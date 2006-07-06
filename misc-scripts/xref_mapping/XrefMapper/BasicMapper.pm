@@ -508,7 +508,6 @@ sub fetch_and_dump_seq{
   }
   close DNA;
   close PEP;
-  die "FINISHED DUMP\n";
 #  print "$rna RNA genes ignored for mapping purposes\n";
   
 }
@@ -3085,6 +3084,14 @@ EOS
   my $okay =0;
   my $both = 0;
   my $poss = 0;
+
+
+  #sql needed to get the dependent xrefs for those missed.
+  my $dep_sql = "SELECT dx.dependent_xref_id, FROM dependent_xref dx, xref x WHERE x.xref_id=dx.dependent_xref_id AND master_xref_id = ?";
+    my $dep_sth = $self->xref->dbc->prepare($dep_sql);
+
+
+
   while ($xref_sth->fetch()) {
     if(!defined($xrefs_written{$xref_id1}) or !defined($xrefs_written{$xref_id2})){
       if (!defined($xrefs_written{$xref_id1}) and !defined($xrefs_written{$xref_id2})){
@@ -3152,6 +3159,19 @@ EOS
 	  print OBJECT_XREF2 $transcript_2_translation{$ens_int_id}."\tTranslation\t" ;
 	  print OBJECT_XREF2 $good2missed{$goodxref};
 	  print OBJECT_XREF2 "\n";	
+
+
+	  $dep_sth->execute($good2missed{$goodxref}-$xref_id_offset);
+	  my $dep_xref;
+	  $dep_sth->bind_columns(\$dep_xref);
+	  while($dep_sth->fetch){
+	    $max_object_xref_id++;
+	    print OBJECT_XREF2 "$max_object_xref_id\t";
+	    print OBJECT_XREF2 $transcript_2_translation{$ens_int_id}."\tTranslation\t" ;
+	    print OBJECT_XREF2 $dep_xref+$xref_id_offset;
+	    print OBJECT_XREF2 "\n";	
+	  }
+
 	  print TRIAGE_UPDATE "DELETE unmapped_object FROM unmapped_object ";
 	  print TRIAGE_UPDATE   "WHERE identifier = '".$good2missed_acc{$goodxref}."' ";
 	  print TRIAGE_UPDATE   "AND external_db_id = $ex_db_id ;\n";
@@ -3163,6 +3183,18 @@ EOS
 	  print OBJECT_XREF2 $translation_2_transcript{$ens_int_id}."\tTranscript\t" ;
 	  print OBJECT_XREF2 $good2missed{$goodxref};
 	  print OBJECT_XREF2 "\n";	
+
+	  $dep_sth->execute($good2missed{$goodxref}-$xref_id_offset);
+	  my $dep_xref;
+	  $dep_sth->bind_columns(\$dep_xref);
+	  while($dep_sth->fetch){
+	    $max_object_xref_id++;
+	    print OBJECT_XREF2 "$max_object_xref_id\t";
+	    print OBJECT_XREF2 $translation_2_transcript{$ens_int_id}."\tTranscript\t" ;
+	    print OBJECT_XREF2 $dep_xref+$xref_id_offset;
+	    print OBJECT_XREF2 "\n";	
+	  }
+
 	  print TRIAGE_UPDATE "DELETE unmapped_object FROM unmapped_object ";
 	  print TRIAGE_UPDATE   "WHERE identifier = '".$good2missed_acc{$goodxref}."' ";
 	  print TRIAGE_UPDATE   "AND external_db_id = $ex_db_id ;\n";
@@ -3189,6 +3221,16 @@ EOS
 	print OBJECT_XREF2 $transcript_2_translation{$ens_int_id}."\tTranslation\t" ;
 	print OBJECT_XREF2 $good2missed{$goodxref};
 	print OBJECT_XREF2 "\n";	
+	$dep_sth->execute($good2missed{$goodxref}-$xref_id_offset);
+	my $dep_xref;
+	$dep_sth->bind_columns(\$dep_xref);
+	while($dep_sth->fetch){
+	  $max_object_xref_id++;
+	  print OBJECT_XREF2 "$max_object_xref_id\t";
+	  print OBJECT_XREF2 $transcript_2_translation{$ens_int_id}."\tTranslation\t" ;
+	  print OBJECT_XREF2 $dep_xref+$xref_id_offset;
+	  print OBJECT_XREF2 "\n";	
+	}
 	print TRIAGE_UPDATE "DELETE unmapped_object FROM unmapped_object ";
 	print TRIAGE_UPDATE   "WHERE identifier like '".$good2missed_acc{$goodxref}."' ";
 	print TRIAGE_UPDATE   "AND external_db_id = $ex_db_id ;\n";
@@ -3200,6 +3242,16 @@ EOS
 	print OBJECT_XREF2 $translation_2_transcript{$ens_int_id}."\tTranscript\t" ;
 	print OBJECT_XREF2 $good2missed{$goodxref};
 	print OBJECT_XREF2 "\n";	
+	$dep_sth->execute($good2missed{$goodxref}-$xref_id_offset);
+	my $dep_xref;
+	$dep_sth->bind_columns(\$dep_xref);
+	while($dep_sth->fetch){
+	  $max_object_xref_id++;
+	  print OBJECT_XREF2 "$max_object_xref_id\t";
+	  print OBJECT_XREF2 $translation_2_transcript{$ens_int_id}."\tTranscript\t" ;
+	  print OBJECT_XREF2 $dep_xref+$$xref_id_offset;
+	  print OBJECT_XREF2 "\n";	
+	}
 	print TRIAGE_UPDATE "DELETE unmapped_object FROM unmapped_object ";
 	print TRIAGE_UPDATE   "WHERE identifier like '".$good2missed_acc{$goodxref}."' ";
 	print TRIAGE_UPDATE   "AND external_db_id = $ex_db_id ;\n";
@@ -3361,6 +3413,7 @@ PSQL
   }
   close(XREF);
 }
+    
 
 1;
 
