@@ -158,6 +158,48 @@ sub fetch_ditag {
 }
 
 
+=head2 get_ditag_location
+
+  Arg [1]    : none
+  Description: Get the start and end location (and strand ) of the start-end pair
+               this DitagFeature belongs to.
+               If it is not a paired ditag, these will be identical
+               to DitagFeature->start() & DitagFeature->end().
+  Returntype : int (start, end, strand)
+  Exceptions : throws if the 2 features of a pair are found on different strands
+               or if the second one cannot be found.
+  Caller     : general
+
+=cut
+
+sub get_ditag_location {
+  my $self = shift;
+
+  my ($start, $end, $strand);
+  if($self->ditag_side eq "F"){
+    $start = $self->start;
+    $end   = $self->end;
+  }
+  else{
+    my ($ditag_a, $ditag_b);
+    eval{
+     ($ditag_a, $ditag_b) = @{$self->adaptor->fetch_all_by_ditagID($self->ditag_id, $self->ditag_pair_id)};
+    };
+    if($@ or !defined($ditag_b)){
+      throw("Cannot find 2nd tag of pair (".$self->dbID.", ".$self->ditag_id.", ".$self->ditag_pair_id.")");
+    }
+
+    ($ditag_a->start < $ditag_b->start) ? ($start = $ditag_a->start) : ($start = $ditag_b->start);
+    ($ditag_a->end   > $ditag_b->end)   ? ($end   = $ditag_a->end)   : ($end   = $ditag_b->end);
+    if($self->strand != $ditag_b->strand){
+      throw('the strand of the two ditagFeatures are different! '.$ditag_a->strand.'/'.$ditag_b->strand);
+    }
+  }
+
+  return($start, $end, $self->strand);
+}
+
+
 =head2 property functions
 
   Arg [1]    : (optional) value
