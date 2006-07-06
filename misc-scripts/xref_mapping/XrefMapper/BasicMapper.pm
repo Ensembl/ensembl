@@ -117,7 +117,7 @@ sub build_list_and_map {
     my $q_dna_file = $self->xref->dir."/xref_".$i."_dna.fasta";
     if (-e $q_dna_file and -s $q_dna_file) {
       push @dna, $method;
-      push @dna, $q_dna_file,
+      push @dna, $q_dna_file;
       push @dna, $self->core->dna_file();
       push @list, \@dna;
     }
