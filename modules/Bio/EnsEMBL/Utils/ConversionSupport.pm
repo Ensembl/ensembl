@@ -889,15 +889,6 @@ sub get_species_scientific_name {
     $dba ||= $self->dba;
     my $sql_tmp = "SELECT meta_value FROM meta WHERE meta_key = \'species.classification\' ORDER BY meta_id";
     my $sql = $dba->dbc->add_limit_clause($sql_tmp,2);
-#     my $sql = qq(
-#         SELECT
-#                 meta_value
-#         FROM
-#                 meta
-#         WHERE meta_key = "species.classification"
-#         ORDER BY meta_id
-#         LIMIT 2
-#     );
     my $sth = $dba->dbc->db_handle->prepare($sql);
     $sth->execute;
     my @sp;
