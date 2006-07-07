@@ -116,18 +116,20 @@ my $chr_slices = $support->split_chromosomes_by_size(5000000);
 
 # known biotype/status pairs and associated density type
 my %gene_types = (
-    "protein_coding_KNOWN"          => "knownPCodDensity",
-	"processed_transcript_KNOWN"    => "knownPTransDensity",
-    "protein_coding_NOVEL"          => "novelPCodDensity",
-    "processed_transcript_NOVEL"    => "novelPTransDensity",
-    "processed_transcript_PUTATIVE" => "putativePTransDensity",
-    "protein_coding_PREDICTED"      => "predictedPCodDensity",
-    "Ig_pseudogene_segment_UNKNOWN" => "IgPseudoSegDensity",
-    "Ig_segment_NOVEL"              => "IgSegDensity",
-	"Ig_segment_KNOWN"              => "IgSegDensity",
-    "pseudogene_UNKNOWN"            => "pseudoGeneDensity",
-    "processed_pseudogene_UNKNOWN"  => "pseudoGeneDensity",
-    "unprocessed_pseudogene_UNKNOWN"=> "pseudoGeneDensity",
+    "protein_coding_KNOWN"             => "knownPCodDensity",
+    "protein_coding_in_progress_KNOWN" => "knownPCodDensity",
+	"processed_transcript_KNOWN"       => "knownPTransDensity",
+    "protein_coding_NOVEL"             => "novelPCodDensity",
+    "protein_coding_in_progress_NOVEL" => "novelPCodDensity",
+    "processed_transcript_NOVEL"       => "novelPTransDensity",
+    "processed_transcript_PUTATIVE"    => "putativePTransDensity",
+    "protein_coding_PREDICTED"         => "predictedPCodDensity",
+    "Ig_pseudogene_segment_UNKNOWN"    => "IgPseudoSegDensity",
+    "Ig_segment_NOVEL"                 => "IgSegDensity",
+	"Ig_segment_KNOWN"                 => "IgSegDensity",
+    "pseudogene_UNKNOWN"               => "pseudoGeneDensity",
+    "processed_pseudogene_UNKNOWN"     => "pseudoGeneDensity",
+    "unprocessed_pseudogene_UNKNOWN"   => "pseudoGeneDensity",
 );
 
 # check for new biotype/status pairs
