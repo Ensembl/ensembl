@@ -120,6 +120,7 @@
 3124	AFFY_Plasmodium_Anopheles	1	XREF	1	0	1	Affymx Microarray Anopheles
 3125	AFFY_Bovine	1	XREF	1	0	1	Affymx Microarray Bovine
 3126	AGILENT_G2518A	1	XREF	1	0	1	Agilent Microarray G2518A
+3150	Illumina	1	XREF	1	0	1	Illumina
 3300	miRNA_Registry	1	XREF	1	0	1	miRNA Registry
 3400	SGD	1	KNOWN	1	0	50	SGD
 3500	IPI	1	KNOWN	1	0	5	IPI
