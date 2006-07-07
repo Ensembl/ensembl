@@ -869,6 +869,7 @@ INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_39_40_f.sql|remo
 INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_39_40_g.sql|add_ditag_tables');
 INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_39_40_h.sql|oligo_feature_analysis_id_type');
 INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_39_40_i.sql|schema_version');
+INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_39_40_j.sql|marker_synonym_name');
 
 ################################################################################
 #
@@ -879,7 +880,7 @@ CREATE TABLE marker_synonym (
   marker_synonym_id           INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
   marker_id                   INT(10) UNSIGNED NOT NULL,
   source                      VARCHAR(20),
-  name                        VARCHAR(30),    
+  name                        VARCHAR(50),    
 
   PRIMARY KEY (marker_synonym_id),
   KEY marker_synonym_idx (marker_synonym_id, name),
