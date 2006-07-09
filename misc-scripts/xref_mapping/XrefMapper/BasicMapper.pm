@@ -3087,7 +3087,7 @@ EOS
 
 
   #sql needed to get the dependent xrefs for those missed.
-  my $dep_sql = "SELECT dx.dependent_xref_id, FROM dependent_xref dx, xref x WHERE x.xref_id=dx.dependent_xref_id AND master_xref_id = ?";
+  my $dep_sql = "SELECT dx.dependent_xref_id FROM dependent_xref dx, xref x WHERE x.xref_id=dx.dependent_xref_id AND master_xref_id = ?";
     my $dep_sth = $self->xref->dbc->prepare($dep_sql);
 
 
@@ -3249,7 +3249,7 @@ EOS
 	  $max_object_xref_id++;
 	  print OBJECT_XREF2 "$max_object_xref_id\t";
 	  print OBJECT_XREF2 $translation_2_transcript{$ens_int_id}."\tTranscript\t" ;
-	  print OBJECT_XREF2 $dep_xref+$$xref_id_offset;
+	  print OBJECT_XREF2 $dep_xref+$xref_id_offset;
 	  print OBJECT_XREF2 "\n";	
 	}
 	print TRIAGE_UPDATE "DELETE unmapped_object FROM unmapped_object ";
