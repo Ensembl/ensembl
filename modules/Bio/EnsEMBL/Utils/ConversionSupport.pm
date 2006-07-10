@@ -251,9 +251,14 @@ sub confirm_params {
     print "Running script with these parameters:\n\n";
     print $self->list_all_params;
 
-    # ask user if he wants to proceed
-    exit unless $self->user_proceed("Continue?");
-    
+	if ($self->param('host') eq 'web-4-11') {
+		# ask user if he wants to proceed
+		exit unless $self->user_proceed("**************\n\n You're working on web-4-11! Is that correct and you want to continue ?\n\n**************");
+	}
+	else {
+		# ask user if he wants to proceed
+		exit unless $self->user_proceed("Continue?");
+    }
     return(1);
 }
 
@@ -938,15 +943,6 @@ sub get_species_scientific_name {
     $dba ||= $self->dba;
     my $sql_tmp = "SELECT meta_value FROM meta WHERE meta_key = \'species.classification\' ORDER BY meta_id";
     my $sql = $dba->dbc->add_limit_clause($sql_tmp,2);
-#     my $sql = qq(
-#         SELECT
-#                 meta_value
-#         FROM
-#                 meta
-#         WHERE meta_key = "species.classification"
-#         ORDER BY meta_id
-#         LIMIT 2
-#     );
     my $sth = $dba->dbc->db_handle->prepare($sql);
     $sth->execute;
     my @sp;
