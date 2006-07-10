@@ -643,7 +643,7 @@ sub get_database {
             -host   => $self->param("${prefix}host"),
             -port   => $self->param("${prefix}port"),
             -user   => $self->param("${prefix}user"),
-            -pass   => $self->param("${prefix}pass"),
+            -pass   => $self->param("${prefix}pass") || '',
             -dbname => $self->param("${prefix}dbname"),
             -group  => $database,
     );
