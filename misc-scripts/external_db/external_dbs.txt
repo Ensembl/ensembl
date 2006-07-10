@@ -21,6 +21,8 @@
 821	FlyBaseName_gene	1	XREF	1	0	5	FlyBaseName gene
 824	FlyBaseName_translations	1	XREF	1	0	5	FlyBaseName translations
 825	FlyBaseName_transcript	1	XREF	1	0	50	FlyBaseName transcript
+826	FlyBaseCGID_gene	1	XREF	1	0	5	FlyBaseCGID gene
+827	FlyBaseCGID_transcript	1	XREF	1	0	50	FlyBaseCGID transcript
 900	GKB	1	XREF	1	0	5	GKB
 1000	GO	1	KNOWNXREF	1	0	5	GO
 1100	HUGO	1	KNOWNXREF	0	1	100	HGNC Symbol
