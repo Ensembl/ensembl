@@ -618,7 +618,7 @@ sub serverroot {
 sub get_database {
     my $self = shift;
     my $database = shift or throw("You must provide a database");
-    my $prefix = shift;
+    my $prefix = shift || '';
     $self->check_required_params(
         "${prefix}host",
         "${prefix}port",
@@ -635,8 +635,7 @@ sub get_database {
         vega    => 'Bio::Otter::DBSQL::DBAdaptor',
 		compara => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
     );
-    my %valid = map { $_ => 1 } keys %adaptors;
-    throw("Unknown database: $database") unless $valid{$database};
+    throw("Unknown database: $database") unless $adaptors{$database};
 
     $self->dynamic_use($adaptors{$database});
     my $dba = $adaptors{$database}->new(
