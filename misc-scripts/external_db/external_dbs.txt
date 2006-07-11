@@ -122,6 +122,8 @@
 3124	AFFY_Plasmodium_Anopheles	1	XREF	1	0	1	Affymx Microarray Anopheles
 3125	AFFY_Bovine	1	XREF	1	0	1	Affymx Microarray Bovine
 3126	AGILENT_G2518A	1	XREF	1	0	1	Agilent Microarray G2518A
+3127	AFFY_YG_S98	1	XREF	1	0	1	Affymx Microarray YG-S98
+3128	AFFY_Yeast_2	1	XREF	1	0	1	Affymx Microarray Yeast_2
 3150	Illumina	1	XREF	1	0	1	Illumina
 3200	VB_array	1	XREF	1	0	1	VectorBase Array
 3300	miRNA_Registry	1	XREF	1	0	1	miRNA Registry
