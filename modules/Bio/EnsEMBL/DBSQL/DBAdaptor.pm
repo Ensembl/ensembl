@@ -272,7 +272,7 @@ sub get_available_adaptors{
     ) ),
    # Those whose adaptors are in Map::DBSQL
     map( { $_ => "Bio::EnsEMBL::Map::DBSQL::${_}Adaptor" } qw(
-      Marker                   MarkerFeature        QtlFeature     Qtl
+							      Marker                   MarkerFeature        QtlFeature     Qtl         Ditag      DitagFeature
     ) ),
    # Finally the exceptions... those that have non-standard mapping between object / adaptor ....
 #    'Blast'                => 'Bio::EnsEMBL::External::BlastAdaptor',
