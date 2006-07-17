@@ -132,16 +132,12 @@ sub new {
       $self->disconnect_when_inactive(1);
     }
   } else {
-
-
     $db   || throw("-DBNAME argument is required.");
     $user || throw("-USER argument is required.");
 
     $driver ||= 'mysql';
     $host   ||= 'mysql';
     $port   ||= 3306;
-
-    my $dsn = "DBI:$driver:database=$db;host=$host;port=$port;mysql_local_infile=1";
 
     $self->username( $user );
     $self->host( $host );
@@ -153,7 +149,6 @@ sub new {
     if($inactive_disconnect) {
       $self->disconnect_when_inactive($inactive_disconnect);
     }
-
   }
 
 #  if(defined $dnadb) {
@@ -185,13 +180,37 @@ sub connect {
     warning("unconnected db_handle is still pingable, reseting connected boolean\n");
   }
 
-  my $dsn = "DBI:" . $self->driver() .
-            ":database=". $self->dbname() .
-            ";host=" . $self->host() .
-            ";port=" . $self->port();
-
-  my $dbh;
-  eval{ $dbh = DBI->connect($dsn, $self->username(), $self->password(), {'RaiseError' => 1}); };
+  my ($dsn, $dbh);
+  if ( $self->driver() eq "Oracle" ) {
+    $dsn = "DBI:" . $self->driver . ":";
+    eval { $dbh = DBI->connect($dsn,
+                               $self->username . "\@" . $self->dbname,
+                               $self->password,
+                               {'RaiseError' => 1, 'PrintError' => 0});
+    };
+  } elsif ( $self->driver() eq "ODBC" ) {
+    $dsn = "DBI:" . $self->driver() . ":" . $self->dbname();
+    eval{ $dbh = DBI->connect($dsn,
+                              $self->username(),
+                              $self->password(),
+                              {'LongTruncOk' => 1,
+                               'LongReadLen' => 2**16 - 8,
+                               'RaiseError' => 1,
+                               'PrintError' => 0,
+                               'odbc_cursortype' => 2});
+    };
+  }
+  else{ 
+    $dsn = "DBI:" . $self->driver() .
+           ":database=". $self->dbname() .
+           ";host=" . $self->host() .
+           ";port=" . $self->port();
+    eval{ $dbh = DBI->connect($dsn,
+                              $self->username(),
+                              $self->password(),
+                              {'RaiseError' => 1});
+    };
+}
 
   if(!$dbh || $@ || !$dbh->ping()) {
     warn("Could not connect to database " . $self->dbname() .
@@ -718,12 +737,10 @@ sub from_seconds_to_date{
     }
     elsif ($self->driver eq 'odbc'){
 	if ($seconds){
-	    $string = "DATEADD(second,$seconds,date)";
-#	    $string = "DATEDIFF(date,'JAN 1 1970',$seconds)";
+	    $string = "DATEDIFF(date,'JAN 1 1970',$seconds)";
 	}
 	else{
-#	    $string = "\"0000-00-00 00:00:00\"";
-	    $string = 'January 1, 1900';
+	    $string = "\"0000-00-00 00:00:00\"";
 	}
     }
     else{

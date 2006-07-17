@@ -807,6 +807,30 @@ sub _fetch_by_object_type {
 
 =cut
 
+sub list_gene_ids_by_external_db_id{
+   my ($self,$external_db_id) = @_;
+
+   my %T = map { ($_, 1) }
+       $self->_type_by_external_db_id( $external_db_id, 'Translation', 'gene' ),
+       $self->_type_by_external_db_id( $external_db_id, 'Transcript',  'gene' ),
+       $self->_type_by_external_db_id( $external_db_id, 'Gene' );
+   return keys %T;
+}
+
+=head2 list_gene_ids_by_external_db_id
+
+  Arg [1]    : string $external_id
+  Example    : @gene_ids = $dbea->list_gene_ids_by_extids('ARSE');
+  Description: Retrieve a list of geneid by an external identifier that is 
+               linked to  any of the genes transcripts, translations or the 
+               gene itself 
+  Returntype : list of ints
+  Exceptions : none
+  Caller     : unknown
+  Status     : Stable
+
+=cut
+
 sub list_gene_ids_by_extids{
    my ($self,$name) = @_;
 
@@ -953,6 +977,93 @@ sub _type_by_external_id{
 	$hash{$r} = 1;
 	push( @result, $r );
       }
+    }
+  }
+  return @result;
+}
+
+=head2 _type_by_external_type
+
+  Arg [1]    : string $type - external_db type
+  Arg [2]    : string $ensType - ensembl_object_type
+  Arg [3]    : (optional) string $extraType
+  	       other object type to be returned
+  Example    : $self->_type_by_external_id(1030, 'Translation');
+  Description: Gets
+  Returntype : list of dbIDs (gene_id, transcript_id, etc.)
+  Exceptions : none
+  Caller     : list_translation_ids_by_extids
+               translationids_by_extids
+  	       geneids_by_extids
+  Status     : Stable
+
+=cut
+
+sub _type_by_external_db_id{
+  my ($self, $external_db_id, $ensType, $extraType) = @_;
+
+  my $from_sql = '';
+  my $where_sql = '';
+  my $ID_sql = "oxr.ensembl_id";
+
+  if (defined $extraType) {
+    if (lc($extraType) eq 'translation') {
+      $ID_sql = "tl.translation_id";
+    } else {
+      $ID_sql = "t.${extraType}_id";
+    }
+
+    if (lc($ensType) eq 'translation') {
+      $from_sql = 'transcript t, translation tl, ';
+      $where_sql = qq(
+          t.transcript_id = tl.transcript_id AND
+          tl.translation_id = oxr.ensembl_id AND
+          t.is_current = 1 AND
+      );
+    } else {
+      $from_sql = 'transcript t, ';
+      $where_sql = 't.'.lc($ensType).'_id = oxr.ensembl_id AND '.
+          't.is_current = 1 AND ';
+    }
+  }
+
+  if (lc($ensType) eq 'gene') {
+    $from_sql = 'gene g, ';
+    $where_sql = 'g.gene_id = oxr.ensembl_id AND g.is_current = 1 AND ';
+  } elsif (lc($ensType) eq 'transcript') {
+    $from_sql = 'transcript t, ';
+    $where_sql = 't.transcript_id = oxr.ensembl_id AND t.is_current = 1 AND ';
+  } elsif (lc($ensType) eq 'translation') {
+    $from_sql = 'transcript t, translation tl, ';
+    $where_sql = qq(
+        t.transcript_id = tl.transcript_id AND
+        tl.translation_id = oxr.ensembl_id AND
+        t.is_current = 1 AND
+    );
+  }
+
+  my $query = 
+    "SELECT $ID_sql
+       FROM $from_sql xref x, object_xref oxr
+      WHERE $where_sql x.external_db_id = ? AND
+  	     x.xref_id = oxr.xref_id AND oxr.ensembl_object_type= ?";
+
+# Increase speed of query by splitting the OR in query into three separate 
+# queries. This is because the 'or' statments render the index useless 
+# because MySQL can't use any fields in the index.
+
+  my %hash = (); 
+  my @result = ();
+
+
+  my $sth = $self->prepare( $query );
+  $sth->bind_param(1, "$external_db_id", SQL_VARCHAR);
+  $sth->bind_param(2, $ensType, SQL_VARCHAR);
+  $sth->execute();
+  while( my $r = $sth->fetchrow_array() ) {
+    if( !exists $hash{$r} ) {
+      $hash{$r} = 1;
+      push( @result, $r );
     }
   }
   return @result;

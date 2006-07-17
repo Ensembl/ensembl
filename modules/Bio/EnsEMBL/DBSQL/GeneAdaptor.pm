@@ -317,7 +317,28 @@ sub fetch_all_by_domain {
   return $self->fetch_all_by_dbID_list(\@gene_ids);
 }
 
+sub fetch_all_by_Slice_and_external_dbname_link {
+  my $self  = shift;
+  my $slice = shift;
+  my $logic_name = shift;
+  my $load_transcripts = shift;
+  my @genes_passed;
 
+  #get the external_db_id from the name
+
+  # get the gene_ids for those with links
+
+
+  # get all the genes on the slice
+
+  my $genes = $self->SUPER::fetch_all_by_Slice_constraint($slice,
+    'g.is_current = 1', $logic_name);
+
+  # cretae a list of those that are in the gene_ids list
+  foreach my $gene (@$genes){
+    if(
+  }
+}
 
 =head2 fetch_all_by_Slice
 
@@ -553,6 +574,8 @@ sub fetch_by_translation_stable_id {
     }
     return $self->fetch_by_dbID($geneid);
 }
+
+
 
 
 =head2 fetch_all_by_external_name
