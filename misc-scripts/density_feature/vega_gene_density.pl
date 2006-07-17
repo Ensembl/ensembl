@@ -116,20 +116,20 @@ my $chr_slices = $support->split_chromosomes_by_size(5000000);
 
 # known biotype/status pairs and associated density type
 my %gene_types = (
-    "protein_coding_KNOWN" => "knownPCodDensity",
+    "protein_coding_KNOWN"             => "knownPCodDensity",
     "protein_coding_in_progress_KNOWN" => "knownPCodDensity",
-	"processed_transcript_KNOWN" => "knownPTransDensity",
-    "protein_coding_NOVEL" => "novelPCodDensity",
+	"processed_transcript_KNOWN"       => "knownPTransDensity",
+    "protein_coding_NOVEL"             => "novelPCodDensity",
     "protein_coding_in_progress_NOVEL" => "novelPCodDensity",
-    "processed_transcript_NOVEL" => "novelPTransDensity",
-    "processed_transcript_PUTATIVE" => "putativePTransDensity",
-    "protein_coding_PREDICTED"      => "predictedPCodDensity",
-    "Ig_pseudogene_segment_UNKNOWN" => "IgPseudoSegDensity",
-    "Ig_segment_NOVEL"              => "IgSegDensity",
-	"Ig_segment_KNOWN"              => "IgSegDensity",
-    "pseudogene_UNKNOWN"            => "pseudoGeneDensity",
-    "processed_pseudogene_UNKNOWN"  => "pseudoGeneDensity",
-    "unprocessed_pseudogene_UNKNOWN"=> "pseudoGeneDensity",
+    "processed_transcript_NOVEL"       => "novelPTransDensity",
+    "processed_transcript_PUTATIVE"    => "putativePTransDensity",
+    "protein_coding_PREDICTED"         => "predictedPCodDensity",
+    "Ig_pseudogene_segment_UNKNOWN"    => "IgPseudoSegDensity",
+    "Ig_segment_NOVEL"                 => "IgSegDensity",
+	"Ig_segment_KNOWN"                 => "IgSegDensity",
+    "pseudogene_UNKNOWN"               => "pseudoGeneDensity",
+    "processed_pseudogene_UNKNOWN"     => "pseudoGeneDensity",
+    "unprocessed_pseudogene_UNKNOWN"   => "pseudoGeneDensity",
 );
 
 # check for new biotype/status pairs
@@ -296,7 +296,7 @@ foreach my $block_size (keys %{ $chr_slices }) {
         );
         
         push @attribs, Bio::EnsEMBL::Attribute->new(
-            -NAME => 'total_Ig_segment_',
+            -NAME => 'total_Ig_segment_UNKNOWN',
             -CODE => 'IgSegCount',
             -VALUE => $total{'Ig_segment_NOVEL'}
 						+ $total{'Ig_segment_KNOWN'} || 0,
@@ -304,32 +304,32 @@ foreach my $block_size (keys %{ $chr_slices }) {
         );
         
         push @attribs, Bio::EnsEMBL::Attribute->new(
-            -NAME => 'Ig_pseudogene_segment_',
+            -NAME => 'Ig_pseudogene_segment_UNKNOWN',
             -CODE => 'IgPsSegCount',
-            -VALUE => $total{'Ig_pseudogene_segment_'} || 0,
+            -VALUE => $total{'Ig_pseudogene_segment_UNKNOWN'} || 0,
             -DESCRIPTION => 'Number of Ig Pseudogene Segments'
         );
         
         push @attribs, Bio::EnsEMBL::Attribute->new(
-            -NAME => 'total_pseudogene_',
+            -NAME => 'total_pseudogene_UNKNOWN',
             -CODE => 'TotPsCount',
-            -VALUE => ($total{'pseudogene_'}
-                        + $total{'processed_pseudogene_'}
-                        + $total{'unprocessed_pseudogene_'}) || 0,
+            -VALUE => ($total{'pseudogene_UNKNOWN'}
+                        + $total{'processed_pseudogene_UNKNOWN'}
+                        + $total{'unprocessed_pseudogene_UNKNOWN'}) || 0,
             -DESCRIPTION => 'Total Number of Pseudogenes'
         );
         
         push @attribs, Bio::EnsEMBL::Attribute->new(
-            -NAME => 'processed_pseudogene_',
+            -NAME => 'processed_pseudogene_UNKNOWN',
             -CODE => 'ProcPsCount',
-            -VALUE => $total{'processed_pseudogene_'} || 0,
+            -VALUE => $total{'processed_pseudogene_UNKNOWN'} || 0,
             -DESCRIPTION => 'Number of Processed pseudogenes'
         );
         
         push @attribs, Bio::EnsEMBL::Attribute->new(
-            -NAME => 'unprocessed_pseudogene_',
+            -NAME => 'unprocessed_pseudogene_UNKNOWN',
             -CODE => 'UnprocPsCount',
-            -VALUE => $total{'unprocessed_pseudogene_'} || 0,
+            -VALUE => $total{'unprocessed_pseudogene_UNKNOWN'} || 0,
             -DESCRIPTION => 'Number of Unprocessed pseudogenes'
         );
         
