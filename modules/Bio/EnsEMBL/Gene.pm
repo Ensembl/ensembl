@@ -823,6 +823,7 @@ sub transform {
     for my $old_transcript ( @{$self->{'_transcript_array'}} ) {
       my $new_transcript = $old_transcript->transform( @_ );
       # this can fail if gene transform failed  
+      
       return undef unless $new_transcript;
 
       if( ! defined $new_gene ) {
@@ -842,10 +843,10 @@ sub transform {
       %$new_gene = %$self;
       bless $new_gene, ref( $self );
 
-      $self->start( $low_start );
-      $self->end( $hi_end );
-      $self->strand( $strand );
-      $self->slice( $slice );
+      $new_gene->start( $low_start );
+      $new_gene->end( $hi_end );
+      $new_gene->strand( $strand );
+      $new_gene->slice( $slice );
     }
 
     $new_gene->{'_transcript_array'} = \@new_transcripts;
