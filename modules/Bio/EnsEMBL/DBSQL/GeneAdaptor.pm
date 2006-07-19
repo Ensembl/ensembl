@@ -318,6 +318,81 @@ sub fetch_all_by_domain {
 }
 
 
+
+=head2 fetch_all_by_Slice
+
+  Arg [1]    : Bio::EnsEMBL::Slice $slice
+               The slice to fetch genes on.
+  Arg [2]    : (optional) string $logic_name
+               the logic name of the type of features to obtain
+  Arg [3]    : (optional) boolean $load_transcripts
+               if true, transcripts will be loaded immediately rather than
+               lazy loaded later.
+  Arg [4]    : Name of the external database
+  Example    : @genes = @{$ga->fetch_all_by_Slice_and_external_dbname_link
+                ($slice,undef,undef,"HUGO")};
+
+  Description: Overrides superclass method to optionally load transcripts
+               immediately rather than lazy-loading them later.  This
+               is more efficient when there are a lot of genes whose
+               transcripts are going to be used. The genes are then filtered
+               to return only those with external database links of the type specified
+  Returntype : reference to list of genes
+  Exceptions : thrown if exon cannot be placed on transcript slice
+  Caller     : 
+  Status     : At Risk
+
+=cut
+
+
+sub fetch_all_by_Slice_and_external_dbname_link {
+  my $self  = shift;
+  my $slice = shift;
+  my $logic_name = shift;
+  my $load_transcripts = shift;
+  my $db_name = shift;
+  my @genes_passed;
+  my $external_db_id;
+  #get the external_db_id from the name
+  my $sth = $self->prepare(
+     "SELECT external_db_id from external_db where db_name = ?");
+
+  $sth->bind_param(1,$db_name,SQL_VARCHAR);
+  $sth->execute();
+  $sth->bind_columns(\$external_db_id);
+  $sth->fetch;
+  if(!defined($external_db_id) || $external_db_id == 0){
+    warn "Could not find external database $db_name in the external_db table\navailable are:-\n";
+    $sth = $self->prepare(
+     "SELECT db_name from external_db");
+    $sth->execute();
+    $sth->bind_columns(\$external_db_id);
+    while($sth->fetch){
+      warn "\t$external_db_id\n";
+    }
+    return @genes_passed;
+  }
+  
+  # get the gene_ids for those with links
+  my $dbe_adaptor = $self->db()->get_DBEntryAdaptor();
+  my %linked_genes= $dbe_adaptor->list_gene_ids_by_external_db_id($external_db_id);
+
+  # get all the genes on the slice  
+
+  my $genes = $self->SUPER::fetch_all_by_Slice_constraint($slice,
+    'g.is_current = 1', $logic_name);
+
+  # create a list of those that are in the gene_ids list
+  foreach my $gene (@$genes){
+    if($linked_genes{$gene->dbID}){
+      push @genes_passed, $gene;
+    }
+  }
+
+  #return the list of those that passed
+  return \@genes_passed;
+}
+
 =head2 fetch_all_by_Slice
 
   Arg [1]    : Bio::EnsEMBL::Slice $slice
