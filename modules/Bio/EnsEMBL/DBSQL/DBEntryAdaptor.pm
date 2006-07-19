@@ -793,10 +793,10 @@ sub _fetch_by_object_type {
   return \@out;
 }
 
-=head2 list_gene_ids_by_extids
+=head2 list_gene_ids_by_external_db_id
 
   Arg [1]    : string $external_id
-  Example    : @gene_ids = $dbea->list_gene_ids_by_extids('ARSE');
+  Example    : @gene_ids = $dbea->list_gene_ids_by_external_db_id(1020);
   Description: Retrieve a list of geneid by an external identifier that is 
                linked to  any of the genes transcripts, translations or the 
                gene itself 
