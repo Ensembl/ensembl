@@ -89,14 +89,17 @@ sub new {
 
 sub cache_file_exists {
   my $self = shift;
+  my $type = shift;
 
-  my $cache_path = $self->cache_path;
+  throw("You must provide a cache type (old|new).") unless $type;
+
+  my $cache_path = $self->cache_path($type);
 
   if (-s $cache_path) {
-    $self->logger->log("Cache file exists. Will read cache from $cache_path.\n");
+    $self->logger->log("Cache file found. Will read from $cache_path.\n", 1);
     return(1);
   } else {
-    $self->logger->log("No cache file found. Will have to build cache from db.\n");
+    $self->logger->log("No cache file found. Will build cache from db.\n", 1);
     return(0);
   }
 }
@@ -104,97 +107,70 @@ sub cache_file_exists {
 
 sub cache_path {
   my $self = shift;
+  my $type = shift;
 
-  unless ($self->{'_cache_path'}) {
-    $self->{'_cache_path'} = ($self->conf->param('dumppath') || '.').'/'.
-      ($self->conf->param('cachefile') || 'object_cache.ser');
-  }
+  throw("You must provide a cache type (old|new).") unless $type;
 
-  return $self->{'_cache_path'};
+  my $cache_path = ($self->conf->param('dumppath') || '.')."/$type.".
+    ($self->conf->param('cachefile') || 'object_cache.ser');
+
+  return $cache_path;
 }
 
 
 sub write_to_file {
   my $self = shift;
+  my $type = shift;
+
+  throw("You must provide a cache type (old|new).") unless $type;
 
   # create dump directory if it doesn't exist
   if (my $dump_path = $self->conf->param('dumppath')) {
     unless (-d $dump_path) {
-      $self->logger->log("Cache directory $dump_path doesn't exist. Will create it.\n");
+      $self->logger->log("Cache directory $dump_path doesn't exist. Will create it.\n", 1);
       system("mkdir -p $dump_path") == 0 or
         throw("Unable to create directory $dump_path.\n");
     }
   }
   
-  my $cache_path = $self->cache_path;
+  my $cache_path = $self->cache_path($type);
 
-  $self->logger->log("Will dump to $cache_path.\n");
-  $self->logger->log_stamped("Dumping cache...\n");
+  $self->logger->log("Will dump to $cache_path.\n", 1);
+  $self->logger->log_stamped("Dumping cache...\n", 1);
 
-  eval { nstore($self->{'_cache'}, $cache_path) };
+  eval { nstore($self->{'_cache'}->{$type}, $cache_path) };
   if ($@) {
     throw("Unable to store $cache_path: $@\n");
   }
   my $size = -s $cache_path;
   $size = parse_bytes($size);
   
-  $self->logger->log_stamped("Done (cache file is $size).\n");
+  $self->logger->log_stamped("Done (cache file is $size).\n", 1);
 }
 
 
 sub read_from_file {
   my $self = shift;
+  my $type = shift;
 
-  my $cache_path = $self->cache_path;
+  throw("You must provide a cache type (old|new).") unless $type;
+
+  my $cache_path = $self->cache_path($type);
 
   unless (-s $cache_path) {
     throw("No valid cache file found at $cache_path.");
   }
 
-  eval { $self->{'_cache'} = retrieve($cache_path); };
+  $self->logger->log("Reading cache from $cache_path...\n");
+  eval { $self->{'_cache'}->{$type} = retrieve($cache_path); };
   if ($@) {
     throw("Unable to retrieve cache: $@");
   }
+  $self->logger->log_stamped("Done.\n");
 
-  return $self->{'_cache'};
+  return $self->{'_cache'}->{$type};
 }
 
-
-=head2 
-
-  Arg[1]      : 
-  Example     : 
-  Description : 
-  Return type : 
-  Exceptions  : 
-  Caller      : 
-  Status      :
-
-=cut
-
-sub build_cache {
-  my $self = shift;
-
-  # connect to db
-  my $old_dba = $self->get_DBAdaptor('old');
-  my $new_dba = $self->get_DBAdaptor('new');
-
-  #
-  # old database
-  #
-  $self->logger->log_stamped("Loading from old database...\n");
-
-  # fetch genes
-  my $old_genes = $self->fetch_genes($old_dba);
-
-  # fetch transcripts, translations and exons and build caches
-  $self->build_cache_from_genes('old', $old_genes);
-
-  #
-  # new database
-  #
-
-}
 
 sub fetch_genes {
   my $self = shift;
@@ -213,11 +189,11 @@ sub fetch_genes {
   # fetch genes, depending on filters to apply
   #
   my @all_genes = ();
-  my @genes = ();
+  my $genes = [];
 
   if ($self->conf->param('chromosomes')) {
     # filter by chromosome
-    $self->logger->log("Filtering by chromosome: ", 2);
+    $self->logger->log("Filtering by chromosome: ", 3);
     
     foreach my $chr ($self->conf->param('chromosomes')) {
       $self->logger->log("$chr ");
@@ -228,7 +204,7 @@ sub fetch_genes {
     
   } elsif ($self->conf->param('region')) {
     # filter by region (specific slice)
-    $self->logger->log("Filtering by region: ".$self->conf->param('region')."\n", 2);
+    $self->logger->log("Filtering by region: ".$self->conf->param('region')."\n", 3);
 
     my $slice = $sa->fetch_by_name($self->conf->param('region'));
     @all_genes = @{ $slice->get_all_Genes(undef, undef, 1) };
@@ -240,22 +216,22 @@ sub fetch_genes {
 
   # filter by biotype
   if ($self->conf->param('biotypes')) {
-    $self->logger->log("Filtering by biotype: ", 2);
+    $self->logger->log("Filtering by biotype: ", 3);
 
     foreach my $biotype ($self->conf->param('biotypes')) {
       $self->logger->log("$biotype ");
-      push @genes, grep { $_->biotype eq $biotype } @all_genes;
+      push @$genes, grep { $_->biotype eq $biotype } @all_genes;
     }
 
     $self->logger->log("\n");
 
   } else {
-    @genes = @all_genes;
+    $genes = \@all_genes;
   }
 
-  $self->logger->log_stamped("Done loading ".scalar(@genes)." genes.\n\n", 1);
+  $self->logger->log_stamped("Done loading ".scalar(@$genes)." genes.\n\n", 1);
 
-  return \@genes;
+  return $genes;
 }
 
 
@@ -273,10 +249,13 @@ sub build_cache_from_genes {
   my $num_genes = scalar(@$genes);
   $self->logger->init_progressbar('index_genes', $num_genes);
 
+#use Data::Dumper;
+#$Data::Dumper::Indent = 1;
+
   foreach my $gene (@$genes) {
     #$self->logger->log_progressbar('index_genes', ++$i, 2);
-    $self->logger->log_progress($num_genes, ++$i, 20, 2, 1);
-
+    $self->logger->log_progress($num_genes, ++$i, 20, 3, 1);
+    
     # build gene caches
     $self->add($type, 'genes_by_id', $gene->dbID, $gene);
     $self->add($type, 'genes_by_stable_id', $gene->stable_id, $gene);
@@ -308,10 +287,38 @@ sub build_cache_from_genes {
     }
   }
 
-  $self->logger->log_stamped("Done building the index:\n", 1);
+  foreach my $gene (@$genes) {
+    #
+    # delete all unwanted data from objects
+    #
+    $gene->adaptor(undef);
+    $gene->analysis(undef);
+    $gene->display_xref(undef);
+    $gene->slice->adaptor(undef);
+    $gene->slice->coord_system->adaptor(undef);
+
+    foreach my $tr (@{ $gene->get_all_Transcripts }) {
+      $tr->adaptor(undef);
+      $tr->display_xref(undef);
+      $tr->analysis(undef);
+      
+      if (my $tl = $tr->translation) {
+        $tl->adaptor(undef);
+      }
+
+      foreach my $exon (@{ $tr->get_all_Exons }) {
+        $exon->adaptor(undef);
+        $exon->analysis(undef);
+      }
+    }
+
+    #warn Data::Dumper::Dumper($gene) if ($i < 2);;
+  }
+
+  $self->logger->log_stamped("Done building the index:\n", 2);
   foreach my $name (qw(genes transcripts translations exons)) {
-    my $num = scalar(keys %{ $self->get_by_name('old', "${name}_by_id") });
-    $self->logger->log(sprintf("%12.0f %-20s\n", $num, $name), 2);
+    my $num = scalar(keys %{ $self->get_by_name($type, "${name}_by_id") });
+    $self->logger->log(sprintf("%12.0f %-20s\n", $num, $name), 3);
   }
   $self->logger->log("\n");
 }
@@ -371,6 +378,16 @@ sub get_by_name {
   throw("You must provide a cache name (e.g. genes_by_id.") unless $name;
   
   return $self->{'_cache'}->{$type}->{$name} || {};
+}
+
+
+sub flush_by_type {
+  my $self = shift;
+  my $type = shift;
+
+  throw("You must provide a cache type (old|new).") unless $type;
+
+  undef $self->{'_cache'}->{$type};
 }
 
 
