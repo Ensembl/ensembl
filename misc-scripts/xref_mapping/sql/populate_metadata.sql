@@ -144,6 +144,9 @@ INSERT INTO source VALUES (5000, 'OTTT', 1, 'Y', 50);
 # Illumina
 INSERT INTO source VALUES (5010, 'Illumina', 1, 'Y', 50);
 
+# Codelink
+INSERT INTO source VALUES (5020, 'Codelink', 1, 'Y', 50);
+
 ################################################################################
 # Files to fetch data from
 
@@ -320,7 +323,8 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 # Sentrix humanref-8 expression beadchip
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (5010, 9606,'http://www.illumina.com/General/Products/ArraysReagents/zip_files/Human_RefSeq-8_sequence.zip#Human_RefSeq-8_sequence.csv', '', now(), now(), "IlluminaParser");
 
-
+# Codelink
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (5020, 9606,'LOCAL:Codelink/GEHC_Amersham_CodeLink_HWG_300026.fna', '', now(), now(), "CodelinkParser");
 
 # --------------------------------------------------------------------------------
 
@@ -368,6 +372,9 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 # Sentrix mouseref-8 expression beadchip
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (5010, 10090,'http://www.illumina.com/General/Products/ArraysReagents/zip_files/Mouse_Ref-8_V1_sequence.zip#Mouse_Ref-8_V1_sequence.csv', '', now(), now(), "IlluminaParser");
 
+# Codelink
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (5020, 10090,'LOCAL:Codelink/GEHC_Amersham_CodeLink_MWG_300033.fna', '', now(), now(), "CodelinkParser");
+
 
 # --------------------------------------------------------------------------------
 ### RAT
@@ -405,6 +412,9 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 
 ##      ncRNAs presently inhouse ( points to file with dumped xrefs from transfer_ncRNA.pl) .
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (4000, 10116,'LOCAL:ncRNA/ncRNA.txt', '', now(), now(), "ncRNAParser");
+
+# Codelink
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (5020, 10116,'LOCAL:Codelink/GEHC_Amersham_CodeLink_RWG_300031.fna', '', now(), now(), "CodelinkParser");
 
 # --------------------------------------------------------------------------------
 
