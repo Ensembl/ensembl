@@ -428,7 +428,10 @@ sub transform {
   }
 
   my $new_exon = $self->SUPER::transform( @_ );
-  return undef unless $new_exon;
+  if (not defined $new_exon or
+      $new_exon->length != $self->length) {
+    return undef;
+  }
 
   if( exists $self->{'_supporting_evidence'} ) {
     my @new_features;
