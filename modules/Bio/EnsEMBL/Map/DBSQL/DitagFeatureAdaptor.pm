@@ -210,7 +210,7 @@ sub fetch_all_by_Slice {
 
   #fetch ditagFeatures for these ids
   # splitting large queries into smaller batches
-  my $max_size = 500;
+  my $max_size     = 1000;
   my $ids_to_fetch = "";
 
   while(@id_list) {
