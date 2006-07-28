@@ -161,10 +161,10 @@ sub log_error {
   $txt = "ERROR: ".$txt;
   $self->log($txt, $indent);
   
-  $self->log("Exiting prematurely.\n\n");
+  $self->log("\nExiting prematurely.\n\n");
   $self->log("Runtime: ".$self->runtime." ".$self->date_and_mem."\n\n");
   
-  exit;
+  exit(1);
 }
 
 

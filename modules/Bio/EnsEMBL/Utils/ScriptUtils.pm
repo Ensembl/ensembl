@@ -40,6 +40,8 @@ our @EXPORT_OK = qw(
   commify
   sort_chromosomes
   parse_bytes
+  directory_hash
+  dynamic_use
 );
 
 
@@ -181,4 +183,44 @@ sub parse_bytes {
   return "$parsed ".$suffixes[$order];
 }
 
+
+sub directory_hash {
+  my $filename = shift;
+
+  my (@md5) = md5_hex($filename) =~ /\G(..)/g;
+  return join('/', @md5[0..2]);
+}
+
+
+=head2 dynamic_use
+
+  Arg [1]    : String $classname - The name of the class to require/import
+  Example    : $self->dynamic_use('Bio::EnsEMBL::DBSQL::DBAdaptor');
+  Description: Requires and imports the methods for the classname provided,
+               checks the symbol table so that it doesnot re-require modules
+               that have already been required.
+  Returntype : true on success
+  Exceptions : Warns to standard error if module fails to compile
+  Caller     : internal
+
+=cut
+
+sub dynamic_use {
+  my $classname = shift;
+  my ($parent_namespace, $module) = $classname =~/^(.*::)(.*)$/ ?
+                                      ($1,$2) : ('::', $classname);
+  no strict 'refs';
+
+  # return if module has already been imported
+  return 1 if $parent_namespace->{$module.'::'};
+  
+  eval "require $classname";
+  die("Failed to require $classname: $@") if ($@);
+
+  $classname->import();
+  
+  return 1;
+}
+
 1;
+
