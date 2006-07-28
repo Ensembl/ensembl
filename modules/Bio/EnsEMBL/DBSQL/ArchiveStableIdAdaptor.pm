@@ -141,7 +141,8 @@ sub fetch_by_stable_id_version {
     SELECT
           m.new_db_name,
           m.new_release,
-          m.new_assembly
+          m.new_assembly,
+          sie.score
     FROM  stable_id_event sie, mapping_session m
     WHERE sie.mapping_session_id = m.mapping_session_id
     AND   sie.new_stable_id = "$stable_id"
@@ -153,7 +154,7 @@ sub fetch_by_stable_id_version {
 
   my $sth = $self->prepare($sql);
   $sth->execute();
-  my ($db_name, $release, $assembly) = $sth->fetchrow_array();
+  my ($db_name, $release, $assembly, $score) = $sth->fetchrow_array();
   $sth->finish();
   
   # you might have missed a stable ID that was deleted in the very first
@@ -163,7 +164,8 @@ sub fetch_by_stable_id_version {
       SELECT
             m.old_db_name,
             m.old_release,
-            m.old_assembly
+            m.old_assembly,
+            sie.score
       FROM  stable_id_event sie, mapping_session m
       WHERE sie.mapping_session_id = m.mapping_session_id
       AND   sie.old_stable_id = "$stable_id"
@@ -175,7 +177,7 @@ sub fetch_by_stable_id_version {
 
     $sth = $self->prepare($sql);
     $sth->execute();
-    ($db_name, $release, $assembly) = $sth->fetchrow_array();
+    ($db_name, $release, $assembly, $score) = $sth->fetchrow_array();
     $sth->finish();
   }
   
@@ -186,6 +188,7 @@ sub fetch_by_stable_id_version {
     $arch_id->db_name($db_name);
     $arch_id->release($release);
     $arch_id->assembly($assembly);
+    $arch_id->score($score);
   }
 
   return $arch_id;
@@ -325,6 +328,7 @@ sub fetch_predecessors_by_archive_id {
     SELECT
           sie.old_stable_id,
           sie.old_version,
+          sie.score,
           m.old_db_name,
           m.old_release,
           m.old_assembly
@@ -339,8 +343,8 @@ sub fetch_predecessors_by_archive_id {
   $sth->bind_param(2, $arch_id->db_name, SQL_VARCHAR);
   $sth->execute();
   
-  my ($old_stable_id, $old_version, $old_db_name, $old_release, $old_assembly);
-  $sth->bind_columns(\$old_stable_id, \$old_version, \$old_db_name, \$old_release, \$old_assembly);
+  my ($old_stable_id, $old_version, $score, $old_db_name, $old_release, $old_assembly);
+  $sth->bind_columns(\$old_stable_id, \$old_version, \$score, \$old_db_name, \$old_release, \$old_assembly);
   
   while( $sth->fetch() ) {
     if( defined $old_stable_id ) {
@@ -351,7 +355,8 @@ sub fetch_predecessors_by_archive_id {
 	 -db_name => $old_db_name,
          -release => $old_release,
          -assembly => $old_assembly,
-	 -adaptor => $self
+	 -adaptor => $self,
+         -score => $score
 	);
       _resolve_type( $old_arch_id );
       push( @result, $old_arch_id );
@@ -373,6 +378,7 @@ sub fetch_predecessors_by_archive_id {
         SELECT
               sie.new_stable_id,
               sie.new_version,
+              sie.score,
               m.new_db_name,
               m.new_release,
               m.new_assembly
@@ -387,7 +393,7 @@ sub fetch_predecessors_by_archive_id {
       $sth->bind_param(2,$prev_dbname, SQL_VARCHAR);
       $sth->execute();
       
-      $sth->bind_columns(\$old_stable_id, \$old_version, \$old_db_name, \$old_release, \$old_assembly);
+      $sth->bind_columns(\$old_stable_id, \$old_version, \$score, \$old_db_name, \$old_release, \$old_assembly);
       
       while( $sth->fetch() ) {
         if (defined $old_stable_id) {
@@ -398,7 +404,8 @@ sub fetch_predecessors_by_archive_id {
              -db_name => $old_db_name,
              -release => $old_release,
              -assembly => $old_assembly,
-             -adaptor => $self
+             -adaptor => $self,
+             -score => $score
             );
           _resolve_type( $old_arch_id );
           push( @result, $old_arch_id );
@@ -444,6 +451,7 @@ sub fetch_successors_by_archive_id {
     SELECT
           sie.new_stable_id,
           sie.new_version,
+          sie.score,
           m.new_db_name,
           m.new_release,
           m.new_assembly
@@ -458,8 +466,8 @@ sub fetch_successors_by_archive_id {
   $sth->bind_param(2,$arch_id->db_name,SQL_VARCHAR);
   $sth->execute();
   
-  my ($new_stable_id, $new_version, $new_db_name, $new_release, $new_assembly);
-  $sth->bind_columns(\$new_stable_id, \$new_version, \$new_db_name, \$new_release, \$new_assembly);
+  my ($new_stable_id, $new_version, $score, $new_db_name, $new_release, $new_assembly);
+  $sth->bind_columns(\$new_stable_id, \$new_version, \$score, \$new_db_name, \$new_release, \$new_assembly);
   
   while( $sth->fetch() ) {
     if( defined $new_stable_id ) {
@@ -470,7 +478,8 @@ sub fetch_successors_by_archive_id {
 	 -db_name => $new_db_name,
          -release => $new_release,
          -assembly => $new_assembly,
-	 -adaptor => $self
+	 -adaptor => $self,
+         -score => $score
 	);
         
       _resolve_type($new_arch_id);
@@ -493,6 +502,7 @@ sub fetch_successors_by_archive_id {
         SELECT
               sie.old_stable_id,
               sie.old_version,
+              sie.score,
               m.old_db_name,
               m.old_release,
               m.old_assembly
@@ -507,7 +517,7 @@ sub fetch_successors_by_archive_id {
       $sth->bind_param(2, $next_dbname, SQL_VARCHAR);
       $sth->execute();
       
-      $sth->bind_columns(\$new_stable_id, \$new_version, \$new_db_name, \$new_release, \$new_assembly);
+      $sth->bind_columns(\$new_stable_id, \$new_version, \$score, \$new_db_name, \$new_release, \$new_assembly);
       
       while( $sth->fetch() ) {
         if (defined $new_stable_id) {
@@ -518,7 +528,8 @@ sub fetch_successors_by_archive_id {
              -db_name => $new_db_name,
              -release => $new_release,
              -assembly => $new_assembly,
-             -adaptor => $self
+             -adaptor => $self,
+             -score => $score
             );
             
           _resolve_type($new_arch_id);
@@ -888,7 +899,8 @@ sub _lookup_version {
             m.new_db_name,
             m.new_release,
             m.new_assembly,
-            sie.new_version
+            sie.new_version,
+            sie.score
       FROM  stable_id_event sie, mapping_session m
       WHERE sie.mapping_session_id = m.mapping_session_id
       AND   new_stable_id = "@{[$arch_id->stable_id]}"
@@ -903,7 +915,8 @@ sub _lookup_version {
             m.old_db_name,
             m.old_release,
             m.old_assembly,
-            sie.old_version
+            sie.old_version,
+            sie.score
       FROM  stable_id_event sie, mapping_session m
       WHERE sie.mapping_session_id = m.mapping_session_id
       AND   sie.old_stable_id = "@{[$arch_id->stable_id]}"
@@ -914,7 +927,7 @@ sub _lookup_version {
 
   my $sth = $self->prepare($sql);
   $sth->execute();
-  my ($db_name, $release, $assembly, $version) = $sth->fetchrow_array();
+  my ($db_name, $release, $assembly, $version, $score) = $sth->fetchrow_array();
   $sth->finish();
   
   # you might have missed a stable ID that was deleted in the very first
@@ -925,7 +938,8 @@ sub _lookup_version {
             m.old_db_name,
             m.old_release,
             m.old_assembly,
-            sie.old_version
+            sie.old_version,
+            sie.score
       FROM  stable_id_event sie, mapping_session m
       WHERE sie.mapping_session_id = m.mapping_session_id
       AND   old_stable_id = "@{[$arch_id->stable_id]}"
@@ -937,7 +951,7 @@ sub _lookup_version {
 
     $sth = $self->prepare($sql);
     $sth->execute();
-    ($db_name, $release, $assembly, $version) = $sth->fetchrow_array();
+    ($db_name, $release, $assembly, $version, $score) = $sth->fetchrow_array();
     $sth->finish();
   }
   
@@ -950,6 +964,7 @@ sub _lookup_version {
       $arch_id->db_name($db_name);
       $arch_id->release($release);
       $arch_id->assembly($assembly);
+      $arch_id->score($score);
     }
   }
 
