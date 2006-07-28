@@ -145,6 +145,13 @@ sub list_stable_ids {
 }
 
 
+sub list_seq_region_ids {
+  my $self = shift;
+
+  return $self->_list_seq_region_ids('gene');
+}
+
+
 =head2 fetch_by_display_label
 
   Arg [1]    : String $label - display label of gene to fetch

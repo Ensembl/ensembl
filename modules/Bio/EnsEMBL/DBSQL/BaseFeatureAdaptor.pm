@@ -85,6 +85,11 @@ sub new {
                which are on the Slice defined by $slice. If $logic_name is 
                defined only features with an analysis of type $logic_name 
                will be returned. 
+               NOTE: only features that are entirely on the slice's seq_region
+               will be returned (i.e. if they hang off the start/end of a
+               seq_region they will be discarded). Features can extend over the
+               slice boundaries though (in cases where you have a slice that
+               doesn't span the whole seq_region).
   Returntype : listref of Bio::EnsEMBL::SeqFeatures in Slice coordinates
   Exceptions : none
   Caller     : Bio::EnsEMBL::Slice
@@ -564,7 +569,7 @@ sub _remap {
       $strand     = $f->strand();
       $seq_region = $f->slice->seq_region_name();
     }
-
+    
     # maps to region outside desired area
     next if ($start > $slice_end) || ($end < $slice_start) || 
       ($slice_seq_region ne $seq_region);
@@ -760,6 +765,33 @@ sub _max_feature_length {
   return $self->{'_max_feature_length'};
 }
 
+
+#
+# Lists all seq_region_ids that a particular feature type is found on.
+# Useful e.g. for finding out which seq_regions have genes.
+# Returns a listref of seq_region_ids.
+#
+sub _list_seq_region_ids {
+  my ($self, $table) = @_;
+  
+  my @out;
+  
+  my $sql = qq(
+    SELECT distinct(sr.seq_region_id)
+    FROM seq_region sr, $table a
+    WHERE sr.seq_region_id = a.seq_region_id
+  );
+  my $sth = $self->prepare($sql);
+  $sth->execute;
+
+  while (my ($id) = $sth->fetchrow) {
+    push(@out, $id);
+  }
+
+  $sth->finish;
+
+  return \@out;
+}
 
 
 =head1 DEPRECATED METHODS
