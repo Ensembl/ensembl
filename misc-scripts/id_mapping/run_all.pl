@@ -130,7 +130,7 @@ $conf->check_required_params(
   )
 );
 
-# create commandline options for running component scripts
+# dump cache files
 my $options = $conf->create_commandline_options(
     -ALLOWED_PARAMS => 1,
     -REPLACE => {
@@ -138,12 +138,21 @@ my $options = $conf->create_commandline_options(
         is_component => 1,
     },
 );
-
-# dump cache files
 &run_component('dump_cache.pl', $options, 'building cache');
 
 # ID mapping
-#&run_component('id_mapping.pl', $options, 'Id mapping');
+$options = $conf->create_commandline_options(
+    -ALLOWED_PARAMS => 1,
+    -REPLACE => {
+        interactive => 0,
+        is_component => 1,
+    },
+    -EXCLUDE => [qw(
+        oldhost oldport olduser oldpass olddbname
+        newhost newport newuser newpass newdbname
+    )]
+);
+&run_component('id_mapping.pl', $options, 'Id mapping');
 
 # archive
 #&run_component('archive.pl', $options, 'archive');

@@ -36,8 +36,15 @@ no warnings 'uninitialized';
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 use Bio::EnsEMBL::Utils::ScriptUtils qw(parse_bytes);
+use Bio::EnsEMBL::IdMapping::TinyFeature;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Storable qw(nfreeze thaw nstore retrieve);
+
+
+# define available cache names here
+my @cache_names = qw(
+    exons_by_id
+);
 
 
 =head2 new
@@ -75,163 +82,200 @@ sub new {
 }
 
 
-=head2 
-
-  Arg[1]      : 
-  Example     : 
-  Description : 
-  Return type : 
-  Exceptions  : 
-  Caller      : 
-  Status      :
-
-=cut
-
-sub cache_file_exists {
+sub all_cache_files_exist {
   my $self = shift;
   my $type = shift;
 
-  throw("You must provide a cache type (old|new).") unless $type;
+  throw("You must provide a cache type.") unless $type;
 
-  my $cache_path = $self->cache_path($type);
+  my $i = 1;
+  foreach my $name (@{ $self->cache_names }) {
+    $i *= $self->cache_file_exists($name, $type);
+  }
 
-  if (-s $cache_path) {
-    $self->logger->log("Cache file found. Will read from $cache_path.\n", 1);
-    return(1);
+  return $i;
+}
+
+
+sub cache_names {
+  return \@cache_names;
+}
+
+
+sub cache_file_exists {
+  my $self = shift;
+  my $name = shift;
+  my $type = shift;
+
+  throw("You must provide a cache name (e.g. genes_by_id.") unless $name;
+  throw("You must provide a cache type.") unless $type;
+
+  my $cache_file = $self->cache_file($name, $type);
+
+  if (-s $cache_file) {
+    $self->logger->log("Cache file found. Will read from $cache_file.\n", 3);
+    return 1;
   } else {
-    $self->logger->log("No cache file found. Will build cache from db.\n", 1);
-    return(0);
+    $self->logger->log("No cache file found. Will build cache from db.\n", 3);
+    return 0;
   }
 }
 
 
-sub cache_path {
+sub cache_file {
+  my $self = shift;
+  my $name = shift;
+  my $type = shift;
+
+  throw("You must provide a cache name (e.g. genes_by_id.") unless $name;
+  throw("You must provide a cache type.") unless $type;
+
+  my $cache_file = ($self->conf->param('dumppath') || '.').
+    "/$name.$type.object_cache.ser";
+
+  return $cache_file;
+}
+
+
+sub write_all_to_file {
   my $self = shift;
   my $type = shift;
 
-  throw("You must provide a cache type (old|new).") unless $type;
+  throw("You must provide a cache type.") unless $type;
 
-  my $cache_path = ($self->conf->param('dumppath') || '.')."/$type.".
-    ($self->conf->param('cachefile') || 'object_cache.ser');
-
-  return $cache_path;
+  foreach my $name (@{ $self->cache_names }) {
+    $self->write_to_file($name, $type);
+  }
 }
 
 
 sub write_to_file {
   my $self = shift;
+  my $name = shift;
   my $type = shift;
 
-  throw("You must provide a cache type (old|new).") unless $type;
+  throw("You must provide a cache name (e.g. genes_by_id.") unless $name;
+  throw("You must provide a cache type.") unless $type;
 
   # create dump directory if it doesn't exist
   if (my $dump_path = $self->conf->param('dumppath')) {
     unless (-d $dump_path) {
-      $self->logger->log("Cache directory $dump_path doesn't exist. Will create it.\n", 1);
       system("mkdir -p $dump_path") == 0 or
         throw("Unable to create directory $dump_path.\n");
     }
   }
   
-  my $cache_path = $self->cache_path($type);
+  my $cache_file = $self->cache_file($name, $type);
 
-  $self->logger->log("Will dump to $cache_path.\n", 1);
-  $self->logger->log_stamped("Dumping cache...\n", 1);
-
-  eval { nstore($self->{'_cache'}->{$type}, $cache_path) };
+  eval { nstore($self->{'_cache'}->{$name}->{$type}, $cache_file) };
   if ($@) {
-    throw("Unable to store $cache_path: $@\n");
+    throw("Unable to store $cache_file: $@\n");
   }
-  my $size = -s $cache_path;
-  $size = parse_bytes($size);
-  
-  $self->logger->log_stamped("Done (cache file is $size).\n", 1);
+
+  my $size = -s $cache_file;
+  return parse_bytes($size);
 }
 
 
 sub read_from_file {
   my $self = shift;
+  my $name = shift;
   my $type = shift;
 
-  throw("You must provide a cache type (old|new).") unless $type;
+  throw("You must provide a cache name (e.g. genes_by_id.") unless $name;
+  throw("You must provide a cache type.") unless $type;
 
-  my $cache_path = $self->cache_path($type);
+  my $cache_file = $self->cache_file($name, $type);
 
-  unless (-s $cache_path) {
-    throw("No valid cache file found at $cache_path.");
+  unless (-s $cache_file) {
+    throw("No valid cache file found at $cache_file.");
   }
 
-  $self->logger->log("Reading cache from $cache_path...\n");
-  eval { $self->{'_cache'}->{$type} = retrieve($cache_path); };
+  $self->logger->log_stamped("Reading cache from file...\n");
+  $self->logger->log("Cache file $cache_file.\n", 1);
+  eval { $self->{'_cache'}->{$name}->{$type} = retrieve($cache_file); };
   if ($@) {
     throw("Unable to retrieve cache: $@");
   }
   $self->logger->log_stamped("Done.\n");
 
-  return $self->{'_cache'}->{$type};
+  return $self->{'_cache'}->{$name}->{$type};
 }
 
 
-sub fetch_genes {
+sub slice_names {
   my $self = shift;
-  my $dba = shift;
+  my $dbtype = shift;
 
-  $self->logger->log_stamped("Fetching genes...\n", 1);
+  throw("You must provide a db type (old|new).") unless $dbtype;
 
-  unless ($dba->isa('Bio::EnsEMBL::DBSQL::DBAdaptor')) {
-    throw("You must provide a database adaptor.");
-  }
-
+  my $dba = $self->get_DBAdaptor($dbtype);
   my $sa = $dba->get_SliceAdaptor;
-  my $ga = $dba->get_GeneAdaptor;
 
-  #
-  # fetch genes, depending on filters to apply
-  #
-  my @all_genes = ();
-  my $genes = [];
+  my @slice_names = ();
 
   if ($self->conf->param('chromosomes')) {
     # filter by chromosome
-    $self->logger->log("Filtering by chromosome: ", 3);
-    
     foreach my $chr ($self->conf->param('chromosomes')) {
-      $self->logger->log("$chr ");
       my $slice = $sa->fetch_by_region('chromosome', $chr);
-      push @all_genes, @{ $slice->get_all_Genes(undef, undef, 1) };
+      push @slice_names, $slice->name;
     }
-    $self->logger->log("\n");
     
   } elsif ($self->conf->param('region')) {
     # filter by region (specific slice)
-    $self->logger->log("Filtering by region: ".$self->conf->param('region')."\n", 3);
-
     my $slice = $sa->fetch_by_name($self->conf->param('region'));
-    @all_genes = @{ $slice->get_all_Genes(undef, undef, 1) };
-    
+    push @slice_names, $slice->name;
+
   } else {
-    # fetch all genes
-    @all_genes = @{ $ga->fetch_all };
-  }
-
-  # filter by biotype
-  if ($self->conf->param('biotypes')) {
-    $self->logger->log("Filtering by biotype: ", 3);
-
-    foreach my $biotype ($self->conf->param('biotypes')) {
-      $self->logger->log("$biotype ");
-      push @$genes, grep { $_->biotype eq $biotype } @all_genes;
+    # fetch all genes, but do in junks to save memory
+    my $ga = $dba->get_GeneAdaptor;
+    foreach my $srid (@{ $ga->list_seq_region_ids }) {
+      my $slice = $sa->fetch_by_seq_region_id($srid);
+      push @slice_names, $slice->name;
     }
-
-    $self->logger->log("\n");
-
-  } else {
-    $genes = \@all_genes;
   }
 
-  $self->logger->log_stamped("Done loading ".scalar(@$genes)." genes.\n\n", 1);
+  return \@slice_names;
+}
 
-  return $genes;
+
+sub build_cache {
+  my $self = shift;
+  my $dbtype = shift;
+  my $slice_name = shift;
+  
+  my $dba = $self->get_DBAdaptor($dbtype);
+  my $sa = $dba->get_SliceAdaptor;
+  my $slice = $sa->fetch_by_name($slice_name);
+  my $genes = $slice->get_all_Genes(undef, undef, 1);
+
+  # biotype filter
+  $genes = $self->filter_biotype($genes) if ($self->conf->param('biotypes'));
+  my $i = scalar(@$genes);
+
+  # build cache
+  my $type = "$dbtype.$slice_name";
+  $self->build_cache_from_genes($type, $genes);
+  undef $genes;
+
+  # write cache to file, then flush cache to reclaim memory
+  my $size = $self->write_all_to_file($type);
+
+  return $i, $size;
+}
+
+
+sub filter_biotypes {
+  my $self = shift;
+  my $genes = shift;
+
+  my $filtered = [];
+
+  foreach my $biotype ($self->conf->param('biotypes')) {
+    push @$filtered, grep { $_->biotype eq $biotype } @$genes;
+  }
+
+  return $filtered;
 }
 
 
@@ -240,154 +284,182 @@ sub build_cache_from_genes {
   my $type = shift;
   my $genes = shift;
   
-  $self->logger->log_stamped("Indexing...\n", 1);
-
-  throw("You must provide a type (old|new).") unless $type;
+  throw("You must provide a type.") unless $type;
   throw("You must provide a listref of genes.") unless (ref($genes) eq 'ARRAY');
 
-  my $i = 0;
-  my $num_genes = scalar(@$genes);
-  $self->logger->init_progressbar('index_genes', $num_genes);
-
-#use Data::Dumper;
-#$Data::Dumper::Indent = 1;
+  #my $i = 0;
+  #my $num_genes = scalar(@$genes);
+  #$self->logger->init_progressbar('index_genes', $num_genes);
 
   foreach my $gene (@$genes) {
     #$self->logger->log_progressbar('index_genes', ++$i, 2);
-    $self->logger->log_progress($num_genes, ++$i, 20, 3, 1);
+    #$self->logger->log_progress($num_genes, ++$i, 20, 3, 1);
     
+    # create lightweigt gene
+    my $lgene = Bio::EnsEMBL::IdMapping::TinyFeature->new_fast([
+        'g',
+        $gene->dbID,
+        $gene->stable_id,
+        $gene->start,
+        $gene->end,
+        $gene->strand,
+    ]);
+
     # build gene caches
-    $self->add($type, 'genes_by_id', $gene->dbID, $gene);
-    $self->add($type, 'genes_by_stable_id', $gene->stable_id, $gene);
+    #$self->add($type, 'genes_by_id', $gene->dbID, $lgene);
+    #$self->add($type, 'genes_by_stable_id', $gene->stable_id, $lgene);
     
     # transcripts
     foreach my $tr (@{ $gene->get_all_Transcripts }) {
+      my $ltr = Bio::EnsEMBL::IdMapping::TinyFeature->new_fast([
+          'tr',
+          $tr->dbID,
+          $tr->stable_id,
+          $tr->start,
+          $tr->end,
+          $tr->strand,
+      ]);
+
+      #$lgene->add_Transcript($ltr);
+
       # build transcript caches
-      $self->add($type, 'transcripts_by_id', $tr->dbID, $tr);
-      $self->add($type, 'transcripts_by_stable_id', $tr->stable_id, $tr);
-      $self->add($type, 'genes_by_transcript_id', $tr->dbID, $gene);
+      #$self->add($type, 'transcripts_by_id', $tr->dbID, $ltr);
+      #$self->add($type, 'transcripts_by_stable_id', $tr->stable_id, $ltr);
+      #$self->add($type, 'genes_by_transcript_id', $tr->dbID, $lgene);
 
       # translation (if there is one)
       if (my $tl = $tr->translation) {
-        $self->add($type, 'translations_by_id', $tl->dbID, $tl);
-        $self->add($type, 'translations_by_stable_id', $tl->stable_id, $tl);
-        $self->add($type, 'translations_by_transcript_id', $tr->dbID, $tl);
+        my $ltl = Bio::EnsEMBL::IdMapping::TinyFeature->new_fast([
+            'tl',
+            $tl->dbID,
+            $tl->stable_id,
+        ]);
+
+        #$ltr->add_Translation($ltl);
+
+        #$self->add($type, 'translations_by_id', $tl->dbID, $ltl);
+        #$self->add($type, 'translations_by_stable_id', $tl->stable_id, $ltl);
+        #$self->add($type, 'translations_by_transcript_id', $tr->dbID, $ltl);
+
+        undef $tl;
       }
 
       # exons
       foreach my $exon (@{ $tr->get_all_Exons }) {
-        # force sequence lazy-loading
-        $exon->{'_seq_cache_dump'} =
-          $exon->slice->subseq($exon->start, $exon->end, $exon->strand);
-        
-        $self->add($type, 'exons_by_id', $exon->dbID, $exon);
-        $self->add($type, 'genes_by_exon_id', $exon->dbID, $gene);
-        $self->add_list($type, 'transcripts_by_exon_id', $exon->dbID, $tr);
-      }
-    }
-  }
+        my $lexon = Bio::EnsEMBL::IdMapping::TinyFeature->new_fast([
+            'e',
+            $exon->dbID,
+            $exon->stable_id,
+            $exon->start,
+            $exon->end,
+            $exon->strand,
+            $exon->slice->seq_region_name,
+            $exon->slice->coord_system_name,
+            $exon->slice->coord_system->version,
+            #$exon->slice->subseq($exon->start, $exon->end, $exon->strand),
+        ]);
 
-  foreach my $gene (@$genes) {
-    #
-    # delete all unwanted data from objects
-    #
-    $gene->adaptor(undef);
-    $gene->analysis(undef);
-    $gene->display_xref(undef);
-    $gene->slice->adaptor(undef);
-    $gene->slice->coord_system->adaptor(undef);
+        $ltr->add_Exon($lexon);
 
-    foreach my $tr (@{ $gene->get_all_Transcripts }) {
-      $tr->adaptor(undef);
-      $tr->display_xref(undef);
-      $tr->analysis(undef);
-      
-      if (my $tl = $tr->translation) {
-        $tl->adaptor(undef);
+        $self->add('exons_by_id', $type, $exon->dbID, $lexon);
+        #$self->add($type, 'genes_by_exon_id', $exon->dbID, $lgene);
+        #$self->add_list($type, 'transcripts_by_exon_id', $exon->dbID, $ltr);
+
+        undef $exon;
       }
 
-      foreach my $exon (@{ $tr->get_all_Exons }) {
-        $exon->adaptor(undef);
-        $exon->analysis(undef);
-      }
+      undef $tr;
     }
 
-    #warn Data::Dumper::Dumper($gene) if ($i < 2);;
+    undef $gene;
   }
 
-  $self->logger->log_stamped("Done building the index:\n", 2);
-  foreach my $name (qw(genes transcripts translations exons)) {
-    my $num = scalar(keys %{ $self->get_by_name($type, "${name}_by_id") });
-    $self->logger->log(sprintf("%12.0f %-20s\n", $num, $name), 3);
-  }
-  $self->logger->log("\n");
+  #use Data::Dumper;
+  #warn Data::Dumper::Dumper($genes);
+
 }
 
 
 sub add {
   my $self = shift;
-  my $type = shift;
   my $name = shift;
+  my $type = shift;
   my $key = shift;
   my $val = shift;
 
-  throw("You must provide a cache type (old|new).") unless $type;
   throw("You must provide a cache name (e.g. genes_by_id.") unless $name;
+  throw("You must provide a cache type.") unless $type;
   throw("You must provide a cache key (e.g. a gene dbID).") unless $key;
 
-  $self->{'_cache'}->{$type}->{$name}->{$key} = $val;
+  $self->{'_cache'}->{$name}->{$type}->{$key} = $val;
 
-  return $self->{'_cache'}->{$type}->{$name}->{$key};
+  return $self->{'_cache'}->{$name}->{$type}->{$key};
 }
 
 sub add_list {
   my $self = shift;
-  my $type = shift;
   my $name = shift;
+  my $type = shift;
   my $key = shift;
   my @vals = @_;
 
-  throw("You must provide a cache type (old|new).") unless $type;
   throw("You must provide a cache name (e.g. genes_by_id.") unless $name;
+  throw("You must provide a cache type.") unless $type;
   throw("You must provide a cache key (e.g. a gene dbID).") unless $key;
 
-  push @{ $self->{'_cache'}->{$type}->{$name}->{$key} }, @vals;
+  push @{ $self->{'_cache'}->{$name}->{$type}->{$key} }, @vals;
 
-  return $self->{'_cache'}->{$type}->{$name}->{$key};
+  return $self->{'_cache'}->{$name}->{$type}->{$key};
 }
 
 sub get_by_key {
   my $self = shift;
-  my $type = shift;
   my $name = shift;
+  my $type = shift;
   my $key = shift;
 
-  throw("You must provide a cache type (old|new).") unless $type;
   throw("You must provide a cache name (e.g. genes_by_id.") unless $name;
+  throw("You must provide a cache type.") unless $type;
   throw("You must provide a cache key (e.g. a gene dbID).") unless $key;
 
-  return $self->{'_cache'}->{$type}->{$name}->{$key};
+  return $self->{'_cache'}->{$name}->{$type}->{$key};
 }
 
 sub get_by_name {
   my $self = shift;
-  my $type = shift;
   my $name = shift;
+  my $type = shift;
 
-  throw("You must provide a cache type (old|new).") unless $type;
   throw("You must provide a cache name (e.g. genes_by_id.") unless $name;
+  throw("You must provide a cache type.") unless $type;
   
-  return $self->{'_cache'}->{$type}->{$name} || {};
+  return $self->{'_cache'}->{$name}->{$type} || {};
 }
 
 
-sub flush_by_type {
+sub merge {
   my $self = shift;
-  my $type = shift;
+  my $name = shift;
 
-  throw("You must provide a cache type (old|new).") unless $type;
+  throw("You must provide a cache name (e.g. genes_by_id.") unless $name;
 
-  undef $self->{'_cache'}->{$type};
+  foreach my $type (keys %{ $self->{'_cache'}->{$name} || {} }) {
+    (my $merged_type = $type) =~ s/^(\w+)\..+/$1/;
+    
+    foreach my $key (keys %{ $self->{'_cache'}->{$name}->{$type} || {} }) {
+      if (defined $self->{'_cache'}->{$name}->{$merged_type}->{$key}) {
+        warning("Duplicate key in cache: $name|$merged_type|$key. Skipping.\n");
+      } else {
+        $self->{'_cache'}->{$name}->{$merged_type}->{$key} =
+          $self->{'_cache'}->{$name}->{$type}->{$key};
+      }
+
+      delete $self->{'_cache'}->{$name}->{$type}->{$key};
+    }
+    
+    delete $self->{'_cache'}->{$name}->{$type};
+
+  }
 }
 
 
