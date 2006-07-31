@@ -9,7 +9,7 @@ use Bio::EnsEMBL::Registry;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::EnsEMBL::DBSQL::GeneAdaptor;
 
-my $method_link_type = "TREE_HOMOLOGIES";
+my $method_link_type = "ENSEMBL_HOMOLOGUES";
 
 my ($conf, $compara, $from_species, @to_multi, $print, $names, $go_terms, $delete_names, $delete_go_terms, $no_backup, $full_stats);
 
@@ -265,7 +265,8 @@ sub project_go_terms {
       #print $dbEntry->display_id() . " " . $et . " " . $projections_by_evidence_type{$et} . "\n";
     }
 
-    # add linkage_type for projection to IEA (in the absence of a specific one for projections)
+    # Change linkage_type for projection to IEA (in the absence of a specific one for projections)
+    $dbEntry->flush_linkage_types();
     $dbEntry->add_linkage_type("IEA");
 
     my $txt = "from $from_latin_species translation " . $from_translation->stable_id();
@@ -334,10 +335,10 @@ sub print_stats {
   if ($go_terms) {
 
     print "GO xrefs: total ";
-    print &count_rows($to_ga, "SELECT COUNT(DISTICT(x.dbprimary_acc)) FROM xref x, external_db e WHERE e.external_db_id=x.external_db_id AND e.db_name='GO'");
+    print &count_rows($to_ga, "SELECT COUNT(DISTINCT(x.dbprimary_acc)) FROM xref x, external_db e WHERE e.external_db_id=x.external_db_id AND e.db_name='GO'");
 
     print " projected ";
-    print &count_rows($to_ga, "SELECT COUNT(DISTICT(x.dbprimary_acc)) FROM xref x, external_db e WHERE e.external_db_id=x.external_db_id AND e.db_name='GO' AND x.info_type='PROJECTION'");
+    print &count_rows($to_ga, "SELECT COUNT(DISTINCT(x.dbprimary_acc)) FROM xref x, external_db e WHERE e.external_db_id=x.external_db_id AND e.db_name='GO' AND x.info_type='PROJECTION'");
 
     print "\n";
 
