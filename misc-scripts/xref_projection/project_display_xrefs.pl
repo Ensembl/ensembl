@@ -265,8 +265,7 @@ sub project_go_terms {
       #print $dbEntry->display_id() . " " . $et . " " . $projections_by_evidence_type{$et} . "\n";
     }
 
-    # Change linkage_type to IEA (in the absence of a specific one for projections)
-    $dbEntry->flush_linkage_types();
+    # add linkage_type for projection to IEA (in the absence of a specific one for projections)
     $dbEntry->add_linkage_type("IEA");
 
     my $txt = "from $from_latin_species translation " . $from_translation->stable_id();
@@ -291,6 +290,8 @@ sub go_xref_exists {
   my ($dbEntry, $to_go_xrefs) = @_;
 
   foreach my $xref (@{$to_go_xrefs}) {
+
+    next if (ref($dbEntry) ne "Bio::EnsEMBL::GoXref" || ref($xref) ne "Bio::EnsEMBL::GoXref");
 
     if ($xref->dbname() eq $dbEntry->dbname() &&
 	$xref->primary_id() eq $dbEntry->primary_id() &&
@@ -333,10 +334,10 @@ sub print_stats {
   if ($go_terms) {
 
     print "GO xrefs: total ";
-    print &count_rows($to_ga, "SELECT COUNT(*) FROM xref x, external_db e WHERE e.external_db_id=x.external_db_id AND e.db_name='GO'");
+    print &count_rows($to_ga, "SELECT COUNT(DISTICT(x.dbprimary_acc)) FROM xref x, external_db e WHERE e.external_db_id=x.external_db_id AND e.db_name='GO'");
 
     print " projected ";
-    print &count_rows($to_ga, "SELECT COUNT(*) FROM xref x, external_db e WHERE e.external_db_id=x.external_db_id AND e.db_name='GO' AND x.info_type='PROJECTION'");
+    print &count_rows($to_ga, "SELECT COUNT(DISTICT(x.dbprimary_acc)) FROM xref x, external_db e WHERE e.external_db_id=x.external_db_id AND e.db_name='GO' AND x.info_type='PROJECTION'");
 
     print "\n";
 
@@ -355,7 +356,7 @@ sub count_rows {
   $sth->execute();
 
   return ($sth->fetchrow_array())[0];
-
+ 
 }
 
 # ----------------------------------------------------------------------
