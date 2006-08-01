@@ -186,6 +186,10 @@ sub fetch_by_region {
   if ($coord_system_name) {
     $cs = $csa->fetch_by_name($coord_system_name,$version);
 
+    if( !$cs && $coord_system_name eq 'chromosome' ) {
+      $cs = $csa->fetch_by_name('group',$version);
+    }
+
     if (!$cs) {
       throw("Unknown coordinate system:\n name='$coord_system_name' " .
             "version='$version'\n");
