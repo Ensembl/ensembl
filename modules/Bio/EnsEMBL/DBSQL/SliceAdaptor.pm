@@ -186,6 +186,7 @@ sub fetch_by_region {
   if ($coord_system_name) {
     $cs = $csa->fetch_by_name($coord_system_name,$version);
 
+    ## REMOVE THESE THREE LINES WHEN STICKLEBACK DB IS FIXED!
     if( !$cs && $coord_system_name eq 'chromosome' ) {
       $cs = $csa->fetch_by_name('group',$version);
     }
