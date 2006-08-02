@@ -281,7 +281,7 @@ sub fetch_by_region {
       my ($tmp_name, $id, $tmp_length, $cs_id);
       $sth->bind_columns(\$tmp_name, \$id, \$tmp_length, \$cs_id);
 
-      my $i;
+      my $i = 0;
 
       while ($sth->fetch) {
         my $tmp_cs = ($cs) ? $cs : $csa->fetch_by_dbID($cs_id);
