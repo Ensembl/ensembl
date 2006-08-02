@@ -93,7 +93,6 @@ sub new {
   return $self;
 }
 
-
 =head2 name
 
   Arg [1]    : (optional) string $type
@@ -113,6 +112,27 @@ sub name {
 
   return $self->{'name'};
 }
+
+=head2 dbID
+
+  Arg [1]    : (optional) int id
+  Example    : $ditag_id = $ditag->dbID;
+  Description: Getter/Setter for the dbID of a ditag
+  Returntype : int
+  Caller     : general
+
+=cut
+
+sub dbID {
+  my $self = shift;
+
+  if(@_) {
+    $self->{'dbID'} = shift;
+  }
+
+  return $self->{'dbID'};
+}
+
 
 =head2 type
 
