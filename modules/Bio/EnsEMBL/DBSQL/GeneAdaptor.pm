@@ -205,6 +205,36 @@ sub fetch_by_stable_id {
   return $gene;
 }
 
+
+
+=head2 fetch_all_by_biotype 
+
+  Arg [1]    : String $biotype 
+               The biotype of the gene to retrieve
+  Example    : $gene = $gene_adaptor->fetch_all_by_biotype('protein_coding') ; 
+  Description: Retrieves an array reference of gene objects from the database via its biotype.
+               The genes will be retrieved in its native coordinate system (i.e.
+               in the coordinate system it is stored in the database). It may
+               be converted to a different coordinate system through a call to
+               transform() or transfer(). If the gene or exon is not found
+               undef is returned instead.
+  Returntype  : listref of Bio::EnsEMBL::Gene
+  Exceptions : if we cant get the gene in given coord system
+  Caller     : general
+  Status     : At Risk 
+
+=cut
+
+sub fetch_all_by_biotype {
+  my ($self, $biotype) = @_;
+
+  my $constraint = "g.biotype = '$biotype' and g.is_current = 1" ;
+  my @genes  = @{ $self->generic_fetch($constraint) };
+  return \@genes ;
+}
+
+
+
 =head2 fetch_all_versions_by_stable_id 
 
   Arg [1]     : String $stable_id 
