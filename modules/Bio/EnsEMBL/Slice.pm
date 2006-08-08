@@ -2228,6 +2228,7 @@ sub get_all_AssemblyExceptionFeatures {
 =head2 get_all_MiscFeatures
 
   Arg [1]    : string $set (optional)
+  Arg [2]    : string $database (optional)
   Example    : $slice->get_all_MiscFeatures('cloneset');
   Description: Retreives all misc features which overlap this slice. If
                a set code is provided only features which are members of
@@ -2242,16 +2243,31 @@ sub get_all_AssemblyExceptionFeatures {
 sub get_all_MiscFeatures {
   my $self = shift;
   my $misc_set = shift;
+  my $dbtype = shift; 
+  my $msa;
 
   my $adaptor = $self->adaptor();
-
   if(!$adaptor) {
     warning('Cannot retrieve features without attached adaptor.');
     return [];
   }
 
-  my $mfa = $adaptor->db->get_MiscFeatureAdaptor();
-
+  my $mfa;
+  if($dbtype) {
+    my $db = $reg->get_db($adaptor->db(), $dbtype);
+    if(defined($db)){
+      $mfa = $reg->get_adaptor( lc($db->species()), $db->group(), "miscfeature" );
+    } else{
+      $mfa = $reg->get_adaptor( $adaptor->db()->species(), $dbtype, "miscfeature" );
+    }
+    if(!defined $mfa) {
+      warning( "$dbtype misc features not available" );
+      return [];
+    }
+  } else {
+    $mfa =  $adaptor->db->get_MiscFeatureAdaptor();
+  }
+  
   if($misc_set) {
     return $mfa->fetch_all_by_Slice_and_set_code($self,$misc_set);
   }
