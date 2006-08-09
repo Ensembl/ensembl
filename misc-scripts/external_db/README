@@ -82,6 +82,10 @@ master list:
        Upon executing the script it will display a list of dbs that the updates
        will be applied and you will have to type 'yes' at a confirmation.
 
+       If the databases to be updated contain rows that are not in the file, 
+       a warning will be given and the database in question skipped.
+
+
 (2) Add new mart or GKB xrefs.  This can be done using the following scripts
     and the appropriate input files from Damian / Imre. It is important to
     ensure that any new external databases have been added as described in
