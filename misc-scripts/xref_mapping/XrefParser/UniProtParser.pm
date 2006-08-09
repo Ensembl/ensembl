@@ -259,7 +259,9 @@ sub create_xrefs {
     my ($deps) = $_ =~ /(DR\s+.+)/s; # /s allows . to match newline
       my @dep_lines = split /\n/, $deps;
     foreach my $dep (@dep_lines) {
-      if($dep =~ /GO/){
+      #both GO and UniGene have the own sources so ignore those in the uniprot files
+      #as the uniprot data should be older
+      if($dep =~ /GO/ || $dep =~ /UniGene/){
 	next;
       }
       if ($dep =~ /^DR\s+(.+)/) {
