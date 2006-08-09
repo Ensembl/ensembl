@@ -19,7 +19,6 @@ to the ensembl entities via normal alignment methods (we use exonerate).
 
 
 Below is a list of dependent xrefs that might be added.
-UniGene
 EMBL
 PDB
 protein_id
@@ -101,7 +100,7 @@ ftp://ftp.ncbi.nih.gov/repository/UniGene/Bos_taurus/Bt.data.gz
 
 These are primary xrefs in that they contain sequence and hence can be mapped 
 to the ensembl entities via normal alignment methods (we use exonerate).
-Also loaded via the Uniprot!!! 
+No longer loaded via Uniprot.
 
 Has no dependent xrefs.
 
