@@ -11,7 +11,7 @@ use Bio::EnsEMBL::DBSQL::GeneAdaptor;
 
 my $method_link_type = "ENSEMBL_HOMOLOGUES";
 
-my ($conf, $compara, $from_species, @to_multi, $print, $names, $go_terms, $delete_names, $delete_go_terms, $no_backup, $full_stats);
+my ($conf, $compara, $from_species, @to_multi, $print, $names, $go_terms, $delete_names, $delete_go_terms, $no_backup, $full_stats, $descriptions);
 
 GetOptions('conf=s'          => \$conf,
 	   'compara=s'       => \$compara,
@@ -25,6 +25,7 @@ GetOptions('conf=s'          => \$conf,
 	   'delete_go_terms' => \$delete_go_terms,
 	   'nobackup'        => \$no_backup,
 	   'full_stats'      => \$full_stats,
+           'descriptions'    => \$descriptions,
 	   'help'            => sub { usage(); exit(0); });
 
 
@@ -83,7 +84,6 @@ foreach my $to_species (@to_multi) {
   print_stats($to_ga);
 
   # Get all genes, find homologies, set xrefs
-
   foreach my $gene_id (@{$from_ga->list_dbIDs}) {
 
     my $gene = $from_ga->fetch_by_dbID($gene_id);
@@ -169,6 +169,11 @@ sub project_display_names {
 
       # Modify the dbEntry to indicate it's not from this species - set info_type & info_text
       my $txt = "from $from_latin_species gene " . $from_gene->stable_id();
+
+      # Add description to the gene if required
+      # This should probably be in another column in the xref table but we just use the gene
+      # description column for now. 
+      $to_gene->description($from_gene->description()) if ($descriptions && $from_gene->description());
 
       $dbEntry->info_type("PROJECTION");
       $dbEntry->info_text($txt);
@@ -507,6 +512,10 @@ sub usage {
   [--delete_names]      Delete projected display xrefs & gene names.
 
   [--delete_go_terms]   Delete projected GO terms.
+
+  [--descriptions]      Project descriptions as well. Only works if -names is
+                        specified. Descriptions appended to info_text field,
+                        separated by |
 
   [--print]             Print details of projection only, don't store in database
 
