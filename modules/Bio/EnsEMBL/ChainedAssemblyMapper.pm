@@ -251,7 +251,7 @@ sub size {
 sub map {
   throw('Incorrect number of arguments.') if(@_ < 6);
 
-  my ($self, $frm_seq_region, $frm_start,
+  my ($self, $frm_seq_region_name, $frm_start,
       $frm_end, $frm_strand, $frm_cs, $fastmap) = @_;
 
   my $mapper  = $self->{'first_last_mapper'};
@@ -262,6 +262,10 @@ sub map {
 
   my $frm;
   my $registry;
+
+  my @tmp;
+  push @tmp, $frm_seq_region_name;
+  my $seq_region_id = @{$self->adaptor()->seq_regions_to_ids($frm_cs, \@tmp)}[0];
 
   #speed critical section:
   #try to do simple pointer equality comparisons of the coord system objects
@@ -299,16 +303,13 @@ sub map {
   #get a list of ranges in the requested region that have not been registered,
   #and register them at the same
 
-  #print STDERR "frm_start=$frm_start frm_end=$frm_end" .
-  #              "min_start=$min_start min_end=$min_end\n";
-
   my $ranges;
 
   if($is_insert) {
-    $ranges = $registry->check_and_register($frm_seq_region, $frm_end,
+    $ranges = $registry->check_and_register($seq_region_id, $frm_end,
                                             $frm_start, $min_start, $min_end);
   } else {
-    $ranges = $registry->check_and_register($frm_seq_region, $frm_start,
+    $ranges = $registry->check_and_register($seq_region_id, $frm_start,
                                             $frm_end, $min_start, $min_end);
   }
 
@@ -318,21 +319,21 @@ sub map {
 
       if($is_insert) {
         $ranges = $registry->check_and_register
-          ($frm_seq_region, $frm_end, $frm_start, $min_start, $min_end);
+          ($seq_region_id, $frm_end, $frm_start, $min_start, $min_end);
       } else {
         $ranges = $registry->check_and_register
-          ($frm_seq_region, $frm_start, $frm_end, $min_start, $min_end);
+          ($seq_region_id, $frm_start, $frm_end, $min_start, $min_end);
       }
     }
-    $self->adaptor->register_chained($self,$frm,$frm_seq_region,$ranges);
+    $self->adaptor->register_chained($self,$frm,$seq_region_id,$ranges);
   }
 
   if($fastmap) {
-    return $mapper->fastmap($frm_seq_region, $frm_start, $frm_end,
+    return $mapper->fastmap($seq_region_id, $frm_start, $frm_end,
                             $frm_strand, $frm);
   }
 
-  return $mapper->map_coordinates($frm_seq_region, $frm_start, $frm_end,
+  return $mapper->map_coordinates($seq_region_id, $frm_start, $frm_end,
                                   $frm_strand, $frm);
 }
 
@@ -340,98 +341,6 @@ sub map {
 sub fastmap {
   my $self = shift;
   return $self->map(@_,1);
-}
-
-
-
-=head2 list_seq_regions
-
-  Arg [1]    : string $frm_seq_region
-               The name of the sequence region of interest
-  Arg [2]    : int $frm_start
-               The start of the region of interest
-  Arg [3]    : int $frm_end
-               The end of the region to transform of interest
-  Arg [5]    : Bio::EnsEMBL::CoordSystem $frm_cs
-               The coordinate system to obtain overlapping ids of
-  Example    : foreach $id ($asm_mapper->list_ids('X',1,1000,$ctg_cs)) {...}
-  Description: Retrieves a list of overlapping seq_region internal identifiers
-               of another coordinate system.  This is the same as the 
-               list_ids method but uses seq_region names rather internal ids
-  Returntype : List of strings
-  Exceptions : none
-  Caller     : general
-  Status     : Stable
-
-=cut
-
-
-sub list_seq_regions {
-  throw('Incorrect number of arguments.') if(@_ != 5);
-  my($self, $frm_seq_region, $frm_start, $frm_end, $frm_cs) = @_;
-
-  my $is_insert = ($frm_start == $frm_end + 1);
-
-  #the minimum area we want to register if registration is necessary is
-  #about 1MB. Break requested ranges into chunks of 1MB and then register
-  #this larger region if we have a registry miss.
-
-  #use bitwise shift for fast and easy integer multiplication and division
-  my ($min_start, $min_end);
-
-  if($is_insert) {
-    $min_start = (($frm_end >> $CHUNKFACTOR) << $CHUNKFACTOR);
-    $min_end   = ((($frm_start >> $CHUNKFACTOR) + 1) << $CHUNKFACTOR) - 1;
-  } else {
-    $min_start = (($frm_start >> $CHUNKFACTOR) << $CHUNKFACTOR);
-    $min_end   = ((($frm_end >> $CHUNKFACTOR) + 1) << $CHUNKFACTOR) - 1;
-  }
-
-  if($frm_cs->equals($self->{'first_cs'})) {
-    my $registry = $self->{'first_registry'};
-
-    my $ranges;
-
-    if($is_insert) {
-      $ranges = $registry->check_and_register
-        ($frm_seq_region, $frm_end, $frm_start, $min_start, $min_end);
-    } else {
-      $ranges = $registry->check_and_register
-        ($frm_seq_region, $frm_start, $frm_end, $min_start, $min_end);
-    }
-
-    if(defined($ranges)) {
-      $self->adaptor->register_chained($self,$FIRST,$frm_seq_region,$ranges);
-    }
-
-    return map {$_->to()->id()}
-      $self->first_last_mapper()->list_pairs($frm_seq_region, $frm_start,
-				  $frm_end, $FIRST);
-
-  } elsif($frm_cs->equals($self->{'last_cs'})) {
-    my $registry = $self->{'last_registry'};
-
-    my $ranges;
-    if($is_insert) {
-      $ranges = $registry->check_and_register
-        ($frm_seq_region, $frm_end, $frm_start, $min_start, $min_end);
-    } else {
-      $ranges = $registry->check_and_register
-        ($frm_seq_region, $frm_start, $frm_end, $min_start, $min_end);
-    }
-
-    if(defined($ranges)) {
-      $self->adaptor->register_chained($self,$LAST,$frm_seq_region,$ranges);
-    }
-
-    return map {$_->from()->id()}
-      $self->first_last_mapper()->list_pairs($frm_seq_region, $frm_start,
-				  $frm_end, $LAST);
-  } else {
-    throw("Coordinate system " . $frm_cs->name . " " . $frm_cs->version .
-          " is neither the first nor the last coordinate system " .
-          " of this ChainedAssemblyMapper");
-  }
 }
 
 
@@ -457,13 +366,109 @@ sub list_seq_regions {
 
 =cut
 
+
 sub list_ids {
+  throw('Incorrect number of arguments.') if(@_ != 5);
+  my($self, $frm_seq_region_name, $frm_start, $frm_end, $frm_cs) = @_;
+
+  my $is_insert = ($frm_start == $frm_end + 1);
+
+  #the minimum area we want to register if registration is necessary is
+  #about 1MB. Break requested ranges into chunks of 1MB and then register
+  #this larger region if we have a registry miss.
+
+  #use bitwise shift for fast and easy integer multiplication and division
+  my ($min_start, $min_end);
+
+  if($is_insert) {
+    $min_start = (($frm_end >> $CHUNKFACTOR) << $CHUNKFACTOR);
+    $min_end   = ((($frm_start >> $CHUNKFACTOR) + 1) << $CHUNKFACTOR) - 1;
+  } else {
+    $min_start = (($frm_start >> $CHUNKFACTOR) << $CHUNKFACTOR);
+    $min_end   = ((($frm_end >> $CHUNKFACTOR) + 1) << $CHUNKFACTOR) - 1;
+  }
+
+  my @tmp;
+  push @tmp, $frm_seq_region_name;
+  my $seq_region_id = @{$self->adaptor()->seq_regions_to_ids($frm_cs, \@tmp)}[0];
+
+  if($frm_cs->equals($self->{'first_cs'})) {
+    my $registry = $self->{'first_registry'};
+
+    my $ranges;
+
+
+    if($is_insert) {
+      $ranges = $registry->check_and_register
+        ($seq_region_id, $frm_end, $frm_start, $min_start, $min_end);
+    } else {
+      $ranges = $registry->check_and_register
+        ($seq_region_id, $frm_start, $frm_end, $min_start, $min_end);
+    }
+
+    if(defined($ranges)) {
+      $self->adaptor->register_chained($self,$FIRST,$seq_region_id,$ranges);
+    }
+
+    return map {$_->to()->id()}
+      $self->first_last_mapper()->list_pairs($seq_region_id, $frm_start,
+				  $frm_end, $FIRST);
+
+  } elsif($frm_cs->equals($self->{'last_cs'})) {
+    my $registry = $self->{'last_registry'};
+
+    my $ranges;
+    if($is_insert) {
+      $ranges = $registry->check_and_register
+        ($seq_region_id, $frm_end, $frm_start, $min_start, $min_end);
+    } else {
+      $ranges = $registry->check_and_register
+        ($seq_region_id, $frm_start, $frm_end, $min_start, $min_end);
+    }
+
+    if(defined($ranges)) {
+      $self->adaptor->register_chained($self,$LAST,$seq_region_id,$ranges);
+    }
+
+    return map {$_->from()->id()}
+      $self->first_last_mapper()->list_pairs($seq_region_id, $frm_start,
+				  $frm_end, $LAST);
+  } else {
+    throw("Coordinate system " . $frm_cs->name . " " . $frm_cs->version .
+          " is neither the first nor the last coordinate system " .
+          " of this ChainedAssemblyMapper");
+  }
+}
+
+
+=head2 list_seq_regions
+
+  Arg [1]    : string $frm_seq_region
+               The name of the sequence region of interest
+  Arg [2]    : int $frm_start
+               The start of the region of interest
+  Arg [3]    : int $frm_end
+               The end of the region to transform of interest
+  Arg [5]    : Bio::EnsEMBL::CoordSystem $frm_cs
+               The coordinate system to obtain overlapping ids of
+  Example    : foreach $id ($asm_mapper->list_ids('X',1,1000,$ctg_cs)) {...}
+  Description: Retrieves a list of overlapping seq_region internal identifiers
+               of another coordinate system.  This is the same as the 
+               list_ids method but uses seq_region names rather internal ids
+  Returntype : List of strings
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub list_seq_regions {
   throw('Incorrect number of arguments.') if(@_ != 5);
   my($self, $frm_seq_region, $frm_start, $frm_end, $frm_cs) = @_;
 
   #retrieve the seq_region names
   my @seq_regs =
-    $self->list_seq_regions($frm_seq_region,$frm_start,$frm_end,$frm_cs);
+    $self->list_ids($frm_seq_region,$frm_start,$frm_end,$frm_cs);
 
   #The seq_regions are from the 'to' coordinate system not the
   #from coordinate system we used to obtain them
@@ -474,8 +479,8 @@ sub list_ids {
     $to_cs = $self->first_CoordSystem();
   }
 
-  #convert them to ids
-  return @{$self->adaptor()->seq_regions_to_ids($to_cs, \@seq_regs)};
+  #convert them to names
+  return @{$self->adaptor()->seq_ids_to_regions(\@seq_regs)};
 }
 
 

@@ -429,6 +429,7 @@ sub transform {
   }
 
   my $projection = $self->project( $cs_name, $cs_version );
+
   if( @$projection != 1 ) {
     return undef;
   } else {

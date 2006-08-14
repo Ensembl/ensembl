@@ -93,7 +93,7 @@ use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Bio::EnsEMBL::Slice;
 use Bio::EnsEMBL::Mapper;
 
-use Bio::EnsEMBL::Utils::Exception qw(throw deprecate warning);
+use Bio::EnsEMBL::Utils::Exception qw(throw deprecate warning stack_trace_dump);
 
 
 @ISA = ('Bio::EnsEMBL::DBSQL::BaseAdaptor');
@@ -209,11 +209,12 @@ sub fetch_by_region {
   my $key;
 
   if ($cs) {
+ 
     push @bind_vals, $cs->dbID();
     $sql = "SELECT sr.name, sr.seq_region_id, sr.length, " .
            $cs->dbID() ." FROM seq_region sr ";
 
-    $constraint = "sr.coord_system_id = ?";
+	      $constraint = "sr.coord_system_id = ?";
 
     $key = "$seq_region_name:".$cs->dbID();
   } else {
@@ -411,6 +412,9 @@ sub fetch_by_name {
   Arg [1]    : string $seq_region_id
                The internal identifier of the seq_region to create this slice
                on
+  Arg [2]    : optional start
+  Arg [3]    : optional end
+  Arg [4]    : optional strand
   Example    : $slice = $slice_adaptor->fetch_by_seq_region_id(34413);
   Description: Creates a slice object of an entire seq_region using the
                seq_region internal identifier to resolve the seq_region.
@@ -423,7 +427,7 @@ sub fetch_by_name {
 =cut
 
 sub fetch_by_seq_region_id {
-  my ($self, $seq_region_id) = @_;
+  my ($self, $seq_region_id,$start,$end,$strand) = @_;
 
   my $arr = $self->{'sr_id_cache'}->{ $seq_region_id };
   my ($name, $length, $cs);
@@ -458,9 +462,9 @@ sub fetch_by_seq_region_id {
   return Bio::EnsEMBL::Slice->new(-COORD_SYSTEM      => $cs,
                                   -SEQ_REGION_NAME   => $name,
                                   -SEQ_REGION_LENGTH => $length,
-                                  -START             => 1,
-                                  -END               => $length,
-                                  -STRAND            => 1,
+                                  -START             => $start || 1,
+                                  -END               => $end || $length,
+                                  -STRAND            => $strand || 1,
                                   -ADAPTOR           => $self);
 }
 

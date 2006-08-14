@@ -67,7 +67,8 @@ use Bio::EnsEMBL::ChainedAssemblyMapper;
 use Bio::EnsEMBL::TopLevelAssemblyMapper;
 
 use Bio::EnsEMBL::Utils::Cache; #CPAN LRU cache
-use Bio::EnsEMBL::Utils::Exception qw(deprecate throw);
+use Bio::EnsEMBL::Utils::Exception qw(throw deprecate warning stack_trace_dump);
+#use Bio::EnsEMBL::Utils::Exception qw(deprecate throw);
 use Bio::EnsEMBL::Utils::SeqRegionCache;
 
 use integer; #do proper arithmetic bitshifts
@@ -250,6 +251,12 @@ sub register_assembled {
   my $asm_start      = shift;
   my $asm_end        = shift;
 
+  my $test = $asm_seq_region;
+  $test =~ s/\d+//g;
+  if(length($test) > 0 or $asm_seq_region < 1000){
+    print STDERR "$asm_seq_region NOT INTEGER\n";
+    print STDERR stack_trace_dump();
+  }
   if(!ref($asm_mapper) || !$asm_mapper->isa('Bio::EnsEMBL::AssemblyMapper')) {
     throw("Bio::EnsEMBL::AssemblyMapper argument expected");
   }
@@ -324,8 +331,8 @@ sub register_assembled {
     }
   }
 
-  my $asm_seq_region_id =
-    $self->_seq_region_name_to_id($asm_seq_region,$asm_cs_id);
+#  my $asm_seq_region_id = 
+#    $self->_seq_region_name_to_id($asm_seq_region,$asm_cs_id);
 
   # Retrieve the description of how the assembled region is made from
   # component regions for each of the continuous blocks of unregistered,
@@ -355,7 +362,7 @@ sub register_assembled {
 
   foreach my $region (@chunk_regions) {
     my($region_start, $region_end) = @$region;
-    $sth->bind_param(1,$asm_seq_region_id,SQL_INTEGER);
+    $sth->bind_param(1,$asm_seq_region,SQL_INTEGER);
     $sth->bind_param(2,$region_start,SQL_INTEGER);
     $sth->bind_param(3,$region_end,SQL_INTEGER);
     $sth->bind_param(4,$cmp_cs_id,SQL_INTEGER);
@@ -373,12 +380,12 @@ sub register_assembled {
     # Load the unregistered regions of the mapper
     #
     while($sth->fetch()) {
-      next if($asm_mapper->have_registered_component($cmp_seq_region));
-      $asm_mapper->register_component($cmp_seq_region);
+      next if($asm_mapper->have_registered_component($cmp_seq_region_id));
+      $asm_mapper->register_component($cmp_seq_region_id);
       $asm_mapper->mapper->add_map_coordinates(
                  $asm_seq_region, $asm_start, $asm_end,
                  $ori,
-                 $cmp_seq_region, $cmp_start, $cmp_end);
+                 $cmp_seq_region_id, $cmp_start, $cmp_end);
 
       my $arr = [ $cmp_seq_region_id, $cmp_seq_region, 
                   $cmp_cs_id, $cmp_seq_region_length ];
@@ -434,6 +441,44 @@ sub _seq_region_name_to_id {
   return $sr_id;
 }
 
+sub _seq_region_id_to_name {
+  my $self    = shift;
+  my $sr_id = shift;
+
+  ($sr_id) || throw('seq_region_is required');
+
+  my $arr = $self->{'sr_id_cache'}->{"$sr_id"};
+  if( $arr ) {
+    return $arr->[1];
+  }
+
+  # Get the seq_region name via the id.  This would be quicker if we just
+  # used internal ids instead but stored but then we lose the ability
+  # the transform accross databases with different internal ids
+
+  my $sth = $self->prepare("SELECT name, length ,coord_system_id " .
+			   "FROM   seq_region " .
+			   "WHERE  seq_region_id = ? ");
+
+  $sth->bind_param(1,$sr_id,SQL_INTEGER);
+  $sth->execute();
+
+  print "rows =>".$sth->rows()."\n\n";
+  if(!$sth->rows() == 1) {
+    throw("non-existant seq_region [$sr_id]");
+  }
+
+  my ($sr_name, $sr_length, $cs_id) = $sth->fetchrow_array();
+  $sth->finish();
+
+  $arr = [ $sr_id, $sr_name, $cs_id, $sr_length ];
+
+  $self->{'sr_name_cache'}->{"$sr_name:$cs_id"} = $arr;
+  $self->{'sr_id_cache'}->{"$sr_id"} = $arr;
+
+  return $sr_name;
+}
+
 
 =head2 register_component
 
@@ -476,8 +521,8 @@ sub register_component {
   #do nothing if this region is already registered
   return if($asm_mapper->have_registered_component($cmp_seq_region));
 
-  my $cmp_seq_region_id =
-    $self->_seq_region_name_to_id($cmp_seq_region, $cmp_cs_id);
+#  my $cmp_seq_region_id =
+#    $self->_seq_region_name_to_id($cmp_seq_region, $cmp_cs_id);
 
   # Determine what part of the assembled region this component region makes up
 
@@ -497,7 +542,7 @@ sub register_component {
    };
 
   my $sth = $self->prepare($q);
-  $sth->bind_param(1,$cmp_seq_region_id,SQL_INTEGER);
+  $sth->bind_param(1,$cmp_seq_region,SQL_INTEGER);
   $sth->bind_param(2,$asm_cs_id,SQL_INTEGER);
   $sth->execute();
 
@@ -510,7 +555,7 @@ sub register_component {
   #we do not currently support components mapping to multiple assembled
   if($sth->rows() != 1) {
     throw("Multiple assembled regions for single " .
-          "component region cmp_seq_region_id=[$cmp_seq_region_id]");
+          "component region cmp_seq_region_id=[$cmp_seq_region]");
   }
 
   my ($asm_start, $asm_end, $asm_seq_region_id,
@@ -530,7 +575,7 @@ sub register_component {
   # (2) Use locality of reference (if they want something in same general
   #     region it will already be registered).
 
-  $self->register_assembled($asm_mapper,$asm_seq_region,$asm_start,$asm_end);
+  $self->register_assembled($asm_mapper,$asm_seq_region_id,$asm_start,$asm_end);
 }
 
 
@@ -578,7 +623,7 @@ sub register_chained {
   my $self = shift;
   my $casm_mapper = shift;
   my $from = shift;
-  my $seq_region_name = shift;
+  my $seq_region_id = shift;
   my $ranges = shift;
 
 
@@ -690,8 +735,8 @@ sub register_chained {
 
   $sth = ($asm_cs->equals($start_cs)) ? $asm2cmp_sth : $cmp2asm_sth;
 
-  my $seq_region_id = $self->_seq_region_name_to_id($seq_region_name,
-						    $start_cs->dbID());
+#  my $seq_region_id = $self->_seq_region_name_to_id($seq_region_name,
+#						    $start_cs->dbID());
   my $mid_cs_id;
 
   # check for the simple case where the ChainedMapper is short
@@ -727,21 +772,21 @@ sub register_chained {
       if( defined $mid_cs ) {
         $start_mid_mapper->add_map_coordinates
           (
-           $seq_region_name,$start_start, $start_end, $ori,
-           $mid_seq_region, $mid_start, $mid_end
+           $seq_region_id,$start_start, $start_end, $ori,
+           $mid_seq_region_id, $mid_start, $mid_end
           );
       } else {
         if( $from eq "first" ) {
           $combined_mapper->add_map_coordinates
             (
-             $seq_region_name,$start_start, $start_end, $ori,
-             $mid_seq_region, $mid_start, $mid_end
+             $seq_region_id,$start_start, $start_end, $ori,
+             $mid_seq_region_id, $mid_start, $mid_end
             );
         } else {
           $combined_mapper->add_map_coordinates
             (
-             $mid_seq_region, $mid_start, $mid_end, $ori,
-             $seq_region_name,$start_start, $start_end
+             $mid_seq_region_id, $mid_start, $mid_end, $ori,
+             $seq_region_id,$start_start, $start_end
             );
         }
       }
@@ -755,7 +800,7 @@ sub register_chained {
 
       push @mid_ranges,[$mid_seq_region_id,$mid_seq_region,
                         $mid_start,$mid_end];
-      push @start_ranges, [ $seq_region_name, $start_start, $start_end ];
+      push @start_ranges, [ $seq_region_id, $start_start, $start_end ];
 
       #the region that we actually register may actually be larger or smaller
       #than the region that we wanted to register.
@@ -763,7 +808,7 @@ sub register_chained {
       #extra work later
 
       if($start_start < $start || $start_end > $end) {
-        $start_registry->check_and_register($seq_region_name,$start_start,
+        $start_registry->check_and_register($seq_region_id,$start_start,
                                             $start_end);
       }
     }
@@ -773,7 +818,7 @@ sub register_chained {
   # last_registry and we are done
   if( ! defined $mid_cs ) {
     for my $range ( @mid_ranges ) {
-      $end_registry->check_and_register( $range->[1], $range->[2],
+      $end_registry->check_and_register( $range->[0], $range->[2],
                                          $range->[3] );
     }
 
@@ -832,8 +877,8 @@ sub register_chained {
       #      "$mid_start-$mid_end($ori)\n";
       $end_mid_mapper->add_map_coordinates
         (
-         $end_seq_region, $end_start, $end_end, $ori,
-         $mid_seq_region, $mid_start, $mid_end
+         $end_seq_region_id, $end_start, $end_end, $ori,
+         $mid_seq_region_id, $mid_start, $mid_end
         );
 
       #update sr_name cache
@@ -843,7 +888,7 @@ sub register_chained {
       $self->{'sr_id_cache'}->{"$end_seq_region_id"} = $arr;
 
       #register this region on the end coord system
-      $end_registry->check_and_register($end_seq_region, $end_start, $end_end);
+      $end_registry->check_and_register($end_seq_region_id, $end_start, $end_end);
     }
   }
 
@@ -937,11 +982,11 @@ sub register_all {
   my %asm_registered;
 
   while($sth->fetch()) {
-    $mapper->register_component($cmp_seq_region);
+    $mapper->register_component($cmp_seq_region_id);
     $mapper->mapper->add_map_coordinates(
-                 $asm_seq_region, $asm_start, $asm_end,
+                 $asm_seq_region_id, $asm_start, $asm_end,
                  $ori,
-                 $cmp_seq_region, $cmp_start, $cmp_end);
+                 $cmp_seq_region_id, $cmp_start, $cmp_end);
 
       my $arr = [$cmp_seq_region_id, $cmp_seq_region, $cmp_cs_id, $cmp_length];
 
@@ -949,13 +994,13 @@ sub register_all {
       $self->{'sr_id_cache'}->{"$cmp_seq_region_id"} = $arr;
 
     # only register each asm seq_region once since it requires some work
-    if(!$asm_registered{$asm_seq_region}) {
-      $asm_registered{$asm_seq_region} = 1;
+    if(!$asm_registered{$asm_seq_region_id}) {
+      $asm_registered{$asm_seq_region_id} = 1;
 
       # register all chunks from start of seq region to end
       my $end_chunk = $asm_length >> $CHUNKFACTOR;
       for(my $i = 0; $i <= $end_chunk; $i++) {
-        $mapper->register_assembled($asm_seq_region, $i);
+        $mapper->register_assembled($asm_seq_region_id, $i);
       }
 
       $arr = [$asm_seq_region_id, $asm_seq_region, $asm_cs_id, $asm_length];
@@ -1099,15 +1144,15 @@ sub register_all_chained {
   while($sth->fetch()) {
     $mapper->add_map_coordinates
       (
-       $start_seq_region, $start_start, $start_end, $ori,
-       $mid_seq_region, $mid_start, $mid_end
+       $start_seq_region_id, $start_start, $start_end, $ori,
+       $mid_seq_region_id, $mid_start, $mid_end
       );
-    push( @ranges, [$start_seq_region, $start_start, $start_end ] );
+    push( @ranges, [$start_seq_region_id, $start_start, $start_end ] );
 
-    $reg->check_and_register( $start_seq_region, 1, $start_length );
+    $reg->check_and_register( $start_seq_region_id, 1, $start_length );
     if( ! defined $mid_cs ) {
       $casm_mapper->last_registry()->check_and_register
-	( $mid_seq_region, $mid_start, $mid_end );
+	( $mid_seq_region_id, $mid_start, $mid_end );
     }
 
     my $arr = [ $mid_seq_region_id, $mid_seq_region,
@@ -1170,11 +1215,11 @@ sub register_all_chained {
   while($sth->fetch()) {
     $end_mid_mapper->add_map_coordinates
       (
-       $end_seq_region, $end_start, $end_end, $ori,
-       $mid_seq_region, $mid_start, $mid_end
+       $end_seq_region_id, $end_start, $end_end, $ori,
+       $mid_seq_region_id, $mid_start, $mid_end
       );
 
-    $reg->check_and_register( $end_seq_region, 1, $end_length );
+    $reg->check_and_register( $end_seq_region_id, 1, $end_length );
 
     my $arr = [ $end_seq_region_id, $end_seq_region,
              $end_cs_id, $end_length ];
@@ -1204,11 +1249,11 @@ sub _build_combined_mapper {
 
 
   foreach my $range (@$ranges) {
-    my ( $seq_region_name, $start, $end) = @$range;
+    my ( $seq_region_id, $start, $end) = @$range;
 
     my $sum = 0;
 
-    my @initial_coords = $start_mid_mapper->map_coordinates($seq_region_name,
+    my @initial_coords = $start_mid_mapper->map_coordinates($seq_region_id,
                                                             $start,$end,1,
                                                             $start_name);
 
@@ -1238,12 +1283,12 @@ sub _build_combined_mapper {
 
           if($start_name eq 'first') { # add coords in consistant order
             $combined_mapper->add_map_coordinates(
-                             $seq_region_name, $total_start, $total_end, $ori,
+                             $seq_region_id, $total_start, $total_end, $ori,
                              $fcoord->id(), $fcoord->start(), $fcoord->end());
           } else {
             $combined_mapper->add_map_coordinates(
                         $fcoord->id(), $fcoord->start(), $fcoord->end(),$ori,
-                        $seq_region_name, $total_start, $total_end);
+                        $seq_region_id, $total_start, $total_end);
           }
 
           #print STDERR "  fcoord: id=".$fcoord->id." start=".
@@ -1292,6 +1337,41 @@ sub seq_regions_to_ids {
       push( @out, $arr->[0] );
     } else {
       push @out, $self->_seq_region_name_to_id($sr,$cs_id);
+    }
+  }
+
+  return \@out;
+}
+
+
+=head2 seq_ids_to_regions
+
+  Arg [1]    : listref of   seq_region ids
+  Example    : my @ids = @{$asma->ids_to_seq_regions(\@seq_ids)};
+  Description: Converts a list of seq_region ids to seq region names
+               using the internal cache that has accumulated while registering
+               regions for AssemblyMappers. If any requested regions are 
+               not  found in the cache an attempt is made to retrieve them
+               from the database.
+  Returntype : listref of strings
+  Exceptions : throw if a non-existant seq_region_id is provided
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub seq_ids_to_regions {
+  my $self = shift;
+  my $seq_region_ids = shift;
+
+  my @out;
+
+  foreach my $sr (@$seq_region_ids) {
+    my $arr = $self->{'sr_id_cache'}->{"$sr"};
+    if( $arr ) {
+      push( @out, $arr->[1] );
+    } else {
+      push @out, $self->_seq_region_id_to_name($sr);
     }
   }
 

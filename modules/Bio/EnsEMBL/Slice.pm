@@ -717,7 +717,12 @@ sub project {
     my @coords;
 
     if( defined $asm_mapper ) {
-      @coords = $asm_mapper->map($normal_slice->seq_region_name(),
+#      print STDERR "HI ".$normal_slice->seq_region_name()."\n";
+#      print STDERR "\t".$normal_slice->start(),
+#	"\t".$normal_slice->end(),
+#	  "\t",$normal_slice->strand`(),
+#	    "\t",$slice_cs->name." -> ".$cs->name."\n";
+     @coords = $asm_mapper->map($normal_slice->seq_region_name(),
 				 $normal_slice->start(),
 				 $normal_slice->end(),
 				 $normal_slice->strand(),
@@ -728,7 +733,6 @@ sub project {
     }
 
     #construct a projection from the mapping results and return it
-
     foreach my $coord (@coords) {
       my $coord_start  = $coord->start();
       my $coord_end    = $coord->end();
@@ -749,14 +753,21 @@ sub project {
         }
 
         #create slices for the mapped-to coord system
-        my $slice = $slice_adaptor->fetch_by_region($coord_cs->name(),
+#	print STDERR "COORD id is ".$coord->id."\n";
+#        my $slice = $slice_adaptor->fetch_by_region($coord_cs->name(),
+#                                                    $coord->id(),
+#                                                    $coord_start,
+#                                                    $coord_end,
+#                                                    $coord->strand(),
+#                                                    $coord_cs->version());
+
+        my $slice = $slice_adaptor->fetch_by_seq_region_id(
                                                     $coord->id(),
                                                     $coord_start,
                                                     $coord_end,
-                                                    $coord->strand(),
-                                                    $coord_cs->version());
+                                                    $coord->strand());
 
-        my $current_end = $current_start + $length - 1;
+	my $current_end = $current_start + $length - 1;
 	
         push @projection, bless([$current_start, $current_end, $slice],
                                 "Bio::EnsEMBL::ProjectionSegment");

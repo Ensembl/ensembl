@@ -511,7 +511,7 @@ ok( $tr->dbID == 21740 );
 
 my @transcripts = @{ $ta->fetch_all_versions_by_stable_id('ENST00000355555') };
 debug("fetch_all_versions_by_stable_id");
-ok( scalar(@transcripts) == 2 );
+ok( scalar(@transcripts) == 1 );
 
 $tr = $ta->fetch_by_translation_stable_id('ENSP00000355555');
 debug("fetch_by_translation_stable_id");

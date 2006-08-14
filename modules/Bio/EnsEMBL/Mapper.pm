@@ -48,6 +48,7 @@ package Bio::EnsEMBL::Mapper;
 use strict;
 use integer;
 
+use Bio::EnsEMBL::Utils::Exception qw(throw deprecate warning stack_trace_dump);
 use Bio::EnsEMBL::Mapper::Pair;
 use Bio::EnsEMBL::Mapper::IndelPair;
 use Bio::EnsEMBL::Mapper::Unit;
@@ -520,6 +521,11 @@ sub add_map_coordinates{
   if( ($contig_end - $contig_start)  != ($chr_end - $chr_start) ) {
     throw("Cannot deal with mis-lengthed mappings so far");
   }
+  my $test = $contig_id;
+  $test =~ s/\d+//g;
+
+  $test = $chr_name;
+  $test =~ s/\d+//g;
 
   my $from =
     Bio::EnsEMBL::Mapper::Unit->new($contig_id, $contig_start, $contig_end);

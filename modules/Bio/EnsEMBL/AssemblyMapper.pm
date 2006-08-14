@@ -201,13 +201,18 @@ sub register_all {
 sub map {
   throw('Incorrect number of arguments.') if(@_ != 6);
 
-  my ($self, $frm_seq_region, $frm_start, $frm_end, $frm_strand, $frm_cs) = @_;
+  my ($self, $frm_seq_region_name, $frm_start, $frm_end, $frm_strand, $frm_cs) = @_;
 
   my $mapper  = $self->{'mapper'};
   my $asm_cs  = $self->{'asm_cs'};
   my $cmp_cs  = $self->{'cmp_cs'};
   my $adaptor = $self->{'adaptor'};
   my $frm;
+
+  my @tmp;
+  push @tmp, $frm_seq_region_name;
+  my $seq_region_id = @{$self->adaptor()->seq_regions_to_ids($frm_cs, \@tmp)}[0];
+
 
   #speed critical section:
   #try to do simple pointer equality comparisons of the coord system objects
@@ -216,8 +221,8 @@ sub map {
 
   if($frm_cs == $cmp_cs || ($frm_cs != $asm_cs && $frm_cs->equals($cmp_cs))) {
 
-    if(!$self->{'cmp_register'}->{$frm_seq_region}) {
-      $adaptor->register_component($self,$frm_seq_region);
+    if(!$self->{'cmp_register'}->{$seq_region_id}) {
+      $adaptor->register_component($self,$seq_region_id);
     }
     $frm = $COMPONENT;
 
@@ -225,7 +230,7 @@ sub map {
 
     # This can be probably be sped up some by only calling registered
     # assembled if needed
-    $adaptor->register_assembled($self,$frm_seq_region,$frm_start,$frm_end);
+    $adaptor->register_assembled($self,$seq_region_id,$frm_start,$frm_end);
     $frm = $ASSEMBLED;
 
   } else {
@@ -235,7 +240,7 @@ sub map {
           " of this AssemblyMapper");
   }
 
-  return $mapper->map_coordinates($frm_seq_region, $frm_start, $frm_end,
+  return $mapper->map_coordinates($seq_region_id, $frm_start, $frm_end,
                                   $frm_strand, $frm);
 }
 
@@ -307,13 +312,17 @@ sub size {
 sub fastmap {
   throw('Incorrect number of arguments.') if(@_ != 6);
 
-  my ($self, $frm_seq_region, $frm_start, $frm_end, $frm_strand, $frm_cs) = @_;
+  my ($self, $frm_seq_region_name, $frm_start, $frm_end, $frm_strand, $frm_cs) = @_;
 
   my $mapper  = $self->{'mapper'};
   my $asm_cs  = $self->{'asm_cs'};
   my $cmp_cs  = $self->{'cmp_cs'};
   my $adaptor = $self->{'adaptor'};
   my $frm;
+
+  my @tmp;
+  push @tmp, $frm_seq_region_name;
+  my $seq_region_id = @{$self->adaptor()->seq_regions_to_ids($frm_cs, \@tmp)}[0];
 
   #speed critical section:
   #try to do simple pointer equality comparisons of the coord system objects
@@ -322,8 +331,8 @@ sub fastmap {
 
   if($frm_cs == $cmp_cs || ($frm_cs != $asm_cs && $frm_cs->equals($cmp_cs))) {
 
-    if(!$self->{'cmp_register'}->{$frm_seq_region}) {
-      $adaptor->register_component($self,$frm_seq_region);
+    if(!$self->{'cmp_register'}->{$seq_region_id}) {
+      $adaptor->register_component($self,$seq_region_id);
     }
     $frm = $COMPONENT;
 
@@ -331,7 +340,7 @@ sub fastmap {
 
     # This can be probably be sped up some by only calling registered
     # assembled if needed
-    $adaptor->register_assembled($self,$frm_seq_region,$frm_start,$frm_end);
+    $adaptor->register_assembled($self,$seq_region_id,$frm_start,$frm_end);
     $frm = $ASSEMBLED;
 
   } else {
@@ -341,13 +350,13 @@ sub fastmap {
           " of this AssemblyMapper");
   }
 
-  return $mapper->fastmap($frm_seq_region, $frm_start, $frm_end,
+  return $mapper->fastmap($seq_region_id, $frm_start, $frm_end,
                           $frm_strand, $frm);
 }
 
 
 
-=head2 list_seq_regions
+=head2 list_ids
 
   Arg [1]    : string $frm_seq_region
                The name of the sequence region of interest
@@ -368,34 +377,37 @@ sub fastmap {
 
 =cut
 
-
-sub list_seq_regions {
+sub list_ids {
   throw('Incorrect number of arguments.') if(@_ != 5);
-  my($self, $frm_seq_region, $frm_start, $frm_end, $frm_cs) = @_;
+  my($self, $frm_seq_region_name, $frm_start, $frm_end, $frm_cs) = @_;
+
+  my @tmp;
+  push @tmp, $frm_seq_region_name;
+  my $seq_region_id = @{$self->adaptor()->seq_regions_to_ids($frm_cs, \@tmp)}[0];
 
   if($frm_cs->equals($self->component_CoordSystem())) {
 
-    if(!$self->have_registered_component($frm_seq_region)) {
-      $self->adaptor->register_component($self,$frm_seq_region);
+    if(!$self->have_registered_component($seq_region_id)) {
+      $self->adaptor->register_component($self,$seq_region_id);
     }
 
     #pull out the 'from' identifiers of the mapper pairs.  The
     #we loaded the assembled side as the 'from' side in the constructor
     return
       map {$_->from()->id()}
-      $self->mapper()->list_pairs($frm_seq_region, $frm_start,
+      $self->mapper()->list_pairs($seq_region_id, $frm_start,
                                   $frm_end, $COMPONENT);
 
   } elsif($frm_cs->equals($self->assembled_CoordSystem())) {
 
     $self->adaptor->register_assembled($self,
-                                       $frm_seq_region,$frm_start,$frm_end);
+                                       $seq_region_id,$frm_start,$frm_end);
 
     #pull out the 'to' identifiers of the mapper pairs
     #we loaded the component side as the 'to' coord system in the constructor
     return
       map {$_->to->id()}
-        $self->mapper()->list_pairs($frm_seq_region, $frm_start,
+        $self->mapper()->list_pairs($seq_region_id, $frm_start,
                                     $frm_end, $ASSEMBLED);
   } else {
     throw("Coordinate system " . $frm_cs->name . " " . $frm_cs->version .
@@ -404,8 +416,43 @@ sub list_seq_regions {
   }
 }
 
+#sub list_seq_regions {
+#  throw('Incorrect number of arguments.') if(@_ != 5);
+#  my($self, $frm_seq_region_name, $frm_start, $frm_end, $frm_cs) = @_;
 
-=head2 list_ids
+#  if($frm_cs->equals($self->component_CoordSystem())) {
+
+#    if(!$self->have_registered_component($seq_region_id)) {
+#      $self->adaptor->register_component($self,$seq_region_id);
+#    }
+
+#    #pull out the 'from' identifiers of the mapper pairs.  The
+#    #we loaded the assembled side as the 'from' side in the constructor
+#    return
+#      map {$_->from()->id()}
+#      $self->mapper()->list_pairs($seq_region_id, $frm_start,
+#                                  $frm_end, $COMPONENT);
+
+#  } elsif($frm_cs->equals($self->assembled_CoordSystem())) {
+
+#    $self->adaptor->register_assembled($self,
+#                                       $frm_seq_region,$frm_start,$frm_end);
+
+#    #pull out the 'to' identifiers of the mapper pairs
+#    #we loaded the component side as the 'to' coord system in the constructor
+#    return
+#      map {$_->to->id()}
+#        $self->mapper()->list_pairs($frm_seq_region, $frm_start,
+#                                    $frm_end, $ASSEMBLED);
+#  } else {
+#    throw("Coordinate system " . $frm_cs->name . " " . $frm_cs->version .
+#          " is neither the assembled nor the component coordinate system " .
+#          " of this AssemblyMapper");
+#  }
+#}
+
+
+=head2 list_seq_regions
 
   Arg [1]    : string $frm_seq_region
                The name of the sequence region of interest
@@ -415,7 +462,7 @@ sub list_seq_regions {
                The end of the region to transform of interest
   Arg [5]    : Bio::EnsEMBL::CoordSystem $frm_cs
                The coordinate system to obtain overlapping ids of
-  Example    : foreach $id ($asm_mapper->list_ids('X',1,1000,$chr_cs)) {...}
+  Example    : foreach $id ($asm_mapper->list_seq_regions('X',1,1000,$chr_cs)) {...}
   Description: Retrieves a list of overlapping seq_region internal identifiers
                of another coordinate system.  This is the same as the
                list_seq_regions method but uses internal identfiers rather 
@@ -427,13 +474,14 @@ sub list_seq_regions {
 
 =cut
 
-sub list_ids {
+sub list_seq_regions {
   throw('Incorrect number of arguments.') if(@_ != 5);
   my($self, $frm_seq_region, $frm_start, $frm_end, $frm_cs) = @_;
 
   #retrieve the seq_region names
-  my @seq_regs =
-    $self->list_seq_regions($frm_seq_region,$frm_start,$frm_end,$frm_cs);
+
+  my @seq_ids =
+    $self->list_ids($frm_seq_region,$frm_start,$frm_end,$frm_cs);
 
   #The seq_regions are from the 'to' coordinate system not the
   #from coordinate system we used to obtain them
@@ -445,8 +493,29 @@ sub list_ids {
   }
 
   #convert them to ids
-  return @{$self->adaptor()->seq_regions_to_ids($to_cs, \@seq_regs)};
+  return @{$self->adaptor()->seq_ids_to_regions(\@seq_ids)};
 }
+
+#sub list_ids {
+#  throw('Incorrect number of arguments.') if(@_ != 5);
+#  my($self, $frm_seq_region, $frm_start, $frm_end, $frm_cs) = @_;
+
+#  #retrieve the seq_region names
+#  my @seq_regs =
+#    $self->list_seq_regions($frm_seq_region,$frm_start,$frm_end,$frm_cs);
+
+#  #The seq_regions are from the 'to' coordinate system not the
+#  #from coordinate system we used to obtain them
+#  my $to_cs;
+#  if($frm_cs->equals($self->assembled_CoordSystem())) {
+#    $to_cs = $self->component_CoordSystem();
+#  } else {
+#    $to_cs = $self->assembled_CoordSystem();
+#  }
+
+#  #convert them to ids
+#  return @{$self->adaptor()->seq_regions_to_ids($to_cs, \@seq_regs)};
+#}
 
 
 

@@ -84,56 +84,56 @@ sub sql {
 ## call   Bio::EnsEMBL::DBSQL::StatementHandle->dump(0); to end log
 ## and set $dump to 0 
 ## leave $dump = 1 for continuous log
-#my @bind_args=();
-#my $dump = 1;
-#my $total_time = 0;
+my @bind_args=();
+my $dump = 0;
+my $total_time = 0;
 
-#sub dump {
-#  $dump = shift;
-#  if($total_time){
-#    print "Time taken was $total_time\n";
-#  }
-#  $total_time = 0;
-#}
+sub dump {
+  $dump = shift;
+  if($total_time){
+    print STDERR "###################Time taken was $total_time\n";
+  }
+  $total_time = 0;
+}
 
-#sub bind_param{ 
-#  my ($self,@args) = @_;
+sub bind_param{ 
+  my ($self,@args) = @_;
 
-#  $bind_args[$args[0]-1] = $args[1];
-#  $self->SUPER::bind_param(@args);
-#} 
+  $bind_args[$args[0]-1] = $args[1];
+  $self->SUPER::bind_param(@args);
+} 
 
-#sub execute {
-#  my ($self,@args) = @_;
+sub execute {
+  my ($self,@args) = @_;
   
-#  if(!$dump){ # skip dumping
-#    return $self->SUPER::execute(@args);
-#  }
-#  my $sql = $self->sql();
+  if(!$dump){ # skip dumping
+    return $self->SUPER::execute(@args);
+  }
+  my $sql = $self->sql();
   
   
-#  my @chrs = split(//, $sql);
+  my @chrs = split(//, $sql);
   
-#  my $j = 0;
-#  for(my $i =0; $i < @chrs; $i++) {
-#    $chrs[$i] = $bind_args[$j++] if($chrs[$i] eq '?' && defined($bind_args[$j]));
-#  }
+  my $j = 0;
+  for(my $i =0; $i < @chrs; $i++) {
+    $chrs[$i] = $bind_args[$j++] if($chrs[$i] eq '?' && defined($bind_args[$j]));
+  }
   
-#  my $str = join('', @chrs);
+  my $str = join('', @chrs);
   
-#  print "\nSQL:\n$str\n\n";
+  print STDERR "\nSQL:\n$str\n\n";
   
-#  my $time = time;
-#  my $res = $self->SUPER::execute(@args);
-#  $time = time - $time;
+  my $time = time;
+  my $res = $self->SUPER::execute(@args);
+  $time = time - $time;
 
-#  $total_time += $time;
-#  print "DONE ($time)\n";
-#  return $res;
-#}
-#
+  $total_time += $time;
+  print "DONE ($time)\n";
+  return $res;
+}
+
 # End uncomment
-#
+
 
 sub DESTROY {
   my ($obj) = @_;

@@ -220,7 +220,7 @@ ok( $exon->dbID == 162033 );
 
 my @exons = @{ $exonad->fetch_all_versions_by_stable_id('ENSE00001109603') };
 debug("fetch_all_versions_by_stable_id");
-ok( scalar(@exons) == 2 );
+ok( scalar(@exons) == 1 );
 
 # store/update tests
 
