@@ -251,12 +251,12 @@ sub register_assembled {
   my $asm_start      = shift;
   my $asm_end        = shift;
 
-  my $test = $asm_seq_region;
-  $test =~ s/\d+//g;
-  if(length($test) > 0 or $asm_seq_region < 1000){
-    print STDERR "$asm_seq_region NOT INTEGER\n";
-    print STDERR stack_trace_dump();
-  }
+#  my $test = $asm_seq_region;
+#  $test =~ s/\d+//g;
+#  if(length($test) > 0 or $asm_seq_region < 1000){
+#    print STDERR "$asm_seq_region NOT INTEGER\n";
+#    print STDERR stack_trace_dump();
+#  }
   if(!ref($asm_mapper) || !$asm_mapper->isa('Bio::EnsEMBL::AssemblyMapper')) {
     throw("Bio::EnsEMBL::AssemblyMapper argument expected");
   }
