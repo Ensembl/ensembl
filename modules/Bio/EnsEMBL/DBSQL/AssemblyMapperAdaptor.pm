@@ -463,7 +463,6 @@ sub _seq_region_id_to_name {
   $sth->bind_param(1,$sr_id,SQL_INTEGER);
   $sth->execute();
 
-  print "rows =>".$sth->rows()."\n\n";
   if(!$sth->rows() == 1) {
     throw("non-existant seq_region [$sr_id]");
   }
@@ -1090,6 +1089,10 @@ sub register_all_chained {
     }
   } else {
     @path = @{$csa->get_mapping_path($first_cs, $mid_cs)};
+    # fix for when we have something like supercontig#contig#chromosome
+    if(!defined($path[1])){
+      splice(@path,1,1);
+    }
   }
 
   if(@path != 2) {
@@ -1176,7 +1179,11 @@ sub register_all_chained {
 
 
   @path = @{$csa->get_mapping_path($last_cs, $mid_cs)};
-
+  if(defined($mid_cs)){
+    if(!defined($path[1])){
+      splice(@path,1,1);
+    }
+  }
   if(@path != 2) {
     my $path = join(',', map({$_->name .' '. $_->version} @path));
     my $len  = scalar(@path) - 1;
