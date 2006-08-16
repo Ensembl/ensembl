@@ -2686,8 +2686,7 @@ sub get_all_DitagFeatures {
      return [];
    }
 
-   my $db;
-   my $dfa = $db->get_DitagFeatureAdaptor();
+   my $dfa = $self->adaptor->db->get_DitagFeatureAdaptor();
 
    return $dfa->fetch_all_by_Slice($self, $type);
 }
