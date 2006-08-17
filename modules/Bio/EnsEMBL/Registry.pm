@@ -968,7 +968,7 @@ sub load_registry_from_db{
 	  print "Bio::EnsEMBL::Funcgen::DBSQL::DBAdaptor module not found so functional genomics databases will be ignored if found\n" if ($verbose);
   }
   else{
-    my @fungen_dbs = grep { /^[a-z]+_[a-z]+_funcgen_\d+_/ } @dbnames;
+    my @funcgen_dbs = grep { /^[a-z]+_[a-z]+_funcgen_\d+_/ } @dbnames;
     
     for my $funcgen_db ( @funcgen_dbs ) {
 		my ($species, $num ) = ( $funcgen_db =~ /(^[a-z]+_[a-z]+)_funcgen_(\d+)/ );
