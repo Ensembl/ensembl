@@ -961,6 +961,30 @@ sub load_registry_from_db{
       print $variation_db." loaded\n" if ($verbose);
     }
   }
+
+  eval "require Bio::EnsEMBL::Funcgen::DBSQL::DBAdaptor";
+  if($@) {
+    #ignore funcgen DBs as code required not there for this
+	  print "Bio::EnsEMBL::Funcgen::DBSQL::DBAdaptor module not found so functional genomics databases will be ignored if found\n" if ($verbose);
+  }
+  else{
+    my @fungen_dbs = grep { /^[a-z]+_[a-z]+_funcgen_\d+_/ } @dbnames;
+    
+    for my $funcgen_db ( @funcgen_dbs ) {
+		my ($species, $num ) = ( $funcgen_db =~ /(^[a-z]+_[a-z]+)_funcgen_(\d+)/ );
+		my $dba = Bio::EnsEMBL::Funcgen::DBSQL::DBAdaptor->new
+		  ( -group => "funcgen",
+			-species => $species,
+			-host => $host,
+			-user => $user,
+			-pass => $pass,
+			-port => $port,
+			-dbname => $funcgen_db
+		  );
+		print $funcgen_db." loaded\n" if ($verbose);
+    }
+  }
+
   
   #Compara
   if($compara_version){
