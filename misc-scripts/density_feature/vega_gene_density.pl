@@ -296,7 +296,7 @@ foreach my $block_size (keys %{ $chr_slices }) {
         );
         
         push @attribs, Bio::EnsEMBL::Attribute->new(
-            -NAME => 'total_Ig_segment_',
+            -NAME => 'total_Ig_segment_UNKNOWN',
             -CODE => 'IgSegCount',
             -VALUE => $total{'Ig_segment_NOVEL'}
 						+ $total{'Ig_segment_KNOWN'} || 0,
@@ -304,32 +304,32 @@ foreach my $block_size (keys %{ $chr_slices }) {
         );
         
         push @attribs, Bio::EnsEMBL::Attribute->new(
-            -NAME => 'Ig_pseudogene_segment_',
+            -NAME => 'Ig_pseudogene_segment_UNKNOWN',
             -CODE => 'IgPsSegCount',
-            -VALUE => $total{'Ig_pseudogene_segment_'} || 0,
+            -VALUE => $total{'Ig_pseudogene_segment_UNKNOWN'} || 0,
             -DESCRIPTION => 'Number of Ig Pseudogene Segments'
         );
         
         push @attribs, Bio::EnsEMBL::Attribute->new(
-            -NAME => 'total_pseudogene_',
+            -NAME => 'total_pseudogene_UNKNOWN',
             -CODE => 'TotPsCount',
-            -VALUE => ($total{'pseudogene_'}
-                        + $total{'processed_pseudogene_'}
-                        + $total{'unprocessed_pseudogene_'}) || 0,
+            -VALUE => ($total{'pseudogene_UNKNOWN'}
+                        + $total{'processed_pseudogene_UNKNOWN'}
+                        + $total{'unprocessed_pseudogene_UNKNOWN'}) || 0,
             -DESCRIPTION => 'Total Number of Pseudogenes'
         );
         
         push @attribs, Bio::EnsEMBL::Attribute->new(
-            -NAME => 'processed_pseudogene_',
+            -NAME => 'processed_pseudogene_UNKNOWN',
             -CODE => 'ProcPsCount',
-            -VALUE => $total{'processed_pseudogene_'} || 0,
+            -VALUE => $total{'processed_pseudogene_UNKNOWN'} || 0,
             -DESCRIPTION => 'Number of Processed pseudogenes'
         );
         
         push @attribs, Bio::EnsEMBL::Attribute->new(
-            -NAME => 'unprocessed_pseudogene_',
+            -NAME => 'unprocessed_pseudogene_UNKNOWN',
             -CODE => 'UnprocPsCount',
-            -VALUE => $total{'unprocessed_pseudogene_'} || 0,
+            -VALUE => $total{'unprocessed_pseudogene_UNKNOWN'} || 0,
             -DESCRIPTION => 'Number of Unprocessed pseudogenes'
         );
         
