@@ -114,6 +114,12 @@ sub gen_load{
     }
     $config_sub =  \&Bio::EnsEMBL::Utils::ConfigRegistry::load_variation;
   }
+  elsif($dba->isa('Bio::EnsEMBL::Funcgen::DBSQL::DBAdaptor')){
+    if(!defined($dba->group())){
+      $dba->group('funcgen');
+  }
+    $config_sub =  \&Bio::EnsEMBL::Utils::ConfigRegistry::load_funcgen;
+  }
   elsif($dba->isa('Bio::EnsEMBL::DBSQL::DBAdaptor')){
     #vega uses the core DBAdaptor so test if vega is in the dbname
     if(!defined($dba->group())){
@@ -265,6 +271,9 @@ sub load_variation{
   load_and_attach_dnadb_to_core(@_);
 }
 
+sub load_funcgen{
+  load_and_attach_dnadb_to_core(@_);
+}
 
 sub load_haplotype{
   load_adaptors(@_);
