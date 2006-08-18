@@ -1912,7 +1912,7 @@ sub dump_comparison {
 
 }
 
-sub build_transcript_display_xrefs {
+sub build_transcript_and_gene_display_xrefs {
   my ($self) = @_;
   my $dir = $self->core->dir();
 
@@ -2012,9 +2012,6 @@ ESQL
 	    $ensembl_id = $translation_to_transcript{$ensembl_id};
 	    # so everything is stored on the transcript. 
 	  }
-#	  if($ensembl_id == 264852){
-#	    print $level."\t".$ensembl_id."\t$xref_id\n";
-#	  }
 	  if(!defined($trans_score{$ensembl_id})){
 	    $trans_best_hit{$ensembl_id} = $xref_id;
 	    $trans_level{$ensembl_id} = $level; 
@@ -2130,85 +2127,6 @@ ESQL
 }
 
 
-# Assign display_xrefs to genes based on transcripts
-# Gene gets the display xref of the highest priority of all of its transcripts
-# If more than one transcript with the same priority, longer transcript is used
-
-sub build_gene_display_xrefs {
-
-  my ($self, $transcript_display_xrefs) = @_;
-
-  my $dir = $self->core->dir();
-
-  my $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(-dbconn => $self->core->dbc);
-
-  my $ta = $db->get_TranscriptAdaptor();
-
-  print "Assigning display_xrefs to genes\n";
-
-  open (GENE_DX, ">$dir/gene_display_xref.sql");
-  open (GENE_DX_TXT, ">$dir/gene_display_xref.txt");
-  my $hit = 0;
-  my $miss = 0;
-  my $trans_no_xref = 0;
-  my $trans_xref = 0;
-  foreach my $gene_id (keys %genes_to_transcripts) {
-
-    my @transcripts = @{$genes_to_transcripts{$gene_id}};
-
-    my $best_xref=undef;
-    my $best_xref_priority_idx = 99999;
-    my $best_transcript_length = -1;
-    foreach my $transcript_id (@transcripts) {
-      if (!$transcript_display_xrefs->{$transcript_id}) {
-	$trans_no_xref++;
-	next;
-      } else {
-	$trans_xref++;
-      }
-      my ($xref_id, $priority) = split (/\|/, $transcript_display_xrefs->{$transcript_id});
-
-      # 2 separate if clauses to avoid having to fetch transcripts unnecessarily
-
-      if (($priority < $best_xref_priority_idx)) {
-
-	$best_xref_priority_idx = $priority;
-	$best_xref = $xref_id;
-
-      } elsif ($priority == $best_xref_priority_idx) {
-
-	# compare transcript lengths and use longest
-	my $transcript = $ta->fetch_by_dbID($transcript_id);
-	my $transcript_length = $transcript->length();
-	if ($transcript_length > $best_transcript_length) {
-	  $best_transcript_length = $transcript_length;
-	  $best_xref_priority_idx = $priority;
-	  $best_xref = $xref_id;
-	}
-      }
-    }
-
-    if (defined($best_xref)) {
-      # Write record
-      print GENE_DX "UPDATE gene g SET g.display_xref_id=" . $best_xref . " WHERE g.gene_id=" . $gene_id . ";\n";
-      print GENE_DX_TXT $best_xref . "\t" . $gene_id ."\n";
-      $hit++;
-    } else {
-      $miss++;
-    }
-
-  }
-
-  close (GENE_DX);
-  close (GENE_DX_TXT);
-  print "Transcripts with no xrefs: $trans_no_xref with xrefs: $trans_xref\n";
-  print "Wrote $hit gene display_xref entries to gene_display_xref.sql\n";
-  print "Couldn't find display_xrefs for $miss genes\n" if ($miss > 0);
-  print "Found display_xrefs for all genes\n" if ($miss == 0);
-
-  return \%genes_to_transcripts;
-
-}
 
 # Display xref sources to be used for transcripts *in order of priority*
 # Source names used must be identical to those in the source table.
