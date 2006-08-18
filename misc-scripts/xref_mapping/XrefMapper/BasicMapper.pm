@@ -1913,232 +1913,219 @@ sub dump_comparison {
 }
 
 sub build_transcript_display_xrefs {
-
-  my ($self, $xref_id_offset) = @_;
-
+  my ($self) = @_;
   my $dir = $self->core->dir();
 
-  # get a list of xref sources; format:
-  # key: xref_id value: source_name
-  # lots of these; if memory is a problem, just get the source ID (not the name)
-  # and look it up elsewhere
-  # note %xref_to_source is global
-  print "Building xref->source mapping table\n";
-  my $sql = "SELECT x.xref_id, s.name FROM source s, xref x WHERE x.source_id=s.source_id";
-  my $sth = $self->xref->dbc->prepare($sql);
-  $sth->execute();
+  #IANIANIAN
+  # only load the xrefs which are used in the setting of descriptions
+  # see transcript_display_xref_sources;
+  # In fact bollocks to most of this just use the object_xref table for each transcipt
 
-  my ($xref_id, $source_name);
-  $sth->bind_columns(\$xref_id, \$source_name);
+  # get the priority for the xrefs  (this is the display xref priority)
+  # for each transcript {
+  #    get the objects_xref for this
+  #    get the object_xref for its translation
+  #    get the one with the best priority
+  #    set the transcript or set to null if none found (maybe report if changed)
+  #    set hash of transcript_to_xref{gene} = xref_id sort of thing
+  #    set hash object_to_gene{transcript|translation:id} = gene
+  #    set hash for score and priority aswell/
+  # }
 
-  while ($sth->fetch()) {
-    $xref_to_source{$xref_id} = $source_name;
-  }
+  # for each gene{
+  #   for each transcript{
+  #     get the hight presedence then score if equal
+  #   }
+  #   set gene display_xref_id
+  #   WHAT ABOUT THE DESCRIPTION?
 
-  print "Got " . scalar(keys %xref_to_source) . " xref-source mappings\n";
-
-  # Cache the list of translation->transcript mappings & vice versa
-  # Note variables are global
-  print "Building translation to transcript mappings\n";
-  $sth = $self->core->dbc->prepare("SELECT translation_id, transcript_id FROM translation");
-  $sth->execute();
-
-  my ($translation_id, $transcript_id);
-  $sth->bind_columns(\$translation_id, \$transcript_id);
-
-  while ($sth->fetch()) {
-    $translation_to_transcript{$translation_id} = $transcript_id;
-    $transcript_to_translation{$transcript_id} = $translation_id if ($translation_id);
-  }
-
-  print "Building transcript display_xrefs\n";
-  my @priorities = $self->transcript_display_xref_sources();
-
-  my $n = 0;
-
-  # go through each object/xref mapping and store the best ones as we go along
-  my %obj_to_best_xref;
-
-#INSERT  DIRECT XREFS HERE.  ???  DEPENDENT??
-  my $sth_new = $self->xref->dbc->prepare(<<DIRX);
-  SELECT dx.general_xref_id, dx.ensembl_stable_id, dx.type, s.name, s.source_id 
-    FROM direct_xref dx, xref x, source s
-      WHERE dx.general_xref_id=x.xref_id
-	AND x.source_id=s.source_id
-	ORDER BY s.source_id
-DIRX
-
-  $sth_new->execute();
-  my ($xref_id, $ensembl_stable_id, $ensembl_type, $source_name, $source_id);
-
-  $sth_new->bind_columns(\$xref_id, \$ensembl_stable_id, \$ensembl_type, 
-			 \$source_name, \$source_id);
-
-  my $last_source_id = 0;
-
-  while($sth_new->fetch()){
-    my $index = 99999;
-    my $object_id;
-    if($last_source_id != $source_id){
-      $last_source_id = $source_id;
-      $index = find_in_list($source_name,@priorities);
-    }
-    if($index > 0){
-      if($ensembl_stable_id =~ /^ENS/){
-	$object_id = $stable_id_to_internal_id{$ensembl_stable_id};
-      }
-      else{
-	$object_id = $ensembl_stable_id;
-      }
-      $ensembl_type = ucfirst lc  $ensembl_type;
-      my $key = $ensembl_type."|".$object_id;
-      push @{$object_xref_mappings{$key}}, $xref_id;
-
-      $object_xref_identities{$key}->{$xref_id}->{"query_identity"} = 100;
-      $object_xref_identities{$key}->{$xref_id}->{"target_identity"} = 100;
-
+  if(!scalar(keys %translation_to_transcript)){
+    print "Building translation to transcript mappings\n";
+    my $sth = $self->core->dbc->prepare("SELECT translation_id, transcript_id FROM translation");
+    $sth->execute();
+    
+    my ($translation_id, $transcript_id);
+    $sth->bind_columns(\$translation_id, \$transcript_id);
+    
+    while ($sth->fetch()) {
+      $translation_to_transcript{$translation_id} = $transcript_id;
+      $transcript_to_translation{$transcript_id} = $translation_id if ($translation_id);
     }
   }
-  $sth_new->finish();
 
+  my %external_name_to_id;  
+  my %ex_db_id_to_status;
+  my $sql1 = "SELECT external_db_id, db_name, status from external_db";
+  
+  my $sth1 = $self->core->dbc->prepare($sql1) || die "prepare failed for $sql1\n";
+  $sth1->execute() || die "execute failed";
+  my ($db_id, $name, $status);
+  $sth1->bind_columns(\$db_id, \$name, \$status);
+  while($sth1->fetch()){
+    $external_name_to_id{$name}  = $db_id;
+    $ex_db_id_to_status{$db_id} = $status;
+  }
+  $sth1->finish;
 
-  foreach my $key (keys %object_xref_mappings) {
+  my @presedence = $self->transcript_display_xref_sources();
 
-    my ($type, $object_id) = split /\|/, $key;
+  my $sql = (<<ESQL);
+  SELECT ox.ensembl_id, ox.ensembl_object_type, ox.xref_id, ix.query_identity, ix.target_identity
+    FROM object_xref ox, xref x 
+      LEFT JOIN identity_xref ix on ox.object_xref_id = ix.object_xref_id 
+	WHERE x.xref_id = ox.xref_id and x.external_db_id =?
+ESQL
 
-    next if ($type !~ /(Transcript|Translation)/i);
+  my $psth = $self->core->dbc->prepare($sql) || die "prepare failed for $sql\n";
+ 
+  my $level = 0;
+  my ($ensembl_id, $ens_type, $xref_id, $qid, $tid);
+  my %gene_best_hit;
+  my %gene_level;
+  my %trans_best_hit;
+  my %trans_level;
 
-    # if a transcript has more than one associated xref,
-    # use the one with the highest priority, i.e. lower list position in @priorities
-    my @xrefs = @{$object_xref_mappings{$key}};
-    my ($best_xref, $best_xref_priority_idx);
-    # store best query & target identities for each source for this object
-    my %best_qi;
-    my %best_ti;
-    $best_xref_priority_idx = 99999;
-    foreach my $xref (@xrefs) {
+  my $format_problem=0;
+  foreach my $ord (reverse(@presedence)){ # if we do this in reverse then it is okay to overwrite values
 
-      my $source = $xref_to_source{$xref};
-      if ($source) {
-	my $i = find_in_list($source, @priorities);
+    #reset each loop so can be used to see if it has been set for this loop
+    # know when to test the ids
+    my %gene_score;
+    my %trans_score;
+    $level++;
+    print "\t".$ord."\n";
 
-	my $s = $source . "|" . $object_id;
-	my $key = $type . "|" . $object_id;
-	my $query_identity  = $object_xref_identities{$key}->{$xref}->{"query_identity"};
-	my $target_identity = $object_xref_identities{$key}->{$xref}->{"target_identity"};
-
-	# Check if this source has a better priority than the current best one
-	# Note if 2 sources are the same priority, the mappings are compared on
-	# query_identity then target_identity
-	if ($i > -1 && $i <= $best_xref_priority_idx &&
-	    (($query_identity > $best_qi{$s}) ||
-	    ($query_identity == $best_qi{$s} && $target_identity > $best_ti{$s}))) {
-	#if ($i > -1 && $i <= $best_xref_priority_idx && $query_identity > $best_qi{$s}) {
-	  $best_xref = $xref;
-	  $best_xref_priority_idx = $i;
-	  $best_qi{$s} = $query_identity;
-	  $best_ti{$s} = $target_identity;
+    if(defined($external_name_to_id{$ord})){
+      $psth->execute($external_name_to_id{$ord}) || die "execute failed";
+      $psth->bind_columns(\$ensembl_id, \$ens_type, \$xref_id, \$qid, \$tid);
+      while($psth->fetch()){
+	if($ens_type eq "Gene"){
+	  # gene cannot have identitys, so just take the first one.
+	  if(!defined($gene_score{$ensembl_id})){
+	    $gene_best_hit{$ensembl_id} = $xref_id;
+	    $gene_score{$ensembl_id} = 1;
+	    $gene_level{$ensembl_id} = $level; 
+	  }
 	}
-      } else {
-	warn("Couldn't find a source for xref id $xref " . $xref_accessions{$xref_id} . "\n");
+	elsif($ens_type eq "Transcript" || $ens_type eq "Translation"){
+	  if($ens_type eq "Translation"){
+	    $ensembl_id = $translation_to_transcript{$ensembl_id};
+	    # so everything is stored on the transcript. 
+	  }
+#	  if($ensembl_id == 264852){
+#	    print $level."\t".$ensembl_id."\t$xref_id\n";
+#	  }
+	  if(!defined($trans_score{$ensembl_id})){
+	    $trans_best_hit{$ensembl_id} = $xref_id;
+	    $trans_level{$ensembl_id} = $level; 
+	    if(defined($qid)){
+	      $trans_score{$ensembl_id}  = $tid."\t".$qid;
+	    }
+	    else{
+	      $trans_score{$ensembl_id}  = "100\t100";
+	    }
+	  }
+	  else{
+	    if(defined($trans_score{$ensembl_id} and defined($qid))){
+	      my ($old_t, $old_q) = split (/\s+/,$trans_score{$ensembl_id});
+	      if(($qid > $old_q) || ($qid == $old_q and $tid > $old_t)){
+		$trans_best_hit{$ensembl_id} = $xref_id;
+		$trans_level{$ensembl_id} = $level; 
+		$trans_score{$ensembl_id}  = $tid."\t".$qid;		
+	      }
+	    }
+	  }
+	}
+	else{
+	  $format_problem++;
+	}
       }
-    }
-    # store object type, id, and best xref id and source priority
-    if ($best_xref) {
-      $obj_to_best_xref{$key} = $best_xref . "|" . $best_xref_priority_idx;
-    }
 
+    }
+    else{
+      print $ord." Could not find external db id for this\n";
+    }
+	 
   }
-
-
-  # Now go through each of the calculated best xrefs and convert any that are
-  # calculated against translations to be associated with their transcript,
-  # if the priority of the translation xref is higher than that of the transcript
-  # xref.
-  # Needs to be done this way to avoid clobbering higher-priority transcripts.
-
-  # hash keyed on transcript id, value is xref_id|source prioirity index
-  my %transcript_display_xrefs;
-
-  # Write a .sql file that can be executed, and a .txt file that can be processed
   open (TRANSCRIPT_DX, ">$dir/transcript_display_xref.sql");
   open (TRANSCRIPT_DX_TXT, ">$dir/transcript_display_xref.txt");
 
-  foreach my $key (keys %obj_to_best_xref) {
+  foreach my $transcript (keys %trans_best_hit){
+    # print the display_xref_id for these
+    print TRANSCRIPT_DX "UPDATE transcript SET display_xref_id=" .$trans_best_hit{$transcript}. 
+      " WHERE transcript_id=" . $transcript . ";\n";
+    print TRANSCRIPT_DX_TXT  $trans_best_hit{$transcript}. "\t" . $transcript . "\n";
+    
+  }
+  
+  close TRANSCRIPT_DX;
+  close TRANSCRIPT_DX_TXT;
 
-    my ($type, $object_id) = split /\|/, $key;
+  #now do the gene display xrefs;
+  open (GENE_DX, ">$dir/gene_display_xref.sql");
+  open (GENE_DX_TXT, ">$dir/gene_display_xref.txt");
 
-    my ($best_xref, $best_xref_priority_idx) = split /\|/, $obj_to_best_xref{$key};
-
-    # If transcript has a translation, use the best xref out of the transcript & translation
-
-    my $transcript_id;
-    my $translation_id;
-    if ($type =~ /Transcript/i) {
-      $transcript_id = $object_id;
-      $translation_id = $transcript_to_translation{$transcript_id};
-    }
-    elsif ($type =~ /Translation/i) {
-      $translation_id = $object_id;
-      $transcript_id = $translation_to_transcript{$translation_id};
-      $object_id = $transcript_id;
-    }
-    elsif ($type =~ /Gene/i){ 
-      next;
-    }
-    else{
-      print "Cannot deal with type $type\n";
-      next;
-    }
-    if ($translation_id) {
-      my ($translation_xref, $translation_priority) = split /\|/, $obj_to_best_xref{"Translation|$translation_id"};
-      my ($transcript_xref, $transcript_priority)   = split /\|/, $obj_to_best_xref{"Transcript|$transcript_id"};
-      my $transcript_qi = $object_xref_identities{"Transcript|$object_id"}->{$transcript_xref}->{"query_identity"};
-      my $translation_qi = $object_xref_identities{"Translation|$object_id"}->{$translation_xref}->{"query_identity"};
-
-      #print "transcript xref $transcript_xref transcript pri $transcript_priority transcript qi: $transcript_qi translation xref $translation_xref translation pri $translation_priority translation qi $translation_qi\n";
-      if(!$translation_xref){
-	$best_xref = $transcript_xref;
-	$best_xref_priority_idx = $transcript_priority;
-      }
-      if(!$transcript_xref){
-	$best_xref = $translation_xref;
-	$best_xref_priority_idx = $translation_priority;
-      }
-      elsif ($translation_priority < $transcript_priority) {
-	$best_xref = $translation_xref;
-	$best_xref_priority_idx = $translation_priority;
-      } else {
-	$best_xref = $transcript_xref;
-	$best_xref_priority_idx = $transcript_priority;
-      }
-
-    }
-    if ($best_xref) {
-
-      # Write record with xref_id_offset
-      if(defined($object_id) and $object_id > 0){
-	print TRANSCRIPT_DX "UPDATE transcript SET display_xref_id=" . ($best_xref+$xref_id_offset) . " WHERE transcript_id=" . $object_id . ";\n";
-	print TRANSCRIPT_DX_TXT ($best_xref+$xref_id_offset) . "\t" . $object_id . "\n";
-	$n++;
-      }
-      else{
-	print "ERROR: problems with object_id for $key\n";
-      }
-
-      my $value = ($best_xref+$xref_id_offset) . "|" . $best_xref_priority_idx;
-      $transcript_display_xrefs{$object_id} = $value;
-
-    }
-
+  if(!scalar(keys %genes_to_transcripts)){
+    $self->build_genes_to_transcripts();
   }
 
-  close(TRANSCRIPT_DX);
-  close(TRANSCRIPT_DX_TXT);
+  my $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(-dbconn => $self->core->dbc);
 
-  print "Wrote $n transcript display_xref entries to transcript_display_xref.sql\n";
+  my $ta = $db->get_TranscriptAdaptor();
 
-  return \%transcript_display_xrefs;
+  foreach my $gene_id (keys %genes_to_transcripts) {
+
+    my @transcripts = @{$genes_to_transcripts{$gene_id}};
+
+    my $best_xref = undef;
+    my $best_level = 0;
+    my $best_object = undef;
+    my $best_length =0;
+    if(defined($gene_best_hit{$gene_id})){
+      $best_xref = $gene_best_hit{$gene_id};
+      $best_level = $gene_level{$gene_id};
+    }
+
+    foreach my $transcript_id (@transcripts) {
+      if(defined($trans_best_hit{$transcript_id})){
+	if($trans_level{$transcript_id} >  $best_level){
+	  $best_xref = $trans_best_hit{$transcript_id};
+	  $best_level = $trans_level{$transcript_id};
+	  $best_object = $transcript_id;
+	}
+	elsif($trans_level{$transcript_id} == $best_level){ # now use the longest
+	  my $transcript = $ta->fetch_by_dbID($transcript_id);
+	  my $new_length = $transcript->length();
+	  if(!$best_length){
+	    $transcript = $ta->fetch_by_dbID($best_object);
+	    $best_length = $transcript->length();
+	  }
+	  if($best_length < $new_length){
+	    $best_xref = $trans_best_hit{$transcript_id};
+	    $best_level = $trans_level{$transcript_id};
+	    $best_object = $transcript_id;
+	    $best_length = $new_length;
+	  }
+	}
+      }
+    }
+    if(defined($best_xref)) {
+      print GENE_DX "UPDATE gene g SET g.display_xref_id=" . $best_xref . 
+	" WHERE g.gene_id=" . $gene_id . ";\n";
+      print GENE_DX_TXT $best_xref . "\t" . $gene_id ."\n";
+      
+    }
+    else{
+      print GENE_DX "UPDATE gene g SET g.display_xref_id=NULL". 
+	" WHERE g.gene_id=" . $gene_id . ";\n";
+      print GENE_DX_TXT "NULL\t" . $gene_id ."\n";
+      
+    }
+  }
+  close GENE_DX;
+  close GENE_DX_TXT;
+  die "OKAY THATS ENOUGH FOR NOW\n";
+  return;
 
 }
 
@@ -2471,11 +2458,6 @@ GENE
     my $mysql_command = $self->get_mysql_command($core_db);
     system( "$mysql_command < $file" ) == 0 
         or print( "ERROR: parsing $file in mysql\n" );
-#    my $str = "mysql -u " .$core_db->username() ." -p'" . $core_db->password() . 
-#      "' -h " . $core_db->host() ." -P " . $core_db->port() . " " .$core_db->dbname() . " < $file";
-#    if(system $str){
-#      print "ERROR: parsing $file in mysql\n";
-#    }
   }
 
   # gene descriptions
@@ -2484,12 +2466,6 @@ GENE
   my $mysql_command = $self->get_mysql_command($core_db);
   system( "$mysql_command < $file" ) == 0 
       or print( "ERROR: parsing $file in mysql\n" );
-
-#  my $str = "mysql -u " .$core_db->username() ." -p'" . $core_db->password() . 
-#    "' -h " . $core_db->host() ." -P " . $core_db->port() . " " .$core_db->dbname() . " < $file";
-#  if(system $str){
-#    print "ERROR: parsing $file in mysql\n";
-#  }
 
   # update meta table with timestamp saying when xrefs were last updated
   $file =  $ensembl->dir() . "/meta_timestamp.sql";
@@ -2501,12 +2477,6 @@ GENE
   my $mysql_command = $self->get_mysql_command($core_db);
   system( "$mysql_command < $file" ) == 0 
       or print( "ERROR: parsing $file in mysql\n" );
-#  my $str = "mysql -u " .$core_db->username() ." -p'" . $core_db->password() . 
-#    "' -h " . $core_db->host() ." -P " . $core_db->port() . " " .$core_db->dbname() . " < $file";
-#  system $str;
-#  if(system $str){
-#    print "ERROR: parsing $file in mysql\n";
-#  }
 
   # set gene and transcript statuses to KNOWN or NOVEL based on external_db status
   print "Setting gene and transcript status from external_db KNOWN/NOVEL\n";
@@ -2535,11 +2505,7 @@ GENE
   my $mysql_command = $self->get_mysql_command($core_db);
   system( "$mysql_command < $file" ) == 0 
       or print( "ERROR: parsing $file in mysql\n" );
-#  my $str = "mysql -u " .$core_db->username() ." -p'" . $core_db->password() . 
-#    "' -h " . $core_db->host() ." -P " . $core_db->port() . " " .$core_db->dbname() . " < $file";
-#  if(system $str){
-#    print "ERROR: parsing $file in mysql\n";
-#  }
+
 }
 
 # Assign gene descriptions
@@ -2567,6 +2533,370 @@ GENE
 # - UniProt/SPTREMBL
 #    If there are several, precedence is established on the basis of the occurrence of 
 #    regular expression patterns in the description.
+
+
+sub new_build_gene_descriptions{
+  my ($self) = @_;
+
+  #  1) get xrefs descriptions and accessions for those in the list
+  #        use $self->gene_description_sources  to get sources.
+  #        only store xrefs if valid description
+  #  2) process these descriptions with $self->filter_by_regexp
+  #  3) get transcripts and gene xrefs for these (similar to earlier)
+  #     but do different output
+
+  my @regexps = $self->gene_description_filter_regexps();
+
+  if(scalar(@regexps) == 0){
+    die "shit no reg exps\n";
+  }
+  print "regexp ".scalar(@regexps)."\n";
+  my @sources = $self->gene_description_sources();
+
+  if(!scalar(keys %translation_to_transcript)){
+    print "Building translation to transcript mappings\n";
+    my $sth = $self->core->dbc->prepare("SELECT translation_id, transcript_id FROM translation");
+    $sth->execute();
+    
+    my ($translation_id, $transcript_id);
+    $sth->bind_columns(\$translation_id, \$transcript_id);
+    
+    while ($sth->fetch()) {
+      $translation_to_transcript{$translation_id} = $transcript_id;
+      $transcript_to_translation{$transcript_id} = $translation_id if ($translation_id);
+    }
+  }
+
+  my %external_name_to_id;  
+  my %ex_db_id_to_status;
+  my $sql1 = "SELECT external_db_id, db_name, status from external_db";
+  
+  my $sth1 = $self->core->dbc->prepare($sql1) || die "prepare failed for $sql1\n";
+  $sth1->execute() || die "execute failed";
+  my ($db_id, $name, $status);
+  $sth1->bind_columns(\$db_id, \$name, \$status);
+  while($sth1->fetch()){
+    $external_name_to_id{$name}  = $db_id;
+    $ex_db_id_to_status{$db_id} = $status;
+  }
+  $sth1->finish;
+
+  my $sql = (<<ESQL);
+  SELECT x.xref_id, x.dbprimary_acc, x.description
+    FROM xref x
+      WHERE x.external_db_id = ?
+ESQL
+
+  my $sth = $self->core->dbc->prepare($sql) || die "prepare failed for $sql\n";
+  print $sql."\n";
+  my ($xref_id, $acc, $description);
+  
+  my $level = 0;
+  my $removed = 0;
+  my $added = 0;
+  my $checked = 0;
+  foreach my $source (@sources){
+    $level++;
+    if(defined($external_name_to_id{$source})){
+      $sth->execute($external_name_to_id{$source}) || die "execute failed";
+      print $level.")\t".$source."\t".$external_name_to_id{$source}."\n";
+      $sth->bind_columns(\$xref_id, \$acc, \$description);
+      while($sth->fetch()){
+	$checked++;
+	if ($description) {
+	  my $filtered_description = $self->filter_by_regexp($description, \@regexps);
+	  if ($filtered_description ne "") {
+	    $xref_descriptions{$xref_id} = $description;
+	    $xref_accessions{$xref_id} = $acc;
+	    $added++;
+	  } else {
+	    $removed++;
+	  }
+	}	
+      }
+    }
+    else{
+      print "Could not find $source in table external_db\n";
+    }
+  }
+  $sth->finish;
+  print "Regexp filtering (" . scalar(@regexps) . 
+    " regexps) removed $removed descriptions, left with " . scalar(keys %xref_descriptions) . "\n";
+
+  print "$added have been added\n";
+
+  print "$checked have been checked\n";
+
+
+  $sql = (<<ETSQL);
+  SELECT ox.ensembl_id, ox.ensembl_object_type, ox.xref_id, ix.query_identity, ix.target_identity
+    FROM object_xref ox, xref x 
+      LEFT JOIN identity_xref ix on ox.object_xref_id = ix.object_xref_id 
+	WHERE x.xref_id = ox.xref_id and x.external_db_id =?
+ETSQL
+
+  my $psth = $self->core->dbc->prepare($sql) || die "prepare failed for $sql\n";
+ 
+  my $level = 0;
+  my ($ensembl_id, $ens_type, $xref_id, $qid, $tid);
+  my %gene_best_hit;
+  my %gene_level;
+  my %gene_source;
+  my %trans_best_hit;
+  my %trans_level;
+  my %trans_source;
+  my %trans_score;
+
+  my $format_problem=0;
+
+
+  my @words = qw(unknown hypothetical putative novel probable [0-9]{3} kDa fragment cdna protein);
+  my $trembl_id = $external_name_to_id{"Uniprot/SPTREMBL"};
+  
+  foreach my $ord (@sources){
+    my %gene_score;
+    my %trans_seen;
+    $level++;
+    
+    if(defined($external_name_to_id{$ord})){
+      print $level."\t".$ord."\n";
+      $psth->execute($external_name_to_id{$ord}) || die "execute failed";
+      $psth->bind_columns(\$ensembl_id, \$ens_type, \$xref_id, \$qid, \$tid);
+      while($psth->fetch()){
+	if(defined($xref_descriptions{$xref_id})){ # if no description then ignore
+	  if($ens_type eq "Gene"){
+	    $gene_best_hit{$ensembl_id} = $xref_id;
+	    $gene_score{$ensembl_id} = 1;
+	    $gene_level{$ensembl_id} = $level; 
+	    $gene_source{$ensembl_id} = $ord;
+	  }
+	  elsif($ens_type eq "Transcript" || $ens_type eq "Translation"){
+	    if($ens_type eq "Translation"){
+	      $ensembl_id = $translation_to_transcript{$ensembl_id};
+	      # so everything is stored on the transcript. 
+	    }
+	    if(!defined($trans_seen{$ensembl_id})){
+	      $trans_seen{$ensembl_id} = 1;
+	      $trans_best_hit{$ensembl_id} = $xref_id;
+	      $trans_level{$ensembl_id} = $level; 
+	      $trans_source{$ensembl_id} = $ord;
+	      if($external_name_to_id{$ord} == $trembl_id){
+		$trans_score{$ensembl_id} = find_match($xref_descriptions{$xref_id}, @words);
+	      }
+	      else{
+		if(defined($qid)){
+		  $trans_score{$ensembl_id}  = $tid."\t".$qid;
+		}
+		else{
+		  $trans_score{$ensembl_id}  = "100\t100";
+		}
+	      }
+	    }
+	    else{ # need to check if this is better than the one already stored.
+	      if($external_name_to_id{$ord} == $trembl_id){
+		my $new_score = find_match($xref_descriptions{$xref_id}, @words);
+		if($new_score > $trans_score{$ensembl_id}){
+		  $trans_best_hit{$ensembl_id} = $xref_id;
+		  $trans_level{$ensembl_id} = $level; 
+		  $trans_score{$ensembl_id} = $new_score;
+		  $trans_source{$ensembl_id} = $ord;
+		}
+	      }
+	      else{
+		if(defined($qid)){
+		  my ($old_t, $old_q) = split (/\s+/,$trans_score{$ensembl_id});
+		  if(($qid > $old_q) || ($qid == $old_q and $tid > $old_t)){
+		    $trans_best_hit{$ensembl_id} = $xref_id;
+		    $trans_level{$ensembl_id} = $level; 
+		    $trans_score{$ensembl_id}  = $tid."\t".$qid;		
+		    $trans_source{$ensembl_id} = $ord;
+		  }
+		}	      
+	      }
+	    }
+	  }
+	}
+      }
+    }
+    else{
+      print "Ignoring $ord as this does not appear in the table external_db\n"; 
+    }	  
+  }
+
+
+  print "OLD: ".$trans_best_hit{"249026"}."\t".$trans_score{"249026"}."\n";
+  print "NEW: ".$trans_best_hit{"248954"}."\t".$trans_score{"248954"}."\n";
+
+  print  "number of best transcripts id ".scalar( keys %trans_best_hit)."\n";
+  
+  # So i now have the best descriptions!
+  if(!scalar(keys %genes_to_transcripts)){
+    $self->build_genes_to_transcripts();
+  }
+
+#test
+#  my %gene_desc;
+#  
+#  my $sql2 = "SELECT gene_id, description from gene";
+#  my $sth2 =  $self->core->dbc->prepare($sql2) || die "prepare failed for $sql2\n";
+#  $sth2->execute() || die "execute failed";
+#  my ($db_id, $name);
+#  $sth2->bind_columns(\$db_id, \$name);
+#  while($sth2->fetch()){
+#    $gene_desc{$db_id}  = $name;
+#  }
+#  $sth2->finish;
+
+
+
+
+
+
+  my $dir = $self->core->dir();
+  open(GENE_DESCRIPTIONS,">$dir/gene_description.sql") || die "Could not open $dir/gene_description.sql";
+
+  my $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(-dbconn => $self->core->dbc);
+
+  my $ta = $db->get_TranscriptAdaptor();
+
+  foreach my $gene_id (keys %genes_to_transcripts) {
+
+    my @transcripts = @{$genes_to_transcripts{$gene_id}};
+
+    my $best_xref = undef;
+    my $best_level = 0;
+    my $best_object = undef;
+    my $best_source = "";
+    my $best_length =0;
+    my $best_score=0;
+    if(defined($gene_best_hit{$gene_id})){
+      $best_xref = $gene_best_hit{$gene_id};
+      $best_level = $gene_level{$gene_id};
+      $best_source = $gene_source{$gene_id};
+    }
+
+    foreach my $transcript_id (@transcripts) {
+#      if($gene_id == 72994){
+#	print "processing:- ".$trans_best_hit{$transcript_id}."\t".$trans_score{$transcript_id}."\n";
+#      }
+      if(defined($trans_best_hit{$transcript_id})){
+	if($trans_level{$transcript_id} >  $best_level){
+#	  if($gene_id == 72994){
+#	    print "setting best to :- ". $trans_best_hit{$transcript_id} ."\n";
+#	  }
+	  $best_xref = $trans_best_hit{$transcript_id};
+	  $best_level = $trans_level{$transcript_id};
+	  $best_object = $transcript_id;
+	  $best_source = $trans_source{$transcript_id};
+	  $best_score = $trans_score{$transcript_id};
+	}
+	elsif($trans_level{$transcript_id} == $best_level){ # now use the longest
+	  #use the scores;
+	  my ($told, $qold) = split (/\s+/,$best_score);
+	  my ($tnew, $qnew) = split (/\s+/,$trans_score{$transcript_id});
+	  my $same = 1;
+#	  if($gene_id == 72994){
+#	    print "best score = $best_score\n";
+#	    print "new _score is ". $trans_score{$transcript_id}."\n";
+#	    print "pre OLD ".$qold." ".$told."\n";
+#	    print "    NEW ".$qnew." ".$tnew."\n";
+#	  }
+	  if(defined($qold)){ #q and t values
+#	      if($gene_id == 72994){
+#		print "checking OLD ".$qold." ".$told."\n";
+#		print "         NEW ".$qnew." ".$tnew."\n";
+#	      }
+	    if(($qnew > $qold) || 
+	       ($qnew == $qold and $tnew > $told)){
+#	      if($gene_id == 72994){
+#		print "overwriting OLD ".$qold." ".$told."\n";
+#		print "            NEW ".$qnew." ".$tnew."\n";
+#	      }
+	      $same = 0;
+#	      if($gene_id == 72994){
+#		print "overwriting to :- ". $trans_best_hit{$transcript_id} ."\n";
+#	      }
+	      $best_xref = $trans_best_hit{$transcript_id};
+	      $best_level = $trans_level{$transcript_id};
+	      $best_object = $transcript_id;
+	      $best_source = $trans_source{$transcript_id};
+	      $best_score = $trans_score{$transcript_id};	      	      
+	    }
+	  }
+	  else{ # trembl and only has one score.
+	    if($told < $tnew){
+	      $same = 0;
+#	      if($gene_id == 72994){
+#		print "TREMBL setting best to :- ". $trans_best_hit{$transcript_id} ."\n";
+#	      }
+	      $best_xref = $trans_best_hit{$transcript_id};
+	      $best_level = $trans_level{$transcript_id};
+	      $best_object = $transcript_id;
+	      $best_source = $trans_source{$transcript_id};
+	      $best_score = $trans_score{$transcript_id};	      
+	    }
+	    elsif($told != $tnew){
+	      $same = 0;
+	    }
+	  }
+
+	  if($same){
+#	    if($gene_id == 72994){
+#	      print "same\n";
+#	    }
+	    my $transcript = $ta->fetch_by_dbID($transcript_id);
+	    my $new_length = $transcript->length();
+	    if(!$best_length){
+	      $transcript = $ta->fetch_by_dbID($best_object);
+	      $best_length = $transcript->length();
+	    }
+	    if($best_length < $new_length){
+	      $best_xref = $trans_best_hit{$transcript_id};
+	      $best_level = $trans_level{$transcript_id};
+	      $best_source = $trans_source{$transcript_id};
+	      $best_object = $transcript_id;
+	      $best_length = $new_length;
+	    }
+	  }
+	}
+      }
+    }
+    
+    if(defined($best_xref)) {
+      my $description = $xref_descriptions{$best_xref};
+      my $acc = $xref_accessions{$best_xref};
+      
+      $description =~ s/\"//ig; # remove " as they will cause problems in .sql files
+      
+      my $desc = $description . " [Source:$best_source;Acc:$acc]";
+  
+#      if($desc ne $gene_desc{$gene_id}){
+#	print "ERROR: $gene_id\nREAL:".$gene_desc{$gene_id}."\nNEW :$desc\n\n";
+#      }
+    
+      print GENE_DESCRIPTIONS "UPDATE gene g SET g.description=\"$desc\" ".
+	"WHERE g.gene_id=$gene_id;\n" if ($description);
+      
+    }
+    else{
+      print GENE_DESCRIPTIONS "UPDATE gene g SET g.description=\"\" ".
+	"WHERE g.gene_id=$gene_id;\n"
+      
+    }
+#    if($gene_id == 72994){
+#      print "best xref:-".$best_xref."\n";
+#      die "";
+#    }
+
+  }
+  close GENE_DESCRIPTIONS;
+
+
+
+
+}
+
+
 
 sub build_gene_descriptions {
 
