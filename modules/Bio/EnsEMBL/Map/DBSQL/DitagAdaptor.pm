@@ -269,7 +269,8 @@ sub store {
     $sth->execute($ditag->name, $ditag->type);
     if($sth->fetchrow() > 0){
       warning( "Ditag with name/type ".$ditag->name." / ".$ditag->type.
-               " is already stored in this database." );
+               " is already stored in this database.\n".
+	       "Use $da->update_ditag() instead.");
       next TAG;
     }
 
@@ -326,6 +327,30 @@ sub print_creation {
   }
 
   return $string;
+}
+
+
+=head2 update_ditag
+
+  Arg [1]    : ditag to update
+  Description: update an existing ditag with new values
+  Returntype : 1 on success
+
+=cut
+
+sub update_ditag {
+  my ($self, $ditag) = @_;
+
+  my $sth = $self->prepare( "UPDATE ditag SET name=?, type=?, tag_count=?, sequence=? where ditag_id=?;" );
+  my $result =$sth->execute(
+                            $ditag->name,
+                            $ditag->type,
+                            $ditag->tag_count,
+                            $ditag->sequence,
+                            $ditag->dbID,
+                           );
+
+  return $result;
 }
 
 
