@@ -270,7 +270,7 @@ sub store {
     if($sth->fetchrow() > 0){
       warning( "Ditag with name/type ".$ditag->name." / ".$ditag->type.
                " is already stored in this database.\n".
-	       "Use $da->update_ditag() instead.");
+	       "Use update_ditag() instead.");
       next TAG;
     }
 
