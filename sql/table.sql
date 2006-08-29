@@ -148,6 +148,7 @@ CREATE TABLE analysis_description (
   analysis_id	               INT(10) UNSIGNED NOT NULL,
   description                  TEXT,
   display_label                VARCHAR(255),
+  displayable                  BOOLEAN NOT NULL DEFAULT 1,
 
   KEY analysis_idx (analysis_id)
   
@@ -741,8 +742,9 @@ CREATE TABLE xref (
    display_label              VARCHAR(128) NOT NULL,
    version                    VARCHAR(10) DEFAULT '0' NOT NULL,
    description                VARCHAR(255),
-   info_type                  ENUM('PROJECTION', 'MISC'),
+   info_type                  ENUM('PROJECTION', 'MISC', 'DEPENDENT', 'DIRECT', 'SEQUENCE_MATCH', 'INFERRED_PAIR'),
    info_text                  VARCHAR(255),
+   priority		      INT DEFAULT 1 NOT NULL,
 
    PRIMARY KEY (xref_id),
    UNIQUE KEY id_index (dbprimary_acc, external_db_id, info_type, info_text),
@@ -870,6 +872,9 @@ INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_39_40_g.sql|add_
 INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_39_40_h.sql|oligo_feature_analysis_id_type');
 INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_39_40_i.sql|schema_version');
 INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_39_40_j.sql|marker_synonym_name');
+INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_40_41_a.sql|analysis_description_displayable');
+INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_40_41_b.sql|info_type_enum');
+INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_40_41_c.sql|xref_priority');
 
 ################################################################################
 #
@@ -1542,13 +1547,13 @@ CREATE TABLE unmapped_reason (
 
 CREATE TABLE ditag (
 
-       ditag_id INT NOT NULL auto_increment,
-       name VARCHAR(30),
-       type VARCHAR(30),
-       tag_count smallint(6) default 1,
-       sequence TEXT,
+       ditag_id          INT(10) UNSIGNED NOT NULL auto_increment,
+       name              VARCHAR(30),
+       type              VARCHAR(30),
+       tag_count         smallint(6) default 1,
+       sequence          TEXT,
 
-       PRIMARY KEY ( ditag_id )
+       PRIMARY KEY (ditag_id)
 
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 
@@ -1560,19 +1565,19 @@ CREATE TABLE ditag (
 
 CREATE TABLE ditag_feature (
 
-       ditag_feature_id int(10) unsigned NOT NULL auto_increment,
-       ditag_id int(10) unsigned NOT NULL default '0',
-       ditag_pair_id int(10) unsigned NOT NULL default '0',
-       seq_region_id int(10) unsigned NOT NULL default '0',
-       seq_region_start int(10) unsigned NOT NULL default '0',
-       seq_region_end int(10) unsigned NOT NULL default '0',
-       seq_region_strand tinyint(1) NOT NULL default '0',
-       analysis_id int(10) unsigned NOT NULL default '0',
-       hit_start int(10) unsigned NOT NULL default '0',
-       hit_end int(10) unsigned NOT NULL default '0',
-       hit_strand tinyint(1) NOT NULL default '0',
-       cigar_line text default '',
-       ditag_side char default '',
+       ditag_feature_id   INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+       ditag_id           INT(10) UNSIGNED NOT NULL default '0',
+       ditag_pair_id      INT(10) UNSIGNED NOT NULL default '0',
+       seq_region_id      INT(10) UNSIGNED NOT NULL default '0',
+       seq_region_start   INT(10) UNSIGNED NOT NULL default '0',
+       seq_region_end     INT(10) UNSIGNED NOT NULL default '0',
+       seq_region_strand  TINYINT(1) NOT NULL default '0',
+       analysis_id        INT(10) UNSIGNED NOT NULL default '0',
+       hit_start          INT(10) UNSIGNED NOT NULL default '0',
+       hit_end            INT(10) UNSIGNED NOT NULL default '0',
+       hit_strand         TINYINT(1) NOT NULL default '0',
+       cigar_line         TEXT default '',
+       ditag_side         CHAR default '',
 
        PRIMARY KEY  (ditag_feature_id),
        KEY (ditag_id),
