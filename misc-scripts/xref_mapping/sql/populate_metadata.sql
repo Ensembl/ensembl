@@ -123,6 +123,12 @@ INSERT INTO source VALUES (2850, "Celera_Gene", 1, 'Y', 40);
 INSERT INTO source VALUES (2852, "Celera_Pep", 1, 'Y', 40);
 INSERT INTO source VALUES (2854, "Celera_Trans", 1, 'Y', 40);
 INSERT INTO source VALUES (2856, "Anopheles_symbol", 1, 'Y', 40);
+INSERT INTO source VALUES (2857, "ARRAY_IC_MMC1_20k_v1", 1, 'Y', 40);
+INSERT INTO source VALUES (2858, "ARRAY_IC_MMC2_12k_v1", 1, 'Y', 40);
+INSERT INTO source VALUES (2859, "ARRAY_JHU_GAM3.0_21k_v1", 1, 'Y', 40);
+INSERT INTO source VALUES (2860, "ARRAY_LIV_GAMDETOX_0.25k_v1", 1, 'Y', 40);
+INSERT INTO source VALUES (2861, "ARRAY_JHU_AEG1.0_20k_v1", 1, 'Y', 40);
+INSERT INTO source VALUES (2862, "ARRAY_LIV_AEGDETOX_0.25k_v1", 1, 'Y', 40);
 
 # aedes aegypti
 INSERT INTO source (source_id,name,release,download,ordered) VALUES ('7159', 'AedesGenBank','1','Y','30') ;
@@ -798,6 +804,13 @@ INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_d
 # GO
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (1070, 7165,'ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/UNIPROT/gene_association.goa_uniprot.gz', now(), now(), "GOParser");
 
+# VectorBase Arrays
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (2857, 7165,'LOCAL:Anopheles_gambiae/IC/IC_MMC1_20k_v1.txt', now(), now(), "VbDirectParser");
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (2858, 7165,'LOCAL:Anopheles_gambiae/IC/IC_MMC2_12k_v1.txt', now(), now(), "VbDirectParser");
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (2859, 7165,'LOCAL:Anopheles_gambiae/JHU/JHU_GAM3.0_21k_v1.txt', now(), now(), "VbDirectParser");
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (2860, 7165,'LOCAL:Anopheles_gambiae/LIV/LIV_AEGDETOX_0.25k_v1.txt', now(), now(), "VbDirectParser");
+
+
 # --------------------------------------------------------------------------------
 
 
@@ -821,6 +834,11 @@ INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_d
 
 # GO
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (1070, 7159,'ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/UNIPROT/gene_association.goa_uniprot.gz', now(), now(), "GOParser");
+
+# Vectorbase Arrays
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (2861, 7159,'LOCAL:Aedes_aegypti/JHU/JHU_AEG1.0_20k_v1.txt', now(), now(), "VbDirectParser");
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (2862, 7159,'LOCAL:Aedes_aegypti/LIV/LIV_AEGDETOX_0.25k_v1.txt', now(), now(), "VbDirectParser");
+
 
 # --------------------------------------------------------------------------------
 
