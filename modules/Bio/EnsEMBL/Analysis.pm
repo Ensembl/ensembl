@@ -32,8 +32,9 @@ Bio::EnsEMBL::Analysis.pm - Stores details of an analysis run
         -module_version  => $module_version,
         -parameters      => $parameters,
         -created         => $created,
-        -desccription    => 'some warm words about this analysis'
-	-display_label   => 'UNIprot alignment'
+        -description     => 'some warm words about this analysis',
+	-display_label   => 'UNIprot alignment',
+        -displayable     => '1'
         );
 
 =head1 DESCRIPTION
@@ -89,12 +90,13 @@ use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 
 sub new {
   my($class,@args) = @_;
-  
+
   my $self = bless {},$class;
-   
+
   my ($id, $adaptor, $db, $db_version, $db_file, $program, $program_version,
       $program_file, $gff_source, $gff_feature, $module, $module_version,
-      $parameters, $created, $logic_name, $description, $display_label ) = 
+      $parameters, $created, $logic_name, $description, $display_label, 
+      $displayable) = 
 
 	  rearrange([qw(ID
 	  			ADAPTOR
@@ -113,6 +115,7 @@ sub new {
 				LOGIC_NAME
 			        DESCRIPTION
                                 DISPLAY_LABEL
+			        DISPLAYABLE
 				)],@args);
 
   $self->dbID             ($id);
@@ -132,6 +135,7 @@ sub new {
   $self->logic_name ( $logic_name );
   $self->description( $description );
   $self->display_label( $display_label );
+  $self->displayable( $displayable );
   return $self; # success - we hope!
 }
 
@@ -502,6 +506,29 @@ sub display_label {
     return $self->{_display_label};
 }
 
+=head2 displayable
+
+  Arg [1]    : string $displayable
+  Example    : none
+  Description: get/set for attribute displayable
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub displayable {
+    my ($self,$arg) = @_;
+
+    if (defined($arg)) {
+	$self->{_displayable} = $arg;
+    }
+
+    return $self->{_displayable};
+}
+
+
 =head2 compare
 
   Arg  1     : Bio::EnsEMBL::Analysis $ana
@@ -519,10 +546,10 @@ sub display_label {
 
 sub compare {
   my ($self, $ana ) = @_;
-  
+
   throw("Object is not a Bio::EnsEMBL::Analysis") 
     unless $ana->isa("Bio::EnsEMBL::Analysis");
-  
+
   my $detail = 0;
 
   foreach my $methodName ( 'program', 'program_version', 'program_file',
@@ -530,10 +557,10 @@ sub compare {
     'module_version', 'parameters','logic_name' ) {
     if( defined $self->$methodName() && ! $ana->can($methodName )) {
       $detail = 1;
-    } 
+    }
     if( defined $self->$methodName() && ! defined $ana->$methodName() ) {
       $detail = 1;
-    } 
+    }
     # if given anal is different from this, defined or not, then its different
     if( defined($ana->$methodName()) && defined($self->$methodName()) &&
         ( $self->$methodName() ne $ana->$methodName() )) {
