@@ -23,6 +23,10 @@ ALTER table density_feature ADD FOREIGN KEY (seq_region_id) REFERENCES seq_regio
 
 ALTER table density_type ADD FOREIGN KEY (analysis_id) REFERENCES analysis(analysis_id);
 
+ALTER table ditag_feature ADD FOREIGN KEY (ditag_id) REFERENCES ditag(ditag_id);
+ALTER table ditag_feature ADD FOREIGN KEY (seq_region_id) REFERENCES seq_region(seq_region_id);
+ALTER table ditag_feature ADD FOREIGN KEY (analysis_id) REFERENCES analysis(analysis_id);
+
 ALTER table dna ADD FOREIGN KEY (seq_region_id) REFERENCES seq_region(seq_region_id);
 
 ALTER table dna_align_feature ADD FOREIGN KEY (analysis_id) REFERENCES analysis(analysis_id);
@@ -45,6 +49,8 @@ ALTER table gene ADD FOREIGN KEY (seq_region_id) REFERENCES seq_region(seq_regio
 
 ALTER table gene_attrib ADD FOREIGN KEY (attrib_type_id) REFERENCES attrib_type(attrib_type_id);
 ALTER table gene_attrib ADD FOREIGN KEY (gene_id) REFERENCES gene(gene_id);
+
+ALTER table gene_archive ADD FOREIGN KEY (mapping_session_id) REFERENCES mapping_session (mapping_session_id);
 
 ALTER table gene_stable_id ADD FOREIGN KEY (gene_id) REFERENCES gene(gene_id);
 
@@ -83,6 +89,7 @@ ALTER table oligo_array ADD FOREIGN KEY (parent_array_id) REFERENCES oligo_array
 
 ALTER table oligo_feature ADD FOREIGN KEY (analysis_id) REFERENCES analysis(analysis_id);
 ALTER table oligo_feature ADD FOREIGN KEY (seq_region_id) REFERENCES seq_region(seq_region_id);
+ALTER table oligo_feature ADD FOREIGN KEY (oligo_probe_id) REFERENCES oligo_probe (oligo_probe_id);
 
 ALTER table oligo_probe ADD FOREIGN KEY (oligo_array_id) REFERENCES oligo_array(oligo_array_id);
 
@@ -159,3 +166,4 @@ ALTER table unmapped_object ADD FOREIGN KEY (external_db_id) REFERENCES external
 ALTER table unmapped_object ADD FOREIGN KEY (unmapped_reason_id) REFERENCES unmapped_reason(unmapped_reason_id);
 
 ALTER table xref ADD FOREIGN KEY (external_db_id) REFERENCES external_db(external_db_id);
+
