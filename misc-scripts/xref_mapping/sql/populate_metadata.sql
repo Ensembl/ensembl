@@ -804,25 +804,11 @@ INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_d
 # GO
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (1070, 7165,'ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/UNIPROT/gene_association.goa_uniprot.gz', now(), now(), "GOParser");
 
-<<<<<<< populate_metadata.sql
 # VectorBase Arrays
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (2857, 7165,'LOCAL:Anopheles_gambiae/IC/IC_MMC1_20k_v1.txt', now(), now(), "VbDirectParser");
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (2858, 7165,'LOCAL:Anopheles_gambiae/IC/IC_MMC2_12k_v1.txt', now(), now(), "VbDirectParser");
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (2859, 7165,'LOCAL:Anopheles_gambiae/JHU/JHU_GAM3.0_21k_v1.txt', now(), now(), "VbDirectParser");
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (2860, 7165,'LOCAL:Anopheles_gambiae/LIV/LIV_GAMDETOX_0.25k_v1.txt', now(), now(), "VbDirectParser");
-
-
-=======
-# VectorBase Arrays
-INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (2857, 7165,'LOCAL:Anopheles_gambiae/IC/IC_MMC1_20k_v1.txt', now(), now(), "VbDirectParser");
-INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (2858, 7165,'LOCAL:Anopheles_gambiae/IC/IC_MMC2_12k_v1.txt', now(), now(), "VbDirectParser");
-INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (2859, 7165,'LOCAL:Anopheles_gambiae/JHU/JHU_GAM3.0_21k_v1.txt', now(), now(), "VbDirectParser");
-INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (2860, 7165,'LOCAL:Anopheles_gambiae/LIV/LIV_GAMDETOX_0.25k_v1.txt', now(), now(), "VbDirectParser");
-
-
->>>>>>> 1.102
-# --------------------------------------------------------------------------------
-
 
 ###### Aedes 
 
