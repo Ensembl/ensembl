@@ -41,11 +41,10 @@ my %translation_to_transcript;
 my %transcript_to_translation;
 my %genes_to_transcripts;
 my %internal_id_to_stable_id;
-my %object_xref_identities;
 my %xref_descriptions;
-my %xref_labels;
 my %xrefs_written;
-my %object_xrefs_written;
+my %object_xrefs_written;        # Needed in case an xref if matched to one enembl object
+                                 # by more than one method. On the display we only want to see it once.
 my %failed_xref_mappings;
 my %updated_source;
 
@@ -944,9 +943,7 @@ sub parse_mappings {
     $total_files++;
 
     # files are named Method_(dna|peptide)_N.map
-#    my $type = get_ensembl_object_type($file);
-#
-#    my $method = get_method($file);
+
     my ($method, $type, $part) = get_parts($file);
     
     if($type =~ 'Translation'){
@@ -997,8 +994,8 @@ sub parse_mappings {
 
       # store query & target identities
       # Note this is a hash (type|object id) of hashes (xref id) of hashes ("query_identity" or "target_identity")
-      $object_xref_identities{$key}->{$xref_id}->{"query_identity"} = $query_identity;
-      $object_xref_identities{$key}->{$xref_id}->{"target_identity"} = $target_identity;
+#      $object_xref_identities{$key}->{$xref_id}->{"query_identity"} = $query_identity;
+#      $object_xref_identities{$key}->{$xref_id}->{"target_identity"} = $target_identity;
 
       # note the NON-OFFSET xref_id is stored here as the values are used in
       # a query against the original xref database
@@ -1830,8 +1827,8 @@ sub dump_core_xrefs {
 
 	    # Also store *parent's* query/target identity for dependent xrefs
 	    print GO_XREF $object_xref_id . "\t" . $linkage_annotation . "\n"  if ($source_id == $go_source_id);
-	    $object_xref_identities{$key}->{$xref_id}->{"target_identity"} = $object_xref_identities{$key}->{$master_xref_id}->{"target_identity"};
-	    $object_xref_identities{$key}->{$xref_id}->{"query_identity"} = $object_xref_identities{$key}->{$master_xref_id}->{"query_identity"};
+#	    $object_xref_identities{$key}->{$xref_id}->{"target_identity"} = $object_xref_identities{$key}->{$master_xref_id}->{"target_identity"};
+#	    $object_xref_identities{$key}->{$xref_id}->{"query_identity"} = $object_xref_identities{$key}->{$master_xref_id}->{"query_identity"};
 
 	    # write a go_xref with the appropriate linkage type
 	    $object_xref_id++;
@@ -1861,15 +1858,15 @@ sub dump_core_xrefs {
   close(EXTERNAL_SYNONYM);
   close(GO_XREF);
 
-  # calculate display_xref_ids for transcripts and genes
-  my $transcript_display_xrefs = $self->build_transcript_display_xrefs($xref_id_offset);
+#  # calculate display_xref_ids for transcripts and genes
+#  my $transcript_display_xrefs = $self->build_transcript_display_xrefs($xref_id_offset);
   
-  $self->build_genes_to_transcripts();
+#  $self->build_genes_to_transcripts();
 
-  $self->build_gene_display_xrefs($transcript_display_xrefs);
+#  $self->build_gene_display_xrefs($transcript_display_xrefs);
 
-  # now build gene descriptions
-  $self->build_gene_descriptions();
+#  # now build gene descriptions
+#  $self->build_gene_descriptions();
 
   return $object_xref_id;
 
@@ -1916,10 +1913,8 @@ sub build_transcript_and_gene_display_xrefs {
   my ($self) = @_;
   my $dir = $self->core->dir();
 
-  #IANIANIAN
   # only load the xrefs which are used in the setting of descriptions
   # see transcript_display_xref_sources;
-  # In fact bollocks to most of this just use the object_xref table for each transcipt
 
   # get the priority for the xrefs  (this is the display xref priority)
   # for each transcript {
@@ -1993,7 +1988,6 @@ ESQL
     my %gene_score;
     my %trans_score;
     $level++;
-    print "\t".$ord."\n";
 
     if(defined($external_name_to_id{$ord})){
       $psth->execute($external_name_to_id{$ord}) || die "execute failed";
@@ -2112,16 +2106,18 @@ ESQL
       print GENE_DX_TXT $best_xref . "\t" . $gene_id ."\n";
       
     }
-    else{
-      print GENE_DX "UPDATE gene g SET g.display_xref_id=NULL". 
-	" WHERE g.gene_id=" . $gene_id . ";\n";
-      print GENE_DX_TXT "NULL\t" . $gene_id ."\n";
-      
-    }
+# already set to NULL
+#    else{
+#      print GENE_DX "UPDATE gene g SET g.display_xref_id=NULL". 
+#	" WHERE g.gene_id=" . $gene_id . ";\n";
+#      print GENE_DX_TXT "NULL\t" . $gene_id ."\n";
+#     
+#    }
   }
   close GENE_DX;
   close GENE_DX_TXT;
-  die "OKAY THATS ENOUGH FOR NOW\n";
+#IAN
+
   return;
 
 }
@@ -2147,8 +2143,6 @@ sub transcript_display_xref_sources {
 	  'RefSeq_peptide',
 	  'RefSeq_dna',
 	  'Uniprot/SPTREMBL',
-	  'RefSeq_peptide_predicted',
-	  'RefSeq_dna_predicted',
 	  'EntrezGene');
 
 }
@@ -2318,15 +2312,47 @@ sub do_upload {
   }     
   close CLEAN;
   
-  
+
+
   foreach my $table ("go_xref", "interpro") {
+    my $file = $ensembl->dir() . "/" . $table . ".txt";
     
-    my $sth = $core_db->prepare("DELETE FROM $table");
-    print "Deleting existing data in $table\n";
-    $sth->execute();
-    
+    if(-s $file){ 
+      my $sth = $core_db->prepare("DELETE FROM $table");
+      print "Deleting existing data in $table\n";
+      $sth->execute();
+    }
   }
   
+  print "Uploading new data\n";
+  foreach my $table ("xref", "object_xref", "identity_xref", "external_synonym", 
+		     "go_xref", "interpro", "unmapped_object") {
+
+    my $file = $ensembl->dir() . "/" . $table . ".txt";
+
+    if(-s $file){
+      my $sth = $core_db->prepare("LOAD DATA INFILE \'$file\' IGNORE INTO TABLE $table");
+      print "Uploading data in $file to $table\n";
+      $sth->execute();
+    }
+    else{
+      print "NO file or zero size file, so not able to load file $file to $table\n";
+    }
+  }
+
+}
+
+sub genes_and_transcripts_attributes_set{
+  my ($self) = @_;
+
+  my $ensembl = $self->core;
+  my $core_db = $ensembl->dbc;
+  #use the core data that is already there.
+
+  $self->build_transcript_and_gene_display_xrefs();
+  $self->new_build_gene_descriptions();
+
+
   # gene & transcript display_xrefs
   my $sth = $core_db->prepare(<<GADES);
   UPDATE gene g 
@@ -2350,22 +2376,6 @@ TRAN
 GENE
   print "Setting all existing descriptions in gene table to null\n";
   $sth->execute();
-
-  print "Uploading new data\n";
-  foreach my $table ("xref", "object_xref", "identity_xref", "external_synonym", 
-		     "go_xref", "interpro", "unmapped_object") {
-
-    my $file = $ensembl->dir() . "/" . $table . ".txt";
-
-    if(-e $file){
-      my $sth = $core_db->prepare("LOAD DATA INFILE \'$file\' IGNORE INTO TABLE $table");
-      print "Uploading data in $file to $table\n";
-      $sth->execute();
-    }
-    else{
-      print "NO file $file to load??????\n";
-    }
-  }
 
   # gene_display_xref.sql etc
   foreach my $table ("gene", "transcript") {
@@ -2423,8 +2433,9 @@ GENE
   my $mysql_command = $self->get_mysql_command($core_db);
   system( "$mysql_command < $file" ) == 0 
       or print( "ERROR: parsing $file in mysql\n" );
-
 }
+
+
 
 # Assign gene descriptions
 # Algorithm:
@@ -2468,7 +2479,7 @@ sub new_build_gene_descriptions{
   if(scalar(@regexps) == 0){
     die "shit no reg exps\n";
   }
-  print "regexp ".scalar(@regexps)."\n";
+#  print "regexp ".scalar(@regexps)."\n";
   my @sources = $self->gene_description_sources();
 
   if(!scalar(keys %translation_to_transcript)){
@@ -2506,7 +2517,7 @@ sub new_build_gene_descriptions{
 ESQL
 
   my $sth = $self->core->dbc->prepare($sql) || die "prepare failed for $sql\n";
-  print $sql."\n";
+#  print $sql."\n";
   my ($xref_id, $acc, $description);
   
   my $level = 0;
@@ -2517,7 +2528,7 @@ ESQL
     $level++;
     if(defined($external_name_to_id{$source})){
       $sth->execute($external_name_to_id{$source}) || die "execute failed";
-      print $level.")\t".$source."\t".$external_name_to_id{$source}."\n";
+#      print $level.")\t".$source."\t".$external_name_to_id{$source}."\n";
       $sth->bind_columns(\$xref_id, \$acc, \$description);
       while($sth->fetch()){
 	$checked++;
@@ -2577,7 +2588,7 @@ ETSQL
     $level++;
     
     if(defined($external_name_to_id{$ord})){
-      print $level."\t".$ord."\n";
+#      print $level."\t".$ord."\n";
       $psth->execute($external_name_to_id{$ord}) || die "execute failed";
       $psth->bind_columns(\$ensembl_id, \$ens_type, \$xref_id, \$qid, \$tid);
       while($psth->fetch()){
@@ -2640,10 +2651,6 @@ ETSQL
       print "Ignoring $ord as this does not appear in the table external_db\n"; 
     }	  
   }
-
-
-  print "OLD: ".$trans_best_hit{"249026"}."\t".$trans_score{"249026"}."\n";
-  print "NEW: ".$trans_best_hit{"248954"}."\t".$trans_score{"248954"}."\n";
 
   print  "number of best transcripts id ".scalar( keys %trans_best_hit)."\n";
   
@@ -2816,146 +2823,6 @@ ETSQL
 
 
 
-sub build_gene_descriptions {
-
-  my ($self) = @_;
-
-  # TODO - don't call this from, but after, gene_display_xref
-
-  # Get all xref descriptions, filtered by regexp.
-  # Discard any that are blank (i.e. regexp has removed everything)
-
-  print "Getting & filtering xref descriptions\n";
- # Note %xref_descriptions & %xref_accessions are global
-
-  my $sth = $self->xref->dbc->prepare("SELECT xref_id, accession, description FROM xref");
-  $sth->execute();
-  my ($xref_id, $accession, $description);
-  $sth->bind_columns(\$xref_id, \$accession, \$description);
-
-  my $removed = 0;
-  my @regexps = $self->gene_description_filter_regexps();
-  while ($sth->fetch()) {
-    if ($description) {
-      my $filtered_description = $self->filter_by_regexp($description, \@regexps);
-      if ($filtered_description ne "") {
-	$xref_descriptions{$xref_id} = $description;
-	$xref_accessions{$xref_id} = $accession;
-      } else {
-	$removed++;
-      }
-    }
-  }
-
-  print "Regexp filtering (" . scalar(@regexps) . " regexps) removed $removed descriptions, left with " . scalar(keys %xref_descriptions) . "\n";
-
-  my $dir = $self->core->dir();
-  open(GENE_DESCRIPTIONS,">$dir/gene_description.sql") || die "Could not open $dir/gene_description.sql";
-
-  # Foreach gene, get any xrefs associated with its transcripts or translations
-
-  # just in case species specific routines missed the population of the
-  # needed hashes. Check an populate if miising.
-  if(!scalar(keys %translation_to_transcript)){
-    print "Building translation to transcript mappings\n";
-    $sth = $self->core->dbc->prepare("SELECT translation_id, transcript_id FROM translation");
-    $sth->execute();
-    
-    my ($translation_id, $transcript_id);
-    $sth->bind_columns(\$translation_id, \$transcript_id);
-    
-    while ($sth->fetch()) {
-      $translation_to_transcript{$translation_id} = $transcript_id;
-      $transcript_to_translation{$transcript_id} = $translation_id if ($translation_id);
-    }
-  }
-  if(!scalar(keys %xref_to_source)){
-    print "Building xref->source mapping table\n";
-    my $sql = "SELECT x.xref_id, s.name FROM source s, xref x WHERE x.source_id=s.source_id";
-    my $sth = $self->xref->dbc->prepare($sql);
-    $sth->execute();
-
-    my ($xref_id, $source_name);
-    $sth->bind_columns(\$xref_id, \$source_name);
-
-    while ($sth->fetch()) {
-      $xref_to_source{$xref_id} = $source_name;
-    }
-
-    print "Got " . scalar(keys %xref_to_source) . " xref-source mappings\n";
-
-  }
-
-
-  print "Assigning gene descriptions\n";
-
-
-  foreach my $gene_id (keys %genes_to_transcripts) {
-
-    my @gene_xrefs;
-
-    my %local_xref_to_object;
-
-    my @transcripts = @{$genes_to_transcripts{$gene_id}};
-    foreach my $transcript (@transcripts) {
-
-      my @xref_ids;
-
-      my $key = "Transcript|$transcript";
-      if ($object_xref_mappings{$key}) {
-
-	@xref_ids = @{$object_xref_mappings{$key}};
-	push @gene_xrefs, @xref_ids;
-	foreach my $xref (@xref_ids) {
-	  $local_xref_to_object{$xref} = $key;
-	}
-
-      }
-
-      my $translation = $transcript_to_translation{$transcript};
-      $key = "Translation|$translation";
-      if ($object_xref_mappings{$key}) {
-
-	@xref_ids = @{$object_xref_mappings{$key}};
-	push @gene_xrefs, @xref_ids ;
-	foreach my $xref (@xref_ids) {
-	  $local_xref_to_object{$xref} = $key;
-	}
-      }
-
-    }
-
-    # Now sort through these and find the "best" description and write it
-
-    if (@gene_xrefs) {
-
-      @gene_xrefs = sort {compare_xref_descriptions($self->consortium(), $gene_id, \%local_xref_to_object)} @gene_xrefs;
-
-      my $best_xref = $self->get_best(\@gene_xrefs);
-      my $source = $xref_to_source{$best_xref};
-
-      # only store the description if its source is one of the allowed ones
-      if (find_in_list($source, $self->gene_description_sources()) > -1) {
-
-	my $description = $xref_descriptions{$best_xref};
-	my $acc = $xref_accessions{$best_xref};
-
-	$description =~ s/\"//ig; # remove " as they will cause problems in .sql files
-
-	my $desc = $description . " [Source:$source;Acc:$acc]";
-
-	print GENE_DESCRIPTIONS "UPDATE gene g SET g.description=\"$desc\" ".
-	                          "WHERE g.gene_id=$gene_id;\n" if ($description);
-
-      }
-
-    }
-
-  } # foreach gene
-
-  close(GENE_DESCRIPTIONS);
-
-}
 # Check if any .err files exist that have non-zero size;
 # this indicates that something has gone wrong with the exonerate run
 
@@ -3140,73 +3007,70 @@ GENE
 # Assumed this function is called by Perl sort, passed with parameter
 # See comment for build_gene_descriptions for how precedence is decided.
 
-sub compare_xref_descriptions {
+#sub compare_xref_descriptions {
 
-  my ($consortium, $gene_id, $xref_to_object) = @_;
+#  my ($consortium, $gene_id, $xref_to_object) = @_;
 
-  my @sources = gene_description_sources();
-  push @sources, $consortium;
+#  my @sources = gene_description_sources();
+#  push @sources, $consortium;
 
-  my @words = qw(unknown hypothetical putative novel probable [0-9]{3} kDa fragment cdna protein);
+#  my @words = qw(unknown hypothetical putative novel probable [0-9]{3} kDa fragment cdna protein);
 
-  my $src_a = $xref_to_source{$a};
-  my $src_b = $xref_to_source{$b};
-  my $pos_a = find_in_list($src_a, @sources);
-  my $pos_b = find_in_list($src_b, @sources);
+#  my $src_a = $xref_to_source{$a};
+#  my $src_b = $xref_to_source{$b};
+#  my $pos_a = find_in_list($src_a, @sources);
+#  my $pos_b = find_in_list($src_b, @sources);
 
-  # If same source, need to do more work
-  if ($pos_a == $pos_b) {
+#  # If same source, need to do more work
+#  if ($pos_a == $pos_b) {
 
-   if ($src_a eq "Uniprot/SWISSPROT" || $src_a =~ /RefSeq/) {
+#   if ($src_a eq "Uniprot/SWISSPROT" || $src_a =~ /RefSeq/) {
 
-     # Compare on query identities, then target identities if queries are the same
-     my $key_a = $xref_to_object->{$a}; # e.g. "Translation|1234"
-     my $key_b = $xref_to_object->{$b};
-     my ($type_a, $object_a) = split(/\|/, $key_a);
-     my ($type_b, $object_b) = split(/\|/, $key_b);
+#     # Compare on query identities, then target identities if queries are the same
+#     my $key_a = $xref_to_object->{$a}; # e.g. "Translation|1234"
+#     my $key_b = $xref_to_object->{$b};
+#     my ($type_a, $object_a) = split(/\|/, $key_a);
+#     my ($type_b, $object_b) = split(/\|/, $key_b);
 
-     return 0 if ($type_a != $type_b); # only compare like with like
+#     return 0 if ($type_a != $type_b); # only compare like with like
 
-     my $query_identity_a = $object_xref_identities{$key_a}->{$a}->{"query_identity"};
-     my $query_identity_b = $object_xref_identities{$key_b}->{$b}->{"query_identity"};
+#     my $query_identity_a = $object_xref_identities{$key_a}->{$a}->{"query_identity"};
+#     my $query_identity_b = $object_xref_identities{$key_b}->{$b}->{"query_identity"};
 
-     #print "gene 78163 " . $xref_accessions{$a} . " key a $key_a qia $query_identity_a " . $xref_accessions{$b} . " key b $key_b qib $query_identity_b \n" if ($gene_id==78163);
-     return ($query_identity_a <=> $query_identity_b) if ($query_identity_a != $query_identity_b);
+#     return ($query_identity_a <=> $query_identity_b) if ($query_identity_a != $query_identity_b);
 
-     my $target_identity_a = $object_xref_identities{$key_a}->{$a}->{"target_identity"};
-     my $target_identity_b = $object_xref_identities{$key_b}->{$b}->{"target_identity"};
+#     my $target_identity_a = $object_xref_identities{$key_a}->{$a}->{"target_identity"};
+#     my $target_identity_b = $object_xref_identities{$key_b}->{$b}->{"target_identity"};
 
-     return ($target_identity_a <=> $target_identity_b);
+#     return ($target_identity_a <=> $target_identity_b);
 
-   } elsif ($src_a eq "Uniprot/SPTREMBL") {
+#   } elsif ($src_a eq "Uniprot/SPTREMBL") {
 
-     # Compare on words
-     my $wrd_idx_a = find_match($xref_descriptions{$a}, @words);
-     my $wrd_idx_b = find_match($xref_descriptions{$b}, @words);
-     return $wrd_idx_a <=> $wrd_idx_b;
+#     # Compare on words
+#     my $wrd_idx_a = find_match($xref_descriptions{$a}, @words);
+#     my $wrd_idx_b = find_match($xref_descriptions{$b}, @words);
+#     return $wrd_idx_a <=> $wrd_idx_b;
 
-   } else {
+#   } else {
 
-     return 0;
+#     return 0;
 
-   }
-    return 0;
+#   }
+#    return 0;
 
-  } else {
+#  } else {
 
-    return $pos_a <=> $pos_b;
+#    return $pos_a <=> $pos_b;
 
-  }
-}
+#  }
+#}
 
 # list of sources to be used when building gene descriptions
 # sorted into increasing order of priority
 
 sub gene_description_sources {
 
-  return ("RefSeq_dna_predicted",
-	  "RefSeq_peptide_predicted",
-	  "Uniprot/SPTREMBL",
+  return ("Uniprot/SPTREMBL",
 	  "Uniprot/Varsplic",
 	  "RefSeq_dna",
 	  "RefSeq_peptide",
@@ -3266,19 +3130,19 @@ sub upload_external_db {
 
 
 # Cache xref labels for debugging purposes
-
-sub cache_xref_labels {
-
-  my ($self,$xref_dbc) = @_;
-
-  print "Caching xref labels\n";
-  my $sth = $xref_dbc->prepare("SELECT xref_id, label FROM xref");
-  $sth->execute();
-  while(my @row = $sth->fetchrow_array()){
-    $xref_labels{$row[0]} = $row[1];
-  }
-
-}
+#
+#sub cache_xref_labels {
+#
+#  my ($self,$xref_dbc) = @_;
+#
+#  print "Caching xref labels\n";
+#  my $sth = $xref_dbc->prepare("SELECT xref_id, label FROM xref");
+#  $sth->execute();
+#  while(my @row = $sth->fetchrow_array()){
+#    $xref_labels{$row[0]} = $row[1];
+#  }
+#
+#}
 sub get_xref_descriptions{
   return \%xref_descriptions;
 }
@@ -3576,6 +3440,7 @@ sub delete_unmapped {
 
   my $self = shift;
 
+  print "NEED to change this to only delete the unmapped objects of those being updated.\n";
   my $sth = $self->core->dbc->prepare("DELETE FROM unmapped_object WHERE type='xref'");
   print "Deleting data from unmapped_object table\n";
   $sth->execute();
