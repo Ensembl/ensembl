@@ -338,15 +338,20 @@ $mapper->parse_mappings($notriage);
 
 $mapper->delete_unmapped() if ($delete_unmapped);
 
-$mapper->do_upload() if ($upload);
+if($upload){
 
-print "\nChecking pair data\n" if($upload);
-$mapper->add_missing_pairs() if($upload);
+  $mapper->do_upload();
 
-#$mapper->check_pairs() if(!$upload);
+  print "\nChecking pair data\n";
+  $mapper->add_missing_pairs();
 
-print "\nChecking xrefs\n" if ($upload);
-$mapper->cleanup_database() if ($upload);
+  print "\nChecking xrefs\n";
+  $mapper->cleanup_database();
+
+
+  $mapper->genes_and_transcripts_attributes_set();
+
+}
 
 print  "*** All finished ***\n";
 
