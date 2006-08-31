@@ -65,7 +65,8 @@ use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 =cut
 
 sub new {
-  my $class = shift;
+  my $caller = shift;
+  my $class = ref($caller) || $caller;
 
   my ($logfile, $logpath, $logappend, $verbose, $is_component) = rearrange(
     ['LOGFILE', 'LOGPATH', 'LOGAPPEND', 'VERBOSE', 'IS_COMPONENT'], @_);

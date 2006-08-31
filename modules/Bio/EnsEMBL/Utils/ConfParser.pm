@@ -69,7 +69,8 @@ use Bio::EnsEMBL::Utils::Logger;
 =cut
 
 sub new {
-  my $class = shift;
+  my $caller = shift;
+  my $class = ref($caller) || $caller;
 
   my ($serverroot) = rearrange(['SERVERROOT'], @_);
 
