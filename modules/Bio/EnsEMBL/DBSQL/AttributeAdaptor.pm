@@ -44,6 +44,8 @@ use warnings;
 
 package Bio::EnsEMBL::DBSQL::AttributeAdaptor;
 
+use DBI ':sql_types';
+
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Bio::EnsEMBL::Attribute;
 
