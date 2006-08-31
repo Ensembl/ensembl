@@ -2073,8 +2073,6 @@ sub transcript_display_xref_sources {
 	  'flybase_symbol',
 	  'Anopheles_symbol',
 	  'Genoscope_annotated_gene',
-	  'Genoscope_predicted_transcript',
-	  'Genoscope_predicted_gene',
 	  'Uniprot/SWISSPROT',
 	  'Uniprot/Varsplic',
 	  'RefSeq_peptide',
@@ -2721,16 +2719,6 @@ sub filter_by_regexp {
 sub gene_description_filter_regexps {
 
   return ();
-
-}
-
-
-# The "consortium" source for this species, should be the same as in
-# source table
-
-sub consortium {
-
-  return "xxx"; # Default to something that won't be matched as a source
 
 }
 

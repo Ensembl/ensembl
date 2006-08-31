@@ -21,7 +21,14 @@ sub consortium {
 
 sub gene_description_sources {
 
-  return ("RefSeq_dna_predicted", "RefSeq_peptide_predicted", "Uniprot/SPTREMBL", "RefSeq_dna", "RefSeq_peptide", "Uniprot/Varsplic", "Uniprot/SWISSPROT", "MarkerSymbol", "RFAM", "miRNA_Registry");
+  return ("Uniprot/SPTREMBL", 
+	  "RefSeq_dna", 
+	  "RefSeq_peptide", 
+	  "Uniprot/Varsplic", 
+	  "Uniprot/SWISSPROT", 
+	  "MarkerSymbol",
+	  "RFAM", 
+	  "miRNA_Registry");
 
 }
 
@@ -57,40 +64,6 @@ sub special_filter {
           '^\s+\(?\s*$');
 }
 
-sub get_best {
-  my ($self,$xrefref,$gene_id) =@_;
-
-  my @refs = @{$xrefref};
-  my @mouseregexps = $self->special_filter();
-  my $check =0;
-  my $new_best;
-  my $best_xref = @refs[-1];
-
- 
-  my $xref_descriptions = $self->get_xref_descriptions();
-  my $xref_accessions = $self->get_xref_accessions();
- 
-
-  while(!$check){
-
-    $new_best = pop(@refs);
-    
-    if($new_best){
-      my $description = $self->filter_by_regexp($xref_descriptions->{$new_best}, \@mouseregexps);
-      
-      
-      if ($description ne "") {
-	$best_xref = $new_best;
-	$check=1;
-      }
-    }
-    else{
-      $check= 1;
-    }
-  }
-  
-  return $best_xref;
-}
 
 sub gene_description_filter_regexps {
 
