@@ -76,16 +76,17 @@ my $conf = new Bio::EnsEMBL::Utils::ConfParser(
 $conf->param('default_conf', './default.conf');
 $conf->parse_common_options(@_);
 $conf->parse_extra_options(qw(
-  oldhost|old_host=s
-  oldport|old_port=n
-  olduser|old_user=s
-  oldpass|old_pass=s
-  olddbname|old_dbname=s
-  newhost|new_host=s
-  newport|new_port=n
-  newuser|new_user=s
-  newpass|new_pass=s
-  newdbname|new_dbname=s
+  sourcehost|source_host=s
+  sourceport|source_port=n
+  sourceuser|source_user=s
+  sourcepass|source_pass=s
+  sourcedbname|source_dbname=s
+  targethost|target_host=s
+  targetport|target_port=n
+  targetuser|target_user=s
+  targetpass|target_pass=s
+  targetdbname|target_dbname=s
+  mode=s
   dumppath|dump_path=s
   cachefile|cache_file=s
   chromosomes|chr=s@
@@ -95,8 +96,9 @@ $conf->parse_extra_options(qw(
 $conf->allowed_params(
   $conf->get_common_params,
   qw(
-    oldhost oldport olduser oldpass olddbname
-    newhost newport newuser newpass newdbname
+    sourcehost sourceport sourceuser sourcepass sourcedbname
+    targethost targetport targetuser targetpass targetdbname
+    mode
     dumppath cachefile
     chromosomes region biotypes
   )
@@ -124,44 +126,43 @@ $logger->init_log($conf->list_all_params);
 # check required parameters were set
 $conf->check_required_params(
   qw(
-    oldhost oldport olduser olddbname
-    newhost newport newuser newdbname
+    sourcehost sourceport sourceuser sourcedbname
+    targethost targetport targetuser targetdbname
     dumppath
   )
 );
 
-# dump cache files
-my $options = $conf->create_commandline_options(
+# define options for the components
+my %options;
+
+$options{'dump_cache'} = $conf->create_commandline_options(
     -ALLOWED_PARAMS => 1,
     -REPLACE => {
         interactive => 0,
         is_component => 1,
     },
+    -EXCLUDE => [qw(mode)]
 );
-&run_component('dump_cache.pl', $options, 'building cache');
 
-# ID mapping
-$options = $conf->create_commandline_options(
+$options{'id_mapping'} = $conf->create_commandline_options(
     -ALLOWED_PARAMS => 1,
     -REPLACE => {
         interactive => 0,
         is_component => 1,
     },
     -EXCLUDE => [qw(
-        oldhost oldport olduser oldpass olddbname
-        newhost newport newuser newpass newdbname
+        sourcehost sourceport sourceuser sourcepass sourcedbname
+        targethost targetport targetuser targetpass targetdbname
     )]
 );
-&run_component('id_mapping.pl', $options, 'Id mapping');
 
-# archive
-#&run_component('archive.pl', $options, 'archive');
+# dump cache files (this is done for all modes)
+&run_component('dump_cache.pl', $options{'dump_cache'}, 'building cache');
 
-# reporting
-#&run_component('report.pl', $options, 'creating report');
-
-# QC
-#&run_component('qc.pl', $options, 'QC');
+# run components, depending on mode
+my $mode = $conf->param('mode') || 'normal';
+no strict 'refs';
+&run_$mode;
 
 
 # finish logfile
@@ -169,6 +170,22 @@ $logger->finish_log;
 
 
 ### END main ###
+
+
+sub run_normal {
+  # ID mapping
+  &run_component('id_mapping.pl', $options{'id_mapping'}, 'Id mapping');
+
+  # archive
+  #&run_component('archive.pl', $options{'archive'}, 'archive');
+
+  # reporting
+  #&run_component('report.pl', $options{'report'}, 'creating report');
+
+  # QC
+  #&run_component('qc.pl', $options{'qc'}, 'QC');
+}
+
 
 sub run_component {
   my $cmd = shift;

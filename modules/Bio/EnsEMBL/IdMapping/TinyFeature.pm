@@ -29,6 +29,14 @@ Please post comments/questions to the Ensembl development list
 =cut
 
 
+# internal data structure (array indices):
+#
+#  0  dbID
+#  1  stable_id
+#
+# other instance variables differ by subclass implementation, so look there.
+
+
 use strict;
 use warnings;
 no warnings 'uninitialized';
@@ -45,69 +53,15 @@ sub new_fast {
 
 sub id {
   my $self = shift;
-  $self->[1] = shift if (@_);
-  return $self->[1];
+  $self->[0] = shift if (@_);
+  return $self->[0];
 }
 
 
 sub stable_id {
   my $self = shift;
-  $self->[2] = shift if (@_);
-  return $self->[2];
-}
-
-
-sub add_Transcript {
-  my $self = shift;
-  my $tr = shift;
-
-  unless ($self->[0] eq 'g' and $tr->[0] eq 'tr') {
-    throw('You can only add transcripts to a gene.');
-  }
-
-  push @{ $self->[9] }, $tr;
-}
-
-
-sub get_all_Transcripts {
-  my $self = shift;
-
-  throw('Only genes have transcripts.') unless ($self->[0] eq 'g'); 
-  
-  return $self->[9] || [];
-}
-
-
-sub add_Translation {
-  my $self = shift;
-  my $tl = shift;
-
-  unless ($self->[0] eq 'tr' and $tl->[0] eq 'tl') {
-    throw('You can only add a translation to a transcript.');
-  }
-
-  $self->[10] = $tl;
-}
-
-
-sub add_Exon {
-  my $self = shift;
-  my $exon = shift;
-
-  unless ($self->[0] eq 'tr' and $exon->[0] eq 'e') {
-    throw('You can only add exons to a transcript.');
-  }
-
-  push @{ $self->[11] }, $exon;
-}
-
-
-sub get_all_Exons {
-  my $self = shift;
-
-  throw('Only transcripts have exons.') unless ($self->[0] eq 'tr'); 
-  
-  return $self->[11] || [];
+  $self->[1] = shift if (@_);
+  return $self->[1];
 }
 
 

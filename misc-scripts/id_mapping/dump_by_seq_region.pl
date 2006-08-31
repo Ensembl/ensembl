@@ -77,16 +77,16 @@ my $conf = new Bio::EnsEMBL::Utils::ConfParser(
 $conf->param('default_conf', './default.conf');
 $conf->parse_common_options(@_);
 $conf->parse_extra_options(qw(
-  oldhost|old_host=s
-  oldport|old_port=n
-  olduser|old_user=s
-  oldpass|old_pass=s
-  olddbname|old_dbname=s
-  newhost|new_host=s
-  newport|new_port=n
-  newuser|new_user=s
-  newpass|new_pass=s
-  newdbname|new_dbname=s
+  sourcehost|source_host=s
+  sourceport|source_port=n
+  sourceuser|source_user=s
+  sourcepass|source_pass=s
+  sourcedbname|source_dbname=s
+  targethost|target_host=s
+  targetport|target_port=n
+  targetuser|target_user=s
+  targetpass|target_pass=s
+  targetdbname|target_dbname=s
   dumppath|dump_path=s
   biotypes=s@
   dbtype=s
@@ -96,8 +96,8 @@ $conf->parse_extra_options(qw(
 $conf->allowed_params(
   $conf->get_common_params,
   qw(
-    oldhost oldport olduser oldpass olddbname
-    newhost newport newuser newpass newdbname
+    sourcehost sourceport sourceuser sourcepass sourcedbname
+    targethost targetport targetuser targetpass targetdbname
     dumppath biotypes
     dbtype slice_name cache_impl
   )
@@ -126,8 +126,8 @@ $logger->init_log($conf->list_all_params);
 # check required parameters were set
 $conf->check_required_params(
   qw(
-    oldhost oldport olduser olddbname
-    newhost newport newuser newdbname
+    sourcehost sourceport sourceuser sourcedbname
+    targethost targetport targetuser targetdbname
     dumppath
     dbtype slice_name cache_impl
   )
