@@ -49,9 +49,7 @@ use Bio::EnsEMBL::Attribute;
 
 use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 
-use vars qw(@ISA);
-
-@ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
+use base qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
 
 
 =head2 new
