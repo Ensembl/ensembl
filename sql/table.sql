@@ -859,7 +859,7 @@ CREATE TABLE meta (
 
 
 # Auto add schema version to database
-INSERT INTO meta (meta_key, meta_value) VALUES ("schema_version", "40");
+INSERT INTO meta (meta_key, meta_value) VALUES ("schema_version", "41");
 
 # patches included in this schema file
 INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_39_40_a.sql|rationalise_key_columns');
