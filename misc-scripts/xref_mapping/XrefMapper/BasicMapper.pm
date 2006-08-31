@@ -10,8 +10,8 @@ use Bio::EnsEMBL::Translation;
 use XrefMapper::db;
 use vars qw(@ISA @EXPORT_OK);
 use strict;
-@EXPORT_OK = qw (%stable_id_to_internal_id %object_xref_mappings %xref_to_source %xref_accessions %source_to_external_db);
-use vars qw (%stable_id_to_internal_id %object_xref_mappings %xref_to_source %xref_accessions %source_to_external_db);
+@EXPORT_OK = qw (%stable_id_to_internal_id  %xref_to_source %xref_accessions %source_to_external_db);
+use vars qw (%stable_id_to_internal_id %xref_to_source %xref_accessions %source_to_external_db);
 
 =head1 NAME
 
@@ -482,32 +482,25 @@ sub fetch_and_dump_seq{
   my $i =0;
   my $rna = 0;
   foreach my $gene (@genes){
-#    if($gene->biotype eq "protein_coding" or $gene->biotype eq "pseudogene"){
-      foreach my $transcript (@{$gene->get_all_Transcripts()}) {
-	$i++;
-	my $seq = $transcript->spliced_seq(); 
-	$seq =~ s/(.{60})/$1\n/g;
-	print DNA ">" . $transcript->dbID() . "\n" .$seq."\n";
-	my $trans = $transcript->translation();
-	my $translation = $transcript->translate();
-	
-	if(defined($translation)){
-	  my $pep_seq = $translation->seq();
-	  $pep_seq =~ s/(.{60})/$1\n/g;
-	  print PEP ">".$trans->dbID()."\n".$pep_seq."\n";
-	}
+    foreach my $transcript (@{$gene->get_all_Transcripts()}) {
+      $i++;
+      my $seq = $transcript->spliced_seq(); 
+      $seq =~ s/(.{60})/$1\n/g;
+      print DNA ">" . $transcript->dbID() . "\n" .$seq."\n";
+      my $trans = $transcript->translation();
+      my $translation = $transcript->translate();
+      
+      if(defined($translation)){
+	my $pep_seq = $translation->seq();
+	$pep_seq =~ s/(.{60})/$1\n/g;
+	print PEP ">".$trans->dbID()."\n".$pep_seq."\n";
       }
-      
-      last if(defined($max) and $i > $max);
-      
- #   }
- #   else{
- #     $rna++;
- #   }
+    }
+    
+    last if(defined($max) and $i > $max);
   }
   close DNA;
   close PEP;
-#  print "$rna RNA genes ignored for mapping purposes\n";
   
 }
 
@@ -579,6 +572,44 @@ sub dumpcheck {
   (defined $arg) &&
     ($self->{_dumpcheck} = $arg );
   return $self->{_dumpcheck};
+}
+
+=head2 external_db_file
+ 
+  Arg [1]    : (optional) 
+  Example    : $mapper->external_db_file(cwd()."../../external_db.txt");
+  Description: Getter / Setter for external_db_file. 
+               Stores the file witj path of where to get the external database file.
+  Returntype : scalar
+  Exceptions : none
+
+=cut
+
+sub external_db_file {
+  my ($self, $arg) = @_;
+
+  (defined $arg) &&
+    ($self->{_external_db_file} = $arg );
+  return $self->{_external_db_file};
+}
+
+=head2 upload
+ 
+  Arg [1]    : (optional) 
+  Example    : $mapper->upload("yes");
+  Description: Getter / Setter for dumpcheck. 
+               If set the mapper will not upload files.
+  Returntype : scalar
+  Exceptions : none
+
+=cut
+
+sub upload {
+  my ($self, $arg) = @_;
+
+  (defined $arg) &&
+    ($self->{_upload} = $arg );
+  return $self->{_upload};
 }
 
 
@@ -878,10 +909,6 @@ sub parse_mappings {
   $xref->dbc->disconnect_when_inactive(0);
   $xref->dbc->connect();
 
-  # cache xref id->label info; useful for debugging
-#  $self->cache_xref_labels($xref->dbc);
-
-
 
   # Will need lookup tables for gene/transcript/translation stable ID to internal ID
   $self->build_stable_id_to_internal_id_hash();
@@ -930,7 +957,6 @@ sub parse_mappings {
   # format:
   #   key: ensembl object type:ensembl object id
   #   value: list of xref_id (with offset)
-  # Note %object_xref_mappings is global
 
 
   my @dna_check=();
@@ -990,12 +1016,7 @@ sub parse_mappings {
       # store mapping for later - note NON-OFFSET xref_id is used
       my $key = $type . "|" . $target_id;
       my $xref_id = $query_id;
-      push @{$object_xref_mappings{$key}}, $xref_id;
 
-      # store query & target identities
-      # Note this is a hash (type|object id) of hashes (xref id) of hashes ("query_identity" or "target_identity")
-#      $object_xref_identities{$key}->{$xref_id}->{"query_identity"} = $query_identity;
-#      $object_xref_identities{$key}->{$xref_id}->{"target_identity"} = $target_identity;
 
       # note the NON-OFFSET xref_id is stored here as the values are used in
       # a query against the original xref database
@@ -1004,7 +1025,6 @@ sub parse_mappings {
     }
 
     close(FILE);
-    #print "After $file, lines read increased by " . ($total_lines-$last_lines) . "\n";
     $last_lines = $total_lines;
   }
 
@@ -1062,10 +1082,6 @@ sub parse_mappings {
     $self->dump_xref_with_no_triage_data($xref_id_offset);
   }
 
-  # write comparison info. Can be removed after development
-  ###writes to xref.txt.Do not want to do this if loading data afterwards
-  ####  $self->dump_comparison();
-
 }
 
 sub get_stable_ids(){
@@ -1103,10 +1119,6 @@ sub get_failed_id{
     print STDERR "your core database\n";
     print STDERR "Alterntively do not add the triage data and add -notriage to the command line.\n";
     die();
-#    $$max_unmapped_reason++;
-#    print UNMAPPED_REASON $$max_unmapped_reason."\t".$summary_failed."\t".
-#      $description_failed."\n";
-#    $xref_failed_id = $$max_unmapped_reason;      
   }
   return $xref_failed_id;
 }
@@ -1184,9 +1196,6 @@ PSQL
 
   open (UNMAPPED_OBJECT, ">" . $self->core->dir() . "/unmapped_object.txt");
 
-#  open (UNMAPPED_REASON, ">".$self->core->dir()."/unmapped_reason.txt");
-
-
   # get the Unmapped Object Reasons for the core database and 
   # add new ones if the standard xref descriptions are not there
   my %cutoff_2_failed_id=();
@@ -1195,17 +1204,6 @@ PSQL
   my $summary_missed = "Failed to match";
   my $description_missed = "Unable to match to any ensembl entity at all";
   
-#  my $sth = $self->core->dbc->prepare("select MAX(unmapped_reason_id) ".
-#				      "from unmapped_reason");
-#  $sth->execute();
-#  my $max_unmapped_reason_id;
-#  $sth->bind_columns(\$max_unmapped_reason_id);
-#  $sth->fetch;
-#  if(!defined($max_unmapped_reason_id)){
-#    $max_unmapped_reason_id = 1;
-#  }
-#  $sth->finish;
-
   my $sth = $self->core->dbc->prepare("select MAX(unmapped_object_id) ".
 				      "from unmapped_object");
   $sth->execute();
@@ -1233,15 +1231,10 @@ PSQL
     print STDERR "your core database\n";
     print STDERR "Alterntively do not add the triage data and add -notriage to the command line.\n";
     die();
-#    $max_unmapped_reason_id++;
-#    print UNMAPPED_REASON $max_unmapped_reason_id."\t".$summary_missed."\t".
-#      $description_missed."\n";
-#    $xref_missed_id = $max_unmapped_reason_id;      
   }
   $sth->finish;
  
 
-#  foreach my $source ("%RefSeq%","UniProt%","Anopheles_symbol"){
   foreach my $source (@primary_sources){
 
     my %triage_dumped=(); # dump only once for each accession
@@ -1256,7 +1249,6 @@ PSQL
 		       \$description, \$source_id, \$species_id);
     while($sth->fetch()){
       if (!$xrefs_written{$xref_id}) {
-#	$xrefs_written{$xref_id} = 1;
 	my $external_db_id = $source_to_external_db{$source_id};
 	if(!defined($updated_source{$external_db_id})){
 	  $self->cleanup_sources_file($external_db_id);
@@ -1822,7 +1814,7 @@ sub dump_core_xrefs {
 	    print OBJECT_XREF "$object_xref_id\t$object_id\t$type\t" . ($xref_id+$xref_id_offset) . "\n";
 	    # Add this mapping to the list - note NON-OFFSET xref_id is used
 	    my $key = $type . "|" . $object_id;
-	    push @{$object_xref_mappings{$key}}, $xref_id;
+#	    push @{$object_xref_mappings{$key}}, $xref_id;
 	    $object_xrefs_written{$full_key} = 1;
 
 	    # Also store *parent's* query/target identity for dependent xrefs
@@ -1858,56 +1850,10 @@ sub dump_core_xrefs {
   close(EXTERNAL_SYNONYM);
   close(GO_XREF);
 
-#  # calculate display_xref_ids for transcripts and genes
-#  my $transcript_display_xrefs = $self->build_transcript_display_xrefs($xref_id_offset);
-  
-#  $self->build_genes_to_transcripts();
-
-#  $self->build_gene_display_xrefs($transcript_display_xrefs);
-
-#  # now build gene descriptions
-#  $self->build_gene_descriptions();
-
   return $object_xref_id;
 
 }
 
-
-# produce output for comparison with existing ensembl mappings
-# format is (with header)
-# xref_accession ensembl_type ensembl_id
-
-sub dump_comparison {
-
-  my $self = shift;
-
-  my $dir = $self->core->dir();
-
-  print "Dumping comparison data\n";
-
-  open (COMPARISON, ">comparison/xref_mappings.txt");
-  print COMPARISON "xref_accession" . "\t" . "ensembl_type" . "\t" . "ensembl_id\n";
-
-  # get the xref accession for each xref as the xref_ids are ephemeral
-  # first read all the xrefs that were dumped and get an xref_id->accession map
-  my %xref_id_to_accesson;
-  open (XREF, "$dir/xref.txt");
-  while (<XREF>) {
-    my ($xref_id,$external_db_id,$accession,$label,$version,$description) = split;
-    $xref_id_to_accesson{$xref_id} = $accession;
-  }
-  close (XREF);
-
-  open (OBJECT_XREF, "$dir/object_xref.txt");
-  while (<OBJECT_XREF>) {
-    my ($object_xref_id,$object_id,$type,$xref_id) = split;
-    print COMPARISON $xref_id_to_accesson{$xref_id} . "\t" . $type . "\t" . $object_id . "\n";
-  }
-
-  close (OBJECT_XREF);
-  close (COMPARISON);
-
-}
 
 sub build_transcript_and_gene_display_xrefs {
   my ($self) = @_;
@@ -1929,10 +1875,9 @@ sub build_transcript_and_gene_display_xrefs {
 
   # for each gene{
   #   for each transcript{
-  #     get the hight presedence then score if equal
+  #     get the highest presedence then score if equal
   #   }
   #   set gene display_xref_id
-  #   WHAT ABOUT THE DESCRIPTION?
 
   if(!scalar(keys %translation_to_transcript)){
     print "Building translation to transcript mappings\n";
@@ -2106,17 +2051,9 @@ ESQL
       print GENE_DX_TXT $best_xref . "\t" . $gene_id ."\n";
       
     }
-# already set to NULL
-#    else{
-#      print GENE_DX "UPDATE gene g SET g.display_xref_id=NULL". 
-#	" WHERE g.gene_id=" . $gene_id . ";\n";
-#      print GENE_DX_TXT "NULL\t" . $gene_id ."\n";
-#     
-#    }
   }
   close GENE_DX;
   close GENE_DX_TXT;
-#IAN
 
   return;
 
@@ -2352,6 +2289,10 @@ sub genes_and_transcripts_attributes_set{
   $self->build_transcript_and_gene_display_xrefs();
   $self->new_build_gene_descriptions();
 
+  if(!defined($self->upload)){
+    print "Not clearing genes and transcript attrubutes and loading new ones as upload NOT set\n";
+    return;
+  }
 
   # gene & transcript display_xrefs
   my $sth = $core_db->prepare(<<GADES);
@@ -2437,31 +2378,6 @@ GENE
 
 
 
-# Assign gene descriptions
-# Algorithm:
-# foreach gene
-#   get all transcripts & translations
-#   get all associated xrefs
-#   filter by regexp, discard blank ones
-#   if, after filtering, the description is not blank, use the *original* description
-#   order by source & keyword
-#   assign description of best xref to gene
-# }
-#
-# One gene may have several associated peptides; the one to use is decided as follows.
-# In decreasing order of precedence:
-#
-# - Consortium xref, e.g. ZFIN for zebrafish
-#
-# - UniProt/SWISSPROT
-#     If there are several, the one with the best %query_id then %target_id is used
-#
-# - RefSeq
-#    If there are several, the one with the best %query_id then %target_id is used
-#
-# - UniProt/SPTREMBL
-#    If there are several, precedence is established on the basis of the occurrence of 
-#    regular expression patterns in the description.
 
 
 sub new_build_gene_descriptions{
@@ -2479,7 +2395,6 @@ sub new_build_gene_descriptions{
   if(scalar(@regexps) == 0){
     die "shit no reg exps\n";
   }
-#  print "regexp ".scalar(@regexps)."\n";
   my @sources = $self->gene_description_sources();
 
   if(!scalar(keys %translation_to_transcript)){
@@ -2517,7 +2432,7 @@ sub new_build_gene_descriptions{
 ESQL
 
   my $sth = $self->core->dbc->prepare($sql) || die "prepare failed for $sql\n";
-#  print $sql."\n";
+
   my ($xref_id, $acc, $description);
   
   my $level = 0;
@@ -2528,7 +2443,6 @@ ESQL
     $level++;
     if(defined($external_name_to_id{$source})){
       $sth->execute($external_name_to_id{$source}) || die "execute failed";
-#      print $level.")\t".$source."\t".$external_name_to_id{$source}."\n";
       $sth->bind_columns(\$xref_id, \$acc, \$description);
       while($sth->fetch()){
 	$checked++;
@@ -2551,11 +2465,6 @@ ESQL
   $sth->finish;
   print "Regexp filtering (" . scalar(@regexps) . 
     " regexps) removed $removed descriptions, left with " . scalar(keys %xref_descriptions) . "\n";
-
-  print "$added have been added\n";
-
-  print "$checked have been checked\n";
-
 
   $sql = (<<ETSQL);
   SELECT ox.ensembl_id, ox.ensembl_object_type, ox.xref_id, ix.query_identity, ix.target_identity
@@ -2588,7 +2497,6 @@ ETSQL
     $level++;
     
     if(defined($external_name_to_id{$ord})){
-#      print $level."\t".$ord."\n";
       $psth->execute($external_name_to_id{$ord}) || die "execute failed";
       $psth->bind_columns(\$ensembl_id, \$ens_type, \$xref_id, \$qid, \$tid);
       while($psth->fetch()){
@@ -2659,24 +2567,6 @@ ETSQL
     $self->build_genes_to_transcripts();
   }
 
-#test
-#  my %gene_desc;
-#  
-#  my $sql2 = "SELECT gene_id, description from gene";
-#  my $sth2 =  $self->core->dbc->prepare($sql2) || die "prepare failed for $sql2\n";
-#  $sth2->execute() || die "execute failed";
-#  my ($db_id, $name);
-#  $sth2->bind_columns(\$db_id, \$name);
-#  while($sth2->fetch()){
-#    $gene_desc{$db_id}  = $name;
-#  }
-#  $sth2->finish;
-
-
-
-
-
-
   my $dir = $self->core->dir();
   open(GENE_DESCRIPTIONS,">$dir/gene_description.sql") || die "Could not open $dir/gene_description.sql";
 
@@ -2701,14 +2591,8 @@ ETSQL
     }
 
     foreach my $transcript_id (@transcripts) {
-#      if($gene_id == 72994){
-#	print "processing:- ".$trans_best_hit{$transcript_id}."\t".$trans_score{$transcript_id}."\n";
-#      }
       if(defined($trans_best_hit{$transcript_id})){
 	if($trans_level{$transcript_id} >  $best_level){
-#	  if($gene_id == 72994){
-#	    print "setting best to :- ". $trans_best_hit{$transcript_id} ."\n";
-#	  }
 	  $best_xref = $trans_best_hit{$transcript_id};
 	  $best_level = $trans_level{$transcript_id};
 	  $best_object = $transcript_id;
@@ -2720,27 +2604,10 @@ ETSQL
 	  my ($told, $qold) = split (/\s+/,$best_score);
 	  my ($tnew, $qnew) = split (/\s+/,$trans_score{$transcript_id});
 	  my $same = 1;
-#	  if($gene_id == 72994){
-#	    print "best score = $best_score\n";
-#	    print "new _score is ". $trans_score{$transcript_id}."\n";
-#	    print "pre OLD ".$qold." ".$told."\n";
-#	    print "    NEW ".$qnew." ".$tnew."\n";
-#	  }
 	  if(defined($qold)){ #q and t values
-#	      if($gene_id == 72994){
-#		print "checking OLD ".$qold." ".$told."\n";
-#		print "         NEW ".$qnew." ".$tnew."\n";
-#	      }
 	    if(($qnew > $qold) || 
 	       ($qnew == $qold and $tnew > $told)){
-#	      if($gene_id == 72994){
-#		print "overwriting OLD ".$qold." ".$told."\n";
-#		print "            NEW ".$qnew." ".$tnew."\n";
-#	      }
 	      $same = 0;
-#	      if($gene_id == 72994){
-#		print "overwriting to :- ". $trans_best_hit{$transcript_id} ."\n";
-#	      }
 	      $best_xref = $trans_best_hit{$transcript_id};
 	      $best_level = $trans_level{$transcript_id};
 	      $best_object = $transcript_id;
@@ -2751,9 +2618,6 @@ ETSQL
 	  else{ # trembl and only has one score.
 	    if($told < $tnew){
 	      $same = 0;
-#	      if($gene_id == 72994){
-#		print "TREMBL setting best to :- ". $trans_best_hit{$transcript_id} ."\n";
-#	      }
 	      $best_xref = $trans_best_hit{$transcript_id};
 	      $best_level = $trans_level{$transcript_id};
 	      $best_object = $transcript_id;
@@ -2766,9 +2630,6 @@ ETSQL
 	  }
 
 	  if($same){
-#	    if($gene_id == 72994){
-#	      print "same\n";
-#	    }
 	    my $transcript = $ta->fetch_by_dbID($transcript_id);
 	    my $new_length = $transcript->length();
 	    if(!$best_length){
@@ -2795,23 +2656,10 @@ ETSQL
       
       my $desc = $description . " [Source:$best_source;Acc:$acc]";
   
-#      if($desc ne $gene_desc{$gene_id}){
-#	print "ERROR: $gene_id\nREAL:".$gene_desc{$gene_id}."\nNEW :$desc\n\n";
-#      }
-    
       print GENE_DESCRIPTIONS "UPDATE gene g SET g.description=\"$desc\" ".
 	"WHERE g.gene_id=$gene_id;\n" if ($description);
       
     }
-    else{
-      print GENE_DESCRIPTIONS "UPDATE gene g SET g.description=\"\" ".
-	"WHERE g.gene_id=$gene_id;\n"
-      
-    }
-#    if($gene_id == 72994){
-#      print "best xref:-".$best_xref."\n";
-#      die "";
-#    }
 
   }
   close GENE_DESCRIPTIONS;
@@ -2989,9 +2837,6 @@ GENE
     
   }
   
-  #  print $sql."\n";
-  
-  #  $ensembl_dbc->do($sql);
   
   $ensembl_dbc->do("INSERT IGNORE INTO object_xref2 SELECT * FROM object_xref");
   
@@ -3003,67 +2848,6 @@ GENE
 }
 
 
-# Sort a list of xrefs by the priority of their sources
-# Assumed this function is called by Perl sort, passed with parameter
-# See comment for build_gene_descriptions for how precedence is decided.
-
-#sub compare_xref_descriptions {
-
-#  my ($consortium, $gene_id, $xref_to_object) = @_;
-
-#  my @sources = gene_description_sources();
-#  push @sources, $consortium;
-
-#  my @words = qw(unknown hypothetical putative novel probable [0-9]{3} kDa fragment cdna protein);
-
-#  my $src_a = $xref_to_source{$a};
-#  my $src_b = $xref_to_source{$b};
-#  my $pos_a = find_in_list($src_a, @sources);
-#  my $pos_b = find_in_list($src_b, @sources);
-
-#  # If same source, need to do more work
-#  if ($pos_a == $pos_b) {
-
-#   if ($src_a eq "Uniprot/SWISSPROT" || $src_a =~ /RefSeq/) {
-
-#     # Compare on query identities, then target identities if queries are the same
-#     my $key_a = $xref_to_object->{$a}; # e.g. "Translation|1234"
-#     my $key_b = $xref_to_object->{$b};
-#     my ($type_a, $object_a) = split(/\|/, $key_a);
-#     my ($type_b, $object_b) = split(/\|/, $key_b);
-
-#     return 0 if ($type_a != $type_b); # only compare like with like
-
-#     my $query_identity_a = $object_xref_identities{$key_a}->{$a}->{"query_identity"};
-#     my $query_identity_b = $object_xref_identities{$key_b}->{$b}->{"query_identity"};
-
-#     return ($query_identity_a <=> $query_identity_b) if ($query_identity_a != $query_identity_b);
-
-#     my $target_identity_a = $object_xref_identities{$key_a}->{$a}->{"target_identity"};
-#     my $target_identity_b = $object_xref_identities{$key_b}->{$b}->{"target_identity"};
-
-#     return ($target_identity_a <=> $target_identity_b);
-
-#   } elsif ($src_a eq "Uniprot/SPTREMBL") {
-
-#     # Compare on words
-#     my $wrd_idx_a = find_match($xref_descriptions{$a}, @words);
-#     my $wrd_idx_b = find_match($xref_descriptions{$b}, @words);
-#     return $wrd_idx_a <=> $wrd_idx_b;
-
-#   } else {
-
-#     return 0;
-
-#   }
-#    return 0;
-
-#  } else {
-
-#    return $pos_a <=> $pos_b;
-
-#  }
-#}
 
 # list of sources to be used when building gene descriptions
 # sorted into increasing order of priority
@@ -3116,7 +2900,7 @@ sub upload_external_db {
   }
 
   if ($count == 0 || $upload_external_db ) {
-    my $edb = cwd() . "/../external_db/external_dbs.txt";
+    my $edb = $self->external_db_file;
     print "external_db table is empty, uploading from $edb\n";
     my $edb_sth = $core_db->prepare("LOAD DATA INFILE \'$edb\' INTO TABLE external_db");
     $edb_sth->execute();
@@ -3125,24 +2909,6 @@ sub upload_external_db {
 }
 
 
-
-
-
-
-# Cache xref labels for debugging purposes
-#
-#sub cache_xref_labels {
-#
-#  my ($self,$xref_dbc) = @_;
-#
-#  print "Caching xref labels\n";
-#  my $sth = $xref_dbc->prepare("SELECT xref_id, label FROM xref");
-#  $sth->execute();
-#  while(my @row = $sth->fetchrow_array()){
-#    $xref_labels{$row[0]} = $row[1];
-#  }
-#
-#}
 sub get_xref_descriptions{
   return \%xref_descriptions;
 }
@@ -3177,8 +2943,7 @@ sub add_missing_pairs{
   if (!defined $max_object_xref_id && $entries_obj_xref == 0 ) {
     die ("No existing object_xref_ids, something very wrong\n");
   }
-#  print "xref offset => $xref_id_offset\n";
-#  print "max object xref => $max_object_xref_id \n";
+
   my $xref_sql = (<<EOS);
   SELECT x1.xref_id, x2.xref_id, x1.accession, x2.accession   
     FROM pairs p, xref x1, xref x2
@@ -3239,9 +3004,6 @@ EOS
   }
   $tran_sth->finish();
 
-#  print "but apparently $okay have no matches at all and $both have two\n";
-#  print "potential filler ins = $poss\n";
-#  print "good2missed=>".scalar(%good2missed)."\n";
   open(OBJECT_XREF2, ">".$self->core->dir()."/pairs_object_xref.txt") 
     || die "Could not open pairs_object_xref.txt";
 
@@ -3392,12 +3154,6 @@ EOS
   my $mysql_command = $self->get_mysql_command($core_db);
   system( "$mysql_command < $triage_file" ) == 0 
       or print( "ERROR: parsing $file in mysql\n" );
-
-#  my $str = "mysql -u " .$core_db->username() ." -p'" . $core_db->password() . 
-#    "' -h " . $core_db->host() ." -P " . $core_db->port() . " " .$core_db->dbname() . " < ". $triage_file;
-#  if(system $str){
-#    print "ERROR: parsing $triage_file in mysql\n";
-#  }
 
   print "updated triage data accordingly\n";
 }
