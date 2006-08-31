@@ -136,9 +136,10 @@ while (<FILE>) {
   #   3. the projection doesn't have the same length as the original
   #      feature
 
-  next unless (@segments);
-  next if (scalar(@segments) > 1);
+  # this tests for (1) and (2)
+  next unless (scalar(@segments) == 1);
 
+  # test (3)
   my $proj_slice = $segments[0]->to_Slice;
   next unless ($feat->length == $proj_slice->length);
 
