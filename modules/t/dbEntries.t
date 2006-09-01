@@ -91,7 +91,8 @@ my $xref = Bio::EnsEMBL::DBEntry->new
    -priority => "5",
    -db_display_name => "Nice friendly name",
    -info_type => "PROJECTION",
-   -info_text => "from human gene ENSG0000011111"
+   -info_text => "from human gene ENSG0000011111",
+   -xref_priority => "2"
    );
 
 
@@ -129,25 +130,25 @@ my $tl = $tr->translation();
 
 print STDERR "\ndb1=".$dbEntryAdaptor->store( $xref, $gene->dbID, "Gene" )."\n";
 my $oxr_count = count_rows($db, 'object_xref');
-print STDERR "\n1 count is avctually".$oxr_count."\n";
+print STDERR "\n1 count is actually".$oxr_count."\n";
 print STDERR "\ndb2=".$dbEntryAdaptor->store( $xref, $tr->dbID, "Transcript" );
 $oxr_count = count_rows($db, 'object_xref');
 print STDERR "\n2 count is avctually".$oxr_count."\n";
 print STDERR "\ndb3=".$dbEntryAdaptor->store( $goref, $tl->dbID, "Translation" );
 $oxr_count = count_rows($db, 'object_xref');
-print STDERR "\n3 count is avctually".$oxr_count."\n";
+print STDERR "\n3 count is actually".$oxr_count."\n";
 print STDERR "\ndb4=".$dbEntryAdaptor->store( $ident_xref, $tl->dbID, "Translation" );
 $oxr_count = count_rows($db, 'object_xref');
-print STDERR "\n4 count is avctually".$oxr_count."\n";
+print STDERR "\n4 count is actually".$oxr_count."\n";
 print STDERR "\ndb5=".$dbEntryAdaptor->store( $ident_xref, $tr->dbID, "Transcript" );
-my ( $oxr_count, $go_count );
+my ($go_count );
 
 $oxr_count = count_rows($db, 'object_xref');
 #
 # 6 right number of object xrefs in db
 #
 debug( "object_xref_count = $oxr_count" );
-print STDERR "\n5 count is avctually".$oxr_count."\n";
+print STDERR "\n5 count is actually".$oxr_count."\n";
 ok( $oxr_count == 5 );
 
 $xref_count = count_rows($db, 'xref');
@@ -175,6 +176,7 @@ $ident_count = count_rows($db, 'identity_xref');
 debug( "Number of identity_xrefs = $ident_count" );
 ok( $ident_count == 2 );
 
+ok($xref->xref_priority() == 2);
 
 $multi->restore();
 
