@@ -127,11 +127,13 @@ INSERT INTO source VALUES (2857, "ARRAY_IC_MMC1_20k_v1", 1, 'Y', 40);
 INSERT INTO source VALUES (2858, "ARRAY_IC_MMC2_12k_v1", 1, 'Y', 40);
 INSERT INTO source VALUES (2859, "ARRAY_JHU_GAM3.0_21k_v1", 1, 'Y', 40);
 INSERT INTO source VALUES (2860, "ARRAY_LIV_GAMDETOX_0.25k_v1", 1, 'Y', 40);
-INSERT INTO source VALUES (2861, "ARRAY_JHU_AEG1.0_20k_v1", 1, 'Y', 40);
-INSERT INTO source VALUES (2862, "ARRAY_LIV_AEGDETOX_0.25k_v1", 1, 'Y', 40);
 
 # aedes aegypti
 INSERT INTO source (source_id,name,release,download,ordered) VALUES ('7159', 'AedesGenBank','1','Y','30') ;
+INSERT INTO source VALUES (2861, "ARRAY_JHU_AEG1.0_20k_v1", 1, 'Y', 40);
+INSERT INTO source VALUES (2862, "ARRAY_LIV_AEGDETOX_0.25k_v1", 1, 'Y', 40);
+INSERT INTO source VALUES (2863, "ARRAY_ND_TIGRTC_9.6K_v1", 1, 'Y', 40);
+INSERT INTO source VALUES (2864, "ARRAY_UCR_GillMgMT_0.2K_v2", 1, 'Y', 40);
 
 # Uniprot alternative splice
 INSERT INTO source VALUES (3000, "Uniprot/Varsplic", 1, 'Y',20);
@@ -834,6 +836,8 @@ INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_d
 # Vectorbase Arrays
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (2861, 7159,'LOCAL:Aedes_aegypti/JHU/JHU_AEG1.0_20k_v1.txt', now(), now(), "VbDirectParser");
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (2862, 7159,'LOCAL:Aedes_aegypti/LIV/LIV_AEGDETOX_0.25k_v1.txt', now(), now(), "VbDirectParser");
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (2863, 7159,'LOCAL:Aedes_aegypti/ND/ND_TIGRTC_9.6k_v1.txt', now(), now(), "VbDirectParser");
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (2864, 7159,'LOCAL:Aedes_aegypti/UCR/UCR_GillMgMT_0.2k_v2.txt', now(), now(), "VbDirectParser");
 
 
 # --------------------------------------------------------------------------------
