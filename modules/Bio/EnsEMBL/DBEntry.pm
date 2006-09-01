@@ -86,13 +86,15 @@ sub new_fast {
                     -priority => $priority,
                     -db_display_name => $db_display_name,
                     -info_type => $info_type,
-                    -info_text => $info_text);
+                    -info_text => $info_text,
+                    -xref_priority => $xref_priority);
   Description: Creates a new DBEntry object
   Returntype : Bio::EnsEMBL::DBEntry
   Exceptions : none
   Caller     : Bio::EnsEMBL::DBEntryAdaptor
   Status     : At Risk
-               Due to 'PRIMARY_ID_LINKABLE','DISPLAY_ID_LINKABLE','PRIORITY'
+               Due to 'PRIMARY_ID_LINKABLE','DISPLAY_ID_LINKABLE','PRIORITY',
+              'INFO_TYPE', 'INFO_TEXT', ''DB_DISPLAY_NAME', 'XREF_PRIORITY'
                being under development - if you don't use any of these the
                method can be considered Stable
 
@@ -105,12 +107,13 @@ sub new {
 
   my ( $adaptor, $dbID, $primary_id, $version,
        $dbname, $release, $display_id, $description,
-       $primary_id_linkable, $display_id_linkable, $priority, 
-       $db_display_name, $info_type, $info_text) =
+       $primary_id_linkable, $display_id_linkable, $priority,
+       $db_display_name, $info_type, $info_text, $xref_priority) =
     rearrange ( ['ADAPTOR','DBID','PRIMARY_ID','VERSION',
                  'DBNAME','RELEASE','DISPLAY_ID','DESCRIPTION',
 		 'PRIMARY_ID_LINKABLE','DISPLAY_ID_LINKABLE','PRIORITY',
-		 'DB_DISPLAY_NAME', 'INFO_TYPE', 'INFO_TEXT'], @args );
+		 'DB_DISPLAY_NAME', 'INFO_TYPE', 'INFO_TEXT',
+                 'XREF_PRIORITY'], @args );
 
   $self->{'adaptor'} = $adaptor;
   $self->{'dbID'}    = $dbID;
@@ -126,8 +129,9 @@ sub new {
   if( defined $display_id_linkable) { $self->display_id_linkable($display_id_linkable) }
   if( defined $priority) { $self->priority($priority) }
   if( defined $db_display_name) { $self->db_display_name($db_display_name) }
-  if( defined $info_type) { $self->db_display_name($info_type) }
-  if( defined $info_text) { $self->db_display_name($info_text) }
+  if( defined $info_type) { $self->info_type($info_type) }
+  if( defined $info_text) { $self->info_text($info_text) }
+  if( defined $xref_priority) { $self->xref_priority($xref_priority) }
   $self->{synonyms} = [];;
 
   return $self;
@@ -378,7 +382,10 @@ sub display_id_linkable {
 
   Arg [1]    : int $priority
   Example    : none
-  Priority   : Getter/setter for attribute 'priority'.
+  Priority   : Getter/setter for attribute 'priority'. Note this
+               is the priority from the external_db table; if you
+               require the priority from the xref table, us the
+               xref_priority attribute instead.
   Returntype : String
   Exceptions : none
   Caller     : general
@@ -544,6 +551,30 @@ sub status{
   return $self->{status};
 }
 
+
+=head2 xref_priority
+
+  Arg [1]    : int $xref_priority
+  Example    : none
+  Priority   : Getter/setter for attribute 'xref_priority'. Note
+               that this is the priority from the xref table; if
+               you require the priority from the external_db table,
+               use the priority attribute instead.
+  Returntype : String
+  Exceptions : none
+  Caller     : general
+  Status     : At Risk
+             : due to it being under development
+
+=cut
+
+sub xref_priority {
+  my ( $self, $arg ) = @_;
+  if( defined $arg ) {
+    $self->{xref_priority} = $arg;
+  }
+  return $self->{xref_priority};
+}
 
 =head1 DEPRECATED METHODS
 
