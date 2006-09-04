@@ -63,7 +63,7 @@ if ($help || scalar @ARGV == 0 || ! defined $pass) {
 my ($input_file) = @ARGV;
 my @dbs_to_copy;
 
-	my %mysql_directory_per_svr = ('ecs1a:3306' => "/mysql1a/databases",
+my %mysql_directory_per_svr = ('ecs1a:3306' => "/mysql1a/databases",
                                'ecs1b:3306' => "/mysql2a/databases",
                                'ecs1c:3306' => "/mysql3a/databases",
                                'ecs1d:3306' => "/mysql4a/databases",
@@ -89,7 +89,23 @@ my @dbs_to_copy;
                                'ia64f:3306' => "/mysql/data_3306/databases",
                                'ia64g:3306' => "/mysql/data_3306/databases",
                                'ia64g:3355' => "/mysql/data_3355/databases",
-                               'ia64h:3306' => "/mysql/data_3306/databases");
+                               'ia64h:3306' => "/mysql/data_3306/databases",
+			       'genebuild1:3306'   => "/mysql/data_3306/databases",
+			       'ensdb-2-01:3306'   => "/mysql/data_3306/databases",
+			       'genebuild2:3306'   => "/mysql/data_3306/databases",
+			       'ensdb-2-02:3306'   => "/mysql/data_3306/databases",
+			       'genebuild3:3306'   => "/mysql/data_3306/databases",
+			       'ensdb-2-03:3306'   => "/mysql/data_3306/databases",
+			       'mart1:3306'        => "/mysql/data_3306/databases",
+			       'ensdb-2-07:3306'   => "/mysql/data_3306/databases",
+			       'compara1:3306'     => "/mysql/data_3306/databases",
+			       'ensdb-2-09:3306'   => "/mysql/data_3306/databases",
+			       'ens-staging:3306'  => "/mysql/data_3306/databases",
+			       'ensdb-2-10:3306'   => "/mysql/data_3306/databases",
+			       'ens-genomics:3306' => "/mysql/data_3306/databases",
+			       'ensdb-2-11:3306'   => "/mysql/data_3306/databases",
+			       'ens-research:3306' => "/mysql/data_3306/databases",
+			       'ensdb-2-12:3306'   => "/mysql/data_3306/databases");
 
 my $working_host = $ENV{'HOST'};
 my $generic_working_host = $working_host;
