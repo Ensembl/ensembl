@@ -16,6 +16,8 @@ Required arguments:
   --pass, --dbpass, --db_pass=PASS    database passwort PASS
   
   --pattern, --dbpattern=PATTERN      patch databases where name matches PATTERN
+                                      Note that this is a database pattern of the
+                                      form %core_41% rather than a regexp
   --schema, --dbschema=NUM            patch to schema version NUM
 
 Optional arguments:
