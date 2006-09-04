@@ -1577,7 +1577,7 @@ INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_d
 
 ##      UniGene
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
-(6, 8090,'ftp://ftp.ncbi.nih.gov/repository/UniGene/Oryzias_latipes/Ola.seq.uniq.gz ftp://ftp.ncbi.nih.gov/repository/UniGene/Oryzias_latipes/Ola.data.gz.',  now(), now(), "UniGeneParser");
+(6, 8090,'ftp://ftp.ncbi.nih.gov/repository/UniGene/Oryzias_latipes/Ola.seq.uniq.gz ftp://ftp.ncbi.nih.gov/repository/UniGene/Oryzias_latipes/Ola.data.gz',  now(), now(), "UniGeneParser");
 
 ##------------------------------------------------------------------------------
 
