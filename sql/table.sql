@@ -876,6 +876,7 @@ INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_40_41_a.sql|anal
 INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_40_41_b.sql|info_type_enum');
 INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_40_41_c.sql|xref_priority');
 INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_40_41_d.sql|ditag_primary_key_type');
+INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_40_41_e.sql|schema_version');
 
 ################################################################################
 #
