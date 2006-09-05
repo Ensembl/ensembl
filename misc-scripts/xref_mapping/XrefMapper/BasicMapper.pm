@@ -48,6 +48,7 @@ my %xrefs_written;
 my %object_xrefs_written;
 my %failed_xref_mappings;
 my %updated_source;
+my %XXXxref_id_to_accession;
 
 =head2 new
 
@@ -459,6 +460,7 @@ sub fetch_and_dump_seq{
 
 
   # fetch by location, or everything if not defined
+
   my @genes;
   if ($location) {
 
@@ -498,7 +500,7 @@ sub fetch_and_dump_seq{
 	  print PEP ">".$trans->dbID()."\n".$pep_seq."\n";
 	}
       }
-      
+
       last if(defined($max) and $i > $max);
       
  #   }
@@ -1472,7 +1474,7 @@ sub dump_direct_xrefs {
         if(!defined($updated_source{$external_db_id})){
           $self->cleanup_sources_file($external_db_id);
         }
-        print XREF ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $accession . "\t" . $label . "\t" . $version . "\t" . $description . "\n";
+        print XREF ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $accession . "\t" . $label . "\t" . $version . "\t" . $description . "DIRECT" . "\t" . "Externally assigned relationship between $ensembl_stable_id and $accession" . "\n";
         $xrefs_written{$xref_id} = 1;
       }
       print OBJECT_XREF "$object_xref_id\t$ensembl_internal_id\t" . ucfirst($type) . "\t" . ($xref_id+$xref_id_offset) . "\n";
@@ -1505,7 +1507,7 @@ sub dump_direct_xrefs {
               if(!defined($updated_source{$external_db_id})){
                 $self->cleanup_sources_file($external_db_id);
               }
-              print XREF ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $accession . "\t" . $label . "\t" . $version . "\t" . $description . "\n";
+              print XREF ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $accession . "\t" . $label . "\t" . $version . "\t" . $description . "DIRECT" . "\t" . "Externally assigned relationship between $ensembl_stable_id and $accession" ."\n";
               $xrefs_written{$xref_id} = 1;
             }
             $ensembl_internal_id = $stable_id_to_internal_id{$type}->{$stable_id};
@@ -1769,6 +1771,8 @@ sub dump_core_xrefs {
     # core database so we add on $xref_id_offset
     while ($xref_sth->fetch()) {
 
+      $XXXxref_id_to_accession{$xref_id} = $accession;
+
       # make sure label is set to /something/ so that the website displays something
       $label = $accession if (!$label);
 
@@ -1778,7 +1782,7 @@ sub dump_core_xrefs {
 	  if(!defined($updated_source{$external_db_id})){
 	    $self->cleanup_sources_file($external_db_id);
 	  }
-	  print XREF ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $accession . "\t" . $label . "\t" . $version . "\t" . $description . "\n";
+	  print XREF ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $accession . "\t" . $label . "\t" . $version . "\t" . $description . "\t" . "MISC" . "Relationship generated from exonerate mapping" . "\n";
 	  $xrefs_written{$xref_id} = 1;
 	  $source_ids{$source_id} = $source_id;
 	}
@@ -1809,7 +1813,9 @@ sub dump_core_xrefs {
 	  $self->cleanup_sources_file($external_db_id);
 	}
 	
-	print XREF ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $accession . "\t" . $label . "\t" . $version . "\t" . $description . "\n";
+	my $master_accession = $XXXxref_id_to_accession{$master_xref_id};
+
+	print XREF ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $accession . "\t" . $label . "\t" . $version . "\t" . $description . "\t" . "DEPENDENT" . "\t" . "Generated via $master_accession" . "\n";
 	$xrefs_written{$xref_id} = 1;
 	$source_ids{$source_id} = $source_id;
       }
@@ -1817,7 +1823,7 @@ sub dump_core_xrefs {
       # create an object_xref linking this (dependent) xref with any objects it maps to
       # write to file and add to object_xref_mappings
       if (defined $xref_to_objects{$master_xref_id}) {
-	my @ensembl_object_ids = keys( %{$xref_to_objects{$master_xref_id}} ); 
+	my @ensembl_object_ids = keys( %{$xref_to_objects{$master_xref_id}} );
 	foreach my $object_id_key (@ensembl_object_ids) {
 	  my ($object_id, $type) = split /\|/, $object_id_key;
 	  my $full_key = $type."|".$object_id."|".$xref_id;
@@ -1828,12 +1834,15 @@ sub dump_core_xrefs {
 	    push @{$object_xref_mappings{$key}}, $xref_id;
 	    $object_xrefs_written{$full_key} = 1;
 
-	    # Also store *parent's* query/target identity for dependent xrefs
+	    # write a go_xref with the appropriate linkage type
 	    print GO_XREF $object_xref_id . "\t" . $linkage_annotation . "\n"  if ($source_id == $go_source_id);
+	    my $master_accession = $XXXxref_id_to_accession{$master_xref_id};
+	    print "Wrote object ID $object_xref_id linkage $linkage_annotation for accession $accession master xref id $master_xref_id master accession $master_accession\n" if ($source_id == $go_source_id);
+	
+	    # Also store *parent's* query/target identity for dependent xrefs
 	    $object_xref_identities{$key}->{$xref_id}->{"target_identity"} = $object_xref_identities{$key}->{$master_xref_id}->{"target_identity"};
 	    $object_xref_identities{$key}->{$xref_id}->{"query_identity"} = $object_xref_identities{$key}->{$master_xref_id}->{"query_identity"};
 
-	    # write a go_xref with the appropriate linkage type
 	    $object_xref_id++;
 
 	  }
@@ -3317,7 +3326,10 @@ sub dump_all_dependencies{
 	$self->cleanup_sources_file($external_db_id);
       }
       
-      print XREF ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $accession . "\t" . $label . "\t" . $version . "\t" . $description . "\n";
+
+      my $master_accession = $XXXxref_id_to_accession{$master_xref_id};
+
+      print XREF ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $accession . "\t" . $label . "\t" . $version . "\t" . $description .  "\t" . "DEPENDENT" . "\t" . "Generated via $master_accession" . "\n";
       $xrefs_written{$xref_id} = 1;
     }
   }
