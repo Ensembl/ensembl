@@ -9,7 +9,7 @@ use Getopt::Long;
 use DBI;
 use IO::File;
 
-my ( $host, $user, $pass, $port,@dbnames, $file, $release_num, $master);
+my ( $host, $user, $pass, $port,@dbnames, $file, $release_num, $master, $force);
 
 GetOptions( "host=s",        \$host,
 	    "user=s",        \$user,
@@ -18,7 +18,8 @@ GetOptions( "host=s",        \$host,
 	    "file=s",        \$file,
             "dbnames=s@",    \@dbnames,
 	    "release_num=i", \$release_num,
-	    "master=s",      \$master
+	    "master=s",      \$master,
+            "force",         \$force
 	  );
 
 #both host and file are required
@@ -92,7 +93,12 @@ foreach my $dbname (@dbnames) {
 
   print STDERR "Looking at $dbname ... \n";
 
-  if (compare_external_db($db, $master, $dbname)) {
+  if ($force) {
+
+    print STDERR "Forcing overwrite of external_db table in $dbname from $file\n";
+    load_database($db, $dbname, @rows);
+
+   } elsif (compare_external_db($db, $master, $dbname)) {
 
     print STDERR "$dbname has no additional rows. Overwriting external_db table from $file\n";
     load_database($db, $dbname, @rows);
@@ -180,6 +186,8 @@ sub usage {
                     -pass password 
                     -port port_of_server optional
                     -master the name of the master database to load the file into
+                    -force  force update, even if there are rows in the database
+                            that are not in the file
                     -release the release of the database to update used to 
                              match database names.  e.g. 13
                     -file the path of the file containing the insert statements
@@ -200,8 +208,8 @@ sub usage {
   perl update_external_dbs.pl -host ecs2d -file external_dbs.txt -user ensadmin -pass secret -release 14
 
   If the databases to be updated contain rows that are not in the file, a warning will
-  be given and the database in question skipped.
-
+  be given and the database in question skipped, unless -force is used.
+ 
 EOF
 ;
   exit;
