@@ -121,11 +121,9 @@
 3123	AFFY_C_elegans	1	XREF	1	0	1	Affymx Microarray C Elegans
 3124	AFFY_Plasmodium_Anopheles	1	XREF	1	0	1	Affymx Microarray Anopheles
 3125	AFFY_Bovine	1	XREF	1	0	1	Affymx Microarray Bovine
-3126	AGILENT_G2518A	1	XREF	1	0	1	Agilent Microarray G2518A
 3127	AFFY_YG_S98	1	XREF	1	0	1	Affymx Microarray YG-S98
 3128	AFFY_Yeast_2	1	XREF	1	0	1	Affymx Microarray Yeast_2
 3129	AFFY_Rhesus	1	XREF	1	0	1	Affymx Microarray R Macaque
-3150	Illumina	1	XREF	1	0	1	Illumina
 3200	VB_array	1	XREF	1	0	1	VectorBase Array
 3201	ARRAY_EMBL_MMC1_20k_v1	1	XREF	1	0	1	VectorBase Array
 3202	ARRAY_EMBL_MMC2_12k_v1	1	XREF	1	0	1	VectorBase Array
@@ -135,6 +133,8 @@
 3206	ARRAY_LIV_AEGDETOX_0.25k_v1	1	XREF	1	0	1	VectorBase Array
 3207	ARRAY_ND_TIGRTC_9.6K_v1	1	XREF	1	0	1	VectorBase Array
 3208	ARRAY_UCR_GillMgMT_0.2K_v2	1	XREF	1	0	1	VectorBase Array
+3250	Illumina	1	XREF	1	0	1	Illumina
+3251	AGILENT_G2518A	1	XREF	1	0	1	Agilent Microarray G2518A
 3300	miRNA_Registry	1	XREF	1	0	1	miRNA Registry
 3400	SGD	1	KNOWN	1	0	50	SGD
 3500	IPI	1	KNOWN	1	0	5	IPI
