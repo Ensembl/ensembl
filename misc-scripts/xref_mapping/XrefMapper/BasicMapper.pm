@@ -32,6 +32,23 @@ Post questions to the EnsEMBL development list ensembl-dev@ebi.ac.uk
 
 =cut
 
+# hold alist of source that have more than 1 priority
+# and hence can come from several sources.
+my %priority_source_id;     # {1090} = 1
+my %priority_source_name;   # {HUGO} = 2
+my %priority_id_to_name;    # {1091} = HUGO
+
+# hold a hash of the values with the highest priority
+my %priority_xref_acc;      # {12} =  "567";
+my %priority_xref_source_id;# {12} = 1090;
+my %priority_xref;          # {HUGO:567} = "12\t1100\t567\t567\t\tdescrip\n"
+my %priority_xref_state;    # {HUGO:567} = "primary" or "dependent" or "direct";
+my %priority_xref_priority; # {HUGO:567} = 1; 
+my %priority_object_xref;   # {HUGO:567} = {Gene:123456};
+my %priority_identity_xref; # {HUGO:567} = as normal print except no object_xref_id at the start
+#                                        = "100\t100\t1\t100\t110-210\t100M\t100\t987\n";
+my %priority_failed;         # {1090:12} = "gene|123456|78|35|90|90\n";
+
 # Hashes to hold method-specific thresholds
 my %method_query_threshold;
 my %method_target_threshold;
@@ -47,6 +64,38 @@ my %object_xrefs_written;        # Needed in case an xref if matched to one enem
                                  # by more than one method. On the display we only want to see it once.
 my %failed_xref_mappings;
 my %updated_source;
+
+
+
+=head2 find_priority_source
+
+  Description: Finds those source that hae more than one source
+               Stores the results in the global hashes 
+               %priority_source_id and %priority_source_name
+  Returntype : none
+  Exceptions : none
+  Caller     : General
+
+=cut
+
+sub find_priority_source{
+  my($self) = @_;
+
+  my $sql = "SELECT source_id, name, priority  from source where priority > 1";
+  my $sth = $self->core->dbc->prepare($sql);
+  $sth->execute();
+  my ($source_id, $name, $priority);
+  $sth->bind_columns(\$source_id,\$name, \$priority);
+  while($sth->fetch()){
+    $priority_source_id{$source_id} = $priority;
+    $priority_source_name{$name} = $priority;
+    $priority_id_to_name{$source_id} = $name
+  }
+  $sth->finish;
+  foreach my $name (keys %priority_source_name){
+    print "\t".$name." to be processed using prioritys of the sources\n";
+  }
+}
 
 =head2 new
 
@@ -386,7 +435,7 @@ sub dump_subset{
     while(my @row = $sth->fetchrow_array()){
 
       $row[1] =~ s/(.{60})/$1\n/g;
-      print XREF_DUMP ">".$row[0]."\n".$row[1]."\n";
+      print XREF_DUMP ">".$row[0]."-".$row[3]."\n".$row[1]."\n";
 
     }
 
@@ -993,19 +1042,44 @@ sub parse_mappings {
       my ($label, $query_id, $target_id, $identity, $query_length, $target_length, $query_start, $query_end, $target_start, $target_end, $cigar_line, $score) = split(/:/, $_);
       $cigar_line =~ s/ //g;
 
+  #    my ($query_id, $source_id) = split(/-/, $qid_sid);
       # calculate percentage identities
       my $query_identity = int (100 * $identity / $query_length);
       my $target_identity = int (100 * $identity / $target_length);
 
       # only take mappings where there is a good match on one or both sequences
       if ($query_identity  < $method_query_threshold{$method} &&
-	  $target_identity < $method_target_threshold{$method}){
+	  $target_identity < $method_target_threshold{$method}){ 
 	my $reason = $type."|".$target_id."|".$query_identity."|".$target_identity."|";
-	   $reason .= $method_query_threshold{$method}."|". $method_target_threshold{$method};
-	$failed_xref_mappings{$query_id} = $reason;
+	$reason .= $method_query_threshold{$method}."|". $method_target_threshold{$method};
+	if(!defined($priority_xref_source_id{$query_id})){
+	  $failed_xref_mappings{$query_id} = $reason;
+	}
+	else{
+	  $priority_failed{$priority_xref_source_id{$query_id}.":".$query_id} = $reason;
+	}
 	next;
       }
 
+      if(defined($priority_xref_source_id{$query_id})){
+	my $source_id = priority_xref_source_id{$query_id};
+	my $key = $priority_source_name{$source_id}.":".$priority_xref_acc{$query_id};
+	if(!defined($priority_xref_priority{$key})){
+	  if($priority_xref_priority{$key} 
+	     < $priority_source_id{$source_id}){
+
+	    $priority_xref_priority{$key} = $priority_source_id{$source_id};
+	    $priority_object_xref{$key} = "$type:$target_id";
+	    $priority_identity_xref{$key} = join("\t", ($query_identity, $target_identity, 
+							$query_start+1, $query_end, 
+							$target_start+1, $target_end, 
+							$cigar_line, $score, "\\N", $analysis_id)) . "\n";
+	    $priority_xref_state{$key} = "primary";
+	  }
+	  next; # do not store OBJECT, IDENTITY or set primary_xref. do much later
+	  
+	}
+      }
       # note we add on $xref_id_offset to avoid clashes
       print OBJECT_XREF "$object_xref_id\t$target_id\t$type\t" . ($query_id+$xref_id_offset) . "\n";
       print IDENTITY_XREF join("\t", ($object_xref_id, $query_identity, $target_identity, $query_start+1, $query_end, $target_start+1, $target_end, $cigar_line, $score, "\\N", $analysis_id)) . "\n";
@@ -1239,6 +1313,9 @@ PSQL
 
     my %triage_dumped=(); # dump only once for each accession
 
+    if(defined($priority_source_id{$source})){ # cannot do triage at the moment for priority type xrefs.
+      next;
+    }
     my $sql = "select x.xref_id, x.accession, x.version, x.label, x.description, x.source_id, ".
               "x.species_id from xref x where x.source_id = $source";
     my $sth = $self->xref->dbc->prepare($sql);
@@ -1254,9 +1331,9 @@ PSQL
 	  $self->cleanup_sources_file($external_db_id);
 	}
 	print XREF ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $accession . 
-	             "\t" . $label . "\t" . $version . "\t" . $description . "\n";
-
-#dump out dependencies aswell
+	  "\t" . $label . "\t" . $version . "\t" . $description . "\n";
+	
+	#dump out dependencies aswell
 	
         $self->dump_all_dependencies($xref_id, $xref_id_offset);
 
@@ -1351,6 +1428,10 @@ sub dump_orphan_xrefs() {
   $sth->bind_columns(\$xref_id, \$accession, \$version, \$label, \$description, \$source_id, \$species_id);
 
   while ($sth->fetch()) {
+
+    if(defined($priority_source_id{$source_id})){
+      next;
+    }
 
     my $external_db_id = $source_to_external_db{$source_id};
     if ($external_db_id) { # skip "unknown" sources
@@ -1461,6 +1542,21 @@ sub dump_direct_xrefs {
         if(!defined($updated_source{$external_db_id})){
           $self->cleanup_sources_file($external_db_id);
         }
+
+	if(!defined($priority_xref_source_id{$xref_id})){
+	  my $key = $priority_source_name{$source_id}.":".$priority_xref_acc{$xref_id};
+	  if($priority_xref_priority{$key} 
+				  < $priority_source_id{$source_id}){
+
+	    $priority_xref_priority{$key} = $priority_source_id{$source_id};
+	    $priority_object_xref{$key} = ucfirst($type).":".$ensembl_internal_id;
+	    $priority_identity_xref{$key} = undef;
+
+	    $priority_xref_state{$key} = "direct";
+          }
+          next; # do not store XREF or OBJECT. do much later
+	}
+
         print XREF ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $accession . "\t" . $label . "\t" . $version . "\t" . $description . "\n";
         $xrefs_written{$xref_id} = 1;
       }
@@ -1810,17 +1906,27 @@ sub dump_core_xrefs {
 	foreach my $object_id_key (@ensembl_object_ids) {
 	  my ($object_id, $type) = split /\|/, $object_id_key;
 	  my $full_key = $type."|".$object_id."|".$xref_id;
+	  my $key = $priority_source_name{$source_id}.":".$priority_xref_acc{$xref_id};	  
+	  if(!defined($priority_xref_priority{$key})){
+	    if($priority_xref_priority{$key} 
+				    < $priority_source_id{$source_id}){
+
+	      $priority_xref_priority{$key} = $priority_source_id{$source_id};
+	      $priority_object_xref{$key} = "$type:$object_id";
+	      $priority_identity_xref{$key} = undef;
+	      $priority_xref_state{$key} = "dependent";
+	    }
+	    next;
+	  }
 	  if (!$object_xrefs_written{$full_key}) {
+	       	    
 	    print OBJECT_XREF "$object_xref_id\t$object_id\t$type\t" . ($xref_id+$xref_id_offset) . "\n";
 	    # Add this mapping to the list - note NON-OFFSET xref_id is used
 	    my $key = $type . "|" . $object_id;
-#	    push @{$object_xref_mappings{$key}}, $xref_id;
 	    $object_xrefs_written{$full_key} = 1;
 
 	    # Also store *parent's* query/target identity for dependent xrefs
 	    print GO_XREF $object_xref_id . "\t" . $linkage_annotation . "\n"  if ($source_id == $go_source_id);
-#	    $object_xref_identities{$key}->{$xref_id}->{"target_identity"} = $object_xref_identities{$key}->{$master_xref_id}->{"target_identity"};
-#	    $object_xref_identities{$key}->{$xref_id}->{"query_identity"} = $object_xref_identities{$key}->{$master_xref_id}->{"query_identity"};
 
 	    # write a go_xref with the appropriate linkage type
 	    $object_xref_id++;
@@ -1828,7 +1934,7 @@ sub dump_core_xrefs {
 	  }
 	}
       }
-    }
+    }# end of dependents
 
     #print "source_ids: " . join(" ", keys(%source_ids)) . "\n";
 
