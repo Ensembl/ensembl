@@ -3,6 +3,7 @@
 use strict;
 use Getopt::Long;
 use Cwd 'chdir';
+use Sys::Hostname qw(hostname);
 
 $| = 1;
 
@@ -91,25 +92,16 @@ my %mysql_directory_per_svr = ('ecs1a:3306' => "/mysql1a/databases",
                                'ia64g:3355' => "/mysql/data_3355/databases",
                                'ia64h:3306' => "/mysql/data_3306/databases",
 			       'genebuild1:3306'   => "/mysql/data_3306/databases",
-			       'ensdb-2-01:3306'   => "/mysql/data_3306/databases",
 			       'genebuild2:3306'   => "/mysql/data_3306/databases",
-			       'ensdb-2-02:3306'   => "/mysql/data_3306/databases",
 			       'genebuild3:3306'   => "/mysql/data_3306/databases",
-			       'ensdb-2-03:3306'   => "/mysql/data_3306/databases",
 			       'mart1:3306'        => "/mysql/data_3306/databases",
-			       'ensdb-2-07:3306'   => "/mysql/data_3306/databases",
 			       'compara1:3306'     => "/mysql/data_3306/databases",
-			       'ensdb-2-09:3306'   => "/mysql/data_3306/databases",
 			       'ens-staging:3306'  => "/mysql/data_3306/databases",
-			       'ensdb-2-10:3306'   => "/mysql/data_3306/databases",
 			       'ens-genomics:3306' => "/mysql/data_3306/databases",
-			       'ensdb-2-11:3306'   => "/mysql/data_3306/databases",
-			       'ens-research:3306' => "/mysql/data_3306/databases",
-			       'ensdb-2-12:3306'   => "/mysql/data_3306/databases");
+			       'ens-research:3306' => "/mysql/data_3306/databases");
 
-my $working_host = $ENV{'HOST'};
-my $generic_working_host = $working_host;
-$generic_working_host =~ s/(ecs[1234]).*/$1/;
+my ($generic_working_host) = (gethostbyname(hostname));
+$generic_working_host =~ s/\..*//;
 my $working_dir = $ENV{'PWD'};
 my %already_flushed;
 
@@ -123,11 +115,11 @@ while (my $line = <F>) {
   next if ($line =~ /^\s*$/);
   if ($line =~ /^(\S+)\s+(\d+)\s+(\S+)\s+(\S+)\s+(\d+)\s+(\S+)\s*$/) {
     my ($src_srv,$src_port,$src_db,$dest_srv,$dest_port,$dest_db) = ($1,$2,$3,$4,$5,$6);
-    unless ($dest_srv =~ /^$generic_working_host.*$/) {
-      my $generic_destination_server = $dest_srv;
-      $generic_destination_server =~ s/(ecs[1234]).*/$1/;
+    my ($dest_srv_host) = (gethostbyname($dest_srv));
+    $dest_srv_host =~ s/\..*//;
+    unless ($dest_srv_host eq $generic_working_host) {
       warn "// skipped copy of $src_db from $src_srv to $dest_srv
-// this script should be run on a generic destination host $generic_destination_server\n";
+// this script should be run on a generic destination host $dest_srv\n";
       next;
     }
     my $src_srv_ok = 0;
@@ -143,7 +135,7 @@ while (my $line = <F>) {
     }
     unless ($src_srv_ok && $dest_srv_ok) {
       warn "// skipped copy of $src_db from $src_srv to $dest_srv
-// this script works only to copy dbs between certain ecs_nodes:mysql_port" .
+// this script works only to copy dbs between certain nodes:mysql_port" .
 join(", ", keys %mysql_directory_per_svr) ."\n";
       next;
     }
