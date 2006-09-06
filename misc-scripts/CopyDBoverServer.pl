@@ -173,15 +173,14 @@ foreach my $db_to_copy (@dbs_to_copy) {
 //\n";
 
   my $source_srv = $db_to_copy->{src_srv};
-  $source_srv =~ s/(ecs[1234][a-h]?)\.*.*/$1/;
-  $source_srv =~ s/(ia64[ef])\.*.*/$1/;
+  $source_srv =~ s/\..*//;
   
   my $source_port = $db_to_copy->{src_port};
 
   my $source_db = $mysql_directory_per_svr{$source_srv . ":" . $source_port} . "/" . $db_to_copy->{src_db};
 
   my $destination_srv = $db_to_copy->{dest_srv};
-  $destination_srv =~ s/(ecs[1234][a-h]?)\.*.*/$1/;
+  $destination_srv =~ s/\..*//;
   my $destination_port = $db_to_copy->{dest_port};
 
   my $destination_directory = $mysql_directory_per_svr{$destination_srv . ":" . $destination_port};
