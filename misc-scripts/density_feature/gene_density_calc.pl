@@ -186,7 +186,7 @@ foreach my $known (1, 0) {
       #
 
       foreach my $gene (@{$sub_slice->get_all_Genes()}){
-	if($gene->type() !~ /pseudogene/i and $gene->start >=1 ) {
+	if($gene->biotype() !~ /pseudogene/i and $gene->start >=1 ) {
 	  $count++ if(!$known || $gene->is_known());
 	}
       }
