@@ -121,7 +121,8 @@ while (my $line = <F>) {
     my ($src_srv,$src_port,$src_db,$dest_srv,$dest_port,$dest_db) = ($1,$2,$3,$4,$5,$6);
     my ($dest_srv_host) = (gethostbyname($dest_srv));
     $dest_srv_host =~ s/\..*//;
-    unless ($dest_srv_host eq $generic_working_host) {
+
+    unless ($generic_working_host =~ /^$dest_srv_host/) {
       warn "// skipped copy of $src_db from $src_srv to $dest_srv
 // this script should be run on a generic destination host $dest_srv\n";
       next;
