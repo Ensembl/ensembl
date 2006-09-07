@@ -97,7 +97,9 @@ sub run {
 	}
       }
 
-      while( /db="(PROSITE|PFAM|PRINTS|PREFILE|PROFILE|TIGRFAMs|PIRSF|SMART)"\s+dbkey="(\S+)"/cgm ) {
+      my ($members) = $_ =~ /<member_list>(.+)<\/member_list\>/s; 
+      
+      while($members =~ /db="(PROSITE|PFAM|PRINTS|PREFILE|PROFILE|TIGRFAMs|PIRSF|SMART)"\s+dbkey="(\S+)"/cgm ) {
 	my ( $db_type, $id ) =  ( $1, $2 );
 	if(!get_xref($get_interpro_sth, $interpro,$id)){
 	  $add_interpro_sth->execute($interpro,$id);
