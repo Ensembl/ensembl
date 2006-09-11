@@ -16,15 +16,15 @@ Required arguments:
   --pass, --dbpass, --db_pass=PASS    database passwort PASS
   
   --pattern, --dbpattern=PATTERN      patch databases where name matches PATTERN
-                                      Note that this is a database pattern of the
-                                      form %core_41% rather than a regexp
+                                      Note that this is a database pattern of
+                                      the form %core_41% rather than a regexp
   --schema, --dbschema=NUM            patch to schema version NUM
 
 Optional arguments:
 
-  --patch_variation_database         If this attribute is specified, will read the
-                                     sql from ensembl-variation and patch the
-                                     variation databases (default:false)
+  --patch_variation_database         If this attribute is specified, will read
+                                     the sql from ensembl-variation and patch
+                                     the variation databases (default:false)
 
   --conffile, --conf=FILE             read parameters from FILE
                                       (default: conf/Conversion.ini)
@@ -38,8 +38,11 @@ Optional arguments:
 
   -v, --verbose=0|1                   verbose logging (default: false)
   -i, --interactive=0|1               run script interactively (default: true)
-  -n, --dry_run, --dry=0|1            don't write results to database
+  -n, --dry, --dry_run=0|1            don't write results to database
   -h, --help, -?                      print help (this message)
+
+Please note that where an argument expects a value, this is true for all
+alternative argument styles.
 
 =head1 DESCRIPTION
 
