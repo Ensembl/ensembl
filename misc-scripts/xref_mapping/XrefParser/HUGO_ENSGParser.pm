@@ -34,7 +34,7 @@ sub run {
   my %version;
   my %description;
 
-  my $dbi = dbi();  
+  my $dbi = $self->dbi();  
   my $sql = "select accession, label, version,  description from xref where source_id = 1091";
   my $sth = $dbi->prepare($sql);
   $sth->execute();

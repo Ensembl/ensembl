@@ -32,7 +32,7 @@ sub run {
   my %version;
   my %description;
 
-  my $dbi = dbi();  
+  my $dbi = $self->dbi();  
   my $sql = "select accession, label, version,  description from xref where source_id = 1091";
   my $sth = $dbi->prepare($sql);
   $sth->execute();
@@ -48,7 +48,7 @@ sub run {
   $sql = 'select x.accession, d.ensembl_stable_id, d.type 
             from xref x, direct_xref d, source s 
              where s.source_id = x.source_id and 
-                   x.xref_id = d.general_xref_id and s.name like "CCDS'; 
+                   x.xref_id = d.general_xref_id and s.name like "CCDS"'; 
  
   $sth = $dbi->prepare($sql);
   $sth->execute();
