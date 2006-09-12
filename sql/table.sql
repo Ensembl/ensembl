@@ -868,6 +868,7 @@ INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_40_41_b.sql|info
 INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_40_41_c.sql|xref_priority');
 INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_40_41_d.sql|ditag_primary_key_type');
 INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_40_41_e.sql|schema_version');
+INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_40_41_f.sql|attrib_indices');
 
 ################################################################################
 #
@@ -993,6 +994,7 @@ CREATE TABLE misc_attrib (
   value                       TEXT NOT NULL DEFAULT '',
 
   KEY type_val_idx (attrib_type_id, value(40)),
+  KEY val_only_idx (value(40)),
   KEY misc_feature_idx (misc_feature_id)
   
 ) COLLATE=latin1_swedish_ci TYPE=MyISAM;
@@ -1010,6 +1012,7 @@ CREATE TABLE translation_attrib (
   value                       TEXT NOT NULL DEFAULT '',
 
   KEY type_val_idx (attrib_type_id, value(40)),
+  KEY val_only_idx (value(40)),
   KEY translation_idx (translation_id)
   
 ) COLLATE=latin1_swedish_ci TYPE=MyISAM;
@@ -1026,6 +1029,7 @@ CREATE TABLE transcript_attrib (
   value                       TEXT NOT NULL DEFAULT '',
 
   KEY type_val_idx (attrib_type_id, value(40)),
+  KEY val_only_idx (value(40)),
   KEY transcript_idx (transcript_id)
 
 ) COLLATE=latin1_swedish_ci TYPE=MyISAM;
@@ -1043,6 +1047,7 @@ CREATE TABLE gene_attrib (
   value                       TEXT NOT NULL DEFAULT '',
 
   KEY type_val_idx (attrib_type_id, value(40)),
+  KEY val_only_idx (value(40)),
   KEY gene_idx (gene_id)
 
 ) COLLATE=latin1_swedish_ci TYPE=MyISAM;
@@ -1060,6 +1065,7 @@ CREATE TABLE seq_region_attrib (
   value                       TEXT NOT NULL DEFAULT '',
 
   KEY type_val_idx (attrib_type_id, value(40)),
+  KEY val_only_idx (value(40)),
   KEY seq_region_idx (seq_region_id)
 
 ) COLLATE=latin1_swedish_ci TYPE=MyISAM;
