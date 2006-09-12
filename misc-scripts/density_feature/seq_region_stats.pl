@@ -46,6 +46,11 @@ my %attrib_codes = ( 'miRNA'              => 'miRNA',
 # do both genestats and snpstats by default
 $genestats = $snpstats = 1 if(!$genestats && !$snpstats);
 
+# delete old attributes before starting
+foreach my $code (values %attrib_codes) {
+  my $sth = $db->dbc()->prepare( "DELETE sa FROM seq_region_attrib sa, attrib_type at WHERE at.attrib_type_id=sa.attrib_type_id AND at.code=?" );
+  $sth->execute("GeneNo_$code");
+}
 
 #
 # Only run on database with genes
@@ -160,7 +165,7 @@ sub variation_attach {
   my $db = shift;
 
   my $core_db_name;
-  $core_db_name = $db->dbname();
+  $core_db_name = $db->dbc->dbname();
   if( $core_db_name !~ /_core_/ ) {
     return 0;
   }
