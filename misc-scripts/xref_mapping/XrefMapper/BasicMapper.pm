@@ -36,12 +36,14 @@ Post questions to the EnsEMBL development list ensembl-dev@ebi.ac.uk
 # and hence can come from several sources.
 my %priority_source_id;     # {1090} = 1
 my %priority_source_name;   # {HUGO} = 2
-my %priority_id_to_name;    # {1091} = HUGO
+my %priority_source_id_to_name;    # {1091} = HUGO
 
-# hold a hash of the values with the highest priority
+#be able to get from xref to the accession or source for those needed
 my %priority_xref_acc;      # {12} =  "567";
 my %priority_xref_source_id;# {12} = 1090;
-my %priority_xref;          # {HUGO:567} = "12\t1100\t567\t567\t\tdescrip\n"
+
+# hold a hash of the values with the highest priority
+my %priority_xref;          # {HUGO:567} = 12
 my %priority_xref_state;    # {HUGO:567} = "primary" or "dependent" or "direct";
 my %priority_xref_priority; # {HUGO:567} = 1; 
 my %priority_object_xref;   # {HUGO:567} = {Gene:123456};
@@ -78,22 +80,52 @@ my %updated_source;
 
 =cut
 
-sub find_priority_source{
+sub find_priority_sources{
   my($self) = @_;
 
   my $sql = "SELECT source_id, name, priority  from source where priority > 1";
-  my $sth = $self->core->dbc->prepare($sql);
+  my $sth = $self->xref->dbc->prepare($sql);
   $sth->execute();
   my ($source_id, $name, $priority);
   $sth->bind_columns(\$source_id,\$name, \$priority);
   while($sth->fetch()){
-    $priority_source_id{$source_id} = $priority;
     $priority_source_name{$name} = $priority;
-    $priority_id_to_name{$source_id} = $name
   }
   $sth->finish;
+
   foreach my $name (keys %priority_source_name){
+    $sql = 'SELECT source_id, name, priority from source where name ="'.$name.'"'; 
     print "\t".$name." to be processed using prioritys of the sources\n";
+    
+    #for each name get all the sources and then store the xref data needed.
+    my $sth = $self->xref->dbc->prepare($sql);
+    $sth->execute();
+    $sth->bind_columns(\$source_id,\$name, \$priority);
+    my @source_ids=();
+    while($sth->fetch()){
+      $priority_source_name{$name} = $priority;
+      $priority_source_id{$source_id} = $priority;    
+      $priority_source_id_to_name{$source_id} = $name;
+      push @source_ids, $source_id;
+    }
+    $sth->finish;
+    foreach my $source (@source_ids){
+
+      my $sql2 = "SELECT xref_id, accession from xref where xref.source_id = $source";
+      my $sth2 = $self->xref->dbc->prepare($sql2);
+      $sth2->execute();
+      my ($xref_id, $acc);
+      $sth2->bind_columns(\$xref_id,\$acc);
+      print "\tgetting data for source $source\n";	
+      my $count =0;
+      while($sth2->fetch){
+	$priority_xref_acc{$xref_id}       = $acc;
+	$priority_xref_source_id{$xref_id} = $source;
+	$count++;
+      }
+      print "\t$count xrefs accessed at priority level ".$priority_source_id{$source}."\n";
+      $sth2->finish;
+    }
   }
 }
 
@@ -1008,6 +1040,9 @@ sub parse_mappings {
   #   value: list of xref_id (with offset)
 
 
+
+  print "priority_xref_source_id has ".scalar(%priority_xref_source_id)." keys in hash\n";
+
   my @dna_check=();
   my @pep_check=();
 
@@ -1035,14 +1070,17 @@ sub parse_mappings {
     my $analysis_id = $self->get_analysis_id($type);
     #    my $analysis_id = 999;
 
+    open(ARSE,">>priority_xref.out") || die "Could not open priority_xref.out\n";
+
     while (<FILE>) {
 
       $total_lines++;
       chomp();
-      my ($label, $query_id, $target_id, $identity, $query_length, $target_length, $query_start, $query_end, $target_start, $target_end, $cigar_line, $score) = split(/:/, $_);
+#IANIAN need to set back AFTER deleting xref.fasta
+      my ($label, $qid_sid, $target_id, $identity, $query_length, $target_length, $query_start, $query_end, $target_start, $target_end, $cigar_line, $score) = split(/:/, $_);
       $cigar_line =~ s/ //g;
 
-  #    my ($query_id, $source_id) = split(/-/, $qid_sid);
+      my ($query_id, $source_id) = split(/-/, $qid_sid); #IANIANIAN
       # calculate percentage identities
       my $query_identity = int (100 * $identity / $query_length);
       my $target_identity = int (100 * $identity / $target_length);
@@ -1063,22 +1101,44 @@ sub parse_mappings {
 
       if(defined($priority_xref_source_id{$query_id})){
 	my $source_id = priority_xref_source_id{$query_id};
-	my $key = $priority_source_name{$source_id}.":".$priority_xref_acc{$query_id};
-	if(!defined($priority_xref_priority{$key})){
-	  if($priority_xref_priority{$key} 
-	     < $priority_source_id{$source_id}){
-
-	    $priority_xref_priority{$key} = $priority_source_id{$source_id};
-	    $priority_object_xref{$key} = "$type:$target_id";
-	    $priority_identity_xref{$key} = join("\t", ($query_identity, $target_identity, 
-							$query_start+1, $query_end, 
-							$target_start+1, $target_end, 
-							$cigar_line, $score, "\\N", $analysis_id)) . "\n";
-	    $priority_xref_state{$key} = "primary";
-	  }
-	  next; # do not store OBJECT, IDENTITY or set primary_xref. do much later
-	  
+	if(!defined($priority_source_id_to_name{$source_id}) or length($priority_source_id_to_name{$source_id}) < 2){
+	  print STDERR "priority_source_id_to_name has ".scalar(%priority_source_id_to_name)." keys for hash\n";
+	  die "no source name for source id $source_id\n";
 	}
+	my $key = $priority_source_id_to_name{$source_id}.":".$priority_xref_acc{$query_id};
+	if(!defined($priority_xref_priority{$key})){
+	  print ARSE $priority_xref_acc{$query_id}."\t".$source_id.
+	    " being set as undef from parsing mapped data.(PRIMARY) priority = ".$priority_source_id{$source_id}."\n";
+	  
+	  $priority_xref{$key} = $query_id;
+	  $priority_xref_priority{$key} = $priority_source_id{$source_id};
+	  $priority_object_xref{$key} = "$type:$target_id";
+	  $priority_identity_xref{$key} = join("\t", ($query_identity, $target_identity, 
+						      $query_start+1, $query_end, 
+						      $target_start+1, $target_end, 
+						      $cigar_line, $score, "\\N", $analysis_id)) . "\n";
+	  $priority_xref_state{$key} = "primary";
+	  next;
+	}
+	if($priority_xref_priority{$key} 
+	   > $priority_source_id{$source_id}){
+	  print ARSE $priority_xref_acc{$query_id}."\t".$source_id.
+	    " being set as better priority found from parsing mapped data.(PRIMARY) priority = ".$priority_source_id{$source_id}."\n";
+	  
+	  $priority_xref{$key} = $query_id;
+	  $priority_xref_priority{$key} = $priority_source_id{$source_id};
+	  $priority_object_xref{$key} = "$type:$target_id";
+	  $priority_identity_xref{$key} = join("\t", ($query_identity, $target_identity, 
+						      $query_start+1, $query_end, 
+						      $target_start+1, $target_end, 
+						      $cigar_line, $score, "\\N", $analysis_id)) . "\n";
+	  $priority_xref_state{$key} = "primary";
+	}
+	else{
+	  print ARSE $priority_xref_acc{$query_id}."\t".$source_id." has less priority (PRIMARY) so left as is\n";
+	}
+	next; # do not store OBJECT, IDENTITY or set primary_xref. do much later
+	  
       }
       # note we add on $xref_id_offset to avoid clashes
       print OBJECT_XREF "$object_xref_id\t$target_id\t$type\t" . ($query_id+$xref_id_offset) . "\n";
@@ -1104,6 +1164,7 @@ sub parse_mappings {
 
   close(IDENTITY_XREF);
   close(OBJECT_XREF);
+  close(ARSE);
 
   print "Read $total_lines lines from $total_files exonerate output files\n";
 
@@ -1157,6 +1218,90 @@ sub parse_mappings {
   }
 
 }
+
+
+sub process_priority_xrefs{
+  my ($self) =@_;
+
+
+  my $ensembl = $self->core;
+  my $xref = $self->xref;
+  my $dir = $ensembl->dir();
+
+  my $xref_id_offset = $self->xref_id_offset();
+  # get current max object_xref_id
+  my $row = @{$ensembl->dbc->db_handle->selectall_arrayref("SELECT MAX(object_xref_id) FROM object_xref")}[0];
+  my $max_object_xref_id = @{$row}[0];
+  if (!defined $max_object_xref_id) {
+    print "No existing object_xref_ids, will start from 1\n";
+    $max_object_xref_id = 0;
+  } else {
+    print "Maximum existing object_xref_id = $max_object_xref_id\n";
+  }
+  my $object_xref_id_offset = $max_object_xref_id + 1;
+  my $object_xref_id = $object_xref_id_offset;
+
+
+  open(XREF,">$dir/xref_priority.txt") || die "Could not open xref_priority.txt";
+  open(OBJECT_XREF,">$dir/object_xref_priority.txt") || die "Could not open object_xref_priority.txt"; 
+  open(IDENTIY_XREF,">$dir/identity_xref_priority.txt") || die "Could not open identity_xref.txt";
+
+
+  my @xref_list=();
+  foreach my $key (keys %priority_xref){
+    my($source_name,$acc) = split(/:/,$key);
+    my $xref_id = $priority_xref{$key};
+    if($priority_xref_state{$key} eq "primary"){
+      $self->dump_all_dependencies($xref_id, $xref_id_offset);
+    }
+    push @xref_list, $xref_id;
+    $xref_id += $xref_id_offset;
+    if($priority_xref_state{$key} eq "primary"){
+      $self->dump_all_dependencies($xref_id, $xref_id_offset);
+    }
+    if(defined($priority_object_xref{$key})){
+      my ($type,$id) = split(/:/,$priority_object_xref{$key});
+      print OBJECT_XREF $object_xref_id."\t".$id."\t".$type."\t".$xref_id."\n";
+      if(defined($priority_identity_xref{$key})){
+        print IDENTITY_XREF $object_xref_id."\t".$priority_identity_xref{$key};
+      }
+      $object_xref_id++;
+    } 
+  }
+
+  my $list = join(", ", @xref_list);
+  my $sql = "SELECT xref_id, accession, version, label, description, source_id from xref where xref_id in ($list)";
+  my $sth = $self->xref->dbc->prepare($sql);
+  $sth->execute();
+  my ($xref_id, $acc,$ver, $label, $desc, $source_id);
+  $sth->bind_columns(\$xref_id, \$acc, \$ver, \$label, \$desc, \$source_id);
+  while($sth->fetch()){
+    print XREF ($xref_id+$xref_id_offset)."\t". $source_to_external_db{$source_id}.
+      "\t$acc\t$label\t$ver\t$desc\n";
+  }
+  $sth->finish;
+
+
+
+  close XREF;
+  close OBJECT_XREF;
+  close IDENTITY_XREF;
+
+  foreach my $table ("xref","object_xref","identity_xref"){
+    my $file = $dir."/".$table."_priority.txt";
+  
+    if(-s $file){
+      my $sth = $ensembl->dbc->prepare("LOAD DATA INFILE \'$file\' INTO TABLE $table");
+      print "Uploading data in $file to $table\n";
+      $sth->execute();
+    }
+    else{
+      print "NO file or zero size file, so not able to load file $file to $table\n";
+    }
+  }
+
+}
+
 
 sub get_stable_ids(){
   my ($self, $type, $string, $hashref) = @_;
@@ -1439,10 +1584,11 @@ sub dump_orphan_xrefs() {
 	if(!defined($updated_source{$external_db_id})){
 	  $self->cleanup_sources_file($external_db_id);
 	}
-	print XREF ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $accession . "\t" . $label . "\t" . $version . "\t" . $description . "\n";
-
-	$xrefs_written{$xref_id} = 1;
-	$count++;
+	if(!defined($priority_xref_source_id{$xref_id})){
+	  print XREF ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $accession . "\t" . $label . "\t" . $version . "\t" . $description . "\n";
+	  $xrefs_written{$xref_id} = 1;
+	  $count++;
+	}
       }
     }
 
@@ -1504,6 +1650,9 @@ sub dump_direct_xrefs {
   my ($xref_id, $ensembl_stable_id, $type, $linkage_xref, $accession, $version, $label, $description, $source_id, $species_id);
   $xref_sth->bind_columns(\$xref_id, \$ensembl_stable_id, \$type, \$linkage_xref,\ $accession, \$version, \$label, \$description, \$source_id, \$species_id);
 
+
+  open(ARSE,">>priority_xref.out") || die "Could not open priority_xref.out\n";
+
   while ($xref_sth->fetch()) {
     my $external_db_id = $source_to_external_db{$source_id};
 
@@ -1543,17 +1692,40 @@ sub dump_direct_xrefs {
           $self->cleanup_sources_file($external_db_id);
         }
 
-	if(!defined($priority_xref_source_id{$xref_id})){
-	  my $key = $priority_source_name{$source_id}.":".$priority_xref_acc{$xref_id};
-	  if($priority_xref_priority{$key} 
-				  < $priority_source_id{$source_id}){
+	if(defined($priority_xref_source_id{$xref_id})){
+	  if(!defined($priority_source_id_to_name{$source_id}) or length($priority_source_id_to_name{$source_id}) < 2){
+	    print STDERR "priority_source_id_to_name has ".scalar(%priority_source_id_to_name)." keys for has\n";
+	    die "no source name for source id $source_id\n";
+	  }
+	  my $key = $priority_source_id_to_name{$source_id}.":".$priority_xref_acc{$xref_id};
+	  if(!defined($priority_xref_priority{$key})){
+	    print ARSE $priority_xref_acc{$xref_id}."\t".$source_id.
+	      " being set as undef (DIRECT) xref= $xref_id key = $key  priority = ".$priority_source_id{$source_id}."\n";
 
+	    $priority_xref{$key} = $xref_id;
+	    $priority_xref_priority{$key} = $priority_source_id{$source_id};
+	    $priority_object_xref{$key} = ucfirst($type).":".$ensembl_internal_id;
+	    $priority_identity_xref{$key} = undef;
+
+	    $priority_xref_state{$key} = "direct";
+	    next; # do not store XREF or OBJECT. do much later
+	  }
+	  if($priority_xref_priority{$key}        # old one
+	     > $priority_source_id{$source_id}){  # new one
+
+	    print ARSE $priority_xref_acc{$xref_id}."\t".$source_id.
+	      " being set as better priority found (DIRECT) priority = ".$priority_source_id{$source_id}."\n";
+
+	    $priority_xref{$key} = $xref_id;
 	    $priority_xref_priority{$key} = $priority_source_id{$source_id};
 	    $priority_object_xref{$key} = ucfirst($type).":".$ensembl_internal_id;
 	    $priority_identity_xref{$key} = undef;
 
 	    $priority_xref_state{$key} = "direct";
           }
+	  else{
+	    print ARSE $priority_xref_acc{$xref_id}."\t".$source_id." has less (DIRECT) priority so left as is. \n";
+	  }
           next; # do not store XREF or OBJECT. do much later
 	}
 
@@ -1619,7 +1791,7 @@ sub dump_direct_xrefs {
   close(OBJECT_XREF);
   close(XREF);
   close(GO_XREF);
-
+  close(ARSE);
   $xref_sth->finish();
 
   print "  Wrote $count direct xrefs\n";
@@ -1787,6 +1959,8 @@ sub dump_core_xrefs {
   my @xref_ids = keys %$xref_ids_hashref;
   my %xref_to_objects = %$xref_ids_hashref;
 
+  print "\nxref_to_object has ".scalar(%xref_to_objects)." hashes\n";
+
   my $dir = $self->core->dir();
 
   open (XREF, ">$dir/xref.txt");
@@ -1880,10 +2054,20 @@ sub dump_core_xrefs {
     $dep_sth->execute();
 
     $dep_sth->bind_columns(\$xref_id, \$master_xref_id, \$accession, \$label, \$description, \$source_id, \$version, \$linkage_annotation);
-    while ($dep_sth->fetch()) {
+
+    open(ARSE,">>priority_xref.out") || die "Could not open priority_xref.out\n";
+
+
+    my $debug= 0;
+    if($master_xref_id == 521596){
+      print STDERR "master = 52196";
+      $debug = 1;
+    }
+    while ($dep_sth->fetch()) {  # dependent xrefs
 
 
       my $external_db_id = $source_to_external_db{$source_id};
+      print STDERR "external db id = $external_db_id\n" if($debug);
       next if (!$external_db_id);
 
 
@@ -1894,27 +2078,51 @@ sub dump_core_xrefs {
 	  $self->cleanup_sources_file($external_db_id);
 	}
 	
-	print XREF ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $accession . "\t" . $label . "\t" . $version . "\t" . $description . "\n";
+	if(!defined($priority_xref_source_id{$xref_id})){
+	  print XREF ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $accession . "\t" . $label . "\t" . $version . "\t" . $description . "\n";
+	}
 	$xrefs_written{$xref_id} = 1;
 	$source_ids{$source_id} = $source_id;
       }
 
       # create an object_xref linking this (dependent) xref with any objects it maps to
       # write to file and add to object_xref_mappings
+      print STDERR "xrefs_to_object =>". $xref_to_objects{$master_xref_id}."\n" if ($debug);
       if (defined $xref_to_objects{$master_xref_id}) {
 	my @ensembl_object_ids = keys( %{$xref_to_objects{$master_xref_id}} ); 
+	print STDERR "ensembl_object_ids ".join(", ",@ensembl_object_ids) if($debug);
 	foreach my $object_id_key (@ensembl_object_ids) {
 	  my ($object_id, $type) = split /\|/, $object_id_key;
 	  my $full_key = $type."|".$object_id."|".$xref_id;
-	  my $key = $priority_source_name{$source_id}.":".$priority_xref_acc{$xref_id};	  
-	  if(!defined($priority_xref_priority{$key})){
-	    if($priority_xref_priority{$key} 
-				    < $priority_source_id{$source_id}){
-
+	  print STDERR "Well well well\n" if ($debug);
+	  if(defined($priority_xref_source_id{$xref_id})){
+	    my $key = $priority_source_id_to_name{$source_id}.":".$priority_xref_acc{$xref_id};	  
+	    if(!defined($priority_xref_priority{$key})){
+	      print ARSE $priority_xref_acc{$xref_id}."\t".$source_id.
+		" being set as undef  (DEPENDENT) priority = ".$priority_source_id{$source_id}."\n";
+	      
+	      $priority_xref{$key} = $xref_id;
 	      $priority_xref_priority{$key} = $priority_source_id{$source_id};
 	      $priority_object_xref{$key} = "$type:$object_id";
 	      $priority_identity_xref{$key} = undef;
 	      $priority_xref_state{$key} = "dependent";
+	      next;
+	    }
+	    if($priority_xref_priority{$key} 
+	       > $priority_source_id{$source_id}){
+	      
+	      print ARSE $priority_xref_acc{$xref_id}."\t".$source_id.
+		" being set as better priority found  (DEPENDENT) priority = ".$priority_source_id{$source_id}."\n";
+
+	      $priority_xref{$key} = $xref_id;
+	      $priority_xref_priority{$key} = $priority_source_id{$source_id};
+	      $priority_object_xref{$key} = "$type:$object_id";
+	      $priority_identity_xref{$key} = undef;
+	      $priority_xref_state{$key} = "dependent";
+	      next;
+	    }
+	    else{
+	      print ARSE $priority_xref_acc{$xref_id}."\t".$source_id." has less priority (DEPENDENT) so left as is\n";
 	    }
 	    next;
 	  }
@@ -1955,6 +2163,7 @@ sub dump_core_xrefs {
   close(OBJECT_XREF);
   close(EXTERNAL_SYNONYM);
   close(GO_XREF);
+  close (ARSE);
 
   return $object_xref_id;
 
@@ -3279,8 +3488,10 @@ sub dump_all_dependencies{
 	$self->cleanup_sources_file($external_db_id);
       }
       
-      print XREF ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $accession . "\t" . $label . "\t" . $version . "\t" . $description . "\n";
-      $xrefs_written{$xref_id} = 1;
+      if(!defined($priority_xref_source_id{$xref_id})){
+	print XREF ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $accession . "\t" . $label . "\t" . $version . "\t" . $description . "\n";
+	$xrefs_written{$xref_id} = 1;
+      }
     }
   }
 }
@@ -3349,7 +3560,11 @@ PSQL
 
   foreach my $source (@primary_sources){
 
-     my $sql = "select x.xref_id, x.accession, x.version, x.label, x.description, x.source_id, ".
+
+    if(defined($priority_source_name{$source})){
+      next;
+    }
+    my $sql = "select x.xref_id, x.accession, x.version, x.label, x.description, x.source_id, ".
               "x.species_id from xref x where x.source_id = $source";
     my $sth = $self->xref->dbc->prepare($sql);
     $sth->execute();
@@ -3363,12 +3578,14 @@ PSQL
 	if(!defined($updated_source{$external_db_id})){
 	  $self->cleanup_sources_file($external_db_id);
 	}
-	print XREF ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $accession . 
+	if(!defined($priority_xref_source_id{$xref_id})){
+	  print XREF ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $accession . 
 	             "\t" . $label . "\t" . $version . "\t" . $description . "\n";
 
 #dump out dependencies aswell
 	
-        $self->dump_all_dependencies($xref_id, $xref_id_offset);
+	  $self->dump_all_dependencies($xref_id, $xref_id_offset);
+	}
 
       }
     }
