@@ -23,6 +23,32 @@ sub run {
   my $line_count = 0;
   my $xref_count = 0;
 
+
+
+  # becouse the direct mapping have no descriptions etc
+  # we have to steal these fromt he previous HUGO parser.
+  # This is why the order states this is after the other one.
+  # maybe 1091 is not right maybe should use name = HUGO and priority = 2 ??
+
+  my %label;
+  my %version;
+  my %description;
+
+  my $dbi = dbi();  
+  my $sql = "select accession, label, version,  description from xref where source_id = 1091";
+  my $sth = $dbi->prepare($sql);
+  $sth->execute();
+  my ($acc, $lab, $ver, $desc);
+  $sth->bind_columns(\$acc, \$lab, \$ver, \$desc);
+  while (my @row = $sth->fetchrow_array()) {
+    $label{$acc} = $lab;
+    $version{$acc} = $ver;
+    $description{$acc} = $desc;
+  }
+  $sth->finish;
+
+
+
   my %acc;
   while (<HUGO>) {
 
@@ -33,7 +59,7 @@ sub run {
       my $version ="";
       $line_count++;
       
-      my $xref_id = $self->add_xref($hgnc, $version, $hgnc, "", $source_id, $species_id);
+      my $xref_id = $self->add_xref($hgnc, $version{$hgnc} , $label{$hgnc}||$hgnc , $description{$hgnc}, $source_id, $species_id);
       $xref_count++;
       
 
