@@ -862,16 +862,7 @@ CREATE TABLE meta (
 INSERT INTO meta (meta_key, meta_value) VALUES ("schema_version", "41");
 
 # patches included in this schema file
-INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_39_40_a.sql|rationalise_key_columns');
-INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_39_40_b.sql|xref_unique_constraint');
-INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_39_40_c.sql|xref_version');
-INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_39_40_d.sql|stable_id_event_score_column');
-INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_39_40_e.sql|is_current_not_null');
-INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_39_40_f.sql|remove_all_latest');
-INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_39_40_g.sql|add_ditag_tables');
-INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_39_40_h.sql|oligo_feature_analysis_id_type');
-INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_39_40_i.sql|schema_version');
-INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_39_40_j.sql|marker_synonym_name');
+# NOTE: at beginning of release cycle, remove patch entries from last release
 INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_40_41_a.sql|analysis_description_displayable');
 INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_40_41_b.sql|info_type_enum');
 INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_40_41_c.sql|xref_priority');
