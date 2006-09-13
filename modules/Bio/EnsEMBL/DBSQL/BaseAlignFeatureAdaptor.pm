@@ -118,6 +118,42 @@ sub fetch_all_by_hit_name{
 }
 
 
+=head2 fetch_all_by_hit_name_unversioned
+
+  Arg [1]    : string $hit_name
+               the beginning of the hit_name of the features to obtain
+               e.g. AA768786 would retrieve AA768786.1, AA768786.2 etc
+  Arg [2]    : (optional) string $logic_name
+               the analysis logic name of the type of features to obtain
+  Example    : @feats = $adaptor->fetch_all_by_hit_name($name, $logic_name);
+  Description: Returns a listref of features created from the database
+               which correspond to the given hit_name. If logic name
+               is defined, only features with an analysis of type
+               $logic_name will be returned.
+  Returntype : listref of Bio::EnsEMBL::BaseAlignFeatures
+  Exceptions : thrown if hit_name is not defined
+  Caller     : general
+  Status     : At risk
+
+=cut
+
+sub fetch_all_by_hit_name_unversioned {
+  my( $self, $hit_name, $logic_name ) = @_;
+  throw("hit_name argument is required") if(! $hit_name);
+
+  #construct a constraint like 't1.hit_name = "123"'
+  my @tabs = $self->_tables;
+  my ($name, $syn) = @{$tabs[0]};
+  my $constraint = ( "${syn}.hit_name LIKE '$hit_name%'" );
+
+  if( $logic_name ){
+    # Add the $logic_name constraint
+    $constraint = $self->_logic_name_to_constraint($constraint, $logic_name);
+  }
+  return $self->generic_fetch($constraint);
+}
+
+
 
 =head2 fetch_all_by_RawContig_and_pid
 
