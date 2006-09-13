@@ -32,7 +32,7 @@ Optional arguments:
 
     -v, --verbose=0|1                   verbose logging (default: false)
     -i, --interactive=0|1               run script interactively (default: true)
-    -n, --dry_run, --dry=0|1            don't write results to database
+    -n, --dry_run, --dry=0|1            dont write results to database
     -h, --help, -?                      print help (this message)
 
 =head1 DESCRIPTION
@@ -209,7 +209,8 @@ $support->log_stamped("Done loading $c seq_regions.\n\n");
 $support->log_stamped("Adding coord_system entries...\n");
 $sql = qq(
     INSERT INTO $ref_db.coord_system
-    SELECT coord_system_id+$csi_adjust, name, version, rank+100, ''
+    SELECT coord_system_id+$csi_adjust, name, version,
+      (SELECT MAX(rank)+1 FROM $ref_db.coord_system), ''
     FROM coord_system
     WHERE name = 'chromosome'
     AND version = '$alt_assembly'
