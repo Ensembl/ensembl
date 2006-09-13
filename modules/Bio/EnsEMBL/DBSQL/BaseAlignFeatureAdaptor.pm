@@ -127,7 +127,7 @@ sub fetch_all_by_hit_name{
                the analysis logic name of the type of features to obtain
   Example    : @feats = $adaptor->fetch_all_by_hit_name($name, $logic_name);
   Description: Returns a listref of features created from the database
-               which correspond to the given hit_name. If logic name
+               which start with the  given hit_name. If logic name
                is defined, only features with an analysis of type
                $logic_name will be returned.
   Returntype : listref of Bio::EnsEMBL::BaseAlignFeatures
