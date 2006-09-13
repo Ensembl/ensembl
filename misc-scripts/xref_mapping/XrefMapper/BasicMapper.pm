@@ -467,7 +467,7 @@ sub dump_subset{
     while(my @row = $sth->fetchrow_array()){
 
       $row[1] =~ s/(.{60})/$1\n/g;
-      print XREF_DUMP ">".$row[0]."-".$row[3]."\n".$row[1]."\n";
+      print XREF_DUMP ">".$row[0]."\n".$row[1]."\n";
 
     }
 
@@ -1076,11 +1076,9 @@ sub parse_mappings {
 
       $total_lines++;
       chomp();
-#IANIAN need to set back AFTER deleting xref.fasta
-      my ($label, $qid_sid, $target_id, $identity, $query_length, $target_length, $query_start, $query_end, $target_start, $target_end, $cigar_line, $score) = split(/:/, $_);
+      my ($label, $query_id, $target_id, $identity, $query_length, $target_length, $query_start, $query_end, $target_start, $target_end, $cigar_line, $score) = split(/:/, $_);
       $cigar_line =~ s/ //g;
 
-      my ($query_id, $source_id) = split(/-/, $qid_sid); #IANIANIAN
       # calculate percentage identities
       my $query_identity = int (100 * $identity / $query_length);
       my $target_identity = int (100 * $identity / $target_length);
@@ -1287,11 +1285,38 @@ sub process_priority_xrefs{
   close OBJECT_XREF;
   close IDENTITY_XREF;
 
-  foreach my $table ("xref","object_xref","identity_xref"){
+  # Do one big query to get a list of all the synonyms; note each xref may have
+  # more than one synonym so they are stored in a hash of lists
+  my $syn_count = 0;
+  my %synonyms;
+  my $syn_sth = $self->xref->dbc->prepare("SELECT xref_id, synonym FROM synonym");
+  $syn_sth->execute();
+  
+  my ($sxref_id, $synonym);
+  $syn_sth->bind_columns(\$sxref_id, \$synonym);
+  while ($syn_sth->fetch()) {
+    
+    if(defined($priority_xref_source_id{$sxref_id})){
+      push @{$synonyms{$sxref_id}}, $synonym;
+    }
+  }
+
+  open (EXTERNAL_SYNONYM, ">$dir/external_synonym_priority.txt");
+  # Dump any synonyms for xrefs we've written
+  # Now write the synonyms we want to the file
+  foreach my $xref_id (keys %synonyms) {
+    foreach my $syn (@{$synonyms{$xref_id}}) {
+      print EXTERNAL_SYNONYM ($xref_id+$xref_id_offset) . "\t" . $syn . "\n";
+      $syn_count++;
+    }
+  }
+  close EXTERNAL_SYNONYM;
+
+  foreach my $table ("xref","object_xref","identity_xref","external_synonym"){
     my $file = $dir."/".$table."_priority.txt";
   
     if(-s $file){
-      my $sth = $ensembl->dbc->prepare("LOAD DATA INFILE \'$file\' INTO TABLE $table");
+      my $sth = $ensembl->dbc->prepare("LOAD DATA INFILE \'$file\' IGNORE INTO TABLE $table");
       print "Uploading data in $file to $table\n";
       $sth->execute();
     }
@@ -1299,6 +1324,11 @@ sub process_priority_xrefs{
       print "NO file or zero size file, so not able to load file $file to $table\n";
     }
   }
+
+
+
+
+
 
 }
 
@@ -1980,8 +2010,9 @@ sub dump_core_xrefs {
   $syn_sth->bind_columns(\$sxref_id, \$synonym);
   while ($syn_sth->fetch()) {
 
-    push @{$synonyms{$sxref_id}}, $synonym;
-
+    if(!defined($priority_xref_source_id{$sxref_id})){
+      push @{$synonyms{$sxref_id}}, $synonym;
+    }
   }
 
   # keep a unique list of source IDs to build the external_db table later

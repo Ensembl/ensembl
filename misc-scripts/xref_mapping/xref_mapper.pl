@@ -347,6 +347,8 @@ else{
 
 $mapper->xref($xref); # attach xref object to mapper object
 
+#testing remove after
+
 
 if(defined($recalc_display_xrefs)){
   $mapper->genes_and_transcripts_attributes_set();
@@ -364,17 +366,24 @@ $mapper->upload_external_db($delete_external_db ) if $upload ;
 
 $mapper->build_list_and_map();
 
+$mapper->find_priority_sources();
+
+
 print "\nParsing mapping output\n";
 $mapper->parse_mappings($notriage);
 
-$mapper->delete_unmapped() if ($delete_unmapped);
 
 if($upload){
+
+  $mapper->delete_unmapped() if ($delete_unmapped);
 
   $mapper->do_upload();
 
   print "\nChecking pair data\n";
   $mapper->add_missing_pairs();
+
+
+  $mapper->process_priority_xrefs();
 
   print "\nChecking xrefs\n";
   $mapper->cleanup_database();
