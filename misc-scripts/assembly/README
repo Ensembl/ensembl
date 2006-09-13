@@ -6,6 +6,10 @@ assembly versions of a genome.
 All scripts used in this pipeline have a --help option to print available
 arguments (to be passed in from the commandline, or read from a ini-style
 configuration file specified with --conffile).
+Be sure to supply a config file or update the default file (sanger-plugins/
+vega/conf/ini-files/Conversion.ini) as a path to a logging directory and
+a binary directory are expected.
+Check the files in the logging dir for errors after every step.
 
 For an example how to *use* the mapping created by these scripts, please see
 EXAMPLE.use_mapping.pl.
@@ -36,7 +40,7 @@ To start the process, you'll have to load the alternative chromosomes into the
 Ensembl database for further processing. The reference and alternative database
 need to be on the same db host.
 
-a. Make suer you have all databases on the same host.
+a. Make sure you have all databases on the same host.
 
 b. Then run the script:
 
