@@ -48,104 +48,111 @@ INSERT INTO species (species_id, taxonomy_id, name, aliases) VALUES (69293,69293
 
 # "High level" sources that we will also download from (via source_url)
 
-INSERT INTO source VALUES (1020, 'MIM', 1, 'Y', 10);
+INSERT INTO source VALUES (1020, 'MIM', 1, 'Y', 10, 1);
 
-INSERT INTO source VALUES (1, "Uniprot/SWISSPROT", 1, 'Y',20);
-INSERT INTO source VALUES (2, "Uniprot/SPTREMBL", 1, 'Y',20);
-INSERT INTO source VALUES (3, "RefSeq_peptide", 1, 'Y',20);
-INSERT INTO source VALUES (4, "RefSeq_dna", 1, 'Y',20);
-INSERT INTO source VALUES (5, "IPI", 1, 'Y',30);
-INSERT INTO source VALUES (6, "UniGene", 1, 'Y',30);
-INSERT INTO source VALUES (10, "RefSeq_peptide_predicted", 1, 'Y',20);
-INSERT INTO source VALUES (11, "RefSeq_dna_predicted", 1, 'Y',20);
+INSERT INTO source VALUES (1, "Uniprot/SWISSPROT", 1, 'Y',20,1 );
+INSERT INTO source VALUES (2, "Uniprot/SPTREMBL", 1, 'Y',20, 1);
+INSERT INTO source VALUES (3, "RefSeq_peptide", 1, 'Y',20, 1);
+INSERT INTO source VALUES (4, "RefSeq_dna", 1, 'Y',20, 1);
+INSERT INTO source VALUES (5, "IPI", 1, 'Y',30, 1);
+INSERT INTO source VALUES (6, "UniGene", 1, 'Y',30, 1);
+INSERT INTO source VALUES (10, "RefSeq_peptide_predicted", 1, 'Y',20, 1);
+INSERT INTO source VALUES (11, "RefSeq_dna_predicted", 1, 'Y',20, 1);
 # Agilent probes
-INSERT INTO source VALUES (2700, 'AgilentProbe', 1, 'Y', 50);
-INSERT INTO source VALUES (2701, 'AgilentCGH', 1, 'Y', 50);
+INSERT INTO source VALUES (2700, 'AgilentProbe', 1, 'Y', 50, 1);
+INSERT INTO source VALUES (2701, 'AgilentCGH', 1, 'Y', 50, 1);
 
 # Other sources - used to create dependent xrefs, but not to download from
 
-INSERT INTO source VALUES (1010, 'EMBL', 1, 'N', 30);
-INSERT INTO source VALUES (1021, 'MIM_GENE', 1, 'N', 30);
-INSERT INTO source VALUES (1022, 'MIM_MORBID', 1, 'N', 30);
-INSERT INTO source VALUES (1030, 'PDB', 1, 'N', 30);
-INSERT INTO source VALUES (1040, 'protein_id', 1, 'N', 30);
-INSERT INTO source VALUES (1050, 'PUBMED', 1, 'N', 30);
-INSERT INTO source VALUES (1060, 'MEDLINE', 1, 'N', 30);
-INSERT INTO source VALUES (1070, 'GO', 1, 'Y',60);
-INSERT INTO source VALUES (1080, 'MarkerSymbol', 1, 'Y',30);
-INSERT INTO source VALUES (1090, 'HUGO', 1, 'Y',30);
+INSERT INTO source VALUES (1010, 'EMBL', 1, 'N', 30, 1);
+INSERT INTO source VALUES (1021, 'MIM_GENE', 1, 'N', 30, 1);
+INSERT INTO source VALUES (1022, 'MIM_MORBID', 1, 'N', 30, 1);
+INSERT INTO source VALUES (1030, 'PDB', 1, 'N', 30, 1);
+INSERT INTO source VALUES (1040, 'protein_id', 1, 'N', 30, 1);
+INSERT INTO source VALUES (1050, 'PUBMED', 1, 'N', 30, 1);
+INSERT INTO source VALUES (1060, 'MEDLINE', 1, 'N', 30, 1);
+INSERT INTO source VALUES (1070, 'GO', 1, 'Y',60, 1);
+INSERT INTO source VALUES (1080, 'MarkerSymbol', 1, 'Y',30, 1);
+
+# note for hugo 1090 has a lower order ie. it will be parsed after the 1091
+# but has a higher priority as it should take precedense.
+# 1090 needs 1091 to be loaded first to obtain descriptions etc.
+
+INSERT INTO source VALUES (1090, 'HUGO', 1, 'Y',30, 1);
+INSERT INTO source VALUES (1091, 'HUGO', 1, 'Y',29, 3);
+INSERT INTO source VALUES (1092, 'HUGO', 1, 'Y',51, 2);
 
 
-INSERT INTO source VALUES (1110, 'EntrezGene', 1, 'N', 30);
+INSERT INTO source VALUES (1110, 'EntrezGene', 1, 'N', 30, 1);
 
-INSERT INTO source VALUES (1200, 'RGD', 1, 'Y',30);
-INSERT INTO source VALUES (1300, 'Interpro', 1, 'Y', 30);
-INSERT INTO source VALUES (1400, 'ZFIN_ID', 1, 'Y', 30);
-#INSERT INTO source VALUES (1500, 'OMIM', 1, 'Y', 40);
+INSERT INTO source VALUES (1200, 'RGD', 1, 'Y',30, 1);
+INSERT INTO source VALUES (1300, 'Interpro', 1, 'Y', 30, 1);
+INSERT INTO source VALUES (1400, 'ZFIN_ID', 1, 'Y', 30, 1);
+#INSERT INTO source VALUES (1500, 'OMIM', 1, 'Y', 40, 1);
 
-INSERT INTO source VALUES (2000, 'CCDS', 1, 'Y', 50);
+INSERT INTO source VALUES (2000, 'CCDS', 1, 'Y', 50, 1);
 
-#INSERT INTO source VALUES (2400, 'WormBase', 1, 'Y',50);
-INSERT INTO source VALUES (2400, 'wormpep_id', 1, 'Y', 50);
-INSERT INTO source VALUES (2410, 'wormbase_gene', 1, 'N',50);
-INSERT INTO source VALUES (2420, 'wormbase_transcript', 1, 'N', 50);
-INSERT INTO source VALUES (2430, 'wormbase_locus', 1, 'N', 50);
-INSERT INTO source VALUES (2440, 'wormbase_pseudogene', 1, 'N', 50);
+#INSERT INTO source VALUES (2400, 'WormBase', 1, 'Y',50, 1);
+INSERT INTO source VALUES (2400, 'wormpep_id', 1, 'Y', 50, 1);
+INSERT INTO source VALUES (2410, 'wormbase_gene', 1, 'N',50, 1);
+INSERT INTO source VALUES (2420, 'wormbase_transcript', 1, 'N', 50, 1);
+INSERT INTO source VALUES (2430, 'wormbase_locus', 1, 'N', 50, 1);
+INSERT INTO source VALUES (2440, 'wormbase_pseudogene', 1, 'N', 50, 1);
 
 # drosphila melanogster sources 
-INSERT INTO source VALUES (2500, 'flybase_gff', 1, 'Y', 50);
-INSERT INTO source VALUES (2510, 'flybase_gene_id', 1, 'N', 50);
-INSERT INTO source VALUES (2520, 'flybase_transcript_id', 1, 'N', 50);
-INSERT INTO source VALUES (2530, 'flybase_polypeptide_id', 1, 'N', 50);
-INSERT INTO source VALUES (2540, 'flybase_annotation_id', 1, 'N', 50);
-INSERT INTO source VALUES (2550, 'flybase_synonym', 1, 'N', 50);
-INSERT INTO source VALUES (2560, 'flybase_name', 1, 'N', 50);
-INSERT INTO source VALUES (2561, 'FlyBaseName_gene', 1, 'N', 50);
-INSERT INTO source VALUES (2562, 'FlyBaseName_transcript', 1, 'N', 50);
-INSERT INTO source VALUES (2563, 'FlyBaseName_translations', 1, 'N', 50);
-INSERT INTO source VALUES (2570, 'gadfly_gene_cgid', 1, 'N', 50);
-INSERT INTO source VALUES (2571, 'gadfly_transcript_cgid', 1, 'N', 50);
-INSERT INTO source VALUES (2572, 'gadfly_translation_cgid', 1, 'N', 50);
+INSERT INTO source VALUES (2500, 'flybase_gff', 1, 'Y', 50, 1);
+INSERT INTO source VALUES (2510, 'flybase_gene_id', 1, 'N', 50, 1);
+INSERT INTO source VALUES (2520, 'flybase_transcript_id', 1, 'N', 50, 1);
+INSERT INTO source VALUES (2530, 'flybase_polypeptide_id', 1, 'N', 50, 1);
+INSERT INTO source VALUES (2540, 'flybase_annotation_id', 1, 'N', 50, 1);
+INSERT INTO source VALUES (2550, 'flybase_synonym', 1, 'N', 50, 1);
+INSERT INTO source VALUES (2560, 'flybase_name', 1, 'N', 50, 1);
+INSERT INTO source VALUES (2561, 'FlyBaseName_gene', 1, 'N', 50, 1);
+INSERT INTO source VALUES (2562, 'FlyBaseName_transcript', 1, 'N', 50, 1);
+INSERT INTO source VALUES (2563, 'FlyBaseName_translations', 1, 'N', 50, 1);
+INSERT INTO source VALUES (2570, 'gadfly_gene_cgid', 1, 'N', 50, 1);
+INSERT INTO source VALUES (2571, 'gadfly_transcript_cgid', 1, 'N', 50, 1);
+INSERT INTO source VALUES (2572, 'gadfly_translation_cgid', 1, 'N', 50, 1);
 
 # ciona intestinalis sources
-INSERT INTO source VALUES (2601, 'cint_jgi_v1', 1, 'Y', 50);
-INSERT INTO source VALUES (2602, 'cint_jgi_v2', 1, 'Y', 50);
-INSERT INTO source VALUES (2610, 'cint_aniseed_jgi_v1', 1, 'Y', 50);
-INSERT INTO source VALUES (2611, 'cint_aniseed_jgi_v2', 1, 'Y', 50);
+INSERT INTO source VALUES (2601, 'cint_jgi_v1', 1, 'Y', 50, 1);
+INSERT INTO source VALUES (2602, 'cint_jgi_v2', 1, 'Y', 50, 1);
+INSERT INTO source VALUES (2610, 'cint_aniseed_jgi_v1', 1, 'Y', 50, 1);
+INSERT INTO source VALUES (2611, 'cint_aniseed_jgi_v2', 1, 'Y', 50, 1);
 
 # anopheles gambiae sources
 # predicted versions of Uniprot/EMBL - created as dependent in appropriate parse
-INSERT INTO source VALUES (2801, "Uniprot/SWISSPROT_predicted", 1, 'N',20);
-INSERT INTO source VALUES (2802, "Uniprot/SPTREMBL_predicted", 1, 'N',20);
-INSERT INTO source VALUES (2810, "EMBL_predicted", 1, 'N',20);
-INSERT INTO source VALUES (2840, 'protein_id_predicted', 1, 'N', 30);
-INSERT INTO source VALUES (2850, "Celera_Gene", 1, 'Y', 40);
-INSERT INTO source VALUES (2852, "Celera_Pep", 1, 'Y', 40);
-INSERT INTO source VALUES (2854, "Celera_Trans", 1, 'Y', 40);
-INSERT INTO source VALUES (2856, "Anopheles_symbol", 1, 'Y', 40);
+INSERT INTO source VALUES (2801, "Uniprot/SWISSPROT_predicted", 1, 'N',20, 1);
+INSERT INTO source VALUES (2802, "Uniprot/SPTREMBL_predicted", 1, 'N',20, 1);
+INSERT INTO source VALUES (2810, "EMBL_predicted", 1, 'N',20, 1);
+INSERT INTO source VALUES (2840, 'protein_id_predicted', 1, 'N', 30, 1);
+INSERT INTO source VALUES (2850, "Celera_Gene", 1, 'Y', 40, 1);
+INSERT INTO source VALUES (2852, "Celera_Pep", 1, 'Y', 40, 1);
+INSERT INTO source VALUES (2854, "Celera_Trans", 1, 'Y', 40, 1);
+INSERT INTO source VALUES (2856, "Anopheles_symbol", 1, 'Y', 40, 1);
 
 # aedes aegypti
-INSERT INTO source (source_id,name,release,download,ordered) VALUES ('7159', 'AedesGenBank','1','Y','30') ;
+INSERT INTO source VALUES (7159, 'AedesGenBank', '1','Y','30', 1) ;
 
 # Uniprot alternative splice
-INSERT INTO source VALUES (3000, "Uniprot/Varsplic", 1, 'Y',20);
+INSERT INTO source VALUES (3000, "Uniprot/Varsplic", 1, 'Y',20, 1);
 
 # Xenopus Jamboree peptides
-INSERT INTO source VALUES (3100, "Xenopus_Jamboree", 1, 'Y',20);
+INSERT INTO source VALUES (3100, "Xenopus_Jamboree", 1, 'Y',20, 1);
 
 # ncRNA sources
-INSERT INTO source VALUES (4000, "ncRNA", 1, 'Y',70);
-INSERT INTO source VALUES (4010, "RFAM", 1, 'N',70);
-INSERT INTO source VALUES (4020, "miRNA_Registry", 1, 'N',70);
+INSERT INTO source VALUES (4000, "ncRNA", 1, 'Y',70, 1);
+INSERT INTO source VALUES (4010, "RFAM", 1, 'N',70, 1);
+INSERT INTO source VALUES (4020, "miRNA_Registry", 1, 'N',70, 1);
 
 # temporary (?) source for mapping Havana OTT transcripts to Ensembl transcripts
-INSERT INTO source VALUES (5000, 'OTTT', 1, 'Y', 50);
+INSERT INTO source VALUES (5000, 'OTTT', 1, 'Y', 50, 1);
 
 # Illumina
-INSERT INTO source VALUES (5010, 'Illumina', 1, 'Y', 50);
+INSERT INTO source VALUES (5010, 'Illumina', 1, 'Y', 50, 1);
 
 # Codelink
-INSERT INTO source VALUES (5020, 'Codelink', 1, 'Y', 50);
+INSERT INTO source VALUES (5020, 'Codelink', 1, 'Y', 50, 1);
 
 ################################################################################
 # Files to fetch data from
@@ -287,7 +294,13 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1070, 9606,'ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/HUMAN/gene_association.goa_human.gz', '', now(), now(), "GOParser");
 
 ##       HUGO
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1090, 9606,'http://www.gene.ucl.ac.uk/cgi-bin/nomenclature/gdlw.pl?title=Genew+output+data&col=gd_hgnc_id&col=gd_app_sym&col=gd_app_name&col=gd_prev_sym&col=gd_aliases&col=md_prot_id&col=gd_pub_refseq_ids&status=Approved&status=Approved+Non-Human&status_opt=3&=on&where=&order_by=gd_hgnc_id&limit=&format=text&submit=submit&.cgifields=&.cgifields=status&.cgifields=chr', '', now(), now(), "HUGOParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1090, 9606,'LOCAL:HUGO/HUGO_TO_ENSG', '', now(), now(), "HUGO_ENSGParser");
+
+##       HUGO
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1092, 9606,'LOCAL:HUGO/CCDS_TO_HUGO', '', now(), now(), "HUGO_CCDSParser");
+
+# lower priority HUGO data
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1091, 9606,'http://www.gene.ucl.ac.uk/cgi-bin/nomenclature/gdlw.pl?title=Genew+output+data&col=gd_hgnc_id&col=gd_app_sym&col=gd_app_name&col=gd_prev_sym&col=gd_aliases&col=md_prot_id&col=gd_pub_refseq_ids&status=Approved&status=Approved+Non-Human&status_opt=3&=on&where=&order_by=gd_hgnc_id&limit=&format=text&submit=submit&.cgifields=&.cgifields=status&.cgifields=chr', '', now(), now(), "HUGOParser");
 
 ##      Interpro
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1300, 9606,'ftp://ftp.ebi.ac.uk/pub/databases/interpro/interpro.xml.gz', '', now(), now(), "InterproParser");
@@ -343,6 +356,7 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (4, 10090,'ftp://ftp.ncbi.nih.gov/refseq/M_musculus/mRNA_Prot/mouse.rna.fna.gz', '', now(), now(), "RefSeqParser");
 
 ##      mgd (MGI -- MarkerSymbol)
+# need to add  ftp://ftp.informatics.jax.org/pub/reports/MRK_Sequence.rpt
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1080, 10090,'ftp://ftp.informatics.jax.org/pub/reports/MRK_SwissProt_TrEMBL.rpt ftp://ftp.informatics.jax.org/pub/reports/MRK_Synonym.sql.rpt', '', now(), now(), "MGDParser");
 
 ##      GO 

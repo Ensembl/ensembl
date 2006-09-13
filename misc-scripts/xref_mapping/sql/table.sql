@@ -68,6 +68,7 @@ CREATE TABLE source (
   release                     varchar(255),
   download                    enum('Y', 'N') default 'Y',
   ordered                     int unsigned not null, 
+  priority                    int unsigned default 1,
    
   PRIMARY KEY (source_id),
   KEY name_idx(name) 
