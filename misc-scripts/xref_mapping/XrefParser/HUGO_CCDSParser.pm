@@ -73,7 +73,7 @@ sub run {
     $line_count++;
     if(!defined($seen{$hgnc})){
       $seen{$hgnc} = 1;
-      my $key = "CCDS".$hgnc;
+      my $key = "CCDS".$ccds;
       if(defined($ensembl_stable_id{$key})){
 	my $xref_id = $self->add_xref($hgnc, $version{$hgnc} , $label{$hgnc}||$hgnc , 
 				      $description{$hgnc}, $source_id, $species_id);

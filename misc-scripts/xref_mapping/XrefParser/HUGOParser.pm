@@ -76,23 +76,23 @@ sub run {
     # Use the RefSeq if available as this is manually curated
     # If no RefSeq, use the Swissprot instead
 
-    my $master;
-    if ($array[6]) {               # RefSeq
-      $master = $refseq{$array[6]};
+    my $seen=0;
+    if ($array[6]) {             # RefSeq
       $refseq_count++;
-    } elsif ($array[5]) {        # Uniprot
-      $master = $swiss{$array[5]};
+      XrefParser::BaseParser->add_to_xrefs($array[6], $array[0], '', $array[1], $array[2], "", $source_id, $species_id);
+      $seen = 1;
+    } 
+    if ($array[5]) {        # Uniprot
+      XrefParser::BaseParser->add_to_xrefs($array[5], $array[0], '', $array[1], $array[2], "", ($source_id+1), $species_id);
       $swiss_count++;
+      $seen=1;
     }
 
-    if (!$master) {
+    if (!$seen) {
       $mismatch++;
       next;
     }
 
-    #print $array[5] ." " . $array[6] . " " . $master . " " . $swiss_count . " " . $refseq_count . " " . $mismatch . "\n";
-
-    XrefParser::BaseParser->add_to_xrefs($master, $array[0], '', $array[1], $array[2], "", $source_id, $species_id);
 
     if (defined($array[3])) {     # dead name, add to synonym
       my @array2 = split(',\s*', $array[3]);
