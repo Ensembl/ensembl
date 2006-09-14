@@ -21,7 +21,9 @@ xref_mapper.pl - Create Ensembl gene model xref mappings
 [B<-delete_external_db>]
 [B<-notriage>]
 [B<-delete_unmapped>]
+[B<-recalc_display_xrefs>}
 [B<-dumpcheck>]
+[B<-external_db_file>]
 
 =back
 
@@ -70,7 +72,7 @@ dump only the specified (analysis.logic_name) gene type from the core DB
 
 use existing *.map files
 
-=item B<upload>
+=item B<-upload>
 
 upload xref, object_xref, identity_xref data, and set display_xrefs
 for genes and transcripts. Data is written to *.txt etc regardless of
@@ -83,6 +85,16 @@ deletes all entries of the external_db table if it contains any rows
 and uploads new data into the table - you have to interactively
 confirm the deletion before. Works only if option B<-upload> is used
 as well.
+
+=item B<-recalc_display_xrefs>
+
+recalculate the display xrefs for all the genes and transcripts
+and also recalculate the gene descriptions. This only reads the 
+data already stored in the core database and set these attributes 
+based on what is already stored. Useful if you have changed the 
+prioritys for the display xrefs etc or what sources are used in 
+which order for gene desriptions and merely want to recalc what 
+should be displayed. 
 
 =item B<-notriage>
 
@@ -146,20 +158,24 @@ my $location;
 my $logic_name;
 my $notriage=undef;
 my $delete_unmapped = undef;
+my $recalc_display_xrefs = undef;
+my $external_db_file="/../external_db/external_dbs.txt";
 
-GetOptions ('file=s'                  => \$file,
-            'verbose'                 => \$verbose,
-	    'dumpcheck'               => \$dumpcheck,
-	    'useexistingmappings'     => \$use_existing_mappings,
-	    'maxdump=n'               => \$maxdump,
-	    'upload'                  => \$upload,
-	    'delete_external_db'      => \$delete_external_db , 
-	    'location=s'              => \$location,
-            'logicname=s'             => \$logic_name,
-	    'notriage'                => \$notriage,
-	    'delete_unmapped'         => \$delete_unmapped,
-            'help'                    => \$help,
-            'man'                     => \$man );
+GetOptions ('file=s'                    => \$file,
+            'verbose'                   => \$verbose,
+	    'dumpcheck'                 => \$dumpcheck,
+	    'useexistingmappings'       => \$use_existing_mappings,
+	    'maxdump=n'                 => \$maxdump,
+	    'upload'                    => \$upload,
+	    'delete_external_db'        => \$delete_external_db , 
+	    'location=s'                => \$location,
+            'logicname=s'               => \$logic_name,
+	    'notriage'                  => \$notriage,
+	    'delete_unmapped'           => \$delete_unmapped,
+	    'recalc_display_xrefs_only' => \$recalc_display_xrefs,
+	    'external_db_file'          => \$external_db_file,
+            'help'                      => \$help,
+            'man'                       => \$man );
 pod2usage(1)            if ($help);
 pod2usage(VERBOSE => 2) if ($man);
 #usage("-file option is required")   if(!$file);
@@ -300,6 +316,13 @@ if(defined($species_hash{'species'})){
   $core->species($value);
 
   $mapper->core($core);
+
+  if(defined($upload)){
+    $mapper->upload("yes");
+  }
+  if(defined($external_db_file)){
+    $mapper->external_db_file($external_db_file);
+  }
   
   if(defined($dumpcheck)){
     $mapper->dumpcheck("yes");
@@ -324,6 +347,16 @@ else{
 
 $mapper->xref($xref); # attach xref object to mapper object
 
+#testing remove after
+
+
+if(defined($recalc_display_xrefs)){
+  $mapper->genes_and_transcripts_attributes_set();
+  print "Finished recalculating display xrefs and gene descriptions";
+  exit;
+}
+
+
 print "\nDumping xref & Ensembl sequences\n";
 $mapper->dump_seqs($location);
 
@@ -333,20 +366,32 @@ $mapper->upload_external_db($delete_external_db ) if $upload ;
 
 $mapper->build_list_and_map();
 
+$mapper->find_priority_sources();
+
+
 print "\nParsing mapping output\n";
 $mapper->parse_mappings($notriage);
 
-$mapper->delete_unmapped() if ($delete_unmapped);
 
-$mapper->do_upload() if ($upload);
+if($upload){
 
-print "\nChecking pair data\n" if($upload);
-$mapper->add_missing_pairs() if($upload);
+  $mapper->delete_unmapped() if ($delete_unmapped);
 
-#$mapper->check_pairs() if(!$upload);
+  $mapper->do_upload();
 
-print "\nChecking xrefs\n" if ($upload);
-$mapper->cleanup_database() if ($upload);
+  print "\nChecking pair data\n";
+  $mapper->add_missing_pairs();
+
+
+  $mapper->process_priority_xrefs();
+
+  print "\nChecking xrefs\n";
+  $mapper->cleanup_database();
+
+
+  $mapper->genes_and_transcripts_attributes_set();
+
+}
 
 print  "*** All finished ***\n";
 
