@@ -23,15 +23,11 @@ sub transcript_display_xref_sources {
 	  'flybase_symbol',
 	  'Anopheles_symbol',
 	  'Genoscope_annotated_gene',
-	  'Genoscope_predicted_transcript',
-	  'Genoscope_predicted_gene',
 	  'Uniprot/SWISSPROT',
 	  'Uniprot/Varsplic',
 	  'RefSeq_peptide',
 	  'RefSeq_dna',
 	  'Uniprot/SPTREMBL',
-	  'RefSeq_peptide_predicted',
-	  'RefSeq_dna_predicted',
 	  'EntrezGene');
 
 }
