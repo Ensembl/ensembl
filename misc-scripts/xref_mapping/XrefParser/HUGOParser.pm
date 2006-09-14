@@ -76,37 +76,48 @@ sub run {
     # Use the RefSeq if available as this is manually curated
     # If no RefSeq, use the Swissprot instead
 
-    my $master;
-    if ($array[6]) {               # RefSeq
-      $master = $refseq{$array[6]};
-      $refseq_count++;
-    } elsif ($array[5]) {        # Uniprot
-      $master = $swiss{$array[5]};
-      $swiss_count++;
-    }
+    if ($array[6]) {             # RefSeq
+      if(defined($refseq{$array[6]})){
+	$refseq_count++;
+	XrefParser::BaseParser->add_to_xrefs($refseq{$array[6]}, $array[0], '', $array[1], $array[2], "", $source_id, $species_id);
 
-    if (!$master) {
-      $mismatch++;
-      next;
-    }
+	if (defined($array[3])) {     # dead name, add to synonym
+	  my @array2 = split(',\s*', $array[3]);
+	  foreach my $arr (@array2){
+	    XrefParser::BaseParser->add_to_syn($array[0], $source_id, $arr);
+	  }
+	}
 
-    #print $array[5] ." " . $array[6] . " " . $master . " " . $swiss_count . " " . $refseq_count . " " . $mismatch . "\n";
+	if (defined($array[4])) {     # alias, add to synonym
+	  my @array2 = split(',\s*', $array[4]);
+	  foreach my $arr (@array2){
+	    XrefParser::BaseParser->add_to_syn($array[0], $source_id, $arr);
+	  }
+	}
+      }
+       }
 
-    XrefParser::BaseParser->add_to_xrefs($master, $array[0], '', $array[1], $array[2], "", $source_id, $species_id);
-
-    if (defined($array[3])) {     # dead name, add to synonym
-      my @array2 = split(',\s*', $array[3]);
-      foreach my $arr (@array2){
-	XrefParser::BaseParser->add_to_syn($array[0], $source_id, $arr);
+    if ($array[5]) {        # Uniprot
+      if(defined($swiss{$array[5]})){
+	XrefParser::BaseParser->add_to_xrefs($swiss{$array[5]}, $array[0], '', $array[1], $array[2], "", ($source_id+1), $species_id);
+	$swiss_count++;
+	if (defined($array[3])) {     # dead name, add to synonym
+	  my @array2 = split(',\s*', $array[3]);
+	  foreach my $arr (@array2){
+	    XrefParser::BaseParser->add_to_syn($array[0], ($source_id+1), $arr);
+	  }
+	}
+	
+	if (defined($array[4])) {     # alias, add to synonym
+	  my @array2 = split(',\s*', $array[4]);
+	  foreach my $arr (@array2){
+	    XrefParser::BaseParser->add_to_syn($array[0], ($source_id+1), $arr);
+	  }
+	}
       }
     }
 
-    if (defined($array[4])) {     # alias, add to synonym
-      my @array2 = split(',\s*', $array[4]);
-      foreach my $arr (@array2){
-	XrefParser::BaseParser->add_to_syn($array[0], $source_id, $arr);
-      }
-    }
+
 
   } # while HUGO
 
