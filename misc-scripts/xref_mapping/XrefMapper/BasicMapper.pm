@@ -1103,6 +1103,8 @@ sub parse_mappings {
       chomp();
       my ($label, $query_id, $target_id, $identity, $query_length, $target_length, $query_start, $query_end, $target_start, $target_end, $cigar_line, $score) = split(/:/, $_);
       $cigar_line =~ s/ //g;
+      $cigar_line =~ s/([MDI])(\d+)/$2$1/ig;
+
 
       if($query_id == 138110 || $query_id == 523601){
 	print "processing $query_id\n";
