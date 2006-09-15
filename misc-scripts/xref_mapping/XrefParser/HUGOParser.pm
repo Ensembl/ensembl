@@ -76,8 +76,10 @@ sub run {
     # Use the RefSeq if available as this is manually curated
     # If no RefSeq, use the Swissprot instead
 
+    my $seen = 0;
     if ($array[6]) {             # RefSeq
       if(defined($refseq{$array[6]})){
+	$seen = 1;
 	$refseq_count++;
 	XrefParser::BaseParser->add_to_xrefs($refseq{$array[6]}, $array[0], '', $array[1], $array[2], "", $source_id, $species_id);
 
@@ -99,6 +101,7 @@ sub run {
 
     if ($array[5]) {        # Uniprot
       if(defined($swiss{$array[5]})){
+	my $seen = 1;
 	XrefParser::BaseParser->add_to_xrefs($swiss{$array[5]}, $array[0], '', $array[1], $array[2], "", ($source_id+1), $species_id);
 	$swiss_count++;
 	if (defined($array[3])) {     # dead name, add to synonym
@@ -116,7 +119,9 @@ sub run {
 	}
       }
     }
-
+    if(!$seen){ # Store to keep descriptions etc
+      $self->add_xref($array[0], "", $array[1], $array[2], $source_id, $species_id);      
+    }
 
 
   } # while HUGO
