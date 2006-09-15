@@ -127,7 +127,7 @@ while (<FILE>) {
   );
 
   # project feature to new assembly
-  my @segments = @{ $feat->project('chromosome', $new_assembly) };
+  my @segments = @{ $feat->feature_Slice->project('chromosome', $new_assembly) };
 
   # do some sanity checks on the projection results:
   # discard the projected feature if
