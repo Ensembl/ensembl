@@ -109,14 +109,14 @@ sub new{
     my $af_adaptor = $variation_db->get_AlleleFeatureAdaptor;
     
     if( $af_adaptor ) {
-	#get the Population for the given strain
-	my $pop_adaptor = $variation_db->get_PopulationAdaptor;
+	#get the Individual for the given strain
+	my $ind_adaptor = $variation_db->get_IndividualAdaptor;
 
-	if ($pop_adaptor){
-	    my $population = $pop_adaptor->fetch_by_name($self->{'strain_name'});
-	    #check that the population returned is a strain
-	    if ((defined $population) && ($population->is_strain)){
-		my $allele_features = $af_adaptor->fetch_all_by_Slice_Population($self,$population);
+	if ($ind_adaptor){
+	    my $individual = shift @{$ind_adaptor->fetch_all_by_name($self->{'strain_name'})}; #the name should be unique for a strain
+	    #check that the individua returned isin the database
+	    if (defined $individual){
+		my $allele_features = $af_adaptor->fetch_all_by_Slice($self,$individual);
 		$self->{'alleleFeatures'} = $allele_features;
 		return $self;
 	    }
@@ -126,7 +126,7 @@ sub new{
 	    }
 	}
 	else{
-	    warning("Not possible to retrieve PopulationAdaptor from the variation database");
+	    warning("Not possible to retrieve IndividualAdaptor from the variation database");
 	    return '';
 	}
     } else {
