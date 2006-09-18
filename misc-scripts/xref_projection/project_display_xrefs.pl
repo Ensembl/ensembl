@@ -1,3 +1,4 @@
+
 use strict;
 
 # Sets display_xref_ids for novel genes in the "to" database based
@@ -9,7 +10,7 @@ use Bio::EnsEMBL::Registry;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::EnsEMBL::DBSQL::GeneAdaptor;
 
-my $method_link_type = "ENSEMBL_HOMOLOGUES";
+my $method_link_type = "ENSEMBL_ORTHOLOGUES";
 
 my ($conf, $compara, $from_species, @to_multi, $print, $names, $go_terms, $delete_names, $delete_go_terms, $no_backup, $full_stats, $descriptions);
 
@@ -172,7 +173,7 @@ sub project_display_names {
 
       # Add description to the gene if required
       # This should probably be in another column in the xref table but we just use the gene
-      # description column for now. 
+      # description column for now.
       $to_gene->description($from_gene->description()) if ($descriptions && $from_gene->description());
 
       $dbEntry->info_type("PROJECTION");
