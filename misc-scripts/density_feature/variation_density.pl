@@ -45,6 +45,14 @@ if( ! variation_attach( $db )) {
   die( "Couldnt attach variation to $dbname" );
 }
 
+
+#
+# Clean up old features first. Also remove analysis and density type entry as these are recreated.
+#
+
+my $sth = $db->dbc->prepare("DELETE df, dt, a FROM density_feature df, density_type dt, analysis a WHERE a.analysis_id=dt.analysis_id AND dt.density_type_id=df.density_type_id AND a.logic_name='snpDensity'");
+$sth->execute();;
+
 #
 # Get the adaptors needed;
 #
@@ -150,7 +158,7 @@ sub variation_attach {
   my $db = shift;
 
   my $core_db_name;
-  $core_db_name = $db->dbname();
+  $core_db_name = $db->dbc->dbname();
   if( $core_db_name !~ /_core_/ ) {
     return 0;
   }
@@ -163,20 +171,31 @@ sub variation_attach {
   my %all_db_names = map {( $_->[0] , 1)} @$all_db_names;
   my $snp_db_name = $core_db_name;
   $snp_db_name =~ s/_core_/_variation_/;
-  if( ! exists $all_db_names{ $snp_db_name } ) {
-    return 0;
-  }
+# if( ! exists $all_db_names{ $snp_db_name } ) {
+#   return 0;
+# }
+#
+# # this should register the dbadaptor with the Registry
+# my $snp_db = Bio::EnsEMBL::Variation::DBSQL::DBAdaptor->new
+#   ( -host => $db->host(),
+#     -user => $db->username(),
+#     -pass => $db->password(),
+#     -port => $db->port(),
+#     -dbname => $snp_db_name,
+#     -group => "variation",
+#     -species => "DEFAULT"
+#   );
 
-  # this should register the dbadaptor with the Registry
-  my $snp_db = Bio::EnsEMBL::Variation::DBSQL::DBAdaptor->new
-    ( -host => $db->host(),
-      -user => $db->username(),
-      -pass => $db->password(),
-      -port => $db->port(),
-      -dbname => $snp_db_name,
-      -group => "variation",
-      -species => "DEFAULT"
-    );
+
+ my $snp_db = Bio::EnsEMBL::Variation::DBSQL::DBAdaptor->new
+   ( -host => 'ens-genomics1',
+     -user => 'ensro',
+     -pass => '',
+     -port => 3306,
+     -dbname => 'yuan_hum_var_41',
+     -group => "variation",
+     -species => "DEFAULT"
+   );
 
   return 1;
 }
