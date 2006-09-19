@@ -550,6 +550,11 @@ sub get_seq_region_id {
                slices will be rerurned.
   Arg [4]    : int $include_duplicates (optional)
                If set duplicate regions will be returned.
+               
+               NOTE: if you don't use this option and you have a PAR
+               (pseudo-autosomal region) at the beginning of your seq_region
+               then your slice will not start at position 1, so coordinates
+               retrieved from this slice might not be what you expected.
 
   Example    : @chromos = @{$slice_adaptor->fetch_all('chromosome','NCBI33')};
                @contigs = @{$slice_adaptor->fetch_all('contig')};
