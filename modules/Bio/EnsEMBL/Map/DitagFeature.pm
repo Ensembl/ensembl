@@ -81,7 +81,7 @@ sub new {
   my ($caller, @args) = @_;
   my ( $dbID, $adaptor, $start, $end, $strand, $slice, $analysis, $hit_start, $hit_end, 
        $hit_strand, $ditag_id, $ditag_side, $cigar_line, $ditag_pair_id, $tag_count ) = rearrange( 
-      [ 'dbid', 'adaptor' ,'start', 'end', 'strand', 'slice', 'analysis', 'hit_start', 
+												  [ 'dbid', 'adaptor' ,'start', 'end', 'strand', 'slice', 'analysis', 'hit_start', 
 	'hit_end', 'hit_strand', 'ditag_id', 'ditag_side', 'cigar_line', 'ditag_pair_id' ,'tag_count'],
        @args );
   my $class = ref($caller) || $caller;
@@ -97,9 +97,9 @@ sub new {
       throw('-STRAND argument must be 1, -1, or 0');
     }
   }
-    if(defined($hit_strand)) {
+  if(defined($hit_strand)) {
     if(!($hit_strand == 1) && !($hit_strand == -1) && !($hit_strand == 0)) {
-      throw('-HIT_STRAND argument must be 1, -1, or 0');
+      throw('-HIT_STRAND argument must be 1, -1, or 0 not '.$hit_strand);
     }
   }
   if(defined($start) && defined($end)) {
@@ -165,6 +165,7 @@ sub fetch_ditag {
                this DitagFeature belongs to.
                If it is not a paired ditag, these will be identical
                to DitagFeature->start() & DitagFeature->end().
+               Please note that the returned start/end are min/max locations.
   Returntype : int (start, end, strand)
   Exceptions : throws if the 2 features of a pair are found on different strands
                or if the second one cannot be found.
@@ -181,18 +182,25 @@ sub get_ditag_location {
     $end   = $self->end;
   }
   else{
-    my ($ditag_a, $ditag_b);
+    my ($ditag_a, $ditag_b, $more);
     eval{
-     ($ditag_a, $ditag_b) = @{$self->adaptor->fetch_all_by_ditagID($self->ditag_id, $self->ditag_pair_id)};
+     ($ditag_a, $ditag_b, $more) = @{$self->adaptor->fetch_all_by_ditagID($self->ditag_id, $self->ditag_pair_id)};
     };
-    if($@ or !defined($ditag_b)){
-      throw("Cannot find 2nd tag of pair (".$self->dbID.", ".$self->ditag_id.", ".$self->ditag_pair_id.")");
+    if($@ or !defined($ditag_a) or !defined($ditag_b)){
+      #warn("Cannot find 2nd tag of pair (".$self->dbID.", ".$self->ditag_id.", ".$self->ditag_pair_id.")");
+      $start = $self->start;
+      $end   = $self->end;
     }
+    else{
+      if(defined $more){
+	throw("More than two DitagFeatures were returned for ".$self->dbID.", ".$self->ditag_id.", ".$self->ditag_pair_id);
+      }
 
-    ($ditag_a->start < $ditag_b->start) ? ($start = $ditag_a->start) : ($start = $ditag_b->start);
-    ($ditag_a->end   > $ditag_b->end)   ? ($end   = $ditag_a->end)   : ($end   = $ditag_b->end);
-    if($self->strand != $ditag_b->strand){
-      throw('the strand of the two ditagFeatures are different! '.$ditag_a->strand.'/'.$ditag_b->strand);
+      ($ditag_a->start < $ditag_b->start) ? ($start = $ditag_a->start) : ($start = $ditag_b->start);
+      ($ditag_a->end   > $ditag_b->end)   ? ($end   = $ditag_a->end)   : ($end   = $ditag_b->end);
+      if($ditag_a->strand != $ditag_b->strand){
+	throw('the strand of the two ditagFeatures are different! '.$ditag_a->strand.'/'.$ditag_b->strand);
+      }
     }
   }
 
