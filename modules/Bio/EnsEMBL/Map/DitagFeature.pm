@@ -187,9 +187,7 @@ sub get_ditag_location {
      ($ditag_a, $ditag_b, $more) = @{$self->adaptor->fetch_all_by_ditagID($self->ditag_id, $self->ditag_pair_id)};
     };
     if($@ or !defined($ditag_a) or !defined($ditag_b)){
-      #warn("Cannot find 2nd tag of pair (".$self->dbID.", ".$self->ditag_id.", ".$self->ditag_pair_id.")");
-      $start = $self->start;
-      $end   = $self->end;
+      throw("Cannot find 2nd tag of pair (".$self->dbID.", ".$self->ditag_id.", ".$self->ditag_pair_id.")");
     }
     else{
       if(defined $more){
