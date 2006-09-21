@@ -24,7 +24,7 @@ Bio::EnsEMBL::DBSQL::ProteinFeatureAdaptor
                                             -driver => 'mysql' );
   my $pfa = $db->get_ProteinFeatureAdaptor();
 
-  my @prot_feats = $pfa->fetch_all_by_translation_id(1231);
+  my @prot_feats = @{$pfa->fetch_all_by_translation_id(1231)};
 
   my $prot_feat = $pfa->fetch_by_dbID(523);
 
