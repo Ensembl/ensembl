@@ -1,4 +1,3 @@
-
 use strict;
 
 # Sets display_xref_ids for novel genes in the "to" database based
@@ -44,6 +43,9 @@ if (!$go_terms && !$names) {
   exit(1);
 
 }
+
+# only these evidence codes will be considered for GO term projection
+my @evidence_codes = [ "IDA", "IEP", "IGI", "IMP", "IPI" ];
 
 @to_multi = split(/,/,join(',',@to_multi));
 
@@ -107,7 +109,7 @@ foreach my $to_species (@to_multi) {
     print "Projected terms by evidence code:\n";
     my $total;
     foreach my $et (sort keys %projections_by_evidence_type) {
-      next if ($et eq 'IEA');
+      next if (!grep(/$et/, @evidence_codes));
       if ($et) {
 	print $et . "\t" . $projections_by_evidence_type{$et} . "\n";
 	$total += $projections_by_evidence_type{$et};
@@ -161,7 +163,7 @@ sub project_display_names {
   my $to_source = $to_gene->display_xref()->dbname() if ($to_gene->display_xref());
   my $from_source = $from_gene->display_xref()->dbname() if ($from_gene->display_xref());
 
-  my $from_latin_species = Bio::EnsEMBL::Registry->get_alias($from_species);
+  my $from_latin_species = ucfirst(Bio::EnsEMBL::Registry->get_alias($from_species));
 
   # if no display name set, do the projection
   if (check_overwrite_display_xref($to_gene, $from_source, $to_source)) {
@@ -243,7 +245,7 @@ sub project_go_terms {
   my $from_translation = $ma->fetch_by_dbID($from_attribute->peptide_member_id())->get_Translation();
   my $to_translation   = $ma->fetch_by_dbID($to_attribute->peptide_member_id())->get_Translation();
 
-  my $from_latin_species = Bio::EnsEMBL::Registry->get_alias($from_species);
+  my $from_latin_species = ucfirst(Bio::EnsEMBL::Registry->get_alias($from_species));
 
   my $to_go_xrefs = $to_translation->get_all_DBEntries();
 
@@ -259,7 +261,7 @@ sub project_go_terms {
     # even if there are more than one evidence type for this GO term
     # Should be changed to just skip IEA one, not others
     foreach my $et (@{$dbEntry->get_all_linkage_types}){
-      next DBENTRY if ($et eq "IEA" || $et eq "ISS");
+      next DBENTRY if (!grep(/$et/, @evidence_codes));
     }
 
     # check that each from GO term isn't already projected
