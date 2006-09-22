@@ -509,7 +509,7 @@ sub get_all_synonyms {
   my $self = shift;
 
   # lazy-load synonyms if required
-  if (!$self->{synonyms}) {
+  if (!$self->{synonyms} & $self->{adaptor}) {
     $self->{synonyms} = $self->{adaptor}->fetch_all_synonyms($self->dbID());
   }
 
