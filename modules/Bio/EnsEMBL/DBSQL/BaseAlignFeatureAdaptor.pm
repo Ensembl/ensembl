@@ -144,7 +144,7 @@ sub fetch_all_by_hit_name_unversioned {
   #construct a constraint like 't1.hit_name = "123"'
   my @tabs = $self->_tables;
   my ($name, $syn) = @{$tabs[0]};
-  my $constraint = ( "${syn}.hit_name LIKE '$hit_name%'" );
+  my $constraint = ( "${syn}.hit_name LIKE '$hit_name.%'" );
 
   if( $logic_name ){
     # Add the $logic_name constraint
