@@ -318,7 +318,7 @@ sub store {
     $sth->bind_param(5, $dbRef,SQL_INTEGER);
     $sth->bind_param(6, $exObj->info_type, SQL_VARCHAR);
     $sth->bind_param(7, $exObj->info_text, SQL_VARCHAR);
-    $sth->bind_param(8, $exObj->xref_priority,SQL_INTEGER);
+    $sth->bind_param(8, 1,SQL_INTEGER); # XXX remove this!
 
     $sth->execute();
 
@@ -1147,6 +1147,41 @@ sub fetch_all_by_description {
   $sth->finish();
 
   return \@results;
+}
+
+=head2 fetch_all_synonyms
+
+  Arg [1]    : dbID of DBEntry to fetch synonyms for. Used in lazy loading of synonyms.
+
+  Example    : @canc_refs = @{$db_entry_adaptor->fetch_all_synonyms(1234)};
+  Description: Fetches the synonyms for a particular DBEntry.
+  Returntype : listref of synonyms. List referred to may be empty if there are no synonyms.
+  Exceptions : None.
+  Caller     : General
+  Status     : At Risk
+
+=cut
+
+
+sub fetch_all_synonyms {
+
+  my ($self, $dbID) = @_;
+
+  my @synonyms;
+
+  my $sth = $self->prepare("SELECT synonym FROM external_synonym WHERE xref_id = ?");
+
+  $sth->bind_param(1, $dbID, SQL_INTEGER);
+  $sth->execute();
+  while ( my $arrayref = $sth->fetchrow_arrayref()){
+    my ($synonym) = @$arrayref;
+    push (@synonyms, $synonym);
+  }
+
+  @synonyms = [] if (!@synonyms);
+
+  return \@synonyms;
+
 }
 
 =head2 geneids_by_extids
