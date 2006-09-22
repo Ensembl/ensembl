@@ -64,8 +64,6 @@ sub new_fast {
 
   bless $hashref, $class;
 
-  $hashref->{synonyms} = [];
-  
   return $hashref;
 }
 
@@ -132,7 +130,6 @@ sub new {
   if( defined $info_type) { $self->info_type($info_type) }
   if( defined $info_text) { $self->info_text($info_text) }
   if( defined $xref_priority) { $self->xref_priority($xref_priority) }
-  $self->{synonyms} = [];;
 
   return $self;
 }
@@ -499,7 +496,8 @@ sub add_synonym {
   Args       : none
   Example    : my @synonyms = @{ $db_entry->get_all_synonyms };
   Description: Get a list of synonyms known for this object.
-  Returntype : listref of strings 
+               Synonyms are lazy-loaded if required.
+  Returntype : listref of strings. May be empty.
   Exceptions : none
   Caller     : general
   Status     : Stable
@@ -507,7 +505,14 @@ sub add_synonym {
 =cut
 
 sub get_all_synonyms {
+
   my $self = shift;
+
+  # lazy-load synonyms if required
+  if (!$self->{synonyms}) {
+    $self->{synonyms} = $self->{adaptor}->fetch_all_synonyms($self->dbID());
+  }
+
   return $self->{synonyms};
 }
 
