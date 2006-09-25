@@ -21,7 +21,7 @@ sub delete_existing {
   print "Deleting existing features & related data for type $type\n";
 
   # Delete any regulatory_feature_coding entries first
-  my $sth = $db_adaptor->dbc->prepare("DELETE rft FROM regulatory_feature rfeat, regulatory_factor_coding rft, analysis a WHERE rfeat.regulatory_factor_id=rft.regulatory_factor_id AND a.analysis_id=rfeat.analysis_id AND LOWER(a.analysis_id)=?");
+  my $sth = $db_adaptor->dbc->prepare("DELETE rft FROM regulatory_feature rfeat, regulatory_factor_coding rft, analysis a WHERE rfeat.regulatory_factor_id=rft.regulatory_factor_id AND a.analysis_id=rfeat.analysis_id AND LOWER(a.logic_name)=?");
   $sth->execute($t);
 
   # now delete interlinked regulatory_feature, regulatory_factor and regulatory_feature_object entries
@@ -29,11 +29,11 @@ sub delete_existing {
   $sth->execute($t);
 
   # delete dangling regulatory_factors
-  $sth = $db_adaptor->dbc->prepare("DELETE rfact FROM regulatory_feature rfeat, regulatory_factor rfact, analysis a WHERE rfeat.regulatory_factor_id=rfact.regulatory_factor_id AND a.analysis_id=rfeat.analysis_id AND LOWER(a.analysis_id)=?");
+  $sth = $db_adaptor->dbc->prepare("DELETE rfact FROM regulatory_feature rfeat, regulatory_factor rfact, analysis a WHERE rfeat.regulatory_factor_id=rfact.regulatory_factor_id AND a.analysis_id=rfeat.analysis_id AND LOWER(a.logic_name)=?");
   $sth->execute($t);
 
   # and finally any dangling regulatory features
-  $sth = $db_adaptor->dbc->prepare("DELETE rfeat FROM regulatory_feature rfeat, analysis a WHERE a.analysis_id=rfeat.analysis_id AND LOWER(a.analysis_id)=?");
+  $sth = $db_adaptor->dbc->prepare("DELETE rfeat FROM regulatory_feature rfeat, analysis a WHERE a.analysis_id=rfeat.analysis_id AND LOWER(a.logic_name)=?");
   $sth->execute($t);
 
   # Delete search regions; they have a different analysis_id
