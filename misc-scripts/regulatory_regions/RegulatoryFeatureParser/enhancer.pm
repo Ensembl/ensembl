@@ -45,6 +45,23 @@ sub parse {
   # this object is only used for projection
   my $dummy_analysis = new Bio::EnsEMBL::Analysis(-logic_name => 'EnhancerProjection');
 
+
+  # use separate analyses to distinguish positive and negative influence
+  my $analysis_positive = $analysis_adaptor->fetch_by_logic_name("enhancer_positive")->dbID();
+  my $analysis_negative = $analysis_adaptor->fetch_by_logic_name("enhancer_negative")->dbID();
+
+  if (!$analysis_positive) {
+    print STDERR "Can't get analysis for enhancer_positive, skipping\n";
+    exit(1);
+  }
+
+  if (!$analysis_negative) {
+    print STDERR "Can't get analysis for enhancer_negative, skipping\n";
+    exit(1);
+  }
+
+  # read file
+
   open (FILE, "<$file") || die "Can't open $file";
 
   while (<FILE>) {
@@ -66,23 +83,11 @@ sub parse {
     # Feature name
 
     $feature{NAME} = "LBNL-$element_number";
-    $feature{INFLUENCE} = $posneg;
 
     # ----------------------------------------
     # Analysis
 
-    my $analysis = $anal{"enhancer"};
-    if (!$analysis) {
-      $analysis = $analysis_adaptor->fetch_by_logic_name("enhancer");
-      $anal{"enhancer"} = $analysis;
-    }
-
-    if (!$analysis) {
-      print STDERR "Can't get analysis for enhancer, skipping\n";
-      next;
-    }
-
-    $feature{ANALYSIS_ID} = $analysis->dbID();
+    $feature{ANALYSIS_ID} = $posneg eq 'positive' ? $analysis_positive : $analysis_negative;
 
     # ----------------------------------------
     # Seq_region ID and co-ordinates
