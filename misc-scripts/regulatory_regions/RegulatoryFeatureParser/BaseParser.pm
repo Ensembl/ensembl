@@ -155,21 +155,27 @@ sub upload_features_and_factors {
 			  $feature->{ANALYSIS_ID},
 			  $feature->{FACTOR_ID});
 
-    $feature_object_sth->execute($feature->{INTERNAL_ID},
-				  $feature->{ENSEMBL_TYPE},
-				  $feature->{ENSEMBL_ID},
-				  $feature->{INFLUENCE},
-				  $feature->{EVIDENCE});
+    if ($feature->{ENSEMBL_TYPE} && $feature->{ENSEMBL_ID}) {
+      $feature_object_sth->execute($feature->{INTERNAL_ID},
+				   $feature->{ENSEMBL_TYPE},
+				   $feature->{ENSEMBL_ID},
+				   $feature->{INFLUENCE},
+				   $feature->{EVIDENCE});
+    }
 
   }
 
-  print "Uploading " . scalar(@{$objects->{FACTORS}}) . " factors ...\n";
+  if ($objects->{FACTORS}) {
 
-  foreach my $factor (@{$objects->{FACTORS}}) {
+    print "Uploading " . scalar(@{$objects->{FACTORS}}) . " factors ...\n";
 
-    $factor_sth->execute($factor->{INTERNAL_ID},
-			 $factor->{NAME},
-			 $factor->{TYPE});
+    foreach my $factor (@{$objects->{FACTORS}}) {
+
+      $factor_sth->execute($factor->{INTERNAL_ID},
+			   $factor->{NAME},
+			   $factor->{TYPE});
+
+    }
 
   }
 
