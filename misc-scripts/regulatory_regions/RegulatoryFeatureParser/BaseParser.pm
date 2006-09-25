@@ -56,6 +56,11 @@ sub validate_type {
 
   my ($db_adaptor, $type) = @_;
 
+  # LBL enhancers have both positive and negative varieties
+  if (lc($type) eq 'enhancer') {
+    return (validate_type($db_adaptor, 'enhancer_positive') &&validate_type($db_adaptor, 'enhancer_negative'));
+  }
+
   my $sth = $db_adaptor->dbc->prepare("SELECT analysis_id FROM analysis WHERE LOWER(logic_name)=?");
 
   $sth->execute(lc($type));
