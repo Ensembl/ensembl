@@ -1143,7 +1143,7 @@ sub get_all_PredictionTranscripts {
                The mimimum score of the features to retrieve
   Arg [3]    : (optional) string $dbtype
                The name of an attached database to retrieve the features from
-               instead.  e.g. 'est'.
+               instead, e.g. 'otherfeatures'.
   Example    : @dna_dna_align_feats = @{$slice->get_all_DnaAlignFeatures};
   Description: Retrieves the DnaDnaAlignFeatures which overlap this slice with
                logic name $logic_name and with score above $score.  If 
