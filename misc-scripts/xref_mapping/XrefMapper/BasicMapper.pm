@@ -129,15 +129,6 @@ sub find_priority_sources{
       $sth2->finish;
     }
   }
-  foreach my $test (570338, 566523, 566524){
-    if(!defined($priority_xref_source_id{$test})){
-      print "1) $test not in priority_xref_source_id\n";
-    }
-    else{
-      print "1) $test okay\n";
-    }
-  }
-
 
 }
 
@@ -1055,22 +1046,9 @@ sub parse_mappings {
 
 
 
-  print "priority_xref_source_id has ".scalar(%priority_xref_source_id)." keys in hash\n";
-
   my @dna_check=();
   my @pep_check=();
   my $count_new=0;
-
-  print "before priority_xref have been set to ".scalar (%priority_xref). "\n";
-
-  foreach my $test (570338, 566523, 566524){
-    if(!defined($priority_xref_source_id{$test})){
-      print "$test not in priority_xref_source_id\n";
-    }
-    else{
-      print "$test okay\n";
-    }
-  }
 
   foreach my $file (glob("$dir/*.map")) {
 
@@ -1096,7 +1074,7 @@ sub parse_mappings {
     my $analysis_id = $self->get_analysis_id($type);
     #    my $analysis_id = 999;
 
-    open(ARSE,">>priority_xref.out") || die "Could not open priority_xref.out\n";
+    open(PRIORITY_FILE,">>priority_xref.out") || die "Could not open priority_xref.out\n";
     while (<FILE>) {
 
       $total_lines++;
@@ -1106,12 +1084,6 @@ sub parse_mappings {
       $cigar_line =~ s/([MDI])(\d+)/$2$1/ig;
 
 
-      if($query_id == 138110 || $query_id == 523601){
-	print "processing $query_id\n";
-      }
-      if($total_lines < 20){
-	print "query= $query_id\n";
-      }
       # calculate percentage identities
       my $query_identity = int (100 * $identity / $query_length);
       my $target_identity = int (100 * $identity / $target_length);
@@ -1125,15 +1097,9 @@ sub parse_mappings {
 	  $failed_xref_mappings{$query_id} = $reason;
 	}
 	else{
-	  if($query_id == 138110 || $query_id == 523601){
-	    print "processing  $query_id FAILED $query_identity  $target_identity\n";
-	  }
 	  $priority_failed{$priority_xref_source_id{$query_id}.":".$query_id} = $reason;
 	}
 	next;
-      }
-      if($query_id == 138110 || $query_id == 523601){
-	print "processing  $query_id passed identitys\n";
       }
 
       if(defined($priority_xref_source_id{$query_id})){
@@ -1144,7 +1110,7 @@ sub parse_mappings {
 	}
 	my $key = $priority_source_id_to_name{$source_id}.":".$priority_xref_acc{$query_id};
 	if(!defined($priority_xref_priority{$key})){
-	  print ARSE $priority_xref_acc{$query_id}."\t".$source_id.
+	  print PRIORITY_FILE $priority_xref_acc{$query_id}."\t".$source_id.
 	    " being set as undef from parsing mapped data.(PRIMARY) priority = ".$priority_source_id{$source_id}."\n";
 	  
 	  $priority_xref{$key} = $query_id;
@@ -1159,7 +1125,7 @@ sub parse_mappings {
 	}
 	if($priority_xref_priority{$key} 
 	   > $priority_source_id{$source_id}){
-	  print ARSE $priority_xref_acc{$query_id}."\t".$source_id.
+	  print PRIORITY_FILE $priority_xref_acc{$query_id}."\t".$source_id.
 	    " being set as better priority found from parsing mapped data.(PRIMARY) priority = ".$priority_source_id{$source_id}."\n";
 	  
 	  $priority_xref{$key} = $query_id;
@@ -1172,7 +1138,7 @@ sub parse_mappings {
 	  $priority_xref_state{$key} = "primary";
 	}
 	else{
-	  print ARSE $priority_xref_acc{$query_id}."\t".$source_id." has less priority (PRIMARY) so left as is\n";
+	  print PRIORITY_FILE $priority_xref_acc{$query_id}."\t".$source_id." has less priority (PRIMARY) so left as is\n";
 	}
 	next; # do not store OBJECT, IDENTITY or set primary_xref. do much later
 	  
@@ -1204,12 +1170,11 @@ sub parse_mappings {
 
   close(IDENTITY_XREF);
   close(OBJECT_XREF);
-  close(ARSE);
+  close(PRIORITY_FILE);
 
   print "Read $total_lines lines from $total_files exonerate output files\n";
   print "\n number of non priority dependent xrefs is $count_new\n";
 
-  print "after priority_xref have been set to ".scalar(%priority_xref). "\n";
 
   if($self->jobcount() != $total_files){
     print $dna_check[-1]." dna map files\n";
@@ -1283,7 +1248,6 @@ sub process_priority_xrefs{
   my $object_xref_id_offset = $max_object_xref_id + 1;
   my $object_xref_id = $object_xref_id_offset;
 
-
   open(XREF,">$dir/xref_priority.txt") || die "Could not open xref_priority.txt";
   open(OBJECT_XREF,">$dir/object_xref_priority.txt") || die "Could not open object_xref_priority.txt"; 
   open(IDENTIY_XREF,">$dir/identity_xref_priority.txt") || die "Could not open identity_xref.txt";
@@ -1311,6 +1275,9 @@ sub process_priority_xrefs{
     } 
   }
 
+  if(scalar(@xref_list) < 1){
+    return;
+  }
   my $list = join(", ", @xref_list);
   my $sql = "SELECT xref_id, accession, version, label, description, source_id from xref where xref_id in ($list)";
   my $sth = $self->xref->dbc->prepare($sql);
@@ -1723,7 +1690,7 @@ sub dump_direct_xrefs {
   $xref_sth->bind_columns(\$xref_id, \$ensembl_stable_id, \$type, \$linkage_xref,\ $accession, \$version, \$label, \$description, \$source_id, \$species_id);
 
 
-  open(ARSE,">>priority_xref.out") || die "Could not open priority_xref.out\n";
+  open(PRIORITY_FILE,">>priority_xref.out") || die "Could not open priority_xref.out\n";
 
   while ($xref_sth->fetch()) {
     my $external_db_id = $source_to_external_db{$source_id};
@@ -1771,7 +1738,7 @@ sub dump_direct_xrefs {
 	  }
 	  my $key = $priority_source_id_to_name{$source_id}.":".$priority_xref_acc{$xref_id};
 	  if(!defined($priority_xref_priority{$key})){
-	    print ARSE $priority_xref_acc{$xref_id}."\t".$source_id.
+	    print PRIORITY_FILE $priority_xref_acc{$xref_id}."\t".$source_id.
 	      " being set as undef (DIRECT) xref= $xref_id key = $key  priority = ".$priority_source_id{$source_id}."\n";
 	    $priority_xref_extra_bit{$xref_id} = "\tDIRECT" . "\t" . 
                               "Externally assigned relationship between $ensembl_stable_id and $accession" . "\n";
@@ -1786,7 +1753,7 @@ sub dump_direct_xrefs {
 	  if($priority_xref_priority{$key}        # old one
 	     > $priority_source_id{$source_id}){  # new one
 
-	    print ARSE $priority_xref_acc{$xref_id}."\t".$source_id.
+	    print PRIORITY_FILE $priority_xref_acc{$xref_id}."\t".$source_id.
 	      " being set as better priority found (DIRECT) priority = ".$priority_source_id{$source_id}."\n";
 
 	    $priority_xref_extra_bit{$xref_id} = "\tDIRECT" . "\t" . 
@@ -1799,7 +1766,7 @@ sub dump_direct_xrefs {
 	    $priority_xref_state{$key} = "direct";
           }
 	  else{
-	    print ARSE $priority_xref_acc{$xref_id}."\t".$source_id." has less (DIRECT) priority so left as is. \n";
+	    print PRIORITY_FILE $priority_xref_acc{$xref_id}."\t".$source_id." has less (DIRECT) priority so left as is. \n";
 	  }
           next; # do not store XREF or OBJECT. do much later
 	}
@@ -1866,7 +1833,7 @@ sub dump_direct_xrefs {
   close(OBJECT_XREF);
   close(XREF);
   close(GO_XREF);
-  close(ARSE);
+  close(PRIORITY_FILE);
   $xref_sth->finish();
 
   print "  Wrote $count direct xrefs\n";
@@ -2034,18 +2001,8 @@ sub dump_core_xrefs {
   my @xref_ids = keys %$xref_ids_hashref;
   my %xref_to_objects = %$xref_ids_hashref;
 
-  print "\nxref_to_object has ".scalar(%xref_to_objects)." hashes\n";
 
   my $dir = $self->core->dir();
-
-  foreach my $test (570338, 566523, 566524){
-    if(!defined($priority_xref_source_id{$test})){
-      print "2) $test not in priority_xref_source_id\n";
-    }
-    else{
-      print "2) $test okay\n";
-    }
-  }
 
   open (XREF, ">$dir/xref.txt");
   open (OBJECT_XREF, ">>$dir/object_xref.txt");
@@ -2113,9 +2070,6 @@ sub dump_core_xrefs {
     # core database so we add on $xref_id_offset
     while ($xref_sth->fetch()) {
 
-      if($xref_id == 523601 || $xref_id == 138110){
-	print "PRIMARY xref $xref_id being processed\n";
-      }
       $XXXxref_id_to_accession{$xref_id} = $accession;
 
       # make sure label is set to /something/ so that the website displays something
@@ -2127,7 +2081,7 @@ sub dump_core_xrefs {
 	  if(!defined($updated_source{$external_db_id})){
 	    $self->cleanup_sources_file($external_db_id);
 	  }
-	  print XREF ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $accession . "\t" . $label . "\t" . $version . "\t" . $description . "\t" . "MISC" . "Relationship generated from exonerate mapping" . "\n";
+	  print XREF ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $accession . "\t" . $label . "\t" . $version . "\t" . $description . "\t" . "MISC\t" . "Relationship generated from exonerate mapping" . "\n";
 	  $xrefs_written{$xref_id} = 1;
 	  $source_ids{$source_id} = $source_id;
 	}
@@ -2145,16 +2099,11 @@ sub dump_core_xrefs {
 
     $dep_sth->bind_columns(\$xref_id, \$master_xref_id, \$accession, \$label, \$description, \$source_id, \$version, \$linkage_annotation);
 
-    open(ARSE,">>priority_xref.out") || die "Could not open priority_xref.out\n";
+    open(PRIORITY_FILE,">>priority_xref.out") || die "Could not open priority_xref.out\n";
 
 
     while ($dep_sth->fetch()) {  # dependent xrefs
-      my $debug =0;
-      if($master_xref_id == 138110 || $master_xref_id == 523601){
-	print "processing dependents for $master_xref_id\n";
-	$debug =1;
-      }
-      print "pre xrefs_written $xref_id\n" if($debug);
+
       my $external_db_id = $source_to_external_db{$source_id};
       next if (!$external_db_id);
 
@@ -2162,7 +2111,7 @@ sub dump_core_xrefs {
       $label = $accession if (!$label);
 
       my $master_accession = $XXXxref_id_to_accession{$master_xref_id};
-      print "pre xrefs_written $xref_id\n" if($debug);
+
       if (!$xrefs_written{$xref_id}) {
 	if(!defined($updated_source{$external_db_id})){
 	  $self->cleanup_sources_file($external_db_id);
@@ -2185,7 +2134,7 @@ sub dump_core_xrefs {
 	  if(defined($priority_xref_source_id{$xref_id})){
 	    my $key = $priority_source_id_to_name{$source_id}.":".$priority_xref_acc{$xref_id};	  
 	    if(!defined($priority_xref_priority{$key})){
-	      print ARSE $priority_xref_acc{$xref_id}."\t".$source_id.
+	      print PRIORITY_FILE $priority_xref_acc{$xref_id}."\t".$source_id.
 		" being set as undef  (DEPENDENT) priority = ".$priority_source_id{$source_id}."\n";
 	      
 	      $priority_xref_extra_bit{$xref_id} = "\t" . "DEPENDENT" . "\t" . "Generated via $master_accession" . "\n";
@@ -2199,7 +2148,7 @@ sub dump_core_xrefs {
 	    if($priority_xref_priority{$key} 
 	       > $priority_source_id{$source_id}){
 	      
-	      print ARSE $priority_xref_acc{$xref_id}."\t".$source_id.
+	      print PRIORITY_FILE $priority_xref_acc{$xref_id}."\t".$source_id.
 		" being set as better priority found  (DEPENDENT) priority = ".$priority_source_id{$source_id}."\n";
 
 	      $priority_xref_extra_bit{$xref_id} = "\t" . "DEPENDENT" . "\t" . "Generated via $master_accession" . "\n";
@@ -2211,7 +2160,7 @@ sub dump_core_xrefs {
 	      next;
 	    }
 	    else{
-	      print ARSE $priority_xref_acc{$xref_id}."\t".$source_id." has less priority (DEPENDENT) so left as is\n";
+	      print PRIORITY_FILE $priority_xref_acc{$xref_id}."\t".$source_id." has less priority (DEPENDENT) so left as is\n";
 	    }
 	    next;
 	  }
@@ -2256,7 +2205,7 @@ sub dump_core_xrefs {
   close(OBJECT_XREF);
   close(EXTERNAL_SYNONYM);
   close(GO_XREF);
-  close (ARSE);
+  close (PRIORITY_FILE);
 
   return $object_xref_id;
 
@@ -2799,7 +2748,7 @@ sub new_build_gene_descriptions{
   my @regexps = $self->gene_description_filter_regexps();
 
   if(scalar(@regexps) == 0){
-    die "shit no reg exps\n";
+    warn "no reg exps\n";
   }
   my @sources = $self->gene_description_sources();
 
