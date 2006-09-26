@@ -31,7 +31,7 @@ Bio::EnsEMBL::Map::DitagFeature
 =head1 DESCRIPTION
 
 Represents a mapped ditag object in the EnsEMBL database.
-These are the original tags separated into start ("L") and end ("R") parts if applicaple,
+These are the original tags separated into start ("L") and end ("R") parts if applicable,
 successfully aligned to the genome. Two DitagFeatures usually relate to one parent Ditag.
 Alternatively there are CAGE tags e.g. which only have a 5\'tag ("F").
 
@@ -42,9 +42,8 @@ package Bio::EnsEMBL::Map::DitagFeature;
 use strict;
 use vars qw(@ISA);
 
-#use Bio::EnsEMBL::Storable;
 use Bio::EnsEMBL::Feature;
-use Bio::EnsEMBL::Utils::Exception qw(throw);
+use Bio::EnsEMBL::Utils::Exception qw( throw );
 use Bio::EnsEMBL::Utils::Argument  qw( rearrange );
 
 @ISA = qw(Bio::EnsEMBL::Feature);
@@ -206,12 +205,12 @@ sub get_ditag_location {
 }
 
 
-=head2 property functions
+=head2 ditag_id
 
   Arg [1]    : (optional) value
-  Description: Getter/Setter for the different properties
+  Description: Getter/Setter for the ditag_id
                of this DitagFeature
-  Returntype : int or string
+  Returntype : int
   Exceptions : none
   Caller     : general
 
@@ -227,6 +226,17 @@ sub ditag_id {
   return $self->{'ditag_id'};
 }
 
+=head2 slice
+
+  Arg [1]    : (optional) value
+  Description: Getter/Setter for the slice
+               of this DitagFeature
+  Returntype : slice object
+  Exceptions : none
+  Caller     : general
+
+=cut
+
 sub slice {
   my $self = shift;
 
@@ -237,6 +247,16 @@ sub slice {
   return $self->{'slice'};
 }
 
+=head2 ditag_pair_id
+
+  Arg [1]    : (optional) value
+  Description: Getter/Setter for the ditag_pair_id
+               of this DitagFeature
+  Returntype : int
+  Exceptions : none
+  Caller     : general
+
+=cut
 sub ditag_pair_id {
   my $self = shift;
 
@@ -246,6 +266,17 @@ sub ditag_pair_id {
 
   return $self->{'ditag_pair_id'};
 }
+
+=head2 ditag_side
+
+  Arg [1]    : (optional) value
+  Description: Getter/Setter for the ditag_side
+               of this DitagFeature
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+
+=cut
 
 sub ditag_side {
   my $self = shift;
@@ -257,6 +288,17 @@ sub ditag_side {
   return $self->{'ditag_side'};
 }
 
+=head2 hit_start
+
+  Arg [1]    : (optional) value
+  Description: Getter/Setter for the hit_start
+               of this DitagFeature
+  Returntype : int
+  Exceptions : none
+  Caller     : general
+
+=cut
+
 sub hit_start {
   my $self = shift;
 
@@ -266,6 +308,17 @@ sub hit_start {
 
   return $self->{'hit_start'};
 }
+
+=head2 hit_end
+
+  Arg [1]    : (optional) value
+  Description: Getter/Setter for the hit_end
+               of this DitagFeature
+  Returntype : int
+  Exceptions : none
+  Caller     : general
+
+=cut
 
 sub hit_end {
   my $self = shift;
@@ -277,6 +330,17 @@ sub hit_end {
   return $self->{'hit_end'};
 }
 
+=head2 hit_strand
+
+  Arg [1]    : (optional) value
+  Description: Getter/Setter for the hit_strand
+               of this DitagFeature
+  Returntype : 1/-1/0
+  Exceptions : none
+  Caller     : general
+
+=cut
+
 sub hit_strand {
   my $self = shift;
 
@@ -286,6 +350,17 @@ sub hit_strand {
 
   return $self->{'hit_strand'};
 }
+
+=head2 cigar_line
+
+  Arg [1]    : (optional) value
+  Description: Getter/Setter for the cigar_line
+               of this DitagFeature
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+
+=cut
 
 sub cigar_line {
   my $self = shift;
@@ -297,6 +372,17 @@ sub cigar_line {
   return $self->{'cigar_line'};
 }
 
+=head2 start
+
+  Arg [1]    : (optional) value
+  Description: Getter/Setter for the start
+               of this DitagFeature
+  Returntype : int
+  Exceptions : none
+  Caller     : general
+
+=cut
+
 sub start {
   my $self = shift;
 
@@ -306,6 +392,17 @@ sub start {
 
   return $self->{'start'};
 }
+
+=head2 end
+
+  Arg [1]    : (optional) value
+  Description: Getter/Setter for the end
+               of this DitagFeature
+  Returntype : int or string
+  Exceptions : none
+  Caller     : general
+
+=cut
 
 sub end {
   my $self = shift;
@@ -317,6 +414,17 @@ sub end {
   return $self->{'end'};
 }
 
+=head2 strand
+
+  Arg [1]    : (optional) value
+  Description: Getter/Setter for the strand
+               of this DitagFeature
+  Returntype : 1/-1/0
+  Exceptions : none
+  Caller     : general
+
+=cut
+
 sub strand {
   my $self = shift;
 
@@ -327,6 +435,17 @@ sub strand {
   return $self->{'strand'};
 }
 
+=head2 dbID
+
+  Arg [1]    : (optional) value
+  Description: Getter/Setter for the dbID
+               of this DitagFeature
+  Returntype : int
+  Exceptions : none
+  Caller     : general
+
+=cut
+
 sub dbID {
   my $self = shift;
 
@@ -336,6 +455,17 @@ sub dbID {
 
   return $self->{'dbID'};
 }
+
+=head2 sequence
+
+  Arg [1]    : (optional) value
+  Description: Getter/Setter for the sequence
+               of this DitagFeature
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+
+=cut
 
 sub sequence {
   my $self = shift;

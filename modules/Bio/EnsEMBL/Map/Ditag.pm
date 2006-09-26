@@ -38,8 +38,8 @@ use strict;
 use vars qw(@ISA);
 
 use Bio::EnsEMBL::Storable;
-use Bio::EnsEMBL::Utils::Exception qw(throw);
-use Bio::EnsEMBL::Utils::Argument qw( rearrange );
+use Bio::EnsEMBL::Utils::Exception qw( throw );
+use Bio::EnsEMBL::Utils::Argument  qw( rearrange );
 
 @ISA = qw(Bio::EnsEMBL::Storable);
 
@@ -77,6 +77,8 @@ sub new {
                                               -adaptor   => $dbAdaptor
                                              );');
   }
+
+  if(!$tag_count){ $tag_count = 0; }
 
   if(!($sequence =~ /^[ATCGN]+$/i)){
     throw('ditag sequence contains non-standard characters: '.$sequence);

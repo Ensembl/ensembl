@@ -15,7 +15,7 @@ Bio::EnsEMBL::Map::DBSQL::DitagAdaptor
 =head1 SYNOPSIS
 
 my $ditagadaptor = $db->get_DitagAdaptor();
-my @ditags = @{ $ditagadaptor->fetch_by_type("ZZ11") };
+my @ditags       = @{ $ditagadaptor->fetch_by_type("ZZ11") };
 
 =head1 DESCRIPTION
 
@@ -30,7 +30,7 @@ use vars ('@ISA');
 
 use Bio::EnsEMBL::Map::Ditag;
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
-use Bio::EnsEMBL::Utils::Exception qw(throw warning);
+use Bio::EnsEMBL::Utils::Exception qw( throw warning );
 
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
 
@@ -171,6 +171,7 @@ sub fetch_all {
   Arg [3]    : row offset
   Description: fetch_by_type with row limit and offset
   Returntype : listref of Bio::EnsEMBL::Map::Ditag
+  Caller     : general
 
 =cut
 
@@ -178,7 +179,6 @@ sub fetch_all_with_limit {
   my ($self, $tagtype, $limit, $offset) = @_;
 
   my @ditags = ();
-  print STDERR "> $tagtype, $limit, $offset\n";
   my $sql = "SELECT d.ditag_id, d.name, d.type, d.tag_count, d.sequence ".
             "FROM ditag d ".
             "WHERE d.type = ? LIMIT ? OFFSET ?;";
@@ -258,12 +258,12 @@ sub store {
       throw( "Object must be an Ensembl Ditag, " . "not a [" . ref($ditag) . "]" );
     }
 
-#    if ( $ditag->is_stored($db) ) {
-#      warning( "Ditag [" . $ditag->dbID . "] is already stored in this database." );
-#      next TAG;
-#    }
+    if ( $ditag->is_stored($db) ) {
+      warning( "Ditag [" . $ditag->dbID . "] is already stored in this database." );
+      next TAG;
+    }
 
-    #check if tag with same name/type exists
+    #check if tag with same name/type already exists
     my $sth = $self->prepare( "SELECT COUNT(*) FROM ditag 
                                WHERE name = ? AND type = ?" );
     $sth->execute($ditag->name, $ditag->type);
@@ -334,7 +334,7 @@ sub print_creation {
 
   Arg [1]    : ditag to update
   Description: update an existing ditag with new values
-  Returntype : 1 on success
+  Returntype : true on success
 
 =cut
 
