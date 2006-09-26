@@ -238,7 +238,6 @@ sub fetch_all_by_Slice_constraint {
         # discard boundary crossing features from symlinked regions
         foreach my $bound (@bounds) {
           if($f->{'start'} < $bound && $f->{'end'} >= $bound) {
-	    print STDERR "BOUNDRY CROSSED\n";
             next FEATURE;
           }
         }
