@@ -2,7 +2,7 @@ use strict;
 
 BEGIN { $| = 1;  
 	use Test;
-	plan tests => 17;
+	plan tests => 18;
 }
 
 use Bio::EnsEMBL::Test::MultiTestDB;
@@ -55,7 +55,7 @@ my $feature = Bio::EnsEMBL::Map::DitagFeature->new(
 ok($feature && $feature->isa('Bio::EnsEMBL::Map::DitagFeature'));
 
 ########
-# 2-14 #
+# 2-15 #
 ########
 
 #test ditag_id, ditag_side, hit_start, hit_end,
@@ -81,9 +81,9 @@ ok($ditagFeature->strand        eq $qstrand);
 ok($ditagFeature->dbID          == $dbID);
 ok(length($ditagFeature->sequence) > 10);
 
-######
-# 13 #
-######
+#########
+# 16-17 #
+#########
 
 #test fetch_ditag
 
@@ -91,5 +91,14 @@ my $ditag = $ditagFeature->fetch_ditag();
 
 ok(defined $ditag && $ditag->isa('Bio::EnsEMBL::Map::Ditag'));
 ok($ditag->dbID == $ditag_id);
+
+######
+# 18 #
+######
+
+#test get_ditag_location
+
+my ($rstart, $rend, $rstrand) = $ditagFeature->get_ditag_location();
+ok(defined($rstart) && defined($rend) && defined($rstrand));
 
 1;
