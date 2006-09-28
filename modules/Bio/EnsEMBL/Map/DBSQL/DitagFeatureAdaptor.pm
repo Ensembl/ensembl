@@ -98,6 +98,7 @@ sub fetch_by_dbID {
 
   Arg [1]    : ditag dbID
   Arg [2]    : (optional) ditag-pair dbID
+  Arg [3]    : (optional) analysis ID
   Example    : @my_tags = @{$ditagfeature_adaptor->fetch_all_by_ditag_id($my_id)};
   Description: Retrieves all ditagFeatures from the database linking to a specific ditag-id
   Returntype : listref of Bio::EnsEMBL::Map::DitagFeature
@@ -106,7 +107,7 @@ sub fetch_by_dbID {
 =cut
 
 sub fetch_all_by_ditagID {
-  my ($self, $ditag_id, $ditag_pair_id) = @_;
+  my ($self, $ditag_id, $ditag_pair_id, $analysis_id) = @_;
 
   my $sql = "SELECT ditag_feature_id, ditag_id, seq_region_id, seq_region_start, 
              seq_region_end, seq_region_strand, analysis_id, hit_start, hit_end, 
@@ -115,6 +116,9 @@ sub fetch_all_by_ditagID {
              WHERE  ditag_id = ? ";
   if($ditag_pair_id){
     $sql .= "AND ditag_pair_id = ? ";
+  }
+  if($analysis_id){
+    $sql .= "AND analysis_id = ? ";
   }
   $sql   .= "ORDER BY ditag_pair_id";
   my $sth = $self->prepare($sql);

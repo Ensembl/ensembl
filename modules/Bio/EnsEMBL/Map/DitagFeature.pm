@@ -183,14 +183,18 @@ sub get_ditag_location {
   else{
     my ($ditag_a, $ditag_b, $more);
     eval{
-     ($ditag_a, $ditag_b, $more) = @{$self->adaptor->fetch_all_by_ditagID($self->ditag_id, $self->ditag_pair_id)};
+     ($ditag_a, $ditag_b, $more) = @{$self->adaptor->fetch_all_by_ditagID($self->ditag_id,
+									  $self->ditag_pair_id,
+									  $self->analysis->analysis_id)};
     };
     if($@ or !defined($ditag_a) or !defined($ditag_b)){
-      throw("Cannot find 2nd tag of pair (".$self->dbID.", ".$self->ditag_id.", ".$self->ditag_pair_id.")");
+      throw("Cannot find 2nd tag of pair (".$self->dbID.", ".$self->ditag_id.", ".
+	    $self->ditag_pair_id.", ".$self->analysis->analysis_id.")");
     }
     else{
       if(defined $more){
-	throw("More than two DitagFeatures were returned for ".$self->dbID.", ".$self->ditag_id.", ".$self->ditag_pair_id);
+	throw("More than two DitagFeatures were returned for ".$self->dbID.", ".$self->ditag_id
+	      .", ".$self->ditag_pair_id);
       }
 
       ($ditag_a->start < $ditag_b->start) ? ($start = $ditag_a->start) : ($start = $ditag_b->start);
