@@ -185,11 +185,11 @@ sub get_ditag_location {
     eval{
      ($ditag_a, $ditag_b, $more) = @{$self->adaptor->fetch_all_by_ditagID($self->ditag_id,
 									  $self->ditag_pair_id,
-									  $self->analysis->analysis_id)};
+									  $self->analysis->dbID)};
     };
     if($@ or !defined($ditag_a) or !defined($ditag_b)){
       throw("Cannot find 2nd tag of pair (".$self->dbID.", ".$self->ditag_id.", ".
-	    $self->ditag_pair_id.", ".$self->analysis->analysis_id.")");
+	    $self->ditag_pair_id.", ".$self->analysis->dbID.")\n".$@);
     }
     else{
       if(defined $more){
@@ -200,7 +200,7 @@ sub get_ditag_location {
       ($ditag_a->start < $ditag_b->start) ? ($start = $ditag_a->start) : ($start = $ditag_b->start);
       ($ditag_a->end   > $ditag_b->end)   ? ($end   = $ditag_a->end)   : ($end   = $ditag_b->end);
       if($ditag_a->strand != $ditag_b->strand){
-	throw('the strand of the two ditagFeatures are different! '.$ditag_a->strand.'/'.$ditag_b->strand);
+	throw('the strands of the two ditagFeatures are different! '.$ditag_a->strand.'/'.$ditag_b->strand);
       }
     }
   }

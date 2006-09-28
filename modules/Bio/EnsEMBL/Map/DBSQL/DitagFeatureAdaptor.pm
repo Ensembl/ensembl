@@ -109,6 +109,7 @@ sub fetch_by_dbID {
 sub fetch_all_by_ditagID {
   my ($self, $ditag_id, $ditag_pair_id, $analysis_id) = @_;
 
+  my $arg = $ditag_id;
   my $sql = "SELECT ditag_feature_id, ditag_id, seq_region_id, seq_region_start, 
              seq_region_end, seq_region_strand, analysis_id, hit_start, hit_end, 
              hit_strand, cigar_line, ditag_side, ditag_pair_id 
@@ -116,18 +117,15 @@ sub fetch_all_by_ditagID {
              WHERE  ditag_id = ? ";
   if($ditag_pair_id){
     $sql .= "AND ditag_pair_id = ? ";
+    $arg .= ", $ditag_pair_id";
   }
   if($analysis_id){
     $sql .= "AND analysis_id = ? ";
+    $arg .= ", $analysis_id";
   }
   $sql   .= "ORDER BY ditag_pair_id";
   my $sth = $self->prepare($sql);
-  if($ditag_pair_id){
-    $sth->execute($ditag_id, $ditag_pair_id);
-  }
-  else{
-    $sth->execute($ditag_id);
-  }
+  $sth->execute(split(",",$arg));
 
   my $result = $self->_fetch($sth);
 
@@ -208,7 +206,6 @@ sub fetch_all_by_Slice {
   $sql .= "df.seq_region_id = ".$slice->get_seq_region_id.
           " AND df.seq_region_start <= ".$slice->end.
 	  " AND df.seq_region_end   >= ".$slice->start;
-  print STDERR "\n$sql\n";
 
   my $sth = $self->prepare($sql);
   $sth->execute();
