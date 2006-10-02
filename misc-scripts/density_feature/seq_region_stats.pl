@@ -48,8 +48,14 @@ $genestats = $snpstats = 1 if(!$genestats && !$snpstats);
 
 # delete old attributes before starting
 foreach my $code (values %attrib_codes) {
-  my $sth = $db->dbc()->prepare( "DELETE sa FROM seq_region_attrib sa, attrib_type at WHERE at.attrib_type_id=sa.attrib_type_id AND at.code=?" );
-  $sth->execute("GeneNo_$code");
+  if ($genestats) {
+    my $sth = $db->dbc()->prepare( "DELETE sa FROM seq_region_attrib sa, attrib_type at WHERE at.attrib_type_id=sa.attrib_type_id AND at.code=?" );
+    $sth->execute("GeneNo_$code");
+  }
+  if ($snpstats) {
+    my $sth = $db->dbc()->prepare( "DELETE sa FROM seq_region_attrib sa, attrib_type at WHERE at.attrib_type_id=sa.attrib_type_id AND at.code=?" );
+    $sth->execute("SNPCount");
+  }
 }
 
 #
@@ -178,20 +184,23 @@ sub variation_attach {
   my %all_db_names = map {( $_->[0] , 1)} @$all_db_names;
   my $snp_db_name = $core_db_name;
   $snp_db_name =~ s/_core_/_variation_/;
-  if( ! exists $all_db_names{ $snp_db_name } ) {
-    return 0;
-  }
+ 
 
-  # this should register the dbadaptor with the Registry
-  my $snp_db = Bio::EnsEMBL::Variation::DBSQL::DBAdaptor->new
-    ( -host => $db->host(),
-      -user => $db->username(),
-      -pass => $db->password(),
-      -port => $db->port(),
-      -dbname => $snp_db_name,
-      -group => "variation",
-      -species => "DEFAULT"
-    );
+
+if( ! exists $all_db_names{ $snp_db_name } ) {
+   return 0;
+ }
+
+ # this should register the dbadaptor with the Registry
+ my $snp_db = Bio::EnsEMBL::Variation::DBSQL::DBAdaptor->new
+   ( -host => $db->host(),
+     -user => $db->username(),
+     -pass => $db->password(),
+     -port => $db->port(),
+     -dbname => $snp_db_name,
+     -group => "variation",
+     -species => "DEFAULT"
+   );
 
   return 1;
 }
