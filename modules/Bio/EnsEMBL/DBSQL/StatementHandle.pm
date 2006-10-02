@@ -80,10 +80,18 @@ sub sql {
 # uncomment this for printing out handy debug information 
 # (every query if you want)
 #
+#
+# to stop caching messing up your timings try doing thefoloowing on any adapter:-
+#
+# my $sth = $slice_adaptor->dbc->db_handle->prepare("SET SESSION query_cache_type = OFF");
+# $sth->execute || die "set session failed\n";
+# 
+#
 ## call   Bio::EnsEMBL::DBSQL::StatementHandle->dump(1); to start log
 ## call   Bio::EnsEMBL::DBSQL::StatementHandle->dump(0); to end log
 ## and set $dump to 0 
 ## leave $dump = 1 for continuous log
+# uncomment from here-------------------
 #my @bind_args=();
 #my $dump = 0;
 #my $total_time = 0;
