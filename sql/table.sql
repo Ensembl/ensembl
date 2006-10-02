@@ -40,6 +40,11 @@ CREATE TABLE oligo_feature (
 #
 # Table structure for table 'oligo_probe'
 #
+# Note that the primary key contains both the probe ID and the array ID because
+# it is often possible to get the same probe on different arrays 
+# e.g. (older Affy arrays are often subsets of newer arrays).
+# We give them the same oligo_probe_id so that we only have to store the 
+# features once.
 
 CREATE TABLE oligo_probe (
   
