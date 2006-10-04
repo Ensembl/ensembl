@@ -35,22 +35,7 @@ foreach my $type (@types) {
   my $sth;
 
   # get starting stable ID, either specified or current max
-  my $new_stable_id;
-
-  if ($start) {
-
-    $new_stable_id = $start;
-
-  } else {
-
-    $sth = $dbi->prepare("SELECT MAX(stable_id) FROM $table");
-    $sth->execute();
-    if (my @row = $sth->fetchrow_array()) {
-      $new_stable_id = $row[0];
-    } else {
-      die "Can't get max $type stable ID from $table\n";
-    }
-  }
+  my $new_stable_id = $start ? $start : get_highest_stable_id($dbi, $type);
 
   # get timestamp so all new stable IDs have the same created/modified dates
   $sth = $dbi->prepare("SELECT NOW()");
@@ -87,6 +72,41 @@ sub increment_stable_id {
 
 }
 
+# --------------------------------------------------------------------------------
+
+sub get_highest_stable_id {
+
+  my ($dbi, $type) = @_;
+
+  my $sid = $type . "_stable_id";
+
+  my ($highest_from_current, $highest_from_archive);
+
+  # get highest stable ID from the relevant table
+  my $sth = $dbi->prepare("SELECT MAX(stable_id) FROM $sid");
+  $sth->execute();
+  if (my @row = $sth->fetchrow_array()) {
+    $highest_from_current = $row[0];
+  } else {
+    die "Can't get max $type stable ID from $sid\n";
+  }
+
+  return $highest_from_current if ($type eq "exon");
+
+  # and from relevant archive
+  $sth = $dbi->prepare("SELECT MAX($sid) FROM gene_archive");
+  $sth->execute();
+  if (my @row = $sth->fetchrow_array()) {
+    $highest_from_archive = $row[0];
+  } else {
+    die "Can't get max $type stable ID from gene_archive\n";
+  }
+
+  my $max = ($highest_from_current ge $highest_from_archive) ? $highest_from_current : $highest_from_archive;
+
+  return $max;
+
+}
 # --------------------------------------------------------------------------------
 
 sub usage {
