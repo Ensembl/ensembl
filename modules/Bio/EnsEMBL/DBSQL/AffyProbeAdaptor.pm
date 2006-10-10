@@ -75,7 +75,7 @@ sub fetch_all_by_AffyArray {
   Returntype : Listref of Bio::EnsEMBL::AffyProbe objects.
   Exceptions : None
   Caller     : General
-  Status     : High Risk
+  Status     : At Risk
              : Likely to be removed - use fetch_all_by_AffyArray instead
 
 =cut
