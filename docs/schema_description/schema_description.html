@@ -48,7 +48,7 @@
             </tr>
          </table>
       </p>
-      <p>This document refers to version <strong>41</strong> of the EnsEMBL core schema.
+      <p>This document refers to version <strong>42</strong> of the EnsEMBL core schema.
       </p>
       <hr>
       <p>Quick links to tables:</p>
@@ -230,13 +230,7 @@
       
       
       <h3><a name="assembly">assembly</a></h3>
-      <p>Describes how contig sequences make up the chromosomal sequence. The data in this table defines the "static golden path",
-         i.e. the best effort draft full genome sequence as determined by the UCSC or NCBI (depending which assembly you are using)
-         Each row represents a contig (raw_id, FK from contig table) at least part of  which is present in the golden path. The part
-         of the contig that is in the path is delimited by fields raw_start and raw_end and the absolute position within the golden
-         path chromosome (chromosome_id) is given by chr_start and chr_end. Each contig is in a "supercontig" such as a "fingerprint
-         clone contig" or NT contig and the super contig is identified by the superctg_name column and the position of the specified
-         section of the contig  within its supercontig is given by fields superctg_start and superctg_end. 
+      <p>The assembly table states, which parts of seq_regions are exactly equal. It enables to transform coordinates between seq_regions. Typically this contains how chromosomes are made of contigs, clones out of contigs, and chromosomes out of supercontigs. It allows you to artificially chunk chromosome sequence into smaller parts.
       </p>
       <p><b>See also:</b></p>
       <p>Tables:</p>
