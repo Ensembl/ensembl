@@ -1,5 +1,5 @@
 #
-# EnsEMBL module for Bio::EnsEMBL::Exon
+# EnsEMBL module for Bio::EnsEMBL::Intron
 #
 #
 # Copyright Ian Longden
@@ -62,7 +62,7 @@ sub new {
   }
 
   if($e1->strand != $e2->strand){
-    throw("Exons on different strand. Not allowed");
+  #  throw("Exons on different strand. Not allowed");
   }
   else{
     $self->{'strand'} = $e1->strand;
