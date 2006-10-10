@@ -269,7 +269,7 @@ sub fetch_all_by_Slice_constraint {
   Returntype : listref of Bio::EnsEMBL::SeqFeatures
   Exceptions : thrown if $logic_name
   Caller     : General
-  Status     : Experimental
+  Status     : Stable
 
 =cut
 
