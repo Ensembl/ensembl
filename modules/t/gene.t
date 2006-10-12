@@ -3,7 +3,7 @@ use warnings;
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 80;
+	plan tests => 84;
 }
 
 use Bio::EnsEMBL::Test::MultiTestDB;
@@ -638,7 +638,7 @@ my $rf_gene = $ga->fetch_by_dbID(18256);
 #ok(@{$rf_gene->get_all_regulatory_features()} == 1);  # non-recursive
 ok(@{$rf_gene->get_all_regulatory_features(1)} == 12); # recursive
 
-# test getting coded-for regualtory factors
+# test getting coded-for regulatory factors
 $gene = $ga->fetch_by_dbID(18271);
 my @factors = @{$gene->fetch_coded_for_regulatory_factors()};
 ok($factors[0]->dbID() == 5);
@@ -726,3 +726,44 @@ ok($gene->is_current == 1);
 
 $multi->restore;
 
+#
+# Tests for unconventional transcript association functionality
+#
+
+# test a gene with existing associations
+$gene = $ga->fetch_by_dbID(18256);
+ok(@{$gene->get_all_unconventional_transcript_associations()} == 3);
+
+# test removing them all
+$gene->remove_unconventional_transcript_associations();
+ok(@{$gene->get_all_unconventional_transcript_associations()} == 0);
+
+# test adding to a new gene
+my $new_gene = $ga->fetch_by_dbID(18260);
+my $new_transcript = $db->get_TranscriptAdaptor()->fetch_by_dbID(21720);
+
+ok(@{$new_gene->get_all_unconventional_transcript_associations()} == 0);
+$new_gene->add_unconventional_transcript_association($new_transcript, 'sense_intronic');
+ok(@{$new_gene->get_all_unconventional_transcript_associations()} == 1);
+
+# test storing
+$multi->hide( "core", "unconventional_transcript_association" );
+
+$new_gene = $ga->fetch_by_dbID(18261);
+ok(@{$new_gene->get_all_unconventional_transcript_associations()} == 0);
+
+$new_gene->add_unconventional_transcript_association($new_transcript, 'sense_intronic');
+$new_gene->add_unconventional_transcript_association($new_transcript, 'antisense');
+
+$ga->store($new_gene);
+
+# test removing
+$ga->remove($new_gene);
+
+my $utaa = $db->get_UnconventionalTranscriptAssociationAdaptor();
+ok(@{$utaa->fetch_all_by_gene($new_gene)} == 0);
+
+# test updating
+
+
+$multi->restore;
