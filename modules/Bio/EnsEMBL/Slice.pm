@@ -441,7 +441,26 @@ sub length {
   return $self->{'end'} - $self->{'start'} + 1;
 }
 
+=head2 is_toplevel
+  Arg        : none
+  Example    : my $top = $slice->is_toplevel
+  Description: Returns 1 if slice is a toplevel slice else 0
+  Returntype : int
+  Caller     : general
+  Status     : At Risk
 
+=cut
+
+sub is_toplevel {
+  my ($self) = @_;
+
+  if(!defined($self->{'toplevel'})){
+    $self->{'toplevel'} = $self->adaptor->is_toplevel($self->get_seq_region_id);
+  }
+  
+  return $self->{'toplevel'};
+}
+  
 
 =head2 invert
 

@@ -301,7 +301,17 @@ sub _slice_fetch {
 
   #find out what coordinate systems the features are in
   my $mcc = $self->db->get_MetaCoordContainer();
-  my @feat_css = @{$mcc->fetch_all_CoordSystems_by_feature_type($tab_name)};
+  my @feat_css=();
+
+
+  my $mca = $self->db->get_MetaContainer();
+  my $value_list = $mca->list_value_by_key( $tab_name."build.level" );
+  if( @$value_list and $slice->is_toplevel()) {   
+    push @feat_css, $slice_cs;
+  }
+  else{
+    @feat_css = @{$mcc->fetch_all_CoordSystems_by_feature_type($tab_name)};
+  }
 
   my $asma = $self->db->get_AssemblyMapperAdaptor();
   my @features;

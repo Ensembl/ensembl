@@ -706,7 +706,31 @@ sub fetch_all {
   return \@out;
 }
 
+=head2 is_toplevel
+  Arg        : int seq_region_id 
+  Example    : my $top = $slice_adptor->is_toplevel($seq_region_id)
+  Description: Returns 1 if slice is a toplevel slice else 0
+  Returntype : int
+  Caller     : Slice method is_toplevel
+  Status     : At Risk
 
+=cut
+
+sub is_toplevel{
+  my $self = shift;
+  my $id = shift;
+
+  my $sth = $self->prepare("SELECT at.code from seq_region_attrib sra, attrib_type at WHERE sra.seq_region_id = $id AND  at.attrib_type_id = sra.attrib_type_id AND at.code = 'toplevel'");
+  
+  $sth->execute();
+  
+  my $code = undef;
+  $sth->bind_columns(\$code);
+  while($sth->fetch){
+    return 1;
+  }
+  return 0;
+}
 
 =head2 fetch_by_band
 
