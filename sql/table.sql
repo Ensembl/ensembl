@@ -155,7 +155,7 @@ CREATE TABLE analysis_description (
   display_label                VARCHAR(255),
   displayable                  BOOLEAN NOT NULL DEFAULT 1,
 
-  KEY analysis_idx (analysis_id)
+  UNIQUE KEY analysis_idx (analysis_id)
   
 ) COLLATE=latin1_swedish_ci TYPE=MyISAM;
 
@@ -749,7 +749,6 @@ CREATE TABLE xref (
    description                VARCHAR(255),
    info_type                  ENUM('PROJECTION', 'MISC', 'DEPENDENT', 'DIRECT', 'SEQUENCE_MATCH', 'INFERRED_PAIR'),
    info_text                  VARCHAR(255),
-   priority		      INT DEFAULT 1 NOT NULL,
 
    PRIMARY KEY (xref_id),
    UNIQUE KEY id_index (dbprimary_acc, external_db_id, info_type, info_text),
@@ -864,7 +863,7 @@ CREATE TABLE meta (
 
 
 # Auto add schema version to database
-INSERT INTO meta (meta_key, meta_value) VALUES ("schema_version", "41");
+INSERT INTO meta (meta_key, meta_value) VALUES ("schema_version", "42");
 
 # patches included in this schema file
 # NOTE: at beginning of release cycle, remove patch entries from last release
@@ -874,6 +873,11 @@ INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_40_41_c.sql|xref
 INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_40_41_d.sql|ditag_primary_key_type');
 INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_40_41_e.sql|schema_version');
 INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_40_41_f.sql|attrib_indices');
+
+INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_41_42_a.sql|remove_xref_priority');
+INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_41_42_b.sql|unconventional_transcripts');
+INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_41_42_c.sql|analysis_description_unique');
+INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_41_42_d.sql|schema_version');
 
 ################################################################################
 #
@@ -1586,5 +1590,22 @@ CREATE TABLE ditag_feature (
        PRIMARY KEY  (ditag_feature_id),
        KEY (ditag_id),
        KEY (ditag_pair_id)
+
+) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+
+################################################################################
+#
+# Table structure for table 'unconventional_transcript_association'
+#
+# Describes transcripts that do not link to a single gene in the normal way.
+
+CREATE TABLE unconventional_transcript_association (
+
+       transcript_id    INT(10) UNSIGNED NOT NULL,
+       gene_id          INT(10) UNSIGNED NOT NULL,
+       interaction_type ENUM("antisense","sense_intronic","sense_overlaping_exonic","chimeric_sense_exonic"),
+
+       KEY (transcript_id),
+       KEY (gene_id)
 
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
