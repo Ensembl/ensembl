@@ -936,8 +936,8 @@ sub store {
                status = ?,
                is_current = ?
   );
-  # colum status is used from schema version 34 onwards (before it was
-  # confidence) 
+  # column status is used from schema version 34 onwards (before it was
+  # confidence)
 
   my $sth = $self->prepare( $store_gene_sql );
   $sth->bind_param(1, $type, SQL_VARCHAR);
@@ -1053,6 +1053,12 @@ sub store {
   my $attr_adaptor = $db->get_AttributeAdaptor();
   $attr_adaptor->store_on_Gene($gene_dbID, $gene->get_all_Attributes);
 
+  # store unconventional transcript associations if there are any
+  my $utaa = $db->get_UnconventionalTranscriptAssociationAdaptor();
+  foreach my $uta (@{$gene->get_all_unconventional_transcript_associations()}) {
+    $utaa->store($uta);
+  }
+
   # set the adaptor and dbID on the original passed in gene not the
   # transfered copy
   $original->adaptor($self);
@@ -1110,7 +1116,6 @@ sub remove {
   $attrib_adaptor->remove_from_Gene($gene);
 
   # remove all of the transcripts associated with this gene
-
   my $transcriptAdaptor = $self->db->get_TranscriptAdaptor();
   foreach my $trans ( @{$gene->get_all_Transcripts()} ) {
     $transcriptAdaptor->remove($trans);
@@ -1119,6 +1124,13 @@ sub remove {
   # remove the gene stable identifier
 
   $sth = $self->prepare( "delete from gene_stable_id where gene_id = ? " );
+  $sth->bind_param(1, $gene->dbID, SQL_INTEGER);
+  $sth->execute();
+  $sth->finish();
+
+  # remove any unconventional transcript associations involving this gene
+
+  $sth = $self->prepare( "delete from unconventional_transcript_association where gene_id = ? " );
   $sth->bind_param(1, $gene->dbID, SQL_INTEGER);
   $sth->execute();
   $sth->finish();
@@ -1402,19 +1414,19 @@ sub _objs_from_sth {
     my $display_xref;
 
     if( $display_xref_id ) {
-      $display_xref = Bio::EnsEMBL::DBEntry->new_fast
-        ({ 'dbID' => $display_xref_id,
-           'adaptor' => $dbEntryAdaptor,
-           'display_id' => $xref_display_id,
-           'primary_id' => $xref_primary_acc,
-           'version'    => $xref_version,
-           'description' => $xref_desc,
-           'release' => $external_release,
-           'dbname' => $external_db,
-           'db_display_name' => $external_db_name,
-	   'info_type' => $info_type,
-	   'info_text' => $info_text
-         });
+     $display_xref = Bio::EnsEMBL::DBEntry->new_fast
+     	 ({ 'dbID' => $display_xref_id,
+     	    'adaptor' => $dbEntryAdaptor,
+     	    'display_id' => $xref_display_id,
+     	    'primary_id' => $xref_primary_acc,
+     	    'version'    => $xref_version,
+     	    'description' => $xref_desc,
+     	    'release' => $external_release,
+     	    'dbname' => $external_db,
+     	    'db_display_name' => $external_db_name,
+     	    'info_type' => $info_type,
+     	    'info_text' => $info_text
+     	  });
       $display_xref->status( $external_status );
     }				
 
