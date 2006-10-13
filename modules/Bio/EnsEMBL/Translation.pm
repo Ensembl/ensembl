@@ -495,6 +495,9 @@ sub get_all_DomainFeatures{
               'scanprosite', #prosite 
               'superfamily', 
               'pfam',
+              'smart',
+              'tigrfam',
+              'pirsf',
               'prints');
 
  foreach my $type (@types) {
