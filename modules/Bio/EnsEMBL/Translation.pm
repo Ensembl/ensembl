@@ -491,10 +491,13 @@ sub get_all_DomainFeatures{
 
  my @features;
 
- my @types = ('pfscan',      #profile (prosite or pfam motifs) 
-              'scanprosite', #prosite 
-              'superfamily', 
+ my @types = ('pfscan',      #profile (prosite or pfam motifs)
+              'scanprosite', #prosite
+              'superfamily',
               'pfam',
+              'smart',
+              'tigrfam',
+              'pirsf',
               'prints');
 
  foreach my $type (@types) {
