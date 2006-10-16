@@ -192,10 +192,10 @@ sub get_ditag_location {
 	    $self->ditag_pair_id.", ".$self->analysis->dbID.")\n".$@);
     }
     else{
-      if(defined $more){
-	throw("More than two DitagFeatures were returned for ".$self->dbID.", ".$self->ditag_id
-	      .", ".$self->ditag_pair_id);
-      }
+#      if(defined $more){
+#	throw("More than two DitagFeatures were returned for ".$self->dbID.", ".$self->ditag_id
+#	      .", ".$self->ditag_pair_id);
+#      }
 
       ($ditag_a->start < $ditag_b->start) ? ($start = $ditag_a->start) : ($start = $ditag_b->start);
       ($ditag_a->end   > $ditag_b->end)   ? ($end   = $ditag_a->end)   : ($end   = $ditag_b->end);
