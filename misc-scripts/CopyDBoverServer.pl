@@ -104,6 +104,7 @@ my %mysql_directory_per_svr = ('ecs1a:3306' => "/mysql1a/databases",
 			       'ens-genomics1:3306' => "/mysql/data_3306/databases",
 			       'ens-genomics2:3306' => "/mysql/data_3306/databases",
 			       'ens-staging:3306'  => "/mysql/data_3306/databases",
+			       'ens-livemirror:3306'  => "/mysql/data_3306/databases",
 			       'ens-research:3306' => "/mysql/data_3306/databases");
 
 my ($generic_working_host) = (gethostbyname(hostname));
