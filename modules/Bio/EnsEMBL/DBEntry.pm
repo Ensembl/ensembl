@@ -126,8 +126,8 @@ sub new {
   if( defined $display_id_linkable) { $self->display_id_linkable($display_id_linkable) }
   if( defined $priority) { $self->priority($priority) }
   if( defined $db_display_name) { $self->db_display_name($db_display_name) }
-  if( defined $info_type) { $self->db_display_name($info_type) }
-  if( defined $info_text) { $self->db_display_name($info_text) }
+  if( defined $info_type) { $self->info_type($info_type) }
+  if( defined $info_text) { $self->info_text($info_text) }
   $self->{synonyms} = [];;
 
   return $self;
