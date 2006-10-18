@@ -183,7 +183,7 @@ sub end_phase {
     $self->{'end_phase'} = shift;
   } else {
     if( ! defined ( $self->{'end_phase'} )) {
-      warning( "No end phase set in Exon. You must set it explicitly." );
+#      warning( "No end phase set in Exon. You must set it explicitly." );
     }
   }
   return $self->{'end_phase'};
