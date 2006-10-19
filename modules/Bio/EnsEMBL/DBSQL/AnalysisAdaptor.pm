@@ -334,6 +334,7 @@ sub store {
   }
     
 
+
   my $rows_inserted = 0;
   my $sth;
 
@@ -434,12 +435,13 @@ sub store {
     if( defined( $analysis->description() ) ||
 	defined( $analysis->display_label() )) {
 
+
       $sth = $self->prepare( "INSERT IGNORE INTO analysis_description (analysis_id, display_label, description, displayable) VALUES (?,?,?,?)");
 
       $sth->bind_param(1,$dbID,SQL_INTEGER);
       $sth->bind_param(2,$analysis->display_label(),SQL_VARCHAR);
       $sth->bind_param(3,$analysis->description,SQL_LONGVARCHAR);
-      $sth->bind_param(3,$analysis->displayable,SQL_TINYINT);
+      $sth->bind_param(4,$analysis->displayable,SQL_TINYINT);
       $sth->execute();
 
       $sth->finish();
