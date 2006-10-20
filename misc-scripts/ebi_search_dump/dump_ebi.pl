@@ -129,16 +129,19 @@ sub content {
     my $description = escapeHTML($gene->description()); # do any other fields need escaping?
 
     p ("<description>" . $description . "</description>");
-    p ("<dates>");
-    # TODO - date formatting
-    if ( $gene->created_date()) { # don't always have creation date
-      p ("<date type=\"creation\" value=\"" . $gene->created_date() . "\"/>");
+
+    my $created = $gene->created_date();
+    my $modified = $gene->modified_date();
+
+    if ($created || $modified) {
+      p ("<dates>");
+      p ("<date type=\"creation\" value=\"" . format_date($created) . "\"/>") if ($created);
+      p ("<date type=\"last_modification\" value=\"" . format_date($modified) . "\"/>") if ($modified);
+      p ("</dates>");
     }
-    p ("<date type=\"last_modification\" value=\"" . $gene->modified_date() . "\"/>");
-    p ("</dates>");
 
     # xrefs
-    p ("<cross-references>");
+    p ("<cross_references>");
 
     foreach my $xref (@{$gene->get_all_DBLinks()}) {
 
@@ -146,7 +149,7 @@ sub content {
 
     }
 
-    p ("</cross-references>");
+    p ("</cross_references>");
 
     # additional fields - transcript, translation etc
     p ("<additional_fields>");
@@ -223,7 +226,19 @@ sub p {
 
 # -------------------------------------------------------------------------------
 
+sub format_date {
 
+  my $t = shift;
+
+  my ($y, $m, $d, $ss, $mm, $hh) = (localtime($t))[5,4,3,0,1,2];
+  $y += 1900;
+  $m += 1;
+  $d = "0" . $d if ($d < 10);
+  $m = "0" . $m if ($m < 10);
+
+  return "$d-$m-$y";
+
+}
 
 # -------------------------------------------------------------------------------
 
