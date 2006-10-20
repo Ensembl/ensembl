@@ -140,13 +140,18 @@ sub content {
       p ("</dates>");
     }
 
-    # xrefs
+    # xrefs - deal with protein_ids separately, as additional fields
+    my @protein_ids;
+
     p ("<cross_references>");
 
     foreach my $xref (@{$gene->get_all_DBLinks()}) {
 
-      p ("<ref dbname=\"" . $xref->dbname() ."\" dbkey=\"" . $xref->display_id() . "\"/>");
-
+      if ($xref->dbname() !~ /protein_id/) {
+	p ("<ref dbname=\"" . $xref->dbname() ."\" dbkey=\"" . $xref->display_id() . "\"/>");
+      } else {
+	push @protein_ids, $xref->display_id();
+      }
     }
 
     p ("</cross_references>");
@@ -161,6 +166,10 @@ sub content {
       my $translation = $transcript->translation();
       p ("<field name=\"translation\">" . $translation->stable_id() . "</field>") if ($translation);
 
+    }
+
+    foreach my $protein_id (@protein_ids) {
+      p ("<field name=\"protein_id\">" . $protein_id . "</field>");
     }
 
     p ("</additional_fields>");
