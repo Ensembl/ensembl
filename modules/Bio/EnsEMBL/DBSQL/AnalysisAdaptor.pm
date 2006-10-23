@@ -104,7 +104,7 @@ sub fetch_all {
            db, db_version, db_file,
            module, module_version,
            gff_source, gff_feature,
-           created, parameters, description, display_label, displayable
+           created, parameters, description, display_label, displayable, web_data
     FROM   analysis
     LEFT JOIN analysis_description
     ON analysis.analysis_id = analysis_description.analysis_id } );
@@ -224,7 +224,7 @@ sub fetch_by_dbID {
            db, db_version, db_file,
            module, module_version,
            gff_source, gff_feature,
-           created, parameters, description, display_label, displayable
+           created, parameters, description, display_label, displayable, web_data
     FROM   analysis
     LEFT JOIN analysis_description
     ON analysis.analysis_id = analysis_description.analysis_id
@@ -275,7 +275,7 @@ sub fetch_by_logic_name {
            db, db_version, db_file,
            module, module_version,
            gff_source, gff_feature,
-           created, parameters, description, display_label, displayable
+           created, parameters, description, display_label, displayable, web_data
     FROM   analysis
     LEFT JOIN analysis_description
     ON analysis.analysis_id = analysis_description.analysis_id
@@ -436,12 +436,13 @@ sub store {
 	defined( $analysis->display_label() )) {
 
 
-      $sth = $self->prepare( "INSERT IGNORE INTO analysis_description (analysis_id, display_label, description, displayable) VALUES (?,?,?,?)");
+      $sth = $self->prepare( "INSERT IGNORE INTO analysis_description (analysis_id, display_label, description, displayable, web_data) VALUES (?,?,?,?, ?)");
 
       $sth->bind_param(1,$dbID,SQL_INTEGER);
       $sth->bind_param(2,$analysis->display_label(),SQL_VARCHAR);
       $sth->bind_param(3,$analysis->description,SQL_LONGVARCHAR);
       $sth->bind_param(4,$analysis->displayable,SQL_TINYINT);
+      $sth->bind_param(4,$analysis->web_data(),SQL_LONGVARCHAR);
       $sth->execute();
 
       $sth->finish();
@@ -521,15 +522,15 @@ sub update {
   if ($sth->fetchrow_hashref) { # update if exists
 
     $sth = $self->prepare
-      ("UPDATE analysis_description SET description = ?, display_label = ?, displayable = ? WHERE analysis_id = ?");
+      ("UPDATE analysis_description SET description = ?, display_label = ?, displayable = ?, web_data = ? WHERE analysis_id = ?");
 
-    $sth->execute($a->description(), $a->display_label(), $a->displayable(), $a->dbID);
+    $sth->execute($a->description(), $a->display_label(), $a->displayable(), $a->web_data(), $a->dbID);
 
   } else { # create new entry
 
     if( $a->description() || $a->display_label()) {
-      $sth = $self->prepare( "INSERT IGNORE INTO analysis_description (analysis_id, display_label, description, displayable) VALUES (?,?,?,?)");
-      $sth->execute( $a->dbID(), $a->display_label(), $a->description(), $a->displayable() );
+      $sth = $self->prepare( "INSERT IGNORE INTO analysis_description (analysis_id, display_label, description, displayable, web_data) VALUES (?,?,?,?,?)");
+      $sth->execute( $a->dbID(), $a->display_label(), $a->description(), $a->displayable(), $a->web_data() );
       $sth->finish();
     }
 
@@ -672,7 +673,8 @@ sub _objFromHashref {
       -logic_name      => $rowHash->{logic_name},
       -description     => $rowHash->{description},
       -display_label   => $rowHash->{display_label},
-      -displayable     => $rowHash->{displayable}
+      -displayable     => $rowHash->{displayable},
+      -web_data        => $rowHash->{web_data}
     );
 
   return $analysis;

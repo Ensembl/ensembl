@@ -34,7 +34,8 @@ Bio::EnsEMBL::Analysis.pm - Stores details of an analysis run
         -created         => $created,
         -description     => 'some warm words about this analysis',
 	-display_label   => 'UNIprot alignment',
-        -displayable     => '1'
+        -displayable     => '1',
+	-web_data        => 'web metadata info'
         );
 
 =head1 DESCRIPTION
@@ -95,8 +96,8 @@ sub new {
 
   my ($id, $adaptor, $db, $db_version, $db_file, $program, $program_version,
       $program_file, $gff_source, $gff_feature, $module, $module_version,
-      $parameters, $created, $logic_name, $description, $display_label, 
-      $displayable) = 
+      $parameters, $created, $logic_name, $description, $display_label,
+      $displayable, $web_data) =
 
 	  rearrange([qw(ID
 	  			ADAPTOR
@@ -116,6 +117,7 @@ sub new {
 			        DESCRIPTION
                                 DISPLAY_LABEL
 			        DISPLAYABLE
+                                WEB_DATA
 				)],@args);
 
   $self->dbID             ($id);
@@ -136,6 +138,7 @@ sub new {
   $self->description( $description );
   $self->display_label( $display_label );
   $self->displayable( $displayable );
+  $self->web_data       ( $web_data );
   return $self; # success - we hope!
 }
 
@@ -528,6 +531,28 @@ sub displayable {
     return $self->{_displayable};
 }
 
+
+=head2 web_data
+
+  Arg [1]    : string $web_data
+  Example    : none
+  Description: get/set for attribute web_data
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub web_data {
+    my ($self,$arg) = @_;
+
+    if (defined($arg)) {
+	$self->{_web_data} = $arg;
+    }
+
+    return $self->{_web_data};
+}
 
 =head2 compare
 
