@@ -154,6 +154,7 @@ CREATE TABLE analysis_description (
   description                  TEXT,
   display_label                VARCHAR(255),
   displayable                  BOOLEAN NOT NULL DEFAULT 1,
+  web_data                     TEXT,
 
   UNIQUE KEY analysis_idx (analysis_id)
   
@@ -878,6 +879,8 @@ INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_41_42_a.sql|remo
 INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_41_42_b.sql|unconventional_transcripts');
 INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_41_42_c.sql|analysis_description_unique');
 INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_41_42_d.sql|schema_version');
+INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_41_42_e.sql|ditag_autoincrement');
+INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_41_42_f.sql|analysis_description_web_data');
 
 ################################################################################
 #
