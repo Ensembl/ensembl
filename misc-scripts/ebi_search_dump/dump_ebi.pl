@@ -243,13 +243,14 @@ sub format_date {
 
   my $t = shift;
 
+  my @months = qw[JAN FEB MAR APR MAY JUN JUL AUG SEP OCT NOV DEC];
+
   my ($y, $m, $d, $ss, $mm, $hh) = (localtime($t))[5,4,3,0,1,2];
   $y += 1900;
-  $m += 1;
   $d = "0" . $d if ($d < 10);
-  $m = "0" . $m if ($m < 10);
+  my $mm = $months[$m];
 
-  return "$d-$m-$y";
+  return "$d-$mm-$y";
 
 }
 
