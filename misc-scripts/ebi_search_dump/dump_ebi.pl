@@ -1,6 +1,8 @@
 # Dump gene and xref information to an XML file for indexing by the EBI's
 # search engine.
-
+#
+# To copy files to the EBI so that they can be picked up:
+# scp homo_sapiens_core_41_36c.xml.gz glenn@puffin.ebi.ac.uk:xml/
 
 use strict;
 use DBI;
@@ -28,7 +30,7 @@ if( !$host || !$dbpattern ) {
   usage();
 }
 
-my $entry_count = 0;
+my $entry_count ;
 
 my $fh;
 
@@ -37,7 +39,6 @@ run();
 sub run() {
 
   # loop over databases
-  # TODO - separate file for each database?
 
   my $dsn = "DBI:mysql:host=$host";
   $dsn .= ";port=$port" if ($port);
@@ -70,7 +71,8 @@ sub run() {
 						 '-port' => $port,
 						 '-user' => $user,
 						 '-pass' => $pass,
-						 '-dbname' => $dbname);
+						 '-dbname' => $dbname,
+						 '-species' => $dbname);
 
     header($dba, $dbname);
 
@@ -113,6 +115,8 @@ sub header {
 sub content {
 
   my ($dba) = @_;
+
+  $entry_count = 0;
 
   my $gene_adaptor = $dba->get_GeneAdaptor();
 
