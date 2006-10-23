@@ -1,7 +1,7 @@
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 15;
+	plan tests => 17;
 }
 
 my $loaded = 0;
@@ -39,7 +39,9 @@ $analysis->gff_source('dummy');
 $analysis->gff_feature('dummy');
 $analysis->description( "some funny description" );
 $analysis->display_label( "and a label" );
+$analysis->displayable( 1 );
 $analysis->created( "2005-10-28 10:28:29");
+$analysis->web_data("blah");
 
 ok($analysis);
 
@@ -58,7 +60,8 @@ ok($analysis_out->db eq 'dummy');
 ok( check_methods( $analysis_out, "db", "db_file", "dbID", "compare",
 		   "logic_name", "parameters", "gff_source", "gff_feature",
 		   "module", "module_version", "program_file",
-		   "program", "db_version", "adaptor" ));
+		   "program", "db_version", "adaptor", "display_label", 
+		   "displayable", "web_data" ));
 
 ok( $analysis_out->description eq "some funny description" );
 
@@ -66,17 +69,22 @@ ok( $analysis_out->description eq "some funny description" );
 $analysis->logic_name("new_dummy");
 $analysis->description("new description");
 $analysis->display_label("new label");
+$analysis->displayable(0);
+$analysis->web_data("blahblah");
 my $dbID = $analysis->dbID();
 $analysis_ad->update($analysis);
 my $analysis_updated = $analysis_ad->fetch_by_dbID($dbID);
 ok($analysis_updated->logic_name() eq "new_dummy");
 ok($analysis_updated->description() eq "new description");
 ok($analysis_updated->display_label() eq "new label");
+ok($analysis_updated->displayable() eq 0);
+ok($analysis_updated->web_data() eq "blahblah");
 
 # now try updating analysis that has no existing description
 $analysis = Bio::EnsEMBL::Analysis->new();
 $analysis->logic_name('dummy_analysis');
 $analysis->created( "2005-10-28 10:28:29");
+$analysis->displayable(1);
 $analysis_ad->store($analysis);
 $dbID = $analysis->dbID();
 $analysis->description("updated description");
