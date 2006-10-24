@@ -30,7 +30,7 @@ if( !$host || !$dbpattern ) {
   usage();
 }
 
-my $entry_count ;
+my $entry_count;
 
 my $fh;
 
@@ -67,6 +67,8 @@ sub run() {
 
     print "Dumping $dbname to $file\n";
 
+    my $start_time = time;
+
     my $dba = new Bio::EnsEMBL::DBSQL::DBAdaptor('-host' => $host,
 						 '-port' => $port,
 						 '-user' => $user,
@@ -79,6 +81,8 @@ sub run() {
     content($dba);
 
     footer();
+
+    print_time($start_time);
 
   }
 
@@ -101,6 +105,8 @@ sub header {
 
   my $release = @{$meta_container->list_value_by_key('schema_version')}[0];
   my $date = @{$meta_container->list_value_by_key('xref.timestamp')}[0]; # near enough for now
+  $date = munge_release_date($date);
+
   p ("<release>$release</release>");
   p ("<release_date>$date</release_date>");
 
@@ -243,14 +249,55 @@ sub format_date {
 
   my $t = shift;
 
-  my @months = qw[JAN FEB MAR APR MAY JUN JUL AUG SEP OCT NOV DEC];
-
   my ($y, $m, $d, $ss, $mm, $hh) = (localtime($t))[5,4,3,0,1,2];
   $y += 1900;
   $d = "0" . $d if ($d < 10);
-  my $mm = $months[$m];
+  my $mm = text_month($m);
 
   return "$d-$mm-$y";
+
+}
+
+# -------------------------------------------------------------------------------
+
+sub munge_release_date {
+
+  my $t = shift; # e.g. 2006-09-15 02:33:45
+
+  my ($date, $time) = split(/ /, $t);
+  my ($y, $m, $d) = split(/\-/, $date);
+  my $mm = text_month($m);
+
+  return "$d-$mm-$y";
+
+}
+
+# -------------------------------------------------------------------------------
+
+sub text_month {
+
+  my $m = shift;
+
+  my @months = qw[JAN FEB MAR APR MAY JUN JUL AUG SEP OCT NOV DEC];
+
+  return $months[$m];
+
+}
+
+# -------------------------------------------------------------------------------
+
+sub print_time {
+
+  my $start = shift;
+
+  my $t = time - $start;
+  my $s = $t % 60;
+  $t = ($t - $s) / 60;
+  my $m = $t % 60;
+  $t = ($t - $m) /60;
+  my $h = $t % 60;
+
+  print "Time taken: " . $h . "h " . $m . "m " .$s . "s\n";
 
 }
 
