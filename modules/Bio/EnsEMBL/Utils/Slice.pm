@@ -76,7 +76,7 @@ sub split_Slices{
 
   foreach my $slice (@$slice_big){
 
-    my $start = 1;
+    my $start = $slice->start;
     my $end;
     my $multiple;
     my $number;
@@ -106,7 +106,7 @@ sub split_Slices{
       $end = $start + $multiple + $overlap;
 
       #any remainder gets added to the last slice of the seq_region
-      $end = $length if($i == $number-1);
+      $end = $slice->end if($i == $number-1);
 
       push @out, Bio::EnsEMBL::Slice->new
         (-START             => $start,
