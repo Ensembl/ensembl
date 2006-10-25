@@ -12,7 +12,7 @@ use IO::Zlib;
 
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 
-use CGI qw(escapeHTML);
+use HTML::Entities;
 
 my ( $host, $user, $pass, $port, $dbpattern, $max_genes, $gzip );
 
@@ -136,7 +136,7 @@ sub content {
 
     p ("<name>" . $gene->display_id() . "</name>");
 
-    my $description = escapeHTML($gene->description()); # do any other fields need escaping?
+    my $description = encode_entities($gene->description()); # do any other fields need encoding?
 
     p ("<description>" . $description . "</description>");
 
@@ -158,7 +158,9 @@ sub content {
     foreach my $xref (@{$gene->get_all_DBLinks()}) {
 
       if ($xref->dbname() !~ /protein_id/) {
-	p ("<ref dbname=\"" . $xref->dbname() ."\" dbkey=\"" . $xref->display_id() . "\"/>");
+	my $display_id = $xref->display_id();
+	$display_id =~ s/<.+>//g;
+	p ("<ref dbname=\"" . $xref->dbname() ."\" dbkey=\"" . $display_id. "\"/>");
       } else {
 	push @protein_ids, $xref->display_id();
       }
