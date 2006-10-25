@@ -1103,7 +1103,7 @@ sub parse_mappings {
       }
 
       if(defined($priority_xref_source_id{$query_id})){
-	my $source_id = priority_xref_source_id{$query_id};
+	my $source_id = $priority_xref_source_id{$query_id};
 	if(!defined($priority_source_id_to_name{$source_id}) or length($priority_source_id_to_name{$source_id}) < 2){
 	  print STDERR "priority_source_id_to_name has ".scalar(%priority_source_id_to_name)." keys for hash\n";
 	  die "no source name for source id $source_id\n";
@@ -3488,11 +3488,13 @@ EOS
   my $file = $self->core->dir()."/pairs_object_xref.txt";
   
   # don't seem to be able to use prepared statements here
-  my $sth = $self->core->dbc->prepare("LOAD DATA INFILE \'$file\' IGNORE INTO TABLE object_xref");
-  print "Uploading data in $file to object_xref\n";
-  $sth->execute();
+   if(-s $file){
+       my $sth = $self->core->dbc->prepare("LOAD DATA INFILE \'$file\' IGNORE INTO TABLE object_xref");
+       print "Uploading data in $file to object_xref\n";
+       $sth->execute();
   
-  print "$added new object xrefs added based on the Pairs\n";
+       print "$added new object xrefs added based on the Pairs\n";
+   }
 
   my $core_db = $self->core->dbc;
 
