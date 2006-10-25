@@ -388,8 +388,11 @@ sub get_species_id_for_filename {
 
 sub get_source_id_for_source_name {
   
-  my ($self, $source_name) = @_;
-  my $sql = "SELECT source_id FROM source WHERE name='" . $source_name . "'";
+  my ($self, $source_name,$priority_desc) = @_;
+  my $sql = "SELECT source_id FROM source WHERE LOWER(name)='" . lc($source_name) . "'";
+  if(defined($priority_desc)){
+    $sql .= " AND LOWER(priority_description)='".lc($priority_desc)."'";
+  }
   my $sth = dbi()->prepare($sql);
   $sth->execute();
   my @row = $sth->fetchrow_array();
@@ -463,17 +466,17 @@ sub get_valid_xrefs_for_dependencies{
   my %dependent_2_xref;
 
 
-  my $sql = "select source_id from source where name =?";
+  my $sql = "select source_id from source where LOWER(name) =?";
   my $sth = dbi()->prepare($sql);
   my @dependent_sources;
-  $sth->execute($dependent_name);
+  $sth->execute(lc($dependent_name));
   while(my @row = $sth->fetchrow_array()){
-    push @dependent_sources,$row[0];
+   push @dependent_sources,$row[0];
   }
 
   my @sources;
   foreach my $name (@reverse_ordered_source_list){
-    $sth->execute($name);
+    $sth->execute(lc($name));
     while(my @row = $sth->fetchrow_array()){
       push @sources,$row[0];
     }
@@ -496,7 +499,6 @@ sub get_valid_xrefs_for_dependencies{
        }
      }
   }
-
   return \%dependent_2_xref;
 }
 
