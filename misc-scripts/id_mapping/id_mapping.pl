@@ -67,6 +67,7 @@ use Bio::EnsEMBL::Utils::ConfParser;
 use Bio::EnsEMBL::Utils::Logger;
 use Bio::EnsEMBL::IdMapping::Cache;
 use Bio::EnsEMBL::IdMapping::ExonScoreBuilder;
+use Bio::EnsEMBL::IdMapping::TranscriptScoreBuilder;
 
 #use Devel::Size qw(size total_size);
 #use Data::Dumper;
@@ -88,13 +89,19 @@ $conf->parse_extra_options(qw(
   chromosomes|chr=s@
   region=s
   biotypes=s@
+  min_exon_length|minexonlength=i
+  exonerate_path|exoneratepath=s
+  exonerate_threshold|exoneratethreshold=i
+  exonerate_jobs|exoneratejobs=i
+  exonerate_bytes_per_job|exoneratebytesperjob=i
 ));
 $conf->allowed_params(
   $conf->get_common_params,
   qw(
-    mode
-    dumppath
+    mode dumppath
     chromosomes region biotypes
+    min_exon_length
+    exonerate_path exonerate_threshold exonerate_jobs exonerate_byte_per_job
   )
 );
 
@@ -122,6 +129,7 @@ $logger->init_log($conf->list_all_params);
 $conf->check_required_params(
   qw(
     dumppath
+    exonerate_path
   )
 );
 
@@ -137,21 +145,14 @@ my $cache = Bio::EnsEMBL::IdMapping::Cache->new(
   -LOGGER       => $logger,
   -CONF         => $conf,
 );
-
-foreach my $dbtype (qw(source target)) {
-  foreach my $slice_name (@{ $cache->slice_names($dbtype) }) {
-    $logger->log("\n");
-    $cache->read_from_file('exons_by_id', "$dbtype.$slice_name");
-  }
-}
-
-$cache->merge('exons_by_id');
+$cache->read_instance_from_file;
 
 
 # run in requested mode
 my $mode = $conf->param('mode') || 'normal';
+my $run = "run_$mode";
 no strict 'refs';
-&run_$mode;
+&$run;
 
 
 # finish logfile
@@ -173,11 +174,15 @@ sub build_scores {
     -CONF         => $conf,
     -CACHE        => $cache
   );
-  #my $tsb = Bio::EnsEMBL::IdMapping::TranscriptScoreBuilder->new(
+  my $tsb = Bio::EnsEMBL::IdMapping::TranscriptScoreBuilder->new(
+    -LOGGER       => $logger,
+    -CONF         => $conf,
+    -CACHE        => $cache
+  );
   #my $gsb = Bio::EnsEMBL::IdMapping::GeneScoreBuilder->new(
 
   $exon_scores = $esb->score_exons;
-  #$transcript_scores = $tsb->score_transcripts;
+  $transcript_scores = $tsb->score_transcripts;
   #$gene_scores = $gsb->score_genes;
 }
 

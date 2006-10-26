@@ -92,6 +92,11 @@ $conf->parse_extra_options(qw(
   chromosomes|chr=s@
   region=s
   biotypes=s@
+  min_exon_length|minexonlength=i
+  exonerate_path|exoneratepath=s
+  exonerate_threshold|exoneratethreshold=i
+  exonerate_jobs|exoneratejobs=i
+  exonerate_bytes_per_job|exoneratebytesperjob=i
 ));
 $conf->allowed_params(
   $conf->get_common_params,
@@ -101,6 +106,8 @@ $conf->allowed_params(
     mode
     dumppath cachefile
     chromosomes region biotypes
+    min_exon_length
+    exonerate_path exonerate_threshold exonerate_jobs exonerate_byte_per_job
   )
 );
 
@@ -141,7 +148,8 @@ $options{'dump_cache'} = $conf->create_commandline_options(
         interactive => 0,
         is_component => 1,
     },
-    -EXCLUDE => [qw(mode)]
+    -EXCLUDE => [qw(mode min_exon_length exonerate_path exonerate_threshold
+                    exonerate_jobs exonerate_byte_per_job)]
 );
 
 $options{'id_mapping'} = $conf->create_commandline_options(
@@ -161,8 +169,9 @@ $options{'id_mapping'} = $conf->create_commandline_options(
 
 # run components, depending on mode
 my $mode = $conf->param('mode') || 'normal';
+my $sub = "run_$mode";
 no strict 'refs';
-&run_$mode;
+&$sub;
 
 
 # finish logfile

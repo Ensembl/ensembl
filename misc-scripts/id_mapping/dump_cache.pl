@@ -31,11 +31,11 @@ Optional arguments:
 
 =head1 DESCRIPTION
 
-Use --sourceschema and --targetschema to specify a schema version (default: latest).
-This will be used to determine the subroutine to build the cache. By default,
-&build_cache_latest() is run which uses Bio::EnsEMBL::IdMapping::Cache to read
-from the database and write the cache.  An alternative subroutine can use a
-different module for that, which will usually inherit from the former and
+Use --sourceschema and --targetschema to specify a schema version (default:
+latest). This will be used to determine the subroutine to build the cache. By
+default, &build_cache_latest() is run which uses Bio::EnsEMBL::IdMapping::Cache
+to read from the database and write the cache.  An alternative subroutine can
+use a different module for that, which will usually inherit from the former and
 overwrite Cache->build_cache(). This is useful for backwards compatibility with
 older schema versions. Once the cache is built, no API access is needed,
 therefore the ID mapping application is independent of the underlying database
@@ -144,10 +144,10 @@ $conf->check_required_params(
 my %jobs;
 
 # create empty directory for logs
-my $logpath = ($conf->param('logpath')||$conf->param('dumppath')).'/lsf';
+my $logpath = ($conf->param('logpath')||$conf->param('dumppath')).'/lsf_dump_cache';
 system("rm -rf $logpath") == 0 or
   $logger->log_error("Unable to delete lsf log dir $logpath: $!\n");
-system("mkdir $logpath") == 0 or
+system("mkdir -p $logpath") == 0 or
   $logger->log_error("Can't create lsf log dir $logpath: $!\n");
 
 # submit jobs to lsf
@@ -164,6 +164,7 @@ foreach my $dbtype (qw(source target)) {
 # monitor progress
 my $err;
 my $total = scalar(keys %jobs);
+my @types;
 
 while (keys %jobs) {
   foreach my $type (keys %jobs) {
@@ -174,6 +175,7 @@ while (keys %jobs) {
 
     # the job has finished if you find the error logfile
     delete($jobs{$type}) if (-e $err_log);
+    push @types, $type;
   }
 
   $logger->log("Jobs waiting: ".scalar(keys %jobs)."/$total.\r");
@@ -184,10 +186,14 @@ while (keys %jobs) {
 $logger->log("\n\n");
 
 # check if anything went wrong
+foreach my $type (@types) {
+  $err++ unless (-e "$logpath/dump_by_seq_region.$type.success");
+}
+
 my $retval = 0;
 if ($err) {
   $logger->log("At least one of your jobs failed.\n");
-  $logger->log("Please check $logpath for errors.\n");
+  $logger->log("Please check $logpath and ".$conf->param('logpath')."/dump_by_seq_region.log for errors.\n");
   $retval = 1;
 }
 
@@ -243,6 +249,7 @@ sub bsubmit {
             dbtype        => $dbtype,
             slice_name    => $slice_name,
             cache_impl    => ref($cache),
+            log_append    => 1,
         },
         -EXCLUDE => [qw(region chromosomes)]
     );

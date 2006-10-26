@@ -149,6 +149,11 @@ my $i = 0;
 my $size = 0;
 ($i, $size) = $cache->build_cache($dbtype, $slice_name);
 
+# set flag to indicate everything went fine
+my $success_file = $conf->param('logpath')."/lsf/dump_by_seq_region.$dbtype.$slice_name.success";
+open(TMPFILE, '>', $success_file) and close TMPFILE
+  or die "Can't open $success_file for writing: $!";
+
 # log success
 $logger->log("Done with $dbtype $slice_name (genes: $i, filesize: $size, runtime: ".$logger->runtime." ".$logger->date_and_mem."\n");
 
