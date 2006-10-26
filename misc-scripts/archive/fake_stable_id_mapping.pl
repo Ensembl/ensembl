@@ -19,15 +19,21 @@ Options:
     --port, --dbport, --db_port=PORT    use new database port PORT
     --user, --dbuser, --db_user=USER    use new database username USER
     --pass, --dbpass, --db_pass=PASS    use new database passwort PASS
-    --ensembldbname=NAME                use old database NAME
-    --ensemblhost=HOST                  use old database host HOST
-    --ensemblport=PORT                  use old database port PORT
-    --ensembluser=USER                  use old database username USER
-    --ensemblpass=PASS                  use old database passwort PASS
+    --altdbname=NAME                    use old database NAME
+    --althost=HOST                      use old database host HOST
+    --altport=PORT                      use old database port PORT
+    --altuser=USER                      use old database username USER
+    --altpass=PASS                      use old database passwort PASS
 
-    --mapping_session_id=ID             latest mapping session
-    --stable_id_file=FILE               the path of the file containing a list
+    --mapping_session_id|msi=ID         latest mapping session
+    --gene_stable_id_file|gsi_file|gsi=FILE
+                                        the path of the file containing a list
                                         of gene stable Ids that were deleted
+    --transcript_stable_id_file|tsi_file|tsi=FILE    
+                                        (optional) the path of the file
+                                        containing a list of transcript stable
+                                        Ids that were deleted
+    --skip_ncrna|skip_ncRNA|skip_nc=0|1 (optionally) skip ncRNAs
 
     --logfile, --log=FILE               log to FILE (default: *STDOUT)
     --logpath=PATH                      write logfile to PATH (default: .)
@@ -42,7 +48,7 @@ Options:
 This script fakes a stable ID archive run for a database where some genes were
 deleted. A new mapping session is created and all stable IDs other than the
 deleted ones are mapped to themselves. For the deleted genes, appropriate
-entries in gene_archive and peptide archive are created. All this is done to
+entries in gene_archive and peptide_archive are created. All this is done to
 the new database, whereas stable Ids of deleted objects are looked up in the
 old database (if you haven't deleted them yet, old and new can point to the
 same db).
@@ -90,23 +96,27 @@ my $support = new Bio::EnsEMBL::Utils::ConversionSupport($SERVERROOT);
 # parse options
 $support->parse_common_options(@_);
 $support->parse_extra_options(
-  'ensemblhost=s',
-  'ensemblport=n',
-  'ensembluser=s',
-  'ensemblpass=s',
-  'ensembldbname=s',
-  'mapping_session_id=n',
-  'stable_id_file=s',
+  'althost=s',
+  'altport=n',
+  'altuser=s',
+  'altpass=s',
+  'altdbname=s',
+  'mapping_session_id|msi=n',
+  'gene_stable_id_file|gsi_file|gsi=s',
+  'transcript_stable_id_file|tsi_file|tsi=s',
+  'skip_ncrna|skip_ncRNA|skip_nc=s'
 );
 $support->allowed_params(
   $support->get_common_params,
-  'ensemblhost',
-  'ensemblport',
-  'ensembluser',
-  'ensemblpass',
-  'ensembldbname',
+  'althost',
+  'altport',
+  'altuser',
+  'altpass',
+  'altdbname',
   'mapping_session_id',
-  'stable_id_file',
+  'gene_stable_id_file',
+  'transcript_stable_id_file',
+  'skip_ncrna',
 );
 
 if ($support->param('help') or $support->error) {
@@ -121,18 +131,17 @@ $support->confirm_params;
 $support->init_log;
 
 $support->check_required_params(
-  'ensemblhost',
-  'ensemblport',
-  'ensembluser',
-  'ensemblpass',
-  'ensembldbname',
+  'althost',
+  'altport',
+  'altuser',
+  'altdbname',
   'mapping_session_id',
-  'stable_id_file',
+  'gene_stable_id_file',
 );
 
 # connect to database and get adaptors
 my $dba_new = $support->get_database('core');
-my $dba_old = $support->get_database('ensembl', 'ensembl');
+my $dba_old = $support->get_database('ensembl', 'alt');
 my $dbh_new = $dba_new->dbc->db_handle;
 my $ta = $dba_old->get_TranscriptAdaptor;
 my $ga = $dba_old->get_GeneAdaptor;
@@ -141,15 +150,17 @@ my $sql;
 my $c;
 my $sth;
 
+#
 # read list of deleted gene_stable_ids from file
+#
 $support->log_stamped("Reading list of deleted gene_stable_ids from file, and fetching associated transcript and translation stable IDs from the db...\n");
-my @gsi;
-my @tsi;
-my @tlsi;
-my @genes;
-my $infh = $support->filehandle('<', $support->param('stable_id_file'));
+my %gsi;
+my %tsi;
+my %tlsi;
+my %genes;
+my $gfh = $support->filehandle('<', $support->param('gene_stable_id_file'));
 
-while (my $g = <$infh>) {
+while (my $g = <$gfh>) {
   chomp $g;
   my $gene = $ga->fetch_by_stable_id($g);
 
@@ -159,20 +170,48 @@ while (my $g = <$infh>) {
     next;
   }
   
-  push @gsi, $g;
-  push @genes, $gene;
+  $genes{$g} = $gene;
+  $gsi{$g} = 1;
 
   # fetch associated transcript and translation stable IDs from the 37 db
   foreach my $transcript (@{ $gene->get_all_Transcripts }) {
-    push @tsi, $transcript->stable_id;
-    push @tlsi, $transcript->translation->stable_id;
+    $tsi{$transcript->stable_id} = 1;
+    $tlsi{$transcript->translation->stable_id} = 1;
   }
 }
 
-my $gsi_string = "'".join("', '", @gsi)."'";
-my $tsi_string = "'".join("', '", @tsi)."'";
-my $tlsi_string = "'".join("', '", @tlsi)."'";
-$support->log_stamped("Done reading ".scalar(@gsi)." gene and fetching ".scalar(@tsi)." transcript and ".scalar(@tlsi)." translation stable IDs.\n\n");
+#
+# read list of deleted transcript_stable_ids from file
+#
+if ($support->param('transcript_stable_id_file')) {
+
+  $support->log_stamped("Reading list of deleted transcript_stable_ids from file, and fetching associated translation stable IDs from the db...\n");
+
+  my $tfh = $support->filehandle('<', $support->param('transcript_stable_id_file'));
+
+  while (my $t = <$tfh>) {
+    chomp $t;
+    my $transcript = $ta->fetch_by_stable_id($t);
+
+    # skip non-protein-coding genes
+    unless ($transcript->biotype eq 'protein_coding') {
+      $support->log_warning("Transcript ".$transcript->stable_id." is non-protein_coding, skipping.\n", 1);
+      next;
+    }
+    
+    $tsi{$transcript->stable_id} = 1;
+    $tlsi{$transcript->translation->stable_id} = 1;
+    
+    my $gene = $ga->fetch_by_transcript_id($transcript->dbID);
+    $genes{$gene->stable_id} = $gene;
+  }
+}
+
+my $gsi_string = "'".join("', '", keys(%gsi))."'";
+my $tsi_string = "'".join("', '", keys(%tsi))."'";
+my $tlsi_string = "'".join("', '", keys(%tlsi))."'";
+
+$support->log_stamped("Done loading ".scalar(keys(%gsi))." gene, ".scalar(keys(%tsi))." transcript and ".scalar(keys(%tlsi))." translation stable IDs.\n\n");
 
 # exit now if doing a dry run
 if ($support->param('dry_run')) {
@@ -182,6 +221,7 @@ if ($support->param('dry_run')) {
 }
 
 # backup archive tables in case you screw up
+=cut
 $support->log_stamped("Creating backup of stable_id_event, gene_archive and peptide_archive...\n");
 $sql = qq(
   CREATE TABLE stable_id_event_bak
@@ -199,10 +239,11 @@ $sql = qq(
 );
 $c = $dbh_new->do($sql);
 $support->log_stamped("Done.\n\n");
+=cut
 
 # create a new mapping session
 $support->log("Creating new mapping session...\n");
-my $old_db_name = $support->param('ensembldbname');
+my $old_db_name = $support->param('altdbname');
 my $new_db_name = $support->param('dbname');
 $sql = qq(
   INSERT INTO mapping_session (old_db_name, new_db_name, created)
@@ -212,7 +253,9 @@ $c = $dbh_new->do($sql);
 my $mapping_session_id = $dbh_new->{'mysql_insertid'};
 $support->log("Done.\n\n");
 
+#
 # create stable_id_event entries for all objects, mapping to themselves
+#
 $support->log_stamped("Creating stable_id_event entries for all objects, mapping to themselves...\n");
 my $msi = $support->param('mapping_session_id');
 $sql = qq(
@@ -236,11 +279,23 @@ $sth->finish;
 
 $sql = qq(
   INSERT INTO stable_id_event 
-  VALUES (?, ?, ?, ?, ?, ?)
+  VALUES (?, ?, ?, ?, ?, ?, ?)
 );
 $sth = $dbh_new->prepare($sql);
 
+# optionally skip ncRNAs
+my %nc_genes = ();
+if ($support->param('skip_ncrna')) {
+  foreach my $biotype (qw(miRNA misc_RNA Mt-tRNA Mt-rRNA rRNA snoRNA snRNA)) {
+    map { $nc_genes{$_->stable_id} = 1 }
+      @{ $ga->fetch_all_by_biotype($biotype) };
+  }
+}
+
 foreach my $k (keys %unique_sie) {
+  # optionally skip ncRNAs
+  next if ($nc_genes{$unique_sie{$k}->{'new_stable_id'}});
+
   $sth->execute(
     $unique_sie{$k}->{'new_stable_id'},
     $unique_sie{$k}->{'new_version'},
@@ -248,6 +303,7 @@ foreach my $k (keys %unique_sie) {
     $unique_sie{$k}->{'new_version'},
     $mapping_session_id,
     $unique_sie{$k}->{'type'},
+    1
   );
 }
 
@@ -302,29 +358,20 @@ my $sth_pep = $dbh_new->prepare(qq(
   INSERT INTO peptide_archive (md5_checksum, peptide_seq)
   VALUES (?, ?)
 ));
-my $sth_sie = $dbh_new->prepare(qq(
-  DELETE sie FROM stable_id_event sie, mapping_session ms
-  WHERE sie.new_stable_id = ?
-  AND sie.new_version = ?
-  AND sie.mapping_session_id = ms.mapping_session_id
-  AND ms.old_db_name = 'ALL'
-));
 
 $c = 0;
 
-foreach my $gene (@genes) {
-  # delete ALL mapping session entries from stable_id_event where gene was
-  # deleted
-  $sth_sie->execute($gene->stable_id, $gene->version);
+foreach my $gsi (keys(%genes)) {
+  my $gene = $genes{$gsi};
 
   foreach my $trans (@{ $gene->get_all_Transcripts }) {
+  
+    # skip transcripts that were not deleted (since %genes may contain genes
+    # were only some but not all transcripts were deleted)
+    next unless ($tsi{$trans->stable_id});
+  
     my $tl = $trans->translation;
 
-    # delete ALL mapping session entries from stable_id_event where object was
-    # deleted
-    $sth_sie->execute($trans->stable_id, $trans->version);
-    $sth_sie->execute($tl->stable_id, $tl->version);
-  
     # add peptide_archive entry
     $sth_pep->execute(md5_hex($trans->translate->seq), $trans->translate->seq);
     my $pid = $dbh_new->{'mysql_insertid'};
