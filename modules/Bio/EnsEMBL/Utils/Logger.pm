@@ -318,7 +318,7 @@ sub log_filehandle {
     if (my $logfile = $self->logfile) {
       if (my $logpath = $self->logpath) {
         unless (-e $logpath) {
-          system("mkdir $logpath") == 0 or
+          system("mkdir -p $logpath") == 0 or
             throw("Can't create log dir $logpath: $!\n");
         }
         
