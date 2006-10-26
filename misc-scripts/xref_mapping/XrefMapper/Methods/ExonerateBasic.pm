@@ -140,18 +140,18 @@ sub submit_exonerate {
   my $main_job = <<EOF;
 . /usr/local/lsf/conf/profile.lsf
 
-cd /tmp
+#cd /tmp
 
-rm -f /tmp/\$LSB_JOBINDEX.$queryfile /tmp/\$LSB_JOBINDEX.$targetfile /tmp/$output
+#rm -f /tmp/\$LSB_JOBINDEX.$queryfile /tmp/\$LSB_JOBINDEX.$targetfile /tmp/$output
 
-lsrcp ecs2c:$target /tmp/\$LSB_JOBINDEX.$targetfile
-lsrcp ecs2c:$query  /tmp/\$LSB_JOBINDEX.$queryfile
+#lsrcp ecs2c:$target /tmp/\$LSB_JOBINDEX.$targetfile
+#lsrcp ecs2c:$query  /tmp/\$LSB_JOBINDEX.$queryfile
 
-$exonerate_path /tmp/\$LSB_JOBINDEX.$queryfile /tmp/\$LSB_JOBINDEX.$targetfile --querychunkid \$LSB_JOBINDEX --querychunktotal $num_jobs --showvulgar false --showalignment FALSE --ryo "xref:%qi:%ti:%ei:%ql:%tl:%qab:%qae:%tab:%tae:%C:%s\n" $options_str | grep '^xref' > /tmp/$output
+$exonerate_path $query $target --querychunkid \$LSB_JOBINDEX --querychunktotal $num_jobs --showvulgar false --showalignment FALSE --ryo "xref:%qi:%ti:%ei:%ql:%tl:%qab:%qae:%tab:%tae:%C:%s\n" $options_str | grep '^xref' > $root_dir/$output
 
-lsrcp /tmp/$output ecs2c:$root_dir/$output
+#lsrcp /tmp/$output ecs2c:$root_dir/$output
 
-rm -f /tmp/\$LSB_JOBINDEX.$queryfile /tmp/\$LSB_JOBINDEX.$targetfile /tmp/$output
+#rm -f /tmp/\$LSB_JOBINDEX.$queryfile /tmp/\$LSB_JOBINDEX.$targetfile /tmp/$output
 EOF
 
   # now submit it
