@@ -33,10 +33,24 @@ use strict;
 use warnings;
 no warnings 'uninitialized';
 
-use Bio::EnsEMBL::IDMapping::TinyFeature;
-our @ISA = qw(Bio::EnsEMBL::IDMapping::TinyFeature);
+use Bio::EnsEMBL::IdMapping::TinyFeature;
+our @ISA = qw(Bio::EnsEMBL::IdMapping::TinyFeature);
 
 use Bio::EnsEMBL::Utils::Exception qw(throw warning);
+
+
+sub biotype {
+  my $self = shift;
+  $self->[2] = shift if (@_);
+  return $self->[2];
+}
+
+
+sub display_name {
+  my $self = shift;
+  $self->[3] = shift if (@_);
+  return $self->[3];
+}
 
 
 sub add_Transcript {
@@ -47,12 +61,12 @@ sub add_Transcript {
     throw('Need a Bio::EnsEMBL::IdMapping::TinyTranscript.');
   }
 
-  push @{ $self->[9] }, $tr;
+  push @{ $self->[4] }, $tr;
 }
 
 
 sub get_all_Transcripts {
-  return $_->[9] || [];
+  return $_->[5] || [];
 }
 
 

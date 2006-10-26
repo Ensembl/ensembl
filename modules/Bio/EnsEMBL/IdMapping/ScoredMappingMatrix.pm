@@ -37,24 +37,26 @@ use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 use Bio::EnsEMBL::Utils::ScriptUtils qw(parse_bytes);
 use Bio::EnsEMBL::IdMapping::Entry;
+use Storable qw(nfreeze thaw nstore retrieve);
 
 
 sub new {
   my $caller = shift;
   my $class = ref($caller) || $caller;
 
-  my ($dump_path) = rearrange(['DUMP_PATH'], @_);
+  my ($dump_path, $cache_file) = rearrange([qw(DUMP_PATH CACHE_FILE)], @_);
 
-  throw("You must provide a dump path") unless ($dump_path);
-
+  throw("You must provide a cache file name") unless ($cache_file);
+  
   my $self = {};
   bless ($self, $class);
 
   # initialise internal datastructure
-  $self->{'matrix'} = {};
-  $self->{'source_list'} = {};
-  $self->{'target_list'} = {};
-  $self->{'dump_path'} = $dump_path;
+  $self->{'cache'}->{'matrix'} = {};
+  $self->{'cache'}->{'source_list'} = {};
+  $self->{'cache'}->{'target_list'} = {};
+  $self->{'dump_path'} = $dump_path || '.';
+  $self->{'cache_file'} = $self->dump_path."/$cache_file";
 
   return $self;
 }
@@ -83,12 +85,12 @@ sub add_score {
   my $score = shift;
   
   # make sure you don't put duplicates on the source and target lists
-  unless (exists($self->{'matrix'}->{"$source:$target"})) {
-    push @{ $self->{'source_list'}->{$source} }, $target;
-    push @{ $self->{'target_list'}->{$target} }, $source;
+  unless (exists($self->{'cache'}->{'matrix'}->{"$source:$target"})) {
+    push @{ $self->{'cache'}->{'source_list'}->{$source} }, $target;
+    push @{ $self->{'cache'}->{'target_list'}->{$target} }, $source;
   }
 
-  $self->{'matrix'}->{"$source:$target"} = $score;
+  $self->{'cache'}->{'matrix'}->{"$source:$target"} = $score;
 }
 
 
@@ -97,9 +99,9 @@ sub get_Entry {
   my $source = shift;
   my $target = shift;
 
-  if (exists($self->{'matrix'}->{"$source:$target"}) {
+  if (exists($self->{'cache'}->{'matrix'}->{"$source:$target"})) {
     return Bio::EnsEMBL::IdMapping::Entry->new_fast(
-      [$source, $target, $self->{'matrix'}->{"$source:$target"}]
+      [$source, $target, $self->{'cache'}->{'matrix'}->{"$source:$target"}]
     );
   } else {
     return undef;
@@ -113,8 +115,8 @@ sub get_score {
   my $target = shift;
 
 
-  if (exists($self->{'matrix'}->{"$source:$target"}) {
-    return $self->{'matrix'}->{"$source:$target"};
+  if (exists($self->{'cache'}->{'matrix'}->{"$source:$target"})) {
+    return $self->{'cache'}->{'matrix'}->{"$source:$target"};
   } else {
     return undef;
   }
@@ -125,7 +127,7 @@ sub get_targets_for_source {
   my $self = shift;
   my $source = shift;
 
-  return($self->{'source_list'}->{$source} || []);
+  return($self->{'cache'}->{'source_list'}->{$source} || []);
 }
 
 
@@ -133,7 +135,7 @@ sub get_sources_for_target {
   my $self = shift;
   my $target = shift;
 
-  return($self->{'target_list'}->{$target} || []);
+  return($self->{'cache'}->{'target_list'}->{$target} || []);
 }
 
 
@@ -142,10 +144,10 @@ sub get_all_Entries {
 
   my @result = ();
   
-  foreach my $key (keys %{ $self->{'matrix'} }) {
+  foreach my $key (keys %{ $self->{'cache'}->{'matrix'} }) {
     my ($source, $target) = split(/:/, $key);
     push @result, Bio::EnsEMBL::IdMapping::Entry->new_fast(
-      [$source, $target, $self->{'matrix'}->{$key}]
+      [$source, $target, $self->{'cache'}->{'matrix'}->{$key}]
     );
   }
 
@@ -178,20 +180,20 @@ sub get_target_count {
 }
 
 
-sub get_min_scores {
+sub get_min_max_scores {
   my $self = shift;
 
-  my @keys = keys %{ $self->{'matrix'} };
+  my @keys = keys %{ $self->{'cache'}->{'matrix'} };
 
   return [undef, undef] unless (@keys);
 
   # initialise; this should make loop quicker
-  my $min = $self->{'matrix'}->{$keys[0]};
-  my $max = $self->{'matrix'}->{$keys[0]};
+  my $min = $self->{'cache'}->{'matrix'}->{$keys[0]};
+  my $max = $self->{'cache'}->{'matrix'}->{$keys[0]};
   
   foreach my $key (@keys) {
-    $min = $self->{'matrix'}->{$key} if ($min > $self->{'matrix'}->{$key});
-    $max = $self->{'matrix'}->{$key} if ($max < $self->{'matrix'}->{$key});
+    $min = $self->{'cache'}->{'matrix'}->{$key} if ($min > $self->{'cache'}->{'matrix'}->{$key});
+    $max = $self->{'cache'}->{'matrix'}->{$key} if ($max < $self->{'cache'}->{'matrix'}->{$key});
   }
 
   return [$min, $max];
@@ -201,21 +203,17 @@ sub get_min_scores {
 sub get_average_score {
   my $self = shift;
 
-  my @keys = keys %{ $self->{'matrix'} };
+  my @keys = keys %{ $self->{'cache'}->{'matrix'} };
 
   return undef unless (@keys);
 
   my $total = 0;
   
   foreach my $key (@keys) {
-    $total += $self->{'matrix'}->{$key};
+    $total += $self->{'cache'}->{'matrix'}->{$key};
   }
 
   return $total/scalar(@keys);
-}
-
-
-sub write_to_file {
 }
 
 
@@ -231,9 +229,9 @@ sub merge {
   my $c = 0;
 
   foreach my $key (keys %{ $matrix->{'matrix'} }) {
-    if (!defined($self->{'matrix'}->{$key}) or
-        $self->{'matrix'}->{$key} < $matrix->{'matrix'}->{$key}) {
-      $self->{'matrix'}->{$key} = $matrix->{'matrix'}->{$key};
+    if (!defined($self->{'cache'}->{'matrix'}->{$key}) or
+        $self->{'cache'}->{'matrix'}->{$key} < $matrix->{'matrix'}->{$key}) {
+      $self->{'cache'}->{'matrix'}->{$key} = $matrix->{'matrix'}->{$key};
       $c++;
     }
   }
@@ -255,7 +253,7 @@ sub write_to_file {
   
   my $cache_file = $self->cache_file;
 
-  eval { nstore($self, $cache_file) };
+  eval { nstore($self->{'cache'}, $cache_file) };
   if ($@) {
     throw("Unable to store $cache_file: $@\n");
   }
@@ -274,7 +272,7 @@ sub read_from_file {
     throw("No valid cache file found at $cache_file.");
   }
 
-  eval { $self = retrieve($cache_file); };
+  eval { $self->{'cache'} = retrieve($cache_file); };
   if ($@) {
     throw("Unable to retrieve cache: $@");
   }
@@ -283,16 +281,16 @@ sub read_from_file {
 }
 
 
-sub cache_file {
-  my $self = shift;
-  my $cache_file = ($self->dump_path || '.').'/exon_scoring_matrix.ser';
-  return $cache_file;
-}
-
-
 #
 # getter/setters
 #
+
+sub cache_file {
+  my $self = shift;
+  $self->{'cache_file'} = shift if (@_);
+  return $self->{'cache_file'};
+}
+
 
 sub dump_path {
   my $self = shift;

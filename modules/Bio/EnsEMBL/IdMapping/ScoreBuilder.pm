@@ -34,6 +34,7 @@ use warnings;
 no warnings 'uninitialized';
 
 use Bio::EnsEMBL::Utils::Exception qw(throw warning);
+use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 
 
 =head2 new
@@ -95,6 +96,30 @@ sub cache {
   my $self = shift;
   $self->{'_cache'} = shift if (@_);
   return $self->{'_cache'};
+}
+
+
+sub log_matrix_stats {
+  my $self = shift;
+  my $matrix = shift;
+
+  unless ($matrix and
+          $matrix->isa('Bio::EnsEMBL::IdMapping::ScoredMappingMatrix')) {
+    throw('You must provide a ScoredMappingMatrix.');
+  }
+
+  my $fmt1 = "%-40s%10.0f\n";
+  my $fmt2 = "%-40s%10.2f\n";
+  
+  $self->logger->log(sprintf($fmt1, "Scoring matrix entries:",
+    $matrix->get_entry_count), 1);
+  
+  $self->logger->log(sprintf($fmt2, "Average score:",
+    $matrix->get_average_score), 1);
+  
+  my ($min, $max) = @{ $matrix->get_min_max_scores };
+  $self->logger->log(sprintf($fmt2, "Min. score:", $min), 1);
+  $self->logger->log(sprintf($fmt2, "Max. score:", $max), 1);
 }
 
 

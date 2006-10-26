@@ -33,21 +33,49 @@ use strict;
 use warnings;
 no warnings 'uninitialized';
 
-use Bio::EnsEMBL::IDMapping::TinyFeature;
-our @ISA = qw(Bio::EnsEMBL::IDMapping::TinyFeature);
+use Bio::EnsEMBL::IdMapping::TinyFeature;
+our @ISA = qw(Bio::EnsEMBL::IdMapping::TinyFeature);
 
 use Bio::EnsEMBL::Utils::Exception qw(throw warning);
+
+
+sub start {
+  my $self = shift;
+  $self->[2] = shift if (@_);
+  return $self->[2];
+}
+
+
+sub end {
+  my $self = shift;
+  $self->[3] = shift if (@_);
+  return $self->[3];
+}
+
+
+sub strand {
+  my $self = shift;
+  $self->[4] = shift if (@_);
+  return $self->[4];
+}
+
+
+sub length {
+  my $self = shift;
+  $self->[5] = shift if (@_);
+  return $self->[5];
+}
 
 
 sub add_Translation {
   my $self = shift;
   my $tl = shift;
 
-  unless ($self->[0] eq 'tr' and $tl->[0] eq 'tl') {
-    throw('You can only add a translation to a transcript.');
+  unless ($tl && $tl->isa('Bio::EnsEMBL::IdMapping::TinyTranslation')) {
+    throw('Need a Bio::EnsEMBL::IdMapping::TinyTranslation.');
   }
 
-  $self->[10] = $tl;
+  $self->[6] = $tl;
 }
 
 
@@ -59,12 +87,12 @@ sub add_Exon {
     throw('Need a Bio::EnsEMBL::IdMapping::TinyExon.');
   }
 
-  push @{ $self->[11] }, $exon;
+  push @{ $self->[7] }, $exon;
 }
 
 
 sub get_all_Exons {
-  return $_->[11] || [];
+  return $_->[7] || [];
 }
 
 

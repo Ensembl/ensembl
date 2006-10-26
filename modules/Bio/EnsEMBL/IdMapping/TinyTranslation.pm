@@ -1,4 +1,4 @@
-package Bio::EnsEMBL::IdMapping::TinyGene;
+package Bio::EnsEMBL::IdMapping::TinyTranslation;
 
 =head1 NAME
 
@@ -33,8 +33,8 @@ use strict;
 use warnings;
 no warnings 'uninitialized';
 
-use Bio::EnsEMBL::IDMapping::TinyFeature;
-our @ISA = qw(Bio::EnsEMBL::IDMapping::TinyFeature);
+use Bio::EnsEMBL::IdMapping::TinyFeature;
+our @ISA = qw(Bio::EnsEMBL::IdMapping::TinyFeature);
 
 use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 
