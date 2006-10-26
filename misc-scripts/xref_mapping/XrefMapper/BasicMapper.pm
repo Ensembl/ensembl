@@ -85,15 +85,33 @@ my %XXXxref_id_to_accession;
 sub find_priority_sources{
   my($self) = @_;
 
-  my $sql = "SELECT source_id, name, priority  from source where priority > 1";
+
+
+# need to check if this needed for this species.
+# NOTE: only store in priority_source_name if same name seen more than one :-)
+# i.e. more than one priority source is "USED"
+
+  my $sql = "select distinct(source.source_id), source.name, source.priority from source, xref where xref.source_id = source.source_id and source.priority >1";
   my $sth = $self->xref->dbc->prepare($sql);
   $sth->execute();
   my ($source_id, $name, $priority);
   $sth->bind_columns(\$source_id,\$name, \$priority);
+  my %more_than_one;
   while($sth->fetch()){
-    $priority_source_name{$name} = $priority;
+      if(!defined($more_than_one{$name})){
+	  $more_than_one{$name} = $priority;
+      }
+      else{
+	  $priority_source_name{$name} = $priority;
+      }
   }
   $sth->finish;
+
+
+
+
+
+
 
   foreach my $name (keys %priority_source_name){
     $sql = 'SELECT source_id, name, priority from source where name ="'.$name.'"'; 
