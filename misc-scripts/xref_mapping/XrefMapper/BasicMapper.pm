@@ -1328,7 +1328,7 @@ sub process_priority_xrefs{
     my $file = $dir."/".$table."_priority.txt";
   
     if(-s $file){
-      my $sth = $ensembl->dbc->prepare("LOAD DATA INFILE \'$file\' IGNORE INTO TABLE $table");
+      my $sth = $ensembl->dbc->prepare("LOAD DATA LOCAL INFILE \'$file\' IGNORE INTO TABLE $table");
       print "Uploading data in $file to $table\n";
       $sth->execute();
     }
@@ -2623,7 +2623,7 @@ sub do_upload {
     my $file = $ensembl->dir() . "/" . $table . ".txt";
 
     if(-s $file){
-      my $sth = $core_db->prepare("LOAD DATA INFILE \'$file\' IGNORE INTO TABLE $table");
+      my $sth = $core_db->prepare("LOAD DATA LOCAL INFILE \'$file\' IGNORE INTO TABLE $table");
       print "Uploading data in $file to $table\n";
       $sth->execute();
     }
@@ -3247,7 +3247,7 @@ sub upload_external_db {
   if ($count == 0 || $upload_external_db ) {
     my $edb = $self->external_db_file;
     print "external_db table is empty, uploading from $edb\n";
-    my $edb_sth = $core_db->prepare("LOAD DATA INFILE \'$edb\' INTO TABLE external_db");
+    my $edb_sth = $core_db->prepare("LOAD DATA LOCAL INFILE \'$edb\' INTO TABLE external_db");
     $edb_sth->execute();
   }
 
@@ -3489,7 +3489,7 @@ EOS
   
   # don't seem to be able to use prepared statements here
    if(-s $file){
-       my $sth = $self->core->dbc->prepare("LOAD DATA INFILE \'$file\' IGNORE INTO TABLE object_xref");
+       my $sth = $self->core->dbc->prepare("LOAD DATA LOCAL INFILE \'$file\' IGNORE INTO TABLE object_xref");
        print "Uploading data in $file to object_xref\n";
        $sth->execute();
   
