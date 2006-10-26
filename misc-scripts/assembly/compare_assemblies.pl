@@ -139,11 +139,9 @@ map { $support->param("alt$_", $support->param($_)) unless ($support->param("alt
 # reference database
 my $R_dba = $support->get_database('ensembl');
 my $R_sa = $R_dba->get_SliceAdaptor;
-my $R_sa = $R_dba->get_SliceAdaptor;
 
 # database containing the alternative assembly
 my $A_dba = $support->get_database('core', 'alt');
-my $A_sa = $A_dba->get_SliceAdaptor;
 my $A_sa = $A_dba->get_SliceAdaptor;
 
 my $fmt1 = "%-20s%-12s%-12s\n";
