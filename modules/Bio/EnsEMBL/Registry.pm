@@ -814,6 +814,50 @@ my $self = shift;
 
 
 
+=head2 load_registry_from_url
+
+  Arg [1]    : string $url
+  Example : load_registry_from_url("mysql://anonymous@ensembldb.ensembl.org:3306");
+  Description: Will load the correct versions of the ensembl databases for the
+               software release it can find on a database instance into the 
+               registry. Also adds a set of standard aliases. The url format is:
+               mysql://[[username][:password]@]hostname[:port].
+               You can also request a specific version for the databases by adding
+               a slash and the version number but your script may crash as the API
+               version won't match the DB version.
+  Exceptions : None.
+  Status     : Stable
+ 
+=cut
+
+sub load_registry_from_url {
+  my ($self, $url, $verbose) = @_;
+
+  if ($url =~ /mysql\:\/\/([^\@]+\@)?([^\:\/]+)(\:\d+)?(\/\d+)?/) {
+    my $user_pass = $1;
+    my $host = $2;
+    my $port = $3;
+    my $version = $4;
+
+    $user_pass =~ s/\@$//;
+    my ($user, $pass) = $user_pass =~ m/([^\:]+)(\:.+)?/;
+    $pass =~ s/^\:// if ($pass);
+    $port =~ s/^\:// if ($port);
+    $version =~ s/^\/// if ($version);
+
+    $self->load_registry_from_db(
+        -host=> $host,
+        -user => $user,
+        -pass => $pass,
+        -port => $port,
+        -db_version => $version,
+        -verbose => $verbose);
+  } else {
+    throw("Only MySQL URLs are accepted at the moment");
+  }
+}
+
+
 =head2 load_registry_from_db
 
   Arg [HOST] : The domain name of the database host to connect to.
@@ -825,6 +869,12 @@ my $self = shift;
   Arg [PORT] : int
                The port to use when connecting to the database
   Arg [VERBOSE]: (optional) Wether to print database messages 
+  Arg [DB_VERSION]: (optional) By default, only databases corresponding
+               to this API version are loaded. This allows the script to
+               use databases from another version although it might not
+               work properly. This option should only be used for
+               production or testing purposes and if you really know what
+               you are doing.
 
   Example : load_registry_from_db( -host => 'ensembldb.ensembl.org',
 				   -user => 'anonymous',
@@ -839,10 +889,10 @@ my $self = shift;
  
 =cut
 
-sub load_registry_from_db{
+sub load_registry_from_db {
   my($self, @args) = @_;
-  my ($host, $port, $user, $pass, $verbose) =
-    rearrange([qw(HOST PORT USER PASS VERBOSE)], @args);
+  my ($host, $port, $user, $pass, $verbose, $db_version) =
+    rearrange([qw(HOST PORT USER PASS VERBOSE DB_VERSION)], @args);
 
 
 
@@ -858,6 +908,9 @@ sub load_registry_from_db{
   
   my %temp;
   my $software_version = $self->software_version();
+  if (defined($db_version)) {
+    $software_version = $db_version;
+  }
   print "Will only load $software_version databases\n" if ($verbose);
   for my $db (@dbnames){
     if($db =~ /^([a-z]+_[a-z]+_[a-z]+)_(\d+)_(\d+[a-z]*)/){
