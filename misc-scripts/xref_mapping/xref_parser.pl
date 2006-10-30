@@ -3,7 +3,7 @@ use strict;
 use Getopt::Long;
 use XrefParser::BaseParser;
 
-my ($host, $port, $dbname, $user, $pass, @species, @sources, $skipdownload, $checkdownload, $create, $release, $cleanup, $drop_existing_db, $deletedownloaded, $dl_path);
+my ($host, $port, $dbname, $user, $pass, @species, @sources, $skipdownload, $checkdownload, $create, $release, $cleanup, $drop_existing_db, $deletedownloaded, $dl_path, @notsource);
 
 GetOptions('dbuser|user=s'       => \$user,
 	   'dbpass|pass=s'       => \$pass,
@@ -18,6 +18,7 @@ GetOptions('dbuser|user=s'       => \$user,
 	   'create'       => \$create,
 	   'setrelease=s' => \$release,
 	   'cleanup'      => \$cleanup,
+	   'notsource=s'    => \@notsource,
 	   'drop_db|dropdb!'     => \$drop_existing_db, # drops xref db without user interaction
 	   'delete_downloaded' => \$deletedownloaded,
 	   'download_path=s' => \$dl_path,
@@ -34,7 +35,9 @@ if (!$user || !$host || !$dbname) {
 
 }
 
-XrefParser::BaseParser::run($host, $port, $dbname, $user, $pass, \@species, \@sources, $skipdownload, $checkdownload, $create, $release, $cleanup,$drop_existing_db, $deletedownloaded, $dl_path);
+print "NOT:".$notsource[0]."\n";
+
+XrefParser::BaseParser::run($host, $port, $dbname, $user, $pass, \@species, \@sources, $skipdownload, $checkdownload, $create, $release, $cleanup,$drop_existing_db, $deletedownloaded, $dl_path, \@notsource);
 
 # --------------------------------------------------------------------------------
 
@@ -42,7 +45,7 @@ sub usage {
 
   print << "EOF";
 
-  xref_parser.pl -user {user} -pass {password} -host {host} -port {port} -dbname {database} -species {species1,species2} -source {source1,source2} -skipdownload -create -setrelease
+  xref_parser.pl -user {user} -pass {password} -host {host} -port {port} -dbname {database} -species {species1,species2} -source {source1,source2} -notsource {source1,source2} -skipdownload -create -setrelease 
 
   -user             User name to access database. Must allow writing.
 		
@@ -69,6 +72,8 @@ sub usage {
                     Not specifying a -source argument will result in all species being
                     used.
 		
+  -notsource        Which source to skip.
+
   -create           If specified, cause dbname to be deleted and re-created if it
                     already exists. User is prompted before database is dropped to
                     prevent disasters arising from dropping the wrong database.

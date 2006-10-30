@@ -32,12 +32,13 @@ my ($skipdownload,$drop_db,$checkdownload, $dl_path) ;
 sub run {
 
   ($host, $port, $dbname, $user, $pass, my $speciesr, my $sourcesr, $skipdownload, $checkdownload, 
-    $create, $release, $cleanup, $drop_db, $deletedownloaded, $dl_path) = @_;
+    $create, $release, $cleanup, $drop_db, $deletedownloaded, $dl_path, my $notsourcesr) = @_;
 
   $base_dir = $dl_path if $dl_path;
 
   my @species = @$speciesr;
   my @sources = @$sourcesr;
+  my @notsources = @$notsourcesr;
 
   my $sql_dir = dirname($0);
 
@@ -50,6 +51,7 @@ sub run {
 
   # validate source names
   exit(1) if (!validate_sources(@sources));
+  exit(1) if (!validate_sources(@notsources));
 
   # build SQL
   my $species_sql = "";
@@ -72,6 +74,15 @@ sub run {
     $source_sql .= ") ";
   }
 
+  if (@notsources) {
+    $source_sql .= " AND LOWER(s.name) NOT IN (";
+    for (my $i = 0; $i < @notsources; $i++ ) {
+      $source_sql .= "," if ($i ne 0);
+      $source_sql .= "\'" . lc($notsources[$i]) . "\'";
+    }
+    $source_sql .= ") ";
+  }
+
   my $sql =
     "SELECT s.source_id, su.source_url_id, s.name, su.url, su.checksum, su.parser, su.species_id, sp.name " .
       "FROM source s, source_url su, species sp " .
@@ -79,7 +90,8 @@ sub run {
           "AND su.species_id=sp.species_id " .
 	    $source_sql . $species_sql .
 	      "ORDER BY s.ordered";
-  #print $sql . "\n";
+ # print $sql . "\n";
+
 
   my $sth = $dbi->prepare($sql);
   $sth->execute();
