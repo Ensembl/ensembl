@@ -88,8 +88,8 @@ sub run {
   
 #for each one seen get all its dependent xrefs and load them fro the new one too;
 
-  my $add_dependent_xref_sth = dbi->prepare("INSERT INTO dependent_xref VALUES(?,?,?,?)");
-  my $get_dependent_xref_sth = dbi->prepare("SELECT dependent_xref_id, linkage_annotation "
+  my $add_dependent_xref_sth = $dbi->prepare("INSERT INTO dependent_xref VALUES(?,?,?,?)");
+  my $get_dependent_xref_sth = $dbi->prepare("SELECT dependent_xref_id, linkage_annotation "
 					    .  "FROM  dependent_xref where master_xref_id = ?");
 
   foreach my $old_xref (keys %old_to_new){
