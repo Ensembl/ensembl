@@ -329,6 +329,30 @@ sub print_creation {
 }
 
 
+=head2 update_ditag
+
+  Arg [1]    : ditag to update
+  Description: update an existing ditag with new values
+  Returntype : 1 on success
+
+=cut
+
+sub update_ditag {
+  my ($self, $ditag) = @_;
+
+  my $sth    = $self->prepare( "UPDATE ditag SET name=?, type=?, tag_count=?, sequence=? where ditag_id=?;" );
+  my $result = $sth->execute(
+                             $ditag->name,
+			     $ditag->type,
+			     $ditag->tag_count,
+			     $ditag->sequence,
+			     $ditag->dbID,
+			    );
+
+  return $result;
+}
+
+
 =head2 list_dbIDs
 
   Args       : None

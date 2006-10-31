@@ -356,8 +356,6 @@ sub _fetch {
         if($dest_slice_strand == 1) {
           $seqstart    = $seqstart  - $dest_slice_start + 1;
           $seqend      = $seqend    - $dest_slice_start + 1;
-          $hit_start   = $hit_start - $dest_slice_start + 1;
-          $hit_end     = $hit_end   - $dest_slice_start + 1;
         } else {
           my $tmp_seq_region_start = $seqstart;
           $seqstart    = $dest_slice_end - $seqend + 1;
