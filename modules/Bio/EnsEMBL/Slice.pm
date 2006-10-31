@@ -2686,6 +2686,7 @@ sub get_all_ExternalFeatures {
 =head2 get_all_DitagFeatures
 
   Arg [1]    : (optional) string ditag type
+  Arg [1]    : (optional) string logic_name
   Example    : @dna_dna_align_feats = @{$slice->get_all_DitagFeatures};
   Description: Retrieves the DitagFeatures of a specific type which overlap
                this slice with. If type is not defined, all features are
@@ -2698,7 +2699,7 @@ sub get_all_ExternalFeatures {
 =cut
 
 sub get_all_DitagFeatures {
-   my ($self, $type) = @_;
+   my ($self, $type, $logic_name) = @_;
 
    if(!$self->adaptor()) {
      warning('Cannot get DitagFeatures without attached adaptor');
@@ -2707,7 +2708,7 @@ sub get_all_DitagFeatures {
 
    my $dfa = $self->adaptor->db->get_DitagFeatureAdaptor();
 
-   return $dfa->fetch_all_by_Slice($self, $type);
+   return $dfa->fetch_all_by_Slice($self, $type, $logic_name);
 }
 
 
