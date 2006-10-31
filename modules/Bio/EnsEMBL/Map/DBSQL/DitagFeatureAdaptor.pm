@@ -40,7 +40,6 @@ use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
 
-
 =head2 fetch_all
 
   Arg [1]    : none
@@ -97,6 +96,7 @@ sub fetch_by_dbID {
 
   Arg [1]    : ditag dbID
   Arg [2]    : (optional) ditag-pair dbID
+  Arg [3]    : (optional) analysis ID
   Example    : @my_tags = @{$ditagfeature_adaptor->fetch_all_by_ditag_id($my_id)};
   Description: Retrieves all ditagFeatures from the database linking to a specific ditag-id
   Returntype : listref of Bio::EnsEMBL::Map::DitagFeature
@@ -105,8 +105,9 @@ sub fetch_by_dbID {
 =cut
 
 sub fetch_all_by_ditagID {
-  my ($self, $ditag_id, $ditag_pair_id) = @_;
+  my ($self, $ditag_id, $ditag_pair_id, $analysis_id) = @_;
 
+  my $arg = $ditag_id;
   my $sql = "SELECT ditag_feature_id, ditag_id, seq_region_id, seq_region_start, 
              seq_region_end, seq_region_strand, analysis_id, hit_start, hit_end, 
              hit_strand, cigar_line, ditag_side, ditag_pair_id 
@@ -114,15 +115,15 @@ sub fetch_all_by_ditagID {
              WHERE  ditag_id = ? ";
   if($ditag_pair_id){
     $sql .= "AND ditag_pair_id = ? ";
+    $arg .= ", $ditag_pair_id";
+  }
+  if($analysis_id){
+    $sql .= "AND analysis_id = ? ";
+    $arg .= ", $analysis_id";
   }
   $sql   .= "ORDER BY ditag_pair_id";
   my $sth = $self->prepare($sql);
-  if($ditag_pair_id){
-    $sth->execute($ditag_id, $ditag_pair_id);
-  }
-  else{
-    $sth->execute($ditag_id);
-  }
+  $sth->execute(split(",",$arg));
 
   my $result = $self->_fetch($sth);
 
@@ -167,6 +168,7 @@ sub fetch_all_by_type {
   Example    : $tag = $ditagfeature_adaptor->fetch_all_by_Slice($slice, "SME005");
   Description: Retrieves ditagFeatures from the database overlapping a specific region
                and (optional) of a specific ditag type or analysis.
+               Start & end ocations are returned in slice coordinates, now.
   Returntype : listref of Bio::EnsEMBL::Map::DitagFeatures
   Caller     : general
 
@@ -202,7 +204,9 @@ sub fetch_all_by_Slice {
   }
   $sql .= "df.seq_region_id = ".$slice->get_seq_region_id.
           " AND df.seq_region_start <= ".$slice->end.
-	  " AND df.seq_region_end   >= ".$slice->start;
+	  " AND df.seq_region_end >= ".$slice->start;
+
+  #print STDERR "\n>$sql\n";
 
   my $sth = $self->prepare($sql);
   $sth->execute();
@@ -226,11 +230,80 @@ sub fetch_all_by_Slice {
                               seq_region_end, seq_region_strand, analysis_id, hit_start, hit_end, 
                               hit_strand, cigar_line, ditag_side, ditag_pair_id 
                               FROM   ditag_feature
-                              WHERE  ditag_feature_id IN(".$ids_to_fetch.")" );
+                              WHERE  ditag_feature_id IN(".$ids_to_fetch.")");
     $sth->execute();
 
-    my $result = $self->_fetch($sth);
+    my $result = $self->_fetch($sth, $slice);
     push(@result, @$result);
+  }
+
+  #print STDERR "\nhave ".scalar @result;
+
+  return \@result;
+}
+
+
+=head2 fetch_pairs_by_Slice
+
+  Arg [1]    : Bio::EnsEMBL::Slice
+  Arg [2]    : (optional) ditag type (specific library)
+  Arg [3]    : (optional) analysis logic_name
+  Example    : my $ditagfeatures = $dfa->fetch_pairs_by_Slice($slice);
+               foreach my $ditagfeature (@$ditagfeatures){
+                 $minstart   = $$ditagfeature2{'start'};
+                 $maxend     = $$ditagfeature2{'end'};
+                 $bothstrand = $$ditagfeature2{'strand'};
+                 $tag_count  = $$ditagfeature2{'tag_count'};
+                 print "$minstart, $maxend, $bothstrand, $tag_count\n";
+               }
+  Description: Retrieves ditagFeature information in pairs from the database overlapping a specific region
+               and (optional) of a specific ditag type or analysis. The absotute start and end points are
+               fetched.
+               Slices should be SMALL!
+  Returntype : array ref with hash ref of artifical DitagFeature object
+  Caller     : general
+
+=cut
+
+sub fetch_pairs_by_Slice {
+  my ($self, $slice, $tagtype, $logic_name) = @_;
+  my ($tag_id, $pair_id, $seq_region_id, $start, $end, $strand, $analysis_id, $tag_count);
+  my @result;
+
+  my $sql = "SELECT df.ditag_id, df.ditag_pair_id, df.seq_region_id, MIN(df.seq_region_start), ".
+            "MAX(df.seq_region_end), df.seq_region_strand, df.analysis_id, d.tag_count ".
+            "FROM ditag_feature df, ditag d ".
+            "WHERE df.ditag_id=d.ditag_id ";
+  if($tagtype){
+    $sql .= "AND d.type = \"".$tagtype."\"";
+  }
+  $sql .= " AND df.seq_region_id = ".$slice->get_seq_region_id.
+          " AND df.seq_region_start <= ".$slice->end.
+	  " AND df.seq_region_end >= ".$slice->start;
+  if($logic_name){
+    my $analysis = $self->db->get_AnalysisAdaptor->fetch_by_logic_name($logic_name);
+    if(!$analysis) {
+      return undef;
+    }
+    $sql .= " AND df.analysis_id = ".$analysis->dbID();
+  }
+  $sql .= " GROUP BY df.ditag_id, df.ditag_pair_id;";
+
+  my $sth = $self->prepare($sql);
+  $sth->execute();
+  $sth->bind_columns( \$tag_id, \$pair_id, \$seq_region_id, \$start, \$end, \$strand, \$analysis_id ,\$tag_count);
+  while ( $sth->fetch ) {
+    my %ditag_pair = (
+                      ditag     => $tag_id,
+                      pair_id   => $pair_id,
+                      region    => $seq_region_id,
+                      start     => $start,
+                      end       => $end,
+                      strand    => $strand,
+                      analysis  => $analysis_id,
+                      tag_count => $tag_count
+                     );
+    push(@result, \%ditag_pair);
   }
 
   return \@result;
@@ -240,6 +313,7 @@ sub fetch_all_by_Slice {
 =head2 _fetch
 
   Arg [1]    : statement handler
+  Arg [2]    : (optional) target-slice for the feature
   Description: generic sql-fetch function for the DitagFeature fetch methods
   Returntype : listref of Bio::EnsEMBL::Map::DitagFeatures
   Caller     : private
@@ -247,7 +321,7 @@ sub fetch_all_by_Slice {
 =cut
 
 sub _fetch {
-  my ($self, $sth) = @_;
+  my ($self, $sth, $dest_slice) = @_;
 
   my ( $tag_id, $mothertag_id, $seqreg, $seqstart, $seqend, $strand, $analysis_id, $hit_start,
        $hit_end, $hit_strand, $cigar_line, $ditag_side, $ditag_pair_id );
@@ -258,10 +332,41 @@ sub _fetch {
                       \$ditag_pair_id );
 
   my @ditags;
+  my $dest_slice_start;
+  my $dest_slice_end;
+  my $dest_slice_strand;
+  my $dest_slice_length;
+  my $dest_slice_sr_name;
+  my $dest_slice_sr_id;
+  if($dest_slice) {
+    $dest_slice_start  = $dest_slice->start();
+    $dest_slice_end    = $dest_slice->end();
+    $dest_slice_strand = $dest_slice->strand();
+    $dest_slice_length = $dest_slice->length();
+    $dest_slice_sr_name = $dest_slice->seq_region_name();
+    $dest_slice_sr_id   = $dest_slice->get_seq_region_id();
+  }
 
   while ( $sth->fetch ) {
     my $analysis_obj = $self->db->get_AnalysisAdaptor->fetch_by_dbID($analysis_id);
     my $slice        = $self->db->get_SliceAdaptor->fetch_by_seq_region_id($seqreg);
+
+    if($dest_slice) {
+      if($dest_slice_start != 1 || $dest_slice_strand != 1) {
+        if($dest_slice_strand == 1) {
+          $seqstart    = $seqstart  - $dest_slice_start + 1;
+          $seqend      = $seqend    - $dest_slice_start + 1;
+          $hit_start   = $hit_start - $dest_slice_start + 1;
+          $hit_end     = $hit_end   - $dest_slice_start + 1;
+        } else {
+          my $tmp_seq_region_start = $seqstart;
+          $seqstart    = $dest_slice_end - $seqend + 1;
+          $seqend      = $dest_slice_end - $tmp_seq_region_start + 1;
+          $strand     *= -1;
+        }
+	$slice = $dest_slice;
+      }
+    }
 
     push @ditags,
       Bio::EnsEMBL::Map::DitagFeature->new( -dbid          => $tag_id,
