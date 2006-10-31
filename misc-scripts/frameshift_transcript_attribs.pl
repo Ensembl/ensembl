@@ -120,7 +120,7 @@ sub usage {
   Finds all potential frameshifts (exons 1, 2 4 or 5 bp apart) in a database 
   and adds transcript  attributes for them. Attribute value is intron length.
 
-  perl introns_to_transcript_attribs.pl {options}
+  perl $0 {options}
 
  Options ([..] indicates optional):
 
