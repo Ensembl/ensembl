@@ -210,8 +210,11 @@ sub _get_indels{
     #go throuh all the strains getting ONLY the indels (length_diff <> 0)
     my @indels;
     foreach my $strainSlice (@{$self->strains}){
-	my @results = grep {$_->length_diff != 0} @{$strainSlice->get_all_differences_Slice()};
-	push @indels, @results;
+	my $differences = $strainSlice->get_all_differences_Slice(); #need to check there are differences....
+	if (defined $differences){
+	    my @results = grep {$_->length_diff != 0} @{$differences};
+	    push @indels, @results;
+	}
     }
     #need to overlap the gaps using the RangeRegistry module
     my $range_registry = Bio::EnsEMBL::Mapper::RangeRegistry->new();
