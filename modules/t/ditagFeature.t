@@ -87,7 +87,7 @@ ok(length($ditagFeature->sequence) > 10);
 
 #test fetch_ditag
 
-my $ditag = $ditagFeature->fetch_ditag();
+my $ditag = $ditagFeature->ditag();
 
 ok(defined $ditag && $ditag->isa('Bio::EnsEMBL::Map::Ditag'));
 ok($ditag->dbID == $ditag_id);
