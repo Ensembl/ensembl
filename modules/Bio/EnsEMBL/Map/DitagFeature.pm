@@ -67,6 +67,7 @@ use Bio::EnsEMBL::Utils::Argument  qw( rearrange );
   Arg [15]   : (optional) int tag_count, only used for imported mappings where
                identical positions where collapsed into into one feature.
                Default: 1
+  Arg [16]   : (optional) ditag object
 
   Example    : $ditag = Bio::EnsEMBL::Map::DitagFeature->new
                             (-dbID => 123, -adaptor => $adaptor, ...);
@@ -79,9 +80,9 @@ use Bio::EnsEMBL::Utils::Argument  qw( rearrange );
 sub new {
   my ($caller, @args) = @_;
   my ( $dbID, $adaptor, $start, $end, $strand, $slice, $analysis, $hit_start, $hit_end, 
-       $hit_strand, $ditag_id, $ditag_side, $cigar_line, $ditag_pair_id, $tag_count ) = rearrange( 
-												  [ 'dbid', 'adaptor' ,'start', 'end', 'strand', 'slice', 'analysis', 'hit_start', 
-	'hit_end', 'hit_strand', 'ditag_id', 'ditag_side', 'cigar_line', 'ditag_pair_id' ,'tag_count'],
+       $hit_strand, $ditag_id, $ditag_side, $cigar_line, $ditag_pair_id, $tag_count, $ditag  ) =
+	 rearrange( [ 'dbid', 'adaptor' ,'start', 'end', 'strand', 'slice', 'analysis', 'hit_start',
+	'hit_end', 'hit_strand', 'ditag_id', 'ditag_side', 'cigar_line', 'ditag_pair_id' ,'tag_count', 'ditag'],
        @args );
   my $class = ref($caller) || $caller;
 
@@ -131,6 +132,7 @@ sub new {
                      'ditag_side'    => $ditag_side,
                      'cigar_line'    => $cigar_line,
 		     'tag_count'     => $tag_count,
+		     'ditag'         => $ditag,
                     }, $class);
 
   return $self;
@@ -139,21 +141,37 @@ sub new {
 
 =head2 fetch_ditag
 
-  Arg [1]    : none
-  Description: Get the ditag object of this DitagFeature
+  Description: Deprecated, use ditag() instead
+
+=cut
+
+sub fetch_ditag {
+  throw("Deprecated method, please use ditag() instead.\n")
+}
+
+
+=head2 ditag
+
+  Arg [1]    : (optional) ditag object
+  Description: Get/Set the ditag object of this DitagFeature
   Returntype : Bio::EnsEMBL::Map::Ditag
   Exceptions : none
   Caller     : general
 
 =cut
 
-sub fetch_ditag {
+sub ditag {
   my $self = shift;
 
-  my $ditag_adaptor = $self->adaptor->db->get_DitagAdaptor;
-  my $ditag = $ditag_adaptor->fetch_by_dbID($self->ditag_id);
+  if(@_) {
+    $self->{'ditag'} = shift;
+  } elsif(!$self->{'ditag'} && $self->{'adaptor'} && $self->{'ditag_id'}) {
+    #lazy load the ditag
+    my $ditag_adaptor = $self->adaptor->db->get_DitagAdaptor;
+    $self->{'ditag'}   = $ditag_adaptor->fetch_by_dbID($self->ditag_id);
+  }
 
-  return $ditag;
+  return $self->{'ditag'};
 }
 
 
