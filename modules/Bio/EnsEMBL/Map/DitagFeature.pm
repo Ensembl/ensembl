@@ -157,6 +157,31 @@ sub fetch_ditag {
 }
 
 
+=head2 ditag
+
+  Arg [1]    : (optional) ditag object
+  Description: Get/Set the ditag object of this DitagFeature
+  Returntype : Bio::EnsEMBL::Map::Ditag
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub ditag {
+  my $self = shift;
+
+  if(@_) {
+    $self->{'ditag'} = shift;
+  } elsif(!$self->{'ditag'} && $self->{'adaptor'} && $self->{'ditag_id'}) {
+    #lazy load the ditag
+    my $ditag_adaptor = $self->adaptor->db->get_DitagAdaptor;
+    $self->{'ditag'}   = $ditag_adaptor->fetch_by_dbID($self->ditag_id);
+  }
+
+  return $self->{'ditag'};
+}
+
+
 =head2 get_ditag_location
 
   Arg [1]    : none

@@ -170,6 +170,7 @@ sub fetch_all_by_type {
   Example    : $tags = $ditagfeature_adaptor->fetch_all_by_Slice($slice, "SME005");
   Description: Retrieves ditagFeatures from the database overlapping a specific region
                and (optional) of a specific ditag type or analysis.
+               Start & end ocations are returned in slice coordinates, now.
   Returntype : listref of Bio::EnsEMBL::Map::DitagFeatures
   Caller     : general
 
@@ -232,7 +233,7 @@ sub fetch_all_by_Slice {
                               WHERE  ditag_feature_id IN(".$ids_to_fetch.")" );
     $sth->execute();
 
-    my $result = $self->_fetch($sth);
+    my $result = $self->_fetch($sth, $slice);
     push(@result, @$result);
   }
 
@@ -243,6 +244,7 @@ sub fetch_all_by_Slice {
 =head2 _fetch
 
   Arg [1]    : statement handler
+  Arg [2]    : (optional) target-slice for the feature
   Description: generic sql-fetch function for the DitagFeature fetch methods
   Returntype : listref of Bio::EnsEMBL::Map::DitagFeatures
   Caller     : private
@@ -250,7 +252,7 @@ sub fetch_all_by_Slice {
 =cut
 
 sub _fetch {
-  my ($self, $sth) = @_;
+  my ($self, $sth, $dest_slice) = @_;
 
   my ( $tag_id, $mothertag_id, $seqreg, $seqstart, $seqend, $strand, $analysis_id, $hit_start,
        $hit_end, $hit_strand, $cigar_line, $ditag_side, $ditag_pair_id );
@@ -260,13 +262,42 @@ sub _fetch {
                       \$hit_strand,    \$cigar_line,   \$ditag_side,
                       \$ditag_pair_id );
 
-  my @ditags;
+  my @ditag_features;
+  my $dest_slice_start;
+  my $dest_slice_end;
+  my $dest_slice_strand;
+  my $dest_slice_length;
+  my $dest_slice_sr_name;
+  my $dest_slice_sr_id;
+  if($dest_slice) {
+    $dest_slice_start   = $dest_slice->start();
+    $dest_slice_end     = $dest_slice->end();
+    $dest_slice_strand  = $dest_slice->strand();
+    $dest_slice_length  = $dest_slice->length();
+    $dest_slice_sr_name = $dest_slice->seq_region_name();
+    $dest_slice_sr_id   = $dest_slice->get_seq_region_id();
+  }
 
   while ( $sth->fetch ) {
     my $analysis_obj = $self->db->get_AnalysisAdaptor->fetch_by_dbID($analysis_id);
     my $slice        = $self->db->get_SliceAdaptor->fetch_by_seq_region_id($seqreg);
 
-    push @ditags,
+    if($dest_slice) {
+      if($dest_slice_start != 1 || $dest_slice_strand != 1) {
+        if($dest_slice_strand == 1) {
+          $seqstart    = $seqstart  - $dest_slice_start + 1;
+          $seqend      = $seqend    - $dest_slice_start + 1;
+        } else {
+          my $tmp_seq_region_start = $seqstart;
+          $seqstart    = $dest_slice_end - $seqend + 1;
+          $seqend      = $dest_slice_end - $tmp_seq_region_start + 1;
+          $strand     *= -1;
+        }
+	$slice = $dest_slice;
+      }
+    }
+
+    push @ditag_features,
       Bio::EnsEMBL::Map::DitagFeature->new( -dbid          => $tag_id,
                                             -slice         => $slice,
                                             -start         => $seqstart,
@@ -280,11 +311,12 @@ sub _fetch {
                                             -cigar_line    => $cigar_line,
                                             -ditag_side    => $ditag_side,
 					    -ditag_pair_id => $ditag_pair_id,
+					    -ditag         => undef,
                                             -adaptor       => $self,
                                             );
   }
 
-  return \@ditags;
+  return \@ditag_features;
 }
 
 
