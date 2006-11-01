@@ -1098,7 +1098,7 @@ sub load_registry_from_db {
   Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(-species => "Pan_troglodytes",
 						 -alias => \@aliases);
   
-  @aliases = ('elegans');
+  @aliases = ('elegans','worm');
   Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(-species => "Caenorhabditis_elegans", 
 						 -alias => \@aliases);
   
@@ -1118,11 +1118,11 @@ sub load_registry_from_db {
   Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(-species => "Rattus_norvegicus",
                                                -alias => \@aliases);
   
-  @aliases = ('F_Rubripes', 'fugu rubripes', 'Fugu_Rubripes', 'Fugu');
-  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(-species => "Fugu_rubripes",
+  @aliases = ('T_Rubripes', 'Fugu', 'takifugu');
+  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(-species => "Takifugu_rubripes",
 						 -alias => \@aliases);
   
-  @aliases = ('G_Gallus', 'gallus gallus', 'Gallus_gallus', 'Chicken', 'GalGal2');
+  @aliases = ('G_Gallus', 'gallus gallus', 'Chicken', 'GalGal2');
   Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(-species => "Gallus_Gallus",
 						 -alias => \@aliases);
   
@@ -1138,9 +1138,6 @@ sub load_registry_from_db {
   Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(-species => "Anopheles_gambiae",
 						 -alias => \@aliases);
   
-  @aliases = ('A_Mellifera', 'Apis Mellifera','Apis_mellifera', 'Apis', 'honeybee');
-  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(-species => "Apis_mellifera",
-						 -alias => \@aliases);
   
   @aliases = ('D_Melanogaster', 'drosophila melanogaster', 'Drosophila_melanogaster', 'drosophila', 'fly');
   Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(-species => "Drosophila_melanogaster",
@@ -1156,10 +1153,60 @@ sub load_registry_from_db {
   
   Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(-species => "Canis_familiaris",
 						 -alias => \@aliases);
+
   Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(-species => "Ciona_intestinalis",
-						 -alias => ['ciona']);
+						 -alias => ['ciona','Ciona intestinalis']);
+
   Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(-species => "Bos_taurus",
-						 -alias => ['cow']);
+						 -alias => ['cow','bos_taurus']);
+
+  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(-species => "Macaca_mulatta",
+						 -alias => ['rhesus','rhesus_monkey','macaca mulatta']);
+
+  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(-species => "Otolemur_garnettii",
+						 -alias => ['bushbaby','Otolemur garnettii']);
+
+  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(-species => "Oryctolagus_cuniculus",
+						 -alias => ['rabbit','Oryctolagus cuniculus']);
+
+  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(-species => "Felis_catus",
+						 -alias => ['cat','felis catus']);
+
+  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(-species => "Sus_scrofa",
+						 -alias => ['pig','sus scrofa']);
+
+  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(-species => "Sorex_araneus",
+						 -alias => ['shrew','european_shrew','Sorex araneus']);
+
+  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(-species => "Erinaceus_europaeus",
+						 -alias => ['western_european_hegdehog','Erinaceus europaeus']);
+
+  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(-species => "Myotis_lucifugus",
+						 -alias => ['microbat','little_brown_bat']);
+
+  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(-species => "Dasypus_novemcinctus",
+						 -alias => ['armadillo','arma','Dasypus novemcinctu']);
+
+  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(-species => "Loxodonta_africana",
+						 -alias => ['african_elephant','elephant','Loxodonta africana']);
+
+  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(-species => "Echinops_telfairi",
+						 -alias => ['tenrec','madagascar_hedgehog','lesser_hedgehog','Echinops telfairi']);
+
+  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(-species => "Monodelphis_domestica",
+						 -alias => ['opossum','Monodelphis domestica']);
+
+  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(-species => "Ornithorhynchus_anatinus",
+						 -alias => ['platypus','Ornithorhynchus anatinus']);
+
+  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(-species => "Gasterosteus_aculeatus",
+						 -alias => ['stickleback','Gasterosteus aculeatus']);
+
+  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(-species => "Oryzias_latipes",
+						 -alias => ['medaka','Oryzias latipes']);
+
+
+
   @aliases = ('compara');
   
   Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(-species => "multi",
