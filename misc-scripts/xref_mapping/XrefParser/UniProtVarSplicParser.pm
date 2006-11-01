@@ -12,12 +12,12 @@ use vars qw(@ISA);
 
 # UniProtVarSplic file format: fasta, e.g.
 
-# >P48347-2 (P48347) Splice isoform 2 of P48347
-# MENEREKQVYLAKLSEQTERYDEMVEAMKKVAQLDVELTVEERNLVSVGYKNVIGARRAS
-# WRILSSIEQKEESKGNDENVKRLKNYRKRVEDELAKVCNDILSVIDKHLIPSSNAVESTV
-# FFYKMKGDYYRYLAEFSSGAERKEAADQSLEAYKAAVAAAENGLAPTHPVRLGLALNFSV
-# FYYEILNSPESACQLAKQAFDDAIAELDSLNEESYKDSTLIMQLLRDNLTLWTSDLNEEG
-# DERTKGADEPQDEV
+#>P48347-2|14310_ARATH Isoform 2 of P48347 - Arabidopsis thaliana (Mouse-ear cress)
+#MENEREKQVYLAKLSEQTERYDEMVEAMKKVAQLDVELTVEERNLVSVGYKNVIGARRAS
+#WRILSSIEQKEESKGNDENVKRLKNYRKRVEDELAKVCNDILSVIDKHLIPSSNAVESTV
+#FFYKMKGDYYRYLAEFSSGAERKEAADQSLEAYKAAVAAAENGLAPTHPVRLGLALNFSV
+#FYYEILNSPESACQLAKQAFDDAIAELDSLNEESYKDSTLIMQLLRDNLTLWTSDLNEEG
+#DERTKGADEPQDEV
 
 sub run {
 
@@ -43,10 +43,11 @@ sub run {
     my ($header, $sequence) = $_ =~ /^>?(.+?)\n([^>]*)/s or warn("Can't parse FASTA entry: $_\n");
 
     # deconstruct header
-    my ($accession, $original, @description) = split /\s+/, $header;
+    my ($accession, @description) = split /\|/, $header;
     my $description = join(" ", @description);
+    
+    my ($original, $extension) = split/-/, $accession;
 
-    $original =~ s/[\(\)]//g;
     if(defined($swiss{$original})){
       # make sequence into one long string
       $sequence =~ s/\n//g;
@@ -89,3 +90,5 @@ sub new {
 }
 
 1;
+
+
