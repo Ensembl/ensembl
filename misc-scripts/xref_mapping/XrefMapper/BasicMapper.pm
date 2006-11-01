@@ -91,7 +91,7 @@ sub find_priority_sources{
 # NOTE: only store in priority_source_name if same name seen more than one :-)
 # i.e. more than one priority source is "USED"
 
-  my $sql = "select distinct(source.source_id), source.name, source.priority from source, xref where xref.source_id = source.source_id and source.priority >1";
+  my $sql = "select distinct(source.source_id), source.name, source.priority from source, xref where xref.source_id = source.source_id ";
   my $sth = $self->xref->dbc->prepare($sql);
   $sth->execute();
   my ($source_id, $name, $priority);
@@ -1272,17 +1272,41 @@ sub process_priority_xrefs{
 
 
   my @xref_list=();
+
+  # first process the 'primary' ones. As these may generate new ones
+  # and hence added to the list as we go along. These would be missed if 
+  # all done at once.
   foreach my $key (keys %priority_xref){
     my($source_name,$acc) = split(/:/,$key);
     my $xref_id = $priority_xref{$key};
-    if($priority_xref_state{$key} eq "primary"){
-      $self->dump_all_dependencies($xref_id, $xref_id_offset);
+    my $dep_list;
+    if($priority_xref_state{$key} ne  "primary"){
+	next;
+    }
+    my ($type,$id) = split(/:/,$priority_object_xref{$key});
+    $dep_list = $self->dump_all_dependencies($xref_id, $xref_id_offset, $type, $id);
+    push @xref_list, $xref_id;
+    if(defined($priority_object_xref{$key})){
+      print OBJECT_XREF $object_xref_id."\t".$id."\t".$type."\t".$xref_id."\n";
+      if(defined($priority_identity_xref{$key})){
+        print IDENTITY_XREF $object_xref_id."\t".$priority_identity_xref{$key};
+      }
+      $object_xref_id++;
+      foreach my $dependent (@$dep_list){
+	  print OBJECT_XREF $object_xref_id."\t".$id."\t".$type."\t".$dependent."\n";	  
+	  $object_xref_id++;	  
+      }
+    } 
+  }
+
+  foreach my $key (keys %priority_xref){
+    my($source_name,$acc) = split(/:/,$key);
+    my $xref_id = $priority_xref{$key};
+    my $dep_list;
+    if($priority_xref_state{$key} eq "primary"){  #ignore as already done.
+	next;
     }
     push @xref_list, $xref_id;
-    $xref_id += $xref_id_offset;
-    if($priority_xref_state{$key} eq "primary"){
-      $self->dump_all_dependencies($xref_id, $xref_id_offset);
-    }
     if(defined($priority_object_xref{$key})){
       my ($type,$id) = split(/:/,$priority_object_xref{$key});
       print OBJECT_XREF $object_xref_id."\t".$id."\t".$type."\t".$xref_id."\n";
@@ -1290,9 +1314,12 @@ sub process_priority_xrefs{
         print IDENTITY_XREF $object_xref_id."\t".$priority_identity_xref{$key};
       }
       $object_xref_id++;
+      foreach my $dependent (@$dep_list){
+	  print OBJECT_XREF $object_xref_id."\t".$id."\t".$type."\t".$dependent."\n";	  
+	  $object_xref_id++;	  
+      }
     } 
   }
-
   if(scalar(@xref_list) < 1){
     return;
   }
@@ -3524,7 +3551,8 @@ EOS
 }
 
 sub dump_all_dependencies{
-  my ($self, $master_id, $xref_id_offset) = @_;
+  my ($self, $master_id, $xref_id_offset, $type, $object_id) = @_;
+  my @return;
 
   # Now get the dependent xrefs for this xref and write them
   
@@ -3546,20 +3574,54 @@ sub dump_all_dependencies{
     $label = $accession if (!$label);
     
     if (!$xrefs_written{$xref_id}) {
-      if(!defined($updated_source{$external_db_id})){
-	$self->cleanup_sources_file($external_db_id);
-      }
-      
-
-      my $master_accession = $XXXxref_id_to_accession{$master_xref_id};
-
-      if(!defined($priority_xref_source_id{$xref_id})){
-	print XREF ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $accession . "\t" . $label . "\t" . $version . "\t" . $description .  "\t" . "DEPENDENT" . "\t" . "Generated via $master_accession" . "\n";
+	if(!defined($updated_source{$external_db_id})){
+	    $self->cleanup_sources_file($external_db_id);
+	}
 	
-	$xrefs_written{$xref_id} = 1;
-      }
+	
+	my $master_accession = $XXXxref_id_to_accession{$master_xref_id};
+	
+	if(!defined($priority_xref_source_id{$xref_id})){
+	    print XREF ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $accession . "\t" . $label . "\t" . $version . "\t" . $description .  "\t" . "DEPENDENT" . "\t" . "Generated via $master_accession" . "\n";
+	    push @return, ($xref_id+$xref_id_offset);
+	    $xrefs_written{$xref_id} = 1;
+	}
+	elsif(defined($type)){
+	    my $key = $priority_source_id_to_name{$source_id}.":".$priority_xref_acc{$xref_id};	  
+	    if(!defined($priority_xref_priority{$key})){
+		print PRIORITY_FILE $priority_xref_acc{$xref_id}."\t".$source_id.
+		    " being set as undef  (DEPENDENT) priority = ".$priority_source_id{$source_id}."\n";
+		
+		$priority_xref_extra_bit{$xref_id} = "\t" . "DEPENDENT" . "\t" . "Generated via $master_accession" . "\n";
+		$priority_xref{$key} = $xref_id;
+		$priority_xref_priority{$key} = $priority_source_id{$source_id};
+		$priority_object_xref{$key} = "$type:$object_id";
+		$priority_identity_xref{$key} = undef;
+		$priority_xref_state{$key} = "dependent";
+		next;
+	    }
+	    if($priority_xref_priority{$key} 
+	       > $priority_source_id{$source_id}){
+		
+		print PRIORITY_FILE $priority_xref_acc{$xref_id}."\t".$source_id.
+		    " being set as better priority found  (DEPENDENT) priority = ".$priority_source_id{$source_id}."\n";
+		
+		$priority_xref_extra_bit{$xref_id} = "\t" . "DEPENDENT" . "\t" . "Generated via $master_accession" . "\n";
+		$priority_xref{$key} = $xref_id;
+		$priority_xref_priority{$key} = $priority_source_id{$source_id};
+		$priority_object_xref{$key} = "$type:$object_id";
+		$priority_identity_xref{$key} = undef;
+		$priority_xref_state{$key} = "dependent";
+		next;
+	    }
+	    else{
+		print PRIORITY_FILE $priority_xref_acc{$xref_id}."\t".$source_id." has less priority (DEPENDENT) so left as is\n";
+	    }
+	}
     }
-  }
+
+  }   
+  return \@return;
 }
     
 
