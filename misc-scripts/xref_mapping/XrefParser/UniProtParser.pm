@@ -2,8 +2,10 @@
 #
 # Files actually contain both types of xref, distinguished by ID line;
 #
-# ID   143B_HUMAN     STANDARD;      PRT;   245 AA.         SwissProt
-# ID   Q9B1S6      PRELIMINARY;      PRT;   260 AA.         SPTrEMBL
+# ID   CYC_PIG                 Reviewed;         104 AA.  Swissprot
+# ID   Q3ASY8_CHLCH            Unreviewed;     36805 AA.  SPTrEMBL
+
+
 
 package XrefParser::UniProtParser;
 
@@ -190,7 +192,7 @@ sub create_xrefs {
     my ($label, $sp_type) = $_ =~ /ID\s+(\w+)\s+(\w+)/;
 
     # SwissProt/SPTrEMBL are differentiated by having STANDARD/PRELIMINARY here
-    if ($sp_type =~ /STANDARD/i) {
+    if ($sp_type =~ /^Reviewed/i) {
 
       $xref->{SOURCE_ID} = $sp_source_id;
       if ($is_predicted) {
@@ -200,7 +202,7 @@ sub create_xrefs {
 	$xref->{SOURCE_ID} = $sp_source_id;
 	$num_sp++;
       }
-    } elsif ($sp_type =~ /PRELIMINARY/i) {
+    } elsif ($sp_type =~ /Unreviewed/i) {
 
       if ($is_predicted) {
 	$xref->{SOURCE_ID} = $sptr_pred_source_id;
