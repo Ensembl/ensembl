@@ -306,6 +306,8 @@ ftp://ftp.informatics.jax.org/pub/reports/MRK_SwissProt_TrEMBL.rpt
 ftp://ftp.informatics.jax.org/pub/reports/MRK_Synonym.sql.rpt
 
 This is mouse specific xref being the Mouse Genome Informatics data.
+Xrefs are generated via the Uniprot entries in the MGI files first, and
+via the RefSeq entries if there is no Uniprot entry.
 The files have references to uniprot entries and so the GO entries are 
 set to be dependent xrefs on these.
 
