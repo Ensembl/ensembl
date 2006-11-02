@@ -227,7 +227,6 @@ sub remove_probeset_transcript_mappings {
 
   my ($dba, $probeset) = @_;
 
-  print "Removing probeset $probeset\n";
   my $p = 0;
 
   my $sth = $dba->dbc()->prepare("DELETE FROM object_xref WHERE xref_id=? AND ensembl_object_type='Transcript' AND ensembl_id=?");
@@ -244,8 +243,6 @@ sub remove_probeset_transcript_mappings {
   }
 
   $sth->finish();
-
-  print "Removed $p probeset-transcript mappings\n";
 
 }
 
