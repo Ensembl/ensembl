@@ -180,12 +180,7 @@ sub add_xref {
 
   foreach my $array (@{$feature->probe()->get_all_Arrays()}) {
 
-    if (@arrays && find_in_list($array, @arrays,) == -1 ) {
-      print $array " not in list, skipping\n";
-      next;
-    } else {
-      print "Using $array\n";
-    }
+    next if (@arrays && find_in_list($array->name(), @arrays,) == -1 );
 
     # TODO - get db name from array name; for now just use AFFY_HG_U133A
 
