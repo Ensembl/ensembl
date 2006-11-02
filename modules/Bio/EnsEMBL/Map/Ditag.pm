@@ -35,13 +35,9 @@ piece of sequence like CAGE tags or a ditag with concatenated sequence from
 package Bio::EnsEMBL::Map::Ditag;
 
 use strict;
-use vars qw(@ISA);
+use Carp;
+use base qw(Bio::EnsEMBL::Root);
 
-use Bio::EnsEMBL::Storable;
-use Bio::EnsEMBL::Utils::Exception qw( throw );
-use Bio::EnsEMBL::Utils::Argument  qw( rearrange );
-
-@ISA = qw(Bio::EnsEMBL::Storable);
 
 
 =head2 new
@@ -62,12 +58,13 @@ use Bio::EnsEMBL::Utils::Argument  qw( rearrange );
 
 sub new {
   my ($caller, @args) = @_;
-  my ($dbID, $name, $type, $tag_count, $sequence, $adaptor) = rearrange(
+
+  my ($dbID, $name, $type, $tag_count, $sequence, $adaptor) = $caller->_rearrange(
       [ 'DBID', 'NAME', 'TYPE', 'TAG_COUNT', 'SEQUENCE', 'ADAPTOR' ], @args);
   my $class = ref($caller) || $caller;
 
   if(!$name or !$type or !$sequence) {
-    throw('Missing information for Ditag object:
+    confess('Missing information for Ditag object:
               Bio::EnsEMBL::Map::Ditag->new (
                                               -dbID      => $tag_id,
                                               -name      => $name,
@@ -81,7 +78,7 @@ sub new {
   if(!$tag_count){ $tag_count = 0; }
 
   if(!($sequence =~ /^[ATCGN]+$/i)){
-    throw('ditag sequence contains non-standard characters: '.$sequence);
+    confess('ditag sequence contains non-standard characters: '.$sequence);
   }
 
   my $self = bless( {'dbID'        => $dbID,

@@ -40,13 +40,8 @@ Alternatively there are CAGE tags e.g. which only have a 5\'tag ("F").
 package Bio::EnsEMBL::Map::DitagFeature;
 
 use strict;
-use vars qw(@ISA);
+use base qw(Bio::EnsEMBL::SeqFeature);
 
-use Bio::EnsEMBL::Feature;
-use Bio::EnsEMBL::Utils::Exception qw( throw );
-use Bio::EnsEMBL::Utils::Argument  qw( rearrange );
-
-@ISA = qw(Bio::EnsEMBL::Feature);
 
 =head2 new
 
@@ -79,7 +74,7 @@ use Bio::EnsEMBL::Utils::Argument  qw( rearrange );
 sub new {
   my ($caller, @args) = @_;
   my ( $dbID, $adaptor, $start, $end, $strand, $slice, $analysis, $hit_start, $hit_end, 
-       $hit_strand, $ditag_id, $ditag_side, $cigar_line, $ditag_pair_id, $tag_count ) = rearrange( 
+       $hit_strand, $ditag_id, $ditag_side, $cigar_line, $ditag_pair_id, $tag_count ) = $caller->_rearrange( 
 												  [ 'dbid', 'adaptor' ,'start', 'end', 'strand', 'slice', 'analysis', 'hit_start', 
 	'hit_end', 'hit_strand', 'ditag_id', 'ditag_side', 'cigar_line', 'ditag_pair_id' ,'tag_count'],
        @args );
@@ -87,30 +82,30 @@ sub new {
 
   if($analysis) {
     if(!ref($analysis) || !$analysis->isa('Bio::EnsEMBL::Analysis')) {
-      throw('-ANALYSIS argument must be a Bio::EnsEMBL::Analysis not '.
+      die('-ANALYSIS argument must be a Bio::EnsEMBL::Analysis not '.
             $analysis);
     }
   }
   if(defined($strand)) {
     if(!($strand =~ /^-?\d$/) or !($strand == 1) && !($strand == -1) && !($strand == 0)) {
-      throw('-STRAND argument must be 1, -1, or 0');
+      die('-STRAND argument must be 1, -1, or 0');
     }
   }
   if(defined($hit_strand)) {
     if(!($hit_strand == 1) && !($hit_strand == -1) && !($hit_strand == 0)) {
-      throw('-HIT_STRAND argument must be 1, -1, or 0 not '.$hit_strand);
+      die('-HIT_STRAND argument must be 1, -1, or 0 not '.$hit_strand);
     }
   }
   if(defined($start) && defined($end)) {
     if($end+1 < $start) {
-      throw('Start must be less than or equal to end+1.');
+      die('Start must be less than or equal to end+1.');
     }
   }
   else{
-    throw('Need start and end location.');
+    die('Need start and end location.');
   }
   if(!(defined($hit_start) && defined($hit_end))) {
-    throw('Need hit start and hit end location.');
+    die('Need hit start and hit end location.');
   }
   if(!defined($tag_count) or (!$tag_count =~ /^[\d]+$/)){
     $tag_count = 1;
@@ -213,19 +208,19 @@ sub get_ditag_location {
 									  $self->analysis->dbID)};
     };
     if($@ or !defined($ditag_a) or !defined($ditag_b)){
-      throw("Cannot find 2nd tag of pair (".$self->dbID.", ".$self->ditag_id.", ".
+      die("Cannot find 2nd tag of pair (".$self->dbID.", ".$self->ditag_id.", ".
 	    $self->ditag_pair_id.", ".$self->analysis->dbID.")\n".$@);
     }
     else{
 #      if(defined $more){
-#	throw("More than two DitagFeatures were returned for ".$self->dbID.", ".$self->ditag_id
+#	die("More than two DitagFeatures were returned for ".$self->dbID.", ".$self->ditag_id
 #	      .", ".$self->ditag_pair_id);
 #      }
 
       ($ditag_a->start < $ditag_b->start) ? ($start = $ditag_a->start) : ($start = $ditag_b->start);
       ($ditag_a->end   > $ditag_b->end)   ? ($end   = $ditag_a->end)   : ($end   = $ditag_b->end);
       if($ditag_a->strand != $ditag_b->strand){
-	throw('the strands of the two ditagFeatures are different! '.$ditag_a->strand.'/'.$ditag_b->strand);
+	die('the strands of the two ditagFeatures are different! '.$ditag_a->strand.'/'.$ditag_b->strand);
       }
     }
   }
