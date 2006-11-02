@@ -2,10 +2,11 @@ use strict;
 
 use Getopt::Long;
 
+use Bio::EnsEMBL::DBEntry;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::EnsEMBL::Mapper::RangeRegistry;
 
-my ($s_host, $s_port, $s_user, $s_pass, $s_dbname, $t_host, $t_port, $t_user, $t_pass, $t_dbname, $print, $max_mismatches, $utr_length);
+my ($s_host, $s_port, $s_user, $s_pass, $s_dbname, $t_host, $t_port, $t_user, $t_pass, $t_dbname, $print, $max_mismatches, $utr_length, $max_probesets_per_transcript, $max_transcripts, @arrays);
 
 GetOptions('source_host=s'      => \$s_host,
            'source_user=s'      => \$s_user,
@@ -19,6 +20,9 @@ GetOptions('source_host=s'      => \$s_host,
            'target_dbname=s'    => \$t_dbname,
 	   'mismatches=i'       => \$max_mismatches,
            'utr_length=i'       => \$utr_length,
+	   'max_probesets=i'    => \$max_probesets_per_transcript,
+	   'max_transcripts=i'  => \$max_transcripts,
+	   'arrays=s'           => \@arrays,
 	   'print'              => \$print,
            'help'               => sub { usage(); exit(0); });
 
@@ -27,6 +31,10 @@ $s_port ||= 3306; $t_port ||= 3306;
 $max_mismatches ||= 1;
 
 $utr_length ||= 2000;
+
+$max_probesets_per_transcript ||= 100;
+
+@arrays = split(/,/,join(',',@arrays));
 
 usage() if(!$s_user || !$s_dbname || !$s_host);
 
@@ -63,11 +71,16 @@ my %exonic_probesets;
 my %utr_probesets;
 my %intronic_probesets;
 
+my %promiscuous_probes;
+my %dbentries_per_probeset;
+
 my $i = 0;
 
 foreach my $transcript (@{$transcript_adaptor->fetch_all()}) {
 
   print "$i\n" if ($i % 1000 == 0);
+
+  last if ($max_transcripts && $i >= $max_transcripts);
 
   my $stable_id = $transcript->stable_id();
 
@@ -93,38 +106,28 @@ foreach my $transcript (@{$transcript_adaptor->fetch_all()}) {
     my $probe_length = $probe->probelength();
     my $min_overlap = ($probe_length - $max_mismatches);
 
-    my $arrays = "";
-    foreach my $array (@{$probe->get_all_Arrays()}) {
-      $arrays .= $array->name() . " ";
-    }
-
     my $exon_overlap = $rr->overlap_size("exonic", $feature->seq_region_start(), $feature->seq_region_end());
     my $utr_overlap = $rr->overlap_size("utr", $feature->seq_region_start(), $feature->seq_region_end());
 
     if ($exon_overlap >= $min_overlap) {
 
       $exonic_probesets{$probeset} = $stable_id;
-      print join("\t", $stable_id, $probeset, $exon_overlap, $arrays, "exonic", "\n") if ($print);
-      add_xref($transcript, $probe, $db_entry_adaptor) if (!$print);
+      add_xref($transcript, $feature, $db_entry_adaptor) if (!$print);
 
     } elsif ($utr_overlap > $min_overlap) {
 
       $utr_probesets{$probeset} = $stable_id;
-      print "$stable_id\t$probeset\t$utr_overlap\tutr\n" if ($print);
-      add_xref($transcript, $probe, $db_entry_adaptor) if (!$print);
+      add_xref($transcript, $feature, $db_entry_adaptor) if (!$print);
 
     } else { # must be intronic
 
       $intronic_probesets{$probeset} = $stable_id;
-      print "$stable_id\t$probeset\t\tintronic\n" if ($print);
 
     }
   }
 
   # TODO - make external_db array names == array names in OligoArray!
   # change oligo_array.name to be oligo_array.external_db_id ?
-
-  # TODO - remove 'promiscuous' probes
 
   $i++;
 
@@ -169,30 +172,110 @@ sub pc {
 
 sub add_xref {
 
-  my ($transcript, $probe, $dbea) = @_;
+  my ($transcript, $feature, $dbea) = @_;
 
-  # TODO - get db name from probe name; for now just use AFFY_HG_U133A
+  my $probeset = $feature->probeset();
 
-  my $dbe = new DBEntry( -adaptor              => $dbea,
-			 -primary_id           => $probe->name(),
-			 -version              => "1",
-			 -dbname               => "AFFY_HG_U133A", # XXXXX
-			 -release              => "1",
-			 -display_id           => $probe->name(),
-			 -description          => undef,
-			 -primary_id_linkable  => 1,
-			 -display_id_linkable  => 0,
-			 -priority             => 1,
-			 -db_display_name      => "AFFY_HG_U133A", # XXXXX
-			 -info_type            => "MISC",  # TODO - change to PROBE when available
-			 -info_text            => "");
+  # store one xref/object_xref for each array-probeset-transcript combination
 
-  $dbea->store($dbe, $transcript->dbID(), "Transcript");
+  foreach my $array (@{$feature->probe()->get_all_Arrays()}) {
+
+    if (@arrays && find_in_list($array, @arrays,) == -1 ) {
+      print $array " not in list, skipping\n";
+      next;
+    } else {
+      print "Using $array\n";
+    }
+
+    # TODO - get db name from array name; for now just use AFFY_HG_U133A
+
+    my $dbe = new Bio::EnsEMBL::DBEntry( -adaptor              => $dbea,
+					 -primary_id           => $probeset,
+					 -version              => "1",
+					 -dbname               => "AFFY_HG_U133A", # XXXXX use proper array name
+					 -release              => "1",
+					 -display_id           => $probeset,
+					 -description          => undef,
+					 -primary_id_linkable  => 1,
+					 -display_id_linkable  => 0,
+					 -priority             => 1,
+					 -db_display_name      => "AFFY_HG_U133A", # XXXXX
+					 -info_type            => "MISC",  # TODO - change to PROBE when available
+					 -info_text            => "probe2transcript.pl test");
+
+
+    $dbea->store($dbe, $transcript->dbID(), "Transcript");
+
+    # store the dbID of the newly created DBEntry in %dbentries_per_probeset
+    # so that promiscuous ones can be removed later; note format of value is
+    # $dbe->dbID:$transcript->dbID
+    push @{$dbentries_per_probeset{$probeset}}, $dbe->dbID() . ":" . $transcript->dbID();
+
+  }
 
 }
 
+# ----------------------------------------------------------------------
+
+# Remove mappings for probesets that map to more than 100 transcripts
+
+# TODO This is horribly inefficent, potentially thousands of unnecessary db calls
+
+sub prune_promiscuous_probesets {
+
+  my ($dba) = @_;
+
+  print "Removing probesets that map to more than $max_probesets_per_transcript transcripts\n";
+  my $p = 0;
+
+  my $sth = $dba->dbc()->prepare("DELETE FROM object_xref WHERE xref_id=? AND ensembl_object_type='Transcript' AND ensembl_id=?");
+
+  foreach my $probeset (keys %dbentries_per_probeset) {
+
+    my $values = @{$dbentries_per_probeset{$probeset}};
+
+    if ($values > $max_probesets_per_transcript) {
+
+      foreach my $value (@{$dbentries_per_probeset{$probeset}}) {
+
+	my ($dbe_id, $transcript_id) = split(/:/, $value);
+
+	$sth->execute($dbe_id, $transcript_id);
+	$p++;
+      }
+
+    }
+
+  }
+
+  $sth->finish();
+
+  print "Removed $p probeset-transcript mappings\n";
+
+  # TODO - remove any xrefs that have 0 object_xrefs?
+
+}
 
 # ----------------------------------------------------------------------
+
+# Find the index of an item in a list(ref), or -1 if it's not in the list.
+# Only look for exact matches (case insensitive)
+
+sub find_in_list {
+
+  my ($item, @list) = @_;
+
+  for (my $i = 0; $i < scalar(@list); $i++) {
+    if (lc($list[$i]) eq lc($item)) {
+      return $i;
+    }
+  }
+
+  return -1;
+
+}
+# ----------------------------------------------------------------------
+
 
 sub usage {
 
@@ -228,18 +311,29 @@ sub usage {
 		
    --target_dbname        Database name to write xrefs to.
 
-  Note that if no target_host etc is specified, xrefs will be written to the database specified
-  by the source_* parameters.
+  Note that if no target_host etc is specified, xrefs will be written to the
+  database specified by the source_* parameters.
 
-  GENERAL OPTIONS:
+  GENERAL MAPPING OPTIONS:
 
-  [--mismatches]   Allow up to this number of mismatches, inclusive. Defaults to 1.
+  [--mismatches]      Allow up to this number of mismatches, inclusive.
+                      Defaults to 1.
+		
+  [--utr_length]      Search this many bases downstream of the transcript
+                      coding region as well. Defaults to 2000.
+		
+  [--max_probesets]   Don't store mappings to any 'promiscuous' probesets that map
+                      to more than this number of transcripts. Defaults to 100.
 
-  [--utr_length]   Search this many bases downstream of the transcript coding region as well. Defaults to 2000.
+  [--arrays]          Comma-separated list of arrays to use. Defaults to all arrays.
 
-  [--print]        Print information about mapping, don't store in database.
+  MISCELLANEOUS:
 
-  [--help]         This text.
+  [--print]           Print information about mapping, don't store in database.
+
+  [--max_transcripts] Only use this many transcripts. Useful for debugging.
+
+  [--help]            This text.
 
 
 EOF
