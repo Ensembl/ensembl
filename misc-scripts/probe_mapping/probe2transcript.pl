@@ -71,7 +71,7 @@ my %exonic_probesets;
 my %utr_probesets;
 my %intronic_probesets;
 
-my %promiscuous_probes;
+my %promiscuous_probesets;
 my %dbentries_per_probeset;
 
 my $i = 0;
@@ -102,6 +102,9 @@ foreach my $transcript (@{$transcript_adaptor->fetch_all()}) {
   foreach my $feature (@$oligo_features) {
 
     my $probeset = $feature->probeset();
+
+    next if ($promiscuous_probesets{$probeset});
+
     my $probe = $feature->probe();
     my $probe_length = $probe->probelength();
     my $min_overlap = ($probe_length - $max_mismatches);
@@ -206,48 +209,43 @@ sub add_xref {
     # $dbe->dbID:$transcript->dbID
     push @{$dbentries_per_probeset{$probeset}}, $dbe->dbID() . ":" . $transcript->dbID();
 
+    # if any probesets map to more than 100 transcripts, ignore them in future and 
+    # delete existing mappings to them
+    if (scalar(@{$dbentries_per_probeset{$probeset}}) > $max_probesets_per_transcript) {
+      $promiscuous_probesets{$probeset} = $probeset;
+      remove_probeset_transcript_mappings($t_db, $probeset);
+    }
   }
 
 }
 
 # ----------------------------------------------------------------------
 
-# Remove mappings for probesets that map to more than 100 transcripts
+# Remove mappings for a particular probeset
 
-# TODO This is horribly inefficent, potentially thousands of unnecessary db calls
+sub remove_probeset_transcript_mappings {
 
-sub prune_promiscuous_probesets {
+  my ($dba, $probeset) = @_;
 
-  my ($dba) = @_;
-
-  print "Removing probesets that map to more than $max_probesets_per_transcript transcripts\n";
+  print "Removing probeset $probeset\n";
   my $p = 0;
 
   my $sth = $dba->dbc()->prepare("DELETE FROM object_xref WHERE xref_id=? AND ensembl_object_type='Transcript' AND ensembl_id=?");
 
-  foreach my $probeset (keys %dbentries_per_probeset) {
+  my $values = @{$dbentries_per_probeset{$probeset}};
 
-    my $values = @{$dbentries_per_probeset{$probeset}};
+  foreach my $value (@{$dbentries_per_probeset{$probeset}}) {
 
-    if ($values > $max_probesets_per_transcript) {
+    my ($dbe_id, $transcript_id) = split(/:/, $value);
 
-      foreach my $value (@{$dbentries_per_probeset{$probeset}}) {
-
-	my ($dbe_id, $transcript_id) = split(/:/, $value);
-
-	$sth->execute($dbe_id, $transcript_id);
-	$p++;
-      }
-
-    }
+    $sth->execute($dbe_id, $transcript_id);
+    $p++;
 
   }
 
   $sth->finish();
 
   print "Removed $p probeset-transcript mappings\n";
-
-  # TODO - remove any xrefs that have 0 object_xrefs?
 
 }
 
