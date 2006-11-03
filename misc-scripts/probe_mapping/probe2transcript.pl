@@ -76,6 +76,8 @@ my %dbentries_per_probeset;
 
 my $i = 0;
 
+my $rr = Bio::EnsEMBL::Mapper::RangeRegistry->new();
+
 foreach my $transcript (@{$transcript_adaptor->fetch_all()}) {
 
   print "$i\n" if ($i % 1000 == 0);
@@ -89,7 +91,7 @@ foreach my $transcript (@{$transcript_adaptor->fetch_all()}) {
 
   my $exons = $transcript->get_all_Exons();
 
-  my $rr = Bio::EnsEMBL::Mapper::RangeRegistry->new();
+  $rr->flush();
 
   foreach my $exon (@$exons) {
     $rr->check_and_register("exonic", $exon->seq_region_start, $exon->seq_region_end);
@@ -105,8 +107,7 @@ foreach my $transcript (@{$transcript_adaptor->fetch_all()}) {
 
     next if ($promiscuous_probesets{$probeset});
 
-    my $probe = $feature->probe();
-    my $probe_length = $probe->probelength();
+    my $probe_length = $feature->probe()->probelength();
     my $min_overlap = ($probe_length - $max_mismatches);
 
     my $exon_overlap = $rr->overlap_size("exonic", $feature->seq_region_start(), $feature->seq_region_end());
@@ -209,7 +210,7 @@ sub add_xref {
     # $dbe->dbID:$transcript->dbID
     push @{$dbentries_per_probeset{$probeset}}, $dbe->dbID() . ":" . $transcript->dbID();
 
-    # if any probesets map to more than 100 transcripts, ignore them in future and 
+    # if any probesets map to more than 100 transcripts, ignore them in future and
     # delete existing mappings to them
     if (scalar(@{$dbentries_per_probeset{$probeset}}) > $max_probesets_per_transcript) {
       $promiscuous_probesets{$probeset} = $probeset;
