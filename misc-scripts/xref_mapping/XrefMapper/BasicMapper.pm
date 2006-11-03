@@ -1116,6 +1116,7 @@ sub parse_mappings {
 	}
 	else{
 	  $priority_failed{$priority_xref_source_id{$query_id}.":".$query_id} = $reason;
+	  print PRIORITY_FILE  $priority_xref_acc{$query_id}."\tFailed cutoff $reason\n";
 	}
 	next;
       }
@@ -1133,7 +1134,7 @@ sub parse_mappings {
 	  
 	  $priority_xref{$key} = $query_id;
 	  $priority_xref_priority{$key} = $priority_source_id{$source_id};
-	  $priority_object_xref{$key} = "$type:$target_id";
+	  $priority_object_xref{$key} = "$type:$target_id\n";
 	  $priority_identity_xref{$key} = join("\t", ($query_identity, $target_identity, 
 						      $query_start+1, $query_end, 
 						      $target_start+1, $target_end, 
@@ -1148,7 +1149,7 @@ sub parse_mappings {
 	  
 	  $priority_xref{$key} = $query_id;
 	  $priority_xref_priority{$key} = $priority_source_id{$source_id};
-	  $priority_object_xref{$key} = "$type:$target_id";
+	  $priority_object_xref{$key} = "$type:$target_id\n";
 	  $priority_identity_xref{$key} = join("\t", ($query_identity, $target_identity, 
 						      $query_start+1, $query_end, 
 						      $target_start+1, $target_end, 
@@ -1331,8 +1332,10 @@ sub process_priority_xrefs{
   $sth->bind_columns(\$xref_id, \$acc, \$ver, \$label, \$desc, \$source_id);
   while($sth->fetch()){
     print XREF ($xref_id+$xref_id_offset)."\t". $source_to_external_db{$source_id}.
-      "\t$acc\t$label\t$ver\t$desc";
+      "\t$acc\t$label\t$ver\t$desc\n";
     print XREF $priority_xref_extra_bit{$xref_id}; # no need for "\n" already added;
+    $xrefs_written{$xref_id}
+
   }
   $sth->finish;
 
@@ -3352,14 +3355,44 @@ EOS
   my $both = 0;
   my $poss = 0;
 
-
   #sql needed to get the dependent xrefs for those missed.
   my $dep_sql = "SELECT dx.dependent_xref_id FROM dependent_xref dx, xref x WHERE x.xref_id=dx.dependent_xref_id AND master_xref_id = ?";
     my $dep_sth = $self->xref->dbc->prepare($dep_sql);
 
-
-
+  my @xref_list;
+  my %seenit=();
   while ($xref_sth->fetch()) {
+    # If either of these are a priority source then make sure they are the chosen one.
+    if($xref_id2 == 522394){
+      print STDERR "NM_001032394 (522394) \n";
+    }
+    if(defined($priority_xref_acc{$xref_id2}) and $priority_xref_acc{$xref_id2} eq "NM_001032394"){
+      print STDERR "NM_001032394\n"; 
+    }
+    if(defined($priority_xref_source_id{$xref_id1})){
+      if(!defined($xrefs_written{$xref_id1})){
+	if(!defined($seenit{$x1_acc})){
+	  push @xref_list, $xref_id1;
+	  $seenit{$x1_acc} = $x2_acc;
+	}
+      }
+    }
+    if(defined($priority_xref_source_id{$xref_id2})){
+      if(!defined($xrefs_written{$xref_id2})){
+	if(!defined($seenit{$x2_acc})){
+	  push @xref_list, $xref_id2;
+	  $seenit{$x2_acc} = $x1_acc;
+	}
+      }
+    }
+    
+    if($xref_id2 == 522394){
+      print STDERR "NM_001032394 (522394) AGAIN\n";
+    }
+    if(defined($priority_xref_acc{$xref_id2}) and $priority_xref_acc{$xref_id2} eq "NM_001032394"){
+      print STDERR "NM_001032394 AGAIN\n"; 
+    }
+    
     if(!defined($xrefs_written{$xref_id1}) or !defined($xrefs_written{$xref_id2})){
       if (!defined($xrefs_written{$xref_id1}) and !defined($xrefs_written{$xref_id2})){
 	$okay++;
@@ -3379,6 +3412,47 @@ EOS
       $both++;
     }
   }
+
+
+
+
+  if(scalar(@xref_list) > 1){
+    open(XREF2, ">".$self->core->dir()."/pairs_xref.txt") 
+      || die "Could not open pairs_xref.txt";
+
+
+    my $list = join(", ", @xref_list);
+    my $sql = "SELECT xref_id, accession, version, label, description, source_id from xref where xref_id in ($list)";
+    my $sth = $self->xref->dbc->prepare($sql);
+    $sth->execute();
+    my ($xref_id, $acc,$ver, $label, $desc, $source_id);
+    $sth->bind_columns(\$xref_id, \$acc, \$ver, \$label, \$desc, \$source_id);
+    my $count =0;
+    while($sth->fetch()){
+      $count++;
+      print XREF2 ($xref_id+$xref_id_offset)."\t". $source_to_external_db{$source_id}.
+	"\t$acc\t$label\t$ver\t$desc";
+      print XREF2 "\tDEPENDENT\tGenerated via its Pair ".$seenit{$acc}."\n";
+      $xrefs_written{$xref_id}
+	
+    }
+    $sth->finish;
+
+
+    my $file = $self->core->dir()."/pairs_xref.txt";
+    
+    # don't seem to be able to use prepared statements here
+    if(-s $file){
+      my $sth = $self->core->dbc->prepare("LOAD DATA LOCAL INFILE \'$file\' IGNORE INTO TABLE xref");
+      print "Uploading data in $file to object_xref\n";
+      $sth->execute();
+      
+      print "$count xrefs added based on the Pairs\n";
+    }
+
+  }
+
+
 
 # create a hash to interchange between transcripts and translations
   my $tran_sth = $self->core->dbc->prepare("SELECT translation_id, transcript_id from translation");
@@ -3540,6 +3614,7 @@ EOS
   
        print "$added new object xrefs added based on the Pairs\n";
    }
+
 
   my $core_db = $self->core->dbc;
 
