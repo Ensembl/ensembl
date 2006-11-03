@@ -46,7 +46,7 @@ run();
 sub run {
 
   # compare total counts first
-  my $count_sql = "SELECT COUNT(*) FROM xref x, object_xref ox WHERE x.xref_id=ox.xref_id AND $restrict_sql";
+  my $count_sql = "SELECT COUNT(*) FROM xref x, object_xref ox WHERE x.xref_id=ox.xref_id AND ox.ensembl_object_type='Transcript' AND $restrict_sql";
   my $s_sth = $s_db->dbc()->prepare($count_sql);
   $s_sth->execute();
   my $count = ($s_sth->fetchrow_array())[0];
@@ -67,22 +67,31 @@ sub run {
   my $target_only = 0;
   my $both = 0;
 
+  open(SOURCE_ONLY, ">source_only.txt");
+  open(TARGET_ONLY, ">target_only.txt");
+  open(BOTH,        ">both.txt");
+
   foreach my $key (keys %source_mappings) {
 
     if ($target_mappings{$key}) {
       $both++;
+      print BOTH "$key\n";
     } else {
       $source_only++;
+      print SOURCE_ONLY "$key\n";
     }
 
   }
 
-  print "$both mappings in both databases\n";
+  print "$both unique mappings in both databases\n";
   print "$source_only mappings in source only\n";
 
   foreach my $key (keys %target_mappings) {
 
-    $target_only++ if (!$source_mappings{$key});
+    if (!$source_mappings{$key}) {
+      $target_only++;
+      print TARGET_ONLY "$key\n";
+    }
 
   }
 
