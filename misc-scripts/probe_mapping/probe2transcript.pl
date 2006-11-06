@@ -184,21 +184,23 @@ sub add_xref {
 
   foreach my $array (@{$feature->probe()->get_all_Arrays()}) {
 
-    next if (@arrays && find_in_list($array->name(), @arrays,) == -1 );
+    my $array_name = $array->name();
+    next if (@arrays && find_in_list($array_name, @arrays,) == -1 );
 
-    # TODO - get db name from array name; for now just use AFFY_HG_U133A
+    # TODO - this only works if external_db db_name == array name; currently needs
+    # some manual hacking to acheive this
 
     my $dbe = new Bio::EnsEMBL::DBEntry( -adaptor              => $dbea,
 					 -primary_id           => $probeset,
 					 -version              => "1",
-					 -dbname               => "AFFY_HG_U133A", # XXXXX use proper array name
+					 -dbname               => $array_name,
 					 -release              => "1",
 					 -display_id           => $probeset,
 					 -description          => undef,
 					 -primary_id_linkable  => 1,
 					 -display_id_linkable  => 0,
 					 -priority             => 1,
-					 -db_display_name      => "AFFY_HG_U133A", # XXXXX
+					 -db_display_name      => $array_name,
 					 -info_type            => "MISC",  # TODO - change to PROBE when available
 					 -info_text            => "probe2transcript.pl test");
 
