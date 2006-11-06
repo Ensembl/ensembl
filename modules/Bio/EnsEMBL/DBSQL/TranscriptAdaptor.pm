@@ -1,4 +1,4 @@
-package Bio::EnsEMBL::DBSQL::TranscriptAdaptor;
+]package Bio::EnsEMBL::DBSQL::TranscriptAdaptor;
 
 =head1 NAME
 
@@ -19,7 +19,7 @@ interaction relating to the storage and retrieval of Transcripts
   $slice = $slice_adaptor->fetch_by_region('chromosome', '3', 1, 1000000);
   @transcripts = @{$transcript_adaptor->fetch_all_by_Slice($slice)};
 
-  ($transcript) = @{$transcript_adaptor->fetch_all_by_external_name('BRCA2')};
+  ($transcript) = @{$transcript_adaptor->fetch_all_by_external_name('NP_065811.1')};
 
 =head1 DESCRIPTION
 
@@ -417,9 +417,9 @@ sub fetch_all_by_Slice {
   Arg [1]    : String $external_id
                An external identifier of the transcript to be obtained
   Example    : my @transcripts = @{ $tr_adaptor->fetch_all_by_external_name
-                  ('ARSE') };
+                  ('NP_065811.1') };
   Description: Retrieves all transcripts which are associated with an 
-               external identifier such as a GO term, HUGO id, Swissprot
+               external identifier such as a GO term, Swissprot
                identifer, etc. Usually there will only be a single transcript
                returned in the listref, but not always. Transcripts are
                returned in their native coordinate system. That is, the 
