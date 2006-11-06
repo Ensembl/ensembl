@@ -608,7 +608,7 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 
 ##   WormBase 
 
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (2400, 6239, 'ftp://ftp.sanger.ac.uk/pub/databases/wormpep/wormpep150/wormpep.table150', '', now(), now(), "WormPepParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (2400, 6239, 'ftp://ftp.sanger.ac.uk/pub/databases/wormpep/wormpep160/wormpep.table160', '', now(), now(), "WormPepParser");
 
 ##   Stable ID xref transfer - note use of WormbaseDatabaseStableIDParser
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (2400, 6239, 'mysql:ensembldb.ensembl.org::caenorhabditis_elegans_core_39_150a:anonymous', '', now(), now(), "WormbaseDatabaseStableIDParser");
