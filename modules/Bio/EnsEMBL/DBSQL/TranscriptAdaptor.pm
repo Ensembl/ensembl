@@ -19,7 +19,7 @@ interaction relating to the storage and retrieval of Transcripts
   $slice = $slice_adaptor->fetch_by_region('chromosome', '3', 1, 1000000);
   @transcripts = @{$transcript_adaptor->fetch_all_by_Slice($slice)};
 
-  ($transcript) = @{$transcript_adaptor->fetch_all_by_external_name('BRCA2')};
+  ($transcript) = @{$transcript_adaptor->fetch_all_by_external_name('NP_065811.1')};
 
 =head1 DESCRIPTION
 
