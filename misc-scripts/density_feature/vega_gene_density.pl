@@ -130,9 +130,7 @@ if ($support->param('limit_file')) {
 	}
 }
 
-#warn Dumper(\%gene_ids);
-#exit;
-# known biotype/status pairs and associated density type
+# biotype/status pairs and associated density type
 my %gene_types = (
     "protein_coding_KNOWN"             => "knownPCodDensity",
     "protein_coding_in_progress_KNOWN" => "knownPCodDensity",
@@ -148,7 +146,7 @@ my %gene_types = (
     "pseudogene_UNKNOWN"               => "pseudoGeneDensity",
     "processed_pseudogene_UNKNOWN"     => "pseudoGeneDensity",
     "unprocessed_pseudogene_UNKNOWN"   => "pseudoGeneDensity",
-    "processed_transcript_UNKNOWN"     => "PTransDensity",
+#    "processed_transcript_UNKNOWN"     => "PTransDensity",
     "processed_transcript_PREDICTED"   => "PredPTransDensity",
 );
 
@@ -297,14 +295,14 @@ foreach my $block_size (keys %{ $chr_slices }) {
 
       push @attribs, Bio::EnsEMBL::Attribute->new(
             -NAME => 'processed_transcript_PREDICTED',
-            -CODE => 'KnownPTCount',
+            -CODE => 'PredPTCount',
             -VALUE => $total{'processed_transcript_PREDICTED'} || 0,
             -DESCRIPTION => 'Number of Predicted Processed Transcripts',
         );
 
       push @attribs, Bio::EnsEMBL::Attribute->new(
             -NAME => 'processed_transcript_UNKNOWN',
-            -CODE => 'KnownPTCount',
+            -CODE => 'PTCount',
             -VALUE => $total{'processed_transcript_UNKNOWN'} || 0,
             -DESCRIPTION => 'Number of Processed Transcripts',
         );
@@ -389,11 +387,8 @@ foreach my $block_size (keys %{ $chr_slices }) {
             -DESCRIPTION => 'Number of Novel Protein coding genes in progress'
         );
 
-#warn Dumper(\@attribs);
-#exit
-
         $attrib_adaptor->store_on_Slice($slice, \@attribs) unless ($support->param('dry_run'));
-        
+
         # log stats
         $support->log("\n");
         $support->log("Totals for chr $chr:\n", 1);
