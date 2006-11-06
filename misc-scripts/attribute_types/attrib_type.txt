@@ -105,11 +105,11 @@
 34	NovelPTCount	processed_transcript_NOVEL	Number of Novel Processed Transcripts
 35	PutPTCount	processed_transcript_PUTATIVE	Number of Putative Processed Transcripts
 36	PredPCCount	protein_coding_PREDICTED	Number of Predicted Protein Coding
-37	IgSegCount	total_Ig_segment_	Number of Ig Segments
-38	IgPsSegCount	Ig_pseudogene_segment_	Number of Ig Pseudogene Segments
-39	TotPsCount	total_pseudogene_	Number of Pseudogenes
-40	ProcPsCount	processed_pseudogene_	Number of Processed pseudogenes
-41	UnprocPsCount	unprocessed_pseudogene_	Number of Unprocessed pseudogenes
+37	IgSegCount	total_Ig_segment_UNKNOWN	Number of Ig Segments
+38	IgPsSegCount	Ig_pseudogene_segment_UNKNOWN	Number of Ig Pseudogene Segments
+39	TotPsCount	total_pseudogene_UNKNOWN	Number of Pseudogenes
+40	ProcPsCount	processed_pseudogene_UNKNOWN	Number of Processed pseudogenes
+41	UnprocPsCount	unprocessed_pseudogene_UNKNOWN	Number of Unprocessed pseudogenes
 42	KnwnPCProgCount	protein_coding_in_progress_KNOWN	Number of Known Protein coding genes in progress
 43	NovPCProgCount	protein_coding_in_progress_NOVEL	Number of Novel Protein coding genes in progress
 
@@ -140,3 +140,7 @@
 
 # label frameshifts modelled as short (1,2,4,5 bp) introns
 59	Frameshift	Frameshift	Frameshift modelled as intron
+
+#more gene counts for Vega
+60	PTCount	processed_transcript_UNKNOWN	Number of Processed Transcripts
+61	PredPTCount	processed_transcript_PREDICTED	Number of Predicted Processed Transcripts
