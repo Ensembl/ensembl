@@ -67,9 +67,7 @@ my $slice_adaptor = $t_db->get_SliceAdaptor();
 my $oligo_feature_adaptor = $s_db->get_OligoFeatureAdaptor();
 my $db_entry_adaptor = $t_db->get_DBEntryAdaptor();
 
-my %exonic_probesets;
-my %utr_probesets;
-my %intronic_probesets;
+my %count;
 
 my %promiscuous_probesets;
 my %dbentries_per_probeset;
@@ -99,7 +97,12 @@ foreach my $transcript (@{$transcript_adaptor->fetch_all()}) {
 
   $rr->check_and_register("utr", $extended_slice->end()-$utr_length, $extended_slice->end());
 
-  my $oligo_features = $extended_slice->get_all_OligoFeatures();
+  my $oligo_features;
+  if (@arrays) {
+    $oligo_features = $extended_slice->get_all_OligoFeatures(@arrays);
+  } else {
+    $oligo_features = $extended_slice->get_all_OligoFeatures();
+  }
 
   foreach my $feature (@$oligo_features) {
 
@@ -115,17 +118,17 @@ foreach my $transcript (@{$transcript_adaptor->fetch_all()}) {
 
     if ($exon_overlap >= $min_overlap) {
 
-      $exonic_probesets{$probeset} = $stable_id;
+      $count{'exonic'}++;
       add_xref($transcript, $feature, $db_entry_adaptor) if (!$print);
 
-    } elsif ($utr_overlap > $min_overlap) {
+    } elsif ($utr_overlap >= $min_overlap) {
 
-      $utr_probesets{$probeset} = $stable_id;
+      $count{'utr'}++;
       add_xref($transcript, $feature, $db_entry_adaptor) if (!$print);
 
     } else { # must be intronic
 
-      $intronic_probesets{$probeset} = $stable_id;
+      $count{'intronic'}++;
 
     }
   }
@@ -143,9 +146,9 @@ print_stats();
 
 sub print_stats {
 
-  my $e = scalar(keys(%exonic_probesets));
-  my $i = scalar(keys(%intronic_probesets));
-  my $u = scalar(keys(%utr_probesets));
+  my $e = $count{'exonic'};
+  my $i = $count{'intronic'};
+  my $u = $count{'utr'};
   my $t = $e + $i + $u;
 
   print "Total probesets: $t\n\n";
