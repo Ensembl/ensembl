@@ -442,7 +442,7 @@ sub store {
       $sth->bind_param(2,$analysis->display_label(),SQL_VARCHAR);
       $sth->bind_param(3,$analysis->description,SQL_LONGVARCHAR);
       $sth->bind_param(4,$analysis->displayable,SQL_TINYINT);
-      $sth->bind_param(4,$analysis->web_data(),SQL_LONGVARCHAR);
+      $sth->bind_param(5,$analysis->web_data(),SQL_LONGVARCHAR);
       $sth->execute();
 
       $sth->finish();
