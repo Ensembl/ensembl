@@ -140,3 +140,7 @@
 
 # label frameshifts modelled as short (1,2,4,5 bp) introns
 59	Frameshift	Frameshift	Frameshift modelled as intron
+
+#more gene counts for Vega
+60	PTCount	processed_transcript_UNKNOWN	Number of Processed Transcripts
+61	PredPTCount	processed_transcript_PREDICTED	Number of Predicted Processed Transcripts

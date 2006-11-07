@@ -28,6 +28,7 @@ General options:
 Specific options:
 
     --chromosomes, --chr=LIST           only process LIST chromosomes
+    --limit_file                        only process gene_ids in this file
 
 =head1 DESCRIPTION
 
@@ -79,6 +80,7 @@ use Bio::EnsEMBL::Utils::ConversionSupport;
 use Bio::EnsEMBL::DensityType;
 use Bio::EnsEMBL::DensityFeature;
 use POSIX;
+use Data::Dumper;
 
 $| = 1;
 
@@ -86,8 +88,12 @@ my $support = new Bio::EnsEMBL::Utils::ConversionSupport($SERVERROOT);
 
 # parse options
 $support->parse_common_options(@_);
-$support->parse_extra_options('chromosomes|chr=s@');
-$support->allowed_params($support->get_common_params, 'chromosomes');
+$support->parse_extra_options(
+							  'chromosomes|chr=s@',
+							  'limit_file=s');
+$support->allowed_params($support->get_common_params,
+						 'chromosomes',
+						 'limit_file');
 
 if ($support->param('help') or $support->error) {
     warn $support->error if $support->error;
@@ -114,7 +120,17 @@ my $dbh = $dba->dbc->db_handle;
 # split chromosomes by size and determine block size
 my $chr_slices = $support->split_chromosomes_by_size(5000000);
 
-# known biotype/status pairs and associated density type
+#limit to gene_stable_ids ?
+my (%gene_ids, %found_genes);
+if ($support->param('limit_file')) { 
+	my $in = $support->filehandle('<', $support->param('limit_file'));
+	while (<$in>) {
+		my ($gsi) = split ' ', $_;
+		$gene_ids{$gsi}++;
+	}
+}
+
+# biotype/status pairs and associated density type
 my %gene_types = (
     "protein_coding_KNOWN"             => "knownPCodDensity",
     "protein_coding_in_progress_KNOWN" => "knownPCodDensity",
@@ -130,6 +146,8 @@ my %gene_types = (
     "pseudogene_UNKNOWN"               => "pseudoGeneDensity",
     "processed_pseudogene_UNKNOWN"     => "pseudoGeneDensity",
     "unprocessed_pseudogene_UNKNOWN"   => "pseudoGeneDensity",
+#    "processed_transcript_UNKNOWN"     => "PTransDensity",
+    "processed_transcript_PREDICTED"   => "PredPTransDensity",
 );
 
 # check for new biotype/status pairs
@@ -159,6 +177,7 @@ map { $support->log(sprintf($FMT, $_, $type_status{$_}), 1) }
 $support->log("\n");
 if ($new) {
     $support->log_warning("There are new biotype/status pairs! You might need to adapt Bio::EnsEMBL::ColourMap, EnsEMBL::Sanger_vega::Component::Chromosome and configure mapview to show them.\n\n");
+	exit;
 }
 
 
@@ -184,6 +203,7 @@ foreach my $type (keys %gene_types) {
         $dtcache->{$block_size}->{$gene_types{$type}} = $dt;
     }
 }
+
 
 # loop over block sizes
 foreach my $block_size (keys %{ $chr_slices }) {
@@ -220,7 +240,13 @@ foreach my $block_size (keys %{ $chr_slices }) {
                 $current_start = $current_end + 1;
                 next;
             }
-            foreach my $gene (@{$genes}) {
+      GENE: foreach my $gene (@{$genes}) {
+				if ($support->param('limit_file')) {
+					my $gsi = $gene->stable_id;
+					next GENE unless ($gene_ids{$gsi});
+					$gene_ids{$gsi} |= 2;
+				}
+
                 # only count genes that don't overlap the subslice start
                 # (since these were already counted in the last bin)
                 my $gene_type = $gene->biotype . '_' . $gene->status;
@@ -265,6 +291,20 @@ foreach my $block_size (keys %{ $chr_slices }) {
             -CODE => 'KnownPTCount',
             -VALUE => $total{'processed_transcript_KNOWN'} || 0,
             -DESCRIPTION => 'Number of Known Processed Transcripts',
+        );
+
+      push @attribs, Bio::EnsEMBL::Attribute->new(
+            -NAME => 'processed_transcript_PREDICTED',
+            -CODE => 'PredPTCount',
+            -VALUE => $total{'processed_transcript_PREDICTED'} || 0,
+            -DESCRIPTION => 'Number of Predicted Processed Transcripts',
+        );
+
+      push @attribs, Bio::EnsEMBL::Attribute->new(
+            -NAME => 'processed_transcript_UNKNOWN',
+            -CODE => 'PTCount',
+            -VALUE => $total{'processed_transcript_UNKNOWN'} || 0,
+            -DESCRIPTION => 'Number of Processed Transcripts',
         );
 
         push @attribs, Bio::EnsEMBL::Attribute->new(
@@ -348,7 +388,7 @@ foreach my $block_size (keys %{ $chr_slices }) {
         );
 
         $attrib_adaptor->store_on_Slice($slice, \@attribs) unless ($support->param('dry_run'));
-        
+
         # log stats
         $support->log("\n");
         $support->log("Totals for chr $chr:\n", 1);
@@ -357,8 +397,13 @@ foreach my $block_size (keys %{ $chr_slices }) {
         map { $support->log(sprintf($FMT, $_, $total{$_}), 2) } sort keys %total;
         $support->log_stamped("\nDone.\n\n", 1);
     }
-    $support->log_stamped("Done.\n");
 }
+if (%gene_ids) {
+	my $no_genes_to_look_for = keys %gene_ids;
+	my (@genes_not_found) = grep {$gene_ids{$_} == 1} keys %gene_ids;
+	$support->log("Of the $no_genes_to_look_for genes in ".$support->param('limit_file')." , the following were missing: @genes_not_found\n");
+}
+$support->log_stamped("Done.\n");
 
 # finish logfile
 $support->finish_log;

@@ -25,6 +25,9 @@ General options:
     -n, --dry_run, --dry=0|1            don't write results to database
     -h, --help, -?                      print help (this message)
 
+    --prune				undo, i.e. delete from the database changes caused by running the script			
+
+
 Specific options:
 
     --repeatfile=FILE                   read repeat class definitions from FILE
@@ -78,8 +81,8 @@ my $support = new Bio::EnsEMBL::Utils::ConversionSupport($SERVERROOT);
 
 # parse options
 $support->parse_common_options(@_);
-$support->parse_extra_options('repeatfile');
-$support->allowed_params($support->get_common_params, 'repeatfile');
+$support->parse_extra_options('repeatfile', 'prune');
+$support->allowed_params($support->get_common_params, 'repeatfile', 'prune');
 
 if ($support->param('help') or $support->error) {
     warn $support->error if $support->error;
@@ -92,11 +95,118 @@ $support->confirm_params;
 # get log filehandle and print heading and parameters to logfile
 $support->init_log;
 
-$support->check_required_params('repeatfile');
+$support->check_required_params('repeatfile') unless $support->param('prune');		# don't need the repeat file for pruning
 
 # connect to database and get adaptors
 my $dba = $support->get_database('ensembl');
 my $dbh = $dba->dbc->db_handle;
+
+# unless we are pruning (undo), we should make a backup copy of the repeat_consensus table
+if($support->param('prune')){
+	# prune (undo mode)
+	# backup table must exist for this to work
+	
+	if(check_for_backup_table()){
+		# backup table present
+		if($support->user_proceed("Replace the current table 'repeat_consensus' with the backup table 'repeat_consensus_backup'?")){
+		
+			if($dbh->do("drop table repeat_consensus")){
+				
+				if($dbh->do("create table repeat_consensus select * from repeat_consensus_backup")){
+					
+					$support->log("prune (undo) was successful\n");
+				
+					$support->log_stamped("Done.\n");
+
+					# finish logfile
+					$support->finish_log;
+				
+					exit(0);
+				
+				
+				}
+				else{
+				
+					$support->log_error("prune failed\n");
+				
+				
+				}
+				
+			}
+			else{
+			
+				$support->log_error("prune failed\n");
+			
+			}
+		
+		
+		}
+		else{
+		
+			#user is aborting
+			print "aborting...\n";
+			$support->log_error("aborting...\n");
+		
+		
+		}
+	
+	}
+	else{
+	
+		print "Cannot do prune, as no backup table\n";
+		$support->log_error("Cannot do prune, as no backup table\n");
+	
+	
+	}
+
+}
+else{
+
+	# normal run
+	# check to see if the backup table 'repeat_consensus_backup' already exists
+	
+	
+	if(check_for_backup_table()){
+		#table already exists: ask user if OK to overwrite it
+		
+		if ($support->user_proceed("The backup table 'repeat_consensus_backup' already exists, OK to delete?")) {
+                    if($dbh->do("drop table 'repeat_consensus_backup'")){
+                    
+                    	$support->log("deleted previous backup table\n");
+                    	make_backup_table();
+                    	
+                    	
+                    
+                    }
+                    else{
+                    
+                    	$support->log_error("tried but failed to delete previous backup table\n");
+                    }
+                }
+                else{
+                
+                	# user won't allow removing the backup table
+                	print "Aborting ...\n";
+                	$support->log_error("User won't allow removal of backup table ... aborting program\n");
+                	
+                
+                }
+		
+	
+	
+	
+	}else{
+		# table doesn't exist, therefore we can create it
+		make_backup_table();
+	
+	}
+
+
+
+
+}
+
+
 
 # mouse fixes
 if ($support->species eq 'Mus_musculus') {
@@ -186,3 +296,40 @@ $support->log_stamped("Done.\n");
 # finish logfile
 $support->finish_log;
 
+
+sub make_backup_table{
+	if($dbh->do("create table repeat_consensus_backup select * from repeat_consensus")){
+		$support->log("backup table 'repeat_consensus_backup was created successfully\n");
+	
+	}
+	else{
+		$support->log_error("failed to create backup table 'repeat_consensus_backup'\n");
+	
+	}
+
+
+}
+
+sub check_for_backup_table{
+	# check to see if the backup table 'repeat_consensus_backup' already exists
+	my @tables = $dbh->tables();
+	my $found=0;
+
+	foreach my $table(@tables){
+		#print "$table\n";
+		
+		if($table eq '`repeat_consensus_backup`'){
+			
+			$found=1;
+			last;
+		
+		
+		}
+	
+	}
+
+
+	return $found;
+
+
+}
