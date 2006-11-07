@@ -477,6 +477,26 @@ sub display_id {
   return $self->stable_id || $self->dbID || '';
 }
 
+=head2 get_all_Attributes
+
+  Arg [1]    : none
+  Example    :
+  Description: DOES NOTHING, Returns empty listref. Provided here to prevent
+               Transcript attributes being returned for PredictionTranscripts.
+  Returntype : EMPTY listref Bio::EnsEMBL::Attribute
+  Exceptions : none
+  Caller     : general
+  Status     : At risk
+
+=cut
+
+sub get_all_Attributes {
+  my $self = shift;
+
+  return [];
+}
+
+
 
 =head2 get_exon_count
 
