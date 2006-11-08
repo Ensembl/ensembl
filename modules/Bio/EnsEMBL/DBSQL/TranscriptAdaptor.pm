@@ -1,4 +1,4 @@
-]package Bio::EnsEMBL::DBSQL::TranscriptAdaptor;
+package Bio::EnsEMBL::DBSQL::TranscriptAdaptor;
 
 =head1 NAME
 
