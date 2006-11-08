@@ -104,11 +104,11 @@ sub repair {
 
   # what remains in old attrib type ?
   #  Entries with a code that is unknown in general file 
-  #  and that shouldnt really happen. If it happens, the code
-  #  needs to ne appended to attrib_type table and the attrib
+  #  and that shouldn't really happen. If it happens, the code
+  #  needs to be appended to attrib_type table and the attrib
   #  type_ids will be updated in the feature tables.
 
-  #  Entries with a code that is known, but has different 
+  #  Entries with a code that is known, but has different
   #  attrib_type_id. Feature tables will be updated.
 
   $db->do( "create table tmp_attrib_types ".
@@ -158,16 +158,15 @@ sub load_attribs {
   my ( $db, $attribs ) = @_;
     my $sth;
     $sth = $db->prepare( "insert into attrib_type( attrib_type_id, code, name, description) ".
-			 "values(?,?,?,?)" ); 
+			 "values(?,?,?,?)" );
     for my $attrib ( @$attribs ) {
       $sth->execute( $attrib->{'attrib_type_id'}, $attrib->{'code'},
 		     $attrib->{'name'}, $attrib->{'description'} );
     }
 }
-  
 
 
-# alternatively consistency can be enforceed to a certain degree 
+# alternatively consistency can be enforced to a certain degree
 sub check_consistency {
   my $attribs = shift;
   my $database = shift;
@@ -175,7 +174,7 @@ sub check_consistency {
 
   my ( %db_codes, %file_codes );
   map { $file_codes{$_->{'attrib_type_id'}} = $_->{'code'}} @$attribs;
-  
+
   $db->do( "use $database" );
   my $sth = $db->prepare( "SELECT attrib_type_id, code, name, description ".
 			  "FROM attrib_type" );
@@ -187,7 +186,7 @@ sub check_consistency {
   # check if any ids in the database colide with the file
   my $consistent = 1;
   for my $dbid ( keys %db_codes ) {
-    if(! exists $file_codes{ $dbid } || 
+    if(! exists $file_codes{ $dbid } ||
        $file_codes{$dbid} ne $db_codes{ $dbid } ) {
       $consistent = 0;
     }
@@ -205,7 +204,7 @@ sub read_attrib_file {
   #
   my $fh = IO::File->new();
   $fh->open($file) or die("could not open input file $file");
-  
+ 
   my @rows;
   my $row;
   while($row = <$fh>) {
@@ -214,7 +213,7 @@ sub read_attrib_file {
     next if ( $row =~ /^\#/ );
 
     my @a = split(/\t/, $row);
-    
+
     push @rows, {'attrib_type_id' => $a[0],
 		 'code' => $a[1],
 		 'name' => $a[2],
@@ -237,10 +236,10 @@ sub usage {
 
 Usage perl upload_attributes.pl -host .. -user .. -port .. -pass ..
       and either -dbnames homo_sap_1 -dbname homo_sap_2 -dbnames .....
-              or -relase_num ..   
+              or -relase_num ..
              put -file .. if its not the default 
                           attrib_type.txt right next to this script
-                     
+
 
 EOC
 ;
