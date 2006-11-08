@@ -37,7 +37,7 @@ my $db = DBI->connect( $dsn, $user, $pass, {RaiseError => 1} );
 
 if($release_num) {
   @dbnames = map {$_->[0] } @{ $db->selectall_arrayref( "show databases" ) };
-  
+
   #
   # filter out all non-core databases
   #
@@ -63,15 +63,14 @@ if($input ne 'yes') {
 
 my $attribs = read_attrib_file( $file );
 
-# if any attrib_types are loaded that are different from 
-# the file, a consistency problem is reported and the 
-# upload is not done.
+# if any attrib_types are loaded that are different from the file, a consistency problem 
+# is reported and the upload is not done.
 for my $database ( @dbnames ) {
   if( check_consistency( $attribs, $database, $db )) {
     # consistent
     $db->do( "use $database" );
     $db->do( "delete from attrib_type" );
-    
+
     load_attribs( $db, $attribs );
   } else {
     print STDERR "Repairing $database, not consistent!\n";
@@ -83,11 +82,12 @@ for my $database ( @dbnames ) {
 # move attrib types wih the same code to the common attrib_type table
 # ones that are not in the table move to an attrib_type_id that is not used
 sub repair {
+
   my ( $attribs, $database, $db ) = @_;
-  
+
   $db->do( "use $database" );
 
-  my @tables = qw( seq_region_attrib misc_attrib translation_attrib transcript_attrib );
+  my @tables = qw( seq_region_attrib misc_attrib translation_attrib transcript_attrib gene_attrib);
   my $ref = $db->selectall_arrayref( "show create table attrib_type" );
   my $create_table = $ref->[0]->[1];
 
