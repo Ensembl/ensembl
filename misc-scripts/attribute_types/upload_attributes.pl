@@ -41,14 +41,14 @@ if($release_num) {
   #
   # filter out all non-core databases
   #
-  @dbnames = grep {/^[a-zA-Z]+\_[a-zA-Z]+\_(core|est|estgene|vega)\_${release_num}\_\d+[A-Za-z]?$/} @dbnames;
+  @dbnames = grep {/^[a-zA-Z]+\_[a-zA-Z]+\_(core|otherfeatures|cdna|vega)\_${release_num}\_\d+[A-Za-z]?$/} @dbnames;
 }
 
 
 #
 # make sure the user wishes to continue
 #
-print STDERR "The following databases will be attrib_tye updated:\n  ";
+print STDERR "The following databases will have their attrib_type tables updated:\n  ";
 print join("\n  ", @dbnames);
 print "\ncontinue with update (yes/no)>  ";
 
