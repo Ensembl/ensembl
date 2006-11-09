@@ -46,19 +46,23 @@ use Bio::EnsEMBL::Utils::Exception qw( throw warning );
 
   Arg [1]    : none
   Example    : @all_tags = @{$ditagfeature_adaptor->fetch_all};
-  Description: Retrieves all ditagFeatures from the database
+  Description: Retrieves all ditagFeatures from the database;
+               Usually not a good idea, use fetch_all_by_Slice instead.
   Returntype : listref of Bio::EnsEMBL::Map::DitagFeature
   Caller     : general
+  Status     : At Risk
 
 =cut
 
 sub fetch_all {
   my $self = shift;
 
-  my $sth = $self->prepare("SELECT ditag_feature_id, ditag_id, seq_region_id, seq_region_start, 
-                            seq_region_end, seq_region_strand, analysis_id, hit_start, hit_end, 
-                            hit_strand, cigar_line, ditag_side, ditag_pair_id 
-                            FROM   ditag_feature" );
+  my $sth = $self->prepare("SELECT df.ditag_feature_id, df.ditag_id, df.seq_region_id, 
+                            df.seq_region_start, df.seq_region_end, df.seq_region_strand, 
+                            df.analysis_id, df.hit_start, df.hit_end, df.hit_strand, 
+                            df.cigar_line, df.ditag_side, df.ditag_pair_id, d.tag_count 
+                            FROM   ditag_feature df, ditag d 
+                            WHERE  df.ditag_id=d.ditag_id" );
   $sth->execute;
 
   my $result = $self->_fetch($sth);
@@ -74,24 +78,25 @@ sub fetch_all {
   Description: Retrieves a ditagFeature from the database.
   Returntype : Bio::EnsEMBL::Map::DitagFeature
   Caller     : general
+  Status     : At Risk
 
 =cut
 
 sub fetch_by_dbID {
   my ($self, $dbid) = @_;
 
-  my $sth = $self->prepare("SELECT ditag_feature_id, ditag_id, seq_region_id, seq_region_start, 
-                            seq_region_end, seq_region_strand, analysis_id, hit_start, hit_end, 
-                            hit_strand, cigar_line, ditag_side, ditag_pair_id 
-                            FROM   ditag_feature
-                            WHERE  ditag_feature_id = ?" );
+  my $sth = $self->prepare("SELECT df.ditag_feature_id, df.ditag_id, df.seq_region_id, 
+                            df.seq_region_start, df.seq_region_end, df.seq_region_strand, 
+                            df.analysis_id, df.hit_start, df.hit_end, df.hit_strand, 
+                            df.cigar_line, df.ditag_side, df.ditag_pair_id, d.tag_count 
+                            FROM   ditag_feature df, ditag d 
+                            WHERE  df.ditag_id=d.ditag_id AND df.ditag_feature_id = ?" );
   $sth->execute($dbid);
 
   my $result = $self->_fetch($sth);
 
   return $result->[0];
 }
-
 
 
 =head2 fetch_all_by_ditagID
@@ -103,6 +108,7 @@ sub fetch_by_dbID {
   Description: Retrieves all ditagFeatures from the database linking to a specific ditag-id
   Returntype : listref of Bio::EnsEMBL::Map::DitagFeature
   Caller     : general
+  Status     : At Risk
 
 =cut
 
@@ -110,20 +116,21 @@ sub fetch_all_by_ditagID {
   my ($self, $ditag_id, $ditag_pair_id, $analysis_id) = @_;
 
   my $arg = $ditag_id;
-  my $sql = "SELECT ditag_feature_id, ditag_id, seq_region_id, seq_region_start, 
-             seq_region_end, seq_region_strand, analysis_id, hit_start, hit_end, 
-             hit_strand, cigar_line, ditag_side, ditag_pair_id 
-             FROM   ditag_feature 
-             WHERE  ditag_id = ? ";
+  my $sql = "SELECT df.ditag_feature_id, df.ditag_id, df.seq_region_id, 
+             df.seq_region_start, df.seq_region_end, df.seq_region_strand, 
+             df.analysis_id, df.hit_start, df.hit_end, df.hit_strand, 
+             df.cigar_line, df.ditag_side, df.ditag_pair_id, d.tag_count 
+             FROM   ditag_feature df, ditag d 
+             WHERE  df.ditag_id=d.ditag_id AND df.ditag_id = ? ";
   if($ditag_pair_id){
-    $sql .= "AND ditag_pair_id = ? ";
+    $sql .= "AND df.ditag_pair_id = ? ";
     $arg .= ", $ditag_pair_id";
   }
   if($analysis_id){
-    $sql .= "AND analysis_id = ? ";
+    $sql .= "AND df.analysis_id = ? ";
     $arg .= ", $analysis_id";
   }
-  $sql   .= "ORDER BY ditag_pair_id";
+  $sql   .= "ORDER BY df.ditag_pair_id";
   my $sth = $self->prepare($sql);
   $sth->execute(split(",",$arg));
 
@@ -140,6 +147,7 @@ sub fetch_all_by_ditagID {
   Description: Retrieves all ditagFeatures from the database linking to a specific ditag-type
   Returntype : listref of Bio::EnsEMBL::Map::DitagFeature
   Caller     : general
+  Status     : At Risk
 
 =cut
 
@@ -149,9 +157,9 @@ sub fetch_all_by_type {
   my $sth = $self->prepare("SELECT df.ditag_feature_id, df.ditag_id, df.seq_region_id, 
                             df.seq_region_start, df.seq_region_end, df.seq_region_strand, 
                             df.analysis_id, df.hit_start, df.hit_end, df.hit_strand, 
-                            df.cigar_line, df.ditag_side, ditag_pair_id 
+                            df.cigar_line, df.ditag_side, df.ditag_pair_id, d.tag_count 
                             FROM   ditag_feature df, ditag d 
-                            WHERE  df.ditag_id=d.ditag_id and d.type = ? 
+                            WHERE  df.ditag_id=d.ditag_id AND d.type = ? 
                             ORDER BY df.ditag_id, df.ditag_pair_id" );
   $sth->execute($ditag_type);
 
@@ -159,7 +167,6 @@ sub fetch_all_by_type {
 
   return $result;
 }
-
 
 
 =head2 fetch_all_by_Slice
@@ -173,6 +180,7 @@ sub fetch_all_by_type {
                Start & end locations are returned in slice coordinates, now.
   Returntype : listref of Bio::EnsEMBL::Map::DitagFeatures
   Caller     : general
+  Status     : At Risk
 
 =cut
 
@@ -187,55 +195,31 @@ sub fetch_all_by_Slice {
   }
 
   #get affected ditag_feature_ids
-  my $sql = "SELECT df.ditag_feature_id ".
-            "FROM ditag_feature df ";
+  my $sql = "SELECT df.ditag_feature_id, df.ditag_id, df.seq_region_id, df.seq_region_start, 
+             df.seq_region_end, df.seq_region_strand, df.analysis_id, df.hit_start, df.hit_end, 
+             df.hit_strand, df.cigar_line, df.ditag_side, df.ditag_pair_id, 
+             d.tag_count 
+             FROM ditag_feature df, ditag d 
+             WHERE df.ditag_id=d.ditag_id";
   if($tagtype){
-    $sql .= ", ditag d ".
-            "WHERE df.ditag_id=d.ditag_id ".
-            "AND d.type = \"".$tagtype."\" AND ";
-  }
-  else{
-    $sql .= "WHERE ";
+    $sql .= " AND d.type = \"".$tagtype."\"";
   }
   if($logic_name){
     my $analysis = $self->db->get_AnalysisAdaptor->fetch_by_logic_name($logic_name);
     if(!$analysis) {
       return undef;
     }
-    $sql .= "df.analysis_id = ".$analysis->dbID()." AND ";
+    $sql .= " AND df.analysis_id = ".$analysis->dbID();
   }
-  $sql .= "df.seq_region_id = ".$slice->get_seq_region_id.
+  $sql .= " AND df.seq_region_id = ".$slice->get_seq_region_id.
           " AND df.seq_region_start <= ".$slice->end.
 	  " AND df.seq_region_end   >= ".$slice->start;
 
   my $sth = $self->prepare($sql);
   $sth->execute();
-  my @id_list = map {$_->[0]} @{$sth->fetchall_arrayref([0],undef)};
 
-  #fetch ditagFeatures for these ids
-  #whith splitting large queries into smaller batches
-  my $max_size     = 1000;
-  my $ids_to_fetch = "";
-
-  while(@id_list) {
-    my @ids;
-    if(@id_list > $max_size) {
-      @ids = splice(@id_list, 0, $max_size);
-    } else {
-      @ids = splice(@id_list, 0);
-    }
-    $ids_to_fetch = join(', ', @ids);
-
-    my $sth = $self->prepare("SELECT ditag_feature_id, ditag_id, seq_region_id, seq_region_start, 
-                              seq_region_end, seq_region_strand, analysis_id, hit_start, hit_end, 
-                              hit_strand, cigar_line, ditag_side, ditag_pair_id 
-                              FROM   ditag_feature
-                              WHERE  ditag_feature_id IN(".$ids_to_fetch.")" );
-    $sth->execute();
-
-    my $result = $self->_fetch($sth, $slice);
-    push(@result, @$result);
-  }
+  my $result = $self->_fetch($sth);
+  push(@result, @$result);
 
   return \@result;
 }
@@ -260,6 +244,7 @@ sub fetch_all_by_Slice {
                Slices should be SMALL!
   Returntype : array ref with hash ref of artifical DitagFeature object
   Caller     : general
+  Status     : At Risk
 
 =cut
 
@@ -315,6 +300,7 @@ sub fetch_pairs_by_Slice {
   Description: generic sql-fetch function for the DitagFeature fetch methods
   Returntype : listref of Bio::EnsEMBL::Map::DitagFeatures
   Caller     : private
+  Status     : At Risk
 
 =cut
 
@@ -322,12 +308,12 @@ sub _fetch {
   my ($self, $sth, $dest_slice) = @_;
 
   my ( $tag_id, $mothertag_id, $seqreg, $seqstart, $seqend, $strand, $analysis_id, $hit_start,
-       $hit_end, $hit_strand, $cigar_line, $ditag_side, $ditag_pair_id );
+       $hit_end, $hit_strand, $cigar_line, $ditag_side, $ditag_pair_id, $tag_count );
   $sth->bind_columns( \$tag_id,        \$mothertag_id, \$seqreg,
                       \$seqstart,      \$seqend,       \$strand,
                       \$analysis_id,   \$hit_start,    \$hit_end,
                       \$hit_strand,    \$cigar_line,   \$ditag_side,
-                      \$ditag_pair_id );
+                      \$ditag_pair_id, \$tag_count );
 
   my @ditag_features;
   my $dest_slice_start;
@@ -373,6 +359,7 @@ sub _fetch {
                                             -ditag_side    => $ditag_side,
 					    -ditag_pair_id => $ditag_pair_id,
 					    -ditag         => undef,
+					    -tag_count     => $tag_count,
                                             -adaptor       => $self,
                                             );
   }
@@ -391,6 +378,7 @@ sub _fetch {
   Exceptions : thrown if not all data needed for storing is populated in the
                ditag features
   Caller     : Bio::EnsEMBL::Map::DitagFeature
+  Status     : At Risk
 
 =cut
 
@@ -426,6 +414,7 @@ sub sequence {
   Exceptions : thrown if not all data needed for storing is populated in the
                ditag features
   Caller     : general
+  Status     : At Risk
 
 =cut
 
@@ -535,27 +524,27 @@ TAG:
   Exceptions : thrown if not all data needed for storing is given for the
                ditag features
   Caller     : general
+  Status     : At Risk
 
 =cut
 
 sub batch_store {
   my ( $self, $ditags, $have_dbIDs ) = @_;
 
-  my %tag_ids = ();
   my @good_ditags;
   my ($sql, $sqladd);
   my $inserts = 0;
 
   if ( ref $ditags eq 'ARRAY' ) {
     if ( scalar(@$ditags) == 0 ) {
-      throw( "Must call store with ditagFeature or list ref of ditagsFeature" );
+      throw( "Must call store with ditagFeature or list ref of ditagFeatures." );
     }
   } elsif ($ditags) {
     my @ditags;
     push @ditags, $ditags;
     $ditags = \@ditags;
   } else {
-    throw( "Must call store with ditagFeature or list ref of ditagsFeature." );
+    throw( "Must call store with ditagFeature or list ref of ditagFeatures." );
   }
 
   my $db = $self->db() or throw "Couldn t get database connection.";
@@ -572,7 +561,6 @@ sub batch_store {
                  . " is already stored in this database." );
       next;
     }
-    $tag_ids{$ditag->ditag_id} = $ditag;
     push(@good_ditags, $ditag);
   }
   $ditags = undef;
@@ -669,6 +657,7 @@ sub update_ditagFeature {
                the current database.
   Returntype : List of ints
   Exceptions : None
+  Status     : Stable
 
 =cut
 
