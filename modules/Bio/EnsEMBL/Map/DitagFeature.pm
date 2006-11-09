@@ -74,6 +74,7 @@ use Bio::EnsEMBL::Utils::Argument  qw( rearrange );
   Description: Creates a new DitagFeature
   Returntype : Bio::EnsEMBL::Map::DitagFeature
   Caller     : general
+  Status     : At Risk
 
 =cut
 
@@ -157,6 +158,7 @@ sub fetch_ditag {
   Returntype : Bio::EnsEMBL::Map::Ditag
   Exceptions : none
   Caller     : general
+  Status     : At Risk
 
 =cut
 
@@ -187,6 +189,7 @@ sub ditag {
   Exceptions : throws if the 2 features of a pair are found on different strands
                or if the second one cannot be found.
   Caller     : general
+  Status     : At Risk
 
 =cut
 
@@ -235,6 +238,7 @@ sub get_ditag_location {
   Returntype : int
   Exceptions : none
   Caller     : general
+  Status     : At Risk
 
 =cut
 
@@ -256,6 +260,7 @@ sub ditag_id {
   Returntype : slice object
   Exceptions : none
   Caller     : general
+  Status     : At Risk
 
 =cut
 
@@ -277,6 +282,7 @@ sub slice {
   Returntype : int
   Exceptions : none
   Caller     : general
+  Status     : At Risk
 
 =cut
 sub ditag_pair_id {
@@ -297,6 +303,7 @@ sub ditag_pair_id {
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : At Risk
 
 =cut
 
@@ -318,6 +325,7 @@ sub ditag_side {
   Returntype : int
   Exceptions : none
   Caller     : general
+  Status     : At Risk
 
 =cut
 
@@ -339,6 +347,7 @@ sub hit_start {
   Returntype : int
   Exceptions : none
   Caller     : general
+  Status     : At Risk
 
 =cut
 
@@ -360,6 +369,7 @@ sub hit_end {
   Returntype : 1/-1/0
   Exceptions : none
   Caller     : general
+  Status     : At Risk
 
 =cut
 
@@ -381,6 +391,7 @@ sub hit_strand {
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : At Risk
 
 =cut
 
@@ -402,6 +413,7 @@ sub cigar_line {
   Returntype : int
   Exceptions : none
   Caller     : general
+  Status     : At Risk
 
 =cut
 
@@ -423,6 +435,7 @@ sub start {
   Returntype : int or string
   Exceptions : none
   Caller     : general
+  Status     : At Risk
 
 =cut
 
@@ -444,6 +457,7 @@ sub end {
   Returntype : 1/-1/0
   Exceptions : none
   Caller     : general
+  Status     : At Risk
 
 =cut
 
@@ -465,6 +479,7 @@ sub strand {
   Returntype : int
   Exceptions : none
   Caller     : general
+  Status     : At Risk
 
 =cut
 
@@ -486,6 +501,7 @@ sub dbID {
   Returntype : string
   Exceptions : none
   Caller     : general
+  Status     : At Risk
 
 =cut
 
@@ -497,5 +513,27 @@ sub sequence {
   return $self->{'sequence'};
 }
 
+
+=head2 tag_count
+
+  Arg [1]    : (optional) value
+  Description: Getter/Setter for the tag_count
+               of this DitagFeature
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+  Status     : At Risk
+
+=cut
+
+sub tag_count {
+  my $self = shift;
+
+  if(@_) {
+    $self->{'tag_count'} = shift;
+  }
+
+  return $self->{'tag_count'};
+}
 
 1;
