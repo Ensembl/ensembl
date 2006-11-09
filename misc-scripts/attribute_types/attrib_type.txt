@@ -163,6 +163,7 @@
 73	GeneNo_MTrRNA	Mt_rRNA Gene Count	Number of Mt_rRNA Genes
 74	GeneNo_MTtRNA	Mt_tRNA Gene Count	Number of Mt_tRNA Genes
 75	GeneNo_RNA_pseu scRNA_pseudogene Gene Count	Number of scRNA_pseudogene Genes
+76	GeneNo_tRNA	tRNA Gene Count	 Number of tRNA Genes
 
-76	supercontig	SuperContig name	NULL
-77	well_name	Well plate name	NULL
+80	supercontig	SuperContig name	NULL
+81	well_name	Well plate name	NULL
