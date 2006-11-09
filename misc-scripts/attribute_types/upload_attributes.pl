@@ -12,14 +12,15 @@ use IO::File;
 use FindBin;
 
 
-my ( $host, $user, $pass, $port,@dbnames, $file, $release_num);
+my ( $host, $user, $pass, $port,@dbnames, $file, $release_num, $nobackup);
 
-GetOptions( "host=s", \$host,
-	    "user=s", \$user,
-	    "pass=s", \$pass,
-	    "port=i", \$port,
-	    "file=s", \$file,
-            "dbnames=s@", \@dbnames,
+GetOptions( "host=s",        \$host,
+	    "user=s",        \$user,
+	    "pass=s",        \$pass,
+	    "port=i",        \$port,
+	    "file=s",        \$file,
+	    "nobackup",      \$nobackup,
+            "dbnames=s@",    \@dbnames,
 	    "release_num=i", \$release_num
 	  );
 
@@ -63,9 +64,12 @@ if($input ne 'yes') {
 
 my $attribs = read_attrib_file( $file );
 
-# if any attrib_types are loaded that are different from the file, a consistency problem 
+# if any attrib_types are loaded that are different from the file, a consistency problem
 # is reported and the upload is not done.
 for my $database ( @dbnames ) {
+
+  backup_attribute_types($host, $user, $pass, $port, $database) if (!$nobackup);
+
   if( check_consistency( $attribs, $database, $db )) {
     # consistent
     $db->do( "use $database" );
@@ -118,7 +122,7 @@ sub repair {
 	   "on oat.code = at.code " .
 	   "where at.code is null" );
   $db->do( "insert into attrib_type( code, name, description) ".
-	   "select code, name, description ". 
+	   "select code, name, description ".
 	   "from tmp_attrib_types" );
 
   $ref = $db->selectall_arrayref( "select code from tmp_attrib_types" );
@@ -183,7 +187,7 @@ sub check_consistency {
     $db_codes{ $arr->[0] } = $arr->[1];
   }
 
-  # check if any ids in the database colide with the file
+  # check if any ids in the database collide with the file
   my $consistent = 1;
   for my $dbid ( keys %db_codes ) {
     if(! exists $file_codes{ $dbid } ||
@@ -222,6 +226,21 @@ sub read_attrib_file {
   $fh->close();
   return \@rows;
 }
+
+
+sub backup_attribute_types {
+
+  my ($host, $user, $pass, $port, $dbname) = @_;
+
+  unless (system("mysql -h$host -P$port -u$user -p$pass -N -e 'select * from attrib_type' $dbname > $dbname.attrib_type.backup; gzip -9 -f $dbname.attrib_type.backup") == 0) {
+    print STDERR "Can't dump the original attrib_type table from $dbname for backup\n";
+    exit 1;
+  } else {
+    print STDERR "Original attrib_type table backed up in $dbname.attrib_type.backup\n";
+  }
+
+}
+
 
 sub usage {
   GetOptions( "host=s", \$host,
