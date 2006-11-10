@@ -311,7 +311,7 @@ sub type_variation {
     }
 
     # variation must be intronic since mapped to cdna gap, but is within
-    # transcript
+    # transcript, note that ESSENTIAL_SPLICE_SITE only consider first (AG) and last (GT) 2 bases inside the intron.
 
     $var->type('INTRONIC');
 
@@ -324,7 +324,9 @@ sub type_variation {
     return [$var];
   }
 
-  if ($splice_site_3) {
+  #now variation must be in exons, the first 3 bs into exon could be splice_site
+
+  if ($splice_site_2 or $splice_site_3) {
     $var->type('SPLICE_SITE');
   }
   
@@ -464,8 +466,10 @@ sub apply_aa_change {
     }
   }
 
+  #note if type is already defined as SOTP_GAINED OR STOP_LOST, then even @aa_alleles > 1, we are not given type
+  # of 'NON_SYNONYMOUS_CODING'
   if(@aa_alleles > 1) {
-    if ( ! defined $var->type  ){
+    if ( ! defined $var->type or $var->type eq "SPLICE_SITE"  ){
       $var->type('NON_SYNONYMOUS_CODING');
     }
   }
