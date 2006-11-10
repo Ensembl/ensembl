@@ -665,7 +665,7 @@ sub store {
       my $key = $end_exon->hashkey();
       ($end_exon) = grep {$_->hashkey() eq $key} @$exons;
 
-      if($start_exon) {
+      if($end_exon) {
         $translation->end_Exon($end_exon);
       } else {
         throw("Translation's end_Exon does not appear to be one of the " .
