@@ -881,6 +881,7 @@ INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_41_42_c.sql|anal
 INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_41_42_d.sql|schema_version');
 INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_41_42_e.sql|ditag_autoincrement');
 INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_41_42_f.sql|analysis_description_web_data');
+INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_41_42_g.sql|genebuild_version_format_change');
 
 ################################################################################
 #
