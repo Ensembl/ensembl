@@ -272,8 +272,10 @@ sub type_variation {
     foreach my $c (@coords) {
       my %new_var = %{$var};
       $new_var{'end'} = $var->start + $c->length() - 1;
-      $var->start( $new_var{'end'} + 1);      
-      push @out, @{type_variation($tr, "", bless \%new_var, ref($var))};
+      $var->start( $new_var{'end'} + 1);
+      #empty the type before re-run
+      $var->empty_type ;  
+      push @out, @{type_variation($tr, $g, bless \%new_var, ref($var))};
     }
 
     return \@out;
@@ -342,7 +344,9 @@ sub type_variation {
       my %new_var = %{$var};
       $new_var{'end'} = $var->start + $c->length() - 1;
       $var->start( $new_var{'end'} + 1);
-      push @out, @{type_variation($tr, "", bless \%new_var, ref($var))};
+      #empty the type before re-run       
+      $var->empty_type ;
+      push @out, @{type_variation($tr, $g, bless \%new_var, ref($var))};
     }
     return \@out;
   }
@@ -469,7 +473,7 @@ sub apply_aa_change {
   #note if type is already defined as SOTP_GAINED OR STOP_LOST, then even @aa_alleles > 1, we are not given type
   # of 'NON_SYNONYMOUS_CODING'
   if(@aa_alleles > 1) {
-    if ( ! defined $var->type or $var->type eq "SPLICE_SITE"  ){
+    if (!$var->type or (join ' ',@{$var->type}) !~ /STOP/) {
       $var->type('NON_SYNONYMOUS_CODING');
     }
   }
