@@ -63,6 +63,7 @@ my %genes_to_transcripts;
 my %internal_id_to_stable_id;
 my %xref_descriptions;
 my %xrefs_written;
+my %priority_seenit;
 my %object_xrefs_written;        # Needed in case an xref if matched to one enembl object
                                  # by more than one method. On the display we only want to see it once.
 my %failed_xref_mappings;
@@ -1026,8 +1027,6 @@ sub parse_mappings {
   } else {
     print "Maximum existing object_xref_id = $max_object_xref_id\n";
   }
-  my $object_xref_id_offset = $max_object_xref_id + 1;
-  my $object_xref_id = $object_xref_id_offset;
 
   $row = @{$ensembl->dbc->db_handle->selectall_arrayref("SELECT MAX(xref_id) FROM xref")}[0];
   my $max_xref_id = @$row[0];
@@ -1166,11 +1165,11 @@ sub parse_mappings {
 	$count_new++;
       }
       # note we add on $xref_id_offset to avoid clashes
-      print OBJECT_XREF "$object_xref_id\t$target_id\t$type\t" . ($query_id+$xref_id_offset) . "\n";
-      print IDENTITY_XREF join("\t", ($object_xref_id, $query_identity, $target_identity, $query_start+1, $query_end, $target_start+1, $target_end, $cigar_line, $score, "\\N", $analysis_id)) . "\n";
-
+      print OBJECT_XREF "$max_object_xref_id\t$target_id\t$type\t" . ($query_id+$xref_id_offset) . "\n";
+      $max_object_xref_id++;
+      print IDENTITY_XREF join("\t", ($max_object_xref_id, $query_identity, $target_identity, $query_start+1, $query_end, $target_start+1, $target_end, $cigar_line, $score, "\\N", $analysis_id)) . "\n";
+      $max_object_xref_id++;
       # TODO - evalue?
-      $object_xref_id++;
 
       # store mapping for later - note NON-OFFSET xref_id is used
       my $key = $type . "|" . $target_id;
@@ -1222,7 +1221,7 @@ sub parse_mappings {
   }
 
   # write relevant xrefs to file
-  $max_object_xref_id = $self->dump_core_xrefs(\%primary_xref_ids, $object_xref_id+1, $xref_id_offset, $object_xref_id_offset);
+  $max_object_xref_id = $self->dump_core_xrefs(\%primary_xref_ids, $max_object_xref_id, $xref_id_offset);
 
   # dump interpro table as well
   $self->dump_interpro();
@@ -1254,6 +1253,29 @@ sub process_priority_xrefs{
   my $xref = $self->xref;
   my $dir = $ensembl->dir();
 
+
+  my $primary_sql= (<<PSQL);
+    SELECT DISTINCT(s.name), px.sequence_type
+      FROM source s, primary_xref px, xref x 
+	WHERE x.xref_id = px.xref_id
+	  AND s.source_id = x.source_id
+PSQL
+
+  my $psth = $self->xref->dbc->prepare($primary_sql) || die "prepare failed";
+  $psth->execute() || die "execute failed";
+
+  my %source_2_seqtype=();
+
+  my ($prim,$seq_type);
+  $psth->bind_columns(\$prim,\$seq_type);
+  while($psth->fetch()){
+    $source_2_seqtype{$prim} = $seq_type;
+  }  
+
+
+
+
+
   my $xref_id_offset = $self->xref_id_offset();
   # get current max object_xref_id
   my $row = @{$ensembl->dbc->db_handle->selectall_arrayref("SELECT MAX(object_xref_id) FROM object_xref")}[0];
@@ -1264,12 +1286,12 @@ sub process_priority_xrefs{
   } else {
     print "Maximum existing object_xref_id = $max_object_xref_id\n";
   }
-  my $object_xref_id_offset = $max_object_xref_id + 1;
-  my $object_xref_id = $object_xref_id_offset;
+#  my $object_xref_id_offset = $max_object_xref_id + 1;
+  my $object_xref_id =  $max_object_xref_id + 1;
 
-  open(XREF,">$dir/xref_priority.txt") || die "Could not open xref_priority.txt";
-  open(OBJECT_XREF,">$dir/object_xref_priority.txt") || die "Could not open object_xref_priority.txt"; 
-  open(IDENTIY_XREF,">$dir/identity_xref_priority.txt") || die "Could not open identity_xref.txt";
+  open(XREF_P,">$dir/xref_priority.txt") || die "Could not open xref_priority.txt";
+  open(OBJECT_XREF_P,">$dir/object_xref_priority.txt") || die "Could not open object_xref_priority.txt"; 
+  open(IDENTITY_XREF_P,">$dir/identity_xref_priority.txt") || die "Could not open identity_xref.txt";
 
 
   my @xref_list=();
@@ -1282,19 +1304,25 @@ sub process_priority_xrefs{
     my $xref_id = $priority_xref{$key};
     my $dep_list;
     if($priority_xref_state{$key} ne  "primary"){
+      if(($priority_xref_state{$key} eq "direct" and defined($source_2_seqtype{$source_name}))){
+	$priority_xref_state{$key} = "primary";
+      }
+      else{
 	next;
+      }
     }
     my ($type,$id) = split(/:/,$priority_object_xref{$key});
+    chomp $id;
     $dep_list = $self->dump_all_dependencies($xref_id, $xref_id_offset, $type, $id);
     push @xref_list, $xref_id;
     if(defined($priority_object_xref{$key})){
-      print OBJECT_XREF $object_xref_id."\t".$id."\t".$type."\t".$xref_id."\n";
+      print OBJECT_XREF_P $object_xref_id."\t".$id."\t".$type."\t".($xref_id+$xref_id_offset)."\n";
       if(defined($priority_identity_xref{$key})){
-        print IDENTITY_XREF $object_xref_id."\t".$priority_identity_xref{$key};
+        print IDENTITY_XREF_P $object_xref_id."\t".$priority_identity_xref{$key};
       }
       $object_xref_id++;
       foreach my $dependent (@$dep_list){
-	  print OBJECT_XREF $object_xref_id."\t".$id."\t".$type."\t".$dependent."\n";	  
+	  print OBJECT_XREF_P $object_xref_id."\t".$id."\t".$type."\t".$dependent."\n";	  
 	  $object_xref_id++;	  
       }
     } 
@@ -1310,18 +1338,19 @@ sub process_priority_xrefs{
     push @xref_list, $xref_id;
     if(defined($priority_object_xref{$key})){
       my ($type,$id) = split(/:/,$priority_object_xref{$key});
-      print OBJECT_XREF $object_xref_id."\t".$id."\t".$type."\t".$xref_id."\n";
+      print OBJECT_XREF_P $object_xref_id."\t".$id."\t".$type."\t".$xref_id."\n";
       if(defined($priority_identity_xref{$key})){
-        print IDENTITY_XREF $object_xref_id."\t".$priority_identity_xref{$key};
+        print IDENTITY_XREF_P $object_xref_id."\t".$priority_identity_xref{$key};
       }
       $object_xref_id++;
       foreach my $dependent (@$dep_list){
-	  print OBJECT_XREF $object_xref_id."\t".$id."\t".$type."\t".$dependent."\n";	  
+	  print OBJECT_XREF_P $object_xref_id."\t".$id."\t".$type."\t".$dependent."\n";	  
 	  $object_xref_id++;	  
       }
     } 
   }
   if(scalar(@xref_list) < 1){
+    print "At end of process prioritys  Maximum existing object_xref_id = $max_object_xref_id\n";
     return;
   }
   my $list = join(", ", @xref_list);
@@ -1331,19 +1360,25 @@ sub process_priority_xrefs{
   my ($xref_id, $acc,$ver, $label, $desc, $source_id);
   $sth->bind_columns(\$xref_id, \$acc, \$ver, \$label, \$desc, \$source_id);
   while($sth->fetch()){
-    print XREF ($xref_id+$xref_id_offset)."\t". $source_to_external_db{$source_id}.
-      "\t$acc\t$label\t$ver\t$desc\n";
-    print XREF $priority_xref_extra_bit{$xref_id}; # no need for "\n" already added;
-    $xrefs_written{$xref_id}
-
+    print XREF_P ($xref_id+$xref_id_offset)."\t". $source_to_external_db{$source_id}.
+      "\t$acc\t$label\t$ver\t$desc";
+    if(defined( $priority_xref_extra_bit{$xref_id})){
+      print XREF_P $priority_xref_extra_bit{$xref_id}; # no need for "\n" already added;
+    }
+    else{
+      print STDERR "no extra bit for $acc ($xref_id)\n";
+      print XREF_P "\n";
+    }
+    $xrefs_written{$xref_id};
+    $priority_seenit{$acc} = "SEEN_IT";
   }
   $sth->finish;
 
 
 
-  close XREF;
-  close OBJECT_XREF;
-  close IDENTITY_XREF;
+  close XREF_P;
+  close OBJECT_XREF_P;
+  close IDENTITY_XREF_P;
 
   # Do one big query to get a list of all the synonyms; note each xref may have
   # more than one synonym so they are stored in a hash of lists
@@ -1386,6 +1421,7 @@ sub process_priority_xrefs{
   }
 
 
+  print "At end of process prioritys  Maximum existing object_xref_id = $object_xref_id\n";
 
 }
 
@@ -3336,6 +3372,12 @@ sub add_missing_pairs{
   if (!defined $max_object_xref_id && $entries_obj_xref == 0 ) {
     die ("No existing object_xref_ids, something very wrong\n");
   }
+  if (!defined $max_object_xref_id) {
+    print "No existing object_xref_ids, will start from 1\n";
+    $max_object_xref_id = 0;
+  } else {
+    print "Maximum existing object_xref_id = $max_object_xref_id\n";
+  }
 
   my $xref_sql = (<<EOS);
   SELECT x1.xref_id, x2.xref_id, x1.accession, x2.accession   
@@ -3355,44 +3397,41 @@ EOS
   my $both = 0;
   my $poss = 0;
 
-  #sql needed to get the dependent xrefs for those missed.
-  my $dep_sql = "SELECT dx.dependent_xref_id FROM dependent_xref dx, xref x WHERE x.xref_id=dx.dependent_xref_id AND master_xref_id = ?";
-    my $dep_sth = $self->xref->dbc->prepare($dep_sql);
-
   my @xref_list;
-  my %seenit=();
+
   while ($xref_sth->fetch()) {
-    # If either of these are a priority source then make sure they are the chosen one.
-    if($xref_id2 == 522394){
-      print STDERR "NM_001032394 (522394) \n";
-    }
-    if(defined($priority_xref_acc{$xref_id2}) and $priority_xref_acc{$xref_id2} eq "NM_001032394"){
-      print STDERR "NM_001032394\n"; 
-    }
+   # If either of these are a priority source then make sure they are the chosen one.
     if(defined($priority_xref_source_id{$xref_id1})){
       if(!defined($xrefs_written{$xref_id1})){
-	if(!defined($seenit{$x1_acc})){
+	if(!defined($priority_seenit{$x1_acc})){
 	  push @xref_list, $xref_id1;
-	  $seenit{$x1_acc} = $x2_acc;
+	  $priority_seenit{$x1_acc} = $x2_acc;
+	}
+	else{
+	  next;
 	}
       }
+      else{
+	next;
+      }
     }
+
     if(defined($priority_xref_source_id{$xref_id2})){
       if(!defined($xrefs_written{$xref_id2})){
-	if(!defined($seenit{$x2_acc})){
+	if(!defined($priority_seenit{$x2_acc})){
 	  push @xref_list, $xref_id2;
-	  $seenit{$x2_acc} = $x1_acc;
+	  $priority_seenit{$x2_acc} = $x1_acc;
 	}
+	else{
+	  next;
+	}
+      }
+      else{
+	next;
       }
     }
     
-    if($xref_id2 == 522394){
-      print STDERR "NM_001032394 (522394) AGAIN\n";
-    }
-    if(defined($priority_xref_acc{$xref_id2}) and $priority_xref_acc{$xref_id2} eq "NM_001032394"){
-      print STDERR "NM_001032394 AGAIN\n"; 
-    }
-    
+
     if(!defined($xrefs_written{$xref_id1}) or !defined($xrefs_written{$xref_id2})){
       if (!defined($xrefs_written{$xref_id1}) and !defined($xrefs_written{$xref_id2})){
 	$okay++;
@@ -3414,7 +3453,10 @@ EOS
   }
 
 
-
+  #sql needed to get the dependent xrefs for those missed.
+  my $dep_sql = "SELECT dx.dependent_xref_id FROM dependent_xref dx, xref x WHERE x.xref_id=dx.dependent_xref_id AND master_xref_id = ?";
+  my $dep_sth = $self->xref->dbc->prepare($dep_sql);
+  
 
   if(scalar(@xref_list) > 1){
     open(XREF2, ">".$self->core->dir()."/pairs_xref.txt") 
@@ -3432,13 +3474,13 @@ EOS
       $count++;
       print XREF2 ($xref_id+$xref_id_offset)."\t". $source_to_external_db{$source_id}.
 	"\t$acc\t$label\t$ver\t$desc";
-      print XREF2 "\tDEPENDENT\tGenerated via its Pair ".$seenit{$acc}."\n";
+      print XREF2 "\tDEPENDENT\tGenerated via its Pair ".$priority_seenit{$acc}."\n";
       $xrefs_written{$xref_id}
 	
     }
     $sth->finish;
 
-
+    close XREF2;
     my $file = $self->core->dir()."/pairs_xref.txt";
     
     # don't seem to be able to use prepared statements here
@@ -3594,6 +3636,7 @@ EOS
 	print TRIAGE_UPDATE   "WHERE identifier like '".$good2missed_acc{$goodxref}."' ";
 	print TRIAGE_UPDATE   "AND external_db_id = $ex_db_id ;\n";
       }
+      
     }
    $sth_ob->finish();
   }
@@ -3614,6 +3657,9 @@ EOS
   
        print "$added new object xrefs added based on the Pairs\n";
    }
+
+
+  print "At end of pairs Maximum existing object_xref_id = $max_object_xref_id\n";
 
 
   my $core_db = $self->core->dbc;
