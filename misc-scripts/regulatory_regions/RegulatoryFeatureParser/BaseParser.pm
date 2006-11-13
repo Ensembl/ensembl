@@ -58,7 +58,7 @@ sub validate_type {
 
   # LBL enhancers have both positive and negative varieties
   if (lc($type) eq 'enhancer') {
-    return (validate_type($db_adaptor, 'enhancer_positive') &&validate_type($db_adaptor, 'enhancer_negative'));
+    return (validate_type($db_adaptor, 'enhancer_positive') && validate_type($db_adaptor, 'enhancer_negative'));
   }
 
   my $sth = $db_adaptor->dbc->prepare("SELECT analysis_id FROM analysis WHERE LOWER(logic_name)=?");
@@ -248,5 +248,28 @@ sub project_feature {
 }
 
 # --------------------------------------------------------------------------------
+
+sub get_blank_factor_id () {
+
+  my ($self, $db_adaptor) = @_;
+
+  my $sth = $db_adaptor->dbc->prepare("SELECT regulatory_factor_id FROM regulatory_factor WHERE name=''");
+  $sth->execute();
+
+  my ($factor_id) = $sth->fetchrow_array();
+
+  if ($factor_id) {
+    print "Found existing blank factor, id = $factor_id\n";
+  } else {
+     $db_adaptor->dbc->do("INSERT INTO regulatory_factor (name) VALUES ('')");
+     $sth->execute();
+     ($factor_id) = $sth->fetchrow_array();
+     print "Created new blank factor, id = $factor_id\n";
+  }
+
+  return $factor_id;
+
+}
+
 
 1;
