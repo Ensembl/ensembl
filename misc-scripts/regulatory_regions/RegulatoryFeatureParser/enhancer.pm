@@ -60,6 +60,10 @@ sub parse {
     exit(1);
   }
 
+
+  # link to a blank factor so the SQL still works
+  my $blank_factor_id = $self->get_blank_factor_id($db_adaptor);
+
   # read file
 
   open (FILE, "<$file") || die "Can't open $file";
@@ -148,6 +152,11 @@ sub parse {
     # Evidence
 
     $feature{EVIDENCE} = "";
+
+    # ----------------------------------------
+    # Factor - blank so that the SQL for retrieving still works
+
+    $feature{FACTOR_ID} = $blank_factor_id;
 
     # ----------------------------------------
     # Add to object to be returned
