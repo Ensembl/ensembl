@@ -23,13 +23,13 @@ GetOptions( "host=s",        \$host,
 	  );
 
 #both host and file are required
-usage() if(!$host || !$file);
+usage("[DIE] Need a host and file\n\n") if(!$host || !$file);
 
 #release num XOR dbname are required
-usage() if(($release_num && @dbnames) || (!$release_num && !@dbnames));
+usage("[DIE] Need either both a release number and database names or neither\n\n") if(($release_num && @dbnames) || (!$release_num && !@dbnames));
 
 # master database is required
-usage() if (!$master);
+usage("[DIE] Master database required\n\n") if (!$master);
 
 $port ||= 3306;
 
@@ -178,8 +178,9 @@ sub compare_external_db {
 }
 
 sub usage {
+  my $error = shift;
   print STDERR <<EOF
-
+  $error
              Usage: update_external_db options
  Where options are: -host hostname 
                     -user username 
@@ -205,7 +206,7 @@ sub usage {
   perl update_external_dbs.pl -host ecs1c -file external_dbs.txt -user ensadmin -pass secret -dbnames homo_sapiens_core_14_33 -dbnames mus_musculus_core_14_30
 
   # update all core databases for release 14
-  perl update_external_dbs.pl -host ecs2d -file external_dbs.txt -user ensadmin -pass secret -release 14
+  perl update_external_dbs.pl -host ens-staging -file external_dbs.txt -user ensadmin -pass secret -release 42 -master master_schema_42
 
   If the databases to be updated contain rows that are not in the file, a warning will
   be given and the database in question skipped, unless -force is used.
