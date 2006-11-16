@@ -528,10 +528,10 @@ sub write_to_projection_db {
 
   $sth->execute($release,
 		$from_dbname,
-		ucfirst(Bio::EnsEMBL::Registry->get_alias($from_species)),
+		Bio::EnsEMBL::Registry->get_alias($from_species),
 		$from_species,
 		$to_dbname,
-		ucfirst(Bio::EnsEMBL::Registry->get_alias($to_species)),
+		Bio::EnsEMBL::Registry->get_alias($to_species),
 		$to_species) || die "Can't write to projection info database\n";
 
   $sth->finish();
