@@ -10,7 +10,7 @@
 # describes its uses, unless its description field is deemed to be
 # expressive enough
 
-# need o document and find out about each attrib_type
+# need to document and find out about each attrib_type
 
 
 1	embl_acc	EMBL accession
@@ -119,12 +119,12 @@
 46	NumAnnotClone	Fully annotated clones	Number of fully annotated clones
 
 # Acknowledgements for manual annotation of this seq_region
-47	ack	Acknowledgement		Acknowledgement
+47	ack	Acknowledgement	Acknowledgement for manual annotation
 
 # old clone attribute
-48	htg_phase	High throughput phase	high throughput genomic sequencing phase
+48	htg_phase	High throughput phase	High throughput genomic sequencing phase
 49	description	Description	A general descriptive text attribute
-50	chromosome	Chromosome	chromosomal location for supercontigs that are not assembled
+50	chromosome	Chromosome	Chromosomal location for supercontigs that are not assembled
 51	nonsense	Nonsense Mutation	Strain specific nonesense mutation
 
 # misc Vega attribs
@@ -140,3 +140,30 @@
 
 # label frameshifts modelled as short (1,2,4,5 bp) introns
 59	Frameshift	Frameshift	Frameshift modelled as intron
+
+#more gene counts for Vega
+60	PTCount	processed_transcript_UNKNOWN	Number of Processed Transcripts
+61	PredPTCount	processed_transcript_PREDICTED	Number of Predicted Processed Transcripts
+
+
+62	ncRNA	Structure	RNA secondary structure line
+
+63	skip_clone	skip clone  Skip clone in align_by_clone_identity.pl
+
+# Gene counts for seq_region_stats.pl script
+64	GeneNo_knwCod	known protein_coding Gene Count	Number of known protein_coding Genes
+65	GeneNo_novCod	novel protein_coding Gene Count	Number of novel protein_coding Genes
+66	GeneNo_rRNA	rRNA Gene Count	Number of rRNA Genes
+67	GeneNo_pseudo	pseudogene Gene Count	Number of pseudogene Genes
+68	GeneNo_snRNA	snRNA Gene Count	Number of snRNA Genes
+69	GeneNo_snoRNA	snoRNA Gene Count	Number of snoRNA Genes
+70	GeneNo_miRNA	miRNA Gene Count	Number of miRNA Genes
+71	GeneNo_mscRNA	misc_RNA Gene Count	Number of misc_RNA Genes
+72	GeneNo_scRNA	scRNA Gene Count	Number of scRNA Genes
+73	GeneNo_MTrRNA	Mt_rRNA Gene Count	Number of Mt_rRNA Genes
+74	GeneNo_MTtRNA	Mt_tRNA Gene Count	Number of Mt_tRNA Genes
+75	GeneNo_RNA_pseu scRNA_pseudogene Gene Count	Number of scRNA_pseudogene Genes
+76	GeneNo_tRNA	tRNA Gene Count	 Number of tRNA Genes
+
+80	supercontig	SuperContig name	NULL
+81	well_name	Well plate name	NULL
