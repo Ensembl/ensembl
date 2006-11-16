@@ -11,7 +11,7 @@ use Bio::EnsEMBL::DBSQL::GeneAdaptor;
 
 my $method_link_type = "ENSEMBL_ORTHOLOGUES";
 
-my ($conf, $compara, $from_species, @to_multi, $print, $names, $go_terms, $delete_names, $delete_go_terms, $no_backup, $full_stats, $descriptions);
+my ($conf, $compara, $from_species, @to_multi, $print, $names, $go_terms, $delete_names, $delete_go_terms, $no_backup, $full_stats, $descriptions, $release, $no_database);
 
 GetOptions('conf=s'          => \$conf,
 	   'compara=s'       => \$compara,
@@ -26,11 +26,38 @@ GetOptions('conf=s'          => \$conf,
 	   'nobackup'        => \$no_backup,
 	   'full_stats'      => \$full_stats,
            'descriptions'    => \$descriptions,
+	   'release=i'       => \$release,
+	   'no_database'     => \$no_database,
 	   'help'            => sub { usage(); exit(0); });
 
 
-if (!$conf|| !$compara || !$from_species || !@to_multi) {
+if (!$conf) {
 
+  print STDERR "Configuration file must be supplied via -conf argument\n";
+  usage();
+  exit(1);
+
+} elsif (!$compara) {
+
+  print STDERR "Compara database must be supplied via -compara argument\n";
+  usage();
+  exit(1);
+
+} elsif (!$from_species) {
+
+  print STDERR "From species must be supplied via -from argument\n";
+ usage();
+  exit(1);
+
+} elsif (!@to_multi) {
+
+  print STDERR "At least one target species must be supplied via the -to argument\n";
+  usage();
+  exit(1);
+
+} elsif (!$release && !$no_database) {
+
+  print STDERR "Release must be specified via -release argument unless -no_database is used\n";
   usage();
   exit(1);
 
@@ -38,8 +65,8 @@ if (!$conf|| !$compara || !$from_species || !@to_multi) {
 
 if (!$go_terms && !$names) {
 
-  print "One or both of --names or --go_terms must be specified\n";
-  print "Use --help for more detailed usage informaion\n";
+  print STDERR "One or both of --names or --go_terms must be specified\n";
+  print STDERR "Use --help for more detailed usage informaion\n";
   exit(1);
 
 }
@@ -66,6 +93,8 @@ foreach my $to_species (@to_multi) {
 
   my $to_ga   = Bio::EnsEMBL::Registry->get_adaptor($to_species, 'core', 'Gene');
   my $to_dbea = Bio::EnsEMBL::Registry->get_adaptor($to_species, 'core', 'DBEntry');
+
+  write_to_projection_db($to_ga->dbc(), $release, $from_species, $from_ga->dbc(), $to_species) unless ($no_database);
 
   backup($to_ga) if (!$no_backup);
 
@@ -365,7 +394,7 @@ sub count_rows {
   $sth->execute();
 
   return ($sth->fetchrow_array())[0];
- 
+
 }
 
 # ----------------------------------------------------------------------
@@ -480,6 +509,38 @@ sub backup {
 
 # ----------------------------------------------------------------------
 
+sub write_to_projection_db {
+
+  my ($to_dbc, $release, $from_species, $from_dbc, $to_species) = @_;
+
+  my $host = $to_dbc->host();
+  my $port = $to_dbc->port();
+  my $user = $to_dbc->username();
+  my $pass = $to_dbc->password();
+  my $dbname = "projection_info";
+
+  my $from_dbname = $from_dbc->dbname();
+  my $to_dbname = $to_dbc->dbname();
+
+  my $db = DBI->connect("dbi:mysql:host=$host;port=$port;database=$dbname", "$user", "$pass", {'RaiseError' => 1}) || die "Can't connect to " . $dbname;
+
+  my $sth = $db->prepare("INSERT INTO projections (release, timestamp, from_db, from_species_latin, from_species_common, to_db, to_species_latin, to_species_common) VALUES (?, NOW(), ?, ?, ?, ?, ?, ?)");
+
+  $sth->execute($release,
+		$from_dbname,
+		ucfirst(Bio::EnsEMBL::Registry->get_alias($from_species)),
+		$from_species,
+		$to_dbname,
+		ucfirst(Bio::EnsEMBL::Registry->get_alias($to_species)),
+		$to_species) || die "Can't write to projection info database\n";
+
+  $sth->finish();
+
+}
+
+# ----------------------------------------------------------------------
+
+
 sub usage {
 
   print << "EOF";
@@ -508,6 +569,9 @@ sub usage {
                         several --to arguments or a comma-separated list, e.g.
                         -from human -to dog -to opossum or --to dog,opossum
 
+   --release            The current Ensembl release. Needed for projection_info
+                        database.
+
   [--names]             Project display names and descriptions.
 
   [--go_terms]          Project GO terms.
@@ -527,6 +591,8 @@ sub usage {
   [--nobackup]          Skip dumping of table backups
 
   [--full_stats]        Print full statistics, e.g. number of terms per evidence type
+
+  [--no_database]       Don't write to the projection_info database.
 
   [--help]              This text.
 
