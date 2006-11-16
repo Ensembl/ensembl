@@ -1114,7 +1114,7 @@ sub parse_mappings {
 	  $failed_xref_mappings{$query_id} = $reason;
 	}
 	else{
-	  $priority_failed{$priority_xref_source_id{$query_id}.":".$query_id} = $reason;
+	  $priority_failed{$priority_xref_source_id{$query_id}.":".$priority_xref_acc{$query_id}} = $reason;
 	  print PRIORITY_FILE  $priority_xref_acc{$query_id}."\tFailed cutoff $reason\n";
 	}
 	next;
@@ -1139,6 +1139,7 @@ sub parse_mappings {
 						      $target_start+1, $target_end, 
 						      $cigar_line, $score, "\\N", $analysis_id)) . "\n";
 	  $priority_xref_state{$key} = "primary";
+	  $priority_xref_extra_bit{$query_id} =  "\tSEQUENCE_MATCH\t" . "Relationship generated from exonerate mapping" . "\n";
 	  next;
 	}
 	if($priority_xref_priority{$key} 
@@ -1154,6 +1155,7 @@ sub parse_mappings {
 						      $target_start+1, $target_end, 
 						      $cigar_line, $score, "\\N", $analysis_id)) . "\n";
 	  $priority_xref_state{$key} = "primary";
+	  $priority_xref_extra_bit{$query_id} =  "\tSEQUENCE_MATCH\t" . "Relationship generated from exonerate mapping" . "\n";
 	}
 	else{
 	  print PRIORITY_FILE $priority_xref_acc{$query_id}."\t".$source_id." has less priority (PRIMARY) so left as is\n";
@@ -1582,6 +1584,8 @@ PSQL
     my %triage_dumped=(); # dump only once for each accession
 
     if(defined($priority_source_id{$source})){ # cannot do triage at the moment for priority type xrefs.
+                                               # oh yes we can!! but not yet
+
       next;
     }
     my $sql = "select x.xref_id, x.accession, x.version, x.label, x.description, x.source_id, ".
@@ -1599,7 +1603,7 @@ PSQL
 	  $self->cleanup_sources_file($external_db_id);
 	}
 	print XREF ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $accession . 
-	  "\t" . $label . "\t" . $version . "\t" . $description . "\n";
+	  "\t" . $label . "\t" . $version . "\t" . $description . "\tMISC\tNo match\n";
 	
 	#dump out dependencies aswell
 	
@@ -1708,7 +1712,7 @@ sub dump_orphan_xrefs() {
 	  $self->cleanup_sources_file($external_db_id);
 	}
 	if(!defined($priority_xref_source_id{$xref_id})){
-	  print XREF ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $accession . "\t" . $label . "\t" . $version . "\t" . $description . "\n";
+	  print XREF ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $accession . "\t" . $label . "\t" . $version . "\t" . $description . "\tMISC\tNo match\n";
 	  $xrefs_written{$xref_id} = 1;
 	  $count++;
 	}
@@ -1774,8 +1778,11 @@ sub dump_direct_xrefs {
   $xref_sth->bind_columns(\$xref_id, \$ensembl_stable_id, \$type, \$linkage_xref,\ $accession, \$version, \$label, \$description, \$source_id, \$species_id);
 
 
-  open(PRIORITY_FILE,">>priority_xref.out") || die "Could not open priority_xref.out\n";
+  my %error_count;
+  my %error_example;
 
+  open(PRIORITY_FILE,">>priority_xref.out") || die "Could not open priority_xref.out\n";
+  my $ccds_source = get_source_id_from_source_name($self->xref(), "CCDS");
   while ($xref_sth->fetch()) {
     my $external_db_id = $source_to_external_db{$source_id};
 
@@ -1789,12 +1796,23 @@ sub dump_direct_xrefs {
 
     # In the case of CCDS xrefs, direct_xref is to transcript but we want
     # the mapping in the core db to be to the *translation*
-    if ($source_id == get_source_id_from_source_name($self->xref(), "CCDS")) {
+    if ($source_id == $ccds_source) {
       $type = 'translation';
       my $tmp_esid = $ensembl_stable_id;
       $ensembl_stable_id = $transcript_stable_id_to_translation_stable_id{$tmp_esid};
-      warn "Can't find translation for transcript $tmp_esid" if (!$ensembl_stable_id);
+      if(defined($error_count{$source_id})and defined(!$ensembl_stable_id)){
+	$error_count{$source_id}++;
+	if($error_count{$source_id} < 6){
+	  $error_example{$source_id} .= ", $tmp_esid - $accession";
+	}
+      }
+      elsif(!$ensembl_stable_id){
+	$error_count{$source_id} = 1;
+	$error_example{$source_id} = "$tmp_esid - $accession";
+      }
+#      warn "Can't find translation for transcript $tmp_esid" if (!$ensembl_stable_id);
       #print "CCDS: transcript $tmp_esid -> translation $ensembl_stable_id\n";
+      next;
     }
     
     my $ensembl_internal_id;
@@ -1862,7 +1880,7 @@ sub dump_direct_xrefs {
       $object_xref_id++;
       $count++;
       
-    } else {
+    } else { ##ahh
       if(!defined($worm_pep_source_id)){
         $worm_pep_source_id = get_source_id_from_source_name($self->xref(), "wormpep_id");
         $worm_locus_source_id = get_source_id_from_source_name($self->xref(), "wormbase_locus");
@@ -1903,15 +1921,26 @@ sub dump_direct_xrefs {
         } # foreach stable_id
         
       } # if source_id
-      
       # if we haven't changed $object_xref_id, nothing was written
-      print STDERR "Can't find $type corresponding to stable ID $ensembl_stable_id in ${type}_stable_id, not writing record for xref $accession\n" if ($object_xref_id == $old_object_xref_id);
+ #     print STDERR "Can't find $type corresponding to stable ID $ensembl_stable_id in ${type}_stable_id, not writing record for xref $accession\n" if ($object_xref_id == $old_object_xref_id);
+      if(defined($error_count{$source_id})){
+	$error_count{$source_id}++;
+	if($error_count{$source_id} < 6){
+	  $error_example{$source_id} .= ", $ensembl_stable_id - $accession";
+	}
+      }
+      else{
+	$error_count{$source_id} = 1;
+	$error_example{$source_id} = "$ensembl_stable_id - $accession";
+      }
       
-      
-      
-      
-      
+            
     }
+  }
+
+  foreach my $key (keys %error_count){
+    print STDERR "Problems with ".$error_count{$key}." Direct Xrefs for source $key\n";
+    print STDERR "\te.g.   ".$error_example{$key}."\n";
   }
 
   close(OBJECT_XREF);
@@ -2165,7 +2194,7 @@ sub dump_core_xrefs {
 	  if(!defined($updated_source{$external_db_id})){
 	    $self->cleanup_sources_file($external_db_id);
 	  }
-	  print XREF ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $accession . "\t" . $label . "\t" . $version . "\t" . $description . "\t" . "MISC\t" . "Relationship generated from exonerate mapping" . "\n";
+	  print XREF ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $accession . "\t" . $label . "\t" . $version . "\t" . $description . "\t" . "SEQUENCE_MATCH\t" . "Relationship generated from exonerate mapping" . "\n";
 	  $xrefs_written{$xref_id} = 1;
 	  $source_ids{$source_id} = $source_id;
 	}
@@ -3474,7 +3503,7 @@ EOS
       $count++;
       print XREF2 ($xref_id+$xref_id_offset)."\t". $source_to_external_db{$source_id}.
 	"\t$acc\t$label\t$ver\t$desc";
-      print XREF2 "\tDEPENDENT\tGenerated via its Pair ".$priority_seenit{$acc}."\n";
+      print XREF2 "\tINFERRED_PAIR\tGenerated via its Pair ".$priority_seenit{$acc}."\n";
       $xrefs_written{$xref_id}
 	
     }
@@ -3551,7 +3580,6 @@ EOS
 	    print OBJECT_XREF2 $dep_xref+$xref_id_offset;
 	    print OBJECT_XREF2 "\n";	
 	  }
-
 	  print TRIAGE_UPDATE "DELETE unmapped_object FROM unmapped_object ";
 	  print TRIAGE_UPDATE   "WHERE identifier = '".$good2missed_acc{$goodxref}."' ";
 	  print TRIAGE_UPDATE   "AND external_db_id = $ex_db_id ;\n";
@@ -3829,7 +3857,7 @@ PSQL
 	}
 	if(!defined($priority_xref_source_id{$xref_id})){
 	  print XREF ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $accession . 
-	             "\t" . $label . "\t" . $version . "\t" . $description . "\n";
+	             "\t" . $label . "\t" . $version . "\t" . $description . "\tMISC\tNo match\n";
 
 #dump out dependencies aswell
 	
