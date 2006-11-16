@@ -50,6 +50,7 @@ if($release_num) {
 #
 # make sure the user wishes to continue
 #
+print STDERR "Please make sure you've updated $file from CVS!\n";
 print STDERR "The following databases will have their external_db tables updated if necessary:\n  ";
 print join("\n  ", @dbnames);
 print "\nContinue with update (yes/no)>  ";
