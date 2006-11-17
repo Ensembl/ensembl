@@ -1293,7 +1293,7 @@ PSQL
 
   open(XREF_P,">$dir/xref_priority.txt") || die "Could not open xref_priority.txt";
   open(OBJECT_XREF_P,">$dir/object_xref_priority.txt") || die "Could not open object_xref_priority.txt"; 
-  open(IDENTITY_XREF_P,">$dir/identity_xref_priority.txt") || die "Could not open identity_xref.txt";
+  open(IDENTITY_XREF_P,">$dir/identity_xref_priority.txt") || die "Could not open identity_xref_priority.txt";
 
 
   my @xref_list=();
@@ -1340,17 +1340,18 @@ PSQL
     push @xref_list, $xref_id;
     if(defined($priority_object_xref{$key})){
       my ($type,$id) = split(/:/,$priority_object_xref{$key});
-      print OBJECT_XREF_P $object_xref_id."\t".$id."\t".$type."\t".$xref_id."\n";
+      print OBJECT_XREF_P $object_xref_id."\t".$id."\t".$type."\t".($xref_id+$xref_id_offset)."\n";
       if(defined($priority_identity_xref{$key})){
         print IDENTITY_XREF_P $object_xref_id."\t".$priority_identity_xref{$key};
       }
       $object_xref_id++;
-      foreach my $dependent (@$dep_list){
-	  print OBJECT_XREF_P $object_xref_id."\t".$id."\t".$type."\t".$dependent."\n";	  
-	  $object_xref_id++;	  
-      }
+#      foreach my $dependent (@$dep_list){
+#	  print OBJECT_XREF_P $object_xref_id."\t".$id."\t".$type."\t".$dependent."\n";	  
+#	  $object_xref_id++;	  
+#      }
     } 
   }
+
   if(scalar(@xref_list) < 1){
     print "At end of process prioritys  Maximum existing object_xref_id = $max_object_xref_id\n";
     return;
@@ -1800,7 +1801,7 @@ sub dump_direct_xrefs {
       $type = 'translation';
       my $tmp_esid = $ensembl_stable_id;
       $ensembl_stable_id = $transcript_stable_id_to_translation_stable_id{$tmp_esid};
-      if(defined($error_count{$source_id})and defined(!$ensembl_stable_id)){
+      if(defined($error_count{$source_id}) and !$ensembl_stable_id){
 	$error_count{$source_id}++;
 	if($error_count{$source_id} < 6){
 	  $error_example{$source_id} .= ", $tmp_esid - $accession";
@@ -1812,7 +1813,6 @@ sub dump_direct_xrefs {
       }
 #      warn "Can't find translation for transcript $tmp_esid" if (!$ensembl_stable_id);
       #print "CCDS: transcript $tmp_esid -> translation $ensembl_stable_id\n";
-      next;
     }
     
     my $ensembl_internal_id;
