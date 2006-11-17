@@ -1168,7 +1168,6 @@ sub parse_mappings {
       }
       # note we add on $xref_id_offset to avoid clashes
       print OBJECT_XREF "$max_object_xref_id\t$target_id\t$type\t" . ($query_id+$xref_id_offset) . "\n";
-      $max_object_xref_id++;
       print IDENTITY_XREF join("\t", ($max_object_xref_id, $query_identity, $target_identity, $query_start+1, $query_end, $target_start+1, $target_end, $cigar_line, $score, "\\N", $analysis_id)) . "\n";
       $max_object_xref_id++;
       # TODO - evalue?
