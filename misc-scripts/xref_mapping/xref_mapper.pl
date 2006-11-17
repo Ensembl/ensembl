@@ -379,11 +379,13 @@ if($upload){
 
   $mapper->do_upload();
 
+
+  print "\nProcessing priority xrefs\n";
+  $mapper->process_priority_xrefs();
+
   print "\nChecking pair data\n";
   $mapper->add_missing_pairs();
 
-
-  $mapper->process_priority_xrefs();
 
   print "\nChecking xrefs\n";
   $mapper->cleanup_database();
