@@ -171,28 +171,17 @@ sub variation_attach {
   my %all_db_names = map {( $_->[0] , 1)} @$all_db_names;
   my $snp_db_name = $core_db_name;
   $snp_db_name =~ s/_core_/_variation_/;
-# if( ! exists $all_db_names{ $snp_db_name } ) {
-#   return 0;
-# }
-#
-# # this should register the dbadaptor with the Registry
-# my $snp_db = Bio::EnsEMBL::Variation::DBSQL::DBAdaptor->new
-#   ( -host => $db->host(),
-#     -user => $db->username(),
-#     -pass => $db->password(),
-#     -port => $db->port(),
-#     -dbname => $snp_db_name,
-#     -group => "variation",
-#     -species => "DEFAULT"
-#   );
+ if( ! exists $all_db_names{ $snp_db_name } ) {
+   return 0;
+ }
 
-
+ # this should register the dbadaptor with the Registry
  my $snp_db = Bio::EnsEMBL::Variation::DBSQL::DBAdaptor->new
-   ( -host => 'ens-genomics1',
-     -user => 'ensro',
-     -pass => '',
-     -port => 3306,
-     -dbname => 'yuan_hum_var_41',
+   ( -host => $db->host(),
+     -user => $db->username(),
+     -pass => $db->password(),
+     -port => $db->port(),
+     -dbname => $snp_db_name,
      -group => "variation",
      -species => "DEFAULT"
    );
@@ -234,10 +223,3 @@ sub print_features {
     print "  ".$f->density_value()."\t".$f->start()."\n";
   }
 }
-
-
-
-
-  
-
-
