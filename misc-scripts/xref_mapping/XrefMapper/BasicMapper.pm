@@ -1386,7 +1386,7 @@ PSQL
   # more than one synonym so they are stored in a hash of lists
   my $syn_count = 0;
   my %synonyms;
-  my $syn_sth = $self->xref->dbc->prepare("SELECT xref_id, synonym FROM synonym and xref_id in ($list)");
+  my $syn_sth = $self->xref->dbc->prepare("SELECT xref_id, synonym FROM synonym where xref_id in ($list)");
   $syn_sth->execute();
   
   my ($sxref_id, $synonym);
