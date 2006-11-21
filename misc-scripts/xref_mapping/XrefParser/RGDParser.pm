@@ -61,13 +61,13 @@ sub run {
   #
 
   if($linearr[0] =~ /GENE_RDB_ID/){
-   warn ($linearr[0]."!= GENE_RDB_ID is not the first element in the header\n");
+   die ($linearr[0]."!= GENE_RDB_ID is not the first element in the header\n");
   }
   if($linearr[1] ne "SYMBOL"){
-    warn ("SYMBOL is not the second element in the header\n");
+    die ("SYMBOL is not the second element in the header\n");
   }
   if($linearr[2] ne "NAME"){
-    warn ("NAME is not the third element in the header\n");
+    die ("NAME is not the third element in the header\n");
   }
   if($linearr[16] ne "GENBANK_NUCLEOTIDE"){
     die ("GENBANK_NUCLEOTIDE is not the seventeenth element in the header but ".$linearr[16]." is.\\n");
