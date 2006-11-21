@@ -277,7 +277,7 @@ sub fetch_all_by_logic_name {
   my $self = shift;
   my $logic_name = shift || throw( "Need a logic_name" );
   my $constraint = $self->_logic_name_to_constraint( '',$logic_name );
-  return $self->fetch_all( $constraint )
+  return $self->generic_fetch($constraint);
 }
 
 #
