@@ -69,8 +69,8 @@ sub run {
   if($linearr[2] ne "NAME"){
     warn ("NAME is not the third element in the header\n");
   }
-  if($linearr[14] ne "GENBANK_NUCLEOTIDE"){
-    warn ("GENBANK_NUCLEOTIDE is not the fourteenth element in the header\n");
+  if($linearr[16] ne "GENBANK_NUCLEOTIDE"){
+    die ("GENBANK_NUCLEOTIDE is not the seventeenth element in the header but ".$linearr[16]." is.\\n");
   }
   
   my $count= 0;
