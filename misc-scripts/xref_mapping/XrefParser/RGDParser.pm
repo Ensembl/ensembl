@@ -44,11 +44,8 @@ sub run {
   }
 
 
-#  my (%genbank) = %{XrefParser::BaseParser->get_valid_codes("EMBL",$species_id)};
   my (%refseq) = %{XrefParser::BaseParser->get_valid_codes("refseq",$species_id)};
   
-
-  print STDERR "refseq->". %refseq."\n";
 
   if(!open(RGD,"<".$file)){
     print "ERROR: Could not open $file\n";
@@ -98,7 +95,7 @@ sub run {
       }
     }
     if(!$done){
-      print STDERR "$rgd FAILED for $failed_list\n";
+#      print STDERR "$rgd FAILED for $failed_list\n";
       $self->add_xref("RGD:".$rgd,"",$symbol,$name,$source_id,$species_id);
       $mismatch++;
     }
