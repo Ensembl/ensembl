@@ -46,7 +46,9 @@ sub run {
 
 #  my (%genbank) = %{XrefParser::BaseParser->get_valid_codes("EMBL",$species_id)};
   my (%refseq) = %{XrefParser::BaseParser->get_valid_codes("refseq",$species_id)};
+  
 
+  print STDERR "refseq->". %refseq."\n";
 
   if(!open(RGD,"<".$file)){
     print "ERROR: Could not open $file\n";
@@ -77,9 +79,10 @@ sub run {
   my $mismatch = 0;
   while ($line = <RGD>) {
     chomp $line;
-    my ($rgd, $symbol, $name, $refseq) = (split (/\t/,$line))[0,1,2,14];
+    my ($rgd, $symbol, $name, $refseq) = (split (/\t/,$line))[0,1,2,16];
     my @nucs = split(/\,/,$refseq);
     my $done = 0;
+    my $failed_list ="";
     foreach my $nuc (reverse @nucs){
       if(!$done){
 	my $xref=undef; 
@@ -89,9 +92,13 @@ sub run {
 	  XrefParser::BaseParser->add_to_xrefs($xref,"RGD:".$rgd,"",$symbol,$name,"",$source_id,$species_id);
 	  $count++;
 	}
+	else{
+	  $failed_list .= " $nuc";
+	}
       }
     }
     if(!$done){
+      print STDERR "$rgd FAILED for $failed_list\n";
       $self->add_xref("RGD:".$rgd,"",$symbol,$name,$source_id,$species_id);
       $mismatch++;
     }
