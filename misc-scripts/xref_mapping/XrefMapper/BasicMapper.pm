@@ -1111,7 +1111,7 @@ sub parse_mappings {
 	my $reason = $type."|".$target_id."|".$query_identity."|".$target_identity."|";
 	$reason .= $method_query_threshold{$method}."|". $method_target_threshold{$method};
 	if(!defined($priority_xref_source_id{$query_id})){
-	  $failed_xref_mappings{$query_id} = $reason;
+	  $failed_xref_mappings{$query_id} = "$type|$target_id";
 	}
 	else{
 	  $priority_failed{$priority_xref_source_id{$query_id}.":".$priority_xref_acc{$query_id}} = $reason;
@@ -1287,7 +1287,6 @@ PSQL
   } else {
     print "Maximum existing object_xref_id = $max_object_xref_id\n";
   }
-#  my $object_xref_id_offset = $max_object_xref_id + 1;
   my $object_xref_id =  $max_object_xref_id + 1;
 
   open(XREF_P,">$dir/xref_priority.txt") || die "Could not open xref_priority.txt";
@@ -1344,10 +1343,6 @@ PSQL
         print IDENTITY_XREF_P $object_xref_id."\t".$priority_identity_xref{$key};
       }
       $object_xref_id++;
-#      foreach my $dependent (@$dep_list){
-#	  print OBJECT_XREF_P $object_xref_id."\t".$id."\t".$type."\t".$dependent."\n";	  
-#	  $object_xref_id++;	  
-#      }
     } 
   }
 
@@ -1408,6 +1403,16 @@ PSQL
     }
   }
   close EXTERNAL_SYNONYM;
+
+
+
+
+  #unmapped objects. Need to write these fro the priority_xrefs.
+
+
+
+
+
 
   foreach my $table ("xref","object_xref","identity_xref","external_synonym"){
     my $file = $dir."/".$table."_priority.txt";
