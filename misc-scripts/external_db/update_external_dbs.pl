@@ -85,6 +85,11 @@ while ($row = <$fh>) {
 	       'display_label_linkable' => $a[5],
 	       'priority'               => $a[6],
 	       'db_display_name'        => $a[7]};
+
+  if ($a[1] =~ /^$/ || $a[1] =~ /^\s+$/ || $a[1] =~ /^\d+$/) {
+    print STDERR "Cannot parse the following line:\n$row\nIt probably has spaces separating the fields rather than tabs.\n";
+    exit(1);
+  }
 }
 $fh->close();
 
