@@ -160,6 +160,6 @@
 5300	Oxford_FGU_Md_tscript	1	PRED	1	0	1	Oxford Ponting Group Monodelphis predictions transcript id
 5400	Oxford_FGU_Oa_gene	1	PRED	1	0	1	Oxford Ponting Group Platypus predictions gene id
 5500	Oxford_FGU_Oa_tscript	1	PRED	1	0	1	Oxford Ponting Group Platypus predictions transcript id
-5700    Ens_Cf_gene     1       XREF    1       0       5       Ensembl Dog Gene
-5710    Ens_Cf_transcript       1       XREF    1       0       5       Ensembl Dog Transcript
-5720    Ens_Cf_translation      1       XREF    1       0       5       Ensembl Dog Translation
+5700	Ens_Cf_gene	1	XREF	1	0	5	Ensembl	Dog Gene
+5710	Ens_Cf_transcript	1	XREF	1	0	5	Ensembl	Dog Transcript
+5720	Ens_Cf_translation	1	XREF	1	0	5	Ensembl	Dog Translation
