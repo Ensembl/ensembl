@@ -1,3 +1,8 @@
+#
+#
+# Please separate fields in this file with TABS not spaces!
+#
+#
 210	Anopheles_symbol	1	KNOWN	1	0	50	Anopheles symbol
 300	BRIGGSAE_HYBRID	1	KNOWNXREF	1	0	5	Briggsae Hybrid
 400	Celera_Gene	1	PRED	1	0	5	Celera gene
@@ -163,3 +168,8 @@
 5700	Ens_Cf_gene	1	XREF	1	0	5	Ensembl	Dog Gene
 5710	Ens_Cf_transcript	1	XREF	1	0	5	Ensembl	Dog Transcript
 5720	Ens_Cf_translation	1	XREF	1	0	5	Ensembl	Dog Translation
+#
+#
+# Please separate fields in this file with TABS not spaces!
+#
+#
