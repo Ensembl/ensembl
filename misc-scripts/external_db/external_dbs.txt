@@ -134,7 +134,7 @@
 3207	ARRAY_ND_TIGRTC_9_6K_v1	1	XREF	1	0	1	VectorBase Array
 3208	ARRAY_UCR_GillMgMT_0_2K_v2	1	XREF	1	0	1	VectorBase Array
 3250	Illumina	1	XREF	1	0	1	Illumina
-3251	Illumina_V1	1	XREF	1	0	1	Illumina_V1
+3251	Illumina_V1	1	XREF	1	0	1	Illumina V1
 3252	Illumina_V2	1	XREF	1	0	1	Illumina V2
 3251	AGILENT_G2518A	1	XREF	1	0	1	Agilent Microarray G2518A
 3300	miRNA_Registry	1	XREF	1	0	1	miRNA Registry
