@@ -33,6 +33,8 @@ usage("[DIE] Master database required\n\n") if (!$master);
 
 $port ||= 3306;
 
+$file ||= "external_dbs.txt";
+
 my $dsn = "DBI:mysql:host=$host;port=$port";
 
 my $db = DBI->connect( $dsn, $user, $pass, {RaiseError => 1} );
@@ -71,6 +73,9 @@ my @rows;
 my $row;
 while ($row = <$fh>) {
   chomp($row);
+  next if ($row =~ /^#/);    # skip comments
+  next if ($row =~ /^$/);    # and blank lines
+  next if ($row =~ /^\s+/);  # and whitespace-only lines
   my @a = split(/\t/, $row);
   push @rows, {'external_db_id'         => $a[0],
                'db_name'                => $a[1],
@@ -193,7 +198,8 @@ sub usage {
                     -release the release of the database to update used to 
                              match database names.  e.g. 13
                     -file the path of the file containing the insert statements
-                          of the entries of the external_db table
+                          of the entries of the external_db table. Default is
+                          external_dbs.txt
                     -dbnames db1
                           the names of the database to update. if not provided
                           all of the core databases matching the release arg
