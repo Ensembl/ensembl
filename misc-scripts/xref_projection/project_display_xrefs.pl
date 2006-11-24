@@ -292,11 +292,8 @@ sub project_go_terms {
     # also exclude ISS terms (manually projected based on orthologs)
     next if (ref($dbEntry) ne "Bio::EnsEMBL::GoXref");
 
-    # TODO - this will skip whole xref if any evidence type is IEA
-    # even if there are more than one evidence type for this GO term
-    # Should be changed to just skip IEA one, not others
+    # Skip the whole dbEntry if one or more if its evidence codes isn't in the whitelist
     foreach my $et (@{$dbEntry->get_all_linkage_types}){
-      print "$et " . "\n";
       next DBENTRY if (!grep(/$et/, @evidence_codes));
     }
 
