@@ -116,10 +116,16 @@ foreach my $to_species (@to_multi) {
   print_stats($to_ga);
 
   # Get all genes, find homologies, set xrefs
-  foreach my $gene_id (@{$from_ga->list_dbIDs}) {
+  my @genes = @{$from_ga->list_dbIDs};
+  my $i = 0;
+  my $total_genes = scalar(@genes);
+  foreach my $gene_id (@genes) {
 
     my $gene = $from_ga->fetch_by_dbID($gene_id);
     # next unless ($gene->biotype eq "protein_coding");
+
+    print "$i of $total_genes source genes\n" if ($i % 1000 == 0);
+    $i++;
 
     my $member = $ma->fetch_by_source_stable_id("ENSEMBLGENE",$gene->stable_id);
     next unless (defined $member);
@@ -282,20 +288,22 @@ sub project_go_terms {
 
     next if ($dbEntry->dbname() ne "GO" || !$dbEntry);
 
+    #print "found GO\n";
     # only project GO terms with non-IEA evidence codes
     # also exclude ISS terms (manually projected based on orthologs)
     next if (ref($dbEntry) ne "Bio::EnsEMBL::GoXref");
-
+    #print "type OK\n";
     # TODO - this will skip whole xref if any evidence type is IEA
     # even if there are more than one evidence type for this GO term
     # Should be changed to just skip IEA one, not others
     foreach my $et (@{$dbEntry->get_all_linkage_types}){
+      #print "$et " . join(" ", @evidence_codes) . "\n";
       next DBENTRY if (!grep(/$et/, @evidence_codes));
     }
-
+    #print "no IEA\n";
     # check that each from GO term isn't already projected
     next if go_xref_exists($dbEntry, $to_go_xrefs);
-
+#print "doesn't exist";
     # record statistics by evidence type
     foreach my $et (@{$dbEntry->get_all_linkage_types}){
       $projections_by_evidence_type{$et}++;
@@ -315,7 +323,7 @@ sub project_go_terms {
     print $to_translation->stable_id() . " --> " . $dbEntry->display_id() . "\n" if ($print);
 
     $to_dbea->store($dbEntry, $to_translation->dbID(), 'Translation') if (!$print);
-    #print "stored xref ID " . $dbEntry->dbID() ." " . $to_translation->stable_id() . " ". $to_translation->dbID() . " " . $dbEntry->display_id() . "\n";
+    print "stored xref ID " . $dbEntry->dbID() ." " . $to_translation->stable_id() . " ". $to_translation->dbID() . " " . $dbEntry->display_id() . "\n";
 
   }
 
@@ -355,7 +363,7 @@ sub print_stats {
 
   if ($names) {
 
-    $count = count_rows($to_ga, "SELECT COUNT(*) FROM gene g, xref x WHERE g.display_xref_id=x.xref_id AND g.display_xref_id IS NOT NULL AND x.info_type IS NULL");
+    $count = count_rows($to_ga, "SELECT COUNT(*) FROM gene g, xref x WHERE g.display_xref_id=x.xref_id AND g.display_xref_id IS NOT NULL AND  (x.info_type != 'PROJECTION' || x.info_type IS NULL)");
     printf("Gene names: unprojected %d (%3.1f\%)" , $count, (100 * $count / $total_genes));
 
     $count = count_rows($to_ga, "SELECT COUNT(*) FROM gene g, xref x WHERE g.display_xref_id=x.xref_id AND x.info_type='PROJECTION'");
