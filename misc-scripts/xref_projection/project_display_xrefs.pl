@@ -72,7 +72,7 @@ if (!$go_terms && !$names) {
 }
 
 # only these evidence codes will be considered for GO term projection
-my @evidence_codes = [ "IDA", "IEP", "IGI", "IMP", "IPI" ];
+my @evidence_codes = ( "IDA", "IEP", "IGI", "IMP", "IPI" );
 
 @to_multi = split(/,/,join(',',@to_multi));
 
@@ -288,22 +288,21 @@ sub project_go_terms {
 
     next if ($dbEntry->dbname() ne "GO" || !$dbEntry);
 
-    #print "found GO\n";
     # only project GO terms with non-IEA evidence codes
     # also exclude ISS terms (manually projected based on orthologs)
     next if (ref($dbEntry) ne "Bio::EnsEMBL::GoXref");
-    #print "type OK\n";
+
     # TODO - this will skip whole xref if any evidence type is IEA
     # even if there are more than one evidence type for this GO term
     # Should be changed to just skip IEA one, not others
     foreach my $et (@{$dbEntry->get_all_linkage_types}){
-      #print "$et " . join(" ", @evidence_codes) . "\n";
+      print "$et " . "\n";
       next DBENTRY if (!grep(/$et/, @evidence_codes));
     }
-    #print "no IEA\n";
+
     # check that each from GO term isn't already projected
     next if go_xref_exists($dbEntry, $to_go_xrefs);
-#print "doesn't exist";
+
     # record statistics by evidence type
     foreach my $et (@{$dbEntry->get_all_linkage_types}){
       $projections_by_evidence_type{$et}++;
@@ -323,7 +322,7 @@ sub project_go_terms {
     print $to_translation->stable_id() . " --> " . $dbEntry->display_id() . "\n" if ($print);
 
     $to_dbea->store($dbEntry, $to_translation->dbID(), 'Translation') if (!$print);
-    print "stored xref ID " . $dbEntry->dbID() ." " . $to_translation->stable_id() . " ". $to_translation->dbID() . " " . $dbEntry->display_id() . "\n";
+    #print "stored xref ID " . $dbEntry->dbID() ." " . $to_translation->stable_id() . " ". $to_translation->dbID() . " " . $dbEntry->display_id() . "\n";
 
   }
 
