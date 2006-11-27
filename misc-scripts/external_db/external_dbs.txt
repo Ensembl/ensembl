@@ -158,8 +158,9 @@
 4650	shares_CDS_with	1	XREF	1	0	1	transcript having same CDS
 4700	Medaka	1	XREF	1	0	1	Medaka Genome Project
 4800	ENST	1	XREF	1	0	1	Ensembl transcripts
+4900	TCAG	1	XREF	1	0	75	TCAG Chr 7 Annotation
 5000	Ens_Mm_gene	1	XREF	1	0	40	Ensembl Mouse Gene
-7159	AedesGenBank	1	PRED	1	0	30	Aedes GenBank      
+5100	IMGT	1	XREF	1	0	7	IMGT/HLA
 6000	Codelink	1	XREF	1	0	1	GE Healthcare/Amersham Codelink WGA
 5200	Oxford_FGU_Md_gene	1	PRED	1	0	1	Oxford Ponting Group Monodelphis predictions gene id
 5300	Oxford_FGU_Md_tscript	1	PRED	1	0	1	Oxford Ponting Group Monodelphis predictions transcript id
@@ -168,6 +169,7 @@
 5700	Ens_Cf_gene	1	XREF	1	0	5	Ensembl	Dog Gene
 5710	Ens_Cf_transcript	1	XREF	1	0	5	Ensembl	Dog Transcript
 5720	Ens_Cf_translation	1	XREF	1	0	5	Ensembl	Dog Translation
+7159	AedesGenBank	1	PRED	1	0	30	Aedes GenBank      
 #
 #
 # Please separate fields in this file with TABS not spaces!
