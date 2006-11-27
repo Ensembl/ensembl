@@ -129,6 +129,7 @@
 3127	AFFY_YG_S98	1	XREF	1	0	1	Affymx Microarray YG-S98
 3128	AFFY_Yeast_2	1	XREF	1	0	1	Affymx Microarray Yeast_2
 3129	AFFY_Rhesus	1	XREF	1	0	1	Affymx Microarray R Macaque
+3130    AFFY_CINT06a520380F	1	XREF	0	1	Affymx Microarray C Intestinalis CINT06a520380F
 3200	VB_array	1	XREF	1	0	1	VectorBase Array
 3201	ARRAY_EMBL_MMC1_20k_v1	1	XREF	1	0	1	VectorBase Array
 3202	ARRAY_EMBL_MMC2_12k_v1	1	XREF	1	0	1	VectorBase Array
