@@ -167,3 +167,18 @@
 
 80	supercontig	SuperContig name	NULL
 81	well_name	Well plate name	NULL
+
+# Added by fc1 26/11/06
+82	bacterial	Bacterial
+83	NovelCDSCount	Novel CDS Count
+84	NovelTransCount	Novel Transcript Count
+85	PutTransCount	Putative Transcript Count
+86	PredTransCount	Predicted Transcript Count
+87	UnclassPsCount	Unclass Ps count
+88	KnwnprogCount	Known prog Count
+89	NovCDSprogCount	Novel CDS prog count
+90	bacend_well_nam	BACend well name
+91	alt_well_name	Alt well name
+92	TranscriptEdge	Transcript Edge
+93	alt_embl_acc	Alt EMBL acc
+94	alt_org	Alt org
