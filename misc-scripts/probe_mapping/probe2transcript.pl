@@ -6,27 +6,36 @@ use Bio::EnsEMBL::DBEntry;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::EnsEMBL::Mapper::RangeRegistry;
 
-my ($s_host, $s_port, $s_user, $s_pass, $s_dbname, $t_host, $t_port, $t_user, $t_pass, $t_dbname, $print, $max_mismatches, $utr_length, $max_probesets_per_transcript, $max_transcripts, @arrays);
+my ($transcript_host, $transcript_port, $transcript_user, $transcript_pass, $transcript_dbname,
+    $oligo_host, $oligo_port, $oligo_user, $oligo_pass, $oligo_dbname,
+    $xref_host, $xref_port, $xref_user, $xref_pass, $xref_dbname,
+    $print, $max_mismatches, $utr_length, $max_probesets_per_transcript, $max_transcripts, @arrays, $delete);
 
-GetOptions('source_host=s'      => \$s_host,
-           'source_user=s'      => \$s_user,
-           'source_port=i'      => \$s_port,
-           'source_pass=s'      => \$s_pass,
-           'source_dbname=s'    => \$s_dbname,
-	   'target_host=s'      => \$t_host,
-           'target_user=s'      => \$t_user,
-           'target_port=i'      => \$t_port,
-           'target_pass=s'      => \$t_pass,
-           'target_dbname=s'    => \$t_dbname,
-	   'mismatches=i'       => \$max_mismatches,
-           'utr_length=i'       => \$utr_length,
-	   'max_probesets=i'    => \$max_probesets_per_transcript,
-	   'max_transcripts=i'  => \$max_transcripts,
-	   'arrays=s'           => \@arrays,
-	   'print'              => \$print,
-           'help'               => sub { usage(); exit(0); });
+GetOptions('transcript_host=s'      => \$transcript_host,
+           'transcript_user=s'      => \$transcript_user,
+           'transcript_port=i'      => \$transcript_port,
+           'transcript_pass=s'      => \$transcript_pass,
+           'transcript_dbname=s'    => \$transcript_dbname,
+	   'oligo_host=s'           => \$oligo_host,
+           'oligo_user=s'           => \$oligo_user,
+           'oligo_port=i'           => \$oligo_port,
+           'oligo_pass=s'           => \$oligo_pass,
+           'oligo_dbname=s'         => \$oligo_dbname,
+	   'xref_host=s'            => \$xref_host,
+           'xref_user=s'            => \$xref_user,
+           'xref_port=i'            => \$xref_port,
+           'xref_pass=s'            => \$xref_pass,
+           'xref_dbname=s'          => \$xref_dbname,
+	   'mismatches=i'           => \$max_mismatches,
+           'utr_length=i'           => \$utr_length,
+	   'max_probesets=i'        => \$max_probesets_per_transcript,
+	   'max_transcripts=i'      => \$max_transcripts,
+	   'arrays=s'               => \@arrays,
+	   'print'                  => \$print,
+	   'delete'                 => \$delete,
+           'help'                   => sub { usage(); exit(0); });
 
-$s_port ||= 3306; $t_port ||= 3306;
+$transcript_port ||= 3306; $oligo_port ||= 3306; $xref_port ||= 3306;
 
 $max_mismatches ||= 1;
 
@@ -36,49 +45,81 @@ $max_probesets_per_transcript ||= 100;
 
 @arrays = split(/,/,join(',',@arrays));
 
-usage() if(!$s_user || !$s_dbname || !$s_host);
+usage() if(!$transcript_user || !$transcript_dbname || !$transcript_host);
 
+my $transcript_db = new Bio::EnsEMBL::DBSQL::DBAdaptor('-host'   => $transcript_host,
+						       '-port'   => $transcript_port,
+						       '-user'   => $transcript_user,
+						       '-pass'   => $transcript_pass,
+						       '-dbname' => $transcript_dbname);
+my $oligo_db;
 
-my $s_db = new Bio::EnsEMBL::DBSQL::DBAdaptor('-host'   => $s_host,
-					      '-port'   => $s_port,
-					      '-user'   => $s_user,
-					      '-pass'   => $s_pass,
-					      '-dbname' => $s_dbname);
+if ($oligo_host && $oligo_dbname && $oligo_user) {
 
-my $t_db;
-
-if ($t_host && $t_dbname && $t_user) {
-
-  $t_db = new Bio::EnsEMBL::DBSQL::DBAdaptor('-host'   => $t_host,
-					     '-port'   => $t_port,
-					     '-user'   => $t_user,
-					     '-pass'   => $t_pass,
-					     '-dbname' => $t_dbname);
+  $oligo_db = new Bio::EnsEMBL::DBSQL::DBAdaptor('-host'   => $oligo_host,
+						 '-port'   => $oligo_port,
+						 '-user'   => $oligo_user,
+						 '-pass'   => $oligo_pass,
+						 '-dbname' => $oligo_dbname);
 
 } else {
 
-  print "No target database specified, writing xrefs to $s_host:$s_port:$s_dbname\n";
-  $t_db = $s_db;
+  print "No oligo database specified, reading oligo features from $transcript_host:$transcript_port:$transcript_dbname\n";
+  $oligo_db = $transcript_db;
 
 }
 
-my $transcript_adaptor = $t_db->get_TranscriptAdaptor();
-my $slice_adaptor = $t_db->get_SliceAdaptor();
-my $oligo_feature_adaptor = $s_db->get_OligoFeatureAdaptor();
-my $db_entry_adaptor = $t_db->get_DBEntryAdaptor();
+my $xref_db;
+
+if ($xref_host && $xref_dbname && $xref_user) {
+
+  $xref_db = new Bio::EnsEMBL::DBSQL::DBAdaptor('-host'   => $xref_host,
+						'-port'   => $xref_port,
+						'-user'   => $xref_user,
+						'-pass'   => $xref_pass,
+						'-dbname' => $xref_dbname);
+
+} else {
+
+  print "No xref database specified, writing xrefs to $transcript_host:$transcript_port:$transcript_dbname\n";
+  $xref_db = $transcript_db;
+
+}
+
+delete_existing_xrefs($oligo_db, $xref_db, @arrays) if ($delete);
+
+check_existing_and_exit($oligo_db, $xref_db, @arrays);
+
+my $transcript_adaptor = $transcript_db->get_TranscriptAdaptor();
+my $slice_adaptor = $transcript_db->get_SliceAdaptor();
+my $oligo_feature_adaptor = $oligo_db->get_OligoFeatureAdaptor();
+my $db_entry_adaptor = $xref_db->get_DBEntryAdaptor();
 
 my %count;
 
 my %promiscuous_probesets;
 my %dbentries_per_probeset;
 
+$| = 1; # auto flush stdout
+
 my $i = 0;
+my $last_pc = -1;
 
 my $rr = Bio::EnsEMBL::Mapper::RangeRegistry->new();
 
-foreach my $transcript (@{$transcript_adaptor->fetch_all()}) {
+my @transcripts = @{$transcript_adaptor->fetch_all()};
+my $total =  scalar(@transcripts);
 
-  print "$i\n" if ($i % 1000 == 0);
+print "Mapping, percentage complete: ";
+
+foreach my $transcript (@transcripts) {
+
+  my $pc = int ((100 * $i) / $total);
+
+  if ($pc > $last_pc) {
+    print "$pc ";
+    $last_pc = $pc;
+  }
 
   last if ($max_transcripts && $i >= $max_transcripts);
 
@@ -92,7 +133,9 @@ foreach my $transcript (@{$transcript_adaptor->fetch_all()}) {
   $rr->flush();
 
   foreach my $exon (@$exons) {
-    $rr->check_and_register("exonic", $exon->seq_region_start, $exon->seq_region_end);
+    my $start = $exon->seq_region_start() - 13; # XXX ceil(25/2) like Craig's - do this properly
+    my $end = $exon->seq_region_end() + 13;
+    $rr->check_and_register("exonic", $start, $end);
   }
 
   $rr->check_and_register("utr", $extended_slice->end()-$utr_length, $extended_slice->end());
@@ -114,7 +157,7 @@ foreach my $transcript (@{$transcript_adaptor->fetch_all()}) {
     my $min_overlap = ($probe_length - $max_mismatches);
 
     my $exon_overlap = $rr->overlap_size("exonic", $feature->seq_region_start(), $feature->seq_region_end());
-    my $utr_overlap = $rr->overlap_size("utr", $feature->seq_region_start(), $feature->seq_region_end());
+    my $utr_overlap  = $rr->overlap_size("utr",    $feature->seq_region_start(), $feature->seq_region_end());
 
     if ($exon_overlap >= $min_overlap) {
 
@@ -139,6 +182,8 @@ foreach my $transcript (@{$transcript_adaptor->fetch_all()}) {
   $i++;
 
 }
+
+print "\n";
 
 print_stats();
 
@@ -219,9 +264,101 @@ sub add_xref {
     # delete existing mappings to them
     if (scalar(@{$dbentries_per_probeset{$probeset}}) > $max_probesets_per_transcript) {
       $promiscuous_probesets{$probeset} = $probeset;
-      remove_probeset_transcript_mappings($t_db, $probeset);
+      #remove_probeset_transcript_mappings($t_db, $probeset);
     }
   }
+
+}
+
+# ----------------------------------------------------------------------
+
+# Delete existing xrefs & object xrefs. Use user-specified arrays if
+# defined, otherwise all arrays.
+# Assumes external_db.dbname == oligo_array.name
+
+sub delete_existing_xrefs {
+
+  my ($oligo_adaptor, $dbentry_adaptor, @arrays) = @_;
+
+  # get array names if necessary
+  my @arrays_to_delete;
+  if (@arrays) {
+
+    @arrays_to_delete = @arrays;
+
+  } else {
+
+    my $sth = $oligo_adaptor->dbc()->prepare("SELECT DISTINCT(name) FROM oligo_array");
+    $sth->execute();
+
+    while(my @row = $sth->fetchrow_array()){
+
+      push @arrays_to_delete, $row[0];
+
+    }
+
+    $sth->finish();
+
+  }
+
+  my $del_sth = $dbentry_adaptor->dbc()->prepare("DELETE x, ox FROM xref x, object_xref ox, external_db e WHERE x.xref_id=ox.xref_id AND e.external_db_id=x.external_db_id AND e.db_name = ?");
+
+  foreach my $array (@arrays_to_delete) {
+
+    print "Deleting xrefs and object_xrefs for $array\n";
+    $del_sth->execute($array);
+
+  }
+
+  $del_sth->finish();
+
+}
+
+# ----------------------------------------------------------------------
+
+# Check if there are already xrefs defined, and exit if there are.
+# Use user-specified arrays if defined, otherwise all arrays.
+# Assumes external_db.dbname == oligo_array.name
+
+sub check_existing_and_exit {
+
+  my ($oligo_adaptor, $dbentry_adaptor) = @_;
+
+  # get array names if necessary
+  my @arrays_to_check;
+  if (@arrays) {
+
+    @arrays_to_check = @arrays;
+
+  } else {
+
+    my $sth = $oligo_adaptor->dbc()->prepare("SELECT DISTINCT(name) FROM oligo_array");
+    $sth->execute();
+
+    while(my @row = $sth->fetchrow_array()){
+
+      push @arrays_to_check, $row[0];
+
+    }
+
+    $sth->finish();
+
+  }
+
+  my $xref_sth = $dbentry_adaptor->dbc()->prepare("SELECT COUNT(*) FROM xref x, object_xref ox, external_db e WHERE x.xref_id=ox.xref_id AND e.external_db_id=x.external_db_id AND e.db_name = ?");
+
+  foreach my $array (@arrays_to_check) {
+
+    $xref_sth->execute($array);
+    my @row2 = $xref_sth->fetchrow_array();
+    if ($row2[0] > 0) {
+      print "Array $array already has " . $row2[0] . " xrefs, exiting.\nThere may be other arrays with xrefs; use -delete to remove them if required.\n";
+      exit(1);
+    }
+
+  }
+
+  $xref_sth->finish();
 
 }
 
@@ -283,32 +420,44 @@ sub usage {
 
   Options ([..] indicates optional):
 
-  READING OLIGO FEATURES:
+  READING TRANSCRIPTS:
 
-   --source_host          The database server to read oligo features from.
+   --transcript_host          The database server to read transcripts from.
 		
-   [--source_port]        The port to use for reading features. Defaults to 3306.
+   [--transcript_port]        The port to use for reading transcripts. Defaults to 3306.
 		
-   --source_user          Database username for reading features.
+   --transcript_user          Database username for reading transcripts.
 		
-   --source_pass          Password for source_user, if required.
+   --transcript_pass          Password for transcript_user, if required.
 		
-   --source_dbname        Database name to read features from.
+   --transcript_dbname        Database name to read transcripts from.
+
+  READING OLIGOS:
+
+   --oligo_host          The database server to read oligo features from.
+		
+   [--oligo_port]        The port to use for reading oligo features. Defaults to 3306.
+		
+   --oligo_user          Database username for reading oligo featuress.
+		
+   --oligo_pass          Password for oligo_user, if required.
+		
+   --oligo_dbname        Database name to read oligo features from.
 
   WRITING XREFS:
 
-   --target_host          The database server to write xrefs to.
+   --xref_host          The database server to write xrefs to.
 		
-   [--target_port]        The port to use for writing xrefs.. Defaults to 3306.
+   [--xref_port]        The port to use for writing xrefs.. Defaults to 3306.
 		
-   --target_user          Database username for xrefs. Must allow writing.
+   --xref_user          Database username for xrefs. Must allow writing.
 		
-   --target_pass          Password for target_user, if required.
+   --xref_pass          Password for xref_user, if required.
 		
-   --target_dbname        Database name to write xrefs to.
+   --xref_dbname        Database name to write xrefs to.
 
-  Note that if no target_host etc is specified, xrefs will be written to the
-  database specified by the source_* parameters.
+  Note that if no oligo_host, xref_host etc is specified, oligo features will be read from,
+  and xrefs written to, the database specified by the transcript_* parameters.
 
   GENERAL MAPPING OPTIONS:
 
@@ -324,6 +473,8 @@ sub usage {
   [--arrays]          Comma-separated list of arrays to use. Defaults to all arrays.
 
   MISCELLANEOUS:
+
+  [--delete]          Delete existing xrefs and object_xrefs. No deletion is done by default.
 
   [--print]           Print information about mapping, don't store in database.
 
