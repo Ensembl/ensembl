@@ -169,6 +169,7 @@
 5700	Ens_Cf_gene	1	XREF	1	0	5	Ensembl	Dog Gene
 5710	Ens_Cf_transcript	1	XREF	1	0	5	Ensembl	Dog Transcript
 5720	Ens_Cf_translation	1	XREF	1	0	5	Ensembl	Dog Translation
+6100	Havana_gene	1	XREF	1	0	100	Havana gene ID
 7159	AedesGenBank	1	PRED	1	0	30	Aedes GenBank      
 #
 #
