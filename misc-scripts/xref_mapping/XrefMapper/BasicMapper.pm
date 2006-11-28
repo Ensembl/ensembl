@@ -52,6 +52,10 @@ my %priority_identity_xref; # {HUGO:567} = as normal print except no object_xref
 #                                        = "100\t100\t1\t100\t110-210\t100M\t100\t987\n";
 my %priority_failed;         # {1090:12} = "gene|123456|78|35|90|90\n";
 
+
+
+
+
 # Hashes to hold method-specific thresholds
 my %method_query_threshold;
 my %method_target_threshold;
@@ -72,7 +76,7 @@ my %XXXxref_id_to_accession;
 
 
 
-=head2 find_priority_source
+=head2 find_priority_sources
 
   Description: Finds those source that hae more than one source
                Stores the results in the global hashes 
@@ -89,7 +93,7 @@ sub find_priority_sources{
 
 
 # need to check if this needed for this species.
-# NOTE: only store in priority_source_name if same name seen more than one :-)
+# NOTE: only store in priority_source_name if same name seen more than once :-)
 # i.e. more than one priority source is "USED"
 
   my $sql = "select distinct(source.source_id), source.name, source.priority from source, xref where xref.source_id = source.source_id ";
@@ -1110,11 +1114,13 @@ sub parse_mappings {
 	  $target_identity < $method_target_threshold{$method}){ 
 	my $reason = $type."|".$target_id."|".$query_identity."|".$target_identity."|";
 	$reason .= $method_query_threshold{$method}."|". $method_target_threshold{$method};
+	#IANL
 	if(!defined($priority_xref_source_id{$query_id})){
-	  $failed_xref_mappings{$query_id} = "$type|$target_id";
+	  $failed_xref_mappings{$query_id} = $reason;
 	}
 	else{
-	  $priority_failed{$priority_xref_source_id{$query_id}.":".$priority_xref_acc{$query_id}} = $reason;
+	  $priority_failed{$priority_source_id_to_name{$priority_xref_source_id{$query_id}}
+						       .":".$priority_xref_acc{$query_id}} = $reason;
 	  print PRIORITY_FILE  $priority_xref_acc{$query_id}."\tFailed cutoff $reason\n";
 	}
 	next;
@@ -1254,7 +1260,6 @@ sub process_priority_xrefs{
   my $xref = $self->xref;
   my $dir = $ensembl->dir();
 
-
   my $primary_sql= (<<PSQL);
     SELECT DISTINCT(s.name), px.sequence_type
       FROM source s, primary_xref px, xref x 
@@ -1357,6 +1362,7 @@ PSQL
   my ($xref_id, $acc,$ver, $label, $desc, $source_id);
   $sth->bind_columns(\$xref_id, \$acc, \$ver, \$label, \$desc, \$source_id);
   while($sth->fetch()){
+    my $key = $priority_source_id_to_name{$priority_xref_source_id{$xref_id}}.":".$acc;
     print XREF_P ($xref_id+$xref_id_offset)."\t". $source_to_external_db{$source_id}.
       "\t$acc\t$label\t$ver\t$desc";
     if(defined( $priority_xref_extra_bit{$xref_id})){
@@ -1367,13 +1373,11 @@ PSQL
       print XREF_P "\n";
     }
     $xrefs_written{$xref_id};
-    $priority_seenit{$acc} = "SEEN_IT";
+    $priority_seenit{$key} = "SEEN_IT";
   }
   $sth->finish;
 
 
-
-  close XREF_P;
   close OBJECT_XREF_P;
   close IDENTITY_XREF_P;
 
@@ -1403,14 +1407,6 @@ PSQL
     }
   }
   close EXTERNAL_SYNONYM;
-
-
-
-
-  #unmapped objects. Need to write these fro the priority_xrefs.
-
-
-
 
 
 
@@ -1484,7 +1480,7 @@ sub dump_triage_data() {
   my %translation_2_stable=();
   my %transcript_2_stable=();
   foreach my $temp (values %failed_xref_mappings){
-    my ($type,$id) = split(/\|/,$temp);
+    my ($type,$id,@junk) = split(/\|/,$temp);
     if($type =~ /Translation/){
       $translation_count++;
       if($translation_count > $batch_size){
@@ -1588,11 +1584,10 @@ PSQL
 
     my %triage_dumped=(); # dump only once for each accession
 
-    if(defined($priority_source_id{$source})){ # cannot do triage at the moment for priority type xrefs.
-                                               # oh yes we can!! but not yet
-
+    if(defined($priority_source_id{$source})){ # These are done seperately at the end.
       next;
     }
+
     my $sql = "select x.xref_id, x.accession, x.version, x.label, x.description, x.source_id, ".
               "x.species_id from xref x where x.source_id = $source";
     my $sth = $self->xref->dbc->prepare($sql);
@@ -1662,7 +1657,7 @@ PSQL
 	    print UNMAPPED_OBJECT $xref_DNA_analysis."\t";
 	  }
 	  print UNMAPPED_OBJECT $external_db_id."\t".$accession."\t";
-	  print UNMAPPED_OBJECT $xref_missed_id."\t0\t0\t0\tNULL\n"
+	  print UNMAPPED_OBJECT $xref_missed_id."\t0\t0\t0\tNULL\n";
 	}
       }
     }
@@ -1928,6 +1923,7 @@ sub dump_direct_xrefs {
       # if we haven't changed $object_xref_id, nothing was written
  #     print STDERR "Can't find $type corresponding to stable ID $ensembl_stable_id in ${type}_stable_id, not writing record for xref $accession\n" if ($object_xref_id == $old_object_xref_id);
       if(defined($error_count{$source_id})){
+    #IANL add priority_failed HERE.
 	$error_count{$source_id}++;
 	if($error_count{$source_id} < 6){
 	  $error_example{$source_id} .= ", $ensembl_stable_id - $accession";
@@ -1935,6 +1931,7 @@ sub dump_direct_xrefs {
       }
       else{
 	$error_count{$source_id} = 1;
+    #IANL add priority_failed HERE.
 	$error_example{$source_id} = "$ensembl_stable_id - $accession";
       }
       
@@ -2694,6 +2691,9 @@ sub cleanup_sources_file{
 
 
     print DEL "DELETE FROM xref WHERE xref.external_db_id = $id \n";
+
+    print DEL "DELETE FROM unmapped_object WHERE type='xref' and external_db_id = $id \n";
+
   } else { 
     warn("\nFound an empty id\n");
   }
@@ -3413,7 +3413,7 @@ sub add_missing_pairs{
   }
 
   my $xref_sql = (<<EOS);
-  SELECT x1.xref_id, x2.xref_id, x1.accession, x2.accession   
+  SELECT x1.xref_id, x2.xref_id, x1.accession, x2.accession, x1.source_id, x2.source_id   
     FROM pairs p, xref x1, xref x2
       WHERE p.accession1 = x1.accession
 	AND p.accession2 = x2.accession
@@ -3421,8 +3421,8 @@ sub add_missing_pairs{
 EOS
   my $xref_sth = $self->xref->dbc->prepare($xref_sql);
   $xref_sth->execute(); 
-  my ($xref_id1,$xref_id2, $x1_acc, $x2_acc);
-  $xref_sth->bind_columns(\$xref_id1, \$xref_id2, \$x1_acc, \$x2_acc);
+  my ($xref_id1,$xref_id2, $x1_acc, $x2_acc, $x1_source_id, $x2_source_id);
+  $xref_sth->bind_columns(\$xref_id1, \$xref_id2, \$x1_acc, \$x2_acc, \$x1_source_id, \$x2_source_id);
 
   my %good2missed=();
   my %good2missed_acc=();
@@ -3435,10 +3435,11 @@ EOS
   while ($xref_sth->fetch()) {
    # If either of these are a priority source then make sure they are the chosen one.
     if(defined($priority_xref_source_id{$xref_id1})){
+      my $key = $priority_source_id_to_name{$priority_xref_source_id{$xref_id1}}.":".$x1_acc;
       if(!defined($xrefs_written{$xref_id1})){
-	if(!defined($priority_seenit{$x1_acc})){
+	if(!defined($priority_seenit{$key})){
 	  push @xref_list, $xref_id1;
-	  $priority_seenit{$x1_acc} = $x2_acc;
+	  $priority_seenit{$key} = $x2_acc;
 	}
 	else{
 	  next;
@@ -3451,9 +3452,10 @@ EOS
 
     if(defined($priority_xref_source_id{$xref_id2})){
       if(!defined($xrefs_written{$xref_id2})){
-	if(!defined($priority_seenit{$x2_acc})){
+	my $key = $priority_source_id_to_name{$priority_xref_source_id{$xref_id2}}.":".$x2_acc;
+	if(!defined($priority_seenit{$key})){
 	  push @xref_list, $xref_id2;
-	  $priority_seenit{$x2_acc} = $x1_acc;
+	  $priority_seenit{$key} = $x1_acc;
 	}
 	else{
 	  next;
@@ -3507,7 +3509,8 @@ EOS
       $count++;
       print XREF2 ($xref_id+$xref_id_offset)."\t". $source_to_external_db{$source_id}.
 	"\t$acc\t$label\t$ver\t$desc";
-      print XREF2 "\tINFERRED_PAIR\tGenerated via its Pair ".$priority_seenit{$acc}."\n";
+      my $key = $priority_source_id_to_name{$priority_xref_source_id{$source_id}}.":".$acc;
+      print XREF2 "\tINFERRED_PAIR\tGenerated via its Pair ".$priority_seenit{$key}."\n";
       $xrefs_written{$xref_id}
 	
     }
@@ -3778,17 +3781,6 @@ sub dump_all_dependencies{
 }
     
 
-sub delete_unmapped {
-
-  my $self = shift;
-
-  print "NEED to change this to only delete the unmapped objects of those being updated.\n";
-  my $sth = $self->core->dbc->prepare("DELETE FROM unmapped_object WHERE type='xref'");
-  print "Deleting data from unmapped_object table\n";
-  $sth->execute();
-
-}
-
 sub get_mysql_command{
   my $self = shift;
   my $dbc  = shift;
@@ -3875,6 +3867,176 @@ PSQL
   close(XREF);
 }
     
+
+
+sub unmapped_data_for_prioritys{
+
+  my $self= shift;
+  my $xref_id_offset = $self->xref_id_offset();
+  my $ensembl = $self->core;
+  my $xref = $self->xref;
+  my $dir = $ensembl->dir();
+  my %cutoff_2_failed_id=();
+
+  my $summary_failed = "Failed to match at thresholds";
+  my $summary_missed = "Failed to match";
+  my $description_missed = "Unable to match to any ensembl entity at all";
+
+
+  #IANL
+  #unmapped objects. Need to write these for the priority_xrefs.
+  # use priority_seenit and priority_failed
+
+  open(UNMAPPED_OBJECT,">$dir/unmapped_object_priority.txt") 
+    || die "Could not open unmapped_object_priority.txt";
+  
+  open(XREF_P,">$dir/unmapped_xref_priority.txt") 
+    || die "Could not open unmapped_xref_priority.txt";
+  
+  #for each priority source that is primary :-
+    # get all xref,acc for this
+      # if seentit ignore
+        # else if priotrity_failed 
+           #write unmapped object.
+
+  my $description_missed = "Unable to match to any ensembl entity at all";
+  
+  my $sth = $self->core->dbc->prepare("select unmapped_reason_id from unmapped_reason where full_description like '".$description_missed."'");  
+  $sth->execute();
+  my $xref_missed_id;
+  $sth->bind_columns(\$xref_missed_id);
+  $sth->fetch;
+  if(!defined($xref_missed_id)){
+    print STDERR "Could not find the description:\n";
+    print STDERR $description_missed,"\n";
+    print STDERR "In the directory ensembl/misc-scripts/unmapped_reason you ";
+    print STDERR "can add the new reason to the unmapped_reason.txt file ";
+    print STDERR "and run the update_unmapped_reasons.pl script to update ";
+    print STDERR "your core database\n";
+    print STDERR "Alterntively do not add the triage data and add -notriage to the command line.\n";
+    die();
+  }
+  $sth->finish;
+ 
+
+  $sth = $self->core->dbc->prepare("select MAX(unmapped_object_id) ".
+				      "from unmapped_object");
+  $sth->execute();
+  my $max_unmapped_object_id;
+  $sth->bind_columns(\$max_unmapped_object_id);
+  $sth->fetch;
+  if(!defined($max_unmapped_object_id)){
+    $max_unmapped_object_id = 1;
+  }
+  $sth->finish;
+
+  my $primary_sql= (<<PSQL);
+    SELECT DISTINCT(s.source_id), px.sequence_type
+      FROM source s, primary_xref px, xref x 
+	WHERE x.xref_id = px.xref_id
+	  AND s.source_id = x.source_id
+PSQL
+
+  my $psth = $self->xref->dbc->prepare($primary_sql) || die "prepare failed";
+  $psth->execute() || die "execute failed";
+
+  my @primary_sources =();
+  my %source_2_seqtype=();
+
+  my ($prim, $seq_type);
+  $psth->bind_columns(\$prim,\$seq_type);
+  while($psth->fetch()){
+   if(defined($priority_source_id_to_name{$prim})){
+    push @primary_sources, $prim;
+    $source_2_seqtype{$prim} = $seq_type;
+   }
+  }
+
+  my $xref_PROT_analysis = $self->get_analysis_id("translation");
+  my $xref_DNA_analysis  = $self->get_analysis_id("transcript");
+
+  foreach my $source_id (@primary_sources){  #priority primary sources
+    my $old_source_name = $priority_source_id_to_name{$source_id};
+    my $external_db_id = $source_to_external_db{$source_id};
+    my $xref_sql = "SELECT xref_id, accession, version, label, description from xref where xref.source_id = $source_id";
+    my $sth = $self->xref->dbc->prepare($xref_sql) || die "prepare failed";
+    $sth->execute() || die "execute failed";
+    my ($xref_id, $acc, $ver, $lab, $desc);
+    $sth->bind_columns(\$xref_id, \$acc, \$ver, \$lab, \$desc);
+    while($sth->fetch()){
+      my $key = $old_source_name.":".$acc;
+      if(defined($priority_seenit{$key})){
+	next;
+      }
+      $priority_seenit{$key} = 1; 
+      if(defined($priority_failed{$key})){
+	my ($ensembl_type,$ensembl_id,$q_perc,$t_perc,$q_cut,$t_cut) =  
+	  split(/\|/,$priority_failed{$key});
+	
+	if(!defined($cutoff_2_failed_id{$q_cut."_".$t_cut})){
+	  $cutoff_2_failed_id{$q_cut."_".$t_cut} = $self->get_failed_id($q_cut, $t_cut, $summary_failed);
+	}
+	$max_unmapped_object_id++;
+	
+	print  UNMAPPED_OBJECT $max_unmapped_object_id."\txref\t";
+	
+	if($ensembl_type  =~ /Translation/){
+	  print UNMAPPED_OBJECT $xref_PROT_analysis."\t";
+	}
+	elsif($ensembl_type  =~ /Transcript/){
+	  print UNMAPPED_OBJECT $xref_DNA_analysis."\t";
+	}
+	else{
+	  die "type=*".$ensembl_type."*\n".$failed_xref_mappings{$xref_id}."\n";
+	}
+	print UNMAPPED_OBJECT $external_db_id."\t".$acc."\t".$cutoff_2_failed_id{$q_cut."_".$t_cut}."\t";
+	print UNMAPPED_OBJECT $q_perc."\t".$t_perc."\t";
+	print UNMAPPED_OBJECT $ensembl_id."\t".$ensembl_type."\n";
+	print XREF_P ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $acc . 
+	  "\t" . $lab . "\t" . $ver . "\t" . $desc . "\tMISC\tNo match over threshold\n";
+      }
+      else{
+	$max_unmapped_object_id++;
+	print  UNMAPPED_OBJECT $max_unmapped_object_id."\txref\t";
+	if($source_2_seqtype{$source_id} =~ /peptide/){
+	  print UNMAPPED_OBJECT $xref_PROT_analysis."\t";
+	}
+	elsif($source_2_seqtype{$source_id} =~ /dna/){
+	  print UNMAPPED_OBJECT $xref_DNA_analysis."\t";
+	}
+	print UNMAPPED_OBJECT $external_db_id."\t".$acc."\t";
+	print UNMAPPED_OBJECT $xref_missed_id."\t0\t0\t0\tNULL\n";
+	print XREF_P ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $acc . 
+	  "\t" . $lab . "\t" . $ver . "\t" . $desc . "\tMISC\tNo match\n";
+      }
+    }
+  }
+  close UNMAPPED_OBJECT;
+  close XREF_P;
+
+  my $file = $dir."/unmapped_xref_priority.txt";
+  
+  if(-s $file){
+    my $sth = $ensembl->dbc->prepare("LOAD DATA LOCAL INFILE \'$file\' IGNORE INTO TABLE xref");
+    print "Uploading data in $file to xref\n";
+    $sth->execute();
+  }
+  $file = $dir."/unmapped_object_priority.txt";
+  
+  if(-s $file){
+    my $sth = $ensembl->dbc->prepare("LOAD DATA LOCAL INFILE \'$file\' IGNORE INTO TABLE unmapped_object");
+    print "Uploading data in $file to unmapped_object\n";
+    $sth->execute();
+  }
+
+
+}
+
+
+
+
+
+
 
 1;
 
