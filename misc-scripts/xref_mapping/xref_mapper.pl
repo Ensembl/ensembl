@@ -386,6 +386,8 @@ if($upload){
   print "\nChecking pair data\n";
   $mapper->add_missing_pairs();
 
+  print "\nPriority unmapped xrefs sorting\n";
+  $mapper->unmapped_data_for_prioritys();
 
   print "\nChecking xrefs\n";
   $mapper->cleanup_database();
