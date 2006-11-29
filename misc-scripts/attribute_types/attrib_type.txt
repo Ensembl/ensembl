@@ -182,3 +182,9 @@
 92	TranscriptEdge	Transcript Edge
 93	alt_embl_acc	Alt EMBL acc
 94	alt_org	Alt org
+
+# anacode attribs added by ml6 29/11/06
+95	intl_clone_name	International Clone Name	
+96	embl_version	EMBL Version	
+97	chr	Chromosome Name	Chromosome Name Contained in the Assembly
+98	equiv_asm	Equivalent EnsEMBL assembly For full chromosomes made from NCBI AGPs
