@@ -187,4 +187,4 @@
 95	intl_clone_name	International Clone Name	
 96	embl_version	EMBL Version	
 97	chr	Chromosome Name	Chromosome Name Contained in the Assembly
-98	equiv_asm	Equivalent EnsEMBL assembly For full chromosomes made from NCBI AGPs
+98	equiv_asm	Equivalent EnsEMBL assembly	For full chromosomes made from NCBI AGPs
