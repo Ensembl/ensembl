@@ -194,18 +194,18 @@ sub seq {
   return 'N' x $self->length();
 }
 
-=head2 get_all_differences_Slice
+=head2 get_all_AlleleFeatures_Slice
 
     Args        : nonre
-    Example     : my $differences = $strainSlice->get_all_differences_Slice()
-    Description : Gets all differences between the StrainSlice object and the Slice is defined
+    Example     : my $af = $strainSlice->get_all_AlleleFeatures_Slice()
+    Description : Gets all AlleleFeatures between the StrainSlice object and the Slice is defined
     ReturnType  : listref of Bio::EnsEMBL::Variation::AlleleFeature
     Exceptions  : none
     Caller      : general
 
 =cut
 
-sub get_all_differences_Slice{
+sub get_all_AlleleFeatures_Slice{
     my $self = shift;
 
     return $self->{'alleleFeatures'};
@@ -535,4 +535,18 @@ sub mapper{
     }
     return $self->{'mapper'};
 }
+
+=head2 get_all_differences_Slice
+
+    Description : DEPRECATED use get_all_AlleleFeatures instead
+   
+=cut
+
+sub get_all_differences_Slice{
+    my $self = shift;
+    
+    deprecate('Use get_all_differences_Slice instead');
+    return $self->get_all_AlleleFeatures_Slice(@_);
+}
+
 1;
