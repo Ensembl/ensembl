@@ -95,6 +95,7 @@ sub header {
   my ($dba, $dbname) = @_;
 
   p ("<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>");
+  p ("<!DOCTYPE database [ <!ENTITY auml \"&#228;\">]>");
   p ("<database>");
   p ("<name>$dbname</name>");
 
