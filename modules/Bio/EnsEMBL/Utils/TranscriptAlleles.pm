@@ -96,7 +96,7 @@ sub get_all_ConsequenceType {
 
       #we have to consider het alleles
       my $string;
-      if ($allele->allele_string =~ /\|\\\//){
+      if ($allele->allele_string =~ /[\|\\\/]/){
 	  my @alleles = split /[\|\\\/]/,$allele->allele_string;
 	  if ($alleles[0] ne $allele->ref_allele_string){
 	      $string = $alleles[0];
@@ -107,8 +107,7 @@ sub get_all_ConsequenceType {
       }
       else{
 	  $string = $allele->allele_string;  
-      }
-    
+      }    
     my $opposite_strand = 0; #to indicate wether transcript and allele and in different strands
     if( $transcript->strand != $allele->strand ) {
       $string =~tr/ACGT/TGCA/;
