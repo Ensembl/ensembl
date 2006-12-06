@@ -96,8 +96,8 @@ sub get_all_ConsequenceType {
 
       #we have to consider het alleles
       my $string;
-      if ($allele->allele_string =~ /\//){
-	  my @alleles = split /\//,$allele->allele_string;
+      if ($allele->allele_string =~ /\|\\\//){
+	  my @alleles = split /[\|\\\/]/,$allele->allele_string;
 	  if ($alleles[0] ne $allele->ref_allele_string){
 	      $string = $alleles[0];
 	  }
