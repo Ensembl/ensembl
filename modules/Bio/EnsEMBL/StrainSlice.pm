@@ -24,10 +24,10 @@ Bio::EnsEMBL::StrainSlice - SubClass of the Slice. Represents the slice of the g
    my $seq = $strainSlice->seq();
    print $seq;
 
-   #get differences between this StrainSlice and the reference
-   my $differences = $strainSlice->get_all_differences_Slice();
-   foreach my $difference (@{$differences}){
-      print "Difference in position ", $difference->start,"-",$difference->end," in strain with allele ", $difference->allele_string,"\n";
+   #get allele features between this StrainSlice and the reference
+   my $afs = $strainSlice->get_all_AlleleFeatures_Slice();
+   foreach my $af (@{$afs}){
+      print "AlleleFeature in position ", $af->start,"-",$af->end," in strain with allele ", $af->allele_string,"\n";
    }
    #compare a strain against another strain
    my $strainSlice_2 = $slice->get_by_strain($strain_name_2);

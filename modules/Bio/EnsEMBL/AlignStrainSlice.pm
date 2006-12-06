@@ -29,7 +29,7 @@ Bio::EnsEMBL::AlignStrainSlice - Represents the slice of the genome aligned with
                                                      -STRAINS => \@strainSlices);
 
    #get coordinates of variation in alignSlice
-   my $alleleFeatures = $strainSlice1->get_all_differences_Slice();
+   my $alleleFeatures = $strainSlice1->get_all_AlleleFeature_Slice();
    foreach my $af (@{$alleleFeatures}){
        my $new_feature = $alignSlice->alignFeature($af, $strainSlice1);
        print "Coordinates of the feature in AlignSlice are: ", $new_feature->start, "-", $new_feature->end, "\n";
@@ -210,7 +210,7 @@ sub _get_indels{
     #go throuh all the strains getting ONLY the indels (length_diff <> 0)
     my @indels;
     foreach my $strainSlice (@{$self->strains}){
-	my $differences = $strainSlice->get_all_differences_Slice(); #need to check there are differences....
+	my $differences = $strainSlice->get_all_AlleleFeatures_Slice(); #need to check there are differences....
 	if (defined $differences){
 	    my @results = grep {$_->length_diff != 0} @{$differences};
 	    push @indels, @results;
