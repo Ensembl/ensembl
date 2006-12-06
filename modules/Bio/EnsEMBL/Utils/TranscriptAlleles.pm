@@ -85,6 +85,7 @@ sub get_all_ConsequenceType {
   my @same_codon; #contains up to 3 allele features, that are in the same codon, but each position can contain more than 1 allele
   my @out; #array containing the consequence types of the alleles in the transcript
   foreach my $allele (@alleles_ordered) {
+#  foreach my $allele (@{$alleles}) {
     #get consequence type of the AlleleFeature
     # my $new_allele = $allele->transform('chromosome');
     #my $consequence_type = Bio::EnsEMBL::Variation::ConsequenceType->new($transcript->dbID(),'',$allele->start,$allele->end,$allele->strand,[$allele->allele_string]);
@@ -92,7 +93,22 @@ sub get_all_ConsequenceType {
     ### This relies on the Allele being of the form i.e. a SNP! [ACGT-](/[ACGT-])+
     ### The rest don't work anyway until we have a AlignStrainSlice
     ### MUST BE SORTED....
-    my $string = $allele->allele_string;
+
+      #we have to consider het alleles
+      my $string;
+      if ($allele->allele_string =~ /\//){
+	  my @alleles = split /\//,$allele->allele_string;
+	  if ($alleles[0] ne $allele->ref_allele_string){
+	      $string = $alleles[0];
+	  }
+	  else{
+	      $string = $alleles[1];
+	  }
+      }
+      else{
+	  $string = $allele->allele_string;  
+      }
+    
     my $opposite_strand = 0; #to indicate wether transcript and allele and in different strands
     if( $transcript->strand != $allele->strand ) {
       $string =~tr/ACGT/TGCA/;
@@ -104,6 +120,8 @@ sub get_all_ConsequenceType {
     #calculate the consequence type of the Allele if different from the reference Allele
     if (($opposite_strand && $allele->ref_allele_string eq $allele->allele_string) || (!$opposite_strand && $allele->ref_allele_string eq $string)){      	#same allele as reference, there is no consequence, called SARA
       	#same allele as reference, there is no consequence, called SARA
+	#we have to calculate if there are more than 2 in the same codon
+	empty_codon(\@out,\@same_codon);	
 	$consequence_type->type('SARA');
 	push @out, $consequence_type;
 	next;
@@ -111,6 +129,7 @@ sub get_all_ConsequenceType {
 	
     my $ref_consequences = type_variation($transcript,"",$consequence_type);
     if ($allele->start != $allele->end){
+	empty_codon(\@out,\@same_codon);
 	#do not calculate for indels effects of 2 or more in same codon
 	push @out, @{$ref_consequences};
 	next;
@@ -118,11 +137,13 @@ sub get_all_ConsequenceType {
 
     my $new_consequence = shift @{$ref_consequences};
     if (! defined $new_consequence ) {
+	empty_codon(\@out,\@same_codon);
       push @out, $consequence_type; # should be empty
       next;
     }
 
     if ( !defined $new_consequence->aa_start){
+	empty_codon(\@out,\@same_codon);
 	push @out, $new_consequence;
 	next;
     }
@@ -154,15 +175,23 @@ sub get_all_ConsequenceType {
     }
   }
   #add last consequence_type
-  if (@same_codon == 1){
-	map {push @out, @{$_}} @same_codon;
-  }
-  elsif (@same_codon > 1){
-    calculate_same_codon(\@same_codon);
-    map {push @out, @{$_}} @same_codon;    
-  }
+  empty_codon(\@out,\@same_codon);
 
   return \@out;
+}
+
+sub empty_codon{
+    my $out = shift;
+    my $same_codon = shift;
+
+    if (@{$same_codon} == 1){
+	map {push @{$out}, @{$_}} @{$same_codon};
+    }
+    elsif (@{$same_codon} > 1){
+	calculate_same_codon($same_codon);
+	map {push @{$out}, @{$_}} @{$same_codon};    
+    }
+    @{$same_codon} = ();
 }
 
 # recalculates the effect of 2 or 3 SNPs in the same codon
