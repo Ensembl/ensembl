@@ -9,7 +9,7 @@ use Bio::EnsEMBL::Mapper::RangeRegistry;
 my ($transcript_host, $transcript_port, $transcript_user, $transcript_pass, $transcript_dbname,
     $oligo_host, $oligo_port, $oligo_user, $oligo_pass, $oligo_dbname,
     $xref_host, $xref_port, $xref_user, $xref_pass, $xref_dbname,
-    $print, $max_mismatches, $utr_length, $max_probesets_per_transcript, $max_transcripts, @arrays, $delete);
+    $max_mismatches, $utr_length, $max_transcripts_per_probeset, $max_transcripts, @arrays, $delete);
 
 GetOptions('transcript_host=s'      => \$transcript_host,
            'transcript_user=s'      => \$transcript_user,
@@ -28,10 +28,9 @@ GetOptions('transcript_host=s'      => \$transcript_host,
            'xref_dbname=s'          => \$xref_dbname,
 	   'mismatches=i'           => \$max_mismatches,
            'utr_length=i'           => \$utr_length,
-	   'max_probesets=i'        => \$max_probesets_per_transcript,
+	   'max_probesets=i'        => \$max_transcripts_per_probeset,
 	   'max_transcripts=i'      => \$max_transcripts,
 	   'arrays=s'               => \@arrays,
-	   'print'                  => \$print,
 	   'delete'                 => \$delete,
            'help'                   => sub { usage(); exit(0); });
 
@@ -41,7 +40,7 @@ $max_mismatches ||= 1;
 
 $utr_length ||= 2000;
 
-$max_probesets_per_transcript ||= 100;
+$max_transcripts_per_probeset ||= 100;
 
 @arrays = split(/,/,join(',',@arrays));
 
@@ -95,10 +94,13 @@ my $slice_adaptor = $transcript_db->get_SliceAdaptor();
 my $oligo_feature_adaptor = $oligo_db->get_OligoFeatureAdaptor();
 my $db_entry_adaptor = $xref_db->get_DBEntryAdaptor();
 
-my %count;
-
 my %promiscuous_probesets;
-my %dbentries_per_probeset;
+my %transcripts_per_probeset;
+
+my %transcript_ids;
+my %probeset_sizes;
+
+my %transcript_probeset_count; # key: transcript:probeset value: count
 
 $| = 1; # auto flush stdout
 
@@ -109,6 +111,9 @@ my $rr = Bio::EnsEMBL::Mapper::RangeRegistry->new();
 
 my @transcripts = @{$transcript_adaptor->fetch_all()};
 my $total =  scalar(@transcripts);
+
+open (LOG, ">${transcript_dbname}_probe2transcript.log");
+
 
 print "Mapping, percentage complete: ";
 
@@ -121,9 +126,12 @@ foreach my $transcript (@transcripts) {
     $last_pc = $pc;
   }
 
+  $i++;
+
   last if ($max_transcripts && $i >= $max_transcripts);
 
   my $stable_id = $transcript->stable_id();
+  $transcript_ids{$stable_id} = $transcript->dbID(); # needed later
 
   my $slice = $transcript->feature_Slice(); # note not ->slice() as this gets whole chromosome!
   my $extended_slice = $slice->expand(0, $utr_length);
@@ -149,11 +157,17 @@ foreach my $transcript (@transcripts) {
 
   foreach my $feature (@$oligo_features) {
 
-    my $probeset = $feature->probeset();
+    #next if ($transcript->strand() != $feature->strand());
 
-    next if ($promiscuous_probesets{$probeset});
+    my $probe = $feature->probe();
+    my $probeset = $probe->probeset();
 
-    my $probe_length = $feature->probe()->probelength();
+    foreach my $array (@{$probe->get_all_Arrays()}) {
+      $probeset_sizes{$probeset} = $array->setsize();
+    }
+    my $key = $transcript->stable_id() . ":" . $probeset;
+
+    my $probe_length = $probe->probelength();
     my $min_overlap = ($probe_length - $max_mismatches);
 
     my $exon_overlap = $rr->overlap_size("exonic", $feature->seq_region_start(), $feature->seq_region_end());
@@ -161,17 +175,15 @@ foreach my $transcript (@transcripts) {
 
     if ($exon_overlap >= $min_overlap) {
 
-      $count{'exonic'}++;
-      add_xref($transcript, $feature, $db_entry_adaptor) if (!$print);
+      $transcript_probeset_count{$key}++;
 
     } elsif ($utr_overlap >= $min_overlap) {
 
-      $count{'utr'}++;
-      add_xref($transcript, $feature, $db_entry_adaptor) if (!$print);
+      $transcript_probeset_count{$key}++;
 
     } else { # must be intronic
 
-      $count{'intronic'}++;
+      print LOG "Unmapped intronic " . $transcript->stable_id . "\t" . $probeset . " probe length $probe_length\n";
 
     }
   }
@@ -179,27 +191,103 @@ foreach my $transcript (@transcripts) {
   # TODO - make external_db array names == array names in OligoArray!
   # change oligo_array.name to be oligo_array.external_db_id ?
 
-  $i++;
-
 }
 
 print "\n";
 
-print_stats();
+# cache which arrays a probeset belongs to; key = probeset, value = space-separated array names
+my $arrays_per_probeset = cache_arrays_per_probeset($oligo_db);
+
+my $threshold = 0.5; # TODO - make this configurable
+
+print "Writing xrefs\n";
+# now loop over all the mappings and add xrefs for those that have a suitable number of matches
+foreach my $key (keys %transcript_probeset_count) {
+
+  my ($transcript, $probeset) = split (/:/, $key);
+
+  my $probeset_size = $probeset_sizes{$probeset};
+
+  my $hits = $transcript_probeset_count{$key};
+
+  if ($hits / $probeset_size >= $threshold) {
+
+    # only create xrefs for non-promiscuous probesets
+    if ($transcripts_per_probeset{$probeset} <= $max_transcripts_per_probeset) {
+
+      add_xref($transcript_ids{$transcript}, $probeset, $db_entry_adaptor);
+      $transcripts_per_probeset{$probeset}++;
+      print LOG "$probeset\t$transcript\tmapped\t$probeset_size\t$hits\n"; # TODO - record intron hits per probeset
+
+    } else {
+
+      print LOG "$probeset\t$transcript\tpromiscuous\t$probeset_size\t$hits\n"; # TODO - record intron hits per probeset
+      # TODO - remove mappings for probesets that end up being promiscuous
+
+    }
+
+  } else {
+
+    print LOG "$probeset\t$transcript\tinsufficient\t$probeset_size\t$hits\n";
+
+  }
+
+}
+
+
+# Find probesets that don't match any transcripts at all, write to log file
+log_orphan_probes();
+
+close (LOG);
 
 # ----------------------------------------------------------------------
 
-sub print_stats {
+sub log_orphan_probes {
 
-  my $e = $count{'exonic'};
-  my $i = $count{'intronic'};
-  my $u = $count{'utr'};
-  my $t = $e + $i + $u;
+  print "Logging probesets that don't map to any transcripts\n";
 
-  print "Total probesets: $t\n\n";
-  print "Exonic:  \t$e\t" . pc($e, $t) . "%\n";
-  print "Intronic:\t$i\t" . pc($i, $t) . "%\n";
-  print "UTR:     \t$u\t" . pc($u, $t) . "%\n\n";
+  foreach my $probeset (keys %{$arrays_per_probeset}) {
+
+    print LOG "$probeset\tNo transcript mappings\n" if (!$transcripts_per_probeset{$probeset});
+
+  }
+
+}
+
+# ----------------------------------------------------------------------
+
+sub cache_arrays_per_probeset {
+
+  my ($db) = @_;
+
+  print "Caching arrays per probeset\n";
+
+  my %result;
+
+  my $sth = $db->dbc()->prepare("SELECT op.probeset, oa.name FROM oligo_probe op, oligo_array oa WHERE oa.oligo_array_id=op.oligo_array_id GROUP BY op.probeset, oa.name ");
+  $sth->execute();
+  my ($probeset, $array);
+  $sth->bind_columns(\$probeset, \$array);
+
+  my $last_probeset = "";
+  my $arrays = "";
+
+  while($sth->fetch()){
+
+    if ($probeset eq $last_probeset) {
+      $arrays .= " " if ($arrays);
+      $arrays .= $array;
+    } else {
+      $arrays = $array;
+    }
+    $result{$probeset} = $arrays;
+    $last_probeset = $probeset;
+
+  }
+
+  $sth->finish();
+
+  return \%result;
 
 }
 
@@ -224,15 +312,11 @@ sub pc {
 
 sub add_xref {
 
-  my ($transcript, $feature, $dbea) = @_;
-
-  my $probeset = $feature->probeset();
+  my ($transcript_id, $probeset, $dbea) = @_;
 
   # store one xref/object_xref for each array-probeset-transcript combination
+  foreach my $array_name (split (/ /, $arrays_per_probeset->{$probeset})) {
 
-  foreach my $array (@{$feature->probe()->get_all_Arrays()}) {
-
-    my $array_name = $array->name();
     next if (@arrays && find_in_list($array_name, @arrays,) == -1 );
 
     # TODO - this only works if external_db db_name == array name; currently needs
@@ -252,20 +336,8 @@ sub add_xref {
 					 -info_type            => "MISC",  # TODO - change to PROBE when available
 					 -info_text            => "probe2transcript.pl test");
 
+    $dbea->store($dbe, $transcript_id, "Transcript");
 
-    $dbea->store($dbe, $transcript->dbID(), "Transcript");
-
-    # store the dbID of the newly created DBEntry in %dbentries_per_probeset
-    # so that promiscuous ones can be removed later; note format of value is
-    # $dbe->dbID:$transcript->dbID
-    push @{$dbentries_per_probeset{$probeset}}, $dbe->dbID() . ":" . $transcript->dbID();
-
-    # if any probesets map to more than 100 transcripts, ignore them in future and
-    # delete existing mappings to them
-    if (scalar(@{$dbentries_per_probeset{$probeset}}) > $max_probesets_per_transcript) {
-      $promiscuous_probesets{$probeset} = $probeset;
-      #remove_probeset_transcript_mappings($t_db, $probeset);
-    }
   }
 
 }
@@ -366,28 +438,28 @@ sub check_existing_and_exit {
 
 # Remove mappings for a particular probeset
 
-sub remove_probeset_transcript_mappings {
-
-  my ($dba, $probeset) = @_;
-
-  my $p = 0;
-
-  my $sth = $dba->dbc()->prepare("DELETE FROM object_xref WHERE xref_id=? AND ensembl_object_type='Transcript' AND ensembl_id=?");
-
-  my $values = @{$dbentries_per_probeset{$probeset}};
-
-  foreach my $value (@{$dbentries_per_probeset{$probeset}}) {
-
-    my ($dbe_id, $transcript_id) = split(/:/, $value);
-
-    $sth->execute($dbe_id, $transcript_id);
-    $p++;
-
-  }
-
-  $sth->finish();
-
-}
+#sub remove_probeset_transcript_mappings {
+#
+#  my ($dba, $probeset) = @_;
+#
+#  my $p = 0;
+#
+#  my $sth = $dba->dbc()->prepare("DELETE FROM object_xref WHERE xref_id=? AND ensembl_object_type='Transcript' AND ensembl_id=?");
+#
+#  my $values = @{$dbentries_per_probeset{$probeset}};
+#
+#  foreach my $value (@{$dbentries_per_probeset{$probeset}}) {
+#
+#    my ($dbe_id, $transcript_id) = split(/:/, $value);
+#
+#    $sth->execute($dbe_id, $transcript_id);
+#    $p++;
+#
+#  }
+#
+#  $sth->finish();
+#
+#}
 
 # ----------------------------------------------------------------------
 
@@ -475,8 +547,6 @@ sub usage {
   MISCELLANEOUS:
 
   [--delete]          Delete existing xrefs and object_xrefs. No deletion is done by default.
-
-  [--print]           Print information about mapping, don't store in database.
 
   [--max_transcripts] Only use this many transcripts. Useful for debugging.
 
