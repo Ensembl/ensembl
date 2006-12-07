@@ -28,6 +28,7 @@ General options:
 Specific options:
 
     --chromosomes, --chr=LIST           only process LIST chromosomes
+    --prune								delete data in the database from a previous run
     --limit_file                        only process gene_ids in this file
 
 =head1 DESCRIPTION
@@ -80,7 +81,6 @@ use Bio::EnsEMBL::Utils::ConversionSupport;
 use Bio::EnsEMBL::DensityType;
 use Bio::EnsEMBL::DensityFeature;
 use POSIX;
-use Data::Dumper;
 
 $| = 1;
 
@@ -88,12 +88,8 @@ my $support = new Bio::EnsEMBL::Utils::ConversionSupport($SERVERROOT);
 
 # parse options
 $support->parse_common_options(@_);
-$support->parse_extra_options(
-							  'chromosomes|chr=s@',
-							  'limit_file=s');
-$support->allowed_params($support->get_common_params,
-						 'chromosomes',
-						 'limit_file');
+$support->parse_extra_options('chromosomes|chr=s@', 'prune', 'limit_file=s');
+$support->allowed_params($support->get_common_params, 'chromosomes', 'prune', 'limit_file');
 
 if ($support->param('help') or $support->error) {
     warn $support->error if $support->error;
@@ -117,8 +113,94 @@ my $aa = $dba->get_AnalysisAdaptor;
 my $attrib_adaptor = $dba->get_AttributeAdaptor;
 my $dbh = $dba->dbc->db_handle;
 
+
 # split chromosomes by size and determine block size
 my $chr_slices = $support->split_chromosomes_by_size(5000000);
+
+# known biotype/status pairs and associated density type
+
+# Note: the types starting with 'total_...' should only be used for the stats stuff and are composed of other types, 
+# which are in the array pointed to by the 'parts' key
+
+
+my %gene_types= (
+	"protein_coding_KNOWN" => {logic_name => "knownPCodDensity", code => "KnownPCCount", description => "Number of Known Protein Coding"},
+	"protein_coding_in_progress_KNOWN" => {logic_name => "knownPCodDensity", code => "KnwnPCProgCount", description => "Number of Known Protein coding genes in progress" },
+	"processed_transcript_KNOWN"  => {logic_name => "knownPTransDensity", code => "KnownPTCount", description => "Number of Known Processed Transcripts" },
+	"protein_coding_NOVEL"  => {logic_name => "novelPCodDensity", code => "NovelPCCount", description => "Number of Novel Protein Coding"},
+	"protein_coding_in_progress_NOVEL" => {logic_name => "novelPCodDensity", code => "NovPCProgCount", description => "Number of Novel Protein coding genes in progress"},
+	"processed_transcript_NOVEL" => {logic_name => "novelPTransDensity", code => "NovelPTCount", description => "Number of Novel transcripts"},
+	"processed_transcript_PUTATIVE" => {logic_name => "putativePTransDensity", code => "PutPTCount", description => "Number of Putative processed transcripts"},
+	"protein_coding_PREDICTED" => {logic_name => "predictedPCodDensity", code => "PredPCCount", description => "Number of Predicted transcripts"},
+	"Ig_pseudogene_segment_UNKNOWN"  => {logic_name => "IgPseudoSegDensity", code => "IgPsSegCount", description => "Number of Ig Pseudogene Segments"},
+	"Ig_segment_NOVEL" => {logic_name => "IgSegDensity", code => "", description => ""},
+	"Ig_segment_KNOWN"  => {logic_name => "IgSegDensity", code => "", description => ""},
+	"pseudogene_UNKNOWN" => {logic_name => "pseudoGeneDensity", code => "", description => ""},
+	"processed_pseudogene_UNKNOWN" => {logic_name => "pseudoGeneDensity", code => "ProcPsCount", description => "Number of Processed pseudogenes"},
+	"unprocessed_pseudogene_UNKNOWN" => {logic_name => "pseudoGeneDensity", code => "UnprocPsCount", description => "Number of Unprocessed pseudogenes"},
+	"total_pseudogene_UNKNOWN" => {logic_name => "", code => "TotPsCount", description => "Total Number of Pseudogenes", parts => ['pseudogene_UNKNOWN', 'processed_pseudogene_UNKNOWN', 'unprocessed_pseudogene_UNKNOWN']},
+	"total_Ig_segment_UNKNOWN" => {logic_name => "", code => "IgSegCount", description => "Number of Ig Segments", parts => ['Ig_segment_NOVEL','Ig_segment_KNOWN']},
+	"processed_transcript_UNKNOWN"     => {logic_name => "PTransDensity", code => "PTCount", description => "Number of Processed Transcripts"},
+    "processed_transcript_PREDICTED"   => {logic_name => "PredPTransDensity", code => "PredPTCount", description => "Number of Predicted Processed Transcripts"}
+);
+
+if($support->param('prune')){
+	# delete the results in the database from a previous run
+	
+	$support->log("running in prune mode\n");
+	$support->log("pruning 1 (tables analysis, density_type, density_feature)\n");
+	
+	# Note: Need to use a left-join in the multitable delete otherwise rows in e.g. analysis which have program= vega_gene_density.pl, but no corresponding rows in the density_type or density_feature table will NOT be deleted.
+	
+	my $query= "delete analysis, density_type, density_feature from analysis left join density_type on analysis.analysis_id= density_type.analysis_id left join density_feature on density_type.density_type_id= density_feature.density_type_id where analysis.program= 'vega_gene_density.pl'";
+
+
+	if($dbh->do($query)){
+
+		$support->log("prune 1 was successfull: any previous entries in the database generated by this script have been deleted\n");
+
+	}
+	else{
+
+		$support->log_error("prune 1 failed: any previous entries in the database generated by this script have NOT been deleted\n");
+	}
+
+	
+	foreach my $name(keys %gene_types){
+		
+		my $href= $gene_types{$name};
+		my $code= $href->{'code'};
+		
+		if($code){
+			#$query= "delete attrib_type, seq_region_attrib from attrib_type, seq_region_attrib where (attrib_type.code= '$code') and (attrib_type.attrib_type_id= seq_region_attrib.attrib_type_id)";
+			$query= "delete attrib_type, seq_region_attrib from attrib_type left join seq_region_attrib on attrib_type.attrib_type_id= seq_region_attrib.attrib_type_id where attrib_type.code= '$code'";
+			if($dbh->do($query)){
+
+				$support->log("prune 2 was successfull for code $code\n");
+		
+			}
+			else{
+		
+				$support->log_error("prune 2 failed for code $code\n");
+			}
+				
+		
+		}
+	
+	
+	
+	}
+	
+	
+	
+	
+	
+	
+	$support->finish_log;
+	exit;
+	
+
+}
 
 #limit to gene_stable_ids ?
 my (%gene_ids, %found_genes);
@@ -130,25 +212,6 @@ if ($support->param('limit_file')) {
 	}
 }
 
-# biotype/status pairs and associated density type
-my %gene_types = (
-    "protein_coding_KNOWN"             => "knownPCodDensity",
-    "protein_coding_in_progress_KNOWN" => "knownPCodDensity",
-	"processed_transcript_KNOWN"       => "knownPTransDensity",
-    "protein_coding_NOVEL"             => "novelPCodDensity",
-    "protein_coding_in_progress_NOVEL" => "novelPCodDensity",
-    "processed_transcript_NOVEL"       => "novelPTransDensity",
-    "processed_transcript_PUTATIVE"    => "putativePTransDensity",
-    "protein_coding_PREDICTED"         => "predictedPCodDensity",
-    "Ig_pseudogene_segment_UNKNOWN"    => "IgPseudoSegDensity",
-    "Ig_segment_NOVEL"                 => "IgSegDensity",
-	"Ig_segment_KNOWN"                 => "IgSegDensity",
-    "pseudogene_UNKNOWN"               => "pseudoGeneDensity",
-    "processed_pseudogene_UNKNOWN"     => "pseudoGeneDensity",
-    "unprocessed_pseudogene_UNKNOWN"   => "pseudoGeneDensity",
-#    "processed_transcript_UNKNOWN"     => "PTransDensity",
-    "processed_transcript_PREDICTED"   => "PredPTransDensity",
-);
 
 # check for new biotype/status pairs
 my $sql = qq(
@@ -177,20 +240,27 @@ map { $support->log(sprintf($FMT, $_, $type_status{$_}), 1) }
 $support->log("\n");
 if ($new) {
     $support->log_warning("There are new biotype/status pairs! You might need to adapt Bio::EnsEMBL::ColourMap, EnsEMBL::Sanger_vega::Component::Chromosome and configure mapview to show them.\n\n");
-	exit;
 }
 
 
 # create Analysis and DensityType objects
 my (%density_types, $dtcache);
 foreach my $type (keys %gene_types) {
-    $density_types{$gene_types{$type}} = 1;
+    
+    # ignore any type starting with 'total_'
+    if($type =~/^total_/){
+    
+    	next;
+    }
+    
+    
+    $density_types{$gene_types{$type}{'logic_name'}} = 1;
     my $analysis = new Bio::EnsEMBL::Analysis (
         -program     => "vega_gene_density.pl",
         -database    => "ensembl",
         -gff_source  => "vega_gene_density.pl",
         -gff_feature => "density",
-        -logic_name  => $gene_types{$type}
+        -logic_name  => $gene_types{$type}{'logic_name'}
     );
     $aa->store($analysis) unless ($support->param('dry_run'));
     foreach my $block_size (keys %{ $chr_slices }) {
@@ -200,10 +270,9 @@ foreach my $type (keys %gene_types) {
             -value_type => 'sum'
         );
         $dta->store($dt) unless ($support->param('dry_run'));
-        $dtcache->{$block_size}->{$gene_types{$type}} = $dt;
+        $dtcache->{$block_size}->{$gene_types{$type}{'logic_name'}} = $dt;
     }
 }
-
 
 # loop over block sizes
 foreach my $block_size (keys %{ $chr_slices }) {
@@ -240,20 +309,21 @@ foreach my $block_size (keys %{ $chr_slices }) {
                 $current_start = $current_end + 1;
                 next;
             }
-      GENE: foreach my $gene (@{$genes}) {
-				if ($support->param('limit_file')) {
+           GENE: foreach my $gene (@{$genes}) {
+           
+           		if ($support->param('limit_file')) {
 					my $gsi = $gene->stable_id;
 					next GENE unless ($gene_ids{$gsi});
 					$gene_ids{$gsi} |= 2;
 				}
-
+				
                 # only count genes that don't overlap the subslice start
                 # (since these were already counted in the last bin)
                 my $gene_type = $gene->biotype . '_' . $gene->status;
                 if ($gene->start >= 1) {
                     $total{$gene_type}++;
                 }
-                $num{$gene_types{$gene_type}}++;
+                $num{$gene_types{$gene_type}{'logic_name'}}++;
             }
             
             # create DensityFeature objects for each type
@@ -270,7 +340,7 @@ foreach my $block_size (keys %{ $chr_slices }) {
             
             # logging
             $support->log_verbose("Chr: $chr | Bin: $i/$bins | Counts: ".
-                join(",", map { $num{$gene_types{$_}} || 0 }
+                join(",", map { $num{$gene_types{$_}{'logic_name'}} || 0 }
                     sort keys %gene_types)."\n", 2);
         }
         
@@ -279,116 +349,51 @@ foreach my $block_size (keys %{ $chr_slices }) {
         
         # stats
         my @attribs;
-        push @attribs, Bio::EnsEMBL::Attribute->new(
-            -NAME => 'protein_coding_KNOWN',
-            -CODE => 'KnownPCCount',
-            -VALUE => $total{'protein_coding_KNOWN'} || 0,
-            -DESCRIPTION => 'Number of Known Protein Coding',
-        );
-
-        push @attribs, Bio::EnsEMBL::Attribute->new(
-            -NAME => 'processed_transcript_KNOWN',
-            -CODE => 'KnownPTCount',
-            -VALUE => $total{'processed_transcript_KNOWN'} || 0,
-            -DESCRIPTION => 'Number of Known Processed Transcripts',
-        );
-
-      push @attribs, Bio::EnsEMBL::Attribute->new(
-            -NAME => 'processed_transcript_PREDICTED',
-            -CODE => 'PredPTCount',
-            -VALUE => $total{'processed_transcript_PREDICTED'} || 0,
-            -DESCRIPTION => 'Number of Predicted Processed Transcripts',
-        );
-
-      push @attribs, Bio::EnsEMBL::Attribute->new(
-            -NAME => 'processed_transcript_UNKNOWN',
-            -CODE => 'PTCount',
-            -VALUE => $total{'processed_transcript_UNKNOWN'} || 0,
-            -DESCRIPTION => 'Number of Processed Transcripts',
-        );
-
-        push @attribs, Bio::EnsEMBL::Attribute->new(
-            -NAME => 'protein_coding_NOVEL',
-            -CODE => 'NovelPCCount',
-            -VALUE => $total{'protein_coding_NOVEL'} || 0,
-            -DESCRIPTION => 'Number of Novel Protein Coding'
-        );
         
-        push @attribs, Bio::EnsEMBL::Attribute->new(
-            -NAME => 'processed_transcript_NOVEL',
-            -CODE => 'NovelPTCount',
-            -VALUE => $total{'processed_transcript_NOVEL'} || 0,
-            -DESCRIPTION => 'Number of Novel transcripts'
-        );
+        foreach my $name(keys %gene_types){
         
-        push @attribs, Bio::EnsEMBL::Attribute->new(
-            -NAME => 'processed_transcript_PUTATIVE',
-            -CODE => 'PutPTCount',
-            -VALUE => $total{'processed_transcript_PUTATIVE'} || 0,
-            -DESCRIPTION => 'Number of Putative processed transcripts'
-        );
+        	my $href= $gene_types{$name};
+        	
+        	my $code= $href->{'code'};
+        	next unless $code;
+        	
+        	
+        	my $description= $href->{'description'};
+        	my $value=0;
+        	
+        	if(exists $href->{'parts'}){
+        		#contains multiple elements
+        		
+        		
+        		foreach my $part($href->{'parts'}){
+        		
+        			$value += $total{$part} || 0;
+        		
+        		
+        		}
+        		
+        	
+        	}else{
+        	
+        		#contains a single element
+        		$value= $total{$name} || 0;
+        		
+        	}
+        	
+        	push @attribs, Bio::EnsEMBL::Attribute->new(
+	            -NAME => $name,
+	            -CODE => $code,
+	            -VALUE => $value,
+	            -DESCRIPTION => $description
+	        );
         
-        push @attribs, Bio::EnsEMBL::Attribute->new(
-            -NAME => 'protein_coding_PREDICTED',
-            -CODE => 'PredPCCount',
-            -VALUE => $total{'protein_coding_PREDICTED'} || 0,
-            -DESCRIPTION => 'Number of Predicted transcripts'
-        );
+        }
         
-        push @attribs, Bio::EnsEMBL::Attribute->new(
-            -NAME => 'total_Ig_segment_UNKNOWN',
-            -CODE => 'IgSegCount',
-            -VALUE => $total{'Ig_segment_NOVEL'}
-						+ $total{'Ig_segment_KNOWN'} || 0,
-            -DESCRIPTION => 'Number of Ig Segments'
-        );
+       
         
-        push @attribs, Bio::EnsEMBL::Attribute->new(
-            -NAME => 'Ig_pseudogene_segment_UNKNOWN',
-            -CODE => 'IgPsSegCount',
-            -VALUE => $total{'Ig_pseudogene_segment_UNKNOWN'} || 0,
-            -DESCRIPTION => 'Number of Ig Pseudogene Segments'
-        );
-        
-        push @attribs, Bio::EnsEMBL::Attribute->new(
-            -NAME => 'total_pseudogene_UNKNOWN',
-            -CODE => 'TotPsCount',
-            -VALUE => ($total{'pseudogene_UNKNOWN'}
-                        + $total{'processed_pseudogene_UNKNOWN'}
-                        + $total{'unprocessed_pseudogene_UNKNOWN'}) || 0,
-            -DESCRIPTION => 'Total Number of Pseudogenes'
-        );
-        
-        push @attribs, Bio::EnsEMBL::Attribute->new(
-            -NAME => 'processed_pseudogene_UNKNOWN',
-            -CODE => 'ProcPsCount',
-            -VALUE => $total{'processed_pseudogene_UNKNOWN'} || 0,
-            -DESCRIPTION => 'Number of Processed pseudogenes'
-        );
-        
-        push @attribs, Bio::EnsEMBL::Attribute->new(
-            -NAME => 'unprocessed_pseudogene_UNKNOWN',
-            -CODE => 'UnprocPsCount',
-            -VALUE => $total{'unprocessed_pseudogene_UNKNOWN'} || 0,
-            -DESCRIPTION => 'Number of Unprocessed pseudogenes'
-        );
-        
-        push @attribs, Bio::EnsEMBL::Attribute->new(
-            -NAME => 'protein_coding_in_progress_KNOWN',
-            -CODE => 'KnwnPCProgCount',
-            -VALUE => $total{'protein_coding_in_progress_KNOWN'} || 0,
-            -DESCRIPTION => 'Number of Known Protein coding genes in progress'
-        );
-        
-        push @attribs, Bio::EnsEMBL::Attribute->new(
-            -NAME => 'protein_coding_in_progress_NOVEL',
-            -CODE => 'NovPCProgCount',
-            -VALUE => $total{'protein_coding_in_progress_NOVEL'} || 0,
-            -DESCRIPTION => 'Number of Novel Protein coding genes in progress'
-        );
 
         $attrib_adaptor->store_on_Slice($slice, \@attribs) unless ($support->param('dry_run'));
-
+        
         # log stats
         $support->log("\n");
         $support->log("Totals for chr $chr:\n", 1);
@@ -397,12 +402,15 @@ foreach my $block_size (keys %{ $chr_slices }) {
         map { $support->log(sprintf($FMT, $_, $total{$_}), 2) } sort keys %total;
         $support->log_stamped("\nDone.\n\n", 1);
     }
+    $support->log_stamped("Done.\n");
 }
+
 if (%gene_ids) {
 	my $no_genes_to_look_for = keys %gene_ids;
 	my (@genes_not_found) = grep {$gene_ids{$_} == 1} keys %gene_ids;
 	$support->log("Of the $no_genes_to_look_for genes in ".$support->param('limit_file')." , the following were missing: @genes_not_found\n");
 }
+
 $support->log_stamped("Done.\n");
 
 # finish logfile
