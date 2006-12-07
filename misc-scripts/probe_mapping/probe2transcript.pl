@@ -9,7 +9,8 @@ use Bio::EnsEMBL::Mapper::RangeRegistry;
 my ($transcript_host, $transcript_port, $transcript_user, $transcript_pass, $transcript_dbname,
     $oligo_host, $oligo_port, $oligo_user, $oligo_pass, $oligo_dbname,
     $xref_host, $xref_port, $xref_user, $xref_pass, $xref_dbname,
-    $max_mismatches, $utr_length, $max_transcripts_per_probeset, $max_transcripts, @arrays, $delete);
+    $max_mismatches, $utr_length, $max_transcripts_per_probeset, $max_transcripts, @arrays, $delete,
+    $mapping_threshold);
 
 GetOptions('transcript_host=s'      => \$transcript_host,
            'transcript_user=s'      => \$transcript_user,
@@ -30,6 +31,7 @@ GetOptions('transcript_host=s'      => \$transcript_host,
            'utr_length=i'           => \$utr_length,
 	   'max_probesets=i'        => \$max_transcripts_per_probeset,
 	   'max_transcripts=i'      => \$max_transcripts,
+	   'threshold=s'            => \$mapping_threshold,
 	   'arrays=s'               => \@arrays,
 	   'delete'                 => \$delete,
            'help'                   => sub { usage(); exit(0); });
@@ -41,6 +43,8 @@ $max_mismatches ||= 1;
 $utr_length ||= 2000;
 
 $max_transcripts_per_probeset ||= 100;
+
+$mapping_threshold ||= 0.5;
 
 @arrays = split(/,/,join(',',@arrays));
 
@@ -198,8 +202,6 @@ print "\n";
 # cache which arrays a probeset belongs to; key = probeset, value = space-separated array names
 my $arrays_per_probeset = cache_arrays_per_probeset($oligo_db);
 
-my $threshold = 0.5; # TODO - make this configurable
-
 print "Writing xrefs\n";
 # now loop over all the mappings and add xrefs for those that have a suitable number of matches
 foreach my $key (keys %transcript_probeset_count) {
@@ -210,7 +212,7 @@ foreach my $key (keys %transcript_probeset_count) {
 
   my $hits = $transcript_probeset_count{$key};
 
-  if ($hits / $probeset_size >= $threshold) {
+  if ($hits / $probeset_size >= $mapping_threshold) {
 
     # only create xrefs for non-promiscuous probesets
     if ($transcripts_per_probeset{$probeset} <= $max_transcripts_per_probeset) {
@@ -233,7 +235,6 @@ foreach my $key (keys %transcript_probeset_count) {
   }
 
 }
-
 
 # Find probesets that don't match any transcripts at all, write to log file
 log_orphan_probes();
@@ -543,6 +544,8 @@ sub usage {
                       to more than this number of transcripts. Defaults to 100.
 
   [--arrays]          Comma-separated list of arrays to use. Defaults to all arrays.
+
+  [--threshold]       Fraction of probes per probeset that have to map. Default 0.5 
 
   MISCELLANEOUS:
 
