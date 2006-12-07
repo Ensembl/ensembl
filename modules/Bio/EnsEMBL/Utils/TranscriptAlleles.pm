@@ -95,29 +95,30 @@ sub get_all_ConsequenceType {
     ### MUST BE SORTED....
 
       #we have to consider het alleles
-      my $string;
+      my $reverse_string;
+      my $allele_string;
       if ($allele->allele_string =~ /[\|\\\/]/){
 	  my @alleles = split /[\|\\\/]/,$allele->allele_string;
 	  if ($alleles[0] ne $allele->ref_allele_string){
-	      $string = $alleles[0];
+	      $allele_string = $alleles[0];
 	  }
 	  else{
-	      $string = $alleles[1];
+	      $allele_string = $alleles[1];
 	  }
       }
       else{
-	  $string = $allele->allele_string;  
+	  $allele_string = $allele->allele_string;  
       }    
     my $opposite_strand = 0; #to indicate wether transcript and allele and in different strands
     if( $transcript->strand != $allele->strand ) {
-      $string =~tr/ACGT/TGCA/;
+	$reverse_string = $allele_string;
+      $reverse_string =~tr/ACGT/TGCA/;
       $opposite_strand = 1;
     }
 
-    my $consequence_type = Bio::EnsEMBL::Variation::ConsequenceType->new($transcript->dbID(),'',$allele->start, $allele->end, $transcript->strand, [$string]);
-
+    my $consequence_type = Bio::EnsEMBL::Variation::ConsequenceType->new($transcript->dbID(),'',$allele->start, $allele->end, $transcript->strand, [$allele_string]);
     #calculate the consequence type of the Allele if different from the reference Allele
-    if (($opposite_strand && $allele->ref_allele_string eq $allele->allele_string) || (!$opposite_strand && $allele->ref_allele_string eq $string)){      	#same allele as reference, there is no consequence, called SARA
+    if (($opposite_strand && $allele->ref_allele_string eq $allele_string) || (!$opposite_strand && $allele->ref_allele_string eq $reverse_string)){      	#same allele as reference, there is no consequence, called SARA
       	#same allele as reference, there is no consequence, called SARA
 	#we have to calculate if there are more than 2 in the same codon
 	empty_codon(\@out,\@same_codon);	
