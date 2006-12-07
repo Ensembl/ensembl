@@ -84,8 +84,10 @@ sub get_all_ConsequenceType {
   my @alleles_ordered = sort { $a->start <=> $b->start} @$alleles; #sort the alleles by the genomic position
   my @same_codon; #contains up to 3 allele features, that are in the same codon, but each position can contain more than 1 allele
   my @out; #array containing the consequence types of the alleles in the transcript
+
   foreach my $allele (@alleles_ordered) {
-    #get consequence type of the AlleleFeature
+
+ #get consequence type of the AlleleFeature
     # my $new_allele = $allele->transform('chromosome');
     #my $consequence_type = Bio::EnsEMBL::Variation::ConsequenceType->new($transcript->dbID(),'',$allele->start,$allele->end,$allele->strand,[$allele->allele_string]);
     ### REAL HACK BY js5 because something is borked in TranscriptMapper
@@ -101,6 +103,10 @@ sub get_all_ConsequenceType {
 
     my $consequence_type = Bio::EnsEMBL::Variation::ConsequenceType->new($transcript->dbID(),'',$allele->start, $allele->end, $transcript->strand, [$string]);
 
+   if ($allele->variation_name eq 'rs16805446') {
+     push @out, $consequence_type;
+     next;
+   }
     #calculate the consequence type of the Allele if different from the reference Allele
     if (($opposite_strand && $allele->ref_allele_string eq $allele->allele_string) || (!$opposite_strand && $allele->ref_allele_string eq $string)){      	#same allele as reference, there is no consequence, called SARA
       	#same allele as reference, there is no consequence, called SARA
@@ -153,6 +159,7 @@ sub get_all_ConsequenceType {
 	push @{$same_codon[0]}, $new_consequence; #push the element not in the same codon
     }
   }
+
   #add last consequence_type
   if (@same_codon == 1){
 	map {push @out, @{$_}} @same_codon;
@@ -161,7 +168,6 @@ sub get_all_ConsequenceType {
     calculate_same_codon(\@same_codon);
     map {push @out, @{$_}} @same_codon;    
   }
-
   return \@out;
 }
 
