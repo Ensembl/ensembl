@@ -183,12 +183,16 @@ sub run {
       if ( $checkdownload ) {   
 
          my $check_file = "$dir/$file" ;   
+	 print "FILE:$check_file\n";
          $check_file =~s/\.gz//; 
          $check_file =~s/\.Z//; 
+	 print "FILE:$check_file\n";
          print "checking for file $check_file\n" ; 
          if (-e "$check_file" ) { 
            print "SKIPPING $file because file $check_file already exists\n" ; 
            $skipdownload = 1 ;
+	   $file =~s/\.gz//; 
+	   $file=~s/\.Z//; 
          } else { 
           print "File $check_file does not exist. \n scheduling $dir/$file for download ..........\n" ; 
         }
@@ -254,6 +258,9 @@ sub run {
 	}
 
       }
+
+      $file =~s/\.gz//; # if skipdownload set this will not have been done yet.
+      $file=~s/\.Z//;   # if it has no harm done
 
       if ($file_from_archive) {
 	push @new_file, $file_from_archive;
