@@ -183,10 +183,8 @@ sub run {
       if ( $checkdownload ) {   
 
          my $check_file = "$dir/$file" ;   
-	 print "FILE:$check_file\n";
          $check_file =~s/\.gz//; 
          $check_file =~s/\.Z//; 
-	 print "FILE:$check_file\n";
          print "checking for file $check_file\n" ; 
          if (-e "$check_file" ) { 
            print "SKIPPING $file because file $check_file already exists\n" ; 
