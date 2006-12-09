@@ -274,6 +274,12 @@ foreach my $type (keys %gene_types) {
     }
 }
 
+
+# need a hash to stop duplcations at line
+my %chromosome_done=();
+
+
+
 # loop over block sizes
 foreach my $block_size (keys %{ $chr_slices }) {
     $support->log("Available chromosomes using block size of $block_size:\n    ");
@@ -345,7 +351,10 @@ foreach my $block_size (keys %{ $chr_slices }) {
         }
         
         # store DensityFeatures for the chromosome
+        
         $dfa->store(@density_features) unless ($support->param('dry_run'));
+        	
+        
         
         # stats
         my @attribs;
@@ -365,9 +374,9 @@ foreach my $block_size (keys %{ $chr_slices }) {
         		#contains multiple elements
         		
         		
-        		foreach my $part($href->{'parts'}){
+        		foreach my $part(@{$href->{'parts'}}){
         		
-        			$value += $total{$part} || 0;
+        			$value += ($total{$part} || 0);
         		
         		
         		}
@@ -390,9 +399,13 @@ foreach my $block_size (keys %{ $chr_slices }) {
         }
         
        
+        if(! $chromosome_done{$chr}){
+        	$attrib_adaptor->store_on_Slice($slice, \@attribs) unless ($support->param('dry_run'));
+        	$chromosome_done{$chr}=1;
         
+        }
 
-        $attrib_adaptor->store_on_Slice($slice, \@attribs) unless ($support->param('dry_run'));
+        
         
         # log stats
         $support->log("\n");
