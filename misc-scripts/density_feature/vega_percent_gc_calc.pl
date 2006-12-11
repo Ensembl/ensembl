@@ -105,7 +105,10 @@ my $dbh= $dba->dbc->db_handle;
 # check for prune option (undo)
 if($support->param('prune')){
 
-	my $query= "delete analysis, density_type, density_feature from analysis, density_type, density_feature where (analysis.program= 'percent_gc_calc.pl') and (analysis.analysis_id= density_type.analysis_id) and (density_type.density_type_id= density_feature.density_type_id)";
+	my $query= "delete analysis, density_type, density_feature from analysis left join density_type on  analysis.analysis_id= density_type.analysis_id left join density_feature on density_type.density_type_id= density_feature.density_type_id where analysis.program= 'percent_gc_calc.pl'";
+	
+	
+	#my $query= "delete analysis, density_type, density_feature from analysis, density_type, density_feature where (analysis.program= 'percent_gc_calc.pl') and (analysis.analysis_id= density_type.analysis_id) and (density_type.density_type_id= density_feature.density_type_id)";
 
 	if($dbh->do($query)){
 
