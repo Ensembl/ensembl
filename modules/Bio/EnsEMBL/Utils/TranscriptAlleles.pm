@@ -94,31 +94,31 @@ sub get_all_ConsequenceType {
     ### The rest don't work anyway until we have a AlignStrainSlice
     ### MUST BE SORTED....
 
-      #we have to consider het alleles
-      my $reverse_string;
-      my $allele_string;
-      if ($allele->allele_string =~ /[\|\\\/]/){
-	  my @alleles = split /[\|\\\/]/,$allele->allele_string;
-	  if ($alleles[0] ne $allele->ref_allele_string){
-	      $allele_string = $alleles[0];
+    #we have to consider het alleles
+    my $allele_string;
+    if ($allele->allele_string =~ /[\|\\\/]/){
+      my @alleles = split /[\|\\\/]/,$allele->allele_string;
+      if ($alleles[0] ne $allele->ref_allele_string){
+	$allele_string = $alleles[0];
 	  }
-	  else{
-	      $allele_string = $alleles[1];
-	  }
-      }
       else{
-	  $allele_string = $allele->allele_string;  
-      }    
+	$allele_string = $alleles[1];
+      }
+    }
+    else{
+      $allele_string = $allele->allele_string;  
+    }    
     my $opposite_strand = 0; #to indicate wether transcript and allele and in different strands
+    my $transcript_allele = $allele_string;
     if( $transcript->strand != $allele->strand ) {
-	$reverse_string = $allele_string;
-      $reverse_string =~tr/ACGT/TGCA/;
+      $transcript_allele =~tr/ACGT/TGCA/;
       $opposite_strand = 1;
     }
 
-    my $consequence_type = Bio::EnsEMBL::Variation::ConsequenceType->new($transcript->dbID(),'',$allele->start, $allele->end, $transcript->strand, [$allele_string]);
+    my $consequence_type = Bio::EnsEMBL::Variation::ConsequenceType->new($transcript->dbID(),'',$allele->start, $allele->end, $transcript->strand, [$transcript_allele]);
     #calculate the consequence type of the Allele if different from the reference Allele
-    if (($opposite_strand && $allele->ref_allele_string eq $allele_string) || (!$opposite_strand && $allele->ref_allele_string eq $reverse_string)){      	#same allele as reference, there is no consequence, called SARA
+    #if (($opposite_strand && $allele->ref_allele_string eq $allele_string) || (!$opposite_strand && $allele->ref_allele_string eq $allele_string)){      	#same allele as reference, there is no consequence, called SARA
+    if ($allele->ref_allele_string eq $allele_string) {      	#same allele as reference, there is no consequence, called SARA
       	#same allele as reference, there is no consequence, called SARA
 	#we have to calculate if there are more than 2 in the same codon
 	empty_codon(\@out,\@same_codon);	
