@@ -138,19 +138,23 @@ foreach my $transcript (@transcripts) {
   $transcript_ids{$stable_id} = $transcript->dbID(); # needed later
 
   my $slice = $transcript->feature_Slice(); # note not ->slice() as this gets whole chromosome!
-  my $extended_slice = $slice->expand(0, $utr_length);
+  my $extended_slice = $slice->expand(0, $utr_length); # this takes account of strand
 
   my $exons = $transcript->get_all_Exons();
 
   $rr->flush();
 
   foreach my $exon (@$exons) {
-    my $start = $exon->seq_region_start() - 13; # XXX ceil(25/2) like Craig's - do this properly
-    my $end = $exon->seq_region_end() + 13;
+    my $start = $exon->seq_region_start();
+    my $end = $exon->seq_region_end();
     $rr->check_and_register("exonic", $start, $end);
   }
 
-  $rr->check_and_register("utr", $extended_slice->end()-$utr_length, $extended_slice->end());
+  if ($transcript->strand() == 1) {
+    $rr->check_and_register("utr", $extended_slice->end()-$utr_length, $extended_slice->end());
+  } else {
+    $rr->check_and_register("utr", $extended_slice->start(), $extended_slice->start() + $utr_length);
+  }
 
   my $oligo_features;
   if (@arrays) {
@@ -161,7 +165,7 @@ foreach my $transcript (@transcripts) {
 
   foreach my $feature (@$oligo_features) {
 
-    #next if ($transcript->strand() != $feature->strand());
+    #next if ($transcript->strand() != $feature->strand()); # XXX log this
 
     my $probe = $feature->probe();
     my $probeset = $probe->probeset();
@@ -175,7 +179,7 @@ foreach my $transcript (@transcripts) {
     my $min_overlap = ($probe_length - $max_mismatches);
 
     my $exon_overlap = $rr->overlap_size("exonic", $feature->seq_region_start(), $feature->seq_region_end());
-    my $utr_overlap  = $rr->overlap_size("utr",    $feature->seq_region_start(), $feature->seq_region_end());
+    my $utr_overlap = $rr->overlap_size("utr",     $feature->seq_region_start(), $feature->seq_region_end());
 
     if ($exon_overlap >= $min_overlap) {
 
@@ -219,11 +223,12 @@ foreach my $key (keys %transcript_probeset_count) {
 
       add_xref($transcript_ids{$transcript}, $probeset, $db_entry_adaptor);
       $transcripts_per_probeset{$probeset}++;
-      print LOG "$probeset\t$transcript\tmapped\t$probeset_size\t$hits\n"; # TODO - record intron hits per probeset
+      print LOG "$probeset\t$transcript\tmapped\t$probeset_size\t$hits\n";
 
     } else {
 
-      print LOG "$probeset\t$transcript\tpromiscuous\t$probeset_size\t$hits\n"; # TODO - record intron hits per probeset
+      print LOG "$probeset\t$transcript\tpromiscuous\t$probeset_size\t$hits\n";
+      $promiscuous_probesets{$probeset} = $probeset;
       # TODO - remove mappings for probesets that end up being promiscuous
 
     }
@@ -361,7 +366,7 @@ sub delete_existing_xrefs {
 
   } else {
 
-    my $sth = $oligo_adaptor->dbc()->prepare("SELECT DISTINCT(name) FROM oligo_array");
+    my $sth = $oligo_adaptor->dbc()->prepare("SELECT DISTINCT(name) FROM oligo_array ORDER BY name");
     $sth->execute();
 
     while(my @row = $sth->fetchrow_array()){
