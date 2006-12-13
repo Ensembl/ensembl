@@ -127,6 +127,9 @@ sub content {
 
   my $gene_adaptor = $dba->get_GeneAdaptor();
 
+  my $meta_container = $dba->get_MetaContainer();
+  my $species = $meta_container->get_Species()->common_name();
+
   foreach my $gene (@{$gene_adaptor->fetch_all()}) {
 
     last if ($max_genes && $entry_count >= $max_genes);
@@ -169,7 +172,7 @@ sub content {
 
     p ("</cross_references>");
 
-    # additional fields - transcript, translation etc
+    # additional fields - transcript, translation, species etc
     p ("<additional_fields>");
 
     foreach my $transcript (@{$gene->get_all_Transcripts()}) {
@@ -185,6 +188,8 @@ sub content {
       p ("<field name=\"protein_id\">" . $protein_id . "</field>");
     }
 
+    p ("<field name=\"species\">" . $species . "</field>");
+
     p ("</additional_fields>");
 
     # close tag
@@ -197,8 +202,6 @@ sub content {
 
 
 }
-
-
 
 # -------------------------------------------------------------------------------
 
