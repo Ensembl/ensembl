@@ -6,20 +6,6 @@
 #   big regions genomesize / 4000 for 4000 features on the genome
 
 
-
-use FindBin qw($Bin);
-use File::Path;
-use File::Basename qw( dirname );
-BEGIN {
-  $SERVERROOT = dirname( $Bin );
-  $SERVERROOT =~ s#/ensembl/misc-scripts##;
-  $SERVERROOT;  unshift @INC, "$SERVERROOT/conf";
-  eval{ require SiteDefs };
-  if ($@){ die "Can't use SiteDefs.pm - $@\n"; }
-  map{ unshift @INC, $_ } @SiteDefs::ENSEMBL_LIB_DIRS;
-} ;
-
-
 use strict;
 #use dbi;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
