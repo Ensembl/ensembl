@@ -201,6 +201,7 @@ WHERE   hsp_id    = ?";
 #
 sub new {
   my $caller = shift;
+#warn "DB - @_";
   my $connection = Bio::EnsEMBL::DBSQL::DBConnection->new(@_);
   my $self = $caller->SUPER::new($connection);
   return $self;
@@ -340,7 +341,7 @@ sub store_search_multi{
   my $frozen = shift || $search_multi->serialise;
 
   my $dbh  = $self->dbc->db_handle;
-
+#warn "STORING>............................";
   my $ticket  = $search_multi->token || $self->throw( "Bio::Tools::Run::EnsemblSearchMulti obj has no ticket" );
 
   my $sth = $dbh->prepare( $SQL_SEARCH_MULTI_RETRIEVE );
@@ -380,7 +381,9 @@ sub retrieve_search_multi {
 
   my $dbh  = $self->dbc->db_handle;
   my $sth = $dbh->prepare( $SQL_SEARCH_MULTI_RETRIEVE );
+#warn "WRITING TICKET - $ticket...",length($ticket);
   my $rv  = $sth->execute( $ticket ) || $self->throw( $sth->errstr );
+#warn "TICKET RETRIEVED....";
   if( $rv < 1 ){ $self->throw( "Token $ticket not found" ) }
   my ( $frozen ) = $sth->fetchrow_array;
   $frozen || $self->throw( "Object from ticket $ticket is empty" );
@@ -448,7 +451,7 @@ sub store_result_2{
   my $ticket  = $self->ticket || warn("Result $id BlastAdaptor has no ticket");
 
   my $rv = 0;
-  warn "DATE is $use_date";
+#  warn "DATE is $use_date";
   if( $ticket ){
     $sth = $dbh->prepare( sprintf $SQL_RESULT_RETRIEVE_TICKET, $use_date );
     $rv = $sth->execute( $ticket ) ||  $self->throw( $sth->errstr );
@@ -823,17 +826,37 @@ sub use_date {
   my $key  = '_current_table';
   my $self = shift;
   my $type = uc( shift );
+#warn "$self --- $key --- $type $self";
   $valid_table_types{$type} || 
     $self->throw( "Need a table type (Result, Hit or HSP)" );
 
   $self->{$key} ||= {};
   if( ! $self->{$key}->{$type} ){
-    my $sth = $self->dbc->db_handle->prepare( $SQL_SELECT_TABLE_LOG_CURRENT );
-    my $rv = $sth->execute( $type ) || ( warn( $sth->errstr ) && return );
-    $rv > 0 || ( warn( "No current $type table found" ) && return );
-    my $date = $sth->fetchrow_arrayref->[0];
-    $date =~ s/-//g;
-    $self->{$key}->{$type} = $date;
+    my $sth = $self->dbc->db_handle->prepare( "
+SELECT table_type,  use_date
+  FROM blast_table_log
+ WHERE table_status = 'CURRENT'
+ORDER BY use_date ASC" );
+#warn "prepare... $sth";
+#warn $SQL_SELECT_TABLE_LOG_CURRENT;
+#warn $type;
+    my $rv = $sth->execute();# $type );
+#warn $rv;
+    unless( $rv ) { 
+      $sth->finish;
+      warn( $sth->errstr );
+      return;
+    }
+#warn "exec...";
+    foreach my $r (@{ $sth->fetchall_arrayref }) {
+      my $date = $r->[1];
+      $date =~ s/-//g;
+      $self->{$key}->{$r->[0]} = $date;
+#warn "$r->[0] ---> $r->[1] ---> $date";
+    }
+#    $rv > 0 || ( warn( "No current $type table found" ) && return );
+    $sth->finish;
+#warn "end of finish...";
   }
   return $self->{$key}->{$type};
 }
