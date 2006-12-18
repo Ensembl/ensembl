@@ -185,7 +185,7 @@ sub create_xrefs {
       # TODO experimental/predicted
 
       my @EntrezGeneIDline = $entry =~ /db_xref=.GeneID:(\d+)/g;
-      my @mimline = $entry =~ /db_xref=.MIM:(\d+)/g;
+      my @SGDGeneIDline = $entry =~ /db_xref=.SGD:(\S+)/g;
       my @protein_id = $entry =~ /\/protein_id=.(\S+_\d+)/g;
       my @coded_by = $entry =~  /\/coded_by=.(\w+_\d+)/g;
 
@@ -205,28 +205,15 @@ sub create_xrefs {
 	$dep{ACCESSION} = $ll;
 	push @{$xref->{DEPENDENT_XREFS}}, \%dep;
       }
+      foreach my $ll (@SGDGeneIDline) {
+	my %dep;
+	$dep{SOURCE_ID} = $dependent_sources{"SGD"} 
+          || die( 'No source for SGD!' );
+	$dep{LINKAGE_SOURCE_ID} = $source_id;
+	$dep{ACCESSION} = $ll;
+	push @{$xref->{DEPENDENT_XREFS}}, \%dep;
+      }
 # Refseq's do not tell wetheer the mim is for the gene of morbid so ignore for now.
-#      foreach my $mim (@mimline) {
-#	my %dep;
-#	if(defined($morbidmap{$mim})){
-#	  $dep{SOURCE_NAME} = "MIM_MORBID";
-#	  $dep{SOURCE_ID} = $dependent_sources{"MIM_MORBID"}         
-#	    || die( 'No source for MIM_MORBID!' );
-#	}
-#	elsif(defined($genemap{$mim})){
-#	  $dep{SOURCE_NAME} = "MIM_GENE";
-#	  $dep{SOURCE_ID} = $dependent_sources{"MIM_GENE"}         
-#	    || die( 'No source for MIM_GENE!' );
-#	}
-#	else{
-#	  next;
-#	}
-##      	$dep{SOURCE_ID} = $dependent_sources{MIM}
-##          || die( 'No source for MIM!' );
-#	$dep{LINKAGE_SOURCE_ID} = $source_id;
-#	$dep{ACCESSION} = $mim;
-#	push @{$xref->{DEPENDENT_XREFS}}, \%dep;
-#      }
 
       push @xrefs, $xref;
 
