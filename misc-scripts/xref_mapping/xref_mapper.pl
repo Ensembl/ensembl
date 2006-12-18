@@ -389,6 +389,9 @@ if($upload){
   print "\nPriority unmapped xrefs sorting\n";
   $mapper->unmapped_data_for_prioritys();
 
+  print "\nProcess DEPENDENT unmapped object data\n";
+  $mapper->write_dependent_unmapped_objects();
+
   print "\nChecking xrefs\n";
   $mapper->cleanup_database();
 
