@@ -50,6 +50,8 @@ INSERT INTO species (species_id, taxonomy_id, name, aliases) VALUES (8090, 8090,
 
 INSERT INTO source VALUES (1020, 'MIM', 1, 'Y', 10, 1, "");
 INSERT INTO source VALUES (2000, 'CCDS', 1, 'Y', 10, 1, "");
+INSERT INTO source VALUES (1110, 'EntrezGene', 1, 'Y', 10, 1, "");
+
 
 INSERT INTO source VALUES (1,  "Uniprot/SWISSPROT", 1, 'Y',20,1, "" );
 INSERT INTO source VALUES (2,  "Uniprot/SPTREMBL", 1, 'Y',20, 1, "");
@@ -89,11 +91,12 @@ INSERT INTO source VALUES (1092, 'HUGO', 1, 'N',29, 4, "uniprot"); # use uniprot
 INSERT INTO source VALUES (1094, 'HUGO', 1, 'N',29, 5, "entrezgene"); # use entrezgene
 
 
-INSERT INTO source VALUES (1110, 'EntrezGene', 1, 'N', 30, 1, "");
 
 INSERT INTO source VALUES (1200, 'RGD', 1, 'Y',30, 1, "");
 INSERT INTO source VALUES (1300, 'Interpro', 1, 'Y', 30, 1, "");
 INSERT INTO source VALUES (1400, 'ZFIN_ID', 1, 'Y', 30, 1, "");
+
+INSERT INTO source VALUES (1250, 'SGD', 1, 'N',30, 1, "");
 
 
 #INSERT INTO source VALUES (2400, 'WormBase', 1, 'Y',50, 1, "");
@@ -172,6 +175,12 @@ INSERT INTO source VALUES (5020, 'Codelink', 1, 'Y', 50, 1, "");
 
 # --------------------------------------------------------------------------------
 ### DROSOPHILA TESTING GFF
+
+#enrtexgene
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser)\
+VALUES (1110, 7227, 'ftp://ftp.ncbi.nlm.nih.gov/gene/DATA/gene_info.gz', now(), now(), "EntrezGeneParser");
+
+
 # chr 2L	
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser)\
 VALUES (2500, 7227, 'ftp://ftp.flybase.net/genomes/Drosophila_melanogaster/current/gff/dmel-2L-r4.2.1.gff.gz', now(), now(), "Flybase_dmel_GFFv3_Parser");
@@ -288,6 +297,11 @@ VALUES (6,7227,'ftp://ftp.ncbi.nih.gov/repository/UniGene/Drosophila_melanogaste
 
 
 ### HUMAN
+
+#        EntrzGene
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser)\
+VALUES (1110, 9606, 'ftp://ftp.ncbi.nlm.nih.gov/gene/DATA/gene_info.gz', now(), now(), "EntrezGeneParser");
+
 ##       uniprot
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1, 9606, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz', '', now(), now(), "UniProtParser");
 
@@ -357,6 +371,10 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 # --------------------------------------------------------------------------------
 
 ###MOUSE
+##      EmtrezGene
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser)\
+VALUES (1110, 10090, 'ftp://ftp.ncbi.nlm.nih.gov/gene/DATA/gene_info.gz', now(), now(), "EntrezGeneParser");
+
 ##      uniprot
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1, 10090, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz', '', now(), now(), "UniProtParser");
 
@@ -407,6 +425,10 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 
 # --------------------------------------------------------------------------------
 ### RAT
+##      EntrezGene
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser)\
+VALUES (1110, 10116, 'ftp://ftp.ncbi.nlm.nih.gov/gene/DATA/gene_info.gz', now(), now(), "EntrezGeneParser");
+
 ##      uniprot
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1, 10116, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz', '', now(), now(), "UniProtParser");
 
@@ -448,6 +470,10 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 # --------------------------------------------------------------------------------
 
 ### Zebrafish
+##      EmtrezGene
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser)\
+VALUES (1110, 7955, 'ftp://ftp.ncbi.nlm.nih.gov/gene/DATA/gene_info.gz', now(), now(), "EntrezGeneParser");
+
 ##      uniprot
 
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1, 7955, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz', '', now(), now(), "UniProtParser");
@@ -483,6 +509,10 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 
 # --------------------------------------------------------------------------------
 ### Chicken
+##      EntrezGene
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser)\
+VALUES (1110, 9031, 'ftp://ftp.ncbi.nlm.nih.gov/gene/DATA/gene_info.gz', now(), now(), "EntrezGeneParser");
+
 ##      uniprot
 
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1, 9031, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz', '', now(), now(), "UniProtParser");
@@ -508,6 +538,10 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 
 # --------------------------------------------------------------------------------
 ### XENOPUS
+##      EmtrezGene
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser)\
+VALUES (1110, 8364, 'ftp://ftp.ncbi.nlm.nih.gov/gene/DATA/gene_info.gz', now(), now(), "EntrezGeneParser");
+
 # uniprot
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1, 8364, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz', '', now(), now(), "UniProtParser");
 
@@ -542,6 +576,10 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 
 ### Dog
 
+##      EntrezGene
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser)\
+VALUES (1110, 9615, 'ftp://ftp.ncbi.nlm.nih.gov/gene/DATA/gene_info.gz', now(), now(), "EntrezGeneParser");
+
 #        uniprot
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1, 9615, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz', '', now(), now(), "UniProtParser");
 
@@ -568,6 +606,9 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 # --------------------------------------------------------------------------------
 
 ### C elegans
+#       EntrezGene
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser)\
+VALUES (1110, 6239, 'ftp://ftp.ncbi.nlm.nih.gov/gene/DATA/gene_info.gz', now(), now(), "EntrezGeneParser");
 
 #        uniprot
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1, 6239, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz', '', now(), now(), "UniProtParser");
@@ -616,6 +657,9 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 # --------------------------------------------------------------------------------
 
 #### HoneyBee
+##      EntrezGene
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser)\
+VALUES (1110, 7460, 'ftp://ftp.ncbi.nlm.nih.gov/gene/DATA/gene_info.gz', now(), now(), "EntrezGeneParser");
 
 ## Uniprot
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1, 7460, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz', '', now(), now(), "UniProtParser");
@@ -643,6 +687,9 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 
 
 #### SeaSquirt Ciona intestinalis
+##      EntrezGene
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser)\
+VALUES (1110, 7719, 'ftp://ftp.ncbi.nlm.nih.gov/gene/DATA/gene_info.gz', now(), now(), "EntrezGeneParser");
 
 ## Uniprot
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
@@ -696,6 +743,10 @@ VALUES (2611, 7719,'ftp://ftp.jgi-psf.org/pub/JGI_data/Ciona/v2.0/FM1.aa.fasta.g
 
 
 #### Ciona savignyi 
+
+##      EntrezGene
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser)\
+VALUES (1110, 51511, 'ftp://ftp.ncbi.nlm.nih.gov/gene/DATA/gene_info.gz', now(), now(), "EntrezGeneParser");
 
 ## Uniprot
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
@@ -803,6 +854,10 @@ INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_d
 
 ###### Anopheles
 
+##      EntrezGene
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser)\
+VALUES (1110, 7165, 'ftp://ftp.ncbi.nlm.nih.gov/gene/DATA/gene_info.gz', now(), now(), "EntrezGeneParser");
+
 # Uniprot
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (1,7165,'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz',now(),now(),'UniProtParser');
 
@@ -835,6 +890,10 @@ INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_d
 
 ###### Aedes 
 
+##      EntrezGene
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser)\
+VALUES (1110, 7159, 'ftp://ftp.ncbi.nlm.nih.gov/gene/DATA/gene_info.gz', now(), now(), "EntrezGeneParser");
+
 # Uniprot
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (1,7159,'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz',now(),now(),'UniProtParser');
 
@@ -866,6 +925,10 @@ INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_d
 
 #### Cow
 
+##      EntrezGene
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser)\
+VALUES (1110, 9913, 'ftp://ftp.ncbi.nlm.nih.gov/gene/DATA/gene_info.gz', now(), now(), "EntrezGeneParser");
+
 ## Uniprot
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
  (1, 9913, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz', now(), now(), "UniProtParser");
@@ -889,6 +952,10 @@ INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_d
 # -----------------------------------------------------------------------------------
 
 #### Monodelphis
+
+##      EntrezGene
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser)\
+VALUES (1110, 13616, 'ftp://ftp.ncbi.nlm.nih.gov/gene/DATA/gene_info.gz', now(), now(), "EntrezGeneParser");
 
 ## Uniprot
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
@@ -1159,6 +1226,10 @@ INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_d
 # ------------------------------------------------------------------------------
 #### Fugu
 
+##      EntrezGene
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser)\
+VALUES (1110, 31033, 'ftp://ftp.ncbi.nlm.nih.gov/gene/DATA/gene_info.gz', now(), now(), "EntrezGeneParser");
+
 ## Uniprot
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
  (1, 31033, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz', now(), now(), "UniProtParser");
@@ -1212,6 +1283,10 @@ INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_d
 
 # -----------------------------------------------------------------------------------
 #### Yeast
+
+##      EmtrezGene
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser)\
+VALUES (1110, 4932, 'ftp://ftp.ncbi.nlm.nih.gov/gene/DATA/gene_info.gz', now(), now(), "EntrezGeneParser");
 
 ## Uniprot
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
@@ -1282,6 +1357,10 @@ INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_d
 
 
 ####rhesus macaque
+
+##      EntrezGene
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser)\
+VALUES (1110, 9544, 'ftp://ftp.ncbi.nlm.nih.gov/gene/DATA/gene_info.gz', now(), now(), "EntrezGeneParser");
 
 ## Uniprot
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
@@ -1487,6 +1566,10 @@ INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_d
 ##------------------------------------------------------------------------------
 ##### elephant
 
+##      EntrezGene
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser)\
+VALUES (1110, 9785, 'ftp://ftp.ncbi.nlm.nih.gov/gene/DATA/gene_info.gz', now(), now(), "EntrezGeneParser");
+
 ## Uniprot
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
  (1, 9785, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz', now(), now(), "UniProtParser");
@@ -1502,6 +1585,10 @@ INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_d
 
 ##------------------------------------------------------------------------------
 ##### armadillo
+
+##      EntrezGene
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser)\
+VALUES (1110, 9361, 'ftp://ftp.ncbi.nlm.nih.gov/gene/DATA/gene_info.gz', now(), now(), "EntrezGeneParser");
 
 ## Uniprot
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
@@ -1519,6 +1606,10 @@ INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_d
 ##------------------------------------------------------------------------------
 ##### rabbit
 
+##      EntrezGene
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser)\
+VALUES (1110, 9986, 'ftp://ftp.ncbi.nlm.nih.gov/gene/DATA/gene_info.gz', now(), now(), "EntrezGeneParser");
+
 ## Uniprot
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
  (1, 9986, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz', now(), now(), "UniProtParser");
@@ -1534,6 +1625,10 @@ INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_d
 
 ##------------------------------------------------------------------------------
 ##### tenrec
+
+##      EntrezGene
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser)\
+VALUES (1110, 9371, 'ftp://ftp.ncbi.nlm.nih.gov/gene/DATA/gene_info.gz', now(), now(), "EntrezGeneParser");
 
 ## Uniprot
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
@@ -1551,6 +1646,10 @@ INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_d
 ##------------------------------------------------------------------------------
 ##### cat
 
+##      EntrezGene
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser)\
+VALUES (1110, 9685, 'ftp://ftp.ncbi.nlm.nih.gov/gene/DATA/gene_info.gz', now(), now(), "EntrezGeneParser");
+
 ## Uniprot
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
  (1, 9685, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz', now(), now(), "UniProtParser");
@@ -1566,6 +1665,11 @@ INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_d
 
 ##------------------------------------------------------------------------------
 ### STICKLEBACK
+
+##      EntrezGene
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser)\
+VALUES (1110, 69293, 'ftp://ftp.ncbi.nlm.nih.gov/gene/DATA/gene_info.gz', now(), now(), "EntrezGeneParser");
+
 ##       uniprot
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1,69293 , 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz', '', now(), now(), "UniProtParser");
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (2,69293 , 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_trembl.dat.gz', '', now(), now(), "UniProtParser");
@@ -1593,6 +1697,10 @@ INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_d
 
 ##------------------------------------------------------------------------------
 ##### medaka
+
+##      EntrezGene
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser)\
+VALUES (1110, 8090, 'ftp://ftp.ncbi.nlm.nih.gov/gene/DATA/gene_info.gz', now(), now(), "EntrezGeneParser");
 
 ## Uniprot
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
