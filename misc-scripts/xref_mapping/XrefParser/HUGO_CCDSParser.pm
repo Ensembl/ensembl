@@ -33,7 +33,7 @@ sub run {
   my %description;
 
   my $dbi = $self->dbi();  
-  my $sql = "select accession, label, version,  description from xref where source_id in (1091, 1092)";
+  my $sql = "select accession, label, version,  description from xref where source_id in (1091, 1092, 1094)";
   my $sth = $dbi->prepare($sql);
   $sth->execute();
   my ($acc, $lab, $ver, $desc);
@@ -66,11 +66,20 @@ sub run {
   my $line_count = 0;
   my $xref_count = 0;
   my %seen;
+  my $ignore_count = 0;
+  my $ignore_examples ="";
   while(<HUGO>){
     chomp;
     my ($ccds,$hgnc) = split;
     
     $line_count++;
+    if(!defined($label{$hgnc})){
+      $ignore_count++;
+      if($ignore_count < 10){
+	$ignore_examples .= " ".$hgnc;
+      }
+      next;
+    }
     if(!defined($seen{$hgnc})){
       $seen{$hgnc} = 1;
       my $key = "CCDS".$ccds;
@@ -83,6 +92,9 @@ sub run {
     }
   }
   print "Parsed $line_count HGNC identifiers from $file, added $xref_count xrefs and $xref_count direct_xrefs  from $line_count lines.\n";
+  if($ignore_count){
+    print $ignore_count." ignoreed due to numbers no identifiers being no longer valid :- $ignore_examples\n";
+  }
 
   close(HUGO);
   return 0;
