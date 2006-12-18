@@ -1526,7 +1526,7 @@ CREATE TABLE unmapped_object (
   ensembl_id            INT(10) UNSIGNED DEFAULT '0',
   ensembl_object_type   ENUM('RawContig','Transcript','Gene','Translation')
                         DEFAULT 'RawContig',
-
+  parent                VARCHAR(255) DEFAULT NULL,
   PRIMARY KEY (unmapped_object_id),
   KEY id_idx (identifier),
   KEY anal_idx (analysis_id),
