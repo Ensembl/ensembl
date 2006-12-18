@@ -42,8 +42,9 @@ sub run {
     $species_id = XrefParser::BaseParser->get_species_id_for_filename($file);
   }
 
-
+  my $swiss_miss=0;
   my (%swiss) = %{XrefParser::BaseParser->get_valid_codes("uniprot",$species_id)};
+  my $refseq_miss=0;
   my (%refseq) = %{XrefParser::BaseParser->get_valid_codes("refseq",$species_id)};
 
   # complication with GO xrefs from JAX - linked to MGI symbols, which are themselves
@@ -89,8 +90,10 @@ sub run {
           XrefParser::BaseParser->add_to_xrefs($refseq{$array[1]},$array[4],'',$array[4],'',$array[6],$source_id,$species_id);
           $count++;
 	  #print join (" ", "RefSeq" ,$refseq{$array[1]}, $array[4], "\n");
-
         }
+	else{
+	  $refseq_miss++;
+}	
       }
       elsif($array[0] =~ /UniProt/){
         if($swiss{$array[1]}){
@@ -98,6 +101,9 @@ sub run {
           $count++;
 	  #print join (" ", "UniProt" ,$swiss{$array[1]}, $array[4], "\n");
         }
+	else{
+	  $swiss_miss++;
+	}
       }
       elsif($array[0] =~ /^WB/){
 	#WB      CE20707 ZYG-9           GO:0008017      WB:WBPaper00003099|PMID:9606208 ISS             F                       protein  taxon:6239      20030829        WB
@@ -162,7 +168,7 @@ sub run {
       }
     }
   }
-  print "\t$count GO dependent xrefs added $miss not found\n"; 
+  print "\t$count GO dependent xrefs added $refseq_miss refseq not found and $swiss_miss Swissprot not found \n"; 
   return 0;
 }
 
