@@ -179,8 +179,9 @@ and so the GO entries are set to be dependent xref on these.
 EntrezGene
 ----------
 
-gene-centered information at NCBI is stored as a depenedent xref and is obtained 
-from the refseq entires.
+gene-centered information at NCBI is stored as a depenedent xref and the mappings are 
+obtained from the refseq entires. Data about descriptions and synonyms are obtained from
+the file gene_info.gz file from ncbi.
 
 
 
