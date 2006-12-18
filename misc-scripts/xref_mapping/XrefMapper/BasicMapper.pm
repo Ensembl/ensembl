@@ -54,7 +54,11 @@ my %priority_failed;         # {1090:12} = "gene|123456|78|35|90|90\n";
 
 
 
+my %unmapped_primary_xref;   # $unmapped_primary_xref{1234} = " master QZ1234 had no match"
+                             # store list of primary unmapped xrefs
+                             # to use to write secondary unmapped_object data
 
+my %object_succesfully_mapped;  # $object_succesfully_mapped{1235}  = 1;
 
 # Hashes to hold method-specific thresholds
 my %method_query_threshold;
@@ -78,7 +82,7 @@ my %XXXxref_id_to_accession;
 
 =head2 find_priority_sources
 
-  Description: Finds those source that hae more than one source
+  Description: Finds those source that have more than one source
                Stores the results in the global hashes 
                %priority_source_id and %priority_source_name
   Returntype : none
@@ -179,7 +183,7 @@ sub new{
   Arg[1]: xref object which holds info needed for the dump of xref
 
   Description: Dumps out the files for the mapping. Xref object should hold
-              the value of the databases and source to be used.
+               the value of the databases and source to be used.
   Returntype : none
   Exceptions : will die if species not known or an error occurs while
              : trying to write to files. 
@@ -242,8 +246,6 @@ sub build_list_and_map {
   $self->run_mapping(\@list);
 
 }
-#
-#  $self->remove_all_old_output_files();
 
 
 =head2 get_species_id_from_species_name
@@ -377,8 +379,7 @@ sub dump_xref{
     foreach my $list (@lists){
       if(!-e $xref->dir()."/xref_".$i."_dna.fasta"){ 
 	$skip = 0;
-      }
-      if(!-e $xref->dir()."/xref_".$i."_peptide.fasta"){ 
+      }      if(!-e $xref->dir()."/xref_".$i."_peptide.fasta"){ 
 	$skip = 0;
       }
       $i++;
@@ -535,7 +536,6 @@ sub fetch_and_dump_seq{
 
   my $ensembl = $self->core;
   my $logic_name = $self->logic_name;
-  my $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(-dbconn => $ensembl->dbc);
 
   #
   # store ensembl dna file name and open it
@@ -561,6 +561,7 @@ sub fetch_and_dump_seq{
   open(PEP,">".$ensembl->protein_file()) 
     || die("Could not open protein file for writing: ".$ensembl->protein_file."\n");
 
+  my $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(-dbconn => $ensembl->dbc);
   my $gene_adaptor = $db->get_GeneAdaptor();
 
 
@@ -1095,7 +1096,6 @@ sub parse_mappings {
     my $analysis_id = $self->get_analysis_id($type);
     #    my $analysis_id = 999;
 
-    open(PRIORITY_FILE,">>priority_xref.out") || die "Could not open priority_xref.out\n";
     while (<FILE>) {
 
       $total_lines++;
@@ -1114,14 +1114,12 @@ sub parse_mappings {
 	  $target_identity < $method_target_threshold{$method}){ 
 	my $reason = $type."|".$target_id."|".$query_identity."|".$target_identity."|";
 	$reason .= $method_query_threshold{$method}."|". $method_target_threshold{$method};
-	#IANL
 	if(!defined($priority_xref_source_id{$query_id})){
 	  $failed_xref_mappings{$query_id} = $reason;
 	}
 	else{
 	  $priority_failed{$priority_source_id_to_name{$priority_xref_source_id{$query_id}}
 						       .":".$priority_xref_acc{$query_id}} = $reason;
-	  print PRIORITY_FILE  $priority_xref_acc{$query_id}."\tFailed cutoff $reason\n";
 	}
 	next;
       }
@@ -1134,8 +1132,6 @@ sub parse_mappings {
 	}
 	my $key = $priority_source_id_to_name{$source_id}.":".$priority_xref_acc{$query_id};
 	if(!defined($priority_xref_priority{$key})){
-	  print PRIORITY_FILE $priority_xref_acc{$query_id}."\t".$source_id.
-	    " being set as undef from parsing mapped data.(PRIMARY) priority = ".$priority_source_id{$source_id}."\n";
 	  
 	  $priority_xref{$key} = $query_id;
 	  $priority_xref_priority{$key} = $priority_source_id{$source_id};
@@ -1150,8 +1146,6 @@ sub parse_mappings {
 	}
 	if($priority_xref_priority{$key} 
 	   > $priority_source_id{$source_id}){
-	  print PRIORITY_FILE $priority_xref_acc{$query_id}."\t".$source_id.
-	    " being set as better priority found from parsing mapped data.(PRIMARY) priority = ".$priority_source_id{$source_id}."\n";
 	  
 	  $priority_xref{$key} = $query_id;
 	  $priority_xref_priority{$key} = $priority_source_id{$source_id};
@@ -1163,9 +1157,6 @@ sub parse_mappings {
 	  $priority_xref_state{$key} = "primary";
 	  $priority_xref_extra_bit{$query_id} =  "\tSEQUENCE_MATCH\t" . "Relationship generated from exonerate mapping" . "\n";
 	}
-	else{
-	  print PRIORITY_FILE $priority_xref_acc{$query_id}."\t".$source_id." has less priority (PRIMARY) so left as is\n";
-	}
 	next; # do not store OBJECT, IDENTITY or set primary_xref. do much later
 	  
       }
@@ -1173,6 +1164,7 @@ sub parse_mappings {
 	$count_new++;
       }
       # note we add on $xref_id_offset to avoid clashes
+      $object_succesfully_mapped{query_id} = 1;
       print OBJECT_XREF "$max_object_xref_id\t$target_id\t$type\t" . ($query_id+$xref_id_offset) . "\n";
       print IDENTITY_XREF join("\t", ($max_object_xref_id, $query_identity, $target_identity, $query_start+1, $query_end, $target_start+1, $target_end, $cigar_line, $score, "\\N", $analysis_id)) . "\n";
       $max_object_xref_id++;
@@ -1195,7 +1187,6 @@ sub parse_mappings {
 
   close(IDENTITY_XREF);
   close(OBJECT_XREF);
-  close(PRIORITY_FILE);
 
   print "Read $total_lines lines from $total_files exonerate output files\n";
   print "\n number of non priority dependent xrefs is $count_new\n";
@@ -1251,6 +1242,14 @@ sub parse_mappings {
 
 }
 
+=head2 process_priority_xrefs
+
+ Description: Dump out the xrefs and their highest priority mappings
+ Returntype : none
+ Exceptions : none
+ Caller     : xref_mapper.pl
+
+=cut
 
 sub process_priority_xrefs{
   my ($self) =@_;
@@ -1318,15 +1317,18 @@ PSQL
     }
     my ($type,$id) = split(/:/,$priority_object_xref{$key});
     chomp $id;
+    $XXXxref_id_to_accession{$xref_id} = $acc;
     $dep_list = $self->dump_all_dependencies($xref_id, $xref_id_offset, $type, $id);
     push @xref_list, $xref_id;
     if(defined($priority_object_xref{$key})){
       print OBJECT_XREF_P $object_xref_id."\t".$id."\t".$type."\t".($xref_id+$xref_id_offset)."\n";
+      $object_succesfully_mapped{$xref_id} = 1;
       if(defined($priority_identity_xref{$key})){
         print IDENTITY_XREF_P $object_xref_id."\t".$priority_identity_xref{$key};
       }
       $object_xref_id++;
       foreach my $dependent (@$dep_list){
+	$object_succesfully_mapped{($dependent-$xref_id_offset)} = 1;
 	  print OBJECT_XREF_P $object_xref_id."\t".$id."\t".$type."\t".$dependent."\n";	  
 	  $object_xref_id++;	  
       }
@@ -1343,6 +1345,7 @@ PSQL
     push @xref_list, $xref_id;
     if(defined($priority_object_xref{$key})){
       my ($type,$id) = split(/:/,$priority_object_xref{$key});
+      $object_succesfully_mapped{$xref_id} = 1;
       print OBJECT_XREF_P $object_xref_id."\t".$id."\t".$type."\t".($xref_id+$xref_id_offset)."\n";
       if(defined($priority_identity_xref{$key})){
         print IDENTITY_XREF_P $object_xref_id."\t".$priority_identity_xref{$key};
@@ -1428,6 +1431,17 @@ PSQL
 
 }
 
+=head2 get_stable_ids
+
+  Arg[1]     : type (Gene or Transcript or Translation)
+  Arg[2]     : string. comma seperated list of ids to get stable id for
+  Arg[3]     : hashref. hash to laod id to stable id mappings
+  Description: Load into the hashref given the id tp stableId mappings
+  Exceptions : none.
+  Caller     : general
+  Returntype : none
+
+=cut
 
 sub get_stable_ids(){
   my ($self, $type, $string, $hashref) = @_;
@@ -1446,8 +1460,22 @@ sub get_stable_ids(){
   $sth->finish;
 }
 
+
+=head2 get_failed_id
+
+  Arg[1]     : query cutoff value used
+  Arg[2]     : target cutoff value used
+  Example    : failed_id = get_failed_id("90","90");
+  Description: Get the unmapped_reason_id from the unmapped_reason table
+             : with the specified cutoff values. 
+  Returntype : int
+  Exception  : Will die if the reason cannot be found. These should be pre loaded.
+  Caller     : General.
+
+=cut
+
 sub get_failed_id{
-  my ($self, $q_cut, $t_cut, $summary_failed)= @_;
+  my ($self, $q_cut, $t_cut)= @_;
   my $description_failed = "Unable to match at the thresholds of $q_cut\% for the query or $t_cut\% for the target";
 
   my $sth = $self->core->dbc->prepare("select unmapped_reason_id from unmapped_reason where full_description like '".$description_failed."'");
@@ -1467,6 +1495,18 @@ sub get_failed_id{
   }
   return $xref_failed_id;
 }
+
+
+=head2 dump_triage_data
+
+  Arg[1]     : the xref id offset.  
+  Description: write/upload all the unmapped objects fro those NOT mapped.
+  Returntype : none
+  Caller     : general
+  Exceptions : Will die if reason_id cannot be found.
+
+=cut
+
 
 sub dump_triage_data() {
   my ($self, $xref_id_offset) = @_;
@@ -1579,7 +1619,6 @@ PSQL
   }
   $sth->finish;
  
-
   foreach my $source (@primary_sources){
 
     my %triage_dumped=(); # dump only once for each accession
@@ -1602,11 +1641,14 @@ PSQL
 	if(!defined($updated_source{$external_db_id})){
 	  $self->cleanup_sources_file($external_db_id);
 	}
-	print XREF ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $accession . 
+        $unmapped_primary_xref{$xref_id} = $accession;
+ 	print XREF ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $accession . 
 	  "\t" . $label . "\t" . $version . "\t" . $description . "\tMISC\tNo match\n";
 	
 	#dump out dependencies aswell
-	
+
+	$XXXxref_id_to_accession{$xref_id} = $accession;
+
         $self->dump_all_dependencies($xref_id, $xref_id_offset);
 
 	if(defined($failed_xref_mappings{$xref_id})){
@@ -1668,9 +1710,15 @@ PSQL
 #  close(UNMAPPED_REASON);
 }
 
-# dump xrefs that don't appear in either the primary_xref or dependent_xref tables
-# also ignore direct_xref
-# e.g. Interpro xrefs
+=head2 dump_orphan_xrefs
+
+  Arg[1]     : the offset for xref ids
+  Description: writes outs the xrefs that are not primary or dependent tables
+  Returntype : none
+  Caller     : general
+  Exceptions : none
+
+=cut
 
 sub dump_orphan_xrefs() {
 
@@ -1731,6 +1779,18 @@ sub dump_orphan_xrefs() {
 
 # Dump direct xrefs. Need to do stable ID -> internal ID mapping.
 
+=head2 dump_direct_xrefs
+
+  Arg[1]     : offset for xref ids
+  Arg[2]     : max object xrefs id
+  Description: write the direct xrefs and mappings (object_xrefs)
+             : for the direct xrefs.
+  Returntype : none
+  Exceptions : none
+  Caller     : general
+
+=cut
+
 sub dump_direct_xrefs {
 
   my ($self, $xref_id_offset, $max_object_xref_id) = @_;
@@ -1781,7 +1841,6 @@ sub dump_direct_xrefs {
   my %error_count;
   my %error_example;
 
-  open(PRIORITY_FILE,">>priority_xref.out") || die "Could not open priority_xref.out\n";
   my $ccds_source = get_source_id_from_source_name($self->xref(), "CCDS");
   while ($xref_sth->fetch()) {
     my $external_db_id = $source_to_external_db{$source_id};
@@ -1810,8 +1869,6 @@ sub dump_direct_xrefs {
 	$error_count{$source_id} = 1;
 	$error_example{$source_id} = "$tmp_esid - $accession";
       }
-#      warn "Can't find translation for transcript $tmp_esid" if (!$ensembl_stable_id);
-      #print "CCDS: transcript $tmp_esid -> translation $ensembl_stable_id\n";
     }
     
     my $ensembl_internal_id;
@@ -1839,8 +1896,7 @@ sub dump_direct_xrefs {
 	  }
 	  my $key = $priority_source_id_to_name{$source_id}.":".$priority_xref_acc{$xref_id};
 	  if(!defined($priority_xref_priority{$key})){
-	    print PRIORITY_FILE $priority_xref_acc{$xref_id}."\t".$source_id.
-	      " being set as undef (DIRECT) xref= $xref_id key = $key  priority = ".$priority_source_id{$source_id}."\n";
+
 	    $priority_xref_extra_bit{$xref_id} = "\tDIRECT" . "\t" . 
                               "Externally assigned relationship between $ensembl_stable_id and $accession" . "\n";
 	    $priority_xref{$key} = $xref_id;
@@ -1854,9 +1910,6 @@ sub dump_direct_xrefs {
 	  if($priority_xref_priority{$key}        # old one
 	     > $priority_source_id{$source_id}){  # new one
 
-	    print PRIORITY_FILE $priority_xref_acc{$xref_id}."\t".$source_id.
-	      " being set as better priority found (DIRECT) priority = ".$priority_source_id{$source_id}."\n";
-
 	    $priority_xref_extra_bit{$xref_id} = "\tDIRECT" . "\t" . 
                               "Externally assigned relationship between $ensembl_stable_id and $accession" . "\n";
 	    $priority_xref{$key} = $xref_id;
@@ -1866,20 +1919,18 @@ sub dump_direct_xrefs {
 
 	    $priority_xref_state{$key} = "direct";
           }
-	  else{
-	    print PRIORITY_FILE $priority_xref_acc{$xref_id}."\t".$source_id." has less (DIRECT) priority so left as is. \n";
-	  }
           next; # do not store XREF or OBJECT. do much later
 	}
         print XREF ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $accession . "\t" . $label . "\t" . $version . "\t" . $description ."\t". "DIRECT" . "\t" . "Externally assigned relationship between $ensembl_stable_id and $accession" . "\n";
 
         $xrefs_written{$xref_id} = 1;
       }
+      $object_succesfully_mapped{$xref_id} = 1;
       print OBJECT_XREF "$object_xref_id\t$ensembl_internal_id\t" . ucfirst($type) . "\t" . ($xref_id+$xref_id_offset) . "\n";
       $object_xref_id++;
       $count++;
       
-    } else { ##ahh
+    } else {
       if(!defined($worm_pep_source_id)){
         $worm_pep_source_id = get_source_id_from_source_name($self->xref(), "wormpep_id");
         $worm_locus_source_id = get_source_id_from_source_name($self->xref(), "wormbase_locus");
@@ -1909,6 +1960,7 @@ sub dump_direct_xrefs {
               $xrefs_written{$xref_id} = 1;
             }
             $ensembl_internal_id = $stable_id_to_internal_id{$type}->{$stable_id};
+	    $object_succesfully_mapped{$xref_id} =1;
             print OBJECT_XREF "$object_xref_id\t$ensembl_internal_id\t" . ucfirst($type) . "\t" . ($xref_id+$xref_id_offset) . "\n";
             if( $source_id == $go_source_id){
               print GO_XREF $object_xref_id . "\t" . $linkage_xref . "\n";
@@ -1921,9 +1973,7 @@ sub dump_direct_xrefs {
         
       } # if source_id
       # if we haven't changed $object_xref_id, nothing was written
- #     print STDERR "Can't find $type corresponding to stable ID $ensembl_stable_id in ${type}_stable_id, not writing record for xref $accession\n" if ($object_xref_id == $old_object_xref_id);
       if(defined($error_count{$source_id})){
-    #IANL add priority_failed HERE.
 	$error_count{$source_id}++;
 	if($error_count{$source_id} < 6){
 	  $error_example{$source_id} .= ", $ensembl_stable_id - $accession";
@@ -1931,7 +1981,6 @@ sub dump_direct_xrefs {
       }
       else{
 	$error_count{$source_id} = 1;
-    #IANL add priority_failed HERE.
 	$error_example{$source_id} = "$ensembl_stable_id - $accession";
       }
       
@@ -1947,15 +1996,20 @@ sub dump_direct_xrefs {
   close(OBJECT_XREF);
   close(XREF);
   close(GO_XREF);
-  close(PRIORITY_FILE);
   $xref_sth->finish();
 
   print "  Wrote $count direct xrefs\n";
 
 }
 
+=head2 dump_interpro
 
-# Dump the interpro table from the xref database
+  Description: Dump the interpro table from the xref database
+  Returntype : none
+  Exceptions : none
+
+=cut
+
 sub dump_interpro {
 
   my $self = shift;
@@ -1976,12 +2030,24 @@ sub dump_interpro {
 
 }
 
+
+=head2 build_stable_id_to_internal_id_hash
+
+  Description: Build hash of stable id between internal ids for gene, transcripts 
+             : and transltions for the core database.
+             : stores data in the global hashes stable_id_to_internal_id 
+             : and internal_id_to_stable_id
+  Returntype : int
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+
 sub build_stable_id_to_internal_id_hash {
 
   my ($self) = @_;
 
-#  my %stable_id_to_internal_id;
-#  my %internal_id_to_stable_id;
   foreach my $type ('gene', 'transcript', 'translation') { # Add exon here if required
 
     print "Caching stable ID -> internal ID links for ${type}s\n";
@@ -2003,6 +2069,16 @@ sub build_stable_id_to_internal_id_hash {
   return 1;
 
 }
+
+=head2 get_ensembl_object_type
+
+  Arg[1]     : filename  
+  Description: return the type of object mapped to based on file name
+  Returntype : scalar . "Transcript" or Translation" or undef if not known
+  Exceptions : none
+  Caller     : general
+
+=cut
 
 sub get_ensembl_object_type {
 
@@ -2028,6 +2104,19 @@ sub get_ensembl_object_type {
 
 }
 
+
+=head2 get_parts
+
+  Arg[1]     : filename, must be a map file
+  Description: return the method, type and part for a given file.
+             : method -> method used to genenate map file
+             : type -> type of mapping dna or peptide 
+             : part -> the index for the job.
+  Exceptions : none.
+  Caller     : parse_mappings
+
+=cut
+
 sub get_parts {
 
   my $filename = shift;
@@ -2052,6 +2141,14 @@ sub get_parts {
 
 }
 
+
+=head2 get_method
+
+  Arg[1]     : map filename
+  Description: get the method name from the file name 
+
+=cut
+
 sub get_method {
 
   my $filename = shift;
@@ -2063,6 +2160,15 @@ sub get_method {
   return $method;
 
 }
+
+
+=head2 get_analysis_id
+
+  Arg[1]     : Ensembl type "transcript" or "Translation"
+  Description: Get the analysis id for the ensembl type.
+  Returntype : scalar
+
+=cut
 
 sub get_analysis_id {
 
@@ -2079,10 +2185,7 @@ sub get_analysis_id {
   my $analysis_id;
 
   if (my @row = $sth->fetchrow_array()) {
-
     $analysis_id = $row[0];
-#    print "Found exising analysis ID ($analysis_id) for $logic_name\n";
-
   } else {
 
     print "No analysis with logic_name $logic_name found, creating ...\n";
@@ -2099,6 +2202,15 @@ sub get_analysis_id {
 
 }
 
+
+=head2 remove_all_old_output_files
+
+ Description: deletes all the .txt and .sql files from the output directory to ensure
+            : we don't add old data.    
+ Returntype : none
+
+=cut
+
 sub remove_all_old_output_files{
   my ($self) =@_;
 
@@ -2108,9 +2220,20 @@ sub remove_all_old_output_files{
 
 }
 
+=head2 dump_core_xrefs
+
+  Arg[1]     : hashref of xrefs to be processed
+  Arg[2]     : start_object_xref_id. start id for new object xrefs 
+  Arg[3]     : xref_id_offset.   the offset to be applied to the xref ids (going from xref to core)
+  Description: Dump xref and object xrefs for htose in the hashref.
+  Returntype : New maximum value of the object xref id.
+  Exceptions : none
+
+=cut
+
 sub dump_core_xrefs {
 
-  my ($self, $xref_ids_hashref, $start_object_xref_id, $xref_id_offset, $object_xref_id_offset) = @_;
+  my ($self, $xref_ids_hashref, $start_object_xref_id, $xref_id_offset) = @_;
 
   my @xref_ids = keys %$xref_ids_hashref;
   my %xref_to_objects = %$xref_ids_hashref;
@@ -2213,8 +2336,6 @@ sub dump_core_xrefs {
 
     $dep_sth->bind_columns(\$xref_id, \$master_xref_id, \$accession, \$label, \$description, \$source_id, \$version, \$linkage_annotation);
 
-    open(PRIORITY_FILE,">>priority_xref.out") || die "Could not open priority_xref.out\n";
-
 
     while ($dep_sth->fetch()) {  # dependent xrefs
 
@@ -2248,8 +2369,6 @@ sub dump_core_xrefs {
 	  if(defined($priority_xref_source_id{$xref_id})){
 	    my $key = $priority_source_id_to_name{$source_id}.":".$priority_xref_acc{$xref_id};	  
 	    if(!defined($priority_xref_priority{$key})){
-	      print PRIORITY_FILE $priority_xref_acc{$xref_id}."\t".$source_id.
-		" being set as undef  (DEPENDENT) priority = ".$priority_source_id{$source_id}."\n";
 	      
 	      $priority_xref_extra_bit{$xref_id} = "\t" . "DEPENDENT" . "\t" . "Generated via $master_accession" . "\n";
 	      $priority_xref{$key} = $xref_id;
@@ -2262,9 +2381,6 @@ sub dump_core_xrefs {
 	    if($priority_xref_priority{$key} 
 	       > $priority_source_id{$source_id}){
 	      
-	      print PRIORITY_FILE $priority_xref_acc{$xref_id}."\t".$source_id.
-		" being set as better priority found  (DEPENDENT) priority = ".$priority_source_id{$source_id}."\n";
-
 	      $priority_xref_extra_bit{$xref_id} = "\t" . "DEPENDENT" . "\t" . "Generated via $master_accession" . "\n";
 	      $priority_xref{$key} = $xref_id;
 	      $priority_xref_priority{$key} = $priority_source_id{$source_id};
@@ -2273,13 +2389,11 @@ sub dump_core_xrefs {
 	      $priority_xref_state{$key} = "dependent";
 	      next;
 	    }
-	    else{
-	      print PRIORITY_FILE $priority_xref_acc{$xref_id}."\t".$source_id." has less priority (DEPENDENT) so left as is\n";
-	    }
 	    next;
 	  }
 	  if (!$object_xrefs_written{$full_key}) {
 	       	    
+	    $object_succesfully_mapped{$xref_id} = 1;
 	    print OBJECT_XREF "$object_xref_id\t$object_id\t$type\t" . ($xref_id+$xref_id_offset) . "\n";
 	    # Add this mapping to the list - note NON-OFFSET xref_id is used
 	    my $key = $type . "|" . $object_id;
@@ -2319,11 +2433,23 @@ sub dump_core_xrefs {
   close(OBJECT_XREF);
   close(EXTERNAL_SYNONYM);
   close(GO_XREF);
-  close (PRIORITY_FILE);
 
   return $object_xref_id;
 
 }
+
+
+=head2  build_transcript_and_gene_display_xrefs
+
+  Description: Creates the gene and transcript display xrefs sql files
+             : Uses sql queries to the core database to find the "best" xrefs
+             : taken from a lists of xref types to be used.
+             : See transcript_display_xref_sources for the default list
+             : or the specific species.pm file. 
+  Exception  : none
+  Caller     : general
+
+=cut
 
 
 sub build_transcript_and_gene_display_xrefs {
@@ -2531,9 +2657,14 @@ ESQL
 }
 
 
+=head2 transcript_display_xref_sources
 
-# Display xref sources to be used for transcripts *in order of priority*
-# Source names used must be identical to those in the source table.
+  Description: return the xref sources to be used for transcripts *in order of priority*
+             : Source names used must be identical to those in the source table.
+  Returntype : ref to array
+  Exceptions : none
+
+=cut
 
 sub transcript_display_xref_sources {
 
@@ -2552,6 +2683,17 @@ sub transcript_display_xref_sources {
 	  'EntrezGene');
 
 }
+
+
+=head2 build_genes_to_transcripts
+
+  Description: get and store data wrt gene and trancsripts into a hash
+             : (global  %genes_to_transcripts)
+  Returntype : none
+  Exceptions : none
+  Caller     : General
+
+=cut
 
 # Get transcripts associated with each gene
 
@@ -2577,8 +2719,19 @@ sub build_genes_to_transcripts {
 
 }
 
-# Find the index of an item in a list(ref), or -1 if it's not in the list.
-# Only look for exact matches (case insensitive)
+
+
+=head2 find_in_list
+
+  Arg[1]     : item to search for
+  Arg[2]     : array to seach in  
+  Description: Find the index of an item in a list(ref), or -1 if it's
+             :  not in the list. Only look for exact matches (case insensitive)
+  Returntype : integer
+  Exceptions : none
+  Caller     : General
+
+=cut
 
 sub find_in_list {
 
@@ -2594,9 +2747,20 @@ sub find_in_list {
 
 }
 
-# Take a string and a list of regular expressions
-# Find the index of the highest matching regular expression
-# Return the index, or -1 if not found.
+
+=head2 find_match
+
+  Arg[1]     : string to search for
+  Arg[2]     : list of regular expressions
+  Decsription: Take a string and a list of regular expressions
+             : Find the index of the highest matching regular expression
+             :  Return the index, or -1 if not found.
+  Returntype : integer
+  Exceptions : none
+  Caller     : General
+
+=cut
+
 
 sub find_match {
 
@@ -2616,7 +2780,17 @@ sub find_match {
 
 }
 
-# Build a map of source id (in xref database) to external_db (in core database)
+
+=head2 map_source_to_external_db
+
+
+  Description: Build a map of source id (in xref database) to external_db
+             : (in core database) into global hash source_to_external_db
+  Returntpye : none
+  Exceptions : none
+  Caller     : General
+
+=cut
 
 sub map_source_to_external_db {
 
@@ -2654,6 +2828,17 @@ sub map_source_to_external_db {
   return %source_to_external_db;
 }
 
+
+=head2 
+
+  Description: Create the file of sql commmands to remove old data from 
+             : the core database
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+ 
 
 sub cleanup_sources_file{
   my ($self,$id) = @_;
@@ -2701,7 +2886,16 @@ sub cleanup_sources_file{
 
 }
 
-# Upload .txt files and execute .sql files.
+=head2 do_upload
+
+
+  Description:  Upload .txt files and execute .sql files.
+  Exceptions : none
+  Returntype : none
+  Caller     : General
+
+=cut
+
 
 sub do_upload {
 
@@ -2750,6 +2944,16 @@ sub do_upload {
   }
 
 }
+
+
+=head2 genes_and_transcripts_attributes_set
+
+  Description: clearing gene and transcripts status and setting new ones
+  Exeptions  : none
+  Returntype : none
+  Caller     : General
+
+=cut
 
 sub genes_and_transcripts_attributes_set{
   my ($self) = @_;
@@ -2850,7 +3054,14 @@ GENE
 
 
 
+=head2 new_build_gene_descriptions
 
+  Description: Build the new gene descriptions.
+  Returntype : none
+  Exceptions : none
+  Caller     : general
+
+=cut
 
 sub new_build_gene_descriptions{
   my ($self) = @_;
@@ -3142,9 +3353,15 @@ ETSQL
 }
 
 
+=head2 check_err
+  
+  Arf[1]     : Directory to check for .err files.
+  Description: Check if any .err files exist that have non-zero size;
+             : this indicates that something has gone wrong with the 
+             : exonerate run
+  Returntype : none
 
-# Check if any .err files exist that have non-zero size;
-# this indicates that something has gone wrong with the exonerate run
+=cut
 
 sub check_err {
 
@@ -3157,6 +3374,7 @@ sub check_err {
 
   }
 }
+
 
 sub get_best {
   my ($self,$refxref) = @_;
@@ -3175,7 +3393,16 @@ sub strip{
   return \@ret;
 }
 
-# remove a list of patterns from a string
+=head2 filter_by_regexp
+
+ Arg[1]     : String to be processed.
+ Arg[2]     : list of regexps to be applied
+ Description: remove a list of patterns from a string
+ Returntype : scalar (The filtered string)
+ Exceptions : none
+
+=cut
+
 sub filter_by_regexp {
 
   my ($self, $str, $regexps) = @_;
@@ -3188,8 +3415,17 @@ sub filter_by_regexp {
 
 }
 
-# Regexp used for filter out useless text from gene descriptions
-# Method can be overridden in species-specific modules
+
+=head2 gene_description_filter_regexps
+
+  Description: Regexp used for filter out useless text from gene descriptions
+             : Method can be overridden in species-specific modules
+  Returntype : array
+  Exceptions : none
+  Caller     : General
+
+=cut
+
 sub gene_description_filter_regexps {
 
   return ();
@@ -3198,9 +3434,16 @@ sub gene_description_filter_regexps {
 
 
 
-# move translation hits on to their transcripts if the same external_db_id
-# has hits to both translation and transcript
+=head2 cleanup_database
 
+  Description: checks and moves translation hits on to their transcripts if the same 
+             : external_db_id has hits to both translation and transcript
+             : also do the same for gene and transcript if needed
+  Returntype : none
+  Exceptions : none
+  Caller     : General
+
+=cut
 
 sub cleanup_database {
   my ($self) = @_;
@@ -3251,6 +3494,20 @@ ESQL
   }
 }
 
+
+=head2 fix_mart_problem
+  Arg[1]     : external database name
+  Arg[2]     : external_db_id for database
+  Arg[3]     : type of ensembl entity to move from
+  Arg[4]     : type of ensembl entity to tmove to
+  Description: moves translation hits on to their transcripts if the same 
+             : external_db_id has hits to both translation and transcript
+             : OR does the same for gene and transcript depending on 
+  Returntype : none
+  Exceptions : none
+  Caller     : General
+
+=cut
 
 sub fix_mart_prob{
   my ($self,$db_name,$db_id,$type1,$type2) = @_;
@@ -3310,9 +3567,15 @@ GENE
 }
 
 
+=head2 gene_description_sources
 
-# list of sources to be used when building gene descriptions
-# sorted into increasing order of priority
+  Description: list of sources to be used when building gene descriptions
+             : sorted into increasing order of priority
+  Returntype : array
+  Exceptions : none
+  Caller     : General
+
+=cut
 
 sub gene_description_sources {
 
@@ -3325,6 +3588,16 @@ sub gene_description_sources {
 	  "RFAM");
 
 }
+
+
+=head2 upload_external_db
+
+  Arg[1]     : int to force deletetion of external_db before loading
+  Description: load the curreny externla_db table if not up to date
+  Exceptions : none
+  Caller     : General  
+
+=cut
 
 # load external_db (if it's empty) from ../external_db/external_dbs.txt
 
@@ -3371,13 +3644,24 @@ sub upload_external_db {
 }
 
 
-sub get_xref_descriptions{
-  return \%xref_descriptions;
-}
 
-sub get_xref_accessions{
- return \%xref_accessions;
-}
+#sub get_xref_descriptions{
+#  return \%xref_descriptions;
+#}
+#
+#sub get_xref_accessions{
+# return \%xref_accessions;
+#}
+#
+
+=head2 xref_id_offset
+
+  Arg[1]     : <optional> int 
+  Description: Getter/setter for the xref_id offset
+  Exceptions : none
+  Caller     : General
+
+=cut
 
 sub xref_id_offset{
  my  $self  = shift;
@@ -3388,6 +3672,17 @@ sub xref_id_offset{
   }
  return undef;
 }
+
+
+
+=head2 add_missing_pairs
+
+  Description: add the missing pairs. For refseqs they come as peptide and dna so if
+             : one is mapped and the  other is not then add the other pair.
+  Exceptions : none
+  Caller     : General
+
+=cut
 
 sub add_missing_pairs{
   my ($self) = @_;
@@ -3511,8 +3806,8 @@ EOS
 	"\t$acc\t$label\t$ver\t$desc";
       my $key = $priority_source_id_to_name{$priority_xref_source_id{$source_id}}.":".$acc;
       print XREF2 "\tINFERRED_PAIR\tGenerated via its Pair ".$priority_seenit{$key}."\n";
-      $xrefs_written{$xref_id}
-	
+      $xrefs_written{$xref_id};
+      $unmapped_primary_xref{$xref_id} = undef;	
     }
     $sth->finish;
 
@@ -3571,6 +3866,7 @@ EOS
 	if(($type =~ /Transcript/) and defined($transcript_2_translation{$ens_int_id})){
 	  $max_object_xref_id++;
 	  $added++;
+	  $object_succesfully_mapped{($good2missed{$goodxref}-$xref_id_offset)} = 1;
 	  print OBJECT_XREF2 "$max_object_xref_id\t";
 	  print OBJECT_XREF2 $transcript_2_translation{$ens_int_id}."\tTranslation\t" ;
 	  print OBJECT_XREF2 $good2missed{$goodxref};
@@ -3582,6 +3878,7 @@ EOS
 	  $dep_sth->bind_columns(\$dep_xref);
 	  while($dep_sth->fetch){
 	    $max_object_xref_id++;
+	    $object_succesfully_mapped{$dep_xref} = 1;
 	    print OBJECT_XREF2 "$max_object_xref_id\t";
 	    print OBJECT_XREF2 $transcript_2_translation{$ens_int_id}."\tTranslation\t" ;
 	    print OBJECT_XREF2 $dep_xref+$xref_id_offset;
@@ -3594,6 +3891,7 @@ EOS
 	elsif(($type =~ /Translation/) and defined($translation_2_transcript{$ens_int_id})){
 	  $max_object_xref_id++;
 	  $added++;
+	  $object_succesfully_mapped{($good2missed{$goodxref}-$xref_id_offset)} = 1;
 	  print OBJECT_XREF2 "$max_object_xref_id\t";
 	  print OBJECT_XREF2 $translation_2_transcript{$ens_int_id}."\tTranscript\t" ;
 	  print OBJECT_XREF2 $good2missed{$goodxref};
@@ -3604,6 +3902,7 @@ EOS
 	  $dep_sth->bind_columns(\$dep_xref);
 	  while($dep_sth->fetch){
 	    $max_object_xref_id++;
+	    $object_succesfully_mapped{$dep_xref} = 1;
 	    print OBJECT_XREF2 "$max_object_xref_id\t";
 	    print OBJECT_XREF2 $translation_2_transcript{$ens_int_id}."\tTranscript\t" ;
 	    print OBJECT_XREF2 $dep_xref+$xref_id_offset;
@@ -3632,6 +3931,7 @@ EOS
       if(($type =~ /Transcript/) and defined($transcript_2_translation{$ens_int_id})){
 	$max_object_xref_id++;
 	$added++;
+	$object_succesfully_mapped{($good2missed{$goodxref}-$xref_id_offset)} = 1;
 	print OBJECT_XREF2 "$max_object_xref_id\t";
 	print OBJECT_XREF2 $transcript_2_translation{$ens_int_id}."\tTranslation\t" ;
 	print OBJECT_XREF2 $good2missed{$goodxref};
@@ -3641,6 +3941,7 @@ EOS
 	$dep_sth->bind_columns(\$dep_xref);
 	while($dep_sth->fetch){
 	  $max_object_xref_id++;
+	  $object_succesfully_mapped{$dep_xref} = 1;
 	  print OBJECT_XREF2 "$max_object_xref_id\t";
 	  print OBJECT_XREF2 $transcript_2_translation{$ens_int_id}."\tTranslation\t" ;
 	  print OBJECT_XREF2 $dep_xref+$xref_id_offset;
@@ -3653,6 +3954,7 @@ EOS
       elsif(($type =~ /Translation/) and defined($translation_2_transcript{$ens_int_id})){
 	$max_object_xref_id++;
 	$added++;
+	$object_succesfully_mapped{($good2missed{$goodxref}-$xref_id_offset)} = 1;
 	print OBJECT_XREF2 "$max_object_xref_id\t";
 	print OBJECT_XREF2 $translation_2_transcript{$ens_int_id}."\tTranscript\t" ;
 	print OBJECT_XREF2 $good2missed{$goodxref};
@@ -3662,6 +3964,7 @@ EOS
 	$dep_sth->bind_columns(\$dep_xref);
 	while($dep_sth->fetch){
 	  $max_object_xref_id++;
+	  $object_succesfully_mapped{$dep_xref} = 1;
 	  print OBJECT_XREF2 "$max_object_xref_id\t";
 	  print OBJECT_XREF2 $translation_2_transcript{$ens_int_id}."\tTranscript\t" ;
 	  print OBJECT_XREF2 $dep_xref+$xref_id_offset;
@@ -3706,6 +4009,21 @@ EOS
   print "updated triage data accordingly\n";
 }
 
+
+=head2  dump_all_dependencies
+
+  Arg[1]     : xref_id of master
+  Arg[2]     : xref_id offset
+  Arg[3]     : type of ensembl entity master mapped to
+  Arg[4]     : object_id of ensembl identity master is mapped to
+  Description: Write the xrefs entry for the depenedent xrefs for a given master.
+             : if not a priority else store data needed for later
+  Returntype : Reference to an array of those dependent xrefs stored
+  Exceptions : none
+  Caller     : General
+
+=cut
+
 sub dump_all_dependencies{
   my ($self, $master_id, $xref_id_offset, $type, $object_id) = @_;
   my @return;
@@ -3745,8 +4063,6 @@ sub dump_all_dependencies{
 	elsif(defined($type)){
 	    my $key = $priority_source_id_to_name{$source_id}.":".$priority_xref_acc{$xref_id};	  
 	    if(!defined($priority_xref_priority{$key})){
-		print PRIORITY_FILE $priority_xref_acc{$xref_id}."\t".$source_id.
-		    " being set as undef  (DEPENDENT) priority = ".$priority_source_id{$source_id}."\n";
 		
 		$priority_xref_extra_bit{$xref_id} = "\t" . "DEPENDENT" . "\t" . "Generated via $master_accession" . "\n";
 		$priority_xref{$key} = $xref_id;
@@ -3759,9 +4075,6 @@ sub dump_all_dependencies{
 	    if($priority_xref_priority{$key} 
 	       > $priority_source_id{$source_id}){
 		
-		print PRIORITY_FILE $priority_xref_acc{$xref_id}."\t".$source_id.
-		    " being set as better priority found  (DEPENDENT) priority = ".$priority_source_id{$source_id}."\n";
-		
 		$priority_xref_extra_bit{$xref_id} = "\t" . "DEPENDENT" . "\t" . "Generated via $master_accession" . "\n";
 		$priority_xref{$key} = $xref_id;
 		$priority_xref_priority{$key} = $priority_source_id{$source_id};
@@ -3770,9 +4083,6 @@ sub dump_all_dependencies{
 		$priority_xref_state{$key} = "dependent";
 		next;
 	    }
-	    else{
-		print PRIORITY_FILE $priority_xref_acc{$xref_id}."\t".$source_id." has less priority (DEPENDENT) so left as is\n";
-	    }
 	}
     }
 
@@ -3780,6 +4090,16 @@ sub dump_all_dependencies{
   return \@return;
 }
     
+
+=head2 get_mysql_command
+ 
+  Arg[1]
+  Description: get the mysql line for issueing sql to database
+  Returntype : scalar 
+  Exceptions : none
+  Caller     : General
+
+=cut 
 
 sub get_mysql_command{
   my $self = shift;
@@ -3802,6 +4122,17 @@ sub get_mysql_command{
                   $dbname );
   return $str;
 }
+
+
+
+=head2 dump_xref_with_no_triage_data
+
+  Arg[1]     : int xref_id offset
+  Description: dump xrefs with no traiage data at all.
+  Exceptions : none
+  Callers    : General
+
+=cut
 
 sub dump_xref_with_no_triage_data() {
   my ($self, $xref_id_offset) = @_;
@@ -3857,6 +4188,7 @@ PSQL
 
 #dump out dependencies aswell
 	
+	  $XXXxref_id_to_accession{$xref_id} = $accession;
 	  $self->dump_all_dependencies($xref_id, $xref_id_offset);
 	}
 
@@ -3868,6 +4200,16 @@ PSQL
 }
     
 
+
+=head2 unmapped_data_for_prioritys
+
+
+  Description: write and uploads the unmapped data for the priority xrefs
+  Returntype : none
+  Exceptions : Will die if cannot find a valid reason id for a reason_object
+  Caller     : General
+
+=cut
 
 sub unmapped_data_for_prioritys{
 
@@ -3883,7 +4225,6 @@ sub unmapped_data_for_prioritys{
   my $description_missed = "Unable to match to any ensembl entity at all";
 
 
-  #IANL
   #unmapped objects. Need to write these for the priority_xrefs.
   # use priority_seenit and priority_failed
 
@@ -3992,6 +4333,7 @@ PSQL
 	print UNMAPPED_OBJECT $external_db_id."\t".$acc."\t".$cutoff_2_failed_id{$q_cut."_".$t_cut}."\t";
 	print UNMAPPED_OBJECT $q_perc."\t".$t_perc."\t";
 	print UNMAPPED_OBJECT $ensembl_id."\t".$ensembl_type."\n";
+	$unmapped_primary_xref{$xref_id} = $acc;
 	print XREF_P ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $acc . 
 	  "\t" . $lab . "\t" . $ver . "\t" . $desc . "\tMISC\tNo match over threshold\n";
       }
@@ -4006,6 +4348,7 @@ PSQL
 	}
 	print UNMAPPED_OBJECT $external_db_id."\t".$acc."\t";
 	print UNMAPPED_OBJECT $xref_missed_id."\t0\t0\t0\tNULL\n";
+	$unmapped_primary_xref{$xref_id} = $acc;
 	print XREF_P ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $acc . 
 	  "\t" . $lab . "\t" . $ver . "\t" . $desc . "\tMISC\tNo match\n";
       }
@@ -4033,10 +4376,153 @@ PSQL
 }
 
 
+=head2 write_dependent_unmapped_objects
+
+  Description: wrote and load the unmapped object for the dependent xrefs
+  Exceptions : none
+  Returntype : none
+
+=cut
+
+sub write_dependent_unmapped_objects{
+  my $self = shift;
+  my $xref_id_offset = $self->xref_id_offset();
+  my $ensembl = $self->core;  
+  my $dir = $ensembl->dir();
+
+  open(UNMAPPED_OBJECT,">$dir/unmapped_object_dependents.txt") 
+    || die "Could not open unmapped_object_dependents.txt";
+  
+  open(XREF,">$dir/dependent_xref.txt") 
+    || die "Could not open dependent_xref.txt";
 
 
+  my $description_missed = "Unable to match as master xref was not mapped";
+  
+  my $sth = $self->core->dbc->prepare("select unmapped_reason_id from unmapped_reason where full_description like '".$description_missed."'");  
+  $sth->execute();
+  my $xref_missed_id;
+  $sth->bind_columns(\$xref_missed_id);
+  $sth->fetch;
+  if(!defined($xref_missed_id)){
+    print STDERR "Could not find the description:\n";
+    print STDERR $description_missed,"\n";
+    print STDERR "In the directory ensembl/misc-scripts/unmapped_reason you ";
+    print STDERR "can add the new reason to the unmapped_reason.txt file ";
+    print STDERR "and run the update_unmapped_reasons.pl script to update ";
+    print STDERR "your core database\n";
+    print STDERR "Alterntively do not add the triage data and add -notriage to the command line.\n";
+    die();
+  }
+  $sth->finish;
+ 
+  my $max_unmapped_object_id;
+  $sth = $self->core->dbc->prepare("select MAX(unmapped_object_id) ".
+				      "from unmapped_object");
+  $sth->execute();
+  my $max_unmapped_object_id;
+  $sth->bind_columns(\$max_unmapped_object_id);
+  $sth->fetch;
+  if(!defined($max_unmapped_object_id)){
+    $max_unmapped_object_id = 1;
+  }
+  $sth->finish;
 
+  my $primary_sql= (<<PSQL);
+    SELECT DISTINCT(s.source_id), px.sequence_type
+      FROM source s, primary_xref px, xref x
+        WHERE x.xref_id = px.xref_id
+          AND s.source_id = x.source_id
+PSQL
+  
+  my $psth = $self->xref->dbc->prepare($primary_sql) || die "prepare failed";
+  $psth->execute() || die "execute failed";
+  
 
+  my %source_2_seqtype=();
+  
+  my ($prim, $seq_type);
+  $psth->bind_columns(\$prim,\$seq_type);
+  while($psth->fetch()){
+    $source_2_seqtype{$prim} = $seq_type;
+  }
+  
+  my $xref_PROT_analysis = $self->get_analysis_id("translation");
+  my $xref_DNA_analysis  = $self->get_analysis_id("transcript");
+  
+  #  $unmapped_primary_xref{$xref_id} = "QZ1234";
+  
+  my $sql = "SELECT DISTINCT(x.xref_id), x2.source_id, dx.master_xref_id, x.accession, x.label, x.description, x.source_id, x.version, dx.linkage_annotation FROM dependent_xref dx, xref x, xref x2 WHERE x2.xref_id = dx.master_xref_id and x.xref_id=dx.dependent_xref_id AND master_xref_id = ?";
+  
+  my $dep_sth = $self->xref->dbc->prepare($sql);
+  
+  
+  foreach my $key (keys %unmapped_primary_xref){
+    $dep_sth->execute($key);
+    my ($xref_id, $master_source, $accession, $version, $label, $description, $source_id, $species_id, $master_xref_id, $linkage_annotation);
+  
+    $dep_sth->bind_columns(\$xref_id, \$master_source, \$master_xref_id, \$accession, \$label, \$description, \$source_id, \$version, \$linkage_annotation);
+    
+    while ($dep_sth->fetch()) {
+      
+
+      if(defined($priority_xref_source_id{$xref_id})){ #priority ones already done
+	next;
+      }
+      
+      my $external_db_id = $source_to_external_db{$source_id};
+      next if (!$external_db_id);
+      
+      
+      if (!$xrefs_written{$xref_id}) {
+        print XREF ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $accession . "\t" .
+          $label . "\t" . $version . "\t" . $description .  "\t" . "DEPENDENT" . "\t" .
+            "No mapping ".$unmapped_primary_xref{$xref_id}. "\n";
+        $xrefs_written{$xref_id} = 1;
+      }
+      if(!defined($object_succesfully_mapped{$xref_id})){
+	$max_unmapped_object_id++;
+	print  UNMAPPED_OBJECT $max_unmapped_object_id."\txref\t";
+	if($source_2_seqtype{$master_source} =~ /peptide/){
+	  if (not defined $xref_PROT_analysis) {
+	    $xref_PROT_analysis = $self->get_analysis_id("translation");
+	  }
+	  print UNMAPPED_OBJECT $xref_PROT_analysis."\t";
+	}
+	elsif($source_2_seqtype{$master_source} =~ /dna/){
+	  if (not defined $xref_DNA_analysis) {
+	    $xref_DNA_analysis = $self->get_analysis_id("transcript");
+	  }
+	  print UNMAPPED_OBJECT $xref_DNA_analysis."\t";
+	}
+	else{
+	  die "COULD NOT get an analysis for source id = $master_source ".$unmapped_primary_xref{$master_xref_id}."\n";
+	}
+	print UNMAPPED_OBJECT $external_db_id."\t".$accession."\t";
+	print UNMAPPED_OBJECT $xref_missed_id."\t0\t0\t0\tNULL\t".
+	  $unmapped_primary_xref{$master_xref_id}. "\n";
+      }
+    }
+  }
+  close UNMAPPED_OBJECT;
+  close XREF;
+  
+  my $file = $dir."/dependent_xref.txt";
+  
+  if(-s $file){
+    my $sth = $ensembl->dbc->prepare("LOAD DATA LOCAL INFILE \'$file\' IGNORE INTO TABLE xref");
+    print "Uploading data in $file to xref\n";
+    $sth->execute();
+  }
+  $file = $dir."/unmapped_object_dependents.txt";
+  
+  if(-s $file){
+    my $sth = $ensembl->dbc->prepare("LOAD DATA LOCAL INFILE \'$file\' IGNORE INTO TABLE unmapped_object");
+    print "Uploading data in $file to unmapped_object\n";
+    $sth->execute();
+  }
+  
+}
 
 1;
 
