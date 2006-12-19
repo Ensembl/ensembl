@@ -51,6 +51,8 @@ INSERT INTO species (species_id, taxonomy_id, name, aliases) VALUES (8090, 8090,
 INSERT INTO source VALUES (1020, 'MIM', 1, 'Y', 10, 1, "");
 INSERT INTO source VALUES (2000, 'CCDS', 1, 'Y', 10, 1, "");
 INSERT INTO source VALUES (1110, 'EntrezGene', 1, 'Y', 10, 1, "");
+INSERT INTO source VALUES (1250, 'SGD', 1, 'Y',10, 1, "");
+
 
 
 INSERT INTO source VALUES (1,  "Uniprot/SWISSPROT", 1, 'Y',20,1, "" );
@@ -95,9 +97,6 @@ INSERT INTO source VALUES (1094, 'HUGO', 1, 'N',29, 5, "entrezgene"); # use entr
 INSERT INTO source VALUES (1200, 'RGD', 1, 'Y',30, 1, "");
 INSERT INTO source VALUES (1300, 'Interpro', 1, 'Y', 30, 1, "");
 INSERT INTO source VALUES (1400, 'ZFIN_ID', 1, 'Y', 30, 1, "");
-
-INSERT INTO source VALUES (1250, 'SGD', 1, 'N',30, 1, "");
-
 
 #INSERT INTO source VALUES (2400, 'WormBase', 1, 'Y',50, 1, "");
 INSERT INTO source VALUES (2400, 'wormpep_id', 1, 'Y', 50, 1, "");
@@ -168,6 +167,7 @@ INSERT INTO source VALUES (5010, 'Illumina', 1, 'Y', 50, 1, "");
 
 # Codelink
 INSERT INTO source VALUES (5020, 'Codelink', 1, 'Y', 50, 1, "");
+
 
 ################################################################################
 # Files to fetch data from
@@ -1284,9 +1284,14 @@ INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_d
 # -----------------------------------------------------------------------------------
 #### Yeast
 
-##      EmtrezGene
+##      EntrezGene
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser)\
 VALUES (1110, 4932, 'ftp://ftp.ncbi.nlm.nih.gov/gene/DATA/gene_info.gz', now(), now(), "EntrezGeneParser");
+
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser)\
+VALUES (1250, 4932, 'ftp://genome-ftp.stanford.edu/pub/yeast/gene_registry/registry.genenames.tab', now(), now(), "SGDParser");
+
+
 
 ## Uniprot
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
