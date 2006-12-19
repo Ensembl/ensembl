@@ -144,21 +144,21 @@ foreach my $slice ( @sorted_slices ) {
       }
     }
 
-    while ( $small_end + $small_blocksize <= $chunk_end ) {
-      # here we can do the small sized density features
-      $small_start = $small_end+1;
-      $small_end += $small_blocksize;
-
-      $repeat_size = $rr->overlap_size( "1", $small_start, $small_end );
-      my $percentage_repeat = $repeat_size / $small_blocksize * 100;
-
-      push( @dfs, Bio::EnsEMBL::DensityFeature->new
-        (-seq_region    => $slice,
-         -start         => $small_start,
-         -end           => $small_end,
-         -density_type  => $small_density_type,
-         -density_value => $percentage_repeat));
-    }
+    #while ( $small_end + $small_blocksize <= $chunk_end ) {
+    #  # here we can do the small sized density features
+    #  $small_start = $small_end+1;
+    #  $small_end += $small_blocksize;
+    #
+    #  $repeat_size = $rr->overlap_size( "1", $small_start, $small_end );
+    #  my $percentage_repeat = $repeat_size / $small_blocksize * 100;
+    #
+    #  push( @dfs, Bio::EnsEMBL::DensityFeature->new
+    #    (-seq_region    => $slice,
+    #     -start         => $small_start,
+    #     -end           => $small_end,
+    #     -density_type  => $small_density_type,
+    #     -density_value => $percentage_repeat));
+    #}
 
     if (@dfs) {
       $dfa->store(@dfs);
