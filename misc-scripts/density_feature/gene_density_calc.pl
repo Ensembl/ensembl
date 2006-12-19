@@ -37,9 +37,9 @@ GetOptions( "host=s", \$host,
 
 
 
-unless ($host || $user || $pass || $dbname) { 
-	print "\n\nusage : perl gene_density.pl -host <HOST> -user <USER> -pass <PASS> -port <3306> -dbname <DATABASENAME> \n\n" ; 
-	exit(0) ; 
+unless ($host || $user || $pass || $dbname) {
+	print "\n\nusage : perl gene_density.pl -host <HOST> -user <USER> -pass <PASS> -port <3306> -dbname <DATABASENAME> \n\n" ;
+	exit(0) ;
 	}
 
 my $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(-host => $host,
@@ -98,6 +98,10 @@ my $dfa = $db->get_DensityFeatureAdaptor();
 my $dta = $db->get_DensityTypeAdaptor();
 my $aa  = $db->get_AnalysisAdaptor();
 my $slice_adaptor = $db->get_SliceAdaptor();
+
+print "Deleting old knownGeneDensity and geneDensity features\n";
+$sth = $db->dbc->prepare("DELETE df, dt, a FROM density_feature df, density_type dt, analysis a WHERE a.analysis_id=dt.analysis_id AND dt.density_type_id=df.density_type_id AND a.logic_name IN ('knownGeneDensity', 'geneDensity')");
+$sth->execute();
 
 #
 # block size estimation
