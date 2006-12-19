@@ -51,7 +51,7 @@ if( ! variation_attach( $db )) {
 #
 
 my $sth = $db->dbc->prepare("DELETE df, dt, a FROM density_feature df, density_type dt, analysis a WHERE a.analysis_id=dt.analysis_id AND dt.density_type_id=df.density_type_id AND a.logic_name='snpDensity'");
-$sth->execute();;
+$sth->execute();
 
 #
 # Get the adaptors needed;
