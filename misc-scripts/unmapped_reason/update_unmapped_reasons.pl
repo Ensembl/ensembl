@@ -116,10 +116,10 @@ sub usage {
  E.g.:
 
   #update 2 databases
-  perl update_unmapped_reasons.pl -host ecs1c -file external_dbs.txt -user ensadmin -pass secret -dbnames homo_sapiens_core_14_33 -dbnames mus_musculus_core_14_30
+  perl update_unmapped_reasons.pl -host ecs1c -file unmapped_reason.txt -user ensadmin -pass secret -dbnames homo_sapiens_core_14_33 -dbnames mus_musculus_core_14_30
 
   #update all core databases for release 14
-  perl update_unmapped_reasons.pl -host ecs2d -file external_dbs.txt -user ensadmin -pass secret -release 14
+  perl update_unmapped_reasons.pl -host ecs2d -file unmapped_reason.txt -user ensadmin -pass secret -release 14
 
 EOF
 ;
