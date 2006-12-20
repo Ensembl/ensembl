@@ -4397,7 +4397,7 @@ sub write_dependent_unmapped_objects{
     || die "Could not open dependent_xref.txt";
 
 
-  my $description_missed = "Unable to match as master xref was not mapped";
+  my $description_missed = "Unable to match as parent xref was not mapped";
   
   my $sth = $self->core->dbc->prepare("select unmapped_reason_id from unmapped_reason where full_description like '".$description_missed."'");  
   $sth->execute();
