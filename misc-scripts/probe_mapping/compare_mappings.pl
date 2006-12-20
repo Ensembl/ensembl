@@ -117,12 +117,11 @@ sub cache_mappings {
   my %mappings;
 
   # TODO - fix SQL when external_db changes
-  my $sth = $db->dbc()->prepare("SELECT tsi.stable_id, e.db_name, x.dbprimary_acc FROM xref x, external_db e, object_xref ox, transcript_stable_id tsi WHERE x.xref_id=ox.xref_id AND x.external_db_id=e.external_db_id AND ox.ensembl_object_type='Transcript' AND ox.ensembl_id=tsi.transcript_id AND $restrict_sql");
+  my $sth = $db->dbc()->prepare("SELECT tsi.stable_id, e.db_name, x.dbprimary_acc, t.biotype FROM xref x, external_db e, object_xref ox, transcript_stable_id tsi, transcript t WHERE x.xref_id=ox.xref_id AND x.external_db_id=e.external_db_id AND ox.ensembl_object_type='Transcript' AND ox.ensembl_id=t.transcript_id AND t.transcript_id=tsi.transcript_id AND $restrict_sql");
   $sth->execute();
   while (my @row = $sth->fetchrow_array()) {
 
-    my $key = $row[0] . "\t" . $row[1]. "\t" . $row[2];
-    #my $key = $row[0] . "\t" . $row[2];
+    my $key = $row[0] . "\t" . $row[3] . "\t". $row[1]. "\t" . $row[2];
     $mappings{$key} = $key;
 
     print "$key\n" if ($print);
