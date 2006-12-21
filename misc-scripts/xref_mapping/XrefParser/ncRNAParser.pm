@@ -47,11 +47,19 @@ sub run {
   }
   while(my $line = <FILE>){
     chomp $line;
-    my ($gene_id,$transcript_id,$source_name,$acc,$display_label,$full_description)
+    my ($gene_id,$transcript_id,$source_name,$acc,$display_label,$full_description, $status)
       = split("\t",$line);
 
     #trim the description.
     my ($description,$junk) = split("[[]Source:",$full_description);
+    if($source_name eq "miRNA_Registry"){
+      if($status eq "KNOWN"){
+	$source_name = "miRBase";
+      }
+      else{
+	$source_name = "miRBase_predicted";
+      }
+    }
     if(!defined($name_2_source_id{$source_name})){
       my $tmp = $self->get_source_id_for_source_name($source_name);
       if(!$tmp){
