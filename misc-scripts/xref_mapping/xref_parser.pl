@@ -35,7 +35,6 @@ if (!$user || !$host || !$dbname) {
 
 }
 
-print "NOT:".$notsource[0]."\n";
 
 XrefParser::BaseParser::run($host, $port, $dbname, $user, $pass, \@species, \@sources, $skipdownload, $checkdownload, $create, $release, $cleanup,$drop_existing_db, $deletedownloaded, $dl_path, \@notsource);
 
