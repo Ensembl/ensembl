@@ -157,7 +157,8 @@ INSERT INTO source VALUES (3100, "Xenopus_Jamboree", 1, 'Y',20, 1, "");
 # ncRNA sources
 INSERT INTO source VALUES (4000, "ncRNA", 1, 'Y',70, 1, "");
 INSERT INTO source VALUES (4010, "RFAM", 1, 'N',70, 1, "");
-INSERT INTO source VALUES (4020, "miRNA_Registry", 1, 'N',70, 1, "");
+INSERT INTO source VALUES (4020, "miRBase", 1, 'N',70, 1, "");
+INSERT INTO source VALUES (4025, "miRBase_predicted", 1, 'N',70, 1, "");
 
 # temporary (?) source for mapping Havana OTT transcripts to Ensembl transcripts
 INSERT INTO source VALUES (5000, 'OTTT', 1, 'Y', 50, 1, "");
@@ -507,6 +508,9 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 ##      Agilent ( original in /ecs4/work5/is1/zv6/oligo/agilent/AGILENT_G2518A.fa ) 
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (2700, 7955,'LOCAL:AgilentProbe/ZebrafishExpression.fasta', '', now(), now(), "AgilentParser");
 
+##      ncRNAs presently inhouse ( points to file with dumped xrefs from transfer_ncRNA.pl) .
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (4000, 7955,'LOCAL:ncRNA/ncRNA.txt', '', now(), now(), "ncRNAParser");
+
 # --------------------------------------------------------------------------------
 ### Chicken
 ##      EntrezGene
@@ -535,6 +539,10 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 
 ##      UniGene
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (6, 9031,'ftp://ftp.ncbi.nih.gov/repository/UniGene/Gallus_gallus/Gga.seq.uniq.gz ftp://ftp.ncbi.nih.gov/repository/UniGene/Gallus_gallus/Gga.data.gz', '', now(), now(), "UniGeneParser");
+
+##      ncRNAs presently inhouse ( points to file with dumped xrefs from transfer_ncRNA.pl) .
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (4000, 9031,'LOCAL:ncRNA/ncRNA.txt', '', now(), now(), "ncRNAParser");
+
 
 # --------------------------------------------------------------------------------
 ### XENOPUS
@@ -572,6 +580,9 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 ##      Xenopus Jamboree
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3100, 8364,'LOCAL:/ecs4/work4/mc2/Xenopus/jamboree/names/names_seq.fa', '', now(), now(), "XenopusJamboreeParser");
 
+##      ncRNAs presently inhouse ( points to file with dumped xrefs from transfer_ncRNA.pl) .
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (4000, 8364,'LOCAL:ncRNA/ncRNA.txt', '', now(), now(), "ncRNAParser");
+
 # --------------------------------------------------------------------------------
 
 ### Dog
@@ -602,6 +613,9 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 
 ##      UniGene
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (6, 9615,'ftp://ftp.ncbi.nih.gov/repository/UniGene/Canis_familiaris/Cfa.seq.uniq.gz ftp://ftp.ncbi.nih.gov/repository/UniGene/Canis_familiaris/Cfa.data.gz', '', now(), now(), "UniGeneParser");
+
+##      ncRNAs presently inhouse ( points to file with dumped xrefs from transfer_ncRNA.pl) .
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (4000, 9615,'LOCAL:ncRNA/ncRNA.txt', '', now(), now(), "ncRNAParser");
 
 # --------------------------------------------------------------------------------
 
@@ -653,6 +667,8 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 
 ##   Stable ID xref transfer - note use of WormbaseDatabaseStableIDParser
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (2400, 6239, 'mysql:ensembldb.ensembl.org::caenorhabditis_elegans_core_39_150a:anonymous', '', now(), now(), "WormbaseDatabaseStableIDParser");
+
+
 
 # --------------------------------------------------------------------------------
 
@@ -739,6 +755,8 @@ VALUES (2610, 7719,'ftp://ftp.jgi-psf.org/pub/JGI_data/Ciona/v1.0/ciona.prot.fas
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser)\
 VALUES (2611, 7719,'ftp://ftp.jgi-psf.org/pub/JGI_data/Ciona/v2.0/FM1.aa.fasta.gz',now(),now(),'JGI_ProteinParser');
 
+##      ncRNAs presently inhouse ( points to file with dumped xrefs from transfer_ncRNA.pl) .
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (4000, 7719,'LOCAL:ncRNA/ncRNA.txt', '', now(), now(), "ncRNAParser");
 
 
 
@@ -847,6 +865,8 @@ INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_d
 (6, 51511,'ftp://ftp.ncbi.nih.gov/repository/UniGene/Ciona_savignyi/Csa.seq.uniq.gz ftp://ftp.ncbi.nih.gov/repository/UniGene/Ciona_savignyi/Csa.data.gz',  now(), now(), "UniGeneParser");
 
 
+##      ncRNAs presently inhouse ( points to file with dumped xrefs from transfer_ncRNA.pl) .
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (4000, 51511,'LOCAL:ncRNA/ncRNA.txt', '', now(), now(), "ncRNAParser");
 
 
 
@@ -948,6 +968,9 @@ INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_d
 
 ##      UniGene
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (6, 9913,'ftp://ftp.ncbi.nih.gov/repository/UniGene/Bos_taurus/Bt.seq.uniq.gz ftp://ftp.ncbi.nih.gov/repository/UniGene/Bos_taurus/Bt.data.gz',  now(), now(), "UniGeneParser");
+
+##      ncRNAs presently inhouse ( points to file with dumped xrefs from transfer_ncRNA.pl) .
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (4000, 9913,'LOCAL:ncRNA/ncRNA.txt', '', now(), now(), "ncRNAParser");
 
 # -----------------------------------------------------------------------------------
 
@@ -1223,6 +1246,10 @@ INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_d
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
 (1300, 13616,'ftp://ftp.ebi.ac.uk/pub/databases/interpro/interpro.xml.gz', now(), now(), "InterproParser");
 
+##      ncRNAs presently inhouse ( points to file with dumped xrefs from transfer_ncRNA.pl) .
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (4000, 13616,'LOCAL:ncRNA/ncRNA.txt', '', now(), now(), "ncRNAParser");
+
+
 # ------------------------------------------------------------------------------
 #### Fugu
 
@@ -1280,6 +1307,10 @@ INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_d
 ##      UniGene
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
 (6, 31033,'ftp://ftp.ncbi.nih.gov/repository/UniGene/Takifugu_rubripes/Tru.seq.uniq.gz ftp://ftp.ncbi.nih.gov/repository/UniGene/Takifugu_rubripes/Tru.data.gz',  now(), now(), "UniGeneParser");
+
+##      ncRNAs presently inhouse ( points to file with dumped xrefs from transfer_ncRNA.pl) .
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (4000, 31033,'LOCAL:ncRNA/ncRNA.txt', '', now(), now(), "ncRNAParser");
+
 
 # -----------------------------------------------------------------------------------
 #### Yeast
@@ -1568,6 +1599,10 @@ INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_d
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
 (1300, 9544,'ftp://ftp.ebi.ac.uk/pub/databases/interpro/interpro.xml.gz', now(), now(), "InterproParser");
 
+##      ncRNAs presently inhouse ( points to file with dumped xrefs from transfer_ncRNA.pl) .
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (4000, 9544,'LOCAL:ncRNA/ncRNA.txt', '', now(), now(), "ncRNAParser");
+
+
 ##------------------------------------------------------------------------------
 ##### elephant
 
@@ -1587,6 +1622,10 @@ INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_d
 
 ##      Interpro
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (1300, 9785,'ftp://ftp.ebi.ac.uk/pub/databases/interpro/interpro.xml.gz', now(), now(), "InterproParser");
+
+##      ncRNAs presently inhouse ( points to file with dumped xrefs from transfer_ncRNA.pl) .
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (4000, 9785,'LOCAL:ncRNA/ncRNA.txt', '', now(), now(), "ncRNAParser");
+
 
 ##------------------------------------------------------------------------------
 ##### armadillo
@@ -1608,6 +1647,11 @@ INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_d
 ##      Interpro
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (1300, 9361,'ftp://ftp.ebi.ac.uk/pub/databases/interpro/interpro.xml.gz', now(), now(), "InterproParser");
 
+
+##      ncRNAs presently inhouse ( points to file with dumped xrefs from transfer_ncRNA.pl) .
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (4000, 9361,'LOCAL:ncRNA/ncRNA.txt', '', now(), now(), "ncRNAParser");
+
+
 ##------------------------------------------------------------------------------
 ##### rabbit
 
@@ -1627,6 +1671,10 @@ INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_d
 
 ##      Interpro
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (1300, 9986,'ftp://ftp.ebi.ac.uk/pub/databases/interpro/interpro.xml.gz', now(), now(), "InterproParser");
+
+
+##      ncRNAs presently inhouse ( points to file with dumped xrefs from transfer_ncRNA.pl) .
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (4000, 9986,'LOCAL:ncRNA/ncRNA.txt', '', now(), now(), "ncRNAParser");
 
 ##------------------------------------------------------------------------------
 ##### tenrec
@@ -1700,6 +1748,10 @@ INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_d
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (4, 69293,'ftp://ftp.ncbi.nih.gov/refseq/release/vertebrate_other/vertebrate_other7.rna.fna.gz',  now(), now(), "RefSeqParser");
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (4, 69293,'ftp://ftp.ncbi.nih.gov/refseq/release/vertebrate_other/sequences.fasta.gz',  now(), now(), "RefSeqParser");
 
+##      ncRNAs presently inhouse ( points to file with dumped xrefs from transfer_ncRNA.pl) .
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (4000, 69293,'LOCAL:ncRNA/ncRNA.txt', '', now(), now(), "ncRNAParser");
+
+
 ##------------------------------------------------------------------------------
 ##### medaka
 
@@ -1756,6 +1808,10 @@ INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_d
 ##      UniGene
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
 (6, 8090,'ftp://ftp.ncbi.nih.gov/repository/UniGene/Oryzias_latipes/Ola.seq.uniq.gz ftp://ftp.ncbi.nih.gov/repository/UniGene/Oryzias_latipes/Ola.data.gz',  now(), now(), "UniGeneParser");
+
+
+##      ncRNAs presently inhouse ( points to file with dumped xrefs from transfer_ncRNA.pl) .
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (4000, 8090,'LOCAL:ncRNA/ncRNA.txt', '', now(), now(), "ncRNAParser");
 
 ##------------------------------------------------------------------------------
 
