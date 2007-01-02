@@ -245,8 +245,8 @@ ok(@$interpro == 1);
 # test fetch_all_by_external_name
 #
 
-($tr) = @{$ta->fetch_all_by_external_name('HCK')};
-ok($tr && $tr->stable_id eq 'ENST00000262651');
+($tr) = @{$ta->fetch_all_by_external_name('PLAGL2')};
+ok($tr && $tr->stable_id eq 'ENST00000246229');
 
 #
 # test fetch_by_translation_id
@@ -530,13 +530,13 @@ my $sl = $sa->fetch_by_region('chromosome', 'MT_NC_001807');
 @transcripts = @{ $sl->get_all_Transcripts };
 ok( scalar(@transcripts) == 1 );
 
-@transcripts = @{ $ta->fetch_all_by_external_name('MX_HUMAN') };
+@transcripts = @{ $ta->fetch_all_by_external_name('MAE1_HUMAN') };
 debug( "fetch_all_by_external_name" );
-ok( scalar(@transcripts) == 1 && $transcripts[0]->dbID == 21740 );
+ok( scalar(@transcripts) == 1 && $transcripts[0]->dbID == 21738 );
 
-$tr = $ta->fetch_by_display_label('MX_HUMAN');
+$tr = $ta->fetch_by_display_label('MAPRE1');
 debug("fetch_by_display_label");
-ok( $tr->dbID == 21740 );
+ok( $tr->dbID == 21738 );
 
 # store/update
 
