@@ -346,6 +346,7 @@ sub _columns {
   Example    : @feature_ids = @{$protein_align_feature_adaptor->list_dbIDs()};
   Description: Gets an array of internal ids for all protein align 
                features in the current db
+  Arg[1]     : <optional> int. not 0 for the ids to be sorted by the seq_region.
   Returntype : listref of ints
   Exceptions : none
   Caller     : ?
@@ -354,9 +355,9 @@ sub _columns {
 =cut
 
 sub list_dbIDs {
-   my ($self) = @_;
+   my ($self,$ordered) = @_;
 
-   return $self->_list_dbIDs("protein_align_feature");
+   return $self->_list_dbIDs("protein_align_feature", undef, $ordered);
 }
 
 

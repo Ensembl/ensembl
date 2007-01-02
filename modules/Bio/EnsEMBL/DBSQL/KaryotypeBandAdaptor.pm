@@ -214,6 +214,7 @@ sub fetch_by_chr_band {
   Example    : @kary_ids = @{$karyotype_band_adaptor->list_dbIDs()};
   Description: Gets an array of internal ids for all karyotype bands in the
                current db
+  Arg[1]     : <optional> int. not 0 for the ids to be sorted by the seq_region.
   Returntype : reference to a list of ints
   Exceptions : none
   Caller     : ?
@@ -222,9 +223,9 @@ sub fetch_by_chr_band {
 =cut
 
 sub list_dbIDs {
-  my $self = shift;
+  my ($self, $ordered) = shift;
 
-  return $self->_list_dbIDs("karyotype");
+  return $self->_list_dbIDs("karyotype",undef, $ordered);
 }
 
 

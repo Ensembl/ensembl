@@ -1067,6 +1067,7 @@ sub update {
 
   Example    : @transcript_ids = @{ $t_adaptor->list_dbIDs };
   Description: Gets a list of internal ids for all transcripts in the db.
+  Arg[1]     : <optional> int. not 0 for the ids to be sorted by the seq_region.
   Returntype : Listref of Ints
   Exceptions : none
   Caller     : general
@@ -1075,9 +1076,9 @@ sub update {
 =cut
 
 sub list_dbIDs {
-   my ($self) = @_;
+   my ($self, $ordered) = @_;
 
-   return $self->_list_dbIDs("transcript");
+   return $self->_list_dbIDs("transcript",undef, $ordered);
 }
 
 

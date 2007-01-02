@@ -311,6 +311,7 @@ sub _objs_from_sth {
   Arg [1]    : none
   Example    : @feature_ids = @{$simple_feature_adaptor->list_dbIDs()};
   Description: Gets an array of internal ids for all simple features in the current db
+  Arg[1]     : <optional> int. not 0 for the ids to be sorted by the seq_region.
   Returntype : list of ints
   Exceptions : none
   Caller     : ?
@@ -319,9 +320,9 @@ sub _objs_from_sth {
 =cut
 
 sub list_dbIDs {
-   my ($self) = @_;
+   my ($self, $ordered) = @_;
 
-   return $self->_list_dbIDs("simple_feature");
+   return $self->_list_dbIDs("simple_feature", undef, $ordered);
 }
 
 1;

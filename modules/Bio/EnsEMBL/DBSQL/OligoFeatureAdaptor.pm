@@ -495,6 +495,7 @@ sub store{
   Example    : my @feature_ids = @{$ofa->list_dbIDs()};
   Description: Gets an array of internal IDs for all OligoFeature objects in
                the current database.
+  Arg[1]     : <optional> int. not 0 for the ids to be sorted by the seq_region.
   Returntype : List of ints
   Exceptions : None
   Caller     : ?
@@ -503,9 +504,9 @@ sub store{
 =cut
 
 sub list_dbIDs {
-	my $self = shift;
+  my ($self,$ordered) = shift;
 	
-	return $self->_list_dbIDs('oligo_feature');
+  return $self->_list_dbIDs('oligo_feature',undef,$ordered);
 }
 
 1;

@@ -113,6 +113,7 @@ sub _left_join {
 
   Example    : @gene_ids = @{$gene_adaptor->list_dbIDs()};
   Description: Gets an array of internal ids for all genes in the current db
+  Arg[1]     : <optional> int. not 0 for the ids to be sorted by the seq_region.
   Returntype : Listref of Ints
   Exceptions : none
   Caller     : general
@@ -121,9 +122,9 @@ sub _left_join {
 =cut
 
 sub list_dbIDs {
-   my ($self) = @_;
+  my ($self,$ordered) = @_;
 
-   return $self->_list_dbIDs("gene");
+  return $self->_list_dbIDs("gene",undef, $ordered);
 }
 
 
@@ -150,7 +151,6 @@ sub list_seq_region_ids {
 
   return $self->_list_seq_region_ids('gene');
 }
-
 
 =head2 fetch_by_display_label
 

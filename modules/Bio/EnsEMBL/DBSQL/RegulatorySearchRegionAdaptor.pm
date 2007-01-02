@@ -352,6 +352,7 @@ sub store {
   Arg [1]    : none
   Example    : @feature_ids = @{$repeat_feature_adaptor->list_dbIDs()};
   Description: Gets an array of internal ids for all repeat features in the current db
+  Arg[1]     : <optional> int. not 0 for the ids to be sorted by the seq_region.
   Returntype : list of ints
   Exceptions : none
   Caller     : ?
@@ -361,9 +362,9 @@ sub store {
 =cut
 
 sub list_dbIDs {
-   my ($self) = @_;
+   my ($self, $ordered) = @_;
 
-   return $self->_list_dbIDs("regulatory_search_region");
+   return $self->_list_dbIDs("regulatory_search_region", undef, $ordered);
 }
 
 

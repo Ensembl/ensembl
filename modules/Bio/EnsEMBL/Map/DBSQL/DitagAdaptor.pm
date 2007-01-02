@@ -366,9 +366,9 @@ sub update_ditag {
 =cut
 
 sub list_dbIDs {
-	my $self = shift;
+  my ($self, $ordered) = shift;
 	
-	return $self->_list_dbIDs('ditag');
+  return $self->_list_dbIDs('ditag');
 }
 
 1;

@@ -216,13 +216,16 @@ sub dbc{
 # returns listref of IDs
 sub _list_dbIDs {
 
-  my ($self, $table, $pk) = @_;
+  my ($self, $table, $pk, $ordered) = @_;
   if (!defined($pk)) {
     $pk = $table . "_id";
   }
 
   my @out;
   my $sql = "SELECT " . $pk . "  FROM " . $table;
+  if(defined($ordered) and $ordered){
+    $sql .= " order by seq_region_id, seq_region_start"
+  }	
   my $sth = $self->prepare($sql);
   $sth->execute;
 
@@ -234,6 +237,7 @@ sub _list_dbIDs {
 
   return \@out;
 }
+
 
 # _straight_join
 
