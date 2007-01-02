@@ -238,7 +238,7 @@ ok($defined_exons_count == $pt->cdna2genomic( 1, $pt->length()));
 #
 # 30 test type
 #
-ok(&Bio::EnsEMBL::Test::TestUtils::test_getter_setter($pt, 'type', 'test'));
+ok(&Bio::EnsEMBL::Test::TestUtils::test_getter_setter($pt, 'biotype', 'test'));
 
 #
 # 31 test fetch_by_stable_id
