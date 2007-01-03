@@ -161,6 +161,9 @@ ALTER table translation_attrib ADD FOREIGN KEY (translation_id) REFERENCES trans
 
 ALTER table translation_stable_id ADD FOREIGN KEY (translation_id) REFERENCES translation(translation_id);
 
+ALTER table unconventional_transcript_association ADD FOREIGN KEY (gene_id) REFERENCES gene(gene_id);
+ALTER table unconventional_transcript_association ADD FOREIGN KEY (transcript_id) REFERENCES transcript(transcript_id);
+
 ALTER table unmapped_object ADD FOREIGN KEY (analysis_id) REFERENCES analysis(analysis_id);
 ALTER table unmapped_object ADD FOREIGN KEY (external_db_id) REFERENCES external_db(external_db_id);
 ALTER table unmapped_object ADD FOREIGN KEY (unmapped_reason_id) REFERENCES unmapped_reason(unmapped_reason_id);
