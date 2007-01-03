@@ -474,6 +474,7 @@ sub exists {
 
   Arg [1]    : Bio::EnsEMBL::Gene $gene 
                (The gene to retrieve DBEntries for)
+  Arg [2]    : optional external database name
   Example    : @db_entries = @{$db_entry_adaptor->fetch_by_Gene($gene)};
   Description: This returns a list of DBEntries associated with this gene.
                Note that this method was changed in release 15.  Previously
@@ -489,19 +490,20 @@ sub exists {
 =cut
 
 sub fetch_all_by_Gene {
-  my ( $self, $gene ) = @_;
+  my ( $self, $gene, $ex_db_reg ) = @_;
 
   if(!ref($gene) || !$gene->isa('Bio::EnsEMBL::Gene')) {
     throw("Bio::EnsEMBL::Gene argument expected.");
   }
 
-  return $self->_fetch_by_object_type($gene->dbID(), 'Gene');
+  return $self->_fetch_by_object_type($gene->dbID(), 'Gene', $ex_db_reg);
 }
 
 
 =head2 fetch_all_by_Transcript
 
   Arg [1]    : Bio::EnsEMBL::Transcript
+  Arg [2]    : optional external database name
   Example    : @db_entries = @{$db_entry_adaptor->fetch_by_Gene($trans)};
   Description: This returns a list of DBEntries associated with this 
                transcript. Note that this method was changed in release 15.  
@@ -517,13 +519,13 @@ sub fetch_all_by_Gene {
 =cut
 
 sub fetch_all_by_Transcript {
-  my ( $self, $trans ) = @_;
+  my ( $self, $trans, $ex_db_reg ) = @_;
 
   if(!ref($trans) || !$trans->isa('Bio::EnsEMBL::Transcript')) {
     throw("Bio::EnsEMBL::Transcript argument expected.");
   }
 
-  return $self->_fetch_by_object_type( $trans->dbID(), 'Transcript');
+  return $self->_fetch_by_object_type( $trans->dbID(), 'Transcript', $ex_db_reg);
 }
 
 
@@ -531,6 +533,7 @@ sub fetch_all_by_Transcript {
 
   Arg [1]    : Bio::EnsEMBL::Translation $trans
                (The translation to fetch database entries for)
+  Arg [2]    : optional external database name
   Example    : @db_entries = @{$db_entry_adptr->fetch_by_Translation($trans)};
   Description: Retrieves external database entries for an EnsEMBL translation
   Returntype : listref of Bio::EnsEMBL::DBEntries; may be of type IdentityXref if
@@ -542,7 +545,7 @@ sub fetch_all_by_Transcript {
 =cut
 
 sub fetch_all_by_Translation {
-  my ( $self, $trans ) = @_;
+  my ( $self, $trans, $ex_db_reg ) = @_;
 
   if(!ref($trans) || !$trans->isa('Bio::EnsEMBL::Translation')) {
     throw('Bio::EnsEMBL::Translation argument expected.');
@@ -551,7 +554,7 @@ sub fetch_all_by_Translation {
     warning( "Cannot fetch_all_by_Translation without a dbID" );
     return [];
   }
-  return $self->_fetch_by_object_type( $trans->dbID(), 'Translation' );
+  return $self->_fetch_by_object_type( $trans->dbID(), 'Translation', $ex_db_reg );
 }
 
 
@@ -661,6 +664,7 @@ sub remove_from_object {
   Arg [1]    : string $ensID
   Arg [2]    : string $ensType
   			   (object type to be returned) 
+  Arg [3]    : optional $exdbname (external database name)
   Example    : $self->_fetch_by_object_type( $translation_id, 'Translation' )
   Description: Fetches DBEntry by Object type
   Returntype : arrayref of DBEntry objects; may be of type IdentityXref if
@@ -674,7 +678,7 @@ sub remove_from_object {
 =cut
 
 sub _fetch_by_object_type {
-  my ( $self, $ensID, $ensType ) = @_;
+  my ( $self, $ensID, $ensType, $exdbname ) = @_;
   my @out;
 
   if (!defined($ensID)) {
@@ -683,7 +687,8 @@ sub _fetch_by_object_type {
   if (!defined($ensType)) {
     throw("Can't fetch_by_EnsObject_type without a type");
   }
-  my $sth = $self->prepare("
+#  my $sth = $self->prepare("
+  my $sql = (<<SSQL);
     SELECT xref.xref_id, xref.dbprimary_acc, xref.display_label, xref.version,
            xref.description,
            exDB.dbprimary_acc_linkable, exDB.display_label_linkable, exDB.priority,
@@ -703,7 +708,9 @@ sub _fetch_by_object_type {
       AND  xref.external_db_id = exDB.external_db_id 
       AND  oxr.ensembl_id = ?
       AND  oxr.ensembl_object_type = ?
-  ");
+SSQL
+  $sql .= " AND exDB.db_name like '".$exdbname."' " if($exdbname);
+  my $sth = $self->prepare($sql);
 
   $sth->bind_param(1,$ensID,SQL_INTEGER);
   $sth->bind_param(2,$ensType,SQL_VARCHAR);

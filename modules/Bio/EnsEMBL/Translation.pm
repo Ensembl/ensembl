@@ -337,21 +337,28 @@ sub transform {
 
 sub get_all_DBEntries {
   my $self = shift;
+  my $ex_db_exp = shift;
+
+  my $cache_name = "dbentries";
+
+  if(defined($ex_db_exp)){
+    $cache_name .= $ex_db_exp;
+  }
 
   #if not cached, retrieve all of the xrefs for this gene
-  if(!defined $self->{'dbentries'}) {
+  if(!defined $self->{$cache_name}) {
     my $adaptor = $self->adaptor();
     my $dbID    = $self->dbID();
 
     return [] if(!$adaptor || !$dbID);
 
-    $self->{'dbentries'} =
-      $self->adaptor->db->get_DBEntryAdaptor->fetch_all_by_Translation($self);
+    $self->{$cache_name} =
+      $self->adaptor->db->get_DBEntryAdaptor->fetch_all_by_Translation($self, $ex_db_exp);
   }
 
-  $self->{'dbentries'} ||= [];
+  $self->{$cache_name} ||= [];
 
-  return $self->{'dbentries'};
+  return $self->{$cache_name};
 }
 
 

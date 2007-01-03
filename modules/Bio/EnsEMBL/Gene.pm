@@ -435,23 +435,29 @@ sub add_DBEntry {
 =cut
 
 sub get_all_DBEntries {
-  my $self = shift;
+  my ($self, $db_name_exp) = @_;
+  my $cache_name = "dbentries";
 
+  if(defined($db_name_exp)){
+    $cache_name .= $db_name_exp;
+  }
   # if not cached, retrieve all of the xrefs for this gene
-  if(!defined $self->{'dbentries'} && $self->adaptor()) {
-    $self->{'dbentries'} = 
-      $self->adaptor->db->get_DBEntryAdaptor->fetch_all_by_Gene($self);
+  if(!defined $self->{$cache_name} && $self->adaptor()) {
+    $self->{$cache_name} = 
+      $self->adaptor->db->get_DBEntryAdaptor->fetch_all_by_Gene($self,$db_name_exp);
   }
 
-  $self->{'dbentries'} ||= [];
+  $self->{$cache_name} ||= [];
 
-  return $self->{'dbentries'};
+  return $self->{$cache_name};
 }
 
 
 =head2 get_all_DBLinks
 
   Example    : @dblinks = @{ $gene->get_all_DBLinks };
+             : @dblinks = @{ $gene->get_all_DBLinks("Uniprot%") };
+  Arg [1]    : <optional> database name use % for wild card as sent to sql directly 
   Description: Retrieves _all_ related DBEntries for this gene. This includes
                all DBEntries that are associated with the transcripts and
                corresponding translations of this gene.
@@ -459,6 +465,11 @@ sub get_all_DBEntries {
                If you only want to retrieve the DBEntries associated with the
                gene (and not the transcript and translations) then you should
                use the get_all_DBEntries call instead.
+         
+               Note: Each entry may be listed more than once. No uniqueness checks are done.
+                     Also if you put in an incorrect external database name no checks are done
+                     to see if this exists, you will just get an empty list.
+
   Returntype : Listref of Bio::EnsEMBL::DBEntry objects
   Exceptions : none
   Caller     : general
@@ -468,15 +479,16 @@ sub get_all_DBEntries {
 
 sub get_all_DBLinks {
    my $self = shift;
+   my $db_name_exp = shift;
 
-   my @links = @{$self->get_all_DBEntries()};
+   my @links = @{$self->get_all_DBEntries($db_name_exp)};
 
    # add all of the transcript and translation xrefs to the return list
-   foreach my $transc (@{$self->get_all_Transcripts()}) {
-     push @links, @{$transc->get_all_DBEntries};
+   foreach my $transc (@{$self->get_all_Transcripts}) {
+     push @links, @{$transc->get_all_DBEntries($db_name_exp)};
 
      my $transl = $transc->translation();
-     push @links, @{$transl->get_all_DBEntries} if($transl);
+     push @links, @{$transl->get_all_DBEntries($db_name_exp)} if($transl);
    }
 
    return \@links;

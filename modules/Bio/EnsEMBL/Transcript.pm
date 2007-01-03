@@ -180,13 +180,14 @@ sub new {
 
 sub get_all_DBLinks {
   my $self = shift;
+  my $ex_db_exp = shift;
 
   my @links;
 
-  push @links, @{$self->get_all_DBEntries};
+  push @links, @{$self->get_all_DBEntries($ex_db_exp)};
 
   my $transl = $self->translation();
-  push @links, @{$transl->get_all_DBEntries} if($transl);
+  push @links, @{$transl->get_all_DBEntries($ex_db_exp)} if($transl);
 
   @links = sort {_compare_xrefs()} @links;
 
@@ -214,16 +215,22 @@ sub get_all_DBLinks {
 
 sub get_all_DBEntries {
   my $self = shift;
+  my $ex_db_exp = shift;
 
+  my $cache_name = "dbentries";
+
+  if(defined($ex_db_exp)){
+    $cache_name .= $ex_db_exp;
+  }
   # if not cached, retrieve all of the xrefs for this gene
-  if(!defined $self->{'dbentries'} && $self->adaptor()) {
-    $self->{'dbentries'} = 
-      $self->adaptor->db->get_DBEntryAdaptor->fetch_all_by_Transcript($self);
+  if(!defined $self->{$cache_name} && $self->adaptor()) {
+    $self->{$cache_name} = 
+      $self->adaptor->db->get_DBEntryAdaptor->fetch_all_by_Transcript($self, $ex_db_exp);
   }
 
-  $self->{'dbentries'} ||= [];
+  $self->{$cache_name} ||= [];
 
-  return $self->{'dbentries'};
+  return $self->{$cache_name};
 }
 
 
