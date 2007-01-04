@@ -864,7 +864,7 @@ CREATE TABLE meta (
 
 
 # Auto add schema version to database
-INSERT INTO meta (meta_key, meta_value) VALUES ("schema_version", "42");
+INSERT INTO meta (meta_key, meta_value) VALUES ("schema_version", "43");
 
 # patches included in this schema file
 # NOTE: at beginning of release cycle, remove patch entries from last release
@@ -883,7 +883,8 @@ INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_41_42_e.sql|dita
 INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_41_42_f.sql|analysis_description_web_data');
 INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_41_42_g.sql|genebuild_version_format_change');
 
-INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_42_43_a.sql|unmapped_object_probe2transcript');
+INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_42_43_a.sql|unmapped_object.parent');
+INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_42_43_b.sql|unmapped_object_probe2transcript');
 
 ################################################################################
 #
