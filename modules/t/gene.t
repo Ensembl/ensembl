@@ -653,7 +653,6 @@ ok( $gene->dbID == 18275 );
 
 @genes = @{ $ga->fetch_all_versions_by_stable_id('ENSG00000355555') };
 debug("fetch_all_versions_by_stable_id");
-print STDERR "genes:-".scalar(@genes)."\n";
 ok( scalar(@genes) == 1 );
 
 my $sl = $sa->fetch_by_region('chromosome', 'MT_NC_001807');
@@ -747,7 +746,6 @@ $new_gene->add_unconventional_transcript_association($new_transcript, 'sense_int
 ok(@{$new_gene->get_all_unconventional_transcript_associations()} == 1);
 
 # test storing
-$multi->hide( "core", "unconventional_transcript_association" );
 
 $new_gene = $ga->fetch_by_dbID(18261);
 ok(@{$new_gene->get_all_unconventional_transcript_associations()} == 0);
@@ -758,12 +756,7 @@ $new_gene->add_unconventional_transcript_association($new_transcript, 'antisense
 $ga->store($new_gene);
 
 # test removing
-$ga->remove($new_gene);
+$new_gene->remove_unconventional_transcript_associations();
 
 my $utaa = $db->get_UnconventionalTranscriptAssociationAdaptor();
 ok(@{$utaa->fetch_all_by_gene($new_gene)} == 0);
-
-# test updating
-
-
-$multi->restore;
