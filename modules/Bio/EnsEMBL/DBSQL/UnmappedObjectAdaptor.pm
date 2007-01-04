@@ -216,7 +216,7 @@ sub _objs_from_sth {
 =head2 store
 
   Arg [1]    : list of Bio::EnsEMBL::UnmappedObjects @uo
-               the simple features to store in the database
+               the unmapped objects to store in the database
   Example    : $ou_adaptor->store(@uo);
   Description: Stores a list of unmapped objects in the database
   Returntype : none
