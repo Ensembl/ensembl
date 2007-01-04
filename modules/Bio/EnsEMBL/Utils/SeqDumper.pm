@@ -693,6 +693,19 @@ sub _dump_feature_table {
       $value = $self->features2location( [$gene] );
       $self->write( @ff, 'gene', $value );
       $self->write( @ff, "", '/gene='.$gene->stable_id() );
+
+
+      if(defined($gene->display_xref)){
+	$self->write( @ff, "",'/locus_tag="'.$gene->display_xref->display_id.'"');
+      }
+      my $desc = $gene->description;
+      if(defined($desc) and $desc ne ""){
+	$desc =~ s/\"//; 
+	$self->write( @ff, "", '/note="'.$gene->description.'"');
+      }
+
+
+
       foreach my $transcript (@{$gene->get_all_Transcripts}) {
         my $translation = $transcript->translation;
 
