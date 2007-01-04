@@ -297,17 +297,19 @@ sub type_variation {
 
   if(@coords > 1) {
     my @out;
+    #this will be a new type, complex_indel
+    $var->type('COMPLEX_INDEL');
+    return [$var];
+#     foreach my $c (@coords) {
+#       my %new_var = %{$var};
+#       $new_var{'end'} = $var->start + $c->length() - 1;
+#       $var->start( $new_var{'end'} + 1);
+#       #empty the type before re-run
+#       $var->empty_type ;  
+#       push @out, @{type_variation($tr, $g, bless \%new_var, ref($var))};
+#     }
 
-    foreach my $c (@coords) {
-      my %new_var = %{$var};
-      $new_var{'end'} = $var->start + $c->length() - 1;
-      $var->start( $new_var{'end'} + 1);
-      #empty the type before re-run
-      $var->empty_type ;  
-      push @out, @{type_variation($tr, $g, bless \%new_var, ref($var))};
-    }
-
-    return \@out;
+#    return \@out;
   }
 
   my @coords_splice_2 = $tm->genomic2cdna($var->start -2, $var->end +2, $var->strand);
@@ -367,17 +369,19 @@ sub type_variation {
   @coords = $tm->genomic2cds($var->start, $var->end,$var->strand);
 
   if(@coords > 1) {
-    my @out;
-
-    foreach my $c (@coords) {
-      my %new_var = %{$var};
-      $new_var{'end'} = $var->start + $c->length() - 1;
-      $var->start( $new_var{'end'} + 1);
-      #empty the type before re-run       
-      $var->empty_type ;
-      push @out, @{type_variation($tr, $g, bless \%new_var, ref($var))};
-    }
-    return \@out;
+#    my @out;
+      #this is a new type, complex_indel
+      $var->type('COMPLEX_INDEL');
+      return [$var];
+#     foreach my $c (@coords) {
+#       my %new_var = %{$var};
+#       $new_var{'end'} = $var->start + $c->length() - 1;
+#       $var->start( $new_var{'end'} + 1);
+#       #empty the type before re-run       
+#       $var->empty_type ;
+#       push @out, @{type_variation($tr, $g, bless \%new_var, ref($var))};
+#     }
+#     return \@out;
   }
 
   $c = $coords[0];
