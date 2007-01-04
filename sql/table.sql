@@ -883,6 +883,8 @@ INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_41_42_e.sql|dita
 INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_41_42_f.sql|analysis_description_web_data');
 INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_41_42_g.sql|genebuild_version_format_change');
 
+INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_42_43_a.sql|unmapped_object_probe2transcript');
+
 ################################################################################
 #
 # Table structure for table 'marker_synonym'
@@ -1516,7 +1518,7 @@ CREATE TABLE regulatory_search_region (
 CREATE TABLE unmapped_object (
 
   unmapped_object_id    INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  type                  ENUM('xref', 'cDNA', 'Marker') NOT NULL,
+  type                  ENUM('xref', 'cDNA', 'Marker', 'probe2transcript') NOT NULL,
   analysis_id           INT(10) UNSIGNED NOT NULL,
   external_db_id        INT(10) UNSIGNED NOT NULL,
   identifier            VARCHAR(255) NOT NULL,
