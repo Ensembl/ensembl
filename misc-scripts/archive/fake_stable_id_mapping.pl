@@ -220,27 +220,6 @@ if ($support->param('dry_run')) {
   exit;
 }
 
-# backup archive tables in case you screw up
-=cut
-$support->log_stamped("Creating backup of stable_id_event, gene_archive and peptide_archive...\n");
-$sql = qq(
-  CREATE TABLE stable_id_event_bak
-  SELECT * FROM stable_id_event
-);
-$c = $dbh_new->do($sql);
-$sql = qq(
-  CREATE TABLE gene_archive_bak
-  SELECT * FROM gene_archive
-);
-$c = $dbh_new->do($sql);
-$sql = qq(
-  CREATE TABLE peptide_archive_bak
-  SELECT * FROM peptide_archive
-);
-$c = $dbh_new->do($sql);
-$support->log_stamped("Done.\n\n");
-=cut
-
 # create a new mapping session
 $support->log("Creating new mapping session...\n");
 my $old_db_name = $support->param('altdbname');
@@ -392,14 +371,6 @@ foreach my $gsi (keys(%genes)) {
   }
 }
 $support->log_stamped("Done adding $c entries.\n\n");
-
-# delete backup tables? (or remind to do so)
-if ($support->user_proceed("Would you like to drop the temporary backup table?")) {
-  $dbh_new->do(qq(DROP TABLE stable_id_event_bak));
-  $dbh_new->do(qq(DROP TABLE gene_archive_bak));
-  $dbh_new->do(qq(DROP TABLE peptide_archive_bak));
-  $support->log("Done.\n\n");
-}
 
 # finish logfile
 $support->finish_log;
