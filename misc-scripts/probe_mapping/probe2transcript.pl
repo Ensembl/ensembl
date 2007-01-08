@@ -3,6 +3,7 @@ use strict;
 use Getopt::Long;
 
 use Bio::EnsEMBL::DBEntry;
+use Bio::EnsEMBL::UnmappedObject;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::EnsEMBL::Mapper::RangeRegistry;
 
@@ -10,7 +11,7 @@ my ($transcript_host, $transcript_port, $transcript_user, $transcript_pass, $tra
     $oligo_host, $oligo_port, $oligo_user, $oligo_pass, $oligo_dbname,
     $xref_host, $xref_port, $xref_user, $xref_pass, $xref_dbname,
     $max_mismatches, $utr_length, $max_transcripts_per_probeset, $max_transcripts, @arrays, $delete,
-    $mapping_threshold);
+    $mapping_threshold, $no_triage);
 
 GetOptions('transcript_host=s'      => \$transcript_host,
            'transcript_user=s'      => \$transcript_user,
@@ -34,6 +35,7 @@ GetOptions('transcript_host=s'      => \$transcript_host,
 	   'threshold=s'            => \$mapping_threshold,
 	   'arrays=s'               => \@arrays,
 	   'delete'                 => \$delete,
+	   'no_triage'              => \$no_triage,
            'help'                   => sub { usage(); exit(0); });
 
 $transcript_port ||= 3306; $oligo_port ||= 3306; $xref_port ||= 3306;
@@ -90,6 +92,7 @@ if ($xref_host && $xref_dbname && $xref_user) {
 }
 
 delete_existing_xrefs($oligo_db, $xref_db, @arrays) if ($delete);
+delete_unmapped_entries($xref_db) if ($delete);
 
 check_existing_and_exit($oligo_db, $xref_db, @arrays);
 
@@ -97,14 +100,22 @@ my $transcript_adaptor = $transcript_db->get_TranscriptAdaptor();
 my $slice_adaptor = $transcript_db->get_SliceAdaptor();
 my $oligo_feature_adaptor = $oligo_db->get_OligoFeatureAdaptor();
 my $db_entry_adaptor = $xref_db->get_DBEntryAdaptor();
+my $analysis_adaptor = $xref_db->get_AnalysisAdaptor();
+my $unmapped_object_adaptor = $xref_db->get_UnmappedObjectAdaptor();
+
+my $analysis = get_or_create_analysis($analysis_adaptor);
 
 my %promiscuous_probesets;
 my %transcripts_per_probeset;
 
 my %transcript_ids;
-my %probeset_sizes;
 
 my %transcript_probeset_count; # key: transcript:probeset value: count
+
+my %arrays_per_probeset;
+my %array_probeset_sizes;
+
+my @unmapped_objects;
 
 $| = 1; # auto flush stdout
 
@@ -145,8 +156,8 @@ foreach my $transcript (@transcripts) {
   $rr->flush();
 
   foreach my $exon (@$exons) {
-    my $start = $exon->seq_region_start();
-    my $end = $exon->seq_region_end();
+    my $start = $exon->start();
+    my $end = $exon->end();
     $rr->check_and_register("exonic", $start, $end);
   }
 
@@ -170,30 +181,37 @@ foreach my $transcript (@transcripts) {
     my $probe = $feature->probe();
     my $probeset = $probe->probeset();
 
-    foreach my $array (@{$probe->get_all_Arrays()}) {
-      $probeset_sizes{$probeset} = $array->setsize();
-    }
-    my $key = $transcript->stable_id() . ":" . $probeset;
+    my $transcript_key = $transcript->stable_id() . ":" . $probeset;
 
     my $probe_length = $probe->probelength();
     my $min_overlap = ($probe_length - $max_mismatches);
 
     my $exon_overlap = $rr->overlap_size("exonic", $feature->seq_region_start(), $feature->seq_region_end());
-    my $utr_overlap = $rr->overlap_size("utr",     $feature->seq_region_start(), $feature->seq_region_end());
+    my $utr_overlap  = $rr->overlap_size("utr",    $feature->seq_region_start(), $feature->seq_region_end());
 
     if ($exon_overlap >= $min_overlap) {
 
-      $transcript_probeset_count{$key}++;
+      $transcript_probeset_count{$transcript_key}++;
 
     } elsif ($utr_overlap >= $min_overlap) {
 
-      $transcript_probeset_count{$key}++;
+      $transcript_probeset_count{$transcript_key}++;
 
     } else { # must be intronic
 
       print LOG "Unmapped intronic " . $transcript->stable_id . "\t" . $probeset . " probe length $probe_length\n";
+      if (!$no_triage) {
+	push @unmapped_objects, new Bio::EnsEMBL::UnmappedObject(-type       => 'probe2transcript',
+								 -analysis   => $analysis,
+								 -identifier => $probeset,
+								 -summary    => "Unmapped intronic",
+								 -full_desc  => "Probe mapped to intronic region of transcript",
+								 -ensembl_object_type => 'Transcript',
+								 -ensembl_id => $transcript->dbID());
+      }
 
     }
+
   }
 
   # TODO - make external_db array names == array names in OligoArray!
@@ -203,8 +221,9 @@ foreach my $transcript (@transcripts) {
 
 print "\n";
 
-# cache which arrays a probeset belongs to; key = probeset, value = space-separated array names
-my $arrays_per_probeset = cache_arrays_per_probeset($oligo_db);
+# cache which arrays a probeset belongs to, and the sizes of probesets in different arrays
+cache_arrays_per_probeset($oligo_db);
+
 
 print "Writing xrefs\n";
 # now loop over all the mappings and add xrefs for those that have a suitable number of matches
@@ -212,30 +231,54 @@ foreach my $key (keys %transcript_probeset_count) {
 
   my ($transcript, $probeset) = split (/:/, $key);
 
-  my $probeset_size = $probeset_sizes{$probeset};
+  # store one xref/object_xref for each array-probeset-transcript combination
+  foreach my $array (split (/ /, $arrays_per_probeset{$probeset})) {
 
-  my $hits = $transcript_probeset_count{$key};
+    next if (@arrays && find_in_list($array, @arrays,) == -1 );
 
-  if ($hits / $probeset_size >= $mapping_threshold) {
+    my $size_key = $array . ":" . $probeset;
+    my $probeset_size = $array_probeset_sizes{$size_key};
 
-    # only create xrefs for non-promiscuous probesets
-    if ($transcripts_per_probeset{$probeset} <= $max_transcripts_per_probeset) {
+    my $hits = $transcript_probeset_count{$key};
 
-      add_xref($transcript_ids{$transcript}, $probeset, $db_entry_adaptor);
-      $transcripts_per_probeset{$probeset}++;
+    if ($hits / $probeset_size >= $mapping_threshold) {
+
+      # only create xrefs for non-promiscuous probesets
+
+      #XXX
+      add_xref($transcript_ids{$transcript}, $probeset, $db_entry_adaptor, $array, $probeset_size, $hits);
       print LOG "$probeset\t$transcript\tmapped\t$probeset_size\t$hits\n";
+
+     # if ($transcripts_per_probeset{$probeset} <= $max_transcripts_per_probeset) {
+     #
+     #   add_xref($transcript_ids{$transcript}, $probeset, $db_entry_adaptor, $array, $probeset_size, $hits);
+     #   $transcripts_per_probeset{$probeset}++;
+     #   print LOG "$probeset\t$transcript\tmapped\t$probeset_size\t$hits\n";
+     #
+     # } else {
+     #
+     #   print LOG "$probeset\t$transcript\tpromiscuous\t$probeset_size\t$hits\n";
+     #   $promiscuous_probesets{$probeset} = $probeset;
+     #   # TODO - remove mappings for probesets that end up being promiscuous
+     #
+     # }
+
+      # TODO - write insufficient/promiscuous/orphan to unmapped_object ?
 
     } else {
 
-      print LOG "$probeset\t$transcript\tpromiscuous\t$probeset_size\t$hits\n";
-      $promiscuous_probesets{$probeset} = $probeset;
-      # TODO - remove mappings for probesets that end up being promiscuous
+      print LOG "$probeset\t$transcript\tinsufficient\t$probeset_size\t$hits\n";
+       if (!$no_triage) {
+	push @unmapped_objects, new Bio::EnsEMBL::UnmappedObject(-type       => 'probe2transcript',
+								 -analysis   => $analysis,
+								 -identifier => $probeset,
+								 -summary    => "Insufficient hits",
+								 -full_desc  => "Probe had an insufficient number of hits (probeset size = $probeset_size, hits = $hits)",
+								 -ensembl_object_type => 'Transcript',
+								 -ensembl_id => $transcript_ids{$transcript});
+      }
 
     }
-
-  } else {
-
-    print LOG "$probeset\t$transcript\tinsufficient\t$probeset_size\t$hits\n";
 
   }
 
@@ -246,16 +289,31 @@ log_orphan_probes();
 
 close (LOG);
 
+# upload triage information if required
+if (!$no_triage) {
+
+  print "Uploading " . scalar(@unmapped_objects) . " unmapped reasons to xref database\n";
+  $unmapped_object_adaptor->store(@unmapped_objects);
+
+}
+
 # ----------------------------------------------------------------------
 
 sub log_orphan_probes {
 
   print "Logging probesets that don't map to any transcripts\n";
 
-  foreach my $probeset (keys %{$arrays_per_probeset}) {
+  foreach my $probeset (keys %arrays_per_probeset) {
 
     print LOG "$probeset\tNo transcript mappings\n" if (!$transcripts_per_probeset{$probeset});
 
+    if (!$no_triage) {
+      push @unmapped_objects, new Bio::EnsEMBL::UnmappedObject(-type       => 'probe2transcript',
+							       -analysis   => $analysis,
+							       -identifier => $probeset,
+							       -summary    => "No transcript mappings",
+							       -full_desc  => "Probeset did not map to any transcripts");
+    }
   }
 
 }
@@ -268,12 +326,10 @@ sub cache_arrays_per_probeset {
 
   print "Caching arrays per probeset\n";
 
-  my %result;
-
-  my $sth = $db->dbc()->prepare("SELECT op.probeset, oa.name FROM oligo_probe op, oligo_array oa WHERE oa.oligo_array_id=op.oligo_array_id GROUP BY op.probeset, oa.name ");
+  my $sth = $db->dbc()->prepare("SELECT op.probeset, oa.name, oa.probe_setsize FROM oligo_probe op, oligo_array oa WHERE oa.oligo_array_id=op.oligo_array_id GROUP BY op.probeset, oa.name ");
   $sth->execute();
-  my ($probeset, $array);
-  $sth->bind_columns(\$probeset, \$array);
+  my ($probeset, $array, $probeset_size);
+  $sth->bind_columns(\$probeset, \$array, \$probeset_size);
 
   my $last_probeset = "";
   my $arrays = "";
@@ -286,16 +342,17 @@ sub cache_arrays_per_probeset {
     } else {
       $arrays = $array;
     }
-    $result{$probeset} = $arrays;
+    $arrays_per_probeset{$probeset} = $arrays;
     $last_probeset = $probeset;
+    my $key = $array . ":" . $probeset;
+    $array_probeset_sizes{$key} = $probeset_size;
 
   }
 
   $sth->finish();
 
-  return \%result;
-
 }
+
 
 # ----------------------------------------------------------------------
 
@@ -318,33 +375,28 @@ sub pc {
 
 sub add_xref {
 
-  my ($transcript_id, $probeset, $dbea) = @_;
+  my ($transcript_id, $probeset, $dbea, $array, $probeset_size, $hits) = @_;
 
-  # store one xref/object_xref for each array-probeset-transcript combination
-  foreach my $array_name (split (/ /, $arrays_per_probeset->{$probeset})) {
+  my $txt = "probeset_size $probeset_size hits $hits";
 
-    next if (@arrays && find_in_list($array_name, @arrays,) == -1 );
+  # TODO - this only works if external_db db_name == array name; currently needs
+  # some manual hacking to acheive this
 
-    # TODO - this only works if external_db db_name == array name; currently needs
-    # some manual hacking to acheive this
+  my $dbe = new Bio::EnsEMBL::DBEntry( -adaptor              => $dbea,
+				       -primary_id           => $probeset,
+				       -version              => "1",
+				       -dbname               => $array,
+				       -release              => "1",
+				       -display_id           => $probeset,
+				       -description          => undef,
+				       -primary_id_linkable  => 1,
+				       -display_id_linkable  => 0,
+				       -priority             => 1,
+				       -db_display_name      => $array,
+				       -info_type            => "MISC",  # TODO - change to PROBE when available
+				       -info_text            => $txt);
 
-    my $dbe = new Bio::EnsEMBL::DBEntry( -adaptor              => $dbea,
-					 -primary_id           => $probeset,
-					 -version              => "1",
-					 -dbname               => $array_name,
-					 -release              => "1",
-					 -display_id           => $probeset,
-					 -description          => undef,
-					 -primary_id_linkable  => 1,
-					 -display_id_linkable  => 0,
-					 -priority             => 1,
-					 -db_display_name      => $array_name,
-					 -info_type            => "MISC",  # TODO - change to PROBE when available
-					 -info_text            => "probe2transcript.pl test");
-
-    $dbea->store($dbe, $transcript_id, "Transcript");
-
-  }
+  $dbea->store($dbe, $transcript_id, "Transcript");
 
 }
 
@@ -387,6 +439,23 @@ sub delete_existing_xrefs {
     $del_sth->execute($array);
 
   }
+
+  $del_sth->finish();
+
+}
+
+# ----------------------------------------------------------------------
+
+# Delete existing entries in unmapped_object, unmapped_reason and analysis
+
+sub delete_unmapped_entries {
+
+  my ($xref_adaptor) = @_;
+
+  my $del_sth = $xref_adaptor->dbc()->prepare("DELETE a, ur, uo FROM analysis a, unmapped_reason ur, unmapped_object uo WHERE a.logic_name = 'probe2transcript' AND a.analysis_id=uo.analysis_id AND uo.unmapped_reason_id=ur.unmapped_reason_id");
+
+  print "Deleting unmapped records\n";
+  $del_sth->execute();
 
   $del_sth->finish();
 
@@ -485,6 +554,28 @@ sub find_in_list {
   return -1;
 
 }
+
+# ----------------------------------------------------------------------
+
+sub get_or_create_analysis {
+
+  my ($analysis_adaptor) = @_;
+
+  my $analysis = $analysis_adaptor->fetch_by_logic_name("probe2transcript");
+
+  if (!$analysis) {
+
+    $analysis = $analysis_adaptor->store(new Bio::EnsEMBL::Analysis(-logic_name    => 'probe2transcript',
+								    -program       => 'probe2transcript.pl',
+								    -description   => 'Probe to transcript mapping',
+								    -displayable   => '0'));
+
+  }
+
+  return $analysis;
+
+}
+
 # ----------------------------------------------------------------------
 
 
@@ -537,6 +628,9 @@ sub usage {
   Note that if no oligo_host, xref_host etc is specified, oligo features will be read from,
   and xrefs written to, the database specified by the transcript_* parameters.
 
+  Also, triage information will be written to the unmapped_object & unmapped_reason tables
+  in the xref database, unless the -no_triage option is specified.
+
   GENERAL MAPPING OPTIONS:
 
   [--mismatches]      Allow up to this number of mismatches, inclusive.
@@ -554,9 +648,12 @@ sub usage {
 
   MISCELLANEOUS:
 
-  [--delete]          Delete existing xrefs and object_xrefs. No deletion is done by default.
+  [--delete]          Delete existing xrefs and object_xrefs, and entries in unmapped_object.
+                      No deletion is done by default.
 
   [--max_transcripts] Only use this many transcripts. Useful for debugging.
+
+  [--no_triage]       Don't write to the unmapped_object/unmapped_reason tables.
 
   [--help]            This text.
 
