@@ -748,7 +748,7 @@ CREATE TABLE xref (
    display_label              VARCHAR(128) NOT NULL,
    version                    VARCHAR(10) DEFAULT '0' NOT NULL,
    description                VARCHAR(255),
-   info_type                  ENUM('PROJECTION', 'MISC', 'DEPENDENT', 'DIRECT', 'SEQUENCE_MATCH', 'INFERRED_PAIR'),
+   info_type                  ENUM('PROJECTION', 'MISC', 'DEPENDENT', 'DIRECT', 'SEQUENCE_MATCH', 'INFERRED_PAIR', 'PROBE', 'UNMAPPED'),
    info_text                  VARCHAR(255),
 
    PRIMARY KEY (xref_id),
@@ -885,6 +885,8 @@ INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_41_42_g.sql|gene
 
 INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_42_43_a.sql|unmapped_object.parent');
 INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_42_43_b.sql|unmapped_object_probe2transcript');
+INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_42_43_c.sql|info_type_probe_unmapped');
+INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_42_43_d.sql|unmapped_object_external_db_id');
 
 ################################################################################
 #
@@ -1521,7 +1523,7 @@ CREATE TABLE unmapped_object (
   unmapped_object_id    INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
   type                  ENUM('xref', 'cDNA', 'Marker', 'probe2transcript') NOT NULL,
   analysis_id           INT(10) UNSIGNED NOT NULL,
-  external_db_id        INT(10) UNSIGNED NOT NULL,
+  external_db_id        INT(10) UNSIGNED,
   identifier            VARCHAR(255) NOT NULL,
   unmapped_reason_id    SMALLINT(5) UNSIGNED NOT NULL,
   query_score           DOUBLE,
