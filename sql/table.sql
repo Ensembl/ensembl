@@ -868,25 +868,11 @@ INSERT INTO meta (meta_key, meta_value) VALUES ("schema_version", "43");
 
 # patches included in this schema file
 # NOTE: at beginning of release cycle, remove patch entries from last release
-INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_40_41_a.sql|analysis_description_displayable');
-INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_40_41_b.sql|info_type_enum');
-INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_40_41_c.sql|xref_priority');
-INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_40_41_d.sql|ditag_primary_key_type');
-INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_40_41_e.sql|schema_version');
-INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_40_41_f.sql|attrib_indices');
-
-INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_41_42_a.sql|remove_xref_priority');
-INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_41_42_b.sql|unconventional_transcripts');
-INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_41_42_c.sql|analysis_description_unique');
-INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_41_42_d.sql|schema_version');
-INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_41_42_e.sql|ditag_autoincrement');
-INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_41_42_f.sql|analysis_description_web_data');
-INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_41_42_g.sql|genebuild_version_format_change');
-
 INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_42_43_a.sql|unmapped_object.parent');
 INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_42_43_b.sql|unmapped_object_probe2transcript');
 INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_42_43_c.sql|info_type_probe_unmapped');
 INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_42_43_d.sql|unmapped_object_external_db_id');
+INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_42_43_e.sql|gene_archive.peptide_archive_id.index');
 
 ################################################################################
 #
@@ -1264,6 +1250,7 @@ CREATE TABLE gene_archive (
   KEY gene_idx (gene_stable_id, gene_version),
   KEY transcript_idx (transcript_stable_id, transcript_version),
   KEY translation_idx (translation_stable_id, translation_version)
+  KEY peptide_archive_id_idx (peptide_archive_id)
 
 ) COLLATE=latin1_swedish_ci TYPE=MyISAM;
 
