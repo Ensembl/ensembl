@@ -164,7 +164,8 @@ INSERT INTO source VALUES (4025, "miRBase_predicted", 1, 'N',70, 1, "");
 INSERT INTO source VALUES (5000, 'OTTT', 1, 'Y', 50, 1, "");
 
 # Illumina
-INSERT INTO source VALUES (5010, 'Illumina', 1, 'Y', 50, 1, "");
+INSERT INTO source VALUES (5011, 'Illumina_V1', 1, 'Y', 50, 1, "");
+INSERT INTO source VALUES (5012, 'Illumina_V2', 1, 'Y', 50, 1, "");
 
 # Codelink
 INSERT INTO source VALUES (5020, 'Codelink', 1, 'Y', 50, 1, "");
@@ -360,11 +361,10 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 ##      OTTT
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (5000, 9606,'LOCAL:OTTT/OTTT.txt', '', now(), now(), "OTTTParser");
 
-##	Illumina
-# Sentrix human-6 gene expression beadchip
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (5010, 9606,'http://www.illumina.com/General/Products/ArraysReagents/zip_files/Human_WG-6_sequence.zip#Human_WG-6_sequence.csv', '', now(), now(), "IlluminaParser");
-# Sentrix humanref-8 expression beadchip
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (5010, 9606,'http://www.illumina.com/General/Products/ArraysReagents/zip_files/Human_RefSeq-8_sequence.zip#Human_RefSeq-8_sequence.csv', '', now(), now(), "IlluminaParser");
+## Illumina version 1
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (5011, 9606, 'LOCAL:Illumina_V1/Human_WG-6.fa', '', now(), now(), "FastaParser");
+## Illumina version 2
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (5012, 9606, 'LOCAL:Illumina_V2/Human-6_v2_sequence.csv', '', now(), now(), "IlluminaParser");
 
 # Codelink
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (5020, 9606,'LOCAL:Codelink/GEHC_Amersham_CodeLink_HWG_300026.fna', '', now(), now(), "CodelinkParser");
@@ -414,11 +414,8 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 ##      ncRNAs presently inhouse ( points to file with dumped xrefs from transfer_ncRNA.pl) .
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (4000, 10090,'LOCAL:ncRNA/ncRNA.txt', '', now(), now(), "ncRNAParser");
 
-##	Illumina
-# Sentrix mouse-6 gene expression beadchip
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (5010, 10090,'http://www.illumina.com/General/Products/ArraysReagents/zip_files/Mouse-6_V1_sequence.zip#Mouse-6_V1_sequence.csv', '', now(), now(), "IlluminaParser");
-# Sentrix mouseref-8 expression beadchip
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (5010, 10090,'http://www.illumina.com/General/Products/ArraysReagents/zip_files/Mouse_Ref-8_V1_sequence.zip#Mouse_Ref-8_V1_sequence.csv', '', now(), now(), "IlluminaParser");
+# Illumina V1
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (5011, 10090,'LOCAL:Illumina_V1/Mouse-6_V1.fa', '', now(), now(), "FastaParser");
 
 # Codelink
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (5020, 10090,'LOCAL:Codelink/GEHC_Amersham_CodeLink_MWG_300033.fna', '', now(), now(), "CodelinkParser");
