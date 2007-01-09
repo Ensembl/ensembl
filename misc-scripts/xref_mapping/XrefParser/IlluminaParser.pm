@@ -7,13 +7,13 @@ use XrefParser::BaseParser;
 use vars qw(@ISA);
 @ISA = qw(XrefParser::BaseParser);
 
-# Parser for Illumina refs
+# Parser for Illumina V2 xrefs - V1 are done by the vanilla FastaParser
 
-#Gid,Accession,Symbol,Probe_Sequence,Definition
-#GI_4505876,NM_000445.1,PLEC1,AACACTAACCTGACCGTGGGCGGGGCCTTGCGGTATCCGCCCCCAATAAA,"Homo sapiens plectin 1, intermediate filament binding protein 500kDa (PLEC1), transcript variant 1, mRNA."
-#GI_18860893,NM_130393.1,PTPRD,CTACAGGCCCTTCAATATCCATGGAGTCTCTTCTGAGCCATACAGGGCAC,"Homo sapiens protein tyrosine phosphatase, receptor type, D (PTPRD), transcript variant 4, mRNA."
+# Search_key,Target,ProbeId,Gid,Transcript,Accession,Symbol,Type,Start,Probe_Sequence,Definition,Ontology,Synonym
+# ILMN_89282,ILMN_89282,0004760445,23525203,Hs.388528,BU678343,"",S,349,CTCTCTAAAGGGACAACAGAGTGGACAGTCAAGGAACTCCACATATTCAT,"UI-CF-EC0-abi-c-12-0-UI.s1 UI-CF-EC0 Homo sapiens cDNA clone UI-CF-EC0-abi-c-12-0-UI 3, mRNA sequence",,
+# ILMN_35826,ILMN_35826,0002760372,89042416,XM_497527.2,XM_497527.2,"LOC441782",S,902,GGGGTCAAGCCCAGGTGAAATGTGGATTGGAAAAGTGCTTCCCTTGCCCC,"PREDICTED: Homo sapiens similar to spectrin domain with coiled-coils 1 (LOC441782), mRNA.",,
 
-# Note that "defintion" column often has commas.
+# Note that "definition" column often has commas.
 
 sub run {
 
@@ -35,16 +35,23 @@ sub run {
     # strip ^M at end of line
     $_ =~ s/\015//g;
 
-    my ($accession, $refseq, $symbol, $sequence) = split(/,/); # ignore description for now
-    next if ($accession eq "Gid" && $refseq eq "Accession");   # skip header
+    my @bits = split(/,[^ ]/);
+    my $illumina_id = $bits[0];
+    next if ($illumina_id eq "Search_key");   # skip header
+    next if (!$illumina_id); # skip lines with missing accessions
 
-    next if (!$accession); # skip lines with missing accessions and "null" for RefSeq
+    my $sequence = $bits[9];
 
-    my ($description) = $_ =~ /.*\"([^\"]*)\.\"/; # parse description
+    my $type = $bits[7];
+    # XXX what about "type" column?
+
+
+    my ($description) = $bits[10];
+    $description =~ s/\"//g;
 
     # build the xref object and store it
-    $xref->{ACCESSION}     = $accession;
-    $xref->{LABEL}         = $accession;
+    $xref->{ACCESSION}     = $illumina_id;
+    $xref->{LABEL}         = $illumina_id;
     $xref->{SEQUENCE}      = $sequence;
     $xref->{SOURCE_ID}     = $source_id;
     $xref->{SPECIES_ID}    = $species_id;
@@ -58,7 +65,7 @@ sub run {
 
   close(FILE);
 
-  print scalar(@xrefs) . " Illumina xrefs succesfully parsed\n";
+  print scalar(@xrefs) . " Illumina V2 xrefs succesfully parsed\n";
 
   XrefParser::BaseParser->upload_xref_object_graphs(\@xrefs);
 
