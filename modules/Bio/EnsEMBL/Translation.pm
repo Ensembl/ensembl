@@ -1,10 +1,4 @@
-#
-# Ensembl module for Bio::EnsEMBL::Translation
-#
-#
-# You may distribute this module under the same terms as perl itself
-
-# POD documentation - main docs before the code
+package Bio::EnsEMBL::Translation;
 
 =head1 NAME
 
@@ -13,22 +7,42 @@ transcript
 
 =head1 SYNOPSIS
 
+  my $translation = Bio::EnsEMBL::Translation->new(
+    -START_EXON => $exon1,
+    -END_EXON   => $exon2,
+    -SEQ_START  => 98,
+    -SEQ_END    => 39
+  );
+
+  # stable ID setter
+  $translation->stable_id('ENSP00053458');
+
+  # get start and end position in start/end exons
+  my $start = $translation->start;
+  my $end = $translation->end;
 
 =head1 DESCRIPTION
 
 A Translation object defines the CDS and UTR regions of a Transcript
 through the use of start_Exon/end_Exon, and start/end attributes.
 
+=head1 LICENCE
+
+This code is distributed under an Apache style licence. Please see
+http://www.ensembl.org/info/about/code_licence.html for details.
+
+=head1 AUTHOR
+
+Ensembl core API team
+
 =head1 CONTACT
 
-Post questions to the EnsEMBL Developer list: ensembl-dev@ebi.ac.uk
-
-=head1 METHODS
+Please post comments/questions to the Ensembl development list
+<ensembl-dev@ebi.ac.uk>
 
 =cut
 
 
-package Bio::EnsEMBL::Translation;
 use vars qw($AUTOLOAD @ISA);
 use strict;
 
@@ -38,7 +52,6 @@ use Bio::EnsEMBL::Utils::Argument qw( rearrange );
 use Bio::EnsEMBL::Storable;
 
 @ISA = qw(Bio::EnsEMBL::Storable);
-
 
 
 =head2 new
@@ -103,13 +116,16 @@ sub new {
 
 =head2 start
 
- Title   : start
- Usage   : $obj->start($newval)
- Function: return or assign the value of start, which is a position within
-           the exon given by start_Exon.
- Returns : value of start
- Args    : newvalue (optional)
- Status  : Stable
+  Arg [1]    : (optional) int $start - start position to set
+  Example    : $translation->start(17);
+  Description: Getter/setter for the value of start, which is a position within
+               the exon given by start_Exon.
+
+               If you need genomic coordinates, use Transcript->pep2genomic().
+  Returntype : int
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -127,14 +143,16 @@ sub start{
 
 =head2 end
 
- Title   : end
- Usage   : $obj->end($newval)
- Function: return or assign the value of end, which is a position within
-           the exon given by end_Exon.
- Returns : value of end
- Args    : newvalue (optional)
- Status  : Stable
+  Arg [1]    : (optional) int $end - end position to set
+  Example    : $translation->end(8);
+  Description: Getter/setter for the value of end, which is a position within
+               the exon given by end_Exon.
 
+               If you need genomic coordinates, use Transcript->pep2genomic().
+  Returntype : int
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -152,15 +170,15 @@ sub end {
 
 =head2 start_Exon
 
- Title   : start_exon
- Usage   : $obj->start_Exon($newval)
- Function: return or assign the value of start_exon, which denotes the
-           exon at which translation starts (and within this exon, at the
-           position indicated by start, see above).
- Returns : value of start_exon (Exon object)
- Args    : newvalue (optional)
- Status  : Stable
-
+  Arg [1]    : (optional) Bio::EnsEMBL::Exon - start exon to assign
+  Example    : $translation->start_Exon($exon1);
+  Description: Getter/setter for the value of start_Exon, which denotes the
+               exon at which translation starts (and within this exon, at the
+               position indicated by start, see above).
+  Returntype : Bio::EnsEMBL::Exon
+  Exceptions : thrown on wrong argument type
+  Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -178,18 +196,17 @@ sub start_Exon {
 }
 
 
-
-
 =head2 end_Exon
 
- Title   : end_exon
- Usage   : $obj->end_Exon($newval)
- Function: return or assign the value of end_exon, which denotes the
-           exon at which translation ends (and within this exon, at the
-           position indicated by end, see above).
- Returns : value of end_exon (Exon object)
- Args    : newvalue (optional)
- Status  : Stable
+  Arg [1]    : (optional) Bio::EnsEMBL::Exon - start exon to assign
+  Example    : $translation->start_Exon($exon1);
+  Description: Getter/setter for the value of end_Exon, which denotes the
+               exon at which translation ends (and within this exon, at the
+               position indicated by end, see above).
+  Returntype : Bio::EnsEMBL::Exon
+  Exceptions : thrown on wrong argument type
+  Caller     : general
+  Status     : Stable
 
 =cut
 
@@ -207,12 +224,11 @@ sub end_Exon {
 }
 
 
-
 =head2 version
 
-  Arg [1]    : string $version
-  Example    : none
-  Description: get/set for attribute version
+  Arg [1]    : (optional) string $version - version to set
+  Example    : $translation->version(2);
+  Description: Getter/setter for attribute version
   Returntype : string
   Exceptions : none
   Caller     : general
@@ -229,9 +245,9 @@ sub version {
 
 =head2 stable_id
 
-  Arg [1]    : string $stable_id
-  Example    : none
-  Description: get/set for attribute stable_id
+  Arg [1]    : (optional) string $stable_id - stable ID to set
+  Example    : $translation->stable_id('ENSP0059890');
+  Description: Getter/setter for attribute stable_id
   Returntype : string
   Exceptions : none
   Caller     : general
@@ -247,9 +263,9 @@ sub stable_id {
 
 =head2 created_date
 
-  Arg [1]    : (optional) string to be used for the created date
-  Example    : none
-  Description: get/set for attribute created date
+  Arg [1]    : (optional) string $created_date - created date to set
+  Example    : $translation->created_date('2007-01-10 20:52:00');
+  Description: Getter/setter for attribute created date
   Returntype : string
   Exceptions : none
   Caller     : general
@@ -266,9 +282,9 @@ sub created_date {
 
 =head2 modified_date
 
-  Arg [1]    : (optional) string to be used for the modified date
-  Example    : none
-  Description: get/set for attribute modified date
+  Arg [1]    : (optional) string $modified_date - modification date to set
+  Example    : $translation->modified_date('2007-01-10 20:52:00');
+  Description: Getter/setter for attribute modified date
   Returntype : string
   Exceptions : none
   Caller     : general
@@ -286,13 +302,13 @@ sub modified_date {
 
 =head2 transform
 
-  Arg  1    : hashref $old_new_exon_map
-              a hash that maps old to new exons for a whole gene
-  Function  : maps start end end exon according to mapping table
-              if an exon is not mapped, just keep the old one
+  Arg [1]    : hashref $old_new_exon_map
+               a hash that maps old to new exons for a whole gene
+  Description: maps start end end exon according to mapping table.
+              If an exon is not mapped, just keep the old one.
   Returntype: none
-  Exceptions: none
-  Caller    : Transcript->transform() 
+  Exceptions : none
+  Caller     : Transcript->transform() 
   Status     : Stable
 
 =cut
@@ -320,8 +336,8 @@ sub transform {
 
 =head2 get_all_DBEntries
 
-  Arg [1]    : none
-  Example    : @dbentries = @{$gene->get_all_DBEntries()};
+  Arg [1]    : (optional) $ex_db_exp - external db name
+  Example    : @dbentries = @{$translation->get_all_DBEntries()};
   Description: Retrieves DBEntries (xrefs) for this translation.  
 
                This method will attempt to lazy-load DBEntries from a
@@ -345,7 +361,7 @@ sub get_all_DBEntries {
     $cache_name .= $ex_db_exp;
   }
 
-  #if not cached, retrieve all of the xrefs for this gene
+  # if not cached, retrieve all of the xrefs for this gene
   if(!defined $self->{$cache_name}) {
     my $adaptor = $self->adaptor();
     my $dbID    = $self->dbID();
@@ -366,10 +382,10 @@ sub get_all_DBEntries {
 
   Arg [1]    : Bio::EnsEMBL::DBEntry $dbe
                The dbEntry to be added
-  Example    : @dbentries = @{$gene->get_all_DBEntries()};
-  Description: Associates a DBEntry with this gene. Note that adding DBEntries
-               will prevent future lazy-loading of DBEntries for this gene
-               (see get_all_DBEntries).
+  Example    : $translation->add_DBEntry($xref);
+  Description: Associates a DBEntry with this translation. Note that adding
+               DBEntries will prevent future lazy-loading of DBEntries for this
+               translation (see get_all_DBEntries).
   Returntype : none
   Exceptions : thrown on incorrect argument type
   Caller     : general
@@ -395,7 +411,7 @@ sub add_DBEntry {
   Arg [1]    : see get_all_DBEntries
   Example    : see get_all_DBEntries
   Description: This is here for consistancy with the Transcript and Gene 
-               classes.  It is a synonym for the get_all_DBEntries method.
+               classes. It is a synonym for the get_all_DBEntries method.
   Returntype : see get_all_DBEntries
   Exceptions : none
   Caller     : general
@@ -407,8 +423,6 @@ sub get_all_DBLinks {
   my $self = shift;
   return $self->get_all_DBEntries(@_);
 }
-
-
 
 
 =head2 get_all_ProteinFeatures
@@ -450,7 +464,6 @@ sub get_all_ProteinFeatures {
       my $analysis = $f->analysis();
       if($analysis) {
         $name = lc($f->analysis->logic_name());
-	#warn "$dbID has analysis $name\n";
       } else {
         warning("ProteinFeature has no attached analysis\n");
         $name = '';
@@ -460,7 +473,7 @@ sub get_all_ProteinFeatures {
     }
   }
 
-  #a specific type of protein feature was requested
+  # a specific type of protein feature was requested
   if(defined($logic_name)) {
     $logic_name = lc($logic_name);
     return $self->{'protein_features'}->{$logic_name} || [];
@@ -468,7 +481,7 @@ sub get_all_ProteinFeatures {
 
   my @features;
 
-  #all protein features were requested
+  # all protein features were requested
   foreach my $type (keys %{$self->{'protein_features'}}) {
     push @features, @{$self->{'protein_features'}->{$type}};
   }
@@ -477,15 +490,14 @@ sub get_all_ProteinFeatures {
 }
 
 
-
 =head2 get_all_DomainFeatures
 
-  Arg [1]    : none
   Example    : @domain_feats = @{$translation->get_all_DomainFeatures};
   Description: A convenience method which retrieves all protein features
                that are considered to be 'Domain' features.  Features which
                are 'domain' features are those with analysis logic names:
-               'pfscan', 'scanprosite', 'superfamily', 'pfam', 'prints'.
+               'pfscan', 'scanprosite', 'superfamily', 'pfam', 'prints',
+               'smart', 'pirsf', 'tigrfam'.
   Returntype : listref of Bio::EnsEMBL::ProteinFeatures
   Exceptions : none
   Caller     : webcode (protview)
@@ -515,10 +527,8 @@ sub get_all_DomainFeatures{
 }
 
 
-
 =head2 display_id
 
-  Arg [1]    : none
   Example    : print $translation->display_id();
   Description: This method returns a string that is considered to be
                the 'display' identifier. For translations this is (depending on
@@ -539,7 +549,6 @@ sub display_id {
 
 =head2 length
 
-  Arg [1]    : none
   Example    : print "Peptide length =", $translation->length();
   Description: Retrieves the length of the peptide sequence (i.e. number of
                amino acids) represented by this Translation object.
@@ -560,13 +569,11 @@ sub length {
 
 =head2 seq
 
-  Arg [1]    : none
   Example    : print $translation->seq();
   Description: Retrieves a string representation of the peptide sequence
                of this Translation.  This retrieves the transcript from the
                database and gets its sequence, or retrieves the sequence which
-               was set via the constructor.  If no adaptor is attached to this
-               translation.
+               was set via the constructor.
   Returntype : string
   Exceptions : warning if the sequence is not set and cannot be retrieved from
                the database.
@@ -606,6 +613,7 @@ sub seq {
     return ''; #empty string
   }
 }
+
 
 =head2 get_all_Attributes
 
@@ -650,8 +658,8 @@ sub get_all_Attributes {
 
 =head2 add_Attributes
 
-  Arg [1...] : Bio::EnsEMBL::Attribute $attribute
-               You can have more Attributes as arguments, all will be added.
+  Arg [1..N] : Bio::EnsEMBL::Attribute $attribute
+               Attributes to add.
   Example    : $translation->add_Attributes($selenocysteine_attribute);
   Description: Adds an Attribute to the Translation. Usefull to 
                do _selenocysteine.
@@ -680,9 +688,9 @@ sub add_Attributes {
   }
 }
 
+
 =head2 get_all_SeqEdits
 
-  Arg [1]    : none
   Example    : my @seqeds = @{$transcript->get_all_SeqEdits()};
   Description: Retrieves all post transcriptional sequence modifications for
                this transcript.
@@ -711,20 +719,20 @@ sub get_all_SeqEdits {
       push @seqeds, Bio::EnsEMBL::SeqEdit->new(-ATTRIB => $a);
     }
   }
-  
 
   return \@seqeds;
 }
+  
 
 =head2 modify_translation
 
-  Arg    1   : Bio::Seq $peptide 
+  Arg [1]    : Bio::Seq $peptide 
   Example    : my $seq = Bio::Seq->new(-SEQ => $dna)->translate();
                $translation->modify_translation($seq);
   Description: Applies sequence edits such as selenocysteines to the Bio::Seq 
                peptide thats passed in
   Returntype : Bio::Seq
-  Exceptions :
+  Exceptions : none
   Caller     : Bio::EnsEMBL::Transcript->translate
   Status     : Stable
 
@@ -767,13 +775,12 @@ sub temporary_id {
 
 =head2 get_all_DASFactories
 
-  Arg [1]   : none
   Function  : Retrieves a listref of registered DAS objects
-  Returntype: [ DAS_objects ]
-  Exceptions:
+  Returntype: DAS objects
+  Exceptions: none
   Caller    : webcode
-  Example   : $dasref = $prot->get_all_DASFactories
-  Status     : Stable
+  Example   : $dasref = $prot->get_all_DASFactories;
+  Status    : Stable
 
 =cut
 
@@ -783,10 +790,8 @@ sub get_all_DASFactories {
 }
 
 
-
 =head2 get_all_DAS_Features
 
-  Arg [1]    : none
   Example    : $features = $prot->get_all_DAS_Features;
   Description: Retreives a hash reference to a hash of DAS feature
                sets, keyed by the DNS, NOTE the values of this hash
@@ -794,14 +799,14 @@ sub get_all_DASFactories {
                 (1) a pointer to an array of features;
                 (2) a pointer to the DAS stylesheet
   Returntype : hashref of Bio::SeqFeatures
-  Exceptions : ?
+  Exceptions : none
   Caller     : webcode
   Status     : Stable
 
 =cut
 
 sub get_all_DAS_Features{
-  my ($self,@args) = @_;
+  my $self = shift;
   $self->{_das_features} ||= {}; # Cache
   my %das_features;
 
@@ -837,13 +842,13 @@ sub get_all_DAS_Features{
 
 =head2 get_all_regulatory_features
 
-  Arg [1]    : none
   Example    : @features = $translation->get_all_regulatory_features();
-  Description: Gets all the regulatory features associated with this translation.
+  Description: Gets all the regulatory features associated with this
+               translation.
                Each feature only appears once.
   Returntype : Listref of Bio::EnsEMBL::RegulatoryFeature
   Exceptions : If arg is not of correct type.
-  Caller     : ?
+  Caller     : general
   Status     : At Risk
              : Regulatory features are currently under development and are 
              : likely to change.
@@ -851,13 +856,11 @@ sub get_all_DAS_Features{
 =cut
 
 sub get_all_regulatory_features {
-
    my ($self) = @_;
 
    my $rfa = $self->adaptor->db->get_RegulatoryFeatureAdaptor();
 
    return $rfa->fetch_all_by_translation($self);
-
 }
 
 1;
