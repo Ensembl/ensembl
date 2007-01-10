@@ -1872,25 +1872,26 @@ sub get_all_Genes{
 
 =head2 get_all_Genes_by_type
 
-
-  Arg [1]    : string $type 
+  Arg [1]    : string $type
+               The biotype of genes wanted.
   Arg [2]    : (optional) string $logic_name
   Arg [3]    : (optional) boolean $load_transcripts
                If set to true, transcripts will be loaded immediately rather
                than being lazy-loaded on request.  This will result in a
                significant speed up if the Transcripts and Exons are going to
                be used (but a slow down if they are not).
-  Example    : @genes = @{$slice->get_all_Genes_by_type($type, 'ensembl')};
-  Description: Retrieves genes that overlap this slice of type $type.
+  Example    : @genes = @{$slice->get_all_Genes_by_type('protein_coding',
+               'ensembl')};
+  Description: Retrieves genes that overlap this slice of biotype $type.
                This is primarily used by the genebuilding code when several
-               types of genes are used.
+               biotypes of genes are used.
 
                The logic name is the analysis of the genes that are retrieved.
                If not provided all genes will be retrieved instead.
 
   Returntype : listref of Bio::EnsEMBL::Genes
   Exceptions : none
-  Caller     : genebuilder
+  Caller     : genebuilder, general
   Status     : Stable
 
 =cut

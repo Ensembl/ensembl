@@ -106,7 +106,7 @@ sub new {
  Title   : start
  Usage   : $obj->start($newval)
  Function: return or assign the value of start, which is a position within
-           the exon given by start_exon_id.
+           the exon given by start_Exon.
  Returns : value of start
  Args    : newvalue (optional)
  Status  : Stable
@@ -130,7 +130,7 @@ sub start{
  Title   : end
  Usage   : $obj->end($newval)
  Function: return or assign the value of end, which is a position within
-           the exon given by end_exon.
+           the exon given by end_Exon.
  Returns : value of end
  Args    : newvalue (optional)
  Status  : Stable
