@@ -10,7 +10,7 @@ use POSIX qw(strftime);
 use Getopt::Long;
 use Bio::EnsEMBL::Utils::Exception;
 
-my $base_dir = ".";
+my $base_dir = "/lustre/scratch1/ensembl/jb16/yeast_test/data/xrefs";
 
 my $add_xref_sth = undef;
 my $add_direct_xref_sth = undef;
@@ -1356,7 +1356,7 @@ sub set_release {
 
   my $dbi = dbi();
 
-  my $sth = $dbi->prepare("UPDATE source SET release=? WHERE source_id=?");
+  my $sth = $dbi->prepare("UPDATE source SET source_release=? WHERE source_id=?");
 
   $sth->execute($release, $source_id);
 
