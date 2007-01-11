@@ -1249,7 +1249,7 @@ CREATE TABLE gene_archive (
 
   KEY gene_idx (gene_stable_id, gene_version),
   KEY transcript_idx (transcript_stable_id, transcript_version),
-  KEY translation_idx (translation_stable_id, translation_version)
+  KEY translation_idx (translation_stable_id, translation_version),
   KEY peptide_archive_id_idx (peptide_archive_id)
 
 ) COLLATE=latin1_swedish_ci TYPE=MyISAM;
