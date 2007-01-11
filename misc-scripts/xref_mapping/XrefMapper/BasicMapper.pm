@@ -2382,8 +2382,8 @@ sub build_transcript_and_gene_display_xrefs {
 
   my $sql = (<<ESQL);
   SELECT ox.ensembl_id, ox.ensembl_object_type, ox.xref_id, ix.query_identity, ix.target_identity
-    FROM object_xref ox, xref x 
-      LEFT JOIN identity_xref ix on ox.object_xref_id = ix.object_xref_id 
+    FROM (object_xref ox, xref x) 
+      LEFT JOIN identity_xref ix ON (ox.object_xref_id = ix.object_xref_id) 
 	WHERE x.xref_id = ox.xref_id and x.external_db_id =?
 ESQL
 
@@ -2940,8 +2940,8 @@ ESQL
 
   $sql = (<<ETSQL);
   SELECT ox.ensembl_id, ox.ensembl_object_type, ox.xref_id, ix.query_identity, ix.target_identity
-    FROM object_xref ox, xref x 
-      LEFT JOIN identity_xref ix on ox.object_xref_id = ix.object_xref_id 
+    FROM (object_xref ox, xref x) 
+      LEFT JOIN identity_xref ix on (ox.object_xref_id = ix.object_xref_id) 
 	WHERE x.xref_id = ox.xref_id and x.external_db_id =?
 ETSQL
 
