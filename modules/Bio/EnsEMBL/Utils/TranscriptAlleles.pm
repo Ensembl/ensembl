@@ -310,6 +310,7 @@ sub type_variation {
 #     }
 
 #    return \@out;
+
   }
 
   my @coords_splice_2 = $tm->genomic2cdna($var->start -2, $var->end +2, $var->strand);
