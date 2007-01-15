@@ -10,7 +10,7 @@ use POSIX qw(strftime);
 use Getopt::Long;
 use Bio::EnsEMBL::Utils::Exception;
 
-my $base_dir = "/lustre/scratch1/ensembl/jb16/yeast_test/data/xrefs";
+my $base_dir = ".";
 
 my $add_xref_sth = undef;
 my $add_direct_xref_sth = undef;
