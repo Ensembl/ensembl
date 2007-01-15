@@ -99,7 +99,7 @@ sub new{
 		 'strains' => $strainSlices}, $class;
 }
 
-=head2 new
+=head2 alignFeature
 
     Arg[1]      : Bio::EnsEMBL::Feature $feature
     Arg[2]      : Bio::EnsEMBL::StrainSlice $strainSlice
@@ -120,11 +120,11 @@ sub alignFeature{
     if (!ref($feature) || !$feature->isa('Bio::EnsEMBL::Feature')){	
 	throw("Bio::EnsEMBL::Feature object expected");
     }
-
     #and align it to the AlignStrainSlice object
     my $mapper_strain = $self->mapper();
 
     my @results;
+  
     if ($feature->start > $feature->end){
 	#this is an Indel, map it with the special method
 	@results = $mapper_strain->map_indel('Slice',$feature->start, $feature->end, $feature->strand,'Slice');
@@ -162,18 +162,22 @@ sub mapper{
 	my $end_slice;
 	my $start_align = 1;
 	my $end_align;
-	my $length_indel;
+	my $length_indel = 0;
+	my $length_acum_indel = 0;
 	foreach my $indel (@{$indels}){
-	    $length_indel = $indel->[1] - $indel->[0] + 1;
-
 	    $end_slice = $indel->[0] - 1;
-	    $end_align = $indel->[0] - 1;
+	    $end_align = $indel->[0] - 1 + $length_acum_indel; #we must consider length previous indels
+
+	    $length_indel = $indel->[1] - $indel->[0] + 1;
+	    
+
 	    $mapper->add_map_coordinates('Slice',$start_slice,$end_slice,1,'AlignStrainSlice',$start_align,$end_align);
 	    
 	    $mapper->add_indel_coordinates('Slice',$end_slice + 1,$end_slice,1,'AlignStrainSlice',$end_align + 1,$end_align + $length_indel);
 	    $start_slice = $end_slice + 1;
-	    $start_align = $indel->[1] + 1;
-
+	    $start_align = $indel->[1] + 1 + $length_acum_indel; #we must consider legnth previous indels
+	    
+	    $length_acum_indel += $length_indel;
 	}
 	if ($start_slice <= $self->length){
 	    $mapper->add_map_coordinates('Slice',$start_slice,$self->length,1,'AlignStrainSlice',$start_align,$start_align + $self->length - $start_slice)
@@ -211,14 +215,18 @@ sub _get_indels{
     my @indels;
     foreach my $strainSlice (@{$self->strains}){
 	my $differences = $strainSlice->get_all_AlleleFeatures_Slice(); #need to check there are differences....
-	if (defined $differences){
-	    my @results = grep {$_->length_diff != 0} @{$differences};
-	    push @indels, @results;
+	foreach my $af (@{$differences}){
+	    #if length is 0, but is a -, it is still a gap in the strain
+	    if (($af->length_diff != 0) || ($af->length_diff == 0 && $af->allele_string =~ /-/)){
+		push @indels, $af;
+	    }
 	}
     }
     #need to overlap the gaps using the RangeRegistry module
     my $range_registry = Bio::EnsEMBL::Mapper::RangeRegistry->new();
     foreach my $indel (@indels){
+	#in the reference and the strain there is a gap
+	$range_registry->check_and_register(1,$indel->start,$indel->start) if ($indel->length_diff == 0);
 	#deletion in reference slice
 	$range_registry->check_and_register(1,$indel->start, $indel->end ) if ($indel->length_diff < 0);
 	#insertion in reference slice
