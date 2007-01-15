@@ -2538,7 +2538,7 @@ ESQL
 sub transcript_display_xref_sources {
 
   return ('RFAM',
-	  'miRNA_Registry',
+	  'miRBase',
 	  'HUGO',
 	  'MarkerSymbol',
 	  'flybase_symbol',
