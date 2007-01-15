@@ -665,7 +665,7 @@ sub map_indel {
      $mid_idx = ($start_idx+$end_idx)>>1;
      $pair = $lr->[$mid_idx];
      $self_coord   = $pair->{$from};
-     if( $self_coord->{'end'} < $start ) {
+     if( $self_coord->{'end'} <= $start ) {
        $start_idx = $mid_idx;
      } else {
        $end_idx = $mid_idx;
@@ -678,7 +678,13 @@ sub map_indel {
      my $target_coord = $pair->{$to};
 
      if  (exists $pair->{'indel'}){
-	 push @indel_coordinates, $target_coord;
+	 #need to return unit coordinate
+	 my $to   =
+	     Bio::EnsEMBL::Mapper::Unit->new($target_coord->{'id'},
+						      $target_coord->{'start'},
+						      $target_coord->{'end'},
+					     );
+	 push @indel_coordinates, $to;
 	 last;
      }
      $last_used_pair = $pair;
