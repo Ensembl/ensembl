@@ -53,6 +53,11 @@ my %priority_identity_xref; # {HUGO:567} = as normal print except no object_xref
 my %priority_failed;         # {1090:12} = "gene|123456|78|35|90|90\n";
 
 
+my %unmapped_primary_xref;   # $unmapped_primary_xref{1234} = " master QZ1234 had no match"
+                             # store list of primary unmapped xrefs
+                             # to use to write secondary unmapped_object data
+
+my %object_succesfully_mapped;  # $object_succesfully_mapped{1235}  = 1;
 
 
 
@@ -1173,6 +1178,7 @@ sub parse_mappings {
 	$count_new++;
       }
       # note we add on $xref_id_offset to avoid clashes
+      $object_succesfully_mapped{query_id} = 1;
       print OBJECT_XREF "$max_object_xref_id\t$target_id\t$type\t" . ($query_id+$xref_id_offset) . "\n";
       print IDENTITY_XREF join("\t", ($max_object_xref_id, $query_identity, $target_identity, $query_start+1, $query_end, $target_start+1, $target_end, $cigar_line, $score, "\\N", $analysis_id)) . "\n";
       $max_object_xref_id++;
@@ -1321,14 +1327,16 @@ PSQL
     $dep_list = $self->dump_all_dependencies($xref_id, $xref_id_offset, $type, $id);
     push @xref_list, $xref_id;
     if(defined($priority_object_xref{$key})){
+      $object_succesfully_mapped{$xref_id} = 1;
       print OBJECT_XREF_P $object_xref_id."\t".$id."\t".$type."\t".($xref_id+$xref_id_offset)."\n";
       if(defined($priority_identity_xref{$key})){
         print IDENTITY_XREF_P $object_xref_id."\t".$priority_identity_xref{$key};
       }
       $object_xref_id++;
       foreach my $dependent (@$dep_list){
-	  print OBJECT_XREF_P $object_xref_id."\t".$id."\t".$type."\t".$dependent."\n";	  
-	  $object_xref_id++;	  
+	$object_succesfully_mapped{$xref_id} = 1;
+	print OBJECT_XREF_P $object_xref_id."\t".$id."\t".$type."\t".$dependent."\n";	  
+	$object_xref_id++;	  
       }
     } 
   }
@@ -1343,6 +1351,7 @@ PSQL
     push @xref_list, $xref_id;
     if(defined($priority_object_xref{$key})){
       my ($type,$id) = split(/:/,$priority_object_xref{$key});
+      $object_succesfully_mapped{$xref_id} = 1;
       print OBJECT_XREF_P $object_xref_id."\t".$id."\t".$type."\t".($xref_id+$xref_id_offset)."\n";
       if(defined($priority_identity_xref{$key})){
         print IDENTITY_XREF_P $object_xref_id."\t".$priority_identity_xref{$key};
@@ -1875,6 +1884,7 @@ sub dump_direct_xrefs {
 
         $xrefs_written{$xref_id} = 1;
       }
+      $object_succesfully_mapped{$xref_id} = 1;
       print OBJECT_XREF "$object_xref_id\t$ensembl_internal_id\t" . ucfirst($type) . "\t" . ($xref_id+$xref_id_offset) . "\n";
       $object_xref_id++;
       $count++;
@@ -1909,6 +1919,7 @@ sub dump_direct_xrefs {
               $xrefs_written{$xref_id} = 1;
             }
             $ensembl_internal_id = $stable_id_to_internal_id{$type}->{$stable_id};
+	    $object_succesfully_mapped{$xref_id} = 1;
             print OBJECT_XREF "$object_xref_id\t$ensembl_internal_id\t" . ucfirst($type) . "\t" . ($xref_id+$xref_id_offset) . "\n";
             if( $source_id == $go_source_id){
               print GO_XREF $object_xref_id . "\t" . $linkage_xref . "\n";
@@ -2280,6 +2291,7 @@ sub dump_core_xrefs {
 	  }
 	  if (!$object_xrefs_written{$full_key}) {
 	       	    
+	    $object_succesfully_mapped{$xref_id} = 1;
 	    print OBJECT_XREF "$object_xref_id\t$object_id\t$type\t" . ($xref_id+$xref_id_offset) . "\n";
 	    # Add this mapping to the list - note NON-OFFSET xref_id is used
 	    my $key = $type . "|" . $object_id;
@@ -3321,7 +3333,7 @@ sub gene_description_sources {
 	  "RefSeq_dna",
 	  "RefSeq_peptide",
 	  "Uniprot/SWISSPROT",
-	  "miRNA_Registry",
+	  "miRBase",
 	  "RFAM");
 
 }
@@ -3571,7 +3583,8 @@ EOS
 	if(($type =~ /Transcript/) and defined($transcript_2_translation{$ens_int_id})){
 	  $max_object_xref_id++;
 	  $added++;
-	  print OBJECT_XREF2 "$max_object_xref_id\t";
+          $object_succesfully_mapped{($good2missed{$goodxref}-$xref_id_offset)} = 1;
+ 	  print OBJECT_XREF2 "$max_object_xref_id\t";
 	  print OBJECT_XREF2 $transcript_2_translation{$ens_int_id}."\tTranslation\t" ;
 	  print OBJECT_XREF2 $good2missed{$goodxref};
 	  print OBJECT_XREF2 "\n";	
@@ -3582,7 +3595,8 @@ EOS
 	  $dep_sth->bind_columns(\$dep_xref);
 	  while($dep_sth->fetch){
 	    $max_object_xref_id++;
-	    print OBJECT_XREF2 "$max_object_xref_id\t";
+	    $object_succesfully_mapped{$dep_xref} = 1;
+ 	    print OBJECT_XREF2 "$max_object_xref_id\t";
 	    print OBJECT_XREF2 $transcript_2_translation{$ens_int_id}."\tTranslation\t" ;
 	    print OBJECT_XREF2 $dep_xref+$xref_id_offset;
 	    print OBJECT_XREF2 "\n";	
@@ -3594,7 +3608,8 @@ EOS
 	elsif(($type =~ /Translation/) and defined($translation_2_transcript{$ens_int_id})){
 	  $max_object_xref_id++;
 	  $added++;
-	  print OBJECT_XREF2 "$max_object_xref_id\t";
+          $object_succesfully_mapped{($good2missed{$goodxref}-$xref_id_offset)} = 1;
+ 	  print OBJECT_XREF2 "$max_object_xref_id\t";
 	  print OBJECT_XREF2 $translation_2_transcript{$ens_int_id}."\tTranscript\t" ;
 	  print OBJECT_XREF2 $good2missed{$goodxref};
 	  print OBJECT_XREF2 "\n";	
@@ -3604,7 +3619,8 @@ EOS
 	  $dep_sth->bind_columns(\$dep_xref);
 	  while($dep_sth->fetch){
 	    $max_object_xref_id++;
-	    print OBJECT_XREF2 "$max_object_xref_id\t";
+	    $object_succesfully_mapped{$dep_xref} = 1;
+ 	    print OBJECT_XREF2 "$max_object_xref_id\t";
 	    print OBJECT_XREF2 $translation_2_transcript{$ens_int_id}."\tTranscript\t" ;
 	    print OBJECT_XREF2 $dep_xref+$xref_id_offset;
 	    print OBJECT_XREF2 "\n";	
@@ -3632,7 +3648,8 @@ EOS
       if(($type =~ /Transcript/) and defined($transcript_2_translation{$ens_int_id})){
 	$max_object_xref_id++;
 	$added++;
-	print OBJECT_XREF2 "$max_object_xref_id\t";
+	$object_succesfully_mapped{($good2missed{$goodxref}-$xref_id_offset)} = 1;
+ 	print OBJECT_XREF2 "$max_object_xref_id\t";
 	print OBJECT_XREF2 $transcript_2_translation{$ens_int_id}."\tTranslation\t" ;
 	print OBJECT_XREF2 $good2missed{$goodxref};
 	print OBJECT_XREF2 "\n";	
@@ -3641,7 +3658,8 @@ EOS
 	$dep_sth->bind_columns(\$dep_xref);
 	while($dep_sth->fetch){
 	  $max_object_xref_id++;
-	  print OBJECT_XREF2 "$max_object_xref_id\t";
+          $object_succesfully_mapped{$dep_xref} = 1;
+ 	  print OBJECT_XREF2 "$max_object_xref_id\t";
 	  print OBJECT_XREF2 $transcript_2_translation{$ens_int_id}."\tTranslation\t" ;
 	  print OBJECT_XREF2 $dep_xref+$xref_id_offset;
 	  print OBJECT_XREF2 "\n";	
@@ -3653,7 +3671,8 @@ EOS
       elsif(($type =~ /Translation/) and defined($translation_2_transcript{$ens_int_id})){
 	$max_object_xref_id++;
 	$added++;
-	print OBJECT_XREF2 "$max_object_xref_id\t";
+	$object_succesfully_mapped{($good2missed{$goodxref}-$xref_id_offset)} = 1;
+ 	print OBJECT_XREF2 "$max_object_xref_id\t";
 	print OBJECT_XREF2 $translation_2_transcript{$ens_int_id}."\tTranscript\t" ;
 	print OBJECT_XREF2 $good2missed{$goodxref};
 	print OBJECT_XREF2 "\n";	
@@ -3662,7 +3681,8 @@ EOS
 	$dep_sth->bind_columns(\$dep_xref);
 	while($dep_sth->fetch){
 	  $max_object_xref_id++;
-	  print OBJECT_XREF2 "$max_object_xref_id\t";
+          $object_succesfully_mapped{$dep_xref} = 1;
+ 	  print OBJECT_XREF2 "$max_object_xref_id\t";
 	  print OBJECT_XREF2 $translation_2_transcript{$ens_int_id}."\tTranscript\t" ;
 	  print OBJECT_XREF2 $dep_xref+$xref_id_offset;
 	  print OBJECT_XREF2 "\n";	
@@ -4034,6 +4054,154 @@ PSQL
 
 
 
+
+=head2 write_dependent_unmapped_objects
+
+  Description: wrote and load the unmapped object for the dependent xrefs
+  Exceptions : none
+  Returntype : none
+
+=cut
+
+sub write_dependent_unmapped_objects{
+  my $self = shift;
+  my $xref_id_offset = $self->xref_id_offset();
+  my $ensembl = $self->core;
+  my $dir = $ensembl->dir();
+
+  open(UNMAPPED_OBJECT,">$dir/unmapped_object_dependents.txt")
+    || die "Could not open unmapped_object_dependents.txt";
+
+  open(XREF,">$dir/dependent_xref.txt")
+    || die "Could not open dependent_xref.txt";
+
+
+  my $description_missed = "Unable to match as parent xref was not mapped";
+
+  my $sth = $self->core->dbc->prepare("select unmapped_reason_id from unmapped_reason where full_description like '".$description_missed."'");
+  $sth->execute();
+  my $xref_missed_id;
+  $sth->bind_columns(\$xref_missed_id);
+  $sth->fetch;
+  if(!defined($xref_missed_id)){
+    print STDERR "Could not find the description:\n";
+    print STDERR $description_missed,"\n";
+    print STDERR "In the directory ensembl/misc-scripts/unmapped_reason you ";
+    print STDERR "can add the new reason to the unmapped_reason.txt file ";
+    print STDERR "and run the update_unmapped_reasons.pl script to update ";
+    print STDERR "your core database\n";
+    print STDERR "Alterntively do not add the triage data and add -notriage to the command line.\n";
+    die();
+  }
+  $sth->finish;
+
+  my $max_unmapped_object_id;
+  $sth = $self->core->dbc->prepare("select MAX(unmapped_object_id) ".
+                                      "from unmapped_object");
+  $sth->execute();
+  my $max_unmapped_object_id;
+  $sth->bind_columns(\$max_unmapped_object_id);
+  $sth->fetch;
+  if(!defined($max_unmapped_object_id)){
+    $max_unmapped_object_id = 1;
+  }
+  $sth->finish;
+
+  my $primary_sql= (<<PSQL);
+    SELECT DISTINCT(s.source_id), px.sequence_type
+      FROM source s, primary_xref px, xref x
+        WHERE x.xref_id = px.xref_id
+          AND s.source_id = x.source_id
+PSQL
+
+  my $psth = $self->xref->dbc->prepare($primary_sql) || die "prepare failed";
+  $psth->execute() || die "execute failed";
+
+
+  my %source_2_seqtype=();
+
+  my ($prim, $seq_type);
+  $psth->bind_columns(\$prim,\$seq_type);
+  while($psth->fetch()){
+    $source_2_seqtype{$prim} = $seq_type;
+  }
+
+  my $xref_PROT_analysis = $self->get_analysis_id("translation");
+  my $xref_DNA_analysis  = $self->get_analysis_id("transcript");
+
+  #  $unmapped_primary_xref{$xref_id} = "QZ1234";
+
+  my $sql = "SELECT DISTINCT(x.xref_id), x2.source_id, dx.master_xref_id, x.accession, x.label, x.description, x.source_id,x.version, dx.linkage_annotation FROM dependent_xref dx, xref x, xref x2 WHERE x2.xref_id = dx.master_xref_id and x.xref_id=dx.dependent_xref_id AND master_xref_id = ?";
+
+  my $dep_sth = $self->xref->dbc->prepare($sql);
+
+
+  foreach my $key (keys %unmapped_primary_xref){
+    $dep_sth->execute($key);
+    my ($xref_id, $master_source, $accession, $version, $label, $description, $source_id, $species_id, $master_xref_id, $linkage_annotation);
+
+    $dep_sth->bind_columns(\$xref_id, \$master_source, \$master_xref_id, \$accession, \$label, \$description, \$source_id, \$version, \$linkage_annotation);
+
+    while ($dep_sth->fetch()) {
+
+
+      if(defined($priority_xref_source_id{$xref_id})){ #priority ones already done
+        next;
+      }
+
+      my $external_db_id = $source_to_external_db{$source_id};
+      next if (!$external_db_id);
+
+
+      if (!$xrefs_written{$xref_id}) {
+        print XREF ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $accession . "\t" .
+          $label . "\t" . $version . "\t" . $description .  "\t" . "DEPENDENT" . "\t" .
+            "No mapping ".$unmapped_primary_xref{$xref_id}. "\n";
+        $xrefs_written{$xref_id} = 1;
+      }
+      if(!defined($object_succesfully_mapped{$xref_id})){
+        $max_unmapped_object_id++;
+        print  UNMAPPED_OBJECT $max_unmapped_object_id."\txref\t";
+        if($source_2_seqtype{$master_source} =~ /peptide/){
+          if (not defined $xref_PROT_analysis) {
+            $xref_PROT_analysis = $self->get_analysis_id("translation");
+          }
+          print UNMAPPED_OBJECT $xref_PROT_analysis."\t";
+        }
+        elsif($source_2_seqtype{$master_source} =~ /dna/){
+          if (not defined $xref_DNA_analysis) {
+            $xref_DNA_analysis = $self->get_analysis_id("transcript");
+          }
+          print UNMAPPED_OBJECT $xref_DNA_analysis."\t";
+        }
+        else{
+          die "COULD NOT get an analysis for source id = $master_source ".$unmapped_primary_xref{$master_xref_id}."\n";
+        }
+        print UNMAPPED_OBJECT $external_db_id."\t".$accession."\t";
+        print UNMAPPED_OBJECT $xref_missed_id."\t0\t0\t0\tNULL\t".
+          $unmapped_primary_xref{$master_xref_id}. "\n";
+      }
+    }
+  }
+  close UNMAPPED_OBJECT;
+  close XREF;
+
+  my $file = $dir."/dependent_xref.txt";
+
+  if(-s $file){
+    my $sth = $ensembl->dbc->prepare("LOAD DATA LOCAL INFILE \'$file\' IGNORE INTO TABLE xref");
+    print "Uploading data in $file to xref\n";
+    $sth->execute();
+  }
+  $file = $dir."/unmapped_object_dependents.txt";
+
+  if(-s $file){
+    my $sth = $ensembl->dbc->prepare("LOAD DATA LOCAL INFILE \'$file\' IGNORE INTO TABLE unmapped_object");
+    print "Uploading data in $file to unmapped_object\n";
+    $sth->execute();
+  }
+
+}
 
 
 
