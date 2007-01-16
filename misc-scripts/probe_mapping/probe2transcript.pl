@@ -91,6 +91,8 @@ if ($xref_host && $xref_dbname && $xref_user) {
 
 }
 
+check_names_match($oligo_db, $xref_db);
+
 delete_existing_xrefs($oligo_db, $xref_db, @arrays) if ($delete);
 delete_unmapped_entries($xref_db) if ($delete);
 
@@ -511,6 +513,64 @@ sub check_existing_and_exit {
 
 # ----------------------------------------------------------------------
 
+# Check that the array names in oligo_db match the names in the external_db table in xref_db
+
+sub check_names_match {
+
+ my ($oligo_adaptor, $dbentry_adaptor) = @_;
+
+ my $mismatch;
+
+ # cache oligo_array.name entries
+ my %oligo_array_names;
+
+ my $oligo_sth = $oligo_adaptor->dbc()->prepare("SELECT DISTINCT(name) FROM oligo_array");
+ $oligo_sth->execute();
+
+ while(my @row = $oligo_sth->fetchrow_array()){
+
+   $oligo_array_names{$row[0]} = $row[0];
+
+ }
+
+ $oligo_sth->finish();
+
+ # and external_db names
+ my %external_db_names;
+ my $xref_sth = $dbentry_adaptor->dbc()->prepare("SELECT DISTINCT(db_name) FROM external_db");
+
+ $xref_sth->execute();
+ while (my @row2 = $xref_sth->fetchrow_array()) {
+
+   $external_db_names{$row2[0]} = $row2[0];
+
+ }
+
+  $xref_sth->finish();
+
+ # now compare them
+ foreach my $oligo_array_name (keys %oligo_array_names) {
+   if (!$external_db_names{$oligo_array_name}) {
+     print "$oligo_array_name appears in oligo_array but not in external_db\n";
+     $mismatch = 1;
+   }
+ }
+
+ #foreach my $external_db_name (keys %external_db_names) {
+ #  if (!$oligo_array_names{$external_db_name}) {
+ #    print "$external_db_name appears in external_db but not in oligo_array\n";
+ #  }
+ #}
+
+ if ($mismatch) {
+   print "At least one oligo array name was found that does not appear in external_db; this needs to be rectified before this script can be run successfully.\n";
+   exit(1);
+ }
+
+}
+
+# ----------------------------------------------------------------------
+
 # Remove mappings for a particular probeset
 
 #sub remove_probeset_transcript_mappings {
@@ -565,10 +625,12 @@ sub get_or_create_analysis {
 
   if (!$analysis) {
 
-    $analysis = $analysis_adaptor->store(new Bio::EnsEMBL::Analysis(-logic_name    => 'probe2transcript',
-								    -program       => 'probe2transcript.pl',
-								    -description   => 'Probe to transcript mapping',
-								    -displayable   => '0'));
+    my $id = $analysis_adaptor->store(new Bio::EnsEMBL::Analysis(-logic_name    => 'probe2transcript',
+								 -program       => 'probe2transcript.pl',
+								 -description   => 'Probe to transcript mapping',
+								 -displayable   => '0'));
+
+    $analysis = $analysis_adaptor->fetch_by_logic_name("probe2transcript");
 
   }
 
