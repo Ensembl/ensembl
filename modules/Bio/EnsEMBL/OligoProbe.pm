@@ -329,11 +329,12 @@ sub get_all_complete_names {
 	
     my @result = ();
 	
-	my $probeset = $self->probeset();
-	$probeset .= ':' if $probeset;
-	
+    my $probeset = $self->probeset();
+    $probeset .= ':' if $probeset;
+    $probeset = "" if !$probeset;
+
     while ( my ($arrayname, $probename) = each %{$self->{'probenames'}} ) {
-		push @result, "$arrayname:$probeset$probename";
+      push @result, "$arrayname:$probeset:$probename";
     }
 	
     return \@result;
