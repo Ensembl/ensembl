@@ -181,6 +181,7 @@ foreach my $transcript (@transcripts) {
     #next if ($transcript->strand() != $feature->strand()); # XXX log this
 
     my $probe = $feature->probe();
+    my $probe_name = ${$probe->get_all_complete_names()}[0];
     my $probeset = $probe->probeset();
 
     my $transcript_key = $transcript->stable_id() . ":" . $probeset;
@@ -193,11 +194,11 @@ foreach my $transcript (@transcripts) {
 
     if ($exon_overlap >= $min_overlap) {
 
-      $transcript_probeset_count{$transcript_key}++;
+      $transcript_probeset_count{$transcript_key}{$probe_name}++;
 
     } elsif ($utr_overlap >= $min_overlap) {
 
-      $transcript_probeset_count{$transcript_key}++;
+      $transcript_probeset_count{$transcript_key}{$probe_name}++;
 
     } else { # must be intronic
 
@@ -241,7 +242,7 @@ foreach my $key (keys %transcript_probeset_count) {
     my $size_key = $array . ":" . $probeset;
     my $probeset_size = $array_probeset_sizes{$size_key};
 
-    my $hits = $transcript_probeset_count{$key};
+    my $hits = scalar(keys %{$transcript_probeset_count{$key}});
 
     if ($hits / $probeset_size >= $mapping_threshold) {
 
