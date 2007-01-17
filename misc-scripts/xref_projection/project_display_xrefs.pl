@@ -30,6 +30,7 @@ GetOptions('conf=s'          => \$conf,
 	   'no_database'     => \$no_database,
 	   'help'            => sub { usage(); exit(0); });
 
+$descriptions = 1;
 
 if (!$conf) {
 
@@ -583,10 +584,6 @@ sub usage {
   [--delete_names]      Delete projected display xrefs & gene names.
 
   [--delete_go_terms]   Delete projected GO terms.
-
-  [--descriptions]      Project descriptions as well. Only works if -names is
-                        specified. Descriptions appended to info_text field,
-                        separated by |
 
   [--print]             Print details of projection only, don't store in database
 
