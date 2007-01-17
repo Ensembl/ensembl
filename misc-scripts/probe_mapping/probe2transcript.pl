@@ -308,17 +308,19 @@ sub log_orphan_probes {
 
   foreach my $probeset (keys %arrays_per_probeset) {
 
-    print LOG "$probeset\tNo transcript mappings\n" if (!$transcripts_per_probeset{$probeset});
+    if (!$transcripts_per_probeset{$probeset}) {
 
-    if (!$no_triage) {
-      push @unmapped_objects, new Bio::EnsEMBL::UnmappedObject(-type       => 'probe2transcript',
-							       -analysis   => $analysis,
-							       -identifier => $probeset,
-							       -summary    => "No transcript mappings",
-							       -full_desc  => "Probeset did not map to any transcripts");
+      print LOG "$probeset\tNo transcript mappings\n";
+
+      if (!$no_triage && $probeset) {
+	push @unmapped_objects, new Bio::EnsEMBL::UnmappedObject(-type       => 'probe2transcript',
+								 -analysis   => $analysis,
+								 -identifier => $probeset,
+								 -summary    => "No transcript mappings",
+								 -full_desc  => "Probeset did not map to any transcripts");
+      }
     }
   }
-
 }
 
 # ----------------------------------------------------------------------
