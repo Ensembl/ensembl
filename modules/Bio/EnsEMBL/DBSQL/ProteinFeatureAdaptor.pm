@@ -108,7 +108,7 @@ sub fetch_all_by_translation_id {
 
     my $feat = Bio::EnsEMBL::ProteinFeature->new
       (-DBID        => $dbID,
-       -ADADAPTOR   => $self,
+       -ADAPTOR     => $self,
        -SEQNAME     => $translation_id,
        -START       => $start,
        -END         => $end,
