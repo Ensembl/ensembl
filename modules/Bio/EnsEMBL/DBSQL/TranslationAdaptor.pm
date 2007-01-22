@@ -202,18 +202,18 @@ sub fetch_all_by_external_name {
 
 sub store {
   my ( $self, $translation, $transcript_id )  = @_;
-
+  
   my $start_exon = $translation->start_Exon();
   my $end_exon   = $translation->end_Exon();
-
+ 
   if(!$start_exon) {
     throw("Translation must define a start_Exon to be stored.");
   }
-
+ 
   if(!$end_exon) {
     throw("Translation must define an end_Exon to be stored.");
   }
-
+ 
   if(!$start_exon->dbID) {
     throw("start_Exon must have a dbID for Translation to be stored.");
   }
@@ -234,18 +234,24 @@ sub store {
   $sth->bind_param(5,$transcript_id,SQL_INTEGER);
 
   $sth->execute();
-
+ 
   my $transl_dbID = $sth->{'mysql_insertid'};
 
   #
   # store object xref mappings to translations
   #
+ 
   my $dbEntryAdaptor = $self->db()->get_DBEntryAdaptor();
   # store each of the xrefs for this translation
   foreach my $dbl ( @{$translation->get_all_DBEntries} ) {
      $dbEntryAdaptor->store( $dbl, $transl_dbID, "Translation" );
   }
 
+  #storing the protein features associated with the translation
+  my $pfadaptor = $self->db->get_ProteinFeatureAdaptor();
+  foreach my $pf(@{$translation->get_all_ProteinFeatures}){
+    $pfadaptor->store($pf, $transl_dbID);
+  }
 
   if (defined($translation->stable_id)) {
     if (!defined($translation->version)) {
@@ -261,7 +267,6 @@ sub store {
       $self->db->dbc->from_seconds_to_date($translation->created_date()) . ",";
     $statement .= "modified_date = " .
       $self->db->dbc->from_seconds_to_date($translation->modified_date()) ;
-
     my $sth = $self->prepare($statement);
 
     $sth->bind_param(1,$transl_dbID,SQL_INTEGER);
