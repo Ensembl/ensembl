@@ -595,6 +595,9 @@ sub fetch_and_dump_seq{
   my $i =0;
   my $rna = 0;
   foreach my $gene (@genes){
+    next if $gene->biotype eq 'J_segment';
+    next if $gene->biotype eq 'D_segment';
+
     foreach my $transcript (@{$gene->get_all_Transcripts()}) {
       $i++;
       my $seq = $transcript->spliced_seq(); 
