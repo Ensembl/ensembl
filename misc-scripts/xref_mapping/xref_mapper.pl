@@ -173,7 +173,7 @@ GetOptions ('file=s'                    => \$file,
 	    'notriage'                  => \$notriage,
 	    'delete_unmapped'           => \$delete_unmapped,
 	    'recalc_display_xrefs_only' => \$recalc_display_xrefs,
-	    'external_db_file'          => \$external_db_file,
+	    'external_db_file=s'        => \$external_db_file,
             'help'                      => \$help,
             'man'                       => \$man );
 pod2usage(1)            if ($help);
