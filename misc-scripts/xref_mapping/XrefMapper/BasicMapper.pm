@@ -2554,6 +2554,7 @@ sub transcript_display_xref_sources {
 
   return ('RFAM',
 	  'miRBase',
+          'IMGT/GENE-DB',
 	  'HUGO',
 	  'MarkerSymbol',
 	  'flybase_symbol',
@@ -3336,6 +3337,7 @@ sub gene_description_sources {
 	  "RefSeq_dna",
 	  "RefSeq_peptide",
 	  "Uniprot/SWISSPROT",
+          "IMGT/GENE-DB",
 	  "miRBase",
 	  "RFAM");
 
