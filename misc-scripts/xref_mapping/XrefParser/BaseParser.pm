@@ -90,7 +90,8 @@ sub run {
           "AND su.species_id=sp.species_id " .
 	    $source_sql . $species_sql .
 	      "ORDER BY s.ordered";
- # print $sql . "\n";
+  # print $sql . "\n";
+
 
 
   my $sth = $dbi->prepare($sql);
@@ -507,7 +508,7 @@ sub get_valid_xrefs_for_dependencies{
   $sql .= "          x2.xref_id = d.dependent_xref_id and";
   $sql .= "          x2.source_id=? ";
   
-  my $sth = dbi()->prepare($sql);
+  $sth = dbi()->prepare($sql);
   foreach my $d (@dependent_sources){
     foreach my $s (@sources){
        $sth->execute($s,$d);
@@ -547,7 +548,7 @@ sub get_valid_xrefs_for_direct_xrefs{
   $sql .= "    where x1.xref_id = d.general_xref_id and";
   $sql .= "          x1.source_id=?";
    
-  my $sth = dbi()->prepare($sql);
+  $sth = dbi()->prepare($sql);
   foreach my $d (@direct_sources){
     $sth->execute($d);
     while(my @row = $sth->fetchrow_array()){
@@ -1053,7 +1054,7 @@ sub show_valid_sources() {
 
   $sth->execute();
   while (my @row = $sth->fetchrow_array()) {
-    print @row[0] . "\n";
+    print $row[0] . "\n";
   }
 
 }
@@ -1093,7 +1094,7 @@ sub show_valid_species() {
 
   $sth->execute();
   while (my @row = $sth->fetchrow_array()) {
-    print @row[0] . " (aliases: " . $row[1] . ")\n";
+    print $row[0] . " (aliases: " . $row[1] . ")\n";
   }
 
 }
