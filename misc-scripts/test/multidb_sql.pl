@@ -75,7 +75,7 @@ for my $dbname ( @dbnames ) {
   }
   
    unless ($result_only) { 
-    print STDERR "$dbname\n";
+    print "$dbname\n";
    }
   if(( ! $expression ) && ( !$file )) {
     next;
@@ -84,13 +84,12 @@ for my $dbname ( @dbnames ) {
   $db->do( "use $dbname" );
   if( $file ) {
     for my $sql ( @expressions ) {
-      print STDERR "Do $sql\n";
+      print "Do $sql\n";
       $db->do( $sql );
     }
   } elsif( $expression =~ /^\s*select/i ||
 	   $expression =~ /^\s*show/i ||
 	   $expression =~ /^\s*desc/i ) {
-print "### HERE";
     my $res = $db->selectall_arrayref( $expression );
     my @results = map { join( " ", @$_ ) } @$res ;
     my $db_name_off = 0 ;
@@ -98,15 +97,15 @@ print "### HERE";
      if($result_only){ 
       unless ($db_name_off){
         $db_name_off =1 ;
-        print STDERR "==> $dbname :\n";
+        print "==> $dbname :\n";
       }
      }
-      print STDERR "    Result: ",$result,"\n";
+      print "    Result: ",$result,"\n";
 
     }
   } else {
     $db->do( $expression );
-    print STDERR "  done.\n";
+    print "  done.\n";
   }
 }
 
