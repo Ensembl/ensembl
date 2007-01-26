@@ -9,24 +9,31 @@ use Getopt::Long;
 
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 
-my ( $host, $user, $pass, $port, $dbpattern, $print);
+my ( $host, $user, $pass, $port, $dbpattern, $print,$sing_db_name);
 
-GetOptions( "host=s",              \$host,
-	    "user=s",              \$user,
-	    "pass=s",              \$pass,
-	    "port=i",              \$port,
-	    "dbpattern|pattern=s", \$dbpattern,
+$port = 3306 ; 
+
+GetOptions( "dbhost|host=s",              \$host,
+	    "dbuser|user=s",              \$user,
+	    "dbpass|pass=s",              \$pass,
+	    "dbport|port=i",              \$port,
+	    "dbpattern|pattern=s", \$dbpattern, 
+	    "dbname=s",            \$sing_db_name, 
 	    "print",               \$print,
 	    "help" ,               \&usage
 	  );
 
-if( !$host || !$dbpattern ) {
+
+if( !$host || (!$dbpattern && !$sing_db_name) ) {
   usage();
-}
+} 
+
+$dbpattern = $sing_db_name unless $dbpattern;  
 
 my @feature_types = qw[gene transcript exon repeat_feature];
 
 run();
+
 
 sub run() {
 
@@ -130,19 +137,28 @@ top level. Using v41 API code this can speed fetching & dumping greatly.
 
 Usage: perl $0 <options>
 
-  -host       Database host to connect to.
+  -host|dbhost       Database host to connect to.
 
-  -port       Database port to connect to.
+  -port|dbport       Database port to connect to. ( default 3306 ) 
 
-  -dbpattern  Database name regexp
+  -dbpattern         Database name regexp
 
-  -user       Database username.
+  -user|dbuser       Database username.
 
-  -pass       Password for user.
+  -pass|dbpass       Password for user.
 
-  -print      Just print, don't insert or delete keys.
+  -print             Just print, don't insert or delete keys.
 
-  -help       This message.
+  -help              This message.
+
+  -verbose           prints out the name of the db which is going to be patched
+
+
+
+   If you like to patch just a single database you can also use this commandline : 
+
+   perl meta_levels.pl -dbhost <HOST> -dbuser <user> -dbpass <PASS> -dbport <PORT> -dbname <dbname> 
+
 
 EOF
 
