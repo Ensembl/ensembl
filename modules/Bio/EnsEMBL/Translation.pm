@@ -814,6 +814,8 @@ sub get_all_DAS_Features{
   my $GeneAdaptor = $db->get_GeneAdaptor;
   my $Gene = $GeneAdaptor->fetch_by_translation_stable_id($self->stable_id) || return;
   my $slice = $Gene->feature_Slice;
+ 
+  return $self->SUPER::get_all_DAS_Features($slice);
 
   foreach my $dasfact( @{$self->get_all_DASFactories} ){
     my $dsn = $dasfact->adaptor->dsn;

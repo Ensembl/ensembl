@@ -176,6 +176,39 @@ sub is_stored {
   return 0;
 }
 
+sub get_all_DAS_Features{
+  my ($self, $slice) = @_;
+
+  $self->{_das_features} ||= {}; # Cache
+  $self->{_das_styles} ||= {}; # Cache
+  my %das_features;
+  my %das_styles;
+
+  foreach my $dasfact( @{$self->get_all_DASFactories} ){
+    my $dsn = $dasfact->adaptor->dsn;
+    my $name = $dasfact->adaptor->name;
+    my $type = $dasfact->adaptor->type;
+    my $url = $dasfact->adaptor->url;
+
+    # Construct a cache key : SOURCE_URL/TYPE
+    # Need the type to handle sources that serve multiple types of features
+
+    my $key = $url || ($dasfact->adaptor->protocol .'://'.join('/'. $dasfact->adaptor->domain, $dasfact->adaptor->dsn));
+
+    if( $self->{_das_features}->{$key} ){ # Use cached
+        $das_features{$name} = $self->{_das_features}->{$key};
+        $das_styles{$name} = $self->{_das_styles}->{$key};
+    } else { # Get fresh data
+        my ($featref, $styleref) = ($type =~ /^ensembl_location/) ?  ($dasfact->fetch_all_Features( $slice, $type ))[0] : $dasfact->fetch_all_by_ID( $self );
+        $self->{_das_features}->{$key} = $featref;
+        $self->{_das_styles}->{$key} = $styleref;
+        $das_features{$name} = $featref;
+        $das_styles{$name} = $styleref;
+    }
+  }
+
+  return (\%das_features, \%das_styles);
+}
 
 
 1;
