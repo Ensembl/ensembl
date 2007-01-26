@@ -251,7 +251,7 @@ sub get_all_gene_archive_ids {
   Example     : my @archived_transcripts =
                   @{ $arch_id->get_all_transcript_archive_ids };
   Description : Returns transcript ArchiveStableIds associated with this
-                ArchiveStableId. If this is a gene, it returns itself.
+                ArchiveStableId. If this is a transcript, it returns itself.
   Returntype  : listref of Bio::EnsEMBL::ArchiveStableId
   Exceptions  : none
   Caller      : general
@@ -276,7 +276,7 @@ sub get_all_transcript_archive_ids {
   Example     : my @archived_peptides =
                   @{ $arch_id->get_all_translation_archive_ids };
   Description : Returns translation ArchiveStableIds associated with this
-                ArchiveStableId. If this is a gene, it returns itself.
+                ArchiveStableId. If this is a translation, it returns itself.
   Returntype  : listref of Bio::EnsEMBL::ArchiveStableId
   Exceptions  : none
   Caller      : general
