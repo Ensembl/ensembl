@@ -369,26 +369,28 @@ sub fetch_predecessors_by_archive_id {
   # bridge the gap, look in the previous mapping_session for identical
   # stable_id.version
   unless (@result) {
-    
-    my $prev_dbname = $self->previous_dbname($arch_id->db_name);
-    
-    if ($prev_dbname) {
-      
-      $sql = qq(
-        SELECT
-              sie.new_stable_id,
-              sie.new_version,
-              sie.score,
-              m.new_db_name,
-              m.new_release,
-              m.new_assembly
-        FROM  mapping_session m, stable_id_event sie
-        WHERE sie.mapping_session_id = m.mapping_session_id
-        AND   sie.new_stable_id = ?
-        AND   m.new_db_name = ?	
-      );
 
-      $sth = $self->prepare($sql);
+    $sql = qq(
+      SELECT
+            sie.new_stable_id,
+            sie.new_version,
+            sie.score,
+            m.new_db_name,
+            m.new_release,
+            m.new_assembly
+      FROM  mapping_session m, stable_id_event sie
+      WHERE sie.mapping_session_id = m.mapping_session_id
+      AND   sie.new_stable_id = ?
+      AND   m.new_db_name = ?	
+    );
+
+    $sth = $self->prepare($sql);
+
+    my $curr_dbname = $arch_id->db_name;
+    
+    PREV:
+    while (my $prev_dbname = $self->previous_dbname($curr_dbname)) {
+    
       $sth->bind_param(1,$arch_id->stable_id, SQL_VARCHAR);
       $sth->bind_param(2,$prev_dbname, SQL_VARCHAR);
       $sth->execute();
@@ -409,12 +411,16 @@ sub fetch_predecessors_by_archive_id {
             );
           _resolve_type( $old_arch_id );
           push( @result, $old_arch_id );
+
+          last PREV;
         }
       }
 
-      $sth->finish();
+      $curr_dbname = $prev_dbname;
 
     }
+      
+    $sth->finish();
   }
 
   return \@result;
@@ -493,26 +499,28 @@ sub fetch_successors_by_archive_id {
   # bridge the gap, look in the next mapping_session for identical
   # stable_id.version
   unless (@result) {
+
+    $sql = qq(
+      SELECT
+            sie.old_stable_id,
+            sie.old_version,
+            sie.score,
+            m.old_db_name,
+            m.old_release,
+            m.old_assembly
+      FROM  mapping_session m, stable_id_event sie
+      WHERE sie.mapping_session_id = m.mapping_session_id
+      AND   sie.old_stable_id = ?
+      AND   m.old_db_name = ?	
+    );
+
+    $sth = $self->prepare($sql);
+
+    my $curr_dbname = $arch_id->db_name;
     
-    my $next_dbname = $self->next_dbname($arch_id->db_name);
+    NEXTDB:
+    while (my $next_dbname = $self->next_dbname($curr_dbname)) {
 
-    if ($next_dbname) {
-      
-      $sql = qq(
-        SELECT
-              sie.old_stable_id,
-              sie.old_version,
-              sie.score,
-              m.old_db_name,
-              m.old_release,
-              m.old_assembly
-        FROM  mapping_session m, stable_id_event sie
-        WHERE sie.mapping_session_id = m.mapping_session_id
-        AND   sie.old_stable_id = ?
-        AND   m.old_db_name = ?	
-      );
-
-      $sth = $self->prepare($sql);
       $sth->bind_param(1, $arch_id->stable_id, SQL_VARCHAR);
       $sth->bind_param(2, $next_dbname, SQL_VARCHAR);
       $sth->execute();
@@ -534,12 +542,16 @@ sub fetch_successors_by_archive_id {
             
           _resolve_type($new_arch_id);
           push( @result, $new_arch_id );
+
+          last NEXTDB;
         }
       }
-
-      $sth->finish();
+      
+      $curr_dbname = $next_dbname;
 
     }
+
+    $sth->finish();
   }
 
   return \@result;
