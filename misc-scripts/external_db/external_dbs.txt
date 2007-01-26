@@ -111,7 +111,7 @@
 3108	AFFY_HG_U95C	1	XREF	1	0	1	Affymx Microarray U95
 3109	AFFY_HG_U95D	1	XREF	1	0	1	Affymx Microarray U95
 3110	AFFY_HG_U95E	1	XREF	1	0	1	Affymx Microarray U95
-3111	AFFY_HG_U133_PLUS_2	1	XREF	1	0	1	Affymx Microarray U133
+3111	AFFY_HG_U133_Plus_2	1	XREF	1	0	1	Affymx Microarray U133
 3112	AFFY_HG_U133A_2	1	XREF	1	0	1	Affymx Microarray U133
 3113	AFFY_HG_Focus	1	XREF	1	0	1	Affymx Microarray Focus
 3114	AFFY_Rat230_2	1	XREF	1	0	1	Affymx Microarray Rat230
