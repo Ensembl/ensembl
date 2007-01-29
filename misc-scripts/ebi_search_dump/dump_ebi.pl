@@ -10,11 +10,13 @@ use DBI;
 use Getopt::Long;
 use IO::Zlib;
 
+use Bio::EnsEMBL::Registry;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
+use Bio::EnsEMBL::Variation::DBSQL::DBAdaptor;
 
 use HTML::Entities;
 
-my ( $host, $user, $pass, $port, $dbpattern, $max_genes, $gzip );
+my ($host, $user, $pass, $port, $dbpattern, $max_genes, $gzip, $no_variation);
 
 GetOptions( "host=s",              \$host,
 	    "user=s",              \$user,
@@ -23,6 +25,7 @@ GetOptions( "host=s",              \$host,
 	    "dbpattern|pattern=s", \$dbpattern,
 	    "gzip!",               \$gzip,
             "max_genes=i",         \$max_genes,
+	    "no_variation",        \$no_variation,
 	    "help" ,               \&usage
 	  );
 
@@ -37,6 +40,11 @@ my $fh;
 run();
 
 sub run() {
+
+  Bio::EnsEMBL::Registry->load_registry_from_db(-host => $host,
+						-port => $port,
+						-user => $user,
+						-pass => $pass);
 
   # loop over databases
 
@@ -130,6 +138,13 @@ sub content {
   my $meta_container = $dba->get_MetaContainer();
   my $species = $meta_container->get_Species()->common_name();
 
+  my $db_variation = variation_attach($dba) unless $no_variation;
+
+  my $trv_adaptor;
+  if ($db_variation) { # not all species have variation databases
+    $trv_adaptor = $db_variation->get_TranscriptVariationAdaptor();
+  }
+
   foreach my $gene (@{$gene_adaptor->fetch_all()}) {
 
     last if ($max_genes && $entry_count >= $max_genes);
@@ -175,7 +190,8 @@ sub content {
     # additional fields - transcript, translation, species etc
     p ("<additional_fields>");
 
-    foreach my $transcript (@{$gene->get_all_Transcripts()}) {
+    my $transcripts = $gene->get_all_Transcripts();
+    foreach my $transcript (@{$transcripts}) {
 
       p ("<field name=\"transcript\">" . $transcript->stable_id() . "</field>");
 
@@ -190,6 +206,13 @@ sub content {
 
     p ("<field name=\"species\">" . $species . "</field>");
 
+    # SNP IDs
+    if ($db_variation) {
+      foreach my $tv (@{$trv_adaptor->fetch_all_by_Transcripts($transcripts)}){
+	p ("<field name=\"variation_id\">" . $tv->variation_feature()->variation_name() . "</field>");
+      }
+    }
+
     p ("</additional_fields>");
 
     # close tag
@@ -198,8 +221,6 @@ sub content {
     $entry_count++;
 
   }
-
-
 
 }
 
@@ -223,7 +244,7 @@ sub footer {
   } else {
     close(FILE);
   }
-  
+
 }
 
 
@@ -309,26 +330,61 @@ sub print_time {
 
 # -------------------------------------------------------------------------------
 
+#
+# Figure out the name of a variation database from the core database name
+#
+
+sub variation_attach {
+
+  my $db = shift;
+
+  my $core_db_name;
+  $core_db_name = $db->dbc->dbname();
+  return undef if ($core_db_name !~ /_core_/);
+
+  my $dbc = $db->dbc();
+  my $sth = $dbc->prepare("show databases");
+  $sth->execute();
+  my $all_db_names = $sth->fetchall_arrayref();
+  my %all_db_names = map {( $_->[0] , 1)} @$all_db_names;
+  my $variation_db_name = $core_db_name;
+  $variation_db_name =~ s/_core_/_variation_/;
+
+  return undef if (! exists $all_db_names{$variation_db_name});
+
+  # register the dbadaptor with the Registry
+  return Bio::EnsEMBL::Variation::DBSQL::DBAdaptor->new(-host => $dbc->host(),
+							-user => $dbc->username(),
+							-pass => $dbc->password(),
+							-port => $dbc->port(),
+							-dbname => $variation_db_name);
+
+}
+
+# -------------------------------------------------------------------------------
+
 sub usage {
   print <<EOF; exit(0);
 
 Usage: perl $0 <options>
 
-  -host       Database host to connect to.
+  -host         Database host to connect to.
 
-  -port       Database port to connect to.
+  -port         Database port to connect to.
 
-  -dbpattern  Database name regexp
+  -dbpattern    Database name regexp
 
-  -user       Database username.
+  -user         Database username.
 
-  -pass       Password for user.
+  -pass         Password for user.
 
-  -gzip       Compress output as it's written.
+  -gzip         Compress output as it's written.
 
-  -max_genes  Only dump this many genes for testing.
+  -max_genes    Only dump this many genes for testing.
 
-  -help       This message.
+  -no_variation Don't dump variation IDs.
+
+  -help         This message.
 
 EOF
 
