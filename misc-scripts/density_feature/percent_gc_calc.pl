@@ -52,6 +52,11 @@ if( ! $dna_count ) {
 }
 
 
+
+print "Deleting old PercentGC features\n";
+$sth = $db->dbc->prepare("DELETE df, dt, a FROM density_feature df, density_type dt, analysis a WHERE a.analysis_id=dt.analysis_id AND dt.density_type_id=df.density_type_id AND a.logic_name='PercentGC'");
+$sth->execute();
+
 #
 # Get the adaptors needed;
 #
@@ -63,11 +68,6 @@ my $aa  = $db->get_AnalysisAdaptor();
 
 my $slices = $slice_adaptor->fetch_all( "toplevel" );
 my @sorted_slices =  sort { $b->seq_region_length() <=> $a->seq_region_length()} @$slices;
-
-print "Deleting old PercentGC features\n";
-$sth = $db->dbc->prepare("DELETE df, dt, a FROM density_feature df, density_type dt, analysis a WHERE a.analysis_id=dt.analysis_id AND dt.density_type_id=df.density_type_id AND a.logic_name='PercentGC'");
-$sth->execute();
-
 
 #
 # Create new analysis object for density calculation.

@@ -59,11 +59,6 @@ if( ! $repeat_count ) {
 # Get the adaptors needed;
 #
 
-my $slice_adaptor = $db->get_SliceAdaptor();
-my $dfa = $db->get_DensityFeatureAdaptor();
-my $dta = $db->get_DensityTypeAdaptor();
-my $aa  = $db->get_AnalysisAdaptor();
-
 #
 # Clean up old features first. Also remove analysis and density type entry as these are recreated.
 #
@@ -71,6 +66,13 @@ my $aa  = $db->get_AnalysisAdaptor();
 print "Deleting old PercentageRepeat features\n";
 $sth = $db->dbc->prepare("DELETE df, dt, a FROM density_feature df, density_type dt, analysis a WHERE a.analysis_id=dt.analysis_id AND dt.density_type_id=df.density_type_id AND a.logic_name='PercentageRepeat'");
 $sth->execute();
+
+my $slice_adaptor = $db->get_SliceAdaptor();
+my $dfa = $db->get_DensityFeatureAdaptor();
+my $dta = $db->get_DensityTypeAdaptor();
+my $aa  = $db->get_AnalysisAdaptor();
+
+
 
 #
 # Create new analysis object for density calculation.
