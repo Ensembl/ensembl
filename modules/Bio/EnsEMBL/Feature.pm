@@ -509,12 +509,16 @@ sub transfer {
   #if we are not in the same coord system a transformation step is needed first
   if(!$dest_cs->equals($cur_cs)) {
     $feature = $feature->transform($dest_cs->name, $dest_cs->version);
-    return undef if(!defined($feature));
+    unless(defined($feature)) {
+        warning("Feature could not be transformed");
+        return undef;
+    }
     $current_slice = $feature->{'slice'};
   }
 
   # feature went to entirely different seq_region
   if($current_slice->seq_region_name() ne $slice->seq_region_name()) {
+    warning("Feature went to entirely different seq_region");
     return undef;
   }
 
