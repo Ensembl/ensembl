@@ -73,7 +73,7 @@
 2700	Ens_Hs_gene	1	XREF	1	0	5	Ensembl Human Gene
 2710	Ens_Hs_transcript	1	XREF	1	0	5	Ensembl Human Transcript
 2720	Ens_Hs_translation	1	XREF	1	0	5	Ensembl Human Translation
-2800	RGD	1	XREF	1	0	50	RGD Symbol
+2800	RGD	1	KNOWNXREF	1	0	50	RGD Symbol
 2900	Genoscope_pred_gene	1	XREF	1	0	38	Genoscope pred gene
 2910	Genoscope_pred_transcript	1	XREF	1	0	39	Genoscope pred transcript
 2920	Genoscope_annotated_gene	1	KNOWN	1	0	40	Genoscope annotated gene
