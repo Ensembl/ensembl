@@ -268,6 +268,9 @@ sub create_xrefs {
       }
       if ($dep =~ /^DR\s+(.+)/) {
 	my ($source, $acc, @extra) = split /;\s*/, $1;
+	if($source =~ "RGD"){  #using RGD file now instead.
+	  next;
+	}
 	if (exists $dependent_sources{$source} ) {
 	  # create dependent xref structure & store it
 	  my %dep;
