@@ -203,4 +203,9 @@
 115	EndNotFound	end not found	end not found
 116	StartNotFound	start not found	start not found
 
-117	Frameshift Fra	Frameshift modelled as intron	
+117	Frameshift Fra	Frameshift modelled as intron
+
+# Other Vega attribs
+118	ensembl_name	Ensembl name	Name of equivalent Ensembl chromosome
+119	NoAnnotation	NoAnnotation	Clones without manual annotation
+120	hap_contig	Haplotype contig	Contig present on a haplotype
