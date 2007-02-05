@@ -1307,14 +1307,25 @@ sub get_all_SimilarityFeatures {
 =cut
 
 sub get_all_SimpleFeatures {
-  my ($self, $logic_name, $score) = @_;
+  my ($self, $logic_name, $score, $dbtype) = @_;
 
   if(!$self->adaptor()) {
     warning('Cannot get SimpleFeatures without attached adaptor');
     return [];
   }
 
-  my $sfa = $self->adaptor()->db()->get_SimpleFeatureAdaptor();
+  my $db;
+  if($dbtype) {
+     $db = $self->adaptor->db->get_db_adaptor($dbtype);
+     if(!$db) {
+       warning("Don't have db $dbtype returning empty list\n");
+       return [];
+     }
+  } else {
+    $db = $self->adaptor->db;
+  }
+
+  my $sfa = $db->get_SimpleFeatureAdaptor();
 
   return $sfa->fetch_all_by_Slice_and_score($self, $score, $logic_name);
 }
@@ -1328,6 +1339,8 @@ sub get_all_SimpleFeatures {
                to obtain.
   Arg [2]    : (optional) string $repeat_type
                Limits features returned to those of the specified repeat_type
+  Arg [3]    : (optional) string $db
+               Key for database e.g. core/vega/cdna/....
   Example    : @repeat_feats = @{$slice->get_all_RepeatFeatures(undef,'LTR')};
   Description: Retrieves the RepeatFeatures which overlap  with
                logic name $logic_name and with score above $score.  If 
@@ -1341,14 +1354,25 @@ sub get_all_SimpleFeatures {
 =cut
 
 sub get_all_RepeatFeatures {
-  my ($self, $logic_name, $repeat_type) = @_;
+  my ($self, $logic_name, $repeat_type, $dbtype) = @_;
 
   if(!$self->adaptor()) {
     warning('Cannot get RepeatFeatures without attached adaptor');
     return [];
   }
 
-  my $rpfa = $self->adaptor()->db()->get_RepeatFeatureAdaptor();
+  my $db;
+  if($dbtype) {
+     $db = $self->adaptor->db->get_db_adaptor($dbtype);
+     if(!$db) {
+       warning("Don't have db $dbtype returning empty list\n");
+       return [];
+     }
+  } else {
+    $db = $self->adaptor->db;
+  }
+
+  my $rpfa = $db->get_RepeatFeatureAdaptor();
 
   return $rpfa->fetch_all_by_Slice($self, $logic_name, $repeat_type);
 }
