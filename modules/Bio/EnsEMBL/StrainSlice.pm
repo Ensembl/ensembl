@@ -154,6 +154,24 @@ sub strain_name{
    return $self->{'strain_name'};
 }
 
+
+=head2 display_Slice_name
+
+    Args        : none
+    Example     : my $strain_name = $strainSlice->display_Slice_name();
+    Description : Getter for the name of the strain
+    ReturnType  : string
+    Exceptions  : none
+    Caller      : webteam
+
+=cut
+
+sub display_Slice_name{
+    my $self = shift;
+
+    return $self->strain_name;
+}
+
 =head2 seq
 
   Arg [1]    : none
