@@ -201,11 +201,37 @@ sub length{
     return $length;
 }
 
-#getter for the strains
+=head2 strains
+
+  Args       : None
+  Description: Returns list with all strains used to
+               define this AlignStrainSlice object
+  Returntype : listref of Bio::EnsEMBL::StrainSlice objects
+  Exceptions : none
+  Caller     : general
+
+=cut
+
 sub strains{
     my $self = shift;
 
     return $self->{'strains'};
+}
+
+=head2 Slice
+
+  Args       : None
+  Description: Returns slice where the AlignStrainSlice
+               is defined
+  Returntype : Bio::EnsEMBL::Slice object
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub Slice{
+    my $self = shift;
+    return $self->{'slice'};
 }
 #method to retrieve, in order, a list with all the indels in the different strains
 sub _get_indels{
@@ -234,6 +260,38 @@ sub _get_indels{
     }
     #and return all the gap coordinates....
     return $range_registry->get_ranges(1);
+}
+
+=head2 get_all_underlying_Slices
+
+  Arg  [1]   : int $startBasePair
+               relative to start of slice, which is 1.
+  Arg  [2]   : int $endBasePair
+               relative to start of slice.
+  Arg  [3]   : (optional) int $strand
+               The strand of the slice to obtain sequence from. Default
+               value is 1.
+  Description: This Slice is made of several Bio::EnsEMBL::StrainSlices
+               sequence. This method returns these StrainSlices (or part of
+               them) with the original coordinates 
+  Returntype : listref of Bio::EnsEMBL::StrainSlice objects
+  Exceptions : end should be at least as big as start
+  Caller     : general
+
+=cut
+
+sub get_all_underlying_Slices {
+  my ($self, $start, $end, $strand) = @_;
+  my $underlying_slices = [];
+
+  $start = 1 if (!defined($start));
+  $end ||= $self->Slice->length;
+  $strand ||= 1;
+
+  foreach my $strainSlice (@{$self->strains}){
+      push @{$underlying_slices},$strainSlice->sub_Slice($start,$end,$strand);
+  }
+  return $underlying_slices;
 }
 
 1;
