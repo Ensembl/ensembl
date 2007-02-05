@@ -172,7 +172,7 @@ sub fetch_all_by_type {
 =head2 fetch_all_by_Slice
 
   Arg [1]    : Bio::EnsEMBL::Slice
-  Arg [2]    : (optional) ditag type (specific library)
+  Arg [2]    : (optional) ditag type name (specific library) or an aray ref with multiple type names
   Arg [3]    : (optional) analysis logic_name
   Example    : $tags = $ditagfeature_adaptor->fetch_all_by_Slice($slice, "SME005");
   Description: Retrieves ditagFeatures from the database overlapping a specific region
@@ -202,7 +202,17 @@ sub fetch_all_by_Slice {
              FROM ditag_feature df, ditag d 
              WHERE df.ditag_id=d.ditag_id";
   if($tagtype){
-    $sql .= " AND d.type = \"".$tagtype."\"";
+    my $tagtypes = '';
+    #check if array
+    if(ref $tagtype eq 'ARRAY'){
+      my @arraytype_mod;
+      foreach my $arraytype (@$tagtype){ push @arraytype_mod, '"'.$arraytype.'"' }
+      $tagtypes = join(", ", @arraytype_mod);
+    }
+    else{
+      $tagtypes = '"'.$tagtype.'"';
+    }
+    $sql .= " AND d.type IN(".$tagtypes.")";
   }
   if($logic_name){
     my $analysis = $self->db->get_AnalysisAdaptor->fetch_by_logic_name($logic_name);
