@@ -84,11 +84,10 @@ sub fetch_all_by_Exon {
 
     if(!$feature) {
       warning("Supporting feature $type $feature_id does not exist in DB");
+    } else {
+      my $new_feature = $feature->transfer($exon->slice());
+      push @$out, $new_feature if( $new_feature );
     }
-
-    my $new_feature = $feature->transfer($exon->slice());
-
-    push @$out, $new_feature if( $new_feature );
   }
 
   $sth->finish();
