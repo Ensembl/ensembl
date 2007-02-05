@@ -42,7 +42,12 @@ my %attrib_codes = ( 'miRNA'              => 'miRNA',
 		     'snRNA_pseudogene'     => 'RNA_pseu',
 		     'misc_RNA_pseudogene'  => 'RNA_pseu',
 		     'miRNA_pseudogene'     => 'RNA_pseu',
-		     'Mt_tRNA_pseudogene'   => 'RNA_pseu');
+		     'Mt_tRNA_pseudogene'   => 'RNA_pseu',
+		     'V_segment'            => 'IgSeg',
+		     'J_segment'            => 'IgSeg',   
+		     'D_segment'            => 'IgSeg',
+		     'C_segment'            => 'IgSeg');
+
 
 # do both genestats and snpstats by default
 $genestats = $snpstats = 1 if(!$genestats && !$snpstats);
