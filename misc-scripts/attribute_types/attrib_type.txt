@@ -167,3 +167,45 @@
 
 80	supercontig	SuperContig name	NULL
 81	well_name	Well plate name	NULL
+
+# Added by fc1 26/11/06
+82	bacterial	Bacterial
+83	NovelCDSCount	Novel CDS Count
+84	NovelTransCount	Novel Transcript Count
+85	PutTransCount	Putative Transcript Count
+86	PredTransCount	Predicted Transcript Count
+87	UnclassPsCount	Unclass Ps count
+88	KnwnprogCount	Known prog Count
+89	NovCDSprogCount	Novel CDS prog count
+90	bacend_well_nam	BACend well name
+91	alt_well_name	Alt well name
+92	TranscriptEdge	Transcript Edge
+93	alt_embl_acc	Alt EMBL acc
+94	alt_org	Alt org
+
+# anacode attribs added by ml6 29/11/06 - seen in yeast but not others
+95	intl_clone_name	International Clone Name	
+96	embl_version	EMBL Version	
+97	chr	Chromosome Name	Chromosome Name Contained in the Assembly
+98	equiv_asm	Equivalent EnsEMBL assembly	For full chromosomes made from NCBI AGPs
+99	GeneNo_ncRNA	ncRNA Gene Count	Number of ncRNA Genes
+
+# Ig segment gene counts for seq regions stats script ds5 2/2/07
+100	GeneNo_IgSeg	Ig segment Gene Count	Number of Ig segment Genes
+
+# cat missing atts
+109	HitSimilarity	hit similarity	percentage id to parent transcripts
+110	HitCoverage	hit coverage	coverage of parent transcripts
+111	PropNonGap	proportion non gap	proportion non gap
+112	NumStops	number of stops		
+113	GapExons	gap exons	number of gap exons
+114	SourceTran	source transcript	source transcript	
+115	EndNotFound	end not found	end not found
+116	StartNotFound	start not found	start not found
+
+117	Frameshift Fra	Frameshift modelled as intron
+
+# Other Vega attribs
+118	ensembl_name	Ensembl name	Name of equivalent Ensembl chromosome
+119	NoAnnotation	NoAnnotation	Clones without manual annotation
+120	hap_contig	Haplotype contig	Contig present on a haplotype
