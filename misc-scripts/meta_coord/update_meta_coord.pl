@@ -5,9 +5,9 @@ use Bio::EnsEMBL::DBSQL::DBConnection;
 use Getopt::Long;
 
 my $help = 0;
-my ($host, $port, $user, $pass, $dbname);
+my ($host, $port, $user, $pass, $dbpattern);
 
-my $usage = "\n$0 --host ecs2 --port 3364 --user ensadmin --pass ensembl --dbname homo_sapiens_core_27_35a
+my $usage = "\n$0 --host ecs2 --port 3364 --user ensadmin --pass ensembl --dbpattern core
 
 [--help] displays this menu.
 
@@ -39,7 +39,7 @@ GetOptions('help'     => \$help,
            'port=i'   => \$port,
            'user=s'   => \$user,
            'pass=s'   => \$pass,
-           'dbname=s' => \$dbname);
+           'dbpattern=s' => \$dbpattern);
 
 #print "help: $help argv:" . scalar(@ARGV) . "$host $port $user $pass $dbname\n";
 
@@ -48,13 +48,24 @@ GetOptions('help'     => \$help,
 #  exit 0;
 #}
 
-my $dbc = new Bio::EnsEMBL::DBSQL::DBConnection(-host   => $host,
+my $dsn = "DBI:mysql:host=$host";
+$dsn .= ";port=$port" if ($port);
+
+my $db = DBI->connect( $dsn, $user, $pass );
+
+my @dbnames = map {$_->[0] } @{$db->selectall_arrayref("show databases")};
+
+for my $dbname (@dbnames) {
+
+  next if ($dbname !~ /$dbpattern/);
+  
+  my $dbc = new Bio::EnsEMBL::DBSQL::DBConnection(-host   => $host,
                                                 -port   => $port,
                                                 -user   => $user,
                                                 -pass   => $pass,
                                                 -dbname => $dbname);
 
-my @table_names = qw(
+  my @table_names = qw(
                      assembly_exception
                      gene
                      exon
@@ -76,27 +87,27 @@ my @table_names = qw(
                      transcript
                     );
 
-unless (system("mysql -h$host -P$port -u$user -p$pass -N -e 'select * from meta_coord' $dbname > $dbname.meta_coord.backup") ==0) {
-  print STDERR "Can't dump the original meta_coord for back up\n";
-  exit 1;
-} else {
-  print STDERR "original meta_coord table backed up in $dbname.meta_coord.backup\n";
-}
+  unless (system("mysql -h$host -P$port -u$user -p$pass -N -e 'select * from meta_coord' $dbname > $dbname.meta_coord.backup") ==0) {
+    print STDERR "Can't dump the original meta_coord for back up\n";
+    exit 1;
+  } else {
+    print STDERR "original meta_coord table backed up in $dbname.meta_coord.backup\n";
+  }
 
-foreach my $table_name (@table_names) {
-  print STDERR "Updating $table_name table entries...";
-  my $sql = "delete from meta_coord where table_name = ? ";
-  my $sth = $dbc->prepare($sql);
-  $sth->execute($table_name);
-  $sth->finish;
+  foreach my $table_name (@table_names) {
+    print STDERR "Updating $table_name table entries...";
+    my $sql = "delete from meta_coord where table_name = ? ";
+    my $sth = $dbc->prepare($sql);
+    $sth->execute($table_name);
+    $sth->finish;
 
-  $sql = "insert into meta_coord ".
+    $sql = "insert into meta_coord ".
          "select '$table_name',s.coord_system_id, max(t.seq_region_end-t.seq_region_start+1) ".
          "from $table_name t, seq_region s ".
          "where t.seq_region_id=s.seq_region_id group by s.coord_system_id";
-  $sth = $dbc->prepare($sql);
-  $sth->execute;
-  $sth->finish;
-  print STDERR "Done\n";
+    $sth = $dbc->prepare($sql);
+    $sth->execute;
+    $sth->finish;
+    print STDERR "Done\n";
+  }
 }
-
