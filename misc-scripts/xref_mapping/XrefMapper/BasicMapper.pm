@@ -1401,7 +1401,7 @@ PSQL
   }
   $sth->finish;
 
-
+  close XREF_P;
   close OBJECT_XREF_P;
   close IDENTITY_XREF_P;
   close IDENTITY_XREF_TEMP;
@@ -1441,7 +1441,7 @@ PSQL
     if(-s $file){
       my $sth = $ensembl->dbc->prepare("LOAD DATA LOCAL INFILE \'$file\' IGNORE INTO TABLE $table");
       print "Uploading data in $file to $table\n";
-      $sth->execute();
+      $sth->execute() || die "error loading file $file $!";
     }
     else{
       print "NO file or zero size file, so not able to load file $file to $table\n";
@@ -2361,6 +2361,7 @@ sub dump_core_xrefs {
   close(OBJECT_XREF);
   close(EXTERNAL_SYNONYM);
   close(GO_XREF);
+  close(IDENTITY_XREF);
   close (PRIORITY_FILE);
 
   return $object_xref_id;
@@ -3605,7 +3606,7 @@ sub upload_external_db {
   if ($count == 0 || $upload_external_db ) {
     my $edb = $self->external_db_file;
     print "external_db table is empty, uploading from $edb\n";
-    my $edb_sth = $core_db->prepare("LOAD DATA LOCAL INFILE \'$edb\' INTO TABLE external_db");
+    my $edb_sth = $core_db->prepare("LOAD DATA LOCAL INFILE \'$edb\' IGNORE INTO TABLE external_db");
     $edb_sth->execute();
   }
 
@@ -3730,14 +3731,16 @@ EOS
 
 
   #sql needed to get the dependent xrefs for those missed.
-  my $dep_sql = "SELECT dx.dependent_xref_id FROM dependent_xref dx, xref x WHERE x.xref_id=dx.dependent_xref_id AND master_xref_id = ?";
+  my $dep_sql = "SELECT x.xref_id, x.accession, x.version, x.label, x.description, x.source_id FROM dependent_xref dx, xref x WHERE x.xref_id=dx.dependent_xref_id AND master_xref_id = ?";
   my $dep_sth = $self->xref->dbc->prepare($dep_sql);
   
 
-  if(scalar(@xref_list) > 1){
-    open(XREF2, ">".$self->core->dir()."/pairs_xref.txt") 
-      || die "Could not open pairs_xref.txt";
+  open(XREF2, ">".$self->core->dir()."/pairs_xref.txt") 
+    || die "Could not open pairs_xref.txt";
 
+  my %master_acc;
+
+  if(scalar(@xref_list) > 1){
 
     my $list = join(", ", @xref_list);
     my $sql = "SELECT xref_id, accession, version, label, description, source_id from xref where xref_id in ($list)";
@@ -3748,26 +3751,18 @@ EOS
     my $count =0;
     while($sth->fetch()){
       $count++;
+      $master_acc{$xref_id} = $acc;
       print XREF2 ($xref_id+$xref_id_offset)."\t". $source_to_external_db{$source_id}.
 	"\t$acc\t$label\t$ver\t$desc";
-      my $key = $priority_source_id_to_name{$priority_xref_source_id{$source_id}}.":".$acc;
+      my $key = $priority_source_id_to_name{$priority_xref_source_id{$xref_id}}.":".$acc;
+      if(!defined($priority_seenit{$key})){
+	print STDERR "PROBLEM: key =$key\n\txref = $xref_id\n\toffset is $xref_id_offset\n";
+      }
       print XREF2 "\tINFERRED_PAIR\tGenerated via its Pair ".$priority_seenit{$key}."\n";
-      $xrefs_written{$xref_id}
+      $xrefs_written{$xref_id};
 	
     }
     $sth->finish;
-
-    close XREF2;
-    my $file = $self->core->dir()."/pairs_xref.txt";
-    
-    # don't seem to be able to use prepared statements here
-    if(-s $file){
-      my $sth = $self->core->dbc->prepare("LOAD DATA LOCAL INFILE \'$file\' IGNORE INTO TABLE xref");
-      print "Uploading data in $file to object_xref\n";
-      $sth->execute();
-      
-      print "$count xrefs added based on the Pairs\n";
-    }
 
   }
 
@@ -3790,6 +3785,7 @@ EOS
   open(OBJECT_XREF2, ">".$self->core->dir()."/pairs_object_xref.txt") 
     || die "Could not open pairs_object_xref.txt";
 
+
   my $triage_file = $self->core->dir()."/triage_update.sql";
   open(TRIAGE_UPDATE,">".$triage_file)
     || die "Could not open $triage_file\n";
@@ -3797,6 +3793,7 @@ EOS
   my $i=0;
   my $index;
   my $added = 0;
+  my $added_transcript = 0;
   my $sql = "SELECT o.xref_id, o.ensembl_id, o.ensembl_object_type, ";
   $sql   .=        "x.dbprimary_acc, x.external_db_id ";
   $sql   .=    "FROM object_xref o, xref x ";
@@ -3818,16 +3815,24 @@ EOS
 	  print OBJECT_XREF2 $good2missed{$goodxref};
 	  print OBJECT_XREF2 "\n";	
 
-
 	  $dep_sth->execute($good2missed{$goodxref}-$xref_id_offset);
-	  my $dep_xref;
-	  $dep_sth->bind_columns(\$dep_xref);
+	  my ($xref_id, $acc,$ver, $label, $desc, $source_id);
+	  $dep_sth->bind_columns(\$xref_id, \$acc, \$ver, \$label, \$desc, \$source_id);
+
 	  while($dep_sth->fetch){
+
+	    if(!defined($xrefs_written{$xref_id})){
+	      print XREF2 ($xref_id+$xref_id_offset)."\t". $source_to_external_db{$source_id}.
+		"\t$acc\t$label\t$ver\t$desc";
+	      print XREF2 "\tDEPENDENT\tGenerated via ".$master_acc{$good2missed{$goodxref}-$xref_id_offset}."\n";
+	      $xrefs_written{$xref_id};
+	    }
+
 	    $max_object_xref_id++;
-	    $object_succesfully_mapped{$dep_xref} = 1;
+	    $object_succesfully_mapped{$xref_id} = 1;
  	    print OBJECT_XREF2 "$max_object_xref_id\t";
 	    print OBJECT_XREF2 $transcript_2_translation{$ens_int_id}."\tTranslation\t" ;
-	    print OBJECT_XREF2 $dep_xref+$xref_id_offset;
+	    print OBJECT_XREF2 $xref_id+$xref_id_offset;
 	    print OBJECT_XREF2 "\n";	
 	  }
 	  print TRIAGE_UPDATE "DELETE unmapped_object FROM unmapped_object ";
@@ -3836,7 +3841,7 @@ EOS
 	}
 	elsif(($type =~ /Translation/) and defined($translation_2_transcript{$ens_int_id})){
 	  $max_object_xref_id++;
-	  $added++;
+	  $added_transcript++;
           $object_succesfully_mapped{($good2missed{$goodxref}-$xref_id_offset)} = 1;
  	  print OBJECT_XREF2 "$max_object_xref_id\t";
 	  print OBJECT_XREF2 $translation_2_transcript{$ens_int_id}."\tTranscript\t" ;
@@ -3844,14 +3849,22 @@ EOS
 	  print OBJECT_XREF2 "\n";	
 
 	  $dep_sth->execute($good2missed{$goodxref}-$xref_id_offset);
-	  my $dep_xref;
-	  $dep_sth->bind_columns(\$dep_xref);
+	  my ($xref_id, $acc,$ver, $label, $desc, $source_id);
+	  $dep_sth->bind_columns(\$xref_id, \$acc, \$ver, \$label, \$desc, \$source_id);
 	  while($dep_sth->fetch){
+
+	    if(!defined($xrefs_written{$xref_id})){
+	      print XREF2 ($xref_id+$xref_id_offset)."\t". $source_to_external_db{$source_id}.
+		"\t$acc\t$label\t$ver\t$desc";
+	      print XREF2 "\tDEPENDENT\tGenerated via ".$master_acc{$good2missed{$goodxref}-$xref_id_offset}."\n";
+	      $xrefs_written{$xref_id};
+	    }
+
 	    $max_object_xref_id++;
-	    $object_succesfully_mapped{$dep_xref} = 1;
+	    $object_succesfully_mapped{$xref_id} = 1;
  	    print OBJECT_XREF2 "$max_object_xref_id\t";
 	    print OBJECT_XREF2 $translation_2_transcript{$ens_int_id}."\tTranscript\t" ;
-	    print OBJECT_XREF2 $dep_xref+$xref_id_offset;
+	    print OBJECT_XREF2 $xref_id+$xref_id_offset;
 	    print OBJECT_XREF2 "\n";	
 	  }
 
@@ -3882,15 +3895,25 @@ EOS
 	print OBJECT_XREF2 $transcript_2_translation{$ens_int_id}."\tTranslation\t" ;
 	print OBJECT_XREF2 $good2missed{$goodxref};
 	print OBJECT_XREF2 "\n";	
+
 	$dep_sth->execute($good2missed{$goodxref}-$xref_id_offset);
-	my $dep_xref;
-	$dep_sth->bind_columns(\$dep_xref);
+	my ($xref_id, $acc,$ver, $label, $desc, $source_id);
+	$dep_sth->bind_columns(\$xref_id, \$acc, \$ver, \$label, \$desc, \$source_id);
 	while($dep_sth->fetch){
+
+	  if(!defined($xrefs_written{$xref_id})){
+	    print XREF2 ($xref_id+$xref_id_offset)."\t". $source_to_external_db{$source_id}.
+	      "\t$acc\t$label\t$ver\t$desc";
+	    print XREF2 "\tDEPENDENT\tGenerated via ".$master_acc{$good2missed{$goodxref}-$xref_id_offset}."\n";
+	    $xrefs_written{$xref_id};
+	  }
+
+	  
 	  $max_object_xref_id++;
-          $object_succesfully_mapped{$dep_xref} = 1;
+          $object_succesfully_mapped{$xref_id} = 1;
  	  print OBJECT_XREF2 "$max_object_xref_id\t";
 	  print OBJECT_XREF2 $transcript_2_translation{$ens_int_id}."\tTranslation\t" ;
-	  print OBJECT_XREF2 $dep_xref+$xref_id_offset;
+	  print OBJECT_XREF2 $xref_id+$xref_id_offset;
 	  print OBJECT_XREF2 "\n";	
 	}
 	print TRIAGE_UPDATE "DELETE unmapped_object FROM unmapped_object ";
@@ -3899,21 +3922,30 @@ EOS
       }
       elsif(($type =~ /Translation/) and defined($translation_2_transcript{$ens_int_id})){
 	$max_object_xref_id++;
-	$added++;
+	$added_transcript++;
 	$object_succesfully_mapped{($good2missed{$goodxref}-$xref_id_offset)} = 1;
  	print OBJECT_XREF2 "$max_object_xref_id\t";
 	print OBJECT_XREF2 $translation_2_transcript{$ens_int_id}."\tTranscript\t" ;
 	print OBJECT_XREF2 $good2missed{$goodxref};
 	print OBJECT_XREF2 "\n";	
+
 	$dep_sth->execute($good2missed{$goodxref}-$xref_id_offset);
-	my $dep_xref;
-	$dep_sth->bind_columns(\$dep_xref);
+	my ($xref_id, $acc,$ver, $label, $desc, $source_id);
+	$dep_sth->bind_columns(\$xref_id, \$acc, \$ver, \$label, \$desc, \$source_id);
 	while($dep_sth->fetch){
+
+	  if(!defined($xrefs_written{$xref_id})){
+	    print XREF2 ($xref_id+$xref_id_offset)."\t". $source_to_external_db{$source_id}.
+	      "\t$acc\t$label\t$ver\t$desc";
+	    print XREF2 "\tDEPENDENT\tGenerated via ".$master_acc{$good2missed{$goodxref}-$xref_id_offset}."\n";
+	    $xrefs_written{$xref_id};
+	  }
+
 	  $max_object_xref_id++;
-          $object_succesfully_mapped{$dep_xref} = 1;
+          $object_succesfully_mapped{$xref_id} = 1;
  	  print OBJECT_XREF2 "$max_object_xref_id\t";
 	  print OBJECT_XREF2 $translation_2_transcript{$ens_int_id}."\tTranscript\t" ;
-	  print OBJECT_XREF2 $dep_xref+$xref_id_offset;
+	  print OBJECT_XREF2 $xref_id+$xref_id_offset;
 	  print OBJECT_XREF2 "\n";	
 	}
 	print TRIAGE_UPDATE "DELETE unmapped_object FROM unmapped_object ";
@@ -3925,6 +3957,7 @@ EOS
    $sth_ob->finish();
   }
 
+  close XREF2;
   close OBJECT_XREF2;
 
   #
@@ -3940,8 +3973,18 @@ EOS
        $sth->execute();
   
        print "$added new object xrefs added based on the Pairs\n";
+       print "$added_transcript transcripts\n";
    }
 
+  my $file = $self->core->dir()."/pairs_xref.txt";
+  
+  if(-s $file){
+    my $sth = $self->core->dbc->prepare("LOAD DATA LOCAL INFILE \'$file\' IGNORE INTO TABLE xref");
+    print "Uploading data in $file to xref\n";
+    $sth->execute();
+    
+  }
+  
 
   print "At end of pairs Maximum existing object_xref_id = $max_object_xref_id\n";
 
