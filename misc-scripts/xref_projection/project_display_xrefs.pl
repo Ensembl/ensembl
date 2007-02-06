@@ -117,12 +117,13 @@ foreach my $to_species (@to_multi) {
   print_stats($to_ga);
 
   # Get all genes, find homologies, set xrefs
-  my @genes = @{$from_ga->list_dbIDs};
-  my $i = 0;
-  my $total_genes = scalar(@genes);
-  foreach my $gene_id (@genes) {
+  my $genes = $from_ga->fetch_all();
 
-    my $gene = $from_ga->fetch_by_dbID($gene_id);
+  my $i = 0;
+  my $total_genes = count_rows($from_ga, "SELECT COUNT(*) FROM gene g");
+
+  while (my $gene = shift(@$genes)) {
+
     # next unless ($gene->biotype eq "protein_coding");
 
     print "$i of $total_genes source genes\n" if ($i % 1000 == 0);
