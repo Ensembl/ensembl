@@ -20,7 +20,6 @@ xref_mapper.pl - Create Ensembl gene model xref mappings
 [B<-upload>]
 [B<-delete_external_db>]
 [B<-notriage>]
-[B<-delete_unmapped>]
 [B<-recalc_display_xrefs>}
 [B<-dumpcheck>]
 [B<-external_db_file>]
@@ -100,10 +99,6 @@ should be displayed.
 
 don't dump triage data
 
-=item B<-delete_unmapped>
-
-deletes data from the unmapped_object table.
-
 =item B<EXAMPLE:>
 
 perl xref_mapper.pl -file mapper.input
@@ -157,7 +152,6 @@ my $delete_external_db ;
 my $location;
 my $logic_name;
 my $notriage=undef;
-my $delete_unmapped = undef;
 my $recalc_display_xrefs = undef;
 my $external_db_file="/../external_db/external_dbs.txt";
 
@@ -171,7 +165,6 @@ GetOptions ('file=s'                    => \$file,
 	    'location=s'                => \$location,
             'logicname=s'               => \$logic_name,
 	    'notriage'                  => \$notriage,
-	    'delete_unmapped'           => \$delete_unmapped,
 	    'recalc_display_xrefs_only' => \$recalc_display_xrefs,
 	    'external_db_file=s'        => \$external_db_file,
             'help'                      => \$help,
@@ -347,15 +340,11 @@ else{
 
 $mapper->xref($xref); # attach xref object to mapper object
 
-#testing remove after
-
-
 if(defined($recalc_display_xrefs)){
   $mapper->genes_and_transcripts_attributes_set();
   print "Finished recalculating display xrefs and gene descriptions";
   exit;
 }
-
 
 print "\nDumping xref & Ensembl sequences\n";
 $mapper->dump_seqs($location);
@@ -375,10 +364,8 @@ $mapper->parse_mappings($notriage);
 
 if($upload){
 
-  $mapper->delete_unmapped() if ($delete_unmapped);
 
   $mapper->do_upload();
-
 
   print "\nProcessing priority xrefs\n";
   $mapper->process_priority_xrefs();
