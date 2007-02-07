@@ -3,7 +3,7 @@ use warnings;
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 84;
+	plan tests => 86;
 }
 
 use Bio::EnsEMBL::Test::MultiTestDB;
