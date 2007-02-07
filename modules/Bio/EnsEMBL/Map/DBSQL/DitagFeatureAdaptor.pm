@@ -228,7 +228,7 @@ sub fetch_all_by_Slice {
   my $sth = $self->prepare($sql);
   $sth->execute();
 
-  my $result = $self->_fetch($sth);
+  my $result = $self->_fetch($sth, $slice);
   push(@result, @$result);
 
   return \@result;
