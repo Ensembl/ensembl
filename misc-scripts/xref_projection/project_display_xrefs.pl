@@ -507,7 +507,7 @@ sub backup {
       print STDERR "Can't dump the original $table from $dbname for backup\n";
       exit 1;
     } else {
-      print STDERR "Original $table table backed up in $dbname.$table.backup\n";
+      print "Original $table table backed up in $dbname.$table.backup\n";
     }
   }
 
