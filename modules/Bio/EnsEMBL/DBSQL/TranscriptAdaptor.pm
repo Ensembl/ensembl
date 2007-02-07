@@ -915,9 +915,36 @@ sub remove {
   my $sfsth = $self->prepare("SELECT feature_type, feature_id  " .
                              "FROM transcript_supporting_feature " .
                              "WHERE transcript_id = ?");
+
   $sfsth->bind_param(1, $transcript->dbID, SQL_INTEGER);
   $sfsth->execute();
+
+  # statements to check for shared align_features
+  my $sth1 = $self->prepare("SELECT count(*) FROM supporting_feature " .
+			    "WHERE feature_type = ? AND feature_id = ?");
+  my $sth2 = $self->prepare("SELECT count(*) " .
+                            "FROM transcript_supporting_feature " .
+			    "WHERE feature_type = ? AND feature_id = ?");
+
+  SUPPORTING_FEATURE:
   while(my ($type, $feature_id) = $sfsth->fetchrow()){
+    
+    # only remove align_feature if this is the last reference to it
+    $sth1->bind_param(1, $type, SQL_VARCHAR);
+    $sth1->bind_param(2, $feature_id, SQL_INTEGER);
+    $sth1->execute;
+    $sth2->bind_param(1, $type, SQL_VARCHAR);
+    $sth2->bind_param(2, $feature_id, SQL_INTEGER);
+    $sth2->execute;
+    my ($count1) = $sth1->fetchrow;
+    my ($count2) = $sth2->fetchrow;
+    if ($count1 + $count2 > 1) {
+      #warn "transcript: shared feature, not removing $type|$feature_id\n";
+      next SUPPORTING_FEATURE;
+    }
+    
+    #warn "transcript: removing $type|$feature_id\n";
+  
     if($type eq 'protein_align_feature'){
       my $f = $prot_adp->fetch_by_dbID($feature_id);
       $prot_adp->remove($f);
@@ -931,6 +958,8 @@ sub remove {
     }
   }
   $sfsth->finish();
+  $sth1->finish();
+  $sth2->finish();
 
   # delete the association to supporting features
 
