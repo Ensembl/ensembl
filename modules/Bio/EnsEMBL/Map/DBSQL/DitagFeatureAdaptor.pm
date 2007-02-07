@@ -167,7 +167,7 @@ sub fetch_all_by_type {
 
   return $result;
 }
-X
+
 
 =head2 fetch_all_by_Slice
 
