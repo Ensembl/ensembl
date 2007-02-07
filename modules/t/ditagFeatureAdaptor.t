@@ -105,7 +105,7 @@ ok((scalar @$dfs == 2) && $dfs->[0]->isa('Bio::EnsEMBL::Map::DitagFeature')
 #test fetch by type
 $dfs = $dfa->fetch_all_by_type($tag_library);
 ok((scalar @$dfs) && $dfs->[0]->isa('Bio::EnsEMBL::Map::DitagFeature')
-	&& $dfs->[0]->fetch_ditag->type eq $tag_library);
+	&& $dfs->[0]->ditag->type eq $tag_library);
 
 # test fetch all by slice
 $slice = $db->get_SliceAdaptor->fetch_by_region('chromosome', $region,
