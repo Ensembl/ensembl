@@ -1032,6 +1032,7 @@ sub get_all_DAS_Features{
   my %das_features;
 
   my $slice = $self->feature_Slice;
+return $self->SUPER::get_all_DAS_Features($slice);
 
   foreach my $dasfact( @{$self->get_all_DASFactories} ){
     my $dsn = $dasfact->adaptor->dsn;
