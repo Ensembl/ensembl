@@ -15,7 +15,7 @@ my $multi = Bio::EnsEMBL::Test::MultiTestDB->new();
 my $db    = $multi->get_DBAdaptor( 'core' );
 
 my $region        = '11';
-my $ditag_id      = 1;
+my $ditag_id      = 3278356;
 my $qstart        = 83225874;
 my $qend          = 83236347;
 my $qstrand       = -1;
@@ -56,7 +56,7 @@ my $feature = Bio::EnsEMBL::Map::DitagFeature->new(
 					-hit_start     => $tstart,
 					-hit_end       => $tend,
 					-hit_strand    => $tstrand,
-					-ditag_id      => $ditag_id,
+					-ditag_id      => undef,
 					-ditag_side    => $ditag_side,
 					-ditag_pair_id => $ditag_pair_id,
 					-cigar_line    => $cigar_line,
@@ -73,15 +73,35 @@ ok($feature && $feature->isa('Bio::EnsEMBL::Map::DitagFeature'));
 
 #hide the contents of ditag_feature table
 $multi->hide('core', 'ditag_feature');
+$multi->hide('core', 'ditag');
+
+#create a ditag object to attach to the ditagFeature object fist
+my $name      = "101A01-2";
+my $type      = "ZZ13";
+my $tag_count = 2;
+my $sequence  = "GAGAACTTGGACCGCAGAGAATACACACAAATCAAACC";
+my $new_ditag = Bio::EnsEMBL::Map::Ditag->new (
+                                               -name     => $name, 
+                                               -type     => $type,
+					       -count    => $tag_count,
+                                               -sequence => $sequence, 
+                                              );
+my @ditags = ( $new_ditag );
+$db->get_DitagAdaptor->store(\@ditags);
+
+#attach to ditagFeature
+$feature->ditag($new_ditag);
+$feature->ditag_id($new_ditag->dbID);
 
 $dfa->store($feature);
-ok($feature->dbID && $feature->adaptor == $dfa);
+ok(defined $feature->dbID && $feature->adaptor == $dfa);
 
 my $testfeature = $dfa->fetch_by_dbID($feature->dbID);
 ok($testfeature && $testfeature->isa('Bio::EnsEMBL::Map::DitagFeature'));
 
 #unhide table
 $multi->restore('core', 'ditag_feature');
+$multi->restore('core', 'ditag');
 
 ########
 # 5-11 #

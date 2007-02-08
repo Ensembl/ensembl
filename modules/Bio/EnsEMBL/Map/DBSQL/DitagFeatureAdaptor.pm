@@ -463,13 +463,19 @@ TAG:
       throw(   "Object must be an Ensembl DitagFeature, "
              . "not a " . ref($ditag) );
     }
-
     if ( $ditag->is_stored($db) ) {
       warning(   "DitagFeature " . $ditag->dbID .
                  " is already stored in this database,".
                  " maybe you ned to use the update() method." );
       next TAG;
     }
+    if(!$ditag->ditag_id or !($self->db->get_DitagAdaptor->fetch_by_dbID($ditag->ditag_id))){
+      throw("DitagFeature must be supplied with the id of a corresponding Ditag object.");
+    }
+    if(!$ditag->ditag or !$ditag->ditag->isa("Bio::EnsEMBL::Map::Ditag")){
+      throw("DitagFeature must be linked to a valid Ditag object.");
+    }
+
 
 #    #check if more than x tags with this ditag id exist
 #    $sth3->execute( $ditag->ditag_id );
@@ -565,6 +571,13 @@ sub batch_store {
     if ( !ref $ditag || !$ditag->isa("Bio::EnsEMBL::Map::DitagFeature") ) {
       throw(   "Object must be an Ensembl DitagFeature, "
              . "not a " . ref($ditag) );
+    }
+    if(!$ditag->ditag_id or !($self->db->get_DitagAdaptor->fetch_by_dbID($ditag->ditag_id))){
+      throw("DitagFeature must be supplied with the id of a corresponding Ditag object.");
+    }
+
+    if(!$ditag->ditag or !$ditag->ditag->isa("Bio::EnsEMBL::Map::Ditag")){
+      throw("DitagFeature must be linked to a valid Ditag object.");
     }
     if ( $ditag->is_stored($db) ) {
       warning(   "DitagFeature " . $ditag->dbID
