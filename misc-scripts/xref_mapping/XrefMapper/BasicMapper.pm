@@ -3821,19 +3821,21 @@ EOS
 
 	  while($dep_sth->fetch){
 
-	    if(!defined($xrefs_written{$xref_id})){
-	      print XREF2 ($xref_id+$xref_id_offset)."\t". $source_to_external_db{$source_id}.
-		"\t$acc\t$label\t$ver\t$desc";
-	      print XREF2 "\tDEPENDENT\tGenerated via ".$master_acc{$good2missed{$goodxref}-$xref_id_offset}."\n";
-	      $xrefs_written{$xref_id};
+	    if(!defined($priority_xref_source_id{$xref_id})){
+	      if(!defined($xrefs_written{$xref_id})){
+		print XREF2 ($xref_id+$xref_id_offset)."\t". $source_to_external_db{$source_id}.
+		  "\t$acc\t$label\t$ver\t$desc";
+		print XREF2 "\tDEPENDENT\tGenerated via ".$master_acc{$good2missed{$goodxref}-$xref_id_offset}."\n";
+		$xrefs_written{$xref_id};
+	      }
+	      
+	      $max_object_xref_id++;
+	      $object_succesfully_mapped{$xref_id} = 1;
+	      print OBJECT_XREF2 "$max_object_xref_id\t";
+	      print OBJECT_XREF2 $transcript_2_translation{$ens_int_id}."\tTranslation\t" ;
+	      print OBJECT_XREF2 $xref_id+$xref_id_offset;
+	      print OBJECT_XREF2 "\n";	
 	    }
-
-	    $max_object_xref_id++;
-	    $object_succesfully_mapped{$xref_id} = 1;
- 	    print OBJECT_XREF2 "$max_object_xref_id\t";
-	    print OBJECT_XREF2 $transcript_2_translation{$ens_int_id}."\tTranslation\t" ;
-	    print OBJECT_XREF2 $xref_id+$xref_id_offset;
-	    print OBJECT_XREF2 "\n";	
 	  }
 	  print TRIAGE_UPDATE "DELETE unmapped_object FROM unmapped_object ";
 	  print TRIAGE_UPDATE   "WHERE identifier = '".$good2missed_acc{$goodxref}."' ";
@@ -3853,19 +3855,21 @@ EOS
 	  $dep_sth->bind_columns(\$xref_id, \$acc, \$ver, \$label, \$desc, \$source_id);
 	  while($dep_sth->fetch){
 
-	    if(!defined($xrefs_written{$xref_id})){
-	      print XREF2 ($xref_id+$xref_id_offset)."\t". $source_to_external_db{$source_id}.
-		"\t$acc\t$label\t$ver\t$desc";
-	      print XREF2 "\tDEPENDENT\tGenerated via ".$master_acc{$good2missed{$goodxref}-$xref_id_offset}."\n";
-	      $xrefs_written{$xref_id};
+	    if(!defined($priority_xref_source_id{$xref_id})){
+	      if(!defined($xrefs_written{$xref_id})){
+		print XREF2 ($xref_id+$xref_id_offset)."\t". $source_to_external_db{$source_id}.
+		  "\t$acc\t$label\t$ver\t$desc";
+		print XREF2 "\tDEPENDENT\tGenerated via ".$master_acc{$good2missed{$goodxref}-$xref_id_offset}."\n";
+		$xrefs_written{$xref_id};
+	      }
+	      
+	      $max_object_xref_id++;
+	      $object_succesfully_mapped{$xref_id} = 1;
+	      print OBJECT_XREF2 "$max_object_xref_id\t";
+	      print OBJECT_XREF2 $translation_2_transcript{$ens_int_id}."\tTranscript\t" ;
+	      print OBJECT_XREF2 $xref_id+$xref_id_offset;
+	      print OBJECT_XREF2 "\n";	
 	    }
-
-	    $max_object_xref_id++;
-	    $object_succesfully_mapped{$xref_id} = 1;
- 	    print OBJECT_XREF2 "$max_object_xref_id\t";
-	    print OBJECT_XREF2 $translation_2_transcript{$ens_int_id}."\tTranscript\t" ;
-	    print OBJECT_XREF2 $xref_id+$xref_id_offset;
-	    print OBJECT_XREF2 "\n";	
 	  }
 
 	  print TRIAGE_UPDATE "DELETE unmapped_object FROM unmapped_object ";
@@ -3901,20 +3905,23 @@ EOS
 	$dep_sth->bind_columns(\$xref_id, \$acc, \$ver, \$label, \$desc, \$source_id);
 	while($dep_sth->fetch){
 
-	  if(!defined($xrefs_written{$xref_id})){
-	    print XREF2 ($xref_id+$xref_id_offset)."\t". $source_to_external_db{$source_id}.
-	      "\t$acc\t$label\t$ver\t$desc";
-	    print XREF2 "\tDEPENDENT\tGenerated via ".$master_acc{$good2missed{$goodxref}-$xref_id_offset}."\n";
-	    $xrefs_written{$xref_id};
-	  }
+	  if(!defined($priority_xref_source_id{$xref_id})){
 
-	  
-	  $max_object_xref_id++;
-          $object_succesfully_mapped{$xref_id} = 1;
- 	  print OBJECT_XREF2 "$max_object_xref_id\t";
-	  print OBJECT_XREF2 $transcript_2_translation{$ens_int_id}."\tTranslation\t" ;
-	  print OBJECT_XREF2 $xref_id+$xref_id_offset;
-	  print OBJECT_XREF2 "\n";	
+	    if(!defined($xrefs_written{$xref_id})){
+	      print XREF2 ($xref_id+$xref_id_offset)."\t". $source_to_external_db{$source_id}.
+		"\t$acc\t$label\t$ver\t$desc";
+	      print XREF2 "\tDEPENDENT\tGenerated via ".$master_acc{$good2missed{$goodxref}-$xref_id_offset}."\n";
+	      $xrefs_written{$xref_id};
+	    }
+	    
+	    
+	    $max_object_xref_id++;
+	    $object_succesfully_mapped{$xref_id} = 1;
+	    print OBJECT_XREF2 "$max_object_xref_id\t";
+	    print OBJECT_XREF2 $transcript_2_translation{$ens_int_id}."\tTranslation\t" ;
+	    print OBJECT_XREF2 $xref_id+$xref_id_offset;
+	    print OBJECT_XREF2 "\n";	
+	  }
 	}
 	print TRIAGE_UPDATE "DELETE unmapped_object FROM unmapped_object ";
 	print TRIAGE_UPDATE   "WHERE identifier like '".$good2missed_acc{$goodxref}."' ";
@@ -3934,19 +3941,21 @@ EOS
 	$dep_sth->bind_columns(\$xref_id, \$acc, \$ver, \$label, \$desc, \$source_id);
 	while($dep_sth->fetch){
 
-	  if(!defined($xrefs_written{$xref_id})){
-	    print XREF2 ($xref_id+$xref_id_offset)."\t". $source_to_external_db{$source_id}.
-	      "\t$acc\t$label\t$ver\t$desc";
-	    print XREF2 "\tDEPENDENT\tGenerated via ".$master_acc{$good2missed{$goodxref}-$xref_id_offset}."\n";
-	    $xrefs_written{$xref_id};
+	  if(!defined($priority_xref_source_id{$xref_id})){
+	    if(!defined($xrefs_written{$xref_id})){
+	      print XREF2 ($xref_id+$xref_id_offset)."\t". $source_to_external_db{$source_id}.
+		"\t$acc\t$label\t$ver\t$desc";
+	      print XREF2 "\tDEPENDENT\tGenerated via ".$master_acc{$good2missed{$goodxref}-$xref_id_offset}."\n";
+	      $xrefs_written{$xref_id};
+	    }
+	    
+	    $max_object_xref_id++;
+	    $object_succesfully_mapped{$xref_id} = 1;
+	    print OBJECT_XREF2 "$max_object_xref_id\t";
+	    print OBJECT_XREF2 $translation_2_transcript{$ens_int_id}."\tTranscript\t" ;
+	    print OBJECT_XREF2 $xref_id+$xref_id_offset;
+	    print OBJECT_XREF2 "\n";	
 	  }
-
-	  $max_object_xref_id++;
-          $object_succesfully_mapped{$xref_id} = 1;
- 	  print OBJECT_XREF2 "$max_object_xref_id\t";
-	  print OBJECT_XREF2 $translation_2_transcript{$ens_int_id}."\tTranscript\t" ;
-	  print OBJECT_XREF2 $xref_id+$xref_id_offset;
-	  print OBJECT_XREF2 "\n";	
 	}
 	print TRIAGE_UPDATE "DELETE unmapped_object FROM unmapped_object ";
 	print TRIAGE_UPDATE   "WHERE identifier like '".$good2missed_acc{$goodxref}."' ";
