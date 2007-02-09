@@ -167,13 +167,18 @@ sub ditag {
 
   if(@_) {
     $self->{'ditag'} = shift;
-  } elsif(!$self->{'ditag'} && $self->{'adaptor'} && $self->{'ditag_id'}) {
-    #lazy load the ditag
-    my $ditag_adaptor = $self->adaptor->db->get_DitagAdaptor;
-    $self->{'ditag'}   = $ditag_adaptor->fetch_by_dbID($self->ditag_id);
+  } elsif(!$self->{'ditag'}) {
+    if($self->{'ditag_id'}) {
+      #lazy load the ditag
+      my $ditag_adaptor = $self->analysis->adaptor->db->get_DitagAdaptor;
+      $self->{'ditag'}  = $ditag_adaptor->fetch_by_dbID($self->ditag_id);
+    }
+    else{
+      throw "Could not get Ditag for DitagFeature ".$self->dbID;
+    }
   }
 
-  return $self->{'ditag'};
+  return($self->{'ditag'});
 }
 
 
