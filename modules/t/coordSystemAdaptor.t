@@ -2,13 +2,13 @@ use strict;
 
 BEGIN { $| = 1;
 	use Test ;
-	plan tests => 34;
+	plan tests => 37;
 }
 
 use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::Test::TestUtils;
 
-our $verbose = 0; #set to 1 to turn on debug printouts
+our $verbose = 1; #set to 1 to turn on debug printouts
 
 my $multi = Bio::EnsEMBL::Test::MultiTestDB->new();
 my $db = $multi->get_DBAdaptor( 'core' );
@@ -162,6 +162,22 @@ $sth->execute('newsystem', 'NCBI35');
 my ($attrib) = $sth->fetchrow_array();
 ok($attrib eq 'default_version');
 $sth->finish();
+
+#
+# Test store_mapping_path
+#
+
+my $new_paths = $csa->store_mapping_path( $cs, $cln_cs );
+ok( @{$new_paths} == 1 &&
+    $new_paths->[0] eq 'clone|newsystem:NCBI35' );
+
+my $new_path = $csa->get_mapping_path( $cs, $cln_cs );
+ok( @{$new_path} == 2 &&
+    $new_path->[0]->name eq 'clone' &&
+    $new_path->[1]->name eq 'newsystem' );
+
+my $new_paths2 = $csa->store_mapping_path( $cs, $cln_cs );
+ok( @{$new_paths2} == 0 ); # Should not update second time round
 
 $multi->restore('core', 'coord_system');
 
