@@ -120,6 +120,8 @@ sub new {
                                 WEB_DATA
 				)],@args);
 
+  $displayable ||= 0;
+
   $self->dbID             ($id);
   $self->adaptor        ($adaptor);
   $self->db             ($db);
