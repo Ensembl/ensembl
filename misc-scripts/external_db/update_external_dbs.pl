@@ -22,18 +22,17 @@ GetOptions( "host=s",        \$host,
             "force",         \$force
 	  );
 
-#both host and file are required
-usage("[DIE] Need a host and file\n\n") if(!$host || !$file);
+$port ||= 3306;
+
+$file ||= "external_dbs.txt";
+
+usage("[DIE] Need a host\n\n") if(!$host);
 
 #release num XOR dbname are required
 usage("[DIE] Need either both a release number and database names or neither\n\n") if(($release_num && @dbnames) || (!$release_num && !@dbnames));
 
 # master database is required
 usage("[DIE] Master database required\n\n") if (!$master);
-
-$port ||= 3306;
-
-$file ||= "external_dbs.txt";
 
 my $dsn = "DBI:mysql:host=$host;port=$port";
 
@@ -85,6 +84,11 @@ while ($row = <$fh>) {
 	       'display_label_linkable' => $a[5],
 	       'priority'               => $a[6],
 	       'db_display_name'        => $a[7]};
+
+  if ($a[1] =~ /-/) {
+    print STDERR "Database name " . $a[1] . " contains - characters which will break Mart, please replace them with _ until Mart is fixed\n";
+    exit(1);
+  }
 
   if ($a[1] =~ /^$/ || $a[1] =~ /^\s+$/ || $a[1] =~ /^\d+$/) {
     print STDERR "Cannot parse the following line:\n$row\nIt probably has spaces separating the fields rather than tabs.\n";
