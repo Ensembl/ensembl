@@ -173,8 +173,8 @@
 5720	Ens_Cf_translation	1	XREF	1	0	5	Ensembl	Dog Translation
 6100	Havana_gene	1	XREF	1	0	100	Havana gene ID
 7159	AedesGenBank	1	PRED	1	0	30	Aedes GenBank      
-7200	IMGT/LIGM-DB	200641-6	XREF	1	1	10	IMGT/LIGM-DB
-7201	IMGT/GENE-DB	200641-6	KNOWN	1	0	40	IMGT/GENE-DB
+7200	IMGT/LIGM_DB	200641-6	XREF	1	1	10	IMGT/LIGM-DB
+7201	IMGT/GENE_DB	200641-6	KNOWN	1	0	40	IMGT/GENE-DB
 #
 #
 # Please separate fields in this file with TABS not spaces!
