@@ -7,7 +7,7 @@ use Bio::EnsEMBL::Exon;
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 35;
+	plan tests => 36;
 }
 
 my $loaded = 0;
@@ -123,6 +123,19 @@ ok(@domain_features == 3);
 
 ok($translation->display_id eq $translation->stable_id);
 
+#
+# test that when manually attaching ProteinFeatures they are not loaded from
+# the db
+#
+$translation->{'protein_features'} = undef;
+
+my $pfa = $translation->adaptor->db->get_ProteinFeatureAdaptor;
+my $protein_feature = $pfa->fetch_by_dbID(27374);
+$translation->add_ProteinFeature($protein_feature);
+ok(@{ $translation->get_all_ProteinFeatures } == 1);
+
+# reset ProteinFeature cache
+$translation->{'protein_features'} = undef;
 
 
 #
