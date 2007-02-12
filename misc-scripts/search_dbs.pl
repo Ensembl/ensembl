@@ -13,33 +13,29 @@ use DBI;
 my $timeout = 5;
 
 my @all_locators = qw {
-		     ecs2:3361:ensro::
-		     ecs2:3362:ensro::
-		     ecs2:3363:ensro::
-		     ecs2:3364:ensro::
-		     ecs2:3365:ensro::
-		     ecs2:3366:ensro::
+		     genebuild1:3306:ensro::
+		     genebuild2:3306:ensro::
+		     genebuild3:3306:ensro::
+		     genebuild4:3306:ensro::
+		     genebuild5:3306:ensro::
+		     genebuild6:3306:ensro::
 
-		     ecs4:3350:ensro::
-		     ecs4:3351:ensro::
-		     ecs4:3352:ensro::
-		     ecs4:3353:ensro::
+		     compara1:3306:ensro::
+		     compara2:3306:ensro::
 
-		     ecs1a:3306:ensro::
-		     ecs1b:3306:ensro::
-		     ecs1c:3306:ensro::
-		     ecs1d:3306:ensro::
-		     ecs1e:3306:ensro::
-		     ecs1f:3306:ensro::
-		     ecs1g:3306:ensro::
-		     ecs1h:3306:ensro::
+		     mart1:3306:ensro::
+		     mart2:3306:ensro::
 
-		     ecs3:3304:ensro::
+		     ens-genomics1:3306:ensro::
+		     ens-genomics2:3306:ensro::
 
-		     ia64g:3306:ensro::
-		     ia64e:3306:ensro::
-		     ia64f:3306:ensro::
-		      };
+		     ens-research:3306:ensro::
+		     ens-research:3355:ensro::
+
+		     ens-staging:3306:ensro::
+		     ens-livemirror:3306:ensro::
+
+		     };
 
 
 my $pattern=shift;
@@ -118,5 +114,3 @@ for my $loc ( @all_locators ) {
     }
   }
 }
-
-
