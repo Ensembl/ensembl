@@ -286,7 +286,7 @@ sub fetch_pairs_by_Slice {
   $sth->execute();
   $sth->bind_columns( \$tag_id, \$pair_id, \$seq_region_id, \$start, \$end, \$strand, \$analysis_id ,\$tag_count);
   while ( $sth->fetch ) {
-    my %ditag_pair = (
+    my %ditag_feature_pair = (
                       ditag     => $tag_id,
                       pair_id   => $pair_id,
                       region    => $seq_region_id,
@@ -296,7 +296,7 @@ sub fetch_pairs_by_Slice {
                       analysis  => $analysis_id,
                       tag_count => $tag_count
                      );
-    push(@result, \%ditag_pair);
+    push(@result, \%ditag_feature_pair);
   }
 
   return \@result;
@@ -429,18 +429,18 @@ sub sequence {
 =cut
 
 sub store {
-  my ( $self, $ditags ) = @_;
+  my ( $self, $ditag_features ) = @_;
 
-  if ( ref $ditags eq 'ARRAY' ) {
-    if ( scalar(@$ditags) == 0 ) {
-      throw( "Must call store with ditagFeature or list ref of ditagsFeature" );
+  if ( ref $ditag_features eq 'ARRAY' ) {
+    if ( scalar(@$ditag_features) == 0 ) {
+      throw( "Must call store with ditag_feature or list ref of ditags_features" );
     }
-  } elsif ($ditags) {
-    my @ditags;
-    push @ditags, $ditags;
-    $ditags = \@ditags;
+  } elsif ($ditag_features) {
+    my @ditag_features;
+    push @ditag_features, $ditag_features;
+    $ditag_features = \@ditag_features;
   } else {
-    throw( "Must call store with ditagFeature or list ref of ditagsFeature." );
+    throw( "Must call store with ditag_feature or list ref of ditag_features." );
   }
 
   my $db = $self->db() or throw "Couldn t get database connection.";
@@ -453,32 +453,32 @@ sub store {
                               seq_region_start, seq_region_end, seq_region_strand, analysis_id, hit_start, 
                               hit_end, hit_strand, cigar_line, ditag_side, ditag_pair_id ) 
                               VALUES( ?,?,?,?,?,?,?,?,?,?,?,?,? )" );
-  my $sth3 = $self->prepare( "SELECT COUNT(*) FROM ditag_feature 
-                              WHERE ditag_id = ?" );
+#  my $sth3 = $self->prepare( "SELECT COUNT(*) FROM ditag_feature 
+#                              WHERE ditag_id = ?" );
 
 TAG:
-  foreach my $ditag (@$ditags) {
+  foreach my $ditag_feature (@$ditag_features) {
 
-    if ( !ref $ditag || !$ditag->isa("Bio::EnsEMBL::Map::DitagFeature") ) {
+    if ( !ref $ditag_feature || !$ditag_feature->isa("Bio::EnsEMBL::Map::DitagFeature") ) {
       throw(   "Object must be an Ensembl DitagFeature, "
-             . "not a " . ref($ditag) );
+             . "not a " . ref($ditag_feature) );
     }
-    if ( $ditag->is_stored($db) ) {
-      warning(   "DitagFeature " . $ditag->dbID .
+    if ( $ditag_feature->is_stored($db) ) {
+      warning(   "DitagFeature " . $ditag_feature->dbID .
                  " is already stored in this database,".
-                 " maybe you ned to use the update() method." );
+                 " maybe you need to use the update() method?" );
       next TAG;
     }
-    if(!$ditag->ditag_id or !($self->db->get_DitagAdaptor->fetch_by_dbID($ditag->ditag_id))){
+    if(!$ditag_feature->ditag_id or !($self->db->get_DitagAdaptor->fetch_by_dbID($ditag_feature->ditag_id))){
       throw("DitagFeature must be supplied with the id of a corresponding Ditag object.");
     }
-    if(!$ditag->ditag or !$ditag->ditag->isa("Bio::EnsEMBL::Map::Ditag")){
+    if(!$ditag_feature->ditag or !$ditag_feature->ditag->isa("Bio::EnsEMBL::Map::Ditag")){
       throw("DitagFeature must be linked to a valid Ditag object.");
     }
 
 
 #    #check if more than x tags with this ditag id exist
-#    $sth3->execute( $ditag->ditag_id );
+#    $sth3->execute( $ditag_feature->ditag_id );
 #    my ($num) = $sth3->fetchrow_array();
 #    if ( ($num) and ($num > 1) ) {
 #      warning( "There are already at least 2 DitagFeatures relating to Ditag ".
@@ -489,39 +489,39 @@ TAG:
 #      }
 #    }
 
-    if ( $ditag->dbID ) {
-      $sth2->bind_param( 1,  $ditag->dbID,                      SQL_INTEGER );
-      $sth2->bind_param( 2,  $ditag->ditag_id,                  SQL_INTEGER );
-      $sth2->bind_param( 3, ($ditag->slice->get_seq_region_id), SQL_INTEGER );
-      $sth2->bind_param( 4,  $ditag->start,                     SQL_INTEGER );
-      $sth2->bind_param( 5,  $ditag->end,                       SQL_INTEGER );
-      $sth2->bind_param( 6,  $ditag->strand,                    SQL_VARCHAR );
-      $sth2->bind_param( 7,  $ditag->analysis->dbID,            SQL_INTEGER );
-      $sth2->bind_param( 8,  $ditag->hit_start,                 SQL_INTEGER );
-      $sth2->bind_param( 9,  $ditag->hit_end,                   SQL_INTEGER );
-      $sth2->bind_param( 10, $ditag->hit_strand,                SQL_VARCHAR );
-      $sth2->bind_param( 11, $ditag->cigar_line,                SQL_VARCHAR );
-      $sth2->bind_param( 12, $ditag->ditag_side,                SQL_VARCHAR );
-      $sth2->bind_param( 13, $ditag->ditag_pair_id,             SQL_VARCHAR );
+    if ( $ditag_feature->dbID ) {
+      $sth2->bind_param( 1,  $ditag_feature->dbID,                      SQL_INTEGER );
+      $sth2->bind_param( 2,  $ditag_feature->ditag_id,                  SQL_INTEGER );
+      $sth2->bind_param( 3, ($ditag_feature->slice->get_seq_region_id), SQL_INTEGER );
+      $sth2->bind_param( 4,  $ditag_feature->start,                     SQL_INTEGER );
+      $sth2->bind_param( 5,  $ditag_feature->end,                       SQL_INTEGER );
+      $sth2->bind_param( 6,  $ditag_feature->strand,                    SQL_VARCHAR );
+      $sth2->bind_param( 7,  $ditag_feature->analysis->dbID,            SQL_INTEGER );
+      $sth2->bind_param( 8,  $ditag_feature->hit_start,                 SQL_INTEGER );
+      $sth2->bind_param( 9,  $ditag_feature->hit_end,                   SQL_INTEGER );
+      $sth2->bind_param( 10, $ditag_feature->hit_strand,                SQL_VARCHAR );
+      $sth2->bind_param( 11, $ditag_feature->cigar_line,                SQL_VARCHAR );
+      $sth2->bind_param( 12, $ditag_feature->ditag_side,                SQL_VARCHAR );
+      $sth2->bind_param( 13, $ditag_feature->ditag_pair_id,             SQL_VARCHAR );
       $sth2->execute();
     }
     else{
-      $sth1->bind_param( 1,  $ditag->ditag_id,                  SQL_INTEGER );
-      $sth1->bind_param( 2, ($ditag->slice->get_seq_region_id), SQL_INTEGER );
-      $sth1->bind_param( 3,  $ditag->start,                     SQL_INTEGER );
-      $sth1->bind_param( 4,  $ditag->end,                       SQL_INTEGER );
-      $sth1->bind_param( 5,  $ditag->strand,                    SQL_VARCHAR );
-      $sth1->bind_param( 6,  $ditag->analysis->dbID,            SQL_INTEGER );
-      $sth1->bind_param( 7,  $ditag->hit_start,                 SQL_INTEGER );
-      $sth1->bind_param( 8,  $ditag->hit_end,                   SQL_INTEGER );
-      $sth1->bind_param( 9,  $ditag->hit_strand,                SQL_VARCHAR );
-      $sth1->bind_param( 10, $ditag->cigar_line,                SQL_VARCHAR );
-      $sth1->bind_param( 11, $ditag->ditag_side,                SQL_VARCHAR );
-      $sth1->bind_param( 12, $ditag->ditag_pair_id,             SQL_VARCHAR );
+      $sth1->bind_param( 1,  $ditag_feature->ditag_id,                  SQL_INTEGER );
+      $sth1->bind_param( 2, ($ditag_feature->slice->get_seq_region_id), SQL_INTEGER );
+      $sth1->bind_param( 3,  $ditag_feature->start,                     SQL_INTEGER );
+      $sth1->bind_param( 4,  $ditag_feature->end,                       SQL_INTEGER );
+      $sth1->bind_param( 5,  $ditag_feature->strand,                    SQL_VARCHAR );
+      $sth1->bind_param( 6,  $ditag_feature->analysis->dbID,            SQL_INTEGER );
+      $sth1->bind_param( 7,  $ditag_feature->hit_start,                 SQL_INTEGER );
+      $sth1->bind_param( 8,  $ditag_feature->hit_end,                   SQL_INTEGER );
+      $sth1->bind_param( 9,  $ditag_feature->hit_strand,                SQL_VARCHAR );
+      $sth1->bind_param( 10, $ditag_feature->cigar_line,                SQL_VARCHAR );
+      $sth1->bind_param( 11, $ditag_feature->ditag_side,                SQL_VARCHAR );
+      $sth1->bind_param( 12, $ditag_feature->ditag_pair_id,             SQL_VARCHAR );
       $sth1->execute();
       my $dbID = $sth1->{'mysql_insertid'};
-      $ditag->dbID($dbID);
-      $ditag->adaptor($self);
+      $ditag_feature->dbID($dbID);
+      $ditag_feature->adaptor($self);
     }
 
   }
@@ -545,61 +545,63 @@ TAG:
 =cut
 
 sub batch_store {
-  my ( $self, $ditags, $have_dbIDs ) = @_;
+  my ( $self, $ditag_features, $have_dbIDs ) = @_;
 
-  my @good_ditags;
+  my @good_ditag_features;
   my ($sql, $sqladd);
   my $inserts = 0;
 
-  if ( ref $ditags eq 'ARRAY' ) {
-    if ( scalar(@$ditags) == 0 ) {
-      throw( "Must call store with ditagFeature or list ref of ditagFeatures." );
+  if ( ref $ditag_features eq 'ARRAY' ) {
+    if ( scalar(@$ditag_features) == 0 ) {
+      throw( "Must call store with ditag_feature or list ref of ditag_features." );
     }
-  } elsif ($ditags) {
-    my @ditags;
-    push @ditags, $ditags;
-    $ditags = \@ditags;
+  } elsif ($ditag_features) {
+    my @ditag_features;
+    push @ditag_features, $ditag_features;
+    $ditag_features = \@ditag_features;
   } else {
-    throw( "Must call store with ditagFeature or list ref of ditagFeatures." );
+    throw( "Must call store with ditag_feature or list ref of ditag_features." );
   }
 
   my $db = $self->db() or throw "Couldn t get database connection.";
 
   #check whether it s a DitagFeature object and is not stored already
-  foreach my $ditag (@$ditags) {
+  foreach my $ditag_feature (@$ditag_features) {
 
-    if ( !ref $ditag || !$ditag->isa("Bio::EnsEMBL::Map::DitagFeature") ) {
+    if ( !ref $ditag_feature || !$ditag_feature->isa("Bio::EnsEMBL::Map::DitagFeature") ) {
       throw(   "Object must be an Ensembl DitagFeature, "
-             . "not a " . ref($ditag) );
+             . "not a " . ref($ditag_feature) );
     }
-    if(!$ditag->ditag_id or !($self->db->get_DitagAdaptor->fetch_by_dbID($ditag->ditag_id))){
+    if(!$ditag_feature->ditag_id or !($self->db->get_DitagAdaptor->fetch_by_dbID($ditag_feature->ditag_id))){
       throw("DitagFeature must be supplied with the id of a corresponding Ditag object.");
     }
 
-    if(!$ditag->ditag or !$ditag->ditag->isa("Bio::EnsEMBL::Map::Ditag")){
+    if(!$ditag_feature->ditag or !$ditag_feature->ditag->isa("Bio::EnsEMBL::Map::Ditag")){
       throw("DitagFeature must be linked to a valid Ditag object.");
     }
-    if ( $ditag->is_stored($db) ) {
-      warning(   "DitagFeature " . $ditag->dbID
+    if ( $ditag_feature->is_stored($db) ) {
+      warning(   "DitagFeature " . $ditag_feature->dbID
                  . " is already stored in this database." );
       next;
     }
-    push(@good_ditags, $ditag);
+    push(@good_ditag_features, $ditag_feature);
   }
-  $ditags = undef;
+  $ditag_features = undef;
 
   #create batch INSERT
   if($have_dbIDs){
     $sql = "INSERT INTO ditag_feature ( ditag_feature_id, ditag_id, seq_region_id, seq_region_start, ".
            "seq_region_end, seq_region_strand, analysis_id, hit_start, hit_end, ".
            "hit_strand, cigar_line, ditag_side, ditag_pair_id ) VALUES ";
-    foreach my $ditag (@good_ditags) {
+    foreach my $ditag_feature (@good_ditag_features) {
       $sqladd = "";
       if($inserts){ $sqladd = ", " }
-      $sqladd .= "(". $ditag->ditag_feature_id.", ".$ditag->ditag_id.", ".($ditag->slice->get_seq_region_id).
-	         ", ". $ditag->start.", ".$ditag->end.", '".$ditag->strand."', ".$ditag->analysis->dbID.", ".
-                 $ditag->hit_start.", ".$ditag->hit_end.", '".$ditag->hit_strand."', '".$ditag->cigar_line."', '".
-                 $ditag->ditag_side."', ".$ditag->ditag_pair_id.")";
+      $sqladd .= "(". $ditag_feature->ditag_feature_id.", ".$ditag_feature->ditag_id.", ".
+	         ($ditag_feature->slice->get_seq_region_id).", ". $ditag_feature->start.", ".
+		 $ditag_feature->end.", '".$ditag_feature->strand."', ".$ditag_feature->analysis->dbID.", ".
+                 $ditag_feature->hit_start.", ".$ditag_feature->hit_end.", '".$ditag_feature->hit_strand.
+		 "', '".$ditag_feature->cigar_line."', '".$ditag_feature->ditag_side."', ".
+		 $ditag_feature->ditag_pair_id.")";
       $sql .= $sqladd;
       $inserts++;
     }
@@ -608,13 +610,14 @@ sub batch_store {
     $sql = "INSERT INTO ditag_feature ( ditag_id, seq_region_id, seq_region_start, ".
            "seq_region_end, seq_region_strand, analysis_id, hit_start, hit_end, ".
            "hit_strand, cigar_line, ditag_side, ditag_pair_id ) VALUES ";
-    foreach my $ditag (@good_ditags) {
+    foreach my $ditag_feature (@good_ditag_features) {
       $sqladd = "";
       if($inserts){ $sqladd = ", " }
-      $sqladd .= "(". $ditag->ditag_id.", ".($ditag->slice->get_seq_region_id).", ". $ditag->start.", ".
-                 $ditag->end.", '".$ditag->strand."', ".$ditag->analysis->dbID.", ".$ditag->hit_start.
-                 ", ".$ditag->hit_end.", '".$ditag->hit_strand."', '".$ditag->cigar_line."', '".
-                 $ditag->ditag_side."', ".$ditag->ditag_pair_id.")";
+      $sqladd .= "(". $ditag_feature->ditag_id.", ".($ditag_feature->slice->get_seq_region_id).", ".
+	         $ditag_feature->start.", ".$ditag_feature->end.", '".$ditag_feature->strand."', ".
+		 $ditag_feature->analysis->dbID.", ".$ditag_feature->hit_start.", ".$ditag_feature->hit_end.
+		 ", '".$ditag_feature->hit_strand."', '".$ditag_feature->cigar_line."', '".
+		 $ditag_feature->ditag_side."', ".$ditag_feature->ditag_pair_id.")";
       $sql .= $sqladd;
       $inserts++;
     }
@@ -627,7 +630,7 @@ sub batch_store {
       $db->dbc->do($sql);
     };
     if($@){
-      warning("Problem inserting ditag batch!".$@."\n");
+      warning("Problem inserting ditag feature batch!".$@."\n");
     }
   }
   else{
@@ -637,15 +640,16 @@ sub batch_store {
 }
 
 
-=head2 update_ditagFeature
+=head2 update
 
   Arg [1]    : ditagFeature to update
   Description: update an existing ditagFeature with new values
   Returntype : 1 on success
+  Status     : At Risk
 
 =cut
 
-sub update_ditagFeature {
+sub update {
   my ($self, $ditagFeature) = @_;
 
   my $sth = $self->prepare( "UPDATE ditag_feature
@@ -653,20 +657,21 @@ sub update_ditagFeature {
                              seq_region_strand=?, analysis_id=?, hit_start=?, hit_end=?, hit_strand=?,
                              cigar_line=?, ditag_side=?, ditag_pair_id=?
                              where ditag_feature_id=?;" );
-  my $result =$sth->execute(
-                            $ditagFeature->ditag_id,
-                            $ditagFeature->seq_region_id,
-                            $ditagFeature->seq_region_start,
-                            $ditagFeature->seq_region_end,
-                            $ditagFeature->seq_region_strand,
-                            $ditagFeature->hit_start,
-                            $ditagFeature->hit_end,
-                            $ditagFeature->hit_strand,
-                            $ditagFeature->cigar_line,
-                            $ditagFeature->ditag_side,
-                            $ditagFeature->ditag_pair_id,
-                            $ditagFeature->dbID,
-                           );
+
+  $sth->bind_param(1, $ditagFeature->ditag_id, SQL_INTEGER);
+  $sth->bind_param(1, $ditagFeature->seq_region_id, SQL_INTEGER);
+  $sth->bind_param(1, $ditagFeature->seq_region_start, SQL_INTEGER);
+  $sth->bind_param(1, $ditagFeature->seq_region_end, SQL_INTEGER);
+  $sth->bind_param(1, $ditagFeature->seq_region_strand, SQL_TINYINT);
+  $sth->bind_param(1, $ditagFeature->hit_start, SQL_INTEGER);
+  $sth->bind_param(1, $ditagFeature->hit_end, SQL_INTEGER);
+  $sth->bind_param(1, $ditagFeature->hit_strand, SQL_TINYINT);
+  $sth->bind_param(1, $ditagFeature->cigar_line, SQL_LONGVARCHAR);
+  $sth->bind_param(1, $ditagFeature->ditag_side, SQL_VARCHAR);
+  $sth->bind_param(1, $ditagFeature->ditag_pair_id, SQL_INTEGER);
+  $sth->bind_param(1, $ditagFeature->dbID, SQL_INTEGER);
+
+  my $result =$sth->execute();
 
   return $result;
 }
