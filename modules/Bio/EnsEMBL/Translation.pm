@@ -435,6 +435,9 @@ sub get_all_DBLinks {
                Translation. If a logic_name is specified, only features with 
                that logic_name are returned.  If no logic_name is provided all
                associated protein_features are returned.
+
+               ProteinFeatures are lazy-loaded from the database unless they
+               added manually to the Translation or had already been loaded.
   Returntype : Bio::EnsEMBL::ProteinFeature
   Exceptions : none
   Caller     : general
@@ -449,11 +452,8 @@ sub get_all_ProteinFeatures {
   if(!$self->{'protein_features'}) {
     my $adaptor = $self->adaptor();
     my $dbID    = $self->dbID();
-    if(!$adaptor || !$dbID) {
-      warning("Cannot retrieve ProteinFeatures from translation without " .
-              "an attached adaptor and a dbID. Returning empty list.");
-      return [];
-    }
+
+    return [] if (!$adaptor || !$dbID);
 
     my %hash;
     $self->{'protein_features'} = \%hash;
@@ -479,7 +479,7 @@ sub get_all_ProteinFeatures {
     return $self->{'protein_features'}->{$logic_name} || [];
   }
 
-  my @features;
+  my @features = ();
 
   # all protein features were requested
   foreach my $type (keys %{$self->{'protein_features'}}) {
@@ -524,6 +524,37 @@ sub get_all_DomainFeatures{
  }
 
  return \@features;
+}
+
+
+=head2 add_ProteinFeature
+
+  Arg [1]    : Bio::EnsEMBL::ProteinFeature $pf
+               The ProteinFeature to be added
+  Example    : $translation->add_ProteinFeature($pf);
+  Description: Associates a ProteinFeature with this translation. Note that
+               adding ProteinFeatures will prevent future lazy-loading of
+               ProteinFeatures for this translation (see
+               get_all_ProteinFeatures).
+  Returntype : none
+  Exceptions : thrown on incorrect argument type
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub add_ProteinFeature {
+  my $self = shift;
+  my $pf = shift;
+
+  unless ($pf && ref($pf) && $pf->isa('Bio::EnsEMBL::ProteinFeature')) {
+    throw('Expected ProteinFeature argument');
+  }
+
+  my $analysis = $pf->analysis;
+  throw("ProteinFeature has no attached Analysis.") unless $analysis;
+
+  push @{ $self->{'protein_features'}->{$analysis->logic_name} }, $pf;
 }
 
 
