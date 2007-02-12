@@ -133,6 +133,7 @@ ok(@$path == 3 &&
 #
 
 $multi->save('core', 'coord_system');
+$multi->save('core', 'meta');
 
 $cs = Bio::EnsEMBL::CoordSystem->new
   (-NAME            => 'newsystem',
@@ -180,6 +181,7 @@ my $new_paths2 = $csa->store_mapping_path( $cs, $cln_cs );
 ok( @{$new_paths2} == 0 ); # Should not update second time round
 
 $multi->restore('core', 'coord_system');
+$multi->restore('core', 'meta');
 
 
 
