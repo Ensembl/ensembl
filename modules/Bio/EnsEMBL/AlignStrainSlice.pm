@@ -262,15 +262,9 @@ sub _get_indels{
     return $range_registry->get_ranges(1);
 }
 
-=head2 get_all_underlying_Slices
+=head2 get_all_Slices
 
-  Arg  [1]   : int $startBasePair
-               relative to start of slice, which is 1.
-  Arg  [2]   : int $endBasePair
-               relative to start of slice.
-  Arg  [3]   : (optional) int $strand
-               The strand of the slice to obtain sequence from. Default
-               value is 1.
+  Args       : none
   Description: This Slice is made of several Bio::EnsEMBL::StrainSlices
                sequence. This method returns these StrainSlices (or part of
                them) with the original coordinates 
@@ -280,18 +274,10 @@ sub _get_indels{
 
 =cut
 
-sub get_all_underlying_Slices {
-  my ($self, $start, $end, $strand) = @_;
-  my $underlying_slices = [];
+sub get_all_Slices {
+  my $self = shift;
 
-  $start = 1 if (!defined($start));
-  $end ||= $self->Slice->length;
-  $strand ||= 1;
-
-  foreach my $strainSlice (@{$self->strains}){
-      push @{$underlying_slices},$strainSlice->sub_Slice($start,$end,$strand);
-  }
-  return $underlying_slices;
+  return $self->strains
 }
 
 1;
