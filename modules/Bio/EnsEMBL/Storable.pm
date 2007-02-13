@@ -39,6 +39,7 @@ package Bio::EnsEMBL::Storable;
 use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 
+
 =head2 new
 
   Arg [-ADAPTOR] : Bio::EnsEMBL::DBSQL::BaseAdaptor
@@ -134,6 +135,8 @@ sub adaptor {
 
 =cut
 
+my $message_only_once =1;
+
 sub is_stored {
   my $self = shift;
   my $db = shift;
@@ -149,9 +152,12 @@ sub is_stored {
   my $dbID = $self->{'dbID'};
 
   if($dbID && !$adaptor) {
-    warning("Storable object has a dbID but not an adaptor.\n" .
-          'Storable objects must have neither OR both.');
-    return 0;
+    if($message_only_once){
+      warning("Storable object has a dbID but not an adaptor.\n" .
+	      'Storable objects must have neither OR both.');
+      $message_only_once = 0;
+      return 0;
+    }
   }
 
   if($adaptor && !$dbID) {
