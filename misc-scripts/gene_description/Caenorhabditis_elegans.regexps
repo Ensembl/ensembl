@@ -1,8 +1,0 @@
-# regexp used for filter out useless description for C. elegans
-# add more as appropriate, line begining with # are supposed to be comments
-
-[0-9A-Z]+\.\d*[A-Z]* PROTEIN[ \.]
-\(\d[A-Z]\d+\)\.
-\([0-9A-Z]+\.\d*[A-Z]* PROTEIN\)[ \.]
-^\(*HYPOTHETICAL\s+.*
-^\s*\(FRAGMENT\)\.?\s*$
