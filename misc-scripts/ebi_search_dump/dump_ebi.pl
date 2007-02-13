@@ -3,6 +3,8 @@
 #
 # To copy files to the EBI so that they can be picked up:
 # scp homo_sapiens_core_41_36c.xml.gz glenn@puffin.ebi.ac.uk:xml/
+#
+# Email eb-eye@ebi.ac.uk after copying so the files can be indexed.
 
 use strict;
 use DBI;
@@ -173,6 +175,9 @@ sub content {
     my @protein_ids;
 
     p ("<cross_references>");
+
+    my $tax = $meta_container->get_taxonomy_id();
+    p ("<ref dbname=\"taxonomy\" dbkey=\"$tax\"/>");
 
     foreach my $xref (@{$gene->get_all_DBLinks()}) {
 
