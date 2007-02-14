@@ -567,4 +567,49 @@ sub get_all_differences_Slice{
     return $self->get_all_AlleleFeatures_Slice(@_);
 }
 
+=head2 get_all_VariationFeatures
+
+    Args       : none
+    Description :returns all alleleFeatures features on this slice. 
+    ReturnType : listref of Bio::EnsEMBL::Variation::AlleleFeature
+    Exceptions : none
+    Caller     : contigview, snpview
+
+=cut
+
+sub get_all_VariationFeatures {
+  my $self = shift;
+
+  return $self->get_all_AlleleFeatures_Slice;
+}
+
+=head2 get_original_seq_region_position
+
+  Arg  [1]   : int $position
+               relative to start of slice, which is 1.
+  Description: This Slice is made of several Bio::EnsEMBL::Slices mapped
+               on it with gaps inside and regions with no matching
+               sequence. This method returns the original seq_region_position
+               in the original Slice of the requested position in AlignSlice
+               coordinates
+  Example    : my ($strainSlice, $seq_region_position) = $as_slice->
+                   get_original_seq_region_position(100);
+  Returntype : ($strainSlice, $seq_region_position), an array where the first
+               element is a Bio::EnsEMBL::StrainSlice and the second one is the
+               requested seq_region_position.
+  Exceptions : if the position corresponds to a gap, the slice will be a fake GAP
+               slice and the position will be the requested one (in AlignSlice
+               coordinates)
+  Caller     : general
+
+=cut
+
+sub get_original_seq_region_position {
+    my $self = shift;
+    my $position = shift;
+    #coordinates in the AlignSlice and Slice are the same, so far will return the same Slice
+    #and coordinate
+    return ($self,$position);
+}
+
 1;
