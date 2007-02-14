@@ -574,7 +574,7 @@ sub get_all_homologous_Genes {
 
   # Get the compara 'homologies' corresponding to 'member'
   my $homology_adaptor = $compara_dba->get_adaptor('Homology');
-  my @homolos = @{$homology_adaptor->fetch_by_Member($query_member)};
+  my @homolos = @{$homology_adaptor->fetch_all_by_Member($query_member)};
   unless( scalar(@homolos) ){ return $self->{'homologues'} };
 
   # Get the ensembl 'genes' corresponding to 'homologies'
