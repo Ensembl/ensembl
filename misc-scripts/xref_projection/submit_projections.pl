@@ -39,7 +39,7 @@ my ($o, $e, $n);
 foreach my $to ("chimp", "opossum", "dog", "cow", "macaque", "chicken", "xenopus") {
   $o = "$dir/names_human_$to.out";
   $e = "$dir/names_human_$to.err";
-  $n = substr("nam_hum_$to", 0, 10); # job name display limited to 10 chars
+  $n = substr("n_hum_$to", 0, 10); # job name display limited to 10 chars
   system "bsub -o $o -e $e -J $n perl project_display_xrefs.pl $opts -from human -to $to -names -delete_names";
 }
 exit(0);
@@ -48,7 +48,7 @@ exit(0);
 foreach my $to ("rat") { # don't need the loop but may add more species later
   $o = "$dir/names_mouse_$to.out";
   $e = "$dir/names_mouse_$to.err";
-  $n = substr("nam_mou_$to", 0, 10);
+  $n = substr("n_mou_$to", 0, 10);
   system "bsub -o $o -e $e -J $n perl project_display_xrefs.pl $opts -from human -to $to -names -delete_names";
 }
 
@@ -61,7 +61,7 @@ $opts .= " -nobackup";
 foreach my $to ("mouse", "rat", "dog", "chicken", "cow") {
   $o = "$dir/go_human_$to.out";
   $e = "$dir/go_human_$to.err";
-  $n = substr("go_hum_to", 0, 10);
+  $n = substr("g_hum_to", 0, 10);
   system "bsub -o $o -e $e perl project_display_xrefs.pl $opts -from human -to $to -go_terms -delete_go_terms";
 }
 
@@ -70,12 +70,12 @@ foreach my $to ("mouse", "rat", "dog", "chicken", "cow") {
 foreach my $to ("human", "rat", "dog", "chicken", "cow") {
   $o = "$dir/go_mouse_$to.out";
   $e = "$dir/go_mouse_$to.err";
-  $n = substr("go_mou_$to", 0, 10);
+  $n = substr("g_mou_$to", 0, 10);
   system "bsub -o $o -e $e perl project_display_xrefs.pl $opts -from mouse -to $to -go_terms";
 }
 
 # drosophila to anopheles
 $o = "$dir/go_drosophila_anopheles.out";
 $e = "$dir/go_drosophila_anopheles.err";
-$n = "go_dro_ano";
+$n = "g_dros_ano";
 system "bsub -o $o -e $e perl project_display_xrefs.pl $opts -from drosophila -to anopheles -go_terms -delete_go_terms";
