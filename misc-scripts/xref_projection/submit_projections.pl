@@ -61,7 +61,7 @@ foreach my $to ("mouse", "rat", "dog", "chicken", "cow") {
   $o = "$dir/go_human_$to.out";
   $e = "$dir/go_human_$to.err";
   $n = substr("g_hum_to", 0, 10);
-  system "bsub -o $o -e $e perl project_display_xrefs.pl $opts -from human -to $to -go_terms -delete_go_terms";
+  system "bsub -o $o -e $e -J $n perl project_display_xrefs.pl $opts -from human -to $to -go_terms -delete_go_terms";
 }
 
 # mouse to human, rat, dog, chicken, cow
@@ -70,11 +70,11 @@ foreach my $to ("human", "rat", "dog", "chicken", "cow") {
   $o = "$dir/go_mouse_$to.out";
   $e = "$dir/go_mouse_$to.err";
   $n = substr("g_mou_$to", 0, 10);
-  system "bsub -o $o -e $e perl project_display_xrefs.pl $opts -from mouse -to $to -go_terms";
+  system "bsub -o $o -e $e -J $n perl project_display_xrefs.pl $opts -from mouse -to $to -go_terms";
 }
 
 # drosophila to anopheles
 $o = "$dir/go_drosophila_anopheles.out";
 $e = "$dir/go_drosophila_anopheles.err";
 $n = "g_dros_ano";
-system "bsub -o $o -e $e perl project_display_xrefs.pl $opts -from drosophila -to anopheles -go_terms -delete_go_terms";
+system "bsub -o $o -e $e -J $n perl project_display_xrefs.pl $opts -from drosophila -to anopheles -go_terms -delete_go_terms";
