@@ -28,7 +28,7 @@ if (! -e $dir) {
 }
 
 # common options
-my $opts = "-conf $conf -compara $compara -release $release";
+my $opts = "-conf $conf -compara $compara -release $release -quiet";
 
 my ($o, $e, $n);
 
@@ -42,7 +42,6 @@ foreach my $to ("chimp", "opossum", "dog", "cow", "macaque", "chicken", "xenopus
   $n = substr("n_hum_$to", 0, 10); # job name display limited to 10 chars
   system "bsub -o $o -e $e -J $n perl project_display_xrefs.pl $opts -from human -to $to -names -delete_names";
 }
-exit(0);
 
 # mouse to rat
 foreach my $to ("rat") { # don't need the loop but may add more species later
