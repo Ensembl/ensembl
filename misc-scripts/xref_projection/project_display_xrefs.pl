@@ -11,7 +11,7 @@ use Bio::EnsEMBL::DBSQL::GeneAdaptor;
 
 my $method_link_type = "ENSEMBL_ORTHOLOGUES";
 
-my ($conf, $compara, $from_species, @to_multi, $print, $names, $go_terms, $delete_names, $delete_go_terms, $no_backup, $full_stats, $descriptions, $release, $no_database);
+my ($conf, $compara, $from_species, @to_multi, $print, $names, $go_terms, $delete_names, $delete_go_terms, $no_backup, $full_stats, $descriptions, $release, $no_database, $quiet);
 
 GetOptions('conf=s'          => \$conf,
 	   'compara=s'       => \$compara,
@@ -28,6 +28,7 @@ GetOptions('conf=s'          => \$conf,
            'descriptions'    => \$descriptions,
 	   'release=i'       => \$release,
 	   'no_database'     => \$no_database,
+	   'quiet'           => \$quiet,
 	   'help'            => sub { usage(); exit(0); });
 
 $descriptions = 1;
@@ -126,7 +127,7 @@ foreach my $to_species (@to_multi) {
 
     # next unless ($gene->biotype eq "protein_coding");
 
-    print "$i of $total_genes source genes\n" if ($i % 1000 == 0);
+    print "$i of $total_genes source genes\n" if (!$quiet && $i % 1000 == 0);
     $i++;
 
     my $member = $ma->fetch_by_source_stable_id("ENSEMBLGENE",$gene->stable_id);
@@ -595,6 +596,8 @@ sub usage {
   [--full_stats]        Print full statistics, e.g. number of terms per evidence type
 
   [--no_database]       Don't write to the projection_info database.
+
+  [--quiet]             Don't print percentage progress information to STDOUT.
 
   [--help]              This text.
 
