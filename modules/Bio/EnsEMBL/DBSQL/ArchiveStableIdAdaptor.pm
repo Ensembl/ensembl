@@ -39,6 +39,7 @@ This whole module has a status of At Risk as it is under development.
     fetch_all_by_archive_id
     fetch_predecessors_by_archive_id
     fetch_successors_by_archive_id
+    fetch_history_tree_by_stable_id
     fetch_stable_id_history
     fetch_predecessor_history
     fetch_successor_history
@@ -71,7 +72,11 @@ use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 our @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
 
 use Bio::EnsEMBL::ArchiveStableId;
+use Bio::EnsEMBL::StableIdEvent;
+use Bio::EnsEMBL::StableIdHistoryTree;
 use Bio::EnsEMBL::Utils::Exception qw(deprecate warning);
+
+use Data::Dumper;
 
 
 =head2 fetch_by_stable_id
@@ -555,6 +560,153 @@ sub fetch_successors_by_archive_id {
   }
 
   return \@result;
+}
+
+
+
+=head2 fetch_history_tree_by_stable_id
+
+  Arg[1]      : String $stable_id - the stable ID to fetch the history tree for
+  Example     : my $history = $archive_adaptor->fetch_history_tree_by_stable_id(
+                  'ENSG00023747897');
+  Description : Returns the history tree for a given stable ID. This will
+                include a network of all stable IDs this ID is related to. The
+                method will try to return a minimal (sparse) set of nodes
+                (ArchiveStableIds) and links (StableIdEvents) by removing any
+                redundant entries and consolidating mapping events so that only
+                changes are recorded.
+  Return type : Bio::EnsEMBL::StableIdHistoryTree
+  Exceptions  : 
+  Caller      : Bio::EnsEMBL::ArchiveStableId::get_history_tree, general
+  Status      : At Risk
+              : under development
+
+=cut
+
+sub fetch_history_tree_by_stable_id {
+  my ($self, $stable_id) = @_;
+
+  throw("Expecting a stable ID argument.") unless $stable_id;
+
+  # using a UNION is much faster in this query than somthing like
+  # "... AND (sie.old_stable_id = ?) OR (sie.new_stable_id = ?)"
+  my $sql = qq(
+    SELECT sie.old_stable_id, sie.old_version,
+           ms.old_db_name, ms.old_release, ms.old_assembly,
+           sie.new_stable_id, sie.new_version,
+           ms.new_db_name, ms.new_release, ms.new_assembly,
+           sie.type, sie.score
+    FROM stable_id_event sie, mapping_session ms
+    WHERE sie.mapping_session_id = ms.mapping_session_id
+    AND sie.old_stable_id = ?
+    UNION
+    SELECT sie.old_stable_id, sie.old_version,
+           ms.old_db_name, ms.old_release, ms.old_assembly,
+           sie.new_stable_id, sie.new_version,
+           ms.new_db_name, ms.new_release, ms.new_assembly,
+           sie.type, sie.score
+    FROM stable_id_event sie, mapping_session ms
+    WHERE sie.mapping_session_id = ms.mapping_session_id
+    AND sie.new_stable_id = ?
+  );
+  
+  my $sth = $self->prepare($sql);
+
+  my $history = Bio::EnsEMBL::StableIdHistoryTree->new;
+
+  # remember stable IDs you need to do and those that are done. Initialise the
+  # former hash with the focus stable ID
+  my %do = ($stable_id => 1);
+  my %done;
+
+  # while we got someting to do
+  while (my ($id) = keys(%do)) {
+
+    warn "$id\n";
+
+    # mark this stable ID as done
+    delete $do{$id};
+    $done{$id} = 1;
+
+    # fetch all stable IDs related to this one from the database
+    $sth->bind_param(1, $id, SQL_VARCHAR);
+    $sth->bind_param(2, $id, SQL_VARCHAR);
+    $sth->execute;
+
+    while (my $r = $sth->fetchrow_hashref) {
+      
+      #
+      # create old and new ArchiveStableIds and a StableIdEvent to link them
+      # add all of these to the history tree
+      #
+      my ($old_id, $new_id);
+
+      Data::Dumper::Dumper($r);
+      
+      if ($r->{'old_stable_id'}) {
+        $old_id = Bio::EnsEMBL::ArchiveStableId->new(
+          -stable_id => $r->{'old_stable_id'},
+          -version => $r->{'old_version'},
+          -db_name => $r->{'old_db_name'},
+          -release => $r->{'old_release'},
+          -assembly => $r->{'old_assembly'},
+          -type => $r->{'type'},
+          -adaptor => $self
+        );
+        
+        # add to history tree
+        $history->add_ArchiveStableIds($old_id);
+        
+        # mark stable IDs as todo if appropriate
+        $do{$old_id->stable_id} = 1 unless $done{$old_id->stable_id};
+      }
+       
+      if ($r->{'new_stable_id'}) {
+        $new_id = Bio::EnsEMBL::ArchiveStableId->new(
+          -stable_id => $r->{'new_stable_id'},
+          -version => $r->{'new_version'},
+          -db_name => $r->{'new_db_name'},
+          -release => $r->{'new_release'},
+          -assembly => $r->{'new_assembly'},
+          -type => $r->{'type'},
+          -adaptor => $self
+        );
+
+        # add to history tree
+        $history->add_ArchiveStableIds($new_id);
+        
+        # mark stable IDs as todo if appropriate
+        $do{$new_id->stable_id} = 1 unless $done{$new_id->stable_id};
+      }
+
+      my $event = Bio::EnsEMBL::StableIdEvent->new(
+        -old_id => $old_id,
+        -new_id => $new_id,
+        -score => $r->{'score'}
+      );
+
+      # add to history tree
+      $history->add_StableIdEvents($event);
+
+    }
+  }
+
+  $sth->finish;
+  
+  #
+  # now try to consolidate the tree
+  #
+  # this will remove any nodes where there were no changes, connect the
+  # affected links, and also create links for implicit mappings (i.e. bridge
+  # gaps in the history)
+  #
+  # [todo]
+
+  
+  # calculate coordinates for the sorted tree
+  $history->calculate_simple_coords;
+  
+  return $history;
 }
 
 
