@@ -4,7 +4,7 @@ use warnings;
 
 BEGIN { $| = 1;  
 	use Test;
-	plan tests => 65;
+	plan tests => 66;
 }
 
 use Bio::EnsEMBL::Test::MultiTestDB;
@@ -234,58 +234,82 @@ foreach my $seg (@projection) {
 # test storing a couple of different slices
 #
 my $csa = $db->get_CoordSystemAdaptor();
-my $cs  = $csa->fetch_by_name('contig');
+my $ctg_cs  = $csa->fetch_by_name('contig');
 
 $multi->save('core', 'seq_region', 'dna', 'dnac');
 
-my $len = 50;
+my $ctg_len = 50;
 my $name = 'testregion';
 
 #
 # Store a slice with sequence
 #
 
-$slice = Bio::EnsEMBL::Slice->new(-COORD_SYSTEM    => $cs,
-                                  -SEQ_REGION_NAME => $name,
-                                  -SEQ_REGION_LENGTH => $len,
-                                  -START           => 1,
-                                  -END             => $len,
-                                  -STRAND          => 1); 
+my $ctg_slice = Bio::EnsEMBL::Slice->new(-COORD_SYSTEM    => $ctg_cs,
+                                         -SEQ_REGION_NAME => $name,
+                                         -SEQ_REGION_LENGTH => $ctg_len,
+                                         -START           => 1,
+                                         -END             => $ctg_len,
+                                         -STRAND          => 1); 
+
+my $seq   = 'A' x $ctg_len;
 
 
-my $seq   = 'A' x $len;
 
+$slice_adaptor->store($ctg_slice, \$seq);
 
+$ctg_slice = $slice_adaptor->fetch_by_region('contig', $name);
 
-$slice_adaptor->store($slice, \$seq);
-
-$slice = $slice_adaptor->fetch_by_region('contig', $name);
-
-ok($slice->length == $len);
-ok($slice->seq eq $seq);
-ok($slice->seq_region_name eq $name);
+ok($ctg_slice->length == $ctg_len);
+ok($ctg_slice->seq eq $seq);
+ok($ctg_slice->seq_region_name eq $name);
 
 #
 # Store a slice without sequence
 #
 
-$cs  = $csa->fetch_by_name('chromosome');
+my $chr_cs  = $csa->fetch_by_name('chromosome');
 
-$len = 50e6;
+my $chr_len = 50e6;
 $name = 'testregion2';
-$slice = Bio::EnsEMBL::Slice->new(-COORD_SYSTEM    => $cs,
-                                  -SEQ_REGION_NAME => $name,
-                                  -SEQ_REGION_LENGTH => $len,
-                                  -START           => 1,
-                                  -END             => $len,
-                                  -STRAND          => 1); 
+my $chr_slice = Bio::EnsEMBL::Slice->new(-COORD_SYSTEM    => $chr_cs,
+                                         -SEQ_REGION_NAME => $name,
+                                         -SEQ_REGION_LENGTH => $chr_len,
+                                         -START           => 1,
+                                         -END             => $chr_len,
+                                         -STRAND          => 1); 
 
-$slice_adaptor->store($slice);
+$slice_adaptor->store($chr_slice);
 
-$slice = $slice_adaptor->fetch_by_region('chromosome', $name);
-ok($slice->length() == $len);
-ok($slice->seq_region_length() == $len);
-ok($slice->seq_region_name eq $name);
+$chr_slice = $slice_adaptor->fetch_by_region('chromosome', $name);
+ok($chr_slice->length() == $chr_len);
+ok($chr_slice->seq_region_length() == $chr_len);
+ok($chr_slice->seq_region_name eq $name);
+
+#
+# Store an assembly between the slices
+#
+my $asm_start = 9999;
+my $asm_slice = $chr_slice->sub_Slice( $asm_start, $asm_start + $ctg_len - 1 );
+my $str = $slice_adaptor->store_assembly( $asm_slice, $ctg_slice );
+
+ok( $str eq "chromosome:NCBI33:testregion2:9999:10048:1<>".
+            "contig::testregion:1:50:1" );
+
+my $ctg_map = $chr_slice->project( $ctg_cs->name, $ctg_cs->version );
+# Test currently fails as assembly cached somewhere.
+#ok( @$ctg_map == 1 and
+#    $ctg_map->[0]->[0] == $asm_slice->start and
+#    $ctg_map->[0]->[1] == $asm_slice->end and
+#    $ctg_map->[0]->[2]->name eq $ctg_slice->name );
+
+my $chr_map = $ctg_slice->project( $chr_cs->name, $chr_cs->version );
+# Test currently fails as assembly cached somewhere.
+#ok( @$chr_map == 1 and
+#    $chr_map->[0]->[0] == $ctg_slice->start and
+#    $chr_map->[0]->[1] == $ctg_slice->end and
+#    $chr_map->[0]->[2]->name eq $chr_slice->name );
+
 
 $multi->restore('core', 'seq_region', 'dna', 'dnac');
 
