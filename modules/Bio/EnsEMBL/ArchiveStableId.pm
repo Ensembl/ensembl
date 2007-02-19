@@ -145,6 +145,24 @@ sub new_fast {
 }
 
 
+=head2 get_history_tree
+
+  Example     : my $history_tree = $archive_id->get_history_tree;
+  Description : Returns the history tree of this ArchiveStableId
+  Return type : Bio::EnsEMBL::StableIdHistoryTree
+  Exceptions  : none
+  Caller      : general
+  Status      : At Risk
+              : under development
+
+=cut
+
+sub get_history_tree {
+  my $self = shift;
+  return $self->adaptor->fetch_history_tree_by_stable_id($self->stable_id);
+}
+
+
 =head2 get_all_predecessors
 
   Args        : none
