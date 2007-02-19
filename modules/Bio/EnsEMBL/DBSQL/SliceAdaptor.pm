@@ -107,6 +107,7 @@ sub new {
 
   # use a cache which is shared and also used by the assembly
   # mapper adaptor
+
   my $seq_region_cache = $self->db->get_SeqRegionCache();
 
   $self->{'sr_name_cache'} = $seq_region_cache->{'name_cache'};
@@ -551,7 +552,7 @@ sub get_seq_region_id {
   Arg [4]    : int $include_duplicates (optional)
                If set duplicate regions will be returned.
                
-               NOTE: if you don't use this option and you have a PAR
+               NOTE: if you do not use this option and you have a PAR
                (pseudo-autosomal region) at the beginning of your seq_region
                then your slice will not start at position 1, so coordinates
                retrieved from this slice might not be what you expected.
@@ -1335,6 +1336,117 @@ sub store {
   $slice->adaptor($self);
 
   return $seq_region_id;
+}
+
+
+=head2 store_assembly
+
+  Arg [1]    : Bio::EnsEMBL::Slice $asm_slice
+  Arg [2]    : Bio::EnsEMBL::Slice $cmp_slice
+  Example    : $asm = $slice_adaptor->store_assembly( $slice1, $slice2 );
+  Description: Creates an entry in the analysis table based on the 
+               coordinates of the two slices supplied. Returns a string 
+               representation of the assembly that gets created.
+  Returntype : string
+  Exceptions : throw if either slice has no coord system (cs).
+               throw unless the cs rank of the asm_slice is lower than the 
+               cmp_slice.
+               throw if there is no mapping path between coord systems
+               throw if the lengths of each slice are not equal
+               throw if there are existing mappings between either slice
+               and the oposite cs
+  Caller     : database loading scripts
+  Status     : Experimental
+
+=cut
+
+sub store_assembly{
+  my $self = shift;
+  my $asm_slice = shift;
+  my $cmp_slice = shift;
+
+  #
+  # Get all of the sanity checks out of the way before storing anything
+  #
+
+  if(!ref($asm_slice) || !$asm_slice->isa('Bio::EnsEMBL::Slice')) {
+    throw('Assembled Slice argument is required');
+  }
+  if(!ref($cmp_slice) || !$cmp_slice->isa('Bio::EnsEMBL::Slice')) {
+    throw('Assembled Slice argument is required');
+  }
+
+  my $asm_cs = $asm_slice->coord_system();
+  throw("Slice must have attached CoordSystem.") if(!$asm_cs);
+  my $cmp_cs = $cmp_slice->coord_system();
+  throw("Slice must have attached CoordSystem.") if(!$cmp_cs);
+
+  unless( $asm_cs->rank < $cmp_cs->rank ){
+    throw("Assembled Slice CoordSystem->rank must be lower than ".
+          "the component Slice Coord_system" );
+  }
+
+  my @path = $asm_cs->adaptor->get_mapping_path($asm_cs,$cmp_cs);
+  if(!@path) {
+    throw("No mapping path defined between ".
+          $asm_cs->name . " and " .
+          $cmp_cs->name);
+  }
+
+  if( $asm_slice->length != $cmp_slice->length ){
+    throw("The lengths of the assembled and component slices are not equal" );
+  }
+
+  # For now we disallow any existing mappings between the asm slice and cmp
+  # CoordSystem and vice-versa. 
+  # Some cases of multiple mappings may be allowable by the API, but their 
+  # logic needs to be coded below.
+
+  my $asm_proj = $asm_slice->project( $cmp_cs->name, $cmp_cs->version );
+  if( @$asm_proj ){
+    throw("Regions of the assembled slice are already assembled ".
+          "into the component CoordSystem" ); 
+  }
+  my $cmp_proj = $cmp_slice->project( $asm_cs->name, $asm_cs->version );
+  if( @$cmp_proj ){
+    throw("Regions of the component slice are already assembled ".
+          "into the assembled CoordSystem" ); 
+  }
+
+  #
+  # Checks complete. Store the data
+  #
+  my $sth = $self->db->dbc->prepare
+      ("INSERT INTO assembly " .
+       "SET     asm_seq_region_id = ?, " .
+       "        cmp_seq_region_id = ?, " .
+       "        asm_start = ?, " .
+       "        asm_end   = ?, " .
+       "        cmp_start = ?, " .
+       "        cmp_end   = ?, " .
+       "        ori       = ?" );
+
+  my $asm_seq_region_id = $self->get_seq_region_id( $asm_slice );
+  my $cmp_seq_region_id = $self->get_seq_region_id( $cmp_slice );
+  my $ori = $asm_slice->strand * $cmp_slice->strand;
+
+  $sth->bind_param(1,$asm_seq_region_id,SQL_INTEGER);
+  $sth->bind_param(2,$cmp_seq_region_id,SQL_INTEGER);
+  $sth->bind_param(3,$asm_slice->start,SQL_INTEGER);
+  $sth->bind_param(4,$asm_slice->end,SQL_INTEGER);
+  $sth->bind_param(5,$cmp_slice->start,SQL_INTEGER);
+  $sth->bind_param(6,$cmp_slice->end,SQL_INTEGER);
+  $sth->bind_param(7,$ori,SQL_INTEGER);
+
+  $sth->execute();
+
+  #use Data::Dumper qw( Dumper );
+  #warn Dumper( $self->db->{seq_region_cache} );
+  #$self->db->{seq_region_cache} = undef;
+  #$self->_cache_seq_regions();
+
+  return $asm_slice->name . "<>" . $cmp_slice->name;
+
 }
 
 
