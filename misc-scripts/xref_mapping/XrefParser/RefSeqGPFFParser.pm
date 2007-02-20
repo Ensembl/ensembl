@@ -166,7 +166,7 @@ sub create_xrefs {
       $parsed_seq =~ s#//##g;    # remove trailing end-of-record character
       $parsed_seq =~ s#\s##g;    # remove whitespace
 
-      my ($acc_no_ver,$ver) = split (/\./,$ver);
+      ( my $acc_no_ver, $ver ) = split( /\./, $ver );
 
       $xref->{ACCESSION} = $acc;
       if($acc eq $acc_no_ver){
