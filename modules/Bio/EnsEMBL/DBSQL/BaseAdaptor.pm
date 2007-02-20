@@ -94,11 +94,14 @@ The rest of the documentation details each of the object methods. Internal metho
 
 
 package Bio::EnsEMBL::DBSQL::BaseAdaptor;
-use vars qw(@ISA);
+require Exporter;
+use vars qw(@ISA @EXPORT);
 use strict;
 use Bio::EnsEMBL::Root;
 
-@ISA = qw(Bio::EnsEMBL::Root);
+@ISA = qw(Bio::EnsEMBL::Root Exporter);
+use DBI qw(:sql_types);
+@EXPORT = (@{$DBI::EXPORT_TAGS{'sql_types'}});
 
 
 =head2 new

@@ -62,9 +62,10 @@ sub fetch_all_by_Slice {
   my ($self, @args) = @_;
 
   my $lite_db = $self->db()->get_db_adaptor('lite');
- 
+
   if(defined $lite_db) {
     #use the Lite database if it is available
+
     return $lite_db->get_GeneAdaptor()->fetch_all_by_Slice(@args);
   }
 

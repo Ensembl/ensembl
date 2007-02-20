@@ -476,7 +476,7 @@ sub fetch_all_by_Slice {
     SELECT distinct(t.gene_id)
     FROM   transcript t,exon_transcript et,exon e, gene g 
     $where";
-    
+
   my $sth = $self->db->prepare($sql);
   $sth->execute;
   
