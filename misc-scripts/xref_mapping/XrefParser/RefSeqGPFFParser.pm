@@ -159,11 +159,12 @@ sub create_xrefs {
       my @seq_lines = split /\n/, $seq;
       my $parsed_seq = "";
       foreach my $x (@seq_lines) {
-        my ($seq_only) = $x =~ /\s*\d+\s+(.*)/;
+        my ($seq_only) = $x =~ /^\s*\d+\s+(.*)$/;
+        next if (!defined $seq_only);
         $parsed_seq .= $seq_only;
       }
-      $parsed_seq =~ s/\/\///g;   # remove trailing end-of-record character
-      $parsed_seq =~ s/\s//g;     # remove whitespace
+      $parsed_seq =~ s#//##g;    # remove trailing end-of-record character
+      $parsed_seq =~ s#\s##g;    # remove whitespace
 
       my ($acc_no_ver,$ver) = split (/\./,$ver);
 
