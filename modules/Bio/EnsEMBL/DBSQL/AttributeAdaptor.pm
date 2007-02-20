@@ -49,8 +49,6 @@ use Bio::EnsEMBL::Attribute;
 
 use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 
-use DBI qw(:sql_types);
-
 use vars qw(@ISA);
 
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
