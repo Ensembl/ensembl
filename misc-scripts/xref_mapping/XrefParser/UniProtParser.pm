@@ -259,7 +259,10 @@ sub create_xrefs {
 
     # dependent xrefs - only store those that are from sources listed in the source table
     my ($deps) = $_ =~ /(DR\s+.+)/s; # /s allows . to match newline
-      my @dep_lines = split /\n/, $deps;
+
+    my @dep_lines = ();
+    if ( defined $deps ) { @dep_lines = split /\n/, $deps }
+
     foreach my $dep (@dep_lines) {
       #both GO and UniGene have the own sources so ignore those in the uniprot files
       #as the uniprot data should be older
