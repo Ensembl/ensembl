@@ -131,7 +131,8 @@ sub add_ArchiveStableIds {
 
   foreach my $archive_id (@archive_ids) {
     throw("Bio::EnsEMBL::ArchiveStableId object expected.")
-      unless ($archive_id->isa('Bio::EnsEMBL::ArchiveStableId'));
+      unless (ref($archive_id) &&
+              $archive_id->isa('Bio::EnsEMBL::ArchiveStableId'));
 
     $self->{'nodes'}->{$self->_node_id($archive_id)} = $archive_id;
   }
@@ -200,6 +201,14 @@ sub add_StableIdEvents {
       unless ($event->isa('Bio::EnsEMBL::StableIdEvent'));
 
     $self->{'links'}->{$self->_link_id($event)} = $event;
+
+    # also add ArchiveStableIds linked to this event
+    if ($event->old_ArchiveStableId) {
+      $self->add_ArchiveStableIds($event->old_ArchiveStableId);
+    }
+    if ($event->new_ArchiveStableId) {
+      $self->add_ArchiveStableIds($event->new_ArchiveStableId);
+    }
   }
 
   # reset pre-calculated tree data (needs to be redone after adding objects)
@@ -492,7 +501,7 @@ sub _sort_stable_ids {
                 tree grid. If the ArchiveStableId isn't found in this tree, an
                 empty list is returned.
                 
-                Coordinates are zero-based (i.e. the top lefthand element in
+                Coordinates are zero-based (i.e. the top leftmost element in
                 the grid has coordinates [0, 0], not [1, 1]). This is to
                 facilitate using them to create a matrix as a two-dimensional
                 array of arrays.
