@@ -568,6 +568,11 @@ sub fetch_successors_by_archive_id {
 =head2 fetch_history_tree_by_stable_id
 
   Arg[1]      : String $stable_id - the stable ID to fetch the history tree for
+  Arg[2]      : (optional) Int $num_high_scorers
+                number of mappings per stable ID allowed when filtering
+  Arg[3]      : (optional) Int $max_rows
+                maximum number of stable IDs in history tree (used for
+                filtering)
   Example     : my $history = $archive_adaptor->fetch_history_tree_by_stable_id(
                   'ENSG00023747897');
   Description : Returns the history tree for a given stable ID. This will
@@ -585,9 +590,12 @@ sub fetch_successors_by_archive_id {
 =cut
 
 sub fetch_history_tree_by_stable_id {
-  my ($self, $stable_id) = @_;
+  my ($self, $stable_id, $num_high_scorers, $max_rows) = @_;
 
   throw("Expecting a stable ID argument.") unless $stable_id;
+
+  $num_high_scorers ||= NUM_HIGH_SCORERS;
+  $max_rows ||= MAX_ROWS;
 
   # using a UNION is much faster in this query than somthing like
   # "... AND (sie.old_stable_id = ?) OR (sie.new_stable_id = ?)"
@@ -625,7 +633,7 @@ sub fetch_history_tree_by_stable_id {
 
     # if we already have more than MAX_ROWS stable IDs in this tree, we can't
     # build the full tree. Return undef.
-    if (scalar(keys(%done)) > MAX_ROWS) {
+    if (scalar(keys(%done)) > $max_rows) {
       warning("Too many related stable IDs to draw a history tree.");
       $sth->finish;
       return undef;
@@ -703,10 +711,10 @@ sub fetch_history_tree_by_stable_id {
       
     }
 
-    if (scalar(@others) > NUM_HIGH_SCORERS) {
-      warn "Filtering ".(scalar(@others) - NUM_HIGH_SCORERS).
-        " low-scoring events.\n";
-    }
+    #if (scalar(@others) > $num_high_scorers) {
+    #  warn "Filtering ".(scalar(@others) - $num_high_scorers).
+    #    " low-scoring events.\n";
+    #}
 
     my $k = 0;
     foreach my $event (sort { $b->score <=> $a->score } @others) {
@@ -718,7 +726,7 @@ sub fetch_history_tree_by_stable_id {
       $do{$event->new_ArchiveStableId->stable_id} = 1
         unless $done{$event->new_ArchiveStableId->stable_id};
       
-      last if (++$k == NUM_HIGH_SCORERS);
+      last if (++$k == $num_high_scorers);
     }
     
   }

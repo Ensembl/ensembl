@@ -147,6 +147,11 @@ sub new_fast {
 
 =head2 get_history_tree
 
+  Arg[1]      : (optional) Int $num_high_scorers
+                number of mappings per stable ID allowed when filtering
+  Arg[2]      : (optional) Int $max_rows
+                maximum number of stable IDs in history tree (used for
+                filtering)
   Example     : my $history_tree = $archive_id->get_history_tree;
   Description : Returns the history tree of this ArchiveStableId
   Return type : Bio::EnsEMBL::StableIdHistoryTree
@@ -158,8 +163,9 @@ sub new_fast {
 =cut
 
 sub get_history_tree {
-  my $self = shift;
-  return $self->adaptor->fetch_history_tree_by_stable_id($self->stable_id);
+  my ($self, $num_high_scorers, $max_rows) = @_;
+  return $self->adaptor->fetch_history_tree_by_stable_id(
+    $self->stable_id, $num_high_scorers, $max_rows);
 }
 
 
