@@ -41,7 +41,6 @@ no warnings 'uninitialized';
 
 use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
-use Scalar::Util qw(weaken);
 
 
 =head2 new
@@ -93,9 +92,6 @@ sub new {
                 # setter
                 $event->old_ArchiveStableId($archive_id);
   Description : Getter/setter for old ArchiveStableId in this mapping event.
-                ArchiveStableIds are attached as weak references to avoid
-                circular reference problems when allowing ArchiveStableIds to
-                hold a reference to their StableIdEvents.
   Return type : Bio::EnsEMBL::ArchiveStableId
   Exceptions  : thrown on wrong argument type
   Caller      : general
@@ -117,7 +113,7 @@ sub old_ArchiveStableId {
         (ref($archive_id) && $archive_id->isa('Bio::EnsEMBL::ArchiveStableId'));
     }
 
-    weaken($self->{'old_id'} = $archive_id);
+    $self->{'old_id'} = $archive_id;
   }
 
   # getter
@@ -135,9 +131,6 @@ sub old_ArchiveStableId {
                 # setter
                 $event->new_ArchiveStableId($archive_id);
   Description : Getter/setter for new ArchiveStableId in this mapping event.
-                ArchiveStableIds are attached as weak references to avoid
-                circular reference problems when allowing ArchiveStableIds to
-                hold a reference to their StableIdEvents.
   Return type : Bio::EnsEMBL::ArchiveStableId
   Exceptions  : thrown on wrong argument type
   Caller      : general
@@ -159,7 +152,7 @@ sub new_ArchiveStableId {
         (ref($archive_id) && $archive_id->isa('Bio::EnsEMBL::ArchiveStableId'));
     }
 
-    weaken($self->{'new_id'} = $archive_id);
+    $self->{'new_id'} = $archive_id;
   }
 
   # getter
