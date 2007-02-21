@@ -193,21 +193,28 @@ sub run {
 	print "Using $file_from_archive from $file\n";
       }
 
-      if ( $checkdownload ) {   
+    if ($checkdownload) {
+        my $check_file = $dir . '/' . $file;
+        $check_file =~ s/\.gz$//;
+        $check_file =~ s/\.Z$//;
 
-         my $check_file = "$dir/$file" ;   
-         $check_file =~s/\.gz//; 
-         $check_file =~s/\.Z//; 
-         print "checking for file $check_file\n" ; 
-         if (-e "$check_file" ) { 
-           print "SKIPPING $file because file $check_file already exists\n" ; 
-           $skipdownload = 1 ;
-	   $file =~s/\.gz//; 
-	   $file=~s/\.Z//; 
-         } else { 
-          print "File $check_file does not exist. \n scheduling $dir/$file for download ..........\n" ; 
+        print "Checking for file '$check_file'\n";
+
+        if ( -e "$check_file" ) {
+            print "SKIPPING $file because file "
+              . "'$check_file' already exists\n";
+
+            $skipdownload = 1;
+
+            $file =~ s/\.gz$//;
+            $file =~ s/\.Z$//;
+        } else {
+            print "File '$check_file' does not exist.\n"
+              . "Scheduling '$dir/$file' for download...\n";
+
+            $skipdownload = 0;
         }
-      }
+    }
 
 
       $file =~ s/[&=]//g;
@@ -239,7 +246,9 @@ sub run {
 	my $num_attempts = 0;
 	my $missing = 1;
 	while($num_attempts < 5 and $missing){
-	  my $result = system("wget", "--quiet","--directory-prefix=$dir", "--output-document=$dir/$file",  $urls );
+          my $result =
+            system( "wget", "--quiet", "--directory-prefix=$dir",
+              "--output-document=$dir/$file", $urls );
 	  
 	  # check that the file actually downloaded; may not (e.g. if too many anonymous users)
 	  if ($result != 0) {
