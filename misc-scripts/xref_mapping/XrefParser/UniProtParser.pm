@@ -55,8 +55,8 @@ sub run {
  
 
   my @xrefs = create_xrefs($sp_source_id, $sptr_source_id, $species_id, $file);
-  if(!defined(@xrefs)){
-    return 1; # 1 error
+  if ( !@xrefs ) {
+      return 1;    # 1 error
   }
 
   # delete previous if running directly rather than via BaseParser
@@ -153,15 +153,23 @@ sub create_xrefs {
     #OX   NCBI_TaxID=103690;
 
     my ($ox) = $_ =~ /OX\s+[a-zA-Z_]+=([0-9 ,]+);/;
-    my @ox = split /\, /, $ox;
+    my @ox = ();
     my $found = 0;
 
-    my %taxonomy2species_id = XrefParser::BaseParser->taxonomy2species_id();
-    foreach my $taxon_id_from_file (@ox){
-      if (exists $taxonomy2species_id{$taxon_id_from_file} 
-	  and $taxonomy2species_id{$taxon_id_from_file} eq $species_id) {
-	$found = 1;	
-      }
+    if ( defined $ox ) {
+        @ox = split /\, /, $ox;
+
+        my %taxonomy2species_id =
+          XrefParser::BaseParser->taxonomy2species_id();
+
+        foreach my $taxon_id_from_file (@ox) {
+            if ( exists $taxonomy2species_id{$taxon_id_from_file}
+                and $taxonomy2species_id{$taxon_id_from_file} eq
+                $species_id )
+            {
+                $found = 1;
+            }
+        }
     }
 
     next if (!$found); # no taxon_id's match, so skip to next record
