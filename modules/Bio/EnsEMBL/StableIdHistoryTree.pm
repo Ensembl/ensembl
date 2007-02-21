@@ -25,14 +25,14 @@ ENSG002   1-------2----------
          38      39      40    41    42
 
 The grid coordinates of the ArchiveStableId objects in this example would
-be:
+be (note that coordinates are zero-based):
 
-ENSG001.1               (1, 1)
-ENSG001.2               (3, 1)
-ENSG003.1 (release 41)  (4, 2) 
-ENSG003.1 (release 42)  (5, 2) 
-ENSG002.1               (1, 3)
-ENSG002.2               (2, 3)
+ENSG001.1               (0, 0)
+ENSG001.2               (2, 0)
+ENSG003.1 (release 41)  (3, 1) 
+ENSG003.1 (release 42)  (4, 1) 
+ENSG002.1               (0, 2)
+ENSG002.2               (1, 2)
 
 The tree will only contain those nodes which contain a change in the stable
 ID version. Therefore, in the above example, in release 39 ENSG001 was
@@ -44,14 +44,18 @@ you don't get overlapping lines (not fully implemented yet).
 
 =head1 METHODS
 
-get_release_display_names
-get_unique_stable_ids
-add_ArchiveStableId
+add_ArchiveStableIds
+remove_ArchiveStableId
 add_StableIdEvents
+remove_StableIdEvent
 get_all_ArchiveStableIds
 get_all_StableIdEvents
+get_release_display_names
+get_release_db_names
+get_unique_stable_ids
 coords_by_ArchiveStableId
-calculate_coords
+calculate_simple_coords
+reset_tree
 
 =head1 LICENCE
 
@@ -487,6 +491,11 @@ sub _sort_stable_ids {
   Description : Returns the coordinates of an ArchiveStableId in the history
                 tree grid. If the ArchiveStableId isn't found in this tree, an
                 empty list is returned.
+                
+                Coordinates are zero-based (i.e. the top lefthand element in
+                the grid has coordinates [0, 0], not [1, 1]). This is to
+                facilitate using them to create a matrix as a two-dimensional
+                array of arrays.
   Return type : Arrayref (x coordinate, y coordinate)
   Exceptions  : thrown on wrong argument type
   Caller      : general
@@ -536,8 +545,8 @@ sub calculate_simple_coords {
   foreach my $archive_id (@{ $self->get_all_ArchiveStableIds }) {
   
     # coordinates are positions in the sorted lists
-    my $x = $self->_index_of($archive_id->db_name, $db_names) + 1;
-    my $y = $self->_index_of($archive_id->stable_id, $stable_ids) + 1;
+    my $x = $self->_index_of($archive_id->db_name, $db_names);
+    my $y = $self->_index_of($archive_id->stable_id, $stable_ids);
   
     $self->{'sorted_tree'}->{'coords'}->{$self->_node_id($archive_id)} =
       [ $x, $y ];
@@ -566,8 +575,8 @@ sub _index_of {
 
   my @array = @$arrayref;
 
-  while (my $e = shift(@array)) {
-    return $#array if ($e eq $element);
+  while (my $e = pop(@array)) {
+    return scalar(@array) if ($e eq $element);
   }
 
   return undef;
