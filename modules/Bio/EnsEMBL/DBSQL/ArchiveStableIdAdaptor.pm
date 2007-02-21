@@ -76,7 +76,8 @@ use Bio::EnsEMBL::StableIdEvent;
 use Bio::EnsEMBL::StableIdHistoryTree;
 use Bio::EnsEMBL::Utils::Exception qw(deprecate warning);
 
-use Data::Dumper;
+use constant MAX_ROWS => 50;
+use constant NUM_HIGH_SCORERS => 20;
 
 
 =head2 fetch_by_stable_id
@@ -622,7 +623,13 @@ sub fetch_history_tree_by_stable_id {
   # while we got someting to do
   while (my ($id) = keys(%do)) {
 
-    warn "$id\n";
+    # if we already have more than MAX_ROWS stable IDs in this tree, we can't
+    # build the full tree. Return undef.
+    if (scalar(keys(%done)) > MAX_ROWS) {
+      warning("Too many related stable IDs to draw a history tree.");
+      $sth->finish;
+      return undef;
+    }
 
     # mark this stable ID as done
     delete $do{$id};
@@ -633,6 +640,8 @@ sub fetch_history_tree_by_stable_id {
     $sth->bind_param(2, $id, SQL_VARCHAR);
     $sth->execute;
 
+    my @events;
+
     while (my $r = $sth->fetchrow_hashref) {
       
       #
@@ -641,8 +650,6 @@ sub fetch_history_tree_by_stable_id {
       #
       my ($old_id, $new_id);
 
-      Data::Dumper::Dumper($r);
-      
       if ($r->{'old_stable_id'}) {
         $old_id = Bio::EnsEMBL::ArchiveStableId->new(
           -stable_id => $r->{'old_stable_id'},
@@ -653,12 +660,6 @@ sub fetch_history_tree_by_stable_id {
           -type => $r->{'type'},
           -adaptor => $self
         );
-        
-        # add to history tree
-        $history->add_ArchiveStableIds($old_id);
-        
-        # mark stable IDs as todo if appropriate
-        $do{$old_id->stable_id} = 1 unless $done{$old_id->stable_id};
       }
        
       if ($r->{'new_stable_id'}) {
@@ -671,12 +672,6 @@ sub fetch_history_tree_by_stable_id {
           -type => $r->{'type'},
           -adaptor => $self
         );
-
-        # add to history tree
-        $history->add_ArchiveStableIds($new_id);
-        
-        # mark stable IDs as todo if appropriate
-        $do{$new_id->stable_id} = 1 unless $done{$new_id->stable_id};
       }
 
       my $event = Bio::EnsEMBL::StableIdEvent->new(
@@ -685,10 +680,47 @@ sub fetch_history_tree_by_stable_id {
         -score => $r->{'score'}
       );
 
-      # add to history tree
-      $history->add_StableIdEvents($event);
+      push @events, $event;
 
     }
+
+    # filter out low-scoring events; the number of highest scoring events
+    # returned is defined by NUM_HIGH_SCORERS
+    my @others;
+
+    foreach my $event (@events) {
+      
+      my $old_id = $event->old_ArchiveStableId;
+      my $new_id = $event->new_ArchiveStableId;
+      
+      # creation, deletion and mapping-to-self events are added to the history
+      # tree directly
+      if (!$old_id || !$new_id || ($old_id->stable_id eq $new_id->stable_id)) {
+        $history->add_StableIdEvents($event);
+      } else {
+        push @others, $event;
+      }
+      
+    }
+
+    if (scalar(@others) > NUM_HIGH_SCORERS) {
+      warn "Filtering ".(scalar(@others) - NUM_HIGH_SCORERS).
+        " low-scoring events.\n";
+    }
+
+    my $k = 0;
+    foreach my $event (sort { $b->score <=> $a->score } @others) {
+      $history->add_StableIdEvents($event);
+      
+      # mark stable IDs as todo if appropriate
+      $do{$event->old_ArchiveStableId->stable_id} = 1
+        unless $done{$event->old_ArchiveStableId->stable_id};
+      $do{$event->new_ArchiveStableId->stable_id} = 1
+        unless $done{$event->new_ArchiveStableId->stable_id};
+      
+      last if (++$k == NUM_HIGH_SCORERS);
+    }
+    
   }
 
   $sth->finish;
