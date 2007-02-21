@@ -35,8 +35,16 @@ if (!$user || !$host || !$dbname) {
 
 }
 
-
-XrefParser::BaseParser::run($host, $port, $dbname, $user, $pass, \@species, \@sources, $skipdownload, $checkdownload, $create, $release, $cleanup,$drop_existing_db, $deletedownloaded, $dl_path, \@notsource);
+XrefParser::BaseParser::run(
+    $host, ( defined $port ? $port : '3306' ),
+    $dbname,           $user,
+    $pass,             \@species,
+    \@sources,         $skipdownload,
+    $checkdownload,    $create,
+    $release,          $cleanup,
+    $drop_existing_db, $deletedownloaded,
+    $dl_path,          \@notsource
+);
 
 # --------------------------------------------------------------------------------
 
