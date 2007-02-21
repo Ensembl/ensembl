@@ -2,12 +2,16 @@ package XrefParser::BaseParser;
 
 use strict;
 
+use Carp;
 use DBI;
 use Digest::MD5 qw(md5_hex);
-use File::Path;
-use File::Basename;
-use POSIX qw(strftime);
 use Getopt::Long;
+use POSIX qw(strftime);
+
+use File::Basename;
+use File::Path;
+use IO::File;
+
 use Bio::EnsEMBL::Utils::Exception;
 
 my $base_dir = ".";
@@ -177,7 +181,11 @@ sub run {
       if ($file =~ /(.*)\#(.*)/) {
 	$file = $1;
 	$file_from_archive = $2;
-	die "$file specifies a .zip file without using the # notation to specify the file in the archive to be used."if (!$file_from_archive);
+        if ( !$file_from_archive ) {
+            croak(  "$file specifies a .zip file without using "
+                  . "the # notation to specify the file in the archive "
+                  . "to be used." );
+        }
 	print "Using $file_from_archive from $file\n";
       }
 
@@ -241,7 +249,7 @@ sub run {
 	  $num_attempts++;
 	}
 	if($missing){
-	  die "Could not get $type file $file tried 5 times but failed\n";
+	  croak("Could not get $type file $file tried 5 times but failed");
 	}
 
 	# if the file is compressed, the FTP server may or may not have automatically uncompressed it
@@ -258,8 +266,8 @@ sub run {
 
       }
 
-      $file =~s/\.gz//; # if skipdownload set this will not have been done yet.
-      $file=~s/\.Z//;   # if it has no harm done
+      $file =~s/\.gz$//; # if skipdownload set this will not have been done yet.
+      $file=~s/\.Z$//;   # if it has no harm done
 
       if ($file_from_archive) {
 	push @new_file, $file_from_archive;
@@ -296,12 +304,14 @@ sub run {
       print "Parsing ".join(' ',@new_file)." with $parser\n";
       eval "require XrefParser::$parser";
       my $new = "XrefParser::$parser"->new();
-      if($new->run("$dir/$new_file[0]", $source_id, $species_id)){
-	$summary{$parser}++;
+      if ( $new->run( $dir . '/' . $new_file[0], $source_id, $species_id ) )
+      {
+          $summary{$parser}++;
       }
       
       # update AFTER processing in case of crash.
-      update_source($dbi, $source_url_id, $file_cs, $new_file[0]);
+      update_source( $dbi, $source_url_id, $file_cs,
+          $dir . '/' . $new_file[0] );
       
       # set release if specified
       set_release($release, $source_id) if ($release);
@@ -695,22 +705,22 @@ sub upload_xref_object_graphs {
       if(!(defined($xref_id) and $xref_id)){
 	print STDERR "xref_id is not set for :\n$xref->{ACCESSION}\n$xref->{LABEL}\n$xref->{DESCRIPTION}\n$xref->{SOURCE_ID}\n";
       }
-      if (primary_xref_id_exists($xref_id)) {
-	
-	$pri_update_sth->execute($xref->{SEQUENCE}, $xref_id) || die $dbi->errstr;
-	
+      if ( primary_xref_id_exists($xref_id) ) {
+          $pri_update_sth->execute( $xref->{SEQUENCE}, $xref_id )
+            or croak( $dbi->errstr() );
       } else {
 	
-	$pri_insert_sth->execute($xref_id,
-				 $xref->{SEQUENCE},
-				 $xref->{SEQUENCE_TYPE},
-				 $xref->{STATUS}) || die $dbi->errstr;
+      $pri_insert_sth->execute( $xref_id, $xref->{SEQUENCE},
+          $xref->{SEQUENCE_TYPE},
+          $xref->{STATUS} )
+        or croak( $dbi->errstr() );
       }
 
       # if there are synonyms, add entries in the synonym table
-      foreach my $syn (@{$xref->{SYNONYMS}}) {
-	$syn_sth->execute($xref_id, $syn) || die "$dbi->errstr \n $xref_id\n $syn\n";
-      }	# foreach syn
+      foreach my $syn ( @{ $xref->{SYNONYMS} } ) {
+          $syn_sth->execute( $xref_id, $syn )
+            or croak( $dbi->errstr() . "\n $xref_id\n $syn\n" );
+      } # foreach syn
 
       # if there are dependent xrefs, add xrefs and dependent xrefs for them
       foreach my $depref (@{$xref->{DEPENDENT_XREFS}}) {
@@ -733,8 +743,10 @@ sub upload_xref_object_graphs {
 	  print STDERR "acc = $dep{ACCESSION} \nlink = $dep{LINKAGE_SOURCE_ID} \n".$dbi->err."\n";
 	  print STDERR "source = $dep{SOURCE_ID}\n";
 	}
-	$dep_sth->execute($xref_id, $dep_xref_id, $dep{LINKAGE_ANNOTATION}, $dep{LINKAGE_SOURCE_ID} ) || die $dbi->errstr;
-
+        $dep_sth->execute( $xref_id, $dep_xref_id,
+            $dep{LINKAGE_ANNOTATION},
+            $dep{LINKAGE_SOURCE_ID} )
+          or croak( $dbi->errstr() );
       }	 # foreach dep
        
        if(defined($xref_id) and defined($xref->{PAIR})){
@@ -778,7 +790,7 @@ sub get_dependent_xref_sources {
 
     my $dbi = dbi();
     my $sth = $dbi->prepare("SELECT name,source_id FROM source");
-    $sth->execute() || die $dbi->errstr;
+    $sth->execute() or croak( $dbi->errstr() );
     while(my @row = $sth->fetchrow_array()) {
       my $source_name = $row[0];
       my $source_id = $row[1];
@@ -801,7 +813,7 @@ sub taxonomy2species_id {
 
     my $dbi = dbi();
     my $sth = $dbi->prepare("SELECT species_id, taxonomy_id FROM species");
-    $sth->execute() || die $dbi->errstr;
+    $sth->execute() or croak( $dbi->errstr() );
     while(my @row = $sth->fetchrow_array()) {
       my $species_id = $row[0];
       my $taxonomy_id = $row[1];
@@ -824,7 +836,7 @@ sub name2species_id {
 
     my $dbi = dbi();
     my $sth = $dbi->prepare("SELECT species_id, name FROM species");
-    $sth->execute() || die $dbi->errstr;
+    $sth->execute() or croak( $dbi->errstr() );
     while(my @row = $sth->fetchrow_array()) {
       my $species_id = $row[0];
       my $name = $row[1];
@@ -839,36 +851,49 @@ sub name2species_id {
 # --------------------------------------------------------------------------------
 # Update a row in the source table
 
-sub update_source {
+sub update_source
+{
+    my ( $dbi, $source_url_id, $checksum, $file_name ) = @_;
 
-  my ($dbi, $source_url_id, $checksum, $file) = @_;
-  open(FILE, $file);
-  my $file_date = POSIX::strftime('%Y%m%d%H%M%S', localtime((stat($file))[9]));
-  close(FILE);
+    my $file = IO::File->new($file_name)
+      or croak("Failed to open file '$file_name'");
 
-  my $sql = "UPDATE source_url SET checksum='" . $checksum . "', file_modified_date='" . $file_date . "', upload_date=NOW() WHERE source_url_id=" . $source_url_id;
-  # TODO release?
+    my $file_date =
+      POSIX::strftime( '%Y%m%d%H%M%S',
+        localtime( [ $file->stat() ]->[9] ) );
 
-  $dbi->prepare($sql)->execute() || die $dbi->errstr;
+    $file->close();
 
+    my $sql =
+        "UPDATE source_url SET checksum='$checksum', "
+      . "file_modified_date='$file_date', "
+      . "upload_date=NOW() "
+      . "WHERE source_url_id=$source_url_id";
+
+    # TODO release?
+
+    $dbi->prepare($sql)->execute() || croak( $dbi->errstr() );
 }
 
 
 # --------------------------------------------------------------------------------
 
-sub dbi {
+sub dbi
+{
+    my $self = shift;
 
-  my $self = shift;
+    if ( !defined $dbi ) {
+        my $connect_string =
+          sprintf( "dbi:mysql:host=%s;port=%s;database=%s",
+            $host, $port, $dbname );
 
-  if (!defined $dbi) {
-    $dbi = DBI->connect("dbi:mysql:host=$host;port=$port;database=$dbname",
-			"$user",
-			"$pass",
-			{'RaiseError' => 1}) || die "Can't connect to database";
-  }
+        $dbi =
+          DBI->connect( $connect_string, $user, $pass,
+            { 'RaiseError' => 1 } )
+          or croak( "Can't connect to database: " . $DBI::errstr );
+    }
 
-  return $dbi;
-
+    return $dbi;
 }
 
 # --------------------------------------------------------------------------------
@@ -907,8 +932,8 @@ SELECT xref_id FROM xref WHERE accession=? AND source_id=?';
 
   my $sth = $dbi->prepare( $sql );
 
-   $sth->execute($acc, $source_id, ($species_id ? $species_id : ())) 
-      || die $dbi->errstr;
+  $sth->execute( $acc, $source_id, ( $species_id ? $species_id : () ) )
+    or croak( $dbi->errstr() );
 
   my @row = $sth->fetchrow_array();
   my $xref_id = $row[0];
@@ -953,7 +978,7 @@ sub primary_xref_id_exists {
 
   my $dbi = dbi();
   my $sth = $dbi->prepare("SELECT xref_id FROM primary_xref WHERE xref_id=?");
-  $sth->execute($xref_id) || die $dbi->errstr;
+  $sth->execute($xref_id) or croak( $dbi->errstr() );
   my @row = $sth->fetchrow_array();
   my $result = $row[0];
   $exists = 1 if (defined $result);
@@ -1104,7 +1129,7 @@ sub get_taxonomy_from_species_id{
 
   my $dbi = dbi();
   my $sth = $dbi->prepare("SELECT taxonomy_id FROM species WHERE species_id = $species_id");
-  $sth->execute() || die $dbi->errstr;
+  $sth->execute() or croak( $dbi->errstr() );
   if(my @row = $sth->fetchrow_array()) {
     return $row[0];
   }   
@@ -1120,7 +1145,8 @@ sub get_direct_xref{
     $direct_sth = $dbi->prepare($sql);  
   }
   
-  $direct_sth->execute($stable_id, $type, $link) || die $dbi->errstr;
+  $direct_sth->execute( $stable_id, $type, $link )
+    or croak( $dbi->errstr() );
   if(my @row = $direct_sth->fetchrow_array()) {
     return $row[0];
   }   
@@ -1135,7 +1161,7 @@ sub get_xref{
     $get_xref_sth = $dbi->prepare($sql);  
   }
   
-  $get_xref_sth->execute($acc, $source) || die $dbi->errstr;
+  $get_xref_sth->execute( $acc, $source ) or croak( $dbi->errstr() );
   if(my @row = $get_xref_sth->fetchrow_array()) {
     return $row[0];
   }   
@@ -1149,8 +1175,10 @@ sub add_xref {
   if(!defined($add_xref_sth)){
     $add_xref_sth = dbi->prepare("INSERT INTO xref (accession,version,label,description,source_id,species_id) VALUES(?,?,?,?,?,?)");
   }
- $add_xref_sth->execute($acc,$version || 0,$label,$description,$source_id,$species_id) 
-   || die "$acc\t$label\t\t$source_id\t$species_id\n";
+  $add_xref_sth->execute(
+      $acc, $version || 0, $label,
+      $description, $source_id, $species_id
+  ) or croak("$acc\t$label\t\t$source_id\t$species_id\n");
 
   return $add_xref_sth->{'mysql_insertid'};
 
@@ -1170,18 +1198,21 @@ sub add_to_xrefs{
   
   my $dependent_id = $self->get_xref($acc, $source_id);
   if(!defined($dependent_id)){
-    $add_xref_sth->execute($acc,$version || 0,$label,$description,$source_id,$species_id) 
-      || die "$acc\t$label\t\t$source_id\t$species_id\n";
+    $add_xref_sth->execute(
+        $acc, $version || 0, $label,
+        $description, $source_id, $species_id
+    ) or croak("$acc\t$label\t\t$source_id\t$species_id\n");
   }
   $dependent_id = $self->get_xref($acc, $source_id);
   if(!defined($dependent_id)){
-    die "$acc\t$label\t\t$source_id\t$species_id\n";
+    croak("$acc\t$label\t\t$source_id\t$species_id\n");
   }
   if ($master_xref == 48955) {
     print "$master_xref\t$acc\t$dependent_id\t$linkage\t$source_id\n";
   }
-  $add_dependent_xref_sth->execute($master_xref, $dependent_id,  $linkage, $source_id)
-    || die "$master_xref\t$dependent_id\t$linkage\t$source_id";
+  $add_dependent_xref_sth->execute( $master_xref, $dependent_id, $linkage,
+      $source_id )
+    or croak("$master_xref\t$dependent_id\t$linkage\t$source_id");
 
 }
 
@@ -1195,13 +1226,16 @@ sub add_to_syn_for_mult_sources{
   foreach my $source_id (@$sources){
     my $xref_id = $self->get_xref($acc, $source_id);
     if(defined($xref_id)){
-      $add_synonym_sth->execute($xref_id, $syn) || die "$dbi->errstr \n $xref_id\n $syn\n";
-      $found =1;
+      $add_synonym_sth->execute( $xref_id, $syn )
+        or croak( $dbi->errstr() . "\n $xref_id\n $syn\n" );
+      $found = 1;
     }
   }
-#  if(!$found){
-#    die "Could not find acc $acc in xref table for sources".join(", ",@$sources)."\n";
-#  }
+    #if ( !$found ) {
+    #    croak(  "Could not find acc $acc in xref table for sources"
+    #          . join( ", ", @$sources )
+    #          . "\n" );
+    #}
 }
 
 
@@ -1213,10 +1247,12 @@ sub add_to_syn{
   }
   my $xref_id = $self->get_xref($acc, $source_id);
   if(defined($xref_id)){
-    $add_synonym_sth->execute($xref_id, $syn) || die "$dbi->errstr \n $xref_id\n $syn\n";
+    $add_synonym_sth->execute( $xref_id, $syn )
+      or croak( $dbi->errstr() . "\n $xref_id\n $syn\n" );
   }
-  else{
-    die "Could not find acc $acc in xref table source = $source_id\n";
+  else {
+      croak(  "Could not find acc $acc in "
+            . "xref table source = $source_id\n" );
   }
 }
 
@@ -1283,19 +1319,24 @@ sub create {
 	exit(1);
       }
     } elsif ( !$create) {
-      die("Database $dbname already exists. Use -create option to overwrite it.");
+      croak(  "Database $dbname already exists. "
+            . "Use -create option to overwrite it." );
     }
   }
 
   $dbh->do( "CREATE DATABASE " . $dbname );
 
   print "Creating $dbname from ".$sql_dir."sql/table.sql\n";
-  die "Cannot open  ".$sql_dir."sql/table.sql" if (! -e $sql_dir."sql/table.sql");
+  if ( !-e $sql_dir . "sql/table.sql" ) {
+      croak( "Cannot open  " . $sql_dir . "sql/table.sql" );
+  }
   my $cmd = "mysql -u $user -p$pass -P $port -h $host $dbname < ".$sql_dir."sql/table.sql";
   system ($cmd);
 
   print "Populating metadata in $dbname from ".$sql_dir."sql/populate_metadata.sql\n";
-  die "Cannot open ".$sql_dir."sql/populate_metadata.sql" if (! -e $sql_dir."sql/populate_metadata.sql");
+  if ( !-e $sql_dir . "sql/populate_metadata.sql" ) {
+      croak( "Cannot open " . $sql_dir . "sql/populate_metadata.sql" );
+  }
   $cmd = "mysql -u $user -p$pass -P $port -h $host $dbname < ".$sql_dir."sql/populate_metadata.sql";
   system($cmd);
 
