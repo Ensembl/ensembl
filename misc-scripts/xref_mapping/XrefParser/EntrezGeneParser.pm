@@ -49,7 +49,7 @@ sub run {
   
 
   my $head = <EG>; # first record are the headers
-  chomp;
+  chomp $head;
   my (@arr) = split(/\s+/,$head);
   # process this to the correct indexes to use. (incase they change);
 
