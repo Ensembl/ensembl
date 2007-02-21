@@ -96,16 +96,20 @@ sub run {
 	      "ORDER BY s.ordered";
   # print $sql . "\n";
 
-
-
   my $sth = $dbi->prepare($sql);
   $sth->execute();
-  my ($source_id, $source_url_id, $name, $url, $checksum, $parser, $species_id, $species_name);
-  $sth->bind_columns(\$source_id, \$source_url_id, \$name, \$url, \$checksum, \$parser, \$species_id, \$species_name);
+
+  my ( $source_id, $source_url_id, $name, $url, $checksum, $parser,
+      $species_id, $species_name );
+
+  $sth->bind_columns( \$source_id, \$source_url_id, \$name, \$url,
+      \$checksum, \$parser, \$species_id, \$species_name );
+
   my $last_type = "";
   my $dir;
   my %summary=();
   while (my @row = $sth->fetchrow_array()) {
+    print '-' x 4, "{ $name }", '-' x ( 72 - length($name) ), "\n";
 
     # Download each source into the appropriate directory for parsing later
     # or call the appropriate database parser if appropriate
@@ -297,6 +301,7 @@ sub run {
       else{
 	$summary{$parser}++;	
       }
+
     }
     
     if($parse and defined($new_file[0]) and defined($file_cs)){
