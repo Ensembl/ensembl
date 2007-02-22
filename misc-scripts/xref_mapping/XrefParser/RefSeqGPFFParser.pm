@@ -125,8 +125,10 @@ sub create_xrefs {
     my $species_id_check = $name2species_id{$species};
 
     # skip xrefs for species that aren't in the species table
-    if (defined ($species_id) and $species_id == $species_id_check) {
-
+    if (   defined $species_id
+        && defined $species_id_check
+        && $species_id == $species_id_check )
+    {
       my ($acc) = $entry =~ /ACCESSION\s+(\S+)/;
       my ($ver) = $entry =~ /VERSION\s+(\S+)/;
 
