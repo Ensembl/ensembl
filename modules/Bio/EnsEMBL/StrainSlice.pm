@@ -117,6 +117,7 @@ sub new{
 	    #check that the individua returned isin the database
 	    if (defined $individual){
 		my $allele_features = $af_adaptor->fetch_all_by_Slice($self,$individual);
+		$self->{'_strain'} = $individual;
 		$self->{'alleleFeatures'} = $allele_features;
 		return $self;
 	    }
@@ -204,6 +205,8 @@ sub seq {
     foreach my $vf (@variation_features_ordered){
 	$vf->apply_edit($reference_sequence); #change, in the reference sequence, the vf
     }
+    #need to find coverage information
+    $self->_add_coverage_information($reference_sequence);
     return substr(${$reference_sequence},0,1) if ($self->length == 1); 
     return ${$reference_sequence}; #returns the reference sequence, applying the variationFeatures
   }
@@ -211,6 +214,32 @@ sub seq {
   # no attached sequence, and no db, so just return Ns
   return 'N' x $self->length();
 }
+
+
+sub _add_coverage_information{
+    my $self = shift;
+    my $reference_sequence = shift;
+
+    my $variation_db = $self->adaptor->db->get_db_adaptor('variation');
+
+    unless($variation_db) {
+	warning("Variation database must be attached to core database to " .
+		"retrieve variation information" );
+	return '';
+    }
+    
+    my $rc_adaptor = $variation_db->get_ReadCoverageAdaptor();
+    my $rcs = $rc_adaptor->fetch_all_by_Slice_Sample_depth($self,$self->{'_strain'},1);
+    my $start = 0;
+    foreach my $rc (@{$rcs}){
+	$rc->start(1) if ($rc->start < 0); #if the region lies outside the boundaries of the slice
+	$rc->end($self->end - $self->start + 1) if ($rc->end + $self->start > $self->end); 
+	substr($$reference_sequence, $start,($rc->start - $start - 1),'~' x ($rc->start - $start - 1)) if ($rc->start - 1 > $start); 
+	$start = $rc->end - 1;
+    }
+    substr($$reference_sequence, $start, ($self->length - $start - 1) ,'~' x ($self->length - $start - 1)); 
+}
+
 
 =head2 get_all_AlleleFeatures_Slice
 
