@@ -237,7 +237,7 @@ sub _add_coverage_information{
 	substr($$reference_sequence, $start,($rc->start - $start - 1),'~' x ($rc->start - $start - 1)) if ($rc->start - 1 > $start); 
 	$start = $rc->end - 1;
     }
-    substr($$reference_sequence, $start, ($self->length - $start - 1) ,'~' x ($self->length - $start - 1)); 
+    substr($$reference_sequence, $start, ($self->length - $start) ,'~' x ($self->length - $start)) if ($self->length -1 > $start); 
 }
 
 
