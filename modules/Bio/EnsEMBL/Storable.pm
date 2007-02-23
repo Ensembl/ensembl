@@ -199,7 +199,7 @@ sub get_all_DAS_Features{
     # Construct a cache key : SOURCE_URL/TYPE
     # Need the type to handle sources that serve multiple types of features
 
-    my $key = $url || ($dasfact->adaptor->protocol .'://'.join('/'. $dasfact->adaptor->domain, $dasfact->adaptor->dsn));
+    my $key = join('/', $name, $type);
 
     if( $self->{_das_features}->{$key} ){ # Use cached
         $das_features{$name} = $self->{_das_features}->{$key};
