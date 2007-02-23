@@ -476,6 +476,8 @@ sub _parse_cigar {
 
 =cut
 
+my $message_only_once = 1;
+
 sub _parse_features {
   my ($self,$features ) = @_;
 
@@ -704,8 +706,11 @@ sub _parse_features {
 
         #sanity check,  Should not be an insertion and deletion
         if($insertion_flag) {
-          warning("Should not be an deletion and insertion on the " .
-                  "same alignment region. cigar_line=$string\n");
+          if ($message_only_once) {
+            warning("Should not be an deletion and insertion on the " .
+                    "same alignment region. cigar_line=$string\n");
+            $message_only_once = 0;
+          }
         }
       }
       #shift our position in the hit seq alignment
@@ -725,9 +730,12 @@ sub _parse_features {
 
         #sanity check,  Should not be an insertion and deletion
         if($insertion_flag) {
-          warning("Should not be an deletion and insertion on the " .
-                  "same alignment region. prev2 = $prev2; f->hend() = " .
-                  $f->hend() . "; cigar_line = $string;\n");
+          if ($message_only_once) {
+            warning("Should not be an deletion and insertion on the " .
+                    "same alignment region. prev2 = $prev2; f->hend() = " .
+                    $f->hend() . "; cigar_line = $string;\n");
+            $message_only_once = 0;
+          }
         }
       }
       #shift our position in the hit seq alignment
