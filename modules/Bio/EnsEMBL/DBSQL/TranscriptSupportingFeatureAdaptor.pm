@@ -85,11 +85,10 @@ sub fetch_all_by_Transcript {
 
     if(!$feature) {
       warning("Supporting feature $type $feature_id does not exist in DB");
+    } else { 
+      my $new_feature = $feature->transfer($transcript->slice());
+      push @$out, $new_feature if( $new_feature );
     }
-
-    my $new_feature = $feature->transfer($transcript->slice());
-
-    push @$out, $new_feature if( $new_feature );
   }
 
   $sth->finish();
