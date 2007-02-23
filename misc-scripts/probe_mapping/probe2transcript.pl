@@ -11,7 +11,7 @@ my ($transcript_host, $transcript_port, $transcript_user, $transcript_pass, $tra
     $oligo_host, $oligo_port, $oligo_user, $oligo_pass, $oligo_dbname,
     $xref_host, $xref_port, $xref_user, $xref_pass, $xref_dbname,
     $max_mismatches, $utr_length, $max_transcripts_per_probeset, $max_transcripts, @arrays, $delete,
-    $mapping_threshold, $no_triage);
+    $mapping_threshold, $no_triage, $health_check);
 
 GetOptions('transcript_host=s'      => \$transcript_host,
            'transcript_user=s'      => \$transcript_user,
@@ -36,6 +36,7 @@ GetOptions('transcript_host=s'      => \$transcript_host,
 	   'arrays=s'               => \@arrays,
 	   'delete'                 => \$delete,
 	   'no_triage'              => \$no_triage,
+	   'health_check'           => \$health_check,
            'help'                   => sub { usage(); exit(0); });
 
 $transcript_port ||= 3306; $oligo_port ||= 3306; $xref_port ||= 3306;
@@ -93,10 +94,20 @@ if ($xref_host && $xref_dbname && $xref_user) {
 
 check_names_match($oligo_db, $xref_db);
 
+
+
+
+
 delete_existing_xrefs($oligo_db, $xref_db, @arrays) if ($delete);
 delete_unmapped_entries($xref_db) if ($delete);
 
 check_existing_and_exit($oligo_db, $xref_db, @arrays);
+
+
+if($health_check){
+  print "Healthcheck passed\n";
+  exit 0;
+}
 
 my $transcript_adaptor = $transcript_db->get_TranscriptAdaptor();
 my $slice_adaptor = $transcript_db->get_SliceAdaptor();
