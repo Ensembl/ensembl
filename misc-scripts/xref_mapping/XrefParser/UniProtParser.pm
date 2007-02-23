@@ -13,10 +13,7 @@ use strict;
 use POSIX qw(strftime);
 use File::Basename;
 
-use XrefParser::BaseParser;
-
-use vars qw(@ISA);
-@ISA = qw(XrefParser::BaseParser);
+use base qw( XrefParser::BaseParser );
 
 # --------------------------------------------------------------------------------
 # Parse command line and run if being run directly
@@ -54,7 +51,10 @@ sub run {
   print "SpTREMBL source id for $file: $sptr_source_id\n";
  
 
-  my @xrefs = create_xrefs($sp_source_id, $sptr_source_id, $species_id, $file);
+  my @xrefs =
+    $self->create_xrefs( $sp_source_id, $sptr_source_id, $species_id,
+      $file );
+
   if ( !@xrefs ) {
       return 1;    # 1 error
   }
@@ -110,8 +110,9 @@ sub get_species {
 # Parse file into array of xref objects
 
 sub create_xrefs {
+  my $self = shift;
 
-  my ($sp_source_id, $sptr_source_id, $species_id, $file) = @_;
+  my ( $sp_source_id, $sptr_source_id, $species_id, $file ) = @_;
 
   my $num_sp = 0;
   my $num_sptr = 0;
@@ -135,15 +136,14 @@ sub create_xrefs {
   my (%genemap) = %{XrefParser::BaseParser->get_valid_codes("mim_gene",$species_id)};
   my (%morbidmap) = %{XrefParser::BaseParser->get_valid_codes("mim_morbid",$species_id)};
 
-  if(!open(UNIPROT, $file)){
-    print"Can't open Swissprot file $file\n";
-    return undef;
-  }
+    my $uniprot_io = $self->get_filehandle($file);
+    if ( !defined $uniprot_io ) { return undef }
+
   my @xrefs;
 
-  local $/ = "\/\/\n";
+  local $/ = "//\n";
 
-  while (<UNIPROT>) {
+  while ( $_ = $uniprot_io->getline() ) {
 
     # if an OX line exists, only store the xref if the taxonomy ID that the OX
     # line refers to is in the species table
@@ -353,7 +353,7 @@ sub create_xrefs {
 
   }
 
-  close (UNIPROT);
+  $uniprot_io->close();
 
   print "Read $num_sp SwissProt xrefs and $num_sptr SPTrEMBL xrefs from $file\n";
   print "Found $num_sp_pred predicted SwissProt xrefs and $num_sptr_pred predicted SPTrEMBL xrefs\n" if ($num_sp_pred > 0 || $num_sptr_pred > 0);
@@ -362,17 +362,5 @@ sub create_xrefs {
 
   #TODO - currently include records from other species - filter on OX line??
 }
-
-# --------------------------------------------------------------------------------
-
-sub new {
-
-  my $self = {};
-  bless $self, "XrefParser::UniProtParser";
-  return $self;
-
-}
-
-# --------------------------------------------------------------------------------
 
 1;

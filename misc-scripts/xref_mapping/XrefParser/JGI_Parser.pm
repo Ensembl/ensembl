@@ -3,10 +3,7 @@ package XrefParser::JGI_Parser;
 use strict;
 use File::Basename;
 
-use XrefParser::BaseParser;
-
-use vars qw(@ISA);
-@ISA = qw(XrefParser::BaseParser);
+use base qw( XrefParser::BaseParser );
 
 # JGI protein file with gene predictons  - FASTA FORMAT  
 #
@@ -50,11 +47,14 @@ sub run {
 
   local $/ = "\n>";
 
-  if(!open(FILE,"<".$file)){
-    print  "ERROR: Could not open $file\n";
-    return 1; # 1 is an error
+  my $file_io = $self->get_filehandle($file);
+
+  if ( !defined $file_io ) {
+    print "ERROR: Could not open $file\n";
+    return 1;    # 1 is an error
   }
-  while (<FILE>) {
+
+  while ( $_ = $file_io->getline() ) {
 
     next if (/^File:/);   # skip header
 
@@ -122,7 +122,7 @@ sub run {
 
   }
 
-  close (FILE);
+  $file_io->close();
 
   print scalar(@xrefs) . " JGI_ xrefs succesfully parsed\n";
 
@@ -133,11 +133,14 @@ sub run {
 }
 
 
-sub new {
-  my $self = {};
-  bless $self, "XrefParser::JGI_Parser";
-  print "\n\nh ave new jp\n" ; 
-  return $self;
+sub new
+{
+    my $proto = shift;
+    my $self  = $proto->SUPER::new(@_);
+
+    print "\n\nhave new jp\n";
+
+    return $self;
 }
 
 1;

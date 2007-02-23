@@ -4,11 +4,7 @@ use strict;
 use POSIX qw(strftime);
 use File::Basename;
 
-use XrefParser::BaseParser;
-
-use vars qw(@ISA);
-@ISA = qw(XrefParser::BaseParser);
-
+use base qw( XrefParser::BaseParser );
 
 # --------------------------------------------------------------------------------
 # Parse command line and run if being run directly
@@ -52,16 +48,21 @@ sub run {
     
   local $/ = "*RECORD*";
 
-  if(!open(MIM,"<".$file)){
-    print  "ERROR: Could not open $file\n";
-    return 1; # 1 is an error
+  my $mim_io = $self->get_filehandle($file);
+
+  if ( !defined $mim_io ) {
+    print "ERROR: Could not open $file\n";
+    return 1;    # 1 is an error
   }
-  
+
   my $gene = 0;
   my $phenotype = 0;
   my $removed_count =0;
-  <MIM>; # first record is empty with *RECORD* as the record seperator
-  while (<MIM>) {
+
+  $mim_io->getline();    # first record is empty with *RECORD* as the
+                         # record seperator
+
+  while ( $_ = $mim_io->getline() ) {
     #get the MIM number
     my $number = 0;
     my $description = undef;
@@ -101,6 +102,9 @@ sub run {
       }
     }
   }
+
+  $mim_io->close();
+
   my $syn_count =0;
   foreach my $mim (keys %old_to_new){
     my $old= $mim;
@@ -118,14 +122,4 @@ sub run {
   return 0; #successful
 }
 
-
-
-sub new {
-
-  my $self = {};
-  bless $self, "XrefParser::MIMParser";
-  return $self;
-
-}
- 
 1;

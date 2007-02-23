@@ -4,10 +4,7 @@ use strict;
 
 use DBI;
 
-use XrefParser::BaseParser;
-
-use vars qw(@ISA);
-@ISA = qw(XrefParser::BaseParser);
+use base qw( XrefParser::BaseParser );
 
 # Parse file of HGNC records and assign direct xrefs
 # All assumed to be linked to genes
@@ -16,7 +13,9 @@ sub run {
 
   my ($self, $file, $source_id, $species_id) = @_;
 
-  if(!open(HUGO,"<".$file)){
+  my $hugo_io = $self->get_filehandle($file);
+
+  if ( !defined $hugo_io ) {
     print "Could not open $file\n";
     return 1;
   }
@@ -68,7 +67,8 @@ sub run {
   my %seen;
   my $ignore_count = 0;
   my $ignore_examples ="";
-  while(<HUGO>){
+
+  while( $_ = $hugo_io->getline() ) {
     chomp;
     my ($ccds,$hgnc) = split;
     
@@ -96,17 +96,9 @@ sub run {
     print $ignore_count." ignoreed due to numbers no identifiers being no longer valid :- $ignore_examples\n";
   }
 
-  close(HUGO);
+  $hugo_io->close();
+
   return 0;
-
-}
-
-
-sub new {
-
-  my $self = {};
-  bless $self, "XrefParser::HUGO_CCDSParser";
-  return $self;
 
 }
 

@@ -4,11 +4,7 @@ use strict;
 use POSIX qw(strftime);
 use File::Basename;
 
-use XrefParser::BaseParser;
-
-use vars qw(@ISA);
-@ISA = qw(XrefParser::BaseParser);
-
+use base qw( XrefParser::BaseParser );
 
 # --------------------------------------------------------------------------------
 # Parse command line and run if being run directly
@@ -41,14 +37,15 @@ sub run {
   my $species_tax_id = $self->get_taxonomy_from_species_id($species_id);
   
 
-  if(!open(EG,"<".$file)){
-    print  "ERROR: Could not open $file\n";
-    return 1; # 1 is an error
-  }
+    my $eg_io = $self->get_filehandle($file);
+    if ( !defined $eg_io ) {
+        print "ERROR: Could not open $file\n";
+        return 1;    # 1 is an error
+    }
 
   
 
-  my $head = <EG>; # first record are the headers
+  my $head = $eg_io->getline(); # first record are the headers
   chomp $head;
   my (@arr) = split(/\s+/,$head);
   # process this to the correct indexes to use. (incase they change);
@@ -92,7 +89,7 @@ sub run {
   }
   my $xref_count = 0;
   my $syn_count  = 0;
-  while (<EG>) {
+  while ( $_ = $eg_io->getline() ) {
     chomp;
     my (@arr) = split(/\t/,$_);
     if($arr[$gene_tax_id_index] != $species_tax_id){
@@ -110,18 +107,12 @@ sub run {
       $syn_count++;
     }
   }
+
+  $eg_io->close();
+
   print $xref_count." EntrezGene Xrefs added with $syn_count synonyms\n";
   return 0; #successful
 }
 
-
-
-sub new {
-
-  my $self = {};
-  bless $self, "XrefParser::EntrezGeneParser";
-  return $self;
-
-}
  
 1;

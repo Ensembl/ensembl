@@ -6,10 +6,7 @@ use strict;
 
 use File::Basename;
 
-use XrefParser::BaseParser;
-
-use vars qw(@ISA);
-@ISA = qw( XrefParser::BaseParser);
+use base qw( XrefParser::BaseParser );
 
 # --------------------------------------------------------------------------------
 # Parse command line and run if being run directly
@@ -49,8 +46,10 @@ sub run {
   my $pred_dna_source_id = XrefParser::BaseParser->get_source_id_for_source_name('RefSeq_dna_predicted');
   print "RefSeq_peptide_predicted source ID = $pred_peptide_source_id; RefSeq_dna_predicted source ID = $pred_dna_source_id\n";
 
+  my $xrefs =
+    $self->create_xrefs( $peptide_source_id, $dna_source_id,
+      $pred_peptide_source_id, $pred_dna_source_id, $file, $species_id );
 
-  my $xrefs = create_xrefs($peptide_source_id, $dna_source_id, $pred_peptide_source_id, $pred_dna_source_id, $file, $species_id);
   if(!defined($xrefs)){
     return 1; #error
   }
@@ -68,8 +67,10 @@ sub run {
 # Slightly different formats
 
 sub create_xrefs {
+  my $self = shift;
 
-  my ($peptide_source_id, $dna_source_id, $pred_peptide_source_id, $pred_dna_source_id, $file, $species_id) = @_;
+  my ( $peptide_source_id, $dna_source_id, $pred_peptide_source_id,
+      $pred_dna_source_id, $file, $species_id ) = @_;
 
   my %name2species_id =  XrefParser::BaseParser->name2species_id();
 
@@ -78,10 +79,13 @@ sub create_xrefs {
 #  my (%genemap) = %{XrefParser::BaseParser->get_valid_codes("mim_gene",$species_id)};
 #  my (%morbidmap) = %{XrefParser::BaseParser->get_valid_codes("mim_morbid",$species_id)};
 
-  if(!open(REFSEQ, $file)){
+  my $refseq_io = $self->get_filehandle($file);
+
+  if ( !defined $refseq_io ) {
     print "ERROR: Can't open RefSeqGPFF file $file\n";
     return undef;
   }
+
   my @xrefs;
 
   local $/ = "\/\/\n";
@@ -109,7 +113,7 @@ sub create_xrefs {
   }
 
 
-  while (<REFSEQ>) {
+  while ( $_ = $refseq_io->getline() ) {
 
     my $xref;
 
@@ -224,21 +228,11 @@ sub create_xrefs {
 
   } # while <REFSEQ>
 
-  close (REFSEQ);
+  $refseq_io->close();
 
   print "Read " . scalar(@xrefs) ." xrefs from $file\n";
 
   return \@xrefs;
-
-}
-
-# --------------------------------------------------------------------------------
-
-sub new {
-
-  my $self = {};
-  bless $self, "XrefParser::RefSeqGPFFParser";
-  return $self;
 
 }
 

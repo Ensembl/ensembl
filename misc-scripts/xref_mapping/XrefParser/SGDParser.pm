@@ -4,11 +4,7 @@ use strict;
 use POSIX qw(strftime);
 use File::Basename;
 
-use XrefParser::BaseParser;
-
-use vars qw(@ISA);
-@ISA = qw(XrefParser::BaseParser);
-
+use base qw( XrefParser::BaseParser );
 
 # --------------------------------------------------------------------------------
 # Parse command line and run if being run directly
@@ -40,15 +36,17 @@ sub run {
   
   
 
-  if(!open(SGD,"<".$file)){
-    print  "ERROR: Could not open $file\n";
-    return 1; # 1 is an error
+  my $sgd_io = $self->get_filehandle($file);
+
+  if ( !defined $sgd_io ) {
+    print "ERROR: Could not open $file\n";
+    return 1;    # 1 is an error
   }
 
   my $xref_count =0;
   my $syn_count =0;
 
-  while (<SGD>) {
+  while ( $_ = $sgd_io->getline() ) {
     chomp;
     my ($locus_name, $alias_name, $desc, $gene_prod, $phenotype, $orf_name, $sgd_id) = split(/\t/,$_);
 
@@ -60,18 +58,11 @@ sub run {
       $syn_count++;
     }
   }
+
+  $sgd_io->close();
+
   print $xref_count." SGD Xrefs added with $syn_count synonyms\n";
   return 0; #successful
 }
 
-
-
-sub new {
-
-  my $self = {};
-  bless $self, "XrefParser::SGDParser";
-  return $self;
-
-}
- 
 1;

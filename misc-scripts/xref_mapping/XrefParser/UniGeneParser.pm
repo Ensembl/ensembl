@@ -6,10 +6,7 @@ use strict;
 
 use File::Basename;
 
-use XrefParser::BaseParser;
-
-use vars qw(@ISA);
-@ISA = qw(XrefParser::BaseParser);
+use base qw( XrefParser::BaseParser );
 
 # --------------------------------------------------------------------------------
 # Parse command line and run if being run directly
@@ -41,7 +38,11 @@ sub run {
   if(!defined($species_id)){
     $species_id = XrefParser::BaseParser->get_species_id_for_filename($file);
   }
-my $xrefs =create_xrefs($unigene_source_id, $unigene_source_id, $file, $species_id);
+
+  my $xrefs =
+    $self->create_xrefs( $unigene_source_id, $unigene_source_id, $file,
+      $species_id );
+
   if(!defined($xrefs)){
     return 1; #error
   }
@@ -56,23 +57,24 @@ my $xrefs =create_xrefs($unigene_source_id, $unigene_source_id, $file, $species_
 my %geneid_2_desc;
 
 sub get_desc{
+  my $self = shift;
   my $file = shift;
+
   my $dir = dirname($file);
- 
 
   (my $name) = $file  =~ /\/(\w+)\.seq\.uniq/;
   print $name."\n";
 
   local $/ = "//";
 
+  my $desc_io = $self->get_filehandle( $dir . '/' . $name . '.data' );
 
-  if(!open (DESC, "$dir/$name.data")){
+  if ( !defined $desc_io ) {
     print "ERROR: Can't open $dir/$name.data\n";
     return undef;
   }
 
-  while(<DESC>){
-    
+  while ( $_ = $desc_io->getline() ) {
     #ID          Hs.159356
     #TITLE       Hypothetical LOC388277
     
@@ -82,21 +84,27 @@ sub get_desc{
     $geneid_2_desc{$id} = $descrip;
     
   }
+
+  $desc_io->close();
+
   return 1;
 }
 
 
 sub create_xrefs {
+  my $self = shift;
 
-  my ($peptide_source_id, $unigene_source_id, $file, $species_id) = @_;
+  my ( $peptide_source_id, $unigene_source_id, $file, $species_id ) = @_;
 
   my %name2species_id = XrefParser::BaseParser->name2species_id();
 
-  if(!defined(get_desc($file))){
+  if ( !defined( $self->get_desc($file) ) ) {
     return undef;
   }
 
-  if(!open(UNIGENE, $file)){
+  my $unigene_io = $self->get_filehandle($file);
+
+  if ( !defined $unigene_io ) {
     print "Can't open RefSeq file $file\n";
     return undef;
   }
@@ -110,7 +118,7 @@ sub create_xrefs {
 
   local $/ = "\n>";
 
-  while (<UNIGENE>) {
+  while ( $_ = $unigene_io->getline() ) {
 
     my $xref;
 
@@ -150,24 +158,13 @@ sub create_xrefs {
     
   }
 
-  close (UNIGENE);
+  $unigene_io->close();
+
   %geneid_2_desc=();
   print "Read " . scalar(@xrefs) ." xrefs from $file\n";
 
   return \@xrefs;
 
 }
-
-# --------------------------------------------------------------------------------
-
-sub new {
-
-  my $self = {};
-  bless $self, "XrefParser::UniGeneParser";
-  return $self;
-
-}
-
-# --------------------------------------------------------------------------------
 
 1;

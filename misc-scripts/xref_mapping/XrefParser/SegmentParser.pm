@@ -4,10 +4,7 @@ use strict;
 use POSIX qw(strftime);
 use File::Basename;
  
-use XrefParser::BaseParser;
- 
-use vars qw(@ISA);
-@ISA = qw(XrefParser::BaseParser);
+use base qw( XrefParser::BaseParser );
 
 # --------------------------------------------------------------------------------
 # Parse command line and run if being run directly
@@ -41,11 +38,14 @@ sub run {
   my %name_2_source_id=();
   my $added=0;
 
-  if(!open(FILE,"<". $file)){
-    print  "ERROR: Could not open file $file\n";
+  my $file_io = $self->get_filehandle($file);
+
+  if ( !defined $file_io ) {
+    print "ERROR: Could not open file $file\n";
     return 1;
   }
-  while(my $line = <FILE>){
+
+  while ( my $line = $file_io->getline() ) {
     chomp $line;
     my ($gene_id,$transcript_id,$source_name,$acc,$display_label,$description, $status)
       = split("\t",$line);
@@ -68,19 +68,11 @@ sub run {
     #the those mapped to the transcript to the genes anyway due to the
     #biomart check
   }
-  close FILE;
+
+  $file_io->close();
 
   print "Added $added Xrefs for Gene segments\n";
   return 0;
 }
-
-sub new {
-
-  my $self = {};
-  bless $self, "XrefParser::SegmentParser";
-  return $self;
-
-}
-
 
 1;

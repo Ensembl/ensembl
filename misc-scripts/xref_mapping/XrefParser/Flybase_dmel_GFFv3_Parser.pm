@@ -10,14 +10,12 @@
 package XrefParser::Flybase_dmel_GFFv3_Parser;
 
 use strict;
+
 use POSIX qw(strftime);
 use File::Basename;
-use XrefParser::BaseParser;
-use vars qw(@ISA);
 use Bio::EnsEMBL::Utils::Exception;
 
-
-@ISA = qw(XrefParser::BaseParser);
+use base qw( XrefParser::BaseParser );
 
 my %cache_source =();
 
@@ -40,9 +38,8 @@ if (!defined(caller())) {
 # --------------------------------------------------------------------------------
 
 sub new {
-  my ($class,@args) = @_;
-  my $self={};
-  bless $self,$class;
+  my $proto = shift;
+  my $self = $proto->SUPER::new(@_);
 
   $self->external_source_db_name('flybase_gff');
 
@@ -165,11 +162,15 @@ sub create_xrefs {
   my ($self, $flybase_source_id, $file) = @_;
 
   print STDERR "starting to parse $file...." ;
-  if(!open(GFF, $file)){
+
+  my $gff_io = $self->get_filehandle($file);
+
+  if ( !defined $gff_io ) {
     print "ERROR: Can't open the GFF file $file\n";
     return 0;
   }
-  while (<GFF>) {
+
+  while ( $_ = $gff_io->getline() ) {
     chomp;
 	my @col = split /\s+/;
     if($col[3]){
@@ -202,7 +203,9 @@ sub create_xrefs {
     }
 	
   }
-  close (GFF);
+
+  $gff_io->close();
+
   return 1;
 }
 

@@ -6,10 +6,7 @@ use strict;
 
 use File::Basename;
 
-use XrefParser::BaseParser;
-
-use vars qw(@ISA);
-@ISA = qw(XrefParser::BaseParser);
+use base qw( XrefParser::BaseParser );
 
 # --------------------------------------------------------------------------------
 # Parse command line and run if being run directly
@@ -46,7 +43,10 @@ sub run {
     $species_id = XrefParser::BaseParser->get_species_id_for_filename($file);
   }
 
-  my $xrefs = create_xrefs($peptide_source_id, $dna_source_id, $pred_peptide_source_id, $pred_dna_source_id, $file, $species_id);
+  my $xrefs =
+    $self->create_xrefs( $peptide_source_id, $dna_source_id,
+      $pred_peptide_source_id, $pred_dna_source_id, $file, $species_id );
+
   if(!defined($xrefs)){
     return 1; #error
   }
@@ -65,21 +65,25 @@ sub run {
 # Slightly different formats
 
 sub create_xrefs {
+  my $self = shift;
 
-  my ($peptide_source_id, $dna_source_id, $pred_peptide_source_id, $pred_dna_source_id, $file, $species_id) = @_;
+  my ( $peptide_source_id, $dna_source_id, $pred_peptide_source_id,
+      $pred_dna_source_id, $file, $species_id ) = @_;
 
   my %name2species_id = XrefParser::BaseParser->name2species_id();
 
-  if(!open(REFSEQ, $file)){
-    print "ERROR: Can't open RefSeq file $file\n";
-    return undef;
+  my $refseq_io = $self->get_filehandle($file);
+
+  if ( !defined $refseq_io ) {
+      print "ERROR: Can't open RefSeq file $file\n";
+      return undef;
   }
+
   my @xrefs;
 
   local $/ = "\n>";
 
-  while (<REFSEQ>) {
-
+  while ( $_ = $refseq_io->getline() ) {
     my $xref;
 
     my $entry = $_;
@@ -92,7 +96,7 @@ sub create_xrefs {
 
     (my $gi, my $n, my $ref, my $acc, my $description) = split(/\|/, $header);
     my ($species, $mrna);
-    if ($file =~ /\.faa$/) {
+    if ($file =~ /\.faa(\.gz|\.Z)?$/) {
 
       ($mrna, $description, $species) = $description =~ /(\S*)\s+(.*)\s+\[(.*)\]$/;
       $xref->{SEQUENCE_TYPE} = 'peptide';
@@ -105,7 +109,7 @@ sub create_xrefs {
         }
       $xref->{SOURCE_ID} = $source_id;
 
-    } elsif ($file =~ /\.fna$/) {
+    } elsif ($file =~ /\.fna(\.gz|\.Z)?$/) {
 
       ($species, $description) = $description =~ /\s*(\w+\s+\w+)\s+(.*)$/;
       $xref->{SEQUENCE_TYPE} = 'dna';
@@ -126,8 +130,10 @@ sub create_xrefs {
     my $species_id_check = $name2species_id{$species};
 
     # skip xrefs for species that aren't in the species table
-    if (defined($species_id) and $species_id == $species_id_check) {
-
+    if (   defined $species_id
+        && defined $species_id_check
+        && $species_id == $species_id_check )
+    {
       my ($acc_no_ver,$ver) = split (/\./,$acc);
       $xref->{ACCESSION} = $acc_no_ver;
       $xref->{VERSION} = $ver;
@@ -144,21 +150,11 @@ sub create_xrefs {
 
   }
 
-  close (REFSEQ);
+  $refseq_io->close();
 
   print "Read " . scalar(@xrefs) ." xrefs from $file\n";
 
   return \@xrefs;
-
-}
-
-# --------------------------------------------------------------------------------
-
-sub new {
-
-  my $self = {};
-  bless $self, "XrefParser::RefSeqParser";
-  return $self;
 
 }
 

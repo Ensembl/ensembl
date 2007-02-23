@@ -7,10 +7,7 @@ package XrefParser::WormbaseDatabaseStableIDParser;
 
 use strict;
 
-use XrefParser::DatabaseParser;
-
-use vars qw(@ISA);
-@ISA = qw(XrefParser::DatabaseParser);
+use base qw( XrefParser::DatabaseParser );
 
 sub run {
 
@@ -44,14 +41,6 @@ sub run {
 
   } # foreach type
   return 0;
-}
-
-sub new {
-
-  my $self = {};
-  bless $self, "XrefParser::WormbaseDatabaseStableIDParser";
-  return $self;
-
 }
 
 1;

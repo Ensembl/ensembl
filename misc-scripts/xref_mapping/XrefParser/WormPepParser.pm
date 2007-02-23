@@ -3,10 +3,8 @@ package XrefParser::WormPepParser;
 use strict;
 use File::Basename;
 
-use XrefParser::BaseParser;
+use base qw( XrefParser::BaseParser );
 
-use vars qw(@ISA);
-@ISA = qw(XrefParser::BaseParser);
 my $xref_sth ;
 my $dep_sth;
 
@@ -31,15 +29,17 @@ sub run {
   my $xref_sth = $self->dbi()->prepare("SELECT xref_id FROM xref WHERE accession=? AND source_id=$worm_source_id AND species_id=$species_id");
   my $xref_sth2 = $self->dbi()->prepare("SELECT xref_id FROM xref WHERE accession=? AND source_id=$worm_locus_id AND species_id=$species_id");
 
-  if(!open(PEP,"<".$file)){
+  my $pep_io = $self->get_filehandle($file);
+
+  if ( !defined $pep_io ) {
     print "ERROR: Could not open $file\n";
-    return 1; # 1 error
+    return 1;    # 1 error
   }
+
   my ($x_count, $d_count);
 
 
-  while (<PEP>) {
-
+  while ( $_ = $pep_io->getline() ) {
     my ($transcript, $wb, $display)  = (split(/\t/,substr($_,1)))[0,1,2];
 
     # reuse or create xref
@@ -69,19 +69,10 @@ sub run {
     $d_count++;
   }
 
-  close (PEP);
+  $pep_io->close();
 
   print "Added $d_count direct xrefs and $x_count xrefs\n";
   return 0;
 }
 
-sub new {
-
-  my $self = {};
-  bless $self, "XrefParser::WormPepParser";
-  return $self;
-
-}
-
 1;
-

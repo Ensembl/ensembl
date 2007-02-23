@@ -3,10 +3,8 @@ package XrefParser::DatabaseParser;
 use strict;
 
 use DBI;
-use XrefParser::BaseParser;
 
-use vars qw(@ISA);
-@ISA = qw(XrefParser::BaseParser);
+use base qw( XrefParser::BaseParser );
 
 # Base class for parsers that parse from databases rather than files
 
@@ -55,14 +53,6 @@ sub connect {
 sub db {
 
   return $db;
-
-}
-
-sub new {
-
-  my $self = {};
-  bless $self, "XrefParser::DatabaseParser";
-  return $self;
 
 }
 

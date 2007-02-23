@@ -3,10 +3,7 @@ package XrefParser::CodelinkParser;
 use strict;
 use File::Basename;
 
-use XrefParser::BaseParser;
-
-use vars qw(@ISA);
-@ISA = qw(XrefParser::BaseParser);
+use base qw( XrefParser::BaseParser );
 
 # Parser for Codelink probes
 
@@ -23,13 +20,13 @@ sub run {
 
   local $/ = "\n>";
 
-  if(!open(CODELINK,"<".$file)){
+  my $codelink_io = $self->get_filehandle($file);
+  if ( !defined $codelink_io ) {
     print "ERROR: Could not open $file\n";
-    return 1; # 1 = error
+    return 1;    # 1 = error
   }
 
-  while (<CODELINK>) {
-
+  while ( $_ = $codelink_io->getline() ) {
     my $xref;
 
     my ($header, $sequence) = $_ =~ /^>?(.+?)\n([^>]*)/s or warn("Can't parse FASTA entry: $_\n");
@@ -53,21 +50,14 @@ sub run {
 
   }
 
+  $codelink_io->close();
+
   print scalar(@xrefs) . " Codelink xrefs succesfully parsed\n";
 
   XrefParser::BaseParser->upload_xref_object_graphs(\@xrefs);
 
   print "Done\n";
   return 0; #successful
-}
-
-
-sub new {
-
-  my $self = {};
-  bless $self, "XrefParser::CodelinkParser";
-  return $self;
-
 }
 
 1;

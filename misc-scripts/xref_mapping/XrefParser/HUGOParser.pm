@@ -3,10 +3,8 @@ package XrefParser::HUGOParser;
 use strict;
 use File::Basename;
 
-use XrefParser::BaseParser;
+use base qw( XrefParser::BaseParser );
 
-use vars qw(@ISA);
-@ISA = qw(XrefParser::BaseParser);
 my $xref_sth ;
 my $dep_sth;
 my $syn_sth;
@@ -67,18 +65,20 @@ sub run {
   my $entrezgene_count = 0;
   my $mismatch = 0;
 
-  if(!open (HUGO, "<$file")){
-    print  "ERROR: Can't open HUGO file $file\n";
+  my $hugo_io = $self->get_filehandle($file);
+
+  if ( !defined $hugo_io ) {
+    print "ERROR: Can't open HUGO file $file\n";
     return 1;
   }
 
-  <HUGO>;
+  $_ = $hugo_io->getline();
 
   #23	ABAT	4-aminobutyrate aminotransferase		P80404
   #29	ABCA1	ATP-binding cassette, sub-family A (ABC1), member 1	ABC1, HDLDT1	O95477
   #40	ABCB1	ATP-binding cassette, sub-family B (MDR/TAP), member 1	PGY1, MDR1, CLCS	P-gp, CD243, GP170, ABC20	P08183	NM_000927
 
-  while (<HUGO>) {
+  while ( $_ = $hugo_io->getline() ) {
 
     chomp;
 
@@ -168,7 +168,7 @@ sub run {
 
   } # while HUGO
 
-  close (HUGO);
+  $hugo_io->getline();
 
   print "Loaded a total of " . ($swiss_count + $refseq_count + $entrezgene_count) . " HUGO xrefs, $refseq_count from RefSeq curated mappings and $swiss_count from Uniprot (mapped) and $entrezgene_count from EntrezGene mappings\n";
 
@@ -180,15 +180,6 @@ sub run {
 
 sub rename_url_file{
   return "hugo.txt";
-}
-
-
-sub new {
-
-  my $self = {};
-  bless $self, "XrefParser::HUGOParser";
-  return $self;
-
 }
 
 1;

@@ -2,15 +2,11 @@ package XrefParser::WilsonAffyParser;
 
 use strict;
 
-use XrefParser::BaseParser;
+use base qw( XrefParser::BaseParser );
 
-use vars qw(@ISA);
-@ISA = qw(XrefParser::BaseParser);
 my $xref_sth ;
 my $dep_sth;
 my $syn_sth;
-
-
 
 sub run {
 
@@ -39,14 +35,16 @@ sub create_xrefs {
 
   my @xrefs;
 
-  if(!open(FILE,"<".$file)){
+  my $file_io = $self->get_filehandle($file);
+
+  if ( !defined $file_io ) {
     print "ERROR: Could not open $file\n";
-    return 1; # 1 error
+    return 1;    # 1 error
   }
-  <FILE>; # skip first line
 
-  while (<FILE>) {
+  $file_io->getline();    # skip first line
 
+  while ( $_ = $file_io->getline() ) {
     #last if ($count > 200);
     my $xref;
 
@@ -79,10 +77,13 @@ sub create_xrefs {
 
       # fetch sequence for others (EMBL ESTs and RefSeqs - pfetch will handle these)
       system ("pfetch -q $target > seq.txt");
-      open(SEQ, "<seq.txt");
-      my $seq = <SEQ>;
+
+      my $seq_io = $self->get_filehandle('seq.txt');
+
+      my $seq = $seq_io->getline();
+      $seq_io->close();
+
       chomp($seq);
-      close(SEQ);
 
       if ($seq && $seq !~ /no match/) {
 
@@ -116,21 +117,13 @@ sub create_xrefs {
 
   }
 
-  close(FILE);
+  $file_io->close();
 
   print "\n\nParsed $count primary xrefs.\n";
   print "Couldn't get sequence for $noseq primary_xrefs\n" if ($noseq);
   print "Added $direct direct xrefs.\n";
 
   return \@xrefs;
-
-}
-
-sub new {
-
-  my $self = {};
-  bless $self, "XrefParser::WilsonAffyParser";
-  return $self;
 
 }
 

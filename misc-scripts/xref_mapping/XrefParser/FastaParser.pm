@@ -4,10 +4,7 @@ use strict;
 use Bio::SeqIO;
 use File::Basename;
 
-use XrefParser::BaseParser;
-
-use vars qw(@ISA);
-@ISA = qw(XrefParser::BaseParser);
+use base qw( XrefParser::BaseParser );
 
 # Fasta file format, e.g.
 # >foo peptide sequence for the foo gene
@@ -53,15 +50,6 @@ sub run {
 
   print "Done\n";
   return 0; #successful
-}
-
-
-sub new {
-
-  my $self = {};
-  bless $self, "XrefParser::FastaParser";
-  return $self;
-
 }
 
 1;

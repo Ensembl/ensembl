@@ -6,12 +6,7 @@ use strict;
 use POSIX qw(strftime);
 use File::Basename;
 
-use XrefParser::BaseParser;
-
-use vars qw(@ISA);
-@ISA = qw(XrefParser::BaseParser);
-
-
+use base qw( XrefParser::BaseParser );
 
 # --------------------------------------------------------------------------------
 # Parse command line and run if being run directly
@@ -63,13 +58,16 @@ sub run {
 
   my $count  = 0;
 
-  if(!open(GO,"<".$file)){
+  my $go_io = $self->get_filehandle($file);
+
+  if ( !defined $go_io ) {
     print "ERROR: Could not open $file\n";
-    return 1; # 1 error
+    return 1;    # 1 error
   }
+
   my $taxon_line = "taxon:".$species_id;
   my $miss =0;
-  while (<GO>) {
+  while ( $_ = $go_io->getline() ) {
     if(/$taxon_line/){
       chomp;
       my @array = split (/\t/,$_);
@@ -168,16 +166,11 @@ sub run {
       }
     }
   }
+
+  $go_io->close();
+
   print "\t$count GO dependent xrefs added $refseq_miss refseq not found and $swiss_miss Swissprot not found \n"; 
   return 0;
 }
 
-sub new {
-
-  my $self = {};
-  bless $self, "XrefParser::GOParser";
-  return $self;
-
-}
- 
 1;

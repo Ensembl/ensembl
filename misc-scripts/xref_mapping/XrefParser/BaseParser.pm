@@ -27,16 +27,27 @@ my %dependent_sources;
 my %taxonomy2species_id;
 my %name2species_id;
 
-my ($host, $port, $dbname, $user, $pass, $create, $release, $cleanup, $deletedownloaded);
-my ($skipdownload,$drop_db,$checkdownload, $dl_path) ;
+my (
+    $host,         $port,    $dbname,
+    $user,         $pass,    $create,
+    $release,      $cleanup, $deletedownloaded,
+    $skipdownload, $drop_db, $checkdownload,
+    $dl_path,      $compressed
+);
 
 # --------------------------------------------------------------------------------
 # Get info about files to be parsed from the database
 
-sub run {
-
-  ($host, $port, $dbname, $user, $pass, my $speciesr, my $sourcesr, $skipdownload, $checkdownload, 
-    $create, $release, $cleanup, $drop_db, $deletedownloaded, $dl_path, my $notsourcesr) = @_;
+sub run
+{
+    (
+        $host,           $port,             $dbname,
+        $user,           $pass,             my $speciesr,
+        my $sourcesr,    $skipdownload,     $checkdownload,
+        $create,         $release,          $cleanup,
+        $drop_db,        $deletedownloaded, $dl_path,
+        my $notsourcesr, $compressed
+    ) = @_;
 
   $base_dir = $dl_path if $dl_path;
 
@@ -195,8 +206,8 @@ sub run {
 
     if ($checkdownload) {
         my $check_file = $dir . '/' . $file;
-        $check_file =~ s/\.gz$//;
-        $check_file =~ s/\.Z$//;
+
+        if ( !$compressed ) { $check_file =~ s/\.(gz|Z)$// }
 
         print "Checking for file '$check_file'\n";
 
@@ -206,8 +217,7 @@ sub run {
 
             $skipdownload = 1;
 
-            $file =~ s/\.gz$//;
-            $file =~ s/\.Z$//;
+            if ( !$compressed ) { $file =~ s/\.(gz|Z)$// }
         } else {
             print "File '$check_file' does not exist.\n"
               . "Scheduling '$dir/$file' for download...\n";
@@ -265,22 +275,27 @@ sub run {
 	  croak("Could not get $type file $file tried 5 times but failed");
 	}
 
-	# if the file is compressed, the FTP server may or may not have automatically uncompressed it
-	# TODO - read .gz file directly? open (FILE, "zcat $file|") or Compress::Zlib
-	if ($file =~ /(.*)\.gz$/ or $file =~ /(.*)\.Z$/) {
-	  print "Uncompressing $dir/$file\n";
-	  system("gunzip -f $dir/$file");
-	  $file = $1;
-	}
-	if ($file =~ /(.*)\.zip$/) {
-	  print "Unzipping $dir/$file\n";
-	  system("unzip -o -q -d $dir $dir/$file");
-	}
+        # If the file is compressed, the FTP server may or may not have
+        # automatically uncompressed it (it shouldn't have, is this an
+        # historical artifact? (ak)).
 
+        if ( !$compressed && ( $file =~ /\.(gz|Z)$/ ) ) {
+            print "Uncompressing '$dir/$file' using 'gunzip'\n";
+            system( "gunzip", "-f", $dir . '/' . $file );
+        }
+
+        if ( $file =~ /(.*)\.zip$/ ) {
+            print "Uncompressing '$dir/$file' using 'unzip'\n";
+            system( "unzip", "-o", "-q", "-d", $dir,
+                $dir . '/' . $file );
+        }
       }
 
-      $file =~s/\.gz$//; # if skipdownload set this will not have been done yet.
-      $file=~s/\.Z$//;   # if it has no harm done
+      if ( !$compressed ) {
+        $file =~ s/\.(gz|Z)$//;    # If skipdownload set this will
+                                   # not have been done yet.
+                                   # If it has, no harm done
+      }
 
       if ($file_from_archive) {
 	push @new_file, $file_from_archive;
@@ -361,13 +376,57 @@ sub run {
 
 # --------------------------------------------------------------------------------
 
-sub new {
+# Given a file name, returns a IO::Handle object.  If the file is
+# gzipped, the handle will be to an unseekable stream coming out of a
+# zcat pipe.  If the given file name doesn't correspond to an existing
+# file, the routine will try to add '.gz' to the file name or to remove
+# any .'Z' or '.gz' and try again.  Returns undef on failure and will
+# write a warning to stderr.
 
-  my $self = {};
-  bless $self, "BaseParser";
+sub get_filehandle
+{
+    my ($self, $file_name) = @_;
 
-  return $self;
+    my $io;
 
+    my $alt_file_name = $file_name;
+    $alt_file_name =~ s/\.(gz|Z)$//;
+
+    if ( $alt_file_name eq $file_name ) {
+        $alt_file_name .= '.gz';
+    }
+
+    if ( !-f $file_name ) {
+        carp(   "File '$file_name' does not exist, "
+              . "will try '$alt_file_name'" );
+        $file_name = $alt_file_name;
+    }
+
+    if ( $file_name =~ /\.(gz|Z)$/ ) {
+        # Read from zcat pipe
+        $io = IO::File->new("zcat $file_name |")
+          or carp("Can not open file '$file_name' with 'zcat'");
+    } else {
+        # Read file normally
+        $io = IO::File->new($file_name)
+          or carp("Can not open file '$file_name'");
+    }
+
+    if ( !defined $io ) { return undef }
+
+    print "Reading from '$file_name'...\n";
+
+    return $io;
+}
+
+# --------------------------------------------------------------------------------
+
+sub new
+{
+    my ($proto) = @_;
+
+    my $class = ref $proto || $proto;
+    return bless {}, $class;
 }
 
 # --------------------------------------------------------------------------------

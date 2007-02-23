@@ -3,10 +3,7 @@ package XrefParser::AedesGenBankParser;
 use strict;
 use File::Basename;
 
-use XrefParser::BaseParser;
-
-use vars qw(@ISA);
-@ISA = qw(XrefParser::BaseParser);
+use base qw( XrefParser::BaseParser );
 
 #Aedes GenBank protein - because not yet in UniProt
 #>EAT48991.1
@@ -25,11 +22,13 @@ sub run {
 
   local $/ = "\n>";
 
-  if(!open(FILE,"<".$file)){
-    print "Could not open $file\n";
-    return 1;
+  my $file_io = $self->get_filehandle($file);
+  if ( !defined $file_io ) {
+      print "Could not open $file\n";
+      return 1;
   }
-  while (<FILE>) {
+
+  while ( $_ = $file_io->getline() ) {
 
     my $xref;
 
@@ -73,7 +72,7 @@ sub run {
 
   }
 
-  close (FILE);
+  $file_io->close();
 
   print scalar(@xrefs) . " AedesGenBank xrefs succesfully parsed\n";
 
@@ -81,15 +80,6 @@ sub run {
 
   print "Done\n";
   return 0;
-}
-
-
-sub new {
-
-  my $self = {};
-  bless $self, "XrefParser::AedesGenBankParser";
-  return $self;
-
 }
 
 1;

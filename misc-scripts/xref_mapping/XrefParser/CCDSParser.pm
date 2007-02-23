@@ -4,10 +4,7 @@ use strict;
 
 use DBI;
 
-use XrefParser::BaseParser;
-
-use vars qw(@ISA);
-@ISA = qw(XrefParser::BaseParser);
+use base qw( XrefParser::BaseParser );
 
 # Parse file of CCDS records and assign direct xrefs
 # All assumed to be linked to transcripts
@@ -18,17 +15,19 @@ sub run {
 
   my ($self, $file, $source_id, $species_id) = @_;
 
-  if(!open(CCDS,"<".$file)){
-    print "Could not open $file\n";
-    return 1;
+  my $ccds_io = $self->get_filehandle($file);
+
+  if ( !defined $ccds_io ) {
+      print "Could not open $file\n";
+      return 1;
   }
+
   my $line_count = 0;
   my $xref_count = 0;
 
   my $xref_sth = $self->dbi()->prepare("SELECT xref_id FROM xref WHERE accession=? AND version=? AND source_id=$source_id AND species_id=$species_id");
 
-  while (<CCDS>) {
-
+  while ( $_ = $ccds_io->getline() ) {
     my ($stable_id, $ccds) = split;
 
     my ($acc, $version) = split (/\./, $ccds);
@@ -48,17 +47,8 @@ sub run {
 
   print "Parsed $line_count CCDS identifiers from $file, added $xref_count xrefs and $line_count direct_xrefs\n";
 
-  close(CCDS);
+  $ccds_io->close();
   return 0;
-}
-
-
-sub new {
-
-  my $self = {};
-  bless $self, "XrefParser::CCDSParser";
-  return $self;
-
 }
 
 1;

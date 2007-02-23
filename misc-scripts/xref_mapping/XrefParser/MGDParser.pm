@@ -4,11 +4,8 @@ use strict;
 use POSIX qw(strftime);
 use File::Basename;
  
-use XrefParser::BaseParser;
+use base qw( XrefParser::BaseParser );
  
-use vars qw(@ISA);
-@ISA = qw(XrefParser::BaseParser);
-
 my $xref_sth ;
 my $dep_sth;
  
@@ -51,11 +48,14 @@ sub run {
   my $mismatch = 0;
   my %mgi_good;
 
-  if(!open(FILE,"<". $file)){
-    print  "ERROR: Could not open file $file";
-    return 1; # 1 is an error
+  my $file_io = $self->get_filehandle($file);
+
+  if ( !defined $file_io ) {
+    print "ERROR: Could not open file $file";
+    return 1;    # 1 is an error
   }
-  while(my $line = <FILE>){
+
+  while ( my $line = $file_io->getline() ) {
     chomp $line;
     my ($key,$label,$desc,$sps) = (split("\t",$line))[0,1,3,6];
     my @sp = split(/\s/,$sps); 
@@ -70,19 +70,21 @@ sub run {
       }
     }
   }
-  close FILE;
-
+  $file_io->close();
 
   my $dir = dirname($file);
   my $syn_file = $dir."/MRK_Synonym.sql.rpt";
 
-  if(!open(FILE2,"<". $syn_file)){
-    print  "ERROR: Could not open file $syn_file";
+  $file_io = $self->get_filehandle($syn_file);
+
+  if ( !defined $file_io ) {
+    print "ERROR: Could not open file $syn_file";
     return 1;
   }
+
   my $synonyms=0;
 
-  while(<FILE2>){
+  while ( $_ = $file_io->getline() ) {
     if(/MGI:/){
       chomp ;
       my ($key,$syn) = (split)[0,4];
@@ -92,23 +94,15 @@ sub run {
       }
     }
   }
-  close FILE2;
+
+  $file_io->close();
+
   print "\t$count xrefs succesfully loaded\n";
   print "\t$synonyms synonyms successfully loaded\n";
   print "\t$mismatch xrefs failed to load\n";
      
   return 0;
-
-
-}                                                                                                                     
-
-sub new {
-
-  my $self = {};
-  bless $self, "XrefParser::MGDParser";
-  return $self;
-
 }
- 
+
 1;
     

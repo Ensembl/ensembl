@@ -4,10 +4,7 @@ use strict;
 
 use DBI;
 
-use XrefParser::BaseParser;
-
-use vars qw(@ISA);
-@ISA = qw(XrefParser::BaseParser);
+use base qw( XrefParser::BaseParser );
 
 # Parse file of Refseq records and assign direct xrefs
 
@@ -15,12 +12,12 @@ sub run {
 
   my ($self, $file, $source_id, $species_id) = @_;
 
-  if(!open(REFSEQ,"<".$file)){
+  my $refseq_io = $self->get_filehandle($file);
+
+  if ( defined $refseq_io ) {
     print "Could not open $file\n";
     return 1;
   }
-
-
 
   # becouse the direct mapping have no descriptions etc
   # we have to steal these from the previous Refseq parser.
@@ -67,8 +64,10 @@ sub run {
   my $xref_count = 0;
   my %seen;
   my %old_to_new;
-  <REFSEQ>; # header
-  while(<REFSEQ>){
+
+  $refseq_io->getline();    # header
+
+  while ( $_ = $refseq_io->getline() ) {
       chomp;
       my ($ccds,$refseq) = split;
     
@@ -102,19 +101,12 @@ sub run {
       }   
   }
 
+  $refseq_io->close();
+
   print "Parsed $line_count RefSeq_dna identifiers from $file, added $xref_count xrefs and $xref_count direct_xrefs  from $line_count lines.\n";
 
-  close(REFSEQ);
+
   return 0;
-
-}
-
-
-sub new {
-
-  my $self = {};
-  bless $self, "XrefParser::RefSeq_CCDSParser";
-  return $self;
 
 }
 

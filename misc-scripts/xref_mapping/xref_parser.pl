@@ -3,36 +3,45 @@ use strict;
 use Getopt::Long;
 use XrefParser::BaseParser;
 
-my ($host, $port, $dbname, $user, $pass, @species, @sources, $skipdownload, $checkdownload, $create, $release, $cleanup, $drop_existing_db, $deletedownloaded, $dl_path, @notsource);
+my (
+    $host,             $port,             $dbname,
+    $user,             $pass,             @species,
+    @sources,          $skipdownload,     $checkdownload,
+    $create,           $release,          $cleanup,
+    $drop_existing_db, $deletedownloaded, $dl_path,
+    @notsource, $compressed
+);
 
-GetOptions('dbuser|user=s'       => \$user,
-	   'dbpass|pass=s'       => \$pass,
-	   'dbhost|host=s'       => \$host,
-	   'dbport|port=i'       => \$port,
-	   'dbname=s'            => \$dbname,
-	   'species=s'           => \@species,
-	   'source=s'            => \@sources,
-	   'download_dir=s'      => \$dl_path,
-	   'skipdownload'        => \$skipdownload,     # skips all downloads
-	   'checkdownload!'      => \$checkdownload,   # if file exists it won't be downloaded 
-	   'create'       => \$create,
-	   'setrelease=s' => \$release,
-	   'cleanup'      => \$cleanup,
-	   'notsource=s'    => \@notsource,
-	   'drop_db|dropdb!'     => \$drop_existing_db, # drops xref db without user interaction
-	   'delete_downloaded' => \$deletedownloaded,
-	   'download_path=s' => \$dl_path,
-	   'help'         => sub { usage(); exit(0); });
+GetOptions(
+    'dbuser|user=s'  => \$user,
+    'dbpass|pass=s'  => \$pass,
+    'dbhost|host=s'  => \$host,
+    'dbport|port=i'  => \$port,
+    'dbname=s'       => \$dbname,
+    'species=s'      => \@species,
+    'source=s'       => \@sources,
+    'download_dir=s' => \$dl_path,
+    'skipdownload'   => \$skipdownload,     # skips all downloads
+    'checkdownload!' => \$checkdownload,    # don't download if exists
+    'create'         => \$create,
+    'setrelease=s'   => \$release,
+    'cleanup'        => \$cleanup,
+    'notsource=s'    => \@notsource,
+    'drop_db|dropdb!' =>
+      \$drop_existing_db,    # drops xref db without user interaction
+    'delete_downloaded' => \$deletedownloaded,
+    'download_path=s'   => \$dl_path,
+    'compressed' => \$compressed,   # don't force decompression of files
+    'help' => sub { usage(); exit(0); }
+);
 
 @species = split(/,/,join(',',@species));
 @sources  = split(/,/,join(',',@sources));
 
 
-if (!$user || !$host || !$dbname) {
-
-  usage();
-  exit(1);
-
+if ( !$user || !$host || !$dbname ) {
+    usage();
+    exit(1);
 }
 
 XrefParser::BaseParser::run(
@@ -43,7 +52,8 @@ XrefParser::BaseParser::run(
     $checkdownload,    $create,
     $release,          $cleanup,
     $drop_existing_db, $deletedownloaded,
-    $dl_path,          \@notsource
+    $dl_path,          \@notsource,
+    $compressed
 );
 
 # --------------------------------------------------------------------------------

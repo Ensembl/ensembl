@@ -4,10 +4,7 @@ use strict;
 
 use DBI;
 
-use XrefParser::BaseParser;
-
-use vars qw(@ISA);
-@ISA = qw(XrefParser::BaseParser);
+use base qw( XrefParser::BaseParser );
 
 # Parse file of Ensembl - Vega OTTT transcript mappings
 # ENST00000373795:	OTTHUMT00000010392
@@ -19,17 +16,19 @@ sub run {
 
   my ($self, $file, $source_id, $species_id) = @_;
 
-  if(!open(OTTT,"<".$file)){
+  my $ottt_io = $self->get_filehandle($file);
+
+  if ( !defined $ottt_io ) {
     print "Could not open $file\n";
     return 1;
   }
+
   my $line_count = 0;
   my $xref_count = 0;
 
   my $xref_sth = $self->dbi()->prepare("SELECT xref_id FROM xref WHERE accession=? AND source_id=$source_id AND species_id=$species_id");
 
-  while (<OTTT>) {
-
+  while ( $_ = $ottt_io->getline() ) {
     my ($ens, $ottt) = split;
 
     $ens =~ s/://g;
@@ -48,19 +47,12 @@ sub run {
 
   }
 
+  $ottt_io->close();
+
   print "Parsed $line_count OTTT identifiers from $file, added $xref_count xrefs and $line_count direct_xrefs\n";
 
-  close(OTTT);
+
   return 0;
-}
-
-
-sub new {
-
-  my $self = {};
-  bless $self, "XrefParser::OTTTParser";
-  return $self;
-
 }
 
 1;

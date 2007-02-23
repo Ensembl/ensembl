@@ -4,10 +4,7 @@ use strict;
 use POSIX qw(strftime);
 use File::Basename;
 
-use XrefParser::BaseParser;
-
-use vars qw(@ISA);
-@ISA = qw(XrefParser::BaseParser);
+use base qw( XrefParser::BaseParser );
 
 my $xref_sth ;
 my $dep_sth;
@@ -47,11 +44,14 @@ sub run {
   my (%refseq) = %{XrefParser::BaseParser->get_valid_codes("refseq",$species_id)};
   
 
-  if(!open(RGD,"<".$file)){
+  my $rgd_io = $self->get_filehandle($file);
+
+  if ( !defined $rgd_io ) {
     print "ERROR: Could not open $file\n";
     return 1;
   }
-  my $line = <RGD>;
+
+  my $line = $rgd_io->getline();
   chomp $line;
   my @linearr = split(/\t/,$line);
 
@@ -74,7 +74,7 @@ sub run {
   
   my $count= 0;
   my $mismatch = 0;
-  while ($line = <RGD>) {
+  while ( $line = $rgd_io->getline() ) {
     chomp $line;
     my ($rgd, $symbol, $name, $refseq) = (split (/\t/,$line))[0,1,2,16];
     my @nucs = split(/\,/,$refseq);
@@ -94,6 +94,7 @@ sub run {
 	}
       }
     }
+
     if(!$done){
 #      print STDERR "$rgd FAILED for $failed_list\n";
       $self->add_xref("RGD:".$rgd,"",$symbol,$name,$source_id,$species_id);
@@ -101,18 +102,12 @@ sub run {
     }
 
   }
+
+  $rgd_io->close();
+
   print "\t$count xrefs succesfully loaded and dependent on refseq\n";
   print "\t$mismatch xrefs added but with NO dependencies\n";
   return 0;
 }
 
-
-sub new {
-
-  my $self = {};
-  bless $self, "XrefParser::RGDParser";
-  return $self;
-
-}
- 
 1;

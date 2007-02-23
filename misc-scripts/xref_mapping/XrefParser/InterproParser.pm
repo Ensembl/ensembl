@@ -4,11 +4,8 @@ use strict;
 use POSIX qw(strftime);
 use File::Basename;
   
-use XrefParser::BaseParser;
+use base qw( XrefParser::BaseParser );
   
-use vars qw(@ISA);
-@ISA = qw(XrefParser::BaseParser);
- 
 my $xref_sth ;
 my $dep_sth;
   
@@ -57,15 +54,18 @@ sub run {
 
 
   my $dir = dirname($file);
-                                                                                                                         
+
   my %short_name;
   my %description;
   my %pfam;
-     
-  if(!open (XML, $dir."/interpro.xml")){
+
+  my $xml_io = $self->get_filehandle( $dir . "/interpro.xml" );
+
+  if ( !defined $xml_io ) {
     print "ERROR: Can't open hugo interpro file $dir/interpro.xml\n";
-    return 1; # 1= error
+    return 1;    # 1= error
   }
+
   #<interpro id="IPR001023" type="Family" short_name="Hsp70" protein_count="1556">
   #    <name>Heat shock protein Hsp70</name>
   #     <db_xref protein_count="18" db="PFAM" dbkey="PF01278" name="Omptin" />
@@ -77,8 +77,8 @@ sub run {
 
   my $last = "";
   my $i =0;
-  while (<XML>) {
 
+  while ( $_ = $xml_io->getline() ) {
     my $interpro;
     my $short_name;
     my $name;
@@ -109,7 +109,8 @@ sub run {
     }
   }
 
-  close (LONG);
+  $xml_io->close();
+
   for my $db ( keys %count ) {
     print "\t".$count{$db}." $db loaded.\n";
   }
@@ -126,14 +127,4 @@ sub get_xref{
   return 0;
 }
 
-sub new {
-
-  my $self = {};
-  bless $self, "XrefParser::InterproParser";
-  return $self;
-
-}
- 
 1;
-    
-

@@ -3,10 +3,7 @@ package XrefParser::CeleraParser;
 use strict;
 use File::Basename;
 
-use XrefParser::BaseParser;
-
-use vars qw(@ISA);
-@ISA = qw(XrefParser::BaseParser);
+use base qw( XrefParser::BaseParser );
 
 # Celera database dump for anopheles - FASTA format
 #
@@ -27,12 +24,14 @@ sub run {
 
   local $/ = "\n>";
 
-  if(!open(FILE,"<".$file)){
+  my $file_io = $self->get_filehandle($file);
+
+  if ( !defined $file_io ) {
     print "Could not open $file\n";
     return 1;
   }
-  while (<FILE>) {
 
+  while ( $_ = $file_io->getline() ) {
     next if (/^File:/);   # skip header
 
     my $xref;
@@ -69,7 +68,7 @@ sub run {
 
   }
 
-  close (FILE);
+  $file_io->close();
 
   print scalar(@xrefs) . " Celera xrefs succesfully parsed\n";
 
@@ -77,15 +76,6 @@ sub run {
 
   print "Done\n";
   return 0;
-}
-
-
-sub new {
-
-  my $self = {};
-  bless $self, "XrefParser::CeleraParser";
-  return $self;
-
 }
 
 1;

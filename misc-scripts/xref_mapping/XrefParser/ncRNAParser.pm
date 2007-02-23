@@ -4,10 +4,7 @@ use strict;
 use POSIX qw(strftime);
 use File::Basename;
  
-use XrefParser::BaseParser;
- 
-use vars qw(@ISA);
-@ISA = qw(XrefParser::BaseParser);
+use base qw( XrefParser::BaseParser );
 
 # --------------------------------------------------------------------------------
 # Parse command line and run if being run directly
@@ -41,11 +38,14 @@ sub run {
   my %name_2_source_id=();
   my $added=0;
 
-  if(!open(FILE,"<". $file)){
-    print  "ERROR: Could not open file $file\n";
+  my $file_io = $self->get_filehandle($file);
+
+  if ( !defined $file_io ) {
+    print "ERROR: Could not open file $file\n";
     return 1;
   }
-  while(my $line = <FILE>){
+
+  while ( my $line = $file_io->getline() ) {
     chomp $line;
     my ($gene_id,$transcript_id,$source_name,$acc,$display_label,$full_description, $status)
       = split("\t",$line);
@@ -79,19 +79,11 @@ sub run {
     #biomart check
     #    $self->add_direct_xref($xref_id, $gene_id, "Gene", "")             if (defined($gene_id)); 
   }
-  close FILE;
+
+  $file_io->close();
 
   print "Added $added Xrefs for ncRNAs\n";
   return 0;
 }
-
-sub new {
-
-  my $self = {};
-  bless $self, "XrefParser::ncRNAParser";
-  return $self;
-
-}
-
 
 1;

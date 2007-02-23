@@ -3,10 +3,7 @@ package XrefParser::IPIParser;
 use strict;
 use File::Basename;
 
-use XrefParser::BaseParser;
-
-use vars qw(@ISA);
-@ISA = qw(XrefParser::BaseParser);
+use base qw( XrefParser::BaseParser );
 
 # IPI file format: fasta, e.g.
 # >IPI:IPI00000005.1|SWISS-PROT:P01111|TREMBL:Q15104|REFSEQ_NP:NP_002515|ENSEMBL:ENSP00000261444 Tax_Id=9606 Transforming protein N-Ras
@@ -22,14 +19,16 @@ sub run {
 
   local $/ = "\n>";
 
-  if(!open(IPI,"<".$file)){
+  my $ipi_io = $self->get_filehandle($file);
+
+  if ( !defined $ipi_io ) {
     print "ERROR: Could not open $file\n";
-    return 1; # 1 = error
+    return 1;    # 1 = error
   }
+
   my $species_tax_id = $self->get_taxonomy_from_species_id($species_id);
 
-  while (<IPI>) {
-
+  while ( $_ = $ipi_io->getline() ) {
     my $xref;
 
     my ($header, $sequence) = $_ =~ /^>?(.+?)\n([^>]*)/s or warn("Can't parse FASTA entry: $_\n");
@@ -64,21 +63,14 @@ sub run {
 
   }
 
+  $ipi_io->close();
+
   print scalar(@xrefs) . " IPI xrefs succesfully parsed\n";
 
   XrefParser::BaseParser->upload_xref_object_graphs(\@xrefs);
 
   print "Done\n";
   return 0; #successful
-}
-
-
-sub new {
-
-  my $self = {};
-  bless $self, "XrefParser::IPIParser";
-  return $self;
-
 }
 
 1;
