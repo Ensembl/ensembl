@@ -342,7 +342,12 @@ sub cache_arrays_per_probeset {
 
   print "Caching arrays per probeset\n";
 
-  my $sth = $db->dbc()->prepare("SELECT op.probeset, oa.name, oa.probe_setsize FROM oligo_probe op, oligo_array oa WHERE oa.oligo_array_id=op.oligo_array_id GROUP BY op.probeset, oa.name ");
+  #my $sth = $db->dbc()->prepare("SELECT op.probeset, oa.name, oa.probe_setsize FROM oligo_probe op, oligo_array oa WHERE oa.oligo_array_id=op.oligo_array_id GROUP BY op.probeset, oa.name ");
+
+  #do not need distinct on count as we're linking by array?
+  my $sth = $db->dbc()->prepare("SELECT op.probeset, oa.name, count(op.oligo_probe_id) FROM oligo_probe op, oligo_array oa WHERE oa.oligo_array_id=op.oligo_array_id GROUP BY op.probeset, oa.name");
+
+
   $sth->execute();
   my ($probeset, $array, $probeset_size);
   $sth->bind_columns(\$probeset, \$array, \$probeset_size);
@@ -495,10 +500,13 @@ sub check_existing_and_exit {
 
   } else {
 
-    my $sth = $oligo_adaptor->dbc()->prepare("SELECT DISTINCT(name) FROM oligo_array");
+    my $sth = $oligo_adaptor->dbc()->prepare("SELECT DISTINCT(name), probe_setsize FROM oligo_array");
     $sth->execute();
 
     while(my @row = $sth->fetchrow_array()){
+
+      #this is not essential now as we're counting the size of each probeset
+      warn "Array $row[0] does not have a probeset_size set, please rectify\n"  if($row[1] == 0);
 
       push @arrays_to_check, $row[0];
 
