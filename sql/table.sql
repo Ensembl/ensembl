@@ -27,7 +27,7 @@ CREATE TABLE oligo_feature (
   seq_region_strand     TINYINT NOT NULL,
   mismatches            TINYINT,
   oligo_probe_id        INT(10) UNSIGNED NOT NULL,
-  analysis_id           INT(10) UNSIGNED NOT NULL,
+  analysis_id           SMALLINT UNSIGNED NOT NULL,
 
   PRIMARY KEY (oligo_feature_id),
   KEY seq_region_idx (seq_region_id, seq_region_start),
@@ -121,7 +121,7 @@ CREATE TABLE alt_allele (
 
 CREATE TABLE analysis (
 
-  analysis_id                 INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  analysis_id                 SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
   created                     datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
   logic_name                  VARCHAR(40) NOT NULL,
   db                          VARCHAR(120),
@@ -150,7 +150,7 @@ CREATE TABLE analysis (
 
 CREATE TABLE analysis_description (
 
-  analysis_id	               INT(10) UNSIGNED NOT NULL,
+  analysis_id	               SMALLINT UNSIGNED NOT NULL,
   description                  TEXT,
   display_label                VARCHAR(255),
   displayable                  BOOLEAN NOT NULL DEFAULT 1,
@@ -281,7 +281,7 @@ CREATE TABLE simple_feature (
   seq_region_end              INT(10) UNSIGNED NOT NULL,
   seq_region_strand           TINYINT(1) NOT NULL,
   display_label               VARCHAR(40) NOT NULL,
-  analysis_id                 INT(10) UNSIGNED NOT NULL,
+  analysis_id                 SMALLINT UNSIGNED NOT NULL,
   score                       DOUBLE,
 
   PRIMARY KEY (simple_feature_id),
@@ -307,7 +307,7 @@ CREATE TABLE protein_align_feature (
   hit_start                   INT(10) NOT NULL,
   hit_end                     INT(10) NOT NULL,
   hit_name                    VARCHAR(40) NOT NULL,
-  analysis_id                 INT(10) UNSIGNED NOT NULL,
+  analysis_id                 SMALLINT UNSIGNED NOT NULL,
   score                       DOUBLE,
   evalue                      DOUBLE,
   perc_ident                  FLOAT,
@@ -338,7 +338,7 @@ CREATE TABLE dna_align_feature (
   hit_end                     INT NOT NULL,
   hit_strand                  TINYINT(1) NOT NULL,
   hit_name                    VARCHAR(40) NOT NULL,
-  analysis_id                 INT(10) UNSIGNED NOT NULL,
+  analysis_id                 SMALLINT UNSIGNED NOT NULL,
   score                       DOUBLE,
   evalue                      DOUBLE,
   perc_ident                  FLOAT,
@@ -391,7 +391,7 @@ CREATE TABLE repeat_feature (
   repeat_start                INT(10) NOT NULL,
   repeat_end                  INT(10) NOT NULL,
   repeat_consensus_id         INT(10) UNSIGNED NOT NULL,
-  analysis_id                 INT(10) UNSIGNED NOT NULL,
+  analysis_id                 SMALLINT UNSIGNED NOT NULL,
   score                       DOUBLE,
   
   PRIMARY KEY (repeat_feature_id),
@@ -411,7 +411,7 @@ CREATE TABLE gene (
 
   gene_id                     INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
   biotype                     VARCHAR(40) NOT NULL,
-  analysis_id                 INT(10) UNSIGNED NOT NULL,
+  analysis_id                 SMALLINT UNSIGNED NOT NULL,
   seq_region_id               INT(10) UNSIGNED NOT NULL, 
   seq_region_start            INT(10) UNSIGNED NOT NULL, 
   seq_region_end              INT(10) UNSIGNED NOT NULL, 
@@ -492,7 +492,7 @@ CREATE TABLE transcript (
 
   transcript_id               INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,  
   gene_id                     INT(10) UNSIGNED NOT NULL,
-  analysis_id                 INT(10) UNSIGNED NOT NULL,
+  analysis_id                 SMALLINT UNSIGNED NOT NULL,
   seq_region_id               INT(10) UNSIGNED NOT NULL, 
   seq_region_start            INT(10) UNSIGNED NOT NULL, 
   seq_region_end              INT(10) UNSIGNED NOT NULL, 
@@ -621,7 +621,7 @@ CREATE TABLE protein_feature (
   hit_start                   INT(10) NOT NULL,
   hit_end                     INT(10) NOT NULL,
   hit_id                      VARCHAR(40) NOT NULL,
-  analysis_id                 INT(10) UNSIGNED NOT NULL,
+  analysis_id                 SMALLINT UNSIGNED NOT NULL,
   score                       DOUBLE NOT NULL,
   evalue                      DOUBLE,
   perc_ident                  FLOAT,
@@ -710,7 +710,7 @@ CREATE TABLE identity_xref (
   
   score                   DOUBLE,
   evalue                  DOUBLE,
-  analysis_id             INT(10) UNSIGNED NOT NULL,
+  analysis_id             SMALLINT UNSIGNED NOT NULL,
 
   PRIMARY KEY (object_xref_id),
   KEY analysis_idx (analysis_id)
@@ -743,7 +743,7 @@ CREATE TABLE go_xref (
 CREATE TABLE xref (
 
    xref_id 		      INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-   external_db_id             INT(10) UNSIGNED NOT NULL,
+   external_db_id             SMALLINT UNSIGNED NOT NULL,
    dbprimary_acc              VARCHAR(40) NOT NULL,
    display_label              VARCHAR(128) NOT NULL,
    version                    VARCHAR(10) DEFAULT '0' NOT NULL,
@@ -782,7 +782,7 @@ CREATE TABLE external_synonym (
 
 CREATE TABLE external_db (
 
-  external_db_id 	      INT(10) UNSIGNED NOT NULL,
+  external_db_id 	      SMALLINT UNSIGNED NOT NULL,
   db_name                     VARCHAR(27) NOT NULL,
   db_release                  VARCHAR(40) NOT NULL,
   status                      ENUM('KNOWNXREF','KNOWN','XREF','PRED','ORTH',
@@ -835,7 +835,7 @@ CREATE TABLE prediction_transcript (
   seq_region_start            INT(10) UNSIGNED NOT NULL,
   seq_region_end              INT(10) UNSIGNED NOT NULL,
   seq_region_strand           TINYINT NOT NULL,
-  analysis_id                 INT(10) UNSIGNED NOT NULL,
+  analysis_id                 SMALLINT UNSIGNED NOT NULL,
   display_label               VARCHAR(255),
   
   PRIMARY KEY (prediction_transcript_id),
@@ -864,15 +864,11 @@ CREATE TABLE meta (
 
 
 # Auto add schema version to database
-INSERT INTO meta (meta_key, meta_value) VALUES ("schema_version", "43");
+INSERT INTO meta (meta_key, meta_value) VALUES ("schema_version", "44");
 
 # patches included in this schema file
 # NOTE: at beginning of release cycle, remove patch entries from last release
-INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_42_43_a.sql|unmapped_object.parent');
-INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_42_43_b.sql|unmapped_object_probe2transcript');
-INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_42_43_c.sql|info_type_probe_unmapped');
-INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_42_43_d.sql|unmapped_object_external_db_id');
-INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_42_43_e.sql|gene_archive.peptide_archive_id.index');
+INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_43_44_a.sql|rationalise_key_columns');
 
 ################################################################################
 #
@@ -924,7 +920,7 @@ CREATE TABLE marker_feature (
   seq_region_id               INT(10) UNSIGNED NOT NULL,
   seq_region_start            INT(10) UNSIGNED NOT NULL,
   seq_region_end              INT(10) UNSIGNED NOT NULL,
-  analysis_id                 INT(10) UNSIGNED NOT NULL,
+  analysis_id                 SMALLINT UNSIGNED NOT NULL,
   map_weight                  INT(10) UNSIGNED,
 
   PRIMARY KEY (marker_feature_id),
@@ -1177,7 +1173,7 @@ CREATE TABLE qtl_feature (
   seq_region_start      INT(10)	UNSIGNED NOT NULL,
   seq_region_end        INT(10)	UNSIGNED NOT NULL,
   qtl_id                INT(10)	UNSIGNED NOT NULL,
-  analysis_id           INT(10) UNSIGNED NOT NULL,
+  analysis_id           SMALLINT UNSIGNED NOT NULL,
 
   KEY (qtl_id),
   KEY loc_idx (seq_region_id, seq_region_start),
@@ -1380,7 +1376,7 @@ CREATE TABLE density_feature (
 CREATE TABLE density_type (
 
   density_type_id       INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  analysis_id           INT(10) UNSIGNED NOT NULL,
+  analysis_id           SMALLINT UNSIGNED NOT NULL,
   block_size            INT NOT NULL,
   region_features       INT NOT NULL,
   value_type            ENUM('sum','ratio') NOT NULL,
@@ -1405,7 +1401,7 @@ CREATE TABLE regulatory_feature (
   seq_region_start        INT(10) UNSIGNED NOT NULL,
   seq_region_end          INT(10) UNSIGNED NOT NULL,
   seq_region_strand       TINYINT NOT NULL,
-  analysis_id             INT(10) UNSIGNED NOT NULL,
+  analysis_id             SMALLINT UNSIGNED NOT NULL,
   regulatory_factor_id    INT(10) UNSIGNED,
 
   PRIMARY KEY (regulatory_feature_id),
@@ -1488,7 +1484,7 @@ CREATE TABLE regulatory_search_region (
   ensembl_object_type         ENUM('Transcript', 'Translation', 'Gene')
                               NOT NULL,
   ensembl_object_id           INT(10) UNSIGNED,  # FK to gene/transcript/translation
-  analysis_id                 INT(10) UNSIGNED NOT NULL,
+  analysis_id                 SMALLINT UNSIGNED NOT NULL,
 
   PRIMARY KEY (regulatory_search_region_id),
   KEY rsr_idx (regulatory_search_region_id),
@@ -1509,8 +1505,8 @@ CREATE TABLE unmapped_object (
 
   unmapped_object_id    INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
   type                  ENUM('xref', 'cDNA', 'Marker', 'probe2transcript') NOT NULL,
-  analysis_id           INT(10) UNSIGNED NOT NULL,
-  external_db_id        INT(10) UNSIGNED,
+  analysis_id           SMALLINT UNSIGNED NOT NULL,
+  external_db_id        SMALLINT UNSIGNED,
   identifier            VARCHAR(255) NOT NULL,
   unmapped_reason_id    SMALLINT(5) UNSIGNED NOT NULL,
   query_score           DOUBLE,
@@ -1576,7 +1572,7 @@ CREATE TABLE ditag_feature (
        seq_region_start   INT(10) UNSIGNED NOT NULL default '0',
        seq_region_end     INT(10) UNSIGNED NOT NULL default '0',
        seq_region_strand  TINYINT(1) NOT NULL default '0',
-       analysis_id        INT(10) UNSIGNED NOT NULL default '0',
+       analysis_id        SMALLINT UNSIGNED NOT NULL default '0',
        hit_start          INT(10) UNSIGNED NOT NULL default '0',
        hit_end            INT(10) UNSIGNED NOT NULL default '0',
        hit_strand         TINYINT(1) NOT NULL default '0',
