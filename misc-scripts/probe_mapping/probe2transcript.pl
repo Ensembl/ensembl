@@ -94,17 +94,12 @@ if ($xref_host && $xref_dbname && $xref_user) {
 
 check_names_match($oligo_db, $xref_db);
 
-
-
-
-
 delete_existing_xrefs($oligo_db, $xref_db, @arrays) if ($delete);
 delete_unmapped_entries($xref_db) if ($delete);
 
 check_existing_and_exit($oligo_db, $xref_db, @arrays);
 
-
-if($health_check){
+if ($health_check){
   print "Healthcheck passed\n";
   exit 0;
 }
@@ -738,6 +733,8 @@ sub usage {
   [--max_transcripts] Only use this many transcripts. Useful for debugging.
 
   [--no_triage]       Don't write to the unmapped_object/unmapped_reason tables.
+
+  [--health_check]    Only do sanity checks, then stop.
 
   [--help]            This text.
 
