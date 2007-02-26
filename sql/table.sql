@@ -869,6 +869,7 @@ INSERT INTO meta (meta_key, meta_value) VALUES ("schema_version", "44");
 # patches included in this schema file
 # NOTE: at beginning of release cycle, remove patch entries from last release
 INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_43_44_a.sql|rationalise_key_columns');
+INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_43_44_b.sql|optimise_ditag_tables');
 
 ################################################################################
 #
@@ -1548,10 +1549,10 @@ CREATE TABLE unmapped_reason (
 CREATE TABLE ditag (
 
        ditag_id          INT(10) UNSIGNED NOT NULL auto_increment,
-       name              VARCHAR(30),
-       type              VARCHAR(30),
-       tag_count         smallint(6) default 1,
-       sequence          TEXT,
+       name              VARCHAR(30) NOT NULL,
+       type              VARCHAR(30) NOT NULL,
+       tag_count         smallint(6) UNSIGNED NOT NULL default 1,
+       sequence          TINYTEXT,
 
        PRIMARY KEY (ditag_id)
 
@@ -1576,12 +1577,13 @@ CREATE TABLE ditag_feature (
        hit_start          INT(10) UNSIGNED NOT NULL default '0',
        hit_end            INT(10) UNSIGNED NOT NULL default '0',
        hit_strand         TINYINT(1) NOT NULL default '0',
-       cigar_line         TEXT default '',
+       cigar_line         TINYTEXT NOT NULL,
        ditag_side         CHAR default '',
 
        PRIMARY KEY  (ditag_feature_id),
        KEY (ditag_id),
-       KEY (ditag_pair_id)
+       KEY (ditag_pair_id),
+       KEY seq_region_idx (seq_region_id, seq_region_start, seq_region_end)
 
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 
