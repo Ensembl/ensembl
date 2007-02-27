@@ -2529,7 +2529,6 @@ GSQL
     my %parent;
     my %percent_id_via_acc;
     my @gene_xrefs = ();
-    my @transcript_xrefs = ();
     
     $gene_sth->execute("Gene", $gene_id) || die "execute failed";
     $gene_sth->bind_columns(\$xref_id, \$ex_db_id);
@@ -2555,6 +2554,7 @@ GSQL
     foreach my $transcript_id (@transcripts) {
 #      print "Transcript $transcript_id\n";
       
+      my @transcript_xrefs = ();
       
       $primary_sth->execute("Transcript", $transcript_id ) || die "execute failed";
       $primary_sth->bind_columns(\$xref_id, \$qid, \$tid, \$ex_db_id);
