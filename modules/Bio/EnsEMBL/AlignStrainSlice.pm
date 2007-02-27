@@ -277,7 +277,33 @@ sub _get_indels{
 sub get_all_Slices {
   my $self = shift;
 
-  return $self->strains
+  my @strains;
+  #add the reference strain
+  my $dbVar = $self->Slice->adaptor->db->get_db_adaptor('variation');
+  unless($dbVar) {
+	warning("Variation database must be attached to core database to " .
+		"retrieve variation information" );
+	return '';
+    }
+  my $indAdaptor = $dbVar->get_IndividualAdaptor();
+  my $ref_name =  $indAdaptor->get_reference_strain_name;
+  my $ref_strain = Bio::EnsEMBL::StrainSlice->new(
+					  -START   => $self->Slice->{'start'},
+					  -END     => $self->Slice->{'end'},
+					  -STRAND  => $self->Slice->{'strand'},
+					  -ADAPTOR => $self->Slice->{'adaptor'},
+					  -SEQ    => $self->Slice->{'seq'},
+					  -SEQ_REGION_NAME => $self->Slice->{'seq_region_name'},
+					  -SEQ_REGION_LENGTH => $self->Slice->{'seq_region_length'},
+					  -COORD_SYSTEM    => $self->Slice->{'coord_system'},
+					  -STRAIN_NAME     => $ref_name,
+					   );
+  #this is a fake reference alisce, should not contain any alleleFeature
+  undef $ref_strain->{'alleleFeatures'};
+  
+  push @strains, @{$self->strains};
+  push @strains, $ref_strain;
+  return \@strains;
 }
 
 1;
