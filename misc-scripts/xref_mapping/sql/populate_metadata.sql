@@ -18,7 +18,7 @@ INSERT INTO species (species_id, taxonomy_id, name, aliases) VALUES (99883, 9988
 INSERT INTO species (species_id, taxonomy_id, name, aliases) VALUES (9913, 9913,  'bos_taurus',             'cow,btaurus,bostaurus');
 INSERT INTO species (species_id, taxonomy_id, name, aliases) VALUES (9615, 9615,  'canis_familiaris',        'dog,doggy,cfamiliaris,canisfamiliaris');
 INSERT INTO species (species_id, taxonomy_id, name, aliases) VALUES (8364, 8364,  'xenopus_tropicalis',        'pipid,pipidfrog,xenopus,xtropicalis,xenopustropicalis');
-INSERT INTO species (species_id, taxonomy_id, name, aliases) VALUES (13616, 13616,  'monodelphis_domestica',        'opossum,monodelphis,mdomestica,monodelphisdomestica');
+INSERT INTO species (species_id, taxonomy_id, name, aliases) VALUES (13616, 13616,  'monodelphis_domestica',        'opossum,monodelphis,mdomestica,monodelphisdomestica,mono,possum');
 INSERT INTO species (species_id, taxonomy_id, name, aliases) VALUES (4932, 4932,  'saccharomyces_cerevisiae',  'yeast,saccharomyces,scerevisiae,saccharomycescerevisiae');
 
 INSERT INTO species (species_id, taxonomy_id, name, aliases) VALUES (7460, 7460,  'apis_mellifera',  'apismellifera,honeybee,amellifera');
@@ -29,8 +29,6 @@ INSERT INTO species (species_id, taxonomy_id, name, aliases) VALUES (51511, 5151
 # Serveral strains of anopheles have different taxonomy IDs
 INSERT INTO species (species_id, taxonomy_id, name, aliases) VALUES (7165,7165, 'anopheles_gambiae', 'mosquito,anopheles,agambiae,anophelesgambiae');
 INSERT INTO species (species_id, taxonomy_id, name, aliases) VALUES (7165,180454, 'anopheles_gambiae_strain', '');
-
-INSERT INTO species (species_id, taxonomy_id, name, aliases) VALUES (13616,13616, 'monodelphis_domestica', 'mono,opossum,possum,monodelphis,monodelphisdomestica');
 
 INSERT INTO species (species_id, taxonomy_id, name, aliases) VALUES (9544, 9544,  'macaca_mulatta',        'rmacaque, rhesus, rhesus macaque, macaque');
 INSERT INTO species (species_id, taxonomy_id, name, aliases) VALUES (9785, 9785,  'loxodonta_africana',    'elephant,lafricana,loxodontaafricana');
