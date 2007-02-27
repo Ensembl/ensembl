@@ -122,8 +122,8 @@ sub new{
 		return $self;
 	    }
 	    else{ 
-		warning("Strain not in the database");
-		return '';
+		#warning("Strain not in the database");
+		return $self;
 	    }
 	}
 	else{
@@ -195,7 +195,7 @@ sub seq {
 
   if($self->adaptor()) {
     my $seqAdaptor = $self->adaptor()->db()->get_SequenceAdaptor();
-    my $reference_sequence = $seqAdaptor->fetch_by_Slice_start_end_strand($self,1,undef,1); #get the reference sequence for that slice
+    my $reference_sequence = $seqAdaptor->fetch_by_Slice_start_end_strand($self,1,undef,$self->strand); #get the reference sequence for that slice
     #apply all differences to the reference sequence
 
     # sort edits in reverse order to remove complication of
@@ -205,8 +205,10 @@ sub seq {
     foreach my $vf (@variation_features_ordered){
 	$vf->apply_edit($reference_sequence); #change, in the reference sequence, the vf
     }
-    #need to find coverage information
-    $self->_add_coverage_information($reference_sequence);
+    #need to find coverage information if different from reference
+    my $indAdaptor = $self->adaptor->db->get_db_adaptor('variation')->get_IndividualAdaptor;
+    my $ref_strain = $indAdaptor->get_reference_strain_name;
+    $self->_add_coverage_information($reference_sequence) if ($self->strain_name ne $ref_strain);
     return substr(${$reference_sequence},0,1) if ($self->length == 1); 
     return ${$reference_sequence}; #returns the reference sequence, applying the variationFeatures
   }
@@ -229,7 +231,11 @@ sub _add_coverage_information{
     }
     
     my $rc_adaptor = $variation_db->get_ReadCoverageAdaptor();
+    #this is ugly, but ReadCoverage is always defined in the positive strand
+    my $strand = $self->strand;
+    $self->{'strand'} = 1;
     my $rcs = $rc_adaptor->fetch_all_by_Slice_Sample_depth($self,$self->{'_strain'},1);
+    $self->{'strand'} = $strand;
     my $start = 0;
     foreach my $rc (@{$rcs}){
 	$rc->start(1) if ($rc->start < 0); #if the region lies outside the boundaries of the slice
