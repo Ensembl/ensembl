@@ -195,7 +195,7 @@ sub seq {
 
   if($self->adaptor()) {
     my $seqAdaptor = $self->adaptor()->db()->get_SequenceAdaptor();
-    my $reference_sequence = $seqAdaptor->fetch_by_Slice_start_end_strand($self,1,undef,$self->strand); #get the reference sequence for that slice
+    my $reference_sequence = $seqAdaptor->fetch_by_Slice_start_end_strand($self,1,undef,1); #get the reference sequence for that slice
     #apply all differences to the reference sequence
 
     # sort edits in reverse order to remove complication of
