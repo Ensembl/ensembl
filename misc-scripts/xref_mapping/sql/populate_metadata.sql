@@ -151,7 +151,7 @@ INSERT INTO source VALUES (2863, "ARRAY_ND_TIGRTC_9_6K_v1", 1, 'Y', 40, 1, "");
 INSERT INTO source VALUES (2864, "ARRAY_UCR_GillMgMT_0_2K_v2", 1, 'Y', 40, 1, "");
 
 # Uniprot alternative splice
-INSERT INTO source VALUES (3000, "Uniprot/Varsplic", 1, 'Y',20, 1, "");
+INSERT INTO source VALUES (3000, "Uniprot/Varsplic", 1, 'Y',30, 1, "");
 
 # Xenopus Jamboree peptides
 INSERT INTO source VALUES (3100, "Xenopus_Jamboree", 1, 'Y',20, 1, "");
