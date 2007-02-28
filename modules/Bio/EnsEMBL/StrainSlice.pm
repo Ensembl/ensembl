@@ -117,8 +117,9 @@ sub new{
 	    #check that the individua returned isin the database
 	    if (defined $individual){
 		my $allele_features = $af_adaptor->fetch_all_by_Slice($self,$individual);
+		my $new_allele_features = $self->_filter_af_by_coverage($allele_features);
 		$self->{'_strain'} = $individual;
-		$self->{'alleleFeatures'} = $allele_features;
+		$self->{'alleleFeatures'} = $new_allele_features;
 		return $self;
 	    }
 	    else{ 
@@ -135,6 +136,49 @@ sub new{
 	return '';
     }
 }
+
+=head2 _filter_af_by_coverage
+
+    Arg [1]     : listref to Bio::EnsEMBL::Variation::AlleleFeatures  $allele_features
+    Example     : my $new_list_allele_features = $strainSlice->_filter_af_by_coverage($allele_features);
+    Description : For a list of allele features, gets a new list where they are filter depending on coverage
+    ReturnType  : listref of Bio::EnsEMBL::Variation::AlleleFeature
+    Exceptions  : none
+    Caller      : internal function
+
+=cut
+
+sub _filter_af_by_coverage{
+    my $self = shift;
+    my $allele_features = shift;
+
+    my $variation_db = $self->adaptor->db->get_db_adaptor('variation');
+
+    unless($variation_db) {
+	warning("Variation database must be attached to core database to " .
+		"retrieve variation information" );
+	return '';
+    }
+    
+    my $rc_adaptor = $variation_db->get_ReadCoverageAdaptor();
+    #this is ugly, but ReadCoverage is always defined in the positive strand
+    my $strand = $self->strand;
+    $self->{'strand'} = 1;
+    my $rcs = $rc_adaptor->fetch_all_by_Slice_Sample_depth($self,$self->{'_strain'},1);
+    $self->{'strand'} = $strand;
+    my $new_af;
+    foreach my $af (@{$allele_features}){
+	foreach my $rc (@{$rcs}){
+	    if ($af->start < $rc->end and $af->start > $rc->start){
+		push @{$new_af}, $af;
+		last;
+	    }
+	}
+    }
+    
+    return $new_af;
+}
+
 
 =head2 strain_name
 
