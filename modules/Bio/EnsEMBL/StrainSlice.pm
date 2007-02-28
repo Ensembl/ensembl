@@ -162,10 +162,7 @@ sub _filter_af_by_coverage{
     
     my $rc_adaptor = $variation_db->get_ReadCoverageAdaptor();
     #this is ugly, but ReadCoverage is always defined in the positive strand
-    my $strand = $self->strand;
-    $self->{'strand'} = 1;
     my $rcs = $rc_adaptor->fetch_all_by_Slice_Sample_depth($self,$self->{'_strain'},1);
-    $self->{'strand'} = $strand;
     my $new_af;
     foreach my $af (@{$allele_features}){
 	foreach my $rc (@{$rcs}){
@@ -275,11 +272,7 @@ sub _add_coverage_information{
     }
     
     my $rc_adaptor = $variation_db->get_ReadCoverageAdaptor();
-    #this is ugly, but ReadCoverage is always defined in the positive strand
-    my $strand = $self->strand;
-    $self->{'strand'} = 1;
     my $rcs = $rc_adaptor->fetch_all_by_Slice_Sample_depth($self,$self->{'_strain'},1);
-    $self->{'strand'} = $strand;
     my $start = 0;
     foreach my $rc (@{$rcs}){
 	$rc->start(1) if ($rc->start < 0); #if the region lies outside the boundaries of the slice
