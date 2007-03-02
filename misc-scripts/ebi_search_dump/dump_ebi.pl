@@ -147,7 +147,9 @@ sub content {
     $trv_adaptor = $db_variation->get_TranscriptVariationAdaptor();
   }
 
-  foreach my $gene (@{$gene_adaptor->fetch_all()}) {
+  my $genes = $gene_adaptor->fetch_all();
+
+  while (my $gene = shift(@$genes)) {
 
     last if ($max_genes && $entry_count >= $max_genes);
 
@@ -179,7 +181,9 @@ sub content {
     my $tax = $meta_container->get_taxonomy_id();
     p ("<ref dbname=\"taxonomy\" dbkey=\"$tax\"/>");
 
-    foreach my $xref (@{$gene->get_all_DBLinks()}) {
+    my $xrefs = $gene->get_all_DBLinks();
+
+    while (my $xref = shift(@$xrefs)) {
 
       if ($xref->dbname() !~ /protein_id/) {
 	my $display_id = $xref->display_id();
@@ -196,7 +200,8 @@ sub content {
     p ("<additional_fields>");
 
     my $transcripts = $gene->get_all_Transcripts();
-    foreach my $transcript (@{$transcripts}) {
+
+    foreach my $transcript (@$transcripts) { # can't use while/shift here as array needed later
 
       p ("<field name=\"transcript\">" . $transcript->stable_id() . "</field>");
 
@@ -205,7 +210,7 @@ sub content {
 
     }
 
-    foreach my $protein_id (@protein_ids) {
+    while (my $protein_id = shift(@protein_ids)) {
       p ("<field name=\"protein_id\">" . $protein_id . "</field>");
     }
 
@@ -213,7 +218,8 @@ sub content {
 
     # SNP IDs
     if ($db_variation) {
-      foreach my $tv (@{$trv_adaptor->fetch_all_by_Transcripts($transcripts)}){
+      my $transcript_variations = $trv_adaptor->fetch_all_by_Transcripts($transcripts);
+      while (my $tv = shift(@$transcript_variations)) {
 	p ("<field name=\"variation_id\">" . $tv->variation_feature()->variation_name() . "</field>");
       }
     }
