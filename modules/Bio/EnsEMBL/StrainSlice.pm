@@ -273,6 +273,9 @@ sub _add_coverage_information{
     
     my $rc_adaptor = $variation_db->get_ReadCoverageAdaptor();
     my $rcs = $rc_adaptor->fetch_all_by_Slice_Sample_depth($self,$self->{'_strain'},1);
+    my $rcs_sorted;
+    @{$rcs_sorted} = sort {$a->start <=> $b->start} @{$rcs} if ($self->strand == -1);
+    $rcs = $rcs_sorted if ($self->strand == -1);
     my $start = 0;
     foreach my $rc (@{$rcs}){
 	$rc->start(1) if ($rc->start < 0); #if the region lies outside the boundaries of the slice
