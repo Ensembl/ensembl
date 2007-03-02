@@ -237,6 +237,7 @@ sub seq {
   if($self->adaptor()) {
     my $seqAdaptor = $self->adaptor()->db()->get_SequenceAdaptor();
     my $reference_sequence = $seqAdaptor->fetch_by_Slice_start_end_strand($self,1,undef,1); #get the reference sequence for that slice
+    print "reference ", substr($$reference_sequence,0,5),"\n";
     #apply all differences to the reference sequence
 
     # sort edits in reverse order to remove complication of
@@ -276,7 +277,6 @@ sub _add_coverage_information{
     my $rcs_sorted;
     @{$rcs_sorted} = sort {$a->start <=> $b->start} @{$rcs} if ($self->strand == -1);
     $rcs = $rcs_sorted if ($self->strand == -1);
-    $$reference_sequence = reverse($$reference_sequence) if ($self->strand == -1);
     my $start = 0;
     foreach my $rc (@{$rcs}){
 	$rc->start(1) if ($rc->start < 0); #if the region lies outside the boundaries of the slice
@@ -285,7 +285,6 @@ sub _add_coverage_information{
 	$start = $rc->end - 1;
     }
     substr($$reference_sequence, $start, ($self->length - $start) ,'~' x ($self->length - $start)) if ($self->length -1 > $start); 
-    $$reference_sequence = reverse($$reference_sequence) if ($self->strand == -1);
 }
 
 
