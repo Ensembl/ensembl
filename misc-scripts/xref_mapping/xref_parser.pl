@@ -109,7 +109,9 @@ sub usage {
 
   -drop_db         Drop the xref-database without user interaction
 
-  -download_path   Directory into which to download files. Default is current directory.
+  -download_path   Directory into which to download files (default is the current directory)
+
+  -unzip            Decompress gzipped files (default is to use compressed files)
 
 EOF
 
