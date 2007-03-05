@@ -67,7 +67,7 @@ sub get_desc{
 
   local $/ = "//";
 
-  my $desc_io = $self->get_filehandle( $dir . '/' . $name . '.data' );
+  my $desc_io = $self->get_filehandle( $dir . '/' . $name . '.data.gz' );
 
   if ( !defined $desc_io ) {
     print "ERROR: Can't open $dir/$name.data\n";
@@ -81,7 +81,9 @@ sub get_desc{
     (my $id) = $_ =~ /ID\s+(\S+)/;
     (my $descrip) = $_ =~ /TITLE\s+(.+)\n/;
 
-    $geneid_2_desc{$id} = $descrip;
+    if ( defined $id && defined $descrip ) {
+        $geneid_2_desc{$id} = $descrip;
+    }
     
   }
 
