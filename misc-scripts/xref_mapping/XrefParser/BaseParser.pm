@@ -32,7 +32,7 @@ my (
     $user,         $pass,    $create,
     $release,      $cleanup, $deletedownloaded,
     $skipdownload, $drop_db, $checkdownload,
-    $dl_path,      $compressed
+    $dl_path,      $unzip
 );
 
 # --------------------------------------------------------------------------------
@@ -46,7 +46,7 @@ sub run
         my $sourcesr,    $skipdownload,     $checkdownload,
         $create,         $release,          $cleanup,
         $drop_db,        $deletedownloaded, $dl_path,
-        my $notsourcesr, $compressed
+        my $notsourcesr, $unzip
     ) = @_;
 
   $base_dir = $dl_path if $dl_path;
@@ -207,7 +207,7 @@ sub run
     if ($checkdownload) {
         my $check_file = $dir . '/' . $file;
 
-        if ( !$compressed ) { $check_file =~ s/\.(gz|Z)$// }
+        if ($unzip) { $check_file =~ s/\.(gz|Z)$// }
 
         print "Checking for file '$check_file'\n";
 
@@ -217,7 +217,7 @@ sub run
 
             $skipdownload = 1;
 
-            if ( !$compressed ) { $file =~ s/\.(gz|Z)$// }
+            if (!$unzip ) { $file =~ s/\.(gz|Z)$// }
         } else {
             print "File '$check_file' does not exist.\n"
               . "Scheduling '$dir/$file' for download...\n";
@@ -279,7 +279,7 @@ sub run
         # automatically uncompressed it (it shouldn't have, is this an
         # historical artifact? (ak)).
 
-        if ( !$compressed && ( $file =~ /\.(gz|Z)$/ ) ) {
+        if ( $unzip && ( $file =~ /\.(gz|Z)$/ ) ) {
             print "Uncompressing '$dir/$file' using 'gunzip'\n";
             system( "gunzip", "-f", $dir . '/' . $file );
         }
@@ -291,10 +291,10 @@ sub run
         }
       }
 
-      if ( !$compressed ) {
-        $file =~ s/\.(gz|Z)$//;    # If skipdownload set this will
-                                   # not have been done yet.
-                                   # If it has, no harm done
+      if ($unzip) {
+          $file =~ s/\.(gz|Z)$//;    # If skipdownload set this will
+                                     # not have been done yet.
+                                     # If it has, no harm done
       }
 
       if ($file_from_archive) {

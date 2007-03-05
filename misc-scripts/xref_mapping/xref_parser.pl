@@ -9,8 +9,10 @@ my (
     @sources,          $skipdownload,     $checkdownload,
     $create,           $release,          $cleanup,
     $drop_existing_db, $deletedownloaded, $dl_path,
-    @notsource, $compressed
+    @notsource,        $unzip
 );
+
+$unzip = 0;    # Do not decompress gzipped files by default
 
 GetOptions(
     'dbuser|user=s'  => \$user,
@@ -21,18 +23,18 @@ GetOptions(
     'species=s'      => \@species,
     'source=s'       => \@sources,
     'download_dir=s' => \$dl_path,
-    'skipdownload'   => \$skipdownload,     # skips all downloads
-    'checkdownload!' => \$checkdownload,    # don't download if exists
+    'skipdownload'   => \$skipdownload,     # Skips all downloads
+    'checkdownload!' => \$checkdownload,    # Don't download if exists
     'create'         => \$create,
     'setrelease=s'   => \$release,
     'cleanup'        => \$cleanup,
     'notsource=s'    => \@notsource,
     'drop_db|dropdb!' =>
-      \$drop_existing_db,    # drops xref db without user interaction
+      \$drop_existing_db,    # Drop xref db without user interaction
     'delete_downloaded' => \$deletedownloaded,
     'download_path=s'   => \$dl_path,
-    'compressed' => \$compressed,   # don't force decompression of files
-    'help' => sub { usage(); exit(0); }
+    'unzip' => \$unzip,                   # Force decompression of files
+    'help'  => sub { usage(); exit(0); }
 );
 
 @species = split(/,/,join(',',@species));
@@ -53,7 +55,7 @@ XrefParser::BaseParser::run(
     $release,          $cleanup,
     $drop_existing_db, $deletedownloaded,
     $dl_path,          \@notsource,
-    $compressed
+    $unzip
 );
 
 # --------------------------------------------------------------------------------
