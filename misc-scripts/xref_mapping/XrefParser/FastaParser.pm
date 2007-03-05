@@ -14,7 +14,7 @@ use base qw( XrefParser::BaseParser );
 
 sub run {
 
-  my ($self, $file, $source_id, $species_id) = @_;
+  my ($self, $source_id, $species_id, $file) = @_;
   
   my $sio = Bio::SeqIO->new(-format=>'fasta' , -file=>$file );
   my $species_tax_id = $self->get_taxonomy_from_species_id($species_id);

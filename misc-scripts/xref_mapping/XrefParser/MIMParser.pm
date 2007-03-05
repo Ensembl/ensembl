@@ -23,9 +23,11 @@ if (!defined(caller())) {
 sub run {
 
   my $self = shift if (defined(caller(1)));
-  my $file = shift;
+
   my $general_source_id = shift;
   my $species_id = shift;
+  my $file = shift;
+
   my %old_to_new;
   my %removed;
   my $source_id;

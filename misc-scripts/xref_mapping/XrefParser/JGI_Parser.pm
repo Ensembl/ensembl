@@ -13,7 +13,7 @@ use base qw( XrefParser::BaseParser );
 
 sub run {
 
-  my ($self, $file, $source_id, $species_id) = @_;
+  my ($self, $source_id, $species_id, $file) = @_;
 
   
   my $source_name = $self->get_source_name_for_source_id ($source_id) ;  

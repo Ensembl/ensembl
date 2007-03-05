@@ -17,7 +17,7 @@ my $dep_sth;
 
 sub run {
 
-  my ($self, $file, $source_id, $species_id) = @_;
+  my ($self, $source_id, $species_id, $file) = @_;
 
   print STDERR "WORMPep source = $source_id\tspecies = $species_id\n";
 

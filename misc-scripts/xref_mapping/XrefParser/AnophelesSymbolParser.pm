@@ -14,7 +14,7 @@ use base qw( XrefParser::BaseParser );
 
 sub run {
 
-  my ($self, $file, $source_id, $species_id) = @_;
+  my ($self, $source_id, $species_id, $file) = @_;
 
   next if (/^File:/);   # skip header
 

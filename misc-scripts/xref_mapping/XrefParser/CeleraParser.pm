@@ -16,7 +16,7 @@ use base qw( XrefParser::BaseParser );
 
 sub run {
 
-  my ($self, $file, $source_id, $species_id) = @_;
+  my ($self, $source_id, $species_id, $file) = @_;
 
   my $celera_gene_source_id = $self->get_source_id_for_source_name('Celera_Gene');
 

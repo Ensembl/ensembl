@@ -11,7 +11,7 @@ use base qw( XrefParser::BaseParser );
 
 sub run {
 
-  my ($self, $file, $source_id, $species_id) = @_;
+  my ($self, $source_id, $species_id, $file) = @_;
 
   my $hugo_io = $self->get_filehandle($file);
 

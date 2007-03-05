@@ -23,9 +23,9 @@ if (!defined(caller())) {
 sub run {
 
   my $self = shift if (defined(caller(1)));
-  my $file = shift;
   my $source_id = shift;
   my $species_id = shift;
+  my $file = shift;
 
   if(!defined($source_id)){
     $source_id = XrefParser::BaseParser->get_source_id_for_filename($file);

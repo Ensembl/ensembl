@@ -10,7 +10,7 @@ my $syn_sth;
 
 sub run {
 
-  my ($self, $file, $source_id, $species_id) = @_;
+  my ($self, $source_id, $species_id, $file) = @_;
 
   my @xrefs = $self->create_xrefs($source_id, $species_id, $file);
 

@@ -169,7 +169,7 @@ sub run
 	    print "Parsing local file '$local_file' with $parser\n";
 	    eval "require XrefParser::$parser";
 	    my $new = "XrefParser::$parser"->new();
-	    if($new->run($local_file, $source_id, $species_id)){
+	    if($new->run($source_id, $species_id, $local_file)){
 	      $summary{$parser}++;
 	    }
 	    else{
@@ -335,7 +335,7 @@ sub run
       print "Parsing '" . join( "', '", @new_file ) . "' with $parser\n";
       eval "require XrefParser::$parser";
       my $new = "XrefParser::$parser"->new();
-      if ( $new->run( $dir . '/' . $new_file[0], $source_id, $species_id ) )
+      if ( $new->run( $source_id, $species_id, $dir . '/' . $new_file[0] ) )
       {
           $summary{$parser}++;
       }
@@ -992,10 +992,9 @@ sub md5sum
     open( FILE, $file );
     binmode(FILE);
 
-    my $checksum = sprintf( "%d/%s",
-        [ stat FILE ]->[7],
-        substr( Digest::MD5->new()->addfile(*FILE)->hexdigest(), 0, 6 )
-    );
+    my $checksum = sprintf( "%s/%d",
+        substr( Digest::MD5->new()->addfile(*FILE)->hexdigest(), 0, 6 ),
+        [ stat FILE ]->[7] );
 
     close(FILE);
 
