@@ -974,6 +974,10 @@ sub dbi
 
 # --------------------------------------------------------------------------------
 
+# Compute a checksum of a file.  This checksum is not a straight MD5
+# hex digest, but instead the file size combined with the first six
+# characters of the MD5 hex digest.  This is to save space.
+
 sub md5sum
 {
     my $file = shift;
@@ -988,11 +992,14 @@ sub md5sum
     open( FILE, $file );
     binmode(FILE);
 
-    my $md5 = Digest::MD5->new->addfile(*FILE)->hexdigest();
+    my $checksum = sprintf( "%d/%s",
+        [ stat FILE ]->[7],
+        substr( Digest::MD5->new()->addfile(*FILE)->hexdigest(), 0, 6 )
+    );
 
     close(FILE);
 
-    return $md5;
+    return $checksum;
 }
 
 # --------------------------------------------------------------------------------
