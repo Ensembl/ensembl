@@ -337,6 +337,7 @@ sub remove_all_DASFeatureFactories {
 sub _each_DASFeatureFactory{
    my ($self) = @_;
 
+#   warn "DAS:" , @{$self->{'_das_ff'}||[]}
    return @{$self->{'_das_ff'}||[]}
 }
 

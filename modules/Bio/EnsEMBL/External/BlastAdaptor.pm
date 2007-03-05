@@ -161,9 +161,7 @@ WHERE  hit_id = ? ";
 
 #--- HSPS ---
 
-our $SQL_HSP_STORE = "
-INSERT INTO blast_hsp%s ( object, ticket, chr_name, chr_start, chr_end )
-VALUES                  ( ? , ? , ? , ? , ? )";
+our $SQL_HSP_STORE = "INSERT INTO blast_hsp%s ( object, ticket, chr_name, chr_start, chr_end ) VALUES (?,?,?,?,?)";
 
 our $SQL_HSP_UPDATE = "
 UPDATE  blast_hsp%s
@@ -259,10 +257,15 @@ sub ticket{
 sub store {
   my $self = shift;
   my $obj = shift;
+#warn ".>1";
   return $self->store_search_multi( $obj, @_ ) if $obj->isa("Bio::Tools::Run::SearchMulti");
+#warn ".>2";
   return $self->store_result(       $obj, @_ ) if $obj->isa("Bio::Search::Result::ResultI");
+#warn ".>3";
   return $self->store_hit(          $obj, @_ ) if $obj->isa("Bio::Search::Hit::HitI"      );
+#warn ".>4";
   return $self->store_hsp(          $obj, @_ ) if $obj->isa("Bio::Search::HSP::HSPI"      );
+#warn ".>5";
   $self->throw( "Do not know how to store objects of type ".ref($obj) );
 }
 
@@ -609,6 +612,7 @@ sub store_hsp{
   my $chr_name  = '';
   my $chr_start = 0;
   my $chr_end   = 0;
+#warn ">...................................S";
   if( my $genomic = $hsp->genomic_hit ){
     $chr_name  = $genomic->seq_region_name;
     $chr_start = $genomic->start;
@@ -620,21 +624,38 @@ sub store_hsp{
     $rv = $sth->execute( $id ) ||  $self->throw( $sth->errstr );
     $sth->finish;
   }
+#warn ">...................................M";
   if( $rv < 1 ){ # Insert
+#warn "INSERT ", time();
     my $use_date = $hsp->use_date() || $hsp->use_date($self->use_date('HSP'));
+#warn time(),"  ",sprintf $SQL_HSP_STORE, $use_date;
     my $sth = $dbh->prepare( sprintf $SQL_HSP_STORE, $use_date );
     my @bound = ( $frozen, $ticket, $chr_name,  $chr_start, $chr_end );
-    $sth->execute( @bound ) || $self->throw( $sth->errstr );
+#warn time(),"  ",length($frozen)," $ticket, $chr_name,  $chr_start, $chr_end";
+#warn $sth;
+    my $T = $sth->execute( @bound );
+#warn "EXECUTED.............";
+#warn $sth->errstr;
+    $T || $self->throw( $sth->errstr );
+#warn " ........................ .";
     my $id = $dbh->{mysql_insertid};
     $hsp->token( join( '!!', $id, $use_date ) );
+#warn "FINISHING";
     $sth->finish;
   }
   else{ # Update
+#warn "UPDATE";
     my $sth = $dbh->prepare( sprintf $SQL_HSP_UPDATE, $use_date );
+#warn sprintf $SQL_HSP_UPDATE, $use_date;
     my @bound = ( $frozen, $ticket, $chr_name,  $chr_start, $chr_end, $id );
-    $sth->execute( @bound ) || $self->throw( $sth->errstr );
+#warn length($frozen)," $ticket, $chr_name,  $chr_start, $chr_end, $id";
+    my $T = $sth->execute( @bound );
+#warn $T;
+    $T || $self->throw( $sth->errstr );
     $sth->finish;
+#warn $sth->errstr;
   }
+#warn ">...................................E";
   return $hsp->token();
 }
 
@@ -933,7 +954,7 @@ WHERE  update_time < SUBDATE( NOW(), INTERVAL $days DAY ) /;
     my @time = split( /[-:\s]/, $update_time );
     
     my $epoch_then = timelocal( $time[5], $time[4],   $time[3], 
-				$time[2], $time[1]-1, $time[0] - 1900 );
+                $time[2], $time[1]-1, $time[0] - 1900 );
     my $secs_old = time() - $epoch_then;
     my $days_old = $secs_old / ( 60 * 60 * 24 );
     if( $days_old > $days ){
@@ -943,10 +964,10 @@ WHERE  update_time < SUBDATE( NOW(), INTERVAL $days DAY ) /;
       $sth_drop->execute || $self->throw( $sth_drop->errstr );
       my( $se,$mi,$hr,$da,$mo,$yr ) = (localtime)[0,1,2,3,4,5];
       my $now = sprintf( "%4d-%2d-%2d %2d:%2d:%2d", 
-			 $yr+1900,$mo+1,$da,$hr,$mi,$se );
+             $yr+1900,$mo+1,$da,$hr,$mi,$se );
       $sth_log->execute
         ('DELETED',$now,$num_rows,$table_name) ||
-	  $self->throw( $sth_log->errstr );
+      $self->throw( $sth_log->errstr );
     }
   }
 
