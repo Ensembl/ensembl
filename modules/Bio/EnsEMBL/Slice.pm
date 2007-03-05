@@ -2611,6 +2611,17 @@ sub get_all_Haplotypes {
 }
 
 
+## Do the right thing (TM)! js5
+
+sub get_all_DASFeatures_dsn {
+  my ($self, $source_type, $dsn) = @_;
+  if(!$self->adaptor()) {
+    warning("Cannot retrieve features without attached adaptor");
+    return [];
+  }
+  my @X = grep { $_->adaptor->dsn eq $dsn } $self->adaptor()->db()->_each_DASFeatureFactory;
+  return [ $X[0]->fetch_all_Features( $self, $source_type ) ];
+}
 
 =head2 get_all_DASFeatures
 

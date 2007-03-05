@@ -846,7 +846,7 @@ sub get_all_DAS_Features{
   my $Gene = $GeneAdaptor->fetch_by_translation_stable_id($self->stable_id) || return;
   my $slice = $Gene->feature_Slice;
  
-  return $self->SUPER::get_all_DAS_Features($slice);
+#  return $self->SUPER::get_all_DAS_Features($slice);
 
   foreach my $dasfact( @{$self->get_all_DASFactories} ){
     my $dsn = $dasfact->adaptor->dsn;
@@ -865,7 +865,7 @@ sub get_all_DAS_Features{
 	next;
     } else{ # Get fresh data
 #	my $featref = ($type eq 'ensembl_location') ?  ($dasfact->fetch_all_by_Slice( $slice ))[0] : $dasfact->fetch_all_by_ID( $self );
-	my $featref = ($type =~ /^ensembl_location/) ?  ($dasfact->fetch_all_Features( $slice, $type ))[0] : $dasfact->fetch_all_by_ID( $self );
+	my $featref = ($type =~ /^ensembl_location/) ?  ($dasfact->fetch_all_Features( $slice, $type ))[0] : ($dasfact->fetch_all_by_ID( $self ))[0];
 	$self->{_das_features}->{$key} = $featref;
 	$das_features{$name} = $featref;
     }
