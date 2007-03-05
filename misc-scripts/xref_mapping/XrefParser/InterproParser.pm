@@ -50,7 +50,7 @@ sub run {
     ("INSERT INTO xref (accession,version,label,description,source_id,species_id) VALUES(?,?,?,?,?,?)");
   
   my $get_xref_sth = XrefParser::BaseParser->dbi->prepare
-    ("select xref_id from xref where accession = ? and source_id = ?");
+    ("SELECT xref_id FROM xref WHERE accession = ? AND source_id = ?");
 
 
   my $dir = dirname($file);
@@ -59,7 +59,7 @@ sub run {
   my %description;
   my %pfam;
 
-  my $xml_io = $self->get_filehandle( $dir . "/interpro.xml" );
+  my $xml_io = $self->get_filehandle($file);
 
   if ( !defined $xml_io ) {
     print "ERROR: Can't open hugo interpro file $dir/interpro.xml\n";
@@ -73,48 +73,54 @@ sub run {
   
   my %count;
   local $/ = "</interpro>";
- 
 
   my $last = "";
   my $i =0;
 
   while ( $_ = $xml_io->getline() ) {
-    my $interpro;
-    my $short_name;
-    my $name;
-    
-    ($interpro) = $_ =~ /interpro id\=\"(\S+)\"/;
-    ($short_name) = $_ =~ /short_name\=\"(\S+)\"/;
-    ($name) = $_ =~ /\<name\>(.*)\<\/name\>/;
-	  
-    if($interpro){
-#      print $interpro."\n";
-      if(!get_xref($get_xref_sth, $interpro, $source_id)){
-	$count{INTERPRO}++;
-	if(!$add_xref_sth->execute($interpro,'',$short_name, $name,$source_id,$species_id)){
-	  print "Problem adding ".$interpro."\n";
-	  return 1; # 1 is an error
-	}
-      }
+    my ($interpro)   = $_ =~ /interpro id="(\S+)"/;
+    my ($short_name) = $_ =~ /short_name="(\S+)"/;
+    my ($name)       = $_ =~ /<name>(.*)<\/name>/;
 
-      my ($members) = $_ =~ /<member_list>(.+)<\/member_list\>/s; 
-      
-      while($members =~ /db="(PROSITE|PFAM|PRINTS|PREFILE|PROFILE|TIGRFAMs|PIRSF|SMART)"\s+dbkey="(\S+)"/cgm ) {
-	my ( $db_type, $id ) =  ( $1, $2 );
-	if(!get_xref($get_interpro_sth, $interpro,$id)){
-	  $add_interpro_sth->execute($interpro,$id);
-	  $count{$db_type}++;
-	}
-      }
+    if ($interpro) {
+        #      print $interpro."\n";
+        if ( !get_xref( $get_xref_sth, $interpro, $source_id ) ) {
+            $count{INTERPRO}++;
+            if (
+                !$add_xref_sth->execute(
+                    $interpro, '',         $short_name,
+                    $name,     $source_id, $species_id
+                )
+              )
+            {
+                print "Problem adding '$interpro'\n";
+                return 1;    # 1 is an error
+            }
+        }
+
+        my ($members) = $_ =~ /<member_list>(.+)<\/member_list>/s;
+
+        while ( $members =~
+/db="(PROSITE|PFAM|PRINTS|PREFILE|PROFILE|TIGRFAMs|PIRSF|SMART)"\s+dbkey="(\S+)"/cgm
+          )
+        {
+            my ( $db_type, $id ) = ( $1, $2 );
+
+            if ( !get_xref( $get_interpro_sth, $interpro, $id ) ) {
+                $add_interpro_sth->execute( $interpro, $id );
+                $count{$db_type}++;
+            }
+        }
     }
   }
 
   $xml_io->close();
 
-  for my $db ( keys %count ) {
-    print "\t".$count{$db}." $db loaded.\n";
-  }
-  return 0;
+    for my $db ( keys %count ) {
+        print "\t" . $count{$db} . " $db loaded.\n";
+    }
+
+    return 0;
 }
 
 sub get_xref{
