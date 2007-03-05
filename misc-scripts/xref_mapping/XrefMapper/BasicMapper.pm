@@ -2559,7 +2559,7 @@ GSQL
       $primary_sth->execute("Transcript", $transcript_id ) || die "execute failed";
       $primary_sth->bind_columns(\$xref_id, \$qid, \$tid, \$ex_db_id);
       while($primary_sth->fetch()){
-	if($level_db{$xref_id}){ 	
+	if($level{$ex_db_id}){ 	
 	  push @transcript_xrefs, $xref_id;
 	  $percent_id{$xref_id}  = $qid + $tid;
 	  $level_db{$xref_id}  = $level{$ex_db_id};
