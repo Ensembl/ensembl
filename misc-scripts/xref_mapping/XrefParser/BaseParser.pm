@@ -166,8 +166,8 @@ sub run
         $file_cs = md5sum($local_file);
 	if(defined($file_cs)){
 	  if (!defined $checksum || $checksum ne $file_cs) {
-	    print "Checksum for $file does not match, parsing\n";
-	    print "Parsing local file $local_file with $parser\n";
+	    print "Checksum for '$file' does not match, parsing\n";
+	    print "Parsing local file '$local_file' with $parser\n";
 	    eval "require XrefParser::$parser";
 	    my $new = "XrefParser::$parser"->new();
 	    if($new->run($local_file, $source_id, $species_id)){
@@ -178,7 +178,7 @@ sub run
 	    }
 	  }
 	  else{
-	    print "Ignoring $file as checksums match\n";
+	    print "Ignoring '$file' as checksums match\n";
 	  }
 	}
 	else{
@@ -212,12 +212,12 @@ sub run
         print "Checking for file '$check_file'\n";
 
         if ( -e "$check_file" ) {
-            print "SKIPPING $file because file "
+            print "SKIPPING '$file' because file "
               . "'$check_file' already exists\n";
 
             $skipdownload = 1;
 
-            if (!$unzip ) { $file =~ s/\.(gz|Z)$// }
+            if ($unzip ) { $file =~ s/\.(gz|Z)$// }
         } else {
             print "File '$check_file' does not exist.\n"
               . "Scheduling '$dir/$file' for download...\n";
@@ -243,7 +243,10 @@ sub run
 	  rmtree $dir;
 	}
 
-	mkdir $dir if (!-e $dir);
+        if ( !-d $dir ) {
+            mkdir $dir
+              or croak("Failed to create directory '$dir': $!");
+        }
 
 	$last_type = $type;
 
@@ -271,9 +274,10 @@ sub run
 	  }
 	  $num_attempts++;
 	}
-	if($missing){
-	  croak("Could not get $type file $file tried 5 times but failed");
-	}
+        if ($missing) {
+            croak(  "Could not get '$type' file '$file', "
+                  . "tried 5 times but failed" );
+        }
 
         # If the file is compressed, the FTP server may or may not have
         # automatically uncompressed it (it shouldn't have, is this an
@@ -310,7 +314,7 @@ sub run
 	if (!defined $checksum || $checksum ne $file_cs) {
 	  if (-s "$dir/$file") {
 	    $parse =1;
-	    print "Checksum for $file does not match, parsing\n";
+	    print "Checksum for '$file' does not match, parsing\n";
 	    
 	    # Files from sources "Uniprot/SWISSPROT" and "Uniprot/SPTREMBL" are
 	    # all parsed with the same parser
@@ -330,7 +334,7 @@ sub run
     
     if($parse and defined($new_file[0]) and defined($file_cs)){
 
-      print "Parsing ".join(' ',@new_file)." with $parser\n";
+      print "Parsing '" . join( "', '", @new_file ) . "' with $parser\n";
       eval "require XrefParser::$parser";
       my $new = "XrefParser::$parser"->new();
       if ( $new->run( $dir . '/' . $new_file[0], $source_id, $species_id ) )
@@ -349,9 +353,10 @@ sub run
       
     }
     elsif(!$dsn && !$empty && defined($new_file[0])){
-      print "Ignoring ".join(' ',@new_file)." as checksums match\n";
-    }
-
+        print "Ignoring '"
+          . join( "', '", @new_file )
+          . "' as checksums match\n";
+        }
   }
   print "---------------------------------------------------------\n";
   print "Summary of status\n";
@@ -971,24 +976,25 @@ sub dbi
 
 # --------------------------------------------------------------------------------
 
-sub md5sum {
+sub md5sum
+{
+    my $file = shift;
 
-  my $file = shift;
+    if ( !-f $file ) {
+        print "\n\nWarning: Can not find file '$file' "
+          . "-- you have to download it again.\n\n";
+        print "SKIPPING '$file'\n";
+        return undef;
+    }
 
-  unless (-e $file) {
-	print "\n\nWarning: can't find file $file - you have to download it again. \n\n" ; 
-        print " SKIPPING $file\n" ; 
-#        sleep(10) ; 	
-	return undef; 
-  }
+    open( FILE, $file );
+    binmode(FILE);
 
-  open(FILE, $file);
-  binmode(FILE);
-  my $md5 = Digest::MD5->new->addfile(*FILE)->hexdigest();
-  close(FILE);
+    my $md5 = Digest::MD5->new->addfile(*FILE)->hexdigest();
 
-  return $md5;
+    close(FILE);
 
+    return $md5;
 }
 
 # --------------------------------------------------------------------------------
@@ -1465,18 +1471,19 @@ sub get_sub_list{
 
 # Set release for a source.
 
-sub set_release {
+sub set_release
+{
+    my ( $release, $source_id ) = @_;
 
-  my ($release, $source_id) = @_;
+    my $dbi = dbi();
 
-  my $dbi = dbi();
+    my $sth =
+      $dbi->prepare(
+        "UPDATE source SET source_release=? WHERE source_id=?");
 
-  my $sth = $dbi->prepare("UPDATE source SET source_release=? WHERE source_id=?");
+    print "Setting release to '$release' for source ID '$source_id'\n";
 
-  $sth->execute($release, $source_id);
-
-  print "Set release to $release for source ID $source_id\n";
-
+    $sth->execute( $release, $source_id );
 }
 
 # --------------------------------------------------------------------------------
