@@ -132,7 +132,7 @@ sub run
 
     my $parse = 0;
     my $empty = 0;
-    my $file_cs=0;
+    my $file_cs = "";
     my $type = $name;
     my @new_file=();
     $dir = $base_dir . "/" . sanitise($type);
@@ -162,10 +162,9 @@ sub run
       my ($file) = $urls =~ /.*\/(.*)/;
       if ($urls =~ /^LOCAL:(.*)/i) {
 	my $local_file = $1;
-	#$file_cs = md5sum("$dir/$file");
-        $file_cs = md5sum($local_file);
+        $file_cs .= ':' . md5sum($local_file);
 	if(defined($file_cs)){
-	  if (!defined $checksum || $checksum ne $file_cs) {
+	  if (!defined $checksum || index($checksum, $file_cs) == -1) {
 	    print "Checksum for '$file' does not match, parsing\n";
 	    print "Parsing local file '$local_file' with $parser\n";
 	    eval "require XrefParser::$parser";
@@ -174,7 +173,7 @@ sub run
 	      $summary{$parser}++;
 	    }
 	    else{
-	      update_source($dbi, $source_url_id, $file_cs, $file);
+                update_source( $dbi, $source_url_id, $file_cs, $file );
 	    }
 	  }
 	  else{
@@ -309,11 +308,11 @@ sub run
 
       # compare checksums and parse/upload if necessary
       # need to check file size as some .SPC files can be of zero length
-      $file_cs = md5sum("$dir/$file");
+      $file_cs .= ':' . md5sum("$dir/$file");
       if(defined($file_cs)){
-	if (!defined $checksum || $checksum ne $file_cs) {
+	if (!defined $checksum || index($checksum, $file_cs) == -1) {
 	  if (-s "$dir/$file") {
-	    $parse =1;
+	    $parse = 1;
 	    print "Checksum for '$file' does not match, parsing\n";
 	    
 	    # Files from sources "Uniprot/SWISSPROT" and "Uniprot/SPTREMBL" are
@@ -332,8 +331,7 @@ sub run
 
     }
     
-    if($parse and defined($new_file[0]) and defined($file_cs)){
-
+    if ( $parse and @new_file and defined $file_cs ) {
       print "Parsing '" . join( "', '", @new_file ) . "' with $parser\n";
       eval "require XrefParser::$parser";
       my $new = "XrefParser::$parser"->new();
