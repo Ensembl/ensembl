@@ -315,6 +315,67 @@ sub reverse_complement {
 
 
 
+=head2 transform
+
+  Arg  1     : String $coordinate_system_name
+  Arg [2]    : String $coordinate_system_version
+  Example    : $feature = $feature->transform('contig');
+               $feature = $feature->transform('chromosome', 'NCBI33');
+  Description: Moves this AlignFeature to the given coordinate system.
+               If the feature cannot be transformed to the destination 
+               coordinate system undef is returned instead.
+  Returntype : Bio::EnsEMBL::BaseAlignFeature;
+  Exceptions : wrong parameters
+  Caller     : general
+  Status     : Medium Risk
+             : deprecation needs to be removed at some time
+
+=cut
+
+sub transform {
+  my $self = shift;
+
+  # catch for old style transform calls
+  if( ref $_[0] eq 'HASH') {
+    deprecate("Calling transform with a hashref is deprecate.\n" .
+              'Use $feat->transfer($slice) or ' .
+              '$feat->transform("coordsysname") instead.');
+    my (undef, $new_feat) = each(%{$_[0]});
+    return $self->transfer($new_feat->slice);
+  }
+
+  my $new_feature = $self->SUPER::transform( @_ );
+  if( ! defined $new_feature or 
+      $new_feature->length != $self->length) {
+    my @segments = $self->project( @_ );
+
+    return undef if( ! @segments );  
+
+    my @ungapped;
+    foreach my $f ($self->ungapped_features) {
+      $f = $f->transform( @_ );
+      if (defined $f) {
+        push @ungapped, $f;
+      } else {
+        warning("Failed to transform alignment feature; " .
+                "ungapped component could not be transformed");
+        return undef;
+      }
+    }
+
+    eval {     
+      $new_feature = $self->new(-features => \@ungapped );
+    };
+    if ($@) {
+      warning($@);
+      return undef;
+    }
+  }
+
+  return $new_feature;
+}
+
+
 =head2 _parse_cigar
 
   Args       : none

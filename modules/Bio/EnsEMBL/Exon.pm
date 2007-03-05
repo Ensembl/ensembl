@@ -437,7 +437,9 @@ sub transform {
     my @new_features;
     for my $old_feature ( @{$self->{'_supporting_evidence'}} ) {
       my $new_feature = $old_feature->transform( @_ );
-      push( @new_features, $new_feature );
+      if (defined $new_feature) {
+        push( @new_features, $new_feature );
+      }
     }
     $new_exon->{'_supporting_evidence'} = \@new_features;
   }

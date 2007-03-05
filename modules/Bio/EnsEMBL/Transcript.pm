@@ -1318,7 +1318,7 @@ sub get_all_translateable_Exons {
     # Adjust to translation start if this is the start exon
     if ($ex == $start_exon ) {
       if ($t_start < 1 or $t_start > $length) {
-        warn("WARN: Translation start '$t_start' is outside exon $ex length=$length");
+        warning("WARN: Translation start '$t_start' is outside exon $ex length=$length");
 	return [];
       }
       $adjust_start = $t_start - 1;
@@ -1802,7 +1802,7 @@ sub transform {
     }
 
     if( $order_broken && !$ignore_order ) {
-      warn( "Order of exons broken in transform of ".$self->dbID() ); 
+      warning( "Order of exons broken in transform of ".$self->dbID() ); 
       return undef;
     }
 
@@ -1834,7 +1834,9 @@ sub transform {
     my @new_features;
     for my $old_feature ( @{$self->{'_supporting_evidence'}} ) {
       my $new_feature = $old_feature->transform( @_ );
-      push( @new_features, $new_feature );
+      if (defined $new_feature) { 
+        push @new_features, $new_feature;
+      }
     }
     $new_transcript->{'_supporting_evidence'} = \@new_features;
   }
