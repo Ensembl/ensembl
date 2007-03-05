@@ -63,7 +63,7 @@ sub get_desc{
   my $dir = dirname($file);
 
   (my $name) = $file  =~ /\/(\w+)\.seq\.uniq/;
-  print $name."\n";
+  #print $name."\n";
 
   local $/ = "//";
 
