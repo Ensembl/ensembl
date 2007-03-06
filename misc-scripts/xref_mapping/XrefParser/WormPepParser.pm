@@ -43,7 +43,6 @@ sub run {
     my ($transcript, $wb, $display)  = (split(/\t/,substr($_,1)))[0,1,2];
 
     # reuse or create xref
-    my $xref_id;
     $xref_sth->execute($wb);
     my $xref_id = ($xref_sth->fetchrow_array())[0];
     if (!$xref_id) {
@@ -55,7 +54,6 @@ sub run {
     $d_count++;
 
     if(defined($display) and length($display) > 0 ){
-      my $xref_id2;
       $xref_sth2->execute($display);
       my $xref_id2 = ($xref_sth2->fetchrow_array())[0];
       if (!$xref_id2) {
