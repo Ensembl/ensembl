@@ -31,6 +31,7 @@ sub run {
   my $source_id = shift;
   my $species_id = shift;
   my $file = shift;
+  my $release_file = shift;
 
   print STDERR "source = $source_id\tspecies = $species_id\n";
   if(!defined($source_id)){
@@ -51,7 +52,6 @@ sub run {
   
   my $get_xref_sth = XrefParser::BaseParser->dbi->prepare
     ("SELECT xref_id FROM xref WHERE accession = ? AND source_id = ?");
-
 
   my $dir = dirname($file);
 
@@ -118,6 +118,26 @@ sub run {
 
     for my $db ( keys %count ) {
         print "\t" . $count{$db} . " $db loaded.\n";
+    }
+
+    # Parse the second file that we got.  This is assumed to be the HTML
+    # file that will contain the release information.
+
+    my $release;
+    my $release_io = $self->get_filehandle($release_file);
+    while ( defined( my $line = $release_io->getline() ) ) { 
+        if ($line =~ /Release ([0-9.]+)/) {
+            $release = $1;
+            last;
+        }
+    }
+    $release_io->close();
+
+    if ( defined $release ) {
+        print "Release is '$release'\n";
+        $self->set_release( $release, $source_id );
+    } else {
+        print "Did not find release info in '$release_file'\n";
     }
 
     return 0;
