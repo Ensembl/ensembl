@@ -40,6 +40,8 @@ my (
 
 sub run
 {
+    my $self = shift;
+
     (
         $host,           $port,             $dbname,
         $user,           $pass,             my $speciesr,
@@ -330,9 +332,16 @@ sub run
 
     if ( $parse and @new_file and defined $file_cs ) {
       print "Parsing '" . join( "', '", @new_file ) . "' with $parser\n";
+
       eval "require XrefParser::$parser";
       my $new = "XrefParser::$parser"->new();
-      if ( $new->run( $source_id, $species_id, $dir . '/' . $new_file[0] ) )
+
+      if (
+          $new->run(
+              $source_id, $species_id,
+              map( $dir . '/' . $_, @new_file )
+          )
+        )
       {
           $summary{$parser}++;
       }
@@ -341,9 +350,11 @@ sub run
       update_source( $dbi, $source_url_id, $file_cs,
           $dir . '/' . $new_file[0] );
       
-      # set release if specified
-      set_release($release, $source_id) if ($release);
-      
+      # Set release if specified
+      if ( defined $release ) {
+          $self->set_release( $release, $source_id );
+      }
+
       unlink("$dir/$new_file[0]") if ($cleanup);
       
     }
@@ -943,7 +954,8 @@ sub update_source
       . "upload_date=NOW() "
       . "WHERE source_url_id=$source_url_id";
 
-    # TODO release?
+    # The release is set by the individual parser by calling the
+    # inherited set_release() method.
 
     $dbi->prepare($sql)->execute() || croak( $dbi->errstr() );
 }
@@ -1467,6 +1479,7 @@ sub get_sub_list{
 
 sub set_release
 {
+    my $self = shift;
     my ( $release, $source_id ) = @_;
 
     my $dbi = dbi();
