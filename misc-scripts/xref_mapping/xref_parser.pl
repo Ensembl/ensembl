@@ -46,7 +46,9 @@ if ( !$user || !$host || !$dbname ) {
     exit(1);
 }
 
-XrefParser::BaseParser::run(
+my $base_parser = XrefParser::BaseParser->new();
+
+$base_parser->run(
     $host, ( defined $port ? $port : '3306' ),
     $dbname,           $user,
     $pass,             \@species,
