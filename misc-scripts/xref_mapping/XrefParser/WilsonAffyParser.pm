@@ -14,7 +14,7 @@ sub run {
 
   my @xrefs = $self->create_xrefs($source_id, $species_id, $file);
 
-  if(!defined(@xrefs)){
+  if(!@xrefs){
     return 1; #  1 error
   }
   # upload
