@@ -135,6 +135,7 @@ sub run
     my $parse = 0;
     my $empty = 0;
     my $file_cs = "";
+    my $cs;
     my $type = $name;
     my @new_file=();
     $dir = $base_dir . "/" . sanitise($type);
@@ -164,12 +165,12 @@ sub run
       my ($file) = $urls =~ /.*\/(.*)/;
       if ($urls =~ /^LOCAL:(.*)/i) {
 	my $local_file = $1;
-        if ( !defined( $file_cs = md5sum($local_file) ) ) {
+        if ( !defined( $cs = md5sum($local_file) ) ) {
             print "Download '$local_file'\n";
             $summary{$parser}++;
         }
 	else {
-          $file_cs = ':' . $file_cs;
+          $file_cs .= ':' . $cs;
 	  if (!defined $checksum || index($checksum, $file_cs) == -1) {
 	    print "Checksum for '$file' does not match, parsing\n";
 	    print "Parsing local file '$local_file' with $parser\n";
@@ -307,12 +308,12 @@ sub run
       # compare checksums and parse/upload if necessary
       # need to check file size as some .SPC files can be of zero length
 
-      if ( !defined( $file_cs = md5sum("$dir/$file") ) ) {
+      if ( !defined( $cs = md5sum("$dir/$file") ) ) {
           print "Download '$dir/$file'\n";
           $summary{$parser}++;
       }
       else {
-        $file_cs = ':' . $file_cs;
+        $file_cs .= ':' . $cs;
 	if (!defined $checksum || index($checksum, $file_cs) == -1) {
 	  if (-s "$dir/$file") {
 	    $parse = 1;
