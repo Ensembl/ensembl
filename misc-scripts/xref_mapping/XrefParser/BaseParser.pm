@@ -162,8 +162,12 @@ sub run
       my ($file) = $urls =~ /.*\/(.*)/;
       if ($urls =~ /^LOCAL:(.*)/i) {
 	my $local_file = $1;
-        $file_cs .= ':' . md5sum($local_file);
-	if(defined($file_cs)){
+        if ( !defined( $file_cs = md5sum($local_file) ) ) {
+            print "Download '$local_file'\n";
+            $summary{$parser}++;
+        }
+	else {
+          $file_cs = ':' . $file_cs;
 	  if (!defined $checksum || index($checksum, $file_cs) == -1) {
 	    print "Checksum for '$file' does not match, parsing\n";
 	    print "Parsing local file '$local_file' with $parser\n";
@@ -179,9 +183,6 @@ sub run
 	  else{
 	    print "Ignoring '$file' as checksums match\n";
 	  }
-	}
-	else{
-	  $summary{$parser}++;
 	}
 	next;
       }
@@ -208,19 +209,14 @@ sub run
 
         if ($unzip) { $check_file =~ s/\.(gz|Z)$// }
 
-        print "Checking for file '$check_file'\n";
+        print "Checking '$check_file'... ";
 
         if ( -e "$check_file" ) {
-            print "SKIPPING '$file' because file "
-              . "'$check_file' already exists\n";
-
+            print "found\n";
             $skipdownload = 1;
-
-            if ($unzip ) { $file =~ s/\.(gz|Z)$// }
+            if ($unzip) { $file =~ s/\.(gz|Z)$// }
         } else {
-            print "File '$check_file' does not exist.\n"
-              . "Scheduling '$dir/$file' for download...\n";
-
+            print "not found\n";
             $skipdownload = 0;
         }
     }
@@ -308,8 +304,13 @@ sub run
 
       # compare checksums and parse/upload if necessary
       # need to check file size as some .SPC files can be of zero length
-      $file_cs .= ':' . md5sum("$dir/$file");
-      if(defined($file_cs)){
+
+      if ( !defined( $file_cs = md5sum("$dir/$file") ) ) {
+          print "Download '$dir/$file'\n";
+          $summary{$parser}++;
+      }
+      else {
+        $file_cs = ':' . $file_cs;
 	if (!defined $checksum || index($checksum, $file_cs) == -1) {
 	  if (-s "$dir/$file") {
 	    $parse = 1;
@@ -325,12 +326,8 @@ sub run
 	  }
 	}
       }
-      else{
-	$summary{$parser}++;	
-      }
+    }   # foreach @urls
 
-    }
-    
     if ( $parse and @new_file and defined $file_cs ) {
       print "Parsing '" . join( "', '", @new_file ) . "' with $parser\n";
       eval "require XrefParser::$parser";
@@ -982,14 +979,7 @@ sub md5sum
 {
     my $file = shift;
 
-    if ( !-f $file ) {
-        print "\n\nWarning: Can not find file '$file' "
-          . "-- you have to download it again.\n\n";
-        print "SKIPPING '$file'\n";
-        return undef;
-    }
-
-    open( FILE, $file );
+    if ( !open( FILE, $file ) ) { return undef }
     binmode(FILE);
 
     my $checksum = sprintf( "%s/%d",
