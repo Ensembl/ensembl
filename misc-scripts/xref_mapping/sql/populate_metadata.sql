@@ -249,12 +249,12 @@ INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_d
 VALUES (1,7227,'ftp://ftp.ebi.ac.uk/pub/databases/integr8/uniprot/proteomes/17.D_melanogaster.dat.gz',now(),now(),'UniProtParser');
 
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser)\
-VALUES (1,7227,'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz',now(),now(),'UniProtParser');
+VALUES (1,7227,'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt',now(),now(),'UniProtParser');
 
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser)\
-VALUES (2,7227,'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_trembl.dat.gz',now(),now(),'UniProtParser');
+VALUES (2,7227,'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_trembl.dat.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt',now(),now(),'UniProtParser');
 
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3000, 7227, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot_varsplic.fasta.gz', '', now(), now(), "UniProtVarSplicParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3000, 7227, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot_varsplic.fasta.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', '', now(), now(), "UniProtVarSplicParser");
 
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser)\
 VALUES (3,7227,'ftp://ftp.ncbi.nih.gov/refseq/release/invertebrate/invertebrate1.protein.gpff.gz',now(),now(),'RefSeqGPFFParser');
@@ -313,11 +313,11 @@ VALUES (6,7227,'ftp://ftp.ncbi.nih.gov/repository/UniGene/Drosophila_melanogaste
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (1110, 9606, 'ftp://ftp.ncbi.nlm.nih.gov/gene/DATA/gene_info.gz', now(), now(), "EntrezGeneParser");
 
 ##       uniprot
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1, 9606, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz', '', now(), now(), "UniProtParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1, 9606, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', '', now(), now(), "UniProtParser");
 
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1, 9606, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_trembl.dat.gz', '', now(), now(), "UniProtParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1, 9606, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_trembl.dat.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', '', now(), now(), "UniProtParser");
 
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3000, 9606, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot_varsplic.fasta.gz', '', now(), now(), "UniProtVarSplicParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3000, 9606, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot_varsplic.fasta.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', '', now(), now(), "UniProtVarSplicParser");
 
 ##       refseq
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3, 9606,'ftp://ftp.ncbi.nih.gov/refseq/H_sapiens/mRNA_Prot/human.protein.gpff.gz', '', now(), now(), "RefSeqGPFFParser");
@@ -387,11 +387,11 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (1110, 10090, 'ftp://ftp.ncbi.nlm.nih.gov/gene/DATA/gene_info.gz', now(), now(), "EntrezGeneParser");
 
 ##      uniprot
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1, 10090, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz', '', now(), now(), "UniProtParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1, 10090, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', '', now(), now(), "UniProtParser");
 
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1, 10090, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_trembl.dat.gz', '', now(), now(), "UniProtParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1, 10090, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_trembl.dat.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', '', now(), now(), "UniProtParser");
 
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3000, 10090, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot_varsplic.fasta.gz', '', now(), now(), "UniProtVarSplicParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3000, 10090, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot_varsplic.fasta.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', '', now(), now(), "UniProtVarSplicParser");
 
 ##       refseq
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3, 10090,'ftp://ftp.ncbi.nih.gov/refseq/M_musculus/mRNA_Prot/mouse.protein.gpff.gz', '', now(), now(), "RefSeqGPFFParser");
@@ -442,11 +442,11 @@ INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_d
 VALUES (1110, 10116, 'ftp://ftp.ncbi.nlm.nih.gov/gene/DATA/gene_info.gz', now(), now(), "EntrezGeneParser");
 
 ##      uniprot
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1, 10116, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz', '', now(), now(), "UniProtParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1, 10116, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', '', now(), now(), "UniProtParser");
 
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1, 10116, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_trembl.dat.gz', '', now(), now(), "UniProtParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1, 10116, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_trembl.dat.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', '', now(), now(), "UniProtParser");
 
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3000, 10116, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot_varsplic.fasta.gz', '', now(), now(), "UniProtVarSplicParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3000, 10116, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot_varsplic.fasta.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', '', now(), now(), "UniProtVarSplicParser");
 
 ##       refseq
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3, 10116,'ftp://ftp.ncbi.nih.gov/refseq/R_norvegicus/mRNA_Prot/rat.protein.gpff.gz', '', now(), now(), "RefSeqGPFFParser");
@@ -488,11 +488,11 @@ VALUES (1110, 7955, 'ftp://ftp.ncbi.nlm.nih.gov/gene/DATA/gene_info.gz', now(), 
 
 ##      uniprot
 
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1, 7955, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz', '', now(), now(), "UniProtParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1, 7955, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', '', now(), now(), "UniProtParser");
 
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1, 7955, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_trembl.dat.gz', '', now(), now(), "UniProtParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1, 7955, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_trembl.dat.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', '', now(), now(), "UniProtParser");
 
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3000, 7955, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot_varsplic.fasta.gz', '', now(), now(), "UniProtVarSplicParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3000, 7955, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot_varsplic.fasta.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', '', now(), now(), "UniProtVarSplicParser");
 
 ##       refseq
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3, 7955,'ftp://ftp.ncbi.nih.gov/refseq/D_rerio/mRNA_Prot/zebrafish.protein.gpff.gz', '', now(), now(), "RefSeqGPFFParser");
@@ -530,11 +530,11 @@ VALUES (1110, 9031, 'ftp://ftp.ncbi.nlm.nih.gov/gene/DATA/gene_info.gz', now(), 
 
 ##      uniprot
 
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1, 9031, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz', '', now(), now(), "UniProtParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1, 9031, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', '', now(), now(), "UniProtParser");
 
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1, 9031, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_trembl.dat.gz', '', now(), now(), "UniProtParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1, 9031, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_trembl.dat.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', '', now(), now(), "UniProtParser");
 
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3000, 9031, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot_varsplic.fasta.gz', '', now(), now(), "UniProtVarSplicParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3000, 9031, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot_varsplic.fasta.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', '', now(), now(), "UniProtVarSplicParser");
 
 ##       refseq
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3, 9031,'ftp://ftp.ncbi.nih.gov/genomes/Gallus_gallus/protein/protein.gbk.gz', '', now(), now(), "RefSeqGPFFParser");
@@ -562,12 +562,12 @@ INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_d
 VALUES (1110, 8364, 'ftp://ftp.ncbi.nlm.nih.gov/gene/DATA/gene_info.gz', now(), now(), "EntrezGeneParser");
 
 # uniprot
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1, 8364, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz', '', now(), now(), "UniProtParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1, 8364, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', '', now(), now(), "UniProtParser");
 
 #uniprot
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1, 8364, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_trembl.dat.gz', '', now(), now(), "UniProtParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1, 8364, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_trembl.dat.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', '', now(), now(), "UniProtParser");
 
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3000, 8364, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot_varsplic.fasta.gz', '', now(), now(), "UniProtVarSplicParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3000, 8364, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot_varsplic.fasta.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', '', now(), now(), "UniProtVarSplicParser");
 
 
 ##       refseq
@@ -603,12 +603,12 @@ INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_d
 VALUES (1110, 9615, 'ftp://ftp.ncbi.nlm.nih.gov/gene/DATA/gene_info.gz', now(), now(), "EntrezGeneParser");
 
 #        uniprot
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1, 9615, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz', '', now(), now(), "UniProtParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1, 9615, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', '', now(), now(), "UniProtParser");
 
 #        uniprot
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1, 9615, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_trembl.dat.gz', '', now(), now(), "UniProtParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1, 9615, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_trembl.dat.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', '', now(), now(), "UniProtParser");
 
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3000, 9615, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot_varsplic.fasta.gz', '', now(), now(), "UniProtVarSplicParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3000, 9615, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot_varsplic.fasta.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', '', now(), now(), "UniProtVarSplicParser");
 
 ##       refseq
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3, 9615,'ftp://ftp.ncbi.nih.gov/genomes/Canis_familiaris/protein/protein.gbk.gz', '', now(), now(), "RefSeqGPFFParser");
@@ -636,12 +636,12 @@ INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_d
 VALUES (1110, 6239, 'ftp://ftp.ncbi.nlm.nih.gov/gene/DATA/gene_info.gz', now(), now(), "EntrezGeneParser");
 
 #        uniprot
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1, 6239, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz', '', now(), now(), "UniProtParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1, 6239, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', '', now(), now(), "UniProtParser");
 
 #        uniprot
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1, 6239, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_trembl.dat.gz', '', now(), now(), "UniProtParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1, 6239, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_trembl.dat.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', '', now(), now(), "UniProtParser");
 
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3000, 6239, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot_varsplic.fasta.gz', '', now(), now(), "UniProtVarSplicParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3000, 6239, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot_varsplic.fasta.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', '', now(), now(), "UniProtVarSplicParser");
 
 ##       GO
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1070, 6239,'ftp://ftp.geneontology.org/pub/go/gene-associations/gene_association.wb.gz', '', now(), now(), "GOParser");
@@ -689,11 +689,11 @@ INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_d
 VALUES (1110, 7460, 'ftp://ftp.ncbi.nlm.nih.gov/gene/DATA/gene_info.gz', now(), now(), "EntrezGeneParser");
 
 ## Uniprot
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1, 7460, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz', '', now(), now(), "UniProtParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1, 7460, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', '', now(), now(), "UniProtParser");
 
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (2, 7460, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_trembl.dat.gz', '', now(), now(), "UniProtParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (2, 7460, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_trembl.dat.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', '', now(), now(), "UniProtParser");
 
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3000, 7460, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot_varsplic.fasta.gz', '', now(), now(), "UniProtVarSplicParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3000, 7460, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot_varsplic.fasta.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', '', now(), now(), "UniProtVarSplicParser");
 
 ##       refseq
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3, 7460,'ftp://ftp.ncbi.nih.gov/genomes/Apis_mellifera/protein/protein.gbk.gz', '', now(), now(), "RefSeqGPFFParser");
@@ -720,10 +720,10 @@ VALUES (1110, 7719, 'ftp://ftp.ncbi.nlm.nih.gov/gene/DATA/gene_info.gz', now(), 
 
 ## Uniprot
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
- (1, 7719, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz', now(), now(), "UniProtParser");
+ (1, 7719, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', now(), now(), "UniProtParser");
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
- (2, 7719, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_trembl.dat.gz', now(), now(), "UniProtParser");
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3000, 7719, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot_varsplic.fasta.gz', '', now(), now(), "UniProtVarSplicParser");
+ (2, 7719, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_trembl.dat.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', now(), now(), "UniProtParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3000, 7719, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot_varsplic.fasta.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', '', now(), now(), "UniProtVarSplicParser");
 
 ##       refseq
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
@@ -779,10 +779,10 @@ VALUES (1110, 51511, 'ftp://ftp.ncbi.nlm.nih.gov/gene/DATA/gene_info.gz', now(),
 
 ## Uniprot
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
- (1, 51511, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz', now(), now(), "UniProtParser");
+ (1, 51511, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', now(), now(), "UniProtParser");
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
- (2, 51511, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_trembl.dat.gz', now(), now(), "UniProtParser");
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3000, 51511, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot_varsplic.fasta.gz', '', now(), now(), "UniProtVarSplicParser");
+ (2, 51511, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_trembl.dat.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', now(), now(), "UniProtParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3000, 51511, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot_varsplic.fasta.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', '', now(), now(), "UniProtVarSplicParser");
 
 ##       refseq ftp://ftp.ncbi.nih.gov/refseq/release/vertebrate_other/ *gpff
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
@@ -890,11 +890,11 @@ INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_d
 VALUES (1110, 7165, 'ftp://ftp.ncbi.nlm.nih.gov/gene/DATA/gene_info.gz', now(), now(), "EntrezGeneParser");
 
 # Uniprot
-INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (1,7165,'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz',now(),now(),'UniProtParser');
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (1,7165,'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt',now(),now(),'UniProtParser');
 
-INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (2,7165,'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_trembl.dat.gz',now(),now(),'UniProtParser');
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (2,7165,'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_trembl.dat.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt',now(),now(),'UniProtParser');
 
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3000, 7165, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot_varsplic.fasta.gz', '', now(), now(), "UniProtVarSplicParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3000, 7165, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot_varsplic.fasta.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', '', now(), now(), "UniProtVarSplicParser");
 
 # Interpro
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (1300,7165,'ftp://ftp.ebi.ac.uk/pub/databases/interpro/interpro.xml.gz http://www.ebi.ac.uk/interpro/release_notes.html',now(),now(),'InterproParser');
@@ -926,11 +926,11 @@ INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_d
 VALUES (1110, 7159, 'ftp://ftp.ncbi.nlm.nih.gov/gene/DATA/gene_info.gz', now(), now(), "EntrezGeneParser");
 
 # Uniprot
-INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (1,7159,'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz',now(),now(),'UniProtParser');
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (1,7159,'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt',now(),now(),'UniProtParser');
 
-INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (2,7159,'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_trembl.dat.gz',now(),now(),'UniProtParser');
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (2,7159,'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_trembl.dat.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt',now(),now(),'UniProtParser');
 
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3000, 7159, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot_varsplic.fasta.gz', '', now(), now(), "UniProtVarSplicParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3000, 7159, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot_varsplic.fasta.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', '', now(), now(), "UniProtVarSplicParser");
 
 # Interpro
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (1300,7159,'ftp://ftp.ebi.ac.uk/pub/databases/interpro/interpro.xml.gz http://www.ebi.ac.uk/interpro/release_notes.html',now(),now(),'InterproParser');
@@ -962,10 +962,10 @@ VALUES (1110, 9913, 'ftp://ftp.ncbi.nlm.nih.gov/gene/DATA/gene_info.gz', now(), 
 
 ## Uniprot
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
- (1, 9913, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz', now(), now(), "UniProtParser");
+ (1, 9913, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', now(), now(), "UniProtParser");
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
- (2, 9913, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_trembl.dat.gz', now(), now(), "UniProtParser");
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3000, 9913, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot_varsplic.fasta.gz', '', now(), now(), "UniProtVarSplicParser");
+ (2, 9913, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_trembl.dat.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', now(), now(), "UniProtParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3000, 9913, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot_varsplic.fasta.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', '', now(), now(), "UniProtVarSplicParser");
 
 ##       refseq protein
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3, 9913,'ftp://ftp.ncbi.nih.gov/genomes/Bos_taurus/protein/protein.gbk.gz', '', now(), now(), "RefSeqGPFFParser");
@@ -993,10 +993,10 @@ VALUES (1110, 13616, 'ftp://ftp.ncbi.nlm.nih.gov/gene/DATA/gene_info.gz', now(),
 
 ## Uniprot
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
- (1, 13616, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz', now(), now(), "UniProtParser");
+ (1, 13616, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', now(), now(), "UniProtParser");
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
- (2, 13616, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_trembl.dat.gz', now(), now(), "UniProtParser");
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3000, 13616, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot_varsplic.fasta.gz', '', now(), now(), "UniProtVarSplicParser");
+ (2, 13616, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_trembl.dat.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', now(), now(), "UniProtParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3000, 13616, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot_varsplic.fasta.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', '', now(), now(), "UniProtVarSplicParser");
 
 ##       refseq
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
@@ -1266,10 +1266,10 @@ VALUES (1110, 31033, 'ftp://ftp.ncbi.nlm.nih.gov/gene/DATA/gene_info.gz', now(),
 
 ## Uniprot
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
- (1, 31033, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz', now(), now(), "UniProtParser");
+ (1, 31033, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', now(), now(), "UniProtParser");
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
- (2, 31033, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_trembl.dat.gz', now(), now(), "UniProtParser");
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3000, 31033, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot_varsplic.fasta.gz', '', now(), now(), "UniProtVarSplicParser");
+ (2, 31033, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_trembl.dat.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', now(), now(), "UniProtParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3000, 31033, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot_varsplic.fasta.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', '', now(), now(), "UniProtVarSplicParser");
 
 ##       refseq
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
@@ -1333,10 +1333,10 @@ VALUES (1250, 4932, 'ftp://genome-ftp.stanford.edu/pub/yeast/gene_registry/regis
 
 ## Uniprot
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
- (1, 4932, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz', now(), now(), "UniProtParser");
+ (1, 4932, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', now(), now(), "UniProtParser");
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
- (2, 4932, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_trembl.dat.gz', now(), now(), "UniProtParser");
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3000, 4932, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot_varsplic.fasta.gz', '', now(), now(), "UniProtVarSplicParser");
+ (2, 4932, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_trembl.dat.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', now(), now(), "UniProtParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3000, 4932, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot_varsplic.fasta.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', '', now(), now(), "UniProtVarSplicParser");
 
 ##       refseq
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
@@ -1407,9 +1407,9 @@ VALUES (1110, 9544, 'ftp://ftp.ncbi.nlm.nih.gov/gene/DATA/gene_info.gz', now(), 
 
 ## Uniprot
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
- (1, 9544, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz', now(), now(), "UniProtParser");
+ (1, 9544, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', now(), now(), "UniProtParser");
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
- (2, 9544, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_trembl.dat.gz', now(), now(), "UniProtParser");
+ (2, 9544, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_trembl.dat.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', now(), now(), "UniProtParser");
 
 ##       refseq
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
@@ -1619,10 +1619,10 @@ VALUES (1110, 9785, 'ftp://ftp.ncbi.nlm.nih.gov/gene/DATA/gene_info.gz', now(), 
 
 ## Uniprot
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
- (1, 9785, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz', now(), now(), "UniProtParser");
+ (1, 9785, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', now(), now(), "UniProtParser");
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
- (2, 9785, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_trembl.dat.gz', now(), now(), "UniProtParser");
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3000, 9785, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot_varsplic.fasta.gz', '', now(), now(), "UniProtVarSplicParser");
+ (2, 9785, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_trembl.dat.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', now(), now(), "UniProtParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3000, 9785, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot_varsplic.fasta.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', '', now(), now(), "UniProtVarSplicParser");
 
 ##       GO
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (1070, 9785,'ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/UNIPROT/gene_association.goa_uniprot.gz', now(), now(), "GOParser");
@@ -1643,10 +1643,10 @@ VALUES (1110, 9361, 'ftp://ftp.ncbi.nlm.nih.gov/gene/DATA/gene_info.gz', now(), 
 
 ## Uniprot
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
- (1, 9361, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz', now(), now(), "UniProtParser");
+ (1, 9361, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', now(), now(), "UniProtParser");
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
- (2, 9361, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_trembl.dat.gz', now(), now(), "UniProtParser");
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3000, 9361, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot_varsplic.fasta.gz', '', now(), now(), "UniProtVarSplicParser");
+ (2, 9361, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_trembl.dat.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', now(), now(), "UniProtParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3000, 9361, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot_varsplic.fasta.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', '', now(), now(), "UniProtVarSplicParser");
 
 ##       GO
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (1070, 9361,'ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/UNIPROT/gene_association.goa_uniprot.gz', now(), now(), "GOParser");
@@ -1668,10 +1668,10 @@ VALUES (1110, 9986, 'ftp://ftp.ncbi.nlm.nih.gov/gene/DATA/gene_info.gz', now(), 
 
 ## Uniprot
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
- (1, 9986, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz', now(), now(), "UniProtParser");
+ (1, 9986, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', now(), now(), "UniProtParser");
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
- (2, 9986, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_trembl.dat.gz', now(), now(), "UniProtParser");
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3000, 9986, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot_varsplic.fasta.gz', '', now(), now(), "UniProtVarSplicParser");
+ (2, 9986, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_trembl.dat.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', now(), now(), "UniProtParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3000, 9986, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot_varsplic.fasta.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', '', now(), now(), "UniProtVarSplicParser");
 
 ##       GO
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (1070, 9986,'ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/UNIPROT/gene_association.goa_uniprot.gz', now(), now(), "GOParser");
@@ -1692,10 +1692,10 @@ VALUES (1110, 9371, 'ftp://ftp.ncbi.nlm.nih.gov/gene/DATA/gene_info.gz', now(), 
 
 ## Uniprot
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
- (1, 9371, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz', now(), now(), "UniProtParser");
+ (1, 9371, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', now(), now(), "UniProtParser");
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
- (2, 9371, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_trembl.dat.gz', now(), now(), "UniProtParser");
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3000, 9371, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot_varsplic.fasta.gz', '', now(), now(), "UniProtVarSplicParser");
+ (2, 9371, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_trembl.dat.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', now(), now(), "UniProtParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3000, 9371, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot_varsplic.fasta.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', '', now(), now(), "UniProtVarSplicParser");
 
 ##       GO
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (1070, 9371,'ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/UNIPROT/gene_association.goa_uniprot.gz', now(), now(), "GOParser");
@@ -1712,10 +1712,10 @@ VALUES (1110, 9685, 'ftp://ftp.ncbi.nlm.nih.gov/gene/DATA/gene_info.gz', now(), 
 
 ## Uniprot
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
- (1, 9685, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz', now(), now(), "UniProtParser");
+ (1, 9685, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', now(), now(), "UniProtParser");
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
- (2, 9685, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_trembl.dat.gz', now(), now(), "UniProtParser");
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3000, 9685, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot_varsplic.fasta.gz', '', now(), now(), "UniProtVarSplicParser");
+ (2, 9685, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_trembl.dat.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', now(), now(), "UniProtParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3000, 9685, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot_varsplic.fasta.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', '', now(), now(), "UniProtVarSplicParser");
 
 ##       GO
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (1070, 9685,'ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/UNIPROT/gene_association.goa_uniprot.gz', now(), now(), "GOParser");
@@ -1731,9 +1731,9 @@ INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_d
 VALUES (1110, 69293, 'ftp://ftp.ncbi.nlm.nih.gov/gene/DATA/gene_info.gz', now(), now(), "EntrezGeneParser");
 
 ##       uniprot
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1,69293 , 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz', '', now(), now(), "UniProtParser");
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (2,69293 , 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_trembl.dat.gz', '', now(), now(), "UniProtParser");
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3000,69293 , 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot_varsplic.fasta.gz', '', now(), now(), "UniProtVarSplicParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1,69293 , 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', '', now(), now(), "UniProtParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (2,69293 , 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_trembl.dat.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', '', now(), now(), "UniProtParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3000,69293 , 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot_varsplic.fasta.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', '', now(), now(), "UniProtVarSplicParser");
 ##       GO
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (1070,69293 ,'ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/UNIPROT/gene_association.goa_uniprot.gz', now(), now(), "GOParser");
 ##      Interpro
@@ -1768,10 +1768,10 @@ VALUES (1110, 8090, 'ftp://ftp.ncbi.nlm.nih.gov/gene/DATA/gene_info.gz', now(), 
 
 ## Uniprot
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
- (1, 8090, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz', now(), now(), "UniProtParser");
+ (1, 8090, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', now(), now(), "UniProtParser");
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
- (2, 8090, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_trembl.dat.gz', now(), now(), "UniProtParser");
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3000, 8090, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot_varsplic.fasta.gz', '', now(), now(), "UniProtVarSplicParser");
+ (2, 8090, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_trembl.dat.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', now(), now(), "UniProtParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3000, 8090, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot_varsplic.fasta.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', '', now(), now(), "UniProtVarSplicParser");
 
 ##       refseq
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
@@ -1826,10 +1826,10 @@ VALUES (1110, 59463, 'ftp://ftp.ncbi.nlm.nih.gov/gene/DATA/gene_info.gz', now(),
 
 ## Uniprot
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
- (1, 59463, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz', now(), now(), "UniProtParser");
+ (1, 59463, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', now(), now(), "UniProtParser");
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
- (2, 59463, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_trembl.dat.gz', now(), now(), "UniProtParser");
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3000, 59463, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot_varsplic.fasta.gz', '', now(), now(), "UniProtVarSplicParser");
+ (2, 59463, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_trembl.dat.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', now(), now(), "UniProtParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3000, 59463, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot_varsplic.fasta.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', '', now(), now(), "UniProtVarSplicParser");
 
 ##       refseq
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES \
@@ -2054,10 +2054,10 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 
 ## Uniprot
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
- (1, 9258, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz', now(), now(), "UniProtParser");
+ (1, 9258, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', now(), now(), "UniProtParser");
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
- (2, 9258, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_trembl.dat.gz', now(), now(), "UniProtParser");
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3000, 9258, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot_varsplic.fasta.gz', '', now(), now(), "UniProtVarSplicParser");
+ (2, 9258, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_trembl.dat.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', now(), now(), "UniProtParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3000, 9258, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot_varsplic.fasta.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', '', now(), now(), "UniProtVarSplicParser");
 
 ##       refseq
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
@@ -2271,12 +2271,12 @@ VALUES (1110, 9365, 'ftp://ftp.ncbi.nlm.nih.gov/gene/DATA/gene_info.gz', now(), 
 ## Uniprot
 
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
- (1, 9365, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz', now(), now(), "UniProtParser");
+ (1, 9365, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', now(), now(), "UniProtParser");
 
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
- (2, 9365, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_trembl.dat.gz', now(), now(), "UniProtParser");
+ (2, 9365, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_trembl.dat.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', now(), now(), "UniProtParser");
 
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3000, 9365, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot_varsplic.fasta.gz', '', now(), now(), "UniProtVarSplicParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3000, 9365, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot_varsplic.fasta.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', '', now(), now(), "UniProtVarSplicParser");
 
 
 ##       refseq
@@ -2505,12 +2505,12 @@ VALUES (1110, 37347, 'ftp://ftp.ncbi.nlm.nih.gov/gene/DATA/gene_info.gz', now(),
 ## Uniprot
 
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
- (1, 37347, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz', now(), now(), "UniProtParser");
+ (1, 37347, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', now(), now(), "UniProtParser");
 
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
- (2, 37347, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_trembl.dat.gz', now(), now(), "UniProtParser");
+ (2, 37347, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_trembl.dat.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', now(), now(), "UniProtParser");
 
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3000, 37347, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot_varsplic.fasta.gz', '', now(), now(), "UniProtVarSplicParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3000, 37347, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot_varsplic.fasta.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', '', now(), now(), "UniProtVarSplicParser");
 
 
 ##       refseq
@@ -2739,12 +2739,12 @@ VALUES (1110, 43179, 'ftp://ftp.ncbi.nlm.nih.gov/gene/DATA/gene_info.gz', now(),
 ## Uniprot
 
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
- (1, 43179, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz', now(), now(), "UniProtParser");
+ (1, 43179, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', now(), now(), "UniProtParser");
 
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
- (2, 43179, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_trembl.dat.gz', now(), now(), "UniProtParser");
+ (2, 43179, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_trembl.dat.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', now(), now(), "UniProtParser");
 
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3000, 43179, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot_varsplic.fasta.gz', '', now(), now(), "UniProtVarSplicParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3000, 43179, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot_varsplic.fasta.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', '', now(), now(), "UniProtVarSplicParser");
 
 ##       refseq
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
