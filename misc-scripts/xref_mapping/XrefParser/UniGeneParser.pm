@@ -30,19 +30,21 @@ sub run {
 
   my $source_id = shift;
   my $species_id = shift;
-  my $file = shift;
+  my $uniq_file = shift;
+  my $data_file = shift;
 
   my $unigene_source_id = XrefParser::BaseParser->get_source_id_for_source_name('UniGene');
 
   print "UniGene source ID = $unigene_source_id.\n";
 
-  if(!defined($species_id)){
-    $species_id = XrefParser::BaseParser->get_species_id_for_filename($file);
+  if ( !defined($species_id) ) {
+    $species_id =
+      XrefParser::BaseParser->get_species_id_for_filename($uniq_file);
   }
 
   my $xrefs =
-    $self->create_xrefs( $unigene_source_id, $unigene_source_id, $file,
-      $species_id );
+    $self->create_xrefs( $unigene_source_id, $unigene_source_id,
+      $uniq_file, $data_file, $species_id );
 
   if(!defined($xrefs)){
     return 1; #error
@@ -59,19 +61,16 @@ my %geneid_2_desc;
 
 sub get_desc{
   my $self = shift;
-  my $file = shift;
+  my $data_file = shift;
 
-  my $dir = dirname($file);
-
-  (my $name) = $file  =~ /\/(\w+)\.seq\.uniq/;
-  #print $name."\n";
+  my $dir = dirname($data_file);
 
   local $/ = "//";
 
-  my $desc_io = $self->get_filehandle( $dir . '/' . $name . '.data.gz' );
+  my $desc_io = $self->get_filehandle( $data_file );
 
   if ( !defined $desc_io ) {
-    print "ERROR: Can't open $dir/$name.data\n";
+    print "ERROR: Can't open $data_file\n";
     return undef;
   }
 
@@ -97,18 +96,20 @@ sub get_desc{
 sub create_xrefs {
   my $self = shift;
 
-  my ( $peptide_source_id, $unigene_source_id, $file, $species_id ) = @_;
+  my ( $peptide_source_id, $unigene_source_id, $uniq_file, $data_file,
+      $species_id )
+    = @_;
 
   my %name2species_id = XrefParser::BaseParser->name2species_id();
 
-  if ( !defined( $self->get_desc($file) ) ) {
+  if ( !defined( $self->get_desc($data_file) ) ) {
     return undef;
   }
 
-  my $unigene_io = $self->get_filehandle($file);
+  my $unigene_io = $self->get_filehandle($uniq_file);
 
   if ( !defined $unigene_io ) {
-    print "Can't open RefSeq file $file\n";
+    print "Can't open RefSeq file $uniq_file\n";
     return undef;
   }
 
@@ -164,7 +165,7 @@ sub create_xrefs {
   $unigene_io->close();
 
   %geneid_2_desc=();
-  print "Read " . scalar(@xrefs) ." xrefs from $file\n";
+  print "Read " . scalar(@xrefs) ." xrefs from $uniq_file\n";
 
   return \@xrefs;
 
