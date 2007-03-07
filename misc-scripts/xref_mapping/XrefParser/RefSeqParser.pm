@@ -31,17 +31,18 @@ sub run {
   my $source_id = shift;
   my $species_id = shift;
   my $file = shift;
+  my $release_file = shift;
 
-  my $peptide_source_id = XrefParser::BaseParser->get_source_id_for_source_name('RefSeq_peptide');
-  my $dna_source_id = XrefParser::BaseParser->get_source_id_for_source_name('RefSeq_dna');
+  my $peptide_source_id = $self->get_source_id_for_source_name('RefSeq_peptide');
+  my $dna_source_id = $self->get_source_id_for_source_name('RefSeq_dna');
   print "RefSeq_peptide source ID = $peptide_source_id; RefSeq_dna source ID = $dna_source_id\n";
 
-  my $pred_peptide_source_id = XrefParser::BaseParser->get_source_id_for_source_name('RefSeq_peptide_predicted');
-  my $pred_dna_source_id = XrefParser::BaseParser->get_source_id_for_source_name('RefSeq_dna_predicted');
+  my $pred_peptide_source_id = $self->get_source_id_for_source_name('RefSeq_peptide_predicted');
+  my $pred_dna_source_id = $self->get_source_id_for_source_name('RefSeq_dna_predicted');
   print "RefSeq_peptide_predicted source ID = $pred_peptide_source_id; RefSeq_dna_predicted source ID = $pred_dna_source_id\n";
 
   if(!defined($species_id)){
-    $species_id = XrefParser::BaseParser->get_species_id_for_filename($file);
+    $species_id = $self->get_species_id_for_filename($file);
   }
 
   my $xrefs =
@@ -51,9 +52,27 @@ sub run {
   if(!defined($xrefs)){
     return 1; #error
   }
-  if(!defined(XrefParser::BaseParser->upload_xref_object_graphs($xrefs))){
+  if(!defined($self->upload_xref_object_graphs($xrefs))){
     return 1; # error
   }
+
+    if ( defined $release_file ) {
+        # Parse and set release info.
+        my $release_io = $self->get_filehandle($release_file);
+        local $/ = "\n*";
+        my $release = $release_io->getline();
+        $release_io->close();
+
+        $release =~ s/\s{2,}/ /g;
+        $release =~ s/.*(NCBI Reference Sequence.*) Distribution.*/$1/s;
+        # Put a comma after the release number to make it more readable.
+        $release =~ s/Release (\d+)/Release $1,/;
+
+        print "RefSeq release: '$release'\n";
+
+        $self->set_release( $source_id, $release );
+    }
+
   return 0; # successfull
 
 }
@@ -71,7 +90,7 @@ sub create_xrefs {
   my ( $peptide_source_id, $dna_source_id, $pred_peptide_source_id,
       $pred_dna_source_id, $file, $species_id ) = @_;
 
-  my %name2species_id = XrefParser::BaseParser->name2species_id();
+  my %name2species_id = $self->name2species_id();
 
   my $refseq_io = $self->get_filehandle($file);
 
