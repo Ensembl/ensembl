@@ -74,15 +74,18 @@ sub run {
 
   $self->upload_xref_object_graphs(\@xrefs);
 
-    # Parse and apply the Swiss-Prot release info from $release_file.
-    my $release_io = $self->get_filehandle($release_file);
-    while ( defined( my $line = $release_io->getline() ) ) {
-        if ( $line =~ m#(UniProtKB/Swiss-Prot Release .*)# ) {
-            print "Swiss-Prot release is '$1'\n";
-            $self->set_release( $source_id, $1 );
+    if ( defined $release_file ) {
+        # Parse and apply the Swiss-Prot release info
+        # from $release_file.
+        my $release_io = $self->get_filehandle($release_file);
+        while ( defined( my $line = $release_io->getline() ) ) {
+            if ( $line =~ m#(UniProtKB/Swiss-Prot Release .*)# ) {
+                print "Swiss-Prot release is '$1'\n";
+                $self->set_release( $source_id, $1 );
+            }
         }
+        $release_io->close();
     }
-    $release_io->close();
 
 
   print "Done\n";

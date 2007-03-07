@@ -77,34 +77,36 @@ sub run {
     return 1; 
   }
 
-    # These two lines are duplicated from the create_xrefs() method
-    # below...
-    my $sp_pred_source_id =
-      $self->get_source_id_for_source_name(
-        'Uniprot/SWISSPROT_predicted');
-    my $sptr_pred_source_id =
-      $self->get_source_id_for_source_name(
-        'Uniprot/SPTREMBL_predicted');
+    if ( defined $release_file ) {
+        # These two lines are duplicated from the create_xrefs() method
+        # below...
+        my $sp_pred_source_id =
+          $self->get_source_id_for_source_name(
+            'Uniprot/SWISSPROT_predicted');
+        my $sptr_pred_source_id =
+          $self->get_source_id_for_source_name(
+            'Uniprot/SPTREMBL_predicted');
 
-    # Parse Swiss-Prot and SpTrEMBL release info from
-    # $release_file.
-    my $release_io = $self->get_filehandle($release_file);
-    while ( defined( my $line = $release_io->getline() ) ) {
-        if ( $line =~ m#(UniProtKB/Swiss-Prot Release .*)# ) {
-            $sp_release = $1;
-            print "Swiss-Prot release is '$sp_release'\n";
-        } elsif ( $line =~ m#(UniProtKB/TrEMBL Release .*)# ) {
-            $sptr_release = $1;
-            print "SpTrEMBL release is '$sptr_release'\n";
+        # Parse Swiss-Prot and SpTrEMBL release info from
+        # $release_file.
+        my $release_io = $self->get_filehandle($release_file);
+        while ( defined( my $line = $release_io->getline() ) ) {
+            if ( $line =~ m#(UniProtKB/Swiss-Prot Release .*)# ) {
+                $sp_release = $1;
+                print "Swiss-Prot release is '$sp_release'\n";
+            } elsif ( $line =~ m#(UniProtKB/TrEMBL Release .*)# ) {
+                $sptr_release = $1;
+                print "SpTrEMBL release is '$sptr_release'\n";
+            }
         }
-    }
-    $release_io->close();
+        $release_io->close();
 
-    # Set releases
-    $self->set_release( $sp_source_id,        $sp_release );
-    $self->set_release( $sptr_source_id,      $sptr_release );
-    $self->set_release( $sp_pred_source_id,   $sp_release );
-    $self->set_release( $sptr_pred_source_id, $sptr_release );
+        # Set releases
+        $self->set_release( $sp_source_id,        $sp_release );
+        $self->set_release( $sptr_source_id,      $sptr_release );
+        $self->set_release( $sp_pred_source_id,   $sp_release );
+        $self->set_release( $sptr_pred_source_id, $sptr_release );
+    }
 
 
   return 0; # successfull

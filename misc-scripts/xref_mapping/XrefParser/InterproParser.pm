@@ -128,25 +128,28 @@ sub run {
         print "\t" . $count{$db} . " $db loaded.\n";
     }
 
-    # Parse the second file that we got.  This is assumed to be the HTML
-    # file that will contain the release information.
+    if ( defined $release_file ) {
+        # Parse the second file that we got.  This is assumed to be the
+        # HTML file that will contain the release information.
 
-    my $release;
-    my $release_io = $self->get_filehandle($release_file);
-    while ( defined( my $line = $release_io->getline() ) ) { 
-        if ( $line =~ m#<b>(Release [0-9.]+, \S+ \S+ \S+ \S+)</b># ) {
-            $release = $1;
-            $release =~ s#</?sup>##g;
-            last;
+        my $release;
+        my $release_io = $self->get_filehandle($release_file);
+        while ( defined( my $line = $release_io->getline() ) ) {
+            if ( $line =~ m#<b>(Release [0-9.]+, \S+ \S+ \S+ \S+)</b># )
+            {
+                $release = $1;
+                $release =~ s#</?sup>##g;
+                last;
+            }
         }
-    }
-    $release_io->close();
+        $release_io->close();
 
-    if ( defined $release ) {
-        print "Interpro release is '$release'\n";
-        $self->set_release( $source_id, $release );
-    } else {
-        print "Did not find release info in '$release_file'\n";
+        if ( defined $release ) {
+            print "Interpro release is '$release'\n";
+            $self->set_release( $source_id, $release );
+        } else {
+            print "Did not find release info in '$release_file'\n";
+        }
     }
 
     return 0;
