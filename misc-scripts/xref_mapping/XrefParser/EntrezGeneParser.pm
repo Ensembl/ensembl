@@ -103,8 +103,10 @@ sub run {
 
     my (@syn) = split(/\|/ ,$arr[$gene_synonyms_index]);
     foreach my $synonym (@syn){
-      $self->add_to_syn($acc, $source_id, $synonym);
-      $syn_count++;
+      if($synonym ne "-"){
+	$self->add_to_syn($acc, $source_id, $synonym);
+	$syn_count++;
+      }
     }
   }
 
