@@ -67,7 +67,7 @@ sub fetch_by_dbID {
            xref.version, xref.description,
            exDB.dbprimary_acc_linkable, exDB.display_label_linkable, exDB.priority,
            exDB.db_name, exDB.db_display_name, exDB.db_release, es.synonym,
-           xref.info_type, xref.info_text
+           xref.info_type, xref.info_text, exDB.type
     FROM   (xref, external_db exDB)
     LEFT JOIN external_synonym es on es.xref_id = xref.xref_id
     WHERE  xref.xref_id = ?
@@ -81,8 +81,8 @@ sub fetch_by_dbID {
   while ( my $arrayref = $sth->fetchrow_arrayref()){
     my ( $refID, $dbprimaryId, $displayid, $version, $desc,
 	 $primary_id_linkable, $display_id_linkable, $priority,
-         $dbname, $db_display_name, $release, $synonym, 
-	 $info_type, $info_text) = @$arrayref;
+         $dbname, $db_display_name, $release, $synonym,
+	 $info_type, $info_text, $type) = @$arrayref;
 
     if(!$exDB) {
       $exDB = Bio::EnsEMBL::DBEntry->new
@@ -98,7 +98,8 @@ sub fetch_by_dbID {
 	  -priority => $priority,
 	  -db_display_name => $db_display_name,
 	  -info_type => $info_type,
-	  -info_text => $info_text);
+	  -info_text => $info_text,
+          -type => $type);
 
       $exDB->description( $desc ) if ( $desc );
     }
@@ -141,7 +142,7 @@ sub fetch_by_db_accession {
            xref.version, xref.description,
            exDB.dbprimary_acc_linkable, exDB.display_label_linkable, exDB.priority,
            exDB.db_name, exDB.db_display_name, exDB.db_release, es.synonym,
-           xref.info_type, xref.info_text
+           xref.info_type, xref.info_text, exDB.type
     FROM   (xref, external_db exDB)
     LEFT JOIN external_synonym es on es.xref_id = xref.xref_id
     WHERE  xref.dbprimary_acc = ?
@@ -172,7 +173,7 @@ sub fetch_by_db_accession {
   while ( my $arrayref = $sth->fetchrow_arrayref()){
     my ( $dbID, $dbprimaryId, $displayid, $version, $desc, 
 	 $primary_id_linkable, $display_id_linkable, $priority, $dbname, $db_display_name,
-         $release, $synonym, $info_type, $info_text) = @$arrayref;
+         $release, $synonym, $info_type, $info_text, $type) = @$arrayref;
 
     if(!$exDB) {
       $exDB = Bio::EnsEMBL::DBEntry->new
@@ -188,7 +189,8 @@ sub fetch_by_db_accession {
 	  -priority => $priority,
 	  -db_display_name=>$db_display_name,
 	  -info_type => $info_type,
-	  -info_text => $info_text);
+	  -info_text => $info_text,
+	  -type => $type);
 
       $exDB->description( $desc ) if ( $desc );
     }
@@ -455,7 +457,7 @@ sub exists {
   my $sth = $self->prepare('SELECT x.xref_id 
                             FROM   xref x, external_db xdb
                             WHERE  x.external_db_id = xdb.external_db_id
-                            AND    x.display_label = ? 
+                            AND    x.display_label = ?
                             AND    xdb.db_name = ?');
 
   $sth->bind_param(1,$dbe->display_id,SQL_VARCHAR);
@@ -546,6 +548,7 @@ sub fetch_all_by_Transcript {
 
 sub fetch_all_by_Translation {
   my ( $self, $trans, $ex_db_reg ) = @_;
+print "in f a b t\n";
 
   if(!ref($trans) || !$trans->isa('Bio::EnsEMBL::Translation')) {
     throw('Bio::EnsEMBL::Translation argument expected.');
@@ -554,6 +557,7 @@ sub fetch_all_by_Translation {
     warning( "Cannot fetch_all_by_Translation without a dbID" );
     return [];
   }
+print "out of  f a b t\n";
   return $self->_fetch_by_object_type( $trans->dbID(), 'Translation', $ex_db_reg );
 }
 
@@ -699,7 +703,7 @@ sub _fetch_by_object_type {
            idt.hit_end, idt.translation_start, idt.translation_end,
            idt.cigar_line, idt.score, idt.evalue, idt.analysis_id,
            gx.linkage_type,
-           xref.info_type, xref.info_text
+           xref.info_type, xref.info_text, exDB.type
     FROM   (xref xref, external_db exDB, object_xref oxr)
     LEFT JOIN external_synonym es on es.xref_id = xref.xref_id 
     LEFT JOIN identity_xref idt on idt.object_xref_id = oxr.object_xref_id
@@ -725,9 +729,9 @@ SSQL
          $synonym, $queryid, $targetid, $query_start, $query_end,
          $translation_start, $translation_end, $cigar_line,
          $score, $evalue, $analysis_id, $linkage_type,
-	 $info_type, $info_text) = @$arrRef;
+	 $info_type, $info_text, $type) = @$arrRef;
 
-    my %obj_hash = ( 
+    my %obj_hash = (
 		    'adaptor'    => $self,
 		    'dbID'       => $refID,
 		    'primary_id' => $dbprimaryId,
@@ -777,6 +781,7 @@ SSQL
       $exDB->db_display_name($exDB_db_display_name);
       $exDB->info_type($info_type);
       $exDB->info_text($info_text);
+      $exDB->type($type);
 
       push( @out, $exDB );
       $seen{$refID} = $exDB;
@@ -966,11 +971,11 @@ sub _type_by_external_id{
             syn.xref_id = oxr.xref_id AND oxr.ensembl_object_type= ?",
   );
 
-# Increase speed of query by splitting the OR in query into three separate 
-# queries. This is because the 'or' statments render the index useless 
+# Increase speed of query by splitting the OR in query into three separate
+# queries. This is because the 'or' statments render the index useless
 # because MySQL can't use any fields in the index.
 
-  my %hash = (); 
+  my %hash = ();
   my @result = ();
 
   foreach( @queries ) {
@@ -1103,7 +1108,7 @@ sub fetch_all_by_description {
            xref.version, xref.description,
            exDB.dbprimary_acc_linkable, exDB.display_label_linkable, exDB.priority,
            exDB.db_name, exDB.db_display_name, exDB.db_release, es.synonym,
-           xref.info_type, xref.info_text
+           xref.info_type, xref.info_text, exDB.type
     FROM   (xref, external_db exDB)
     LEFT JOIN external_synonym es on es.xref_id = xref.xref_id
     WHERE  xref.description like ?
@@ -1122,7 +1127,7 @@ sub fetch_all_by_description {
   while ( my $arrayref = $sth->fetchrow_arrayref()){
     my ( $dbID, $dbprimaryId, $displayid, $version, $desc, 
 	 $primary_id_linkable, $display_id_linkable, $priority, $dbname,$db_display_name,
-         $release, $synonym, $info_type, $info_text) = @$arrayref;
+         $release, $synonym, $info_type, $info_text, $type) = @$arrayref;
 
       my $exDB = Bio::EnsEMBL::DBEntry->new
         ( -adaptor => $self,
@@ -1137,7 +1142,8 @@ sub fetch_all_by_description {
 	  -priority => $priority,
 	  -db_display_name=>$db_display_name,
 	  -info_type => $info_type,
-	  -info_text => $info_text);
+	  -info_text => $info_text,
+	  -type => $type);
 
       $exDB->description( $desc ) if ( $desc );
 
