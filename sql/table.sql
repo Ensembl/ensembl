@@ -567,8 +567,8 @@ CREATE TABLE translation_stable_id (
   modified_date               DATETIME NOT NULL,
 
   PRIMARY KEY (translation_id),
-  UNIQUE (stable_id, version)
-
+  KEY stable_id_idx (stable_id, version)	
+ 
 ) COLLATE=latin1_swedish_ci TYPE=MyISAM;
 
 
@@ -792,6 +792,7 @@ CREATE TABLE external_db (
   display_label_linkable      BOOLEAN DEFAULT 0 NOT NULL,
   priority                    INT NOT NULL,
   db_display_name             VARCHAR(255),
+  type                        ENUM('ARRAY', 'ALT_TRANS', 'MISC', 'LIT'),
 
   PRIMARY KEY (external_db_id) 
 
@@ -870,6 +871,8 @@ INSERT INTO meta (meta_key, meta_value) VALUES ("schema_version", "44");
 # NOTE: at beginning of release cycle, remove patch entries from last release
 INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_43_44_a.sql|rationalise_key_columns');
 INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_43_44_b.sql|optimise_ditag_tables');
+INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_43_44_c.sql|external_db_type');
+INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_43_44_d.sql|translation_stable_id_unique');
 
 ################################################################################
 #
