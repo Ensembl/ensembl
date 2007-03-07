@@ -25,7 +25,7 @@ my $multi = Bio::EnsEMBL::Test::MultiTestDB->new();
 
 my $db = $multi->get_DBAdaptor( "core" );
 
-debug( "Test database instatiated" );
+debug( "Test database instantiated" );
 
 #
 # 2 Database instatiated
@@ -67,7 +67,6 @@ debug( " $goxref_count GoXrefs, $ident_count identityXrefs." );
 #
 # 3 as many dblinks as entries in object_xref
 #
-
 ok( $db_entry_count == $xref_count );
 
 #
