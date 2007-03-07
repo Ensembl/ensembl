@@ -3,7 +3,7 @@ use warnings;
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 42;
+	plan tests => 43;
 }
 
 use Bio::EnsEMBL::Test::MultiTestDB;
@@ -90,7 +90,8 @@ my $xref = Bio::EnsEMBL::DBEntry->new
    -priority => "5",
    -db_display_name => "Nice friendly name",
    -info_type => "PROJECTION",
-   -info_text => "from human gene ENSG0000011111"
+   -info_text => "from human gene ENSG0000011111",
+   -type => "ARRAY"
    );
 
 
@@ -166,6 +167,9 @@ $ident_count = count_rows($db, 'identity_xref');
 # the identity (query/target)values are not normalized ...
 debug( "Number of identity_xrefs = $ident_count" );
 ok( $ident_count == 2 );
+
+# Check type storing and retrieval
+ok($xref->type() eq 'ARRAY');
 
 $multi->restore();
 
