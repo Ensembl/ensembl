@@ -373,11 +373,13 @@ if($upload){
   print "\nChecking pair data\n";
   $mapper->add_missing_pairs();
 
-  print "\nPriority unmapped xrefs sorting\n";
-  $mapper->unmapped_data_for_prioritys();
-
-  print "\nProcess DEPENDENT unmapped object data\n";
-  $mapper->write_dependent_unmapped_objects();
+  if(!defined($notriage)){
+    print "\nPriority unmapped xrefs sorting\n";
+    $mapper->unmapped_data_for_prioritys();
+    
+    print "\nProcess DEPENDENT unmapped object data\n";
+    $mapper->write_dependent_unmapped_objects();
+  }
 
   print "\nChecking xrefs\n";
   $mapper->cleanup_database();
