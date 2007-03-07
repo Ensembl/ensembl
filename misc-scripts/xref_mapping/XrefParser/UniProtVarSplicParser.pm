@@ -18,7 +18,7 @@ use base qw( XrefParser::BaseParser );
 
 sub run {
 
-  my ($self, $source_id, $species_id, $file) = @_;
+  my ( $self, $source_id, $species_id, $file, $release_file ) = @_;
 
   my @xrefs;
 
@@ -32,8 +32,8 @@ sub run {
   }
 
   my $species_tax_id = $self->get_taxonomy_from_species_id($species_id);
-  my (%swiss)  =  %{XrefParser::BaseParser->get_valid_codes("uniprot",$species_id)};
- 
+  my %swiss = %{ $self->get_valid_codes( "uniprot", $species_id ) };
+
   my $missed = 0;
   while ( $_ = $file_io->getline() ) {
     my $xref;
@@ -72,7 +72,18 @@ sub run {
   print $missed." ignored as original uniprot not found in database\n";
   print scalar(@xrefs) . " UniProtVarSplic xrefs succesfully parsed\n";
 
-  XrefParser::BaseParser->upload_xref_object_graphs(\@xrefs);
+  $self->upload_xref_object_graphs(\@xrefs);
+
+    # Parse and apply the Swiss-Prot release info from $release_file.
+    my $release_io = $self->get_filehandle($release_file);
+    while ( defined( my $line = $release_io->getline() ) ) {
+        if ( $line =~ m#(UniProtKB/Swiss-Prot Release .*)# ) {
+            print "Swiss-Prot release is '$1'\n";
+            $self->set_release( $source_id, $1 );
+        }
+    }
+    $release_io->close();
+
 
   print "Done\n";
   return 0;

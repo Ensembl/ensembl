@@ -39,16 +39,21 @@ sub run {
   my $source_id = shift;
   my $species_id = shift;
   my $file = shift;
+  my $release_file = shift;
 
   my $species_name;
 
-  my ($sp_source_id, $sptr_source_id);
+  my ( $sp_source_id, $sptr_source_id, $sp_release, $sptr_release );
 
   if(!defined($species_id)){
-    ($species_id, $species_name) = get_species($file);
+    ($species_id, $species_name) = $self->get_species($file);
   }
-  $sp_source_id = XrefParser::BaseParser->get_source_id_for_source_name('Uniprot/SWISSPROT');
-  $sptr_source_id = XrefParser::BaseParser->get_source_id_for_source_name('Uniprot/SPTREMBL');
+
+  $sp_source_id =
+    $self->get_source_id_for_source_name('Uniprot/SWISSPROT');
+  $sptr_source_id =
+    $self->get_source_id_for_source_name('Uniprot/SPTREMBL');
+
   print "SwissProt source id for $file: $sp_source_id\n";
   print "SpTREMBL source id for $file: $sptr_source_id\n";
  
@@ -64,13 +69,44 @@ sub run {
   # delete previous if running directly rather than via BaseParser
   if (!defined(caller(1))) {
     print "Deleting previous xrefs for these sources\n";
-    XrefParser::BaseParser->delete_by_source(\@xrefs);
+    $self->delete_by_source(\@xrefs);
   }
 
   # upload
-  if(!defined(XrefParser::BaseParser->upload_xref_object_graphs(@xrefs))){
+  if(!defined($self->upload_xref_object_graphs(@xrefs))){
     return 1; 
   }
+
+    # These two lines are duplicated from the create_xrefs() method
+    # below...
+    my $sp_pred_source_id =
+      $self->get_source_id_for_source_name(
+        'Uniprot/SWISSPROT_predicted');
+    my $sptr_pred_source_id =
+      $self->get_source_id_for_source_name(
+        'Uniprot/SPTREMBL_predicted');
+
+    # Parse Swiss-Prot and SpTrEMBL release info from
+    # $release_file.
+    my $release_io = $self->get_filehandle($release_file);
+    while ( defined( my $line = $release_io->getline() ) ) {
+        if ( $line =~ m#(UniProtKB/Swiss-Prot Release .*)# ) {
+            $sp_release = $1;
+            print "Swiss-Prot release is '$sp_release'\n";
+        } elsif ( $line =~ m#(UniProtKB/TrEMBL Release .*)# ) {
+            $sptr_release = $1;
+            print "SpTrEMBL release is '$sptr_release'\n";
+        }
+    }
+    $release_io->close();
+
+    # Set releases
+    $self->set_release( $sp_source_id,        $sp_release );
+    $self->set_release( $sptr_source_id,      $sptr_release );
+    $self->set_release( $sp_pred_source_id,   $sp_release );
+    $self->set_release( $sptr_pred_source_id, $sptr_release );
+
+
   return 0; # successfull
 }
 
@@ -79,12 +115,12 @@ sub run {
 # For UniProt files the filename is the taxonomy ID
 
 sub get_species {
-
+  my $self = shift;
   my ($file) = @_;
 
   my ($taxonomy_id, $extension) = split(/\./, basename($file));
 
-  my $sth = XrefParser::BaseParser->dbi()->prepare("SELECT species_id,name FROM species WHERE taxonomy_id=?");
+  my $sth = $self->dbi()->prepare("SELECT species_id,name FROM species WHERE taxonomy_id=?");
   $sth->execute($taxonomy_id);
   my ($species_id, $species_name);
   while(my @row = $sth->fetchrow_array()) {
@@ -121,22 +157,29 @@ sub create_xrefs {
   my $num_sp_pred = 0;
   my $num_sptr_pred = 0;
 
-  my %dependent_sources = XrefParser::BaseParser->get_dependent_xref_sources(); # name-id hash
+  my %dependent_sources = $self->get_dependent_xref_sources(); # name-id hash
 
   # Get predicted equivalents of various sources used here
-  my $sp_pred_source_id = XrefParser::BaseParser->get_source_id_for_source_name('Uniprot/SWISSPROT_predicted');
-  my $sptr_pred_source_id = XrefParser::BaseParser->get_source_id_for_source_name('Uniprot/SPTREMBL_predicted');
-#  my $go_source_id = XrefParser::BaseParser->get_source_id_for_source_name('GO');
+    my $sp_pred_source_id =
+      $self->get_source_id_for_source_name(
+        'Uniprot/SWISSPROT_predicted');
+    my $sptr_pred_source_id =
+      $self->get_source_id_for_source_name(
+        'Uniprot/SPTREMBL_predicted');
+
+#  my $go_source_id = $self->get_source_id_for_source_name('GO');
   my $embl_pred_source_id = $dependent_sources{'EMBL_predicted'};
   my $protein_id_pred_source_id = $dependent_sources{'protein_id_predicted'};
   print "Predicted SwissProt source id for $file: $sp_pred_source_id\n";
-  print "Prediced SpTREMBL source id for $file: $sptr_pred_source_id\n";
+  print "Predicted SpTREMBL source id for $file: $sptr_pred_source_id\n";
   print "Predicted EMBL source id for $file: $embl_pred_source_id\n";
   print "Predicted protein_id source id for $file: $protein_id_pred_source_id\n";
 #  print "GO source id for $file: $go_source_id\n";
 
-  my (%genemap) = %{XrefParser::BaseParser->get_valid_codes("mim_gene",$species_id)};
-  my (%morbidmap) = %{XrefParser::BaseParser->get_valid_codes("mim_morbid",$species_id)};
+    my (%genemap) =
+      %{ $self->get_valid_codes( "mim_gene", $species_id ) };
+    my (%morbidmap) =
+      %{ $self->get_valid_codes( "mim_morbid", $species_id ) };
 
     my $uniprot_io = $self->get_filehandle($file);
     if ( !defined $uniprot_io ) { return undef }
@@ -161,8 +204,7 @@ sub create_xrefs {
     if ( defined $ox ) {
         @ox = split /\, /, $ox;
 
-        my %taxonomy2species_id =
-          XrefParser::BaseParser->taxonomy2species_id();
+        my %taxonomy2species_id = $self->taxonomy2species_id();
 
         foreach my $taxon_id_from_file (@ox) {
             if ( exists $taxonomy2species_id{$taxon_id_from_file}
