@@ -35,23 +35,31 @@ sub run {
 
   print STDERR "source = $source_id\tspecies = $species_id\n";
   if(!defined($source_id)){
-    $source_id = XrefParser::BaseParser->get_source_id_for_filename($file);
+    $source_id = $self->get_source_id_for_filename($file);
   }
   if(!defined($species_id)){
-    $species_id = XrefParser::BaseParser->get_species_id_for_filename($file);
+    $species_id = $self->get_species_id_for_filename($file);
   }
 
-  my $add_interpro_sth =  XrefParser::BaseParser->dbi->prepare
-    ("INSERT INTO interpro (interpro, pfam) VALUES(?,?)");
+  my $add_interpro_sth =
+    $self->dbi()
+    ->prepare("INSERT INTO interpro (interpro, pfam) VALUES(?,?)");
 
-  my $get_interpro_sth =  XrefParser::BaseParser->dbi->prepare
-    ("SELECT interpro from interpro where interpro = ? and pfam = ?");
- 
-  my $add_xref_sth = XrefParser::BaseParser->dbi->prepare
-    ("INSERT INTO xref (accession,version,label,description,source_id,species_id) VALUES(?,?,?,?,?,?)");
-  
-  my $get_xref_sth = XrefParser::BaseParser->dbi->prepare
-    ("SELECT xref_id FROM xref WHERE accession = ? AND source_id = ?");
+  my $get_interpro_sth =
+    $self->dbi()
+    ->prepare( "SELECT interpro FROM interpro "
+        . "WHERE interpro = ? AND pfam = ?" );
+
+  my $add_xref_sth =
+    $self->dbi()
+    ->prepare( "INSERT INTO xref "
+        . "(accession,version,label,description,source_id,species_id) "
+        . "VALUES(?,?,?,?,?,?)" );
+
+  my $get_xref_sth =
+    $self->dbi()
+    ->prepare( "SELECT xref_id FROM xref "
+        . "WHERE accession = ? AND source_id = ?" );
 
   my $dir = dirname($file);
 
@@ -126,15 +134,16 @@ sub run {
     my $release;
     my $release_io = $self->get_filehandle($release_file);
     while ( defined( my $line = $release_io->getline() ) ) { 
-        if ($line =~ /Release ([0-9.]+)/) {
+        if ( $line =~ m#<b>(Release [0-9.]+, \S+ \S+ \S+ \S+)</b># ) {
             $release = $1;
+            $release =~ s#</?sup>##g;
             last;
         }
     }
     $release_io->close();
 
     if ( defined $release ) {
-        print "Release is '$release'\n";
+        print "Interpro release is '$release'\n";
         $self->set_release( $source_id, $release );
     } else {
         print "Did not find release info in '$release_file'\n";
