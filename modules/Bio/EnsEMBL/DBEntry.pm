@@ -84,14 +84,15 @@ sub new_fast {
                     -priority => $priority,
                     -db_display_name => $db_display_name,
                     -info_type => $info_type,
-                    -info_text => $info_text);
+                    -info_text => $info_text,
+                    -type => $type);
   Description: Creates a new DBEntry object
   Returntype : Bio::EnsEMBL::DBEntry
   Exceptions : none
   Caller     : Bio::EnsEMBL::DBEntryAdaptor
   Status     : At Risk
                Due to 'PRIMARY_ID_LINKABLE','DISPLAY_ID_LINKABLE','PRIORITY',
-              'INFO_TYPE', 'INFO_TEXT', ''DB_DISPLAY_NAME'
+              'INFO_TYPE', 'INFO_TEXT', ''DB_DISPLAY_NAME', 'TYPE'
                being under development - if you don't use any of these the
                method can be considered Stable
 
@@ -105,11 +106,11 @@ sub new {
   my ( $adaptor, $dbID, $primary_id, $version,
        $dbname, $release, $display_id, $description,
        $primary_id_linkable, $display_id_linkable, $priority,
-       $db_display_name, $info_type, $info_text) =
+       $db_display_name, $info_type, $info_text, $type) =
     rearrange ( ['ADAPTOR','DBID','PRIMARY_ID','VERSION',
                  'DBNAME','RELEASE','DISPLAY_ID','DESCRIPTION',
 		 'PRIMARY_ID_LINKABLE','DISPLAY_ID_LINKABLE','PRIORITY',
-		 'DB_DISPLAY_NAME', 'INFO_TYPE', 'INFO_TEXT'], @args );
+		 'DB_DISPLAY_NAME', 'INFO_TYPE', 'INFO_TEXT', 'TYPE'], @args );
 
   $self->{'adaptor'} = $adaptor;
   $self->{'dbID'}    = $dbID;
@@ -127,6 +128,7 @@ sub new {
   if( defined $db_display_name) { $self->db_display_name($db_display_name) }
   if( defined $info_type) { $self->info_type($info_type) }
   if( defined $info_text) { $self->info_text($info_text) }
+  if( defined $type) { $self->type($type) }
 
   return $self;
 }
@@ -442,7 +444,7 @@ sub info_type {
     $self->{info_type} = $arg;
   }
   return $self->{info_type};
-}
+ }
 
 
 =head2 info_text
@@ -462,6 +464,25 @@ sub info_text {
     $self->{info_text} = $arg;
   } 
   return $self->{info_text};
+}
+
+=head2 type
+
+  Arg [1]    : String $type
+  Example    : none
+  Description: Getter/setter for attribute 'type'.
+  Returntype : String
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub type {
+  my ( $self, $arg ) = @_;
+  if( defined $arg ) {
+    $self->{type} = $arg;
+  }
+  return $self->{type};
 }
 
 
