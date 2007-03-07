@@ -353,7 +353,7 @@ sub run
       
       # Set release if specified
       if ( defined $release ) {
-          $self->set_release( $release, $source_id );
+          $self->set_release( $source_id, $release );
       }
 
       unlink("$dir/$new_file[0]") if ($cleanup);
@@ -365,20 +365,20 @@ sub run
           . "' as checksums match\n";
         }
   }
-  print "---------------------------------------------------------\n";
-  print "Summary of status\n";
-  print "---------------------------------------------------------\n";
-  foreach my $key (keys %summary){
-    print $key."\t";
-    if($summary{$key}){
-      print "FAILED\n";
-    }
-    else{
-      print "OKAY\n";
-    }
-  }
 
-
+    print "\n", '=' x 80, "\n";
+    print "Summary of status\n";
+    print '=' x 80, "\n";
+    foreach my $key ( keys %summary ) {
+        printf(
+            "%30s\t%s\n",
+            $key,
+            (
+                defined $summary{$key}
+                  && $summary{$key} ? 'FAILED' : 'OKAY'
+            )
+        );
+    }
 
   # remove last working directory
   # TODO reinstate after debugging
@@ -1481,7 +1481,7 @@ sub get_sub_list{
 sub set_release
 {
     my $self = shift;
-    my ( $release, $source_id ) = @_;
+    my ( $source_id, $release ) = @_;
 
     my $dbi = dbi();
 
