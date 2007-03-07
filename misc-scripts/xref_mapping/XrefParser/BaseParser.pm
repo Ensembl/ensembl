@@ -257,9 +257,24 @@ sub run
 	my $num_attempts = 0;
 	my $missing = 1;
 	while($num_attempts < 5 and $missing){
-          my $result =
-            system( "wget", "--quiet", "--directory-prefix=$dir",
-              "--output-document=$dir/$file", $urls );
+          my $proxy_onoff = "on";
+
+            if ( $urls =~ m#ftp://.*[?*\[\]]# ) {
+                # URL is FTP and contains globbing character, turn off
+                # proxying since the proxy only does HTTP and globbing
+                # is not supported by HTTP (only by FTP)...
+                $proxy_onoff = "off";
+            }
+
+            my $result =
+            system(
+                "wget",
+                "--quiet",
+                "--proxy=$proxy_onoff",
+                "--directory-prefix=$dir",
+                "--output-document=$dir/$file",
+                $urls
+            );
 	  
 	  # check that the file actually downloaded; may not (e.g. if too many anonymous users)
 	  if ($result != 0) {
