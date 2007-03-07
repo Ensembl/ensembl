@@ -135,7 +135,7 @@ sub run {
 
     if ( defined $release ) {
         print "Release is '$release'\n";
-        $self->set_release( $release, $source_id );
+        $self->set_release( $source_id, $release );
     } else {
         print "Did not find release info in '$release_file'\n";
     }
