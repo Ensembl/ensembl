@@ -46,7 +46,7 @@ sub run {
 
   print scalar(@xrefs) . " Fasta xrefs succesfully parsed\n";
 
-  XrefParser::BaseParser->upload_xref_object_graphs(\@xrefs);
+  $self->upload_xref_object_graphs(\@xrefs);
 
   print "Done\n";
   return 0; #successful
