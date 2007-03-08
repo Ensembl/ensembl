@@ -28,28 +28,26 @@ sub run {
   my $source_id = shift;
   my $species_id = shift;
   my $file = shift;
+  my $release_file = shift;
 
   my %wrongtype;
 
   if(!defined($source_id)){
-    $source_id = XrefParser::BaseParser->get_source_id_for_filename($file);
+    $source_id = $self->get_source_id_for_filename($file);
   }
   if(!defined($species_id)){
-    $species_id = XrefParser::BaseParser->get_species_id_for_filename($file);
+    $species_id = $self->get_species_id_for_filename($file);
   }
 
   my $swiss_miss=0;
-  my (%swiss) = %{XrefParser::BaseParser->get_valid_codes("uniprot",$species_id)};
+  my (%swiss) = %{$self->get_valid_codes("uniprot",$species_id)};
   my $refseq_miss=0;
-  my (%refseq) = %{XrefParser::BaseParser->get_valid_codes("refseq",$species_id)};
+  my (%refseq) = %{$self->get_valid_codes("refseq",$species_id)};
 
   # complication with GO xrefs from JAX - linked to MGI symbols, which are themselves
   # dependent, so we need to get the MGI->Uniprot mapping and store the *Uniprot*
   # as the master xref
-  my (%mgi_to_uniprot) = %{XrefParser::BaseParser->get_existing_mappings("MarkerSymbol", "Uniprot/Swissprot", $species_id)};
-
-  # also need to have the correct source ID for GO terms
-  my $go_source_id = XrefParser::BaseParser->get_source_id_for_source_name("GO");
+  my (%mgi_to_uniprot) = %{$self->get_existing_mappings("MarkerSymbol", "Uniprot/Swissprot", $species_id)};
 
   my %worm;
   my %worm_label;
@@ -86,7 +84,7 @@ sub run {
       }
       elsif($array[0] =~ /RefSeq/){
         if($refseq{$array[1]}) {
-          XrefParser::BaseParser->add_to_xrefs($refseq{$array[1]},$array[4],'',$array[4],'',$array[6],$source_id,$species_id);
+          $self->add_to_xrefs($refseq{$array[1]},$array[4],'',$array[4],'',$array[6],$source_id,$species_id);
           $count++;
 	  #print join (" ", "RefSeq" ,$refseq{$array[1]}, $array[4], "\n");
         }
@@ -96,7 +94,7 @@ sub run {
       }
       elsif($array[0] =~ /UniProt/){
         if($swiss{$array[1]}){
-          XrefParser::BaseParser->add_to_xrefs($swiss{$array[1]},$array[4],'',$array[4],'',$array[6],$source_id,$species_id);
+          $self->add_to_xrefs($swiss{$array[1]},$array[4],'',$array[4],'',$array[6],$source_id,$species_id);
           $count++;
 	  #print join (" ", "UniProt" ,$swiss{$array[1]}, $array[4], "\n");
         }
@@ -108,7 +106,7 @@ sub run {
 	#WB      CE20707 ZYG-9           GO:0008017      WB:WBPaper00003099|PMID:9606208 ISS             F                       protein  taxon:6239      20030829        WB
         if(!defined($wormset)){
           $wormset = 1;
-          %worm = %{XrefParser::BaseParser->get_valid_xrefs_for_direct_xrefs('worm')};
+          %worm = %{$self->get_valid_xrefs_for_direct_xrefs('worm')};
         }
 	my $worm_acc=$array[1];
         if(!defined($worm{$worm_acc})){ 
@@ -141,12 +139,12 @@ sub run {
 	#ZFIN    ZDB-GENE-030131-5418    rfng            GO:0030902      ZFIN:ZDB-PUB-050125-4|PMID:15659486     IMP     ZFIN:ZDB-MRPHLNO-050308-5     radical fringe homolog (Drosophila)              gene    taxon:7955      20050310        ZFIN
         if(!defined($fishset)){
           $fishset = 1;
-          %fish = %{XrefParser::BaseParser->get_valid_xrefs_for_dependencies
+          %fish = %{$self->get_valid_xrefs_for_dependencies
               ('ZFIN_ID','Uniprot/SPTREMBL','RefSeq_peptide',
                'Uniprot/SWISSPROT')};
         }
         if(defined($fish{$array[1]})){
-          XrefParser::BaseParser->add_to_xrefs($fish{$array[1]},$array[4],'',$array[4],'',$array[6],$source_id,$species_id);
+          $self->add_to_xrefs($fish{$array[1]},$array[4],'',$array[4],'',$array[6],$source_id,$species_id);
           $count++;
         }
       }
@@ -155,7 +153,7 @@ sub run {
 	# MGI	MGI:1923501	0610007P08Rik		GO:0004386	MGI:MGI:1354194	IEA		F	RIKEN cDNA 0610007P08 gene		gene	taxon:10090	20060213	UniProt
 	#  0         1                2         3             4                  5        6             7         8
         if($mgi_to_uniprot{$array[1]}){
-          XrefParser::BaseParser->add_to_xrefs($mgi_to_uniprot{$array[1]}, $array[4], '', $array[4], '', $array[6], $go_source_id, $species_id);
+          $self->add_to_xrefs($mgi_to_uniprot{$array[1]}, $array[4], '', $array[4], '', $array[6], $source_id, $species_id);
           $count++;
 	  #print join (" ", "MGI" ,$mgi_to_uniprot{$array[1]}, $array[4], "\n");
         }
@@ -171,6 +169,25 @@ sub run {
   $go_io->close();
 
   print "\t$count GO dependent xrefs added $refseq_miss refseq not found and $swiss_miss Swissprot not found \n"; 
+
+    if ( defined $release_file ) {
+        # Parse and set release information from $release_file.
+        my $release_io = $self->get_filehandle($release_file);
+
+        # Slurp mode.
+        local $/;
+        my $release = <$release_io>;
+        $release_io->close();
+
+        $release =~ tr /\n/ /;
+        $release =~
+s#.*The following table describes the latest version of (GOA.*?</b>\.).*#$1#;
+        $release =~ s#</?b>##g;
+
+        print "GO release: '$release'\n";
+        $self->set_release( $source_id, $release );
+    }
+
   return 0;
 }
 
