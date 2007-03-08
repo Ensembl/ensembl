@@ -135,10 +135,9 @@ sub run {
         my $release;
         my $release_io = $self->get_filehandle($release_file);
         while ( defined( my $line = $release_io->getline() ) ) {
-            if ( $line =~ m#<b>(Release [0-9.]+, \S+ \S+ \S+ \S+)</b># )
-            {
+            chomp $line;
+            if ( $line =~ m#(Release [0-9.]+, .*)# ) {
                 $release = $1;
-                $release =~ s#</?sup>##g;
                 last;
             }
         }
