@@ -299,39 +299,8 @@ sub store {
   }
 
   # Now the supporting evidence
-  # should be stored from featureAdaptor
-  my $sql = "insert into supporting_feature (exon_id, feature_id, feature_type)
-             values(?, ?, ?)";
-
-  my $sf_sth = $self->prepare($sql);
-
-  my $anaAdaptor = $self->db->get_AnalysisAdaptor();
-  my $dna_adaptor = $self->db->get_DnaAlignFeatureAdaptor();
-  my $pep_adaptor = $self->db->get_ProteinAlignFeatureAdaptor();
-  my $type;
-
-  foreach my $sf (@{$exon->get_all_supporting_features}) {
-    if(!$sf->isa("Bio::EnsEMBL::BaseAlignFeature")){
-      throw("$sf must be an align feature otherwise" .
-            "it can't be stored");
-    }
-
-    if($sf->isa("Bio::EnsEMBL::DnaDnaAlignFeature")){
-      $dna_adaptor->store($sf);
-      $type = 'dna_align_feature';
-    }elsif($sf->isa("Bio::EnsEMBL::DnaPepAlignFeature")){
-      $pep_adaptor->store($sf);
-      $type = 'protein_align_feature';
-    } else {
-      warning("Supporting feature of unknown type. Skipping : [$sf]\n");
-      next;
-    }
-
-    $sf_sth->bind_param(1, $exonId, SQL_INTEGER);
-    $sf_sth->bind_param(2, $sf->dbID, SQL_INTEGER);
-    $sf_sth->bind_param(3, $type, SQL_VARCHAR);
-    $sf_sth->execute();
-  }
+  my $esf_adaptor = $db->get_SupportingFeatureAdaptor;
+  $esf_adaptor->store($exonId, $exon->get_all_supporting_features);
 
   #
   # Finally, update the dbID and adaptor of the exon (and any component exons)
