@@ -32,14 +32,15 @@ sub run {
   my $species_id = shift;
   my $uniq_file = shift;
   my $data_file = shift;
+  my $release_file = shift;
 
-  my $unigene_source_id = XrefParser::BaseParser->get_source_id_for_source_name('UniGene');
+  my $unigene_source_id = $self->get_source_id_for_source_name('UniGene');
 
   print "UniGene source ID = $unigene_source_id.\n";
 
   if ( !defined($species_id) ) {
     $species_id =
-      XrefParser::BaseParser->get_species_id_for_filename($uniq_file);
+      $self->get_species_id_for_filename($uniq_file);
   }
 
   my $xrefs =
@@ -49,9 +50,45 @@ sub run {
   if(!defined($xrefs)){
     return 1; #error
   }
-  if(!defined(XrefParser::BaseParser->upload_xref_object_graphs($xrefs))){
+  if(!defined($self->upload_xref_object_graphs($xrefs))){
     return 1; # error
   }
+
+    if ( defined $release_file ) {
+        # Get species name from species ID.
+        my $species_name;
+
+        my $sth =
+          $self->dbi()
+          ->prepare("SELECT name FROM species WHERE species_id = ?");
+
+        $sth->execute($species_id);
+        $sth->bind_columns( \$species_name );
+        $sth->fetchrow_array();
+
+        $species_name =~ tr/_/ /;
+
+        # Parse and set release info.
+        my $release;
+        my $release_io = $self->get_filehandle($release_file);
+
+        while ( defined( my $line = $release_io->getline() ) ) {
+            if ( $line =~ /^(.*$species_name)/i ) {
+                $release = $1;
+            }
+        }
+        $release_io->close();
+
+        if ( defined $release ) {
+            $release =~ s/\s{2,}/ /g;
+            $release =~ s/^(.*) UniGene/$1, UniGene/;
+
+            print "UniGene release: '$release'\n";
+            #$self->set_release( $source_id,         $release );
+            $self->set_release( $unigene_source_id, $release );
+        }
+    }
+
   return 0; # successfull
 
 }
@@ -100,7 +137,7 @@ sub create_xrefs {
       $species_id )
     = @_;
 
-  my %name2species_id = XrefParser::BaseParser->name2species_id();
+  my %name2species_id = $self->name2species_id();
 
   if ( !defined( $self->get_desc($data_file) ) ) {
     return undef;
