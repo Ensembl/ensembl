@@ -256,8 +256,9 @@ sub run
 	
 	my $num_attempts = 0;
 	my $missing = 1;
-	while($num_attempts < 5 and $missing){
-          my $proxy_onoff = "on";
+
+        while ( $num_attempts < 5 and $missing ) {
+            my $proxy_onoff = "on";
 
             if ( $urls =~ m#ftp://.*[?*\[\]]# ) {
                 # URL is FTP and contains globbing character, turn off
@@ -266,27 +267,39 @@ sub run
                 $proxy_onoff = "off";
             }
 
-            my $result =
-            system(
-                "wget",
-                "--quiet",
-                "--proxy=$proxy_onoff",
-                "--directory-prefix=$dir",
-                "--output-document=$dir/$file",
-                $urls
+            # Redirect standard output for 'wget'.  We need to do it
+            # in this awkward way because we potentially (e.g. for
+            # the UniGene release info files) want to download and
+            # concatenate multiple FTP files to one and the same file.
+            local $| = 1;
+            open my $oldout, ">&STDOUT"
+              or croak("Can not duplicate STDOUT: $!");
+            open( STDOUT, ">$dir/$file" )
+              or croak("Can not open '$dir/$file' for output: $!");
+            binmode(STDOUT);
+
+            my $system_err = system(
+                "wget",                "--quiet",
+                "--output-document=-", "--proxy=$proxy_onoff",
+                "$urls"
             );
-	  
-	  # check that the file actually downloaded; may not (e.g. if too many anonymous users)
-	  if ($result != 0) {
-	    print "wget returned exit code $result; $type file $file not downloaded.\n";
-	    print "waiting for 3 minutes then trying again\n";
-	    sleep(180);
-	  }
-	  else{
-	    $missing=0;
-	  }
-	  $num_attempts++;
-	}
+
+            # Restore standard output.
+            close STDOUT;
+            open STDOUT, ">&", $oldout
+              or croak("Can not restore old STDOUT: $!");
+
+            # Check that the file actually downloaded ok.
+            if ( $system_err != 0 ) {
+                print "wget returned exit code $system_err; "
+                  . "$type file $file not downloaded.\n";
+                print "waiting for 3 minutes then trying again\n";
+                sleep(180);
+            } else {
+                $missing = 0;
+            }
+            $num_attempts++;
+        }
         if ($missing) {
             croak(  "Could not get '$type' file '$file', "
                   . "tried 5 times but failed" );
