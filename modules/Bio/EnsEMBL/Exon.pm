@@ -344,8 +344,8 @@ sub _transform_to_Slice {
   # exons should always transform so in theory no error check necessary
   # actually we could have exons inside and outside the Slice 
   # because of db design and the query that produces them
-  if( ! @mapped ) {
-    $self->throw( "Exon couldnt map" );
+  if( @mapped != 1 ) {
+    $self->throw( "Exon couldn't map" );
   }
   # should get a gap object returned if an exon lies outside of 
   # the current slice.  Simply return the exon as is - i.e. untransformed.
