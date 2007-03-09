@@ -97,7 +97,33 @@ sub run {
 
   $refseq_io->close();
 
+  my (%zfin) = %{XrefParser::BaseParser->get_valid_codes("zfin",$species_id)};
+
+  my $zfin_io = $self->get_filehandle( $dir . '/aliases.txt' );
+
+  if ( !defined $zfin_io ) {
+    print "ERROR: Could not open $dir/aliases.txt\n";
+    return 1;
+  }
+
+#ZDB-GENE-000125-4       deltaC  dlc     bea
+#ZDB-GENE-000125-4       deltaC  dlc     beamter
+
+  my $syncount = 0;
+
+  while ( $_ = $zfin_io->getline() ) {
+    chomp;
+    my ($acc, undef, undef, $syn) = split (/\t/,$_);
+    if(defined($zfin{$acc})){
+      XrefParser::BaseParser->add_to_syn($acc, $source_id, $syn);
+      $syncount++;
+    }
+  }
+
+  $zfin_io->close();
+
   print "\t$spcount xrefs from Swissprot and $rscount xrefs from RefSeq succesfully loaded\n";
+  print "\t$syncount synonyms loaded\n";
   print "\t$mismatch xrefs ignored\n";
   return 0;
 }
