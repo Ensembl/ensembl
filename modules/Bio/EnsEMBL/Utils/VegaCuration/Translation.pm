@@ -54,29 +54,43 @@ sub check_CDS_start_end_remarks {
 	#hasref to return results
 	my $results;
 
-	# check consistency of 'CDS end not found' and the translation end
-	if (grep {$_ eq $stop_codon} qw(TGA TAA TAG)) {
-		if (    ($coding_end != $trans_end)
-			 && (grep {$_->value eq 'CDS end not found'} @remarks) ) {
+	#extra CDS end not found remarks
+	if (grep {$_->value eq 'CDS end not found'} @remarks) {
+		if (   ($coding_end != $trans_end) 
+            && ( grep {$_ eq $stop_codon} qw(TGA TAA TAG) ) ) {
 			$results->{'END_EXTRA'} = 1;
 		}
 	}
-	else {
-		unless (grep {$_->value eq 'CDS end not found'} @remarks) {
-			$results->{'END_MISSING'} = $stop_codon;
+
+	#missing CDS end not found remark
+	if ( $coding_end == $trans_end ) {
+		if (! grep {$_->value eq 'CDS end not found'} @remarks) {
+			if (grep {$_ eq $stop_codon} qw(TGA TAA TAG)) {
+				$results->{'END_MISSING_1'} = 1;
+			}
+			else {
+				$results->{'END_MISSING_2'} = $stop_codon;
+			}
 		}
 	}
 
-	# check consistency of 'mRNA start not found' tags and the translation start
-	if ($start_codon eq 'ATG') {
-		if (    ($coding_start != 1)
-			 && (grep {$_->value eq 'CDS start not found'} @remarks) ) {
+
+	#extra CDS start not found remark
+	if (grep {$_->value eq 'CDS start not found'} @remarks) {
+		if (   ($coding_start != 1) 
+			&& ($start_codon eq 'ATG') ) {
 			$results->{'START_EXTRA'} = 1;
 		}
 	}
-	else {
-		unless (grep {$_->value eq 'CDS start not found'} @remarks) {
-			$results->{'START_MISSING'} = $start_codon;
+
+	#missing CDS start not found remark
+	if ( $coding_start == 1) {
+		if ( ! grep {$_->value eq 'CDS start not found'} @remarks) {
+			if ($start_codon eq 'ATG') {
+				$results->{'START_MISSING_1'} = 1;
+			} else {
+				$results->{'START_MISSING_2'} = $start_codon;
+			}
 		}
 	}
 
