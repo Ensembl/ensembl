@@ -108,104 +108,61 @@ if($support->param('prune')){
 	
 	if(check_for_backup_table()){
 		# backup table present
-		if($support->user_proceed("Replace the current table 'repeat_consensus' with the backup table 'repeat_consensus_backup'?")){
-		
-			if($dbh->do("drop table repeat_consensus")){
-				
-				if($dbh->do("create table repeat_consensus select * from repeat_consensus_backup")){
-					
-					$support->log("prune (undo) was successful\n");
-				
+		if($support->user_proceed("Replace the current table 'repeat_consensus' with the backup table 'repeat_consensus_backup'?")){		
+			if($dbh->do("drop table repeat_consensus")){				
+				if($dbh->do("create table repeat_consensus select * from repeat_consensus_backup")){					
+					$support->log("prune (undo) was successful\n");				
 					$support->log_stamped("Done.\n");
 
 					# finish logfile
-					$support->finish_log;
-				
-					exit(0);
-				
-				
+					$support->finish_log;				
+					exit(0);								
 				}
-				else{
-				
-					$support->log_error("prune failed\n");
-				
-				
-				}
-				
+				else {				
+					$support->log_error("prune failed\n");								
+				}				
 			}
-			else{
-			
-				$support->log_error("prune failed\n");
-			
-			}
-		
-		
+			else {			
+				$support->log_error("prune failed\n");			
+			}				
 		}
 		else{
 		
 			#user is aborting
 			print "aborting...\n";
-			$support->log_error("aborting...\n");
-		
-		
-		}
-	
+			$support->log_error("aborting...\n");				
+		}	
 	}
-	else{
-	
+	else{	
 		print "Cannot do prune, as no backup table\n";
-		$support->log_error("Cannot do prune, as no backup table\n");
-	
-	
+		$support->log_error("Cannot do prune, as no backup table\n");		
 	}
-
 }
 else{
 
 	# normal run
-	# check to see if the backup table 'repeat_consensus_backup' already exists
-	
-	
+	# check to see if the backup table 'repeat_consensus_backup' already exists		
 	if(check_for_backup_table()){
-		#table already exists: ask user if OK to overwrite it
-		
+		#table already exists: ask user if OK to overwrite it		
 		if ($support->user_proceed("The backup table 'repeat_consensus_backup' already exists, OK to delete?")) {
                     if($dbh->do("drop table 'repeat_consensus_backup'")){
-                    
                     	$support->log("deleted previous backup table\n");
                     	make_backup_table();
-                    	
-                    	
-                    
                     }
                     else{
-                    
                     	$support->log_error("tried but failed to delete previous backup table\n");
                     }
                 }
                 else{
-                
                 	# user won't allow removing the backup table
                 	print "Aborting ...\n";
                 	$support->log_error("User won't allow removal of backup table ... aborting program\n");
-                	
-                
                 }
-		
-	
-	
-	
 	}else{
 		# table doesn't exist, therefore we can create it
 		make_backup_table();
-	
 	}
-
-
-
-
 }
-
 
 
 # mouse fixes
@@ -299,15 +256,11 @@ $support->finish_log;
 
 sub make_backup_table{
 	if($dbh->do("create table repeat_consensus_backup select * from repeat_consensus")){
-		$support->log("backup table 'repeat_consensus_backup was created successfully\n");
-	
+		$support->log("backup table 'repeat_consensus_backup was created successfully\n");	
 	}
 	else{
 		$support->log_error("failed to create backup table 'repeat_consensus_backup'\n");
-	
 	}
-
-
 }
 
 sub check_for_backup_table{
@@ -318,18 +271,10 @@ sub check_for_backup_table{
 	foreach my $table(@tables){
 		#print "$table\n";
 		
-		if($table eq '`repeat_consensus_backup`'){
-			
+		if($table eq '`repeat_consensus_backup`'){			
 			$found=1;
-			last;
-		
-		
-		}
-	
+			last;		
+		}	
 	}
-
-
 	return $found;
-
-
 }
