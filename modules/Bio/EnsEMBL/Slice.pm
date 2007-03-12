@@ -2865,6 +2865,15 @@ sub alphabet { return 'dna'; }
 sub accession_number { name(@_); }
 
 
+=head2 is_circular
+
+  Description: Included for Bio::PrimarySeqI interface compliance (1.2)
+
+=cut
+
+sub is_circular { return 0; }
+
+
 
 
 # sub DEPRECATED METHODS #
