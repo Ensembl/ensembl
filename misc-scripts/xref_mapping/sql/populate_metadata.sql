@@ -56,7 +56,6 @@ INSERT INTO source VALUES (1110, 'EntrezGene', 1, 'Y', 10, 1, "");
 INSERT INTO source VALUES (1250, 'SGD', 1, 'Y',10, 1, "");
 
 
-
 INSERT INTO source VALUES (1,  "Uniprot/SWISSPROT", 1, 'Y',20,1, "" );
 INSERT INTO source VALUES (2,  "Uniprot/SPTREMBL", 1, 'Y',20, 1, "");
 INSERT INTO source VALUES (3,  "RefSeq_peptide", 1, 'Y',20, 1, "");
@@ -164,6 +163,7 @@ INSERT INTO source VALUES (4025, "miRBase_predicted", 1, 'N',70, 1, "");
 
 # temporary (?) source for mapping Havana OTT transcripts to Ensembl transcripts
 INSERT INTO source VALUES (5000, 'OTTT', 1, 'Y', 50, 1, "");
+INSERT INTO source VALUES (5005, 'Vega', 1, 'Y', 50, 1, "");
 
 # Illumina
 INSERT INTO source VALUES (5011, 'Illumina_V1', 1, 'Y', 50, 1, "");
@@ -383,10 +383,14 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 # --------------------------------------------------------------------------------
 
 ###MOUSE
-##      EmtrezGene
+
+##  Vega
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (5005, 10090, 'ftp://ftp.sanger.ac.uk/pub/vega/mouse/pep/Mus_musculus.VEGA.feb.pep.known.fa.gz', now(), now(), "VegaParser");
+
+##      EntrezGene
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (1110, 10090, 'ftp://ftp.ncbi.nlm.nih.gov/gene/DATA/gene_info.gz', now(), now(), "EntrezGeneParser");
 
-##      uniprot
+##      Uniprot
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1, 10090, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', '', now(), now(), "UniProtParser");
 
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1, 10090, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_trembl.dat.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', '', now(), now(), "UniProtParser");
