@@ -540,6 +540,24 @@ sub add_supporting_features {
 }
 
 
+=head2 flush_supporting_features
+
+  Example     : $exon->flush_supporting_features;
+  Description : Removes all supporting evidence from the exon.
+  Return type : (Empty) listref
+  Exceptions  : none
+  Caller      : general
+  Status      : At Risk
+              : under development
+
+=cut
+
+sub flush_supporting_features {
+  my $self = shift;
+  $self->{'_supporting_evidence'} = [];
+}
+
+
 =head2 get_all_supporting_features
 
   Arg [1]    : none
