@@ -1079,7 +1079,7 @@ sub split_chromosomes_by_size {
             push @{ $top_slices }, $slice_adaptor->fetch_by_region('chromosome', $chr);
         }
     } else {
-        $top_slices = $slice_adaptor->fetch_all("toplevel");
+        $top_slices = $slice_adaptor->fetch_all('chromosome');
     }
 
     my ($big_chr, $small_chr, $min_big_chr, $min_small_chr);
