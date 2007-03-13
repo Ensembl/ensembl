@@ -162,6 +162,7 @@
 4800	ENST	1	XREF	1	0	1	Ensembl transcripts
 4900	TCAG	1	XREF	1	0	75	TCAG Chr 7 Annotation
 5000	Ens_Mm_gene	1	XREF	1	0	40	Ensembl Mouse Gene
+5020	Ens_Mm_translation	1	XREF	1	0	40	Ensembl Mouse Translation
 5100	IMGT	1	XREF	1	0	7	IMGT/HLA
 6000	Codelink	1	XREF	1	0	1	GE Healthcare/Amersham Codelink WGA
 5200	Oxford_FGU_Md_gene	1	PRED	1	0	1	Oxford Ponting Group Monodelphis predictions gene id
