@@ -140,6 +140,8 @@ use XrefMapper::db;
  
 use vars qw(@INC);
  
+$| = 1;
+
 my $file;
 my $verbose;
 my $dumpcheck=undef;
