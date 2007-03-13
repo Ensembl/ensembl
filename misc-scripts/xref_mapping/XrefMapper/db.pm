@@ -2,6 +2,7 @@ package XrefMapper::db;
 
 use vars '@ISA';
 use Bio::EnsEMBL::DBSQL::DBConnection;
+use Cwd;
 
 sub new{
   my($class, @args) = @_;
@@ -101,17 +102,17 @@ sub process_dir {
   my ($dir) = @_;
 
   if($dir =~ "^\/" ) { # if it start with / then its not from pwd
-    if(! -e $dir){
+    if(! -d $dir){
       die "directory does not exist $dir\n";
     }
   }
   elsif($dir eq "."){
-    $dir = $ENV{PWD};
+    $dir = cwd();
   }
   elsif($dir =~ "^\.\/"){
     my $tmp = $dir;
-    $dir = $ENV{PWD}."/".substr($tmp,2);
-    if(! -e $dir){
+    $dir = cwd() . "/" . substr( $tmp, 2 );
+    if(! -d $dir){
       die "directory does not exist $dir\n";
     }
   }
