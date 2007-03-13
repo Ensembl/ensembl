@@ -1217,20 +1217,20 @@ sub parse_mappings {
 
 
   if($self->jobcount() != $total_files){
-    print $dna_check[-1]." dna map files\n";
-    print $pep_check[-1]." peptide map files\n";
+    print( ( $dna_check[-1] || 0 ) . " dna map files\n" );
+    print( ( $pep_check[-1] || 0 ) . " peptide map files\n" );
     my $test_failed = 0;
-    for(my $i=1; $i < $dna_check[-1]; $i++){
-      if($dna_check[$i] != $i){
-	print "DNA $i file not found\n"; 
-	$test_failed = 1;
-      }
+    for ( my $i = 1 ; $i < ( $dna_check[-1] || 0 ) ; $i++ ) {
+        if ( $dna_check[$i] != $i ) {
+            print "DNA $i file not found\n";
+            $test_failed = 1;
+        }
     }
-    for(my $i=1; $i < $pep_check[-1]; $i++){
-      if($pep_check[$i] != $i){
-	print "PEPTIDE $i file not found\n"; 
-	$test_failed = 1;
-      }
+    for ( my $i = 1 ; $i < ( $pep_check[-1] || 0 ) ; $i++ ) {
+        if ( $pep_check[$i] != $i ) {
+            print "PEPTIDE $i file not found\n";
+            $test_failed = 1;
+        }
     }
     if($test_failed){
       die "Missing Files aborting run\n";
