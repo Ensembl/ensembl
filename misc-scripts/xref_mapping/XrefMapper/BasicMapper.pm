@@ -1396,7 +1396,7 @@ PSQL
       print STDERR "no extra bit for $acc ($xref_id)\n";
       print XREF_P "\n";
     }
-    $xrefs_written{$xref_id};
+    $xrefs_written{$xref_id} = 1;
     $priority_seenit{$key} = "SEEN_IT";
   }
   $sth->finish;
@@ -2939,7 +2939,7 @@ GADES
   $sth->execute();
   
 
-  my $sth = $core_db->prepare(<<TRAN);
+  $sth = $core_db->prepare(<<TRAN);
   UPDATE transcript t 
     SET t.display_xref_id=NULL
 TRAN
@@ -2947,7 +2947,7 @@ TRAN
   $sth->execute();
 
   # gene descriptions
-  my $sth = $core_db->prepare(<<GENE);
+  $sth = $core_db->prepare(<<GENE);
   UPDATE gene g
     SET g.description=NULL 
 GENE
@@ -2979,7 +2979,7 @@ GENE
   print FILE "INSERT INTO meta (meta_key,meta_value) VALUES ('xref.timestamp', NOW())\n";
   close(FILE);
 
-  my $mysql_command = $self->get_mysql_command($core_db);
+  $mysql_command = $self->get_mysql_command($core_db);
   system( "$mysql_command < $file" ) == 0 
       or print( "ERROR: parsing $file in mysql\n" );
 
@@ -3007,7 +3007,7 @@ GENE
   print FILE    "AND x.external_db_id = e.external_db_id AND e.status=\'KNOWNXREF\';\n";
   close(FILE);
 
-  my $mysql_command = $self->get_mysql_command($core_db);
+  $mysql_command = $self->get_mysql_command($core_db);
   system( "$mysql_command < $file" ) == 0 
       or print( "ERROR: parsing $file in mysql\n" );
 }
@@ -3759,7 +3759,7 @@ EOS
 	print STDERR "PROBLEM: key =$key\n\txref = $xref_id\n\toffset is $xref_id_offset\n";
       }
       print XREF2 "\tINFERRED_PAIR\tGenerated via its Pair ".$priority_seenit{$key}."\n";
-      $xrefs_written{$xref_id};
+      $xrefs_written{$xref_id} = 1;
 	
     }
     $sth->finish;
@@ -3826,7 +3826,7 @@ EOS
 		print XREF2 ($xref_id+$xref_id_offset)."\t". $source_to_external_db{$source_id}.
 		  "\t$acc\t$label\t$ver\t$desc";
 		print XREF2 "\tDEPENDENT\tGenerated via ".$master_acc{$good2missed{$goodxref}-$xref_id_offset}."\n";
-		$xrefs_written{$xref_id};
+		$xrefs_written{$xref_id} = 1;
 	      }
 	      
 	      $max_object_xref_id++;
@@ -3860,7 +3860,7 @@ EOS
 		print XREF2 ($xref_id+$xref_id_offset)."\t". $source_to_external_db{$source_id}.
 		  "\t$acc\t$label\t$ver\t$desc";
 		print XREF2 "\tDEPENDENT\tGenerated via ".$master_acc{$good2missed{$goodxref}-$xref_id_offset}."\n";
-		$xrefs_written{$xref_id};
+		$xrefs_written{$xref_id} = 1;
 	      }
 	      
 	      $max_object_xref_id++;
@@ -3911,7 +3911,7 @@ EOS
 	      print XREF2 ($xref_id+$xref_id_offset)."\t". $source_to_external_db{$source_id}.
 		"\t$acc\t$label\t$ver\t$desc";
 	      print XREF2 "\tDEPENDENT\tGenerated via ".$master_acc{$good2missed{$goodxref}-$xref_id_offset}."\n";
-	      $xrefs_written{$xref_id};
+	      $xrefs_written{$xref_id} = 1;
 	    }
 	    
 	    
@@ -3946,7 +3946,7 @@ EOS
 	      print XREF2 ($xref_id+$xref_id_offset)."\t". $source_to_external_db{$source_id}.
 		"\t$acc\t$label\t$ver\t$desc";
 	      print XREF2 "\tDEPENDENT\tGenerated via ".$master_acc{$good2missed{$goodxref}-$xref_id_offset}."\n";
-	      $xrefs_written{$xref_id};
+	      $xrefs_written{$xref_id} = 1;
 	    }
 	    
 	    $max_object_xref_id++;
@@ -3985,7 +3985,7 @@ EOS
        print "$added_transcript transcripts\n";
    }
 
-  my $file = $self->core->dir()."/pairs_xref.txt";
+  $file = $self->core->dir()."/pairs_xref.txt";
   
   if(-s $file){
     my $sth = $self->core->dbc->prepare("LOAD DATA LOCAL INFILE \'$file\' IGNORE INTO TABLE xref");
@@ -4205,8 +4205,6 @@ sub unmapped_data_for_prioritys{
         # else if priotrity_failed 
            #write unmapped object.
 
-  my $description_missed = "Unable to match to any ensembl entity at all";
-  
   my $sth = $self->core->dbc->prepare("select unmapped_reason_id from unmapped_reason where full_description like '".$description_missed."'");  
   $sth->execute();
   my $xref_missed_id;
@@ -4381,7 +4379,6 @@ sub write_dependent_unmapped_objects{
   }
   $sth->finish;
 
-  my $max_unmapped_object_id;
   $sth = $self->core->dbc->prepare("select MAX(unmapped_object_id) ".
                                       "from unmapped_object");
   $sth->execute();
