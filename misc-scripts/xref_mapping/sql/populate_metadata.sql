@@ -163,7 +163,7 @@ INSERT INTO source VALUES (4025, "miRBase_predicted", 1, 'N',70, 1, "");
 
 # temporary (?) source for mapping Havana OTT transcripts to Ensembl transcripts
 INSERT INTO source VALUES (5000, 'OTTT', 1, 'Y', 50, 1, "");
-INSERT INTO source VALUES (5005, 'Vega', 1, 'Y', 50, 1, "");
+INSERT INTO source VALUES (5005, 'Vega_transcript', 1, 'Y', 50, 1, "");
 
 # Illumina
 INSERT INTO source VALUES (5011, 'Illumina_V1', 1, 'Y', 50, 1, "");
