@@ -43,7 +43,7 @@ sub run {
     # note currently we ignore all the other cross-references in the IPI file
 
     # only interested in species with the taxonomy ID were looking for
-    next if ($tax_id != $species_tax_id);
+    next if ( !defined $tax_id || $tax_id != $species_tax_id );
 
     # make sequence into one long string
     $sequence =~ s/\n//g;
