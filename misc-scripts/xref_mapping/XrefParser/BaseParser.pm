@@ -180,7 +180,8 @@ sub run
 	      $summary{$parser}++;
 	    }
 	    else{
-                update_source( $dbi, $source_url_id, $file_cs, $file );
+                update_source( $dbi, $source_url_id, $file_cs,
+                    $local_file );
 	    }
 	  }
 	  else{
