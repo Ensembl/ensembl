@@ -40,6 +40,7 @@ GetOptions(
 @species = split(/,/,join(',',@species));
 @sources  = split(/,/,join(',',@sources));
 
+$| = 1;
 
 if ( !$user || !$host || !$dbname ) {
     usage();
