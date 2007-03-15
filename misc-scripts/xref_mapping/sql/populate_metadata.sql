@@ -173,8 +173,8 @@ INSERT INTO source VALUES (5012, 'Illumina_V2', 1, 'Y', 50, 1, "");
 INSERT INTO source VALUES (5020, 'Codelink', 1, 'Y', 50, 1, "");
 
 # IMGT sources for Ig/TCR segments
-INSERT into source VALUES(4100, 'IMGT/GENE-DB', '200641-6', 'Y', 40, 1, "");
-INSERT into source VALUES(4101, 'IMGT/LIGM-DB', '200641-6', 'N', 10, 1, "");
+INSERT into source VALUES(4100, 'IMGT/GENE_DB', '200641-6', 'Y', 40, 1, "");
+INSERT into source VALUES(4101, 'IMGT/LIGM_DB', '200641-6', 'N', 10, 1, "");
 
 
 
