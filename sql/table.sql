@@ -491,7 +491,7 @@ CREATE TABLE transcript_supporting_feature (
 CREATE TABLE transcript (
 
   transcript_id               INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,  
-  gene_id                     INT(10) UNSIGNED NOT NULL,
+  gene_id                     INT(10) UNSIGNED,
   analysis_id                 SMALLINT UNSIGNED NOT NULL,
   seq_region_id               INT(10) UNSIGNED NOT NULL, 
   seq_region_start            INT(10) UNSIGNED NOT NULL, 
