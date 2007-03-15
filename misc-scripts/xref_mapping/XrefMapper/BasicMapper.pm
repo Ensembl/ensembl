@@ -1627,10 +1627,16 @@ PSQL
 	if(!defined($updated_source{$external_db_id})){
 	  $self->cleanup_sources_file($external_db_id);
 	}
-	print XREF ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $accession . 
-	  "\t" . $label . "\t" . $version . "\t" . $description . "\tMISC\tNo match\n";
-	
-	#dump out dependencies aswell
+
+        print XREF ( $xref_id + $xref_id_offset ) . "\t"
+          . ( $external_db_id || '' ) . "\t"
+          . ( $accession      || '' ) . "\t"
+          . ( $label          || '' ) . "\t"
+          . ( $version        || '' ) . "\t"
+          . ( $description    || '' ) . "\t" . "MISC" . "\t"
+          . "No match\n";
+
+        #dump out dependencies aswell
 
 	$XXXxref_id_to_accession{$xref_id} = $accession;
 	if(!defined($accession) or $accession eq ""){
@@ -1742,7 +1748,15 @@ sub dump_orphan_xrefs() {
 	  $self->cleanup_sources_file($external_db_id);
 	}
 	if(!defined($priority_xref_source_id{$xref_id})){
-	  print XREF ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $accession . "\t" . $label . "\t" . $version . "\t" . $description . "\tMISC\tNo match\n";
+
+            print XREF ( $xref_id + $xref_id_offset ) . "\t"
+              . ( $external_db_id || '' ) . "\t"
+              . ( $accession      || '' ) . "\t"
+              . ( $label          || '' ) . "\t"
+              . ( $version        || '' ) . "\t"
+              . ( $description    || '' ) . "\t" . "MISC" . "\t"
+              . "No match\n";
+
 	  $xrefs_written{$xref_id} = 1;
 	  $count++;
 	}
@@ -1901,7 +1915,17 @@ sub dump_direct_xrefs {
 	  }
           next; # do not store XREF or OBJECT. do much later
 	}
-        print XREF ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $accession . "\t" . $label . "\t" . $version . "\t" . $description ."\t". "DIRECT" . "\t" . "Externally assigned relationship between $ensembl_stable_id and $accession" . "\n";
+
+        print XREF ( $xref_id + $xref_id_offset ) . "\t"
+          . ( $external_db_id || '' ) . "\t"
+          . ( $accession      || '' ) . "\t"
+          . ( $label          || '' ) . "\t"
+          . ( $version        || '' ) . "\t"
+          . ( $description    || '' ) . "\t"
+          . "DIRECT" . "\t"
+          . "Externally assigned relationship between "
+          . $ensembl_stable_id . " and "
+          . $accession . "\n";
 
         $xrefs_written{$xref_id} = 1;
       }
@@ -1936,7 +1960,18 @@ sub dump_direct_xrefs {
               if(!defined($updated_source{$external_db_id})){
                 $self->cleanup_sources_file($external_db_id);
               }
-              print XREF ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $accession . "\t" . $label . "\t" . $version . "\t" . $description ."\t". "DIRECT" . "\t" . "Externally assigned relationship between $ensembl_stable_id and $accession" ."\n";
+
+                print XREF ( $xref_id + $xref_id_offset ) . "\t"
+                  . ( $external_db_id || '' ) . "\t"
+                  . ( $accession      || '' ) . "\t"
+                  . ( $label          || '' ) . "\t"
+                  . ( $version        || '' ) . "\t"
+                  . ( $description    || '' ) . "\t"
+                  . "DIRECT" . "\t"
+                  . "Externally assigned relationship between "
+                  . $ensembl_stable_id . " and "
+                  . $accession . "\n";
+
               $xrefs_written{$xref_id} = 1;
             }
             $ensembl_internal_id = $stable_id_to_internal_id{$type}->{$stable_id};
@@ -2229,7 +2264,16 @@ sub dump_core_xrefs {
 	  if(!defined($updated_source{$external_db_id})){
 	    $self->cleanup_sources_file($external_db_id);
 	  }
-	  print XREF ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $accession . "\t" . $label . "\t" . $version . "\t" . $description . "\t" . "SEQUENCE_MATCH\t" . "Relationship generated from exonerate mapping" . "\n";
+
+            print XREF ( $xref_id + $xref_id_offset ) . "\t"
+              . ( $external_db_id || '' ) . "\t"
+              . ( $accession      || '' ) . "\t"
+              . ( $label          || '' ) . "\t"
+              . ( $version        || '' ) . "\t"
+              . ( $description    || '' ) . "\t"
+              . "SEQUENCE_MATCH" . "\t"
+              . "Relationship generated from exonerate mapping\n";
+
 	  $xrefs_written{$xref_id} = 1;
 	  $source_ids{$source_id} = $source_id;
 	}
@@ -2270,7 +2314,17 @@ sub dump_core_xrefs {
 	}
 	
 	if(!defined($priority_xref_source_id{$xref_id})){
-	  print XREF ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $accession . "\t" . $label . "\t" . $version . "\t" . $description . "\t" . "DEPENDENT" . "\t" . "Generated via $master_accession\n";
+
+            print XREF ( $xref_id + $xref_id_offset ) . "\t"
+              . ( $external_db_id || '' ) . "\t"
+              . ( $accession      || '' ) . "\t"
+              . ( $label          || '' ) . "\t"
+              . ( $version        || '' ) . "\t"
+              . ( $description    || '' ) . "\t"
+              . "DEPENDENT" . "\t"
+              . "Generated via "
+              . $master_accession . "\n";
+
 	}
 	$xrefs_written{$xref_id} = 1;
 	$source_ids{$source_id} = $source_id;
@@ -4041,7 +4095,17 @@ sub dump_all_dependencies{
 	}
 	
 	if(!defined($priority_xref_source_id{$xref_id})){
-	    print XREF ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $accession . "\t" . $label . "\t" . $version . "\t" . $description .  "\t" . "DEPENDENT" . "\t" . "Generated via $master_accession\n";
+
+            print XREF ( $xref_id + $xref_id_offset ) . "\t"
+              . ( $external_db_id || '' ) . "\t"
+              . ( $accession      || '' ) . "\t"
+              . ( $label          || '' ) . "\t"
+              . ( $version        || '' ) . "\t"
+              . ( $description    || '' ) . "\t"
+              . "DEPENDENT" . "\t"
+              . "Generated via "
+              . $master_accession . "\n";
+
 	    push @return, ($xref_id+$xref_id_offset);
 	    $xrefs_written{$xref_id} = 1;
 	}
@@ -4155,8 +4219,14 @@ PSQL
 	  $self->cleanup_sources_file($external_db_id);
 	}
 	if(!defined($priority_xref_source_id{$xref_id})){
-	  print XREF ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $accession . 
-	             "\t" . $label . "\t" . $version . "\t" . $description . "\tMISC\tNo match\n";
+
+            print XREF ( $xref_id + $xref_id_offset ) . "\t"
+              . ( $external_db_id || '' ) . "\t"
+              . ( $accession      || '' ) . "\t"
+              . ( $label          || '' ) . "\t"
+              . ( $version        || '' ) . "\t"
+              . ( $description    || '' ) . "\t" . "MISC" . "\t"
+              . "No match\n";
 
 #dump out dependencies aswell
 	  
@@ -4437,9 +4507,17 @@ PSQL
 
 
       if (!$xrefs_written{$xref_id}) {
-        print XREF ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $accession . "\t" .
-          $label . "\t" . $version . "\t" . $description .  "\t" . "DEPENDENT" . "\t" .
-            "No mapping ".$unmapped_primary_xref{$xref_id}. "\n";
+
+        print XREF ( $xref_id + $xref_id_offset ) . "\t"
+          . ( $external_db_id || '' ) . "\t"
+          . ( $accession      || '' ) . "\t"
+          . ( $label          || '' ) . "\t"
+          . ( $version        || '' ) . "\t"
+          . ( $description    || '' ) . "\t"
+          . "DEPENDENT" . "\t"
+          . "No mapping "
+          . $unmapped_primary_xref{$xref_id} . "\n";
+
         $xrefs_written{$xref_id} = 1;
       }
       if(!defined($object_succesfully_mapped{$xref_id})){
