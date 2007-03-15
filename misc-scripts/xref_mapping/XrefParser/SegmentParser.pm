@@ -20,7 +20,6 @@ if (!defined(caller())) {
 
 }
 
-
 sub run {
   my $self = shift if (defined(caller(1)));
 
@@ -33,7 +32,7 @@ sub run {
   }
   if(!defined($species_id)){
     $species_id = XrefParser::BaseParser->get_species_id_for_filename($file);
-  }                                                
+  }
 
   my %name_2_source_id=();
   my $added=0;
@@ -49,6 +48,8 @@ sub run {
     chomp $line;
     my ($gene_id,$transcript_id,$source_name,$acc,$display_label,$description, $status)
       = split("\t",$line);
+
+      $source_name =~ tr/-/_/;  # No minuses allowed, change to underscore.
 
     if(!defined($name_2_source_id{$source_name})){
       my $tmp = $self->get_source_id_for_source_name($source_name);
