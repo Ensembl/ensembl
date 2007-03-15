@@ -5,7 +5,7 @@
 # description:
 # Add probe2transcript to type enum in unmapped_object
 
-ALTER TABLE unmapped_object CHANGE COLUMN type type ENUM('xref','cDNA','Marker', 'probe2transcript');
+ALTER TABLE unmapped_object CHANGE COLUMN type type ENUM('xref','cDNA','Marker', 'probe2transcript') NOT NULL;
 
 
 # patch identifier
