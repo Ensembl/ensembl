@@ -8,5 +8,5 @@
 ALTER TABLE external_db CHANGE COLUMN type type ENUM('ARRAY', 'ALT_TRANS', 'MISC', 'LIT', 'PRIMARY_DB_SYNONYM');
 
 # patch identifier
-INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_43_44_d.sql|external_db_type_syn');
+INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_43_44_f.sql|external_db_type_syn');
 
