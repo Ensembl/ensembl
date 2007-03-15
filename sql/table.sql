@@ -1555,7 +1555,7 @@ CREATE TABLE ditag (
        name              VARCHAR(30) NOT NULL,
        type              VARCHAR(30) NOT NULL,
        tag_count         smallint(6) UNSIGNED NOT NULL default 1,
-       sequence          TINYTEXT,
+       sequence          TINYTEXT NOT NULL,
 
        PRIMARY KEY (ditag_id)
 
@@ -1581,7 +1581,7 @@ CREATE TABLE ditag_feature (
        hit_end            INT(10) UNSIGNED NOT NULL default '0',
        hit_strand         TINYINT(1) NOT NULL default '0',
        cigar_line         TINYTEXT NOT NULL,
-       ditag_side         CHAR default '',
+       ditag_side         ENUM('F', 'L', 'R') NOT NULL,
 
        PRIMARY KEY  (ditag_feature_id),
        KEY (ditag_id),
