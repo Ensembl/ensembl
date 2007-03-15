@@ -873,7 +873,7 @@ INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_43_44_a.sql|rati
 INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_43_44_b.sql|optimise_ditag_tables');
 INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_43_44_c.sql|external_db_type');
 INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_43_44_d.sql|translation_stable_id_unique');
-INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_43_44_f.sql|external_db_type_syn');
+INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_43_44_e.sql|external_db_type_syn');
 
 
 ################################################################################
