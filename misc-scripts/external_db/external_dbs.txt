@@ -157,7 +157,8 @@
 4400	Xenopus_Jamboree	1	KNOWN	1	0	1	Jamboree	MISC
 4500	Tiffin	1	XREF	1	0	1	Tiffin DNA motifs	MISC
 4600	OTTT	1	XREF	1	0	1	Havana transcripts	ALT_TRANS
-4650	shares_CDS_with	1	XREF	1	0	1	transcript having same CDS	ALT_TRANS
+4660	shares_CDS_with_ENST	1	XREF	1	0	1	Ensembl transcript having same CDS	ALT_TRANS
+4670	shares_CDS_with_OTTT	1	XREF	1	0	1	Havana transcript having same CDS	ALT_TRANS
 4700	Medaka	1	XREF	1	0	1	Medaka Genome Project	MISC
 4800	ENST	1	XREF	1	0	1	Ensembl transcripts	MISC
 4900	TCAG	1	XREF	1	0	75	TCAG Chr 7 Annotation	MISC
