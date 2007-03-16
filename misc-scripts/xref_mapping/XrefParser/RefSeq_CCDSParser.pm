@@ -14,7 +14,7 @@ sub run {
 
   my $refseq_io = $self->get_filehandle($file);
 
-  if ( defined $refseq_io ) {
+  if ( !defined $refseq_io ) {
     print "Could not open $file\n";
     return 1;
   }
