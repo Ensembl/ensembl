@@ -1,7 +1,7 @@
 # this file is intended to hold all valid attrib_type
 # table entries for all ensembl databases that we release
 #
-# If you use the provided upload script, commentlines and 
+# If you use the provided upload script, commentlines and
 # emptry lines should be automatically removed, all
 # other lines should contain tab delimited database entries
 # for the attrib_type table
@@ -44,9 +44,9 @@
 # Snps on a seq_region. See above.
 10	SNPCount	SNP Count	Total Number of SNPs
 
-# another seq_region attribute. When a seq_region should be used with a 
+# another seq_region attribute. When a seq_region should be used with a
 # different codon table this attrbutes value should contain its number.
-# This is a bioperl codon table, find out from there which number to use 
+# This is a bioperl codon table, find out from there which number to use
 # for your seq_region
 # Useful for Mitochondrium and Bacteria with non standard codon tables
 11	codon_table	Codon Table	Alternate codon table
@@ -60,25 +60,25 @@
 
 13	bacend	bacend
 
-# Contains the htg phase for clones. 
+# Contains the htg phase for clones.
 14	htg	htg	High Throughput phase attribute
 
 15	miRNA	Micro RNA	Coordinates of the mature miRNA
 
 # A sequence region that you consider not part of the reference genome should
 # be tagged as non_ref in seq_region_attrib. Chromosome 6 haplotypes in human
-# are exmaples of that. 
+# are exmaples of that.
 16	non_ref	Non Reference	Non Reference Sequence Region
 
 17	sanger_project	Sanger Project name
 
-18	clone_name	Clone name 
+18	clone_name	Clone name
 
-19	fish	FISH location 
+19	fish	FISH location
 
-21	org	Sequencing centre 
+21	org	Sequencing centre
 
-22	method	Method 
+22	method	Method
 
 23	superctg	Super contig id
 
@@ -86,13 +86,13 @@
 
 25	inner_end	Min end value
 
-26	state	Current state of clone 
+26	state	Current state of clone
 
 27	organisation	Organisation sequencing clone
 
-28	seq_len	Accession length 
+28	seq_len	Accession length
 
-29	fp_size	FP size 
+29	fp_size	FP size
 
 30	BACend_flag	BAC end flags
 
@@ -135,7 +135,7 @@
 56	KnownPTCount	processed_transcript_KNOWN	Number of Known Processed Transcripts
 57	ccds	CCDS	CCDS identifier
 
-# make first amino acid methionine 
+# make first amino acid methionine
 58	initial_met	Initial methionine	Set first amino acid to methionine
 
 # label frameshifts modelled as short (1,2,4,5 bp) introns
@@ -184,8 +184,8 @@
 94	alt_org	Alt org
 
 # anacode attribs added by ml6 29/11/06 - seen in yeast but not others
-95	intl_clone_name	International Clone Name	
-96	embl_version	EMBL Version	
+95	intl_clone_name	International Clone Name
+96	embl_version	EMBL Version
 97	chr	Chromosome Name	Chromosome Name Contained in the Assembly
 98	equiv_asm	Equivalent EnsEMBL assembly	For full chromosomes made from NCBI AGPs
 99	GeneNo_ncRNA	ncRNA Gene Count	Number of ncRNA Genes
@@ -197,9 +197,9 @@
 109	HitSimilarity	hit similarity	percentage id to parent transcripts
 110	HitCoverage	hit coverage	coverage of parent transcripts
 111	PropNonGap	proportion non gap	proportion non gap
-112	NumStops	number of stops		
+112	NumStops	number of stops
 113	GapExons	gap exons	number of gap exons
-114	SourceTran	source transcript	source transcript	
+114	SourceTran	source transcript	source transcript
 115	EndNotFound	end not found	end not found
 116	StartNotFound	start not found	start not found
 
@@ -209,3 +209,14 @@
 118	ensembl_name	Ensembl name	Name of equivalent Ensembl chromosome
 119	NoAnnotation	NoAnnotation	Clones without manual annotation
 120	hap_contig	Haplotype contig	Contig present on a haplotype
+
+# loutre attribs added by ml6
+121	annotated	Clone Annotation Status
+122	keyword	Clone Keyword
+123	hidden_remark	Hidden Remark
+124	mRNA_start_NF	mRNA start not found
+125	mRNA_end_NF	mRNA end not found
+126	cds_start_NF	cds start not not
+127	cds_end_NF	cds end not found
+128	write_access	Write access for Sequence Set	1 for writable , 0 for read-only
+129	hidden	Hidden Sequence Set
