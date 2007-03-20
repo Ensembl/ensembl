@@ -398,6 +398,7 @@ sub dump_xref{
     }
   }
 
+  print "Dumping Xref fasta files\n";
   $i=0;
   foreach my $list (@lists){
     $method[$i] = shift @$list;
@@ -560,6 +561,9 @@ sub fetch_and_dump_seq{
   if(defined($self->dumpcheck()) and -e $ensembl->protein_file() and -e $ensembl->dna_file()){
     return;
   }
+
+  print "Dumping Ensembl Fasta files\n";
+
   open(DNA,">".$ensembl->dna_file()) 
     || die("Could not open dna file for writing: ".$ensembl->dna_file."\n");
 
@@ -1255,14 +1259,6 @@ sub parse_mappings {
   $self->dump_orphan_xrefs($xref_id_offset);
 
 
-  # dump triage type data
-  if(!$notriage){
-    $self->dump_triage_data($xref_id_offset);
-  }  
-  # if no triage then dump the xrefs at least
-  else{
-    $self->dump_xref_with_no_triage_data($xref_id_offset);
-  }
 
 }
 
@@ -1387,8 +1383,16 @@ PSQL
   $sth->bind_columns(\$xref_id, \$acc, \$ver, \$label, \$desc, \$source_id);
   while($sth->fetch()){
     my $key = $priority_source_id_to_name{$priority_xref_source_id{$xref_id}}.":".$acc;
-    print XREF_P ($xref_id+$xref_id_offset)."\t". $source_to_external_db{$source_id}.
-      "\t$acc\t$label\t$ver\t$desc";
+#    print XREF_P ($xref_id+$xref_id_offset)."\t". $source_to_external_db{$source_id}.
+#      "\t$acc\t$label\t$ver\t$desc";
+
+    print XREF_P ( $xref_id + $xref_id_offset ) . "\t"
+      . ( $source_to_external_db{$source_id} || '' ) . "\t"
+      . ( $acc                               || '' ) . "\t"
+      . ( $label                             || '' ) . "\t"
+      . ( $ver                               || '' ) . "\t"
+      . ( $desc                              || '' ) ;
+
     if(defined( $priority_xref_extra_bit{$xref_id})){
       print XREF_P $priority_xref_extra_bit{$xref_id}; # no need for "\n" already added;
     }
@@ -1494,9 +1498,11 @@ sub get_failed_id{
 }
 
 sub dump_triage_data() {
-  my ($self, $xref_id_offset) = @_;
+  my ($self) = @_;
+
 
   print "Dumping triage data\n";
+  my $xref_id_offset = $self->xref_id_offset();
   my $translation="";
   my $translation_count=0;
   my $transcript="";
@@ -1562,9 +1568,9 @@ PSQL
     $source_2_seqtype{$prim} = $seq_type;
   }
 
-  open (XREF, ">>" . $self->core->dir() . "/xref.txt");
+  open (XREF, ">" . $self->core->dir() . "/xref_triage.txt");
 
-  open (UNMAPPED_OBJECT, ">" . $self->core->dir() . "/unmapped_object.txt");
+  open (UNMAPPED_OBJECT, ">" . $self->core->dir() . "/unmapped_object_triage.txt");
 
   # get the Unmapped Object Reasons for the core database and 
   # add new ones if the standard xref descriptions are not there
@@ -1701,7 +1707,20 @@ PSQL
   }
   close(XREF);
   close(UNMAPPED_OBJECT);
-#  close(UNMAPPED_REASON);
+
+  foreach my $table ("xref","unmapped_object"){
+    my $file =  $self->core->dir() . "/" . $table . "_triage.txt";
+    
+    if(-s $file){
+      my $sth = $self->core->dbc->prepare("LOAD DATA LOCAL INFILE \'$file\' IGNORE INTO TABLE $table");
+      print "Uploading data in $file to $table\n";
+      $sth->execute();
+    }
+    else{
+      print "NO file or zero size file, so not able to load file $file to $table\n";
+    }
+  }
+  
 }
 
 # dump xrefs that don't appear in either the primary_xref or dependent_xref tables
@@ -1796,7 +1815,7 @@ sub dump_direct_xrefs {
   my $worm_transcript_source_id = undef;
   
   # Will need to look up translation stable ID from transcript stable ID, build hash table
-  print "  Building transcript stable ID -> translation stable ID lookup table\n";
+
   my %transcript_stable_id_to_translation_stable_id;
   my $trans_sth = $self->core->dbc->prepare("SELECT tss.stable_id as transcript, tls.stable_id AS translation FROM translation tl, translation_stable_id tls, transcript_stable_id tss WHERE tss.transcript_id=tl.transcript_id AND tl.translation_id=tls.translation_id");
   $trans_sth->execute();
@@ -1806,9 +1825,6 @@ sub dump_direct_xrefs {
     $transcript_stable_id_to_translation_stable_id{$transcript_stable_id} = $translation_stable_id;
   }
   $trans_sth->finish();
-
-#  # Will need lookup tables for gene/transcript/translation stable ID to internal ID
-#  $self->build_stable_id_to_internal_id_hash();
 
 
   # SQL / statement handle for getting all direct xrefs
@@ -1859,6 +1875,13 @@ sub dump_direct_xrefs {
     }
     
     my $ensembl_internal_id;
+    if(!defined($type)){
+      $type = "";
+    }
+    if(!defined($ensembl_stable_id)){
+      $ensembl_stable_id = "";
+    }
+
     if(defined($stable_id_to_internal_id{$type}->{$ensembl_stable_id})){
       $ensembl_internal_id = $stable_id_to_internal_id{$type}->{$ensembl_stable_id};
     }
@@ -2045,11 +2068,7 @@ sub build_stable_id_to_internal_id_hash {
 
   my ($self) = @_;
 
-#  my %stable_id_to_internal_id;
-#  my %internal_id_to_stable_id;
   foreach my $type ('gene', 'transcript', 'translation') { # Add exon here if required
-
-    print "Caching stable ID -> internal ID links for ${type}s\n";
 
     my $core_sql = "SELECT ${type}_id, stable_id FROM ${type}_stable_id" ;
     my $sth = $self->core->dbc->prepare($core_sql);
@@ -2384,7 +2403,6 @@ sub dump_core_xrefs {
 	    # write a go_xref with the appropriate linkage type
 	    print GO_XREF $object_xref_id . "\t" . $linkage_annotation . "\n"  if ($source_id == $go_source_id);
 	    my $master_accession = $XXXxref_id_to_accession{$master_xref_id};
-#	    print "Wrote object ID $object_xref_id linkage $linkage_annotation for accession $accession master xref id $master_xref_id master accession $master_accession\n" if ($source_id == $go_source_id);
 	
 	    # Also store *parent's* query/target identity for dependent xrefs
 	    print GO_XREF $object_xref_id . "\t" . $linkage_annotation . "\n"  if ($source_id == $go_source_id);
@@ -2416,15 +2434,13 @@ sub dump_core_xrefs {
   close(EXTERNAL_SYNONYM);
   close(GO_XREF);
   close(IDENTITY_XREF);
-  close (PRIORITY_FILE);
+  close(PRIORITY_FILE);
 
   return $object_xref_id;
 
 }
 
 
-
-#IANL
 
 sub build_transcript_and_gene_display_xrefs {
   my ($self) = @_;
@@ -2444,37 +2460,15 @@ sub build_transcript_and_gene_display_xrefs {
   }
   $sth1->finish;
 
+
   #############################
   #create the tempory table
   #############################
 
-  my $create_sql = (<<CSQL);
-  CREATE TABLE identity_xref_temp (
-
-  object_xref_id          INT(10) UNSIGNED NOT NULL,
-  query_identity          INT(5),
-  target_identity         INT(5),
-
-  hit_start               INT,
-  hit_end                 INT,
-  translation_start       INT,
-  translation_end         INT,
-  cigar_line              TEXT,
-
-  score                   DOUBLE,
-  evalue                  DOUBLE,
-  analysis_id             INT(10) UNSIGNED NOT NULL,
-
-  PRIMARY KEY (object_xref_id),
-  KEY analysis_idx (analysis_id)
-
-) COLLATE=latin1_swedish_ci TYPE=MyISAM;
-CSQL
-
-
-  my $sth = $self->core->dbc->prepare($create_sql);
+  my $sth = $self->core->dbc->prepare("create table identity_xref_temp like identity_xref");
   print "creating table identity_xref_temp\n";
-  $sth->execute() || die "Could not \n$create_sql\n";
+  $sth->execute() || die "Could not \ncreate table identity_xref_temp like identity_xref\n";
+
 
   #############################
   #populate the tempory table
@@ -2500,7 +2494,6 @@ CSQL
   foreach my $ord (reverse(@presedence)){
     $i++;
     $level{$external_name_to_id{$ord}} = $i;
- #   print "$ord\t".$external_name_to_id{$ord}."\t$i\n";
   }
 
   if(!scalar(keys %genes_to_transcripts)){
@@ -2508,25 +2501,17 @@ CSQL
   }
 
   if(!scalar(keys %translation_to_transcript)){
-    my $sth = $self->core->dbc->prepare("SELECT translation_id, transcript_id FROM translation");
-    $sth->execute();
-
-    my ($translation_id, $transcript_id);
-    $sth->bind_columns(\$translation_id, \$transcript_id);
-
-    while ($sth->fetch()) {
-      $translation_to_transcript{$translation_id} = $transcript_id;
-      $transcript_to_translation{$transcript_id} = $translation_id if ($translation_id);
-    }
+    $self->load_translation_to_transcript();
   }
 
 
 
   my $sql = (<<ESQL);
-  SELECT ox.xref_id, ix.query_identity, ix.target_identity,  x.external_db_id 
+  SELECT ox.xref_id, ix.query_identity, ix.target_identity,  x.external_db_id, x.display_label 
     FROM (object_xref ox, xref x) 
       LEFT JOIN identity_xref ix ON (ox.object_xref_id = ix.object_xref_id) 
-	WHERE x.xref_id = ox.xref_id and ox.ensembl_object_type = ? and ox.ensembl_id = ? and x.info_type = 'SEQUENCE_MATCH'
+	WHERE x.xref_id = ox.xref_id and ox.ensembl_object_type = ? 
+              and ox.ensembl_id = ? and x.info_type = 'SEQUENCE_MATCH'
 ESQL
 
   my $primary_sth = $self->core->dbc->prepare($sql) || die "prepare failed for $sql\n";
@@ -2534,17 +2519,19 @@ ESQL
 
 
   $sql = (<<ZSQL);
-  SELECT ox.xref_id, ix.query_identity, ix.target_identity, x.external_db_id
+  SELECT ox.xref_id, ix.query_identity, ix.target_identity, x.external_db_id, x.display_label
     FROM (object_xref ox, xref x) 
       LEFT JOIN identity_xref_temp ix ON (ox.object_xref_id = ix.object_xref_id) 
-	WHERE x.xref_id = ox.xref_id and ox.ensembl_object_type = ? and ox.ensembl_id = ? and x.info_type = 'DEPENDENT'
+	WHERE x.xref_id = ox.xref_id and ox.ensembl_object_type = ? 
+              and ox.ensembl_id = ? and x.info_type = 'DEPENDENT'
 ZSQL
  
   my $dependent_sth = $self->core->dbc->prepare($sql) || die "prepare failed for $sql\n";
 
 
+
   $sql = (<<QSQL);
-  SELECT x.xref_id, x.external_db_id
+  SELECT x.xref_id, x.external_db_id, x.display_label
    FROM object_xref o, xref x  
     WHERE x.xref_id = o.xref_id 
         and o.ensembl_object_type = ? and o.ensembl_id = ? and x.info_type = 'DIRECT'
@@ -2553,21 +2540,22 @@ QSQL
   my $direct_sth = $self->core->dbc->prepare($sql) || die "prepare failed for $sql\n";
 
 
+
+# get xrefs connect directly to the gene.
+
   $sql = (<<GSQL);
   SELECT x.xref_id, x.external_db_id
    FROM object_xref o, xref x  
     WHERE x.xref_id = o.xref_id 
-        and o.ensembl_object_type = ? and o.ensembl_id = ?
+        and o.ensembl_object_type = 'Gene' and o.ensembl_id = ?
 GSQL
                              
   my $gene_sth = $self->core->dbc->prepare($sql) || die "prepare failed for $sql\n";
 
   my $count =0;
   
-  my ($xref_id, $qid, $tid, $ex_db_id);
+  my ($xref_id, $qid, $tid, $ex_db_id, $display_label);
   
-  
-
   
 
   open (TRANSCRIPT_DX, ">$dir/transcript_display_xref.sql");
@@ -2577,14 +2565,13 @@ GSQL
     
   
   foreach my $gene_id (keys %genes_to_transcripts) {
-#  foreach my $gene_id ("69115"){
     my %percent_id;
     my %level_db;
     my %parent;
     my %percent_id_via_acc;
     my @gene_xrefs = ();
     
-    $gene_sth->execute("Gene", $gene_id) || die "execute failed";
+    $gene_sth->execute($gene_id) || die "execute failed";
     $gene_sth->bind_columns(\$xref_id, \$ex_db_id);
     
     
@@ -2592,12 +2579,8 @@ GSQL
     my $best_gene_level = 0;    # store level
     my $best_gene_percent = 0;  # additoon of precentage ids
 
- #    print "GENE $gene_id\n";
     while($gene_sth->fetch()){
-#      print "PROCESSING xref=$xref_id, ex_db=$ex_db_id level=".$level{$ex_db_id}." \n";
       if($level{$ex_db_id} > $best_gene_level){
-#	print "Setting best gene to $xref_id for database $ex_db_id\n";
-#	print "New gene level id ".$level{$ex_db_id}."\n";;
 	$best_gene_xref = $xref_id;
 	$best_gene_level = $level{$ex_db_id};
       }
@@ -2606,83 +2589,66 @@ GSQL
 
     my @transcripts = @{$genes_to_transcripts{$gene_id}};
     foreach my $transcript_id (@transcripts) {
-#      print "Transcript $transcript_id\n";
-      
+
       my @transcript_xrefs = ();
       
-      $primary_sth->execute("Transcript", $transcript_id ) || die "execute failed";
-      $primary_sth->bind_columns(\$xref_id, \$qid, \$tid, \$ex_db_id);
-      while($primary_sth->fetch()){
-	if($level{$ex_db_id}){ 	
-	  push @transcript_xrefs, $xref_id;
-	  $percent_id{$xref_id}  = $qid + $tid;
-	  $level_db{$xref_id}  = $level{$ex_db_id};
-#	  print "SEQ_MATCH ".$qid."\t".$tid."\t".$xref_id."\t exteral_db_id = ".$ex_db_id."\tlevel=*".$level_db{$xref_id}."*\n";
-	}  
-      }
-      
-      $dependent_sth->execute("Transcript", $transcript_id ) || die "execute failed";
-      $dependent_sth->bind_columns(\$xref_id, \$qid, \$tid, \$ex_db_id);
-      while($dependent_sth->fetch()){
-	if($level{$ex_db_id}){
-	  push @transcript_xrefs, $xref_id;
-	  $percent_id{$xref_id}  = $qid + $tid;
-	  $level_db{$xref_id}  = $level{$ex_db_id};	    
-#	  print "DEPENDENT ".$percent_id{$xref_id}."\t".$xref_id."\t exteral_db_id = ".$ex_db_id."\tlevel=*".$level_db{$xref_id}."*\n";
-	}  
-      }
-      
-      $direct_sth->execute("Transcript", $transcript_id ) || die "execute failed";
-      $direct_sth->bind_columns(\$xref_id, \$ex_db_id);
-      while($direct_sth->fetch()){
-	if($level{$ex_db_id}){             # only if it's on the list	
-	  push @transcript_xrefs, $xref_id;
-	  $level_db{$xref_id}  = $level{$ex_db_id};
-#	  print "DIRECT\t".$xref_id."\t exteral_db_id = ".$ex_db_id."\tlevel=*".$level_db{$xref_id}."*\n";
-	}  
-      }
-      
-      
-      
-      
-      
-      if(defined($transcript_to_translation{$transcript_id})){
-#	print "Translation ".$transcript_to_translation{$transcript_id}."\n";
-	
-	$primary_sth->execute("Translation", $transcript_to_translation{$transcript_id} ) 
-	  || die "execute failed";
-	$primary_sth->bind_columns(\$xref_id, \$qid, \$tid, \$ex_db_id);
+      foreach my $type ("Transcript", "Translation"){
+	my $ens_id;
+	if($type eq "Transcript"){
+	  $ens_id = $transcript_id;
+	}
+	else{
+	  if(defined($transcript_to_translation{$transcript_id})){
+	    $ens_id=$transcript_to_translation{$transcript_id};
+	  }
+	  else{
+	    next;
+	  }
+	}
+	$primary_sth->execute($type, $ens_id ) || die "execute failed";
+	$primary_sth->bind_columns(\$xref_id, \$qid, \$tid, \$ex_db_id, \$display_label);
 	while($primary_sth->fetch()){
-	  if($level{$ex_db_id}){
+	  if($level{$ex_db_id}  and $display_label =~ /\D+/ ){ #correct level and label is not just a number 	
 	    push @transcript_xrefs, $xref_id;
-	    $percent_id{$xref_id}  = $qid + $tid;
+	    if(!defined($qid) || !defined($tid)){
+	      print "PRIMARY $xref_id\n";
+	      $percent_id{$xref_id} = 0;
+	    }
+	    else{
+	      $percent_id{$xref_id}  = $qid + $tid;
+	    }
+	  
 	    $level_db{$xref_id}  = $level{$ex_db_id};
-#	    print "SEQ_MATCH ".$qid."\t".$tid."\t".$xref_id."\t exteral_db_id = ".$ex_db_id."\tlevel=*".$level_db{$xref_id}."*\n";
 	  }  
 	}
 	
-	$dependent_sth->execute("Translation", $transcript_to_translation{$transcript_id}) || die "execute failed";
-	$dependent_sth->bind_columns(\$xref_id, \$qid, \$tid, \$ex_db_id);
+	$dependent_sth->execute($type, $ens_id ) || die "execute failed";
+	$dependent_sth->bind_columns(\$xref_id, \$qid, \$tid, \$ex_db_id, \$display_label);
 	while($dependent_sth->fetch()){
-	  if($level{$ex_db_id}){
-	    push @transcript_xrefs, $xref_id;
+	  if($level{$ex_db_id}  and $display_label =~ /\D+/){
+	  push @transcript_xrefs, $xref_id;
+	  if(!defined($qid) || !defined($tid)){
+	    print "DEPENDENT $xref_id\n";
+	    $percent_id{$xref_id} = 0;
+	  }
+	  else{
 	    $percent_id{$xref_id}  = $qid + $tid;
-	    $level_db{$xref_id}  = $level{$ex_db_id};
-#	    print "DEPENDENT ".$percent_id{$xref_id}."\t".$xref_id."\t exteral_db_id = ".$ex_db_id."\tlevel=*".$level_db{$xref_id}."*\n";
-	  }  
+	  }
+	  $level_db{$xref_id}  = $level{$ex_db_id};	    
+	}  
 	}
 	
-	$direct_sth->execute("Translation", $transcript_to_translation{$transcript_id}) || die "execute failed";
-	$direct_sth->bind_columns(\$xref_id, \$ex_db_id);
+	$direct_sth->execute($type, $ens_id ) || die "execute failed";
+	$direct_sth->bind_columns(\$xref_id, \$ex_db_id, \$display_label);
 	while($direct_sth->fetch()){
-	  if($level{$ex_db_id}){
+	  if($level{$ex_db_id}  and $display_label =~ /\D+/){ 	
 	    push @transcript_xrefs, $xref_id;
+	    $percent_id{$xref_id} = 0;
 	    $level_db{$xref_id}  = $level{$ex_db_id};
-#	    print "DIRECT\t".$xref_id."\t exteral_db_id = ".$ex_db_id."\tlevel=*".$level_db{$xref_id}."*\n";
 	  }  
 	}
-
-      }
+      
+      }      
       
       my $best_tran_xref  = 0; # store xref
       my $best_tran_level = 0; # store level
@@ -2691,24 +2657,18 @@ GSQL
       foreach my $xref_id (@transcript_xrefs) {
 	if(defined($level_db{$xref_id}) and $level_db{$xref_id}){
 	  if($level_db{$xref_id} < $best_tran_level){
-#	    print "ignoring $xref_id as level ".$level_db{$xref_id}." < best ".$best_tran_level."\n";
 	    next;
 	  }
 
 	  if($level_db{$xref_id} == $best_tran_level){
 	    if($percent_id{$xref_id} < $best_tran_percent){
-#	      print "ignoring $xref_id as percent ".$percent_id{$xref_id}." < best ".$best_tran_percent."\n";
 	      next;
 	    }
 	  }
-#	  print "SETTING new top $xref_id percent = ".$percent_id{$xref_id}.", level =".$level_db{$xref_id}."\n";
 	  $best_tran_percent = $percent_id{$xref_id};
 	  $best_tran_level = $level_db{$xref_id};
 	  $best_tran_xref  = $xref_id;
 	}
-#        else{
-#	  print "ignoring $xref_id as it has no level\n";
-#	}
       }       
       
       if($best_tran_xref){
@@ -2725,14 +2685,13 @@ GSQL
           next;
         }
       }
-#      print "Setting best gene to $best_tran_xref\n";
+
       $best_gene_percent = $best_tran_percent;
       $best_gene_level   = $best_tran_level;
       $best_gene_xref    = $best_tran_xref;
     }
   
     if($best_gene_xref){
-#      print "BEST XREF is $best_gene_xref\n";
       print GENE_DX "UPDATE gene g SET g.display_xref_id=" . $best_gene_xref . 
 	" WHERE g.gene_id=" . $gene_id . ";\n";
       print GENE_DX_TXT $best_gene_xref . "\t" . $gene_id ."\n";
@@ -2776,8 +2735,6 @@ sub build_genes_to_transcripts {
 
   my ($self) = @_;
 
-#  print "Getting transcripts for all genes\n";
-
   my $sql = "SELECT gene_id, transcript_id, seq_region_start, seq_region_end FROM transcript";
   my $sth = $self->core->dbc->prepare($sql);
   $sth->execute();
@@ -2790,8 +2747,6 @@ sub build_genes_to_transcripts {
     push @{$genes_to_transcripts{$gene_id}}, $transcript_id;
     $transcript_length{$transcript_id} = $end- $start;
   }
-
-#  print "Got " . scalar keys(%genes_to_transcripts) . " genes\n";
 
 }
 
@@ -2953,7 +2908,7 @@ sub do_upload {
   
   print "Uploading new data\n";
   foreach my $table ("xref", "object_xref", "identity_xref", "external_synonym", 
-		     "go_xref", "interpro", "unmapped_object") {
+		     "go_xref", "interpro") {
 
     my $file = $ensembl->dir() . "/" . $table . ".txt";
 
@@ -3069,7 +3024,20 @@ GENE
 
 
 
+sub load_translation_to_transcript{
+  my ($self) = @_;
 
+  my $sth = $self->core->dbc->prepare("SELECT translation_id, transcript_id FROM translation");
+  $sth->execute();
+  
+  my ($translation_id, $transcript_id);
+  $sth->bind_columns(\$translation_id, \$transcript_id);
+  
+  while ($sth->fetch()) {
+    $translation_to_transcript{$translation_id} = $transcript_id;
+    $transcript_to_translation{$transcript_id} = $translation_id if ($translation_id);
+  }
+}
 
 
 sub new_build_gene_descriptions{
@@ -3084,18 +3052,11 @@ sub new_build_gene_descriptions{
   }
   my @presedence = $self->gene_description_sources();
 
+
+
  if(!scalar(keys %translation_to_transcript)){
-    my $sth = $self->core->dbc->prepare("SELECT translation_id, transcript_id FROM translation");
-    $sth->execute();
-    
-    my ($translation_id, $transcript_id);
-    $sth->bind_columns(\$translation_id, \$transcript_id);
-    
-    while ($sth->fetch()) {
-      $translation_to_transcript{$translation_id} = $transcript_id;
-      $transcript_to_translation{$transcript_id} = $translation_id if ($translation_id);
-    }
-  }
+   $self->load_translation_to_transcript();
+ }
 
   my %external_name_to_id;  
   my %ex_db_id_to_status;
@@ -3120,7 +3081,6 @@ sub new_build_gene_descriptions{
     $i++;
     $level{$external_name_to_id{$ord}} = $i;
 
-#    print "$ord\t".$external_name_to_id{$ord}."\t$i\n";
   }
 
   if(!scalar(keys %genes_to_transcripts)){
@@ -3132,7 +3092,8 @@ sub new_build_gene_descriptions{
   SELECT ox.xref_id, ix.query_identity, ix.target_identity,  x.external_db_id, x.description, x.dbprimary_acc
     FROM (object_xref ox, xref x) 
       LEFT JOIN identity_xref ix ON (ox.object_xref_id = ix.object_xref_id) 
-	WHERE x.xref_id = ox.xref_id and ox.ensembl_object_type = ? and ox.ensembl_id = ? and x.info_type = 'SEQUENCE_MATCH'
+	WHERE x.xref_id = ox.xref_id and ox.ensembl_object_type = ? 
+              and ox.ensembl_id = ? and x.info_type = 'SEQUENCE_MATCH'
 ESQL
 
   my $primary_sth = $self->core->dbc->prepare($sql) || die "prepare failed for $sql\n";
@@ -3143,7 +3104,8 @@ ESQL
   SELECT ox.xref_id, ix.query_identity, ix.target_identity, x.external_db_id, x.description, x.dbprimary_acc
     FROM (object_xref ox, xref x) 
       LEFT JOIN identity_xref_temp ix ON (ox.object_xref_id = ix.object_xref_id) 
-	WHERE x.xref_id = ox.xref_id and ox.ensembl_object_type = ? and ox.ensembl_id = ? and x.info_type = 'DEPENDENT'
+	WHERE x.xref_id = ox.xref_id and ox.ensembl_object_type = ? 
+              and ox.ensembl_id = ? and x.info_type = 'DEPENDENT'
 ZSQL
  
   my $dependent_sth = $self->core->dbc->prepare($sql) || die "prepare failed for $sql\n";
@@ -3162,8 +3124,9 @@ QSQL
   SELECT x.xref_id, x.external_db_id, x.description, x.dbprimary_acc
    FROM object_xref o, xref x  
     WHERE x.xref_id = o.xref_id 
-        and o.ensembl_object_type = ? and o.ensembl_id = ?
+        and o.ensembl_object_type = 'Gene' and o.ensembl_id = ?
 GSQL
+
   my $gene_sth = $self->core->dbc->prepare($sql) || die "prepare failed for $sql\n";
  
   my $count =0;
@@ -3185,9 +3148,6 @@ GSQL
 
   foreach my $gene_id (keys %genes_to_transcripts) {
     
-    $gene_sth->execute("Gene", $gene_id) || die "execute failed";
-    $gene_sth->bind_columns(\$xref_id, \$ex_db_id, \$description, \$acc);
-    
     my %percent_id;
     my %level_db;
     my %parent;
@@ -3197,15 +3157,17 @@ GSQL
     my @gene_xrefs = ();
     my @transcript_xrefs = ();
 
-#    print "GENE $gene_id\n";
     my $best_gene_xref  = 0;    # store xref
     my $best_gene_level = 0;    # store level
     my $best_gene_percent = 0;  # additoon of precentage ids
     my $best_gene_length  = 0;  # best transcript for the genes length
 
+    $gene_sth->execute($gene_id) || die "execute failed";
+    $gene_sth->bind_columns(\$xref_id, \$ex_db_id, \$description, \$acc);
+    
     while($gene_sth->fetch()){
       $checked++;
-      if ($description) {
+      if ($description and defined($level{$ex_db_id})) {
 	my $filtered_description = $self->filter_by_regexp($description, \@regexps);
 	if ($filtered_description ne "") {
 	  $xref_descriptions{$xref_id} = $description;
@@ -3224,79 +3186,24 @@ GSQL
     
     my @transcripts = @{$genes_to_transcripts{$gene_id}};
     foreach my $transcript_id (@transcripts) {
-      #      print "Transcript $transcript_id\n";
-      $primary_sth->execute("Transcript", $transcript_id) || die "execute failed";
-      $primary_sth->bind_columns(\$xref_id, \$qid, \$tid, \$ex_db_id, \$description, \$acc);
-      while($primary_sth->fetch()){
+      foreach my $type("Transcript", "Translation"){
+	my $ens_id;
+	if($type eq "Transcript"){
+	  $ens_id = $transcript_id;
+	}
+	else{
+	  if(defined($transcript_to_translation{$transcript_id})){
+	    $ens_id=$transcript_to_translation{$transcript_id};
+	  }
+	  else{
+	    next;
+	  }
+	}
 	
-	if($level{$ex_db_id}){
-	  $checked++;
-	  if ($description) {
-	    my $filtered_description = $self->filter_by_regexp($description, \@regexps);
-	    if ($filtered_description ne "") {
-	      $xref_descriptions{$xref_id} = $description;
-	      $xref_accessions{$xref_id} = $acc;
-	      push @transcript_xrefs, $xref_id;
-	      $percent_id{$xref_id}  = $qid + $tid;
-	      $ex_db{$xref_id} = $ex_db_id;
-	      $level_db{$xref_id}  = $level{$ex_db_id};
-	      $added++;
-	    } else {
-	      $removed++;
-	    }
-	  }
-	}  
-      }
-      
-      $dependent_sth->execute("Transcript", $transcript_id) || die "execute failed";
-      $dependent_sth->bind_columns(\$xref_id, \$qid, \$tid, \$ex_db_id, \$description, \$acc);
-      while($dependent_sth->fetch()){
-	if($level{$ex_db_id}){
-	  $checked++;
-	  if ($description) {
-	    my $filtered_description = $self->filter_by_regexp($description, \@regexps);
-	    if ($filtered_description ne "") {
-	      $xref_descriptions{$xref_id} = $description;
-	      $xref_accessions{$xref_id} = $acc;
-	      push @transcript_xrefs, $xref_id;
-	      $percent_id{$xref_id}  = $qid + $tid;
-	      $ex_db{$xref_id} = $ex_db_id;	
-	      $level_db{$xref_id}  = $level{$ex_db_id};
-	      $added++;
-	    } else {
-	      $removed++;
-	    }
-	  }
-	}  
-      }	
-      
-      $direct_sth->execute("Transcript", $transcript_id) || die "execute failed";
-      $direct_sth->bind_columns(\$xref_id, \$ex_db_id, \$description, \$acc);
-      while($direct_sth->fetch()){
-	if($level{$ex_db_id}){
-	  $checked++;
-	  if ($description) {
-	    my $filtered_description = $self->filter_by_regexp($description, \@regexps);
-	    if ($filtered_description ne "") {
-	      $xref_descriptions{$xref_id} = $description;
-	      $xref_accessions{$xref_id} = $acc;
-	      push @transcript_xrefs, $xref_id;
-	      $ex_db{$xref_id} = $ex_db_id;
-	      $level_db{$xref_id}  = $level{$ex_db_id};
-	      $added++;
-	    } else {
-	      $removed++;
-	    }
-	  }
-	}  
-      }
-      
-      if(defined($transcript_to_translation{$transcript_id})){
-	#      print "Translation ".$transcript_to_translation{$transcript_id}."\n";
-        $primary_sth->execute("Translation", $transcript_to_translation{$transcript_id}) || die "execute failed";
+	$primary_sth->execute($type, $ens_id) || die "execute failed";
+	$primary_sth->bind_columns(\$xref_id, \$qid, \$tid, \$ex_db_id, \$description, \$acc);
+	while($primary_sth->fetch()){
 	
-        $primary_sth->bind_columns(\$xref_id, \$qid, \$tid, \$ex_db_id, \$description, \$acc);
-        while($primary_sth->fetch()){ 
 	  if($level{$ex_db_id}){
 	    $checked++;
 	    if ($description) {
@@ -3304,24 +3211,19 @@ GSQL
 	      if ($filtered_description ne "") {
 		$xref_descriptions{$xref_id} = $description;
 		$xref_accessions{$xref_id} = $acc;
-		$added++;
 		push @transcript_xrefs, $xref_id;
 		$percent_id{$xref_id}  = $qid + $tid;
 		$ex_db{$xref_id} = $ex_db_id;
-		if($ex_db_id == $trembl_id){
-		  $percent_id{$xref_id} = find_match($xref_descriptions{$xref_id}, @words);
-		}	    
 		$level_db{$xref_id}  = $level{$ex_db_id};
+		$added++;
 	      } else {
 		$removed++;
 	      }
 	    }
-	    #          print $qid."\t".$tid."\t".$xref_id."\t exteral_db_id = ".$ex_db_id."\tlevel=*".$level_db{$xref_id}."*\n";
-	  }
+	  }  
 	}
-	
-	
-	$dependent_sth->execute("Translation",$transcript_to_translation{$transcript_id}) || die "execute failed";
+      
+	$dependent_sth->execute($type, $ens_id) || die "execute failed";
 	$dependent_sth->bind_columns(\$xref_id, \$qid, \$tid, \$ex_db_id, \$description, \$acc);
 	while($dependent_sth->fetch()){
 	  if($level{$ex_db_id}){
@@ -3332,7 +3234,7 @@ GSQL
 		$xref_descriptions{$xref_id} = $description;
 		$xref_accessions{$xref_id} = $acc;
 		push @transcript_xrefs, $xref_id;
-		$percent_id{$xref_id}  = $qid + $tid;	    
+		$percent_id{$xref_id}  = $qid + $tid;
 		$ex_db{$xref_id} = $ex_db_id;	
 		$level_db{$xref_id}  = $level{$ex_db_id};
 		$added++;
@@ -3340,10 +3242,10 @@ GSQL
 		$removed++;
 	      }
 	    }
-	  } 
-	} 	
-      
-	$direct_sth->execute("Translation", $transcript_to_translation{$transcript_id}) || die "execute failed";
+	  }  
+	}	
+	
+	$direct_sth->execute($type, $ens_id) || die "execute failed";
 	$direct_sth->bind_columns(\$xref_id, \$ex_db_id, \$description, \$acc);
 	while($direct_sth->fetch()){
 	  if($level{$ex_db_id}){
@@ -3354,6 +3256,7 @@ GSQL
 		$xref_descriptions{$xref_id} = $description;
 		$xref_accessions{$xref_id} = $acc;
 		push @transcript_xrefs, $xref_id;
+		$percent_id{$xref_id} = 0;
 		$ex_db{$xref_id} = $ex_db_id;
 		$level_db{$xref_id}  = $level{$ex_db_id};
 		$added++;
@@ -3362,7 +3265,8 @@ GSQL
 	      }
 	    }
 	  }  
-	}			
+	}
+      
       }
       
       my $best_tran_xref  = 0;   # store xref
@@ -3427,7 +3331,7 @@ GSQL
   close GENE_DESCRIPTIONS;
 
   my $sth = $self->core->dbc->prepare("drop table identity_xref_temp");
-  print "droppoing table identity_xref_temp\n";
+  print "dropping table identity_xref_temp\n";
   $sth->execute() || die "Could not drop table identity_xref_temp\n";
   
 }
@@ -3636,7 +3540,7 @@ sub upload_external_db {
   my $upload_external_db = 0 ;
 
   if ($count > 0 ) {
-    print "external_db table already has $count rows\n" ; 
+    print "external_db table has $count rows\n" ; 
     print " you may use -delete_external_db to delete all entries from external_db table and upload new data\n"  unless $force_upload ; 
   }
   if ($force_upload) { 
@@ -3688,6 +3592,7 @@ sub xref_id_offset{
 sub add_missing_pairs{
   my ($self) = @_;
   my $xref_id_offset = $self->xref_id_offset();
+
   #
   # add the pairs
   #
@@ -3720,6 +3625,7 @@ EOS
   my ($xref_id1,$xref_id2, $x1_acc, $x2_acc, $x1_source_id, $x2_source_id);
   $xref_sth->bind_columns(\$xref_id1, \$xref_id2, \$x1_acc, \$x2_acc, \$x1_source_id, \$x2_source_id);
 
+  my %master_acc;
   my %good2missed=();
   my %good2missed_acc=();
   my $okay =0;
@@ -3729,6 +3635,8 @@ EOS
   my @xref_list;
 
   while ($xref_sth->fetch()) {
+    $master_acc{$xref_id1} = $x1_acc;
+    $master_acc{$xref_id2} = $x2_acc;
    # If either of these are a priority source then make sure they are the chosen one.
     if(defined($priority_xref_source_id{$xref_id1})){
       my $key = $priority_source_id_to_name{$priority_xref_source_id{$xref_id1}}.":".$x1_acc;
@@ -3788,11 +3696,12 @@ EOS
   my $dep_sql = "SELECT x.xref_id, x.accession, x.version, x.label, x.description, x.source_id FROM dependent_xref dx, xref x WHERE x.xref_id=dx.dependent_xref_id AND master_xref_id = ?";
   my $dep_sth = $self->xref->dbc->prepare($dep_sql);
   
+  
+
 
   open(XREF2, ">".$self->core->dir()."/pairs_xref.txt") 
     || die "Could not open pairs_xref.txt";
 
-  my %master_acc;
 
   if(scalar(@xref_list) > 1){
 
@@ -3840,9 +3749,10 @@ EOS
     || die "Could not open pairs_object_xref.txt";
 
 
-  my $triage_file = $self->core->dir()."/triage_update.sql";
-  open(TRIAGE_UPDATE,">".$triage_file)
-    || die "Could not open $triage_file\n";
+#  TRIAGE update not needed now as triage stuff done right at the end
+#  my $triage_file = $self->core->dir()."/triage_update.sql";
+#  open(TRIAGE_UPDATE,">".$triage_file)
+#    || die "Could not open $triage_file\n";
 
   my $i=0;
   my $index;
@@ -3853,94 +3763,18 @@ EOS
   $sql   .=    "FROM object_xref o, xref x ";
   $sql   .=      "WHERE x.xref_id = o.xref_id AND x.xref_id IN (";
   my ($goodxref, $ens_int_id, $type, $acc, $ex_db_id);
-  my @list =();
-  foreach my $key (keys %good2missed){
-    if($i > 200){
-      my $sth_ob = $self->core->dbc->prepare($sql.(join(',',@list)).")") || die @_;
-      $sth_ob->execute();
-      $sth_ob->bind_columns(\$goodxref,\$ens_int_id,\$type, \$acc, \$ex_db_id);
-      while($sth_ob->fetch()){
-	if(($type =~ /Transcript/) and defined($transcript_2_translation{$ens_int_id})){
-	  $max_object_xref_id++;
-	  $added++;
-          $object_succesfully_mapped{($good2missed{$goodxref}-$xref_id_offset)} = 1;
- 	  print OBJECT_XREF2 "$max_object_xref_id\t";
-	  print OBJECT_XREF2 $transcript_2_translation{$ens_int_id}."\tTranslation\t" ;
-	  print OBJECT_XREF2 $good2missed{$goodxref};
-	  print OBJECT_XREF2 "\n";	
 
-	  $dep_sth->execute($good2missed{$goodxref}-$xref_id_offset);
-	  my ($xref_id, $acc,$ver, $label, $desc, $source_id);
-	  $dep_sth->bind_columns(\$xref_id, \$acc, \$ver, \$label, \$desc, \$source_id);
+  # keep a list of the "master" xrefs for the new object xrefs.
+  # need a hash for the "master" xref to object xref so that we can add the fake
+  # identity xrefs to the identity_xref_temp file
+  my @new_list;
+  my %identity_master_xref_to_object_xref;
 
-	  while($dep_sth->fetch){
+  my @list_all = keys %good2missed;
 
-	    if(!defined($priority_xref_source_id{$xref_id})){
-	      if(!defined($xrefs_written{$xref_id})){
-		print XREF2 ($xref_id+$xref_id_offset)."\t". $source_to_external_db{$source_id}.
-		  "\t$acc\t$label\t$ver\t$desc";
-		print XREF2 "\tDEPENDENT\tGenerated via ".$master_acc{$good2missed{$goodxref}-$xref_id_offset}."\n";
-		$xrefs_written{$xref_id} = 1;
-	      }
-	      
-	      $max_object_xref_id++;
-	      $object_succesfully_mapped{$xref_id} = 1;
-	      print OBJECT_XREF2 "$max_object_xref_id\t";
-	      print OBJECT_XREF2 $transcript_2_translation{$ens_int_id}."\tTranslation\t" ;
-	      print OBJECT_XREF2 $xref_id+$xref_id_offset;
-	      print OBJECT_XREF2 "\n";	
-	    }
-	  }
-	  print TRIAGE_UPDATE "DELETE unmapped_object FROM unmapped_object ";
-	  print TRIAGE_UPDATE   "WHERE identifier = '".$good2missed_acc{$goodxref}."' ";
-	  print TRIAGE_UPDATE   "AND external_db_id = $ex_db_id ;\n";
-	}
-	elsif(($type =~ /Translation/) and defined($translation_2_transcript{$ens_int_id})){
-	  $max_object_xref_id++;
-	  $added_transcript++;
-          $object_succesfully_mapped{($good2missed{$goodxref}-$xref_id_offset)} = 1;
- 	  print OBJECT_XREF2 "$max_object_xref_id\t";
-	  print OBJECT_XREF2 $translation_2_transcript{$ens_int_id}."\tTranscript\t" ;
-	  print OBJECT_XREF2 $good2missed{$goodxref};
-	  print OBJECT_XREF2 "\n";	
-
-	  $dep_sth->execute($good2missed{$goodxref}-$xref_id_offset);
-	  my ($xref_id, $acc,$ver, $label, $desc, $source_id);
-	  $dep_sth->bind_columns(\$xref_id, \$acc, \$ver, \$label, \$desc, \$source_id);
-	  while($dep_sth->fetch){
-
-	    if(!defined($priority_xref_source_id{$xref_id})){
-	      if(!defined($xrefs_written{$xref_id})){
-		print XREF2 ($xref_id+$xref_id_offset)."\t". $source_to_external_db{$source_id}.
-		  "\t$acc\t$label\t$ver\t$desc";
-		print XREF2 "\tDEPENDENT\tGenerated via ".$master_acc{$good2missed{$goodxref}-$xref_id_offset}."\n";
-		$xrefs_written{$xref_id} = 1;
-	      }
-	      
-	      $max_object_xref_id++;
-	      $object_succesfully_mapped{$xref_id} = 1;
-	      print OBJECT_XREF2 "$max_object_xref_id\t";
-	      print OBJECT_XREF2 $translation_2_transcript{$ens_int_id}."\tTranscript\t" ;
-	      print OBJECT_XREF2 $xref_id+$xref_id_offset;
-	      print OBJECT_XREF2 "\n";	
-	    }
-	  }
-
-	  print TRIAGE_UPDATE "DELETE unmapped_object FROM unmapped_object ";
-	  print TRIAGE_UPDATE   "WHERE identifier = '".$good2missed_acc{$goodxref}."' ";
-	  print TRIAGE_UPDATE   "AND external_db_id = $ex_db_id ;\n";
-	}
-      }
-      $sth_ob->finish();
-      @list =();
-      $i=0;
-    }
-    else{
-      push @list, $key;
-      $i++;
-    }
-  }
-  if($i){
+  while ( @list_all){
+    my @list = splice(@list_all, 0,199);
+#    print "LIST: ".join(',',@list). "\n";
     my $sth_ob = $self->core->dbc->prepare($sql.(join(',',@list)).")") || die @_;
     $sth_ob->execute();
     $sth_ob->bind_columns(\$goodxref,\$ens_int_id,\$type, \$acc, \$ex_db_id);
@@ -3949,25 +3783,29 @@ EOS
 	$max_object_xref_id++;
 	$added++;
 	$object_succesfully_mapped{($good2missed{$goodxref}-$xref_id_offset)} = 1;
- 	print OBJECT_XREF2 "$max_object_xref_id\t";
+	print OBJECT_XREF2 "$max_object_xref_id\t";
 	print OBJECT_XREF2 $transcript_2_translation{$ens_int_id}."\tTranslation\t" ;
 	print OBJECT_XREF2 $good2missed{$goodxref};
 	print OBJECT_XREF2 "\n";	
-
+	
+	
+	push @new_list, $goodxref;
+	push @{$identity_master_xref_to_object_xref{$goodxref}}, $max_object_xref_id;
+	
 	$dep_sth->execute($good2missed{$goodxref}-$xref_id_offset);
 	my ($xref_id, $acc,$ver, $label, $desc, $source_id);
 	$dep_sth->bind_columns(\$xref_id, \$acc, \$ver, \$label, \$desc, \$source_id);
+	
 	while($dep_sth->fetch){
-
+	  
 	  if(!defined($priority_xref_source_id{$xref_id})){
-
 	    if(!defined($xrefs_written{$xref_id})){
-	      print XREF2 ($xref_id+$xref_id_offset)."\t". $source_to_external_db{$source_id}.
-		"\t$acc\t$label\t$ver\t$desc";
+	      print XREF2 ($xref_id+$xref_id_offset)."\t". 
+		$source_to_external_db{$source_id}.
+		"\t$acc\t".($label || ""). "\t" .($ver || ""). "\t". ($desc || "");
 	      print XREF2 "\tDEPENDENT\tGenerated via ".$master_acc{$good2missed{$goodxref}-$xref_id_offset}."\n";
 	      $xrefs_written{$xref_id} = 1;
 	    }
-	    
 	    
 	    $max_object_xref_id++;
 	    $object_succesfully_mapped{$xref_id} = 1;
@@ -3975,26 +3813,33 @@ EOS
 	    print OBJECT_XREF2 $transcript_2_translation{$ens_int_id}."\tTranslation\t" ;
 	    print OBJECT_XREF2 $xref_id+$xref_id_offset;
 	    print OBJECT_XREF2 "\n";	
+	    
+	    push @new_list, $goodxref;
+	    push @{$identity_master_xref_to_object_xref{$goodxref}}, $max_object_xref_id;
+	    
 	  }
 	}
-	print TRIAGE_UPDATE "DELETE unmapped_object FROM unmapped_object ";
-	print TRIAGE_UPDATE   "WHERE identifier like '".$good2missed_acc{$goodxref}."' ";
-	print TRIAGE_UPDATE   "AND external_db_id = $ex_db_id ;\n";
+#	print TRIAGE_UPDATE "DELETE unmapped_object FROM unmapped_object ";
+#	print TRIAGE_UPDATE   "WHERE identifier = '".$good2missed_acc{$goodxref}."' ";
+#	print TRIAGE_UPDATE   "AND external_db_id = $ex_db_id ;\n";
       }
       elsif(($type =~ /Translation/) and defined($translation_2_transcript{$ens_int_id})){
 	$max_object_xref_id++;
 	$added_transcript++;
 	$object_succesfully_mapped{($good2missed{$goodxref}-$xref_id_offset)} = 1;
- 	print OBJECT_XREF2 "$max_object_xref_id\t";
+	print OBJECT_XREF2 "$max_object_xref_id\t";
 	print OBJECT_XREF2 $translation_2_transcript{$ens_int_id}."\tTranscript\t" ;
 	print OBJECT_XREF2 $good2missed{$goodxref};
 	print OBJECT_XREF2 "\n";	
-
+	
+	push @new_list, $goodxref;
+	push @{$identity_master_xref_to_object_xref{$goodxref}}, $max_object_xref_id;
+	
 	$dep_sth->execute($good2missed{$goodxref}-$xref_id_offset);
 	my ($xref_id, $acc,$ver, $label, $desc, $source_id);
 	$dep_sth->bind_columns(\$xref_id, \$acc, \$ver, \$label, \$desc, \$source_id);
 	while($dep_sth->fetch){
-
+	  
 	  if(!defined($priority_xref_source_id{$xref_id})){
 	    if(!defined($xrefs_written{$xref_id})){
 	      print XREF2 ($xref_id+$xref_id_offset)."\t". $source_to_external_db{$source_id}.
@@ -4009,19 +3854,56 @@ EOS
 	    print OBJECT_XREF2 $translation_2_transcript{$ens_int_id}."\tTranscript\t" ;
 	    print OBJECT_XREF2 $xref_id+$xref_id_offset;
 	    print OBJECT_XREF2 "\n";	
+	    
+	    push @new_list, $good2missed{$goodxref};
+	    push @{$identity_master_xref_to_object_xref{$goodxref}}, $max_object_xref_id;
+	    
 	  }
 	}
-	print TRIAGE_UPDATE "DELETE unmapped_object FROM unmapped_object ";
-	print TRIAGE_UPDATE   "WHERE identifier like '".$good2missed_acc{$goodxref}."' ";
-	print TRIAGE_UPDATE   "AND external_db_id = $ex_db_id ;\n";
+	
+#	print TRIAGE_UPDATE "DELETE unmapped_object FROM unmapped_object ";
+#	print TRIAGE_UPDATE   "WHERE identifier = '".$good2missed_acc{$goodxref}."' ";
+#	print TRIAGE_UPDATE   "AND external_db_id = $ex_db_id ;\n";
       }
-      
     }
-   $sth_ob->finish();
+    $sth_ob->finish();
   }
-
   close XREF2;
   close OBJECT_XREF2;
+
+ #
+ # Now set the identity xref temp values.
+ # 
+
+
+  my $identity_sql  = "select x.xref_id, i.* from xref x, object_xref o, identity_xref i"; 
+     $identity_sql .= "   where x.xref_id = o.xref_id and o.object_xref_id = i.object_xref_id and x.xref_id in (";
+     $identity_sql .= join (", ", @new_list). ")";
+
+  my ($xref, $old_object_id, $qid, $tid, $hs, $he, $ts, $te, $cigar, $score, $eval, $anal_id);
+
+  open(IDENTITY_XREF_P,">>".$self->core->dir."/identity_xref_temp.txt") || die "Could not open identity_xref_temp.txt";
+ 
+  my $sth_ob = $self->core->dbc->prepare($identity_sql) || die @_;
+  $sth_ob->execute();
+  $sth_ob->bind_columns(\$xref, \$old_object_id, \$qid, \$tid, \$hs, \$he, \$ts, \$te, \$cigar, \$score, \$eval, \$anal_id);
+  while($sth_ob->fetch()){
+    foreach my $object (@{$identity_master_xref_to_object_xref{$xref}}){
+      print IDENTITY_XREF_P $object. "\t" .
+	($qid || "0")  .   "\t" .
+	($tid || "0")  .   "\t" .
+	($hs || "0")   .   "\t" .
+	($he || "0")   .   "\t" .
+	($ts || "0")   .   "\t" .
+	($te || "0")   .   "\t" .
+	($cigar || "").   "\t" .
+	($score || "0").   "\t" .
+	($eval || "0")    ."\t" .
+	($anal_id || "") ."\n";
+    }    
+  }
+
+  close IDENTITY_XREF_P;
 
   #
   # Now load the data into the database.
@@ -4049,16 +3931,14 @@ EOS
   }
   
 
-  print "At end of pairs Maximum existing object_xref_id = $max_object_xref_id\n";
+
+#  my $core_db = $self->core->dbc;
+#
+#  my $mysql_command = $self->get_mysql_command($core_db);
+#  system( "$mysql_command < $triage_file" ) == 0 
+#      or print( "ERROR: parsing $file in mysql\n" );
 
 
-  my $core_db = $self->core->dbc;
-
-  my $mysql_command = $self->get_mysql_command($core_db);
-  system( "$mysql_command < $triage_file" ) == 0 
-      or print( "ERROR: parsing $file in mysql\n" );
-
-  print "updated triage data accordingly\n";
 }
 
 sub dump_all_dependencies{
@@ -4066,6 +3946,7 @@ sub dump_all_dependencies{
   my @return;
 
   # Now get the dependent xrefs for this xref and write them
+  open(PRIORITY_FILE,">>priority_xref.out") || die "Could not open priority_xref.out\n";
   
   my $sql = "SELECT DISTINCT(x.xref_id), dx.master_xref_id, x.accession, x.label, x.description, x.source_id, x.version, dx.linkage_annotation FROM dependent_xref dx, xref x WHERE x.xref_id=dx.dependent_xref_id AND master_xref_id = $master_id";
   
@@ -4144,6 +4025,7 @@ sub dump_all_dependencies{
     }
 
   }   
+  close PRIORITY_FILE;
   return \@return;
 }
     
@@ -4171,11 +4053,12 @@ sub get_mysql_command{
 }
 
 sub dump_xref_with_no_triage_data() {
-  my ($self, $xref_id_offset) = @_;
-
+  my ($self) = @_;
+  
   print "Dumping xrefs\n";
- my $batch_size=200;
-
+  my $xref_id_offset = $self->xref_id_offset();
+  my $batch_size=200;
+  
   my $primary_sql= (<<PSQL);
     SELECT DISTINCT(s.source_id), px.sequence_type
       FROM source s, primary_xref px, xref x 
@@ -4196,7 +4079,7 @@ PSQL
     $source_2_seqtype{$prim} = $seq_type;
   }
 
-  open (XREF, ">>" . $self->core->dir() . "/xref.txt");
+  open (XREF, ">" . $self->core->dir() . "/xref_no_triage.txt");
 
   foreach my $source (@primary_sources){
 
@@ -4242,6 +4125,18 @@ PSQL
     $sth->finish;
   }
   close(XREF);
+
+  my $file =  $self->core->dir() . "/xref_no_triage.txt";
+    
+  if(-s $file){
+    my $sth = $self->core->dbc->prepare("LOAD DATA LOCAL INFILE \'$file\' IGNORE INTO TABLE xref");
+    print "Uploading data in $file to xref\n";
+    $sth->execute();
+  }
+  else{
+    print "NO file or zero size file, so not able to load file $file to xref\n";
+  }
+
 }
     
 
