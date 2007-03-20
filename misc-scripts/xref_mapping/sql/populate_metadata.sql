@@ -385,7 +385,7 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 ###MOUSE
 
 ##  Vega
-INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (5005, 10090, 'ftp://ftp.sanger.ac.uk/pub/vega/mouse/pep/Mus_musculus.VEGA.feb.pep.known.fa.gz', now(), now(), "VegaParser");
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (5005, 10090, 'ftp://ftp.sanger.ac.uk/pub/vega/mouse/cdna/Mus_musculus.VEGA.feb.cdna.tot.fa.gz', now(), now(), "VegaParser");
 
 ##      EntrezGene
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (1110, 10090, 'ftp://ftp.ncbi.nlm.nih.gov/gene/DATA/gene_info.gz', now(), now(), "EntrezGeneParser");
