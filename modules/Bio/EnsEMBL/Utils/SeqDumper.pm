@@ -286,7 +286,7 @@ sub dump {
 
   my $FH = IO::File->new;;
   if($outfile) {
-    $FH->open(">$outfile") or throw("Could not open file $outfile");
+    $FH->open(">>$outfile") or throw("Could not open file $outfile");
   } else {
     $FH = \*STDOUT;
     #mod_perl did not like the following
