@@ -548,7 +548,6 @@ sub fetch_all_by_Transcript {
 
 sub fetch_all_by_Translation {
   my ( $self, $trans, $ex_db_reg ) = @_;
-print "in f a b t\n";
 
   if(!ref($trans) || !$trans->isa('Bio::EnsEMBL::Translation')) {
     throw('Bio::EnsEMBL::Translation argument expected.');
@@ -557,7 +556,7 @@ print "in f a b t\n";
     warning( "Cannot fetch_all_by_Translation without a dbID" );
     return [];
   }
-print "out of  f a b t\n";
+
   return $self->_fetch_by_object_type( $trans->dbID(), 'Translation', $ex_db_reg );
 }
 
