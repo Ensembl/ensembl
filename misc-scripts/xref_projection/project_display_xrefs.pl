@@ -11,7 +11,7 @@ use Bio::EnsEMBL::DBSQL::GeneAdaptor;
 
 my $method_link_type = "ENSEMBL_ORTHOLOGUES";
 
-my ($conf, $compara, $from_species, @to_multi, $print, $names, $go_terms, $delete_names, $delete_go_terms, $no_backup, $full_stats, $descriptions, $release, $no_database, $quiet);
+my ($conf, $compara, $from_species, @to_multi, $print, $names, $go_terms, $delete_names, $delete_go_terms, $no_backup, $full_stats, $descriptions, $release, $no_database, $quiet, $single_source);
 
 GetOptions('conf=s'          => \$conf,
 	   'compara=s'       => \$compara,
@@ -29,6 +29,7 @@ GetOptions('conf=s'          => \$conf,
 	   'release=i'       => \$release,
 	   'no_database'     => \$no_database,
 	   'quiet'           => \$quiet,
+	   'single_source'   => \$single_source,
 	   'help'            => sub { usage(); exit(0); });
 
 $descriptions = 1;
@@ -207,6 +208,8 @@ sub project_display_names {
   if (check_overwrite_display_xref($to_gene, $from_source, $to_source)) {
 
     if ($dbEntry) {
+
+      next if ($single_source && $dbEntry->dbname() ne $single_source);
 
       # Modify the dbEntry to indicate it's not from this species - set info_type & info_text
       my $txt = "from $from_latin_species gene " . $from_gene->stable_id();
@@ -598,6 +601,8 @@ sub usage {
   [--no_database]       Don't write to the projection_info database.
 
   [--quiet]             Don't print percentage progress information to STDOUT.
+
+  [--single_source]     Specify a single source to project (e.g. HUGO).
 
   [--help]              This text.
 
