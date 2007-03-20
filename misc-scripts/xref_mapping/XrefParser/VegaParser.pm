@@ -7,7 +7,12 @@ use strict;
 
 use base qw( XrefParser::BaseParser );
 
-# Parses the Vega Fasta file format:
+# Parses the Vega CDNA and Peptide Fasta file format:
+#
+# >OTTMUST00000004500 cdna:tot chromosome:VEGA:1:60690948:60709172:1 Gene:OTTMUSG00000002254
+# GTGACTTCAGTTCACACCACACTCTGCCTTGCTCACAGAGGAGGGGCTGCAGCCCTGGCC
+# CTCATCAGAACAATGACACTCAGGCTGCTGTTCTTGGCTCTCAACTTCTTCTCAGTTCAA
+# GTAACAGAAAACAAGATTTTGGTAAAGCAGTCGCCCCTGCTTGTGGTAGATAGCAACGAG
 #
 # >OTTMUSP00000002157 pep:known chromosome:VEGA:1:60690904:60717905:1 Gene:OTTMUSG00000002254 Transcript:OTTMUST00000004499
 # MTLRLLFLALNFFSVQVTENKILVKQSPLLVVDSNEVSLSCRYSYNLLAKEFRASLYKGV
@@ -32,30 +37,22 @@ sub run
 
         if ( substr( $line, 0, 1 ) eq '>' ) {
             # New sequence header.
-            my (
-                $vega_protein_id, $vega_type,
-                $vega_position,   $vega_gene_id,
-                $vega_transcript_id
-            ) = split / /, $line;
 
-            substr( $vega_protein_id, 0, 1, '' ); # Remove initial '>',
-            substr( $vega_gene_id,    0, 5, '' ); # initial 'Gene:', and
-            substr( $vega_transcript_id, 0, 11, '' );  #  'Transcript:'.
+            substr( $line, 0, 1, '' );    # Remove initial '>'
 
-            my ( $vega_alphabet, $vega_status ) =
-              ( $vega_type =~ /(.*):(.*)/ );
+            my ( $vega_id, $vega_alphabet ) =
+              ( $line =~ /^(\S+)\s([^:]+):/ );
 
             my %xref = (
-                'ACCESSION' => $vega_transcript_id,
-                'LABEL'     => $vega_transcript_id,
-                'DESCRIPTION' =>
-                  sprintf( "%s %s", $vega_type, $vega_position ),
-                'SEQUENCE'   => '',
-                'SOURCE_ID'  => $source_id,
-                'SPECIES_ID' => $species_id,
+                'ACCESSION'   => $vega_id,
+                'LABEL'       => $vega_id,
+                'DESCRIPTION' => $line,
+                'SEQUENCE'    => '',
+                'SOURCE_ID'   => $source_id,
+                'SPECIES_ID'  => $species_id,
                 'SEQUENCE_TYPE' =>
                   ( $vega_alphabet eq 'pep' ? 'peptide' : 'dna' ),
-                'STATUS' => $vega_status,
+                'STATUS' => 'experimental'
             );
 
             push @xrefs, \%xref;
