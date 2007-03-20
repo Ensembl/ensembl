@@ -3876,34 +3876,36 @@ EOS
  # 
 
 
-  my $identity_sql  = "select x.xref_id, i.* from xref x, object_xref o, identity_xref i"; 
-     $identity_sql .= "   where x.xref_id = o.xref_id and o.object_xref_id = i.object_xref_id and x.xref_id in (";
-     $identity_sql .= join (", ", @new_list). ")";
-
-  my ($xref, $old_object_id, $qid, $tid, $hs, $he, $ts, $te, $cigar, $score, $eval, $anal_id);
-
-  open(IDENTITY_XREF_P,">>".$self->core->dir."/identity_xref_temp.txt") || die "Could not open identity_xref_temp.txt";
- 
-  my $sth_ob = $self->core->dbc->prepare($identity_sql) || die @_;
-  $sth_ob->execute();
-  $sth_ob->bind_columns(\$xref, \$old_object_id, \$qid, \$tid, \$hs, \$he, \$ts, \$te, \$cigar, \$score, \$eval, \$anal_id);
-  while($sth_ob->fetch()){
-    foreach my $object (@{$identity_master_xref_to_object_xref{$xref}}){
-      print IDENTITY_XREF_P $object. "\t" .
-	($qid || "0")  .   "\t" .
-	($tid || "0")  .   "\t" .
-	($hs || "0")   .   "\t" .
-	($he || "0")   .   "\t" .
-	($ts || "0")   .   "\t" .
-	($te || "0")   .   "\t" .
-	($cigar || "").   "\t" .
-	($score || "0").   "\t" .
-	($eval || "0")    ."\t" .
-	($anal_id || "") ."\n";
-    }    
+  if(@new_list){
+    my $identity_sql  = "select x.xref_id, i.* from xref x, object_xref o, identity_xref i"; 
+    $identity_sql .= "   where x.xref_id = o.xref_id and o.object_xref_id = i.object_xref_id and x.xref_id in (";
+    $identity_sql .= join (", ", @new_list). ")";
+    
+    my ($xref, $old_object_id, $qid, $tid, $hs, $he, $ts, $te, $cigar, $score, $eval, $anal_id);
+    
+    open(IDENTITY_XREF_P,">>".$self->core->dir."/identity_xref_temp.txt") || die "Could not open identity_xref_temp.txt";
+    
+    my $sth_ob = $self->core->dbc->prepare($identity_sql) || die @_;
+    $sth_ob->execute();
+    $sth_ob->bind_columns(\$xref, \$old_object_id, \$qid, \$tid, \$hs, \$he, \$ts, \$te, \$cigar, \$score, \$eval, \$anal_id);
+    while($sth_ob->fetch()){
+      foreach my $object (@{$identity_master_xref_to_object_xref{$xref}}){
+	print IDENTITY_XREF_P $object. "\t" .
+	  ($qid || "0")  .   "\t" .
+	  ($tid || "0")  .   "\t" .
+	  ($hs || "0")   .   "\t" .
+	  ($he || "0")   .   "\t" .
+	  ($ts || "0")   .   "\t" .
+	  ($te || "0")   .   "\t" .
+	  ($cigar || "").   "\t" .
+	  ($score || "0").   "\t" .
+	  ($eval || "0")    ."\t" .
+	  ($anal_id || "") ."\n";
+      }    
+    }
+    
+    close IDENTITY_XREF_P;
   }
-
-  close IDENTITY_XREF_P;
 
   #
   # Now load the data into the database.
