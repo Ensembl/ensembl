@@ -348,7 +348,7 @@ if(defined($recalc_display_xrefs)){
   exit;
 }
 
-print "\nDumping xref & Ensembl sequences\n";
+#print "\nDumping xref & Ensembl sequences\n";
 $mapper->dump_seqs($location);
 
 
@@ -375,6 +375,14 @@ if($upload){
   print "\nChecking pair data\n";
   $mapper->add_missing_pairs();
 
+
+  if($notriage){
+    $mapper->dump_xref_with_no_triage_data();
+  }  
+  else{
+    $mapper->dump_triage_data();
+  }
+
   if(!defined($notriage)){
     print "\nPriority unmapped xrefs sorting\n";
     $mapper->unmapped_data_for_prioritys();
@@ -382,6 +390,7 @@ if($upload){
     print "\nProcess DEPENDENT unmapped object data\n";
     $mapper->write_dependent_unmapped_objects();
   }
+
 
   print "\nChecking xrefs\n";
   $mapper->cleanup_database();
