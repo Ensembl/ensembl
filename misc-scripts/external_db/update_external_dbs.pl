@@ -83,7 +83,8 @@ while ($row = <$fh>) {
 	       'dbprimary_acc_linkable' => $a[4],
 	       'display_label_linkable' => $a[5],
 	       'priority'               => $a[6],
-	       'db_display_name'        => $a[7]};
+	       'db_display_name'        => $a[7],
+	       'type'                   => $a[8]};
 
   if ($a[1] =~ /-/) {
     print STDERR "Database name " . $a[1] . " contains - characters which will break Mart, please replace them with _ until Mart is fixed\n";
@@ -142,8 +143,8 @@ sub load_database {
   $sth = $db->prepare('INSERT INTO external_db (external_db_id, db_name,
                                                 db_release, status, dbprimary_acc_linkable,
                                                 display_label_linkable, priority,
-                                                db_display_name)
-                       VALUES (?,?,?,?,?,?,?,?)');
+                                                db_display_name, type)
+                       VALUES (?,?,?,?,?,?,?,?,?)');
 
   foreach my $row (@rows) {
     $sth->execute($row->{'external_db_id'},
@@ -153,7 +154,8 @@ sub load_database {
 		  $row->{'dbprimary_acc_linkable'},
 		  $row->{'display_label_linkable'},
 		  $row->{'priority'},
-		  $row->{'db_display_name'});
+		  $row->{'db_display_name'},
+		  $row->{'type'});
   }
 
   $sth->finish();
