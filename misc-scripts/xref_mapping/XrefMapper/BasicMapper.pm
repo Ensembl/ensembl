@@ -2491,7 +2491,7 @@ sub build_transcript_and_gene_display_xrefs {
   my $i=0;
   my %level;
 
-  foreach my $ord (reverse(@presedence)){
+  foreach my $ord (reverse (@presedence)){
     $i++;
     if(!defined($external_name_to_id{$ord})){
       print STDERR "unknown external database name *$ord* being used\n";
@@ -3080,10 +3080,10 @@ sub new_build_gene_descriptions{
   my $i=0;
   my %level;
   
-  foreach my $ord (@presedence){
+  foreach my $ord (reverse (@presedence)){
     $i++;
     if(!defined($external_name_to_id{$ord})){
-      print STDERR "No id for ord *$ord*\n";
+      print STDERR "Unknown external database name  *$ord* being used\n";
     }
     $level{$external_name_to_id{$ord}} = $i;
 
@@ -3517,18 +3517,27 @@ GENE
 
 
 # list of sources to be used when building gene descriptions
-# sorted into increasing order of priority
+# sorted into DEcreasing order of priority
 
 sub gene_description_sources {
 
-  return ("Uniprot/SPTREMBL",
-	  "Uniprot/Varsplic",
-	  "RefSeq_dna",
-	  "RefSeq_peptide",
-	  "Uniprot/SWISSPROT",
-          "IMGT/GENE_DB",
+#  return ("Uniprot/SPTREMBL",
+#	  "Uniprot/Varsplic",
+#	  "RefSeq_dna",
+#	  "RefSeq_peptide",
+#	  "Uniprot/SWISSPROT",
+#          "IMGT/GENE_DB",
+#	  "miRBase",
+#	  "RFAM");
+
+  return ("RFAM",
 	  "miRBase",
-	  "RFAM");
+          "IMGT/GENE_DB",
+	  "Uniprot/SWISSPROT",
+	  "RefSeq_peptide",
+	  "RefSeq_dna",
+	  "Uniprot/Varsplic",
+	  "Uniprot/SPTREMBL");
 
 }
 

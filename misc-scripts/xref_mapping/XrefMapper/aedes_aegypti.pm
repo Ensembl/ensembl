@@ -24,10 +24,10 @@ sub get_set_lists {
 
 
 sub gene_description_sources {
-  return ("Uniprot/SPTREMBL",
-	  "RefSeq_dna",
+  return ("Uniprot/SWISSPROT",
 	  "RefSeq_peptide",
-	  "Uniprot/SWISSPROT");
+	  "RefSeq_dna",
+	  "Uniprot/SPTREMBL");
 }
 
 # regexps to match any descriptons we want to filter out

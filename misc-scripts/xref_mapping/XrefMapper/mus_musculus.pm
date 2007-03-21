@@ -21,15 +21,15 @@ sub consortium {
 
 sub gene_description_sources {
 
-  return ("Uniprot/SPTREMBL", 
-	  "RefSeq_dna", 
-	  "RefSeq_peptide", 
-	  "Uniprot/Varsplic", 
-	  "Uniprot/SWISSPROT", 
-	  "MarkerSymbol",
-          "IMGT/GENE_DB",
+  return ("miRBase",
 	  "RFAM", 
-	  "miRBase");
+          "IMGT/GENE_DB",
+	  "MarkerSymbol",
+	  "Uniprot/SWISSPROT", 
+	  "Uniprot/Varsplic", 
+	  "RefSeq_peptide", 
+	  "RefSeq_dna", 	  
+	  "Uniprot/SPTREMBL" );
 
 }
 

@@ -18,13 +18,13 @@ sub get_set_lists {
 # If there is an Anopheles_symbol xref, use its description
 sub gene_description_sources {
 
-  return ("RefSeq_dna_predicted",
-	  "RefSeq_peptide_predicted",
-	  "Uniprot/SPTREMBL",
-	  "RefSeq_dna",
+  return ("Anopheles_symbol",
+	  "Uniprot/SWISSPROT"
 	  "RefSeq_peptide",
-	  "Uniprot/SWISSPROT",
-	  "Anopheles_symbol");
+	  "RefSeq_dna",
+	  "Uniprot/SPTREMBL",
+	  "RefSeq_peptide_predicted",
+	  "RefSeq_dna_predicted");
 
 }
 
