@@ -220,3 +220,8 @@
 127	cds_end_NF	cds end not found
 128	write_access	Write access for Sequence Set	1 for writable , 0 for read-only
 129	hidden	Hidden Sequence Set
+
+# loutre attribs for vega production (st3)
+130	vega_name	Vega name	seq_region.name as it will be in vega
+131	vega_export_mode	Export mode	E (External), I (Internal) etc
+132	vega_release	Vega release	Vega release number in which this is found
