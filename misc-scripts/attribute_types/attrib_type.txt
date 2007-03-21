@@ -222,6 +222,6 @@
 129	hidden	Hidden Sequence Set
 
 # loutre attribs for vega production (st3)
-130	vega_name	Vega name	seq_region.name as it will be in vega
+130	vega_name	Vega name	Vega seq_region.name
 131	vega_export_mode	Export mode	E (External), I (Internal) etc
-132	vega_release	Vega release	Vega release number in which this is found
+132	vega_release	Vega release	Vega release number
