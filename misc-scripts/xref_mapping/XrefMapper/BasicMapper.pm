@@ -2493,6 +2493,9 @@ sub build_transcript_and_gene_display_xrefs {
 
   foreach my $ord (reverse(@presedence)){
     $i++;
+    if(!defined($external_name_to_id{$ord})){
+      print STDERR "unknown external database name *$ord* being used\n";
+    }
     $level{$external_name_to_id{$ord}} = $i;
   }
 
@@ -2714,7 +2717,7 @@ sub transcript_display_xref_sources {
 
   return ('RFAM',
 	  'miRBase',
-          'IMGT/GENE-DB',
+          'IMGT/GENE_DB',
 	  'HUGO',
 	  'MarkerSymbol',
 	  'flybase_symbol',
@@ -3079,6 +3082,9 @@ sub new_build_gene_descriptions{
   
   foreach my $ord (@presedence){
     $i++;
+    if(!defined($external_name_to_id{$ord})){
+      print STDERR "No id for ord *$ord*\n";
+    }
     $level{$external_name_to_id{$ord}} = $i;
 
   }
@@ -3520,7 +3526,7 @@ sub gene_description_sources {
 	  "RefSeq_dna",
 	  "RefSeq_peptide",
 	  "Uniprot/SWISSPROT",
-          "IMGT/GENE-DB",
+          "IMGT/GENE_DB",
 	  "miRBase",
 	  "RFAM");
 
