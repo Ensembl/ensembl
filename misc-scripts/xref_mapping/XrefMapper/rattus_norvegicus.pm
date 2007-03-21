@@ -16,7 +16,7 @@ sub get_set_lists {
 sub transcript_display_xref_sources {
 
   return ('RFAM',
-	  'miRNA_Registry',
+	  'miRBase',
 	  'HUGO',
 	  'RGD',
 	  'MarkerSymbol',

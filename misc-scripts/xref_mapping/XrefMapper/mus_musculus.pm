@@ -27,9 +27,9 @@ sub gene_description_sources {
 	  "Uniprot/Varsplic", 
 	  "Uniprot/SWISSPROT", 
 	  "MarkerSymbol",
-          "IMGT/GENE-DB",
+          "IMGT/GENE_DB",
 	  "RFAM", 
-	  "miRNA_Registry");
+	  "miRBase");
 
 }
 
