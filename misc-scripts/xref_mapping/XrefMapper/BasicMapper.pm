@@ -42,14 +42,17 @@ my %priority_xref_acc;      # {12} =  "567";
 my %priority_xref_source_id;# {12} = 1090;
 
 # hold a hash of the values with the highest priority
-my %priority_xref;          # {HUGO:567} = 12
-my %priority_xref_extra_bit;# {12} = "\tDIRECT\tExternally assigned relationship between ENST123 and Q12345\n";
-my %priority_xref_state;    # {HUGO:567} = "primary" or "dependent" or "direct";
-my %priority_xref_priority; # {HUGO:567} = 1; 
-my %priority_object_xref;   # {HUGO:567} = {Gene:123456};
-my %priority_identity_xref; # {HUGO:567} = as normal print except no object_xref_id at the start
+my %priority_xref;           # {HUGO:567} = 12
+my %priority_xref_extra_bit; # {12} = "\tDIRECT\tExternally assigned relationship between ENST123 and Q12345\n";
+my %priority_xref_state;     # {HUGO:567} = "primary" or "dependent" or "direct";
+my %priority_xref_priority;  # {HUGO:567} = 1; 
+my %priority_object_xref;    # {HUGO:567} = {Gene:123456};
+my %priority_identity_xref;  # {HUGO:567} = as normal print except no object_xref_id at the start
 #                                        = "100\t100\t1\t100\t110-210\t100M\t100\t987\n";
 my %priority_failed;         # {1090:12} = "gene|123456|78|35|90|90\n";
+
+
+
 
 
 my %unmapped_primary_xref;   # $unmapped_primary_xref{1234} = " master QZ1234 had no match"
@@ -83,7 +86,7 @@ my %XXXxref_id_to_accession;
 
 =head2 find_priority_sources
 
-  Description: Finds those source that hae more than one source
+  Description: Finds those sources that hae more than one source
                Stores the results in the global hashes 
                %priority_source_id and %priority_source_name
   Returntype : none
@@ -101,7 +104,12 @@ sub find_priority_sources{
 # NOTE: only store in priority_source_name if same name seen more than once :-)
 # i.e. more than one priority source is "USED"
 
-  my $sql = "select distinct(source.source_id), source.name, source.priority from source, xref where xref.source_id = source.source_id ";
+  my $sql = (<<SQL);
+     SELECT DISTINCT(source.source_id), source.name, source.priority
+       FROM source, xref 
+         WHERE xref.source_id = source.source_id
+SQL
+
   my $sth = $self->xref->dbc->prepare($sql);
   $sth->execute();
   my ($source_id, $name, $priority);
@@ -116,9 +124,6 @@ sub find_priority_sources{
       }
   }
   $sth->finish;
-
-
-
 
 
 
@@ -247,8 +252,6 @@ sub build_list_and_map {
   $self->run_mapping(\@list);
 
 }
-#
-#  $self->remove_all_old_output_files();
 
 
 =head2 get_species_id_from_species_name
@@ -394,6 +397,7 @@ sub dump_xref{
 	$method[$k++] = shift @$list;
       }
       $self->method(\@method);
+      print "Xref fasta files found and will be used (No new dumping)\n";
       return;
     }
   }
@@ -559,6 +563,7 @@ sub fetch_and_dump_seq{
 
 
   if(defined($self->dumpcheck()) and -e $ensembl->protein_file() and -e $ensembl->dna_file()){
+    print "Ensembl Fasta files found (no new dumping)\n";
     return;
   }
 
@@ -854,7 +859,7 @@ sub run_mapping {
 
   # delete old output files in target directory if we're going to produce new ones
   if (!defined($self->use_existing_mappings())) {
-    print "Deleting out err and map files from output dir\n";
+    print "Deleting out, err and map files from output dir\n";
     my $dir = $self->core->dir();
     unlink (<$dir/*.map $dir/*.out $dir/*.err>);
   }
@@ -954,7 +959,6 @@ sub submit_depend_job {
   # rest of command
   push @depend_bsub, ('-q', 'small', '-o', "$root_dir/depend.out", '-e', "$root_dir/depend.err");
 
-  #print "##depend bsub:\n" . join (" ", @depend_bsub) . "\n";
 
   my $jobid = 0;
 
@@ -1040,18 +1044,20 @@ sub parse_mappings {
   if (!defined $max_object_xref_id) {
     print "No existing object_xref_ids, will start from 1\n";
     $max_object_xref_id = 1;
-  } else {
-    print "Maximum existing object_xref_id = $max_object_xref_id\n";
   }
+# else {
+#    print "Maximum existing object_xref_id = $max_object_xref_id\n";
+#  }
 
   $row = @{$ensembl->dbc->db_handle->selectall_arrayref("SELECT MAX(xref_id) FROM xref")}[0];
   my $max_xref_id = @$row[0];
   if (!defined $max_xref_id) {
     print "No existing xref_ids, will start from 1\n";
     $max_xref_id = 1; 
-  } else {
-    print "Maximum existing xref_id = $max_xref_id\n";
   }
+#  else {
+#    print "Maximum existing xref_id = $max_xref_id\n";
+#  }
 
   my $xref_id_offset = $max_xref_id + 1;
 
@@ -1107,7 +1113,6 @@ sub parse_mappings {
     my $analysis_id = $self->get_analysis_id($type);
     #    my $analysis_id = 999;
 
-    open(PRIORITY_FILE,">>priority_xref.out") || die "Could not open priority_xref.out\n";
     while (<FILE>) {
 
       $total_lines++;
@@ -1133,7 +1138,6 @@ sub parse_mappings {
 	else{
 	  $priority_failed{$priority_source_id_to_name{$priority_xref_source_id{$query_id}}
 						       .":".$priority_xref_acc{$query_id}} = $reason;
-	  print PRIORITY_FILE  $priority_xref_acc{$query_id}."\tFailed cutoff $reason\n";
 	}
 	next;
       }
@@ -1147,8 +1151,6 @@ sub parse_mappings {
 	}
 	my $key = $priority_source_id_to_name{$source_id}.":".$priority_xref_acc{$query_id};
 	if(!defined($priority_xref_priority{$key})){
-	  print PRIORITY_FILE $priority_xref_acc{$query_id}."\t".$source_id.
-	    " being set as undef from parsing mapped data.(PRIMARY) priority = ".$priority_source_id{$source_id}."\n";
 	  
 	  $priority_xref{$key} = $query_id;
 	  $priority_xref_priority{$key} = $priority_source_id{$source_id};
@@ -1163,8 +1165,6 @@ sub parse_mappings {
 	}
 	if($priority_xref_priority{$key} 
 	   > $priority_source_id{$source_id}){
-	  print PRIORITY_FILE $priority_xref_acc{$query_id}."\t".$source_id.
-	    " being set as better priority found from parsing mapped data.(PRIMARY) priority = ".$priority_source_id{$source_id}."\n";
 	  
 	  $priority_xref{$key} = $query_id;
 	  $priority_xref_priority{$key} = $priority_source_id{$source_id};
@@ -1175,9 +1175,6 @@ sub parse_mappings {
 						      $cigar_line, $score, "\\N", $analysis_id)) . "\n";
 	  $priority_xref_state{$key} = "primary";
 	  $priority_xref_extra_bit{$query_id} =  "\tSEQUENCE_MATCH\t" . "Relationship generated from exonerate mapping" . "\n";
-	}
-	else{
-	  print PRIORITY_FILE $priority_xref_acc{$query_id}."\t".$source_id." has less priority (PRIMARY) so left as is\n";
 	}
 	next; # do not store OBJECT, IDENTITY or set primary_xref. do much later
 	  
@@ -1214,10 +1211,9 @@ sub parse_mappings {
 
   close(IDENTITY_XREF);
   close(OBJECT_XREF);
-  close(PRIORITY_FILE);
 
   print "Read $total_lines lines from $total_files exonerate output files\n";
-  print "\n number of non priority dependent xrefs is $count_new\n";
+  print "\nnumber of non priority primary xrefs is $count_new\n";
 
 
   if($self->jobcount() != $total_files){
@@ -1292,7 +1288,6 @@ PSQL
 
 
 
-
   my $xref_id_offset = $self->xref_id_offset();
   # get current max object_xref_id
   my $row = @{$ensembl->dbc->db_handle->selectall_arrayref("SELECT MAX(object_xref_id) FROM object_xref")}[0];
@@ -1300,9 +1295,10 @@ PSQL
   if (!defined $max_object_xref_id) {
     print "No existing object_xref_ids, will start from 1\n";
     $max_object_xref_id = 1;
-  } else {
-    print "Maximum existing object_xref_id = $max_object_xref_id\n";
   }
+# else {
+#    print "Maximum existing object_xref_id = $max_object_xref_id\n";
+#  }
   my $object_xref_id =  $max_object_xref_id + 1;
 
   open(XREF_P,">$dir/xref_priority.txt") || die "Could not open xref_priority.txt";
@@ -1372,7 +1368,7 @@ PSQL
   }
 
   if(scalar(@xref_list) < 1){
-    print "At end of process prioritys  Maximum existing object_xref_id = $max_object_xref_id\n";
+#    print "At end of process prioritys  Maximum existing object_xref_id = $max_object_xref_id\n";
     return;
   }
   my $list = join(", ", @xref_list);
@@ -1383,8 +1379,6 @@ PSQL
   $sth->bind_columns(\$xref_id, \$acc, \$ver, \$label, \$desc, \$source_id);
   while($sth->fetch()){
     my $key = $priority_source_id_to_name{$priority_xref_source_id{$xref_id}}.":".$acc;
-#    print XREF_P ($xref_id+$xref_id_offset)."\t". $source_to_external_db{$source_id}.
-#      "\t$acc\t$label\t$ver\t$desc";
 
     print XREF_P ( $xref_id + $xref_id_offset ) . "\t"
       . ( $source_to_external_db{$source_id} || '' ) . "\t"
@@ -1453,7 +1447,7 @@ PSQL
   }
 
 
-  print "At end of process prioritys  Maximum existing object_xref_id = $object_xref_id\n";
+  print "At end of processing prioritys\n";
 
 }
 
@@ -1646,7 +1640,7 @@ PSQL
 
 	$XXXxref_id_to_accession{$xref_id} = $accession;
 	if(!defined($accession) or $accession eq ""){
-	  print "No accession for ".($xref_id+$xref_id_offset)."\t2\n";
+	  print STDERR "No accession for ".($xref_id+$xref_id_offset)."\t2\n";
 	}
 	
         $self->dump_all_dependencies($xref_id, $xref_id_offset);
@@ -1735,7 +1729,6 @@ sub dump_orphan_xrefs() {
 
   open (XREF, ">>" . $self->core->dir() . "/xref.txt");
 
-  # need a triple left-join
 
   my $sql = q[
     SELECT x.xref_id, x.accession, x.version, x.label, x.description, 
@@ -1817,7 +1810,13 @@ sub dump_direct_xrefs {
   # Will need to look up translation stable ID from transcript stable ID, build hash table
 
   my %transcript_stable_id_to_translation_stable_id;
-  my $trans_sth = $self->core->dbc->prepare("SELECT tss.stable_id as transcript, tls.stable_id AS translation FROM translation tl, translation_stable_id tls, transcript_stable_id tss WHERE tss.transcript_id=tl.transcript_id AND tl.translation_id=tls.translation_id");
+  my $sql = (<<SQL);
+    SELECT tss.stable_id as transcript, tls.stable_id AS translation 
+       FROM translation tl, translation_stable_id tls, transcript_stable_id tss 
+         WHERE tss.transcript_id=tl.transcript_id AND tl.translation_id=tls.translation_id
+SQL
+
+  my $trans_sth = $self->core->dbc->prepare($sql);
   $trans_sth->execute();
   my ($transcript_stable_id, $translation_stable_id);
   $trans_sth->bind_columns(\$transcript_stable_id, \$translation_stable_id);
@@ -1828,20 +1827,26 @@ sub dump_direct_xrefs {
 
 
   # SQL / statement handle for getting all direct xrefs
-  my $xref_sql = "SELECT dx.general_xref_id, dx.ensembl_stable_id, dx.type, dx.linkage_xref, x.accession, x.version, x.label, x.description, x.source_id, x.species_id FROM direct_xref dx, xref x WHERE dx.general_xref_id=x.xref_id";
+  my $xref_sql = (<<XSQL);
+     SELECT dx.general_xref_id, dx.ensembl_stable_id, dx.type, dx.linkage_xref, 
+             x.accession, x.version, x.label, x.description, x.source_id, x.species_id 
+       FROM direct_xref dx, xref x 
+         WHERE dx.general_xref_id=x.xref_id
+XSQL
+
   my $xref_sth = $self->xref->dbc->prepare($xref_sql);
 
   my $rv = $xref_sth->execute();
-  print "  Found $rv direct xrefs in xref DB\n";
 
-  my ($xref_id, $ensembl_stable_id, $type, $linkage_xref, $accession, $version, $label, $description, $source_id, $species_id);
-  $xref_sth->bind_columns(\$xref_id, \$ensembl_stable_id, \$type, \$linkage_xref,\ $accession, \$version, \$label, \$description, \$source_id, \$species_id);
+  my ($xref_id, $ensembl_stable_id, $type, $linkage_xref, $accession, $version, 
+      $label, $description, $source_id, $species_id);
+  $xref_sth->bind_columns(\$xref_id, \$ensembl_stable_id, \$type, \$linkage_xref,\ $accession, 
+                          \$version, \$label, \$description, \$source_id, \$species_id);
 
 
   my %error_count;
   my %error_example;
 
-  open(PRIORITY_FILE,">>priority_xref.out") || die "Could not open priority_xref.out\n";
   my $ccds_source = get_source_id_from_source_name($self->xref(), "CCDS");
   while ($xref_sth->fetch()) {
     my $external_db_id = $source_to_external_db{$source_id};
@@ -1870,8 +1875,6 @@ sub dump_direct_xrefs {
 	$error_count{$source_id} = 1;
 	$error_example{$source_id} = "$tmp_esid - $accession";
       }
-#      warn "Can't find translation for transcript $tmp_esid" if (!$ensembl_stable_id);
-      #print "CCDS: transcript $tmp_esid -> translation $ensembl_stable_id\n";
     }
     
     my $ensembl_internal_id;
@@ -1906,8 +1909,7 @@ sub dump_direct_xrefs {
 	  }
 	  my $key = $priority_source_id_to_name{$source_id}.":".$priority_xref_acc{$xref_id};
 	  if(!defined($priority_xref_priority{$key})){
-	    print PRIORITY_FILE $priority_xref_acc{$xref_id}."\t".$source_id.
-	      " being set as undef (DIRECT) xref= $xref_id key = $key  priority = ".$priority_source_id{$source_id}."\n";
+
 	    $priority_xref_extra_bit{$xref_id} = "\tDIRECT" . "\t" . 
                               "Externally assigned relationship between $ensembl_stable_id and $accession" . "\n";
 	    $priority_xref{$key} = $xref_id;
@@ -1921,8 +1923,6 @@ sub dump_direct_xrefs {
 	  if($priority_xref_priority{$key}        # old one
 	     > $priority_source_id{$source_id}){  # new one
 
-	    print PRIORITY_FILE $priority_xref_acc{$xref_id}."\t".$source_id.
-	      " being set as better priority found (DIRECT) priority = ".$priority_source_id{$source_id}."\n";
 
 	    $priority_xref_extra_bit{$xref_id} = "\tDIRECT" . "\t" . 
                               "Externally assigned relationship between $ensembl_stable_id and $accession" . "\n";
@@ -1933,9 +1933,6 @@ sub dump_direct_xrefs {
 
 	    $priority_xref_state{$key} = "direct";
           }
-	  else{
-	    print PRIORITY_FILE $priority_xref_acc{$xref_id}."\t".$source_id." has less (DIRECT) priority so left as is. \n";
-	  }
           next; # do not store XREF or OBJECT. do much later
 	}
 
@@ -1957,7 +1954,7 @@ sub dump_direct_xrefs {
       $object_xref_id++;
       $count++;
       
-    } else { ##ahh
+    } else {
       if(!defined($worm_pep_source_id)){
         $worm_pep_source_id = get_source_id_from_source_name($self->xref(), "wormpep_id");
         $worm_locus_source_id = get_source_id_from_source_name($self->xref(), "wormbase_locus");
@@ -2010,8 +2007,7 @@ sub dump_direct_xrefs {
         } # foreach stable_id
         
       } # if source_id
-      # if we haven't changed $object_xref_id, nothing was written
- #     print STDERR "Can't find $type corresponding to stable ID $ensembl_stable_id in ${type}_stable_id, not writing record for xref $accession\n" if ($object_xref_id == $old_object_xref_id);
+
       if(defined($error_count{$source_id})){
 	$error_count{$source_id}++;
 	if($error_count{$source_id} < 6){
@@ -2035,7 +2031,6 @@ sub dump_direct_xrefs {
   close(OBJECT_XREF);
   close(XREF);
   close(GO_XREF);
-  close(PRIORITY_FILE);
   $xref_sth->finish();
 
   print "  Wrote $count direct xrefs\n";
@@ -2188,6 +2183,7 @@ sub remove_all_old_output_files{
 
   my $dir = $self->core->dir();
 
+  print "Deleting txt and sql files from output dir\n";
   unlink(<$dir/*.txt $dir/*.sql>);
 
 }
@@ -2211,6 +2207,7 @@ sub dump_core_xrefs {
   # Cache synonyms for later use
   # Do one big query to get a list of all the synonyms; note each xref may have
   # more than one synonym so they are stored in a hash of lists
+
   my $syn_count = 0;
   my %synonyms;
   my $syn_sth = $self->xref->dbc->prepare("SELECT xref_id, synonym FROM synonym");
@@ -2310,8 +2307,6 @@ sub dump_core_xrefs {
 
     $dep_sth->bind_columns(\$xref_id, \$master_xref_id, \$accession, \$label, \$description, \$source_id, \$version, \$linkage_annotation);
 
-    open(PRIORITY_FILE,">>priority_xref.out") || die "Could not open priority_xref.out\n";
-
 
     while ($dep_sth->fetch()) {  # dependent xrefs
 
@@ -2359,8 +2354,6 @@ sub dump_core_xrefs {
 	  if(defined($priority_xref_source_id{$xref_id})){
 	    my $key = $priority_source_id_to_name{$source_id}.":".$priority_xref_acc{$xref_id};	  
 	    if(!defined($priority_xref_priority{$key})){
-	      print PRIORITY_FILE $priority_xref_acc{$xref_id}."\t".$source_id.
-		" being set as undef  (DEPENDENT) priority = ".$priority_source_id{$source_id}."\n";
 	      
 	      $priority_xref_extra_bit{$xref_id} = "\t" . "DEPENDENT" . "\t" . "Generated via $master_accession\n";
 	      $priority_xref{$key} = $xref_id;
@@ -2373,9 +2366,6 @@ sub dump_core_xrefs {
 	    if($priority_xref_priority{$key} 
 	       > $priority_source_id{$source_id}){
 	      
-	      print PRIORITY_FILE $priority_xref_acc{$xref_id}."\t".$source_id.
-		" being set as better priority found  (DEPENDENT) priority = ".$priority_source_id{$source_id}."\n";
-
 	      $priority_xref_extra_bit{$xref_id} = "\t" . "DEPENDENT" . "\t" . "Generated via $master_accession\n";
 	      $priority_xref{$key} = $xref_id;
 	      $priority_xref_priority{$key} = $priority_source_id{$source_id};
@@ -2383,9 +2373,6 @@ sub dump_core_xrefs {
 	      $priority_identity_xref{$key} = undef;
 	      $priority_xref_state{$key} = "dependent";
 	      next;
-	    }
-	    else{
-	      print PRIORITY_FILE $priority_xref_acc{$xref_id}."\t".$source_id." has less priority (DEPENDENT) so left as is\n";
 	    }
 	    next;
 	  }
@@ -2434,7 +2421,6 @@ sub dump_core_xrefs {
   close(EXTERNAL_SYNONYM);
   close(GO_XREF);
   close(IDENTITY_XREF);
-  close(PRIORITY_FILE);
 
   return $object_xref_id;
 
@@ -3764,11 +3750,6 @@ EOS
     || die "Could not open pairs_object_xref.txt";
 
 
-#  TRIAGE update not needed now as triage stuff done right at the end
-#  my $triage_file = $self->core->dir()."/triage_update.sql";
-#  open(TRIAGE_UPDATE,">".$triage_file)
-#    || die "Could not open $triage_file\n";
-
   my $i=0;
   my $index;
   my $added = 0;
@@ -3789,7 +3770,6 @@ EOS
 
   while ( @list_all){
     my @list = splice(@list_all, 0,199);
-#    print "LIST: ".join(',',@list). "\n";
     my $sth_ob = $self->core->dbc->prepare($sql.(join(',',@list)).")") || die @_;
     $sth_ob->execute();
     $sth_ob->bind_columns(\$goodxref,\$ens_int_id,\$type, \$acc, \$ex_db_id);
@@ -3834,9 +3814,6 @@ EOS
 	    
 	  }
 	}
-#	print TRIAGE_UPDATE "DELETE unmapped_object FROM unmapped_object ";
-#	print TRIAGE_UPDATE   "WHERE identifier = '".$good2missed_acc{$goodxref}."' ";
-#	print TRIAGE_UPDATE   "AND external_db_id = $ex_db_id ;\n";
       }
       elsif(($type =~ /Translation/) and defined($translation_2_transcript{$ens_int_id})){
 	$max_object_xref_id++;
@@ -3876,9 +3853,6 @@ EOS
 	  }
 	}
 	
-#	print TRIAGE_UPDATE "DELETE unmapped_object FROM unmapped_object ";
-#	print TRIAGE_UPDATE   "WHERE identifier = '".$good2missed_acc{$goodxref}."' ";
-#	print TRIAGE_UPDATE   "AND external_db_id = $ex_db_id ;\n";
       }
     }
     $sth_ob->finish();
@@ -3948,14 +3922,6 @@ EOS
   }
   
 
-
-#  my $core_db = $self->core->dbc;
-#
-#  my $mysql_command = $self->get_mysql_command($core_db);
-#  system( "$mysql_command < $triage_file" ) == 0 
-#      or print( "ERROR: parsing $file in mysql\n" );
-
-
 }
 
 sub dump_all_dependencies{
@@ -3963,16 +3929,22 @@ sub dump_all_dependencies{
   my @return;
 
   # Now get the dependent xrefs for this xref and write them
-  open(PRIORITY_FILE,">>priority_xref.out") || die "Could not open priority_xref.out\n";
   
-  my $sql = "SELECT DISTINCT(x.xref_id), dx.master_xref_id, x.accession, x.label, x.description, x.source_id, x.version, dx.linkage_annotation FROM dependent_xref dx, xref x WHERE x.xref_id=dx.dependent_xref_id AND master_xref_id = $master_id";
+  my $sql = (<<SQL);
+  SELECT DISTINCT(x.xref_id), dx.master_xref_id, x.accession, x.label, x.description, 
+                 x.source_id, x.version, dx.linkage_annotation 
+    FROM dependent_xref dx, xref x 
+       WHERE x.xref_id=dx.dependent_xref_id AND master_xref_id = $master_id
+SQL
   
   my $dep_sth = $self->xref->dbc->prepare($sql);
   $dep_sth->execute();
 
-   my ($xref_id, $accession, $version, $label, $description, $source_id, $species_id, $master_xref_id, $linkage_annotation);
+   my ($xref_id, $accession, $version, $label, $description, $source_id, 
+       $species_id, $master_xref_id, $linkage_annotation);
   
-  $dep_sth->bind_columns(\$xref_id, \$master_xref_id, \$accession, \$label, \$description, \$source_id, \$version, \$linkage_annotation);
+  $dep_sth->bind_columns(\$xref_id, \$master_xref_id, \$accession, \$label, \$description, 
+                         \$source_id, \$version, \$linkage_annotation);
   while ($dep_sth->fetch()) {
     
     my $external_db_id = $source_to_external_db{$source_id};
@@ -3989,7 +3961,8 @@ sub dump_all_dependencies{
 	
 	my $master_accession = $XXXxref_id_to_accession{$master_id};
 	if(!defined($master_accession) or $master_accession eq ""){
-	  print "(dump_all_dependencies) No master_acc for master xref ($master_xref_id = $master_id)  for $accession ($xref_id) $type\n";
+	  print "(dump_all_dependencies) No master_acc for master xref ($master_xref_id = $master_id)"
+	         . " for $accession ($xref_id) $type\n";
 	}
 	
 	if(!defined($priority_xref_source_id{$xref_id})){
@@ -4010,8 +3983,6 @@ sub dump_all_dependencies{
 	elsif(defined($type)){
 	    my $key = $priority_source_id_to_name{$source_id}.":".$priority_xref_acc{$xref_id};	  
 	    if(!defined($priority_xref_priority{$key})){
-		print PRIORITY_FILE $priority_xref_acc{$xref_id}."\t".$source_id.
-		    " being set as undef  (DEPENDENT) priority = ".$priority_source_id{$source_id}."\n";
 		
 		$priority_xref_extra_bit{$xref_id} = "\t" . "DEPENDENT" . "\t" . "Generated via $master_accession\n";
 		$priority_xref{$key} = $xref_id;
@@ -4024,9 +3995,6 @@ sub dump_all_dependencies{
 	    if($priority_xref_priority{$key} 
 	       > $priority_source_id{$source_id}){
 		
-		print PRIORITY_FILE $priority_xref_acc{$xref_id}."\t".$source_id.
-		    " being set as better priority found  (DEPENDENT) priority = ".$priority_source_id{$source_id}."\n";
-		
 		$priority_xref_extra_bit{$xref_id} = "\t" . "DEPENDENT" . "\t" . "Generated via $master_accession\n";
 		$priority_xref{$key} = $xref_id;
 		$priority_xref_priority{$key} = $priority_source_id{$source_id};
@@ -4035,14 +4003,10 @@ sub dump_all_dependencies{
 		$priority_xref_state{$key} = "dependent";
 		next;
 	    }
-	    else{
-		print PRIORITY_FILE $priority_xref_acc{$xref_id}."\t".$source_id." has less priority (DEPENDENT) so left as is\n";
-	    }
 	  }
     }
 
   }   
-  close PRIORITY_FILE;
   return \@return;
 }
     
@@ -4396,16 +4360,23 @@ PSQL
 
   #  $unmapped_primary_xref{$xref_id} = "QZ1234";
 
-  my $sql = "SELECT DISTINCT(x.xref_id), x2.source_id, dx.master_xref_id, x.accession, x.label, x.description, x.source_id,x.version, dx.linkage_annotation FROM dependent_xref dx, xref x, xref x2 WHERE x2.xref_id = dx.master_xref_id and x.xref_id=dx.dependent_xref_id AND master_xref_id = ?";
+  my $sql = (<<SQL);
+  SELECT DISTINCT(x.xref_id), x2.source_id, dx.master_xref_id, x.accession, x.label, 
+                  x.description, x.source_id,x.version, dx.linkage_annotation 
+    FROM dependent_xref dx, xref x, xref x2 
+        WHERE x2.xref_id = dx.master_xref_id AND x.xref_id=dx.dependent_xref_id AND master_xref_id = ?";
+SQL
 
   my $dep_sth = $self->xref->dbc->prepare($sql);
 
 
   foreach my $key (keys %unmapped_primary_xref){
     $dep_sth->execute($key);
-    my ($xref_id, $master_source, $accession, $version, $label, $description, $source_id, $species_id, $master_xref_id, $linkage_annotation);
+    my ($xref_id, $master_source, $accession, $version, $label, $description, $source_id, 
+        $species_id, $master_xref_id, $linkage_annotation);
 
-    $dep_sth->bind_columns(\$xref_id, \$master_source, \$master_xref_id, \$accession, \$label, \$description, \$source_id, \$version, \$linkage_annotation);
+    $dep_sth->bind_columns(\$xref_id, \$master_source, \$master_xref_id, \$accession, \$label, 
+                           \$description, \$source_id, \$version, \$linkage_annotation);
 
     while ($dep_sth->fetch()) {
 
