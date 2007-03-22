@@ -8,10 +8,11 @@ use Getopt::Long;
 use Bio::EnsEMBL::Registry;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::EnsEMBL::DBSQL::GeneAdaptor;
+use Bio::EnsEMBL::Utils::Eprof qw(eprof_start eprof_end eprof_dump);
 
 my $method_link_type = "ENSEMBL_ORTHOLOGUES";
 
-my ($conf, $compara, $from_species, @to_multi, $print, $names, $go_terms, $delete_names, $delete_go_terms, $no_backup, $full_stats, $descriptions, $release, $no_database, $quiet, $single_source);
+my ($conf, $compara, $from_species, @to_multi, $print, $names, $go_terms, $delete_names, $delete_go_terms, $no_backup, $full_stats, $descriptions, $release, $no_database, $quiet, $single_source, $max_genes);
 
 GetOptions('conf=s'          => \$conf,
 	   'compara=s'       => \$compara,
@@ -29,8 +30,11 @@ GetOptions('conf=s'          => \$conf,
 	   'release=i'       => \$release,
 	   'no_database'     => \$no_database,
 	   'quiet'           => \$quiet,
-	   'single_source'   => \$single_source,
+	   'single_source=s' => \$single_source,
+	   'max_genes=i'     => \$max_genes,
 	   'help'            => sub { usage(); exit(0); });
+
+$| = 1; # auto flush stdout
 
 $descriptions = 1;
 
@@ -106,6 +110,9 @@ foreach my $to_species (@to_multi) {
 
   my $mlss = $mlssa->fetch_by_method_link_type_registry_aliases($method_link_type, [$from_species, $to_species]);
 
+  # get homologies from compara - comes back as a hash of arrays
+  my $homologies = fetch_homologies($ha, $mlss, $from_species);
+
   my $str = "gene display_xrefs and descriptions" if ($names);
   $str .= " and " if ($names && $go_terms);
   $str .= "GO terms" if ($go_terms);
@@ -118,29 +125,35 @@ foreach my $to_species (@to_multi) {
   print "$to_species, before projection: \n";
   print_stats($to_ga);
 
-  # Get all genes, find homologies, set xrefs
-  my $genes = $from_ga->fetch_all();
-
   my $i = 0;
-  my $total_genes = count_rows($from_ga, "SELECT COUNT(*) FROM gene g");
+  my $total_genes = scalar(keys %$homologies);
+  my $last_pc = -1;
 
-  while (my $gene = shift(@$genes)) {
+  print "Percentage complete: ";
 
-    # next unless ($gene->biotype eq "protein_coding");
+  foreach my $from_stable_id (keys %$homologies) {
 
-    print "$i of $total_genes source genes\n" if (!$quiet && $i % 1000 == 0);
+    $last_pc = print_progress($i, $total_genes, $last_pc) if (!$quiet);
+
+    last if ($max_genes && $i > $max_genes);
+
     $i++;
 
-    my $member = $ma->fetch_by_source_stable_id("ENSEMBLGENE",$gene->stable_id);
-    next unless (defined $member);
+    my $from_gene = $from_ga->fetch_by_stable_id($from_stable_id);
 
-    my $homologies = $ha->fetch_all_by_Member_MethodLinkSpeciesSet($member, $mlss);
+    foreach my $to_stable_id (@{$homologies->{$from_stable_id}}) {
 
-    project_homologies($homologies, $to_ga, $to_dbea, $names, $go_terms, $ma, %db_to_type);
+      my $to_gene = $to_ga->fetch_by_stable_id($to_stable_id);
+
+      project_display_names($to_ga, $to_dbea, $from_gene, $to_gene, %db_to_type) if ($names);
+
+      project_go_terms($to_ga, $to_dbea, $ma, $from_gene, $to_gene) if ($go_terms);
+
+    }
 
   }
 
-  print "$to_species, after projection: \n";
+  print "\n$to_species, after projection: \n";
   print_stats($to_ga);
 
   # print statistics if required
@@ -159,45 +172,13 @@ foreach my $to_species (@to_multi) {
 
 }
 
-# ----------------------------------------------------------------------
-
-# Project homologies from first to subsequent species
-sub project_homologies() {
-
-  my ($homologies, $to_ga, $to_dbea, $names, $go_terms, $ma, %db_to_type) = @_;
-
-  foreach my $homology (@{$homologies}) {
-
-    next if ($homology->description() ne "ortholog_one2one" && $homology->description() ne "apparent_ortholog_one2one");
-
-    my @mas = @{$homology->get_all_Member_Attribute};
-    my ($from_member, $from_attribute) = @{$mas[0]};
-    my ($to_member, $to_attribute) = @{$mas[1]};
-
-    # ----------------------------------------
-    # Display names and descriptions
-
-    project_display_names($to_ga, $to_dbea, $ma, $from_member, $to_member, %db_to_type) if ($names);
-
-    # ----------------------------------------
-    # GO terms
-
-    project_go_terms($to_ga, $to_dbea, $ma, $from_attribute, $to_attribute) if ($go_terms);
-
-    # ----------------------------------------
-
-  }
-
-}
 
 # --------------------------------------------------------------------------------
 
 sub project_display_names {
 
-  my ($to_ga, $to_dbea, $ma, $from_member, $to_member, %db_to_type) = @_;
+  my ($to_ga, $to_dbea, $from_gene, $to_gene, %db_to_type) = @_;
 
-  my $to_gene = $to_ga->fetch_by_stable_id($to_member->stable_id());
-  my $from_gene = $from_ga->fetch_by_stable_id($from_member->stable_id());
   my $dbEntry = $from_gene->display_xref();
   my $to_source = $to_gene->display_xref()->dbname() if ($to_gene->display_xref());
   my $from_source = $from_gene->display_xref()->dbname() if ($from_gene->display_xref());
@@ -209,7 +190,7 @@ sub project_display_names {
 
     if ($dbEntry) {
 
-      next if ($single_source && $dbEntry->dbname() ne $single_source);
+      return if ($single_source && ($dbEntry->dbname() ne $single_source));
 
       # Modify the dbEntry to indicate it's not from this species - set info_type & info_text
       my $txt = "from $from_latin_species gene " . $from_gene->stable_id();
@@ -280,17 +261,21 @@ sub project_display_names {
 
 sub project_go_terms {
 
-  my ($to_ga, $to_dbea, $ma, $from_attribute, $to_attribute) = @_;
+  my ($to_ga, $to_dbea, $ma, $from_gene, $to_gene) = @_;
 
   # GO xrefs are linked to translations, not genes
-  my $from_translation = $ma->fetch_by_dbID($from_attribute->peptide_member_id())->get_Translation();
-  my $to_translation   = $ma->fetch_by_dbID($to_attribute->peptide_member_id())->get_Translation();
+  # For historical reasons we only project GO terms between the longest translations of each gene
+  # TODO - consider projecting *all* GO terms from *all* source translations to one translation of target?
+  # TODO - getting the translation's length seem to involve lots of database accesses - some way to do 
+  # this quicker? Via SQL?
+  my $from_translation = get_longest_translation($from_gene);
+  my $to_translation   = get_longest_translation($to_gene);
 
   my $from_latin_species = ucfirst(Bio::EnsEMBL::Registry->get_alias($from_species));
 
-  my $to_go_xrefs = $to_translation->get_all_DBEntries();
+  my $to_go_xrefs = $to_translation->get_all_DBEntries("GO");
 
-  DBENTRY: foreach my $dbEntry (@{$from_translation->get_all_DBEntries()}) {
+  DBENTRY: foreach my $dbEntry (@{$from_translation->get_all_DBEntries("GO")}) {
 
     next if ($dbEntry->dbname() ne "GO" || !$dbEntry);
 
@@ -309,7 +294,6 @@ sub project_go_terms {
     # record statistics by evidence type
     foreach my $et (@{$dbEntry->get_all_linkage_types}){
       $projections_by_evidence_type{$et}++;
-      #print $dbEntry->display_id() . " " . $et . " " . $projections_by_evidence_type{$et} . "\n";
     }
 
     # Change linkage_type for projection to IEA (in the absence of a specific one for projections)
@@ -325,7 +309,6 @@ sub project_go_terms {
     print $to_translation->stable_id() . " --> " . $dbEntry->display_id() . "\n" if ($print);
 
     $to_dbea->store($dbEntry, $to_translation->dbID(), 'Translation') if (!$print);
-    #print "stored xref ID " . $dbEntry->dbID() ." " . $to_translation->stable_id() . " ". $to_translation->dbID() . " " . $dbEntry->display_id() . "\n";
 
   }
 
@@ -545,6 +528,94 @@ sub write_to_projection_db {
 		$to_species) || die "Can't write to projection info database\n";
 
   $sth->finish();
+
+}
+
+# ----------------------------------------------------------------------
+# Fetch the homologies from the Compara database.
+# Returns a two element array:
+# First 
+
+sub fetch_homologies {
+
+  my ($ha, $mlss, $from_species) = @_;
+
+  print "Fetching Compara homologies\n";
+
+  my %homology_cache;
+
+  my $homologies = $ha->fetch_all_by_MethodLinkSpeciesSet($mlss);
+
+  foreach my $homology (@{$homologies}) {
+
+    next if ($homology->description() ne "ortholog_one2one" && $homology->description() ne "apparent_ortholog_one2one");
+
+    my @mas = @{$homology->get_all_Member_Attribute};
+    my ($member1, $attribute1) = @{$mas[0]};
+    my ($member2, $attribute2) = @{$mas[1]};
+
+    # order of member1/member2 is arbitrary, need to figure out which is "from" and which is "to"
+    my ($from_member, $to_member, $from_attribute, $to_attribute);
+    if (lc($member1->genome_db()->name()) eq lc(Bio::EnsEMBL::Registry->get_alias($from_species))) {
+      $from_member = $member1;
+      $from_attribute = $member1;
+      $to_member = $member2;
+      $to_attribute = $member2;
+    } else {
+      $from_member = $member2;
+      $from_attribute = $member2;
+      $to_member = $member1;
+      $to_attribute = $member1;
+    }
+
+    push @{$homology_cache{$from_member->stable_id()}}, $to_member->stable_id();
+
+  }
+
+  print "Done fetching homologies\n";
+
+  return \%homology_cache;
+
+}
+
+# ----------------------------------------------------------------------
+
+sub get_longest_translation {
+
+  my $gene = shift;
+
+  my $longest_translation;
+  my $max_length = -1;
+
+  foreach my $transcript (@{$gene->get_all_Transcripts()}) {
+
+    my $translation = $transcript->translation();
+    if ($translation && $translation->length() > $max_length) {
+      $longest_translation = $translation;
+    }
+
+  }
+
+  warn("Can't find longest translation for " . $gene->stable_id()) if (!$longest_translation);
+
+  return $longest_translation;
+
+}
+
+# ----------------------------------------------------------------------
+
+sub print_progress {
+
+  my ($i, $total, $last_pc) = @_;
+
+  my $pc = int ((100 * $i) / $total);
+
+  if ($pc > $last_pc) {
+    print "$pc ";
+    $last_pc = $pc;
+  }
+
+  return $last_pc;
 
 }
 
