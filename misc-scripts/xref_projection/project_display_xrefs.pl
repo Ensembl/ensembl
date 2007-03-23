@@ -266,7 +266,7 @@ sub project_go_terms {
   # GO xrefs are linked to translations, not genes
   # For historical reasons we only project GO terms between the longest translations of each gene
   # TODO - consider projecting *all* GO terms from *all* source translations to one translation of target?
-  # TODO - getting the translation's length seem to involve lots of database accesses - some way to do 
+  # TODO - getting the translation's length seem to involve lots of database accesses - some way to do
   # this quicker? Via SQL?
   my $from_translation = get_longest_translation($from_gene);
   my $to_translation   = get_longest_translation($to_gene);
@@ -275,7 +275,9 @@ sub project_go_terms {
 
   my $to_go_xrefs = $to_translation->get_all_DBEntries("GO");
 
-  DBENTRY: foreach my $dbEntry (@{$from_translation->get_all_DBEntries("GO")}) {
+ DBENTRY: foreach my $dbEntry (@{$from_translation->get_all_DBEntries("GO")}) {
+
+    next if (!$bdEntry || $dbEntry->dbname() ne "GO" || ref($dbEntry) ne "Bio::EnsEMBL::GoXref");
 
     # Skip the whole dbEntry if one or more if its evidence codes isn't in the whitelist
     foreach my $et (@{$dbEntry->get_all_linkage_types}){
