@@ -53,6 +53,7 @@ use FindBin qw($Bin $Script);
 use POSIX qw(strftime);
 use Cwd qw(abs_path);
 use DBI;
+use Data::Dumper;
 
 =head2 new
 
@@ -115,6 +116,7 @@ sub parse_common_options {
         'help|h|?',
     );
 
+
     # reads config file
     my $conffile = $h{'conffile'} || $self->serverroot . "/sanger-plugins/vega/conf/ini-files/Conversion.ini";
     $conffile = abs_path($conffile);
@@ -129,8 +131,8 @@ sub parse_common_options {
             s/^[#;].*//;
             s/\s+[;].*$//;
 
-            # read options into internal parameter datastructure
-            next unless (/(\w\S*)\s*=\s*(.*)/);
+            # read options into internal parameter datastructure, removing whitespace
+            next unless (/(\w\S*)\s*=\s*(\S*)\s*/);
             my $name = $1;
             my $val = $2;
             if ($val =~ /\$SERVERROOT/) {
@@ -143,6 +145,7 @@ sub parse_common_options {
     } elsif ($conffile) {
         warning("Unable to open configuration file $conffile for reading: $!");
     }
+
     
     # override configured parameter with commandline options
     map { $self->param($_, $h{$_}) } keys %h;
@@ -231,6 +234,27 @@ sub get_common_params {
         dry_run
     );
 }
+
+=head2 get_lutre_params
+
+  Example     : my @allowed_params = $self->get_lutre_params, 'extra_param';
+  Description : Returns a list of commonly used parameters in for working with a loutre db
+  Return type : Array - list of common parameters
+  Exceptions  : none
+  Caller      : general
+
+=cut
+
+sub get_loutre_params {
+	return qw(
+			  loutrehost
+			  loutreport
+			  loutreuser
+			  loutrepass
+			  loutredbname
+		  );
+}
+
 
 =head2 confirm_params
 
@@ -634,6 +658,7 @@ sub get_database {
         otter   => 'Bio::Otter::DBSQL::DBAdaptor',
         vega    => 'Bio::Otter::DBSQL::DBAdaptor',
 		compara => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
+		loutre  => 'Bio::Vega::DBSQL::DBAdaptor',
     );
     throw("Unknown database: $database") unless $adaptors{$database};
 
@@ -675,7 +700,7 @@ sub get_database {
 sub get_dbconnection {
   my $self = shift;
   my $prefix = shift;
-
+ 
   $self->check_required_params(
       "${prefix}host",
       "${prefix}port",
@@ -691,7 +716,6 @@ sub get_dbconnection {
   }
 
   my $dbh;
-
   eval{
     $dbh = DBI->connect($dsn, $self->param("${prefix}user"),
       $self->param("${prefix}pass"), {'RaiseError' => 1, 'PrintError' => 0});
@@ -704,7 +728,6 @@ sub get_dbconnection {
   }
 
   $self->{'_dbh'} = $dbh;
-
   return $self->{'_dbh'};
 
 }
@@ -1426,6 +1449,256 @@ sub commify {
   $num =~ s/(\d\d\d)(?=\d)(?!\d*\.)/$1,/g;
 
   return scalar reverse $num;
+}
+
+=head2 fetch_non_hidden_slice
+
+  Arg[1]      : B::E::SliceAdaptor
+  Arg[2]      : B::E::AttributeAdaptor
+  Arg[3]      : string $coord_system_name (optional) - 'chromosome' by default
+  Arg[4]      : string $coord_system_version (optional) - 'otter' by default
+  Example     : $chroms = $support->fetch_non_hidden_slice($sa);
+  Description : retrieve all slices from a lutra database that don't have a hidden attribute
+  Return type : arrayref
+  Caller      : general
+  Status      : stable
+
+=cut
+
+sub fetch_non_hidden_slice {
+	my $self = shift;
+	my $aa   = shift or throw("You must supply an attribute adaptor");
+	my $sa   = shift or throw("You must supply a slice adaptor");
+	my $cs = shift || 'chromosome';
+	my $cv = shift || 'Otter';
+	my $visible_chroms;
+	foreach my $chrom ( @{$sa->fetch_all($cs,$cv)} ) {
+		my $attribs = $aa->fetch_all_by_Slice($chrom);
+		push @$visible_chroms, $chrom if @{$self->get_attrib_values($attribs,'hidden','N')};
+	}
+	return $visible_chroms;
+}
+
+
+=head2 get_attrib_values
+
+  Arg[1]      : Arrayref of B::E::Attributes
+  Arg[2]      : 'code' to search for
+  Arg[3]      : 'value' to search for (optional)
+  Example     : my $c = $self->get_attrib_values($attribs,'name'));
+  Description : In the abscence of an attribute value argument examines an arrayref
+                of B::E::Attributes for a particular attribute type, returning the values
+                for each attribute of that type (can therefore be used to test for the
+                number of attributes of that type).
+                In the presence of the optional value argument, it can be used to test
+                for the presence of an attribute with a particular value
+  Return type : arrayref of values for that attribute
+  Caller      : general
+  Status      : stable
+
+=cut
+
+sub get_attrib_values {
+	my $self    = shift;
+	my $attribs = shift;
+	my $code    = shift;
+	my $value   = shift;
+	if (my @atts = grep {$_->code eq $code } @$attribs) {
+		if ($value) {
+			if (my @values = grep {$_->value eq $value} @atts) {
+				return  \@values;
+			}
+			else {
+				return [];
+			}
+		}
+		else {
+			my $r;
+			foreach (@atts) {
+				push @$r, $_->value;
+			}
+			return $r;
+		}
+	}
+	else {
+		return [];
+	}
+}
+
+=head2 fix_attrib_value
+
+  Arg[1]      : Arrayref of exisiting B::E::Attributes
+  Arg[2]      : dbID of object
+  Arg[3]      : name of object (just for reporting)
+  Arg[4]      : attrib_type.code
+  Arg[5]      : attrib_type.value
+  Arg[5]      : interactive ? (0 by default)
+  Arg[6]      : table
+  Example     : $support->fix_attrib_value($attribs,$chr_id,$chr_name,'vega_export_mod','N',1);
+  Description : adds a new attribute to an object, or updates an existing attribute with a new value
+                Can be run in interactive or non-interactive mode (default)
+  Return type : none
+  Caller      : general
+  Status      : only ever tested with seq_region_attributes to date
+
+=cut
+
+sub fix_attrib_value {
+	my $self        = shift;
+	my $attribs     = shift;
+	my $id          = shift;
+	my $name        = shift;
+	my $code        = shift;
+	my $value       = shift;
+	my $interact    = shift || 0;
+	my $table       = shift || 'seq_region_attrib';
+
+	#set interactive parameter
+	my $int_before;
+	if (! $interact) {
+		$int_before = $self->param('interactive');
+		$self->param('interactive',0);
+	}
+
+#	warn "interactive_before = $int_before";
+	#get any existing value(s) for this attribute
+	my $existings = $self->get_attrib_values($attribs,$code);
+	
+	#add a new attribute if there is none...
+	if (! @$existings ) {
+		if ($self->user_proceed("Do you want to set $name attrib (code = $code) to value $value ?")) {
+			my $r = $self->store_new_attribute($id,$code,$value);
+			
+			#reset interactive parameter
+			$self->param('interactive',$int_before) if (! $interact);
+			return $r;
+		}
+	}
+	#...warn and exit if you're trying to update more than one value for the same attribute...
+	elsif (scalar @$existings > 1) {
+		$self->log_warning("You shouldn't be trying to update multiple attributes with the same code at once ($name:$code,$value), looks like you have duplicate entries in the (seq_region_)attrib table\n");
+		exit;
+	}
+
+	else {
+		my $existing = $existings->[0];
+		#...or update an attribute with new values...
+		if ($existing ne $value) {
+			if ($self->user_proceed("Do you want to reset $name attrib (code = $code) from $existing to $value ?")) {
+				my $r = $self->update_attribute($id,$code,$value);
+				$self->param('interactive',$int_before) if (! $interact);
+				push @$r, $existing;
+				return $r;
+			}
+		}
+		#...or make no change
+		else {
+			$self->param('interactive',$int_before) if (! $interact);
+			return [];
+		}
+	}
+}
+
+=head2 _get_attrib_id
+
+  Arg[1]      : attrib_type.code 
+  Arg[2]      : database handle 
+  Example     : $self->_get_attrib_id('name',$dbh)
+  Description : get attrib_type.attrib_type_id from a attrib_type.code
+  Return type : attrib_type.attrib_type_id 
+  Caller      : internal
+  Status      : stable
+
+=cut
+
+sub _get_attrib_id {
+	my $self        = shift;
+	my $attrib_code = shift;
+	my $dbh         = shift;
+	my ($attrib_id) = $dbh->selectrow_array(
+		qq(select attrib_type_id
+           from attrib_type
+           where code = ?),
+			{},
+		($attrib_code)
+	);
+	if (! $attrib_id) {
+		$self->log_warning("There is no attrib_type_id for code $attrib_code, please patch the attrib_table\n");
+		exit;
+	}
+	else {
+		return $attrib_id;
+	}
+}
+
+=head2 store_new_attribute
+
+  Arg[1]      : seq_region.seq_region_id
+  Arg[2]      : attrib_type.code
+  Arg[3]      : attrib_type.value
+  ARG[4]      : table to update (seq_region_attribute by default)
+  Example     : $support->store_new_attribute(23,name,5);
+  Description : uses MySQL to store an entry (code and value) in an attribute table 
+                (seq_region_attrib by default)
+  Return type : array_ref
+  Caller      : general
+  Status      : stable
+
+=cut
+
+sub store_new_attribute {
+	my $self         = shift;
+	my $sr_id        = shift;
+	my $attrib_code  = shift;
+	my $attrib_value = shift;
+	my $table        = shift || 'seq_region_attrib';
+
+	#get database handle
+	my $dbh = $self->get_dbconnection('loutre');
+	#get attrib_type_id for this particular attribute
+	my $attrib_id = $self->_get_attrib_id($attrib_code,$dbh);
+	#store
+	my $r = $dbh->do(
+		qq(insert into $table
+           values (?,?,?)),
+        {},
+		($sr_id,$attrib_id,$attrib_value)
+	);
+	return ['Stored',$r];
+}
+
+=head2 update_attribute
+
+  Arg[1]      : seq_region.seq_region_id
+  Arg[2]      : attrib_type.code
+  Arg[3]      : attrib_type.value
+  ARG[4]      : table to update (seq_region_attribute by default)
+  Example     : $support->update_attribute(23,name,5);
+  Description : uses MySQL to update an attribute table (seq_region_attrib by default)
+  Return type : array_ref
+  Caller      : general
+  Status      : stable
+
+=cut
+
+sub update_attribute {
+	my $self = shift;
+	my $sr_id = shift;
+	my $attrib_code  = shift;
+	my $attrib_value = shift;
+	my $table        = shift || 'seq_region_attrib';
+	my $dbh = $self->get_dbconnection('loutre');
+	my $attrib_id = $self->_get_attrib_id($attrib_code,$dbh);
+	#update
+	my $r = $dbh->do(
+		qq(update $table
+           set value = ?
+           where seq_region_id = $sr_id
+           and attrib_type_id = $attrib_id),
+        {},
+		($attrib_value)
+	);
+	return ['Updated',$r];
 }
 
 1;
