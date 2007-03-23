@@ -277,12 +277,6 @@ sub project_go_terms {
 
   DBENTRY: foreach my $dbEntry (@{$from_translation->get_all_DBEntries("GO")}) {
 
-    next if ($dbEntry->dbname() ne "GO" || !$dbEntry);
-
-    # only project GO terms with non-IEA evidence codes
-    # also exclude ISS terms (manually projected based on orthologs)
-    next if (ref($dbEntry) ne "Bio::EnsEMBL::GoXref");
-
     # Skip the whole dbEntry if one or more if its evidence codes isn't in the whitelist
     foreach my $et (@{$dbEntry->get_all_linkage_types}){
       next DBENTRY if (!grep(/$et/, @evidence_codes));
