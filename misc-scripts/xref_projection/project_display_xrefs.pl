@@ -277,7 +277,7 @@ sub project_go_terms {
 
  DBENTRY: foreach my $dbEntry (@{$from_translation->get_all_DBEntries("GO")}) {
 
-    next if (!$bdEntry || $dbEntry->dbname() ne "GO" || ref($dbEntry) ne "Bio::EnsEMBL::GoXref");
+    next if (!$dbEntry || $dbEntry->dbname() ne "GO" || ref($dbEntry) ne "Bio::EnsEMBL::GoXref");
 
     # Skip the whole dbEntry if one or more if its evidence codes isn't in the whitelist
     foreach my $et (@{$dbEntry->get_all_linkage_types}){
