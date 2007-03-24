@@ -10,7 +10,7 @@ my $base_dir = "/lustre/work1/ensembl/gp1/projections/";
 
 my $conf = "release_44.conf"; # registry config file
 
-my $compara = "ensembl_compara_44"; # name in registry file
+my $compara = "ensembl_compara_43"; # name in registry file
 
 # -------------------------- end of config ----------------------------
 
@@ -64,17 +64,27 @@ foreach my $to ("mouse", "rat", "dog", "chicken", "cow") {
   system "bsub -o $o -e $e -J $n perl project_display_xrefs.pl $opts -from human -to $to -go_terms -delete_go_terms";
 }
 
-# mouse to human, rat, dog, chicken, cow
-# note need to not use -delete the second time around
-foreach my $to ("human", "rat", "dog", "chicken", "cow") {
-  $o = "$dir/go_mouse_$to.out";
-  $e = "$dir/go_mouse_$to.err";
-  $n = substr("g_mou_$to", 0, 10);
-  system "bsub -o $o -e $e -J $n perl project_display_xrefs.pl $opts -from mouse -to $to -go_terms";
-}
-
 # drosophila to anopheles
 $o = "$dir/go_drosophila_anopheles.out";
 $e = "$dir/go_drosophila_anopheles.err";
 $n = "g_dros_ano";
 system "bsub -o $o -e $e -J $n perl project_display_xrefs.pl $opts -from drosophila -to anopheles -go_terms -delete_go_terms";
+
+# ----------------------------------------------------------------------
+
+# GO terms - mouse to human, rat, dog, chicken, cow
+# Have to use job dependencies since these jobs need to run after the corresponding human-X projections have
+# Note need to not use -delete the second time around
+foreach my $to ("human", "rat", "dog", "chicken", "cow") {
+  $o = "$dir/go_mouse_$to.out";
+  $e = "$dir/go_mouse_$to.err";
+  $n = substr("g_mou_$to", 0, 10);
+  my $d;
+  if ($to eq "human") { # don't need to wait for mouse-human
+    $d = '';
+  } else {
+    my $depend_job_name = substr("g_hum_$to", 0, 10);
+    $d = "-w 'done($depend_job_name)'";
+  }
+  system "bsub -o $o -e $e -J $n $d perl project_display_xrefs.pl $opts -from mouse -to $to -go_terms";
+}
