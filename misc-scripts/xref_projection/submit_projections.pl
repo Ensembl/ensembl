@@ -40,7 +40,7 @@ foreach my $to ("chimp", "opossum", "dog", "cow", "macaque", "chicken", "xenopus
   $o = "$dir/names_human_$to.out";
   $e = "$dir/names_human_$to.err";
   $n = substr("n_hum_$to", 0, 10); # job name display limited to 10 chars
-  system "bsub -o $o -e $e -J $n perl project_display_xrefs.pl $opts -from human -to $to -names -delete_names";
+  system "bsub -o $o -e $e -J $n perl project_display_xrefs.pl $opts -from human -to $to -names -delete_names -no_database";
 }
 
 # mouse to rat
@@ -48,7 +48,7 @@ foreach my $to ("rat") { # don't need the loop but may add more species later
   $o = "$dir/names_mouse_$to.out";
   $e = "$dir/names_mouse_$to.err";
   $n = substr("n_mou_$to", 0, 10);
-  system "bsub -o $o -e $e -J $n perl project_display_xrefs.pl $opts -from mouse -to $to -names -delete_names";
+  system "bsub -o $o -e $e -J $n perl project_display_xrefs.pl $opts -from mouse -to $to -names -delete_names -no_database";
 }
 
 # ----------------------------------------
@@ -79,8 +79,12 @@ foreach my $to ("human", "rat", "dog", "chicken", "cow") {
   $o = "$dir/go_mouse_$to.out";
   $e = "$dir/go_mouse_$to.err";
   $n = substr("g_mou_$to", 0, 10);
-  my $depend_job_name = substr("g_hum_$to", 0, 10);
-  my $d = "-w 'done($depend_job_name)'";
+  my $d;
+  if ($to eq 'human') { # no "human-human" to depend upon
+    $d = '';
+  } else {
+    my $depend_job_name = substr("g_hum_$to", 0, 10);
+    $d = "-w 'ended($depend_job_name)'";
   }
   system "bsub -o $o -e $e -J $n $d perl project_display_xrefs.pl $opts -from mouse -to $to -go_terms";
 }
