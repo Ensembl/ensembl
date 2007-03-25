@@ -63,6 +63,8 @@ ALTER table karyotype ADD FOREIGN KEY (seq_region_id) REFERENCES seq_region(seq_
 
 ALTER table stable_id_event ADD FOREIGN KEY (mapping_session_id) REFERENCES mapping_session(mapping_session_id);
 
+ALTER table marker ADD FOREIGN KEY (display_marker_synonym_id) REFERENCES marker_synonym (marker_synonym_id);
+
 ALTER table marker_feature ADD FOREIGN KEY (analysis_id) REFERENCES analysis(analysis_id);
 ALTER table marker_feature ADD FOREIGN KEY (marker_id) REFERENCES marker(marker_id);
 ALTER table marker_feature ADD FOREIGN KEY (seq_region_id) REFERENCES seq_region(seq_region_id);
@@ -165,7 +167,7 @@ ALTER table unconventional_transcript_association ADD FOREIGN KEY (gene_id) REFE
 ALTER table unconventional_transcript_association ADD FOREIGN KEY (transcript_id) REFERENCES transcript(transcript_id);
 
 ALTER table unmapped_object ADD FOREIGN KEY (analysis_id) REFERENCES analysis(analysis_id);
-#ALTER table unmapped_object ADD FOREIGN KEY (external_db_id) REFERENCES external_db(external_db_id);
+ALTER table unmapped_object ADD FOREIGN KEY (external_db_id) REFERENCES external_db(external_db_id);
 ALTER table unmapped_object ADD FOREIGN KEY (unmapped_reason_id) REFERENCES unmapped_reason(unmapped_reason_id);
 
 ALTER table xref ADD FOREIGN KEY (external_db_id) REFERENCES external_db(external_db_id);
