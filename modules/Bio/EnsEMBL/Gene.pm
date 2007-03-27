@@ -757,8 +757,8 @@ sub is_current {
 
 =head2 created_date
 
-  Arg [1]    : (optional) String - created date to set
-  Example    : $gene->created_date('2006-05-01 12:00:00');
+  Arg [1]    : (optional) String - created date to set (as a UNIX time int)
+  Example    : $gene->created_date('1141948800');
   Description: Getter/setter for attribute created_date
   Returntype : String
   Exceptions : none
@@ -776,8 +776,8 @@ sub created_date {
 
 =head2 modified_date
 
-  Arg [1]    : (optional) String - modified date to set
-  Example    : $gene->modified_date('2006-05-01 12:00:00');
+  Arg [1]    : (optional) String - modified date to set (as a UNIX time int)
+  Example    : $gene->modified_date('1141948800');
   Description: Getter/setter for attribute modified_date
   Returntype : String
   Exceptions : none
