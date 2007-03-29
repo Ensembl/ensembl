@@ -9,13 +9,20 @@ Bio::EnsEMBL::ArchiveStableIdAdaptor
 my $reg = "Bio::EnsEMBL::Registry";
 my $archiveStableIdAdaptor =
   $reg->get_adaptor('human', 'core', 'ArchiveStableId');
-  
-my $arch_id = $archiveStableIdAdaptor->fetch_by_stable_id("ENSG00000068990");
-my @history = @{ $archiveStableIdAdaptor->fetch_stable_id_history($arch_id) };
 
-foreach my $a (@history) {
-  print "Stable ID: ".$a->stable_id.".".$a->version."\n";
-  print "Release: ".$a->release." (".$a->assembly.", ".$a->db_name.")\n");
+my $stable_id = 'ENSG00000068990';
+  
+my $arch_id = $archiveStableIdAdaptor->fetch_by_stable_id($stable_id);
+print "Latest incarnation of this stable ID:\n";
+print "  Stable ID: ".$a->stable_id.".".$a->version."\n";
+print "  Release: ".$a->release." (".$a->assembly.", ".$a->db_name.")\n");
+
+print "\nStable ID history:\n\n";
+my $history = $archiveStableIdAdaptor->fetch_history_tree_by_stable_id($stable_id);
+
+foreach my $a (@{ $history->get_all_ArchiveStableIds }) {
+  print "  Stable ID: ".$a->stable_id.".".$a->version."\n";
+  print "  Release: ".$a->release." (".$a->assembly.", ".$a->db_name.")\n\n");
 }
 
 =head1 DESCRIPTION
@@ -40,11 +47,19 @@ This whole module has a status of At Risk as it is under development.
     fetch_predecessors_by_archive_id
     fetch_successors_by_archive_id
     fetch_history_tree_by_stable_id
-    fetch_stable_id_history
+    fetch_archive_id_history
     fetch_predecessor_history
     fetch_successor_history
     get_peptide
     list_dbnames
+    previous_dbname
+    next_dbname
+    
+=head1 RELATED MODULES
+
+Bio::EnsEMBL::ArchiveStableId
+Bio::EnsEMBL::StableIdEvent
+Bio::EnsEMBL::StableIdHistoryTree
 
 =head1 LICENCE
 
@@ -84,7 +99,7 @@ use constant NUM_HIGH_SCORERS => 20;
 
   Arg [1]     : string $stable_id
   Example     : none
-  Description : retrives an ArchiveStableId that is the latest incarnation of
+  Description : Retrives an ArchiveStableId that is the latest incarnation of
                 given stable_id.
   Returntype  : Bio::EnsEMBL::ArchiveStableId or undef if not in database
   Exceptions  : none
@@ -119,7 +134,7 @@ sub fetch_by_stable_id {
   Arg [1]     : string $stable_id
   Arg [2]     : int $version
   Example     : none
-  Description : Retrieve an archiveStableId with given version and stable ID.
+  Description : Retrieve an ArchiveStableId with given version and stable ID.
   Returntype  : Bio::EnsEMBL::ArchiveStableId 
   Exceptions  : none
   Caller      : general
@@ -147,8 +162,7 @@ sub fetch_by_stable_id_version {
     SELECT
           m.new_db_name,
           m.new_release,
-          m.new_assembly,
-          sie.score
+          m.new_assembly
     FROM  stable_id_event sie, mapping_session m
     WHERE sie.mapping_session_id = m.mapping_session_id
     AND   sie.new_stable_id = "$stable_id"
@@ -160,7 +174,7 @@ sub fetch_by_stable_id_version {
 
   my $sth = $self->prepare($sql);
   $sth->execute();
-  my ($db_name, $release, $assembly, $score) = $sth->fetchrow_array();
+  my ($db_name, $release, $assembly) = $sth->fetchrow_array();
   $sth->finish();
   
   # you might have missed a stable ID that was deleted in the very first
@@ -170,8 +184,7 @@ sub fetch_by_stable_id_version {
       SELECT
             m.old_db_name,
             m.old_release,
-            m.old_assembly,
-            sie.score
+            m.old_assembly
       FROM  stable_id_event sie, mapping_session m
       WHERE sie.mapping_session_id = m.mapping_session_id
       AND   sie.old_stable_id = "$stable_id"
@@ -183,7 +196,7 @@ sub fetch_by_stable_id_version {
 
     $sth = $self->prepare($sql);
     $sth->execute();
-    ($db_name, $release, $assembly, $score) = $sth->fetchrow_array();
+    ($db_name, $release, $assembly) = $sth->fetchrow_array();
     $sth->finish();
   }
   
@@ -194,7 +207,6 @@ sub fetch_by_stable_id_version {
     $arch_id->db_name($db_name);
     $arch_id->release($release);
     $arch_id->assembly($assembly);
-    $arch_id->score($score);
   }
 
   return $arch_id;
@@ -206,7 +218,7 @@ sub fetch_by_stable_id_version {
   Arg [1]     : string $stable_id
   Arg [2]     : string $db_name
   Example     : none
-  Description : create an ArchiveStableId from given arguments.
+  Description : Create an ArchiveStableId from given arguments.
   Returntype  : Bio::EnsEMBL::ArchiveStableId or undef if not in database
   Exceptions  : none
   Caller      : general
@@ -310,7 +322,9 @@ sub fetch_all_by_archive_id {
   Arg [1]     : Bio::EnsEMBL::ArchiveStableId
   Example     : none
   Description : Retrieve a list of ArchiveStableIds that were mapped to the 
-                given one. 
+                given one. This method goes back only one level, to retrieve
+                a full predecessor history use fetch_predecessor_history, or 
+                fetch_history_tree_by_stable_id for the complete network.
   Returntype  : listref Bio::EnsEMBL::ArchiveStableId
   Exceptions  : none
   Caller      : Bio::EnsEMBL::ArchiveStableId->get_all_predecessors
@@ -334,7 +348,6 @@ sub fetch_predecessors_by_archive_id {
     SELECT
           sie.old_stable_id,
           sie.old_version,
-          sie.score,
           m.old_db_name,
           m.old_release,
           m.old_assembly
@@ -349,8 +362,8 @@ sub fetch_predecessors_by_archive_id {
   $sth->bind_param(2, $arch_id->db_name, SQL_VARCHAR);
   $sth->execute();
   
-  my ($old_stable_id, $old_version, $score, $old_db_name, $old_release, $old_assembly);
-  $sth->bind_columns(\$old_stable_id, \$old_version, \$score, \$old_db_name, \$old_release, \$old_assembly);
+  my ($old_stable_id, $old_version, $old_db_name, $old_release, $old_assembly);
+  $sth->bind_columns(\$old_stable_id, \$old_version, \$old_db_name, \$old_release, \$old_assembly);
   
   while( $sth->fetch() ) {
     if( defined $old_stable_id ) {
@@ -361,8 +374,7 @@ sub fetch_predecessors_by_archive_id {
 	 -db_name => $old_db_name,
          -release => $old_release,
          -assembly => $old_assembly,
-	 -adaptor => $self,
-         -score => $score
+	 -adaptor => $self
 	);
       _resolve_type( $old_arch_id );
       push( @result, $old_arch_id );
@@ -380,7 +392,6 @@ sub fetch_predecessors_by_archive_id {
       SELECT
             sie.new_stable_id,
             sie.new_version,
-            sie.score,
             m.new_db_name,
             m.new_release,
             m.new_assembly
@@ -401,7 +412,7 @@ sub fetch_predecessors_by_archive_id {
       $sth->bind_param(2,$prev_dbname, SQL_VARCHAR);
       $sth->execute();
       
-      $sth->bind_columns(\$old_stable_id, \$old_version, \$score, \$old_db_name, \$old_release, \$old_assembly);
+      $sth->bind_columns(\$old_stable_id, \$old_version, \$old_db_name, \$old_release, \$old_assembly);
       
       while( $sth->fetch() ) {
         if (defined $old_stable_id) {
@@ -412,8 +423,7 @@ sub fetch_predecessors_by_archive_id {
              -db_name => $old_db_name,
              -release => $old_release,
              -assembly => $old_assembly,
-             -adaptor => $self,
-             -score => $score
+             -adaptor => $self
             );
           _resolve_type( $old_arch_id );
           push( @result, $old_arch_id );
@@ -439,7 +449,8 @@ sub fetch_predecessors_by_archive_id {
   Example     : none
   Description : Retrieve a list of ArchiveStableIds that the given one was 
                 mapped to. This method goes forward only one level, to retrieve
-                a full successor history use fetch_successor_history().
+                a full successor history use fetch_successor_history, or 
+                fetch_history_tree_by_stable_id for the complete network.
   Returntype  : listref Bio::EnsEMBL::ArchiveStableId
   Exceptions  : none
   Caller      : Bio::EnsEMBL::ArchiveStableId->get_all_successors
@@ -463,7 +474,6 @@ sub fetch_successors_by_archive_id {
     SELECT
           sie.new_stable_id,
           sie.new_version,
-          sie.score,
           m.new_db_name,
           m.new_release,
           m.new_assembly
@@ -478,8 +488,8 @@ sub fetch_successors_by_archive_id {
   $sth->bind_param(2,$arch_id->db_name,SQL_VARCHAR);
   $sth->execute();
   
-  my ($new_stable_id, $new_version, $score, $new_db_name, $new_release, $new_assembly);
-  $sth->bind_columns(\$new_stable_id, \$new_version, \$score, \$new_db_name, \$new_release, \$new_assembly);
+  my ($new_stable_id, $new_version, $new_db_name, $new_release, $new_assembly);
+  $sth->bind_columns(\$new_stable_id, \$new_version, \$new_db_name, \$new_release, \$new_assembly);
   
   while( $sth->fetch() ) {
     if( defined $new_stable_id ) {
@@ -490,8 +500,7 @@ sub fetch_successors_by_archive_id {
 	 -db_name => $new_db_name,
          -release => $new_release,
          -assembly => $new_assembly,
-	 -adaptor => $self,
-         -score => $score
+	 -adaptor => $self
 	);
         
       _resolve_type($new_arch_id);
@@ -510,7 +519,6 @@ sub fetch_successors_by_archive_id {
       SELECT
             sie.old_stable_id,
             sie.old_version,
-            sie.score,
             m.old_db_name,
             m.old_release,
             m.old_assembly
@@ -531,7 +539,7 @@ sub fetch_successors_by_archive_id {
       $sth->bind_param(2, $next_dbname, SQL_VARCHAR);
       $sth->execute();
       
-      $sth->bind_columns(\$new_stable_id, \$new_version, \$score, \$new_db_name, \$new_release, \$new_assembly);
+      $sth->bind_columns(\$new_stable_id, \$new_version, \$new_db_name, \$new_release, \$new_assembly);
       
       while( $sth->fetch() ) {
         if (defined $new_stable_id) {
@@ -542,8 +550,7 @@ sub fetch_successors_by_archive_id {
              -db_name => $new_db_name,
              -release => $new_release,
              -assembly => $new_assembly,
-             -adaptor => $self,
-             -score => $score
+             -adaptor => $self
             );
             
           _resolve_type($new_arch_id);
@@ -576,13 +583,13 @@ sub fetch_successors_by_archive_id {
   Example     : my $history = $archive_adaptor->fetch_history_tree_by_stable_id(
                   'ENSG00023747897');
   Description : Returns the history tree for a given stable ID. This will
-                include a network of all stable IDs this ID is related to. The
+                include a network of all stable IDs it is related to. The
                 method will try to return a minimal (sparse) set of nodes
                 (ArchiveStableIds) and links (StableIdEvents) by removing any
                 redundant entries and consolidating mapping events so that only
                 changes are recorded.
   Return type : Bio::EnsEMBL::StableIdHistoryTree
-  Exceptions  : 
+  Exceptions  : thrown on missing argument
   Caller      : Bio::EnsEMBL::ArchiveStableId::get_history_tree, general
   Status      : At Risk
               : under development
@@ -733,18 +740,15 @@ sub fetch_history_tree_by_stable_id {
 
   $sth->finish;
   
-  #
-  # now try to consolidate the tree
-  #
-  # this will remove any nodes where there were no changes, connect the
-  # affected links, and also create links for implicit mappings (i.e. bridge
-  # gaps in the history)
-  #
-  # [todo]
+  # try to consolidate the tree (remove redundant nodes, bridge gaps)
+  $history->consolidate_tree;
 
+  # now add ArchiveStableIds of the remaining events to the tree
+  $history->add_ArchiveStableIds_for_events;
   
-  # calculate coordinates for the sorted tree
-  $history->calculate_simple_coords;
+  # calculate grid coordinates for the sorted tree; this will also try to
+  # untangle the tree
+  $history->calculate_coords;
   
   return $history;
 }
@@ -758,20 +762,23 @@ sub fetch_history_tree_by_stable_id {
                 predecessors in the stable_id_event tree of the given
                 stable_id. Might well be empty. This is not the complete network
                 this stable id belongs to, but rather branches out from this id
-                only.
+                only. To get the full network use
+                fetch_history_tree_by_stable_id().
   Returntype  : listref of Bio::EnsEMBL::ArchiveStableId
                 Since every ArchiveStableId knows about it's successors, this is
                 a linked tree.
   Exceptions  : none
   Caller      : webcode for archive
-  Status      : At Risk
-              : under development
+  Status      : DEPRECATED
+              : Use fetch_history_tree_by_stable_id() instead.
 
 =cut
 
 sub fetch_archive_id_history {
   my $self = shift;
   my $arch_id = shift;
+  
+  deprecate("Please use fetch_history_tree_by_stable_id() instead.");
 
   my @result = (
     $arch_id,
@@ -1103,8 +1110,7 @@ sub _lookup_version {
             m.new_db_name,
             m.new_release,
             m.new_assembly,
-            sie.new_version,
-            sie.score
+            sie.new_version
       FROM  stable_id_event sie, mapping_session m
       WHERE sie.mapping_session_id = m.mapping_session_id
       AND   new_stable_id = "@{[$arch_id->stable_id]}"
@@ -1119,8 +1125,7 @@ sub _lookup_version {
             m.old_db_name,
             m.old_release,
             m.old_assembly,
-            sie.old_version,
-            sie.score
+            sie.old_version
       FROM  stable_id_event sie, mapping_session m
       WHERE sie.mapping_session_id = m.mapping_session_id
       AND   sie.old_stable_id = "@{[$arch_id->stable_id]}"
@@ -1131,7 +1136,7 @@ sub _lookup_version {
 
   my $sth = $self->prepare($sql);
   $sth->execute();
-  my ($db_name, $release, $assembly, $version, $score) = $sth->fetchrow_array();
+  my ($db_name, $release, $assembly, $version) = $sth->fetchrow_array();
   $sth->finish();
   
   # you might have missed a stable ID that was deleted in the very first
@@ -1142,8 +1147,7 @@ sub _lookup_version {
             m.old_db_name,
             m.old_release,
             m.old_assembly,
-            sie.old_version,
-            sie.score
+            sie.old_version
       FROM  stable_id_event sie, mapping_session m
       WHERE sie.mapping_session_id = m.mapping_session_id
       AND   old_stable_id = "@{[$arch_id->stable_id]}"
@@ -1155,7 +1159,7 @@ sub _lookup_version {
 
     $sth = $self->prepare($sql);
     $sth->execute();
-    ($db_name, $release, $assembly, $version, $score) = $sth->fetchrow_array();
+    ($db_name, $release, $assembly, $version) = $sth->fetchrow_array();
     $sth->finish();
   }
   
@@ -1168,7 +1172,6 @@ sub _lookup_version {
       $arch_id->db_name($db_name);
       $arch_id->release($release);
       $arch_id->assembly($assembly);
-      $arch_id->score($score);
     }
   }
 
