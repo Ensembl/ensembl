@@ -6,6 +6,25 @@ Bio::EnsEMBL::StableIdHistoryTree - object representing a stable ID history tree
 
 =head1 SYNOPSIS
 
+my $reg = "Bio::EnsEMBL::Registry";
+my $archiveStableIdAdaptor =
+  $reg->get_adaptor('human', 'core', 'ArchiveStableId');
+
+my $stable_id = 'ENSG00000068990';
+my $history = $archiveStableIdAdaptor->fetch_history_tree_by_stable_id('ENSG01');
+
+print "Unique stable IDs in this tree:\n";
+print join(", ", @{ $history->get_unique_stable_ids }), "\n";
+
+print "\nReleases in this tree:\n";
+print join(", ", @{ $history->get_release_display_names }), "\n";
+
+print "\nCoordinates of nodes in the tree:\n\n";
+foreach my $a (@{ $history->get_all_ArchiveStableIds }) {
+  print "  Stable ID: ".$a->stable_id.".".$a->version."\n";
+  print "  Release: ".$a->release." (".$a->assembly.", ".$a->db_name.")\n");
+  print "  coords: ".join(', ', @{ $history->coords_by_ArchiveStableId($a) })."\n\n";
+}
 
 =head1 DESCRIPTION
 
@@ -34,28 +53,40 @@ ENSG003.1 (release 42)  (4, 1)
 ENSG002.1               (0, 2)
 ENSG002.2               (1, 2)
 
-The tree will only contain those nodes which contain a change in the stable
+The tree will only contain those nodes which had a change in the stable
 ID version. Therefore, in the above example, in release 39 ENSG001 was
 present and had version 1 (but will not be drawn there, to unclutter the
 output).
 
-The grid positions will be calculated by the API and will ideally make sure
-you don't get overlapping lines (not fully implemented yet).
+The grid positions will be calculated by the API and will try to untangle the
+tree (i.e. try to avoid overlapping lines).
 
 =head1 METHODS
 
+new
 add_ArchiveStableIds
+add_ArchiveStableIds_for_events
 remove_ArchiveStableId
+flush_ArchiveStableIds
 add_StableIdEvents
 remove_StableIdEvent
+flush_StableIdEvents
 get_all_ArchiveStableIds
 get_all_StableIdEvents
 get_release_display_names
 get_release_db_names
 get_unique_stable_ids
+optimise_tree
 coords_by_ArchiveStableId
-calculate_simple_coords
+calculate_coords
+consolidate_tree
 reset_tree
+
+=head1 RELATED MODULES
+
+Bio::EnsEMBL::ArchiveStableId
+Bio::EnsEMBL::DBSQL::ArchiveStableIdAdaptor
+Bio::EnsEMBL::StableIdEvent
 
 =head1 LICENCE
 
@@ -83,7 +114,7 @@ use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 
 =head2 new
 
-  Example     : my $history_tree = Bio::EnsEMBL::StableIdHistoryTree->new;
+  Example     : my $history = Bio::EnsEMBL::StableIdHistoryTree->new;
   Description : object constructor
   Return type : Bio::EnsEMBL::StableIdHistoryTree
   Exceptions  : none
@@ -106,18 +137,19 @@ sub new {
 
 =head2 add_ArchiveStableIds
 
-  Arg[1]      : Bio::EnsEMBL::ArchiveStableId's @archive_ids
+  Arg[1..n]   : Bio::EnsEMBL::ArchiveStableId's @archive_ids
                 The ArchiveStableIds to add to the the history tree
   Example     : my $archive_id = $archiveStableIdAdaptor->fetch_by_stable_id(
                   'ENSG00024808');
-                $history_tree->add_ArchiveStableId($archive_id);
+                $history->add_ArchiveStableId($archive_id);
   Description : Adds ArchiveStableIds (nodes) to the history tree. No
-                calculation of grid coordinates is done, you need to initiate
-                this manually with calculate_coords(). ArchiveStableIds are only
-                added once for each release (to avoid duplicates).
+                calculation of grid coordinates is done at this point, you need
+                to initiate this manually with calculate_coords().
+                ArchiveStableIds are only added once for each release (to avoid
+                duplicates).
   Return type : none
   Exceptions  : thrown on invalid or missing argument
-  Caller      : Bio::EnsEMBL::DBSQL::ArchiveStableIdAdaptor::fetch_history_tree_by_stable_id, general
+  Caller      : Bio::EnsEMBL::DBSQL::ArchiveStableIdAdaptor::fetch_history_by_stable_id, general
   Status      : At Risk
               : under development
 
@@ -136,20 +168,47 @@ sub add_ArchiveStableIds {
 
     $self->{'nodes'}->{$self->_node_id($archive_id)} = $archive_id;
   }
+}
 
-  # reset pre-calculated tree data (needs to be redone after adding objects)
-  $self->reset_tree;
+
+=head2 add_ArchiveStableIds_for_events 
+
+  Example     : my $history = Bio::EnsEMBL::StableIdHistoryTree->new;
+                $history->add_StableIdEvents($event1, $event2);
+                $history->add_ArchiveStableIds_for_events;
+  Description : Convenience method that adds all ArchiveStableIds for all
+                StableIdEvents attached to this object to the tree.
+  Return type : none
+  Exceptions  : none
+  Caller      : Bio::EnsEMBL::DBSQL::ArchiveStableIdAdaptor::fetch_history_by_stable_id, general
+  Status      : At Risk
+              : under development
+
+=cut
+
+sub add_ArchiveStableIds_for_events {
+  my $self = shift;
+
+  foreach my $event (@{ $self->get_all_StableIdEvents }) {
+    if ($event->old_ArchiveStableId) {
+      $self->add_ArchiveStableIds($event->old_ArchiveStableId);
+    }
+    if ($event->new_ArchiveStableId) {
+      $self->add_ArchiveStableIds($event->new_ArchiveStableId);
+    }
+  }
 }
 
 
 =head2 remove_ArchiveStableId
 
-  Arg[1]      : 
-  Example     : 
-  Description : 
-  Return type : 
-  Exceptions  : 
-  Caller      : 
+  Arg[1]      : Bio::EnsEMBL::ArchiveStableId $archive_id
+                the ArchiveStableId to remove from the tree
+  Example     : $history->remove_ArchiveStableId($archive_id);
+  Description : Removes an ArchiveStableId from the tree.
+  Return type : none
+  Exceptions  : thrown on missing or invalid argument
+  Caller      : Bio::EnsEMBL::DBSQL::ArchiveStableIdAdaptor::fetch_history_by_stable_id, general
   Status      : At Risk
               : under development
 
@@ -164,6 +223,25 @@ sub remove_ArchiveStableId {
 
   my %nodes = %{ $self->{'nodes'} };
   delete $nodes{$self->_node_id($archive_id)};
+  $self->{'nodes'} = \%nodes;
+}
+
+
+=head2 flush_ArchiveStableIds
+
+  Example     : $history->flush_ArchiveStableIds;
+  Description : Remove all ArchiveStableIds from the tree.
+  Return type : none
+  Exceptions  : none
+  Caller      : general
+  Status      : At Risk
+              : under development
+
+=cut
+
+sub flush_ArchiveStableIds {
+  my $self = shift;
+  $self->{'nodes'} = undef;
 }
 
 
@@ -180,11 +258,14 @@ sub _node_id {
 
   Arg[1..n]   : Bio::EnsEMBL::StableIdEvent's @events
                 The StableIdEvents to add to the the history tree
-  Example     : $history_tree->add_StableIdEvent($event);
-  Description : Adds StableIdEvents (links) to the history tree.
+  Example     : $history->add_StableIdEvents($event);
+  Description : Adds StableIdEvents (links) to the history tree. Note that 
+                ArchiveStableIds attached to the StableIdEvent aren't added to
+                the tree automatically, you'll need to call
+                add_ArchiveStableIds_for_events later.
   Return type : none
   Exceptions  : thrown on invalid or missing argument
-  Caller      : Bio::EnsEMBL::DBSQL::ArchiveStableIdAdaptor::fetch_history_tree_by_stable_id, general
+  Caller      : Bio::EnsEMBL::DBSQL::ArchiveStableIdAdaptor::fetch_history_by_stable_id, general
   Status      : At Risk
               : under development
 
@@ -201,29 +282,19 @@ sub add_StableIdEvents {
       unless ($event->isa('Bio::EnsEMBL::StableIdEvent'));
 
     $self->{'links'}->{$self->_link_id($event)} = $event;
-
-    # also add ArchiveStableIds linked to this event
-    if ($event->old_ArchiveStableId) {
-      $self->add_ArchiveStableIds($event->old_ArchiveStableId);
-    }
-    if ($event->new_ArchiveStableId) {
-      $self->add_ArchiveStableIds($event->new_ArchiveStableId);
-    }
   }
-
-  # reset pre-calculated tree data (needs to be redone after adding objects)
-  $self->reset_tree;
 }
 
 
 =head2 remove_StableIdEvent 
 
-  Arg[1]      : 
-  Example     : 
-  Description : 
-  Return type : 
-  Exceptions  : 
-  Caller      : 
+  Arg[1]      : Bio::EnsEMBL::StableIdEvent $event
+                the StableIdEvent to remove from the tree
+  Example     : $history->remove_StableIdEvent($event);
+  Description : Removes a StableIdEvent from the tree.
+  Return type : none
+  Exceptions  : thrown on missing or invalid arguments
+  Caller      : Bio::EnsEMBL::DBSQL::ArchiveStableIdAdaptor::fetch_history_by_stable_id, general
   Status      : At Risk
               : under development
 
@@ -237,7 +308,27 @@ sub remove_StableIdEvent {
 
   my %links = %{ $self->{'links'} };
   delete $links{$self->_link_id($event)};
+  $self->{'links'} = \%links;
 }
+
+
+=head2 flush_StableIdEvents 
+
+  Example     : $history->flush_StableIdEvents; 
+  Description : Removes all StableIdEvents from the tree.
+  Return type : none
+  Exceptions  : none
+  Caller      : general
+  Status      : At Risk
+              : under development
+
+=cut
+
+sub flush_StableIdEvents {
+  my $self = shift;
+  $self->{'links'} = undef;
+}
+
 
 #
 # generate a unique link identifier
@@ -261,7 +352,7 @@ sub _link_id {
 
 =head2 get_all_ArchiveStableIds 
 
-  Example     : foreach my $arch_id (@{ $history_tree->get_all_ArchiveStableIds }) {
+  Example     : foreach my $arch_id (@{ $history->get_all_ArchiveStableIds }) {
                   print $arch_id->stable_id, '.', $arch_id->version, "\n";
                 }
   Description : Gets all ArchiveStableIds (nodes) in this tree.
@@ -281,11 +372,11 @@ sub get_all_ArchiveStableIds {
 
 =head2 get_all_StableIdEvents 
 
-  Example     : foreach my $event (@{ $history_tree->get_all_StableIdsEvents }) {
+  Example     : foreach my $event (@{ $history->get_all_StableIdsEvents }) {
                   print "Old stable ID: ", 
-                    $event->old_ArchiveStableId->stable_id, "\n";
+                    ($event->get_attribute('old', 'stable_id') or 'none'), "\n";
                   print "New stable ID: ", 
-                    $event->new_ArchiveStableId->stable_id, "\n";
+                    ($event->get_attribute('new', 'stable_id') or 'none'), "\n";
                   print "Mapping score: ", $event->score, "\n";
                 }
   Description : Gets all StableIdsEvents (links) in this tree.
@@ -306,7 +397,7 @@ sub get_all_StableIdEvents {
 =head2 get_release_display_names
 
   Example     : print "Unique release display_names in this tree:\n"
-                foreach my $name (@{ $history_tree->get_release_display_names }) {
+                foreach my $name (@{ $history->get_release_display_names }) {
                   print "  $name\n";
                 }
   Description : Returns a chronologically sorted list of unique release
@@ -340,7 +431,7 @@ sub get_release_display_names {
 =head2 get_release_db_names
 
   Example     : print "Unique release db_names in this tree:\n"
-                foreach my $name (@{ $history_tree->get_release_db_names }) {
+                foreach my $name (@{ $history->get_release_db_names }) {
                   print "  $name\n";
                 }
   Description : Returns a chronologically sorted list of unique release
@@ -362,24 +453,16 @@ sub get_release_db_names {
 }
 
 
-=head2 _sort_releases
-
-  Example     : 
-  Description : Create a chronologically sorted list of releases.
-
-                Before release 21, sometimes several releases had the same
-                number (because this number indicated schema version then which
-                wasn't changed in every release). To get unique release
-                identifiers we therefore need to sort this out by adding
-                "version numbers" to the release.
-  Return type : Arrayref of arrayrefs (db_name, release)
-  Exceptions  : none
-  Caller      : get_release_display_names
-  Status      : At Risk
-              : under development
-
-=cut
-
+#
+# Create a chronologically sorted list of releases.
+#
+# Before release 21, sometimes several releases had the same number (because
+# this number indicated schema version then which wasn't changed in every
+# release). To get unique release identifiers we therefore need to sort this
+# out by adding "version numbers" to the release.
+#
+# Return type : Arrayref of arrayrefs (db_name, release)
+#
 sub _sort_releases {
   my $self = shift;
 
@@ -430,7 +513,7 @@ sub _sort_releases {
 =head2 get_unique_stable_ids 
 
   Example     : print "Unique stable IDs in this tree:\n"
-                foreach my $id (@{ $history_tree->get_unique_stable_ids }) {
+                foreach my $id (@{ $history->get_unique_stable_ids }) {
                   print "  $id\n";
                 }
   Description : Returns a list of unique stable IDs in this tree. Version is not
@@ -440,7 +523,7 @@ sub _sort_releases {
 
                 Sort algorithm will depend on what was chosen when the sorted
                 tree was generated. This ranges from a simple alphanumeric sort
-                to algorithms trying to disentangle the history tree. If no
+                to algorithms trying to untangle the history tree. If no
                 pre-sorted data is found, an alphanumerically sorted list will
                 be returned by default.
   Return type : Arrayref of strings.
@@ -457,36 +540,230 @@ sub get_unique_stable_ids {
   unless ($self->{'sorted_tree'}->{'stable_ids'}) {
     warning("No sorted stable ID list found. Will return lexically sorted unique stable ID, which might not be what you wanted.");
 
-    $self->_sort_stable_ids;
+    $self->{'sorted_tree'}->{'stable_ids'} = $self->_sort_stable_ids;
   }
   
   return $self->{'sorted_tree'}->{'stable_ids'};
 }
 
 
-=head2 _sort_stable_ids
+#
+# Returns a list of stable IDs in this history tree, sorted alphabetically.
+# This is the simplest sort function used and doesn't try to untangle the tree.
+#
+# Return type : Arrayref
+#
+sub _sort_stable_ids {
+  my $self = shift;
+  my %unique = map { $_->stable_id => 1 } @{ $self->get_all_ArchiveStableIds };
+  return [sort keys %unique];
+}
 
-  Example     : 
-  Description : Returns a list of stable IDs in this history tree, sorted
-                alphabetically. This is the simplest sort function used and
-                doesn't try to untangle the tree.
-  Return type : Arrayref
+
+=head2 optimise_tree
+
+  Example     : $history->optimise_tree;
+  Description : This method sorts the history tree so that the number of
+                overlapping branches is minimised (thus "untangling" the tree).
+                
+                It uses a clustering algorithm for this which iteratively moves
+                the nodes with the largest vertical distance next to each other
+                and looking for a mininum in total branch length. This might not
+                produce the overall optimum but usually converges on a local
+                optimum very quickly.
+  Return type : none
   Exceptions  : none
-  Caller      : get_unique_stable_ids
+  Caller      : calculate_coords
   Status      : At Risk
               : under development
 
 =cut
 
-sub _sort_stable_ids {
+sub optimise_tree {
   my $self = shift;
 
-  unless ($self->{'sorted_tree'}->{'stable_ids'}) {
-    my %unique = map { $_->stable_id => 1 } @{ $self->get_all_ArchiveStableIds };
-    $self->{'sorted_tree'}->{'stable_ids'} = [sort keys %unique];
+  # get all non-self events
+  my @links;
+  foreach my $event (@{ $self->get_all_StableIdEvents }) {
+    next unless ($event->old_ArchiveStableId and $event->new_ArchiveStableId);
+    my $old_id = $event->old_ArchiveStableId->stable_id;
+    my $new_id = $event->new_ArchiveStableId->stable_id;
+    push @links, [$old_id, $new_id] if ($old_id ne $new_id);
   }
-  
-  return $self->{'sorted_tree'}->{'stable_ids'};
+
+  # get initial list of sorted unique stable IDs and put them into a position
+  # lookup hash
+  my $i = 0;
+  my %pos = map { $_ => $i++ } @{ $self->_sort_stable_ids };
+
+  my $opt_length;
+  my $successive_fails = 0;
+  my $k = 0;
+  my %seen;
+
+  # for debug purposes:
+  # find the number of permutations for the given number of stable IDs
+  my $fact = $self->_factorial(scalar(keys %pos));
+
+  OPT:
+  while ($successive_fails < 100) {
+
+    # sort links by vertical distance
+    #warn "sorting\n";
+    $self->_sort_links(\@links, \%pos);
+
+    # loop over sorted links
+    SORTED:
+    foreach my $link (@links) {
+      
+      #warn "  trying ".join('-', @$link)."\n";
+
+      $k++;
+      
+      # remember last sort order
+      my %last = %pos;
+      
+      #my $this_order = join(':', sort { $pos{$a} <=> $pos{$b} } keys %pos);
+      #warn "    before $this_order\n";
+
+      # try both to move bottom node next to top node's current position and
+      # top node next to bottom node's position - one of the methods might give
+      # you better results
+      DIRECT:
+      foreach my $direction (qw(up down)) {
+
+        # move the nodes next to each other
+        $self->_move_nodes($link, \%pos, $direction);
+
+        # next if we've seen this sort order before
+        my $new_order = join(':', sort { $pos{$a} <=> $pos{$b} } keys %pos);
+        #warn "    after ($direction) $new_order\n";
+        if ($seen{$new_order}) {
+          #warn "      seen\n";
+          %pos = %last;
+          next DIRECT;
+        }
+        $seen{$new_order} = 1;
+
+        # calculate total link length for this sort order
+        my $total_length = $self->_total_link_length(\@links, \%pos);
+
+        if (!$opt_length or $total_length < $opt_length) {
+          #warn "      better ($total_length/$opt_length)\n";
+          $opt_length = $total_length;
+          $successive_fails = 0;
+          next OPT;
+        } else {
+          #warn "      worse ($total_length/$opt_length)\n";
+          %pos = %last;
+          $successive_fails++;
+        }
+      }
+      
+    }
+
+    last OPT;
+    
+  }
+
+  #warn "Needed $k tries (of $fact) to find optimal tree.\n";
+
+  my @best = sort { $pos{$a} <=> $pos{$b} } keys %pos;
+  $self->{'sorted_tree'}->{'stable_ids'} = \@best;
+}
+
+
+#
+# find the number of permutations for a give array size.
+# used for debugging code (compare implemented algorithm to looping over all
+# possible permutations).
+#
+sub _factorial {
+  my ($self, $n) = @_;
+  my $s = 1;
+  $s *= $n-- while $n > 0;
+  return $s;
+}
+
+
+#
+# sort links by vertical distance
+#
+sub _sort_links {
+  my ($self, $links, $pos) = @_;
+
+  my @lookup;
+
+  foreach my $link (@$links) {
+    my $dist = $pos->{$link->[0]} - $pos->{$link->[1]};
+    $dist = -$dist if ($dist < 0);
+    push @lookup, [$dist, $link];
+    #warn " $dist ".join(' ', @$link)."\n";
+  }
+
+  @$links = map { $_->[1] } sort { $b->[0] <=> $a->[0] } @lookup;
+}
+
+
+#
+# make two nodes adjacent by moving the second node next to the first node
+# all other node coordinates are adjusted accordingly
+#
+sub _move_nodes {
+  my ($self, $link, $pos, $direction) = @_;
+
+  my $first_pos = $pos->{$link->[0]};
+  my $second_pos = $pos->{$link->[1]};
+
+  # swap positions if necessary
+  if ($first_pos > $second_pos) {
+    my $tmp = $second_pos;
+    $second_pos = $first_pos;
+    $first_pos = $tmp;
+  }
+  #warn "      $first_pos:$second_pos\n";
+
+  foreach my $p (keys %$pos) {
+    
+    my $val = $pos->{$p};
+    
+    #warn "      $p $val\n";
+    if ($direction eq 'up') {
+      if ($val > $first_pos and $val < $second_pos) {
+        $val++;
+      } elsif ($val == $second_pos) {
+        $val = $first_pos + 1;
+      }
+    } else {
+      if ($val > $first_pos and $val < $second_pos) {
+        $val--;
+      } elsif ($val == $first_pos) {
+        $val = $second_pos - 1;
+      }
+    }
+    
+    #warn "      $p $val\n";
+    $pos->{$p} = $val;
+    #warn "\n";
+  }
+}
+
+
+#
+# calculate the total link (vertical distance) length based on this sort order
+#
+sub _total_link_length {
+  my ($self, $links, $pos) = @_;
+
+  my $total_length;
+
+  foreach my $link (@$links) {
+    my $length = $pos->{$link->[0]} - $pos->{$link->[1]};
+    $length = -$length if ($length < 0);
+    $total_length += $length;
+  }
+
+  return $total_length;
 }
 
 
@@ -495,7 +772,7 @@ sub _sort_stable_ids {
   Arg[1]      : Bio::EnsEMBL::ArchiveStableId $archive_id
                 The ArchiveStableId to get tree grid coordinates for
   Example     : my ($x, $y) =
-                  @{ $history_tree->coords_by_ArchiveStableId($archive_id) };
+                  @{ $history->coords_by_ArchiveStableId($archive_id) };
                 print $archive_id->stable_id, " coords: $x, $y\n";
   Description : Returns the coordinates of an ArchiveStableId in the history
                 tree grid. If the ArchiveStableId isn't found in this tree, an
@@ -517,29 +794,27 @@ sub coords_by_ArchiveStableId {
   my ($self, $archive_id) = @_;
 
   throw("Bio::EnsEMBL::ArchiveStableId object expected.")
-    unless ($archive_id->isa('Bio::EnsEMBL::ArchiveStableId'));
+    unless ($archive_id and ref($archive_id) and
+      $archive_id->isa('Bio::EnsEMBL::ArchiveStableId'));
   
   return $self->{'sorted_tree'}->{'coords'}->{$self->_node_id($archive_id)}
     || [];
 }
 
 
-=head2 calculate_simple_coords 
+=head2 calculate_coords
 
-  Example     : $history_tree->calculate_simple_coords;
+  Example     : $history->calculate_coords;
   Description : Pre-calculates the grid coordinates of all nodes in the tree.
-                This most simple method for this task sorts releases
-                chronologically and stable IDs alphabetically. No efforts are
-                made to disentangle the tree.
   Return type : none
   Exceptions  : none
-  Caller      : ArchiveStableIdAdaptor::fetch_history_tree_by_stable_id
+  Caller      : ArchiveStableIdAdaptor::fetch_history_by_stable_id
   Status      : At Risk
               : under development
 
 =cut
 
-sub calculate_simple_coords {
+sub calculate_coords {
   my $self = shift;
 
   # reset any previous tree cordinate calculations
@@ -548,7 +823,10 @@ sub calculate_simple_coords {
   # the "master" information for the sorted tree is stored as the sorted lists
   # of releases (x) and stable IDs (y). Sort them now.
   my $db_names = $self->get_release_db_names;
-  my $stable_ids = $self->_sort_stable_ids;
+
+  # untangle tree by sorting stable IDs appropriately
+  $self->optimise_tree;
+  my $stable_ids = $self->get_unique_stable_ids;
   
   # for performance reasons, additionally store coordinates in a lookup hash
   foreach my $archive_id (@{ $self->get_all_ArchiveStableIds }) {
@@ -562,21 +840,12 @@ sub calculate_simple_coords {
   }
 }
 
-
-=head2 _index_of
-
-  Arg[1]      : 
-  Example     : my @array = (a, b, c);
-                my $i = _index_of('b', \@array); # will return 1
-  Description : Returns the index of an element in an array
-  Return type : Int (or undef if element is not found in array)
-  Exceptions  : thrown on wrong argument types
-  Caller      : internal
-  Status      : At Risk
-              : under development
-
-=cut
-
+#
+# Description : Returns the index of an element in an array
+# Example     : my @array = (a, b, c);
+#               my $i = _index_of('b', \@array); # will return 1
+# Return type : Int (or undef if element is not found in array)
+#
 sub _index_of {
   my ($self, $element, $arrayref) = @_;
 
@@ -592,9 +861,122 @@ sub _index_of {
 }
 
 
+=head2 consolidate_tree
+
+  Example     : $history->consolidate_tree;
+  Description : Consolidate the history tree. This means removing nodes where
+                there wasn't a change and bridging gaps in the history. The end
+                result will be a sparse tree which only contains the necessary
+                information.
+  Return type : none
+  Exceptions  : none
+  Caller      : ArchiveStableIdAdaptor->fetch_history_tree_by_stable_id
+  Status      : At Risk
+              : under development
+
+=cut
+
+sub consolidate_tree {
+  my $self = shift;
+
+  #
+  # get all self-events and creations/deletions and sort them (by stable ID and
+  # chronologically)
+  #
+  my @event_lookup;
+  
+  foreach my $event (@{ $self->get_all_StableIdEvents }) {
+  
+    my $old_id = $event->old_ArchiveStableId;
+    my $new_id = $event->new_ArchiveStableId;
+
+    if (!$old_id or !$new_id or ($old_id->stable_id eq $new_id->stable_id)) {
+      if ($old_id) {
+        push @event_lookup, [$old_id->stable_id, $old_id->release, $event];
+      } else {
+        push @event_lookup, [$new_id->stable_id, $new_id->release - 1, $event];
+      }
+    }
+  }
+
+  my @self_events = map { $_->[2] }
+    sort { $a->[0] cmp $b->[0] || $a->[1] <=> $b->[1] } @event_lookup;
+
+  #
+  # consolidate tree
+  #
+  my $last = shift(@self_events);
+
+  while (my $event = shift(@self_events)) {
+
+    my $lo = $last->old_ArchiveStableId;
+    my $ln = $last->new_ArchiveStableId;
+    my $eo = $event->old_ArchiveStableId;
+    my $en = $event->new_ArchiveStableId;
+
+    if ($lo and $eo and $en and $lo->stable_id eq $eo->stable_id
+        and $lo->version eq $eo->version) {
+
+      # this removes redundant nodes and connects the remaining nodes:
+      #
+      # o--o--o  ->  o-----o
+      # 1  1  1      1     1
+
+      #warn 'A: '.$last->ident_string.' | '.$event->ident_string."\n";
+
+      $self->remove_StableIdEvent($last);
+      $self->remove_StableIdEvent($event);
+
+      $event->old_ArchiveStableId($lo);
+
+      $self->add_StableIdEvents($event);
+
+    } elsif ($ln and $eo and $ln->db_name ne $eo->db_name
+        and $ln->stable_id eq $eo->stable_id and $ln->version eq $eo->version) {
+        
+      # try to brigde gaps
+
+      if ($en) {
+        
+        # o--o  o--o  ->  o--o-----o
+        # 1  2  2  2      1  2     2
+        #
+        #    o  o--o  ->  o-----o
+        #    1  1  1      1     1
+        
+        #warn 'X: '.$last->ident_string.' | '.$event->ident_string."\n";
+
+        $self->remove_StableIdEvent($event);
+        $event->old_ArchiveStableId($ln);
+        $self->add_StableIdEvents($event);
+        
+      } else {
+        
+        # there's a deletion event, deal with it differently
+        #
+        # o--o  o  ->  o-----o
+        # 1  1  1      1     1
+        
+        #warn 'Y: '.$last->ident_string.' | '.$event->ident_string."\n";
+
+        $self->remove_StableIdEvent($last);
+        $last->new_ArchiveStableId($eo);
+        $self->add_StableIdEvents($last);
+
+      }
+
+    #} else {
+      #warn 'C: '.$last->ident_string.' | '.$event->ident_string."\n";
+    }
+  
+    $last = $event;
+  }
+}
+
+
 =head2 reset_tree
 
-  Example     : $history_tree->reset_tree;
+  Example     : $history->reset_tree;
   Description : Resets all pre-calculated tree grid data. Mostly used internally
                 by methods that modify the tree.
   Return type : none
