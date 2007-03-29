@@ -6,6 +6,26 @@ Bio::EnsEMBL::StableIdEvent- object representing a stable ID mapping event
 
 =head1 SYNOPSIS
 
+my $old_id = Bio::EnsEMBL::ArchiveStableId->new(
+  -stable_id => 'ENSG001'
+  -version => 1,
+  -type => 'Gene',
+);
+
+my $new_id = Bio::EnsEMBL::ArchiveStableId->new(
+  -stable_id => 'ENSG001'
+  -version => 2,
+  -type => 'Gene',
+);
+
+my $event = Bio::EnsEMBL::StableIdEvent->new(
+  -old_id => $old_id,
+  -new_id => $new_id,
+  -score => 0.997
+);
+
+# directly access attributes in old and new ArchiveStableId
+my $old_stable_id = $event->get_attribute('old', 'stable_id');
 
 =head1 DESCRIPTION
 
@@ -14,9 +34,18 @@ ArchiveStableIds with a mapping score.
 
 =head1 METHODS
 
-score
+new
 old_ArchiveStableId
 new_ArchiveStableId
+score
+get_attribute
+ident_string
+
+=head1 RELATED MODULES
+
+Bio::EnsEMBL::ArchiveStableId
+Bio::EnsEMBL::DBSQL::ArchiveStableIdAdaptor
+Bio::EnsEMBL::StableIdHistoryTree
 
 =head1 LICENCE
 
@@ -177,6 +206,88 @@ sub score {
   my $self = shift;
   $self->{'score'} = shift if (@_);
   return $self->{'score'};
+}
+
+
+=head2 get_attribute
+
+  Arg[1]      : String $type - determines whether to get attribute from 'old'
+                or 'new' ArchiveStableId
+  Arg[2]      : String $attr - ArchiveStableId attribute to fetch
+  Example     : my $old_stable_id = $event->get_attribute('old', 'stable_id');
+  Description : Accessor to attributes of the ArchiveStableIds attached to this
+                event. Convenience method that does the check for undef old
+                and/or new ArchiveStableId for you.
+  Return type : same as respective method in Bio::EnsEMBL::ArchiveStableId, or
+                undef
+  Exceptions  : thrown on wrong arguments
+  Caller      : general
+  Status      : At Risk
+              : under development
+
+=cut
+
+sub get_attribute {
+  my ($self, $type, $attr) = @_;
+
+  throw("First argument passed to this function has to be 'old' or 'new'.")
+    unless ($type eq 'old' or $type eq 'new');
+
+  my %allowed_attribs = map { $_ => 1 }
+    qw(stable_id version db_name release assembly);
+
+  throw("Attribute $attr not allowed.") unless $allowed_attribs{$attr};
+
+  my $call = $type.'_ArchiveStableId';
+
+  if (my $id = $self->$call) {
+    return $id->$attr;
+  } else {
+    return undef;
+  }
+}
+
+
+=head2 ident_string
+
+  Example     : print $event->ident_string, "\n";
+  Description : Returns a string that can be used to identify your StableIdEvent.
+                Useful in debug warnings.
+  Return type : String
+  Exceptions  : none
+  Caller      : general
+  Status      : At Risk
+              : under development
+
+=cut
+
+sub ident_string {
+  my $self = shift;
+
+  my $old_id = $self->old_ArchiveStableId;
+  my $new_id = $self->new_ArchiveStableId;
+
+  my $str;
+
+  if ($old_id) {
+    $str = $old_id->stable_id.'.'.$old_id->version.' ('.
+      $old_id->release.')';
+  } else {
+    $str = 'null';
+  }
+
+  $str .= ' -> ';
+
+  if ($new_id) {
+    $str .= $new_id->stable_id.'.'.$new_id->version.' ('.
+      $new_id->release.')';
+  } else {
+    $str .= 'null';
+  }
+
+  $str .= ' ['.$self->score.']';
+  
+  return $str;
 }
 
 
