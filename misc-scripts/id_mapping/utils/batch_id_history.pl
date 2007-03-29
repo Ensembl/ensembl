@@ -27,7 +27,10 @@ Optional arguments:
 
 This script reads a list of stable IDs from a file and sees if it can find them
 in the stable ID archive. It will print the ID history for each of them and
-optinally the peptide sequence found there as well.
+optinally the peptide sequence found there as well. Note that this will not 
+print the full history network, but rather branch out from your focus stable ID
+only. If you are interested in the full network, have a look at
+Bio::EnsEMBL::StableIdHistoryTree and related modules.
 
 =head1 LICENCE
 
