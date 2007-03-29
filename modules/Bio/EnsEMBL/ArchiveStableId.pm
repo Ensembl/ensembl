@@ -28,11 +28,27 @@ Status: At Risk. This module is in development.
 
     new
     new_fast
+    get_history_tree
     get_all_predecessors
     get_all_successors
     get_peptide
+    get_all_gene_archive_ids
     get_all_transcript_archive_ids
     get_all_translation_archive_ids
+    stable_id
+    db_name
+    release
+    assembly
+    adaptor
+    type
+    successors
+    version
+
+=head1 RELATED MODULES
+
+Bio::EnsEMBL::DBSQL::ArchiveStableIdAdaptor
+Bio::EnsEMBL::StableIdEvent
+Bio::EnsEMBL::StableIdHistoryTree
 
 =head1 LICENCE
 
@@ -89,8 +105,8 @@ sub new {
 
   my $self = bless {}, $class;
 
-  my ($stable_id, $version, $db_name, $release, $assembly, $type, $adaptor, $score) =
-    rearrange([qw( STABLE_ID VERSION DB_NAME RELEASE ASSEMBLY TYPE ADAPTOR SCORE)],
+  my ($stable_id, $version, $db_name, $release, $assembly, $type, $adaptor) =
+    rearrange([qw( STABLE_ID VERSION DB_NAME RELEASE ASSEMBLY TYPE ADAPTOR)],
     @_ );
 
   $self->{'stable_id'} = $stable_id;
@@ -100,7 +116,6 @@ sub new {
   $self->{'assembly'} = $assembly;
   $self->{'type'} = $type;
   $self->{'adaptor'} = $adaptor;
-  $self->{'score'} = $score;
 
   return $self;
 }
@@ -138,7 +153,6 @@ sub new_fast {
       'assembly' => $_[4],
       'type' => $_[5],
       'adaptor' => $_[6],
-      'score' => $_[7],
   }, $class;
 
   return $self;
@@ -356,12 +370,6 @@ sub type {
   my $self = shift;
   $self->{'type'} = shift if (@_);
   return $self->{'type'};
-}
-
-sub score {
-  my $self = shift;
-  $self->{'score'} = shift if (@_);
-  return $self->{'score'};
 }
 
 sub successors {
