@@ -1486,11 +1486,11 @@ sub fetch_non_hidden_slice {
   Arg[2]      : 'code' to search for
   Arg[3]      : 'value' to search for (optional)
   Example     : my $c = $self->get_attrib_values($attribs,'name'));
-  Description : In the abscence of an attribute value argument examines an arrayref
+  Description : (i) In the abscence of an attribute value argument examines an arrayref
                 of B::E::Attributes for a particular attribute type, returning the values
                 for each attribute of that type (can therefore be used to test for the
                 number of attributes of that type).
-                In the presence of the optional value argument, it can be used to test
+                (ii) In the presence of the optional value argument, it can be used to test
                 for the presence of an attribute with a particular value
   Return type : arrayref of values for that attribute
   Caller      : general
@@ -1504,16 +1504,19 @@ sub get_attrib_values {
 	my $code    = shift;
 	my $value   = shift;
 	if (my @atts = grep {$_->code eq $code } @$attribs) {
+		my $r;
 		if ($value) {
 			if (my @values = grep {$_->value eq $value} @atts) {
-				return  \@values;
+				foreach (@values) {
+					push @$r, $_->value;
+				}
+				return $r;
 			}
 			else {
 				return [];
 			}
 		}
 		else {
-			my $r;
 			foreach (@atts) {
 				push @$r, $_->value;
 			}
