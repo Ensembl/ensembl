@@ -225,3 +225,10 @@
 130	vega_name	Vega name	Vega seq_region.name
 131	vega_export_mode	Export mode	E (External), I (Internal) etc
 132	vega_release	Vega release	Vega release number
+
+
+# loutre attribs for assembly_tags (ck1)
+133	atag_CLE	clone left end	Clone_lef_end feature marked in GAP database
+134	atag_CRE	clone right end	Clone_right_end feature marked in GAP database
+135	atag_Misc	misc assembly_tag	miscellaneous feature marked in GAP database
+136	atag_Unsure	unsure region of sequence	region of uncertain DNA sequence marked in GAP database
