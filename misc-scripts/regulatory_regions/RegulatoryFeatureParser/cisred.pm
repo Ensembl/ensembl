@@ -127,7 +127,7 @@ sub parse {
 	$factor_id = $highest_factor_id + 1;
 	$factor{INTERNAL_ID} = $factor_id;
 	$factor{NAME} = $group_name;
-	$factor{TYPE} = $factor{NAME}; # TODO - error checking that type is one of the enums?
+	$factor{TYPE} = 'NULL';
 	push @factors, \%factor;
 	$factor_ids_by_name{$factor{NAME}} = $factor_id;
 	$highest_factor_id = $factor_id;
