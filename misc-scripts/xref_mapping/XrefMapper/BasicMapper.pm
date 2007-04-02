@@ -1693,7 +1693,7 @@ PSQL
 	    print UNMAPPED_OBJECT $xref_DNA_analysis."\t";
 	  }
 	  print UNMAPPED_OBJECT $external_db_id."\t".$accession."\t";
-	  print UNMAPPED_OBJECT $xref_missed_id."\t0\t0\t0\tNULL\n";
+	  print UNMAPPED_OBJECT $xref_missed_id."\t0\t0\t0\t\\N\n";
 	}
       }
     }
@@ -4255,7 +4255,7 @@ PSQL
 	  print UNMAPPED_OBJECT $xref_DNA_analysis."\t";
 	}
 	print UNMAPPED_OBJECT $external_db_id."\t".$acc."\t";
-	print UNMAPPED_OBJECT $xref_missed_id."\t0\t0\t0\tNULL\n";
+	print UNMAPPED_OBJECT $xref_missed_id."\t0\t0\t0\t\\N\n";
 	print XREF_P ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $acc . 
 	  "\t" . $lab . "\t" . $ver . "\t" . $desc . "\tMISC\tNo match\n";
       }
@@ -4421,8 +4421,8 @@ SQL
         else{
           die "COULD NOT get an analysis for source id = $master_source ".$unmapped_primary_xref{$master_xref_id}."\n";
         }
-        print UNMAPPED_OBJECT $external_db_id."\t".$accession."\t";
-        print UNMAPPED_OBJECT $xref_missed_id."\t0\t0\t0\tNULL\t".
+        print UNMAPPED_OBJECT $external_db_id."\t".$accession.["\t";
+        print UNMAPPED_OBJECT $xref_missed_id."\t0\t0\t0\t\\N\t".
           $unmapped_primary_xref{$master_xref_id}. "\n";
       }
     }
