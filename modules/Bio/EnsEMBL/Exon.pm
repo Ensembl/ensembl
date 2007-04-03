@@ -608,13 +608,14 @@ sub cdna_coding_end {
                   exon in genomic coordinates on the forward strand.
                   Returns undef if the whole exon is non-coding.
     Return type : Integer or undef
-    Exceptions  : None
+    Exceptions  : Throws if the given argument is not a transcript.
     Caller      : General
     Status      : At Risk (Under Development)
 
 =cut
 
-# This method is analogous to cdna_coding_start().
+# This implementation of this method is analogous to the implementation
+# of cdna_coding_start().
 
 sub coding_region_start {
     my $self = shift;
@@ -683,13 +684,14 @@ sub coding_region_start {
                   exon in genomic coordinates on the forward strand.
                   Returns undef if the whole exon is non-coding.
     Return type : Integer or undef
-    Exceptions  : None
+    Exceptions  : Throws if the given argument is not a transcript.
     Caller      : General
     Status      : At Risk (Under Development)
 
 =cut
 
-# This method is analogous to cdna_coding_end().
+# This implementation of this method is analogous to the implementation
+# of cdna_coding_end().
 
 sub coding_region_end {
     my $self = shift;
