@@ -1,8 +1,9 @@
 use strict;
 
-BEGIN { $| = 1;
-	use Test ;
-	plan tests => 35;
+BEGIN {
+    $| = 1;
+    use Test;
+    plan tests => 47;
 }
 
 my $loaded = 0;
@@ -263,4 +264,30 @@ foreach my $e (@exons) {
 }
 
 $multi->restore();
+
+# TESTS 36-47: Tests for cdna_start(), cdna_end(), cdna_coding_start(),
+# cdna_coding_end(), coding_region_start(), and coding_region_end().
+
+my $transcriptad = $db->get_TranscriptAdaptor();
+my $transcript   = $transcriptad->fetch_by_stable_id('ENST00000246229');
+
+@exons = @{ $transcript->get_all_Exons() };
+
+$exon = shift @exons;    # First exon is non-coding.
+
+ok( $exon->cdna_start($transcript) == 1 );
+ok( $exon->cdna_end($transcript) == 88 );
+ok( !defined $exon->cdna_coding_start($transcript) );
+ok( !defined $exon->cdna_coding_end($transcript) );
+ok( !defined $exon->coding_region_start($transcript) );
+ok( !defined $exon->coding_region_end($transcript) );
+
+$exon = shift @exons;    # Second exon is coding.
+
+ok( $exon->cdna_start($transcript) == 89 );
+ok( $exon->cdna_end($transcript) == 462 );
+ok( $exon->cdna_coding_start($transcript) == 203 );
+ok( $exon->cdna_coding_end($transcript) == 462 );
+ok( $exon->coding_region_start($transcript) == 30577779 );
+ok( $exon->coding_region_end($transcript) == 30578038 );
 
