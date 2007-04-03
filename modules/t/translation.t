@@ -5,9 +5,10 @@ use Bio::EnsEMBL::Test::TestUtils;
 use Bio::EnsEMBL::Translation;
 use Bio::EnsEMBL::Exon;
 
-BEGIN { $| = 1;
-	use Test;
-	plan tests => 36;
+BEGIN {
+    $| = 1;
+    use Test;
+    plan tests => 40;
 }
 
 my $loaded = 0;
@@ -283,4 +284,14 @@ ok(count_rows($db, 'translation_attrib') == 2);
 
 $multi->restore('core');
 
+# TEST 37-40: Tests for cdna_start(), cdna_end(), genomic_start(), and
+# genomic_end().
 
+$tr = $tra->fetch_by_stable_id('ENST00000246229');
+$tl = $tr->translation();
+
+ok( $tl->cdna_start() == 203 );
+ok( $tl->cdna_end() == 1690 );
+
+ok( $tl->genomic_start() == 30572315 );
+ok( $tl->genomic_end() == 30578038 );
