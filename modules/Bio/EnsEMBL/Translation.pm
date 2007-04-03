@@ -121,7 +121,8 @@ sub new {
   Description: Getter/setter for the value of start, which is a position within
                the exon given by start_Exon.
 
-               If you need genomic coordinates, use Transcript->pep2genomic().
+               If you need genomic coordinates, use the genomic_start()
+               method.
   Returntype : int
   Exceptions : none
   Caller     : general
@@ -148,7 +149,8 @@ sub start{
   Description: Getter/setter for the value of end, which is a position within
                the exon given by end_Exon.
 
-               If you need genomic coordinates, use Transcript->pep2genomic().
+               If you need genomic coordinates, use the genomic_end()
+               method.
   Returntype : int
   Exceptions : none
   Caller     : general
@@ -223,6 +225,162 @@ sub end_Exon {
     return $self->{'end_exon'};
 }
 
+=head2 cdna_start
+
+    Arg  [1]    : Bio::EnsEMBL::Transcript (optional).  The
+                  transcript which this is a translation of.  If
+                  no transcript is given, the method will use
+                  TranscriptAdaptor->fetch_by_translation_id() to locate
+                  the correct transcript.
+    Example     : $translation_cdna_start = $translation->cdna_start();
+    Description : Returns the start position of the translation in cDNA
+                  coordinates.
+    Return type : Integer
+    Exceptions  : Throws if the given (optional) argument is not a
+                  transcript.
+    Caller      : General
+    Status      : At Risk (Under Development)
+
+=cut
+
+sub cdna_start {
+    my $self = shift;
+    my ($transcript) = @_;
+
+    if ( defined $transcript
+         && (    !ref $transcript
+              || !$transcript->isa('Bio::EnsEMBL::Transcript') )
+      ) {
+        throw("Argument is not a transcript");
+    }
+
+    if ( !exists $self->{'cdna_start'} ) {
+        if ( !defined $transcript ) {
+            # We were not given a transcript, get the transcript out of
+            # the database.
+
+            my $transcript_adaptor =
+              $self->adaptor()->db()->get_TranscriptAdaptor();
+
+            $transcript =
+              $transcript_adaptor->fetch_by_translation_id(
+                                                        $self->dbID() );
+        }
+
+        $self->{'cdna_start'} =
+          $self->start_Exon()->cdna_coding_start($transcript);
+    }
+
+    return $self->{'cdna_start'};
+} ## end sub cdna_start
+
+=head2 cdna_end
+
+    Arg  [1]    : Bio::EnsEMBL::Transcript (optional).  The
+                  transcript which this is a translation of.  If
+                  no transcript is given, the method will use
+                  TranscriptAdaptor->fetch_by_translation_id() to locate
+                  the correct transcript.
+    Example     : $translation_cdna_end = $translation->cdna_end();
+    Description : Returns the end position of the translation in cDNA
+                  coordinates.
+    Return type : Integer
+    Exceptions  : Throws if the given (optional) argument is not a
+                  transcript.
+    Caller      : General
+    Status      : At Risk (Under Development)
+
+=cut
+
+sub cdna_end {
+    my $self = shift;
+    my ($transcript) = @_;
+
+    if ( defined $transcript
+         && (    !ref $transcript
+              || !$transcript->isa('Bio::EnsEMBL::Transcript') )
+      ) {
+        throw("Argument is not a transcript");
+    }
+
+    if ( !exists $self->{'cdna_end'} ) {
+        if ( !defined $transcript ) {
+            # We were not given a transcript, get the transcript out of
+            # the database.
+
+            my $transcript_adaptor =
+              $self->adaptor()->db()->get_TranscriptAdaptor();
+
+            $transcript =
+              $transcript_adaptor->fetch_by_translation_id(
+                                                        $self->dbID() );
+        }
+
+        $self->{'cdna_end'} =
+          $self->end_Exon()->cdna_coding_end($transcript);
+    }
+
+    return $self->{'cdna_end'};
+} ## end sub cdna_end
+
+=head2 genomic_start
+
+    Args        : None
+    Example     : $translation_genomic_start =
+                      $translation->genomic_start();
+    Description : Returns the start position of the translation in
+                  genomic coordinates on the forward strand.
+    Return type : Integer
+    Exceptions  : None
+    Caller      : General
+    Status      : At Risk (Under Development)
+
+=cut
+
+sub genomic_start {
+    my $self = shift;
+
+    if ( !exists $self->{'genomic_start'} ) {
+        if ( $self->start_Exon()->strand() >= 0 ) {
+            $self->{'genomic_start'} =
+              $self->start_Exon()->start() + ( $self->start() - 1 );
+        } else {
+            $self->{'genomic_start'} =
+              $self->end_Exon()->end() - ( $self->end() - 1 );
+        }
+    }
+
+    return $self->{'genomic_start'};
+}
+
+=head2 genomic_end
+
+    Args        : None
+    Example     : $translation_genomic_end = $translation->genomic_end();
+    Description : Returns the end position of the translation in genomic
+                  coordinates on the forward strand.
+    Return type : Integer
+    Exceptions  : None
+    Caller      : General
+    Status      : At Risk (Under Development)
+
+=cut
+
+sub genomic_end {
+    my $self = shift;
+
+    if ( !exists $self->{'genomic_end'} ) {
+        if ( $self->end_Exon()->strand() >= 0 ) {
+            $self->{'genomic_end'} =
+              $self->end_Exon()->start() + ( $self->end() - 1 );
+        } else {
+            $self->{'genomic_end'} =
+              $self->start_Exon()->end() - ( $self->start() - 1 );
+        }
+    }
+
+    return $self->{'genomic_end'};
+}
 
 =head2 version
 
