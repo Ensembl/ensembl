@@ -1004,7 +1004,7 @@ sub register_all {
 
       $arr = [$asm_seq_region_id, $asm_seq_region, $asm_cs_id, $asm_length];
 
-      $self->{'sr_name_cache'}->{"$asm_seq_region:$cmp_cs_id"} = $arr;
+      $self->{'sr_name_cache'}->{"$asm_seq_region:$asm_cs_id"} = $arr;
       $self->{'sr_id_cache'}->{"$asm_seq_region_id"} = $arr;
     }
   }
