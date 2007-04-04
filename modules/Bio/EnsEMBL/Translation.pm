@@ -227,14 +227,14 @@ sub end_Exon {
 
 =head2 cdna_start
 
-    Arg  [1]    : Bio::EnsEMBL::Transcript (optional).  The
-                  transcript which this is a translation of.  If
-                  no transcript is given, the method will use
-                  TranscriptAdaptor->fetch_by_translation_id() to locate
-                  the correct transcript.
+    Arg  [1]    : (optional) Bio::EnsEMBL::Transcript $transcript
+                  The transcript which this is a translation of.
     Example     : $translation_cdna_start = $translation->cdna_start();
     Description : Returns the start position of the translation in cDNA
                   coordinates.
+                  If no transcript is given, the method will use
+                  TranscriptAdaptor->fetch_by_translation_id() to locate
+                  the correct transcript.
     Return type : Integer
     Exceptions  : Throws if the given (optional) argument is not a
                   transcript.
@@ -249,8 +249,8 @@ sub cdna_start {
 
     if ( defined $transcript
          && (    !ref $transcript
-              || !$transcript->isa('Bio::EnsEMBL::Transcript') )
-      ) {
+              || !$transcript->isa('Bio::EnsEMBL::Transcript') ) )
+    {
         throw("Argument is not a transcript");
     }
 
@@ -276,14 +276,14 @@ sub cdna_start {
 
 =head2 cdna_end
 
-    Arg  [1]    : Bio::EnsEMBL::Transcript (optional).  The
-                  transcript which this is a translation of.  If
-                  no transcript is given, the method will use
-                  TranscriptAdaptor->fetch_by_translation_id() to locate
-                  the correct transcript.
+    Arg  [1]    : (optional) Bio::EnsEMBL::Transcript $transcript
+                  The transcript which this is a translation of.
     Example     : $translation_cdna_end = $translation->cdna_end();
     Description : Returns the end position of the translation in cDNA
                   coordinates.
+                  If no transcript is given, the method will use
+                  TranscriptAdaptor->fetch_by_translation_id() to locate
+                  the correct transcript.
     Return type : Integer
     Exceptions  : Throws if the given (optional) argument is not a
                   transcript.
@@ -298,8 +298,8 @@ sub cdna_end {
 
     if ( defined $transcript
          && (    !ref $transcript
-              || !$transcript->isa('Bio::EnsEMBL::Transcript') )
-      ) {
+              || !$transcript->isa('Bio::EnsEMBL::Transcript') ) )
+    {
         throw("Argument is not a transcript");
     }
 
