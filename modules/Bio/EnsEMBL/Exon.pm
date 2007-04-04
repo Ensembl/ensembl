@@ -357,13 +357,15 @@ sub strand {
 
 =head2 cdna_start
 
-    Arg 1       : Bio::EnsEMBL::Transcript
-                  Since an exon may be part of one or more transcripts,
-                  the relevant transcript must be given as argument ot
-                  this method.
+    Arg [1]     : Bio::EnsEMBL::Transcript $transcript
+                  The transcript for which cDNA coordinates should be
+                  relative to.
     Example     : $cdna_start = $exon->cdna_start($transcript);
     Description : Returns the start position of the exon in cDNA
                   coordinates.
+                  Since an exon may be part of one or more transcripts,
+                  the relevant transcript must be given as argument to
+                  this method.
     Return type : Integer
     Exceptions  : Throws if the given argument is not a transcript.
                   Throws if the first part of the exon maps into a gap.
@@ -379,7 +381,8 @@ sub cdna_start {
 
     if (    !defined $transcript
          || !ref $transcript
-         || !$transcript->isa('Bio::EnsEMBL::Transcript') ) {
+         || !$transcript->isa('Bio::EnsEMBL::Transcript') )
+    {
         throw("Argument is not a transcript");
     }
 
@@ -406,13 +409,15 @@ sub cdna_start {
 
 =head2 cdna_end
 
-    Arg 1       : Bio::EnsEMBL::Transcript
-                  Since an exon may be part of one or more transcripts,
-                  the relevant transcript must be given as argument ot
-                  this method.
+    Arg [1]     : Bio::EnsEMBL::Transcript $transcript
+                  The transcript for which cDNA coordinates should be
+                  relative to.
     Example     : $cdna_end = $exon->cdna_end($transcript);
     Description : Returns the end position of the exon in cDNA
                   coordinates.
+                  Since an exon may be part of one or more transcripts,
+                  the relevant transcript must be given as argument to
+                  this method.
     Return type : Integer
     Exceptions  : Throws if the given argument is not a transcript.
                   Throws if the last part of the exon maps into a gap.
@@ -428,7 +433,8 @@ sub cdna_end {
 
     if (    !defined $transcript
          || !ref $transcript
-         || !$transcript->isa('Bio::EnsEMBL::Transcript') ) {
+         || !$transcript->isa('Bio::EnsEMBL::Transcript') )
+    {
         throw("Argument is not a transcript");
     }
 
@@ -454,14 +460,16 @@ sub cdna_end {
 
 =head2 cdna_coding_start
 
-    Arg 1       : Bio::EnsEMBL::Transcript
-                  Since an exon may be part of one or more transcripts,
-                  the relevant transcript must be given as argument ot
-                  this method.
+    Arg [1]     : Bio::EnsEMBL::Transcript $transcript
+                  The transcript for which cDNA coordinates should be
+                  relative to.
     Example     : $cdna_coding_start = $exon->cdna_coding_start($transcript);
     Description : Returns the start position of the coding region of the
                   exon in cDNA coordinates.  Returns undef if the whole
                   exon is non-coding.
+                  Since an exon may be part of one or more transcripts,
+                  the relevant transcript must be given as argument to
+                  this method.
     Return type : Integer or undef
     Exceptions  : Throws if the given argument is not a transcript.
     Caller      : General
@@ -475,7 +483,8 @@ sub cdna_coding_start {
 
     if (    !defined $transcript
          || !ref $transcript
-         || !$transcript->isa('Bio::EnsEMBL::Transcript') ) {
+         || !$transcript->isa('Bio::EnsEMBL::Transcript') )
+    {
         throw("Argument is not a transcript");
     }
 
@@ -508,7 +517,8 @@ sub cdna_coding_start {
               # exon.
 
                 if ( $transcript_coding_start <=
-                     $self->cdna_end($transcript) ) {
+                     $self->cdna_end($transcript) )
+                {
                     # Coding region starts within this exon.
                     $self->{'cdna_coding_start'}->{$transcript_id} =
                       $transcript_coding_start;
@@ -526,14 +536,16 @@ sub cdna_coding_start {
 
 =head2 cdna_coding_end
 
-    Arg 1       : Bio::EnsEMBL::Transcript
-                  Since an exon may be part of one or more transcripts,
-                  the relevant transcript must be given as argument ot
-                  this method.
+    Arg [1]     : Bio::EnsEMBL::Transcript $transcript
+                  The transcript for which cDNA coordinates should be
+                  relative to.
     Example     : $cdna_coding_end = $exon->cdna_coding_end($transcript);
     Description : Returns the end position of the coding region of the
                   exon in cDNA coordinates.  Returns undef if the whole
                   exon is non-coding.
+                  Since an exon may be part of one or more transcripts,
+                  the relevant transcript must be given as argument to
+                  this method.
     Return type : Integer or undef
     Exceptions  : Throws if the given argument is not a transcript.
     Caller      : General
@@ -547,7 +559,8 @@ sub cdna_coding_end {
 
     if (    !defined $transcript
          || !ref $transcript
-         || !$transcript->isa('Bio::EnsEMBL::Transcript') ) {
+         || !$transcript->isa('Bio::EnsEMBL::Transcript') )
+    {
         throw("Argument is not a transcript");
     }
 
@@ -580,7 +593,8 @@ sub cdna_coding_end {
                 # exon.
 
                 if ( $transcript_coding_end >=
-                     $self->cdna_start($transcript) ) {
+                     $self->cdna_start($transcript) )
+                {
                     # Coding region ends within this exon.
                     $self->{'cdna_coding_end'}->{$transcript_id} =
                       $transcript_coding_end;
@@ -598,15 +612,15 @@ sub cdna_coding_end {
 
 =head2 coding_region_start
 
-    Arg 1       : Bio::EnsEMBL::Transcript
-                  Since an exon may be part of one or more transcripts,
-                  the relevant transcript must be given as argument ot
-                  this method.
+    Arg [1]     : Bio::EnsEMBL::Transcript $transcript
     Example     : $coding_region_start =
                     $exon->coding_region_start($transcript);
     Description : Returns the start position of the coding region of the
                   exon in genomic coordinates on the forward strand.
                   Returns undef if the whole exon is non-coding.
+                  Since an exon may be part of one or more transcripts,
+                  the relevant transcript must be given as argument to
+                  this method.
     Return type : Integer or undef
     Exceptions  : Throws if the given argument is not a transcript.
     Caller      : General
@@ -614,7 +628,7 @@ sub cdna_coding_end {
 
 =cut
 
-# This implementation of this method is analogous to the implementation
+# The implementation of this method is analogous to the implementation
 # of cdna_coding_start().
 
 sub coding_region_start {
@@ -623,7 +637,8 @@ sub coding_region_start {
 
     if (    !defined $transcript
          || !ref $transcript
-         || !$transcript->isa('Bio::EnsEMBL::Transcript') ) {
+         || !$transcript->isa('Bio::EnsEMBL::Transcript') )
+    {
         throw("Argument is not a transcript");
     }
 
@@ -674,15 +689,15 @@ sub coding_region_start {
 
 =head2 coding_region_end
 
-    Arg 1       : Bio::EnsEMBL::Transcript
-                  Since an exon may be part of one or more transcripts,
-                  the relevant transcript must be given as argument ot
-                  this method.
+    Arg [1]     : Bio::EnsEMBL::Transcript $transcript
     Example     : $coding_region_end =
                     $exon->coding_region_end($transcript);
     Description : Returns the end position of the coding region of the
                   exon in genomic coordinates on the forward strand.
                   Returns undef if the whole exon is non-coding.
+                  Since an exon may be part of one or more transcripts,
+                  the relevant transcript must be given as argument to
+                  this method.
     Return type : Integer or undef
     Exceptions  : Throws if the given argument is not a transcript.
     Caller      : General
@@ -690,7 +705,7 @@ sub coding_region_start {
 
 =cut
 
-# This implementation of this method is analogous to the implementation
+# The implementation of this method is analogous to the implementation
 # of cdna_coding_end().
 
 sub coding_region_end {
@@ -699,7 +714,8 @@ sub coding_region_end {
 
     if (    !defined $transcript
          || !ref $transcript
-         || !$transcript->isa('Bio::EnsEMBL::Transcript') ) {
+         || !$transcript->isa('Bio::EnsEMBL::Transcript') )
+    {
         throw("Argument is not a transcript");
     }
 
