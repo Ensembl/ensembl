@@ -136,7 +136,7 @@ $support->check_required_params(
 
 # first set connection parameters for alternative db if not different from
 # reference db
-map { $support->param("alt$_", $support->param($_)) unless ($support->param("alt$_")) } qw(host port user pass);
+map { $support->param("alt$_", $support->param($_)) unless ($support->param("alt$_")) } qw(host port user);
 
 # reference database
 my $R_dba = $support->get_database('ensembl');

@@ -475,11 +475,8 @@ sub adjust_coords {
 
 =head2 filter_overlaps
 
-  Description : Filters overlapping query (i.e. reference) sequences in
-                alignments. Longer alignments are are given preference.
-  Return type : none
-  Exceptions  : none
-  Caller      : internal
+  Description : DEPRECATED. This filtering algorithm didn't work well. Please
+                run the separate script fix_overlaps.pl.
 
 =cut
 
@@ -513,7 +510,7 @@ sub filter_overlaps {
         # guarantee that)
         my $last;
         foreach my $c (@A_sort) {
-            $self->support->log_warning("Overlapping alternatvie alignment at ".join(':', $R_chr, $c->[0], $c->[1])." (last_end ".$last->[1].")\n", 1) if ($last and $c->[0] <= $last->[1]);
+            $self->support->log_warning("Overlapping alternative alignment at ".join(':', $R_chr, $c->[0], $c->[1])." (last_end ".$last->[1].")\n", 1) if ($last and $c->[0] <= $last->[1]);
             $last = $c;
         }
 

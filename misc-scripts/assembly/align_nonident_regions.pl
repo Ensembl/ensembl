@@ -64,7 +64,6 @@ Alignments are calculated by this algorithm:
     4. filter best hits (for query sequences, i.e. alternative regions) using
        axtBest
     5. parse blastz output to create blocks of exact matches only
-    6. remove overlapping target (reference) alignments
     7. write alignments to assembly table
 
 =head1 RELATED FILES
@@ -286,7 +285,7 @@ $support->log_stamped("Done.\n");
 
 # filter overlapping Vega alignment regions
 $support->log_stamped("Filtering overlapping reference alignment regions...\n");
-$aligner->filter_overlaps;
+#$aligner->filter_overlaps;
 $support->log_stamped("Done.\n");
 
 # write alignments to assembly table
