@@ -23,7 +23,7 @@ Bio::EnsEMBL::Attribute - A generic Attribute class.
 
   print $attrib->name(), "\n";
   print $attrib->code(), "\n";
-  print $attrib->desc(), "\n";
+  print $attrib->description(), "\n";
   print $attrib->value(), "\n";
 
 =head1 DESCRIPTION
