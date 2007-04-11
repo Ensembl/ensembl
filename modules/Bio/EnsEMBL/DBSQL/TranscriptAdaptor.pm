@@ -1327,8 +1327,10 @@ sub fetch_all_by_exon_supporting_evidence {
     throw("feature type must be dna_align_feature or protein_align_feature");
   }
 
-  my $anal_from = ", analysis a " if ($analysis);
-  my $anal_where = "AND a.analysis_id = f.analysis_id AND a.analysis_id=? "
+  my $anal_from = "";
+  $anal_from = ", analysis a " if ($analysis);
+  my $anal_where = "";
+  $anal_where = "AND a.analysis_id = f.analysis_id AND a.analysis_id=? "
     if ($analysis);
 
   my $sql = qq(
@@ -1391,8 +1393,10 @@ sub fetch_all_by_transcript_supporting_evidence {
     throw("feature type must be dna_align_feature or protein_align_feature");
   }
 
-  my $anal_from = ", analysis a " if ($analysis);
-  my $anal_where = "AND a.analysis_id = f.analysis_id AND a.analysis_id=? "
+  my $anal_from = "";
+  $anal_from = ", analysis a " if ($analysis);
+  my $anal_where = "";
+  $anal_from = "AND a.analysis_id = f.analysis_id AND a.analysis_id=? "
     if ($analysis);
 
   my $sql = qq(
