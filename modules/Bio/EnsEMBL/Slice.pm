@@ -2611,6 +2611,10 @@ sub get_all_Haplotypes {
 }
 
 
+sub get_all_DASFactories {
+   my $self = shift;
+   return [ $self->adaptor()->db()->_each_DASFeatureFactory ];
+}
 
 =head2 get_all_DASFeatures
 
@@ -2640,8 +2644,48 @@ sub get_all_DASFeatures_dsn {
   return [ $X[0]->fetch_all_Features( $self, $source_type ) ];
 }
 
+sub get_all_DAS_Features{
+  my ($self) = @_;
+
+  $self->{_das_features} ||= {}; # Cache
+  $self->{_das_styles} ||= {}; # Cache
+  $self->{_das_segments} ||= {}; # Cache
+  my %das_features;
+  my %das_styles;
+  my %das_segments;
+  my $slice = $self;
+
+  foreach my $dasfact( @{$self->get_all_DASFactories} ){
+    my $dsn = $dasfact->adaptor->dsn;
+    my $name = $dasfact->adaptor->name;
+    my $type = $dasfact->adaptor->type;
+    my $url = $dasfact->adaptor->url;
+
+    # Construct a cache key : SOURCE_URL/TYPE
+    # Need the type to handle sources that serve multiple types of features
+
+    my $key = join('/', $name, $type);
+    if( $self->{_das_features}->{$key} ){ # Use cached
+        $das_features{$name} = $self->{_das_features}->{$key};
+        $das_styles{$name} = $self->{_das_styles}->{$key};
+        $das_segments{$name} = $self->{_das_segments}->{$key};
+    } else { # Get fresh data
+        my ($featref, $styleref, $segref) = $dasfact->fetch_all_Features( $slice, $type );
+        $self->{_das_features}->{$key} = $featref;
+        $self->{_das_styles}->{$key} = $styleref;
+        $self->{_das_segments}->{$key} = $segref;
+        $das_features{$name} = $featref;
+        $das_styles{$name} = $styleref;
+        $das_segments{$name} = $segref;
+    }
+  }
+
+  return (\%das_features, \%das_styles, \%das_segments);
+}
+
 sub get_all_DASFeatures{
    my ($self, $source_type) = @_;
+
 
   if(!$self->adaptor()) {
     warning("Cannot retrieve features without attached adaptor");

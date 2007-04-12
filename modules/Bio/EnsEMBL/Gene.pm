@@ -1027,37 +1027,8 @@ sub get_all_DASFactories {
 
 sub get_all_DAS_Features{
   my ($self, @args) = @_;
-
-  $self->{_das_features} ||= {}; # Cache
-  my %das_features;
-
   my $slice = $self->feature_Slice;
-return $self->SUPER::get_all_DAS_Features($slice);
-
-  foreach my $dasfact( @{$self->get_all_DASFactories} ){
-    my $dsn = $dasfact->adaptor->dsn;
-    my $name = $dasfact->adaptor->name;
-    my $type = $dasfact->adaptor->type;
-    my $url = $dasfact->adaptor->url;
-
-    # Construct a cache key : SOURCE_URL/TYPE
-    # Need the type to handle sources that serve multiple types of features
-
-    my $key = $url || $dasfact->adaptor->protocol .'://'.$dasfact->adaptor->domain;
-    $key .= "/$dsn/$type";
-
-    if( $self->{_das_features}->{$key} ){ # Use cached
-	$das_features{$name} = $self->{_das_features}->{$key};
-	next;
-    } else { # Get fresh data
-	my $featref = ($type =~ /^ensembl_location/) ?  ($dasfact->fetch_all_Features( $slice, $type ))[0] : $dasfact->fetch_all_by_ID( $self );
-        # my $featref = ($type eq 'ensembl_location') ?  ($dasfact->fetch_all_by_Slice( $slice ))[0] : $dasfact->fetch_all_by_ID( $self );
-	$self->{_das_features}->{$key} = $featref;
-	$das_features{$name} = $featref;
-    }
-  }
-
-  return \%das_features;
+  return $self->SUPER::get_all_DAS_Features($slice);
 }
 
 

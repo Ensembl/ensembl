@@ -187,8 +187,10 @@ sub get_all_DAS_Features{
 
   $self->{_das_features} ||= {}; # Cache
   $self->{_das_styles} ||= {}; # Cache
+  $self->{_das_segments} ||= {}; # Cache
   my %das_features;
   my %das_styles;
+  my %das_segments;
 
   foreach my $dasfact( @{$self->get_all_DASFactories} ){
     my $dsn = $dasfact->adaptor->dsn;
@@ -204,16 +206,21 @@ sub get_all_DAS_Features{
     if( $self->{_das_features}->{$key} ){ # Use cached
         $das_features{$name} = $self->{_das_features}->{$key};
         $das_styles{$name} = $self->{_das_styles}->{$key};
+        $das_segments{$name} = $self->{_das_segments}->{$key};
     } else { # Get fresh data
-        my ($featref, $styleref) = ($type =~ /^ensembl_location/) ?  ($dasfact->fetch_all_Features( $slice, $type ))[0] : $dasfact->fetch_all_by_ID( $self );
+  
+        my ($featref, $styleref, $segref) = ($type =~ /^ensembl_location/) ?  ($dasfact->fetch_all_Features( $slice, $type )) : $dasfact->fetch_all_by_ID( $self );
+   
         $self->{_das_features}->{$key} = $featref;
         $self->{_das_styles}->{$key} = $styleref;
+        $self->{_das_segments}->{$key} = $segref;
         $das_features{$name} = $featref;
         $das_styles{$name} = $styleref;
+        $das_segments{$name} = $segref;
     }
   }
 
-  return (\%das_features, \%das_styles);
+  return (\%das_features, \%das_styles, \%das_segments);
 }
 
 
