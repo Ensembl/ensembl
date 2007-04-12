@@ -1,6 +1,6 @@
 
 #
-# BioPerl module for Bio::EnsEMBL::Util::Eprof
+# BioPerl module for Bio::EnsEMBL::Utils::Eprof
 #
 # Cared for by Ewan Birney <birney@ebi.ac.uk>
 #
@@ -12,7 +12,7 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::Util::Eprof - Bespoke Ensembl profiler
+Bio::EnsEMBL::Utils::Eprof - Bespoke Ensembl profiler
 
 =head1 SYNOPSIS
 
