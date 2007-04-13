@@ -512,11 +512,15 @@ sub transform {
 sub get_all_DBEntries {
   my $self = shift;
   my $ex_db_exp = shift;
+  my $info_type = shift;
 
   my $cache_name = "dbentries";
 
   if(defined($ex_db_exp)){
     $cache_name .= $ex_db_exp;
+  }
+  if(defined($info_type)){
+    $cache_name .= $info_type;
   }
 
   # if not cached, retrieve all of the xrefs for this gene
@@ -527,7 +531,7 @@ sub get_all_DBEntries {
     return [] if(!$adaptor || !$dbID);
 
     $self->{$cache_name} =
-      $self->adaptor->db->get_DBEntryAdaptor->fetch_all_by_Translation($self, $ex_db_exp);
+      $self->adaptor->db->get_DBEntryAdaptor->fetch_all_by_Translation($self, $ex_db_exp, $info_type);
   }
 
   $self->{$cache_name} ||= [];

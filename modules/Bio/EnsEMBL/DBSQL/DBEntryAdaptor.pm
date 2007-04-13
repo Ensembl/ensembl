@@ -477,6 +477,7 @@ sub exists {
   Arg [1]    : Bio::EnsEMBL::Gene $gene 
                (The gene to retrieve DBEntries for)
   Arg [2]    : optional external database name
+  Arg [3]    : optional info type 
   Example    : @db_entries = @{$db_entry_adaptor->fetch_by_Gene($gene)};
   Description: This returns a list of DBEntries associated with this gene.
                Note that this method was changed in release 15.  Previously
@@ -492,13 +493,13 @@ sub exists {
 =cut
 
 sub fetch_all_by_Gene {
-  my ( $self, $gene, $ex_db_reg ) = @_;
+  my ( $self, $gene, $ex_db_reg, $info_type ) = @_;
 
   if(!ref($gene) || !$gene->isa('Bio::EnsEMBL::Gene')) {
     throw("Bio::EnsEMBL::Gene argument expected.");
   }
 
-  return $self->_fetch_by_object_type($gene->dbID(), 'Gene', $ex_db_reg);
+  return $self->_fetch_by_object_type($gene->dbID(), 'Gene', $ex_db_reg, $info_type);
 }
 
 
@@ -506,6 +507,7 @@ sub fetch_all_by_Gene {
 
   Arg [1]    : Bio::EnsEMBL::Transcript
   Arg [2]    : optional external database name
+  Arg [3]    : optional info type 
   Example    : @db_entries = @{$db_entry_adaptor->fetch_by_Gene($trans)};
   Description: This returns a list of DBEntries associated with this 
                transcript. Note that this method was changed in release 15.  
@@ -521,13 +523,13 @@ sub fetch_all_by_Gene {
 =cut
 
 sub fetch_all_by_Transcript {
-  my ( $self, $trans, $ex_db_reg ) = @_;
+  my ( $self, $trans, $ex_db_reg, $info_type ) = @_;
 
   if(!ref($trans) || !$trans->isa('Bio::EnsEMBL::Transcript')) {
     throw("Bio::EnsEMBL::Transcript argument expected.");
   }
 
-  return $self->_fetch_by_object_type( $trans->dbID(), 'Transcript', $ex_db_reg);
+  return $self->_fetch_by_object_type( $trans->dbID(), 'Transcript', $ex_db_reg, $info_type);
 }
 
 
@@ -536,6 +538,7 @@ sub fetch_all_by_Transcript {
   Arg [1]    : Bio::EnsEMBL::Translation $trans
                (The translation to fetch database entries for)
   Arg [2]    : optional external database name
+  Arg [3]    : optional info type 
   Example    : @db_entries = @{$db_entry_adptr->fetch_by_Translation($trans)};
   Description: Retrieves external database entries for an EnsEMBL translation
   Returntype : listref of Bio::EnsEMBL::DBEntries; may be of type IdentityXref if
@@ -547,7 +550,7 @@ sub fetch_all_by_Transcript {
 =cut
 
 sub fetch_all_by_Translation {
-  my ( $self, $trans, $ex_db_reg ) = @_;
+  my ( $self, $trans, $ex_db_reg, $info_type ) = @_;
 
   if(!ref($trans) || !$trans->isa('Bio::EnsEMBL::Translation')) {
     throw('Bio::EnsEMBL::Translation argument expected.');
@@ -557,7 +560,7 @@ sub fetch_all_by_Translation {
     return [];
   }
 
-  return $self->_fetch_by_object_type( $trans->dbID(), 'Translation', $ex_db_reg );
+  return $self->_fetch_by_object_type( $trans->dbID(), 'Translation', $ex_db_reg, $info_type );
 }
 
 
@@ -681,7 +684,7 @@ sub remove_from_object {
 =cut
 
 sub _fetch_by_object_type {
-  my ( $self, $ensID, $ensType, $exdbname ) = @_;
+  my ( $self, $ensID, $ensType, $exdbname, $infotype ) = @_;
   my @out;
 
   if (!defined($ensID)) {
@@ -713,6 +716,7 @@ sub _fetch_by_object_type {
       AND  oxr.ensembl_object_type = ?
 SSQL
   $sql .= " AND exDB.db_name like '".$exdbname."' " if($exdbname);
+  $sql .= " AND xref.info_type like '".$infotype."' " if($infotype);
   my $sth = $self->prepare($sql);
 
   $sth->bind_param(1,$ensID,SQL_INTEGER);
@@ -737,6 +741,8 @@ SSQL
 		    'display_id' => $displayid,
 		    'version'    => $version,
 		    'release'    => $release,
+		    'info_type'  => $info_type,
+		    'info_text'  => $info_text,
 		    'dbname'     => $dbname );
 
 
@@ -778,8 +784,6 @@ SSQL
       $exDB->display_id_linkable($display_id_linkable);
       $exDB->priority($priority);
       $exDB->db_display_name($exDB_db_display_name);
-      $exDB->info_type($info_type);
-      $exDB->info_text($info_text);
       $exDB->type($type);
 
       push( @out, $exDB );
