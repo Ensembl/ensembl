@@ -3,7 +3,7 @@ use warnings;
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 43;
+	plan tests => 58;
 }
 
 use Bio::EnsEMBL::Test::MultiTestDB;
@@ -67,6 +67,7 @@ debug( " $goxref_count GoXrefs, $ident_count identityXrefs." );
 #
 # 3 as many dblinks as entries in object_xref
 #
+print $db_entry_count."\t".$xref_count."\n";
 ok( $db_entry_count == $xref_count );
 
 #
@@ -335,6 +336,73 @@ ok($go_total - $go_count   == count_rows($db, 'go_xref'));
 ok($id_total - $id_count   == count_rows($db, 'identity_xref'));
 
 $multi->restore('core', 'object_xref', 'identity_xref', 'go_xref');
+
+
+# new info type checks
+
+# fetch_all_by Gene Transcript Translation
+
+# transclation info type
+
+$translation = $ta->fetch_by_dbID(21737)->translation;
+$dbes = $translation->get_all_DBEntries(undef,"DEPENDENT");
+
+ok(@$dbes == 2); # test 44
+
+$dbes = $translation->get_all_DBLinks(undef,"DEPENDENT");
+ok(@$dbes == 2);
+
+$dbes = $translation->get_all_DBLinks(undef,"SEQUENCE_MATCH");
+ok(@$dbes == 1);
+
+$dbes = $translation->get_all_DBLinks(undef,"INFERRED_PAIR");
+ok(@$dbes == 1);
+
+$dbes = $translation->get_all_DBLinks(undef,"RUBBISH");
+ok(@$dbes == 0);
+
+
+
+# transcript info type
+
+my $transcript = $ta->fetch_by_dbID(21737);
+$dbes = $transcript->get_all_DBEntries(undef,"DEPENDENT");
+
+ok(@$dbes == 0); # test 49
+
+$dbes = $transcript->get_all_DBLinks(undef,"DEPENDENT");
+ok(@$dbes == 2);
+
+$dbes = $transcript->get_all_DBLinks(undef,"SEQUENCE_MATCH");
+ok(@$dbes == 1);
+
+$dbes = $transcript->get_all_DBLinks(undef,"INFERRED_PAIR");
+ok(@$dbes == 1);
+
+$dbes = $transcript->get_all_DBLinks(undef,"RUBBISH");
+ok(@$dbes == 0);
+
+
+
+# gene info type
+
+$gene = $ga->fetch_by_dbID(18272);
+$dbes = $gene->get_all_DBEntries(undef,"DEPENDENT");
+
+ok(@$dbes == 0); # test 54
+
+$dbes = $gene->get_all_DBLinks(undef,"DEPENDENT");
+ok(@$dbes == 2);
+
+$dbes = $gene->get_all_DBLinks(undef,"SEQUENCE_MATCH");
+ok(@$dbes == 1);
+
+$dbes = $gene->get_all_DBLinks(undef,"INFERRED_PAIR");
+ok(@$dbes == 1);
+
+$dbes = $gene->get_all_DBLinks(undef,"RUBBISH");
+ok(@$dbes == 0);
+
 
 
 sub print_dbEntries {
