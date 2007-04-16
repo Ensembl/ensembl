@@ -338,24 +338,25 @@ ok($id_total - $id_count   == count_rows($db, 'identity_xref'));
 $multi->restore('core', 'object_xref', 'identity_xref', 'go_xref');
 
 
-# new info type checks
+# new type checks
 
 # fetch_all_by Gene Transcript Translation
 
 # transclation info type
 
 $translation = $ta->fetch_by_dbID(21737)->translation;
-$dbes = $translation->get_all_DBEntries(undef,"DEPENDENT");
+$dbes = $translation->get_all_DBEntries(undef,"MISC");
 
-ok(@$dbes == 2); # test 44
+ok(@$dbes == 19); # test 44
 
-$dbes = $translation->get_all_DBLinks(undef,"DEPENDENT");
-ok(@$dbes == 2);
 
-$dbes = $translation->get_all_DBLinks(undef,"SEQUENCE_MATCH");
-ok(@$dbes == 1);
+$dbes = $translation->get_all_DBLinks(undef,"MISC");
+ok(@$dbes == 19);
 
-$dbes = $translation->get_all_DBLinks(undef,"INFERRED_PAIR");
+$dbes = $translation->get_all_DBLinks(undef,"ALT_TRANS");
+ok(@$dbes == 9);
+
+$dbes = $translation->get_all_DBLinks(undef,"ARRAY");
 ok(@$dbes == 1);
 
 $dbes = $translation->get_all_DBLinks(undef,"RUBBISH");
@@ -363,20 +364,20 @@ ok(@$dbes == 0);
 
 
 
-# transcript info type
+# transcript external type
 
 my $transcript = $ta->fetch_by_dbID(21737);
-$dbes = $transcript->get_all_DBEntries(undef,"DEPENDENT");
+$dbes = $transcript->get_all_DBEntries(undef,"MISC");
 
 ok(@$dbes == 0); # test 49
 
-$dbes = $transcript->get_all_DBLinks(undef,"DEPENDENT");
-ok(@$dbes == 2);
+$dbes = $transcript->get_all_DBLinks(undef,"MISC");
+ok(@$dbes == 19);
 
-$dbes = $transcript->get_all_DBLinks(undef,"SEQUENCE_MATCH");
-ok(@$dbes == 1);
+$dbes = $transcript->get_all_DBLinks(undef,"ALT_TRANS");
+ok(@$dbes == 9);
 
-$dbes = $transcript->get_all_DBLinks(undef,"INFERRED_PAIR");
+$dbes = $transcript->get_all_DBLinks(undef,"ARRAY");
 ok(@$dbes == 1);
 
 $dbes = $transcript->get_all_DBLinks(undef,"RUBBISH");
@@ -384,20 +385,20 @@ ok(@$dbes == 0);
 
 
 
-# gene info type
+# gene external type
 
 $gene = $ga->fetch_by_dbID(18272);
-$dbes = $gene->get_all_DBEntries(undef,"DEPENDENT");
+$dbes = $gene->get_all_DBEntries(undef,"MISC");
 
 ok(@$dbes == 0); # test 54
 
-$dbes = $gene->get_all_DBLinks(undef,"DEPENDENT");
-ok(@$dbes == 2);
+$dbes = $gene->get_all_DBLinks(undef,"MISC");
+ok(@$dbes == 19);
 
-$dbes = $gene->get_all_DBLinks(undef,"SEQUENCE_MATCH");
-ok(@$dbes == 1);
+$dbes = $gene->get_all_DBLinks(undef,"ALT_TRANS");
+ok(@$dbes == 9);
 
-$dbes = $gene->get_all_DBLinks(undef,"INFERRED_PAIR");
+$dbes = $gene->get_all_DBLinks(undef,"ARRAY");
 ok(@$dbes == 1);
 
 $dbes = $gene->get_all_DBLinks(undef,"RUBBISH");

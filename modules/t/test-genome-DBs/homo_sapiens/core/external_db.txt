@@ -24,11 +24,11 @@
 6	GO	1	KNOWNXREF	1	0	5	GO	MISC
 5	HUGO	1	KNOWNXREF	0	1	100	HUGO	MISC
 11	Interpro	1	XREF	1	0	5	Interpro	MISC
-10	EntrezGene	1	KNOWNXREF	1	0	10	EntrezGene	MISC
+10	EntrezGene	1	KNOWNXREF	1	0	10	EntrezGene	ARRAY
 1400	MarkerSymbol	1	KNOWNXREF	1	0	50	MarkerSymbol	MISC
 4	MIM	1	KNOWNXREF	1	0	5	MIM	MISC
 8	PDB	1	KNOWNXREF	1	0	5	PDB	MISC
-3	protein_id	1	KNOWNXREF	1	0	5	Protein ID	MISC
+3	protein_id	1	KNOWNXREF	1	0	5	Protein ID	ALT_TRANS
 9	RefSeq_dna	1	KNOWN	1	0	25	RefSeq DNA	MISC
 1805	RefSeq_dna_predicted	1	PRED	1	0	15	RefSeq DNA predicted	MISC
 1810	RefSeq_peptide	1	KNOWN	1	0	26	RefSeq peptide	MISC
