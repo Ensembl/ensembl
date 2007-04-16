@@ -435,19 +435,19 @@ sub add_DBEntry {
 =cut
 
 sub get_all_DBEntries {
-  my ($self, $db_name_exp, $info_type) = @_;
+  my ($self, $db_name_exp, $ex_db_type) = @_;
   my $cache_name = "dbentries";
 
   if(defined($db_name_exp)){
     $cache_name .= $db_name_exp;
   }
-  if(defined($info_type)){
-    $cache_name .= $info_type;
+  if(defined($ex_db_type)){
+    $cache_name .= $ex_db_type;
   }
   # if not cached, retrieve all of the xrefs for this gene
   if(!defined $self->{$cache_name} && $self->adaptor()) {
     $self->{$cache_name} = 
-      $self->adaptor->db->get_DBEntryAdaptor->fetch_all_by_Gene($self,$db_name_exp,, $info_type);
+      $self->adaptor->db->get_DBEntryAdaptor->fetch_all_by_Gene($self,$db_name_exp, $ex_db_type);
   }
 
   $self->{$cache_name} ||= [];
@@ -483,16 +483,16 @@ sub get_all_DBEntries {
 sub get_all_DBLinks {
    my $self = shift;
    my $db_name_exp = shift;
-   my $info_type = shift;
+   my $ex_db_type = shift;
 
-   my @links = @{$self->get_all_DBEntries($db_name_exp, $info_type)};
+   my @links = @{$self->get_all_DBEntries($db_name_exp, $ex_db_type)};
 
    # add all of the transcript and translation xrefs to the return list
    foreach my $transc (@{$self->get_all_Transcripts}) {
-     push @links, @{$transc->get_all_DBEntries($db_name_exp, $info_type)};
+     push @links, @{$transc->get_all_DBEntries($db_name_exp, $ex_db_type)};
 
      my $transl = $transc->translation();
-     push @links, @{$transl->get_all_DBEntries($db_name_exp, $info_type)} if($transl);
+     push @links, @{$transl->get_all_DBEntries($db_name_exp, $ex_db_type)} if($transl);
    }
 
    return \@links;
