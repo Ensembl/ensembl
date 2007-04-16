@@ -122,6 +122,8 @@ sub AUTOLOAD {
   throw("The requested method $method could not be found in lite or snp" );
 }
 
+sub DESTROY {
+}
 
 1;
 
