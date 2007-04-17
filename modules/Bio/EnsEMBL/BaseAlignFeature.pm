@@ -330,7 +330,7 @@ sub reverse_complement {
   Status     : Medium Risk
              : deprecation needs to be removed at some time
 
-=cut
+# =cut
 
 sub transform {
   my $self = shift;
@@ -345,8 +345,9 @@ sub transform {
   }
 
   my $new_feature = $self->SUPER::transform( @_ );
-  if( ! defined $new_feature or 
-      $new_feature->length != $self->length) {
+  warn sprintf "%-40.40s  %d", $self,        $self->length;
+  warn sprintf "%-40.40s  %d", $new_feature, $new_feature->length;
+  if( ! defined $new_feature || $new_feature->length != $self->length) {
     my @segments = $self->project( @_ );
 
     return undef if( ! @segments );  

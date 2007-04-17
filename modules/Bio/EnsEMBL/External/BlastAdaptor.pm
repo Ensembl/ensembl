@@ -161,9 +161,7 @@ WHERE  hit_id = ? ";
 
 #--- HSPS ---
 
-our $SQL_HSP_STORE = "
-INSERT INTO blast_hsp%s ( object, ticket, chr_name, chr_start, chr_end )
-VALUES                  ( ? , ? , ? , ? , ? )";
+our $SQL_HSP_STORE = "INSERT INTO blast_hsp%s ( object, ticket, chr_name, chr_start, chr_end ) VALUES (?,?,?,?,?)";
 
 our $SQL_HSP_UPDATE = "
 UPDATE  blast_hsp%s
@@ -291,9 +289,13 @@ sub store {
 
 sub prepare {
   my $self = shift;
+#  warn( "==> ", $self->dbc->dbname, " ", $self->dbc->db_handle );
+#warn @_;
   my $T = $self->SUPER::prepare( @_ );
+#  warn( "<== ", $self->dbc->dbname, " ", $self->dbc->db_handle );
   return $T;
 }
+
 #----------------------------------------------------------------------
 
 =head2 retrieve
@@ -369,6 +371,7 @@ sub store_search_multi{
   my $frozen = shift || $search_multi->serialise;
 
   my $dbh  = $self->dbc->db_handle;
+#warn "STORING>............................";
   my $ticket  = $search_multi->token || $self->throw( "Bio::Tools::Run::EnsemblSearchMulti obj has no ticket" );
 
   my $sth = $self->prepare( $SQL_SEARCH_MULTI_RETRIEVE );
@@ -386,7 +389,6 @@ sub store_search_multi{
     $sth->execute( $frozen, $ticket ) || $self->throw( $sth->errstr );
     $sth->finish;
   }
-  my $sth = $self->prepare('show tables'); $sth->execute(); $sth->finish;
   return $search_multi->token();
 }
 
@@ -408,11 +410,10 @@ sub retrieve_search_multi {
   my $ticket = shift || $self->throw( "Need an EnsemblSearchMulti ticket" );  
 
   my $dbh  = $self->dbc->db_handle;
-warn $dbh;
-warn $SQL_SEARCH_MULTI_RETRIEVE;
   my $sth = $self->prepare( $SQL_SEARCH_MULTI_RETRIEVE );
-warn $sth;
+#warn "WRITING TICKET - $ticket...",length($ticket);
   my $rv  = $sth->execute( $ticket ) || $self->throw( $sth->errstr );
+#warn "TICKET RETRIEVED....";
   if( $rv < 1 ){ $self->throw( "Token $ticket not found" ) }
   my ( $frozen ) = $sth->fetchrow_array;
   $frozen || $self->throw( "Object from ticket $ticket is empty" );
@@ -480,6 +481,7 @@ sub store_result_2{
   my $ticket  = $self->ticket || warn("Result $id BlastAdaptor has no ticket");
 
   my $rv = 0;
+#  warn "DATE is $use_date";
   if( $ticket ){
     $sth = $self->prepare( sprintf $SQL_RESULT_RETRIEVE_TICKET, $use_date );
     $rv = $sth->execute( $ticket ) ||  $self->throw( $sth->errstr );
@@ -627,6 +629,7 @@ sub store_hsp{
   my $frozen = shift || $hsp->serialise;
 
   my $dbh  = $self->dbc->db_handle;
+
   my ( $id, $use_date ) = split( '!!', $hsp->token || '');
   $use_date ||= $hsp->use_date() || $hsp->use_date($self->use_date('HSP'));
 
@@ -636,6 +639,7 @@ sub store_hsp{
   my $chr_name  = '';
   my $chr_start = 0;
   my $chr_end   = 0;
+#warn ">...................................S";
   if( my $genomic = $hsp->genomic_hit ){
     $chr_name  = $genomic->seq_region_name;
     $chr_start = $genomic->start;
@@ -647,22 +651,38 @@ sub store_hsp{
     $rv = $sth->execute( $id ) ||  $self->throw( $sth->errstr );
     $sth->finish;
   }
+#warn ">...................................M";
   if( $rv < 1 ){ # Insert
+#warn "INSERT ", time();
     my $use_date = $hsp->use_date() || $hsp->use_date($self->use_date('HSP'));
-    my $sth = $self->prepare( 'show tables' ); $sth->execute(); $sth->finish();
-    $sth = $self->prepare( sprintf $SQL_HSP_STORE, $use_date );
+#warn time(),"  ",sprintf $SQL_HSP_STORE, $use_date;
+    my $sth = $self->prepare( sprintf $SQL_HSP_STORE, $use_date );
     my @bound = ( $frozen, $ticket, $chr_name,  $chr_start, $chr_end );
-    $sth->execute( @bound ) || $self->throw( $sth->errstr );
+#warn time(),"  ",length($frozen)," $ticket, $chr_name,  $chr_start, $chr_end";
+#warn $sth;
+    my $T = $sth->execute( @bound );
+#warn "EXECUTED.............";
+#warn $sth->errstr;
+    $T || $self->throw( $sth->errstr );
+#warn " ........................ .";
     my $id = $dbh->{mysql_insertid};
     $hsp->token( join( '!!', $id, $use_date ) );
+#warn "FINISHING";
     $sth->finish;
   }
   else{ # Update
+#warn "UPDATE";
     my $sth = $self->prepare( sprintf $SQL_HSP_UPDATE, $use_date );
+#warn sprintf $SQL_HSP_UPDATE, $use_date;
     my @bound = ( $frozen, $ticket, $chr_name,  $chr_start, $chr_end, $id );
-    $sth->execute( @bound ) || $self->throw( $sth->errstr );
+#warn length($frozen)," $ticket, $chr_name,  $chr_start, $chr_end, $id";
+    my $T = $sth->execute( @bound );
+#warn $T;
+    $T || $self->throw( $sth->errstr );
     $sth->finish;
+#warn $sth->errstr;
   }
+#warn ">...................................E";
   return $hsp->token();
 }
 
@@ -955,13 +975,13 @@ WHERE  update_time < SUBDATE( NOW(), INTERVAL $days DAY ) /;
 
   my @deletable_hit_tables;
   foreach my $row( @$res_res, @$hit_res, @$hsp_res ){
-    my $table_name  = $row->[0];  ## table name
-    my $num_rows    = $row->[4];  ## # Rows...
-    my $update_time = $row->[12]; ## update time ---  Should be a string like 2003-08-15 10:36:56
+    my $table_name  = $row->[0];
+    my $num_rows    = $row->[3];
+    my $update_time = $row->[11]; # Should be a string like 2003-08-15 10:36:56
     my @time = split( /[-:\s]/, $update_time );
     
     my $epoch_then = timelocal( $time[5], $time[4],   $time[3], 
-				$time[2], $time[1]-1, $time[0] - 1900 );
+                $time[2], $time[1]-1, $time[0] - 1900 );
     my $secs_old = time() - $epoch_then;
     my $days_old = $secs_old / ( 60 * 60 * 24 );
     if( $days_old > $days ){
@@ -971,10 +991,10 @@ WHERE  update_time < SUBDATE( NOW(), INTERVAL $days DAY ) /;
       $sth_drop->execute || $self->throw( $sth_drop->errstr );
       my( $se,$mi,$hr,$da,$mo,$yr ) = (localtime)[0,1,2,3,4,5];
       my $now = sprintf( "%4d-%2d-%2d %2d:%2d:%2d", 
-			 $yr+1900,$mo+1,$da,$hr,$mi,$se );
+             $yr+1900,$mo+1,$da,$hr,$mi,$se );
       $sth_log->execute
         ('DELETED',$now,$num_rows,$table_name) ||
-	  $self->throw( $sth_log->errstr );
+      $self->throw( $sth_log->errstr );
     }
   }
 
