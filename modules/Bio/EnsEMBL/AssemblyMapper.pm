@@ -97,6 +97,8 @@ sub new {
 
   $self->adaptor($adaptor);
 
+  $adaptor->cache_seq_ids_with_mult_assemblys();
+
   if(@coord_systems != 2) {
     throw('Can only map between 2 coordinate systems. ' .
           scalar(@coord_systems) . ' were provided');
@@ -108,6 +110,7 @@ sub new {
 
   #we load the mapper calling the 'ASSEMBLED' the 'from' coord system
   #and the 'COMPONENT' the 'to' coord system
+  
   $self->{'mapper'} = Bio::EnsEMBL::Mapper->new($ASSEMBLED, $COMPONENT,
                                                $coord_systems[0],
                                                $coord_systems[1]);
@@ -209,9 +212,7 @@ sub map {
   my $adaptor = $self->{'adaptor'};
   my $frm;
 
-  my @tmp;
-  push @tmp, $frm_seq_region_name;
-  my $seq_region_id = @{$self->adaptor()->seq_regions_to_ids($frm_cs, \@tmp)}[0];
+  my $seq_region_id = @{$self->adaptor()->seq_regions_to_ids($frm_cs, [$frm_seq_region_name])}[0];
 
 
   #speed critical section:

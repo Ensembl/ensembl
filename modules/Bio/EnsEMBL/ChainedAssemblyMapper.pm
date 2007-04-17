@@ -111,6 +111,8 @@ sub new {
           scalar(@coord_systems) . ' were provided');
   }
 
+  $adaptor->cache_seq_ids_with_mult_assemblys();
+
   # Set the component, intermediate and assembled coordinate systems
   $self->{'first_cs'}   = $coord_systems[0];
   $self->{'mid_cs'}   = $coord_systems[1];
@@ -137,7 +139,6 @@ sub new {
 
   return $self;
 }
-
 
 
 =head2 max_pair_count

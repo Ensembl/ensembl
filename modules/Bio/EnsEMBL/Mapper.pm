@@ -102,6 +102,10 @@ sub new {
   $self->{'from_cs'} = $from_cs;
   $self->{'to_cs'}   = $to_cs;
 
+
+# do sql to get any componente with muliple assemblys.
+
+
   return $self;
 }
 
@@ -213,13 +217,16 @@ sub map_coordinates{
      }
    }
 
+ 
+   
+   my $orig_start = $start;
    for( my $i = $start_idx; $i<=$#$lr; $i++ ) {
      $pair = $lr->[$i];
      my $self_coord   = $pair->{$from};
      my $target_coord = $pair->{$to};
 
      # if we haven't even reached the start, move on
-     if( $self_coord->{'end'} < $start ) {
+     if( $self_coord->{'end'} < $orig_start ) {
        next;
      }
      
@@ -521,11 +528,7 @@ sub add_map_coordinates{
   if( ($contig_end - $contig_start)  != ($chr_end - $chr_start) ) {
     throw("Cannot deal with mis-lengthed mappings so far");
   }
-  my $test = $contig_id;
-  $test =~ s/\d+//g;
 
-  $test = $chr_name;
-  $test =~ s/\d+//g;
 
   my $from =
     Bio::EnsEMBL::Mapper::Unit->new($contig_id, $contig_start, $contig_end);
@@ -936,8 +939,9 @@ sub _merge_pairs {
       }
       else{
 	  # duplicate filter
-	  if( $current_pair->{'to'}->{'start'} == $next_pair->{'to'}->{'start'} ) {
-	      $del_pair = $next_pair;
+	  if( $current_pair->{'to'}->{'start'} == $next_pair->{'to'}->{'start'} 
+	     and $current_pair->{'from'}->{'id'} == $next_pair->{'from'}->{'id'} ) {
+	    $del_pair = $next_pair;
 	  } elsif(( $current_pair->{'from'}->{'id'} eq $next_pair->{'from'}->{'id'} ) &&
 		  ( $next_pair->{'ori'} == $current_pair->{'ori'} ) &&
 		  ( $next_pair->{'to'}->{'start'} -1 == $current_pair->{'to'}->{'end'} )) {

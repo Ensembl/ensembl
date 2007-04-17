@@ -109,6 +109,48 @@ sub new {
 
 
 
+=head2  cache_seq_ids_with_mult_assemblys
+
+  Example    : $self->adaptor->cache_seq_ids_with_mult_assemblys();
+  Description: Creates a hash of the component seq region ids that 
+               map to more than one assembly from the assembly table.
+  Retruntype : none
+  Exceptions : none
+  Caller     : AssemblyMapper, ChainedAssemblyMapper
+  Status     : At Risk
+ 
+=cut
+
+sub cache_seq_ids_with_mult_assemblys{
+  my $self = shift;
+  my %multis;
+
+  return if (defined($self->{'multi_seq_ids'}));
+  $self->{'multi_seq_ids'} = {};
+
+  my $sql=(<<SQL);  
+    SELECT a.cmp_seq_region_id, count(*) as count 
+      FROM assembly a, seq_region s, coord_system c 
+	WHERE a.asm_seq_region_id=s.seq_region_id and 
+	  c.coord_system_id = s.coord_system_id
+        GROUP BY a.cmp_seq_region_id, s.coord_system_id HAVING count >= 2
+SQL
+
+  my $sth = $self->prepare($sql);
+
+  $sth->execute();
+
+  my ($seq_region_id, $count);
+
+  $sth->bind_columns(\$seq_region_id, \$count);
+
+  my %asm_registered;
+
+  while($sth->fetch()) {
+    $self->{'multi_seq_ids'}->{$seq_region_id} = $count;
+  }
+  $sth->finish;
+}
 
 
 =head2 fetch_by_CoordSystems
@@ -251,12 +293,6 @@ sub register_assembled {
   my $asm_start      = shift;
   my $asm_end        = shift;
 
-#  my $test = $asm_seq_region;
-#  $test =~ s/\d+//g;
-#  if(length($test) > 0 or $asm_seq_region < 1000){
-#    print STDERR "$asm_seq_region NOT INTEGER\n";
-#    print STDERR stack_trace_dump();
-#  }
   if(!ref($asm_mapper) || !$asm_mapper->isa('Bio::EnsEMBL::AssemblyMapper')) {
     throw("Bio::EnsEMBL::AssemblyMapper argument expected");
   }
@@ -380,7 +416,8 @@ sub register_assembled {
     # Load the unregistered regions of the mapper
     #
     while($sth->fetch()) {
-      next if($asm_mapper->have_registered_component($cmp_seq_region_id));
+      next if($asm_mapper->have_registered_component($cmp_seq_region_id) 
+               and !defined($self->{'multi_seq_ids'}->{$cmp_seq_region_id}));
       $asm_mapper->register_component($cmp_seq_region_id);
       $asm_mapper->mapper->add_map_coordinates(
                  $asm_seq_region, $asm_start, $asm_end,
@@ -517,8 +554,9 @@ sub register_component {
   my $cmp_cs_id = $asm_mapper->component_CoordSystem()->dbID();
   my $asm_cs_id = $asm_mapper->assembled_CoordSystem()->dbID();
 
-  #do nothing if this region is already registered
-  return if($asm_mapper->have_registered_component($cmp_seq_region));
+  #do nothing if this region is already registered or special case
+  return if($asm_mapper->have_registered_component($cmp_seq_region) 
+  and !defined($self->{'multi_seq_ids'}->{$cmp_seq_region}));
 
 #  my $cmp_seq_region_id =
 #    $self->_seq_region_name_to_id($cmp_seq_region, $cmp_cs_id);
@@ -663,7 +701,6 @@ sub register_chained {
 
   #the SQL varies depending on whether we are coming from assembled or
   #component coordinate system
-  #print STDERR "ASM SQL:";
   my $asm2cmp_sth = $self->prepare(
      'SELECT
          asm.cmp_start,
@@ -683,7 +720,6 @@ sub register_chained {
          asm.cmp_seq_region_id = sr.seq_region_id AND
 	 sr.coord_system_id = ?');
 
-  #print STDERR "CMP SQL:";
   my $cmp2asm_sth = $self->prepare(
       'SELECT
          asm.asm_start,
@@ -858,7 +894,6 @@ sub register_chained {
     $sth->bind_param(3,$end,SQL_INTEGER);
     $sth->bind_param(4,$end_cs_id,SQL_INTEGER);
     $sth->execute();
-    #print STDERR "bind vals=($mid_seq_region_id, $start, $end, $mid_cs_id)\n";
 
     #load the end <-> mid mapper with the results and record the mid cs
     #ranges we just added to the mapper
@@ -871,9 +906,6 @@ sub register_chained {
 		       \$mid_end);
 
     while($sth->fetch()) {
-      #print STDERR "Adding to end<->mid mapper:\n" .
-      #      "$end_seq_region:$end_start-$end_end<->$mid_seq_region:" .
-      #      "$mid_start-$mid_end($ori)\n";
       $end_mid_mapper->add_map_coordinates
         (
          $end_seq_region_id, $end_start, $end_end, $ori,
@@ -1173,7 +1205,6 @@ sub register_all_chained {
   
   if( ! defined $mid_cs ) {
     # thats it for the simple case
-    print STDERR "Loaded the combined mapper\n";
     return;
   }
 
@@ -1271,8 +1302,6 @@ sub _build_combined_mapper {
         next;
       }
 
-      #print STDERR "icoord: id=".$icoord->id." start=".$icoord->start." end=".
-      #             $icoord->end."\n";
 
       #feed the results of the first mapping into the second mapper
       my @final_coords =
@@ -1298,11 +1327,6 @@ sub _build_combined_mapper {
                         $seq_region_id, $total_start, $total_end);
           }
 
-          #print STDERR "  fcoord: id=".$fcoord->id." start=".
-          #  $fcoord->start." end=".$fcoord->end."\n";
-          #print STDERR "Loading combined mapper with : " ,
-          #  "$seq_region_name:$total_start-$total_end, ($ori) <-> "
-          #   .$fcoord->id.":".$fcoord->start."-".$fcoord->end."\n";
         }
         $sum += $fcoord->length();
       }
