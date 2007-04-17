@@ -291,10 +291,7 @@ sub store {
 
 sub prepare {
   my $self = shift;
-#  warn( "==> ", $self->dbc->dbname, " ", $self->dbc->db_handle );
-#warn @_;
   my $T = $self->SUPER::prepare( @_ );
-#  warn( "<== ", $self->dbc->dbname, " ", $self->dbc->db_handle );
   return $T;
 }
 #----------------------------------------------------------------------
