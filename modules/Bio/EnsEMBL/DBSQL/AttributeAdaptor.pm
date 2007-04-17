@@ -76,324 +76,76 @@ sub new {
   return $self;
 }
 
+use vars '$AUTOLOAD';
+
+sub AUTOLOAD {
+  my ($self,@args) = @_;
+  my @array_return=();
+  my $ref_return = undef;
+  $AUTOLOAD =~ /^.*::(\w+_)+(\w+)$/ ;
+
+  my $sub = $1;
+  my $type = $2;
 
 
-=head2 fetch_all_by_MiscFeature
 
-  Arg [1]    : Bio::EnsEMBL::MiscFeature $mf
-  Example    : @attributes = @{$attrib_adaptor->fetch_all_by_MiscFeature($mf)};
-  Description: Fetches all attributes for a given MiscFeature
-  Returntype : Bio::EnsEMBL::Attribute
-  Exceptions : throw if incorrect arguments
-               throw if provided MiscFeature does not have a dbID
-  Caller     : MiscFeature
-  Status     : Stable
+#  print STDERR "AUTO".$AUTOLOAD."\n";
 
-=cut
+#  print STDERR "AUTOLOAD reached with call to $sub of type $type\n";
+  if($self->can($sub)){
+    return $self->$sub($type,@args);
+  }
+  else{
+    warn("In AttribAdaptor cannot call sub $sub$type\n");
+  }
+  return undef;
+}
 
-sub fetch_all_by_MiscFeature {
+
+
+sub store_on_{
   my $self = shift;
-  my $mf   = shift;
-
-  if(!ref($mf) || !$mf->isa('Bio::EnsEMBL::MiscFeature')) {
-    throw('MiscFeature argument is required.');
-  }
-
-  my $mfid = $mf->dbID();
-
-  if(!defined($mfid)) {
-    throw("MiscFeature must have dbID.");
-  }
-
-  my $sth = $self->prepare("SELECT at.code, at.name, at.description, " .
-                           "       ma.value " .
-                           "FROM misc_attrib ma, attrib_type at " .
-                           "WHERE ma.misc_feature_id = ? " .
-                           "AND   at.attrib_type_id = ma.attrib_type_id");
-
-  $sth->bind_param(1,$mfid,SQL_INTEGER);
-  $sth->execute();
-
-  my $results = $self->_obj_from_sth($sth);
-
-  $sth->finish();
-
-  return $results;
-}
-
-
-=head2 fetch_all_by_Gene
-
-  Arg [1]    : Bio::EnsEMBL::Gene $gene
-  Example    : @attributes = @{ $attrib_adaptor->fetch_all_by_Gene($gene) };
-  Description: Fetches all attributes for a given Gene
-  Returntype : Bio::EnsEMBL::Attribute
-  Exceptions : throw if incorrect arguments
-               throw if provided MiscFeature does not have a dbID
-  Caller     : Gene
-  Status     : Stable
-
-=cut
-
-sub fetch_all_by_Gene {
-  my $self = shift;
-  my $gene = shift;
-
-  if(!ref($gene) || !$gene->isa('Bio::EnsEMBL::Gene')) {
-    throw('Gene argument is required.');
-  }
-
-  my $gid = $gene->dbID();
-
-  if(!defined($gid)) {
-    throw("Gene must have dbID.");
-  }
-
-  my $sth = $self->prepare("SELECT at.code, at.name, at.description, " .
-                           "       ga.value " .
-                           "FROM gene_attrib ga, attrib_type at " .
-                           "WHERE ga.gene_id = ? " .
-                           "AND   at.attrib_type_id = ga.attrib_type_id");
-
-  $sth->execute($gid);
-
-  my $results = $self->_obj_from_sth($sth);
-
-  $sth->finish();
-
-  return $results;
-}
-
-
-=head2 fetch_all_by_Transcript
-
-  Arg [1]    : Bio::EnsEMBL::Transcript $tr
-  Example    : @attributes = @{$attrib_adaptor->fetch_all_by_Transcript( $tr )};
-  Description: Fetches all attributes for a given Transcript
-  Returntype : Bio::EnsEMBL::Attribute
-  Exceptions : throw if incorrect arguments
-               throw if provided MiscFeature does not have a dbID
-  Caller     : Transcript
-  Status     : Stable
-
-=cut
-
-sub fetch_all_by_Transcript {
-  my $self = shift;
-  my $tr   = shift;
-
-  if(!ref($tr) || !$tr->isa('Bio::EnsEMBL::Transcript')) {
-    throw('Transcript argument is required.');
-  }
-
-  my $trid = $tr->dbID();
-
-  if(!defined($trid)) {
-    throw("Transcript must have dbID.");
-  }
-
-  my $sth = $self->prepare("SELECT at.code, at.name, at.description, " .
-                           "       ta.value " .
-                           "FROM transcript_attrib ta, attrib_type at " .
-                           "WHERE ta.transcript_id = ? " .
-                           "AND   at.attrib_type_id = ta.attrib_type_id");
-
-  $sth->bind_param(1,$trid,SQL_INTEGER);
-  $sth->execute();
-
-  my $results = $self->_obj_from_sth($sth);
-
-  $sth->finish();
-
-  return $results;
-}
-
-
-=head2 fetch_all_by_Translation
-
-  Arg [1]    : Bio::EnsEMBL::Translation $tl
-  Example    : @attributes = @{$attrib_adaptor->fetch_all_by_Translation( $tl )};
-  Description: Fetches all attributes for a given Translation
-  Returntype : Bio::EnsEMBL::Attribute
-  Exceptions : throw if incorrect arguments
-               throw if provided Translation does not have a dbID
-  Caller     : Transcript
-  Status     : Stable
-
-=cut
-
-sub fetch_all_by_Translation {
-  my $self = shift;
-  my $tl   = shift;
-
-  if(!ref($tl) || !$tl->isa('Bio::EnsEMBL::Translation')) {
-    throw('Translation argument is required.');
-  }
-
-  my $tlid = $tl->dbID();
-
-  if(!defined($tlid)) {
-    throw("Translation must have dbID.");
-  }
-
-  my $sth = $self->prepare("SELECT at.code, at.name, at.description, " .
-                           "       ta.value " .
-                           "FROM translation_attrib ta, attrib_type at " .
-                           "WHERE ta.translation_id = ? " .
-                           "AND   at.attrib_type_id = ta.attrib_type_id");
-
-  $sth->bind_param(1,$tlid,SQL_INTEGER);
-  $sth->execute();
-
-  my $results = $self->_obj_from_sth($sth);
-
-  $sth->finish();
-
-  return $results;
-}
-
-
-
-
-=head2 fetch_all_by_Slice
-
-  Arg [1]    : Bio::EnsEMBL::Slice $slice
-  Example    : @attributes = @{$attrib_adaptor->fetch_all_by_Slice($slice)};
-  Description: Fetches all attributes for a given sequence region (which the
-               passed in slice is on)
-  Returntype : Bio::EnsEMBL::Attribute
-  Exceptions : throw if incorrect arguments
-               throw if cannot get seq_region_id from provided Slice
-  Caller     : Slice
-  Status     : Stable
-
-=cut
-
-sub fetch_all_by_Slice {
-  my $self = shift;
-  my $slice = shift;
-
-  if(!ref($slice) || !$slice->isa('Bio::EnsEMBL::Slice')) {
-    throw('Slice argument is required.');
-  }
-
-  my $seq_region_id = $slice->get_seq_region_id();
-  if(!defined($seq_region_id)) {
-    throw("Could not get seq_region_id for provided slice: ".$slice->name());
-  }
-
-  my $sth = $self->prepare("SELECT at.code, at.name, at.description, " .
-                           "       sra.value " .
-                           "FROM seq_region_attrib sra, attrib_type at " .
-                           "WHERE sra.seq_region_id = ? " .
-                           "AND   at.attrib_type_id = sra.attrib_type_id");
-
-  $sth->bind_param(1,$seq_region_id,SQL_INTEGER);
-  $sth->execute();
-
-  my $results = $self->_obj_from_sth($sth);
-  $sth->finish();
-
-  return $results;
-}
-
-
-
-=head2 store_on_Slice
-
-  Arg [1]    : Bio::EnsEMBL::Slice $slice
-  Arg [2]    : listref of Bio::EnsEMBL::Attribute objects $attribs
-  Example    : $attribute_adaptor->store_on_Slice($slice, \@attribs);
-  Description: Stores a set of attributes on a sequence region given a
-               Slice object which is on the seq_region for which attributes are
-               being stored.
-  Returntype : none
-  Exceptions : throw if $slice argument not provided
-  Caller     : general
-  Status     : Stable
-
-=cut
-
-sub store_on_Slice {
-  my $self     = shift;
-  my $slice    = shift;
-  my $attribs = shift;
-
-  if(!ref($slice) || !$slice->isa('Bio::EnsEMBL::Slice')) {
-    throw("Slice argument expected.");
-  }
-
-  if(ref($attribs) ne 'ARRAY') {
-    throw("Reference to list of Bio::EnsEMBL::Attribute objects " .
-          "argument expected.");
-  }
-
-  my $seq_region_id = $slice->get_seq_region_id();
-
-  if(!$seq_region_id) {
-    throw("Could not get seq_region_id for provided slice: ".$slice->name());
-  }
-
-  my $sth = $self->prepare( "INSERT into seq_region_attrib ".
-                            "SET seq_region_id = ?, attrib_type_id = ?, ".
-                            "value = ? " );
-
-  foreach my $at ( @$attribs ) {
-    if(!ref($at) && $at->isa('Bio::EnsEMBL::Attribute')) {
-      throw("Reference to list of Bio::EnsEMBL::Attribute objects " .
-            "argument expected.");
-    }
-    my $atid = $self->_store_type( $at );
-    $sth->bind_param(1,$seq_region_id,SQL_INTEGER);
-    $sth->bind_param(2,$atid,SQL_INTEGER);
-    $sth->bind_param(3,$at->value,SQL_VARCHAR);
-    $sth->execute();
-  }
-
-  return;
-}
-
-
-
-
-=head2 store_on_MiscFeature
-
-  Arg [1]    : Bio::EnsEMBL::MiscFeature $feature
-  Example    : $attribute_adaptor->store_on_MiscFeature($my_misc_feature,
-                                                        $attributes)
-  Description: Stores all the attributes on the misc feature. 
-               Will duplicate things if called twice.
-  Returntype : none
-  Exceptions : throw on incorrect arguments
-               throw if provided feature is not stored in this database
-  Caller     : general, MiscFeatureAdaptor
-  Status     : Stable
-
-=cut
-
-sub store_on_MiscFeature {
-  my $self       = shift;
-  my $feature    = shift;
+  my $type = shift;
+  my $object = shift;
   my $attributes = shift;
+  my $table;
 
-  if(!ref($feature) || !$feature->isa('Bio::EnsEMBL::MiscFeature')) {
-    throw("MiscFeature argument expected");
+
+  my $object_id;
+  if($type =~ /[GT][er][na][en]/){
+    $object_id = $object;
+    $table = lc($type);
+#    $type = lc($type);
   }
-
-  if(ref($attributes) ne 'ARRAY') {
-    throw("Reference to list of Bio::EnsEMBL::Attribute objects argument " .
-          "expected");
+  else{
+    if(!ref($object) || !$object->isa('Bio::EnsEMBL::'.$type)) {
+      throw("$type argument is required. but you passed $object");
+    }
+    if($type eq "Slice"){
+      $object_id = $object->get_seq_region_id();
+      $table = "seq_region"; 
+      $type = "seq_region";
+    }
+    else{
+      if($type eq "MiscFeature"){
+	$type = "misc_feature";
+	$table = "misc"; 
+      }
+      else{
+	$table = lc($type);
+      }
+      
+      $object_id = $object->dbID();
+      my $db = $self->db();
+      
+      if(!$object->is_stored($db)) {
+	throw("$type is not stored in this database.");
+      }
+      
+    }
   }
-
-  my $db = $self->db();
-  if(!$feature->is_stored($db)) {
-    throw("MiscFeature is not stored in this DB - cannot store attributes.");
-  }
-
-  my $feature_id = $feature->dbID();
-
-  my $sth = $self->prepare( "INSERT into misc_attrib ".
-			    "SET misc_feature_id = ?, attrib_type_id = ?, ".
+  my $sth = $self->prepare( "INSERT into ".$table."_attrib ".
+			    "SET ".$type."_id = ?, attrib_type_id = ?, ".
 			    "value = ? " );
 
   for my $attrib ( @$attributes ) {
@@ -402,7 +154,7 @@ sub store_on_MiscFeature {
             "argument expected.");
     }
     my $atid = $self->_store_type( $attrib );
-    $sth->bind_param(1,$feature_id,SQL_INTEGER);
+    $sth->bind_param(1,$object_id,SQL_INTEGER);
     $sth->bind_param(2,$atid,SQL_INTEGER);
     $sth->bind_param(3,$attrib->value,SQL_VARCHAR);
     $sth->execute();
@@ -412,228 +164,48 @@ sub store_on_MiscFeature {
 }
 
 
-=head2 store_on_Gene
-
-  Arg [1]    : Int $gene_id - the dbID of the gene to store the attributes for
-  Arg [2]    : listref Bio::EnsEMBL::Attribute $attribs
-  Example    : $attribute_adaptor->store_on_Gene($gene_id, $attributes)
-  Description: Stores all the attributes on the Gene. 
-               Will duplicate things if called twice.
-  Returntype : none
-  Exceptions : throw on incorrect arguments
-  Caller     : general, GeneAdaptor
-  Status     : Stable
-
-=cut
-
-sub store_on_Gene {
+sub remove_from_{
   my $self = shift;
-  my $gene_id = shift;
-  my $attributes = shift;
+  my $type = shift;
+  my $object = shift;
+  my $table;
 
-  my $gene_dbID = $self->_id_check($gene_id);
-
-  if(ref($attributes) ne 'ARRAY') {
-    throw("Reference to list of Bio::EnsEMBL::Attribute objects argument " .
-          "expected");
+  if(!ref($object) || !$object->isa('Bio::EnsEMBL::'.$type)) {
+    throw("$type argument is required. but you passed $object");
   }
 
-  my $sth = $self->prepare( "INSERT into gene_attrib ".
-			    "SET gene_id = ?, attrib_type_id = ?, ".
-			    "value = ? " );
-
-  for my $attrib ( @$attributes ) {
-    if(!ref($attrib) && $attrib->isa('Bio::EnsEMBL::Attribute')) {
-      throw("Reference to list of Bio::EnsEMBL::Attribute objects " .
-            "argument expected.");
+  my $object_id;
+  if($type eq "Slice"){
+    $object_id = $object->get_seq_region_id();
+    $table = "seq_region"; 
+    $type = "seq_region";
+  }
+  else{
+    if($type eq "MiscFeature"){
+      $type = "misc_feature";
+      $table = "misc"; 
     }
-    my $atid = $self->_store_type($attrib);
-    $sth->execute($gene_dbID, $atid, $attrib->value);
-  }
-
-  return;
-}
-
-
-=head2 store_on_Transcript
-
-  Arg [1]    : Int $trans_id
-               The dbID of the transcript to store the attributes for
-  Arg [2]    : listref Bio::EnsEMBL::Attribute $attribs
-  Example    : $attribute_adaptor->store_on_Transcript($trans_id, $attributes)
-  Description: Stores all the attributes on the Transcript. 
-               Will duplicate things if called twice.
-  Returntype : none
-  Exceptions : throw on incorrect arguments
-  Caller     : general, TranscriptAdaptor
-  Status     : Stable
-
-=cut
-
-sub store_on_Transcript {
-  my $self = shift;
-  my $trans_id = shift;
-  my $attributes = shift;
-
-  my $trans_dbID = $self->_id_check($trans_id);
-  
-  if (ref($attributes) ne 'ARRAY') {
-    throw("Reference to list of Bio::EnsEMBL::Attribute objects argument " .
-          "expected");
-  }
-
-  my $sth = $self->prepare( "INSERT into transcript_attrib ".
-			    "SET transcript_id = ?, attrib_type_id = ?, ".
-			    "value = ? " );
-
-  for my $attrib (@$attributes) {
-    if (!ref($attrib) && $attrib->isa('Bio::EnsEMBL::Attribute')) {
-      throw("Reference to list of Bio::EnsEMBL::Attribute objects " .
-            "argument expected.");
+    else{
+      $table = lc($type);
     }
-    my $atid = $self->_store_type($attrib);
-    $sth->bind_param(1,$trans_dbID, SQL_INTEGER);
-    $sth->bind_param(2,$atid, SQL_INTEGER);
-    $sth->bind_param(3,$attrib->value, SQL_VARCHAR);
-    $sth->execute();
-  }
 
-  return;
-}
-
-
-
-=head2 store_on_Translation
-
-  Arg [1]    : Int $transl_id
-               The dbID of the translation to store the attributes for
-  Arg [2]    : listref Bio::EnsEMBL::Attribute $attribs
-  Example    : $attribute_adaptor->store_on_Translation($transl_id, $attributes)
-  Description: Stores all the attributes on the Translation. 
-               Will duplicate things if called twice.
-  Returntype : none
-  Exceptions : throw on incorrect arguments
-  Caller     : general, TranslationAdaptor
-  Status     : Stable
-
-=cut
-
-sub store_on_Translation {
-  my $self = shift;
-  my $transl_id = shift;
-  my $attributes = shift;
-
-  my $transl_dbID = $self->_id_check($transl_id);
-  
-  if (ref($attributes) ne 'ARRAY') {
-    throw("Reference to list of Bio::EnsEMBL::Attribute objects argument " .
-          "expected");
-  }
-
-  my $sth = $self->prepare( "INSERT into translation_attrib ".
-			    "SET translation_id = ?, attrib_type_id = ?, ".
-			    "value = ? " );
-
-  for my $attrib (@$attributes) {
-    if (!ref($attrib) && $attrib->isa('Bio::EnsEMBL::Attribute')) {
-      throw("Reference to list of Bio::EnsEMBL::Attribute objects " .
-            "argument expected.");
+    $object_id = $object->dbID();
+    my $db = $self->db();
+    
+    if(!$object->is_stored($db)) {
+      throw("$type is not stored in this database.");
     }
-    my $atid = $self->_store_type($attrib);
-    $sth->bind_param(1,$transl_dbID, SQL_INTEGER);
-    $sth->bind_param(2,$atid, SQL_INTEGER);
-    $sth->bind_param(3,$attrib->value, SQL_VARCHAR);
-    $sth->execute();
+
   }
 
-  return;
-}
-
-
-=head2 remove_from_Slice
-
-  Arg [1]    : Bio::EnsEMBL::Slice $slice
-               The Slice to remove attributes from
-  Arg [2]    : (optional) dbID $attrib_type_id
-               Database id of attributes to remove
-  Example    : $attribute_adaptor->remove_from_Slice($slice);
-  Description: Removes all attributes which are stored in the database on
-               the provided Slice.
-  Returntype : none
-  Exceptions : throw on incorrect arguments
-               throw if cannot obtain seq_region_id from provided Slice
-  Caller     : general
-  Status     : Stable
-
-=cut
-
-sub remove_from_Slice {
-  my $self = shift;
-  my $slice = shift;
-  my $attrib_type_id = shift;
-
-  if(!ref($slice) || !$slice->isa('Bio::EnsEMBL::Slice')) {
-    throw("Bio::EnsEMBL::Slice argument expected.");
+  if(!defined($object_id)) {
+    throw("$type must have dbID.");
   }
 
-  my $srid = $slice->get_seq_region_id();
+  my $sth = $self->prepare("DELETE FROM ".$table."_attrib " .
+                         "WHERE ".$type."_id = ?");
 
-  if(!$srid) {
-    throw("Could not get seq_region_id for provided slice: ".$slice->name());
-  }
-  
-  if (defined $attrib_type_id) {
-    my $sth = $self->prepare("DELETE FROM seq_region_attrib " .
-        "WHERE seq_region_id = ? AND attrib_type_id = ?");
-    $sth->bind_param(1,$srid,SQL_INTEGER);
-    $sth->bind_param(2,$attrib_type_id,SQL_INTEGER);
-    $sth->execute();
-    $sth->finish;
-  } else {
-    my $sth = $self->prepare("DELETE FROM seq_region_attrib " .
-        "WHERE seq_region_id = ?");
-    $sth->bind_param(1,$srid,SQL_INTEGER);
-    $sth->execute();
-    $sth->finish();
-  }
-
-  return;
-}
-
-
-=head2 remove_from_MiscFeature
-
-  Arg [1]    : Bio::EnsEMBL::MiscFeature $mf
-               The MiscFeature to remove attributes from
-  Example    : $attribute_adaptor->remove_from_MiscFeature($mf);
-  Description: Removes all attributes which are stored in the database on
-               the provided MiscFeature.
-  Returntype : none
-  Exceptions : throw on incorrect arguments
-               throw if MiscFeature is not stored in this database
-  Caller     : general
-  Status     : Stable
-
-=cut
-
-sub remove_from_MiscFeature {
-  my $self = shift;
-  my $mf   = shift;
-
-  if(!ref($mf) || !$mf->isa('Bio::EnsEMBL::MiscFeature')) {
-    throw("Bio::EnsEMBL::MiscFeature argument is required.");
-  }
-
-  my $db = $self->db();
-
-  if(!$mf->is_stored($db)) {
-    throw("MiscFeature is not stored in this database.");
-  }
-
-  my $sth = $db->dbc->prepare("DELETE FROM misc_attrib " .
-                         "WHERE misc_feature_id = ?");
-
-  $sth->bind_param(1,$mf->dbID,SQL_INTEGER);
+  $sth->bind_param(1,$object_id,SQL_INTEGER);
   $sth->execute();
 
   $sth->finish();
@@ -642,154 +214,59 @@ sub remove_from_MiscFeature {
 }
 
 
-=head2 remove_from_Gene
 
-  Arg [1]    : Bio::EnsEMBL::Gene $gene
-               The Gene to remove attributes from
-  Arg [2]    : (optional) dbID $attrib_type_id
-               Database id of attributes to remove
-  Example    : $attribute_adaptor->remove_from_Gene($gene);
-  Description: Removes all attributes which are stored in the database on
-               the provided Gene.
-  Returntype : none
-  Exceptions : throw on incorrect arguments
-               throw if gene not stored
-  Caller     : general
-  Status     : Stable
-
-=cut
-
-sub remove_from_Gene {
+sub fetch_all_by_{
   my $self = shift;
-  my $gene = shift;
-  my $attrib_type_id = shift;
+  my $type = shift;
+  my $object   = shift;
+  my $table =undef;
 
-  if(!ref($gene) || !$gene->isa('Bio::EnsEMBL::Gene')) {
-    throw("Bio::EnsEMBL::Gene argument expected.");
+  if(!ref($object) || !$object->isa('Bio::EnsEMBL::'.$type)) {
+    throw("$type argument is required. but you passed $object");
   }
 
-  my $db = $self->db();
-
-  if (! $gene->is_stored($db)) {
-    throw("Gene is not stored in the database.");
+  my $object_id;
+  if($type eq "Slice"){
+    $object_id = $object->get_seq_region_id();
+    $table = "seq_region"; 
+    $type = "seq_region";
   }
+  else{
+    if($type eq "MiscFeature"){
+      $type = "misc_feature";
+      $table = "misc"; 
+    }
+    else{
+      $table = lc($type);
+    }
+
+    $object_id = $object->dbID();
+  }
+
+  if(!defined($object_id)) {
+    throw("$type must have dbID.");
+  }
+
+
+  my $sth = $self->prepare("SELECT at.code, at.name, at.description, " .
+                           "       t.value " .
+                           "FROM ".($table||$type)."_attrib t, attrib_type at " .
+                           "WHERE t.".$type."_id = ? " .
+                           "AND   at.attrib_type_id = t.attrib_type_id");
+
+  $sth->bind_param(1,$object_id,SQL_INTEGER);
+  $sth->execute();
+
+  my $results = $self->_obj_from_sth($sth);
+
+  $sth->finish();
+
+  return $results;
   
-  if (defined $attrib_type_id) {
-    my $sth = $self->prepare("DELETE FROM gene_attrib " .
-        "WHERE gene_id = ? AND attrib_type_id = ?");
-    $sth->execute($gene->dbID, $attrib_type_id);
-    $sth->finish;
-  } else {
-    my $sth = $self->prepare("DELETE FROM gene_attrib " .
-        "WHERE gene_id = ?");
-    $sth->execute($gene->dbID);
-    $sth->finish();
-  }
-
-  return;
 }
 
 
-=head2 remove_from_Transcript
-
-  Arg [1]    : Bio::EnsEMBL::Transcript $transcript
-               The Transcript to remove attributes from
-  Arg [2]    : (optional) dbID $attrib_type_id
-               Database id of attributes to remove
-  Example    : $attribute_adaptor->remove_from_Transcript($transcript);
-  Description: Removes all attributes which are stored in the database on
-               the provided Transcript.
-  Returntype : none
-  Exceptions : throw on incorrect arguments
-               throw if transcript not stored
-  Caller     : general
-  Status     : Stable
-
-=cut
-
-sub remove_from_Transcript {
-  my $self = shift;
-  my $transcript = shift;
-  my $attrib_type_id = shift;
-
-  if(!ref($transcript) || !$transcript->isa('Bio::EnsEMBL::Transcript')) {
-    throw("Bio::EnsEMBL::Transcript argument expected.");
-  }
-
-  my $db = $self->db();
-
-  if (! $transcript->is_stored($db)) {
-    throw("Transcript is not stored in the database.");
-  }
-  
-  if (defined $attrib_type_id) {
-    my $sth = $self->prepare("DELETE FROM transcript_attrib " .
-        "WHERE transcript_id = ? AND attrib_type_id = ?");
-    $sth->bind_param(1,$transcript->dbID,SQL_INTEGER);
-    $sth->bind_param(2,$attrib_type_id,SQL_INTEGER);
-    $sth->execute();
-    $sth->finish;
-  } else {
-    my $sth = $self->prepare("DELETE FROM transcript_attrib " .
-        "WHERE transcript_id = ?");
-    $sth->bind_param(1,$transcript->dbID,SQL_INTEGER);
-    $sth->execute();
-    $sth->finish();
-  }
-
-  return;
-}
-
-
-
-=head2 remove_from_Translation
-
-  Arg [1]    : Bio::EnsEMBL::Translation $translation
-               The Translation to remove attributes from
-  Arg [2]    : (optional) dbID $attrib_type_id
-               Database id of attributes to remove
-  Example    : $attribute_adaptor->remove_from_Transcript($transcript);
-  Description: Removes all attributes which are stored in the database on
-               the provided Transcript.
-  Returntype : none
-  Exceptions : throw on incorrect arguments
-               throw if transcript not stored
-  Caller     : general
-  Status     : Stable
-
-=cut
-
-sub remove_from_Translation {
-  my $self = shift;
-  my $translation = shift;
-  my $attrib_type_id = shift;
-
-  if(!ref($translation) || !$translation->isa('Bio::EnsEMBL::Translation')) {
-    throw("Bio::EnsEMBL::Translation argument expected.");
-  }
-
-  my $db = $self->db();
-
-  if (! $translation->is_stored($db)) {
-    throw("Transcript is not stored in the database.");
-  }
-  
-  if (defined $attrib_type_id) {
-    my $sth = $self->prepare("DELETE FROM translation_attrib " .
-        "WHERE translation_id = ? AND attrib_type_id = ?");
-    $sth->bind_param(1,$translation->dbID,SQL_INTEGER);
-    $sth->bind_param(2,$attrib_type_id,SQL_INTEGER);
-    $sth->execute();
-    $sth->finish;
-  } else {
-    my $sth = $self->prepare("DELETE FROM translation_attrib " .
-        "WHERE translation_id = ?");
-    $sth->bind_param(1,$translation->dbID,SQL_INTEGER);
-    $sth->execute();
-    $sth->finish();
-  }
-
-  return;
+sub DESTROY{
 }
 
 
@@ -887,4 +364,7 @@ sub _obj_from_sth {
 }
 
 
+
+
 1;
+
