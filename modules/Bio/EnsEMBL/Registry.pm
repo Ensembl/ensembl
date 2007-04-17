@@ -955,6 +955,26 @@ sub load_registry_from_db {
     print $coredb." loaded\n" if ($verbose);
   }
 
+  # register cdna databases
+  
+  my @cdna_dbs = grep { /^[a-z]+_[a-z]+_cdna_\d+_/ } @dbnames;
+  
+  for my $cdnadb ( @cdna_dbs ) {
+    my ($species, $num ) = ( $cdnadb =~ /(^[a-z]+_[a-z]+)_cdna_(\d+)/ );
+    my $dba = Bio::EnsEMBL::DBSQL::DBAdaptor->new
+      ( -group => "cdna",
+	-species => $species,
+	-host => $host,
+	-user => $user,
+	-pass => $pass,
+	-port => $port,
+	-dbname => $cdnadb
+      );
+    (my $sp = $species ) =~ s/_/ /g;
+    $self->add_alias( $species, $sp );
+    print $cdnadb." loaded\n" if ($verbose);
+  }
+
   my @vega_dbs = grep { /^[a-z]+_[a-z]+_vega_\d+_/ } @dbnames;
   
   for my $vegadb ( @vega_dbs ) {
