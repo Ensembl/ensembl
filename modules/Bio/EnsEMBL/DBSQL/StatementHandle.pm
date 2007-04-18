@@ -87,22 +87,67 @@ sub sql {
 # $sth->execute || die "set session failed\n";
 # 
 #
-## call   Bio::EnsEMBL::DBSQL::StatementHandle->dump(1); to start log
-## call   Bio::EnsEMBL::DBSQL::StatementHandle->dump(0); to end log
+## call   Bio::EnsEMBL::DBSQL::StatementHandle->sql_timing_start(); to start log
+## call   Bio::EnsEMBL::DBSQL::StatementHandle->sql_timing_print(1); to print the results
 ## and set $dump to 0 
 ## leave $dump = 1 for continuous log
 # uncomment from here-------------------
 #my @bind_args=();
 #my $dump = 0;
-#my $total_time = 0;
+#my %total_time;
+#my %min_time;
+#my %max_time;
+#my %number_of_times;
+#my %first_time;
+#my $grand_total;
 
-#sub dump {
-#  $dump = shift;
-#  if($total_time){
-#    print STDERR "###################Time taken was $total_time\n";
-#  }
-#  $total_time = 0;
+#sub sql_timing_start{
+#  %total_time = ();
+#  %number_of_times = ();
+#  %min_time = ();
+#  %max_time = ();
+#  %first_time = ();
+#  $grand_total = 0;
+#  $dump = 1;
 #}
+
+#sub sql_timimg_pause{
+#  $dump=0;
+#}
+
+#sub sql_timing_resume{
+#  $dump =1;
+#}
+
+
+
+#sub sql_timing_print{
+#  my $self = shift;
+#  my $level = shift;
+#  my $fh    = shift;
+#  my $grand_total=0;
+
+#  if(!defined($fh)){
+#    $fh = \*STDERR;
+#  }
+#  print ref($fh)."\n";
+#  foreach my $key (keys %total_time){
+#    if(defined($level) and $level){
+#      print $fh  $key."\n";
+#      print $fh "total\t \tnum\tfirst \t\tavg\t \t[min     ,max      ]\n";
+#      printf $fh "%6f\t%d\t%6f\t%6f\t[%6f, %6f]\n\n", 
+#	$total_time{$key}, 
+#	$number_of_times{$key},
+#        $first_time{$key},
+#       ($total_time{$key}/$number_of_times{$key}),
+#        $min_time{$key},
+#	$max_time{$key};
+#    }	
+#    $grand_total += $total_time{$key};
+#  }
+#  printf $fh "\ntotal time %6f\n\n", $grand_total;
+#}
+
 
 #sub bind_param{ 
 #  my ($self,@args) = @_;
@@ -129,14 +174,30 @@ sub sql {
   
 #  my $str = join('', @chrs);
   
-#  print STDERR "\nSQL:\n$str\n\n";
+##  uncomment this line if you want to see sql in order.
+##  print STDERR "\n\nSQL:\n$str\n\n";
   
 #  my $time = time;
 #  my $res = $self->SUPER::execute(@args);
 #  $time = time - $time;
 
-#  $total_time += $time;
-#  print "DONE ($time)\n";
+#  if(defined($total_time{$sql})){
+#    $total_time{$sql} += $time;
+#    $number_of_times{$sql}++;
+#    if($min_time{$sql} > $time){
+#      $min_time{$sql} = $time;
+#    }
+#    if($max_time{$sql} < $time){
+#      $max_time{$sql} = $time;
+#    }
+#  }
+#  else{
+#    $first_time{$sql} = $time;
+#    $max_time{$sql} = $time;
+#    $min_time{$sql} = $time;
+#    $total_time{$sql} = $time;
+#    $number_of_times{$sql} = 1;
+#  }
 #  return $res;
 #}
 
