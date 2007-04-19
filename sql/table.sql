@@ -784,7 +784,7 @@ CREATE TABLE external_db (
 
   external_db_id 	      SMALLINT UNSIGNED NOT NULL,
   db_name                     VARCHAR(27) NOT NULL,
-  db_release                  VARCHAR(40) NOT NULL,
+  db_release                  VARCHAR(40),
   status                      ENUM('KNOWNXREF','KNOWN','XREF','PRED','ORTH',
                                    'PSEUDO')
                               NOT NULL,
@@ -865,16 +865,13 @@ CREATE TABLE meta (
 
 
 # Auto add schema version to database
-INSERT INTO meta (meta_key, meta_value) VALUES ("schema_version", "44");
+INSERT INTO meta (meta_key, meta_value) VALUES ("schema_version", "45");
 
 # patches included in this schema file
 # NOTE: at beginning of release cycle, remove patch entries from last release
-INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_43_44_a.sql|rationalise_key_columns');
-INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_43_44_b.sql|optimise_ditag_tables');
-INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_43_44_c.sql|external_db_type');
-INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_43_44_d.sql|translation_stable_id_unique');
-INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_43_44_e.sql|schema_version');
-INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_43_44_f.sql|external_db_type_syn');
+INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_44_45_a.sql|schema_version');
+INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_44_45_b.sql|marker_index');
+INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_44_45_c.sql|db_release_not_null');
 
 ################################################################################
 #
@@ -910,7 +907,8 @@ CREATE TABLE marker (
   type                        ENUM('est', 'microsatellite'),
   
   PRIMARY KEY (marker_id),
-  KEY marker_idx (marker_id, priority)
+  KEY marker_idx (marker_id, priority),
+  KEY display_idx (display_marker_synonym_id)
 
 ) COLLATE=latin1_swedish_ci TYPE=MyISAM;
 
