@@ -124,6 +124,8 @@ my $API_VERSION = 44;
   Arg [1]    : (optional) string $arg file to load the registry from
   Arg [2]    : (optional) string if set prints out messages about conf file used.
   Arg [3]    : (optional) string if not 0 will print out all information
+  Arg [4]    : (optional) string if 1 the db connection will not be cleared, if not set 
+               the db connections will be cleared ( default ) 
   Example    : Bio::EnsEMBL::Registry->load_all();
   Returntype : none
   Exceptions : none
