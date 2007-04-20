@@ -135,10 +135,13 @@ sub load_all{
   my $class = shift;
   my $conf_file = shift;
   my $verbose = shift;
+  my $no_clear = shift ; 
   
-  if(defined($registry_register{'seen'})){
-    print STDERR "Clearing previuosly loaded configuration from Registry\n" if ($verbose);
-    $class->clear();
+  if(defined($registry_register{'seen'})){ 
+    unless ( $no_clear ) { 
+      print STDERR "Clearing previuosly loaded configuration from Registry\n" if ($verbose);
+      $class->clear();
+    }
   }
   $registry_register{'seen'}=1;
   if(defined($conf_file)){
