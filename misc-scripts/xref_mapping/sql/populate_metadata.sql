@@ -284,7 +284,7 @@ INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_d
 VALUES (3,7227,'ftp://ftp.ncbi.nih.gov/refseq/release/invertebrate/invertebrate9.protein.gpff.gz',now(),now(),'RefSeqGPFFParser');
 
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser)\
-VALUES (1070,7227,'ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/UNIPROT/gene_association.goa_uniprot.gz http://www.ebi.ac.uk/GOA/SPTR_release.html',now(),now(),'GOParser');
+VALUES (1070,7227,'ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/UNIPROT/gene_association.goa_uniprot.gz http://www.ebi.ac.uk/GOA/uniprot_release.html',now(),now(),'GOParser');
 
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser)\
 VALUES (1300,7227,'ftp://ftp.ebi.ac.uk/pub/databases/interpro/interpro.xml.gz ftp://ftp.ebi.ac.uk/pub/databases/interpro/release_notes.txt',now(),now(),'InterproParser');
@@ -547,7 +547,7 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (4, 9031,'ftp://ftp.ncbi.nih.gov/genomes/Gallus_gallus/RNA/rna.gbk.gz ftp://ftp.ncbi.nih.gov/refseq/release/release-notes/RefSeq-release*.txt', '', now(), now(), "RefSeqGPFFParser");
 
 ##       GO
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1070, 9031,'ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/UNIPROT/gene_association.goa_uniprot.gz http://www.ebi.ac.uk/GOA/SPTR_release.html', '', now(), now(), "GOParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1070, 9031,'ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/UNIPROT/gene_association.goa_uniprot.gz http://www.ebi.ac.uk/GOA/uniprot_release.html', '', now(), now(), "GOParser");
 
 ##      Interpro
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1300, 9031,'ftp://ftp.ebi.ac.uk/pub/databases/interpro/interpro.xml.gz ftp://ftp.ebi.ac.uk/pub/databases/interpro/release_notes.txt', '', now(), now(), "InterproParser");
@@ -621,7 +621,7 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (4, 9615,'ftp://ftp.ncbi.nih.gov/genomes/Canis_familiaris/RNA/rna.gbk.gz ftp://ftp.ncbi.nih.gov/refseq/release/release-notes/RefSeq-release*.txt', '', now(), now(), "RefSeqGPFFParser");
 
 ##       GO
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1070, 9615,'ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/UNIPROT/gene_association.goa_uniprot.gz http://www.ebi.ac.uk/GOA/SPTR_release.html', '', now(), now(), "GOParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1070, 9615,'ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/UNIPROT/gene_association.goa_uniprot.gz http://www.ebi.ac.uk/GOA/uniprot_release.html', '', now(), now(), "GOParser");
 
 ##      Interpro
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1300, 9615,'ftp://ftp.ebi.ac.uk/pub/databases/interpro/interpro.xml.gz ftp://ftp.ebi.ac.uk/pub/databases/interpro/release_notes.txt', '', now(), now(), "InterproParser");
@@ -706,7 +706,7 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (4, 7460,'ftp://ftp.ncbi.nih.gov/genomes/Apis_mellifera/RNA/rna.gbk.gz ftp://ftp.ncbi.nih.gov/refseq/release/release-notes/RefSeq-release*.txt', '', now(), now(), "RefSeqGPFFParser");
 
 ##       GO
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1070, 7460,'ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/UNIPROT/gene_association.goa_uniprot.gz http://www.ebi.ac.uk/GOA/SPTR_release.html', '', now(), now(), "GOParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1070, 7460,'ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/UNIPROT/gene_association.goa_uniprot.gz http://www.ebi.ac.uk/GOA/uniprot_release.html', '', now(), now(), "GOParser");
 
 ##      Interpro
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1300, 7460,'ftp://ftp.ebi.ac.uk/pub/databases/interpro/interpro.xml.gz ftp://ftp.ebi.ac.uk/pub/databases/interpro/release_notes.txt', '', now(), now(), "InterproParser");
@@ -746,7 +746,7 @@ INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_d
 
 ##       GO
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
-(1070, 7719,'ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/UNIPROT/gene_association.goa_uniprot.gz http://www.ebi.ac.uk/GOA/SPTR_release.html', now(), now(), "GOParser");
+(1070, 7719,'ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/UNIPROT/gene_association.goa_uniprot.gz http://www.ebi.ac.uk/GOA/uniprot_release.html', now(), now(), "GOParser");
 
 ##      Interpro
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
@@ -869,7 +869,7 @@ VALUES (3,51511,'ftp://ftp.ncbi.nih.gov/refseq/release/invertebrate/invertebrate
 
 ##       GO
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
-(1070, 51511,'ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/UNIPROT/gene_association.goa_uniprot.gz http://www.ebi.ac.uk/GOA/SPTR_release.html', now(), now(), "GOParser");
+(1070, 51511,'ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/UNIPROT/gene_association.goa_uniprot.gz http://www.ebi.ac.uk/GOA/uniprot_release.html', now(), now(), "GOParser");
 
 ##      Interpro
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
@@ -915,7 +915,7 @@ INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_d
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (2856, 7165,'LOCAL:Anopheles_symbol/GeneName_translation_UniqID.txt', now(), now(), "AnophelesSymbolParser");
 
 # GO
-INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (1070, 7165,'ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/UNIPROT/gene_association.goa_uniprot.gz http://www.ebi.ac.uk/GOA/SPTR_release.html', now(), now(), "GOParser");
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (1070, 7165,'ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/UNIPROT/gene_association.goa_uniprot.gz http://www.ebi.ac.uk/GOA/uniprot_release.html', now(), now(), "GOParser");
 
 # VectorBase Arrays
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (2857, 7165,'LOCAL:Anopheles_gambiae/EMBL/EMBL_MMC1_20k_v1.txt', now(), now(), "VbDirectParser");
@@ -946,7 +946,7 @@ INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_d
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (7159, 7159,'LOCAL:AedesGenBank/Aedes_proteinID.fa', now(), now(), "AedesGenBankParser");
 
 # GO
-INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (1070, 7159,'ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/UNIPROT/gene_association.goa_uniprot.gz http://www.ebi.ac.uk/GOA/SPTR_release.html', now(), now(), "GOParser");
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (1070, 7159,'ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/UNIPROT/gene_association.goa_uniprot.gz http://www.ebi.ac.uk/GOA/uniprot_release.html', now(), now(), "GOParser");
 
 # Vectorbase Arrays
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (2861, 7159,'LOCAL:Aedes_aegypti/JHU/JHU_AEG1.0_20k_v1.txt', now(), now(), "VbDirectParser");
@@ -976,7 +976,7 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (4, 9913,'ftp://ftp.ncbi.nih.gov/genomes/Bos_taurus/RNA/rna.gbk.gz ftp://ftp.ncbi.nih.gov/refseq/release/release-notes/RefSeq-release*.txt', '', now(), now(), "RefSeqGPFFParser");
 
 ##       GO
-INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (1070, 9913,'ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/UNIPROT/gene_association.goa_uniprot.gz http://www.ebi.ac.uk/GOA/SPTR_release.html', now(), now(), "GOParser");
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (1070, 9913,'ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/UNIPROT/gene_association.goa_uniprot.gz http://www.ebi.ac.uk/GOA/uniprot_release.html', now(), now(), "GOParser");
 
 ##      Interpro
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (1300, 9913,'ftp://ftp.ebi.ac.uk/pub/databases/interpro/interpro.xml.gz ftp://ftp.ebi.ac.uk/pub/databases/interpro/release_notes.txt', now(), now(), "InterproParser");
@@ -1251,7 +1251,7 @@ INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_d
 
 ##       GO
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
-(1070, 13616,'ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/UNIPROT/gene_association.goa_uniprot.gz http://www.ebi.ac.uk/GOA/SPTR_release.html', now(), now(), "GOParser");
+(1070, 13616,'ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/UNIPROT/gene_association.goa_uniprot.gz http://www.ebi.ac.uk/GOA/uniprot_release.html', now(), now(), "GOParser");
 
 ##      Interpro
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
@@ -1308,7 +1308,7 @@ INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_d
 
 ##       GO
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
-(1070, 31033,'ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/UNIPROT/gene_association.goa_uniprot.gz http://www.ebi.ac.uk/GOA/SPTR_release.html', now(), now(), "GOParser");
+(1070, 31033,'ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/UNIPROT/gene_association.goa_uniprot.gz http://www.ebi.ac.uk/GOA/uniprot_release.html', now(), now(), "GOParser");
 
 ##      Interpro
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
@@ -1395,7 +1395,7 @@ INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_d
 
 ##       GO
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
-(1070, 4932,'ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/UNIPROT/gene_association.goa_uniprot.gz http://www.ebi.ac.uk/GOA/SPTR_release.html', now(), now(), "GOParser");
+(1070, 4932,'ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/UNIPROT/gene_association.goa_uniprot.gz http://www.ebi.ac.uk/GOA/uniprot_release.html', now(), now(), "GOParser");
 
 ##      Interpro
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
@@ -1604,7 +1604,7 @@ INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_d
 
 ##       GO
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
-(1070, 9544,'ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/UNIPROT/gene_association.goa_uniprot.gz http://www.ebi.ac.uk/GOA/SPTR_release.html', now(), now(), "GOParser");
+(1070, 9544,'ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/UNIPROT/gene_association.goa_uniprot.gz http://www.ebi.ac.uk/GOA/uniprot_release.html', now(), now(), "GOParser");
 
 ##      Interpro
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
@@ -1629,7 +1629,7 @@ INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_d
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3000, 9785, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot_varsplic.fasta.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', '', now(), now(), "UniProtVarSplicParser");
 
 ##       GO
-INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (1070, 9785,'ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/UNIPROT/gene_association.goa_uniprot.gz http://www.ebi.ac.uk/GOA/SPTR_release.html', now(), now(), "GOParser");
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (1070, 9785,'ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/UNIPROT/gene_association.goa_uniprot.gz http://www.ebi.ac.uk/GOA/uniprot_release.html', now(), now(), "GOParser");
 
 ##      Interpro
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (1300, 9785,'ftp://ftp.ebi.ac.uk/pub/databases/interpro/interpro.xml.gz ftp://ftp.ebi.ac.uk/pub/databases/interpro/release_notes.txt', now(), now(), "InterproParser");
@@ -1653,7 +1653,7 @@ INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_d
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3000, 9361, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot_varsplic.fasta.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', '', now(), now(), "UniProtVarSplicParser");
 
 ##       GO
-INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (1070, 9361,'ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/UNIPROT/gene_association.goa_uniprot.gz http://www.ebi.ac.uk/GOA/SPTR_release.html', now(), now(), "GOParser");
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (1070, 9361,'ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/UNIPROT/gene_association.goa_uniprot.gz http://www.ebi.ac.uk/GOA/uniprot_release.html', now(), now(), "GOParser");
 
 ##      Interpro
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (1300, 9361,'ftp://ftp.ebi.ac.uk/pub/databases/interpro/interpro.xml.gz ftp://ftp.ebi.ac.uk/pub/databases/interpro/release_notes.txt', now(), now(), "InterproParser");
@@ -1678,7 +1678,7 @@ INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_d
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3000, 9986, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot_varsplic.fasta.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', '', now(), now(), "UniProtVarSplicParser");
 
 ##       GO
-INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (1070, 9986,'ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/UNIPROT/gene_association.goa_uniprot.gz http://www.ebi.ac.uk/GOA/SPTR_release.html', now(), now(), "GOParser");
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (1070, 9986,'ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/UNIPROT/gene_association.goa_uniprot.gz http://www.ebi.ac.uk/GOA/uniprot_release.html', now(), now(), "GOParser");
 
 ##      Interpro
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (1300, 9986,'ftp://ftp.ebi.ac.uk/pub/databases/interpro/interpro.xml.gz ftp://ftp.ebi.ac.uk/pub/databases/interpro/release_notes.txt', now(), now(), "InterproParser");
@@ -1702,7 +1702,7 @@ INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_d
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3000, 9371, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot_varsplic.fasta.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', '', now(), now(), "UniProtVarSplicParser");
 
 ##       GO
-INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (1070, 9371,'ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/UNIPROT/gene_association.goa_uniprot.gz http://www.ebi.ac.uk/GOA/SPTR_release.html', now(), now(), "GOParser");
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (1070, 9371,'ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/UNIPROT/gene_association.goa_uniprot.gz http://www.ebi.ac.uk/GOA/uniprot_release.html', now(), now(), "GOParser");
 
 ##      Interpro
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (1300, 9371,'ftp://ftp.ebi.ac.uk/pub/databases/interpro/interpro.xml.gz ftp://ftp.ebi.ac.uk/pub/databases/interpro/release_notes.txt', now(), now(), "InterproParser");
@@ -1722,7 +1722,7 @@ INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_d
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3000, 9685, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot_varsplic.fasta.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', '', now(), now(), "UniProtVarSplicParser");
 
 ##       GO
-INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (1070, 9685,'ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/UNIPROT/gene_association.goa_uniprot.gz http://www.ebi.ac.uk/GOA/SPTR_release.html', now(), now(), "GOParser");
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (1070, 9685,'ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/UNIPROT/gene_association.goa_uniprot.gz http://www.ebi.ac.uk/GOA/uniprot_release.html', now(), now(), "GOParser");
 
 ##      Interpro
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (1300, 9685,'ftp://ftp.ebi.ac.uk/pub/databases/interpro/interpro.xml.gz ftp://ftp.ebi.ac.uk/pub/databases/interpro/release_notes.txt', now(), now(), "InterproParser");
@@ -1739,7 +1739,7 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (2,69293 , 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_trembl.dat.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', '', now(), now(), "UniProtParser");
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3000,69293 , 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot_varsplic.fasta.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', '', now(), now(), "UniProtVarSplicParser");
 ##       GO
-INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (1070,69293 ,'ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/UNIPROT/gene_association.goa_uniprot.gz http://www.ebi.ac.uk/GOA/SPTR_release.html', now(), now(), "GOParser");
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (1070,69293 ,'ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/UNIPROT/gene_association.goa_uniprot.gz http://www.ebi.ac.uk/GOA/uniprot_release.html', now(), now(), "GOParser");
 ##      Interpro
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (1300,69293 ,'ftp://ftp.ebi.ac.uk/pub/databases/interpro/interpro.xml.gz ftp://ftp.ebi.ac.uk/pub/databases/interpro/release_notes.txt', now(), now(), "InterproParser");
 # refseq
@@ -1809,7 +1809,7 @@ INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_d
 
 ##       GO
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
-(1070, 8090,'ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/UNIPROT/gene_association.goa_uniprot.gz http://www.ebi.ac.uk/GOA/SPTR_release.html', now(), now(), "GOParser");
+(1070, 8090,'ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/UNIPROT/gene_association.goa_uniprot.gz http://www.ebi.ac.uk/GOA/uniprot_release.html', now(), now(), "GOParser");
 
 ##      Interpro
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
@@ -2037,7 +2037,7 @@ INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_d
 
 ##       GO
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
-(1070, 59463,'ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/UNIPROT/gene_association.goa_uniprot.gz http://www.ebi.ac.uk/GOA/SPTR_release.html', now(), now(), "GOParser");
+(1070, 59463,'ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/UNIPROT/gene_association.goa_uniprot.gz http://www.ebi.ac.uk/GOA/uniprot_release.html', now(), now(), "GOParser");
 
 ##      Interpro
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
@@ -2252,7 +2252,7 @@ INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_d
 
 ##       GO
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
-(1070, 9258,'ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/UNIPROT/gene_association.goa_uniprot.gz http://www.ebi.ac.uk/GOA/SPTR_release.html', now(), now(), "GOParser");
+(1070, 9258,'ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/UNIPROT/gene_association.goa_uniprot.gz http://www.ebi.ac.uk/GOA/uniprot_release.html', now(), now(), "GOParser");
 
 ##      Interpro
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
@@ -2485,7 +2485,7 @@ INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_d
 
 ##       GO
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
-(1070, 9365,'ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/UNIPROT/gene_association.goa_uniprot.gz http://www.ebi.ac.uk/GOA/SPTR_release.html', now(), now(), "GOParser");
+(1070, 9365,'ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/UNIPROT/gene_association.goa_uniprot.gz http://www.ebi.ac.uk/GOA/uniprot_release.html', now(), now(), "GOParser");
 
 ##      Interpro
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
@@ -2719,7 +2719,7 @@ INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_d
 
 ##       GO
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
-(1070, 37347,'ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/UNIPROT/gene_association.goa_uniprot.gz http://www.ebi.ac.uk/GOA/SPTR_release.html', now(), now(), "GOParser");
+(1070, 37347,'ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/UNIPROT/gene_association.goa_uniprot.gz http://www.ebi.ac.uk/GOA/uniprot_release.html', now(), now(), "GOParser");
 
 ##      Interpro
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
@@ -2951,7 +2951,7 @@ INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_d
 
 ##       GO
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
-(1070, 43179,'ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/UNIPROT/gene_association.goa_uniprot.gz http://www.ebi.ac.uk/GOA/SPTR_release.html', now(), now(), "GOParser");
+(1070, 43179,'ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/UNIPROT/gene_association.goa_uniprot.gz http://www.ebi.ac.uk/GOA/uniprot_release.html', now(), now(), "GOParser");
 
 ##      Interpro
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES\
