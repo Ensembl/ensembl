@@ -181,7 +181,7 @@ sub run {
 
         $release =~ tr /\n/ /;
         $release =~
-          s#.*The following table describes.*?of (GOA.*?</b>).*#$1#;
+          s#.*The following table describes.*?of (GOA.*?</b>\.).*#$1#;
         $release =~ s#</?b>##g;
 
         print "GO release: '$release'\n";
