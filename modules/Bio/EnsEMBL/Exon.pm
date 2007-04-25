@@ -345,7 +345,10 @@ sub _transform_to_Slice {
   # actually we could have exons inside and outside the Slice 
   # because of db design and the query that produces them
   if( @mapped != 1 ) {
-    $self->throw( "Exon couldn't map" );
+    # Don't throw - return untransformed instead
+    warn sprintf "Got %d features from map_coordinates_to_assembly() for exon %s",
+        scalar(@mapped), $self->stable_id || $self->dbID;
+    return $self;
   }
   # should get a gap object returned if an exon lies outside of 
   # the current slice.  Simply return the exon as is - i.e. untransformed.
