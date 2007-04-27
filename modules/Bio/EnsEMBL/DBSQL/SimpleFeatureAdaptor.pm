@@ -181,7 +181,7 @@ sub _objs_from_sth {
     $out->display_label($hashref->{'display_label'});
     $out->attach_seq($contig); 
 
-    if($hashref->{'score'}) {
+    if(defined($hashref->{'score'})) {
       $out->score($hashref->{'score'});
     }
     
