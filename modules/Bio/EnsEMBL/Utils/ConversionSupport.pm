@@ -853,9 +853,11 @@ sub get_chrlength {
         unless ($dba->isa('Bio::EnsEMBL::DBSQL::DBAdaptor'));
 
     my $sa = $dba->get_SliceAdaptor;
+
+    # note: 'chromosome' changed to 'top_level' in next 2 lines
     my @chromosomes = map { $_->seq_region_name } 
-                            @{ $sa->fetch_all('chromosome', $version) };
-    my %chr = map { $_ => $sa->fetch_by_region('chromosome', $_, undef, undef, undef, $version)->length } @chromosomes;
+                            @{ $sa->fetch_all('toplevel', $version) };
+    my %chr = map { $_ => $sa->fetch_by_region('toplevel', $_, undef, undef, undef, $version)->length } @chromosomes;
 
     my @wanted = $self->param('chromosomes');
     if (@wanted) {
