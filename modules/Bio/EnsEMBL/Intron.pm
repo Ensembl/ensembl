@@ -69,7 +69,12 @@ sub new {
   }
 
   if($e1->slice ne $e2->slice){
-    throw("Exons on different slices. Not allowed");
+    if($e1->slice->seq_region_name ne $e2->slice->seq_region_name){
+      throw("Exons on different slices. Not allowed");
+    }
+    else{
+      warn("Exons have different slice references to the same seq_region\n");
+    }
   }
   else{ 
     $self->{'slice'} = $e1->slice;
