@@ -2705,6 +2705,7 @@ sub transcript_display_xref_sources {
 	  'miRBase',
           'IMGT/GENE_DB',
 	  'HUGO',
+          'SGD',
 	  'MarkerSymbol',
 	  'flybase_symbol',
 	  'Anopheles_symbol',
