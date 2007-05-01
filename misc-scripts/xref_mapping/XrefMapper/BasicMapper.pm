@@ -4421,7 +4421,7 @@ SQL
         else{
           die "COULD NOT get an analysis for source id = $master_source ".$unmapped_primary_xref{$master_xref_id}."\n";
         }
-        print UNMAPPED_OBJECT $external_db_id."\t".$accession.["\t";
+        print UNMAPPED_OBJECT $external_db_id."\t".$accession."\t";
         print UNMAPPED_OBJECT $xref_missed_id."\t0\t0\t0\t\\N\t".
           $unmapped_primary_xref{$master_xref_id}. "\n";
       }
