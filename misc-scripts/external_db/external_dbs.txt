@@ -166,7 +166,7 @@
 5000	Ens_Mm_gene	1	XREF	1	0	40	Ensembl Mouse Gene	MISC
 5020	Ens_Mm_translation	1	XREF	1	0	40	Ensembl Mouse Translation	MISC
 5100	IMGT	1	XREF	1	0	7	IMGT/HLA	MISC
-6000	Codelink	1	XREF	1	0	1	GE Healthcare/Amersham Codelink WGA	MISC
+6000	Codelink	1	XREF	1	0	1	GE Healthcare/Amersham Codelink WGA	ARRAY
 5200	Oxford_FGU_Md_gene	1	PRED	1	0	1	Oxford Ponting Group Monodelphis predictions gene id	ALT_TRANS
 5300	Oxford_FGU_Md_tscript	1	PRED	1	0	1	Oxford Ponting Group Monodelphis predictions transcript id	ALT_TRANS
 5400	Oxford_FGU_Oa_gene	1	PRED	1	0	1	Oxford Ponting Group Platypus predictions gene id	ALT_TRANS
