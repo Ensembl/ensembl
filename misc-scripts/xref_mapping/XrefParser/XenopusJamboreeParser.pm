@@ -28,8 +28,6 @@ sub run {
     return 1;    # 1 error
   }
 
-  my $species_tax_id = $self->get_taxonomy_from_species_id($species_id);
-
   while ( $_ = $file_io->getline() ) {
     my $xref;
 

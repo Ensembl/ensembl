@@ -17,7 +17,7 @@ sub run {
   my ($self, $source_id, $species_id, $file) = @_;
   
   my $sio = Bio::SeqIO->new(-format=>'fasta' , -file=>$file );
-  my $species_tax_id = $self->get_taxonomy_from_species_id($species_id);
+  my %species_tax_id = %{$self->get_taxonomy_from_species_id($species_id)};
   
   my @xrefs;
   while( my $seq = $sio->next_seq ) {
@@ -25,7 +25,7 @@ sub run {
     # Test species if available
     if( my $sp = $seq->species ){
       if( my $tax_id = $sp->ncbi_taxid ){
-        next if $tax_id != $species_tax_id;
+        next if (!defined $species_tax_id{$tax_id});
       }
     }
 

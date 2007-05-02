@@ -34,7 +34,7 @@ sub run {
     $species_id = XrefParser::BaseParser->get_species_id_for_filename($file);
   }
   
-  my $species_tax_id = $self->get_taxonomy_from_species_id($species_id);
+  my %species_tax_id = %{$self->get_taxonomy_from_species_id($species_id)};
   
 
     my $eg_io = $self->get_filehandle($file);
@@ -92,7 +92,7 @@ sub run {
   while ( $_ = $eg_io->getline() ) {
     chomp;
     my (@arr) = split(/\t/,$_);
-    if($arr[$gene_tax_id_index] != $species_tax_id){
+    if(!defined($species_tax_id{$arr[$gene_tax_id_index]})){
       next;
     }
     my $acc    = $arr[$gene_id_index];

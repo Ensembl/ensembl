@@ -26,7 +26,7 @@ sub run {
     return 1;    # 1 = error
   }
 
-  my $species_tax_id = $self->get_taxonomy_from_species_id($species_id);
+  my %species_tax_id = %{$self->get_taxonomy_from_species_id($species_id)};
 
   while ( $_ = $ipi_io->getline() ) {
     my $xref;
@@ -43,7 +43,7 @@ sub run {
     # note currently we ignore all the other cross-references in the IPI file
 
     # only interested in species with the taxonomy ID were looking for
-    next if ( !defined $tax_id || $tax_id != $species_tax_id );
+    next if ( !defined $tax_id || !defined $species_tax_id{$tax_id});
 
     # make sequence into one long string
     $sequence =~ s/\n//g;

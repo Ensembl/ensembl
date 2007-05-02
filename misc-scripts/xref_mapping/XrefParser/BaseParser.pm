@@ -101,7 +101,7 @@ sub run
   }
 
   my $sql =
-    "SELECT s.source_id, su.source_url_id, s.name, su.url, su.checksum, su.parser, su.species_id, sp.name " .
+    "SELECT distinct(s.source_id), su.source_url_id, s.name, su.url, su.checksum, su.parser, su.species_id " .
       "FROM source s, source_url su, species sp " .
 	"WHERE s.download='Y' AND su.source_id=s.source_id " .
           "AND su.species_id=sp.species_id " .
@@ -113,10 +113,10 @@ sub run
   $sth->execute();
 
   my ( $source_id, $source_url_id, $name, $url, $checksum, $parser,
-      $species_id, $species_name );
+      $species_id);
 
   $sth->bind_columns( \$source_id, \$source_url_id, \$name, \$url,
-      \$checksum, \$parser, \$species_id, \$species_name );
+      \$checksum, \$parser, \$species_id);
 
   my $last_type = "";
   my $dir;
@@ -154,7 +154,7 @@ sub run
 	print "Parsing $dsn with $parser\n";
         eval "require XrefParser::$parser";
         my $new = "XrefParser::$parser"->new();
-        if($new->run($dsn, $source_id, $species_id, $name, $species_name)){
+        if($new->run($dsn, $source_id, $species_id, $name, undef)){
 	  $summary{$parser}++;
 	}
 	next;
@@ -1241,16 +1241,18 @@ sub show_valid_species() {
 
 sub get_taxonomy_from_species_id{
   my ($self,$species_id) = @_;
+  my %hash;
 
   my $dbi = dbi();
   my $sth = $dbi->prepare("SELECT taxonomy_id FROM species WHERE species_id = $species_id");
   $sth->execute() or croak( $dbi->errstr() );
-  if(my @row = $sth->fetchrow_array()) {
-    return $row[0];
+  while(my @row = $sth->fetchrow_array()) {
+    $hash{$row[0]} = 1;
   }   
   $sth->finish;
-  return undef;
+  return \%hash;
 }
+
 sub get_direct_xref{
   my ($self,$stable_id,$type,$link) = @_;
 

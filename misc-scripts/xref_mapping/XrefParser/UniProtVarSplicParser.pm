@@ -31,7 +31,6 @@ sub run {
     return 1;    # 1 error
   }
 
-  my $species_tax_id = $self->get_taxonomy_from_species_id($species_id);
   my %swiss = %{ $self->get_valid_codes( "uniprot", $species_id ) };
 
   my $missed = 0;
