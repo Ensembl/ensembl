@@ -81,7 +81,7 @@ my $support = new Bio::EnsEMBL::Utils::ConversionSupport($SERVERROOT);
 
 # parse options
 $support->parse_common_options(@_);
-$support->parse_extra_options('repeatfile', 'prune');
+$support->parse_extra_options('repeatfile=s', 'prune');
 $support->allowed_params($support->get_common_params, 'repeatfile', 'prune');
 
 if ($support->param('help') or $support->error) {
