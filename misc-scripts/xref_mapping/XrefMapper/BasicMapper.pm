@@ -1384,8 +1384,8 @@ PSQL
       . ( $source_to_external_db{$source_id} || '' ) . "\t"
       . ( $acc                               || '' ) . "\t"
       . ( $label                             || '' ) . "\t"
-      . ( $ver                               || '' ) . "\t"
-      . ( $desc                              || '' ) ;
+      . ( $ver                               || 0 ) . "\t"
+      . ( $desc                              || '' );
 
     if(defined( $priority_xref_extra_bit{$xref_id})){
       print XREF_P $priority_xref_extra_bit{$xref_id}; # no need for "\n" already added;
@@ -1632,7 +1632,7 @@ PSQL
           . ( $external_db_id || '' ) . "\t"
           . ( $accession      || '' ) . "\t"
           . ( $label          || '' ) . "\t"
-          . ( $version        || '' ) . "\t"
+          . ( $version        || 0 ) . "\t"
           . ( $description    || '' ) . "\t" . "MISC" . "\t"
           . "No match\n";
 
@@ -1765,7 +1765,7 @@ sub dump_orphan_xrefs() {
               . ( $external_db_id || '' ) . "\t"
               . ( $accession      || '' ) . "\t"
               . ( $label          || '' ) . "\t"
-              . ( $version        || '' ) . "\t"
+              . ( $version        || 0 ) . "\t"
               . ( $description    || '' ) . "\t" . "MISC" . "\t"
               . "No match\n";
 
@@ -1940,7 +1940,7 @@ XSQL
           . ( $external_db_id || '' ) . "\t"
           . ( $accession      || '' ) . "\t"
           . ( $label          || '' ) . "\t"
-          . ( $version        || '' ) . "\t"
+          . ( $version        || 0 ) . "\t"
           . ( $description    || '' ) . "\t"
           . "DIRECT" . "\t"
           . "Externally assigned relationship between "
@@ -1985,7 +1985,7 @@ XSQL
                   . ( $external_db_id || '' ) . "\t"
                   . ( $accession      || '' ) . "\t"
                   . ( $label          || '' ) . "\t"
-                  . ( $version        || '' ) . "\t"
+                  . ( $version        || 0 ) . "\t"
                   . ( $description    || '' ) . "\t"
                   . "DIRECT" . "\t"
                   . "Externally assigned relationship between "
@@ -2285,7 +2285,7 @@ sub dump_core_xrefs {
               . ( $external_db_id || '' ) . "\t"
               . ( $accession      || '' ) . "\t"
               . ( $label          || '' ) . "\t"
-              . ( $version        || '' ) . "\t"
+              . ( $version        || 0 ) . "\t"
               . ( $description    || '' ) . "\t"
               . "SEQUENCE_MATCH" . "\t"
               . "Relationship generated from exonerate mapping\n";
@@ -2333,7 +2333,7 @@ sub dump_core_xrefs {
               . ( $external_db_id || '' ) . "\t"
               . ( $accession      || '' ) . "\t"
               . ( $label          || '' ) . "\t"
-              . ( $version        || '' ) . "\t"
+              . ( $version        || 0 ) . "\t"
               . ( $description    || '' ) . "\t"
               . "DEPENDENT" . "\t"
               . "Generated via "
@@ -3717,13 +3717,20 @@ EOS
     while($sth->fetch()){
       $count++;
       $master_acc{$xref_id} = $acc;
-      print XREF2 ($xref_id+$xref_id_offset)."\t". $source_to_external_db{$source_id}.
-	"\t$acc\t$label\t$ver\t$desc";
+    print XREF2 ( $xref_id + $xref_id_offset ) . "\t"
+      . ( $source_to_external_db{$source_id} || '' ) . "\t"
+      . ( $acc                               || '' ) . "\t"
+      . ( $label                             || '' ) . "\t"
+      . ( $ver                               || 0 ) . "\t"
+      . ( $desc                              || '' );
       my $key = $priority_source_id_to_name{$priority_xref_source_id{$xref_id}}.":".$acc;
       if(!defined($priority_seenit{$key})){
 	print STDERR "PROBLEM: key =$key\n\txref = $xref_id\n\toffset is $xref_id_offset\n";
       }
-      print XREF2 "\tINFERRED_PAIR\tGenerated via its Pair ".$priority_seenit{$key}."\n";
+    print XREF2 "\t"
+      . "INFERRED_PAIR" . "\t"
+      . "Generated via its Pair "
+      . $priority_seenit{$key} . "\n";
       $xrefs_written{$xref_id} = 1;
 	
     }
@@ -3796,10 +3803,16 @@ EOS
 	  
 	  if(!defined($priority_xref_source_id{$xref_id})){
 	    if(!defined($xrefs_written{$xref_id})){
-	      print XREF2 ($xref_id+$xref_id_offset)."\t". 
-		$source_to_external_db{$source_id}.
-		"\t$acc\t".($label || ""). "\t" .($ver || ""). "\t". ($desc || "");
-	      print XREF2 "\tDEPENDENT\tGenerated via ".$master_acc{$good2missed{$goodxref}-$xref_id_offset}."\n";
+            print XREF2 ( $xref_id + $xref_id_offset ) . "\t"
+              . ( $source_to_external_db{$source_id} || '' ) . "\t"
+              . ( $acc                               || '' ) . "\t"
+              . ( $label                             || '' ) . "\t"
+              . ( $ver                               || 0 ) . "\t"
+              . ( $desc                              || '' ) . "\t"
+              . "DEPENDENT" . "\t"
+              . "Generated via "
+              . $master_acc{ $good2missed{$goodxref} - $xref_id_offset }
+              . "\n";
 	      $xrefs_written{$xref_id} = 1;
 	    }
 	    
@@ -3835,9 +3848,15 @@ EOS
 	  
 	  if(!defined($priority_xref_source_id{$xref_id})){
 	    if(!defined($xrefs_written{$xref_id})){
-	      print XREF2 ($xref_id+$xref_id_offset)."\t". $source_to_external_db{$source_id}.
-		"\t$acc\t$label\t$ver\t$desc";
-	      print XREF2 "\tDEPENDENT\tGenerated via ".$master_acc{$good2missed{$goodxref}-$xref_id_offset}."\n";
+            print XREF2 ( $xref_id + $xref_id_offset ) . "\t"
+              . ( $source_to_external_db{$source_id} || '' ) . "\t"
+              . ( $acc                               || '' ) . "\t"
+              . ( $label                             || '' ) . "\t"
+              . ( $ver                               || 0 ) . "\t"
+              . ( $desc                              || '' ) . "\t"
+              . "DEPENDENT" . "\t"
+              . "Generated via "
+              . $master_acc{ $good2missed{$goodxref} - $xref_id_offset } . "\n";
 	      $xrefs_written{$xref_id} = 1;
 	    }
 	    
@@ -3972,7 +3991,7 @@ SQL
               . ( $external_db_id || '' ) . "\t"
               . ( $accession      || '' ) . "\t"
               . ( $label          || '' ) . "\t"
-              . ( $version        || '' ) . "\t"
+              . ( $version        || 0 ) . "\t"
               . ( $description    || '' ) . "\t"
               . "DEPENDENT" . "\t"
               . "Generated via "
@@ -4089,7 +4108,7 @@ PSQL
               . ( $external_db_id || '' ) . "\t"
               . ( $accession      || '' ) . "\t"
               . ( $label          || '' ) . "\t"
-              . ( $version        || '' ) . "\t"
+              . ( $version        || 0 ) . "\t"
               . ( $description    || '' ) . "\t" . "MISC" . "\t"
               . "No match\n";
 
@@ -4243,8 +4262,13 @@ PSQL
 	print UNMAPPED_OBJECT $external_db_id."\t".$acc."\t".$cutoff_2_failed_id{$q_cut."_".$t_cut}."\t";
 	print UNMAPPED_OBJECT $q_perc."\t".$t_perc."\t";
 	print UNMAPPED_OBJECT $ensembl_id."\t".$ensembl_type."\n";
-	print XREF_P ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $acc . 
-	  "\t" . $lab . "\t" . $ver . "\t" . $desc . "\tMISC\tNo match over threshold\n";
+        print XREF_P ( $xref_id + $xref_id_offset ) . "\t"
+          . ( $external_db_id || '' ) . "\t"
+          . ( $acc            || '' ) . "\t"
+          . ( $lab            || '' ) . "\t"
+          . ( $ver            || 0 ) . "\t"
+          . ( $desc           || '' ) . "\t" . "MISC" . "\t"
+          . "No match over threshold\n";
       }
       else{
 	$max_unmapped_object_id++;
@@ -4257,8 +4281,13 @@ PSQL
 	}
 	print UNMAPPED_OBJECT $external_db_id."\t".$acc."\t";
 	print UNMAPPED_OBJECT $xref_missed_id."\t0\t0\t0\t\\N\n";
-	print XREF_P ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $acc . 
-	  "\t" . $lab . "\t" . $ver . "\t" . $desc . "\tMISC\tNo match\n";
+        print XREF_P ( $xref_id + $xref_id_offset ) . "\t"
+          . ( $external_db_id || '' ) . "\t"
+          . ( $acc            || '' ) . "\t"
+          . ( $lab            || '' ) . "\t"
+          . ( $ver            || 0 ) . "\t"
+          . ( $desc           || '' ) . "\t" . "MISC" . "\t"
+          . "No match\n";
       }
     }
   }
@@ -4396,7 +4425,7 @@ SQL
           . ( $external_db_id || '' ) . "\t"
           . ( $accession      || '' ) . "\t"
           . ( $label          || '' ) . "\t"
-          . ( $version        || '' ) . "\t"
+          . ( $version        || 0 ) . "\t"
           . ( $description    || '' ) . "\t"
           . "DEPENDENT" . "\t"
           . "No mapping "
