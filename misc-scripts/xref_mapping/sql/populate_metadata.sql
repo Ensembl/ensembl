@@ -852,7 +852,7 @@ INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_d
 VALUES (3,51511,'ftp://ftp.ncbi.nih.gov/refseq/release/invertebrate/invertebrate10.protein.gpff.gz',now(),now(),'RefSeqGPFFParser');
 
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser)\
-VALUES (3,51511,'ftp://ftp.ncbi.nih.gov/refseq/release/invertebrate/invertebrate11protein.gpff.gz',now(),now(),'RefSeqGPFFParser');
+VALUES (3,51511,'ftp://ftp.ncbi.nih.gov/refseq/release/invertebrate/invertebrate11.protein.gpff.gz',now(),now(),'RefSeqGPFFParser');
 
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser)\
 VALUES (3,51511,'ftp://ftp.ncbi.nih.gov/refseq/release/invertebrate/invertebrate12.protein.gpff.gz',now(),now(),'RefSeqGPFFParser');
