@@ -217,22 +217,24 @@ sub parse {
 
   close FILE;
 
-  print "Skipped $skipped due to missing stable ID - internal ID mappings\n";
-
   # ----------------------------------------
   # Search regions 
   # read search_regions.txt from same location as $file
   my $search_regions_file = dirname($file) . "/search_regions.txt";
+
+  my $skipped_sr = 0;
 
   my @search_regions;
   print "Parsing search regions from $search_regions_file\n";
   open (SEARCH_REGIONS, "<$search_regions_file") || die "Can't open $search_regions_file";
   <SEARCH_REGIONS>; # skip header
   while (<SEARCH_REGIONS>) {
+    chomp;
     my ($id, $chromosome, $start, $end, $strand, $ensembl_gene_id) = split;
     my $gene_id = $stable_id_to_internal_id->{gene}->{$ensembl_gene_id};
     if (!$gene_id) {
       warn("Can't get internal ID for $ensembl_gene_id\n");
+      $skipped_sr++;
       next;
     }
     my $sr_chr_slice = $slice_adaptor->fetch_by_region('chromosome', $chromosome, undef, undef, undef, $old_assembly);
@@ -285,6 +287,8 @@ sub parse {
   $result{SEARCH_REGIONS} = \@search_regions;
 
   print "Parsed " . scalar(@{$result{FEATURES}}) . " features, " . scalar(@{$result{FACTORS}}) . " factors and " . scalar(@{$result{SEARCH_REGIONS}}) . " search regions\n";
+
+ print "Skipped $skipped features and $skipped_sr search regions due to missing stable ID - internal ID mappings\n";
 
   return \%result;
 
