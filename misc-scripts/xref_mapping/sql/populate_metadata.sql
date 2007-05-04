@@ -131,8 +131,10 @@ INSERT INTO source VALUES (2611, 'cint_aniseed_jgi_v2', 1, 'Y', 50, 1, "");
 # predicted versions of Uniprot/EMBL - created as dependent in appropriate parse
 INSERT INTO source VALUES (2857, "ARRAY_EMBL_MMC1_20k_v1", 1, 'Y', 40,1, "" );
 INSERT INTO source VALUES (2858, "ARRAY_EMBL_MMC2_12k_v1", 1, 'Y', 40, 1, "");
-INSERT INTO source VALUES (2859, "ARRAY_JHU_GAM3_0_21k_v1", 1, 'Y', 40, 1, "");
+INSERT INTO source VALUES (2859, "ARRAY_JHSPH_GAM3_0_21k_v1", 1, 'Y', 40, 1, "");
 INSERT INTO source VALUES (2860, "ARRAY_LIV_GAMDETOX_0_25k_v1", 1, 'Y', 40, 1, "");
+INSERT INTO source VALUES (2865, "ARRAY_LIV_GAMDETOX_0_25k_v2", 1, 'Y', 40, 1, "");
+INSERT INTO source VALUES (2866, "ARRAY_JHSPH_AG_GAMBER_15k_v1", 1, 'Y', 40, 1, "");
 INSERT INTO source VALUES (2801, "Uniprot/SWISSPROT_predicted", 1, 'N',20, 1, "");
 INSERT INTO source VALUES (2802, "Uniprot/SPTREMBL_predicted", 1, 'N',20, 1, "");
 INSERT INTO source VALUES (2810, "EMBL_predicted", 1, 'N',20, 1, "");
@@ -920,8 +922,10 @@ INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_d
 # VectorBase Arrays
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (2857, 7165,'LOCAL:Anopheles_gambiae/EMBL/EMBL_MMC1_20k_v1.txt', now(), now(), "VbDirectParser");
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (2858, 7165,'LOCAL:Anopheles_gambiae/EMBL/EMBL_MMC2_12k_v1.txt', now(), now(), "VbDirectParser");
-INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (2859, 7165,'LOCAL:Anopheles_gambiae/JHU/JHU_GAM3.0_21k_v1.txt', now(), now(), "VbDirectParser");
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (2859, 7165,'LOCAL:Anopheles_gambiae/JHSPH/JHSPH_GAM3.0_21k_v1.txt', now(), now(), "VbDirectParser");
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (2860, 7165,'LOCAL:Anopheles_gambiae/LIV/LIV_GAMDETOX_0.25k_v1.txt', now(), now(), "VbDirectParser");
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (2865, 7165,'LOCAL:Anopheles_gambiae/LIV/LIV_GAMDETOX_0.25k_v2.txt', now(), now(), "VbDirectParser");
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (2866, 7165,'LOCAL:Anopheles_gambiae/JHSPH/JHSPH_AG_GAMBER_15k_v1.txt', now(), now(), "VbDirectParser");
 
 ###### Aedes 
 
