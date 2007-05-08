@@ -162,6 +162,11 @@ sub run
 
       # Local files need to be dealt with specially; assume they are specified as
       # LOCAL:location/of/file/relative/to/xref_mapper
+
+      # FIXME?: Temporary (?) fix to allow us to understand that
+      #         'file://' is the same as 'LOCAL:'.
+      $urls =~ s#^file://#LOCAL:#;
+
       my ($file) = $urls =~ /.*\/(.*)/;
       if ($urls =~ /^LOCAL:(.*)/i) {
 	my $local_file = $1;
