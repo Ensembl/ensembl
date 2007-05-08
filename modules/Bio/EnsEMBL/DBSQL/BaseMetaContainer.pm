@@ -37,7 +37,7 @@ use vars qw(@ISA);
 use strict;
 
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
-use Bio::EnsEMBL::Utils::Exception qw(deprecate warning);
+use Bio::EnsEMBL::Utils::Exception qw(throw deprecate warning);
 
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
 
@@ -118,7 +118,7 @@ sub list_value_by_key {
   Example    : $meta_container->store_key_value($key, $value);
   Description: stores a value in the meta container, accessable by a key
   Returntype : none
-  Exceptions : none
+  Exceptions : Thrown if the key/value already exists.
   Caller     : ?
   Status     : Stable
 
@@ -127,7 +127,12 @@ sub list_value_by_key {
 sub store_key_value {
   my ( $self, $key, $value ) = @_;
 
-  my $sth = $self->prepare( "INSERT INTO meta( meta_key, meta_value) 
+  if ($self->key_value_exists($key, $value)) {
+    warn("Key/value pair $key/$value already exists in the meta table; not storing duplicate");
+    return;
+  }
+
+  my $sth = $self->prepare( "INSERT INTO meta( meta_key, meta_value)
                              VALUES( ?, ? )" );
 
   my $res = $sth->execute( $key, $value );
@@ -188,6 +193,63 @@ sub delete_key {
   delete $self->{'cache'}->{$key};
 
   return;
+}
+
+=head2 delete_key_value
+
+  Arg [1]    : string $key
+               The key which should be removed from the database.
+  Arg [2]    : string $value
+               The value to be removed.
+  Example    : $meta_container->delete_key('patch', 'patch_39_40_b.sql|xref_unique_constraint');
+  Description: Removes all rows from the meta table which have a meta_key
+               equal to $key, AND a meta_value equal to $value.
+  Returntype : none
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub delete_key_value {
+  my ($self, $key, $value) = @_;
+
+  my $sth = $self->prepare("DELETE FROM meta WHERE meta_key = ? AND meta_value = ?");
+  $sth->execute($key, $value);
+  $sth->finish();
+
+  delete $self->{'cache'}->{$key};
+
+  return;
+}
+
+=head2 key_value_exists
+
+  Arg [1]    : string $key
+               the key to check
+  Arg [2]    : string $value
+               the value to check
+  Example    : if ($meta_container->key_value_exists($key, $value)) ...
+  Description: Return true if a particular key/value pair exists, undef otherwise
+  Returntype : boolean
+  Exceptions : none
+  Caller     : ?
+  Status     : Stable
+
+=cut
+
+sub key_value_exists {
+
+  my ($self, $key, $value) = @_;
+
+  my $sth = $self->prepare( "SELECT * FROM meta WHERE meta_key = ? AND meta_value = ?" );
+  $sth->execute($key, $value);
+
+  if ($sth->fetchrow_arrayref()) {
+    return 1;
+  }
+
+  return undef;
 }
 
 1;
