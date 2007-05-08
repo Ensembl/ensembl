@@ -97,7 +97,7 @@ sub new {
 
   $self->adaptor($adaptor);
 
-  $adaptor->cache_seq_ids_with_mult_assemblys();
+  #$adaptor->cache_seq_ids_with_mult_assemblys();
 
   if(@coord_systems != 2) {
     throw('Can only map between 2 coordinate systems. ' .
