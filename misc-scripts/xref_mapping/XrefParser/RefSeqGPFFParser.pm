@@ -30,7 +30,7 @@ sub run {
 
   my $source_id = shift;
   my $species_id = shift;
-  my @files = @_
+  my @files = @_;
 
   my $release_file;
 
