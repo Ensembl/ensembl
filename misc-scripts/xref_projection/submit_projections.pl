@@ -4,13 +4,13 @@ use strict;
 # Remember to check/set the various config optons
 
 # ------------------------------ config -------------------------------
-my $release = 44;
+my $release = 45;
 
 my $base_dir = "/lustre/work1/ensembl/gp1/projections/";
 
-my $conf = "release_44.conf"; # registry config file
+my $conf = "release_45.conf"; # registry config file
 
-my $compara = "ensembl_compara_43"; # name in registry file
+my $compara = "bb2_ensembl_compara_45"; # name in registry file
 
 # -------------------------- end of config ----------------------------
 
