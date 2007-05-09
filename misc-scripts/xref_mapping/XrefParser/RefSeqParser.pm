@@ -30,8 +30,13 @@ sub run {
 
   my $source_id = shift;
   my $species_id = shift;
-  my $file = shift;
-  my $release_file = shift;
+  my @files = @_;
+
+  my $release_file;
+
+    if ( $files[-1] =~ /RefSeq-release/ ) {
+        $release_file = pop @files;
+    }
 
     my $peptide_source_id =
       $self->get_source_id_for_source_name('RefSeq_peptide');
@@ -50,20 +55,25 @@ sub run {
       . "$pred_peptide_source_id\n";
     print "RefSeq_dna_predicted source ID = $pred_dna_source_id\n";
 
-    if ( !defined($species_id) ) {
-        $species_id = $self->get_species_id_for_filename($file);
-    }
+    foreach my $file (@files) {
+        if ( !defined($species_id) ) {
+            $species_id = $self->get_species_id_for_filename($file);
+        }
 
-    my $xrefs =
-      $self->create_xrefs( $peptide_source_id, $dna_source_id,
-        $pred_peptide_source_id, $pred_dna_source_id, $file,
-        $species_id );
+        my $xrefs =
+          $self->create_xrefs( $peptide_source_id,
+                               $dna_source_id,
+                               $pred_peptide_source_id,
+                               $pred_dna_source_id,
+                               $file,
+                               $species_id );
 
-    if ( !defined($xrefs) ) {
-        return 1;    #error
-    }
-    if ( !defined( $self->upload_xref_object_graphs($xrefs) ) ) {
-        return 1;    # error
+        if ( !defined($xrefs) ) {
+            return 1;    #error
+        }
+        if ( !defined( $self->upload_xref_object_graphs($xrefs) ) ) {
+            return 1;    # error
+        }
     }
 
     if ( defined $release_file ) {
