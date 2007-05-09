@@ -36,13 +36,13 @@ foreach my $section ( $config->GroupMembers('species') ) {
     my $species_name = substr( $section, 8 );
 
     printf( "# Species '%s' (id = %d)\n",
-            $species_name, $config->val( $section, 'id' ) );
+            $species_name, $config->val( $section, 'taxonomy_id' ) );
 
     print(   "INSERT INTO species "
            . "(species_id, taxonomy_id, name, aliases)\n" );
 
     printf( "VALUES (%d, %d, '%s', '%s');\n",
-            $config->val( $section, 'id' ),
+            $config->val( $section, 'taxonomy_id' ),
             $config->val( $section, 'taxonomy_id' ),
             $species_name,
             $config->val( $section, 'aliases' ) );
@@ -91,7 +91,8 @@ foreach my $species_section ( $config->GroupMembers('species') ) {
 
         print( '#', '-' x 79, "\n" );
         printf( "# Data for species '%s' (id = %d)\n",
-                $species_name, $config->val( $species_section, 'id' ) );
+                $species_name,
+                $config->val( $species_section, 'taxonomy_id' ) );
         print( '#', '-' x 79, "\n" );
         print("\n");
 
@@ -122,7 +123,7 @@ foreach my $species_section ( $config->GroupMembers('species') ) {
 
             printf( "VALUES (%d, %d, '%s', now(), now(), '%s');\n",
                     $config->val( $source_section,  'id' ),
-                    $config->val( $species_section, 'id' ),
+                    $config->val( $species_section, 'taxonomy_id' ),
                     join( ' ', @uris ),
                     $config->val( $source_section, 'parser' ) );
 
