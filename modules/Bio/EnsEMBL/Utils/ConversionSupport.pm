@@ -1174,7 +1174,7 @@ sub log {
 
 sub log_warning {
     my ($self, $txt, $indent) = @_;
-    $txt = "WARNING: " . $txt;
+    $txt = "\nWARNING: " . $txt;
     $self->log($txt, $indent);
     $self->{'_warnings'}++;
     return(1);
@@ -1476,7 +1476,7 @@ sub fetch_non_hidden_slice {
 	my $visible_chroms;
 	foreach my $chrom ( @{$sa->fetch_all($cs,$cv)} ) {
 		my $attribs = $aa->fetch_all_by_Slice($chrom);
-		push @$visible_chroms, $chrom if @{$self->get_attrib_values($attribs,'hidden','N')};
+		push @$visible_chroms, $chrom if @{$self->get_attrib_values($attribs,'hidden',0)};
 	}
 	return $visible_chroms;
 }
