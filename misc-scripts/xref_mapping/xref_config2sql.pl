@@ -109,17 +109,13 @@ foreach my $species_section ( $config->GroupMembers('species') ) {
                    . "(source_id, species_id, url, file_modified_date, "
                    . "upload_date, parser)\n" );
 
-            my @uris = (
-                         split( /\n/,
-                                $config->val($source_section, 'data_uri'
-                                )
-                         ),
-                         $config->val( $source_section, 'release_uri' )
-            );
+            my @uris = split( /\n/,
+                          $config->val( $source_section, 'data_uri' ) );
 
-            if ( $uris[-1] eq ' ' || $uris[-1] eq '' ) {
-                pop(@uris);
-            }
+            my $release_uri =
+              $config->val( $source_section, 'release_uri' );
+
+            if ( $release_uri =~ /\w/ ) { push( @uris, $release_uri ) }
 
             printf( "VALUES (%d, %d, '%s', now(), now(), '%s');\n",
                     $config->val( $source_section,  'id' ),
