@@ -55,8 +55,8 @@ sub run {
       . "$pred_peptide_source_id\n";
     print "RefSeq_dna_predicted source ID = $pred_dna_source_id\n";
 
+    my @xrefs;
     foreach my $file (@files) {
-
         if ( $source_id < 1 ) {
             $source_id =
               $self->get_source_id_for_filename( basename($file) );
@@ -65,7 +65,7 @@ sub run {
             $species_id = $self->get_species_id_for_filename($file);
         }
 
-        my $xrefs =
+        push @xrefs,
           $self->create_xrefs( $peptide_source_id,
                                $dna_source_id,
                                $pred_peptide_source_id,
@@ -73,13 +73,16 @@ sub run {
                                $file,
                                $species_id );
 
-        if ( !defined($xrefs) ) {
+        if ( !defined( $xrefs[-1] ) ) {
             return 1;    #error
         }
+    }
+
+    foreach my $xrefs (@xrefs) {
         if ( !defined( $self->upload_xref_object_graphs($xrefs) ) ) {
             return 1;    # error
         }
-    } ## end foreach my $file (@files)
+    }
 
     if ( defined $release_file ) {
         # Parse and set release info.
