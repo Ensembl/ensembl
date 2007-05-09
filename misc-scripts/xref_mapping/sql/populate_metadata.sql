@@ -439,6 +439,12 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 # TcR/Ig gene segments presently inhouse ( points to file with dumped direct xrefs )
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (4100, 10090,'LOCAL:Segments/Seg_xrefs.txt', '', now(), now(), "SegmentParser");
 
+##      CCDS
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (2000, 10090,'LOCAL:CCDS/CCDS.txt', '', now(), now(), "CCDSParser");
+
+##      OTTT
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (5000, 10090,'LOCAL:OTTT/OTTT.txt', '', now(), now(), "OTTTParser");
+
 
 
 # --------------------------------------------------------------------------------
