@@ -1453,7 +1453,7 @@ sub commify {
   return scalar reverse $num;
 }
 
-=head2 fetch_non_hidden_slice
+=head2 fetch_non_hidden_slices
 
   Arg[1]      : B::E::SliceAdaptor
   Arg[2]      : B::E::AttributeAdaptor
@@ -1467,7 +1467,7 @@ sub commify {
 
 =cut
 
-sub fetch_non_hidden_slice {
+sub fetch_non_hidden_slices {
 	my $self = shift;
 	my $aa   = shift or throw("You must supply an attribute adaptor");
 	my $sa   = shift or throw("You must supply a slice adaptor");
