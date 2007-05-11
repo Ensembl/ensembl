@@ -61,7 +61,7 @@ sub run {
             $species_id = $self->get_species_id_for_filename($file);
         }
 
-        push @xrefs,
+        my $xrefs =
           $self->create_xrefs( $peptide_source_id,
                                $dna_source_id,
                                $pred_peptide_source_id,
@@ -69,15 +69,15 @@ sub run {
                                $file,
                                $species_id );
 
-        if ( !defined($xrefs[-1]) ) {
+        if ( !defined($xrefs) ) {
             return 1;    #error
         }
+
+        push @xrefs, @{$xrefs};
     }
 
-    foreach my $xrefs (@xrefs) {
-        if ( !defined( $self->upload_xref_object_graphs($xrefs) ) ) {
-            return 1;    # error
-        }
+    if ( !defined( $self->upload_xref_object_graphs( \@xrefs ) ) ) {
+        return 1;    # error
     }
 
     if ( defined $release_file ) {
