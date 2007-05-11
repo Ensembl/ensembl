@@ -65,7 +65,7 @@ sub run {
             $species_id = $self->get_species_id_for_filename($file);
         }
 
-        push @xrefs,
+        my $xrefs =
           $self->create_xrefs( $peptide_source_id,
                                $dna_source_id,
                                $pred_peptide_source_id,
@@ -73,15 +73,15 @@ sub run {
                                $file,
                                $species_id );
 
-        if ( !defined( $xrefs[-1] ) ) {
+        if ( !defined( $xrefs ) ) {
             return 1;    #error
         }
+
+        push @xrefs, @{$xrefs};
     }
 
-    foreach my $xrefs (@xrefs) {
-        if ( !defined( $self->upload_xref_object_graphs($xrefs) ) ) {
-            return 1;    # error
-        }
+    if ( !defined( $self->upload_xref_object_graphs( \@xrefs ) ) ) {
+        return 1;    # error
     }
 
     if ( defined $release_file ) {
@@ -121,7 +121,8 @@ sub create_xrefs {
   my ( $peptide_source_id, $dna_source_id, $pred_peptide_source_id,
       $pred_dna_source_id, $file, $species_id ) = @_;
 
-  my %name2species_id =  $self->name2species_id();
+  my %name2species_id     = $self->name2species_id();
+  my %taxonomy2species_id = $self->taxonomy2species_id();
 
   my %dependent_sources =  $self->get_dependent_xref_sources();
 
@@ -176,6 +177,12 @@ sub create_xrefs {
     $species =~ s/\s+/_/g;
     $species =~ s/\n//g;
     my $species_id_check = $name2species_id{$species};
+
+    # Try going through the taxon ID if species check didn't work.
+    if ( !defined $species_id_check ) {
+        my ($taxon_id) = $entry =~ /db_xref="taxon:(\d+)"/;
+        $species_id_check = $taxonomy2species_id{$taxon_id};
+    }
 
     # skip xrefs for species that aren't in the species table
     if (   defined $species_id
