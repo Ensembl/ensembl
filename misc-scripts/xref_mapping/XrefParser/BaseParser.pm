@@ -101,22 +101,24 @@ sub run
   }
 
   my $sql =
-    "SELECT distinct(s.source_id), su.source_url_id, s.name, su.url, su.checksum, su.parser, su.species_id " .
-      "FROM source s, source_url su, species sp " .
-	"WHERE s.download='Y' AND su.source_id=s.source_id " .
-          "AND su.species_id=sp.species_id " .
-	    $source_sql . $species_sql .
-	      "ORDER BY s.ordered";
+      "SELECT DISTINCT(s.source_id), su.source_url_id, s.name, su.url, "
+    . "su.release_url, su.checksum, su.parser, su.species_id "
+    . "FROM source s, source_url su, species sp "
+    . "WHERE s.download='Y' AND su.source_id=s.source_id "
+    . "AND su.species_id=sp.species_id "
+    . $source_sql
+    . $species_sql
+    . "ORDER BY s.ordered";
   # print $sql . "\n";
 
   my $sth = $dbi->prepare($sql);
   $sth->execute();
 
-  my ( $source_id, $source_url_id, $name, $url, $checksum, $parser,
-      $species_id);
+  my ( $source_id, $source_url_id, $name, $url, $release_url, $checksum,
+       $parser, $species_id );
 
   $sth->bind_columns( \$source_id, \$source_url_id, \$name, \$url,
-      \$checksum, \$parser, \$species_id);
+                      \$release_url, \$checksum, \$parser, \$species_id );
 
   my $last_type = "";
   my $dir;
@@ -124,13 +126,15 @@ sub run
   while (my @row = $sth->fetchrow_array()) {
     print '-' x 4, "{ $name }", '-' x ( 72 - length($name) ), "\n";
 
-    # Download each source into the appropriate directory for parsing later
-    # or call the appropriate database parser if appropriate
-    # Also delete previous working directory if we're starting a new source type
+    # Download each source into the appropriate directory for parsing
+    # later or call the appropriate database parser if appropriate.
+    # Also delete previous working directory if we're starting a new
+    # source type can have more than one file.
 
-    # can have more than one file
-
-    my @files = split(/\s+/,$url);
+    my @files = split( /\s+/, $url );
+    if ( defined $release_url ) {
+        push @files, $release_url;
+    }
 
     my $parse = 0;
     my $empty = 0;
@@ -365,22 +369,38 @@ sub run
       }
     }   # foreach @urls
 
+    # If $release_url is defined, then @urls contains it in the end, and
+    # so does @new_file, so pop it off @new_file.
+    if ( defined $release_url ) {
+        $release_url = pop @new_file;
+    }
+
     if ( $parse and @new_file and defined $file_cs ) {
       print "Parsing '" . join( "', '", @new_file ) . "' with $parser\n";
 
       eval "require XrefParser::$parser";
       my $new = "XrefParser::$parser"->new();
 
-      if (
-          $new->run(
-              $source_id, $species_id,
-              map( $dir . '/' . $_, @new_file )
-          )
-        )
-      {
-          $summary{$parser}++;
-      }
-      
+    if ( defined $release_url ) {
+        # Run with $release_url.
+        if (
+             $new->run( $source_id,
+                        $species_id,
+                        map( $dir . '/' . $_, @new_file ),
+                        $dir . '/' . $release_url ) )
+        {
+            $summary{$parser}++;
+        }
+    } else {
+        # Run without $release_url.
+        if (
+             $new->run( $source_id, $species_id,
+                        map( $dir . '/' . $_, @new_file ) ) )
+        {
+            $summary{$parser}++;
+        }
+    }
+
       # update AFTER processing in case of crash.
       update_source( $dbi, $source_url_id, $file_cs,
           $dir . '/' . $new_file[0] );
@@ -421,6 +441,12 @@ sub run
 }
 
 # --------------------------------------------------------------------------------
+
+# Given a URI, download it.  If the URI is a 'file://' or 'ftp://' then
+# standars shell file name globbing (not regular expressions) is allowed
+# (HTTP does not allow file name globbing).
+sub fetch_file {    # FIXME
+}
 
 # Given a file name, returns a IO::Handle object.  If the file is
 # gzipped, the handle will be to an unseekable stream coming out of a
@@ -948,24 +974,41 @@ sub taxonomy2species_id {
 # Get & cache a hash of all the species IDs & species names.
 
 sub name2species_id {
+    my $self = shift;
 
-  my $self = shift;
+    if ( !%name2species_id ) {
 
-  if (!%name2species_id) {
+        my $dbi = dbi();
+        my $sth = $dbi->prepare("SELECT species_id, name FROM species");
+        $sth->execute() or croak( $dbi->errstr() );
+        while ( my @row = $sth->fetchrow_array() ) {
+            my $species_id = $row[0];
+            my $name       = $row[1];
+            $name2species_id{$name} = $species_id;
+        }
 
-    my $dbi = dbi();
-    my $sth = $dbi->prepare("SELECT species_id, name FROM species");
-    $sth->execute() or croak( $dbi->errstr() );
-    while(my @row = $sth->fetchrow_array()) {
-      my $species_id = $row[0];
-      my $name = $row[1];
-      $name2species_id{$name} = $species_id;
-    }
-  }
+        if (0) {
+            # Also populate the hash with all the aliases.
+            $sth =
+              $dbi->prepare("SELECT species_id, aliases FROM species");
+            $sth->execute() or croak( $dbi->errstr() );
+            while ( my @row = $sth->fetchrow_array() ) {
+                my $species_id = $row[0];
+                foreach my $name ( split /,\s*/, $row[1] ) {
+                    if ( exists $name2species_id{$name} ) {
+                        warn "Ambigous species alias: "
+                          . "$name (id = $species_id)\n";
+                    } else {
+                        $name2species_id{$name} = $species_id;
+                    }
+                }
+            }
+        }
 
-  return %name2species_id;
+    } ## end if ( !%name2species_id)
 
-}
+    return %name2species_id;
+} ## end sub name2species_id
 
 # --------------------------------------------------------------------------------
 # Update a row in the source table
