@@ -35,17 +35,27 @@ print("\n");
 foreach my $section ( $config->GroupMembers('species') ) {
     my $species_name = substr( $section, 8 );
 
-    printf( "# Species '%s' (id = %d)\n",
-            $species_name, $config->val( $section, 'taxonomy_id' ) );
+    my $species_id;
+
+    if (
+         defined( my $strain_of_species =
+                    $config->val( $section, 'strain_of' ) ) )
+    {
+        my $strain_of_section =
+          sprintf( "species %s", $strain_of_species );
+        $species_id = $config->val( $strain_of_section, 'taxonomy_id' );
+    } else {
+        $species_id = $config->val( $section, 'taxonomy_id' );
+    }
+
+    printf( "# Species '%s' (id = %d)\n", $species_name, $species_id );
 
     print(   "INSERT INTO species "
            . "(species_id, taxonomy_id, name, aliases)\n" );
 
     printf( "VALUES (%d, %d, '%s', '%s');\n",
-            $config->val( $section, 'taxonomy_id' ),
-            $config->val( $section, 'taxonomy_id' ),
-            $species_name,
-            $config->val( $section, 'aliases' ) );
+            $species_id,   $config->val( $section, 'taxonomy_id' ),
+            $species_name, $config->val( $section, 'aliases' ) );
 
     print("\n");
 }
@@ -87,42 +97,59 @@ print("# DATA FILES\n");
 print("\n");
 
 foreach my $species_section ( $config->GroupMembers('species') ) {
-        my $species_name = substr( $species_section, 8 );
+    my $species_name = substr( $species_section, 8 );
 
-        print( '#', '-' x 79, "\n" );
-        printf( "# Data for species '%s' (id = %d)\n",
-                $species_name,
-                $config->val( $species_section, 'taxonomy_id' ) );
-        print( '#', '-' x 79, "\n" );
-        print("\n");
+    my $species_id;
 
-        foreach my $source_name (
+    if (
+         defined( my $strain_of_species =
+                    $config->val( $species_section, 'strain_of' ) ) )
+    {
+        my $strain_of_section =
+          sprintf( "species %s", $strain_of_species );
+        $species_id = $config->val( $strain_of_section, 'taxonomy_id' );
+    } else {
+        $species_id = $config->val( $species_section, 'taxonomy_id' );
+    }
+
+    print( '#', '-' x 79, "\n" );
+    printf( "# Data for species '%s' (id = %d)\n",
+            $species_name, $species_id );
+    print( '#', '-' x 79, "\n" );
+    print("\n");
+
+
+    foreach my $source_name (
              split( /\n/, $config->val( $species_section, 'source' ) ) )
-        {
-            my $source_section = sprintf( "source %s", $source_name );
+    {
+        my $source_section = sprintf( "source %s", $source_name );
 
-            printf( "# Data from source '%s' (id = %d)\n",
-                    $source_name,
-                    $config->val( $source_section, 'id' ) );
+        printf( "# Data from source '%s' (id = %d)\n",
+                $source_name, $config->val( $source_section, 'id' ) );
 
-            print(   "INSERT INTO source_url "
-                   . "(source_id, species_id, url, file_modified_date, "
-                   . "upload_date, parser)\n" );
+        print(   "INSERT INTO source_url "
+               . "(source_id, species_id, url, release_url, "
+               . "file_modified_date, upload_date, parser)\n" );
 
-            my @uris = split( /\n/,
-                          $config->val( $source_section, 'data_uri' ) );
+        my @uris =
+          split( /\n/, $config->val( $source_section, 'data_uri' ) );
 
-            my $release_uri =
-              $config->val( $source_section, 'release_uri' );
+        my $release_uri =
+          $config->val( $source_section, 'release_uri' );
 
-            if ( $release_uri =~ /\w/ ) { push( @uris, $release_uri ) }
-
-            printf( "VALUES (%d, %d, '%s', now(), now(), '%s');\n",
-                    $config->val( $source_section,  'id' ),
-                    $config->val( $species_section, 'taxonomy_id' ),
-                    join( ' ', @uris ),
-                    $config->val( $source_section, 'parser' ) );
-
-            print("\n");
+        if ( $release_uri !~ /\w/ ) {
+            $release_uri = '\N';
+        } else {
+            $release_uri = "'$release_uri'";
         }
-}
+
+        printf( "VALUES (%d, %d, '%s', %s, now(), now(), '%s');\n",
+                $config->val( $source_section, 'id' ),
+                $species_id,
+                join( ' ', @uris ),
+                $release_uri,
+                $config->val( $source_section, 'parser' ) );
+
+        print("\n");
+    } ## end foreach my $source_name ( split...
+} ## end foreach my $species_section...
