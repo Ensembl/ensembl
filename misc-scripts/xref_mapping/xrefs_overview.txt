@@ -11,36 +11,35 @@ database.
 Parsing the external database References
 ------------------------------------------------------------------------
 
-In the directory sql you will find a file populate_metadata.sql. In this
-file the data there is used to get the files to be parsed. So for each
-species there will be a list of datafiles that will be parsed. Most
-sources will start with 'ftp://' or 'http://' which indicates that they
-will be downloaded from external sites.  Those starting with 'file://'
-(or 'LOCAL:') are not downloaded and must be copied manually from
-another source.
+In this directory you will find an ini-file called 'xref_config.ini'.
+This file contains two types of configuration sections; source sections
+and species sections.  A source section defines Xref priority, order
+etc. (as key-value pairs) for the source and also the URIs pointing
+to the data files that the source should use.  The source label will
+only be used to refer to the source within the ini-file (from a species
+section), so this can be any text string which is easy to undeerstand
+the meaning of.
 
-When xref_parser.pm is run it will load this data for all species into
-the database and will then down load and parse all those files for a
+A species section contains information about species aliases, taxonomy
+ID and what sources to use for that species.  The name of the species is
+defined by the source label and will be store in the Xref database.
+
+For now, the script 'xref_config2sql.pl', also found in this directory,
+should be used to convert the ini-file into a SQL file which you should
+replace the file 'sql/populate_metadata.sql' with.
+
+When 'xref_parser.pl' is run it will load this data for all species into
+the database and will then download and parse all those files for a
 given specified species.
 
-If you want to add a new source you will have to add a new source line
-i.e.
+If you want to add a new source you will have to add a new source
+section, following the pattern used by the other source sections.  You
+will then have to add it to the species that require the data.
 
-    INSERT INTO source VALUES (10020, 'NEWSOURCE', 1, 'Y', 10, 1, "");
-
-then for a particular species you will have to defined how to get the
-file and parse it. i.e.
-
-    INSERT INTO source_url
-        (source_id, species_id, url, checksum,
-        file_modified_date, upload_date, parser)
-    VALUES (10020, 9606,
-        'ftp://ftp.ebi.ac.uk/pub/databases/new_source.dat', '',
-        now(), now(), "NewSourceParser");
-
-You will now also have to write the parser NewSourceParser.pm in the
-XrefParser directory.  You can find lots of examples of parsers in this
-directory.
+If the new data comes in files not previously handeled by the Xref
+system, you will now also have to write the parser NewSourceParser.pm in
+the XrefParser directory.  You can find lots of examples of parsers in
+this directory.
 
 The parsing can create three types of xrefs these are
 
