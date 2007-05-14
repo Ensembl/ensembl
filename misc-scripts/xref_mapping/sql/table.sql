@@ -84,6 +84,7 @@ CREATE TABLE source_url (
   source_id                   int unsigned not null,
   species_id                  int unsigned not null,
   url                         mediumtext,
+  release_url                 mediumtext,
   checksum                    varchar(255),
   file_modified_date          datetime,
   upload_date                 datetime,
