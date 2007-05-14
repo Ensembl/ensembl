@@ -1,75 +1,123 @@
-The Xref System.
-----------------
+The Xref System
+========================================================================
 
-The external database references (xrefs) are added to the ensembl databases using the code  found in this directory. The process consists of two parts. First part is parsing the data into a tempory database (xref database). The second part is to map the new xrefs to the ensembl database.
+The external database references (xrefs) are added to the ensembl
+databases using the code found in this directory. The process consists
+of two parts. First part is parsing the data into a tempory database
+(xref database). The second part is to map the new xrefs to the ensembl
+database.
 
-Parsing the external database References.
------------------------------------------
 
+Parsing the external database References
+------------------------------------------------------------------------
 
-In the directory sql you will find a file populate_metadata.sql. In this file the data there is used to get the files to be parsed. So for each species there will be a list of datafiles that will be parsed. Most sources will start with ftp:// or http:/ which indicates that tehy will be downloaded from external sites. Those starting with LOCAL:/ are not downloaded and must be copied manually from another source.
+In the directory sql you will find a file populate_metadata.sql. In this
+file the data there is used to get the files to be parsed. So for each
+species there will be a list of datafiles that will be parsed. Most
+sources will start with 'ftp://' or 'http://' which indicates that they
+will be downloaded from external sites.  Those starting with 'file://'
+(or 'LOCAL:') are not downloaded and must be copied manually from
+another source.
 
-When xref_parser.pm is ran it will load this data for all species into the database and will then down load and parse all those files for a given specified species.
+When xref_parser.pm is run it will load this data for all species into
+the database and will then down load and parse all those files for a
+given specified species.
 
-If you want to add a new source you will have to add a new source line i.e
-INSERT INTO source VALUES (10020, 'NEWSOURCE', 1, 'Y', 10, 1, "");
-
-then for a particular species you will have to defined how to get the file and parse it.
+If you want to add a new source you will have to add a new source line
 i.e.
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (10020, 9606, 'ftp://ftp.ebi.ac.uk/pub/databases/new_source.dat', '', now(), now(), "NewSourceParser");
 
-You will now also have to write the parser NewSourceParser.pm in the XrefParser directory.
-You can find lots of examples of parsers in this directory. 
+    INSERT INTO source VALUES (10020, 'NEWSOURCE', 1, 'Y', 10, 1, "");
 
-The parsing can create 3 types of xrefs these are
+then for a particular species you will have to defined how to get the
+file and parse it. i.e.
+
+    INSERT INTO source_url
+        (source_id, species_id, url, checksum,
+        file_modified_date, upload_date, parser)
+    VALUES (10020, 9606,
+        'ftp://ftp.ebi.ac.uk/pub/databases/new_source.dat', '',
+        now(), now(), "NewSourceParser");
+
+You will now also have to write the parser NewSourceParser.pm in the
+XrefParser directory.  You can find lots of examples of parsers in this
+directory.
+
+The parsing can create three types of xrefs these are
 
 1) Primary   (These have sequence and are mapped via exonerate)
 2) Dependent (Have no sequence but are dependent on the Primary ones)
-3) Direct    (These are directly linked to the ensembl entitys, so the mapping is already done)    
+3) Direct    (These are directly linked to the ensembl entitys, so the
+             mapping is already done)
 
-When you run the script xref_parser.pl to do the xrefs you must pass to it several options but for most runs all you need to specify it the user,pass,host,dbname and species. i.e.
+When you run the script xref_parser.pl to do the xrefs you must pass
+to it several options but for most runs all you need to specify it the
+user,pass,host,dbname and species. i.e.
 
-perl xref_parser.pl -host mymachine -user admin -pass XXXX -dbname new_human_xref -species human
+    perl xref_parser.pl -host mymachine -user admin -pass XXXX \
+        -dbname new_human_xref -species human
 
-Please keep the output from this script and check it later. At the end of the output there will be a summary of what was successful and what failed this is important.
+Please keep the output from this script and check it later. At the end
+of the output there will be a summary of what was successful and what
+failed this is important.
+
+Some sources will have more than one file, in these cases they have
+the same source name but different source ids. These are known as
+priority xrefs as the xrefs are mapped according to the priority of the
+source. An example of this is the HUGOs.
+
+For more information on the what data can be parsed see
+parsing_information.txt
 
 
-Some sources will have more than one file, in these cases they have the same source name but different source ids. These are known as priority xrefs as the xrefs are mapped according to the priority of the source. An example of this is the HUGOs. 
-
-For more information on the what data can be parsed see parsing_information.txt
-
-
-Mapping the external database references to the Ensembl core database. 
-----------------------------------------------------------------------
+Mapping the external database references to the Ensembl core database
+------------------------------------------------------------------------
 
 This is an overview of what goes on in the script xref_mapper.pl
 
-Primary xrefs are dumped out to two fasta files, one for peptides and the other for dna.
-Ensembl Transcripts and Translations are then dumped out to two files in fasta format.
+Primary xrefs are dumped out to two fasta files, one for peptides and
+the other for DNA.  Ensembl Transcripts and Translations are then dumped
+out to two files in fasta format.
 
-Exonerate is then used to find the best matches for the xrefs. If there is more than one best macth then the xref is mapped to more than one ensembl entity. A cutoff is used to filter the best macthes to make sure they pass cerain criteria. By defualt this is that the query identity OR the target identity must be over 90%. This can be changed by creating your own method.pm file in the directory XrefMapper/Methods and creating subroutines query_identity_threshold and target_identity_threshold which return the new values.
+Exonerate is then used to find the best matches for the xrefs. If there
+is more than one best macth then the xref is mapped to more than one
+ensembl entity. A cutoff is used to filter the best macthes to make sure
+they pass cerain criteria. By defualt this is that the query identity OR
+the target identity must be over 90%. This can be changed by creating
+your own method.pm file in the directory XrefMapper/Methods and creating
+subroutines query_identity_threshold and target_identity_threshold which
+return the new values.
 
-So exonerate will generate a set of .map files with the mapping in. The .map files are then parsed and any that pass the criteria are stored in the xref table, object_xref table  and the identity_xref table. All dependent xrefs are also stored if the parent is mapped.
+So exonerate will generate a set of .map files with the mapping in. The
+.map files are then parsed and any that pass the criteria are stored
+in the xref table, object_xref table and the identity_xref table. All
+dependent xrefs are also stored if the parent is mapped.
 
-Direct xrefs are also stored at this stage but no mapping is needed here as we already knew what each xref maps too.
+Direct xrefs are also stored at this stage but no mapping is needed here
+as we already knew what each xref maps too.
 
-For priority xrefs (ones that have multiple sources) the highest priority one is only stored.
+For priority xrefs (ones that have multiple sources) the highest
+priority one is only stored.
 
-Any xrefs whcih fail to be mapped are written to the unmapped_object table with a brief explanation of why they could not be mapped.
+Any xrefs whcih fail to be mapped are written to the unmapped_object
+table with a brief explanation of why they could not be mapped.
 
-Once all the mapping have been stored the display_xrefs and the descriptions are generated for the transcripts and genes.
+Once all the mapping have been stored the display_xrefs and the
+descriptions are generated for the transcripts and genes.
 
-If you want to change any of the defualt settings you can create a new species.pm for your particular species and override the script BasicMapper.pm. see rattus_norvegicus.pm as an example.
- 
+If you want to change any of the defualt settings you can create a
+new species.pm for your particular species and override the script
+BasicMapper.pm. see rattus_norvegicus.pm as an example.
 
-The xref_mapper.pl needs a configuration file which has information on the xref database and the core datadase and also the species name. Below is an exaple of running the mapping.
+The xref_mapper.pl needs a configuration file which has information on
+the xref database and the core datadase and also the species name. Below
+is an exaple of running the mapping.
 
-perl ~/ensembl-live/ensembl/misc-scripts/xref_mapping/xref_mapper.pl -file xref_input -upload >&MAPPER.OUT
+    perl ~/ensembl-live/ensembl/misc-scripts/xref_mapping/xref_mapper.pl \
+        -file xref_input -upload >&MAPPER.OUT
 
 
 Here is an example of a config file
-
----------------------------------------------
+------------------------------------------------------------------------
 xref
 host=ensembl-machine
 port=3306
@@ -85,9 +133,10 @@ dbname=homo_sapiens_core_42_36d
 user=admin
 password=xxxx
 dir=./ensembl
-----------------------------------------------
+------------------------------------------------------------------------
 
-
-Note it is good practice to put a sub directory for the ensembl directory as many files are generated asnd hence best to put these all together and way from everything else or it will be hard to find things. Also the directory can be tared and zipped in case you need to check things later.
-
-
+Note it is good practice to put a sub directory for the ensembl
+directory as many files are generated asnd hence best to put these
+all together and way from everything else or it will be hard to find
+things. Also the directory can be tared and zipped in case you need to
+check things later.
