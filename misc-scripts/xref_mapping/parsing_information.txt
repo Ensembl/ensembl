@@ -127,7 +127,7 @@ This is a local and is not down loaded automatically via ftp so an
 AgilentProbe the file must be copied by hand.  This will be some thing
 like
 
-    LOCAL:AgilentProbe/HumanExpression.fasta
+    file://AgilentProbe/HumanExpression.fasta
 
 These are primary Xrefs in that they contain sequence and hence can be
 mapped to the Ensembl entities via normal alignment methods (we use
@@ -143,7 +143,7 @@ This is a local and is not down loaded automatically via ftp so an
 AgilentProbe the file must be copied by hand.  This will be some thing
 like
 
-    LOCAL:AgilentCGH/HumanCGH.fasta
+    file://AgilentCGH/HumanCGH.fasta
 
 These are primary Xrefs in that they contain sequence and hence can be
 mapped to the Ensembl entities via normal alignment methods (we use
@@ -237,7 +237,7 @@ ncRNA, RFAM, miRNA_Registry
 This is a local and is not down loaded automatically via ftp so you must
 copy this file first before running the parser.
 
-    LOCAL:ncRNA/ncRNA.txt
+    file://ncRNA/ncRNA.txt
 
 These are direct Xrefs so the file contains data on what the Xref is and
 which Ensembl entity it matches too.
@@ -305,7 +305,7 @@ These are the direct mapping between the vega genes and Ensembl
 ones.  Not all of these are mapped but a fair proportion are.  These
 create direct Xrefs.  The file used should be
 
-    LOCAL:OTTT/OTTT.txt
+    file://OTTT/OTTT.txt
 
 
 CCDS
@@ -317,7 +317,7 @@ quality tests.
 
 A local file is used here:
 
-    LOCAL:CCDS/CCDS.txt 
+    file://CCDS/CCDS.txt 
 
 The file contains a list of ccds identifiers and the Ensembl entities
 they match to.  So direct Xrefs are created for these.
@@ -381,6 +381,6 @@ Uses the file
 
 and the database (last release should do)
 
-    mysql:ensembldb.ensembl.org::caenorhabditis_elegans_core_39_150a:anonymous
+    mysql://ensembldb.ensembl.org::caenorhabditis_elegans_core_39_150a:anonymous
 
 This creates direct Xrefs for all these.
