@@ -247,35 +247,36 @@ sub type_variation {
   my $UPSTREAM = 5000;
   my $DOWNSTREAM = 5000;
 
+  #empty type first in the case of recursive call
+  $var->empty_type if defined $var->type;
+  
   if (!$var->isa('Bio::EnsEMBL::Variation::ConsequenceType')){
       throw("Not possible to calculate the consequence type for ",ref($var)," : Bio::EnsEMBL::Variation::ConsequenceType object expected");
   }
 
-  ##to find if a SNP is overlapping with a regulatory region, we need to get a slice containing a gene
-  ##plus 5kb on both side, then fetch regulatory feature by the slice, then check whether they overlapping
+  ##to find if a SNP is overlapping with the transcript of the regulatory region, also the SNP should be within 5kb on both side of the transcript, then check whether they overlapping
 
-  if ($g and ref($g) and $g->isa('Bio::EnsEMBL::Gene')) {
+#   if ($g and ref($g) and $tr->isa('Bio::EnsEMBL::Genes')) {
+#     foreach my $rf (@{$g->fetch_all_regulatory_features()}) {
+#       my $rf_start = $rf->seq_region_start;
+#       my $rf_end  = $rf->seq_region_end;
 
-    my $seq_region_slice = $g->slice->seq_region_Slice;
+#       if ($var->end >= $rf_start and $var->start <= $rf_end) {
+#  	$var->type('REGULATORY_REGION');
+# 	last;
+#       }
+#     }
+#   }
 
-    my $g_start = $g->start - $UPSTREAM;
-    $g_start = 1 if $g_start <1;
-    my $g_end = $g->end + $DOWNSTREAM;
-    $g_end = $seq_region_slice->end if $g_end > $seq_region_slice->end;
+  if ($tr and ref($tr) and $tr->isa('Bio::EnsEMBL::Transcripts')) {
+    foreach my $rf (@{$tr->fetch_all_regulatory_features()}) {
+      my $rf_start = $rf->start;
+      my $rf_end  = $rf->end;
 
-    my $g_slice = $seq_region_slice->sub_Slice($g_start,$g_end, $g->slice->strand);
-
-    my $rfa = $g->adaptor->db->get_RegulatoryFeatureAdaptor();
-
-    my $rfs = $rfa->fetch_all_by_Slice($g_slice);
-
-    foreach my $rf (@{$rfs}) {
-      my $new_rf_start = $rf->start+$g_slice->start-1;
-      my $new_rf_end  = $rf->end+$g_slice->start-1;
-
-      if ($var->end >= $new_rf_start and $var->start <= $new_rf_end) {
- 	$var->type('REGULATORY_REGION');
-	last;
+      if ($var->end >= $rf_start and $var->start <= $rf_end) {
+ 	$var->type('REGULATORY_REGION') if ($var->type !~ /REGULATORY/);
+	print $var->start, " has regulatiory_region near",$tr->dbId,"\n";
+        last;
       }
     }
   }
@@ -308,8 +309,8 @@ sub type_variation {
 #       $var->empty_type ;  
 #       push @out, @{type_variation($tr, $g, bless \%new_var, ref($var))};
 #     }
-
 #    return \@out;
+
 
   }
 
@@ -457,6 +458,7 @@ sub apply_aa_change {
 
   my @aa_alleles = ($old_aa);
 
+  #here could generate multi type if have multi-allele change: "ACTAGT/-/T"
   foreach my $a (@alleles) {
     $a =~ s/\-//;
     my $cds = $tr->translateable_seq();
@@ -466,7 +468,6 @@ sub apply_aa_change {
         # since too complicated and could be very long
 	
 	$var->type('FRAMESHIFT_CODING');
-	
         return [$var];
       }
 
@@ -503,7 +504,7 @@ sub apply_aa_change {
       }
     }
   }
-
+  
   #note if type is already defined as SOTP_GAINED OR STOP_LOST, then even @aa_alleles > 1, we are not given type
   # of 'NON_SYNONYMOUS_CODING'
   if(@aa_alleles > 1) {
