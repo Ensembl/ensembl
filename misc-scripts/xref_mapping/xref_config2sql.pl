@@ -35,27 +35,21 @@ print("\n");
 foreach my $section ( $config->GroupMembers('species') ) {
     my $species_name = substr( $section, 8 );
 
-    my $species_id;
+    my @taxonomy_ids =
+      split( /\n/, $config->val( $section, 'taxonomy_id' ) );
 
-    if (
-         defined( my $strain_of_species =
-                    $config->val( $section, 'strain_of' ) ) )
-    {
-        my $strain_of_section =
-          sprintf( "species %s", $strain_of_species );
-        $species_id = $config->val( $strain_of_section, 'taxonomy_id' );
-    } else {
-        $species_id = $config->val( $section, 'taxonomy_id' );
-    }
+    my $species_id = $taxonomy_ids[0];
 
     printf( "# Species '%s' (id = %d)\n", $species_name, $species_id );
 
-    print(   "INSERT INTO species "
-           . "(species_id, taxonomy_id, name, aliases)\n" );
+    foreach my $taxonomy_id (@taxonomy_ids) {
+        print(   "INSERT INTO species "
+               . "(species_id, taxonomy_id, name, aliases)\n" );
 
-    printf( "VALUES (%d, %d, '%s', '%s');\n",
-            $species_id,   $config->val( $section, 'taxonomy_id' ),
-            $species_name, $config->val( $section, 'aliases' ) );
+        printf( "VALUES (%d, %d, '%s', '%s');\n",
+                $species_id, $taxonomy_id, $species_name,
+                $config->val( $section, 'aliases' ) );
+    }
 
     print("\n");
 }
@@ -99,18 +93,10 @@ print("\n");
 foreach my $species_section ( $config->GroupMembers('species') ) {
     my $species_name = substr( $species_section, 8 );
 
-    my $species_id;
+    my @taxonomy_ids =
+      split( /\n/, $config->val( $species_section, 'taxonomy_id' ) );
 
-    if (
-         defined( my $strain_of_species =
-                    $config->val( $species_section, 'strain_of' ) ) )
-    {
-        my $strain_of_section =
-          sprintf( "species %s", $strain_of_species );
-        $species_id = $config->val( $strain_of_section, 'taxonomy_id' );
-    } else {
-        $species_id = $config->val( $species_section, 'taxonomy_id' );
-    }
+    my $species_id = $taxonomy_ids[0];
 
     print( '#', '-' x 79, "\n" );
     printf( "# Data for species '%s' (id = %d)\n",
