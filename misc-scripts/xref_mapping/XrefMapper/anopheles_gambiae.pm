@@ -8,7 +8,7 @@ use vars '@ISA';
 
 sub get_set_lists {
 
-  return [["ExonerateGappedBest1", ["anopheles_gambiae","*"]]];
+  return [["ExonerateGappedBest1_agam", ["anopheles_gambiae","*"]]];
 
 }
 
@@ -19,13 +19,28 @@ sub get_set_lists {
 sub gene_description_sources {
 
   return ("Anopheles_symbol",
-	  "Uniprot/SWISSPROT"
-	  "RefSeq_peptide",
-	  "RefSeq_dna",
+	  "Uniprot/SWISSPROT",
+	  #"RefSeq_peptide",
+	  #"RefSeq_dna",
 	  "Uniprot/SPTREMBL",
-	  "RefSeq_peptide_predicted",
-	  "RefSeq_dna_predicted");
+	  #"RefSeq_peptide_predicted",
+	  #"RefSeq_dna_predicted",
+	  #"EntrezGene");
+          );
+}
 
+sub transcript_display_xref_sources {
+
+  return ('RFAM',
+	  'miRBase',
+	  'Anopheles_symbol',
+	  'Uniprot/SWISSPROT',
+	  'Uniprot/Varsplic',
+	  #'RefSeq_peptide',
+	  #'RefSeq_dna',
+	  'Uniprot/SPTREMBL',
+	  #'EntrezGene'
+           );
 }
 
 # regexps to match any descriptons we want to filter out
@@ -34,6 +49,5 @@ sub gene_description_filter_regexps {
   return ();
 
 }
-
 
 1;
