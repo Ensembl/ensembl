@@ -987,20 +987,17 @@ sub name2species_id {
             $name2species_id{$name} = $species_id;
         }
 
-        if (0) {
-            # Also populate the hash with all the aliases.
-            $sth =
-              $dbi->prepare("SELECT species_id, aliases FROM species");
-            $sth->execute() or croak( $dbi->errstr() );
-            while ( my @row = $sth->fetchrow_array() ) {
-                my $species_id = $row[0];
-                foreach my $name ( split /,\s*/, $row[1] ) {
-                    if ( exists $name2species_id{$name} ) {
-                        warn "Ambigous species alias: "
-                          . "$name (id = $species_id)\n";
-                    } else {
-                        $name2species_id{$name} = $species_id;
-                    }
+        # Also populate the hash with all the aliases.
+        $sth = $dbi->prepare("SELECT species_id, aliases FROM species");
+        $sth->execute() or croak( $dbi->errstr() );
+        while ( my @row = $sth->fetchrow_array() ) {
+            my $species_id = $row[0];
+            foreach my $name ( split /,\s*/, $row[1] ) {
+                if ( exists $name2species_id{$name} ) {
+                    warn "Ambigous species alias: "
+                      . "$name (id = $species_id)\n";
+                } else {
+                    $name2species_id{$name} = $species_id;
                 }
             }
         }
