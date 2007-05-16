@@ -118,8 +118,9 @@ sub new{
 	    if (defined $individual){
 		my $allele_features = $af_adaptor->fetch_all_by_Slice($self,$individual);
 		$self->{'_strain'} = $individual;		
-		my $new_allele_features = $self->_filter_af_by_coverage($allele_features);
-		$self->{'alleleFeatures'} = $new_allele_features;
+#		my $new_allele_features = $self->_filter_af_by_coverage($allele_features);
+#		$self->{'alleleFeatures'} = $new_allele_features;
+		$self->{'alleleFeatures'} = $allele_features;
 		return $self;
 	    }
 	    else{ 
