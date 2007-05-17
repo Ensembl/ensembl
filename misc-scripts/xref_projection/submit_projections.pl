@@ -10,8 +10,6 @@ my $base_dir = "/lustre/work1/ensembl/gp1/projections/";
 
 my $conf = "release_45.conf"; # registry config file
 
-my $compara = "bb2_ensembl_compara_45"; # name in registry file
-
 # -------------------------- end of config ----------------------------
 
 # check that base directory exists
@@ -28,7 +26,7 @@ if (! -e $dir) {
 }
 
 # common options
-my $opts = "-conf $conf -compara $compara -release $release -quiet";
+my $opts = "-conf $conf $compara -release $release -quiet";
 
 my ($o, $e, $n);
 
