@@ -44,12 +44,6 @@ if (!$conf) {
   usage();
   exit(1);
 
-} elsif (!$compara) {
-
-  print STDERR "Compara database must be supplied via -compara argument\n";
-  usage();
-  exit(1);
-
 } elsif (!$from_species) {
 
   print STDERR "From species must be supplied via -from argument\n";
@@ -88,9 +82,31 @@ my @evidence_codes = ( "IDA", "IEP", "IGI", "IMP", "IPI" );
 Bio::EnsEMBL::Registry->no_version_check(1);
 Bio::EnsEMBL::Registry->load_all($conf);
 
-my $mlssa = Bio::EnsEMBL::Registry->get_adaptor($compara, 'compara', 'MethodLinkSpeciesSet');
-my $ha    = Bio::EnsEMBL::Registry->get_adaptor($compara, 'compara', 'Homology');
-my $ma    = Bio::EnsEMBL::Registry->get_adaptor($compara, 'compara', 'Member');
+# Get Compara adaptors - use the one specified on the command line, or the first one 
+# defined in the registry file if not specified
+
+my $mlssa;
+my $ha;
+my $ma;
+
+if ($compara) {
+
+   $mlssa = Bio::EnsEMBL::Registry->get_adaptor($compara, 'compara', 'MethodLinkSpeciesSet');
+   $ha    = Bio::EnsEMBL::Registry->get_adaptor($compara, 'compara', 'Homology');
+   $ma    = Bio::EnsEMBL::Registry->get_adaptor($compara, 'compara', 'Member');
+
+   die "Can't connect to Compara database specified by $compara - check command-line and registry file settings" if (!$mlssa || !$ha || !$ma);
+
+} else {
+
+   $mlssa = @{Bio::EnsEMBL::Registry->get_all_adaptors(-group => "compara", -type => "MethodLinkSpeciesSet")}[0];
+   $ha = @{Bio::EnsEMBL::Registry->get_all_adaptors(-group => "compara", -type => "Homology")}[0];
+   $ma = @{Bio::EnsEMBL::Registry->get_all_adaptors(-group => "compara", -type => "Member")}[0];
+
+   die "Can't connect to Compara database from registry - check registry file settings" if (!$mlssa || !$ha || !$ma);
+
+}
+
 
 my $from_ga = Bio::EnsEMBL::Registry->get_adaptor($from_species, 'core', 'Gene');
 
@@ -634,9 +650,6 @@ sub usage {
                         is given, the one set in ENSEMBL_REGISTRY will be used
                         if defined, if not ~/.ensembl_init will be used.
 
-   --compara string     A Compara database
-                        (a Bio::EnsEMBL::Registry alias, defined in config file)
-
    --from string        The species to use as the source
                         (a Bio::EnsEMBL::Registry alias, defined in config file)
 
@@ -648,6 +661,11 @@ sub usage {
 
    --release            The current Ensembl release. Needed for projection_info
                         database.
+
+  [--compara string]    A Compara database
+                        (a Bio::EnsEMBL::Registry alias, defined in config file)
+                        If not specified, the first compara database defined in 
+                        the registry file is used.
 
   [--names]             Project display names and descriptions.
 
