@@ -836,6 +836,8 @@ sub dynamic_use {
 
   Arg[1]      : (optional) Bio::EnsEMBL::DBSQL::DBAdaptor $dba
   Arg[2]      : (optional) String $version - coord_system version
+  Arg[3]      : (optional) String $type - type of region eg chromsome (defaults to 'toplevel')
+  Arg[4]      : (optional) Boolean - return non reference slies as well (required for haplotypes eq 6-COX)
   Example     : my $chr_length = $support->get_chrlength($dba);
   Description : Get all chromosomes and their length from the database. Return
                 chr_name/length for the chromosomes the user requested (or all
@@ -847,17 +849,17 @@ sub dynamic_use {
 =cut
 
 sub get_chrlength {
-    my ($self, $dba, $version) = @_;
+    my ($self, $dba, $version,$type,$include_non_reference) = @_;
     $dba ||= $self->dba;
+	$type ||= 'toplevel';
     throw("get_chrlength should be passed a Bio::EnsEMBL::DBSQL::DBAdaptor\n")
         unless ($dba->isa('Bio::EnsEMBL::DBSQL::DBAdaptor'));
 
     my $sa = $dba->get_SliceAdaptor;
 
-    # note: 'chromosome' changed to 'top_level' in next 2 lines
     my @chromosomes = map { $_->seq_region_name } 
-                            @{ $sa->fetch_all('toplevel', $version) };
-    my %chr = map { $_ => $sa->fetch_by_region('toplevel', $_, undef, undef, undef, $version)->length } @chromosomes;
+                            @{ $sa->fetch_all($type, $version,$include_non_reference) };
+    my %chr = map { $_ => $sa->fetch_by_region($type, $_, undef, undef, undef, $version)->length } @chromosomes;
 
     my @wanted = $self->param('chromosomes');
     if (@wanted) {
