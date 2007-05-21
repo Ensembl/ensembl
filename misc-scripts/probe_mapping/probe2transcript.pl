@@ -18,25 +18,25 @@ GetOptions('transcript_host=s'      => \$transcript_host,
            'transcript_port=i'      => \$transcript_port,
            'transcript_pass=s'      => \$transcript_pass,
            'transcript_dbname=s'    => \$transcript_dbname,
-	   'oligo_host=s'           => \$oligo_host,
+		   'oligo_host=s'           => \$oligo_host,
            'oligo_user=s'           => \$oligo_user,
            'oligo_port=i'           => \$oligo_port,
            'oligo_pass=s'           => \$oligo_pass,
            'oligo_dbname=s'         => \$oligo_dbname,
-	   'xref_host=s'            => \$xref_host,
+		   'xref_host=s'            => \$xref_host,
            'xref_user=s'            => \$xref_user,
            'xref_port=i'            => \$xref_port,
            'xref_pass=s'            => \$xref_pass,
            'xref_dbname=s'          => \$xref_dbname,
-	   'mismatches=i'           => \$max_mismatches,
+		   'mismatches=i'           => \$max_mismatches,
            'utr_length=i'           => \$utr_length,
-	   'max_probesets=i'        => \$max_transcripts_per_probeset,
-	   'max_transcripts=i'      => \$max_transcripts,
-	   'threshold=s'            => \$mapping_threshold,
-	   'arrays=s'               => \@arrays,
-	   'delete'                 => \$delete,
-	   'no_triage'              => \$no_triage,
-	   'health_check'           => \$health_check,
+		   'max_probesets=i'        => \$max_transcripts_per_probeset,
+		   'max_transcripts=i'      => \$max_transcripts,
+		   'threshold=s'            => \$mapping_threshold,
+		   'arrays=s'               => \@arrays,
+		   'delete'                 => \$delete,
+		   'no_triage'              => \$no_triage,
+		   'health_check'           => \$health_check,
            'help'                   => sub { usage(); exit(0); });
 
 $transcript_port ||= 3306; $oligo_port ||= 3306; $xref_port ||= 3306;
@@ -210,17 +210,30 @@ foreach my $transcript (@transcripts) {
 
       print LOG "Unmapped intronic " . $transcript->stable_id . "\t" . $probeset . " probe length $probe_length\n";
       if (!$no_triage) {
-	push @unmapped_objects, new Bio::EnsEMBL::UnmappedObject(-type       => 'probe2transcript',
-								 -analysis   => $analysis,
-								 -identifier => $probeset,
-								 -summary    => "Unmapped intronic",
-								 -full_desc  => "Probe mapped to intronic region of transcript",
-								 -ensembl_object_type => 'Transcript',
-								 -ensembl_id => $transcript->dbID());
+
+
+		my $um_obj = new Bio::EnsEMBL::UnmappedObject(-type       => 'probe2transcript',
+													  -analysis   => $analysis,
+													  -identifier => $probeset,
+													  -summary    => "Unmapped intronic",
+													  -full_desc  => "Probe mapped to intronic region of transcript",
+													  -ensembl_object_type => 'Transcript',
+													  -ensembl_id => $transcript->dbID());
+		
+		&cache_and_load_unmapped_objects($um_obj);
+		
+		#push @unmapped_objects, new Bio::EnsEMBL::UnmappedObject(-type       => 'probe2transcript',
+		#														 -analysis   => $analysis,
+		#														 -identifier => $probeset,
+		#														 -summary    => "Unmapped intronic",
+		#														 -full_desc  => "Probe mapped to intronic region of transcript",
+		#														 -ensembl_object_type => 'Transcript',
+		#														 -ensembl_id => $transcript->dbID());
+		  
+
+		
       }
-
-    }
-
+	}
   }
 
   # TODO - make external_db array names == array names in OligoArray!
@@ -278,13 +291,26 @@ foreach my $key (keys %transcript_probeset_count) {
 
       print LOG "$probeset\t$transcript\tinsufficient\t$probeset_size\t$hits\n";
        if (!$no_triage) {
-	push @unmapped_objects, new Bio::EnsEMBL::UnmappedObject(-type       => 'probe2transcript',
-								 -analysis   => $analysis,
-								 -identifier => $probeset,
-								 -summary    => "Insufficient hits",
-								 -full_desc  => "Probe had an insufficient number of hits (probeset size = $probeset_size, hits = $hits)",
-								 -ensembl_object_type => 'Transcript',
-								 -ensembl_id => $transcript_ids{$transcript});
+
+		 my $um_obj = new Bio::EnsEMBL::UnmappedObject(-type       => 'probe2transcript',
+													   -analysis   => $analysis,
+													   -identifier => $probeset,
+													   -summary    => "Insufficient hits",
+													   -full_desc  => "Probe had an insufficient number of hits (probeset size = $probeset_size, hits = $hits)",
+													   -ensembl_object_type => 'Transcript',
+													   -ensembl_id => $transcript_ids{$transcript});
+		 
+		 #push @unmapped_objects, new Bio::EnsEMBL::UnmappedObject(-type       => 'probe2transcript',
+		#						 -analysis   => $analysis,
+		#						 -identifier => $probeset,
+		#						 -summary    => "Insufficient hits",
+		#						 -full_desc  => "Probe had an insufficient number of hits (probeset size = $probeset_size, hits = $hits)",
+		#						 -ensembl_object_type => 'Transcript',
+		#						 -ensembl_id => $transcript_ids{$transcript});
+
+
+		 &cache_and_load_unmapped_objects($um_obj);
+
       }
 
     }
@@ -292,6 +318,10 @@ foreach my $key (keys %transcript_probeset_count) {
   }
 
 }
+
+
+
+#can we load first batch of unmapped_object here to save memmory
 
 # Find probesets that don't match any transcripts at all, write to log file
 log_orphan_probes();
@@ -308,6 +338,26 @@ if (!$no_triage) {
 
 # ----------------------------------------------------------------------
 
+# only loads unless cache hits size limit
+
+sub cache_and_load_unmapped_objects{
+  my ($um_obj) = @_;
+
+  push @unmapped_objects, $um_obj;
+
+  if(scalar(@unmapped_objects) >10000){
+	#print "Uploading " . scalar(@unmapped_objects) . " unmapped reasons to xref database\n";
+	$unmapped_object_adaptor->store(@unmapped_objects);
+	@unmapped_objects = ();
+  }
+}
+
+
+
+
+
+# ----------------------------------------------------------------------
+
 sub log_orphan_probes {
 
   print "Logging probesets that don't map to any transcripts\n";
@@ -319,11 +369,19 @@ sub log_orphan_probes {
       print LOG "$probeset\tNo transcript mappings\n";
 
       if (!$no_triage && $probeset) {
-	push @unmapped_objects, new Bio::EnsEMBL::UnmappedObject(-type       => 'probe2transcript',
-								 -analysis   => $analysis,
-								 -identifier => $probeset,
-								 -summary    => "No transcript mappings",
-								 -full_desc  => "Probeset did not map to any transcripts");
+		my $um_obj = new Bio::EnsEMBL::UnmappedObject(-type       => 'probe2transcript',
+																 -analysis   => $analysis,
+																 -identifier => $probeset,
+																 -summary    => "No transcript mappings",
+																 -full_desc  => "Probeset did not map to any transcripts");
+
+		&cache_and_load_unmapped_objects($um_obj);
+
+		#push @unmapped_objects, new Bio::EnsEMBL::UnmappedObject(-type       => 'probe2transcript',
+		#														 -analysis   => $analysis,
+		#														 -identifier => $probeset,
+		#														 -summary    => "No transcript mappings",
+		#														 -full_desc  => "Probeset did not map to any transcripts");
       }
     }
   }
