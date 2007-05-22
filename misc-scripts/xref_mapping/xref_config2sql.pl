@@ -9,9 +9,12 @@
 # convert it into a SQL file that can be used in place of the old      #
 # 'populate_metadata.sql' file found in the 'sql' subdirectory.        #
 #                                                                      #
-# The output from this script should be redirected to a file that you  #
-# manually run to populate your Xref database, just as you did with    #
-# 'populate_metadata.sql'.                                             #
+# The output from this script should be redirected to a file that      #
+# you manually run to populate your Xref database, just as was done    #
+# with 'populate_metadata.sql'.  The safest thing to do is just to     #
+# overwrite 'sql/populate_metadata.sql' with the output of this        #
+# script.  This will ensure that 'xref_parser.pl populates the Xref    #
+# database with the correct data.                                      #
 #                                                                      #
 ########################################################################
 
