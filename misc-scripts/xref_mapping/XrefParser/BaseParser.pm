@@ -483,11 +483,25 @@ sub fetch_files {
         } elsif ( $uri->scheme() eq 'http' ) {
             # Deal with HTTP files.
 
-            my $ua = LWP::UserAgent->new();
-            $ua->env_proxy();
-
             my $file_path =
               catfile( $dest_dir, basename( $uri->path() ) );
+
+            if ( $deletedownloaded && -f $file_path ) {
+                printf( "Deleting '%s'\n", $file_path );
+                unlink($file_path);
+            }
+
+            if ( $checkdownload && -f $file_path ) {
+                # The file is already there, no need to connect to a
+                # HTTP server.
+
+                printf( "File '%s' already exists\n", $file_path );
+                push( @processed_files, $file_path );
+                next;
+            }
+
+            my $ua = LWP::UserAgent->new();
+            $ua->env_proxy();
 
             if ( !-d dirname($file_path) ) {
                 printf( "Creating directory '%s'\n",
