@@ -9,12 +9,17 @@ use Getopt::Long;
 use POSIX qw(strftime);
 
 use File::Basename;
-use File::Path;
+use File::Spec::Functions;
 use IO::File;
+use Net::FTP;
+use URI;
+use URI::file;
+use Text::Glob qw( match_glob );
+use LWP::UserAgent;
 
 use Bio::EnsEMBL::Utils::Exception;
 
-my $base_dir = ".";
+my $base_dir = File::Spec->curdir();
 
 my $add_xref_sth = undef;
 my $add_direct_xref_sth = undef;
@@ -38,415 +43,501 @@ my (
 # --------------------------------------------------------------------------------
 # Get info about files to be parsed from the database
 
-sub run
-{
+sub run {
     my $self = shift;
 
-    (
-        $host,           $port,             $dbname,
-        $user,           $pass,             my $speciesr,
-        my $sourcesr,    $skipdownload,     $checkdownload,
-        $create,         $release,          $cleanup,
-        $drop_db,        $deletedownloaded, $dl_path,
-        my $notsourcesr, $unzip
+    (  $host,           $port,             $dbname,
+       $user,           $pass,             my $speciesr,
+       my $sourcesr,    $skipdownload,     $checkdownload,
+       $create,         $release,          $cleanup,
+       $drop_db,        $deletedownloaded, $dl_path,
+       my $notsourcesr, $unzip
     ) = @_;
 
-  $base_dir = $dl_path if $dl_path;
+    $base_dir = $dl_path if $dl_path;
 
-  my @species = @$speciesr;
-  my @sources = @$sourcesr;
-  my @notsources = @$notsourcesr;
+    my @species    = @$speciesr;
+    my @sources    = @$sourcesr;
+    my @notsources = @$notsourcesr;
 
-  my $sql_dir = dirname($0);
+    my $sql_dir = dirname($0);
 
-  create($host, $port, $user, $pass, $dbname, $sql_dir."/" , $drop_db ) if ($create);
-
-  my $dbi = dbi();
-
-  # validate species names
-  my @species_ids = validate_species(@species);
-
-  # validate source names
-  exit(1) if (!validate_sources(@sources));
-  exit(1) if (!validate_sources(@notsources));
-
-  # build SQL
-  my $species_sql = "";
-  if (@species_ids) {
-    $species_sql .= " AND su.species_id IN (";
-    for (my $i = 0; $i < @species_ids; $i++ ) {
-      $species_sql .= "," if ($i ne 0);
-      $species_sql .= $species_ids[$i];
+    if ($create) {
+        create( $host, $port, $user, $pass, $dbname, $sql_dir,
+                $drop_db );
     }
-    $species_sql .= ") ";
-  }
 
-  my $source_sql = "";
-  if (@sources) {
-    $source_sql .= " AND LOWER(s.name) IN (";
-    for (my $i = 0; $i < @sources; $i++ ) {
-      $source_sql .= "," if ($i ne 0);
-      $source_sql .= "\'" . lc($sources[$i]) . "\'";
+    my $dbi = dbi();
+
+    # validate species names
+    my @species_ids = validate_species(@species);
+
+    # validate source names
+    exit(1) if ( !validate_sources(@sources) );
+    exit(1) if ( !validate_sources(@notsources) );
+
+    # build SQL
+    my $species_sql = "";
+    if (@species_ids) {
+        $species_sql .= " AND su.species_id IN (";
+        for ( my $i = 0 ; $i < @species_ids ; $i++ ) {
+            $species_sql .= "," if ( $i ne 0 );
+            $species_sql .= $species_ids[$i];
+        }
+        $species_sql .= ") ";
     }
-    $source_sql .= ") ";
-  }
 
-  if (@notsources) {
-    $source_sql .= " AND LOWER(s.name) NOT IN (";
-    for (my $i = 0; $i < @notsources; $i++ ) {
-      $source_sql .= "," if ($i ne 0);
-      $source_sql .= "\'" . lc($notsources[$i]) . "\'";
+    my $source_sql = "";
+    if (@sources) {
+        $source_sql .= " AND LOWER(s.name) IN (";
+        for ( my $i = 0 ; $i < @sources ; $i++ ) {
+            $source_sql .= "," if ( $i ne 0 );
+            $source_sql .= "\'" . lc( $sources[$i] ) . "\'";
+        }
+        $source_sql .= ") ";
     }
-    $source_sql .= ") ";
-  }
 
-  my $sql =
+    if (@notsources) {
+        $source_sql .= " AND LOWER(s.name) NOT IN (";
+        for ( my $i = 0 ; $i < @notsources ; $i++ ) {
+            $source_sql .= "," if ( $i ne 0 );
+            $source_sql .= "\'" . lc( $notsources[$i] ) . "\'";
+        }
+        $source_sql .= ") ";
+    }
+
+    my $sql =
       "SELECT DISTINCT(s.source_id), su.source_url_id, s.name, su.url, "
-    . "su.release_url, su.checksum, su.parser, su.species_id "
-    . "FROM source s, source_url su, species sp "
-    . "WHERE s.download='Y' AND su.source_id=s.source_id "
-    . "AND su.species_id=sp.species_id "
-    . $source_sql
-    . $species_sql
-    . "ORDER BY s.ordered";
-  # print $sql . "\n";
+      . "su.release_url, su.checksum, su.parser, su.species_id "
+      . "FROM source s, source_url su, species sp "
+      . "WHERE s.download='Y' AND su.source_id=s.source_id "
+      . "AND su.species_id=sp.species_id "
+      . $source_sql
+      . $species_sql
+      . "ORDER BY s.ordered";
+    # print $sql . "\n";
 
-  my $sth = $dbi->prepare($sql);
-  $sth->execute();
+    my $sth = $dbi->prepare($sql);
+    $sth->execute();
 
-  my ( $source_id, $source_url_id, $name, $url, $release_url, $checksum,
-       $parser, $species_id );
+    my ( $source_id, $source_url_id, $name, $url, $release_url,
+         $checksum, $parser, $species_id );
 
-  $sth->bind_columns( \$source_id, \$source_url_id, \$name, \$url,
-                      \$release_url, \$checksum, \$parser, \$species_id );
+    $sth->bind_columns( \$source_id,   \$source_url_id,
+                        \$name,        \$url,
+                        \$release_url, \$checksum,
+                        \$parser,      \$species_id );
 
-  my $last_type = "";
-  my $dir;
-  my %summary=();
-  while (my @row = $sth->fetchrow_array()) {
-    print '-' x 4, "{ $name }", '-' x ( 72 - length($name) ), "\n";
+    my $dir;
+    my %summary = ();
 
-    # Download each source into the appropriate directory for parsing
-    # later or call the appropriate database parser if appropriate.
-    # Also delete previous working directory if we're starting a new
-    # source type can have more than one file.
+    while ( my @row = $sth->fetchrow_array() ) {
+        print '-' x 4, "{ $name }", '-' x ( 72 - length($name) ), "\n";
 
-    my @files = split( /\s+/, $url );
-    if ( defined $release_url ) {
-        push @files, $release_url;
-    }
+        my $cs;
+        my $file_cs = "";
+        my $parse   = 0;
+        my $empty   = 0;
+        my $type    = $name;
+        my $dsn;
 
-    my $parse = 0;
-    my $empty = 0;
-    my $file_cs = "";
-    my $cs;
-    my $type = $name;
-    my @new_file=();
-    $dir = $base_dir . "/" . sanitise($type);
-    my $dsn;
-    $summary{$parser} = 0;
-    ##
-    # for summary purposes if 0 is returned then it is successful.
-    #                         1 is returned then if failed.
-    #                     undef/nothing  is returned the we do not know
-    ##
-    foreach my $urls (@files){
+        my @files = split( /\s+/, $url );
+        my @files_to_parse = ();
 
-      # Database parsing
-      if ($urls =~ /^mysql:/i) {
-	$dsn = $urls;
-	print "Parsing $dsn with $parser\n";
-        eval "require XrefParser::$parser";
-        my $new = "XrefParser::$parser"->new();
-        if($new->run($dsn, $source_id, $species_id, $name, undef)){
-	  $summary{$parser}++;
-	}
-	next;
-      }
+        $dir = catdir( $base_dir, sanitise($type) );
 
-      # Local files need to be dealt with specially; assume they are specified as
-      # LOCAL:location/of/file/relative/to/xref_mapper
+        # For summary purposes: If 0 is returned (in $summary{$parser})
+        # then it is successful.  If 1 is returned then it failed.  If
+        # undef/nothing is returned the we do not know
+        $summary{$parser} = 0;
 
-      # FIXME?: Temporary (?) fix to allow us to understand that
-      #         'file://' is the same as 'LOCAL:'.
-      $urls =~ s#^file://#LOCAL:#;
-
-      my ($file) = $urls =~ /.*\/(.*)/;
-      if ($urls =~ /^LOCAL:(.*)/i) {
-	my $local_file = $1;
-        if ( !defined( $cs = md5sum($local_file) ) ) {
-            print "Download '$local_file'\n";
-            $summary{$parser}++;
+        @files = $self->fetch_files( $dir, @files );
+        if ( !@files ) {
+            # Fetching failed.
+            ++$summary{$parser};
+            next;
         }
-	else {
-          $file_cs .= ':' . $cs;
-	  if (!defined $checksum || index($checksum, $file_cs) == -1) {
-	    print "Checksum for '$file' does not match, parsing\n";
-	    print "Parsing local file '$local_file' with $parser\n";
-	    eval "require XrefParser::$parser";
-	    my $new = "XrefParser::$parser"->new();
-	    if($new->run($source_id, $species_id, $local_file)){
-	      $summary{$parser}++;
-	    }
-	    else{
-                update_source( $dbi, $source_url_id, $file_cs,
-                    $local_file );
-	    }
-	  }
-	  else{
-	    print "Ignoring '$file' as checksums match\n";
-	  }
-	}
-	next;
-      }
-
-
-      # Download files
-
-      # Deal with URLs with # notation denoting filenames from archive
-      # If the # is used, set $file and $file_from_archive approprately
-      my $file_from_archive;
-      if ($file =~ /(.*)\#(.*)/) {
-	$file = $1;
-	$file_from_archive = $2;
-        if ( !$file_from_archive ) {
-            croak(  "$file specifies a .zip file without using "
-                  . "the # notation to specify the file in the archive "
-                  . "to be used." );
-        }
-	print "Using $file_from_archive from $file\n";
-      }
-
-    if ($checkdownload) {
-        my $check_file = $dir . '/' . $file;
-
-        if ($unzip) { $check_file =~ s/\.(gz|Z)$// }
-
-        print "Checking '$check_file'... ";
-
-        if ( -e "$check_file" ) {
-            print "found\n";
-            $skipdownload = 1;
-            if ($unzip) { $file =~ s/\.(gz|Z)$// }
-        } else {
-            print "not found\n";
-            $skipdownload = 0;
-        }
-    }
-
-
-      $file =~ s/[&=]//g;
-      if (length($file) > 100) {
-	#	  $file = time;
-	$file = md5_hex($file);
-	print"URL is longer than 100 charcters; renamed to $file\n";
-      }
-
-
-      # File parsing
-      if (!$skipdownload) {
-
-	if ($type ne $last_type && $deletedownloaded) {
-	  print "Deleting $dir\n";
-	  rmtree $dir;
-	}
-
-        if ( !-d $dir ) {
-            mkdir $dir
-              or croak("Failed to create directory '$dir': $!");
+        if ( defined($release_url) ) {
+            $release_url =
+              $self->fetch_files( $dir, $release_url )->[-1];
         }
 
-	$last_type = $type;
+        foreach my $urls (@files) {
 
-	if ($file_from_archive) {
-	  print "Downloading $file to $dir/$file\n";
-	} else {
-	  print "Downloading $urls to $dir/$file\n";
-	}
-	
-	my $num_attempts = 0;
-	my $missing = 1;
-
-        while ( $num_attempts < 5 and $missing ) {
-            my $proxy_onoff = "on";
-
-            if ( $urls =~ m#ftp://.*[?*\[\]]# ) {
-                # URL is FTP and contains globbing character, turn off
-                # proxying since the proxy only does HTTP and globbing
-                # is not supported by HTTP (only by FTP)...
-                $proxy_onoff = "off";
+            # Database parsing
+            if ( $urls =~ /^mysql:/i ) {
+                $dsn = $urls;
+                print "Parsing $dsn with $parser\n";
+                eval "require XrefParser::$parser";
+                my $new = "XrefParser::$parser"->new();
+                if (
+                     $new->run( $dsn,  $source_id, $species_id,
+                                $name, undef ) )
+                {
+                    $summary{$parser}++;
+                }
+                next;
             }
 
-            # Redirect standard output for 'wget'.  We need to do it
-            # in this awkward way because we potentially (e.g. for
-            # the UniGene release info files) want to download and
-            # concatenate multiple FTP files to one and the same file.
-            local $| = 1;
-            open my $oldout, ">&STDOUT"
-              or croak("Can not duplicate STDOUT: $!");
-            open( STDOUT, ">$dir/$file" )
-              or croak("Can not open '$dir/$file' for output: $!");
-            binmode(STDOUT);
+            # Local files need to be dealt with
+            # specially; assume they are specified as
+            # LOCAL:location/of/file/relative/to/xref_mapper
 
-            my $system_err = system(
-                "wget",                "--quiet",
-                "--output-document=-", "--proxy=$proxy_onoff",
-                "$urls"
-            );
+            $urls =~ s#^file:#LOCAL:#;
 
-            # Restore standard output.
-            close STDOUT;
-            open STDOUT, ">&", $oldout
-              or croak("Can not restore old STDOUT: $!");
+            my ($file) = $urls =~ /.*\/(.*)/;
+            if ( $urls =~ /^LOCAL:(.*)/i ) {
+                my $local_file = $1;
+                if ( !defined( $cs = md5sum($local_file) ) ) {
+                    print "Download '$local_file'\n";
+                    $summary{$parser}++;
+                } else {
+                    $file_cs .= ':' . $cs;
+                    if ( !defined $checksum
+                         || index( $checksum, $file_cs ) == -1 )
+                    {
+                        print "Checksum for '$file' does not match, "
+                          . "will parse...\n";
+                        print "Parsing local file '$local_file' "
+                          . "with $parser\n";
+                        eval "require XrefParser::$parser";
+                        my $new = "XrefParser::$parser"->new();
+                        if (
+                             $new->run(
+                                    $source_id, $species_id, $local_file
+                             ) )
+                        {
+                            $summary{$parser}++;
+                        } else {
+                            update_source( $dbi,     $source_url_id,
+                                           $file_cs, $local_file );
+                        }
+                    } else {
+                        print "Ignoring '$file' as checksums match\n";
+                    }
+                } ## end else [ if ( !defined( $cs = md5sum...
+                next;
+            } ## end if ( $urls =~ /^LOCAL:(.*)/i)
 
-            # Check that the file actually downloaded ok.
-            if ( $system_err != 0 ) {
-                print "wget returned exit code $system_err; "
-                  . "$type file $file not downloaded.\n";
-                print "waiting for 3 minutes then trying again\n";
-                sleep(180);
+            # This part deals with Zip archives.  It is unclear if this
+            # is useful at all.  If so, then this should be handled by
+            # the fatch_files() method.
+            if (0) {
+                # Deal with URLs with '#' notation denoting filenames
+                # from archive If the '#' is used, set $file and
+                # $file_from_archive approprately.
+                my $file_from_archive;
+                if ( $file =~ /(.*)\#(.*)/ ) {
+                    $file              = $1;
+                    $file_from_archive = $2;
+                    if ( !$file_from_archive ) {
+                        croak(
+                            "$file specifies a .zip file without using "
+                              . "the # notation to specify the file "
+                              . "in the archive to be used." );
+                    }
+                    print "Using $file_from_archive from $file\n";
+                }
+            }
+
+            if ( $unzip && ( $file =~ /\.(gz|Z)$/ ) ) {
+                print "Uncompressing '"
+                  . catfile( $dir, $file )
+                  . "' using 'gunzip'\n";
+                system( "gunzip", "-f", catfile( $dir, $file ) );
+            }
+            if ($unzip) {
+                $file =~ s/\.(gz|Z)$//;  # If skipdownload set this will
+                                         # not have been done yet.
+                                         # If it has, no harm done
+            }
+
+            push @files_to_parse, $file;
+
+            # Compare checksums and parse/upload if necessary need to
+            # check file size as some .SPC files can be of zero length
+
+            if ( !defined( $cs = md5sum( catfile( $dir, $file ) ) ) ) {
+                print "Download '" . catfile( $dir, $file ) . "'\n";
+                $summary{$parser}++;
             } else {
-                $missing = 0;
+                $file_cs .= ':' . $cs;
+                if ( !defined $checksum
+                     || index( $checksum, $file_cs ) == -1 )
+                {
+                    if ( -s catfile( $dir, $file ) ) {
+                        $parse = 1;
+                        print "Checksum for '$file' does not match, "
+                          . "will parse...\n";
+
+                        # Files from sources "Uniprot/SWISSPROT" and
+                        # "Uniprot/SPTREMBL" are all parsed with the
+                        # same parser
+                        if (    $parser eq "Uniprot/SWISSPROT"
+                             || $parser eq "Uniprot/SPTREMBL" )
+                        {
+                            $parser = 'UniProtParser';
+                        }
+                    } else {
+                        $empty = 1;
+                        print $file . " has zero length, skipping\n";
+                    }
+                }
             }
-            $num_attempts++;
+        }    # foreach @urls
+
+        if ( $parse and @files_to_parse and defined $file_cs ) {
+            print "Parsing '"
+              . join( "', '", @files_to_parse )
+              . "' with $parser\n";
+
+            eval "require XrefParser::$parser";
+            my $new = "XrefParser::$parser"->new();
+
+            if ( defined $release_url ) {
+                # Run with $release_url.
+                if (
+                     $new->run( $source_id,
+                                $species_id,
+                                map( catfile( $dir, $_ ),
+                                     @files_to_parse ),
+                                $release_url ) )
+                {
+                    $summary{$parser}++;
+                }
+            } else {
+                # Run without $release_url.
+                if (
+                     $new->run( $source_id,
+                                $species_id,
+                                map( catfile( $dir, $_ ),
+                                     @files_to_parse ) ) )
+                {
+                    $summary{$parser}++;
+                }
+            }
+
+            # update AFTER processing in case of crash.
+            update_source( $dbi, $source_url_id, $file_cs,
+                           catfile( $dir, $files_to_parse[0] ) );
+
+            # Set release if specified
+            if ( defined $release ) {
+                $self->set_release( $source_id, $release );
+            }
+
+        } ## end if ( $parse and @files_to_parse...
+        elsif ( !$dsn && !$empty && defined( $files_to_parse[0] ) ) {
+            print "Ignoring '"
+              . join( "', '", @files_to_parse )
+              . "' as checksums match\n";
         }
-        if ($missing) {
-            croak(  "Could not get '$type' file '$file', "
-                  . "tried 5 times but failed" );
+
+        if ($cleanup) {
+            foreach
+              my $file ( map( catfile( $dir, $_ ), @files_to_parse ) )
+            {
+                printf( "Deleting '%s'\n", $file );
+                unlink($file);
+            }
         }
 
-        # If the file is compressed, the FTP server may or may not have
-        # automatically uncompressed it (it shouldn't have, is this an
-        # historical artifact? (ak)).
-
-        if ( $unzip && ( $file =~ /\.(gz|Z)$/ ) ) {
-            print "Uncompressing '$dir/$file' using 'gunzip'\n";
-            system( "gunzip", "-f", $dir . '/' . $file );
-        }
-
-        if ( $file =~ /(.*)\.zip$/ ) {
-            print "Uncompressing '$dir/$file' using 'unzip'\n";
-            system( "unzip", "-o", "-q", "-d", $dir,
-                $dir . '/' . $file );
-        }
-      }
-
-      if ($unzip) {
-          $file =~ s/\.(gz|Z)$//;    # If skipdownload set this will
-                                     # not have been done yet.
-                                     # If it has, no harm done
-      }
-
-      if ($file_from_archive) {
-	push @new_file, $file_from_archive;
-      } else {
-	push @new_file, $file;
-      }
-
-      # compare checksums and parse/upload if necessary
-      # need to check file size as some .SPC files can be of zero length
-
-      if ( !defined( $cs = md5sum("$dir/$file") ) ) {
-          print "Download '$dir/$file'\n";
-          $summary{$parser}++;
-      }
-      else {
-        $file_cs .= ':' . $cs;
-	if (!defined $checksum || index($checksum, $file_cs) == -1) {
-	  if (-s "$dir/$file") {
-	    $parse = 1;
-	    print "Checksum for '$file' does not match, parsing\n";
-	    
-	    # Files from sources "Uniprot/SWISSPROT" and "Uniprot/SPTREMBL" are
-	    # all parsed with the same parser
-	    $parser = 'UniProtParser' if ($parser eq "Uniprot/SWISSPROT" || $parser eq "Uniprot/SPTREMBL");
-	  }
-	  else {
-	    $empty = 1;
-	    print $file . " has zero length, skipping\n";
-	  }
-	}
-      }
-    }   # foreach @urls
-
-    # If $release_url is defined, then @urls contains it in the end, and
-    # so does @new_file, so pop it off @new_file.
-    if ( defined $release_url ) {
-        $release_url = pop @new_file;
-    }
-
-    if ( $parse and @new_file and defined $file_cs ) {
-      print "Parsing '" . join( "', '", @new_file ) . "' with $parser\n";
-
-      eval "require XrefParser::$parser";
-      my $new = "XrefParser::$parser"->new();
-
-    if ( defined $release_url ) {
-        # Run with $release_url.
-        if (
-             $new->run( $source_id,
-                        $species_id,
-                        map( $dir . '/' . $_, @new_file ),
-                        $dir . '/' . $release_url ) )
-        {
-            $summary{$parser}++;
-        }
-    } else {
-        # Run without $release_url.
-        if (
-             $new->run( $source_id, $species_id,
-                        map( $dir . '/' . $_, @new_file ) ) )
-        {
-            $summary{$parser}++;
-        }
-    }
-
-      # update AFTER processing in case of crash.
-      update_source( $dbi, $source_url_id, $file_cs,
-          $dir . '/' . $new_file[0] );
-      
-      # Set release if specified
-      if ( defined $release ) {
-          $self->set_release( $source_id, $release );
-      }
-
-      unlink("$dir/$new_file[0]") if ($cleanup);
-      
-    }
-    elsif(!$dsn && !$empty && defined($new_file[0])){
-        print "Ignoring '"
-          . join( "', '", @new_file )
-          . "' as checksums match\n";
-        }
-  }
+    } ## end while ( my @row = $sth->fetchrow_array...
 
     print "\n", '=' x 80, "\n";
     print "Summary of status\n";
     print '=' x 80, "\n";
     foreach my $key ( keys %summary ) {
-        printf(
-            "%30s\t%s\n",
-            $key,
-            (
-                defined $summary{$key}
-                  && $summary{$key} ? 'FAILED' : 'OKAY'
-            )
-        );
+        printf( "%30s\t%s\n",
+                $key, (
+                   defined $summary{$key}
+                     && $summary{$key} ? 'FAILED' : 'OKAY'
+                ) );
     }
 
-  # remove last working directory
-  # TODO reinstate after debugging
-  #rmtree $dir;
+    # remove last working directory
+    # TODO reinstate after debugging
+    #rmtree $dir;
 
-}
+} ## end sub run
 
-# --------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
-# Given a URI, download it.  If the URI is a 'file://' or 'ftp://' then
-# standars shell file name globbing (not regular expressions) is allowed
-# (HTTP does not allow file name globbing).
-sub fetch_file {    # FIXME
-}
+# Given one or several FTP or HTTP URIs, download them.  If an URI is
+# for a file or MySQL connection, then these will be ignored.  For
+# FTP, standard shell file name globbing is allowed (but not regular
+# expressions).  HTTP does not allow file name globbing.  The routine
+# returns a list of successfully downloaded local files or an empty list
+# if there was an error.
+
+sub fetch_files {
+    my $self = shift;
+
+    my ( $dest_dir, @user_uris ) = @_;
+
+    my @processed_files;
+
+    foreach my $user_uri (@user_uris) {
+        # Change old-style 'LOCAL:' URIs into 'file:'.
+        $user_uri =~ s#^LOCAL:#file:#i;
+
+        my $uri = URI->new($user_uri);
+
+        if ( $uri->scheme() eq 'file' ) {
+            # Deal with local files.
+
+            my @local_files;
+
+            $user_uri =~ s/file://;
+            if ( -f $user_uri ) {
+                push( @processed_files, $user_uri );
+            } else {
+                printf( "==> Can not find file '%s'\n", $user_uri );
+                return ();
+            }
+        } elsif ( $uri->scheme() eq 'ftp' ) {
+            # Deal with FTP files.
+
+            my $file_path =
+              catfile( $dest_dir, basename( $uri->path() ) );
+
+            if ( $deletedownloaded && -f $file_path ) {
+                printf( "Deleting '%s'\n", $file_path );
+                unlink($file_path);
+            }
+
+            if ( $checkdownload && -f $file_path ) {
+                # The file is already there, no need to connect to a FTP
+                # server.  This also means no file name globbing was
+                # used (for globbing FTP URIs, we always need to connect
+                # to a FTP site to see what files are there).
+
+                printf( "File '%s' already exists\n", $file_path );
+                push( @processed_files, $file_path );
+                next;
+            }
+
+            printf( "Connecting to FTP host '%s'\n", $uri->host() );
+
+            my $ftp = Net::FTP->new( $uri->host(), 'Debug' => 0 );
+            if ( !defined($ftp) ) {
+                printf( "==> Can not open FTP connection: %s\n",
+                        $ftp->message() );
+                return ();
+            }
+
+            if ( !$ftp->login( 'anonymous', '-anonymous@' ) ) {
+                printf( "==> Can not log in on FTP host: %s\n",
+                        $ftp->message() );
+                return ();
+            }
+
+            foreach my $remote_file (
+                          ( @{ $ftp->ls( dirname( $uri->path() ) ) } ) )
+            {
+                if ( !match_glob( $uri->path(), $remote_file ) ) {
+                    next;
+                }
+
+                $file_path =
+                  catfile( $dest_dir, basename($remote_file) );
+
+                if ( $deletedownloaded && -f $file_path ) {
+                    printf( "Deleting '%s'\n", $file_path );
+                    unlink($file_path);
+                }
+
+                if ( $checkdownload && -f $file_path ) {
+                    printf( "File '%s' already exists\n", $file_path );
+                } else {
+
+                    if ( !-d dirname($file_path) ) {
+                        printf( "Creating directory '%s'\n",
+                                dirname($file_path) );
+                        if ( !mkdir( dirname($file_path) ) ) {
+                            printf(
+                                "==> Can not create directory '%s': %s",
+                                dirname($file_path), $! );
+                            return ();
+                        }
+                    }
+
+                    printf( "Fetching '%s' (size = %d)\n",
+                            $remote_file, $ftp->size($remote_file) );
+                    printf( "Local file is '%s'\n", $file_path );
+
+
+                    $ftp->binary();
+                    if ( !$ftp->get( $remote_file, $file_path ) ) {
+                        printf( "==> Could not get '%s': %s\n",
+                                basename( $uri->path() ),
+                                $ftp->message() );
+                        return ();
+                    }
+                }
+
+                push( @processed_files, $file_path );
+
+            } ## end foreach my $remote_file ( (...
+
+        } elsif ( $uri->scheme() eq 'http' ) {
+            # Deal with HTTP files.
+
+            my $ua = LWP::UserAgent->new();
+            $ua->env_proxy();
+
+            my $file_path =
+              catfile( $dest_dir, basename( $uri->path() ) );
+
+            if ( !-d dirname($file_path) ) {
+                printf( "Creating directory '%s'\n",
+                        dirname($file_path) );
+                if ( !mkdir( dirname($file_path) ) ) {
+                    printf( "==> Can not create directory '%s': %s",
+                            dirname($file_path), $! );
+                    return ();
+                }
+            }
+
+            if ( $deletedownloaded && -f $file_path ) {
+                printf( "Deleting '%s'\n", $file_path );
+                unlink($file_path);
+            }
+
+            printf( "Connecting to HTTP host '%s'\n", $uri->host() );
+            printf( "Fetching '%s'\n",                $uri->path() );
+
+            if ( $checkdownload && -f $file_path ) {
+                printf( "File '%s' already exists\n", $file_path );
+            } else {
+
+                printf( "Local file is '%s'\n", $file_path );
+
+                my $response = $ua->get( $uri->as_string(),
+                                        ':content_file' => $file_path );
+
+                if ( !$response->is_success() ) {
+                    printf( "==> Could not get '%s': %s\n",
+                            basename( $uri->path() ),
+                            $response->content() );
+                    return ();
+                }
+            }
+
+            push( @processed_files, $file_path );
+
+        } elsif ( $uri->schema() eq 'mysql' ) {
+            # Just leave MySQL data untouched for now.
+            push( @processed_files, $user_uri );
+        } else {
+            printf( "==> Unknown URI scheme '%s' in URI '%s'\n",
+                    $uri->scheme(), $uri->as_string() );
+            return ();
+        }
+    } ## end foreach my $user_uri (@user_uris)
+
+    return ( wantarray() ? @processed_files : \@processed_files );
+} ## end sub fetch_files
 
 # Given a file name, returns a IO::Handle object.  If the file is
 # gzipped, the handle will be to an unseekable stream coming out of a
@@ -491,7 +582,7 @@ sub get_filehandle
     return $io;
 }
 
-# --------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
 sub new
 {
@@ -1432,21 +1523,18 @@ sub add_direct_xref {
 
 }
 
-# --------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
-# Remove potentially problematic characters from string used for file/dir names
+# Remove potentially problematic characters from string used as file or
+# directory names.
 
 sub sanitise {
-
-  my $str = shift;
-  my $ret = $str;
-
-  $ret =~ s/[\/\:]//g;
-  return $ret;
-
+    my $str = shift;
+    $str =~ tr[/:][]d;
+    return $str;
 }
 
-# --------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
 # Create database if required. Assumes sql/table.sql and sql/populate_metadata.sql
 # are present.
@@ -1488,20 +1576,23 @@ sub create {
 
   $dbh->do( "CREATE DATABASE " . $dbname );
 
-  print "Creating $dbname from ".$sql_dir."sql/table.sql\n";
-  if ( !-e $sql_dir . "sql/table.sql" ) {
-      croak( "Cannot open  " . $sql_dir . "sql/table.sql" );
+  print "Creating $dbname from "
+    . catfile( $sql_dir, 'sql', 'table.sql' ), "\n";
+  if ( !-e catfile( $sql_dir, 'sql', 'table.sql' ) ) {
+    croak( "Cannot open  " . catfile( $sql_dir, 'sql', 'table.sql' ) );
   }
-  my $cmd = "mysql -u $user -p$pass -P $port -h $host $dbname < ".$sql_dir."sql/table.sql";
-  system ($cmd);
-
-  print "Populating metadata in $dbname from ".$sql_dir."sql/populate_metadata.sql\n";
-  if ( !-e $sql_dir . "sql/populate_metadata.sql" ) {
-      croak( "Cannot open " . $sql_dir . "sql/populate_metadata.sql" );
-  }
-  $cmd = "mysql -u $user -p$pass -P $port -h $host $dbname < ".$sql_dir."sql/populate_metadata.sql";
+  my $cmd = "mysql -u $user -p$pass -P $port -h $host $dbname < "
+    . catfile( $sql_dir, 'sql', 'table.sql' );
   system($cmd);
 
+  print "Populating metadata in $dbname from ".$sql_dir."sql/populate_metadata.sql\n";
+  if ( !-e catfile( $sql_dir, 'sql', 'populate_metadata.sql' ) ) {
+    croak( "Cannot open "
+           . catfile( $sql_dir, 'sql', 'populate_metadata.sql' ) );
+  }
+  $cmd = "mysql -u $user -p$pass -P $port -h $host $dbname < "
+    . catfile( $sql_dir, 'sql', 'populate_metadata.sql' );
+  system($cmd);
 }
 
 sub get_label_to_accession{
