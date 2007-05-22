@@ -3,6 +3,7 @@ package XrefParser::ZFINParser;
 use strict;
 use POSIX qw(strftime);
 use File::Basename;
+use File::Spec::Functions;
 
 use base qw( XrefParser::BaseParser );
 
@@ -41,10 +42,12 @@ sub run {
   my (%swiss) = %{XrefParser::BaseParser->get_valid_codes("uniprot",$species_id)};
   my (%refseq) = %{XrefParser::BaseParser->get_valid_codes("refseq",$species_id)};
 
-  my $swissprot_io = $self->get_filehandle( $dir . '/swissprot.txt' );
+  my $swissprot_io =
+    $self->get_filehandle( catfile( $dir, 'uniprot.txt' ) );
 
   if ( !defined $swissprot_io ) {
-    print "ERROR: Could not open $dir/swissprot.txt\n";
+    print( "ERROR: Could not open " . catfile( $dir, 'uniprot.txt' ),
+           "\n" );
     return 1;    # 1 error
   }
 
@@ -72,10 +75,11 @@ sub run {
 
   $swissprot_io->close();
 
-  my $refseq_io = $self->get_filehandle( $dir . '/refseq.txt' );
+  my $refseq_io = $self->get_filehandle( catfile( $dir, 'refseq.txt' ) );
 
   if ( !defined $refseq_io ) {
-    print "ERROR: Could not open $dir/refseq.txt\n";
+    print( "ERROR: Could not open " . catfile( $dir, 'refseq.txt' ),
+           "\n" );
     return 1;
   }
 
@@ -99,10 +103,11 @@ sub run {
 
   my (%zfin) = %{XrefParser::BaseParser->get_valid_codes("zfin",$species_id)};
 
-  my $zfin_io = $self->get_filehandle( $dir . '/aliases.txt' );
+  my $zfin_io = $self->get_filehandle( catfile( $dir, 'aliases.txt' ) );
 
   if ( !defined $zfin_io ) {
-    print "ERROR: Could not open $dir/aliases.txt\n";
+    print( "ERROR: Could not open " . catfile( $dir, 'aliases.txt' ),
+           "\n" );
     return 1;
   }
 
@@ -122,7 +127,8 @@ sub run {
 
   $zfin_io->close();
 
-  print "\t$spcount xrefs from Swissprot and $rscount xrefs from RefSeq succesfully loaded\n";
+  print "\t$spcount xrefs from UniProt and\n";
+  print "\t$rscount xrefs from RefSeq succesfully loaded\n";
   print "\t$syncount synonyms loaded\n";
   print "\t$mismatch xrefs ignored\n";
   return 0;
