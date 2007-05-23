@@ -440,7 +440,10 @@ sub fetch_files {
             foreach my $remote_file (
                           ( @{ $ftp->ls( dirname( $uri->path() ) ) } ) )
             {
-                if ( !match_glob( $uri->path(), $remote_file ) ) {
+                if (
+                     !match_glob( basename( $uri->path() ), $remote_file
+                     ) )
+                {
                     next;
                 }
 
