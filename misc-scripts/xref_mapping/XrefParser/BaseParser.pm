@@ -162,11 +162,11 @@ sub run {
               $self->fetch_files( $dir, $release_url )->[-1];
         }
 
-        foreach my $urls (@files) {
+        foreach my $file (@files) {
 
             # Database parsing
-            if ( $urls =~ /^mysql:/i ) {
-                $dsn = $urls;
+            if ( $file =~ /^mysql:/i ) {
+                $dsn = $file;
                 print "Parsing $dsn with $parser\n";
                 eval "require XrefParser::$parser";
                 my $new = "XrefParser::$parser"->new();
@@ -179,72 +179,73 @@ sub run {
                 next;
             }
 
-            # Local files need to be dealt with
-            # specially; assume they are specified as
-            # LOCAL:location/of/file/relative/to/xref_mapper
-
-            $urls =~ s#^file:#LOCAL:#;
-
-            my ($file) = $urls =~ /.*\/(.*)/;
-            if ( $urls =~ /^LOCAL:(.*)/i ) {
-                my $local_file = $1;
-                if ( !defined( $cs = md5sum($local_file) ) ) {
-                    print "Download '$local_file'\n";
-                    $summary{$parser}++;
-                } else {
-                    $file_cs .= ':' . $cs;
-                    if ( !defined $checksum
-                         || index( $checksum, $file_cs ) == -1 )
-                    {
-                        print "Checksum for '$file' does not match, "
-                          . "will parse...\n";
-                        print "Parsing local file '$local_file' "
-                          . "with $parser\n";
-                        eval "require XrefParser::$parser";
-                        my $new = "XrefParser::$parser"->new();
-                        if (
-                             $new->run(
-                                    $source_id, $species_id, $local_file
-                             ) )
-                        {
-                            $summary{$parser}++;
-                        } else {
-                            update_source( $dbi,     $source_url_id,
-                                           $file_cs, $local_file );
-                        }
-                    } else {
-                        print "Ignoring '$file' as checksums match\n";
-                    }
-                } ## end else [ if ( !defined( $cs = md5sum...
-                next;
-            } ## end if ( $urls =~ /^LOCAL:(.*)/i)
-
-            # This part deals with Zip archives.  It is unclear if this
-            # is useful at all.  If so, then this should be handled by
-            # the fatch_files() method.
             if (0) {
-                # Deal with URLs with '#' notation denoting filenames
-                # from archive If the '#' is used, set $file and
-                # $file_from_archive approprately.
-                my $file_from_archive;
-                if ( $file =~ /(.*)\#(.*)/ ) {
-                    $file              = $1;
-                    $file_from_archive = $2;
-                    if ( !$file_from_archive ) {
-                        croak(
-                            "$file specifies a .zip file without using "
-                              . "the # notation to specify the file "
-                              . "in the archive to be used." );
+                # Local files need to be dealt with
+                # specially; assume they are specified as
+                # file:location/of/file/relative/to/xref_mapper
+
+                my ($urls) = ( $file =~ s#^LOCAL:#file:# );
+
+                my ($file) = $urls =~ /.*\/(.*)/;
+                if ( $urls =~ /^file:(.*)/i ) {
+                    my $local_file = $1;
+                    if ( !defined( $cs = md5sum($local_file) ) ) {
+                        print "Download '$local_file'\n";
+                        $summary{$parser}++;
+                    } else {
+                        $file_cs .= ':' . $cs;
+                        if ( !defined $checksum
+                             || index( $checksum, $file_cs ) == -1 )
+                        {
+                            print
+                              "Checksum for '$file' does not match, "
+                              . "will parse...\n";
+                            print "Parsing local file '$local_file' "
+                              . "with $parser\n";
+                            eval "require XrefParser::$parser";
+                            my $new = "XrefParser::$parser"->new();
+                            if (
+                                 $new->run( $source_id, $species_id,
+                                            $local_file ) )
+                            {
+                                $summary{$parser}++;
+                            } else {
+                                update_source( $dbi,     $source_url_id,
+                                               $file_cs, $local_file );
+                            }
+                        } else {
+                            print
+                              "Ignoring '$file' as checksums match\n";
+                        }
+                    } ## end else [ if ( !defined( $cs = md5sum...
+                    next;
+                } ## end if ( $urls =~ /^file:(.*)/i)
+
+                # This part deals with Zip archives.  It is unclear if
+                # this is useful at all.  If so, then this should be
+                # handled by the fatch_files() method.
+                if (0) {
+                   # Deal with URLs with '#' notation denoting filenames
+                   # from archive If the '#' is used, set $file and
+                   # $file_from_archive approprately.
+                    my $file_from_archive;
+                    if ( $file =~ /(.*)\#(.*)/ ) {
+                        $file              = $1;
+                        $file_from_archive = $2;
+                        if ( !$file_from_archive ) {
+                            croak(
+"$file specifies a .zip file without using "
+                                  . "the # notation to specify the file "
+                                  . "in the archive to be used." );
+                        }
+                        print "Using $file_from_archive from $file\n";
                     }
-                    print "Using $file_from_archive from $file\n";
                 }
-            }
+            } ## end if (0)
 
             if ( $unzip && ( $file =~ /\.(gz|Z)$/ ) ) {
-                print "Uncompressing '"
-                  . catfile( $dir, $file )
-                  . "' using 'gunzip'\n";
-                system( "gunzip", "-f", catfile( $dir, $file ) );
+                printf( "Uncompressing '%s' using 'gunzip'\n", $file );
+                system( "gunzip", "-f", $file );
             }
             if ($unzip) {
                 $file =~ s/\.(gz|Z)$//;  # If skipdownload set this will
@@ -252,23 +253,23 @@ sub run {
                                          # If it has, no harm done
             }
 
-            push @files_to_parse, $file;
-
             # Compare checksums and parse/upload if necessary need to
             # check file size as some .SPC files can be of zero length
 
-            if ( !defined( $cs = md5sum( catfile( $dir, $file ) ) ) ) {
-                print "Download '" . catfile( $dir, $file ) . "'\n";
+            if ( !defined( $cs = md5sum($file) ) ) {
+                printf( "Download '%s'\n", $file );
                 $summary{$parser}++;
             } else {
                 $file_cs .= ':' . $cs;
                 if ( !defined $checksum
                      || index( $checksum, $file_cs ) == -1 )
                 {
-                    if ( -s catfile( $dir, $file ) ) {
+                    if ( -s $file ) {
                         $parse = 1;
                         print "Checksum for '$file' does not match, "
                           . "will parse...\n";
+
+                        push @files_to_parse, $file;
 
                         # Files from sources "Uniprot/SWISSPROT" and
                         # "Uniprot/SPTREMBL" are all parsed with the
@@ -280,11 +281,13 @@ sub run {
                         }
                     } else {
                         $empty = 1;
-                        print $file . " has zero length, skipping\n";
+                        printf(
+                            "The file '%s' has zero length, skipping\n",
+                            $file );
                     }
-                }
-            }
-        }    # foreach @urls
+                } ## end if ( !defined $checksum...
+            } ## end else [ if ( !defined( $cs = md5sum...
+        } ## end foreach my $file (@files)
 
         if ( $parse and @files_to_parse and defined $file_cs ) {
             print "Parsing '"
@@ -297,29 +300,24 @@ sub run {
             if ( defined $release_url ) {
                 # Run with $release_url.
                 if (
-                     $new->run( $source_id,
-                                $species_id,
-                                map( catfile( $dir, $_ ),
-                                     @files_to_parse ),
-                                $release_url ) )
+                     $new->run( $source_id,      $species_id,
+                                @files_to_parse, $release_url ) )
                 {
                     $summary{$parser}++;
                 }
             } else {
                 # Run without $release_url.
                 if (
-                     $new->run( $source_id,
-                                $species_id,
-                                map( catfile( $dir, $_ ),
-                                     @files_to_parse ) ) )
+                     $new->run( $source_id, $species_id,
+                                @files_to_parse ) )
                 {
                     $summary{$parser}++;
                 }
             }
 
             # update AFTER processing in case of crash.
-            update_source( $dbi, $source_url_id, $file_cs,
-                           catfile( $dir, $files_to_parse[0] ) );
+            update_source( $dbi,     $source_url_id,
+                           $file_cs, $files_to_parse[0] );
 
             # Set release if specified
             if ( defined $release ) {
@@ -334,9 +332,7 @@ sub run {
         }
 
         if ($cleanup) {
-            foreach
-              my $file ( map( catfile( $dir, $_ ), @files_to_parse ) )
-            {
+            foreach my $file (@files_to_parse) {
                 printf( "Deleting '%s'\n", $file );
                 unlink($file);
             }
@@ -500,9 +496,6 @@ sub fetch_files {
                 next;
             }
 
-            my $ua = LWP::UserAgent->new();
-            $ua->env_proxy();
-
             if ( !-d dirname($file_path) ) {
                 printf( "Creating directory '%s'\n",
                         dirname($file_path) );
@@ -513,11 +506,6 @@ sub fetch_files {
                 }
             }
 
-            if ( $deletedownloaded && -f $file_path ) {
-                printf( "Deleting '%s'\n", $file_path );
-                unlink($file_path);
-            }
-
             printf( "Connecting to HTTP host '%s'\n", $uri->host() );
             printf( "Fetching '%s'\n",                $uri->path() );
 
@@ -526,6 +514,9 @@ sub fetch_files {
             } else {
 
                 printf( "Local file is '%s'\n", $file_path );
+
+                my $ua = LWP::UserAgent->new();
+                $ua->env_proxy();
 
                 my $response = $ua->get( $uri->as_string(),
                                         ':content_file' => $file_path );
