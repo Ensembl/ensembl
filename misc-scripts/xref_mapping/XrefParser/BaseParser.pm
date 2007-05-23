@@ -269,8 +269,6 @@ sub run {
                         print "Checksum for '$file' does not match, "
                           . "will parse...\n";
 
-                        push @files_to_parse, $file;
-
                         # Files from sources "Uniprot/SWISSPROT" and
                         # "Uniprot/SPTREMBL" are all parsed with the
                         # same parser
@@ -285,8 +283,13 @@ sub run {
                             "The file '%s' has zero length, skipping\n",
                             $file );
                     }
-                } ## end if ( !defined $checksum...
+                }
             } ## end else [ if ( !defined( $cs = md5sum...
+
+            # Push this file to the list of files to parsed.  The files
+            # are *actually* parsed only if $parse == 1.
+            push @files_to_parse, $file;
+
         } ## end foreach my $file (@files)
 
         if ( $parse and @files_to_parse and defined $file_cs ) {
@@ -324,11 +327,10 @@ sub run {
                 $self->set_release( $source_id, $release );
             }
 
-        } ## end if ( $parse and @files_to_parse...
-        elsif ( !$dsn && !$empty && defined( $files_to_parse[0] ) ) {
-            print "Ignoring '"
-              . join( "', '", @files_to_parse )
-              . "' as checksums match\n";
+        } elsif ( !$dsn && !$empty && @files_to_parse ) {
+            print(   "Ignoring '"
+                   . join( "', '", @files_to_parse )
+                   . "' as checksums match\n" );
         }
 
         if ($cleanup) {
