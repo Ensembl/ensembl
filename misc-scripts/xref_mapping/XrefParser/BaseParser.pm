@@ -146,15 +146,16 @@ sub run {
 
         $dir = catdir( $base_dir, sanitise($type) );
 
-        # For summary purposes: If 0 is returned (in $summary{$parser})
-        # then it is successful.  If 1 is returned then it failed.  If
-        # undef/nothing is returned the we do not know
-        $summary{$parser} = 0;
+        # For summary purposes: If 0 is returned (in
+        # $summary{$name}->{$parser}) then it is successful.  If 1 is
+        # returned then it failed.  If undef/nothing is returned the we
+        # do not know.
+        $summary{$name}->{$parser} = 0;
 
         @files = $self->fetch_files( $dir, @files );
         if ( !@files ) {
             # Fetching failed.
-            ++$summary{$parser};
+            ++$summary{$name}->{$parser};
             next;
         }
         if ( defined($release_url) ) {
@@ -174,7 +175,7 @@ sub run {
                      $new->run( $dsn,  $source_id, $species_id,
                                 $name, undef ) )
                 {
-                    $summary{$parser}++;
+                    ++$summary{$name}->{$parser};
                 }
                 next;
             }
@@ -191,7 +192,7 @@ sub run {
                     my $local_file = $1;
                     if ( !defined( $cs = md5sum($local_file) ) ) {
                         print "Download '$local_file'\n";
-                        $summary{$parser}++;
+                        ++$summary{$name}->{$parser};
                     } else {
                         $file_cs .= ':' . $cs;
                         if ( !defined $checksum
@@ -208,7 +209,7 @@ sub run {
                                  $new->run( $source_id, $species_id,
                                             $local_file ) )
                             {
-                                $summary{$parser}++;
+                                ++$summary{$name}->{$parser};
                             } else {
                                 update_source( $dbi,     $source_url_id,
                                                $file_cs, $local_file );
@@ -258,7 +259,7 @@ sub run {
 
             if ( !defined( $cs = md5sum($file) ) ) {
                 printf( "Download '%s'\n", $file );
-                $summary{$parser}++;
+                ++$summary{$name}->{$parser};
             } else {
                 $file_cs .= ':' . $cs;
                 if ( !defined $checksum
@@ -306,7 +307,7 @@ sub run {
                      $new->run( $source_id,      $species_id,
                                 @files_to_parse, $release_url ) )
                 {
-                    $summary{$parser}++;
+                    ++$summary{$name}->{$parser};
                 }
             } else {
                 # Run without $release_url.
@@ -314,7 +315,7 @@ sub run {
                      $new->run( $source_id, $species_id,
                                 @files_to_parse ) )
                 {
-                    $summary{$parser}++;
+                    ++$summary{$name}->{$parser};
                 }
             }
 
@@ -345,12 +346,18 @@ sub run {
     print "\n", '=' x 80, "\n";
     print "Summary of status\n";
     print '=' x 80, "\n";
-    foreach my $key ( keys %summary ) {
-        printf( "%30s\t%s\n",
-                $key, (
-                   defined $summary{$key}
-                     && $summary{$key} ? 'FAILED' : 'OKAY'
-                ) );
+
+    foreach my $source_name ( sort keys %summary ) {
+        foreach my $parser_name ( keys %{ $summary{$source_name} } ) {
+            printf( "%30s %-20s\t%s\n",
+                    $source_name,
+                    $parser_name, (
+                       defined $summary{$source_name}->{$parser_name}
+                         && $summary{$source_name}->{$parser_name}
+                       ? 'FAILED'
+                       : 'OKAY'
+                    ) );
+        }
     }
 
     # remove last working directory
