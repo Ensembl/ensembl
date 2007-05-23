@@ -437,9 +437,13 @@ sub fetch_files {
                 return ();
             }
 
-            foreach my $remote_file (
-                          ( @{ $ftp->ls( dirname( $uri->path() ) ) } ) )
-            {
+            if ( !$ftp->cwd( dirname( $uri->path() ) ) ) {
+                printf( "== Can not change directory to '%s': %s\n",
+                        dirname( $uri->path() ), $ftp->message() );
+                return ();
+            }
+
+            foreach my $remote_file ( ( @{ $ftp->ls() } ) ) {
                 if (
                      !match_glob( basename( $uri->path() ), $remote_file
                      ) )
@@ -474,7 +478,6 @@ sub fetch_files {
                             $remote_file, $ftp->size($remote_file) );
                     printf( "Local file is '%s'\n", $file_path );
 
-
                     $ftp->binary();
                     if ( !$ftp->get( $remote_file, $file_path ) ) {
                         printf( "==> Could not get '%s': %s\n",
@@ -482,7 +485,7 @@ sub fetch_files {
                                 $ftp->message() );
                         return ();
                     }
-                }
+                } ## end else [ if ( $checkdownload &&...
 
                 push( @processed_files, $file_path );
 
