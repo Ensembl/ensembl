@@ -1,7 +1,7 @@
 UniProt/Swissprot - UniProt/Trembl (UNIversal PROTein resource)
 ---------------------------------------------------------------
 
-The files cans come in two types:
+The files can come in two types:
 
 1)  Contains data for all species
 
@@ -13,17 +13,17 @@ The files cans come in two types:
 
     This is the normal case.
 
-2)  Contains data for that one species
+2)  Contains data for one species only
 
     ftp://ftp.ebi.ac.uk/pub/databases/integr8/uniprot/proteomes/17.D_melanogaster.dat.gz
 
 
 These are primary Xrefs in that they contain sequence and hence can be
 mapped to the Ensembl entities via normal alignment methods (we use
-exonerate).
+Exonerate).
 
 
-Below is a list of dependent Xrefs that might be added:
+This is a list of dependent Xrefs that might be added:
 
     EMBL
     PDB
@@ -50,7 +50,7 @@ These files are parsed by the parser RefSeqGPFFParser.pm
 
 These are primary Xrefs in that they contain sequence and hence can be
 mapped to the Ensembl entities via normal alignment methods (we use
-exonerate).
+Exonerate).
 
 Below is a list of dependent Xrefs that might be added:
 
@@ -75,7 +75,7 @@ These files are parsed by the parser RefSeqParser.pm
 
 These are primary Xrefs in that they contain sequence and hence can be
 mapped to the Ensembl entities via normal alignment methods (we use
-exonerate).
+Exonerate).
 
 Below is a list of dependent Xrefs that might be added:
 
@@ -93,14 +93,14 @@ Comes as species specific file i.e.
 The files have something like
 
 >IPI:IPI00000005.1|SWISS-PROT:P01111|TREMBL:Q5U091|ENSEMBL:ENSP00000261444;ENSP00000358548|REFSEQ:NP_002515|VEGA:OTTHUMP00000013879 Tax_Id=9606 GTPase NRas precursor
-seqeunce..................
+sequence..................
 
 But most of the header information is ignored except for the description
-and the IPI value.  The sequence is used to position the ipi Xref.
+and the IPI value.  The sequence is used to position the IPI Xref.
 
 These are primary Xrefs in that they contain sequence and hence can be
 mapped to the Ensembl entities via normal alignment methods (we use
-exonerate).
+Exonerate).
 
 Has no dependent Xrefs.
 
@@ -115,7 +115,7 @@ Comes as species specific file i.e.
 
 These are primary Xrefs in that they contain sequence and hence can be
 mapped to the Ensembl entities via normal alignment methods (we use
-exonerate).  No longer loaded via UniProt.
+Exonerate).  No longer loaded via UniProt.
 
 Has no dependent Xrefs.
 
@@ -123,15 +123,15 @@ Has no dependent Xrefs.
 AgilentProbe
 ------------
 
-This is a local and is not down loaded automatically via ftp so an
+This is a local and is not down loaded automatically via FTP so an
 AgilentProbe the file must be copied by hand.  This will be some thing
 like
 
-    file://AgilentProbe/HumanExpression.fasta
+    file:AgilentProbe/HumanExpression.fasta
 
 These are primary Xrefs in that they contain sequence and hence can be
 mapped to the Ensembl entities via normal alignment methods (we use
-exonerate).
+Exonerate).
 
 Has no dependent Xrefs.
 
@@ -139,15 +139,15 @@ Has no dependent Xrefs.
 AgilentCGH
 ----------
 
-This is a local and is not down loaded automatically via ftp so an
+This is a local and is not down loaded automatically via FTP so an
 AgilentProbe the file must be copied by hand.  This will be some thing
 like
 
-    file://AgilentCGH/HumanCGH.fasta
+    file:AgilentCGH/HumanCGH.fasta
 
 These are primary Xrefs in that they contain sequence and hence can be
 mapped to the Ensembl entities via normal alignment methods (we use
-exonerate).
+Exonerate).
 
 Has no dependent Xrefs.
 
@@ -189,17 +189,17 @@ Can come in a species specific file or can contain all species.
     ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/UNIPROT/gene_association.goa_uniprot.gz
     ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/HUMAN/gene_association.goa_human.gz
 
-GO information in the UniProt and Refseq files are ignored and just the
+GO information in the UniProt and RefSeq files are ignored and just the
 information from the above files are used.  The files have references to
-UniProt and Refseq entries and so the GO entries are set to be dependent
+UniProt and RefSeq entries and so the GO entries are set to be dependent
 Xref on these.
 
 
 EntrezGene
 ----------
 
-Gene-centered information at NCBI is stored as a depenedent Xref and is
-obtained from the Refseq entires.
+Gene-centred information at NCBI is stored as a dependent Xref and is
+obtained from the RefSeq entries.
 
 
 Interpro
@@ -211,7 +211,7 @@ and gets it data from the file
     ftp://ftp.ebi.ac.uk/pub/databases/interpro/interpro.xml.gz
 
 NOTE:  Interpro has its own table and hence the Xrefs are stored but
-are not linked to the Ensembl entities directly but a list of interpro
+are not linked to the Ensembl entities directly but a list of InterPro
 and identifiers are stored.  The identifiers stored are of the type
 
     PROSITE, PFAM, PRINTS, PREFILE, PROFILE, TIGRFAMs
@@ -220,13 +220,13 @@ and identifiers are stored.  The identifiers stored are of the type
 UniProt/Varsplic
 ----------------
 
-Alternative splice forms are obtained from the follwing file
+Alternative splice forms are obtained from the following file
 
     ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot_varsplic.fasta.gz
 
 These are primary Xrefs in that they contain sequence and hence can be
 mapped to the Ensembl entities via normal alignment methods (we use
-exonerate).
+Exonerate).
 
 Has no dependent Xrefs.
 
@@ -234,10 +234,10 @@ Has no dependent Xrefs.
 ncRNA, RFAM, miRNA_Registry
 ---------------------------
 
-This is a local and is not down loaded automatically via ftp so you must
+This is a local and is not down loaded automatically via FTP so you must
 copy this file first before running the parser.
 
-    file://ncRNA/ncRNA.txt
+    file:ncRNA/ncRNA.txt
 
 These are direct Xrefs so the file contains data on what the Xref is and
 which Ensembl entity it matches too.
@@ -267,12 +267,12 @@ This creates two set of Xrefs:
 Note those in set 2 will also be in set 1.
 
 These MIM Xrefs are linked to UniProt/SwissProt entries using the
-UniProtParser.pm creating dependent Xrefs.  Note if the Swissprot Entrie
-does not specify wether the MIM entrie is a phenotype or a gene then it
+UniProtParser.pm creating dependent Xrefs.  Note if the Swissprot entry
+does not specify whether the MIM entry is a phenotype or a gene then it
 is ignored.  For this same reason MIM dependent Xrefs are NOT obtained
-from the Refseq entries.
+from the RefSeq entries.
 
-So when the swissport entries are matched to Ensembl the MIM entries
+So when the Swissprot entries are matched to Ensembl the MIM entries
 will also be matched.
 
 
@@ -280,7 +280,7 @@ HUGO
 ----
 
 The Human Genome Organisation Xrefs are obtained from using the
-following url:
+following URL:
 
 http://www.gene.ucl.ac.uk/cgi-bin/nomenclature/gdlw.pl?title=Genew+output+data
 &col=gd_hgnc_id&col=gd_app_sym&col=gd_app_name&col=gd_prev_sym&col=gd_aliases
@@ -289,23 +289,22 @@ http://www.gene.ucl.ac.uk/cgi-bin/nomenclature/gdlw.pl?title=Genew+output+data
 &.cgifields=&.cgifields=status&.cgifields=chr
 
 Which is a script that produces a list of HUGO identifiers with the
-UniProt and Refseq entries they are linked to.
+UniProt and RefSeq entries they are linked to.
 
-The files have references to UniProt and Refseq entries and so the GO
+The files have references to UniProt and RefSeq entries and so the GO
 entries are set to be dependent Xref on these.
 
-NOTE:  due to length of its name the file is stored in the name of its
-checksum.
+NOTE:  This data will be stored as the file 'gdlw.pl'.
 
 
 OTTT
 ----
 
-These are the direct mapping between the vega genes and Ensembl
+These are the direct mapping between the Vega genes and Ensembl
 ones.  Not all of these are mapped but a fair proportion are.  These
 create direct Xrefs.  The file used should be
 
-    file://OTTT/OTTT.txt
+    file:OTTT/OTTT.txt
 
 
 CCDS
@@ -317,9 +316,9 @@ quality tests.
 
 A local file is used here:
 
-    file://CCDS/CCDS.txt 
+    file:CCDS/CCDS.txt
 
-The file contains a list of ccds identifiers and the Ensembl entities
+The file contains a list of CCDS identifiers and the Ensembl entities
 they match to.  So direct Xrefs are created for these.
 
 
@@ -349,7 +348,7 @@ Rat Genome Database entries are populate by using the file
 
     ftp://rgd.mcw.edu/pub/data_release/GENES
 
-The rgd Xrefs are dependent Xrefs on the Refseq entries.
+The RGD Xrefs are dependent Xrefs on the Refseq entries.
 
 
 Zebra fish
@@ -363,17 +362,17 @@ The two files
     http://zfin.org/data_transfer/Downloads/refseq.txt
     http://zfin.org/data_transfer/Downloads/swissprot.txt
 
-contain list of zfin identifiers and Refseq or swissprot indentifiers
+contains list of ZFIN identifiers and RefSeq or Swissprot identifiers
 depending on the file.
 
-This creates a set of dependent Xrefs on Refseq and UniProt entries.
+This creates a set of dependent Xrefs on RefSeq and UniProt entries.
 
 
 C Elegans
 ---------
 
 wormpep_id, wormbase_locus, wormbase_gene, wormbase_transcript
---------------------------------------------------------------- 
+--------------------------------------------------------------
 
 Uses the file
 
