@@ -152,6 +152,7 @@ my $gsi_string;
 my $gsi_mod_string;
 my $tsi_string;
 my $tlsi_string;
+my %skip_biotypes = ();
 
 #
 # find out which genes and transcripts were deleted
@@ -290,6 +291,58 @@ sub determine_deleted {
   
   $support->log_stamped("Determining list of deleted gene, transcript and translation stable IDs by comparing dbs...\n");
 
+  # optionally skip ncRNAs
+  #
+  # this is the complete list of ncRNA biotype; you might need to update it (the
+  # code below will try to help you with this)
+  my @nc_biotypes = qw(
+    miRNA
+    miRNA_pseudogene
+    misc_RNA
+    misc_RNA_pseudogene
+    Mt_rRNA
+    Mt_tRNA
+    Mt_tRNA_pseudogene
+    rRNA
+    rRNA_pseudogene
+    scRNA
+    scRNA_pseudogene
+    snoRNA
+    snoRNA_pseudogene
+    snRNA
+    snRNA_pseudogene
+    tRNA_pseudogene
+  );
+
+  if ($support->param('skip_ncrna')) {
+
+    %skip_biotypes = map { $_ => 1 } @nc_biotypes;
+
+    # make sure we have a complete list of ncRNA biotypes
+    my $sql = qq(SELECT DISTINCT biotype from gene);
+    my $sth1 = $dbh_new->prepare($sql);
+    $sth1->execute;
+    my @biotypes_db;
+    
+    while ((my $biotype) = $sth1->fetchrow_array) {
+      push @biotypes_db, $biotype unless ($skip_biotypes{$biotype});
+    }
+
+    $sth1->finish;
+
+    if (@biotypes_db) {
+      print "These are the non-ncRNA biotypes found in the db:\n";
+      map { print "  $_\n" } @biotypes_db;
+      print "\nPlease check that the list of ncRNA biotypes is still complete, otherwise adapt the script.\n";
+      exit unless $support->user_proceed("Continue?");
+    }
+  }
+
+  # optionally skip other biotypes
+  if ($support->param('skip_biotypes')) {
+    %skip_biotypes = map { $_ => 1 } $support->param('skip_biotypes');
+  }
+
   # get old and new genes and transcripts from db
   my $ga_old = $dba_old->get_GeneAdaptor;
   my @genes_old = @{ $ga_old->fetch_all };
@@ -300,6 +353,10 @@ sub determine_deleted {
   my %tsi_new = map { $_ => 1 } @{ $ta_new->list_stable_ids };
 
   while (my $g_old = shift(@genes_old)) {
+    
+    # skip biotypes
+    next if ($skip_biotypes{$g_old->biotype});
+  
     my $gsi = $g_old->stable_id;
   
     # mark gene as deleted
@@ -310,6 +367,10 @@ sub determine_deleted {
 
     # transcripts
     foreach my $tr (@{ $g_old->get_all_Transcripts }) {
+
+      # skip biotypes
+      next if ($skip_biotypes{$tr->biotype});
+  
       my $tsi = $tr->stable_id;
 
       unless ($tsi_new{$tsi}) {
@@ -363,12 +424,32 @@ sub create_mapping_session {
   
   my $old_db_name = $support->param('altdbname');
   my $new_db_name = $support->param('dbname');
+  
+  my $old_mca = $dba_old->get_MetaContainer;
+  my ($old_release) = @{ $old_mca->list_value_by_key('schema_version') };
+  my ($old_assembly) = @{ $old_mca->list_value_by_key('assembly.default') };
+
+  my $new_mca = $dba_new->get_MetaContainer;
+  my ($new_release) = @{ $new_mca->list_value_by_key('schema_version') };
+  my ($new_assembly) = @{ $new_mca->list_value_by_key('assembly.default') };
+  
   my $sql = qq(
-    INSERT INTO mapping_session (old_db_name, new_db_name, created)
-    VALUES ('$old_db_name', '$new_db_name', NOW())
+    INSERT INTO mapping_session
+    VALUES (NULL, '$old_db_name', '$new_db_name', '$old_release',
+            '$new_release','$old_assembly', '$new_assembly', NOW())
   );
   my $c = $dbh_new->do($sql) unless ($support->param('dry_run'));
   my $mapping_session_id = $dbh_new->{'mysql_insertid'};
+  
+  my $fmt = "%-23s%-40s\n";
+  $support->log(sprintf($fmt, 'mapping_session_id', $mapping_session_id), 1);
+  $support->log(sprintf($fmt, 'old_db_name', $old_db_name), 1);
+  $support->log(sprintf($fmt, 'new_db_name', $new_db_name), 1);
+  $support->log(sprintf($fmt, 'old_release', $old_release), 1);
+  $support->log(sprintf($fmt, 'new_release', $new_release), 1);
+  $support->log(sprintf($fmt, 'old_assembly', $old_assembly), 1);
+  $support->log(sprintf($fmt, 'new_assembly', $new_assembly), 1);
+
   $support->log("Done.\n\n");
 
   return $mapping_session_id;
@@ -403,60 +484,6 @@ sub create_stable_id_events {
   );
   my $sth = $dbh_new->prepare($sql);
 
-  # optionally skip ncRNAs
-  #
-  # this is the complete list of ncRNA biotype; you might need to update it (the
-  # code below will try to help you with this)
-  my @nc_biotypes = qw(
-    miRNA
-    miRNA_pseudogene
-    misc_RNA
-    misc_RNA_pseudogene
-    Mt_rRNA
-    Mt_tRNA
-    Mt_tRNA_pseudogene
-    rRNA
-    rRNA_pseudogene
-    scRNA
-    scRNA_pseudogene
-    snoRNA
-    snoRNA_pseudogene
-    snRNA
-    snRNA_pseudogene
-    tRNA_pseudogene
-  );
-
-  my %skip_biotypes = ();
-
-  if ($support->param('skip_ncrna')) {
-
-    %skip_biotypes = map { $_ => 1 } @nc_biotypes;
-
-    # make sure we have a complete list of ncRNA biotypes
-    $sql = qq(SELECT DISTINCT biotype from gene);
-    my $sth1 = $dbh_new->prepare($sql);
-    $sth1->execute;
-    my @biotypes_db;
-    
-    while ((my $biotype) = $sth1->fetchrow_array) {
-      push @biotypes_db, $biotype unless ($skip_biotypes{$biotype});
-    }
-
-    $sth1->finish;
-
-    if (@biotypes_db) {
-      print "These are the non-ncRNA biotypes found in the db:\n";
-      map { print "  $_\n" } @biotypes_db;
-      print "\nPlease check that the list of ncRNA biotypes is still complete, otherwise adapt the script.\n";
-      exit unless $support->user_proceed("Continue?");
-    }
-  }
-
-  # optionally skip other biotypes
-  if ($support->param('skip_biotypes')) {
-    %skip_biotypes = map { $_ => 1 } $support->param('skip_biotypes');
-  }
-
   my %stats = map { $_ => 0 } qw(g tr tl g_tot tr_tot);
   my $num_genes = scalar(@genes);
   my $i;
@@ -466,7 +493,7 @@ sub create_stable_id_events {
     $stats{g_tot}++;
     
     next if ($skip_biotypes{$gene->biotype});
-
+    
     unless ($support->param('dry_run')) {
       $sth->execute(
         $gene->stable_id,
@@ -486,9 +513,9 @@ sub create_stable_id_events {
     while (my $tr = shift(@transcripts)) {
       
       $stats{tr_tot}++;
-    
-      next if ($skip_biotypes{$tr->biotype});
 
+      next if ($skip_biotypes{$tr->biotype});
+    
       unless ($support->param('dry_run')) {
         $sth->execute(
           $tr->stable_id,
@@ -684,7 +711,8 @@ sub populated_archive {
         if ($tl) {
           $tl_stable_id = $tl->stable_id;
           $tl_version = $tl->version;
-          $sth_pep->execute(md5_hex($trans->translate->seq), $trans->translate->seq);
+          my $pep_seq = $trans->translate->seq;
+          $sth_pep->execute(md5_hex($pep_seq), $pep_seq);
           $pid = $dbh_new->{'mysql_insertid'};
         }
 
