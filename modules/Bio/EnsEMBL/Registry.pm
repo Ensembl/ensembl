@@ -15,42 +15,50 @@ Bio::EnsEMBL::Registry
 
 Bio::EnsEMBL::Registry->load_all("configuration_file");
 
-$gene_adaptor = Bio::EnsEMBL::Registry->get_adaptor("homo_sapiens","core","gene"))
+$gene_adaptor =
+  Bio::EnsEMBL::Registry->get_adaptor( "human", "core", "gene" );
 
 
 =head1 DESCRIPTION
 
-All Adaptors are stored/registered using this module. This module should then
-be used to get the adaptors needed.
+All Adaptors are stored/registered using this module. This module should
+then be used to get the adaptors needed.
 
-The registry can be loaded from a configuration file using the method load_all.
-If a file is passed to load_all then this is used.
-Else if the enviroment variable ENSEMBL_REGISTRY is set then this is used
-Else if the file .ensembl_init in your home directory exist it is used.
+The registry can be loaded from a configuration file using the load_all
+method.
 
-For the Web server ENSEMBL_REGISTRY should be set in SiteDefs.pm, which will
-pass this on to load_all.
+If a filename is passed to load_all then this is used.  Else if the
+enviroment variable ENSEMBL_REGISTRY is set to the name on an existing
+configuration file, then this is used.  Else if the file .ensembl_init
+in your home directory exist, it is used.
+
+For the Web server ENSEMBL_REGISTRY should be set in SiteDefs.pm.  This
+will then be passed on to load_all.
 
 
-The registry can also be loaded via the method load_registry_from_db which
-given a host will load the latest versions of the Ensembl databases from it.
+The registry can also be loaded via the method load_registry_from_db
+which given a database host will load the latest versions of the Ensembl
+databases from it.
 
-The four types of registrys are for db adaptors, dba adaptors, dna adaptors
+The four types of registries are for db adaptors, dba adaptors, dna adaptors
 and the standard type.
 
 =head2 db
 
-These are registrys for backwards compatibillity and enable the subroutines
+These are registries for backwards compatibility and enable the subroutines
 to add other adaptors to connections. 
 
 e.g. get_all_db_adaptors, get_db_adaptor, add_db_adaptor, remove_db_adaptor
 are the old DBAdaptor subroutines which are now redirected to the Registry.
 
 So if before we had
-   my $sfa = $self->adaptor()->db()->get_db_adaptor('blast');
+
+    my $sfa = $self->adaptor()->db()->get_db_adaptor('blast');
 
 We now want to change this to
-   my $sfa = Bio::EnsEMBL::Registry->get_adaptor("Human","core","blast");
+
+    my $sfa =
+      Bio::EnsEMBL::Registry->get_adaptor( "human", "core", "blast" );
 
 
 =head2 DBA
@@ -60,12 +68,13 @@ These are the stores for the DBAdaptors
 The Registry will create all the DBConnections needed now if you set up the
 configuration correctly. So instead of the old commands like
 
-my $db = Bio::EnsEMBL::DBSQL::DBAdaptor->new(....)
-my $exon_adaptor = $db->get_ExonAdaptor;
+    my $db           = Bio::EnsEMBL::DBSQL::DBAdaptor->new(...);
+    my $exon_adaptor = $db->get_ExonAdaptor;
 
 we should now have just
 
-my  $exon_adaptor = Bio::EnsEMBL::Registry->get_adaptor("Human","core","Exon");
+    my $exon_adaptor =
+      Bio::EnsEMBL::Registry->get_adaptor( "human", "core", "exon" );
 
 
 =head2 DNA
@@ -73,9 +82,9 @@ my  $exon_adaptor = Bio::EnsEMBL::Registry->get_adaptor("Human","core","Exon");
 This is an internal Registry and allows the configuration of a dnadb. 
 An example here is to set the est database to get its dna data from the core database.
 
-## set the est db to use the core for getting dna data.
-#Bio::EnsEMBL::Utils::ConfigRegistry->
-#                         dnadb_add("Homo Sapiens","core","Homo Sapiens","est");
+    ## set the est db to use the core for getting dna data.
+    # Bio::EnsEMBL::Utils::ConfigRegistry->dnadb_add(
+    #         "Homo Sapiens", "core", "Homo Sapiens", "est" );
 
 
 =head2 adaptors
@@ -85,7 +94,8 @@ Slice Adaptor etc.
 
 These are accessed by the get_adaptor subroutine i.e.
 
-my  $exon_adaptor = Bio::EnsEMBL::Registry->get_adaptor("Human","core","Exon");
+    my $exon_adaptor =
+      Bio::EnsEMBL::Registry->get_adaptor( "human", "core", "exon" );
 
 =head1 CONTACT
 
@@ -114,18 +124,26 @@ my $API_VERSION = 45;
 
 =head2 load_all
 
- Will load the registry with the configuration file which is obtained from
- the first in the following and in that order.
+ Will load the registry with the configuration file which is obtained
+ from the first in the following and in that order.
 
-  1) if an argument is passed to this method this is used as the conf file.
-  2) If the enviroment variable ENSEMBL_REGISTRY is set this is used.
-  3) If the file .ensembl_init exist in the home directory it is used
+  1) If an argument is passed to this method, this is used as the name
+     of the configuration file to read.
 
-  Arg [1]    : (optional) string $arg file to load the registry from
-  Arg [2]    : (optional) string if set prints out messages about conf file used.
-  Arg [3]    : (optional) string if not 0 will print out all information
-  Arg [4]    : (optional) string if 1 the db connection will not be cleared, if not set 
-               the db connections will be cleared ( default ) 
+  2) If the enviroment variable ENSEMBL_REGISTRY is set, this is used as
+     the name of the configuration file to read.
+
+  3) If the file .ensembl_init exist in the home directory, it is used
+     as the configuration file.
+
+  Arg [1]    : (optional) string
+               Name of file to load the registry from.
+  Arg [2]    : (optional) integer
+               If not 0, will print out all information.
+  Arg [3]    : (optional) integer
+               If not 0, the db connection will not be cleared, if 0 or
+               if not set the db connections will be cleared (this is
+               the default).
   Example    : Bio::EnsEMBL::Registry->load_all();
   Returntype : none
   Exceptions : none
@@ -199,7 +217,7 @@ sub clear{
 }
 
 #
-# db adaptors. (for backwards compatibillity)
+# db adaptors. (for backwards compatibility)
 #
 
 =head2 add_db
@@ -211,7 +229,7 @@ sub clear{
   Returntype : none
   Exceptions : none
   Status     : At Risk.
-             : This is here for backwards compatibillity only and may be removed 
+             : This is here for backwards compatibility only and may be removed 
              : eventually. Solution is to make sure the db and the adaptor have
              : the same species and the call is then no longer needed.
              
@@ -234,7 +252,7 @@ sub add_db{
   Returntype : adaptor
   Exceptions : none
   Status     : At Risk.
-             : This is here for backwards compatibillity only and may be removed 
+             : This is here for backwards compatibility only and may be removed 
              : eventually. Solution is to make sure the db and the adaptor have
              : the same species and the call is then no longer needed.
 
@@ -257,7 +275,7 @@ sub remove_db{
   Returntype : adaptor
   Exceptions : none
   Status     : At Risk.
-             : This is here for backwards compatibillity only and may be removed 
+             : This is here for backwards compatibility only and may be removed 
              : eventually. Solution is to make sure the db and the adaptor have
              : the same species then call get_DBAdaptor instead.
 
@@ -281,7 +299,7 @@ sub get_db{
   Returntype : adaptor
   Exceptions : none
   Status     : At Risk.
-             : This is here for backwards compatibillity only and may be removed 
+             : This is here for backwards compatibility only and may be removed 
              : eventually. Solution is to make sure the dbs all have
              : the same species then call get_all_DBAdaptors(-species => "human");
 
