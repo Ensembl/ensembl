@@ -728,8 +728,10 @@ sub is_toplevel{
   my $code = undef;
   $sth->bind_columns(\$code);
   while($sth->fetch){
+    $sth->finish;
     return 1;
   }
+  $sth->finish;
   return 0;
 }
 
