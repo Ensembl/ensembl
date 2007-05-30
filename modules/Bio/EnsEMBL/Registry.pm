@@ -150,49 +150,53 @@ my $API_VERSION = 45;
   Status     : Stable
 
 =cut
- 
-sub load_all{
-  my $class = shift;
-  my $conf_file = shift;
-  my $verbose = shift;
-  my $no_clear = shift ; 
-  
-  if(defined($registry_register{'seen'})){ 
-    unless ( $no_clear ) { 
-      print STDERR "Clearing previuosly loaded configuration from Registry\n" if ($verbose);
-      $class->clear();
-    }
-  }
-  $registry_register{'seen'}=1;
-  if(defined($conf_file)){
-    print STDERR  "Loading conf from site defs file ".$conf_file."\n" if ($verbose);
-;
-    if(-e $conf_file){
-      eval{ require($conf_file) }; $@ && die($@);
-      
-      # other wise it gets done again by the web initialisation stuff
-      delete $INC{$conf_file}; 
-    }
-    else{ #error message
-      print STDERR "File passed (".$conf_file.") does not exist therefore no configuration loaded\n";
-    }
-  }
-  elsif(defined($ENV{ENSEMBL_REGISTRY}) and -e $ENV{ENSEMBL_REGISTRY}){
-    my $file = $ENV{ENSEMBL_REGISTRY};
-    print STDERR  "Loading conf from ".$file."\n"  if ($verbose);
-;
-    eval{ require($file) }; $@ && die($@);
-  }
-  elsif(-e $ENV{HOME}."/.ensembl_init") {
-    my $file = $ENV{HOME}."/.ensembl_init";
-    
-    eval{ require($file) }; $@ && die($@)
-  }
-  else{
-    print STDERR "NO default configuration to load\n" if ($verbose);
-  }
-}
 
+sub load_all {
+    my $class = shift;
+    my ( $config_file, $verbose, $no_clear ) = @_;
+
+    $config_file ||= $ENV{ENSEMBL_REGISTRY}
+      || $ENV{HOME} . "/.ensembl_init";
+
+    $verbose  ||= 0;
+    $no_clear ||= 0;
+
+    if ( !defined($config_file) ) {
+        if ($verbose) {
+            print( STDERR
+                   "No default registry configuration to load.\n" );
+        }
+    } elsif ( !-e $config_file ) {
+        if ($verbose) {
+            printf( STDERR "Configuration file '%s' does not exist. "
+                      . "Registry configuration not loaded.\n",
+                    $config_file );
+        }
+    } else {
+        if ( defined( $registry_register{'seen'} ) ) {
+            if ( !$no_clear ) {
+                if ($verbose) {
+                    print( STDERR "Clearing previously loaded "
+                           . "registry configuration\n" );
+                }
+                $class->clear();
+            }
+        }
+        $registry_register{'seen'} = 1;
+
+        if ($verbose) {
+            printf( STDERR
+                      "Loading registry configuration from '%s'.\n",
+                    $config_file );
+        }
+
+        eval { require($config_file) };
+        $@ && die($@);
+
+        # To make the web code avoid doing this again:
+        delete $INC{$config_file};
+    }
+} ## end sub load_all
 
 =head2 clear
 
