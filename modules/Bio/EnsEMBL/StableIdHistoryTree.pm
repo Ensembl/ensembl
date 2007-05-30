@@ -63,24 +63,28 @@ tree (i.e. try to avoid overlapping lines).
 
 =head1 METHODS
 
-new
-add_ArchiveStableIds
-add_ArchiveStableIds_for_events
-remove_ArchiveStableId
-flush_ArchiveStableIds
-add_StableIdEvents
-remove_StableIdEvent
-flush_StableIdEvents
-get_all_ArchiveStableIds
-get_all_StableIdEvents
-get_release_display_names
-get_release_db_names
-get_unique_stable_ids
-optimise_tree
-coords_by_ArchiveStableId
-calculate_coords
-consolidate_tree
-reset_tree
+  new
+  add_ArchiveStableIds
+  add_ArchiveStableIds_for_events
+  remove_ArchiveStableId
+  flush_ArchiveStableIds
+  add_StableIdEvents
+  remove_StableIdEvent
+  flush_StableIdEvents
+  get_all_ArchiveStableIds
+  get_all_StableIdEvents
+  get_latest_StableIdEvent
+  get_release_display_names
+  get_release_db_names
+  get_unique_stable_ids
+  optimise_tree
+  coords_by_ArchiveStableId
+  calculate_coords
+  consolidate_tree
+  reset_tree
+  current_dbname
+  current_release
+  current_assembly
 
 =head1 RELATED MODULES
 
@@ -109,11 +113,15 @@ use strict;
 use warnings;
 no warnings 'uninitialized';
 
+use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 
 
 =head2 new
 
+  Arg [CURRENT_DBNAME]   : (optional) name of current db
+  Arg [CURRENT_RELEASE]  : (optional) current release number
+  Arg [CURRENT_ASSEMBLY] : (optional) current assembly name
   Example     : my $history = Bio::EnsEMBL::StableIdHistoryTree->new;
   Description : object constructor
   Return type : Bio::EnsEMBL::StableIdHistoryTree
@@ -130,6 +138,14 @@ sub new {
   
   my $self = {};
   bless $self, $class;
+
+  my ($current_dbname, $current_release, $current_assembly) =
+    rearrange([qw( CURRENT_DBNAME CURRENT_RELEASE CURRENT_ASSEMBLY )], @_ );
+
+  # initialise
+  $self->{'current_dbname'} = $current_dbname;
+  $self->{'current_release'} = $current_release;
+  $self->{'current_assembly'} = $current_assembly;
   
   return $self;
 }
@@ -326,7 +342,7 @@ sub remove_StableIdEvent {
 
 sub flush_StableIdEvents {
   my $self = shift;
-  $self->{'links'} = undef;
+  $self->{'links'} = undef; 
 }
 
 
@@ -391,6 +407,58 @@ sub get_all_ArchiveStableIds {
 sub get_all_StableIdEvents {
   my $self = shift;
   return [ values %{ $self->{'links'} } ]; 
+}
+
+
+=head2 get_latest_StableIdEvent
+
+  Arg[1]      : Bio::EnsEMBL::ArchiveStableId $arch_id - the stable ID to get
+                the latest Event for
+  Example     : my $arch_id = Bio::EnsEMBL::ArchiveStableId->new(
+                  -stable_id => 'ENSG00001'
+                );
+                my $event = $history->get_latest_Event($arch_id);
+  Description : Returns the latest StableIdEvent found in the tree where a given
+                stable ID is the new stable ID. If more than one is found (e.g.
+                in a merge scenario in the latest mapping), preference is given
+                to self-events.
+  Return type : Bio::EnsEMBL::StableIdEvent
+  Exceptions  : thrown on missing or wrong argument
+  Caller      : Bio::EnsEMBL::DBSQL::ArchiveStableIdAdaptor::add_all_current_to_history, general
+  Status      : At Risk
+              : under development
+
+=cut
+
+sub get_latest_StableIdEvent {
+  my $self = shift;
+  my $arch_id = shift;
+  
+  unless ($arch_id and $arch_id->isa('Bio::EnsEMBL::ArchiveStableId')) {
+    throw("Need a Bio::EnsEMBL::ArchiveStableId.");
+  }
+
+  my @all_events = @{ $self->get_all_StableIdEvents };
+  my @self_events = ();
+
+  while (my $event = shift(@all_events)) {
+    if ($event->new_ArchiveStableId and
+        $event->new_ArchiveStableId->stable_id eq $arch_id->stable_id) {
+      push @self_events, $event;
+    }
+  }
+
+  my @sorted = sort { $b->new_ArchiveStableId->release <=>
+                      $a->new_ArchiveStableId->release } @self_events;
+
+  # give priority to self events
+  my $latest;
+  while ($latest = shift @sorted) {
+    last if ($latest->old_ArchiveStableId and
+             $latest->old_ArchiveStableId->stable_id eq $arch_id->stable_id);
+  }
+
+  return $latest;
 }
 
 
@@ -538,8 +606,6 @@ sub get_unique_stable_ids {
   my $self = shift;
   
   unless ($self->{'sorted_tree'}->{'stable_ids'}) {
-    warning("No sorted stable ID list found. Will return lexically sorted unique stable ID, which might not be what you wanted.");
-
     $self->{'sorted_tree'}->{'stable_ids'} = $self->_sort_stable_ids;
   }
   
@@ -971,6 +1037,9 @@ sub consolidate_tree {
   
     $last = $event;
   }
+  
+  # now add ArchiveStableIds of the remaining events to the tree
+  $self->add_ArchiveStableIds_for_events;
 }
 
 
@@ -990,6 +1059,92 @@ sub consolidate_tree {
 sub reset_tree {
   my $self = shift;
   $self->{'sorted_tree'} = undef;
+}
+
+
+=head2 current_dbname
+
+  Arg[1]      : (optional) String $dbname - the dbname to set
+  Example     : my $dbname = $history->current_dbname;
+  Description : Getter/setter for current dbname.
+  Return type : String
+  Exceptions  : none
+  Caller      : general
+  Status      : At Risk
+              : under development
+
+=cut
+
+sub current_dbname {
+  my $self = shift;
+  $self->{'current_dbname'} = shift if (@_);
+  return $self->{'current_dbname'};
+}
+
+
+=head2 current_release
+
+  Arg[1]      : (optional) Int $release - the release to set
+  Example     : my $release = $history->current_release;
+  Description : Getter/setter for current release.
+  Return type : Int
+  Exceptions  : none
+  Caller      : general
+  Status      : At Risk
+              : under development
+
+=cut
+
+sub current_release {
+  my $self = shift;
+  $self->{'current_release'} = shift if (@_);
+  return $self->{'current_release'};
+}
+
+
+=head2 current_assembly
+
+  Arg[1]      : (optional) String $assembly - the assembly to set
+  Example     : my $assembly = $history->current_assembly;
+  Description : Getter/setter for current assembly.
+  Return type : String
+  Exceptions  : none
+  Caller      : general
+  Status      : At Risk
+              : under development
+
+=cut
+
+sub current_assembly {
+  my $self = shift;
+  $self->{'current_assembly'} = shift if (@_);
+  return $self->{'current_assembly'};
+}
+
+
+=head2 is_incomplete
+
+  Arg[1]      : (optional) Boolean $incomplete 
+  Example     : if ($history->is_incomplete) {
+                  print "Returned tree is incomplete due to too many mappings
+                    in the database.\n";
+                }
+  Description : Getter/setter for incomplete flag. This is used by
+                ArchiveStableIdAdaptor to indicate that it finished building
+                the tree prematurely due to too many mappins in the db and can
+                be used by applications to print warning messages.
+  Return type : Boolean
+  Exceptions  : none
+  Caller      : general
+  Status      : At Risk
+              : under development
+
+=cut
+
+sub is_incomplete {
+  my $self = shift;
+  $self->{'incomplete'} = shift if (@_);
+  return $self->{'incomplete'};
 }
 
 
