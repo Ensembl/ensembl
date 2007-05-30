@@ -458,10 +458,12 @@ sub exists {
                             FROM   xref x, external_db xdb
                             WHERE  x.external_db_id = xdb.external_db_id
                             AND    x.display_label = ?
-                            AND    xdb.db_name = ?');
+                            AND    xdb.db_name = ?
+                            AND    x.dbprimary_acc = ?');
 
   $sth->bind_param(1,$dbe->display_id,SQL_VARCHAR);
   $sth->bind_param(2,$dbe->dbname,SQL_VARCHAR);
+  $sth->bind_param(3,$dbe->primary_id,SQL_VARCHAR);
   $sth->execute();
 
   my ($dbID) = $sth->fetchrow_array;
