@@ -83,6 +83,7 @@ use Bio::EnsEMBL::Utils::Exception qw(deprecate);
 
   Arg [STABLE_ID] : String $stable_id 
   Arg [VERSION]   : Int $version 
+  Arg [CURRENT_VERSION] : Int $current_version 
   Arg [DB_NAME]   : String $db_name 
   Arg [RELEASE]   : String $release
   Arg [ASSEMBLY_NAME] : String $assembly
@@ -105,12 +106,13 @@ sub new {
 
   my $self = bless {}, $class;
 
-  my ($stable_id, $version, $db_name, $release, $assembly, $type, $adaptor) =
-    rearrange([qw( STABLE_ID VERSION DB_NAME RELEASE ASSEMBLY TYPE ADAPTOR)],
-    @_ );
+  my ($stable_id, $version, $current_version, $db_name, $release, $assembly,
+    $type, $adaptor) = rearrange([qw( STABLE_ID VERSION CURRENT_VERSION DB_NAME
+    RELEASE ASSEMBLY TYPE ADAPTOR)], @_ );
 
   $self->{'stable_id'} = $stable_id;
   $self->{'version'} = $version;
+  $self->{'current_version'} = $current_version;
   $self->{'db_name'} = $db_name;
   $self->{'release'} = $release;
   $self->{'assembly'} = $assembly;
@@ -130,6 +132,7 @@ sub new {
   Arg [5]     : String $assembly
   Arg [6]     : String $type - "Gene", "Transcript", "Translation", "Exon"
   Arg [7]     : Bio::EnsEMBL::DBSQL::ArchiveStableIdAdaptor $adaptor 
+  Arg [8]     : Int $current_version 
   Example     : none
   Description : faster version of above constructor
   Returntype  : Bio::EnsEMBL::ArchiveStableId
@@ -153,6 +156,7 @@ sub new_fast {
       'assembly' => $_[4],
       'type' => $_[5],
       'adaptor' => $_[6],
+      'current_version' => $_[7],
   }, $class;
 
   return $self;
@@ -178,8 +182,13 @@ sub new_fast {
 
 sub get_history_tree {
   my ($self, $num_high_scorers, $max_rows) = @_;
-  return $self->adaptor->fetch_history_tree_by_stable_id(
-    $self->stable_id, $num_high_scorers, $max_rows);
+  
+  unless ($self->{'history'}) {
+    $self->{'history'} = $self->adaptor->fetch_history_tree_by_stable_id(
+      $self->stable_id, $num_high_scorers, $max_rows);
+  }
+
+  return $self->{'history'};
 }
 
 
@@ -334,12 +343,125 @@ sub get_all_translation_archive_ids {
 }
 
 
+=head2 current_version
+
+  Example     : if (my $v = $arch_id->current_version) {
+                  print "Current version of this stable ID: ", $v, "\n";
+                } else {
+                  print "This stable ID is not in the current db.\n";
+                }
+  Description : Lazy-loads the current version of stable ID
+  Return type : Boolean (TRUE is current version found, else FALSE)
+  Exceptions  : none
+  Caller      : general
+  Status      : At Risk
+              : under development
+
+=cut
+
+sub current_version {
+  my $self = shift;
+
+  if (@_) {
+    $self->{'current_version'} = shift;
+  } elsif (! defined $self->{'current_version'}) {
+    if (defined $self->{'adaptor'}) {
+      # lazy load
+      $self->{'adaptor'}->lookup_current($self);
+    }       
+  }
+
+  return $self->{'current_version'};
+}
+
+
+=head2 is_current
+
+  Example     : if ($arch_id->is_current) {
+                  print $arch_id->version, " is the current version of this
+                    stable ID.\n";
+                }
+  Description : Determines if the version of this object is the current version
+                of this stable ID.
+  Return type : Boolean (TRUE if it is current, else FALSE)
+  Exceptions  : none
+  Caller      : general
+  Status      : At Risk
+              : under development
+
+=cut
+
+sub is_current {
+  my $self = shift;
+  return ($self->{'version'} == $self->{'current_version'});
+}
+
+
+=head2 get_latest_incarnation
+
+  Example     : my $latest = $arch_id->get_latest_incarnation;
+                print "Latest version of ".$arch_id->stable_id." is ".
+                  $latest->version."\n";
+  Description : Returns the ArchiveStableId representing the latest version
+                of this stable ID. Returns itself if this already is the latest
+                version, otherwise fetches it from the db.
+  Return type : Bio::EnsEMBL::ArchiveStableId
+  Exceptions  : none
+  Caller      : general
+  Status      : At Risk
+              : under development
+
+=cut
+
+sub get_latest_incarnation {
+  my $self = shift;
+
+  return $self if ($self->is_latest);
+
+  my $latest = $self->adaptor->fetch_by_stable_id($self->stable_id);
+  return $latest;
+}
+
+
+=head2 is_latest
+
+  Arg[1]      : (optional) Boolean $is_latest
+  Example     : if ($arch_id->is_latest) {
+                  print "Version ".$arch_id->version." is the latest version 
+                    of ".$arch_id->stable_id."\n";
+                }
+  Description : Indicates whether this is the latest version of this stable ID.
+                Can also be used as a setter if we know this is the latest
+                version.
+  Return type : Boolean (TRUE if yes, FALSE if no)
+  Exceptions  : none
+  Caller      : Bio::EnsEMBL::DBSQL::ArchiveStableIdAdaptor->fetch_by_stable_id, general
+  Status      : At Risk
+              : under development
+
+=cut
+
+sub is_latest {
+  my $self = shift;
+  $self->{'is_latest'} = shift if (@_);
+  return ($self->{'is_latest'} || $self->is_current);
+}
+
+
+#
 # getter/setters for attributes
+#
 
 sub stable_id {
   my $self = shift;
   $self->{'stable_id'} = shift if (@_);
   return $self->{'stable_id'};
+}
+
+sub version {
+  my $self = shift;
+  $self->{'version'} = shift if (@_);
+  return $self->{'version'};
 }
 
 sub db_name {
@@ -360,16 +482,16 @@ sub assembly {
   return $self->{'assembly'};
 }
 
-sub adaptor {
-  my $self = shift;
-  $self->{'adaptor'} = shift if (@_);
-  return $self->{'adaptor'};
-}
-
 sub type {
   my $self = shift;
   $self->{'type'} = shift if (@_);
   return $self->{'type'};
+}
+
+sub adaptor {
+  my $self = shift;
+  $self->{'adaptor'} = shift if (@_);
+  return $self->{'adaptor'};
 }
 
 sub successors {
@@ -379,34 +501,5 @@ sub successors {
 }
 
 
-# lazy loading 
-
-sub version {
-  my $self = shift;
-  if( @_ ) {
-    $self->{'version'} = shift;
-
-  } else {
-    if( ! defined $self->{'version'} ) {
-      if( defined $self->{'db_name'} && defined $self->{'adaptor'} ) {
-	# lazy loading
-	$self->{'adaptor'}->_lookup_version( $self );
-      }
-    }       
-  }
-  return $self->{'version'};
-}
-
-
-# deprecated methods (changed to more descriptive names)
-
-sub get_translation_archive_id {
-    my $self = shift;
-    
-    deprecate("Use get_all_translation_archive_ids() instead");
-    
-    return $self->get_all_translation_archive_ids;
-}
-
-
 1;
+
