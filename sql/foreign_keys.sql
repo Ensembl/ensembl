@@ -56,6 +56,8 @@ ALTER table gene_stable_id ADD FOREIGN KEY (gene_id) REFERENCES gene(gene_id);
 
 ALTER table go_xref ADD FOREIGN KEY (object_xref_id) REFERENCES object_xref(object_xref_id);
 
+ALTER table go_xref ADD FOREIGN KEY (source_external_db_id) REFERENCES external_db(external_db_id);
+
 ALTER table identity_xref ADD FOREIGN KEY (analysis_id) REFERENCES analysis(analysis_id);
 ALTER table identity_xref ADD FOREIGN KEY (object_xref_id) REFERENCES object_xref(object_xref_id);
 
