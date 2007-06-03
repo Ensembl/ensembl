@@ -32,17 +32,22 @@ Status: At Risk. This module is in development.
     get_all_predecessors
     get_all_successors
     get_peptide
+    get_all_associated_archived
     get_all_gene_archive_ids
     get_all_transcript_archive_ids
     get_all_translation_archive_ids
+    current_version
+    is_current
+    get_latest_incarnation
+    is_latest
     stable_id
+    version
     db_name
     release
     assembly
-    adaptor
     type
+    adaptor
     successors
-    version
 
 =head1 RELATED MODULES
 
@@ -76,7 +81,6 @@ use Bio::EnsEMBL::Root;
 our @ISA = qw(Bio::EnsEMBL::Root);
 
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
-use Bio::EnsEMBL::Utils::Exception qw(deprecate);
 
 
 =head2 new
@@ -265,6 +269,29 @@ sub get_peptide {
   } else { 
     return undef;
   }
+}
+
+
+=head2 get_all_associated_archived
+
+  Example     : my ($arch_gene, $arch_tr, $arch_tl, $pep_seq) =
+                  @{ $arch_id->get_all_associated_archived };
+  Description : Fetches associated archived stable IDs from the db for this
+                ArchiveStableId (version is taken into account).
+  Return type : Listref of
+                  ArchiveStableId archived gene
+                  ArchiveStableId archived transcript
+                  (optional) ArchiveStableId archived translation
+                  (optional) peptide sequence
+  Caller      : webcode, general
+  Status      : At Risk
+              : under development
+
+=cut
+
+sub get_all_associated_archived {
+  my $self = shift;
+  return $self->adaptor->fetch_associated_archived($self);
 }
 
 
