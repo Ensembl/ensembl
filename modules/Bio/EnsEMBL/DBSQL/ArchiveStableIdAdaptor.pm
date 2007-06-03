@@ -132,60 +132,28 @@ sub fetch_by_stable_id {
   } else {
 
     # look for latest version of this stable id
-    my $EXTRA_SQL = defined($arch_id->{'type'}) ?
+    my $extra_sql = defined($arch_id->{'type'}) ?
       " AND sie.type = '@{[lc($arch_id->{'type'})]}'" : '';
 
-    my $sql = qq(
-      SELECT
-            m.new_db_name,
-            m.new_release,
-            m.new_assembly,
-            sie.new_version,
-            sie.type
-      FROM  stable_id_event sie, mapping_session m
-      WHERE sie.mapping_session_id = m.mapping_session_id
-      AND   new_stable_id = "@{[$arch_id->stable_id]}"
-      $EXTRA_SQL
-      ORDER BY m.created DESC
-      LIMIT 1
-    );
+    my $r = $self->_fetch_archive_id($stable_id, $extra_sql, $extra_sql);
 
-    my $sth = $self->prepare($sql);
-    $sth->execute();
-    my ($db_name, $release, $assembly, $version, $type) =
-      $sth->fetchrow_array();
-    $sth->finish();
-    
-    # you might have missed a stable ID that was deleted in the very first
-    # stable ID mapping for this species, so go back and try again
-    if (! defined $db_name) {
-      $sql = qq(
-        SELECT
-              m.old_db_name,
-              m.old_release,
-              m.old_assembly,
-              sie.old_version,
-              sie.type
-        FROM  stable_id_event sie, mapping_session m
-        WHERE sie.mapping_session_id = m.mapping_session_id
-        AND   old_stable_id = "@{[$arch_id->stable_id]}"
-        $EXTRA_SQL
-        ORDER BY m.created DESC
-        LIMIT 1
-      );
-
-      $sth = $self->prepare($sql);
-      $sth->execute();
-      ($db_name, $release, $assembly, $version, $type) = $sth->fetchrow_array();
-      $sth->finish();
+    if ($r->{'new_stable_id'} and $r->{'new_stable_id'} eq $stable_id) {
+      # latest event is a self event, use new_* data
+      $arch_id->version($r->{'new_version'});
+      $arch_id->release($r->{'new_release'});
+      $arch_id->assembly($r->{'new_assembly'});
+      $arch_id->db_name($r->{'new_db_name'});
+    } else {
+      # latest event is a deletion event (or mapping to other ID; this clause
+      # is only used to cope with buggy data where deletion events are
+      # missing), use old_* data
+      $arch_id->version($r->{'old_version'});
+      $arch_id->release($r->{'old_release'});
+      $arch_id->assembly($r->{'old_assembly'});
+      $arch_id->db_name($r->{'old_db_name'});
     }
 
-    # set ArchiveStableId properties
-    $arch_id->version($version);
-    $arch_id->type(ucfirst(lc($type)));
-    $arch_id->db_name($db_name);
-    $arch_id->release($release);
-    $arch_id->assembly($assembly);
+    $arch_id->type(ucfirst(lc($r->{'type'})));
   }
   
   if (! defined $arch_id->db_name) {
@@ -236,49 +204,26 @@ sub fetch_by_stable_id_version {
   } else {
 
     # find latest release this stable ID version is found in archive
-    my $sql = qq(
-      SELECT
-            m.new_db_name,
-            m.new_release,
-            m.new_assembly
-      FROM  stable_id_event sie, mapping_session m
-      WHERE sie.mapping_session_id = m.mapping_session_id
-      AND   sie.new_stable_id = "$stable_id"
-      AND   sie.new_version = $version
-      ORDER BY m.created DESC
-      LIMIT 1
-    );
+    my $extra_sql1 = qq(AND sie.old_version = "$version");
+    my $extra_sql2 = qq(AND sie.new_version = "$version");
+    my $r = $self->_fetch_archive_id($stable_id, $extra_sql1, $extra_sql2);
 
-    my $sth = $self->prepare($sql);
-    $sth->execute();
-    my ($db_name, $release, $assembly) = $sth->fetchrow_array();
-    $sth->finish();
-    
-    # you might have missed a stable ID that was deleted in the very first
-    # stable ID mapping for this species, so go back and try again
-    if (! defined $db_name) {
-      my $sql = qq(
-        SELECT
-              m.old_db_name,
-              m.old_release,
-              m.old_assembly
-        FROM  stable_id_event sie, mapping_session m
-        WHERE sie.mapping_session_id = m.mapping_session_id
-        AND   sie.old_stable_id = "$stable_id"
-        AND   sie.old_version = $version
-        ORDER BY m.created DESC
-        LIMIT 1
-      );
-
-      $sth = $self->prepare($sql);
-      $sth->execute();
-      ($db_name, $release, $assembly) = $sth->fetchrow_array();
-      $sth->finish();
+    if ($r->{'new_stable_id'} and $r->{'new_stable_id'} eq $stable_id
+        and $r->{'new_version'} == $version) {
+      # latest event is a self event, use new_* data
+      $arch_id->release($r->{'new_release'});
+      $arch_id->assembly($r->{'new_assembly'});
+      $arch_id->db_name($r->{'new_db_name'});
+    } else {
+      # latest event is a deletion event (or mapping to other ID; this clause
+      # is only used to cope with buggy data where deletion events are
+      # missing), use old_* data
+      $arch_id->release($r->{'old_release'});
+      $arch_id->assembly($r->{'old_assembly'});
+      $arch_id->db_name($r->{'old_db_name'});
     }
 
-    $arch_id->db_name($db_name);
-    $arch_id->release($release);
-    $arch_id->assembly($assembly);
+    $arch_id->type(ucfirst(lc($r->{'type'})));
   }
   
   if (! defined $arch_id->db_name) {
@@ -323,65 +268,35 @@ sub fetch_by_stable_id_dbname {
     $arch_id->version($arch_id->current_version);
     $arch_id->release($self->get_current_release);
     $arch_id->assembly($self->get_current_assembly);
-    $arch_id->db_name($db_name);
   
   } else {
 
     # find version for this dbname in the stable ID archive
-    my $EXTRA_SQL = defined($arch_id->{'type'}) ?
+    my $extra_sql = defined($arch_id->{'type'}) ?
       " AND sie.type = '@{[lc($arch_id->{'type'})]}'" : '';
+    my $extra_sql1 = $extra_sql . qq( AND ms.old_db_name = "$db_name");
+    my $extra_sql2 = $extra_sql . qq( AND ms.new_db_name = "$db_name");
+    my $r = $self->_fetch_archive_id($stable_id, $extra_sql1, $extra_sql2);
 
-    my $sql = qq(
-      SELECT
-            m.new_db_name,
-            m.new_release,
-            m.new_assembly,
-            sie.new_version,
-            sie.type
-      FROM  stable_id_event sie, mapping_session m
-      WHERE sie.mapping_session_id = m.mapping_session_id
-      AND   sie.new_stable_id = "@{[$arch_id->stable_id]}"
-      AND   m.new_db_name = "@{[$arch_id->db_name]}"
-      $EXTRA_SQL
-    );
-
-    my $sth = $self->prepare($sql);
-    $sth->execute();
-    my ($db_name, $release, $assembly, $version, $type) =
-      $sth->fetchrow_array();
-    $sth->finish();
-    
-    # you might have missed a stable ID that was deleted in the very first
-    # stable ID mapping for this species, so go back and try again
-    if (! defined $db_name) {
-      $sql = qq(
-        SELECT
-              m.old_db_name,
-              m.old_release,
-              m.old_assembly,
-              sie.old_version,
-              sie.type
-        FROM  stable_id_event sie, mapping_session m
-        WHERE sie.mapping_session_id = m.mapping_session_id
-        AND   old_stable_id = "@{[$arch_id->stable_id]}"
-        AND   m.old_db_name = "@{[$arch_id->db_name]}"
-        $EXTRA_SQL
-      );
-
-      $sth = $self->prepare($sql);
-      $sth->execute();
-      ($db_name, $release, $assembly, $version, $type) = $sth->fetchrow_array();
-      $sth->finish();
+    if ($r->{'new_stable_id'} and $r->{'new_stable_id'} eq $stable_id
+        and $r->{'new_db_name'} cmp $db_name) {
+      # latest event is a self event, use new_* data
+      $arch_id->release($r->{'new_release'});
+      $arch_id->assembly($r->{'new_assembly'});
+      $arch_id->version($r->{'new_version'});
+    } else {
+      # latest event is a deletion event (or mapping to other ID; this clause
+      # is only used to cope with buggy data where deletion events are
+      # missing), use old_* data
+      $arch_id->release($r->{'old_release'});
+      $arch_id->assembly($r->{'old_assembly'});
+      $arch_id->version($r->{'old_version'});
     }
 
-    $arch_id->version($version);
-    $arch_id->type(ucfirst(lc($type)));
-    $arch_id->release($release);
-    $arch_id->assembly($assembly);
-    $arch_id->db_name($db_name);
+    $arch_id->type(ucfirst(lc($r->{'type'})));
   }
   
-  if (! defined $arch_id->db_name) {
+  if (! defined $arch_id->version ) {
     # couldn't find stable ID version in archive or current release
     return undef;
   }
@@ -389,16 +304,56 @@ sub fetch_by_stable_id_dbname {
   return $arch_id;
 }
 
+#
+# Helper method to do fetch ArchiveStableId from db.
+# Used by fetch_by_stable_id(), fetch_by_stable_id_version() and
+# fetch_by_stable_id_dbname().
+# Returns hashref as returned by DBI::sth::fetchrow_hashref
+#
+sub _fetch_archive_id {
+  my $self = shift;
+  my $stable_id = shift;
+  my $extra_sql1 = shift;
+  my $extra_sql2 = shift;
+
+  # using a UNION is much faster in this query than somthing like
+  # "... AND (sie.old_stable_id = ? OR sie.new_stable_id = ?)"
+  my $sql = qq(
+    (SELECT * FROM stable_id_event sie, mapping_session ms
+    WHERE sie.mapping_session_id = ms.mapping_session_id
+    AND sie.old_stable_id = "$stable_id"
+    $extra_sql1)
+    UNION
+    (SELECT * FROM stable_id_event sie, mapping_session ms
+    WHERE sie.mapping_session_id = ms.mapping_session_id
+    AND sie.new_stable_id = "$stable_id"
+    $extra_sql2)
+    ORDER BY created DESC
+    LIMIT 1
+  );
+
+  my $sth = $self->prepare($sql);
+  $sth->execute;
+  my $r = $sth->fetchrow_hashref;
+  $sth->finish;
+
+  return $r;
+}  
+
 
 =head2 fetch_all_by_archive_id
 
   Arg [1]     : Bio::EnsEMBL::ArchiveStableId $archive_id
   Arg [2]     : String $return_type - type of ArchiveStableId to fetch
   Example     : my $arch_id = $arch_adaptor->fetch_by_stable_id('ENSG0001');
-                my @archived_transcripts = $arch_adaptor->fetch_all_by_archive_id($arch_id, 'Transcript');
+                my @archived_transcripts =
+                 $arch_adaptor->fetch_all_by_archive_id($arch_id, 'Transcript');
   Description : Given a ArchiveStableId it retrieves associated ArchiveStableIds
                 of specified type (e.g. retrieve transcripts for genes or vice
                 versa).
+
+                See also fetch_associated_archived() for a different approach to
+                retrieve this data.
   Returntype  : listref Bio::EnsEMBL::ArchiveStableId
   Exceptions  : none
   Caller      : Bio::EnsEMBL::ArchiveStableId->get_all_gene_archive_ids,
@@ -457,6 +412,110 @@ sub fetch_all_by_archive_id {
 }
 
 
+=head2 fetch_associated_archived 
+
+  Arg[1]      : Bio::EnsEMBL::ArchiveStableId $arch_id -
+                the ArchiveStableId to fetch associated archived IDs for
+  Example     : my ($arch_gene, $arch_tr, $arch_tl, $pep_seq) =
+                  @{ $archive_adaptor->fetch_associated_archived($arch_id) };
+  Description : Fetches associated archived stable IDs from the db for a given
+                ArchiveStableId (version is taken into account).
+  Return type : Listref of
+                  ArchiveStableId archived gene
+                  ArchiveStableId archived transcript
+                  (optional) ArchiveStableId archived translation
+                  (optional) peptide sequence
+  Exceptions  : thrown on missing or wrong argument
+                thrown if ArchiveStableID has no type
+  Caller      : Bio::EnsEMBL::ArchiveStableId->get_all_associated_archived()
+  Status      : At Risk
+              : under development
+
+=cut
+
+sub fetch_associated_archived {
+  my $self = shift;
+  my $arch_id = shift;
+
+  throw("Need a Bio::EnsEMBL::ArchiveStableId") unless ($arch_id
+    and ref($arch_id) and $arch_id->isa('Bio::EnsEMBL::ArchiveStableId'));
+
+  my $type = $arch_id->type;
+  throw("Can't deduce ArchiveStableId type.") unless ($type);
+
+  my $sql = qq(
+    SELECT  ga.gene_stable_id,
+            ga.gene_version,
+            ga.transcript_stable_id,
+            ga.transcript_version,
+            ga.translation_stable_id,
+            ga.translation_version,
+            pa.peptide_seq,
+            ms.old_release,
+            ms.old_assembly,
+            ms.old_db_name
+    FROM (mapping_session ms, gene_archive ga)
+    LEFT JOIN peptide_archive pa
+      ON ga.peptide_archive_id = pa.peptide_archive_id
+    WHERE ga.mapping_session_id = ms.mapping_session_id
+    AND ga.${type}_stable_id = ?
+    AND ga.${type}_version = ?
+  );
+
+  my $sth = $self->prepare($sql);
+  $sth->bind_param(1, $arch_id->stable_id, SQL_VARCHAR);
+  $sth->bind_param(2, $arch_id->version, SQL_SMALLINT);
+  $sth->execute;
+
+  my @result = ();
+
+  while (my $r = $sth->fetchrow_hashref) {
+
+    my @row = ();
+
+    # create ArchiveStableIds genes, transcripts and translations
+    push @row, Bio::EnsEMBL::ArchiveStableId->new(
+       -stable_id => $r->{'gene_stable_id'},
+       -version => $r->{'gene_version'},
+       -db_name => $r->{'old_db_name'},
+       -release => $r->{'old_release'},
+       -assembly => $r->{'old_assembly'},
+       -type => 'Gene',
+       -adaptor => $self
+    );
+    
+    push @row, Bio::EnsEMBL::ArchiveStableId->new(
+       -stable_id => $r->{'transcript_stable_id'},
+       -version => $r->{'transcript_version'},
+       -db_name => $r->{'old_db_name'},
+       -release => $r->{'old_release'},
+       -assembly => $r->{'old_assembly'},
+       -type => 'Transcript',
+       -adaptor => $self
+    );
+
+    if ($r->{'translation_stable_id'}) {
+      push @row, Bio::EnsEMBL::ArchiveStableId->new(
+         -stable_id => $r->{'translation_stable_id'},
+         -version => $r->{'translation_version'},
+         -db_name => $r->{'old_db_name'},
+         -release => $r->{'old_release'},
+         -assembly => $r->{'old_assembly'},
+         -type => 'Translation',
+         -adaptor => $self
+      );
+
+      # push peptide sequence onto result list
+      push @row, $r->{'peptide_seq'};
+    }
+    
+    push @result, \@row;
+  }
+
+  return \@result;
+}
+
+
 =head2 fetch_predecessors_by_archive_id
 
   Arg [1]     : Bio::EnsEMBL::ArchiveStableId
@@ -464,7 +523,8 @@ sub fetch_all_by_archive_id {
   Description : Retrieve a list of ArchiveStableIds that were mapped to the 
                 given one. This method goes back only one level, to retrieve
                 a full predecessor history use fetch_predecessor_history, or 
-                fetch_history_tree_by_stable_id for the complete network.
+                ideally fetch_history_tree_by_stable_id for the complete
+                history network.
   Returntype  : listref Bio::EnsEMBL::ArchiveStableId
   Exceptions  : none
   Caller      : Bio::EnsEMBL::ArchiveStableId->get_all_predecessors
@@ -590,7 +650,8 @@ sub fetch_predecessors_by_archive_id {
   Description : Retrieve a list of ArchiveStableIds that the given one was 
                 mapped to. This method goes forward only one level, to retrieve
                 a full successor history use fetch_successor_history, or 
-                fetch_history_tree_by_stable_id for the complete network.
+                ideally fetch_history_tree_by_stable_id for the complete
+                history network.
   Returntype  : listref Bio::EnsEMBL::ArchiveStableId
   Exceptions  : none
   Caller      : Bio::EnsEMBL::ArchiveStableId->get_all_successors
@@ -983,47 +1044,6 @@ sub add_all_current_to_history {
 }
 
 
-=head2 fetch_archive_id_history
-
-  Arg [1]     : Bio::EnsEMBL::ArchiveStableId $arch_id
-  Example     : none
-  Description : Gives back a list of archive stable ids which are successors or
-                predecessors in the stable_id_event tree of the given
-                stable_id. Might well be empty. This is not the complete network
-                this stable id belongs to, but rather branches out from this id
-                only. To get the full network use
-                fetch_history_tree_by_stable_id().
-  Returntype  : listref of Bio::EnsEMBL::ArchiveStableId
-                Since every ArchiveStableId knows about it's successors, this is
-                a linked tree.
-  Exceptions  : none
-  Caller      : webcode for archive
-  Status      : DEPRECATED
-              : Use fetch_history_tree_by_stable_id() instead.
-
-=cut
-
-sub fetch_archive_id_history {
-  my $self = shift;
-  my $arch_id = shift;
-  
-  deprecate("Please use fetch_history_tree_by_stable_id() instead.");
-
-  my @result = (
-    $arch_id,
-    @{ $self->fetch_predecessor_history($arch_id) },
-    @{ $self->fetch_successor_history($arch_id) }
-  );
-
-  # filter duplicates
-  my %unique = map { join(":", $_->stable_id, $_->version, $_->release) => $_ }
-    @result;
-  @result = values %unique;
-
-  return \@result;
-}
-
-
 =head2 fetch_successor_history
 
   Arg [1]     : Bio::EnsEMBL::ArchiveStableId $arch_id
@@ -1031,6 +1051,9 @@ sub fetch_archive_id_history {
   Description : Gives back a list of archive stable ids which are successors in
                 the stable_id_event tree of the given stable_id. Might well be
                 empty.
+                
+                This method isn't deprecated, but in most cases you will rather
+                want to use fetch_history_tree_by_stable_id().
   Returntype  : listref Bio::EnsEMBL::ArchiveStableId
                 Since every ArchiveStableId knows about it's successors, this is
                 a linked tree.
@@ -1089,6 +1112,9 @@ sub fetch_successor_history {
   Description : Gives back a list of archive stable ids which are predecessors
                 in the stable_id_event tree of the given stable_id. Might well
                 be empty.
+                
+                This method isn't deprecated, but in most cases you will rather
+                want to use fetch_history_tree_by_stable_id().
   Returntype  : listref Bio::EnsEMBL::ArchiveStableId
                 Since every ArchiveStableId knows about it's successors, this is
                 a linked tree.
