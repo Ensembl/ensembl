@@ -85,6 +85,7 @@ tree (i.e. try to avoid overlapping lines).
   current_dbname
   current_release
   current_assembly
+  is_incomplete
 
 =head1 RELATED MODULES
 
@@ -958,15 +959,18 @@ sub consolidate_tree {
 
     if (!$old_id or !$new_id or ($old_id->stable_id eq $new_id->stable_id)) {
       if ($old_id) {
-        push @event_lookup, [$old_id->stable_id, $old_id->release, $event];
+        push @event_lookup, [$old_id->stable_id, $old_id->release, 
+          $old_id->db_name, $event];
       } else {
-        push @event_lookup, [$new_id->stable_id, $new_id->release - 1, $event];
+        push @event_lookup, [$new_id->stable_id, $new_id->release - 1,
+          $new_id->db_name, $event];
       }
     }
   }
 
-  my @self_events = map { $_->[2] }
-    sort { $a->[0] cmp $b->[0] || $a->[1] <=> $b->[1] } @event_lookup;
+  my @self_events = map { $_->[3] }
+    sort { $a->[0] cmp $b->[0] || $a->[1] <=> $b->[1] || $a->[2] cmp $b->[2] }
+      @event_lookup;
 
   #
   # consolidate tree
