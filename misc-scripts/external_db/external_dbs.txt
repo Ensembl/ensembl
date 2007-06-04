@@ -182,6 +182,7 @@
 7200	IMGT/LIGM_DB	200641-6	XREF	1	1	10	IMGT/LIGM-DB	MISC
 7201	IMGT/GENE_DB	200641-6	KNOWN	1	0	40	IMGT/GENE-DB	MISC
 8000	Vega_mouse_transcript	1	XREF	1	0	5	Vega mouse transcript	MISC
+8100	Platypus_olfactory_receptor	1	XREF	1	0	40	Platypus olfactory receptor gene	MISC
 #
 #
 # Please separate fields in this file with TABS not spaces!
