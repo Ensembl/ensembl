@@ -279,7 +279,8 @@ sub fetch_by_stable_id_dbname {
     my $r = $self->_fetch_archive_id($stable_id, $extra_sql1, $extra_sql2);
 
     if ($r->{'new_stable_id'} and $r->{'new_stable_id'} eq $stable_id
-        and $r->{'new_db_name'} cmp $db_name) {
+        and $r->{'new_db_name'} eq $db_name) {
+
       # latest event is a self event, use new_* data
       $arch_id->release($r->{'new_release'});
       $arch_id->assembly($r->{'new_assembly'});
