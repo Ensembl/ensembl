@@ -729,9 +729,7 @@ CREATE TABLE go_xref (
   linkage_type            ENUM('IC', 'IDA', 'IEA', 'IEP', 'IGI', 'IMP', 
 		               'IPI', 'ISS', 'NAS', 'ND', 'TAS', 'NR', 'RCA')
                           NOT NULL,
-  source_external_db_id   INT(10) UNSIGNED DEFAULT NULL,
   KEY (object_xref_id),
-  KEY (source_external_db_id),
   UNIQUE (object_xref_id, linkage_type)
 
 ) COLLATE=latin1_swedish_ci TYPE=MyISAM;
