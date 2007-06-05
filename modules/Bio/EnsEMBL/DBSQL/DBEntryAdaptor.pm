@@ -101,6 +101,7 @@ sub fetch_by_dbID {
 	  -info_text => $info_text,
           -type => $type);
 
+
       $exDB->description( $desc ) if ( $desc );
     }
 
@@ -817,7 +818,8 @@ SSQL
   Example    : @gene_ids = $dbea->list_gene_ids_by_external_db_id(1020);
   Description: Retrieve a list of geneid by an external identifier that is 
                linked to  any of the genes transcripts, translations or the 
-               gene itself 
+               gene itself. NOTE: if more than one external identifier has the
+               same primary accession then genes for each of these is returned. 
   Returntype : list of ints
   Exceptions : none
   Caller     : unknown
