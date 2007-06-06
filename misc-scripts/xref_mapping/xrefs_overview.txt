@@ -28,7 +28,7 @@ multiple strains or subspecies, for example), there can be more than one
 'taxonomy_id' key.  The name of the species is defined by the source
 label and will be store in the Xref database.
 
-For now, the script 'xref_config2sql.pl', also found in this directory,
+For now, the script 'xref_config2sql.pl' (also found in this directory)
 should be used to convert the ini-file into a SQL file which you
 should replace the file 'sql/populate_metadata.sql' with.  When
 'xref_parser.pl' is run it will load this generated SQL file into the
@@ -44,12 +44,19 @@ system, you will now also have to write the parser NewSourceParser.pm
 (the parser name may be arbitrary chosen) in the XrefParser directory.
 You can find lots of examples of parsers in this directory.
 
-The parsing can create three types of Xrefs these are
+Before running the Xref parser, make sure that the environment
+variable 'http_proxy' is set to point to the local HTTP proxy to get
+outside the firewall.  For Sanger, the value of the variable should be
+"http://cache.internal.sanger.ac.uk:3128", i.e. for tcsh shells you
+should have
 
-1) Primary   (These have sequence and are mapped via exonerate)
-2) Dependent (Have no sequence but are dependent on the Primary ones)
-3) Direct    (These are directly linked to the Ensembl entities, so the
-             mapping is already done)
+    setenv http_proxy http://cache.internal.sanger.ac.uk:3128
+
+in your ~/.tcshrc file, while for bash-like shell you should have
+
+    export http_proxy=http://cache.internal.sanger.ac.uk:3128
+
+in your ~/.profile or ~/.bashrc file.
 
 When you run the script 'xref_parser.pl' to do the Xrefs you must pass
 to it several options but for most runs all you need to specify it the
@@ -62,6 +69,13 @@ dbname, and species, i.e.
 Please keep the output from this script and check it later.  At the end
 of the output there will be a summary of what was successful and what
 failed to run.  This is important.
+
+The parsing can create three types of Xrefs these are
+
+1) Primary   (These have sequence and are mapped via exonerate)
+2) Dependent (Have no sequence but are dependent on the Primary ones)
+3) Direct    (These are directly linked to the Ensembl entities, so the
+             mapping is already done)
 
 Some sources will have more than one set of files associated with it,
 in these cases they have the same source name but different source IDs.
