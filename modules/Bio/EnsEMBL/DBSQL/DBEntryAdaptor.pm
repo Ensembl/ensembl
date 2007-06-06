@@ -101,6 +101,7 @@ sub fetch_by_dbID {
 	  -info_text => $info_text,
           -type => $type);
 
+
       $exDB->description( $desc ) if ( $desc );
     }
 
@@ -458,10 +459,12 @@ sub exists {
                             FROM   xref x, external_db xdb
                             WHERE  x.external_db_id = xdb.external_db_id
                             AND    x.display_label = ?
-                            AND    xdb.db_name = ?');
+                            AND    xdb.db_name = ?
+                            AND    x.dbprimary_acc = ?');
 
   $sth->bind_param(1,$dbe->display_id,SQL_VARCHAR);
   $sth->bind_param(2,$dbe->dbname,SQL_VARCHAR);
+  $sth->bind_param(3,$dbe->primary_id,SQL_VARCHAR);
   $sth->execute();
 
   my ($dbID) = $sth->fetchrow_array;
@@ -815,7 +818,8 @@ SSQL
   Example    : @gene_ids = $dbea->list_gene_ids_by_external_db_id(1020);
   Description: Retrieve a list of geneid by an external identifier that is 
                linked to  any of the genes transcripts, translations or the 
-               gene itself 
+               gene itself. NOTE: if more than one external identifier has the
+               same primary accession then genes for each of these is returned. 
   Returntype : list of ints
   Exceptions : none
   Caller     : unknown

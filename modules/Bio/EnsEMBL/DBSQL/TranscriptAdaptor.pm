@@ -94,11 +94,12 @@ sub _columns {
   return ( 't.transcript_id', 't.seq_region_id', 't.seq_region_start',
            't.seq_region_end', 't.seq_region_strand', 't.analysis_id',
            't.gene_id', 't.is_current',
-	   't.display_xref_id', 'tsi.stable_id','tsi.version', $created_date,
+	   'tsi.stable_id','tsi.version', $created_date,
 	   $modified_date, 't.description', 't.biotype', 't.status',
-	   'x.display_label', 'exdb.db_name' ,'exdb.status',
+	   'exdb.db_name' ,'exdb.status',
            'exdb.db_display_name',
-	   'x.info_type', 'x.info_text');
+	   'x.xref_id', 'x.display_label', 'x.dbprimary_acc', 'x.version', 
+           'x.description', 'x.info_type', 'x.info_text',);
 }
 
 
@@ -1131,19 +1132,20 @@ sub _objs_from_sth {
 
   my ( $transcript_id, $seq_region_id, $seq_region_start, $seq_region_end, 
        $seq_region_strand, $analysis_id, $gene_id, $is_current, 
-       $display_xref_id, $stable_id, $version, $created_date, $modified_date,
+       $stable_id, $version, $created_date, $modified_date,
        $description, $biotype, $status,
-       $external_name, $external_db, $external_status, $external_db_name,
-       $info_type, $info_text);
+       $external_db, $external_status, $external_db_name,
+       $xref_id, $xref_display_label, $xref_primary_acc, $xref_version, 
+       $xref_description, $xref_info_type, $xref_info_text);
 
   $sth->bind_columns( \$transcript_id, \$seq_region_id, \$seq_region_start,
                       \$seq_region_end, \$seq_region_strand, \$analysis_id,
-                      \$gene_id, \$is_current, \$display_xref_id, \$stable_id,
+                      \$gene_id, \$is_current, , \$stable_id,
                       \$version, \$created_date, \$modified_date,
 		      \$description, \$biotype, \$status,
-                      \$external_name, \$external_db, \$external_status,
-                      \$external_db_name,
-		      \$info_type, \$info_text);
+                      \$external_db, \$external_status, \$external_db_name,
+		      \$xref_id, \$xref_display_label, \$xref_primary_acc, \$xref_version,
+                      \$xref_description, \$xref_info_type, \$xref_info_text);
 
   my $asm_cs;
   my $cmp_cs;
@@ -1262,13 +1264,18 @@ sub _objs_from_sth {
 
     my $display_xref;
 
-    if( $display_xref_id ) {
+    if( $xref_id ) {
       $display_xref = Bio::EnsEMBL::DBEntry->new_fast({
-           'dbID' => $display_xref_id,
+           'dbID'        => $xref_id,
+           'display_id'  => $xref_display_label,
+           'primary_id'  => $xref_primary_acc,
+           'version'     => $xref_version,
+           'description' => $xref_description,
+           'info_type'   => $xref_info_type,
+           'info_text'   => $xref_info_text,
            'adaptor' => $dbEntryAdaptor,
-           'display_id' => $external_name,
            'db_display_name' => $external_db_name,
-           'dbname' => $external_db
+           'dbname' => $external_db						       
       });
     }
 				
@@ -1286,7 +1293,7 @@ sub _objs_from_sth {
         '-version'       =>  $version,
 	'-created_date'  =>  $created_date || undef,
 	'-modified_date' =>  $modified_date || undef,
-        '-external_name' =>  $external_name,
+        '-external_name' =>  $xref_display_label,
         '-external_db'   =>  $external_db,
         '-external_status' => $external_status,
         '-external_display_name' => $external_db_name, 
