@@ -1601,18 +1601,18 @@ sub create {
   if ( !-e catfile( $sql_dir, 'sql', 'table.sql' ) ) {
     croak( "Cannot open  " . catfile( $sql_dir, 'sql', 'table.sql' ) );
   }
-  my $cmd = "mysql -u $user -p$pass -P $port -h $host $dbname < "
+  my $cmd = "mysql -u $user -p'$pass' -P $port -h $host $dbname < "
     . catfile( $sql_dir, 'sql', 'table.sql' );
-  system($cmd);
+  system($cmd) == 0 or die( "Cannot run the following (exit $?):\n$cmd\n" );
 
   print "Populating metadata in $dbname from ".$sql_dir."sql/populate_metadata.sql\n";
   if ( !-e catfile( $sql_dir, 'sql', 'populate_metadata.sql' ) ) {
     croak( "Cannot open "
            . catfile( $sql_dir, 'sql', 'populate_metadata.sql' ) );
   }
-  $cmd = "mysql -u $user -p$pass -P $port -h $host $dbname < "
+  $cmd = "mysql -u $user -p'$pass' -P $port -h $host $dbname < "
     . catfile( $sql_dir, 'sql', 'populate_metadata.sql' );
-  system($cmd);
+  system($cmd) == 0 or die( "Cannot run the following (exit $?):\n$cmd\n" );
 }
 
 sub get_label_to_accession{
