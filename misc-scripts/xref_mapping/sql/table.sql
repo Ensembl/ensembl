@@ -120,6 +120,7 @@ CREATE TABLE species (
 
   KEY species_idx (species_id),
   KEY taxonomy_idx(taxonomy_id),
+  UNIQUE KEY species_taxonomy_idx(species_id,taxonomy_id),
   KEY name_idx(name)
 
 );
