@@ -387,6 +387,42 @@ sub get_all_ArchiveStableIds {
 }
 
 
+=head2 get_all_current_ArchiveStableIds 
+
+  Example     : foreach my $arch_id (@{ $history->get_all_current_ArchiveStableIds }) {
+                  print $arch_id->stable_id, '.', $arch_id->version, "\n";
+                }
+  Description : Convenience method to get all current ArchiveStableIds in this
+                tree.
+                
+                Note that no lazy loading of "current" status is done at that
+                stage; as long as you retrieve your StableIdHistoryTree object
+                from ArchiveStableIdAdaptor, you'll get the right answer. In
+                other use cases, if you want to make sure you really get all
+                current stable IDs, loop over the result of
+                get_all_ArchiveStableIds() and call
+                ArchiveStableId->current_version() on all of them.
+  Return type : Arrayref of Bio::EnsEMBL::ArchiveStableId objects
+  Exceptions  : none
+  Caller      : general
+  Status      : At Risk
+              : under development
+
+=cut
+
+sub get_all_current_ArchiveStableIds {
+  my $self = shift;
+
+  my @current = ();
+
+  foreach my $arch_id (@{ $self->get_all_ArchiveStableIds }) {
+    push @current, $arch_id if ($arch_id->is_current);
+  }
+
+  return \@current;
+}
+
+
 =head2 get_all_StableIdEvents 
 
   Example     : foreach my $event (@{ $history->get_all_StableIdsEvents }) {
