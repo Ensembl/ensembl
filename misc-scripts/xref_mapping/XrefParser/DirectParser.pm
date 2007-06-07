@@ -29,7 +29,7 @@ sub new {
 sub run {
     my $self = shift;
 
-    my ( $filename, $source_id, $species_id ) = @_;
+    my ( $source_id, $species_id, $filename ) = @_;
 
     my $file_io = $self->get_filehandle($filename);
 
