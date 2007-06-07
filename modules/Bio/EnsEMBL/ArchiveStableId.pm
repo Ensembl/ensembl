@@ -409,7 +409,9 @@ sub current_version {
                     stable ID.\n";
                 }
   Description : Determines if the version of this object is the current version
-                of this stable ID.
+                of this stable ID. Note that this method doesn't lazy-load the
+                current version of an ArchiveStableId; if you want to be sure,
+                use current_version() instead.
   Return type : Boolean (TRUE if it is current, else FALSE)
   Exceptions  : none
   Caller      : general
