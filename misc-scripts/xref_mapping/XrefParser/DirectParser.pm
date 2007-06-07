@@ -32,6 +32,9 @@ sub run {
     my ( $source_id, $species_id, $filename ) = @_;
 
     my $file_io = $self->get_filehandle($filename);
+    if ( !defined($file_io) ) {
+        return 1;
+    }
 
     my $parsed_count = 0;
 
