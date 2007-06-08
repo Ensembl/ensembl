@@ -385,9 +385,7 @@ sub fetch_files {
     foreach my $user_uri (@user_uris) {
         # Change old-style 'LOCAL:' URIs into 'file:'.
         $user_uri =~ s#^LOCAL:#file:#i;
-
         my $uri = URI->new($user_uri);
-
         if ( $uri->scheme() eq 'file' ) {
             # Deal with local files.
 
@@ -546,7 +544,7 @@ sub fetch_files {
 
             push( @processed_files, $file_path );
 
-        } elsif ( $uri->schema() eq 'mysql' ) {
+        } elsif ( $uri->scheme() eq 'mysql' ) {
             # Just leave MySQL data untouched for now.
             push( @processed_files, $user_uri );
         } else {
@@ -1153,7 +1151,7 @@ sub dbi
 {
     my $self = shift;
 
-    if ( !defined $dbi ) {
+    if ( !defined $dbi || !$dbi->ping() ) {
         my $connect_string =
           sprintf( "dbi:mysql:host=%s;port=%s;database=%s",
             $host, $port, $dbname );
@@ -1162,8 +1160,9 @@ sub dbi
           DBI->connect( $connect_string, $user, $pass,
             { 'RaiseError' => 1 } )
           or croak( "Can't connect to database: " . $DBI::errstr );
+        $dbi->{'mysql_auto_reconnect'} = 1; # Reconnect on timeout
     }
-
+    
     return $dbi;
 }
 
