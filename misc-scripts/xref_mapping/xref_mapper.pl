@@ -361,6 +361,12 @@ $mapper->find_priority_sources();
 
 
 print "\nParsing mapping output\n";
+unless( $notriage and ! $mapper->count_unmapped_reasons ){
+  die( "The unmapped_reasons table in the target database is empty. ",
+       "Either run this script using the -notriage flag, ",
+       "or populate the table using e.g. ",
+       "ensembl/misc-scripts/unmapped_reason/update_unmapped_reasons.pl\n" );
+}
 $mapper->parse_mappings($notriage);
 
 

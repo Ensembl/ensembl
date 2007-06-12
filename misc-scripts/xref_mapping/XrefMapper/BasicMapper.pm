@@ -859,8 +859,8 @@ sub run_mapping {
 
   # delete old output files in target directory if we're going to produce new ones
   if (!defined($self->use_existing_mappings())) {
-    print "Deleting out, err and map files from output dir\n";
     my $dir = $self->core->dir();
+    print "Deleting out, err and map files from output dir: $dir\n";
     unlink (<$dir/*.map $dir/*.out $dir/*.err>);
   }
   $self->remove_all_old_output_files();
@@ -1847,7 +1847,11 @@ XSQL
   my %error_count;
   my %error_example;
 
-  my $ccds_source = get_source_id_from_source_name($self->xref(), "CCDS");
+  my $ccds_source;
+  eval{ $ccds_source = 
+            get_source_id_from_source_name($self->xref(), "CCDS") }; 
+  if( $@ and $@ !~ /^Please try again/){ die( "==> $@" ) }
+
   while ($xref_sth->fetch()) {
     my $external_db_id = $source_to_external_db{$source_id};
 
@@ -1956,11 +1960,23 @@ XSQL
       
     } else {
       if(!defined($worm_pep_source_id)){
-        $worm_pep_source_id = get_source_id_from_source_name($self->xref(), "wormpep_id");
-        $worm_locus_source_id = get_source_id_from_source_name($self->xref(), "wormbase_locus");
-        $worm_gene_source_id = get_source_id_from_source_name($self->xref(), "wormbase_gene");
-        $worm_transcript_source_id = get_source_id_from_source_name($self->xref(), "wormbase_transcript");
-        $go_source_id = get_source_id_from_source_name($self->xref(), "GO" );
+        # Non-standard handling of WormBase stuff
+        eval{ $worm_pep_source_id = get_source_id_from_source_name
+                  ($self->xref(), "wormpep_id") };
+        if( $@ and $@ !~ /^Please try again/){ die( "==> $@" ) }
+        eval{ $worm_locus_source_id = get_source_id_from_source_name
+                  ($self->xref(), "wormbase_locus") };
+        if( $@ and $@ !~ /^Please try again/){ die( "==> $@" ) }
+        eval{ $worm_gene_source_id = get_source_id_from_source_name
+                  ($self->xref(), "wormbase_gene") };
+        if( $@ and $@ !~ /^Please try again/){ die( "==> $@" ) }            
+        eval{ $worm_transcript_source_id = get_source_id_from_source_name
+                  ($self->xref(), "wormbase_transcript") };
+        if( $@ and $@ !~ /^Please try again/){ die( "==> $@" ) }
+        eval{ $go_source_id = get_source_id_from_source_name
+                  ($self->xref(), "GO" ) };
+        if( $@ and $@ !~ /^Please try again/){ die( "==> $@" ) }
+        $worm_pep_source_id ||= 0;
       }
       # deal with UTR transcripts in Elegans and potentially others
       # Need to link xrefs that are listed as linking to e.g. ZK829.4
@@ -2183,9 +2199,8 @@ sub remove_all_old_output_files{
 
   my $dir = $self->core->dir();
 
-  print "Deleting txt and sql files from output dir\n";
+  print "Deleting txt and sql files from output dir: $dir\n";
   unlink(<$dir/*.txt $dir/*.sql>);
-
 }
 
 sub dump_core_xrefs {
@@ -4140,7 +4155,16 @@ PSQL
 
 }
     
-
+sub count_unmapped_reasons{
+  # Returns the number of entries in the unmapped_reason table
+  my $self = shift;
+  my $sth = $self->core->dbc->prepare
+      ("select count(*) from unmapped_reason" );
+  $sth->execute();
+  my $count = ($sth->fetchrow_array)[0];
+  $sth->finish;
+  return $count;
+}
 
 sub unmapped_data_for_prioritys{
 
