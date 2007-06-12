@@ -9,7 +9,6 @@ use vars '@ISA';
 # Same as in BasicMapper but Genoscope order reversed.
 
 sub transcript_display_xref_sources {
-  print "RETURNING THE display xref sources\n";
   return ('Platypus_olfactory_receptor',
           'Oxford_FGU_Oa_tscript',
           'Oxford_FGU_Oa_gene',
@@ -30,5 +29,21 @@ sub transcript_display_xref_sources {
           'EntrezGene');
 
 }
+
+sub gene_description_sources {
+
+ return ("RFAM",
+         "miRBase",
+         "IMGT/GENE_DB",
+         "Uniprot/SWISSPROT",
+         "RefSeq_peptide",
+         "RefSeq_dna",
+         "Uniprot/Varsplic",
+         "Uniprot/SPTREMBL");
+
+}
+
+
+
 
 1;
