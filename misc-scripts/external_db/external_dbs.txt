@@ -44,6 +44,9 @@
 1805	RefSeq_dna_predicted	1	PRED	1	0	15	RefSeq DNA predicted	MISC
 1810	RefSeq_peptide	1	KNOWN	1	0	26	RefSeq peptide	MISC
 1815	RefSeq_peptide_predicted	1	PRED	1	0	16	RefSeq peptide predicted	MISC
+1820	RefSeq_rna	1	KNOWN	1	0	24	RefSeq RNA	MISC
+1825	RefSeq_rna_predicted	1	PRED	1	0	14	RefSeq RNA predicted	MISC
+1830	RefSeq_genomic	1	KNOWN	1	0	23	RefSeq Genomic MISC
 1900	Sanger_Hver1_2_1	1	XREF	1	0	5	Sanger Hver 121	MISC
 1901	Sanger_Hver1_3_1	1	XREF	1	0	5	Sanger Hver 131	MISC
 1902	SNGR_Hver	1	XREF	1	0	5	Sanger Hver	MISC
