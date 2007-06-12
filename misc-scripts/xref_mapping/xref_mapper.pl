@@ -355,18 +355,21 @@ $mapper->dump_seqs($location);
 print "\nChecking external_db table\n" if ($upload);
 $mapper->upload_external_db($delete_external_db ) if $upload ;  
 
+unless( $notriage ){
+  unless( $mapper->count_unmapped_reasons ){
+    die( "The unmapped_reason table in the target database is empty. ",
+         "Either run this script using the -notriage flag, ",
+         "or populate the table using e.g. ",
+         "ensembl/misc-scripts/unmapped_reason/update_unmapped_reasons.pl\n" );
+  }
+}
+
 $mapper->build_list_and_map();
 
 $mapper->find_priority_sources();
 
 
 print "\nParsing mapping output\n";
-unless( $notriage and ! $mapper->count_unmapped_reasons ){
-  die( "The unmapped_reasons table in the target database is empty. ",
-       "Either run this script using the -notriage flag, ",
-       "or populate the table using e.g. ",
-       "ensembl/misc-scripts/unmapped_reason/update_unmapped_reasons.pl\n" );
-}
 $mapper->parse_mappings($notriage);
 
 
