@@ -299,6 +299,7 @@ sub run {
               . "' with $parser\n";
 
             eval "require XrefParser::$parser";
+            $@ && warn( "[ERROR] Cannot require $parser: $@" );
             my $new = "XrefParser::$parser"->new();
 
             if ( defined $release_url ) {
