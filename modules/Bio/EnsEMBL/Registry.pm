@@ -117,6 +117,8 @@ use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 use Bio::EnsEMBL::Utils::ConfigRegistry;
 use DBI;
 
+use Config::IniFiles;
+
 use vars qw(%registry_register);
 
 my $API_VERSION = 45;
@@ -190,12 +192,126 @@ sub load_all {
                     $config_file );
         }
 
-        eval { require($config_file) };
-        $@ && die($@);
+        my $cfg = Config::IniFiles->new( -file => $config_file );
+        if ( defined $cfg ) {
 
-        # To make the web code avoid doing this again:
-        delete $INC{$config_file};
-    }
+            # This is a map from group names to Ensembl DB adaptors.
+            my %group2adaptor = (
+                 'blast'   => 'Bio::EnsEMBL::External::BlastAdaptor',
+                 'compara' => 'Bio::EnsEMBL::Compara::DBSQL::DBAdaptor',
+                 'core'    => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
+                 'estgene' => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
+                 'funcgen' => 'Bio::EnsEMBL::Funcgen::DBSQL::DBAdaptor',
+                 'haplotype' =>
+                   'Bio::EnsEMBL::ExternalData::Haplotype::DBAdaptor',
+                 'hive' => 'Bio::EnsEMBL::Hive::DBSQL::DBAdaptor',
+                 'lite' => 'Bio::EnsEMBL::Lite::DBAdaptor',
+                 'otherfeatures' => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
+                 'pipeline' =>
+                   'Bio::EnsEMBL::Pipeline::DBSQL::DBAdaptor',
+                 'snp' =>
+                   'Bio::EnsEMBL::ExternalData::SNPSQL::DBAdaptor',
+                 'variation' =>
+                   'Bio::EnsEMBL::Variation::DBSQL::DBAdaptor',
+                 'vega' => 'Bio::EnsEMBL::DBSQL::DBAdaptor' );
+
+            my %default_adaptor_args = ();
+
+            if ( $cfg->SectionExists('default') ) {
+                # The 'default' section is special.  It contain default
+                # values that should be implicit to all other section in
+                # this configuration file.
+
+                if ( defined( $cfg->val( 'default', 'alias' ) ) ) {
+                    print( STDERR
+                             "It is not allowed to specify 'alias' "
+                           . "in the 'default' section. "
+                           . "Ignoring that alias specification.\n" );
+                    $cfg->delval( 'default', 'alias' );
+                }
+
+                %default_adaptor_args =
+                  map { '-' . $_ => $cfg->val( 'default', $_ ) }
+                  $cfg->Parameters('default');
+            }
+
+            foreach my $section ( $cfg->Sections() ) {
+                if ( $section eq 'default' )
+                {    # We have already done the 'default' section.
+                    next;
+                }
+
+                my $group = $cfg->val( $section, 'group' )
+                  || $cfg->val( 'default', 'group' );
+
+                if ( !defined($group) ) {
+                    printf( STDERR "Key 'group' is undefined "
+                              . "for configuration section '%s', "
+                              . "skipping this section.\n",
+                            $section );
+                    next;
+                }
+
+                my $adaptor = $group2adaptor{ lc($group) };
+                if ( !defined($adaptor) ) {
+                    printf( STDERR "Unknown group '%s' "
+                              . "for configuration section '%s', "
+                              . "skipping this section.\n",
+                            $group, $section );
+                    next;
+                }
+
+                # If there is an 'alias' key in the ini-file, make a
+                # note of it for later and remove it.  Since it may
+                # be a multi-value key, it might mess up the adaptor
+                # arguments if we don't do this.
+                my $alias = $cfg->val( $section, 'alias' );
+                $cfg->delval( $section, 'alias' );
+
+                # We trust the user to provide sensible key-value pairs.
+                my %adaptor_args = %default_adaptor_args;
+                foreach my $parameter ( $cfg->Parameters($section) ) {
+                    $adaptor_args{ '-' . $parameter } =
+                      $cfg->val( $section, $parameter );
+                }
+
+                if ($verbose) {
+                    printf( "Configuring adaptor '%s' "
+                              . "for configuration section '%s'...\n",
+                            $adaptor, $section );
+                }
+
+                $adaptor->new(%adaptor_args);
+
+                my $species = $cfg->val( $section, 'species' )
+                  || $cfg->val( 'default', 'species' );
+
+                if ( defined($alias) && defined($species) ) {
+                    my @aliases = split( /\n/, $alias );
+
+                  # if ($verbose) {
+                  #     printf( "Adding aliases for species '%s': %s\n",
+                  #             $species, join( ', ', @aliases ) );
+                  # }
+
+                    Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
+                                                   -species => $species,
+                                                   -alias   => \@aliases
+                    );
+                }
+            } ## end foreach my $section ( $cfg->Sections...
+        } else {
+            # This is probably no ini-file but an old style piece
+            # of configuration written in Perl.  We need to try to
+            # require() it.
+
+            eval { require($config_file) };
+            if ($@) { die($@) }
+
+            # To make the web code avoid doing this again:
+            delete $INC{$config_file};
+        }
+    } ## end else [ if ( !defined($config_file...
 } ## end sub load_all
 
 =head2 clear
