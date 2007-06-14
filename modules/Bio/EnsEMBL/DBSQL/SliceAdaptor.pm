@@ -196,12 +196,12 @@ sub fetch_by_region {
       throw("Unknown coordinate system:\n name='$coord_system_name' " .
             "version='$version'\n");
     }
-
     # fetching by toplevel is same as fetching w/o name or version
     if ($cs->is_top_level()) {
       $cs = undef;
       $version = undef;
     }
+
   }
 
   my $constraint;
@@ -242,10 +242,7 @@ sub fetch_by_region {
     $length = $arr->[3];
   } else {
     my $sth = $self->prepare($sql . " WHERE sr.name = ? AND " . $constraint);
-    # Quotes around "$seq_region_name" are needed so that mysql does not
-    # treat chromosomes like '6' as an int.  This was doing horrible
-    # inexact matches like '6DR51', '6_UN', etc.
-    $sth->bind_param(1, "$seq_region_name", SQL_VARCHAR);
+    $sth->bind_param(1, $seq_region_name, SQL_VARCHAR);
     if ($cs){
 	$sth->bind_param(2, $cs->dbID, SQL_INTEGER);
     }
