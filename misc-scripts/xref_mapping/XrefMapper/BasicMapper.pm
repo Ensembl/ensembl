@@ -228,6 +228,7 @@ sub build_list_and_map {
   my @list=();
 
   my $i = 0;
+
   foreach my $method (@{$self->method()}){
     my @dna=();
     my $q_dna_file = $self->xref->dir."/xref_".$i."_dna.fasta";
@@ -248,7 +249,6 @@ sub build_list_and_map {
     }
     $i++;
   }
-
   $self->run_mapping(\@list);
 
 }
@@ -376,7 +376,6 @@ sub dump_xref{
   }
   
   my @method=();
-  
   my @lists =@{$self->get_set_lists()};
   
   my $i=0;
@@ -1243,18 +1242,20 @@ sub parse_mappings {
   }
 
   # write relevant xrefs to file
-  $max_object_xref_id = $self->dump_core_xrefs(\%primary_xref_ids, $max_object_xref_id, $xref_id_offset);
-
-  # dump interpro table as well
-  $self->dump_interpro();
+  $max_object_xref_id 
+      = $self->dump_core_xrefs(\%primary_xref_ids, 
+                               $max_object_xref_id, $xref_id_offset);
 
   # dump direct xrefs
-  $self->dump_direct_xrefs($xref_id_offset, $max_object_xref_id);
+  $max_object_xref_id
+      = $self->dump_direct_xrefs($xref_id_offset, $max_object_xref_id);
 
-  # dump xrefs that don't appear in either the primary_xref or dependent_xref tables
+  # dump xrefs that don't appear in primary_xref, direct_xref or 
+  # dependent_xref tables (e.g. interpro)
   $self->dump_orphan_xrefs($xref_id_offset);
 
-
+  # dump interpro table as well
+  $self->dump_interpro($xref_id_offset,$max_object_xref_id);
 
 }
 
@@ -2050,30 +2051,119 @@ XSQL
   $xref_sth->finish();
 
   print "  Wrote $count direct xrefs\n";
-
+  return $object_xref_id;
 }
 
 
 # Dump the interpro table from the xref database
 sub dump_interpro {
-
   my $self = shift;
+  my $xref_id_offset = shift;
+  my $oxref_id_offset = shift;
 
-  open (INTERPRO, ">" .  $self->core->dir() . "/interpro.txt");
+  print "Writing InterPro\n";
+  my( $ipro_count, $xref_count, $oxref_count, $goxref_count ) = (0,0,0,0); 
 
-  my $sth = $self->xref->dbc->prepare("SELECT * FROM interpro");
-  $sth->execute();
+  open (INTERPRO,    ">"  . $self->core->dir() . "/interpro.txt");
+  open (XREF,        ">>" . $self->core->dir() . "/xref.txt");
+  open (OBJECT_XREF, ">>" . $self->core->dir() . "/object_xref.txt");
+  open (GO_XREF,     ">>" . $self->core->dir() . "/go_xref.txt");
 
-  my ($interpro, $pfam);
-  $sth->bind_columns(\$interpro, \$pfam);
-  while ($sth->fetch()) {
-    print INTERPRO $interpro . "\t" . $pfam . "\n";
+  # Get a mapping of protein domains to ensembl translations for 
+  # interpro dependent xrefs
+  my $core_sql = "SELECT hit_id, translation_id FROM protein_feature" ;
+  my $core_sth = $self->core->dbc->prepare($core_sql);
+  $core_sth->execute();
+  my %domain_to_translation = ();
+  my ($domain, $translation);
+  $core_sth->bind_columns(\$domain, \$translation);
+  while ($core_sth->fetch()) {
+    $domain_to_translation{$domain} ||= [];
+    push @{$domain_to_translation{$domain}}, $translation;
+  }
+
+  # Get a list of interpro data, including dependent xrefs if avail
+  my $sth = $self->xref->dbc->prepare("
+    SELECT ip.interpro, ip.pfam, x2.xref_id, x2.source_id,
+           x2.accession, x2.version, x2.label, x2.description, 
+           dx.linkage_annotation
+      FROM interpro ip, xref x 
+        LEFT JOIN dependent_xref dx ON x.xref_id=dx.master_xref_id
+          LEFT JOIN xref x2 ON dx.dependent_xref_id=x2.xref_id
+            WHERE ip.interpro = x.accession");
+  my $rv = $sth->execute();
+  my %interpro_cache;
+  my %xref_cache;
+  my %oxref_cache;
+  my %goxref_cache;
+  while( my $row = $sth->fetchrow_arrayref() ){
+    my ( $interpro, $pfam, $dx_xref_id, $dx_source_id, $dx_accession, 
+         $dx_version, $dx_label, $dx_description, $go_linkage ) = @$row;
+    unless( $interpro_cache{$interpro.$pfam} ){
+      # We have a fresh interpro.
+      # Note; interpro xrefs themselves are handled by dump_orphan_xrefs
+      print INTERPRO $interpro . "\t" . $pfam . "\n";
+      $interpro_cache{$interpro.$pfam} ++;
+      $ipro_count++;
+    }
+    if( $dx_accession ){
+      # We have a dependent xref for this interpro...
+      my $xref_id;
+      unless( $xref_id = $xref_cache{$dx_accession} ){
+        $xref_id = $dx_xref_id + $xref_id_offset;
+        $xref_cache{$dx_accession} = $xref_id;
+        printf XREF ("%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
+                     $xref_id,
+                     $source_to_external_db{$dx_source_id},
+                     $dx_accession,
+                     $dx_label,
+                     $dx_version,
+                     $dx_description,
+                     'DEPENDENT',
+                     "Generated via $interpro");
+        $xref_count++;
+      }
+      foreach my $ensembl_id( @{$domain_to_translation{$pfam}||[]} ){
+        #...And the interpro domain maps to a translation
+        my $oxref_id;
+        unless( $oxref_id = $oxref_cache{$dx_accession.$ensembl_id} ){
+          $oxref_id = $oxref_count + 1 + $oxref_id_offset;          
+          $oxref_cache{$dx_accession.$ensembl_id} = $oxref_id;
+          printf OBJECT_XREF ( "%s\t%s\t%s\t%s\n",
+                               $oxref_id,
+                               $ensembl_id,
+                               'Translation',
+                               $xref_id );
+          $oxref_count ++;
+        }
+        if( $go_linkage ){
+          #...And we have linkage data, indicating a GO sref
+          unless( $goxref_cache{$oxref_id.$go_linkage} ){
+            $goxref_cache{$oxref_id.$go_linkage} ++;
+            printf GO_XREF ( "%s\t%s\n",
+                             $oxref_id,
+                             $go_linkage );
+            $goxref_count ++;
+          }
+        }
+      }
+    }
   }
   $sth->finish();
 
   close (INTERPRO);
+  close (XREF);
+  close (OBJECT_XREF);
+  close (GO_XREF);
 
+  print("  Wrote $ipro_count interpro table entries\n");
+  print("  Wrote $xref_count interpro-dependent xrefs \n"); 
+  print("    including $oxref_count object xrefs, \n");
+  print("    and $goxref_count go xrefs\n");
+
+  return $oxref_id_offset + $oxref_count;
 }
+
 
 sub build_stable_id_to_internal_id_hash {
 
