@@ -1426,6 +1426,7 @@ sub get_direct_xref{
   return undef;
 }
 
+
 sub get_xref{
   my ($self,$acc,$source) = @_;
 
@@ -1461,12 +1462,28 @@ sub add_xref {
 sub add_to_xrefs{
   my ($self,$master_xref,$acc,$version,$label,$description,$linkage,$source_id,$species_id) = @_;
 
+  $master_xref || die( "Need a master_xref_id on which this xref depends" );
+  $acc         || die( "Need an accession of this dependent xref" );
+  $version     ||= 0;
+  $label       ||= $acc;
+  $description ||= undef;
+  $linkage     ||= undef;
+  $source_id   || die( "Need a source_id for this dependent xref" );
+  $species_id  || die( "Need a species_id for this dependent xref" );
+
   if(!defined($add_xref_sth)){
-    $add_xref_sth = dbi->prepare("INSERT INTO xref (accession,version,label,description,source_id,species_id)".
-				 " VALUES(?,?,?,?,?,?)");
+    $add_xref_sth = dbi->prepare("
+INSERT INTO xref 
+  (accession,version,label,description,source_id,species_id)
+VALUES
+  (?,?,?,?,?,?)");
   }
   if(!defined($add_dependent_xref_sth)){
-    $add_dependent_xref_sth = dbi->prepare("INSERT INTO dependent_xref VALUES(?,?,?,?)");
+    $add_dependent_xref_sth = dbi->prepare("
+INSERT INTO dependent_xref 
+  (master_xref_id,dependent_xref_id,linkage_annotation,linkage_source_id)
+VALUES
+  (?,?,?,?)");
   }
   
   my $dependent_id = $self->get_xref($acc, $source_id);
