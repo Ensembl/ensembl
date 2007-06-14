@@ -371,7 +371,7 @@ sub strand {
                   Throws if the first part of the exon maps into a gap.
                   Throws if the exon can not be mapped at all.
     Caller      : General
-    Status      : At Risk (Under Development)
+    Status      : Stable
 
 =cut
 
@@ -423,7 +423,7 @@ sub cdna_start {
                   Throws if the last part of the exon maps into a gap.
                   Throws if the exon can not be mapped at all.
     Caller      : General
-    Status      : At Risk (Under Development)
+    Status      : Stable
 
 =cut
 
@@ -473,7 +473,7 @@ sub cdna_end {
     Return type : Integer or undef
     Exceptions  : Throws if the given argument is not a transcript.
     Caller      : General
-    Status      : At Risk (Under Development)
+    Status      : Stable
 
 =cut
 
@@ -549,7 +549,7 @@ sub cdna_coding_start {
     Return type : Integer or undef
     Exceptions  : Throws if the given argument is not a transcript.
     Caller      : General
-    Status      : At Risk (Under Development)
+    Status      : Stable
 
 =cut
 
@@ -615,16 +615,17 @@ sub cdna_coding_end {
     Arg [1]     : Bio::EnsEMBL::Transcript $transcript
     Example     : $coding_region_start =
                     $exon->coding_region_start($transcript);
-    Description : Returns the start position of the coding region of the
-                  exon in genomic coordinates on the forward strand.
-                  Returns undef if the whole exon is non-coding.
+    Description : Returns the start position of the coding region
+                  of the exon in slice-relative coordinates on the
+                  forward strand.  Returns undef if the whole exon is
+                  non-coding.
                   Since an exon may be part of one or more transcripts,
                   the relevant transcript must be given as argument to
                   this method.
     Return type : Integer or undef
     Exceptions  : Throws if the given argument is not a transcript.
     Caller      : General
-    Status      : At Risk (Under Development)
+    Status      : Stable
 
 =cut
 
@@ -692,16 +693,17 @@ sub coding_region_start {
     Arg [1]     : Bio::EnsEMBL::Transcript $transcript
     Example     : $coding_region_end =
                     $exon->coding_region_end($transcript);
-    Description : Returns the end position of the coding region of the
-                  exon in genomic coordinates on the forward strand.
-                  Returns undef if the whole exon is non-coding.
+    Description : Returns the end position of the coding region of
+                  the exon in slice-relative coordinates on the
+                  forward strand.  Returns undef if the whole exon is
+                  non-coding.
                   Since an exon may be part of one or more transcripts,
                   the relevant transcript must be given as argument to
                   this method.
     Return type : Integer or undef
     Exceptions  : Throws if the given argument is not a transcript.
     Caller      : General
-    Status      : At Risk (Under Development)
+    Status      : Stable
 
 =cut
 
