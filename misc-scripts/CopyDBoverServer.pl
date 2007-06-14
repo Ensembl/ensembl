@@ -64,34 +64,7 @@ if ($help || scalar @ARGV == 0 || ! defined $pass) {
 my ($input_file) = @ARGV;
 my @dbs_to_copy;
 
-my %mysql_directory_per_svr = ('ecs1a:3306' => "/mysql1a/databases",
-                               'ecs1b:3306' => "/mysql2a/databases",
-                               'ecs1c:3306' => "/mysql3a/databases",
-                               'ecs1d:3306' => "/mysql4a/databases",
-                               'ecs1e:3306' => "/mysql5a/databases",
-                               'ecs1f:3306' => "/mysql6a/databases",
-                               'ecs1g:3306' => "/mysql7a/databases",
-                               'ecs1h:3306' => "/mysql_archive/current/var",
-			       'ecs2:3361' => "/mysql/data_3361/databases",
-			       'ecs2:3362' => "/mysql/data_3362/databases",
-			       'ecs2:3363' => "/mysql/data_3363/databases",
-			       'ecs2:3364' => "/mysql/data_3364/databases",
-			       'ecs2:3365' => "/mysql/data_3365/databases",
-			       'ecs2:3366' => "/mysql/data_3366/databases",
-			       'ecs3:3307' => "/mysql/current/var",
-			       'ecs3:3309' => "/mysqlh/current/var",
-			       'ecs3:3304' => "/mysql_archive/current/var",
-                               'ecs3f:3310' => "/mysqlf/ecs3f_3310/databases",
-			       'ecs4:3350' => "/mysql-3350/databases",
-			       'ecs4:3351' => "/mysql-3351/databases",
-			       'ecs4:3352' => "/mysql-3352/databases",
-			       'ecs4:3353' => "/mysql-3353/databases",
-			       'ia64e:3306' => "/mysql/data_3306/databases",
-                               'ia64f:3306' => "/mysql/data_3306/databases",
-                               'ia64g:3306' => "/mysql/data_3306/databases",
-                               'ia64g:3355' => "/mysql/data_3355/databases",
-                               'ia64h:3306' => "/mysql/data_3306/databases",
-			       'genebuild1:3306'   => "/mysql/data_3306/databases",
+my %mysql_directory_per_svr = ('genebuild1:3306'   => "/mysql/data_3306/databases",
 			       'genebuild2:3306'   => "/mysql/data_3306/databases",
 			       'genebuild3:3306'   => "/mysql/data_3306/databases",
 			       'genebuild4:3306'   => "/mysql/data_3306/databases",
@@ -106,7 +79,8 @@ my %mysql_directory_per_svr = ('ecs1a:3306' => "/mysql1a/databases",
 			       'ens-genomics2:3306' => "/mysql/data_3306/databases",
 			       'ens-staging:3306'  => "/mysql/data_3306/databases",
 			       'ens-livemirror:3306'  => "/mysql/data_3306/databases",
-			       'ens-research:3306' => "/mysql/data_3306/databases");
+			       'ens-research:3306' => "/mysql/data_3306/databases",
+			       'ens-research:3309' => "/mysql/data_3309/databases");
 
 my ($generic_working_host) = (gethostbyname(hostname));
 $generic_working_host =~ s/\..*//;
