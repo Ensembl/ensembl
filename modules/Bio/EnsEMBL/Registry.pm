@@ -220,14 +220,19 @@ sub load_all {
             if ( $cfg->SectionExists('default') ) {
                 # The 'default' section is special.  It contain default
                 # values that should be implicit to all other section in
-                # this configuration file.
+                # this configuration file.  Aliases are added if there
+                # is also a 'species' setting.
 
-                if ( defined( $cfg->val( 'default', 'alias' ) ) ) {
-                    print( STDERR
-                             "It is not allowed to specify 'alias' "
-                           . "in the 'default' section. "
-                           . "Ignoring that alias specification.\n" );
-                    $cfg->delval( 'default', 'alias' );
+                my $alias = $cfg->val( 'default', 'alias' );
+                $cfg->delval( 'default', 'alias' );
+
+                my $species = $cfg->val( 'default', 'species' );
+
+                if ( defined($alias) && defined($species) ) {
+                    Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
+                                     -species => $species,
+                                     -alias => [ split( /\n/, $alias ) ]
+                    );
                 }
 
                 %default_adaptor_args =
@@ -261,13 +266,25 @@ sub load_all {
                     next;
                 }
 
-                # If there is an 'alias' key in the ini-file, make a
-                # note of it for later and remove it.  Since it may
-                # be a multi-value key, it might mess up the adaptor
-                # arguments if we don't do this.
+                # Handle aliases.  A section must have both an 'alias'
+                # setting and a 'species' setting for aliases to be
+                # added.  The 'species' setting might be inherited from
+                # the 'default' section.
+
                 my $alias = $cfg->val( $section, 'alias' );
                 $cfg->delval( $section, 'alias' );
 
+                my $species = $cfg->val( $section, 'species' )
+                  || $cfg->val( 'default', 'species' );
+
+                if ( defined($alias) && defined($species) ) {
+                    Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
+                                     -species => $species,
+                                     -alias => [ split( /\n/, $alias ) ]
+                    );
+                }
+
+                # Fill in the adaptor initialization arguments.
                 # We trust the user to provide sensible key-value pairs.
                 my %adaptor_args = %default_adaptor_args;
                 foreach my $parameter ( $cfg->Parameters($section) ) {
@@ -283,22 +300,6 @@ sub load_all {
 
                 $adaptor->new(%adaptor_args);
 
-                my $species = $cfg->val( $section, 'species' )
-                  || $cfg->val( 'default', 'species' );
-
-                if ( defined($alias) && defined($species) ) {
-                    my @aliases = split( /\n/, $alias );
-
-                  # if ($verbose) {
-                  #     printf( "Adding aliases for species '%s': %s\n",
-                  #             $species, join( ', ', @aliases ) );
-                  # }
-
-                    Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
-                                                   -species => $species,
-                                                   -alias   => \@aliases
-                    );
-                }
             } ## end foreach my $section ( $cfg->Sections...
         } else {
             # This is probably no ini-file but an old style piece
