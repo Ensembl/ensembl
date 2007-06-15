@@ -148,7 +148,7 @@ my $A_sa = $A_dba->get_SliceAdaptor;
 
 $support->log("Looping over chromosomes...\n\n");
 
-foreach my $chr ($support->sort_chromosomes) {
+foreach my $chr ($support->sort_chromosomes($support->get_chrlength(undef, undef, 'chromosome'))) {
   $support->log_stamped("Chromosome $chr...\n", 1);
 
   my $R_slice = $R_sa->fetch_by_region('chromosome', $chr);
@@ -158,6 +158,7 @@ foreach my $chr ($support->sort_chromosomes) {
   my @segments = @{ $R_slice->project('chromosome', $support->param('altassembly')) };
   
   my $i;
+  my $k;
 
   foreach my $seg (@segments) {
     # reference sequence
@@ -180,7 +181,7 @@ foreach my $chr ($support->sort_chromosomes) {
 
     } else {
       # not identical -> something is wrong
-      $support->log_warning("Sequence mismatch at ".$R_sub_slice->name."\n", 2);
+      $support->log("Sequence mismatch at ".$R_sub_slice->name."\n", 2);
 
       my $R_sub_seq;
       my $A_sub_seq;
@@ -194,16 +195,18 @@ foreach my $chr ($support->sort_chromosomes) {
       }
       
       $support->log("Ref: $R_sub_seq\n", 3);
-      $support->log("Alt: $A_sub_seq\n", 3);
+      $support->log("Alt: $A_sub_seq\n\n", 3);
 
       $i++;
     }
+
+    $k++;
   }
 
   if ($i) {
-    $support->log("Total: $i problematic alignments.\n", 2);
+    $support->log("Total: $i (of $k) alignments contain sequence mismatches.\n", 2);
   } else {
-    $support->log("All alignments ok.\n", 2);
+    $support->log("All $k alignments ok.\n", 2);
   }
 
   $support->log_stamped("Done.\n\n", 1);

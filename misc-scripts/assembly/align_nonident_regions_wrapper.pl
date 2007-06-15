@@ -97,6 +97,10 @@ my $support = new Bio::EnsEMBL::Utils::ConversionSupport($SERVERROOT);
 $support->parse_common_options(@_);
 $support->parse_extra_options(
     'assembly=s',
+    'althost=s',
+    'altport=i',
+    'altuser=s',
+    'altpass=s',
     'altdbname=s',
     'altassembly=s',
     'bindir=s',
@@ -106,6 +110,10 @@ $support->parse_extra_options(
 $support->allowed_params(
     $support->get_common_params,
     'assembly',
+    'althost',
+    'altport',
+    'altuser',
+    'altpass',
     'altdbname',
     'altassembly',
     'bindir',
@@ -140,7 +148,7 @@ my $R_dba = $support->get_database('ensembl');
 # loop over chromosomes
 $support->log_stamped("Looping over chromosomes...\n");
 
-foreach my $chr ($support->sort_chromosomes) {
+foreach my $chr ($support->sort_chromosomes($support->get_chrlength(undef, undef, 'chromosome'))) {
     $support->log_stamped("Chromosome $chr...\n", 1);
 
     # run align_nonident_regions.pl via lsf

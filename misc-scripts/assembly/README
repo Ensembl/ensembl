@@ -90,6 +90,9 @@ chromosome at a time over lsf:
 
   $ ensembl/misc-scripts/assembly/align_nonident_regions_wrapper.pl
 
+After running this, check all logfiles for errors (also the lsf logs in the lsf/
+subdirectory of your logpath).
+
 
 4. Remove overlaps:
 ===================

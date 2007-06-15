@@ -151,7 +151,7 @@ my %stats_total;
 
 $support->log_stamped("Looping over chromosomes...\n");
 
-foreach my $R_chr ($support->sort_chromosomes) {
+foreach my $R_chr ($support->sort_chromosomes($support->get_chrlength(undef, undef, 'chromosome'))) {
     $support->log_stamped("\nChromosome $R_chr...\n", 1);
 
     # fetch chromosome slice and project to clones

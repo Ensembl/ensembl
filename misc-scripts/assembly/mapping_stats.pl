@@ -151,7 +151,7 @@ my $fmt3 = "%-44s%8.0f (%2.0f%%)\n";
 
 $support->log("Looping over chromosomes...\n\n");
 
-foreach my $chr ($support->sort_chromosomes) {
+foreach my $chr ($support->sort_chromosomes($support->get_chrlength(undef, undef, 'chromosome'))) {
   $support->log_stamped("Chromosome $chr...\n", 1);
 
   # determine non-N sequence length of alternative chromosome
@@ -176,6 +176,7 @@ foreach my $chr ($support->sort_chromosomes) {
   # determine total length of mapping to alternative assembly
   my $mapping_length = 0;
   my %blocks;
+  my %blocklength;
 
   # chromosome length order of magnitude
   my $oom = length($A_length);
@@ -197,7 +198,10 @@ foreach my $chr ($support->sort_chromosomes) {
     my $c_oom = $oom;
     
     while ($c_oom) {
-      if ($l > 10**($c_oom-1) and $l <= 10**$c_oom) { $blocks{10**$c_oom}++; }
+      if ($l > 10**($c_oom-1) and $l <= 10**$c_oom) {
+        $blocks{10**$c_oom}++;
+        $blocklength{10**$c_oom} += $l;
+      }
       $c_oom--;
     }
     $blocks{10}++ if ($l == 1);
@@ -227,7 +231,7 @@ foreach my $chr ($support->sort_chromosomes) {
     for (my $i = 0; $i < $oom; $i++) {
       my $from = 10**$i;
       my $to = 10**($i+1);
-      $support->log(sprintf($fmt3, "    ".$support->commify($from)." - ".$support->commify($to)." bp:", $blocks{$to}, $blocks{$to}/$alignments*100), 2);
+      $support->log(sprintf($fmt3, "    ".$support->commify($from)." - ".$support->commify($to)." bp:", $blocks{$to}, $blocklength{$to}/$R_slice->length*100), 2);
     }
   }
   

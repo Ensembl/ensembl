@@ -120,6 +120,10 @@ my $support = new Bio::EnsEMBL::Utils::ConversionSupport($SERVERROOT);
 $support->parse_common_options(@_);
 $support->parse_extra_options(
     'assembly=s',
+    'althost=s',
+    'altport=i',
+    'altuser=s',
+    'altpass=s',
     'altdbname=s',
     'altassembly=s',
     'chromosomes|chr=s@',
@@ -128,6 +132,10 @@ $support->parse_extra_options(
 $support->allowed_params(
     $support->get_common_params,
     'assembly',
+    'althost',
+    'altport',
+    'altuser',
+    'altpass',
     'altdbname',
     'altassembly',
     'chromosomes',
@@ -167,10 +175,9 @@ if ($support->param('verbose') and $support->user_proceed($txt)) {
 #
 my ($dba, $dbh, $sql, $sth);
 
-# first set connection parameters for alternative db
-# both databases have to be on the same host, so we don't need to configure
-# them separately
-map { $support->param("alt$_", $support->param($_)) } qw(host port user pass);
+# first set connection parameters for alternative db if not different from
+# reference db
+map { $support->param("alt$_", $support->param($_)) unless ($support->param("alt$_")) } qw(host port user);
 
 # reference database
 my $R_dba = $support->get_database('ensembl');
@@ -206,8 +213,8 @@ unless ($support->param('dry_run')) {
 #####
 # get reference and alternative chromosomes
 #
-my $R_chrlength = $support->get_chrlength($R_dba, $support->param('assembly'));
-my $A_chrlength = $support->get_chrlength($R_dba, $support->param('altassembly'));
+my $R_chrlength = $support->get_chrlength($R_dba, $support->param('assembly'), 'chromosome');
+my $A_chrlength = $support->get_chrlength($R_dba, $support->param('altassembly'), 'chromosome');
 my $ref_chr_map = $support->get_ensembl_chr_mapping($R_dba, $support->param('assembly'));
 
 #####

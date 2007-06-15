@@ -142,7 +142,7 @@ my $sth = $dbh->prepare($sql);
 my $fmt1 = "%10s %10s %10s %10s %3s\n";
 my @rows = ();
 
-foreach my $chr ($support->sort_chromosomes) {
+foreach my $chr ($support->sort_chromosomes($support->get_chrlength(undef, undef, 'chromosome'))) {
   $support->log_stamped("\nChromosome $chr...\n");
 
   $sth->execute($chr);

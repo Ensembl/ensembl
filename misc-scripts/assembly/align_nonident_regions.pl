@@ -119,6 +119,10 @@ my $support = new Bio::EnsEMBL::Utils::ConversionSupport($SERVERROOT);
 $support->parse_common_options(@_);
 $support->parse_extra_options(
     'assembly=s',
+    'althost=s',
+    'altport=i',
+    'altuser=s',
+    'altpass=s',
     'altdbname=s',
     'altassembly=s',
     'bindir=s',
@@ -128,6 +132,10 @@ $support->parse_extra_options(
 $support->allowed_params(
     $support->get_common_params,
     'assembly',
+    'althost',
+    'altport',
+    'altuser',
+    'altpass',
     'altdbname',
     'altassembly',
     'bindir',
@@ -157,10 +165,9 @@ $support->check_required_params(
 #
 my ($dba, $dbh, $sql, $sth);
 
-# first set connection parameters for alternative db
-# both databases have to be on the same host, so we don't need to configure
-# them separately
-map { $support->param("alt$_", $support->param($_)) } qw(host port user pass);
+# first set connection parameters for alternative db if not different from
+# reference db
+map { $support->param("alt$_", $support->param($_)) unless ($support->param("alt$_")) } qw(host port user);
 
 # reference database
 my $R_dba = $support->get_database('ensembl');

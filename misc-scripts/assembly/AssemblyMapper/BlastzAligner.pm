@@ -279,7 +279,9 @@ sub find_best_alignment {
 
   Example     : $aligner->parse_blastz_output;
   Description : Reads a blastz alignment result from an axt file and creates
-                a datastructure containing ungapped alignments from it.
+                a datastructure containing ungapped alignments from it. Note
+                that mismatches are allowed, but separate stats will be
+                collected for them.
   Return type : none
   Exceptions  : none
   Caller      : general
@@ -329,15 +331,15 @@ sub parse_blastz_output {
                     $self->stats_incr('R_gap', 1) if ($R_arr[$j] eq '-');
                     $match_flag = 0;
                 } else {
+                    $self->found_match($match_flag, $j, \%coords);
+                    $match_flag = 1;
+
                     # match
                     if ($A_arr[$j] eq $R_arr[$j]) {
-                        $self->found_match($match_flag, $j, \%coords);
                         $self->stats_incr('match', 1);
-                        $match_flag = 1;
                     # mismatch
                     } else {
                         $self->stats_incr('mismatch', 1);
-                        $match_flag = 0;
                     }
                 }
             }
