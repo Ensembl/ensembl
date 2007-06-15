@@ -232,3 +232,4 @@
 134	atag_CRE	Clone_right_end	Clone_right_end feature marked in GAP database
 135	atag_Misc	Misc	miscellaneous feature marked in GAP database
 136	atag_Unsure	Unsure	region of uncertain DNA sequence marked in GAP database
+137	MultAssem	Multiple Assembled seq region	Part of Seq Region is part of more than one assembly
