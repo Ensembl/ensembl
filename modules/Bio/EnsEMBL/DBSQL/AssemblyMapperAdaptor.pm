@@ -126,28 +126,25 @@ sub cache_seq_ids_with_mult_assemblys{
   my %multis;
 
   return if (defined($self->{'multi_seq_ids'}));
+
   $self->{'multi_seq_ids'} = {};
 
   my $sql=(<<SQL);  
-    SELECT a.cmp_seq_region_id, count(*) as count 
-      FROM assembly a, seq_region s, coord_system c 
-	WHERE a.asm_seq_region_id=s.seq_region_id and 
-	  c.coord_system_id = s.coord_system_id
-        GROUP BY a.cmp_seq_region_id, s.coord_system_id HAVING count >= 2
+    SELECT seq_region_id 
+      FROM seq_region_attrib sra, attrib_type at
+	WHERE sra.attrib_type_id = at.attrib_type_id and code = "MultAssem"
 SQL
 
   my $sth = $self->prepare($sql);
 
   $sth->execute();
 
-  my ($seq_region_id, $count);
+  my ($seq_region_id);
 
-  $sth->bind_columns(\$seq_region_id, \$count);
-
-  my %asm_registered;
+  $sth->bind_columns(\$seq_region_id);
 
   while($sth->fetch()) {
-    $self->{'multi_seq_ids'}->{$seq_region_id} = $count;
+    $self->{'multi_seq_ids'}->{$seq_region_id} = 1;
   }
   $sth->finish;
 }
