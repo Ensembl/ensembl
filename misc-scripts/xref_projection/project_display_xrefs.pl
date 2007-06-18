@@ -503,7 +503,7 @@ sub backup {
 
   foreach my $table ("gene", "xref", "object_xref") {
     unless (system("mysql -h$host -P$port -u$user -p$pass -N -e 'select * from $table' $dbname > $dbname.$table.backup; gzip -9 -f $dbname.$table.backup") == 0) {
-      print STDERR "Can't dump the original $table from $dbname for backup\n";
+      print STDERR "Can't dump the original $table table from $dbname for backup\n";
       exit 1;
     } else {
       print "Original $table table backed up in $dbname.$table.backup\n";
