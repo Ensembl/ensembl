@@ -298,7 +298,9 @@ sub load_all {
                             $adaptor, $section );
                 }
 
-                require($adaptor);
+                eval "require $adaptor";
+                if ($@) { die($@) }
+
                 $adaptor->new(%adaptor_args);
 
             } ## end foreach my $section ( $cfg->Sections...
