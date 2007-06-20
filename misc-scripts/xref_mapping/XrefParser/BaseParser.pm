@@ -30,6 +30,7 @@ my $add_synonym_sth = undef;
 my $dbi;
 my %dependent_sources;
 my %taxonomy2species_id;
+my %species_id2taxonomy;
 my %name2species_id;
 
 my ( $host,             $port,    $dbname,        $user,
@@ -1070,6 +1071,31 @@ sub taxonomy2species_id {
   }
 
   return %taxonomy2species_id;
+
+}
+
+
+sub species_id2taxonomy {
+
+  my $self = shift;
+
+  if (!%species_id2taxonomy) {
+
+    my $dbi = dbi();
+    my $sth = $dbi->prepare("SELECT species_id, taxonomy_id FROM species");
+    $sth->execute() or croak( $dbi->errstr() );
+    while(my @row = $sth->fetchrow_array()) {
+      my $species_id = $row[0];
+      my $taxonomy_id = $row[1];
+      if(defined($species_id2taxonomy{$species_id})){
+	push @{$species_id2taxonomy{$species_id}}, $taxonomy_id;
+      }
+      else{
+	$species_id2taxonomy{$species_id} = [$taxonomy_id];
+      }
+    }
+  }
+  return %species_id2taxonomy;
 
 }
 
