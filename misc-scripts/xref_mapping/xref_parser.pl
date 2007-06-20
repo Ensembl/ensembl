@@ -3,14 +3,12 @@ use strict;
 use Getopt::Long;
 use XrefParser::BaseParser;
 
-my (
-    $host,             $port,             $dbname,
-    $user,             $pass,             @species,
-    @sources,          $skipdownload,     $checkdownload,
-    $create,           $release,          $cleanup,
-    $drop_existing_db, $deletedownloaded, $dl_path,
-    @notsource,        $unzip
-);
+my ( $host,             $port,          $dbname,
+     $user,             $pass,          @species,
+     @sources,          $checkdownload, $create,
+     $release,          $cleanup,       $drop_existing_db,
+     $deletedownloaded, $dl_path,       @notsource,
+     $unzip );
 
 $unzip = 0;    # Do not decompress gzipped files by default
 
@@ -23,7 +21,6 @@ GetOptions(
     'species=s'      => \@species,
     'source=s'       => \@sources,
     'download_dir=s' => \$dl_path,
-    'skipdownload'   => \$skipdownload,     # Skips all downloads
     'checkdownload!' => \$checkdownload,    # Don't download if exists
     'create'         => \$create,
     'setrelease=s'   => \$release,
@@ -34,8 +31,7 @@ GetOptions(
     'delete_downloaded' => \$deletedownloaded,
     'download_path=s'   => \$dl_path,
     'unzip' => \$unzip,                   # Force decompression of files
-    'help'  => sub { usage(); exit(0); }
-);
+    'help'  => sub { usage(); exit(0); } );
 
 @species = split(/,/,join(',',@species));
 @sources  = split(/,/,join(',',@sources));
@@ -50,16 +46,14 @@ if ( !$user || !$host || !$dbname ) {
 my $base_parser = XrefParser::BaseParser->new();
 
 $base_parser->run(
-    $host, ( defined $port ? $port : '3306' ),
-    $dbname,           $user,
-    $pass,             \@species,
-    \@sources,         $skipdownload,
-    $checkdownload,    $create,
-    $release,          $cleanup,
-    $drop_existing_db, $deletedownloaded,
-    $dl_path,          \@notsource,
-    $unzip
-);
+               $host, ( defined $port ? $port : '3306' ),
+               $dbname,           $user,
+               $pass,             \@species,
+               \@sources,         $checkdownload,
+               $create,           $release,
+               $cleanup,          $drop_existing_db,
+               $deletedownloaded, $dl_path,
+               \@notsource,       $unzip );
 
 # --------------------------------------------------------------------------------
 
@@ -67,42 +61,45 @@ sub usage {
 
   print << "EOF";
 
-  xref_parser.pl -user {user} -pass {password} -host {host} -port {port} -dbname {database} -species {species1,species2} -source {source1,source2} -notsource {source1,source2} -skipdownload -create -setrelease 
+  xref_parser.pl -user {user} -pass {password} -host {host} \\
+    -port {port} -dbname {database} -species {species1,species2} \\
+    -source {source1,source2} -notsource {source1,source2} \\
+    -create -setrelease
 
   -user             User name to access database. Must allow writing.
-		
+
   -pass             Password for user.
-		
+
   -host             Database host.
-		
+
   -port             Database port.
-		
+
   -dbname           Name of xref database to use/create.
-		
-  -species          Which species to import. Multiple -species arguments and/or comma,
-                    separated lists of species are allowed. Species may be referred to
-                    by genus/species (e.g. homo_sapiens) or common aliases (e.g. human).
-                    Specifying an unknown species will cause a list of valid species to
-                    be printed.
-                    Not specifying a -species argument will result in all species being
+
+  -species          Which species to import. Multiple -species arguments
+                    and/or comma, separated lists of species are
+                    allowed. Species may be referred to by genus/species
+                    (e.g. homo_sapiens) or common aliases (e.g. human).
+                    Specifying an unknown species will cause a list
+                    of valid species to be printed.  Not specifying a
+                    -species argument will result in all species being
                     used.
-		
-  -source           Which sources to import. Multiple -source arguments and/or comma,
-                    separated lists of sources are allowed.
-                    Specifying an unknown source will cause a list of valid sources to
-                    be printed.
-                    Not specifying a -source argument will result in all species being
+
+  -source           Which sources to import. Multiple -source arguments
+                    and/or comma, separated lists of sources are
+                    allowed.  Specifying an unknown source will cause a
+                    list of valid sources to be printed.  Not specifying
+                    a -source argument will result in all species being
                     used.
-		
+
   -notsource        Which source to skip.
 
-  -create           If specified, cause dbname to be deleted and re-created if it
-                    already exists. User is prompted before database is dropped to
-                    prevent disasters arising from dropping the wrong database.
-		
-  -skipdownload     Don't download any data, parse existing.
+  -create           If specified, cause dbname to be deleted and
+                    re-created if it already exists. User is prompted
+                    before database is dropped to prevent disasters
+                    arising from dropping the wrong database.
 
-  -checkdownload    Check if file exists, otherwise downloads the file 
+  -checkdownload    Check if file exists, otherwise downloads the file.
 
   -deletedownloaded Delete any existing downloaded files first.
 
@@ -110,11 +107,13 @@ sub usage {
 
   -cleanup          Delete the downloaded source files after parsing.
 
-  -drop_db         Drop the xref-database without user interaction
+  -drop_db          Drop the xref-database without user interaction.
 
-  -download_path   Directory into which to download files (default is the current directory)
+  -download_path    Directory into which to download files (default is
+                    the current directory).
 
-  -unzip            Decompress gzipped files (default is to use compressed files)
+  -unzip            Decompress gzipped files (default is to use compressed
+                    files).
 
 EOF
 

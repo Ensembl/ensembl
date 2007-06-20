@@ -32,13 +32,10 @@ my %dependent_sources;
 my %taxonomy2species_id;
 my %name2species_id;
 
-my (
-    $host,         $port,    $dbname,
-    $user,         $pass,    $create,
-    $release,      $cleanup, $deletedownloaded,
-    $skipdownload, $drop_db, $checkdownload,
-    $dl_path,      $unzip
-);
+my ( $host,             $port,    $dbname,        $user,
+     $pass,             $create,  $release,       $cleanup,
+     $deletedownloaded, $drop_db, $checkdownload, $dl_path,
+     $unzip );
 
 # --------------------------------------------------------------------------------
 # Get info about files to be parsed from the database
@@ -46,12 +43,12 @@ my (
 sub run {
     my $self = shift;
 
-    (  $host,           $port,             $dbname,
-       $user,           $pass,             my $speciesr,
-       my $sourcesr,    $skipdownload,     $checkdownload,
-       $create,         $release,          $cleanup,
-       $drop_db,        $deletedownloaded, $dl_path,
-       my $notsourcesr, $unzip
+    (  $host,             $port,          $dbname,
+       $user,             $pass,          my $speciesr,
+       my $sourcesr,      $checkdownload, $create,
+       $release,          $cleanup,       $drop_db,
+       $deletedownloaded, $dl_path,       my $notsourcesr,
+       $unzip
     ) = @_;
 
     $base_dir = $dl_path if $dl_path;
@@ -248,11 +245,7 @@ sub run {
                 printf( "Uncompressing '%s' using 'gunzip'\n", $file );
                 system( "gunzip", "-f", $file );
             }
-            if ($unzip) {
-                $file =~ s/\.(gz|Z)$//;  # If skipdownload set this will
-                                         # not have been done yet.
-                                         # If it has, no harm done
-            }
+            if ($unzip) { $file =~ s/\.(gz|Z)$// }
 
             # Compare checksums and parse/upload if necessary need to
             # check file size as some .SPC files can be of zero length
