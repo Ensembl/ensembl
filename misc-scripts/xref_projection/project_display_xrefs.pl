@@ -75,7 +75,6 @@ if (!$go_terms && !$names) {
 
 # only certain types of homology are considered
 my @homology_types_allowed = ("ortholog_one2one","apparent_ortholog_one2one");
-my @homology_types_allowed;
 if ($one_to_many) {
   push @homology_types_allowed, "ortholog_one2many","apparent_ortholog_one2many";
 }
