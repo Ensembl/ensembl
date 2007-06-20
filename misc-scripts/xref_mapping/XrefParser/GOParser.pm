@@ -181,8 +181,8 @@ sub run {
 
         $release =~ tr /\n/ /;
         $release =~
-          s#.*The following table describes.*?of (GOA.*?</b>\.).*#$1#;
-        $release =~ s#</?b>##g;
+          s#.*The following table describes.*?of (GOA.*?)<ul>.*#$1#;
+        $release =~ s#<[^>]+>##g;
 
         print "GO release: '$release'\n";
         $self->set_release( $source_id, $release );
