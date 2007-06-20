@@ -12,7 +12,7 @@ use Bio::EnsEMBL::Utils::Eprof qw(eprof_start eprof_end eprof_dump);
 
 my $method_link_type = "ENSEMBL_ORTHOLOGUES";
 
-my ($conf, $compara, $from_species, @to_multi, $print, $names, $go_terms, $delete_names, $delete_go_terms, $no_backup, $full_stats, $descriptions, $release, $no_database, $quiet, $single_source, $max_genes);
+my ($conf, $compara, $from_species, @to_multi, $print, $names, $go_terms, $delete_names, $delete_go_terms, $no_backup, $full_stats, $descriptions, $release, $no_database, $quiet, $single_source, $max_genes, $one_to_many);
 
 GetOptions('conf=s'          => \$conf,
 	   'compara=s'       => \$compara,
@@ -32,6 +32,7 @@ GetOptions('conf=s'          => \$conf,
 	   'quiet'           => \$quiet,
 	   'single_source=s' => \$single_source,
 	   'max_genes=i'     => \$max_genes,
+	   'one_to_many'     => \$one_to_many,
 	   'help'            => sub { usage(); exit(0); });
 
 $| = 1; # auto flush stdout
@@ -70,6 +71,13 @@ if (!$go_terms && !$names) {
   print STDERR "Use --help for more detailed usage informaion\n";
   exit(1);
 
+}
+
+# only certain types of homology are considered
+my @homology_types_allowed = ("ortholog_one2one","apparent_ortholog_one2one");
+my @homology_types_allowed;
+if ($one_to_many) {
+  push @homology_types_allowed, "ortholog_one2many","apparent_ortholog_one2many";
 }
 
 # only these evidence codes will be considered for GO term projection
@@ -157,13 +165,17 @@ foreach my $to_species (@to_multi) {
 
     my $from_gene = $from_ga->fetch_by_stable_id($from_stable_id);
 
-    foreach my $to_stable_id (@{$homologies->{$from_stable_id}}) {
+    my @to_genes = @{$homologies->{$from_stable_id}};
+    my $i = 1;
+    foreach my $to_stable_id (@to_genes) {
 
       my $to_gene = $to_ga->fetch_by_stable_id($to_stable_id);
 
-      project_display_names($to_ga, $to_dbea, $from_gene, $to_gene, %db_to_type) if ($names);
+      project_display_names($to_ga, $to_dbea, $from_gene, $to_gene, $i, scalar(@to_genes), %db_to_type) if ($names);
 
       project_go_terms($to_ga, $to_dbea, $ma, $from_gene, $to_gene) if ($go_terms);
+
+      $i++;
 
     }
 
@@ -193,7 +205,7 @@ foreach my $to_species (@to_multi) {
 
 sub project_display_names {
 
-  my ($to_ga, $to_dbea, $from_gene, $to_gene, %db_to_type) = @_;
+  my ($to_ga, $to_dbea, $from_gene, $to_gene,  $gene_number, $total_gene_number, %db_to_type) = @_;
 
   my $dbEntry = $from_gene->display_xref();
   my $to_source = $to_gene->display_xref()->dbname() if ($to_gene->display_xref());
@@ -209,7 +221,17 @@ sub project_display_names {
       return if ($single_source && ($dbEntry->dbname() ne $single_source));
 
       # Modify the dbEntry to indicate it's not from this species - set info_type & info_text
-      my $txt = "from $from_latin_species gene " . $from_gene->stable_id();
+      my $info_txt = "from $from_latin_species gene " . $from_gene->stable_id();
+
+      # modify the display_id to have " (1 of 3)" etc if this is a one-to-many ortholog
+      my $tuple_txt = "";
+      if ($total_gene_number > 1) {
+	$tuple_txt = " ($gene_number of $total_gene_number)";
+	my $existing = $dbEntry->display_id();
+	$existing =~ s/\(\d+ of \d+\)//;
+	$dbEntry->display_id($existing . $tuple_txt);
+	$info_txt .= $tuple_txt;
+      }
 
       # Add description to the gene if required
       # This should probably be in another column in the xref table but we just use the gene
@@ -217,7 +239,7 @@ sub project_display_names {
       $to_gene->description($from_gene->description()) if ($descriptions && $from_gene->description());
 
       $dbEntry->info_type("PROJECTION");
-      $dbEntry->info_text($txt);
+      $dbEntry->info_text($info_txt);
 
       # Add the xref to the "to" gene, or transcript or translation depending on what the
       # other xrefs from this dbname as assigned to (see build_db_to_type)
@@ -545,8 +567,8 @@ sub write_to_projection_db {
 
 # ----------------------------------------------------------------------
 # Fetch the homologies from the Compara database.
-# Returns a two element array:
-# First 
+# Returns a hash of arrays:
+# Key = "from" stable ID, value = array of "to" stable IDs
 
 sub fetch_homologies {
 
@@ -554,39 +576,55 @@ sub fetch_homologies {
 
   print "Fetching Compara homologies\n";
 
+  my $from_species_alias = lc(Bio::EnsEMBL::Registry->get_alias($from_species));
+
   my %homology_cache;
 
   my $homologies = $ha->fetch_all_by_MethodLinkSpeciesSet($mlss);
 
   foreach my $homology (@{$homologies}) {
 
-    next if ($homology->description() ne "ortholog_one2one" && $homology->description() ne "apparent_ortholog_one2one");
+    next if (!homology_type_allowed($homology->description));
 
     my @mas = @{$homology->get_all_Member_Attribute};
-    my ($member1, $attribute1) = @{$mas[0]};
-    my ($member2, $attribute2) = @{$mas[1]};
 
-    # order of member1/member2 is arbitrary, need to figure out which is "from" and which is "to"
-    my ($from_member, $to_member, $from_attribute, $to_attribute);
-    if (lc($member1->genome_db()->name()) eq lc(Bio::EnsEMBL::Registry->get_alias($from_species))) {
-      $from_member = $member1;
-      $from_attribute = $member1;
-      $to_member = $member2;
-      $to_attribute = $member2;
-    } else {
-      $from_member = $member2;
-      $from_attribute = $member2;
-      $to_member = $member1;
-      $to_attribute = $member1;
+    # order of member-attributes is arbitrary, so need to find which one corresponds to the "from" species
+    my @to_stable_ids;
+    my $from_stable_id;
+    foreach my $ma (@mas) {
+
+      my ($member, $attribute) = @{$ma};
+
+      if (lc($member->genome_db()->name()) eq $from_species_alias) {
+	$from_stable_id = $member->stable_id();
+      } else {
+	push @to_stable_ids, $member->stable_id();
+      }
     }
 
-    push @{$homology_cache{$from_member->stable_id()}}, $to_member->stable_id();
+    print "Warning: can't find stable ID corresponding to 'from' species" if (!$from_stable_id);
+
+    push @{$homology_cache{$from_stable_id}}, @to_stable_ids;
 
   }
 
   print "Done fetching homologies\n";
 
   return \%homology_cache;
+
+}
+
+# ----------------------------------------------------------------------
+
+sub homology_type_allowed {
+
+  my $h = shift;
+
+  foreach my $allowed (@homology_types_allowed) {
+    return 1 if ($h eq $allowed);
+  }
+
+  return undef;
 
 }
 
@@ -688,6 +726,10 @@ sub usage {
   [--quiet]             Don't print percentage progress information to STDOUT.
 
   [--single_source]     Specify a single source to project (e.g. HUGO).
+
+  [--one_to_many]       Also project one-to-many orthologs; multiple orthologs in
+                        target are named "1 of 3", etc. Currently only affects
+                        display xrefs, not GO terms.
 
   [--help]              This text.
 
