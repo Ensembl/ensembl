@@ -50,7 +50,7 @@ foreach my $to ("rat") { # don't need the loop but may add more species later
 }
 
 # human to fish - note use of -one_to_many option for 1-many projections
-foreach my $to ("zebrafish", "medaka", "tetraodon", "fugu", "stickleback", "") {
+foreach my $to ("zebrafish", "medaka", "tetraodon", "fugu", "stickleback") {
   $o = "$dir/names_human_$to.out";
   $e = "$dir/names_human_$to.err";
   $n = substr("n_hum_$to", 0, 10);
