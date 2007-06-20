@@ -8,7 +8,7 @@ my $release = 45;
 
 my $base_dir = "/lustre/work1/ensembl/gp1/projections/";
 
-my $conf = "release_45.conf"; # registry config file
+my $conf = "release_45.ini"; # registry config file
 
 # -------------------------- end of config ----------------------------
 
@@ -26,15 +26,15 @@ if (! -e $dir) {
 }
 
 # common options
-my $opts = "-conf $conf $compara -release $release -quiet";
+my $opts = "-conf $conf -release $release -quiet";
 
 my ($o, $e, $n);
 
 # ----------------------------------------
 # Display names
 
-# human to chimp,opossum,dog,cow,macaque,chicken,xenopus
-foreach my $to ("chimp", "opossum", "dog", "cow", "macaque", "chicken", "xenopus") {
+# human to chimp,opossum,dog,cow,macaque,chicken,xenopus,pig,armadillo,small_hedgehog,european_hedgehog,cat,elephant,macaque,bat,platypus,rabbit,galago,european_shrew,squirrel,ground_shrew
+foreach my $to ("chimp", "opossum", "dog", "cow", "macaque", "chicken", "xenopus", "guinea_pig", "armadillo", "small_hedgehog", "european_hedgehog", "cat", "elephant", "macaque", "bat", "platypus", "rabbit", "galago", "european_shrew", "squirrel", "ground_shrew") {
   $o = "$dir/names_human_$to.out";
   $e = "$dir/names_human_$to.err";
   $n = substr("n_hum_$to", 0, 10); # job name display limited to 10 chars
@@ -47,6 +47,14 @@ foreach my $to ("rat") { # don't need the loop but may add more species later
   $e = "$dir/names_mouse_$to.err";
   $n = substr("n_mou_$to", 0, 10);
   system "bsub -o $o -e $e -J $n perl project_display_xrefs.pl $opts -from mouse -to $to -names -delete_names -no_database";
+}
+
+# human to fish - note use of -one_to_many option for 1-many projections
+foreach my $to ("zebrafish", "medaka", "tetraodon", "fugu", "stickleback", "") {
+  $o = "$dir/names_human_$to.out";
+  $e = "$dir/names_human_$to.err";
+  $n = substr("n_hum_$to", 0, 10);
+  system "bsub -o $o -e $e -J $n perl project_display_xrefs.pl $opts -from human -to $to -names -delete_names -no_database -one_to_many";
 }
 
 # ----------------------------------------
