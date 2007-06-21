@@ -144,13 +144,19 @@ sub fetch_by_Transcript {
 
 =head2 fetch_all_by_external_name
 
-  Arg [1]    : string $external_id
-               The external identifier for the tranlsation(s) to be obtained.
-  Example    : @tls = @{$trl_adaptor->fetch_all_by_external_name('BRCA2')};
-  Description: Retrieves a list of translations fetched via an external
-               identifier.  Note that this may not be a particularly useful
-               method, because translations do not make much sense out of the 
-               context of their transcript.  It may be better to use the
+  Arg [1]    : string $external_name
+               The external identifier for the translation(s) to be
+               obtained.
+  Arg [2]    : (optional) string $external_db_name
+               The name of the external database from which the
+               identifier originates.
+  Example    : my @translations =
+                  @{ $trl_adaptor->fetch_all_by_external_name('BRCA2') };
+  Description: Retrieves a list of translations fetched via an
+               external identifier.  Note that this may not be a
+               particularly useful method, because translations
+               do not make much sense out of the context of
+               their transcript.  It may be better to use the
                TranscriptAdaptor::fetch_all_by_external_name instead.
   Returntype : reference to a list of Translations
   Exceptions : none
@@ -162,19 +168,21 @@ sub fetch_by_Transcript {
 =cut
 
 sub fetch_all_by_external_name {
-  my $self = shift;
-  my $external_id = shift;
+  my ( $self, $external_name, $external_db_name ) = @_;
 
   my $entry_adaptor = $self->db->get_DBEntryAdaptor();
-  my @ids = $entry_adaptor->list_translation_ids_by_extids($external_id);
+
+  my @ids =
+    $entry_adaptor->list_translation_ids_by_extids( $external_name,
+                                                    $external_db_name );
 
   my $transcript_adaptor = $self->db()->get_TranscriptAdaptor();
 
   my @out;
-
   foreach my $id (@ids) {
     my $transcript = $transcript_adaptor->fetch_by_translation_id($id);
-    if($transcript) {
+
+    if ( defined($transcript) ) {
       push @out, $self->fetch_by_Transcript($transcript);
     }
   }

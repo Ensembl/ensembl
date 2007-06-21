@@ -415,20 +415,24 @@ sub fetch_all_by_Slice {
 
 =head2 fetch_all_by_external_name
 
-  Arg [1]    : String $external_id
+  Arg [1]    : String $external_name
                An external identifier of the transcript to be obtained
-  Example    : my @transcripts = @{ $tr_adaptor->fetch_all_by_external_name
-                  ('NP_065811.1') };
-  Description: Retrieves all transcripts which are associated with an 
-               external identifier such as a GO term, Swissprot
-               identifer, etc. Usually there will only be a single transcript
-               returned in the listref, but not always. Transcripts are
-               returned in their native coordinate system. That is, the 
-               coordinate system in which they are stored in the database. If
-               they are required in another coordinate system the 
-               Transcript::transfer or Transcript::transform method can be 
-               used to convert them. If no transcripts with the external
-               identifier are found, a reference to an empty list is returned.
+  Arg [2]    : (optional) String $external_db_name
+               The name of the external database from which the
+               identifier originates.
+  Example    : my @transcripts =
+                  @{ $tr_adaptor->fetch_all_by_external_name( 'NP_065811.1') };
+  Description: Retrieves all transcripts which are associated with
+               an external identifier such as a GO term, Swissprot
+               identifer, etc.  Usually there will only be a single
+               transcript returned in the list reference, but not
+               always.  Transcripts are returned in their native
+               coordinate system, i.e. the coordinate system in which
+               they are stored in the database.  If they are required
+               in another coordinate system the Transcript::transfer or
+               Transcript::transform method can be used to convert them.
+               If no transcripts with the external identifier are found,
+               a reference to an empty list is returned.
   Returntype : Listref of Bio::EnsEMBL::Transcript objects
   Exceptions : none
   Caller     : general
@@ -437,17 +441,16 @@ sub fetch_all_by_Slice {
 =cut
 
 sub fetch_all_by_external_name {
-  my $self = shift;
-  my $external_id = shift;
-
-  my @trans = ();
+  my ( $self, $external_name, $external_db_name ) = @_;
 
   my $entryAdaptor = $self->db->get_DBEntryAdaptor();
-  my @ids = $entryAdaptor->list_transcript_ids_by_extids($external_id);
 
-  return $self->fetch_all_by_dbID_list(\@ids);
+  my @ids =
+    $entryAdaptor->list_transcript_ids_by_extids( $external_name,
+                                                  $external_db_name );
+
+  return $self->fetch_all_by_dbID_list( \@ids );
 }
-
 
 =head2 fetch_by_display_label
 

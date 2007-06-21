@@ -670,15 +670,18 @@ sub fetch_by_translation_stable_id {
 
 =head2 fetch_all_by_external_name
 
-  Arg [1]    : String $external_id
+  Arg [1]    : String $external_name
                The external identifier for the gene to be obtained
+  Arg [2]    : (optional) String $external_db_name
+               The name of the external database from which the
+               identifier originates.
   Example    : @genes = @{$gene_adaptor->fetch_all_by_external_name('BRCA2')}
-  Description: Retrieves a list of genes with an external database 
-               idenitifier $external_id. The genes returned are in their
-               native coordinate system. I.e. in the coordinate system they
-               are stored in the database in. If another coordinate system
-               is required then the Gene::transfer or Gene::transform method 
-               can be used.
+  Description: Retrieves a list of genes with an external database
+               identifier $external_name. The genes returned are in
+               their native coordinate system, i.e. in the coordinate
+               system they are stored in the database in.  If another
+               coordinate system is required then the Gene::transfer or
+               Gene::transform method can be used.
   Returntype : listref of Bio::EnsEMBL::Genes
   Exceptions : none
   Caller     : goview, general
@@ -687,17 +690,18 @@ sub fetch_by_translation_stable_id {
 =cut
 
 sub fetch_all_by_external_name {
-  my ($self, $external_id) = @_;
+  my ( $self, $external_name, $external_db_name ) = @_;
 
   my $entryAdaptor = $self->db->get_DBEntryAdaptor();
 
-  my (@ids, @result);
-  @ids = $entryAdaptor->list_gene_ids_by_extids($external_id);
+  my @ids =
+    $entryAdaptor->list_gene_ids_by_extids( $external_name,
+                                            $external_db_name );
 
-  my $genes = $self->fetch_all_by_dbID_list(\@ids);
+  my %genes_by_dbIDs =
+    map { $_->dbID(), $_ } @{ $self->fetch_all_by_dbID_list( \@ids ) };
 
-  my %genes_by_dbIDs = map { $_->dbID(),$_ } @$genes;
-  @result = map { $genes_by_dbIDs{ $_ } } @ids;
+  my @result = map { $genes_by_dbIDs{$_} } @ids;
 
   return \@result;
 }

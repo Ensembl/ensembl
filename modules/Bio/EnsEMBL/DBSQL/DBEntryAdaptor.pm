@@ -837,9 +837,10 @@ sub list_gene_ids_by_external_db_id{
    return keys %T;
 }
 
-=head2 list_gene_ids_by_external_db_id
+=head2 list_gene_ids_by_extids
 
-  Arg [1]    : string $external_id
+  Arg [1]    : string $external_name
+  Arg [2]    : (optional) string $external_db_name
   Example    : @gene_ids = $dbea->list_gene_ids_by_extids('ARSE');
   Description: Retrieve a list of geneid by an external identifier that is 
                linked to  any of the genes transcripts, translations or the 
@@ -851,20 +852,25 @@ sub list_gene_ids_by_external_db_id{
 
 =cut
 
-sub list_gene_ids_by_extids{
-   my ($self,$name) = @_;
+sub list_gene_ids_by_extids {
+  my ( $self, $external_name, $external_db_name ) = @_;
 
-   my %T = map { ($_, 1) }
-       $self->_type_by_external_id( $name, 'Translation', 'gene' ),
-       $self->_type_by_external_id( $name, 'Transcript',  'gene' ),
-       $self->_type_by_external_id( $name, 'Gene' );
-   return keys %T;
+  my %T = map { ( $_, 1 ) }
+    $self->_type_by_external_id( $external_name, 'Translation', 'gene',
+                                 $external_db_name ),
+    $self->_type_by_external_id( $external_name, 'Transcript', 'gene',
+                                 $external_db_name ),
+    $self->_type_by_external_id( $external_name, 'Gene', undef,
+                                 $external_db_name );
+
+  return keys %T;
 }
 
 
 =head2 list_transcript_ids_by_extids
 
-  Arg [1]    : string $external_id
+  Arg [1]    : string $external_name
+  Arg [2]    : (optional) string $external_db_name
   Example    : @tr_ids = $dbea->list_gene_ids_by_extids('BCRA2');
   Description: Retrieve a list transcript ids by an external identifier that 
                is linked to any of the genes transcripts, translations or the 
@@ -876,32 +882,39 @@ sub list_gene_ids_by_extids{
 
 =cut
 
-sub list_transcript_ids_by_extids{
-   my ($self,$name) = @_;
-   my @transcripts;
+sub list_transcript_ids_by_extids {
+  my ( $self, $external_name, $external_db_name ) = @_;
 
-   my %T = map { ($_, 1) }
-       $self->_type_by_external_id( $name, 'Translation', 'transcript' ),
-       $self->_type_by_external_id( $name, 'Transcript' );
-   return keys %T;
+  my %T = map { ( $_, 1 ) }
+    $self->_type_by_external_id( $external_name, 'Translation',
+                                 'transcript',   $external_db_name
+    ),
+    $self->_type_by_external_id( $external_name, 'Transcript', undef,
+                                 $external_db_name );
+
+  return keys %T;
 }
 
 
 =head2 list_translation_ids_by_extids
 
-  Arg [1]    :  string $name 
-  Example    :  @tr_ids = $dbea->list_gene_ids_by_extids('GO:0004835');
-  Description:  Gets a list of translation IDs by external display IDs
-  Returntype :  list of Ints
-  Exceptions :  none
-  Caller     :  unknown
+  Arg [1]    : string $external_name
+  Arg [2]    : (optional) string $external_db_name
+  Example    : @tr_ids = $dbea->list_gene_ids_by_extids('GO:0004835');
+  Description: Gets a list of translation IDs by external display IDs
+  Returntype : list of Ints
+  Exceptions : none
+  Caller     : unknown
   Status     : Stable
 
 =cut
 
-sub list_translation_ids_by_extids{
-  my ($self,$name) = @_;
-  return $self->_type_by_external_id($name, 'Translation');
+sub list_translation_ids_by_extids {
+  my ( $self, $external_name, $external_db_name ) = @_;
+
+  return
+    $self->_type_by_external_id( $external_name, 'Translation', undef,
+                                 $external_db_name );
 }
 
 =head2 _type_by_external_id
@@ -909,6 +922,7 @@ sub list_translation_ids_by_extids{
   Arg [1]    : string $name - dbprimary_acc
   Arg [2]    : string $ensType - ensembl_object_type
   Arg [3]    : (optional) string $extraType
+  Arg [4]    : (optional) string $external_db_name
   	       other object type to be returned
   Example    : $self->_type_by_external_id($name, 'Translation');
   Description: Gets
@@ -921,42 +935,45 @@ sub list_translation_ids_by_extids{
 
 =cut
 
-sub _type_by_external_id{
-  my ($self, $name, $ensType, $extraType) = @_;
+sub _type_by_external_id {
+  my ( $self, $name, $ensType, $extraType, $external_db_name ) = @_;
 
-  my $from_sql = '';
+  my $from_sql  = '';
   my $where_sql = '';
-  my $ID_sql = "oxr.ensembl_id";
+  my $ID_sql    = "oxr.ensembl_id";
 
-  if (defined $extraType) {
-    if (lc($extraType) eq 'translation') {
+  if ( defined $extraType ) {
+    if ( lc($extraType) eq 'translation' ) {
       $ID_sql = "tl.translation_id";
     } else {
       $ID_sql = "t.${extraType}_id";
     }
 
-    if (lc($ensType) eq 'translation') {
-      $from_sql = 'transcript t, translation tl, ';
+    if ( lc($ensType) eq 'translation' ) {
+      $from_sql  = 'transcript t, translation tl, ';
       $where_sql = qq(
           t.transcript_id = tl.transcript_id AND
           tl.translation_id = oxr.ensembl_id AND
           t.is_current = 1 AND
       );
     } else {
-      $from_sql = 'transcript t, ';
-      $where_sql = 't.'.lc($ensType).'_id = oxr.ensembl_id AND '.
-          't.is_current = 1 AND ';
+      $from_sql  = 'transcript t, ';
+      $where_sql = 't.'
+        . lc($ensType)
+        . '_id = oxr.ensembl_id AND '
+        . 't.is_current = 1 AND ';
     }
   }
 
-  if (lc($ensType) eq 'gene') {
-    $from_sql = 'gene g, ';
+  if ( lc($ensType) eq 'gene' ) {
+    $from_sql  = 'gene g, ';
     $where_sql = 'g.gene_id = oxr.ensembl_id AND g.is_current = 1 AND ';
-  } elsif (lc($ensType) eq 'transcript') {
+  } elsif ( lc($ensType) eq 'transcript' ) {
     $from_sql = 'transcript t, ';
-    $where_sql = 't.transcript_id = oxr.ensembl_id AND t.is_current = 1 AND ';
-  } elsif (lc($ensType) eq 'translation') {
-    $from_sql = 'transcript t, translation tl, ';
+    $where_sql =
+      't.transcript_id = oxr.ensembl_id AND t.is_current = 1 AND ';
+  } elsif ( lc($ensType) eq 'translation' ) {
+    $from_sql  = 'transcript t, translation tl, ';
     $where_sql = qq(
         t.transcript_id = tl.transcript_id AND
         tl.translation_id = oxr.ensembl_id AND
@@ -964,43 +981,74 @@ sub _type_by_external_id{
     );
   }
 
+  if ( defined($external_db_name) ) {
+    # Involve the 'external_db' table to limit the hits to a particular
+    # external database.
+
+    $from_sql .= 'external_db xdb, ';
+    $where_sql .=
+        'xdb.db_name LIKE '
+      . $self->dbc()->db_handle()->quote( $external_db_name . '%' )
+      . ' AND xdb.external_db_id = x.external_db_id AND';
+  }
+
   my @queries = (
     "SELECT $ID_sql
        FROM $from_sql xref x, object_xref oxr
       WHERE $where_sql x.dbprimary_acc = ? AND
-  	     x.xref_id = oxr.xref_id AND oxr.ensembl_object_type= ?",
+             x.xref_id = oxr.xref_id AND
+             oxr.ensembl_object_type= ?",
     "SELECT $ID_sql 
        FROM $from_sql xref x, object_xref oxr
       WHERE $where_sql x.display_label = ? AND
-  	     x.xref_id = oxr.xref_id AND oxr.ensembl_object_type= ?",
-    "SELECT $ID_sql
-       FROM $from_sql object_xref oxr, external_synonym syn
-      WHERE $where_sql syn.synonym = ? AND
-            syn.xref_id = oxr.xref_id AND oxr.ensembl_object_type= ?",
+             x.xref_id = oxr.xref_id AND
+             oxr.ensembl_object_type= ?"
   );
 
-# Increase speed of query by splitting the OR in query into three separate
-# queries. This is because the 'or' statments render the index useless
-# because MySQL can't use any fields in the index.
+  if ( defined $external_db_name ) {
+    # If we are given the name of an external database, we need to join
+    # between the 'xref' and the 'object_xref' tables on 'xref_id'.
 
-  my %hash = ();
+    push @queries, "SELECT $ID_sql
+       FROM $from_sql xref x, object_xref oxr, external_synonym syn
+      WHERE $where_sql syn.synonym = ? AND
+             x.xref_id = oxr.xref_id AND
+             oxr.ensembl_object_type= ? AND
+             syn.xref_id = oxr.xref_id";
+  } else {
+    # If we weren't given an external database name, we can get away
+    # with less joins here.
+
+    push @queries, "SELECT $ID_sql
+       FROM $from_sql object_xref oxr, external_synonym syn
+      WHERE $where_sql syn.synonym = ? AND
+             oxr.ensembl_object_type= ? AND
+             syn.xref_id = oxr.xref_id";
+  }
+
+  # Increase speed of query by splitting the OR in query into three
+  # separate queries.  This is because the 'or' statments render the
+  # index useless because MySQL can't use any fields in it.
+
+  my %hash   = ();
   my @result = ();
 
-  foreach( @queries ) {
-
-    my $sth = $self->prepare( $_ );
-    $sth->bind_param(1, "$name", SQL_VARCHAR);
-    $sth->bind_param(2, $ensType, SQL_VARCHAR);
+  foreach (@queries) {
+    my $sth = $self->prepare($_);
+    $sth->bind_param( 1, "$name", SQL_VARCHAR );
+    $sth->bind_param( 2, $ensType, SQL_VARCHAR );
     $sth->execute();
-    while( my $r = $sth->fetchrow_array() ) {
-      if( !exists $hash{$r} ) {
-	$hash{$r} = 1;
-	push( @result, $r );
+
+    while ( my $r = $sth->fetchrow_array() ) {
+      if ( !exists $hash{$r} ) {
+        $hash{$r} = 1;
+        push( @result, $r );
       }
     }
   }
+
   return @result;
-}
+} ## end sub _type_by_external_id
 
 =head2 _type_by_external_type
 
