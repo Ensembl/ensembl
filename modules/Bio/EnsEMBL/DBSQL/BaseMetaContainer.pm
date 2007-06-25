@@ -103,6 +103,7 @@ sub list_value_by_key {
   while( my $arrRef = $sth->fetchrow_arrayref() ) {
     push( @result, $arrRef->[0] );
   }
+  $sth->finish();
   $self->{'cache'}->{$key} = \@result;
 
   return \@result;

@@ -1493,6 +1493,7 @@ sub _build_exception_cache {
     $hash{$result[0]} ||= [];
     push(@{$hash{$result[0]}}, \@result);
   }
+  $sth->finish();
 
   return;
 }
