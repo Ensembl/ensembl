@@ -844,6 +844,7 @@ sub register_chained {
                                             $start_end);
       }
     }
+    $sth->finish();
   }
 
   # in the one step case, we load the mid ranges in the
@@ -918,6 +919,7 @@ sub register_chained {
       #register this region on the end coord system
       $end_registry->check_and_register($end_seq_region_id, $end_start, $end_end);
     }
+    $sth->finish();
   }
 
   #########
