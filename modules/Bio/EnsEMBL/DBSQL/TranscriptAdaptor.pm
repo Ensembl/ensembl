@@ -1326,7 +1326,7 @@ sub _objs_from_sth {
   Returntype : Listref of Bio::EnsEMBL::Transcript objects
   Exceptions : If feature_type is not of correct type.
   Caller     : general
-  Status     : At Risk
+  Status     : Stable
 
 =cut
 
@@ -1391,7 +1391,7 @@ sub fetch_all_by_exon_supporting_evidence {
   Returntype : Listref of Bio::EnsEMBL::Transcript objects
   Exceptions : If feature_type is not of correct type.
   Caller     : general
-  Status     : At Risk
+  Status     : Stable
 
 =cut
 

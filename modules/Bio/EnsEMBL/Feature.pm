@@ -1051,7 +1051,7 @@ sub get_all_alt_locations {
   Returntype : TRUE if features overlap, FALSE if they don't
   Exceptions : warning if features are on different seq_regions
   Caller     : general
-  Status     : At Risk
+  Status     : Stable
 
 =cut
 

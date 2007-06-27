@@ -221,7 +221,7 @@ sub fetch_by_stable_id {
   Returntype  : listref of Bio::EnsEMBL::Gene
   Exceptions : if we cant get the gene in given coord system
   Caller     : general
-  Status     : At Risk 
+  Status     : Stable
 
 =cut
 
@@ -377,7 +377,7 @@ sub fetch_all_by_domain {
   Returntype : reference to list of genes
   Exceptions : thrown if exon cannot be placed on transcript slice
   Caller     : 
-  Status     : At Risk
+  Status     : Stable
 
 =cut
 
@@ -1525,7 +1525,7 @@ sub cache_gene_seq_mappings{
   Returntype : Listref of Bio::EnsEMBL::Gene
   Exceptions : If feature_type is not of correct type.
   Caller     : general
-  Status     : At Risk
+  Status     : Stable
 
 =cut
 
@@ -1590,7 +1590,7 @@ sub fetch_all_by_exon_supporting_evidence {
   Returntype : Listref of Bio::EnsEMBL::Gene
   Exceptions : If feature_type is not of correct type.
   Caller     : general
-  Status     : At Risk
+  Status     : Stable
 
 =cut
 

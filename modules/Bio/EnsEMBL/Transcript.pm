@@ -358,8 +358,7 @@ sub add_supporting_features {
   Return type : (Empty) listref
   Exceptions  : none
   Caller      : general
-  Status      : At Risk
-              : under development
+  Status      : Stable
 
 =cut
 
