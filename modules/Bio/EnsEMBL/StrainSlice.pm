@@ -217,10 +217,11 @@ sub display_Slice_name{
 
 =head2 seq
 
-  Arg [1]    : none
+  Arg [1]    : int $with_coverage (optional)
   Example    : print "SEQUENCE = ", $strainSlice->seq();
   Description: Returns the sequence of the region represented by this
-               slice formatted as a string in the strain.
+               slice formatted as a string in the strain. If flag with_coverage
+               is set to 1, returns sequence if there is coverage in the region
   Returntype : string
   Exceptions : none
   Caller     : general
@@ -229,6 +230,9 @@ sub display_Slice_name{
 
 sub seq {
   my $self = shift;
+  my $with_coverage = shift;
+
+  $with_coverage ||= 0;
 
   # special case for in-between (insert) coordinates
   return '' if($self->start() == $self->end() + 1);
@@ -250,7 +254,7 @@ sub seq {
     #need to find coverage information if different from reference
     my $indAdaptor = $self->adaptor->db->get_db_adaptor('variation')->get_IndividualAdaptor;
     my $ref_strain = $indAdaptor->get_reference_strain_name;
-    $self->_add_coverage_information($reference_sequence) if ($self->strain_name ne $ref_strain);
+    $self->_add_coverage_information($reference_sequence) if ($with_coverage == 1 && $self->strain_name ne $ref_strain);
     return substr(${$reference_sequence},0,1) if ($self->length == 1); 
     return ${$reference_sequence}; #returns the reference sequence, applying the variationFeatures
   }
@@ -290,7 +294,7 @@ sub _add_coverage_information{
 
 =head2 get_all_AlleleFeatures_Slice
 
-    Args        : nonre
+    Args        : none
     Example     : my $af = $strainSlice->get_all_AlleleFeatures_Slice()
     Description : Gets all AlleleFeatures between the StrainSlice object and the Slice is defined
     ReturnType  : listref of Bio::EnsEMBL::Variation::AlleleFeature
