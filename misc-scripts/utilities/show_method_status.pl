@@ -90,7 +90,7 @@ my $logger = new Bio::EnsEMBL::Utils::Logger(
   -LOGFILE    => $conf->param('logfile'),
   -LOGPATH    => $conf->param('logpath'),
   -LOGAPPEND  => $conf->param('logappend'),
-  -VERBOSE    => $conf->param('verbose'),
+  -LOGLEVEL   => $conf->param('loglevel'),
 );
 
 # initialise log
@@ -164,7 +164,7 @@ sub parse_files {
   if ($result or $conf->param('show_empty')) {
     my $filepath = $File::Find::name;
     $filepath =~ s/$path\///;
-    $logger->log("\n$filepath\n$result");
+    $logger->info("\n$filepath\n$result");
   }
 
 }
