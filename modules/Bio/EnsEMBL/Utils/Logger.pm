@@ -49,8 +49,17 @@ no warnings 'uninitialized';
 use FindBin qw($Bin $Script);
 use POSIX qw(strftime);
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
-use Bio::EnsEMBL::Utils::Exception qw(throw warning);
+use Bio::EnsEMBL::Utils::Exception qw(throw);
+use Bio::EnsEMBL::Utils::ScriptUtils qw(parse_bytes);
 
+my %level_defs = (
+  'error'     => 1,
+  'warn'      => 2,
+  'warning'   => 2,
+  'info'      => 3,
+  'debug'     => 4,
+  'verbose'   => 4,
+);
 
 =head2 new
 
@@ -59,7 +68,7 @@ use Bio::EnsEMBL::Utils::Exception qw(throw warning);
                                         '/path/to/ensembl');
   Description : constructor
   Return type : Bio::EnsEMBL::Utils::ConversionSupport object
-  Exceptions  : thrown if no serverroot is provided
+  Exceptions  : thrown on invalid loglevel
   Caller      : general
 
 =cut
@@ -68,8 +77,8 @@ sub new {
   my $caller = shift;
   my $class = ref($caller) || $caller;
 
-  my ($logfile, $logpath, $logappend, $verbose, $is_component) = rearrange(
-    ['LOGFILE', 'LOGPATH', 'LOGAPPEND', 'VERBOSE', 'IS_COMPONENT'], @_);
+  my ($logfile, $logpath, $logappend, $loglevel, $is_component) = rearrange(
+    ['LOGFILE', 'LOGPATH', 'LOGAPPEND', 'LOGLEVEL', 'IS_COMPONENT'], @_);
   
   my $self = { '_warnings'     => 0, };
   bless ($self, $class);
@@ -78,14 +87,22 @@ sub new {
   $self->logfile($logfile);
   $self->logpath($logpath);
   $self->logappend($logappend);
-  $self->verbose($verbose);
   $self->is_component($is_component);
+
+  $loglevel ||= 'info';
+  if ($loglevel =~ /^\d+$/ and $loglevel > 0 and $loglevel < 5) {
+    $self->{'loglevel'} = $loglevel;
+  } elsif ($level_defs{lc($loglevel)}) {
+    $self->{'loglevel'} = $level_defs{lc($loglevel)};
+  } else {
+    throw('Unknown loglevel: $loglevel.');
+  }
   
   return $self;
 }
 
 
-=head2 log
+=head2 log_generic
 
   Arg[1]      : String $txt - the text to log
   Arg[2]      : Int $indent - indentation level for log message
@@ -100,11 +117,17 @@ sub new {
 
 =cut
 
-sub log {
-  my ($self, $txt, $indent) = @_;
+sub log_generic {
+  my ($self, $txt, $indent, $stamped) = @_;
 
   $indent ||= 0;
   my $fh = $self->log_filehandle;
+
+  # append timestamp and memory usage to log text if requested
+  if ($stamped) {
+    $txt =~ s/(\n*)$//;
+    $txt .= " ".$self->date_and_mem.$1;
+  }
   
   # strip off leading linebreaks so that indenting doesn't break
   $txt =~ s/^(\n*)//;
@@ -118,32 +141,7 @@ sub log {
 }
 
 
-=head2 log_warning
-
-  Arg[1]      : String $txt - the warning text to log
-  Arg[2]      : Int $indent - indentation level for log message
-  Example     : my $log = $support->log_filehandle;
-                $support->log_warning('Log foo.\n', 1);
-  Description : Logs a message via $self->log and increases the warning counter.
-  Return type : true on success
-  Exceptions  : none
-  Caller      : general
-
-=cut
-
-sub log_warning {
-  my ($self, $txt, $indent) = @_;
-  
-  $txt = "WARNING: " . $txt;
-  $self->log($txt, $indent);
-  
-  $self->{'_warnings'}++;
-  
-  return(1);
-}
-
-
-=head2 log_error
+=head2 error
 
   Arg[1]      : String $txt - the error text to log
   Arg[2]      : Int $indent - indentation level for log message
@@ -156,20 +154,59 @@ sub log_warning {
 
 =cut
 
-sub log_error {
-  my ($self, $txt, $indent) = @_;
+sub error {
+  my ($self, $txt, $indent, $stamped) = @_;
+
+  return(0) unless ($self->{'loglevel'} >= 1);
   
   $txt = "ERROR: ".$txt;
-  $self->log($txt, $indent);
+  $self->log_generic($txt, $indent, $stamped);
   
-  $self->log("\nExiting prematurely.\n\n");
-  $self->log("Runtime: ".$self->runtime." ".$self->date_and_mem."\n\n");
+  $self->log_generic("\nExiting prematurely.\n\n");
+  $self->log_generic("Runtime: ".$self->runtime." ".$self->date_and_mem."\n\n");
   
   exit(1);
 }
 
 
-=head2 log_verbose
+=head2 warning
+
+  Arg[1]      : String $txt - the warning text to log
+  Arg[2]      : Int $indent - indentation level for log message
+  Example     : my $log = $support->log_filehandle;
+                $support->log_warning('Log foo.\n', 1);
+  Description : Logs a message via $self->log and increases the warning counter.
+  Return type : true on success
+  Exceptions  : none
+  Caller      : general
+
+=cut
+
+sub warning {
+  my ($self, $txt, $indent, $stamped) = @_;
+  
+  return(0) unless ($self->{'loglevel'} >= 2);
+  
+  $txt = "WARNING: " . $txt;
+  $self->log_generic($txt, $indent, $stamped);
+  
+  $self->{'_warnings'}++;
+  
+  return(1);
+}
+
+
+sub info {
+  my ($self, $txt, $indent, $stamped) = @_;
+
+  return(0) unless ($self->{'loglevel'} >= 3);
+
+  $self->log_generic($txt, $indent, $stamped);
+  return(1);
+}
+
+
+=head2 debug
 
   Arg[1]      : String $txt - the warning text to log
   Arg[2]      : Int $indent - indentation level for log message
@@ -182,38 +219,12 @@ sub log_error {
 
 =cut
 
-sub log_verbose {
-  my ($self, $txt, $indent) = @_;
+sub debug {
+  my ($self, $txt, $indent, $stamped) = @_;
 
-  return(0) unless $self->verbose;
+  return(0) unless ($self->{'loglevel'} >= 4);
 
-  $self->log($txt, $indent);
-  return(1);
-}
-
-
-=head2 log_stamped
-
-  Arg[1]      : String $txt - the warning text to log
-  Arg[2]      : Int $indent - indentation level for log message
-  Example     : my $log = $support->log_filehandle;
-                $support->log_stamped('Log this stamped message.\n', 1);
-  Description : Appends timestamp and memory usage to a message and logs it via
-                $self->log
-  Return type : TRUE on success
-  Exceptions  : none
-  Caller      : general
-
-=cut
-
-sub log_stamped {
-  my ($self, $txt, $indent) = @_;
-  
-  # append timestamp and memory usage to log text
-  $txt =~ s/(\n*)$//;
-  $txt .= " ".$self->date_and_mem.$1;
-  
-  $self->log($txt, $indent);
+  $self->log_generic($txt, $indent, $stamped);
   return(1);
 }
 
@@ -235,7 +246,7 @@ sub log_progress {
     my $log_str = "\r".('  'x$indent)."$curr/$max (".int($curr/$max*100)."\%$mem)";
     $log_str .= "\n" if ($curr == $max);
     
-    $self->log($log_str);
+    $self->info($log_str);
   }
 
 }
@@ -259,7 +270,7 @@ sub log_progressbar {
   my $log_str = "\r".('  'x$indent)."[".('='x$index).(' 'x(20-$index))."] ${percent}\%";
   $log_str .= "\n" if ($curr == $self->{'_progress'}->{$name}->{'max_val'});
 
-  $self->log($log_str);
+  $self->info($log_str);
 
   # increment counters
   $self->{'_progress'}->{$name}->{'index'}++;
@@ -391,12 +402,12 @@ sub init_log {
     my $script = "$hostname:$Bin/$Script";
     my $user = `whoami`;
     chomp $user;
-    $self->log("Script: $script\nDate: ".$self->date."\nUser: $user\n");
+    $self->info("Script: $script\nDate: ".$self->date."\nUser: $user\n");
 
     # print parameters the script is running with
     if ($params) {
-      $self->log("Parameters:\n\n");
-      $self->log($params);
+      $self->info("Parameters:\n\n");
+      $self->info($params);
     }
   }
 
@@ -418,9 +429,9 @@ sub init_log {
 sub finish_log {
   my $self = shift;
   
-  $self->log("\nAll done for $Script.\n");
-  $self->log($self->warnings." warnings. ");
-  $self->log("Runtime: ".$self->runtime." ".$self->date_and_mem."\n\n");
+  $self->info("\nAll done for $Script.\n");
+  $self->info($self->warning_count." warnings. ");
+  $self->info("Runtime: ".$self->runtime." ".$self->date_and_mem."\n\n");
   
   return(1);
 }
@@ -459,6 +470,7 @@ sub date_and_mem {
   my $date = strftime "%Y-%m-%d %T", localtime;
   my $mem = `ps -p $$ -o vsz |tail -1`;
   chomp $mem;
+  $mem = parse_bytes($mem*1000);
   return "[$date, mem $mem]";
 }
 
@@ -496,7 +508,7 @@ sub mem {
 }
 
 
-=head2 warnings
+=head2 warning_count
 
   Example     : print LOG "There were ".$support->warnings." warnings.\n";
   Description : Returns the number of warnings encountered while running the
@@ -507,7 +519,7 @@ sub mem {
 
 =cut
 
-sub warnings {
+sub warning_count {
   my $self = shift;
   return $self->{'_warnings'};
 }
@@ -582,30 +594,36 @@ sub logappend {
 
 =cut
 
-sub verbose {
-  my $self = shift;
-  $self->{'_verbose'} = shift if (@_);
-  return $self->{'_verbose'};
-}
-
-
-=head2 
-
-  Arg[1]      : 
-  Example     : 
-  Description : 
-  Return type : 
-  Exceptions  : 
-  Caller      : 
-  Status      :
-
-=cut
-
 sub is_component {
   my $self = shift;
   $self->{'_is_component'} = shift if (@_);
   return $self->{'_is_component'};
 }
+
+
+#
+# deprecated methods (left here for backwards compatibility
+#
+sub log_error {
+  return $_[0]->error(@_);
+}
+
+sub log_warning {
+  return $_[0]->warning(@_);
+}
+
+sub log {
+  return $_[0]->info(@_);
+}
+
+sub log_verbose {
+  return $_[0]->debug(@_);
+}
+
+sub log_stamped {
+  return $_[0]->log(@_, 1);
+}
+
 
 
 1;
