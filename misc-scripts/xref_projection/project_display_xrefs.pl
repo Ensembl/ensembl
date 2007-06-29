@@ -355,12 +355,24 @@ sub go_xref_exists {
 
   foreach my $xref (@{$to_go_xrefs}) {
 
+#    if ($dbEntry->primary_id() eq "GO:0005515" && $xref->primary_id() eq "GO:0005515") {
+#      print $xref->dbname() . " " .  $xref->primary_id() . " " . join("", @{$xref->get_all_linkage_types()}) . " -> " .  $dbEntry->dbname() . " " . $dbEntry->primary_id() . " " . join("", @{$dbEntry->get_all_linkage_types()}) . "\n";
+#    }
+
     next if (ref($dbEntry) ne "Bio::EnsEMBL::GoXref" || ref($xref) ne "Bio::EnsEMBL::GoXref");
 
     if ($xref->dbname() eq $dbEntry->dbname() &&
 	$xref->primary_id() eq $dbEntry->primary_id() &&
 	join("", @{$xref->get_all_linkage_types()}) eq join("", @{$dbEntry->get_all_linkage_types()})) {
       return 1;
+    }
+
+    # if a GO term with the same accession, but IEA evidence code, exists, also don't project, as this
+    # will lead to duplicates when the projected term has its evidence code changed to IEA after projection
+    if ($xref->primary_id() eq $dbEntry->primary_id()) {
+      foreach my $evidence_code (@{$xref->get_all_linkage_types()}) {
+	return 1 if ($evidence_code eq "IEA");
+      }
     }
 
   }
@@ -384,8 +396,8 @@ sub print_stats {
     $count = count_rows($to_ga, "SELECT COUNT(*) FROM gene g, xref x WHERE g.display_xref_id=x.xref_id AND g.display_xref_id IS NOT NULL AND  (x.info_type != 'PROJECTION' || x.info_type IS NULL)");
     printf("Gene names: unprojected %d (%3.1f\%)" , $count, (100 * $count / $total_genes));
 
-    $count = count_rows($to_ga, "SELECT COUNT(*) FROM gene g, xref x WHERE g.display_xref_id=x.xref_id AND x.info_type='PROJECTION'");
-    printf(" projected %d (%3.1f\%)" , $count, (100 * $count / $total_genes));
+    my $projected = count_rows($to_ga, "SELECT COUNT(*) FROM gene g, xref x WHERE g.display_xref_id=x.xref_id AND x.info_type='PROJECTION'");
+    printf(" projected %d (%3.1f\%)" , $projected, (100 * $projected / $total_genes));
 
     $count = count_rows($to_ga, "SELECT COUNT(*) FROM gene g, xref x, external_db e WHERE g.display_xref_id=x.xref_id AND x.external_db_id=e.external_db_id AND e.db_name IN ('RefSeq_dna_predicted', 'RefSeq_peptide_predicted')");
     printf(" predicted %d (%3.1f\%)" , $count, (100 * $count / $total_genes));
@@ -393,6 +405,11 @@ sub print_stats {
     $count = count_rows($to_ga, "SELECT COUNT(*) FROM gene g WHERE display_xref_id IS NOT NULL");
     printf(" total genes with names %d (%3.1f\%)\n" , $count, (100 * $count / $total_genes));
 
+    if ($projected > 0) {
+      my $one2many = count_rows($to_ga, "SELECT COUNT(*) FROM gene g, xref x WHERE g.display_xref_id=x.xref_id AND x.info_type='PROJECTION' AND x.display_label LIKE '%(% of %)%'");
+      my $one2one = $projected - $one2many;
+      printf("Of the %d projected genes, %d (%3.1f\%) are from one-one mappings, %d (%3.1f\%) from one-many mappings\n", $projected, $one2one, (100 * $one2one/$projected), $one2many, (100 * $one2many / $projected));
+    }
   }
 
   if ($go_terms) {
