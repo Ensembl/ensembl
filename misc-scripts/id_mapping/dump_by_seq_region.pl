@@ -23,8 +23,8 @@ Optional arguments:
   --logfile, --log=FILE               log to FILE (default: *STDOUT)
   --logpath=PATH                      write logfile to PATH (default: .)
   --logappend, --log_append           append to logfile (default: truncate)
+  --loglevel=LEVEL                    define log level (default: INFO)
 
-  -v, --verbose=0|1                   verbose logging (default: false)
   -i, --interactive=0|1               run script interactively (default: true)
   -n, --dry_run, --dry=0|1            don't write results to database
   -h, --help, -?                      print help (this message)
@@ -53,84 +53,41 @@ use warnings;
 no warnings 'uninitialized';
 
 use FindBin qw($Bin);
-use vars qw($SERVERROOT);
-
-BEGIN {
-    $SERVERROOT = "$Bin/../../..";
-    unshift(@INC, "$SERVERROOT/ensembl/modules");
-    unshift(@INC, "$SERVERROOT/bioperl-live");
-}
-
-use Getopt::Long;
-use Pod::Usage;
 use Bio::EnsEMBL::Utils::ConfParser;
 use Bio::EnsEMBL::Utils::Logger;
 use Bio::EnsEMBL::Utils::ScriptUtils qw(dynamic_use);
 
-$| = 1;
-
+# parse configuration and commandline arguments
 my $conf = new Bio::EnsEMBL::Utils::ConfParser(
-  -SERVERROOT => $SERVERROOT,
+  -SERVERROOT => "$Bin/../../..",
+  -DEFAULT_CONF => "$Bin/default.conf"
 );
 
-# parse options
-$conf->param('default_conf', './default.conf');
-$conf->parse_common_options(@_);
-$conf->parse_extra_options(qw(
-  sourcehost|source_host=s
-  sourceport|source_port=n
-  sourceuser|source_user=s
-  sourcepass|source_pass=s
-  sourcedbname|source_dbname=s
-  targethost|target_host=s
-  targetport|target_port=n
-  targetuser|target_user=s
-  targetpass|target_pass=s
-  targetdbname|target_dbname=s
-  dumppath|dump_path=s
-  biotypes=s@
-  dbtype=s
-  slice_name=s
-  cache_impl=s
-));
-$conf->allowed_params(
-  $conf->get_common_params,
-  qw(
-    sourcehost sourceport sourceuser sourcepass sourcedbname
-    targethost targetport targetuser targetpass targetdbname
-    dumppath biotypes
-    dbtype slice_name cache_impl
-  )
+$conf->parse_options(
+  'sourcehost|source_host=s' => 1,
+  'sourceport|source_port=n' => 1,
+  'sourceuser|source_user=s' => 1,
+  'sourcepass|source_pass=s' => 0,
+  'sourcedbname|source_dbname=s' => 1,
+  'targethost|target_host=s' => 1,
+  'targetport|target_port=n' => 1,
+  'targetuser|target_user=s' => 1,
+  'targetpass|target_pass=s' => 0,
+  'targetdbname|target_dbname=s' => 1,
+  'dumppath|dump_path=s' => 1,
+  'biotypes=s@' => 0,
+  'dbtype=s' => 1,
+  'slice_name=s' => 1,
+  'cache_impl=s' => 1,
 );
-
-if ($conf->param('help') or $conf->error) {
-    warn $conf->error if $conf->error;
-    pod2usage(1);
-}
-
-# ask user to confirm parameters to proceed
-$conf->confirm_params;
 
 # get log filehandle and print heading and parameters to logfile
 my $logger = new Bio::EnsEMBL::Utils::Logger(
   -LOGFILE      => $conf->param('logfile') || 'dump_by_seq_region.log',
   -LOGPATH      => $conf->param('logpath'),
-  -LOGAPPEND    => $conf->param('logappend'),
-  -VERBOSE      => $conf->param('verbose'),
-  -IS_COMPONENT => $conf->param('is_component'),
-);
-
-# initialise log
-$logger->init_log($conf->list_all_params);
-
-# check required parameters were set
-$conf->check_required_params(
-  qw(
-    sourcehost sourceport sourceuser sourcedbname
-    targethost targetport targetuser targetdbname
-    dumppath
-    dbtype slice_name cache_impl
-  )
+  -LOGAPPEND    => 1,
+  -LOGLEVEL     => $conf->param('loglevel'),
+  -IS_COMPONENT => 1,
 );
 
 # build cache
@@ -150,11 +107,11 @@ my $size = 0;
 ($i, $size) = $cache->build_cache($dbtype, $slice_name);
 
 # set flag to indicate everything went fine
-my $success_file = $conf->param('logpath')."/lsf/dump_by_seq_region.$dbtype.$slice_name.success";
+my $success_file = $conf->param('logpath')."/lsf_dump_cache/dump_by_seq_region.$dbtype.$slice_name.success";
 open(TMPFILE, '>', $success_file) and close TMPFILE
   or die "Can't open $success_file for writing: $!";
 
 # log success
-$logger->log("Done with $dbtype $slice_name (genes: $i, filesize: $size, runtime: ".$logger->runtime." ".$logger->date_and_mem."\n");
+$logger->info("Done with $dbtype $slice_name (genes: $i, filesize: $size, runtime: ".$logger->runtime." ".$logger->date_and_mem."\n");
 
 

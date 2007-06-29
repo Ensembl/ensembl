@@ -23,8 +23,8 @@ Optional arguments:
   --logfile, --log=FILE               log to FILE (default: *STDOUT)
   --logpath=PATH                      write logfile to PATH (default: .)
   --logappend, --log_append           append to logfile (default: truncate)
+  --loglevel=LEVEL                    define log level (default: INFO)
 
-  -v, --verbose=0|1                   verbose logging (default: false)
   -i, --interactive=0|1               run script interactively (default: true)
   -n, --dry_run, --dry=0|1            don't write results to database
   -h, --help, -?                      print help (this message)
@@ -53,85 +53,47 @@ use warnings;
 no warnings 'uninitialized';
 
 use FindBin qw($Bin);
-use vars qw($SERVERROOT);
-
-BEGIN {
-    $SERVERROOT = "$Bin/../../..";
-    unshift(@INC, "$SERVERROOT/ensembl/modules");
-    unshift(@INC, "$SERVERROOT/bioperl-live");
-}
-
-use Getopt::Long;
-use Pod::Usage;
 use Bio::EnsEMBL::Utils::ConfParser;
 use Bio::EnsEMBL::Utils::Logger;
 use Bio::EnsEMBL::IdMapping::Cache;
 use Bio::EnsEMBL::IdMapping::ExonScoreBuilder;
 use Bio::EnsEMBL::IdMapping::TranscriptScoreBuilder;
+use Bio::EnsEMBL::IdMapping::GeneScoreBuilder;
 
 #use Devel::Size qw(size total_size);
 #use Data::Dumper;
 #$Data::Dumper::Indent = 1;
 
-
-$| = 1;
-
+# parse configuration and commandline arguments
 my $conf = new Bio::EnsEMBL::Utils::ConfParser(
-  -SERVERROOT => $SERVERROOT,
+  -SERVERROOT => "$Bin/../../..",
+  -DEFAULT_CONF => "$Bin/default.conf"
 );
 
-# parse options
-$conf->param('default_conf', './default.conf');
-$conf->parse_common_options(@_);
-$conf->parse_extra_options(qw(
-  mode=s
-  dumppath|dump_path=s
-  chromosomes|chr=s@
-  region=s
-  biotypes=s@
-  min_exon_length|minexonlength=i
-  exonerate_path|exoneratepath=s
-  exonerate_threshold|exoneratethreshold=i
-  exonerate_jobs|exoneratejobs=i
-  exonerate_bytes_per_job|exoneratebytesperjob=i
-));
-$conf->allowed_params(
-  $conf->get_common_params,
-  qw(
-    mode dumppath
-    chromosomes region biotypes
-    min_exon_length
-    exonerate_path exonerate_threshold exonerate_jobs exonerate_byte_per_job
-  )
+$conf->parse_options(
+  'mode=s' => 0,
+  'dumppath|dump_path=s' => 1,
+  'chromosomes|chr=s@' => 0,
+  'region=s' => 0,
+  'biotypes=s@' => 0,
+  'min_exon_length|minexonlength=i' => 0,
+  'exonerate_path|exoneratepath=s' => 1,
+  'exonerate_threshold|exoneratethreshold=f' => 0,
+  'exonerate_jobs|exoneratejobs=i' => 0,
+  'exonerate_bytes_per_job|exoneratebytesperjob=f' => 0,
 );
-
-if ($conf->param('help') or $conf->error) {
-    warn $conf->error if $conf->error;
-    pod2usage(1);
-}
-
-# ask user to confirm parameters to proceed
-$conf->confirm_params;
 
 # get log filehandle and print heading and parameters to logfile
 my $logger = new Bio::EnsEMBL::Utils::Logger(
   -LOGFILE      => $conf->param('logfile'),
   -LOGPATH      => $conf->param('logpath'),
   -LOGAPPEND    => $conf->param('logappend'),
-  -VERBOSE      => $conf->param('verbose'),
+  -LOGLEVEL     => $conf->param('loglevel'),
   -IS_COMPONENT => $conf->param('is_component'),
 );
 
 # initialise log
-$logger->init_log($conf->list_all_params);
-
-# check required parameters were set
-$conf->check_required_params(
-  qw(
-    dumppath
-    exonerate_path
-  )
-);
+$logger->init_log($conf->list_param_values);
 
 
 # instance variables
@@ -179,11 +141,15 @@ sub build_scores {
     -CONF         => $conf,
     -CACHE        => $cache
   );
-  #my $gsb = Bio::EnsEMBL::IdMapping::GeneScoreBuilder->new(
+  my $gsb = Bio::EnsEMBL::IdMapping::GeneScoreBuilder->new(
+    -LOGGER       => $logger,
+    -CONF         => $conf,
+    -CACHE        => $cache
+  );
 
   $exon_scores = $esb->score_exons;
-  $transcript_scores = $tsb->score_transcripts;
-  #$gene_scores = $gsb->score_genes;
+  $transcript_scores = $tsb->score_transcripts($exon_scores);
+  $gene_scores = $gsb->score_genes($transcript_scores);
 }
 
 
@@ -191,7 +157,7 @@ sub build_scores {
 # test memory consumption of cache after merging. used for debugging.
 #
 sub log_cache_stats {
-  $logger->log("\nCache memory usage:\n\n");
+  $logger->info("\nCache memory usage:\n\n");
 
   my $s;
   my %keys;
@@ -211,26 +177,26 @@ sub log_cache_stats {
   my $fmt = "%-50s%12.0f\n";
 
   foreach my $k (sort { $keys{$a} <=> $keys{$b} } keys %keys) {
-    $logger->log(sprintf($fmt, $k, $keys{$k}), 1);
+    $logger->info(sprintf($fmt, $k, $keys{$k}), 1);
   }
-  $logger->log(sprintf($fmt, "total overhead", $s), 1);
-  $logger->log(sprintf($fmt, "data", ($ts-$s)), 1);
-  $logger->log(sprintf($fmt, "total", $ts)."\n", 1);
+  $logger->info(sprintf($fmt, "total overhead", $s), 1);
+  $logger->info(sprintf($fmt, "data", ($ts-$s)), 1);
+  $logger->info(sprintf($fmt, "total", $ts)."\n", 1);
 
   # test
   my $i = 0;
   foreach my $eid (keys %{ $cache->get_by_name('exons_by_id', 'target') }) {
     last if ($i++ > 0);
     
-    $logger->log("\nData object memory usage:\n\n");
+    $logger->info("\nData object memory usage:\n\n");
     
     my $exon = $cache->get_by_key('exons_by_id', 'target', $eid);
     my $s1 = size($exon);
     my $ts1 = total_size($exon);
 
-    $logger->log(sprintf($fmt, "object", $s1), 1);
-    $logger->log(sprintf($fmt, "data", ($ts1-$s1)), 1);
-    $logger->log(sprintf($fmt, "total", $ts1)."\n", 1);
+    $logger->info(sprintf($fmt, "object", $s1), 1);
+    $logger->info(sprintf($fmt, "data", ($ts1-$s1)), 1);
+    $logger->info(sprintf($fmt, "total", $ts1)."\n", 1);
 
     print $exon->stable_id."\n";
     #warn Data::Dumper::Dumper($exon);

@@ -23,8 +23,8 @@ Optional arguments:
   --logfile, --log=FILE               log to FILE (default: *STDOUT)
   --logpath=PATH                      write logfile to PATH (default: .)
   --logappend, --log_append           append to logfile (default: truncate)
+  --loglevel=LEVEL                    define log level (default: INFO)
 
-  -v, --verbose=0|1                   verbose logging (default: false)
   -i, --interactive=0|1               run script interactively (default: true)
   -n, --dry_run, --dry=0|1            don't write results to database
   -h, --help, -?                      print help (this message)
@@ -63,97 +63,59 @@ use warnings;
 no warnings 'uninitialized';
 
 use FindBin qw($Bin);
-use vars qw($SERVERROOT);
-
-BEGIN {
-    $SERVERROOT = "$Bin/../../..";
-    unshift(@INC, "$SERVERROOT/ensembl/modules");
-    unshift(@INC, "$SERVERROOT/bioperl-live");
-}
-
-use Getopt::Long;
-use Pod::Usage;
 use Bio::EnsEMBL::Utils::ConfParser;
 use Bio::EnsEMBL::Utils::Logger;
 use Bio::EnsEMBL::Utils::ScriptUtils qw(dynamic_use);
 
-$| = 1;
-
+# parse configuration and commandline arguments
 my $conf = new Bio::EnsEMBL::Utils::ConfParser(
-  -SERVERROOT => $SERVERROOT,
+  -SERVERROOT => "$Bin/../../..",
+  -DEFAULT_CONF => "$Bin/default.conf"
 );
 
-# parse options
-$conf->param('default_conf', './default.conf');
-$conf->parse_common_options(@_);
-$conf->parse_extra_options(qw(
-  sourcehost|source_host=s
-  sourceport|source_port=n
-  sourceuser|source_user=s
-  sourcepass|source_pass=s
-  sourcedbname|source_dbname=s
-  targethost|target_host=s
-  targetport|target_port=n
-  targetuser|target_user=s
-  targetpass|target_pass=s
-  targetdbname|target_dbname=s
-  dumppath|dump_path=s
-  chromosomes|chr=s@
-  region=s
-  biotypes=s@
-));
-$conf->allowed_params(
-  $conf->get_common_params,
-  qw(
-    sourcehost sourceport sourceuser sourcepass sourcedbname
-    targethost targetport targetuser targetpass targetdbname
-    dumppath
-    chromosomes region biotypes
-  )
+$conf->parse_options(
+  'sourcehost|source_host=s' => 1,
+  'sourceport|source_port=n' => 1,
+  'sourceuser|source_user=s' => 1,
+  'sourcepass|source_pass=s' => 0,
+  'sourcedbname|source_dbname=s' => 1,
+  'targethost|target_host=s' => 1,
+  'targetport|target_port=n' => 1,
+  'targetuser|target_user=s' => 1,
+  'targetpass|target_pass=s' => 0,
+  'targetdbname|target_dbname=s' => 1,
+  'dumppath|dump_path=s' => 1,
+  'chromosomes|chr=s@' => 0,
+  'region=s' => 0,
+  'biotypes=s@' => 0,
 );
-
-if ($conf->param('help') or $conf->error) {
-    warn $conf->error if $conf->error;
-    pod2usage(1);
-}
-
-# ask user to confirm parameters to proceed
-$conf->confirm_params;
 
 # get log filehandle and print heading and parameters to logfile
 my $logger = new Bio::EnsEMBL::Utils::Logger(
   -LOGFILE      => $conf->param('logfile'),
   -LOGPATH      => $conf->param('logpath'),
   -LOGAPPEND    => $conf->param('logappend'),
-  -VERBOSE      => $conf->param('verbose'),
+  -LOGLEVEL     => $conf->param('loglevel'),
   -IS_COMPONENT => $conf->param('is_component'),
 );
 
 # initialise log
-$logger->init_log($conf->list_all_params);
-
-# check required parameters were set
-$conf->check_required_params(
-  qw(
-    sourcehost sourceport sourceuser sourcedbname
-    targethost targetport targetuser targetdbname
-    dumppath
-  )
-);
+$logger->init_log($conf->list_param_values);
 
 my %jobs;
 
 # create empty directory for logs
-my $logpath = ($conf->param('logpath')||$conf->param('dumppath')).'/lsf_dump_cache';
+my $logpath = ($conf->param('logpath') || $conf->param('dumppath')) .
+  '/lsf_dump_cache';
 system("rm -rf $logpath") == 0 or
-  $logger->log_error("Unable to delete lsf log dir $logpath: $!\n");
+  $logger->error("Unable to delete lsf log dir $logpath: $!\n");
 system("mkdir -p $logpath") == 0 or
-  $logger->log_error("Can't create lsf log dir $logpath: $!\n");
+  $logger->error("Can't create lsf log dir $logpath: $!\n");
 
 # submit jobs to lsf
 foreach my $dbtype (qw(source target)) {
   
-  $logger->log_stamped("\n".ucfirst($dbtype)." db...\n");
+  $logger->info("\n".ucfirst($dbtype)." db...\n", 0, 'stamped');
 
   my $schema = $conf->param("${dbtype}schema") || 'latest';
   my $cache_builder = "build_cache_$schema";
@@ -178,22 +140,23 @@ while (keys %jobs) {
     push @types, $type;
   }
 
-  $logger->log("Jobs waiting: ".scalar(keys %jobs)."/$total.\r");
+  $logger->info("Jobs waiting: ".scalar(keys %jobs)."/$total.\r");
 
   sleep(3) if (scalar(keys %jobs));
 }
 
-$logger->log("\n\n");
+$logger->info("\n\n");
 
 # check if anything went wrong
 foreach my $type (@types) {
+  warn "$logpath/dump_by_seq_region.$type.success\n";
   $err++ unless (-e "$logpath/dump_by_seq_region.$type.success");
 }
 
 my $retval = 0;
 if ($err) {
-  $logger->log("At least one of your jobs failed.\n");
-  $logger->log("Please check $logpath and ".$conf->param('logpath')."/dump_by_seq_region.log for errors.\n");
+  $logger->warning("At least one of your jobs failed.\n");
+  $logger->warning("Please check $logpath and ".$conf->param('logpath')."/".$conf->param('logfile')." for errors.\n");
   $retval = 1;
 }
 
@@ -221,7 +184,7 @@ sub build_cache_latest {
   my $dba = $cache->get_DBAdaptor($dbtype);
   my $sa = $dba->get_SliceAdaptor;
   
-  $logger->log("Submitting jobs to lsf...\n", 1);
+  $logger->info("Submitting jobs to lsf...\n", 1);
 
   foreach my $slice_name (@{ $cache->slice_names($dbtype) }) {
     &bsubmit($dbtype, $slice_name, $cache, $logpath);
@@ -236,22 +199,18 @@ sub bsubmit {
   my $cache = shift;
   my $logpath = shift;
   
-  $logger->log("$slice_name\n", 2);
+  $logger->info("$slice_name\n", 2);
   
   my $type = "$dbtype.$slice_name";
 
   unless ($cache->all_cache_files_exist($type)) {
     my $options = $conf->create_commandline_options(
-        -ALLOWED_PARAMS => 1,
-        -REPLACE => {
-            interactive   => 0,
-            is_component  => 1,
-            dbtype        => $dbtype,
-            slice_name    => $slice_name,
-            cache_impl    => ref($cache),
-            log_append    => 1,
-        },
-        -EXCLUDE => [qw(region chromosomes)]
+        interactive   => 0,
+        is_component  => 1,
+        dbtype        => $dbtype,
+        slice_name    => $slice_name,
+        cache_impl    => ref($cache),
+        log_append    => 1,
     );
     
     my $cmd = "bsub ".
@@ -260,7 +219,7 @@ sub bsubmit {
                 "./dump_by_seq_region.pl $options";
 
     system("$cmd") == 0
-      or $logger->log_error("Error running dump_by_seq_region.pl: $!");
+      or $logger->error("Error running dump_by_seq_region.pl: $!");
 
     # mark job as submitted
     $jobs{$type} = 1;
