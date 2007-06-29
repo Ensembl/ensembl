@@ -52,7 +52,7 @@ sub score_genes {
     throw('Need a Bio::EnsEMBL::IdMapping::ScoredMappingMatrix.');
   }
 
-  $self->logger->log_stamped("Starting gene scoring...\n\n");
+  $self->logger->info("Starting gene scoring...\n\n", 0, 'stamped');
 
   # build scores based on transcript scores
   my $matrix = $self->scores_from_transcript_scores($transcript_matrix);
@@ -60,23 +60,23 @@ sub score_genes {
   # log stats of combined matrix
   my $fmt = "%-40s%10.0f\n";
 
-  $self->logger->log("Scoring matrix:\n");
+  $self->logger->info("Scoring matrix:\n");
 
-  $self->logger->log(sprintf($fmt, "Total source genes:",
-    $self->cache->get_count_by_name('genes_by_id', 'source'), 1);
+  $self->logger->info(sprintf($fmt, "Total source genes:",
+    $self->cache->get_count_by_name('genes_by_id', 'source')), 1);
 
-  $self->logger->log(sprintf($fmt, "Scored source genes:",
+  $self->logger->info(sprintf($fmt, "Scored source genes:",
     $matrix->get_source_count), 1);
 
-  $self->logger->log(sprintf($fmt, "Total target genes:",
-    $self->cache->get_count_by_name('genes_by_id', 'target'), 1);
+  $self->logger->info(sprintf($fmt, "Total target genes:",
+    $self->cache->get_count_by_name('genes_by_id', 'target')), 1);
 
-  $self->logger->log(sprintf($fmt, "Scored target genes:",
+  $self->logger->info(sprintf($fmt, "Scored target genes:",
     $matrix->get_target_count), 1);
 
   $self->log_matrix_stats($matrix);
   
-  $self->logger->log("\nDone with transcript scoring.\n\n");
+  $self->logger->info("\nDone with transcript scoring.\n\n");
 
   return $matrix;
 }
@@ -101,19 +101,19 @@ sub scores_from_transcript_scores {
   if (-s $gene_cache) {
     
     # read from file
-    $self->logger->log_stamped("Reading gene scoring matrix from file...\n");
-    $self->logger->log("Cache file $gene_cache.\n", 1);
+    $self->logger->info("Reading gene scoring matrix from file...\n", 0, 'stamped');
+    $self->logger->info("Cache file $gene_cache.\n", 1);
     $matrix->read_from_file;
-    $self->logger->log_stamped("Done.\n");
+    $self->logger->info("Done.\n", 0, 'stamped');
     
   } else {
     
     # build scoring matrix
-    $self->logger->log("No gene scoring matrix found. Will build new one.\n");
+    $self->logger->info("No gene scoring matrix found. Will build new one.\n");
 
-    $self->logger->log_stamped("Transcript scoring...\n");
+    $self->logger->info("Gene scoring...\n", 0, 'stamped');
     $matrix = $self->build_scores($matrix, $transcript_matrix);
-    $self->logger->log_stamped("Done.\n");
+    $self->logger->info("Done.\n", 0, 'stamped');
 
     # write scoring matrix to file
     $matrix->write_to_file;
@@ -144,7 +144,7 @@ sub build_scores {
   $self->flag_matrix_from_transcript_scores($matrix, $transcript_matrix);
 
   # now calculate the actual scores for the genes in the flag matrix
-  $final_matrix = $self->score_matrix_from_flag_matrix($matrix,
+  my $final_matrix = $self->score_matrix_from_flag_matrix($matrix,
     $transcript_matrix);
   
   return $final_matrix;
@@ -161,7 +161,7 @@ sub flag_matrix_from_transcript_scores {
   my $num_genes =
     scalar(keys %{ $self->cache->get_by_name('genes_by_id', 'source') });
   
-  $self->logger->log("Creating flag matrix...\n", 1);
+  $self->logger->info("Creating flag matrix...\n", 1);
 
   # for every transcript scoring matrix entry, make an entry in the gene flag
   # matrix.
@@ -178,7 +178,7 @@ sub flag_matrix_from_transcript_scores {
     $matrix->add_score($source_gene->id, $target_gene->id, 1);
   }
 
-  $self->logger->log("\n\n");
+  $self->logger->info("\n\n");
 
   return $matrix;
 }
@@ -201,7 +201,7 @@ sub score_matrix_from_flag_matrix {
   my $num_genes =
     scalar(keys %{ $self->cache->get_by_name('genes_by_id', 'source') });
   
-  $self->logger->log("Creating score matrix from flag matrix...\n", 1);
+  $self->logger->info("Creating score matrix from flag matrix...\n", 1);
 
   # loop over flag matrix and do proper scoring for each entry
   foreach my $entry (@{ $flag_matrix->get_all_Entries }) {
@@ -230,7 +230,7 @@ sub score_matrix_from_flag_matrix {
     $matrix->add($entry->source, $entry->target, $score);
   }
 
-  $self->logger->log("\n\n");
+  $self->logger->info("\n\n");
 
   return $matrix;
 }
@@ -254,7 +254,7 @@ sub complex_gene_gene_score {
     @{ $target_gene->get_all_Transcripts };
     
   # loop over source transcripts
-  foreach my $source_transcript (@{ $source_gene->get_all_Transcripts ) {
+  foreach my $source_transcript (@{ $source_gene->get_all_Transcripts }) {
 
     # now loop over target transcripts and find the highest scoring target
     # transcript belonging to the target gene
@@ -262,7 +262,7 @@ sub complex_gene_gene_score {
     
     foreach my $target_transcript_id (@{ $transcript_matrix->get_targets_for_source($source_transcript->id) }) {
 
-      next unless (%target_transcripts{$target_transcript_id});
+      next unless ($target_transcripts{$target_transcript_id});
 
       my $score = $transcript_matrix->get_score(
         $source_transcript->id, $target_transcript_id);
@@ -281,7 +281,7 @@ sub complex_gene_gene_score {
     @{ $source_gene->get_all_Transcripts };
     
   # loop over target transcripts
-  foreach my $target_transcript (@{ $target_gene->get_all_Transcripts ) {
+  foreach my $target_transcript (@{ $target_gene->get_all_Transcripts }) {
 
     # now loop over source transcripts and find the highest scoring source
     # transcript belonging to the source gene
@@ -289,7 +289,7 @@ sub complex_gene_gene_score {
     
     foreach my $source_transcript_id (@{ $transcript_matrix->get_sources_for_target($target_transcript->id) }) {
 
-      next unless (%source_transcripts{$source_transcript_id});
+      next unless ($source_transcripts{$source_transcript_id});
 
       my $score = $transcript_matrix->get_score(
         $source_transcript_id, $target_transcript->id);
@@ -306,14 +306,14 @@ sub complex_gene_gene_score {
   # calculate overall score for this gene
   my $gene_score = 0;
 
-  if (($source_gene_length + $target_gene_length) > 0) {
+  if (($source_gene->length + $target_gene->length) > 0) {
 
     $gene_score = ($source_gene_score + $target_gene_score) /
-                  ($source_gene_length + $target_gene_length);
+                  ($source_gene->length + $target_gene->length);
 
   } else {
   
-    $self->logger->log_warning("Combined length of source (".$source_gene->id.") and target (".$target_gene->id.") gene is zero!\n", 1);
+    $self->logger->warning("Combined length of source (".$source_gene->id.") and target (".$target_gene->id.") gene is zero!\n", 1);
   
   }
 
@@ -326,7 +326,7 @@ sub complex_gene_gene_score {
 # This is used when the more elaborate gene representing score does not
 # distinguish very well.
 #
-sub complex_gene_gene_score {
+sub simple_gene_gene_score {
   my $self = shift;
   my $source_gene = shift;
   my $target_gene = shift;
@@ -334,8 +334,8 @@ sub complex_gene_gene_score {
 
   my $gene_score = 0;
 
-  foreach my $source_transcript (@{ $source_gene->get_all_Transcripts ) {
-    foreach my $target_transcript (@{ $target_gene->get_all_Transcripts ) {
+  foreach my $source_transcript (@{ $source_gene->get_all_Transcripts }) {
+    foreach my $target_transcript (@{ $target_gene->get_all_Transcripts }) {
       
       my $score = $transcript_matrix->get_score($source_transcript->id,
         $target_transcript->id);

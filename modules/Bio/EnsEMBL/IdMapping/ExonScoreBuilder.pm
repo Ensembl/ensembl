@@ -52,28 +52,28 @@ use Bio::EnsEMBL::IdMapping::ScoredMappingMatrix;
 sub score_exons {
   my $self = shift;
 
-  $self->logger->log_stamped("Starting exon scoring...\n\n");
+  $self->logger->info("Starting exon scoring...\n\n", 0, 'stamped');
 
   # score using overlaps, then exonerate
   my $matrix = $self->overlap_score;
   my $exonerate_matrix = $self->exonerate_score($matrix);
 
   # log stats before matrix merging
-  $self->logger->log("\nOverlap scoring matrix:\n");
+  $self->logger->info("\nOverlap scoring matrix:\n");
   $self->log_matrix_stats($matrix);
-  $self->logger->log("\nExonerate scoring matrix:\n");
+  $self->logger->info("\nExonerate scoring matrix:\n");
   $self->log_matrix_stats($exonerate_matrix);
   
   # merge matrices
-  $self->logger->log_stamped("\nMerging scoring matrices...\n");
+  $self->logger->info("\nMerging scoring matrices...\n", 0, 'stamped');
   $matrix->merge($exonerate_matrix);
-  $self->logger->log_stamped("Done.\n\n");
+  $self->logger->info("Done.\n\n", 0, 'stamped');
 
   # log stats of combined matrix
-  $self->logger->log("Combined scoring matrix:\n");
+  $self->logger->info("Combined scoring matrix:\n");
   $self->log_matrix_stats($matrix);
   
-  $self->logger->log_stamped("\nDone with exon scoring.\n\n");
+  $self->logger->info("\nDone with exon scoring.\n\n", 0, 'stamped');
 
   return $matrix;
 }
@@ -95,20 +95,20 @@ sub overlap_score {
   if (-s $overlap_cache) {
     
     # read from file
-    $self->logger->log_stamped("Reading exon overlap scoring matrix from file...\n");
-    $self->logger->log("Cache file $overlap_cache.\n", 1);
+    $self->logger->info("Reading exon overlap scoring matrix from file...\n", 0, 'stamped');
+    $self->logger->info("Cache file $overlap_cache.\n", 1);
     $matrix->read_from_file;
-    $self->logger->log_stamped("Done.\n");
+    $self->logger->info("Done.\n", 0, 'stamped');
     
   } else {
     
     # build scoring matrix
-    $self->logger->log("No exon overlap scoring matrix found. Will build new one.\n");
+    $self->logger->info("No exon overlap scoring matrix found. Will build new one.\n");
 
     if ($self->cache->highest_common_cs) {
-      $self->logger->log_stamped("Overlap scoring...\n");
+      $self->logger->info("Overlap scoring...\n", 0, 'stamped');
       $matrix = $self->build_overlap_scores($matrix);
-      $self->logger->log_stamped("Done.\n");
+      $self->logger->info("Done.\n", 0, 'stamped');
     }
 
     # write scoring matrix to file
@@ -142,15 +142,15 @@ sub exonerate_score {
   if (-s $exonerate_cache) {
 
     # read from file
-    $self->logger->log_stamped("Reading exonerate matrix from file...\n");
-    $self->logger->log("Cache file $exonerate_cache.\n", 1);
+    $self->logger->info("Reading exonerate matrix from file...\n", 0, 'stamped');
+    $self->logger->info("Cache file $exonerate_cache.\n", 1);
     $exonerate_matrix->read_from_file;
-    $self->logger->log_stamped("Done.\n");
+    $self->logger->info("Done.\n", 0, 'stamped');
 
   } else {
 
     # build scoring matrix
-    $self->logger->log("No exonerate matrix found. Will build new one.\n");
+    $self->logger->info("No exonerate matrix found. Will build new one.\n");
 
     # dump exons to fasta files
     my $dump_count = $self->dump_filtered_exons($matrix);
@@ -164,7 +164,7 @@ sub exonerate_score {
 
     } else {
 
-      $self->logger->log("No source and/or target exons dumped, so don't need to run exonerate.\n");
+      $self->logger->info("No source and/or target exons dumped, so don't need to run exonerate.\n");
 
     }
     
@@ -193,7 +193,7 @@ sub build_overlap_scores {
   }
 
   # get sorted list of exon containers
-  $self->logger->log_stamped("Reading sorted exons from cache...\n", 1);
+  $self->logger->info("Reading sorted exons from cache...\n", 1, 'stamped');
 
   my @source_exons = $self->sort_exons(
     [values %{ $self->cache->get_by_name('exons_by_id', 'source') }]
@@ -202,7 +202,7 @@ sub build_overlap_scores {
     [values %{ $self->cache->get_by_name('exons_by_id', 'target') }]
   );
 
-  $self->logger->log_stamped("Done.\n", 1);
+  $self->logger->info("Done.\n", 1, 'stamped');
 
   # get first source and target exon container
   my $source_ec = shift(@source_exons);
@@ -211,7 +211,7 @@ sub build_overlap_scores {
   my %source_overlap = ();
   my %target_overlap = ();
   
-  $self->logger->log_stamped("Scoring...\n", 1);
+  $self->logger->info("Scoring...\n", 1, 'stamped');
 
   while ($source_ec or $target_ec) {
 
@@ -243,7 +243,8 @@ sub build_overlap_scores {
           next if (defined($matrix->get_score(
             $source_ec->[0]->id, $target_exon->id)));
 
-          $self->overlap_score($source_ec->[0], $target_exon, $matrix);
+          $self->calc_overlap_score($source_ec->[0], $target_exon,
+            $matrix);
         }
       }
 
@@ -265,7 +266,7 @@ sub build_overlap_scores {
           next if (defined($matrix->get_score(
             $source_exon->id, $target_ec->[0]->id)));
 
-          $self->overlap_score($source_exon, $target_ec->[0], $matrix);
+          $self->calc_overlap_score($source_exon, $target_ec->[0], $matrix);
         }
       }
 
@@ -274,7 +275,7 @@ sub build_overlap_scores {
     }
   }
 
-  $self->logger->log_stamped("Done.\n", 1);
+  $self->logger->info("Done.\n", 1, 'stamped');
 
   return $matrix;
 }
@@ -312,7 +313,7 @@ sub compare_exon_containers {
 # region by exons sizes. 1.0 is full overlap on both exons. Score of at least
 # 0,5 are added to the exon scoring matrix.
 #
-sub overlap_score {
+sub calc_overlap_score {
   my $self = shift;
   my $source_exon = shift;
   my $target_exon = shift;
@@ -361,8 +362,8 @@ sub run_exonerate {
 
   my $source_file = $self->exon_fasta_file('source');
   my $target_file = $self->exon_fasta_file('target');
-  my $source_size = -s $source_size;
-  my $target_size = -s $target_size;
+  my $source_size = -s $source_file;
+  my $target_size = -s $target_file;
 
   # check if fasta files exist and are not empty
   unless ($source_size and $target_size) {
@@ -373,21 +374,21 @@ sub run_exonerate {
   my $logpath = ($self->conf->param('logpath')||$self->cache->dump_path).
     '/lsf_exonerate';
   system("rm -rf $logpath") == 0 or
-    $self->logger->log_error("Unable to delete lsf log dir $logpath: $!\n");
+    $self->logger->error("Unable to delete lsf log dir $logpath: $!\n");
   system("mkdir -p $logpath") == 0 or
-    $self->logger->log_error("Can't create lsf log dir $logpath: $!\n");
+    $self->logger->error("Can't create lsf log dir $logpath: $!\n");
 
   # delete exonerate output from previous runs
   my $dumppath = $self->cache->dump_path;
 
   opendir(DUMPDIR, $dumppath) or
-    $self->logger->log_error("Can't open $dumppath for reading: $!");
+    $self->logger->error("Can't open $dumppath for reading: $!");
 
   while (defined(my $file = readdir(DUMPDIR))) {
     next unless /exonerate_map\.\d+/;
 
     unlink("$dumppath/$file") or
-      $self->logger->log_error("Can't delete $dumppath/$file: $!");
+      $self->logger->error("Can't delete $dumppath/$file: $!");
   }
   
   closedir(DUMPDIR);
@@ -404,29 +405,37 @@ sub run_exonerate {
   #
   # run exonerate jobs using lsf
   #
-  my $exonerate_job = "bsub -J $lsf_name[1-$num_jobs] " .
-    " -o $logpath/exonerate.%I.out -e $logpath/exonerate.%I.err" .
-    " -q normal -m bc_hosts " .
-    " $exonerate_path $source_file $target_file" .
-    " --querychunkid \$LSB_JOBINDEX --querychunktotal $num_jobs" .
-    " --model affine:local -M 900 --showalignment FALSE --subopt no" .
-    " --percent $percent --ryo \"myinfo: \%qi \%ti \%et \%ql \%tl\\n\"" .
-    " | grep '^myinfo:' > $dumppath/exonerate_map.\$LSB_JOBINDEX";
+  local *BSUB;
+  open BSUB, "|bsub -J$lsf_name\[1-$num_jobs\] -o $logpath/exonerate.\%I.out"
+    or $self->logger->error("Could not open open pipe to bsub: $!\n");
 
-  $self->logger->log("Submitting $num_jobs exonerate jobs to lsf:\n\n");
-  $self->logger->log("$exonerate_job\n\n");
+  my $exonerate_job = qq{$exonerate_path } .
+    qq{--query $source_file --target $target_file } .
+    q{--querychunkid $LSB_JOBINDEX } .
+    qq{--querychunktotal $num_jobs } .
+    q{--model affine:local -M 900 --showalignment FALSE --subopt no } .
+    qq{--percent $percent } .
+    q{--ryo 'myinfo: %qi %ti %et %ql %tl\n' } .
+    qq{| grep '^myinfo:' > $dumppath/exonerate_map.\$LSB_JOBINDEX} . "\n";
+  
+  $self->logger->info("Submitting $num_jobs exonerate jobs to lsf:\n\n");
+  $self->logger->info("$exonerate_job\n\n");
 
-  system("$exonerate_job") == 0
-    or $self->logger->log_error("Error submitting exonerate jobs: $!");
+  print BSUB $exonerate_job;
+  $self->logger->error("Error submitting exonerate jobs: $!\n")
+    unless ($? == 0); 
+  close BSUB;
 
   # submit depended job to monitor finishing of exonerate jobs
-  $self->logger->log_stamped("Waiting for exonerate jobs to finish...\n");
+  $self->logger->info("Waiting for exonerate jobs to finish...\n", 0, 'stamped');
 
-  my $depended_job = "bsub -K -w ended($lsf_name) -q small " .
-    " -o $logpath/exonerate_depend.out -e $logpath/exonerate_depend.err" .
-    " /bin/true";
+  my $dependent_job = qq{bsub -K -w "ended($lsf_name)" -q small } .
+    qq{-o $logpath/exonerate_depend.out /bin/true};
 
-  $self->logger->log_stamepd("All exonerate jobs finished.\n");
+  system($dependent_job) == 0 or
+    $self->logger->error("Error submitting dependent job: $!\n");
+
+  $self->logger->info("All exonerate jobs finished.\n", 0, 'stamped');
 
   #
   # check results
@@ -446,18 +455,18 @@ sub run_exonerate {
   }
 
   if (@missing) {
-    $self->logger->log("Couldn't find all exonerate output files. These are missing:\n");
+    $self->logger->info("Couldn't find all exonerate output files. These are missing:\n");
     foreach (@missing) {
-      $self->logger->log("$_\n", 1);
+      $self->logger->info("$_\n", 1);
     }
 
     exit(1);
   }
 
   if (@error) {
-    $self->logger->log("One or more exonerate jobs failed. Check these error files:\n");
+    $self->logger->info("One or more exonerate jobs failed. Check these error files:\n");
     foreach (@error) {
-      $self->logger->log("$_\n", 1);
+      $self->logger->info("$_\n", 1);
     }
 
     exit(1);
@@ -506,7 +515,7 @@ sub write_filtered_exons {
     throw('You must provide a ScoredMappingMatrix.');
   }
 
-  $self->logger->log_stamped("\nDumping $type exons to fasta file...\n");
+  $self->logger->info("\nDumping $type exons to fasta file...\n", 0, 'stamped');
 
   # don't dump exons shorter than this
   my $min_exon_length = $self->conf->param('min_exon_length') || 15;
@@ -552,11 +561,11 @@ sub write_filtered_exons {
 
   # log
   my $fmt = "%-30s%10s\n";
-  my $size = -e $file;
-  $self->logger->log(sprintf($fmt, 'Total exons:', $total_exons), 1);
-  $self->logger->log(sprintf($fmt, 'Dumped exons:', $dumped_exons), 1);
-  $self->logger->log(sprintf($fmt, 'Dump file size:', parse_bytes($size)), 1);
-  $self->logger->log_stamped("Done.\n\n");
+  my $size = -s $file;
+  $self->logger->info(sprintf($fmt, 'Total exons:', $total_exons), 1);
+  $self->logger->info(sprintf($fmt, 'Dumped exons:', $dumped_exons), 1);
+  $self->logger->info(sprintf($fmt, 'Dump file size:', parse_bytes($size)), 1);
+  $self->logger->info("Done.\n\n", 0, 'stamped');
 
   return $dumped_exons;
 }
@@ -571,21 +580,20 @@ sub parse_exonerate_results {
     throw('You must provide a ScoredMappingMatrix.');
   }
 
-  $self->logger->log_stamped("Parsing exonerate results...\n");
+  $self->logger->info("Parsing exonerate results...\n", 0, 'stamped');
 
   # loop over all result files
   my $dumppath = $self->cache->dump_path;
   my $num_files = 0;
+  my $num_lines = 0;
 
   opendir(DUMPDIR, $dumppath) or
-    $self->logger->log_error("Can't open $dumppath for reading: $!");
+    $self->logger->error("Can't open $dumppath for reading: $!");
 
   while (defined(my $file = readdir(DUMPDIR))) {
-    next unless /exonerate_map\.\d+/;
+    next unless $file =~ /exonerate_map\.\d+/;
 
-    # counters
     $num_files++;
-    my $num_lines = 0;
 
     open(F, '<', "$dumppath/$file");
 
@@ -601,7 +609,7 @@ sub parse_exonerate_results {
       my $score = 0;
 
       if ($source_length == 0 or $target_length == 0) {
-        $self->logger->log_warning("Alignment length is 0 for $source_id/$target_id.\n");
+        $self->logger->warning("Alignment length is 0 for $source_id/$target_id.\n");
       } else {
         $score = 2 * $match_length / ($source_length + $target_length);
       }
@@ -615,7 +623,7 @@ sub parse_exonerate_results {
   
   closedir(DUMPDIR);
 
-  $self->logger->log_stamped("Done parsing $num_lines lines from $num_files result files.\n");
+  $self->logger->info("Done parsing $num_lines lines from $num_files result files.\n", 0, 'stamped');
 
   return $exonerate_matrix;
 }

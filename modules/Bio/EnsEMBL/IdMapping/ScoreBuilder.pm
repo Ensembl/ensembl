@@ -111,15 +111,15 @@ sub log_matrix_stats {
   my $fmt1 = "%-40s%10.0f\n";
   my $fmt2 = "%-40s%10.2f\n";
   
-  $self->logger->log(sprintf($fmt1, "Scoring matrix entries:",
+  $self->logger->info(sprintf($fmt1, "Scoring matrix entries:",
     $matrix->get_entry_count), 1);
   
-  $self->logger->log(sprintf($fmt2, "Average score:",
+  $self->logger->info(sprintf($fmt2, "Average score:",
     $matrix->get_average_score), 1);
   
   my ($min, $max) = @{ $matrix->get_min_max_scores };
-  $self->logger->log(sprintf($fmt2, "Min. score:", $min), 1);
-  $self->logger->log(sprintf($fmt2, "Max. score:", $max), 1);
+  $self->logger->info(sprintf($fmt2, "Min. score:", $min), 1);
+  $self->logger->info(sprintf($fmt2, "Max. score:", $max), 1);
 }
 
 

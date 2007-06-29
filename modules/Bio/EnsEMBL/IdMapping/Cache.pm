@@ -47,6 +47,10 @@ use Storable qw(nfreeze thaw nstore retrieve);
 # define available cache names here
 my @cache_names = qw(
     exons_by_id
+    transcripts_by_id
+    transcripts_by_exon_id
+    genes_by_id
+    genes_by_transcript_id
 );
 
 
@@ -101,12 +105,17 @@ sub build_cache {
   my $i = scalar(@$genes);
 
   # find common coord_system
-  $self->find_common_coord_systems;
+  my $common_cs_found = $self->find_common_coord_systems;
 
-  # find out whether native and common coord_system are identical
+  # find out whether native coord_system is a common coord_system.
+  # if so, you don't need to project.
+  # also don't project if no common coord_system present
   my $need_project = 1;
-  my $csid = join(':', $slice->coord_system_name, $slice->coord_system->version);
-  $need_project = 0 if ($self->is_common_cs($csid));
+  my $csid = join(':', $slice->coord_system_name,
+                       $slice->coord_system->version);
+  if ($self->is_common_cs($csid) or !$self->highest_common_cs) {
+    $need_project = 0;
+  }
   
   # build cache
   my $type = "$dbtype.$slice_name";
@@ -163,8 +172,8 @@ sub build_cache_from_genes {
     ]);
 
     # build gene caches
-    #$self->add($type, 'genes_by_id', $gene->dbID, $lgene);
-    #$self->add($type, 'genes_by_stable_id', $gene->stable_id, $lgene);
+    $self->add('genes_by_id', $type, $gene->dbID, $lgene);
+    #$self->add('genes_by_stable_id', $type, $gene->stable_id, $lgene);
     
     # transcripts
     foreach my $tr (@{ $gene->get_all_Transcripts }) {
@@ -180,9 +189,9 @@ sub build_cache_from_genes {
       #$lgene->add_Transcript($ltr);
 
       # build transcript caches
-      $self->add($type, 'transcripts_by_id', $tr->dbID, $ltr);
-      #$self->add($type, 'transcripts_by_stable_id', $tr->stable_id, $ltr);
-      $self->add($type, 'genes_by_transcript_id', $tr->dbID, $lgene);
+      $self->add('transcripts_by_id', $type, $tr->dbID, $ltr);
+      #$self->add('transcripts_by_stable_id', $type, $tr->stable_id, $ltr);
+      $self->add('genes_by_transcript_id', $type, $tr->dbID, $lgene);
 
       # translation (if there is one)
       if (my $tl = $tr->translation) {
@@ -193,9 +202,9 @@ sub build_cache_from_genes {
 
         #$ltr->add_Translation($ltl);
 
-        #$self->add($type, 'translations_by_id', $tl->dbID, $ltl);
-        #$self->add($type, 'translations_by_stable_id', $tl->stable_id, $ltl);
-        #$self->add($type, 'translations_by_transcript_id', $tr->dbID, $ltl);
+        #$self->add('translations_by_id', $type, $tl->dbID, $ltl);
+        #$self->add('translations_by_stable_id', $type, $tl->stable_id, $ltl);
+        #$self->add('translations_by_transcript_id', $type, $tr->dbID, $ltl);
 
         undef $tl;
       }
@@ -233,8 +242,8 @@ sub build_cache_from_genes {
         $ltr->add_Exon($lexon);
 
         $self->add('exons_by_id', $type, $exon->dbID, $lexon);
-        #$self->add($type, 'genes_by_exon_id', $exon->dbID, $lgene);
-        $self->add_list($type, 'transcripts_by_exon_id', $exon->dbID, $ltr);
+        #$self->add('genes_by_exon_id', $type, $exon->dbID, $lgene);
+        $self->add_list('transcripts_by_exon_id', $type, $exon->dbID, $ltr);
 
         undef $exon;
       }
@@ -295,7 +304,7 @@ sub get_by_key {
 
   # transparently load cache from file unless already loaded
   unless ($self->{'instance'}->{'loaded'}->{"$name:$type"}) {
-    $self->load_and_merge($name, $type);
+    $self->read_and_merge($name, $type);
   }
 
   return $self->{'cache'}->{$name}->{$type}->{$key};
@@ -311,7 +320,7 @@ sub get_by_name {
   
   # transparently load cache from file unless already loaded
   unless ($self->{'instance'}->{'loaded'}->{"$name:$type"}) {
-    $self->load_and_merge($name, $type);
+    $self->read_and_merge($name, $type);
   }
 
   return $self->{'cache'}->{$name}->{$type} || {};
@@ -328,7 +337,7 @@ sub get_count_by_name {
   
   # transparently load cache from file unless already loaded
   unless ($self->{'instance'}->{'loaded'}->{"$name:$type"}) {
-    $self->load_and_merge($name, $type);
+    $self->read_and_merge($name, $type);
   }
 
   return scalar(keys %{ $self->get_by_name($name, $type) });
@@ -382,6 +391,7 @@ sub find_common_coord_systems {
     }
   }
   
+  return $found_highest;
 }
 
 
@@ -427,7 +437,7 @@ sub seq_regions_compatible {
   if ($equal/$s_count > 0.5 and $equal/$t_count > 0.5) {
     return(1);
   } else {
-    $self->logger->log("Only $equal seq_regions identical for ".$cs->name." ".$cs->version."\n");
+    $self->logger->info("Only $equal seq_regions identical for ".$cs->name." ".$cs->version."\n");
     return(0);
   }
   
@@ -491,10 +501,10 @@ sub cache_file_exists {
   my $cache_file = $self->cache_file($name, $type);
 
   if (-s $cache_file) {
-    $self->logger->log("Cache file found. Will read from $cache_file.\n", 3);
+    $self->logger->info("Cache file found. Will read from $cache_file.\n", 3);
     return 1;
   } else {
-    $self->logger->log("No cache file found. Will build cache from db.\n", 3);
+    $self->logger->info("No cache file found for $name/$type. Will build cache from db.\n", 3);
     return 0;
   }
 }
@@ -573,7 +583,7 @@ sub write_to_file {
   throw("You must provide a cache type.") unless $type;
 
   unless ($self->{'cache'}->{$name}->{$type}) {
-    $self->logger->log_warning("No features found in $name/$type. Won't write cache file.\n");
+    $self->logger->warning("No features found in $name/$type. Won't write cache file.\n");
     return;
   }
 
@@ -639,13 +649,13 @@ sub read_from_file {
     throw("No valid cache file found at $cache_file.");
   }
 
-  #$self->logger->log_stamped("Reading cache from file...\n");
-  #$self->logger->log("Cache file $cache_file.\n", 1);
+  #$self->logger->info("Reading cache from file...\n", 0, 'stamped');
+  #$self->logger->info("Cache file $cache_file.\n", 1);
   eval { $self->{'cache'}->{$name}->{$type} = retrieve($cache_file); };
   if ($@) {
     throw("Unable to retrieve cache: $@");
   }
-  #$self->logger->log_stamped("Done.\n");
+  #$self->logger->info("Done.\n", 0, 'stamped');
 
   return $self->{'cache'}->{$name}->{$type};
 }
@@ -662,7 +672,7 @@ sub merge {
     
     foreach my $key (keys %{ $self->{'cache'}->{$name}->{$type} || {} }) {
       if (defined $self->{'cache'}->{$name}->{$merged_type}->{$key}) {
-        warning("Duplicate key in cache: $name|$merged_type|$key. Skipping.\n");
+        # warning("Duplicate key in cache: $name|$merged_type|$key. Skipping.\n");
       } else {
         $self->{'cache'}->{$name}->{$merged_type}->{$key} =
           $self->{'cache'}->{$name}->{$type}->{$key};
@@ -715,7 +725,11 @@ sub slice_names {
     
   } elsif ($self->conf->param('region')) {
     # filter by region (specific slice)
-    my $slice = $sa->fetch_by_name($self->conf->param('region'));
+    # don't use SliceAdaptor->fetch_by_name() since this will fail if assembly
+    # versions are different for source and target db
+    my ($cs, $version, $name, $start, $end, $strand) =
+      split(/:/, $self->conf->param('region'));
+    my $slice = $sa->fetch_by_region($cs, $name, $start, $end);
     push @slice_names, $slice->name;
 
   } else {

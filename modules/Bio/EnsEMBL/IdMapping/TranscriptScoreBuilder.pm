@@ -52,7 +52,7 @@ sub score_transcripts {
     throw('Need a Bio::EnsEMBL::IdMapping::ScoredMappingMatrix.');
   }
 
-  $self->logger->log_stamped("Starting transcript scoring...\n\n");
+  $self->logger->info("Starting transcript scoring...\n\n", 0, 'stamped');
 
   # build scores based on exon scores
   my $matrix = $self->scores_from_exon_scores($exon_matrix);
@@ -60,23 +60,23 @@ sub score_transcripts {
   # log stats of combined matrix
   my $fmt = "%-40s%10.0f\n";
 
-  $self->logger->log("Scoring matrix:\n");
+  $self->logger->info("Scoring matrix:\n");
 
-  $self->logger->log(sprintf($fmt, "Total source transcripts:",
-    $self->cache->get_count_by_name('transcripts_by_id', 'source'), 1);
+  $self->logger->info(sprintf($fmt, "Total source transcripts:",
+    $self->cache->get_count_by_name('transcripts_by_id', 'source')), 1);
 
-  $self->logger->log(sprintf($fmt, "Scored source transcripts:",
+  $self->logger->info(sprintf($fmt, "Scored source transcripts:",
     $matrix->get_source_count), 1);
 
-  $self->logger->log(sprintf($fmt, "Total target transcripts:",
-    $self->cache->get_count_by_name('transcripts_by_id', 'target'), 1);
+  $self->logger->info(sprintf($fmt, "Total target transcripts:",
+    $self->cache->get_count_by_name('transcripts_by_id', 'target')), 1);
 
-  $self->logger->log(sprintf($fmt, "Scored target transcripts:",
+  $self->logger->info(sprintf($fmt, "Scored target transcripts:",
     $matrix->get_target_count), 1);
 
   $self->log_matrix_stats($matrix);
   
-  $self->logger->log("\nDone with transcript scoring.\n\n");
+  $self->logger->info("\nDone with transcript scoring.\n\n");
 
   return $matrix;
 }
@@ -101,19 +101,19 @@ sub scores_from_exon_scores {
   if (-s $transcript_cache) {
     
     # read from file
-    $self->logger->log_stamped("Reading transcript scoring matrix from file...\n");
-    $self->logger->log("Cache file $transcript_cache.\n", 1);
+    $self->logger->info("Reading transcript scoring matrix from file...\n", 0, 'stamped');
+    $self->logger->info("Cache file $transcript_cache.\n", 1);
     $matrix->read_from_file;
-    $self->logger->log_stamped("Done.\n");
+    $self->logger->info("Done.\n", 0, 'stamped');
     
   } else {
     
     # build scoring matrix
-    $self->logger->log("No transcript scoring matrix found. Will build new one.\n");
+    $self->logger->info("No transcript scoring matrix found. Will build new one.\n");
 
-    $self->logger->log_stamped("Transcript scoring...\n");
+    $self->logger->info("Transcript scoring...\n", 0, 'stamped');
     $matrix = $self->build_scores($matrix, $exon_matrix);
-    $self->logger->log_stamped("Done.\n");
+    $self->logger->info("Done.\n", 0, 'stamped');
 
     # write scoring matrix to file
     $matrix->write_to_file;
@@ -144,7 +144,8 @@ sub build_scores {
   $self->flag_matrix_from_exon_scores($matrix, $exon_matrix);
 
   # now calculate the actual scores for the transcripts in the flag matrix
-  $final_matrix = $self->score_matrix_from_flag_matrix($matrix, $exon_matrix);
+  my $final_matrix =
+    $self->score_matrix_from_flag_matrix($matrix, $exon_matrix);
   
   return $final_matrix;
 }
@@ -160,7 +161,7 @@ sub flag_matrix_from_exon_scores {
   my $num_transcripts =
     scalar(keys %{ $self->cache->get_by_name('transcripts_by_id', 'source') });
 
-  $self->logger->log("Creating flag matrix...\n", 1);
+  $self->logger->info("Creating flag matrix...\n", 1);
 
   # loop over source transcripts
   foreach my $source_transcript (values %{ $self->cache->get_by_name('transcripts_by_id', 'source') }) {
@@ -169,7 +170,7 @@ sub flag_matrix_from_exon_scores {
     $self->logger->log_progress($num_transcripts, ++$i, 20, 1, 0);
 
     # get all exons for the source transcript
-    foreach my $source_exon (@{ $souce_transcript->get_all_Exons }) {
+    foreach my $source_exon (@{ $source_transcript->get_all_Exons }) {
 
       # get target exons for this source exon from scoring matrix
       foreach my $target_exon_id (@{ $exon_matrix->get_targets_for_source($source_exon->id) }) {
@@ -178,14 +179,14 @@ sub flag_matrix_from_exon_scores {
         foreach my $target_transcript (@{ $self->cache->get_by_key('transcripts_by_exon_id', 'target', $target_exon_id) }) {
           
           # add scoring flag for these two transcripts
-          $matrix->add_score($source_transcript->id, $target_transcript->id, 1)Ã;
+          $matrix->add_score($source_transcript->id, $target_transcript->id, 1);
           
         }
       }
     }
   }
 
-  $self->logger->log("\n\n");
+  $self->logger->info("\n\n");
 
   return $matrix;
 }
@@ -210,7 +211,7 @@ sub score_matrix_from_flag_matrix {
   my $num_transcripts =
     scalar(keys %{ $self->cache->get_by_name('transcripts_by_id', 'source') });
 
-  $self->logger->log("Creating score matrix from flag matrix...\n", 1);
+  $self->logger->info("Creating score matrix from flag matrix...\n", 1);
   
   # loop over source transcripts
   foreach my $source_transcript (values %{ $self->cache->get_by_name('transcripts_by_id', 'source') }) {
@@ -247,7 +248,7 @@ sub score_matrix_from_flag_matrix {
 
         foreach my $target_exon_id (@{ $exon_matrix->get_targets_for_source($source_exon->id) }) {
 
-          next unless (%target_exon{$target_exon_id});
+          next unless ($target_exons{$target_exon_id});
 
           my $score = $exon_matrix->get_score(
             $source_exon->id, $target_exon_id);
@@ -266,7 +267,7 @@ sub score_matrix_from_flag_matrix {
 
         foreach my $source_exon_id (@{ $exon_matrix->get_sources_for_target($target_exon->id) }) {
 
-          next unless (%source_exon{$source_exon_id});
+          next unless ($source_exons{$source_exon_id});
 
           my $score = $exon_matrix->get_score(
             $source_exon_id, $target_exon->id);
@@ -287,7 +288,7 @@ sub score_matrix_from_flag_matrix {
         if (($source_transcript_score > $source_transcript_length) or
             ($target_transcript_score > $target_transcript_length)) {
 
-          $self->logger->log_warning("Score > length for source ($source_target_score <> $source_transcript_length) or target ($target_transcript_score <> $target_transcript_length).\n", 1);
+          $self->logger->warning("Score > length for source ($source_transcript_score <> $source_transcript_length) or target ($target_transcript_score <> $target_transcript_length).\n", 1);
 
         } else {
           
@@ -305,14 +306,14 @@ sub score_matrix_from_flag_matrix {
       
       } else {
       
-        $self->logger->log_warning("Combined length of source (".$source_transcript->id.") and target (".$target_transcript->id.") transcript is zero!\n", 1);
+        $self->logger->warning("Combined length of source (".$source_transcript->id.") and target (".$target_transcript->id.") transcript is zero!\n", 1);
       
       }
 
     }
   }
 
-  $self->logger->log("\n\n");
+  $self->logger->info("\n\n");
 
   return $matrix;
     

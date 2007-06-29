@@ -156,27 +156,32 @@ sub get_all_Entries {
 
 
 sub get_all_sources {
-  return [keys %{ $_->{'source_list'} }];
+  my $self = shift;
+  return [keys %{ $self->{'cache'}->{'source_list'} }];
 }
 
 
 sub get_all_targets {
-  return [keys %{ $_->{'target_list'} }];
+  my $self = shift;
+  return [keys %{ $self->{'cache'}->{'target_list'} }];
 }
 
 
 sub get_entry_count {
-  return scalar(keys %{ $_->{'matrix'} });
+  my $self = shift;
+  return scalar(keys %{ $self->{'cache'}->{'matrix'} });
 }
 
 
 sub get_source_count {
-  return scalar(keys %{ $_->{'source_list'} });
+  my $self = shift;
+  return scalar(keys %{ $self->{'cache'}->{'source_list'} });
 }
 
 
 sub get_target_count {
-  return scalar(keys %{ $_->{'target_list'} });
+  my $self = shift;
+  return scalar(keys %{ $self->{'cache'}->{'target_list'} });
 }
 
 
@@ -228,10 +233,10 @@ sub merge {
 
   my $c = 0;
 
-  foreach my $key (keys %{ $matrix->{'matrix'} }) {
+  foreach my $key (keys %{ $matrix->{'cache'}->{'matrix'} }) {
     if (!defined($self->{'cache'}->{'matrix'}->{$key}) or
-        $self->{'cache'}->{'matrix'}->{$key} < $matrix->{'matrix'}->{$key}) {
-      $self->{'cache'}->{'matrix'}->{$key} = $matrix->{'matrix'}->{$key};
+        $self->{'cache'}->{'matrix'}->{$key} < $matrix->{'cache'}->{'matrix'}->{$key}) {
+      $self->{'cache'}->{'matrix'}->{$key} = $matrix->{'cache'}->{'matrix'}->{$key};
       $c++;
     }
   }
