@@ -121,7 +121,7 @@ use Config::IniFiles;
 
 use vars qw(%registry_register);
 
-my $API_VERSION = 45;
+my $API_VERSION = 46;
 
 
 =head2 load_all
