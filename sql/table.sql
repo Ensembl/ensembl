@@ -683,6 +683,7 @@ CREATE TABLE object_xref (
                                    'regulatory_feature')
                               NOT NULL,
   xref_id                     INT UNSIGNED NOT NULL,
+  linkage_annotation          VARCHAR(255) DEFAULT NULL,
 
   UNIQUE (ensembl_object_type, ensembl_id, xref_id),
   KEY oxref_idx (object_xref_id, xref_id, ensembl_object_type, ensembl_id),
