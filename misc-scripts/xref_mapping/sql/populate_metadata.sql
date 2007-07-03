@@ -293,20 +293,6 @@ INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_d
 VALUES (6,7227,'ftp://ftp.ncbi.nih.gov/repository/UniGene/Drosophila_melanogaster/Dm.seq.uniq.gz ftp://ftp.ncbi.nih.gov/repository/UniGene/Drosophila_melanogaster/Dm.data.gz',now(),now(),'UniGeneParser');
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 ### HUMAN
 
 #        EntrzGene
@@ -1726,6 +1712,35 @@ INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_d
 
 ##      Interpro
 INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser) VALUES (1300, 9685,'ftp://ftp.ebi.ac.uk/pub/databases/interpro/interpro.xml.gz ftp://ftp.ebi.ac.uk/pub/databases/interpro/release_notes.txt', now(), now(), "InterproParser");
+
+# --------------------------------------------------------------------------------
+
+### chimp
+
+##      EntrezGene
+INSERT INTO source_url (source_id, species_id, url, file_modified_date, upload_date, parser)\
+VALUES (1110, 9615, 'ftp://ftp.ncbi.nlm.nih.gov/gene/DATA/gene_info.gz', now(), now(), "EntrezGeneParser");
+
+#        uniprot
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1, 9598, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', '', now(), now(), "UniProtParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1, 9598, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_trembl.dat.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', '', now(), now(), "UniProtParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3000, 9598, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot_varsplic.fasta.gz ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/reldate.txt', '', now(), now(), "UniProtVarSplicParser");
+
+##       refseq
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3, 9598,'ftp://ftp.ncbi.nih.gov/genomes/Pan_troglodytes/protein/protein.gbk.gz ftp://ftp.ncbi.nih.gov/refseq/release/release-notes/RefSeq-release*.txt', '', now(), now(), "RefSeqGPFFParser");
+
+##       refseq
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (4, 9598,'ftp://ftp.ncbi.nih.gov/genomes/Pan_troglodytes/RNA/rna.gbk.gz ftp://ftp.ncbi.nih.gov/refseq/release/release-notes/RefSeq-release*.txt', '', now(), now(), "RefSeqGPFFParser");
+
+##       GO
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1070, 9598,'ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/UNIPROT/gene_association.goa_uniprot.gz http://www.ebi.ac.uk/GOA/SPTR_release.html', '', now(), now(), "GOParser");
+
+##      Interpro
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1300, 9598,'ftp://ftp.ebi.ac.uk/pub/databases/interpro/interpro.xml.gz ftp://ftp.ebi.ac.uk/pub/databases/interpro/release_notes.txt', '', now(), now(), "InterproParser");
+
+##      ncRNAs presently inhouse ( points to file with dumped xrefs from transfer_ncRNA.pl) .
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (4000, 9598,'LOCAL:ncRNA/ncRNA.txt', '', now(), now(), "ncRNAParser");
+
 
 ##------------------------------------------------------------------------------
 ### STICKLEBACK
