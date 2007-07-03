@@ -85,7 +85,7 @@ sub run {
 	$xref=$refseq{$nuc} if defined($refseq{$nuc});
 	if(defined($xref)){
 	  $done = 1;
-	  XrefParser::BaseParser->add_to_xrefs($xref,"RGD:".$rgd,"",$symbol,$name,"",$source_id,$species_id);
+	  XrefParser::BaseParser->add_to_xrefs($xref,$rgd,"",$symbol,$name,"",$source_id,$species_id);
 	  $count++;
 	}
 	else{
@@ -96,7 +96,7 @@ sub run {
 
     if(!$done){
 #      print STDERR "$rgd FAILED for $failed_list\n";
-      $self->add_xref("RGD:".$rgd,"",$symbol,$name,$source_id,$species_id);
+      $self->add_xref($rgd,"",$symbol,$name,$source_id,$species_id);
       $mismatch++;
     }
 
