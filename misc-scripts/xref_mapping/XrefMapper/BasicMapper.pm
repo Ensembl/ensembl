@@ -81,8 +81,26 @@ my %object_xrefs_written;        # Needed in case an xref if matched to one enem
 my %failed_xref_mappings;
 my %updated_source;
 my %XXXxref_id_to_accession;
+my %XXXxref_id_to_source_id;
+my %xref_source_id_to_name;
 
+sub create_source_id_to_source_name{  
+  my($self) = @_;
 
+  my $sql = (<<SQL);
+     SELECT DISTINCT(source.source_id), source.name
+       FROM source, xref 
+         WHERE xref.source_id = source.source_id
+SQL
+  
+  my $sth = $self->xref->dbc->prepare($sql);
+  $sth->execute();
+  my ($source_id, $name, $priority);
+  $sth->bind_columns(\$source_id,\$name);
+  while($sth->fetch()){
+    $xref_source_id_to_name{$source_id} = $name;
+  }
+}
 
 =head2 find_priority_sources
 
@@ -1183,7 +1201,7 @@ sub parse_mappings {
       }
       # note we add on $xref_id_offset to avoid clashes
       $object_succesfully_mapped{query_id} = 1;
-      print OBJECT_XREF "$max_object_xref_id\t$target_id\t$type\t" . ($query_id+$xref_id_offset) . "\n";
+      print OBJECT_XREF "$max_object_xref_id\t$target_id\t$type\t" . ($query_id+$xref_id_offset) . "\t\\N\n";
 
 
       my $identity_string =  join("\t", ($query_identity, $target_identity, $query_start+1, $query_end, $target_start+1, $target_end, $cigar_line, $score, "\\N", $analysis_id)) . "\n";
@@ -1331,18 +1349,20 @@ PSQL
       print "No accession for ".($xref_id+$xref_id_offset)."\t1\n";
     }
     $XXXxref_id_to_accession{$xref_id} = $acc;
+#PROCESS PRIORITY XREFS
     $dep_list = $self->dump_all_dependencies($xref_id, $xref_id_offset, $type, $id);
     push @xref_list, $xref_id;
     if(defined($priority_object_xref{$key})){
       $object_succesfully_mapped{$xref_id} = 1;
-      print OBJECT_XREF_P $object_xref_id."\t".$id."\t".$type."\t".($xref_id+$xref_id_offset)."\n";
+      print OBJECT_XREF_P $object_xref_id."\t".$id."\t".$type."\t".($xref_id+$xref_id_offset)."\t\\N\n";
       if(defined($priority_identity_xref{$key})){
         print IDENTITY_XREF_P $object_xref_id."\t".$priority_identity_xref{$key};
       }
       $object_xref_id++;
       foreach my $dependent (@$dep_list){
 	$object_succesfully_mapped{$xref_id} = 1;
-	print OBJECT_XREF_P $object_xref_id."\t".$id."\t".$type."\t".$dependent."\n";	  
+	print OBJECT_XREF_P $object_xref_id."\t".$id."\t".$type."\t".$dependent.
+	  "\tFROM:".$source_name.":".$acc."\n";	  
 	print IDENTITY_XREF_TEMP $object_xref_id."\t".$primary_identity{$xref_id};
 	$object_xref_id++;	  
       }
@@ -1360,7 +1380,7 @@ PSQL
     if(defined($priority_object_xref{$key})){
       my ($type,$id) = split(/:/,$priority_object_xref{$key});
       $object_succesfully_mapped{$xref_id} = 1;
-      print OBJECT_XREF_P $object_xref_id."\t".$id."\t".$type."\t".($xref_id+$xref_id_offset)."\n";
+      print OBJECT_XREF_P $object_xref_id."\t".$id."\t".$type."\t".($xref_id+$xref_id_offset)."\t\\N\n";
       if(defined($priority_identity_xref{$key})){
         print IDENTITY_XREF_P $object_xref_id."\t".$priority_identity_xref{$key};
       }
@@ -1640,6 +1660,7 @@ PSQL
         #dump out dependencies aswell
 
 	$XXXxref_id_to_accession{$xref_id} = $accession;
+	$XXXxref_id_to_source_id{$xref_id} = $source_id;
 	if(!defined($accession) or $accession eq ""){
 	  print STDERR "No accession for ".($xref_id+$xref_id_offset)."\t2\n";
 	}
@@ -1955,7 +1976,7 @@ XSQL
         $xrefs_written{$xref_id} = 1;
       }
       $object_succesfully_mapped{$xref_id} = 1;
-      print OBJECT_XREF "$object_xref_id\t$ensembl_internal_id\t" . ucfirst($type) . "\t" . ($xref_id+$xref_id_offset) . "\n";
+      print OBJECT_XREF "$object_xref_id\t$ensembl_internal_id\t" . ucfirst($type) . "\t" . ($xref_id+$xref_id_offset) . "\t\\N\n";
       $object_xref_id++;
       $count++;
       
@@ -2013,7 +2034,7 @@ XSQL
             }
             $ensembl_internal_id = $stable_id_to_internal_id{$type}->{$stable_id};
 	    $object_succesfully_mapped{$xref_id} = 1;
-            print OBJECT_XREF "$object_xref_id\t$ensembl_internal_id\t" . ucfirst($type) . "\t" . ($xref_id+$xref_id_offset) . "\n";
+            print OBJECT_XREF "$object_xref_id\t$ensembl_internal_id\t" . ucfirst($type) . "\t" . ($xref_id+$xref_id_offset) . "\t\\N\n";
             if( $source_id == $go_source_id){
               print GO_XREF $object_xref_id . "\t" . $linkage_xref . "\n";
             }
@@ -2129,7 +2150,7 @@ sub dump_interpro {
         unless( $oxref_id = $oxref_cache{$dx_accession.$ensembl_id} ){
           $oxref_id = $oxref_count + 1 + $oxref_id_offset;          
           $oxref_cache{$dx_accession.$ensembl_id} = $oxref_id;
-          printf OBJECT_XREF ( "%s\t%s\t%s\t%s\n",
+          printf OBJECT_XREF ( "%s\t%s\t%s\t%s\t\\N\n",
                                $oxref_id,
                                $ensembl_id,
                                'Translation',
@@ -2301,6 +2322,7 @@ sub dump_core_xrefs {
   my %xref_to_objects = %$xref_ids_hashref;
 
 
+  $self->create_source_id_to_source_name();
   my $dir = $self->core->dir();
 
   open (XREF, ">$dir/xref.txt");
@@ -2375,7 +2397,7 @@ sub dump_core_xrefs {
 	print " No accession for $xref_id, $accession, $label, $source_id\t3\n";
       }	
       $XXXxref_id_to_accession{$xref_id} = $accession;
-
+      $XXXxref_id_to_source_id{$xref_id} = $source_id;
       # make sure label is set to /something/ so that the website displays something
       $label = $accession if (!$label);
 
@@ -2420,11 +2442,17 @@ sub dump_core_xrefs {
 
 
       $label = $accession if (!$label);
-
       my $master_accession = $XXXxref_id_to_accession{$master_xref_id};
-      
+#      my $master_source_name = $xref_source_id_to_name{$source_id};
+      my $master_source_name = $xref_source_id_to_name{$XXXxref_id_to_source_id{$master_xref_id}};
+
+#IANL      need to add source here to be able to add this to object_xref; 
+
       if(!defined($master_accession) or $master_accession eq ""){
 	print "(dump_core_xrefs) No master_acc for master xref $master_xref_id,".($master_xref_id+$xref_id_offset)." for $accession ($xref_id)\n";
+      }
+      if(!defined($master_source_name) or $master_source_name eq ""){
+	print "(dump_core_xrefs) No master_source_name for master xref $master_xref_id,".($master_xref_id+$xref_id_offset)." for $accession ($xref_id)\n";
       }
       
       if (!$xrefs_written{$xref_id}) {
@@ -2485,7 +2513,7 @@ sub dump_core_xrefs {
 	       	    
 	    $object_succesfully_mapped{$xref_id} = 1;
 
-	    print OBJECT_XREF "$object_xref_id\t$object_id\t$type\t" . ($xref_id+$xref_id_offset) . "\n";
+	    print OBJECT_XREF "$object_xref_id\t$object_id\t$type\t" . ($xref_id+$xref_id_offset) . "\tFROM:".$master_source_name.":".$master_accession."\n";
 	    print IDENTITY_XREF $object_xref_id."\t".$primary_identity{$master_xref_id};
 
 	    # Add this mapping to the list - note NON-OFFSET xref_id is used
@@ -2575,14 +2603,17 @@ sub build_transcript_and_gene_display_xrefs {
     print "NO file or zero size file, so not able to load file $file to identity_xref_temp\n";
   }
 
+  #
+  # get a list of sources to use
+  # and also a list of those xrefs to ignore 
+  # where the source name is the key and the value is the string to test for 
+  # 
+  my ($presedence, $ignore) = @{$self->transcript_display_xref_sources()};
 
-
-
-  my @presedence = $self->transcript_display_xref_sources();
   my $i=0;
   my %level;
 
-  foreach my $ord (reverse (@presedence)){
+  foreach my $ord (reverse (@$presedence)){
     $i++;
     if(!defined($external_name_to_id{$ord})){
       print STDERR "unknown external database name *$ord* being used\n";
@@ -2601,11 +2632,12 @@ sub build_transcript_and_gene_display_xrefs {
 
 
   my $sql = (<<ESQL);
-  SELECT ox.xref_id, ix.query_identity, ix.target_identity,  x.external_db_id, x.display_label 
-    FROM (object_xref ox, xref x) 
+  SELECT ox.xref_id, ix.query_identity, ix.target_identity,  x.external_db_id, x.display_label, e.db_name, ox.linkage_annotation
+    FROM (object_xref ox, xref x, external_db e) 
       LEFT JOIN identity_xref ix ON (ox.object_xref_id = ix.object_xref_id) 
-	WHERE x.xref_id = ox.xref_id and ox.ensembl_object_type = ? 
-              and ox.ensembl_id = ? and x.info_type = 'SEQUENCE_MATCH'
+	WHERE x.xref_id = ox.xref_id AND ox.ensembl_object_type = ? 
+              AND ox.ensembl_id = ? AND x.info_type = 'SEQUENCE_MATCH'
+              AND e.external_db_id = x.external_db_id
 ESQL
 
   my $primary_sth = $self->core->dbc->prepare($sql) || die "prepare failed for $sql\n";
@@ -2613,11 +2645,12 @@ ESQL
 
 
   $sql = (<<ZSQL);
-  SELECT ox.xref_id, ix.query_identity, ix.target_identity, x.external_db_id, x.display_label
-    FROM (object_xref ox, xref x) 
+  SELECT ox.xref_id, ix.query_identity, ix.target_identity, x.external_db_id, x.display_label, e.db_name, ox.linkage_annotation
+    FROM (object_xref ox, xref x, external_db e) 
       LEFT JOIN identity_xref_temp ix ON (ox.object_xref_id = ix.object_xref_id) 
 	WHERE x.xref_id = ox.xref_id and ox.ensembl_object_type = ? 
               and ox.ensembl_id = ? and x.info_type = 'DEPENDENT'
+              AND e.external_db_id = x.external_db_id
 ZSQL
  
   my $dependent_sth = $self->core->dbc->prepare($sql) || die "prepare failed for $sql\n";
@@ -2625,10 +2658,11 @@ ZSQL
 
 
   $sql = (<<QSQL);
-  SELECT x.xref_id, x.external_db_id, x.display_label
-   FROM object_xref o, xref x  
+  SELECT  x.xref_id, x.external_db_id, x.display_label, e.db_name, o.linkage_annotation
+   FROM object_xref o, xref x, external_db e 
     WHERE x.xref_id = o.xref_id 
         and o.ensembl_object_type = ? and o.ensembl_id = ? and x.info_type = 'DIRECT'
+              AND e.external_db_id = x.external_db_id
 QSQL
                              
   my $direct_sth = $self->core->dbc->prepare($sql) || die "prepare failed for $sql\n";
@@ -2638,17 +2672,18 @@ QSQL
 # get xrefs connect directly to the gene.
 
   $sql = (<<GSQL);
-  SELECT x.xref_id, x.external_db_id
-   FROM object_xref o, xref x  
+  SELECT x.xref_id, x.external_db_id, e.db_name, o.linkage_annotation
+   FROM object_xref o, xref x, external_db e   
     WHERE x.xref_id = o.xref_id 
         and o.ensembl_object_type = 'Gene' and o.ensembl_id = ?
+              AND e.external_db_id = x.external_db_id
 GSQL
                              
   my $gene_sth = $self->core->dbc->prepare($sql) || die "prepare failed for $sql\n";
 
   my $count =0;
   
-  my ($xref_id, $qid, $tid, $ex_db_id, $display_label);
+  my ($xref_id, $qid, $tid, $ex_db_id, $display_label, $external_db_name, $linkage_annotation);
   
   
 
@@ -2666,7 +2701,7 @@ GSQL
     my @gene_xrefs = ();
     
     $gene_sth->execute($gene_id) || die "execute failed";
-    $gene_sth->bind_columns(\$xref_id, \$ex_db_id);
+    $gene_sth->bind_columns(\$xref_id, \$ex_db_id, \$external_db_name, \$linkage_annotation);
     
     
     my $best_gene_xref  = 0;    # store xref
@@ -2674,6 +2709,12 @@ GSQL
     my $best_gene_percent = 0;  # additoon of precentage ids
 
     while($gene_sth->fetch()){
+      if(defined($$ignore{$external_db_name})){
+	if($linkage_annotation =~ /$$ignore{$external_db_name}/){
+	  print "Ignoring $xref_id as linkage_annotation has ".$$ignore{$external_db_name}." in it. DELETE THIS MESSAGE AFTER TESTING\n";
+	  next;
+	}
+      }
       if($level{$ex_db_id} > $best_gene_level){
 	$best_gene_xref = $xref_id;
 	$best_gene_level = $level{$ex_db_id};
@@ -2700,9 +2741,18 @@ GSQL
 	  }
 	}
 	$primary_sth->execute($type, $ens_id ) || die "execute failed";
-	$primary_sth->bind_columns(\$xref_id, \$qid, \$tid, \$ex_db_id, \$display_label);
+	$primary_sth->bind_columns(\$xref_id, \$qid, \$tid, \$ex_db_id, 
+				   \$display_label, \$external_db_name, 
+				   \$linkage_annotation);
 	while($primary_sth->fetch()){
 	  if($level{$ex_db_id}  and $display_label =~ /\D+/ ){ #correct level and label is not just a number 	
+	    if(defined($$ignore{$external_db_name})){
+	      if($linkage_annotation =~ /$$ignore{$external_db_name}/){
+#		print "Ignoring $xref_id as linkage_annotation has ".$$ignore{$external_db_name}." in it. DELETE THIS MESSAGE AFTER TESTING\n";
+		next;
+	      }
+	    }
+
 	    push @transcript_xrefs, $xref_id;
 	    if(!defined($qid) || !defined($tid)){
 	      print "PRIMARY $xref_id\n";
@@ -2717,25 +2767,40 @@ GSQL
 	}
 	
 	$dependent_sth->execute($type, $ens_id ) || die "execute failed";
-	$dependent_sth->bind_columns(\$xref_id, \$qid, \$tid, \$ex_db_id, \$display_label);
+	$dependent_sth->bind_columns(\$xref_id, \$qid, \$tid, \$ex_db_id, 
+				     \$display_label, \$external_db_name, 
+				     \$linkage_annotation);
 	while($dependent_sth->fetch()){
 	  if($level{$ex_db_id}  and $display_label =~ /\D+/){
-	  push @transcript_xrefs, $xref_id;
-	  if(!defined($qid) || !defined($tid)){
-	    print "DEPENDENT $xref_id\n";
-	    $percent_id{$xref_id} = 0;
-	  }
-	  else{
-	    $percent_id{$xref_id}  = $qid + $tid;
-	  }
-	  $level_db{$xref_id}  = $level{$ex_db_id};	    
-	}  
+	    if(defined($$ignore{$external_db_name})){
+	      if($linkage_annotation =~ /$$ignore{$external_db_name}/){
+		print "Ignoring $xref_id as linkage_annotation has ".$$ignore{$external_db_name}." in it. DELETE THIS MESSAGE AFTER TESTING\n";
+		next;
+	      }
+	    }
+	    push @transcript_xrefs, $xref_id;
+	    if(!defined($qid) || !defined($tid)){
+	      print "DEPENDENT $xref_id\n";
+	      $percent_id{$xref_id} = 0;
+	    }
+	    else{
+	      $percent_id{$xref_id}  = $qid + $tid;
+	    }
+	    $level_db{$xref_id}  = $level{$ex_db_id};	    
+	  }  
 	}
 	
 	$direct_sth->execute($type, $ens_id ) || die "execute failed";
-	$direct_sth->bind_columns(\$xref_id, \$ex_db_id, \$display_label);
+	$direct_sth->bind_columns(\$xref_id, \$ex_db_id, \$display_label,
+				  \$external_db_name, \$linkage_annotation);
 	while($direct_sth->fetch()){
 	  if($level{$ex_db_id}  and $display_label =~ /\D+/){ 	
+	    if(defined($$ignore{$external_db_name})){
+	      if($linkage_annotation =~ /$$ignore{$external_db_name}/){
+		print "Ignoring $xref_id as linkage_annotation has ".$$ignore{$external_db_name}." in it. DELETE THIS MESSAGE AFTER TESTING\n";
+		next;
+	      }
+	    }
 	    push @transcript_xrefs, $xref_id;
 	    $percent_id{$xref_id} = 0;
 	    $level_db{$xref_id}  = $level{$ex_db_id};
@@ -2806,21 +2871,26 @@ GSQL
 
 sub transcript_display_xref_sources {
 
-  return ('RFAM',
-	  'miRBase',
-          'IMGT/GENE_DB',
-	  'HUGO',
-          'SGD',
-	  'MarkerSymbol',
-	  'flybase_symbol',
-	  'Anopheles_symbol',
-	  'Genoscope_annotated_gene',
-	  'Uniprot/SWISSPROT',
-	  'Uniprot/Varsplic',
-	  'RefSeq_peptide',
-	  'RefSeq_dna',
-	  'Uniprot/SPTREMBL',
-	  'EntrezGene');
+  my @list = qw(RFAM
+		miRBase 
+		IMGT/GENE_DB
+		HUGO
+		SGD
+		MarkerSymbol
+		flybase_symbol
+		Anopheles_symbol
+		Genoscope_annotated_gene
+		Uniprot/SWISSPROT
+		Uniprot/Varsplic
+		RefSeq_peptide
+		RefSeq_dna
+		Uniprot/SPTREMBL
+		EntrezGene);
+
+  my %ignore;
+  $ignore{"EntrezGene"}= 'FROM:RefSeq_[pd][en][pa].*_predicted';
+  
+  return [\@list,\%ignore];
 
 }
 
@@ -3894,7 +3964,7 @@ EOS
 	print OBJECT_XREF2 "$max_object_xref_id\t";
 	print OBJECT_XREF2 $transcript_2_translation{$ens_int_id}."\tTranslation\t" ;
 	print OBJECT_XREF2 $good2missed{$goodxref};
-	print OBJECT_XREF2 "\n";	
+	print OBJECT_XREF2 "\t\\N\n";	
 	
 	
 	push @new_list, $goodxref;
@@ -3926,7 +3996,7 @@ EOS
 	    print OBJECT_XREF2 "$max_object_xref_id\t";
 	    print OBJECT_XREF2 $transcript_2_translation{$ens_int_id}."\tTranslation\t" ;
 	    print OBJECT_XREF2 $xref_id+$xref_id_offset;
-	    print OBJECT_XREF2 "\n";	
+	    print OBJECT_XREF2 "\t\\N\n";	
 	    
 	    push @new_list, $goodxref;
 	    push @{$identity_master_xref_to_object_xref{$goodxref}}, $max_object_xref_id;
@@ -3941,7 +4011,7 @@ EOS
 	print OBJECT_XREF2 "$max_object_xref_id\t";
 	print OBJECT_XREF2 $translation_2_transcript{$ens_int_id}."\tTranscript\t" ;
 	print OBJECT_XREF2 $good2missed{$goodxref};
-	print OBJECT_XREF2 "\n";	
+	print OBJECT_XREF2 "\t\\N\n";	
 	
 	push @new_list, $goodxref;
 	push @{$identity_master_xref_to_object_xref{$goodxref}}, $max_object_xref_id;
@@ -3970,7 +4040,7 @@ EOS
 	    print OBJECT_XREF2 "$max_object_xref_id\t";
 	    print OBJECT_XREF2 $translation_2_transcript{$ens_int_id}."\tTranscript\t" ;
 	    print OBJECT_XREF2 $xref_id+$xref_id_offset;
-	    print OBJECT_XREF2 "\n";	
+	    print OBJECT_XREF2 "\\N\n";	
 	    
 	    push @new_list, $good2missed{$goodxref};
 	    push @{$identity_master_xref_to_object_xref{$goodxref}}, $max_object_xref_id;
@@ -4223,6 +4293,7 @@ PSQL
 	    print "No accession for ".($xref_id+$xref_id_offset)."\t4\n";
 	  }
 	  $XXXxref_id_to_accession{$xref_id} = $accession;	
+	  $XXXxref_id_to_source_id{$xref_id} = $source_id;
 	  $self->dump_all_dependencies($xref_id, $xref_id_offset);
 	}
 

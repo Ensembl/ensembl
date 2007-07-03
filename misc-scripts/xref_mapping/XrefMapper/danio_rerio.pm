@@ -14,16 +14,20 @@ sub get_set_lists {
 
 sub transcript_display_xref_sources {
 
-  return ('ZFIN_ID',
-	  'MarkerSymbol',
-	  'flybase_symbol',
-	  'Anopheles_symbol',
-	  'Genoscope_annotated_gene',
-	  'Uniprot/SWISSPROT',
-	  'RefSeq_peptide',
-	  'RefSeq_dna',
-	  'Uniprot/SPTREMBL',
-	  'EntrezGene');
+  my @list = qw(ZFIN_ID
+		MarkerSymbol
+		flybase_symbol
+		Anopheles_symbol
+		Genoscope_annotated_gene
+		Uniprot/SWISSPROT
+		RefSeq_peptide
+		RefSeq_dna
+		Uniprot/SPTREMBL
+		EntrezGene);
+
+  my %ignore;
+  
+  return [\@list,\%ignore];
 
 }
 

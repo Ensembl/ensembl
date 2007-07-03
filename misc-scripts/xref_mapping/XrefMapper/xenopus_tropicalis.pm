@@ -14,17 +14,22 @@ sub get_set_lists{
 
 sub transcript_display_xref_sources {
 
-  return ('Xenopus_Jamboree',
-	  'MarkerSymbol',
-	  'flybase_symbol',
-	  'Anopheles_symbol',
-	  'Genoscope_annotated_gene',
-	  'Uniprot/SWISSPROT',
-	  'RefSeq_peptide',
-	  'RefSeq_dna',
-	  'Uniprot/SPTREMBL',
-	  'EntrezGene');
+  my @list = qw(Xenopus_Jamboree
+		MarkerSymbol
+		flybase_symbol
+		Anopheles_symbol
+		Genoscope_annotated_gene
+		Uniprot/SWISSPROT
+		RefSeq_peptide
+		RefSeq_dna
+		Uniprot/SPTREMBL
+		EntrezGene);
 
+
+  my %ignore;
+  $ignore{"EntrezGene"}= 'FROM:RefSeq_[pd][en][pa].*_predicted';
+  
+  return [\@list,\%ignore];
 }
 
 1;

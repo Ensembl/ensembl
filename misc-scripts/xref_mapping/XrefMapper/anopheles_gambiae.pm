@@ -31,16 +31,16 @@ sub gene_description_sources {
 
 sub transcript_display_xref_sources {
 
-  return ('RFAM',
-	  'miRBase',
-	  'Anopheles_symbol',
-	  'Uniprot/SWISSPROT',
-	  'Uniprot/Varsplic',
-	  #'RefSeq_peptide',
-	  #'RefSeq_dna',
-	  'Uniprot/SPTREMBL',
-	  #'EntrezGene'
-           );
+  my @list = qw(RFAM
+		miRBase
+		Anopheles_symbol
+		Uniprot/SWISSPROT
+		Uniprot/Varsplic
+		Uniprot/SPTREMBL);
+
+  my %ignore;
+  return [\@list,\%ignore];
+
 }
 
 # regexps to match any descriptons we want to filter out
