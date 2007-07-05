@@ -3,7 +3,7 @@ use warnings;
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 58;
+	plan tests => 59;
 }
 
 use Bio::EnsEMBL::Test::MultiTestDB;
@@ -99,15 +99,6 @@ my $xref = Bio::EnsEMBL::DBEntry->new
 my %goxref = %$xref;
 my %identxref = %$xref;
 
-my $goref = Bio::EnsEMBL::GoXref->new
-  (
-   -primary_id => "1",
-   -dbname => "GO",
-   -release => "1",
-   -display_id => "Ens related GO"
-   );
-$goref->add_linkage_type( "IC" );
-
 my $ident_xref = Bio::EnsEMBL::IdentityXref->new
   (
    -primary_id => "1",
@@ -118,6 +109,16 @@ my $ident_xref = Bio::EnsEMBL::IdentityXref->new
 
 $ident_xref->query_identity( 100 );
 $ident_xref->target_identity( 95 );
+
+my $goref = Bio::EnsEMBL::GoXref->new
+  (
+   -primary_id => "1",
+   -dbname => "GO",
+   -release => "1",
+   -display_id => "Ens related GO"
+   );
+$goref->add_linkage_type( "IC" ); # Linkage type on own
+$goref->add_linkage_type( "ISS", $goref ); # Linkage type with source xref
 
 
 $multi->hide( "core", "object_xref", "xref", "identity_xref", "go_xref" );
@@ -130,9 +131,9 @@ my $tl = $tr->translation();
 my $oxr_count = count_rows($db, 'object_xref');
 $dbEntryAdaptor->store( $xref, $tr->dbID, "Transcript" );
 $oxr_count = count_rows($db, 'object_xref');
-$dbEntryAdaptor->store( $goref, $tl->dbID, "Translation" );
-$oxr_count = count_rows($db, 'object_xref');
 $dbEntryAdaptor->store( $ident_xref, $tl->dbID, "Translation" );
+$oxr_count = count_rows($db, 'object_xref');
+$dbEntryAdaptor->store( $goref, $tl->dbID, "Translation" );
 $oxr_count = count_rows($db, 'object_xref');
 $dbEntryAdaptor->store( $ident_xref, $tr->dbID, "Transcript" );
 my ($go_count );
@@ -158,7 +159,7 @@ ok( $xref_count == 3 );
 #
 $go_count = count_rows($db, 'go_xref');
 debug( "Number of go_xrefs = $go_count" );
-ok( $go_count == 1 );
+ok( $go_count == 2 );
 
 #
 # 9 identity xrefs right
@@ -187,11 +188,15 @@ my $xrefs = $dbEntryAdaptor->fetch_all_by_Translation($translation);
 my @syns = grep {$_ eq 'syn1' || $_ eq 'syn2'} @{$xref->get_all_synonyms};
 ok(@syns == 2);
 
-#and also 2 evidence tags
+#and also 2 evidence tags, and one source_xref
 if($xref && $xref->isa('Bio::EnsEMBL::GoXref')) {
   my @evtags = 
     grep {$_ eq 'IEA' || $_ eq 'IC'} @{$xref->get_all_linkage_types()};
   ok(@evtags == 2);
+  my @source_xrefs = 
+    grep {UNIVERSAL::isa($_->[1],'Bio::EnsEMBL::DBEntry')}
+	@{$xref->get_all_linkage_info};
+  ok(@source_xrefs == 1);
 } else {
   ok(0);
 }
@@ -342,13 +347,12 @@ $multi->restore('core', 'object_xref', 'identity_xref', 'go_xref');
 
 # fetch_all_by Gene Transcript Translation
 
-# transclation info type
+# translation info type
 
 $translation = $ta->fetch_by_dbID(21737)->translation;
 $dbes = $translation->get_all_DBEntries(undef,"MISC");
 
 ok(@$dbes == 19); # test 44
-
 
 $dbes = $translation->get_all_DBLinks(undef,"MISC");
 ok(@$dbes == 19);

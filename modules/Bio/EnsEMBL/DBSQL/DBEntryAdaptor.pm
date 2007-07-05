@@ -422,11 +422,19 @@ sub store {
       $sth = $self->prepare( "
              INSERT ignore INTO go_xref
                 SET object_xref_id = ?,
+                    source_xref_id = ?,
                     linkage_type = ? " );
-      foreach my $lt (@{$exObj->get_all_linkage_types()}) {
+      foreach my $info (@{$exObj->get_all_linkage_info()}) {
+	  my( $lt, $sourceXref ) = @{$info};
+	  my $sourceXid = undef;
+	  if( $sourceXref ){ 
+	      $sourceXref->is_stored($self->dbc) || $sourceXref->store;
+	      $sourceXid = $sourceXref->dbID;
+	  }
 	  $sth->bind_param(1,$Xidt,SQL_INTEGER);
-	  $sth->bind_param(2,$lt,SQL_VARCHAR);
-        $sth->execute();
+	  $sth->bind_param(2,$sourceXid,SQL_INTEGER);
+	  $sth->bind_param(3,$lt,SQL_VARCHAR);
+	  $sth->execute();
       }
     }
   } 
@@ -701,7 +709,8 @@ sub _fetch_by_object_type {
   my $sql = (<<SSQL);
     SELECT xref.xref_id, xref.dbprimary_acc, xref.display_label, xref.version,
            xref.description,
-           exDB.dbprimary_acc_linkable, exDB.display_label_linkable, exDB.priority,
+           exDB.dbprimary_acc_linkable, exDB.display_label_linkable, 
+           exDB.priority,
            exDB.db_name, exDB.db_release, exDB.status, exDB.db_display_name,
            oxr.object_xref_id,
            es.synonym, 
@@ -709,7 +718,7 @@ sub _fetch_by_object_type {
            idt.hit_end, idt.translation_start, idt.translation_end,
            idt.cigar_line, idt.score, idt.evalue, idt.analysis_id,
            gx.linkage_type,
-           xref.info_type, xref.info_text, exDB.type
+           xref.info_type, xref.info_text, exDB.type, gx.source_xref_id
     FROM   (xref xref, external_db exDB, object_xref oxr)
     LEFT JOIN external_synonym es on es.xref_id = xref.xref_id 
     LEFT JOIN identity_xref idt on idt.object_xref_id = oxr.object_xref_id
@@ -736,8 +745,8 @@ SSQL
          $synonym, $queryid, $targetid, $query_start, $query_end,
          $translation_start, $translation_end, $cigar_line,
          $score, $evalue, $analysis_id, $linkage_type,
-	 $info_type, $info_text, $type) = @$arrRef;
-
+	 $info_type, $info_text, $type, $source_xref_id ) = @$arrRef;
+    my $linkage_key = ($linkage_type||'') . ($source_xref_id||'');
     my %obj_hash = (
 		    'adaptor'    => $self,
 		    'dbID'       => $refID,
@@ -749,7 +758,6 @@ SSQL
 		    'info_text'  => $info_text,
 		    'type'       => $type,
 		    'dbname'     => $dbname );
-
 
     # using an outer join on the synonyms as well as on identity_xref, we
     # now have to filter out the duplicates (see v.1.18 for
@@ -776,8 +784,11 @@ SSQL
 
       } elsif( defined $linkage_type && $linkage_type ne "") {
         $exDB = Bio::EnsEMBL::GoXref->new_fast( \%obj_hash );
-        $exDB->add_linkage_type( $linkage_type );
-        $linkage_types{$refID}->{$linkage_type} = 1;
+        my $source_xref = $source_xref_id 
+            ? $self->fetch_by_dbID($source_xref_id) 
+            : undef;
+        $exDB->add_linkage_type( $linkage_type, $source_xref || () );
+        $linkage_types{$refID}->{$linkage_key} = 1;
       } else {
         $exDB = Bio::EnsEMBL::DBEntry->new_fast(\%obj_hash);
       }
@@ -803,9 +814,14 @@ SSQL
       $synonyms{$refID}->{$synonym} = 1;
     }
 
-    if(defined($linkage_type) && $linkage_type ne "" && !$linkage_types{$refID}->{$linkage_type}) {
-      $seen{$refID}->add_linkage_type($linkage_type);
-      $linkage_types{$refID}->{$linkage_type} = 1;
+    if( defined($linkage_type) 
+        && $linkage_type ne "" 
+        && !$linkage_types{$refID}->{$linkage_key}) {
+      my $source_xref = $source_xref_id 
+          ? $self->fetch_by_dbID($source_xref_id) 
+          : undef;
+      $seen{$refID}->add_linkage_type($linkage_type, $source_xref||());
+      $linkage_types{$refID}->{$linkage_key} = 1;
     }
   }
 

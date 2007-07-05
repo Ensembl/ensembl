@@ -67,26 +67,53 @@ use strict;
 
 =head2 add_linkage_type
 
-  Arg [1]    : (optional) string $value
+  Arg [1]    : string $value
     allowed are "IC", "IDA", "IEA", "IEP", "IGI", "IMP", "IPI", "ISS",
                 "NAS", "NS", "TAS", "NR"
+  Arg [2]    : (optional) Bio::EnsEMBL::DBEntry $source
   Example    : $go_xref->add_linkage_type('IGI');
-  Description: Associates a linkage type with this go_xref
-  Returntype : string
-  Exceptions : thrown if $linkage_type argument not supplied
+  Description: Associates a linkage type and source DBEntry with this go_xref
+  Returntype : integer; number of linkages
+  Exceptions : thrown if $linkage_type argument not supplied or
+               the optional DBEntry is not a DBEntry object.
   Caller     : DBEntryAdaptor
-  Status     : Stable
+  Status     : Experimantal
 
 =cut
 
 sub add_linkage_type {
   my $self = shift;
   my $lt = shift;
-
+  my $source_dbentry = shift || undef();
+  
   $self->throw("linkage type argument required") if(!$lt);
+  $self->throw("source_xref must be a Bio::EnsEMBL::DBEntry")
+      if($source_dbentry 
+	 and ! UNIVERSAL::isa($source_dbentry,'Bio::EnsEMBL::DBEntry'));
 
   $self->{'linkage_types'} ||= [];
-  push @{$self->{'linkage_types'}}, $lt;
+  push @{$self->{'linkage_types'}}, [$lt, ( $source_dbentry || () )];
+}
+
+
+=head2 get_all_linkage_info
+
+  Arg [1]    : none
+  Example    : foreach (@{$gox->get_all_linkage_info})
+                { print "evidence: $_->[0] via $_->[1]->display_id" }
+  Description: Retrieves a list of evidence-tag/source-DBEntry pairs
+               associated with this go_xref
+  Returntype : listref of listrefs
+  Exceptions : none
+  Caller     : geneview? general.
+  Status     : Experimental
+
+=cut
+
+sub get_all_linkage_info {
+  my $self = shift;
+
+  return $self->{'linkage_types'} || [];
 }
 
 
@@ -94,7 +121,8 @@ sub add_linkage_type {
 
   Arg [1]    : none
   Example    : foreach my $et (@{$goxr->get_all_linkage_types}){ print "$et ";}
-  Description: Retrieves a list of evidence tags associated with this go_xref
+  Description: Retrieves a unique list of evidence tags associated with 
+               this go_xref
   Returntype : none
   Exceptions : none
   Caller     : geneview? general
@@ -104,8 +132,9 @@ sub add_linkage_type {
 
 sub get_all_linkage_types {
   my $self = shift;
-
-  return $self->{'linkage_types'} || [];
+  my %seen;
+  return[ grep{!$seen{$_}++} map{$_->[0]} @{$self->{'linkage_types'}} ];
+  #return [ map{ $_->[0]} @{ $self->{'linkage_types'} || [] } ];
 }
 
 
