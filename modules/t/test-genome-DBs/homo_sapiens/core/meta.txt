@@ -1,4 +1,4 @@
-1	schema_version	45
+1	schema_version	46
 2	assembly.default	NCBI34
 33	species.classification	Chordata
 32	species.classification	Vertebrata
