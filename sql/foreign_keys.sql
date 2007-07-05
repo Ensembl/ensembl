@@ -55,6 +55,7 @@ ALTER table gene_archive ADD FOREIGN KEY (mapping_session_id) REFERENCES mapping
 ALTER table gene_stable_id ADD FOREIGN KEY (gene_id) REFERENCES gene(gene_id);
 
 ALTER table go_xref ADD FOREIGN KEY (object_xref_id) REFERENCES object_xref(object_xref_id);
+ALTER table go_xref ADD FOREIGN KEY (source_xref_id) REFERENCES xref(xref_id);
 
 ALTER table identity_xref ADD FOREIGN KEY (analysis_id) REFERENCES analysis(analysis_id);
 ALTER table identity_xref ADD FOREIGN KEY (object_xref_id) REFERENCES object_xref(object_xref_id);
