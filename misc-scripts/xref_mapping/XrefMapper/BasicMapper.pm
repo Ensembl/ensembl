@@ -1219,7 +1219,7 @@ sub parse_mappings {
       # note the NON-OFFSET xref_id is stored here as the values are used in
       # a query against the original xref database
       $primary_xref_ids{$query_id}{$target_id."|".$type} = $target_id."|".$type;
-      $primary_identity{$query_id} = $identity_string;      
+      $primary_identity{$query_id}{$target_id."|".$type} = $identity_string;      
     }
 
     close(FILE);
@@ -1363,7 +1363,7 @@ PSQL
 	$object_succesfully_mapped{$xref_id} = 1;
 	print OBJECT_XREF_P $object_xref_id."\t".$id."\t".$type."\t".$dependent.
 	  "\tFROM:".$source_name.":".$acc."\n";	  
-	print IDENTITY_XREF_TEMP $object_xref_id."\t".$primary_identity{$xref_id};
+	print IDENTITY_XREF_TEMP $object_xref_id."\t".$primary_identity{$xref_id}{$id."|".$type};
 	$object_xref_id++;	  
       }
     } 
@@ -2514,7 +2514,7 @@ sub dump_core_xrefs {
 	    $object_succesfully_mapped{$xref_id} = 1;
 
 	    print OBJECT_XREF "$object_xref_id\t$object_id\t$type\t" . ($xref_id+$xref_id_offset) . "\tFROM:".$master_source_name.":".$master_accession."\n";
-	    print IDENTITY_XREF $object_xref_id."\t".$primary_identity{$master_xref_id};
+	    print IDENTITY_XREF $object_xref_id."\t".$primary_identity{$master_xref_id}{$object_id."|".$type};
 
 	    # Add this mapping to the list - note NON-OFFSET xref_id is used
 	    my $key = $type . "|" . $object_id;
@@ -2711,7 +2711,7 @@ GSQL
     while($gene_sth->fetch()){
       if(defined($$ignore{$external_db_name})){
 	if($linkage_annotation =~ /$$ignore{$external_db_name}/){
-	  print "Ignoring $xref_id as linkage_annotation has ".$$ignore{$external_db_name}." in it. DELETE THIS MESSAGE AFTER TESTING\n";
+#	  print "Ignoring $xref_id as linkage_annotation has ".$$ignore{$external_db_name}." in it. DELETE THIS MESSAGE AFTER TESTING\n";
 	  next;
 	}
       }
@@ -2774,7 +2774,7 @@ GSQL
 	  if($level{$ex_db_id}  and $display_label =~ /\D+/){
 	    if(defined($$ignore{$external_db_name})){
 	      if($linkage_annotation =~ /$$ignore{$external_db_name}/){
-		print "Ignoring $xref_id as linkage_annotation has ".$$ignore{$external_db_name}." in it. DELETE THIS MESSAGE AFTER TESTING\n";
+#		print "Ignoring $xref_id as linkage_annotation has ".$$ignore{$external_db_name}." in it. DELETE THIS MESSAGE AFTER TESTING\n";
 		next;
 	      }
 	    }
@@ -2797,7 +2797,7 @@ GSQL
 	  if($level{$ex_db_id}  and $display_label =~ /\D+/){ 	
 	    if(defined($$ignore{$external_db_name})){
 	      if($linkage_annotation =~ /$$ignore{$external_db_name}/){
-		print "Ignoring $xref_id as linkage_annotation has ".$$ignore{$external_db_name}." in it. DELETE THIS MESSAGE AFTER TESTING\n";
+#		print "Ignoring $xref_id as linkage_annotation has ".$$ignore{$external_db_name}." in it. DELETE THIS MESSAGE AFTER TESTING\n";
 		next;
 	      }
 	    }
@@ -4663,7 +4663,254 @@ SQL
 }
 
 
+sub get_list_of_sources_for_one_max_per_transcript{
+  my $self = shift;
+  
+  my @list;
+
+  return @list;
+}
 
 
+sub check_special_sources(){
+  my $self = shift;
+
+  #  1) get the external_db_id;
+  my @list = $self->get_list_of_sources_for_one_max_per_transcript();
+
+  my $ex_db_sql = 'SELECT e.external_db_id, e.db_name from external_db e where e.db_name like ?';
+
+
+  my $mult_sql = (<<MULT);
+    SELECT ox.ensembl_id, ox.ensembl_object_type, count(*) AS count 
+     FROM object_xref ox, xref x 
+       WHERE x.xref_id = ox.xref_id AND 
+             x.external_db_id = ? 
+        GROUP BY ox.ensembl_id, ox.ensembl_object_type HAVING count >= 2;
+MULT
+
+  my $xref_sql = (<<XREFS);
+  SELECT x.xref_id, ox.object_xref_id, x.info_type
+    FROM xref x, object_xref ox
+      WHERE x.xref_id = ox.xref_id AND
+	ox.ensembl_object_type = ? AND
+	  ox.ensembl_id = ? AND 
+	    x.external_db_id = ? 
+XREFS
+
+  my $primary_sql = (<<PRIMARY);
+    SELECT i.target_identity, i.query_identity
+      FROM identity_xref i
+	WHERE i.object_xref_id = ?
+PRIMARY
+
+
+  my $dependent_sql = (<<DEPEND);
+    SELECT i.target_identity, i.query_identity
+      FROM identity_xref_temp i
+	WHERE i.object_xref_id = ?
+DEPEND
+
+
+  my $temp_loaded = 0;
+  my $total_transcripts_altered = 0;
+  my $total_object_xrefs_removed = 0;
+
+  my $outfile = $self->core->dir."/delete_multi_source.sql";
+  open (DOI, ">".$outfile) || die "Could not open $outfile\nAHHHH\n";
+
+  foreach my $source (@list){
+    my $transcripts_altered = 0;
+    my $object_xrefs_removed = 0;
+    my $ex_db=0;
+
+    print "Looking up source $source with sql $ex_db_sql\n";
+    my $ex_db_sth = $self->core->dbc->prepare($ex_db_sql); 
+    $ex_db_sth->execute($source) || die "problem executing $ex_db_sql";
+    my $name;
+    $ex_db_sth->bind_columns(\$ex_db,\$name) || die "problem binding $ex_db_sql\n";
+    
+    $ex_db_sth->fetch();
+    $ex_db_sth->finish;
+    if(!defined($ex_db) or $ex_db == 0){
+      die "Could not find external_db_id for $source\n";
+    }
+    else{
+      print "making sure one $source ($ex_db) per transcript\n";
+    }
+    #  2) get list of ensembl entities to check
+    my @mult_list;
+    my $type;
+
+    my $mult_sth = $self->core->dbc->prepare($mult_sql);
+    my ($ens_id, $junk); 
+    $mult_sth->execute($ex_db);
+    $mult_sth->bind_columns(\$ens_id, \$type, \$junk);
+    
+    while ($mult_sth->fetch()) {
+      push @mult_list, $ens_id;
+    }
+    $mult_sth->finish;
+    
+
+    print "\tFound ".scalar(@mult_list)." $type's  with more than one $source ($ex_db) xref\n";
+ 
+    #  3) for each ensembl object to that has more than one xref of this type, try to remove the
+    #     weakest link.
+    
+    
+    # get the priority for the sources (may be used for test criteria) NOT SURE YET
+    
+    
+    my $depend_sth;
+    my $seq_sth;
+#    my $i =0;
+    foreach my $ens (@mult_list){
+    
+      ###########################################
+      # get all the xrefs of this ex_db with %ids
+      ###########################################
+#      if($i < 5){
+#	print "processing ensembl $type:$ens\n";
+#      }
+      my $xref_sth = $self->core->dbc->prepare($xref_sql);
+      $xref_sth->execute($type,$ens,$ex_db);
+      my ($xref_id, $object_xref_id, $xref_info_type); 
+      $xref_sth->bind_columns(\$xref_id, \$object_xref_id, \$xref_info_type);
+      my %object_xref;
+      my %info_type;
+      my %percent_id_total;
+      while($xref_sth->fetch()){
+	$object_xref{$xref_id} = $object_xref_id;
+	$info_type{$xref_id}   = $xref_info_type
+      }
+      $xref_sth->finish;
+      my $last = 0;
+      foreach my $xref (keys %object_xref){
+	if($info_type{$xref} eq "PROJECTION"){
+	  $percent_id_total{$xref} = 0;
+	}
+	elsif($info_type{$xref} eq "DIRECT"){
+	  $percent_id_total{$xref} = 200;
+	}
+	elsif($info_type{$xref} eq "SEQUENCE_MATCH"){
+	  if($last != 1){
+	    $seq_sth = $self->core->dbc->prepare($primary_sql);
+	    $last = 1;
+	  }
+	  $seq_sth->execute($object_xref{$xref});
+	  my ($target_id, $query_id); 
+	  $seq_sth->bind_columns(\$target_id, \$query_id);
+	  while($seq_sth->fetch()){
+	    $percent_id_total{$xref_id} = $target_id + $query_id;
+	  }
+#	  $seq_sth->finish
+	}
+	elsif($info_type{$xref} eq "DEPENDENT"){
+	  if(!$temp_loaded){
+	    my $dir = $self->core->dir();
+	    my $file = $dir."/identity_xref_temp.txt";
+	    
+	    if(-s $file){
+	      my $sth = $self->core->dbc->prepare("create table identity_xref_temp like identity_xref");
+	      print "creating table identity_xref_temp\n";
+	      $sth->execute() || die "Could not \ncreate table identity_xref_temp like identity_xref\n";
+	      $sth->finish;
+	      my $temp_sth = $self->core->dbc->prepare("LOAD DATA LOCAL INFILE \'$file\' IGNORE INTO TABLE identity_xref_temp");
+	      print "Uploading data in $file to identity_xref_temp\n";
+	      $temp_sth->execute();
+#	      $temp_sth->finish;
+	    }
+	    else{
+	      print "NO file or zero size file, so not able to load file $file to identity_xref_temp\n";
+	    }
+	    $temp_loaded = 1;
+	  }
+	  if($last != 2){
+	    $depend_sth = $self->core->dbc->prepare($dependent_sql);
+	    $last = 2;
+	  }
+	  $depend_sth->execute($object_xref{$xref});
+	  my ($target_id, $query_id); 
+	  $depend_sth->bind_columns(\$target_id, \$query_id);
+	  if($depend_sth->fetch()){
+	    $percent_id_total{$xref} = $target_id + $query_id;
+#	    if($i < 5){
+#	      print "\t**  $target_id\t$query_id\n";
+#	    }
+	  }
+	  else{
+#	    if($i < 5){
+	      print "No percent_id for object_xref ".$object_xref{$xref}."\n";
+#	    }
+	  }
+#	  $depend_sth->finish;
+	}
+	else{
+	  print STDERR "hmm ".$info_type{$xref}." not on list??\n";
+	}
+	#      elsif($info_type{$xref} eq "INFERRED_PAIR"){
+	#      }
+      } # end foreach my $xref
+      
+      
+      ####################
+      # find the best one
+      ####################
+      
+      my $best =0;
+      foreach my $key (keys %object_xref){
+#	if($i < 5){
+#	  print "\tobject_xref:".$object_xref{$key}."\n";
+#	  print "\t\%id = ".$percent_id_total{$key}."\n";
+#	}
+	if($best < $percent_id_total{$key}){
+	  $best = $percent_id_total{$key};
+	}
+      }
+      
+#      if($i < 5){
+#	print "\tbest = $best\n";
+#      }
+
+#     $i++;
+      
+      # go through others again and if < best remove from object_xref and identity_xref
+      
+      my $alt=0;
+      foreach my $key (keys %object_xref){
+	if($best > $percent_id_total{$key}){
+	  $alt = 1;
+	  $object_xrefs_removed++;
+	  print DOI "delete o from object_xref o where o.object_xref_id = ".$object_xref{$key}."\n";
+	  print DOI "delete i from identity_xref i where i.object_xref_id = ".$object_xref{$key}."\n";
+#	  if($i < 5){
+#	    print "remove object xref and identity xref where object_xref = ".$object_xref{$key}."\n";
+#	  }
+	}
+      }
+      if($alt){
+	$transcripts_altered++;
+      }
+
+      
+    }# end foreach my $ens multi_list
+    print "For source $source:\n";
+    print "\t$object_xrefs_removed object_xrefs removed\n";
+    print "\t$transcripts_altered transcripts affected by this\n";
+    $total_transcripts_altered += $transcripts_altered;
+    $total_object_xrefs_removed += $object_xrefs_removed;
+  } # end of foreach source
+  if($temp_loaded){
+    $self->core->dbc->do("DROP TABLE identity_xref_temp");   
+  }
+  close DOI;
+
+  # process new sql file
+  
+  if($total_object_xrefs_removed){ # no point doing owt if file is empty
+    #process the sql file
+  }
+}
 1;
 

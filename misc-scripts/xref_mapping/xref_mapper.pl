@@ -342,6 +342,14 @@ else{
 
 $mapper->xref($xref); # attach xref object to mapper object
 
+
+
+##############
+##remove after testing
+#$mapper->check_special_sources();
+#exit;
+##############
+
 if(defined($recalc_display_xrefs)){
   $mapper->genes_and_transcripts_attributes_set();
   print "Finished recalculating display xrefs and gene descriptions";
@@ -371,6 +379,7 @@ $mapper->find_priority_sources();
 
 print "\nParsing mapping output\n";
 $mapper->parse_mappings($notriage);
+
 
 
 if($upload){
@@ -403,6 +412,12 @@ if($upload){
 
   print "\nChecking xrefs\n";
   $mapper->cleanup_database();
+
+  # if special sources are set then make sure these ONLY have one 
+  # xref per transcript. This is based on % identity etc but if 
+  # two have the same and we cannot distinguish between them still keep
+  # both.
+  $mapper->check_special_sources();
 
 
   $mapper->genes_and_transcripts_attributes_set();

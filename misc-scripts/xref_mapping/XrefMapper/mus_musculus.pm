@@ -95,4 +95,12 @@ sub gene_description_filter_regexps {
 
 }
 
+sub get_list_of_sources_for_one_max_per_transcript{
+  my $self = shift;
+
+  my @list = qw(MarkerSymbol);
+
+  return @list;
+}
+
 1;
