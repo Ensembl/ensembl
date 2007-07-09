@@ -876,6 +876,8 @@ INSERT INTO meta (meta_key, meta_value) VALUES ("schema_version", "46");
 INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_45_46_a.sql|schema_version');
 INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_45_46_c.sql|unmapped_object.external_db_id');
 INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_45_46_d.sql|meta_unique_key');
+INSERT INTO meta (meta_key, meta_value) 
+  VALUES ('patch', 'patch_45_46_f.sql|stable_id_event.uni_idx');
 
 ################################################################################
 #
@@ -1226,8 +1228,7 @@ CREATE TABLE stable_id_event (
   type                      ENUM('gene', 'transcript', 'translation') NOT NULL,
   score			    FLOAT NOT NULL DEFAULT 0,
 
-  UNIQUE KEY uni_idx (mapping_session_id, old_stable_id, old_version,
-    new_stable_id, new_version, type),
+  UNIQUE KEY uni_idx (mapping_session_id, old_stable_id, new_stable_id, type),
 
   KEY new_idx (new_stable_id),
   KEY old_idx (old_stable_id)
