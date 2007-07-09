@@ -344,12 +344,6 @@ $mapper->xref($xref); # attach xref object to mapper object
 
 
 
-##############
-##remove after testing
-#$mapper->check_special_sources();
-#exit;
-##############
-
 if(defined($recalc_display_xrefs)){
   $mapper->genes_and_transcripts_attributes_set();
   print "Finished recalculating display xrefs and gene descriptions";
