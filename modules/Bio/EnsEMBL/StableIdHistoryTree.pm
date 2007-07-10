@@ -508,12 +508,6 @@ sub get_latest_StableIdEvent {
   Description : Returns a chronologically sorted list of unique release
                 display_names in this tree.
 
-                Note that these display_names will differ from the value of
-                ArchiveStableId->release in some rare cases where the release
-                name stored in the database is not unique. In these cases, a
-                "version number" is appended to the release number to create
-                the display_name.
-                
                 This method can be used to determine the number of columns when
                 plotting the history tree.
   Return type : Arrayref of strings.
@@ -561,11 +555,6 @@ sub get_release_db_names {
 #
 # Create a chronologically sorted list of releases.
 #
-# Before release 21, sometimes several releases had the same number (because
-# this number indicated schema version then which wasn't changed in every
-# release). To get unique release identifiers we therefore need to sort this
-# out by adding "version numbers" to the release.
-#
 # Return type : Arrayref of arrayrefs (db_name, release)
 #
 sub _sort_releases {
@@ -573,34 +562,10 @@ sub _sort_releases {
 
   unless ($self->{'sorted_tree'}->{'releases'}) {
 
-    my @archive_ids = @{ $self->get_all_ArchiveStableIds };
-    my $r;
     my @releases;
 
-    # get all releases and their associated database names.
-    # the combination of release number and database name is unique, so we will
-    # use this to identify our releases
-    while (my $archive_id = shift(@archive_ids)) {
-      $r->{$archive_id->release}->{$archive_id->db_name} = 1;
-    }
-
-    foreach my $release (keys %$r) {
-      
-      my @db_names = sort keys %{ $r->{$release} };
-      
-      if (scalar(@db_names) > 1) {
-        # more than one release with this number.
-        # we need to create multiple display_names
-        my $i = 0;
-        foreach my $db_name (@db_names) {
-          my $name = "$release." . ++$i;
-          push @releases, [ $db_name, $name ];
-        }
-
-      } else {
-        # just a single release with this number, use it directly
-        push @releases, [ $db_names[0], $release ];
-      }
+    foreach my $archive_id (@{ $self->get_all_ArchiveStableIds }) {
+      push @releases, [ $archive_id->db_name, $archive_id->release ];
     }
 
     # sort releases by release number, then db_name; this should get them into
