@@ -281,11 +281,21 @@ sub fetch_pairs_by_Slice {
     $sql .= " AND df.analysis_id = ".$analysis->dbID();
   }
   $sql .= " GROUP BY df.ditag_id, df.ditag_pair_id;";
-
   my $sth = $self->prepare($sql);
   $sth->execute();
   $sth->bind_columns( \$tag_id, \$pair_id, \$seq_region_id, \$start, \$end, \$strand, \$analysis_id ,\$tag_count);
   while ( $sth->fetch ) {
+    #convert into relative slice coordinates
+    if($slice->strand == 1) {
+      $start = $start - $slice->start + 1;
+      $end   = $end   - $slice->start + 1;
+    }
+    else{
+      $start  = $slice->end - $end + 1;
+      $end    = $slice->end - $start + 1;
+      $strand *= -1;
+    }
+
     my %ditag_feature_pair = (
                       ditag     => $tag_id,
                       pair_id   => $pair_id,
