@@ -874,8 +874,10 @@ INSERT INTO meta (meta_key, meta_value) VALUES ("schema_version", "46");
 # patches included in this schema file
 # NOTE: at beginning of release cycle, remove patch entries from last release
 INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_45_46_a.sql|schema_version');
+INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_45_46_b.sql|go_xref.source_xref_id');
 INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_45_46_c.sql|unmapped_object.external_db_id');
 INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_45_46_d.sql|meta_unique_key');
+INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_45_46_e.sql|object_xref_linkage_annotation');
 INSERT INTO meta (meta_key, meta_value) 
   VALUES ('patch', 'patch_45_46_f.sql|stable_id_event.uni_idx');
 
