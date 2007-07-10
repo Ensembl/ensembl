@@ -562,15 +562,16 @@ sub _sort_releases {
 
   unless ($self->{'sorted_tree'}->{'releases'}) {
 
-    my @releases;
+    my %unique = ();
 
     foreach my $archive_id (@{ $self->get_all_ArchiveStableIds }) {
-      push @releases, [ $archive_id->db_name, $archive_id->release ];
+      $unique{join(':', $archive_id->db_name, $archive_id->release)} = 1;
     }
 
     # sort releases by release number, then db_name; this should get them into
     # chronological order
-    @releases = sort { $a->[1] <=> $b->[1] || $a->[0] cmp $b->[0] } @releases;
+    my @releases = sort { $a->[1] <=> $b->[1] || $a->[0] cmp $b->[0] }
+      map { [ split(/:/, $_) ] } keys(%unique);
 
     $self->{'sorted_tree'}->{'releases'} = \@releases;
   
