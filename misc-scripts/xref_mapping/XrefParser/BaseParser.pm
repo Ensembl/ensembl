@@ -61,8 +61,7 @@ sub run {
     my $sql_dir = dirname($0);
 
     if ($create) {
-        create( $host, $port, $user, $pass, $dbname, $sql_dir,
-                $drop_db );
+      create( $host, $port, $user, $pass, $dbname, $sql_dir, $drop_db );
     }
 
     my $dbi = dbi();
@@ -1596,11 +1595,41 @@ sub sanitise {
 # are present.
 
 sub create {
-
-  my ($host, $port, $user, $pass, $dbname, $sql_dir,$drop_db ) = @_;
+  my ( $host, $port, $user, $pass, $dbname, $sql_dir, $drop_db ) = @_;
 
   my $dbh = DBI->connect( "DBI:mysql:host=$host:port=$port", $user, $pass,
                           {'RaiseError' => 1});
+
+  my $metadata_file =
+    catfile( $sql_dir, 'sql', 'populate_metadata.sql' );
+  my $ini_file = catfile( $sql_dir, 'xref_config.ini' );
+
+  $| = 1;    # flush stdout
+
+  # Figure out whether to run 'xref_config2sql.pl' or not by comparing
+  # the timestamps on 'xref_config.ini' and 'sql/populate_metadata.sql'.
+  my $ini_tm  = ( stat $ini_file )[9];
+  my $meta_tm = ( stat $metadata_file )[9];
+
+  if ( !defined($meta_tm) || $ini_tm > $meta_tm ) {
+    printf( "==> Your copy of 'xref_config.ini' is newer than '%s'\n",
+            catfile( 'sql', 'populate_metadata.sql' ) );
+    print("==> Should I re-run 'xref_config2sql.pl' for you? [y/N]: ");
+
+    my $reply = <STDIN>;
+    chomp $reply;
+
+    if ( lc( substr( $reply, 0, 1 ) ) eq 'y' ) {
+      my $cmd =
+          catfile( $sql_dir, 'xref_config2sql.pl' )
+        . " $ini_file >"
+        . $metadata_file;
+
+      system($cmd) == 0 and print("==> Done.\n")
+        or croak(
+             "Cannot execute the following command (exit $?):\n$cmd\n");
+    }
+  }
 
   # check to see if the database already exists
   my %dbs = map {$_->[0] => 1} @{$dbh->selectall_arrayref('SHOW DATABASES')};
@@ -1614,7 +1643,6 @@ sub create {
   
     if ( $create && !$drop_db ) {
       print "WARNING: about to drop database $dbname on $host:$port; yes to confirm, otherwise exit: ";
-      $| = 1; # flush stdout
       my $p = <STDIN>;
       chomp $p;
       if ($p eq "yes") {
@@ -1632,23 +1660,28 @@ sub create {
 
   $dbh->do( "CREATE DATABASE " . $dbname );
 
-  print "Creating $dbname from "
-    . catfile( $sql_dir, 'sql', 'table.sql' ), "\n";
-  if ( !-e catfile( $sql_dir, 'sql', 'table.sql' ) ) {
-    croak( "Cannot open  " . catfile( $sql_dir, 'sql', 'table.sql' ) );
-  }
-  my $cmd = "mysql -u $user -p'$pass' -P $port -h $host $dbname < "
-    . catfile( $sql_dir, 'sql', 'table.sql' );
-  system($cmd) == 0 or die( "Cannot run the following (exit $?):\n$cmd\n" );
+  my $table_file = catfile( $sql_dir, 'sql', 'table.sql' );
 
-  print "Populating metadata in $dbname from ".$sql_dir."sql/populate_metadata.sql\n";
-  if ( !-e catfile( $sql_dir, 'sql', 'populate_metadata.sql' ) ) {
-    croak( "Cannot open "
-           . catfile( $sql_dir, 'sql', 'populate_metadata.sql' ) );
+  printf( "Creating %s from %s\n", $dbname, $table_file );
+  if ( !-e $table_file ) {
+    croak( "Cannot open  " . $table_file );
   }
-  $cmd = "mysql -u $user -p'$pass' -P $port -h $host $dbname < "
-    . catfile( $sql_dir, 'sql', 'populate_metadata.sql' );
-  system($cmd) == 0 or die( "Cannot run the following (exit $?):\n$cmd\n" );
+
+  my $cmd =
+    "mysql -u $user -p'$pass' -P $port -h $host $dbname < $table_file";
+  system($cmd) == 0
+    or croak("Cannot execute the following command (exit $?):\n$cmd\n");
+
+  printf( "Populating metadata in %s from %s\n",
+          $dbname, $metadata_file );
+  if ( !-e $metadata_file ) {
+    croak( "Cannot open " . $metadata_file );
+  }
+
+  $cmd = "mysql -u $user -p'$pass' -P $port -h $host "
+    . "$dbname < $metadata_file";
+  system($cmd) == 0
+    or croak("Cannot execute the following command (exit $?):\n$cmd\n");
 }
 
 sub get_label_to_accession{
