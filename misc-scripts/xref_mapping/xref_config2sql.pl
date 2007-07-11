@@ -120,8 +120,8 @@ foreach my $species_section ( $config->GroupMembers('species') ) {
                . "(source_id, species_id, url, release_url, "
                . "file_modified_date, upload_date, parser)\n" );
 
-        my @uris =
-          split( /\n/, $config->val( $source_section, 'data_uri' ) );
+        my @uris = split( /\n/,
+                      $config->val( $source_section, 'data_uri', '' ) );
 
         my $release_uri =
           $config->val( $source_section, 'release_uri' );
