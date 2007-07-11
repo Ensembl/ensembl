@@ -487,12 +487,13 @@ sub get_latest_StableIdEvent {
 
   my @sorted = sort { $b->new_ArchiveStableId->release <=>
                       $a->new_ArchiveStableId->release } @self_events;
-
+  
   # give priority to self events
   my $latest;
   while ($latest = shift @sorted) {
-    last if ($latest->old_ArchiveStableId and
-             $latest->old_ArchiveStableId->stable_id eq $arch_id->stable_id);
+    last if (($latest->old_ArchiveStableId and
+              $latest->old_ArchiveStableId->stable_id eq $arch_id->stable_id)
+             or !$latest->old_ArchiveStableId);
   }
 
   return $latest;
@@ -955,7 +956,7 @@ sub consolidate_tree {
   my @event_lookup;
   
   foreach my $event (@{ $self->get_all_StableIdEvents }) {
-  
+
     my $old_id = $event->old_ArchiveStableId;
     my $new_id = $event->new_ArchiveStableId;
 
@@ -1021,23 +1022,54 @@ sub consolidate_tree {
         $self->remove_StableIdEvent($event);
         $event->old_ArchiveStableId($ln);
         $self->add_StableIdEvents($event);
-        
-      } else {
+
+      } elsif ($lo) {
         
         # there's a deletion event, deal with it differently
-        #
-        # o--o  o  ->  o-----o
-        # 1  1  1      1     1
+
+        if ($lo->version eq $ln->version) {
         
-        #warn 'Y: '.$last->ident_string.' | '.$event->ident_string."\n";
+          # o--o  o  ->  o-----o
+          # 1  1  1      1     1
+          
+          #warn 'Y: '.$last->ident_string.' | '.$event->ident_string."\n";
+
+          $self->remove_StableIdEvent($last);
+          $last->new_ArchiveStableId($eo);
+          $self->add_StableIdEvents($last);
+
+        } else {
+
+          # o--o  o  ->  o--o--o
+          # 1  2  2      1  2  2
+          
+          #warn 'Z: '.$last->ident_string.' | '.$event->ident_string."\n";
+
+          $self->remove_StableIdEvent($event);
+          $event->old_ArchiveStableId($ln);
+          $event->new_ArchiveStableId($eo);
+          $self->add_StableIdEvents($event);
+
+        }
+
+      } else {
+
+        # creation followed by deletion in next mapping
+        #
+        # o  o  ->  o--o
+        # 1  1      1  1
+
+        #warn 'Q: '.$last->ident_string.' | '.$event->ident_string."\n";
 
         $self->remove_StableIdEvent($last);
-        $last->new_ArchiveStableId($eo);
-        $self->add_StableIdEvents($last);
+        $self->remove_StableIdEvent($event);
+        $event->old_ArchiveStableId($ln);
+        $event->new_ArchiveStableId($eo);
+        $self->add_StableIdEvents($event);
 
       }
 
-    #} else {
+    } else {
       #warn 'C: '.$last->ident_string.' | '.$event->ident_string."\n";
     }
   
