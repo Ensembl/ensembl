@@ -95,9 +95,13 @@ sub usage {
   -notsource        Which source to skip.
 
   -create           If specified, cause dbname to be deleted and
-                    re-created if it already exists. User is prompted
-                    before database is dropped to prevent disasters
-                    arising from dropping the wrong database.
+                    re-created if it already exists.  The user is
+                    prompted before the database is dropped to
+                    prevent disasters arising from dropping the wrong
+                    database.  If needed, this switch will also make
+                    the script ask the user whether it should run the
+                    'xref_config2sql.pl' script for him/her to renew
+                    'sql/populate_metadata.sql' from 'xref_config.ini'.
 
   -checkdownload    Check if file exists, otherwise downloads the file.
 
