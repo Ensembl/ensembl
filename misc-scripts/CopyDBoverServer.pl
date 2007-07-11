@@ -225,6 +225,7 @@ skipped copy of ".$db_to_copy->{src_db}." from ".$db_to_copy->{src_srv}." to ". 
   } else {
     print STDERR "FAILED
 skipped copy of $db_to_copy->{src_db} from $db_to_copy->{src_srv} to $db_to_copy->{dest_srv}\n";
+print "$copy_cmd\n";
     next;
   }
 
