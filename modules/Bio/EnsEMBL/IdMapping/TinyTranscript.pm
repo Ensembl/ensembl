@@ -92,7 +92,7 @@ sub add_Exon {
 
 
 sub get_all_Exons {
-  return $_->[7] || [];
+  return $_[0]->[7] || [];
 }
 
 
