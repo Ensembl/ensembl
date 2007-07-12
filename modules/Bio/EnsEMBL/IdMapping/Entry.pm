@@ -74,5 +74,11 @@ sub score {
 }
 
 
+sub to_string {
+  my $self = shift;
+  return sprintf('%-10s%-10s%-5f', $self->source, $self->target, $self->score);
+}
+
+
 1;
 
