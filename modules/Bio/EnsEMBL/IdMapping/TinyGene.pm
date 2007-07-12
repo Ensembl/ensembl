@@ -39,17 +39,45 @@ our @ISA = qw(Bio::EnsEMBL::IdMapping::TinyFeature);
 use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 
 
-sub biotype {
+sub start {
   my $self = shift;
   $self->[2] = shift if (@_);
   return $self->[2];
 }
 
 
-sub display_name {
+sub end {
   my $self = shift;
   $self->[3] = shift if (@_);
   return $self->[3];
+}
+
+
+sub strand {
+  my $self = shift;
+  $self->[4] = shift if (@_);
+  return $self->[4];
+}
+
+
+sub seq_region_name {
+  my $self = shift;
+  $self->[5] = shift if (@_);
+  return $self->[5];
+}
+
+
+sub biotype {
+  my $self = shift;
+  $self->[6] = shift if (@_);
+  return $self->[6];
+}
+
+
+sub display_name {
+  my $self = shift;
+  $self->[7] = shift if (@_);
+  return $self->[7];
 }
 
 
@@ -61,12 +89,18 @@ sub add_Transcript {
     throw('Need a Bio::EnsEMBL::IdMapping::TinyTranscript.');
   }
 
-  push @{ $self->[4] }, $tr;
+  push @{ $self->[8] }, $tr;
 }
 
 
 sub get_all_Transcripts {
-  return $_->[5] || [];
+  return $_[0]->[8] || [];
+}
+
+
+sub length {
+  my $self = shift;
+  return ($self->end - $self->start + 1);
 }
 
 
