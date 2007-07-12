@@ -83,6 +83,7 @@ my %updated_source;
 my %XXXxref_id_to_accession;
 my %XXXxref_id_to_source_id;
 my %xref_source_id_to_name;
+my %external_db_release;
 
 sub create_source_id_to_source_name{  
   my($self) = @_;
@@ -2988,10 +2989,10 @@ sub map_source_to_external_db {
   my %source_to_external_db;
 
   # get all sources
-  my $sth = $self->xref->dbc->prepare("select s.source_id, s.name, count(*) from xref x, source s where x.source_id = s.source_id group by source_id");
+  my $sth = $self->xref->dbc->prepare("select s.source_id, s.name, s.source_release, count(*) from xref x, source s where x.source_id = s.source_id group by source_id");
   $sth->execute();
-  my ($source_id, $source_name, $count);
-  $sth->bind_columns(\$source_id, \$source_name, \$count);
+  my ($source_id, $source_name, $source_release, $count);
+  $sth->bind_columns(\$source_id, \$source_name, \$source_release, \$count);
 
   while($sth->fetchrow_array()) {
 
@@ -3005,8 +3006,16 @@ sub map_source_to_external_db {
     if (@row) {
 
       $source_to_external_db{$source_id} = $row[0];
-      #print "Source name $source_name id $source_id corresponds to core external_db_id " . $row[0] . "\n";
-
+      if($source_release ne "1"){
+	if($source_release =~ /RefSeq/){
+	  $external_db_release{$row[0]} = substr($source_release,-40); # At the moment max is 40
+	}
+	else{
+	  $external_db_release{$row[0]} = substr($source_release,0,40);  # At the moment max is 40
+	}
+	
+#	print "Source name $source_name id $source_id corresponds to core external_db_id " . $row[0] . "and  release is *".$external_db_release{$row[0]}."*\n";
+      }
     } else {
       print STDERR "Can't find external_db entry for source name $source_name; xrefs for this source will not be written. Consider adding $source_name to external_db and \n"
       . " Make sure that you used TABS not spaces as delimiters in external_db.txt\n" ; 
@@ -3027,6 +3036,13 @@ sub cleanup_sources_file{
   open (DEL, ">>$dir/cleanup.sql") || die "Could not open $dir/cleanup.sql\n";
 
   if ($id =~ m/\w/){
+
+    if(defined($external_db_release{$id})){
+      print DEL "UPDATE external_db ";
+      print DEL 'SET db_release = "'.$external_db_release{$id};
+      print DEL '" WHERE external_db_id = '.$id."\n";
+    }
+	
 
     print DEL "DELETE external_synonym ";
     print DEL     "FROM external_synonym, xref ";
@@ -4175,7 +4191,7 @@ SQL
     
     if (!$xrefs_written{$xref_id}) {
 	if(!defined($updated_source{$external_db_id})){
-	    $self->cleanup_sources_file($external_db_id);
+	    $self->cleanup_sources_file($external_db_id,$source_id);
 	}
 	
 	
