@@ -102,9 +102,9 @@ sub scores_from_exon_scores {
     
     # read from file
     $self->logger->info("Reading transcript scoring matrix from file...\n", 0, 'stamped');
-    $self->logger->info("Cache file $transcript_cache.\n", 1);
+    $self->logger->debug("Cache file $transcript_cache.\n", 1);
     $matrix->read_from_file;
-    $self->logger->info("Done.\n", 0, 'stamped');
+    $self->logger->info("Done.\n\n", 0, 'stamped');
     
   } else {
     
@@ -113,7 +113,7 @@ sub scores_from_exon_scores {
 
     $self->logger->info("Transcript scoring...\n", 0, 'stamped');
     $matrix = $self->build_scores($matrix, $exon_matrix);
-    $self->logger->info("Done.\n", 0, 'stamped');
+    $self->logger->info("Done.\n\n", 0, 'stamped');
 
     # write scoring matrix to file
     $matrix->write_to_file;
@@ -186,7 +186,7 @@ sub flag_matrix_from_exon_scores {
     }
   }
 
-  $self->logger->info("\n\n");
+  $self->logger->info("\n");
 
   return $matrix;
 }
@@ -197,13 +197,23 @@ sub score_matrix_from_flag_matrix {
   my $flag_matrix = shift;
   my $exon_matrix = shift;
 
+  unless ($flag_matrix and
+          $flag_matrix->isa('Bio::EnsEMBL::IdMapping::ScoredMappingMatrix')) {
+    throw('Need a transcript Bio::EnsEMBL::IdMapping::ScoredMappingMatrix.');
+  }
+  
+  unless ($exon_matrix and
+          $exon_matrix->isa('Bio::EnsEMBL::IdMapping::ScoredMappingMatrix')) {
+    throw('Need an exon Bio::EnsEMBL::IdMapping::ScoredMappingMatrix.');
+  }
+
   my $transcript_score_threshold =
     $self->conf->param('transcript_score_threshold') || 0;
 
   # create a new scoring matrix which will replace the flag matrix
   my $matrix = Bio::EnsEMBL::IdMapping::ScoredMappingMatrix->new(
-    -DUMP_PATH   => $self->conf->param('dumppath'),
-    -CACHE_FILE  => 'transcript_matrix.ser',
+    -DUMP_PATH   => $flag_matrix->dump_path,
+    -CACHE_FILE  => $flag_matrix->cache_file,
   );
 
   # initialise progress logger
@@ -230,7 +240,7 @@ sub score_matrix_from_flag_matrix {
 
     # get all corresponding target transcripts from the flag matrix
     foreach my $target_transcript_id (@{ $flag_matrix->get_targets_for_source($source_transcript->id) }) {
-
+      
       my $target_transcript = $self->cache->get_by_key('transcripts_by_id', 'target', $target_transcript_id);
 
       my $source_transcript_score = 0;
@@ -313,7 +323,7 @@ sub score_matrix_from_flag_matrix {
     }
   }
 
-  $self->logger->info("\n\n");
+  $self->logger->info("\n");
 
   return $matrix;
     
