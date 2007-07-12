@@ -33,69 +33,65 @@ use strict;
 use warnings;
 no warnings 'uninitialized';
 
+use Bio::EnsEMBL::IdMapping::BaseObject;
+our @ISA = qw(Bio::EnsEMBL::IdMapping::BaseObject);
+
 use Bio::EnsEMBL::Utils::Exception qw(throw warning);
-use Bio::EnsEMBL::Utils::Argument qw(rearrange);
+use Bio::EnsEMBL::IdMapping::ScoredMappingMatrix;
 
+#
+# create a shrinked matrix which doesn't contain entries which were already 
+# mapped
+#
+sub create_shrinked_matrix {
+  my $self = shift;
+  my $matrix = shift;
+  my $mappings = shift;
+  my $cache_file = shift;
 
-=head2 new
-
-  Arg[1]      : 
-  Example     : 
-  Description : constructor
-  Return type : 
-  Exceptions  : 
-  Caller      : general
-
-=cut
-
-sub new {
-  my $caller = shift;
-  my $class = ref($caller) || $caller;
-
-  my ($logger, $conf, $cache) = rearrange(['LOGGER', 'CONF', 'CACHE'], @_);
-
-  unless ($logger->isa('Bio::EnsEMBL::Utils::Logger')) {
-    throw("You must provide a Bio::EnsEMBL::Utils::Logger for logging.");
+  # argument checks
+  unless ($matrix and
+          $matrix->isa('Bio::EnsEMBL::IdMapping::ScoredMappingMatrix')) {
+    throw('Need a Bio::EnsEMBL::IdMapping::ScoredMappingMatrix.');
   }
   
-  unless ($conf->isa('Bio::EnsEMBL::Utils::ConfParser')) {
-    throw("You must provide configuration as a Bio::EnsEMBL::Utils::ConfParser object.");
+  unless ($mappings and
+          $mappings->isa('Bio::EnsEMBL::IdMapping::MappingList')) {
+    throw('Need a gene Bio::EnsEMBL::IdMapping::MappingList.');
   }
-  
-  unless ($cache->isa('Bio::EnsEMBL::IdMapping::Cache')) {
-    throw("You must provide configuration as a Bio::EnsEMBL::IdMapping::Cache object.");
+
+  throw('Need a cache file name.') unless ($cache_file);
+
+  my $shrinked_matrix = Bio::EnsEMBL::IdMapping::ScoredMappingMatrix->new(
+    -DUMP_PATH   => $self->conf->param('dumppath'),
+    -CACHE_FILE  => $cache_file,
+  );
+
+  # create lookup hashes for sources and targets in the MappingList
+  my %sources = ();
+  my %targets = ();
+
+  foreach my $entry (@{ $mappings->get_all_Entries }) {
+    $sources{$entry->source} = 1;
+    $targets{$entry->target} = 1;
   }
-  
-  my $self = {};
-  bless ($self, $class);
 
-  # initialise
-  $self->logger($logger);
-  $self->conf($conf);
-  $self->cache($cache);
-  
-  return $self;
-}
+  # add all entries to shrinked matrix which are not in the MappingList
+  foreach my $entry (@{ $matrix->get_all_Entries }) {
+    unless ($sources{$entry->source} or $targets{$entry->target}) {
+      $shrinked_matrix->add_Entry($entry);
+    }
+  }
 
+  # log shrinking stats
+  $self->logger->info('Sources '.$matrix->get_source_count.' --> '.
+    $shrinked_matrix->get_source_count."\n");
+  $self->logger->info('Targets '.$matrix->get_target_count.' --> '.
+    $shrinked_matrix->get_target_count."\n");
+  $self->logger->info('Entries '.$matrix->get_entry_count.' --> '.
+    $shrinked_matrix->get_entry_count."\n");
 
-sub logger {
-  my $self = shift;
-  $self->{'_logger'} = shift if (@_);
-  return $self->{'_logger'};
-}
-
-
-sub conf {
-  my $self = shift;
-  $self->{'_conf'} = shift if (@_);
-  return $self->{'_conf'};
-}
-
-
-sub cache {
-  my $self = shift;
-  $self->{'_cache'} = shift if (@_);
-  return $self->{'_cache'};
+  return $shrinked_matrix;
 }
 
 
@@ -113,6 +109,12 @@ sub log_matrix_stats {
   
   $self->logger->info(sprintf($fmt1, "Scoring matrix entries:",
     $matrix->get_entry_count), 1);
+  
+  $self->logger->info(sprintf($fmt1, "Scoring matrix sources:",
+    $matrix->get_source_count), 1);
+  
+  $self->logger->info(sprintf($fmt1, "Scoring matrix targets:",
+    $matrix->get_target_count), 1);
   
   $self->logger->info(sprintf($fmt2, "Average score:",
     $matrix->get_average_score), 1);
