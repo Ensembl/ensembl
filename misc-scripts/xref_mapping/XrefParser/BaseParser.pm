@@ -1620,8 +1620,8 @@ sub create {
     chomp $reply;
 
     if ( lc( substr( $reply, 0, 1 ) ) eq 'y' ) {
-      my $cmd =
-          catfile( $sql_dir, 'xref_config2sql.pl' )
+      my $cmd = "perl "
+        . catfile( $sql_dir, 'xref_config2sql.pl' )
         . " $ini_file >"
         . $metadata_file;
 
