@@ -76,7 +76,7 @@ sub score_genes {
 
   $self->log_matrix_stats($matrix);
   
-  $self->logger->info("\nDone with transcript scoring.\n\n");
+  $self->logger->info("\nDone with gene scoring.\n");
 
   return $matrix;
 }
@@ -102,9 +102,9 @@ sub scores_from_transcript_scores {
     
     # read from file
     $self->logger->info("Reading gene scoring matrix from file...\n", 0, 'stamped');
-    $self->logger->info("Cache file $gene_cache.\n", 1);
+    $self->logger->debug("Cache file $gene_cache.\n", 1);
     $matrix->read_from_file;
-    $self->logger->info("Done.\n", 0, 'stamped');
+    $self->logger->info("Done.\n\n", 0, 'stamped');
     
   } else {
     
@@ -113,7 +113,7 @@ sub scores_from_transcript_scores {
 
     $self->logger->info("Gene scoring...\n", 0, 'stamped');
     $matrix = $self->build_scores($matrix, $transcript_matrix);
-    $self->logger->info("Done.\n", 0, 'stamped');
+    $self->logger->info("Done.\n\n", 0, 'stamped');
 
     # write scoring matrix to file
     $matrix->write_to_file;
@@ -156,10 +156,19 @@ sub flag_matrix_from_transcript_scores {
   my $matrix = shift;
   my $transcript_matrix = shift;
 
+  unless ($matrix and
+          $matrix->isa('Bio::EnsEMBL::IdMapping::ScoredMappingMatrix')) {
+    throw('Need a gene Bio::EnsEMBL::IdMapping::ScoredMappingMatrix.');
+  }
+  
+  unless ($transcript_matrix and
+          $transcript_matrix->isa('Bio::EnsEMBL::IdMapping::ScoredMappingMatrix')) {
+    throw('Need a transcript Bio::EnsEMBL::IdMapping::ScoredMappingMatrix.');
+  }
+
   # initialise progress logger
   my $i;
-  my $num_genes =
-    scalar(keys %{ $self->cache->get_by_name('genes_by_id', 'source') });
+  my $num_entries = $transcript_matrix->get_entry_count;
   
   $self->logger->info("Creating flag matrix...\n", 1);
 
@@ -167,7 +176,7 @@ sub flag_matrix_from_transcript_scores {
   # matrix.
   foreach my $entry (@{ $transcript_matrix->get_all_Entries }) {
 
-    $self->logger->log_progress($num_genes, ++$i, 20, 1, 0);
+    $self->logger->log_progress($num_entries, ++$i, 20, 1, 0);
 
     my $source_gene = $self->cache->get_by_key('genes_by_transcript_id',
       'source', $entry->source);
@@ -178,7 +187,7 @@ sub flag_matrix_from_transcript_scores {
     $matrix->add_score($source_gene->id, $target_gene->id, 1);
   }
 
-  $self->logger->info("\n\n");
+  $self->logger->info("\n");
 
   return $matrix;
 }
@@ -190,23 +199,32 @@ sub score_matrix_from_flag_matrix {
   my $transcript_matrix = shift;
   my $simple_scoring = shift;
 
+  unless ($flag_matrix and
+          $flag_matrix->isa('Bio::EnsEMBL::IdMapping::ScoredMappingMatrix')) {
+    throw('Need a gene Bio::EnsEMBL::IdMapping::ScoredMappingMatrix.');
+  }
+  
+  unless ($transcript_matrix and
+          $transcript_matrix->isa('Bio::EnsEMBL::IdMapping::ScoredMappingMatrix')) {
+    throw('Need a transcript Bio::EnsEMBL::IdMapping::ScoredMappingMatrix.');
+  }
+
   # create a new scoring matrix which will replace the flag matrix
   my $matrix = Bio::EnsEMBL::IdMapping::ScoredMappingMatrix->new(
-    -DUMP_PATH   => $self->conf->param('dumppath'),
-    -CACHE_FILE  => 'gene_matrix.ser',
+    -DUMP_PATH   => $flag_matrix->dump_path,
+    -CACHE_FILE  => $flag_matrix->cache_file,
   );
 
   # initialise progress logger
   my $i;
-  my $num_genes =
-    scalar(keys %{ $self->cache->get_by_name('genes_by_id', 'source') });
+  my $num_entries = $flag_matrix->get_entry_count;
   
   $self->logger->info("Creating score matrix from flag matrix...\n", 1);
 
   # loop over flag matrix and do proper scoring for each entry
   foreach my $entry (@{ $flag_matrix->get_all_Entries }) {
     
-    $self->logger->log_progress($num_genes, ++$i, 20, 1, 0);
+    $self->logger->log_progress($num_entries, ++$i, 20, 1, 0);
 
     my $score = 0;
     my $source_gene = $self->cache->get_by_key('genes_by_id', 'source',
@@ -227,10 +245,10 @@ sub score_matrix_from_flag_matrix {
         $transcript_matrix);
     }
 
-    $matrix->add($entry->source, $entry->target, $score);
+    $matrix->add_score($entry->source, $entry->target, $score);
   }
 
-  $self->logger->info("\n\n");
+  $self->logger->info("\n");
 
   return $matrix;
 }
@@ -353,9 +371,83 @@ sub simple_gene_rescore {
   my $gene_matrix = shift;
   my $transcript_matrix = shift;
 
-  return $self->score_matrix_from_flag_matrix($gene_matrix,
+  $gene_matrix = $self->score_matrix_from_flag_matrix($gene_matrix,
     $transcript_matrix, 1);
 }
+
+#
+# penalise scores between genes with different biotypes or display names
+# entries are modified in place
+#
+sub biotype_gene_rescore {
+  my $self = shift;
+  my $matrix = shift;
+
+  unless ($matrix and
+          $matrix->isa('Bio::EnsEMBL::IdMapping::ScoredMappingMatrix')) {
+    throw('Need a Bio::EnsEMBL::IdMapping::ScoredMappingMatrix.');
+  }
+
+  foreach my $entry (@{ $matrix->get_all_Entries }) {
+
+    my $source_gene = $self->cache->get_by_key('genes_by_id', 'source',
+      $entry->source);
+
+    my $target_gene = $self->cache->get_by_key('genes_by_id', 'target',
+      $entry->target);
+
+    unless ($source_gene->biotype eq $target_gene->biotype and
+            $source_gene->display_name eq $target_gene->display_name) {
+      
+      $matrix->set_score($entry->source, $entry->target, ($entry->score * 0.8));
+    }
+  }
+  
+}
+
+
+sub internal_id_gene_rescore {
+  my $self = shift;
+  my $matrix = shift;
+
+  unless ($matrix and
+          $matrix->isa('Bio::EnsEMBL::IdMapping::ScoredMappingMatrix')) {
+    throw('Need a Bio::EnsEMBL::IdMapping::ScoredMappingMatrix.');
+  }
+
+  foreach my $source (@{ $matrix->get_all_sources }) {
+
+    my @entries = sort { $b <=> $a }
+      @{ $matrix->get_Entries_for_source($source) };
+
+    # nothing to do if we only have one mapping
+    next unless (scalar(@entries) > 1);
+
+    # only penalise if mappings are ambiguous
+    next unless ($entries[0]->score == $entries[1]->score);
+
+    # only penalise if one source id == target id where score == best score
+    my $ambiguous = 0;
+    
+    foreach my $e (@entries) {
+      if ($e->target == $source and $e->score == $entries[0]) {
+        $ambiguous = 1;
+      }
+    }
+
+    next unless ($ambiguous);
+
+    # now penalise those where source id != target id and score == best score
+    foreach my $e (@entries) {
+      if ($e->target != $source and $e->score == $entries[0]) {
+        $matrix->set_score($source, $e->target, ($e->score * 0.8));
+      }
+    }
+
+  }
+
+}
+
 
 1;
 
