@@ -167,6 +167,10 @@ sub build_cache_from_genes {
     my $lgene = Bio::EnsEMBL::IdMapping::TinyGene->new_fast([
         $gene->dbID,
         $gene->stable_id,
+        $gene->start,
+        $gene->end,
+        $gene->strand,
+        $gene->slice->seq_region_name,
         $gene->biotype,
         $gene->display_id,
     ]);
@@ -186,7 +190,7 @@ sub build_cache_from_genes {
           $tr->length,
       ]);
 
-      #$lgene->add_Transcript($ltr);
+      $lgene->add_Transcript($ltr);
 
       # build transcript caches
       $self->add('transcripts_by_id', $type, $tr->dbID, $ltr);
@@ -253,9 +257,6 @@ sub build_cache_from_genes {
 
     undef $gene;
   }
-
-  #use Data::Dumper;
-  #warn Data::Dumper::Dumper($genes);
 
 }
 
@@ -501,10 +502,12 @@ sub cache_file_exists {
   my $cache_file = $self->cache_file($name, $type);
 
   if (-s $cache_file) {
-    $self->logger->info("Cache file found. Will read from $cache_file.\n", 3);
+    $self->logger->info("Cache file found for $name.\n", 3);
+    $self->logger->debug("Will read from $cache_file.\n", 3);
     return 1;
   } else {
-    $self->logger->info("No cache file found for $name/$type. Will build cache from db.\n", 3);
+    $self->logger->info("No cache file found for $name.\n", 3);
+    $self->logger->info("Will build cache from db.\n", 3);
     return 0;
   }
 }
@@ -614,27 +617,6 @@ sub write_instance_to_file {
 }
 
 
-sub read_and_merge {
-  my $self = shift;
-  my $name = shift;
-  my $dbtype = shift;
-
-  throw("You must provide a cache name (e.g. genes_by_id.") unless $name;
-  unless ($dbtype eq 'source' or $dbtype eq 'target') {
-    throw("Db type must be 'source' or 'target'.");
-  }
-
-  foreach my $slice_name (@{ $self->slice_names($dbtype) }) {
-    $self->read_from_file($name, "$dbtype.$slice_name");
-  }
-
-  $self->merge($name);
-
-  # flag as being loaded
-  $self->{'instance'}->{'loaded'}->{"$name:$dbtype"} = 1;
-}
-
-
 sub read_from_file {
   my $self = shift;
   my $name = shift;
@@ -661,13 +643,40 @@ sub read_from_file {
 }
 
 
+sub read_and_merge {
+  my $self = shift;
+  my $name = shift;
+  my $dbtype = shift;
+
+  throw("You must provide a cache name (e.g. genes_by_id.") unless $name;
+  unless ($dbtype eq 'source' or $dbtype eq 'target') {
+    throw("Db type must be 'source' or 'target'.");
+  }
+
+  foreach my $slice_name (@{ $self->slice_names($dbtype) }) {
+    $self->read_from_file($name, "$dbtype.$slice_name");
+  }
+
+  $self->merge($name, $dbtype);
+
+  # flag as being loaded
+  $self->{'instance'}->{'loaded'}->{"$name:$dbtype"} = 1;
+}
+
+
 sub merge {
   my $self = shift;
   my $name = shift;
+  my $dbtype = shift;
 
   throw("You must provide a cache name (e.g. genes_by_id.") unless $name;
+  unless ($dbtype eq 'source' or $dbtype eq 'target') {
+    throw("Db type must be 'source' or 'target'.");
+  }
 
   foreach my $type (keys %{ $self->{'cache'}->{$name} || {} }) {
+    next unless ($type =~ /^$dbtype/);
+    
     (my $merged_type = $type) =~ s/^(\w+)\..+/$1/;
     
     foreach my $key (keys %{ $self->{'cache'}->{$name}->{$type} || {} }) {
