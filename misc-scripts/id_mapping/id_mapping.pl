@@ -59,6 +59,7 @@ use Bio::EnsEMBL::IdMapping::Cache;
 use Bio::EnsEMBL::IdMapping::ExonScoreBuilder;
 use Bio::EnsEMBL::IdMapping::TranscriptScoreBuilder;
 use Bio::EnsEMBL::IdMapping::GeneScoreBuilder;
+use Bio::EnsEMBL::IdMapping::InternalIdMapper;
 
 #use Devel::Size qw(size total_size);
 #use Data::Dumper;
@@ -97,6 +98,9 @@ $logger->init_log($conf->list_param_values);
 
 
 # instance variables
+my $esb;
+my $tsb;
+my $gsb;
 my $exon_scores;
 my $transcript_scores;
 my $gene_scores;
@@ -127,29 +131,58 @@ $logger->finish_log;
 sub run_normal {
   # build scores
   &build_scores;
+
+  # map stable IDs
+  &map;
 }
 
 
 sub build_scores {
-  my $esb = Bio::EnsEMBL::IdMapping::ExonScoreBuilder->new(
+  # get new ScoreBuilders for exons, transcripts and genes
+  $esb = Bio::EnsEMBL::IdMapping::ExonScoreBuilder->new(
     -LOGGER       => $logger,
     -CONF         => $conf,
     -CACHE        => $cache
   );
-  my $tsb = Bio::EnsEMBL::IdMapping::TranscriptScoreBuilder->new(
+  $tsb = Bio::EnsEMBL::IdMapping::TranscriptScoreBuilder->new(
     -LOGGER       => $logger,
     -CONF         => $conf,
     -CACHE        => $cache
   );
-  my $gsb = Bio::EnsEMBL::IdMapping::GeneScoreBuilder->new(
+  $gsb = Bio::EnsEMBL::IdMapping::GeneScoreBuilder->new(
     -LOGGER       => $logger,
     -CONF         => $conf,
     -CACHE        => $cache
   );
 
+  # exon scoring
   $exon_scores = $esb->score_exons;
+  
+  # transcript scoring
   $transcript_scores = $tsb->score_transcripts($exon_scores);
+  
+  # gene scoring
   $gene_scores = $gsb->score_genes($transcript_scores);
+}
+
+
+sub map {
+  
+  # get a mapper
+  my $mapper = Bio::EnsEMBL::IdMapping::InternalIdMapper->new(
+    -LOGGER       => $logger,
+    -CONF         => $conf,
+    -CACHE        => $cache
+  );
+
+  # map genes
+  $mapper->map_genes($gene_scores, $transcript_scores, $gsb);
+
+  # map transcripts
+
+  # map exons
+
+  # map translations
 }
 
 
