@@ -33,30 +33,23 @@ use strict;
 use warnings;
 no warnings 'uninitialized';
 
+use Bio::EnsEMBL::IdMapping::Serialisable;
+our @ISA = qw(Bio::EnsEMBL::IdMapping::Serialisable);
+
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 use Bio::EnsEMBL::Utils::Exception qw(throw warning);
-use Bio::EnsEMBL::Utils::ScriptUtils qw(parse_bytes);
 use Bio::EnsEMBL::IdMapping::Entry;
-use Storable qw(nfreeze thaw nstore retrieve);
 
 
 sub new {
   my $caller = shift;
   my $class = ref($caller) || $caller;
-
-  my ($dump_path, $cache_file) = rearrange([qw(DUMP_PATH CACHE_FILE)], @_);
-
-  throw("You must provide a cache file name") unless ($cache_file);
-  
-  my $self = {};
-  bless ($self, $class);
+  my $self = $class->SUPER::new(@_);
 
   # initialise internal datastructure
   $self->{'cache'}->{'matrix'} = {};
   $self->{'cache'}->{'source_list'} = {};
   $self->{'cache'}->{'target_list'} = {};
-  $self->{'dump_path'} = $dump_path || '.';
-  $self->{'cache_file'} = $self->dump_path."/$cache_file";
 
   return $self;
 }
@@ -75,6 +68,7 @@ sub add_Entry {
 
 
 sub remove_Entry {
+  warning('Method ScoredMappingMatrix->remove_Entry not implemented (yet).');
 }
 
 
@@ -90,6 +84,16 @@ sub add_score {
     push @{ $self->{'cache'}->{'target_list'}->{$target} }, $source;
   }
 
+  $self->{'cache'}->{'matrix'}->{"$source:$target"} = $score;
+}
+
+
+sub set_score {
+  my $self = shift;
+  my $source = shift;
+  my $target = shift;
+  my $score = shift;
+  
   $self->{'cache'}->{'matrix'}->{"$source:$target"} = $score;
 }
 
@@ -127,7 +131,16 @@ sub get_targets_for_source {
   my $self = shift;
   my $source = shift;
 
-  return($self->{'cache'}->{'source_list'}->{$source} || []);
+  return $self->{'cache'}->{'source_list'}->{$source} || [];
+}
+
+
+sub get_Entries_for_source {
+  my $self = shift;
+  my $source = shift;
+
+  return [ map { $self->get_Entry($source, $_) }
+	    @{ $self->{'cache'}->{'source_list'}->{$source} || [] } ];
 }
 
 
@@ -135,7 +148,16 @@ sub get_sources_for_target {
   my $self = shift;
   my $target = shift;
 
-  return($self->{'cache'}->{'target_list'}->{$target} || []);
+  return $self->{'cache'}->{'target_list'}->{$target} || [];
+}
+
+
+sub get_Entries_for_target {
+  my $self = shift;
+  my $target = shift;
+
+  return [ map { $self->get_Entry($_, $target) }
+	    @{ $self->{'cache'}->{'target_list'}->{$target} || [] } ];
 }
 
 
@@ -233,6 +255,7 @@ sub merge {
 
   my $c = 0;
 
+  # merge the matrices
   foreach my $key (keys %{ $matrix->{'cache'}->{'matrix'} }) {
     if (!defined($self->{'cache'}->{'matrix'}->{$key}) or
         $self->{'cache'}->{'matrix'}->{$key} < $matrix->{'cache'}->{'matrix'}->{$key}) {
@@ -241,66 +264,32 @@ sub merge {
     }
   }
 
-  return $c;
-}
-
-
-sub write_to_file {
-  my $self = shift;
-
-  # create dump directory if it doesn't exist
-  if (my $dump_path = $self->dump_path) {
-    unless (-d $dump_path) {
-      system("mkdir -p $dump_path") == 0 or
-        throw("Unable to create directory $dump_path.\n");
+  # merge sources and target lists
+  foreach my $key (keys %{ $matrix->{'cache'}->{'source_list'} }) {
+    if (defined($self->{'cache'}->{'source_list'}->{$key})) {
+      # need to merge lists
+      my %unique = map { $_ => 1 } @{ $self->get_targets_for_source($key) };
+      map { $unique{$_} = 1 } @{ $matrix->get_targets_for_source($key) };
+      $self->{'cache'}->{'source_list'}->{$key} = [keys %unique];
+    } else {
+      # no merging needed
+      $self->{'cache'}->{'source_list'}->{$key} = $matrix->{'cache'}->{'source_list'}->{$key};
     }
   }
-  
-  my $cache_file = $self->cache_file;
 
-  eval { nstore($self->{'cache'}, $cache_file) };
-  if ($@) {
-    throw("Unable to store $cache_file: $@\n");
+  foreach my $key (keys %{ $matrix->{'cache'}->{'target_list'} }) {
+    if (defined($self->{'cache'}->{'target_list'}->{$key})) {
+      # need to merge lists
+      my %unique = map { $_ => 1 } @{ $self->get_sources_for_target($key) };
+      map { $unique{$_} = 1 } @{ $matrix->get_sources_for_target($key) };
+      $self->{'cache'}->{'target_list'}->{$key} = [keys %unique];
+    } else {
+      # no merging needed
+      $self->{'cache'}->{'target_list'}->{$key} = $matrix->{'cache'}->{'target_list'}->{$key};
+    }
   }
 
-  my $size = -s $cache_file;
-  return parse_bytes($size);
-}
-
-
-sub read_from_file {
-  my $self = shift;
-
-  my $cache_file = $self->cache_file;
-
-  unless (-s $cache_file) {
-    throw("No valid cache file found at $cache_file.");
-  }
-
-  eval { $self->{'cache'} = retrieve($cache_file); };
-  if ($@) {
-    throw("Unable to retrieve cache: $@");
-  }
-
-  return $self;
-}
-
-
-#
-# getter/setters
-#
-
-sub cache_file {
-  my $self = shift;
-  $self->{'cache_file'} = shift if (@_);
-  return $self->{'cache_file'};
-}
-
-
-sub dump_path {
-  my $self = shift;
-  $self->{'dump_path'} = shift if (@_);
-  return $self->{'dump_path'};
+  return $c;
 }
 
 
