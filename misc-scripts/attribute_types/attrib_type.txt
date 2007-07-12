@@ -237,3 +237,7 @@
 
 140	wgs	WGS contig	WGS contig integrated into the map
 141	bac	AGP clones	tiling path of clones
+
+# Attribute for per-gene GC percentage
+
+142	GeneGC	Gene GC	 Percentage GC content for this gene
