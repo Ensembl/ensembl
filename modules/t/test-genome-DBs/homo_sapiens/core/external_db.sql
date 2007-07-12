@@ -8,6 +8,9 @@ CREATE TABLE `external_db` (
   `priority` int(11) NOT NULL default '0',
   `db_display_name` varchar(255) collate latin1_bin default NULL,
   `type`  ENUM('ARRAY', 'ALT_TRANS', 'MISC', 'LIT'),
+  `secondary_db_name`          VARCHAR(255),
+  `secondary_db_table`         VARCHAR(255),
+
   PRIMARY KEY  (`external_db_id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_bin;
 
