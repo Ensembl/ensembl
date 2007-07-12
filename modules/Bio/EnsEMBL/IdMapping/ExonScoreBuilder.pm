@@ -96,7 +96,7 @@ sub overlap_score {
     
     # read from file
     $self->logger->info("Reading exon overlap scoring matrix from file...\n", 0, 'stamped');
-    $self->logger->info("Cache file $overlap_cache.\n", 1);
+    $self->logger->debug("Cache file $overlap_cache.\n", 1);
     $matrix->read_from_file;
     $self->logger->info("Done.\n", 0, 'stamped');
     
@@ -143,7 +143,7 @@ sub exonerate_score {
 
     # read from file
     $self->logger->info("Reading exonerate matrix from file...\n", 0, 'stamped');
-    $self->logger->info("Cache file $exonerate_cache.\n", 1);
+    $self->logger->debug("Cache file $exonerate_cache.\n", 1);
     $exonerate_matrix->read_from_file;
     $self->logger->info("Done.\n", 0, 'stamped');
 
