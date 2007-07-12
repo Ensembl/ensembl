@@ -42,9 +42,11 @@ for my $dbname (@dbnames) {
 					       '-dbname' => $dbname,
 					       '-species' => $dbname);
 
+  print STDERR "$dbname\n";
+
   delete_existing($dba) if !($print);
 
-  print "Calculating Gene GC attributes\n";
+  print STDERR "Calculating Gene GC attributes\n";
 
   my $attribute_adaptor = $dba->get_AttributeAdaptor();
 
