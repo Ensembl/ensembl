@@ -61,6 +61,8 @@ my %level_defs = (
   'verbose'   => 4,
 );
 
+my @reverse_level_defs = (undef, qw(error warning info debug));
+
 =head2 new
 
   Arg[1]      : String $serverroot - root directory of your ensembl sandbox
@@ -598,6 +600,12 @@ sub is_component {
   my $self = shift;
   $self->{'_is_component'} = shift if (@_);
   return $self->{'_is_component'};
+}
+
+
+sub loglevel {
+  my $self = shift;
+  return $reverse_level_def[$self->{'loglevel'}];
 }
 
 
