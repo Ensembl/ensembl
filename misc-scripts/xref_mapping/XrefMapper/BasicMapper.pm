@@ -1321,6 +1321,7 @@ PSQL
   my $object_xref_id =  $max_object_xref_id + 1;
 
   open(XREF_P,">$dir/xref_priority.txt") || die "Could not open xref_priority.txt";
+  open(GO_XREF_P,">$dir/go_xref_priority.txt") || die "Could not open go_xref_priority.txt";
   open(OBJECT_XREF_P,">$dir/object_xref_priority.txt") || die "Could not open object_xref_priority.txt"; 
   open(IDENTITY_XREF_P,">$dir/identity_xref_priority.txt") || die "Could not open identity_xref_priority.txt";
   open(IDENTITY_XREF_TEMP,">>$dir/identity_xref_temp.txt") || die "Could not open identity_xref_temp.txt";
@@ -1369,6 +1370,26 @@ PSQL
     } 
   }
 
+  #
+  # special"GO" bit for go xrefs we need to add the linkage annotation.
+  #
+
+  my $go_sql = "select dependent_xref_id, linkage_annotation from dependent_xref where dependent_xref_id in (";
+  $go_sql .= join(", ", values %priority_xref).") AND linkage_annotation is not null";
+  
+  my $sth = $self->xref->dbc->prepare($go_sql) || die "prepare failed";
+  $sth->execute() || die "execute failed";
+
+  my ($go_xref,$annot);
+  $sth->bind_columns(\$go_xref,\$annot);
+  my %go_xrefs;
+  while($sth->fetch()){
+    $go_xrefs{$go_xref} = $annot;
+  }
+  $sth->finish;
+
+
+
   foreach my $key (keys %priority_xref){
     my($source_name,$acc) = split(/:/,$key);
     my $xref_id = $priority_xref{$key};
@@ -1381,6 +1402,9 @@ PSQL
       my ($type,$id) = split(/:/,$priority_object_xref{$key});
       $object_succesfully_mapped{$xref_id} = 1;
       print OBJECT_XREF_P $object_xref_id."\t".$id."\t".$type."\t".($xref_id+$xref_id_offset)."\t\\N\n";
+      if(defined($go_xrefs{$xref_id})){
+	print GO_XREF_P  $object_xref_id."\t".$go_xrefs{$xref_id}."\n";
+      }
       if(defined($priority_identity_xref{$key})){
         print IDENTITY_XREF_P $object_xref_id."\t".$priority_identity_xref{$key};
       }
@@ -1421,6 +1445,7 @@ PSQL
   $sth->finish;
 
   close XREF_P;
+  close GO_XREF_P;
   close OBJECT_XREF_P;
   close IDENTITY_XREF_P;
   close IDENTITY_XREF_TEMP;
@@ -1454,7 +1479,7 @@ PSQL
 
 
 
-  foreach my $table ("xref","object_xref","identity_xref","external_synonym"){
+  foreach my $table ("xref","object_xref","identity_xref","external_synonym","go_xref"){
     my $file = $dir."/".$table."_priority.txt";
   
     if(-s $file){
