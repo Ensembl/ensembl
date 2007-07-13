@@ -753,8 +753,6 @@ CREATE TABLE xref (
    description                VARCHAR(255),
    info_type                  ENUM('PROJECTION', 'MISC', 'DEPENDENT', 'DIRECT', 'SEQUENCE_MATCH', 'INFERRED_PAIR', 'PROBE', 'UNMAPPED'),
    info_text                  VARCHAR(255),
-   secondary_db_name          VARCHAR(255),
-   secondary_db_table         VARCHAR(255),
 
    PRIMARY KEY (xref_id),
    UNIQUE KEY id_index (dbprimary_acc, external_db_id, info_type, info_text),
