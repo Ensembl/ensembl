@@ -257,6 +257,8 @@ cache_arrays_per_probeset($oligo_db);
 
 
 print "Writing xrefs\n";
+my $um_cnt = 0;
+
 # now loop over all the mappings and add xrefs for those that have a suitable number of matches
 foreach my $key (keys %transcript_probeset_count) {
 
@@ -340,9 +342,10 @@ close (LOG);
 # upload triage information if required
 if (!$no_triage) {
 
-  print "Uploading " . scalar(@unmapped_objects) . " unmapped reasons to xref database\n";
+  print "Uploading unmapped reasons to xref database\n";
   $unmapped_object_adaptor->store(@unmapped_objects);
-
+  $um_cnt += scalar(@unmapped_objects);
+  print "Loaded a total of $um_cnt UnmappedObjects to the DB\n";
 }
 
 # ----------------------------------------------------------------------
@@ -361,6 +364,8 @@ sub cache_and_load_unmapped_objects{
 	  $unmapped_objects[0]->dbID('2000');
 	  $first_cache = 0;
 	}
+
+	$um_cnt += scalar(@unmapped_objects);
 
 	$unmapped_object_adaptor->store(@unmapped_objects);
 	@unmapped_objects = ();
