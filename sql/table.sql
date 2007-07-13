@@ -753,6 +753,8 @@ CREATE TABLE xref (
    description                VARCHAR(255),
    info_type                  ENUM('PROJECTION', 'MISC', 'DEPENDENT', 'DIRECT', 'SEQUENCE_MATCH', 'INFERRED_PAIR', 'PROBE', 'UNMAPPED'),
    info_text                  VARCHAR(255),
+   secondary_db_name          VARCHAR(255),
+   secondary_db_table         VARCHAR(255),
 
    PRIMARY KEY (xref_id),
    UNIQUE KEY id_index (dbprimary_acc, external_db_id, info_type, info_text),
@@ -877,9 +879,9 @@ INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_45_46_a.sql|sche
 INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_45_46_b.sql|go_xref.source_xref_id');
 INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_45_46_c.sql|unmapped_object.external_db_id');
 INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_45_46_d.sql|meta_unique_key');
-INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_45_46_e.sql|object_xref_linkage_annotation');
-INSERT INTO meta (meta_key, meta_value) 
-  VALUES ('patch', 'patch_45_46_f.sql|stable_id_event.uni_idx');
+INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_45_46_e.sql|external_db_new_cols');
+INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_45_46_f.sql|stable_id_event.uni_idx');
+INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_45_46_g.sql|object_xref_linkage_annotation');
 
 ################################################################################
 #
