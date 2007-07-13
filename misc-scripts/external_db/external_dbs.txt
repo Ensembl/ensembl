@@ -146,6 +146,7 @@
 3251	AGILENT_G2518A	1	XREF	1	0	1	Agilent Microarray G2518A	ARRAY
 3255	Illumina_V1	1	XREF	1	0	1	Illumina V1	ARRAY
 3256	Illumina_V2	1	XREF	1	0	1	Illumina V2	ARRAY
+3299	Platypus_exon	XREF	1	0	1	Platypus Exon Array
 3300	miRBase	1	KNOWNXREF	1	0	1	miRBase	MISC
 3310	miRBase_predicted	1	XREF	1	0	1	miRBase predicted	MISC
 3400	SGD	1	KNOWN	1	0	50	SGD	MISC
