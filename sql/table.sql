@@ -798,7 +798,9 @@ CREATE TABLE external_db (
   priority                    INT NOT NULL,
   db_display_name             VARCHAR(255),
   type                        ENUM('ARRAY', 'ALT_TRANS', 'MISC', 'LIT', 'PRIMARY_DB_SYNONYM'),
-
+  secondary_db_name           VARCHAR(255) DEFAULT NULL,
+  secondary_db_table          VARCHAR(255) DEFAULT NULL,
+	
   PRIMARY KEY (external_db_id) 
 
 ) COLLATE=latin1_swedish_ci TYPE=MyISAM;
