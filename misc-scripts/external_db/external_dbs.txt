@@ -46,7 +46,7 @@
 1815	RefSeq_peptide_predicted	1	PRED	1	0	16	RefSeq peptide predicted	MISC
 1820	RefSeq_rna	1	KNOWN	1	0	24	RefSeq RNA	MISC
 1825	RefSeq_rna_predicted	1	PRED	1	0	14	RefSeq RNA predicted	MISC
-1830	RefSeq_genomic	1	KNOWN	1	0	23	RefSeq Genomic MISC
+1830	RefSeq_genomic	1	KNOWN	1	0	23	RefSeq Genomic	MISC
 1900	Sanger_Hver1_2_1	1	XREF	1	0	5	Sanger Hver 121	MISC
 1901	Sanger_Hver1_3_1	1	XREF	1	0	5	Sanger Hver 131	MISC
 1902	SNGR_Hver	1	XREF	1	0	5	Sanger Hver	MISC
@@ -143,10 +143,13 @@
 3206	ARRAY_LIV_AEGDETOX_0_25k_v1	1	XREF	1	0	1	VectorBase Array	ARRAY
 3207	ARRAY_ND_TIGRTC_9_6K_v1	1	XREF	1	0	1	VectorBase Array	ARRAY
 3208	ARRAY_UCR_GillMgMT_0_2K_v2	1	XREF	1	0	1	VectorBase Array	ARRAY
+3209	ARRAY_JHSPH_AGGAMBER_15k_v1	1	XREF	1	0	1	VectorBase Array	ARRAY
+3210	ARRAY_LIV_GAMDETOX_0_25k_v2	1	XREF	1	0	1	VectorBase Array	ARRAY
 3250	Illumina	1	XREF	1	0	1	Illumina	ARRAY
 3251	AGILENT_G2518A	1	XREF	1	0	1	Agilent Microarray G2518A	ARRAY
 3255	Illumina_V1	1	XREF	1	0	1	Illumina V1	ARRAY
 3256	Illumina_V2	1	XREF	1	0	1	Illumina V2	ARRAY
+3299	Platypus_exon	XREF	1	0	1	Platypus Exon Array	ARRAY
 3300	miRBase	1	KNOWNXREF	1	0	1	miRBase	MISC
 3310	miRBase_predicted	1	XREF	1	0	1	miRBase predicted	MISC
 3400	SGD	1	KNOWN	1	0	50	SGD	MISC
@@ -161,6 +164,7 @@
 4400	Xenopus_Jamboree	1	KNOWN	1	0	1	Jamboree	MISC
 4500	Tiffin	1	XREF	1	0	1	Tiffin DNA motifs	MISC
 4600	OTTT	1	XREF	1	0	1	Havana transcripts	ALT_TRANS
+4650	shares_CDS_with	1	XREF	1	0	1	transcript having same CDS	ALT_TRANS
 4660	shares_CDS_with_ENST	1	XREF	1	0	1	Ensembl transcript having same CDS	ALT_TRANS
 4670	shares_CDS_with_OTTT	1	XREF	1	0	1	Havana transcript having same CDS	ALT_TRANS
 4700	Medaka	1	XREF	1	0	1	Medaka Genome Project	MISC
@@ -169,7 +173,7 @@
 5000	Ens_Mm_gene	1	XREF	1	0	40	Ensembl Mouse Gene	MISC
 5020	Ens_Mm_translation	1	XREF	1	0	40	Ensembl Mouse Translation	MISC
 5100	IMGT	1	XREF	1	0	7	IMGT/HLA	MISC
-6000	Codelink	1	XREF	1	0	1	GE Healthcare/Amersham Codelink WGA	MISC
+6000	Codelink	1	XREF	1	0	1	GE Healthcare/Amersham Codelink WGA	ARRAY
 5200	Oxford_FGU_Md_gene	1	PRED	1	0	1	Oxford Ponting Group Monodelphis predictions gene id	ALT_TRANS
 5300	Oxford_FGU_Md_tscript	1	PRED	1	0	1	Oxford Ponting Group Monodelphis predictions transcript id	ALT_TRANS
 5400	Oxford_FGU_Oa_gene	1	PRED	1	0	1	Oxford Ponting Group Platypus predictions gene id	ALT_TRANS
@@ -182,8 +186,10 @@
 7200	IMGT/LIGM_DB	200641-6	XREF	1	1	10	IMGT/LIGM-DB	MISC
 7201	IMGT/GENE_DB	200641-6	KNOWN	1	0	40	IMGT/GENE-DB	MISC
 8000	Vega_mouse_transcript	1	XREF	1	0	5	Vega mouse transcript	MISC
+8100	Platypus_olfactory_receptor	1	XREF	1	0	40	Platypus olfactory receptor gene	MISC
 #
 #
 # Please separate fields in this file with TABS not spaces!
 #
-#	
+#
+	
