@@ -243,11 +243,14 @@ sub key_value_exists {
 
   my ($self, $key, $value) = @_;
 
-  my $sth = $self->prepare( "SELECT * FROM meta WHERE meta_key = ? AND meta_value = ?" );
+  my $sth = $self->prepare( "SELECT meta_value FROM meta WHERE meta_key = ? AND meta_value = ?" );
   $sth->execute($key, $value);
 
-  if ($sth->fetchrow_arrayref()) {
-    return 1;
+  while( my $arrRef = $sth->fetchrow_arrayref() ) {
+    if ($arrRef->[0] eq $value) {
+      $sth->finish();
+      return 1;
+    }
   }
 
   return undef;
