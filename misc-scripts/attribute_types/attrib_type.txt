@@ -234,4 +234,5 @@
 136	atag_Unsure	Unsure	region of uncertain DNA sequence marked in GAP database
 
 # vega
-137 TotAssemblyLeng Finished sequence length  Length of the assembly not counting sequence gaps
+137	TotAssemblyLeng	Finished sequence length	Length of the assembly not counting sequence gaps
+
