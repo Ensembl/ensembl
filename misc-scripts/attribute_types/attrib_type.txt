@@ -241,3 +241,6 @@
 # Attribute for per-gene GC percentage
 
 142	GeneGC	Gene GC	 Percentage GC content for this gene
+
+# vega
+143 TotAssemblyLeng Finished sequence length  Length of the assembly not counting sequence gaps
