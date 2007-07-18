@@ -368,6 +368,33 @@ sub get_source_id_from_source_name{
 
   return $source_id;
 } 
+=head2 get_source_hash_from_source_name
+
+  Arg[1]: source name
+
+  Description: get the source_id from the database for the named source.
+  Example    : my $id = get_source_id_from_source_name('RefSeq');
+  Returntype : hash off source_ids to name for given name
+  Exceptions : will die if source does not exist in given xref database.
+  Caller     : general
+
+=cut
+
+sub get_source_hash_from_source_name{
+  my ($self, $source) = @_;
+  my %source_hash;
+  my $source_id;
+  
+  my $sql = "select source_id from source where name = '".$source."'";
+  my $sth = $self->dbc->prepare($sql);
+  $sth->execute();
+  $sth->bind_columns(\$source_id);
+  while($sth->fetch()){
+    $source_hash{$source_id} = $source;
+  }	
+  $sth->finish();
+  return \%source_hash;
+} 
 
 
 =head2 dump_xref
@@ -1320,7 +1347,7 @@ PSQL
 #    print "Maximum existing object_xref_id = $max_object_xref_id\n";
 #  }
   my $object_xref_id =  $max_object_xref_id + 1;
-
+  my @go_depend = ();
   open(XREF_P,">$dir/xref_priority.txt") || die "Could not open xref_priority.txt";
   open(GO_XREF_P,">$dir/go_xref_priority.txt") || die "Could not open go_xref_priority.txt";
   open(OBJECT_XREF_P,">$dir/object_xref_priority.txt") || die "Could not open object_xref_priority.txt"; 
@@ -1366,6 +1393,8 @@ PSQL
 	print OBJECT_XREF_P $object_xref_id."\t".$id."\t".$type."\t".$dependent.
 	  "\tFROM:".$source_name.":".$acc."\n";	  
 	print IDENTITY_XREF_TEMP $object_xref_id."\t".$primary_identity{$xref_id}{$id."|".$type};
+#	print GO_XREF $object_xref_id . "\t" . $linkage_annotation . "\n"  if (defined($go_source{$source_id}));
+	
 	$object_xref_id++;	  
       }
     } 
@@ -1374,22 +1403,25 @@ PSQL
   #
   # special"GO" bit for go xrefs we need to add the linkage annotation.
   #
-
-  my $go_sql = "select dependent_xref_id, linkage_annotation from dependent_xref where dependent_xref_id in (";
-  $go_sql .= join(", ", values %priority_xref).") AND linkage_annotation is not null";
-  
-  my $sth = $self->xref->dbc->prepare($go_sql) || die "prepare failed";
-  $sth->execute() || die "execute failed";
-
-  my ($go_xref,$annot);
-  $sth->bind_columns(\$go_xref,\$annot);
-  my %go_xrefs;
-  while($sth->fetch()){
-    $go_xrefs{$go_xref} = $annot;
+  my %go_xrefs = ();
+  if(values %priority_xref){
+    my $go_sql = "select master_xref_id, dependent_xref_id, linkage_annotation from dependent_xref where dependent_xref_id in (";
+    $go_sql .= join(", ", values %priority_xref).") AND linkage_annotation is not null";
+    
+    my $sth = $self->xref->dbc->prepare($go_sql) || die "prepare failed";
+    $sth->execute() || die "execute failed";
+    
+    my ($master_xref, $go_xref,$annot);
+    $sth->bind_columns(\$master_xref, \$go_xref,\$annot);
+    my $go_count=0;
+    while($sth->fetch()){
+      $go_count++;
+      $go_xrefs{$go_xref} = $annot;
+    }
+    print "THRERE ARE $go_count go xrefs\n";
+    $sth->finish;
   }
-  $sth->finish;
-
-
+  
 
   foreach my $key (keys %priority_xref){
     my($source_name,$acc) = split(/:/,$key);
@@ -1849,7 +1881,7 @@ sub dump_direct_xrefs {
   open (GO_XREF, ">>" .$self->core->dir(). "/go_xref.txt");
 
 
-  my $go_source_id;
+  my %go_source;
   my $worm_pep_source_id = undef;
   my $worm_locus_source_id = undef;
   my $worm_gene_source_id = undef;
@@ -2021,8 +2053,8 @@ XSQL
         eval{ $worm_transcript_source_id = get_source_id_from_source_name
                   ($self->xref(), "wormbase_transcript") };
         if( $@ and $@ !~ /^Please try again/){ die( "==> $@" ) }
-        eval{ $go_source_id = get_source_id_from_source_name
-                  ($self->xref(), "GO" ) };
+        eval{ %go_source = %{get_source_hash_from_source_name
+                  ($self->xref(), "GO" ) }};
         if( $@ and $@ !~ /^Please try again/){ die( "==> $@" ) }
         $worm_pep_source_id ||= 0;
       }
@@ -2030,7 +2062,7 @@ XSQL
       # Need to link xrefs that are listed as linking to e.g. ZK829.4
       # to each of ZK829.4.1, ZK829.4.2, ZK829.4.3
       my $old_object_xref_id = $object_xref_id;
-      if ($source_id == $worm_pep_source_id || $source_id == $go_source_id 
+      if ($source_id == $worm_pep_source_id || defined($go_source{$source_id}) 
           || $source_id == $worm_locus_source_id || $source_id == $worm_gene_source_id
           || $source_id == $worm_transcript_source_id) {
         
@@ -2061,7 +2093,7 @@ XSQL
             $ensembl_internal_id = $stable_id_to_internal_id{$type}->{$stable_id};
 	    $object_succesfully_mapped{$xref_id} = 1;
             print OBJECT_XREF "$object_xref_id\t$ensembl_internal_id\t" . ucfirst($type) . "\t" . ($xref_id+$xref_id_offset) . "\t\\N\n";
-            if( $source_id == $go_source_id){
+            if(defined($go_source{$source_id})){
               print GO_XREF $object_xref_id . "\t" . $linkage_xref . "\n";
             }
             $object_xref_id++;
@@ -2451,7 +2483,7 @@ sub dump_core_xrefs {
 
     # Now get the dependent xrefs for each of these xrefs and write them as well
     # Store the go_linkage_annotations as we go along (need for dumping go_xref)
-    my $go_source_id = get_source_id_from_source_name($self->xref, "GO");
+    my %go_source = %{get_source_hash_from_source_name($self->xref, "GO")};
 
     $sql = "SELECT DISTINCT(x.xref_id), dx.master_xref_id, x.accession, x.label, x.description, x.source_id, x.version, dx.linkage_annotation FROM dependent_xref dx, xref x WHERE x.xref_id=dx.dependent_xref_id AND master_xref_id $id_str";
 
@@ -2547,11 +2579,10 @@ sub dump_core_xrefs {
 	    $object_xrefs_written{$full_key} = 1;
 
 	    # write a go_xref with the appropriate linkage type
-	    print GO_XREF $object_xref_id . "\t" . $linkage_annotation . "\n"  if ($source_id == $go_source_id);
+	    print GO_XREF $object_xref_id . "\t" . $linkage_annotation . "\n"  if (defined($go_source{$source_id}));
 	    my $master_accession = $XXXxref_id_to_accession{$master_xref_id};
 	
 	    # Also store *parent's* query/target identity for dependent xrefs
-	    print GO_XREF $object_xref_id . "\t" . $linkage_annotation . "\n"  if ($source_id == $go_source_id);
 
 	    $object_xref_id++;
 
