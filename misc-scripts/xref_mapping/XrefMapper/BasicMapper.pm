@@ -1349,7 +1349,6 @@ PSQL
   my $object_xref_id =  $max_object_xref_id + 1;
   my @go_depend = ();
   open(XREF_P,">$dir/xref_priority.txt") || die "Could not open xref_priority.txt";
-  open(GO_XREF_P,">$dir/go_xref_priority.txt") || die "Could not open go_xref_priority.txt";
   open(OBJECT_XREF_P,">$dir/object_xref_priority.txt") || die "Could not open object_xref_priority.txt"; 
   open(IDENTITY_XREF_P,">$dir/identity_xref_priority.txt") || die "Could not open identity_xref_priority.txt";
   open(IDENTITY_XREF_TEMP,">>$dir/identity_xref_temp.txt") || die "Could not open identity_xref_temp.txt";
@@ -1393,35 +1392,10 @@ PSQL
 	print OBJECT_XREF_P $object_xref_id."\t".$id."\t".$type."\t".$dependent.
 	  "\tFROM:".$source_name.":".$acc."\n";	  
 	print IDENTITY_XREF_TEMP $object_xref_id."\t".$primary_identity{$xref_id}{$id."|".$type};
-#	print GO_XREF $object_xref_id . "\t" . $linkage_annotation . "\n"  if (defined($go_source{$source_id}));
-	
 	$object_xref_id++;	  
       }
     } 
   }
-
-  #
-  # special"GO" bit for go xrefs we need to add the linkage annotation.
-  #
-  my %go_xrefs = ();
-  if(values %priority_xref){
-    my $go_sql = "select master_xref_id, dependent_xref_id, linkage_annotation from dependent_xref where dependent_xref_id in (";
-    $go_sql .= join(", ", values %priority_xref).") AND linkage_annotation is not null";
-    
-    my $sth = $self->xref->dbc->prepare($go_sql) || die "prepare failed";
-    $sth->execute() || die "execute failed";
-    
-    my ($master_xref, $go_xref,$annot);
-    $sth->bind_columns(\$master_xref, \$go_xref,\$annot);
-    my $go_count=0;
-    while($sth->fetch()){
-      $go_count++;
-      $go_xrefs{$go_xref} = $annot;
-    }
-    print "THRERE ARE $go_count go xrefs\n";
-    $sth->finish;
-  }
-  
 
   foreach my $key (keys %priority_xref){
     my($source_name,$acc) = split(/:/,$key);
@@ -1435,9 +1409,6 @@ PSQL
       my ($type,$id) = split(/:/,$priority_object_xref{$key});
       $object_succesfully_mapped{$xref_id} = 1;
       print OBJECT_XREF_P $object_xref_id."\t".$id."\t".$type."\t".($xref_id+$xref_id_offset)."\t\\N\n";
-      if(defined($go_xrefs{$xref_id})){
-	print GO_XREF_P  $object_xref_id."\t".$go_xrefs{$xref_id}."\n";
-      }
       if(defined($priority_identity_xref{$key})){
         print IDENTITY_XREF_P $object_xref_id."\t".$priority_identity_xref{$key};
       }
@@ -1478,7 +1449,6 @@ PSQL
   $sth->finish;
 
   close XREF_P;
-  close GO_XREF_P;
   close OBJECT_XREF_P;
   close IDENTITY_XREF_P;
   close IDENTITY_XREF_TEMP;
