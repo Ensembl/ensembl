@@ -4,11 +4,11 @@ use strict;
 # Remember to check/set the various config optons
 
 # ------------------------------ config -------------------------------
-my $release = 45;
+my $release = 46;
 
 my $base_dir = "/lustre/work1/ensembl/gp1/projections/";
 
-my $conf = "release_45.ini"; # registry config file
+my $conf = "release_46.ini"; # registry config file
 
 # -------------------------- end of config ----------------------------
 
@@ -34,7 +34,7 @@ my ($o, $e, $n);
 # Display names
 
 # human to chimp,opossum,dog,cow,macaque,chicken,xenopus,pig,armadillo,small_hedgehog,european_hedgehog,cat,elephant,macaque,bat,platypus,rabbit,galago,european_shrew,squirrel,ground_shrew
-foreach my $to ("chimp", "opossum", "dog", "cow", "macaque", "chicken", "xenopus", "guinea_pig", "armadillo", "small_hedgehog", "european_hedgehog", "cat", "elephant", "macaque", "bat", "platypus", "rabbit", "galago", "european_shrew", "squirrel", "ground_shrew") {
+foreach my $to ("chimp", "opossum", "dog", "cow", "macaque", "chicken", "xenopus", "guinea_pig", "armadillo", "small_hedgehog", "european_hedgehog", "cat", "elephant", "bat", "platypus", "rabbit", "galago", "european_shrew", "squirrel", "ground_shrew") {
   $o = "$dir/names_human_$to.out";
   $e = "$dir/names_human_$to.err";
   $n = substr("n_hum_$to", 0, 10); # job name display limited to 10 chars
