@@ -2,7 +2,7 @@
 # search engine.
 #
 # To copy files to the EBI so that they can be picked up:
-# scp homo_sapiens_core_41_36c.xml.gz glenn@puffin.ebi.ac.uk:xml/
+# scp *.xml.gz glenn@puffin.ebi.ac.uk:xml/
 #
 # Email eb-eye@ebi.ac.uk after copying so the files can be indexed.
 
@@ -115,11 +115,8 @@ sub header {
   p ("<description>Ensembl $species database</description>");
 
   my $release = @{$meta_container->list_value_by_key('schema_version')}[0];
-  my $date = @{$meta_container->list_value_by_key('xref.timestamp')}[0]; # near enough for now
-  $date = munge_release_date($date);
 
   p ("<release>$release</release>");
-  p ("<release_date>$date</release_date>");
 
   p ("");
   p ("<entries>");
@@ -290,20 +287,6 @@ sub format_date {
   my ($y, $m, $d, $ss, $mm, $hh) = (localtime($t))[5,4,3,0,1,2];
   $y += 1900;
   $d = "0" . $d if ($d < 10);
-  my $mm = text_month($m);
-
-  return "$d-$mm-$y";
-
-}
-
-# -------------------------------------------------------------------------------
-
-sub munge_release_date {
-
-  my $t = shift; # e.g. 2006-09-15 02:33:45
-
-  my ($date, $time) = split(/ /, $t);
-  my ($y, $m, $d) = split(/\-/, $date);
   my $mm = text_month($m);
 
   return "$d-$mm-$y";
