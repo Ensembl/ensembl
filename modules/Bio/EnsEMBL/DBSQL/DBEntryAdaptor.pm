@@ -51,7 +51,7 @@ use strict;
   Arg [1]    : int $dbID
                the unique database identifier for the DBEntry to retrieve
   Example    : my $db_entry = $db_entry_adaptor->fetch_by_dbID($dbID);
-  Description: retrieves a dbEntry from the database via its unique identifier 
+  Description: retrieves a dbEntry from the database via its unique identifier
   Returntype : Bio::EnsEMBL::DBEntry
   Exceptions : none
   Caller     : general
@@ -67,7 +67,8 @@ sub fetch_by_dbID {
            xref.version, xref.description,
            exDB.dbprimary_acc_linkable, exDB.display_label_linkable, exDB.priority,
            exDB.db_name, exDB.db_display_name, exDB.db_release, es.synonym,
-           xref.info_type, xref.info_text, exDB.type
+           xref.info_type, xref.info_text, exDB.type, exDB.secondary_db_name,
+           exDB.secondary_db_table
     FROM   (xref, external_db exDB)
     LEFT JOIN external_synonym es on es.xref_id = xref.xref_id
     WHERE  xref.xref_id = ?
@@ -82,7 +83,8 @@ sub fetch_by_dbID {
     my ( $refID, $dbprimaryId, $displayid, $version, $desc,
 	 $primary_id_linkable, $display_id_linkable, $priority,
          $dbname, $db_display_name, $release, $synonym,
-	 $info_type, $info_text, $type) = @$arrayref;
+	 $info_type, $info_text, $type, $secondary_db_name,
+	 $secondary_db_table) = @$arrayref;
 
     if(!$exDB) {
       $exDB = Bio::EnsEMBL::DBEntry->new
@@ -99,7 +101,9 @@ sub fetch_by_dbID {
 	  -db_display_name => $db_display_name,
 	  -info_type => $info_type,
 	  -info_text => $info_text,
-          -type => $type);
+          -type => $type,
+	  -secondary_db_name => $secondary_db_name,
+	  -secondary_db_table => $secondary_db_table);
 
 
       $exDB->description( $desc ) if ( $desc );
@@ -143,7 +147,8 @@ sub fetch_by_db_accession {
            xref.version, xref.description,
            exDB.dbprimary_acc_linkable, exDB.display_label_linkable, exDB.priority,
            exDB.db_name, exDB.db_display_name, exDB.db_release, es.synonym,
-           xref.info_type, xref.info_text, exDB.type
+           xref.info_type, xref.info_text, exDB.type, exDB.secondary_db_name,
+           exDB.secondary_db_table
     FROM   (xref, external_db exDB)
     LEFT JOIN external_synonym es on es.xref_id = xref.xref_id
     WHERE  xref.dbprimary_acc = ?
@@ -174,7 +179,8 @@ sub fetch_by_db_accession {
   while ( my $arrayref = $sth->fetchrow_arrayref()){
     my ( $dbID, $dbprimaryId, $displayid, $version, $desc, 
 	 $primary_id_linkable, $display_id_linkable, $priority, $dbname, $db_display_name,
-         $release, $synonym, $info_type, $info_text, $type) = @$arrayref;
+         $release, $synonym, $info_type, $info_text, $type, $secondary_db_name,
+	 $secondary_db_table) = @$arrayref;
 
     if(!$exDB) {
       $exDB = Bio::EnsEMBL::DBEntry->new
@@ -191,7 +197,9 @@ sub fetch_by_db_accession {
 	  -db_display_name=>$db_display_name,
 	  -info_type => $info_type,
 	  -info_text => $info_text,
-	  -type => $type);
+	  -type => $type,
+	  -secondary_db_name => $secondary_db_name,
+	  -secondary_db_table => $secondary_db_table);
 
       $exDB->description( $desc ) if ( $desc );
     }
@@ -238,7 +246,7 @@ sub store {
 
   if ($ensID =~ /^\d+$/) {
     $ensembl_id = $ensID;
-  
+
   } elsif ( ref($ensID) eq 'Bio::EnsEMBL::Gene' or
             ref($ensID) eq 'Bio::EnsEMBL::Transcript' or
             ref($ensID) eq 'Bio::EnsEMBL::Translation') {
@@ -493,7 +501,7 @@ sub exists {
   Description: This returns a list of DBEntries associated with this gene.
                Note that this method was changed in release 15.  Previously
                it set the DBLinks attribute of the gene passed in to contain
-               all of the gene, transcript, and translation xrefs associated 
+               all of the gene, transcript, and translation xrefs associated
                with this gene.
   Returntype : listref of Bio::EnsEMBL::DBEntries; may be of type IdentityXref if
                there is mapping data, or GoXref if there is linkage data.
@@ -521,14 +529,14 @@ sub fetch_all_by_Gene {
   Arg [3]    : optional external_db type 
   Example    : @db_entries = @{$db_entry_adaptor->fetch_by_Gene($trans)};
   Description: This returns a list of DBEntries associated with this 
-               transcript. Note that this method was changed in release 15.  
-               Previously it set the DBLinks attribute of the gene passed in 
-               to contain all of the gene, transcript, and translation xrefs 
+               transcript. Note that this method was changed in release 15.
+               Previously it set the DBLinks attribute of the gene passed in
+               to contain all of the gene, transcript, and translation xrefs
                associated with this gene.
   Returntype : listref of Bio::EnsEMBL::DBEntries; may be of type IdentityXref if
                there is mapping data, or GoXref if there is linkage data.
   Exceptions : throes if transcript argument not passed
-  Caller     : Bio::EnsEMBL::Gene 
+  Caller     : Bio::EnsEMBL::Gene
   Status     : Stable
 
 =cut
@@ -709,11 +717,12 @@ sub _fetch_by_object_type {
   my $sql = (<<SSQL);
     SELECT xref.xref_id, xref.dbprimary_acc, xref.display_label, xref.version,
            xref.description,
-           exDB.dbprimary_acc_linkable, exDB.display_label_linkable, 
+           exDB.dbprimary_acc_linkable, exDB.display_label_linkable,
            exDB.priority,
            exDB.db_name, exDB.db_release, exDB.status, exDB.db_display_name,
+           exDB.secondary_db_name, exDB.secondary_db_table,
            oxr.object_xref_id,
-           es.synonym, 
+           es.synonym,
            idt.query_identity, idt.target_identity, idt.hit_start,
            idt.hit_end, idt.translation_start, idt.translation_end,
            idt.cigar_line, idt.score, idt.evalue, idt.analysis_id,
@@ -741,23 +750,26 @@ SSQL
   while ( my $arrRef = $sth->fetchrow_arrayref() ) {
     my ( $refID, $dbprimaryId, $displayid, $version, 
          $desc, $primary_id_linkable, $display_id_linkable, $priority,
-         $dbname, $release, $exDB_status, $exDB_db_display_name, $objid,
+         $dbname, $release, $exDB_status, $exDB_db_display_name,
+	 $exDB_secondary_db_name, $exDB_secondary_db_table, $objid,
          $synonym, $queryid, $targetid, $query_start, $query_end,
          $translation_start, $translation_end, $cigar_line,
          $score, $evalue, $analysis_id, $linkage_type,
 	 $info_type, $info_text, $type, $source_xref_id ) = @$arrRef;
     my $linkage_key = ($linkage_type||'') . ($source_xref_id||'');
     my %obj_hash = (
-		    'adaptor'    => $self,
-		    'dbID'       => $refID,
-		    'primary_id' => $dbprimaryId,
-		    'display_id' => $displayid,
-		    'version'    => $version,
-		    'release'    => $release,
-		    'info_type'  => $info_type,
-		    'info_text'  => $info_text,
-		    'type'       => $type,
-		    'dbname'     => $dbname );
+		    'adaptor'            => $self,
+		    'dbID'               => $refID,
+		    'primary_id'         => $dbprimaryId,
+		    'display_id'         => $displayid,
+		    'version'            => $version,
+		    'release'            => $release,
+		    'info_type'          => $info_type,
+		    'info_text'          => $info_text,
+		    'type'               => $type,
+		    'secondary_db_name'  => $exDB_secondary_db_name,
+		    'secondary_db_table' => $exDB_secondary_db_table,
+		    'dbname'             => $dbname );
 
     # using an outer join on the synonyms as well as on identity_xref, we
     # now have to filter out the duplicates (see v.1.18 for
@@ -814,11 +826,11 @@ SSQL
       $synonyms{$refID}->{$synonym} = 1;
     }
 
-    if( defined($linkage_type) 
-        && $linkage_type ne "" 
+    if( defined($linkage_type)
+        && $linkage_type ne ""
         && !$linkage_types{$refID}->{$linkage_key}) {
-      my $source_xref = $source_xref_id 
-          ? $self->fetch_by_dbID($source_xref_id) 
+      my $source_xref = $source_xref_id
+          ? $self->fetch_by_dbID($source_xref_id)
           : undef;
       $seen{$refID}->add_linkage_type($linkage_type, $source_xref||());
       $linkage_types{$refID}->{$linkage_key} = 1;
@@ -832,10 +844,10 @@ SSQL
 
   Arg [1]    : string $external_id
   Example    : @gene_ids = $dbea->list_gene_ids_by_external_db_id(1020);
-  Description: Retrieve a list of geneid by an external identifier that is 
-               linked to  any of the genes transcripts, translations or the 
+  Description: Retrieve a list of geneid by an external identifier that is
+               linked to  any of the genes transcripts, translations or the
                gene itself. NOTE: if more than one external identifier has the
-               same primary accession then genes for each of these is returned. 
+               same primary accession then genes for each of these is returned.
   Returntype : list of ints
   Exceptions : none
   Caller     : unknown
@@ -1136,7 +1148,7 @@ sub _type_by_external_db_id{
 # queries. This is because the 'or' statments render the index useless 
 # because MySQL can't use any fields in the index.
 
-  my %hash = (); 
+  my %hash = ();
   my @result = ();
 
 
@@ -1161,7 +1173,7 @@ sub _type_by_external_db_id{
 
   Example    : @canc_refs = @{$db_entry_adaptor->fetch_all_by_description("%cancer%")};
                @db_entries = @{$db_entry_adaptor->fetch_all_by_description("%cancer%","MIM_MORBID")};
-  Description: Retrieves DBEntrys that match the description. Optionally you can search on 
+  Description: Retrieves DBEntrys that match the description. Optionally you can search on
                external databases tpye
   Returntype : ref to array of Bio::EnsEMBL::DBSQL::DBEntry
   Exceptions : None.
@@ -1180,7 +1192,8 @@ sub fetch_all_by_description {
            xref.version, xref.description,
            exDB.dbprimary_acc_linkable, exDB.display_label_linkable, exDB.priority,
            exDB.db_name, exDB.db_display_name, exDB.db_release, es.synonym,
-           xref.info_type, xref.info_text, exDB.type
+           xref.info_type, xref.info_text, exDB.type, exDB.secondary_db_name,
+           exDB.secondary_db_table
     FROM   (xref, external_db exDB)
     LEFT JOIN external_synonym es on es.xref_id = xref.xref_id
     WHERE  xref.description like ?
@@ -1190,16 +1203,17 @@ sub fetch_all_by_description {
      $sql .= " AND exDB.db_name = ? ";
    }
    my $sth = $self->prepare($sql);
-   
+
   $sth->bind_param(1,$description,SQL_VARCHAR);
   if(defined($dbname)){
     $sth->bind_param(2,$dbname,SQL_VARCHAR);
   }
   $sth->execute();
   while ( my $arrayref = $sth->fetchrow_arrayref()){
-    my ( $dbID, $dbprimaryId, $displayid, $version, $desc, 
+    my ( $dbID, $dbprimaryId, $displayid, $version, $desc,
 	 $primary_id_linkable, $display_id_linkable, $priority, $dbname,$db_display_name,
-         $release, $synonym, $info_type, $info_text, $type) = @$arrayref;
+         $release, $synonym, $info_type, $info_text, $type, $secondary_db_name,
+	 $secondary_db_table) = @$arrayref;
 
       my $exDB = Bio::EnsEMBL::DBEntry->new
         ( -adaptor => $self,
@@ -1215,7 +1229,9 @@ sub fetch_all_by_description {
 	  -db_display_name=>$db_display_name,
 	  -info_type => $info_type,
 	  -info_text => $info_text,
-	  -type => $type);
+	  -type => $type,
+	  -secondary_db_name => $secondary_db_name,
+	  -secondary_db_table => $secondary_db_table);
 
       $exDB->description( $desc ) if ( $desc );
 

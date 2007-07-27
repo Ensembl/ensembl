@@ -85,14 +85,17 @@ sub new_fast {
                     -db_display_name => $db_display_name,
                     -info_type => $info_type,
                     -info_text => $info_text,
-                    -type => $type);
+                    -type => $type,
+                    -secondary_db_name => $secondary_db_name,
+                    -secondary_db_table => $secondary_db_table);
   Description: Creates a new DBEntry object
   Returntype : Bio::EnsEMBL::DBEntry
   Exceptions : none
   Caller     : Bio::EnsEMBL::DBEntryAdaptor
   Status     : At Risk
                Due to 'PRIMARY_ID_LINKABLE','DISPLAY_ID_LINKABLE','PRIORITY',
-              'INFO_TYPE', 'INFO_TEXT', ''DB_DISPLAY_NAME', 'TYPE'
+              'INFO_TYPE', 'INFO_TEXT', ''DB_DISPLAY_NAME', 'TYPE',
+              'SECONDARY_DB_NAME', 'SECONDARY_DB_TABLE'
                being under development - if you don't use any of these the
                method can be considered Stable
 
@@ -106,11 +109,13 @@ sub new {
   my ( $adaptor, $dbID, $primary_id, $version,
        $dbname, $release, $display_id, $description,
        $primary_id_linkable, $display_id_linkable, $priority,
-       $db_display_name, $info_type, $info_text, $type) =
+       $db_display_name, $info_type, $info_text, $type,
+       $secondary_db_name, $secondary_db_table) =
     rearrange ( ['ADAPTOR','DBID','PRIMARY_ID','VERSION',
                  'DBNAME','RELEASE','DISPLAY_ID','DESCRIPTION',
 		 'PRIMARY_ID_LINKABLE','DISPLAY_ID_LINKABLE','PRIORITY',
-		 'DB_DISPLAY_NAME', 'INFO_TYPE', 'INFO_TEXT', 'TYPE'], @args );
+		 'DB_DISPLAY_NAME', 'INFO_TYPE', 'INFO_TEXT', 'TYPE',
+                 'SECONDARY_DB_NAME', 'SECONDARY_DB_TABLE'], @args );
 
   $self->{'adaptor'} = $adaptor;
   $self->{'dbID'}    = $dbID;
@@ -129,6 +134,8 @@ sub new {
   if( defined $info_type) { $self->info_type($info_type) }
   if( defined $info_text) { $self->info_text($info_text) }
   if( defined $type) { $self->type($type) }
+  if( defined $secondary_db_name) { $self->secondary_db_name($secondary_db_name) }
+  if( defined $secondary_db_table) { $self->secondary_db_table($secondary_db_table) }
 
   return $self;
 }
@@ -483,6 +490,45 @@ sub type {
     $self->{type} = $arg;
   }
   return $self->{type};
+}
+
+=head2 secondary_db_name
+
+  Arg [1]    : String $secondary_db_name
+  Example    : none
+  Description: Getter/setter for attribute 'secondary_db_name'.
+  Returnsecondary_db_name : String
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub secondary_db_name {
+  my ( $self, $arg ) = @_;
+  if( defined $arg ) {
+    $self->{secondary_db_name} = $arg;
+  }
+  return $self->{secondary_db_name};
+}
+
+
+=head2 secondary_db_table
+
+  Arg [1]    : String $secondary_db_table
+  Example    : none
+  Description: Getter/setter for attribute 'secondary_db_table'.
+  Returnsecondary_db_table : String
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub secondary_db_table {
+  my ( $self, $arg ) = @_;
+  if( defined $arg ) {
+    $self->{secondary_db_table} = $arg;
+  }
+  return $self->{secondary_db_table};
 }
 
 
