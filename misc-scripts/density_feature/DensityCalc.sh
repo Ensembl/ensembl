@@ -33,8 +33,6 @@ if [[ ${dbname} == ${dbname#*_core_*} ]]; then
   exit 1
 fi
 
-exit
-
 print "Submitting percent GC calculation to queue 'normal'"
 print "\tThe output from this job goes to the file"
 print "\t'${dbname}_gc.out'"
