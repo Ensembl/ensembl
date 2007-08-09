@@ -656,7 +656,7 @@ sub get_all_differences_Slice{
 
 =head2 get_all_VariationFeatures
 
-    Args       : none
+    Arg[1]     : int $with_coverage (optional)
     Description :returns all alleleFeatures features on this slice. 
     ReturnType : listref of Bio::EnsEMBL::Variation::AlleleFeature
     Exceptions : none
@@ -666,8 +666,9 @@ sub get_all_differences_Slice{
 
 sub get_all_VariationFeatures {
   my $self = shift;
-
-  return $self->get_all_AlleleFeatures_Slice;
+  my $with_coverage = shift;
+  $with_coverage ||= 0;
+  return $self->get_all_AlleleFeatures_Slice($with_coverage);
 }
 
 =head2 get_original_seq_region_position
