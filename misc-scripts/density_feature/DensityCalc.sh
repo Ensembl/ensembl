@@ -36,7 +36,7 @@ fi
 print "Submitting percent GC calculation to queue 'normal'"
 print "\tThe output from this job goes to the file"
 print "\t'${dbname}_gc.out'"
-bsub -qnormal -oo ${dbname}_gc.out \
+bsub -q normal -J gc_calc -oo ${dbname}_gc.out \
   perl ./percent_gc_calc.pl \
   -host ${host} \
   -port ${port} \
@@ -47,7 +47,7 @@ bsub -qnormal -oo ${dbname}_gc.out \
 print "Submitting gene density calculation to queue 'normal'"
 print "\tThe output from this job goes to the file"
 print "\t'${dbname}_gene.out'"
-bsub -qnormal -oo ${dbname}_gene.out \
+bsub -q normal -J gene_density -oo ${dbname}_gene.out \
   perl ./gene_density_calc.pl \
   -host ${host} \
   -port ${port} \
@@ -58,7 +58,7 @@ bsub -qnormal -oo ${dbname}_gene.out \
 print "Submitting repeat coverage calculation to queue 'long'"
 print "\tThe output from this job goes to the file"
 print "\t'${dbname}_repeat.out'"
-bsub -qlong -oo ${dbname}_repeat.out \
+bsub -q long -J repeat_cov -oo ${dbname}_repeat.out \
   perl ./repeat_coverage_calc.pl \
   -host ${host} \
   -port ${port} \
@@ -69,7 +69,7 @@ bsub -qlong -oo ${dbname}_repeat.out \
 print "Submitting variation density calculation to queue 'normal'"
 print "\tThe output from this job goes to the file"
 print "\t'${dbname}_var.out'"
-bsub -qnormal -oo ${dbname}_var.out \
+bsub -q normal -J var_density -oo ${dbname}_var.out \
   perl ./variation_density.pl \
   -host ${host} \
   -port ${port} \
@@ -80,7 +80,7 @@ bsub -qnormal -oo ${dbname}_var.out \
 print "Submitting seq region stats calculation to queue 'normal'"
 print "\tThe output from this job goes to the file"
 print "\t'${dbname}_seqreg.out'"
-bsub -qnormal -oo ${dbname}_seqreg.out \
+bsub -q normal -J seqreg_stats -oo ${dbname}_seqreg.out \
   perl ./seq_region_stats.pl \
   -host ${host} \
   -port ${port} \
