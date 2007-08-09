@@ -294,9 +294,10 @@ sub _add_coverage_information{
 
 =head2 get_all_AlleleFeatures_Slice
 
-    Args        : none
+    Arg[1]      : int $with_coverage (optional)
     Example     : my $af = $strainSlice->get_all_AlleleFeatures_Slice()
-    Description : Gets all AlleleFeatures between the StrainSlice object and the Slice is defined
+    Description : Gets all AlleleFeatures between the StrainSlice object and the Slice is defined.
+                  If argument $with_coverage set to 1, returns only AF if they have coverage information
     ReturnType  : listref of Bio::EnsEMBL::Variation::AlleleFeature
     Exceptions  : none
     Caller      : general
@@ -305,6 +306,12 @@ sub _add_coverage_information{
 
 sub get_all_AlleleFeatures_Slice{
     my $self = shift;
+    my $with_coverage = shift;
+
+    if ($with_coverage == 1){
+	my $new_allele_features = $self->_filter_af_by_coverage($self->{'alleleFeatures'});
+	return $new_allele_features;
+    }
 
     return $self->{'alleleFeatures'};
 }
