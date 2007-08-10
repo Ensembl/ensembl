@@ -28,7 +28,7 @@ then
 fi
 
 # Make sure this is a core database.
-if [[ ${dbname} == ${dbname#*_core_*} ]]; then
+if [[ -n ${dbname##*_core_*} ]]; then
   print -u2 "The database '${dbname}' is not a core database"
   exit 1
 fi
