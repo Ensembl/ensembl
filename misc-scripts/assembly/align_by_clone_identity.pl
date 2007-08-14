@@ -273,32 +273,47 @@ my $fmt6 = "%-10s%-12s%-10s%-12s\n";
     my $A_slice = $A_sa->fetch_by_region('chromosome', $A_chr, undef, undef, undef, $support->param('altassembly'));
     my $A_slice_ref = $R_sa->fetch_by_region('chromosome', $A_chr, undef, undef, undef, $support->param('altassembly'));
 
-    # project to clones
-    my @R_clones = @{ $R_slice->project('clone') };
-    my @A_clones = @{ $A_slice->project('clone') };
+    # project to contigs (not to clones because for WGS assembly regions there
+    # are no clones)
+    my @R_contigs = @{ $R_slice->project('contig') };
+    my @A_contigs = @{ $A_slice->project('contig') };
 
-    # loop over alternative clones
+    # loop over alternative clontigs
     my $last = 0;
     my $j = 0;
     my $match_flag = 0;
     my $last_A_seg;
     my %stats_chr;
 
-    foreach my $A_seg (@A_clones) {  
+    foreach my $A_seg (@A_contigs) {
 
-      my $A_clone = $A_seg->to_Slice;
+      my $A_contig = $A_seg->to_Slice;
 
-      $support->log_verbose("Alternative clone ($j) ".$A_clone->seq_region_name.":".$A_clone->start."-".$A_clone->end.":".$A_clone->strand." $A_chr:".$A_seg->from_start."-".$A_seg->from_end."\n", 2);
+      # project contig to clone for clone name comparison
+      my @A_clones = @{ $A_contig->project('clone') };
 
-      # walk reference clones
+      my $A_clone;
+      $A_clone = $A_clones[0]->to_Slice if (@A_clones);
+
+      $support->log_verbose("Alternative contig ($j) ".$A_contig->seq_region_name.":".$A_contig->start."-".$A_contig->end.":".$A_contig->strand." $A_chr:".$A_seg->from_start."-".$A_seg->from_end."\n", 2);
+
+      # walk reference contigs
       REFCLONES:
-      for (my $i = $last; $i < scalar(@R_clones); $i++) {
+      for (my $i = $last; $i < scalar(@R_contigs); $i++) {
 
-        my $R_clone = $R_clones[$i]->to_Slice;
+        my $R_contig = $R_contigs[$i]->to_Slice;
 
-        # same name.version and strand found
-        if ($A_clone->seq_region_name eq $R_clone->seq_region_name and
-            $A_clone->strand == $R_clone->strand) {
+        # project contig to clone for clone name comparison
+        my @R_clones = @{ $R_contig->project('clone') };
+
+        my $R_clone;
+        $R_clone = $R_clones[0]->to_Slice if (@R_clones);
+
+        # same clone name.version and contig and clone strand found
+        if ($A_clone and $R_clone and
+            $A_clone->seq_region_name eq $R_clone->seq_region_name and
+            $A_clone->strand == $R_clone->strand and
+            $A_contig->strand == $R_contig->strand) {
 
           # same clone start/end -> identical assembly
           if ($A_clone->start == $R_clone->start and $A_clone->end == $R_clone->end) {
@@ -309,11 +324,11 @@ my $fmt6 = "%-10s%-12s%-10s%-12s\n";
               $support->log_verbose("Skipping matching reference clone ($i)".
                   $R_clone->seq_region_name.":".$R_clone->start."-".
                   $R_clone->end.":".$R_clone->strand."$R_chr:".
-                  $R_clones[$i]->from_start."-".$R_clones[$i]->from_end.
+                  $R_contigs[$i]->from_start."-".$R_contigs[$i]->from_end.
                   "\n", 2);
 
               &found_nomatch($R_chr, $A_chr, $match, $nomatch, $A_seg,
-                  $last_A_seg, $R_clones[$i], $R_clones[$i-1],
+                  $last_A_seg, $R_contigs[$i], $R_contigs[$i-1],
                   $match_flag, $i, $j
               );
 
@@ -325,11 +340,11 @@ my $fmt6 = "%-10s%-12s%-10s%-12s\n";
               $support->log_verbose("Found matching reference clone ($i)".
                   $R_clone->seq_region_name.":".$R_clone->start."-".
                   $R_clone->end.":".$R_clone->strand."$R_chr:".
-                  $R_clones[$i]->from_start."-".$R_clones[$i]->from_end.
+                  $R_contigs[$i]->from_start."-".$R_contigs[$i]->from_end.
                   "\n", 2);
 
               &found_match($R_chr, $A_chr, $match, $nomatch, $A_seg,
-                  $last_A_seg, $R_clones[$i], $R_clones[$i-1],
+                  $last_A_seg, $R_contigs[$i], $R_contigs[$i-1],
                   $match_flag, $i, $j
               );
 
@@ -340,11 +355,11 @@ my $fmt6 = "%-10s%-12s%-10s%-12s\n";
           # start/end mismatch
           } else {
 
-            $support->log_verbose("Start/end mismatch for clone ($i) ".$R_clone->seq_region_name.":".$R_clone->start."-".$R_clone->end.":".$R_clone->strand." $R_chr:".$R_clones[$i]->from_start."-".$R_clones[$i]->from_end."\n", 2);
+            $support->log_verbose("Start/end mismatch for clone ($i) ".$R_contig->seq_region_name.":".$R_contig->start."-".$R_contig->end.":".$R_contig->strand." $R_chr:".$R_contigs[$i]->from_start."-".$R_contigs[$i]->from_end."\n", 2);
 
             &found_nomatch(
                 $R_chr, $A_chr, $match, $nomatch, $A_seg, $last_A_seg,
-                $R_clones[$i], $R_clones[$i-1], $match_flag, $i, $j
+                $R_contigs[$i], $R_contigs[$i-1], $match_flag, $i, $j
             );
 
             $stats_chr{'mismatch'}++;
@@ -354,12 +369,12 @@ my $fmt6 = "%-10s%-12s%-10s%-12s\n";
           $last = $i;
           last REFCLONES;
 
-        # different clones
+        # different clones or no clones found
         } else {
 
-          $support->log_verbose("Skipping clone ($i)".$R_clone->seq_region_name.":".$R_clone->start."-".$R_clone->end.":".$R_clone->strand." $R_chr:".$R_clones[$i]->from_start."-".$R_clones[$i]->from_end."\n", 2);
+          $support->log_verbose("Skipping clone ($i)".$R_contig->seq_region_name.":".$R_contig->start."-".$R_contig->end.":".$R_contig->strand." $R_chr:".$R_contigs[$i]->from_start."-".$R_contigs[$i]->from_end."\n", 2);
 
-          &found_nomatch($R_chr, $A_chr, $match, $nomatch, $A_seg, $last_A_seg, $R_clones[$i], $R_clones[$i-1], $match_flag, $i, $j);
+          &found_nomatch($R_chr, $A_chr, $match, $nomatch, $A_seg, $last_A_seg, $R_contigs[$i], $R_contigs[$i-1], $match_flag, $i, $j);
 
           $match_flag = 0;
 
@@ -377,8 +392,8 @@ my $fmt6 = "%-10s%-12s%-10s%-12s\n";
       if ($match->{$R_chr}) {
 
         my $c = scalar(@{ $match->{$R_chr} }) - 1;
-        $match->{$R_chr}->[$c]->[2] = scalar(@A_clones) - $match->{$R_chr}->[$c]->[2];
-        $match->{$R_chr}->[$c]->[5] = scalar(@R_clones) - $match->{$R_chr}->[$c]->[5];
+        $match->{$R_chr}->[$c]->[2] = scalar(@A_contigs) - $match->{$R_chr}->[$c]->[2];
+        $match->{$R_chr}->[$c]->[5] = scalar(@R_contigs) - $match->{$R_chr}->[$c]->[5];
 
       }
 
@@ -388,8 +403,8 @@ my $fmt6 = "%-10s%-12s%-10s%-12s\n";
       if ($nomatch->{$R_chr}) {
 
         my $c = scalar(@{ $nomatch->{$R_chr} }) - 1;
-        $nomatch->{$R_chr}->[$c]->[2] = scalar(@A_clones) - $nomatch->{$R_chr}->[$c]->[2];
-        $nomatch->{$R_chr}->[$c]->[5] = scalar(@R_clones) - $nomatch->{$R_chr}->[$c]->[5];
+        $nomatch->{$R_chr}->[$c]->[2] = scalar(@A_contigs) - $nomatch->{$R_chr}->[$c]->[2];
+        $nomatch->{$R_chr}->[$c]->[5] = scalar(@R_contigs) - $nomatch->{$R_chr}->[$c]->[5];
 
       }
 
@@ -445,8 +460,8 @@ my $fmt6 = "%-10s%-12s%-10s%-12s\n";
     }
 
     # stats for this chromosome
-    $stats_chr{'A_only'} = scalar(@A_clones) - $stats_chr{'identical'} - $stats_chr{'mismatch'};
-    $stats_chr{'R_only'} = scalar(@R_clones) - $stats_chr{'identical'} - $stats_chr{'mismatch'};
+    $stats_chr{'A_only'} = scalar(@A_contigs) - $stats_chr{'identical'} - $stats_chr{'mismatch'};
+    $stats_chr{'R_only'} = scalar(@R_contigs) - $stats_chr{'identical'} - $stats_chr{'mismatch'};
     for (my $c = 0; $c < scalar(@{ $match->{$R_chr} || [] }); $c++) {
       $stats_chr{'A_matchlength'} += $match->{$R_chr}->[$c]->[1] - $match->{$R_chr}->[$c]->[0];
       $stats_chr{'R_matchlength'} += $match->{$R_chr}->[$c]->[4] - $match->{$R_chr}->[$c]->[3];
