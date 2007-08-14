@@ -290,11 +290,6 @@ while (my $row = $sth->fetchrow_hashref) {
 
 $support->log_stamped("Done.\n");
 
-# filter overlapping Vega alignment regions
-$support->log_stamped("Filtering overlapping reference alignment regions...\n");
-#$aligner->filter_overlaps;
-$support->log_stamped("Done.\n");
-
 # write alignments to assembly table
 unless ($support->param('dry_run')) {
   $aligner->write_assembly($R_dba);
