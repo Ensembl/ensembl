@@ -81,7 +81,8 @@ calculated by this algorithm:
   3. align using blastz
   4. filter best hits (for query sequences, i.e. alternative regions) using
      axtBest
-  5. parse blastz output to create blocks of exact matches only
+  5. parse blastz output to create blocks of exact matches only (update:
+     mismatches are allowed now, but gaps are not)
   6. remove overlapping target (reference) alignments
   7. write alignments to assembly table
 
