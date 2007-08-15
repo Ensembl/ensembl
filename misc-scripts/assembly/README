@@ -28,6 +28,12 @@ assembly differences:
 
   $ ensembl/misc-scripts/assembly/compare_assemblies.pl
 
+Also note that the current version of the alignment code allows basepair
+mismatches (but no insertions/deletions), so if you need perfect sequence
+matches you'll have to post-process the projection results as required. Earlier
+versions of this code didn't allow mismatches which resulted in a very
+fragmented mapping, and in most use cases this wasn't desirable.
+
 
 -------------------------------------------------------------------------------
 Creating the whole genome alignment
@@ -166,7 +172,7 @@ Known bugs
 
 When projecting from a symlinked region of a PAR, you will end up in the
 reference region (e.g. projecting from human chromosome Y gets you to X). The
-coordinates of the projected slice will therefor also reflect the reference
+coordinates of the projected slice will therefore also reflect the reference
 region and might not be what you expect. Since features should only be stored
 once (on the reference region) anyway, these projections should be ignored.
 
