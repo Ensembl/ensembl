@@ -156,6 +156,7 @@ foreach my $chr ($support->sort_chromosomes($support->get_chrlength(undef, undef
   
   my $i = 0;
   my $j = 0;
+  my $k = 0;
   
   while ($last and (my $r = $sth->fetchrow_hashref)) {
     # merge adjacent assembly segments (these can result from alternating
@@ -166,9 +167,36 @@ foreach my $chr ($support->sort_chromosomes($support->get_chrlength(undef, undef
       $j++;
 
       # debug warnings
-      $support->log_verbose('last:   '.sprintf($fmt1, map { $last->{$_} }
+      $support->log_verbose('merging - last: '.sprintf($fmt1,
+        map { $last->{$_} } qw(asm_start asm_end cmp_start cmp_end ori)), 1);
+      $support->log_verbose('this:           '.sprintf($fmt1, map { $r->{$_} }
         qw(asm_start asm_end cmp_start cmp_end ori)), 1);
-      $support->log_verbose('this: '.sprintf($fmt1, map { $r->{$_} }
+
+      # remove last row
+      pop(@rows);
+
+      # merge segments and add new row
+      $last->{'asm_end'} = $r->{'asm_end'};
+      $last->{'cmp_end'} = $r->{'cmp_end'};
+      push @rows, $last;
+
+      next;
+    }
+    
+    # bridge small gaps (again, these can result from alternating alignments
+    # from clone identity and blastz alignment). A maximum gap size of 10bp is
+    # allowed
+    my $asm_gap = $r->{'asm_start'} - $last->{'asm_end'} - 1;
+    my $cmp_gap = $r->{'cmp_start'} - $last->{'cmp_end'} - 1;
+
+    if ($asm_gap == $cmp_gap and $asm_gap <= 10 and $asm_gap > 0) {
+
+      $k++;
+
+      # debug warnings
+      $support->log_verbose('bridging - last: '.sprintf($fmt1,
+        map { $last->{$_} } qw(asm_start asm_end cmp_start cmp_end ori)), 1);
+      $support->log_verbose('this:            '.sprintf($fmt1, map { $r->{$_} }
         qw(asm_start asm_end cmp_start cmp_end ori)), 1);
 
       # remove last row
@@ -219,6 +247,7 @@ foreach my $chr ($support->sort_chromosomes($support->get_chrlength(undef, undef
 
   $support->log("Fixed $i mappings.\n", 1);
   $support->log("Merged $j mappings.\n", 1);
+  $support->log("Bridged $k gaps.\n", 1);
 }
 
 $sth->finish;
