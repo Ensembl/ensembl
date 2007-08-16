@@ -610,38 +610,46 @@ sub subseq {
 sub get_base_count {
   my $self = shift;
 
-  my $a = 0; my $c = 0; my $t = 0; my $g = 0;
+  my $a = 0;
+  my $c = 0;
+  my $t = 0;
+  my $g = 0;
 
   my $start = 1;
   my $end;
+
   my $RANGE = 100_000;
-  my $len = $self->length;
+  my $len   = $self->length();
+
   my $seq;
 
-  while($start <= $len) {
+  while ( $start <= $len ) {
     $end = $start + $RANGE - 1;
+    $end = $len if ( $end > $len );
 
-    $end = $len if($end > $len);
-    $seq = $self->subseq($start, $end);
-    $a += $seq =~ tr/Aa/Aa/;
-    $c += $seq =~ tr/Cc/Cc/;
-    $t += $seq =~ tr/Tt/Tt/;
-    $g += $seq =~ tr/Gg/Gg/;
+    $seq = $self->subseq( $start, $end );
+
+    $a += $seq =~ tr/Aa//;
+    $c += $seq =~ tr/Cc//;
+    $t += $seq =~ tr/Tt//;
+    $g += $seq =~ tr/Gg//;
 
     $start = $end + 1;
   }
 
+  my $actg = $a + $c + $t + $g;
+
   my $gc_content = 0;
-  if($a || $g || $c || $t) {  #avoid divide by 0
-    $gc_content = sprintf( "%1.2f", (($g + $c)/($a + $g + $t + $c)) * 100);
+  if ( $actg > 0 ) {    # Avoid dividing by 0
+    $gc_content = sprintf( "%1.2f", ( ( $g + $c )/$actg )*100 );
   }
 
-  return {'a' => $a,
-	  'c' => $c,
-	  't' => $t,
-	  'g' => $g,
-	  'n' => $len - $a - $c - $t - $g,
-	  '%gc' => $gc_content};
+  return { 'a'   => $a,
+           'c'   => $c,
+           't'   => $t,
+           'g'   => $g,
+           'n'   => $len - $actg,
+           '%gc' => $gc_content };
 }
 
 
