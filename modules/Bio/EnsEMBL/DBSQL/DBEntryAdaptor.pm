@@ -223,6 +223,11 @@ sub fetch_by_db_accession {
   Arg [3]    : string $ensType ('Transcript', 'Translation', 'Gene')
                The type of EnsEMBL object that this external database entry is
                being associated with.
+  Arg [4]    : boolean $ignore_release
+               If unset or zero, will require that the release string
+               of the DBEntry object is identical to the release of the
+               external database.  If set and non-zero, will ignore the
+               release information.
   Example    : $dbea->store($db_entry, $transcript_id, 'Transcript');
   Description: Stores a reference to an external database (if it is not stored
                already) and associates an EnsEMBL object of a specified type
@@ -235,7 +240,8 @@ sub fetch_by_db_accession {
 =cut
 
 sub store {
-  my ( $self, $exObj, $ensID, $ensType ) = @_;
+  my ( $self, $exObj, $ensID, $ensType, $ignore_release ) = @_;
+
   my $dbJustInserted;
 
   #
@@ -266,31 +272,58 @@ sub store {
   #
   # Check for the existance of the external_db, throw if it does not exist
   #
-  my $sth = $self->prepare( "
+
+  my $dbRef;
+
+  if ( !$ignore_release ) {
+    my $sth = $self->prepare( "
      SELECT external_db_id
        FROM external_db
-      WHERE db_name = ?
-        AND db_release = ?");
-  $sth->bind_param(1,$exObj->dbname,SQL_VARCHAR);
-  $sth->bind_param(2,$exObj->release,SQL_VARCHAR);
-  $sth->execute();
-  my ($dbRef) =  $sth->fetchrow_array();
-  if(!$dbRef) {
-    throw("external_db [" . $exObj->dbname . "] release [" .
-		 $exObj->release . "] does not exist");
+      WHERE db_name    = ?
+        AND db_release = ?" );
+
+    $sth->bind_param( 1, $exObj->dbname(),  SQL_VARCHAR );
+    $sth->bind_param( 2, $exObj->release(), SQL_VARCHAR );
+
+    $sth->execute();
+
+    ($dbRef) = $sth->fetchrow_array();
+
+    if ( !$dbRef ) {
+      throw(
+             sprintf( "external_db [%s] release [%s] does not exist",
+                      $exObj->dbname(), $exObj->release() ) );
+    }
+  } else {
+    my $sth = $self->prepare( "
+     SELECT external_db_id
+       FROM external_db
+      WHERE db_name = ? " );
+
+    $sth->bind_param( 1, $exObj->dbname(), SQL_VARCHAR );
+
+    $sth->execute();
+
+    ($dbRef) = $sth->fetchrow_array();
+
+    if ( !$dbRef ) {
+      throw(
+          sprintf( "external_db [%s] does not exist", $exObj->dbname() )
+      );
+    }
   }
+
   #
   # Check for the existance of the external reference, add it if not present
   #
-  $sth = $self->prepare( "
+  my $sth = $self->prepare( "
        SELECT xref_id
          FROM xref
         WHERE external_db_id = ?
-          AND dbprimary_acc = ?
-          AND version = ?
-          AND info_type = ?
-          AND info_text = ?
-         " );
+          AND dbprimary_acc  = ?
+          AND version        = ?
+          AND info_type      = ?
+          AND info_text      = ?" );
 
   $sth->bind_param(1,$dbRef,SQL_INTEGER);
   $sth->bind_param(2,$exObj->primary_id,SQL_VARCHAR);
