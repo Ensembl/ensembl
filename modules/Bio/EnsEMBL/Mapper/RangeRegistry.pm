@@ -176,8 +176,6 @@ sub check_and_register {
     return [[$rstart,$rend]];
   }
 
-  my $CUR;
-
   #####
   #loop through the list of existing ranges recording any "gaps" where the
   #existing range does not cover part of the requested range
@@ -202,7 +200,7 @@ sub check_and_register {
   my ($gap_start, $gap_end, $r_idx, $rstart_idx, $rend_idx);
   $gap_start = $rstart;
 
-  for($CUR=$start_idx; $CUR < $len; $CUR++) {
+  for(my $CUR=$start_idx; $CUR < $len; $CUR++) {
     my ($pstart,$pend) = @{$list->[$CUR]};
 
     #no work needs to be done at all if
@@ -298,8 +296,6 @@ sub overlap_size {
     return 0;
   }
 
-  my $CUR;
-
   #####
   #loop through the list of existing ranges recording any "gaps" where the
   #existing range does not cover part of the requested range
@@ -320,7 +316,7 @@ sub overlap_size {
     }
   }
 
-  for($CUR=$start_idx; $CUR < $len; $CUR++) {
+  for(my $CUR=$start_idx; $CUR < $len; $CUR++) {
     my ($pstart,$pend) = @{$list->[$CUR]};
 
     if ( $pstart > $end ) {
