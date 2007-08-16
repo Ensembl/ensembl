@@ -320,9 +320,7 @@ sub overlap_size {
     my ($pstart,$pend) = @{$list->[$CUR]};
 
     if ( $pstart > $end ) {
-      # The rest of the ranges in the registry are out of range of what
-      # we're looking for (they start after the end of our query range),
-      # so don't look further.
+      # No more interesting ranges here.
       last;
     }
 
