@@ -32,6 +32,7 @@ my %dependent_sources;
 my %taxonomy2species_id;
 my %species_id2taxonomy;
 my %name2species_id;
+my %xref_dependent_mapped;
 
 my ( $host,             $port,    $dbname,        $user,
      $pass,             $create,  $release,       $cleanup,
@@ -1515,13 +1516,13 @@ VALUES
   if(!defined($dependent_id)){
     croak("$acc\t$label\t\t$source_id\t$species_id\n");
   }
-  if ($master_xref == 48955) {
-    print "$master_xref\t$acc\t$dependent_id\t$linkage\t$source_id\n";
-  }
-  $add_dependent_xref_sth->execute( $master_xref, $dependent_id, $linkage,
-      $source_id )
-    or croak("$master_xref\t$dependent_id\t$linkage\t$source_id");
 
+  if(!defined($xref_dependent_mapped{$master_xref."|".$dependent_id})){
+    $add_dependent_xref_sth->execute( $master_xref, $dependent_id, $linkage,
+				      $source_id )
+      or croak("$master_xref\t$dependent_id\t$linkage\t$source_id");
+    $xref_dependent_mapped{$master_xref."|".$dependent_id} = 1;
+  }
 }
 
 sub add_to_syn_for_mult_sources{
@@ -1748,6 +1749,26 @@ sub set_release
     print "Setting release to '$release' for source ID '$source_id'\n";
 
     $sth->execute( $release, $source_id );
+}
+
+sub get_dependent_mappings {
+  my $self = shift;
+  my $source_id = shift;
+  my $dbi = dbi();
+  
+  my $sth =
+    $dbi->prepare(
+		  "select d.master_xref_id, d.dependent_xref_id from dependent_xref d, xref x where x.xref_id = d.dependent_xref_id and x.source_id = $source_id");
+  
+  $sth->execute();
+  my $master_xref;
+  my $dependent_xref;
+  $sth->bind_columns(\$master_xref,\$dependent_xref);
+  while($sth->fetch){
+    $xref_dependent_mapped{$master_xref."|".$dependent_xref}=1;
+  }
+  $sth->finish;
+
 }
 
 # --------------------------------------------------------------------------------
