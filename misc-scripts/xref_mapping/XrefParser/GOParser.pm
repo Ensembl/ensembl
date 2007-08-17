@@ -32,9 +32,18 @@ sub run {
 
   my %wrongtype;
 
-  if(!defined($source_id)){
-    $source_id = $self->get_source_id_for_filename($file);
-  }
+#  if(!defined($source_id)){
+#    $source_id = $self->get_source_id_for_filename($file);
+#  }
+
+  #get the "main" GO source id.
+  $source_id = $self->get_source_id_for_source_name("GO","main");
+
+
+  #get the mapping that are already there so that we don't get lots of duplicates.
+  # stored in the global hash xref_dependent_mapped.
+  $self->get_dependent_mappings($source_id);
+
   if(!defined($species_id)){
     $species_id = $self->get_species_id_for_filename($file);
   }
