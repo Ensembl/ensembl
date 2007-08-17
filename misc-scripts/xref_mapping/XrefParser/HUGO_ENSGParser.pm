@@ -33,10 +33,26 @@ sub run {
   my %description;
 
   my $dbi = $self->dbi();  
-  my $sql = "select accession, label, version,  description from xref where source_id in (1091, 1092, 1094)";
+
+  #get the source ids for HUGO refseq, entrezgene and unitprot
+  my $sql = 'select source_id, priority_description from source where name like "HUGO"';
   my $sth = $dbi->prepare($sql);
+  
   $sth->execute();
-  my ($acc, $lab, $ver, $desc);
+  my ($hgnc_source_id, $desc);
+  $sth->bind_columns(\$hgnc_source_id, \$desc);
+  my @arr;
+  while($sth->fetch()){
+    if(lc($desc) eq "refseq" or lc($desc) eq "uniprot" or lc($desc) eq "entrezgene"){
+      push @arr, $hgnc_source_id;
+    }
+  }
+  $sth->finish;
+  
+  $sql = "select accession, label, version,  description from xref where source_id in (".join(", ",@arr).")";
+  $sth = $dbi->prepare($sql);
+  $sth->execute();
+  my ($acc, $lab, $ver);
   $sth->bind_columns(\$acc, \$lab, \$ver, \$desc);
   while (my @row = $sth->fetchrow_array()) {
     $label{$acc} = $lab;
