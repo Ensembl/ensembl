@@ -15,6 +15,14 @@ sub run {
   scalar( keys %interpros )
       || ( print( "ERROR: No InterPro xrefs found in DB" ) && return 1 );
 
+  #get the "main" GO source id.
+  $source_id = $self->get_source_id_for_source_name("GO","main");
+
+  # get the mapping that are already there so that we don't get lots of duplicates.
+  # stored in the global hash xref_dependent_mapped.
+  $self->get_dependent_mappings($source_id);
+
+
   # Process the file
   my( $skip_count, $dependent_xref_count ) = (0,0);
   while( my $line = $file_io->getline() ){
@@ -28,10 +36,14 @@ sub run {
       my $go_term = $3;
       my $go_id   = $4;
       
-      my $ipro_xref_id = $interpros{$ipro_id} || ( $skip_count ++ and next );
-      $self->add_to_xrefs($ipro_xref_id,$go_id,1,$go_id,$go_term,'IEA',
-                          $source_id,$species_id);
-      $dependent_xref_count++;
+      if(defined($interpros{$ipro_id})){
+	$self->add_to_xrefs($interpros{$ipro_id},$go_id,1,$go_id,$go_term,'IEA',
+			    $source_id,$species_id);
+	$dependent_xref_count++;
+      }
+      else{
+	$skip_count++;
+      }
     }
 
   }    
