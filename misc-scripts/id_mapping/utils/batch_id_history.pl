@@ -103,49 +103,63 @@ if ($outfile) {
 
 while (my $sid = <$infh>) {
   
-  # skip comments
-  next if (/^#/);
+  # skip comments and empty lines
+  next if (/^#/ or /^\s?\n$/);
 
   chomp($sid);
-  print $outfh "\n$sid\n";
+  print $outfh "\n$sid\n\n";
 
-  # fetch initial archive id
-  my $archiveStableId = $aa->fetch_by_stable_id($sid);
-
-  if ($archiveStableId) {
+  my $archive_id = $aa->fetch_by_stable_id($sid);
   
-    # get archive id history
-    my $history = $aa->fetch_archive_id_history($archiveStableId);
+  unless ($archive_id) {
+    print $outfh "  Not found in database.\n";
+    next;
+  }
 
-    # group archive ids by release
-    my $release;
-    foreach my $arch_id (@$history) {
-      push @{ $release->{$arch_id->release} }, $arch_id;
-    }
+  my $history = $archive_id->get_history_tree;
+  next unless $history;
 
-    # loop over releases and print results
-    foreach my $r (sort { $a <=> $b } keys %$release) {
-      
-      print $outfh "\n  Release $r (".$release->{$r}->[0]->assembly.", ".
-        $release->{$r}->[0]->db_name.")\n";
+  if ($history->is_incomplete) {
+    print $outfh "  NOTE: History tree is incomplete.\n\n";
+  }
 
-      # loop over archive ids
-      foreach my $a (@{ $release->{$r} }) {
-        print $outfh "    ".$a->stable_id.".".$a->version."\n";
-        
-        # print peptide sequence
-        if ($pep_seq) {
-          foreach my $pep (@{ $a->get_all_translation_archive_ids }) {
-            print $outfh "      Peptide ".$pep->stable_id."> ".
-              $pep->get_peptide."\n";
-          }
-        }
+  my $matrix = [];
 
-      }
-    }
-    
+  # get unique stable IDs (regardless of version)
+  my @unique_ids = @{ $history->get_unique_stable_ids };
+
+  my $i = 0;
+  foreach my $id (@unique_ids) {
+    $matrix->[$i++]->[0] = $id;
+  }
+
+  # get all releases for which we have nodes in this graph
+  my @releases  = @{ $history->get_release_display_names };
+
+  my $j = 1;
+  foreach my $release (@releases) {
+    $matrix->[scalar(@unique_ids)]->[$j++] = $release;
+  }
+
+  # print a "graphical" representation of the tree
+  my $fmt = "  %-20s" . ("%-6s" x scalar(@releases)) . "\n";
+
+  foreach my $a_id (@{ $history->get_all_ArchiveStableIds }) {
+    my ($x, $y) = @{ $history->coords_by_ArchiveStableId($a_id) };
+    $matrix->[$y]->[$x+1] = $a_id->version;
+  }
+
+  for (my $i = 0; $i < @$matrix; $i++) {
+    print $outfh sprintf($fmt, @{ $matrix->[$i] });
+  }
+
+  # current versions in history
+  print $outfh "\n  Current stable IDs in this tree:\n";
+  my @current = @{ $history->get_all_current_ArchiveStableIds };
+  if (@current) {
+    map { print $outfh "    ".$_->stable_id.".".$_->version."\n" } @current;
   } else {
-    print $outfh "  Not found in archive.\n\n";
+    print $outfh "    none\n";
   }
 
 }
