@@ -103,7 +103,7 @@ sub AUTOLOAD {
 
 
 
-sub store_on_{
+sub store_on_ {
   my $self = shift;
   my $type = shift;
   my $object = shift;
@@ -113,7 +113,7 @@ sub store_on_{
 
   my $object_id;
   if($type =~ /[GT][er][na][en]/){
-    $object_id = $object;
+    $object_id = $object->dbID;
     $table = lc($type);
 #    $type = lc($type);
   }
