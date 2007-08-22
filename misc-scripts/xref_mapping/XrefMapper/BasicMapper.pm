@@ -2340,6 +2340,7 @@ sub remove_all_old_output_files{
 
   print "Deleting txt and sql files from output dir: $dir\n";
   unlink(<$dir/*.txt $dir/*.sql>);
+  $self->cleanup_projections_file();
 }
 
 sub dump_core_xrefs {
@@ -3026,6 +3027,31 @@ sub map_source_to_external_db {
 
   return %source_to_external_db;
 }
+
+
+sub cleanup_projections_file{
+  my $self = shift;
+
+  my $dir = $self->core->dir();
+  open (DEL, ">>$dir/cleanup.sql") || die "Could not open $dir/cleanup.sql\n";
+
+  print DEL "DELETE es ";
+  print DEL    "FROM xref x, external_synonym es ";
+  print DEL       "WHERE x.xref_id = es.xref_id and x.info_type = 'PROJECTION'\n";
+
+  print DEL "DELETE object_xref ";
+  print DEL     "FROM object_xref, xref ";
+  print DEL       "WHERE object_xref.xref_id = xref.xref_id ";
+  print DEL         "AND xref.info_type = 'PROJECTION'\n";
+
+  print DEL "DELETE xref ";
+  print DEL     "FROM xref ";
+  print DEL       "WHERE xref.info_type = 'PROJECTION'\n";
+
+  close DEL;
+}
+
+
 
 
 sub cleanup_sources_file{
