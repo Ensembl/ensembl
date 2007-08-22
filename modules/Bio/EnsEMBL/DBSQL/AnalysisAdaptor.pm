@@ -153,9 +153,7 @@ sub fetch_all_by_feature_class {
         return [] );
 
   my $sql_t = qq|
-SELECT DISTINCT( a.analysis_id )
-FROM   analysis a, %s f
-WHERE  a.analysis_id=f.analysis_id |;
+SELECT DISTINCT a.analysis_id FROM %s |;
   
   my $sql = sprintf( $sql_t, $feat_table );
   my $sth = $self->prepare( $sql );
