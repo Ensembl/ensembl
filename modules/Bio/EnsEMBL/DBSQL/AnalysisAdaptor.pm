@@ -153,7 +153,7 @@ sub fetch_all_by_feature_class {
         return [] );
 
   my $sql_t = qq|
-SELECT DISTINCT a.analysis_id FROM %s |;
+SELECT DISTINCT analysis_id FROM %s |;
   
   my $sql = sprintf( $sql_t, $feat_table );
   my $sth = $self->prepare( $sql );
