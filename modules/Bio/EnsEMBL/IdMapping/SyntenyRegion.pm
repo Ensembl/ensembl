@@ -177,6 +177,7 @@ sub merge {
 
 #
 # extend this SyntenyRegion to span a $factor * $score more area
+#
 sub stretch {
   my ($self, $factor) = @_;
 
@@ -185,10 +186,12 @@ sub stretch {
   $self->source_start($self->source_start - $source_adjust);
   $self->source_end($self->source_end + $source_adjust);
   
-  my $target_factor = ($self->target_end - $self->target_start + 1) *
+  my $target_adjust = ($self->target_end - $self->target_start + 1) *
     $factor * $self->score;
   $self->target_start($self->target_start - $target_adjust);
   $self->target_end($self->target_end + $target_adjust);
+
+  return $self;
 }
 
 
