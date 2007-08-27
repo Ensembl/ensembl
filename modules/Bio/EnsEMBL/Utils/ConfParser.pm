@@ -316,6 +316,37 @@ sub param {
 }
 
 
+=head2 is_true
+
+  Arg[1]      : Parameter name
+  Example     : unless ($conf->is_true('upload')) {
+                  print "Won't upload data.\n";
+                  next;
+                }
+  Description : Checks whether a param value is set to 'true', which is defined
+                here as TRUE (in the Perl sense) but not the string 'no'.
+  Return type : Boolean
+  Exceptions  : thrown if no parameter name is supplied
+  Caller      : general
+  Status      : At Risk
+              : under development
+
+=cut
+
+sub is_true {
+  my $self = shift;
+  my $name = shift or throw("You must supply a parameter name");
+
+  my $param = $self->param($name);
+
+  if ($param and !($param =~ /^no$/i)) {
+    return(1);
+  } else {
+    return(0);
+  }
+}
+
+
 =head2 list_params
 
   Example     : print "Current parameter names:\n";
