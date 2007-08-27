@@ -41,6 +41,7 @@ our @EXPORT_OK = qw(
   sort_chromosomes
   parse_bytes
   directory_hash
+  path_append
   dynamic_use
 );
 
@@ -189,6 +190,24 @@ sub directory_hash {
 
   my (@md5) = md5_hex($filename) =~ /\G(..)/g;
   return join('/', @md5[0..2]);
+}
+
+
+sub path_append {
+  my $path1 = shift;
+  my $path2 = shift;
+
+  # default to current directory
+  $path1 = '.' unless (defined($path1));
+
+  my $return_path = "$path1/$path2";
+
+  unless (-d $return_path) {
+    system("mkdir -p $return_path") == 0 or
+      throw("Unable to create directory $return_path: $!\n");
+  }
+  
+  return $return_path;
 }
 
 
