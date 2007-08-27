@@ -65,5 +65,32 @@ sub stable_id {
 }
 
 
+sub version {
+  my $self = shift;
+  $self->[2] = shift if (@_);
+  return $self->[2];
+}
+
+
+sub created_date {
+  my $self = shift;
+  $self->[3] = shift if (@_);
+  return $self->[3];
+}
+
+
+sub modified_date {
+  my $self = shift;
+  $self->[4] = shift if (@_);
+  return $self->[4];
+}
+
+
+sub to_string {
+  my $self = shift;
+  return $self->id.':'.$self->stable_id.'.'.$self->version;
+}
+
+
 1;
 

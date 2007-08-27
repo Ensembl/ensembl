@@ -41,43 +41,64 @@ use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 
 sub start {
   my $self = shift;
-  $self->[2] = shift if (@_);
-  return $self->[2];
-}
-
-
-sub end {
-  my $self = shift;
-  $self->[3] = shift if (@_);
-  return $self->[3];
-}
-
-
-sub strand {
-  my $self = shift;
-  $self->[4] = shift if (@_);
-  return $self->[4];
-}
-
-
-sub seq_region_name {
-  my $self = shift;
   $self->[5] = shift if (@_);
   return $self->[5];
 }
 
 
-sub biotype {
+sub end {
   my $self = shift;
   $self->[6] = shift if (@_);
   return $self->[6];
 }
 
 
-sub display_name {
+sub strand {
   my $self = shift;
   $self->[7] = shift if (@_);
   return $self->[7];
+}
+
+
+sub seq_region_name {
+  my $self = shift;
+  $self->[8] = shift if (@_);
+  return $self->[8];
+}
+
+
+sub biotype {
+  my $self = shift;
+  $self->[9] = shift if (@_);
+  return $self->[9];
+}
+
+
+sub status {
+  my $self = shift;
+  $self->[10] = shift if (@_);
+  return $self->[10];
+}
+
+
+sub logic_name {
+  my $self = shift;
+  $self->[11] = shift if (@_);
+  return $self->[11];
+}
+
+
+sub display_name {
+  my $self = shift;
+  $self->[12] = shift if (@_);
+  return $self->[12];
+}
+
+
+sub is_known {
+  my $self = shift;
+  $self->[13] = shift if (@_);
+  return $self->[13];
 }
 
 
@@ -89,12 +110,12 @@ sub add_Transcript {
     throw('Need a Bio::EnsEMBL::IdMapping::TinyTranscript.');
   }
 
-  push @{ $self->[8] }, $tr;
+  push @{ $self->[14] }, $tr;
 }
 
 
 sub get_all_Transcripts {
-  return $_[0]->[8] || [];
+  return $_[0]->[14] || [];
 }
 
 

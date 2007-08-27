@@ -41,29 +41,36 @@ use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 
 sub start {
   my $self = shift;
-  $self->[2] = shift if (@_);
-  return $self->[2];
+  $self->[5] = shift if (@_);
+  return $self->[5];
 }
 
 
 sub end {
   my $self = shift;
-  $self->[3] = shift if (@_);
-  return $self->[3];
+  $self->[6] = shift if (@_);
+  return $self->[6];
 }
 
 
 sub strand {
   my $self = shift;
-  $self->[4] = shift if (@_);
-  return $self->[4];
+  $self->[7] = shift if (@_);
+  return $self->[7];
 }
 
 
-sub length {
+sub seq_md5_sum {
   my $self = shift;
-  $self->[5] = shift if (@_);
-  return $self->[5];
+  $self->[8] = shift if (@_);
+  return $self->[8];
+}
+
+
+sub is_known {
+  my $self = shift;
+  $self->[9] = shift if (@_);
+  return $self->[9];
 }
 
 
@@ -75,7 +82,12 @@ sub add_Translation {
     throw('Need a Bio::EnsEMBL::IdMapping::TinyTranslation.');
   }
 
-  $self->[6] = $tl;
+  $self->[10] = $tl;
+}
+
+
+sub translation {
+  return $_[0]->[10];
 }
 
 
@@ -87,12 +99,18 @@ sub add_Exon {
     throw('Need a Bio::EnsEMBL::IdMapping::TinyExon.');
   }
 
-  push @{ $self->[7] }, $exon;
+  push @{ $self->[11] }, $exon;
 }
 
 
 sub get_all_Exons {
-  return $_[0]->[7] || [];
+  return $_[0]->[11] || [];
+}
+
+
+sub length {
+  my $self = shift;
+  return ($self->end - $self->start + 1);
 }
 
 

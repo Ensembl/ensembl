@@ -60,64 +60,64 @@ use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 
 sub start {
   my $self = shift;
-  $self->[2] = shift if (@_);
-  return $self->[2];
-}
-
-
-sub end {
-  my $self = shift;
-  $self->[3] = shift if (@_);
-  return $self->[3];
-}
-
-
-sub strand {
-  my $self = shift;
-  $self->[4] = shift if (@_);
-  return $self->[4];
-}
-
-
-sub seq_region_name {
-  my $self = shift;
   $self->[5] = shift if (@_);
   return $self->[5];
 }
 
 
-sub coord_system_name {
+sub end {
   my $self = shift;
   $self->[6] = shift if (@_);
   return $self->[6];
 }
 
 
-sub coord_system_version {
+sub strand {
   my $self = shift;
   $self->[7] = shift if (@_);
   return $self->[7];
 }
 
 
-sub seq {
+sub seq_region_name {
   my $self = shift;
   $self->[8] = shift if (@_);
   return $self->[8];
 }
 
 
-sub phase {
+sub coord_system_name {
   my $self = shift;
   $self->[9] = shift if (@_);
   return $self->[9];
 }
 
 
-sub need_project {
+sub coord_system_version {
   my $self = shift;
   $self->[10] = shift if (@_);
   return $self->[10];
+}
+
+
+sub seq {
+  my $self = shift;
+  $self->[11] = shift if (@_);
+  return $self->[11];
+}
+
+
+sub phase {
+  my $self = shift;
+  $self->[12] = shift if (@_);
+  return $self->[12];
+}
+
+
+sub need_project {
+  my $self = shift;
+  $self->[13] = shift if (@_);
+  return $self->[13];
 }
 
 
@@ -125,13 +125,13 @@ sub common_start {
   my $self = shift;
 
   # when used as a setter, always set a value
-  $self->[11] = shift if (@_);
+  $self->[14] = shift if (@_);
 
   # when used as a getter
-  if (scalar(@$self) > 11) {
+  if (scalar(@$self) > 14) {
     # return value for common coord_system if available (but avoid
     # autovivification gotcha!)
-    return $self->[11];
+    return $self->[14];
   } elsif ($self->need_project) {
     # return undef if common value expected but not there (e.g. no projection
     # found
@@ -147,13 +147,13 @@ sub common_end {
   my $self = shift;
 
   # when used as a setter, always set a value
-  $self->[12] = shift if (@_);
+  $self->[15] = shift if (@_);
 
   # when used as a getter
-  if (scalar(@$self) > 11) {
+  if (scalar(@$self) > 14) {
     # return value for common coord_system if available (but avoid
     # autovivification gotcha!)
-    return $self->[12];
+    return $self->[15];
   } elsif ($self->need_project) {
     # return undef if common value expected but not there (e.g. no projection
     # found
@@ -169,13 +169,13 @@ sub common_strand {
   my $self = shift;
 
   # when used as a setter, always set a value
-  $self->[13] = shift if (@_);
+  $self->[16] = shift if (@_);
 
   # when used as a getter
-  if (scalar(@$self) > 11) {
+  if (scalar(@$self) > 14) {
     # return value for common coord_system if available (but avoid
     # autovivification gotcha!)
-    return $self->[13];
+    return $self->[16];
   } elsif ($self->need_project) {
     # return undef if common value expected but not there (e.g. no projection
     # found
@@ -191,13 +191,13 @@ sub common_sr_name {
   my $self = shift;
 
   # when used as a setter, always set a value
-  $self->[14] = shift if (@_);
+  $self->[17] = shift if (@_);
 
   # when used as a getter
-  if (scalar(@$self) > 11) {
+  if (scalar(@$self) > 14) {
     # return value for common coord_system if available (but avoid
     # autovivification gotcha!)
-    return $self->[14];
+    return $self->[17];
   } elsif ($self->need_project) {
     # return undef if common value expected but not there (e.g. no projection
     # found
@@ -212,6 +212,11 @@ sub common_sr_name {
 sub length {
   my $self = shift;
   return ($self->end - $self->start + 1);
+}
+
+
+sub is_known {
+  return 1;
 }
 
 

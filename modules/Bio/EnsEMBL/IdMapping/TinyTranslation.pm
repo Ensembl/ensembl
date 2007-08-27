@@ -39,5 +39,26 @@ our @ISA = qw(Bio::EnsEMBL::IdMapping::TinyFeature);
 use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 
 
+sub transcript_id {
+  my $self = shift;
+  $self->[5] = shift if (@_);
+  return $self->[5];
+}
+
+
+sub seq {
+  my $self = shift;
+  $self->[6] = shift if (@_);
+  return $self->[6];
+}
+
+
+sub is_known {
+  my $self = shift;
+  $self->[7] = shift if (@_);
+  return $self->[7];
+}
+
+
 1;
 
