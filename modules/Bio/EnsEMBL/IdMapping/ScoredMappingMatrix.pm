@@ -67,6 +67,11 @@ sub add_Entry {
 }
 
 
+sub update_Entry {
+  return $_[0]->add_Entry($_[1]);
+}
+
+
 sub remove_Entry {
   warning('Method ScoredMappingMatrix->remove_Entry not implemented (yet).');
 }
@@ -290,6 +295,19 @@ sub merge {
   }
 
   return $c;
+}
+
+
+sub to_string {
+  my $self = shift;
+  
+  my $string = '';
+  
+  foreach my $entry (@{ $self->get_all_Entries }) {
+    $string .= $entry->to_string."\n";
+  }
+
+  return $string;
 }
 
 
