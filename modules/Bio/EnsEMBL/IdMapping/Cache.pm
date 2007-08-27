@@ -35,13 +35,14 @@ no warnings 'uninitialized';
 
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 use Bio::EnsEMBL::Utils::Exception qw(throw warning);
-use Bio::EnsEMBL::Utils::ScriptUtils qw(parse_bytes);
+use Bio::EnsEMBL::Utils::ScriptUtils qw(parse_bytes path_append);
 use Bio::EnsEMBL::IdMapping::TinyGene;
 use Bio::EnsEMBL::IdMapping::TinyTranscript;
 use Bio::EnsEMBL::IdMapping::TinyTranslation;
 use Bio::EnsEMBL::IdMapping::TinyExon;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Storable qw(nfreeze thaw nstore retrieve);
+use Digest::MD5 qw(md5_hex);
 
 
 # define available cache names here
@@ -49,6 +50,7 @@ my @cache_names = qw(
     exons_by_id
     transcripts_by_id
     transcripts_by_exon_id
+    translations_by_id
     genes_by_id
     genes_by_transcript_id
 );
@@ -167,12 +169,18 @@ sub build_cache_from_genes {
     my $lgene = Bio::EnsEMBL::IdMapping::TinyGene->new_fast([
         $gene->dbID,
         $gene->stable_id,
+        $gene->version,
+        $gene->created_date,
+        $gene->modified_date,
         $gene->start,
         $gene->end,
         $gene->strand,
         $gene->slice->seq_region_name,
         $gene->biotype,
+        $gene->status,
+        $gene->analysis->logic_name,
         $gene->display_id,
+        ($gene->is_known ? 1 : 0),
     ]);
 
     # build gene caches
@@ -184,10 +192,14 @@ sub build_cache_from_genes {
       my $ltr = Bio::EnsEMBL::IdMapping::TinyTranscript->new_fast([
           $tr->dbID,
           $tr->stable_id,
+          $tr->version,
+          $tr->created_date,
+          $tr->modified_date,
           $tr->start,
           $tr->end,
           $tr->strand,
-          $tr->length,
+          md5_hex($tr->spliced_seq),
+          ($tr->is_known ? 1 : 0),
       ]);
 
       $lgene->add_Transcript($ltr);
@@ -202,11 +214,17 @@ sub build_cache_from_genes {
         my $ltl = Bio::EnsEMBL::IdMapping::TinyTranslation->new_fast([
             $tl->dbID,
             $tl->stable_id,
+            $tl->version,
+            $tl->created_date,
+            $tl->modified_date,
+            $tr->dbID,
+            $tr->translate->seq,
+            ($tr->is_known ? 1 : 0),
         ]);
 
-        #$ltr->add_Translation($ltl);
+        $ltr->add_Translation($ltl);
 
-        #$self->add('translations_by_id', $type, $tl->dbID, $ltl);
+        $self->add('translations_by_id', $type, $tl->dbID, $ltl);
         #$self->add('translations_by_stable_id', $type, $tl->stable_id, $ltl);
         #$self->add('translations_by_transcript_id', $type, $tr->dbID, $ltl);
 
@@ -218,6 +236,9 @@ sub build_cache_from_genes {
         my $lexon = Bio::EnsEMBL::IdMapping::TinyExon->new_fast([
             $exon->dbID,
             $exon->stable_id,
+            $exon->version,
+            $exon->created_date,
+            $exon->modified_date,
             $exon->start,
             $exon->end,
             $exon->strand,
@@ -535,25 +556,7 @@ sub instance_file {
 sub dump_path {
   my $self = shift;
 
-  unless ($self->{'dump_path'}) {
-  
-    my $dump_path;
-
-    if ($self->conf->param('dumppath')) {
-      $dump_path = $self->conf->param('dumppath');
-
-      # create directory if not exists
-      unless (-d $dump_path) {
-        system("mkdir -p $dump_path") == 0 or
-          throw("Unable to create directory $dump_path.\n");
-      }
-
-    } else {
-      $dump_path = '.';
-    }
-
-    $self->{'dump_path'} = $dump_path;
-  }
+  $self->{'dump_path'} ||= path_append($self->conf->param('dumppath'), 'cache');
 
   return $self->{'dump_path'};
 }
