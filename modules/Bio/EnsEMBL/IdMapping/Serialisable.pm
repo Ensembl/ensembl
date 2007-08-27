@@ -53,6 +53,7 @@ sub new {
   # initialise internal datastructure
   $self->{'dump_path'} = $dump_path || '.';
   $self->{'cache_file'} = $self->dump_path."/$cache_file";
+  $self->{'cache_file_name'} = $cache_file;
 
   return $self;
 }
@@ -103,6 +104,13 @@ sub read_from_file {
 # getter/setters
 #
 
+sub dump_path {
+  my $self = shift;
+  $self->{'dump_path'} = shift if (@_);
+  return $self->{'dump_path'};
+}
+
+
 sub cache_file {
   my $self = shift;
   $self->{'cache_file'} = shift if (@_);
@@ -110,10 +118,10 @@ sub cache_file {
 }
 
 
-sub dump_path {
+sub cache_file_name {
   my $self = shift;
-  $self->{'dump_path'} = shift if (@_);
-  return $self->{'dump_path'};
+  $self->{'cache_file_name'} = shift if (@_);
+  return $self->{'cache_file_name'};
 }
 
 
