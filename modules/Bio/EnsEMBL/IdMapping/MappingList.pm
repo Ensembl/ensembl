@@ -37,6 +37,7 @@ use Bio::EnsEMBL::IdMapping::Serialisable;
 our @ISA = qw(Bio::EnsEMBL::IdMapping::Serialisable);
 
 use Bio::EnsEMBL::Utils::Exception qw(throw warning);
+use Bio::EnsEMBL::Utils::ScriptUtils qw(path_append);
 
 
 sub new {
@@ -73,7 +74,7 @@ sub add_all {
   my $self = shift;
   my @mappings = @_;
 
-  foreach my $mapping (@mapping) {
+  foreach my $mapping (@mappings) {
     
     unless ($mapping->isa('Bio::EnsEMBL::IdMapping::MappingList')) {
       throw("Need a Bio::EnsEMBL::IdMapping::MappingList");
@@ -87,6 +88,37 @@ sub add_all {
 sub get_entry_count {
   my $self = shift;
   return scalar(@{ $self->{'cache'}->{'entries'} });
+}
+
+
+sub log {
+  my $self = shift;
+  my $type = shift;
+  
+  my $debug_path = path_append($self->dump_path, 'debug');
+  my $logfile = "$debug_path/${type}_mappings.txt";
+  
+  open(my $fh, '>', $logfile) or
+    throw("Unable to open $logfile for writing: $!");
+
+  foreach my $entry (@{ $self->get_all_Entries }) {
+    print $fh ($entry->to_string."\n");
+  }
+
+  close($fh);
+}
+
+
+sub to_string {
+  my $self = shift;
+  
+  my $string = '';
+  
+  foreach my $entry (@{ $self->get_all_Entries }) {
+    $string .= $entry->to_string."\n";
+  }
+
+  return $string;
 }
 
 
