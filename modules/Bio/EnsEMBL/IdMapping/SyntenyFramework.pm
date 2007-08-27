@@ -40,6 +40,7 @@ use Bio::EnsEMBL::IdMapping::BaseObject;
 our @ISA = qw(Bio::EnsEMBL::IdMapping::BaseObject);
 
 use Bio::EnsEMBL::Utils::Exception qw(throw warning);
+use Bio::EnsEMBL::IdMapping::SyntenyRegion;
 
 
 sub new {
@@ -89,8 +90,9 @@ sub build_synteny {
   }
 
   # sort synteny regions
-  my @sorted = sort { $a->seq_region_name cmp $b->seq_region_name or
-                      $a->start <=> $b->start } @synteny_regions;
+  my @sorted = sort { $a->source_seq_region_name cmp $b->source_seq_region_name
+                      or $a->source_start <=> $b->source_start }
+                        @synteny_regions;
   
   # now create merged regions from overlapping syntenies, but only merge a
   # maximum of 2 regions (otherwise you end up with large synteny blocks which
@@ -163,7 +165,8 @@ sub rescore_gene_matrix {
       $highest_score = $score if ($score > $highest_score);
     }
 
-    $entry->score($entry_score * 0.7 + $highest_score * 0.3);
+    $matrix->set_score($entry->source, $entry->target,
+      ($entry->score * 0.7 + $highest_score * 0.3));
   }
 
 }
