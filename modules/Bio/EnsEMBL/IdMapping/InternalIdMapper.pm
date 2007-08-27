@@ -37,6 +37,10 @@ use Bio::EnsEMBL::IdMapping::BaseObject;
 our @ISA = qw(Bio::EnsEMBL::IdMapping::BaseObject);
 
 use Bio::EnsEMBL::Utils::Exception qw(throw warning);
+use Bio::EnsEMBL::Utils::ScriptUtils qw(path_append);
+use Bio::EnsEMBL::IdMapping::Entry;
+use Bio::EnsEMBL::IdMapping::MappingList;
+use Bio::EnsEMBL::IdMapping::SyntenyFramework;
 
 
 # scores are considered the same if (2.0 * (s1-s2))/(s1 + s2) < this
@@ -67,8 +71,10 @@ sub map_genes {
   
   $self->logger->info("Starting gene mapping...\n\n", 0, 'stamped');
 
+  my $dump_path = path_append($self->conf->param('dumppath'), 'mapping');
+
   my $mappings = Bio::EnsEMBL::IdMapping::MappingList->new(
-    -DUMP_PATH   => $self->conf->param('dumppath'),
+    -DUMP_PATH   => $dump_path,
     -CACHE_FILE  => 'gene_mappings.ser',
   );
 
@@ -79,7 +85,7 @@ sub map_genes {
     # read from file
     $self->logger->info("Reading gene mappings from file...\n", 0, 'stamped');
     $self->logger->debug("Cache file $mapping_cache.\n", 1);
-    $matrix->read_from_file;
+    $mappings->read_from_file;
     $self->logger->info("Done.\n\n", 0, 'stamped');
     
   } else {
@@ -87,14 +93,19 @@ sub map_genes {
     # create gene mappings
     $self->logger->info("No gene mappings found. Will calculate then now.\n");
 
-    $self->logger->info("Mapping genes...\n", 0, 'stamped');
+    $self->logger->info("Basic gene mapping\n");
 
     #
     # basic mapping
     #
     $self->basic_mapping($gene_scores, $mappings);
+
     my $synteny_gene_scores = $gsb->create_shrinked_matrix($gene_scores,
       $mappings, 'synteny_gene_matrix.ser');
+
+    $self->logger->info("Found ".$mappings->get_entry_count.
+      " initial mappings.\n\n");
+
 
     #
     # build the synteny from unambiguous mappings
@@ -112,14 +123,17 @@ sub map_genes {
     $sf->rescore_gene_matrix($synteny_gene_scores);
 
     my $synteny_mappings = Bio::EnsEMBL::IdMapping::MappingList->new(
-      -DUMP_PATH   => $self->conf->param('dumppath'),
+      -DUMP_PATH   => $dump_path,
       -CACHE_FILE  => 'gene_synteny_mappings.ser',
     );
     
     $self->basic_mapping($synteny_gene_scores, $synteny_mappings);
     
+    my $simple_gene_scores = $gsb->create_shrinked_matrix($synteny_gene_scores,
+      $synteny_mappings, 'simple_gene_matrix.ser');
+    
     $self->logger->info("Found ".$synteny_mappings->get_entry_count.
-      " additional mappings.\n");
+      " additional mappings.\n\n");
 
 
     #
@@ -127,20 +141,20 @@ sub map_genes {
     #
     $self->logger->info("Retry with simple best transcript score\n");
     
-    my $simple_gene_scores = $gsb->create_shrinked_matrix($synteny_gene_scores,
-      $synteny_mappings, 'simple_gene_matrix.ser');
-    
     $gsb->simple_gene_rescore($simple_gene_scores, $transcript_scores);
     
     my $simple_mappings = Bio::EnsEMBL::IdMapping::MappingList->new(
-      -DUMP_PATH   => $self->conf->param('dumppath'),
+      -DUMP_PATH   => $dump_path,
       -CACHE_FILE  => 'gene_simple_mappings.ser',
     );
     
     $self->basic_mapping($simple_gene_scores, $simple_mappings);
     
+    my $biotype_gene_scores = $gsb->create_shrinked_matrix($simple_gene_scores, 
+      $simple_mappings, 'biotype_gene_matrix.ser');
+
     $self->logger->info("Found ".$simple_mappings->get_entry_count.
-      " additional mappings.\n");
+      " additional mappings.\n\n");
 
 
     #
@@ -148,20 +162,20 @@ sub map_genes {
     #
     $self->logger->info("Retry with biotype disambiguation\n");
     
-    my $biotype_gene_scores = $gsb->create_shrinked_matrix($simple_gene_scores, 
-      $simple_mappings, 'biotype_gene_matrix.ser');
-
     $gsb->biotype_gene_rescore($biotype_gene_scores);
 
     my $biotype_mappings = Bio::EnsEMBL::IdMapping::MappingList->new(
-      -DUMP_PATH   => $self->conf->param('dumppath'),
+      -DUMP_PATH   => $dump_path,
       -CACHE_FILE  => 'gene_biotype_mappings.ser',
     );
     
     $self->basic_mapping($biotype_gene_scores, $biotype_mappings);
     
+    my $internal_id_gene_scores = $gsb->create_shrinked_matrix(
+      $biotype_gene_scores, $biotype_mappings, 'internal_id_gene_matrix.ser');
+
     $self->logger->info("Found ".$biotype_mappings->get_entry_count.
-      " additional mappings.\n");
+      " additional mappings.\n\n");
     
 
     #
@@ -170,30 +184,27 @@ sub map_genes {
     #
     $self->logger->info("Retry with internalID disambiguation\n");
     
-    my $internal_id_gene_scores = $gsb->create_shrinked_matrix(
-      $biotype_gene_scores, $biotype_mappings, 'internal_id_gene_matrix.ser');
-
-    $gsb->internal_id_gene_rescore($internal_id_gene_scores);
+    $gsb->internal_id_rescore($internal_id_gene_scores);
 
     my $internal_id_mappings = Bio::EnsEMBL::IdMapping::MappingList->new(
-      -DUMP_PATH   => $self->conf->param('dumppath'),
+      -DUMP_PATH   => $dump_path,
       -CACHE_FILE  => 'gene_internal_id_mappings.ser',
     );
     
     $self->basic_mapping($internal_id_gene_scores, $internal_id_mappings);
     
+    my $remaining_gene_scores = $gsb->create_shrinked_matrix(
+      $internal_id_gene_scores, $internal_id_mappings,
+      'remaining_gene_matrix.ser');
+
     $self->logger->info("Found ".$internal_id_mappings->get_entry_count.
-      " additional mappings.\n");
+      " additional mappings.\n\n");
 
 
     #
     # report remaining ambiguities
     #
-    my $remaining_gene_scores = $gsb->create_shrinked_matrix(
-      $internal_id_gene_scores, $internal_id_mappings,
-      'remaining_gene_matrix.ser');
-
-    $self->logger->info("\n".$remaining_gene_scores->get_source_count.
+    $self->logger->info($remaining_gene_scores->get_source_count.
       " source genes are ambiguous with ".
       $remaining_gene_scores->get_target_count." target genes.\n\n");
 
@@ -219,6 +230,378 @@ sub map_genes {
   return $mappings;
 
 }
+
+
+sub map_transcripts {
+  my $self = shift;
+  my $transcript_scores = shift;
+  my $gene_mappings = shift;
+  my $tsb = shift;
+
+  # argument checks
+  unless ($transcript_scores and
+      $transcript_scores->isa('Bio::EnsEMBL::IdMapping::ScoredMappingMatrix')) {
+    throw('Need a transcript Bio::EnsEMBL::IdMapping::ScoredMappingMatrix.');
+  }
+
+  unless ($gene_mappings and
+          $gene_mappings->isa('Bio::EnsEMBL::IdMapping::MappingList')) {
+    throw('Need a gene Bio::EnsEMBL::IdMapping::MappingList.');
+  }
+  
+  unless ($tsb and
+          $tsb->isa('Bio::EnsEMBL::IdMapping::TranscriptScoreBuilder')) {
+    throw('Need a Bio::EnsEMBL::IdMapping::TranscriptScoreBuilder.');
+  }
+  
+  $self->logger->info("Starting transcript mapping...\n\n", 0, 'stamped');
+
+  my $dump_path = path_append($self->conf->param('dumppath'), 'mapping');
+
+  my $mappings = Bio::EnsEMBL::IdMapping::MappingList->new(
+    -DUMP_PATH   => $dump_path,
+    -CACHE_FILE  => 'transcript_mappings.ser',
+  );
+
+  my $mapping_cache = $mappings->cache_file;
+
+  if (-s $mapping_cache) {
+    
+    # read from file
+    $self->logger->info("Reading transcript mappings from file...\n", 0,
+      'stamped');
+    $self->logger->debug("Cache file $mapping_cache.\n", 1);
+    $mappings->read_from_file;
+    $self->logger->info("Done.\n\n", 0, 'stamped');
+    
+  } else {
+    
+    # create transcript mappings
+    $self->logger->info("No transcript mappings found. Will calculate then now.\n");
+
+    $self->logger->info("Basic transcript mapping\n");
+
+    #
+    # basic mapping
+    #
+    $self->basic_mapping($transcript_scores, $mappings);
+
+    my $transcript_scores1 = $tsb->create_shrinked_matrix(
+      $transcript_scores, $mappings, 'transcript_matrix1.ser');
+
+    $self->logger->info("Found ".$mappings->get_entry_count.
+      " initial mappings.\n\n");
+
+
+    #
+    # handle cases with exact match but different translation
+    #
+    $self->logger->info("Exact Transcript non-exact Translation\n");
+    
+    $tsb->different_translation_rescore($transcript_scores1);
+    
+    my $mappings1 = Bio::EnsEMBL::IdMapping::MappingList->new(
+      -DUMP_PATH   => $dump_path,
+      -CACHE_FILE  => 'transcript_mappings1.ser',
+    );
+    
+    $self->basic_mapping($transcript_scores1, $mappings1);
+    
+    my $transcript_scores2 = $tsb->create_shrinked_matrix(
+      $transcript_scores1, $mappings1, 'transcript_matrix2.ser');
+
+    $self->logger->info("Found ".$mappings1->get_entry_count.
+      " additional mappings.\n\n");
+
+
+    #
+    # reduce score for mappings of transcripts which do not belong to mapped
+    # genes
+    #
+    $self->logger->info("Transcripts in mapped Genes\n");
+    
+    $tsb->non_mapped_gene_rescore($transcript_scores2, $gene_mappings);
+    
+    my $mappings2 = Bio::EnsEMBL::IdMapping::MappingList->new(
+      -DUMP_PATH   => $dump_path,
+      -CACHE_FILE  => 'transcript_mappings2.ser',
+    );
+    
+    $self->basic_mapping($transcript_scores2, $mappings2);
+    
+    my $transcript_scores3 = $tsb->create_shrinked_matrix(
+      $transcript_scores2, $mappings2, 'transcript_matrix3.ser');
+
+    $self->logger->info("Found ".$mappings2->get_entry_count.
+      " additional mappings.\n\n");
+
+
+    #
+    # selectively rescore by penalising scores between transcripts with
+    # different internalIDs  
+    #
+    $self->logger->info("Retry with internalID disambiguation\n");
+    
+    $tsb->internal_id_rescore($transcript_scores3);
+
+    my $mappings3 = Bio::EnsEMBL::IdMapping::MappingList->new(
+      -DUMP_PATH   => $dump_path,
+      -CACHE_FILE  => 'transcript_mappings3.ser',
+    );
+    
+    $self->basic_mapping($transcript_scores3, $mappings3);
+    
+    my $transcript_scores4 = $tsb->create_shrinked_matrix(
+      $transcript_scores3, $mappings3, 'transcript_matrix4.ser');
+
+    $self->logger->info("Found ".$mappings3->get_entry_count.
+      " additional mappings.\n\n");
+
+
+    #
+    # handle ambiguities between transcripts in single genes
+    #
+    $self->logger->info("Transcripts in single Genes\n");
+    
+    my $mappings4 = Bio::EnsEMBL::IdMapping::MappingList->new(
+      -DUMP_PATH   => $dump_path,
+      -CACHE_FILE  => 'transcript_mappings4.ser',
+    );
+    
+    $self->same_gene_transcript_mapping($transcript_scores4, $mappings4);
+    
+    my $remaining_transcript_scores = $tsb->create_shrinked_matrix(
+      $transcript_scores4, $mappings4, 'transcript_matrix5.ser');
+
+    $self->logger->info("Found ".$mappings4->get_entry_count.
+      " additional mappings.\n\n");
+
+
+    #
+    # report remaining ambiguities
+    #
+    $self->logger->info($remaining_transcript_scores->get_source_count.
+      " source transcripts are ambiguous with ".
+      $remaining_transcript_scores->get_target_count." target transcripts.\n\n");
+
+    $self->log_ambiguous($remaining_transcript_scores, 'transcript');
+
+    
+    #
+    # merge mappings and write to file
+    #
+    $mappings->add_all($mappings1, $mappings2, $mappings3, $mappings4);
+
+    $mappings->write_to_file;
+
+    if ($self->logger->loglevel eq 'debug') {
+      $mappings->log('transcript');
+    }
+
+    $self->logger->info("Done.\n\n", 0, 'stamped');
+
+  }
+
+  return $mappings;
+
+}
+
+
+sub map_exons {
+  my $self = shift;
+  my $exon_scores = shift;
+  my $transcript_mappings = shift;
+  my $esb = shift;
+
+  # argument checks
+  unless ($exon_scores and
+      $exon_scores->isa('Bio::EnsEMBL::IdMapping::ScoredMappingMatrix')) {
+    throw('Need a Bio::EnsEMBL::IdMapping::ScoredMappingMatrix of exons.');
+  }
+
+  unless ($transcript_mappings and
+          $transcript_mappings->isa('Bio::EnsEMBL::IdMapping::MappingList')) {
+    throw('Need a Bio::EnsEMBL::IdMapping::MappingList of transcripts.');
+  }
+  
+  unless ($esb and
+          $esb->isa('Bio::EnsEMBL::IdMapping::ExonScoreBuilder')) {
+    throw('Need a Bio::EnsEMBL::IdMapping::ExonScoreBuilder.');
+  }
+  
+  $self->logger->info("Starting exon mapping...\n\n", 0, 'stamped');
+
+  my $dump_path = path_append($self->conf->param('dumppath'), 'mapping');
+
+  my $mappings = Bio::EnsEMBL::IdMapping::MappingList->new(
+    -DUMP_PATH   => $dump_path,
+    -CACHE_FILE  => 'exon_mappings.ser',
+  );
+
+  my $mapping_cache = $mappings->cache_file;
+
+  if (-s $mapping_cache) {
+    
+    # read from file
+    $self->logger->info("Reading exon mappings from file...\n", 0,
+      'stamped');
+    $self->logger->debug("Cache file $mapping_cache.\n", 1);
+    $mappings->read_from_file;
+    $self->logger->info("Done.\n\n", 0, 'stamped');
+    
+  } else {
+    
+    # create exon mappings
+    $self->logger->info("No exon mappings found. Will calculate then now.\n");
+
+    $self->logger->info("Basic exon mapping\n");
+
+    #
+    # basic mapping
+    #
+    $self->basic_mapping($exon_scores, $mappings);
+
+    my $exon_scores1 = $esb->create_shrinked_matrix(
+      $exon_scores, $mappings, 'exon_matrix1.ser');
+    
+    $self->logger->info("Found ".$mappings->get_entry_count.
+      " initial mappings.\n\n");
+
+
+    #
+    # reduce score for mappings of exons which do not belong to mapped
+    # transcripts
+    #
+    $self->logger->info("Exons in mapped Transcripts\n");
+    
+    $esb->non_mapped_transcript_rescore($exon_scores1, $transcript_mappings);
+    
+    my $mappings1 = Bio::EnsEMBL::IdMapping::MappingList->new(
+      -DUMP_PATH   => $dump_path,
+      -CACHE_FILE  => 'exon_mappings1.ser',
+    );
+    
+    $self->basic_mapping($exon_scores1, $mappings1);
+    
+    my $remaining_exon_scores = $esb->create_shrinked_matrix(
+      $exon_scores1, $mappings1, 'exon_matrix2.ser');
+
+    $self->logger->info("Found ".$mappings1->get_entry_count.
+      " additional mappings.\n\n");
+
+
+    #
+    # report remaining ambiguities
+    #
+    $self->logger->info($remaining_exon_scores->get_source_count.
+      " source exons are ambiguous with ".
+      $remaining_exon_scores->get_target_count." target exons.\n\n");
+
+    $self->log_ambiguous($remaining_exon_scores, 'exon');
+
+    
+    #
+    # merge mappings and write to file
+    #
+    $mappings->add_all($mappings1);
+
+    $mappings->write_to_file;
+
+    if ($self->logger->loglevel eq 'debug') {
+      $mappings->log('exon');
+    }
+
+    $self->logger->info("Done.\n\n", 0, 'stamped');
+
+  }
+
+  return $mappings;
+
+}
+
+
+sub map_translations {
+  my $self = shift;
+  my $transcript_mappings = shift;
+
+  # argument checks
+  unless ($transcript_mappings and
+          $transcript_mappings->isa('Bio::EnsEMBL::IdMapping::MappingList')) {
+    throw('Need a Bio::EnsEMBL::IdMapping::MappingList of transcripts.');
+  }
+  
+  $self->logger->info("Starting translation mapping...\n\n", 0, 'stamped');
+
+  my $dump_path = path_append($self->conf->param('dumppath'), 'mapping');
+
+  my $mappings = Bio::EnsEMBL::IdMapping::MappingList->new(
+    -DUMP_PATH   => $dump_path,
+    -CACHE_FILE  => 'translation_mappings.ser',
+  );
+
+  my $mapping_cache = $mappings->cache_file;
+
+  if (-s $mapping_cache) {
+    
+    # read from file
+    $self->logger->info("Reading translation mappings from file...\n", 0,
+      'stamped');
+    $self->logger->debug("Cache file $mapping_cache.\n", 1);
+    $mappings->read_from_file;
+    $self->logger->info("Done.\n\n", 0, 'stamped');
+    
+  } else {
+    
+    # create translation mappings
+    $self->logger->info("No translation mappings found. Will calculate then now.\n");
+
+    $self->logger->info("Translation mapping\n");
+
+    #
+    # map translations for mapped transcripts
+    #
+    my $i = 0;
+
+    foreach my $entry (@{ $transcript_mappings->get_all_Entries }) {
+
+      my $source_tl = $self->cache->get_by_key('transcripts_by_id',
+        'source', $entry->source)->translation;
+      my $target_tl = $self->cache->get_by_key('transcripts_by_id',
+        'target', $entry->target)->translation;
+
+      if ($source_tl and $target_tl) {
+      
+        # add mapping for the translations; note that the score is taken from
+        # the transcript mapping
+        my $tl_entry = Bio::EnsEMBL::IdMapping::Entry->new_fast([
+          $source_tl->id, $target_tl->id, $entry->score
+        ]);
+        $mappings->add_Entry($tl_entry);
+      
+      } else {
+        $i++;
+      }
+
+    }
+
+    $self->logger->debug("Skipped transcripts without translation: $i\n", 1);
+    $self->logger->info("Found ".$mappings->get_entry_count.
+      " mappings.\n\n");
+
+    $mappings->write_to_file;
+
+    if ($self->logger->loglevel eq 'debug') {
+      $mappings->log('translation');
+    }
+
+    $self->logger->info("Done.\n\n", 0, 'stamped');
+
+  }
+
+  return $mappings;
+
+}
+
 
 #
 # find the highest unambiguous score for all sources and targets in a scoring
@@ -285,14 +668,14 @@ sub higher_score_exists {
   my $target = $entry->target;
   my $score = $entry->score;
 
-  foreach my $other_source @{ $matrix->get_sources_for_target($target) }) {
+  foreach my $other_source (@{ $matrix->get_sources_for_target($target) }) {
     if ($other_source != $source and !$sources_done->{$other_source} and
         $score < $matrix->get_score($other_source, $target)) {
           return 1;
     }
   }
 
-  foreach my $other_target @{ $matrix->get_targets_for_source($source) }) {
+  foreach my $other_target (@{ $matrix->get_targets_for_source($source) }) {
     if ($other_target != $target and !$targets_done->{$other_target} and
         $score < $matrix->get_score($source, $other_target)) {
           return 1;
@@ -315,22 +698,22 @@ sub ambiguous_mapping {
 
   my $retval = 0;
 
-  foreach my $other_source @{ $matrix->get_sources_for_target($target) }) {
+  foreach my $other_source (@{ $matrix->get_sources_for_target($target) }) {
     my $other_score = $matrix->get_score($other_source, $target);
     
     if ($other_source != $source and
       ($self->scores_similar($score, $other_score) or $score < $other_score)) {
-        retval = 1;
+        $retval = 1;
         push @{ $other_sources }, $other_source;
     }
   }
 
-  foreach my $other_target @{ $matrix->get_targets_for_source($source) }) {
+  foreach my $other_target (@{ $matrix->get_targets_for_source($source) }) {
     my $other_score = $matrix->get_score($source, $other_target);
-    
+
     if ($other_target != $target and
       ($self->scores_similar($score, $other_score) or $score < $other_score)) {
-        retval = 1;
+        $retval = 1;
         push @{ $other_targets }, $other_target;
     }
   }
@@ -360,7 +743,7 @@ sub scores_similar {
 sub filter_sources {
   my ($self, $other_sources, $sources_done) = @_;
 
-  return 0 unless (scalar(@$other_sources) and scalar(@$sources_done));
+  return 0 unless (scalar(@$other_sources) and scalar(keys %$sources_done));
 
   my @tmp = ();
 
@@ -375,7 +758,7 @@ sub filter_sources {
 sub filter_targets {
   my ($self, $other_targets, $targets_done) = @_;
 
-  return 0 unless (scalar(@{ $other_targets) and scalar(@$targets_done));
+  return 0 unless (scalar(@{ $other_targets }) and scalar(keys %$targets_done));
 
   my @tmp = ();
 
@@ -384,6 +767,206 @@ sub filter_targets {
   }
 
   $other_targets = \@tmp;
+}
+
+
+#
+# modified basic mapper that maps transcripts that are ambiguous within one gene
+#
+sub same_gene_transcript_mapping {
+  my $self = shift;
+  my $matrix = shift;
+  my $mappings = shift;
+
+  # argument checks
+  unless ($matrix and
+          $matrix->isa('Bio::EnsEMBL::IdMapping::ScoredMappingMatrix')) {
+    throw('Need a Bio::EnsEMBL::IdMapping::ScoredMappingMatrix.');
+  }
+  
+  unless ($mappings and
+          $mappings->isa('Bio::EnsEMBL::IdMapping::MappingList')) {
+    throw('Need a gene Bio::EnsEMBL::IdMapping::MappingList.');
+  }
+
+  my $sources_done = {};
+  my $targets_done = {};
+
+  # sort scoring matrix entries by descending score
+  my @sorted_entries = sort { $b->score <=> $a->score }
+    @{ $matrix->get_all_Entries };
+
+  while (my $entry = shift(@sorted_entries)) {
+    
+    # we already found a mapping for either source or target yet
+    next if ($sources_done->{$entry->source} or
+             $targets_done->{$entry->target});
+    
+    my $other_sources = [];
+    my $other_targets = [];
+    my %source_genes = ();
+    my %target_genes = ();
+
+    if ($self->ambiguous_mapping($entry, $matrix, $other_sources, $other_targets)) {
+      $self->filter_sources($other_sources, $sources_done);
+      $self->filter_targets($other_targets, $targets_done);
+
+      $source_genes{$self->cache->get_by_key('genes_by_transcript_id',
+        'source', $entry->source)} = 1;
+      $target_genes{$self->cache->get_by_key('genes_by_transcript_id',
+        'target', $entry->target)} = 1;
+
+      foreach my $other_source (@{ $other_sources }) {
+        $source_genes{$self->cache->get_by_key('genes_by_transcript_id',
+          'source', $other_source)} = 1;
+      }
+        
+      foreach my $other_target (@{ $other_targets }) {
+        $target_genes{$self->cache->get_by_key('genes_by_transcript_id',
+          'target', $other_target)} = 1;
+      }
+      
+      # only add mapping if only one source and target gene involved
+      if (scalar(keys %source_genes) == 1 and scalar(keys %target_genes) == 1) {
+        $mappings->add_Entry($entry);
+      }
+
+    } else {
+      # this is the best mapping, add it
+      $mappings->add_Entry($entry);
+    }
+
+    $sources_done->{$entry->source} = 1;
+    $targets_done->{$entry->target} = 1;
+  }
+  
+}
+
+
+sub log_ambiguous {
+  my $self = shift;
+  my $matrix = shift;
+  my $type = shift;
+
+  unless ($matrix and
+          $matrix->isa('Bio::EnsEMBL::IdMapping::ScoredMappingMatrix')) {
+    throw('Need a Bio::EnsEMBL::IdMapping::ScoredMappingMatrix.');
+  }
+  
+  # create dump directory if it doesn't exist
+  my $debug_path = $self->conf->param('dumppath').'/debug';
+  unless (-d $debug_path) {
+    system("mkdir -p $debug_path") == 0 or
+      throw("Unable to create directory $debug_path.\n");
+  }
+  
+  my $logfile = "$debug_path/ambiguous_${type}.txt";
+  
+  open(my $fh, '>', $logfile) or
+    throw("Unable to open $logfile for writing: $!");
+
+  my @low_scoring = ();
+  my @high_scoring = ();
+  my $last_id;
+
+  # log by source
+  foreach my $entry (sort { $a->source <=> $b->source }
+                        @{ $matrix->get_all_Entries }) {
+    
+    $last_id ||= $entry->target;
+
+    if ($last_id != $entry->source) {
+      $self->write_ambiguous($type, 'source', $fh, \@low_scoring,
+        \@high_scoring);
+      $last_id = $entry->source;
+    }
+    
+    if ($entry->score < 0.5) {
+      push @low_scoring, $entry;
+    } else {
+      push @high_scoring, $entry;
+    }
+  }
+
+  # write last source
+  $self->write_ambiguous($type, 'source', $fh, \@low_scoring, \@high_scoring);
+
+  # now do the same by target
+  $last_id = undef;
+  foreach my $entry (sort { $a->target <=> $b->target }
+                        @{ $matrix->get_all_Entries }) {
+
+    $last_id ||= $entry->target;
+
+    if ($last_id != $entry->target) {
+      $self->write_ambiguous($type, 'target', $fh, \@low_scoring,
+        \@high_scoring);
+      $last_id = $entry->target;
+    }
+    
+    if ($entry->score < 0.5) {
+      push @low_scoring, $entry;
+    } else {
+      push @high_scoring, $entry;
+    }
+  }
+
+  # write last target
+  $self->write_ambiguous($type, 'target', $fh, \@low_scoring, \@high_scoring);
+
+  close($fh);
+}
+
+
+sub write_ambiguous {
+  my ($self, $type, $db_type, $fh, $low, $high) = @_;
+  
+  # if only source or target are ambiguous (i.e. you have only one mapping from
+  # this perspective) then log from the other perspective
+  if (scalar(@$low) + scalar(@$high) <= 1) {
+    @$low = ();
+    @$high = ();
+    return;
+  }
+
+  my $first_id;
+  if (@$low) {
+    $first_id = $low->[0]->$db_type;
+  } else {
+    $first_id = $high->[0]->$db_type;
+  }
+
+  my $other_db_type;
+  if ($db_type eq 'source') {
+    $other_db_type = 'target';
+  } else {
+    $other_db_type = 'source';
+  }
+
+  print $fh "$db_type $type $first_id scores ambiguously:\n";
+
+  # high scorers
+  if (@$high) {
+    print $fh "  high scoring ${other_db_type}s\n";
+
+    while (my $e = shift(@$high)) {
+      print $fh "    ", $e->$other_db_type, " ", $e->score, "\n";
+    }
+  }
+
+  # low scorers
+  if (@$low) {
+    print $fh "  low scoring ${other_db_type}s\n    ";
+
+    my $i = 1;
+
+    while (my $e = shift(@$low)) {
+      print $fh "\n    " unless (($i++)%10);
+      print $fh $e->$other_db_type, ", ";
+    }
+  }
+
+  print $fh "\n";
 }
 
 
