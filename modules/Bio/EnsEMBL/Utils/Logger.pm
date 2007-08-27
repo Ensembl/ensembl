@@ -605,7 +605,7 @@ sub is_component {
 
 sub loglevel {
   my $self = shift;
-  return $reverse_level_def[$self->{'loglevel'}];
+  return $reverse_level_defs[$self->{'loglevel'}];
 }
 
 
