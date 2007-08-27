@@ -39,7 +39,7 @@ use Bio::EnsEMBL::IdMapping::ScoreBuilder;
 our @ISA = qw(Bio::EnsEMBL::IdMapping::ScoreBuilder);
 
 use Bio::EnsEMBL::Utils::Exception qw(throw warning);
-use Bio::EnsEMBL::Utils::ScriptUtils qw(parse_bytes);
+use Bio::EnsEMBL::Utils::ScriptUtils qw(path_append);
 use Bio::EnsEMBL::IdMapping::ScoredMappingMatrix;
 
 
@@ -91,8 +91,10 @@ sub scores_from_exon_scores {
     throw('Need a Bio::EnsEMBL::IdMapping::ScoredMappingMatrix.');
   }
   
+  my $dump_path = path_append($self->conf->param('dumppath'), 'matrix');
+  
   my $matrix = Bio::EnsEMBL::IdMapping::ScoredMappingMatrix->new(
-    -DUMP_PATH   => $self->conf->param('dumppath'),
+    -DUMP_PATH   => $dump_path,
     -CACHE_FILE  => 'transcript_matrix.ser',
   );
 
@@ -213,7 +215,7 @@ sub score_matrix_from_flag_matrix {
   # create a new scoring matrix which will replace the flag matrix
   my $matrix = Bio::EnsEMBL::IdMapping::ScoredMappingMatrix->new(
     -DUMP_PATH   => $flag_matrix->dump_path,
-    -CACHE_FILE  => $flag_matrix->cache_file,
+    -CACHE_FILE  => $flag_matrix->cache_file_name,
   );
 
   # initialise progress logger
@@ -330,5 +332,84 @@ sub score_matrix_from_flag_matrix {
 }
 
 
+sub different_translation_rescore {
+  my $self = shift;
+  my $matrix = shift;
+
+  unless ($matrix and
+          $matrix->isa('Bio::EnsEMBL::IdMapping::ScoredMappingMatrix')) {
+    throw('Need a Bio::EnsEMBL::IdMapping::ScoredMappingMatrix.');
+  }
+
+  my $i = 0;
+
+  foreach my $entry (sort { $b->score <=> $a->score }
+                      @{ $matrix->get_all_Entries }) {
+
+    # we only do this for perfect matches, i.e. transcript score == 1
+    last if ($entry->score < 1);
+
+    my $source_tl = $self->cache->get_by_key('transcripts_by_id',
+      'source', $entry->source)->translation;
+    my $target_tl = $self->cache->get_by_key('transcripts_by_id',
+      'target', $entry->target)->translation;
+
+    # no penalty if both transcripts have no translation
+    next if (!$source_tl and !$target_tl);
+
+    if (!$source_tl or !$target_tl or
+        ($source_tl->seq ne $target_tl->seq)) {
+      # set score to a value less than 1
+      $matrix->set_score($entry->source, $entry->target, 0.98);
+      $i++;
+    }
+    
+  }
+
+  $self->logger->debug("Non-perfect translations on perfect transcripts: $i\n", 1);
+}
+
+
+sub non_mapped_gene_rescore {
+  my $self = shift;
+  my $matrix = shift;
+  my $gene_mappings = shift;
+
+  # argument checks
+  unless ($matrix and
+      $matrix->isa('Bio::EnsEMBL::IdMapping::ScoredMappingMatrix')) {
+    throw('Need a transcript Bio::EnsEMBL::IdMapping::ScoredMappingMatrix.');
+  }
+
+  unless ($gene_mappings and
+          $gene_mappings->isa('Bio::EnsEMBL::IdMapping::MappingList')) {
+    throw('Need a gene Bio::EnsEMBL::IdMapping::MappingList.');
+  }
+
+  # create of lookup hash of mapped source genes to target genes
+  my %gene_lookup = map { $_->source => $_->target }
+    @{ $gene_mappings->get_all_Entries };
+
+  my $i = 0;
+
+  foreach my $entry (@{ $matrix->get_all_Entries }) {
+
+    my $source_gene = $self->cache->get_by_key('genes_by_transcript_id',
+      'source', $entry->source);
+    my $target_gene = $self->cache->get_by_key('genes_by_transcript_id',
+      'target', $entry->target);
+
+    my $mapped_target = $gene_lookup{$source_gene->id};
+
+    if (!$mapped_target or ($mapped_target != $target_gene->id)) {
+      $matrix->set_score($entry->source, $entry->target, ($entry->score * 0.8));
+      $i++;
+    }
+  }
+
+  $self->logger->debug("Scored transcripts in non-mapped genes: $i\n", 1);
+}
+
+  
 1;
 
