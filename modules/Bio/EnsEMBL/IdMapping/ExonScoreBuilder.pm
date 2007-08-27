@@ -40,7 +40,7 @@ our @ISA = qw(Bio::EnsEMBL::IdMapping::ScoreBuilder);
 
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 use Bio::EnsEMBL::Utils::Exception qw(throw warning);
-use Bio::EnsEMBL::Utils::ScriptUtils qw(parse_bytes);
+use Bio::EnsEMBL::Utils::ScriptUtils qw(parse_bytes path_append);
 use Bio::EnsEMBL::IdMapping::ScoredMappingMatrix;
 
 
@@ -84,9 +84,11 @@ sub score_exons {
 #
 sub overlap_score {
   my $self = shift;
+
+  my $dump_path = path_append($self->conf->param('dumppath'), 'matrix');
   
   my $matrix = Bio::EnsEMBL::IdMapping::ScoredMappingMatrix->new(
-    -DUMP_PATH   => $self->conf->param('dumppath'),
+    -DUMP_PATH   => $dump_path,
     -CACHE_FILE  => 'exon_overlap_matrix.ser',
   );
 
@@ -132,8 +134,10 @@ sub exonerate_score {
     throw('Need a Bio::EnsEMBL::IdMapping::ScoredMappingMatrix.');
   }
 
+  my $dump_path = path_append($self->conf->param('dumppath'), 'matrix');
+
   my $exonerate_matrix = Bio::EnsEMBL::IdMapping::ScoredMappingMatrix->new(
-    -DUMP_PATH   => $self->conf->param('dumppath'),
+    -DUMP_PATH   => $dump_path,
     -CACHE_FILE  => 'exon_exonerate_matrix.ser',
   );
 
@@ -628,4 +632,59 @@ sub parse_exonerate_results {
   return $exonerate_matrix;
 }
 
+
+sub non_mapped_transcript_rescore {
+  my $self = shift;
+  my $matrix = shift;
+  my $transcript_mappings = shift;
+
+  # argument checks
+  unless ($matrix and
+      $matrix->isa('Bio::EnsEMBL::IdMapping::ScoredMappingMatrix')) {
+    throw('Need a Bio::EnsEMBL::IdMapping::ScoredMappingMatrix of exons.');
+  }
+
+  unless ($transcript_mappings and
+          $transcript_mappings->isa('Bio::EnsEMBL::IdMapping::MappingList')) {
+    throw('Need a Bio::EnsEMBL::IdMapping::MappingList of transcripts.');
+  }
+
+  # create of lookup hash of mapped source transcripts to target transcripts
+  my %transcript_lookup = map { $_->source => $_->target }
+    @{ $transcript_mappings->get_all_Entries };
+
+  my $i = 0;
+
+  foreach my $entry (@{ $matrix->get_all_Entries }) {
+
+    my @source_transcripts = @{ $self->cache->get_by_key(
+      'transcripts_by_exon_id', 'source', $entry->source) };
+    my @target_transcripts = @{ $self->cache->get_by_key(
+      'transcripts_by_exon_id', 'target', $entry->target) };
+
+    my $found_mapped = 0;
+
+    TR:
+    foreach my $source_tr (@source_transcripts) {
+      foreach my $target_tr (@target_transcripts) {
+        my $mapped_target = $transcript_lookup{$source_tr->id};
+
+        if ($mapped_target and ($mapped_target == $target_tr->id)) {
+          $found_mapped = 1;
+          last TR;
+        }
+      }
+    }
+    
+    unless ($found_mapped) {
+      $matrix->set_score($entry->source, $entry->target, ($entry->score * 0.8));
+      $i++;
+    }
+  }
+
+  $self->logger->debug("Scored exons in non-mapped transcripts: $i\n", 1);
+}
+
+
+1;
 
