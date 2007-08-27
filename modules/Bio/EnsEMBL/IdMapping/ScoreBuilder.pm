@@ -37,7 +37,9 @@ use Bio::EnsEMBL::IdMapping::BaseObject;
 our @ISA = qw(Bio::EnsEMBL::IdMapping::BaseObject);
 
 use Bio::EnsEMBL::Utils::Exception qw(throw warning);
+use Bio::EnsEMBL::Utils::ScriptUtils qw(path_append);
 use Bio::EnsEMBL::IdMapping::ScoredMappingMatrix;
+
 
 #
 # create a shrinked matrix which doesn't contain entries which were already 
@@ -62,8 +64,10 @@ sub create_shrinked_matrix {
 
   throw('Need a cache file name.') unless ($cache_file);
 
+  my $dump_path = path_append($self->conf->param('dumppath'), 'matrix');
+
   my $shrinked_matrix = Bio::EnsEMBL::IdMapping::ScoredMappingMatrix->new(
-    -DUMP_PATH   => $self->conf->param('dumppath'),
+    -DUMP_PATH   => $dump_path,
     -CACHE_FILE  => $cache_file,
   );
 
@@ -92,6 +96,53 @@ sub create_shrinked_matrix {
     $shrinked_matrix->get_entry_count."\n");
 
   return $shrinked_matrix;
+}
+
+
+sub internal_id_rescore {
+  my $self = shift;
+  my $matrix = shift;
+
+  unless ($matrix and
+          $matrix->isa('Bio::EnsEMBL::IdMapping::ScoredMappingMatrix')) {
+    throw('Need a Bio::EnsEMBL::IdMapping::ScoredMappingMatrix.');
+  }
+
+  my $i = 0;
+
+  foreach my $source (@{ $matrix->get_all_sources }) {
+
+    my @entries = sort { $b <=> $a }
+      @{ $matrix->get_Entries_for_source($source) };
+
+    # nothing to do if we only have one mapping
+    next unless (scalar(@entries) > 1);
+
+    # only penalise if mappings are ambiguous
+    next unless ($entries[0]->score == $entries[1]->score);
+
+    # only penalise if one source id == target id where score == best score
+    my $ambiguous = 0;
+    
+    foreach my $e (@entries) {
+      if ($e->target == $source and $e->score == $entries[0]) {
+        $ambiguous = 1;
+      }
+    }
+
+    next unless ($ambiguous);
+
+    # now penalise those where source id != target id and score == best score
+    foreach my $e (@entries) {
+      if ($e->target != $source and $e->score == $entries[0]) {
+        $matrix->set_score($source, $e->target, ($e->score * 0.8));
+        $i++;
+      }
+    }
+
+  }
+  
+  $self->logger->debug("Scored entries with internal ID mismatch: $i\n", 1);
 }
 
 
