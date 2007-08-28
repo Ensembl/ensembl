@@ -113,7 +113,12 @@ sub store_on_ {
 
   my $object_id;
   if($type =~ /[GT][er][na][en]/){
-    $object_id = $object->dbID;
+    if (!ref($object)){
+      $object_id = $object;
+    }
+    else {
+      $object_id = $object->dbID;
+    }
     $table = lc($type);
 #    $type = lc($type);
   }
