@@ -45,7 +45,7 @@ my $martdb = new Bio::EnsEMBL::DBSQL::DBAdaptor(
 
 #directory with input files and for output
 my $inputdir = '/lustre/work1/ensembl/mh4/Genbank_dump_45/Input';
-my $outdir = '/lustre/work1/ensembl/mh4/Genbank_dump_45/Output/Outfiles';
+my $outdir = '/lustre/work1/ensembl/mh4/Genbank_dump_45/Output/Outfiles_2007-08-23';
 
 ###############################################
 ##  load some data from files
@@ -55,7 +55,7 @@ my %scafmap;
 my %old_prot_ann;
 # my %moved; # not using in 45 dump
 my %gene_name;
-my %panther;
+my %autoname;
 my %mir_evidence;
 my %old_ensangg;
 my %idmap_gene;
@@ -122,8 +122,10 @@ while (<GENE_NAME>) {
 close GENE_NAME;
 
 
-#*# changes pending for v45 - also need to have Panther description look-up
-#*# add reading file with asociations between AGAMxxxxx-PA and Panther descriptions
+#*# changes pending for v45
+#*# want to have Interpro/Panther/auotannotation descr look-up for automated second-choice product naming
+#*# add reading file with asociations between AGAMxxxxx-PA and descriptions/names
+#*# and storing in hash %autoname
 
 
 # read file that associates mir (miRNA) names / descriptions with the source of evidence that miRBase (aka Sam G-J) use to identify them
@@ -184,12 +186,12 @@ while (<IDMAPM>) {
 }
 close IDMAPM;
 
-# read files to lookup protein_id from aedes VB stable id 
-# and uniprot acc.sv from drosphila CGxxxx-Px
+# read files to lookup protein_id from aedes VB stable id
+# these are for use in inference (evidence) tags
 # AAEL006014-PA   EAT42428.1
 # and uniprot acc.sv from drosphila CGxxxx-Px
 # CG8340-PA       P32234.2
-# inboth cases, nwither neither column is unique
+# in both cases, neither column is unique
 # but decided ok just to take any (ie the last one)!
 
 open AEDES, "$inputdir/aedes_VB_2_proteinid_lookup" || die "can't find file with aedes lookup";
@@ -259,8 +261,8 @@ my $gene_orth=0;
 
 # global counters etc for CDS stuff
 my %pid_count;
-my ($fetch_count,$proteins_named,$proteins_described,$proteins_panthered,$proteins_plain);
-$fetch_count=$proteins_named=$proteins_described=$proteins_panthered=$proteins_plain=0;
+my ($fetch_count,$proteins_named,$proteins_described,$proteins_autonamed,$proteins_plain);
+$fetch_count=$proteins_named=$proteins_described=$proteins_autonamed=$proteins_plain=0;
 
 my ($man_c, $snap_c, $comm_c, $inf_c, $default_c, $error_c);
 $man_c=$snap_c= $comm_c= $inf_c=$default_c=$error_c= 0;
@@ -817,7 +819,7 @@ print  "Genes found on scaffolds: $genes_found\n\tof which ncRNA genes: $genes_n
 print  "Fetched proteins: $fetch_count, note with name: $proteins_named\n";
 
 print "Product details:\n";
-print "\tfrom gene_name $proteins_described\n\tfrom Panther $proteins_panthered\n\tstable_id only $proteins_plain\n";
+print "\tfrom gene_name $proteins_described\n\tfrom autoname $proteins_autonamed\n\tstable_id only $proteins_plain\n";
 
 print  "Protein id asssignment details:\n";
 foreach my $pid_type (sort keys %pid_count) {
@@ -1123,15 +1125,16 @@ sub print_transcript_coordinates {
 
   print OUT "\t\t\tproduct\t$tr_name\n";
 
-#*# changed for v45 - print transcript_id (for NCBI internal purposes)
-  print OUT "\t\t\ttranscript_id\t$tr_name\n";
-
+#*# changed for v45 - print transcript_id (for NCBI internal purposes) with prefix
 #*# changed for v45 - add protein_id tag to mRNA
-#*# ugly - simplifiction / duplication of code in the CDS section
+#*# protein_id generation is ugly - simplification/duplication of code in the CDS section
 #*# qv for comments and checks and counts
 
-  my $pid;
   my $prefix = 'gnl|WGS:AAAB|';
+
+  print OUT "\t\t\ttranscript_id\t$prefix$tr_name\n";
+
+  my $pid;
   my $old_translation_name;
 
   if ($idmap_prot{$translation_name}) {
@@ -1333,8 +1336,11 @@ sub print_translation_coordinates {
   }
   print OUT "\t\t\tlocus_tag\t$locus_tag_gene\n";
 
-#*# changed for v45 - added print of (internal use) transcript_id
-  print OUT "\t\t\ttranscript_id\t$transcript_name\n";
+#*# changed for v45 - added print of (internal use) transcript_id - use same prefix
+
+  my $prefix = 'gnl|WGS:AAAB|';
+
+  print OUT "\t\t\ttranscript_id\t$prefix$transcript_name\n";
 
 # construct ncbi protein id string
 # from the old_prot_ann hash if stable_id existed in previous release
@@ -1347,7 +1353,6 @@ sub print_translation_coordinates {
 #*# - print additional note if the protein_id includes an old style ebiP or Celera id
 
   my $pid;
-  my $prefix = 'gnl|WGS:AAAB|';
   my $old_translation_name;
 
 # find if have old ENSANGP stable id mapped to this AGAPxxx-PA
@@ -1404,10 +1409,10 @@ sub print_translation_coordinates {
   print OUT "\t\t\tnote\t$translation_name encoded by $transcript_name\n";
 
 
-#*# changed for v45 - protein stable id and description if any (from genename or Panther) will be used within a single product tag, rather than printing separately
+#*# changed for v45 - protein stable id and description if any (from genename or autoname) will be used within a single product tag, rather than printing separately
 #*# - use transcript display xref to retrieve single possibly-different name, not DBentries
 #*# - require that there is an defined gene name (this handles the cases where gene name is used multiple times and I have found this gene to be undesignated)
-#*# - description look-up from Panther-based file if no genename one
+#*# - description look-up from autoname-based hash if no genename one
 
   my $description;
   if ( (defined $gene_name) && ($tr ->display_xref) ) {
@@ -1426,12 +1431,12 @@ sub print_translation_coordinates {
     }
   }
 
-# look for Panther description if no gene-name-description-derived product
-# may need to add not-taking Panther if 'hypothetical protein'
+# look for autoname description if no gene-name-description-derived product
+# may need to add not-taking autoname if 'hypothetical protein' etc
   unless (defined $description) {
-    if ($panther{$translation_name}) {
-      print OUT "\t\t\tproduct\t$panther{$translation_name} ($translation_name)\n";
-      $proteins_panthered++;
+    if ($autoname{$translation_name}) {
+      print OUT "\t\t\tproduct\t$autoname{$translation_name} ($translation_name)\n";
+      $proteins_autonamed++;
     }
     else {
       print OUT "\t\t\tproduct\t$translation_name\n";
