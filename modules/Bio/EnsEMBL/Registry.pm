@@ -117,8 +117,6 @@ use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 use Bio::EnsEMBL::Utils::ConfigRegistry;
 use DBI;
 
-use Config::IniFiles;
-
 use vars qw(%registry_register);
 
 my $API_VERSION = 46;
@@ -192,9 +190,24 @@ sub load_all {
                     $config_file );
         }
 
-        my $cfg = Config::IniFiles->new( -file => $config_file );
-        if ( defined $cfg ) {
+        my $cfg;
 
+        eval { require Config::IniFiles };
+        if ($@) {
+          # The user does not have the 'Config::IniFiles' module.
+          if ($verbose) {
+            print( STDERR "No Config::IniFiles module found, "
+                   . "assuming this is not an ini-file\n" );
+          }
+          # If the configuration file *is* an ini-file, we can expect a
+          # load of compilation errors from the next eval...
+        } else {
+          # The user has the 'Config::IniFiles' module installed.  See
+          # if this is an ini-file or not...
+          $cfg = Config::IniFiles->new( -file => $config_file );
+        }
+
+        if ( defined $cfg ) {
             # This is a map from group names to Ensembl DB adaptors.
             my %group2adaptor = (
                  'blast'   => 'Bio::EnsEMBL::External::BlastAdaptor',
