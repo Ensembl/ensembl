@@ -376,10 +376,10 @@ wormpep_id, wormbase_locus, wormbase_gene, wormbase_transcript
 
 Uses the file
 
-    ftp://ftp.sanger.ac.uk/pub/databases/wormpep/wormpep150/wormpep.table150
+    ftp://ftp.sanger.ac.uk/pub/databases/wormpep/wormpep180/wormpep.table180
 
 and the database (last release should do)
 
-    mysql://ensembldb.ensembl.org::caenorhabditis_elegans_core_39_150a:anonymous
+    mysql:ensembldb.ensembl.org:3306:caenorhabditis_elegans_core_46_170b:anonymous
 
 This creates direct Xrefs for all these.
