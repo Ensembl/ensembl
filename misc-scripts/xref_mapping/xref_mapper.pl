@@ -155,7 +155,7 @@ my $location;
 my $logic_name;
 my $notriage=undef;
 my $recalc_display_xrefs = undef;
-my $external_db_file="/../external_db/external_dbs.txt";
+my $external_db_file="../external_db/external_dbs.txt";
 
 GetOptions ('file=s'                    => \$file,
             'verbose'                   => \$verbose,
