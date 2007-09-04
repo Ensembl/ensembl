@@ -736,18 +736,18 @@ sub is_toplevel{
 
  Title   : fetch_by_band
  Usage   :
- Function: create a Slice representing a series of bands
+ Function: Does not work please use fetch_by_chr_band
  Example :
  Returns : Bio::EnsEMBL::Slice
  Args    : the band name
- Status     : Stable
+ Status     : AT RISK
 
 =cut
 
 sub fetch_by_band {
   my ($self,$band) = @_;
 
-  my $sth = $self->db->prepare
+  my $sth = $self->dbc->prepare
         ("select s.name,max(k.seq_region_id)-min(k.seq_region_id, min(k.seq_region_start), max(k.seq_region_id) " .
          "from karyotype as k " .
          "where k.band like ? and k.seq_region_id = s.seq_region_id");
@@ -782,7 +782,7 @@ sub fetch_by_chr_band {
   my $chr_slice = $self->fetch_by_region('toplevel', $chr);
   my $seq_region_id = $self->get_seq_region_id($chr_slice);
 
-  my $sth = $self->db->prepare
+  my $sth = $self->dbc->prepare
         ("select min(k.seq_region_start), max(k.seq_region_end) " .
          "from karyotype as k " .
          "where k.seq_region_id = ? and k.band like ?");
