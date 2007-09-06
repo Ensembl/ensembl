@@ -30,10 +30,13 @@ label and will be store in the Xref database.
 
 For now, the script 'xref_config2sql.pl' (also found in this directory)
 should be used to convert the ini-file into a SQL file which you
-should replace the file 'sql/populate_metadata.sql' with.  When
-'xref_parser.pl' is run it will load this generated SQL file into the
-database and will then download and parse all external data files for
-one or several specified species.
+should replace the file 'sql/populate_metadata.sql' with.  The
+'xref_config2sql.pl' script expects to find 'xref_config.ini' in the
+current directory, but you may specify an alternative file as the first
+command line argument to the script if you have moved or renamed the
+ini-file.  When 'xref_parser.pl' is run it will load the generated SQL
+file into the database and will then download and parse all external
+data files for one or several specified species.
 
 If you want to add a new source you will have to add a new source
 section, following the pattern used by the other source sections.  You
