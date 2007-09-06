@@ -137,7 +137,10 @@ sub create_xrefs {
       $species_id )
     = @_;
 
-  my %name2species_id = $self->name2species_id();
+  # Create a hash of all valid names for this species. Not used...
+  # my %species2name = $self->species_id2name();
+  # my @names   = @{$species2name{$species_id}};
+  # my %name2species_id     = map{ $_=>$species_id } @names;
 
   if ( !defined( $self->get_desc($data_file) ) ) {
     return undef;

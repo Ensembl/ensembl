@@ -32,6 +32,7 @@ my %dependent_sources;
 my %taxonomy2species_id;
 my %species_id2taxonomy;
 my %name2species_id;
+my %species_id2name;
 my %xref_dependent_mapped;
 
 my ( $host,             $port,    $dbname,        $user,
@@ -1055,6 +1056,9 @@ sub get_dependent_xref_sources {
 # Get & cache a hash of all the species IDs & taxonomy IDs.
 
 sub taxonomy2species_id {
+  warn( "[DEPRECATED] taxonomy2species_id is a deprecated (unsafe) method. ".
+        "Please use species_id2taxonomy instead. Called by ".
+        join( ', ', (caller(0))[1..2] ) );
 
   my $self = shift;
 
@@ -1066,6 +1070,12 @@ sub taxonomy2species_id {
     while(my @row = $sth->fetchrow_array()) {
       my $species_id = $row[0];
       my $taxonomy_id = $row[1];
+      if( my $ori =$taxonomy2species_id{$taxonomy_id} ){
+        die( "Taxon $taxonomy_id already used for species $ori. ".
+               "Cannot assign to species $species_id as well. ".
+               "Consider using the species_id2taxonomy call instead. ".
+               "Called by ". join( ', ', (caller(0))[1..2] ) );
+      }
       $taxonomy2species_id{$taxonomy_id} = $species_id;
     }
   }
@@ -1103,6 +1113,10 @@ sub species_id2taxonomy {
 # Get & cache a hash of all the species IDs & species names.
 
 sub name2species_id {
+  warn( "[DEPRECATED] name2species_id is a deprecated (unsafe) method. ".
+        "Please use species_id2name instead. Called by ".
+        join( ', ', (caller(0))[1..2] ) );
+
     my $self = shift;
 
     if ( !%name2species_id ) {
@@ -1122,9 +1136,11 @@ sub name2species_id {
         while ( my @row = $sth->fetchrow_array() ) {
             my $species_id = $row[0];
             foreach my $name ( split /,\s*/, $row[1] ) {
-                if ( exists $name2species_id{$name} ) {
-                    warn "Ambigous species alias: "
-                      . "$name (id = $species_id)\n";
+                if ( my $ori = $name2species_id{$name} ) {
+                  die( "Name $name already used for species $ori. ".
+                       "Cannot assign to species $species_id as well. ".
+                       "Consider using the species_id2name call instead. ".
+                       "Called by ". join( ', ', (caller(0))[1..2] ) );
                 } else {
                     $name2species_id{$name} = $species_id;
                 }
@@ -1135,6 +1151,35 @@ sub name2species_id {
 
     return %name2species_id;
 } ## end sub name2species_id
+
+sub species_id2name {
+  my $self = shift;
+
+  if ( !%species_id2name ) {
+
+    my $dbi = dbi();
+    my $sth = $dbi->prepare("SELECT species_id, name FROM species");
+    $sth->execute() or croak( $dbi->errstr() );
+    while ( my @row = $sth->fetchrow_array() ) {
+      my $species_id = $row[0];
+      my $name       = $row[1];
+      $species_id2name{$species_id} = [ $name ];
+    }
+    
+    # Also populate the hash with all the aliases.
+    $sth = $dbi->prepare("SELECT species_id, aliases FROM species");
+    $sth->execute() or croak( $dbi->errstr() );
+    while ( my @row = $sth->fetchrow_array() ) {
+      my $species_id = $row[0];
+      foreach my $name ( split /,\s*/, $row[1] ) {
+        $species_id2name{$species_id} ||= [];
+        push @{$species_id2name{$species_id}}, $name;
+      }
+    }  
+  } ## end if ( !%species_id2name)
+
+  return %species_id2name;
+} ## end sub species_id2name
 
 # --------------------------------------------------------------------------------
 # Update a row in the source table

@@ -118,7 +118,11 @@ sub create_xrefs {
   my ( $peptide_source_id, $dna_source_id, $pred_peptide_source_id,
       $pred_dna_source_id, $file, $species_id ) = @_;
 
-  my %name2species_id = $self->name2species_id();
+  # Create a hash of all valid names for this species
+  my %species2name = $self->species_id2name();
+  my @names   = @{$species2name{$species_id}};
+  my %name2species_id     = map{ $_=>$species_id } @names;
+  # my %name2species_id = $self->name2species_id();
 
   my $refseq_io = $self->get_filehandle($file);
 

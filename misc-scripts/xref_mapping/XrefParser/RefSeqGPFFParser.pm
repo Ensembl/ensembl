@@ -121,8 +121,15 @@ sub create_xrefs {
   my ( $peptide_source_id, $dna_source_id, $pred_peptide_source_id,
       $pred_dna_source_id, $file, $species_id ) = @_;
 
-  my %name2species_id     = $self->name2species_id();
-  my %taxonomy2species_id = $self->taxonomy2species_id();
+  # Create a hash of all valid names and taxon_ids for this species
+  my %species2name = $self->species_id2name();
+  my %species2tax  = $self->species_id2taxonomy();
+  my @names   = @{$species2name{$species_id}};
+  my @tax_ids = @{$species2tax{$species_id}};
+  my %name2species_id     = map{ $_=>$species_id } @names;
+  my %taxonomy2species_id = map{ $_=>$species_id } @tax_ids;
+  # my %name2species_id     = $self->name2species_id();
+  # my %taxonomy2species_id = $self->taxonomy2species_id();
 
   my %dependent_sources =  $self->get_dependent_xref_sources();
 

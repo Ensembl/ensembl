@@ -190,6 +190,11 @@ sub create_xrefs {
 
   local $/ = "//\n";
 
+  # Create a hash of all valid taxon_ids for this species
+  my %species2tax = $self->species_id2taxonomy();
+  my @tax_ids = @{$species2tax{$species_id}};
+  my %taxonomy2species_id = map{ $_=>$species_id } @tax_ids;
+
   while ( $_ = $uniprot_io->getline() ) {
 
     # if an OX line exists, only store the xref if the taxonomy ID that the OX
@@ -206,15 +211,12 @@ sub create_xrefs {
     if ( defined $ox ) {
         @ox = split /\, /, $ox;
 
-        my %taxonomy2species_id = $self->taxonomy2species_id();
+        # my %taxonomy2species_id = $self->taxonomy2species_id();
 
         foreach my $taxon_id_from_file (@ox) {
-            if ( exists $taxonomy2species_id{$taxon_id_from_file}
-                and $taxonomy2species_id{$taxon_id_from_file} eq
-                $species_id )
-            {
-                $found = 1;
-            }
+          if ( exists $taxonomy2species_id{$taxon_id_from_file} ){
+            $found = 1;
+          }
         }
     }
 
