@@ -31,6 +31,7 @@ ALTER table dna ADD FOREIGN KEY (seq_region_id) REFERENCES seq_region(seq_region
 
 ALTER table dna_align_feature ADD FOREIGN KEY (analysis_id) REFERENCES analysis(analysis_id);
 ALTER table dna_align_feature ADD FOREIGN KEY (seq_region_id) REFERENCES seq_region(seq_region_id);
+ALTER table dna_align_feature ADD FOREIGN KEY (external_db_id) REFERENCES external_db(external_db_id);
 
 ALTER table dnac ADD FOREIGN KEY (seq_region_id) REFERENCES seq_region(seq_region_id);
 
@@ -104,6 +105,7 @@ ALTER table prediction_transcript ADD FOREIGN KEY (seq_region_id) REFERENCES seq
 
 ALTER table protein_align_feature ADD FOREIGN KEY (analysis_id) REFERENCES analysis(analysis_id);
 ALTER table protein_align_feature ADD FOREIGN KEY (seq_region_id) REFERENCES seq_region(seq_region_id);
+ALTER table protein_align_feature ADD FOREIGN KEY (external_db_id) REFERENCES external_db(external_db_id);
 
 ALTER table protein_feature ADD FOREIGN KEY (analysis_id) REFERENCES analysis(analysis_id);
 ALTER table protein_feature ADD FOREIGN KEY (translation_id) REFERENCES translation(translation_id);
