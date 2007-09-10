@@ -1165,6 +1165,7 @@ sub log {
 
   Arg[1]      : String $txt - the warning text to log
   Arg[2]      : Int $indent - indentation level for log message
+  Arg[2]      : Bool - add a line break before warning if true
   Example     : my $log = $support->log_filehandle;
                 $support->log_warning('Log foo.\n', 1);
   Description : Logs a message via $self->log and increases the warning counter.
@@ -1175,8 +1176,9 @@ sub log {
 =cut
 
 sub log_warning {
-    my ($self, $txt, $indent) = @_;
-    $txt = "\nWARNING: " . $txt;
+    my ($self, $txt, $indent, $break) = @_;
+    $txt = "WARNING: " . $txt;
+	$txt = "\n$txt" if ($break);
     $self->log($txt, $indent);
     $self->{'_warnings'}++;
     return(1);
