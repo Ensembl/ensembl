@@ -167,7 +167,7 @@ sub create_xrefs {
       $xref->{SEQUENCE_TYPE} = 'dna';
       $xref->{STATUS} = 'experimental';
       my $source_id;
-      if ($acc =~ /^XM_/) {
+      if ($acc =~ /^XM_/ || $acc =~ /^XR/) {
 	$source_id = $pred_dna_source_id;
       } else {
 	$source_id = $dna_source_id;
