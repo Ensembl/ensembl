@@ -312,12 +312,15 @@ CREATE TABLE protein_align_feature (
   evalue                      DOUBLE,
   perc_ident                  FLOAT,
   cigar_line                  TEXT,
+  external_db_id              SMALLINT UNSIGNED,
+  hcoverage                   DOUBLE,
 
   PRIMARY KEY (protein_align_feature_id),
   KEY seq_region_idx (seq_region_id, analysis_id, seq_region_start, score),
   KEY seq_region_idx_2 (seq_region_id, seq_region_start),
   KEY hit_idx (hit_name),
-  KEY analysis_idx (analysis_id)
+  KEY analysis_idx (analysis_id),
+  KEY external_db_idx (external_db_id)
 
 ) COLLATE=latin1_swedish_ci TYPE=MyISAM MAX_ROWS=100000000 AVG_ROW_LENGTH=80;
 
@@ -343,12 +346,15 @@ CREATE TABLE dna_align_feature (
   evalue                      DOUBLE,
   perc_ident                  FLOAT,
   cigar_line                  TEXT,
+  external_db_id              SMALLINT UNSIGNED,
+  hcoverage                   DOUBLE,
 
   PRIMARY KEY (dna_align_feature_id),
   KEY seq_region_idx (seq_region_id, analysis_id, seq_region_start, score),
   KEY seq_region_idx_2 (seq_region_id, seq_region_start),
   KEY hit_idx (hit_name),
-  KEY analysis_idx (analysis_id)
+  KEY analysis_idx (analysis_id),
+  KEY external_db_idx (external_db_id)
 
 ) COLLATE=latin1_swedish_ci TYPE=MyISAM MAX_ROWS=100000000 AVG_ROW_LENGTH=80;
 
@@ -786,8 +792,8 @@ CREATE TABLE external_synonym (
 CREATE TABLE external_db (
 
   external_db_id 	      SMALLINT UNSIGNED NOT NULL,
-  db_name                     VARCHAR(27) NOT NULL,
-  db_release                  VARCHAR(40),
+  db_name                     VARCHAR(28) NOT NULL,
+  db_release                  VARCHAR(255),
   status                      ENUM('KNOWNXREF','KNOWN','XREF','PRED','ORTH',
                                    'PSEUDO')
                               NOT NULL,
@@ -871,17 +877,14 @@ CREATE TABLE meta (
 
 
 # Auto add schema version to database
-INSERT INTO meta (meta_key, meta_value) VALUES ("schema_version", "46");
+INSERT INTO meta (meta_key, meta_value) VALUES ("schema_version", "47");
 
 # patches included in this schema file
 # NOTE: at beginning of release cycle, remove patch entries from last release
-INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_45_46_a.sql|schema_version');
-INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_45_46_b.sql|go_xref.source_xref_id');
-INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_45_46_c.sql|unmapped_object.external_db_id');
-INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_45_46_d.sql|meta_unique_key');
-INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_45_46_e.sql|external_db_new_cols');
-INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_45_46_f.sql|stable_id_event.uni_idx');
-INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_45_46_g.sql|object_xref_linkage_annotation');
+INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_46_47_a.sql|schema_version');
+INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_46_47_b.sql|new_align_columns');
+INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_46_47_c.sql|extend_db_release');
+INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_46_47_d.sql|auto_increment_external_db');
 
 ################################################################################
 #
