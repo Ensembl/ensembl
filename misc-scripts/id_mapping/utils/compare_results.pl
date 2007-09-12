@@ -191,7 +191,7 @@ sub compare_genes {
 
   my $fmt1 = "%-20s%-8s%-40s%-1s\n";
 
-  my @stat_keys = qw(TOT OK S I D N);
+  my @stat_keys = qw(TOT OK S I D N NEW);
   my %stats = map { $_ => 0 } @stat_keys;
 
   #
@@ -204,6 +204,12 @@ sub compare_genes {
     my $gene2 = $gsi2{$gsid1};
 
     $stats{TOT}++;
+
+    # this is a new stable ID, we can't make any predictions for those
+    if (($max_stable_id cmp $gene1->stable_id) == -1) {
+      $stats{NEW}++;
+      next;
+    }
 
     # next if gene in db 2 is the same (same stable and internal ID)
     if ($gene2 and ($gene1->dbID == $gene2->dbID)) {
