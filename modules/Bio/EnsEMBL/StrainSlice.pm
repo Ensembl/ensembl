@@ -167,7 +167,7 @@ sub _filter_af_by_coverage{
     my $new_af;
     foreach my $af (@{$allele_features}){
 	foreach my $rc (@{$rcs}){
-	    if ($af->start < $rc->end and $af->start > $rc->start){
+	    if ($af->start <= $rc->end and $af->start >= $rc->start){
 		push @{$new_af}, $af;
 		last;
 	    }
