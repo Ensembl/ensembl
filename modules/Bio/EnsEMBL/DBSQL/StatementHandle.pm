@@ -49,7 +49,7 @@ sub dbc {
   if (@_) {
     my $dbc = shift;
     if(!defined($dbc)) {
-      # without delete key space would grow indefinately causing mem-leak
+      # without delete key space would grow indefinitely causing mem-leak
       delete($dbchash{$self});
     } else {
       $dbchash{$self} = $dbc;
@@ -65,7 +65,7 @@ sub sql {
   if (@_) {
     my $sql = shift;
     if(!defined($sql)) {
-      # without delete key space would grow indefinately causing mem-leak
+      # without delete key space would grow indefinitely causing mem-leak
       delete($dbc_sql_hash{$self});
     } else {
       $dbc_sql_hash{$self} = $sql;
