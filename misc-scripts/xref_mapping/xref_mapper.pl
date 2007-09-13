@@ -344,6 +344,12 @@ $mapper->xref($xref); # attach xref object to mapper object
 
 
 
+#$mapper->species_specific_cleanup();
+#$mapper->species_specific_pre_attributes_set();
+#exit;
+
+
+
 if(defined($recalc_display_xrefs)){
   $mapper->genes_and_transcripts_attributes_set();
   print "Finished recalculating display xrefs and gene descriptions";
@@ -413,6 +419,8 @@ if($upload){
   # both.
   $mapper->check_special_sources();
 
+
+  $mapper->species_specific_pre_attributes_set();
 
   $mapper->genes_and_transcripts_attributes_set();
 

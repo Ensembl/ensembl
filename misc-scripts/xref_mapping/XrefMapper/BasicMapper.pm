@@ -2808,7 +2808,7 @@ GSQL
 	    }
 	    push @transcript_xrefs, $xref_id;
 	    if(!defined($qid) || !defined($tid)){
-	      print "DEPENDENT $xref_id\n";
+	      print "DEPENDENT $xref_id\n" if($ex_db_id != 1100); #HGNC has added one with no %ids.
 	      $percent_id{$xref_id} = 0;
 	    }
 	    else{
@@ -3052,7 +3052,8 @@ sub cleanup_projections_file{
 }
 
 
-
+sub species_specific_cleanup{
+}
 
 sub cleanup_sources_file{
   my ($self,$id) = @_;
@@ -3127,7 +3128,7 @@ sub do_upload {
   }     
   close CLEAN;
   
-
+  $self->species_specific_cleanup();
 
   foreach my $table ("go_xref", "interpro") {
     my $file = $ensembl->dir() . "/" . $table . ".txt";
@@ -4980,5 +4981,10 @@ DEPEND
     #process the sql file
   }
 }
+
+
+sub species_specific_pre_attributes_set{
+}
+
 1;
 
