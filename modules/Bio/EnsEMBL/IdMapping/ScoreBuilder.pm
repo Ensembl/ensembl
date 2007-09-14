@@ -49,7 +49,7 @@ sub create_shrinked_matrix {
   my $self = shift;
   my $matrix = shift;
   my $mappings = shift;
-  my $cache_file = shift;
+  my $cache_file = shift; # base name, extension '.ser' will be added
 
   # argument checks
   unless ($matrix and
@@ -65,26 +65,37 @@ sub create_shrinked_matrix {
   throw('Need a cache file name.') unless ($cache_file);
 
   my $dump_path = path_append($self->conf->param('dumppath'), 'matrix');
+  $cache_file .= '.ser';
 
   my $shrinked_matrix = Bio::EnsEMBL::IdMapping::ScoredMappingMatrix->new(
     -DUMP_PATH   => $dump_path,
     -CACHE_FILE  => $cache_file,
+    -AUTO_LOAD   => 1,
   );
 
-  # create lookup hashes for sources and targets in the MappingList
-  my %sources = ();
-  my %targets = ();
+  # if we already found a saved matrix, just return it
+  if ($shrinked_matrix->loaded) {
+  
+    $self->logger->info("Read existing scoring matrix from $cache_file.\n");
+  
+  } else {
+    
+    # create lookup hashes for sources and targets in the MappingList
+    my %sources = ();
+    my %targets = ();
 
-  foreach my $entry (@{ $mappings->get_all_Entries }) {
-    $sources{$entry->source} = 1;
-    $targets{$entry->target} = 1;
-  }
-
-  # add all entries to shrinked matrix which are not in the MappingList
-  foreach my $entry (@{ $matrix->get_all_Entries }) {
-    unless ($sources{$entry->source} or $targets{$entry->target}) {
-      $shrinked_matrix->add_Entry($entry);
+    foreach my $entry (@{ $mappings->get_all_Entries }) {
+      $sources{$entry->source} = 1;
+      $targets{$entry->target} = 1;
     }
+
+    # add all entries to shrinked matrix which are not in the MappingList
+    foreach my $entry (@{ $matrix->get_all_Entries }) {
+      unless ($sources{$entry->source} or $targets{$entry->target}) {
+        $shrinked_matrix->add_Entry($entry);
+      }
+    }
+
   }
 
   # log shrinking stats
@@ -94,6 +105,7 @@ sub create_shrinked_matrix {
     $shrinked_matrix->get_target_count."\n");
   $self->logger->info('Entries '.$matrix->get_entry_count.' --> '.
     $shrinked_matrix->get_entry_count."\n");
+  $self->logger->info('New mappings: '.$mappings->get_entry_count."\n\n");
 
   return $shrinked_matrix;
 }
@@ -156,7 +168,7 @@ sub log_matrix_stats {
   }
 
   my $fmt1 = "%-40s%10.0f\n";
-  my $fmt2 = "%-40s%10.2f\n";
+  my $fmt2 = "%-40s%10.5f\n";
   
   $self->logger->info(sprintf($fmt1, "Scoring matrix entries:",
     $matrix->get_entry_count), 1);
