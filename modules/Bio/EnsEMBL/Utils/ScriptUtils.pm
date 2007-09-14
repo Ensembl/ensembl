@@ -179,7 +179,7 @@ sub parse_bytes {
   my $length = length($bytes);
   my $order = int(($length-1)/3);
 
-  my $parsed = sprintf('%.0f', $bytes/10**(3*$order));
+  my $parsed = sprintf('%.1f', $bytes/10**(3*$order));
 
   return "$parsed ".$suffixes[$order];
 }
