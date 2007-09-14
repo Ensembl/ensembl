@@ -27,7 +27,7 @@ Optional arguments:
   --altuser=USER                      alternative database username USER
   --altpass=PASS                      alternative database password PASS
 
-  --chromosomes, --chr=LIST           only process LIST chromosomes
+  --chromosomes, --chr=LIST           only process LIST toplevel seq_regions
 
   --conffile, --conf=FILE             read parameters from FILE
                                       (default: conf/Conversion.ini)
@@ -44,7 +44,7 @@ Optional arguments:
 =head1 DESCRIPTION
 
 This script compares two assemblies. At the moment all it does is to list
-clones that are on different chromosomes in the two assemblies.
+clones that are on different toplevel seq_regions in the two assemblies.
 
 =head1 RELATED FILES
 
@@ -149,13 +149,13 @@ my $fmt2 = "%-35s%10.0f\n";
 my @diff_total;
 my %stats_total;
 
-$support->log_stamped("Looping over chromosomes...\n");
+$support->log_stamped("Looping over toplevel seq_regions...\n");
 
-foreach my $R_chr ($support->sort_chromosomes($support->get_chrlength(undef, undef, 'chromosome'))) {
+foreach my $R_chr ($support->sort_chromosomes($support->get_chrlength)) {
     $support->log_stamped("\nChromosome $R_chr...\n", 1);
 
-    # fetch chromosome slice and project to clones
-    my $R_slice = $R_sa->fetch_by_region('chromosome', $R_chr);
+    # fetch toplevel seq_region slice and project to clones
+    my $R_slice = $R_sa->fetch_by_region('toplevel', $R_chr);
     my @R_clones = @{ $R_slice->project('clone') };
 
     # loop over reference clones
@@ -166,21 +166,21 @@ foreach my $R_chr ($support->sort_chromosomes($support->get_chrlength(undef, und
         my $R_clone = $R_seg->to_Slice;
         my $R_clone_name = $R_clone->seq_region_name;
 
-        # fetch clone from alternative db and project to chromosome
+        # fetch clone from alternative db and project to toplevel seq_region
         my $A_clone = $A_sa->fetch_by_region('clone', $R_clone_name);
         if ($A_clone) {
-            my ($A_seg) = @{ $A_clone->project('chromosome') };
+            my ($A_seg) = @{ $A_clone->project('toplevel') };
             if ($A_seg) {
                 my $A_slice = $A_seg->to_Slice;
 
-                # compare chromosome names
+                # compare toplevel seq_region names
                 my $A_chr = $A_slice->seq_region_name;
                 unless ($R_chr eq $A_chr) {
                     push @diff, [$R_clone_name, $R_chr, $A_chr];
                 }
             } else {
                 $stats{'does_not_project'}++;
-                $support->log_verbose("Clone $R_clone_name doesn't project to chromosome.\n", 2);
+                $support->log_verbose("Clone $R_clone_name doesn't project to toplevel seq_region.\n", 2);
             }
         } else {
             $stats{'not_in_alt'}++;
@@ -191,20 +191,20 @@ foreach my $R_chr ($support->sort_chromosomes($support->get_chrlength(undef, und
     map { $stats_total{$_} += $stats{$_} }
         qw(num_clones does_not_project not_in_alt);
 
-    # print results for this chromosome
-    $support->log("\nStats for chromosome $R_chr:\n\n", 2);
+    # print results for this toplevel seq_region
+    $support->log("\nStats for toplevel seq_region $R_chr:\n\n", 2);
     $support->log(sprintf($fmt2, "Total number of clones:", $stats{'num_clones'}), 3);
     $support->log(sprintf($fmt2, "Clones not in alternative db:", $stats{'not_in_alt'}), 3);
     $support->log(sprintf($fmt2, "Clones not in alternative assembly:", $stats{'does_not_project'}), 3);
     if (@diff) {
-        $support->log("\nClones on different chromosomes in the 2 assemblies:\n\n", 3);
+        $support->log("\nClones on different toplevel seq_regions in the 2 assemblies:\n\n", 3);
         $support->log(sprintf($fmt1, qw(CLONE R_CHR A_CHR)), 4);
         $support->log(('-'x44)."\n", 4);
         foreach my $d (@diff) {
             $support->log(sprintf($fmt1, @{ $d }), 4);
         }
     } else {
-        $support->log("\nAll matching clones on same chromosome in the 2 assemblies.\n", 3);
+        $support->log("\nAll matching clones on same toplevel seq_region in the 2 assemblies.\n", 3);
     }
 }
 
@@ -216,14 +216,14 @@ $support->log(sprintf($fmt2, "Total number of clones:", $stats_total{'num_clones
 $support->log(sprintf($fmt2, "Clones not in alternative db:", $stats_total{'not_in_alt'}), 1);
 $support->log(sprintf($fmt2, "Clones not in alternative assembly:", $stats_total{'does_not_project'}), 1);
 if (@diff_total) {
-    $support->log("\nClones on different chromosomes in the 2 assemblies:\n\n", 1);
+    $support->log("\nClones on different toplevel seq_regions in the 2 assemblies:\n\n", 1);
     $support->log(sprintf($fmt1, qw(CLONE R_CHR A_CHR)), 2);
     $support->log(('-'x44)."\n", 2);
     foreach my $d (@diff_total) {
         $support->log(sprintf($fmt1, @{ $d }), 2);
     }
 } else {
-    $support->log("\nAll clones on same chromosome in the 2 assemblies.\n", 2);
+    $support->log("\nAll clones on same toplevel seq_region in the 2 assemblies.\n", 2);
 }
 $support->log("\n");
 

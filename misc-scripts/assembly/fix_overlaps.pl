@@ -22,7 +22,7 @@ Required arguments:
 
 Optional arguments:
 
-  --chromosomes, --chr=LIST           only process LIST chromosomes
+  --chromosomes, --chr=LIST           only process LIST toplevel seq_regions
 
   --conffile, --conf=FILE             read parameters from FILE
                                       (default: conf/Conversion.ini)
@@ -132,8 +132,6 @@ my $sql = qq(
   AND a.cmp_seq_region_id = sr2.seq_region_id
   AND sr1.coord_system_id = cs1.coord_system_id
   AND sr2.coord_system_id = cs2.coord_system_id
-  AND cs1.name = 'chromosome'
-  AND cs2.name = 'chromosome'
   AND cs1.version = '$assembly'
   AND cs2.version = '$altassembly'
   AND sr1.name = ?
@@ -145,13 +143,20 @@ my $sth = $dbh->prepare($sql);
 my $fmt1 = "%10s %10s %10s %10s %3s\n";
 my @rows = ();
 
-foreach my $chr ($support->sort_chromosomes($support->get_chrlength(undef, undef, 'chromosome'))) {
-  $support->log_stamped("\nChromosome $chr...\n");
+foreach my $chr ($support->sort_chromosomes) {
+  $support->log_stamped("\nToplevel seq_region $chr...\n");
 
   $sth->execute($chr);
 
   # do an initial fetch
   my $last = $sth->fetchrow_hashref;
+
+  # skip seq_regions for which we don't have data
+  unless ($last) {
+    $support->log("No mappings found. Skipping.\n", 1);
+    next;
+  }
+  
   push @rows, $last;
   
   my $i = 0;
@@ -266,8 +271,6 @@ if ($support->param('dry_run')) {
     AND a.cmp_seq_region_id = sr2.seq_region_id
     AND sr1.coord_system_id = cs1.coord_system_id
     AND sr2.coord_system_id = cs2.coord_system_id
-    AND cs1.name = 'chromosome'
-    AND cs2.name = 'chromosome'
     AND cs1.version = '$assembly'
     AND cs2.version = '$altassembly'
   ));

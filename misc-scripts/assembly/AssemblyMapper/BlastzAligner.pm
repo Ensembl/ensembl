@@ -130,7 +130,7 @@ sub create_tempdir {
       # create tmpdir to store input and output
       my $user = `whoami`;
       chomp $user;
-      $tempdir = "/tmp/$user.".time.".".int(rand(1000));
+      $tempdir = "/tmp/$user.".time.".".int(rand(100000));
       $self->support->log("Creating tmpdir $tempdir...\n");
       system("mkdir $tempdir") == 0 or
           $self->support->log_error("Can't create tmp dir $tempdir: $!\n");
@@ -180,7 +180,8 @@ sub write_sequence {
 
     unless (-e "$tmpdir/$basename1.fa") {
       my $fh = $self->support->filehandle('>', "$tmpdir/$basename1.fa");
-      print $fh join(':', ">$basename1 dna:chromfrag chromosome",
+      my $cs_name = $slice->coord_system_name;
+      print $fh join(':', ">$basename1 dna:chromfrag $cs_name",
                             $assembly,
                             $slice->start,
                             $slice->end,
@@ -576,8 +577,6 @@ sub write_assembly {
     my $R_dbh = $R_dba->dbc->db_handle;
     my $R_sa = $R_dba->get_SliceAdaptor;
 
-    my $alt_chr_map = $self->support->get_ensembl_chr_mapping($R_dba, $self->support->param('assembly'));
-
     my $sth = $R_dbh->prepare(qq(
         INSERT IGNORE INTO assembly (asm_seq_region_id, cmp_seq_region_id,
             asm_start,asm_end, cmp_start, cmp_end, ori)
@@ -589,9 +588,14 @@ sub write_assembly {
     my $i;
     foreach my $R_chr (sort _by_chr_num keys %{ $self->{'_match'} }) {
         # get seq_region_id for alternative and reference chromosome
-        my $A_chr = $alt_chr_map->{$R_chr};
-        my $R_sid = $R_sa->get_seq_region_id($R_sa->fetch_by_region('chromosome', $R_chr, undef, undef, undef, $self->support->param('assembly')));
-        my $A_sid = $R_sa->get_seq_region_id($R_sa->fetch_by_region('chromosome', $A_chr, undef, undef, undef, $self->support->param('altassembly')));
+        my $A_chr = $R_chr;
+        my $R_slice = $R_sa->fetch_by_region('toplevel', $R_chr, undef, undef, undef, $self->support->param('assembly'));
+        my $R_sid = $R_sa->get_seq_region_id($R_slice);
+        # we need to fetch the alternative slice from the reference db
+        # explicitely by coord_system, since toplevel attribute is not set
+        # there
+        my $cs_name = $R_slice->coord_system_name;
+        my $A_sid = $R_sa->get_seq_region_id($R_sa->fetch_by_region($cs_name, $A_chr, undef, undef, undef, $self->support->param('altassembly')));
 
         foreach my $id (sort { $a <=> $b } keys %{ $self->{'_match'}->{$R_chr} }) {
             for (my $align = 0; $align < scalar(@{ $self->{'_match'}->{$R_chr}->{$id} }); $align++) {

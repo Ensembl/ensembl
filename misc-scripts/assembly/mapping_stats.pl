@@ -28,7 +28,7 @@ Optional arguments:
   --altuser=USER                      alternative database username USER
   --altpass=PASS                      alternative database password PASS
 
-  --chromosomes, --chr=LIST           only process LIST chromosomes
+  --chromosomes, --chr=LIST           only process LIST toplevel seq_regions
 
   --conffile, --conf=FILE             read parameters from FILE
                                       (default: conf/Conversion.ini)
@@ -149,13 +149,20 @@ my $fmt1 = "%-40s%12s\n";
 my $fmt2 = "%-40s%11.1f%%\n";
 my $fmt3 = "%-44s%8.0f (%2.0f%%)\n";
 
-$support->log("Looping over chromosomes...\n\n");
+$support->log("Looping over toplevel seq_regions...\n\n");
 
-foreach my $chr ($support->sort_chromosomes($support->get_chrlength(undef, undef, 'chromosome'))) {
-  $support->log_stamped("Chromosome $chr...\n", 1);
+foreach my $chr ($support->sort_chromosomes) {
+  $support->log_stamped("Toplevel seq_region $chr...\n", 1);
 
-  # determine non-N sequence length of alternative chromosome
-  my $A_slice = $A_sa->fetch_by_region('chromosome', $chr);
+  # determine non-N sequence length of alternative toplevel seq_region
+  my $A_slice = $A_sa->fetch_by_region('toplevel', $chr);
+
+  unless ($A_slice) {
+    $support->log("Not found in alternative db. Skipping.\n", 2);
+    next;
+  }
+  
+  my $cs_name = $A_slice->coord_system_name;
 
   my $start = 1;
   my $A_chr_length = $A_slice->length;
@@ -178,11 +185,11 @@ foreach my $chr ($support->sort_chromosomes($support->get_chrlength(undef, undef
   my %blocks;
   my %blocklength;
 
-  # chromosome length order of magnitude
+  # toplevel seq_region length order of magnitude
   my $oom = length($A_length);
   
-  my $R_slice = $R_sa->fetch_by_region('chromosome', $chr);
-  my @segments = @{ $R_slice->project('chromosome', $support->param('altassembly')) };
+  my $R_slice = $R_sa->fetch_by_region($cs_name, $chr);
+  my @segments = @{ $R_slice->project($cs_name, $support->param('altassembly')) };
 
   my $alignments = 0;
 
@@ -212,9 +219,9 @@ foreach my $chr ($support->sort_chromosomes($support->get_chrlength(undef, undef
   # print stats
   $support->log("\n");
   
-  $support->log(sprintf($fmt1, "Reference chromosome length:",
+  $support->log(sprintf($fmt1, "Reference toplevel seq_region length:",
       $support->commify($R_slice->length)), 2);
-  $support->log(sprintf($fmt1, "Alternative chromosome length:",
+  $support->log(sprintf($fmt1, "Alternative toplevel seq_region length:",
       $support->commify($A_chr_length)), 2);
   $support->log(sprintf($fmt1, "Non-N sequence length (alternative):",
       $support->commify($A_length)), 2);

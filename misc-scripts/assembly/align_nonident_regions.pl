@@ -204,7 +204,7 @@ while (my $row = $sth->fetchrow_hashref) {
   $support->log_stamped("Block with tmp_align_id = $id\n", 1);
   
   my $A_slice = $A_sa->fetch_by_region(
-      'chromosome',
+      'toplevel',
       $row->{'alt_seq_region_name'},
       $row->{'alt_start'},
       $row->{'alt_end'},
@@ -213,7 +213,7 @@ while (my $row = $sth->fetchrow_hashref) {
   );
   
   my $R_slice = $R_sa->fetch_by_region(
-      'chromosome',
+      'toplevel',
       $row->{'ref_seq_region_name'},
       $row->{'ref_start'},
       $row->{'ref_end'},

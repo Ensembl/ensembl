@@ -23,8 +23,8 @@ Creating the whole genome alignment between two assembly versions of a genome is
 a two-step process. Alignments are first created by matching identical clones,
 and the remaining region pairs are then aligned using blastz. This only works
 well for assemblies without major rearrangements (especially no clones moved
-between chromosomes). You can use a test script to get a picture of your
-assembly differences:
+between toplevel seq_regions). You can use a test script to get a picture of
+your assembly differences:
 
   $ ensembl/misc-scripts/assembly/compare_assemblies.pl
 
@@ -39,12 +39,36 @@ fragmented mapping, and in most use cases this wasn't desirable.
 Creating the whole genome alignment
 -------------------------------------------------------------------------------
 
+0. Check dbs:
+=============
+
+You will need mapping paths from all toplevel coord_systems you intend to
+include in the mapping to contig and clone, in both the reference and
+alternative db. If not present, add appropriate entries to the meta table,
+given that the mapping actually exists. A common missing entry is the 3-way
+mapping between chromosomes, contigs and clones, e.g.
+
+mysql> select * from meta where meta_key = 'assembly.mapping';
++---------+------------------+-----------------------------------------+
+| meta_id | meta_key         | meta_value                              |
++---------+------------------+-----------------------------------------+
+|      34 | assembly.mapping | chromosome:NCBIM37#contig               |
+|     125 | assembly.mapping | chromosome:NCBIM37#contig#clone         |
+|      37 | assembly.mapping | clone#contig                            |
++---------+------------------+-----------------------------------------+
+[...only partial result shown...]
+
+The entry with meta_id 125 is often missing, even though the mapping is there
+implicitely, defined by meta_id 34 and 37, but it can't be used by the
+AssemblyMapper.
+
+
 1. Load alternative assembly:
 =============================
 
-To start the process, you'll have to load the alternative chromosomes into the
-Ensembl database for further processing. The reference and alternative database
-need to be on the same db host.
+To start the process, you'll have to load the alternative toplevel seq_regions
+into the Ensembl database for further processing. The reference and alternative
+database need to be on the same db host.
 
 a. Make sure you have all databases on the same host.
 
@@ -66,7 +90,7 @@ in a file of clones to skip (--skipclones argument). This can be useful to get
 better results in regions with major assembly differences.
        
 The result is stored in the assembly table as an assembly between the
-chromosomes of both genome assemblies.
+toplevel seq_regions of both genome assemblies.
 
 Non-aligned blocks are stored in a temporary table (tmp_align) and will be
 aligned using blastz in the second step.
@@ -74,7 +98,7 @@ aligned using blastz in the second step.
 To run the script:
 
   $ ensembl/misc-scripts/assembly/align_by_clone_identity.pl
-  
+
 
 3. Align non-identical regions:
 ===============================
@@ -176,6 +200,14 @@ coordinates of the projected slice will therefore also reflect the reference
 region and might not be what you expect. Since features should only be stored
 once (on the reference region) anyway, these projections should be ignored.
 
+
+2. Log output of align_by_clone_identity.pl:
+============================================
+
+Sometimes the clone counts for directly aligned blocks in the logfile are
+wrong. Note that only the log output is wrong, the actual data generated is
+correct.
+  
 
 If you find other bugs please report them to the Ensembl development mailing
 list <ensembl-dev@ebi.ac.uk> or to Patrick Meidl <meidl@ebi.ac.uk>.

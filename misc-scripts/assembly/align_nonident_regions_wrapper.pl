@@ -22,7 +22,7 @@ Required arguments:
 
 Optional arguments:
 
-    --chromosomes, --chr=LIST           only process LIST chromosomes
+    --chromosomes, --chr=LIST           only process LIST toplevel seq_regions
     --bindir=DIR                        look for program binaries in DIR
     --tmpfir=DIR                        use DIR for temporary files (useful for
                                         re-runs after failure)
@@ -41,7 +41,7 @@ Optional arguments:
 
 =head1 DESCRIPTION
 
-This script is a wrapper around align_nonident_regions.pl to run one chromosome
+This script is a wrapper around align_nonident_regions.pl to run one toplevel seq_region
 at a time via lsf. See documentation in align_nonident_regions.pl for details.
 
 =head1 RELATED FILES
@@ -145,11 +145,12 @@ $support->check_required_params(
 #
 my $R_dba = $support->get_database('ensembl');
 
-# loop over chromosomes
-$support->log_stamped("Looping over chromosomes...\n");
+# loop over toplevel seq_regions
+$support->log_stamped("Looping over toplevel seq_regions...\n");
 
-foreach my $chr ($support->sort_chromosomes($support->get_chrlength(undef, undef, 'chromosome'))) {
-    $support->log_stamped("Chromosome $chr...\n", 1);
+foreach my $chr ($support->sort_chromosomes($support->get_chrlength)) {
+    
+    $support->log_stamped("Toplevel seq_region $chr...\n", 1);
 
     # run align_nonident_regions.pl via lsf
     my $options = $support->create_commandline_options({
@@ -172,11 +173,11 @@ foreach my $chr ($support->sort_chromosomes($support->get_chrlength(undef, undef
     );
 
     system("$cmd") == 0
-        or $support->log_error("Error running align_nonident_regions.pl: $!");
+        or $support->log_error("Error running align_nonident_regions.pl: $!i\n");
 
     $support->log_stamped("Done.\n", 2);
 
-    $support->log_stamped("Done with chromosome $chr.\n", 1);
+    $support->log_stamped("Done with toplevel seq_region $chr.\n", 1);
 }
 
 $support->log_stamped("Done.\n");

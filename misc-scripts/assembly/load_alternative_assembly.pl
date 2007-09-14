@@ -20,6 +20,8 @@ Required arguments:
 
     --altdbname=NAME                    alternative database NAME
     --altassembly=ASSEMBLY              alternative assembly version ASSEMBLY
+    --coord_systems, --cs=CS            coord_systems to load (default: all
+                                        toplevel)
 
 Optional arguments:
 
@@ -38,16 +40,17 @@ Optional arguments:
 =head1 DESCRIPTION
 
 This script is part of a series of scripts to create a mapping between two
-assemblies. It assembles the chromosome coordinate systems of two different
+assemblies. It assembles the toplevel coordinate systems of two different
 assemblies of a genome by creating a whole genome alignment between the two.
 
 The process assumes that the two assemblies are reasonably similar, i.e. there
-are no major rearrangements or clones moved from one chromosome to another.
+are no major rearrangements or clones moved from one toplevel seq_region to
+another.
 
 See "Related files" below for an overview of the whole process.
 
-This particular script loads the alternative chromosomes into the Ensembl
-database for further processing.
+This particular script loads the alternative toplevel seq_regions into the
+Ensembl database for further processing.
 
 =head1 RELATED FILES
 
@@ -102,18 +105,22 @@ $support->parse_extra_options(
     'assembly=s',
     'altdbname=s',
     'altassembly=s',
+    'coord_systems|cs=s',
 );
 $support->allowed_params(
     $support->get_common_params,
     'assembly',
     'altdbname',
     'altassembly',
+    'coord_systems',
 );
 
 if ($support->param('help') or $support->error) {
     warn $support->error if $support->error;
     pod2usage(1);
 }
+
+$support->comma_to_list('coord_systems');
 
 # ask user to confirm parameters to proceed
 $support->confirm_params;
@@ -170,6 +177,53 @@ $support->log_stamped("Done.\n\n");
 #
 $support->log_stamped("Load seq_regions from alternative db...\n");
 
+# determine which coord_systems we want to include
+# by default, all coord_systems with toplevel seq_regions will be used
+my @coord_systems = $support->param('coord_systems');
+
+unless (@coord_systems) {
+  # get toplevel coord_systems from both dbs
+  my %common_cs = ();
+
+  my $sql = qq(
+    SELECT distinct(cs.name)
+    FROM seq_region sr, coord_system cs, seq_region_attrib sra, attrib_type at
+    WHERE sr.coord_system_id = cs.coord_system_id
+    AND sr.seq_region_id = sra.seq_region_id
+    AND sra.attrib_type_id = at.attrib_type_id
+    AND at.code = 'toplevel'
+  );
+
+  # ref
+  $sth = $dbh->{'ref'}->prepare($sql);
+  $sth->execute;
+  while (my ($cs) = $sth->fetchrow_array) {
+    $common_cs{$cs}++;
+  }
+  $sth->finish;
+  
+  # alt
+  $sth = $dbh->{'alt'}->prepare($sql);
+  $sth->execute;
+  while (my ($cs) = $sth->fetchrow_array) {
+    $common_cs{$cs}++;
+  }
+  $sth->finish;
+
+  # now determine the common ones
+  foreach my $cs (sort keys %common_cs) {
+    push @coord_systems, $cs if ($common_cs{$cs} > 1);
+  }
+}
+
+unless (@coord_systems) {
+  $support->error("No common toplevel coord_systems found.\n");
+}
+
+my $cs_string = join("', '", @coord_systems);
+$cs_string = "'$cs_string'";
+$support->log("Will use these coord_systems: $cs_string\n", 1);
+
 # determine max(seq_region_id) and max(coord_system_id) in Ensembl
 $sql = qq(SELECT MAX(seq_region_id) FROM seq_region);
 $sth = $dbh->{'ref'}->prepare($sql);
@@ -195,9 +249,12 @@ $sql = qq(
         sr.name,
         sr.coord_system_id+$csi_adjust,
         sr.length
-    FROM seq_region sr, coord_system cs
+    FROM seq_region sr, coord_system cs, seq_region_attrib sra, attrib_type at
     WHERE sr.coord_system_id = cs.coord_system_id
-    AND cs.name = 'chromosome'
+    AND sr.seq_region_id = sra.seq_region_id
+    AND sra.attrib_type_id = at.attrib_type_id
+    AND at.code = 'toplevel'
+    AND cs.name IN ($cs_string)
     AND cs.version = '$alt_assembly'
 );
 my $c = $dbh->{'alt'}->do($sql);
@@ -207,28 +264,34 @@ $support->log_stamped("Done loading $c seq_regions.\n\n");
 # add appropriate entries to coord_system
 #
 $support->log_stamped("Adding coord_system entries...\n");
-$sql = qq(
-    INSERT INTO $ref_db.coord_system
-    SELECT coord_system_id+$csi_adjust, name, version,
-      (SELECT MAX(rank)+1 FROM $ref_db.coord_system), ''
-    FROM coord_system
-    WHERE name = 'chromosome'
-    AND version = '$alt_assembly'
-);
-$c = $dbh->{'alt'}->do($sql);
+$c = 0;
+foreach my $cs (@coord_systems) {
+  $sql = qq(
+      INSERT INTO $ref_db.coord_system
+      SELECT coord_system_id+$csi_adjust, name, version,
+        (SELECT MAX(rank)+1 FROM $ref_db.coord_system), ''
+      FROM coord_system
+      WHERE name = '$cs'
+      AND version = '$alt_assembly'
+  );
+  $c += $dbh->{'alt'}->do($sql);
+}
 $support->log_stamped("Done adding $c coord_system entries.\n\n");
 
 #####
 # add assembly.mapping to meta table
 #
 $support->log_stamped("Adding assembly.mapping entry to meta table...\n");
-my $mappingstring = 'chromosome:'.$support->param('assembly').
-    '#chromosome:'.$support->param('altassembly');
-$sql = qq(
-    INSERT INTO meta (meta_key, meta_value)
-    VALUES ('assembly.mapping', '$mappingstring')
-);
-$c = $dbh->{'ref'}->do($sql);
+$c = 0;
+foreach my $cs (@coord_systems) {
+  my $mappingstring = "$cs:".$support->param('assembly').
+      "#$cs:".$support->param('altassembly');
+  $sql = qq(
+      INSERT INTO meta (meta_key, meta_value)
+      VALUES ('assembly.mapping', '$mappingstring')
+  );
+  $c += $dbh->{'ref'}->do($sql);
+}
 $support->log_stamped("Done inserting $c meta entries.\n\n");
 
 # finish logfile

@@ -28,7 +28,7 @@ Optional arguments:
   --altuser=USER                      alternative database username USER
   --altpass=PASS                      alternative database password PASS
 
-  --chromosomes, --chr=LIST           only process LIST chromosomes
+  --chromosomes, --chr=LIST           only process LIST toplevel seq_regions
 
   --conffile, --conf=FILE             read parameters from FILE
                                       (default: conf/Conversion.ini)
@@ -146,16 +146,23 @@ my $R_sa = $R_dba->get_SliceAdaptor;
 my $A_dba = $support->get_database('core', 'alt');
 my $A_sa = $A_dba->get_SliceAdaptor;
 
-$support->log("Looping over chromosomes...\n\n");
+$support->log("Looping over toplevel seq_regions...\n\n");
 
-foreach my $chr ($support->sort_chromosomes($support->get_chrlength(undef, undef, 'chromosome'))) {
-  $support->log_stamped("Chromosome $chr...\n", 1);
+foreach my $chr ($support->sort_chromosomes) {
+  $support->log_stamped("Toplevel seq_region $chr...\n", 1);
 
-  my $R_slice = $R_sa->fetch_by_region('chromosome', $chr);
-  my $A_slice = $A_sa->fetch_by_region('chromosome', $chr);
+  my $R_slice = $R_sa->fetch_by_region('toplevel', $chr);
+  my $A_slice = $A_sa->fetch_by_region('toplevel', $chr);
+
+  unless ($A_slice) {
+    $support->log("Not found in alternative db. Skipping.\n", 2);
+    next;
+  }
+  
+  my $cs_name = $A_slice->coord_system_name;
 
   # compare reference and alternative sequence
-  my @segments = @{ $R_slice->project('chromosome', $support->param('altassembly')) };
+  my @segments = @{ $R_slice->project($cs_name, $support->param('altassembly')) };
   
   my $i;
   my $k;
