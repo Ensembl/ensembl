@@ -43,7 +43,8 @@ sub new {
   my $caller = shift;
   my $class = ref($caller) || $caller;
 
-  my ($dump_path, $cache_file) = rearrange([qw(DUMP_PATH CACHE_FILE)], @_);
+  my ($dump_path, $cache_file, $auto_load) =
+    rearrange([qw(DUMP_PATH CACHE_FILE AUTO_LOAD)], @_);
 
   throw("You must provide a cache file name") unless ($cache_file);
   
@@ -54,6 +55,14 @@ sub new {
   $self->{'dump_path'} = $dump_path || '.';
   $self->{'cache_file'} = $self->dump_path."/$cache_file";
   $self->{'cache_file_name'} = $cache_file;
+
+  # automatically load serialised object from file if requested
+  if ($auto_load) {
+    if (-s $self->cache_file) {
+      $self->read_from_file;
+      $self->{'loaded'} = 1;
+    }
+  }
 
   return $self;
 }
@@ -122,6 +131,13 @@ sub cache_file_name {
   my $self = shift;
   $self->{'cache_file_name'} = shift if (@_);
   return $self->{'cache_file_name'};
+}
+
+
+sub loaded {
+  my $self = shift;
+  $self->{'loaded'} = shift if (@_);
+  return $self->{'loaded'};
 }
 
 
