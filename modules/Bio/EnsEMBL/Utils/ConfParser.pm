@@ -167,6 +167,9 @@ sub parse_options {
       next unless (/(\w\S*)\s*=\s*(.*)/);
       my $name = $1;
       my $val = $2;
+
+      # strip optional quotes from parameter values
+      $val =~ s/^["'](.*)["']/$1/;
       
       # replace $SERVERROOT with value
       if ($val =~ /\$SERVERROOT/) {
@@ -225,6 +228,9 @@ sub _common_options {
   return (
     'conffile|conf=s' => 0,
     'logfile|log=s' => 0,
+    'logauto!' => 0,
+    'logautobase=s' => 0,
+    'logautoid=s' => 0,
     'logpath=s' => 0,
     'logappend|log_append|log-append!' => 0,
     'loglevel=s' => 0,
@@ -456,9 +462,18 @@ sub create_commandline_options {
 
       # unset value (this is how flags behave)
       $val = undef;
+    } else {
+      # don't add the param if it's not a flag param and no value is set
+      next unless (defined($val));
+
+      # quote the value if it contains blanks
+      if ($val =~ /\s+/) {
+        # use an appropriate quoting style
+        ($val =~ /'/) ? ($val = qq("$val")) : ($val = qq('$val'));
+      }
     }
     
-    $options_string .= sprintf("--%s %s ", $param, $val);
+    $options_string .= sprintf(qq(--%s %s ), $param, $val);
   }
 
   return $options_string;
