@@ -79,8 +79,10 @@ sub new {
   my $caller = shift;
   my $class = ref($caller) || $caller;
 
-  my ($logfile, $logpath, $logappend, $loglevel, $is_component) = rearrange(
-    ['LOGFILE', 'LOGPATH', 'LOGAPPEND', 'LOGLEVEL', 'IS_COMPONENT'], @_);
+  my ($logfile, $logauto, $logautobase, $logautoid, $logpath, $logappend,
+    $loglevel, $is_component) = rearrange(
+      ['LOGFILE', 'LOGAUTO', 'LOGAUTOBASE', 'LOGAUTOID', 'LOGPATH', 'LOGAPPEND',
+      'LOGLEVEL', 'IS_COMPONENT'], @_);
   
   my $self = { '_warnings'     => 0, };
   bless ($self, $class);
@@ -90,6 +92,12 @@ sub new {
   $self->logpath($logpath);
   $self->logappend($logappend);
   $self->is_component($is_component);
+
+  # automatic logfile creation
+  $self->logauto($logauto);
+  $logautoid ||= strftime("%Y%m%d-%H%M%S", localtime);
+  $self->log_auto_id($logautoid);
+  $self->create_auto_logfile($logautobase);
 
   $loglevel ||= 'info';
   if ($loglevel =~ /^\d+$/ and $loglevel > 0 and $loglevel < 5) {
@@ -127,8 +135,9 @@ sub log_generic {
 
   # append timestamp and memory usage to log text if requested
   if ($stamped) {
-    $txt =~ s/(\n*)$//;
-    $txt .= " ".$self->date_and_mem.$1;
+    $txt =~ s/^(\n*)(.*)(\n*)$/$2/;
+    $txt = sprintf("%-60s%20s", $txt, $self->time_and_mem);
+    $txt = $1.$txt.$3;
   }
   
   # strip off leading linebreaks so that indenting doesn't break
@@ -233,24 +242,31 @@ sub debug {
 
 sub log_progress {
   my $self = shift;
-  my $max = shift;
+  my $name = shift;
   my $curr = shift;
-  my $incr = shift || 20;
   my $indent = shift;
-  my $show_mem = shift;
+  
+  throw("You must provide a name and the current value for your progress bar")
+    unless ($name and $curr);
 
-  throw("You must provide a maximum and current value to log progress.")
-    unless ($max and $curr);
+  # return if we haven't reached the next increment
+  return if ($curr < int($self->{'_progress'}->{$name}->{'next'}));
 
-  if (($curr % $incr) == 0 or $curr < 20 or $curr == $max) {
-    my $mem;
-    $mem = ", mem ".$self->mem if ($show_mem);
-    my $log_str = "\r".('  'x$indent)."$curr/$max (".int($curr/$max*100)."\%$mem)";
-    $log_str .= "\n" if ($curr == $max);
-    
-    $self->info($log_str);
-  }
+  my $index = $self->{'_progress'}->{$name}->{'index'};
+  my $num_bins = $self->{'_progress'}->{$name}->{'numbins'};
+  my $percent = $index/$num_bins*100;
 
+  my $log_str;
+  $log_str .= '      'x$indent if ($index == 0);
+  $log_str .= "\b"x4;
+  $log_str .= sprintf("%3s%%", $percent);
+  $log_str .= "\n" if ($curr == $self->{'_progress'}->{$name}->{'max_val'});
+
+  $self->info($log_str);
+
+  # increment counters
+  $self->{'_progress'}->{$name}->{'index'}++;
+  $self->{'_progress'}->{$name}->{'next'} += $self->{'_progress'}->{$name}->{'binsize'};
 }
 
 
@@ -267,35 +283,41 @@ sub log_progressbar {
   return if ($curr < int($self->{'_progress'}->{$name}->{'next'}));
 
   my $index = $self->{'_progress'}->{$name}->{'index'};
-  my $percent = $index*5;
+  my $num_bins = $self->{'_progress'}->{$name}->{'numbins'};
+  my $percent = $index/$num_bins*100;
 
-  my $log_str = "\r".('  'x$indent)."[".('='x$index).(' 'x(20-$index))."] ${percent}\%";
+  my $log_str = "\r".('  'x$indent)."[".('='x$index).(' 'x($num_bins-$index))."] ${percent}\%";
   $log_str .= "\n" if ($curr == $self->{'_progress'}->{$name}->{'max_val'});
 
   $self->info($log_str);
 
   # increment counters
   $self->{'_progress'}->{$name}->{'index'}++;
-  $self->{'_progress'}->{$name}->{'next'} +=
-    $self->{'_progress'}->{$name}->{'binsize'};
+  $self->{'_progress'}->{$name}->{'next'} += $self->{'_progress'}->{$name}->{'binsize'};
 }
 
 
-sub init_progressbar {
+sub init_progress {
   my $self = shift;
-  my $name = shift;
   my $max = shift;
+  my $num_bins = shift || 50;
 
-  throw("You must provide a name and the maximum value for your progress bar")
-    unless ($name and $max);
+  throw("You must provide the maximum value for your progress bar")
+    unless (defined($max));
 
-  # calculate bin size; we will use 20 bins (5% increments)
-  my $binsize = $max/20;
+  # auto-generate a unique name for your progressbar
+  my $name = time . '_' . int(rand(1000));
+
+  # calculate bin size; we will use 50 bins (2% increments)
+  my $binsize = $max/$num_bins;
 
   $self->{'_progress'}->{$name}->{'max_val'} = $max;
   $self->{'_progress'}->{$name}->{'binsize'} = $binsize;
+  $self->{'_progress'}->{$name}->{'numbins'} = $num_bins;
   $self->{'_progress'}->{$name}->{'next'} = 0;
   $self->{'_progress'}->{$name}->{'index'} = 0;
+
+  return $name;
 }
 
 
@@ -397,7 +419,7 @@ sub init_log {
   $self->{'_start_time'} = time;
 
   # don't log parameters if this script is run by another one
-  unless ($self->is_component) {
+  if ($self->logauto or ! $self->is_component) {
     # print script name, date, user who is running it
     my $hostname = `hostname`;
     chomp $hostname;
@@ -477,6 +499,16 @@ sub date_and_mem {
 }
 
 
+sub time_and_mem {
+  my $date = strftime "%T", localtime;
+  my $mem = `ps -p $$ -o vsz |tail -1`;
+  chomp $mem;
+  $mem = parse_bytes($mem*1000);
+  $mem =~ s/ //;
+  return "[$date|$mem]";
+}
+
+
 =head2 date
 
   Example     : print "Date: " . $support->date . "\n";
@@ -543,6 +575,65 @@ sub logfile {
   my $self = shift;
   $self->{'_logfile'} = shift if (@_);
   return $self->{'_logfile'};
+}
+
+
+=head2 
+
+  Arg[1]      : 
+  Example     : 
+  Description : 
+  Return type : 
+  Exceptions  : 
+  Caller      : 
+  Status      :
+
+=cut
+
+sub log_auto_id {
+  my $self = shift;
+  $self->{'_log_auto_id'} = shift if (@_);
+  return $self->{'_log_auto_id'};
+}
+
+
+sub logauto {
+  my $self = shift;
+  $self->{'_log_auto'} = shift if (@_);
+  return $self->{'_log_auto'};
+}
+
+
+=head2 
+
+  Arg[1]      : 
+  Example     : 
+  Description : 
+  Return type : 
+  Exceptions  : 
+  Caller      : 
+  Status      : At Risk
+              : under development
+
+=cut
+
+sub create_auto_logfile {
+  my $self = shift;
+  my $logautobase = shift;
+
+  # do nothing if automatic logfile generation isn't set
+  return unless ($self->logauto);
+
+  # an explicit logfile name overrides LOGAUTO
+  return if ($self->logfile);
+
+  # argument check
+  unless ($logautobase) {
+    throw('Need a base logfile name for auto-generating logfile.');
+  }
+
+  # create a logfile name
+  $self->logfile("${logautobase}_".$self->log_auto_id.".log");
 }
 
 
