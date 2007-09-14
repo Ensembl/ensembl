@@ -69,7 +69,7 @@ sub map_genes {
     throw('Need a Bio::EnsEMBL::IdMapping::GeneScoreBuilder.');
   }
   
-  $self->logger->info("Starting gene mapping...\n\n", 0, 'stamped');
+  $self->logger->info("== Internal ID mapping for genes...\n\n", 0, 'stamped');
 
   my $dump_path = path_append($self->conf->param('dumppath'), 'mapping');
 
@@ -91,114 +91,92 @@ sub map_genes {
   } else {
     
     # create gene mappings
-    $self->logger->info("No gene mappings found. Will calculate then now.\n");
-
-    $self->logger->info("Basic gene mapping\n");
+    $self->logger->info("No gene mappings found. Will calculate them now.\n");
 
     #
     # basic mapping
     #
-    $self->basic_mapping($gene_scores, $mappings);
+    $self->logger->info("Basic gene mapping...\n", 0, 'stamped');
 
-    my $synteny_gene_scores = $gsb->create_shrinked_matrix($gene_scores,
-      $mappings, 'synteny_gene_matrix.ser');
+    my $mappings0 = $self->basic_mapping($gene_scores, 'gene_mappings0');
 
-    $self->logger->info("Found ".$mappings->get_entry_count.
-      " initial mappings.\n\n");
+    my $gene_scores1 = $gsb->create_shrinked_matrix($gene_scores, $mappings0,
+      'gene_matrix1');
 
 
     #
     # build the synteny from unambiguous mappings
     #
-    $self->logger->info("Synteny Framework building\n");
-    my $sf = Bio::EnsEMBL::IdMapping::SyntenyFramework->new(
-      -LOGGER       => $self->logger,
-      -CONF         => $self->conf,
-      -CACHE        => $self->cache
-    );
-    $sf->build_synteny($mappings);
+    unless ($gene_scores1->loaded) {
+      $self->logger->info("Synteny Framework building...\n", 0, 'stamped');
+      my $sf = Bio::EnsEMBL::IdMapping::SyntenyFramework->new(
+        -LOGGER       => $self->logger,
+        -CONF         => $self->conf,
+        -CACHE        => $self->cache
+      );
+      $sf->build_synteny($mappings0);
 
-    # use it to rescore the genes
-    $self->logger->info("Synteny assisted mapping\n");
-    $sf->rescore_gene_matrix($synteny_gene_scores);
+      # use it to rescore the genes
+      $self->logger->info("\nSynteny assisted mapping...\n", 0, 'stamped');
+      $sf->rescore_gene_matrix($gene_scores1);
 
-    my $synteny_mappings = Bio::EnsEMBL::IdMapping::MappingList->new(
-      -DUMP_PATH   => $dump_path,
-      -CACHE_FILE  => 'gene_synteny_mappings.ser',
-    );
-    
-    $self->basic_mapping($synteny_gene_scores, $synteny_mappings);
-    
-    my $simple_gene_scores = $gsb->create_shrinked_matrix($synteny_gene_scores,
-      $synteny_mappings, 'simple_gene_matrix.ser');
-    
-    $self->logger->info("Found ".$synteny_mappings->get_entry_count.
-      " additional mappings.\n\n");
+      # checkpoint
+      $gene_scores1->write_to_file;
+    }
 
+    my $mappings1 = $self->basic_mapping($gene_scores1, 'gene_mappings1');
+    
+    my $gene_scores2 = $gsb->create_shrinked_matrix($gene_scores1, $mappings1,
+      'gene_matrix2');
+    
 
     #
     # rescore with simple scoring function and try again
     #
-    $self->logger->info("Retry with simple best transcript score\n");
+    $self->logger->info("Retry with simple best transcript score...\n", 0, 'stamped');
     
-    $gsb->simple_gene_rescore($simple_gene_scores, $transcript_scores);
+    unless ($gene_scores2->loaded) {
+      $gsb->simple_gene_rescore($gene_scores2, $transcript_scores);
+      $gene_scores2->write_to_file;
+    }
     
-    my $simple_mappings = Bio::EnsEMBL::IdMapping::MappingList->new(
-      -DUMP_PATH   => $dump_path,
-      -CACHE_FILE  => 'gene_simple_mappings.ser',
-    );
+    my $mappings2 = $self->basic_mapping($gene_scores2, 'gene_mappings2');
     
-    $self->basic_mapping($simple_gene_scores, $simple_mappings);
-    
-    my $biotype_gene_scores = $gsb->create_shrinked_matrix($simple_gene_scores, 
-      $simple_mappings, 'biotype_gene_matrix.ser');
-
-    $self->logger->info("Found ".$simple_mappings->get_entry_count.
-      " additional mappings.\n\n");
+    my $gene_scores3 = $gsb->create_shrinked_matrix($gene_scores2, $mappings2,
+      'gene_matrix3');
 
 
     #
     # rescore by penalising scores between genes with different biotypes  
     #
-    $self->logger->info("Retry with biotype disambiguation\n");
+    $self->logger->info("Retry with biotype disambiguation...\n", 0, 'stamped');
     
-    $gsb->biotype_gene_rescore($biotype_gene_scores);
+    unless ($gene_scores3->loaded) {
+      $gsb->biotype_gene_rescore($gene_scores3);
+      $gene_scores3->write_to_file;
+    }
 
-    my $biotype_mappings = Bio::EnsEMBL::IdMapping::MappingList->new(
-      -DUMP_PATH   => $dump_path,
-      -CACHE_FILE  => 'gene_biotype_mappings.ser',
-    );
+    my $mappings3 = $self->basic_mapping($gene_scores3, 'gene_mappings3');
     
-    $self->basic_mapping($biotype_gene_scores, $biotype_mappings);
-    
-    my $internal_id_gene_scores = $gsb->create_shrinked_matrix(
-      $biotype_gene_scores, $biotype_mappings, 'internal_id_gene_matrix.ser');
+    my $gene_scores4 = $gsb->create_shrinked_matrix($gene_scores3, $mappings3,
+      'gene_matrix4');
 
-    $self->logger->info("Found ".$biotype_mappings->get_entry_count.
-      " additional mappings.\n\n");
-    
 
     #
     # selectively rescore by penalising scores between genes with different
     # internalIDs  
     #
-    $self->logger->info("Retry with internalID disambiguation\n");
+    $self->logger->info("Retry with internalID disambiguation...\n", 0, 'stamped');
     
-    $gsb->internal_id_rescore($internal_id_gene_scores);
+    unless ($gene_scores4->loaded) {
+      $gsb->internal_id_rescore($gene_scores4);
+      $gene_scores4->write_to_file;
+    }
 
-    my $internal_id_mappings = Bio::EnsEMBL::IdMapping::MappingList->new(
-      -DUMP_PATH   => $dump_path,
-      -CACHE_FILE  => 'gene_internal_id_mappings.ser',
-    );
-    
-    $self->basic_mapping($internal_id_gene_scores, $internal_id_mappings);
+    my $mappings4 = $self->basic_mapping($gene_scores4, 'gene_mappings4');
     
     my $remaining_gene_scores = $gsb->create_shrinked_matrix(
-      $internal_id_gene_scores, $internal_id_mappings,
-      'remaining_gene_matrix.ser');
-
-    $self->logger->info("Found ".$internal_id_mappings->get_entry_count.
-      " additional mappings.\n\n");
+      $gene_scores4, $mappings4, 'remaining_gene_matrix');
 
 
     #
@@ -214,8 +192,8 @@ sub map_genes {
     #
     # merge mappings and write to file
     #
-    $mappings->add_all($synteny_mappings, $simple_mappings, $biotype_mappings,
-                       $internal_id_mappings);
+    $mappings->add_all($mappings0, $mappings1, $mappings2, $mappings3,
+                       $mappings4);
 
     $mappings->write_to_file;
 
@@ -228,7 +206,6 @@ sub map_genes {
   }
 
   return $mappings;
-
 }
 
 
@@ -254,7 +231,7 @@ sub map_transcripts {
     throw('Need a Bio::EnsEMBL::IdMapping::TranscriptScoreBuilder.');
   }
   
-  $self->logger->info("Starting transcript mapping...\n\n", 0, 'stamped');
+  $self->logger->info("== Internal ID mapping for transcripts...\n\n", 0, 'stamped');
 
   my $dump_path = path_append($self->conf->param('dumppath'), 'mapping');
 
@@ -277,104 +254,87 @@ sub map_transcripts {
   } else {
     
     # create transcript mappings
-    $self->logger->info("No transcript mappings found. Will calculate then now.\n");
-
-    $self->logger->info("Basic transcript mapping\n");
+    $self->logger->info("No transcript mappings found. Will calculate them now.\n");
 
     #
     # basic mapping
     #
-    $self->basic_mapping($transcript_scores, $mappings);
+    $self->logger->info("Basic transcript mapping...\n", 0, 'stamped');
+
+    my $mappings0 = $self->basic_mapping($transcript_scores,
+      'transcript_mappings0');
 
     my $transcript_scores1 = $tsb->create_shrinked_matrix(
-      $transcript_scores, $mappings, 'transcript_matrix1.ser');
-
-    $self->logger->info("Found ".$mappings->get_entry_count.
-      " initial mappings.\n\n");
+      $transcript_scores, $mappings0, 'transcript_matrix1');
 
 
     #
     # handle cases with exact match but different translation
     #
-    $self->logger->info("Exact Transcript non-exact Translation\n");
+    $self->logger->info("Exact Transcript non-exact Translation...\n", 0, 'stamped');
     
-    $tsb->different_translation_rescore($transcript_scores1);
+    unless ($transcript_scores1->loaded) {
+      $tsb->different_translation_rescore($transcript_scores1);
+      $transcript_scores1->write_to_file;
+    }
     
-    my $mappings1 = Bio::EnsEMBL::IdMapping::MappingList->new(
-      -DUMP_PATH   => $dump_path,
-      -CACHE_FILE  => 'transcript_mappings1.ser',
-    );
-    
-    $self->basic_mapping($transcript_scores1, $mappings1);
+    my $mappings1 = $self->basic_mapping($transcript_scores1,
+      'transcript_mappings1');
     
     my $transcript_scores2 = $tsb->create_shrinked_matrix(
-      $transcript_scores1, $mappings1, 'transcript_matrix2.ser');
-
-    $self->logger->info("Found ".$mappings1->get_entry_count.
-      " additional mappings.\n\n");
+      $transcript_scores1, $mappings1, 'transcript_matrix2');
 
 
     #
     # reduce score for mappings of transcripts which do not belong to mapped
     # genes
     #
-    $self->logger->info("Transcripts in mapped Genes\n");
+    $self->logger->info("Transcripts in mapped genes...\n", 0, 'stamped');
     
+    unless ($transcript_scores2->loaded) {
     $tsb->non_mapped_gene_rescore($transcript_scores2, $gene_mappings);
+      $transcript_scores2->write_to_file;
+    }
     
-    my $mappings2 = Bio::EnsEMBL::IdMapping::MappingList->new(
-      -DUMP_PATH   => $dump_path,
-      -CACHE_FILE  => 'transcript_mappings2.ser',
-    );
-    
-    $self->basic_mapping($transcript_scores2, $mappings2);
+    my $mappings2 = $self->basic_mapping($transcript_scores2,
+      'transcript_mappings2');
     
     my $transcript_scores3 = $tsb->create_shrinked_matrix(
-      $transcript_scores2, $mappings2, 'transcript_matrix3.ser');
-
-    $self->logger->info("Found ".$mappings2->get_entry_count.
-      " additional mappings.\n\n");
+      $transcript_scores2, $mappings2, 'transcript_matrix3');
 
 
     #
     # selectively rescore by penalising scores between transcripts with
     # different internalIDs  
     #
-    $self->logger->info("Retry with internalID disambiguation\n");
+    $self->logger->info("Retry with internalID disambiguation...\n", 0, 'stamped');
     
-    $tsb->internal_id_rescore($transcript_scores3);
+    unless ($transcript_scores3->loaded) {
+      $tsb->internal_id_rescore($transcript_scores3);
+      $transcript_scores3->write_to_file;
+    }
 
-    my $mappings3 = Bio::EnsEMBL::IdMapping::MappingList->new(
-      -DUMP_PATH   => $dump_path,
-      -CACHE_FILE  => 'transcript_mappings3.ser',
-    );
-    
-    $self->basic_mapping($transcript_scores3, $mappings3);
+    my $mappings3 = $self->basic_mapping($transcript_scores3,
+      'transcript_mappings3');
     
     my $transcript_scores4 = $tsb->create_shrinked_matrix(
-      $transcript_scores3, $mappings3, 'transcript_matrix4.ser');
-
-    $self->logger->info("Found ".$mappings3->get_entry_count.
-      " additional mappings.\n\n");
+      $transcript_scores3, $mappings3, 'transcript_matrix4');
 
 
     #
     # handle ambiguities between transcripts in single genes
     #
-    $self->logger->info("Transcripts in single Genes\n");
+    $self->logger->info("Transcripts in single genes...\n", 0, 'stamped');
     
-    my $mappings4 = Bio::EnsEMBL::IdMapping::MappingList->new(
-      -DUMP_PATH   => $dump_path,
-      -CACHE_FILE  => 'transcript_mappings4.ser',
-    );
+    unless ($transcript_scores4->loaded) {
+      $transcript_scores4->write_to_file;
+    }
     
-    $self->same_gene_transcript_mapping($transcript_scores4, $mappings4);
-    
-    my $remaining_transcript_scores = $tsb->create_shrinked_matrix(
-      $transcript_scores4, $mappings4, 'transcript_matrix5.ser');
+    my $mappings4 = $self->same_gene_transcript_mapping($transcript_scores4,
+      'transcript_mappings4');
 
-    $self->logger->info("Found ".$mappings4->get_entry_count.
-      " additional mappings.\n\n");
+    my $remaining_transcript_scores = $tsb->create_shrinked_matrix(
+      $transcript_scores4, $mappings4, 'transcript_matrix5');
 
 
     #
@@ -390,7 +350,8 @@ sub map_transcripts {
     #
     # merge mappings and write to file
     #
-    $mappings->add_all($mappings1, $mappings2, $mappings3, $mappings4);
+    $mappings->add_all($mappings0, $mappings1, $mappings2, $mappings3,
+                       $mappings4);
 
     $mappings->write_to_file;
 
@@ -429,7 +390,7 @@ sub map_exons {
     throw('Need a Bio::EnsEMBL::IdMapping::ExonScoreBuilder.');
   }
   
-  $self->logger->info("Starting exon mapping...\n\n", 0, 'stamped');
+  $self->logger->info("== Internal ID mapping for exons...\n\n", 0, 'stamped');
 
   my $dump_path = path_append($self->conf->param('dumppath'), 'mapping');
 
@@ -452,42 +413,34 @@ sub map_exons {
   } else {
     
     # create exon mappings
-    $self->logger->info("No exon mappings found. Will calculate then now.\n");
-
-    $self->logger->info("Basic exon mapping\n");
+    $self->logger->info("No exon mappings found. Will calculate them now.\n");
 
     #
     # basic mapping
     #
-    $self->basic_mapping($exon_scores, $mappings);
+    $self->logger->info("Basic exon mapping...\n", 0, 'stamped');
 
-    my $exon_scores1 = $esb->create_shrinked_matrix(
-      $exon_scores, $mappings, 'exon_matrix1.ser');
+    my $mappings0 = $self->basic_mapping($exon_scores, 'exon_mappings0');
+
+    my $exon_scores1 = $esb->create_shrinked_matrix( $exon_scores, $mappings0,
+      'exon_matrix1');
     
-    $self->logger->info("Found ".$mappings->get_entry_count.
-      " initial mappings.\n\n");
-
 
     #
     # reduce score for mappings of exons which do not belong to mapped
     # transcripts
     #
-    $self->logger->info("Exons in mapped Transcripts\n");
+    $self->logger->info("Exons in mapped transcripts...\n", 0, 'stamped');
     
-    $esb->non_mapped_transcript_rescore($exon_scores1, $transcript_mappings);
+    unless ($exon_scores1->loaded) {
+      $esb->non_mapped_transcript_rescore($exon_scores1, $transcript_mappings);
+      $exon_scores1->write_to_file;
+    }
     
-    my $mappings1 = Bio::EnsEMBL::IdMapping::MappingList->new(
-      -DUMP_PATH   => $dump_path,
-      -CACHE_FILE  => 'exon_mappings1.ser',
-    );
-    
-    $self->basic_mapping($exon_scores1, $mappings1);
+    my $mappings1 = $self->basic_mapping($exon_scores1, 'exon_mappings1');
     
     my $remaining_exon_scores = $esb->create_shrinked_matrix(
-      $exon_scores1, $mappings1, 'exon_matrix2.ser');
-
-    $self->logger->info("Found ".$mappings1->get_entry_count.
-      " additional mappings.\n\n");
+      $exon_scores1, $mappings1, 'exon_matrix2');
 
 
     #
@@ -503,7 +456,7 @@ sub map_exons {
     #
     # merge mappings and write to file
     #
-    $mappings->add_all($mappings1);
+    $mappings->add_all($mappings0, $mappings1);
 
     $mappings->write_to_file;
 
@@ -530,7 +483,7 @@ sub map_translations {
     throw('Need a Bio::EnsEMBL::IdMapping::MappingList of transcripts.');
   }
   
-  $self->logger->info("Starting translation mapping...\n\n", 0, 'stamped');
+  $self->logger->info("== Internal ID mapping for translations...\n\n", 0, 'stamped');
 
   my $dump_path = path_append($self->conf->param('dumppath'), 'mapping');
 
@@ -553,9 +506,9 @@ sub map_translations {
   } else {
     
     # create translation mappings
-    $self->logger->info("No translation mappings found. Will calculate then now.\n");
+    $self->logger->info("No translation mappings found. Will calculate them now.\n");
 
-    $self->logger->info("Translation mapping\n");
+    $self->logger->info("Translation mapping...\n", 0, 'stamped');
 
     #
     # map translations for mapped transcripts
@@ -585,8 +538,7 @@ sub map_translations {
     }
 
     $self->logger->debug("Skipped transcripts without translation: $i\n", 1);
-    $self->logger->info("Found ".$mappings->get_entry_count.
-      " mappings.\n\n");
+    $self->logger->info("New mappings: ".$mappings->get_entry_count."\n\n");
 
     $mappings->write_to_file;
 
@@ -610,17 +562,31 @@ sub map_translations {
 sub basic_mapping {
   my $self = shift;
   my $matrix = shift;
-  my $mappings = shift;
+  my $mapping_name = shift;
 
   # argument checks
   unless ($matrix and
           $matrix->isa('Bio::EnsEMBL::IdMapping::ScoredMappingMatrix')) {
     throw('Need a Bio::EnsEMBL::IdMapping::ScoredMappingMatrix.');
   }
+
+  throw('Need a name for serialising the mapping.') unless ($mapping_name);
+
+  # Create a new MappingList object. Specify AUTO_LOAD to load serialised
+  # existing mappings if found
+  my $dump_path = path_append($self->conf->param('dumppath'), 'mapping');
   
-  unless ($mappings and
-          $mappings->isa('Bio::EnsEMBL::IdMapping::MappingList')) {
-    throw('Need a gene Bio::EnsEMBL::IdMapping::MappingList.');
+  my $mappings = Bio::EnsEMBL::IdMapping::MappingList->new(
+    -DUMP_PATH   => $dump_path,
+    -CACHE_FILE  => "${mapping_name}.ser",
+    -AUTO_LOAD   => 1,
+  );
+  
+  # checkpoint test: return a previously stored MappingList
+  # checkpoint test: return a previously stored MappingList
+  if ($mappings->loaded) {
+    $self->logger->info("Read existing mappings from ${mapping_name}.ser.\n");
+    return $mappings;
   }
 
   my $sources_done = {};
@@ -657,7 +623,11 @@ sub basic_mapping {
     $sources_done->{$entry->source} = 1;
     $targets_done->{$entry->target} = 1;
   }
-  
+
+  # create checkpoint
+  $mappings->write_to_file;
+
+  return $mappings;
 }
 
 
@@ -776,17 +746,30 @@ sub filter_targets {
 sub same_gene_transcript_mapping {
   my $self = shift;
   my $matrix = shift;
-  my $mappings = shift;
+  my $mapping_name = shift;
 
   # argument checks
   unless ($matrix and
           $matrix->isa('Bio::EnsEMBL::IdMapping::ScoredMappingMatrix')) {
     throw('Need a Bio::EnsEMBL::IdMapping::ScoredMappingMatrix.');
   }
+
+  throw('Need a name for serialising the mapping.') unless ($mapping_name);
+
+  # Create a new MappingList object. Specify AUTO_LOAD to load serialised
+  # existing mappings if found
+  my $dump_path = path_append($self->conf->param('dumppath'), 'mapping');
   
-  unless ($mappings and
-          $mappings->isa('Bio::EnsEMBL::IdMapping::MappingList')) {
-    throw('Need a gene Bio::EnsEMBL::IdMapping::MappingList.');
+  my $mappings = Bio::EnsEMBL::IdMapping::MappingList->new(
+    -DUMP_PATH   => $dump_path,
+    -CACHE_FILE  => "${mapping_name}.ser",
+    -AUTO_LOAD   => 1,
+  );
+  
+  # checkpoint test: return a previously stored MappingList
+  if ($mappings->loaded) {
+    $self->logger->info("Read existing mappings from ${mapping_name}.ser.\n");
+    return $mappings;
   }
 
   my $sources_done = {};
@@ -839,7 +822,11 @@ sub same_gene_transcript_mapping {
     $sources_done->{$entry->source} = 1;
     $targets_done->{$entry->target} = 1;
   }
-  
+
+  # create checkpoint
+  $mappings->write_to_file;
+
+  return $mappings;
 }
 
 
