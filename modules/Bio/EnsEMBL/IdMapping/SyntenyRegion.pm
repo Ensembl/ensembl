@@ -136,6 +136,12 @@ sub merge {
     $target_dist = $self->target_end - $sr->target_end;
   }
 
+  # prevent division by zero error
+  if ($source_dist == 0 or $target_dist == 0) {
+    warn("WARNING: source_dist ($source_dist) and/or target_dist ($target_dist) is zero.\n");
+    return 0;
+  }
+
   # calculate a distance score
   my $dist = $source_dist - $target_dist;
   $dist = -$dist if ($dist < 0);
@@ -151,7 +157,7 @@ sub merge {
   my $new_score = $dist_score * ($sr->score + $self->score)/2;
 
   if ($new_score > 1) {
-    warn("Bad merge score: $new_score\n");
+    warn("WARNING: Bad merge score: $new_score\n");
   }
 
   # extend SyntenyRegion to cover both sources and targets, set merged score
