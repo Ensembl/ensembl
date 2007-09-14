@@ -1,4 +1,4 @@
-#!/usr/local/ensembl/bin/perl
+#!/software/bin/perl
 
 =head1 NAME
 
@@ -55,6 +55,7 @@ no warnings 'uninitialized';
 use FindBin qw($Bin);
 use Bio::EnsEMBL::Utils::ConfParser;
 use Bio::EnsEMBL::Utils::Logger;
+use Bio::EnsEMBL::Utils::ScriptUtils qw(path_append);
 use Bio::EnsEMBL::IdMapping::Cache;
 use Bio::EnsEMBL::IdMapping::ExonScoreBuilder;
 use Bio::EnsEMBL::IdMapping::TranscriptScoreBuilder;
@@ -85,11 +86,23 @@ $conf->parse_options(
   'exonerate_threshold|exoneratethreshold=f' => 0,
   'exonerate_jobs|exoneratejobs=i' => 0,
   'exonerate_bytes_per_job|exoneratebytesperjob=f' => 0,
+  'exonerate_extra_params|exonerateextraparams=s' => 0,
+  'upload_events|uploadevents=s' => 0,
+  'upload_stable_ids|uploadstableids=s' => 0,
+  'upload_archive|uploadarchive=s' => 0,
 );
+
+# set default logpath
+unless ($conf->param('logpath')) {
+  $conf->param('logpath', path_append($conf->param('dumppath'), 'log'));
+}
 
 # get log filehandle and print heading and parameters to logfile
 my $logger = new Bio::EnsEMBL::Utils::Logger(
   -LOGFILE      => $conf->param('logfile'),
+  -LOGAUTO      => $conf->param('logauto'),
+  -LOGAUTOBASE  => 'id_mapping',
+  -LOGAUTOID    => $conf->param('logautoid'),
   -LOGPATH      => $conf->param('logpath'),
   -LOGAPPEND    => $conf->param('logappend'),
   -LOGLEVEL     => $conf->param('loglevel'),
@@ -112,7 +125,6 @@ my $transcript_mappings;
 my $gene_mappings;
 my $translation_mappings;
 
-
 # loading cache from file
 my $cache = Bio::EnsEMBL::IdMapping::Cache->new(
   -LOGGER       => $logger,
@@ -127,7 +139,7 @@ my $stable_id_mapper = Bio::EnsEMBL::IdMapping::StableIdMapper->new(
   -CONF         => $conf,
   -CACHE        => $cache
 );
-$stable_id_mapper->generate_mapping_session;
+
 
 # run in requested mode
 my $mode = $conf->param('mode') || 'normal';
@@ -144,6 +156,7 @@ $logger->finish_log;
 
 
 sub run_normal {
+  
   # build scores
   &build_scores;
 
@@ -169,6 +182,14 @@ sub run_normal {
 
   # final stats and summary email
   &analyse_results;
+}
+
+
+sub run_upload {
+  # upload table data files into db
+  &upload_mapping_session_and_events;
+  &upload_stable_ids;
+  &upload_archive;
 }
 
 
@@ -267,10 +288,12 @@ sub generate_similarity_events {
   $logger->info("Generating similarity events...\n", 0, 'stamped');
 
   # genes
+  $logger->debug("genes\n", 1);
   $stable_id_mapper->generate_similarity_events($gene_mappings, $gene_scores,
     'gene');
 
   # transcripts
+  $logger->debug("transcripts\n", 1);
   my $filtered_transcript_scores =
     $stable_id_mapper->filter_same_gene_transcript_similarities(
       $transcript_scores);
@@ -279,6 +302,7 @@ sub generate_similarity_events {
     $filtered_transcript_scores, 'transcript');
 
   # translations
+  $logger->debug("translations\n", 1);
   $stable_id_mapper->generate_translation_similarity_events(
     $translation_mappings, $filtered_transcript_scores);
 
@@ -295,7 +319,7 @@ sub dump_existing_events {
   $logger->info("Dumping existing stable_id_events...\n", 0, 'stamped');
   
   my $i = $stable_id_mapper->dump_table_to_file('source', 'stable_id_event',
-    'stable_id_event_existing.txt');
+    'stable_id_event_existing.txt', 1);
 
   $logger->info("Done writing $i entries.\n\n", 0, 'stamped');
 }
@@ -322,9 +346,9 @@ sub archive {
   $logger->info("Dumping existing gene and peptide archive...\n", 0, 'stamped');
 
   my $i = $archiver->dump_table_to_file('source', 'gene_archive',
-    'gene_archive_existing.txt');
+    'gene_archive_existing.txt', 1);
   my $j = $archiver->dump_table_to_file('source', 'peptide_archive',
-    'peptide_archive_existing.txt');
+    'peptide_archive_existing.txt', 1);
 
   $logger->info("Done writing $i gene_archive and $j peptide_archive entries.\n\n", 0, 'stamped');
 }
@@ -334,15 +358,23 @@ sub upload_mapping_session_and_events {
   if ($conf->is_true('upload_events') and ! $conf->param('dry_run')) {
     
     $logger->info("Uploading mapping_session and stable_id_event tables...\n");
+
+    my $i = 0;
+    my $j = 0;
     
-    $stable_id_mapper->upload_file_into_table('target', 'mapping_session',
+    $logger->info("mapping_session...\n", 1);
+    $i += $stable_id_mapper->upload_file_into_table('target', 'mapping_session',
       'mapping_session.txt');
-    $stable_id_mapper->upload_file_into_table('target', 'stable_id_event',
+    $logger->info("$i\n", 1);
+    
+    $logger->info("stable_id_event...\n", 1);
+    $j += $stable_id_mapper->upload_file_into_table('target', 'stable_id_event',
       'stable_id_event_existing.txt');
-    $stable_id_mapper->upload_file_into_table('target', 'stable_id_event',
+    $j += $stable_id_mapper->upload_file_into_table('target', 'stable_id_event',
       'stable_id_event_new.txt');
-    $stable_id_mapper->upload_file_into_table('target', 'stable_id_event',
+    $j += $stable_id_mapper->upload_file_into_table('target', 'stable_id_event',
       'stable_id_event_similarity.txt');
+    $logger->info("$j\n", 1);
     
     $logger->info("Done.\n\n");
   
@@ -358,8 +390,10 @@ sub upload_stable_ids {
     $logger->info("Uploading stable ID tables...\n");
     
     foreach my $t (qw(gene transcript translation exon)) {
-      $stable_id_mapper->upload_file_into_table('target', "${t}_stable_id",
-        "${t}_stable_id.txt");
+      $logger->info("${t}_stable_id...\n", 1);
+      my $i = $stable_id_mapper->upload_file_into_table('target',
+        "${t}_stable_id", "${t}_stable_id.txt");
+      $logger->info("$i\n", 1);
     }
     
     $logger->info("Done.\n\n");
@@ -376,10 +410,13 @@ sub upload_archive {
     $logger->info("Uploading gene and peptide tables...\n");
     
     foreach my $t (qw(gene peptide)) {
-      $stable_id_mapper->upload_file_into_table('target', "${t}_archive",
+      $logger->info("${t}_archive...\n", 1);
+      my $i = 0;
+      $i += $stable_id_mapper->upload_file_into_table('target', "${t}_archive",
         "${t}_archive_existing.txt");
-      $stable_id_mapper->upload_file_into_table('target', "${t}_archive",
+      $i += $stable_id_mapper->upload_file_into_table('target', "${t}_archive",
         "${t}_archive_new.txt");
+      $logger->info("$i\n", 1);
     }
     
     $logger->info("Done.\n\n");
