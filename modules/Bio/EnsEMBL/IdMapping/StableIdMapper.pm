@@ -152,10 +152,15 @@ sub map_stable_ids {
   # generate a new mapping_session and write all mapping_session data to a file
   $self->generate_mapping_session;
 
+  $self->logger->info("== Stable ID mapping for $type...\n\n", 0, 'stamped');
+
   # check if there are any objects of this type at all
   my %all_sources = %{ $self->cache->get_by_name("${type}s_by_id", 'source') };
   my %all_targets = %{ $self->cache->get_by_name("${type}s_by_id", 'target') };
-  return unless (scalar(keys %all_sources));
+  unless (scalar(keys %all_sources)) {
+    $self->logger->info("No cached ${type}s found.\n\n");
+    return;
+  }
 
   my %stats = map { $_ => 0 }
     qw(mapped_known mapped_novel new lost_known lost_novel);
@@ -313,6 +318,7 @@ sub map_stable_ids {
   # also generate and write stats to file
   $self->generate_mapping_stats($type, \%stats);
 
+  $self->logger->info("Done.\n\n");
 }
 
 
@@ -624,15 +630,15 @@ sub write_stable_ids_to_file {
     # check for missing created and modified dates
     my $created_date = $obj->created_date;
     unless ($created_date) {
-      $self->logger->debug("Missing created_date for target ".
-        $obj->to_string."\n", 1);
+      #$self->logger->debug("Missing created_date for target ".
+      #  $obj->to_string."\n", 1);
       $created_date = $self->mapping_session_date;
     }
     
     my $modified_date = $obj->modified_date;
     unless ($modified_date) {
-      $self->logger->debug("Missing modified_date for target ".
-        $obj->to_string."\n", 1);
+      #$self->logger->debug("Missing modified_date for target ".
+      #  $obj->to_string."\n", 1);
       $modified_date = $self->mapping_session_date;
     }
     

@@ -52,7 +52,7 @@ sub score_transcripts {
     throw('Need a Bio::EnsEMBL::IdMapping::ScoredMappingMatrix.');
   }
 
-  $self->logger->info("Starting transcript scoring...\n\n", 0, 'stamped');
+  $self->logger->info("-- Scoring transcripts...\n\n", 0, 'stamped');
 
   # build scores based on exon scores
   my $matrix = $self->scores_from_exon_scores($exon_matrix);
@@ -65,14 +65,8 @@ sub score_transcripts {
   $self->logger->info(sprintf($fmt, "Total source transcripts:",
     $self->cache->get_count_by_name('transcripts_by_id', 'source')), 1);
 
-  $self->logger->info(sprintf($fmt, "Scored source transcripts:",
-    $matrix->get_source_count), 1);
-
   $self->logger->info(sprintf($fmt, "Total target transcripts:",
     $self->cache->get_count_by_name('transcripts_by_id', 'target')), 1);
-
-  $self->logger->info(sprintf($fmt, "Scored target transcripts:",
-    $matrix->get_target_count), 1);
 
   $self->log_matrix_stats($matrix);
   
@@ -162,6 +156,7 @@ sub flag_matrix_from_exon_scores {
   my $i;
   my $num_transcripts =
     scalar(keys %{ $self->cache->get_by_name('transcripts_by_id', 'source') });
+  my $progress_id = $self->logger->init_progress($num_transcripts, 100);
 
   $self->logger->info("Creating flag matrix...\n", 1);
 
@@ -169,7 +164,7 @@ sub flag_matrix_from_exon_scores {
   foreach my $source_transcript (values %{ $self->cache->get_by_name('transcripts_by_id', 'source') }) {
     
     # log progress
-    $self->logger->log_progress($num_transcripts, ++$i, 20, 1, 0);
+    $self->logger->log_progress($progress_id, ++$i, 1);
 
     # get all exons for the source transcript
     foreach my $source_exon (@{ $source_transcript->get_all_Exons }) {
@@ -222,6 +217,7 @@ sub score_matrix_from_flag_matrix {
   my $i;
   my $num_transcripts =
     scalar(keys %{ $self->cache->get_by_name('transcripts_by_id', 'source') });
+  my $progress_id = $self->logger->init_progress($num_transcripts, 100);
 
   $self->logger->info("Creating score matrix from flag matrix...\n", 1);
   
@@ -229,7 +225,7 @@ sub score_matrix_from_flag_matrix {
   foreach my $source_transcript (values %{ $self->cache->get_by_name('transcripts_by_id', 'source') }) {
     
     # log progress
-    $self->logger->log_progress($num_transcripts, ++$i, 20, 1, 0);
+    $self->logger->log_progress($progress_id, ++$i, 1);
 
     # We are only interested in scoring with exons that are in the target
     # transcript. The scored mapping matrix may contain scores for exons that
@@ -262,8 +258,8 @@ sub score_matrix_from_flag_matrix {
 
           next unless ($target_exons{$target_exon_id});
 
-          my $score = $exon_matrix->get_score(
-            $source_exon->id, $target_exon_id);
+          my $score = $exon_matrix->get_score($source_exon->id,
+            $target_exon_id);
           $max_source_score = $score if ($score > $max_source_score);
         }
 
