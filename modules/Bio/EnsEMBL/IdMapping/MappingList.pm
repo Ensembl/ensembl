@@ -45,8 +45,10 @@ sub new {
   my $class = ref($caller) || $caller;
   my $self = $class->SUPER::new(@_);
 
-  # initialise internal datastructure
-  $self->{'cache'}->{'entries'} = [];
+  # initialise internal datastructure unless we loaded a serialised object
+  unless ($self->loaded) {
+    $self->{'cache'}->{'entries'} = [];
+  }
 
   return $self;
 }
