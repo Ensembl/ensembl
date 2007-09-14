@@ -1,4 +1,4 @@
-#!/usr/local/bin/perl
+#!/software/bin/perl
 
 =head1 NAME
 
@@ -85,6 +85,13 @@ $conf->parse_options(
   'exonerate_threshold|exoneratethreshold=f' => 0,
   'exonerate_jobs|exoneratejobs=i' => 0,
   'exonerate_bytes_per_job|exoneratebytesperjob=f' => 0,
+  'exonerate_extra_params|exonerateextraparams=s' => 0,
+  'upload_events|uploadevents=s' => 0,
+  'upload_stable_ids|uploadstableids=s' => 0,
+  'upload_archive|uploadarchive=s' => 0,
+  'lsf!' => 0,
+  'lsf_opt_run|lsfoptrun=s' => 0,
+  'lsf_opt_dump_cache|lsfoptdumpcache=s' => 0,
 );
 
 # set default logpath
@@ -102,22 +109,27 @@ my $logger = new Bio::EnsEMBL::Utils::Logger(
   -LOGLEVEL     => $conf->param('loglevel'),
 );
 
+# if user wants to run via lsf, submit script with bsub (this will exit this
+# instance of the script)
+&bsubmit if ($conf->param('lsf'));
+
 # initialise log
 $logger->init_log($conf->list_param_values);
 
 # this script is only a wrapper and will run one or more components.
 # define options for the components here.
 my %options;
+my $logautoid = $logger->log_auto_id;
 
 $options{'dump_cache'} = $conf->create_commandline_options(
-  logautoid     => $logger->log_auto_id,
+  logautoid     => $logautoid,
   logappend     => 1,
   interactive   => 0,
   is_component  => 1,
 );
 
 $options{'id_mapping'} = $conf->create_commandline_options(
-  logautoid     => $logger->log_auto_id,
+  logautoid     => $logautoid,
   logappend     => 1,
   interactive   => 0,
   is_component  => 1,
@@ -149,6 +161,13 @@ sub run_normal {
 }
 
 
+sub run_upload {
+  # upload table data files into db
+  # (delegate to id_mapping.pl which will do the right thing based on --mode)
+  &run_component('id_mapping', $options{'id_mapping'}, 'uploading tables');
+}
+
+
 sub run_component {
   my $basename = shift;
   my $options = shift;
@@ -159,8 +178,8 @@ sub run_component {
 
   $logger->info("----- $logtext -----\n", 0, 'stamped');
   
-  if (my $log_id = $logger->log_auto_id) {
-    $logger->info("See ${basename}_$log_id.log for logs.\n", 1);
+  if ($logger->logauto) {
+    $logger->info("See ${basename}_".$logger->log_auto_id.".log for logs.\n", 1);
   } elsif ($logger->logfile) {
     $logger->info("See below for logs.\n", 1);
   }
@@ -169,5 +188,39 @@ sub run_component {
     or $logger->error("Error running $cmd. Please see the respective logfile for more information.\n");
   
   $logger->info("----- done with $logtext -----\n\n", 0, 'stamped');
+}
+
+
+sub bsubmit {
+  #
+  # build bsub commandline
+  #
+
+  # automatically create a filename for lsf output
+  my $cmd = 'bsub -o '.$conf->param('logpath');
+  $cmd .= '/lsf_'.$logger->log_auto_id.'.out';
+
+  # add extra lsf options as configured by the user
+  $cmd .= ' '.$conf->param('lsf_opt_run');
+
+  # this script's name
+  $cmd .= " $0";
+
+  # options for this script
+  my $options = $conf->create_commandline_options(
+    logautoid => $logger->log_auto_id,
+    interactive   => 0,
+    lsf       => 0,
+  );
+  $cmd .= " $options";
+
+  #
+  # execute bsub
+  #
+  print "\nRe-executing via lsf:\n";
+  print "$cmd\n\n";
+
+  exec($cmd) or die "Could not exec $0 via lsf: $!\n";
+  #exit;
 }
 
