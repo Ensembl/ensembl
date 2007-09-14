@@ -156,13 +156,13 @@ sub build_cache_from_genes {
 
   #my $i = 0;
   #my $num_genes = scalar(@$genes);
-  #$self->logger->init_progressbar('index_genes', $num_genes);
+  #my $progress_id = $self->logger->init_progress($num_genes);
 
   # loop over genes sorted by gene location.
   # the sort will hopefully improve assembly mapper cache performance and
   # therefore speed up exon sequence retrieval
   foreach my $gene (sort { $a->start <=> $b->start } @$genes) {
-    #$self->logger->log_progressbar('index_genes', ++$i, 2);
+    #$self->logger->log_progressbar($progress_id, ++$i, 2);
     #$self->logger->log_progress($num_genes, ++$i, 20, 3, 1);
 
     # create lightweigt gene
@@ -522,7 +522,7 @@ sub cache_file_exists {
 
   my $cache_file = $self->cache_file($name, $type);
 
-  if (-s $cache_file) {
+  if (-e $cache_file) {
     $self->logger->info("Cache file found for $name.\n", 3);
     $self->logger->debug("Will read from $cache_file.\n", 3);
     return 1;
@@ -630,17 +630,20 @@ sub read_from_file {
 
   my $cache_file = $self->cache_file($name, $type);
 
-  unless (-s $cache_file) {
-    throw("No valid cache file found at $cache_file.");
+  if (-s $cache_file) {
+    
+    #$self->logger->info("Reading cache from file...\n", 0, 'stamped');
+    #$self->logger->info("Cache file $cache_file.\n", 1);
+    eval { $self->{'cache'}->{$name}->{$type} = retrieve($cache_file); };
+    if ($@) {
+      throw("Unable to retrieve cache: $@");
+    }
+    #$self->logger->info("Done.\n", 0, 'stamped');
+
+  } else {
+    $self->logger->warning("Cache file $cache_file not found or empty.\n");
   }
 
-  #$self->logger->info("Reading cache from file...\n", 0, 'stamped');
-  #$self->logger->info("Cache file $cache_file.\n", 1);
-  eval { $self->{'cache'}->{$name}->{$type} = retrieve($cache_file); };
-  if ($@) {
-    throw("Unable to retrieve cache: $@");
-  }
-  #$self->logger->info("Done.\n", 0, 'stamped');
 
   return $self->{'cache'}->{$name}->{$type};
 }
