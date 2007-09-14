@@ -52,7 +52,7 @@ use Bio::EnsEMBL::IdMapping::ScoredMappingMatrix;
 sub score_exons {
   my $self = shift;
 
-  $self->logger->info("Starting exon scoring...\n\n", 0, 'stamped');
+  $self->logger->info("-- Scoring exons...\n\n", 0, 'stamped');
 
   # score using overlaps, then exonerate
   my $matrix = $self->overlap_score;
@@ -375,8 +375,7 @@ sub run_exonerate {
   }
 
   # create an empty lsf log directory
-  my $logpath = ($self->conf->param('logpath')||$self->cache->dump_path).
-    '/lsf_exonerate';
+  my $logpath = path_append($self->logger->logpath, 'lsf_exonerate');
   system("rm -rf $logpath") == 0 or
     $self->logger->error("Unable to delete lsf log dir $logpath: $!\n");
   system("mkdir -p $logpath") == 0 or
@@ -405,6 +404,7 @@ sub run_exonerate {
   my $percent = ($self->conf->param('exonerate_threshold') || 0.5) * 100;
   my $lsf_name = 'idmapping_exonerate_'.time;
   my $exonerate_path = $self->conf->param('exonerate_path');
+  my $exonerate_extra_params = $self->conf->param('exonerate_extra_params');
 
   #
   # run exonerate jobs using lsf
@@ -419,6 +419,7 @@ sub run_exonerate {
     qq{--querychunktotal $num_jobs } .
     q{--model affine:local -M 900 --showalignment FALSE --subopt no } .
     qq{--percent $percent } .
+    $self->conf->param('exonerate_extra_params') . " " .
     q{--ryo 'myinfo: %qi %ti %et %ql %tl\n' } .
     qq{| grep '^myinfo:' > $dumppath/exonerate_map.\$LSB_JOBINDEX} . "\n";
   
@@ -541,7 +542,7 @@ sub write_filtered_exons {
     $total_exons++;
 
     # skip if exon shorter than threshold
-    next EXON if (($exon->end - $exon->start + 1) < $min_exon_length);
+    next EXON if ($exon->length < $min_exon_length);
 
     # skip if overlap score with any other exon is 1
     if ($type eq 'source') {
