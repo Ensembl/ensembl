@@ -52,7 +52,7 @@ sub score_genes {
     throw('Need a Bio::EnsEMBL::IdMapping::ScoredMappingMatrix.');
   }
 
-  $self->logger->info("Starting gene scoring...\n\n", 0, 'stamped');
+  $self->logger->info("-- Scoring genes...\n\n", 0, 'stamped');
 
   # build scores based on transcript scores
   my $matrix = $self->scores_from_transcript_scores($transcript_matrix);
@@ -65,18 +65,12 @@ sub score_genes {
   $self->logger->info(sprintf($fmt, "Total source genes:",
     $self->cache->get_count_by_name('genes_by_id', 'source')), 1);
 
-  $self->logger->info(sprintf($fmt, "Scored source genes:",
-    $matrix->get_source_count), 1);
-
   $self->logger->info(sprintf($fmt, "Total target genes:",
     $self->cache->get_count_by_name('genes_by_id', 'target')), 1);
 
-  $self->logger->info(sprintf($fmt, "Scored target genes:",
-    $matrix->get_target_count), 1);
-
   $self->log_matrix_stats($matrix);
   
-  $self->logger->info("\nDone with gene scoring.\n");
+  $self->logger->info("\nDone with gene scoring.\n\n");
 
   return $matrix;
 }
@@ -171,6 +165,7 @@ sub flag_matrix_from_transcript_scores {
   # initialise progress logger
   my $i;
   my $num_entries = $transcript_matrix->get_entry_count;
+  my $progress_id = $self->logger->init_progress($num_entries, 100);
   
   $self->logger->info("Creating flag matrix...\n", 1);
 
@@ -178,7 +173,7 @@ sub flag_matrix_from_transcript_scores {
   # matrix.
   foreach my $entry (@{ $transcript_matrix->get_all_Entries }) {
 
-    $self->logger->log_progress($num_entries, ++$i, 20, 1, 0);
+    $self->logger->log_progress($progress_id, ++$i, 1);
 
     my $source_gene = $self->cache->get_by_key('genes_by_transcript_id',
       'source', $entry->source);
@@ -220,13 +215,14 @@ sub score_matrix_from_flag_matrix {
   # initialise progress logger
   my $i;
   my $num_entries = $flag_matrix->get_entry_count;
+  my $progress_id = $self->logger->init_progress($num_entries, 100);
   
   $self->logger->info("Creating score matrix from flag matrix...\n", 1);
 
   # loop over flag matrix and do proper scoring for each entry
   foreach my $entry (@{ $flag_matrix->get_all_Entries }) {
     
-    $self->logger->log_progress($num_entries, ++$i, 20, 1, 0);
+    $self->logger->log_progress($progress_id, ++$i, 1);
 
     my $score = 0;
     my $source_gene = $self->cache->get_by_key('genes_by_id', 'source',
@@ -290,7 +286,7 @@ sub complex_gene_gene_score {
     }
 
     if ($max_source_score > 0) {
-      $source_gene_score += $max_source_score * $source_transcript->length;
+      $source_gene_score += ($max_source_score * $source_transcript->length);
     }
 
     $source_gene_accum_length += $source_transcript->length;
@@ -317,7 +313,7 @@ sub complex_gene_gene_score {
     }
 
     if ($max_target_score > 0) {
-      $target_gene_score += $max_target_score * $target_transcript->length;
+      $target_gene_score += ($max_target_score * $target_transcript->length);
     }
 
     $target_gene_accum_length += $target_transcript->length;
@@ -326,15 +322,21 @@ sub complex_gene_gene_score {
   # calculate overall score for this gene
   my $gene_score = 0;
 
-  if (($source_gene->length + $target_gene->length) > 0) {
+  if (($source_gene_accum_length + $target_gene_accum_length) > 0) {
 
     $gene_score = ($source_gene_score + $target_gene_score) /
-                  ($source_gene->length + $target_gene->length);
+                  ($source_gene_accum_length + $target_gene_accum_length);
 
   } else {
   
-    $self->logger->warning("Combined length of source (".$source_gene->id.") and target (".$target_gene->id.") gene is zero!\n", 1);
+    $self->logger->warning("Combined transcript length of source (".$source_gene->id.") and target (".$target_gene->id.") gene is zero!\n", 1);
   
+  }
+
+  if ($gene_score > 1) {
+    $self->logger->warning("Illegal gene score: $gene_score (".
+      join("|", $source_gene_score, $target_gene_score,
+           $source_gene_accum_length, $target_gene_accum_length).")\n", 1);
   }
 
   return $gene_score;
