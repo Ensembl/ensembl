@@ -47,9 +47,11 @@ sub new {
   my $self = $class->SUPER::new(@_);
 
   # initialise internal datastructure
-  $self->{'cache'}->{'matrix'} = {};
-  $self->{'cache'}->{'source_list'} = {};
-  $self->{'cache'}->{'target_list'} = {};
+  unless ($self->loaded) {
+    $self->{'cache'}->{'matrix'} = {};
+    $self->{'cache'}->{'source_list'} = {};
+    $self->{'cache'}->{'target_list'} = {};
+  }
 
   return $self;
 }
