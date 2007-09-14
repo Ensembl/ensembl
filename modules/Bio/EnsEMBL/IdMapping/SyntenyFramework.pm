@@ -89,10 +89,15 @@ sub build_synteny {
     push @synteny_regions, $sr;
   }
 
+  unless (@synteny_regions) {
+    $self->logger->warning("No synteny regions could be identified.\n");
+    return;
+  }
+
   # sort synteny regions
-  my @sorted = sort { $a->source_seq_region_name cmp $b->source_seq_region_name
-                      or $a->source_start <=> $b->source_start }
-                        @synteny_regions;
+  my @sorted = sort _by_overlap @synteny_regions;
+
+  $self->logger->info("SyntenyRegions before merging: ".scalar(@sorted)."\n");
   
   # now create merged regions from overlapping syntenies, but only merge a
   # maximum of 2 regions (otherwise you end up with large synteny blocks which
@@ -122,7 +127,22 @@ sub build_synteny {
     $self->add_SyntenyRegion($last_sr->stretch(2));
     $last_merged = 0;
   }
+  
+  $self->logger->info("SyntenyRegions after merging: ".scalar(@{ $self->get_all_SyntenyRegions })."\n");
 
+}
+
+
+sub _by_overlap {
+  # first sort by seq_region
+  my $retval = ($a->source_seq_region_name cmp $b->source_seq_region_name);
+  return $retval if ($retval);
+
+  # then sort by overlap:
+  # return -1 if $a is downstream, 1 if it's upstream, 0 if they overlap
+  if ($a->source_end < $b->source_start) { return -1; }
+  if ($a->source_start < $b->source_end) { return 1; }
+  return 0;
 }
 
 
