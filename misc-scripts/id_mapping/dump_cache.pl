@@ -1,4 +1,4 @@
-#!/usr/local/ensembl/bin/perl
+#!/software/bin/perl
 
 =head1 NAME
 
@@ -65,7 +65,7 @@ no warnings 'uninitialized';
 use FindBin qw($Bin);
 use Bio::EnsEMBL::Utils::ConfParser;
 use Bio::EnsEMBL::Utils::Logger;
-use Bio::EnsEMBL::Utils::ScriptUtils qw(dynamic_use);
+use Bio::EnsEMBL::Utils::ScriptUtils qw(dynamic_use path_append);
 
 # parse configuration and commandline arguments
 my $conf = new Bio::EnsEMBL::Utils::ConfParser(
@@ -88,11 +88,20 @@ $conf->parse_options(
   'chromosomes|chr=s@' => 0,
   'region=s' => 0,
   'biotypes=s@' => 0,
+  'lsf_opt_dump_cache|lsfoptdumpcache=s' => 0,
 );
+
+# set default logpath
+unless ($conf->param('logpath')) {
+  $conf->param('logpath', path_append($conf->param('dumppath'), 'log'));
+}
 
 # get log filehandle and print heading and parameters to logfile
 my $logger = new Bio::EnsEMBL::Utils::Logger(
   -LOGFILE      => $conf->param('logfile'),
+  -LOGAUTO      => $conf->param('logauto'),
+  -LOGAUTOBASE  => 'dump_cache',
+  -LOGAUTOID    => $conf->param('logautoid'),
   -LOGPATH      => $conf->param('logpath'),
   -LOGAPPEND    => $conf->param('logappend'),
   -LOGLEVEL     => $conf->param('loglevel'),
@@ -105,8 +114,7 @@ $logger->init_log($conf->list_param_values);
 my %jobs;
 
 # create empty directory for logs
-my $logpath = ($conf->param('logpath') || $conf->param('dumppath')) .
-  '/lsf_dump_cache';
+my $logpath = path_append($conf->param('logpath'), 'dump_by_seq_region');
 system("rm -rf $logpath") == 0 or
   $logger->error("Unable to delete lsf log dir $logpath: $!\n");
 system("mkdir -p $logpath") == 0 or
@@ -148,15 +156,16 @@ while (keys %jobs) {
 $logger->info("\n\n");
 
 # check if anything went wrong
+sleep(5);
 foreach my $type (@types) {
-  warn "$logpath/dump_by_seq_region.$type.success\n";
+  #warn "$logpath/dump_by_seq_region.$type.success\n";
   $err++ unless (-e "$logpath/dump_by_seq_region.$type.success");
 }
 
 my $retval = 0;
 if ($err) {
   $logger->warning("At least one of your jobs failed.\n");
-  $logger->warning("Please check $logpath and ".$conf->param('logpath')."/".$conf->param('logfile')." for errors.\n");
+  $logger->warning("Please check $logpath and ".$logger->logpath."/".$logger->logfile." for errors.\n");
   $retval = 1;
 }
 
@@ -205,17 +214,19 @@ sub bsubmit {
 
   unless ($cache->all_cache_files_exist($type)) {
     my $options = $conf->create_commandline_options(
+        logauto       => 1,
+        logautobase   => "dump_by_seq_region_${type}",
         interactive   => 0,
         is_component  => 1,
         dbtype        => $dbtype,
         slice_name    => $slice_name,
         cache_impl    => ref($cache),
-        log_append    => 1,
     );
-    
+
     my $cmd = "bsub ".
                 "-o $logpath/dump_by_seq_region.$type.out ".
                 "-e $logpath/dump_by_seq_region.$type.err ".
+                $conf->param('lsf_opt_dump_cache') . " " .
                 "./dump_by_seq_region.pl $options";
 
     system("$cmd") == 0

@@ -1,4 +1,4 @@
-#!/usr/local/ensembl/bin/perl
+#!/software/bin/perl
 
 =head1 NAME
 
@@ -55,7 +55,7 @@ no warnings 'uninitialized';
 use FindBin qw($Bin);
 use Bio::EnsEMBL::Utils::ConfParser;
 use Bio::EnsEMBL::Utils::Logger;
-use Bio::EnsEMBL::Utils::ScriptUtils qw(dynamic_use);
+use Bio::EnsEMBL::Utils::ScriptUtils qw(dynamic_use path_append);
 
 # parse configuration and commandline arguments
 my $conf = new Bio::EnsEMBL::Utils::ConfParser(
@@ -81,11 +81,22 @@ $conf->parse_options(
   'cache_impl=s' => 1,
 );
 
+# set default logpath
+unless ($conf->param('logpath')) {
+  $conf->param('logpath', path_append($conf->param('dumppath'), 'log'));
+}
+# log to a subdirectory to prevent clutter
+$conf->param('logpath', path_append($conf->param('logpath'),
+  'dump_by_seq_region'));  
+
 # get log filehandle and print heading and parameters to logfile
 my $logger = new Bio::EnsEMBL::Utils::Logger(
-  -LOGFILE      => $conf->param('logfile') || 'dump_by_seq_region.log',
+  -LOGFILE      => $conf->param('logfile'),
+  -LOGAUTO      => $conf->param('logauto'),
+  -LOGAUTOBASE  => $conf->param('logautobase') || 'dump_by_seq_region',
+  -LOGAUTOID    => $conf->param('logautoid'),
   -LOGPATH      => $conf->param('logpath'),
-  -LOGAPPEND    => 1,
+  -LOGAPPEND    => $conf->param('logappend'),
   -LOGLEVEL     => $conf->param('loglevel'),
   -IS_COMPONENT => 1,
 );
@@ -107,7 +118,7 @@ my $size = 0;
 ($i, $size) = $cache->build_cache($dbtype, $slice_name);
 
 # set flag to indicate everything went fine
-my $success_file = $conf->param('logpath')."/lsf_dump_cache/dump_by_seq_region.$dbtype.$slice_name.success";
+my $success_file = $conf->param('logpath')."/dump_by_seq_region.$dbtype.$slice_name.success";
 open(TMPFILE, '>', $success_file) and close TMPFILE
   or die "Can't open $success_file for writing: $!";
 
