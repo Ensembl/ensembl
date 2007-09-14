@@ -132,6 +132,7 @@ sub dump_table_to_file {
   my $dbtype = shift;
   my $table = shift;
   my $filename = shift;
+  my $check_existing = shift;
 
   # argument check
   unless (($dbtype eq 'source') or ($dbtype eq 'target')) {
@@ -139,6 +140,12 @@ sub dump_table_to_file {
   }
   throw("Need a table name.") unless ($table);
   throw("Need a filename.") unless ($filename);
+
+  # conditionally check if table was already dumped
+  if ($check_existing and $self->file_exists($filename, 'tables')) {
+    $self->logger->info("$filename exists, won't dump again.\n");
+    return 0;
+  }
   
   my $fh = $self->get_filehandle($filename, 'tables');
 
@@ -187,20 +194,39 @@ sub upload_file_into_table {
   }
   
   my $file = join('/', $self->conf->param('dumppath'), 'tables', $filename);
+  my $r = 0;
   
   if (-s $file) {
+
+    $self->logger->debug("$file -> $table\n", 1);
     
     my $dba = $self->cache->get_DBAdaptor($dbtype);
     my $dbh = $dba->dbc->db_handle;
-    my $sql = qq(LOAD DATA LOCAL INFILE '$file' INTO TABLE $table);
+
+    # check table is empty
+    my $sql = qq(SELECT count(*) FROM $table);
     my $sth = $dbh->prepare($sql);
     $sth->execute;
+    my ($c) = $sth->fetchrow_array;
+    $sth->finish;
+
+    if ($c) {
+      $self->logger->warning("Table $table not empty: found $c entries.\n", 1);
+      $self->logger->info("Data not uploaded!\n", 1);
+      return $r;
+    }
+    
+    # now upload the data
+    $sql = qq(LOAD DATA LOCAL INFILE '$file' INTO TABLE $table);
+    $sth = $dbh->prepare($sql);
+    $r = $sth->execute;
     $sth->finish;
 
   } else {
     $self->logger->warning("No data found in file $filename.\n", 1);
   }
 
+  return $r;
 }
 
 
