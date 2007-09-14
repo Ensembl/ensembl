@@ -397,7 +397,7 @@ sub create_summary_email {
   #
   # mapping stats
   #
-  foreach my $type (qw(exon transcript translation gene_detailed)) {
+  foreach my $type (qw(exon transcript translation gene gene_detailed)) {
     my $filename = "${type}_mapping_stats.txt";
     
     if ($self->file_exists($filename, 'stats')) {
