@@ -356,10 +356,6 @@ sub go_xref_exists {
 
   foreach my $xref (@{$to_go_xrefs}) {
 
-#    if ($dbEntry->primary_id() eq "GO:0005515" && $xref->primary_id() eq "GO:0005515") {
-#      print $xref->dbname() . " " .  $xref->primary_id() . " " . join("", @{$xref->get_all_linkage_types()}) . " -> " .  $dbEntry->dbname() . " " . $dbEntry->primary_id() . " " . join("", @{$dbEntry->get_all_linkage_types()}) . "\n";
-#    }
-
     next if (ref($dbEntry) ne "Bio::EnsEMBL::GoXref" || ref($xref) ne "Bio::EnsEMBL::GoXref");
 
     if ($xref->dbname() eq $dbEntry->dbname() &&
