@@ -85,6 +85,9 @@ my %XXXxref_id_to_source_id;
 my %xref_source_id_to_name;
 my %external_db_release;
 
+my %go_done;                    #state wethere this go has already been done.
+
+
 sub create_source_id_to_source_name{  
   my($self) = @_;
 
@@ -2064,7 +2067,8 @@ XSQL
 	    $object_succesfully_mapped{$xref_id} = 1;
             print OBJECT_XREF "$object_xref_id\t$ensembl_internal_id\t" . ucfirst($type) . "\t" . ($xref_id+$xref_id_offset) . "\t\\N\n";
             if(defined($go_source{$source_id})){
-              print GO_XREF $object_xref_id . "\t" . $linkage_xref . "\n";
+              print GO_XREF $object_xref_id . "\t" . $linkage_xref . "\\N\n";
+	      $go_done{$ensembl_internal_id."|".ucfirst($type)."|" . ($xref_id+$xref_id_offset)} = 1;
             }
             $object_xref_id++;
             
@@ -2178,22 +2182,28 @@ sub dump_interpro {
         unless( $oxref_id = $oxref_cache{$dx_accession.$ensembl_id} ){
           $oxref_id = $oxref_count + 1 + $oxref_id_offset;          
           $oxref_cache{$dx_accession.$ensembl_id} = $oxref_id;
+
+          # If this was loaded already via the normal go system ignore as already processed.
+	  if(defined($go_done{$ensembl_id."|".'Translation'."|".$xref_id})) { 
+	    next;
+	  }
+			     
           printf OBJECT_XREF ( "%s\t%s\t%s\t%s\t\\N\n",
                                $oxref_id,
                                $ensembl_id,
                                'Translation',
                                $xref_id );
           $oxref_count ++;
-        }
-        if( $go_linkage ){
-          #...And we have linkage data, indicating a GO sref
-          unless( $goxref_cache{$oxref_id.$go_linkage} ){
-            $goxref_cache{$oxref_id.$go_linkage} ++;
-            printf GO_XREF ( "%s\t%s\n",
-                             $oxref_id,
-                             $go_linkage );
-            $goxref_count ++;
-          }
+	  if( $go_linkage ){
+	    #...And we have linkage data, indicating a GO sref
+	    unless( $goxref_cache{$oxref_id.$go_linkage} ){
+	      $goxref_cache{$oxref_id.$go_linkage} ++;
+	      printf GO_XREF ( "%s\t%s\t\\N\n",
+			       $oxref_id,
+			       $go_linkage );
+	      $goxref_count ++;
+	    }
+	  }
         }
       }
     }
@@ -2550,7 +2560,8 @@ sub dump_core_xrefs {
 	    $object_xrefs_written{$full_key} = 1;
 
 	    # write a go_xref with the appropriate linkage type
-	    print GO_XREF $object_xref_id . "\t" . $linkage_annotation . "\n"  if (defined($go_source{$source_id}));
+	    print GO_XREF $object_xref_id . "\t" . $linkage_annotation . "\\N\n"  if (defined($go_source{$source_id}));
+	    $go_done{$object_id."|".$type."|" . ($xref_id+$xref_id_offset)} = 1;
 	    my $master_accession = $XXXxref_id_to_accession{$master_xref_id};
 	
 	    # Also store *parent's* query/target identity for dependent xrefs
@@ -3155,7 +3166,6 @@ sub do_upload {
       print "NO file or zero size file, so not able to load file $file to $table\n";
     }
   }
-
 }
 
 sub genes_and_transcripts_attributes_set{
