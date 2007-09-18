@@ -44,7 +44,7 @@ Please post comments/questions to the Ensembl development list
 
 use strict;
 
-use POSIX;
+use POSIX ();
 use Bio::EnsEMBL::Feature;
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 use Bio::EnsEMBL::Utils::Exception qw(throw warning deprecate);
