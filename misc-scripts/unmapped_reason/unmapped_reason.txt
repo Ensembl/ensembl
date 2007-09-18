@@ -14,3 +14,5 @@
 15	Failed to match at thresholds	Unable to match at the thresholds of 100% for the query or 100% for the target
 16	Failed to match at thresholds	Unable to match at the thresholds of 55% for the query or 55% for the target
 17	Parent xref failed to match	Unable to match as parent xref was not mapped
+18	Marker matches multiple times	Marker aligns to the genome > 5 times
+19	Marker does not align	Unable to align to the genome
