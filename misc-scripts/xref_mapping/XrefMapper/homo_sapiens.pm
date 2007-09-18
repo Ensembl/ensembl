@@ -56,7 +56,7 @@ sub gene_description_filter_regexps {
 
 
 sub get_canonical_name{
-   return "HUGO";
+   return "HGNC";
 }
 
 sub species_specific_cleanup{
@@ -360,7 +360,7 @@ ISQL
           
 #
 # Some dependent accs match to more than one transcript which may not necessarily be in the same
-# gene. In this case we get genes with object_xref to HUGOs but no Transcripts for that gene due to the
+# gene. In this case we get genes with object_xref to XXXXs but no Transcripts for that gene due to the
 # moving to the largest transcript idea.
 # 
 
