@@ -110,8 +110,6 @@ sub new {
   $self->{'type'} = $type               || throw('TYPE must be given');
   if (lc($type) eq "xref") {
     $self->{'external_db_id'} = $ex_db_id || throw('EXTERNAL_DB_ID must be given');
-  } else {
-    $self->{'external_db_id'} = 0;
   }
   $self->{'identifier'} = $identifier   || throw('IDENTIFIER must be given');
   $self->{'query_score'} = $query_score  if(defined($query_score));
