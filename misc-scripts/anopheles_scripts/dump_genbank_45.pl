@@ -45,7 +45,8 @@ my $martdb = new Bio::EnsEMBL::DBSQL::DBAdaptor(
 
 #directory with input files and for output
 my $inputdir = '/lustre/work1/ensembl/mh4/Genbank_dump_45/Input';
-my $outdir = '/lustre/work1/ensembl/mh4/Genbank_dump_45/Output/Outfiles_2007-08-23';
+my $outdir = '/lustre/work1/ensembl/mh4/Genbank_dump_45/Output/Outfiles_2007-08-29';
+
 
 ###############################################
 ##  load some data from files
@@ -259,11 +260,14 @@ my $undesignated=0;
 my $orths = 0;
 my $gene_orth=0;
 
+# global counters etc for mRNA stuff
+my ($transcripts_described,$transcripts_autonamed,$transcripts_plain);
+$transcripts_described=$transcripts_autonamed=$transcripts_plain=0;
+
 # global counters etc for CDS stuff
 my %pid_count;
 my ($fetch_count,$proteins_named,$proteins_described,$proteins_autonamed,$proteins_plain);
 $fetch_count=$proteins_named=$proteins_described=$proteins_autonamed=$proteins_plain=0;
-
 my ($man_c, $snap_c, $comm_c, $inf_c, $default_c, $error_c);
 $man_c=$snap_c= $comm_c= $inf_c=$default_c=$error_c= 0;
 
@@ -281,7 +285,7 @@ my $real_chr_name;
 foreach my $scaff (sort {$a->seq_region_name cmp $b->seq_region_name} @scaffolds) {
   last if $scaffs_seen >9000;
   my $scaff_name = $scaff -> seq_region_name;
-#  next unless ($scaff_name eq "AAAB01008976");  # limit to one scaff for testing
+#  next unless ($scaff_name eq "AAAB01008905");  # limit to one scaff for testing
   print STDERR "Processing scaffold $scaff_name\n" if $scaff_name =~/00$/;
   $scaffs_seen ++;
 
@@ -816,15 +820,18 @@ print  "\tIf there are genes running off scaffold, multiscaff genes may exist an
 
 print  "Genes found on scaffolds: $genes_found\n\tof which ncRNA genes: $genes_ncRNA\nGenes with names: $genes_named\tUn-named because of multiply used gene name: $undesignated\nGenes with Dros orths: $gene_orth\tTotal dros orthologues: $orths\n";
 
-print  "Fetched proteins: $fetch_count, note with name: $proteins_named\n";
+print  "Fetched proteins: $fetch_count, note with distinct name: $proteins_named\n";
 
-print "Product details:\n";
+print "Product details - CDS:\n";
 print "\tfrom gene_name $proteins_described\n\tfrom autoname $proteins_autonamed\n\tstable_id only $proteins_plain\n";
+print "Product details - mRNA:\n";
+print "\tfrom gene_name $transcripts_described\n\tfrom autoname $transcripts_autonamed\n\tstable_id only $transcripts_plain\n";
 
 print  "Protein id asssignment details:\n";
 foreach my $pid_type (sort keys %pid_count) {
   print  "\t$pid_type: ".$pid_count{$pid_type}."\n";
 }
+
 print  "Inference details:\n";
 print "\tManual note: $man_c\n\tDefault note: $default_c\n\tSnap: $snap_c\n\tInference tag(s): $inf_c\n\tComm or genename only no note: $comm_c\n\tError (other):  $error_c\n";
 
@@ -1123,7 +1130,44 @@ sub print_transcript_coordinates {
   }
   print OUT "\t\t\tlocus_tag\t$locus_tag_gene\n";
 
-  print OUT "\t\t\tproduct\t$tr_name\n";
+#*# changed for v45 - mRNA product tag name should match CDS product
+#*# VB identifier in brackets is however -RA not -PA form
+#*#  ugly - uses near-duplication of code in the CDS section
+
+  my $description;
+  if ( (defined $gene_name) && ($tr ->display_xref) ) {
+    my $dbentry = $tr -> display_xref;
+    if ($dbentry -> dbname eq "Anopheles_symbol") {
+      my $prot_name = $dbentry -> display_id;
+
+## omitting note re distinct name - used in CDS tag sub-routine only
+#      if (lc $prot_name ne lc $gene_name) {
+#	print OUT "\t\t\tnote\t$prot_name\n";
+#	$proteins_named++;	
+#      }
+
+      if ( $gene_name{lc $prot_name}{'description'} ) {
+	$description = $gene_name{lc $prot_name}{'description'};
+	print OUT "\t\t\tproduct\t$description ($tr_name)\n";
+	$transcripts_described++;
+      }
+    }
+  }
+
+# look for autoname description if no gene-name-description-derived product
+# may need to add not-taking autoname if 'hypothetical protein' etc
+## note deliberately using translation_name as the look-up, not tr(anscript) name
+  unless (defined $description) {
+    if ($autoname{$translation_name}) {
+      print OUT "\t\t\tproduct\t$autoname{$translation_name} ($tr_name)\n";
+      $transcripts_autonamed++;
+    }
+    else {
+      print OUT "\t\t\tproduct\t$tr_name\n";
+      $transcripts_plain ++;
+    }
+  }
+
 
 #*# changed for v45 - print transcript_id (for NCBI internal purposes) with prefix
 #*# changed for v45 - add protein_id tag to mRNA
