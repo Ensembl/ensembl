@@ -1273,7 +1273,7 @@ sub fetch_all_synonyms {
     push (@synonyms, $synonym);
   }
 
-  @synonyms = [] if (!@synonyms);
+  @synonyms = () if (!@synonyms);
 
   return \@synonyms;
 
