@@ -1,4 +1,7 @@
-#!/usr/local/bin/perl
+#!/software/bin/perl -w
+
+use strict;
+use warnings;
 
 =head1 NAME
 
@@ -161,7 +164,7 @@ $sth->execute;
 
 # loop over databases
 while (my ($dbname) = $sth->fetchrow_array) {
-  $support->log("$dbname\n");
+  $support->log_stamped("$dbname\n");
   
   if ($support->user_proceed("\nPatch $dbname?")) {
 
