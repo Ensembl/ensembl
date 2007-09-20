@@ -2560,7 +2560,7 @@ sub dump_core_xrefs {
 	    $object_xrefs_written{$full_key} = 1;
 
 	    # write a go_xref with the appropriate linkage type
-	    print GO_XREF $object_xref_id . "\t" . $linkage_annotation . "\\N\n"  if (defined($go_source{$source_id}));
+	    print GO_XREF $object_xref_id . "\t" . $linkage_annotation . "\t\\N\n"  if (defined($go_source{$source_id}));
 	    $go_done{$object_id."|".$type."|" . ($xref_id+$xref_id_offset)} = 1;
 	    my $master_accession = $XXXxref_id_to_accession{$master_xref_id};
 	
