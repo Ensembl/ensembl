@@ -2,7 +2,7 @@ use strict;
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 23;
+	plan tests => 25;
 }
 
 
@@ -97,6 +97,8 @@ my $score      = 80;
 my $percent_id = 90;
 my $evalue     = 23.2;
 my $cigar_string = '100M';
+my $hcoverage  = 99.5;
+my $external_db_id = 2200;
 
 $feat = Bio::EnsEMBL::DnaDnaAlignFeature->new
   (-START  => $start,
@@ -111,7 +113,9 @@ $feat = Bio::EnsEMBL::DnaDnaAlignFeature->new
    -PERCENT_ID => $percent_id,
    -SCORE    => $score,
    -P_VALUE => $evalue,
-   -ANALYSIS => $analysis);
+   -ANALYSIS => $analysis,
+   -HCOVERAGE => $hcoverage,
+   -EXTERNAL_DB_ID => $external_db_id );
 
 ok(!$feat->is_stored($db));
 
@@ -137,6 +141,8 @@ ok($feat->percent_id == $percent_id);
 ok($feat->score == $score);
 ok($feat->p_value == $evalue);
 ok($feat->analysis->logic_name eq $analysis->logic_name);
+ok($feat->external_db_id == $external_db_id);
+ok($feat->hcoverage == $hcoverage);
 
 $multi->restore('core', 'dna_align_feature');
 
