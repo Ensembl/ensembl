@@ -119,10 +119,10 @@ sub new {
   my $self = $class->SUPER::new(@_);
 
   my ($hstart,$hend,$hstrand,$percent_id,$score, $species, $hspecies,
-      $p_value, $hseqname, $f1,$f2, $coverage, $hcoverage, $group_id,$level_id) =
+      $p_value, $hseqname, $f1,$f2, $coverage, $hcoverage, $group_id,$level_id, $external_db_id) =
     rearrange(['HSTART','HEND','HSTRAND','PERCENT_ID','SCORE','SPECIES',
                'HSPECIES', 'P_VALUE', 'HSEQNAME', 'FEATURE1','FEATURE2',
-               'COVERAGE', 'HCOVERAGE', 'GROUP_ID','LEVEL_ID'], @_);
+               'COVERAGE', 'HCOVERAGE', 'GROUP_ID','LEVEL_ID', 'EXTERNAL_DB_ID'], @_);
 
   if(defined($hstart) && defined($hend) && ($hend < $hstart)) {
     throw('HSTART must be less than or equal to HEND');
@@ -145,6 +145,7 @@ sub new {
   $self->{'p_value'}    = $p_value;
   $self->{'group_id'}   = $group_id;
   $self->{'level_id'}   = $level_id;
+  $self->{'external_db_id'} = $external_db_id;
   #
   # Feature1 and Feature2 arg handling for backwards compatibility
   #
@@ -519,6 +520,26 @@ sub hcoverage {
   $self->{'hcoverage'} = shift if(@_);
   return $self->{'hcoverage'};
 }
+
+=head2 external_db_id
+
+  Arg [1]    : int  $external_db_id (optional)
+  Example    : $ex_db = $fp->external_db_id();
+  Description: Getter/Setter for the external_db_id taregt source database feature
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+  Status     : At Risk
+
+=cut
+
+sub external_db_id {
+  my $self = shift;
+  $self->{'external_db_id'} = shift if(@_);
+  return $self->{'external_db_id'};
+}
+
+
 
 
 =head2 p_value

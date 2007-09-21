@@ -92,7 +92,9 @@ sub _columns {
             daf.cigar_line
             daf.evalue
             daf.perc_ident
-            daf.score);
+            daf.score
+            daf.external_db_id
+            daf.hcoverage );
 }
 
 
@@ -131,8 +133,8 @@ sub store {
      "INSERT INTO $tablename (seq_region_id, seq_region_start, seq_region_end,
                              seq_region_strand, hit_start, hit_end,
                              hit_strand, hit_name, cigar_line,
-                             analysis_id, score, evalue, perc_ident)
-     VALUES (?,?,?,?,?,?,?,?,?,?,?, ?, ?)");
+                             analysis_id, score, evalue, perc_ident, external_db_id, hcoverage)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?, ?, ?, ?, ?)");
 
  FEATURE: foreach my $feat ( @feats ) {
     if( !ref $feat || !$feat->isa("Bio::EnsEMBL::DnaDnaAlignFeature") ) {
@@ -188,6 +190,8 @@ sub store {
     $sth->bind_param(11,$feat->score,SQL_DOUBLE);
     $sth->bind_param(12,$feat->p_value,SQL_DOUBLE);
     $sth->bind_param(13,$feat->percent_id,SQL_FLOAT);
+    $sth->bind_param(14,$feat->external_db_id,SQL_INTEGER);
+    $sth->bind_param(15,$feat->hcoverage,SQL_DOUBLE);
 
     $sth->execute();
     $original->dbID($sth->{'mysql_insertid'});
@@ -234,12 +238,15 @@ sub _objs_from_sth {
 
   my($dna_align_feature_id, $seq_region_id, $analysis_id, $seq_region_start,
      $seq_region_end, $seq_region_strand, $hit_start, $hit_end, $hit_name,
-     $hit_strand, $cigar_line, $evalue, $perc_ident, $score);
+     $hit_strand, $cigar_line, $evalue, $perc_ident, $score,
+     $external_db_id, $hcoverage );
 
   $sth->bind_columns(
     \$dna_align_feature_id, \$seq_region_id, \$analysis_id, \$seq_region_start,
     \$seq_region_end, \$seq_region_strand, \$hit_start, \$hit_end, \$hit_name,
-    \$hit_strand, \$cigar_line, \$evalue, \$perc_ident, \$score);
+    \$hit_strand, \$cigar_line, \$evalue, \$perc_ident, \$score,
+    \$external_db_id, \$hcoverage );
+
 
   my $asm_cs;
   my $cmp_cs;
@@ -353,7 +360,9 @@ sub _objs_from_sth {
           'cigar_string'  =>  $cigar_line,
           'analysis'      =>  $analysis,
           'adaptor'       =>  $self,
-          'dbID'          =>  $dna_align_feature_id } );
+          'dbID'          =>  $dna_align_feature_id,
+	  'external_db_id'=>  $external_db_id,
+          'hcoverage'     =>  $hcoverage } );
   }
 
   return \@features;

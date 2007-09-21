@@ -79,8 +79,8 @@ sub store{
      "INSERT INTO $tablename (seq_region_id, seq_region_start, seq_region_end,
                              seq_region_strand, hit_start, hit_end,
                              hit_name, cigar_line,
-                             analysis_id, score, evalue, perc_ident)
-     VALUES (?,?,?,?,?,?,?,?,?,?, ?, ?)");
+                             analysis_id, score, evalue, perc_ident, external_db_id, hcoverage)
+     VALUES (?,?,?,?,?,?,?,?,?,?, ?, ?, ?, ?)");
 
  FEATURE: foreach my $feat ( @feats ) {
    if( !ref $feat || !$feat->isa("Bio::EnsEMBL::DnaPepAlignFeature") ) {
@@ -141,6 +141,8 @@ sub store{
    $sth->bind_param(10,$feat->score,SQL_DOUBLE);
    $sth->bind_param(11,$feat->p_value,SQL_DOUBLE);
    $sth->bind_param(12,$feat->percent_id,SQL_REAL);
+   $sth->bind_param(13,$feat->external_db_id,SQL_INTEGER);
+   $sth->bind_param(14,$feat->hcoverage,SQL_DOUBLE);
 
    $sth->execute();
    $original->dbID($sth->{'mysql_insertid'});
@@ -187,12 +189,14 @@ sub _objs_from_sth {
 
   my ($protein_align_feature_id, $seq_region_id, $seq_region_start,
       $seq_region_end, $analysis_id, $seq_region_strand, $hit_start,
-      $hit_end, $hit_name, $cigar_line, $evalue, $perc_ident, $score);
+      $hit_end, $hit_name, $cigar_line, $evalue, $perc_ident, $score,
+      $external_db_id, $hcoverage );
 
   $sth->bind_columns(\$protein_align_feature_id, \$seq_region_id,
            \$seq_region_start,\$seq_region_end, \$analysis_id,
            \$seq_region_strand, \$hit_start,\$hit_end, \$hit_name,
-           \$cigar_line, \$evalue, \$perc_ident, \$score);
+           \$cigar_line, \$evalue, \$perc_ident, \$score,
+           \$external_db_id, \$hcoverage );
 
   my $asm_cs;
   my $cmp_cs;
@@ -306,7 +310,9 @@ sub _objs_from_sth {
           'cigar_string'  =>  $cigar_line,
           'analysis'      =>  $analysis,
           'adaptor'       =>  $self,
-          'dbID'          =>  $protein_align_feature_id } );
+          'dbID'          =>  $protein_align_feature_id, 
+	  'external_db_id'=>  $external_db_id,
+          'hcoverage'     =>  $hcoverage } );
   }
 
   return \@features;
@@ -337,7 +343,9 @@ sub _columns {
              paf.cigar_line
              paf.evalue
              paf.perc_ident
-             paf.score );
+             paf.score
+             paf.external_db_id
+             paf.hcoverage );
 }
 
 =head2 list_dbIDs
