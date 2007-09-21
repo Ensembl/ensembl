@@ -1158,6 +1158,8 @@ sub get_all_PredictionTranscripts {
   Arg [3]    : (optional) string $dbtype
                The name of an attached database to retrieve the features from
                instead, e.g. 'otherfeatures'.
+  Arg [4]    : (optional) float hcoverage
+               The minimum hcoverage od the featurs to retrieve
   Example    : @dna_dna_align_feats = @{$slice->get_all_DnaAlignFeatures};
   Description: Retrieves the DnaDnaAlignFeatures which overlap this slice with
                logic name $logic_name and with score above $score.  If 
@@ -1172,7 +1174,7 @@ sub get_all_PredictionTranscripts {
 =cut
 
 sub get_all_DnaAlignFeatures {
-   my ($self, $logic_name, $score, $dbtype) = @_;
+   my ($self, $logic_name, $score, $dbtype, $hcoverage) = @_;
 
    if(!$self->adaptor()) {
      warning('Cannot get DnaAlignFeatures without attached adaptor');
@@ -1193,7 +1195,13 @@ sub get_all_DnaAlignFeatures {
 
    my $dafa = $db->get_DnaAlignFeatureAdaptor();
 
-   return $dafa->fetch_all_by_Slice_and_score($self,$score, $logic_name);
+   if(defined($score) and defined ($hcoverage)){
+     warning "cannot specify score and hcoverage. Using score only";
+   }
+   if(defined($score)){
+     return $dafa->fetch_all_by_Slice_and_score($self,$score, $logic_name);
+   }
+   return $dafa->fetch_all_by_Slice_and_hcoverage($self,$hcoverage, $logic_name);
 }
 
 
@@ -1208,6 +1216,8 @@ sub get_all_DnaAlignFeatures {
   Arg [3]    : (optional) string $dbtype
                The name of an attached database to retrieve features from 
                instead.
+  Arg [4]    : (optional) float hcoverage
+               The minimum hcoverage od the featurs to retrieve
   Example    : @dna_pep_align_feats = @{$slice->get_all_ProteinAlignFeatures};
   Description: Retrieves the DnaPepAlignFeatures which overlap this slice with
                logic name $logic_name and with score above $score.  If 
@@ -1222,7 +1232,7 @@ sub get_all_DnaAlignFeatures {
 =cut
 
 sub get_all_ProteinAlignFeatures {
-  my ($self, $logic_name, $score, $dbtype) = @_;
+  my ($self, $logic_name, $score, $dbtype, $hcoverage) = @_;
 
   if(!$self->adaptor()) {
     warning('Cannot get ProteinAlignFeatures without attached adaptor');
@@ -1242,7 +1252,15 @@ sub get_all_ProteinAlignFeatures {
   }
 
   my $pafa = $db->get_ProteinAlignFeatureAdaptor();
-  return $pafa->fetch_all_by_Slice_and_score($self, $score, $logic_name);
+
+  if(defined($score) and defined ($hcoverage)){
+    warning "cannot specify score and hcoverage. Using score only";
+  }
+  if(defined($score)){
+    return $pafa->fetch_all_by_Slice_and_score($self,$score, $logic_name);
+  }
+  return $pafa->fetch_all_by_Slice_and_hcoverage($self,$hcoverage, $logic_name);
+  
 }
 
 
