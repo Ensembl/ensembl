@@ -593,7 +593,9 @@ sub register_component {
   #
   if($sth->rows() != 1) {
     throw("Multiple assembled regions for single " .
-          "component region cmp_seq_region_id=[$cmp_seq_region]");
+          "component region cmp_seq_region_id=[$cmp_seq_region]\n".
+          "Remember that multiple mappings use the \#-operaator".
+          " in the meta-table (i.e. chromosome:EquCab2\#contig\n");
   }
 
   my ($asm_start, $asm_end, $asm_seq_region_id,
