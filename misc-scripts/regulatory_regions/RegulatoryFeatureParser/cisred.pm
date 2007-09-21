@@ -90,6 +90,8 @@ sub parse {
 
   my $skipped = 0;
 
+  my $coords_changed = 0;
+
   open (FILE, "<$file") || die "Can't open $file";
   <FILE>; # skip header
   while (<FILE>) {
@@ -99,9 +101,7 @@ sub parse {
     my %feature;
     # name	chromosome	start	end	strand	group_name   ensembl_gene_id
     my ($motif_name, $chromosome, $start, $end, $strand, $group_name, $gene_id) = split (/\t/);
-    #print "before: $gene_id\n";
-    $gene_id = substr($gene_id, 0, 15);
-    #print "after: $gene_id\n";
+    ($gene_id) = $gene_id =~ /(ENS.*G\d{11})/;
 
     # ----------------------------------------
     # Feature name & analysis
@@ -161,6 +161,8 @@ sub parse {
       #print join("\t", "OLD: ", $start, $end, $strand, $chromosome, $motif_name) . "\n";
 
       my $projected_feature = $self->project_feature($start, $end, $strand, $chromosome, $chr_slice, $dummy_analysis, $new_assembly, $slice_adaptor, $motif_name);
+
+      $coords_changed++ if ($projected_feature->start() != $start || $projected_feature->end() != $end);
 
       $start = $projected_feature->start();
       $end = $projected_feature->end();
@@ -288,7 +290,9 @@ sub parse {
 
   print "Parsed " . scalar(@{$result{FEATURES}}) . " features, " . scalar(@{$result{FACTORS}}) . " factors and " . scalar(@{$result{SEARCH_REGIONS}}) . " search regions\n";
 
- print "Skipped $skipped features and $skipped_sr search regions due to missing stable ID - internal ID mappings\n";
+  print "Skipped $skipped features and $skipped_sr search regions due to missing stable ID - internal ID mappings\n";
+
+  print "$coords_changed features had their co-ordinates changed as a result of assembly mapping.\n" if ($new_assembly);
 
   return \%result;
 
