@@ -586,7 +586,11 @@ sub register_component {
     return;
   }
 
-  #we do not currently support components mapping to multiple assembled
+  #we do not currently support components mapping to multiple assembled 
+  # make sure that you've got the correct mapping in the meta-table : 
+  #   chromosome:EquCab2#contig ( use'#' for multiple mappings ) 
+  #   chromosome:EquCab2|contig ( use '|' delimiter for 1-1 mappings )  
+  #
   if($sth->rows() != 1) {
     throw("Multiple assembled regions for single " .
           "component region cmp_seq_region_id=[$cmp_seq_region]");
