@@ -41,6 +41,40 @@ use Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor;
 
 @EXPORT = (@{$DBI::EXPORT_TAGS{'sql_types'}});
 
+=head2 fetch_all_by_Slice_and_hcoverage
+
+  Arg [1]    : Bio::EnsEMBL::Slice $slice
+               The slice from which to obtain align features.
+  Arg [2]    : (optional) float $hcoverage 
+               a lower bound for the hcoverage of feats to obtain
+  Arg [3]    : (optional) string $logic_name
+               the logic name of the type of features to obtain
+  Example    : @feats = $adaptor->fetch_all_by_Slice_and_hcoverage($slice, 50.0);
+  Description: Returns a listref of features created from the database which
+               are on the Slice $slice and with a hcoverage
+               greater than $hcoverage.  If logic name is defined, only features
+               with an analysis of type $logic_name will be returned.
+  Returntype : listref of Bio::EnsEMBL::BaseAlignFeatures in Slice coordinates
+  Exceptions : thrown if pid is not defined
+  Caller     : general
+  Status     : At Risk
+
+=cut
+
+sub fetch_all_by_Slice_and_hcoverage {
+  my ($self,$slice,$hcoverage, $logic_name) = @_;
+  my $constraint;
+
+
+  if(defined $hcoverage){
+    $constraint = "hcoverage > $hcoverage";
+  }
+
+  return $self->fetch_all_by_Slice_constraint($slice, $constraint,
+                                              $logic_name);
+}
+
+
 =head2 fetch_all_by_Slice_and_pid
 
   Arg [1]    : Bio::EnsEMBL::Slice $slice
@@ -66,13 +100,13 @@ sub fetch_all_by_Slice_and_pid {
   my $constraint;
 
 
-  #get the primary table alias
-  my @tabs = $self->_tables;
-  my $alias = $tabs[0]->[1];
+#  #get the primary table alias
+#  my @tabs = $self->_tables;
+#  my $alias = $tabs[0]->[1];
 
-  if(defined $pid) {
-    $constraint = "${alias}.perc_ident > $pid";
-  }
+#  if(defined $pid) {
+#    $constraint = "${alias}.perc_ident > $pid";
+#  }
 
   if(defined $pid){
     $constraint = "perc_ident > $pid";
