@@ -1035,6 +1035,11 @@ sub load_registry_from_url {
                work properly. This option should only be used for
                production or testing purposes and if you really know what
                you are doing.
+  Arg [WAIT_TIMEOUT]: (optional) integer
+                 Time in seconds for the wait timeout to happen. Time after which
+                 the connection is deleted if not used. By default this is 28800 (8 hours)
+                 So set this to greater than this if your connection are getting deleted.
+                 Only set this if you are having problems and know what you are doing.
 
   Example : load_registry_from_db( -host => 'ensembldb.ensembl.org',
 				   -user => 'anonymous',
@@ -1051,8 +1056,8 @@ sub load_registry_from_url {
 
 sub load_registry_from_db {
   my($self, @args) = @_;
-  my ($host, $port, $user, $pass, $verbose, $db_version) =
-    rearrange([qw(HOST PORT USER PASS VERBOSE DB_VERSION)], @args);
+  my ($host, $port, $user, $pass, $verbose, $db_version, $wait_timeout) =
+    rearrange([qw(HOST PORT USER PASS VERBOSE DB_VERSION WAIT_TIMEOUT )], @args);
 
 
 
@@ -1061,6 +1066,7 @@ sub load_registry_from_db {
 
   $user ||= "ensro";
   $port ||= 3306;
+  $wait_timeout ||= 0;
   my $db = DBI->connect( "DBI:mysql:host=$host;port=$port" , $user, $pass );
 
   my $res = $db->selectall_arrayref( "show databases" );
@@ -1108,7 +1114,8 @@ sub load_registry_from_db {
 	-user => $user,
 	-pass => $pass,
 	-port => $port,
-	-dbname => $coredb
+	-dbname => $coredb,
+        -wait_timeout => $wait_timeout
       );
     (my $sp = $species ) =~ s/_/ /g;
     $self->add_alias( $species, $sp );
@@ -1128,7 +1135,8 @@ sub load_registry_from_db {
 	-user => $user,
 	-pass => $pass,
 	-port => $port,
-	-dbname => $cdnadb
+	-dbname => $cdnadb,
+        -wait_timeout => $wait_timeout
       );
     (my $sp = $species ) =~ s/_/ /g;
     $self->add_alias( $species, $sp );
@@ -1146,6 +1154,7 @@ sub load_registry_from_db {
 	-user => $user,
 	-pass => $pass,
 	-port => $port,
+        -wait_timeout => $wait_timeout,
 	-dbname => $vegadb
       );
     (my $sp = $species ) =~ s/_/ /g;
@@ -1164,6 +1173,7 @@ sub load_registry_from_db {
 	-user => $user,
 	-pass => $pass,
 	-port => $port,
+        -wait_timeout => $wait_timeout,
 	-dbname => $other_db
       );
       (my $sp = $species ) =~ s/_/ /g;
@@ -1189,6 +1199,7 @@ sub load_registry_from_db {
 	  -user => $user,
 	  -pass => $pass,
 	  -port => $port,
+          -wait_timeout => $wait_timeout,
 	  -dbname => $variation_db
 	);
       print $variation_db." loaded\n" if ($verbose);
@@ -1212,6 +1223,7 @@ sub load_registry_from_db {
 			-user => $user,
 			-pass => $pass,
 			-port => $port,
+		        -wait_timeout => $wait_timeout,
 			-dbname => $funcgen_db
 		  );
 		print $funcgen_db." loaded\n" if ($verbose);
@@ -1236,6 +1248,7 @@ sub load_registry_from_db {
 	  -user => $user,
 	  -pass => $pass,
 	  -port => $port,
+          -wait_timeout => $wait_timeout,
 	  -dbname => $compara_db
 	);
       print $compara_db." loaded\n" if ($verbose);       

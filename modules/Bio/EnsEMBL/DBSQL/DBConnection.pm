@@ -88,6 +88,12 @@ use Bio::EnsEMBL::Utils::Argument qw(rearrange);
                  which would otherwise keep open a lot of connections to the
                  database.  Database connections are automatically reopened
                  when required.
+  Arg [WAIT_TIMEOUT]: (optional) integer
+                 Time in seconds for the wait timeout to happen. Time after which
+                 the connection is deleted if not used. By default this is 28800 (8 hours)
+                 on most systems. 
+                 So set this to greater than this if your connection are getting deleted.
+                 Only set this if you are having problems and know what you are doing.
 
   Example    : $dbc = Bio::EnsEMBL::DBSQL::DBConnection->new
                   (-user   => 'anonymous',
@@ -109,9 +115,9 @@ use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 sub new {
   my $class = shift;
 
-  my ($db,$host,$driver,$user,$password,$port, $inactive_disconnect, $dbconn) =
+  my ($db,$host,$driver,$user,$password,$port, $inactive_disconnect, $dbconn, $wait_timeout) =
     rearrange([qw(DBNAME HOST DRIVER USER PASS PORT 
-                  DISCONNECT_WHEN_INACTIVE DBCONN )], @_);
+                  DISCONNECT_WHEN_INACTIVE DBCONN WAIT_TIMEOUT)], @_);
 
   my $self = {};
   bless $self, $class;
@@ -138,6 +144,7 @@ sub new {
     $driver ||= 'mysql';
     $host   ||= 'mysql';
     $port   ||= 3306;
+    $wait_timeout   ||= 0;
 
     $self->username( $user );
     $self->host( $host );
@@ -145,6 +152,7 @@ sub new {
     $self->password( $password );
     $self->port($port);
     $self->driver($driver);
+    $self->timeout($wait_timeout);
 
     if($inactive_disconnect) {
       $self->disconnect_when_inactive($inactive_disconnect);
@@ -221,8 +229,10 @@ sub connect {
           " as user " . $self->username() .
           " using [$dsn] as a locator:\n" . $DBI::errstr);
   }
-
   $self->db_handle($dbh);
+  if($self->timeout()){
+    $dbh->do("SET SESSION wait_timeout=".$self->timeout());
+  }
   #print("CONNECT\n");
 }
 
@@ -253,6 +263,16 @@ sub disconnect_count {
   return $self->{'disconnect_count'} = shift if(@_);
   $self->{'disconnect_count'}=0 unless(defined($self->{'disconnect_count'}));
   return $self->{'disconnect_count'};
+}
+
+sub timeout{
+  my($self, $arg ) = @_;
+
+  (defined $arg) &&
+    ($self->{_timeout} = $arg );
+
+  return $self->{_timeout};
+
 }
 
 sub query_count {
