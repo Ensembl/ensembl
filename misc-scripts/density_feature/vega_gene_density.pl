@@ -88,7 +88,7 @@ my $support = new Bio::EnsEMBL::Utils::ConversionSupport($SERVERROOT);
 
 # parse options
 $support->parse_common_options(@_);
-$support->parse_extra_options('chromosomes|chr=s@', 'prune', 'limit_file=s');
+$support->parse_extra_options('chromosomes|chr=s@', 'prune=s', 'limit_file=s');
 $support->allowed_params($support->get_common_params, 'chromosomes', 'prune', 'limit_file');
 
 if ($support->param('help') or $support->error) {
