@@ -19,9 +19,11 @@ my @all_locators = qw {
 		     genebuild4:3306:ensro::
 		     genebuild5:3306:ensro::
 		     genebuild6:3306:ensro::
+		     genebuild6:3307:ensro::
 
 		     compara1:3306:ensro::
 		     compara2:3306:ensro::
+		     compara3:3306:ensro::
 
 		     mart1:3306:ensro::
 		     mart2:3306:ensro::
