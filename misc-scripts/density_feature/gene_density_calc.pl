@@ -99,6 +99,13 @@ print "Deleting old knownGeneDensity and geneDensity features\n";
 $sth = $db->dbc->prepare("DELETE df, dt, a FROM density_feature df, density_type dt, analysis a WHERE a.analysis_id=dt.analysis_id AND dt.density_type_id=df.density_type_id AND a.logic_name IN ('knownGeneDensity', 'geneDensity')");
 $sth->execute();
 
+$sth = $db->dbc()->prepare(
+  qq(
+  DELETE ad
+  FROM analysis_description ad
+  WHERE ad.display_label IN ('knownGeneDensity', 'geneDensity')) );
+$sth->execute();
+
 my $dfa = $db->get_DensityFeatureAdaptor();
 my $dta = $db->get_DensityTypeAdaptor();
 my $aa  = $db->get_AnalysisAdaptor();
@@ -112,14 +119,20 @@ my $slice_adaptor = $db->get_SliceAdaptor();
 my $top_slices = $slice_adaptor->fetch_all('toplevel');
 my @sorted_slices = sort { $b->seq_region_length() <=> $a->seq_region_length()} @$top_slices;
 
-	
-my $analysis = new Bio::EnsEMBL::Analysis (-program     => "gene_density_calc.pl",
-					   -database    => "ensembl",
-					   -gff_source  => "gene_density_calc.pl",
-					   -gff_feature => "density",
-					   -logic_name  => "knownGeneDensity");
+my $analysis =
+  new Bio::EnsEMBL::Analysis(
+            -program     => "gene_density_calc.pl",
+            -database    => "ensembl",
+            -gff_source  => "gene_density_calc.pl",
+            -gff_feature => "density",
+            -logic_name  => "knownGeneDensity",
+            -description => 'Known gene density features in a database '
+              . 'as calculated by gene_density_calc.pl',
+            -display_label => 'knownGeneDensity',
+            -displayable   => 1 );
 
-$aa->store( $analysis );
+$aa->store($analysis);
+$aa->update($analysis);
 
 $analysis = new Bio::EnsEMBL::Analysis (-program     => "gene_density_calc.pl",
 					-database    => "ensembl",

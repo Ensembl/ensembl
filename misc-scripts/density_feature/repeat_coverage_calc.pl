@@ -67,6 +67,13 @@ print "Deleting old PercentageRepeat features\n";
 $sth = $db->dbc->prepare("DELETE df, dt, a FROM density_feature df, density_type dt, analysis a WHERE a.analysis_id=dt.analysis_id AND dt.density_type_id=df.density_type_id AND a.logic_name='PercentageRepeat'");
 $sth->execute();
 
+$sth = $db->dbc()->prepare(
+  qq(
+  DELETE ad
+  FROM analysis_description ad
+  WHERE ad.display_label = 'PercentageRepeat') );
+$sth->execute();
+
 my $slice_adaptor = $db->get_SliceAdaptor();
 my $dfa = $db->get_DensityFeatureAdaptor();
 my $dta = $db->get_DensityTypeAdaptor();
@@ -78,13 +85,20 @@ my $aa  = $db->get_AnalysisAdaptor();
 # Create new analysis object for density calculation.
 #
 
-my $analysis = new Bio::EnsEMBL::Analysis (-program     => "repeat_coverage_calc.pl",
-					   -database    => "ensembl",
-					   -gff_source  => "repeat_coverage_calc.pl",
-					   -gff_feature => "density",
-					   -logic_name  => "PercentageRepeat");
- 
+my $analysis =
+  new Bio::EnsEMBL::Analysis(
+       -program     => "repeat_coverage_calc.pl",
+       -database    => "ensembl",
+       -gff_source  => "repeat_coverage_calc.pl",
+       -gff_feature => "density",
+       -logic_name  => "PercentageRepeat",
+       -description =>
+         'Percentage of repetetive elements for top level seq_regions.',
+       -display_label => 'PercentageRepeat',
+       -displayable   => 1 );
+
 $aa->store($analysis);
+$aa->update($analysis);
 
 my $slices = $slice_adaptor->fetch_all( "toplevel" );
 my @sorted_slices = sort { $b->seq_region_length() <=> $a->seq_region_length() } @$slices;

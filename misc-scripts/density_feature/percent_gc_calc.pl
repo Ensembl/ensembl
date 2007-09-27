@@ -54,7 +54,20 @@ if( ! $dna_count ) {
 
 
 print "Deleting old PercentGC features\n";
-$sth = $db->dbc->prepare("DELETE df, dt, a FROM density_feature df, density_type dt, analysis a WHERE a.analysis_id=dt.analysis_id AND dt.density_type_id=df.density_type_id AND a.logic_name='PercentGC'");
+$sth = $db->dbc->prepare(
+  qq(
+DELETE df, dt, a
+FROM density_feature df, density_type dt, analysis a
+WHERE a.analysis_id=dt.analysis_id
+AND dt.density_type_id=df.density_type_id
+AND a.logic_name='PercentGC') );
+$sth->execute();
+
+$sth = $db->dbc()->prepare(
+  qq(
+  DELETE ad
+  FROM analysis_description ad
+  WHERE ad.display_label = 'PercentGC') );
 $sth->execute();
 
 #
@@ -73,14 +86,19 @@ my @sorted_slices =  sort { $b->seq_region_length() <=> $a->seq_region_length()}
 # Create new analysis object for density calculation.
 #
 
-my $analysis = new Bio::EnsEMBL::Analysis (-program     => "percent_gc_calc.pl",
-					   -database    => "ensembl",
-					   -gff_source  => "percent_gc_calc.pl",
-					   -gff_feature => "density",
-					   -logic_name  => "PercentGC");
+my $analysis =
+  new Bio::EnsEMBL::Analysis(
+             -program     => "percent_gc_calc.pl",
+             -database    => "ensembl",
+             -gff_source  => "percent_gc_calc.pl",
+             -gff_feature => "density",
+             -logic_name  => "PercentGC",
+             -description => 'Percentage of G/C bases in the sequence.',
+             -display_label => 'PercentGC',
+             -displayable   => 1 );
 
 $aa->store($analysis);
-
+$aa->update($analysis);
 
 #
 # Create new density type.

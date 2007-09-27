@@ -53,6 +53,13 @@ if( ! variation_attach( $db )) {
 my $sth = $db->dbc->prepare("DELETE df, dt, a FROM density_feature df, density_type dt, analysis a WHERE a.analysis_id=dt.analysis_id AND dt.density_type_id=df.density_type_id AND a.logic_name='snpDensity'");
 $sth->execute();
 
+$sth = $db->dbc()->prepare(
+  qq(
+  DELETE ad
+  FROM analysis_description ad
+  WHERE ad.display_label = 'snpDensity') );
+$sth->execute();
+
 #
 # Get the adaptors needed;
 #
@@ -65,15 +72,19 @@ my $slice_adaptor = $db->get_SliceAdaptor();
 my $top_slices = $slice_adaptor->fetch_all( "toplevel" );
 my @sorted_slices =  sort { $b->seq_region_length() <=> $a->seq_region_length()} @$top_slices;
 
+my $analysis =
+  new Bio::EnsEMBL::Analysis(
+              -program     => "variation_density.pl",
+              -database    => "ensembl",
+              -gff_source  => "variation_density.pl",
+              -gff_feature => "density",
+              -logic_name  => "snpDensity",
+              -description => 'Density of SNP features on the sequence',
+              -display_label => 'snpDensity',
+              -displayable   => 1 );
 
-
-my $analysis = new Bio::EnsEMBL::Analysis (-program     => "variation_density.pl",
-					   -database    => "ensembl",
-					   -gff_source  => "variation_density.pl",
-					   -gff_feature => "density",
-					   -logic_name  => "snpDensity");
-
-$aa->store( $analysis );
+$aa->store($analysis);
+$aa->update($analysis);
 
 
 #
