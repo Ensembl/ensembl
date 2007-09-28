@@ -270,6 +270,7 @@ sub get_available_adaptors{
       Slice                    SupportingFeature    Transcript
       TranscriptSupportingFeature Translation       UnmappedObject
       UnconventionalTranscriptAssociation
+      AssemblySlice
     ) ),
    # Those whose adaptors are in Map::DBSQL
     map( { $_ => "Bio::EnsEMBL::Map::DBSQL::${_}Adaptor" } qw(
