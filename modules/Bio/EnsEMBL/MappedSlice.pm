@@ -223,6 +223,43 @@ sub project {
 }
 
 
+sub get_all_DASFeatures_dsn {
+  my $self = shift;
+
+  foreach my $pair (@{ $self->get_all_Slice_Mapper_pairs }) {
+    my ($slice, $mapper) = @$pair;
+
+    # call $method on each native slice composing the MappedSlice
+    my ($featref, $styleref, $segref) =
+      @{ $slice->get_all_DASFeatures_dsn(@_) };
+    
+    use Data::Dumper;
+    warn Data::Dumper::Dumper($featref);
+    warn Data::Dumper::Dumper($styleref);
+    warn Data::Dumper::Dumper($segref);
+
+  }
+
+}
+
+
+sub get_all_DAS_Features {
+  my $self = shift;
+
+  foreach my $pair (@{ $self->get_all_Slice_Mapper_pairs }) {
+    my ($slice, $mapper) = @$pair;
+    
+    print "\nFetching DAS features for ".$slice->name."\n";
+
+    # call $method on each native slice composing the MappedSlice
+    my ($featref, $styleref, $segref) = $slice->get_all_DAS_Features;
+    return ($featref, $styleref, $segref);
+
+  }
+
+}
+
+
 =head2 
 
   Arg[1]      : 
@@ -250,6 +287,7 @@ sub AUTOLOAD {
 
   foreach my $pair (@{ $self->get_all_Slice_Mapper_pairs }) {
     my ($slice, $mapper) = @$pair;
+    #warn $slice->name;
 
     # call $method on each native slice composing the MappedSlice
     my @features = @{ $slice->$method(@_) };
