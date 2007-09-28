@@ -135,9 +135,9 @@ sub set_AssemblySliceAdaptor {
   my $self = shift;
   my $assembly_slice_adaptor = shift;
 
-  unless ($assembly_slice_adaptor and ref($assembly_slice_adatpor) and
-          $assembly_slice_adaptor->isa('Bio::EnsEMBL::AssemblySliceAdaptor')) {
-    throw("Need a Bio::EnsEMBL::AssemblySliceAdaptor.");
+  unless ($assembly_slice_adaptor and ref($assembly_slice_adaptor) and
+    $assembly_slice_adaptor->isa('Bio::EnsEMBL::DBSQL::AssemblySliceAdaptor')) {
+      throw("Need a Bio::EnsEMBL::AssemblySliceAdaptor.");
   }
 
   $self->{'adaptors'}->{'AssemblySlice'} = $assembly_slice_adaptor;
