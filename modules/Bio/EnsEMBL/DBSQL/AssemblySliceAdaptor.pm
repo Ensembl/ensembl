@@ -52,7 +52,7 @@ our @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
 
 
 sub new {
-  my $class = shift;
+  my $caller = shift;
 
   my $class = ref($caller) || $caller;
   my $self = $class->SUPER::new(@_);
@@ -61,10 +61,9 @@ sub new {
 }
 
 
-sub fetch_by_Slice_version {
+sub fetch_by_version {
   my $self = shift;
   my $container = shift;
-  my $slice = shift;
   my $version = shift;
 
   # arguement check
@@ -73,20 +72,18 @@ sub fetch_by_Slice_version {
     throw("Need a MappedSliceContainer.");
   }
 
-  unless ($slice and ref($slice) and $slice->isa('Bio::EnsEMBL::Slice')) {
-    throw("Need a Bio::EnsEMBL::Slice.");
-  }
-
   unless ($version) {
     throw("Need an assembly version.");
   }
 
+  my $slice = $container->ref_Slice;
+
   # project slice onto other assembly and construct MappedSlice for result
   my $mapped_slice = Bio::EnsEMBL::MappedSlice->new(
-      SLICE     => $slice,
-      CONTAINER => $container,
-      ADAPTOR   => $self,
-      NAME      => $slice->name.":mapped_$version";
+      -SLICE     => $slice,
+      -CONTAINER => $container,
+      -ADAPTOR   => $self,
+      -NAME      => $slice->name.":mapped_$version",
   );
 
   my $cs_name = $slice->coord_system_name;
@@ -99,7 +96,7 @@ sub fetch_by_Slice_version {
     my $mapper = Bio::EnsEMBL::Mapper->new('ref_slice', 'mapped_slice');  
     
     # tell the mapper how to map this segment
-    $mapper->add_map_coordinate(
+    $mapper->add_map_coordinates(
         'ref_slice',
         $seg->from_start,
         $seg->from_end,
