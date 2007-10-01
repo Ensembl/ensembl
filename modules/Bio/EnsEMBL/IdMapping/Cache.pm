@@ -2,6 +2,8 @@ package Bio::EnsEMBL::IdMapping::Cache;
 
 =head1 NAME
 
+Bio::EnsEMBL::IdMapping::Cache - a cache to hold data objects used by the 
+IdMapping application
 
 =head1 SYNOPSIS
 
@@ -58,12 +60,18 @@ my @cache_names = qw(
 
 =head2 new
 
-  Arg[1]      : 
-  Example     : 
+  Arg [LOGGER]: Bio::EnsEMBL::Utils::Logger $logger - a logger object
+  Arg [CONF]  : Bio::EnsEMBL::Utils::ConfParser $conf - a configuration object
+  Example     : my $cache = Bio::EnsEMBL::IdMapping::Cache->new(
+                  -LOGGER => $logger,
+                  -CONF   => $conf,
+                );
   Description : constructor
   Return type : Bio::EnsEMBL::IdMapping::Cache object
-  Exceptions  : 
+  Exceptions  : thrown on wrong or missing arguments
   Caller      : general
+  Status      : At Risk
+              : under development
 
 =cut
 
@@ -92,6 +100,25 @@ sub new {
 }
 
 
+=head2 build_cache
+
+  Arg[1]      : String $dbtype - db type (source|target)
+  Arg[2]      : String $slice_name - the name of a slice (format as returned by
+                Bio::EnsEMBL::Slice->name)
+  Example     : my ($num_genes, $filesize) = $cache->build_cache('source',
+                  'chromosome:NCBI36:X:1:1000000:-1');
+  Description : Builds a cache of genes, transcripts, translations and exons
+                needed by the IdMapping application and serialises the resulting
+                cache object to a file.
+  Return type : list of the number of genes processed and the size of the
+                serialised cache file
+  Exceptions  : thrown on invalid slice name
+  Caller      : general
+  Status      : At Risk
+              : under development
+
+=cut
+
 sub build_cache {
   my $self = shift;
   my $dbtype = shift;
@@ -99,7 +126,12 @@ sub build_cache {
   
   my $dba = $self->get_DBAdaptor($dbtype);
   my $sa = $dba->get_SliceAdaptor;
+  
   my $slice = $sa->fetch_by_name($slice_name);
+  unless ($slice) {
+    throw("Could not retrieve slice $slice_name.");
+  }
+  
   my $genes = $slice->get_all_Genes(undef, undef, 1);
 
   # biotype filter
@@ -131,6 +163,20 @@ sub build_cache {
 }
 
 
+=head2 filter_biotypes
+
+  Arg[1]      : Listref of Bio::EnsEMBL::Genes $genes - the genes to filter
+  Example     : my @filtered = @{ $cache->filter_biotypes(\@genes) };
+  Description : Filters a list of genes by biotype. Biotypes are taken from the
+                IdMapping configuration parameter 'biotypes'.
+  Return type : Listref of Bio::EnsEMBL::Genes (or empty list)
+  Exceptions  : none
+  Caller      : internal
+  Status      : At Risk
+              : under development
+
+=cut
+
 sub filter_biotypes {
   my $self = shift;
   my $genes = shift;
@@ -144,6 +190,31 @@ sub filter_biotypes {
   return $filtered;
 }
 
+
+=head2 build_cache_from_genes 
+
+  Arg[1]      : String $type - cache type
+  Arg[2]      : Listref of Bio::EnsEMBL::Genes $genes - genes to build cache
+                from
+  Arg[3]      : Boolean $need_project - indicate if we need to project exons to
+                common coordinate system
+  Example     : $cache->build_cache_from_genes(
+                  'source.chromosome:NCBI36:X:1:100000:1', \@genes);
+  Description : Builds the cache by fetching transcripts, translations and exons
+                for a list of genes from the database, and creating lightweight
+                Bio::EnsEMBL::IdMapping::TinyFeature objects containing only the
+                data needed by the IdMapping application. These objects are
+                attached to a name cache in this cache object. Exons only need
+                to be projected to a commond coordinate system if their native
+                coordinate system isn't common to source and target assembly
+                itself.
+  Return type : none
+  Exceptions  : thrown on wrong or missing arguments
+  Caller      : internal
+  Status      : At Risk
+              : under development
+
+=cut
 
 sub build_cache_from_genes {
   my $self = shift;
@@ -185,7 +256,6 @@ sub build_cache_from_genes {
 
     # build gene caches
     $self->add('genes_by_id', $type, $gene->dbID, $lgene);
-    #$self->add('genes_by_stable_id', $type, $gene->stable_id, $lgene);
     
     # transcripts
     foreach my $tr (@{ $gene->get_all_Transcripts }) {
@@ -206,7 +276,6 @@ sub build_cache_from_genes {
 
       # build transcript caches
       $self->add('transcripts_by_id', $type, $tr->dbID, $ltr);
-      #$self->add('transcripts_by_stable_id', $type, $tr->stable_id, $ltr);
       $self->add('genes_by_transcript_id', $type, $tr->dbID, $lgene);
 
       # translation (if there is one)
@@ -225,8 +294,6 @@ sub build_cache_from_genes {
         $ltr->add_Translation($ltl);
 
         $self->add('translations_by_id', $type, $tl->dbID, $ltl);
-        #$self->add('translations_by_stable_id', $type, $tl->stable_id, $ltl);
-        #$self->add('translations_by_transcript_id', $type, $tr->dbID, $ltl);
 
         undef $tl;
       }
@@ -267,7 +334,6 @@ sub build_cache_from_genes {
         $ltr->add_Exon($lexon);
 
         $self->add('exons_by_id', $type, $exon->dbID, $lexon);
-        #$self->add('genes_by_exon_id', $type, $exon->dbID, $lgene);
         $self->add_list('transcripts_by_exon_id', $type, $exon->dbID, $ltr);
 
         undef $exon;
@@ -281,6 +347,23 @@ sub build_cache_from_genes {
 
 }
 
+
+=head2 add
+
+  Arg[1]      : String $name - a cache name (e.g. 'genes_by_id')
+  Arg[2]      : String type - a cache type (e.g. "source.$slice_name")
+  Arg[3]      : String $key - key of this entry (e.g. a gene dbID)
+  Arg[4]      : Bio::EnsEMBL::IdMappping::TinyFeature $val - value to cache
+  Example     : $cache->add('genes_by_id',
+                  'source.chromosome:NCBI36:X:1:1000000:1', '1234', $tiny_gene);
+  Description : Adds a TinyFeature object to a named cache.
+  Return type : Bio::EnsEMBL::IdMapping::TinyFeature
+  Exceptions  : thrown on wrong or missing arguments
+  Caller      : internal
+  Status      : At Risk
+              : under development
+
+=cut
 
 sub add {
   my $self = shift;
@@ -297,6 +380,25 @@ sub add {
 
   return $self->{'cache'}->{$name}->{$type}->{$key};
 }
+
+=head2 add_list
+
+  Arg[1]      : String $name - a cache name (e.g. 'genes_by_id')
+  Arg[2]      : String type - a cache type (e.g. "source.$slice_name")
+  Arg[3]      : String $key - key of this entry (e.g. a gene dbID)
+  Arg[4]      : List of Bio::EnsEMBL::IdMappping::TinyFeature @val - values
+                to cache
+  Example     : $cache->add_list('transcripts_by_exon_id',
+                  'source.chromosome:NCBI36:X:1:1000000:1', '1234',
+                  $tiny_transcript1, $tiny_transcript2);
+  Description : Adds a list of TinyFeature objects to a named cache.
+  Return type : Listref of Bio::EnsEMBL::IdMapping::TinyFeature objects
+  Exceptions  : thrown on wrong or missing arguments
+  Caller      : internal
+  Status      : At Risk
+              : under development
+
+=cut
 
 sub add_list {
   my $self = shift;

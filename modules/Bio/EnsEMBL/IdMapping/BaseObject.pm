@@ -2,15 +2,34 @@ package Bio::EnsEMBL::IdMapping::BaseObject;
 
 =head1 NAME
 
+Bio::EnsEMBL::IdMapping::BaseObject - base object for IdMapping objects
 
 =head1 SYNOPSIS
 
+# this object isn't instantiated directly but rather extended
+use Bio::EnsEMBL::IdMapping::BaseObject;
+our @ISA = qw(Bio::EnsEMBL::IdMapping::BaseObject);
 
 =head1 DESCRIPTION
 
+This is the base object for some of the objects used in the IdMapping
+application. An object that extends BaseObject will have a ConfParser, Logger
+and Cache object. BaseObject also implements some useful utility functions
+related to file and db access.
+
+This isn't very clean OO design but it's efficient and easy to use...
 
 =head1 METHODS
 
+new
+get_filehandle
+file_exists
+fetch_value_from_db
+dump_table_to_file
+upload_file_into_table
+logger
+conf
+cache
 
 =head1 LICENCE
 
@@ -40,12 +59,20 @@ use Bio::EnsEMBL::Utils::ScriptUtils qw(path_append);
 
 =head2 new
 
-  Arg[1]      : 
-  Example     : 
-  Description : constructor
-  Return type : 
-  Exceptions  : 
+  Arg [LOGGER]: Bio::EnsEMBL::Utils::Logger $logger - a logger object
+  Arg [CONF]  : Bio::EnsEMBL::Utils::ConfParser $conf - a configuration object
+  Arg [CACHE] : Bio::EnsEMBL::IdMapping::Cache $cache - a cache object
+  Example     : my $object = Bio::EnsEMBL::IdMapping::BaseObjectSubclass->new(
+                  -LOGGER => $logger,
+                  -CONF   => $conf,
+                  -CACHE  => $cache
+                );
+  Description : Constructor
+  Return type : implementing subclass type
+  Exceptions  : thrown on wrong or missing arguments
   Caller      : general
+  Status      : At Risk
+              : under development
 
 =cut
 
@@ -55,15 +82,18 @@ sub new {
 
   my ($logger, $conf, $cache) = rearrange(['LOGGER', 'CONF', 'CACHE'], @_);
 
-  unless ($logger->isa('Bio::EnsEMBL::Utils::Logger')) {
+  unless ($logger and ref($logger) and
+          $logger->isa('Bio::EnsEMBL::Utils::Logger')) {
     throw("You must provide a Bio::EnsEMBL::Utils::Logger for logging.");
   }
   
-  unless ($conf->isa('Bio::EnsEMBL::Utils::ConfParser')) {
+  unless ($conf and ref($conf) and
+          $conf->isa('Bio::EnsEMBL::Utils::ConfParser')) {
     throw("You must provide configuration as a Bio::EnsEMBL::Utils::ConfParser object.");
   }
   
-  unless ($cache->isa('Bio::EnsEMBL::IdMapping::Cache')) {
+  unless ($cache and ref($cache) and
+          $cache->isa('Bio::EnsEMBL::IdMapping::Cache')) {
     throw("You must provide configuration as a Bio::EnsEMBL::IdMapping::Cache object.");
   }
   
@@ -78,6 +108,25 @@ sub new {
   return $self;
 }
 
+
+=head2 get_filehandle 
+
+  Arg[1]      : String $filename - filename for filehandle
+  Arg[2]      : String $path_append - append subdirectory name to dumppath
+  Arg[3]      : String $mode - filehandle mode (<|>|>>)
+  Example     : my $fh = $object->get_filehandle('mapping_stats.txt', 'stats',
+                  '>');
+                print $fh "Stats:\n";
+  Description : Returns a filehandle to a file for reading or writing. The file
+                is qualified with the dumppath defined in the configuration and
+                an optional subdirectory name.
+  Return type : filehandle
+  Exceptions  : thrown on missing filename
+  Caller      : general
+  Status      : At Risk
+              : under development
+
+=cut
 
 sub get_filehandle {
   my $self = shift;
@@ -99,6 +148,22 @@ sub get_filehandle {
 }
 
 
+=head2 file_exists
+
+  Arg[1]      : String $filename - filename to test
+  Arg[2]      : Boolean $path_append - turn on pre-pending of dumppath
+  Example     : unless ($object->file_exists('gene_mappings.ser', 1)) {
+                  $object->do_gene_mapping;
+                }
+  Description : Tests if a file exists and has non-zero size.
+  Return type : Boolean
+  Exceptions  : none
+  Caller      : general
+  Status      : At Risk
+              : under development
+
+=cut
+
 sub file_exists {
   my $self = shift;
   my $filename = shift;
@@ -110,6 +175,23 @@ sub file_exists {
   return (-s "$path/$filename");
 }
 
+
+=head2 fetch_value_from_db 
+
+  Arg[1]      : DBI::db $dbh - a DBI database handle
+  Arg[2]      : String $sql - SQL statement to execute
+  Example     : my $num_genes = $object->fetch_value_from_db($dbh,
+                  'SELECT count(*) FROM gene');
+  Description : Executes an SQL statement on a db handle and returns the first
+                column of the first row returned. Useful for queries returning a
+                single value, like table counts.
+  Return type : Return type of SQL statement
+  Exceptions  : thrown on wrong or missing arguments
+  Caller      : general
+  Status      : At Risk
+              : under development
+
+=cut
 
 sub fetch_value_from_db {
   my $self = shift;
@@ -126,6 +208,25 @@ sub fetch_value_from_db {
   return $retval;
 }
 
+
+=head2 dump_table_to_file 
+
+  Arg[1]      : String $dbtype - db type (source|target)
+  Arg[2]      : String $table - name of table to dump
+  Arg[3]      : String $filename - name of dump file
+  Arg[4]      : Boolean $check_existing - turn on test for existing dump
+  Example     : my $rows_dumped = $object->dump_table_to_file('source',
+                  'stable_id_event', 'stable_id_event_existing.txt');
+  Description : Dumps the contents of a db table to a tab-delimited file. The
+                dump file will be written to a subdirectory called 'tables'
+                under the dumppath from your configuration.
+  Return type : Int - the number of rows dumped
+  Exceptions  : thrown on wrong or missing arguments
+  Caller      : general
+  Status      : At Risk
+              : under development
+
+=cut
 
 sub dump_table_to_file {
   my $self = shift;
@@ -173,6 +274,25 @@ sub dump_table_to_file {
   return $i;
 }
 
+
+=head2 upload_file_into_table
+
+  Arg[1]      : String $dbtype - db type (source|target)
+  Arg[2]      : String $table - name of table to upload the data to
+  Arg[3]      : String $filename - name of dump file
+  Example     : my $rows_uploaded = $object->upload_file_into_table('target',
+                  'stable_id_event', 'stable_id_event_new.txt');
+  Description : Uploads a tab-delimited data file into a db table. The data file
+                will be taken from a subdirectory 'tables' under your configured
+                dumppath. If the db table isn't empty, no data is uploaded (and
+                a warning is issued).
+  Return type : Int - the number of rows uploaded
+  Exceptions  : thrown on wrong or missing arguments
+  Caller      : general
+  Status      : At Risk
+              : under development
+
+=cut
 
 sub upload_file_into_table {
   my $self = shift;
@@ -230,6 +350,19 @@ sub upload_file_into_table {
 }
 
 
+=head2 logger
+
+  Arg[1]      : (optional) Bio::EnsEMBL::Utils::Logger - the logger to set
+  Example     : $object->logger->info("Starting ID mapping.\n");
+  Description : Getter/setter for logger object
+  Return type : Bio::EnsEMBL::Utils::Logger
+  Exceptions  : none
+  Caller      : constructor
+  Status      : At Risk
+              : under development
+
+=cut
+
 sub logger {
   my $self = shift;
   $self->{'_logger'} = shift if (@_);
@@ -237,12 +370,39 @@ sub logger {
 }
 
 
+=head2 conf
+
+  Arg[1]      : (optional) Bio::EnsEMBL::Utils::ConfParser - the configuration
+                to set
+  Example     : my $dumppath = $object->conf->param('dumppath');
+  Description : Getter/setter for configuration object
+  Return type : Bio::EnsEMBL::Utils::ConfParser
+  Exceptions  : none
+  Caller      : constructor
+  Status      : At Risk
+              : under development
+
+=cut
+
 sub conf {
   my $self = shift;
   $self->{'_conf'} = shift if (@_);
   return $self->{'_conf'};
 }
 
+
+=head2 cache
+
+  Arg[1]      : (optional) Bio::EnsEMBL::IdMapping::Cache - the cache to set
+  Example     : $object->cache->read_from_file('genes_by_id', 'source');
+  Description : Getter/setter for cache object
+  Return type : Bio::EnsEMBL::IdMapping::Cache
+  Exceptions  : none
+  Caller      : constructor
+  Status      : At Risk
+              : under development
+
+=cut
 
 sub cache {
   my $self = shift;
