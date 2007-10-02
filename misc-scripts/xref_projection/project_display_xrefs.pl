@@ -12,7 +12,7 @@ use Bio::EnsEMBL::Utils::Eprof qw(eprof_start eprof_end eprof_dump);
 
 my $method_link_type = "ENSEMBL_ORTHOLOGUES";
 
-my ($conf, $compara, $from_species, @to_multi, $print, $names, $go_terms, $delete_names, $delete_go_terms, $no_backup, $full_stats, $descriptions, $release, $no_database, $quiet, $single_source, $max_genes, $one_to_many);
+my ($conf, $compara, $from_species, @to_multi, $print, $names, $go_terms, $delete_names, $delete_go_terms, $no_backup, $full_stats, $descriptions, $release, $no_database, $quiet, $single_source, $max_genes, $one_to_many, $go_check);
 
 GetOptions('conf=s'          => \$conf,
 	   'compara=s'       => \$compara,
@@ -33,6 +33,7 @@ GetOptions('conf=s'          => \$conf,
 	   'single_source=s' => \$single_source,
 	   'max_genes=i'     => \$max_genes,
 	   'one_to_many'     => \$one_to_many,
+	   'go_check'        => \$go_check,
 	   'help'            => sub { usage(); exit(0); });
 
 $| = 1; # auto flush stdout
@@ -255,19 +256,19 @@ sub project_display_names {
       if ($type eq "Gene") {
 
 	$to_gene->add_DBEntry($dbEntry);
-	$to_dbea->store($dbEntry, $to_gene->dbID(), 'Gene') if (!$print);
+	$to_dbea->store($dbEntry, $to_gene->dbID(), 'Gene', 1) if (!$print);
 
       } elsif ($type eq "Transcript" || !$type) {
 	
 	$to_transcript->add_DBEntry($dbEntry);
-	$to_dbea->store($dbEntry, $to_transcript->dbID(), 'Transcript') if (!$print);
+	$to_dbea->store($dbEntry, $to_transcript->dbID(), 'Transcript', 1) if (!$print);
 
       } elsif ($type eq "Translation") {
 
 	my $to_translation = $to_transcript->translation();
 	return if (!$to_translation);
 	$to_translation->add_DBEntry($dbEntry);
-	$to_dbea->store($dbEntry, $to_translation->dbID(), 'Translation') if (!$print);
+	$to_dbea->store($dbEntry, $to_translation->dbID(), 'Translation',1) if (!$print);
 
       } else {
 
@@ -311,7 +312,7 @@ sub project_go_terms {
 
   my $from_latin_species = ucfirst(Bio::EnsEMBL::Registry->get_alias($from_species));
 
-  my $to_go_xrefs = $to_translation->get_all_DBEntries("GO");
+  my $to_go_xrefs = $to_translation->get_all_DBEntries("GO") if ($go_check);
 
  DBENTRY: foreach my $dbEntry (@{$from_translation->get_all_DBEntries("GO")}) {
 
@@ -323,7 +324,7 @@ sub project_go_terms {
     }
 
     # check that each from GO term isn't already projected
-    next if go_xref_exists($dbEntry, $to_go_xrefs);
+    next if ($go_check && go_xref_exists($dbEntry, $to_go_xrefs));
 
     # record statistics by evidence type
     foreach my $et (@{$dbEntry->get_all_linkage_types}){
@@ -342,7 +343,7 @@ sub project_go_terms {
 
     print $to_translation->stable_id() . " --> " . $dbEntry->display_id() . "\n" if ($print);
 
-    $to_dbea->store($dbEntry, $to_translation->dbID(), 'Translation') if (!$print);
+    $to_dbea->store($dbEntry, $to_translation->dbID(), 'Translation', 1) if (!$print);
 
   }
 
@@ -743,6 +744,9 @@ sub usage {
   [--one_to_many]       Also project one-to-many orthologs; multiple orthologs in
                         target are named "1 of 3", etc. Currently only affects
                         display xrefs, not GO terms.
+
+  [--go_check]          Check if GO term is already assigned, and don't project if it
+                        is. Off by default.
 
   [--help]              This text.
 
