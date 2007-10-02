@@ -149,6 +149,8 @@
 3251	AGILENT_G2518A	1	XREF	1	0	1	Agilent Microarray G2518A	ARRAY	\N	\N
 3255	Illumina_V1	1	XREF	1	0	1	Illumina V1	ARRAY	\N	\N
 3256	Illumina_V2	1	XREF	1	0	1	Illumina V2	ARRAY	\N	\N
+3260	ARRAY_ZFISH_LEIDEN2	1	XREF	1	0	1	Zebrafish Leiden2 Microarray	ARRAY	\N	\N
+3261	ARRAY_ZFISH_LEIDEN3	1	XREF	1	0	1	Zebrafish Leiden3 Microarray	ARRAY	\N	\N
 3299	Platypus_exon	1	XREF	1	0	1	Platypus Exon Array	ARRAY	\N	\N
 3300	miRBase	1	KNOWNXREF	1	0	1	miRBase	MISC	\N	\N
 3310	miRBase_predicted	1	XREF	1	0	1	miRBase predicted	MISC	\N	\N
