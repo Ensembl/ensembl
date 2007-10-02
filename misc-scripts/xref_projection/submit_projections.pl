@@ -4,11 +4,11 @@ use strict;
 # Remember to check/set the various config optons
 
 # ------------------------------ config -------------------------------
-my $release = 46;
+my $release = 47;
 
 my $base_dir = "/lustre/work1/ensembl/gp1/projections/";
 
-my $conf = "release_46.ini"; # registry config file
+my $conf = "release_47.ini"; # registry config file
 
 # -------------------------- end of config ----------------------------
 
@@ -62,19 +62,21 @@ foreach my $to ("zebrafish", "medaka", "tetraodon", "fugu", "stickleback") {
 
 $opts .= " -nobackup";
 
-# human to mouse, rat, dog, chicken, cow
-foreach my $to ("mouse", "rat", "dog", "chicken", "cow") {
+# human to mouse, rat, dog, chicken, cow, chimp, macaque, guinea_pig
+foreach my $to ("mouse", "rat", "dog", "chicken", "cow", "chimp", "macaque", "guinea_pig") {
   $o = "$dir/go_human_$to.out";
   $e = "$dir/go_human_$to.err";
   $n = substr("g_hum_$to", 0, 10);
   system "bsub -o $o -e $e -J $n perl project_display_xrefs.pl $opts -from human -to $to -go_terms -delete_go_terms";
 }
 
-# drosophila to anopheles
-$o = "$dir/go_drosophila_anopheles.out";
-$e = "$dir/go_drosophila_anopheles.err";
-$n = "g_dros_ano";
-system "bsub -o $o -e $e -J $n perl project_display_xrefs.pl $opts -from drosophila -to anopheles -go_terms -delete_go_terms";
+# drosophila to anopheles, aedes
+foreach my $to ("anopheles", "aedes") {
+  $o = "$dir/go_drosophila_$to.out";
+  $e = "$dir/go_drosophila_$to.err";
+  $n = substr("g_dros_$to", 0, 10);
+  system "bsub -o $o -e $e -J $n perl project_display_xrefs.pl $opts -from drosophila -to $to -go_terms -delete_go_terms";
+}
 
 # ----------------------------------------
 
