@@ -2,38 +2,103 @@ package Bio::EnsEMBL::MappedSlice;
 
 =head1 NAME
 
-Bio::EnsEMBL::MappedSlice
+Bio::EnsEMBL::MappedSlice - an object representing a mapped slice
 
 =head1 SYNOPSIS
 
+# get a reference slice
+my $slice = $slice_adaptor->fetch_by_region('chromosome', 14, 900000, 950000);
+
+# create MappedSliceContainer based on the reference slice
+my $msc = Bio::EnsEMBL::MappedSliceContainer->new(
+    -SLICE => $slice
+);
+
+# set the adaptor for fetching AssemblySlices
+my $asa = $slice->adaptor->db->get_AssemblySliceAdaptor;
+$msc->set_AssemblySliceAdaptor($asa);
+
+# add an AssemblySlice to your MappedSliceContainer
+$msc->attach_AssemblySlice('NCBIM36');
+
+foreach my $mapped_slice (@{ $msc->get_all_MappedSlices }) {
+  print $mapped_slice->name, "\n";
+  
+  foreach my $sf (@{ $mapped_slice->get_all_SimpleFeatures }) {
+    print "  ", &to_string($sf), "\n";
+  }
+}
 
 =head1 DESCRIPTION
 
-  Not supported Bio::EnsEMBL::Slice methods:
+NOTE: this code is under development and not fully functional nor tested yet. 
+Use only for development.
 
-    All deprecated methods
-    All Bio::PrimarySeqI compliance methods
-    expand
-    get_generic_features
-    get_seq_region_id
-    seq_region_Slice
+This object represents a mapped slice, i.e. a slice that's attached to a
+reference slice and a mapper to convert coordinates to/from the reference. The
+attachment is done via a MappedSliceContainer which has the reference slice and
+the "container slice" defining the common coordinate system for all
+MappedSlices.
 
-  Not supported but maybe should/could:
+A MappedSlice is supposed to behave as close to a Bio::EnsEMBL::Slice as
+possible. Most Slice methods are implemented in MappedSlice and will return an
+equivalent value to what Slice does. There are some exceptions of unimplemented
+methods, either because there is no useful equivalent for a MappedSlice to do,
+or they are too complicated.
 
-    calculate_pi
-    calculate_theta
-    get_base_count
-    get_by_Individual
-    get_by_strain
-    invert
-    
+Not supported Bio::EnsEMBL::Slice methods:
+
+  All deprecated methods
+  All Bio::PrimarySeqI compliance methods
+  expand
+  get_generic_features
+  get_seq_region_id
+  seq_region_Slice
+
+Not currently supported but maybe should/could:
+
+  calculate_pi
+  calculate_theta
+  get_base_count
+  get_by_Individual
+  get_by_strain
+  invert
+
+Internally, a MappedSlice is a collection of Bio::EnsEMBL::Slices and associated
+Bio::EnsEMBL::Mappers which map the slices to the common container coordinate
+system.
+
+MappedSlices are usually created and attached to a MappedSliceContainer by an
+adaptor/factory.
 
 =head1 METHODS
 
+new
+add_Slice_Mapper_pair
+get_all_Slice_Mapper_pairs
+adaptor
+container
+name
+seq_region_name
+start
+end
+strand
+length
+seq_region_length
+centrepoint
+coord_system
+coord_system_name
+is_toplevel
+seq (not implemented yet)
+subseq (not implemented yet)
+get_repeatmasked_seq (not implemented yet)
+sub_MappedSlice (not implemented yet)
+project (not implemented yet)
 
 =head1 REALTED MODULES
 
 Bio::EnsEMBL::MappedSlice
+Bio::EnsEMBL::DBSQL::AssemblySliceAdaptor
 Bio::EnsEMBL::Compara::AlignSlice
 Bio::EnsEMBL::Compara::AlignSlice::Slice
 Bio::EnsEMBL::AlignStrainSlice
@@ -68,12 +133,33 @@ use Scalar::Util qw(weaken);
 use vars qw($AUTOLOAD);
 
 
+=head2 new
+
+  Arg [ADAPTOR]   : Adaptor $adaptor - an adaptor of the appropriate type
+  Arg [CONTAINER] : Bio::EnsEMBL::MappedSliceContainer $container - the
+                    container this MappedSlice is attached to
+  Arg [NAME]      : String $name - name
+  Example     : my $mapped_slice = Bio::EnsEMBL::MappedSlice->new(
+                  -ADAPTOR   => $adaptor,
+                  -CONTAINER => $container,
+                  -NAME      => $name,
+                );
+  Description : Constructor. Usually you won't call this method manually, but
+                the MappedSlice will be constructed by an adaptor/factory.
+  Return type : Bio::EnsEMBL::MappedSlice
+  Exceptions  : thrown on wrong or missing arguments
+  Caller      : general, MappedSlice adaptors
+  Status      : At Risk
+              : under development
+
+=cut
+
 sub new {
   my $caller = shift;
   my $class = ref($caller) || $caller;
 
-  my ($adaptor, $container, $ref_slice, $name) =
-    rearrange([qw(ADAPTOR CONTAINER SLICE NAME)], @_);
+  my ($adaptor, $container, $name) =
+    rearrange([qw(ADAPTOR CONTAINER NAME)], @_);
 
   # arguement check
   unless ($container and ref($container) and
@@ -81,11 +167,6 @@ sub new {
     throw("Need a MappedSliceContainer.");
   }
 
-  unless ($ref_slice and ref($ref_slice) and
-          $ref_slice->isa('Bio::EnsEMBL::Slice')) {
-    throw("You must provide a reference slice.");
-  }
-  
   my $self = {};
   bless ($self, $class);
 
@@ -95,7 +176,7 @@ sub new {
   
   # need to weaken reference to prevent circular reference
   weaken($self->{'container'} = $container);
-  $self->{'ref_slice'} = $ref_slice;
+
   $self->{'adaptor'} = $adaptor if (defined($adaptor));
   $self->{'name'} = $name if (defined($name));
 
@@ -104,6 +185,21 @@ sub new {
   return $self;
 }
 
+
+=head2 add_Slice_Mapper_pair 
+
+  Arg[1]      : Bio::EnsEMBL::Slice $slice - slice to add
+  Arg[2]      : Bio::EnsEMBL::Mapper $mapper - the mapper for this slice
+  Example     : $mapped_slice->add_Slice_Mapper_pair($slice, $mapper);
+  Description : Adds a native slice and a corresponding mapper to map to/from
+                the artificial container coord system.
+  Return type : listref of Bio::EnsEMBL::MappedSlice
+  Exceptions  : thrown on wrong or missing arguments
+  Caller      : general, MappedSlice adaptors
+  Status      : At Risk
+              : under development
+
+=cut
 
 sub add_Slice_Mapper_pair {
   my $self = shift;
@@ -125,11 +221,53 @@ sub add_Slice_Mapper_pair {
 }
 
 
+=head2 get_all_Slice_Mapper_pairs 
+
+  Example     : foreach my $pair (@{ $self->get_all_Slice_Mapper_pairs }) {
+                  my ($slice, $mapper) = @$pair;
+
+                  # get container coordinates
+                  my @coords = $mapper->map_coordinates(
+                    $slice->seq_region_name,
+                    $slice->start,
+                    $slice->end,
+                    $slice->strand,
+                    'mapped_slice'
+                  );
+
+                  # ....
+                }
+  Description : Gets all Slice/Mapper pairs this MappedSlice is composed of.
+                Each slice (and features on it) can be mapped onto the
+                artificial container coord system using the mapper.
+  Return type : listref of listref of a Bio::EnsEMBL::Slice and
+                Bio::EnsEMBL::Mapper pair
+  Exceptions  : none
+  Caller      : general
+  Status      : At Risk
+              : under development
+
+=cut
+
 sub get_all_Slice_Mapper_pairs {
   my $self = shift;
   return $self->{'slice_mapper_pairs'};
 }
 
+
+=head2 adaptor
+
+  Arg[1]      : (optional) Adaptor $adaptor - the adaptor/factory for this
+                object
+  Example     : $mapped_slice->adaptor($assembly_slice_adaptor);
+  Description : Getter/setter for the adaptor/factory for this object.
+  Return type : Adaptor of appropriate type
+  Exceptions  : none
+  Caller      : general
+  Status      : At Risk
+              : under development
+
+=cut
 
 sub adaptor {
   my $self = shift;
@@ -138,6 +276,27 @@ sub adaptor {
 }
 
 
+=head2 container
+
+  Arg[1]      : (optional) Bio::EnsEMBL::MappedSliceContainer - the container
+                this object is attached to
+  Example     : my $container = $mapped_slice->container;
+                print $container->ref_slice->name, "\n";
+  Description : Getter/setter for the container this object is attached to. The
+                container will give you access to the reference slice, a common
+                artificial container slice, and a mapper to map to it from the
+                container coord system.
+
+                The implementation uses a weak reference to attach the container
+                since the container holds a list of MappedSlices itself.
+  Return type : Bio::EnsEMBL::MappedSliceContainer
+  Exceptions  : none
+  Caller      : general
+  Status      : At Risk
+              : under development
+
+=cut
+
 sub container {
   my $self = shift;
   weaken($self->{'container'} = shift) if (@_);
@@ -145,67 +304,205 @@ sub container {
 }
 
 
+=head2 name
+
+  Arg[1]      : String - the name of this object
+  Example     : my $name = $mapped_slice->container->ref_slice->name .
+                  ":mapped_" . $ident_string;
+                $mapped_slice->name($name);
+  Description : Getter/setter for this object's name
+  Return type : String
+  Exceptions  : none
+  Caller      : general
+  Status      : At Risk
+              : under development
+
+=cut
+
 sub name {
   my $self = shift;
   $self->{'name'} = shift if (@_);
   return $self->{'name'};
 }
 
-# return ref_slice->$_
+
+=head2 seq_region_name
+
+  Example     : my $sr_name = $mapped_slice->seq_region_name;
+  Description : Returns the seq_region name of the reference slice.
+  Return type : String
+  Exceptions  : none
+  Caller      : general
+  Status      : At Risk
+              : under development
+
+=cut
+
 sub seq_region_name {
   my $self = shift;
-  return $self->container->ref_Slice->seq_region_name;
+  return $self->container->ref_slice->seq_region_name;
 }
 
-# return ref_slice->$_
+
+=head2 start
+
+  Example     : my $start = $mapped_slice->start;
+  Description : Returns the start of the container slice.
+  Return type : Int
+  Exceptions  : none
+  Caller      : general
+  Status      : At Risk
+              : under development
+
+=cut
+
 sub start {
   my $self = shift;
-  return $self->container->ref_Slice->start;
+  return $self->container->container_slice->start;
 }
 
-# return ref_slice->$_
+
+=head2 end
+
+  Example     : my $end = $mapped_slice->end;
+  Description : Returns the end of the container slice.
+  Return type : Int
+  Exceptions  : none
+  Caller      : general
+  Status      : At Risk
+              : under development
+
+=cut
+
 sub end {
   my $self = shift;
-  return $self->container->ref_Slice->end;
+  return $self->container->container_slice->end;
 }
 
-# return ref_slice->$_
+
+=head2 strand
+
+  Example     : my $strand = $mapped_slice->strand;
+  Description : Returns the strand of the container slice.
+  Return type : Int
+  Exceptions  : none
+  Caller      : general
+  Status      : At Risk
+              : under development
+
+=cut
+
 sub strand {
   my $self = shift;
-  return $self->container->ref_Slice->strand;
+  return $self->container->container_slice->strand;
 }
 
-# container length?
+
+=head2 length
+
+  Example     : my $length = $mapped_slice->length;
+  Description : Returns the length of the container slice
+  Return type : Int
+  Exceptions  : none
+  Caller      : general
+  Status      : At Risk
+              : under development
+
+=cut
+
 sub length {
+  my $self = shift;
+  return $self->container->container_slice->length;
 }
 
-# return ref_slice->$_
+
+=head2 seq_region_length
+
+  Example     : my $sr_length = $mapped_slice->seq_region_length;
+  Description : Returns the seq_region length of the reference slice.
+  Return type : Int
+  Exceptions  : none
+  Caller      : general
+  Status      : At Risk
+              : under development
+
+=cut
+
 sub seq_region_length {
   my $self = shift;
-  return $self->container->ref_Slice->seq_region_length;
+  return $self->container->ref_slice->seq_region_length;
 }
 
-# return ref_slice->$_
+
+=head2 centrepoint
+
+  Example     : my $centrepoint = $mapped_slice->centrepoint;
+  Description : Returns the centrepoint of the container slice.
+  Return type : Int
+  Exceptions  : none
+  Caller      : general
+  Status      : At Risk
+              : under development
+
+=cut
+
+sub centrepoint {
+  my $self = shift;
+  return $self->container->container_slice->centrepoint;
+}
+
+
+=head2 coord_system
+
+  Example     : my $cs = $mapped_slice->coord_system;
+  Description : Returns the coord system of the container slice.
+  Return type : Bio::EnsEMBL::CoordSystem
+  Exceptions  : none
+  Caller      : general
+  Status      : At Risk
+              : under development
+
+=cut
+
 sub coord_system {
   my $self = shift;
-  return $self->container->ref_Slice->coord_system;
+  return $self->container->container_slice->coord_system;
 }
 
-# return ref_slice->$_
+=head2 coord_system_name
+
+  Example     : my $cs_name = $mapped_slice->coord_system_name;
+  Description : Returns the coord system name of the container slice.
+  Return type : Int
+  Exceptions  : none
+  Caller      : general
+  Status      : At Risk
+              : under development
+
+=cut
+
 sub coord_system_name {
   my $self = shift;
-  return $self->container->ref_Slice->coord_system_name;
+  return $self->container->container_slice->coord_system_name;
 }
 
-# return ref_slice->$_
+=head2 is_toplevel
+
+  Example     : my $toplevel_flag = $mapped_slice->is_toplevel;
+  Description : Returns weather the container slice is toplevel.
+  Return type : Int
+  Exceptions  : none
+  Caller      : general
+  Status      : At Risk
+              : under development
+
+=cut
+
 sub is_toplevel {
   my $self = shift;
-  return $self->container->ref_Slice->is_toplevel;
+  return $self->container->container_slice->is_toplevel;
 }
 
-# container centrepoint
-sub centrepoint {
-}
 
 sub seq {
 }
@@ -223,52 +520,20 @@ sub project {
 }
 
 
-sub get_all_DASFeatures_dsn {
-  my $self = shift;
+=head2 AUTOLOAD
 
-  foreach my $pair (@{ $self->get_all_Slice_Mapper_pairs }) {
-    my ($slice, $mapper) = @$pair;
-
-    # call $method on each native slice composing the MappedSlice
-    my ($featref, $styleref, $segref) =
-      @{ $slice->get_all_DASFeatures_dsn(@_) };
-    
-    use Data::Dumper;
-    warn Data::Dumper::Dumper($featref);
-    warn Data::Dumper::Dumper($styleref);
-    warn Data::Dumper::Dumper($segref);
-
-  }
-
-}
-
-
-sub get_all_DAS_Features {
-  my $self = shift;
-
-  foreach my $pair (@{ $self->get_all_Slice_Mapper_pairs }) {
-    my ($slice, $mapper) = @$pair;
-    
-    print "\nFetching DAS features for ".$slice->name."\n";
-
-    # call $method on each native slice composing the MappedSlice
-    my ($featref, $styleref, $segref) = $slice->get_all_DAS_Features;
-    return ($featref, $styleref, $segref);
-
-  }
-
-}
-
-
-=head2 
-
-  Arg[1]      : 
-  Example     : 
+  Arg[1..N]   : Arguments passed on to the calls on the underlying slices.
+  Example     : my @simple_features = @{ $mapped_slice->get_all_SimpleFeatures };
   Description : Aggregate data gathered from composing Slices.
-                This will call Slice->get_all_* and munge the results.
-  Return type : 
-  Exceptions  : 
-  Caller      : 
+                This will call Slice->get_all_* and combine the results.
+                Coordinates will be transformed to be on the container slice
+                coordinate system.
+
+                Calls involving DAS features are skipped since the DAS adaptor
+                handles coordinate conversions natively.
+  Return type : listref of features (same type as corresponding Slice method)
+  Exceptions  : none
+  Caller      : general
   Status      : At Risk
               : under development
 
@@ -282,6 +547,9 @@ sub AUTOLOAD {
   
   # AUTOLOAD should only deal with get_all_* methods
   return unless ($method =~ /^get_all_/);
+
+  # skip DAS methods
+  return if ($method =~ /DAS/);
   
   my @mapped_features = ();
 
@@ -292,10 +560,10 @@ sub AUTOLOAD {
     # call $method on each native slice composing the MappedSlice
     my @features = @{ $slice->$method(@_) };
     
-    # map features onto the MappedSlice coordinate system
+    # map features onto the artificial container coordinate system
     foreach my $f (@features) {
-      # first map onto the ref_slice cs using the mapper from this pair
-      my @ref_coords = $mapper->map_coordinates(
+      
+      my @coords = $mapper->map_coordinates(
           $f->slice->seq_region_name,
           $f->start,
           $f->end,
@@ -304,19 +572,16 @@ sub AUTOLOAD {
       );
 
       # sanity check
-      if (scalar(@ref_coords) > 1) {
+      if (scalar(@coords) > 1) {
         warning("Got more than one Coordinate returned, expected only one!\n");
       }
 
-      $f->start($ref_coords[0]->start);
-      $f->end($ref_coords[0]->end);
-      $f->strand($f->strand*$ref_coords[0]->strand);
-      $f->slice($self->container->ref_Slice);
+      $f->start($coords[0]->start);
+      $f->end($coords[0]->end);
+      $f->strand($coords[0]->strand);
+      $f->slice($self->container->container_slice);
 
-      # then map from ref_slice to the common cs using the mapper in the 
-      # MappedSliceContainer
-
-      push @mapped_features, $f;      
+      push @mapped_features, $f;
     }
 
   }

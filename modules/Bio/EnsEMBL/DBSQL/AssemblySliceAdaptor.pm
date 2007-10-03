@@ -2,20 +2,40 @@ package Bio::EnsEMBL::DBSQL::AssemblySliceAdaptor;
 
 =head1 NAME
 
-Bio::EnsEMBL::DBSQL::AssemblySliceAdaptor
+Bio::EnsEMBL::DBSQL::AssemblySliceAdaptor - adaptor/factory for MappedSlices
+representing alternative assemblies
 
 =head1 SYNOPSIS
 
+my $slice = $slice_adaptor->fetch_by_region('chromosome', 14, 900000, 950000);
+
+my $msc = Bio::EnsEMBL::MappedSliceContainer->new(
+    -SLICE => $slice
+);
+
+my $asa = Bio::EnsEMBL::DBSQL::AssemblySliceAdaptor->new;
+
+my ($mapped_slice) = @{ $asa->fetch_by_version($msc, 'NCBIM36') };
 
 =head1 DESCRIPTION
 
+NOTE: this code is under development and not fully functional nor tested yet. 
+Use only for development.
+
+This adaptor is a factory for creating MappedSlices representing alternative
+assemblies and attaching them to a MappedSliceContainer. A mapper will be
+created to map between the reference slice and the common container slice
+coordinate system.
 
 =head1 METHODS
 
+new
+fetch_by_version
 
 =head1 REALTED MODULES
 
 Bio::EnsEMBL::MappedSlice
+Bio::EnsEMBL::MappedSliceContainer
 Bio::EnsEMBL::Compara::AlignSlice
 Bio::EnsEMBL::Compara::AlignSlice::Slice
 Bio::EnsEMBL::AlignStrainSlice
@@ -51,6 +71,19 @@ use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 our @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
 
 
+=head2 new
+
+  Example     : my $assembly_slice_adaptor =
+                  Bio::EnsEMBL::DBSQL::AssemblySliceAdaptor->new;
+  Description : Constructor.
+  Return type : Bio::EnsEMBL::DBSQL::AssemblySliceAdaptor
+  Exceptions  : none
+  Caller      : general
+  Status      : At Risk
+              : under development
+
+=cut
+
 sub new {
   my $caller = shift;
 
@@ -60,6 +93,22 @@ sub new {
   return $self;
 }
 
+
+=head2 fetch_by_version
+
+  Arg[1]      : Bio::EnsEMBL::MappedSliceContainer $container - the container
+                  to attach MappedSlices to
+  Arg[2]      : String $version - the assembly version to fetch
+  Example     : my ($mapped_slice) = @{ $msc->fetch_by_version('NCBIM36') };
+  Description : Creates a MappedSlice representing an alternative assembly
+                version of the container's reference slice.
+  Return type : listref of Bio::EnsEMBL::MappedSlice
+  Exceptions  : thrown on wrong or missing arguments
+  Caller      : general, Bio::EnsEMBL::MappedSliceContainer
+  Status      : At Risk
+              : under development
+
+=cut
 
 sub fetch_by_version {
   my $self = shift;
@@ -76,13 +125,12 @@ sub fetch_by_version {
     throw("Need an assembly version.");
   }
 
-  my $slice = $container->ref_Slice;
+  my $slice = $container->ref_slice;
 
   # project slice onto other assembly and construct MappedSlice for result
   my $mapped_slice = Bio::EnsEMBL::MappedSlice->new(
-      -SLICE     => $slice,
-      -CONTAINER => $container,
       -ADAPTOR   => $self,
+      -CONTAINER => $container,
       -NAME      => $slice->name.":mapped_$version",
   );
 
@@ -92,12 +140,12 @@ sub fetch_by_version {
   
     my $proj_slice = $seg->to_Slice;
     
-    # create a Mapper to map to/from ref_slice
-    my $mapper = Bio::EnsEMBL::Mapper->new('ref_slice', 'mapped_slice');  
+    # create a Mapper to map to/from the mapped_slice artificial coord system
+    my $mapper = Bio::EnsEMBL::Mapper->new('mapped_slice', 'native_slice');  
     
     # tell the mapper how to map this segment
     $mapper->add_map_coordinates(
-        'ref_slice',
+        'mapped_slice',
         $seg->from_start,
         $seg->from_end,
         ($slice->strand * $proj_slice->strand),
