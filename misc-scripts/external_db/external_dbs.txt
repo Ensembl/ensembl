@@ -28,6 +28,7 @@
 825	FlyBaseName_transcript	1	XREF	1	0	50	FlyBaseName transcript	MISC	\N	\N
 826	FlyBaseCGID_gene	1	XREF	1	0	5	FlyBaseCGID gene	MISC	\N	\N
 827	FlyBaseCGID_transcript	1	XREF	1	0	50	FlyBaseCGID transcript	MISC	\N	\N
+828	FlyBaseCGID_translation	1	XREF	1	0	50	FlyBaseCGID translation	MISC	\N	\N
 900	GKB	1	XREF	1	0	5	GKB	MISC	\N	\N
 1000	GO	1	KNOWNXREF	1	0	5	GO	MISC	\N	\N
 1100	HGNC	1	KNOWNXREF	0	1	100	HGNC Symbol	PRIMARY_DB_SYNONYM	\N	\N
@@ -80,6 +81,7 @@
 2900	Genoscope_pred_gene	1	XREF	1	0	38	Genoscope pred gene	MISC	\N	\N
 2910	Genoscope_pred_transcript	1	XREF	1	0	39	Genoscope pred transcript	MISC	\N	\N
 2920	Genoscope_annotated_gene	1	KNOWN	1	0	40	Genoscope annotated gene	MISC	\N	\N
+2930	Genoscope_pred_translation	1	XREF	1	0	40	Genoscope pred translation	MISC	\N	\N
 3001	AFFY_MG_U74_all	1	XREF	1	0	1	Affymx Microarray U74	ARRAY	\N	\N
 3002	AFFY_MG_U74A	1	XREF	1	0	1	Affymx Microarray U74	ARRAY	\N	\N
 3003	AFFY_MG_U74Av2	1	XREF	1	0	1	Affymx Microarray U74	ARRAY	\N	\N
@@ -177,9 +179,9 @@
 4820	ENST_CDS	1	XREF	1	0	1	Ensembl transcripts sharing CDS with Vega transcript	MISC	\N	\N
 4900	TCAG	1	XREF	1	0	75	TCAG Chr 7 Annotation	MISC	\N	\N
 5000	Ens_Mm_gene	1	XREF	1	0	40	Ensembl Mouse Gene	MISC	\N	\N
+5010	Ens_Mm_transcript	1	XREF	1	0	40	Ensembl Mouse Transcript	MISC	\N	\N
 5020	Ens_Mm_translation	1	XREF	1	0	40	Ensembl Mouse Translation	MISC	\N	\N
 5100	IMGT	1	XREF	1	0	7	IMGT/HLA	MISC	\N	\N
-6000	Codelink	1	XREF	1	0	1	GE Healthcare/Amersham Codelink WGA	ARRAY	\N	\N
 5200	Oxford_FGU_Md_gene	1	PRED	1	0	1	Oxford Ponting Group Monodelphis predictions gene id	ALT_TRANS	\N	\N
 5300	Oxford_FGU_Md_tscript	1	PRED	1	0	1	Oxford Ponting Group Monodelphis predictions transcript id	ALT_TRANS	\N	\N
 5400	Oxford_FGU_Oa_gene	1	PRED	1	0	1	Oxford Ponting Group Platypus predictions gene id	ALT_TRANS	\N	\N
@@ -187,12 +189,48 @@
 5700	Ens_Cf_gene	1	XREF	1	0	5	Ensembl Dog Gene	MISC	\N	\N
 5710	Ens_Cf_transcript	1	XREF	1	0	5	Ensembl Dog Transcript	MISC	\N	\N
 5720	Ens_Cf_translation	1	XREF	1	0	5	Ensembl Dog Translation	MISC	\N	\N
+5810	Ens_Dr_transcript	1	XREF	1	0	5	Ensembl Zebrafish Transcript	MISC	\N	\N
+5820	Ens_Dr_translation	1	XREF	1	0	5	Ensembl Zebrafish Translation	MISC	\N	\N
+5900	Ens_Md_gene	1	XREF	1	0	5	Ensembl Monodelphis Gene	MISC	\N	\N
+6000	Codelink	1	XREF	1	0	1	GE Healthcare/Amersham Codelink WGA	ARRAY	\N	\N
 6100	Havana_gene	1	XREF	1	0	100	Havana gene ID	MISC	\N	\N
+6200	Ens_Rn_gene	1	XREF	1	0	5	Ensembl Rat Gene	MISC	\N	\N
+6300	Ens_Ol_gene	1	XREF	1	0	5	Ensembl Medaka Gene	MISC	\N	\N
+6400	Ens_Gg_gene	1	XREF	1	0	40	Ensembl Chicken Gene	MISC	\N	\N
+6410	Ens_Gg_transcript	1	XREF	1	0	40	Ensembl Chicken Transcript	MISC	\N	\N
+6420	Ens_Gg_translation	1	XREF	1	0	40	Ensembl Chicken Translation	MISC	\N	\N
+6500	IMCB_Tr_gene	1	XREF	1	0	40	IMCB Fugu Gene	MISC	\N	\N
 7159	AedesGenBank	1	PRED	1	0	30	Aedes GenBank	MISC	\N	\N
 7200	IMGT/LIGM_DB	200641-6	XREF	1	1	10	IMGT/LIGM-DB	MISC	\N	\N
 7201	IMGT/GENE_DB	200641-6	KNOWN	1	0	40	IMGT/GENE-DB	MISC	\N	\N
 8000	Vega_mouse_transcript	1	XREF	1	0	5	Vega mouse transcript	MISC	\N	\N
 8100	Platypus_olfactory_receptor	1	XREF	1	0	40	Platypus olfactory receptor gene	MISC	\N	\N
+8200	PRF	1	XREF	1	0	5	PRF	MISC	\N	\N
+8300	PIR	1	XREF	1	0	5	PIR	MISC	\N	\N
+8400	TetNig_cdna	1	XREF	1	0	40	Genoscope tetraodon cDNA	MISC	\N	\N
+8500	GasAcu_cdna	1	XREF	1	0	40	Stickleback cDNA	MISC	\N	\N
+8600	OrnAna_454_cdna	1	XREF	1	0	40	Platypus 454 cDNA	MISC	\N	\N
+8700	TakRub_cdna	1	XREF	1	0	40	Takifugu cDNA	MISC	\N	\N
+8800	CioInt_est	1	XREF	1	0	40	Ciona intestinalis EST	MISC	\N	\N
+8900	CioInt_cdna	1	XREF	1	0	40	Ciona intestinalis cDNA	MISC	\N	\N
+9000	CaeEle_est	1	XREF	1	0	40	C Elegans EST	MISC	\N	\N
+9100	XenTro_Gurdon_EST	1	XREF	1	0	40	Xenopus Gurdon EST Clusters	MISC	\N	\N
+9110	XenTro_cdna	1	XREF	1	0	40	Xenopus Tropicalis cDNA	MISC	\N	\N
+9120	XenLae_cdna	1	XREF	1	0	40	Xenopus Laevis cDNA	MISC	\N	\N
+9200	TakRub_est	1	XREF	1	0	40	Takifugu EST	MISC	\N	\N
+9210	TakRub_annotation	1	XREF	1	0	40	Takifugu gene annotation	MISC	\N	\N
+9220	TakRub_seleno_annotation	1	XREF	1	0	40	Takifugu selenoprotein annotation	MISC	\N	\N
+9400	TetNig_mouse_econtig	1	XREF	1	0	40	Genoscope mouse exofish econtig	MISC	\N	\N
+9410	TetNig_fugu_econtig	1	XREF	1	0	40	Genoscope fugu exofish econtig	MISC	\N	\N
+9420	TetNig_human_econtig	1	XREF	1	0	40	Genoscope human exofish econtig	MISC	\N	\N
+9430	TetNig_human_IPI_econtig	1	XREF	1	0	40	Genoscope human IPI exofish econtig	MISC	\N	\N
+9440	TetNig_mouse_IPI_econtig	1	XREF	1	0	40	Genoscope mouse IPI exofish econtig	MISC	\N	\N
+9500	OryLat_est	1	XREF	1	0	40	Medaka EST	MISC	\N	\N
+9600	Trace_archive	1	XREF	1	0	40	Trace Archive id	MISC	\N	\N
+9700	CioSav_est	1	XREF	1	0	40	Ciona savignyi EST	MISC	\N	\N
+9800	kyotograil_2004	1	PRED	1	0	30	Ciona intestinalis Kyotograil 2004 predictions	MISC	\N	\N
+9900	kyotograil_2005	1	PRED	1	0	30	Ciona intestinalis Kyotograil 2005 predictions	MISC	\N	\N
+10000	wormbase_id	1	XREF	1	0	30	Generic exdb for worbase id of any type for feature table	MISC	\N	\N
 #
 #
 # Please separate fields in this file with TABS not spaces!
