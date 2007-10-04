@@ -41,6 +41,8 @@ utility class to post-process projections from one assembly to another
     undef, 'NCBIM36');
 
   my $new_slice = $assembly_projector->old_to_new($slice);
+  
+  print $new_slice->name, " (", $assembly_projector->last_status, ")\n";
 
 =head1 DESCRIPTION
 
@@ -64,7 +66,8 @@ Discard the projected feature/slice if:
   4. all segments are on same chromosome and strand
 
 If a projection fails any of these rules, undef is returned instead of a
-projected feature/slice.
+projected feature/slice. You can use the last_status() method to find out about
+the results of the rules tests.
 
 Also note that when projecting features, only a shallow projection is performed,
 i.e. other features attached to your features (e.g. the transcripts of a gene)
@@ -203,8 +206,10 @@ sub new {
                 seq_region and strand. If -MERGE_FRAGMENTS is set, gaps will be
                 bridged by creating a single object from first_segment_start to
                 last_segment_end. If -CHECK_LENGTH is set, the projected object
-                will have to have the same length as the original. Please see
-                the comments in the code for more details about these rules.
+                will have to have the same length as the original. You can use
+                the last_status() method to find out what the result of some of
+                these rule tests were. Please see the comments in the code for
+                more details about these rules.
 
                 The return value of this method will always be a single object,
                 or undef if the projection fails any of the rules.
@@ -290,19 +295,25 @@ sub project {
   #      as the original feature/slice
   #   4. all segments are on same chromosome and strand
 
+  # keep track of the status of applied rules
+  my @status = ();
+
   # test (1)
   return undef unless (@segments);
   #warn "DEBUG: passed test 1\n";
 
   # test (2)
   return undef if (!($self->merge_fragments) and scalar(@segments) > 1);
+  push @status, 'fragmented' if (scalar(@segments) > 1);
   #warn "DEBUG: passed test 2\n";
 
   # test (3)
   my $first_slice = $segments[0]->to_Slice;
   my $last_slice = $segments[-1]->to_Slice;
-  return undef if ($self->check_length and
-    ($last_slice->end - $first_slice->start + 1) != $object->length);
+  my $length_mismatch = (($last_slice->end - $first_slice->start + 1) !=
+    $object->length);
+  return undef if ($self->check_length and $length_mismatch);
+  push @status, 'length_mismatch' if ($length_mismatch);
   #warn "DEBUG: passed test 3\n";
 
   # test (4)
@@ -315,6 +326,9 @@ sub project {
   }
   return undef if (scalar(keys %sr_names) > 1 or scalar(keys %strands) > 1);
   #warn "DEBUG: passed test 4\n";
+
+  # remember rule status
+  $self->last_status(join('|', @status));
 
   # everything looks fine, so adjust the coords of your feature/slice
   my $new_slice = $first_slice;
@@ -423,6 +437,13 @@ sub check_length {
   my $self = shift;
   $self->{'check_length'} = shift if (@_);
   return $self->{'check_length'};
+}
+
+
+sub last_status {
+  my $self = shift;
+  $self->{'last_status'} = shift if (@_);
+  return $self->{'last_status'};
 }
 
 
