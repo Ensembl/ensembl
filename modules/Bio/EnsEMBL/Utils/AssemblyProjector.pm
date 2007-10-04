@@ -7,12 +7,36 @@ utility class to post-process projections from one assembly to another
 
 =head1 SYNOPSIS
 
+  # connect to an old database
+  my $dba_old = new Bio::EnsEMBL::DBSQL::DBAdaptor(
+    -host   => 'ensembldb.ensembl.org',
+    -port   => 3306,
+    -user   => ensro,
+    -dbname => 'mus_musculus_core_46_36g',
+    -group  => 'core_old',
+  );
+
+  # connect to the new database containing the mapping between old and new
+  # assembly
+  my $dba_new = new Bio::EnsEMBL::DBSQL::DBAdaptor(
+    -host   => 'ensembldb.ensembl.org',
+    -port   => 3306,
+    -user   => ensro,
+    -dbname => 'mus_musculus_core_47_37',
+    -group  => 'core_new',
+  );
+
   my $assembly_projector = Bio::EnsEMBL::Utils::AssemblyProjector->new(
-      -OLD_ASSEMBLY => NCBIM36,
-      -NEW_ASSEMBLY => NCBIM37,
+      -OLD_ASSEMBLY    => 'NCBIM36',
+      -NEW_ASSEMBLY    => 'NCBIM37',
+      -ADAPTOR         => $dba_new,
+      -EXTERNAL_SOURCE => 1,
+      -MERGE_FRAGMENTS => 1,
+      -CHECK_LENGTH    => 0,
   );
 
   # fetch a slice on the old assembly
+  my $slice_adaptor = $dba_old->get_SliceAdaptor;
   my $slice = $slice_adaptor->fetch_by_region('chromosome', 1, undef, undef,
     undef, 'NCBIM36');
 
@@ -20,11 +44,45 @@ utility class to post-process projections from one assembly to another
 
 =head1 DESCRIPTION
 
-This class implements some utility functions which apply sensible rules to the
-results of projecting a feature or slice from one assembly to another.
+This class implements some utility functions for converting coordinates between
+assemblies. A mapping between the two assemblies has to present the database for
+this to work, see the 'Related Modules' section below on how to generate the
+mapping.
+
+In addition to the "raw" projecting of features and slices, the methods in this
+module also apply some sensible rules to the results of the projection (like
+discarding unwanted results or merging fragmented projections). These are the
+rules (depending on configuration):
+
+Discard the projected feature/slice if:
+
+  1. it doesn't project at all (no segments returned)
+  2. [unless MERGE_FRAGMENTS is set] the projection is fragmented (more
+     than one segment)
+  3. [if CHECK_LENGTH is set] the projection doesn't have the same length
+     as the original feature/slice
+  4. all segments are on same chromosome and strand
+
+If a projection fails any of these rules, undef is returned instead of a
+projected feature/slice.
+
+Also note that when projecting features, only a shallow projection is performed,
+i.e. other features attached to your features (e.g. the transcripts of a gene)
+are not projected automatically, so it will be the responsability of the user
+code project all levels of features involved.
 
 =head1 METHODS
 
+new
+project
+old_to_new
+new_to_old
+adaptor
+external_source
+old_assembly
+new_assembly
+merge_fragments
+check_length
 
 =head1 REALTED MODULES
 
@@ -65,15 +123,20 @@ use Bio::EnsEMBL::Slice;
 
 =head2 new
 
+  Arg [ADAPTOR]         : Bio::EnsEMBL::DBSQL::DBAdaptor $adaptor - a db adaptor
+                          for a database containing the assembly mapping
+  Arg [EXTERNAL_SOURCE] : (optional) Boolean $external_source - indicates if
+                          source is from a different database
   Arg [OLD_ASSEMBLY]    : name of the old assembly
   Arg [OLD_ASSEMBLY]    : name of the new assembly
   Arg [OBJECT_TYPE]     : (optional) object type ('slice' or 'feature')
   Arg [MERGE_FRAGMENTS] : (optional) Boolean - determines if segments are merged
-                          to return a single object spannin all segments
+                          to return a single object spanning all segments
                           (default: true)
   Arg [CHECK_LENGTH]    : (optional) Boolean - determines if projected objects
                           have to have same length as original (default: false)
   Example     : my $ap = Bio::EnsEMBL::Utils::AssemblyProjector->new(
+                  -DBADAPTOR    => $dba,
                   -OLD_ASSEMBLY => NCBIM36,
                   -NEW_ASSEMBLY => NCBIM37,
                 );
@@ -91,32 +154,36 @@ sub new {
   my $caller = shift;
   my $class = ref($caller) || $caller;
 
-  my ($old_assembly, $new_assembly, $object_type, $merge_fragments,
-      $check_length) = rearrange([qw(OLD_ASSEMBLY NEW_ASSEMBLY OBJECT_TYPE
-                                     MERGE_FRAGMENTS CHECK_LENGTH)], @_);
+  my ($adaptor, $external_source, $old_assembly, $new_assembly,
+      $merge_fragments, $check_length) = rearrange([qw(ADAPTOR EXTERNAL_SOURCE 
+        OLD_ASSEMBLY NEW_ASSEMBLY MERGE_FRAGMENTS CHECK_LENGTH)], @_);
+
+  unless ($adaptor and ref($adaptor) and
+          $adaptor->isa('Bio::EnsEMBL::DBSQL::DBAdaptor')) {
+    throw("You must provide a DBAdaptor to a database containing the assembly mapping.");
+  }
 
   unless ($old_assembly and $new_assembly) {
     throw("You must provide an old and new assembly name.");
-  }
-
-  if ($object_type and !
-    (lc($object_type) eq 'feature' or lc($object_type) eq 'slice')) {
-      throw("Type must be 'feature' or 'slice'");
   }
 
   my $self = {};
   bless ($self, $class);
 
   # initialise
+  $self->{'adaptor'} = $adaptor;
   $self->{'old_assembly'} = $old_assembly;
   $self->{'new_assembly'} = $new_assembly;
-  $self->{'object_type'} = $object_type;
   
   # by default, merge fragments
   $self->{'merge_fragments'} = $merge_fragments || 1;
 
   # by default, do not check length
   $self->{'check_length'} = $check_length || 0;
+
+  # by default, features and slices are expected in same database as the 
+  # assembly mapping
+  $self->{'external_source'} = $external_source || 0;
 
   return $self;
 }
@@ -136,13 +203,17 @@ sub new {
                 seq_region and strand. If -MERGE_FRAGMENTS is set, gaps will be
                 bridged by creating a single object from first_segment_start to
                 last_segment_end. If -CHECK_LENGTH is set, the projected object
-                will have to have the same length as the original.
+                will have to have the same length as the original. Please see
+                the comments in the code for more details about these rules.
 
-                The return value of this method will always be a single object.
+                The return value of this method will always be a single object,
+                or undef if the projection fails any of the rules.
                 
-                Please see the comments in the code for details about these
-                rules.
-  Return type : same a Arg 1
+                Note that when projecting features, only a "shallow" projection
+                is performed, i.e. attached features aren't projected
+                automatically! (e.g. if you project a gene, its transcripts will
+                have to be projected manually before storing the new gene)
+  Return type : same a Arg 1, or undef if projection fails any of the rules
   Exceptions  : thrown on invalid arguments
   Caller      : general, $self->old_to_new, $self->new_to_old
   Status      : At Risk
@@ -159,13 +230,40 @@ sub project {
   my ($slice, $object_type);
 
   if ($object->isa('Bio::EnsEMBL::Feature')) {
-    $slice = $object->feature_Slice;
     $object_type = 'feature';
   } elsif ($object->isa('Bio::EnsEMBL::Slice')) {
-    $slice = $object;
     $object_type = 'slice';
   } else {
     throw("Need a Feature or Slice to project.");
+  }
+
+  # if the feature or slice is sourced from another db, we have to "transfer"
+  # it to the db that contains the assembly mapping. the transfer is very 
+  # shallow but that should do for our purposes
+  if ($self->external_source) {
+    my $slice_adaptor = $self->adaptor->get_SliceAdaptor;
+
+    if ($object_type eq 'feature') {
+    
+      # createa a new slice from the target db
+      my $f_slice = $object->slice;
+      my $target_slice = $slice_adaptor->fetch_by_name($f_slice->name);
+      
+      # now change the feature so that it appears it's from the target db
+      $object->slice($target_slice);
+    
+    } else {
+    
+      # createa a new slice from the target db
+      $object = $slice_adaptor->fetch_by_name($object->name);
+      
+    }
+  }
+
+  if ($object_type eq 'feature') {
+    $slice = $object->feature_Slice;
+  } else {
+    $slice = $object;
   }
 
   # warn if trying to project to assembly version the object already is on
@@ -173,10 +271,14 @@ sub project {
     warning("Assembly version to project to ($to_assembly) is the same as your object's assembly (".$slice->coord_system->version.").");
   }
 
+  # now project the slice
   my $cs_name = $slice->coord_system_name;
+  my @segments = @{ $slice->project($cs_name, $to_assembly) };
 
-  # [todo] project $slice instead? what is more efficient for Features?
-  my @segments = @{ $object->project($cs_name, $to_assembly) };
+  # we need to reverse the projection segment list if the orignial 
+  if ($slice->strand == -1) {
+    @segments = reverse(@segments);
+  }
 
   # apply rules to projection results
   # 
@@ -190,15 +292,18 @@ sub project {
 
   # test (1)
   return undef unless (@segments);
+  #warn "DEBUG: passed test 1\n";
 
   # test (2)
   return undef if (!($self->merge_fragments) and scalar(@segments) > 1);
+  #warn "DEBUG: passed test 2\n";
 
   # test (3)
   my $first_slice = $segments[0]->to_Slice;
   my $last_slice = $segments[-1]->to_Slice;
   return undef if ($self->check_length and
     ($last_slice->end - $first_slice->start + 1) != $object->length);
+  #warn "DEBUG: passed test 3\n";
 
   # test (4)
   my %sr_names = ();
@@ -209,6 +314,7 @@ sub project {
     $strands{$sl->strand}++;
   }
   return undef if (scalar(keys %sr_names) > 1 or scalar(keys %strands) > 1);
+  #warn "DEBUG: passed test 4\n";
 
   # everything looks fine, so adjust the coords of your feature/slice
   my $new_slice = $first_slice;
@@ -217,17 +323,22 @@ sub project {
   if ($object_type eq 'slice') {
     return $new_slice;
   } else {
+  
     $object->start($new_slice->start);
     $object->end($new_slice->end);
-    $object->strand($new_slice->strand); # ????
+    $object->strand($new_slice->strand);
     $object->slice($new_slice->seq_region_Slice);
+
+    # undef dbID and adaptor so you can store the feature in the target db
+    $object->dbID(undef);
+    $object->adaptor(undef);
 
     return $object;
   }
   
 }
 
-  
+
 =head2 old_to_new
 
   Arg[1]      : Bio::EnsEMBL::Slice or Bio::EnsEMBL::Feature $object -
@@ -235,7 +346,7 @@ sub project {
   Example     : my $new_slice = $assembly_projector->old_to_new($old_slice);
   Description : Projects a Slice or Feature from old to new assembly.
                 This method is just a convenience wrapper for $self->project.
-  Return type : same a Arg 1
+  Return type : same a Arg 1, or undef
   Exceptions  : none
   Caller      : general
   Status      : At Risk
@@ -256,7 +367,7 @@ sub old_to_new {
   Example     : my $old_slice = $assembly_projector->new_to_old($new_slice, 1);
   Description : Projects a Slice or Feature from new to old assembly.
                 This method is just a convenience wrapper for $self->project.
-  Return type : same a Arg 1
+  Return type : same a Arg 1, or undef
   Exceptions  : none
   Caller      : general
   Status      : At Risk
@@ -273,6 +384,20 @@ sub new_to_old {
 #
 # accessors
 #
+sub adaptor {
+  my $self = shift;
+  $self->{'adaptor'} = shift if (@_);
+  return $self->{'adaptor'};
+}
+
+
+sub external_source {
+  my $self = shift;
+  $self->{'external_source'} = shift if (@_);
+  return $self->{'external_source'};
+}
+
+
 sub old_assembly {
   my $self = shift;
   $self->{'old_assembly'} = shift if (@_);
@@ -284,13 +409,6 @@ sub new_assembly {
   my $self = shift;
   $self->{'new_assembly'} = shift if (@_);
   return $self->{'new_assembly'};
-}
-
-
-sub object_type {
-  my $self = shift;
-  $self->{'object_type'} = shift if (@_);
-  return $self->{'object_type'};
 }
 
 
