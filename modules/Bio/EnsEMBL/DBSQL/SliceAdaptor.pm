@@ -571,7 +571,8 @@ sub get_seq_region_id {
                If the coordinate system with the provided name and version
                does not exist an empty list is returned.
                If the coordinate system name provided is 'toplevel', all
-               non-redundant toplevel slices are returned.
+               non-redundant toplevel slices are returned (note that any
+               coord_system_version argument is ignored in that case).
 
                Retrieved slices can be broken into smaller slices using the
                Bio::EnsEMBL::Utils::Slice module.
