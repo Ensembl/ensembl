@@ -29,6 +29,18 @@
 826	FlyBaseCGID_gene	1	XREF	1	0	5	FlyBaseCGID gene	MISC	\N	\N
 827	FlyBaseCGID_transcript	1	XREF	1	0	50	FlyBaseCGID transcript	MISC	\N	\N
 828	FlyBaseCGID_translation	1	XREF	1	0	50	FlyBaseCGID translation	MISC	\N	\N
+830     DGRC-1  1       KNOWNXREF       1       0       5       Drosophila Genomics Resource Center 1   MISC    \N      \N
+831     DGRC-2  1       KNOWNXREF       1       0       5       Drosophila Genomics Resource Center 2   MISC    \N      \N
+840     DRSC    1       KNOWNXREF       1       0       5       Drosophila RNAi Screening Center        MISC    \N      \N
+850     FlyReg  1       KNOWNXREF       1       0       5       FlyReg, Drosophila DNase I Footprint Database   MISC    \N      \N
+860     GenomeRNAi      1       KNOWNXREF       1       0       5       GenomeRNAi is a database of phenotypes from systematic RNA interference (RNAi) screens in cultured Drosophila cells     MISC    \N      \N           
+870     MitoDrome       1       KNOWNXREF       1       0       5       MitoDrome, a database of Drosophila melanogaster nuclear genes encoding for mitochondrial proteins      MISC    \N      \N
+880     BDGP_insitu_expr        1       KNOWNXREF       1       0       5       Berkeley Drosophila Genome Project in situ Gene Expression Database (embryogenesis)     MISC    \N      \N
+881     DrosDel 1       KNOWNXREF       1       0       5       An isogenic deficiency kit for Drosophila melanogaster  MISC    \N      \N
+882     FlyGrid 1       KNOWNXREF       1       0       5       Fly GRID Interaction Data, The General Repository for Interaction Datasets      MISC    \N      \N
+883     hybrigenics     1       KNOWNXREF       1       0       5       Hybrigenics Drosophila PIMRider (protein interaction map)
+884     InteractiveFly  1       KNOWNXREF       1       0       5       Interactive Fly, A cyberspace guide to Drosophila genes and their roles in development  MISC    \N      \N
+890     DEDb    1       KNOWNXREF       1       0       5       Drosophila melanogaster Exon DataBase   MISC    \N      \N
 900	GKB	1	XREF	1	0	5	GKB	MISC	\N	\N
 1000	GO	1	KNOWNXREF	1	0	5	GO	MISC	\N	\N
 1100	HGNC	1	KNOWNXREF	0	1	100	HGNC Symbol	PRIMARY_DB_SYNONYM	\N	\N
@@ -200,6 +212,14 @@
 6410	Ens_Gg_transcript	1	XREF	1	0	40	Ensembl Chicken Transcript	MISC	\N	\N
 6420	Ens_Gg_translation	1	XREF	1	0	40	Ensembl Chicken Translation	MISC	\N	\N
 6500	IMCB_Tr_gene	1	XREF	1	0	40	IMCB Fugu Gene	MISC	\N	\N
+6600    Ens_Ag_gene     1       XREF    1       0       5       Ensembl Mosquito Gene  MISC    \N      \N
+6630    Ens_Am_gene     1       XREF    1       0       5       Ensembl Bee Gene        MISC    \N      \N
+6660    Ens_Ce_gene     1       XREF    1       0       5       Ensembl Worm Gene       MISC    \N      \N
+6690    Ens_Dm_gene     1       XREF    1       0       5       Ensembl FruitFly Gene   MISC    \N      \N
+6720    Ens_Fr_gene     1       XREF    1       0       5       Ensembl Fugu Gene       MISC    \N      \N
+6750    Ens_Pt_gene     1       XREF    1       0       5       Ensembl Chimpanzee Gene MISC    \N      \N
+6780    Ens_Rn_gene     1       XREF    1       0       5       Ensembl Rat Gene        MISC    \N      \N
+6810    Ens_Tn_gene     1       XREF    1       0       5       Ensembl PufferFish Gene MISC    \N      \N
 7159	AedesGenBank	1	PRED	1	0	30	Aedes GenBank	MISC	\N	\N
 7200	IMGT/LIGM_DB	200641-6	XREF	1	1	10	IMGT/LIGM-DB	MISC	\N	\N
 7201	IMGT/GENE_DB	200641-6	KNOWN	1	0	40	IMGT/GENE-DB	MISC	\N	\N
@@ -231,6 +251,15 @@
 9800	kyotograil_2004	1	PRED	1	0	30	Ciona intestinalis Kyotograil 2004 predictions	MISC	\N	\N
 9900	kyotograil_2005	1	PRED	1	0	30	Ciona intestinalis Kyotograil 2005 predictions	MISC	\N	\N
 10000	wormbase_id	1	XREF	1	0	30	Generic exdb for worbase id of any type for feature table	MISC	\N	\N
+10100   EPD     1       KNOWNXREF       1       0       5       Eukaryotic Promoter Database (Bucher)   MISC    \N      \N
+10200   GPCR    1       KNOWNXREF       1       0       5       The G protein-coupled receptor database MISC    \N      \N
+10300   MEROPS  1       KNOWNXREF       1       0       5       MEROPS - the Peptidase Database MISC    \N      \N
+10400   miRBase 1       KNOWNXREF       1       0       5       microRNA database       MISC    \N      \N
+10500   TransFac        1       KNOWNXREF       1       0       5       TransFac, database of transcription factors and their binding sites     MISC    \N      \N
+10600   modCB   1       KNOWNXREF       1       0       5       Caenorhabditis briggsae, InParanoid model organism database     MISC    \N      \N
+10700   modCE   1       KNOWNXREF       1       0       5       Caenorhabditis elegans, InParanoid model organism database      MISC    \N      \N
+10800   modDD   1       KNOWNXREF       1       0       5       Dictyostelium discoideum, InParanoid model organism database    MISC    \N      \N
+10900   GI      1       XREF    1       0       5       GenInfo Identifier, a sequence identification number for a nucleotide sequence  MISC    \N      \N
 #
 #
 # Please separate fields in this file with TABS not spaces!
