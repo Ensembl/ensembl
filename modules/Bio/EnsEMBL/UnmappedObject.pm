@@ -322,7 +322,7 @@ sub external_db_name{
   my $self = shift;
 
   my $handle = $self->{'adaptor'};
-  if(defined($handle)){
+  if(defined($handle) and defined($self->{'external_db_id'})){
     my $sth = $handle->prepare("select db_name from external_db where external_db_id = ".$self->{'external_db_id'});
     $sth->execute();
     my $name;
