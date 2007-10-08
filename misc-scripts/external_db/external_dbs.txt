@@ -201,6 +201,7 @@
 5700	Ens_Cf_gene	1	XREF	1	0	5	Ensembl Dog Gene	MISC	\N	\N
 5710	Ens_Cf_transcript	1	XREF	1	0	5	Ensembl Dog Transcript	MISC	\N	\N
 5720	Ens_Cf_translation	1	XREF	1	0	5	Ensembl Dog Translation	MISC	\N	\N
+5800    Ens_Dr_gene     1       XREF    1       0       5       Ensembl Zebrafish Gene  MISC    \N      \N
 5810	Ens_Dr_transcript	1	XREF	1	0	5	Ensembl Zebrafish Transcript	MISC	\N	\N
 5820	Ens_Dr_translation	1	XREF	1	0	5	Ensembl Zebrafish Translation	MISC	\N	\N
 5900	Ens_Md_gene	1	XREF	1	0	5	Ensembl Monodelphis Gene	MISC	\N	\N
