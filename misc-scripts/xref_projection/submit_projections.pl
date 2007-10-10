@@ -107,7 +107,7 @@ foreach my $pair (@names_1_many) {
   $e = "$dir/names_${from}_$to.err";
   $n = substr("n_${from}_$to", 0, 10);
   print "Submitting name projection from $from to $to (1:many)\n";
-  system "bsub -o $o -e $e -J $n perl project_display_xrefs.pl $opts -from from -to $to -names -delete_names -no_database -one_to_many";
+  system "bsub -o $o -e $e -J $n perl project_display_xrefs.pl $opts -from $from -to $to -names -delete_names -no_database -one_to_many";
 }
 
 # ----------------------------------------
