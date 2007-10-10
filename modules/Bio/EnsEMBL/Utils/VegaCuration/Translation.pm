@@ -51,7 +51,7 @@ sub check_CDS_start_end_remarks {
 	my $stop_codon   = substr($trans_seq, $coding_end-3, 3);
 	my $start_codon  = substr($trans_seq, $coding_start-1, 3);
 
-	#hasref to return results
+	#hashref to return results
 	my $results;
 
 	#extra CDS end not found remarks
@@ -94,5 +94,70 @@ sub check_CDS_start_end_remarks {
 		}
 	}
 
+	return $results;
+}
+
+=head2 check_CDS_end_remarks_loutre
+
+   Args       : B::E::Transcript
+   Example    : my $results = $support->check_CDS_end_remarks($transcript)
+   Description: identifies incorrect 'CDS end...' transcript attribs
+   Returntype : hashref
+
+=cut
+
+sub check_CDS_start_end_remarks_loutre {
+	my $self = shift;
+	my $trans = shift;
+
+	# info for checking
+	my @stops = qw(TGA TAA TAG);
+	my %attributes;
+	foreach my $attribute (@{$trans->get_all_Attributes()}) {
+		$attributes{$attribute->code} = $attribute;
+	}
+	my $coding_end   = $trans->cdna_coding_end;
+	my $coding_start = $trans->cdna_coding_start;
+	my $trans_end    = $trans->length;
+	my $trans_seq    = $trans->seq->seq;
+	my $stop_codon   = substr($trans_seq, $coding_end-3, 3);
+	my $start_codon  = substr($trans_seq, $coding_start-1, 3);
+
+	#hashref to return results
+	my $results;
+
+	#extra CDS end not found remarks
+	if ( ($attributes{'cds_end_NF'}->value == 1)
+			 && ($coding_end != $trans_end) 
+				 && ( grep {$_ eq $stop_codon} @stops) ) {
+		$results->{'END_EXTRA'} = 1;
+	}
+	#missing CDS end not found remark
+	if ( $coding_end == $trans_end ) {
+		if ($attributes{'cds_end_NF'}->value == 0 ) {
+			if (grep {$_ eq $stop_codon} @stops) {
+				$results->{'END_MISSING_2'} = 1;
+			}
+			else {
+				$results->{'END_MISSING_1'} = $stop_codon;
+			}
+		}
+	}
+	#extra CDS start not found remark
+	if ( ($attributes{'cds_start_NF'}->value == 1 )
+			 && ($coding_start != 1)
+				 && ($start_codon eq 'ATG') ) {
+		$results->{'START_EXTRA'} = 1;
+	}
+	#missing CDS start not found remark
+	if ( $coding_start == 1) {
+		if ( $attributes{'cds_start_NF'}->value == 0 ) {
+			if ($start_codon eq 'ATG') {
+				$results->{'START_MISSING_2'} = 1;
+			} else {
+				$results->{'START_MISSING_1'} = $start_codon;
+			}
+		}
+	}
 	return $results;
 }
