@@ -8,7 +8,13 @@ my $release = 47;
 
 my $base_dir = "/lustre/work1/ensembl/gp1/projections/";
 
-my $conf = "release_47.ini"; # registry config file
+my $conf = "release_47.ini"; # registry config file, specifies Compara location
+
+# location of other databases
+my $host = "ens-staging";
+my $port = 3306;
+my $user = "ensadmin";
+my $pass = "ensembl";
 
 # -------------------------- end of config ----------------------------
 
@@ -26,35 +32,82 @@ if (! -e $dir) {
 }
 
 # common options
-my $opts = "-conf $conf -release $release -quiet";
+my $opts = "-conf $conf -host $host -user $user -port $port -pass $pass -version $release -release $release -quiet -nobackup";
 
-my ($o, $e, $n);
+my @names_1_1 = (["human", "chimp"            ],
+		 ["human", "opossum"          ],
+		 ["human", "dog"              ],
+		 ["human", "cow"              ],
+		 ["human", "macaque"          ],
+		 ["human", "chicken"          ],
+		 ["human", "xenopus"          ],
+		 ["human", "guinea_pig"       ],
+		 ["human", "armadillo"        ],
+		 ["human", "small_hedgehog"   ],
+		 ["human", "european_hedgehog"],
+		 ["human", "cat"              ],
+		 ["human", "elephant"         ],
+		 ["human", "bat"              ],
+		 ["human", "platypus"         ],
+		 ["human", "rabbit"           ],
+		 ["human", "galago"           ],
+		 ["human", "european_shrew"   ],
+		 ["human", "squirrel"         ],
+		 ["human", "ground_shrew"     ],
+		 ["mouse", "rat"              ]);
+
+my @names_1_many = (["human", "zebrafish"  ],
+		    ["human", "medaka"     ],
+		    ["human", "tetraodon"  ],
+		    ["human", "fugu"       ],
+		    ["human", "stickleback"]);
+
+
+my @go_terms = (["human",      "mouse"     ],
+		["human",      "rat"       ],
+		["human",      "dog"       ],
+		["human",      "chicken"   ],
+		["human",      "cow"       ],
+		["human",      "chimp"     ],
+		["human",      "macaque"   ],
+		["human",      "guinea_pig"],
+		["drosophila", "anopheles" ],
+		["drosophila", "aedes"     ],
+		["mouse",      "human"     ],
+		["mouse",      "rat"       ],
+		["mouse",      "dog"       ],
+		["mouse",      "chicken"   ],
+		["mouse",      "cow"       ],
+		["rat",        "human"     ],
+		["rat",        "mouse"     ],
+		["danio",      "xenopus"   ],
+		["danio",      "fugu"      ],
+		["danio",      "tetraodon" ],
+		["xenopus",    "danio"     ]);
+
+my ($from, $to, $o, $e, $n);
 
 # ----------------------------------------
 # Display names
 
-# human to chimp,opossum,dog,cow,macaque,chicken,xenopus,pig,armadillo,small_hedgehog,european_hedgehog,cat,elephant,macaque,bat,platypus,rabbit,galago,european_shrew,squirrel,ground_shrew
-foreach my $to ("chimp", "opossum", "dog", "cow", "macaque", "chicken", "xenopus", "guinea_pig", "armadillo", "small_hedgehog", "european_hedgehog", "cat", "elephant", "bat", "platypus", "rabbit", "galago", "european_shrew", "squirrel", "ground_shrew") {
-  $o = "$dir/names_human_$to.out";
-  $e = "$dir/names_human_$to.err";
-  $n = substr("n_hum_$to", 0, 10); # job name display limited to 10 chars
-  system "bsub -o $o -e $e -J $n perl project_display_xrefs.pl $opts -from human -to $to -names -delete_names -no_database";
+# 1:1
+foreach my $pair (@names_1_1) {
+  ($from, $to) = @$pair;
+  $o = "$dir/names_${from}_$to.out";
+  $e = "$dir/names_${from}_$to.err";
+  $n = substr("n_${from}_$to", 0, 10); # job name display limited to 10 chars
+  print "Submitting name projection from $from to $to\n";
+  system "bsub -o $o -e $e -J $n perl project_display_xrefs.pl $opts -from $from -to $to -names -delete_names -no_database";
 }
 
-# mouse to rat
-foreach my $to ("rat") { # don't need the loop but may add more species later
-  $o = "$dir/names_mouse_$to.out";
-  $e = "$dir/names_mouse_$to.err";
-  $n = substr("n_mou_$to", 0, 10);
-  system "bsub -o $o -e $e -J $n perl project_display_xrefs.pl $opts -from mouse -to $to -names -delete_names -no_database";
-}
-
-# human to fish - note use of -one_to_many option for 1-many projections
-foreach my $to ("zebrafish", "medaka", "tetraodon", "fugu", "stickleback") {
-  $o = "$dir/names_human_$to.out";
-  $e = "$dir/names_human_$to.err";
-  $n = substr("n_hum_$to", 0, 10);
-  system "bsub -o $o -e $e -J $n perl project_display_xrefs.pl $opts -from human -to $to -names -delete_names -no_database -one_to_many";
+# 1:many
+foreach my $pair (@names_1_many) {
+  ($from, $to) = @$pair;
+  $o = "$dir/names_${from}_$to.out";
+  $e = "$dir/names_${from}_$to.err";
+  $n = substr("n_${from}_$to", 0, 10);
+  print "Submitting name projection from $from to $to (1:many)\n";
+  system "bsub -o $o -e $e -J $n perl project_display_xrefs.pl $opts -from from -to $to -names -delete_names -no_database -one_to_many";
 }
 
 # ----------------------------------------
@@ -62,37 +115,16 @@ foreach my $to ("zebrafish", "medaka", "tetraodon", "fugu", "stickleback") {
 
 $opts .= " -nobackup";
 
-# human to mouse, rat, dog, chicken, cow, chimp, macaque, guinea_pig
-foreach my $to ("mouse", "rat", "dog", "chicken", "cow", "chimp", "macaque", "guinea_pig") {
-  $o = "$dir/go_human_$to.out";
-  $e = "$dir/go_human_$to.err";
-  $n = substr("g_hum_$to", 0, 10);
-  system "bsub -o $o -e $e -J $n perl project_display_xrefs.pl $opts -from human -to $to -go_terms -delete_go_terms";
-}
-
-# drosophila to anopheles, aedes
-foreach my $to ("anopheles", "aedes") {
-  $o = "$dir/go_drosophila_$to.out";
-  $e = "$dir/go_drosophila_$to.err";
-  $n = substr("g_dros_$to", 0, 10);
-  system "bsub -o $o -e $e -J $n perl project_display_xrefs.pl $opts -from drosophila -to $to -go_terms -delete_go_terms";
+foreach my $pair (@go_terms) {
+  ($from, $to) = @$pair;
+  $o = "$dir/go_${from}_$to.out";
+  $e = "$dir/go_${from}_$to.err";
+  $n = substr("g_${from}_$to", 0, 10);
+  print "Submitting GO term projection from $from to $to\n";
+  system "bsub -o $o -e $e -J $n perl project_display_xrefs.pl $opts -from $from -to $to -go_terms -delete_go_terms";
 }
 
 # ----------------------------------------
 
-# GO terms - mouse to human, rat, dog, chicken, cow
-# Have to use job dependencies since these jobs need to run after the corresponding human-X projections have
-# Note need to not use -delete the second time around
-foreach my $to ("human", "rat", "dog", "chicken", "cow") {
-  $o = "$dir/go_mouse_$to.out";
-  $e = "$dir/go_mouse_$to.err";
-  $n = substr("g_mou_$to", 0, 10);
-  my $d;
-  if ($to eq 'human') { # no "human-human" to depend upon
-    $d = '';
-  } else {
-    my $depend_job_name = substr("g_hum_$to", 0, 10);
-    $d = "-w 'ended($depend_job_name)'";
-  }
-  system "bsub -o $o -e $e -J $n $d perl project_display_xrefs.pl $opts -from mouse -to $to -go_terms";
-}
+
+
