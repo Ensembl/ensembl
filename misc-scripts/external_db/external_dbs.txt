@@ -169,9 +169,9 @@
 4670	shares_CDS_with_OTTT	1	XREF	1	0	1	Havana transcript having same CDS	ALT_TRANS	\N	\N
 4680	shares_CDS_and_UTR_with_OTTT	1	XREF	1	0	1	Transcript having exact match between ENSEMBL and HAVANA	ALT_TRANS	\N	\N
 4700	Medaka	1	XREF	1	0	1	Medaka Genome Project	MISC	\N	\N
-4800	ENST	1	XREF	1	0	1	Ensembl transcripts	MISC	\N	\N
-4810	ENST_ident	1	XREF	1	0	1	Ensembl transcripts identical to Vega transcript	MISC	\N	\N
-4820	ENST_CDS	1	XREF	1	0	1	Ensembl transcripts sharing CDS with Vega transcript	MISC	\N	\N
+4800	ENST	1	XREF	1	0	1	Ensembl transcript having exact match with Havana	ALT_TRANS	\N	\N
+4810	ENST_ident	1	XREF	1	0	1	Ensembl transcript having exact match with Havana	ALT_TRANS	\N	\N
+4820	ENST_CDS	1	XREF	1	0	1	Ensembl transcript sharing CDS with Havana	ALT_TRANS	\N	\N
 4900	TCAG	1	XREF	1	0	75	TCAG Chr 7 Annotation	MISC	\N	\N
 5000	Ens_Mm_gene	1	XREF	1	0	40	Ensembl Mouse Gene	MISC	\N	\N
 5020	Ens_Mm_translation	1	XREF	1	0	40	Ensembl Mouse Translation	MISC	\N	\N
