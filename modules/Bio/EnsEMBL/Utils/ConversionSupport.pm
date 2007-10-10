@@ -235,9 +235,9 @@ sub get_common_params {
     );
 }
 
-=head2 get_lutre_params
+=head2 get_loutre_params
 
-  Example     : my @allowed_params = $self->get_lutre_params, 'extra_param';
+  Example     : my @allowed_params = $self->get_loutre_params, 'extra_param';
   Description : Returns a list of commonly used parameters in for working with a loutre db
   Return type : Array - list of common parameters
   Exceptions  : none
@@ -1480,7 +1480,21 @@ sub fetch_non_hidden_slices {
 	my $visible_chroms;
 	foreach my $chrom ( @{$sa->fetch_all($cs,$cv)} ) {
 		my $attribs = $aa->fetch_all_by_Slice($chrom);
-		push @$visible_chroms, $chrom if @{$self->get_attrib_values($attribs,'hidden',0)};
+		my $chrom_name = $chrom->name;
+		if (my @values = @{$self->get_attrib_values($attribs,'hidden')}) {
+			if ( scalar(@values) > 1) {
+				$self->log_warning("More than one hidden attribute for chromosome $chrom_name\n");
+			}
+			elsif (! $values[0]) {				
+				push @$visible_chroms, $chrom if @{$self->get_attrib_values($attribs,'hidden',0)};
+			}
+			else {
+				$self->log_verbose("chromosome $chrom_name is hidden\n");	
+			}
+		}
+		else {
+			$self->log_warning("No hidden attribute for chromosome $chrom_name\n");
+		}
 	}
 	return $visible_chroms;
 }
@@ -1510,7 +1524,7 @@ sub get_attrib_values {
 	my $code    = shift;
 	my $value   = shift;
 	if (my @atts = grep {$_->code eq $code } @$attribs) {
-		my $r;
+		my $r = [];
 		if ($value) {
 			if (my @values = grep {$_->value eq $value} @atts) {
 				foreach (@values) {
