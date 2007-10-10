@@ -216,8 +216,8 @@
 123	hidden_remark	Hidden Remark
 124	mRNA_start_NF	mRNA start not found
 125	mRNA_end_NF	mRNA end not found
-126	cds_start_NF	cds start not not
-127	cds_end_NF	cds end not found
+126	cds_start_NF	CDS start not found
+127	cds_end_NF	CDS end not found
 128	write_access	Write access for Sequence Set	1 for writable , 0 for read-only
 129	hidden	Hidden Sequence Set
 
