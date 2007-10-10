@@ -12,9 +12,14 @@ use Bio::EnsEMBL::Utils::Eprof qw(eprof_start eprof_end eprof_dump);
 
 my $method_link_type = "ENSEMBL_ORTHOLOGUES";
 
-my ($conf, $compara, $from_species, @to_multi, $print, $names, $go_terms, $delete_names, $delete_go_terms, $no_backup, $full_stats, $descriptions, $release, $no_database, $quiet, $single_source, $max_genes, $one_to_many, $go_check);
+my ($conf, $host, $user, $port, $pass, $version, $compara, $from_species, @to_multi, $print, $names, $go_terms, $delete_names, $delete_go_terms, $no_backup, $full_stats, $descriptions, $release, $no_database, $quiet, $single_source, $max_genes, $one_to_many, $go_check);
 
 GetOptions('conf=s'          => \$conf,
+	   'host=s'          => \$host,
+	   'user=s'          => \$user,
+	   'port=s'          => \$port,
+	   'pass=s'          => \$pass,
+	   'version=i'       => \$version,
 	   'compara=s'       => \$compara,
 	   'from=s'          => \$from_species,
 	   'to=s'            => \@to_multi,
@@ -40,9 +45,9 @@ $| = 1; # auto flush stdout
 
 $descriptions = 1;
 
-if (!$conf) {
+if (!$conf && !$host && !$user) {
 
-  print STDERR "Configuration file must be supplied via -conf argument\n";
+  print STDERR "Configuration file must be supplied via -conf argument, or host/user must be specified\n";
   usage();
   exit(1);
 
@@ -85,12 +90,16 @@ my @evidence_codes = ( "IDA", "IEP", "IGI", "IMP", "IPI" );
 
 @to_multi = split(/,/,join(',',@to_multi));
 
-# Take values from ENSEMBL_REGISTRY environment variable or from ~/.ensembl_init
-# if no reg_conf file is given.
+# load from database and conf file
 Bio::EnsEMBL::Registry->no_version_check(1);
-Bio::EnsEMBL::Registry->load_all($conf);
+Bio::EnsEMBL::Registry->load_registry_from_db(-host       => $host,
+					      -port       => $port,
+					      -user       => $user,
+					      -pass       => $pass,
+					      -db_version => $version);
+Bio::EnsEMBL::Registry->load_all($conf, 0, 1); # options mean "not verbose" and "don't clear registry"
 
-# Get Compara adaptors - use the one specified on the command line, or the first one 
+# Get Compara adaptors - use the one specified on the command line, or the first one
 # defined in the registry file if not specified
 
 my $mlssa;
@@ -468,7 +477,6 @@ sub delete_names {
 
   my ($to_ga) = @_;
 
-  # do both old style (where display_label was modified) and new style (where info_type=PROJECTION)
   print "Setting gene display_xrefs that were projected to NULL\n";
   my $sth = $to_ga->dbc()->prepare("UPDATE gene, xref SET gene.display_xref_id = null WHERE gene.display_xref_id=xref.xref_id AND xref.info_type='PROJECTION'");
   $sth->execute();
@@ -591,6 +599,7 @@ sub fetch_homologies {
   print "Fetching Compara homologies\n";
 
   my $from_species_alias = lc(Bio::EnsEMBL::Registry->get_alias($from_species));
+  $from_species_alias =~ tr/_/ /;
 
   my %homology_cache;
 
@@ -616,7 +625,7 @@ sub fetch_homologies {
       }
     }
 
-    print "Warning: can't find stable ID corresponding to 'from' species" if (!$from_stable_id);
+    print "Warning: can't find stable ID corresponding to 'from' species ($from_species_alias)\n" if (!$from_stable_id);
 
     push @{$homology_cache{$from_stable_id}}, @to_stable_ids;
 
@@ -701,6 +710,17 @@ sub usage {
   [--conf filepath]     the Bio::EnsEMBL::Registry configuration file. If none
                         is given, the one set in ENSEMBL_REGISTRY will be used
                         if defined, if not ~/.ensembl_init will be used.
+                        Note only the Compara database needs to be defined here,
+                        assuming the rest of the databases are on the server
+                        defined by --host etc
+
+   --host, --port,      Database connection details.
+   --user, --pass,
+   --version
+
+                        Note that a combination of the host/user and conf files
+                        can be used. Databases specified in both will use the
+                        conf file setting preferentially.
 
    --from string        The species to use as the source
                         (a Bio::EnsEMBL::Registry alias, defined in config file)
@@ -752,7 +772,7 @@ sub usage {
 
   e.g
 
-  perl project_display_xrefs.pl -conf reg_conf.pl -compara compara35 -from human -to dog
+  perl project_display_xrefs.pl --conf compara_only.ini --host ens-staging -user ensadmin -pass ensembl -version 47 -names -delete_names -from human -to dog -nobackup -no_database
 
 EOF
 
