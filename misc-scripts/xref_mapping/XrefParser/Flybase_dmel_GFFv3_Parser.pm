@@ -2,7 +2,17 @@
 #
 # Files actually contain both types of xref, distinguished by ID line;
 #
-
+# This module will read in the fly gff text file and make xrefs from the information in the file.
+# First of all, it read knows what all the gene, transcript and translation types are, found in column 3 of the gff file:
+# Gene = gene
+# Transcript = mRNA ncRNA snRNA tRNA rRNA pseudogene snoRNA miRNA
+# Translation = CDS protein 
+# For each line in the gff file for the above list of genes, transcript and translations, the following happens:
+# The unique_id is read in from ID= (FBgn, FBtr, FBpp). This is the direct xref for all xrefs of this entry.
+# An xref is made for the entry, using the ID as the xref's accession. Synonyms from Alias= are added to this xref.
+# The Name (Name=) is read in and added as an xref. Synonyms from Alias= are added to this xref.
+# All entries from Dbxref= are added in as xrefs for the entry; they have no synonyms.
+  
 #2L gene [...]  ID=CG11023;Dbxref=FlyBase:FBan0011023,FlyBase:FBgn0031208;gbunit=AE003590;synonym=CG11023
 #2L mRNA [...]  ID=CG11023-RA;Dbxref=FlyBase:FBtr008,FlyBase:FBgn003;dbxref_2nd=Gadfly:CG11023-RA;synonym=CG23-RA
 #3R     FlyBase gene    8084471 8128509 .       +       .
@@ -194,7 +204,10 @@ sub run {
 sub relink_synonyms_to_xrefs{
   my $self = shift;
   foreach my $x (@{$self->xrefs} ){
-   $x->{SYNONYMS} = $self->get_synonyms($x->{ENSEMBL_STABLE_ID});
+    my $src_name = XrefParser::BaseParser->get_source_name_for_source_id($x->{SOURCE_ID});
+    if ($src_name =~ m/^FlyBaseName_/ || $src_name =~ m/^flybase_.*_id$/) {
+      $x->{SYNONYMS} = $self->get_synonyms($x->{ENSEMBL_STABLE_ID});
+    }
   }
 }
 
@@ -234,15 +247,14 @@ sub create_xrefs {
 	}
         # for a gene, this will be FBgn, for a transcript this will be FBtr, etc
 	$unique_id =~s/ID=//g;
+        $self->make_id_xref($unique_id,$type);
 	# set up xref-entry for EVERY single item
 	foreach my $item (@desc) {
-
+          $self->set_flybase_synonyms($item,$unique_id);
 	  # make all xrefs for type "Name=" in desc-field
           # these are FlyBaseName_gene for genes, FlyBaseName_transcript for transcripts, etc
 	  $self->make_name_xref($item,$unique_id,$type);
 
-	  $self->set_flybase_synonyms($item,$unique_id);
-	  
 	  # make all xrefs for type "Name=" in desc-field
 	  $self->make_dbxref_xref($item,$unique_id,$type);
 	}
@@ -461,7 +473,7 @@ sub make_dbxref_xref{
 	$xref->{LABEL} = $dbx;
 	$xref->{SOURCE_ID} = $src_id;
 	$xref->{SPECIES_ID} = $self->species_id();
-	$xref->{SYNONYMS} = $self->get_synonyms($unique_id);
+	#$xref->{SYNONYMS} = $self->get_synonyms($unique_id);
 	$self->add_xref($xref);
 
 	if ($type){
@@ -492,6 +504,42 @@ sub set_flybase_synonyms {
   return undef;
 }
 
+sub make_id_xref{
+  my ($self,$unique_id,$type) = @_;
+  my $xref=undef;
+
+  # make an xref
+  $xref->{ACCESSION} = $unique_id;
+  $xref->{LABEL} = $unique_id;
+  $xref->{SPECIES_ID} = $self->species_id();
+  $xref->{SYNONYMS} = $self->get_synonyms($unique_id);
+  my $type_s = $type;
+  if ($type eq "gene") {
+    $type_s = $self->source_name_fbgn();
+  } elsif ($type eq "transcript") {
+    $type_s = $self->source_name_fbtr();
+  } elsif ($type eq "translation") {
+    $type_s =  $self->source_name_fbpp();
+  } else {
+    throw ("Type $type not recognised");
+  }
+
+  $xref->{SOURCE_ID} =  $self->get_source($type_s);
+	$self->add_xref($xref);
+
+  # only allow Name on genes. This is a fix for Biomart really.
+  if (defined($xref) and $type){
+    my $direct_xref;
+    $direct_xref = $xref ;
+    $direct_xref->{ENSEMBL_STABLE_ID} = $unique_id;
+    $direct_xref->{ENSEMBL_TYPE} = $type;
+    $direct_xref->{LINKAGE_TYPE}='bla';
+    $direct_xref->{SYNONYMS} = $self->get_synonyms($unique_id);
+    $self->add_direct_xref($direct_xref);
+  }
+  return;
+}
+
 sub make_name_xref{
   my ($self,$item,$unique_id,$type) = @_;
   my $xref=undef;
@@ -504,6 +552,7 @@ sub make_name_xref{
     $xref->{ACCESSION} = $$gff_gene_name[0];
     $xref->{LABEL} = $$gff_gene_name[0];
     $xref->{SPECIES_ID} = $self->species_id();
+    $xref->{SYNONYMS} = $self->get_synonyms($unique_id);
     my $type_s = $type;
     if($type eq "translation"){
       $type_s = $type."s";
@@ -513,16 +562,16 @@ sub make_name_xref{
   }
   # only allow Name on genes. This is a fix for Biomart really.
   if (defined($xref) and $type){
-	my $direct_xref;
+    my $direct_xref;
     $direct_xref = $xref ;
     $direct_xref->{ENSEMBL_STABLE_ID} = $unique_id;
     $direct_xref->{ENSEMBL_TYPE} = $type;
     $direct_xref->{LINKAGE_TYPE}='bla';
+    $direct_xref->{SYNONYMS} = $self->get_synonyms($unique_id);
     $self->add_direct_xref($direct_xref);
   }
   return;
 }
-
 
 sub get_fields {
   my ($item,$target) =@_;
@@ -892,22 +941,10 @@ sub gff_dbxref{
   return $self->{_gff_dbxref};
 }
 
-sub gff_2nd_dbxref{
-  my $self = shift;
-  $self->{_gff_2nd_dbxref} = shift if @_ ;
-  return $self->{_gff_2nd_dbxref};
-}
-
 sub gff_synonym{
   my $self = shift;
   $self->{_gff_synonym} = shift if @_ ;
   return $self->{_gff_synonym};
-}
-
-sub gff_2nd_synonym{
-  my $self = shift;
-  $self->{_gff_2nd_synonym} = shift if @_ ;
-  return $self->{_gff_2nd_synonym};
 }
 
 sub species_id {
