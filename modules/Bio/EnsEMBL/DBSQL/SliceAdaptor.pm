@@ -1445,6 +1445,10 @@ sub store_assembly{
   #$self->db->{seq_region_cache} = undef;
   #$self->_cache_seq_regions();
 
+  my $ama = $self->db->get_AssemblyMapperAdaptor();
+  $ama->delete_cache();
+
+
   return $asm_slice->name . "<>" . $cmp_slice->name;
 
 }
