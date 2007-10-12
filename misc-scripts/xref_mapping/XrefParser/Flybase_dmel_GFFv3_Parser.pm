@@ -6,7 +6,20 @@
 # First of all, it read knows what all the gene, transcript and translation types are, found in column 3 of the gff file:
 # Gene = gene
 # Transcript = mRNA ncRNA snRNA tRNA rRNA pseudogene snoRNA miRNA
-# Translation = CDS protein 
+# Translation = protein (could include CDS here but haven't ?) 
+# 
+# ID=FBgn => flybase_gene_id
+# ID=FBtr => flybase_transcript_id
+# ID=FBpp => flybase_polypeptide_id
+# Name=CG0123 => FlyBaseName_gene
+# Name=CG0123-RA => FlyBaseName_transcript
+# Name=CG0123-PA => FlyBaseName_translations
+# Dbxref=FlyBase:FBan => flybase_annotation_id
+# Dbxref=FlyBase_Annotation_IDs:CG0123 => gadfly_gene_cgid
+# Dbxref=FlyBase_Annotation_IDs:CG0123-RA => gadfly_transcript_cgid
+# Dbxref=FlyBase_Annotation_IDs:CG0123-PA => gadfly_translation_id
+# Alias= => flybase_synonym
+#
 # For each line in the gff file for the above list of genes, transcript and translations, the following happens:
 # The unique_id is read in from ID= (FBgn, FBtr, FBpp). This is the direct xref for all xrefs of this entry.
 # An xref is made for the entry, using the ID as the xref's accession. Synonyms from Alias= are added to this xref.
@@ -57,7 +70,7 @@ sub new {
 
   #  my @gff_obj =qw( CDS exon gene mRNA ncRNA pseudogene rRNA snRNA snoRNA tRNA );
   # this array may need to change between releases so check that it's updated
-  my @gff_obj =qw( CDS gene mRNA ncRNA snRNA tRNA rRNA pseudogene snoRNA miRNA);
+  my @gff_obj =qw( gene mRNA ncRNA snRNA tRNA rRNA pseudogene snoRNA miRNA);
   $self->gff_object_types(\@gff_obj);
 
   #
@@ -129,7 +142,7 @@ sub new {
   $self->source_name_prefix_modDDgene('modDD_gene');     # For Dbxref=modDD
 
   my @gene_types = qw (gene) ;
-  my @translation_types = qw (CDS protein);
+  my @translation_types = qw (protein);
   # The transcript_types may change from release to release so check that this list is up-to-date
   my @transcript_types = qw (mRNA ncRNA snRNA tRNA rRNA pseudogene snoRNA miRNA);
 
@@ -273,17 +286,17 @@ sub set_ensembl_object_type{
   my ($self,$t) = @_ ; # $t is identifier in gff for object : CDS,mRNA,gene,pseudogene,snRNA,....
 
   for my $hc (@{ $self->gene_types } ){
-    if ($t=~m/$hc/){
+    if ($t=~m/^$hc$/){
       return 'gene';
     }
   }
   for my $hc (@{ $self->translation_types } ){
-    if ($t=~m/$hc/){
+    if ($t=~m/^$hc$/){
       return 'translation';
     }
   }
   for my $hc (@{ $self->transcript_types} ){
-    if ($t=~m/$hc/){
+    if ($t=~m/^$hc$/){
       return 'transcript';
     }
   }
