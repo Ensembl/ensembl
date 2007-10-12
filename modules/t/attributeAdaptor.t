@@ -4,7 +4,7 @@ use Bio::EnsEMBL::Test::TestUtils;
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 22;
+	plan tests => 26;
 }
 
 use Bio::EnsEMBL::Test::MultiTestDB;
@@ -140,6 +140,15 @@ ok($count == 1);
 
 ok(@attribs == 1);
 
+
+@attribs = @{$aa->fetch_all_by_Slice($slice,"rubbish")};
+ok(@attribs == 0);
+
+@attribs = @{$aa->fetch_all_by_Slice($slice,"test_code2")};
+ok(@attribs == 1);
+
+
+
 $attrib = $attribs[0];
 
 ok($attrib->name eq 'test_name2');
@@ -149,18 +158,30 @@ ok($attrib->value eq 'test_value2');
 
 
 #
-# test the removal of this attribute
+# test the removal of this attribute with atrrib code
 #
-$aa->remove_from_Slice($slice);
+$aa->remove_from_Slice($slice,"junk");
+$count = $db->dbc->db_handle->selectall_arrayref
+  ("SELECT count(*) FROM seq_region_attrib " .
+   "WHERE seq_region_id = " . $slice->get_seq_region_id())->[0]->[0];
+
+ok($count == 1);
+
+
+
 
 #
-# make sure the seq_region_attrib table was updated
+# test the removal of this attribute
 #
+
+$aa->remove_from_Slice($slice,"test_code2");
 $count = $db->dbc->db_handle->selectall_arrayref
   ("SELECT count(*) FROM seq_region_attrib " .
    "WHERE seq_region_id = " . $slice->get_seq_region_id())->[0]->[0];
 
 ok($count == 0);
+
+
 
 #
 # make sure the attribute is no longer retrievable
@@ -173,7 +194,6 @@ ok(@attribs == 0);
 #
 # try to add an attribute with an already existing code
 #
-
 $aa->store_on_Slice($slice, [$attrib]);
 #
 # make sure the seq_region_attrib table was updated
@@ -195,6 +215,17 @@ ok($count == 1);
 @attribs = @{$aa->fetch_all_by_Slice($slice)};
 print "attribs: " . scalar(@attribs) . "\n";
 ok(@attribs == 1);
+
+
+#
+# test the removal of this attribute
+#
+$aa->remove_from_Slice($slice);
+$count = $db->dbc->db_handle->selectall_arrayref
+  ("SELECT count(*) FROM seq_region_attrib " .
+   "WHERE seq_region_id = " . $slice->get_seq_region_id())->[0]->[0];
+
+ok($count == 0);
 
 
 $multi->restore('core', 'misc_attrib', 'seq_region_attrib', 'attrib_type');
