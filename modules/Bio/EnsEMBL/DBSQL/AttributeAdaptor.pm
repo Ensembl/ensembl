@@ -170,13 +170,14 @@ sub store_on_ {
 
 
 sub remove_from_{
-  my $self = shift;
-  my $type = shift;
+  my $self   = shift;
+  my $type   = shift;
   my $object = shift;
+  my $code   = shift;
   my $table;
 
   if(!ref($object) || !$object->isa('Bio::EnsEMBL::'.$type)) {
-    throw("$type argument is required. but you passed $object");
+    throw("$type argument is required or a attrib code. but you passed $object");
   }
 
   my $object_id;
@@ -207,10 +208,20 @@ sub remove_from_{
     throw("$type must have dbID.");
   }
 
-  my $sth = $self->prepare("DELETE FROM ".$table."_attrib " .
+  my $sth;
+  if(defined($code)){
+    $sth = $self->prepare("DELETE a FROM ".$table."_attrib a ,attrib_type at " .
+                         "WHERE a.attrib_type_id = at.attrib_type_id AND ".
+                         "a.".$type."_id = ? AND ".
+			 "at.code like ?");
+    $sth->bind_param(1,$object_id,SQL_INTEGER);
+    $sth->bind_param(2,$code,SQL_VARCHAR);
+  }
+  else{
+    $sth = $self->prepare("DELETE FROM ".$table."_attrib " .
                          "WHERE ".$type."_id = ?");
-
-  $sth->bind_param(1,$object_id,SQL_INTEGER);
+    $sth->bind_param(1,$object_id,SQL_INTEGER);
+  }
   $sth->execute();
 
   $sth->finish();
@@ -221,9 +232,10 @@ sub remove_from_{
 
 
 sub fetch_all_by_{
-  my $self = shift;
-  my $type = shift;
+  my $self     = shift;
+  my $type     = shift;
   my $object   = shift;
+  my $code     = shift;
   my $table =undef;
 
   if(!ref($object) || !$object->isa('Bio::EnsEMBL::'.$type)) {
@@ -253,11 +265,16 @@ sub fetch_all_by_{
   }
 
 
-  my $sth = $self->prepare("SELECT at.code, at.name, at.description, " .
-                           "       t.value " .
-                           "FROM ".($table||$type)."_attrib t, attrib_type at " .
-                           "WHERE t.".$type."_id = ? " .
-                           "AND   at.attrib_type_id = t.attrib_type_id");
+  my $sql = "SELECT at.code, at.name, at.description, t.value " .
+              "FROM ".($table||$type)."_attrib t, attrib_type at ".
+                 "WHERE t.".$type."_id = ? " .
+	         "AND   at.attrib_type_id = t.attrib_type_id ";
+
+  if(defined($code)){
+    $sql .= 'AND at.code like "'.$code.'" ';
+  }
+		   
+  my $sth = $self->prepare($sql);
 
   $sth->bind_param(1,$object_id,SQL_INTEGER);
   $sth->execute();
