@@ -8,6 +8,11 @@ use vars '@ISA';
 
 use XrefMapper::BasicMapper qw(%stable_id_to_internal_id %object_xref_mappings %xref_to_source %xref_accessions %source_to_external_db);
 
+my %genes_to_transcripts;
+my %transcript_to_translation;
+my %translation_to_transcript;
+my %transcript_length;
+
 sub get_set_lists {
 
   return [["ExonerateGappedBest1", ["drosophila_melanogaster","*"]]];
@@ -34,171 +39,385 @@ sub xref_offset{
   return $self->{'_xref_offset'};
 }
 
-sub build_transcript_display_xrefs {
 
-  my ($self,$xref_id_offset) = @_;
+sub gene_display_xref_sources {
 
-  $self->xref_offset($xref_id_offset);
-  $self->build_xref_to_source_mappings();
+  my @list = qw(
+                FlyBaseName_gene
+                gadfly_gene_cgid
+                flybase_gene_id
+                );
 
-  $self->build_display_xrefs("Transcript", "FlyBaseName_transcript", $xref_id_offset);
+  my %ignore;
+  $ignore{"EntrezGene"}= 'FROM:RefSeq_[pd][en][pa].*_predicted';
+
+  return [\@list,\%ignore];
 
 }
 
-sub build_gene_display_xrefs {
 
+sub build_transcript_and_gene_display_xrefs {
   my ($self) = @_;
-
-  my $xref_id_offset =  $self->xref_offset();
-  
-  $self->build_display_xrefs("Gene", "FlyBaseName_gene", $xref_id_offset);
-
-}
-
-sub build_display_xrefs {
-
-  my ($self, $type, $first_source, $xref_id_offset) = @_;
-
-  print "Building " . lc($type) . " display_xrefs for drosophila\n";
-
   my $dir = $self->core->dir();
 
-  $self->read_direct_xref_mappings();
+  my %external_name_to_id;
+  my %ex_db_id_to_status;
+  my $sql1 = "SELECT external_db_id, db_name, status from external_db";
+  
+  my $sth1 = $self->core->dbc->prepare($sql1) || die "prepare failed for $sql1\n";
+  $sth1->execute() || die "execute failed";
+  my ($db_id, $name, $status);
+  $sth1->bind_columns(\$db_id, \$name, \$status);
+  while($sth1->fetch()){
+    $external_name_to_id{$name}  = $db_id;
+    $ex_db_id_to_status{$db_id} = $status;
+  }
+  $sth1->finish;
 
-  print "Building " . lc($type) . " display_xrefs\n";
-  my $n = 0;
 
-  # go through each object/xref mapping and store the best ones as we go along
-  my %obj_to_best_xref;
+  #############################
+  #create the tempory table
+  #############################
+
+  my $sth = $self->core->dbc->prepare("create table identity_xref_temp like identity_xref");
+  print "creating table identity_xref_temp\n";
+  $sth->execute() || die "Could not \ncreate table identity_xref_temp like identity_xref\n";
 
 
-  OBJECT: foreach my $key (keys %XrefMapper::BasicMapper::object_xref_mappings) {
+  #############################
+  #populate the tempory table
+  #############################
+  my $file = $dir."/identity_xref_temp.txt";
+  
+  if(-s $file){
+    my $sth = $self->core->dbc->prepare("LOAD DATA LOCAL INFILE \'$file\' IGNORE INTO TABLE identity_xref_temp");
+    print "Uploading data in $file to identity_xref_temp\n";
+    $sth->execute();
+  }
+  else{
+    print "NO file or zero size file, so not able to load file $file to identity_xref_temp\n";
+  }
 
-    my ($obj_type, $object_id) = split /\|/, $key;
+  #
+  # get a list of sources to use
+  # and also a list of those xrefs to ignore 
+  # where the source name is the key and the value is the string to test for 
+  # 
+  my ($genepresedence, $geneignore) = @{$self->gene_display_xref_sources()};
+  my ($presedence, $ignore) = @{$self->transcript_display_xref_sources()};
 
-    next if ($obj_type !~ /$type/i);
+  my $i=0;
+  my %level;
 
-    # if the ensembl_object has more than one associated xref,
-    # use the $first_source if present, otherwise the $second_source
-    my @xrefs = @{$XrefMapper::BasicMapper::object_xref_mappings{$key}};
-    my ($best_xref);
-    foreach my $xref (@xrefs) {
+  foreach my $ord (reverse (@$presedence)){
+    $i++;
+    if(!defined($external_name_to_id{$ord})){
+      print STDERR "unknown external database name *$ord* being used\n";
+    }
+    $level{$external_name_to_id{$ord}} = $i;
+  }
 
-      my $source = $XrefMapper::BasicMapper::xref_to_source{$xref};
-      if ($source) {
+  foreach my $ord (reverse (@$genepresedence)){
+    $i++;
+    if(!defined($external_name_to_id{$ord})){
+      print STDERR "unknown external database name *$ord* being used\n";
+    }
+    $level{$external_name_to_id{$ord}} = $i;
+  }
 
-	if ($source =~ /$first_source/) {
-	  $obj_to_best_xref{$key} = $xref;
-	  next OBJECT;
+  if(!scalar(keys %genes_to_transcripts)){
+    $self->build_genes_to_transcripts();
+  }
+
+  if(!scalar(keys %translation_to_transcript)){
+    $self->load_translation_to_transcript();
+  }
+
+
+
+  my $sql = (<<ESQL);
+  SELECT ox.xref_id, ix.query_identity, ix.target_identity,  x.external_db_id, x.display_label, e.db_name, ox.linkage_annotation
+    FROM (object_xref ox, xref x, external_db e) 
+      LEFT JOIN identity_xref ix ON (ox.object_xref_id = ix.object_xref_id) 
+	WHERE x.xref_id = ox.xref_id AND ox.ensembl_object_type = ? 
+              AND ox.ensembl_id = ? AND x.info_type = 'SEQUENCE_MATCH'
+              AND e.external_db_id = x.external_db_id
+ESQL
+
+  my $primary_sth = $self->core->dbc->prepare($sql) || die "prepare failed for $sql\n";
+
+
+
+  $sql = (<<ZSQL);
+  SELECT ox.xref_id, ix.query_identity, ix.target_identity, x.external_db_id, x.display_label, e.db_name, ox.linkage_annotation
+    FROM (object_xref ox, xref x, external_db e) 
+      LEFT JOIN identity_xref_temp ix ON (ox.object_xref_id = ix.object_xref_id) 
+	WHERE x.xref_id = ox.xref_id and ox.ensembl_object_type = ? 
+              and ox.ensembl_id = ? and x.info_type = 'DEPENDENT'
+              AND e.external_db_id = x.external_db_id
+ZSQL
+ 
+  my $dependent_sth = $self->core->dbc->prepare($sql) || die "prepare failed for $sql\n";
+
+
+
+  $sql = (<<QSQL);
+  SELECT  x.xref_id, x.external_db_id, x.display_label, e.db_name, o.linkage_annotation
+   FROM object_xref o, xref x, external_db e 
+    WHERE x.xref_id = o.xref_id 
+        and o.ensembl_object_type = ? and o.ensembl_id = ? and x.info_type = 'DIRECT'
+              AND e.external_db_id = x.external_db_id
+QSQL
+                             
+  my $direct_sth = $self->core->dbc->prepare($sql) || die "prepare failed for $sql\n";
+
+
+
+# get xrefs connect directly to the gene.
+
+  $sql = (<<GSQL);
+  SELECT x.xref_id, x.external_db_id, e.db_name, o.linkage_annotation
+   FROM object_xref o, xref x, external_db e   
+    WHERE x.xref_id = o.xref_id 
+        and o.ensembl_object_type = 'Gene' and o.ensembl_id = ?
+              AND e.external_db_id = x.external_db_id
+GSQL
+                             
+  my $gene_sth = $self->core->dbc->prepare($sql) || die "prepare failed for $sql\n";
+
+  my $count =0;
+  
+  my ($xref_id, $qid, $tid, $ex_db_id, $display_label, $external_db_name, $linkage_annotation);
+  
+  
+
+  open (TRANSCRIPT_DX, ">$dir/transcript_display_xref.sql");
+  open (TRANSCRIPT_DX_TXT, ">$dir/transcript_display_xref.txt");
+  open (GENE_DX, ">$dir/gene_display_xref.sql");
+  open (GENE_DX_TXT, ">$dir/gene_display_xref.txt");
+    
+  
+  foreach my $gene_id (keys %genes_to_transcripts) {
+    my %percent_id;
+    my %level_db;
+    my %parent;
+    my %percent_id_via_acc;
+    my @gene_xrefs = ();
+    
+    $gene_sth->execute($gene_id) || die "execute failed";
+    $gene_sth->bind_columns(\$xref_id, \$ex_db_id, \$external_db_name, \$linkage_annotation);
+    
+    
+    my $best_gene_xref  = 0;    # store xref
+    my $best_gene_level = 0;    # store level
+    my $best_gene_percent = 0;  # additoon of precentage ids
+
+    while($gene_sth->fetch()){
+      if(defined($$ignore{$external_db_name})){
+	if($linkage_annotation =~ /$$ignore{$external_db_name}/){
+#	  print "Ignoring $xref_id as linkage_annotation has ".$$ignore{$external_db_name}." in it. DELETE THIS MESSAGE AFTER TESTING\n";
+	  next;
 	}
-
-      } else {
-	warn("Couldn't find a source for xref id $xref " . $XrefMapper::BasicMapper::xref_accessions{$xref} . "\n");
+      }
+      if($level{$ex_db_id} > $best_gene_level){
+	$best_gene_xref = $xref_id;
+	$best_gene_level = $level{$ex_db_id};
+      }
+      if($best_gene_xref){
+        print GENE_DX "UPDATE gene g SET g.display_xref_id=" . $best_gene_xref .
+          " WHERE g.gene_id=" . $gene_id . ";\n";
+        print GENE_DX_TXT $best_gene_xref . "\t" . $gene_id ."\n";
       }
     }
+    
 
+    my @transcripts = @{$genes_to_transcripts{$gene_id}};
+    foreach my $transcript_id (@transcripts) {
+
+      my @transcript_xrefs = ();
+      
+      foreach my $type ("Transcript", "Translation"){
+	my $ens_id;
+	if($type eq "Transcript"){
+	  $ens_id = $transcript_id;
+	}
+	else{
+	  if(defined($transcript_to_translation{$transcript_id})){
+	    $ens_id=$transcript_to_translation{$transcript_id};
+	  }
+	  else{
+	    next;
+	  }
+	}
+	$primary_sth->execute($type, $ens_id ) || die "execute failed";
+	$primary_sth->bind_columns(\$xref_id, \$qid, \$tid, \$ex_db_id, 
+				   \$display_label, \$external_db_name, 
+				   \$linkage_annotation);
+	while($primary_sth->fetch()){
+	  if($level{$ex_db_id}  and $display_label =~ /\D+/ ){ #correct level and label is not just a number 	
+	    if(defined($$ignore{$external_db_name})){
+	      if($linkage_annotation =~ /$$ignore{$external_db_name}/){
+#		print "Ignoring $xref_id as linkage_annotation has ".$$ignore{$external_db_name}." in it. DELETE THIS MESSAGE AFTER TESTING\n";
+		next;
+	      }
+	    }
+
+	    push @transcript_xrefs, $xref_id;
+	    if(!defined($qid) || !defined($tid)){
+	      print "PRIMARY $xref_id\n";
+	      $percent_id{$xref_id} = 0;
+	    }
+	    else{
+	      $percent_id{$xref_id}  = $qid + $tid;
+	    }
+	  
+	    $level_db{$xref_id}  = $level{$ex_db_id};
+	  }  
+	}
+	
+	$dependent_sth->execute($type, $ens_id ) || die "execute failed";
+	$dependent_sth->bind_columns(\$xref_id, \$qid, \$tid, \$ex_db_id, 
+				     \$display_label, \$external_db_name, 
+				     \$linkage_annotation);
+	while($dependent_sth->fetch()){
+	  if($level{$ex_db_id}  and $display_label =~ /\D+/){
+	    if(defined($$ignore{$external_db_name})){
+	      if($linkage_annotation =~ /$$ignore{$external_db_name}/){
+#		print "Ignoring $xref_id as linkage_annotation has ".$$ignore{$external_db_name}." in it. DELETE THIS MESSAGE AFTER TESTING\n";
+		next;
+	      }
+	    }
+	    push @transcript_xrefs, $xref_id;
+	    if(!defined($qid) || !defined($tid)){
+	      print "DEPENDENT $xref_id\n" if($ex_db_id != 1100); #HGNC has added one with no %ids.
+	      $percent_id{$xref_id} = 0;
+	    }
+	    else{
+	      $percent_id{$xref_id}  = $qid + $tid;
+	    }
+	    $level_db{$xref_id}  = $level{$ex_db_id};	    
+	  }  
+	}
+	
+	$direct_sth->execute($type, $ens_id ) || die "execute failed";
+	$direct_sth->bind_columns(\$xref_id, \$ex_db_id, \$display_label,
+				  \$external_db_name, \$linkage_annotation);
+	while($direct_sth->fetch()){
+	  if($level{$ex_db_id}  and $display_label =~ /\D+/){ 	
+	    if(defined($$ignore{$external_db_name})){
+	      if($linkage_annotation =~ /$$ignore{$external_db_name}/){
+#		print "Ignoring $xref_id as linkage_annotation has ".$$ignore{$external_db_name}." in it. DELETE THIS MESSAGE AFTER TESTING\n";
+		next;
+	      }
+	    }
+	    push @transcript_xrefs, $xref_id;
+	    $percent_id{$xref_id} = 0;
+	    $level_db{$xref_id}  = $level{$ex_db_id};
+	  }  
+	}
+      
+      }      
+      
+      my $best_tran_xref  = 0; # store xref
+      my $best_tran_level = 0; # store level
+      my $best_tran_percent = 0; # store best %id total
+
+      foreach my $xref_id (@transcript_xrefs) {
+	if(defined($level_db{$xref_id}) and $level_db{$xref_id}){
+	  if($level_db{$xref_id} < $best_tran_level){
+	    next;
+	  }
+
+	  if($level_db{$xref_id} == $best_tran_level){
+	    if($percent_id{$xref_id} < $best_tran_percent){
+	      next;
+	    }
+	  }
+	  $best_tran_percent = $percent_id{$xref_id};
+	  $best_tran_level = $level_db{$xref_id};
+	  $best_tran_xref  = $xref_id;
+	}
+      }       
+      
+      if($best_tran_xref){
+        print TRANSCRIPT_DX "UPDATE transcript SET display_xref_id=" .$best_tran_xref. 
+            " WHERE transcript_id=" . $transcript_id . ";\n";
+        print TRANSCRIPT_DX_TXT  $best_tran_xref. "\t" . $transcript_id . "\n";
+      }
+
+      if($best_tran_level < $best_gene_level){
+         next;
+      }
+      if($best_tran_level == $best_gene_level){
+        if($best_tran_percent < $best_gene_percent){
+          next;
+        }
+      }
+
+    }
+  
   }
-
-  open (DX, ">$dir/" . lc($type) . "_display_xref.sql");
-  open (DX_TXT, ">$dir/" . lc($type) . "_display_xref.txt");
-
-  foreach my $key (keys %obj_to_best_xref) {
-
-    my ($obj_type, $object_id) = split /\|/, $key;
-    my $best_xref = $obj_to_best_xref{$key};
-    # Write record with xref_id_offset
-    print DX "UPDATE " . lc($type) . " SET display_xref_id=" . ($best_xref+$xref_id_offset) . " WHERE " . lc($type) . "_id=" . $object_id . ";\n";
-    print DX_TXT ($best_xref+$xref_id_offset) . "\t" . $object_id . "\n";
-    $n++;
-
-  }
-
-  close(DX);
-  close(DX_TXT);
-
-  print "Wrote $n " . lc($type) . " display_xref entries to " . lc($type) . "_display_xref.sql\n";
+  close TRANSCRIPT_DX;
+  close TRANSCRIPT_DX_TXT;
+  close GENE_DX;
+  close GENE_DX_TXT;
 
 }
 
-# Cache the source of each xref
-
-sub build_xref_to_source_mappings {
-
-  my $self = shift;
-
-  # get a list of xref sources; format:
-  # key: xref_id value: source_name
-  # lots of these; if memory is a problem, just get the source ID (not the name)
-  # and look it up elsewhere
-  # note %xref_to_source is global
-
-  print "Building xref->source mapping table\n";
-  my $sql = "SELECT x.xref_id, s.name FROM source s, xref x WHERE x.source_id=s.source_id";
-  my $sth = $self->xref->dbc->prepare($sql);
-  $sth->execute();
-
-  my ($xref_id, $source_name);
-  $sth->bind_columns(\$xref_id, \$source_name);
-
-  while ($sth->fetch()) {
-    $XrefMapper::BasicMapper::xref_to_source{$xref_id} = $source_name;
-  }
-
-  print "Got " . scalar(keys %XrefMapper::BasicMapper::xref_to_source) . " xref-source mappings\n";
-
-}
-
-
-# build mappings from direct xrefs
-
-sub read_direct_xref_mappings {
+sub build_genes_to_transcripts {
 
   my ($self) = @_;
 
-  # will need stable_id->internal_id mapping
-#  $self->build_stable_id_to_internal_id_hash() if (!$stable_id_to_internal_id);
+  my $sql = "SELECT gene_id, transcript_id, seq_region_start, seq_region_end FROM transcript";
+  my $sth = $self->core->dbc->prepare($sql);
+  $sth->execute();
 
-  print "Reading direct xref mappings\n";
-  # SQL / statement handle for getting all direct xrefs
-  my $xref_sql = "SELECT dx.general_xref_id, dx.ensembl_stable_id, dx.type, dx.linkage_xref, x.accession, x.version, x.label, x.description, x.source_id, x.species_id FROM direct_xref dx, xref x WHERE dx.general_xref_id=x.xref_id";
-  my $xref_sth = $self->xref->dbc->prepare($xref_sql);
+  my ($gene_id, $transcript_id, $start, $end);
+  $sth->bind_columns(\$gene_id, \$transcript_id, \$start, \$end);
 
-  $xref_sth->execute();
-
-  my ($xref_id, $ensembl_stable_id, $type, $linkage_xref, $accession, $version, $label, $description, $source_id, $species_id);
-  $xref_sth->bind_columns(\$xref_id, \$ensembl_stable_id, \$type, \$linkage_xref,\ $accession, \$version, \$label, \$description, \$source_id, \$species_id);
-
-  my $n = 0;
-
-  # Get source-external_db mappings
-  %XrefMapper::BasicMapper::source_to_external_db = $self->map_source_to_external_db();
-  my $missed =0;
-  while ($xref_sth->fetch()) {
-
-    my $external_db_id = $XrefMapper::BasicMapper::source_to_external_db{$source_id};
-    if (defined($external_db_id)) {
-
-      my $ensembl_internal_id = $XrefMapper::BasicMapper::stable_id_to_internal_id{$type}{$ensembl_stable_id};
-
-      if ($ensembl_internal_id) {
-
-	my $key = $type . "|" . $ensembl_internal_id;
-	push @{$XrefMapper::BasicMapper::object_xref_mappings{$key}}, $xref_id;
-	$n++;
-
-      }
-      else{
-#	print "$type-$ensembl_stable_id NOT FOUND\n";
-	$missed++;
-      }
-    }
-    else{
-      print "WARNING: $source_id \n";
-    }
+  # Note %genes_to_transcripts is global
+  while ($sth->fetch()) {
+    push @{$genes_to_transcripts{$gene_id}}, $transcript_id;
+    $transcript_length{$transcript_id} = $end- $start;
   }
 
-  print "Read $n direct_xref mappings\n";
-  print "Ignored $missed direct xrefs as the stable id could not be found\n";
+}
+sub load_translation_to_transcript{
+  my ($self) = @_;
+
+  my $sth = $self->core->dbc->prepare("SELECT translation_id, transcript_id FROM translation");
+  $sth->execute();
+  
+  my ($translation_id, $transcript_id);
+  $sth->bind_columns(\$translation_id, \$transcript_id);
+  
+  while ($sth->fetch()) {
+    $translation_to_transcript{$translation_id} = $transcript_id;
+    $transcript_to_translation{$transcript_id} = $translation_id if ($translation_id);
+  }
+}
+
+sub gene_description_sources {
+  return (
+          "FlyBaseName_gene",
+          "gadfly_gene_cgid",
+          "flybase_annotation_id",
+         );
+}
+
+sub transcript_display_xref_sources {
+
+  my @list = qw(
+                FlyBaseName_transcript
+                gadfly_transcript_cgid
+                flybase_annotation_id
+                );
+
+  my %ignore;
+  $ignore{"EntrezGene"}= 'FROM:RefSeq_[pd][en][pa].*_predicted';
+
+  return [\@list,\%ignore];
+
 }
 
 1;
