@@ -1414,6 +1414,27 @@ sub seq_ids_to_regions {
   return \@out;
 }
 
+=head2 delete_cache
+
+ Description: Delete all the caches for the mappings/seq_regions
+ Returntype : none
+ Exceptions : none
+ Caller     : General
+ Status     : At risk
+
+=cut
+ 
+sub delete_cache{
+  my ($self) = @_;
+
+  $self->{'sr_name_cache'}     = {};
+  $self->{'sr_id_cache'}       = {};
+
+  foreach my $key (keys %{$self->{'_asm_mapper_cache'}}){
+    $self->{'_asm_mapper_cache'}->{$key}->flush();
+  }
+  $self->{'_asm_mapper_cache'} = {};
+}
 
 
 =head2 register_region
