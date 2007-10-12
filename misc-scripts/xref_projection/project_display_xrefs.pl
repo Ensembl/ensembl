@@ -481,7 +481,9 @@ sub delete_names {
   my $sth = $to_ga->dbc()->prepare("UPDATE gene, xref SET gene.display_xref_id = null WHERE gene.display_xref_id=xref.xref_id AND xref.info_type='PROJECTION'");
   $sth->execute();
 
-  print "Deleting projected xrefs and object_xrefs\n";
+  print "Deleting projected xrefs, object_xrefs and synonyms\n";
+  $sth = $to_ga->dbc()->prepare("DELETE es FROM xref x, external_synonym es WHERE x.xref_id=es.xref_id AND x.info_type='PROJECTION'");
+  $sth->execute();
   $sth = $to_ga->dbc()->prepare("DELETE x, ox FROM xref x, object_xref ox WHERE x.xref_id=ox.xref_id AND x.info_type='PROJECTION'");
   $sth->execute();
 
@@ -495,10 +497,10 @@ sub delete_go_terms {
 
   print "Deleting projected GO terms\n";
 
-  # do both old style (where display_label was modified) and new style (where info_type=PROJECTION)
   my $sth = $to_ga->dbc()->prepare("DELETE x, ox, gx FROM xref x, external_db e, object_xref ox, go_xref gx WHERE x.xref_id=ox.xref_id AND x.external_db_id=e.external_db_id AND ox.object_xref_id=gx.object_xref_id AND e.db_name='GO' AND x.info_type='PROJECTION'");
   $sth->execute();
 
+  # note don't need to delete synonyms as GO terms don't have any
 }
 
 # ----------------------------------------------------------------------
