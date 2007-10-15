@@ -12,11 +12,11 @@ use Getopt::Long;
 
 my ( $host, $user, $pass, $port, $expression, $dbpattern, $help );
 
-GetOptions( "host=s", \$host,
-	    "user=s", \$user,
-	    "pass=s", \$pass,
-	    "port=i", \$port,
-	    "dbpattern=s", \$dbpattern,
+GetOptions( "dbhost|host=s", \$host,
+	    "dbuser|user=s", \$user,
+	    "dbpass|pass=s", \$pass,
+	    "dbport|port=i", \$port,
+	    "dbname|dbpattern=s", \$dbpattern,
       "help", \$help
 	  );
 
