@@ -32,7 +32,10 @@ my @all_locators = qw {
 		     ens-genomics2:3306:ensro::
 
 		     ens-research:3306:ensro::
-		     ens-research:3355:ensro::
+		     ens-research:3309:ensro::
+
+                     ensdb-1-11:3319:ensro::
+                     ensdb-1-11:3317:ensro::
 
 		     ens-staging:3306:ensro::
 		     ens-livemirror:3306:ensro::
