@@ -650,6 +650,7 @@ sub coding_region_start {
         if ( $transcript->coding_region_end() < $start ) {
           # ... and also ends upstream of this exon.
           $self->{'coding_region_start'}->{$transcript_id} = undef;
+          $self->{'coding_region_end'}->{$transcript_id}   = undef;
         } else {
           # ... and does not end upstream of this exon.
           $self->{'coding_region_start'}->{$transcript_id} = $start;
@@ -665,6 +666,7 @@ sub coding_region_start {
         } else {
           # Coding region starts downstream of this exon.
           $self->{'coding_region_start'}->{$transcript_id} = undef;
+          $self->{'coding_region_end'}->{$transcript_id}   = undef;
         }
       }
     } ## end else [ if ( !defined($transcript_coding_start...
@@ -723,7 +725,8 @@ sub coding_region_end {
 
         if ( $transcript->coding_region_start() > $end ) {
           # ... and also starts downstream of this exon.
-          $self->{'coding_region_end'}->{$transcript_id} = undef;
+          $self->{'coding_region_start'}->{$transcript_id} = undef;
+          $self->{'coding_region_end'}->{$transcript_id}   = undef;
         } else {
           # ... and does not start downstream of this exon.
           $self->{'coding_region_end'}->{$transcript_id} = $end;
@@ -738,7 +741,8 @@ sub coding_region_end {
             $transcript_coding_end;
         } else {
           # Coding region ends upstream of this exon.
-          $self->{'coding_region_end'}->{$transcript_id} = undef;
+          $self->{'coding_region_start'}->{$transcript_id} = undef;
+          $self->{'coding_region_end'}->{$transcript_id}   = undef;
         }
       }
     } ## end else [ if ( !defined($transcript_coding_end...
