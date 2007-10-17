@@ -9,7 +9,7 @@
 10	>10% N-strings	More than 10% of the sequence consists of strings of 'N's. Sequences are not rejected for this reason but this may explain a low coverage hit
 11	No output from Exonerate	Exonerate returned no hits using standard parameters plus options --maxintron 400000 and --softmasktarget FALSE
 12	GSS sequence	This cDNA has been excluded from the analysis because it is in the GSS (Genome Survey Sequence) division of GenBank
-13	See kill list	This cDNA has been excluded from the analysis - see ensembl-pipeline/scripts/GeneBuild/cDNA_kill_list.txt for further details
+13	See kill-list database	This sequence has been excluded from the analysis - see the kill-list database for further details
 14	Failed to match at thresholds	Unable to match at the thresholds of 99% for the query or 99% for the target
 15	Failed to match at thresholds	Unable to match at the thresholds of 100% for the query or 100% for the target
 16	Failed to match at thresholds	Unable to match at the thresholds of 55% for the query or 55% for the target
