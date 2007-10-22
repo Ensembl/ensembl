@@ -256,7 +256,7 @@ sub seq {
     my $ref_strain = $indAdaptor->get_reference_strain_name;
     $self->_add_coverage_information($reference_sequence) if ($with_coverage == 1 && $self->strain_name ne $ref_strain);
     return substr(${$reference_sequence},0,1) if ($self->length == 1); 
-    return ${$reference_sequence}; #returns the reference sequence, applying the variationFeatures
+    return substr(${$reference_sequence},0,$self->length); #returns the reference sequence, applying the variationFeatures. Remove additional bases added due to indels
   }
 
   # no attached sequence, and no db, so just return Ns
