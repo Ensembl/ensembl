@@ -249,6 +249,7 @@ sub seq {
     my @variation_features_ordered = sort {$b->start() <=> $a->start()} @{$self->{'alleleFeatures'}} if (defined $self->{'alleleFeatures'});
 
     foreach my $vf (@variation_features_ordered){
+	next if ($vf->start != $vf->end); #quick fix to remove indels from sequence
 	$vf->apply_edit($reference_sequence); #change, in the reference sequence, the vf
     }
     #need to find coverage information if different from reference
