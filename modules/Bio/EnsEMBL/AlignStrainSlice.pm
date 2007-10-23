@@ -302,7 +302,33 @@ sub get_all_Slices {
   undef $ref_strain->{'alleleFeatures'};
   
   push @strains, @{$self->strains};
+  my $new_feature;
+  my $indel;
+  my $aligned_features;
+  my $indels = (); #reference to a hash containing indels in the different strains
+  #we need to realign all Features in the different Slices and add '-' in the reference Slice
+  foreach my $strain (@{$self->strains}){
+      foreach my $af (@{$strain->get_all_AlleleFeatures_Slice()}){
+	  $new_feature = $self->alignFeature($af); #align feature in AlignSlice coordinates
+	  push @{$aligned_features},$new_feature if($new_feature->seq_region_start <= $strain->end); #some features might map outside slice
+	  if ($af->start != $af->end){ #an indel, need to add to the reference, and realign in the strain	     
+              #make a shallow copy of the indel
+	      %{$indel} = %{$new_feature};
+	      bless $indel, ref($new_feature);
+	      $indel->allele_string('-');
+	      push @{$indels},$indel; #and include in the list of potential indels
+	  }
+      }
+      undef $strain->{'alleleFeatures'}; #remove all features before adding new aligned features
+      push @{$strain->{'alleleFeatures'}}, @{$aligned_features};
+      undef $aligned_features;
+  }  
   push @strains, $ref_strain;
+  #need to add indels in the different strains, if not present
+  foreach my $strain (@strains){
+      #inlcude the indels in the StrainSlice object
+      push @{$strain->{'alignIndels'}},@{$indels};
+  }
   return \@strains;
 }
 

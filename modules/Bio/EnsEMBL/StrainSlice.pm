@@ -243,13 +243,20 @@ sub seq {
     my $seqAdaptor = $self->adaptor()->db()->get_SequenceAdaptor();
     my $reference_sequence = $seqAdaptor->fetch_by_Slice_start_end_strand($self,1,undef,1); #get the reference sequence for that slice
     #apply all differences to the reference sequence
+    #first, in case there are any indels, create the new sequence (containing the '-' bases)
+   # sort edits in reverse order to remove complication of
+    # adjusting downstream edits
+    my @indels_ordered = sort {$b->start() <=> $a->start()} @{$self->{'alignIndels'}} if (defined $self->{'alignIndels'});
 
+    foreach my $vf (@indels_ordered){
+	$vf->apply_edit($reference_sequence); #change, in the reference sequence, the vf
+    }
+    #need to find coverage information if diffe
     # sort edits in reverse order to remove complication of
     # adjusting downstream edits
     my @variation_features_ordered = sort {$b->start() <=> $a->start()} @{$self->{'alleleFeatures'}} if (defined $self->{'alleleFeatures'});
 
     foreach my $vf (@variation_features_ordered){
-	next if ($vf->start != $vf->end); #quick fix to remove indels from sequence
 	$vf->apply_edit($reference_sequence); #change, in the reference sequence, the vf
     }
     #need to find coverage information if different from reference
