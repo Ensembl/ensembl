@@ -135,8 +135,8 @@ sub new {
                The orientation of the slice on the sequence region
   Arg [6]    : string $version (optional, default = default version)
                The version of the coordinate system to use (e.g. NCBI33)
-  Arg [7]    : boolean $no_fuzz
-               If true, do not use "fuzzy matching" (see below).
+  Arg [7]    : boolean $no_fuzz (optional, default = undef (false))
+               If true (non-zero), do not use "fuzzy matching" (see below).
   Example    : $slice = $slice_adaptor->fetch_by_region('chromosome', 'X');
                $slice = $slice_adaptor->fetch_by_region('clone', 'AC008066.4');
   Description: Retrieves a slice on the requested region.  At a minimum the
