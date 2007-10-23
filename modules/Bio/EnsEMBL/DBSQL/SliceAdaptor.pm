@@ -135,6 +135,8 @@ sub new {
                The orientation of the slice on the sequence region
   Arg [6]    : string $version (optional, default = default version)
                The version of the coordinate system to use (e.g. NCBI33)
+  Arg [7]    : boolean $no_fuzz
+               If true, do not use "fuzzy matching" (see below).
   Example    : $slice = $slice_adaptor->fetch_by_region('chromosome', 'X');
                $slice = $slice_adaptor->fetch_by_region('clone', 'AC008066.4');
   Description: Retrieves a slice on the requested region.  At a minimum the
@@ -156,6 +158,9 @@ sub new {
                example fetch_by_region('clone', 'AC008066') will
                retrieve the sequence_region with name 'AC008066.4'.
 
+               The fuzzy matching can be turned off by setting the
+               $no_fuzz argument to a true value.
+
                If the requested seq_region is not found in the database undef
                is returned.
 
@@ -173,8 +178,9 @@ sub new {
 # ARNE: This subroutine needs simplification!! 
 #
 sub fetch_by_region {
-  my ($self, $coord_system_name, $seq_region_name,
-      $start, $end, $strand, $version) = @_;
+  my ( $self, $coord_system_name, $seq_region_name, $start, $end,
+       $strand, $version, $no_fuzz )
+    = @_;
 
   $start  = 1 if (!defined($start));
   $strand = 1 if (!defined($strand));
@@ -188,6 +194,13 @@ sub fetch_by_region {
     $cs = $csa->fetch_by_name($coord_system_name,$version);
 
     ## REMOVE THESE THREE LINES WHEN STICKLEBACK DB IS FIXED!
+    ## Anne/ap5 (2007-10-09):
+    # The problem was that the stickleback genebuild called the
+    # chromosomes 'groups', which meant they weren't being picked out by
+    # the karyotype drawing code.  Apparently they are usually called
+    # 'groups' in the stickleback community, even though they really are
+    # chromosomes!
+
     if( !$cs && $coord_system_name eq 'chromosome' ) {
       $cs = $csa->fetch_by_name('group',$version);
     }
@@ -254,6 +267,8 @@ sub fetch_by_region {
 
     if ($sth->rows() == 0) {
       $sth->finish();
+
+      if ($no_fuzz) { return undef }
 
       # do fuzzy matching, assuming that we are just missing a version on
       # the end of the seq_region name
