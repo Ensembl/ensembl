@@ -1398,10 +1398,10 @@ sub load_registry_from_db {
   Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(-species => "Oryzias_latipes",
 						 -alias => ['medaka','Oryzias latipes']);
 
-  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(-species => "Cavia porcellus",
+  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(-species => "Cavia_porcellus",
 						 -alias => ['guinea_pig','"Cavia porcellus']);
 
-  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(-species => "Aedes aegypti",
+  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(-species => "Aedes_aegypti",
 						 -alias => ['aedes','Aedes aegypti']);
 
   @aliases = ('compara');
