@@ -1372,7 +1372,7 @@ sub load_registry_from_db {
 						 -alias => ['shrew','european_shrew','Sorex araneus']);
 
   Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(-species => "Erinaceus_europaeus",
-						 -alias => ['western_european_hegdehog','Erinaceus europaeus']);
+						 -alias => ['western_european_hedgehog','Erinaceus europaeus']);
 
   Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(-species => "Myotis_lucifugus",
 						 -alias => ['microbat','little_brown_bat']);
