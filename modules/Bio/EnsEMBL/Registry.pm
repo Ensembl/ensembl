@@ -1404,6 +1404,13 @@ sub load_registry_from_db {
   Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(-species => "Aedes_aegypti",
 						 -alias => ['aedes','Aedes aegypti']);
 
+  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(-species => "Spermophilus_tridecemlineatus",
+						 -alias => ['squirrel','Spermophilus tridecemlineatus']);
+
+  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(-species => "Tupaia_belangeri",
+						 -alias => ['tree_shrew','Tupaia belangeri ']);
+
+
   @aliases = ('compara');
   Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(-species => "multi",
 						 -alias => \@aliases);
