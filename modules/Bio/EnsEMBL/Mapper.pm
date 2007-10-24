@@ -163,7 +163,9 @@ sub map_coordinates{
 	  defined($strand) && defined($type) ) {
        throw("Must start,end,strand,id,type as coordinates");
    }
+   
 
+   
    # special case for handling inserts:
    if($start == $end + 1) {
      return $self->map_insert($id, $start, $end, $strand, $type);
@@ -220,10 +222,31 @@ sub map_coordinates{
  
    
    my $orig_start = $start;
+   my $last_target_coord = undef;
    for( my $i = $start_idx; $i<=$#$lr; $i++ ) {
      $pair = $lr->[$i];
      my $self_coord   = $pair->{$from};
      my $target_coord = $pair->{$to};
+
+
+
+
+     if(defined($last_target_coord) and $target_coord->{'id'} != $last_target_coord){
+       if($self_coord->{'start'} < $start){ # i.e. the same bit is being mapped to another assembled bit
+	 $start = $orig_start;
+       }
+#       else{
+#	 #not a multi mapped component;
+#       }
+     } 
+     else{
+       $last_target_coord = $target_coord->{'id'};
+     }
+
+
+
+
+
 
      # if we haven't even reached the start, move on
      if( $self_coord->{'end'} < $orig_start ) {
@@ -298,6 +321,7 @@ sub map_coordinates{
 						      $target_end,
 						      $pair->{'ori'} * $strand,
 						      $cs);
+
      }
 
      push(@result,$res);
