@@ -1647,9 +1647,9 @@ sub get_species_and_object_type{
  
   my %type;
   
-  $type{T} = "Transcript";
-  $type{G} = "Gene";
-  $type{P} = "Translation";
+  $type{T} = "transcript";
+  $type{G} = "gene";
+  $type{P} = "translation";
 
   #Do each in turn in order of the usual suspects. This should increase speed on average.
 
