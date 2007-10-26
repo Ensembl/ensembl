@@ -460,7 +460,8 @@ sub get_all_DBEntries {
 
   Example    : @dblinks = @{ $gene->get_all_DBLinks };
              : @dblinks = @{ $gene->get_all_DBLinks("Uniprot%") };
-  Arg [1]    : <optional> database name use % for wild card as sent to sql directly 
+  Arg [1]    : <optional> database name. SQL wildcard characters (_ and %) can be used to
+               specify patterns.
   Description: Retrieves _all_ related DBEntries for this gene. This includes
                all DBEntries that are associated with the transcripts and
                corresponding translations of this gene.
