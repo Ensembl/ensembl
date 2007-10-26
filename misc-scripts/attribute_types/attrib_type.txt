@@ -100,18 +100,18 @@
 31	fpc_clone_id	fpc clone
 
 # additional gene counts for Vega (see GeneCount for general description)
-32	KnownPCCount	protein_coding_KNOWN	Number of Known Protein Coding
-33	NovelPCCount	protein_coding_NOVEL	Number of Novel Protein Coding
-34	NovelPTCount	processed_transcript_NOVEL	Number of Novel Processed Transcripts
+32	KnwnPCCount	protein_coding_KNOWN	Number of Known Protein Coding
+33	NovPCCount	protein_coding_NOVEL	Number of Novel Protein Coding
+34	NovPTCount	processed_transcript_NOVEL	Number of Novel Processed Transcripts
 35	PutPTCount	processed_transcript_PUTATIVE	Number of Putative Processed Transcripts
 36	PredPCCount	protein_coding_PREDICTED	Number of Predicted Protein Coding
-37	IgSegCount	ig_segment	Number of Ig Segments
-38	IgPsSegCount	ig_pseudogene_segment	Number of Ig Pseudogene Segments
+37	NovIgSegCount	ig_segment	Number of Novel Ig Segments
+38	NovIgPsSegCount	ig_pseudogene_segment	Number of Novel Ig Pseudogene Segments
 39	TotPsCount	total_pseudogene	Total Number of Pseudogenes
-40	ProcPsCount	processed_pseudogene	Number of Processed Pseudogenes
-41	UnprocPsCount	unprocessed_pseudogene	Number of Unprocessed Pseudogenes
-42	KnwnPCProgCount	protein_coding_in_progress_KNOWN	Number of Known Protein Coding genes in progress
-43	NovPCProgCount	protein_coding_in_progress_NOVEL	Number of Novel Protein Coding genes in progress
+40	KnwnProcPsCount	processed_pseudogene	Number of Known Processed Pseudogenes
+41	KnwnUnPsCount	unprocessed_pseudogene	Number of Known Unprocessed Pseudogenes
+42	KnwnPCProgCount	protein_coding_in_progress_KNOWN	Number of Known Protein Coding in progress
+43	NovPCProgCount	protein_coding_in_progress_NOVEL	Number of Novel Protein Coding in progress
 
 # Vega annotation stats
 44	AnnotSeqLength	Annotated sequence length	Total length of annotated clone sequence
@@ -132,7 +132,7 @@
 53	author_email	Author email address	Author email address
 54	remark	Remark	Annotation remark
 55	transcr_class	Transcript class	Transcript class
-56	KnownPTCount	processed_transcript_KNOWN	Number of Known Processed Transcripts
+56	KnwnPTCount	processed_transcript_KNOWN	Number of Known Processed Transcripts
 57	ccds	CCDS	CCDS identifier
 
 # make first amino acid methionine
@@ -144,7 +144,6 @@
 #more gene counts for Vega
 60	PTCount	processed_transcript_UNKNOWN	Number of Processed Transcripts
 61	PredPTCount	processed_transcript_PREDICTED	Number of Predicted Processed Transcripts
-
 
 62	ncRNA	Structure	RNA secondary structure line
 
@@ -244,10 +243,14 @@
 
 # vega
 143	TotAssLength	Finished sequence length	Length of the assembly not counting sequence gaps
-144	PsCount	pseudogene	Number of Pseudogenes
-145	TransPsCount	transcribed_pseudogene	Number of Transcribed Pseudogenes
-146	TotPTCount	total_processed_transcript	Total Number of Processed Transcripts
-147	TotPCCount	total_protein_coding	Total Number of Protein Coding
-148	NcCount	non_coding 	Number of Non Coding
-149	PolyCount	polymorphic	Number of Polymorphic
-150	TotIgSegCount	total_ig_segment	Total Number of Ig Segments
+144	NovPsCount	novel_pseudogene	Number of Novel Pseudogenes
+145	KnwnPsCount	known_pseudogene	Number of Known Pseudogenes
+146	KnwnTPsCount	known_transcribed_pseudogene	Number of Known Transcribed Pseudogenes
+147	TotPTCount	total_processed_transcript	Total Number of Processed Transcripts
+148	TotPCCount	total_protein_coding	Total Number of Protein Coding
+149	NovNcCount	novel_non_coding	Number of Novel Non Coding
+150	KnwnPolyCount	known_polymorphic	Number of Known Polymorphic
+151	NovPolyCount	novel_polymorphic	Number of Novel Polymorphic
+152	TotIgSegCount	total_ig_segment	Total Number of Ig Segments
+153	NovProcPsCount	novel_processed_pseudogene	Number of Novel Processed Pseudogenes
+154	NovUnPsCount	novel_unprocessed_pseudogene	Number of Novel Unprocessed Pseudogenes
