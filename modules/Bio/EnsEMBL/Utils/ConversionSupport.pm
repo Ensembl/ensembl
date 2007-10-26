@@ -298,14 +298,14 @@ sub confirm_params {
 
 sub list_all_params {
     my $self = shift;
-    my $txt = sprintf "    %-20s%-40s\n", qw(PARAMETER VALUE);
-    $txt .= "    " . "-"x70 . "\n";
+    my $txt = sprintf "    %-21s%-40s\n", qw(PARAMETER VALUE);
+    $txt .= "    " . "-"x71 . "\n";
     $Text::Wrap::colums = 72;
     my @params = $self->allowed_params;
     foreach my $key (@params) {
         my @vals = $self->param($key);
         if (@vals) {
-            $txt .= Text::Wrap::wrap( sprintf('    %-20s', $key),
+            $txt .= Text::Wrap::wrap( sprintf('   %-21s', $key),
                                       ' 'x24,
                                       join(", ", @vals)
                                     ) . "\n";
