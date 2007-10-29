@@ -439,6 +439,10 @@ sub fetch_all_by_Slice_and_external_dbname_link {
   Arg [3]    : (optional) boolean $load_transcripts
                if true, transcripts will be loaded immediately rather than
                lazy loaded later.
+  Arg [4]    : (optional) string $source
+               the source name of the features to obtain.
+  Arg [5]    : (optional) string biotype
+                the biotype of the features to obtain.
   Example    : @genes = @{$gene_adaptor->fetch_all_by_Slice()};
   Description: Overrides superclass method to optionally load transcripts
                immediately rather than lazy-loading them later.  This
@@ -456,9 +460,20 @@ sub fetch_all_by_Slice {
   my $slice = shift;
   my $logic_name = shift;
   my $load_transcripts = shift;
+  my $source = shift;
+  my $biotype = shift;
+
+  my $constraint = 'g.is_current = 1';
+
+  if(defined($source)){
+    $constraint .= " and g.source = '$source'";
+  }
+  if(defined($biotype)){
+    $constraint .= " and g.biotype = '$biotype'" ;
+  }
 
   my $genes = $self->SUPER::fetch_all_by_Slice_constraint($slice,
-    'g.is_current = 1', $logic_name);
+    $constraint , $logic_name);
 
   # if there are 0 or 1 genes still do lazy-loading
   if(!$load_transcripts || @$genes < 2) {
