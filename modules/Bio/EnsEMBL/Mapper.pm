@@ -231,7 +231,7 @@ sub map_coordinates{
 
 
 
-     if(defined($last_target_coord) and $target_coord->{'id'} != $last_target_coord){
+     if(defined($last_target_coord) and $target_coord->{'id'} ne $last_target_coord){
        if($self_coord->{'start'} < $start){ # i.e. the same bit is being mapped to another assembled bit
 	 $start = $orig_start;
        }
