@@ -1870,6 +1870,10 @@ sub get_all_SNPs_transcripts {
                than being lazy-loaded on request.  This will result in a
                significant speed up if the Transcripts and Exons are going to
                be used (but a slow down if they are not).
+  Arg [4]    : (optional) string $source
+               The source of the genes to retrieve.
+  Arg [5]    : (optional) string $biotype
+               The biotype of the genes to retrieve.
   Example    : @genes = @{$slice->get_all_Genes};
   Description: Retrieves all genes that overlap this slice.
   Returntype : listref of Bio::EnsEMBL::Genes
@@ -1880,7 +1884,7 @@ sub get_all_SNPs_transcripts {
 =cut
 
 sub get_all_Genes{
-  my ($self, $logic_name, $dbtype, $load_transcripts) = @_;
+  my ($self, $logic_name, $dbtype, $load_transcripts, $source, $biotype) = @_;
   
   if(!$self->adaptor()) {
     warning('Cannot get Genes without attached adaptor');
@@ -1904,7 +1908,7 @@ sub get_all_Genes{
     $ga =  $self->adaptor->db->get_GeneAdaptor();
    }
 
-  return $ga->fetch_all_by_Slice( $self, $logic_name, $load_transcripts);
+  return $ga->fetch_all_by_Slice( $self, $logic_name, $load_transcripts, $source, $biotype);
 }
 
 =head2 get_all_Genes_by_type
@@ -1941,12 +1945,38 @@ sub get_all_Genes_by_type{
     return [];
   }
 
-  my @out = grep { $_->biotype eq $type } 
-    @{ $self->get_all_Genes($logic_name, undef, $load_transcripts)};
-
-  return \@out;
+  return $self->get_all_Genes($logic_name, undef, $load_transcripts, undef, $type);
 }
 
+
+=head2 get_all_Genes_by_source
+
+  Arg [1]    : string source
+  Arg [2]    : (optional) boolean $load_transcripts
+               If set to true, transcripts will be loaded immediately rather
+               than being lazy-loaded on request.  This will result in a
+               significant speed up if the Transcripts and Exons are going to
+               be used (but a slow down if they are not).
+  Example    : @genes = @{$slice->get_all_Genes_by_source('ensembl')};
+  Description: Retrieves genes that overlap this slice of source $source.
+
+  Returntype : listref of Bio::EnsEMBL::Genes
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub get_all_Genes_by_source {
+  my ($self, $source, $load_transcripts) = @_;
+
+  if(!$self->adaptor()) {
+    warning('Cannot get Genes without attached adaptor');
+    return [];
+  }
+
+  return  $self->get_all_Genes(undef, undef, $load_transcripts, $source);
+}
 
 =head2 get_all_Transcripts
 
@@ -2856,6 +2886,7 @@ sub get_generic_features {
 }
 
 
+
 #
 # Bioperl Bio::PrimarySeqI methods:
 #
@@ -2971,17 +3002,6 @@ sub get_all_supercontig_Slices {
   return $result;
 }
 
-
-=head2 get_all_Genes_by_source
-
-  Description: DEPRECATED use get_all_Genes instead
-
-=cut
-
-sub get_all_Genes_by_source {
-  deprecate("Use get_all_Genes() instead");
-  return get_all_Genes(@_);
-}
 
 
 
