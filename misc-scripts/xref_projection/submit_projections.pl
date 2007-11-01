@@ -4,11 +4,11 @@ use strict;
 # Remember to check/set the various config optons
 
 # ------------------------------ config -------------------------------
-my $release = 47;
+my $release = 48;
 
 my $base_dir = "/lustre/work1/ensembl/gp1/projections/";
 
-my $conf = "release_47.ini"; # registry config file, specifies Compara location
+my $conf = "release_48.ini"; # registry config file, specifies Compara location
 
 # location of other databases
 my $host = "ens-staging";
@@ -32,7 +32,10 @@ if (! -e $dir) {
 }
 
 # common options
-my $opts = "-conf $conf -host $host -user $user -port $port -pass $pass -version $release -release $release -quiet -nobackup";
+my $script_opts = "-conf $conf -host $host -user $user -port $port -pass $pass -version $release -release $release -quiet -nobackup";
+
+#my $bsub_opts = "-R'select[myens-staging<200]'";
+my $bsub_opts = "";
 
 my @names_1_1 = (["human", "chimp"            ],
 		 ["human", "opossum"          ],
@@ -128,7 +131,7 @@ foreach my $pair (@names_1_1) {
   $e = "$dir/names_${from}_$to.err";
   $n = substr("n_${from}_$to", 0, 10); # job name display limited to 10 chars
   print "Submitting name projection from $from to $to\n";
-  system "bsub -o $o -e $e -J $n perl project_display_xrefs.pl $opts -from $from -to $to -names -delete_names -no_database";
+  system "bsub $bsub_opts -o $o -e $e -J $n perl project_display_xrefs.pl $script_opts -from $from -to $to -names -delete_names -no_database";
 }
 
 # 1:many
@@ -138,13 +141,13 @@ foreach my $pair (@names_1_many) {
   $e = "$dir/names_${from}_$to.err";
   $n = substr("n_${from}_$to", 0, 10);
   print "Submitting name projection from $from to $to (1:many)\n";
-  system "bsub -o $o -e $e -J $n perl project_display_xrefs.pl $opts -from $from -to $to -names -delete_names -no_database -one_to_many";
+  system "bsub $bsub_opts -o $o -e $e -J $n perl project_display_xrefs.pl $script_opts -from $from -to $to -names -delete_names -no_database -one_to_many";
 }
 
 # ----------------------------------------
 # GO terms
 
-$opts .= " -nobackup";
+$script_opts .= " -nobackup";
 
 foreach my $pair (@go_terms) {
   ($from, $to) = @$pair;
@@ -152,7 +155,7 @@ foreach my $pair (@go_terms) {
   $e = "$dir/go_${from}_$to.err";
   $n = substr("g_${from}_$to", 0, 10);
   print "Submitting GO term projection from $from to $to\n";
-  system "bsub -o $o -e $e -J $n perl project_display_xrefs.pl $opts -from $from -to $to -go_terms -delete_go_terms";
+  system "bsub $bsub_opts -o $o -e $e -J $n perl project_display_xrefs.pl $script_opts -from $from -to $to -go_terms -delete_go_terms";
 }
 
 # ----------------------------------------
