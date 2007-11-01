@@ -877,14 +877,11 @@ CREATE TABLE meta (
 
 
 # Auto add schema version to database
-INSERT INTO meta (meta_key, meta_value) VALUES ("schema_version", "47");
+INSERT INTO meta (meta_key, meta_value) VALUES ("schema_version", "48");
 
 # patches included in this schema file
 # NOTE: at beginning of release cycle, remove patch entries from last release
-INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_46_47_a.sql|schema_version');
-INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_46_47_b.sql|new_align_columns');
-INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_46_47_c.sql|extend_db_release');
-INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_46_47_d.sql|auto_increment_external_db');
+INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_47_48_a.sql|schema_version');
 
 ################################################################################
 #
