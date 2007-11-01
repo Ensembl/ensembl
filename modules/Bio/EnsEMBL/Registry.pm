@@ -119,7 +119,7 @@ use DBI;
 
 use vars qw(%registry_register);
 
-my $API_VERSION = 47;
+my $API_VERSION = 48;
 
 
 =head2 load_all
