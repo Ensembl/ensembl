@@ -1506,12 +1506,12 @@ sub fetch_non_hidden_slices {
   Arg[2]      : 'code' to search for
   Arg[3]      : 'value' to search for (optional)
   Example     : my $c = $self->get_attrib_values($attribs,'name'));
-  Description : (i) In the abscence of an attribute value argument examines an arrayref
+  Description : (i) In the absence of an attribute value argument, examines an arrayref
                 of B::E::Attributes for a particular attribute type, returning the values
-                for each attribute of that type (can therefore be used to test for the
-                number of attributes of that type).
+                for each attribute of that type. Can therefore be used to test for the
+                number of attributes of that type.
                 (ii) In the presence of the optional value argument, it can be used to test
-                for the presence of an attribute with a particular value
+                for the presence of an attribute with that particular value
   Return type : arrayref of values for that attribute
   Caller      : general
   Status      : stable
@@ -1550,13 +1550,13 @@ sub get_attrib_values {
 
 =head2 fix_attrib_value
 
-  Arg[1]      : Arrayref of exisiting B::E::Attributes
+  Arg[1]      : Arrayref of existing B::E::Attributes
   Arg[2]      : dbID of object
   Arg[3]      : name of object (just for reporting)
   Arg[4]      : attrib_type.code
   Arg[5]      : attrib_type.value
-  Arg[5]      : interactive ? (0 by default)
-  Arg[6]      : table
+  Arg[6]      : interactive ? (0 by default)
+  Arg[7]      : table
   Example     : $support->fix_attrib_value($attribs,$chr_id,$chr_name,'vega_export_mod','N',1);
   Description : adds a new attribute to an object, or updates an existing attribute with a new value
                 Can be run in interactive or non-interactive mode (default)
@@ -1576,14 +1576,13 @@ sub fix_attrib_value {
 	my $interact    = shift || 0;
 	my $table       = shift || 'seq_region_attrib';
 
-	#set interactive parameter
+	#transiently set interactive parameter to zero
 	my $int_before;
 	if (! $interact) {
 		$int_before = $self->param('interactive');
 		$self->param('interactive',0);
 	}
 
-#	warn "interactive_before = $int_before";
 	#get any existing value(s) for this attribute
 	my $existings = $self->get_attrib_values($attribs,$code);
 	
