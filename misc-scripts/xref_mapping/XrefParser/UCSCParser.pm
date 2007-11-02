@@ -37,16 +37,19 @@ sub run {
          $cdsStart, $cdsEnd, $exonStarts, $exonEnds
     ) = ( split( /\t/, $line ) )[ 0 .. 6, 8, 9 ];
 
-    # UCSC uses slightly different chromosome names, at least for human
-    # (but we do not yet translate the names of the special chromosomes,
-    # e.g. "chr6_cox_hap1" into "c6_COX" etc.)
+    # UCSC uses slightly different chromosome names, at least for
+    # human and mouse, so chop off the 'chr' in the beginning.  We do
+    # not yet translate the names of the special chromosomes, e.g.
+    # "chr6_cox_hap1" (UCSC) into "c6_COX" (Ensembl).
     $chrom =~ s/^chr//;
 
     # They also use '+' and '-' for the strand, instead of -1, 0, or 1.
-    $strand = ( $strand eq '+' ? 1 : -1 );
+    if    ( $strand eq '+' ) { $strand = 1 }
+    elsif ( $strand eq '-' ) { $strand = -1 }
+    else                     { strand  = 0 }
 
-    # ... and non-coding transcripts have cdsStart == cdsEnd (we would
-    # like these to be stored as NULLs).
+    # ... and non-coding transcripts have cdsStart == cdsEnd.  We would
+    # like these to be stored as NULLs.
     if ( $cdsStart == $cdsEnd ) {
       undef($cdsStart);
       undef($cdsEnd);
@@ -61,9 +64,7 @@ sub run {
 
     # Cut off the last comma from $exonEnds, if it exists.  This is done
     # for $exonStarts already (above).
-    if (substr($exonEnds, -1, 1) eq ',') {
-      chop($exonEnds);
-    }
+    if ( substr( $exonEnds, -1, 1 ) eq ',' ) { chop($exonEnds) }
 
     my %xref = ( 'accession'  => $name,
                  'chromosome' => $chrom,
