@@ -144,3 +144,26 @@ CREATE TABLE pairs (
 
 );
 ################################################################################
+
+-- Table for coordinate-based Xrefs, based
+-- on the knownGenes table from UCSC.
+
+CREATE TABLE coordinate_xref (
+  source_id     INT UNSIGNED NOT NULL,
+  species_id    INT UNSIGNED NOT NULL,
+  accession     VARCHAR(255) NOT NULL,
+  chromosome    VARCHAR(255) NOT NULL,
+  strand        TINYINT(2) NOT NULL,
+  txStart       INT(10) NOT NULL,
+  txEnd         INT(10) NOT NULL,
+  cdsStart      INT(10),
+  cdsEnd        INT(10),
+  exonStarts    TEXT NOT NULL,
+  exonEnds      TEXT NOT NULL,
+
+  -- Me ain't sure 'bout these 'uns
+  INDEX start_pos_idx(species_id, chromosome, strand, txStart),
+  INDEX end_pos_idx(species_id, chromosome, strand, txEnd)
+);
+
+################################################################################
