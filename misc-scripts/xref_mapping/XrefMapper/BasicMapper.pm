@@ -3949,7 +3949,7 @@ EOS
 
 
   #sql needed to get the dependent xrefs for those missed.
-  my $dep_sql = "SELECT x.xref_id, x.accession, x.version, x.label, x.description, x.source_id FROM dependent_xref dx, xref x WHERE x.xref_id=dx.dependent_xref_id AND master_xref_id = ?";
+  my $dep_sql = "SELECT x.xref_id, x.accession, x.version, x.label, x.description, x.source_id, dx.linkage_annotation FROM dependent_xref dx, xref x WHERE x.xref_id=dx.dependent_xref_id AND master_xref_id = ?";
   my $dep_sth = $self->xref->dbc->prepare($dep_sql);
   
   
@@ -3957,7 +3957,6 @@ EOS
 
   open(XREF2, ">".$self->core->dir()."/pairs_xref.txt") 
     || die "Could not open pairs_xref.txt";
-
 
   if(scalar(@xref_list) > 1){
 
@@ -4012,6 +4011,9 @@ EOS
     || die "Could not open pairs_object_xref.txt";
 
 
+  open(GO_XREF2, ">".$self->core->dir()."/pairs_go_xref.txt")
+    || die "Could not open pairs_go_xref.txt";
+
   my $i=0;
   my $index;
   my $added = 0;
@@ -4029,6 +4031,8 @@ EOS
   my %identity_master_xref_to_object_xref;
 
   my @list_all = keys %good2missed;
+
+
 
   while ( @list_all){
     my @list = splice(@list_all, 0,199);
@@ -4050,8 +4054,8 @@ EOS
 	push @{$identity_master_xref_to_object_xref{$goodxref}}, $max_object_xref_id;
 	
 	$dep_sth->execute($good2missed{$goodxref}-$xref_id_offset);
-	my ($xref_id, $acc,$ver, $label, $desc, $source_id);
-	$dep_sth->bind_columns(\$xref_id, \$acc, \$ver, \$label, \$desc, \$source_id);
+	my ($xref_id, $acc,$ver, $label, $desc, $source_id, $linkage_annotation);
+	$dep_sth->bind_columns(\$xref_id, \$acc, \$ver, \$label, \$desc, \$source_id, \$linkage_annotation);
 	
 	while($dep_sth->fetch){
 	  
@@ -4076,7 +4080,10 @@ EOS
 	    print OBJECT_XREF2 $transcript_2_translation{$ens_int_id}."\tTranslation\t" ;
 	    print OBJECT_XREF2 $xref_id+$xref_id_offset;
 	    print OBJECT_XREF2 "\t\\N\n";	
-	    
+
+	    if(defined($linkage_annotation) and $linkage_annotation ne ""){
+	      print GO_XREF2 "$max_object_xref_id\t$linkage_annotation\t\\N\n";
+	    }
 	    push @new_list, $goodxref;
 	    push @{$identity_master_xref_to_object_xref{$goodxref}}, $max_object_xref_id;
 	    
@@ -4096,8 +4103,8 @@ EOS
 	push @{$identity_master_xref_to_object_xref{$goodxref}}, $max_object_xref_id;
 	
 	$dep_sth->execute($good2missed{$goodxref}-$xref_id_offset);
-	my ($xref_id, $acc,$ver, $label, $desc, $source_id);
-	$dep_sth->bind_columns(\$xref_id, \$acc, \$ver, \$label, \$desc, \$source_id);
+	my ($xref_id, $acc,$ver, $label, $desc, $source_id, $linkage_annotation);
+	$dep_sth->bind_columns(\$xref_id, \$acc, \$ver, \$label, \$desc, \$source_id, \$linkage_annotation);
 	while($dep_sth->fetch){
 	  
 	  if(!defined($priority_xref_source_id{$xref_id})){
@@ -4121,6 +4128,10 @@ EOS
 	    print OBJECT_XREF2 $xref_id+$xref_id_offset;
 	    print OBJECT_XREF2 "\\N\n";	
 	    
+	    if(defined($linkage_annotation) and $linkage_annotation ne ""){
+	      print GO_XREF2 "$max_object_xref_id\t$linkage_annotation\t\\N\n";
+	    }
+
 	    push @new_list, $good2missed{$goodxref};
 	    push @{$identity_master_xref_to_object_xref{$goodxref}}, $max_object_xref_id;
 	    
@@ -4133,6 +4144,7 @@ EOS
   }
   close XREF2;
   close OBJECT_XREF2;
+  close GO_XREF2;
 
  #
  # Now set the identity xref temp values.
@@ -4191,6 +4203,15 @@ EOS
   if(-s $file){
     my $sth = $self->core->dbc->prepare("LOAD DATA LOCAL INFILE \'$file\' IGNORE INTO TABLE xref");
     print "Uploading data in $file to xref\n";
+    $sth->execute();
+    
+  }
+
+  $file = $self->core->dir()."/pairs_go_xref.txt";
+  
+  if(-s $file){
+    my $sth = $self->core->dbc->prepare("LOAD DATA LOCAL INFILE \'$file\' IGNORE INTO TABLE go_xref");
+    print "Uploading data in $file to go_xref\n";
     $sth->execute();
     
   }
