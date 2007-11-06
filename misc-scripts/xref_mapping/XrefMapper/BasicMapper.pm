@@ -1,17 +1,25 @@
 package XrefMapper::BasicMapper;
 
 use strict;
+use warnings;
+
 use Cwd;
 use DBI;
 use File::Basename;
 use IPC::Open3;
+
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::EnsEMBL::Translation;
+
 use XrefMapper::db;
+use XrefMapper::CoordinateMapper;
+
 use vars qw(@ISA @EXPORT_OK);
-use strict;
-@EXPORT_OK = qw (%stable_id_to_internal_id  %xref_to_source %xref_accessions %source_to_external_db);
-use vars qw (%stable_id_to_internal_id %xref_to_source %xref_accessions %source_to_external_db);
+
+@EXPORT_OK = ( '%stable_id_to_internal_id', '%xref_to_source',
+               '%xref_accessions',          '%source_to_external_db' );
+use vars @EXPORT_OK;
+
 =head1 NAME
 
 XrefMapper::BasicMapper
@@ -967,6 +975,11 @@ sub run_mapping {
     submit_depend_job($self->core->dir, @job_names);
   }
   $self->check_err($self->core->dir); 
+
+
+  $self->run_coordinatemapping();
+
+
 } # run_mapping
 
 
@@ -1231,7 +1244,7 @@ sub parse_mappings {
 	$count_new++;
       }
       # note we add on $xref_id_offset to avoid clashes
-      $object_succesfully_mapped{query_id} = 1;
+      $object_succesfully_mapped{$query_id} = 1;
       print OBJECT_XREF "$max_object_xref_id\t$target_id\t$type\t" . ($query_id+$xref_id_offset) . "\t\\N\n";
 
 
