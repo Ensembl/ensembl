@@ -18,7 +18,10 @@ use vars qw(@ISA @EXPORT_OK);
 
 @EXPORT_OK = ( '%stable_id_to_internal_id', '%xref_to_source',
                '%xref_accessions',          '%source_to_external_db' );
-use vars @EXPORT_OK;
+
+use vars ( '%stable_id_to_internal_id', '%xref_to_source',
+           '%xref_accessions',          '%source_to_external_db' );
+
 
 =head1 NAME
 
