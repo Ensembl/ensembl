@@ -30,7 +30,11 @@ sub add_xref {
   my ( $source_id, $species_id, $xref ) = @_;
 
   if ( !defined($add_xref_sth) ) {
-    $add_xref_sth = $self->dbi()->prepare_cached($add_xref_sql);
+    my $dbh = $self->dbi();
+    $add_xref_sth = $dbh->prepare_cached($add_xref_sql);
+    if ( !defined($add_xref_sth) ) {
+      croak( $dbh->errstr() );
+    }
   }
 
   for my $required_key ( 'accession', 'chromosome',
