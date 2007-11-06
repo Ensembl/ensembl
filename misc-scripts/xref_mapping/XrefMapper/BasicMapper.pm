@@ -980,7 +980,7 @@ sub run_mapping {
   $self->check_err($self->core->dir); 
 
 
-  XrefMapper::CoordinateMapper::run($self);
+  $self->run_coordinatemapping();
 
 } # run_mapping
 
