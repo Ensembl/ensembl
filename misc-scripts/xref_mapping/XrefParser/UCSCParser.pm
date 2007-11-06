@@ -46,7 +46,7 @@ sub run {
     # They also use '+' and '-' for the strand, instead of -1, 0, or 1.
     if    ( $strand eq '+' ) { $strand = 1 }
     elsif ( $strand eq '-' ) { $strand = -1 }
-    else                     { strand  = 0 }
+    else                     { $strand = 0 }
 
     # ... and non-coding transcripts have cdsStart == cdsEnd.  We would
     # like these to be stored as NULLs.
