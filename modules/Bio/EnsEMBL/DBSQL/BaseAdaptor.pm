@@ -293,6 +293,7 @@ sub generic_fetch {
   # left-joined table from the table list
   #
   my @left_join_list = $self->_left_join();
+  my $left_join_prefix = '';
   my $left_join = '';
   my @tables;
   if(@left_join_list) {
@@ -301,7 +302,9 @@ sub generic_fetch {
       if( exists $left_join_hash{ $t->[0] } ) {
         my $condition = $left_join_hash{ $t->[0] };
         my $syn = $t->[1];
-        $left_join .=  "LEFT JOIN\n       ".$t->[0]." $syn ON $condition ";
+        $left_join .=
+          "\n  LEFT JOIN " . $t->[0] . " $syn ON $condition ) ";
+        $left_join_prefix .= '(';
       } else {
         push @tables, $t;
       }
@@ -309,7 +312,6 @@ sub generic_fetch {
   } else {
     @tables = @tabs;
   }
-
 
   my $straight_join = '';
 
@@ -320,7 +322,9 @@ sub generic_fetch {
   #construct a nice table string like 'table1 t1, table2 t2'
   my $tablenames = join(', ', map({ join(' ', @$_) } @tables));
 
-  my $sql = "SELECT $straight_join $columns\n  FROM ($tablenames) $left_join";
+  my $sql =
+      "SELECT $straight_join $columns\n"
+    . "FROM $left_join_prefix ($tablenames) $left_join";
 
   my $default_where = $self->_default_where_clause;
   my $final_clause = $self->_final_clause;
@@ -337,6 +341,9 @@ sub generic_fetch {
 
   #append additional clauses which may have been defined
   $sql .= "\n$final_clause";
+
+  # FOR DEBUG:
+  # printf(STDERR "SQL:\n%s\n", $sql);
 
   my $sth = $db->dbc->prepare($sql);
   $sth->execute;
