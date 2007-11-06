@@ -45,20 +45,20 @@ Post questions to the EnsEMBL development list ensembl-dev@ebi.ac.uk
 # hold alist of source that have more than 1 priority
 # and hence can come from several sources.
 my %priority_source_id;     # {1090} = 1
-my %priority_source_name;   # {HUGO} = 2
-my %priority_source_id_to_name;    # {1091} = HUGO
+my %priority_source_name;   # {HGNC} = 2
+my %priority_source_id_to_name;    # {1091} = HGNC
 
 #be able to get from xref to the accession or source for those needed
 my %priority_xref_acc;      # {12} =  "567";
 my %priority_xref_source_id;# {12} = 1090;
 
 # hold a hash of the values with the highest priority
-my %priority_xref;           # {HUGO:567} = 12
+my %priority_xref;           # {HGNC:567} = 12
 my %priority_xref_extra_bit; # {12} = "\tDIRECT\tExternally assigned relationship between ENST123 and Q12345\n";
-my %priority_xref_state;     # {HUGO:567} = "primary" or "dependent" or "direct";
-my %priority_xref_priority;  # {HUGO:567} = 1; 
-my %priority_object_xref;    # {HUGO:567} = {Gene:123456};
-my %priority_identity_xref;  # {HUGO:567} = as normal print except no object_xref_id at the start
+my %priority_xref_state;     # {HGNC:567} = "primary" or "dependent" or "direct";
+my %priority_xref_priority;  # {HGNC:567} = 1; 
+my %priority_object_xref;    # {HGNC:567} = {Gene:123456};
+my %priority_identity_xref;  # {HGNC:567} = as normal print except no object_xref_id at the start
 #                                        = "100\t100\t1\t100\t110-210\t100M\t100\t987\n";
 my %priority_failed;         # {1090:12} = "gene|123456|78|35|90|90\n";
 
@@ -2928,7 +2928,7 @@ sub transcript_display_xref_sources {
   my @list = qw(RFAM
 		miRBase 
 		IMGT/GENE_DB
-		HUGO
+		HGNC
 		SGD
 		MarkerSymbol
 		flybase_symbol
