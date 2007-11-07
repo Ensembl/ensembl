@@ -929,8 +929,6 @@ sub run_mapping {
   $self->core->dbc->disconnect_when_inactive(1);
   $self->xref->dbc->disconnect_when_inactive(1);
 
-  $self->run_coordinatemapping();
-
   # foreach method, submit the appropriate job & keep track of the job name
   # note we check if use_existing_mappings is set here, not earlier, as we
   # still need to instantiate the method object in order to fill
@@ -979,7 +977,6 @@ sub run_mapping {
     submit_depend_job($self->core->dir, @job_names);
   }
   $self->check_err($self->core->dir); 
-
 
 } # run_mapping
 
@@ -1143,8 +1140,6 @@ sub parse_mappings {
   # format:
   #   key: ensembl object type:ensembl object id
   #   value: list of xref_id (with offset)
-
-
 
   my @dna_check=();
   my @pep_check=();
