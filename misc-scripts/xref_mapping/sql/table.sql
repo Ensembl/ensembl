@@ -149,6 +149,7 @@ CREATE TABLE pairs (
 -- on the knownGenes table from UCSC.
 
 CREATE TABLE coordinate_xref (
+  coord_xref_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
   source_id     INT UNSIGNED NOT NULL,
   species_id    INT UNSIGNED NOT NULL,
   accession     VARCHAR(255) NOT NULL,
@@ -161,7 +162,7 @@ CREATE TABLE coordinate_xref (
   exonStarts    TEXT NOT NULL,
   exonEnds      TEXT NOT NULL,
 
-  -- Me ain't sure 'bout these 'uns
+  UNIQUE KEY coord_xref_idx(coord_xref_id),
   INDEX start_pos_idx(species_id, chromosome, strand, txStart),
   INDEX end_pos_idx(species_id, chromosome, strand, txEnd)
 );
