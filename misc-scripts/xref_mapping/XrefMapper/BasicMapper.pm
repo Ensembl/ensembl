@@ -929,6 +929,7 @@ sub run_mapping {
   $self->core->dbc->disconnect_when_inactive(1);
   $self->xref->dbc->disconnect_when_inactive(1);
 
+  $self->run_coordinatemapping();
 
   # foreach method, submit the appropriate job & keep track of the job name
   # note we check if use_existing_mappings is set here, not earlier, as we
@@ -979,8 +980,6 @@ sub run_mapping {
   }
   $self->check_err($self->core->dir); 
 
-
-  $self->run_coordinatemapping();
 
 } # run_mapping
 
@@ -1045,7 +1044,6 @@ sub submit_depend_job {
       die("Could not fork : $!\n") unless (defined($reader));
       open(STDERR, ">&STDOUT");
       if (($pid = open(BSUB, '|-'))) {
-	
 	print BSUB "/bin/true\n";
 	close BSUB;
 	if ($? != 0) {
