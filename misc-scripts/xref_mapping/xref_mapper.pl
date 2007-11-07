@@ -381,10 +381,7 @@ print "\nParsing mapping output\n";
 $mapper->parse_mappings($notriage);
 
 
-
-if($upload){
-
-
+if ($upload) {
   $mapper->do_upload();
 
   print "\nProcessing priority xrefs\n";
@@ -393,46 +390,40 @@ if($upload){
   print "\nChecking pair data\n";
   $mapper->add_missing_pairs();
 
-
-  if($notriage){
+  if ($notriage) {
     $mapper->dump_xref_with_no_triage_data();
-  }  
-  else{
+  } else {
     $mapper->dump_triage_data();
   }
 
-  if(!defined($notriage)){
+  if ( !defined($notriage) ) {
     print "\nPriority unmapped xrefs sorting\n";
     $mapper->unmapped_data_for_prioritys();
-    
+
     print "\nProcess DEPENDENT unmapped object data\n";
     $mapper->write_dependent_unmapped_objects();
   }
 
-
   print "\nChecking xrefs\n";
   $mapper->cleanup_database();
 
-  # if special sources are set then make sure these ONLY have one 
-  # xref per transcript. This is based on % identity etc but if 
+  # if special sources are set then make sure these ONLY have one
+  # xref per transcript. This is based on % identity etc but if
   # two have the same and we cannot distinguish between them still keep
   # both.
   $mapper->check_special_sources();
+} ## end if ($upload)
 
+$mapper->run_coordinatemapping($upload);
 
+if ($upload) {
   $mapper->species_specific_pre_attributes_set();
-
   $mapper->genes_and_transcripts_attributes_set();
-
 }
 
-print  "*** All finished ***\n";
+print "*** All finished ***\n";
 
 sub info {
-
-  my ($i, @all_species) = @_;
-
+  my ( $i, @all_species ) = @_;
   return " for species $i of " . scalar(@all_species);
-
 }
-
