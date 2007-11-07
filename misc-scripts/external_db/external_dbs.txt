@@ -55,7 +55,7 @@
 1701	protein_id_predicted	1	PRED	1	0	4	Predicted Protein ID	MISC	\N	\N
 1800	RefSeq_dna	1	KNOWN	1	0	25	RefSeq DNA	MISC	\N	\N
 1805	RefSeq_dna_predicted	1	PRED	1	0	15	RefSeq DNA predicted	MISC	\N	\N
-not defined1810	RefSeq_peptide	1	KNOWN	1	0	26	RefSeq peptide	MISC	\N	\N
+1810	RefSeq_peptide	1	KNOWN	1	0	26	RefSeq peptide	MISC	\N	\N
 1815	RefSeq_peptide_predicted	1	PRED	1	0	16	RefSeq peptide predicted	MISC	\N	\N
 1820	RefSeq_rna	1	KNOWN	1	0	24	RefSeq RNA	MISC	\N	\N
 1825	RefSeq_rna_predicted	1	PRED	1	0	14	RefSeq RNA predicted	MISC	\N	\N
@@ -71,7 +71,7 @@ not defined1810	RefSeq_peptide	1	KNOWN	1	0	26	RefSeq peptide	MISC	\N	\N
 2200	Uniprot/SWISSPROT	1	KNOWN	1	1	30	UniProtKB/Swiss-Prot	MISC	\N	\N
 2201	Uniprot/SWISSPROT_predicted	1	PRED	1	1	15	Predicted UniProtKB/Swiss-Prot	MISC	\N	\N
 2202	Uniprot/Varsplic	1	KNOWN	1	1	15	UniprotKB/SpliceVariant	MISC	\N	\N
-2250	UniProtKB_all	1	XREF	1	0	40	UniprotKB generic accession number (TrEMBL or SwissProt not differentiated)	MISC	\N	\N
+2250	UniProtKB_all	1	XREF	1	0	40	UniProtKB generic accession number (TrEMBL or SwissProt not differentiated)	MISC	\N	\N
 2300	Vega_gene	1	XREF	1	0	5	Vega gene	MISC	\N	\N
 2310	Vega_transcript	1	XREF	1	0	5	Vega transcript	MISC	\N	\N
 2320	Vega_translation	1	XREF	1	0	5	Vega translation	MISC	\N	\N
