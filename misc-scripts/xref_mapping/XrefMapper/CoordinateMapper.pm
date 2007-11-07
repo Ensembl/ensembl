@@ -15,13 +15,19 @@ use base qw( Exporter );
 
 our @EXPORT = qw( run_coordinatemapping );
 
+our $coding_weight = 2;
+our $ens_weight    = 3;
+
+our $transcript_score_threshold = 0.95;
+our $gene_score_threshold       = 0.95;
+
 sub run_coordinatemapping {
   my $self = shift;
 
-  #local $| = 1;
-
   my $xref_db = $self->xref();
   my $core_db = $self->core();
+
+  my $output_dir = $core_db->dir();
 
   my $species = $core_db->species();
   my $species_id =
@@ -67,26 +73,16 @@ sub run_coordinatemapping {
     while ( my $gene = shift(@genes) ) {
       my @transcripts = @{ $gene->get_all_Transcripts() };
 
+      my %gene_result;
+
       foreach my $transcript ( sort { $a->start() <=> $b->start() }
                                @transcripts )
       {
         my @exons = @{ $transcript->get_all_Exons() };
 
-        my $rr1 = Bio::EnsEMBL::Mapper::RangeRegistry->new();
+        my %transcript_result;
 
-        log_progress( '=' x 80, "\n" );
-        log_progress( "%15s %12s [%d,%d] [%d,%d] chr%s\n",
-                $transcript->stable_id(), (
-                  defined( $transcript->external_name() )
-                  ? $transcript->external_name()
-                  : ''
-                ),
-                $transcript->start(),
-                $transcript->end(),
-                $transcript->coding_region_start() || 0,
-                $transcript->coding_region_end()   || 0,
-                $chr_name );
-        print("\n");
+        my $rr1 = Bio::EnsEMBL::Mapper::RangeRegistry->new();
 
         my $coding_transcript;
         if ( defined( $transcript->translation() ) ) {
@@ -215,9 +211,6 @@ sub run_coordinatemapping {
           my $ens_exon_hit    = $rexon_match/scalar(@exons);
           my $ens_coding_hit  = $rcoding_match/( $rcoding_count || 1 );
 
-          my $coding_weight = 2;
-          my $ens_weight    = 3;
-
           my $score = (
                 ( $exon_match/$ens_weight + $ens_weight*$rexon_match )/
                   $coding_weight + $coding_weight*(
@@ -228,31 +221,49 @@ sub run_coordinatemapping {
                   $coding_count/$ens_weight + $ens_weight*$rcoding_count
                   ) );
 
-          log_progress( "%10s\t"
-                    . "%3d%% (%4.1f/%2d):"
-                    . "%3d%% (%4.1f/%2d)|"
-                    . "%3d%% (%4.1f/%2d):"
-                    . "%3d%% (%4.1f/%2d) "
-                    . "%3d%%\n",
-                  $accession,
-                  int( 100*$ucsc_exon_hit + 0.5 ),
-                  $exon_match,
-                  $exonCount,
-                  int( 100*$ucsc_coding_hit + 0.5 ),
-                  $coding_match,
-                  $coding_count,
-                  int( 100*$ens_exon_hit + 0.5 ),
-                  $rexon_match,
-                  scalar(@exons),
-                  int( 100*$ens_coding_hit + 0.5 ),
-                  $rcoding_match,
-                  $rcoding_count,
-                  int( 100*$score + 0.5 ) );
+          if ( !defined( $transcript_result{$accession} )
+               || $transcript_result{$accession} < $score )
+          {
+            $transcript_result{$accession} = $score;
+          }
 
         } ## end while ( $sth->fetch() )
         $sth->finish();
 
+        while ( my ( $accession, $score ) = each(%transcript_result) ) {
+          if ( !defined( $gene_result{$accession} )
+               || $gene_result{$accession} < $score )
+          {
+            $gene_result{$accession} = $score;
+          }
+        }
+
+        foreach my $accession (
+             sort( { $transcript_result{$a} <=> $transcript_result{$b} }
+                   keys(%transcript_result) ) )
+        {
+          my $score = $transcript_result{$accession};
+          printf( "t '%s' '%s': %.3f\t%s\n",
+                 $transcript->stable_id(),
+                 $accession, $score,
+                 ( $score > $transcript_score_threshold ? 'OK' : '' ) );
+        }
       } ## end foreach my $transcript ( sort...
+
+      foreach my $accession (
+                         sort( { $gene_result{$a} <=> $gene_result{$b} }
+                               keys(%gene_result) ) )
+      {
+        my $score = $gene_result{$accession};
+        printf( "g '%s' '%s': %.3f\t%s\n",
+                $gene->stable_id(),
+                $accession,
+                $score, (
+                  $score > $gene_score_threshold
+                  ? 'OK'
+                  : ''
+                ) );
+      }
     } ## end while ( my $gene = shift(...
 
   } ## end foreach my $chromosome (@chromosomes)
