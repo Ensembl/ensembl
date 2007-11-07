@@ -114,9 +114,9 @@
 43	NovPCProgCount	protein_coding_in_progress_NOVEL	Number of Novel Protein Coding in progress
 
 # Vega annotation stats
-44	AnnotSeqLength	Annotated sequence length	Total length of annotated clone sequence
-45	TotCloneNum	Total number of clones	Total Number of clones
-46	NumAnnotClone	Fully annotated clones	Number of fully annotated clones
+44	AnnotSeqLength	Annotated sequence length	Annotated Sequence
+45	TotCloneNum	Total number of clones	Total Number of Clones
+46	NumAnnotClone	Fully annotated clones	Number of Fully Annotated Clones
 
 # Acknowledgements for manual annotation of this seq_region
 47	ack	Acknowledgement	Acknowledgement for manual annotation
@@ -242,7 +242,7 @@
 142	GeneGC	Gene GC	 Percentage GC content for this gene
 
 # vega
-143	TotAssLength	Finished sequence length	Length of the assembly not counting sequence gaps
+143	TotAssLength	Finished sequence length	Finished Sequence
 144	NovPsCount	novel_pseudogene	Number of Novel Pseudogenes
 145	KnwnPsCount	known_pseudogene	Number of Known Pseudogenes
 146	KnwnTPsCount	known_transcribed_pseudogene	Number of Known Transcribed Pseudogenes
