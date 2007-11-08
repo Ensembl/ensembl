@@ -26,10 +26,10 @@ our $transcript_score_threshold = 0.95;
 our $gene_score_threshold       = 0.95;
 
 sub run_coordinatemapping {
-  my $self = shift;
+  my ($mapper, $do_upload) = @_;
 
-  my $xref_db = $self->xref();
-  my $core_db = $self->core();
+  my $xref_db = $mapper->xref();
+  my $core_db = $mapper->core();
 
   my $species = $core_db->species();
   my $species_id =
@@ -63,19 +63,66 @@ sub run_coordinatemapping {
   my $xref_dbh = $xref_db->dbc()->db_handle();
   my $core_dbh = $core_db->dbc()->db_handle();
 
+  ######################################################################
+  # Figure out the last used 'xref_id', 'object_xref_id',              #
+  # 'unmapped_object_id', and 'unmapped_reason_id' from the Core       #
+  # database.                                                          #
+  ######################################################################
+
   my $xref_id =
     $core_dbh->selectall_arrayref('SELECT MAX(xref_id) FROM xref')
     ->[0][0];
-
-  my $objxref_id =
-    $core_dbh->selectall_arrayref(
+  my $object_xref_id = $core_dbh->selectall_arrayref(
                  'SELECT MAX(object_xref_id) FROM object_xref')->[0][0];
+  my $unmapped_object_id = $core_dbh->selectall_arrayref(
+         'SELECT MAX(unmapped_object_id) FROM unmapped_object')->[0][0];
+  my $unmapped_reason_id = $core_dbh->selectall_arrayref(
+         'SELECT MAX(unmapped_reason_id) FROM unmapped_reason')->[0][0];
 
-  log_progress( "Last used xref_id        is %d\n", $xref_id );
-  log_progress( "Last used object_xref_id is %d\n", $objxref_id );
+  log_progress( "Last used xref_id            is %d\n", $xref_id );
+  log_progress( "Last used object_xref_id     is %d\n",
+                $object_xref_id );
+  log_progress( "Last used unmapped_object_id is %d\n",
+                $unmapped_object_id );
+  log_progress( "Last used unmapped_reason_id is %d\n",
+                $unmapped_reason_id );
 
   ######################################################################
-  # Read and store available Xrefs from the Xref database              #
+  # Get an 'analysis_id', or discover that we need to add our analysis #
+  # to the 'analyis' table later.                                      #
+  ######################################################################
+
+  my $analysis_params =
+    sprintf( "weights(coding,ensembl)="
+               . "%.2f,%.2f;"
+               . "thresholds(transcript,gene)="
+               . "%.2f,%.2f",
+             $coding_weight, $ens_weight, $transcript_score_threshold,
+             $gene_score_threshold );
+
+  my $analysis_sql = qq(
+    SELECT  analysis_id
+    FROM    analysis
+    WHERE   logic_name = 'XrefCoordinateMapping'
+    AND     parameters = ?
+  );
+
+  my $analysis_sth = $core_dbh->prepare($analysis_sql);
+  $analysis_sth->execute($analysis_params);
+
+  my $analysis_id = $analysis_sth->fetchall_arrayref()->[0][0];
+  if ( !defined($analysis_id) ) {
+    log_progress("Can not find analysis ID for this analysis:\n");
+    log_progress("  logic_name = 'XrefCoordinateMapping'\n");
+    log_progress( "  parameters = '%s'\n", $analysis_params );
+    log_progress("A new analysis will be added\n");
+  } else {
+    log_progress( "Analysis ID                  is %d\n",
+                  $analysis_id );
+  }
+
+  ######################################################################
+  # Read and store available Xrefs from the Xref database.             #
   ######################################################################
 
   my %unmapped;
@@ -91,21 +138,20 @@ sub run_coordinatemapping {
   $xref_sth->execute($species_id);
 
   while ( my $xref = $xref_sth->fetchrow_hashref() ) {
-    ++$xref_id;
-
     $unmapped{ $xref->{'coord_xref_id'} } = {
-      'xref_id' => $xref_id,
       'external_db_id' =>
         $XrefMapper::BasicMapper::source_to_external_db_id{ $xref->{
           'source_id'} }
-        || 11000,    # FIXME
+        || 11000,    # FIXME ('external_db' needs to be updated)
       'accession' => $xref->{'accession'},
-      'reason'    => 'No overlap with any Ensembl gene or transcript' };
+      'reason'    => 'No overlap',
+      'reason_full' =>
+        'No coordinate overlap with any Ensembl gene or transcript' };
   }
   $xref_sth->finish();
 
   ######################################################################
-  # Do coordinate matching                                             #
+  # Do coordinate matching.                                            #
   ######################################################################
 
   my $sql = qq(
@@ -274,7 +320,7 @@ sub run_coordinatemapping {
           my $ens_coding_hit  = $rcoding_match/( $rcoding_count || 1 );
 
           ##############################################################
-          # Calculate the score                                        #
+          # Calculate the score.                                       #
           ##############################################################
 
           my $score = (
@@ -306,6 +352,10 @@ sub run_coordinatemapping {
           }
         }
 
+        ################################################################
+        # Apply transcript threshold.                                  #
+        ################################################################
+
         foreach my $coord_xref_id ( keys(%transcript_result) ) {
           my $score = $transcript_result{$coord_xref_id};
 
@@ -313,7 +363,8 @@ sub run_coordinatemapping {
             if ( exists( $unmapped{$coord_xref_id} ) ) {
               $mapped{$coord_xref_id} = $unmapped{$coord_xref_id};
               delete( $unmapped{$coord_xref_id} );
-              $mapped{$coord_xref_id}{'reason'} = undef;
+              $mapped{$coord_xref_id}{'reason'}      = undef;
+              $mapped{$coord_xref_id}{'reason_full'} = undef;
             }
 
             push( @{ $mapped{$coord_xref_id}{'mapped_to'} }, {
@@ -323,12 +374,26 @@ sub run_coordinatemapping {
 
           } elsif ( exists( $unmapped{$coord_xref_id} ) ) {
             $unmapped{$coord_xref_id}{'reason'} =
+              'Did not meet threshold';
+            $unmapped{$coord_xref_id}{'reason_full'} =
               sprintf( "Overlap score for transcript "
-                         . "not higher than threshold (%.2f)",
+                         . "lower than threshold (%.2f)",
                        $transcript_score_threshold );
           }
-        }
+        } ## end foreach my $coord_xref_id (...
+
+        ################################################################
+        # For this transcript, pick out the best matche(s) from the    #
+        # ones passing the transcript threshold.                       #
+        ################################################################
+
+        # TODO
+
       } ## end foreach my $transcript ( sort...
+
+      ##################################################################
+      # Apply gene threshold.                                          #
+      ##################################################################
 
       foreach my $coord_xref_id ( keys(%gene_result) ) {
         my $score = $gene_result{$coord_xref_id};
@@ -337,7 +402,8 @@ sub run_coordinatemapping {
           if ( exists( $unmapped{$coord_xref_id} ) ) {
             $mapped{$coord_xref_id} = $unmapped{$coord_xref_id};
             delete( $unmapped{$coord_xref_id} );
-            $mapped{$coord_xref_id}{'reason'} = undef;
+            $mapped{$coord_xref_id}{'reason'}      = undef;
+            $mapped{$coord_xref_id}{'reason_full'} = undef;
           }
 
           push( @{ $mapped{$coord_xref_id}{'mapped_to'} }, {
@@ -347,29 +413,52 @@ sub run_coordinatemapping {
 
         } elsif ( exists( $unmapped{$coord_xref_id} ) ) {
           $unmapped{$coord_xref_id}{'reason'} =
+            'Did not meet threshold';
+          $unmapped{$coord_xref_id}{'reason_full'} =
             sprintf( "Overlap score for gene "
-                       . "not higher than threshold (%.2f)",
+                       . "lower than threshold (%.2f)",
                      $gene_score_threshold );
         }
-      }
+      } ## end foreach my $coord_xref_id (...
+
+      ##################################################################
+      # For this gene, pick out the best matche(s) from the ones       #
+      # passing the gene threshold.                                    #
+      ##################################################################
+
+      # TODO
 
     } ## end while ( my $gene = shift(...
+    last;
   } ## end foreach my $chromosome (@chromosomes)
 
+  # Make all dumps.  Order is important.
+  dump_xref( $output_dir, $xref_id, \%mapped, \%unmapped );
+  dump_object_xref( $output_dir, $object_xref_id, \%mapped );
+  dump_unmapped_reason( $output_dir, $unmapped_reason_id, \%unmapped );
+  dump_unmapped_object( $output_dir,  $unmapped_object_id,
+                        $analysis_id, \%unmapped );
+}
+
+sub dump_xref {
+  my ( $output_dir, $xref_id, $mapped, $unmapped ) = @_;
+
   ######################################################################
-  # Dump for 'xref'                                                    #
+  # Dump for 'xref'.                                                   #
   ######################################################################
 
-  my $xref_filename = catfile( $output_dir, 'xref_coord.txt' );
-  my $xref_fh = IO::File->new( '>' . $xref_filename )
-    or
-    croak( sprintf( "Can not open '%s' for writing", $xref_filename ) );
+  my $filename = catfile( $output_dir, 'xref_coord.txt' );
 
-  log_progress( "Dumping for 'xref' to '%s'\n", $xref_filename );
+  my $fh = IO::File->new( '>' . $filename )
+    or croak( sprintf( "Can not open '%s' for writing", $filename ) );
 
-  foreach my $xref ( values(%unmapped), values(%mapped) ) {
-    $xref_fh->printf(
-                "%d\t%d\t%s\t%s\t%s\t%s\t%s\t%s\n",
+  log_progress( "Dumping for 'xref' to '%s'\n", $filename );
+
+  foreach my $xref ( values( %{$unmapped} ), values( %{$mapped} ) ) {
+    # Assign 'xref_id' to this Xref.
+    $xref->{'xref_id'} = ++$xref_id;
+
+    $fh->printf("%d\t%d\t%s\t%s\t%s\t%s\t%s\t%s\n",
                 $xref->{'xref_id'},
                 $xref->{'external_db_id'},
                 $xref->{'accession'},
@@ -380,38 +469,128 @@ sub run_coordinatemapping {
                 '\N'                                  # FIXME (possibly)
     );
   }
-  $xref_fh->close();
+  $fh->close();
 
   log_progress("Dumping for 'xref' done\n");
 
+} ## end sub dump_xref
+
+sub dump_object_xref {
+  my ( $output_dir, $object_xref_id, $mapped ) = @_;
+
   ######################################################################
-  # Dump for 'object_xref'                                             #
+  # Dump for 'object_xref'.                                            #
   ######################################################################
 
-  my $objxref_filename =
-    catfile( $output_dir, 'object_xref_coord.txt' );
-  my $objxref_fh = IO::File->new( '>' . $objxref_filename )
-    or croak(
-        sprintf( "Can not open '%s' for writing", $objxref_filename ) );
+  my $filename = catfile( $output_dir, 'object_xref_coord.txt' );
 
-  log_progress( "Dumping for 'object_xref' to '%s'\n",
-                $objxref_filename );
+  my $fh = IO::File->new( '>' . $filename )
+    or croak( sprintf( "Can not open '%s' for writing", $filename ) );
 
-  foreach my $xref ( values(%mapped) ) {
-    foreach my $objxref ( @{ $xref->{'mapped_to'} } ) {
-      $objxref_fh->printf( "%d\t%d\t%s\t%d\t%s\n",
-                           ++$objxref_id,
-                           $objxref->{'ensembl_id'},
-                           $objxref->{'ensembl_object_type'},
-                           $xref->{'xref_id'},
-                           '\N' );
+  log_progress( "Dumping for 'object_xref' to '%s'\n", $filename );
+
+  foreach my $xref ( values( %{$mapped} ) ) {
+    foreach my $object_xref ( @{ $xref->{'mapped_to'} } ) {
+      # Assign 'object_xref_id' to this Object Xref.
+      $object_xref->{'object_xref_id'} = ++$object_xref_id;
+
+      $fh->printf( "%d\t%d\t%s\t%d\t%s\n",
+                   $object_xref->{'object_xref_id'},
+                   $object_xref->{'ensembl_id'},
+                   $object_xref->{'ensembl_object_type'},
+                   $xref->{'xref_id'},
+                   '\N' );
     }
   }
-  $objxref_fh->close();
+  $fh->close();
 
   log_progress("Dumping for 'object_xref' done\n");
 
-} ## end sub run_coordinatemapping
+} ## end sub dump_objexref
+
+sub dump_unmapped_reason {
+  my ( $output_dir, $unmapped_reason_id, $unmapped ) = @_;
+
+  ######################################################################
+  # Dump for 'unmapped_reason'.                                        #
+  ######################################################################
+
+  # Create a list of the unique reasons.
+  my %reasons;
+
+  foreach my $xref ( values( %{$unmapped} ) ) {
+    if ( !exists( $reasons{ $xref->{'reason_full'} } ) ) {
+      $reasons{ $xref->{'reason_full'} } = {
+                                        'summary' => $xref->{'reason'},
+                                        'full' => $xref->{'reason_full'}
+      };
+    }
+  }
+
+  my $filename = catfile( $output_dir, 'unmapped_reason_coord.txt' );
+
+  my $fh = IO::File->new( '>' . $filename )
+    or croak( sprintf( "Can not open '%s' for writing", $filename ) );
+
+  log_progress( "Dumping for 'unmapped_reason' to '%s'\n", $filename );
+
+  foreach my $reason ( values(%reasons) ) {
+    # Assign 'unmapped_reason_id' to this reason.
+    $reason->{'unmapped_reason_id'} = ++$unmapped_reason_id;
+
+    $fh->printf( "%d\t%s\t%s\n", $reason->{'unmapped_reason_id'},
+                 $reason->{'summary'}, $reason->{'full'} );
+
+  }
+  $fh->close();
+
+  log_progress("Dumping for 'unmapped_reason' done\n");
+
+  # Assign reasons to the unmapped Xrefs from %reasons.
+  foreach my $xref ( values( %{$unmapped} ) ) {
+    $xref->{'reason'}      = $reasons{ $xref->{'reason_full'} };
+    $xref->{'reason_full'} = undef;
+  }
+
+} ## end sub dump_unmapped_reason
+
+sub dump_unmapped_object {
+  my ( $output_dir, $unmapped_object_id, $analysis_id, $unmapped ) = @_;
+
+  ######################################################################
+  # Dump for 'unmapped_object'.                                        #
+  ######################################################################
+
+  my $filename = catfile( $output_dir, 'unmapped_object_coord.txt' );
+
+  my $fh = IO::File->new( '>' . $filename )
+    or croak( sprintf( "Can not open '%s' for writing", $filename ) );
+
+  log_progress( "Dumping for 'unmapped_object' to '%s'\n", $filename );
+
+  foreach my $xref ( values( %{$unmapped} ) ) {
+    # Assign 'unmapped_object_id' to this Xref.
+    $xref->{'unmapped_object_id'} = ++$unmapped_object_id;
+
+    $fh->printf(
+      "%d\t%s\t%d\t%d\t%s\t%d\t%s\t%s\t%s\t%s\t%s\n",
+      $xref->{'unmapped_object_id'},
+      'xref',
+      $analysis_id || -1,    # -1 means create analysis for
+                             # this when uploading
+      $xref->{'external_db_id'},
+      $xref->{'accession'},
+      $xref->{'reason'}->{'unmapped_reason_id'},
+      '\N',
+      '\N',
+      '\N',
+      '\N',
+      '\N' );
+  }
+  $fh->close();
+
+  log_progress("Dumping for 'unmapped_object' done\n");
+} ## end sub dump_unmapped_object
 
 sub log_progress {
   my ( $fmt, @params ) = @_;
