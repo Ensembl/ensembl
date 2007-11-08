@@ -22,8 +22,7 @@ our @EXPORT = qw( run_coordinatemapping );
 our $coding_weight = 2;
 our $ens_weight    = 3;
 
-our $transcript_score_threshold = 0.95;
-our $gene_score_threshold       = 0.95;
+our $transcript_score_threshold = 0.90;
 
 sub run_coordinatemapping {
   my ( $mapper, $do_upload ) = @_;
@@ -95,10 +94,8 @@ sub run_coordinatemapping {
   my $analysis_params =
     sprintf( "weights(coding,ensembl)="
                . "%.2f,%.2f;"
-               . "thresholds(transcript,gene)="
-               . "%.2f,%.2f",
-             $coding_weight, $ens_weight, $transcript_score_threshold,
-             $gene_score_threshold );
+               . "transcript_score_threshold=" . "%.2f",
+             $coding_weight, $ens_weight, $transcript_score_threshold );
 
   my $analysis_sql = qq(
     SELECT  analysis_id
@@ -146,7 +143,7 @@ sub run_coordinatemapping {
       'accession' => $xref->{'accession'},
       'reason'    => 'No overlap',
       'reason_full' =>
-        'No coordinate overlap with any Ensembl gene or transcript' };
+        'No coordinate overlap with any Ensembl transcript' };
   }
   $xref_sth->finish();
 
@@ -342,91 +339,82 @@ sub run_coordinatemapping {
         } ## end while ( $sth->fetch() )
         $sth->finish();
 
-        while ( my ( $coord_xref_id, $score ) =
-                each(%transcript_result) )
+        ################################################################
+        # Apply transcript threshold and pick the best match(es) for   #
+        # this transcript.                                             #
+        ################################################################
+
+        my $best_score;
+        foreach my $coord_xref_id (
+             sort( { $transcript_result{$b} <=> $transcript_result{$a} }
+                   keys(%transcript_result) ) )
         {
-          if ( !defined( $gene_result{$coord_xref_id} )
-               || $gene_result{$coord_xref_id} < $score )
-          {
-            $gene_result{$coord_xref_id} = $score;
-          }
-        }
-
-        ################################################################
-        # Apply transcript threshold.                                  #
-        ################################################################
-
-        foreach my $coord_xref_id ( keys(%transcript_result) ) {
           my $score = $transcript_result{$coord_xref_id};
 
           if ( $score > $transcript_score_threshold ) {
-            if ( exists( $unmapped{$coord_xref_id} ) ) {
-              $mapped{$coord_xref_id} = $unmapped{$coord_xref_id};
-              delete( $unmapped{$coord_xref_id} );
-              $mapped{$coord_xref_id}{'reason'}      = undef;
-              $mapped{$coord_xref_id}{'reason_full'} = undef;
-            }
+            $best_score ||= $score;
 
-            push( @{ $mapped{$coord_xref_id}{'mapped_to'} }, {
-                    'ensembl_id'          => $transcript->dbID(),
-                    'ensembl_object_type' => 'Transcript'
-                  } );
+            if ( $score == $best_score ) {
+              if ( exists( $unmapped{$coord_xref_id} ) ) {
+                $mapped{$coord_xref_id} = $unmapped{$coord_xref_id};
+                delete( $unmapped{$coord_xref_id} );
+                $mapped{$coord_xref_id}{'reason'}      = undef;
+                $mapped{$coord_xref_id}{'reason_full'} = undef;
+              }
+
+              push( @{ $mapped{$coord_xref_id}{'mapped_to'} }, {
+                      'ensembl_id'          => $transcript->dbID(),
+                      'ensembl_object_type' => 'Transcript'
+                    } );
+
+              # This is now a candidate Xref for the gene.
+              if ( !defined( $gene_result{$coord_xref_id} )
+                   || $gene_result{$coord_xref_id} < $score )
+              {
+                $gene_result{$coord_xref_id} = $score;
+              }
+
+            } elsif ( exists( $unmapped{$coord_xref_id} ) ) {
+              $unmapped{$coord_xref_id}{'reason'} =
+                'Was not best match';
+              $unmapped{$coord_xref_id}{'reason_full'} =
+                sprintf(
+                       "Did not top best transcript match score (%.2f)",
+                       $best_score );
+            }
 
           } elsif ( exists( $unmapped{$coord_xref_id} ) ) {
             $unmapped{$coord_xref_id}{'reason'} =
               'Did not meet threshold';
             $unmapped{$coord_xref_id}{'reason_full'} =
-              sprintf( "Overlap score for transcript "
+              sprintf( "Match score for transcript "
                          . "lower than threshold (%.2f)",
                        $transcript_score_threshold );
           }
         } ## end foreach my $coord_xref_id (...
 
-        ################################################################
-        # For this transcript, pick out the best matche(s) from the    #
-        # ones passing the transcript threshold.                       #
-        ################################################################
-
-        # TODO
-
       } ## end foreach my $transcript ( sort...
 
       ##################################################################
-      # Apply gene threshold.                                          #
+      # Pick the best match(es) for this gene.                         #
       ##################################################################
 
-      foreach my $coord_xref_id ( keys(%gene_result) ) {
+      my $best_score;
+      foreach my $coord_xref_id (
+                         sort( { $gene_result{$b} <=> $gene_result{$a} }
+                               keys(%gene_result) ) )
+      {
         my $score = $gene_result{$coord_xref_id};
 
-        if ( $score > $gene_score_threshold ) {
-          if ( exists( $unmapped{$coord_xref_id} ) ) {
-            $mapped{$coord_xref_id} = $unmapped{$coord_xref_id};
-            delete( $unmapped{$coord_xref_id} );
-            $mapped{$coord_xref_id}{'reason'}      = undef;
-            $mapped{$coord_xref_id}{'reason_full'} = undef;
-          }
+        $best_score ||= $score;
 
+        if ( $score == $best_score ) {
           push( @{ $mapped{$coord_xref_id}{'mapped_to'} }, {
                   'ensembl_id'          => $gene->dbID(),
                   'ensembl_object_type' => 'Gene'
                 } );
-
-        } elsif ( exists( $unmapped{$coord_xref_id} ) ) {
-          $unmapped{$coord_xref_id}{'reason'} =
-            'Did not meet threshold';
-          $unmapped{$coord_xref_id}{'reason_full'} =
-            sprintf( "Overlap score for gene "
-                       . "lower than threshold (%.2f)",
-                     $gene_score_threshold );
         }
-      } ## end foreach my $coord_xref_id (...
-
-      ##################################################################
-      # For this gene, pick out the best matche(s) from the ones       #
-      # passing the gene threshold.                                    #
-      ##################################################################
-
-      # TODO
+      }
 
     } ## end while ( my $gene = shift(...
   } ## end foreach my $chromosome (@chromosomes)
@@ -540,7 +528,9 @@ sub dump_unmapped_reason {
 
   log_progress( "Dumping for 'unmapped_reason' to '%s'\n", $filename );
 
-  foreach my $reason ( values(%reasons) ) {
+  foreach my $reason (
+            sort( { $a->{'full'} cmp $b->{'full'} } values(%reasons) ) )
+  {
     # Assign 'unmapped_reason_id' to this reason.
     $reason->{'unmapped_reason_id'} = ++$unmapped_reason_id;
 
