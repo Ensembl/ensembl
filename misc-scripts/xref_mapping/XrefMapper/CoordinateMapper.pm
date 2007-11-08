@@ -26,7 +26,7 @@ our $transcript_score_threshold = 0.95;
 our $gene_score_threshold       = 0.95;
 
 sub run_coordinatemapping {
-  my ($mapper, $do_upload) = @_;
+  my ( $mapper, $do_upload ) = @_;
 
   my $xref_db = $mapper->xref();
   my $core_db = $mapper->core();
@@ -429,7 +429,6 @@ sub run_coordinatemapping {
       # TODO
 
     } ## end while ( my $gene = shift(...
-    last;
   } ## end foreach my $chromosome (@chromosomes)
 
   # Make all dumps.  Order is important.
@@ -438,7 +437,10 @@ sub run_coordinatemapping {
   dump_unmapped_reason( $output_dir, $unmapped_reason_id, \%unmapped );
   dump_unmapped_object( $output_dir,  $unmapped_object_id,
                         $analysis_id, \%unmapped );
-}
+
+} ## end sub run_coordinatemapping
+
+#-----------------------------------------------------------------------
 
 sub dump_xref {
   my ( $output_dir, $xref_id, $mapped, $unmapped ) = @_;
@@ -475,6 +477,8 @@ sub dump_xref {
 
 } ## end sub dump_xref
 
+#-----------------------------------------------------------------------
+
 sub dump_object_xref {
   my ( $output_dir, $object_xref_id, $mapped ) = @_;
 
@@ -507,6 +511,8 @@ sub dump_object_xref {
   log_progress("Dumping for 'object_xref' done\n");
 
 } ## end sub dump_objexref
+
+#-----------------------------------------------------------------------
 
 sub dump_unmapped_reason {
   my ( $output_dir, $unmapped_reason_id, $unmapped ) = @_;
@@ -554,6 +560,8 @@ sub dump_unmapped_reason {
 
 } ## end sub dump_unmapped_reason
 
+#-----------------------------------------------------------------------
+
 sub dump_unmapped_object {
   my ( $output_dir, $unmapped_object_id, $analysis_id, $unmapped ) = @_;
 
@@ -591,6 +599,8 @@ sub dump_unmapped_object {
 
   log_progress("Dumping for 'unmapped_object' done\n");
 } ## end sub dump_unmapped_object
+
+#-----------------------------------------------------------------------
 
 sub log_progress {
   my ( $fmt, @params ) = @_;
