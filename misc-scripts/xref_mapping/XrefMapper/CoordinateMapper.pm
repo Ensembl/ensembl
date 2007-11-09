@@ -508,7 +508,7 @@ sub upload_xref {
   log_progress( "Uploading for 'xref' from '%s'\n", $filename );
 
   my $sql = 'INSERT INTO xref VALUES(?, ?, ?, ?, ?, ?, ?, ?)';
-  my $sth = $dbh->prepare($sth);
+  my $sth = $dbh->prepare($sql);
 
   while ( my $line = $fh->getline() ) {
     chomp($line);
@@ -566,7 +566,7 @@ sub upload_object_xref {
   log_progress( "Uploading for 'object_xref' from '%s'\n", $filename );
 
   my $sql = 'INSERT INTO object_xref VALUES(?, ?, ?, ?, ?, ?)';
-  my $sth = $dbh->prepare($sth);
+  my $sth = $dbh->prepare($sql);
 
   while ( my $line = $fh->getline() ) {
     chomp($line);
