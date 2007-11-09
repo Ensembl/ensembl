@@ -42,9 +42,12 @@ sub run_coordinatemapping {
 
   my $output_dir = $core_db->dir();
 
+  my $xref_filename = catfile( $output_dir, 'xref_coord.txt' );
+  my $object_xref_filename =
+    catfile( $output_dir, 'object_xref_coord.txt' );
   my $unmapped_reason_filename =
     catfile( $output_dir, 'unmapped_reason_coord.txt' );
-  my $unmapped_obj_filename =
+  my $unmapped_object_filename =
     catfile( $output_dir, 'unmapped_object_coord.txt' );
 
   my $core_db_adaptor =
@@ -225,8 +228,6 @@ sub run_coordinatemapping {
                         \( $coord_xref_id, $accession, $txStart, $txEnd,
                            $cdsStart, $cdsEnd, $exonStarts, $exonEnds
                         ) );
-
-        my $exonCount = 0;
 
         while ( $sth->fetch() ) {
           my @exonStarts = split( /,\s*/, $exonStarts );
@@ -441,24 +442,30 @@ sub run_coordinatemapping {
   } ## end foreach my $chromosome (@chromosomes)
 
   # Make all dumps.  Order is important.
-  dump_xref( $output_dir, $xref_id, \%mapped, \%unmapped );
-  dump_object_xref( $output_dir, $object_xref_id, \%mapped );
-  dump_unmapped_reason( $output_dir, $unmapped_reason_id, \%unmapped );
-  dump_unmapped_object( $output_dir,  $unmapped_object_id,
+  dump_xref( $xref_filename, $xref_id, \%mapped, \%unmapped );
+  dump_object_xref( $object_xref_filename, $object_xref_id, \%mapped );
+  dump_unmapped_reason( $unmapped_reason_filename, $unmapped_reason_id,
+                        \%unmapped );
+  dump_unmapped_object( $unmapped_object_filename, $unmapped_object_id,
                         $analysis_id, \%unmapped );
+
+  if ($do_upload) {
+    upload_xref( $xref_filename, $core_dbh );
+    upload_object_xref( $object_xref_filename, $core_dbh );
+    upload_unmapped_reason( $unmapped_reason_filename, $core_dbh );
+    upload_unmapped_object( $unmapped_object_filename, $core_dbh );
+  }
 
 } ## end sub run_coordinatemapping
 
 #-----------------------------------------------------------------------
 
 sub dump_xref {
-  my ( $output_dir, $xref_id, $mapped, $unmapped ) = @_;
+  my ( $filename, $xref_id, $mapped, $unmapped ) = @_;
 
   ######################################################################
   # Dump for 'xref'.                                                   #
   ######################################################################
-
-  my $filename = catfile( $output_dir, 'xref_coord.txt' );
 
   my $fh = IO::File->new( '>' . $filename )
     or croak( sprintf( "Can not open '%s' for writing", $filename ) );
@@ -488,14 +495,37 @@ sub dump_xref {
 
 #-----------------------------------------------------------------------
 
+sub upload_xref {
+  my ( $filename, $dbh ) = @_;
+
+  ######################################################################
+  # Upload for 'xref'.                                                 #
+  ######################################################################
+
+  my $fh = IO::File->new( '<' . $filename )
+    or croak( sprintf( "Can not open '%s' for reading", $filename ) );
+
+  log_progress( "Uploading for 'xref' from '%s'\n", $filename );
+
+  my $sql = 'INSERT INTO xref VALUES(?, ?, ?, ?, ?, ?, ?, ?)';
+  my $sth = $dbh->prepare($sth);
+
+  while ( my $line = $fh->getline() ) {
+    chomp($line);
+    my @fields = split( /\t/, $line );
+    $sth->execute(@fields);
+  }
+  $fh->close();
+}
+
+#-----------------------------------------------------------------------
+
 sub dump_object_xref {
-  my ( $output_dir, $object_xref_id, $mapped ) = @_;
+  my ( $filename, $object_xref_id, $mapped ) = @_;
 
   ######################################################################
   # Dump for 'object_xref'.                                            #
   ######################################################################
-
-  my $filename = catfile( $output_dir, 'object_xref_coord.txt' );
 
   my $fh = IO::File->new( '>' . $filename )
     or croak( sprintf( "Can not open '%s' for writing", $filename ) );
@@ -523,8 +553,33 @@ sub dump_object_xref {
 
 #-----------------------------------------------------------------------
 
+sub upload_object_xref {
+  my ( $filename, $dbh ) = @_;
+
+  ######################################################################
+  # Upload for 'object_xref'.                                          #
+  ######################################################################
+
+  my $fh = IO::File->new( '<' . $filename )
+    or croak( sprintf( "Can not open '%s' for reading", $filename ) );
+
+  log_progress( "Uploading for 'object_xref' from '%s'\n", $filename );
+
+  my $sql = 'INSERT INTO object_xref VALUES(?, ?, ?, ?, ?, ?)';
+  my $sth = $dbh->prepare($sth);
+
+  while ( my $line = $fh->getline() ) {
+    chomp($line);
+    my @fields = split( /\t/, $line );
+    $sth->execute(@fields);
+  }
+  $fh->close();
+}
+
+#-----------------------------------------------------------------------
+
 sub dump_unmapped_reason {
-  my ( $output_dir, $unmapped_reason_id, $unmapped ) = @_;
+  my ( $filename, $unmapped_reason_id, $unmapped ) = @_;
 
   ######################################################################
   # Dump for 'unmapped_reason'.                                        #
@@ -541,8 +596,6 @@ sub dump_unmapped_reason {
       };
     }
   }
-
-  my $filename = catfile( $output_dir, 'unmapped_reason_coord.txt' );
 
   my $fh = IO::File->new( '>' . $filename )
     or croak( sprintf( "Can not open '%s' for writing", $filename ) );
@@ -574,13 +627,11 @@ sub dump_unmapped_reason {
 #-----------------------------------------------------------------------
 
 sub dump_unmapped_object {
-  my ( $output_dir, $unmapped_object_id, $analysis_id, $unmapped ) = @_;
+  my ( $filename, $unmapped_object_id, $analysis_id, $unmapped ) = @_;
 
   ######################################################################
   # Dump for 'unmapped_object'.                                        #
   ######################################################################
-
-  my $filename = catfile( $output_dir, 'unmapped_object_coord.txt' );
 
   my $fh = IO::File->new( '>' . $filename )
     or croak( sprintf( "Can not open '%s' for writing", $filename ) );
