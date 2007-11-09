@@ -354,7 +354,9 @@ sub run_coordinatemapping {
           if ( $score > $transcript_score_threshold ) {
             $best_score ||= $score;
 
-            if ( $score == $best_score ) {
+            if ( sprintf( "%.3f", $score ) eq
+                 sprintf( "%.3f", $best_score ) )
+            {
               if ( exists( $unmapped{$coord_xref_id} ) ) {
                 $mapped{$coord_xref_id} = $unmapped{$coord_xref_id};
                 delete( $unmapped{$coord_xref_id} );
@@ -381,15 +383,32 @@ sub run_coordinatemapping {
                 sprintf(
                        "Did not top best transcript match score (%.2f)",
                        $best_score );
+              if ( !defined( $unmapped{$coord_xref_id}{'score'} )
+                   || $score > $unmapped{$coord_xref_id}{'score'} )
+              {
+                $unmapped{$coord_xref_id}{'score'} = $score;
+                $unmapped{$coord_xref_id}{'ensembl_id'} =
+                  $transcript->dbID();
+              }
             }
 
-          } elsif ( exists( $unmapped{$coord_xref_id} ) ) {
+          } elsif ( exists( $unmapped{$coord_xref_id} )
+                    && $unmapped{$coord_xref_id}{'reason'} ne
+                    'Was not best match' )
+          {
             $unmapped{$coord_xref_id}{'reason'} =
               'Did not meet threshold';
             $unmapped{$coord_xref_id}{'reason_full'} =
               sprintf( "Match score for transcript "
                          . "lower than threshold (%.2f)",
                        $transcript_score_threshold );
+            if ( !defined( $unmapped{$coord_xref_id}{'score'} )
+                 || $score > $unmapped{$coord_xref_id}{'score'} )
+            {
+              $unmapped{$coord_xref_id}{'score'} = $score;
+              $unmapped{$coord_xref_id}{'ensembl_id'} =
+                $transcript->dbID();
+            }
           }
         } ## end foreach my $coord_xref_id (...
 
@@ -408,7 +427,9 @@ sub run_coordinatemapping {
 
         $best_score ||= $score;
 
-        if ( $score == $best_score ) {
+        if (
+           sprintf( "%.3f", $score ) eq sprintf( "%.3f", $best_score ) )
+        {
           push( @{ $mapped{$coord_xref_id}{'mapped_to'} }, {
                   'ensembl_id'          => $gene->dbID(),
                   'ensembl_object_type' => 'Gene'
@@ -578,11 +599,14 @@ sub dump_unmapped_object {
                              # this when uploading
       $xref->{'external_db_id'},
       $xref->{'accession'},
-      $xref->{'reason'}->{'unmapped_reason_id'},
+      $xref->{'reason'}->{'unmapped_reason_id'}, (
+        defined( $xref->{'score'} )
+        ? sprintf( "%.3f", $xref->{'score'} )
+        : '\N'
+      ),
       '\N',
-      '\N',
-      '\N',
-      '\N',
+      $xref->{'ensembl_id'} || '\N',
+      ( defined( $xref->{'ensembl_id'} ) ? 'Transcript' : '\N' ),
       '\N' );
   }
   $fh->close();
