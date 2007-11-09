@@ -516,7 +516,10 @@ sub upload_xref {
     $sth->execute(@fields);
   }
   $fh->close();
-}
+
+  log_progress("Uploading for 'xref' done\n");
+
+} ## end sub upload_xref
 
 #-----------------------------------------------------------------------
 
@@ -574,7 +577,10 @@ sub upload_object_xref {
     $sth->execute(@fields);
   }
   $fh->close();
-}
+
+  log_progress("Uploading for 'object_xref' done\n");
+
+} ## end sub upload_object_xref
 
 #-----------------------------------------------------------------------
 
@@ -626,6 +632,34 @@ sub dump_unmapped_reason {
 
 #-----------------------------------------------------------------------
 
+sub upload_unmapped_reason {
+  my ( $filename, $dbh ) = @_;
+
+  ######################################################################
+  # Upload for 'unmapped_reason'.                                      #
+  ######################################################################
+
+  my $fh = IO::File->new( '<' . $filename )
+    or croak( sprintf( "Can not open '%s' for reading", $filename ) );
+
+  log_progress( "Uploading for 'unmapped_reason' from '%s'\n",
+                $filename );
+
+  my $sql = 'INSERT INTO unmapped_reason VALUES(?, ?, ?)';
+  my $sth = $dbh->prepare($sql);
+
+  while ( my $line = $fh->getline() ) {
+    chomp($line);
+    my @fields = split( /\t/, $line );
+    $sth->execute(@fields);
+  }
+  $fh->close();
+
+  log_progress("Uploading for 'unmapped_reason' done\n");
+} ## end sub upload_unmapped_reason
+
+#-----------------------------------------------------------------------
+
 sub dump_unmapped_object {
   my ( $filename, $unmapped_object_id, $analysis_id, $unmapped ) = @_;
 
@@ -663,7 +697,41 @@ sub dump_unmapped_object {
   $fh->close();
 
   log_progress("Dumping for 'unmapped_object' done\n");
+
 } ## end sub dump_unmapped_object
+
+#-----------------------------------------------------------------------
+
+sub upload_unmapped_reason {
+  my ( $filename, $dbh ) = @_;
+
+  ######################################################################
+  # Upload for 'unmapped_object'.                                      #
+  ######################################################################
+
+  my $fh = IO::File->new( '<' . $filename )
+    or croak( sprintf( "Can not open '%s' for reading", $filename ) );
+
+  log_progress( "Uploading for 'unmapped_object' from '%s'\n",
+                $filename );
+
+  my $sql = 'INSERT INTO unmapped_object '
+    . 'VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+  my $sth = $dbh->prepare($sql);
+
+  while ( my $line = $fh->getline() ) {
+    chomp($line);
+    my @fields = split( /\t/, $line );
+
+    # FIXME (when 'analysis_id' is -1)
+
+    $sth->execute(@fields);
+  }
+  $fh->close();
+
+  log_progress("Uploading for 'unmapped_object' done\n");
+
+} ## end sub upload_unmapped_reason
 
 #-----------------------------------------------------------------------
 
