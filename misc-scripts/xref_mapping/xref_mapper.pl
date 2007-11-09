@@ -16,7 +16,7 @@ xref_mapper.pl - Create Ensembl gene model xref mappings
 [B<-maxdump>S< >I<int>]
 [B<-location>S< >I<string>]
 [B<-logicname>S< >I<string>] 
-[B<-useexistingmapping>]
+[B<-useexistingmappings>]
 [B<-upload>]
 [B<-delete_external_db>]
 [B<-notriage>]
@@ -67,7 +67,7 @@ USE WITH CAUTION -MAY GIVE CONFLICTING RESULTS!
 
 dump only the specified (analysis.logic_name) gene type from the core DB
 
-=item B<-useexistingmapping>
+=item B<-useexistingmappings>
 
 use existing *.map files
 
