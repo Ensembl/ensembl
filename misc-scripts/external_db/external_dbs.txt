@@ -29,8 +29,8 @@
 826	FlyBaseCGID_gene	1	XREF	1	0	5	FlyBaseCGID gene	MISC	\N	\N
 827	FlyBaseCGID_transcript	1	XREF	1	0	50	FlyBaseCGID transcript	MISC	\N	\N
 828	FlyBaseCGID_translation	1	XREF	1	0	50	FlyBaseCGID translation	MISC	\N	\N
-830	DGRC-1	1	KNOWNXREF	1	0	5	Drosophila Genomics Resource Center 1	MISC	\N	\N
-831	DGRC-2	1	KNOWNXREF	1	0	5	Drosophila Genomics Resource Center 2	MISC	\N	\N
+830	DGRC_1	1	KNOWNXREF	1	0	5	Drosophila Genomics Resource Center 1	MISC	\N	\N
+831	DGRC_2	1	KNOWNXREF	1	0	5	Drosophila Genomics Resource Center 2	MISC	\N	\N
 840	DRSC	1	KNOWNXREF	1	0	5	Drosophila RNAi Screening Center	MISC	\N	\N
 850	FlyReg	1	KNOWNXREF	1	0	5	FlyReg, Drosophila DNase I Footprint Database	MISC	\N	\N
 860	GenomeRNAi	1	KNOWNXREF	1	0	5	GenomeRNAi is a database of phenotypes from systematic RNA interference (RNAi) screens in cultured Drosophila cells	MISC	\N	\N	
