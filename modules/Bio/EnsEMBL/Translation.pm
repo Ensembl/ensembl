@@ -529,7 +529,6 @@ sub get_all_DBEntries {
     my $dbID    = $self->dbID();
 
     return [] if(!$adaptor || !$dbID);
-
     $self->{$cache_name} =
       $self->adaptor->db->get_DBEntryAdaptor->fetch_all_by_Translation($self, $ex_db_exp, $ex_db_type);
   }
@@ -901,7 +900,7 @@ sub get_all_SeqEdits {
 
   my $attribs;
   
-  my @edits = ('initial_met', '_selenocysteine');
+  my @edits = ('initial_met', '_selenocysteine', 'amino_acid_sub');
   
 
   foreach my $edit(@edits){
