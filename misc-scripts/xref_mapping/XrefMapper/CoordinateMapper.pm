@@ -501,13 +501,18 @@ sub dump_xref {
     # Assign 'xref_id' to this Xref.
     $xref->{'xref_id'} = ++$xref_id;
 
+    my $accession = $xref->{'accession'};
+
+    my ($version) = ( $accession =~ /\.(\d+)$/ );
+    $version ||= 0;
+
     $fh->printf(
-      "%d\t%d\t%s\t%s\t%s\t%s\t%s\t%s\n",
+      "%d\t%d\t%s\t%s\t%d\t%s\t%s\t%s\n",
       $xref->{'xref_id'},
       $xref->{'external_db_id'},
-      $xref->{'accession'},
-      $xref->{'accession'},
-      '0',
+      $accession,
+      $accession,
+      $version,
       '\N',
       'MISC',    # FIXME (add new 'info_type' enum 'COORDINATEOVERLAP'
                  # in release v49)
