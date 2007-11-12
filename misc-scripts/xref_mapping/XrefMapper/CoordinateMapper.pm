@@ -115,8 +115,33 @@ sub run_coordinatemapping {
     log_progress("Can not find analysis ID for this analysis:\n");
     log_progress("  logic_name = 'XrefCoordinateMapping'\n");
     log_progress( "  parameters = '%s'\n", $analysis_params );
-    log_progress("A new analysis will be added\n");
-  } else {
+
+    if ($do_upload) {
+      ##################################################################
+      # Store a new analysis.                                          #
+      ##################################################################
+
+      log_progress("A new analysis will be added\n");
+
+      $analysis_id = $core_dbh->selectall_arrayref(
+                       'SELECT MAX(analysis_id) FROM analysis')->[0][0];
+      log_progress( "Last used analysis_id is %d\n", $analysis_id );
+
+      my $sql = 'INSERT INTO analysis '
+        . 'VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+      my $sth = $core_dbh->prepare($sql);
+
+      $sth->execute( ++$analysis_id,          'now()',
+                     'XrefCoordinateMapping', '\N',
+                     '\N',                    '\N',
+                     'xref_mapper.pl',        '\N',
+                     '\N',                    $analysis_params,
+                     'CoordinateMapper.pm',   '\N',
+                     '\N',                    '\N' );
+    }
+  } ## end if ( !defined($analysis_id...
+
+  if ( defined($analysis_id) ) {
     log_progress( "Analysis ID                  is %d\n",
                   $analysis_id );
   }
@@ -476,15 +501,17 @@ sub dump_xref {
     # Assign 'xref_id' to this Xref.
     $xref->{'xref_id'} = ++$xref_id;
 
-    $fh->printf("%d\t%d\t%s\t%s\t%s\t%s\t%s\t%s\n",
-                $xref->{'xref_id'},
-                $xref->{'external_db_id'},
-                $xref->{'accession'},
-                $xref->{'accession'},
-                '0',
-                '\N',
-                'MISC',                               # FIXME
-                '\N'                                  # FIXME (possibly)
+    $fh->printf(
+      "%d\t%d\t%s\t%s\t%s\t%s\t%s\t%s\n",
+      $xref->{'xref_id'},
+      $xref->{'external_db_id'},
+      $xref->{'accession'},
+      $xref->{'accession'},
+      '0',
+      '\N',
+      'MISC',    # FIXME (add new 'info_type' enum 'COORDINATEOVERLAP'
+                 # in release v49)
+      '\N'       # FIXME (possibly)
     );
   }
   $fh->close();
@@ -677,11 +704,11 @@ sub dump_unmapped_object {
     $xref->{'unmapped_object_id'} = ++$unmapped_object_id;
 
     $fh->printf(
-      "%d\t%s\t%d\t%d\t%s\t%d\t%s\t%s\t%s\t%s\t%s\n",
+      "%d\t%s\t%s\t%d\t%s\t%d\t%s\t%s\t%s\t%s\t%s\n",
       $xref->{'unmapped_object_id'},
       'xref',
-      $analysis_id || -1,    # -1 means create analysis for
-                             # this when uploading
+      $analysis_id || '\N',    # '\N' (NULL) means no analysis exists
+                               # and uploading this table will fail.
       $xref->{'external_db_id'},
       $xref->{'accession'},
       $xref->{'reason'}->{'unmapped_reason_id'}, (
@@ -722,9 +749,6 @@ sub upload_unmapped_reason {
   while ( my $line = $fh->getline() ) {
     chomp($line);
     my @fields = split( /\t/, $line );
-
-    # FIXME (when 'analysis_id' is -1)
-
     $sth->execute(@fields);
   }
   $fh->close();
