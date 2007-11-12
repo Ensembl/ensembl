@@ -734,7 +734,7 @@ sub dump_unmapped_object {
 
 #-----------------------------------------------------------------------
 
-sub upload_unmapped_reason {
+sub upload_unmapped_object {
   my ( $filename, $dbh ) = @_;
 
   ######################################################################
@@ -760,7 +760,7 @@ sub upload_unmapped_reason {
 
   log_progress("Uploading for 'unmapped_object' done\n");
 
-} ## end sub upload_unmapped_reason
+} ## end sub upload_unmapped_object
 
 #-----------------------------------------------------------------------
 
