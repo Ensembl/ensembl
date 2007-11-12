@@ -244,3 +244,8 @@
 
 # vega
 143	TotAssemblyLeng	Finished sequence length	Length of the assembly not counting sequence gaps
+
+# Drosophila, only where the translation provided by flybase differs from that in our database by ONE amino acid
+144	amino_acid_sub	Amino acid substitution	In drosophila, some translations have been manually curated by FlyBase and a stop codon has been changed to an amino acid in order to prevent premature truncation.
+# Drosophila. Sometimes sequences have been manually altered to remove one base, and this alters the whole translation
+145	_rna_edit	rna_edit	RNA edit
