@@ -11,7 +11,7 @@ use DBI;
 use IO::File;
 
 my ( $host, $user,        $pass,   $port, @dbnames,
-     $file, $release_num, $master, $force );
+     $file, $release_num, $master, $nonreleasemode, $force );
 
 GetOptions( "dbhost|host=s",        \$host,
             "dbuser|user=s",        \$user,
@@ -21,6 +21,7 @@ GetOptions( "dbhost|host=s",        \$host,
             "dbnames=s@",    \@dbnames,
             "release_num=i", \$release_num,
             "master=s",      \$master,
+	    "nonreleasemode", \$nonreleasemode, 
             "force",         \$force );
 
 $port ||= 3306;
@@ -29,13 +30,15 @@ $file ||= "external_dbs.txt";
 
 usage("[DIE] Need a host") if(!$host);
 
-#release num XOR dbname are required
+#release num XOR dbname are required.
 usage(   "[DIE] Need either both a release number and "
        . "database names or neither" )
   if ( ( $release_num && @dbnames ) || ( !$release_num && !@dbnames ) );
 
-# master database is required
-usage("[DIE] Master database required") if (!$master);
+if(!$nonreleasemode){ 
+  # master database is required
+  usage("[DIE] Master database required") if (!$master);
+}
 
 my $dsn = "DBI:mysql:host=$host;port=$port";
 
@@ -112,36 +115,38 @@ while ($row = <$fh>) {
 $fh->close();
 
 # Load into master database
-load_database($db, $master, @rows);
+  if(!$nonreleasemode){
+    load_database($db, $master, @rows);
+  }
+  # Check each other database in turn
+  # Load if no extra rows in db that aren't in master
+  # Warn and skip if there are
+  
+  foreach my $dbname (@dbnames) {
+    
+    print STDERR "Looking at $dbname ... \n";
+    if ($force || $nonreleasemode) {
+      
+      print STDERR "Forcing overwrite of external_db table in "
+	. "$dbname from $file\n";
+      load_database( $db, $dbname, @rows );
+      
+    } elsif (compare_external_db($db, $master, $dbname)) {
+      
+      print STDERR "$dbname has no additional rows. "
+	. "Overwriting external_db table from $file\n";
+      load_database( $db, $dbname, @rows );
+      
+    } else {
+      
+      print STDERR "$dbname has extra rows "
+	. "that are not in $file, skipping\n";
+	
+    }
+ 
 
-# Check each other database in turn
-# Load if no extra rows in db that aren't in master
-# Warn and skip if there are
-
-foreach my $dbname (@dbnames) {
-
-  print STDERR "Looking at $dbname ... \n";
-
-  if ($force) {
-
-    print STDERR "Forcing overwrite of external_db table in "
-      . "$dbname from $file\n";
-    load_database( $db, $dbname, @rows );
-
-   } elsif (compare_external_db($db, $master, $dbname)) {
-
-    print STDERR "$dbname has no additional rows. "
-      . "Overwriting external_db table from $file\n";
-    load_database( $db, $dbname, @rows );
-
-  } else {
-
-    print STDERR "$dbname has extra rows "
-      . "that are not in $file, skipping\n";
 
   }
-
-}
 
 print STDERR "Updates complete\n";
 
@@ -261,6 +266,8 @@ sub usage {
                 will be updated.  Either -dbnames or -release must
                 be specified, but not both.  Multiple dbnames can be
                 provided.
+    -nonreleasemode Does not require master schema and forces the update.
+
 
   Examples:
 
