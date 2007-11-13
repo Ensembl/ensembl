@@ -701,7 +701,7 @@ sub dump_unmapped_object {
 #-----------------------------------------------------------------------
 
 sub upload_data {
-  my ( $table_name, $ncols, $file_name, $dbh ) = @_;
+  my ( $table_name, $ncols, $filename, $dbh ) = @_;
 
   ######################################################################
   # Upload data form a file to a table (give a file name and the       #
@@ -712,7 +712,7 @@ sub upload_data {
     or croak( sprintf( "Can not open '%s' for reading", $filename ) );
 
   log_progress( "Uploading for '%s' from '%s'\n",
-                $table_name, $file_name );
+                $table_name, $filename );
 
   my $sql = sprintf( "INSERT INTO %s VALUES(%s)",
                      $table_name, '?,' x ( $ncols - 1 ) . '?' );
