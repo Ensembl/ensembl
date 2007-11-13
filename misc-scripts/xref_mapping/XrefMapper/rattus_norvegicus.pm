@@ -19,7 +19,7 @@ my @list = qw(RFAM
 	      miRBase
 	      HUGO
 	      RGD
-	      MarkerSymbol
+	      MGI
 	      flybase_symbol
 	      Anopheles_symbol
 	      Genoscope_annotated_gene

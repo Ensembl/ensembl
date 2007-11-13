@@ -17,7 +17,7 @@ sub transcript_display_xref_sources {
 		IMGT/GENE_DB
 		HUGO
 		SGD
-		MarkerSymbol
+		MGI
 		flybase_symbol
 		Anopheles_symbol
 		Genoscope_annotated_gene

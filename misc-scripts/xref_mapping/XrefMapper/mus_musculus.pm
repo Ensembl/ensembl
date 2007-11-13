@@ -15,7 +15,7 @@ sub get_set_lists {
 
 sub consortium {
 
-  return "MarkerSymbol";
+  return "MGI";
 
 }
 
@@ -24,7 +24,7 @@ sub gene_description_sources {
   return ("miRBase",
 	  "RFAM", 
           "IMGT/GENE_DB",
-	  "MarkerSymbol",
+	  "MGI",
 	  "Uniprot/SWISSPROT", 
 	  "Uniprot/Varsplic", 
 	  "RefSeq_peptide", 
@@ -98,7 +98,7 @@ sub gene_description_filter_regexps {
 sub get_list_of_sources_for_one_max_per_transcript{
   my $self = shift;
 
-  my @list = qw(MarkerSymbol);
+  my @list = qw(MGI);
 
   return @list;
 }

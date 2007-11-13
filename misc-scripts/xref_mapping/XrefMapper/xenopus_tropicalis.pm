@@ -15,7 +15,7 @@ sub get_set_lists{
 sub transcript_display_xref_sources {
 
   my @list = qw(Xenopus_Jamboree
-		MarkerSymbol
+		MGI
 		flybase_symbol
 		Anopheles_symbol
 		Genoscope_annotated_gene

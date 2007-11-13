@@ -11,7 +11,7 @@ use vars '@ISA';
 sub transcript_display_xref_sources {
 
   my @list = qw(HUGO
-		MarkerSymbol
+		MGI
 		wormbase_transcript
 		flybase_symbol
 		Anopheles_symbol
