@@ -524,7 +524,7 @@ sub run_coordinatemapping {
 
   if ($do_upload) {
     upload_data( 'xref',        8, $xref_filename,        $core_dbh );
-    upload_data( 'object_xref', 6, $object_xref_filename, $core_dbh );
+    upload_data( 'object_xref', 5, $object_xref_filename, $core_dbh );
     upload_data( 'unmapped_reason', 3, $unmapped_reason_filename,
                  $core_dbh );
     upload_data( 'unmapped_object', 11, $unmapped_object_filename,
