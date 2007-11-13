@@ -128,16 +128,16 @@ sub run_coordinatemapping {
       log_progress( "Last used analysis_id is %d\n", $analysis_id );
 
       my $sql = 'INSERT INTO analysis '
-        . 'VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+        . 'VALUES(?, now(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
       my $sth = $core_dbh->prepare($sql);
 
-      $sth->execute( ++$analysis_id,          'now()',
-                     'XrefCoordinateMapping', '\N',
-                     '\N',                    '\N',
-                     'xref_mapper.pl',        '\N',
-                     '\N',                    $analysis_params,
-                     'CoordinateMapper.pm',   '\N',
-                     '\N',                    '\N' );
+      $sth->execute( ++$analysis_id,   'XrefCoordinateMapping',
+                     '\N',             '\N',
+                     '\N',             'xref_mapper.pl',
+                     '\N',             '\N',
+                     $analysis_params, 'CoordinateMapper.pm',
+                     '\N',             '\N',
+                     '\N' );
     }
   } ## end if ( !defined($analysis_id...
 
@@ -721,6 +721,13 @@ sub upload_data {
   while ( my $line = $fh->getline() ) {
     chomp($line);
     my @fields = split( /\t/, $line );
+
+    if ( scalar(@fields) != $ncols ) {
+      croak(
+             sprintf( "Expected %d fields in '%s', but found %d\n",
+                      $ncols, $filename, scalar(@fields) ) );
+    }
+
     $sth->execute(@fields);
   }
   $fh->close();
