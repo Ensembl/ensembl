@@ -332,10 +332,10 @@ they match to.  So direct Xrefs are created for these.
 Mouse
 -----
 
-MarkerSymbol
+MGI
 ------------
 
-Also known as MGI.
+Previously known as 'MarkerSymbol'.
 
     ftp://ftp.informatics.jax.org/pub/reports/MRK_SwissProt_TrEMBL.rpt
     ftp://ftp.informatics.jax.org/pub/reports/MRK_Synonym.sql.rpt

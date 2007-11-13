@@ -57,7 +57,9 @@ sub run {
   # complication with GO xrefs from JAX - linked to MGI symbols, which are themselves
   # dependent, so we need to get the MGI->Uniprot mapping and store the *Uniprot*
   # as the master xref
-  my (%mgi_to_uniprot) = %{$self->get_existing_mappings("MarkerSymbol", "Uniprot/Swissprot", $species_id)};
+  my %mgi_to_uniprot = %{
+    $self->get_existing_mappings( "MGI", "Uniprot/Swissprot",
+                                  $species_id ) };
 
   my %worm;
   my %worm_label;
