@@ -117,9 +117,9 @@ sub run_coordinatemapping {
     log_progress( "  parameters = '%s'\n", $analysis_params );
 
     if ($do_upload) {
-      ##################################################################
-      # Store a new analysis.                                          #
-      ##################################################################
+      #-----------------------------------------------------------------
+      # Store a new analysis.
+      #-----------------------------------------------------------------
 
       log_progress("A new analysis will be added\n");
 
@@ -211,10 +211,34 @@ sub run_coordinatemapping {
       foreach my $transcript ( sort { $a->start() <=> $b->start() }
                                @transcripts )
       {
+        ################################################################
+        # For each Ensembl transcript:                                 #
+        #   1. Register all Ensembl exons in a RangeRegistry.          #
+        #                                                              #
+        #   2. Find all transcripts in the external database that are  #
+        #      within the range of this Ensembl transcript.            #
+        #                                                              #
+        # For each of those external transcripts:                      #
+        #   3. Calculate the overlap of the exons of the external      #
+        #      transcript with the Ensembl exons using the             #
+        #      overlap_size() method in the RangeRegistry.             #
+        #                                                              #
+        #   4. Register the external exons in their own RangeRegistry. #
+        #                                                              #
+        #   5. Calculate the overlap of the Ensembl exons with the     #
+        #      external exons as in step 3.                            #
+        #                                                              #
+        #   6. Calculate the match score.                              #
+        #                                                              #
+        #   7. Decide whether or not to keep the match.                #
+        ################################################################
+
         my @exons = @{ $transcript->get_all_Exons() };
 
         my %transcript_result;
 
+        # '$rr1' is the RangeRegistry holding Ensembl exons for one
+        # transcript at a time.
         my $rr1 = Bio::EnsEMBL::Mapper::RangeRegistry->new();
 
         my $coding_transcript;
@@ -225,6 +249,11 @@ sub run_coordinatemapping {
         }
 
         foreach my $exon (@exons) {
+          #-------------------------------------------------------------
+          # Register each exon in the RangeRegistry.  Register both the
+          # total length of the exon and the coding range of the exon.
+          #-------------------------------------------------------------
+
           $rr1->check_and_register( 'exon', $exon->start(),
                                     $exon->end() );
 
@@ -238,6 +267,11 @@ sub run_coordinatemapping {
                                 $exon->coding_region_end($transcript) );
           }
         }
+
+        #---------------------------------------------------------------
+        # Get hold of all transcripts from the external database that
+        # overlaps with this Ensembl transcript.
+        #---------------------------------------------------------------
 
         my $sth = $xref_dbh->prepare_cached($sql);
         $sth->execute( $species_id,        $chr_name,
@@ -259,6 +293,8 @@ sub run_coordinatemapping {
           my @exonEnds   = split( /,\s*/, $exonEnds );
           my $exonCount = scalar(@exonStarts);
 
+          # '$rr2' is the RangeRegistry holding exons from the external
+          # transcript, for one transcript at a time.
           my $rr2 = Bio::EnsEMBL::Mapper::RangeRegistry->new();
 
           my $exon_match   = 0;
@@ -267,6 +303,13 @@ sub run_coordinatemapping {
           my $coding_count = 0;
 
           for ( my $i = 0 ; $i < $exonCount ; ++$i ) {
+            #-----------------------------------------------------------
+            # Register the exons from the external database in the same
+            # was as with the Ensembl exons, and calculate the overlap
+            # of the external exons with the previously registered
+            # Ensembl exons.
+            #-----------------------------------------------------------
+
             my $overlap =
               $rr1->overlap_size( 'exon', $exonStarts[$i],
                                   $exonEnds[$i] );
@@ -308,6 +351,11 @@ sub run_coordinatemapping {
           my $rcoding_count = 0;
 
           foreach my $exon (@exons) {
+            #-----------------------------------------------------------
+            # Calculate the overlap of the Ensembl exons with the
+            # external exons.
+            #-----------------------------------------------------------
+
             my $overlap =
               $rr2->overlap_size( 'exon', $exon->start(),
                                   $exon->end() );
@@ -342,9 +390,9 @@ sub run_coordinatemapping {
           my $ens_exon_hit    = $rexon_match/scalar(@exons);
           my $ens_coding_hit  = $rcoding_match/( $rcoding_count || 1 );
 
-          ##############################################################
-          # Calculate the score.                                       #
-          ##############################################################
+          #-------------------------------------------------------------
+          # Calculate the match score.
+          #-------------------------------------------------------------
 
           my $score = (
                 ( $exon_match/$ens_weight + $ens_weight*$rexon_match )/
@@ -365,10 +413,10 @@ sub run_coordinatemapping {
         } ## end while ( $sth->fetch() )
         $sth->finish();
 
-        ################################################################
-        # Apply transcript threshold and pick the best match(es) for   #
-        # this transcript.                                             #
-        ################################################################
+        #---------------------------------------------------------------
+        # Apply transcript threshold and pick the best match(es) for
+        # this transcript.
+        #---------------------------------------------------------------
 
         my $best_score;
         foreach my $coord_xref_id (
@@ -440,9 +488,9 @@ sub run_coordinatemapping {
 
       } ## end foreach my $transcript ( sort...
 
-      ##################################################################
-      # Pick the best match(es) for this gene.                         #
-      ##################################################################
+      #-----------------------------------------------------------------
+      # Pick the best match(es) for this gene.
+      #-----------------------------------------------------------------
 
       my $best_score;
       foreach my $coord_xref_id (
