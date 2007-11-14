@@ -93,6 +93,7 @@ sub species_specific_pre_attributes_set{
   my $self = shift;
   my $dbname = $self->get_canonical_name();
 
+  # Where does '$max_object_xref_id' come from here? (ak/2007-11-14)
   my $object_xref_id = $max_object_xref_id + 1;
 
 
@@ -391,7 +392,8 @@ LSQL
 
 
 
-  my ($gene_id, $object_xref_id, $xref_id);
+  my $gene_id;
+  ( $object_xref_id, $xref_id ) = ( undef, undef );
   $sth = $self->core->dbc->prepare($get_all_object_xref_genes);
   $sth->execute();
 
