@@ -513,11 +513,11 @@ sub run_coordinatemapping {
                         $analysis_id, \%unmapped );
 
   if ($do_upload) {
-    upload_data( 'xref',        8, $xref_filename,        $core_dbh );
-    upload_data( 'object_xref', 5, $object_xref_filename, $core_dbh );
-    upload_data( 'unmapped_reason', 3, $unmapped_reason_filename,
+    upload_data( 'xref',        $xref_filename,        $core_dbh );
+    upload_data( 'object_xref', $object_xref_filename, $core_dbh );
+    upload_data( 'unmapped_reason', $unmapped_reason_filename,
                  $core_dbh );
-    upload_data( 'unmapped_object', 11, $unmapped_object_filename,
+    upload_data( 'unmapped_object', $unmapped_object_filename,
                  $core_dbh );
   }
 
@@ -691,36 +691,25 @@ sub dump_unmapped_object {
 #-----------------------------------------------------------------------
 
 sub upload_data {
-  my ( $table_name, $ncols, $filename, $dbh ) = @_;
+  my ( $table_name, $filename, $dbh ) = @_;
 
   ######################################################################
-  # Upload data form a file to a table (give a file name and the       #
-  # number of columns in the table).                                   #
+  # Upload data from a file to a table.                                #
   ######################################################################
 
-  my $fh = IO::File->new( '<' . $filename )
-    or croak( sprintf( "Can not open '%s' for reading", $filename ) );
+  if ( !-r $filename ) {
+    croak( sprintf( "Can not open '%s' for reading", $filename ) );
+  }
 
   log_progress( "Uploading for '%s' from '%s'\n",
                 $table_name, $filename );
 
-  my $sql = sprintf( "INSERT INTO %s VALUES(%s)",
-                     $table_name, '?,' x ( $ncols - 1 ) . '?' );
+  my $sql =
+    sprintf( "LOAD DATA LOCAL INFILE ? REPLACE INTO TABLE %s", $table_name );
+
   my $sth = $dbh->prepare($sql);
 
-  while ( my $line = $fh->getline() ) {
-    chomp($line);
-    my @fields = split( /\t/, $line );
-
-    if ( scalar(@fields) != $ncols ) {
-      croak(
-             sprintf( "Expected %d fields in '%s', but found %d\n",
-                      $ncols, $filename, scalar(@fields) ) );
-    }
-
-    $sth->execute(@fields);
-  }
-  $fh->close();
+  $sth->execute($filename);
 
   log_progress( "Uploading for '%s' done\n", $table_name );
 
