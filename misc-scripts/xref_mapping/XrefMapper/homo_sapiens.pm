@@ -224,7 +224,7 @@ ISQL
 # Process the dependent ones.
 #
 
-  my ($gsi, $transcript_id, $translation_id);
+  ( $gsi, $transcript_id, $translation_id ) = ( undef, undef, undef );
   $sth = $self->core->dbc->prepare($get_gene_stable_id);
   $sth->execute();
 
@@ -271,7 +271,7 @@ ISQL
 
 
 
-  my($xref_id, $xref_type, $ensembl_id);
+  ( $xref_id, $xref_type, $ensembl_id ) = ( undef, undef, undef );
 
 #
 # Need to change this so that only get object_xrefs fro this genes transcripts and translations
