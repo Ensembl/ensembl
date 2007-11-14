@@ -22,7 +22,7 @@ our @EXPORT = qw( run_coordinatemapping );
 our $coding_weight = 2;
 our $ens_weight    = 3;
 
-our $transcript_score_threshold = 0.90;
+our $transcript_score_threshold = 0.75;
 
 sub run_coordinatemapping {
   my ( $mapper, $do_upload ) = @_;
@@ -100,29 +100,51 @@ sub run_coordinatemapping {
 
   my $analysis_id = $analysis_sth->fetchall_arrayref()->[0][0];
   if ( !defined($analysis_id) ) {
-    log_progress("Can not find analysis ID for this analysis:\n");
-    log_progress("  logic_name = 'XrefCoordinateMapping'\n");
-    log_progress( "  parameters = '%s'\n", $analysis_params );
+    $analysis_id =
+      $core_dbh->selectall_arrayref( "SELECT analysis_id FROM analysis "
+               . "WHERE logic_name = 'XrefCoordinateMapping'" )->[0][0];
 
-    if ($do_upload) {
+    if ( defined($analysis_id) && $do_upload ) {
+      log_progress(   "Will update 'analysis' table "
+                    . "with new parameter settings\n" );
+
       #-----------------------------------------------------------------
-      # Store a new analysis.
+      # Update an existing analysis.
       #-----------------------------------------------------------------
 
-      log_progress("A new analysis will be added\n");
+      my $sql = qq(
+        UPDATE  analysis
+        SET     created = now(), parameters = ?
+        WHERE   analysis_id = ?
+      );
 
-      $analysis_id = $core_dbh->selectall_arrayref(
+      $core_dbh->do( $sql, undef, $analysis_params, $analysis_id );
+
+    } else {
+      log_progress("Can not find analysis ID for this analysis:\n");
+      log_progress("  logic_name = 'XrefCoordinateMapping'\n");
+      log_progress( "  parameters = '%s'\n", $analysis_params );
+
+      if ($do_upload) {
+        #---------------------------------------------------------------
+        # Store a new analysis.
+        #---------------------------------------------------------------
+
+        log_progress("A new analysis will be added\n");
+
+        $analysis_id = $core_dbh->selectall_arrayref(
                        'SELECT MAX(analysis_id) FROM analysis')->[0][0];
-      log_progress( "Last used analysis_id is %d\n", $analysis_id );
+        log_progress( "Last used analysis_id is %d\n", $analysis_id );
 
-      my $sql = 'INSERT INTO analysis '
-        . 'VALUES(?, now(), ?, \N, \N, \N, ?, \N, \N, ?, ?, \N, \N, \N)';
-      my $sth = $core_dbh->prepare($sql);
+        my $sql = 'INSERT INTO analysis '
+          . 'VALUES(?, now(), ?, \N, \N, \N, ?, \N, \N, ?, ?, \N, \N, \N)';
+        my $sth = $core_dbh->prepare($sql);
 
-      $sth->execute( ++$analysis_id,   'XrefCoordinateMapping',
-                     'xref_mapper.pl', $analysis_params,
-                     'CoordinateMapper.pm' );
-    }
+        $sth->execute( ++$analysis_id,   'XrefCoordinateMapping',
+                       'xref_mapper.pl', $analysis_params,
+                       'CoordinateMapper.pm' );
+      }
+    } ## end else [ if ( defined($analysis_id...
   } ## end if ( !defined($analysis_id...
 
   if ( defined($analysis_id) ) {
