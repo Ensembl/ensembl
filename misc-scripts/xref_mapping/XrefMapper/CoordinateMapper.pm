@@ -116,16 +116,12 @@ sub run_coordinatemapping {
       log_progress( "Last used analysis_id is %d\n", $analysis_id );
 
       my $sql = 'INSERT INTO analysis '
-        . 'VALUES(?, now(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+        . 'VALUES(?, now(), ?, \N, \N, \N, ?, \N, \N, ?, ?, \N, \N, \N)';
       my $sth = $core_dbh->prepare($sql);
 
       $sth->execute( ++$analysis_id,   'XrefCoordinateMapping',
-                     '\N',             '\N',
-                     '\N',             'xref_mapper.pl',
-                     '\N',             '\N',
-                     $analysis_params, 'CoordinateMapper.pm',
-                     '\N',             '\N',
-                     '\N' );
+                     'xref_mapper.pl', $analysis_params,
+                     'CoordinateMapper.pm' );
     }
   } ## end if ( !defined($analysis_id...
 
