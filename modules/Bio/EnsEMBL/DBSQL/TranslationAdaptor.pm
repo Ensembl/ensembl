@@ -252,7 +252,7 @@ sub store {
   my $dbEntryAdaptor = $self->db()->get_DBEntryAdaptor();
   # store each of the xrefs for this translation
   foreach my $dbl ( @{$translation->get_all_DBEntries} ) {
-     $dbEntryAdaptor->store( $dbl, $transl_dbID, "Translation" );
+     $dbEntryAdaptor->store( $dbl, $transl_dbID, "Translation", 1 );
   }
 
   #storing the protein features associated with the translation

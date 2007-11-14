@@ -999,7 +999,7 @@ sub store {
   my $dbEntryAdaptor = $db->get_DBEntryAdaptor();
   
   foreach my $dbe ( @{$gene->get_all_DBEntries} ) {
-    $dbEntryAdaptor->store($dbe, $gene_dbID, "Gene");
+    $dbEntryAdaptor->store($dbe, $gene_dbID, "Gene", 1);
   }
   
   # we allow transcripts not to share equal exons and instead have copies

@@ -690,7 +690,7 @@ sub store {
   my $dbEntryAdaptor = $db->get_DBEntryAdaptor();
 
   foreach my $dbe ( @{$transcript->get_all_DBEntries} ) {
-    $dbEntryAdaptor->store($dbe, $transc_dbID, "Transcript");
+    $dbEntryAdaptor->store($dbe, $transc_dbID, "Transcript", 1);
   }
 
   #
@@ -775,6 +775,7 @@ sub store {
 
   # store transcript attributes if there are any
   my $attr_adaptor = $db->get_AttributeAdaptor();
+
   $attr_adaptor->store_on_Transcript($transc_dbID,
                                      $transcript->get_all_Attributes);
 
