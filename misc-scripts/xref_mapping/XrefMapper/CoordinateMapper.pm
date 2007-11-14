@@ -50,18 +50,6 @@ sub run_coordinatemapping {
   my $unmapped_object_filename =
     catfile( $output_dir, 'unmapped_object_coord.txt' );
 
-  my $core_db_adaptor =
-    Bio::EnsEMBL::DBSQL::DBAdaptor->new(
-                                   -host => $core_db->dbc()->host(),
-                                   -port => $core_db->dbc()->port(),
-                                   -user => $core_db->dbc()->username(),
-                                   -pass => $core_db->dbc()->password(),
-                                   -dbname => $core_db->dbc()->dbname(),
-    );
-
-  my $slice_adaptor = $core_db_adaptor->get_SliceAdaptor();
-  my @chromosomes   = @{ $slice_adaptor->fetch_all('Chromosome') };
-
   my $xref_dbh = $xref_db->dbc()->db_handle();
   my $core_dbh = $core_db->dbc()->db_handle();
 
@@ -178,6 +166,18 @@ sub run_coordinatemapping {
   ######################################################################
   # Do coordinate matching.                                            #
   ######################################################################
+
+  my $core_db_adaptor =
+    Bio::EnsEMBL::DBSQL::DBAdaptor->new(
+                                   -host => $core_db->dbc()->host(),
+                                   -port => $core_db->dbc()->port(),
+                                   -user => $core_db->dbc()->username(),
+                                   -pass => $core_db->dbc()->password(),
+                                   -dbname => $core_db->dbc()->dbname(),
+    );
+
+  my $slice_adaptor = $core_db_adaptor->get_SliceAdaptor();
+  my @chromosomes   = @{ $slice_adaptor->fetch_all('Chromosome') };
 
   my $sql = qq(
     SELECT    coord_xref_id, accession,
@@ -385,23 +385,17 @@ sub run_coordinatemapping {
             }
           } ## end foreach my $exon (@exons)
 
-          my $ucsc_exon_hit   = $exon_match/$exonCount;
-          my $ucsc_coding_hit = $coding_match/( $coding_count || 1 );
-          my $ens_exon_hit    = $rexon_match/scalar(@exons);
-          my $ens_coding_hit  = $rcoding_match/( $rcoding_count || 1 );
-
           #-------------------------------------------------------------
           # Calculate the match score.
           #-------------------------------------------------------------
 
-          my $score = (
-                ( $exon_match/$ens_weight + $ens_weight*$rexon_match )/
-                  $coding_weight + $coding_weight*(
-                  $coding_match/$ens_weight + $ens_weight*$rcoding_match
-                  )
-            )/( ( $exonCount/$ens_weight + $ens_weight*scalar(@exons) )/
-                  $coding_weight + $coding_weight*(
-                  $coding_count/$ens_weight + $ens_weight*$rcoding_count
+          my $score = ( ( $exon_match + $ens_weight*$rexon_match ) +
+                          $coding_weight*(
+                              $coding_match + $ens_weight*$rcoding_match
+                          )
+            )/( ( $exonCount + $ens_weight*scalar(@exons) ) +
+                  $coding_weight*(
+                              $coding_count + $ens_weight*$rcoding_count
                   ) );
 
           if ( !defined( $transcript_result{$coord_xref_id} )
