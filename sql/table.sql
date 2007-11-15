@@ -1272,7 +1272,7 @@ CREATE TABLE gene_archive (
 CREATE TABLE peptide_archive (
 
   peptide_archive_id         INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  md5_checksum               char(32),
+  md5_checksum               VARCHAR(32),
   peptide_seq                MEDIUMTEXT NOT NULL,
 
   PRIMARY KEY (peptide_archive_id),
