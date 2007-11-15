@@ -1408,8 +1408,22 @@ sub load_registry_from_db {
 						 -alias => ['squirrel','Spermophilus tridecemlineatus']);
 
   Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(-species => "Tupaia_belangeri",
-						 -alias => ['tree_shrew','Tupaia belangeri ']);
+						 -alias => ['tree_shrew','Tupaia belangeri']);
 
+  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(-species => "Culex_pipiens",
+						 -alias => ['culex','Culex Pipiens']);
+
+  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(-species => "Ochotona_princeps",
+						 -alias => ['pika','Ochotona princeps']);
+
+  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(-species => "Anolis_carolinensis",
+						 -alias => ['anolis','anolis_lizard','Anolis carolinensis']);
+
+  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(-species => "Microcebus_murinus",
+						 -alias => ['mouse_lemur','Microcebus murinus']);
+
+  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(-species => "Pongo_pygmaeus",
+						 -alias => ['orang','orang_utan','orangutan','Pongo pygmaeus']);
 
   @aliases = ('compara');
   Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(-species => "multi",
