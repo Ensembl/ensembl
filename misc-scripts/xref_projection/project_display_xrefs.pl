@@ -88,6 +88,18 @@ if ($one_to_many) {
 # only these evidence codes will be considered for GO term projection
 my @evidence_codes = ( "IDA", "IEP", "IGI", "IMP", "IPI" );
 
+#  IC Inferred by curator
+#  IDA Inferred from direct assay
+#  IEA Inferred from electronic annotation
+#  IGI Inferred from genetic interaction
+#  IMP Inferred from mutant phenotype
+#  IPI Inferred from physical interaction
+#  ISS Inferred from sequence or structural similarity
+#  NAS Non-traceable author statement
+#  ND No biological data available
+#  RCA Reviewed computational analysis
+#  TAS Traceable author statement
+
 @to_multi = split(/,/,join(',',@to_multi));
 
 # load from database and conf file
@@ -191,6 +203,9 @@ foreach my $to_species (@to_multi) {
 
   }
 
+  print "Cleaning up ...";
+  clean_up($to_ga->dbc());
+
   print "\n$to_species, after projection: \n";
   print_stats($to_ga);
 
@@ -199,7 +214,9 @@ foreach my $to_species (@to_multi) {
     print "Projected terms by evidence code:\n";
     my $total;
     foreach my $et (sort keys %projections_by_evidence_type) {
+
       next if (!grep(/$et/, @evidence_codes));
+
       if ($et) {
 	print $et . "\t" . $projections_by_evidence_type{$et} . "\n";
 	$total += $projections_by_evidence_type{$et};
@@ -695,6 +712,21 @@ sub print_progress {
 }
 
 # ----------------------------------------------------------------------
+
+sub clean_up {
+
+  my ($to_dbc) = @_;
+
+  $to_dbc->do("CREATE TABLE tmp_gx SELECT gx.object_xref_id FROM go_xref gx LEFT JOIN object_xref ox ON ox.object_xref_id=gx.object_xref_id WHERE ox.object_xref_id IS NULL");
+
+  $to_dbc->do("DELETE FROM go_xref WHERE object_xref_id IN (SELECT object_xref_id FROM tmp_gx");
+
+  $to_dbc->do("DROP TABLE tmp_gx");
+
+}
+
+# ----------------------------------------------------------------------
+
 
 
 sub usage {
