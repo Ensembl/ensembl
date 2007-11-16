@@ -2,7 +2,7 @@
 
 CREATE TABLE projections (
 
-  release					INT NOT null,
+  db_release					INT NOT null,
   timestamp					DATETIME,
   from_db					VARCHAR(255),
   from_species_latin				VARCHAR(255),

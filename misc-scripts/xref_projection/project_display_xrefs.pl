@@ -592,7 +592,7 @@ sub write_to_projection_db {
 
   my $db = DBI->connect("dbi:mysql:host=$host;port=$port;database=$dbname", "$user", "$pass", {'RaiseError' => 1}) || die "Can't connect to " . $dbname;
 
-  my $sth = $db->prepare("INSERT INTO projections (release, timestamp, from_db, from_species_latin, from_species_common, to_db, to_species_latin, to_species_common) VALUES (?, NOW(), ?, ?, ?, ?, ?, ?)");
+  my $sth = $db->prepare("INSERT INTO projections (db_release, timestamp, from_db, from_species_latin, from_species_common, to_db, to_species_latin, to_species_common) VALUES (?, NOW(), ?, ?, ?, ?, ?, ?)");
 
   $sth->execute($release,
 		$from_dbname,
