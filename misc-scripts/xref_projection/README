@@ -1,0 +1,57 @@
+GENE NAME AND XREF PROJECTION
+==============================
+
+Introduction
+------------
+
+Gene display xrefs and GO terms are projected between species, using homology information from the Ensembl Compara database. This means that species that have little or no such data can have gene names and GO terms assigned based on homology with species that have more data, typically human and mouse.
+
+
+Running the projection
+----------------------
+
+Check out the latest version of the ensembl module from CVS. The scripts referred to here are in the ensembl/misc-scripts/xref-projection directory.
+
+The script which actually does the projection is called project_display_xrefs.pl; however this is not the one that will be run during the release cycle. The script to run is called submit_projections.pl. This uses LSF to run all the projections concurrently. The projections which are run can be found by looking in submit_projections.pl itself.
+
+The steps to run the projection are as follows:
+
+1. Create a registry file to show the location of the Compara database to be used. A typical example will look something like this:
+
+	[Compara]
+	user    = ensro
+	host    = compara2
+	group   = Compara
+	dbname  = ensembl_compara_48
+
+2. Edit submit_projections.pl to set some parameters, all of which are located at the top of the script. The ones to set/check, and example values, are:
+
+	my $release = 48;   # release number
+
+	my $base_dir = "/lustre/scratch1/ensembl/gp1/projections/"; # working base directory; output will be written to a subdirectory with the number of the release
+
+	my $conf = "release_48.ini"; # registry config file, specifies Compara location - see above
+
+	# location of other databases - note read/write access is required
+	my $host = "ens-staging";
+	my $port = 3306;
+	my $user = "ensadmin";
+	my $pass = "ensembl";
+
+3. Run submit_projections.pl. It will submit all the Farm jobs and then exit.
+
+4. Monitor the progress of the run using bjobs. The lsload command is useful for monitoring the load on the server where the databases are being modified (typically ens-staging):
+
+ 	lsload -s | grep myens_staging
+
+The gene name (display_xref) projections typically start to finish after about 20 minutes, while the GO term projections take longer. Currently the full set of projections takes about 4 hours to run.
+
+
+Results
+-------
+
+As jobs finish, they write .out and .err files to the working directory specified in the script. If a job finished successfully, the .err file will be of zero size (but will exist). .err files of non-zero length indicate that something has gone wrong.
+
+All databases that have been projected to should be healthchecked; in particular CoreForeignKeys and the xrefs group of healthchecks should be run. To do this, check out the ensj-healthcheck module, cd into ensj-healthcheck, configure database.properties, then run
+
+./run-healthcheck.sh -d '.*_core_48.*' CoreForeignKeys xrefs
