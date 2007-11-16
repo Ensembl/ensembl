@@ -38,7 +38,7 @@
 880	BDGP_insitu_expr	1	KNOWNXREF	1	0	5	Berkeley Drosophila Genome Project in situ Gene Expression Database (embryogenesis)	MISC	\N	\N
 881	DrosDel 1	KNOWNXREF	1	0	5	An isogenic deficiency kit for Drosophila melanogaster	MISC	\N	\N
 882	FlyGrid 1	KNOWNXREF	1	0	5	FlyGRID Interaction Data, The General Repository for Interaction Datasets	MISC	\N	\N
-883	hybrigenics	1	KNOWNXREF	1	0	5	Hybrigenics Drosophila PIMRider (protein interaction map)
+883	hybrigenics	1	KNOWNXREF	1	0	5	Hybrigenics Drosophila PIMRider (protein interaction map)		MISC	\N	\N
 884	InteractiveFly	1	KNOWNXREF	1	0	5	Interactive Fly, A cyberspace guide to Drosophila genes and their roles in development	MISC	\N	\N
 890	DEDb	1	KNOWNXREF	1	0	5	Drosophila melanogaster Exon DataBase	MISC	\N	\N
 900	GKB	1	XREF	1	0	5	GKB	MISC	\N	\N
