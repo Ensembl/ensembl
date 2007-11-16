@@ -161,7 +161,7 @@ foreach my $pair (@go_terms) {
   $e = "$dir/go_${from}_$to.err";
   $n = substr("g_${from}_$to", 0, 10);
   print "Submitting GO term projection from $from to $to\n";
-  system "bsub $bsub_opts -o $o -e $e -J $n perl project_display_xrefs.pl $script_opts -from $from -to $to -go_terms -delete_go_terms";
+  system "bsub $bsub_opts -q long -o $o -e $e -J $n perl project_display_xrefs.pl $script_opts -from $from -to $to -go_terms -delete_go_terms";
 }
 
 # ----------------------------------------
