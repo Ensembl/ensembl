@@ -53,6 +53,9 @@ if($release_num) {
   @dbnames = grep {/^[a-zA-Z]+\_[a-zA-Z]+\_(core|est|estgene|vega|otherfeatures|cdna)\_${release_num}\_\d+[A-Za-z]?$/} @dbnames;
 }
 
+my @field_names = qw(external_db_id db_name release status dbprimary_acc_linkable display_label_linkable priority  db_display_name type);
+
+my @types = qw(ARRAY ALT_TRANS MISC LIT PRIMARY_DB_SYNONYM);
 
 #
 # make sure the user wishes to continue
@@ -77,8 +80,9 @@ if ($input ne 'yes') {
 my $fh = IO::File->new();
 $fh->open($file) or die("Could not open input file $file");
 my @rows;
-my $row;
-while ($row = <$fh>) {
+my %bad_lines;
+
+while (my $row = <$fh>) {
   chomp($row);
   next if ($row =~ /^#/);    # skip comments
   next if ($row =~ /^$/);    # and blank lines
@@ -104,15 +108,44 @@ while ($row = <$fh>) {
     exit(1);
   }
 
-  if ( $a[1] =~ /^$/ || $a[1] =~ /^\s+$/ || $a[1] =~ /^\d+$/ ) {
-    print STDERR "Cannot parse the following line:\n" 
-      . $row
-      . "\nIt probably has spaces separating the fields "
-      . "rather than tabs.\n";
-    exit(1);
+  # do some formatting checks
+  my $blank;
+  for (my $i=0; $i < scalar(@a); $i++) {
+    if ($a[$i] eq '') {
+      $bad_lines{$row} = $field_names[$i] . " - field blank - check all tabs/spaces in line";
+    }
   }
+
+  if ($a[1] =~ /\s/) {
+    $bad_lines{$row} = "db_name field appears to contain spaces";
+  }
+  if ($a[1] =~ /^$/) {
+    $bad_lines{$row} = "db_name field appears to be missing";
+  }
+  if ($a[1] =~ /^\s+$/) {
+    $bad_lines{$row} = "db_name field appears to be blank";
+  }
+  if ($a[1] =~ /^\d+$/) {
+    $bad_lines{$row} = "db_name field appears to be numeric - check formatting";
+  }
+
+  my $type_ok;
+  foreach my $type (@types) {
+    $type_ok = 1 if ($a[8] eq $type);
+  }
+  $bad_lines{$row} = "type field is " . $a[8] . ", not one of the recognised types" if (!$type_ok);
+
 }
 $fh->close();
+
+if (%bad_lines) {
+  print STDERR "Cannot parse the following line(s) from $file; check that all fields are present and are separated by one tab (not spaces). \n";
+  print STDERR "Name of problem field, and the error is printed in brackets first\n\n";
+  foreach my $row (keys %bad_lines) {
+    print STDERR "[". $bad_lines{$row} . "]" .  " $row\n";
+  }
+  exit(1);
+}
 
 # Load into master database
   if(!$nonreleasemode){
@@ -121,30 +154,28 @@ $fh->close();
   # Check each other database in turn
   # Load if no extra rows in db that aren't in master
   # Warn and skip if there are
-  
+
   foreach my $dbname (@dbnames) {
-    
+
     print STDERR "Looking at $dbname ... \n";
     if ($force || $nonreleasemode) {
-      
+
       print STDERR "Forcing overwrite of external_db table in "
 	. "$dbname from $file\n";
       load_database( $db, $dbname, @rows );
-      
+
     } elsif (compare_external_db($db, $master, $dbname)) {
-      
+
       print STDERR "$dbname has no additional rows. "
 	. "Overwriting external_db table from $file\n";
       load_database( $db, $dbname, @rows );
-      
+
     } else {
-      
+
       print STDERR "$dbname has extra rows "
 	. "that are not in $file, skipping\n";
 	
     }
- 
-
 
   }
 
