@@ -255,3 +255,4 @@
 153	NovProcPsCount	novel_processed_pseudogene	Number of Novel Processed Pseudogenes
 154	NovUnPsCount	novel_unprocessed_pseudogene	Number of Novel Unprocessed Pseudogenes
 155	NovTPsCount	novel_transcribed_pseudogene	Number of Novel Transcribed Pseudogenes
+156	NovTECCount	novel_TEC	Number of Novel TEC Genes
