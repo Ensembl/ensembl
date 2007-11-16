@@ -1369,7 +1369,7 @@ sub load_registry_from_db {
 						 -alias => ['pig','sus scrofa']);
 
   Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(-species => "Sorex_araneus",
-						 -alias => ['shrew','european_shrew','Sorex araneus']);
+						 -alias => ['shrew','ground_shrew','european_shrew','Sorex araneus']);
 
   Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(-species => "Erinaceus_europaeus",
 						 -alias => ['western_european_hedgehog','Erinaceus europaeus']);
