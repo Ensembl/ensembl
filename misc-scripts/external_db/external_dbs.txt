@@ -257,7 +257,6 @@
 10100	EPD	1	KNOWNXREF	1	0	5	Eukaryotic Promoter Database (Bucher)	MISC	\N	\N
 10200	GPCR	1	KNOWNXREF	1	0	5	The G protein-coupled receptor database	MISC	\N	\N
 10300	MEROPS	1	KNOWNXREF	1	0	5	MEROPS - the Peptidase Database	MISC	\N	\N
-10400	miRBase	1	KNOWNXREF	1	0	5	microRNA database	MISC	\N	\N
 10500	TransFac	1	KNOWNXREF	1	0	5	TransFac, database of transcription factors and their binding sites	MISC	\N	\N
 10600	modCB_gene	1	KNOWNXREF	1	0	5	Caenorhabditis briggsae, InParanoid model organism database	MISC	\N	\N
 10700	modCE_gene	1	KNOWNXREF	1	0	5	Caenorhabditis elegans, InParanoid model organism database	MISC	\N	\N
