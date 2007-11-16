@@ -203,7 +203,7 @@ foreach my $to_species (@to_multi) {
 
   }
 
-  print "Cleaning up ...";
+  print "\nCleaning up ...";
   clean_up($to_ga->dbc());
 
   print "\n$to_species, after projection: \n";
@@ -719,7 +719,7 @@ sub clean_up {
 
   $to_dbc->do("CREATE TABLE tmp_gx SELECT gx.object_xref_id FROM go_xref gx LEFT JOIN object_xref ox ON ox.object_xref_id=gx.object_xref_id WHERE ox.object_xref_id IS NULL");
 
-  $to_dbc->do("DELETE FROM go_xref WHERE object_xref_id IN (SELECT object_xref_id FROM tmp_gx");
+  $to_dbc->do("DELETE FROM go_xref WHERE object_xref_id IN (SELECT object_xref_id FROM tmp_gx)");
 
   $to_dbc->do("DROP TABLE tmp_gx");
 
