@@ -1354,10 +1354,10 @@ sub load_registry_from_db {
 						 -alias => ['cow','bos_taurus']);
 
   Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(-species => "Macaca_mulatta",
-						 -alias => ['rhesus','rhesus_monkey','macaca mulatta']);
+						 -alias => ['rhesus','rhesus_monkey','macaque','macaca mulatta']);
 
   Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(-species => "Otolemur_garnettii",
-						 -alias => ['bushbaby','Otolemur garnettii']);
+						 -alias => ['bushbaby','galago','Otolemur garnettii']);
 
   Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(-species => "Oryctolagus_cuniculus",
 						 -alias => ['rabbit','Oryctolagus cuniculus']);
