@@ -6,7 +6,7 @@ use strict;
 # ------------------------------ config -------------------------------
 my $release = 48;
 
-my $base_dir = "/lustre/work1/ensembl/gp1/projections/";
+my $base_dir = "/lustre/scratch1/ensembl/gp1/projections/";
 
 my $conf = "release_48.ini"; # registry config file, specifies Compara location
 
