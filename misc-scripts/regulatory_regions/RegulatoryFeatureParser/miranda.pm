@@ -8,9 +8,7 @@ use strict;
 #  Similarity	hsa-miR-23a	miRanda	miRNA_target	1	919787	919807	+	.	71	transcript id "ENST00000310998"
 
 use RegulatoryFeatureParser::BaseParser;
-use Bio::EnsEMBL::DBEntry;
-use Bio::EnsEMBL::Funcgen::ExternalFeature;
-
+use Bio::EnsEMBL::DBSQL::DBAdaptor;
 
 use vars qw(@ISA);
 @ISA = qw(RegulatoryFeatureParser::BaseParser);
@@ -20,94 +18,44 @@ use vars qw(@ISA);
 # - arrayref of features
 # - arrayref of factors
 
+sub parse {
 
+  my ($self, $db_adaptor, $file, $old_assembly, $new_assembly) = @_;
 
+  my %result;
 
-sub new {
-  my $caller = shift;
-  my $class = ref($caller) || $caller;
+  print "Parsing $file with miranda parser\n";
 
-  my $self = $class->SUPER::new(@_);
-
-  #Set default feature_type and feature_set config
-  $self->{'feature_types'} = {
-							  'miRanda'   => {
-														   class       => 'RNA',
-														   description => 'miRanda microRNA',
-														  },
-							 };
-  $self->{feature_sets} = {
-						   'miRanda miRNA' => {
-											   feature_type      => \$self->{'feature_types'}{'cisRED Search Region'},
-											   analysis          => 
-											   { 
-												-logic_name    => 'miRanda',
-												-description   => 'miRanda microRNA target prediction (http://cbio.mskcc.org/mirnaviewer/)',
-												-display_label => 'miRanda',
-												-displayable   => 1,
-											   },
-											  },						   
-						  };
-
- 
- 
-  $self->validate_and_store_feature_types;
-  $self->set_feature_sets;
-
-  return $self;
-}
-
-
-
-
-sub parse_and_load{
-
-  my ($self, $file, $old_assembly, $new_assembly) = @_;
-
-  print ":: Parsing miRanda data from:\t$file\n";
+  my $feature_internal_id = ($self->find_max_id($db_adaptor, "regulatory_feature")) + 1;
+  my $highest_factor_id = ($self->find_max_id($db_adaptor, "regulatory_factor")) + 1;
 
   my $analysis_adaptor = $db_adaptor->get_AnalysisAdaptor();
-  my %features_by_name; # name -> feature_type
-  my %slice_cache;
-  my $display_name_cache = $self->build_display_name_cache('gene');
-  # this object is only used for projection
-  my $dummy_analysis = new Bio::EnsEMBL::Analysis(-logic_name => 'miRandaProjection');
-  my $skipped = 0;
+  my $slice_adaptor = $db_adaptor->get_SliceAdaptor();
 
+  my @features;
+  my @factors;
+  my %factor_ids_by_name; # name -> factor_id
+  my %feature_objects;
+  my %anal;
+
+  # TODO - regulatory_factor_coding
+
+  my $stable_id_to_internal_id = $self->build_stable_id_cache($db_adaptor);
+
+  # this object is only used for projection
+  my $dummy_analysis = new Bio::EnsEMBL::Analysis(-logic_name => 'CisRedProjection');
 
   open (FILE, "<$file") || die "Can't open $file";
 
   while (<FILE>) {
-	next if ($_ =~ /^\s*\#/ || $_ =~ /^\s*$/);
+
+    next if ($_ =~ /^\s*\#/ || $_ =~ /^\s*$/);
+
+    my %feature;
 
     my ($group, $seq, $method, $feature, $chr, $start, $end, $str, $phase, $score, $pvalue, $type, $id_ignore, $id) = split;
     my $strand = ($str =~ /\+/ ? 1 : -1);
     $id =~ s/[\"\']//g;  # strip quotes
-	$id .= ':'.$seq;
-
-	if(! exists $slice_cache{$chromosome}){
-	
-	  if($old_assembly){
-		$slice_cache{$chr} = $self->slice_adaptor->fetch_by_region('chromosome', 
-																	$chr, 
-																	undef, 
-																	undef, 
-																	undef, 
-																	$old_assembly);
-	  }else{
-		$slice_cache{$chr} = $self->slice_adaptor->fetch_by_region('chromosome', $chr);
-	  }
-
-	  if(! defined 	$slice_cache{$chr}){
-		warn "Can't get slice $chr for sequence $id\n";
-		$skipped++;
-		next;
-	  }
-	}
-
-
-
-
 
     # ----------------------------------------
     # Feature name
@@ -115,24 +63,11 @@ sub parse_and_load{
     # For miRNA_target, individual features don't have a unique name, so create
     # a composite one. Also set influence.
 
-  
+    $feature{NAME} = $id .":" . $seq;
     $feature{INFLUENCE} = "negative";
 
     # ----------------------------------------
     # Factor
-
-	 if(! exists $features_by_group{$group_name}){
-		$features_by_group{$group_name} = $ftype_adaptor->fetch_by_name('crtHsap'.$group_name);
-
-		if(! defined $features_by_group{$group_name}){
-		  ($features_by_group{$group_name}) = @{$ftype_adaptor->store(Bio::EnsEMBL::Funcgen::FeatureType->new
-																	  (
-																	   -name  => 'crtHsap'.$group_name,
-																	   -class => 'Regulatory Motif',
-																	   -description => 'cisRED group motif',
-																	  ))};
-		}
-	  }
 
     # $seq is the name of a factor - if it's already there, find its ID, otherwise add it
     my $factor_id = $factor_ids_by_name{$seq};
