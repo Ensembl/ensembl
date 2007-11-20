@@ -657,6 +657,7 @@ sub translateable_seq {
   }
 
   my $mrna = $self->spliced_seq();
+
   my $start = $self->cdna_coding_start();
   my $end = $self->cdna_coding_end();
 
@@ -1008,11 +1009,24 @@ sub add_Attributes {
     $self->{'attributes'} = [];
   }
 
+  my $seq_change = 0;
   for my $attrib ( @attribs ) {
     if( ! $attrib->isa( "Bio::EnsEMBL::Attribute" )) {
      throw( "Argument to add_Attribute has to be an Bio::EnsEMBL::Attribute" );
     }
     push( @{$self->{'attributes'}}, $attrib );
+    if($attrib->code eq "_rna_edit"){
+      $seq_change = 1;
+    }
+  }
+  if($seq_change){
+    foreach my $ex(@{$self->get_all_Exons()}){
+      $ex->{'_seq_cache'} = undef;
+    }
+    my $translation = $self->translation;
+    if(defined($translation)){
+      $translation->{seq}=undef;
+    }
   }
 
   # flush cdna coord cache b/c we may have added a SeqEdit
@@ -1394,7 +1408,9 @@ sub translate {
     return undef;
   }
 
+
   my $mrna = $self->translateable_seq();
+
   my $display_id = $self->translation->display_id || scalar($self->translation);
 
   # remove final stop codon from the mrna if it is present
