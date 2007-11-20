@@ -910,8 +910,8 @@ sub get_all_SeqEdits {
     foreach my $a (@$attribs) {
       push @seqeds, Bio::EnsEMBL::SeqEdit->new(-ATTRIB => $a);
     }
+    $self->{seq}=undef;
   }
-
   return \@seqeds;
 }
   
