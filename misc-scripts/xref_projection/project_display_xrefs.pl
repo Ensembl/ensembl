@@ -12,7 +12,7 @@ use Bio::EnsEMBL::Utils::Eprof qw(eprof_start eprof_end eprof_dump);
 
 my $method_link_type = "ENSEMBL_ORTHOLOGUES";
 
-my ($conf, $host, $user, $port, $pass, $version, $compara, $from_species, @to_multi, $print, $names, $go_terms, $delete_names, $delete_go_terms, $no_backup, $full_stats, $descriptions, $release, $no_database, $quiet, $single_source, $max_genes, $one_to_many, $go_check);
+my ($conf, $host, $user, $port, $pass, $version, $compara, $from_species, @to_multi, $print, $names, $go_terms, $delete_names, $delete_go_terms, $no_backup, $full_stats, $descriptions, $release, $no_database, $quiet, $max_genes, $one_to_many, $go_check, $all_sources);
 
 GetOptions('conf=s'          => \$conf,
 	   'host=s'          => \$host,
@@ -35,10 +35,10 @@ GetOptions('conf=s'          => \$conf,
 	   'release=i'       => \$release,
 	   'no_database'     => \$no_database,
 	   'quiet'           => \$quiet,
-	   'single_source=s' => \$single_source,
 	   'max_genes=i'     => \$max_genes,
 	   'one_to_many'     => \$one_to_many,
 	   'go_check'        => \$go_check,
+	   'all_sources'     => \$all_sources,
 	   'help'            => sub { usage(); exit(0); });
 
 $| = 1; # auto flush stdout
@@ -232,7 +232,7 @@ sub project_display_names {
 
     if ($dbEntry) {
 
-      return if ($single_source && ($dbEntry->dbname() ne $single_source));
+      return if (!$all_sources && $dbEntry->dbname() ne 'HGNC');
 
       # Modify the dbEntry to indicate it's not from this species - set info_type & info_text
       my $info_txt = "from $from_latin_species gene " . $from_gene->stable_id();
@@ -469,11 +469,18 @@ sub print_full_stats {
     my $total;
     foreach my $source (sort keys %projections_by_source) {
 
-      print $source . "\t" . $projections_by_source{$source} . "\n";
       $total += $projections_by_source{$source};
 
     }
-    print "Total:\t$total\n";
+
+    foreach my $source (sort keys %projections_by_source) {
+
+      my $n = $projections_by_source{$source};
+      printf ("%s\t%d (%3.1f\%)\n",  $source, $n, (100 * $n / $total));
+
+  }
+
+  print "Total:\t$total\n";
 
   }
 
@@ -801,10 +808,11 @@ sub usage {
 
   [--compara string]    A Compara database
                         (a Bio::EnsEMBL::Registry alias, defined in config file)
-                        If not specified, the first compara database defined in 
+                        If not specified, the first compara database defined in
                         the registry file is used.
 
-  [--names]             Project display names and descriptions.
+  [--names]             Project display names and descriptions. Note only HGNC
+                        display names are projected by default (see --all_sources).
 
   [--go_terms]          Project GO terms.
 
@@ -816,15 +824,17 @@ sub usage {
 
   [--method]            Type of homologs (default: TREE_HOMOLOGIES)
 
+  [--all_sources]       Use all sources for name projection (default is HGNC only).
+
   [--nobackup]          Skip dumping of table backups
 
-  [--full_stats]        Print full statistics, e.g. number of terms per evidence type
+  [--full_stats]        Print full statistics, i.e.:
+                         - number of terms per evidence type for projected GO terms
+                         - number of display names per source (if using --all_sources)
 
   [--no_database]       Don't write to the projection_info database.
 
   [--quiet]             Don't print percentage progress information to STDOUT.
-
-  [--single_source]     Specify a single source to project (e.g. HGNC).
 
   [--one_to_many]       Also project one-to-many orthologs; multiple orthologs in
                         target are named "1 of 3", etc. Currently only affects
