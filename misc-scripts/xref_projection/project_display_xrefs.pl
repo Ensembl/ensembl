@@ -140,6 +140,7 @@ if ($compara) {
 my $from_ga = Bio::EnsEMBL::Registry->get_adaptor($from_species, 'core', 'Gene');
 
 my %projections_by_evidence_type;
+my %projections_by_source;
 
 foreach my $to_species (@to_multi) {
 
@@ -209,21 +210,7 @@ foreach my $to_species (@to_multi) {
   print "\n$to_species, after projection: \n";
   print_stats($to_ga);
 
-  # print statistics if required
-  if ($full_stats) {
-    print "Projected terms by evidence code:\n";
-    my $total;
-    foreach my $et (sort keys %projections_by_evidence_type) {
-
-      next if (!grep(/$et/, @evidence_codes));
-
-      if ($et) {
-	print $et . "\t" . $projections_by_evidence_type{$et} . "\n";
-	$total += $projections_by_evidence_type{$et};
-      }
-    }
-    print "Total:\t$total\n";
-  }
+  print_full_stats() if ($full_stats);
 
 }
 
@@ -315,6 +302,9 @@ sub project_display_names {
 
       # update the gene so that the display_xref_id is set
       $to_ga->update($to_gene) if (!$print);
+
+      # keep track of where each projection came from
+      $projections_by_source{$dbEntry->dbname()}++;
 
     }
 
@@ -450,6 +440,45 @@ sub print_stats {
 
 }
 
+# ----------------------------------------------------------------------
+
+sub print_full_stats {
+
+# GO terms
+  if ($go_terms) {
+
+    print "\nProjected terms by evidence code:\n";
+    my $total;
+    foreach my $et (sort keys %projections_by_evidence_type) {
+	
+      next if (!grep(/$et/, @evidence_codes));
+	
+      if ($et) {
+	print $et . "\t" . $projections_by_evidence_type{$et} . "\n";
+	$total += $projections_by_evidence_type{$et};
+      }
+    }
+    print "Total:\t$total\n";
+  }
+
+  # display names
+  if ($names) {
+
+    print "\nProjected display names by source:\n";
+
+    my $total;
+    foreach my $source (sort keys %projections_by_source) {
+
+      print $source . "\t" . $projections_by_source{$source} . "\n";
+      $total += $projections_by_source{$source};
+
+    }
+    print "Total:\t$total\n";
+
+  }
+
+
+}
 
 # ----------------------------------------------------------------------
 
