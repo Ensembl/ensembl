@@ -877,6 +877,7 @@ sub add_Attributes {
       throw( "Argument to add_Attribute must be a Bio::EnsEMBL::Attribute" );
     }
     push( @{$self->{'attributes'}}, $attrib );
+    $self->{seq}=undef;
   }
 }
 
@@ -910,7 +911,6 @@ sub get_all_SeqEdits {
     foreach my $a (@$attribs) {
       push @seqeds, Bio::EnsEMBL::SeqEdit->new(-ATTRIB => $a);
     }
-    $self->{seq}=undef;
   }
   return \@seqeds;
 }
