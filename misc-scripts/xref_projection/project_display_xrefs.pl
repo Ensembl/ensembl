@@ -538,7 +538,7 @@ sub check_overwrite_display_xref {
 
   if ($to_dbname eq "RefSeq_dna_predicted" || $to_dbname eq "RefSeq_peptide_predicted") {
 
-    if (($from_species eq "human" && $from_dbname eq "HUGO") ||
+    if (($from_species eq "human" && $from_dbname eq "HGNC") ||
 	($from_species eq "mouse" && $from_dbname eq "MarkerSymbol")) {
 
       return 1;
@@ -795,7 +795,7 @@ sub usage {
 
   [--quiet]             Don't print percentage progress information to STDOUT.
 
-  [--single_source]     Specify a single source to project (e.g. HUGO).
+  [--single_source]     Specify a single source to project (e.g. HGNC).
 
   [--one_to_many]       Also project one-to-many orthologs; multiple orthologs in
                         target are named "1 of 3", etc. Currently only affects
