@@ -14,8 +14,9 @@ In Ensembl, most genes have a name (e.g. BRCA2) which is assigned from one of th
  
 The current projections which are done are:
 
-Human to chimp,opossum,dog,cow,macaque,chicken,xenopus
-Mouse to rat
+Human to all mammals (1:1 orthologues only)
+Mouse to rat (1:1 orthologues only)
+Human to all fish (using 1-many ortholgues as well)
 
 The projection works as follows:
 
@@ -25,9 +26,11 @@ The projection works as follows:
     Assign "from" gene's name and description to "to" gene
     Set status of "to" gene to KNOWN_BY_PROJECTION
 
-If the "to" gene has an existing display xref, this is not overwritten, except in the case where the "to" gene has a name derived from a  RefSeq_dna_predicted or RefSeq_peptide_predicted xref, and the "from" gene has a name derived from an HGNC (in the case of human) or MGI (in the case of mouse) xref.
+If the "to" gene has an existing display xref, this is not overwritten, except in the case where the "to" gene has a name derived from a RefSeq_dna_predicted or RefSeq_peptide_predicted xref, and the "from" gene has a name derived from an HGNC (in the case of human) or MGI (in the case of mouse) xref.
 
 Note that only homologies of type "ortholog_one2one" and "apparent_ortholog_one2one" are used from Compara. Other types of homology (e.g. one to many) are not used for the projection. This is the case for both the gene name and GO term projection.
+
+As of release 49 (February 2008), only HGNC symbols will be projected from human to the other species. Projections from mouse will continue to use gene names from other sources, e.g. UniProtKB/Swissprot.
 
 
 GO term projection
@@ -37,9 +40,11 @@ As with gene names, there are many more GO (Gene Ontology) annotations for human
 
 The following projections are done currently:
 
-Human to mouse, rat, dog, cow, chicken
-Mouse to human, rat, dog, cow, chicken
+Human to all mammals
+Mouse to all mammals
 Drosophila to anopheles
+
+All GO term projections use 1:1 orthologues only.
 
 The algorithm for the projection is similar to that for gene names:
 
