@@ -134,8 +134,9 @@ foreach my $pair (@names_1_1) {
   $o = "$dir/names_${from}_$to.out";
   $e = "$dir/names_${from}_$to.err";
   $n = substr("n_${from}_$to", 0, 10); # job name display limited to 10 chars
+  my $all = ($from eq "human") ? "" : "--all_sources"; # non-human from species -> use all sources
   print "Submitting name projection from $from to $to\n";
-  system "bsub $bsub_opts -o $o -e $e -J $n perl project_display_xrefs.pl $script_opts -from $from -to $to -names -delete_names -no_database";
+  system "bsub $bsub_opts -o $o -e $e -J $n perl project_display_xrefs.pl $script_opts -from $from -to $to -names -delete_names -no_database $all";
 }
 
 # 1:many
