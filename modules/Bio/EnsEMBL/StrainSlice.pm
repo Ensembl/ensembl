@@ -117,10 +117,13 @@ sub new{
 	    #check that the individua returned isin the database
 	    if (defined $individual){
 		my $allele_features = $af_adaptor->fetch_all_by_Slice($self,$individual);
+		my $vf_ids = {}; #hash containing the relation vf_id->af
 		$self->{'_strain'} = $individual;		
+		map {$vf_ids->{$_->{'_variation_feature_id'}} = $_} @{$allele_features};
 #		my $new_allele_features = $self->_filter_af_by_coverage($allele_features);
 #		$self->{'alleleFeatures'} = $new_allele_features;
 		$self->{'alleleFeatures'} = $allele_features;
+		$self->{'_vf_ids'} = $vf_ids;
 		return $self;
 	    }
 	    else{ 
@@ -297,6 +300,28 @@ sub _add_coverage_information{
 	$start = $rc->end - 1;
     }
     substr($$reference_sequence, $start, ($self->length - $start) ,'~' x ($self->length - $start)) if ($self->length -1 > $start); 
+}
+
+
+=head2 get_AlleleFeature
+
+    Arg[1]      : Bio::EnsEMBL::Variation::VariationFeature $vf
+    Example     : my $af = $strainSlice->get_AlleleFeature($vf);
+    Description : Returns the AlleleFeature object associated with the VariationFeature (if any)
+    ReturnType  : Bio::EnsEMBL::Variation::AlleleFeature
+    Exceptions  : none
+    Caller      : general
+
+=cut
+
+sub get_AlleleFeature{
+    my $self = shift;
+    my $vf = shift;
+    
+    my $af;
+    #look at the hash containing the relation vf_id->alleleFeature, if present, return object, otherwise, undef
+    $af = $self->{'_vf_ids'}->{$vf->dbID} if (defined $self->{'_vf_ids'}->{$vf->dbID});
+    return $af;
 }
 
 
