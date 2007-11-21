@@ -78,6 +78,7 @@ sub new {
   #
 
   $self->gff_name("Name=");
+  $self->gff_ontology("Ontology_term=");
   $self->gff_synonym("Alias=");
   $self->gff_dbxref("Dbxref=");
 
@@ -310,8 +311,9 @@ sub make_dbxref_xref{
   # type = gene, transcript, translation
   my ($xref);
   my $tg1 = $self->gff_dbxref ;
+  my $tg2 = $self->gff_ontology;
 
-  if ($item=~/$tg1/){ # Dbxref=
+  if ($item=~/$tg1/ || $item=~/$tg2/){ # Dbxref=
     # split the xrefs up into a list
     my $dbx1 = get_fields($item,$tg1);
     my @dbx;
@@ -375,6 +377,7 @@ sub make_dbxref_xref{
         $dbx =~s/GI://g;
         $src_id = $self->get_source($self->source_name_gi);
       } elsif ($dbx =~m/GO:/) {
+        # this is an ontology_term
         $dbx =~s/GO://g;
         $src_id = $self->get_source($self->source_name_go);
       } elsif ($dbx =~m/GenomeRNAi:/) {
@@ -401,6 +404,8 @@ sub make_dbxref_xref{
       } elsif ($dbx =~m/Rfam:/) {
         $dbx =~s/Rfam://g;
         $src_id = $self->get_source($self->source_name_rfam);
+      } elsif ($dbx =~m/SO:/) {
+        # do nothing, we don't collect these
       } elsif ($dbx =~m/TF:/) {
         $dbx =~s/TF://g;
         $src_id = $self->get_source($self->source_name_tf);
@@ -958,6 +963,12 @@ sub gff_synonym{
   my $self = shift;
   $self->{_gff_synonym} = shift if @_ ;
   return $self->{_gff_synonym};
+}
+
+sub gff_ontology{
+  my $self = shift;
+  $self->{_gff_ontology} = shift if @_ ;
+  return $self->{_gff_ontology};
 }
 
 sub species_id {
