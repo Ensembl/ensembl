@@ -319,15 +319,18 @@ sub get_all_Slices {
 	      push @{$indels},$indel; #and include in the list of potential indels
 	  }
       }
+      next if (!defined $aligned_features);
       undef $strain->{'alleleFeatures'}; #remove all features before adding new aligned features
       push @{$strain->{'alleleFeatures'}}, @{$aligned_features};
       undef $aligned_features;
   }  
   push @strains, $ref_strain;
   #need to add indels in the different strains, if not present
-  foreach my $strain (@strains){
-      #inlcude the indels in the StrainSlice object
-      push @{$strain->{'alignIndels'}},@{$indels};
+  if (defined $indels){
+      foreach my $strain (@strains){
+	  #inlcude the indels in the StrainSlice object
+	  push @{$strain->{'alignIndels'}},@{$indels};
+      }
   }
   return \@strains;
 }
