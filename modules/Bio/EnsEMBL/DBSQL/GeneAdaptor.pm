@@ -356,31 +356,31 @@ sub fetch_all_by_domain {
 
 
 
-=head2 fetch_all_by_Slice
+=head2 fetch_all_by_Slice_and_external_dbname_link
 
   Arg [1]    : Bio::EnsEMBL::Slice $slice
                The slice to fetch genes on.
   Arg [2]    : (optional) string $logic_name
                the logic name of the type of features to obtain
   Arg [3]    : (optional) boolean $load_transcripts
-               if true, transcripts will be loaded immediately rather than
-               lazy loaded later.
+               if true, transcripts will be loaded immediately
+               rather than lazy loaded later.
   Arg [4]    : Name of the external database
-  Example    : @genes = @{$ga->fetch_all_by_Slice_and_external_dbname_link
-                ($slice,undef,undef,"HUGO")};
-
-  Description: Overrides superclass method to optionally load transcripts
-               immediately rather than lazy-loading them later.  This
-               is more efficient when there are a lot of genes whose
-               transcripts are going to be used. The genes are then filtered
-               to return only those with external database links of the type specified
+  Example    : @genes = @{
+                 $ga->fetch_all_by_Slice_and_external_dbname_link(
+                                          $slice, undef, undef, "HUGO" ) };
+  Description: Overrides superclass method to optionally load
+               transcripts immediately rather than lazy-loading them
+               later.  This is more efficient when there are a lot
+               of genes whose transcripts are going to be used. The
+               genes are then filtered to return only those with
+               external database links of the type specified
   Returntype : reference to list of genes
   Exceptions : thrown if exon cannot be placed on transcript slice
   Caller     : 
   Status     : Stable
 
 =cut
-
 
 sub fetch_all_by_Slice_and_external_dbname_link {
   my $self  = shift;
