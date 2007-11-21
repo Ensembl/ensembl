@@ -1,5 +1,6 @@
 use strict;
 
+use Bio::EnsEMBL::Registry;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::EnsEMBL::Variation::DBSQL::DBAdaptor;
 use Getopt::Long;
@@ -22,11 +23,12 @@ my $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(-host => $host,
 					    -dbname => $dbname);
 
 
-my %attrib_codes = ( 'miRNA'              => 'miRNA',
+my %attrib_codes = ( 'miRNA'                => 'miRNA',
 		     'snRNA'                => 'snRNA',
 		     'snoRNA'               => 'snoRNA',
 		     'rRNA'                 => 'rRNA',
 		     'tRNA'                 => 'tRNA',
+		     'snlRNA'               => 'snlRNA',
 		     'known protein_coding' => 'knwCod',
 		     'misc_RNA'             => 'mscRNA',
 		     'novel protein_coding' => 'novCod',
