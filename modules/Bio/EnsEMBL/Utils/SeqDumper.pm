@@ -345,6 +345,8 @@ sub dump_embl {
 
   my $entry_name = $slice->seq_region_name();
 
+
+
   if($full_slice->name eq $slice->name) {
     $name_str .= ' full sequence';
     $acc = $slice->seq_region_name();
@@ -362,6 +364,9 @@ sub dump_embl {
     $acc = $slice->name();
     $version = $acc;
   }
+
+  $acc = $slice->name();
+
 
 
   #line breaks are allowed near the end of the line on ' ', "\t", "\n", ',' 
@@ -543,6 +548,8 @@ sub dump_genbank {
     $acc = $slice->name();
     $version = $acc;
   }
+
+  $acc = $slice->name();     # to keep format consistent for all
 
   my $length = $slice->length;
   my $start = $slice->start();
