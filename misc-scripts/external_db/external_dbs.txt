@@ -23,8 +23,8 @@
 810	gadfly_gene_cgid	1	XREF	1	0	10	Gadfly gene CGID	MISC	\N	\N
 811	gadfly_transcript_cgid	1	XREF	1	0	10	Gadfly transcript CGID	MISC	\N	\N
 812	gadfly_translation_cgid	1	XREF	1	0	10	Gadfly translation CGID	MISC	\N	\N
-821	FlyBaseName_gene	1	XREF	1	0	5	FlyBaseName gene	MISC	\N	\N
-824	FlyBaseName_translations	1	XREF	1	0	5	FlyBaseName translations	MISC	\N	\N
+821	FlyBaseName_gene	1	KNOWN	1	0	5	FlyBaseName gene	MISC	\N	\N
+824	FlyBaseName_translations	1	KNOWN	1	0	5	FlyBaseName translations	MISC	\N	\N
 825	FlyBaseName_transcript	1	XREF	1	0	50	FlyBaseName transcript	MISC	\N	\N
 826	FlyBaseCGID_gene	1	XREF	1	0	5	FlyBaseCGID gene	MISC	\N	\N
 827	FlyBaseCGID_transcript	1	XREF	1	0	50	FlyBaseCGID transcript	MISC	\N	\N
