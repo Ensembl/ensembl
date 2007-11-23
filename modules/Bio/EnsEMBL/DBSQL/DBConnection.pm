@@ -425,12 +425,12 @@ sub host {
 =head2 password
 
   Arg [1]    : (optional) string $arg
-               The new value of the password used by this connection. 
+               The new value of the password used by this connection.
   Example    : $host = $db_connection->password()
-  Description: Getter/Setter for the password of to use for 
-               this connection.  There is currently no point in setting 
-               this value after the connection has already been established 
-               by the constructor.
+  Description: Getter/Setter for the password of to use for this
+               connection.  There is currently no point in setting
+               this value after the connection has already been
+               established by the constructor.
   Returntype : string
   Exceptions : none
   Caller     : new
@@ -439,10 +439,18 @@ sub host {
 =cut
 
 sub password {
-  my ($self, $arg ) = @_;
-  ( defined $arg ) &&
-    ( $self->{_password} = $arg );
-  $self->{_password};
+  my ( $self, $arg ) = @_;
+
+  if ( defined($arg) ) {
+    # Use an anonymous subroutine that will return the password when
+    # invoked.  This will prevent the password from being accidentally
+    # displayed when using e.g. Data::Dumper on a structure containing
+    # one of these objects.
+
+    $self->{_password} = sub { $arg };
+  }
+
+  return ( ref( $self->{_password} ) && &{ $self->{_password} } ) || '';
 }
 
 
