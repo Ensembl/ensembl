@@ -458,9 +458,10 @@ sub fetch_all_by_dbID_list {
 
 # might not be a good idea, but for convenience
 # shouldnt be called on the BIG tables though
+
 sub fetch_all {
-    my $self = shift;
-    return $self->generic_fetch();
+  my $self = shift;
+  return $self->generic_fetch();
 }
 
 
@@ -468,11 +469,12 @@ sub fetch_all {
 #
 #  Args       : none
 #  Example    : $tablename = $self->_table_name()
-#  Description: ABSTRACT PROTECTED Subclasses are responsible for implementing
-#               this method.  It should list of [tablename, alias] pairs.  
-#               Additionally the primary table (with the dbID, analysis_id, and
-#               score) should be the first table in the list.
-#               e.g:
+#  Description: ABSTRACT PROTECTED
+#               Subclasses are responsible for implementing this
+#               method.  It should list of [tablename, alias] pairs.
+#               Additionally the primary table (with the dbID,
+#               analysis_id, and score) should be the first table in
+#               the list. e.g:
 #               ( ['repeat_feature',   'rf'],
 #                 ['repeat_consensus', 'rc']);
 #               used to obtain features.  
@@ -482,11 +484,8 @@ sub fetch_all {
 #
 
 sub _tables {
-  my $self = shift;
-
-  throw("abstract method _tables not defined by implementing" .
-               " subclass of BaseFeatureAdaptor");
-  return undef;
+  throw(   "abstract method _tables not defined "
+         . "by implementing subclass of BaseAdaptor" );
 }
 
 
@@ -494,81 +493,66 @@ sub _tables {
 #
 #  Args       : none
 #  Example    : $tablename = $self->_columns()
-#  Description: ABSTRACT PROTECTED Subclasses are responsible for implementing
-#               this method.  It should return a list of columns to be used
-#               for feature creation
+#  Description: ABSTRACT PROTECTED
+#               Subclasses are responsible for implementing this
+#               method.  It should return a list of columns to be
+#               used for feature creation.
 #  Returntype : list of strings
 #  Exceptions : thrown if not implemented by subclass
 #  Caller     : BaseFeatureAdaptor::generic_fetch
 #
 
 sub _columns {
-  my $self = shift;
-
-  throw("abstract method _columns not defined by implementing" .
-               " subclass of BaseFeatureAdaptor");
+  throw(   "abstract method _columns not defined "
+         . "by implementing subclass of BaseAdaptor" );
 }
-
 
 
 # _default_where_clause
 #
 #  Arg [1]    : none
 #  Example    : none
-#  Description: May be overridden to provide an additional where constraint to 
-#               the SQL query which is generated to fetch feature records.
-#               This constraint is always appended to the end of the generated
-#               where clause
+#  Description: May be overridden to provide an additional where
+#               constraint to the SQL query which is generated to
+#               fetch feature records.  This constraint is always
+#               appended to the end of the generated where clause
 #  Returntype : string
 #  Exceptions : none
 #  Caller     : generic_fetch
 #
 
-sub _default_where_clause {
-  my $self = shift;
-
-  return '';
-}
-
+sub _default_where_clause { return '' }
 
 
 # _left_join
 
 #  Arg [1]    : none
 #  Example    : none
-#  Description: Can be overridden by a subclass to specify any left joins
-#               which should occur. The table name specigfied in the join
-#               must still be present in the return values of
+#  Description: Can be overridden by a subclass to specify any left
+#               joins which should occur.  The table name specigfied
+#               in the join must still be present in the return
+#               values of.
 #  Returntype : a {'tablename' => 'join condition'} pair
 #  Exceptions : none
 #  Caller     : general
 #
 
-sub _left_join {
-  my $self = shift;
-
-  return ();
-}
-
+sub _left_join { return () }
 
 
 #_final_clause
 
 #  Arg [1]    : none
 #  Example    : none
-#  Description: May be overriden to provide an additional clause to the end
-#               of the SQL query used to fetch feature records.  
-#               This is useful to add a required ORDER BY clause to the 
-#               query for example.
+#  Description: May be overriden to provide an additional clause
+#               to the end of the SQL query used to fetch feature
+#               records.  This is useful to add a required ORDER BY
+#               clause to the query for example.
 #  Returntype : string
 #  Exceptions : none
 #  Caller     : generic_fetch
 
-sub _final_clause {
-  my $self = shift;
-
-  return '';
-}
+sub _final_clause { return '' }
 
 
 #_objs_from_sth
@@ -576,18 +560,18 @@ sub _final_clause {
 #  Arg [1]    : DBI::row_hashref $hashref containing key-value pairs 
 #               for each of the columns specified by the _columns method
 #  Example    : my @feats = $self->_obj_from_hashref
-#  Description: ABSTRACT PROTECTED The subclass is responsible for implementing
-#               this method.  It should take in a DBI row hash reference and
-#               return a list of created features in contig coordinates.
+#  Description: ABSTRACT PROTECTED
+#               The subclass is responsible for implementing this
+#               method.  It should take in a DBI row hash reference
+#               and return a list of created features in contig
+#               coordinates.
 #  Returntype : list of Bio::EnsEMBL::*Features in contig coordinates
 #  Exceptions : thrown if not implemented by subclass
 #  Caller     : BaseFeatureAdaptor::generic_fetch
 
 sub _objs_from_sth {
-  my $self = shift;
-
-  throw("abstract method _obj_from_sth not defined by implementing"
-             . " subclass of BaseFeatureAdaptor");
+  throw(   "abstract method _objs_from_sth not defined "
+         . "by implementing subclass of BaseAdaptor" );
 }
 
 1;
