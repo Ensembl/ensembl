@@ -159,7 +159,6 @@ sub create_xrefs {
   my $num_sp_pred = 0;
   my $num_sptr_pred = 0;
 
-  my %dependent_sources = $self->get_dependent_xref_sources(); # name-id hash
 
   # Get predicted equivalents of various sources used here
     my $sp_pred_source_id =
@@ -169,19 +168,8 @@ sub create_xrefs {
       $self->get_source_id_for_source_name(
         'Uniprot/SPTREMBL_predicted');
 
-#  my $go_source_id = $self->get_source_id_for_source_name('GO');
-  my $embl_pred_source_id = $dependent_sources{'EMBL_predicted'};
-  my $protein_id_pred_source_id = $dependent_sources{'protein_id_predicted'};
   print "Predicted SwissProt source id for $file: $sp_pred_source_id\n";
   print "Predicted SpTREMBL source id for $file: $sptr_pred_source_id\n";
-  print "Predicted EMBL source id for $file: $embl_pred_source_id\n";
-  print "Predicted protein_id source id for $file: $protein_id_pred_source_id\n";
-#  print "GO source id for $file: $go_source_id\n";
-
-    my (%genemap) =
-      %{ $self->get_valid_codes( "mim_gene", $species_id ) };
-    my (%morbidmap) =
-      %{ $self->get_valid_codes( "mim_morbid", $species_id ) };
 
     my $uniprot_io = $self->get_filehandle($file);
     if ( !defined $uniprot_io ) { return undef }
@@ -299,107 +287,10 @@ sub create_xrefs {
 
     $xref->{DESCRIPTION} = $description;
 
-    # ignore sequence
 
-#    my ($seq) = $_ =~ /SQ\s+(.+)/s; # /s allows . to match newline
-#      my @seq_lines = split /\n/, $seq;
-#    my $parsed_seq = "";
-#    foreach my $x (@seq_lines) {
-#      $parsed_seq .= $x;
-#    }
-#    $parsed_seq =~ s/\/\///g;   # remove trailing end-of-record character
-#    $parsed_seq =~ s/\s//g;     # remove whitespace
-#    $parsed_seq =~ s/^.*;//g;   # remove everything before last ;
-
-#    $xref->{SEQUENCE} = $parsed_seq;
-    #print "Adding " . $xref->{ACCESSION} . " " . $xref->{LABEL} ."\n";
-
-    # dependent xrefs - only store those that are from sources listed in the source table
-    my ($deps) = $_ =~ /(DR\s+.+)/s; # /s allows . to match newline
-
-    my @dep_lines = ();
-    if ( defined $deps ) { @dep_lines = split /\n/, $deps }
-
-    foreach my $dep (@dep_lines) {
-      #both GO and UniGene have the own sources so ignore those in the uniprot files
-      #as the uniprot data should be older
-      if($dep =~ /GO/ || $dep =~ /UniGene/){
-	next;
-      }
-      if ($dep =~ /^DR\s+(.+)/) {
-	my ($source, $acc, @extra) = split /;\s*/, $1;
-	if($source =~ "RGD"){  #using RGD file now instead.
-	  next;
-	}
-	if (exists $dependent_sources{$source} ) {
-	  # create dependent xref structure & store it
-	  my %dep;
-          $dep{SOURCE_NAME} = $source;
-          $dep{LINKAGE_SOURCE_ID} = $xref->{SOURCE_ID};
-          $dep{SOURCE_ID} = $dependent_sources{$source};
-	  $dep{ACCESSION} = $acc;
-	  if($dep =~ /MIM/){
-	    $dep{ACCESSION} = $acc;
-	    if(defined($morbidmap{$acc}) and $extra[0] eq "phenotype."){
-	      $dep{SOURCE_NAME} = "MIM_MORBID";
-	      $dep{SOURCE_ID} = $dependent_sources{"MIM_MORBID"};
-	    }
-	    elsif(defined($genemap{$acc}) and $extra[0] eq "gene."){
-	      $dep{SOURCE_NAME} = "MIM_GENE";
-	      $dep{SOURCE_ID} = $dependent_sources{"MIM_GENE"};
-	    }
-	    elsif($extra[0] eq "gene+phenotype."){
-	      $dep{SOURCE_NAME} = "MIM_MORBID";
-	      $dep{SOURCE_ID} = $dependent_sources{"MIM_MORBID"};
-	      if(defined($morbidmap{$acc})){
-		push @{$xref->{DEPENDENT_XREFS}}, \%dep; # array of hashrefs
-	      }
-	      my %dep2;
-	      $dep2{ACCESSION} = $acc;
-	      $dep2{LINKAGE_SOURCE_ID} = $xref->{SOURCE_ID};
-	      $dep2{SOURCE_NAME} = "MIM_GENE";
-	      $dep2{SOURCE_ID} = $dependent_sources{"MIM_GENE"};	      
-	      if(defined($genemap{$acc})){
-		push @{$xref->{DEPENDENT_XREFS}}, \%dep2; # array of hashrefs
-	      }
-	      next;
-	    }
-	    else{
-#	      print "missed $dep\n";
-	      next;
-	    }
-	  }
-	  if ($source eq "EMBL" && $is_predicted) {
-	    $dep{SOURCE_ID} = $embl_pred_source_id
-	  };
-
-	  $dep{ACCESSION} = $acc;
-	  push @{$xref->{DEPENDENT_XREFS}}, \%dep; # array of hashrefs
-
-	  if($dep =~ /EMBL/){
-	    my ($protein_id) = $extra[0];
-	    if($protein_id ne "-"){
-	      my %dep2;
-	      $dep2{SOURCE_NAME} = $source;
-	      $dep2{SOURCE_ID} = $dependent_sources{protein_id};
-	      if ($is_predicted) {
-		$dep2{SOURCE_ID} = $protein_id_pred_source_id
-	      };
-	      $dep2{LINKAGE_SOURCE_ID} = $xref->{SOURCE_ID};
-	      # store accession unversioned
-	      $dep2{LABEL} = $protein_id;
-	      my ($prot_acc, $prot_version) = $protein_id =~ /([^.]+)\.([^.]+)/;
-	      $dep2{ACCESSION} = $prot_acc;
-	      $dep2{VERSION} = $prot_acc;
-	      push @{$xref->{DEPENDENT_XREFS}}, \%dep2; # array of hashrefs
-	    }
-	  }
-	}
-      }
-    }
 
     push @xrefs, $xref;
-
+    
   }
 
   $uniprot_io->close();
