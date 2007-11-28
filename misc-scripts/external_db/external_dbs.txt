@@ -24,22 +24,13 @@
 811	gadfly_transcript_cgid	1	XREF	1	0	10	Gadfly transcript CGID	MISC	\N	\N
 812	gadfly_translation_cgid	1	XREF	1	0	10	Gadfly translation CGID	MISC	\N	\N
 821	FlyBaseName_gene	1	KNOWN	1	0	5	FlyBaseName gene	MISC	\N	\N
-824	FlyBaseName_translations	1	KNOWN	1	0	5	FlyBaseName translations	MISC	\N	\N
+824	FlyBaseName_translation	1	KNOWN	1	0	5	FlyBaseName translation	MISC	\N	\N
 825	FlyBaseName_transcript	1	XREF	1	0	50	FlyBaseName transcript	MISC	\N	\N
 826	FlyBaseCGID_gene	1	XREF	1	0	5	FlyBaseCGID gene	MISC	\N	\N
 827	FlyBaseCGID_transcript	1	XREF	1	0	50	FlyBaseCGID transcript	MISC	\N	\N
 828	FlyBaseCGID_translation	1	XREF	1	0	50	FlyBaseCGID translation	MISC	\N	\N
-830	DGRC_1	1	KNOWNXREF	1	0	5	Drosophila Genomics Resource Center 1	MISC	\N	\N
-831	DGRC_2	1	KNOWNXREF	1	0	5	Drosophila Genomics Resource Center 2	MISC	\N	\N
-840	DRSC	1	KNOWNXREF	1	0	5	Drosophila RNAi Screening Center	MISC	\N	\N
-850	FlyReg	1	KNOWNXREF	1	0	5	FlyReg, Drosophila DNase I Footprint Database	MISC	\N	\N
-860	GenomeRNAi	1	KNOWNXREF	1	0	5	GenomeRNAi is a database of phenotypes from systematic RNA interference (RNAi) screens in cultured Drosophila cells	MISC	\N	\N	
-870	MitoDrome	1	KNOWNXREF	1	0	5	MitoDrome, a database of Drosophila melanogaster nuclear genes encoding for mitochondrial proteins	MISC	\N	\N
 880	BDGP_insitu_expr	1	KNOWNXREF	1	0	5	Berkeley Drosophila Genome Project in situ Gene Expression Database (embryogenesis)	MISC	\N	\N
-881	DrosDel	1	KNOWNXREF	1	0	5	An isogenic deficiency kit for Drosophila melanogaster	MISC	\N	\N
 882	FlyGrid	1	KNOWNXREF	1	0	5	FlyGRID Interaction Data, The General Repository for Interaction Datasets	MISC	\N	\N
-883	hybrigenics	1	KNOWNXREF	1	0	5	Hybrigenics Drosophila PIMRider (protein interaction map)	MISC	\N	\N
-884	InteractiveFly	1	KNOWNXREF	1	0	5	Interactive Fly, A cyberspace guide to Drosophila genes and their roles in development	MISC	\N	\N
 890	DEDb	1	KNOWNXREF	1	0	5	Drosophila melanogaster Exon DataBase	MISC	\N	\N
 900	GKB	1	XREF	1	0	5	GKB	MISC	\N	\N
 1000	GO	1	KNOWNXREF	1	0	5	GO	MISC	\N	\N
