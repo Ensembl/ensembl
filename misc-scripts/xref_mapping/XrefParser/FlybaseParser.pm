@@ -240,7 +240,6 @@ sub run {
             }
 
             $self->add_direct_xref( $xref_id, $id, $type, '' );
-
           }
         }
       } ## end if ( exists( $source_name_map...
@@ -318,7 +317,6 @@ sub run {
       }
 
       $self->add_direct_xref( $xref_id, $id, $type, '' );
-
     }
 
     #-------------------------------------------------------------------
