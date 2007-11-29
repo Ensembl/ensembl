@@ -5,7 +5,7 @@ package XrefParser::FlybaseParser;
 use strict;
 use warnings;
 
-use Data::Dumper;
+use Carp;
 
 use base qw( XrefParser::BaseParser );
 
@@ -106,8 +106,10 @@ sub get_source_id_for_source_name {
       $self->SUPER::get_source_id_for_source_name(@_);
   }
 
-  if ( !defined( $source_id{$source_name} ) ) {
-    die(
+  if ( !defined( $source_id{$source_name} )
+       || $source_id{$source_name} < 0 )
+  {
+    croak(
        sprintf( "Can not find source_id for source '%s'", $source_name )
     );
   }
@@ -119,13 +121,17 @@ sub run {
   my $self = shift;
   my ( $source_id, $species_id, $data_file, $release_file ) = @_;
 
+  # Fetch a hash of the already stored Uniprot accessions.
+  my %uniprot_xref_ids =
+    %{ $self->get_valid_code( 'uniprot', $species_id ) };
+
   my $data_io = $self->get_filehandle($data_file);
 
   while ( defined( my $line = $data_io->getline() ) ) {
-    chomp($line);
-
     # Skip comment lines at the start of the file.
-    if ( $line =~ /^#/ ) { next }
+    if ( substr( $line, 0, 1 ) eq '#' ) { next }
+
+    chomp($line);
 
     # Split each line into fields.
     my @fields = split( /\t/, $line );
@@ -177,12 +183,10 @@ sub run {
 
     my $dbxref = $attributes{'Dbxref'};
 
-    # DEBUG:
-    # foreach my $dbxref_name ( keys( %{$dbxref} ) ) {
-    #   print("$dbxref_name\n");
-    # }
-    # next;
-
+    #-------------------------------------------------------------------
+    # Store Xrefs and Direct Xrefs for all the interesting Dbxref
+    # entries.
+    #-------------------------------------------------------------------
     foreach my $dbxref_name ( keys( %{$dbxref} ) ) {
       my $source_id;
       if ( exists( $source_name_map{$dbxref_name} ) ) {
@@ -190,36 +194,84 @@ sub run {
           $self->get_source_id_for_source_name(
                                        $source_name_map{$dbxref_name} );
 
-        # FIXME:
-        #
-        # Store the Xrefs from $dbxref->{$dbxref_name} (array) using
-        # $self->add_xref():
-        #   accession, version (''), label, description (''), source_id,
-        #   species_id
-        #
-        # Store direct Xrefs using $self->add_direct_xref():
-        #   xref_id, stable_id ($id), type ($type), linkage_xref ('')
+        # Treat Uniprot differently.
+        if ( substr( $dbxref_name, 0, 7 ) eq 'UniProt' ) {
+          foreach my $accession ( @{ $dbxref->{$dbxref_name} } ) {
+            if ( exists( $uniprot_xref_ids{$accession} ) ) {
+              $self->add_direct_xref( $uniprot_xref_ids{$accession},
+                                      $id, $type, '' );
+            }
+          }
+        } else {
+          foreach my $accession ( @{ $dbxref->{$dbxref_name} } ) {
+            my $xref_id =
+              $self->add_xref( $accession, '', $accession, '',
+                               $source_id, $species_id );
+            $self->add_direct_xref( $xref_id, $id, $type, '' );
+          }
+        }
       }
     }
 
-    my $xref_source_id;
-    my $name_source_id;
-    my $id_source_id;
+    #-------------------------------------------------------------------
+    # Store Xrefs and Direct Xrefs for the GO 'Ontology_term' entries.
+    #-------------------------------------------------------------------
+    if ( exists( $attributes{'Ontology_term'}{'GO'} ) ) {
+      my $source_id = $self->get_source_id_for_source_name('GO');
 
+      foreach my $accession ( @{ $attributes{'Ontology_term'}{'GO'} } )
+      {
+        my $xref_id =
+          $self->add_xref( $accession, '', $accession, '', $source_id,
+                           $species_id );
+        $self->add_direct_xref( $xref_id, $id, $type, '' );
+      }
+    }
+
+    #-------------------------------------------------------------------
+    # Store Xrefs and Direct Xrefs for the 'FlyBase_Annotation_IDs'
+    # Dbxref entry (depends on type of 'ID').
+    #-------------------------------------------------------------------
     if ( exists( $dbxref->{'FlyBase_Annotation_IDs'} ) ) {
-      $xref_source_id =
+      my $source_id =
         $self->get_source_id_for_source_name(
                             $special_source_name_map{$type}{'Dbxref'} );
-    }
-    $name_source_id =
-      $self->get_source_id_for_source_name(
-                              $special_source_name_map{$type}{'Name'} );
-    $id_source_id =
-      $self->get_source_id_for_source_name(
-                                $special_source_name_map{$type}{'ID'} );
 
-    # FIXME:
-    # Store Xrefs and direct Xrefs similarly to above.
+      foreach my $accession ( @{ $dbxref->{'FlyBase_Annotation_IDs'} } )
+      {
+        my $xref_id =
+          $self->add_xref( $accession, '', $accession, '', $source_id,
+                           $species_id );
+        $self->add_direct_xref( $xref_id, $id, $type, '' );
+      }
+
+    }
+
+    #-------------------------------------------------------------------
+    # Store Xref and Direct Xref for the 'Name' (depends on type of
+    # 'ID').
+    #-------------------------------------------------------------------
+    {
+      my $source_id =
+        $self->get_source_id_for_source_name(
+                              $special_source_name_map{$type}{'Name'} );
+      my $xref_id =
+        $self->add_xref( $attributes{'Name'}, '', $attributes{'Name'},
+                         $source_id, $species_id );
+      $self->add_direct_xref( $xref_id, $id, $type, '' );
+    }
+
+    #-------------------------------------------------------------------
+    # Store Xref and Direct Xref for the 'ID' (depends on type of 'ID').
+    #-------------------------------------------------------------------
+    {
+      my $source_id =
+        $self->get_source_id_for_source_name(
+                                $special_source_name_map{$type}{'ID'} );
+      my $xref_id =
+        $self->add_xref( $id, '', $id, $source_id, $species_id );
+      $self->add_direct_xref( $xref_id, $id, $type, '' );
+    }
 
   } ## end while ( defined( my $line...
   $data_io->close();
