@@ -128,7 +128,7 @@ sub run {
   my %uniprot_xref_ids =
     %{ $self->get_valid_codes( 'uniprot', $species_id ) };
 
-  my %count;
+  my %xref_ids;
 
   my $data_io = $self->get_filehandle($data_file);
 
@@ -193,11 +193,10 @@ sub run {
     # entries.
     #-------------------------------------------------------------------
     foreach my $dbxref_name ( keys( %{$dbxref} ) ) {
-      my $source_id;
       if ( exists( $source_name_map{$dbxref_name} ) ) {
-        $source_id =
-          $self->get_source_id_for_source_name(
-                                       $source_name_map{$dbxref_name} );
+        my $source_name = $source_name_map{$dbxref_name};
+        my $source_id =
+          $self->get_source_id_for_source_name($source_name);
 
         # Treat Uniprot differently.
         if ( substr( $dbxref_name, 0, 7 ) eq 'UniProt' ) {
@@ -206,19 +205,26 @@ sub run {
               $self->add_direct_xref( $uniprot_xref_ids{$accession},
                                       $id, $type, '' );
 
-              ++$count{'UniProt'};
+              $xref_ids{'UniProt'}{$accession} =
+                $uniprot_xref_ids{$accession};
             } else {
-              ++$count{'UniProt (missed)'};
+              $xref_ids{'UniProt (missed)'}{$accession} = -1;
             }
           }
         } else {
           foreach my $accession ( @{ $dbxref->{$dbxref_name} } ) {
-            my $xref_id =
-              $self->add_xref( $accession, '', $accession, '',
-                               $source_id, $species_id );
+            my $xref_id;
+            if ( exists( $xref_ids{$source_name}{$accession} ) ) {
+              $xref_id = $xref_ids{$source_name}{$accession};
+            } else {
+              $xref_id =
+                $self->add_xref( $accession, '', $accession, '',
+                                 $source_id, $species_id );
+              $xref_ids{$source_name}{$accession} = $xref_id;
+            }
+
             $self->add_direct_xref( $xref_id, $id, $type, '' );
 
-            ++$count{$dbxref_name};
           }
         }
       }
@@ -228,16 +234,22 @@ sub run {
     # Store Xrefs and Direct Xrefs for the GO 'Ontology_term' entries.
     #-------------------------------------------------------------------
     if ( exists( $attributes{'Ontology_term'}{'GO'} ) ) {
-      my $source_id = $self->get_source_id_for_source_name('GO');
+      my $source_name = 'GO';
+      my $source_id   = $self->get_source_id_for_source_name($source_name);
 
       foreach my $accession ( @{ $attributes{'Ontology_term'}{'GO'} } )
       {
-        my $xref_id =
-          $self->add_xref( $accession, '', $accession, '', $source_id,
-                           $species_id );
-        $self->add_direct_xref( $xref_id, $id, $type, '' );
+        my $xref_id;
+        if ( exists( $xref_ids{$source_name}{$accession} ) ) {
+          $xref_id = $xref_ids{$source_name}{$accession};
+        } else {
+          $xref_id =
+            $self->add_xref( $accession, '', $accession, '', $source_id,
+                             $species_id );
+          $xref_ids{$source_name}{$accession} = $xref_id;
+        }
 
-        ++$count{'GO'};
+        $self->add_direct_xref( $xref_id, $id, $type, '' );
       }
     }
 
@@ -246,18 +258,23 @@ sub run {
     # Dbxref entry (depends on type of 'ID').
     #-------------------------------------------------------------------
     if ( exists( $dbxref->{'FlyBase_Annotation_IDs'} ) ) {
+      my $source_name = $special_source_name_map{$type}{'Dbxref'};
       my $source_id =
-        $self->get_source_id_for_source_name(
-                            $special_source_name_map{$type}{'Dbxref'} );
+        $self->get_source_id_for_source_name($source_name);
 
       foreach my $accession ( @{ $dbxref->{'FlyBase_Annotation_IDs'} } )
       {
-        my $xref_id =
-          $self->add_xref( $accession, '', $accession, '', $source_id,
-                           $species_id );
-        $self->add_direct_xref( $xref_id, $id, $type, '' );
+        my $xref_id;
+        if ( exists( $xref_ids{$source_name}{$accession} ) ) {
+          $xref_id = $xref_ids{$source_name}{$accession};
+        } else {
+          $xref_id =
+            $self->add_xref( $accession, '', $accession, '', $source_id,
+                             $species_id );
+          $xref_ids{$source_name}{$accession} = $xref_id;
+        }
 
-        ++$count{ $special_source_name_map{$type}{'Dbxref'} };
+        $self->add_direct_xref( $xref_id, $id, $type, '' );
       }
 
     }
@@ -267,37 +284,54 @@ sub run {
     # 'ID').
     #-------------------------------------------------------------------
     {
+      my $source_name = $special_source_name_map{$type}{'Name'};
       my $source_id =
-        $self->get_source_id_for_source_name(
-                              $special_source_name_map{$type}{'Name'} );
-      my $xref_id =
-        $self->add_xref( $attributes{'Name'}, '', $attributes{'Name'},
-                         '', $source_id, $species_id );
-      $self->add_direct_xref( $xref_id, $id, $type, '' );
+        $self->get_source_id_for_source_name($source_name);
 
-      ++$count{ $special_source_name_map{$type}{'Name'} };
+      my $accession = $attributes{'Name'};
+      my $xref_id;
+
+      if ( exists( $xref_ids{$source_name}{$accession} ) ) {
+        $xref_id = $xref_ids{$source_name}{$accession};
+      } else {
+        $xref_id =
+          $self->add_xref( $accession, '', $accession, '', $source_id,
+                           $species_id );
+        $xref_ids{$source_name}{$accession} = $xref_id;
+      }
+
+      $self->add_direct_xref( $xref_id, $id, $type, '' );
     }
 
     #-------------------------------------------------------------------
     # Store Xref and Direct Xref for the 'ID' (depends on type of 'ID').
     #-------------------------------------------------------------------
     {
+      my $source_name = $special_source_name_map{$type}{'ID'};
       my $source_id =
-        $self->get_source_id_for_source_name(
-                                $special_source_name_map{$type}{'ID'} );
-      my $xref_id =
-        $self->add_xref( $id, '', $id, '', $source_id, $species_id );
-      $self->add_direct_xref( $xref_id, $id, $type, '' );
+        $self->get_source_id_for_source_name($source_name);
 
-      ++$count{ $special_source_name_map{$type}{'ID'} }
+      my $accession = $id;
+      my $xref_id;
+
+      if ( exists( $xref_ids{$source_name}{$accession} ) ) {
+        $xref_id = $xref_ids{$source_name}{$accession};
+      } else {
+        $xref_id =
+          $self->add_xref( $accession, '', $accession, '', $source_id,
+                           $species_id );
+        $xref_ids{$source_name}{$accession} = $xref_id;
+      }
+
+      $self->add_direct_xref( $xref_id, $id, $type, '' );
     }
 
   } ## end while ( defined( my $line...
   $data_io->close();
 
   print("FlybaseParser Summary:\n");
-  while ( my ( $label, $count ) = each(%count) ) {
-    printf( "\t%16s %d\n", $label, $count );
+  while ( my ( $label, $accessions ) = each(%xref_ids) ) {
+    printf( "\t%16s %d\n", $label, scalar( keys( %{$accessions} ) ) );
   }
 
 } ## end sub run
