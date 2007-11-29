@@ -132,9 +132,24 @@ sub run {
 
   my $data_io = $self->get_filehandle($data_file);
 
+  my ( $count_read, $count_skipped, $last_count_read ) = ( 0, 0, 0 );
+  my $status_interval = 10;
+
+  local $SIG{ALRM} = sub {
+    printf( "%d lines read, %d skipped, %d parsed; %d lines/s\n",
+            $count_read, $count_skipped,
+            $count_read - $count_skipped,
+            ( $count_read - $last_count_read )/$status_interval );
+    $last_count_read = $count_read;
+    alarm($status_interval);
+  };
+  alarm($status_interval);
+
   while ( defined( my $line = $data_io->getline() ) ) {
+    ++$count_read;
+
     # Skip comment lines at the start of the file.
-    if ( substr( $line, 0, 1 ) eq '#' ) { next }
+    if ( substr( $line, 0, 1 ) eq '#' ) { ++$count_skipped; next }
 
     chomp($line);
 
@@ -144,10 +159,11 @@ sub run {
     # Only pick out the interesting lines.
     if (
          !(    defined( $fields[1] )
-            && defined( $fields[2] )
             && $fields[1] eq 'FlyBase'
+            && defined( $fields[2] )
             && exists( $object_types{ $fields[2] } ) ) )
     {
+      ++$count_skipped;
       next;
     }
 
@@ -218,7 +234,7 @@ sub run {
               $xref_id = $xref_ids{$source_name}{$accession};
             } else {
               $xref_id =
-                $self->add_xref( $accession, '', $accession, '',
+                $self->add_xref( $accession, undef, $accession, '',
                                  $source_id, $species_id );
               $xref_ids{$source_name}{$accession} = $xref_id;
             }
@@ -227,15 +243,16 @@ sub run {
 
           }
         }
-      }
-    }
+      } ## end if ( exists( $source_name_map...
+    } ## end foreach my $dbxref_name ( keys...
 
     #-------------------------------------------------------------------
     # Store Xrefs and Direct Xrefs for the GO 'Ontology_term' entries.
     #-------------------------------------------------------------------
     if ( exists( $attributes{'Ontology_term'}{'GO'} ) ) {
       my $source_name = 'GO';
-      my $source_id   = $self->get_source_id_for_source_name($source_name);
+      my $source_id =
+        $self->get_source_id_for_source_name($source_name);
 
       foreach my $accession ( @{ $attributes{'Ontology_term'}{'GO'} } )
       {
@@ -244,8 +261,8 @@ sub run {
           $xref_id = $xref_ids{$source_name}{$accession};
         } else {
           $xref_id =
-            $self->add_xref( $accession, '', $accession, '', $source_id,
-                             $species_id );
+            $self->add_xref( $accession, undef, $accession, '',
+                             $source_id, $species_id );
           $xref_ids{$source_name}{$accession} = $xref_id;
         }
 
@@ -269,8 +286,8 @@ sub run {
           $xref_id = $xref_ids{$source_name}{$accession};
         } else {
           $xref_id =
-            $self->add_xref( $accession, '', $accession, '', $source_id,
-                             $species_id );
+            $self->add_xref( $accession, undef, $accession, '',
+                             $source_id, $species_id );
           $xref_ids{$source_name}{$accession} = $xref_id;
         }
 
@@ -295,12 +312,13 @@ sub run {
         $xref_id = $xref_ids{$source_name}{$accession};
       } else {
         $xref_id =
-          $self->add_xref( $accession, '', $accession, '', $source_id,
-                           $species_id );
+          $self->add_xref( $accession, undef, $accession, '',
+                           $source_id, $species_id );
         $xref_ids{$source_name}{$accession} = $xref_id;
       }
 
       $self->add_direct_xref( $xref_id, $id, $type, '' );
+
     }
 
     #-------------------------------------------------------------------
@@ -318,8 +336,8 @@ sub run {
         $xref_id = $xref_ids{$source_name}{$accession};
       } else {
         $xref_id =
-          $self->add_xref( $accession, '', $accession, '', $source_id,
-                           $species_id );
+          $self->add_xref( $accession, undef, $accession, '',
+                           $source_id, $species_id );
         $xref_ids{$source_name}{$accession} = $xref_id;
       }
 
@@ -330,8 +348,9 @@ sub run {
   $data_io->close();
 
   print("FlybaseParser Summary:\n");
-  while ( my ( $label, $accessions ) = each(%xref_ids) ) {
-    printf( "\t%16s %d\n", $label, scalar( keys( %{$accessions} ) ) );
+  foreach my $label ( sort( keys(%xref_ids) ) ) {
+    my $accessions = $xref_ids{$label};
+    printf( "\t%-32s %6d\n", $label, scalar( keys( %{$accessions} ) ) );
   }
 
 } ## end sub run
