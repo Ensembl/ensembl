@@ -46,9 +46,10 @@ my %attrib_codes = ( 'miRNA'                => 'miRNA',
 		     'miRNA_pseudogene'     => 'RNA_pseu',
 		     'Mt_tRNA_pseudogene'   => 'RNA_pseu',
 		     'V_segment'            => 'IgSeg',
-		     'J_segment'            => 'IgSeg',   
+		     'J_segment'            => 'IgSeg',
 		     'D_segment'            => 'IgSeg',
-		     'C_segment'            => 'IgSeg');
+		     'C_segment'            => 'IgSeg',
+		     'retrotransposed'      => 'rettran');
 
 
 # do both genestats and snpstats by default
