@@ -257,7 +257,7 @@ sub run {
                            $species_id );
         $self->add_direct_xref( $xref_id, $id, $type, '' );
 
-        ++$count{ sprintf( 'FlyBaseCGID_%s', $type ) };
+        ++$count{ $special_source_name_map{$type}{'Dbxref'} };
       }
 
     }
@@ -275,7 +275,7 @@ sub run {
                          '', $source_id, $species_id );
       $self->add_direct_xref( $xref_id, $id, $type, '' );
 
-      ++$count{ sprintf( 'FlyBaseName_%s', $type ) };
+      ++$count{ $special_source_name_map{$type}{'Name'} };
     }
 
     #-------------------------------------------------------------------
@@ -289,7 +289,7 @@ sub run {
         $self->add_xref( $id, '', $id, '', $source_id, $species_id );
       $self->add_direct_xref( $xref_id, $id, $type, '' );
 
-      ++$count{ sprintf( 'flybase_%s_id', $type ) };
+      ++$count{ $special_source_name_map{$type}{'ID'} }
     }
 
   } ## end while ( defined( my $line...
