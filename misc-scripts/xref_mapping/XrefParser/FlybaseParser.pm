@@ -104,6 +104,9 @@ sub get_source_id_for_source_name {
   if ( !defined( $source_id{$source_name} ) ) {
     $source_id{$source_name} =
       $self->SUPER::get_source_id_for_source_name(@_);
+
+    printf( "source_id for source '%s' is %d\n",
+            $source_name, $source_id{$source_name} );
   }
 
   if ( !defined( $source_id{$source_name} )
@@ -123,7 +126,9 @@ sub run {
 
   # Fetch a hash of the already stored Uniprot accessions.
   my %uniprot_xref_ids =
-    %{ $self->get_valid_code( 'uniprot', $species_id ) };
+    %{ $self->get_valid_codes( 'uniprot', $species_id ) };
+
+  my %count;
 
   my $data_io = $self->get_filehandle($data_file);
 
@@ -200,6 +205,10 @@ sub run {
             if ( exists( $uniprot_xref_ids{$accession} ) ) {
               $self->add_direct_xref( $uniprot_xref_ids{$accession},
                                       $id, $type, '' );
+
+              ++$count{'UniProt'};
+            } else {
+              ++$count{'UniProt (missed)'};
             }
           }
         } else {
@@ -208,6 +217,8 @@ sub run {
               $self->add_xref( $accession, '', $accession, '',
                                $source_id, $species_id );
             $self->add_direct_xref( $xref_id, $id, $type, '' );
+
+            ++$count{$dbxref_name};
           }
         }
       }
@@ -225,6 +236,8 @@ sub run {
           $self->add_xref( $accession, '', $accession, '', $source_id,
                            $species_id );
         $self->add_direct_xref( $xref_id, $id, $type, '' );
+
+        ++$count{'GO'};
       }
     }
 
@@ -243,6 +256,8 @@ sub run {
           $self->add_xref( $accession, '', $accession, '', $source_id,
                            $species_id );
         $self->add_direct_xref( $xref_id, $id, $type, '' );
+
+        ++$count{ sprintf( 'FlyBaseCGID_%s', $type ) };
       }
 
     }
@@ -257,8 +272,10 @@ sub run {
                               $special_source_name_map{$type}{'Name'} );
       my $xref_id =
         $self->add_xref( $attributes{'Name'}, '', $attributes{'Name'},
-                         $source_id, $species_id );
+                         '', $source_id, $species_id );
       $self->add_direct_xref( $xref_id, $id, $type, '' );
+
+      ++$count{ sprintf( 'FlyBaseName_%s', $type ) };
     }
 
     #-------------------------------------------------------------------
@@ -269,12 +286,19 @@ sub run {
         $self->get_source_id_for_source_name(
                                 $special_source_name_map{$type}{'ID'} );
       my $xref_id =
-        $self->add_xref( $id, '', $id, $source_id, $species_id );
+        $self->add_xref( $id, '', $id, '', $source_id, $species_id );
       $self->add_direct_xref( $xref_id, $id, $type, '' );
+
+      ++$count{ sprintf( 'flybase_%s_id', $type ) };
     }
 
   } ## end while ( defined( my $line...
   $data_io->close();
+
+  print("FlybaseParser Summary:\n");
+  while ( my ( $label, $count ) = each(%count) ) {
+    printf( "\t%16s %d\n", $label, $count );
+  }
 
 } ## end sub run
 
