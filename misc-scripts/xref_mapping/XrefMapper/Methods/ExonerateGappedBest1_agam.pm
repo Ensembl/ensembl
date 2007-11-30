@@ -9,7 +9,7 @@ use vars '@ISA';
 
 
 sub options {
-  return ('-gappedextension FALSE', '--model', 'affine:local', '--subopt', 'no', '--bestn', '1');
+  return ('--gappedextension FALSE', '--model', 'affine:local', '--subopt', 'no', '--bestn', '1');
 }
 
 sub query_identity_threshold {
