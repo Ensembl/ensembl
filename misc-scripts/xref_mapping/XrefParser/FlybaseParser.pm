@@ -217,7 +217,7 @@ sub run {
           $self->get_source_id_for_source_name($source_name);
 
         # Treat Uniprot and Interpro differently.
-        my $pre_source = ($source_name =~ /^(Uniprot|Interpro)/);
+        my ($pre_source) = ( $source_name =~ /^(Uniprot|Interpro)/ );
 
         if ( defined($pre_source) ) {
           foreach my $accession ( @{ $dbxref->{$dbxref_name} } ) {
