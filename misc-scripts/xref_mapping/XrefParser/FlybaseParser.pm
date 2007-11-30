@@ -124,9 +124,11 @@ sub run {
   my $self = shift;
   my ( $source_id, $species_id, $data_file, $release_file ) = @_;
 
-  # Fetch a hash of the already stored Uniprot accessions.
-  my %uniprot_xref_ids =
-    %{ $self->get_valid_codes( 'uniprot', $species_id ) };
+  # Fetch hashes of already stored Uniprot and Interpro accessions.
+  my %pre_xref_ids = (
+        'Uniprot'  => $self->get_valid_codes( 'uniprot',  $species_id ),
+        'Interpro' => $self->get_valid_codes( 'interpro', $species_id )
+  );
 
   my %xref_ids;
 
@@ -214,17 +216,20 @@ sub run {
         my $source_id =
           $self->get_source_id_for_source_name($source_name);
 
-        # Treat Uniprot differently.
-        if ( substr( $dbxref_name, 0, 7 ) eq 'UniProt' ) {
-          foreach my $accession ( @{ $dbxref->{$dbxref_name} } ) {
-            if ( exists( $uniprot_xref_ids{$accession} ) ) {
-              $self->add_direct_xref( $uniprot_xref_ids{$accession},
-                                      $id, $type, '' );
+        # Treat Uniprot and Interpro differently.
+        my $pre_source = ($source_name =~ /^(Uniprot|Interpro)/);
 
-              $xref_ids{'UniProt'}{$accession} =
-                $uniprot_xref_ids{$accession};
+        if ( defined($pre_source) ) {
+          foreach my $accession ( @{ $dbxref->{$dbxref_name} } ) {
+            if ( exists( $pre_xref_ids{$pre_source}{$accession} ) ) {
+              $self->add_direct_xref(
+                                 $pre_xref_ids{$pre_source}{$accession},
+                                 $id, $type, '' );
+
+              $xref_ids{$pre_source}{$accession} =
+                $pre_xref_ids{$pre_source}{$accession};
             } else {
-              $xref_ids{'UniProt (missed)'}{$accession} = -1;
+              $xref_ids{ $pre_source . ' (missed)' }{$accession} = -1;
             }
           }
         } else {
