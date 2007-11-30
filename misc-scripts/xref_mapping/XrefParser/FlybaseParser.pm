@@ -238,9 +238,18 @@ sub run {
             if ( exists( $xref_ids{$source_name}{$accession} ) ) {
               $xref_id = $xref_ids{$source_name}{$accession};
             } else {
-              $xref_id =
-                $self->add_xref( $accession, undef, $accession, '',
-                                 $source_id, $species_id );
+              # The Dbxref 'bdgpinsituexpr' needs case sensitivity, just
+              # like the FlyBase Names, so use the ID as the accession
+              # for this source.
+              if ( $dbxref_name eq 'bdgpinsituexpr' ) {
+                $xref_id =
+                  $self->add_xref( $id, undef, $accession, '',
+                                   $source_id, $species_id );
+              } else {
+                $xref_id =
+                  $self->add_xref( $accession, undef, $accession, '',
+                                   $source_id, $species_id );
+              }
               $xref_ids{$source_name}{$accession} = $xref_id;
             }
 
