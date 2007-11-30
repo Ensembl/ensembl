@@ -112,7 +112,7 @@ sub get_source_id_for_source_name {
   if ( !defined( $source_id{$source_name} )
        || $source_id{$source_name} < 0 )
   {
-    croak(
+    carp(
        sprintf( "Can not find source_id for source '%s'", $source_name )
     );
   }
@@ -131,12 +131,13 @@ sub run {
   );
 
   my %xref_ids;
+  my %names;
 
   my $data_io = $self->get_filehandle($data_file);
 
   my ( $count_read, $count_skipped, $last_count_read ) = ( 0, 0, 0 );
-  my $status_interval = 10;
 
+  my $status_interval = 30;
   local $SIG{ALRM} = sub {
     printf( "%d lines read, %d skipped, %d parsed; %d lines/s\n",
             $count_read, $count_skipped,
@@ -312,16 +313,37 @@ sub run {
       my $accession = $attributes{'Name'};
       my $xref_id;
 
-      if ( exists( $xref_ids{$source_name}{$accession} ) ) {
-        $xref_id = $xref_ids{$source_name}{$accession};
+      # Be careful!  FlyBase names are not case-sensetively unique.
+      # Only store the very first of each variation of a name and ignore
+      # the rest.
+      my $lc_name        = lc($accession);
+      my $good_name = 0;
+      if ( exists( $names{$lc_name} ) ) {
+        # We've seen a variation of this name before...
+        if ( $names{$lc_name} eq $accession ) {
+          # This is our elected Good FlyBase Name Variation.
+          $good_name = 1;
+        }
       } else {
-        $xref_id =
-          $self->add_xref( $accession, undef, $accession, '',
-                           $source_id, $species_id );
-        $xref_ids{$source_name}{$accession} = $xref_id;
+        $names{$lc_name} = $accession;
+        $good_name = 1;
       }
 
-      $self->add_direct_xref( $xref_id, $id, $type, '' );
+      if ($good_name) {
+        if ( exists( $xref_ids{$source_name}{$accession} ) ) {
+          $xref_id = $xref_ids{$source_name}{$accession};
+        } else {
+          $xref_id =
+            $self->add_xref( $accession, undef, $accession, '',
+                             $source_id, $species_id );
+          $xref_ids{$source_name}{$accession} = $xref_id;
+        }
+
+        $self->add_direct_xref( $xref_id, $id, $type, '' );
+      } else {
+        # printf("--> Name '%s' collides with '%s' and will be ignored\n",
+        #       $accession, $names{$lc_name} );
+      }
     }
 
     #-------------------------------------------------------------------
