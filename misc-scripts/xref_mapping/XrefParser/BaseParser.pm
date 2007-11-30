@@ -950,28 +950,30 @@ sub upload_xref_object_graphs {
       }
 
 
-      # create entry in primary_xref table with sequence; if this is a "cumulative"
+       # create entry in primary_xref table with sequence; if this is a "cumulative"
       # entry it may already exist, and require an UPDATE rather than an INSERT
-      if(!(defined($xref_id) and $xref_id)){
-	print STDERR "xref_id is not set for :\n$xref->{ACCESSION}\n$xref->{LABEL}\n$xref->{DESCRIPTION}\n$xref->{SOURCE_ID}\n";
-      }
-      if ( primary_xref_id_exists($xref_id) ) {
-          $pri_update_sth->execute( $xref->{SEQUENCE}, $xref_id )
-            or croak( $dbi->errstr() );
-      } else {
-	
-      $pri_insert_sth->execute( $xref_id, $xref->{SEQUENCE},
-          $xref->{SEQUENCE_TYPE},
-          $xref->{STATUS} )
-        or croak( $dbi->errstr() );
-      }
-
-      # if there are synonyms, add entries in the synonym table
-      foreach my $syn ( @{ $xref->{SYNONYMS} } ) {
-          $syn_sth->execute( $xref_id, $syn )
+       if(defined($xref->{SEQUENCE})){
+	 if(!(defined($xref_id) and $xref_id)){
+	   print STDERR "xref_id is not set for :\n$xref->{ACCESSION}\n$xref->{LABEL}\n$xref->{DESCRIPTION}\n$xref->{SOURCE_ID}\n";
+	 }
+	 if ( primary_xref_id_exists($xref_id) ) {
+	   $pri_update_sth->execute( $xref->{SEQUENCE}, $xref_id )
+	     or croak( $dbi->errstr() );
+	 } else {
+	   
+	   $pri_insert_sth->execute( $xref_id, $xref->{SEQUENCE},
+				     $xref->{SEQUENCE_TYPE},
+				     $xref->{STATUS} )
+	     or croak( $dbi->errstr() );
+	 }
+       }
+       
+       # if there are synonyms, add entries in the synonym table
+       foreach my $syn ( @{ $xref->{SYNONYMS} } ) {
+	 $syn_sth->execute( $xref_id, $syn )
             or croak( $dbi->errstr() . "\n $xref_id\n $syn\n" );
-      } # foreach syn
-
+       } # foreach syn
+       
       # if there are dependent xrefs, add xrefs and dependent xrefs for them
       foreach my $depref (@{$xref->{DEPENDENT_XREFS}}) {
 
