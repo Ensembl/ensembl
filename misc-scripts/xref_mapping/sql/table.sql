@@ -8,7 +8,7 @@
 CREATE TABLE xref (
 
   xref_id                     int unsigned not null auto_increment,
-  accession                   varchar(255) COLLATE latin1_general_cs not null,
+  accession                   varchar(255) not null,
   version                     int unsigned,
   label                       varchar(255),
   description                 varchar(255),
