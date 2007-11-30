@@ -131,7 +131,6 @@ sub run {
   );
 
   my %xref_ids;
-  my %names;
 
   my $data_io = $self->get_filehandle($data_file);
 
@@ -235,38 +234,19 @@ sub run {
           }
         } else {
           foreach my $accession ( @{ $dbxref->{$dbxref_name} } ) {
-            # Be careful!  Some accessions for some of the Dbxref
-            # sources are not case-sensetively unique.  Only store the
-            # very first of each variation of a name and ignore the
-            # rest.
-            my $lc_name   = lc($accession);
-            my $good_name = 0;
-            if ( exists( $names{$source_name}{$lc_name} ) ) {
-              # We've seen a variation of this name before...
-              if ( $names{$source_name}{$lc_name} eq $accession ) {
-                # This is our elected variation.
-                $good_name = 1;
-              }
+            my $xref_id;
+            if ( exists( $xref_ids{$source_name}{$accession} ) ) {
+              $xref_id = $xref_ids{$source_name}{$accession};
             } else {
-              $names{$source_name}{$lc_name} = $accession;
-              $good_name = 1;
+              $xref_id =
+                $self->add_xref( $accession, undef, $accession, '',
+                                 $source_id, $species_id );
+              $xref_ids{$source_name}{$accession} = $xref_id;
             }
 
-            if ($good_name) {
-              my $xref_id;
-              if ( exists( $xref_ids{$source_name}{$accession} ) ) {
-                $xref_id = $xref_ids{$source_name}{$accession};
-              } else {
-                $xref_id =
-                  $self->add_xref( $accession, undef, $accession, '',
-                                   $source_id, $species_id );
-                $xref_ids{$source_name}{$accession} = $xref_id;
-              }
-
-              $self->add_direct_xref( $xref_id, $id, $type, '' );
-            }
-          } ## end foreach my $accession ( @{ ...
-        } ## end else [ if ( defined($pre_source...
+            $self->add_direct_xref( $xref_id, $id, $type, '' );
+          }
+        }
       } ## end if ( exists( $source_name_map...
     } ## end foreach my $dbxref_name ( keys...
 
@@ -332,37 +312,16 @@ sub run {
       my $accession = $attributes{'Name'};
       my $xref_id;
 
-      # Be careful!  FlyBase names are not case-sensetively unique.
-      # Only store the very first of each variation of a name and ignore
-      # the rest.
-      my $lc_name   = lc($accession);
-      my $good_name = 0;
-      if ( exists( $names{$source_name}{$lc_name} ) ) {
-        # We've seen a variation of this name before...
-        if ( $names{$source_name}{$lc_name} eq $accession ) {
-          # This is our elected Good FlyBase Name Variation.
-          $good_name = 1;
-        }
+      if ( exists( $xref_ids{$source_name}{$accession} ) ) {
+        $xref_id = $xref_ids{$source_name}{$accession};
       } else {
-        $names{$source_name}{$lc_name} = $accession;
-        $good_name = 1;
+        $xref_id =
+          $self->add_xref( $id, undef, $accession, '', $source_id,
+                           $species_id );
+        $xref_ids{$source_name}{$accession} = $xref_id;
       }
 
-      if ($good_name) {
-        if ( exists( $xref_ids{$source_name}{$accession} ) ) {
-          $xref_id = $xref_ids{$source_name}{$accession};
-        } else {
-          $xref_id =
-            $self->add_xref( $accession, undef, $accession, '',
-                             $source_id, $species_id );
-          $xref_ids{$source_name}{$accession} = $xref_id;
-        }
-
-        $self->add_direct_xref( $xref_id, $id, $type, '' );
-      } else {
-      # printf("--> Name '%s' collides with '%s' and will be ignored\n",
-      #       $accession, $names{$lc_name} );
-      }
+      $self->add_direct_xref( $xref_id, $id, $type, '' );
     }
 
     #-------------------------------------------------------------------
