@@ -66,10 +66,10 @@ sub check_CDS_start_end_remarks {
 	if ( $coding_end == $trans_end ) {
 		if (! grep {$_->value eq 'CDS end not found'} @remarks) {
 			if (grep {$_ eq $stop_codon} qw(TGA TAA TAG)) {
-				$results->{'END_MISSING_1'} = 1;
+				$results->{'END_MISSING_2'} = 1;
 			}
 			else {
-				$results->{'END_MISSING_2'} = $stop_codon;
+				$results->{'END_MISSING_1'} = $stop_codon;
 			}
 		}
 	}
@@ -87,9 +87,9 @@ sub check_CDS_start_end_remarks {
 	if ( $coding_start == 1) {
 		if ( ! grep {$_->value eq 'CDS start not found'} @remarks) {
 			if ($start_codon eq 'ATG') {
-				$results->{'START_MISSING_1'} = 1;
+				$results->{'START_MISSING_2'} = 1;
 			} else {
-				$results->{'START_MISSING_2'} = $start_codon;
+				$results->{'START_MISSING_1'} = $start_codon;
 			}
 		}
 	}
@@ -153,9 +153,9 @@ sub check_CDS_start_end_remarks_loutre {
 	if ( $coding_start == 1) {
 		if ( $attributes{'cds_start_NF'}->value == 0 ) {
 			if ($start_codon eq 'ATG') {
-				$results->{'START_MISSING_2'} = 1;
+				$results->{'START_MISSING_1'} = 1;
 			} else {
-				$results->{'START_MISSING_1'} = $start_codon;
+				$results->{'START_MISSING_2'} = $start_codon;
 			}
 		}
 	}
