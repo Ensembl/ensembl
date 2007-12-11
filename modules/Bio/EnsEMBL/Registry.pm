@@ -584,6 +584,42 @@ sub get_all_DBAdaptors_by_connection{
   return \@return;
 }
 
+=head2 remove_DBAdaptor
+
+  Arg [1]    : name of the species to get the adaptor for in the registry.
+  Arg [2]    : name of the group to get the adaptor for in the registry.
+  Example    : $dba = Bio::EnsEMBL::Registry->remove_DBAdaptor("Human", "core");
+  Returntype : none
+  Exceptions : none
+  Status     : At risk
+
+=cut
+
+sub remove_DBAdaptor{
+  my ($class, $species, $group) = @_;
+
+  $species = $class->get_alias($species);
+
+  delete $registry_register{$species}{$group};
+  #This will remove the DBAdaptor and all the other adaptors
+
+  #Now remove if from the _DBA array
+  my $index;
+
+  foreach my $i(0..$#{$registry_register{'_DBA'}}){
+    my $dba = $registry_register{'_DBA'}->[$i];
+    if(($dba->species eq $species) &&
+       $dba->group eq $group){
+      $index = $i;
+      last;
+    }
+  }
+  
+  @{$registry_register{'_DBA'}} = splice(@{$registry_register{'_DBA'}}, $index, 1);
+  
+  return;
+}
+
 
 #
 # DNA Adaptors
