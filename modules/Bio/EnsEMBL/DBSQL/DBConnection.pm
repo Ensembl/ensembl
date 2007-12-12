@@ -143,7 +143,18 @@ sub new {
 
     $driver ||= 'mysql';
     $host   ||= 'mysql';
-    $port   ||= 3306;
+
+    if(!defined($port)){
+      $port   = 3306;
+      if($host eq "ensembldb.ensembl.org"){
+	if( $db =~ /\w_\w_\w_(\d+)/){
+	  if($1 >= 48){
+	    $port = 5306;
+	  }
+	}
+      }
+    }
+
     $wait_timeout   ||= 0;
 
     $self->username( $user );

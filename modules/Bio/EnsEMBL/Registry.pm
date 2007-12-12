@@ -1065,7 +1065,15 @@ sub load_registry_from_db {
   my $compara_version =0;
 
   $user ||= "ensro";
-  $port ||= 3306;
+  if(!defined($port)){
+    $port   = 3306;
+    if($host eq "ensembldb.ensembl.org"){
+      if( !defined($db_version) or $db_version >= 48){
+	$port = 5306;
+      }
+    }
+  }
+
   $wait_timeout ||= 0;
   my $db = DBI->connect( "DBI:mysql:host=$host;port=$port" , $user, $pass );
 
