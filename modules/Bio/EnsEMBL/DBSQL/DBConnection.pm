@@ -147,7 +147,7 @@ sub new {
     if(!defined($port)){
       $port   = 3306;
       if($host eq "ensembldb.ensembl.org"){
-	if( $db =~ /\w_\w_\w_(\d+)/){
+	if( $db =~ /\w+_\w+_\w+_(\d+)/){
 	  if($1 >= 48){
 	    $port = 5306;
 	  }
