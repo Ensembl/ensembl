@@ -80,13 +80,19 @@ sub slice {
 
     $this->__attrib( 'segments', \@segments );
 
-    $this->__attrib( 'collection', [] );
+    $this->collection( [] );
     $this->__attrib( 'is_populated', 0 );
 
     $this->__attrib( 'slice', $slice );
   }
 
   return $this->__attrib('slice');
+}
+
+# Getter/setter for the collection array.
+sub collection {
+  my ( $this, $collection ) = @_;
+  return $this->__attrib( 'collection', $collection );
 }
 
 # Returns true if the collection has been populated, false of not.
@@ -149,7 +155,7 @@ sub count {
 
   $this->populate();
 
-  return scalar( @{ $this->__attrib('collection') } );
+  return scalar( @{ $this->collection() } );
 }
 
 #
@@ -234,12 +240,10 @@ sub __bin {
 
   my $bin_length = $slice->length()/$nbins;
 
-  my $collection = $this->__attrib('collection');
-
   my @bins;
   my $entry_index = 0;
 
-  foreach my $entry ( @{$collection} ) {
+  foreach my $entry ( @{ $this->collection() } ) {
     my $start_bin = int( ( $entry->[1] - $slice_start )/$bin_length );
     my $end_bin   = int( ( $entry->[2] - $slice_start )/$bin_length );
 
