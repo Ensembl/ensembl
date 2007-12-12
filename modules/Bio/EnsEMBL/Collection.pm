@@ -190,9 +190,9 @@ sub get_bin_counts {
     } );
 }
 
-# Returns an array of bins, each bin containing an array of indecies
-# into the collection array for the entries allocated to that bin.
-sub get_bin_entry_indecies {
+# Returns an array of bins, each bin containing an array of indices into
+# the collection array for the entries allocated to that bin.
+sub get_bin_entry_indices {
   my ( $this, $nbins ) = @_;
 
   return $this->__bin(
