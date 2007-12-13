@@ -11,6 +11,15 @@ use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 
 use base qw( Bio::EnsEMBL::DBSQL::BaseAdaptor );
 
+# Symbolic constants that acts as indices into the individual feature
+# collection entries.  These must be in sync with the columns returned
+# by the _columns() method.
+use constant { ENTRY_DBID            => 0,
+               ENTRY_SEQREGIONID     => 1,
+               ENTRY_SEQREGIONSTART  => 2,
+               ENTRY_SEQREGIONEND    => 3,
+               ENTRY_SEQREGIONSTRAND => 4 };
+
 #-----------------------------------------------------------------------
 # Constructor
 #-----------------------------------------------------------------------
@@ -154,9 +163,12 @@ sub populate {
     }
   }
 
-  $this->__attrib( 'collection', [
-                     sort({ $a->[2] <=> $b->[2] || $a->[3] <=> $b->[3] }
-                          @entries ) ] );
+  $this->__attrib(
+        'collection', [
+          sort( {
+              $a->[ENTRY_SEQREGIONSTART] <=> $b->[ENTRY_SEQREGIONSTART]
+                || $a->[ENTRY_SEQREGIONEND] <=> $b->[ENTRY_SEQREGIONEND]
+            } @entries ) ] );
 
   $this->__attrib( 'is_populated', 1 );
 } ## end sub populate
@@ -256,8 +268,10 @@ sub __bin {
   my $entry_index = 0;
 
   foreach my $entry ( @{ $this->collection() } ) {
-    my $start_bin = int( ( $entry->[1] - $slice_start )/$bin_length );
-    my $end_bin   = int( ( $entry->[2] - $slice_start )/$bin_length );
+    my $start_bin = int(
+        ( $entry->[ENTRY_SEQREGIONSTART] - $slice_start )/$bin_length );
+    my $end_bin = int(
+          ( $entry->[ENTRY_SEQREGIONEND] - $slice_start )/$bin_length );
 
     if ( $end_bin >= $nbins ) { $end_bin = $nbins - 1 }
 
@@ -444,15 +458,15 @@ sub _objs_from_sth {
     my $end   = $start;
 
     if ( $segment_slice_strand == -1 ) {
-      $start -= $entry->[3] - $segment_slice_start;
-      $end   -= $entry->[2] - $segment_slice_start;
+      $start -= $entry->[ENTRY_SEQREGIONEND] - $segment_slice_start;
+      $end   -= $entry->[ENTRY_SEQREGIONSTART] - $segment_slice_start;
     } else {    # Assumes '0' is really the positive strand.
-      $start += $entry->[2] - $segment_slice_start;
-      $end   += $entry->[3] - $segment_slice_start;
+      $start += $entry->[ENTRY_SEQREGIONSTART] - $segment_slice_start;
+      $end   += $entry->[ENTRY_SEQREGIONEND] - $segment_slice_start;
     }
 
-    $entry->[2] = $start - 1;
-    $entry->[3] = $end - 1;
+    $entry->[ENTRY_SEQREGIONSTART] = $start - 1;
+    $entry->[ENTRY_SEQREGIONEND]   = $end - 1;
 
     push( @features, [ @{$entry} ] );
   } ## end while ( my $entry = $sth->fetchrow_arrayref...
