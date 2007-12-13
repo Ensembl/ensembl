@@ -23,24 +23,29 @@ sub new {
   $this->__attrib( 'is_light', $light );
 
   my $sql = qq(
-    SELECT  cs.name, mc.max_length
+    SELECT  cs.name, mc.max_length, m.meta_value
     FROM    coord_system cs,
             meta_coord mc
+    LEFT JOIN meta m ON m.meta_key = ?
     WHERE   mc.table_name = ?
     AND     mc.coord_system_id = cs.coord_system_id
   );
 
-  my $sth = $this->prepare($sql);
-  $sth->execute( $this->_feature_table()->[0] );
+  my $sth           = $this->prepare($sql);
+  my $feature_table = $this->_feature_table()->[0];
+  $sth->execute( $feature_table . 'build.level', $feature_table );
 
-  my ( $cs_name, $max_length );
-  $sth->bind_columns( \( $cs_name, $max_length ) );
+  my ( $cs_name, $max_length, $build_level );
+  $sth->bind_columns( \( $cs_name, $max_length, $build_level ) );
 
   my %coordinate_systems;
 
   while ( $sth->fetch() ) {
-    $coordinate_systems{$cs_name} =
-      { 'name' => $cs_name, 'max_feature_length' => $max_length };
+    $coordinate_systems{$cs_name} = {
+                                    'name'               => $cs_name,
+                                    'max_feature_length' => $max_length,
+                                    'build_level'        => $build_level
+    };
   }
   $sth->finish();
 
@@ -70,15 +75,43 @@ sub slice {
   my ( $this, $slice ) = @_;
 
   if ( defined($slice) ) {
-    my @segments;
+    my %seqreg_map;
+    my @all_segments;
 
     foreach
       my $cs_name ( keys( %{ $this->__attrib('coordinate_systems') } ) )
     {
-      push( @segments, @{ $slice->project($cs_name) } );
+      my @segments = @{ $slice->project($cs_name) };
+
+      foreach my $segment (@segments) {
+        $seqreg_map{ $segment->to_Slice()->get_seq_region_id() } =
+          $segment;
+      }
+
+      @segments = ( undef, [@segments] );
+      $segments[0] = shift( @{ $segments[1] } );
+      if ( scalar( @{ $segments[1] } ) > 0 ) {
+        $segments[2] = pop( @{ $segments[1] } );
+      }
+      if ( scalar( @{ $segments[1] } ) == 0 ) {
+        if ( exists( $segments[2] ) ) {
+          $segments[1] = $segments[2];
+        }
+        pop(@segments);
+      }
+
+      push( @all_segments, @segments );
     }
 
-    $this->__attrib( 'segments', \@segments );
+    # The 'segments' are a list of ProjectionSegment objects and of
+    # arrays of ProjectionSegment objects.  For segments in arrays, no
+    # constraint on seq_region_start or seq_region_end is needed.
+    $this->__attrib( 'segments', \@all_segments);
+
+    # This is a simple map between seq_region_id and a
+    # ProjectionSegment, used in the mapping done by the
+    # _objs_from_sth() method.
+    $this->__attrib( 'seqreg_map', \%seqreg_map );
 
     $this->collection( [] );
     $this->__attrib( 'is_populated', 0 );
@@ -106,44 +139,23 @@ sub is_populated {
 sub populate {
   my ($this) = @_;
 
-  my @entries;
-
   if ( $this->is_populated() ) { return }
 
+  my @entries;
+
   foreach my $segment ( @{ $this->__attrib('segments') } ) {
-    my $segment_slice       = $segment->to_Slice();
-    my $segment_slice_start = $segment_slice->start();
-
-    my $segment_offset;
-    if ( $segment_slice->strand() == -1 ) {
-      $segment_offset = $segment->from_end();
-    } else {
-      $segment_offset = $segment->from_start();
-    }
-
-    foreach my $entry (
-      @{ $this->generic_fetch( $this->__constraint($segment_slice) ) } )
+    if ( defined($segment)
+         && ( ref($segment) ne 'ARRAY'
+              || scalar( @{$segment} ) > 0 ) )
     {
-      my $start = $this->slice()->start() + $segment_offset;
-      my $end   = $start;
-
-      if ( $segment_slice->strand() == -1 ) {
-        $start -= $entry->[2] - $segment_slice_start;
-        $end   -= $entry->[1] - $segment_slice_start;
-      } else {    # Assumes '0' is really the positive strand.
-        $start += $entry->[1] - $segment_slice_start;
-        $end   += $entry->[2] - $segment_slice_start;
-      }
-
-      $entry->[1] = $start - 1;
-      $entry->[2] = $end - 1;
-
-      push( @entries, $entry );
+      push( @entries,
+            @{ $this->generic_fetch( $this->__constraint($segment) ) }
+      );
     }
-  } ## end foreach my $segment ( @{ $this...
+  }
 
   $this->__attrib( 'collection', [
-                     sort({ $a->[1] <=> $b->[1] || $a->[2] <=> $b->[2] }
+                     sort({ $a->[2] <=> $b->[2] || $a->[3] <=> $b->[3] }
                           @entries ) ] );
 
   $this->__attrib( 'is_populated', 1 );
@@ -263,35 +275,42 @@ sub __bin {
 } ## end sub __bin
 
 sub __constraint {
-  my ( $this, $slice ) = @_;
+  my ( $this, $arg ) = @_;
 
-  my $max_feature_length =
-    $this->__attrib('coordinate_systems')
-    ->{ $slice->coord_system_name() }{'max_feature_length'};
-
-  my $constraint_fmt = q(
-    %1$s.seq_region_id     = %2$10d AND
-    %1$s.seq_region_start >= %5$10d AND %1$s.seq_region_start <= %4$10d AND
-    %1$s.seq_region_end   >= %3$10d AND %1$s.seq_region_end   <= %6$10d
-  );
-
+  my $constraint;
   my $table_alias = $this->_feature_table()->[1];
-  my $dbh         = $this->dbc()->db_handle();
 
-  my $start_constraint = $slice->start() + 1 - $max_feature_length;
-  my $end_constraint   = $slice->end() + $max_feature_length - 1;
+  if ( ref($arg) ne 'ARRAY' ) {
+    my $slice = $arg->to_Slice();
 
-  my $constraint = sprintf( $constraint_fmt,
-                            $table_alias,
-                            $dbh->quote(
-                                $slice->get_seq_region_id(), SQL_INTEGER
-                            ),
-                            $dbh->quote( $slice->start(), SQL_INTEGER ),
-                            $dbh->quote( $slice->end(),   SQL_INTEGER ),
-                            $dbh->quote( $start_constraint, SQL_INTEGER
-                            ),
-                            $dbh->quote( $end_constraint, SQL_INTEGER )
+    my $max_feature_length =
+      $this->__attrib('coordinate_systems')
+      ->{ $slice->coord_system_name() }{'max_feature_length'};
+
+    my $constraint_fmt = q(
+        %1$s.seq_region_id     = %2$10d
+    AND %1$s.seq_region_start <= %4$10d
+    AND %1$s.seq_region_end   >= %3$10d
   );
+
+    $constraint =
+      sprintf( $constraint_fmt,
+               $table_alias, $slice->get_seq_region_id(),
+               $slice->start(), $slice->end() );
+
+  } else {
+    my @seq_region_ids;
+
+    foreach my $segment ( @{$arg} ) {
+      push( @seq_region_ids,
+            $segment->to_Slice()->get_seq_region_id() );
+    }
+
+    my $constraint_fmt = '%s.seq_region_id IN (%s)';
+
+    $constraint = sprintf( $constraint_fmt,
+                           $table_alias, join( ',', @seq_region_ids ) );
+  }
 
   return $constraint;
 } ## end sub __constraint
@@ -368,6 +387,7 @@ sub _columns {
   my $table_alias = $this->_feature_table()->[1];
 
   my @columns = ( $table_alias . '.' . $this->_dbID_column(),
+                  $table_alias . '.seq_region_id',
                   $table_alias . '.seq_region_start',
                   $table_alias . '.seq_region_end',
                   $table_alias . '.seq_region_strand' );
@@ -395,14 +415,50 @@ sub _default_where_clause {
 sub _objs_from_sth {
   my ( $this, $sth ) = @_;
 
-  my @features;
-  while ( my $row = $sth->fetchrow_arrayref() ) {
-    push( @features, [ @{$row} ] );
-  }
+  my $seqreg_map = $this->__attrib('seqreg_map');
 
+  my @features;
+
+  my ( $segment, $segment_slice, $segment_slice_start,
+       $segment_slice_strand, $segment_offset );
+
+  my $slice_start = $this->slice()->start();
+
+  while ( my $entry = $sth->fetchrow_arrayref() ) {
+    if ( !defined($segment)
+         || $segment != $seqreg_map->{ $entry->[1] } )
+    {
+      $segment              = $seqreg_map->{ $entry->[1] };
+      $segment_slice        = $segment->to_Slice();
+      $segment_slice_start  = $segment_slice->start();
+      $segment_slice_strand = $segment_slice->strand();
+
+      if ( $segment_slice_strand == -1 ) {
+        $segment_offset = $segment->from_end();
+      } else {
+        $segment_offset = $segment->from_start();
+      }
+    }
+
+    my $start = $slice_start + $segment_offset;
+    my $end   = $start;
+
+    if ( $segment_slice_strand == -1 ) {
+      $start -= $entry->[3] - $segment_slice_start;
+      $end   -= $entry->[2] - $segment_slice_start;
+    } else {    # Assumes '0' is really the positive strand.
+      $start += $entry->[2] - $segment_slice_start;
+      $end   += $entry->[3] - $segment_slice_start;
+    }
+
+    $entry->[2] = $start - 1;
+    $entry->[3] = $end - 1;
+
+    push( @features, [ @{$entry} ] );
+  } ## end while ( my $entry = $sth->fetchrow_arrayref...
   $sth->finish();
 
   return \@features;
-}
+} ## end sub _objs_from_sth
 
 1;
