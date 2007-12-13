@@ -249,3 +249,7 @@
 144	amino_acid_sub	Amino acid substitution	In drosophila, some translations have been manually curated by FlyBase and a stop codon has been changed to an amino acid in order to prevent premature truncation.
 # Drosophila. Sometimes sequences have been manually altered to remove one base, and this alters the whole translation
 145	_rna_edit	rna_edit	RNA edit
+
+#genebuild - databases of removed transcripts
+146	kill_reason	Kill Reason	Reason why a transcript has been killed
+147	strip_UTR	Strip UTR	Transcript needs bad UTR removing
