@@ -12,19 +12,18 @@ use base qw( Bio::EnsEMBL::Collection );
 #-----------------------------------------------------------------------
 
 sub _extra_tables {
-  return ( [ 'repeat_consensus', 'rc' ], [ 'analysis', 'a' ] );
+  return ( [ 'repeat_consensus', 'rc' ] );
 }
 
 sub _extra_columns {
   return ( 'rf.repeat_start', 'rf.repeat_end',
            'rf.score',        'rc.repeat_name',
-           'a.logic_name' );
+           'rc.repeat_class', 'rc.repeat_type',
+           'rc.repeat_consensus' );
 }
 
 sub _extra_where_clause {
-  return q( rc.repeat_consensus_id = rf.repeat_consensus_id
-    AND a.analysis_id = rf.analysis_id
-  );
+  return 'rc.repeat_consensus_id = rf.repeat_consensus_id';
 }
 
 #-----------------------------------------------------------------------
