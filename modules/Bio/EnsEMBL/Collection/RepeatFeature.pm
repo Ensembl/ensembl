@@ -8,6 +8,16 @@ use warnings;
 use base qw( Bio::EnsEMBL::Collection );
 
 #-----------------------------------------------------------------------
+# Specialized protected methods from base class
+# Bio::EnsEMBL::DBSQL::BaseAdaptor
+#-----------------------------------------------------------------------
+
+sub _straight_join {
+  # Makes no difference? The RepeatFeature adaptor has it...
+  return 1;
+}
+
+#-----------------------------------------------------------------------
 # Specialized protected methods from base class Bio::EnsEMBL::Collection
 #-----------------------------------------------------------------------
 
