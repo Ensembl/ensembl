@@ -112,10 +112,10 @@ sub slice {
       push( @all_segments, @segments );
     }
 
-    # The 'segments' are a list of ProjectionSegment objects and of
+    # The 'segments' list is a list of ProjectionSegment objects and of
     # arrays of ProjectionSegment objects.  For segments in arrays, no
     # constraint on seq_region_start or seq_region_end is needed.
-    $this->__attrib( 'segments', \@all_segments);
+    $this->__attrib( 'segments', \@all_segments );
 
     # This is a simple map between seq_region_id and a
     # ProjectionSegment, used in the mapping done by the
@@ -126,10 +126,10 @@ sub slice {
     $this->__attrib( 'is_populated', 0 );
 
     $this->__attrib( 'slice', $slice );
-  }
+  } ## end if ( defined($slice) )
 
   return $this->__attrib('slice');
-}
+} ## end sub slice
 
 # Getter/setter for the collection array.
 sub collection {
@@ -313,12 +313,9 @@ sub __constraint {
                $slice->start(), $slice->end() );
 
   } else {
-    my @seq_region_ids;
-
-    foreach my $segment ( @{$arg} ) {
-      push( @seq_region_ids,
-            $segment->to_Slice()->get_seq_region_id() );
-    }
+    my @seq_region_ids =
+      sort( { $a <=> $b }
+            map( $_->to_Slice()->get_seq_region_id(), @{$arg} ) );
 
     my $constraint_fmt = '%s.seq_region_id IN (%s)';
 
