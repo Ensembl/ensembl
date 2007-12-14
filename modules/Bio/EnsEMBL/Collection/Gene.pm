@@ -8,6 +8,15 @@ use warnings;
 use base qw( Bio::EnsEMBL::Collection );
 
 #-----------------------------------------------------------------------
+# Specialized protected methods from (super) base class
+# Bio::EnsEMBL::DBSQL::BaseAdaptor
+#-----------------------------------------------------------------------
+
+sub _left_join {
+  return ( [ 'xref', 'x.xref_id = g.display_xref_id' ] );
+}
+
+#-----------------------------------------------------------------------
 # Specialized protected methods from base class Bio::EnsEMBL::Collection
 #-----------------------------------------------------------------------
 
@@ -24,7 +33,6 @@ sub _extra_where_clause {
   return q(
         g.is_current  = 1
     AND g.gene_id     = gsi.gene_id
-    AND x.xref_id     = g.display_xref_id
   );
 }
 
