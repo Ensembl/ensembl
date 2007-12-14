@@ -5,9 +5,10 @@ package Bio::EnsEMBL::Collection;
 use strict;
 use warnings;
 
-use Carp;
-
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
+
+use Bio::EnsEMBL::Utils::Argument qw( rearrange );
+use Bio::EnsEMBL::Utils::Exception qw( throw );
 
 use base qw( Bio::EnsEMBL::DBSQL::BaseAdaptor );
 
@@ -25,11 +26,15 @@ use constant { ENTRY_DBID            => 0,
 #-----------------------------------------------------------------------
 
 sub new {
-  my ( $proto, $slice, $light ) = @_;
+  my $proto = shift;
+  my ( $slice, $light ) = rearrange( [ 'SLICE', 'LIGHT' ], @_ );
+
+  if ( !defined($slice) ) {
+    throw(   'Unable to create a feature collection '
+           . 'without a slice object, I am.' );
+  }
 
   my $this = $proto->SUPER::new( $slice->adaptor()->db() );
-
-  $this->__attrib( 'is_light', $light );
 
   my $sql = qq(
     SELECT  cs.name, mc.max_length, m.meta_value
@@ -60,6 +65,7 @@ sub new {
 
   $this->__attrib( 'coordinate_systems', \%coordinate_systems );
 
+  $this->lightweight($light);
   $this->slice($slice);
 
   return $this;
@@ -69,12 +75,13 @@ sub new {
 # PUBLIC methods
 #-----------------------------------------------------------------------
 
-# Returns true if the collection is lightweight, i.e. if its entries
-# does not contain any feature-specific data (e.g. transcript and gene
-# stable IDs for a transcript feature collection).
-sub is_light {
-  my ($this) = @_;
-  return $this->__attrib('is_light');
+# Getter/setter for the 'lightweight' boolean.  If the collection
+# is lightweight, its entries does not contain any feature-specific
+# data (e.g. transcript and gene stable IDs for a transcript feature
+# collection).
+sub lightweight {
+  my ( $this, $light ) = @_;
+  return $this->__attrib( 'lightweight', $light );
 }
 
 # Getter/setter method for the main slice associated with this
@@ -146,9 +153,19 @@ sub is_populated {
 # Populates the collection with a compact representation of the features
 # overlapping the current slice, and optionally sorts the results.
 sub populate {
-  my ( $this, $do_sort ) = @_;
+  my $this = shift;
+  my ( $sorted, $sort_like_this, $light ) =
+    rearrange( [ 'SORTED', 'SORTSUB', 'LIGHT' ], @_ );
 
   if ( $this->is_populated() ) { return }
+
+  # Save the old lightweight() value so that we can restore it if the
+  # -light argument was used.
+
+  my $old_light = $this->lightweight();
+  if ( defined($light) ) {
+    $this->lightweight($light);
+  }
 
   my @entries;
 
@@ -163,15 +180,24 @@ sub populate {
     }
   }
 
-  if ($do_sort) {
-    @entries = sort( {
-              $a->[ENTRY_SEQREGIONSTART] <=> $b->[ENTRY_SEQREGIONSTART]
-                || $a->[ENTRY_SEQREGIONEND] <=> $b->[ENTRY_SEQREGIONEND]
-    } @entries );
+  if ($sorted) {
+    if ( !defined($sort_like_this) ) {
+      $sort_like_this = sub {
+        $a->[ENTRY_SEQREGIONSTART] <=> $b->[ENTRY_SEQREGIONSTART]
+          || $a->[ENTRY_SEQREGIONEND] <=> $b->[ENTRY_SEQREGIONEND];
+      };
+    }
+
+    @entries = sort( $sort_like_this @entries );
   }
 
   $this->collection( \@entries );
   $this->__attrib( 'is_populated', 1 );
+
+  # Restore the lightweight() value if -light was used.
+  if ( defined($light) ) {
+    $this->lightweight($old_light);
+  }
 } ## end sub populate
 
 # Counts the number of features that overlaps the current slice.
@@ -256,7 +282,7 @@ sub __attrib {
 }
 
 sub __bin {
-  my ( $this, $nbins, $single_entry_binner ) = @_;
+  my ( $this, $nbins, $put_entry_in_bin ) = @_;
 
   $this->populate();
 
@@ -280,8 +306,7 @@ sub __bin {
           $bin_index <= $end_bin ;
           ++$bin_index )
     {
-      $single_entry_binner->( \@bins, $bin_index, $entry,
-                              $entry_index );
+      $put_entry_in_bin->( \@bins, $bin_index, $entry, $entry_index );
     }
 
     ++$entry_index;
@@ -374,7 +399,7 @@ sub _dbID_column {
 # alias used by the collection elements, i.e. the transcript [t] table
 # for Bio::EnsEMBL::Collection::Transcript.
 sub _feature_table {
-  croak("Called abstract method '_feature_table()'");
+  throw("Called abstract method '_feature_table()'");
 }
 
 #-----------------------------------------------------------------------
@@ -387,7 +412,7 @@ sub _tables {
 
   my @tables = ( $this->_feature_table() );
 
-  if ( !$this->is_light() ) {
+  if ( !$this->lightweight() ) {
     push( @tables, $this->_extra_tables() );
   }
 
@@ -405,7 +430,7 @@ sub _columns {
                   $table_alias . '.seq_region_end',
                   $table_alias . '.seq_region_strand' );
 
-  if ( !$this->is_light() ) {
+  if ( !$this->lightweight() ) {
     push( @columns, $this->_extra_columns() );
   }
 
@@ -415,7 +440,7 @@ sub _columns {
 sub _default_where_clause {
   my ($this) = @_;
 
-  if ( !$this->is_light() ) {
+  if ( !$this->lightweight() ) {
     my $extra_where = $this->_extra_where_clause();
     if ( defined($extra_where) ) {
       return $extra_where;
