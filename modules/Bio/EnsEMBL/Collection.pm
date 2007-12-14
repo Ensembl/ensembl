@@ -51,9 +51,9 @@ sub new {
 
   while ( $sth->fetch() ) {
     $coordinate_systems{$cs_name} = {
-                                    'name'               => $cs_name,
-                                    'max_feature_length' => $max_length,
-                                    'build_level'        => $build_level
+            'name'               => $cs_name,
+            'max_feature_length' => $max_length,
+            'build_level'        => $build_level    # Not currently used
     };
   }
   $sth->finish();
@@ -144,9 +144,9 @@ sub is_populated {
 }
 
 # Populates the collection with a compact representation of the features
-# overlapping the current slice.
+# overlapping the current slice, and optionally sorts the results.
 sub populate {
-  my ($this) = @_;
+  my ( $this, $do_sort ) = @_;
 
   if ( $this->is_populated() ) { return }
 
@@ -163,13 +163,14 @@ sub populate {
     }
   }
 
-  $this->__attrib(
-        'collection', [
-          sort( {
+  if ($do_sort) {
+    @entries = sort( {
               $a->[ENTRY_SEQREGIONSTART] <=> $b->[ENTRY_SEQREGIONSTART]
                 || $a->[ENTRY_SEQREGIONEND] <=> $b->[ENTRY_SEQREGIONEND]
-            } @entries ) ] );
+    } @entries );
+  }
 
+  $this->collection( \@entries );
   $this->__attrib( 'is_populated', 1 );
 } ## end sub populate
 
@@ -255,7 +256,7 @@ sub __attrib {
 }
 
 sub __bin {
-  my ( $this, $nbins, $bin_entry_sub ) = @_;
+  my ( $this, $nbins, $single_entry_binner ) = @_;
 
   $this->populate();
 
@@ -279,7 +280,8 @@ sub __bin {
           $bin_index <= $end_bin ;
           ++$bin_index )
     {
-      $bin_entry_sub->( \@bins, $bin_index, $entry, $entry_index );
+      $single_entry_binner->( \@bins, $bin_index, $entry,
+                              $entry_index );
     }
 
     ++$entry_index;
@@ -437,10 +439,10 @@ sub _objs_from_sth {
 
   while ( my $entry = $sth->fetchrow_arrayref() ) {
     if ( !defined($segment)
-         || $segment != $seqreg_map->{ $entry->[1] } )
+         || $segment != $seqreg_map->{ $entry->[ENTRY_SEQREGIONID] } )
     {
-      $segment              = $seqreg_map->{ $entry->[1] };
-      $segment_slice        = $segment->to_Slice();
+      $segment       = $seqreg_map->{ $entry->[ENTRY_SEQREGIONID] };
+      $segment_slice = $segment->to_Slice();
       $segment_slice_start  = $segment_slice->start();
       $segment_slice_strand = $segment_slice->strand();
 
