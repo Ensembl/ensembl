@@ -11,14 +11,21 @@ use base qw( Bio::EnsEMBL::Collection );
 # Specialized protected methods from base class Bio::EnsEMBL::Collection
 #-----------------------------------------------------------------------
 
-sub _extra_tables { return ( [ 'gene_stable_id', 'gsi' ] ) }
+sub _extra_tables {
+  return ( [ 'gene_stable_id', 'gsi' ], [ 'xref', 'x' ] );
+}
 
 sub _extra_columns {
-  return ( 'g.biotype', 'g.status', 'gsi.stable_id' );
+  return ( 'g.biotype', 'g.status', 'gsi.stable_id',
+           'x.display_label' );
 }
 
 sub _extra_where_clause {
-  return 'g.is_current = 1 AND g.gene_id = gsi.gene_id';
+  return q(
+        g.is_current  = 1
+    AND g.gene_id     = gsi.gene_id
+    AND x.xref_id     = g.display_xref_id
+  );
 }
 
 #-----------------------------------------------------------------------
