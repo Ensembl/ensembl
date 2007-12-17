@@ -122,10 +122,11 @@ added to the entries in order to account of the particular feature type.
 An entry from a gene feature collection (Bio::EnsEMBL::Collection::Gene)
 might, for example, contain the Ensembl Stable ID of the gene.
 
-=head2 Light-weight collections
+=head2 Light-weight collections/entries
 
 A light-weight collection is a feature collection whose collection
-entries does not contain the extended feature representation.
+entries are light-weight, whose entries does not contain the extended
+feature representation.
 
 =head1 CONTACT
 
@@ -270,9 +271,29 @@ sub lightweight {
   return $this->__attrib( 'lightweight', $light );
 }
 
-# Getter/setter method for the main slice associated with this
-# collection.  Associating a new slice with the collection will empty
-# all entries from the collection.
+=head2 slice
+
+  Arg [1]       : Bio::EnsEMBL::Slice (optional)
+                  The new slice to be associated with this
+                  collection.
+
+  Example       : my $slice = $collection->slice();
+
+  Description   : Getter/setter for the main slice associated with
+                  this collection.  Associating a new slice with
+                  the collection will empty all entries from the
+                  collection.
+
+  Return type   : Bio::EnsEMBL::Slice
+
+  Exceptions    : None
+
+  Caller        : General
+
+  Status        : At Risk (under development)
+
+=cut
+
 sub slice {
   my ( $this, $slice ) = @_;
 
@@ -324,11 +345,51 @@ sub slice {
   return $this->__attrib('slice');
 } ## end sub slice
 
-# Getter/setter for the array of collection entries.
+=head2 entries
+
+  Arg [1]       : List reference
+                  The new list of feature collection entries,
+                  typically produced within the populate() method.
+
+  Example       : my @entries = @{ $collection->entries() };
+
+  Description   : Getter/setter for the list of collection entries.
+
+  Return type   : List reference
+
+  Exceptions    : None
+
+  Caller        : General
+
+  Status        : At Risk (under development)
+
+=cut
+
 sub entries {
   my ( $this, $entries ) = @_;
   return $this->__attrib( 'entries', $entries );
 }
+
+=head2 is_populated
+
+  Args          : None
+
+  Example       : if ( !$collection->is_populated() ) {
+                    $collection->populate();
+                  }
+
+  Description   : Returns a true value if the collection has been
+                  populated, false of not.
+
+  Return type   : Boolean
+
+  Exceptions    : None
+
+  Caller        : General
+
+  Status        : At Risk (under development)
+
+=cut
 
 # Returns true if the collection has been populated, false of not.
 sub is_populated {
@@ -336,8 +397,39 @@ sub is_populated {
   return $this->__attrib('is_populated');
 }
 
-# Populates the collection with a compact representation of the features
-# overlapping the current slice, and optionally sorts the results.
+=head2 populate
+
+  Arg [SORTED]  : Boolean (optional, default false)
+                  If true, will sort the entries after popluating
+                  the collection.
+
+      [SORTSUB] : Subroutine reference (optional, default undef)
+                  If defined, will be used to sort the entries after
+                  popluating the collection.
+
+      [LIGHT]   : Boolean (optional, default undef)
+                  If true, will populate the collection with
+                  light-weight entries.  If false, will populate the
+                  collection with entries that are not light-weight.
+                  If unset, will use the 'lightweight' boolean set
+                  when calling new().
+
+  Example       : $collection->populate( -sorted => 1, -light => 0 );
+
+  Description   : Populates the collection with a compact
+                  representation of the features overlapping the
+                  current slice, and optionally sorts the results.
+
+  Return type   : None
+
+  Exceptions    : None
+
+  Caller        : General
+
+  Status        : At Risk (under development)
+
+=cut
+
 sub populate {
   my $this = shift;
   my ( $sorted, $sort_like_this, $light ) =
@@ -386,7 +478,26 @@ sub populate {
   }
 } ## end sub populate
 
-# Counts the number of features that overlaps the current slice.
+=head2 count
+
+  Args          : None
+
+  Example       : my $count = $collection->count();
+
+  Description   : Returns the number of features that overlaps the
+                  current slice.
+
+  Return type   : Integer
+
+  Exceptions    : Throws if the collection has not yet been
+                  populated.
+
+  Caller        : General
+
+  Status        : At Risk (under development)
+
+=cut
+
 sub count {
   my ($this) = @_;
 
@@ -398,7 +509,6 @@ sub count {
   return scalar( @{ $this->entries() } );
 }
 
-#
 # Binning methods
 #
 # Each binning method bins the collection entries and returns an array
