@@ -260,7 +260,10 @@ sub populate {
 sub count {
   my ($this) = @_;
 
-  $this->populate();
+  if ( !$this->is_populated() ) {
+    throw(   'Can not count the entries in a feature collection '
+           . 'without first having called populate().' );
+  }
 
   return scalar( @{ $this->entries() } );
 }
@@ -340,7 +343,10 @@ sub __attrib {
 sub __bin {
   my ( $this, $nbins, $put_entry_in_bin ) = @_;
 
-  $this->populate();
+  if ( !$this->is_populated() ) {
+    throw(   'Can not bin a feature collection '
+           . 'without first having called populate()' );
+  }
 
   my $slice       = $this->slice();
   my $slice_start = $slice->start();
