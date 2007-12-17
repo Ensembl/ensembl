@@ -13,7 +13,7 @@ classes.
 
   use Bio::EnsEMBL::Collection::RepeatFeature;
 
-  # Pick out a slice
+  # Pick a slice.
   my $slice =
     $slice_adaptor->fetch_by_region( 'Chromosome', '2', 1, 1e9 );
 
@@ -26,11 +26,11 @@ classes.
   $collection->populate();
 
   # Populate the feature collection from the slice.  Sort the
-  # results on feature start position.
+  # entries on feature start position.
   $collection->populate( -sorted => 1 );
 
   # Populate the feature collection from the slice.  Sort the
-  # results on feature length and don't bother about feature
+  # entries on feature length and don't bother about feature
   # type-specific data.
   $collection->populate(
     -light   => 1,
@@ -53,6 +53,89 @@ classes.
 
   # Retrieve only the bin counts.
   my @bin_counts = @{ $collection->get_bin_counts(100) };
+
+=head1 DESCRIPTION
+
+This is the abstract base class for feature collections.
+
+A feature collection provides a compact representation of features of a
+particular type on a slice.  Each entry in a collection is a short array
+of data representing a feature.  This data is divided into two halfs:
+
+=over 4
+
+=item 1.
+
+Basic feature representation.
+
+=item 2.
+
+Extended feature representation.
+
+=back
+
+=head2 Basic feature representation
+
+The basic feature representation is common to all entries in any type
+of feature collection and consists of a minimal set of values.  Each
+collection entry is an array that contains at least the following data
+(in this order)
+
+=over 4
+
+=item 1.
+
+Ensembl internal database ID.
+
+=item 2.
+
+Ensembl internal sequence region ID.
+
+=item 3.
+
+Feature start position.
+
+=item 4.
+
+Feature end position.
+
+=item 5.
+
+Feature strand.
+
+=back
+
+The module defines a number of constants that may be used
+as symbolic constants in place of the index numbers 0 to
+4: ENTRY_DBID, ENTRY_SEQREGIONID, ENTRY_SEQREGIONSTART,
+ENTRY_SEQREGIONEND, ENTRY_SEQREGIONSTRAND.  For an entry $entry,
+$entry->[Bio::EnsEMBL::Collection::ENTRY_SEQREGIONEND] will thus be the
+end position for the feature that the entry represents.
+
+The position of the feature is in the same coordinate system as the
+slice associated with the collection object.
+
+=head2 Extended feature representation.
+
+A sub-class of this abstract base class will specify further data to be
+added to the entries in order to account of the particular feature type.
+An entry from a gene feature collection (Bio::EnsEMBL::Collection::Gene)
+might, for example, contain the Ensembl Stable ID of the gene.
+
+=head2 Light-weight collections
+
+A light-weight collection is a feature collection whose collection
+entries does not contain the extended feature representation.
+
+=head1 CONTACT
+
+This modules is part of the Ensembl project.  See
+http://www.ensembl.org/ for further information.
+
+Questions may be posted to the ensembl-dev mailing list:
+ensembl-dev@ebi.ac.uk
+
+=head1 METHODS
 
 =cut
 
@@ -80,6 +163,35 @@ use constant { ENTRY_DBID            => 0,
 #-----------------------------------------------------------------------
 # Constructor
 #-----------------------------------------------------------------------
+
+=head2 new
+
+  Arg [SLICE]   : Bio::EnsEMBL::Slice
+                  The slice to be associated with this feature
+                  collection.
+
+  Arg [LIGHT]   : Boolean (optional, default false)
+                  If true, the collection will be 'light-weight',
+                  i.e. no type-specific data will be stored in its
+                  entries when populate() is called.
+
+  Example       : my $collection =
+                    Bio::EnsEMBL::Collection::<feature_type>->new(
+                                                       -slice => $slice,
+                                                       -light => 1 );
+
+  Description   : When called for a sub-class, creates a feature
+                  collection object and associates a slice with it.
+
+  Return type   : Bio::EnsEMBL::Collection::<feature_type>
+
+  Exceptions    : Throws if no slice is specified.
+
+  Caller        : General (through a sub-class).
+
+  Status        : At Risk (under development)
+
+=cut
 
 sub new {
   my $proto = shift;
@@ -131,10 +243,28 @@ sub new {
 # PUBLIC methods
 #-----------------------------------------------------------------------
 
-# Getter/setter for the 'lightweight' boolean.  If the collection
-# is lightweight, its entries does not contain any feature-specific
-# data (e.g. transcript and gene stable IDs for a transcript feature
-# collection).
+=head2 lightweight
+
+  Arg [1]       : Boolean (optional)
+
+  Example       : if ( !$collection->lightweight() ) { ... }
+
+  Description   : Getter/setter for the 'lightweight' boolean.
+                  If the collection is light-weight, its entries
+                  does not contain any feature-specific data (e.g.
+                  transcript or gene stable IDs for a transcript
+                  feature collection).
+
+  Return type   : Boolean
+
+  Exceptions    : None
+
+  Caller        : General
+
+  Status        : At Risk (under development)
+
+=cut
+
 sub lightweight {
   my ( $this, $light ) = @_;
   return $this->__attrib( 'lightweight', $light );
@@ -439,7 +569,7 @@ sub _extra_where_clause { return undef }
 # feature table that holds the dbID for the collection elements, i.e.
 # 'transcript_id' for Bio::EnsEMBL::Collection::Transcript.
 #
-# If this method is not specialized by a subclass, it is assumed that
+# If this method is not specialized by a sub-class, it is assumed that
 # the name of the dbID column is the name of the primary feature table
 # suffixed by '_id'.
 sub _dbID_column {
