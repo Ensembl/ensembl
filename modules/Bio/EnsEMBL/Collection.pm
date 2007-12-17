@@ -136,8 +136,6 @@ http://www.ensembl.org/ for further information.
 Questions may be posted to the ensembl-dev mailing list:
 ensembl-dev@ebi.ac.uk
 
-=head1 METHODS
-
 =cut
 
 package Bio::EnsEMBL::Collection;
@@ -161,9 +159,7 @@ use constant { ENTRY_DBID            => 0,
                ENTRY_SEQREGIONEND    => 3,
                ENTRY_SEQREGIONSTRAND => 4 };
 
-#-----------------------------------------------------------------------
-# Constructor
-#-----------------------------------------------------------------------
+=head1 METHODS (constructor)
 
 =head2 new
 
@@ -241,8 +237,8 @@ sub new {
 } ## end sub new
 
 #-----------------------------------------------------------------------
-# PUBLIC methods
-#-----------------------------------------------------------------------
+
+=head1 METHODS (public)
 
 =head2 lightweight
 
@@ -355,7 +351,7 @@ sub slice {
 
   Description   : Getter/setter for the list of collection entries.
 
-  Return type   : List reference
+  Return type   : List reference to list of list references
 
   Exceptions    : None
 
@@ -567,8 +563,12 @@ sub get_bin_entries {
 }
 
 #-----------------------------------------------------------------------
-# PRIVATE methods
-#-----------------------------------------------------------------------
+
+=head1 METHODS (private)
+
+These are methods that should only ever be used by the class itself.
+
+=cut
 
 sub __attrib {
   my ( $this, $attribute, $value ) = @_;
@@ -656,32 +656,101 @@ sub __constraint {
 } ## end sub __constraint
 
 #-----------------------------------------------------------------------
-# PROTECTED methods
-#-----------------------------------------------------------------------
 
-# _extra_tables() provides a list of tables and table aliases, in
-# addition to the ones returned by _tables(), that are used to
-# create collections of particular feature types, e.g. the tables
-# transcript_stable_id [tsi], gene [g], and gene_stable_id [gsi] for
-# Bio::EnsEMBL::Collection::Transcript.
+=head1 METHODS (protected)
+
+These are methods that may be overridden (specialized) by sub-classes.
+
+=head2 _extra_tables
+
+  Args          : None
+
+  Description   : The method provides a list of tables and
+                  table aliases, in addition to the ones
+                  returned by _tables(), that are used to
+                  create collections of particular feature
+                  types, e.g. the tables transcript_stable_id
+                  [tsi], gene [g], and gene_stable_id [gsi] for
+                  Bio::EnsEMBL::Collection::Transcript.
+
+  Return type   : List of list references
+
+  Exceptions    : None
+
+  Caller        : _tables()
+
+  Status        : At Risk (under development)
+
+=cut
+
 sub _extra_tables { return () }
 
-# _extra_columns() provides a list of columns, in addition to the ones
-# returned by _columns(), that constitutes the contents of an entry of a
-# particular feature type, e.g. t.biotype, t.status, tsi.stable_id, and
-# gsi.stable_id for Bio::EnsEMBL::Collection::Transcript.
+=head2 _extra_columns
+
+  Args          : None
+
+  Description   : The method provides a list of columns, in
+                  addition to the ones returned by _columns(),
+                  that constitutes the contents of an entry of
+                  a particular feature type, e.g. t.biotype,
+                  t.status, tsi.stable_id, and gsi.stable_id for
+                  Bio::EnsEMBL::Collection::Transcript.
+
+  Return type   : List of strings
+
+  Exceptions    : None
+
+  Caller        : _columns()
+
+  Status        : At Risk (under development)
+
+=cut
+
 sub _extra_columns { return () }
 
-# _extra_where_clause() should join the tables from _extra_tables().
+=head2 _extra_where_clause
+
+  Args          : None
+
+  Description   : The method should supply the necessary SQL for
+                  joining the tables from _extra_tables().
+
+  Return type   : String
+
+  Exceptions    : None
+
+  Caller        : _default_where_clause()
+
+  Status        : At Risk (under development)
+
+=cut
+
 sub _extra_where_clause { return undef }
 
-# _dbID_column() provides the name of the column in the primary
-# feature table that holds the dbID for the collection elements, i.e.
-# 'transcript_id' for Bio::EnsEMBL::Collection::Transcript.
-#
-# If this method is not specialized by a sub-class, it is assumed that
-# the name of the dbID column is the name of the primary feature table
-# suffixed by '_id'.
+=head2 _dbID_column
+
+  Args          : None
+
+  Description   : The provides the name of the column in the
+                  primary feature table that holds the dbID for the
+                  collection elements, i.e. 'transcript_id' for
+                  Bio::EnsEMBL::Collection::Transcript.
+
+                  If this method is not specialized by a sub-class,
+                  it is assumed that the name of the dbID column is
+                  the name of the primary feature table suffixed by
+                  the string '_id'.
+
+  Return type   : String
+
+  Exceptions    : None
+
+  Caller        : _columns()
+
+  Status        : At Risk (under development)
+
+=cut
+
 sub _dbID_column {
   my ($this) = @_;
 
@@ -693,21 +762,62 @@ sub _dbID_column {
   return $this->__attrib('dbID_column');
 }
 
-#-----------------------------------------------------------------------
-# ABSTRACT PROTECTED methods
+
 #-----------------------------------------------------------------------
 
-# _feature_table() should return the primary feature table and table
-# alias used by the collection, i.e. the transcript [t] table for
-# Bio::EnsEMBL::Collection::Transcript.
+=head1 METHODS (abstract protected)
+
+These are methods that needs to be implemented by a sub-class since this
+base class can not implement them.
+
+=head2 _feature_table
+
+  Args          : None
+
+  Description   : The method should return the primary
+                  feature table and table alias used by the
+                  collection, i.e. the transcript [t] table for
+                  Bio::EnsEMBL::Collection::Transcript.
+
+  Return type   : List reference to a list of two strings (the
+                  feature table name and its alias).
+
+  Exceptions    : Throws if called on the base class.
+
+  Caller        : new(), _dbID_column(), __constraint()
+
+  Status        : At Risk (under development)
+
+=cut
+
+
 sub _feature_table {
   throw("Called abstract method '_feature_table()'");
 }
 
 #-----------------------------------------------------------------------
-# Implemented abstract protected methods from base class
-# Bio::EnsEMBL::BaseAdaptor
-#-----------------------------------------------------------------------
+
+=head1 Implemented abstract protected methods from base class
+Bio::EnsEMBL::BaseAdaptor
+
+=head2 _tables
+
+  Args          : None
+
+  Description   : Returns the primary feature table and, if the
+                  collection is not light-weight, the additional
+                  tables that are needed to construct the collection
+                  entries.
+
+  Return type   : List of list references
+
+  Exceptions    : None
+
+  Caller        : Bio::EnsEMBL::DBSQL::BaseAdaptor::generic_fetch()
+
+  Status        : At Risk (under development)
+
+=cut
 
 sub _tables {
   my ($this) = @_;
@@ -720,6 +830,23 @@ sub _tables {
 
   return @tables;
 }
+
+=head2 _columns
+
+  Args          : None
+
+  Description   : Returns the columns that makes up a collection
+                  entry.
+
+  Return type   : List of strings
+
+  Exceptions    : None
+
+  Caller        : Bio::EnsEMBL::DBSQL::BaseAdaptor::generic_fetch()
+
+  Status        : At Risk (under development)
+
+=cut
 
 sub _columns {
   my ($this) = @_;
@@ -739,6 +866,25 @@ sub _columns {
   return @columns;
 }
 
+=head2 _default_where_clause
+
+  Args          : None
+
+  Description   : For a light-weight collection, returns an
+                  empty string (no joins), otherwise returns the
+                  WHERE clause that joins the tables returned by
+                  _tables().
+
+  Return type   : String
+
+  Exceptions    : None
+
+  Caller        : Bio::EnsEMBL::DBSQL::BaseAdaptor::generic_fetch()
+
+  Status        : At Risk (under development)
+
+=cut
+
 sub _default_where_clause {
   my ($this) = @_;
 
@@ -751,6 +897,24 @@ sub _default_where_clause {
 
   return '';
 }
+
+=head2 _objs_from_sth
+
+  Arg [1]       : DBI statment handle
+
+  Description   : Given a DBI statment handle, reads the entries,
+                  maps them to the appropriate coordinate system,
+                  and returns a list of them.
+
+  Return type   : List reference to list of list references
+
+  Exceptions    : None
+
+  Caller        : Bio::EnsEMBL::DBSQL::BaseAdaptor::generic_fetch()
+
+  Status        : At Risk (under development)
+
+=cut
 
 sub _objs_from_sth {
   my ( $this, $sth ) = @_;
