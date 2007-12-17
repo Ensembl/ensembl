@@ -1,5 +1,61 @@
 # $Id$
 
+# Ensembl module for Bio::EnsEMBL::Collection
+#
+# You may distribute this module under the same terms as perl itself.
+
+=head1 NAME
+
+Bio::EnsEMBL::Collection - Abstract base class for feature collection
+classes.
+
+=head1 SYNOPSIS
+
+  use Bio::EnsEMBL::Collection::RepeatFeature;
+
+  # Pick out a slice
+  my $slice =
+    $slice_adaptor->fetch_by_region( 'Chromosome', '2', 1, 1e9 );
+
+  # Create a feature collection on the slice.
+  my $collection =
+    Bio::EnsEMBL::Collection::RepeatFeature->new( -slice => $slice,
+                                                  -light => 0 );
+
+  # Populate the feature collection from the slice.
+  $collection->populate();
+
+  # Populate the feature collection from the slice.  Sort the
+  # results on feature start position.
+  $collection->populate( -sorted => 1 );
+
+  # Populate the feature collection from the slice.  Sort the
+  # results on feature length and don't bother about feature
+  # type-specific data.
+  $collection->populate(
+    -light   => 1,
+    -sorted  => 1,
+    -sortsub => sub {
+      $a->[3] - $a->[2] <=> $b->[3] - $b->[2];
+    } );
+
+  # Retrieve the entries from the collection as an array of arrays.
+  my @entries = @{ $collection->entries() };
+
+  # Retrieve a binned representation of the entries using 100 bins.
+  my @binned_entries = @{ $collection->get_bin_entries(100) };
+
+  # Retrieve a binned representation of the entries using 100 bins,
+  # where each entry is represented by its index in the feature
+  # collection array (@entries above).
+  my @binned_entry_indicies =
+    @{ $collection->get_bin_entry_indices(100) };
+
+  # Retrieve only the bin counts.
+  my @bin_counts = @{ $collection->get_bin_counts(100) };
+
+=cut
+
 package Bio::EnsEMBL::Collection;
 
 use strict;
@@ -129,7 +185,7 @@ sub slice {
     # _objs_from_sth() method.
     $this->__attrib( 'seqreg_map', \%seqreg_map );
 
-    $this->collection( [] );
+    $this->entries( [] );
     $this->__attrib( 'is_populated', 0 );
 
     $this->__attrib( 'slice', $slice );
@@ -138,10 +194,10 @@ sub slice {
   return $this->__attrib('slice');
 } ## end sub slice
 
-# Getter/setter for the collection array.
-sub collection {
-  my ( $this, $collection ) = @_;
-  return $this->__attrib( 'collection', $collection );
+# Getter/setter for the array of collection entries.
+sub entries {
+  my ( $this, $entries ) = @_;
+  return $this->__attrib( 'entries', $entries );
 }
 
 # Returns true if the collection has been populated, false of not.
@@ -191,7 +247,7 @@ sub populate {
     @entries = sort( $sort_like_this @entries );
   }
 
-  $this->collection( \@entries );
+  $this->entries( \@entries );
   $this->__attrib( 'is_populated', 1 );
 
   # Restore the lightweight() value if -light was used.
@@ -206,7 +262,7 @@ sub count {
 
   $this->populate();
 
-  return scalar( @{ $this->collection() } );
+  return scalar( @{ $this->entries() } );
 }
 
 #
@@ -255,7 +311,7 @@ sub get_bin_entry_indices {
 }
 
 # Returns an array of bins, each bin containing an array of entries
-# (array references into the collection array) allocated to that bin.
+# (array references into the array of entries) allocated to that bin.
 sub get_bin_entries {
   my ( $this, $nbins ) = @_;
 
@@ -294,7 +350,7 @@ sub __bin {
   my @bins;
   my $entry_index = 0;
 
-  foreach my $entry ( @{ $this->collection() } ) {
+  foreach my $entry ( @{ $this->entries() } ) {
     my $start_bin = int(
         ( $entry->[ENTRY_SEQREGIONSTART] - $slice_start )/$bin_length );
     my $end_bin = int(
@@ -396,8 +452,8 @@ sub _dbID_column {
 #-----------------------------------------------------------------------
 
 # _feature_table() should return the primary feature table and table
-# alias used by the collection elements, i.e. the transcript [t] table
-# for Bio::EnsEMBL::Collection::Transcript.
+# alias used by the collection, i.e. the transcript [t] table for
+# Bio::EnsEMBL::Collection::Transcript.
 sub _feature_table {
   throw("Called abstract method '_feature_table()'");
 }
