@@ -668,6 +668,21 @@ sub get_bins {
 
 These are methods that should only ever be used by the class itself.
 
+=head2 __attrib
+
+  Args [1]      : String
+                  The name of the attribute to get/set.
+
+  Args [2]      : Any (optional)
+                  The new value of the attribute.
+
+  Description   : Simple generic getter/setter method for the
+                  attributes of the class.
+
+  Return type   : Varies
+
+  Caller        : Various methods in this class.
+
 =cut
 
 sub __attrib {
@@ -679,6 +694,20 @@ sub __attrib {
 
   return $this->{'attributes'}{$attribute};
 }
+
+=head2 __constraint
+
+  Arg [1]       : Bio::EnsEMBL::ProjectionSegment or a reference to
+                  list thereof.
+
+  Description   : Produces the constraint for
+                  Bio::EnsEMBL::DBSQL::BaseAdaptor::generic_fetch()
+
+  Return type   : String
+
+  Caller        : populate()
+
+=cut
 
 sub __constraint {
   my ( $this, $arg ) = @_;
@@ -825,7 +854,6 @@ sub _dbID_column {
   return $this->__attrib('dbID_column');
 }
 
-
 #-----------------------------------------------------------------------
 
 =head1 METHODS (abstract protected)
@@ -852,7 +880,6 @@ base class can not implement them.
   Status        : At Risk (under development)
 
 =cut
-
 
 sub _feature_table {
   throw("Called abstract method '_feature_table()'");
