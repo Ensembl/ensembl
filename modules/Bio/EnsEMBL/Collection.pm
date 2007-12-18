@@ -128,6 +128,10 @@ A light-weight collection is a feature collection whose collection
 entries are light-weight, whose entries does not contain the extended
 feature representation.
 
+A collection which is light-weight by default may be created by using
+the argument '-light=>1' in the constructor, new(), but one may also use
+the same argument with populate().
+
 =head1 CONTACT
 
 This modules is part of the Ensembl project.  See
@@ -239,33 +243,6 @@ sub new {
 #-----------------------------------------------------------------------
 
 =head1 METHODS (public)
-
-=head2 lightweight
-
-  Arg [1]       : Boolean (optional)
-
-  Example       : if ( !$collection->lightweight() ) { ... }
-
-  Description   : Getter/setter for the 'lightweight' boolean.
-                  If the collection is light-weight, its entries
-                  does not contain any feature-specific data (e.g.
-                  transcript or gene stable IDs for a transcript
-                  feature collection).
-
-  Return type   : Boolean
-
-  Exceptions    : None
-
-  Caller        : General
-
-  Status        : At Risk (under development)
-
-=cut
-
-sub lightweight {
-  my ( $this, $light ) = @_;
-  return $this->__attrib( 'lightweight', $light );
-}
 
 =head2 slice
 
@@ -473,6 +450,33 @@ sub populate {
     $this->lightweight($old_light);
   }
 } ## end sub populate
+
+=head2 lightweight
+
+  Arg [1]       : Boolean (optional)
+
+  Example       : if ( !$collection->lightweight() ) { ... }
+
+  Description   : Getter/setter for the 'lightweight' boolean.
+                  If the collection is light-weight, its entries
+                  does not contain any feature-specific data (e.g.
+                  transcript or gene stable IDs for a transcript
+                  feature collection).
+
+  Return type   : Boolean
+
+  Exceptions    : None
+
+  Caller        : General
+
+  Status        : At Risk (under development)
+
+=cut
+
+sub lightweight {
+  my ( $this, $light ) = @_;
+  return $this->__attrib( 'lightweight', $light );
+}
 
 =head2 count
 
