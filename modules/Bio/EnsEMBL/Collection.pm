@@ -115,7 +115,7 @@ end position for the feature that the entry represents.
 The position of the feature is in the same coordinate system as the
 slice associated with the collection object.
 
-=head2 Extended feature representation.
+=head2 Extended feature representation
 
 A sub-class of this abstract base class will specify further data to be
 added to the entries in order to account of the particular feature type.
@@ -131,6 +131,53 @@ feature representation.
 A collection which is light-weight by default may be created by using
 the argument '-light=>1' in the constructor, new(), but one may also use
 the same argument with populate().
+
+=head2 Binning methods
+
+This module allows for various ways of binning the result of the
+populate() method by using the get_bins() method.
+
+Each binning method bins the collection entries and gives an array
+with the specified length (number of bins).  An entry, which basically
+consists of a start and a end position, is allocated to one or several
+bins depending on its span and the size of the individual bins.
+
+ Features:     |----|     |----------------|  |--|         |------|
+               |-------------|                |-----|             |--|
+               |-------------------|                 |----|       |--|
+
+ Finer bins:   3 3 3 2 2 2 3 3 2 2 2 1 1 1 1 0 2 2 1 1 1 1 1 1 1 1 2 2
+ Coarser bins: 3  3  2  2  3  2  2  1  1  1  0  2  1  1  1  1  1  3  2
+
+The example above shows the arrays that might be returned from
+get_bins() when using the 'count' binning method with 28 and 19 bins
+respectively.
+
+Here follows a brief description of each implemented binning method.
+
+=over 4
+
+=item  'count' and 'density'
+
+Returns an array of bins, each bin containing the number of entries
+allocated to (i.e. overlapping) that bin.  The 'density' binning method
+is equivalent to 'count' and this is also the default binning method.
+
+=item 'indices' and 'index'
+
+Returns an array of bins, each bin containing an array of indices into
+the collection entry array (available from the entries() method) for the
+entries allocated to that bin.  The 'index' binning method is equivalent
+to 'indicies'.
+
+=item 'entries' and 'entry'
+
+Returns an array of bins, each bin containing an array of entries
+(references into the array of entries retrieved from the entries()
+method) allocated to that bin.  The 'entry' binning method is equivalent
+to 'entries'.
+
+=back
 
 =head1 CONTACT
 
@@ -509,62 +556,111 @@ sub count {
   return scalar( @{ $this->entries() } );
 }
 
-# Binning methods
-#
-# Each binning method bins the collection entries and returns an array
-# with the specified length (number of bins).  An entry, which basically
-# consists of a start and a end position, is allocated to one or several
-# bins depending on its span and the size of the individual bins.
-#
-# Features:     |----|     |----------------|  |--|         |------|
-#               |-------------|                |-----|             |--|
-#               |-------------------|                 |----|       |--|
-#
-# Fine bins:    3 3 3 2 2 2 3 3 2 2 2 1 1 1 1 0 2 2 1 1 1 1 1 1 1 1 2 2
-# Coarse bins:  3  3  2  2  3  2  2  1  1  1  0  2  1  1  1  1  1  3  2
-#
-# The example above shows the arrays returned from get_bin_counts(28)
-# and get_bin_counts(19).
+=head2 get_bins
 
-# Returns an array of bins, each bin containing the number of entries
-# allocated to that bin.  This is equivalent to the density of the
-# entries.
-sub get_bin_counts {
-  my ( $this, $nbins ) = @_;
+  Arg [NBINS]   : Integer
+                  The number of bins to use.
 
-  return $this->__bin(
-    $nbins,
-    sub {
-      my ( $bins, $bin_index, $entry, $entry_index ) = @_;
-      ++$bins->[$bin_index];
-    } );
-}
+  Arg [METHOD]  : String (optional, default 'count')
+                  The binning method to use.  The valid methods are
+                  described above, in the section called 'Binning
+                  methods'.
 
-# Returns an array of bins, each bin containing an array of indices into
-# the collection array for the entries allocated to that bin.
-sub get_bin_entry_indices {
-  my ( $this, $nbins ) = @_;
+  Example       : my @bins = @{
+                    $collection->get_bins( -nbins  => 640,
+                                           -method => 'count'
+                    ) };
 
-  return $this->__bin(
-    $nbins,
-    sub {
-      my ( $bins, $bin_index, $entry, $entry_index ) = @_;
-      push( @{ $bins->[$bin_index] }, $entry_index );
-    } );
-}
+  Description   : Performs binning of the collection entries.
 
-# Returns an array of bins, each bin containing an array of entries
-# (array references into the array of entries) allocated to that bin.
-sub get_bin_entries {
-  my ( $this, $nbins ) = @_;
+  Return type   : List reference
 
-  return $this->__bin(
-    $nbins,
-    sub {
-      my ( $bins, $bin_index, $entry, $entry_index ) = @_;
-      push( @{ $bins->[$bin_index] }, $entry );
-    } );
-}
+  Exceptions    : Throws if the population has not been populated
+                  using the populate() method, or if the provided
+                  binning method does not exist.
+
+  Caller        : General
+
+  Status        : At Risk (under development)
+
+=cut
+
+our %valid_binning_methods = ( 'count'    => 0,
+                               'density'  => 0,    # Same as 'count'.
+                               'indices'  => 1,
+                               'index'    => 1,    # Same as 'indices'.
+                               'entries'  => 2,
+                               'entry'    => 2,    # Same as 'entries'.
+                               'coverage' => 3 );
+
+sub get_bins {
+  my $this = shift;
+  my ( $nbins, $method_name ) = rearrange( [ 'NBINS', 'METHOD' ], @_ );
+
+  if ( !$this->is_populated() ) {
+    throw(   'Can not bin a feature collection '
+           . 'without first having called populate()' );
+  }
+
+  $method_name ||= 'count';
+  if ( !exists( $valid_binning_methods{$method_name} ) ) {
+    throw(
+           sprintf(
+                "Invalid binning method '%s', valid methods are: %s",
+                $method_name, join( ', ', keys(%valid_binning_methods) )
+           ) );
+  }
+  my $method = $valid_binning_methods{$method_name};
+
+  my $slice       = $this->slice();
+  my $slice_start = $slice->start();
+
+  my $bin_length = ( $slice->end() - $slice_start + 1 )/$nbins;
+
+  my @bins = map( $_ = undef, 0 .. $nbins - 1 );
+  my $entry_index = 0;
+
+  foreach my $entry ( @{ $this->entries() } ) {
+    my $start_bin = int(
+        ( $entry->[ENTRY_SEQREGIONSTART] - $slice_start )/$bin_length );
+    my $end_bin = int(
+          ( $entry->[ENTRY_SEQREGIONEND] - $slice_start )/$bin_length );
+
+    if ( $end_bin >= $nbins ) {
+      # This might happen for the very last entry.
+      $end_bin = $nbins - 1;
+    }
+
+    if ( $method == 0 ) {    # For 'count' and 'density'.
+      for ( my $bin_index = $start_bin ;
+            $bin_index <= $end_bin ;
+            ++$bin_index )
+      {
+        ++$bins[$bin_index];
+      }
+    } elsif ( $method == 1 ) {    # For 'indices' and 'index'
+      for ( my $bin_index = $start_bin ;
+            $bin_index <= $end_bin ;
+            ++$bin_index )
+      {
+        push( @{ $bins[$bin_index] }, $entry_index );
+      }
+    } elsif ( $method == 2 ) {    # For 'entries' and 'entry'.
+      for ( my $bin_index = $start_bin ;
+            $bin_index <= $end_bin ;
+            ++$bin_index )
+      {
+        push( @{ $bins[$bin_index] }, $entry );
+      }
+    } elsif ( $method == 3 ) {    # For 'coverage'.
+                                  # TODO
+    }
+
+    ++$entry_index;
+  } ## end foreach my $entry ( @{ $this...
+
+  return \@bins;
+} ## end sub get_bins
 
 #-----------------------------------------------------------------------
 
@@ -583,43 +679,6 @@ sub __attrib {
 
   return $this->{'attributes'}{$attribute};
 }
-
-sub __bin {
-  my ( $this, $nbins, $put_entry_in_bin ) = @_;
-
-  if ( !$this->is_populated() ) {
-    throw(   'Can not bin a feature collection '
-           . 'without first having called populate()' );
-  }
-
-  my $slice       = $this->slice();
-  my $slice_start = $slice->start();
-
-  my $bin_length = $slice->length()/$nbins;
-
-  my @bins;
-  my $entry_index = 0;
-
-  foreach my $entry ( @{ $this->entries() } ) {
-    my $start_bin = int(
-        ( $entry->[ENTRY_SEQREGIONSTART] - $slice_start )/$bin_length );
-    my $end_bin = int(
-          ( $entry->[ENTRY_SEQREGIONEND] - $slice_start )/$bin_length );
-
-    if ( $end_bin >= $nbins ) { $end_bin = $nbins - 1 }
-
-    for ( my $bin_index = $start_bin ;
-          $bin_index <= $end_bin ;
-          ++$bin_index )
-    {
-      $put_entry_in_bin->( \@bins, $bin_index, $entry, $entry_index );
-    }
-
-    ++$entry_index;
-  }
-
-  return \@bins;
-} ## end sub __bin
 
 sub __constraint {
   my ( $this, $arg ) = @_;
