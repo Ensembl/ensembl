@@ -254,6 +254,8 @@
 10800	modDD_gene	1	KNOWNXREF	1	0	5	Dictyostelium discoideum, InParanoid model organism database	MISC	\N	\N
 10900	GI	1	XREF	1	0	5	GenInfo Identifier, a sequence identification number for a nucleotide sequence	MISC	\N	\N
 11000	UCSC	1	KNOWNXREF	1	0	100	UCSC Stable ID	MISC	\N	\N
+11100	Culex_ncRNA	1	XREF	1	0	70	Culex ncRNAs	MISC	\N	\N
+
 #
 #
 # Please separate fields in this file with TABS not spaces!
