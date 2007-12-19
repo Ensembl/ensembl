@@ -341,6 +341,7 @@ sub get_all_AlleleFeatures_Slice{
     my $self = shift;
     my $with_coverage = shift;
 
+    $with_coverage ||= 0; #by default, get all AlleleFeatures
     if ($with_coverage == 1){
 	my $new_allele_features = $self->_filter_af_by_coverage($self->{'alleleFeatures'});
 	return $new_allele_features;
