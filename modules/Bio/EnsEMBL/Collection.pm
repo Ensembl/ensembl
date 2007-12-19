@@ -631,32 +631,51 @@ sub get_bins {
       $end_bin = $nbins - 1;
     }
 
-    if ( $method == 0 ) {    # For 'count' and 'density'.
+    if ( $method == 0 ) {
+
+      # For 'count' and 'density'.
+
       for ( my $bin_index = $start_bin ;
             $bin_index <= $end_bin ;
             ++$bin_index )
       {
         ++$bins[$bin_index];
       }
-    } elsif ( $method == 1 ) {    # For 'indices' and 'index'
+
+    } elsif ( $method == 1 ) {
+
+      # For 'indices' and 'index'
+
       for ( my $bin_index = $start_bin ;
             $bin_index <= $end_bin ;
             ++$bin_index )
       {
         push( @{ $bins[$bin_index] }, $entry_index );
       }
-    } elsif ( $method == 2 ) {    # For 'entries' and 'entry'.
+
+      ++$entry_index;
+
+    } elsif ( $method == 2 ) {
+
+      # For 'entries' and 'entry'.
+
       for ( my $bin_index = $start_bin ;
             $bin_index <= $end_bin ;
             ++$bin_index )
       {
         push( @{ $bins[$bin_index] }, $entry );
       }
-    } elsif ( $method == 3 ) {    # For 'coverage'.
-                                  # TODO
+
+    } elsif ( $method == 3 ) {
+
+      # For 'coverage'.
+
+      throw("The 'coverage' binning method is not yet implemented");
+
+      # FIXME
+
     }
 
-    ++$entry_index;
   } ## end foreach my $entry ( @{ $this...
 
   return \@bins;
