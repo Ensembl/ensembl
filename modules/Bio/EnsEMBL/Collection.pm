@@ -43,16 +43,21 @@ classes.
   my @entries = @{ $collection->entries() };
 
   # Retrieve a binned representation of the entries using 100 bins.
-  my @binned_entries = @{ $collection->get_bin_entries(100) };
+  my @binned_entries = @{
+    $collection->get_bins( -nbins  => 100,
+                           -method => 'entries'
+    ) };
 
   # Retrieve a binned representation of the entries using 100 bins,
   # where each entry is represented by its index in the feature
   # collection array (@entries above).
-  my @binned_entry_indicies =
-    @{ $collection->get_bin_entry_indices(100) };
+  my @binned_entry_indicies = @{
+    $collection->get_bins( -nbins  => 100,
+                           -method => 'indices'
+    ) };
 
   # Retrieve only the bin counts.
-  my @bin_counts = @{ $collection->get_bin_counts(100) };
+  my @bin_counts = @{ $collection->get_bins( -nbins => 100 ) };
 
 =head1 DESCRIPTION
 
@@ -225,8 +230,8 @@ use constant { ENTRY_DBID            => 0,
 
   Example       : my $collection =
                     Bio::EnsEMBL::Collection::<feature_type>->new(
-                                                       -slice => $slice,
-                                                       -light => 1 );
+                                                   -slice => $slice,
+                                                   -light => 1 );
 
   Description   : When called for a sub-class, creates a feature
                   collection object and associates a slice with it.
@@ -434,7 +439,8 @@ sub is_populated {
                   If unset, will use the 'lightweight' boolean set
                   when calling new().
 
-  Example       : $collection->populate( -sorted => 1, -light => 0 );
+  Example       : $collection->populate( -sorted => 1,
+                                         -light  => 0 );
 
   Description   : Populates the collection with a compact
                   representation of the features overlapping the
