@@ -8,11 +8,12 @@ use warnings;
 use base qw( Bio::EnsEMBL::Collection );
 
 #-----------------------------------------------------------------------
-# Specialized protected methods from (super) base class
+# Specialized protected methods from super base class
 # Bio::EnsEMBL::DBSQL::BaseAdaptor
 #-----------------------------------------------------------------------
 
 sub _left_join {
+  # Not all genes have a display_xref_id...
   return ( [ 'xref', 'x.xref_id = g.display_xref_id' ] );
 }
 

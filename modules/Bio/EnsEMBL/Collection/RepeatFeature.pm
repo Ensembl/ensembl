@@ -8,7 +8,7 @@ use warnings;
 use base qw( Bio::EnsEMBL::Collection );
 
 #-----------------------------------------------------------------------
-# Specialized protected methods from base class
+# Specialized protected methods from super base class
 # Bio::EnsEMBL::DBSQL::BaseAdaptor
 #-----------------------------------------------------------------------
 
