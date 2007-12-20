@@ -1,4 +1,3 @@
-
 #
 # BioPerl module for Bio::EnsEMBL::Utils::Eprof
 #
@@ -58,7 +57,7 @@ use Bio::EnsEMBL::Utils::EprofStack;
 use Bio::EnsEMBL::Root;
 
 @ISA = qw(Bio::EnsEMBL::Root Exporter);
-@EXPORT_OK = qw(eprof_start eprof_end eprof_dump );
+@EXPORT_OK = qw(eprof_start eprof_end eprof_dump eprof_reset);
 
 my $global;
 
@@ -117,6 +116,21 @@ sub eprof_dump {
     $global->dump($fh);
 }
 
+=head2 eprof_reset
+
+ Title   : eprof_reset
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub eprof_reset{
+  undef($global);
+}
 
 =head2 dump
 
