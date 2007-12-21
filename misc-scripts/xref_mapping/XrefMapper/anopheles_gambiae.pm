@@ -1,6 +1,8 @@
+
 package XrefMapper::anopheles_gambiae;
 
 use  XrefMapper::BasicMapper;
+use  XrefMapper::VBCoordinateMapper;
 
 use vars '@ISA';
 
@@ -20,8 +22,8 @@ sub gene_description_sources {
 
   return ("Anopheles_symbol",
 	  "Uniprot/SWISSPROT",
-	  #"RefSeq_peptide",
-	  #"RefSeq_dna",
+	  "RefSeq_peptide",
+	  "RefSeq_dna",
 	  "Uniprot/SPTREMBL",
 	  #"RefSeq_peptide_predicted",
 	  #"RefSeq_dna_predicted",
