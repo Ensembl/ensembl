@@ -114,6 +114,7 @@ use strict;
 =cut
 
 sub new {
+  
   my $caller = shift;
 
   my $class = ref($caller) || $caller;
@@ -474,6 +475,7 @@ sub _parse_cigar {
         $start2 = $hstart - 1;
       }
 
+
       push @features, Bio::EnsEMBL::FeaturePair->new
         (-SLICE      => $self->{'slice'},
          -SEQNAME   => $self->{'seqname'},
@@ -489,6 +491,8 @@ sub _parse_cigar {
          -PERCENT_ID => $self->{'percent_id'},
          -ANALYSIS   => $self->{'analysis'},
          -P_VALUE    => $self->{'p_value'},
+         -EXTERNAL_DB_ID => $self->{'external_db_id'}, 
+         -HCOVERAGE   => $self->{'hcoverage'},
          -GROUP_ID    => $self->{'group_id'},
          -LEVEL_ID    => $self->{'level_id'});
       
@@ -574,7 +578,8 @@ sub _parse_features {
   my $percent     = $f[0]->percent_id;
   my $analysis    = $f[0]->analysis;
   my $pvalue      = $f[0]->p_value();
-
+  my $external_db_id = $f[0]->external_db_id;
+  my $hcoverage   = $f[0]->hcoverage;
   my $group_id    = $f[0]->group_id;
   my $level_id    = $f[0]->level_id;
 
@@ -825,6 +830,8 @@ sub _parse_features {
   $self->{'hseqname'}   = $hname;
   $self->{'cigar_string'} = $string;
   $self->{'p_value'}      = $pvalue;
+  $self->{'external_db_id'} = $external_db_id; 
+  $self->{'hcoverage'}    = $hcoverage; 
   $self->{'group_id'}     = $group_id;
   $self->{'level_id'}     = $level_id;
 }
