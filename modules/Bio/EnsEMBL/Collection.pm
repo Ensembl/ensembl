@@ -206,6 +206,8 @@ use Bio::EnsEMBL::Utils::Exception qw( throw );
 
 use base qw( Bio::EnsEMBL::DBSQL::BaseAdaptor );
 
+# Here are some class constants and class variables.
+
 # Symbolic constants that acts as indices into the individual feature
 # collection entries.  These must be in sync with the columns returned
 # by the _columns() method.
@@ -214,6 +216,18 @@ use constant { ENTRY_DBID            => 0,
                ENTRY_SEQREGIONSTART  => 2,
                ENTRY_SEQREGIONEND    => 3,
                ENTRY_SEQREGIONSTRAND => 4 };
+
+# We'll keep the current slice and the projection segments of all slices
+# on the various coordinate systems as class variables rather than
+# as object attributes.  This way, the Ensembl drawing code can have
+# several collection objects attached to one web view (e.g. one per
+# track in ContigView), all sharing the same projection segments.  These
+# structures may be emptied using the flush() method (TODO: implement
+# the flush() method).
+
+our $SLICE;
+our %SEGMENTS;
+our %SEQ_REG_MAP;
 
 =head1 METHODS (constructor)
 
@@ -261,9 +275,9 @@ sub new {
     SELECT  cs.name, mc.max_length, m.meta_value
     FROM    coord_system cs,
             meta_coord mc
-    LEFT JOIN meta m ON m.meta_key = ?
-    WHERE   mc.table_name = ?
-    AND     mc.coord_system_id = cs.coord_system_id
+    LEFT JOIN meta m ON m.meta_key  = ?
+    WHERE   mc.table_name           = ?
+    AND     mc.coord_system_id      = cs.coord_system_id
   );
 
   my $sth           = $this->prepare($sql);
@@ -323,17 +337,21 @@ sub slice {
   my ( $this, $slice ) = @_;
 
   if ( defined($slice) ) {
-    my %seqreg_map;
-    my @all_segments;
+    my $slice_name = $slice->name();
 
     foreach
       my $cs_name ( keys( %{ $this->__attrib('coordinate_systems') } ) )
     {
+      if ( exists( $SEGMENTS{$slice_name}{$cs_name} ) ) { next }
+
       my @segments = @{ $slice->project($cs_name) };
 
       foreach my $segment (@segments) {
-        $seqreg_map{ $segment->to_Slice()->get_seq_region_id() } =
-          $segment;
+        # This is a simple map between seq_region_id and a
+        # ProjectionSegment, used in the mapping done by the
+        # _objs_from_sth() method.
+        $SEQ_REG_MAP{$slice_name}
+          { $segment->to_Slice()->get_seq_region_id() } = $segment;
       }
 
       @segments = ( undef, [@segments] );
@@ -348,26 +366,21 @@ sub slice {
         pop(@segments);
       }
 
-      push( @all_segments, @segments );
-    }
+      # This list is a list of ProjectionSegment objects and of arrays
+      # of ProjectionSegment objects.  For segments in arrays, no
+      # constraint on seq_region_start or seq_region_end is needed.
+      $SEGMENTS{$slice_name}{$cs_name} = \@segments;
 
-    # The 'segments' list is a list of ProjectionSegment objects and of
-    # arrays of ProjectionSegment objects.  For segments in arrays, no
-    # constraint on seq_region_start or seq_region_end is needed.
-    $this->__attrib( 'segments', \@all_segments );
-
-    # This is a simple map between seq_region_id and a
-    # ProjectionSegment, used in the mapping done by the
-    # _objs_from_sth() method.
-    $this->__attrib( 'seqreg_map', \%seqreg_map );
+    } ## end foreach my $cs_name ( keys(...
 
     $this->entries( [] );
     $this->__attrib( 'is_populated', 0 );
 
-    $this->__attrib( 'slice', $slice );
+    $SLICE = $slice;
+
   } ## end if ( defined($slice) )
 
-  return $this->__attrib('slice');
+  return $SLICE;
 } ## end sub slice
 
 =head2 entries
@@ -473,14 +486,20 @@ sub populate {
 
   my @entries;
 
-  foreach my $segment ( @{ $this->__attrib('segments') } ) {
-    if ( defined($segment)
-         && ( ref($segment) ne 'ARRAY'
-              || scalar( @{$segment} ) > 0 ) )
-    {
-      push( @entries,
-            @{ $this->generic_fetch( $this->__constraint($segment) ) }
-      );
+  my $slice_name = $this->slice()->name();
+
+  foreach
+    my $cs_name ( keys( %{ $this->__attrib('coordinate_systems') } ) )
+  {
+    foreach my $segment ( @{ $SEGMENTS{$slice_name}{$cs_name} } ) {
+      if ( defined($segment)
+           && ( ref($segment) ne 'ARRAY'
+                || scalar( @{$segment} ) > 0 ) )
+      {
+        push( @entries,
+              @{$this->generic_fetch( $this->__constraint($segment) ) }
+        );
+      }
     }
   }
 
@@ -1034,21 +1053,22 @@ sub _default_where_clause {
 sub _objs_from_sth {
   my ( $this, $sth ) = @_;
 
-  my $seqreg_map = $this->__attrib('seqreg_map');
-
   my @features;
 
   my ( $segment, $segment_slice, $segment_slice_start,
        $segment_slice_strand, $segment_offset );
 
+  my $slice_name  = $this->slice()->name();
   my $slice_start = $this->slice()->start();
 
   while ( my $entry = $sth->fetchrow_arrayref() ) {
     if ( !defined($segment)
-         || $segment != $seqreg_map->{ $entry->[ENTRY_SEQREGIONID] } )
+         || $segment !=
+         $SEQ_REG_MAP{$slice_name}{ $entry->[ENTRY_SEQREGIONID] } )
     {
-      $segment       = $seqreg_map->{ $entry->[ENTRY_SEQREGIONID] };
-      $segment_slice = $segment->to_Slice();
+      $segment =
+        $SEQ_REG_MAP{$slice_name}{ $entry->[ENTRY_SEQREGIONID] };
+      $segment_slice        = $segment->to_Slice();
       $segment_slice_start  = $segment_slice->start();
       $segment_slice_strand = $segment_slice->strand();
 
