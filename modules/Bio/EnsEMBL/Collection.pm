@@ -226,8 +226,7 @@ use constant { ENTRY_DBID            => 0,
 # as object attributes.  This way, the Ensembl drawing code can have
 # several collection objects attached to one web view (e.g. one per
 # track in ContigView), all sharing the same projection segments.  These
-# structures may be emptied using the flush() method (TODO: implement
-# the flush() method).
+# structures may be emptied using the flush() method.
 
 our $SLICE;
 our %SEGMENTS;
