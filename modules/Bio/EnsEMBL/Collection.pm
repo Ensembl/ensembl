@@ -581,6 +581,44 @@ sub count {
   return scalar( @{ $this->entries() } );
 }
 
+=head2 flush
+
+  Args          : None
+
+  Example       : $collection->flush();
+
+  Description   : Flushes (deletes) all cached data not associated
+                  with the current slice.
+
+  Return type   : None
+
+  Exceptions    : None
+
+  Caller        : General
+
+  Status        : At Risk (under development)
+
+=cut
+
+sub flush {
+  my ($this) = @_;
+
+  my $slice_name = $this->slice()->name();
+
+  foreach my $key ( keys(%SEGMENTS) ) {
+    if ( $key ne $slice_name ) {
+      delete( $SEGMENTS{$key} );
+    }
+  }
+
+  foreach my $key ( keys(%SEQ_REG_MAP) ) {
+    if ( $key ne $slice_name ) {
+      delete( $SEQ_REG_MAP{$key} );
+    }
+  }
+
+}
+
 =head2 get_bins
 
   Arg [NBINS]   : Integer
