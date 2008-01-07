@@ -32,11 +32,15 @@ classes.
   # Populate the feature collection from the slice.  Sort the
   # entries on feature length and don't bother about feature
   # type-specific data.
+  my $entry_start_idx = Bio::EnsEMBL::Collection::ENTRY_SEQREGIONSTART;
+  my $entry_end_idx   = Bio::EnsEMBL::Collection::ENTRY_SEQREGIONEND;
   $collection->populate(
     -light   => 1,
     -sorted  => 1,
     -sortsub => sub {
-      $a->[3] - $a->[2] <=> $b->[3] - $b->[2];
+      $a->[$entry_end_idx] - $a->[$entry_start_idx]
+      <=>
+      $b->[$entry_end_idx] - $b->[$entry_start_idx];
     } );
 
   # Retrieve the entries from the collection as an array of arrays.
