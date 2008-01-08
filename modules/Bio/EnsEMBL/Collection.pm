@@ -60,7 +60,7 @@ classes.
                            -method => 'indices'
     ) };
 
-  # Retrieve only the bin counts.
+  # Retrieve only the bin counts/densities.
   my @bin_counts = @{ $collection->get_bins( -nbins => 100 ) };
 
 =head1 DESCRIPTION
@@ -186,6 +186,19 @@ Returns an array of bins, each bin containing an array of entries
 method) allocated to that bin.  The 'entry' binning method is equivalent
 to 'entries'.
 
+=item 'coverage1'
+
+Returns an array of bins, each bin containing the sum of the fractions
+of features overlapping that bin.  A feature fully inside a bin will
+contribute 1 to the sum while a feature spanning exactly three bins
+(from the very start of the first to the very end of the third) will
+contribute 1/3 to the sum of each bin.
+
+=item 'coverage2'
+
+Returns an array of bins, each bin containing the fraction of the bin
+that is coverage by any feature.
+
 =back
 
 =head1 CONTACT
@@ -231,6 +244,17 @@ use constant { ENTRY_DBID            => 0,
 our $SLICE;
 our %SEGMENTS;
 our %SEQ_REG_MAP;
+
+our %VALID_BINNING_METHODS = (
+                          'count'     => 0,
+                          'density'   => 0,    # Same as 'count'.
+                          'indices'   => 1,
+                          'index'     => 1,    # Same as 'indices'.
+                          'entries'   => 2,
+                          'entry'     => 2,    # Same as 'entries'.
+                          'coverage1' => 3,    # FIXME: find better name
+                          'coverage2' => 4     # FIXME: find better name
+);
 
 =head1 METHODS (constructor)
 
@@ -651,14 +675,6 @@ sub flush {
 
 =cut
 
-our %valid_binning_methods = ( 'count'    => 0,
-                               'density'  => 0,    # Same as 'count'.
-                               'indices'  => 1,
-                               'index'    => 1,    # Same as 'indices'.
-                               'entries'  => 2,
-                               'entry'    => 2,    # Same as 'entries'.
-                               'coverage' => 3 );
-
 sub get_bins {
   my $this = shift;
   my ( $nbins, $method_name ) = rearrange( [ 'NBINS', 'METHOD' ], @_ );
@@ -669,14 +685,14 @@ sub get_bins {
   }
 
   $method_name ||= 'count';
-  if ( !exists( $valid_binning_methods{$method_name} ) ) {
+  if ( !exists( $VALID_BINNING_METHODS{$method_name} ) ) {
     throw(
            sprintf(
                 "Invalid binning method '%s', valid methods are: %s",
-                $method_name, join( ', ', keys(%valid_binning_methods) )
+                $method_name, join( ', ', keys(%VALID_BINNING_METHODS) )
            ) );
   }
-  my $method = $valid_binning_methods{$method_name};
+  my $method = $VALID_BINNING_METHODS{$method_name};
 
   my $slice       = $this->slice();
   my $slice_start = $slice->start();
@@ -734,9 +750,17 @@ sub get_bins {
 
     } elsif ( $method == 3 ) {
 
-      # For 'coverage'.
+      # For 'coverage1'.
 
-      throw("The 'coverage' binning method is not yet implemented");
+      throw("The 'coverage1' binning method is not yet implemented");
+
+      # FIXME
+
+    } elsif ( $method == 4 ) {
+
+      # For 'coverage2'.
+
+      throw("The 'coverage2' binning method is not yet implemented");
 
       # FIXME
 
