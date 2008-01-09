@@ -255,6 +255,23 @@ sub get_loutre_params {
 		  );
 }
 
+=head2 remove_vega_params
+
+  Example     : $support->remove_vega_params;
+  Description : Removes Vega db conection parameters. Usefull to avoid clutter in log files when
+                working exclusively with loutre
+  Return type : none
+  Exceptions  : none
+  Caller      : general
+
+=cut
+
+sub remove_vega_params {
+	my $self = shift;
+	foreach my $param (qw(dbname host port user pass)) {
+		$self->{'_param'}{$param} = undef;
+	}
+}
 
 =head2 confirm_params
 
