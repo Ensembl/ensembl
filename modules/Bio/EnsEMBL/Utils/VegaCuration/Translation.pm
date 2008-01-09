@@ -153,9 +153,9 @@ sub check_CDS_start_end_remarks_loutre {
 	if ( $coding_start == 1) {
 		if ( $attributes{'cds_start_NF'}->value == 0 ) {
 			if ($start_codon eq 'ATG') {
-				$results->{'START_MISSING_1'} = 1;
+				$results->{'START_MISSING_2'} = 1;
 			} else {
-				$results->{'START_MISSING_2'} = $start_codon;
+				$results->{'START_MISSING_1'} = $start_codon;
 			}
 		}
 	}
