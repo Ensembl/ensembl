@@ -26,8 +26,8 @@ sub _extra_tables {
 }
 
 sub _extra_columns {
-  return ( 'g.biotype', 'g.status', 'gsi.stable_id',
-           'x.display_label' );
+  return ( 'g.analysis_id', 'g.biotype', 'g.status',
+           'gsi.stable_id', 'x.display_label' );
 }
 
 sub _extra_where_clause {

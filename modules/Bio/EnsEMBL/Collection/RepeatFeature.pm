@@ -26,10 +26,10 @@ sub _extra_tables {
 }
 
 sub _extra_columns {
-  return ( 'rf.repeat_start', 'rf.repeat_end',
-           'rf.score',        'rc.repeat_name',
-           'rc.repeat_class', 'rc.repeat_type',
-           'rc.repeat_consensus' );
+  return ( 'rf.analysis_id', 'rf.repeat_start',
+           'rf.repeat_end',  'rf.score',
+           'rc.repeat_name', 'rc.repeat_class',
+           'rc.repeat_type', 'rc.repeat_consensus' );
 }
 
 sub _extra_where_clause {

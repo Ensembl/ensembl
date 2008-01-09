@@ -18,7 +18,8 @@ sub _extra_tables {
 }
 
 sub _extra_columns {
-  return ( 't.biotype', 't.status', 'tsi.stable_id', 'gsi.stable_id' );
+  return ( 't.analysis_id', 't.biotype', 't.status',
+           'tsi.stable_id', 'gsi.stable_id' );
 }
 
 sub _extra_where_clause {
