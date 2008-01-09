@@ -186,6 +186,8 @@ Returns an array of bins, each bin containing an array of entries
 method) allocated to that bin.  The 'entry' binning method is equivalent
 to 'entries'.
 
+=begin comment
+
 =item 'coverage1'
 
 Returns an array of bins, each bin containing the sum of the fractions
@@ -198,6 +200,8 @@ contribute 1/3 to the sum of each bin.
 
 Returns an array of bins, each bin containing the fraction of the bin
 that is coverage by any feature.
+
+=end comment
 
 =back
 
@@ -669,6 +673,9 @@ sub flush {
                   using the populate() method, or if the provided
                   binning method does not exist.
 
+                  Throws if the NBINS argument is missing or if any
+                  of the arguments are out of bounds.
+
   Caller        : General
 
   Status        : At Risk (under development)
@@ -684,13 +691,19 @@ sub get_bins {
            . 'without first having called populate()' );
   }
 
+  if ( !defined($nbins) ) {
+    throw('Missing NBINS argument');
+  } elsif ( $nbins <= 0 ) {
+    throw('Negative or zero NBINS argument');
+  }
+
   $method_name ||= 'count';
   if ( !exists( $VALID_BINNING_METHODS{$method_name} ) ) {
     throw(
-           sprintf(
-                "Invalid binning method '%s', valid methods are: %s",
-                $method_name, join( ', ', keys(%VALID_BINNING_METHODS) )
-           ) );
+           sprintf("Invalid binning method '%s', valid methods are: %s",
+                   $method_name,
+                   join( ', ', sort( keys(%VALID_BINNING_METHODS) ) ) )
+    );
   }
   my $method = $VALID_BINNING_METHODS{$method_name};
 
