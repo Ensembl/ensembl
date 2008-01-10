@@ -7,17 +7,21 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::DBSQL::SupportingFeatureAdaptor - Retrieves supporting features 
-                                                from the database.
+Bio::EnsEMBL::DBSQL::SupportingFeatureAdaptor - Retrieves supporting
+features from the database.
 
 =head1 SYNOPSIS
 
-$supporting_feature_adaptor = $database_adaptor->get_SupportingFeatureAdaptor;
-@supporting_feats = @{$supporting_feat_adaptor->fetch_all_by_Exon($exon)};
+  $supporting_feature_adaptor =
+    $database_adaptor->get_SupportingFeatureAdaptor();
+
+  @supporting_feats =
+    @{ $supporting_feat_adaptor->fetch_all_by_Exon($exon) };
 
 =head1 CONTACT
 
-Post questions to ensembl developer mailing list : <ensembl-dev@ebi.ac.uk>
+Post questions to ensembl developer mailing list:
+<ensembl-dev@ebi.ac.uk>
 
 =cut
 
@@ -40,13 +44,17 @@ use vars qw(@ISA);
 =head2 fetch_all_by_Exon
 
   Arg [1]    : Bio::EnsEMBL::Exon $exon 
-               The exon to fetch supporting features for
-  Example    : @sfs = @{$supporting_feat_adaptor->fetch_all_by_Exon($exon)};
-  Description: Retrieves supporting features (evidence) for a given exon. 
-  Returntype : list of Bio::EnsEMBL::BaseAlignFeatures in the same coordinate
-               system as the $exon argument
-  Exceptions : warning if $exon is not in the database (i.e. dbID not defined)
-               throw if a retrieved supporting feature is of unknown type 
+               The exon to fetch supporting features.
+  Example    : @sfs =
+                @{ $supporting_feat_adaptor->fetch_all_by_Exon($exon) };
+  Description: Retrieves supporting features (evidence) for a given
+               exon.
+  Returntype : List of Bio::EnsEMBL::BaseAlignFeatures in the same
+               coordinate system as the $exon argument
+  Exceptions : Warning if $exon is not in the database (i.e. dbID
+               not defined).
+               Throw if a retrieved supporting feature is of unknown
+               type.
   Caller     : Bio::EnsEMBL::Exon
   Status     : Stable
 
@@ -96,13 +104,15 @@ sub fetch_all_by_Exon {
 }
 
 =head2 store
+
   Arg [2]    : Int $transID
-               The dbID of an EnsEMBL transcript to associate with supporting
-               features
-  Arg [1]    : Ref to array of Bio::EnsEMBL::BaseAlignFeature (the support)
+               The dbID of an EnsEMBL transcript to associate with
+               supporting features.
+  Arg [1]    : Ref to array of Bio::EnsEMBL::BaseAlignFeature
+               (the support)
   Example    : $sfa->store($exon_id, \@features);
-  Description: Stores a set of alignment features and associates an EnsEMBL transcript
-               with them
+  Description: Stores a set of alignment features and associates an
+               EnsEMBL transcript with them
   Returntype : none
   Exceptions : thrown when invalid dbID is passed to this method
   Caller     : TranscriptAdaptor
