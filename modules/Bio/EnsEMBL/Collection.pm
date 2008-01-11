@@ -17,10 +17,13 @@ classes.
   my $slice =
     $slice_adaptor->fetch_by_region( 'Chromosome', '2', 1, 1e9 );
 
-  # Create a feature collection on the slice.
+  # Create a feature collection on the slice, restricting it to
+  # 'Dust' features.
   my $collection =
-    Bio::EnsEMBL::Collection::RepeatFeature->new( -slice => $slice,
-                                                  -light => 0 );
+    Bio::EnsEMBL::Collection::RepeatFeature->new(-slice => $slice,
+                                                 -light => 0,
+                                                 -analysis => 'Dust'
+    );
 
   # Populate the feature collection from the slice.
   $collection->populate();
@@ -35,7 +38,6 @@ classes.
   my $entry_start_idx = Bio::EnsEMBL::Collection::ENTRY_SEQREGIONSTART;
   my $entry_end_idx   = Bio::EnsEMBL::Collection::ENTRY_SEQREGIONEND;
   $collection->populate(
-    -light   => 1,
     -sorted  => 1,
     -sortsub => sub {
       $a->[$entry_end_idx] - $a->[$entry_start_idx]
@@ -137,9 +139,8 @@ A light-weight collection is a feature collection whose collection
 entries are light-weight, whose entries does not contain the extended
 feature representation.
 
-A collection which is light-weight by default may be created by using
-the argument '-light=>1' in the constructor, new(), but one may also use
-the same argument with populate().
+A collection which is light-weight may be created by using the argument
+'-light=>1' in the constructor, new().
 
 =head2 Binning methods
 
@@ -355,8 +356,8 @@ sub new {
   $sth->finish();
 
   $this->__attrib( 'coordinate_systems', \%coordinate_systems );
+  $this->__attrib( 'is_lightweight',     $light );
 
-  $this->lightweight($light);
   $this->slice($slice);
 
   return $this;
@@ -501,15 +502,7 @@ sub is_populated {
                   If defined, will be used to sort the entries after
                   popluating the collection.
 
-      [LIGHT]   : Boolean (optional, default undef)
-                  If true, will populate the collection with
-                  light-weight entries.  If false, will populate the
-                  collection with entries that are not light-weight.
-                  If unset, will use the 'lightweight' boolean set
-                  when calling new().
-
-  Example       : $collection->populate( -sorted => 1,
-                                         -light  => 0 );
+  Example       : $collection->populate( -sorted => 1 );
 
   Description   : Populates the collection with a compact
                   representation of the features overlapping the
@@ -527,18 +520,10 @@ sub is_populated {
 
 sub populate {
   my $this = shift;
-  my ( $sorted, $sort_like_this, $light ) =
-    rearrange( [ 'SORTED', 'SORTSUB', 'LIGHT' ], @_ );
+  my ( $sorted, $sort_like_this ) =
+    rearrange( [ 'SORTED', 'SORTSUB' ], @_ );
 
   if ( $this->is_populated() ) { return }
-
-  # Save the old lightweight() value so that we can restore it if the
-  # -light argument was used.
-
-  my $old_light = $this->lightweight();
-  if ( defined($light) ) {
-    $this->lightweight($light);
-  }
 
   my @entries;
 
@@ -573,23 +558,20 @@ sub populate {
   $this->entries( \@entries );
   $this->__attrib( 'is_populated', 1 );
 
-  # Restore the lightweight() value if -light was used.
-  if ( defined($light) ) {
-    $this->lightweight($old_light);
-  }
 } ## end sub populate
 
-=head2 lightweight
+=head2 is_lightweight
 
   Arg [1]       : Boolean (optional)
 
-  Example       : if ( !$collection->lightweight() ) { ... }
+  Example       : if ( !$collection->is_lightweight() ) { ... }
 
-  Description   : Getter/setter for the 'lightweight' boolean.
-                  If the collection is light-weight, its entries
-                  does not contain any feature-specific data (e.g.
-                  transcript or gene stable IDs for a transcript
-                  feature collection).
+  Description   : Returns true if the collection was created as
+                  a light-weight feature collection.  If the
+                  collection is light-weight, its entries does not
+                  contain any feature-specific data (e.g. transcript
+                  or gene stable IDs for a transcript feature
+                  collection).
 
   Return type   : Boolean
 
@@ -601,9 +583,9 @@ sub populate {
 
 =cut
 
-sub lightweight {
-  my ( $this, $light ) = @_;
-  return $this->__attrib( 'lightweight', $light );
+sub is_lightweight {
+  my ($this) = @_;
+  return $this->__attrib('is_lightweight');
 }
 
 =head2 count
@@ -1085,7 +1067,7 @@ sub _tables {
 
   my @tables = ( $this->_feature_table() );
 
-  if ( !$this->lightweight() ) {
+  if ( !$this->is_lightweight() ) {
     push( @tables, $this->_extra_tables() );
   }
 
@@ -1125,7 +1107,7 @@ sub _columns {
                   $table_alias . '.seq_region_end',
                   $table_alias . '.seq_region_strand' );
 
-  if ( !$this->lightweight() ) {
+  if ( !$this->is_lightweight() ) {
     push( @columns, $this->_extra_columns() );
   }
 
@@ -1136,10 +1118,11 @@ sub _columns {
 
   Args          : None
 
-  Description   : For a light-weight collection, returns an
-                  empty string (no joins), otherwise returns the
-                  WHERE clause that joins the tables returned by
-                  _tables().
+  Description   : For a light-weight collection, unrestricted by
+                  any analysis, returns an empty string (no joins),
+                  otherwise returns the WHERE clause that joins the
+                  tables returned by _tables() and/or that restricts
+                  the query by analysis.logic_name.
 
   Return type   : String
 
@@ -1156,7 +1139,7 @@ sub _default_where_clause {
 
   my $where_clause = '';
 
-  if ( !$this->lightweight() ) {
+  if ( !$this->is_lightweight() ) {
     my $extra_where = $this->_extra_where_clause();
     if ( defined($extra_where) ) {
       $where_clause = $extra_where;
