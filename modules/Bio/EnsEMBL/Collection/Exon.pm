@@ -35,6 +35,8 @@ sub _extra_where_clause {
   );
 }
 
+# sub _has_analysis { return 0 }
+
 #-----------------------------------------------------------------------
 # Implemented abstract protected methods from base class
 # Bio::EnsEMBL::Collection

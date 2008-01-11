@@ -273,6 +273,12 @@ our %VALID_BINNING_METHODS = (
                   i.e. no type-specific data will be stored in its
                   entries when populate() is called.
 
+  Arg [ANALYSIS]: String (optional, default undef)
+                  Restrict the feature collection to a specific
+                  analysis logic name, e.g. 'Dust' in a feature
+                  collection of repeat features or 'ncRNA' in a gene
+                  feature collection.
+
   Example       : my $collection =
                     Bio::EnsEMBL::Collection::<feature_type>->new(
                                                    -slice => $slice,
@@ -284,6 +290,9 @@ our %VALID_BINNING_METHODS = (
   Return type   : Bio::EnsEMBL::Collection::<feature_type>
 
   Exceptions    : Throws if no slice is specified.
+                  Warns if trying to restrict by analysis for a
+                  feature type that does not have an analysis
+                  associated with it, e.g. exon.
 
   Caller        : General (through a sub-class).
 
@@ -293,7 +302,8 @@ our %VALID_BINNING_METHODS = (
 
 sub new {
   my $proto = shift;
-  my ( $slice, $light ) = rearrange( [ 'SLICE', 'LIGHT' ], @_ );
+  my ( $slice, $light, $analysis_logic_name ) =
+    rearrange( [ 'SLICE', 'LIGHT', 'ANALYSIS' ], @_ );
 
   if ( !defined($slice) ) {
     throw(   'Unable to create a feature collection '
@@ -301,6 +311,21 @@ sub new {
   }
 
   my $this = $proto->SUPER::new( $slice->adaptor()->db() );
+
+  if ( defined($analysis_logic_name) ) {
+    if ( !$this->_has_analysis() ) {
+      warning(   'This feature type does not have '
+               . 'an analysis to restrict by.' );
+    } else {
+      my $table_alias = $this->_feature_table()->[1];
+      $this->__attrib( 'restrict_by',
+                       sprintf( 'AND %s.analysis_id = a.analysis_id '
+                                  . 'AND a.logic_name = %s',
+                                $table_alias,
+                                $this->dbc()->db_handle()
+                                  ->quote($analysis_logic_name) ) );
+    }
+  }
 
   my $sql = qq(
     SELECT  cs.name, mc.max_length, m.meta_value
@@ -945,7 +970,7 @@ sub _extra_where_clause { return undef }
 
   Args          : None
 
-  Description   : The provides the name of the column in the
+  Description   : The method provides the name of the column in the
                   primary feature table that holds the dbID for the
                   collection elements, i.e. 'transcript_id' for
                   Bio::EnsEMBL::Collection::Transcript.
@@ -975,6 +1000,30 @@ sub _dbID_column {
 
   return $this->__attrib('dbID_column');
 }
+
+=head2 _has_analysis
+
+  Args          : None
+
+  Description   : Some feature types may have an analysis_id column
+                  in their main feature table.  For these feature
+                  types, a restriction on analysis.logic_name may
+                  be enforced by using the ANALYSIS argument of the
+                  constructor.  This method should return a true
+                  value if there is such an analysis_id column in
+                  the feature table.
+
+  Return type   : Boolean
+
+  Exceptions    : None
+
+  Caller        : new()
+
+  Status        : At Risk (under development)
+
+=cut
+
+sub _has_analysis { return 0 }
 
 #-----------------------------------------------------------------------
 
@@ -1040,6 +1089,11 @@ sub _tables {
     push( @tables, $this->_extra_tables() );
   }
 
+  my $restrict_by = $this->__attrib('restrict_by');
+  if ( defined($restrict_by) ) {
+    push( @tables, [ 'analysis', 'a' ] );
+  }
+
   return @tables;
 }
 
@@ -1100,14 +1154,21 @@ sub _columns {
 sub _default_where_clause {
   my ($this) = @_;
 
+  my $where_clause = '';
+
   if ( !$this->lightweight() ) {
     my $extra_where = $this->_extra_where_clause();
     if ( defined($extra_where) ) {
-      return $extra_where;
+      $where_clause = $extra_where;
     }
   }
 
-  return '';
+  my $restrict_by = $this->__attrib('restrict_by');
+  if ( defined($restrict_by) ) {
+    $where_clause .= ' ' . $restrict_by;
+  }
+
+  return $where_clause;
 }
 
 =head2 _objs_from_sth
