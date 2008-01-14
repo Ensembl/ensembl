@@ -236,6 +236,9 @@ sub size {
                The strand of the region to transform FROM
   Arg [5]    : Bio::EnsEMBL::CoordSystem
                The coordinate system to transform FROM
+  Arg [6]    : (optional) fastmap
+  Arg [7]    : (optional) Bio::Ensembl::Slice
+               The slice to transform TO
   Example    : @coords = $asm_mapper->map('X', 1_000_000, 2_000_000,
                                             1, $chr_cs);
   Description: Transforms coordinates from one coordinate system
@@ -253,7 +256,7 @@ sub map {
   throw('Incorrect number of arguments.') if(@_ < 6);
 
   my ($self, $frm_seq_region_name, $frm_start,
-      $frm_end, $frm_strand, $frm_cs, $fastmap) = @_;
+      $frm_end, $frm_strand, $frm_cs, $fastmap, $to_slice) = @_;
 
   my $mapper  = $self->{'first_last_mapper'};
   my $first_cs  = $self->{'first_cs'};
@@ -263,6 +266,9 @@ sub map {
 
   my $frm;
   my $registry;
+
+
+
 
   my @tmp;
   push @tmp, $frm_seq_region_name;
@@ -326,7 +332,7 @@ sub map {
           ($seq_region_id, $frm_start, $frm_end, $min_start, $min_end);
       }
     }
-    $self->adaptor->register_chained($self,$frm,$seq_region_id,$ranges);
+    $self->adaptor->register_chained($self,$frm,$seq_region_id,$ranges,$to_slice);
   }
 
   if($fastmap) {
