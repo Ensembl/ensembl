@@ -74,7 +74,7 @@ use Bio::EnsEMBL::StrainSlice;
 #use Bio::EnsEMBL::IndividualSliceFactory;
 use Bio::EnsEMBL::Mapper::RangeRegistry;
 
-use Data::Dumper;
+# use Data::Dumper;
 
 my $reg = "Bio::EnsEMBL::Registry";
 
