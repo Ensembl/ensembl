@@ -1481,7 +1481,7 @@ sub commify {
   Arg[3]      : string $coord_system_name (optional) - 'chromosome' by default
   Arg[4]      : string $coord_system_version (optional) - 'otter' by default
   Example     : $chroms = $support->fetch_non_hidden_slice($sa);
-  Description : retrieve all slices from a lutra database that don't have a hidden attribute
+  Description : retrieve all slices from a loutra database that don't have a hidden attribute
   Return type : arrayref
   Caller      : general
   Status      : stable
@@ -1492,28 +1492,75 @@ sub fetch_non_hidden_slices {
 	my $self = shift;
 	my $aa   = shift or throw("You must supply an attribute adaptor");
 	my $sa   = shift or throw("You must supply a slice adaptor");
-	my $cs = shift || 'chromosome';
-	my $cv = shift || 'Otter';
+	my $cs   = shift || 'chromosome';
+	my $cv   = shift || 'Otter';
 	my $visible_chroms;
 	foreach my $chrom ( @{$sa->fetch_all($cs,$cv)} ) {
-		my $attribs = $aa->fetch_all_by_Slice($chrom);
 		my $chrom_name = $chrom->name;
-		if (my @values = @{$self->get_attrib_values($attribs,'hidden')}) {
-			if ( scalar(@values) > 1) {
-				$self->log_warning("More than one hidden attribute for chromosome $chrom_name\n");
-			}
-			elsif (! $values[0]) {				
-				push @$visible_chroms, $chrom if @{$self->get_attrib_values($attribs,'hidden',0)};
-			}
-			else {
-				$self->log_verbose("chromosome $chrom_name is hidden\n");	
-			}
+		my $attribs = $aa->fetch_all_by_Slice($chrom,'hidden');
+		if ( scalar(@$attribs) > 1 ) {
+			$self->log_warning("More than one hidden attribute for chromosome $chrom_name\n");
+		}
+		elsif ($attribs->[0]->value == 0) {				
+			push @$visible_chroms, $chrom;
+		}
+		elsif ($attribs->[0]->value == 1) {	
+			$self->log_verbose("chromosome $chrom_name is hidden\n");	
 		}
 		else {
 			$self->log_warning("No hidden attribute for chromosome $chrom_name\n");
 		}
 	}
 	return $visible_chroms;
+}
+
+=head2 get_wanted_chromosomes
+
+  Arg[1]      : B::E::U::ConversionSupport
+  Arg[2]      : B::E::SliceAdaptor
+  Arg[3]      : B::E::AttributeAdaptor
+  Arg[4]      : string $coord_system_name (optional) - 'chromosome' by default
+  Arg[5]      : string $coord_system_version (optional) - 'otter' by default
+  Example     : @chr_names = &Slice::get_wanted_chromosomes($support,$laa,$lsa);
+  Description : retrieve names of slices from a lutra database that are ready for dumping to Vega
+  Return type : arrayref
+  Caller      : general
+  Status      : stable
+
+=cut
+
+sub get_wanted_chromosomes {
+	my $self = shift;
+	my $aa   = shift or throw("You must supply an attribute adaptor");
+	my $sa   = shift or throw("You must supply a slice adaptor");
+	my $cs   = shift || 'chromosome';
+	my $cv   = shift || 'Otter';
+	my $export_mode = $self->param('release_type');
+	my $release = $self->param('vega_release');
+	my $names;
+	my $chroms  = $self->fetch_non_hidden_slices($aa,$sa,$cs,$cv);
+ CHROM:
+	foreach my $chrom (@$chroms) {
+		my $attribs = $aa->fetch_all_by_Slice($chrom);
+		my $vals = $self->get_attrib_values($attribs,'vega_export_mod');
+		if (scalar(@$vals > 1)) {
+			$self->log_warning ("Multiple attribs for \'vega_export_mod\', please fix before continuing");
+			exit;
+		}
+		next CHROM if (! grep { $_ eq $export_mode} @$vals);
+		$vals =  $self->get_attrib_values($attribs,'vega_release',$release);	
+		if (scalar(@$vals > 1)) {
+			$self->log_warning ("Multiple attribs for \'vega_release\' value = $release , please fix before continuing");
+			exit;
+		}
+		next CHROM if (! grep { $_ eq $release} @$vals);
+		my $name = $chrom->seq_region_name;
+		if (my @ignored = $self->param('ignore_chr')) {
+			next CHROM if (grep {$_ eq $name} @ignored);
+		}
+		push @{$names}, $name;
+	}
+	return $names;
 }
 
 
@@ -1527,8 +1574,9 @@ sub fetch_non_hidden_slices {
                 of B::E::Attributes for a particular attribute type, returning the values
                 for each attribute of that type. Can therefore be used to test for the
                 number of attributes of that type.
-                (ii) In the presence of the optional value argument, it can be used to test
-                for the presence of an attribute with that particular value
+                (ii) In the presence of the optional value argument it returns all
+                attributes with that value ie can be used to test for the presence of an
+                attribute with that particular value.
   Return type : arrayref of values for that attribute
   Caller      : general
   Status      : stable
@@ -1577,7 +1625,7 @@ sub get_attrib_values {
   Example     : $support->fix_attrib_value($attribs,$chr_id,$chr_name,'vega_export_mod','N',1);
   Description : adds a new attribute to an object, or updates an existing attribute with a new value
                 Can be run in interactive or non-interactive mode (default)
-  Return type : none
+  Return type : arrayref of results
   Caller      : general
   Status      : only ever tested with seq_region_attributes to date
 
@@ -1619,9 +1667,9 @@ sub fix_attrib_value {
 		exit;
 	}
 
+	#...or update an attribute with new values...
 	else {
 		my $existing = $existings->[0];
-		#...or update an attribute with new values...
 		if ($existing ne $value) {
 			if ($self->user_proceed("Do you want to reset $name attrib (code = $code) from $existing to $value ?")) {
 				my $r = $self->update_attribute($id,$code,$value);
@@ -1689,7 +1737,7 @@ sub store_new_attribute {
 	my $self         = shift;
 	my $sr_id        = shift;
 	my $attrib_code  = shift;
-	my $attrib_value = shift;
+	my $attrib_value = shift || '';
 	my $table        = shift || 'seq_region_attrib';
 
 	#get database handle
