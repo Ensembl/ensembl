@@ -22,11 +22,9 @@ Bio::EnsEMBL::Slice - Arbitary Slice of a genome
    my $seqname = $slice->seq_region_name();
    my $start = $slice->start();
    my $end   = $slice->end();
-   print "$seqname, $start-$end\n";
 
    #get the sequence from the slice
    my $seq = $slice->seq();
-   print $seq;
 
    #get some features from the slice
    foreach $gene ( @{$slice->get_all_Genes} ) {
@@ -2883,6 +2881,128 @@ sub get_generic_features {
 
   return \%features;
 
+}
+
+=head2 project_to_slice
+
+  Arg [1]    : Slice to project to.
+  Example    : my $chr_projection = $clone_slice->project_to_slice($chrom_slice);
+                foreach my $segment ( @$chr_projection ){
+                  $chr_slice = $segment->to_Slice();
+                  print $clone_slice->seq_region_name(). ':'. $segment->from_start(). '-'.
+                        $segment->from_end(). ' -> '.$chr_slice->seq_region_name(). ':'. $chr_slice->start().
+	                '-'.$chr_slice->end().
+                         $chr_slice->strand(). " length: ".($chr_slice->end()-$chr_slice->start()+1). "\n";
+                }
+  Description: Projection of slice to another specific slice. Needed for where we have multiple mappings
+               and we want to state which one to project to.
+  Returntype : list reference of Bio::EnsEMBL::ProjectionSegment objects which
+               can also be used as [$start,$end,$slice] triplets.
+  Exceptions : none
+  Caller     : none
+  Status     : At Risk
+
+=cut
+
+sub project_to_slice {
+  my $self = shift;
+  my $to_slice = shift;
+
+  throw('Slice argument is required') if(!$to_slice);
+
+  my $slice_adaptor = $self->adaptor();
+
+  if(!$slice_adaptor) {
+    warning("Cannot project without attached adaptor.");
+    return [];
+  }
+
+
+  my $mapper_aptr = $slice_adaptor->db->get_AssemblyMapperAdaptor();
+
+  my $cs = $to_slice->coord_system();
+  my $slice_cs = $self->coord_system();
+
+
+  # no mapping is needed if the requested coord system is the one we are in
+  # but we do need to check if some of the slice is outside of defined regions
+  if($slice_cs->equals($cs)) {
+    return $self->_constrain_to_region();
+  }
+
+  my @projection;
+  my $current_start = 1;
+
+  # decompose this slice into its symlinked components.
+  # this allows us to handle haplotypes and PARs
+  my $normal_slice_proj =
+    $slice_adaptor->fetch_normalized_slice_projection($self);
+  foreach my $segment (@$normal_slice_proj) {
+    my $normal_slice = $segment->[2];
+
+    $slice_cs = $normal_slice->coord_system();
+
+    my $asma = $self->adaptor->db->get_AssemblyMapperAdaptor();
+    my $asm_mapper = $asma->fetch_by_CoordSystems($slice_cs, $cs);
+
+    # perform the mapping between this slice and the requested system
+    my @coords;
+
+    if( defined $asm_mapper ) {
+     @coords = $asm_mapper->map($normal_slice->seq_region_name(),
+				 $normal_slice->start(),
+				 $normal_slice->end(),
+				 $normal_slice->strand(),
+				 $slice_cs, undef, $to_slice);
+    } else {
+      $coords[0] = Bio::EnsEMBL::Mapper::Gap->new( $normal_slice->start(),
+						   $normal_slice->end());
+    }
+
+    #construct a projection from the mapping results and return it
+    foreach my $coord (@coords) {
+      my $coord_start  = $coord->start();
+      my $coord_end    = $coord->end();
+      my $length       = $coord_end - $coord_start + 1;
+
+      #skip gaps
+      if($coord->isa('Bio::EnsEMBL::Mapper::Coordinate')) {
+        my $coord_cs     = $coord->coord_system();
+
+        # If the normalised projection just ended up mapping to the
+        # same coordinate system we were already in then we should just
+        # return the original region.  This can happen for example, if we
+        # were on a PAR region on Y which refered to X and a projection to
+        # 'toplevel' was requested.
+        if($coord_cs->equals($slice_cs)) {
+          # trim off regions which are not defined
+          return $self->_constrain_to_region();
+        }
+
+        #create slices for the mapped-to coord system
+        my $slice = $slice_adaptor->fetch_by_seq_region_id(
+                                                    $coord->id(),
+                                                    $coord_start,
+                                                    $coord_end,
+                                                    $coord->strand());
+
+	my $current_end = $current_start + $length - 1;
+	
+        push @projection, bless([$current_start, $current_end, $slice],
+                                "Bio::EnsEMBL::ProjectionSegment");
+      }
+
+      $current_start += $length;
+    }
+  }
+
+
+  # delete the cache as we may want to map to different set next time and old 
+  # results will be cached.
+
+  $mapper_aptr->delete_cache;
+
+  return \@projection;
 }
 
 
