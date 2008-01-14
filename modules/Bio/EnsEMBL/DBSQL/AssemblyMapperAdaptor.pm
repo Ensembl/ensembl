@@ -631,7 +631,8 @@ sub register_component {
                The name of the seqregion we are registering on
   Arg [4]    : listref $ranges
                A list  of ranges to register (in [$start,$end] tuples).
-
+  Arg [5]    : (optional) $to_slice
+               Only register those on this Slice.
   Description: Registers a set of ranges on a chained assembly mapper.
                This function is at the heart of the chained mapping process.
                It retrieves information from the assembly table and
@@ -665,7 +666,15 @@ sub register_chained {
   my $from = shift;
   my $seq_region_id = shift;
   my $ranges = shift;
+  my $to_slice = shift;
 
+  my $to_seq_region_id;
+  if(defined($to_slice)){
+    $to_seq_region_id = $to_slice->get_seq_region_id();
+    if(!defined($to_seq_region_id)){
+      die "Could not get seq_region_id for to_slice".$to_slice->seq_region_name."\n"; 
+    }
+  }
 
   my ($start_name, $start_mid_mapper, $start_cs, $start_registry,
       $end_name, $end_mid_mapper, $end_cs, $end_registry);
@@ -702,45 +711,6 @@ sub register_chained {
       $start_mid_mapper = $combined_mapper;
   }
 
-  #the SQL varies depending on whether we are coming from assembled or
-  #component coordinate system
-  my $asm2cmp_sth = $self->prepare(
-     'SELECT
-         asm.cmp_start,
-         asm.cmp_end,
-         asm.cmp_seq_region_id,
-         sr.name,
-         sr.length,
-         asm.ori,
-         asm.asm_start,
-         asm.asm_end
-      FROM
-         assembly asm, seq_region sr
-      WHERE
-         asm.asm_seq_region_id = ? AND
-         ? <= asm.asm_end AND
-         ? >= asm.asm_start AND
-         asm.cmp_seq_region_id = sr.seq_region_id AND
-	 sr.coord_system_id = ?');
-
-  my $cmp2asm_sth = $self->prepare(
-      'SELECT
-         asm.asm_start,
-         asm.asm_end,
-         asm.asm_seq_region_id,
-         sr.name,
-         sr.length,
-         asm.ori,
-         asm.cmp_start,
-         asm.cmp_end
-      FROM
-         assembly asm, seq_region sr
-      WHERE
-         asm.cmp_seq_region_id = ? AND
-         ? <= asm.cmp_end AND
-         ? >= asm.cmp_start AND
-         asm.asm_seq_region_id = sr.seq_region_id AND
-	 sr.coord_system_id = ?');
 
   ##############
   # obtain the first half of the mappings and load them into the start mapper
@@ -771,10 +741,76 @@ sub register_chained {
   $asm_cs = $path[0];
   $cmp_cs = $path[-1];
 
+  #the SQL varies depending on whether we are coming from assembled or
+  #component coordinate system
+
+my $asm2cmp = (<<ASMCMP);
+   SELECT
+         asm.cmp_start,
+         asm.cmp_end,
+         asm.cmp_seq_region_id,
+         sr.name,
+         sr.length,
+         asm.ori,
+         asm.asm_start,
+         asm.asm_end
+      FROM
+         assembly asm, seq_region sr
+      WHERE
+         asm.asm_seq_region_id = ? AND
+         ? <= asm.asm_end AND
+         ? >= asm.asm_start AND
+         asm.cmp_seq_region_id = sr.seq_region_id AND
+	 sr.coord_system_id = ?
+ASMCMP
+
+
+my $cmp2asm = (<<CMPASM);
+   SELECT
+         asm.asm_start,
+         asm.asm_end,
+         asm.asm_seq_region_id,
+         sr.name,
+         sr.length,
+         asm.ori,
+         asm.cmp_start,
+         asm.cmp_end
+      FROM
+         assembly asm, seq_region sr
+      WHERE
+         asm.cmp_seq_region_id = ? AND
+         ? <= asm.cmp_end AND
+         ? >= asm.cmp_start AND
+         asm.asm_seq_region_id = sr.seq_region_id AND
+	 sr.coord_system_id = ?
+CMPASM
+
+  my $asm2cmp_sth;
+  my $cmp2asm_sth;
+  if(defined($to_slice)){
+    my $to_cs = $to_slice->coord_system;
+    if($asm_cs == $to_cs){
+      $asm2cmp_sth = $self->prepare($asm2cmp." AND asm.asm_seq_region_id = $to_seq_region_id");
+      $cmp2asm_sth = $self->prepare($cmp2asm." AND asm.asm_seq_region_id = $to_seq_region_id");
+    }
+    elsif($cmp_cs == $to_cs){
+      $asm2cmp_sth = $self->prepare($asm2cmp." AND asm.cmp_seq_region_id = $to_seq_region_id");
+      $cmp2asm_sth = $self->prepare($cmp2asm." AND asm.cmp_seq_region_id = $to_seq_region_id");
+    }
+    else{
+      $asm2cmp_sth = $self->prepare($asm2cmp);
+      $cmp2asm_sth = $self->prepare($cmp2asm);
+    }
+  }	
+  else{
+    $asm2cmp_sth = $self->prepare($asm2cmp);
+    $cmp2asm_sth = $self->prepare($cmp2asm);
+  }
+  
+
+
   $sth = ($asm_cs->equals($start_cs)) ? $asm2cmp_sth : $cmp2asm_sth;
 
-#  my $seq_region_id = $self->_seq_region_name_to_id($seq_region_name,
-#						    $start_cs->dbID());
   my $mid_cs_id;
 
   # check for the simple case where the ChainedMapper is short
@@ -807,6 +843,7 @@ sub register_chained {
 		       \$start_end);
 
     while($sth->fetch()) {
+
       if( defined $mid_cs ) {
         $start_mid_mapper->add_map_coordinates
           (
@@ -886,6 +923,22 @@ sub register_chained {
 	  " and " . $end_cs->name . " " . $end_cs->version . ")." .
 	  "\nExpected path length 1, got $len. " .
 	  "(path=$path)");
+  }
+
+  if(defined($to_slice)){
+    my $to_cs = $to_slice->coord_system;
+    if($asm_cs == $to_cs){
+      $asm2cmp_sth = $self->prepare($asm2cmp." AND asm.asm_seq_region_id = $to_seq_region_id");
+      $cmp2asm_sth = $self->prepare($cmp2asm." AND asm.asm_seq_region_id = $to_seq_region_id");
+    }
+    elsif($cmp_cs == $to_cs){
+      $asm2cmp_sth = $self->prepare($asm2cmp." AND asm.cmp_seq_region_id = $to_seq_region_id");
+      $cmp2asm_sth = $self->prepare($cmp2asm." AND asm.cmp_seq_region_id = $to_seq_region_id");
+    }
+    else{
+      $asm2cmp_sth = $self->prepare($asm2cmp);
+      $cmp2asm_sth = $self->prepare($cmp2asm);
+    }
   }
 
   $sth = ($asm_cs->equals($mid_cs)) ? $asm2cmp_sth : $cmp2asm_sth;
@@ -1290,7 +1343,6 @@ sub _build_combined_mapper {
 
   my $mid_name = "middle";
 
-
   foreach my $range (@$ranges) {
     my ( $seq_region_id, $start, $end) = @$range;
 
@@ -1306,7 +1358,7 @@ sub _build_combined_mapper {
         $sum += $icoord->length();
         next;
       }
-
+      
 
       #feed the results of the first mapping into the second mapper
       my @final_coords =
@@ -1314,9 +1366,11 @@ sub _build_combined_mapper {
                                          $icoord->end,
                                          $icoord->strand, $mid_name);
 
+
       my $istrand = $icoord->strand();
       foreach my $fcoord (@final_coords) {
         #load up the final mapper
+      
         if($fcoord->isa('Bio::EnsEMBL::Mapper::Coordinate')) {
           my $total_start = $start + $sum;
           my $total_end   = $total_start + $fcoord->length - 1;
