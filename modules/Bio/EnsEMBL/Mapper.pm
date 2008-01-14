@@ -58,7 +58,7 @@ use Bio::EnsEMBL::Mapper::Gap;
 
 use Bio::EnsEMBL::Utils::Exception qw(throw);
 
-use Data::Dumper;
+# use Data::Dumper;
 
 =head2 new
 
