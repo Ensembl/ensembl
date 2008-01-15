@@ -688,7 +688,7 @@ sub get_database {
             -dbname => $self->param("${prefix}dbname"),
             -group  => $database,
     );
-    
+
     # explicitely set the dnadb to itself - by default the Registry assumes
     # a group 'core' for this now
     $dba->dnadb($dba);
@@ -838,14 +838,15 @@ sub dynamic_use {
     my ($self, $classname) = @_;
     my ($parent_namespace, $module) = $classname =~/^(.*::)(.*)$/ ?
                                         ($1,$2) : ('::', $classname);
+
     no strict 'refs';
     # return if module has already been imported
-    return 1 if $parent_namespace->{$module.'::'};
+    return 1 if $parent_namespace->{$module.'::'} && %{ $parent_namespace->{$module.'::'}||{} };
     
     eval "require $classname";
     throw("Failed to require $classname: $@") if ($@);
     $classname->import();
-    
+
     return 1;
 }
 
