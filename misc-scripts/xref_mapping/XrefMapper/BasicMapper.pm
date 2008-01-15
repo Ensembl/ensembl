@@ -517,7 +517,7 @@ sub dump_subset{
   my ($self,$xref,$rspecies_id,$rsource_id,$index) = @_;
 
   # generate or condition list for species and sources
-  my $final_clause;
+  my $final_clause = "";
   my $use_all = 0;
   my @or_list;
   for (my $j = 0; $j < scalar(@$rspecies_id); $j++){
