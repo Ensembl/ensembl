@@ -24,6 +24,7 @@ Post questions to the EnsEMBL development list ensembl-dev@ebi.ac.uk
 use strict;
 use warnings;
 use vars qw(@ISA);
+use Data::Dumper;
 
 use Bio::EnsEMBL::Utils::VegaCuration::Transcript;
 
@@ -161,3 +162,47 @@ sub check_CDS_start_end_remarks_loutre {
 	}
 	return $results;
 }
+
+
+sub get_havana_seleno_comments {
+	my $seen_translations;
+	while (<DATA>) {
+		next if /^\s+$/ or /#+/;
+		my ($obj,$comment) = split /=/;
+		$obj =~ s/^\s+|\s+$//g;
+		$comment =~ s/^\s+|\s+$//g;
+		$seen_translations->{$obj} = $comment;
+	}
+	return $seen_translations;
+}
+
+
+#details of annotators comments
+__DATA__
+
+OTTHUMT00000144659 = FIXED- changed to transcript
+OTTHUMT00000276377 = FIXED- changed to transcript
+OTTHUMT00000257741 = FIXED- changed to nmd
+OTTHUMT00000155694 = NOT_FIXED- should be nmd but external annotation but cannot be fixed
+OTTHUMT00000155695 = NOT_FIXED- should be nmd but external annotation but cannot be fixed
+OTTHUMT00000282573 = FIXED- changed to unprocessed pseudogene
+OTTHUMT00000285227 = FIXED- changed start site
+OTTHUMT00000151008 = FIXED- incorrect trimming of CDS, removed extra stop codon
+OTTHUMT00000157999 = FIXED- changed incorrect stop
+OTTHUMT00000150523 = FIXED- incorrect trimming of CDS
+OTTHUMT00000150525 = FIXED- incorrect trimming of CDS
+OTTHUMT00000150522 = FIXED- incorrect trimming of CDS
+OTTHUMT00000150521 = FIXED- incorrect trimming of CDS
+OTTHUMT00000246819 = FIXED- corrected frame
+OTTHUMT00000314078 = FIXED- corrected frame
+OTTHUMT00000080133 = FIXED- corrected frame
+OTTHUMT00000286423 = FIXED- changed to transcript
+OTTMUST00000055509 = FIXED- error
+OTTMUST00000038729 = FIXED- corrected frame
+OTTMUST00000021760 = FIXED- corrected frame
+OTTMUST00000023057 = FIXED- corrected frame
+OTTMUST00000015207 = FIXED- corrected frame
+OTTMUST00000056646 = FIXED- error
+OTTMUST00000059686 = FIXED- corrected frame
+OTTMUST00000013426 = FIXED- corrected frame
+OTTMUST00000044412 = FIXED- error
