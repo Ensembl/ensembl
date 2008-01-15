@@ -2924,12 +2924,6 @@ sub project_to_slice {
   my $slice_cs = $self->coord_system();
 
 
-  # no mapping is needed if the requested coord system is the one we are in
-  # but we do need to check if some of the slice is outside of defined regions
-  if($slice_cs->equals($cs)) {
-    return $self->_constrain_to_region();
-  }
-
   my @projection;
   my $current_start = 1;
 

@@ -184,10 +184,10 @@ sub fetch_by_CoordSystems {
     throw("cs2 argument must be a Bio::EnsEMBL::CoordSystem.");
   }
 
-  if($cs1->equals($cs2)) {
-    throw("Cannot create mapper between same coord systems: " .
-          $cs1->name . " " . $cs1->version);
-  }
+#  if($cs1->equals($cs2)) {
+#    throw("Cannot create mapper between same coord systems: " .
+#          $cs1->name . " " . $cs1->version);
+#  }
 
   if($cs1->is_top_level()) {
     return Bio::EnsEMBL::TopLevelAssemblyMapper->new($self, $cs1, $cs2);
