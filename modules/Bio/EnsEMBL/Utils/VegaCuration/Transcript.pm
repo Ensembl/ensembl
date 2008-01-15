@@ -110,8 +110,11 @@ sub check_remarks_and_update_names {
 		}
 	}
 
+#	if ($gsi eq 'OTTMUSG00000001835') { warn Dumper(\%remarks); } 
+
 	#if any of the remarks identify this gene as being known by Havana as being fragmented...
 	if ( (grep {$_ =~ /fragmen/i } @{$remarks{'hidden_remark'}->{'gene'}},
+		  @{$remarks{'remark'}->{'gene'}},
 		  @{$remarks{'remark'}->{'transcripts'}}, 
 		  @{$remarks{'hidden_remark'}->{'transcripts'}} ) ) {
 		if (grep { $_ eq $gene_remark} @{$remarks{'remark'}->{'gene'}}) {
