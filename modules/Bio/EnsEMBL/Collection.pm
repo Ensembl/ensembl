@@ -200,6 +200,9 @@ contribute 1/3 to the sum of each bin.
 Returns an array of bins, each bin containing the fraction of the bin
 that is coverage by any feature.
 
+Please note that the current implementation of this particular binning
+method is extremely inefficient.
+
 =back
 
 =head1 CONTACT
