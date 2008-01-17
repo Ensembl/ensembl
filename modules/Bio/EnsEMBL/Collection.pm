@@ -187,15 +187,15 @@ Returns an array of bins, each bin containing an array of entries
 method) allocated to that bin.  The 'entry' binning method is equivalent
 to 'entries'.
 
-=begin comment
-
-=item 'coverage1'
+=item 'fractional_count' and 'fcount'
 
 Returns an array of bins, each bin containing the sum of the fractions
 of features overlapping that bin.  A feature fully inside a bin will
 contribute 1 to the sum while a feature spanning exactly three bins
 (from the very start of the first to the very end of the third) will
 contribute 1/3 to the sum of each bin.
+
+=begin comment
 
 =item 'coverage2'
 
@@ -251,15 +251,15 @@ our %SEGMENTS;
 our %SEQ_REG_MAP;
 
 our %VALID_BINNING_METHODS = (
-                          'count'     => 0,
-                          'density'   => 0,    # Same as 'count'.
-                          'indices'   => 1,
-                          'index'     => 1,    # Same as 'indices'.
-                          'entries'   => 2,
-                          'entry'     => 2,    # Same as 'entries'.
-                          'coverage1' => 3,    # FIXME: find better name
-                          'coverage2' => 4     # FIXME: find better name
-);
+               'count'            => 0,
+               'density'          => 0,    # Same as 'count'.
+               'indices'          => 1,
+               'index'            => 1,    # Same as 'indices'.
+               'entries'          => 2,
+               'entry'            => 2,    # Same as 'entries'.
+               'fractional_count' => 3,
+               'fcount'           => 3,    # Same as 'fractional_count'.
+               'coverage'         => 4 );
 
 =head1 METHODS (constructor)
 
@@ -770,11 +770,34 @@ sub get_bins {
 
     } elsif ( $method == 3 ) {
 
-      # For 'coverage1'.
+      # For 'fractional_count' and 'fcount'.
 
-      throw("The 'coverage1' binning method is not yet implemented");
+      if ( $start_bin == $end_bin ) {
+        ++$bins[$start_bin];
+      } else {
 
-      # FIXME
+        my $feature_length =
+          $entry->[ENTRY_SEQREGIONEND] -
+          $entry->[ENTRY_SEQREGIONSTART] + 1;
+
+        $bins[$start_bin] +=
+          ( ( $start_bin + 1 )*$bin_length -
+            ( $entry->[ENTRY_SEQREGIONSTART] - $slice_start ) )/
+          $feature_length;
+
+        for ( my $bin_index = $start_bin + 1 ;
+              $bin_index <= $end_bin - 1 ;
+              ++$bin_index )
+        {
+          $bins[$bin_index] += $bin_length/$feature_length;
+        }
+
+        $bins[$end_bin] +=
+          ( ( $entry->[ENTRY_SEQREGIONEND] - $slice_start ) -
+            $end_bin*$bin_length +
+            1 )/$feature_length;
+
+      }
 
     } elsif ( $method == 4 ) {
 
