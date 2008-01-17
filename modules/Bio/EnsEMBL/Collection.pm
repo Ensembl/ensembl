@@ -816,12 +816,13 @@ sub get_bins {
            || ( defined( $bin_masks[$start_bin] )
                 && $bin_masks[$start_bin] != 1 ) )
       {
+        my $bin_start = int( $start_bin*$bin_length );
         for ( my $pos = $feature_start ;
                  $pos <= $feature_end
               && $pos <= int( ( $start_bin + 1 )*$bin_length - 1 ) ;
               ++$pos )
         {
-          $bin_masks[$start_bin][$pos] = 1;
+          $bin_masks[$start_bin][ $pos - $bin_start ] = 1;
         }
       }
 
@@ -836,12 +837,13 @@ sub get_bins {
            || ( defined( $bin_masks[$end_bin] )
                 && $bin_masks[$end_bin] != 1 ) )
       {
-        for ( my $pos = int( $end_bin*$bin_length ) ;
+        my $bin_start = int( $end_bin*$bin_length );
+        for ( my $pos = $bin_start ;
                  $pos <= $feature_end
               && $pos <= int( ( $end_bin + 1 )*$bin_length - 1 ) ;
               ++$pos )
         {
-          $bin_masks[$end_bin][$pos] = 1;
+          $bin_masks[$end_bin][ $pos - $bin_start ] = 1;
         }
       }
 
