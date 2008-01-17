@@ -195,14 +195,10 @@ contribute 1 to the sum while a feature spanning exactly three bins
 (from the very start of the first to the very end of the third) will
 contribute 1/3 to the sum of each bin.
 
-=begin comment
-
-=item 'coverage2'
+=item 'coverage'
 
 Returns an array of bins, each bin containing the fraction of the bin
 that is coverage by any feature.
-
-=end comment
 
 =back
 
@@ -720,7 +716,9 @@ sub get_bins {
   my $bin_length = ( $slice->end() - $slice_start + 1 )/$nbins;
 
   my @bins = map( $_ = undef, 0 .. $nbins - 1 );
+
   my $entry_index = 0;
+  my @bin_masks;
 
   foreach my $entry ( @{ $this->entries() } ) {
     my $start_bin = int(
@@ -780,11 +778,13 @@ sub get_bins {
           $entry->[ENTRY_SEQREGIONEND] -
           $entry->[ENTRY_SEQREGIONSTART] + 1;
 
+        # The first bin...
         $bins[$start_bin] +=
           ( ( $start_bin + 1 )*$bin_length -
             ( $entry->[ENTRY_SEQREGIONSTART] - $slice_start ) )/
           $feature_length;
 
+        # The intermediate bins (if there are any)...
         for ( my $bin_index = $start_bin + 1 ;
               $bin_index <= $end_bin - 1 ;
               ++$bin_index )
@@ -792,24 +792,80 @@ sub get_bins {
           $bins[$bin_index] += $bin_length/$feature_length;
         }
 
+        # The last bin...
         $bins[$end_bin] +=
           ( ( $entry->[ENTRY_SEQREGIONEND] - $slice_start ) -
             $end_bin*$bin_length +
             1 )/$feature_length;
 
-      }
+      } ## end else [ if ( $start_bin == $end_bin)
 
     } elsif ( $method == 4 ) {
 
-      # For 'coverage2'.
+      # For 'coverage'.
 
-      throw("The 'coverage2' binning method is not yet implemented");
+      # FIXME: Correct but inefficient.
 
-      # FIXME
+      my $feature_start = $entry->[ENTRY_SEQREGIONSTART] - $slice_start;
+      my $feature_end   = $entry->[ENTRY_SEQREGIONEND] - $slice_start;
 
-    }
+      if ( !defined( $bin_masks[$start_bin] )
+           || ( defined( $bin_masks[$start_bin] )
+                && $bin_masks[$start_bin] != 1 ) )
+      {
+        for ( my $pos = $feature_start ;
+                 $pos <= $feature_end
+              && $pos <= int( ( $start_bin + 1 )*$bin_length - 1 ) ;
+              ++$pos )
+        {
+          $bin_masks[$start_bin][$pos] = 1;
+        }
+      }
+
+      for ( my $bin_index = $start_bin + 1 ;
+            $bin_index <= $end_bin - 1 ;
+            ++$bin_index )
+      {
+        $bin_masks[$bin_index] = 1;
+      }
+
+      if ( !defined( $bin_masks[$end_bin] )
+           || ( defined( $bin_masks[$end_bin] )
+                && $bin_masks[$end_bin] != 1 ) )
+      {
+        for ( my $pos = int( $end_bin*$bin_length ) ;
+                 $pos <= $feature_end
+              && $pos <= int( ( $end_bin + 1 )*$bin_length - 1 ) ;
+              ++$pos )
+        {
+          $bin_masks[$end_bin][$pos] = 1;
+        }
+      }
+
+    } ## end elsif ( $method == 4 )
 
   } ## end foreach my $entry ( @{ $this...
+
+  if ( $method == 4 ) {
+
+    # For the 'coverage' method: Finish up by going through @bin_masks
+    # and sum up the arrays.
+
+    # FIXME: Correct but inefficient.
+
+    for ( my $bin_index = 0 ; $bin_index < $nbins ; ++$bin_index ) {
+      if ( defined( $bin_masks[$bin_index] ) ) {
+        if ( !ref( $bin_masks[$bin_index] ) ) {
+          $bins[$bin_index] = 1;
+        } else {
+          $bins[$bin_index] =
+            scalar( grep ( defined($_), @{ $bin_masks[$bin_index] } ) )/
+            $bin_length;
+        }
+      }
+    }
+
+  }
 
   return \@bins;
 } ## end sub get_bins
