@@ -344,7 +344,6 @@ sub fetch_by_region {
       my $arr = [ $id, $seq_region_name, $cs_id, $length ];
       $self->{'sr_name_cache'}->{"$seq_region_name:$cs_id"} = $arr;
       $self->{'sr_id_cache'}->{"$id"} = $arr;
-
       $cs = $csa->fetch_by_dbID( $cs_id );
     }
   }
@@ -445,7 +444,7 @@ sub fetch_by_seq_region_id {
   my $arr = $self->{'sr_id_cache'}->{ $seq_region_id };
   my ($name, $length, $cs);
 
-  if( $arr ) {
+  if( $arr &&  defined($arr->[2])) {
     my $cs_id;
     ($name, $cs_id, $length ) = ( $arr->[1], $arr->[2], $arr->[3] );
     $cs = $self->db->get_CoordSystemAdaptor->fetch_by_dbID($cs_id);
