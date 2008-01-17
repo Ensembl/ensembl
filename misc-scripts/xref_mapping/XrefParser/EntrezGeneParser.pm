@@ -37,13 +37,14 @@ sub run {
   my %species_tax_id = %{$self->get_taxonomy_from_species_id($species_id)};
   
 
-    my $eg_io = $self->get_filehandle($file);
-    if ( !defined $eg_io ) {
-        print "ERROR: Could not open $file\n";
-        return 1;    # 1 is an error
-    }
+  my $eg_io = $self->get_filehandle($file);
+  if ( !defined $eg_io ) {
+    print "ERROR: Could not open $file\n";
+    return 1;    # 1 is an error
+  }
 
-  
+  my %seen;
+
 
   my $head = $eg_io->getline(); # first record are the headers
   chomp $head;
@@ -96,6 +97,12 @@ sub run {
       next;
     }
     my $acc    = $arr[$gene_id_index];
+    if($seen{$acc}){
+      next;
+    }
+    else{
+      $seen{$acc} = 1;
+    }
     my $symbol = $arr[$gene_symbol_index];
     my $desc   = $arr[$gene_desc_index];
     $self->add_xref($acc,"",$symbol,$desc,$source_id,$species_id);
