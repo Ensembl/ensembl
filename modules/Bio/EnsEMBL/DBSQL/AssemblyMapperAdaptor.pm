@@ -670,6 +670,9 @@ sub register_chained {
 
   my $to_seq_region_id;
   if(defined($to_slice)){
+   if($casm_mapper->first_CoordSystem()->equals($casm_mapper->last_CoordSystem())){
+      return $self->_register_chained_special($casm_mapper, $from, $seq_region_id, $ranges, $to_slice);
+    }
     $to_seq_region_id = $to_slice->get_seq_region_id();
     if(!defined($to_seq_region_id)){
       die "Could not get seq_region_id for to_slice".$to_slice->seq_region_name."\n"; 
@@ -789,13 +792,13 @@ CMPASM
   my $cmp2asm_sth;
   if(defined($to_slice)){
     my $to_cs = $to_slice->coord_system;
-    if($asm_cs == $to_cs){
-      $asm2cmp_sth = $self->prepare($asm2cmp." AND asm.asm_seq_region_id = $to_seq_region_id");
+    if($asm_cs->equals($to_cs)){
+      $asm2cmp_sth = $self->prepare($asm2cmp);
       $cmp2asm_sth = $self->prepare($cmp2asm." AND asm.asm_seq_region_id = $to_seq_region_id");
     }
-    elsif($cmp_cs == $to_cs){
+    elsif($cmp_cs->equals($to_cs)){
       $asm2cmp_sth = $self->prepare($asm2cmp." AND asm.cmp_seq_region_id = $to_seq_region_id");
-      $cmp2asm_sth = $self->prepare($cmp2asm." AND asm.cmp_seq_region_id = $to_seq_region_id");
+      $cmp2asm_sth = $self->prepare($cmp2asm);
     }
     else{
       $asm2cmp_sth = $self->prepare($asm2cmp);
@@ -927,13 +930,13 @@ CMPASM
 
   if(defined($to_slice)){
     my $to_cs = $to_slice->coord_system;
-    if($asm_cs == $to_cs){
-      $asm2cmp_sth = $self->prepare($asm2cmp." AND asm.asm_seq_region_id = $to_seq_region_id");
+    if($asm_cs->equals($to_cs)){
+      $asm2cmp_sth = $self->prepare($asm2cmp);
       $cmp2asm_sth = $self->prepare($cmp2asm." AND asm.asm_seq_region_id = $to_seq_region_id");
     }
-    elsif($cmp_cs == $to_cs){
+    elsif($cmp_cs->equals($to_cs)){
       $asm2cmp_sth = $self->prepare($asm2cmp." AND asm.cmp_seq_region_id = $to_seq_region_id");
-      $cmp2asm_sth = $self->prepare($cmp2asm." AND asm.cmp_seq_region_id = $to_seq_region_id");
+      $cmp2asm_sth = $self->prepare($cmp2asm);
     }
     else{
       $asm2cmp_sth = $self->prepare($asm2cmp);
@@ -993,6 +996,259 @@ CMPASM
   return;
 }
 
+
+=head _register_chanied_special{
+
+  Arg [1]    : Bio::EnsEMBL::ChainedAssemblyMapper $casm_mapper
+               The chained assembly mapper to register regions on
+  Arg [2]    : string $from ('first' or 'last')
+               The direction we are registering from, and the name of the
+               internal mapper.
+  Arg [3]    : string $seq_region_name
+               The name of the seqregion we are registering on
+  Arg [4]    : listref $ranges
+               A list  of ranges to register (in [$start,$end] tuples).
+  Arg [5]    : (optional) $to_slice
+               Only register those on this Slice.
+  Description: Registers a set of ranges on a chained assembly mapper.
+               This function is at the heart of the chained mapping process.
+               It retrieves information from the assembly table and
+               dynamically constructs the mappings between two coordinate
+               systems which are 2 mapping steps apart. It does this by using
+               two internal mappers to load up a third mapper which is
+               actually used by the ChainedAssemblyMapper to perform the
+               mapping.
+
+               This method must be called before any mapping is
+               attempted on regions of interest, otherwise only gaps will
+               be returned.  Note that the ChainedAssemblyMapper automatically
+               calls this method when the need arises.
+  Returntype : none
+  Exceptions : throw if the seq_region to be registered does not exist
+               or if it associated with multiple assembled pieces (bad data
+               in assembly table)
+
+               throw if the mapping between the coordinate systems cannot
+               be performed in two steps, which means there is an internal
+               error in the data in the meta table or in the code that creates
+               the mapping paths.
+  Caller     : Bio::EnsEMBL::AssemblyMapper
+  Status     : Stable
+
+=cut
+
+sub _register_chained_special {
+  my $self = shift;
+  my $casm_mapper = shift;
+  my $from = shift;
+  my $seq_region_id = shift;
+  my $ranges = shift;
+  my $to_slice = shift;
+  my $found = 0;
+
+  my $sth = $self->prepare("SELECT
+		      asm.cmp_start,
+		      asm.cmp_end,
+		      asm.cmp_seq_region_id,
+		      sr.name,
+		      sr.length,
+		      asm.ori,
+		      asm.asm_start,
+		      asm.asm_end
+		    FROM
+		      assembly asm, seq_region sr
+		    WHERE
+		      asm.asm_seq_region_id = ? AND
+                      ? <= asm.asm_end AND
+		      ? >= asm.asm_start AND
+		      asm.cmp_seq_region_id = sr.seq_region_id AND
+		      sr.coord_system_id = ? AND
+		      asm.cmp_seq_region_id = ?");
+
+
+  my ($start_name, $start_mid_mapper, $start_cs, $start_registry,
+      $end_name, $end_mid_mapper, $end_cs, $end_registry);
+
+  if($from eq 'first') {
+    $start_name       = 'first';
+    $start_mid_mapper = $casm_mapper->first_middle_mapper();
+    $start_cs         = $casm_mapper->first_CoordSystem();
+    $start_registry   = $casm_mapper->first_registry();
+    $end_mid_mapper   = $casm_mapper->last_middle_mapper();
+    $end_cs           = $casm_mapper->last_CoordSystem();
+    $end_registry     = $casm_mapper->last_registry();
+    $end_name         = 'last';
+  } elsif($from eq 'last') {
+    $start_name       = 'last';
+    $start_mid_mapper = $casm_mapper->last_middle_mapper();
+    $start_cs         = $casm_mapper->last_CoordSystem();
+    $start_registry   = $casm_mapper->last_registry();
+    $end_mid_mapper   = $casm_mapper->first_middle_mapper();
+    $end_cs           = $casm_mapper->first_CoordSystem();
+    $end_registry     = $casm_mapper->first_registry();
+    $end_name         = 'first';
+  } else {
+    throw("Invalid from argument: [$from], must be 'first' or 'last'");
+  }
+  my $combined_mapper = $casm_mapper->first_last_mapper();
+  my $mid_cs     = $casm_mapper->middle_CoordSystem();
+  my $mid_name   = 'middle';
+  my $csa = $self->db->get_CoordSystemAdaptor();
+
+  # Check for the simple case where the ChainedMapper is short
+  if( ! defined $mid_cs ) {
+      $start_mid_mapper = $combined_mapper;
+  }
+
+
+  my @path;
+  if( defined $mid_cs ) {
+      @path = @{$csa->get_mapping_path($start_cs, $mid_cs)};
+  } else {
+      @path = @{$csa->get_mapping_path( $start_cs, $end_cs )};
+  }
+  if( ! defined $mid_cs ) {
+      $start_mid_mapper = $combined_mapper;
+  }
+
+  if(@path != 2 && defined( $path[1] )) {
+    my $path = join(',', map({$_->name .' '. $_->version} @path));
+    my $len  = scalar(@path) - 1;
+    throw("Unexpected mapping path between start and intermediate " .
+	  "coord systems (". $start_cs->name . " " . $start_cs->version .
+	  " and " . $mid_cs->name . " " . $mid_cs->version . ")." .
+	  "\nExpected path length 1, got $len. " .
+	  "(path=$path)");
+  }
+
+  my ($asm_cs,$cmp_cs);
+  $asm_cs = $path[0];
+  $cmp_cs = $path[-1];
+
+  my $combined_mapper = $casm_mapper->first_last_mapper();
+  my $mid_cs     = $casm_mapper->middle_CoordSystem();
+  my $mid_name   = 'middle';
+  my $csa = $self->db->get_CoordSystemAdaptor();
+
+  my $mid_cs_id;
+
+
+  # Check for the simple case where the ChainedMapper is short
+  if( ! defined $mid_cs ) {
+      $start_mid_mapper = $combined_mapper;
+  }
+
+  my @mid_ranges;
+  my @start_ranges;
+
+  my $to_cs = $to_slice->coord_system;
+  foreach my $direction (1, 0){
+    my $id1;
+    my $id2;
+    if($direction){
+      $id1 = $seq_region_id;
+      $id2 = $to_slice->get_seq_region_id();
+    }
+    else{
+      $id2 = $seq_region_id;
+      $id1 = $to_slice->get_seq_region_id();
+    }
+    
+    foreach my $range (@$ranges) {
+      my ($start, $end) = @$range;
+      $sth->bind_param(1,$id1,SQL_INTEGER);
+      $sth->bind_param(2,$start,SQL_INTEGER);
+      $sth->bind_param(3,$end,SQL_INTEGER);
+      $sth->bind_param(4,$to_cs->dbID,SQL_INTEGER);
+      $sth->bind_param(5,$id2,SQL_INTEGER);
+      $sth->execute();
+
+      my ($mid_start, $mid_end, $mid_seq_region_id, $mid_seq_region, $mid_length,
+	  $ori, $start_start, $start_end);
+      
+      $sth->bind_columns(\$mid_start, \$mid_end, \$mid_seq_region_id,
+			 \$mid_seq_region, \$mid_length, \$ori, \$start_start,
+			 \$start_end);
+      
+      while($sth->fetch()) {
+	$found = 1;
+      
+	if( defined $mid_cs ) {
+	  $start_mid_mapper->add_map_coordinates
+	    (
+	     $id1,$start_start, $start_end, $ori,
+	     $mid_seq_region_id, $mid_start, $mid_end
+	    );
+	} else {
+	  if( $from eq "first") {
+	    if($direction){
+	      $combined_mapper->add_map_coordinates
+		(
+		 $id1,$start_start, $start_end, $ori,
+		 $mid_seq_region_id, $mid_start, $mid_end
+		);
+	    }
+	    else{
+	      $combined_mapper->add_map_coordinates
+		(
+		 $mid_seq_region_id, $mid_start, $mid_end, $ori,
+		 $id1,$start_start, $start_end
+		);
+	    }	
+	  } else {
+	    if($direction){
+	      $combined_mapper->add_map_coordinates
+		(
+		 $mid_seq_region_id, $mid_start, $mid_end, $ori,
+		 $id1,$start_start, $start_end
+		);
+	    }
+	    else{
+	      $combined_mapper->add_map_coordinates
+		(
+		 $id1,$start_start, $start_end, $ori,
+		 $mid_seq_region_id, $mid_start, $mid_end
+		);
+	    }
+	  }
+	}
+	
+	#update sr_name cache
+	my $arr = [ $mid_seq_region_id, $mid_seq_region,
+		    $mid_cs_id, $mid_length ];
+	
+	$self->{'sr_name_cache'}->{"$mid_seq_region:$mid_cs_id"} = $arr;
+	$self->{'sr_id_cache'}->{"$mid_seq_region_id"} = $arr;
+	
+	push @mid_ranges,[$mid_seq_region_id,$mid_seq_region,
+			  $mid_start,$mid_end];
+	push @start_ranges, [ $id1, $start_start, $start_end ];
+	
+	#the region that we actually register may actually be larger or smaller
+	#than the region that we wanted to register.
+	#register the intersection of the region so we do not end up doing 
+	#extra work later
+	
+	if($start_start < $start || $start_end > $end) {
+	  $start_registry->check_and_register($id1,$start_start,
+					      $start_end);
+	}
+      }
+    $sth->finish();
+    }
+    if($found){
+      if( ! defined $mid_cs ) {
+	for my $range ( @mid_ranges ) {
+	  $end_registry->check_and_register( $range->[0], $range->[2],
+					     $range->[3] );
+	}
+	
+	# and thats it for the simple case ...
+	return;
+      }
+    }
+  }
+}
 
 
 =head2 register_all
