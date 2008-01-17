@@ -2968,10 +2968,10 @@ sub project_to_slice {
         # return the original region.  This can happen for example, if we
         # were on a PAR region on Y which refered to X and a projection to
         # 'toplevel' was requested.
-        if($coord_cs->equals($slice_cs)) {
-          # trim off regions which are not defined
-          return $self->_constrain_to_region();
-        }
+#        if($coord_cs->equals($slice_cs)) {
+#          # trim off regions which are not defined
+#          return $self->_constrain_to_region();
+#        }
 
         #create slices for the mapped-to coord system
         my $slice = $slice_adaptor->fetch_by_seq_region_id(
