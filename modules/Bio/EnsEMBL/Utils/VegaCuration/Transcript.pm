@@ -80,7 +80,7 @@ sub check_remarks_and_update_names {
 	my $dbh = $gene->adaptor->db->dbc->db_handle;
 
 	#get list of IDs that have previously been sent to annotators
-	my $seen_genes = $self->get_havana_comments;
+	my $seen_genes = $self->get_havana_fragmented_loci_comments;
 
 	my $gsi    = $gene->stable_id;
 	my $gid    = $gene->dbID;
@@ -109,8 +109,6 @@ sub check_remarks_and_update_names {
 			push @{$remarks{$type}->{'transcripts'}}, map {$_->value} @{$trans->get_all_Attributes('remark')};
 		}
 	}
-
-#	if ($gsi eq 'OTTMUSG00000001835') { warn Dumper(\%remarks); } 
 
 	#if any of the remarks identify this gene as being known by Havana as being fragmented...
 	if ( (grep {$_ =~ /fragmen/i } @{$remarks{'hidden_remark'}->{'gene'}},
@@ -250,7 +248,16 @@ sub check_names_and_overlap {
 	}
 }		
 
-sub get_havana_comments {
+=head2 get_havana_fragmented_loci_comments
+
+   Args       : none
+   Example    : my $results = $support->get_havana_fragmented_loci_comments
+   Description: parses the HEREDOC containing Havana comments in this module
+   Returntype : hashref
+
+=cut
+
+sub get_havana_fragmented_loci_comments {
 	my $seen_genes;
 	while (<DATA>) {
 		next if /^\s+$/ or /#+/;
@@ -275,6 +282,18 @@ OTTMUSG00000011441 = fragmented
 OTTMUSG00000013335 = fragmented
 OTTMUSG00000011654 = fragmented
 OTTMUSG00000001835 = fragmented
+OTTHUMG00000035221 = fragmented
+OTTHUMG00000037378 = fragmented
+OTTHUMG00000060732 = fragmented
+
+OTTHUMT00000255593 = fragmented
+OTTHUMG00000031383 = fragmented
+OTTHUMG00000012716 = fragmented
+OTTHUMG00000031102 = fragmented
+
+OTTHUMG00000150119 = OK
+OTTHUMG00000149850 = OK
+
 OTTMUSG00000012302 =
 OTTMUSG00000013368 =
 OTTMUSG00000015766 =
