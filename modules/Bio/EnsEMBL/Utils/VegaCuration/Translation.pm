@@ -34,7 +34,8 @@ use Bio::EnsEMBL::Utils::VegaCuration::Transcript;
 
    Args       : B::E::Transcript
    Example    : my $results = $support->check_CDS_end_remarks($transcript)
-   Description: identifies incorrect 'CDS end...' transcript remarks
+   Description: identifies incorrect 'CDS end...' transcript remarks in a
+                otter-derived Vega database
    Returntype : hashref
 
 =cut
@@ -102,7 +103,8 @@ sub check_CDS_start_end_remarks {
 
    Args       : B::E::Transcript
    Example    : my $results = $support->check_CDS_end_remarks($transcript)
-   Description: identifies incorrect 'CDS end...' transcript attribs
+   Description: identifies incorrect 'CDS end...' transcript attribs in a loutre
+                of a loutre-derived Vega database.
    Returntype : hashref
 
 =cut
@@ -163,6 +165,14 @@ sub check_CDS_start_end_remarks_loutre {
 	return $results;
 }
 
+=head2 get_havana_seleno_comments
+
+   Args       : none
+   Example    : my $results = $support->get_havana_seleno_comments
+   Description: parses the HEREDOC containing Havana comments in this module
+   Returntype : hashref
+
+=cut
 
 sub get_havana_seleno_comments {
 	my $seen_translations;
