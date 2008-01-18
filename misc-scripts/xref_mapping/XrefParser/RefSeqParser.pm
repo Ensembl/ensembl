@@ -88,7 +88,8 @@ sub run {
         $release_io->close();
 
         $release =~ s/\s{2,}/ /g;
-        $release =~ s/.*(NCBI Reference Sequence.*) Distribution.*/$1/s;
+        $release =~
+s/.*(NCBI Reference Sequence.*) Distribution Release Notes.*/$1/s;
         # Put a comma after the release number to make it more readable.
         $release =~ s/Release (\d+)/Release $1,/;
 
