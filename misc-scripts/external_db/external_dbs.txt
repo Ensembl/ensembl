@@ -213,6 +213,7 @@
 6750	Ens_Pt_gene	1	XREF	1	0	5	Ensembl Chimpanzee Gene	MISC	\N	\N
 6780	Ens_Rn_gene	1	XREF	1	0	5	Ensembl Rat Gene	MISC	\N	\N
 6810	Ens_Tn_gene	1	XREF	1	0	5	Ensembl PufferFish Gene	MISC	\N	\N
+6820	Ens_Tr_transcript	1	XREF	1	0	40	Ensembl Fugu Transcript	MISC	\N	\N
 7120	Ens_Aa_translation	1	XREF	1	0	40	Ensembl Aedes Translation	MISC	\N	\N
 7159	AedesGenBank	1	PRED	1	0	30	Aedes GenBank	MISC	\N	\N
 7200	IMGT/LIGM_DB	200641-6	XREF	1	1	10	IMGT/LIGM-DB	MISC	\N	\N
