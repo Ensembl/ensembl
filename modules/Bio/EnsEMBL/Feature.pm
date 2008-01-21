@@ -167,7 +167,6 @@ sub start {
 
 
 
-
 =head2 end
 
   Arg [1]    : (optional) int $end
@@ -222,8 +221,6 @@ sub strand {
 
   return $self->{'strand'};
 }
-
-
 
 =head2 move
 
@@ -555,6 +552,76 @@ sub transfer {
   return $feature;
 }
 
+=head2 project_to_slice
+
+  Arg [1]    : slice to project to
+
+
+  Example    :
+    my $clone_projection = $feature->project_to_slice($slice);
+
+    foreach my $seg (@$clone_projection) {
+      my $clone = $seg->to_Slice();
+      print "Features current coords ", $seg->from_start, '-',
+        $seg->from_end, " project onto clone coords " .
+        $clone->seq_region_name, ':', $clone->start, '-', $clone->end,
+        $clone->strand, "\n";
+    }
+  Description: Returns the results of 'projecting' this feature onto another
+               slcie . This is useful to see where a feature
+               would lie in a coordinate system in which it
+               crosses a boundary.
+
+               This method returns a reference to a list of
+               Bio::EnsEMBL::ProjectionSegment objects.
+               ProjectionSegments are blessed arrays and can also be used as
+               triplets [from_start,from_end,to_Slice]. The from_start and
+               from_end are the coordinates relative to the feature start.
+               For example, if a feature is current 100-200bp on a slice
+               then the triplets returned might be:
+               [1,50,$slice1],
+               [51,101,$slice2]
+
+               The to_Slice is a slice spanning the region on the requested
+               coordinate system that this feature projected to.
+
+               If the feature projects entirely into a gap then a reference to
+               an empty list is returned.
+
+  Returntype : list reference of Bio::EnsEMBL::ProjectionSegments
+               which can also be used as [$start,$end,$slice] triplets
+  Exceptions : slice does not have an adaptor
+  Caller     : general
+  Status     : At Risk
+
+=cut
+
+sub project_to_slice {
+  my $self = shift;
+  my $to_slice = shift;
+  my $slice = $self->{'slice'};
+
+  if(!$slice) {
+    warning("Feature cannot be projected without attached slice.");
+    return [];
+  }
+
+
+  #get an adaptor from the attached slice because this feature may not yet
+  #be stored and may not have its own adaptor
+  my $slice_adaptor = $slice->adaptor();
+
+  if(!$slice_adaptor) {
+    throw("Cannot project feature because associated slice does not have an " .
+          " adaptor");
+  }
+
+  my $strand = $self->strand() * $slice->strand();
+  #fetch by feature always gives back forward strand slice:
+  $slice = $slice_adaptor->fetch_by_Feature($self);
+  $slice = $slice->invert if($strand == -1);
+  return $slice->project_to_slice($to_slice);
+}
 
 
 =head2 project
