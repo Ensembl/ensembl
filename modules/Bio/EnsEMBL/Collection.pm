@@ -807,8 +807,6 @@ sub get_bins {
 
       # For 'coverage'.
 
-      # FIXME: Correct but inefficient.
-
       my $feature_start = $entry->[ENTRY_SEQREGIONSTART] - $slice_start;
       my $feature_end   = $entry->[ENTRY_SEQREGIONEND] - $slice_start;
 
@@ -816,10 +814,13 @@ sub get_bins {
            || ( defined( $bin_masks[$start_bin] )
                 && $bin_masks[$start_bin] != 1 ) )
       {
+        # Mask the $start_bin from the start of the feature to the end
+        # of the bin, or to the end of the feature (whichever occurs
+        # first).
         my $bin_start = int( $start_bin*$bin_length );
+        my $bin_end = int( ( $start_bin + 1 )*$bin_length - 1 );
         for ( my $pos = $feature_start ;
-                 $pos <= $feature_end
-              && $pos <= int( ( $start_bin + 1 )*$bin_length - 1 ) ;
+              $pos <= $bin_end && $pos <= $feature_end ;
               ++$pos )
         {
           $bin_masks[$start_bin][ $pos - $bin_start ] = 1;
@@ -830,21 +831,30 @@ sub get_bins {
             $bin_index <= $end_bin - 1 ;
             ++$bin_index )
       {
+        # Mark the middle bins between $start_bin and $end_bin as fully
+        # masked out.
         $bin_masks[$bin_index] = 1;
       }
 
-      if ( !defined( $bin_masks[$end_bin] )
-           || ( defined( $bin_masks[$end_bin] )
-                && $bin_masks[$end_bin] != 1 ) )
-      {
-        my $bin_start = int( $end_bin*$bin_length );
-        for ( my $pos = $bin_start ;
-                 $pos <= $feature_end
-              && $pos <= int( ( $end_bin + 1 )*$bin_length - 1 ) ;
-              ++$pos )
+      if ( $end_bin != $start_bin ) {
+
+        if ( !defined( $bin_masks[$end_bin] )
+             || ( defined( $bin_masks[$end_bin] )
+                  && $bin_masks[$end_bin] != 1 ) )
         {
-          $bin_masks[$end_bin][ $pos - $bin_start ] = 1;
+          # Mask the $end_bin from the start of the bin to the end of
+          # the feature, or to the end of the bin (whichever occurs
+          # first).
+          my $bin_start = int( $end_bin*$bin_length );
+          my $bin_end = int( ( $end_bin + 1 )*$bin_length - 1 );
+          for ( my $pos = $bin_start ;
+                $pos <= $feature_end && $pos <= $bin_end ;
+                ++$pos )
+          {
+            $bin_masks[$end_bin][ $pos - $bin_start ] = 1;
+          }
         }
+
       }
 
     } ## end elsif ( $method == 4 )
@@ -855,8 +865,6 @@ sub get_bins {
 
     # For the 'coverage' method: Finish up by going through @bin_masks
     # and sum up the arrays.
-
-    # FIXME: Correct but inefficient.
 
     for ( my $bin_index = 0 ; $bin_index < $nbins ; ++$bin_index ) {
       if ( defined( $bin_masks[$bin_index] ) ) {
