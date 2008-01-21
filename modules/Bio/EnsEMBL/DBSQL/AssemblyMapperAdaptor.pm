@@ -1090,10 +1090,11 @@ sub _register_chained_special {
   } else {
     throw("Invalid from argument: [$from], must be 'first' or 'last'");
   }
+
   my $combined_mapper = $casm_mapper->first_last_mapper();
-  my $mid_cs     = $casm_mapper->middle_CoordSystem();
-  my $mid_name   = 'middle';
-  my $csa = $self->db->get_CoordSystemAdaptor();
+  my $mid_cs          = $casm_mapper->middle_CoordSystem();
+  my $mid_name        = 'middle';
+  my $csa             = $self->db->get_CoordSystemAdaptor();
 
   # Check for the simple case where the ChainedMapper is short
   if( ! defined $mid_cs ) {
@@ -1125,13 +1126,12 @@ sub _register_chained_special {
   $asm_cs = $path[0];
   $cmp_cs = $path[-1];
 
-  my $combined_mapper = $casm_mapper->first_last_mapper();
-  my $mid_cs     = $casm_mapper->middle_CoordSystem();
-  my $mid_name   = 'middle';
-  my $csa = $self->db->get_CoordSystemAdaptor();
+  $combined_mapper = $casm_mapper->first_last_mapper();
+  $mid_cs          = $casm_mapper->middle_CoordSystem();
+  $mid_name        = 'middle';
+  $csa             = $self->db->get_CoordSystemAdaptor();
 
   my $mid_cs_id;
-
 
   # Check for the simple case where the ChainedMapper is short
   if( ! defined $mid_cs ) {
