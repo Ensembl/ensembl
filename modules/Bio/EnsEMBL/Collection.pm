@@ -127,10 +127,14 @@ slice associated with the collection object.
 
 =head2 Extended feature representation
 
-A sub-class of this abstract base class will specify further data to be
-added to the entries in order to account of the particular feature type.
-An entry from a gene feature collection (Bio::EnsEMBL::Collection::Gene)
-might, for example, contain the Ensembl Stable ID of the gene.
+A sub-class of this abstract base class will specify further
+data to be added to the entries in order to account for the
+particular feature type.  An entry from a gene feature collection
+(Bio::EnsEMBL::Collection::Gene) might, for example, contain the Ensembl
+Stable ID of the gene.
+
+The extended feature representation is defined by the method
+_extra_columns() which is implemented by the sub-class.
 
 =head2 Light-weight collections/entries
 
@@ -198,9 +202,6 @@ contribute 1/3 to the sum of each bin.
 
 Returns an array of bins, each bin containing the fraction of the bin
 that is coverage by any feature.
-
-Please note that the current implementation of this particular binning
-method is extremely inefficient.
 
 =back
 
