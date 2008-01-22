@@ -2179,7 +2179,7 @@ sub dump_interpro {
                      $dx_accession,
                      $dx_label,
                      $dx_version,
-                     $dx_description,
+                     $dx_description || "",
                      'DEPENDENT',
                      "Generated via $interpro");
         $xref_count++;
