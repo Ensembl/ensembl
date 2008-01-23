@@ -2819,7 +2819,7 @@ GSQL
 				     \$linkage_annotation);
 	while($dependent_sth->fetch()){
 	  if($level{$ex_db_id}  and $display_label =~ /\D+/){
-	    if(defined($$ignore{$external_db_name})){
+	    if( defined($$ignore{$external_db_name}) and defined($linkage_annotation) ){
 	      if($linkage_annotation =~ /$$ignore{$external_db_name}/){
 #		print "Ignoring $xref_id as linkage_annotation has ".$$ignore{$external_db_name}." in it. DELETE THIS MESSAGE AFTER TESTING\n";
 		next;
