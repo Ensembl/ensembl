@@ -427,6 +427,7 @@ CREATE TABLE gene (
   status                      ENUM('KNOWN', 'NOVEL', 'PUTATIVE', 'PREDICTED', 'KNOWN_BY_PROJECTION', 'UNKNOWN'),
   description                 TEXT,
   is_current                  BOOLEAN NOT NULL DEFAULT 1,
+  canonical_transcript        INT(10) UNSIGNED,
 
   PRIMARY KEY (gene_id),
   KEY seq_region_idx (seq_region_id, seq_region_start),
@@ -685,8 +686,7 @@ CREATE TABLE object_xref (
   object_xref_id              INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
   ensembl_id                  INT(10) UNSIGNED NOT NULL, 
   ensembl_object_type         ENUM('RawContig', 'Transcript', 'Gene',
-                                   'Translation', 'regulatory_factor',
-                                   'regulatory_feature')
+                                   'Translation')
                               NOT NULL,
   xref_id                     INT UNSIGNED NOT NULL,
   linkage_annotation          VARCHAR(255) DEFAULT NULL,
@@ -757,7 +757,7 @@ CREATE TABLE xref (
    display_label              VARCHAR(128) NOT NULL,
    version                    VARCHAR(10) DEFAULT '0' NOT NULL,
    description                VARCHAR(255),
-   info_type                  ENUM('PROJECTION', 'MISC', 'DEPENDENT', 'DIRECT', 'SEQUENCE_MATCH', 'INFERRED_PAIR', 'PROBE', 'UNMAPPED', 'COORDINATE_OVERLAP'),
+   info_type                  ENUM('PROJECTION', 'MISC', 'DEPENDENT', 'DIRECT', 'SEQUENCE_MATCH', 'INFERRED_PAIR', 'PROBE', 'UNMAPPED'),
    info_text                  VARCHAR(255),
 
    PRIMARY KEY (xref_id),
@@ -1399,113 +1399,6 @@ CREATE TABLE density_type (
 
 ) COLLATE=latin1_swedish_ci TYPE=MyISAM;
 
-
-################################################################################
-#
-# Table structure for table 'regulatory_feature'
-#
-# Describes instances of regulatory_factor binding to the genome.
-
-CREATE TABLE regulatory_feature (
-
-  regulatory_feature_id   INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  name                    VARCHAR(255) NOT NULL,
-  seq_region_id           INT(10) UNSIGNED NOT NULL,
-  seq_region_start        INT(10) UNSIGNED NOT NULL,
-  seq_region_end          INT(10) UNSIGNED NOT NULL,
-  seq_region_strand       TINYINT NOT NULL,
-  analysis_id             SMALLINT UNSIGNED NOT NULL,
-  regulatory_factor_id    INT(10) UNSIGNED,
-
-  PRIMARY KEY (regulatory_feature_id),
-  KEY seq_region_idx (seq_region_id, analysis_id, seq_region_start),
-  KEY seq_region_idx_2 (seq_region_id, seq_region_start)
-
-) COLLATE=latin1_swedish_ci TYPE=MyISAM;
-
-
-################################################################################
-#
-# Table structure for table 'regulatory_factor'
-#
-
-CREATE TABLE regulatory_factor (
-
-  regulatory_factor_id   INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  name                   VARCHAR(255) NOT NULL,
-  type                   ENUM('miRNA_target', 'transcription_factor',
-                              'transcription_factor_complex'),
-
-  PRIMARY KEY (regulatory_factor_id)
-
-) COLLATE=latin1_swedish_ci TYPE=MyISAM;
-
-
-################################################################################
-#
-# Table structure for table 'regulatory_feature_object'
-#
-# Relates regulatory regions to the Ensembl objects they influence. Many-many.
-
-CREATE TABLE regulatory_feature_object (
-
-  regulatory_feature_id   INT(10) UNSIGNED NOT NULL,
-  ensembl_object_type     ENUM('Transcript', 'Translation', 'Gene') NOT NULL,
-  ensembl_object_id       INT(10) UNSIGNED NOT NULL, # FK to transcript,gene etc
-  influence               ENUM('positive', 'negative', 'mixed', 'unknown'),
-  evidence                VARCHAR(255),
-
-  KEY regulatory_feature_idx (regulatory_feature_id),
-  KEY ensembl_object_idx (ensembl_object_type, ensembl_object_id)
-
-) COLLATE=latin1_swedish_ci TYPE=MyISAM;
-
-
-################################################################################
-#
-# Table structure for table 'regulatory_factor_coding'
-#
-# Describes which genes/transcripts code for particular regulatory factors.
-
-CREATE TABLE regulatory_factor_coding (
-
-  regulatory_factor_id  INT(10) UNSIGNED NOT NULL,
-  transcript_id         INT(10) UNSIGNED,
-  gene_id         	INT(10) UNSIGNED,
-
-  KEY transcript_idx (transcript_id),
-  KEY gene_idx (gene_id),
-  KEY regulatory_factor_idx (regulatory_factor_id)
-
-) COLLATE=latin1_swedish_ci TYPE=MyISAM;
-
-
-################################################################################
-#
-# Table structure for table 'regulatory_search_region'
-#
-# Describes regions which were searched for regulatory features.
-
-CREATE TABLE regulatory_search_region (
-
-  regulatory_search_region_id  INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  name                        VARCHAR(255) NOT NULL,
-  seq_region_id               INT(10) UNSIGNED NOT NULL,
-  seq_region_start            INT(10) UNSIGNED NOT NULL,
-  seq_region_end              INT(10) UNSIGNED NOT NULL,
-  seq_region_strand           TINYINT NOT NULL,
-  ensembl_object_type         ENUM('Transcript', 'Translation', 'Gene')
-                              NOT NULL,
-  ensembl_object_id           INT(10) UNSIGNED,  # FK to gene/transcript/translation
-  analysis_id                 SMALLINT UNSIGNED NOT NULL,
-
-  PRIMARY KEY (regulatory_search_region_id),
-  KEY rsr_idx (regulatory_search_region_id),
-  KEY ensembl_object_idx (ensembl_object_type, ensembl_object_id),
-  KEY seq_region_idx (seq_region_id, seq_region_start),
-  KEY seq_region_idx_2 (seq_region_id, seq_region_start)
-
-) COLLATE=latin1_swedish_ci TYPE=MyISAM;
 
 
 ################################################################################
