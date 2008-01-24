@@ -757,7 +757,10 @@ CREATE TABLE xref (
    display_label              VARCHAR(128) NOT NULL,
    version                    VARCHAR(10) DEFAULT '0' NOT NULL,
    description                VARCHAR(255),
-   info_type                  ENUM('PROJECTION', 'MISC', 'DEPENDENT', 'DIRECT', 'SEQUENCE_MATCH', 'INFERRED_PAIR', 'PROBE', 'UNMAPPED'),
+   info_type                  ENUM( 'PROJECTION', 'MISC', 'DEPENDENT',
+                                    'DIRECT', 'SEQUENCE_MATCH',
+                                    'INFERRED_PAIR', 'PROBE',
+                                    'UNMAPPED', 'COORDINATE_OVERLAP' ),
    info_text                  VARCHAR(255),
 
    PRIMARY KEY (xref_id),
