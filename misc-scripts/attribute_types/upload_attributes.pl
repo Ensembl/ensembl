@@ -201,9 +201,14 @@ sub check_consistency {
   # check if any ids in the database collide with the file
   my $consistent = 1;
   for my $dbid ( keys %db_codes ) {
-    if ( !exists $file_codes{$dbid}
-         || $file_codes{$dbid} ne $db_codes{$dbid} )
-    {
+    if ( !exists $file_codes{$dbid} ) {
+      printf( "Not consistent: code '%d' ('%s') not in file.\n",
+              $dbid, $db_codes{$dbid} );
+      $consistent = 0;
+    } elsif ( $file_codes{$dbid} ne $db_codes{$dbid} ) {
+      printf( "Not consistent: code '%d' is '%s' in file "
+                . "but '%s' in database.\n",
+              $dbid, $file_codes{$dbid}, $db_codes{$dbid} );
       $consistent = 0;
     }
   }
