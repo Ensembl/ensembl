@@ -162,7 +162,7 @@
 72	GeneNo_scRNA	scRNA Gene Count	Number of scRNA Genes
 73	GeneNo_MTrRNA	Mt_rRNA Gene Count	Number of Mt_rRNA Genes
 74	GeneNo_MTtRNA	Mt_tRNA Gene Count	Number of Mt_tRNA Genes
-75	GeneNo_RNA_pseu scRNA_pseudogene Gene Count	Number of scRNA_pseudogene Genes
+75	GeneNo_RNA_pseu	scRNA_pseudogene Gene Count	Number of scRNA_pseudogene Genes
 76	GeneNo_tRNA	tRNA Gene Count	 Number of tRNA Genes
 
 80	supercontig	SuperContig name	NULL
@@ -223,7 +223,7 @@
 
 # loutre attribs for vega production (st3)
 130	vega_name	Vega name	Vega seq_region.name
-131	vega_export_mode	Export mode	E (External), I (Internal) etc
+131	vega_export_mod	Export mode	E (External), I (Internal) etc
 132	vega_release	Vega release	Vega release number
 
 
