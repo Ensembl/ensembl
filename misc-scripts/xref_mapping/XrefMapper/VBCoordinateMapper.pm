@@ -174,14 +174,13 @@ sub run_coordinatemapping {
 
   while ( my $xref = $xref_sth->fetchrow_hashref() ) {
     $unmapped{ $xref->{'coord_xref_id'} } = {
-      'external_db_id' =>
-        $XrefMapper::BasicMapper::source_to_external_db_id{ $xref->{
-          'source_id'} }
-        || 11000,    # FIXME ('external_db' needs to be updated)
-      'accession' => $xref->{'accession'},
-      'reason'    => 'No overlap',
-      'reason_full' =>
-        'No coordinate overlap with any Ensembl transcript' };
+          'external_db_id' =>
+            $XrefMapper::BasicMapper::source_to_external_db_id{ $xref->{
+              'source_id'} },
+          'accession' => $xref->{'accession'},
+          'reason'    => 'No overlap',
+          'reason_full' =>
+            'No coordinate overlap with any Ensembl transcript' };
   }
   $xref_sth->finish();
 
@@ -573,17 +572,15 @@ sub dump_xref {
     my ($version) = ( $accession =~ /\.(\d+)$/ );
     $version ||= 0;
 
-    $fh->printf(
-      "%d\t%d\t%s\t%s\t%d\t%s\t%s\t%s\n",
-      $xref->{'xref_id'},
-      $xref->{'external_db_id'},
-      $accession,
-      $accession,
-      $version,
-      '\N',
-      'MISC',    # FIXME (add new 'info_type' enum 'COORDINATEOVERLAP'
-                 # in release v49)
-      '\N'       # FIXME (possibly)
+    $fh->printf("%d\t%d\t%s\t%s\t%d\t%s\t%s\t%s\n",
+                $xref->{'xref_id'},
+                $xref->{'external_db_id'},
+                $accession,
+                $accession,
+                $version,
+                '\N',
+                'COORDINATE_OVERLAP',
+                '\N'                                  # FIXME (possibly)
     );
   }
   $fh->close();
