@@ -32,8 +32,6 @@ table for all the following table names one by one
   prediction_exon
   prediction_transcript
   protein_align_feature
-  regulatory_feature
-  regulatory_search_region
   repeat_feature
   simple_feature
   transcript
@@ -94,8 +92,6 @@ for my $dbname (@dbnames) {
     prediction_exon
     prediction_transcript
     protein_align_feature
-    regulatory_feature
-    regulatory_search_region
     repeat_feature
     simple_feature
     transcript
