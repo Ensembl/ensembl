@@ -161,7 +161,7 @@
 72	GeneNo_scRNA	scRNA Gene Count	Number of scRNA Genes
 73	GeneNo_MTrRNA	Mt_rRNA Gene Count	Number of Mt_rRNA Genes
 74	GeneNo_MTtRNA	Mt_tRNA Gene Count	Number of Mt_tRNA Genes
-75	GeneNo_RNA_pseu scRNA_pseudogene Gene Count	Number of scRNA_pseudogene Genes
+75	GeneNo_RNA_pseu	scRNA_pseudogene Gene Count	Number of scRNA_pseudogene Genes
 76	GeneNo_tRNA	tRNA Gene Count	 Number of tRNA Genes
 
 80	supercontig	SuperContig name	NULL
@@ -242,17 +242,31 @@
 142	GeneGC	Gene GC	 Percentage GC content for this gene
 
 # vega
-143	TotAssLength	Finished sequence length	Finished Sequence
-144	NovPsCount	novel_pseudogene	Number of Novel Pseudogenes
-145	KnwnPsCount	known_pseudogene	Number of Known Pseudogenes
-146	KnwnTPsCount	known_transcribed_pseudogene	Number of Known Transcribed Pseudogenes
-147	TotPTCount	total_processed_transcript	Total Number of Processed Transcripts
-148	TotPCCount	total_protein_coding	Total Number of Protein Coding
-149	NovNcCount	novel_non_coding	Number of Novel Non Coding
-150	KnwnPolyCount	known_polymorphic	Number of Known Polymorphic
-151	NovPolyCount	novel_polymorphic	Number of Novel Polymorphic
-152	TotIgSegCount	total_ig_segment	Total Number of Ig Segments
-153	NovProcPsCount	novel_processed_pseudogene	Number of Novel Processed Pseudogenes
-154	NovUnPsCount	novel_unprocessed_pseudogene	Number of Novel Unprocessed Pseudogenes
-155	NovTPsCount	novel_transcribed_pseudogene	Number of Novel Transcribed Pseudogenes
-156	NovTECCount	novel_TEC	Number of Novel TEC Genes
+143	TotAssemblyLeng	Finished sequence length	Length of the assembly not counting sequence gaps
+
+# Drosophila, only where the translation provided by flybase differs from that in our database by ONE amino acid
+144	amino_acid_sub	Amino acid substitution	In drosophila, some translations have been manually curated by FlyBase and a stop codon has been changed to an amino acid in order to prevent premature truncation.
+# Drosophila. Sometimes sequences have been manually altered to remove one base, and this alters the whole translation
+145	_rna_edit	rna_edit	RNA edit
+
+#genebuild - databases of removed transcripts
+146	kill_reason	Kill Reason	Reason why a transcript has been killed
+147	strip_UTR	Strip UTR	Transcript needs bad UTR removing
+
+# vega
+148	TotAssLength	Finished sequence length	Finished Sequence
+149	NovPsCount	novel_pseudogene	Number of Novel Pseudogenes
+150	KnwnPsCount	known_pseudogene	Number of Known Pseudogenes
+151	KnwnTPsCount	known_transcribed_pseudogene	Number of Known Transcribed Pseudogenes
+152	TotPTCount	total_processed_transcript	Total Number of Processed Transcripts
+153	TotPCCount	total_protein_coding	Total Number of Protein Coding
+154	NovNcCount	novel_non_coding	Number of Novel Non Coding
+155	KnwnPolyCount	known_polymorphic	Number of Known Polymorphic
+156	NovPolyCount	novel_polymorphic	Number of Novel Polymorphic
+157	TotIgSegCount	total_ig_segment	Total Number of Ig Segments
+158	NovProcPsCount	novel_processed_pseudogene	Number of Novel Processed Pseudogenes
+159	NovUnPsCount	novel_unprocessed_pseudogene	Number of Novel Unprocessed Pseudogenes
+160	NovTPsCount	novel_transcribed_pseudogene	Number of Novel Transcribed Pseudogenes
+161	NovTECCount	novel_TEC	Number of Novel TEC Genes
+162	KnwnIgSegCount	known_ig	Number of Known Ig Segments
+
