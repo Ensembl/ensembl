@@ -8,7 +8,7 @@ schema conversion scripts
 =head1 SYNOPSIS
 
     my $serverroot = '/path/to/ensembl';
-    my $suport = new Bio::EnsEMBL::Utils::ConversionSupport($serverroot);
+    my $support = new Bio::EnsEMBL::Utils::ConversionSupport($serverroot);
 
     # parse common options
     $support->parse_common_options;
@@ -34,7 +34,8 @@ Please see http://www.ensembl.org/code_licence.html for details
 
 =head1 AUTHOR
 
-Patrick Meidl <pm2@sanger.ac.uk>
+Steve Trevanion <st3@sanger.ac.uk
+Patrick Meidl <meidl@ebi.ac.uk>
 
 =head1 CONTACT
 
@@ -1523,7 +1524,8 @@ sub fetch_non_hidden_slices {
   Arg[4]      : string $coord_system_name (optional) - 'chromosome' by default
   Arg[5]      : string $coord_system_version (optional) - 'otter' by default
   Example     : @chr_names = &Slice::get_wanted_chromosomes($support,$laa,$lsa);
-  Description : retrieve names of slices from a lutra database that are ready for dumping to Vega
+  Description : retrieve names of slices from a lutra database that are ready for dumping to Vega.
+                Deals with list of names to ignore (ignore_chr = LIST)
   Return type : arrayref
   Caller      : general
   Status      : stable
