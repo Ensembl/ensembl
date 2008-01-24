@@ -468,8 +468,9 @@ sub fetch_files {
                         }
                     }
 
-                    printf( "Fetching '%s' (size = %d)\n",
-                            $remote_file, $ftp->size($remote_file) );
+                    printf( "Fetching '%s' (size = %s)\n",
+                            $remote_file,
+                            $ftp->size($remote_file) || '(unknown)' );
                     printf( "Local file is '%s'\n", $file_path );
 
                     $ftp->binary();
