@@ -126,6 +126,7 @@ sub run_coordinatemapping {
       log_progress( "  parameters = '%s'\n", $analysis_params );
 
       if ($do_upload) {
+
         #---------------------------------------------------------------
         # Store a new analysis.
         #---------------------------------------------------------------
@@ -170,14 +171,13 @@ sub run_coordinatemapping {
 
   while ( my $xref = $xref_sth->fetchrow_hashref() ) {
     $unmapped{ $xref->{'coord_xref_id'} } = {
-      'external_db_id' =>
-        $XrefMapper::BasicMapper::source_to_external_db_id{ $xref->{
-          'source_id'} }
-        || 11000,    # FIXME ('external_db' needs to be updated)
-      'accession' => $xref->{'accession'},
-      'reason'    => 'No overlap',
-      'reason_full' =>
-        'No coordinate overlap with any Ensembl transcript' };
+          'external_db_id' =>
+            $XrefMapper::BasicMapper::source_to_external_db_id{ $xref->{
+              'source_id'} },
+          'accession' => $xref->{'accession'},
+          'reason'    => 'No overlap',
+          'reason_full' =>
+            'No coordinate overlap with any Ensembl transcript' };
   }
   $xref_sth->finish();
 
@@ -229,6 +229,7 @@ sub run_coordinatemapping {
       foreach my $transcript ( sort { $a->start() <=> $b->start() }
                                @transcripts )
       {
+
         ################################################################
         # For each Ensembl transcript:                                 #
         #   1. Register all Ensembl exons in a RangeRegistry.          #
@@ -267,6 +268,7 @@ sub run_coordinatemapping {
         }
 
         foreach my $exon (@exons) {
+
           #-------------------------------------------------------------
           # Register each exon in the RangeRegistry.  Register both the
           # total length of the exon and the coding range of the exon.
@@ -321,6 +323,7 @@ sub run_coordinatemapping {
           my $coding_count = 0;
 
           for ( my $i = 0 ; $i < $exonCount ; ++$i ) {
+
             #-----------------------------------------------------------
             # Register the exons from the external database in the same
             # was as with the Ensembl exons, and calculate the overlap
@@ -369,6 +372,7 @@ sub run_coordinatemapping {
           my $rcoding_count = 0;
 
           foreach my $exon (@exons) {
+
             #-----------------------------------------------------------
             # Calculate the overlap of the Ensembl exons with the
             # external exons.
@@ -568,17 +572,15 @@ sub dump_xref {
     my ($version) = ( $accession =~ /\.(\d+)$/ );
     $version ||= 0;
 
-    $fh->printf(
-      "%d\t%d\t%s\t%s\t%d\t%s\t%s\t%s\n",
-      $xref->{'xref_id'},
-      $xref->{'external_db_id'},
-      $accession,
-      $accession,
-      $version,
-      '\N',
-      'MISC',    # FIXME (add new 'info_type' enum 'COORDINATEOVERLAP'
-                 # in release v49)
-      '\N'       # FIXME (possibly)
+    $fh->printf("%d\t%d\t%s\t%s\t%d\t%s\t%s\t%s\n",
+                $xref->{'xref_id'},
+                $xref->{'external_db_id'},
+                $accession,
+                $accession,
+                $version,
+                '\N',
+                'COORDINATE_OVERLAP',
+                '\N'                                  # FIXME (possibly)
     );
   }
   $fh->close();
