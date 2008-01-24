@@ -100,23 +100,23 @@
 31	fpc_clone_id	fpc clone
 
 # additional gene counts for Vega (see GeneCount for general description)
-32	KnownPCCount	protein_coding_KNOWN	Number of Known Protein Coding
-33	NovelPCCount	protein_coding_NOVEL	Number of Novel Protein Coding
-34	NovelPTCount	processed_transcript_NOVEL	Number of Novel Processed Transcripts
+32	KnwnPCCount	protein_coding_KNOWN	Number of Known Protein Coding
+33	NovPCCount	protein_coding_NOVEL	Number of Novel Protein Coding
+34	NovPTCount	processed_transcript_NOVEL	Number of Novel Processed Transcripts
 35	PutPTCount	processed_transcript_PUTATIVE	Number of Putative Processed Transcripts
 36	PredPCCount	protein_coding_PREDICTED	Number of Predicted Protein Coding
-37	IgSegCount	total_Ig_segment_UNKNOWN	Number of Ig Segments
-38	IgPsSegCount	Ig_pseudogene_segment_UNKNOWN	Number of Ig Pseudogene Segments
-39	TotPsCount	total_pseudogene_UNKNOWN	Number of Pseudogenes
-40	ProcPsCount	processed_pseudogene_UNKNOWN	Number of Processed pseudogenes
-41	UnprocPsCount	unprocessed_pseudogene_UNKNOWN	Number of Unprocessed pseudogenes
-42	KnwnPCProgCount	protein_coding_in_progress_KNOWN	Number of Known Protein coding genes in progress
-43	NovPCProgCount	protein_coding_in_progress_NOVEL	Number of Novel Protein coding genes in progress
+37	NovIgSegCount	ig_segment	Number of Novel Ig Segments
+38	NovIgPsSegCount	ig_pseudogene_segment	Number of Novel Ig Pseudogene Segments
+39	TotPsCount	total_pseudogene	Total Number of Pseudogenes
+40	KnwnProcPsCount	processed_pseudogene	Number of Known Processed Pseudogenes
+41	KnwnUnPsCount	unprocessed_pseudogene	Number of Known Unprocessed Pseudogenes
+42	KnwnPCProgCount	protein_coding_in_progress_KNOWN	Number of Known Protein Coding in progress
+43	NovPCProgCount	protein_coding_in_progress_NOVEL	Number of Novel Protein Coding in progress
 
 # Vega annotation stats
-44	AnnotSeqLength	Annotated sequence length	Total length of annotated clone sequence
-45	TotCloneNum	Total number of clones	Total number of clones
-46	NumAnnotClone	Fully annotated clones	Number of fully annotated clones
+44	AnnotSeqLength	Annotated sequence length	Annotated Sequence
+45	TotCloneNum	Total number of clones	Total Number of Clones
+46	NumAnnotClone	Fully annotated clones	Number of Fully Annotated Clones
 
 # Acknowledgements for manual annotation of this seq_region
 47	ack	Acknowledgement	Acknowledgement for manual annotation
@@ -132,7 +132,7 @@
 53	author_email	Author email address	Author email address
 54	remark	Remark	Annotation remark
 55	transcr_class	Transcript class	Transcript class
-56	KnownPTCount	processed_transcript_KNOWN	Number of Known Processed Transcripts
+56	KnwnPTCount	processed_transcript_KNOWN	Number of Known Processed Transcripts
 57	ccds	CCDS	CCDS identifier
 
 # make first amino acid methionine
@@ -223,9 +223,8 @@
 
 # loutre attribs for vega production (st3)
 130	vega_name	Vega name	Vega seq_region.name
-131	vega_export_mod	Export mode	E (External), I (Internal) etc
+131	vega_export_mode	Export mode	E (External), I (Internal) etc
 132	vega_release	Vega release	Vega release number
-
 
 # loutre attribs for assembly_tags (ck1)
 133	atag_CLE	Clone_left_end	Clone_lef_end feature marked in GAP database
@@ -253,3 +252,20 @@
 #genebuild - databases of removed transcripts
 146	kill_reason	Kill Reason	Reason why a transcript has been killed
 147	strip_UTR	Strip UTR	Transcript needs bad UTR removing
+
+# vega
+148	TotAssLength	Finished sequence length	Finished Sequence
+149	NovPsCount	novel_pseudogene	Number of Novel Pseudogenes
+150	KnwnPsCount	known_pseudogene	Number of Known Pseudogenes
+151	KnwnTPsCount	known_transcribed_pseudogene	Number of Known Transcribed Pseudogenes
+152	TotPTCount	total_processed_transcript	Total Number of Processed Transcripts
+153	TotPCCount	total_protein_coding	Total Number of Protein Coding
+154	NovNcCount	novel_non_coding	Number of Novel Non Coding
+155	KnwnPolyCount	known_polymorphic	Number of Known Polymorphic
+156	NovPolyCount	novel_polymorphic	Number of Novel Polymorphic
+157	TotIgSegCount	total_ig_segment	Total Number of Ig Segments
+158	NovProcPsCount	novel_processed_pseudogene	Number of Novel Processed Pseudogenes
+159	NovUnPsCount	novel_unprocessed_pseudogene	Number of Novel Unprocessed Pseudogenes
+160	NovTPsCount	novel_transcribed_pseudogene	Number of Novel Transcribed Pseudogenes
+161	NovTECCount	novel_TEC	Number of Novel TEC Genes
+161	KnwnIgSegCount	known_ig	Number of Known Ig Segments
