@@ -75,7 +75,7 @@ sub run {
   my $mismatch = 0;
   while ( $line = $rgd_io->getline() ) {
     chomp $line;
-    my ($rgd, $symbol, $name, $refseq) = (split (/\t/,$line))[0,1,2,16];
+    my ($rgd, $symbol, $name, $refseq) = (split (/\t/,$line))[0,1,2,25];
     my @nucs = split(/\,/,$refseq);
     my $done = 0;
     my $failed_list ="";
