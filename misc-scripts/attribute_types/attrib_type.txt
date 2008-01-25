@@ -223,7 +223,7 @@
 
 # loutre attribs for vega production (st3)
 130	vega_name	Vega name	Vega seq_region.name
-131	vega_xport_mode	Export mode	E (External), I (Internal) etc
+131	vega_export_mod	Export mode	E (External), I (Internal) etc
 132	vega_release	Vega release	Vega release number
 
 # loutre attribs for assembly_tags (ck1)
