@@ -29,7 +29,7 @@
 826	FlyBaseCGID_gene	1	XREF	1	0	5	FlyBaseCGID gene	MISC	\N	\N
 827	FlyBaseCGID_transcript	1	XREF	1	0	50	FlyBaseCGID transcript	MISC	\N	\N
 828	FlyBaseCGID_translation	1	XREF	1	0	50	FlyBaseCGID translation	MISC	\N	\N
-880	bdgpinsituexpr	1	KNOWNXREF	1	0	5	Berkeley Drosophila Genome Project in situ Gene Expression Database (embryogenesis)	MISC	\N	\N
+880	BDGP_insitu_expr	1	KNOWNXREF	1	0	5	Berkeley Drosophila Genome Project in situ Gene Expression Database (embryogenesis)	MISC	\N	\N
 882	FlyGrid	1	KNOWNXREF	1	0	5	FlyGRID Interaction Data, The General Repository for Interaction Datasets	MISC	\N	\N
 890	DEDb	1	KNOWNXREF	1	0	5	Drosophila melanogaster Exon DataBase	MISC	\N	\N
 900	GKB	1	XREF	1	0	5	GKB	MISC	\N	\N
