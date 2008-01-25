@@ -1469,6 +1469,9 @@ sub load_registry_from_db {
   Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(-species => "Pongo_pygmaeus",
 						 -alias => ['orang','orang_utan','orangutan','Pongo pygmaeus']);
 
+ Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(-species => "Equus_caballus",
+						 -alias => ['horse', 'Equuscaballus']);
+
   @aliases = ('compara');
   Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(-species => "multi",
 						 -alias => \@aliases);
