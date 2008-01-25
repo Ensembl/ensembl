@@ -268,4 +268,4 @@
 159	NovUnPsCount	novel_unprocessed_pseudogene	Number of Novel Unprocessed Pseudogenes
 160	NovTPsCount	novel_transcribed_pseudogene	Number of Novel Transcribed Pseudogenes
 161	NovTECCount	novel_TEC	Number of Novel TEC Genes
-161	KnwnIgSegCount	known_ig	Number of Known Ig Segments
+162	KnwnIgSegCount	known_ig	Number of Known Ig Segments
