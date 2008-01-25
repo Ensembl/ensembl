@@ -145,6 +145,7 @@
 60	PTCount	processed_transcript_UNKNOWN	Number of Processed Transcripts
 61	PredPTCount	processed_transcript_PREDICTED	Number of Predicted Processed Transcripts
 
+
 62	ncRNA	Structure	RNA secondary structure line
 
 63	skip_clone	skip clone  Skip clone in align_by_clone_identity.pl
@@ -222,9 +223,8 @@
 
 # loutre attribs for vega production (st3)
 130	vega_name	Vega name	Vega seq_region.name
-131	vega_export_mode	Export mode	E (External), I (Internal) etc
+131	vega_export_mod	Export mode	E (External), I (Internal) etc
 132	vega_release	Vega release	Vega release number
-
 
 # loutre attribs for assembly_tags (ck1)
 133	atag_CLE	Clone_left_end	Clone_lef_end feature marked in GAP database
@@ -269,4 +269,3 @@
 160	NovTPsCount	novel_transcribed_pseudogene	Number of Novel Transcribed Pseudogenes
 161	NovTECCount	novel_TEC	Number of Novel TEC Genes
 162	KnwnIgSegCount	known_ig	Number of Known Ig Segments
-
