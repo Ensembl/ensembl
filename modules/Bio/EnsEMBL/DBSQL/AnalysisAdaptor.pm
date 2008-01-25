@@ -159,7 +159,14 @@ SELECT DISTINCT analysis_id FROM %s |;
   my $sth = $self->prepare( $sql );
   my $rv  = $sth->execute();
   my $res = $sth->fetchall_arrayref;
-  return [ map{ $self->fetch_by_dbID($_->[0]) } @{$res} ];
+  my @analyses;
+  foreach my $r( @{$res} ){
+    my $analysis = $self->fetch_by_dbID($r->[0]) 
+        || throw( "analysis_id $r->[0] from $feat_table table "
+                  . "is not in the analysis table!" );
+    push @analyses, $analysis;
+  }
+  return [@analyses];
 }
 
 
