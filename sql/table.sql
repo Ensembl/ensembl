@@ -880,11 +880,16 @@ CREATE TABLE meta (
 
 
 # Auto add schema version to database
-INSERT INTO meta (meta_key, meta_value) VALUES ("schema_version", "48");
+INSERT INTO meta (meta_key, meta_value) VALUES ("schema_version", "49");
 
 # patches included in this schema file
 # NOTE: at beginning of release cycle, remove patch entries from last release
-INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_47_48_a.sql|schema_version');
+INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_48_49_a.sql|schema_version');
+INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_48_49_b.sql|new_canonical_transcript_column');
+INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_48_49_c.sql|regulatory_support_removal');
+INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_48_49_d.sql|new_info_type_enum');
+INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_48_49_e.sql|ensembl_object_type_not_null');
+
 
 ################################################################################
 #
