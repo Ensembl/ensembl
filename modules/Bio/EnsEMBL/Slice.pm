@@ -129,24 +129,32 @@ sub new {
                       START END STRAND ADAPTOR EMPTY)], @_);
 
   #empty is only for backwards compatibility
-  if($empty) {
-    deprecate("Creation of empty slices is no longer needed" .
-              "and is deprecated");
-    return bless({'empty' => 1, 'adaptor' => $adaptor}, $class);
+  if ($empty) {
+    deprecate(   "Creation of empty slices is no longer needed"
+               . "and is deprecated" );
+    return bless( { 'empty' => 1, 'adaptor' => $adaptor }, $class );
   }
 
-  $seq_region_name  || throw('SEQ_REGION_NAME argument is required');
-  defined($start)   || throw('START argument is required');
-  defined($end)     || throw('END argument is required');
-  ($start <= $end+1)  || throw('start must be less than or equal to end+1');
+  if ( !defined($seq_region_name) ) {
+    throw('SEQ_REGION_NAME argument is required');
+  }
+  if ( !defined($start) ) { throw('START argument is required') }
+  if ( !defined($end) )   { throw('END argument is required') }
+  if ( $start > $end + 1 ) {
+    throw('start must be less than or equal to end+1');
+  }
 
-  $seq_region_length = $end if(!defined($seq_region_length));
+  if ( !defined($seq_region_length) ) { $seq_region_length = $end }
 
-  ($seq_region_length > 0) || throw('SEQ_REGION_LENGTH must be > 0');
+  if ( $seq_region_length <= 0 ) {
+    throw('SEQ_REGION_LENGTH must be > 0');
+  }
 
-  if($seq && length($seq) != ($end - $start + 1)){
-      throw('SEQ must be the same length as the defined LENGTH not '.
-            length($seq).' compared to '.($end - $start + 1));
+  if ( defined($seq) && length($seq) != ( $end - $start + 1 ) ) {
+    throw(   'SEQ must be the same length as the defined LENGTH not '
+           . length($seq)
+           . ' compared to '
+           . ( $end - $start + 1 ) );
   }
 
   if(defined($coord_system)) {
