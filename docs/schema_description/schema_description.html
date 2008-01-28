@@ -48,7 +48,7 @@
             </tr>
          </table>
       </p>
-      <p>This document refers to version <strong>48</strong> of the EnsEMBL core schema.
+      <p>This document refers to version <strong>49</strong> of the EnsEMBL core schema.
       </p>
       <hr>
       <p>Quick links to tables:</p>
@@ -103,11 +103,6 @@
          <li><a href="#qtl">qtl</a></li>
          <li><a href="#qtl_feature">qtl_feature</a></li>
          <li><a href="#qtl_synonym">qtl_synonym</a></li>
-         <li><a href="#regulatory_factor">regulatory_factor</a></li>
-         <li><a href="#regulatory_factor_coding">regulatory_factor_coding</a></li>
-         <li><a href="#regulatory_feature">regulatory_feature</a></li>
-         <li><a href="#regulatory_feature_object">regulatory_feature_object</a></li>
-		 <li><a href="#regulatory_search_region">regulatory_search_region</a></li>
          <li><a href="#repeat_consensus">repeat_consensus</a></li>
          <li><a href="#repeat_feature">repeat_feature</a></li>
          <li><a href="#simple_feature">simple_feature</a></li>
@@ -730,52 +725,7 @@
       
       
       
-      
-      <h3><a name="regulatory_feature">regulatory_feature</a></h3>
-      <p>Stores information about features which have an effect (positive or negative) on transcription or translation,such as microRNAs.</p>
-      <p><b>See also:</b></p>
-      <p>Tables:</p>
-      <ul>
-         <li><a href="#regulatory_factor">regulatory_factor</a> - More information about the type of regulatory feature
-         </li>
-         <li><a href="#regulatory_feature_object">regulatory_feature_object</a> - Links regulatory features to the Ensembl objects they regulate.
-         </li>
-      </ul>
-      
-      
-      
-      
-      <h3><a name="regulatory_factor">regulatory_factor</a></h3>
-      <p>Describe which regulatory factor a particular regulatory feature is composed of.</p>
-      <p><b>See also:</b></p>
-      <p>Tables:</p>
-      <ul>
-         <li><a href="#regulatory_feature">regulatory_feature</a> - Contains actual genomic instances of this factor
-         </li>
-      </ul>
-      
-      
-      
-      
-      <h3><a name="regulatory_feature_object">regulatory_feature_object</a></h3>
-      <p>Links regulatory features to the Ensembl objects they are associated with. Analagous to object_xref.</p>
-      <p><b>See also:</b></p>
-      <p>Tables:</p>
-      <ul>
-         <li><a href="#regulatory_feature">regulatory_feature</a>
-         </li>
-      </ul>
-      
-      
-      
-      
-      <h3><a name="regulatory_factor_coding">regulatory_factor_coding</a></h3>
-      <p>Describes which transcripts or genes code for particular regulatory factors.</p>
-      
-
-	  <h3><a name="regulatory_search_region">regulatory_search_region</a></h3>
-      <p>Describes which areas of the genome were searched for regulatory features.</p>
-      
+   
       
       <hr>
       <h2>ID Mapping</h2>
