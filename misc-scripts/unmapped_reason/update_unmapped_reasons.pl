@@ -16,14 +16,18 @@ GetOptions( "host=s", \$host,
 	    "pass=s", \$pass,
 	    "port=i", \$port,
 	    "file=s", \$file,
-            "dbnames=s@", \@dbnames,
+            "dbnames=s@", \@dbnames, # either provide -dbnames or -release  
 	    "release_num=i", \$release_num
 	  );
 
 #both host and file are required
 usage() if(!$host || !$file);
 #release num XOR dbname are required
-usage() if(($release_num && @dbnames) || (!$release_num && !@dbnames));
+if(($release_num && @dbnames) || (!$release_num && !@dbnames)) {  
+  print "\nYou can't use -dbnames <> and -release_num <> options at the same time\n" ;
+  sleep(3) ;  
+  usage()  ; 
+} 
 
 $port ||= 3306;
 
