@@ -171,13 +171,14 @@ sub run_coordinatemapping {
 
   while ( my $xref = $xref_sth->fetchrow_hashref() ) {
     $unmapped{ $xref->{'coord_xref_id'} } = {
-          'external_db_id' =>
-            $XrefMapper::BasicMapper::source_to_external_db_id{ $xref->{
-              'source_id'} },
-          'accession' => $xref->{'accession'},
-          'reason'    => 'No overlap',
-          'reason_full' =>
-            'No coordinate overlap with any Ensembl transcript' };
+      'external_db_id' =>
+        $XrefMapper::BasicMapper::source_to_external_db{ $xref->{
+          'source_id'} }
+        || 11000,    # FIXME (11000 is 'UCSC')
+      'accession' => $xref->{'accession'},
+      'reason'    => 'No overlap',
+      'reason_full' =>
+        'No coordinate overlap with any Ensembl transcript' };
   }
   $xref_sth->finish();
 
