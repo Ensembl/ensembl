@@ -2762,9 +2762,11 @@ GSQL
 	  next;
 	}
       }
-      if($level{$ex_db_id} > $best_gene_level){
-	$best_gene_xref = $xref_id;
-	$best_gene_level = $level{$ex_db_id};
+      if(defined($level{$ex_db_id})){
+	if($level{$ex_db_id} > $best_gene_level){
+	  $best_gene_xref = $xref_id;
+	  $best_gene_level = $level{$ex_db_id};
+	}
       }
     }
     
