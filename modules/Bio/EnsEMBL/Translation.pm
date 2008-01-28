@@ -1008,27 +1008,5 @@ sub get_all_DAS_Features{
   return $self->SUPER::get_all_DAS_Features($slice);
 }
 
-=head2 get_all_regulatory_features
-
-  Example    : @features = $translation->get_all_regulatory_features();
-  Description: Gets all the regulatory features associated with this
-               translation.
-               Each feature only appears once.
-  Returntype : Listref of Bio::EnsEMBL::RegulatoryFeature
-  Exceptions : If arg is not of correct type.
-  Caller     : general
-  Status     : At Risk
-             : Regulatory features are currently under development and are 
-             : likely to change.
-
-=cut
-
-sub get_all_regulatory_features {
-   my ($self) = @_;
-
-   my $rfa = $self->adaptor->db->get_RegulatoryFeatureAdaptor();
-
-   return $rfa->fetch_all_by_translation($self);
-}
 
 1;

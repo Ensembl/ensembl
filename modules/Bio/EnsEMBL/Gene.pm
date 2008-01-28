@@ -1037,32 +1037,6 @@ sub get_all_DAS_Features{
 }
 
 
-=head2 get_all_regulatory_features
-
-  Arg [1]    : Boolean $recursive
-               If set, regulatory features on transcripts belonging to this
-               gene are returned as well
-  Example    : @features = $gene->get_all_regulatory_features(1);
-  Description: Gets all the regulatory features associated with a particular
-               gene, and (optionally) its transcripts. Each feature only
-               appears once.
-  Returntype : Listref of Bio::EnsEMBL::RegulatoryFeature objects
-  Exceptions : If arg is not of correct type.
-  Caller     : general
-  Status     : At Risk
-             : regulatory features are under development
-
-=cut
-
-sub get_all_regulatory_features {
-
-   my ($self, $recursive) = @_;
-
-   my $rfa = $self->adaptor->db->get_RegulatoryFeatureAdaptor();
-
-   return $rfa->fetch_all_by_gene($self, $recursive);
-
-}
 
 
 =head2 add_unconventional_transcript_association

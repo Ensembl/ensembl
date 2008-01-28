@@ -264,8 +264,7 @@ sub get_available_adaptors{
       Gene                     KaryotypeBand        MiscSet
       MiscFeature              OligoArray           OligoFeature
       OligoProbe               PredictionTranscript PredictionExon
-      ProteinFeature           ProteinAlignFeature  RegulatoryFeature
-      RegulatoryFactor         RegulatorySearchRegion RepeatConsensus
+      ProteinFeature           ProteinAlignFeature  RepeatConsensus
       RepeatFeature            Sequence             SimpleFeature
       Slice                    SupportingFeature    Transcript
       TranscriptSupportingFeature Translation       UnmappedObject

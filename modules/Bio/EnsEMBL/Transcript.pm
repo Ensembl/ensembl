@@ -2149,49 +2149,6 @@ sub get_all_DAS_Features {
 }
 
 
-=head2 fetch_all_regulatory_features
-
-  Arg [1]    : none
-  Example    : @features = $transcript->fetch_all_regulatory_features();
-  Description: Gets all the regulatory features associated with this transcript.
-               Each feature only appears once.
-  Returntype : Listref of Bio::EnsEMBL::RegulatoryFeature
-  Exceptions : If arg is not of correct type.
-  Caller     : ?
-  Status    : At Risk
-
-=cut
-
-sub fetch_all_regulatory_features {
-   my ($self) = @_;
-
-   my $rfa = $self->adaptor->db->get_RegulatoryFeatureAdaptor();
-
-   return $rfa->fetch_all_by_transcript($self);
-}
-
-
-=head2 fetch_coded_for_regulatory_factors
-
-  Arg [1]    : none
-  Example    : $transcript->fetch_coded_for_regualtory_factors()
-  Description: Fetches any regulatory_factors that are coded for by this transcript
-  Returntype : Listref of Bio::Ensembl::RegulatoryFactor
-  Exceptions :
-  Caller     : ?
-  Status     : At Risk
-             : under development
-
-=cut
-
-sub fetch_coded_for_regulatory_factors {
-  my ($self) = @_;
-
-  my $rfa = $self->adaptor->db->get_RegulatoryFactorAdaptor();
-
-  return $rfa->fetch_factors_coded_for_by_transcript($self);
-}
-
 
 =head2 _compare_xrefs
 
