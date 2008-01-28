@@ -3,7 +3,7 @@ use warnings;
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 86;
+	plan tests => 84;
 }
 
 use Bio::EnsEMBL::Test::MultiTestDB;
@@ -633,15 +633,6 @@ ok($dbe_id && $dbe_id == $dbe->dbID());
 
 $multi->restore();
 
-# test regulatory feature retrieval
-my $rf_gene = $ga->fetch_by_dbID(18256);
-#ok(@{$rf_gene->get_all_regulatory_features()} == 1);  # non-recursive
-ok(@{$rf_gene->get_all_regulatory_features(1)} == 12); # recursive
-
-# test getting coded-for regulatory factors
-$gene = $ga->fetch_by_dbID(18271);
-my @factors = @{$gene->fetch_coded_for_regulatory_factors()};
-ok($factors[0]->dbID() == 5);
 
 #
 # tests for multiple versions of genes in a database
