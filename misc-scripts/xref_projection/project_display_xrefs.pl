@@ -188,11 +188,15 @@ foreach my $to_species (@to_multi) {
 
     my $from_gene = $from_ga->fetch_by_stable_id($from_stable_id);
 
+    next if (!$from_gene);
+
     my @to_genes = @{$homologies->{$from_stable_id}};
     my $i = 1;
     foreach my $to_stable_id (@to_genes) {
 
       my $to_gene = $to_ga->fetch_by_stable_id($to_stable_id);
+
+      next if (!$to_gene);
 
       project_display_names($to_ga, $to_dbea, $from_gene, $to_gene, $i, scalar(@to_genes), %db_to_type) if ($names);
 
