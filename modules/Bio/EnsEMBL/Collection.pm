@@ -1083,8 +1083,8 @@ sub _dbID_column {
                   in their main feature table.  For these feature
                   types, a restriction on analysis.logic_name may
                   be enforced by using the ANALYSIS argument of the
-                  constructor.  This method should return a true
-                  value if there is such an analysis_id column in
+                  constructor.  This method should return a false
+                  value if there is no such an analysis_id column in
                   the feature table.
 
   Return type   : Boolean
@@ -1097,7 +1097,7 @@ sub _dbID_column {
 
 =cut
 
-sub _has_analysis { return 0 }
+sub _has_analysis { return 1 }
 
 #-----------------------------------------------------------------------
 

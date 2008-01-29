@@ -36,7 +36,7 @@ sub _extra_where_clause {
   return 'rc.repeat_consensus_id = rf.repeat_consensus_id';
 }
 
-sub _has_analysis { return 1 }
+# sub _has_analysis { return 1 }
 
 #-----------------------------------------------------------------------
 # Implemented abstract protected methods from base class
