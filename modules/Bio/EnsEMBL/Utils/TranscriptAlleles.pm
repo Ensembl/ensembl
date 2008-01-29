@@ -268,14 +268,19 @@ sub type_variation {
 #     }
 #   }
 
-  if ($tr and ref($tr) and $tr->isa('Bio::EnsEMBL::Transcripts')) {
-    foreach my $rf (@{$tr->fetch_all_regulatory_features()}) {
+
+  if ($tr and ref($tr) and $tr->isa('Bio::EnsEMBL::Transcript')) {
+      my $dbFunc = $tr->adaptor->db->get_db_adaptor("funcgen");
+      my $rfa = $dbFunc->get_ExternalFeatureAdaptor();      
+      foreach my $rf (@{$rfa->fetch_all_by_Slice($tr->feature_Slice)}){
+	  next if (($rf->feature_set->name !~ /miRNA/) && ($rf->feature_set->name !~ /cisRED/));
+#    foreach my $rf (@{$tr->fetch_all_regulatory_features()}) {
       my $rf_start = $rf->start;
       my $rf_end  = $rf->end;
 
       if ($var->end >= $rf_start and $var->start <= $rf_end) {
- 	$var->type('REGULATORY_REGION') if ($var->type !~ /REGULATORY/);
-	print $var->start, " has regulatiory_region near",$tr->dbId,"\n";
+ 	$var->type('REGULATORY_REGION') if (!defined $var->type || $var->type !~ /REGULATORY/);
+#	print $var->start, " has regulatiory_region near",$tr->dbID,"\n";
         last;
       }
     }
