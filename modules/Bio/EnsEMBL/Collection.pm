@@ -1275,40 +1275,42 @@ sub _objs_from_sth {
   my $slice_name  = $this->slice()->name();
   my $slice_start = $this->slice()->start();
 
-  while ( my $entry = $sth->fetchrow_arrayref() ) {
-    if ( !defined($segment)
-         || $segment !=
-         $SEQ_REG_MAP{$slice_name}{ $entry->[ENTRY_SEQREGIONID] } )
-    {
-      $segment =
-        $SEQ_REG_MAP{$slice_name}{ $entry->[ENTRY_SEQREGIONID] };
-      $segment_slice        = $segment->to_Slice();
-      $segment_slice_start  = $segment_slice->start();
-      $segment_slice_strand = $segment_slice->strand();
+  while ( my $rowcache = $sth->fetchall_arrayref( undef, 1000 ) ) {
+    while ( my $entry = shift( @{$rowcache} ) ) {
+      if ( !defined($segment)
+           || $segment !=
+           $SEQ_REG_MAP{$slice_name}{ $entry->[ENTRY_SEQREGIONID] } )
+      {
+        $segment =
+          $SEQ_REG_MAP{$slice_name}{ $entry->[ENTRY_SEQREGIONID] };
+        $segment_slice        = $segment->to_Slice();
+        $segment_slice_start  = $segment_slice->start();
+        $segment_slice_strand = $segment_slice->strand();
+
+        if ( $segment_slice_strand == -1 ) {
+          $segment_offset = $segment->from_end();
+        } else {
+          $segment_offset = $segment->from_start();
+        }
+      }
+
+      my $start = $slice_start + $segment_offset;
+      my $end   = $start;
 
       if ( $segment_slice_strand == -1 ) {
-        $segment_offset = $segment->from_end();
-      } else {
-        $segment_offset = $segment->from_start();
+        $start -= $entry->[ENTRY_SEQREGIONEND] - $segment_slice_start;
+        $end   -= $entry->[ENTRY_SEQREGIONSTART] - $segment_slice_start;
+      } else {    # Assumes '0' is really the positive strand.
+        $start += $entry->[ENTRY_SEQREGIONSTART] - $segment_slice_start;
+        $end   += $entry->[ENTRY_SEQREGIONEND] - $segment_slice_start;
       }
-    }
 
-    my $start = $slice_start + $segment_offset;
-    my $end   = $start;
+      $entry->[ENTRY_SEQREGIONSTART] = $start - 1;
+      $entry->[ENTRY_SEQREGIONEND]   = $end - 1;
 
-    if ( $segment_slice_strand == -1 ) {
-      $start -= $entry->[ENTRY_SEQREGIONEND] - $segment_slice_start;
-      $end   -= $entry->[ENTRY_SEQREGIONSTART] - $segment_slice_start;
-    } else {    # Assumes '0' is really the positive strand.
-      $start += $entry->[ENTRY_SEQREGIONSTART] - $segment_slice_start;
-      $end   += $entry->[ENTRY_SEQREGIONEND] - $segment_slice_start;
-    }
-
-    $entry->[ENTRY_SEQREGIONSTART] = $start - 1;
-    $entry->[ENTRY_SEQREGIONEND]   = $end - 1;
-
-    push( @features, [ @{$entry} ] );
-  } ## end while ( my $entry = $sth->fetchrow_arrayref...
+      push( @features, [ @{$entry} ] );
+    } ## end while ( my $entry = shift...
+  } ## end while ( my $rowcache = $sth...
   $sth->finish();
 
   return \@features;
