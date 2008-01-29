@@ -110,6 +110,14 @@ foreach my $species_section ( sort( $config->GroupMembers('species') ) )
   {
     my $source_section = sprintf( "source %s", $source_name );
 
+    if ( !defined( $config->val( $source_section, 'id' ) ) ) {
+      die(
+           sprintf( "Can not find source section '[%s]'\n"
+                      . "while reading species section '[%s]'\n",
+                    $source_section, $species_section
+           ) );
+    }
+
     printf( "# Data from source '%s' (id = %d)\n",
             $source_name, $config->val( $source_section, 'id' ) );
 
