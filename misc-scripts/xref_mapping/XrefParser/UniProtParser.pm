@@ -161,6 +161,9 @@ sub create_xrefs {
 
   my %dependent_sources = $self->get_dependent_xref_sources(); # name-id hash
 
+  if(defined($dependent_sources{'HGNC'})){
+    $dependent_sources{'HGNC'} = XrefParser::BaseParser->get_source_id_for_source_name("HGNC","uniprot");
+  }	
   # Get predicted equivalents of various sources used here
     my $sp_pred_source_id =
       $self->get_source_id_for_source_name(
@@ -336,6 +339,10 @@ sub create_xrefs {
           $dep{SOURCE_NAME} = $source;
           $dep{LINKAGE_SOURCE_ID} = $xref->{SOURCE_ID};
           $dep{SOURCE_ID} = $dependent_sources{$source};
+	  if($source =~ /HGNC/){
+	    $acc =~ s/HGNC://;
+	    $dep{LABEL} = $extra[0]
+	  }
 	  $dep{ACCESSION} = $acc;
 	  if($dep =~ /MIM/){
 	    $dep{ACCESSION} = $acc;
