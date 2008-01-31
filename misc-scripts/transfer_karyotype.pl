@@ -25,6 +25,15 @@ my $old_db = DBI->connect("DBI:mysql:host=$oldhost;dbname=$olddbname;port=$oldpo
 
 my $new_db = DBI->connect("DBI:mysql:host=$newhost;dbname=$newdbname;port=$newport", $newuser, $newpass);
 
+# check for rows in new table
+my $chk_sth = $new_db->prepare("SELECT COUNT(*) FROM karyotype");
+$chk_sth->execute();
+my $count = ($chk_sth->fetchrow_array())[0];
+if ($count > 0) {
+  print STDERR "Karyotype table in $newdbname should be empty but has $count rows - delete and re-run\n";
+  exit(1);
+}
+
 my $old_sth = $old_db->prepare("SELECT sr.name, cs.name, sr.length, k.seq_region_start, k.seq_region_end, k.band, k.stain FROM seq_region sr, coord_system cs, karyotype k WHERE sr.coord_system_id=cs.coord_system_id AND sr.seq_region_id=k.seq_region_id");
 $old_sth->execute();
 
