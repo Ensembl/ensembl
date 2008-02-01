@@ -8,7 +8,7 @@ use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::EnsEMBL::Mapper::RangeRegistry;
 
 my ($transcript_host, $transcript_port, $transcript_user, $transcript_pass, $transcript_dbname,
-    $oligo_host, $oligo_port, $oligo_user, $oligo_pass, $oligo_dbname,
+    $oligo_host, $oligo_port, $oligo_user, $oligo_pass, $oligo_dbname, $five_utr, $three_utr,
     $xref_host, $xref_port, $xref_user, $xref_pass, $xref_dbname,
     $max_mismatches, $utr_length, $max_transcripts_per_probeset, $max_transcripts, @arrays, $delete,
     $mapping_threshold, $no_triage, $health_check);
@@ -31,7 +31,7 @@ GetOptions('transcript_host=s'      => \$transcript_host,
            'xref_pass=s'            => \$xref_pass,
            'xref_dbname=s'          => \$xref_dbname,
 		   'mismatches=i'           => \$max_mismatches,
-           'utr_length=i'           => \$utr_length,
+           'utr_length=s'           => \$utr_length,
 		   'max_probesets=i'        => \$max_transcripts_per_probeset,
 		   'max_transcripts=i'      => \$max_transcripts,
 		   'threshold=s'            => \$mapping_threshold,
@@ -41,11 +41,22 @@ GetOptions('transcript_host=s'      => \$transcript_host,
 		   'health_check'           => \$health_check,
            'help'                   => sub { usage(); exit(0); });
 
+
+
+# Default options
 $transcript_port ||= 3306; $oligo_port ||= 3306; $xref_port ||= 3306;
 
 $max_mismatches ||= 1;
 
 $utr_length ||= 2000;
+
+if(($utr_length =~ /\D/) && ($utr_length ne 'annotated')){
+  die("Invalid utr_length parameter($utr_length).  Must be a number or 'annotated'");
+}
+else{
+  $three_utr = $utr_length;
+}
+
 
 $max_transcripts_per_probeset ||= 100;
 
@@ -54,6 +65,8 @@ $mapping_threshold ||= 0.5;
 @arrays = split(/,/,join(',',@arrays));
 
 usage() if(!$transcript_user || !$transcript_dbname || !$transcript_host);
+
+print 'Running on probe2trascript.pl on: '.`hostname`."\n";
 
 my $transcript_db = new Bio::EnsEMBL::DBSQL::DBAdaptor('-host'   => $transcript_host,
 						       '-port'   => $transcript_port,
@@ -143,7 +156,6 @@ print "Mapping, percentage complete: ";
 
 foreach my $transcript (@transcripts) {
 
-
   my $pc = int ((100 * $i) / $total);
 
   if ($pc > $last_pc) {
@@ -158,12 +170,25 @@ foreach my $transcript (@transcripts) {
   my $stable_id = $transcript->stable_id();
   $transcript_ids{$stable_id} = $transcript->dbID(); # needed later
 
+  if($utr_length eq 'annotated'){
+	#$five_utr = Do we need to implement this?
+	my $utr = $transcript->three_prime_utr;
+	$three_utr = (defined $utr) ? $utr->length : 2000;
+
+	#Should we set UTR to 0 if no UTR?
+	#Should we default to 2000 here if UTR is less?
+	#Probably dependent on quality of gene build
+  }
+
   my $slice = $transcript->feature_Slice(); # note not ->slice() as this gets whole chromosome!
-  my $extended_slice = $slice->expand(0, $utr_length); # this takes account of strand
+  #my $extended_slice = $slice->expand(0, $utr_length); # this takes account of strand
+  my $extended_slice = $slice->expand(0, $three_utr); # this takes account of strand
+  
 
   my $exons = $transcript->get_all_Exons();
 
   $rr->flush();
+
 
   foreach my $exon (@$exons) {
     my $start = $exon->start();
@@ -172,18 +197,21 @@ foreach my $transcript (@transcripts) {
   }
 
   if ($transcript->strand() == 1) {
-    $rr->check_and_register("utr", $extended_slice->end()-$utr_length, $extended_slice->end());
+    $rr->check_and_register("utr", $extended_slice->end()-$three_utr, $extended_slice->end());
   } else {
-    $rr->check_and_register("utr", $extended_slice->start(), $extended_slice->start() + $utr_length);
+    $rr->check_and_register("utr", $extended_slice->start(), $extended_slice->start() + $three_utr);
   }
 
   my $oligo_features;
+
+ 
   if (@arrays) {
     $oligo_features = $extended_slice->get_all_OligoFeatures(@arrays);
   } else {
     $oligo_features = $extended_slice->get_all_OligoFeatures();
   }
 
+ 
   foreach my $feature (@$oligo_features) {
     #next if ($transcript->strand() != $feature->strand()); # XXX log this
 
@@ -201,21 +229,21 @@ foreach my $transcript (@transcripts) {
 
     if ($exon_overlap >= $min_overlap) {
 
-	  #print "Exon overlap $exon_overlap excedes minimum overlap $min_overlap\n";
+#	  print "Exon overlap $exon_overlap excedes minimum overlap $min_overlap\n";
 
 
       $transcript_probeset_count{$transcript_key}{$probe_name}++;
 
     } elsif ($utr_overlap >= $min_overlap) {
 
-	  #print "UTR overlap $utr_overlap excedes minimum overlap $min_overlap\n";
+#	  print "UTR overlap $utr_overlap excedes minimum overlap $min_overlap\n";
 
       $transcript_probeset_count{$transcript_key}{$probe_name}++;
 
     } else { # must be intronic
 
 
-	  #print "Intronic\n";
+#	  print "Intronic\n";
 
       print LOG "Unmapped intronic " . $transcript->stable_id . "\t" . $probeset . " probe length $probe_length\n";
       if (!$no_triage) {
@@ -231,17 +259,7 @@ foreach my $transcript (@transcripts) {
 		
 		&cache_and_load_unmapped_objects($um_obj);
 		
-		#push @unmapped_objects, new Bio::EnsEMBL::UnmappedObject(-type       => 'probe2transcript',
-		#														 -analysis   => $analysis,
-		#														 -identifier => $probeset,
-		#														 -summary    => "Unmapped intronic",
-		#														 -full_desc  => "Probe mapped to intronic region of transcript",
-		#														 -ensembl_object_type => 'Transcript',
-		#														 -ensembl_id => $transcript->dbID());
-		  
-
-		
-      }
+	  }
 	}
   }
 
@@ -546,6 +564,9 @@ sub delete_unmapped_entries {
 
   my ($xref_adaptor) = @_;
 
+
+  #This deletes all unmapped objects, even if we're only (re-)running one array!
+
   my $del_sth = $xref_adaptor->dbc()->prepare("DELETE a, ur, uo FROM analysis a, unmapped_reason ur, unmapped_object uo WHERE a.logic_name = 'probe2transcript' AND a.analysis_id=uo.analysis_id AND uo.unmapped_reason_id=ur.unmapped_reason_id");
 
   print "Deleting unmapped records\n";
@@ -794,7 +815,7 @@ sub usage {
                       Defaults to 1.
 		
   [--utr_length]      Search this many bases downstream of the transcript
-                      coding region as well. Defaults to 2000.
+                      coding region as well. Defaults to 2000. Specify 'annotated' to use annotated lengths.
 		
   [--max_probesets]   Don't store mappings to any 'promiscuous' probesets that map
                       to more than this number of transcripts. Defaults to 100.
