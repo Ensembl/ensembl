@@ -190,7 +190,7 @@ Returns an array of bins, each bin containing an array of entries
 method) allocated to that bin.  The 'entry' binning method is equivalent
 to 'entries'.
 
-=item 'fractional_count' and 'fcount'
+=item 'fractional_count' and 'weight'
 
 Returns an array of bins, each bin containing the sum of the fractions
 of features overlapping that bin.  A feature fully inside a bin will
@@ -257,7 +257,7 @@ our %VALID_BINNING_METHODS = (
                'entries'          => 2,
                'entry'            => 2,    # Same as 'entries'.
                'fractional_count' => 3,
-               'fcount'           => 3,    # Same as 'fractional_count'.
+               'weight'           => 3,    # Same as 'fractional_count'.
                'coverage'         => 4 );
 
 =head1 METHODS (constructor)
@@ -771,7 +771,7 @@ sub get_bins {
 
     } elsif ( $method == 3 ) {
 
-      # For 'fractional_count' and 'fcount'.
+      # For 'fractional_count' and 'weight'.
 
       if ( $start_bin == $end_bin ) {
         ++$bins[$start_bin];
