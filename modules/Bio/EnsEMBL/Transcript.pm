@@ -545,18 +545,19 @@ sub display_xref {
 
 =head2 translation
 
-  Arg [1]    : Bio::EnsEMBL::Translation
-  Example    : if($transcript->translation()) {
-                 print $translation->stable_id(), "\n";
+  Args       : None
+  Example    : if ( $transcript->translation() ) {
+                 print( $transcript->translation()->stable_id(), "\n" );
                } else {
-                 print "Pseudogene\n";
+                 print("Pseudogene\n");
                }
-  Description: Getter/setter for the Translation object which defines the
-               CDS (and as a result the peptide encoded by) this transcript.
-               This function will return undef if this Transcript is a
-               pseudogene - i.e. a non-translating transcript such as an
-               ncRNA.  This is the accepted method of determining whether
-               a transcript is a pseudogene or not.
+  Description: Getter/setter for the Translation object which
+               defines the CDS (and as a result the peptide encoded
+               by) this transcript.  This function will return
+               undef if this transcript is a pseudogene, i.e. a
+               non-translating transcript such as an ncRNA.  This
+               is the accepted method of determining whether a
+               transcript is a pseudogene or not.
   Returntype : Bio::EnsEMBL::Translation
   Exceptions : none
   Caller     : general
