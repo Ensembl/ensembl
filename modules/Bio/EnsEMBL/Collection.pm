@@ -947,12 +947,16 @@ sub __constraint {
         %1$s.seq_region_id     = %2$10d
     AND %1$s.seq_region_start <= %4$10d
     AND %1$s.seq_region_end   >= %3$10d
+    AND %1$s.seq_region_start >= %5$10d
   );
 
     $constraint =
       sprintf( $constraint_fmt,
-               $table_alias, $slice->get_seq_region_id(),
-               $slice->start(), $slice->end() );
+               $table_alias,
+               $slice->get_seq_region_id(),
+               $slice->start(),
+               $slice->end(),
+               $slice->start() - $max_feature_length );
 
   } else {
     my @seq_region_ids =
