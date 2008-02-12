@@ -1,3 +1,16 @@
+#Nath
+#Implemented strand check and unmapped object for anti-sense mapping
+#Changed transcript_probeset_count cache to use dbID instead of complete name
+#Renamed check_names_match to validate_arrays and extended to perform probeset warning, external_db name guess and returns cache, user array param validation and association check
+#Merged delete_unampped objects into delete_existing_xrefs due to dependency. Now throws if arrays param set until force_delete specified, deletes using IN list
+#cache_arrays_per_probeset now uses arrays param to reduce size of cache
+#removed unmapped_object dbID = 2000>
+#Change all probe specific unmapped object to reeflect the individual probe rather than the probeset
+#Updated logs
+#Updated docs
+#Added control of promiscuous probesets and unmapped object ????
+
+
 use strict;
 
 use Getopt::Long;
@@ -9,11 +22,11 @@ use Bio::EnsEMBL::Mapper::RangeRegistry;
 
 my ($transcript_host, $transcript_port, $transcript_user, $transcript_pass, $transcript_dbname,
     $oligo_host, $oligo_port, $oligo_user, $oligo_pass, $oligo_dbname, $five_utr, $three_utr,
-    $xref_host, $xref_port, $xref_user, $xref_pass, $xref_dbname,
+    $xref_host, $xref_port, $xref_user, $xref_pass, $xref_dbname, $force_delete,
     $max_mismatches, $utr_length, $max_transcripts_per_probeset, $max_transcripts, @arrays, $delete,
     $mapping_threshold, $no_triage, $health_check);
 
-my $first_cache = 1;
+#my $first_cache = 1;
 
 GetOptions('transcript_host=s'      => \$transcript_host,
            'transcript_user=s'      => \$transcript_user,
@@ -37,6 +50,7 @@ GetOptions('transcript_host=s'      => \$transcript_host,
 		   'threshold=s'            => \$mapping_threshold,
 		   'arrays=s'               => \@arrays,
 		   'delete'                 => \$delete,
+		   'force_delete'           => \$force_delete,
 		   'no_triage'              => \$no_triage,
 		   'health_check'           => \$health_check,
            'help'                   => sub { usage(); exit(0); });
@@ -59,10 +73,9 @@ else{
 
 
 $max_transcripts_per_probeset ||= 100;
-
 $mapping_threshold ||= 0.5;
+@arrays = split(/,/,join(',',@arrays));#?
 
-@arrays = split(/,/,join(',',@arrays));
 
 usage() if(!$transcript_user || !$transcript_dbname || !$transcript_host);
 
@@ -85,7 +98,7 @@ if ($oligo_host && $oligo_dbname && $oligo_user) {
 
 } else {
 
-  print "No oligo database specified, reading oligo features from $transcript_host:$transcript_port:$transcript_dbname\n";
+  print "No oligo database specified, defaulting to $transcript_host:$transcript_port:$transcript_dbname\n";
   $oligo_db = $transcript_db;
 
 }
@@ -107,13 +120,17 @@ if ($xref_host && $xref_dbname && $xref_user) {
 
 }
 
-check_names_match($oligo_db, $xref_db);
+#This validates arrays
+#Why would we ever want to write the xrefs to a different DB?
+my %array_name_cache =  %{&validate_arrays($oligo_db, $xref_db)};
+$delete = $force_delete if $force_delete;
 
-delete_existing_xrefs($oligo_db, $xref_db, @arrays) if ($delete);
-delete_unmapped_entries($xref_db) if ($delete);
+#Merge these as they are related and we need to force unmapped check first
 
-check_existing_and_exit($oligo_db, $xref_db, @arrays);
+delete_existing_xrefs($xref_db) if ($delete);
+check_existing_and_exit($oligo_db, $xref_db);#???
 
+#Do we need this healthcheck mode now?  We're doing it all anyway and fails if any tests fail
 if ($health_check){
   print "Healthcheck passed\n";
   exit 0;
@@ -130,10 +147,8 @@ my $analysis = get_or_create_analysis($analysis_adaptor);
 
 my %promiscuous_probesets;
 my %transcripts_per_probeset;
-
 my %transcript_ids;
 my %transcript_probeset_count; # key: transcript:probeset value: count
-
 my %arrays_per_probeset;
 my %array_probeset_sizes;
 
@@ -141,6 +156,7 @@ my @unmapped_objects;
 
 $| = 1; # auto flush stdout
 
+my $um_obj;#globally defined.
 my $i = 0;
 my $last_pc = -1;
 
@@ -151,7 +167,7 @@ my $total =  scalar(@transcripts);
 
 open (LOG, ">${transcript_dbname}_probe2transcript.log");
 
-print "Identified ".scalar(@transcripts)." for probe mappinng\n";
+print "Identified ".scalar(@transcripts)." transcripts for probe mappinng\n";
 print "Mapping, percentage complete: ";
 
 foreach my $transcript (@transcripts) {
@@ -212,57 +228,97 @@ foreach my $transcript (@transcripts) {
   }
 
  
+  #This works on the assumption that probesets are identical between arrays
+  #i.e. if a probe set is present on different arrays, their probes are identical.
+ 
   foreach my $feature (@$oligo_features) {
-    #next if ($transcript->strand() != $feature->strand()); # XXX log this
+  	#Here we need to skip the assignment if we have already seen the dbID for this transcript
+	#Actually we need to count each dbID mapping
+	#Then if we get some which don't match we need to resolve the differences 
+	#between the array mappings and create 2 xrefs
+	#Then change how arrays per probeset works
+	#What about if we have > 1 mapping for a given probe?
+	#Can we use this in the xref desc?
 
-    my $probe = $feature->probe();
-    my $probe_name = ${$probe->get_all_complete_names()}[0];
-    my $probeset = $probe->probeset();
 
+	my $probe = $feature->probe();
+    #my $probe_name = ${$probe->get_all_complete_names()}[0];
+	#No need to use this as a unique key as we can use dbID, this wouldn't work anyway without redundant dbID records
+
+	#my $probe_name = $probe->get_probename;
+	my $dbID = $probe->dbID;
+	my $probeset = $probe->probeset();
+
+
+	#We should only get one probe for all arrays
+	#So if we get two we know we have >1 mapping
+	#So we need to test again.
+
+	if ($transcript->strand() != $feature->strand()){
+	  print LOG "Unmapped anti-sense " . $transcript->stable_id . "\t${probeset}\tdbID:${dbID}\n";
+	  
+	  if (!$no_triage) {
+		
+		#Use of internal dbID in identifier is dodge
+		#can we use the actual probe names here?
+		$um_obj = new Bio::EnsEMBL::UnmappedObject(-type       => 'probe2transcript',
+													  -analysis   => $analysis,
+													  -identifier => "${probeset}:${dbID}",
+													  -summary    => "Unmapped anti-sense",
+													  -full_desc  => "Probe mapped to opposite strand of transcript",
+													  -ensembl_object_type => 'Transcript',
+													  -ensembl_id => $transcript->dbID());
+		
+		&cache_and_load_unmapped_objects($um_obj);
+
+		next;
+	  }
+	}
+
+
+	#Are we dealing with each probeset for each array individually?
+	#Can we generalise across arrays?
+	#We need to deal with the probe dbIDs in the cache?
+	#Are the probe names being used for anything?
+	#We're are we deconvoluting the probe to array relationship?
+
+    
     my $transcript_key = $transcript->stable_id() . ":" . $probeset;
-
     my $probe_length = $probe->probelength();
     my $min_overlap = ($probe_length - $max_mismatches);
-
     my $exon_overlap = $rr->overlap_size("exonic", $feature->seq_region_start(), $feature->seq_region_end());
     my $utr_overlap  = $rr->overlap_size("utr",    $feature->seq_region_start(), $feature->seq_region_end());
 
     if ($exon_overlap >= $min_overlap) {
-
-#	  print "Exon overlap $exon_overlap excedes minimum overlap $min_overlap\n";
-
-
-      $transcript_probeset_count{$transcript_key}{$probe_name}++;
-
-    } elsif ($utr_overlap >= $min_overlap) {
-
-#	  print "UTR overlap $utr_overlap excedes minimum overlap $min_overlap\n";
-
-      $transcript_probeset_count{$transcript_key}{$probe_name}++;
-
-    } else { # must be intronic
-
-
-#	  print "Intronic\n";
-
-      print LOG "Unmapped intronic " . $transcript->stable_id . "\t" . $probeset . " probe length $probe_length\n";
-      if (!$no_triage) {
-
-
-		my $um_obj = new Bio::EnsEMBL::UnmappedObject(-type       => 'probe2transcript',
+	  #	  print "Exon overlap $exon_overlap excedes minimum overlap $min_overlap\n";
+      $transcript_probeset_count{$transcript_key}{$dbID}++;
+    } 
+	elsif ($utr_overlap >= $min_overlap) {
+	  #	  print "UTR overlap $utr_overlap excedes minimum overlap $min_overlap\n";
+      $transcript_probeset_count{$transcript_key}{$dbID}++;
+    } 
+	else { # must be intronic
+	  #This is for an individual probe!
+	  print LOG "Unmapped intronic " . $transcript->stable_id . "\t${probeset}\tdbID:${dbID}\n";
+	  
+	  if (!$no_triage) {
+		
+		$um_obj = new Bio::EnsEMBL::UnmappedObject(-type       => 'probe2transcript',
 													  -analysis   => $analysis,
-													  -identifier => $probeset,
+													  -identifier => "${probeset}:${dbID}",
 													  -summary    => "Unmapped intronic",
 													  -full_desc  => "Probe mapped to intronic region of transcript",
 													  -ensembl_object_type => 'Transcript',
 													  -ensembl_id => $transcript->dbID());
 		
 		&cache_and_load_unmapped_objects($um_obj);
-		
+
+	
 	  }
 	}
   }
 
+ 
   # TODO - make external_db array names == array names in OligoArray!
   # change oligo_array.name to be oligo_array.external_db_id ?
 
@@ -270,9 +326,7 @@ foreach my $transcript (@transcripts) {
 
 print "\n";
 
-# cache which arrays a probeset belongs to, and the sizes of probesets in different arrays
 cache_arrays_per_probeset($oligo_db);
-
 
 print "Writing xrefs\n";
 my $um_cnt = 0;
@@ -283,36 +337,60 @@ foreach my $key (keys %transcript_probeset_count) {
   my ($transcript, $probeset) = split (/:/, $key);
 
   # store one xref/object_xref for each array-probeset-transcript combination
-  foreach my $array (split (/ /, $arrays_per_probeset{$probeset})) {
+  foreach my $array (split (/ /, $arrays_per_probeset{$probeset})) {	
+	#Not sure about this?
+	#If we're restricting the an array list, then we're ignoring the genuine array relationship
+	#Which may give spurious results
+	#We need to think how we're rolling back xrefs and unmapped objects anyway
+	#As these are done one a probe_set/probe level, not an array level
+	#So we mayve have duplicates if we don't clean
+	#But we have no way of cleaning on an array level without deleting all
+	#Can we clean on a probe/probeset level?
 
+
+	#This should never happen now, as we're enforcing running on all associated arrays
     next if (@arrays && find_in_list($array, @arrays,) == -1 );
 
     my $size_key = $array . ":" . $probeset;
     my $probeset_size = $array_probeset_sizes{$size_key};
 
+
+	#Is this the only place we're using the complete name?
     my $hits = scalar(keys %{$transcript_probeset_count{$key}});
 
     if ($hits / $probeset_size >= $mapping_threshold) {
+	  #This is inc'ing an undef?
+	  $transcripts_per_probeset{$probeset}++;
 
       # only create xrefs for non-promiscuous probesets
 
       #XXX
-      add_xref($transcript_ids{$transcript}, $probeset, $db_entry_adaptor, $array, $probeset_size, $hits);
-      print LOG "$probeset\t$transcript\tmapped\t$probeset_size\t$hits\n";
+      #add_xref($transcript_ids{$transcript}, $probeset, $db_entry_adaptor, $array_name_cache{$array}, $probeset_size, $hits);
+      #print LOG "$probeset\t$transcript\tmapped\t$probeset_size\t$hits\n";
 
-     # if ($transcripts_per_probeset{$probeset} <= $max_transcripts_per_probeset) {
-     #
-     #   add_xref($transcript_ids{$transcript}, $probeset, $db_entry_adaptor, $array, $probeset_size, $hits);
-     #   $transcripts_per_probeset{$probeset}++;
-     #   print LOG "$probeset\t$transcript\tmapped\t$probeset_size\t$hits\n";
-     #
-     # } else {
-     #
-     #   print LOG "$probeset\t$transcript\tpromiscuous\t$probeset_size\t$hits\n";
-     #   $promiscuous_probesets{$probeset} = $probeset;
-     #   # TODO - remove mappings for probesets that end up being promiscuous
-     #
-     # }
+	  if ($transcripts_per_probeset{$probeset} <= $max_transcripts_per_probeset) {     
+        add_xref($transcript_ids{$transcript}, $probeset, $db_entry_adaptor, $array, $probeset_size, $hits);
+        print LOG "$probeset\t$transcript\tmapped\t$probeset_size\t$hits\n";
+     
+      } else {
+        print LOG "$probeset\t$transcript\tpromiscuous\t$probeset_size\t$hits\tCurrentTranscripts".$transcripts_per_probeset{$probeset}."\n";
+        push @{$promiscuous_probesets{$probeset}}, $transcript_ids{$transcript};
+		
+		#$um_obj = new Bio::EnsEMBL::UnmappedObject(-type       => 'probe2transcript',
+		#										   -analysis   => $analysis,
+		#										   -identifier => $probeset,
+		#										   -summary    => "Promiscuous probeset",
+		#										   -full_desc  => "Probeset maps to greater than 100 transcripts",
+		#										   -ensembl_object_type => 'Transcript',
+		#										   -ensembl_id => $transcript_ids{$transcript});
+	#	
+
+		
+		#&cache_and_load_unmapped_objects($um_obj);
+
+
+        # TODO - remove mappings for probesets that end up being promiscuous
+	  }
 
       # TODO - write insufficient/promiscuous/orphan to unmapped_object ?
 
@@ -321,21 +399,17 @@ foreach my $key (keys %transcript_probeset_count) {
       print LOG "$probeset\t$transcript\tinsufficient\t$probeset_size\t$hits\n";
        if (!$no_triage) {
 
-		 my $um_obj = new Bio::EnsEMBL::UnmappedObject(-type       => 'probe2transcript',
-													   -analysis   => $analysis,
-													   -identifier => $probeset,
-													   -summary    => "Insufficient hits",
-													   -full_desc  => "Probe had an insufficient number of hits (probeset size = $probeset_size, hits = $hits)",
-													   -ensembl_object_type => 'Transcript',
-													   -ensembl_id => $transcript_ids{$transcript});
+		 #Can/should we concentrate all unmapped info into one record
+		 #Currently getting one for each probe and each probeset
+
+		 $um_obj = new Bio::EnsEMBL::UnmappedObject(-type       => 'probe2transcript',
+													-analysis   => $analysis,
+													-identifier => $probeset,
+													-summary    => "Insufficient hits",
+													-full_desc  => "Probeset had an insufficient number of hits (probeset size = $probeset_size, hits = $hits)",
+													-ensembl_object_type => 'Transcript',
+													-ensembl_id => $transcript_ids{$transcript});
 		 
-		 #push @unmapped_objects, new Bio::EnsEMBL::UnmappedObject(-type       => 'probe2transcript',
-		#						 -analysis   => $analysis,
-		#						 -identifier => $probeset,
-		#						 -summary    => "Insufficient hits",
-		#						 -full_desc  => "Probe had an insufficient number of hits (probeset size = $probeset_size, hits = $hits)",
-		#						 -ensembl_object_type => 'Transcript',
-		#						 -ensembl_id => $transcript_ids{$transcript});
 
 
 		 &cache_and_load_unmapped_objects($um_obj);
@@ -350,7 +424,41 @@ foreach my $key (keys %transcript_probeset_count) {
 
 
 
-#can we load first batch of unmapped_object here to save memmory
+#Now update promiscuous probesets
+print "Updating ".scalar(keys %promiscuous_probesets)."\n";
+
+foreach my $probeset(keys %promiscuous_probesets){
+
+  #First delete mapped object_xrefs
+  #As there is a chance that probes might be xreffed to a non-transcript entity
+  #Deleting ox and x at the same time would orphan any non-transcript ox's
+  $xref_db->dbc()->do("DELETE ox FROM object_xref ox, xref x WHERE x.dbprimary_acc='$probeset' AND x.xref_id=ox.xref_id AND ensembl_object_type='Transcript'");
+
+  #Any other oxs?
+  if(! @{ $xref_db->dbc->db_handle->selectall_arrayref("SELECT ox.object_xref_id from object_xref ox, xref x WHERE x.dbprimary_acc='$probeset' AND x.xref_id=ox.xref_id")}){
+	#Then delete xref
+	 $xref_db->dbc()->do("DELETE FROM xref WHERE dbprimary_acc='$probeset'");
+  }
+  
+
+  #Now load all unmapped objects
+  #One for all arrays rather than one for each
+  foreach my $transcript(@{$promiscuous_probesets{$probeset}}){
+
+	$um_obj = new Bio::EnsEMBL::UnmappedObject
+	  (
+	   -type       => 'probe2transcript',
+	   -analysis   => $analysis,
+	   -identifier => $probeset,
+	   -summary    => 'Promiscuous probeset',
+	   -full_desc  => 'Probeset maps to '.$transcripts_per_probeset{$probeset}.' transcripts (max 100)',
+	   -ensembl_object_type => 'Transcript',
+	   -ensembl_id => $transcript_ids{$transcript}
+	  );
+		
+	&cache_and_load_unmapped_objects($um_obj);
+  }
+}
 
 # Find probesets that don't match any transcripts at all, write to log file
 log_orphan_probes();
@@ -371,17 +479,22 @@ if (!$no_triage) {
 # only loads unless cache hits size limit
 
 sub cache_and_load_unmapped_objects{
-  my ($um_obj) = @_;
+  my @um_obj = @_;
 
-  push @unmapped_objects, $um_obj;
+  push @unmapped_objects, @um_obj;
 
   if(scalar(@unmapped_objects) >10000){
-	#print "Uploading " . scalar(@unmapped_objects) . " unmapped reasons to xref database\n";
-
-	if($first_cache){
-	  $unmapped_objects[0]->dbID('2000');
-	  $first_cache = 0;
-	}
+	#This is setting the dbID of the unmapped obj, not the unmapped reason
+	#Is this really working?
+	#This won't do anything as the dbID attr is ignored on store
+	#What was this trying to solve?
+	#Was Martin mysqlimporting and overwriting data?
+	#Surely this would fail on import with duplicate keys?
+	#Remove for now
+	#if($first_cache){
+	#  $unmapped_objects[0]->dbID('2000');
+	#  $first_cache = 0;
+	#}
 
 	$um_cnt += scalar(@unmapped_objects);
 
@@ -407,19 +520,13 @@ sub log_orphan_probes {
       print LOG "$probeset\tNo transcript mappings\n";
 
       if (!$no_triage && $probeset) {
-		my $um_obj = new Bio::EnsEMBL::UnmappedObject(-type       => 'probe2transcript',
-																 -analysis   => $analysis,
-																 -identifier => $probeset,
-																 -summary    => "No transcript mappings",
-																 -full_desc  => "Probeset did not map to any transcripts");
-
+		$um_obj = new Bio::EnsEMBL::UnmappedObject(-type       => 'probe2transcript',
+												   -analysis   => $analysis,
+												   -identifier => $probeset,
+												   -summary    => "No transcript mappings",
+												   -full_desc  => "Probeset did not map to any transcripts");
+		
 		&cache_and_load_unmapped_objects($um_obj);
-
-		#push @unmapped_objects, new Bio::EnsEMBL::UnmappedObject(-type       => 'probe2transcript',
-		#														 -analysis   => $analysis,
-		#														 -identifier => $probeset,
-		#														 -summary    => "No transcript mappings",
-		#														 -full_desc  => "Probeset did not map to any transcripts");
       }
     }
   }
@@ -428,15 +535,21 @@ sub log_orphan_probes {
 # ----------------------------------------------------------------------
 
 sub cache_arrays_per_probeset {
-
-  my ($db) = @_;
+  my $db = shift;
 
   print "Caching arrays per probeset\n";
+  my $sql;#do not need distinct on count as we're linking by array?
 
-  #my $sth = $db->dbc()->prepare("SELECT op.probeset, oa.name, oa.probe_setsize FROM oligo_probe op, oligo_array oa WHERE oa.oligo_array_id=op.oligo_array_id GROUP BY op.probeset, oa.name ");
+  if(@arrays){
+	$sql = 'SELECT op.probeset, oa.name, count(op.oligo_probe_id) FROM oligo_probe op, oligo_array oa WHERE oa.oligo_array_id=op.oligo_array_id and oa.name in ("'.join('", "', @arrays).'") GROUP BY op.probeset, oa.name';
+  }
+  else{
+	$sql = 'SELECT op.probeset, oa.name, count(op.oligo_probe_id) FROM oligo_probe op, oligo_array oa WHERE oa.oligo_array_id=op.oligo_array_id GROUP BY op.probeset, oa.name';
+  }
 
-  #do not need distinct on count as we're linking by array?
-  my $sth = $db->dbc()->prepare("SELECT op.probeset, oa.name, count(op.oligo_probe_id) FROM oligo_probe op, oligo_array oa WHERE oa.oligo_array_id=op.oligo_array_id GROUP BY op.probeset, oa.name");
+
+  my $sth = $db->dbc()->prepare($sql);
+
 
 
   $sth->execute();
@@ -514,67 +627,41 @@ sub add_xref {
 
 # ----------------------------------------------------------------------
 
-# Delete existing xrefs & object xrefs. Use user-specified arrays if
+# Delete existing xrefs & object xrefs & unmapped objects. Use user-specified arrays if
 # defined, otherwise all arrays.
-# Assumes external_db.dbname == oligo_array.name
+# Now uses array name cache
 
 sub delete_existing_xrefs {
+  my $xref_db = shift;
 
-  my ($oligo_adaptor, $dbentry_adaptor, @arrays) = @_;
-
-  # get array names if necessary
-  my @arrays_to_delete;
-  if (@arrays) {
-
-    @arrays_to_delete = @arrays;
-
-  } else {
-
-    my $sth = $oligo_adaptor->dbc()->prepare("SELECT DISTINCT(name) FROM oligo_array ORDER BY name");
-    $sth->execute();
-
-    while(my @row = $sth->fetchrow_array()){
-
-      push @arrays_to_delete, $row[0];
-
-    }
-
-    $sth->finish();
-
+  if(@arrays && ! $force_delete){
+	die("You are attempting to delete all unampped objects even though you are only running a subsets of arrays.\n".
+		  "This may result in losing unmapped information for other arrays.  If you really want to do this you must specify -force_delete")
   }
-
-  my $del_sth = $dbentry_adaptor->dbc()->prepare("DELETE x, ox FROM xref x, object_xref ox, external_db e WHERE x.xref_id=ox.xref_id AND e.external_db_id=x.external_db_id AND e.db_name = ?");
-
-  foreach my $array (@arrays_to_delete) {
-
-    print "Deleting xrefs and object_xrefs for $array\n";
-    $del_sth->execute($array);
-
-  }
-
-  $del_sth->finish();
-
-}
-
-# ----------------------------------------------------------------------
-
-# Delete existing entries in unmapped_object, unmapped_reason and analysis
-
-sub delete_unmapped_entries {
-
-  my ($xref_adaptor) = @_;
-
 
   #This deletes all unmapped objects, even if we're only (re-)running one array!
+  print "Deleting ALL unmapped records\n";
+  my $sql = 'DELETE a, ur, uo FROM analysis a, unmapped_reason ur, unmapped_object uo WHERE a.logic_name ="probe2transcript" AND a.analysis_id=uo.analysis_id AND uo.unmapped_reason_id=ur.unmapped_reason_id';
+  $xref_db->dbc->do($sql);
+	
 
-  my $del_sth = $xref_adaptor->dbc()->prepare("DELETE a, ur, uo FROM analysis a, unmapped_reason ur, unmapped_object uo WHERE a.logic_name = 'probe2transcript' AND a.analysis_id=uo.analysis_id AND uo.unmapped_reason_id=ur.unmapped_reason_id");
+  #Now delete xrefs for each array
+  #can we change this to use an IN?
+  #$del_sth = $dbentry_adaptor->dbc()->prepare("DELETE x, ox FROM xref x, object_xref ox, external_db e WHERE x.xref_id=ox.xref_id AND e.external_db_id=x.external_db_id AND e.db_name = ?");
+  #foreach my $array (values %array_name_cache) {
+  #  print "Deleting xrefs and object_xrefs for $array\n";
+	#  $del_sth->execute($array);
+  #}
+  
 
-  print "Deleting unmapped records\n";
-  $del_sth->execute();
+  #Does this work? Will there no be some x's left?
+  print "Deleting XREFs from:\t".join(' ', values %array_name_cache)."\n";
+  $sql = 'DELETE x, ox FROM xref x, object_xref ox, external_db e WHERE x.xref_id=ox.xref_id AND e.external_db_id=x.external_db_id AND e.db_name in ("'.join('", "', values %array_name_cache).'")';
+  $xref_db->dbc->do($sql);
 
-  $del_sth->finish();
-
+  return;
 }
+
 
 # ----------------------------------------------------------------------
 
@@ -586,33 +673,10 @@ sub check_existing_and_exit {
 
   my ($oligo_adaptor, $dbentry_adaptor) = @_;
 
-  # get array names if necessary
-  my @arrays_to_check;
-  if (@arrays) {
-
-    @arrays_to_check = @arrays;
-
-  } else {
-
-    my $sth = $oligo_adaptor->dbc()->prepare("SELECT DISTINCT(name), probe_setsize FROM oligo_array");
-    $sth->execute();
-
-    while(my @row = $sth->fetchrow_array()){
-
-      #this is not essential now as we're counting the size of each probeset
-      warn "Array $row[0] does not have a probeset_size set, please rectify\n"  if($row[1] == 0);
-
-      push @arrays_to_check, $row[0];
-
-    }
-
-    $sth->finish();
-
-  }
 
   my $xref_sth = $dbentry_adaptor->dbc()->prepare("SELECT COUNT(*) FROM xref x, object_xref ox, external_db e WHERE x.xref_id=ox.xref_id AND e.external_db_id=x.external_db_id AND e.db_name = ?");
 
-  foreach my $array (@arrays_to_check) {
+  foreach my $array (values %array_name_cache) {
 
     $xref_sth->execute($array);
     my @row2 = $xref_sth->fetchrow_array();
@@ -629,88 +693,128 @@ sub check_existing_and_exit {
 
 # ----------------------------------------------------------------------
 
-# Check that the array names in oligo_db match the names in the external_db table in xref_db
+# Check that the array names in oligo_db appear in the external_db table in xref_db
 
-sub check_names_match {
-
+#sub check_names_match {
+sub validate_arrays{
  my ($oligo_adaptor, $dbentry_adaptor) = @_;
 
- my $mismatch;
-
- # cache oligo_array.name entries
+ my ($mismatch ,$sql);
  my %oligo_array_names;
 
- my $oligo_sth = $oligo_adaptor->dbc()->prepare("SELECT DISTINCT(name) FROM oligo_array");
+
+ #Get all external_db entries and check probe_setsize
+ #Name is not unique in core!!??
+ $sql = "SELECT DISTINCT(name), probe_setsize FROM oligo_array";
+ $sql .= ' where name in("'.join('", "', @arrays).'")' if @arrays;
+
+ my $oligo_sth = $oligo_adaptor->dbc->prepare($sql);
  $oligo_sth->execute();
 
- while(my @row = $oligo_sth->fetchrow_array()){
+ print "Validating external_db names\n";
 
-   $oligo_array_names{$row[0]} = $row[0];
+ while(my ($oa_name, $ps_size) = $oligo_sth->fetchrow_array()){
 
+   my ($edb_name) = $dbentry_adaptor->dbc->db_handle->selectrow_array("SELECT db_name FROM external_db where db_name='${oa_name}'");
+
+   #Try AFFY_ Can remove this when we change the naming convention
+   if(! defined $edb_name){
+	 ($edb_name) = $dbentry_adaptor->dbc->db_handle->selectrow_array("SELECT db_name FROM external_db where db_name='AFFY_${oa_name}'");
+   }
+
+   print "Array $oa_name does not have a probeset_size set, please rectify\n" if ! $ps_size;#boolean as we don't want 0 size
+
+
+   #Should we add another try here using s/-/_/g?
+
+   if( ! defined $edb_name){
+	 print "Cannot find external_db for oligo_array:\t$oa_name\n";
+	 $mismatch = 1;
+   }
+   else{
+	 print "Found oligo_array\t$oa_name\tin external_db\t$edb_name\n";
+
+	 $oligo_array_names{$oa_name} = $edb_name;
+   }
  }
 
  $oligo_sth->finish();
 
- # and external_db names
- my %external_db_names;
- my $xref_sth = $dbentry_adaptor->dbc()->prepare("SELECT DISTINCT(db_name) FROM external_db");
+ #Now do @arrays checks
+ if(@arrays){
+   print "Validating user specified arrays:\t@arrays\n";
 
- $xref_sth->execute();
- while (my @row2 = $xref_sth->fetchrow_array()) {
+   #Now check all specified arrays are valid
+   if(scalar(@arrays) != scalar(keys %oligo_array_names)){
 
-   $external_db_names{$row2[0]} = $row2[0];
+	 foreach my $array(@arrays){
+	   
+	   if(! exists $oligo_array_names{$array}){
+		 print "Specified array does not exist in the oligo_array table:\t$array\n";
+	   }
+	 }
+	 print "Could not find specified arrays in oligo_array table";
+	 exit(1);
+   }
+   print "Found all external_dbs\n";
 
- }
+   #Now check we have all link arrays in @arrays
+   #This cannot be guaranteed to work as some probesets may be missing on related arrays
+   #Let's take a handfull here to reduce the risk of missing linked arrays
+   # You souldn't really xref the arrays as subsets unless they are not related in anyway
+   # In which case filtering @arrays in the cache will reduce the saize of the cache by removing unwanted array data
+   # How do we tell the array groups?
+   # 1 All old affy 3' and gneomics arrays should be mapped/xreffed together
+   # 2 All new affy exon/gene ST arrays should be mapped/xreffed together
+   # 3 Custom arrays can be mapped separately only if they have nor relation to pre-existing arays? Optional
+   # Do we need another field in array? Design family? 
 
-  $xref_sth->finish();
+  
+   #This is the ticket, will identify all linked arrays for a given array name
+   my %linked_arrays;
+   my $sth = $oligo_adaptor->dbc->prepare('select distinct(oa.name) from oligo_probe op, oligo_array oa where oa.oligo_array_id=op.oligo_array_id and op.oligo_probe_id in(select op.oligo_probe_id from oligo_probe op, oligo_array oa where oa.oligo_array_id=op.oligo_array_id and oa.name =?)');
+   
+   print "Getting all associated array data...this may take a while :|\n";
+   
+   foreach my $array(@arrays){
 
- # now compare them
- foreach my $oligo_array_name (keys %oligo_array_names) {
-   if (!$external_db_names{$oligo_array_name}) {
-     print "$oligo_array_name appears in oligo_array but not in external_db\n";
-     $mismatch = 1;
+	 next if exists $linked_arrays{$array};
+
+	 $sth->execute($array);
+
+	 while(my ($larray) = $sth->fetchrow_array){
+	   
+	   $linked_arrays{$larray} = undef;
+	 }
+   }
+
+   my @missing_arrays;
+
+   foreach my $larray(keys %linked_arrays){
+
+	 if(! grep(/^${larray}$/, @arrays)){
+	   push @missing_arrays, $larray;
+	 } 
+   }
+
+   if(@missing_arrays){
+	 print "The array list you have specified is missing some associated arrays:\t@missing_arrays\n".
+	   "This can cause incomplete xref data to be written.  Please check and start again\n";
+	 exit(1);
    }
  }
 
- #foreach my $external_db_name (keys %external_db_names) {
- #  if (!$oligo_array_names{$external_db_name}) {
- #    print "$external_db_name appears in external_db but not in oligo_array\n";
- #  }
- #}
 
  if ($mismatch) {
    print "At least one oligo array name was found that does not appear in external_db; this needs to be rectified before this script can be run successfully.\n";
    exit(1);
  }
 
+ return \%oligo_array_names;
+
 }
 
-# ----------------------------------------------------------------------
 
-# Remove mappings for a particular probeset
-
-#sub remove_probeset_transcript_mappings {
-#
-#  my ($dba, $probeset) = @_;
-#
-#  my $p = 0;
-#
-#  my $sth = $dba->dbc()->prepare("DELETE FROM object_xref WHERE xref_id=? AND ensembl_object_type='Transcript' AND ensembl_id=?");
-#
-#  my $values = @{$dbentries_per_probeset{$probeset}};
-#
-#  foreach my $value (@{$dbentries_per_probeset{$probeset}}) {
-#
-#    my ($dbe_id, $transcript_id) = split(/:/, $value);
-#
-#    $sth->execute($dbe_id, $transcript_id);
-#    $p++;
-#
-#  }
-#
-#  $sth->finish();
-#
-#}
 
 # ----------------------------------------------------------------------
 
@@ -828,6 +932,8 @@ sub usage {
 
   [--delete]          Delete existing xrefs and object_xrefs, and entries in unmapped_object.
                       No deletion is done by default.
+
+  [--force_delete]    Forces deletion of all unmapped object info even if using a subset of arrays.
 
   [--max_transcripts] Only use this many transcripts. Useful for debugging.
 
