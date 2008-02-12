@@ -21,7 +21,7 @@ use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::EnsEMBL::Mapper::RangeRegistry;
 
 
-#$| = 1; # auto flush stdout
+$| = 1; # auto flush stdout
 
 my ($transcript_host, $transcript_user, $transcript_pass, $transcript_dbname,
     $oligo_host, $oligo_user, $oligo_pass, $oligo_dbname, $five_utr, $three_utr,
@@ -392,7 +392,7 @@ foreach my $key (keys %transcript_probeset_count) {
 
 
 #Now update promiscuous probesets
-print "Updating ".scalar(keys %promiscuous_probesets)."\n";
+print "Updating ".scalar(keys %promiscuous_probesets)." promiscuous probesets\n";
 
 foreach my $probeset(keys %promiscuous_probesets){
 
