@@ -8,7 +8,7 @@
 #Change all probe specific unmapped object to reeflect the individual probe rather than the probeset
 #Updated logs
 #Updated docs
-#Added control of promiscuous probesets and unmapped object ????
+#Added control of promiscuous probesets and unmapped objects
 
 
 use strict;
@@ -20,15 +20,29 @@ use Bio::EnsEMBL::UnmappedObject;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::EnsEMBL::Mapper::RangeRegistry;
 
-my ($transcript_host, $transcript_port, $transcript_user, $transcript_pass, $transcript_dbname,
-    $oligo_host, $oligo_port, $oligo_user, $oligo_pass, $oligo_dbname, $five_utr, $three_utr,
-    $xref_host, $xref_port, $xref_user, $xref_pass, $xref_dbname, $force_delete,
-    $max_mismatches, $utr_length, $max_transcripts_per_probeset, $max_transcripts, @arrays, $delete,
-    $mapping_threshold, $no_triage, $health_check);
 
-#my $first_cache = 1;
+#$| = 1; # auto flush stdout
 
-GetOptions('transcript_host=s'      => \$transcript_host,
+my ($transcript_host, $transcript_user, $transcript_pass, $transcript_dbname,
+    $oligo_host, $oligo_user, $oligo_pass, $oligo_dbname, $five_utr, $three_utr,
+    $xref_host, $xref_user, $xref_pass, $xref_dbname, $force_delete,
+    $max_transcripts, @arrays, $delete, $no_triage, $health_check);
+
+my ($oligo_db, $xref_db, %promiscuous_probesets, %transcripts_per_probeset, @unmapped_objects, $um_obj,
+	%transcript_ids , %transcript_probeset_count, %arrays_per_probeset, %array_probeset_sizes);
+
+# Default options
+my $transcript_port = 3306; 
+my $oligo_port = 3306; 
+my $xref_port = 3306;
+
+my $max_mismatches = 1;
+my $utr_length = 2000;
+my $max_transcripts_per_probeset = 100;
+my $mapping_threshold = 0.5;
+
+GetOptions(
+		   'transcript_host=s'      => \$transcript_host,
            'transcript_user=s'      => \$transcript_user,
            'transcript_port=i'      => \$transcript_port,
            'transcript_pass=s'      => \$transcript_pass,
@@ -53,16 +67,10 @@ GetOptions('transcript_host=s'      => \$transcript_host,
 		   'force_delete'           => \$force_delete,
 		   'no_triage'              => \$no_triage,
 		   'health_check'           => \$health_check,
-           'help'                   => sub { usage(); exit(0); });
+           'help'                   => sub { usage(); exit(0); }
+		  );
 
-
-
-# Default options
-$transcript_port ||= 3306; $oligo_port ||= 3306; $xref_port ||= 3306;
-
-$max_mismatches ||= 1;
-
-$utr_length ||= 2000;
+@arrays = split(/,/,join(',',@arrays));#?
 
 if(($utr_length =~ /\D/) && ($utr_length ne 'annotated')){
   die("Invalid utr_length parameter($utr_length).  Must be a number or 'annotated'");
@@ -71,13 +79,8 @@ else{
   $three_utr = $utr_length;
 }
 
-
-$max_transcripts_per_probeset ||= 100;
-$mapping_threshold ||= 0.5;
-@arrays = split(/,/,join(',',@arrays));#?
-
-
 usage() if(!$transcript_user || !$transcript_dbname || !$transcript_host);
+
 
 print 'Running on probe2trascript.pl on: '.`hostname`."\n";
 
@@ -86,7 +89,6 @@ my $transcript_db = new Bio::EnsEMBL::DBSQL::DBAdaptor('-host'   => $transcript_
 						       '-user'   => $transcript_user,
 						       '-pass'   => $transcript_pass,
 						       '-dbname' => $transcript_dbname);
-my $oligo_db;
 
 if ($oligo_host && $oligo_dbname && $oligo_user) {
 
@@ -103,7 +105,6 @@ if ($oligo_host && $oligo_dbname && $oligo_user) {
 
 }
 
-my $xref_db;
 
 if ($xref_host && $xref_dbname && $xref_user) {
 
@@ -145,18 +146,6 @@ my $unmapped_object_adaptor = $xref_db->get_UnmappedObjectAdaptor();
 
 my $analysis = get_or_create_analysis($analysis_adaptor);
 
-my %promiscuous_probesets;
-my %transcripts_per_probeset;
-my %transcript_ids;
-my %transcript_probeset_count; # key: transcript:probeset value: count
-my %arrays_per_probeset;
-my %array_probeset_sizes;
-
-my @unmapped_objects;
-
-$| = 1; # auto flush stdout
-
-my $um_obj;#globally defined.
 my $i = 0;
 my $last_pc = -1;
 
@@ -372,54 +361,36 @@ foreach my $key (keys %transcript_probeset_count) {
         add_xref($transcript_ids{$transcript}, $probeset, $db_entry_adaptor, $array, $probeset_size, $hits);
         print LOG "$probeset\t$transcript\tmapped\t$probeset_size\t$hits\n";
      
-      } else {
+      } 
+	  else {
         print LOG "$probeset\t$transcript\tpromiscuous\t$probeset_size\t$hits\tCurrentTranscripts".$transcripts_per_probeset{$probeset}."\n";
         push @{$promiscuous_probesets{$probeset}}, $transcript_ids{$transcript};
-		
-		#$um_obj = new Bio::EnsEMBL::UnmappedObject(-type       => 'probe2transcript',
-		#										   -analysis   => $analysis,
-		#										   -identifier => $probeset,
-		#										   -summary    => "Promiscuous probeset",
-		#										   -full_desc  => "Probeset maps to greater than 100 transcripts",
-		#										   -ensembl_object_type => 'Transcript',
-		#										   -ensembl_id => $transcript_ids{$transcript});
-	#	
-
-		
-		#&cache_and_load_unmapped_objects($um_obj);
-
-
-        # TODO - remove mappings for probesets that end up being promiscuous
 	  }
 
-      # TODO - write insufficient/promiscuous/orphan to unmapped_object ?
-
-    } else {
+    } 
+	else {
 
       print LOG "$probeset\t$transcript\tinsufficient\t$probeset_size\t$hits\n";
-       if (!$no_triage) {
+	  
+	  if (!$no_triage) {
 
-		 #Can/should we concentrate all unmapped info into one record
-		 #Currently getting one for each probe and each probeset
+		#Can/should we concentrate all unmapped info into one record
+		#Currently getting one for each probe and each probeset
+		
+		$um_obj = new Bio::EnsEMBL::UnmappedObject(-type       => 'probe2transcript',
+												   -analysis   => $analysis,
+												   -identifier => $probeset,
+												   -summary    => "Insufficient hits",
+												   -full_desc  => "Probeset had an insufficient number of hits (probeset size = $probeset_size, hits = $hits)",
+												   -ensembl_object_type => 'Transcript',
+												   -ensembl_id => $transcript_ids{$transcript});
+		
 
-		 $um_obj = new Bio::EnsEMBL::UnmappedObject(-type       => 'probe2transcript',
-													-analysis   => $analysis,
-													-identifier => $probeset,
-													-summary    => "Insufficient hits",
-													-full_desc  => "Probeset had an insufficient number of hits (probeset size = $probeset_size, hits = $hits)",
-													-ensembl_object_type => 'Transcript',
-													-ensembl_id => $transcript_ids{$transcript});
-		 
-
-
-		 &cache_and_load_unmapped_objects($um_obj);
-
+		
+		&cache_and_load_unmapped_objects($um_obj);
       }
-
     }
-
   }
-
 }
 
 
