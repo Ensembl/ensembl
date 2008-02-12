@@ -131,7 +131,7 @@ $delete = $force_delete if $force_delete;
 delete_existing_xrefs($xref_db) if ($delete);
 check_existing_and_exit($oligo_db, $xref_db);#???
 
-#Do we need this healthcheck mode now?  We're doing it all anyway and fails if any tests fail
+
 if ($health_check){
   print "Healthcheck passed\n";
   exit 0;
@@ -351,14 +351,9 @@ foreach my $key (keys %transcript_probeset_count) {
 	  #This is inc'ing an undef?
 	  $transcripts_per_probeset{$probeset}++;
 
-      # only create xrefs for non-promiscuous probesets
-
-      #XXX
-      #add_xref($transcript_ids{$transcript}, $probeset, $db_entry_adaptor, $array_name_cache{$array}, $probeset_size, $hits);
-      #print LOG "$probeset\t$transcript\tmapped\t$probeset_size\t$hits\n";
 
 	  if ($transcripts_per_probeset{$probeset} <= $max_transcripts_per_probeset) {     
-        add_xref($transcript_ids{$transcript}, $probeset, $db_entry_adaptor, $array, $probeset_size, $hits);
+        add_xref($transcript_ids{$transcript}, $probeset, $db_entry_adaptor, $array_name_cache{$array}, $probeset_size, $hits);
         print LOG "$probeset\t$transcript\tmapped\t$probeset_size\t$hits\n";
      
       } 
@@ -375,7 +370,8 @@ foreach my $key (keys %transcript_probeset_count) {
 	  if (!$no_triage) {
 
 		#Can/should we concentrate all unmapped info into one record
-		#Currently getting one for each probe and each probeset
+		#Currently getting one for each probe and each probeset?
+		#Or is this a problem with array association i.e. Collapse not warked properly?
 		
 		$um_obj = new Bio::EnsEMBL::UnmappedObject(-type       => 'probe2transcript',
 												   -analysis   => $analysis,
@@ -910,7 +906,7 @@ sub usage {
 
   [--no_triage]       Don't write to the unmapped_object/unmapped_reason tables.
 
-  [--health_check]    Only do sanity checks, then stop.
+  [--health_check]    Only do sanity checks, then stop. Useful for capthing errors before nohuping the process proper.
 
   [--help]            This text.
 
