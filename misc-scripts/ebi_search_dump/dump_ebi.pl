@@ -18,22 +18,26 @@ use Bio::EnsEMBL::Variation::DBSQL::DBAdaptor;
 
 use HTML::Entities;
 
-my ($host, $user, $pass, $port, $dbpattern, $max_genes, $gzip, $no_variation);
+my ($host, $user, $pass, $port, $dbpattern, $max_genes, $nogzip, $no_variation, $parallel, $dir);
 
 GetOptions( "host=s",              \$host,
 	    "user=s",              \$user,
 	    "pass=s",              \$pass,
 	    "port=i",              \$port,
 	    "dbpattern|pattern=s", \$dbpattern,
-	    "gzip!",               \$gzip,
+	    "nogzip!",             \$nogzip,
             "max_genes=i",         \$max_genes,
 	    "no_variation",        \$no_variation,
+	    "parallel",            \$parallel,
+	    "dir=s",               \$dir,
 	    "help" ,               \&usage
 	  );
 
-if( !$host || !$dbpattern ) {
-  usage();
-}
+$user    = $user || "ensro";
+$host    = $host || "ens-staging";
+$port    = $port ||  "3306";
+$dbpattern = $dbpattern || "_core_";
+$dir     = $dir || "/lustre/scratch1/ensembl/gp1/xml";
 
 my $entry_count;
 
@@ -61,40 +65,79 @@ sub run() {
 
     next if ($dbname !~ /$dbpattern/);
 
-    my $file = $dbname . ".xml";
-    $file .= ".gz" if ($gzip);
+    my $file = $dir . "/" . $dbname . ".xml";
+    $file .= ".gz" unless ($nogzip);
 
-    if ($gzip) {
+  
 
-      $fh = new IO::Zlib;
-      $fh->open("$file", "wb9") || die ("Can't open compressed stream to $file");
+    if ($parallel) {
 
-    } else  {
+      submit($dbname, $file);
 
-      open(FILE, ">$file") || die "Can't open $file";
+    } else {
+
+      dump_single($dbname, $file);
 
     }
 
-    print "Dumping $dbname to $file\n";
+  }
 
-    my $start_time = time;
+}
 
-    my $dba = new Bio::EnsEMBL::DBSQL::DBAdaptor('-host' => $host,
-						 '-port' => $port,
-						 '-user' => $user,
-						 '-pass' => $pass,
-						 '-dbname' => $dbname,
-						 '-species' => $dbname);
+# -------------------------------------------------------------------------------
 
-    header($dba, $dbname);
+sub submit {
 
-    content($dba);
+  my ($dbname, $file) = @_;
 
-    footer();
+  print "Submitting job for $dbname\n";
 
-    print_time($start_time);
+  my $o = $dir . "/" . ${dbname} . ".out";
+  my $e = $dir . "/" . ${dbname} . ".err";
+
+  my $p = ($pass) ? "-pass $pass" : '';
+
+  my $n = substr($dbname, 0, 10);
+
+  system "bsub -o $o -e $e -J $dbname perl dump_ebi.pl -user $user -host $host $p -port $port -dbpattern $dbname -gzip";
+
+}
+
+# -------------------------------------------------------------------------------
+
+sub dump_single {
+
+  my ($dbname, $file) = @_;
+
+  unless ($nogzip) {
+
+    $fh = new IO::Zlib;
+    $fh->open("$file", "wb9") || die ("Can't open compressed stream to $file");
+
+  } else  {
+
+    open(FILE, ">$file") || die "Can't open $file";
 
   }
+
+  print "Dumping $dbname to $file\n";
+
+  my $start_time = time;
+
+  my $dba = new Bio::EnsEMBL::DBSQL::DBAdaptor('-host' => $host,
+					       '-port' => $port,
+					       '-user' => $user,
+					       '-pass' => $pass,
+					       '-dbname' => $dbname,
+					       '-species' => $dbname);
+
+  header($dba, $dbname);
+
+  content($dba);
+
+  footer();
+
+  print_time($start_time);
 
 }
 
@@ -245,12 +288,14 @@ sub footer {
 
   print "Dumped $entry_count entries\n";
 
-  if ($gzip) {
+  if ($nogzip) {
+
+    close(FILE);
+
+  } else {
 
     $fh->close();
 
-  } else {
-    close(FILE);
   }
 
 }
@@ -266,13 +311,13 @@ sub p {
 
   $str .= "\n";
 
-  if ($gzip) {
+  if ($nogzip) {
 
-    print $fh $str;
+    print FILE $str;
 
   } else {
 
-    print FILE $str;
+    print $fh $str;
 
   }
 
@@ -362,21 +407,25 @@ sub usage {
 
 Usage: perl $0 <options>
 
-  -host         Database host to connect to.
+  -host         Database host to connect to. Defaults to ens-staging.
 
-  -port         Database port to connect to.
+  -port         Database port to connect to. Defaults to 3306.
 
-  -dbpattern    Database name regexp
+  -dbpattern    Database name regexp. Defaults to _core_
 
-  -user         Database username.
+  -user         Database username. Defaults to ensro.
 
   -pass         Password for user.
 
-  -gzip         Compress output as it's written.
+  -dir          Directory to write output to. Defaults to /lustre/scratch1/ensembl/gp1/xml.
+
+  -nogzip       Don't compress output as it's written.
 
   -max_genes    Only dump this many genes for testing.
 
   -no_variation Don't dump variation IDs.
+
+  -parallel     Submit jobs in parallel.
 
   -help         This message.
 
