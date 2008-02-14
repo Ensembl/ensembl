@@ -1,6 +1,0 @@
-CREATE TABLE `dna` (
-  `seq_region_id` int(10) unsigned NOT NULL default '0',
-  `sequence` mediumtext collate latin1_bin NOT NULL,
-  PRIMARY KEY  (`seq_region_id`)
-) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_bin MAX_ROWS=750000 AVG_ROW_LENGTH=19000;
-
