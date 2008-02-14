@@ -101,7 +101,7 @@ sub submit {
 
   my $g = ($nogzip) ? "-nogzip" : '';
 
-  system "bsub -o $o -e $e -J $dbname perl dump_ebi.pl -user $user -host $host $p -port $port -dbpattern $dbname $g";
+  system "bsub -o $o -e $e -J $n perl dump_ebi.pl -user $user -host $host $p -port $port -dbpattern $dbname $g";
 
 }
 
