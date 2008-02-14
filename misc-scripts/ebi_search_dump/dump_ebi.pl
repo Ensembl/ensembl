@@ -99,7 +99,9 @@ sub submit {
 
   my $n = substr($dbname, 0, 10);
 
-  system "bsub -o $o -e $e -J $dbname perl dump_ebi.pl -user $user -host $host $p -port $port -dbpattern $dbname -gzip";
+  my $g = ($nogzip) ? "-nogzip" : '';
+
+  system "bsub -o $o -e $e -J $dbname perl dump_ebi.pl -user $user -host $host $p -port $port -dbpattern $dbname $g";
 
 }
 
