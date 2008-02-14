@@ -382,16 +382,19 @@ sub _objs_from_sth {
       $slice = $dest_slice;
     }
 
-    #finally, create the new repeat feature
-    push @ptranscripts, Bio::EnsEMBL::PredictionTranscript->new
-      ( '-start'         =>  $seq_region_start,
-        '-end'           =>  $seq_region_end,
-        '-strand'        =>  $seq_region_strand,
-        '-adaptor'       =>  $self,
-        '-slice'         =>  $slice,
-        '-analysis'      =>  $analysis,
-        '-dbID'          =>  $prediction_transcript_id,
-        '-display_label' =>  $display_label);
+    # Finally, create the new PredictionTranscript.
+    push( @ptranscripts,
+          $self->_create_feature('Bio::EnsEMBL::PredictionTranscript', {
+                                   '-start'    => $seq_region_start,
+                                   '-end'      => $seq_region_end,
+                                   '-strand'   => $seq_region_strand,
+                                   '-adaptor'  => $self,
+                                   '-slice'    => $slice,
+                                   '-analysis' => $analysis,
+                                   '-dbID' => $prediction_transcript_id,
+                                   '-display_label' => $display_label
+                                 } ) );
+
   }
 
   return \@ptranscripts;

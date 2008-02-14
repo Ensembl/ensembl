@@ -193,20 +193,25 @@ sub _objs_from_sth {
     my $analysis = $analysis_adaptor->fetch_by_dbID($analysis_id);
     
     #print "$identifier\n";
-    push @features, Bio::EnsEMBL::UnmappedObject->new
-      (-unmapped_object_id  => $unmapped_object_id,
-       -unmapped_reason_id  => $unmapped_reason_id,
-       -type                => $type,
-       -analysis            => $analysis,
-       -external_db_id      => $external_db_id,
-       -identifier          => $identifier,
-       -query_score         => $query_score,
-       -target_score        => $target_score,
-       -ensembl_id          => $ensembl_id,
-       -ensembl_object_type => $ensembl_object_type,
-       -summary             => $summary,
-       -full_desc           => $full_desc,
-       -adaptor             => $self);
+
+    push( @features,
+          $self->_create_feature(
+                         'Bio::EnsEMBL::UnmappedObject', {
+                           -unmapped_object_id  => $unmapped_object_id,
+                           -unmapped_reason_id  => $unmapped_reason_id,
+                           -type                => $type,
+                           -analysis            => $analysis,
+                           -external_db_id      => $external_db_id,
+                           -identifier          => $identifier,
+                           -query_score         => $query_score,
+                           -target_score        => $target_score,
+                           -ensembl_id          => $ensembl_id,
+                           -ensembl_object_type => $ensembl_object_type,
+                           -summary             => $summary,
+                           -full_desc           => $full_desc,
+                           -adaptor             => $self
+                         } ) );
+
   }
   return \@features;
 }

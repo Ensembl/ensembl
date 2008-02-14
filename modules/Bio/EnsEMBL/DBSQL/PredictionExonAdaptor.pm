@@ -424,17 +424,20 @@ sub _objs_from_sth {
       $slice = $dest_slice;
     }
 
-    #finally, create the new PredictionExon
-    push @exons, Bio::EnsEMBL::PredictionExon->new
-      ( '-start'         =>  $seq_region_start,
-        '-end'           =>  $seq_region_end,
-        '-strand'        =>  $seq_region_strand,
-        '-adaptor'       =>  $self,
-        '-slice'         =>  $slice,
-        '-dbID'          =>  $prediction_exon_id,
-        '-phase'         =>  $start_phase,
-        '-score'         =>  $score,
-        '-p_value'       =>  $p_value);
+    # Finally, create the new PredictionExon.
+    push( @exons,
+          $self->_create_feature( 'Bio::EnsEMBL::PredictionExon', {
+                                    '-start'   => $seq_region_start,
+                                    '-end'     => $seq_region_end,
+                                    '-strand'  => $seq_region_strand,
+                                    '-adaptor' => $self,
+                                    '-slice'   => $slice,
+                                    '-dbID'    => $prediction_exon_id,
+                                    '-phase'   => $start_phase,
+                                    '-score'   => $score,
+                                    '-p_value' => $p_value
+                                  } ) );
+
   }
 
   return \@exons;

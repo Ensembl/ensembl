@@ -73,7 +73,6 @@ sub new {
   return $self;
 }
 
-
 =head2 fetch_all_by_Slice
 
   Arg [1]    : Bio::EnsEMBL::Slice $slice
@@ -278,6 +277,23 @@ sub fetch_all_by_logic_name {
   my $logic_name = shift || throw( "Need a logic_name" );
   my $constraint = $self->_logic_name_to_constraint( '',$logic_name );
   return $self->generic_fetch($constraint);
+}
+
+# Method that creates an object.  Called by the _objs_from_sth() method
+# in the sub-classes (the various feature adaptors).  Overridden by the
+# feature collection classes.
+
+sub _create_feature {
+  my ( $self, $feature_type, $args ) = @_;
+  return $feature_type->new( %{$args} );
+}
+
+# This is the same as the above, but calls the new_fast() constructor of
+# the feature type.
+
+sub _create_feature_fast {
+  my ( $self, $feature_type, $args ) = @_;
+  return $feature_type->new_fast($args);
 }
 
 #

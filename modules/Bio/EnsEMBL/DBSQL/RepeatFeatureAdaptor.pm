@@ -303,19 +303,21 @@ sub _objs_from_sth {
       $slice = $dest_slice;
     }
 
-    #finally, create the new repeat feature
-    push @features, Bio::EnsEMBL::RepeatFeature->new_fast
-      ( { 'analysis'      =>  $analysis,
-          'start'         =>  $seq_region_start,
-          'end'           =>  $seq_region_end,
-          'strand'        =>  $seq_region_strand,
-          'score'         =>  $score,
-          'hstart'        =>  $repeat_start,
-          'hend'          =>  $repeat_end,
-          'repeat_consensus' => $rc,
-          'adaptor'       =>  $self,
-          'slice'         =>  $slice,
-          'dbID'          =>  $repeat_feature_id } );
+    # Finally, create the new RepeatFeature.
+    push( @features,
+          $self->_create_feature_fast( 'Bio::EnsEMBL::RepeatFeature', {
+                                         'dbID' => $repeat_feature_id,
+                                         'analysis' => $analysis,
+                                         'start'  => $seq_region_start,
+                                         'end'    => $seq_region_end,
+                                         'strand' => $seq_region_strand,
+                                         'score'  => $score,
+                                         'hstart' => $repeat_start,
+                                         'hend'   => $repeat_end,
+                                         'repeat_consensus' => $rc,
+                                         'adaptor'          => $self,
+                                         'slice'            => $slice
+                                       } ) );
 
   }
 

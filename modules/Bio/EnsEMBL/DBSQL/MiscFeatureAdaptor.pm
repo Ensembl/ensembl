@@ -475,14 +475,17 @@ sub _objs_from_sth {
         $seen_attribs->{"$attrib_type_code:$attrib_value"} = 1;
       }
 
-      $feat =  Bio::EnsEMBL::MiscFeature->new_fast
-        ({'start'   => $seq_region_start,
-          'end'     => $seq_region_end,
-          'strand'  => $seq_region_strand,
-          'slice'   => $slice,
-          'adaptor' => $self,
-          'dbID'    => $misc_feature_id,
-          'attributes' => $feat_attribs });
+      $feat =
+        $self->_create_feature_fast( 'Bio::EnsEMBL::MiscFeature', {
+                                       'start'   => $seq_region_start,
+                                       'end'     => $seq_region_end,
+                                       'strand'  => $seq_region_strand,
+                                       'slice'   => $slice,
+                                       'adaptor' => $self,
+                                       'dbID'    => $misc_feature_id,
+                                       'attributes' => $feat_attribs
+                                     } );
+
       push @features, $feat;
 
       if ($misc_set_id) {

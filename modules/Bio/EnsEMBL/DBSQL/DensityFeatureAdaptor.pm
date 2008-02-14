@@ -448,15 +448,19 @@ sub _objs_from_sth {
       $slice = $dest_slice;
     }
 
-    push @features, Bio::EnsEMBL::DensityFeature->new
-      (-dbID          => $density_feature_id,
-       -adaptor       => $self,
-       -start         => $seq_region_start,
-       -end           => $seq_region_end,
-       -seq_region    => $slice,
-       -density_value => $density_value,
-       -density_type  => $density_type);
+    push( @features,
+          $self->_create_feature( 'Bio::EnsEMBL::DensityFeature', {
+                                    -dbID       => $density_feature_id,
+                                    -adaptor    => $self,
+                                    -start      => $seq_region_start,
+                                    -end        => $seq_region_end,
+                                    -seq_region => $slice,
+                                    -density_value => $density_value,
+                                    -density_type  => $density_type
+                                  } ) );
+
   }
+
   return \@features;
 }
 

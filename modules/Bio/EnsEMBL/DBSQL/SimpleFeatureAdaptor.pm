@@ -290,16 +290,20 @@ sub _objs_from_sth {
       $slice = $dest_slice;
     }
 
-    push @features, Bio::EnsEMBL::SimpleFeature->new_fast(
-      {'start'    => $seq_region_start,
-       'end'      => $seq_region_end,
-       'strand'   => $seq_region_strand,
-       'slice'    => $slice,
-       'analysis' => $analysis,
-       'adaptor'  => $self,
-       'dbID'     => $simple_feature_id,
-       'display_label' => $display_label,
-       'score'    => $score});
+    push( @features,
+          $self->_create_feature_fast(
+                                    'Bio::EnsEMBL::SimpleFeature', {
+                                      'start'    => $seq_region_start,
+                                      'end'      => $seq_region_end,
+                                      'strand'   => $seq_region_strand,
+                                      'slice'    => $slice,
+                                      'analysis' => $analysis,
+                                      'adaptor'  => $self,
+                                      'dbID'     => $simple_feature_id,
+                                      'display_label' => $display_label,
+                                      'score'         => $score
+                                    } ) );
+
     }
 
   return \@features;

@@ -116,18 +116,21 @@ sub _objs_from_sth {
   $sth->bind_columns(\$karyotype_id, \$seq_region_id, \$seq_region_start,
                      \$seq_region_end, \$band, \$stain);
 
-  while($sth->fetch()) {
+  while ( $sth->fetch() ) {
     my $slice = $slice_cache{$seq_region_id} ||=
       $slice_adaptor->fetch_by_seq_region_id($seq_region_id);
 
-    push @features, Bio::EnsEMBL::KaryotypeBand->new
-      (-START   => $seq_region_start,
-       -END     => $seq_region_end,
-       -SLICE   => $slice,
-       -ADAPTOR => $self,
-       -DBID    => $karyotype_id,
-       -NAME    => $band,
-       -STAIN   => $stain);
+    push( @features,
+          $self->_create_feature( 'Bio::EnsEMBL::KaryotypeBand', {
+                                    -START   => $seq_region_start,
+                                    -END     => $seq_region_end,
+                                    -SLICE   => $slice,
+                                    -ADAPTOR => $self,
+                                    -DBID    => $karyotype_id,
+                                    -NAME    => $band,
+                                    -STAIN   => $stain
+                                  } ) );
+
   }
 
   return \@features;

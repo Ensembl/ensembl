@@ -252,40 +252,45 @@ sub get_db_adaptor {
 
 =cut 
 
-sub get_available_adaptors{
-  my %pairs =  ( 
-   # Firstly those that just have an adaptor named after there object in the main DBSQL directory
-    map( { $_ => "Bio::EnsEMBL::DBSQL::${_}Adaptor" } qw( 
-      AffyFeature              AffyArray            AffyProbe
-      Analysis                 ArchiveStableId      Attribute
-      AssemblyExceptionFeature AssemblyMapper       CoordSystem
-      CompressedSequence       DBEntry              DnaAlignFeature
-      DensityFeature           DensityType          Exon
-      Gene                     KaryotypeBand        MiscSet
-      MiscFeature              OligoArray           OligoFeature
-      OligoProbe               PredictionTranscript PredictionExon
-      ProteinFeature           ProteinAlignFeature  RepeatConsensus
-      RepeatFeature            Sequence             SimpleFeature
-      Slice                    SupportingFeature    Transcript
-      TranscriptSupportingFeature Translation       UnmappedObject
-      UnconventionalTranscriptAssociation
-      AssemblySlice
-    ) ),
-   # Those whose adaptors are in Map::DBSQL
+sub get_available_adaptors {
+  my %pairs = (
+    # Firstly those that just have an adaptor named after there object
+    # in the main DBSQL directory.
+    map( { $_ => "Bio::EnsEMBL::DBSQL::${_}Adaptor" } qw(
+        AffyFeature              AffyArray            AffyProbe
+        Analysis                 ArchiveStableId      Attribute
+        AssemblyExceptionFeature AssemblyMapper       CoordSystem
+        CompressedSequence       DBEntry              DnaAlignFeature
+        DensityFeature           DensityType          Exon
+        Gene                     KaryotypeBand        MiscSet
+        MiscFeature              OligoArray           OligoFeature
+        OligoProbe               PredictionTranscript PredictionExon
+        ProteinFeature           ProteinAlignFeature  RepeatConsensus
+        RepeatFeature            Sequence             SimpleFeature
+        Slice                    SupportingFeature    Transcript
+        TranscriptSupportingFeature Translation       UnmappedObject
+        UnconventionalTranscriptAssociation
+        AssemblySlice
+        ) ),
+    # Those whose adaptors are in Map::DBSQL
     map( { $_ => "Bio::EnsEMBL::Map::DBSQL::${_}Adaptor" } qw(
-							      Marker                   MarkerFeature        QtlFeature     Qtl         Ditag      DitagFeature
-    ) ),
-   # Finally the exceptions... those that have non-standard mapping between object / adaptor ....
-#    'Blast'                => 'Bio::EnsEMBL::External::BlastAdaptor',
-    'MetaCoordContainer'   => 'Bio::EnsEMBL::DBSQL::MetaCoordContainer',
-    'MetaContainer'        => 'Bio::EnsEMBL::DBSQL::MetaContainer',
-    'SNP'                  => 'Bio::EnsEMBL::DBSQL::ProxySNPAdaptor'
-  );
-  return (\%pairs);
-}
+        Marker MarkerFeature QtlFeature Qtl Ditag DitagFeature
+        ) ),
+    # Finally the exceptions... those that have non-standard mapping
+    # between object / adaptor ....
+    # 'Blast'                => 'Bio::EnsEMBL::External::BlastAdaptor',
+    'MetaCoordContainer' => 'Bio::EnsEMBL::DBSQL::MetaCoordContainer',
+    'MetaContainer'      => 'Bio::EnsEMBL::DBSQL::MetaContainer',
+    'SNP'                => 'Bio::EnsEMBL::DBSQL::ProxySNPAdaptor',
+    # Feature Collections:
+    'GeneCollection'       => 'Bio::EnsEMBL::Collection::Gene',
+    'TranscriptCollection' => 'Bio::EnsEMBL::Collection::Transcript',
+    'ExonCollection'       => 'Bio::EnsEMBL::Collection::Exon',
+    'RepeatFeatureCollection' =>
+      'Bio::EnsEMBL::Collection::RepeatFeature' );
 
-
-
+  return ( \%pairs );
+} ## end sub get_available_adaptors
 
 ###########################################################
 #
