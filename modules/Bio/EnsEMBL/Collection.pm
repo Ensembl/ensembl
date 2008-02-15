@@ -8,8 +8,23 @@ use warnings;
 use Bio::EnsEMBL::Utils::Argument  ('rearrange');
 use Bio::EnsEMBL::Utils::Exception ('throw');
 
+use constant { FEATURE_DBID        => 0,
+               FEATURE_SEQREGIONID => 1,
+               FEATURE_START       => 2,
+               FEATURE_END         => 3,
+               FEATURE_STRAND      => 4 };
+
 sub _remap {
-  my ( $features, $mapper, $slice ) = @_;
+  my ( $this, $features, $mapper, $slice ) = @_;
+
+  if ( scalar( @{$features} ) > 0 ) {
+    if ( $slice->get_seq_region_id() !=
+         $features->[0][FEATURE_SEQREGIONID] )
+    {
+      throw(   '_remap() in Bio::EnsEMBL::Collection '
+             . 'was unexpectedly expected to be intelligent' );
+    }
+  }
 
   return $features;
 }
