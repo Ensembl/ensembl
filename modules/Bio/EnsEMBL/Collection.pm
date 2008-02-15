@@ -1,3 +1,5 @@
+# $Id$
+
 package Bio::EnsEMBL::Collection;
 
 use strict;
