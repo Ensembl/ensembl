@@ -14,8 +14,7 @@ use base( 'Bio::EnsEMBL::Collection',
 sub _create_feature {
   my ( $this, $feature_type, $args ) = @_;
 
-  my @feature =
-    @{ $this->SUPER::_create_feature( $feature_type, $args ) };
+  my $feature = $this->SUPER::_create_feature( $feature_type, $args );
 
   my ( $hstart, $hend, $score, $repeat_consensus, $analysis ) =
     rearrange( [ 'HSTART', 'HEND',
@@ -24,25 +23,25 @@ sub _create_feature {
                ],
                @{$args} );
 
-  push( @feature,
+  push( @{$feature},
         $hstart, $hend, $score, $repeat_consensus->dbID(),
         $analysis->dbID() );
 
-  return \@feature;
+  return $feature;
 }
 
 sub _create_feature_fast {
   my ( $this, $feature_type, $args ) = @_;
 
-  my @feature =
-    @{ $this->SUPER::_create_feature_fast( $feature_type, $args ) };
+  my $feature =
+    $this->SUPER::_create_feature_fast( $feature_type, $args );
 
-  push( @feature,
+  push( @{$feature},
         $args->{'hstart'}, $args->{'hend'}, $args->{'score'},
         $args->{'repeat_consensus'}->dbID(),
         $args->{'analysis'}->dbID() );
 
-  return \@feature;
+  return $feature;
 }
 
 1;
