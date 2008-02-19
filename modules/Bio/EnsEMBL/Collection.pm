@@ -34,17 +34,31 @@ sub _create_feature {
 
   my ( $dbid, $start, $end, $strand, $slice ) =
     rearrange( [ 'DBID', 'START', 'END', 'STRAND', 'SLICE' ],
-               @{$args} );
+               %{$args} );
+  my $feature =
+    [ $dbid, $slice->get_seq_region_id(), $start, $end, $strand ];
 
-  return [ $dbid, $slice->get_seq_region_id(), $start, $end, $strand ];
+  return $feature;
 }
 
 sub _create_feature_fast {
   my ( $this, $feature_type, $args ) = @_;
 
-  return [ $args->{'dbID'},  $args->{'slice'}->get_seq_region_id(),
-           $args->{'start'}, $args->{'end'},
-           $args->{'strand'} ];
+  if ( !defined( $this->{'recent_slice'} )
+       || $this->{'recent_slice'} ne $args->{'slice'} )
+  {
+    $this->{'recent_slice'} = $args->{'slice'};
+    $this->{'recent_slice_seq_region_id'} =
+      $args->{'slice'}->get_seq_region_id();
+  }
+
+  my $feature = [ $args->{'dbID'},
+                  $this->{'recent_slice_seq_region_id'},
+                  $args->{'start'},
+                  $args->{'end'},
+                  $args->{'strand'} ];
+
+  return $feature;
 }
 
 1;
