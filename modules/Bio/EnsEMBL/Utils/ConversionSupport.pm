@@ -8,7 +8,7 @@ schema conversion scripts
 =head1 SYNOPSIS
 
     my $serverroot = '/path/to/ensembl';
-    my $suport = new Bio::EnsEMBL::Utils::ConversionSupport($serverroot);
+    my $support = new Bio::EnsEMBL::Utils::ConversionSupport($serverroot);
 
     # parse common options
     $support->parse_common_options;
@@ -34,7 +34,8 @@ Please see http://www.ensembl.org/code_licence.html for details
 
 =head1 AUTHOR
 
-Patrick Meidl <pm2@sanger.ac.uk>
+Steve Trevanion <st3@sanger.ac.uk
+Patrick Meidl <meidl@ebi.ac.uk>
 
 =head1 CONTACT
 
@@ -235,9 +236,9 @@ sub get_common_params {
     );
 }
 
-=head2 get_lutre_params
+=head2 get_loutre_params
 
-  Example     : my @allowed_params = $self->get_lutre_params, 'extra_param';
+  Example     : my @allowed_params = $self->get_loutre_params, 'extra_param';
   Description : Returns a list of commonly used parameters in for working with a loutre db
   Return type : Array - list of common parameters
   Exceptions  : none
@@ -255,6 +256,23 @@ sub get_loutre_params {
 		  );
 }
 
+=head2 remove_vega_params
+
+  Example     : $support->remove_vega_params;
+  Description : Removes Vega db conection parameters. Usefull to avoid clutter in log files when
+                working exclusively with loutre
+  Return type : none
+  Exceptions  : none
+  Caller      : general
+
+=cut
+
+sub remove_vega_params {
+	my $self = shift;
+	foreach my $param (qw(dbname host port user pass)) {
+		$self->{'_param'}{$param} = undef;
+	}
+}
 
 =head2 confirm_params
 
@@ -298,14 +316,14 @@ sub confirm_params {
 
 sub list_all_params {
     my $self = shift;
-    my $txt = sprintf "    %-20s%-40s\n", qw(PARAMETER VALUE);
-    $txt .= "    " . "-"x70 . "\n";
+    my $txt = sprintf "    %-21s%-40s\n", qw(PARAMETER VALUE);
+    $txt .= "    " . "-"x71 . "\n";
     $Text::Wrap::colums = 72;
     my @params = $self->allowed_params;
     foreach my $key (@params) {
         my @vals = $self->param($key);
         if (@vals) {
-            $txt .= Text::Wrap::wrap( sprintf('    %-20s', $key),
+            $txt .= Text::Wrap::wrap( sprintf('   %-21s', $key),
                                       ' 'x24,
                                       join(", ", @vals)
                                     ) . "\n";
@@ -671,7 +689,7 @@ sub get_database {
             -dbname => $self->param("${prefix}dbname"),
             -group  => $database,
     );
-    
+
     # explicitely set the dnadb to itself - by default the Registry assumes
     # a group 'core' for this now
     $dba->dnadb($dba);
@@ -821,14 +839,15 @@ sub dynamic_use {
     my ($self, $classname) = @_;
     my ($parent_namespace, $module) = $classname =~/^(.*::)(.*)$/ ?
                                         ($1,$2) : ('::', $classname);
+
     no strict 'refs';
     # return if module has already been imported
-    return 1 if $parent_namespace->{$module.'::'};
+    return 1 if $parent_namespace->{$module.'::'} && %{ $parent_namespace->{$module.'::'}||{} };
     
     eval "require $classname";
     throw("Failed to require $classname: $@") if ($@);
     $classname->import();
-    
+
     return 1;
 }
 
@@ -1464,7 +1483,7 @@ sub commify {
   Arg[3]      : string $coord_system_name (optional) - 'chromosome' by default
   Arg[4]      : string $coord_system_version (optional) - 'otter' by default
   Example     : $chroms = $support->fetch_non_hidden_slice($sa);
-  Description : retrieve all slices from a lutra database that don't have a hidden attribute
+  Description : retrieve all slices from a loutra database that don't have a hidden attribute
   Return type : arrayref
   Caller      : general
   Status      : stable
@@ -1475,14 +1494,76 @@ sub fetch_non_hidden_slices {
 	my $self = shift;
 	my $aa   = shift or throw("You must supply an attribute adaptor");
 	my $sa   = shift or throw("You must supply a slice adaptor");
-	my $cs = shift || 'chromosome';
-	my $cv = shift || 'Otter';
+	my $cs   = shift || 'chromosome';
+	my $cv   = shift || 'Otter';
 	my $visible_chroms;
 	foreach my $chrom ( @{$sa->fetch_all($cs,$cv)} ) {
-		my $attribs = $aa->fetch_all_by_Slice($chrom);
-		push @$visible_chroms, $chrom if @{$self->get_attrib_values($attribs,'hidden',0)};
+		my $chrom_name = $chrom->name;
+		my $attribs = $aa->fetch_all_by_Slice($chrom,'hidden');
+		if ( scalar(@$attribs) > 1 ) {
+			$self->log_warning("More than one hidden attribute for chromosome $chrom_name\n");
+		}
+		elsif ($attribs->[0]->value == 0) {				
+			push @$visible_chroms, $chrom;
+		}
+		elsif ($attribs->[0]->value == 1) {	
+			$self->log_verbose("chromosome $chrom_name is hidden\n");	
+		}
+		else {
+			$self->log_warning("No hidden attribute for chromosome $chrom_name\n");
+		}
 	}
 	return $visible_chroms;
+}
+
+=head2 get_wanted_chromosomes
+
+  Arg[1]      : B::E::U::ConversionSupport
+  Arg[2]      : B::E::SliceAdaptor
+  Arg[3]      : B::E::AttributeAdaptor
+  Arg[4]      : string $coord_system_name (optional) - 'chromosome' by default
+  Arg[5]      : string $coord_system_version (optional) - 'otter' by default
+  Example     : @chr_names = &Slice::get_wanted_chromosomes($support,$laa,$lsa);
+  Description : retrieve names of slices from a lutra database that are ready for dumping to Vega.
+                Deals with list of names to ignore (ignore_chr = LIST)
+  Return type : arrayref
+  Caller      : general
+  Status      : stable
+
+=cut
+
+sub get_wanted_chromosomes {
+	my $self = shift;
+	my $aa   = shift or throw("You must supply an attribute adaptor");
+	my $sa   = shift or throw("You must supply a slice adaptor");
+	my $cs   = shift || 'chromosome';
+	my $cv   = shift || 'Otter';
+	my $export_mode = $self->param('release_type');
+	my $release = $self->param('vega_release');
+	my $names;
+	my $chroms  = $self->fetch_non_hidden_slices($aa,$sa,$cs,$cv);
+ CHROM:
+	foreach my $chrom (@$chroms) {
+		my $attribs = $aa->fetch_all_by_Slice($chrom);
+		my $vals = $self->get_attrib_values($attribs,'vega_export_mod');
+		if (scalar(@$vals > 1)) {
+			$self->log_warning ("Multiple attribs for \'vega_export_mod\', please fix before continuing");
+			exit;
+		}
+		next CHROM if (! grep { $_ eq $export_mode} @$vals);
+		$vals =  $self->get_attrib_values($attribs,'vega_release',$release);	
+		if (scalar(@$vals > 1)) {
+			$self->log_warning ("Multiple attribs for \'vega_release\' value = $release , please fix before continuing");
+			exit;
+		}
+		next CHROM if (! grep { $_ eq $release} @$vals);
+		my $name = $chrom->seq_region_name;
+		if (my @ignored = $self->param('ignore_chr')) {
+			next CHROM if (grep {$_ eq $name} @ignored);
+		}
+		push @{$names}, $name;
+	}
+	return $names;
 }
 
 
@@ -1492,12 +1573,13 @@ sub fetch_non_hidden_slices {
   Arg[2]      : 'code' to search for
   Arg[3]      : 'value' to search for (optional)
   Example     : my $c = $self->get_attrib_values($attribs,'name'));
-  Description : (i) In the abscence of an attribute value argument examines an arrayref
+  Description : (i) In the absence of an attribute value argument, examines an arrayref
                 of B::E::Attributes for a particular attribute type, returning the values
-                for each attribute of that type (can therefore be used to test for the
-                number of attributes of that type).
-                (ii) In the presence of the optional value argument, it can be used to test
-                for the presence of an attribute with a particular value
+                for each attribute of that type. Can therefore be used to test for the
+                number of attributes of that type.
+                (ii) In the presence of the optional value argument it returns all
+                attributes with that value ie can be used to test for the presence of an
+                attribute with that particular value.
   Return type : arrayref of values for that attribute
   Caller      : general
   Status      : stable
@@ -1510,7 +1592,7 @@ sub get_attrib_values {
 	my $code    = shift;
 	my $value   = shift;
 	if (my @atts = grep {$_->code eq $code } @$attribs) {
-		my $r;
+		my $r = [];
 		if ($value) {
 			if (my @values = grep {$_->value eq $value} @atts) {
 				foreach (@values) {
@@ -1536,17 +1618,17 @@ sub get_attrib_values {
 
 =head2 fix_attrib_value
 
-  Arg[1]      : Arrayref of exisiting B::E::Attributes
+  Arg[1]      : Arrayref of existing B::E::Attributes
   Arg[2]      : dbID of object
   Arg[3]      : name of object (just for reporting)
   Arg[4]      : attrib_type.code
   Arg[5]      : attrib_type.value
-  Arg[5]      : interactive ? (0 by default)
-  Arg[6]      : table
+  Arg[6]      : interactive ? (0 by default)
+  Arg[7]      : table
   Example     : $support->fix_attrib_value($attribs,$chr_id,$chr_name,'vega_export_mod','N',1);
   Description : adds a new attribute to an object, or updates an existing attribute with a new value
                 Can be run in interactive or non-interactive mode (default)
-  Return type : none
+  Return type : arrayref of results
   Caller      : general
   Status      : only ever tested with seq_region_attributes to date
 
@@ -1562,14 +1644,13 @@ sub fix_attrib_value {
 	my $interact    = shift || 0;
 	my $table       = shift || 'seq_region_attrib';
 
-	#set interactive parameter
+	#transiently set interactive parameter to zero
 	my $int_before;
 	if (! $interact) {
 		$int_before = $self->param('interactive');
 		$self->param('interactive',0);
 	}
 
-#	warn "interactive_before = $int_before";
 	#get any existing value(s) for this attribute
 	my $existings = $self->get_attrib_values($attribs,$code);
 	
@@ -1589,9 +1670,9 @@ sub fix_attrib_value {
 		exit;
 	}
 
+	#...or update an attribute with new values...
 	else {
 		my $existing = $existings->[0];
-		#...or update an attribute with new values...
 		if ($existing ne $value) {
 			if ($self->user_proceed("Do you want to reset $name attrib (code = $code) from $existing to $value ?")) {
 				my $r = $self->update_attribute($id,$code,$value);
@@ -1659,7 +1740,7 @@ sub store_new_attribute {
 	my $self         = shift;
 	my $sr_id        = shift;
 	my $attrib_code  = shift;
-	my $attrib_value = shift;
+	my $attrib_value = shift || '';
 	my $table        = shift || 'seq_region_attrib';
 
 	#get database handle
