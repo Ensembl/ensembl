@@ -620,6 +620,67 @@ sub remove_DBAdaptor{
 }
 
 
+
+=head2 reset_DBAdaptor
+
+  Arg [1]:     string - species e.g. homo_sapiens
+  Arg [2]:     string - DB group e.g. core
+  Arg [3]:     string - new dbname
+  Args [4-7]:  string - optional DB parameters, defaults to current db params if omitted
+  Usage :      $reg->reset_registry_db('homo_sapiens', 'core', 'homo_sapiens_core_37_35j');
+  Description: Resets a DB within the registry.
+  Exceptions:  Throws if mandatory params not supplied
+               Throws if species name is not already seen by the registry
+               Throws if no current DB for species/group available
+  Status :     At risk
+
+=cut
+
+sub reset_DBAdaptor{
+  my ($self, $species, $group, $dbname, $host, $port, $user, $pass) = @_;
+
+  #Check mandatory params
+  if(! (defined $species && defined $group && defined $dbname)){
+	throw('Must provide at least a species, group and dbname parmeter to redefine a DB in the registry');
+  }
+  
+  #validate species here
+  my $alias = $self->get_alias($species);
+  throw("Could not find registry alias for species:\t$species") if(! defined $alias);
+ 
+
+  #Get all current defaults if not defined
+  my $current_db = $self->get_DBAdaptor($alias, $group);
+  
+  if(! defined $current_db){
+	throw("There is not current registry DB for:\t${alias}\t${group}");
+  }
+
+
+  $host ||= $current_db->dbc->host;
+  $port ||= $current_db->dbc->port;
+  $user ||= $current_db->dbc->username;
+  $pass ||= $current_db->dbc->password;
+  my $class = ref($current_db);
+
+  $self->remove_DBAdaptor($alias, $group);
+  
+
+  #ConfigRegistry should automatically add this to the Registry
+  my $db = $class->new(
+					   -user => $user,
+					   -host => $host,
+					   -port => $port,
+					   -pass => $pass,
+					   -dbname => $dbname,
+					   -species => $alias,
+					   -group    => $group,
+					  );
+
+  return $db;
+}
+
+
 #
 # DNA Adaptors
 #
