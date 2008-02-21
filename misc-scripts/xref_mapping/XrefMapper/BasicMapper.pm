@@ -1028,31 +1028,32 @@ sub submit_depend_job {
     local *BSUB;
     local *BSUB_READER;
 
-    if (($reader = open(BSUB_READER, '-|'))) {
+    if ( ( $reader = open( BSUB_READER, '-|' ) ) ) {
       while (<BSUB_READER>) {
         #print "YES:$_";
-	if (/^Job <(\d+)> is submitted/) {
-	  $jobid = $1;
-	  print "LSF job ID for depend job: $jobid\n"
-	}
+        if (/^Job <(\d+)> is submitted/) {
+          $jobid = $1;
+          print "LSF job ID for depend job: $jobid\n";
+        }
       }
       close(BSUB_READER);
     } else {
-      die("Could not fork : $!\n") unless (defined($reader));
-      open(STDERR, ">&STDOUT");
-      if (($pid = open(BSUB, '|-'))) {
-	print BSUB "/bin/true\n";
-	close BSUB;
-	if ($? != 0) {
-	  die("bsub exited with non-zero status ($?) - job not submitted\n");
-	}
+      die("Could not fork : $!\n") unless ( defined($reader) );
+      open( STDERR, ">&STDOUT" );
+      if ( ( $pid = open( BSUB, '|-' ) ) ) {
+        print BSUB "/bin/true\n";
+        close BSUB;
+        if ( $? != 0 ) {
+          die(   "bsub exited with non-zero status ($?) "
+               . "- job not submitted\n" );
+        }
       } else {
-	if (defined($pid)) {
-	  exec(@depend_bsub);
-	  die("Could not exec bsub : $!\n");
-	} else {
-	  die("Could not fork : $!\n");
-	}
+        if ( defined($pid) ) {
+          exec(@depend_bsub);
+          die("Could not exec bsub : $!\n");
+        } else {
+          die("Could not fork : $!\n");
+        }
       }
       exit(0);
     }
@@ -1512,20 +1513,25 @@ PSQL
 }
 
 
-sub get_stable_ids(){
-  my ($self, $type, $string, $hashref) = @_;
+sub get_stable_ids {
+  my ( $self, $type, $string, $hashref ) = @_;
 
-  my $sql = "SELECT ".$type."_id ,stable_id ";
-  $sql .=      "FROM ".$type."_stable_id ";
-  $sql .=          "WHERE ".$type."_id IN (".$string.")";
+  my $sql =
+    sprintf( "SELECT %1$s_id, stable_id "
+               . "FROM %1$s_stable_id "
+               . "WHERE %1$s_id IN ( %2$s )",
+             $type, $string );
 
   my $sth = $self->core->dbc->prepare($sql);
   $sth->execute();
-  my ($trans, $stable);
-  $sth->bind_columns(\$trans,\$stable);
-  while($sth->fetch()){
+
+  my ( $trans, $stable );
+  $sth->bind_columns( \$trans, \$stable );
+
+  while ( $sth->fetch() ) {
     $hashref->{$trans} = $stable;
   }
+
   $sth->finish;
 }
 
@@ -1551,7 +1557,7 @@ sub get_failed_id{
   return $xref_failed_id;
 }
 
-sub dump_triage_data() {
+sub dump_triage_data {
   my ($self) = @_;
 
 
@@ -1782,7 +1788,7 @@ PSQL
 # also ignore direct_xref
 # e.g. Interpro xrefs
 
-sub dump_orphan_xrefs() {
+sub dump_orphan_xrefs {
 
   my ($self, $xref_id_offset) = @_;
 
@@ -2357,7 +2363,7 @@ sub remove_all_old_output_files{
   my $dir = $self->core->dir();
 
   print "Deleting txt and sql files from output dir: $dir\n";
-  unlink(<$dir/*.txt $dir/*.sql>);
+  #unlink(<$dir/*.txt $dir/*.sql>);
   $self->cleanup_projections_file();
 }
 
@@ -4338,7 +4344,7 @@ sub get_mysql_command{
   return $str;
 }
 
-sub dump_xref_with_no_triage_data() {
+sub dump_xref_with_no_triage_data {
   my ($self) = @_;
   
   print "Dumping xrefs\n";
@@ -4782,7 +4788,7 @@ sub get_list_of_sources_for_one_max_per_transcript{
 }
 
 
-sub check_special_sources(){
+sub check_special_sources {
   my $self = shift;
 
   #  1) get the external_db_id;
