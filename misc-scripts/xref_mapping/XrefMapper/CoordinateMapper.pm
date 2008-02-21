@@ -169,16 +169,20 @@ sub run_coordinatemapping {
   my $xref_sth = $xref_dbh->prepare($xref_sql);
   $xref_sth->execute($species_id);
 
+  my $external_db_id;
   while ( my $xref = $xref_sth->fetchrow_hashref() ) {
+    $external_db_id ||=
+      $XrefMapper::BasicMapper::source_to_external_db{ $xref->{
+        'source_id'} };
+    $external_db_id ||= 11000;    # FIXME (11000 is 'UCSC')
+
     $unmapped{ $xref->{'coord_xref_id'} } = {
-      'external_db_id' =>
-        $XrefMapper::BasicMapper::source_to_external_db{ $xref->{
-          'source_id'} }
-        || 11000,    # FIXME (11000 is 'UCSC')
-      'accession' => $xref->{'accession'},
-      'reason'    => 'No overlap',
-      'reason_full' =>
-        'No coordinate overlap with any Ensembl transcript' };
+                   'external_db_id' => $external_db_id,
+                   'accession'      => $xref->{'accession'},
+                   'reason'         => 'No overlap',
+                   'reason_full' =>
+                     'No coordinate overlap with any Ensembl transcript'
+    };
   }
   $xref_sth->finish();
 
@@ -205,7 +209,7 @@ sub run_coordinatemapping {
               exonStarts, exonEnds
     FROM      coordinate_xref
     WHERE     species_id = ?
-    AND       chromosome = ? AND strand = ?
+    AND       chromosome = ? AND strand   = ?
     AND       ((txStart >= ? AND txStart <= ?)    -- txStart in region
     OR         (txEnd   >= ? AND txEnd   <= ?)    -- txEnd in region
     OR         (txStart <= ? AND txEnd   >= ?))   -- region is contained
@@ -540,12 +544,14 @@ sub run_coordinatemapping {
                         $analysis_id, \%unmapped );
 
   if ($do_upload) {
-    upload_data( 'xref',        $xref_filename,        $core_dbh );
-    upload_data( 'object_xref', $object_xref_filename, $core_dbh );
+    # Order is important!
     upload_data( 'unmapped_reason', $unmapped_reason_filename,
-                 $core_dbh );
+                 $external_db_id, $core_dbh );
     upload_data( 'unmapped_object', $unmapped_object_filename,
+                 $external_db_id, $core_dbh );
+    upload_data( 'object_xref', $object_xref_filename, $external_db_id,
                  $core_dbh );
+    upload_data( 'xref', $xref_filename, $external_db_id, $core_dbh );
   }
 
 } ## end sub run_coordinatemapping
@@ -716,7 +722,7 @@ sub dump_unmapped_object {
 #-----------------------------------------------------------------------
 
 sub upload_data {
-  my ( $table_name, $filename, $dbh ) = @_;
+  my ( $table_name, $filename, $external_db_id, $dbh ) = @_;
 
   ######################################################################
   # Upload data from a file to a table.                                #
@@ -726,17 +732,57 @@ sub upload_data {
     croak( sprintf( "Can not open '%s' for reading", $filename ) );
   }
 
+
+  my $cleanup_sql = '';
+  if ( $table_name eq 'unmapped_reason' ) {
+    $cleanup_sql = qq(
+    DELETE  ur
+    FROM    unmapped_object uo,
+            unmapped_reason ur
+    WHERE   uo.external_db_id       = ?
+    AND     ur.unmapped_reason_id   = uo.unmapped_reason_id);
+  } elsif ( $table_name eq 'unmapped_object' ) {
+    $cleanup_sql = qq(
+    DELETE  uo
+    FROM    unmapped_object uo
+    WHERE   uo.external_db_id = ?);
+  } elsif ( $table_name eq 'object_xref' ) {
+    $cleanup_sql = qq(
+    DELETE  ox
+    FROM    xref x,
+            object_xref ox
+    WHERE   x.external_db_id    = ?
+    AND     ox.xref_id          = x.xref_id);
+  } elsif ( $table_name eq 'xref' ) {
+    $cleanup_sql = qq(
+    DELETE  x
+    FROM    xref x
+    WHERE   x.external_db_id    = ?);
+  } else {
+    croak( sprintf( "Table '%s' is unknown\n", $table_name ) );
+  }
+
+  my $load_sql =
+    sprintf( "LOAD DATA LOCAL INFILE ? REPLACE INTO TABLE %s", $table_name );
+
+  log_progress(
+          "Removing old data (external_db_id = '%d') from table '%s'\n",
+          $external_db_id, $table_name );
+
+  my $rows = $dbh->do( $cleanup_sql, undef, $external_db_id )
+    or croak( $dbh->strerr() );
+
+  log_progress( "Removed %d rows\n", $rows );
+
   log_progress( "Uploading for '%s' from '%s'\n",
                 $table_name, $filename );
 
-  my $sql =
-    sprintf( "LOAD DATA LOCAL INFILE ? REPLACE INTO TABLE %s", $table_name );
+  $rows = $dbh->do( $load_sql, undef, $filename ) or croak( $dbh->errstr() );
 
-  my $sth = $dbh->prepare($sql);
+  $dbh->do("OPTIMIZE TABLE $table_name") or croak( $dbh->errstr() );
 
-  $sth->execute($filename);
-
-  log_progress( "Uploading for '%s' done\n", $table_name );
+  log_progress( "Uploading for '%s' done (%d rows)\n",
+                $table_name, $rows );
 
 } ## end sub upload_data
 
