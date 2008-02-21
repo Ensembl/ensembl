@@ -1517,9 +1517,9 @@ sub get_stable_ids {
   my ( $self, $type, $string, $hashref ) = @_;
 
   my $sql =
-    sprintf( "SELECT %1$s_id, stable_id "
-               . "FROM %1$s_stable_id "
-               . "WHERE %1$s_id IN ( %2$s )",
+    sprintf( 'SELECT %1$s_id, stable_id '
+               . 'FROM %1$s_stable_id '
+               . 'WHERE %1$s_id IN ( %2$s )',
              $type, $string );
 
   my $sth = $self->core->dbc->prepare($sql);
