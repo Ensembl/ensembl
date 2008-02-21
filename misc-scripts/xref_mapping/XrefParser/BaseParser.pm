@@ -437,6 +437,8 @@ sub fetch_files {
                 return ();
             }
 
+            $ftp->binary();
+
             foreach my $remote_file ( ( @{ $ftp->ls() } ) ) {
                 if (
                      !match_glob( basename( $uri->path() ), $remote_file
@@ -473,7 +475,6 @@ sub fetch_files {
                             $ftp->size($remote_file) || '(unknown)' );
                     printf( "Local file is '%s'\n", $file_path );
 
-                    $ftp->binary();
                     if ( !$ftp->get( $remote_file, $file_path ) ) {
                         printf( "==> Could not get '%s': %s\n",
                                 basename( $uri->path() ),
