@@ -2363,7 +2363,7 @@ sub remove_all_old_output_files{
   my $dir = $self->core->dir();
 
   print "Deleting txt and sql files from output dir: $dir\n";
-  #unlink(<$dir/*.txt $dir/*.sql>);
+  unlink(<$dir/*.txt $dir/*.sql>);
   $self->cleanup_projections_file();
 }
 
