@@ -732,7 +732,6 @@ sub upload_data {
     croak( sprintf( "Can not open '%s' for reading", $filename ) );
   }
 
-
   my $cleanup_sql = '';
   if ( $table_name eq 'unmapped_reason' ) {
     $cleanup_sql = qq(
@@ -763,7 +762,8 @@ sub upload_data {
   }
 
   my $load_sql =
-    sprintf( "LOAD DATA LOCAL INFILE ? REPLACE INTO TABLE %s", $table_name );
+    sprintf( "LOAD DATA LOCAL INFILE ? REPLACE INTO TABLE %s",
+             $table_name );
 
   log_progress(
           "Removing old data (external_db_id = '%d') from table '%s'\n",
@@ -777,7 +777,8 @@ sub upload_data {
   log_progress( "Uploading for '%s' from '%s'\n",
                 $table_name, $filename );
 
-  $rows = $dbh->do( $load_sql, undef, $filename ) or croak( $dbh->errstr() );
+  $rows = $dbh->do( $load_sql, undef, $filename )
+    or croak( $dbh->errstr() );
 
   $dbh->do("OPTIMIZE TABLE $table_name") or croak( $dbh->errstr() );
 
