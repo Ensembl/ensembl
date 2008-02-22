@@ -31,8 +31,10 @@ Post general queries to B<ensembl-dev@ebi.ac.uk>
 =cut
 
 package Bio::EnsEMBL::Mapper::IndelCoordinate;
+
 use Bio::EnsEMBL::Mapper::Gap;
 use Bio::EnsEMBL::Mapper::Coordinate;
+
 use vars qw(@ISA);
 use strict;
 
@@ -52,17 +54,20 @@ use strict;
 =cut
 
 sub new {
-  my($class,$gap, $coordinate) = @_;
+  my ( $proto, $gap, $coordinate ) = @_;
 
-  return bless{ 'start' => $coordinate->start,
-		'end'   => $coordinate->end,
-		'strand'=> $coordinate->strand,
-		'id'    => $coordinate->id,
-		'coord_system' => $coordinate->coord_system,
-		'gap_start' => $gap->start,
-		'gap_end'   => $gap->end
-	          }, $class;
-  
+  my $class = ref($proto) || $proto;
+
+  return
+    bless( { 'start'        => $coordinate->start(),
+             'end'          => $coordinate->end(),
+             'strand'       => $coordinate->strand(),
+             'id'           => $coordinate->id(),
+             'coord_system' => $coordinate->coord_system(),
+             'gap_start'    => $gap->start(),
+             'gap_end'      => $gap->end()
+           },
+           $class );
 }
 
 =head2 gap_start
@@ -76,13 +81,14 @@ sub new {
 
 =cut
 
-sub gap_start{
-    my ($self,$value) = @_;
-    if (defined $value){
-	$self->{'gap_start'} = $value
-    }
-    return $self->{'gap_start'};
+sub gap_start {
+  my ( $self, $value ) = @_;
 
+  if ( defined($value) ) {
+    $self->{'gap_start'} = $value;
+  }
+
+  return $self->{'gap_start'};
 }
 
 =head2 gap_end
@@ -96,12 +102,14 @@ sub gap_start{
 
 =cut
 
-sub gap_end{
-    my ($self, $value) = @_;
-    if (defined $value){
-	$self->{'gap_end'} = $value;
-    }
-    return $self->{'gap_end'};
+sub gap_end {
+  my ( $self, $value ) = @_;
+
+  if ( defined($value) ) {
+    $self->{'gap_end'} = $value;
+  }
+
+  return $self->{'gap_end'};
 }
 
 =head2 gap_length
@@ -115,8 +123,10 @@ sub gap_end{
 
 =cut
 
-sub gap_length{
-    my $self = shift;
-    return $self->{'gap_end'} - $self->{'gap_start'} + 1;
+sub gap_length {
+  my ($self) = @_;
+
+  return $self->{'gap_end'} - $self->{'gap_start'} + 1;
 }
+
 1;

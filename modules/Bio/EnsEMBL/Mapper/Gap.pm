@@ -31,10 +31,8 @@ Post general queries to B<ensembl-dev@ebi.ac.uk>
 =cut
 
 package Bio::EnsEMBL::Mapper::Gap;
-use vars qw(@ISA);
+
 use strict;
-
-
 
 =head2 new
 
@@ -50,13 +48,12 @@ use strict;
 =cut
 
 sub new {
-  my($class,$start, $end) = @_;
+  my ( $proto, $start, $end ) = @_;
 
-  return bless { 'start' => $start,
-                 'end'   => $end }, $class;
+  my $class = ref($proto) || $proto;
 
+  return bless( { 'start' => $start, 'end' => $end }, $class );
 }
-
 
 =head2 start
 
@@ -71,15 +68,15 @@ sub new {
 
 =cut
 
-sub start{
-   my ($self,$value) = @_;
-   if( defined $value) {
-      $self->{'start'} = $value;
-    }
-    return $self->{'start'};
+sub start {
+  my ( $self, $value ) = @_;
 
+  if ( defined($value) ) {
+    $self->{'start'} = $value;
+  }
+
+  return $self->{'start'};
 }
-
 
 =head2 end
 
@@ -94,14 +91,15 @@ sub start{
 
 =cut
 
-sub end{
-   my ($self,$value) = @_;
-   if( defined $value) {
-      $self->{'end'} = $value;
-    }
-    return $self->{'end'};
-}
+sub end {
+  my ( $self, $value ) = @_;
 
+  if ( defined($value) ) {
+    $self->{'end'} = $value;
+  }
+
+  return $self->{'end'};
+}
 
 =head2 length
 
@@ -116,10 +114,9 @@ sub end{
 =cut
 
 sub length {
-  my $self = shift;
+  my ($self) = @_;
+
   return $self->{'end'} - $self->{'start'} + 1;
 }
-
-
 
 1;

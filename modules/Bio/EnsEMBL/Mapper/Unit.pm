@@ -34,15 +34,17 @@ Post general queries to B<ensembl-dev@ebi.ac.uk>
 
 
 package Bio::EnsEMBL::Mapper::Unit;
-use vars qw(@ISA);
+
 use strict;
 
 sub new {
-  my($class, $id, $start, $end) = @_;
+  my ( $proto, $id, $start, $end ) = @_;
 
-  return bless {'id' => $id, 'start' => $start, 'end' => $end}, $class;
+  my $class = ref($proto) || $proto;
+
+  return
+    bless( { 'id' => $id, 'start' => $start, 'end' => $end }, $class );
 }
-
 
 =head2 id
 
@@ -56,15 +58,15 @@ sub new {
 
 =cut
 
-sub id{
-   my ($self,$value) = @_;
-   if( defined $value) {
-      $self->{'id'} = $value;
-    }
-    return $self->{'id'};
+sub id {
+  my ( $self, $value ) = @_;
 
+  if ( defined($value) ) {
+    $self->{'id'} = $value;
+  }
+
+  return $self->{'id'};
 }
-
 
 =head2 start
 
@@ -79,15 +81,15 @@ sub id{
 
 =cut
 
-sub start{
-   my ($self,$value) = @_;
-   if( defined $value) {
-      $self->{'start'} = $value;
-    }
-    return $self->{'start'};
+sub start {
+  my ( $self, $value ) = @_;
 
+  if ( defined($value) ) {
+    $self->{'start'} = $value;
+  }
+
+  return $self->{'start'};
 }
-
 
 =head2 end
 
@@ -102,14 +104,14 @@ sub start{
 
 =cut
 
-sub end{
-   my ($self,$value) = @_;
-   if( defined $value) {
-      $self->{'end'} = $value;
-    }
-    return $self->{'end'};
+sub end {
+  my ( $self, $value ) = @_;
 
+  if ( defined($value) ) {
+    $self->{'end'} = $value;
+  }
+
+  return $self->{'end'};
 }
-
 
 1;

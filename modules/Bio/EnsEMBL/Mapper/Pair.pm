@@ -33,15 +33,17 @@ Post general queries to B<ensembl-dev@ebi.ac.uk>
 =cut
 
 package Bio::EnsEMBL::Mapper::Pair;
-use vars qw(@ISA);
+
 use strict;
 
 sub new {
-  my($class,$from,$to,$ori) = @_;
+  my ( $proto, $from, $to, $ori ) = @_;
 
-  return bless {'from' => $from, 'to' => $to, 'ori' => $ori}, $class;
+  my $class = ref($proto) || $proto;
+
+  return
+    bless( { 'from' => $from, 'to' => $to, 'ori' => $ori }, $class );
 }
-
 
 =head2 from, to
 
@@ -57,23 +59,24 @@ sub new {
 =cut
 
 sub to {
-   my ($self,$value) = @_;
-   if( defined $value) {
-      $self->{'to'} = $value;
-    }
-    return $self->{'to'};
+  my ( $self, $value ) = @_;
 
+  if ( defined($value) ) {
+    $self->{'to'} = $value;
+  }
+
+  return $self->{'to'};
 }
 
 sub from {
-   my ($self,$value) = @_;
-   if( defined $value) {
-      $self->{'from'} = $value;
-    }
-    return $self->{'from'};
+  my ( $self, $value ) = @_;
 
+  if ( defined($value) ) {
+    $self->{'from'} = $value;
+  }
+
+  return $self->{'from'};
 }
-
 
 =head2 ori
 
@@ -89,11 +92,13 @@ sub from {
 =cut
 
 sub ori {
-   my ($self,$value) = @_;
-   if( defined $value) {
-      $self->{'ori'} = $value;
-    }
-    return $self->{'ori'};
+  my ( $self, $value ) = @_;
+
+  if ( defined($value) ) {
+    $self->{'ori'} = $value;
+  }
+
+  return $self->{'ori'};
 }
 
 1;

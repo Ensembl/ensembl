@@ -32,7 +32,7 @@ Post general queries to B<ensembl-dev@ebi.ac.uk>
 =cut
 
 package Bio::EnsEMBL::Mapper::Coordinate;
-use vars qw(@ISA);
+
 use strict;
 
 =head2 new
@@ -48,17 +48,20 @@ use strict;
   Status      Stable
 
 =cut
-  
- 
 
 sub new {
-  my($class, $id, $start, $end, $strand, $coord_system) = @_;
+  my ( $proto, $id, $start, $end, $strand, $coord_system ) = @_;
 
-  return bless { 'id' => $id,
-                 'start' => $start,
-                 'end'   => $end,
-                 'strand' => $strand,
-                 'coord_system' => $coord_system}, $class;
+  my $class = ref($proto) || $proto;
+
+  return
+    bless( { 'id'           => $id,
+             'start'        => $start,
+             'end'          => $end,
+             'strand'       => $strand,
+             'coord_system' => $coord_system
+           },
+           $class );
 }
 
 
@@ -74,9 +77,13 @@ sub new {
 
 =cut
 
-sub start{
-  my $self = shift;
-  $self->{'start'} = shift if(@_);
+sub start {
+  my ( $self, $value ) = @_;
+
+  if ( defined($value) ) {
+    $self->{'start'} = $value;
+  }
+
   return $self->{'start'};
 }
 
@@ -93,12 +100,15 @@ sub start{
 
 =cut
 
-sub end{
-  my $self = shift;
-  $self->{'end'} = shift if(@_);
+sub end {
+  my ( $self, $value ) = @_;
+
+  if ( defined($value) ) {
+    $self->{'end'} = $value;
+  }
+
   return $self->{'end'};
 }
-
 
 =head2 strand
 
@@ -112,12 +122,15 @@ sub end{
 
 =cut
 
-sub strand{
-  my $self = shift;
-  $self->{'strand'} = shift if(@_);
+sub strand {
+  my ( $self, $value ) = @_;
+
+  if ( defined($value) ) {
+    $self->{'strand'} = $value;
+  }
+
   return $self->{'strand'};
 }
-
 
 =head2 id
 
@@ -132,12 +145,15 @@ sub strand{
 
 =cut
 
-sub id{
-  my $self = shift;
-  $self->{'id'} = shift if(@_);
+sub id {
+  my ( $self, $value ) = @_;
+
+  if ( defined($value) ) {
+    $self->{'id'} = $value;
+  }
+
   return $self->{'id'};
 }
-
 
 =head2 coord_system
 
@@ -151,8 +167,12 @@ sub id{
 =cut
 
 sub coord_system {
-  my $self = shift;
-  $self->{'coord_system'} = shift if(@_);
+  my ( $self, $value ) = @_;
+
+  if ( defined($value) ) {
+    $self->{'coord_system'} = $value;
+  }
+
   return $self->{'coord_system'};
 }
 
@@ -167,7 +187,8 @@ sub coord_system {
 =cut
 
 sub length {
-  my $self = shift;
+  my ($self) = @_;
+
   return $self->{'end'} - $self->{'start'} + 1;
 }
 
