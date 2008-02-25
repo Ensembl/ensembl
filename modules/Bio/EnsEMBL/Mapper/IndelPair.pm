@@ -33,18 +33,21 @@ Post general queries to B<ensembl-dev@ebi.ac.uk>
 =cut
 
 package Bio::EnsEMBL::Mapper::IndelPair;
+
 use vars qw(@ISA);
 use strict;
 
 @ISA = qw(Bio::EnsEMBL::Mapper::Pair);
 
 sub new {
-    my $caller = shift;
-    my $class = ref($caller) || $caller;
+  my ($proto, @args) = @_;
 
-    my $self = $class->SUPER::new(@_); #create the Pair object
-    $self->{'indel'} = 1; #and add the Indel flag
-    return $self;
+  my $class = ref($proto) || $proto;
+
+  my $self = $class->SUPER::new(@args);    # create the Pair object
+  $self->{'indel'} = 1;                    # and add the Indel flag
+
+  return $self;
 }
 
 1;

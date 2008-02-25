@@ -78,19 +78,17 @@ use integer;
 =cut
 
 sub new {
-  my $caller = shift;
-  my $class = ref($caller) || $caller;
-  return bless {'registry' => {}}, $class;
-}
+  my ($proto) = @_;
 
+  my $class = ref($proto) || $proto;
+
+  return bless( { 'registry' => {} }, $class );
+}
 
 sub flush {
-  my $self = shift;
+  my ($self) = @_;
   $self->{'registry'} = {};
 }
-
-
-
 
 =head2 check_and_register
 
@@ -134,134 +132,141 @@ my $START = 0;
 my $END   = 1;
 
 sub check_and_register {
-  my ($self, $id, $start, $end, $rstart,$rend) = @_;
+  my ( $self, $id, $start, $end, $rstart, $rend ) = @_;
 
-  $rstart = $start if(!defined($rstart));
-  $rend   = $end if(!defined($rend));
+  $rstart = $start if ( !defined($rstart) );
+  $rend   = $end   if ( !defined($rend) );
 
   #
   # Sanity checks
   #
-  if(!defined($id) || !defined($start) || !defined($end)) {
+  if ( !defined($id) || !defined($start) || !defined($end) ) {
     throw("ID, start, end arguments are required");
   }
 
-  if($start > $end) {
+  if ( $start > $end ) {
     throw("start argument must be less than end argument");
   }
 
-  if($rstart >$rend) {
-    throw("rend [$rstart] argument must be less than rend [$rend]  argument");
+  if ( $rstart > $rend ) {
+    throw(
+      "rend [$rstart] argument must be less than rend [$rend]  argument"
+    );
   }
 
-  if($rstart > $start) {
+  if ( $rstart > $start ) {
     throw("rstart must be less than or equal to start");
   }
 
-  if($rend < $end) {
+  if ( $rend < $end ) {
     throw("rend must be greater than or equal to end");
   }
 
-  my $reg  = $self->{'registry'};
+  my $reg = $self->{'registry'};
   my $list = $reg->{$id} ||= [];
 
   my @gap_pairs;
 
   my $len = scalar(@$list);
 
-  if($len == 0) {
-    #this is the first request for this id, return a gap pair for the
-    #entire range and register it as seen
-    $list->[0] = [$rstart,$rend];
-    return [[$rstart,$rend]];
+  if ( $len == 0 ) {
+    # this is the first request for this id, return a gap pair for the
+    # entire range and register it as seen
+    $list->[0] = [ $rstart, $rend ];
+    return [ [ $rstart, $rend ] ];
   }
 
   #####
-  #loop through the list of existing ranges recording any "gaps" where the
-  #existing range does not cover part of the requested range
+  # loop through the list of existing ranges recording any "gaps" where
+  # the existing range does not cover part of the requested range
   #
+
   my $start_idx = 0;
-  my $end_idx = $#$list;
+  my $end_idx   = $#$list;
   my ( $mid_idx, $range );
 
   # binary search the relevant pairs
   # helps if the list is big
-  while(( $end_idx - $start_idx ) > 1 ) {
-    $mid_idx = ($start_idx+$end_idx)>>1;
-    $range = $list->[$mid_idx];
-    if( $range->[1] < $rstart ) {
+  while ( ( $end_idx - $start_idx ) > 1 ) {
+    $mid_idx = ( $start_idx + $end_idx ) >> 1;
+    $range   = $list->[$mid_idx];
+
+    if ( $range->[1] < $rstart ) {
       $start_idx = $mid_idx;
     } else {
       $end_idx = $mid_idx;
     }
   }
 
-  
-  my ($gap_start, $gap_end, $r_idx, $rstart_idx, $rend_idx);
+  my ( $gap_start, $gap_end, $r_idx, $rstart_idx, $rend_idx );
   $gap_start = $rstart;
 
-  for(my $CUR=$start_idx; $CUR < $len; $CUR++) {
-    my ($pstart,$pend) = @{$list->[$CUR]};
+  for ( my $CUR = $start_idx ; $CUR < $len ; $CUR++ ) {
+    my ( $pstart, $pend ) = @{ $list->[$CUR] };
 
-    #no work needs to be done at all if
-    #if we find a range pair that entirely overlaps the requested region
-    if($pstart <= $start && $pend >= $end) {
+    # no work needs to be done at all if we find a range pair that
+    # entirely overlaps the requested region
+    if ( $pstart <= $start && $pend >= $end ) {
       return undef;
     }
 
-    #find adjacent or overlapping regions already registered
-    if($pend >= ($rstart-1) && $pstart <= ($rend+1)) {
-      if(!defined($rstart_idx)) {
+    # find adjacent or overlapping regions already registered
+    if ( $pend >= ( $rstart - 1 ) && $pstart <= ( $rend + 1 ) ) {
+      if ( !defined($rstart_idx) ) {
         $rstart_idx = $CUR;
-      }            
-      $rend_idx   = $CUR;
+      }
+      $rend_idx = $CUR;
     }
 
-    if($pstart > $rstart) {
-      $gap_end   = ($rend   < $pstart) ? $rend   : $pstart-1;
-      push @gap_pairs, [$gap_start, $gap_end];
+    if ( $pstart > $rstart ) {
+      $gap_end = ( $rend < $pstart ) ? $rend : $pstart - 1;
+      push @gap_pairs, [ $gap_start, $gap_end ];
     }
 
-    $gap_start = ($rstart > $pend)   ? $rstart : $pend+1;
+    $gap_start = ( $rstart > $pend ) ? $rstart : $pend + 1;
 
-#    if($pstart > $rend && !defined($r_idx)) {
-    if($pend >= $rend && !defined($r_idx)) {
+    #    if($pstart > $rend && !defined($r_idx)) {
+    if ( $pend >= $rend && !defined($r_idx) ) {
       $r_idx = $CUR;
       last;
     }
-  }
+  } ## end for ( my $CUR = $start_idx...
 
-  #do we have to make another gap?
-  if($gap_start <= $rend) {
-    push @gap_pairs, [$gap_start, $rend];
+  # do we have to make another gap?
+  if ( $gap_start <= $rend ) {
+    push @gap_pairs, [ $gap_start, $rend ];
   }
 
   #
-  # Merge the new range into the registered list 
+  # Merge the new range into the registered list
   #
-  if(defined($rstart_idx)) {
-    my ($new_start, $new_end);
-    if($rstart < $list->[$rstart_idx]->[0]) {
+  if ( defined($rstart_idx) ) {
+    my ( $new_start, $new_end );
+
+    if ( $rstart < $list->[$rstart_idx]->[0] ) {
       $new_start = $rstart;
     } else {
       $new_start = $list->[$rstart_idx]->[0];
     }
 
-    if($rend > $list->[$rend_idx]->[1]) {
+    if ( $rend > $list->[$rend_idx]->[1] ) {
       $new_end = $rend;
     } else {
       $new_end = $list->[$rend_idx]->[1];
     }
 
-    splice(@$list, $rstart_idx, $rend_idx-$rstart_idx+1, [$new_start, $new_end]);
-  } elsif(defined($r_idx)) {
-    splice(@$list, $r_idx, 0, [$rstart, $rend]);
+    splice( @$list, $rstart_idx,
+            $rend_idx - $rstart_idx + 1,
+            [ $new_start, $new_end ] );
+
+  } elsif ( defined($r_idx) ) {
+    splice( @$list, $r_idx, 0, [ $rstart, $rend ] );
   } else {
-    push(@$list, [$rstart,$rend]);
+    push( @$list, [ $rstart, $rend ] );
   }
 
   return \@gap_pairs;
-}
+} ## end sub check_and_register
 
 # overlap size is just added to make RangeRegistry generally more useful
 
@@ -281,78 +286,78 @@ sub check_and_register {
 
 sub overlap_size {
   my ( $self, $id, $start, $end ) = @_;
+
   my $overlap = 0;
 
-  return 0 unless $start <= $end;
+  if ( $start > $end ) { return 0 }
 
-  my $reg  = $self->{'registry'};
+  my $reg = $self->{'registry'};
   my $list = $reg->{$id} ||= [];
 
   my $len = scalar(@$list);
 
-  if($len == 0) {
-    #this is the first request for this id, return a gap pair for the
-    #entire range and register it as seen
+  if ( $len == 0 ) {
+    # this is the first request for this id, return a gap pair for the
+    # entire range and register it as seen
     return 0;
   }
 
   #####
-  #loop through the list of existing ranges recording any "gaps" where the
-  #existing range does not cover part of the requested range
+  # loop through the list of existing ranges recording any "gaps" where
+  # the existing range does not cover part of the requested range
   #
+
   my $start_idx = 0;
-  my $end_idx = $#$list;
+  my $end_idx   = $#$list;
   my ( $mid_idx, $range );
 
   # binary search the relevant pairs
   # helps if the list is big
-  while(( $end_idx - $start_idx ) > 1 ) {
-    $mid_idx = ($start_idx+$end_idx)>>1;
-    $range = $list->[$mid_idx];
-    if( $range->[1] < $start ) {
+  while ( ( $end_idx - $start_idx ) > 1 ) {
+    $mid_idx = ( $start_idx + $end_idx ) >> 1;
+    $range   = $list->[$mid_idx];
+    if ( $range->[1] < $start ) {
       $start_idx = $mid_idx;
     } else {
       $end_idx = $mid_idx;
     }
   }
 
-  for(my $CUR=$start_idx; $CUR < $len; $CUR++) {
-    my ($pstart,$pend) = @{$list->[$CUR]};
+  for ( my $CUR = $start_idx ; $CUR < $len ; $CUR++ ) {
+    my ( $pstart, $pend ) = @{ $list->[$CUR] };
 
     if ( $pstart > $end ) {
       # No more interesting ranges here.
       last;
     }
 
-    #no work needs to be done at all if
-    #if we find a range pair that entirely overlaps the requested region
-    if($pstart <= $start && $pend >= $end) {
-      $overlap = $end-$start+1;
+    # no work needs to be done at all if we find a range pair that
+    # entirely overlaps the requested region
+    if ( $pstart <= $start && $pend >= $end ) {
+      $overlap = $end - $start + 1;
       last;
     }
 
     my $mstart = ( $start < $pstart ? $pstart : $start );
-    my $mend = ( $end < $pend ? $end : $pend );
+    my $mend   = ( $end < $pend     ? $end    : $pend );
 
-    if( $mend - $mstart >= 0 ) {
+    if ( $mend - $mstart >= 0 ) {
       $overlap += ( $mend - $mstart + 1 );
     }
   }
 
   return $overlap;
-}
+} ## end sub overlap_size
 
 
 # low level function to access the ranges
 # only use for read access
 
 sub get_ranges {
-  my $self = shift;
-  my $id = shift;
-  
+  my ( $self, $id ) = @_;
+
   return $self->{'registry'}->{$id};
 }
-
 
 1;
 

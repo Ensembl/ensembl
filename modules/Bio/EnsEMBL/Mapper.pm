@@ -78,38 +78,28 @@ use Bio::EnsEMBL::Utils::Exception qw(throw);
 =cut
 
 sub new {
-  my $class = shift;
-  my $from  = shift;
-  my $to    = shift;
-  my $from_cs = shift;
-  my $to_cs   = shift;
+  my ( $proto, $from, $to, $from_cs, $to_cs ) = @_;
 
-  my $self = {};
-  bless $self,$class;
-
-  if( !defined $to ) {
-    throw("Must supply from and to tags");
+  if ( !defined($to) || !defined($from) ) {
+    throw("Must supply 'to' and 'from' tags");
   }
 
-  $self->{"_pair_$from"} = {};
-  $self->{"_pair_$to"} = {};
+  my $class = ref($proto) || $proto;
 
-  $self->to($to);
-  $self->from($from);
+  my $self = bless( { "_pair_$from" => {},
+                      "_pair_$to"   => {},
+                      'pair_count'  => 0,
+                      'to'          => $to,
+                      'from'        => $from,
+                      'to_cs'       => $to_cs,
+                      'from_cs'     => $from_cs
+                    },
+                    $class );
 
-  $self->{'pair_count'} = 0;
-
-  $self->{'from_cs'} = $from_cs;
-  $self->{'to_cs'}   = $to_cs;
-
-
-# do sql to get any componente with muliple assemblys.
-
+  # do sql to get any componente with muliple assemblys.
 
   return $self;
 }
-
-
 
 =head2 flush
 
@@ -858,22 +848,24 @@ sub list_pairs{
 
 =cut
 
-sub to{
-   my ($self,$value) = @_;
-   if( defined $value) {
-      $self->{'to'} = $value;
-    }
-    return $self->{'to'};
+sub to {
+  my ( $self, $value ) = @_;
 
+  if ( defined($value) ) {
+    $self->{'to'} = $value;
+  }
+
+  return $self->{'to'};
 }
 
-sub from{
-   my ($self,$value) = @_;
-   if( defined $value) {
-      $self->{'from'} = $value;
-    }
-    return $self->{'from'};
+sub from {
+  my ( $self, $value ) = @_;
 
+  if ( defined($value) ) {
+    $self->{'from'} = $value;
+  }
+
+  return $self->{'from'};
 }
 
 
