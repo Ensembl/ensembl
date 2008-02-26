@@ -14,6 +14,29 @@ use constant { FEATURE_DBID        => 0,
                FEATURE_END         => 3,
                FEATURE_STRAND      => 4 };
 
+# ----------------------------------------------------------------------
+# The public interface added by Feature Collection
+
+sub fetch_bins_by_Slice {
+  my $this = shift;
+  my ( $slice, $method, $nbins, $logic_name ) =
+    rearrange( [ 'SLICE', 'METHOD', 'NBINS', 'LOGIC_NAME' ], @_ );
+
+  # FIXME: Set lightweight
+  return
+    $this->_bin_features(
+        -slice  => $slice,
+        -nbins  => $nbins,
+        -method => $method,
+        -features =>
+          $this->fetch_by_Slice_constraint( $slice, undef, $logic_name )
+    );
+  # FIXME: Unset lightweight
+}
+
+# ----------------------------------------------------------------------
+# Specialization of methods in Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor
+
 sub _remap {
   my ( $this, $features, $mapper, $slice ) = @_;
 
@@ -61,6 +84,9 @@ sub _create_feature_fast {
   return $feature;
 }
 
+# ----------------------------------------------------------------------
+# Private methods
+
 our %VALID_BINNING_METHODS = (
                'count'            => 0,
                'density'          => 0,    # Same as 'count'.
@@ -72,14 +98,12 @@ our %VALID_BINNING_METHODS = (
                'weight'           => 3,    # Same as 'fractional_count'.
                'coverage'         => 4 );
 
-sub get_bins {
+sub _bin_features {
   my $this = shift;
-  my ( $nbins, $method_name ) = rearrange( [ 'NBINS', 'METHOD' ], @_ );
+  my ( $slice, $nbins, $method_name, $features ) =
+    rearrange( [ 'SLICE', 'NBINS', 'METHOD', 'FEATURES' ], @_ );
 
-  if ( !$this->is_populated() ) {
-    throw(   'Can not bin a feature collection '
-           . 'without first having called populate()' );
-  }
+  if ( !defined($features) || !@{$features} ) { return [] }
 
   if ( !defined($nbins) ) {
     throw('Missing NBINS argument');
