@@ -16,16 +16,18 @@ sub _create_feature {
 
   my $feature = $this->SUPER::_create_feature( $feature_type, $args );
 
-  my ( $hstart, $hend, $score, $repeat_consensus, $analysis ) =
-    rearrange( [ 'HSTART', 'HEND',
-                 'SCORE',  'REPEAT_CONSENSUS',
-                 'ANALYSIS'
-               ],
-               @{$args} );
+  if ( !$this->_lightweight() ) {
+    my ( $hstart, $hend, $score, $repeat_consensus, $analysis ) =
+      rearrange( [ 'HSTART', 'HEND',
+                   'SCORE',  'REPEAT_CONSENSUS',
+                   'ANALYSIS'
+                 ],
+                 @{$args} );
 
-  push( @{$feature},
-        $hstart, $hend, $score, $repeat_consensus->dbID(),
-        $analysis->dbID() );
+    push( @{$feature},
+          $hstart, $hend, $score, $repeat_consensus->dbID(),
+          $analysis->dbID() );
+  }
 
   return $feature;
 }
@@ -36,10 +38,12 @@ sub _create_feature_fast {
   my $feature =
     $this->SUPER::_create_feature_fast( $feature_type, $args );
 
-  push( @{$feature},
-        $args->{'hstart'}, $args->{'hend'}, $args->{'score'},
-        $args->{'repeat_consensus'}->dbID(),
-        $args->{'analysis'}->dbID() );
+  if ( !$this->_lightweight() ) {
+    push( @{$feature},
+          $args->{'hstart'}, $args->{'hend'}, $args->{'score'},
+          $args->{'repeat_consensus'}->dbID(),
+          $args->{'analysis'}->dbID() );
+  }
 
   return $feature;
 }

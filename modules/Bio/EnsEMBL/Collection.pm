@@ -22,8 +22,10 @@ sub fetch_bins_by_Slice {
   my ( $slice, $method, $nbins, $logic_name ) =
     rearrange( [ 'SLICE', 'METHOD', 'NBINS', 'LOGIC_NAME' ], @_ );
 
-  # FIXME: Set lightweight
-  return
+  my $old_value = $this->_lightweight();
+  $this->_lightweight(1);
+
+  my $bins =
     $this->_bin_features(
         -slice  => $slice,
         -nbins  => $nbins,
@@ -31,7 +33,10 @@ sub fetch_bins_by_Slice {
         -features =>
           $this->fetch_by_Slice_constraint( $slice, undef, $logic_name )
     );
-  # FIXME: Unset lightweight
+
+  $this->_lightweight($old_value);
+
+  return $bins;
 }
 
 # ----------------------------------------------------------------------
@@ -86,6 +91,16 @@ sub _create_feature_fast {
 
 # ----------------------------------------------------------------------
 # Private methods
+
+sub _lightweight {
+  my ( $this, $value ) = @_;
+
+  if ( defined($value) ) {
+    $self->{'lightweight'} = ( $value != 0 );
+  }
+
+  return $self->{'lightweight'} || 0;
+}
 
 our %VALID_BINNING_METHODS = (
                'count'            => 0,

@@ -16,10 +16,12 @@ sub _create_feature {
 
   my $feature = $this->SUPER::_create_feature( $feature_type, $args );
 
-  my ( $analysis, $stable_id, $version ) =
-    rearrange( [ 'STABLE_ID', 'VERSION', ], %{$args} );
+  if ( !$this->_lightweight() ) {
+    my ( $analysis, $stable_id, $version ) =
+      rearrange( [ 'STABLE_ID', 'VERSION', ], %{$args} );
 
-  push( @{$feature}, $stable_id, $version );
+    push( @{$feature}, $stable_id, $version );
+  }
 
   return $feature;
 }
