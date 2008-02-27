@@ -129,28 +129,27 @@ sub _bin_features {
   $method_name ||= 'count';
   if ( !exists( $VALID_BINNING_METHODS{$method_name} ) ) {
     throw(
-           sprintf("Invalid binning method '%s', valid methods are: %s",
-                   $method_name,
-                   join( ', ', sort( keys(%VALID_BINNING_METHODS) ) ) )
-    );
+           sprintf(
+              "Invalid binning method '%s', valid methods are:\n\t%s\n",
+              $method_name,
+              join( "\n\t", sort( keys(%VALID_BINNING_METHODS) ) ) ) );
   }
   my $method = $VALID_BINNING_METHODS{$method_name};
 
-  my $slice       = $this->slice();
   my $slice_start = $slice->start();
 
   my $bin_length = ( $slice->end() - $slice_start + 1 )/$nbins;
 
   my @bins = map( $_ = undef, 0 .. $nbins - 1 );
 
-  my $entry_index = 0;
+  my $feature_index = 0;
   my @bin_masks;
 
-  foreach my $entry ( @{ $this->entries() } ) {
-    my $start_bin = int(
-        ( $entry->[ENTRY_SEQREGIONSTART] - $slice_start )/$bin_length );
-    my $end_bin = int(
-          ( $entry->[ENTRY_SEQREGIONEND] - $slice_start )/$bin_length );
+  foreach my $feature ( @{$features} ) {
+    my $start_bin =
+      int( ( $feature->[FEATURE_START] - $slice_start )/$bin_length );
+    my $end_bin =
+      int( ( $feature->[FEATURE_END] - $slice_start )/$bin_length );
 
     if ( $end_bin >= $nbins ) {
       # This might happen for the very last entry.
@@ -176,10 +175,10 @@ sub _bin_features {
             $bin_index <= $end_bin ;
             ++$bin_index )
       {
-        push( @{ $bins[$bin_index] }, $entry_index );
+        push( @{ $bins[$bin_index] }, $feature_index );
       }
 
-      ++$entry_index;
+      ++$feature_index;
 
     } elsif ( $method == 2 ) {
 
@@ -189,7 +188,7 @@ sub _bin_features {
             $bin_index <= $end_bin ;
             ++$bin_index )
       {
-        push( @{ $bins[$bin_index] }, $entry );
+        push( @{ $bins[$bin_index] }, $feature );
       }
 
     } elsif ( $method == 3 ) {
@@ -201,13 +200,12 @@ sub _bin_features {
       } else {
 
         my $feature_length =
-          $entry->[ENTRY_SEQREGIONEND] -
-          $entry->[ENTRY_SEQREGIONSTART] + 1;
+          $feature->[FEATURE_END] - $feature->[FEATURE_START] + 1;
 
         # The first bin...
         $bins[$start_bin] +=
           ( ( $start_bin + 1 )*$bin_length -
-            ( $entry->[ENTRY_SEQREGIONSTART] - $slice_start ) )/
+            ( $feature->[FEATURE_START] - $slice_start ) )/
           $feature_length;
 
         # The intermediate bins (if there are any)...
@@ -220,7 +218,7 @@ sub _bin_features {
 
         # The last bin...
         $bins[$end_bin] +=
-          ( ( $entry->[ENTRY_SEQREGIONEND] - $slice_start ) -
+          ( ( $feature->[FEATURE_END] - $slice_start ) -
             $end_bin*$bin_length +
             1 )/$feature_length;
 
@@ -230,8 +228,8 @@ sub _bin_features {
 
       # For 'coverage'.
 
-      my $feature_start = $entry->[ENTRY_SEQREGIONSTART] - $slice_start;
-      my $feature_end   = $entry->[ENTRY_SEQREGIONEND] - $slice_start;
+      my $feature_start = $feature->[FEATURE_START] - $slice_start;
+      my $feature_end   = $feature->[FEATURE_END] - $slice_start;
 
       if ( !defined( $bin_masks[$start_bin] )
            || ( defined( $bin_masks[$start_bin] )
@@ -282,7 +280,7 @@ sub _bin_features {
 
     } ## end elsif ( $method == 4 )
 
-  } ## end foreach my $entry ( @{ $this...
+  } ## end foreach my $feature ( @{$features...
 
   if ( $method == 4 ) {
 
@@ -304,6 +302,6 @@ sub _bin_features {
   }
 
   return \@bins;
-} ## end sub get_bins
+} ## end sub _bin_features
 
 1;
