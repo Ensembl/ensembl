@@ -9,7 +9,8 @@
 #Updated logs
 #Updated docs
 #Added control of promiscuous probesets and unmapped objects
-
+#Added array level stats
+#added slice and transcript test modes
 
 use strict;
 
@@ -26,10 +27,11 @@ $| = 1; # auto flush stdout
 my ($transcript_host, $transcript_user, $transcript_pass, $transcript_dbname,
     $oligo_host, $oligo_user, $oligo_pass, $oligo_dbname, $five_utr, $three_utr,
     $xref_host, $xref_user, $xref_pass, $xref_dbname, $force_delete,
-    $max_transcripts, @arrays, $delete, $no_triage, $health_check);
+    $max_transcripts, @arrays, $delete, $no_triage, $health_check, $test_slice);
 
 my ($oligo_db, $xref_db, %promiscuous_probesets, %transcripts_per_probeset, @unmapped_objects, $um_obj,
-	%transcript_ids , %transcript_probeset_count, %arrays_per_probeset, %array_probeset_sizes);
+	%transcript_ids , %transcript_probeset_count, %arrays_per_probeset, %array_probeset_sizes, @transcripts,
+   %array_xrefs, %transcript_xrefs, $transcript_sid);
 
 # Default options
 my $transcript_port = 3306; 
@@ -67,6 +69,9 @@ GetOptions(
 		   'force_delete'           => \$force_delete,
 		   'no_triage'              => \$no_triage,
 		   'health_check'           => \$health_check,
+		   'slice=s'                => \$test_slice,
+		   'transcript=s'           => \$transcript_sid,
+		   #add a reduced log to minimize memory usage?
            'help'                   => sub { usage(); exit(0); }
 		  );
 
@@ -151,10 +156,33 @@ my $last_pc = -1;
 
 my $rr = Bio::EnsEMBL::Mapper::RangeRegistry->new();
 
-my @transcripts = @{$transcript_adaptor->fetch_all()};
+open (LOG, ">${transcript_dbname}_probe2transcript.log");
+
+
+if($test_slice && $transcript_sid){
+  throw('Can only run in one test mode, please specify -slice or -transcript');
+}
+
+if($test_slice){
+  print "Running in test mode with slice:\t$test_slice\n";
+  print "WARNING:\tPromiscuous probeset will not be caught!\n";
+
+  my $slice = $slice_adaptor->fetch_by_name($test_slice);
+  throw("Could not get slice from the DB:\t$slice") if ! defined $slice;
+  @transcripts = @{$transcript_adaptor->fetch_all_by_Slice($slice)};
+}
+elsif($transcript_sid){
+  print "Running test mode with transcript:\t$transcript_sid\n";
+  print "WARNING:\tPromiscuous probeset will not be caught!\n";
+
+  @transcripts = ($transcript_adaptor->fetch_by_stable_id($transcript_sid));
+}
+else{
+  @transcripts = @{$transcript_adaptor->fetch_all()};
+}
 my $total =  scalar(@transcripts);
 
-open (LOG, ">${transcript_dbname}_probe2transcript.log");
+throw('Could not find any transcripts') if $total == 0;
 
 print "Identified ".scalar(@transcripts)." transcripts for probe mappinng\n";
 print "Mapping, percentage complete: ";
@@ -243,25 +271,28 @@ foreach my $transcript (@transcripts) {
 	#So if we get two we know we have >1 mapping
 	#So we need to test again.
 
-	if ($transcript->strand() != $feature->strand()){
-	  print LOG "Unmapped anti-sense " . $transcript->stable_id . "\t${probeset}\tdbID:${dbID}\n";
+	if ($transcript->seq_region_strand() != $feature->seq_region_strand()){
+	  print LOG "Unmapped anti-sense ".$transcript->stable_id."\t${probeset}\tdbID:${dbID}\n";
 	  
-	  if (!$no_triage) {
+	  if (! $no_triage) {
 		
 		#Use of internal dbID in identifier is dodge
 		#can we use the actual probe names here?
-		$um_obj = new Bio::EnsEMBL::UnmappedObject(-type       => 'probe2transcript',
-													  -analysis   => $analysis,
-													  -identifier => "${probeset}:${dbID}",
-													  -summary    => "Unmapped anti-sense",
-													  -full_desc  => "Probe mapped to opposite strand of transcript",
-													  -ensembl_object_type => 'Transcript',
-													  -ensembl_id => $transcript->dbID());
+		$um_obj = new Bio::EnsEMBL::UnmappedObject(
+												   -type       => 'probe2transcript',
+												   -analysis   => $analysis,
+												   -identifier => "${probeset}:${dbID}",
+												   -summary    => "Unmapped anti-sense",
+												   -full_desc  => "Probe mapped to opposite strand of transcript",
+												   -ensembl_object_type => 'Transcript',
+												   -ensembl_id => $transcript->dbID()
+												  );
 		
 		&cache_and_load_unmapped_objects($um_obj);
 
-		next;
 	  }
+
+	  next;
 	}
 
 
@@ -279,11 +310,11 @@ foreach my $transcript (@transcripts) {
     my $utr_overlap  = $rr->overlap_size("utr",    $feature->seq_region_start(), $feature->seq_region_end());
 
     if ($exon_overlap >= $min_overlap) {
-	  #	  print "Exon overlap $exon_overlap excedes minimum overlap $min_overlap\n";
+	  	  #print "Exon overlap $exon_overlap excedes minimum overlap $min_overlap\n";
       $transcript_probeset_count{$transcript_key}{$dbID}++;
     } 
 	elsif ($utr_overlap >= $min_overlap) {
-	  #	  print "UTR overlap $utr_overlap excedes minimum overlap $min_overlap\n";
+	  	  #print "UTR overlap $utr_overlap excedes minimum overlap $min_overlap\n";
       $transcript_probeset_count{$transcript_key}{$dbID}++;
     } 
 	else { # must be intronic
@@ -347,12 +378,17 @@ foreach my $key (keys %transcript_probeset_count) {
 	#Is this the only place we're using the complete name?
     my $hits = scalar(keys %{$transcript_probeset_count{$key}});
 
+	print LOG "$array $hits hits for $key\n";
+
     if ($hits / $probeset_size >= $mapping_threshold) {
 	  #This is inc'ing an undef?
 	  $transcripts_per_probeset{$probeset}++;
 
 
-	  if ($transcripts_per_probeset{$probeset} <= $max_transcripts_per_probeset) {     
+	  if ($transcripts_per_probeset{$probeset} <= $max_transcripts_per_probeset) {
+
+		#So we're passing these tests for xrefs of the opposite strand
+
         add_xref($transcript_ids{$transcript}, $probeset, $db_entry_adaptor, $array_name_cache{$array}, $probeset_size, $hits);
         print LOG "$probeset\t$transcript\tmapped\t$probeset_size\t$hits\n";
      
@@ -441,6 +477,29 @@ if (!$no_triage) {
   print "Loaded a total of $um_cnt UnmappedObjects to the DB\n";
 }
 
+#Can we do this with some SQL to save memory here?
+
+foreach my $aname(keys %array_xrefs){
+  print $aname." total xrefs mapped:\t".$array_xrefs{$aname}."\n";
+}
+
+print 'Mapped '. scalar(keys(%transcript_xrefs))."/$total transcripts\n";
+print "Top 5 most mapped transcripts:\n";
+
+#sort keys with respect to values.
+my @tids = sort { $transcript_xrefs{$b} <=>  $transcript_xrefs{$a} } keys %transcript_xrefs;
+my @tcounts = sort { $b <=> $a }values %transcript_xrefs;
+
+for my $i(0..4){
+  print "Transcript $tids[$i] mapped $tcounts[$i] times\n";
+}
+
+#Most mapped probesets?
+
+print "Completed probe mapping\n";
+
+
+
 # ----------------------------------------------------------------------
 
 # only loads unless cache hits size limit
@@ -477,6 +536,11 @@ sub cache_and_load_unmapped_objects{
 # ----------------------------------------------------------------------
 
 sub log_orphan_probes {
+
+  if($test_slice || $transcript_sid){
+	print "Skipping log_orphan_probes as we are running on a test slice or single transcript\n";
+	return;
+  }
 
   print "Logging probesets that don't map to any transcripts\n";
 
@@ -574,6 +638,12 @@ sub add_xref {
   # TODO - this only works if external_db db_name == array name; currently needs
   # some manual hacking to acheive this
 
+  #Some counts
+  #Add key on type of xref?
+  #Will this warn as not defined?
+  $array_xrefs{$array}++;
+  $transcript_xrefs{$transcript_id}++;
+
   my $dbe = new Bio::EnsEMBL::DBEntry( -adaptor              => $dbea,
 				       -primary_id           => $probeset,
 				       -version              => "1",
@@ -622,9 +692,19 @@ sub delete_existing_xrefs {
   
 
   #Does this work? Will there no be some x's left?
+  #$sql = 'DELETE x, ox FROM xref x, object_xref ox, external_db e WHERE x.xref_id=ox.xref_id AND e.external_db_id=x.external_db_id AND e.db_name in ("'.join('", "', values %array_name_cache).'")';
+  #mmm, yes some x's were left, why is this not working?
+
+  #delete separately for now. This is working.
   print "Deleting XREFs from:\t".join(' ', values %array_name_cache)."\n";
-  $sql = 'DELETE x, ox FROM xref x, object_xref ox, external_db e WHERE x.xref_id=ox.xref_id AND e.external_db_id=x.external_db_id AND e.db_name in ("'.join('", "', values %array_name_cache).'")';
+  $sql = 'DELETE ox FROM xref x, object_xref ox, external_db e WHERE x.xref_id=ox.xref_id AND e.external_db_id=x.external_db_id AND e.db_name in ("'.join('", "', values %array_name_cache).'")';
   $xref_db->dbc->do($sql);
+
+  $sql = 'DELETE x FROM xref x, external_db e WHERE e.external_db_id=x.external_db_id AND e.db_name in ("'.join('", "', values %array_name_cache).'")';
+  $xref_db->dbc->do($sql);
+
+
+  
 
   return;
 }
