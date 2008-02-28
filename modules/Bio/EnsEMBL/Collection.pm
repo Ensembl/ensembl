@@ -26,13 +26,13 @@ sub fetch_bins_by_Slice {
   $this->_lightweight(1);
 
   my $bins =
-    $this->_bin_features(
-        -slice  => $slice,
-        -nbins  => $nbins,
-        -method => $method,
-        -features =>
-          $this->fetch_by_Slice_constraint( $slice, undef, $logic_name )
-    );
+    $this->_bin_features( -slice  => $slice,
+                          -nbins  => $nbins,
+                          -method => $method,
+                          -features =>
+                            $this->fetch_all_by_Slice_constraint(
+                                              $slice, undef, $logic_name
+                            ) );
 
   $this->_lightweight($old_value);
 
@@ -96,10 +96,10 @@ sub _lightweight {
   my ( $this, $value ) = @_;
 
   if ( defined($value) ) {
-    $self->{'lightweight'} = ( $value != 0 );
+    $this->{'lightweight'} = ( $value != 0 );
   }
 
-  return $self->{'lightweight'} || 0;
+  return $this->{'lightweight'} || 0;
 }
 
 our %VALID_BINNING_METHODS = (
