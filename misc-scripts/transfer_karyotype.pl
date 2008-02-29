@@ -40,7 +40,7 @@ $old_sth->execute();
 my ($old_sr_name, $old_cs_name, $old_sr_length, $old_k_start, $old_k_end, $band, $stain);
 $old_sth->bind_columns(\$old_sr_name, \$old_cs_name, \$old_sr_length, \$old_k_start, \$old_k_end, \$band, \$stain);
 
-my $new_sth = $new_db->prepare("SELECT sr.seq_region_id, sr.length FROM seq_region sr, coord_system cs WHERE sr.name=? and cs.name=? AND sr.coord_system_id=cs.coord_system_id");
+my $new_sth = $new_db->prepare('SELECT sr.seq_region_id, sr.length FROM seq_region sr, coord_system cs WHERE sr.name=? and cs.name=? AND sr.coord_system_id=cs.coord_system_id AND cs.attrib like "%default_version%" ');
 my ($new_sr_id, $new_sr_length);
 
 my $insert_sth = $new_db->prepare("INSERT INTO karyotype (seq_region_id, seq_region_start, seq_region_end, band, stain) VALUES(?,?,?,?,?)");
