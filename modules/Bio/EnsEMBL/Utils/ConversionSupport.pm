@@ -733,6 +733,8 @@ sub get_dbconnection {
     $dsn .= ";dbname=".$self->param("${prefix}dbname");
   }
 
+#  warn $dsn;
+
   my $dbh;
   eval{
     $dbh = DBI->connect($dsn, $self->param("${prefix}user"),
@@ -742,7 +744,7 @@ sub get_dbconnection {
   if (!$dbh || $@ || !$dbh->ping) {
     $self->log_error("Could not connect to db server as user ".
       $self->param("${prefix}user") .
-      " using [$dsn] as a locator:\n" . $DBI::errstr);
+      " using [$dsn] as a locator:\n" . $DBI::errstr . $@);
   }
 
   $self->{'_dbh'} = $dbh;
