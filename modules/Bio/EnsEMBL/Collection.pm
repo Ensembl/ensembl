@@ -107,8 +107,8 @@ our %VALID_BINNING_METHODS = (
                'density'          => 0,    # Same as 'count'.
                'indices'          => 1,
                'index'            => 1,    # Same as 'indices'.
-               'entries'          => 2,
-               'entry'            => 2,    # Same as 'entries'.
+               'features'         => 2,
+               'feature'          => 2,    # Same as 'features'.
                'fractional_count' => 3,
                'weight'           => 3,    # Same as 'fractional_count'.
                'coverage'         => 4 );
@@ -140,7 +140,19 @@ sub _bin_features {
 
   my $bin_length = ( $slice->end() - $slice_start + 1 )/$nbins;
 
-  my @bins = map( $_ = undef, 0 .. $nbins - 1 );
+  my @bins;
+  if ( $method == 0 ||    # 'count' or 'density'
+       $method == 3 ||    # 'fractional_count' or 'weight'
+       $method == 4       # 'coverage'
+    )
+  {
+    # For binning methods where each bin contain numerical values.
+    @bins = map( $_ = 0, 0 .. $nbins - 1 );
+  } else {
+    # For binning methods where each bin does not contain numerical
+    # values.
+    @bins = map( $_ = undef, 0 .. $nbins - 1 );
+  }
 
   my $feature_index = 0;
   my @bin_masks;
@@ -153,7 +165,7 @@ sub _bin_features {
 
     if ( $end_bin >= $nbins ) {
       # This might happen for the very last entry.
-      #       $end_bin = $nbins - 1;
+      $end_bin = $nbins - 1;
     }
 
     if ( $method == 0 ) {
@@ -182,7 +194,7 @@ sub _bin_features {
 
     } elsif ( $method == 2 ) {
 
-      # For 'entries' and 'entry'.
+      # For 'features' and 'feature'.
 
       for ( my $bin_index = $start_bin ;
             $bin_index <= $end_bin ;
