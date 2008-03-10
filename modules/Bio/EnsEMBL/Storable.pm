@@ -195,12 +195,13 @@ sub get_all_DAS_Features{
   foreach my $dasfact( @{$self->get_all_DASFactories} ){
     my $dsn = $dasfact->adaptor->dsn;
     my $name = $dasfact->adaptor->name;
-    my $type = $dasfact->adaptor->type;
     my $url = $dasfact->adaptor->url;
 
     # Construct a cache key : SOURCE_URL/TYPE
     # Need the type to handle sources that serve multiple types of features
 
+    my ($type) = @{$dasfact->adaptor->mapping || []};
+    $type ||=$dasfact->adaptor->type;
     my $key = join('/', $name, $type);
 
     if( $self->{_das_features}->{$key} ){ # Use cached

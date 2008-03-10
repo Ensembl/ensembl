@@ -334,7 +334,7 @@ sub get_all_complete_names {
     $probeset = "" if !$probeset;
 
     while ( my ($arrayname, $probename) = each %{$self->{'probenames'}} ) {
-      push @result, "$arrayname:$probeset:$probename";
+      push @result, "$arrayname:$probeset$probename";
     }
 	
     return \@result;

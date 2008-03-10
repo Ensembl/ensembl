@@ -2707,9 +2707,14 @@ sub get_all_DAS_Features{
   foreach my $dasfact( @{$self->get_all_DASFactories} ){
     my $dsn = $dasfact->adaptor->dsn;
     my $name = $dasfact->adaptor->name;
-    my $type = $dasfact->adaptor->type;
+#    my $type = $dasfact->adaptor->type;
     my $url = $dasfact->adaptor->url;
 
+ my ($type) = $dasfact->adaptor->mapping;
+ if (ref $type eq 'ARRAY') {
+   $type = shift @$type;
+ }
+ $type ||= $dasfact->adaptor->type; 
     # Construct a cache key : SOURCE_URL/TYPE
     # Need the type to handle sources that serve multiple types of features
 
