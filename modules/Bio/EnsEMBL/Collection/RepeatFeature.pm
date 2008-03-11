@@ -51,28 +51,25 @@ sub _create_feature_fast {
 sub _tables {
   my ($this) = @_;
 
+  my @tables = $this->SUPER::_tables();
+
   if ( $this->_lightweight() ) {
-    return (['repeat_feature','r']);
+    return ( $tables[0] );
   }
 
-  return $this->SUPER::_tables();
+  return @tables;
 }
 
 sub _columns {
   my ($this) = @_;
 
+  my @columns = $this->SUPER::_columns();
+
   if ( $this->_lightweight() ) {
-    # 14 columns needed.
-    return ( 'r.repeat_feature_id', 'r.seq_region_id',
-             'r.seq_region_start',  'r.seq_region_end',
-             'r.seq_region_strand', '1',
-             '1',                   '1',
-             '1',                   '1',
-             '1',                   '1',
-             '1',                   '1' );
+    @columns[ 5 .. $#columns ] = map( 1, 5 .. $#columns );
   }
 
-  return $this->SUPER::_columns();
+  return @columns;
 }
 
 sub _default_where_clause {
