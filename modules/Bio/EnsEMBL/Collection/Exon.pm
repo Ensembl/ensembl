@@ -35,4 +35,38 @@ sub _create_feature_fast {
   return $feature;
 }
 
+sub _tables {
+  my ($this) = @_;
+
+  my @tables = $this->SUPER::_tables();
+
+  if ( $this->_lightweight() ) {
+    return ( $tables[0] );
+  }
+
+  return @tables;
+}
+
+sub _columns {
+  my ($this) = @_;
+
+  my @columns = $this->SUPER::_columns();
+
+  if ( $this->_lightweight() ) {
+    @columns[ 5 .. $#columns ] = map( 1, 5 .. $#columns );
+  }
+
+  return @columns;
+}
+
+sub _default_where_clause {
+  my ($this) = @_;
+
+  if ( $this->_lightweight() ) {
+    return '';
+  }
+
+  return $this->SUPER::_default_where_clause();
+}
+
 1;
