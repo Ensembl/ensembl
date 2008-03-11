@@ -147,11 +147,11 @@ sub _bin_features {
     )
   {
     # For binning methods where each bin contain numerical values.
-    @bins = map( $_ = 0, 0 .. $nbins - 1 );
+    @bins = map( 0, 1 .. $nbins );
   } else {
     # For binning methods where each bin does not contain numerical
     # values.
-    @bins = map( $_ = undef, 0 .. $nbins - 1 );
+    @bins = map( undef, 1 .. $nbins );
   }
 
   my $feature_index = 0;
