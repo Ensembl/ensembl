@@ -225,6 +225,13 @@ sub build_cache_from_genes {
   throw("You must provide a type.") unless $type;
   throw("You must provide a listref of genes.") unless (ref($genes) eq 'ARRAY');
 
+  # initialise cache for the given type.
+  # this is a workaround for a problem with the checkpointing implementation
+  # which caused re-dumping of regions without features
+  foreach my $name (@{ $self->cache_names }) {
+    $self->{'cache'}->{$name}->{$type} = {};
+  }
+
   #my $i = 0;
   #my $num_genes = scalar(@$genes);
   #my $progress_id = $self->logger->init_progress($num_genes);
@@ -268,6 +275,7 @@ sub build_cache_from_genes {
           $tr->start,
           $tr->end,
           $tr->strand,
+          $tr->length,
           md5_hex($tr->spliced_seq),
           ($tr->is_known ? 1 : 0),
       ]);
@@ -687,7 +695,7 @@ sub write_to_file {
   my $name = shift;
   my $type = shift;
 
-  throw("You must provide a cache name (e.g. genes_by_id.") unless $name;
+  throw("You must provide a cache name (e.g. genes_by_id).") unless $name;
   throw("You must provide a cache type.") unless $type;
 
   unless ($self->{'cache'}->{$name}->{$type}) {
