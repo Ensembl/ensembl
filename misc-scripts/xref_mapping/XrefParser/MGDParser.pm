@@ -33,6 +33,8 @@ sub run {
   my $species_id = shift;
   my $file = shift;
 
+  die "No longer used. MGI is taken form the uniprot file\n";
+
   if(!defined($source_id)){
     $source_id = XrefParser::BaseParser->get_source_id_for_filename($file);
   }
@@ -69,6 +71,7 @@ sub run {
 	$mismatch++;
       }
     }
+
   }
   $file_io->close();
 
