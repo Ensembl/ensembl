@@ -14,7 +14,7 @@ use constant { FEATURE_DBID        => 0,
                FEATURE_END         => 3,
                FEATURE_STRAND      => 4 };
 
-# ----------------------------------------------------------------------
+# ======================================================================
 # The public interface added by Feature Collection
 
 sub fetch_bins_by_Slice {
@@ -39,7 +39,7 @@ sub fetch_bins_by_Slice {
   return $bins;
 }
 
-# ----------------------------------------------------------------------
+# ======================================================================
 # Specialization of methods in Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor
 
 sub _remap {
@@ -89,7 +89,7 @@ sub _create_feature_fast {
   return $feature;
 }
 
-# ----------------------------------------------------------------------
+# ======================================================================
 # Private methods
 
 sub _lightweight {
@@ -169,7 +169,7 @@ sub _bin_features {
     }
 
     if ( $method == 0 ) {
-
+      # ----------------------------------------------------------------
       # For 'count' and 'density'.
 
       for ( my $bin_index = $start_bin ;
@@ -180,7 +180,7 @@ sub _bin_features {
       }
 
     } elsif ( $method == 1 ) {
-
+      # ----------------------------------------------------------------
       # For 'indices' and 'index'
 
       for ( my $bin_index = $start_bin ;
@@ -193,7 +193,7 @@ sub _bin_features {
       ++$feature_index;
 
     } elsif ( $method == 2 ) {
-
+      # ----------------------------------------------------------------
       # For 'features' and 'feature'.
 
       for ( my $bin_index = $start_bin ;
@@ -204,7 +204,7 @@ sub _bin_features {
       }
 
     } elsif ( $method == 3 ) {
-
+      # ----------------------------------------------------------------
       # For 'fractional_count' and 'weight'.
 
       if ( $start_bin == $end_bin ) {
@@ -237,7 +237,7 @@ sub _bin_features {
       } ## end else [ if ( $start_bin == $end_bin)
 
     } elsif ( $method == 4 ) {
-
+      # ----------------------------------------------------------------
       # For 'coverage'.
 
       my $feature_start = $feature->[FEATURE_START] - $slice_start;
@@ -296,6 +296,7 @@ sub _bin_features {
 
   if ( $method == 4 ) {
 
+    # ------------------------------------------------------------------
     # For the 'coverage' method: Finish up by going through @bin_masks
     # and sum up the arrays.
 
