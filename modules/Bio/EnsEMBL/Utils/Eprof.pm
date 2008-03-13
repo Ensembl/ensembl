@@ -196,7 +196,7 @@ sub start {
   my ( $self, $tag ) = @_;
 
   if ( !defined($tag) ) {
-    $self->throw("Must start on tag");
+    $self->throw("No tag, can't start.");
   }
 
   if ( !defined( $self->_tags()->{$tag} ) ) {
@@ -222,11 +222,12 @@ sub end {
   my ( $self, $tag ) = @_;
 
   if ( !defined($tag) ) {
-    $self->throw("Must end on tag");
+    $self->throw("No tag, can't end.");
   }
 
   if ( !defined( $self->_tags()->{$tag} ) ) {
-    $self->throw("Ending with a nonexistant tag");
+    $self->throw(
+                sprintf( "Ending with a nonexistant tag '%s'", $tag ) );
   }
 
   $self->_tags->{$tag}->pop_stack();
