@@ -73,7 +73,6 @@ sub new {
   return $self;
 }
 
-
 =head2 fetch_all_by_Slice
 
   Arg [1]    : Bio::EnsEMBL::Slice $slice
@@ -280,6 +279,23 @@ sub fetch_all_by_logic_name {
   return $self->generic_fetch($constraint);
 }
 
+# Method that creates an object.  Called by the _objs_from_sth() method
+# in the sub-classes (the various feature adaptors).  Overridden by the
+# feature collection classes.
+
+sub _create_feature {
+  my ( $self, $feature_type, $args ) = @_;
+  return $feature_type->new( %{$args} );
+}
+
+# This is the same as the above, but calls the new_fast() constructor of
+# the feature type.
+
+sub _create_feature_fast {
+  my ( $self, $feature_type, $args ) = @_;
+  return $feature_type->new_fast($args);
+}
+
 #
 # helper function used by fetch_all_by_Slice_constraint method
 #
@@ -353,7 +369,7 @@ sub _slice_fetch {
 
       # features may still have to have coordinates made relative to slice
       # start
-      $fs = _remap($fs, $mapper, $slice);
+      $fs = $self->_remap( $fs, $mapper, $slice );
 
       push @features, @$fs;
     } else {
@@ -387,7 +403,7 @@ sub _slice_fetch {
 
         my $fs = $self->generic_fetch($constraint, $mapper, $slice);
 
-        $fs = _remap($fs, $mapper, $slice);
+        $fs = $self->_remap( $fs, $mapper, $slice );
 
         push @features, @$fs;
 
@@ -414,7 +430,7 @@ sub _slice_fetch {
 
           my $fs = $self->generic_fetch($constraint,$mapper,$slice);
 
-          $fs = _remap($fs, $mapper, $slice);
+          $fs = $self->_remap( $fs, $mapper, $slice );
 
           push @features, @$fs;
         }
@@ -535,7 +551,7 @@ sub _check_start_end_strand {
 # converted and placed on the slice.
 #
 sub _remap {
-  my ($features, $mapper, $slice) = @_;
+  my ( $self, $features, $mapper, $slice ) = @_;
 
   #check if any remapping is actually needed
   if(@$features && (!$features->[0]->isa('Bio::EnsEMBL::Feature') ||
