@@ -19,11 +19,17 @@ use constant { FEATURE_DBID        => 0,
 
 sub fetch_bins_by_Slice {
   my $this = shift;
-  my ( $slice, $method, $nbins, $logic_name ) =
-    rearrange( [ 'SLICE', 'METHOD', 'NBINS', 'LOGIC_NAME' ], @_ );
+  my ( $slice, $method, $nbins, $logic_name, $lightweight ) =
+    rearrange( [ 'SLICE', 'METHOD',
+                 'NBINS', 'LOGIC_NAME',
+                 'LIGHTWEIGHT'
+               ],
+               @_ );
 
+  # Temporarily set the colleciton to be lightweight.
   my $old_value = $this->_lightweight();
-  $this->_lightweight(1);
+  if   ( defined($lightweight) ) { $this->_lightweight($lightweight) }
+  else                           { $this->_lightweight(1) }
 
   my $bins =
     $this->_bin_features( -slice  => $slice,
@@ -34,6 +40,7 @@ sub fetch_bins_by_Slice {
                                               $slice, undef, $logic_name
                             ) );
 
+  # Reset the lightweightness to whatever it was before.
   $this->_lightweight($old_value);
 
   return $bins;
