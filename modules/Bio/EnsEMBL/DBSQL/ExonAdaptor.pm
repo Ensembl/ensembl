@@ -616,28 +616,30 @@ sub _objs_from_sth {
       $slice = $dest_slice;
     }
 
-    #finally, create the new repeat feature
-    push @exons, Bio::EnsEMBL::Exon->new(
-        '-start'         =>  $seq_region_start,
-	'-end'           =>  $seq_region_end,
-	'-strand'        =>  $seq_region_strand,
-	'-adaptor'       =>  $self,
-	'-slice'         =>  $slice,
-	'-dbID'          =>  $exon_id,
-        '-stable_id'     =>  $stable_id,
-        '-version'       =>  $version,
-	'-created_date'  =>  $created_date || undef,
-	'-modified_date' =>  $modified_date || undef,
-        '-phase'         =>  $phase,
-        '-end_phase'     =>  $end_phase,
-        '-is_current'    =>  $is_current
-    );
+    # Finally, create the new exon.
+    push( @exons,
+          $self->_create_feature( 'Bio::EnsEMBL::Exon', {
+                                    '-start'     => $seq_region_start,
+                                    '-end'       => $seq_region_end,
+                                    '-strand'    => $seq_region_strand,
+                                    '-adaptor'   => $self,
+                                    '-slice'     => $slice,
+                                    '-dbID'      => $exon_id,
+                                    '-stable_id' => $stable_id,
+                                    '-version'   => $version,
+                                    '-created_date' => $created_date
+                                      || undef,
+                                    '-modified_date' => $modified_date
+                                      || undef,
+                                    '-phase'      => $phase,
+                                    '-end_phase'  => $end_phase,
+                                    '-is_current' => $is_current
+                                  } ) );
 
   }
 
   return \@exons;
 }
-
 
 =head1 DEPRECATED METHODS
 

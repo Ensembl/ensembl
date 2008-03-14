@@ -294,25 +294,31 @@ sub _objs_from_sth {
       $slice = $dest_slice;
     }
 
-    #finally, create the new dna align feature
-    push @features, Bio::EnsEMBL::DnaPepAlignFeature->new_fast
-      ( { 'slice'         =>  $slice,
-          'start'         =>  $seq_region_start,
-          'end'           =>  $seq_region_end,
-          'strand'        =>  $seq_region_strand,
-          'hseqname'      =>  $hit_name,
-          'hstart'        =>  $hit_start,
-          'hend'          =>  $hit_end,
-          'hstrand'       =>  1, #dna_pep_align features are always hstrand 1
-          'score'         =>  $score,
-          'p_value'       =>  $evalue,
-          'percent_id'    =>  $perc_ident,
-          'cigar_string'  =>  $cigar_line,
-          'analysis'      =>  $analysis,
-          'adaptor'       =>  $self,
-          'dbID'          =>  $protein_align_feature_id, 
-	  'external_db_id'=>  $external_db_id,
-          'hcoverage'     =>  $hcoverage } );
+    # Finally, create the new ProteinAlignFeature.
+    push(
+      @features,
+      $self->_create_feature_fast(
+        'Bio::EnsEMBL::DnaPepAlignFeature', {
+          'slice'        => $slice,
+          'start'        => $seq_region_start,
+          'end'          => $seq_region_end,
+          'strand'       => $seq_region_strand,
+          'hseqname'     => $hit_name,
+          'hstart'       => $hit_start,
+          'hend'         => $hit_end,
+          'hstrand'      => 1,                  # dna_pep_align features
+                                                # are always hstrand 1
+          'score'        => $score,
+          'p_value'      => $evalue,
+          'percent_id'   => $perc_ident,
+          'cigar_string' => $cigar_line,
+          'analysis'     => $analysis,
+          'adaptor'      => $self,
+          'dbID'           => $protein_align_feature_id,
+          'external_db_id' => $external_db_id,
+          'hcoverage'      => $hcoverage
+        } ) );
+
   }
 
   return \@features;

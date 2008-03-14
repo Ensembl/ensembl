@@ -1449,29 +1449,33 @@ sub _objs_from_sth {
       $display_xref->status( $external_status );
     }				
 
-    #finally, create the new gene
-    push @genes, Bio::EnsEMBL::Gene->new(
-        '-analysis'      =>  $analysis,
-        '-biotype'       =>  $biotype,
-        '-start'         =>  $seq_region_start,
-        '-end'           =>  $seq_region_end,
-        '-strand'        =>  $seq_region_strand,
-        '-adaptor'       =>  $self,
-        '-slice'         =>  $slice,
-        '-dbID'          =>  $gene_id,
-        '-stable_id'     =>  $stable_id,
-        '-version'       =>  $version,
-	'-created_date'  =>  $created_date || undef,
-	'-modified_date' =>  $modified_date || undef,
-        '-description'   =>  $gene_description,
-        '-external_name' =>  $external_name,
-        '-external_db'   =>  $external_db,
-        '-external_status' => $external_status,
-        '-display_xref'  => $display_xref,
-	'-status'        => $status,
-        '-source'        => $source,
-        '-is_current'    => $is_current
-    );
+    # Finally, create the new Gene.
+    push( @genes,
+          $self->_create_feature(
+                            'Bio::EnsEMBL::Gene', {
+                              '-analysis'     => $analysis,
+                              '-biotype'      => $biotype,
+                              '-start'        => $seq_region_start,
+                              '-end'          => $seq_region_end,
+                              '-strand'       => $seq_region_strand,
+                              '-adaptor'      => $self,
+                              '-slice'        => $slice,
+                              '-dbID'         => $gene_id,
+                              '-stable_id'    => $stable_id,
+                              '-version'      => $version,
+                              '-created_date' => $created_date || undef,
+                              '-modified_date' => $modified_date
+                                || undef,
+                              '-description'     => $gene_description,
+                              '-external_name'   => $external_name,
+                              '-external_db'     => $external_db,
+                              '-external_status' => $external_status,
+                              '-display_xref'    => $display_xref,
+                              '-status'          => $status,
+                              '-source'          => $source,
+                              '-is_current'      => $is_current
+                            } ) );
+
   }
 
   return \@genes;
