@@ -40,6 +40,7 @@ my $xref_port = 3306;
 
 my $max_mismatches = 1;
 my $utr_length = 2000;
+my $unannotated_utr_length = 2000;
 my $max_transcripts_per_probeset = 100;
 my $mapping_threshold = 0.5;
 
@@ -61,6 +62,7 @@ GetOptions(
            'xref_dbname=s'          => \$xref_dbname,
 		   'mismatches=i'           => \$max_mismatches,
            'utr_length=s'           => \$utr_length,
+		   'unannotated_utr=s'      => \$unannotated_utr_length,
 		   'max_probesets=i'        => \$max_transcripts_per_probeset,
 		   'max_transcripts=i'      => \$max_transcripts,
 		   'threshold=s'            => \$mapping_threshold,
@@ -83,6 +85,8 @@ if(($utr_length =~ /\D/) && ($utr_length ne 'annotated')){
 else{
   $three_utr = $utr_length;
 }
+
+#we need to do a check here on utr_length and unannotated_utr_length
 
 usage() if(!$transcript_user || !$transcript_dbname || !$transcript_host);
 
@@ -187,6 +191,8 @@ throw('Could not find any transcripts') if $total == 0;
 print "Identified ".scalar(@transcripts)." transcripts for probe mappinng\n";
 print "Mapping, percentage complete: ";
 
+my $no_annotated_utr = 0;
+
 foreach my $transcript (@transcripts) {
 
   my $pc = int ((100 * $i) / $total);
@@ -206,8 +212,14 @@ foreach my $transcript (@transcripts) {
   if($utr_length eq 'annotated'){
 	#$five_utr = Do we need to implement this?
 	my $utr = $transcript->three_prime_utr;
-	$three_utr = (defined $utr) ? $utr->length : 2000;
 
+	if(defined $utr){
+	  $three_utr = $utr->length;
+	}
+	else{
+	  $no_annotated_utr++;
+	  $three_utr = $unannotated_utr_length;
+	}
 	#Should we set UTR to 0 if no UTR?
 	#Should we default to 2000 here if UTR is less?
 	#Probably dependent on quality of gene build
@@ -484,6 +496,7 @@ foreach my $aname(keys %array_xrefs){
 }
 
 print 'Mapped '. scalar(keys(%transcript_xrefs))."/$total transcripts\n";
+print "Default $unannotated_utr_length bp UTR used for $no_annotated_utr transcript with no annotated UTRs\n";
 print "Top 5 most mapped transcripts:\n";
 
 #sort keys with respect to values.
