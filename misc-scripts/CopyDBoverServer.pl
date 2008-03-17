@@ -246,9 +246,25 @@ foreach my $db_to_copy (@dbs_to_copy) {
   # flush tables; in the source server
   unless (defined $already_flushed{$db_to_copy->{$flush_scope}} || $noflush) {
   
-    print STDERR "// flushing tables in $db_to_copy->{$flush_scope} (".&get_time.")...\t";
-    my $flush_cmd = "echo 'flush tables;' | mysql -h $db_to_copy->{src_srv} -u ensadmin -p$pass -P$source_port";
-	$flush_cmd .= ' '.$db_to_copy->{src_db} if $dbflush;
+
+	#Is this sitll flushing the whole instance?
+	#Do we need to flush each individual table
+	#and reset the query cache?
+	print STDERR "// flushing tables in $db_to_copy->{$flush_scope} (".&get_time.")...\t";
+	my $flush_cmd;
+
+	if($dbflush){
+	  my $tables_cmd = "echo 'show tables;' | mysql -h $db_to_copy->{src_srv} -u ensadmin -p$pass -P$source_port $db_to_copy->{src_db}";	  
+
+	  my @tables = split/\n/, `$tables_cmd`;
+	  shift @tables;#remove field header
+
+	  $flush_cmd = "echo 'flush tables ".join(', ', @tables).";' | mysql -h $db_to_copy->{src_srv} -u ensadmin -p$pass -P$source_port $db_to_copy->{src_db}";
+	}
+	else{
+	  $flush_cmd = "echo 'flush tables;' | mysql -h $db_to_copy->{src_srv} -u ensadmin -p$pass -P$source_port";
+	  #$flush_cmd .= ' '.$db_to_copy->{src_db} if $dbflush;
+	}
 
 	#Now flushes on db specific tables
 	#This was introduced to enable copying a an unused DB when others are being heavily used
