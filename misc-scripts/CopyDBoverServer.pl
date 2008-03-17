@@ -7,9 +7,14 @@ use Sys::Hostname qw(hostname);
 
 $| = 1;
 
-my $usage = "\nUsage: $0 -pass XXXXX [-noflush] --nochk] input_file
+my $usage = "\nUsage: $0 -pass XXXXX [-noflush -probe_mapping -xref] input_file
 
 Copy mysql databases between different servers and run myisamchk on the indices when copied.
+
+-dbflush       Flushes only those DBs to be copied, default is to flush entire instance.
+-noflush       Skips table flushing
+-probe_mapping Only copies the tables relevant to running genomics and transcript probe mapping in isolation
+-xref          Only copies the xref tables, to enable running the transcript probe mapping with output to an isolation xref DB.
 
 The input file should have the following format
 
@@ -48,18 +53,32 @@ caa_stat mysql_3365
 Note that this only works for Tru64 CAA instances, i.e. ecs2 & ecs4.
 \n\n";
 
-my $help = 0;
-my $pass;
-my $noflush = 0;
 
-GetOptions('h' => \$help,
-	   'pass=s' => \$pass,
-           'noflush' => \$noflush);
+my ($pass, $xref, $probe_mapping, $help, $noflush, $dbflush);
+
+
+GetOptions(
+		   'h'             => \$help,
+		   'pass=s'        => \$pass,
+           'noflush'       => \$noflush,
+		   'probe_mapping' => \$probe_mapping,
+		   'xref'          => \$xref,
+		   'dbflush'      => \$dbflush,
+		  );
 
 if ($help || scalar @ARGV == 0 || ! defined $pass) {
   print $usage;
   exit 0;
 }
+
+if($dbflush && $noflush){
+  die('Cannot specify mutually exclusive options -noflush and -dbflush');
+}
+
+if($probe_mapping && $xref){
+  die('Cannot specify mutually exclusive options -probemapping and -xref');
+}
+
 
 my ($input_file) = @ARGV;
 my @dbs_to_copy;
@@ -82,6 +101,30 @@ my %mysql_directory_per_svr = ('genebuild1:3306'   => "/mysql/data_3306/database
 			       'ens-research:3306' => "/mysql/data_3306/databases",
 			       'ens-research:3309' => "/mysql/data_3309/databases");
 
+my %tables = (
+			  xref => [('xref', 'object_xref', 'identity_xref', 'go_xref', 
+						'external_db', 'external_synonym', 'unmapped_reason', 'unmapped_object')],
+
+			  probe_mapping => [('oligo_array', 'oligo_probe', 'oligo_feature', 'coord_system', 
+								 'seq_region', 'seq_region_attrib', 'analysis', 
+								 'analysis_description', 'transcript', 'transcript_stable_id', 
+								 'transcript_attrib', 'transcript_supporting_feature', 
+								 'unconventional_transcript_association', 'meta', 'meta_coord')],
+			  #Maybe remove meta unconventional_transcript_association, attribute, supporting_feature & seq_region_attribute?
+			  #Check adaptors
+
+			 );
+
+#add xref tables to probe mapping tables
+push @{$tables{'probe_mapping'}}, @{$tables{'xref'}};
+
+#Set table sub set
+my $table_type = '';
+$table_type = 'xref' if $xref;
+$table_type = 'probe_mapping' if $probe_mapping;
+
+
+my $flush_scope = (defined $dbflush) ? 'src_db' : 'src_srv';
 my ($generic_working_host) = (gethostbyname(hostname));
 $generic_working_host =~ s/\..*//;
 my $working_dir = $ENV{'PWD'};
@@ -93,8 +136,10 @@ open F, $input_file ||
   die "Can not open $input_file, $!\n";
 
 while (my $line = <F>) {
+
   next if ($line =~ /^\#.*$/);
   next if ($line =~ /^\s*$/);
+
   if ($line =~ /^(\S+)\s+(\d+)\s+(\S+)\s+(\S+)\s+(\d+)\s+(\S+)\s*$/) {
     my ($src_srv,$src_port,$src_db,$dest_srv,$dest_port,$dest_db) = ($1,$2,$3,$4,$5,$6);
     my ($dest_srv_host) = (gethostbyname($dest_srv));
@@ -143,18 +188,22 @@ EXIT 1
 
 close F;
 
+my $copy_executable;
+
+if (-e "/usr/bin/cp") {
+  $copy_executable = "/usr/bin/cp";
+} elsif (-e "/bin/cp") {
+  $copy_executable = "/bin/cp";
+}
+
+#change STDERR to STDOUT?
+
 # starting copy processes
 foreach my $db_to_copy (@dbs_to_copy) {
-  my $copy_executable;
-  if (-e "/usr/bin/cp") {
-    $copy_executable = "/usr/bin/cp";
-  } elsif (-e "/bin/cp") {
-    $copy_executable = "/bin/cp";
-  }
-  print STDERR "//
-// Starting new copy process
-//\n";
 
+  print STDERR "//\n// Starting new copy process\n//\n";
+
+  my $time;
   my $source_srv = $db_to_copy->{src_srv};
   $source_srv =~ s/\..*//;
   
@@ -195,33 +244,76 @@ foreach my $db_to_copy (@dbs_to_copy) {
   $destination_srv = undef;
 
   # flush tables; in the source server
-  unless (defined $already_flushed{$db_to_copy->{src_srv}} || $noflush) {
-    print STDERR "// flushing tables in $db_to_copy->{src_srv}...";
-    my $flush_cmd = "echo \"flush tables;\" | mysql -h $db_to_copy->{src_srv} -u ensadmin -p$pass -P$source_port";
+  unless (defined $already_flushed{$db_to_copy->{$flush_scope}} || $noflush) {
+  
+    print STDERR "// flushing tables in $db_to_copy->{$flush_scope} (".&get_time.")...\t";
+    my $flush_cmd = "echo 'flush tables;' | mysql -h $db_to_copy->{src_srv} -u ensadmin -p$pass -P$source_port";
+	$flush_cmd .= ' '.$db_to_copy->{src_db} if $dbflush;
+
+	#Now flushes on db specific tables
+	#This was introduced to enable copying a an unused DB when others are being heavily used
+	#flush tables still reset the query cache, so will this provide an appreciable speed up?
+	#Apparently so.  But still slow due to burden on server from other queries
+	
+
     if (system($flush_cmd) == 0) {
-      print STDERR "DONE\n";
+      print STDERR "DONE (".&get_time.")\n";
     } else {
       print STDERR "FAILED
 skipped copy of ".$db_to_copy->{src_db}." from ".$db_to_copy->{src_srv}." to ". $db_to_copy->{dest_srv} . "\n";
       next;
     }
-    $already_flushed{$db_to_copy->{src_srv}} = 1;
+
+
+	#Can we capture a CTRL-C here to exit the whole script
+	#Otherwise we exit the flush and the script acrries on trying to copy which can mess up tables.
+
+
+    $already_flushed{$db_to_copy->{$flush_scope}} = 1;
   }
 
   # cp the db to $destination_tmp_directory in the destination server
   my $copy_cmd;
+  #Need to make the tmp dir first for file copying
+  if($table_type && ! -e "$destination_tmp_directory/$db_to_copy->{dest_db}"){
+	$copy_cmd = "mkdir $destination_tmp_directory/$db_to_copy->{dest_db};"
+  }
+
   if ($copy_executable =~ /\/bin\/cp$/) {
-    print STDERR "// cp Copying $db_to_copy->{src_srv}:$source_db...";
-    $copy_cmd = "$copy_executable -r $source_db $destination_tmp_directory/$db_to_copy->{dest_db}";
+
+	if($table_type){#Copy table subset
+	
+	  foreach my $table(@{$tables{$table_type}}){
+		$copy_cmd .= "$copy_executable  $source_db/$table.* $destination_tmp_directory/$db_to_copy->{dest_db};";
+	  }
+	  
+	}#Full copy
+	else{
+	  $copy_cmd = "$copy_executable -r $source_db $destination_tmp_directory/$db_to_copy->{dest_db}";
+	}
+	
+	print STDERR "// cp Copying $table_type $db_to_copy->{src_srv}:$source_db...";
+ 
+  } # OR rcp the db to $destination_tmp_directory in the destination server
+  elsif ($copy_executable eq "/usr/bin/rcp") {
     
-  # OR rcp the db to $destination_tmp_directory in the destination server
-  } elsif ($copy_executable eq "/usr/bin/rcp") {
-    print STDERR "// rcp Copying $db_to_copy->{src_srv}:$source_db...";
-    $copy_cmd = "$copy_executable -r $db_to_copy->{src_srv}:$source_db $destination_tmp_directory/$db_to_copy->{dest_db}";
+	if($table_type){#Copy table subset
+	
+	  foreach my $table(@{$tables{$table_type}}){
+		$copy_cmd .= "$copy_executable -r $db_to_copy->{src_srv}:$source_db/$table.* $destination_tmp_directory/$db_to_copy->{dest_db};";
+	  }
+	  
+	}#Full copy
+	else{
+	  $copy_cmd = "$copy_executable -r $db_to_copy->{src_srv}:$source_db $destination_tmp_directory/$db_to_copy->{dest_db}";
+	}
+
+	print STDERR "// rcp Copying $table_type $db_to_copy->{src_srv}:$source_db...";
+
   }
 
   if (system("$copy_cmd") == 0) {
-    print STDERR "DONE\n";
+    print STDERR "DONE (".&get_time.")\n";
   } else {
     print STDERR "FAILED
 skipped copy of $db_to_copy->{src_db} from $db_to_copy->{src_srv} to $db_to_copy->{dest_srv}\n";
@@ -258,10 +350,7 @@ skipped checking/copying of $db_to_copy->{dest_db}\n";
   $db_to_copy->{status} = "SUCCEEDED";
 }
 
-print STDERR "//
-// End of all copy processes
-//
-// Processes summary\n";
+print STDERR "//\n// End of all copy processes (".&get_time.")\n//\n// Processes summary\n";
 
 
 foreach  my $db_to_copy (@dbs_to_copy) {
@@ -269,3 +358,12 @@ foreach  my $db_to_copy (@dbs_to_copy) {
 }
 
 print STDERR "\n";
+
+sub get_time{
+
+  my ($sec, $min, $hour) = localtime;
+
+  return $hour.':'.$min.':'.$sec;
+}
+
+1;
