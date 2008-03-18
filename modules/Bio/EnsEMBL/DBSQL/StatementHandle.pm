@@ -192,9 +192,8 @@ sub bind_param {
 sub execute {
   my ( $self, @args ) = @_;
 
-  if ( !$dump ) {    # skip dumping
-    return $self->SUPER::execute(@args);
-  }
+  # Skip dumping if !$dump
+  if ( !$dump ) { return $self->SUPER::execute(@args) }
 
   my $sql = $self->sql();
   my @chrs = split( //, $sql );
@@ -202,14 +201,15 @@ sub execute {
   my $j = 0;
 
   for ( my $i = 0 ; $i < @chrs ; $i++ ) {
-    $chrs[$i] = $bind_args[ $j++ ]
-      if ( $chrs[$i] eq '?' && defined( $bind_args[$j] ) );
+    if ( $chrs[$i] eq '?' && defined( $bind_args[$j] ) ) {
+      $chrs[$i] = $bind_args[ $j++ ];
+    }
   }
 
   my $str = join( '', @chrs );
 
-  #  uncomment this line if you want to see sql in order.
-  #  print STDERR "\n\nSQL:\n$str\n\n";
+  # Uncomment this line if you want to see sql in order.
+  # print( STDERR "\n\nSQL:\n$str\n\n" );
 
   my $time = time();
   my $res  = $self->SUPER::execute(@args);
@@ -218,12 +218,10 @@ sub execute {
   if ( defined( $total_time{$sql} ) ) {
     $total_time{$sql} += $time;
     $number_of_times{$sql}++;
-    if ( $min_time{$sql} > $time ) {
-      $min_time{$sql} = $time;
-    }
-    if ( $max_time{$sql} < $time ) {
-      $max_time{$sql} = $time;
-    }
+
+    if ( $min_time{$sql} > $time ) { $min_time{$sql} = $time }
+    if ( $max_time{$sql} < $time ) { $max_time{$sql} = $time }
+
   } else {
     $first_time{$sql}      = $time;
     $max_time{$sql}        = $time;
