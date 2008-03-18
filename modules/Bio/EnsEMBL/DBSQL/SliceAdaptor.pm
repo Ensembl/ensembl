@@ -1530,53 +1530,54 @@ sub _build_exception_cache {
 
 =cut
 
-sub cache_toplevel_seq_mappings{
+sub cache_toplevel_seq_mappings {
   my ($self) = @_;
 
-  #get the sequence level to map too
+  # Get the sequence level to map too
 
   my $sql = (<<SSQL);
-  SELECT	name 
-   FROM	coord_system 
-    WHERE attrib like "%sequence_level%"
+  SELECT    name
+  FROM  coord_system
+  WHERE attrib like "%sequence_level%"
 SSQL
+
   my $sth = $self->prepare($sql);
   $sth->execute();
-  
+
   my $sequence_level = $sth->fetchrow_array();
-  
+
   $sth->finish();
 
   my $csa = $self->db->get_CoordSystemAdaptor();
   my $ama = $self->db->get_AssemblyMapperAdaptor();
 
   my $cs1 = $csa->fetch_by_name($sequence_level);
-  
 
   #get level to map too.
-  
-  $sql = (<<LSQL); 
-  SELECT DISTINCT(cs.name) 
-    FROM seq_region sr, seq_region_attrib sra, attrib_type at, coord_system cs 
-      WHERE sra.seq_region_id = sr.seq_region_id AND 
-            sra.attrib_type_id = at.attrib_type_id AND 
-            at.code like "toplevel" AND 
-            cs.coord_system_id = sr.coord_system_id;
-LSQL
 
+  $sql = (<<LSQL);
+  SELECT DISTINCT(cs.name)
+  FROM  seq_region sr,
+        seq_region_attrib sra,
+        attrib_type at,
+        coord_system cs
+  WHERE sra.seq_region_id = sr.seq_region_id
+  AND   sra.attrib_type_id = at.attrib_type_id
+  AND   at.code = "toplevel"
+  AND   cs.coord_system_id = sr.coord_system_id;
+LSQL
 
   $sth = $self->prepare($sql);
   $sth->execute();
-  
-  while(my $csn = $sth->fetchrow_array()){
-    if($csn eq $sequence_level){
-      next;
-    }
+
+  while ( my $csn = $sth->fetchrow_array() ) {
+    if ( $csn eq $sequence_level ) { next }
     my $cs2 = $csa->fetch_by_name($csn);
-    my $am = $ama->fetch_by_CoordSystems($cs1,$cs2);
-    $am->register_all();    
-  };
-}
+    my $am = $ama->fetch_by_CoordSystems( $cs1, $cs2 );
+    $am->register_all();
+  }
+
+} ## end sub cache_toplevel_seq_mappings
 
 
 
