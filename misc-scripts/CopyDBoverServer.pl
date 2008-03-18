@@ -76,7 +76,7 @@ if($dbflush && $noflush){
 }
 
 if($probe_mapping && $xref){
-  die('Cannot specify mutually exclusive options -probemapping and -xref');
+  die('Cannot specify mutually exclusive options -probe_mapping and -xref');
 }
 
 
@@ -122,6 +122,9 @@ push @{$tables{'probe_mapping'}}, @{$tables{'xref'}};
 my $table_type = '';
 $table_type = 'xref' if $xref;
 $table_type = 'probe_mapping' if $probe_mapping;
+
+#Currently this fails if xref or probe_mapping is specified for a non-core DB
+#We need to default to normal copy if dbname !~ _core_
 
 
 my $flush_scope = (defined $dbflush) ? 'src_db' : 'src_srv';
@@ -297,7 +300,7 @@ skipped copy of ".$db_to_copy->{src_db}." from ".$db_to_copy->{src_srv}." to ". 
 
   if ($copy_executable =~ /\/bin\/cp$/) {
 
-	if($table_type){#Copy table subset
+	if($table_type && ($db_to_copy->{src_db} =~ /_core_/)){#Copy core table subset
 	
 	  foreach my $table(@{$tables{$table_type}}){
 		$copy_cmd .= "$copy_executable  $source_db/$table.* $destination_tmp_directory/$db_to_copy->{dest_db};";
@@ -313,7 +316,7 @@ skipped copy of ".$db_to_copy->{src_db}." from ".$db_to_copy->{src_srv}." to ". 
   } # OR rcp the db to $destination_tmp_directory in the destination server
   elsif ($copy_executable eq "/usr/bin/rcp") {
     
-	if($table_type){#Copy table subset
+	if($table_type && ($db_to_copy->{src_db} =~ /_core_/)){#Copy core table subset
 	
 	  foreach my $table(@{$tables{$table_type}}){
 		$copy_cmd .= "$copy_executable -r $db_to_copy->{src_srv}:$source_db/$table.* $destination_tmp_directory/$db_to_copy->{dest_db};";
