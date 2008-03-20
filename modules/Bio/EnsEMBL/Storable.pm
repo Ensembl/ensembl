@@ -200,7 +200,8 @@ sub get_all_DAS_Features{
     # Construct a cache key : SOURCE_URL/TYPE
     # Need the type to handle sources that serve multiple types of features
 
-    my ($type) = @{$dasfact->adaptor->mapping || []};
+    my ($type) = ref($dasfact->adaptor->mapping)eq'ARRAY' ?
+    @{$dasfact->adaptor->mapping} : $dasfact->adaptor->mapping;
     $type ||=$dasfact->adaptor->type;
     my $key = join('/', $name, $type);
 
