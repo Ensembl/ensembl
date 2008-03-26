@@ -60,21 +60,19 @@ sub find_non_overlaps {
 =head2 check_remarks_and_update names
 
    Arg[1]     : B::E::Gene (with potentially duplicated transcript names)
-   Arg[2]     : FH (for storing list of previous seen genes)
-   Arg[3]     : counter 1 (no. of patched genes)
-   Arg[4]     : counter 2 (no. of patched transcripts)
-   Example    : $support->update_names($gene,$fh,\$c1,\$c2)
+   Arg[2]     : counter 1 (no. of patched genes)
+   Arg[3]     : counter 2 (no. of patched transcripts)
+   Example    : $support->update_names($gene,\$c1,\$c2)
    Description: - checks remarks and patches transcripts with identical names according to
                 CDS and length if there are no fragmented gene/transcript_remarks
                 - adds remark attribute to gene
-                - writes IDs of previously seen genes to file
    Returntype : true | false (depending on whether patched or not), counter1, counter2
 
 =cut
 
 sub check_remarks_and_update_names {
 	my $self = shift;
-	my ($gene,$k_flist_fh,$gene_c,$trans_c) = @_;
+	my ($gene,$gene_c,$trans_c) = @_;
 	my $action = ($self->param('dry_run')) ? 'Would add' : 'Added';
 	my $aa  = $gene->adaptor->db->get_AttributeAdaptor;
 	my $dbh = $gene->adaptor->db->dbc->db_handle;
@@ -130,7 +128,6 @@ sub check_remarks_and_update_names {
 	#log if it's been reported before since the gene should have a remark.
 	elsif ($seen_genes->{$gsi} eq 'fragmented') {
 		$self->log_warning("PREVIOUS: $action correctly formatted fragmented loci annotation remark for gene $gsi (has previously been OKeyed by Havana as being fragmented but has no Annotation remark, please add one!)\n");
-		print $k_flist_fh "$gsi\n";
 		#add gene_attrib anyway.
 		if (! $self->param('dry_run') ) {
 			$aa->store_on_Gene($gid,$attrib);
@@ -241,7 +238,7 @@ sub check_names_and_overlap {
 			print $n_flist_fh "$gsi\n";
 		}
 		#...otherwise if the transcripts do overlap
-		elsif ($self->param('verbose')) {
+		else {
 			$self->log_warning("NEW: Overlapping: $gsi ($g_name) has overlapping transcripts ($all_t_names) with Vega duplicated names and it has no \'Annotation_remark- fragmented_loci\' on the gene or \'\%fragmen\%\' remark on any transcripts. Neither has it been OKeyed by Havana before. Transcript names are being patched but this could be checked by Havana if they were feeling keen.\n");
 			print $n_flist_fh "$gsi\n";
 		}
@@ -300,6 +297,7 @@ OTTHUMG00000058101 = fragmented
 OTTHUMG00000150119 = OK
 OTTHUMG00000149850 = OK
 OTTHUMG00000058101 = OK
+OTTHUMG00000058907 = OK
 
 OTTMUSG00000011654 = fragmented
 OTTMUSG00000019369 = fragmented
