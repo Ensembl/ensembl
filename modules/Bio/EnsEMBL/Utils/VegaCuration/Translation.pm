@@ -189,10 +189,12 @@ sub get_havana_seleno_comments {
 sub check_for_stops {
 	my $support = shift;
 	my ($gene,$seen_transcripts) = @_;
+	my $biotype = $gene->biotype;
 	my $scodon = 'TGA';
 
  TRANS:
 	foreach my $trans (@{$gene->get_all_Transcripts}) {
+		my $chrom = $trans->seq_region_name;
 		my $tsi = $trans->stable_id;
 		my $tID = $trans->dbID;
 		my $tname = $trans->get_all_Attributes('name')->[0]->value;
@@ -208,8 +210,8 @@ sub check_for_stops {
 		
 		# (translate method trims stops from sequence end)
 		next TRANS unless ($pseq =~ /\*/);
-		$support->log("Stops found in $tsi ($tname)\n",1);
-		
+		$support->log_verbose("Stops found in $tsi ($tname)\n",1);
+
 		# find out where and how many stops there are
 		my @found_stops;
 		my $mrna   = $trans->translateable_seq;
@@ -241,14 +243,9 @@ sub check_for_stops {
 		my $source = $gene->source;
 		#...no - an internal stop codon error in the database...
 		if ($num_tga < $num_stops) {
-			if ($source eq 'havana') {
-				$support->log_warning("INTERNAL STOPS HAVANA: Transcript $tsi ($tname) has non \'$scodon\' stop codons:\nSequence = $orig_seq\nStops at $positions\n\n");
-			}
-			else {
-				$support->log_verbose("INTERNAL STOPS EXTERNAL: Transcript $tsi ($tname) has non \'$scodon\' stop codons:\nSequence = $orig_seq\nStops at $positions\n\n");
-			}
-			
+			$support->log_warning("INTERNAL STOPS ".uc($source).": Transcript $tsi ($tname,$biotype) on chromosome $chrom has non \'$scodon\' stop codons:\nSequence = $orig_seq\nStops at $positions\n\n");
 		}
+			
 		#...yes - check remarks
 		else {
 			my $flag_remark  = 0; # 1 if word seleno has been used
@@ -294,14 +291,14 @@ sub check_for_stops {
 					}
 					# catch old annotations where number was in DNA not peptide coordinates
 					elsif (($found_stops[$i]->[1] * 3) == $offset) {
-						$support->log_warning("DNA: Annotated stop for transcript tsi ($tname) is in DNA not peptide coordinates\n");
+						$support->log_warning("DNA: Annotated stop for transcript tsi ($tname) on chromosome $chrom is in DNA not peptide coordinates\n");
 					}
 					# catch old annotations where number off by one
 					elsif (($found_stops[$i]->[1]) == $offset+1) {
-						$support->log_warning("PEPTIDE: Annotated stop for transcript $tsi ($tname) is out by one\n");
+						$support->log_warning("PEPTIDE: Annotated stop for transcript $tsi ($tname) on chromosome $chrom is out by one\n");
 					}
 					else {
-						$support->log_warning("Annotated stop for transcript $tsi ($tname) does not match a TGA codon\n");
+						$support->log_warning("Annotated stop for transcript $tsi ($tname) on chromosome $chrom does not match a TGA codon\n");
 						push  @annotated_stops, $offset;
 				}						
 					$i++;
@@ -314,10 +311,10 @@ sub check_for_stops {
 				my $seq = $stop->[0];
 				unless ( grep { $pos == $_} @annotated_stops) {
 					if ($seen_transcripts->{$tsi}) {
-						$support->log_verbose("Transcript $tsi ($tname) has potential selenocysteines but has been discounted by annotators:\n\t".$seen_transcripts->{$tsi}."\n");
+						$support->log("Transcript $tsi ($tname) has potential selenocysteines but has been discounted by annotators:\n\t".$seen_transcripts->{$tsi}."\n");
 					}
 					else {
-						$support->log("POTENTIAL SELENO ($seq) in $tsi ($tname) found at $pos\n");
+						$support->log_warning("POTENTIAL SELENO ($seq) in $tsi ($tname) found at $pos\n");
 					}
 				}
 			}
