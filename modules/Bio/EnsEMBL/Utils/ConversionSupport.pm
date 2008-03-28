@@ -238,8 +238,10 @@ sub get_common_params {
 
 =head2 get_loutre_params
 
-  Example     : my @allowed_params = $self->get_loutre_params, 'extra_param';
-  Description : Returns a list of commonly used parameters in for working with a loutre db
+  Arg         : (optional) return a list to parse or not
+  Example     : $support->parse_extra_options($support->get_loutre_params('parse'))
+  Description : Returns a list of commonly used loutre db parameters - parse option is
+                simply used to distinguish between reporting and parsing parameters
   Return type : Array - list of common parameters
   Exceptions  : none
   Caller      : general
@@ -247,13 +249,25 @@ sub get_common_params {
 =cut
 
 sub get_loutre_params {
-	return qw(
-			  loutrehost
-			  loutreport
-			  loutreuser
-			  loutrepass
-			  loutredbname
-		  );
+	my ($self,$p) = @_;
+	if ($p) {
+		return qw(
+				  loutrehost=s
+				  loutreport=s
+				  loutreuser=s
+				  loutrepass=s
+				  loutredbname=s
+			  );
+	}
+	else {
+		return qw(
+				  loutrehost
+				  loutreport
+				  loutreuser
+				  loutrepass
+				  loutredbname
+			  );
+	}
 }
 
 =head2 remove_vega_params
@@ -293,9 +307,9 @@ sub confirm_params {
     print "Running script with these parameters:\n\n";
     print $self->list_all_params;
 
-	if ($self->param('host') eq 'web-4-11') {
+	if ($self->param('host') eq 'ensdb-1-10') {
 		# ask user if he wants to proceed
-		exit unless $self->user_proceed("**************\n\n You're working on web-4-11! Is that correct and you want to continue ?\n\n**************");
+		exit unless $self->user_proceed("**************\n\n You're working on ensdb-1-10! Is that correct and you want to continue ?\n\n**************");
 	}
 	else {
 		# ask user if he wants to proceed
@@ -362,7 +376,6 @@ sub create_commandline_options {
     if ($settings->{'allowed_params'}) {
         # exclude params explicitly stated
         my %exclude = map { $_ => 1 } @{ $settings->{'exclude'} || [] };
-        
         foreach my $param ($self->allowed_params) {
             unless ($exclude{$param}) {
                 my ($first, @rest) = $self->param($param);
@@ -387,7 +400,6 @@ sub create_commandline_options {
     foreach my $param (keys %param_hash) {
         $options_string .= sprintf("--%s %s ", $param, $param_hash{$param});
     }
-    
     return $options_string;
 }
 
@@ -689,8 +701,17 @@ sub get_database {
             -dbname => $self->param("${prefix}dbname"),
             -group  => $database,
     );
+	#can use this approach to get dna from another db
+#	my $dna_db = $adaptors{$database}->new(
+#			-host => 'otterlive',
+#            -port => '3301',
+#			-user => $self->param("${prefix}user"),
+#			-pass => $self->param("${prefix}pass"),
+#            -dbname => 'loutre_human',
+#		);
+#	$dba->dnadb($dna_db);
 
-    # explicitely set the dnadb to itself - by default the Registry assumes
+    # otherwise explicitely set the dnadb to itself - by default the Registry assumes
     # a group 'core' for this now
     $dba->dnadb($dba);
 
