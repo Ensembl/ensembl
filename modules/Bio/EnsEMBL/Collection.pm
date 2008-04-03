@@ -112,10 +112,10 @@ sub _lightweight {
 our %VALID_BINNING_METHODS = (
                'count'            => 0,
                'density'          => 0,    # Same as 'count'.
-               'indices'          => 1,
-               'index'            => 1,    # Same as 'indices'.
-               'features'         => 2,
-               'feature'          => 2,    # Same as 'features'.
+             # 'indices'          => 1,
+             # 'index'            => 1,    # Same as 'indices'.
+             # 'features'         => 2,
+             # 'feature'          => 2,    # Same as 'features'.
                'fractional_count' => 3,
                'weight'           => 3,    # Same as 'fractional_count'.
                'coverage'         => 4 );
