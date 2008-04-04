@@ -287,8 +287,6 @@ sub backup_tables {
 
 
 sub delete_from_tables {
-  return;
-
   my $fmt1 = "%-30s";
   my $fmt2 = "%8d\n";
 
