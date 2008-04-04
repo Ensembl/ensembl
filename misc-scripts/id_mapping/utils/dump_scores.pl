@@ -67,11 +67,7 @@ my $conf = new Bio::EnsEMBL::Utils::ConfParser(
 );
 
 $conf->parse_options(
-  'mode=s' => 0,
   'dumppath|dump_path=s' => 1,
-  'chromosomes|chr=s@' => 0,
-  'region=s' => 0,
-  'biotypes=s@' => 0,
 );
 
 # set default logpath
@@ -88,7 +84,6 @@ my $logger = new Bio::EnsEMBL::Utils::Logger(
   -LOGPATH      => $conf->param('logpath'),
   -LOGAPPEND    => $conf->param('logappend'),
   -LOGLEVEL     => $conf->param('loglevel'),
-  -IS_COMPONENT => $conf->param('is_component'),
 );
 
 # initialise log
@@ -143,6 +138,7 @@ sub read_matrix {
   return $matrix;
 }
 
+
 sub dump_scores {
   my $type = shift;
   my $matrix = shift;
@@ -155,7 +151,10 @@ sub dump_scores {
   open(my $fh, '>', $logfile) or
     throw("Unable to open $logfile for writing: $!");
 
+  #my $i = 0;
   foreach my $entry (@{ $matrix->get_all_Entries }) {
+    #$logger->info($entry->to_string."\n");
+    #last if (++$i == 10);
     print $fh ($entry->to_string."\n");
   }
 
