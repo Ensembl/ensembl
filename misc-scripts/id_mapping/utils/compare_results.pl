@@ -84,6 +84,10 @@ $conf->parse_options(
   'dumppath|dump_path=s' => 1,
   'lsf!' => 0,
   'lsf_opt|lsfopt=s' => 0,
+  'suffix|sfx=s' => 0,
+  'debug1|d1=s' => 1,
+  'debug2|d2=s' => 1,
+  'type|t=s' => 0,
 );
 
 # set default logpath
@@ -98,7 +102,7 @@ foreach my $p (qw(host port user pass)) {
   }
 }
 
-# get log filehandle and print heading and parameters to logfile
+# get log filehandle and print header and parameters to logfile
 my $logger = new Bio::EnsEMBL::Utils::Logger(
   -LOGFILE      => $conf->param('logfile'),
   -LOGAUTO      => $conf->param('logauto'),
@@ -135,6 +139,7 @@ my $dba1 = new Bio::EnsEMBL::DBSQL::DBAdaptor(
         -group  => 'target',
 );
 $dba1->dnadb($dba1);
+my $dbh1 = $dba1->dbc->db_handle;
 
 my $dba2 = new Bio::EnsEMBL::DBSQL::DBAdaptor(
         -host   => $conf->param("althost"),
@@ -145,9 +150,13 @@ my $dba2 = new Bio::EnsEMBL::DBSQL::DBAdaptor(
         -group  => 'alt',
 );
 $dba2->dnadb($dba2);
+my $dbh2 = $dba2->dbc->db_handle;
 
-# compare gene mapping results
-&compare_genes;
+# compare mapping results
+my $type = $conf->param('type') || 'gene';
+my $function = "compare_${type}s";
+no strict 'refs';
+&$function;
 
 # finish logfile
 $logger->finish_log;
@@ -156,168 +165,177 @@ $logger->finish_log;
 
 
 sub compare_genes {
-
   $logger->info("Comparing genes...\n\n", 0, 'stamped');
+  &compare_features('gene');
+  $logger->info("Done\n\n");
+}
+
+
+sub compare_transcripts {
+  $logger->info("Comparing transcripts...\n\n", 0, 'stamped');
+  &compare_features('transcript');
+  $logger->info("Done\n\n");
+}
+
+
+sub compare_translations {
+  $logger->info("Comparing translations...\n\n", 0, 'stamped');
+  &compare_features('translation');
+  $logger->info("Done\n\n");
+}
+
+
+sub compare_exons {
+  $logger->info("Comparing exons...\n\n", 0, 'stamped');
+  &compare_features('exon');
+  $logger->info("Done\n\n");
+}
+
+
+sub compare_features {
+  my $ftype = shift;
 
   # get a filehandle to write results for debugging
   my $path = path_append($conf->param('dumppath'), 'debug');
-  my $file = "$path/genes_diff.txt";
+  my $file = "$path/${ftype}_diff.txt";
   open(my $fh, '>', $file) or die "Can't open $file for writing: $!\n";
+
+  # read scores from files
+  my $scores = {};
+  unless ($ftype eq 'translation') {
+    foreach my $path1 (qw(debug1 debug2)) {
+      my $p1 = $conf->param($path1);
+      my $file1 = "$p1/${ftype}_scores.txt";
+      open(my $fh1, '<', $file1) or die "Can't open $file1 for reading: $!\n";
+
+      while (my $line = <$fh1>) {
+        chomp $line;
+        my ($old_id, $new_id, $score) = split(/\s+/, $line);
+        $score = sprintf("%.6f", $score);
+
+        # remember the highest score for each new_id
+        if ($score > $scores->{$path1}->{$new_id}) {
+          $scores->{$path1}->{$new_id} = $score;
+        }
+      }
+
+      close($fh1);
+    }
+  }
   
   #
-  # fetch all genes from both dbs and create lookup hash by stable_id
+  # fetch all features from both runs and create lookup hash by stable_id
   #
-  $logger->info("Fetching genes...\n", 0, 'stamped');
-  my $ga1 = $dba1->get_GeneAdaptor;
-  my $ga2 = $dba2->get_GeneAdaptor;
+  $logger->info("Fetching ${ftype} data from dbs...\n", 0, 'stamped');
 
-  my @genes1 = @{ $ga1->fetch_all(undef, undef, 0) };
-  my @genes2 = @{ $ga2->fetch_all(undef, undef, 0) };
+  # db 2
+  my $sql1 = qq(SELECT ${ftype}_id, stable_id FROM ${ftype}_stable_id);
+  my $sth1 = $dbh1->prepare($sql1);
+  $sth1->execute;
+  
+  my %fsi1 = ();
+  my %fii1 = ();
+  
+  while (my $r = $sth1->fetchrow_arrayref) {
+    # create lookup hashes of dbID to stable ID and vice versa
+    $fsi1{$r->[1]} = $r->[0];
+    $fii1{$r->[0]} = $r->[1];
+  }
+
+  $sth1->finish;
+
+  # db 2
+  my $suffix = $conf->param('suffix');
+  my $sql2 = qq(SELECT ${ftype}_id, stable_id FROM ${ftype}_stable_id${suffix});
+  my $sth2 = $dbh2->prepare($sql2);
+  $sth2->execute;
+  
+  my %fsi2 = ();
+  my %fii2 = ();
+  
+  while (my $r = $sth2->fetchrow_arrayref) {
+    # create lookup hashes of dbID to stable ID and vice versa
+    $fsi2{$r->[1]} = $r->[0];
+    $fii2{$r->[0]} = $r->[1];
+  }
+
+  $sth2->finish;
   
   $logger->info("Done.\n\n", 0, 'stamped');
 
-  my %gsi1 = map { $_->stable_id => $_ } @genes1;
-  my %gi1 = map { $_->dbID => $_ } @genes1;
-  my %gsi2 = map { $_->stable_id => $_ } @genes2;
-  my %gi2 = map { $_->dbID => $_ } @genes2;
-
+  #
   # get max(gene_stable_id) from source db
+  #
   my $dbh = $dba_s->dbc->db_handle;
-  my $sql = qq(SELECT max(stable_id) FROM gene_stable_id);
+  my $sql = qq(SELECT max(stable_id) FROM ${ftype}_stable_id);
   my $sth = $dbh->prepare($sql);
   $sth->execute;
   my ($max_stable_id) = $sth->fetchrow_array;
   $sth->finish;
 
-  my $fmt1 = "%-20s%-8s%-40s%-1s\n";
+  #
+  # now loop over dbIDs in db 1 and compare results with db2
+  #
+  $logger->info("Comparing results...\n", 0, 'stamped');
 
-  my @stat_keys = qw(TOT OK S I D N NEW);
+  my @stat_keys = qw(TOT NN II NE EN EE);
   my %stats = map { $_ => 0 } @stat_keys;
+  my $fmt = "%-3s%6d %-20s %-20s %-10s %-10s\n";
 
-  #
-  # now loop over genes in db 1 and print information about genes not found in 
-  # db 2
-  #
-  foreach my $gsid1 (sort keys %gsi1) {
-
-    my $gene1 = $gsi1{$gsid1};
-    my $gene2 = $gsi2{$gsid1};
-
+  foreach my $dbID1 (sort { $a <=> $b } keys %fii1) {
     $stats{TOT}++;
+    my $status;
+    
+    my $sid1 = $fii1{$dbID1};
+    my $sid2 = $fii2{$dbID1};
 
-    # this is a new stable ID, we can't make any predictions for those
-    if (($max_stable_id cmp $gene1->stable_id) == -1) {
-      $stats{NEW}++;
-      next;
-    }
+    # db 1 has new stable ID
+    if (($max_stable_id cmp $sid1) == -1) {
+      
+      # db 2 has new stable ID too
+      if (($max_stable_id cmp $sid2) == -1) {
+        $status = 'NN';
 
-    # next if gene in db 2 is the same (same stable and internal ID)
-    if ($gene2 and ($gene1->dbID == $gene2->dbID)) {
-      $stats{OK}++;
-      next;
-    }
-
-    my $flag;
-    my $gene1a;
-    my $gene2a;
-
-    if ($gene2) {
-      # we found the stable_id, but it was assigned to a different gene in db 2
-      $gene1a = $gi1{$gene2->dbID};
-      $gene2a = $gi2{$gene1->dbID};
-      $flag = 'S';
-    } else {
-      # the gene was assigned a different stable_id
-      $gene2 = $gi2{$gene1->dbID};
-
-      if ($gsi1{$gene2->stable_id}) {
-        # stable ID used in db 1, but for different gene
-        $flag = 'I';
-      } elsif (($max_stable_id cmp $gene2->stable_id) == 1) {
-        # stable ID not used in db 1, gene deleted from db 1
-        $flag = 'D';
+      # db 2 reuses an existing stable ID
       } else {
-        # new stable ID used in db 2
-        $flag = 'N';
+        $status = 'NE';
+      }
+      
+    # else db 1 reused an existing stable ID
+    } else {
+      
+      # db 2 uses the same stable ID
+      if ($sid1 eq $sid2) {
+        $status = 'II';
+
+      # db 2 has a new stable ID
+      } elsif (($max_stable_id cmp $sid2) == -1) {
+        $status = 'EN';
+      
+      # db 2 reuses an existing (but different from db 1) stable ID
+      } else {
+        $status = 'EE';
       }
     }
 
-    my $slice1 = $gene1->feature_Slice;
-    my $ss1 = join(':', map { $slice1->$_ }
-      qw(seq_region_name start end strand length));
-      
-    my $slice2 = $gene2->feature_Slice;
-    my $ss2 = join(':', map { $slice2->$_ }
-      qw(seq_region_name start end strand length));
+    # stats
+    $stats{$status}++;
 
-    # print debug statement
-    my $txt1 = sprintf($fmt1,
-                       $gene1->stable_id,
-                       $gene1->dbID,
-                       $ss1,
-                       $flag
-                      );
-
-    my $txt1a;
-    
-    if ($gene1a) {
-      my $slice1a = $gene1a->feature_Slice;
-      my $ss1a = join(':', map { $slice1a->$_ }
-        qw(seq_region_name start end strand length));
-        
-      my $txt1a = sprintf($fmt1,
-                         $gene1a->stable_id,
-                         $gene1a->dbID,
-                         $ss1a,
-                         undef
-      );
-    } else {
-      $txt1a = "none\n";
-    }
-
-    my $txt2 = sprintf($fmt1,
-                       $gene2->stable_id,
-                       $gene2->dbID,
-                       $ss2,
-                       $flag
-                      );
-    
-    my $txt2a;
-
-    if ($gene2a) {
-      my $slice2a = $gene2a->feature_Slice;
-      my $ss2a = join(':', map { $slice2a->$_ }
-        qw(seq_region_name start end strand length));
-        
-      my $txt2a = sprintf($fmt1,
-                         $gene2a->stable_id,
-                         $gene2a->dbID,
-                         $ss2a,
-                         undef
-      );
-    } else {
-      $txt2a = "none\n";
-    }
-
-    $logger->info($txt1, 1);
-    $logger->info($txt1a, 1) if ($flag eq 'S');
-    $logger->info($txt2, 1);
-    $logger->info($txt2a, 1) if ($flag eq 'S');
-    $logger->info("\n");
-
-    $stats{$flag}++;
+    # print result line (status dbID sid1 sid2)
+    print $fh sprintf($fmt, $status, $dbID1, $sid1, $sid2,
+      $scores->{'debug1'}->{$dbID1}, $scores->{'debug2'}->{$dbID1});
   }
 
   close($fh);
   
-  $logger->info("\nDone.\n\n", 0, 'stamped');
+  $logger->info("Done.\n\n", 0, 'stamped');
 
   # print stats
   $logger->info("Stats:\n");
   foreach my $key (@stat_keys) {
-    $logger->info(sprintf("  %-5s%8.0f\n", $key, $stats{$key}));
+    $logger->info(sprintf("  %-5s%8d (%6s)\n", $key, $stats{$key}, sprintf("%3.1f%%", 100*$stats{$key}/$stats{'TOT'})));
   }
-  
+
 }
 
 
