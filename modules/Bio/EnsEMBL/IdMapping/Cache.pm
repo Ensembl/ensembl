@@ -43,7 +43,7 @@ use Bio::EnsEMBL::IdMapping::TinyTranscript;
 use Bio::EnsEMBL::IdMapping::TinyTranslation;
 use Bio::EnsEMBL::IdMapping::TinyExon;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
-use Storable qw(nfreeze thaw nstore retrieve);
+use Storable qw(nstore retrieve);
 use Digest::MD5 qw(md5_hex);
 
 
@@ -226,11 +226,7 @@ sub build_cache_from_genes {
   throw("You must provide a listref of genes.") unless (ref($genes) eq 'ARRAY');
 
   # initialise cache for the given type.
-  # this is a workaround for a problem with the checkpointing implementation
-  # which caused re-dumping of regions without features
-  foreach my $name (@{ $self->cache_names }) {
-    $self->{'cache'}->{$name}->{$type} = {};
-  }
+  $self->{'cache'}->{$type} = {};
 
   #my $i = 0;
   #my $num_genes = scalar(@$genes);
@@ -257,7 +253,6 @@ sub build_cache_from_genes {
         $gene->biotype,
         $gene->status,
         $gene->analysis->logic_name,
-        $gene->display_id,
         ($gene->is_known ? 1 : 0),
     ]);
 
@@ -384,9 +379,9 @@ sub add {
   throw("You must provide a cache type.") unless $type;
   throw("You must provide a cache key (e.g. a gene dbID).") unless $key;
 
-  $self->{'cache'}->{$name}->{$type}->{$key} = $val;
+  $self->{'cache'}->{$type}->{$name}->{$key} = $val;
 
-  return $self->{'cache'}->{$name}->{$type}->{$key};
+  return $self->{'cache'}->{$type}->{$name}->{$key};
 }
 
 =head2 add_list
@@ -419,9 +414,9 @@ sub add_list {
   throw("You must provide a cache type.") unless $type;
   throw("You must provide a cache key (e.g. a gene dbID).") unless $key;
 
-  push @{ $self->{'cache'}->{$name}->{$type}->{$key} }, @vals;
+  push @{ $self->{'cache'}->{$type}->{$name}->{$key} }, @vals;
 
-  return $self->{'cache'}->{$name}->{$type}->{$key};
+  return $self->{'cache'}->{$type}->{$name}->{$key};
 }
 
 sub get_by_key {
@@ -435,11 +430,11 @@ sub get_by_key {
   throw("You must provide a cache key (e.g. a gene dbID).") unless $key;
 
   # transparently load cache from file unless already loaded
-  unless ($self->{'instance'}->{'loaded'}->{"$name:$type"}) {
-    $self->read_and_merge($name, $type);
+  unless ($self->{'instance'}->{'loaded'}->{"$type"}) {
+    $self->read_and_merge($type);
   }
 
-  return $self->{'cache'}->{$name}->{$type}->{$key};
+  return $self->{'cache'}->{$type}->{$name}->{$key};
 }
 
 sub get_by_name {
@@ -451,11 +446,11 @@ sub get_by_name {
   throw("You must provide a cache type.") unless $type;
   
   # transparently load cache from file unless already loaded
-  unless ($self->{'instance'}->{'loaded'}->{"$name:$type"}) {
-    $self->read_and_merge($name, $type);
+  unless ($self->{'instance'}->{'loaded'}->{$type}) {
+    $self->read_and_merge($type);
   }
 
-  return $self->{'cache'}->{$name}->{$type} || {};
+  return $self->{'cache'}->{$type}->{$name} || {};
 }
 
 
@@ -468,8 +463,8 @@ sub get_count_by_name {
   throw("You must provide a cache type.") unless $type;
   
   # transparently load cache from file unless already loaded
-  unless ($self->{'instance'}->{'loaded'}->{"$name:$type"}) {
-    $self->read_and_merge($name, $type);
+  unless ($self->{'instance'}->{'loaded'}->{$type}) {
+    $self->read_and_merge($type);
   }
 
   return scalar(keys %{ $self->get_by_name($name, $type) });
@@ -602,42 +597,20 @@ sub get_DBAdaptor {
 }
 
 
-sub all_cache_files_exist {
-  my $self = shift;
-  my $type = shift;
-
-  throw("You must provide a cache type.") unless $type;
-
-  my $i = 1;
-  foreach my $name (@{ $self->cache_names }) {
-    $i *= $self->cache_file_exists($name, $type);
-  }
-
-  return $i;
-}
-
-
-sub cache_names {
-  return \@cache_names;
-}
-
-
 sub cache_file_exists {
   my $self = shift;
-  my $name = shift;
   my $type = shift;
 
-  throw("You must provide a cache name (e.g. genes_by_id.") unless $name;
   throw("You must provide a cache type.") unless $type;
 
-  my $cache_file = $self->cache_file($name, $type);
+  my $cache_file = $self->cache_file($type);
 
   if (-e $cache_file) {
-    $self->logger->info("Cache file found for $name.\n", 3);
+    $self->logger->info("Cache file found.\n", 3);
     $self->logger->debug("Will read from $cache_file.\n", 3);
     return 1;
   } else {
-    $self->logger->info("No cache file found for $name.\n", 3);
+    $self->logger->info("No cache file found.\n", 3);
     $self->logger->info("Will build cache from db.\n", 3);
     return 0;
   }
@@ -646,13 +619,11 @@ sub cache_file_exists {
 
 sub cache_file {
   my $self = shift;
-  my $name = shift;
   my $type = shift;
 
-  throw("You must provide a cache name (e.g. genes_by_id.") unless $name;
   throw("You must provide a cache type.") unless $type;
 
-  return $self->dump_path."/$name.$type.object_cache.ser";
+  return $self->dump_path."/$type.object_cache.ser";
 }
 
 
@@ -679,11 +650,7 @@ sub write_all_to_file {
   throw("You must provide a cache type.") unless $type;
 
   my $size = 0;
-
-  foreach my $name (@{ $self->cache_names }) {
-    $size += $self->write_to_file($name, $type);
-  }
-
+  $size += $self->write_to_file($type);
   $size += $self->write_instance_to_file;
 
   return parse_bytes($size);
@@ -692,20 +659,18 @@ sub write_all_to_file {
 
 sub write_to_file {
   my $self = shift;
-  my $name = shift;
   my $type = shift;
 
-  throw("You must provide a cache name (e.g. genes_by_id).") unless $name;
   throw("You must provide a cache type.") unless $type;
 
-  unless ($self->{'cache'}->{$name}->{$type}) {
-    $self->logger->warning("No features found in $name/$type. Won't write cache file.\n");
+  unless ($self->{'cache'}->{$type}) {
+    $self->logger->warning("No features found in $type. Won't write cache file.\n");
     return;
   }
 
-  my $cache_file = $self->cache_file($name, $type);
+  my $cache_file = $self->cache_file($type);
 
-  eval { nstore($self->{'cache'}->{$name}->{$type}, $cache_file) };
+  eval { nstore($self->{'cache'}->{$type}, $cache_file) };
   if ($@) {
     throw("Unable to store $cache_file: $@\n");
   }
@@ -732,19 +697,17 @@ sub write_instance_to_file {
 
 sub read_from_file {
   my $self = shift;
-  my $name = shift;
   my $type = shift;
 
-  throw("You must provide a cache name (e.g. genes_by_id.") unless $name;
   throw("You must provide a cache type.") unless $type;
 
-  my $cache_file = $self->cache_file($name, $type);
+  my $cache_file = $self->cache_file($type);
 
   if (-s $cache_file) {
     
     #$self->logger->info("Reading cache from file...\n", 0, 'stamped');
     #$self->logger->info("Cache file $cache_file.\n", 1);
-    eval { $self->{'cache'}->{$name}->{$type} = retrieve($cache_file); };
+    eval { $self->{'cache'}->{$type} = retrieve($cache_file); };
     if ($@) {
       throw("Unable to retrieve cache: $@");
     }
@@ -755,58 +718,57 @@ sub read_from_file {
   }
 
 
-  return $self->{'cache'}->{$name}->{$type};
+  return $self->{'cache'}->{$type};
 }
 
 
 sub read_and_merge {
   my $self = shift;
-  my $name = shift;
   my $dbtype = shift;
 
-  throw("You must provide a cache name (e.g. genes_by_id.") unless $name;
   unless ($dbtype eq 'source' or $dbtype eq 'target') {
     throw("Db type must be 'source' or 'target'.");
   }
 
   foreach my $slice_name (@{ $self->slice_names($dbtype) }) {
-    $self->read_from_file($name, "$dbtype.$slice_name");
+    $self->read_from_file("$dbtype.$slice_name");
   }
 
-  $self->merge($name, $dbtype);
+  $self->merge($dbtype);
 
   # flag as being loaded
-  $self->{'instance'}->{'loaded'}->{"$name:$dbtype"} = 1;
+  $self->{'instance'}->{'loaded'}->{$dbtype} = 1;
 }
 
 
 sub merge {
   my $self = shift;
-  my $name = shift;
   my $dbtype = shift;
 
-  throw("You must provide a cache name (e.g. genes_by_id.") unless $name;
   unless ($dbtype eq 'source' or $dbtype eq 'target') {
     throw("Db type must be 'source' or 'target'.");
   }
 
-  foreach my $type (keys %{ $self->{'cache'}->{$name} || {} }) {
+  foreach my $type (keys %{ $self->{'cache'} || {} }) {
     next unless ($type =~ /^$dbtype/);
-    
-    (my $merged_type = $type) =~ s/^(\w+)\..+/$1/;
-    
-    foreach my $key (keys %{ $self->{'cache'}->{$name}->{$type} || {} }) {
-      if (defined $self->{'cache'}->{$name}->{$merged_type}->{$key}) {
-        # warning("Duplicate key in cache: $name|$merged_type|$key. Skipping.\n");
-      } else {
-        $self->{'cache'}->{$name}->{$merged_type}->{$key} =
-          $self->{'cache'}->{$name}->{$type}->{$key};
-      }
 
-      delete $self->{'cache'}->{$name}->{$type}->{$key};
+    foreach my $name (keys %{ $self->{'cache'}->{$type} || {} }) {
+    
+      foreach my $key (keys %{ $self->{'cache'}->{$type}->{$name} || {} }) {
+        if (defined $self->{'cache'}->{$dbtype}->{$name}->{$key}) {
+          # warning("Duplicate key in cache: $name|$dbtype|$key. Skipping.\n");
+        } else {
+          $self->{'cache'}->{$dbtype}->{$name}->{$key} =
+            $self->{'cache'}->{$type}->{$name}->{$key};
+        }
+
+        delete $self->{'cache'}->{$type}->{$name}->{$key};
+      }
+      
+      delete $self->{'cache'}->{$type}->{$name};
     }
     
-    delete $self->{'cache'}->{$name}->{$type};
+    delete $self->{'cache'}->{$type};
 
   }
 }
