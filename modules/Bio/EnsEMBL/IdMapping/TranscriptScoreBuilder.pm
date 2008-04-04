@@ -57,6 +57,11 @@ sub score_transcripts {
   # build scores based on exon scores
   my $matrix = $self->scores_from_exon_scores($exon_matrix);
 
+  # debug logging
+  if ($self->logger->loglevel eq 'debug') {
+    $matrix->log('transcript', $self->conf->param('dumppath'));
+  }
+
   # log stats of combined matrix
   my $fmt = "%-40s%10.0f\n";
 
@@ -220,6 +225,10 @@ sub score_matrix_from_flag_matrix {
   my $progress_id = $self->logger->init_progress($num_transcripts, 100);
 
   $self->logger->info("Creating score matrix from flag matrix...\n", 1);
+
+  # debug
+  my $fmt_d1 = "%-14s%-15s%-14s%-14s%-14s\n";
+  my $fmt_d2 = "%.6f";
   
   # loop over source transcripts
   foreach my $source_transcript (values %{ $self->cache->get_by_name('transcripts_by_id', 'source') }) {
@@ -228,7 +237,7 @@ sub score_matrix_from_flag_matrix {
     $self->logger->log_progress($progress_id, ++$i, 1);
 
     # We are only interested in scoring with exons that are in the target
-    # transcript. The scored mapping matrix may contain scores for exons that
+    # transcript. The ScoredMappingMatrix may contain scores for exons that
     # aren't in this transcript so create a hash of the target transcript's
     # exons
     my %source_exons = map { $_->id => 1 }
@@ -250,10 +259,11 @@ sub score_matrix_from_flag_matrix {
 
       # now loop over source exons and find the highest scoring target exon
       # belonging to the target transcript
-      my $max_source_score = -1;
       
       foreach my $source_exon (@{ $source_transcript->get_all_Exons }) {
 
+        my $max_source_score = -1;
+        
         foreach my $target_exon_id (@{ $exon_matrix->get_targets_for_source($source_exon->id) }) {
 
           next unless ($target_exons{$target_exon_id});
@@ -264,15 +274,17 @@ sub score_matrix_from_flag_matrix {
         }
 
         if ($max_source_score > 0) {
-          $source_transcript_score += $max_source_score * $source_exon->length;
+          $source_transcript_score += ($max_source_score * $source_exon->length);
+
         }
       }
 
       # now do the same for target exons
-      my $max_target_score = -1;
       
       foreach my $target_exon (@{ $target_transcript->get_all_Exons }) {
 
+        my $max_target_score = -1;
+        
         foreach my $source_exon_id (@{ $exon_matrix->get_sources_for_target($target_exon->id) }) {
 
           next unless ($source_exons{$source_exon_id});
@@ -283,7 +295,8 @@ sub score_matrix_from_flag_matrix {
         }
 
         if ($max_target_score > 0) {
-          $target_transcript_score += $max_target_score * $target_exon->length;
+          $target_transcript_score += ($max_target_score * $target_exon->length);
+
         }
       }
 
@@ -299,6 +312,15 @@ sub score_matrix_from_flag_matrix {
           $self->logger->warning("Score > length for source ($source_transcript_score <> $source_transcript_length) or target ($target_transcript_score <> $target_transcript_length).\n", 1);
 
         } else {
+
+=cut
+          # debug
+          $self->logger->info($source_transcript->id.":".$target_transcript->id.
+            " source score: $source_transcript_score".
+            " source length: $source_transcript_length".
+            " target score: $target_transcript_score".
+            " target length: $target_transcript_length\n");
+=cut
           
           # everything is fine, add score to matrix
           my $transcript_score =
