@@ -371,9 +371,9 @@ sub upload_mapping_session_and_events {
     $j += $stable_id_mapper->upload_file_into_table('target', 'stable_id_event',
       'stable_id_event_existing.txt');
     $j += $stable_id_mapper->upload_file_into_table('target', 'stable_id_event',
-      'stable_id_event_new.txt');
+      'stable_id_event_new.txt', 1);
     $j += $stable_id_mapper->upload_file_into_table('target', 'stable_id_event',
-      'stable_id_event_similarity.txt');
+      'stable_id_event_similarity.txt', 1);
     $logger->info("$j\n", 1);
     
     $logger->info("Done.\n\n");
@@ -413,9 +413,9 @@ sub upload_archive {
       $logger->info("${t}_archive...\n", 1);
       my $i = 0;
       $i += $stable_id_mapper->upload_file_into_table('target', "${t}_archive",
-        "${t}_archive_existing.txt");
+        "${t}_archive_existing.txt", 1);
       $i += $stable_id_mapper->upload_file_into_table('target', "${t}_archive",
-        "${t}_archive_new.txt");
+        "${t}_archive_new.txt", 1);
       $logger->info("$i\n", 1);
     }
     
