@@ -57,6 +57,11 @@ sub score_genes {
   # build scores based on transcript scores
   my $matrix = $self->scores_from_transcript_scores($transcript_matrix);
 
+  # debug logging
+  if ($self->logger->loglevel eq 'debug') {
+    $matrix->log('gene', $self->conf->param('dumppath'));
+  }
+
   # log stats of combined matrix
   my $fmt = "%-40s%10.0f\n";
 
@@ -232,7 +237,7 @@ sub score_matrix_from_flag_matrix {
 
     if ($simple_scoring) {
     
-      # simple scoring (used for rescoring purposes
+      # simple scoring (used for rescoring purposes)
       $score = $self->simple_gene_gene_score($source_gene, $target_gene,
         $transcript_matrix);
     
@@ -380,7 +385,7 @@ sub simple_gene_rescore {
 }
 
 #
-# penalise scores between genes with different biotypes or display names
+# penalise scores between genes with different biotypes.
 # entries are modified in place
 #
 sub biotype_gene_rescore {
@@ -402,9 +407,8 @@ sub biotype_gene_rescore {
     my $target_gene = $self->cache->get_by_key('genes_by_id', 'target',
       $entry->target);
 
-    unless ($source_gene->biotype eq $target_gene->biotype and
-            $source_gene->display_name eq $target_gene->display_name) {
-      
+    if ($source_gene->biotype ne $target_gene->biotype) {
+      #$self->logger->debug("biotype ".$entry->to_string."\n");
       $matrix->set_score($entry->source, $entry->target, ($entry->score * 0.8));
       $i++;
     }
