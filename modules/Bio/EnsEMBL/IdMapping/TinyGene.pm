@@ -88,17 +88,10 @@ sub logic_name {
 }
 
 
-sub display_name {
+sub is_known {
   my $self = shift;
   $self->[12] = shift if (@_);
   return $self->[12];
-}
-
-
-sub is_known {
-  my $self = shift;
-  $self->[13] = shift if (@_);
-  return $self->[13];
 }
 
 
@@ -110,12 +103,12 @@ sub add_Transcript {
     throw('Need a Bio::EnsEMBL::IdMapping::TinyTranscript.');
   }
 
-  push @{ $self->[14] }, $tr;
+  push @{ $self->[13] }, $tr;
 }
 
 
 sub get_all_Transcripts {
-  return $_[0]->[14] || [];
+  return $_[0]->[13] || [];
 }
 
 
