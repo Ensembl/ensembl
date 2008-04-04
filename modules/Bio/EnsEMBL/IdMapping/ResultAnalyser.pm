@@ -389,6 +389,13 @@ sub create_summary_email {
   print $fh qq(=========================\n\n);
 
   #
+  # timing
+  #
+  print $fh "Run at:  ".localtime;
+  print $fh "Runtime: ";
+  print $fh $self->logger->runtime, "\n\n";
+
+  #
   # parameters used for this run
   #
   print $fh $self->conf->list_param_values;
@@ -485,16 +492,6 @@ sub create_summary_email {
   }
 
   close($in_fh);
-  
-  print $fh "\n";
-
-  #
-  # timing
-  #
-  print $fh "\nRuntime:\n";
-  print $fh "========\n\n";
-  print $fh $self->logger->runtime, "\n\n";
-
   close($fh);
 }
 
