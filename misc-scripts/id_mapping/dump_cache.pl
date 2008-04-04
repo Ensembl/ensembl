@@ -212,7 +212,7 @@ sub bsubmit {
   
   my $type = "$dbtype.$slice_name";
 
-  unless ($cache->all_cache_files_exist($type)) {
+  unless ($cache->cache_file_exists($type)) {
     my $options = $conf->create_commandline_options(
         logauto       => 1,
         logautobase   => "dump_by_seq_region_${type}",
