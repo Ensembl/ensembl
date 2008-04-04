@@ -76,7 +76,13 @@ sub score {
 
 sub to_string {
   my $self = shift;
-  return sprintf('%-10s%-10s%-5f', $self->source, $self->target, $self->score);
+  return sprintf('%-10s%-10s%-5.6f', $self->source, $self->target, $self->score);
+}
+
+
+sub to_string_compat {
+  my $self = shift;
+  return join(" ", $self->source, $self->target, $self->score);
 }
 
 
