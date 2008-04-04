@@ -110,15 +110,17 @@ sub map_genes {
     unless ($gene_scores1->loaded) {
       $self->logger->info("Synteny Framework building...\n", 0, 'stamped');
       my $sf = Bio::EnsEMBL::IdMapping::SyntenyFramework->new(
+        -DUMP_PATH    => $dump_path,
+        -CACHE_FILE   => 'synteny_framework.ser',
         -LOGGER       => $self->logger,
         -CONF         => $self->conf,
-        -CACHE        => $self->cache
+        -CACHE        => $self->cache,
       );
       $sf->build_synteny($mappings0);
 
       # use it to rescore the genes
       $self->logger->info("\nSynteny assisted mapping...\n", 0, 'stamped');
-      $sf->rescore_gene_matrix($gene_scores1);
+      $gene_scores1 = $sf->rescore_gene_matrix_lsf($gene_scores1);
 
       # checkpoint
       $gene_scores1->write_to_file;
@@ -198,7 +200,7 @@ sub map_genes {
     $mappings->write_to_file;
 
     if ($self->logger->loglevel eq 'debug') {
-      $mappings->log('gene');
+      $mappings->log('gene', $self->conf->param('dumppath'));
     }
 
     $self->logger->info("Done.\n\n", 0, 'stamped');
@@ -583,7 +585,6 @@ sub basic_mapping {
   );
   
   # checkpoint test: return a previously stored MappingList
-  # checkpoint test: return a previously stored MappingList
   if ($mappings->loaded) {
     $self->logger->info("Read existing mappings from ${mapping_name}.ser.\n");
     return $mappings;
@@ -596,26 +597,39 @@ sub basic_mapping {
   my @sorted_entries = sort { $b->score <=> $a->score }
     @{ $matrix->get_all_Entries };
 
+  # debug
+  my $idx = substr($mapping_name, -1);
+
   while (my $entry = shift(@sorted_entries)) {
     
-    # we already found a mapping for either source or target yet
+    #$self->logger->debug("\nxxx$idx ".$entry->to_string." ");
+    
+    # we already found a mapping for either source or target
     next if ($sources_done->{$entry->source} or
              $targets_done->{$entry->target});
+    
+    #$self->logger->debug('d');
     
     # there's a better mapping for either source or target
     next if ($self->higher_score_exists($entry, $matrix, $sources_done,
       $targets_done));
+      
+    #$self->logger->debug('h');
 
     # check for ambiguous mappings; they are dealt with later
     my $other_sources = [];
     my $other_targets = [];
 
     if ($self->ambiguous_mapping($entry, $matrix, $other_sources, $other_targets)) {
-      $self->filter_sources($other_sources, $sources_done);
-      $self->filter_targets($other_targets, $targets_done);
+      #$self->logger->debug('a');
+      
+      $other_sources = $self->filter_sources($other_sources, $sources_done);
+      $other_targets = $self->filter_targets($other_targets, $targets_done);
 
       next if (scalar(@$other_sources) or scalar(@$other_targets));
     }
+    
+    #$self->logger->debug('A');
 
     # this is the best mapping, add it
     $mappings->add_Entry($entry);
@@ -713,7 +727,9 @@ sub scores_similar {
 sub filter_sources {
   my ($self, $other_sources, $sources_done) = @_;
 
-  return 0 unless (scalar(@$other_sources) and scalar(keys %$sources_done));
+  unless (scalar(@$other_sources) and scalar(keys %$sources_done)) {
+    return $other_sources;
+  }
 
   my @tmp = ();
 
@@ -721,14 +737,16 @@ sub filter_sources {
     push @tmp, $e unless ($sources_done->{$e}); 
   }
 
-  $other_sources = \@tmp;
+  return \@tmp;
 }
 
 
 sub filter_targets {
   my ($self, $other_targets, $targets_done) = @_;
 
-  return 0 unless (scalar(@{ $other_targets }) and scalar(keys %$targets_done));
+  unless (scalar(@{ $other_targets }) and scalar(keys %$targets_done)) {
+    return $other_targets;
+  }
 
   my @tmp = ();
 
@@ -736,7 +754,7 @@ sub filter_targets {
     push @tmp, $e unless ($targets_done->{$e}); 
   }
 
-  $other_targets = \@tmp;
+  return \@tmp;
 }
 
 
@@ -776,23 +794,30 @@ sub same_gene_transcript_mapping {
   my $targets_done = {};
 
   # sort scoring matrix entries by descending score
-  my @sorted_entries = sort { $b->score <=> $a->score }
-    @{ $matrix->get_all_Entries };
+  my @sorted_entries = sort { $b->score <=> $a->score ||
+    $a->source <=> $b->source || $a->target <=> $b->target }
+      @{ $matrix->get_all_Entries };
 
   while (my $entry = shift(@sorted_entries)) {
     
+    # $self->logger->debug("\nxxx4 ".$entry->to_string." ");
+
     # we already found a mapping for either source or target yet
     next if ($sources_done->{$entry->source} or
              $targets_done->{$entry->target});
-    
+
+    #$self->logger->debug('d');
+
     my $other_sources = [];
     my $other_targets = [];
     my %source_genes = ();
     my %target_genes = ();
 
     if ($self->ambiguous_mapping($entry, $matrix, $other_sources, $other_targets)) {
-      $self->filter_sources($other_sources, $sources_done);
-      $self->filter_targets($other_targets, $targets_done);
+      #$self->logger->debug('a');
+
+      $other_sources = $self->filter_sources($other_sources, $sources_done);
+      $other_targets = $self->filter_targets($other_targets, $targets_done);
 
       $source_genes{$self->cache->get_by_key('genes_by_transcript_id',
         'source', $entry->source)} = 1;
@@ -811,10 +836,13 @@ sub same_gene_transcript_mapping {
       
       # only add mapping if only one source and target gene involved
       if (scalar(keys %source_genes) == 1 and scalar(keys %target_genes) == 1) {
+        #$self->logger->debug('O');
         $mappings->add_Entry($entry);
       }
 
     } else {
+      #$self->logger->debug('A');
+
       # this is the best mapping, add it
       $mappings->add_Entry($entry);
     }
