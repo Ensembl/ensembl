@@ -265,7 +265,7 @@ sub confirm_params {
     print $self->list_param_values;
 
     # ask user if he wants to proceed
-    exit unless user_proceed("Continue?");
+    exit unless user_proceed("Continue?", 1, 'n');
   }
   
   return(1);

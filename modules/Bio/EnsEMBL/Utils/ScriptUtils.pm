@@ -67,18 +67,28 @@ our @EXPORT_OK = qw(
 =cut
 
 sub user_proceed {
-  my $text = shift;
+  my ($text, $interactive, $default) = @_;
 
-  print "$text\n" if $text;
-  print "[y/N] ";
+  unless (defined($default)) {
+    die("Need a default answer for non-interactive runs.");
+  }
+
+  my $input;
+
+  if ($interactive) {
+    print "$text\n" if $text;
+    print "[y/N] ";
   
-  my $input = lc(<>);
-  chomp $input;
+    $input = lc(<>);
+    chomp $input;
+  } else {
+    $input = $default;
+  }
   
   if ($input eq 'y') {
     return(1);
   } else {
-    print "Skipping.\n";
+    print "Skipping.\n" if ($interactive);
     return(0);
   }
 }
@@ -204,7 +214,7 @@ sub path_append {
 
   unless (-d $return_path) {
     system("mkdir -p $return_path") == 0 or
-      throw("Unable to create directory $return_path: $!\n");
+      die("Unable to create directory $return_path: $!\n");
   }
   
   return $return_path;
