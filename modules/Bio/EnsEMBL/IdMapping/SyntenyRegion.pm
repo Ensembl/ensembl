@@ -187,13 +187,15 @@ sub merge {
 sub stretch {
   my ($self, $factor) = @_;
 
-  my $source_adjust = ($self->source_end - $self->source_start + 1) *
-    $factor * $self->score;
+  my $source_adjust = int(($self->source_end - $self->source_start + 1) *
+    $factor * $self->score);
   $self->source_start($self->source_start - $source_adjust);
   $self->source_end($self->source_end + $source_adjust);
+  #warn sprintf("  sss %d %d %d\n", $source_adjust, $self->source_start,
+  #  $self->source_end);
   
-  my $target_adjust = ($self->target_end - $self->target_start + 1) *
-    $factor * $self->score;
+  my $target_adjust = int(($self->target_end - $self->target_start + 1) *
+    $factor * $self->score);
   $self->target_start($self->target_start - $target_adjust);
   $self->target_end($self->target_end + $target_adjust);
 
@@ -205,14 +207,14 @@ sub score_location_relationship {
   my ($self, $source_gene, $target_gene) = @_;
 
   # must be on same seq_region
-  if ($self->source_seq_region_name ne $source_gene->seq_region_name or
-      $self->target_seq_region_name ne $target_gene->seq_region_name) {
+  if (($self->source_seq_region_name ne $source_gene->seq_region_name) or
+      ($self->target_seq_region_name ne $target_gene->seq_region_name)) {
     return 0;
   }
 
   # strand relationship must be the same (use logical XOR to find out)
-  if ($self->source_strand == $source_gene->strand xor
-      $self->target_strand == $target_gene->strand) {
+  if (($self->source_strand == $source_gene->strand) xor
+      ($self->target_strand == $target_gene->strand)) {
     return 0;
   }
 
@@ -222,6 +224,9 @@ sub score_location_relationship {
 
   my $source_rel_end = ($source_gene->end - $self->source_start + 1) /
                        ($self->source_end - $self->source_start + 1);
+
+  #warn "  aaa ".$self->to_string."\n";
+  #warn sprintf("  bbb %.6f %.6f\n", $source_rel_start, $source_rel_end);
 
   # cut off if the source location is completely outside
   return 0 if ($source_rel_start > 1.1 or $source_rel_end < -0.1);
@@ -246,8 +251,11 @@ sub score_location_relationship {
               (($target_rel_start < $source_rel_start) ? $target_rel_start :
                                                          $source_rel_start);
 
-  my $score = 1 - (2 * $added_range - $target_rel_end - $source_rel_end +
-    $target_rel_start + $source_rel_start);
+  my $score = $self->score * (1 - (2 * $added_range - $target_rel_end -
+    $source_rel_end + $target_rel_start + $source_rel_start));
+
+  #warn "  ccc ".sprintf("%.6f:%.6f:%.6f:%.6f:%.6f\n", $added_range,
+  #  $source_rel_start, $source_rel_end, $target_rel_start, $target_rel_end);
 
   $score = 0 if ($score < 0);
 
@@ -258,6 +266,22 @@ sub score_location_relationship {
   }
 
   return $score;
+}
+
+
+sub to_string {
+  my $self = shift;
+  return sprintf("%s:%s-%s:%s %s:%s-%s:%s %.6f",
+    $self->source_seq_region_name,
+    $self->source_start,
+    $self->source_end,
+    $self->source_strand,
+    $self->target_seq_region_name,
+    $self->target_start,
+    $self->target_end,
+    $self->target_strand,
+    $self->score
+  );
 }
 
 

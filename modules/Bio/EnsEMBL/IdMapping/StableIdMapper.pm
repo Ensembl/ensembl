@@ -414,7 +414,7 @@ sub generate_similarity_events {
       # add similarities for all entries within 5% of top scorer
       while (my $e = shift(@entries)) {
         
-        if ($e->score > ($top_score * 0.98)) {
+        if ($e->score > ($top_score * 0.95)) {
           
           my $s_obj = $self->cache->get_by_key("${type}s_by_id", 'source',
             $e->source);
@@ -461,6 +461,8 @@ sub filter_same_gene_transcript_similarities {
   my %all_targets = map { $_->stable_id => 1 }
     values %{ $self->cache->get_by_name("transcripts_by_id", 'target') };
 
+  my $i = 0;
+
   foreach my $e (@{ $transcript_scores->get_all_Entries }) {
 
     my $s_tr = $self->cache->get_by_key('transcripts_by_id', 'source',
@@ -469,14 +471,25 @@ sub filter_same_gene_transcript_similarities {
       $e->source);
     my $t_gene = $self->cache->get_by_key('genes_by_transcript_id', 'target',
       $e->target);
+    # workaround for caching issue: only gene objects in 'genes_by_id' cache
+    # have a stable ID assigned
+    #$t_gene = $self->cache->get_by_key('genes_by_id', 'target', $t_gene->id);
+
+    #$self->logger->debug("xxx ".join(":", $s_tr->stable_id, $s_gene->stable_id,
+    #  $t_gene->stable_id)."\n");
 
     # skip if source and target transcript are in same gene, BUT keep events for
     # deleted transcripts
-    next if (($s_gene->stable_id eq $t_gene->stable_id) and
-      $all_targets{$s_tr->stable_id});
+    if (($s_gene->stable_id eq $t_gene->stable_id) and
+      $all_targets{$s_tr->stable_id}) {
+        $i++;
+        next;
+    }
 
     $filtered_scores->add_Entry($e);
   }
+  
+  $self->logger->debug("Skipped $i same gene transcript mappings.\n");
 
   return $filtered_scores;
 }
@@ -757,7 +770,7 @@ sub get_all_stable_id_events {
   # argument check
   throw("Need an event type (new|similarity).") unless ($type);
 
-  return [ values %{ $self->{'stable_id_events'}->{$type} } ];
+  return [ keys %{ $self->{'stable_id_events'}->{$type} } ];
 }
 
 
