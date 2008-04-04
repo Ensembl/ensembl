@@ -53,7 +53,6 @@ sub new {
 
   # initialise internal datastructure
   $self->{'dump_path'} = $dump_path || '.';
-  $self->{'cache_file'} = $self->dump_path."/$cache_file";
   $self->{'cache_file_name'} = $cache_file;
 
   # automatically load serialised object from file if requested
@@ -120,17 +119,16 @@ sub dump_path {
 }
 
 
-sub cache_file {
-  my $self = shift;
-  $self->{'cache_file'} = shift if (@_);
-  return $self->{'cache_file'};
-}
-
-
 sub cache_file_name {
   my $self = shift;
   $self->{'cache_file_name'} = shift if (@_);
   return $self->{'cache_file_name'};
+}
+
+
+sub cache_file {
+  my $self = shift;
+  return $self->dump_path.'/'.$self->cache_file_name;
 }
 
 
