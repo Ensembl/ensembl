@@ -96,9 +96,10 @@ sub get_entry_count {
 sub log {
   my $self = shift;
   my $type = shift;
+  my $dump_path = shift;
   
-  my $debug_path = path_append($self->dump_path, 'debug');
-  my $logfile = "$debug_path/${type}_mappings.txt";
+  my $debug_path = path_append($dump_path, 'debug');
+  my $logfile = "$debug_path/${type}_final_scores.txt";
   
   open(my $fh, '>', $logfile) or
     throw("Unable to open $logfile for writing: $!");
