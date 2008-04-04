@@ -38,6 +38,7 @@ our @ISA = qw(Bio::EnsEMBL::IdMapping::Serialisable);
 
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 use Bio::EnsEMBL::Utils::Exception qw(throw warning);
+use Bio::EnsEMBL::Utils::ScriptUtils qw(path_append);
 use Bio::EnsEMBL::IdMapping::Entry;
 
 
@@ -54,6 +55,45 @@ sub new {
   }
 
   return $self;
+}
+
+
+sub flush {
+  my $self = shift;
+
+  # reset caches
+  $self->{'cache'}->{'matrix'} = {};
+  $self->{'cache'}->{'source_list'} = {};
+  $self->{'cache'}->{'target_list'} = {};
+}
+
+
+sub sub_matrix {
+  my $self = shift;
+  my $start = shift;
+  my $end = shift;
+
+  # default to returning the full matrix if no start/end provided
+  $start ||= 1;
+  $end ||= $self->size;
+
+  my $sub_matrix = Bio::EnsEMBL::IdMapping::ScoredMappingMatrix->new(
+    -DUMP_PATH   => $self->dump_path,
+    -CACHE_FILE  => $self->cache_file_name,
+  );
+  my $i = 0;
+
+  foreach my $key (sort keys %{ $self->{'cache'}->{'matrix'} }) {
+    $i++;
+    next if ($i < $start);
+    last if ($i > $end);
+
+    my ($source, $target) = split(/:/, $key);
+    $sub_matrix->add_score($source, $target,
+      $self->{'cache'}->{'matrix'}->{$key});
+  }
+
+  return $sub_matrix;
 }
 
 
@@ -202,6 +242,11 @@ sub get_entry_count {
 }
 
 
+sub size {
+  return $_[0]->get_entry_count;
+}
+
+
 sub get_source_count {
   my $self = shift;
   return scalar(keys %{ $self->{'cache'}->{'source_list'} });
@@ -297,6 +342,25 @@ sub merge {
   }
 
   return $c;
+}
+
+
+sub log {
+  my $self = shift;
+  my $type = shift;
+  my $dump_path = shift;
+  
+  my $debug_path = path_append($dump_path, 'debug');
+  my $logfile = "$debug_path/${type}_scores.txt";
+  
+  open(my $fh, '>', $logfile) or
+    throw("Unable to open $logfile for writing: $!");
+
+  foreach my $entry (@{ $self->get_all_Entries }) {
+    print $fh ($entry->to_string."\n");
+  }
+
+  close($fh);
 }
 
 
