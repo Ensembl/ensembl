@@ -280,12 +280,13 @@ sub dump_table_to_file {
   Arg[1]      : String $dbtype - db type (source|target)
   Arg[2]      : String $table - name of table to upload the data to
   Arg[3]      : String $filename - name of dump file
+  Arg[4]      : Boolean $no_check_empty - don't check if table is empty
   Example     : my $rows_uploaded = $object->upload_file_into_table('target',
                   'stable_id_event', 'stable_id_event_new.txt');
   Description : Uploads a tab-delimited data file into a db table. The data file
                 will be taken from a subdirectory 'tables' under your configured
-                dumppath. If the db table isn't empty, no data is uploaded (and
-                a warning is issued).
+                dumppath. If the db table isn't empty and $no_check_empty isn't
+                set, no data is uploaded (and a warning is issued).
   Return type : Int - the number of rows uploaded
   Exceptions  : thrown on wrong or missing arguments
   Caller      : general
@@ -299,6 +300,7 @@ sub upload_file_into_table {
   my $dbtype = shift;
   my $table = shift;
   my $filename = shift;
+  my $no_check_empty = shift;
 
   # argument check
   unless (($dbtype eq 'source') or ($dbtype eq 'target')) {
@@ -324,16 +326,19 @@ sub upload_file_into_table {
     my $dbh = $dba->dbc->db_handle;
 
     # check table is empty
-    my $sql = qq(SELECT count(*) FROM $table);
-    my $sth = $dbh->prepare($sql);
-    $sth->execute;
-    my ($c) = $sth->fetchrow_array;
-    $sth->finish;
+    my ($sql, $sth);
+    unless ($no_check_empty) {
+      $sql = qq(SELECT count(*) FROM $table);
+      $sth = $dbh->prepare($sql);
+      $sth->execute;
+      my ($c) = $sth->fetchrow_array;
+      $sth->finish;
 
-    if ($c) {
-      $self->logger->warning("Table $table not empty: found $c entries.\n", 1);
-      $self->logger->info("Data not uploaded!\n", 1);
-      return $r;
+      if ($c) {
+        $self->logger->warning("Table $table not empty: found $c entries.\n", 1);
+        $self->logger->info("Data not uploaded!\n", 1);
+        return $r;
+      }
     }
     
     # now upload the data
@@ -394,7 +399,7 @@ sub conf {
 =head2 cache
 
   Arg[1]      : (optional) Bio::EnsEMBL::IdMapping::Cache - the cache to set
-  Example     : $object->cache->read_from_file('genes_by_id', 'source');
+  Example     : $object->cache->read_from_file('source');
   Description : Getter/setter for cache object
   Return type : Bio::EnsEMBL::IdMapping::Cache
   Exceptions  : none
