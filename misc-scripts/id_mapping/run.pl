@@ -58,6 +58,12 @@ use Bio::EnsEMBL::Utils::ConfParser;
 use Bio::EnsEMBL::Utils::Logger;
 use Bio::EnsEMBL::Utils::ScriptUtils qw(path_append);
 
+my %valid_modes = (
+  'check_only'  => 1,
+  'normal'      => 1,
+  'upload'      => 1,
+);
+
 # parse configuration and commandline arguments
 my $conf = new Bio::EnsEMBL::Utils::ConfParser(
   -SERVERROOT => "$Bin/../../..",
@@ -76,7 +82,7 @@ $conf->parse_options(
   'targetpass|target_pass=s' => 0,
   'targetdbname|target_dbname=s' => 1,
   'mode=s' => 0,
-  'dumppath|dump_path=s' => 1,
+  'basedir|basedir=s' => 1,
   'chromosomes|chr=s@' => 0,
   'region=s' => 0,
   'biotypes=s@' => 0,
@@ -92,11 +98,12 @@ $conf->parse_options(
   'lsf!' => 0,
   'lsf_opt_run|lsfoptrun=s' => 0,
   'lsf_opt_dump_cache|lsfoptdumpcache=s' => 0,
+  'no_check!' => 0,
 );
 
 # set default logpath
 unless ($conf->param('logpath')) {
-  $conf->param('logpath', path_append($conf->param('dumppath'), 'log'));
+  $conf->param('logpath', path_append($conf->param('basedir'), 'log'));
 }
 
 # get log filehandle and print heading and parameters to logfile
@@ -109,12 +116,30 @@ my $logger = new Bio::EnsEMBL::Utils::Logger(
   -LOGLEVEL     => $conf->param('loglevel'),
 );
 
+# initialise log
+$logger->init_log($conf->list_param_values);
+
+my $mode = $conf->param('mode') || 'normal';
+
+# check configuration and resources.
+# this is deliberately done before submitting to lsf (doesn't need much
+# resources and you will know about config errors before waiting for job to
+# run). the 'no_check' option prevents the checks to be re-run after automatic
+# lsf submission
+unless ($conf->param('no_check')) {
+  unless (&init_check($mode)) {
+    $logger->error("Configuration check failed. See above for details.\n");
+  }
+
+  if ($mode eq 'check_only') {
+    $logger->info("Nothing else to do for 'check_only' mode. Exiting.\n");
+    exit;
+  }
+}
+
 # if user wants to run via lsf, submit script with bsub (this will exit this
 # instance of the script)
 &bsubmit if ($conf->param('lsf'));
-
-# initialise log
-$logger->init_log($conf->list_param_values);
 
 # this script is only a wrapper and will run one or more components.
 # define options for the components here.
@@ -135,8 +160,10 @@ $options{'id_mapping'} = $conf->create_commandline_options(
   is_component  => 1,
 );
 
+$logger->info("Nothing to do, just testing.\n");
+exit;
+
 # run components, depending on mode
-my $mode = $conf->param('mode') || 'normal';
 my $sub = "run_$mode";
 no strict 'refs';
 &$sub;
@@ -145,6 +172,39 @@ no strict 'refs';
 $logger->finish_log;
 
 ### END main ###
+  # add one more job to 
+
+
+sub init_check {
+  my $mode = shift;
+
+  my $ok = 1;
+
+  $logger->info("Checking configuration...\n", 0, 'stamped');
+
+  # check for valid mode
+  unless ($valid_modes{$mode}) {
+    $logger->warning("Invalid mode: $mode.\n");
+    $ok = 0;
+  }
+
+  # create the base directory, throw if this fails
+  my $basedir = $conf->param('basedir');
+  unless (-d $basedir) {
+    system("mkdir -p $basedir") == 0 or
+      die("Unable to create directory $basedir: $!\n");
+  }
+  
+  $logger->info("Done.\n\n", 0, 'stamped');
+
+  return $ok;
+}
+
+
+sub run_check_only {
+  # this is a pseudo mode which does nothing; only init_check() will be executed
+  return;
+}
 
 
 sub run_normal {
@@ -208,9 +268,10 @@ sub bsubmit {
 
   # options for this script
   my $options = $conf->create_commandline_options(
-    logautoid => $logger->log_auto_id,
-    interactive   => 0,
-    lsf       => 0,
+    logautoid   => $logger->log_auto_id,
+    interactive => 0,
+    lsf         => 0,
+    no_check    => 1,
   );
   $cmd .= " $options";
 
