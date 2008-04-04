@@ -637,7 +637,7 @@ sub instance_file {
 sub dump_path {
   my $self = shift;
 
-  $self->{'dump_path'} ||= path_append($self->conf->param('dumppath'), 'cache');
+  $self->{'dump_path'} ||= path_append($self->conf->param('basedir'), 'cache');
 
   return $self->{'dump_path'};
 }

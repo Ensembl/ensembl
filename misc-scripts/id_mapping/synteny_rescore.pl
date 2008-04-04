@@ -67,7 +67,7 @@ my $conf = new Bio::EnsEMBL::Utils::ConfParser(
 );
 
 $conf->parse_options(
-  'dumppath|dump_path=s' => 1,
+  'basedir|basedir=s' => 1,
   'index|i=n' => 1,
 );
 
@@ -95,10 +95,10 @@ my $cache = Bio::EnsEMBL::IdMapping::Cache->new(
 $cache->read_instance_from_file;
 
 # load SyntenyFramework and gene ScoredMappingMatrix from files
-my $dump_path = $conf->param('dumppath');
+my $basedir = $conf->param('basedir');
 
 my $sf = Bio::EnsEMBL::IdMapping::SyntenyFramework->new(
-  -DUMP_PATH    => path_append($dump_path, 'mapping'),
+  -DUMP_PATH    => path_append($basedir, 'mapping'),
   -CACHE_FILE   => 'synteny_framework.ser',
   -LOGGER       => $logger,
   -CONF         => $conf,
@@ -107,7 +107,7 @@ my $sf = Bio::EnsEMBL::IdMapping::SyntenyFramework->new(
 $sf->read_from_file;
 
 my $gene_scores = Bio::EnsEMBL::IdMapping::ScoredMappingMatrix->new(
-  -DUMP_PATH   => path_append($dump_path, 'matrix/synteny_rescore'),
+  -DUMP_PATH   => path_append($basedir, 'matrix/synteny_rescore'),
   -CACHE_FILE  => "gene_matrix_synteny$index.ser",
   -AUTO_LOAD   => 1,
 );

@@ -71,7 +71,7 @@ sub score_exons {
 
   # debug logging
   if ($self->logger->loglevel eq 'debug') {
-    $matrix->log('exon', $self->conf->param('dumppath'));
+    $matrix->log('exon', $self->conf->param('basedir'));
   }
 
   # log stats of combined matrix
@@ -90,7 +90,7 @@ sub score_exons {
 sub overlap_score {
   my $self = shift;
 
-  my $dump_path = path_append($self->conf->param('dumppath'), 'matrix');
+  my $dump_path = path_append($self->conf->param('basedir'), 'matrix');
   
   my $matrix = Bio::EnsEMBL::IdMapping::ScoredMappingMatrix->new(
     -DUMP_PATH   => $dump_path,
@@ -139,7 +139,7 @@ sub exonerate_score {
     throw('Need a Bio::EnsEMBL::IdMapping::ScoredMappingMatrix.');
   }
 
-  my $dump_path = path_append($self->conf->param('dumppath'), 'matrix');
+  my $dump_path = path_append($self->conf->param('basedir'), 'matrix');
 
   my $exonerate_matrix = Bio::EnsEMBL::IdMapping::ScoredMappingMatrix->new(
     -DUMP_PATH   => $dump_path,
@@ -387,16 +387,16 @@ sub run_exonerate {
     $self->logger->error("Can't create lsf log dir $logpath: $!\n");
 
   # delete exonerate output from previous runs
-  my $dumppath = $self->cache->dump_path;
+  my $dump_path = $self->cache->dump_path;
 
-  opendir(DUMPDIR, $dumppath) or
-    $self->logger->error("Can't open $dumppath for reading: $!");
+  opendir(DUMPDIR, $dump_path) or
+    $self->logger->error("Can't open $dump_path for reading: $!");
 
   while (defined(my $file = readdir(DUMPDIR))) {
     next unless /exonerate_map\.\d+/;
 
-    unlink("$dumppath/$file") or
-      $self->logger->error("Can't delete $dumppath/$file: $!");
+    unlink("$dump_path/$file") or
+      $self->logger->error("Can't delete $dump_path/$file: $!");
   }
   
   closedir(DUMPDIR);
@@ -422,7 +422,7 @@ sub run_exonerate {
     qq{--percent $percent } .
     $self->conf->param('exonerate_extra_params') . " " .
     q{--ryo 'myinfo: %qi %ti %et %ql %tl\n' } .
-    qq{| grep '^myinfo:' > $dumppath/exonerate_map.\$LSB_JOBINDEX} . "\n";
+    qq{| grep '^myinfo:' > $dump_path/exonerate_map.\$LSB_JOBINDEX} . "\n";
   
   $self->logger->info("Submitting $num_jobs exonerate jobs to lsf.\n");
   $self->logger->debug("$exonerate_job\n\n");
@@ -456,7 +456,7 @@ sub run_exonerate {
   for (my $i = 1; $i <= $num_jobs; $i++) {
   
     # check that output file exists
-    my $outfile = "$dumppath/exonerate_map.$i";
+    my $outfile = "$dump_path/exonerate_map.$i";
     push @missing, $outfile unless (-s "$outfile");
 
     # check no errors occurred
@@ -596,19 +596,19 @@ sub parse_exonerate_results {
   $self->logger->info("Parsing exonerate results...\n", 0, 'stamped');
 
   # loop over all result files
-  my $dumppath = $self->cache->dump_path;
+  my $dump_path = $self->cache->dump_path;
   my $num_files = 0;
   my $num_lines = 0;
 
-  opendir(DUMPDIR, $dumppath) or
-    $self->logger->error("Can't open $dumppath for reading: $!");
+  opendir(DUMPDIR, $dump_path) or
+    $self->logger->error("Can't open $dump_path for reading: $!");
 
   while (defined(my $file = readdir(DUMPDIR))) {
     next unless $file =~ /exonerate_map\.\d+/;
 
     $num_files++;
 
-    open(F, '<', "$dumppath/$file");
+    open(F, '<', "$dump_path/$file");
 
     while (<F>) {
       $num_lines++;

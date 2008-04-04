@@ -64,7 +64,7 @@ sub create_shrinked_matrix {
 
   throw('Need a cache file name.') unless ($cache_file);
 
-  my $dump_path = path_append($self->conf->param('dumppath'), 'matrix');
+  my $dump_path = path_append($self->conf->param('basedir'), 'matrix');
   $cache_file .= '.ser';
 
   my $shrinked_matrix = Bio::EnsEMBL::IdMapping::ScoredMappingMatrix->new(

@@ -213,7 +213,7 @@ sub rescore_gene_matrix_lsf {
   my $num_jobs = $self->conf->param('synteny_rescore_jobs') || 20;
   $num_jobs++;
 
-  my $dump_path = path_append($self->conf->param('dumppath'),
+  my $dump_path = path_append($self->conf->param('basedir'),
     'matrix/synteny_rescore');
 
   $self->logger->debug("Creating sub-matrices...\n", 0, 'stamped');
@@ -376,7 +376,7 @@ sub logger {
 
   Arg[1]      : (optional) Bio::EnsEMBL::Utils::ConfParser - the configuration
                 to set
-  Example     : my $dumppath = $object->conf->param('dumppath');
+  Example     : my $basedir = $object->conf->param('basedir');
   Description : Getter/setter for configuration object
   Return type : Bio::EnsEMBL::Utils::ConfParser
   Exceptions  : none

@@ -74,7 +74,7 @@ $conf->parse_options(
   'targetuser|target_user=s' => 1,
   'targetpass|target_pass=s' => 0,
   'targetdbname|target_dbname=s' => 1,
-  'dumppath|dump_path=s' => 1,
+  'basedir|basedir=s' => 1,
   'biotypes=s@' => 0,
   'dbtype=s' => 1,
   'slice_name=s' => 1,
@@ -83,7 +83,7 @@ $conf->parse_options(
 
 # set default logpath
 unless ($conf->param('logpath')) {
-  $conf->param('logpath', path_append($conf->param('dumppath'), 'log'));
+  $conf->param('logpath', path_append($conf->param('basedir'), 'log'));
 }
 # log to a subdirectory to prevent clutter
 $conf->param('logpath', path_append($conf->param('logpath'),

@@ -81,7 +81,7 @@ $conf->parse_options(
   'altuser|alt_user=s' => 0,
   'altpass|alt_pass=s' => 0,
   'altdbname|alt_dbname=s' => 1,
-  'dumppath|dump_path=s' => 1,
+  'basedir|basedir=s' => 1,
   'lsf!' => 0,
   'lsf_opt|lsfopt=s' => 0,
   'suffix|sfx=s' => 0,
@@ -92,7 +92,7 @@ $conf->parse_options(
 
 # set default logpath
 unless ($conf->param('logpath')) {
-  $conf->param('logpath', path_append($conf->param('dumppath'), 'log'));
+  $conf->param('logpath', path_append($conf->param('basedir'), 'log'));
 }
 
 # assume both dbs are on same host unless specified otherwise
@@ -196,7 +196,7 @@ sub compare_features {
   my $ftype = shift;
 
   # get a filehandle to write results for debugging
-  my $path = path_append($conf->param('dumppath'), 'debug');
+  my $path = path_append($conf->param('basedir'), 'debug');
   my $file = "$path/${ftype}_diff.txt";
   open(my $fh, '>', $file) or die "Can't open $file for writing: $!\n";
 

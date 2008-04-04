@@ -10,7 +10,7 @@ dump_scores.pl [arguments]
 
 Required arguments:
 
-  --dumppath=PATH                     base directory of ID mapping results
+  --basedir=PATH                     base directory of ID mapping results
 
 Optional arguments:
 
@@ -67,12 +67,12 @@ my $conf = new Bio::EnsEMBL::Utils::ConfParser(
 );
 
 $conf->parse_options(
-  'dumppath|dump_path=s' => 1,
+  'basedir|basedir=s' => 1,
 );
 
 # set default logpath
 unless ($conf->param('logpath')) {
-  $conf->param('logpath', path_append($conf->param('dumppath'), 'log'));
+  $conf->param('logpath', path_append($conf->param('basedir'), 'log'));
 }
 
 # get log filehandle and print heading and parameters to logfile
@@ -89,7 +89,7 @@ my $logger = new Bio::EnsEMBL::Utils::Logger(
 # initialise log
 $logger->init_log($conf->list_param_values);
 
-my $dump_path = path_append($conf->param('dumppath'), 'matrix');
+my $dump_path = path_append($conf->param('basedir'), 'matrix');
 
 # genes
 my $gene_matrix = &read_matrix('gene');
@@ -145,7 +145,7 @@ sub dump_scores {
 
   $logger->info("Dumping  $type scores to file...\n", 0, 'stamped');
 
-  my $debug_path = path_append($conf->param('dumppath'), 'debug');
+  my $debug_path = path_append($conf->param('basedir'), 'debug');
   my $logfile = "$debug_path/${type}_scores.txt";
   
   open(my $fh, '>', $logfile) or

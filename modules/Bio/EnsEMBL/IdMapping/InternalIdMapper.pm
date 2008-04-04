@@ -71,7 +71,7 @@ sub map_genes {
   
   $self->logger->info("== Internal ID mapping for genes...\n\n", 0, 'stamped');
 
-  my $dump_path = path_append($self->conf->param('dumppath'), 'mapping');
+  my $dump_path = path_append($self->conf->param('basedir'), 'mapping');
 
   my $mappings = Bio::EnsEMBL::IdMapping::MappingList->new(
     -DUMP_PATH   => $dump_path,
@@ -200,7 +200,7 @@ sub map_genes {
     $mappings->write_to_file;
 
     if ($self->logger->loglevel eq 'debug') {
-      $mappings->log('gene', $self->conf->param('dumppath'));
+      $mappings->log('gene', $self->conf->param('basedir'));
     }
 
     $self->logger->info("Done.\n\n", 0, 'stamped');
@@ -235,7 +235,7 @@ sub map_transcripts {
   
   $self->logger->info("== Internal ID mapping for transcripts...\n\n", 0, 'stamped');
 
-  my $dump_path = path_append($self->conf->param('dumppath'), 'mapping');
+  my $dump_path = path_append($self->conf->param('basedir'), 'mapping');
 
   my $mappings = Bio::EnsEMBL::IdMapping::MappingList->new(
     -DUMP_PATH   => $dump_path,
@@ -358,7 +358,7 @@ sub map_transcripts {
     $mappings->write_to_file;
 
     if ($self->logger->loglevel eq 'debug') {
-      $mappings->log('transcript');
+      $mappings->log('transcript', $self->conf->param('basedir'));
     }
 
     $self->logger->info("Done.\n\n", 0, 'stamped');
@@ -394,7 +394,7 @@ sub map_exons {
   
   $self->logger->info("== Internal ID mapping for exons...\n\n", 0, 'stamped');
 
-  my $dump_path = path_append($self->conf->param('dumppath'), 'mapping');
+  my $dump_path = path_append($self->conf->param('basedir'), 'mapping');
 
   my $mappings = Bio::EnsEMBL::IdMapping::MappingList->new(
     -DUMP_PATH   => $dump_path,
@@ -463,7 +463,7 @@ sub map_exons {
     $mappings->write_to_file;
 
     if ($self->logger->loglevel eq 'debug') {
-      $mappings->log('exon');
+      $mappings->log('exon', $self->conf->param('basedir'));
     }
 
     $self->logger->info("Done.\n\n", 0, 'stamped');
@@ -487,7 +487,7 @@ sub map_translations {
   
   $self->logger->info("== Internal ID mapping for translations...\n\n", 0, 'stamped');
 
-  my $dump_path = path_append($self->conf->param('dumppath'), 'mapping');
+  my $dump_path = path_append($self->conf->param('basedir'), 'mapping');
 
   my $mappings = Bio::EnsEMBL::IdMapping::MappingList->new(
     -DUMP_PATH   => $dump_path,
@@ -545,7 +545,7 @@ sub map_translations {
     $mappings->write_to_file;
 
     if ($self->logger->loglevel eq 'debug') {
-      $mappings->log('translation');
+      $mappings->log('translation', $self->conf->param('basedir'));
     }
 
     $self->logger->info("Done.\n\n", 0, 'stamped');
@@ -576,7 +576,7 @@ sub basic_mapping {
 
   # Create a new MappingList object. Specify AUTO_LOAD to load serialised
   # existing mappings if found
-  my $dump_path = path_append($self->conf->param('dumppath'), 'mapping');
+  my $dump_path = path_append($self->conf->param('basedir'), 'mapping');
   
   my $mappings = Bio::EnsEMBL::IdMapping::MappingList->new(
     -DUMP_PATH   => $dump_path,
@@ -776,7 +776,7 @@ sub same_gene_transcript_mapping {
 
   # Create a new MappingList object. Specify AUTO_LOAD to load serialised
   # existing mappings if found
-  my $dump_path = path_append($self->conf->param('dumppath'), 'mapping');
+  my $dump_path = path_append($self->conf->param('basedir'), 'mapping');
   
   my $mappings = Bio::EnsEMBL::IdMapping::MappingList->new(
     -DUMP_PATH   => $dump_path,
@@ -869,7 +869,7 @@ sub log_ambiguous {
   }
   
   # create dump directory if it doesn't exist
-  my $debug_path = $self->conf->param('dumppath').'/debug';
+  my $debug_path = $self->conf->param('basedir').'/debug';
   unless (-d $debug_path) {
     system("mkdir -p $debug_path") == 0 or
       throw("Unable to create directory $debug_path.\n");

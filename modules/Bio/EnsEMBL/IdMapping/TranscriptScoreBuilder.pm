@@ -59,7 +59,7 @@ sub score_transcripts {
 
   # debug logging
   if ($self->logger->loglevel eq 'debug') {
-    $matrix->log('transcript', $self->conf->param('dumppath'));
+    $matrix->log('transcript', $self->conf->param('basedir'));
   }
 
   # log stats of combined matrix
@@ -90,7 +90,7 @@ sub scores_from_exon_scores {
     throw('Need a Bio::EnsEMBL::IdMapping::ScoredMappingMatrix.');
   }
   
-  my $dump_path = path_append($self->conf->param('dumppath'), 'matrix');
+  my $dump_path = path_append($self->conf->param('basedir'), 'matrix');
   
   my $matrix = Bio::EnsEMBL::IdMapping::ScoredMappingMatrix->new(
     -DUMP_PATH   => $dump_path,

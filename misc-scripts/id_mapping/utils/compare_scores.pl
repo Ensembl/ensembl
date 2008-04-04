@@ -9,7 +9,7 @@
 
 Required arguments:
 
-  --dumppath=PATH                     base directory of ID mapping results
+  --basedir=PATH                     base directory of ID mapping results
 
 Optional arguments:
 
@@ -67,7 +67,7 @@ $conf->parse_options(
 
 # set default logpath
 unless ($conf->param('logpath')) {
-  $conf->param('logpath', path_append($conf->param('dumppath'), 'log'));
+  $conf->param('logpath', path_append($conf->param('basedir'), 'log'));
 }
 
 # get log filehandle and print heading and parameters to logfile

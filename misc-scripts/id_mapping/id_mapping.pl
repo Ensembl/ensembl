@@ -77,7 +77,7 @@ my $conf = new Bio::EnsEMBL::Utils::ConfParser(
 
 $conf->parse_options(
   'mode=s' => 0,
-  'dumppath|dump_path=s' => 1,
+  'basedir|basedir=s' => 1,
   'chromosomes|chr=s@' => 0,
   'region=s' => 0,
   'biotypes=s@' => 0,
@@ -94,7 +94,7 @@ $conf->parse_options(
 
 # set default logpath
 unless ($conf->param('logpath')) {
-  $conf->param('logpath', path_append($conf->param('dumppath'), 'log'));
+  $conf->param('logpath', path_append($conf->param('basedir'), 'log'));
 }
 
 # get log filehandle and print heading and parameters to logfile

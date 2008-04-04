@@ -84,7 +84,7 @@ $conf->parse_options(
   'targetuser|target_user=s' => 1,
   'targetpass|target_pass=s' => 0,
   'targetdbname|target_dbname=s' => 1,
-  'dumppath|dump_path=s' => 1,
+  'basedir|basedir=s' => 1,
   'chromosomes|chr=s@' => 0,
   'region=s' => 0,
   'biotypes=s@' => 0,
@@ -93,7 +93,7 @@ $conf->parse_options(
 
 # set default logpath
 unless ($conf->param('logpath')) {
-  $conf->param('logpath', path_append($conf->param('dumppath'), 'log'));
+  $conf->param('logpath', path_append($conf->param('basedir'), 'log'));
 }
 
 # get log filehandle and print heading and parameters to logfile

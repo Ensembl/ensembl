@@ -453,7 +453,7 @@ sub filter_same_gene_transcript_similarities {
 
   # create a new matrix for the filtered entries
   my $filtered_scores = Bio::EnsEMBL::IdMapping::ScoredMappingMatrix->new(
-    -DUMP_PATH   => $self->conf->param('dumppath'),
+    -DUMP_PATH   => path_append($self->conf->param('basedir'), 'matrix'),
     -CACHE_FILE  => 'filtered_transcript_scores.ser',
   );
 
@@ -513,7 +513,7 @@ sub generate_translation_similarity_events {
 
   # create a fake translation scoring matrix
   my $translation_scores = Bio::EnsEMBL::IdMapping::ScoredMappingMatrix->new(
-    -DUMP_PATH   => $self->conf->param('dumppath'),
+    -DUMP_PATH   => path_append($self->conf->param('basedir'), 'matrix'),
     -CACHE_FILE  => 'translation_scores.ser',
   );
 

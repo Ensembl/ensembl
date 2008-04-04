@@ -462,7 +462,7 @@ sub create_summary_email {
   print $fh sprintf($fmt2, qw(DIRECTORY DESCRIPTION));
   print $fh ('-'x72), "\n";
 
-  print $fh sprintf($fmt2, 'basedir', $self->conf->param('dumppath'));
+  print $fh sprintf($fmt2, 'basedir', $self->conf->param('basedir'));
 
   foreach my $o (@output) {
     print $fh sprintf($fmt2, '$basedir/'.$o->[0], $o->[1]);
