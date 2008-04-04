@@ -69,6 +69,11 @@ sub score_exons {
   $matrix->merge($exonerate_matrix);
   $self->logger->info("Done.\n\n", 0, 'stamped');
 
+  # debug logging
+  if ($self->logger->loglevel eq 'debug') {
+    $matrix->log('exon', $self->conf->param('dumppath'));
+  }
+
   # log stats of combined matrix
   $self->logger->info("Combined scoring matrix:\n");
   $self->log_matrix_stats($matrix);
@@ -409,10 +414,6 @@ sub run_exonerate {
   #
   # run exonerate jobs using lsf
   #
-  local *BSUB;
-  open BSUB, "|bsub -J$lsf_name\[1-$num_jobs\] -o $logpath/exonerate.\%I.out"
-    or $self->logger->error("Could not open open pipe to bsub: $!\n");
-
   my $exonerate_job = qq{$exonerate_path } .
     qq{--query $source_file --target $target_file } .
     q{--querychunkid $LSB_JOBINDEX } .
@@ -423,15 +424,19 @@ sub run_exonerate {
     q{--ryo 'myinfo: %qi %ti %et %ql %tl\n' } .
     qq{| grep '^myinfo:' > $dumppath/exonerate_map.\$LSB_JOBINDEX} . "\n";
   
-  $self->logger->info("Submitting $num_jobs exonerate jobs to lsf:\n\n");
-  $self->logger->info("$exonerate_job\n\n");
+  $self->logger->info("Submitting $num_jobs exonerate jobs to lsf.\n");
+  $self->logger->debug("$exonerate_job\n\n");
+
+  local *BSUB;
+  open BSUB, "|bsub -J$lsf_name\[1-$num_jobs\] -o $logpath/exonerate.\%I.out"
+    or $self->logger->error("Could not open open pipe to bsub: $!\n");
 
   print BSUB $exonerate_job;
   $self->logger->error("Error submitting exonerate jobs: $!\n")
     unless ($? == 0); 
   close BSUB;
 
-  # submit depended job to monitor finishing of exonerate jobs
+  # submit dependent job to monitor finishing of exonerate jobs
   $self->logger->info("Waiting for exonerate jobs to finish...\n", 0, 'stamped');
 
   my $dependent_job = qq{bsub -K -w "ended($lsf_name)" -q small } .
@@ -537,7 +542,10 @@ sub write_filtered_exons {
   # loop over exons, dump sequence to fasta file if longer than threshold and
   # score < 1
   EXON:
-  foreach my $exon (values %{$self->cache->get_by_name('exons_by_id', $type)}) {
+  foreach my $eid (sort { $b <=> $a }
+                   keys %{ $self->cache->get_by_name('exons_by_id', $type) }) {
+
+    my $exon = $self->cache->get_by_key('exons_by_id', $type, $eid);
 
     $total_exons++;
 
@@ -546,17 +554,17 @@ sub write_filtered_exons {
 
     # skip if overlap score with any other exon is 1
     if ($type eq 'source') {
-      foreach my $target (@{ $matrix->get_targets_for_source($exon->id) }) {
-        next EXON if ($matrix->get_score($exon->id, $target) > 0.9999);
+      foreach my $target (@{ $matrix->get_targets_for_source($eid) }) {
+        next EXON if ($matrix->get_score($eid, $target) > 0.9999);
       }
     } else {
-      foreach my $source (@{ $matrix->get_sources_for_target($exon->id) }) {
-        next EXON if ($matrix->get_score($source, $exon->id) > 0.9999);
+      foreach my $source (@{ $matrix->get_sources_for_target($eid) }) {
+        next EXON if ($matrix->get_score($source, $eid) > 0.9999);
       }
     }
 
     # write exon to fasta file
-    print $fh '>', $exon->id, "\n", $exon->seq, "\n";
+    print $fh '>', $eid, "\n", $exon->seq, "\n";
 
     $dumped_exons++;
 
