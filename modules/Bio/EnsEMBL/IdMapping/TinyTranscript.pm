@@ -60,17 +60,24 @@ sub strand {
 }
 
 
-sub seq_md5_sum {
+sub length {
   my $self = shift;
   $self->[8] = shift if (@_);
   return $self->[8];
 }
 
 
-sub is_known {
+sub seq_md5_sum {
   my $self = shift;
   $self->[9] = shift if (@_);
   return $self->[9];
+}
+
+
+sub is_known {
+  my $self = shift;
+  $self->[10] = shift if (@_);
+  return $self->[10];
 }
 
 
@@ -82,12 +89,12 @@ sub add_Translation {
     throw('Need a Bio::EnsEMBL::IdMapping::TinyTranslation.');
   }
 
-  $self->[10] = $tl;
+  $self->[11] = $tl;
 }
 
 
 sub translation {
-  return $_[0]->[10];
+  return $_[0]->[11];
 }
 
 
@@ -99,18 +106,12 @@ sub add_Exon {
     throw('Need a Bio::EnsEMBL::IdMapping::TinyExon.');
   }
 
-  push @{ $self->[11] }, $exon;
+  push @{ $self->[12] }, $exon;
 }
 
 
 sub get_all_Exons {
-  return $_[0]->[11] || [];
-}
-
-
-sub length {
-  my $self = shift;
-  return ($self->end - $self->start + 1);
+  return $_[0]->[12] || [];
 }
 
 
