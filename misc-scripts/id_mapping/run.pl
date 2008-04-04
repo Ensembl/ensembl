@@ -160,8 +160,8 @@ $options{'id_mapping'} = $conf->create_commandline_options(
   is_component  => 1,
 );
 
-$logger->info("Nothing to do, just testing.\n");
-exit;
+# $logger->info("Nothing to do, just testing.\n");
+# exit;
 
 # run components, depending on mode
 my $sub = "run_$mode";
