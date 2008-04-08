@@ -1,6 +1,50 @@
 # $Id$
 
+# Ensembl module Bio::EnsEMBL::Collection
+#
+# You may distribute this module under the same terms as Perl itself.
+#
+
 package Bio::EnsEMBL::Collection;
+
+=head1 NAME
+
+Bio::EnsEMBL::Collection - Abstract base class for feature collection
+classes.
+
+=head1 SYNOPSIS
+
+  # Create an exon collection adaptor.
+  my $collection =
+    $registry->get_adaptor( 'Human', 'Core', 'ExonCollection' );
+
+  # Create a slice.
+  my $slice =
+    $slice_adaptor->fetch_by_region( 'Chromosome', '2', 1, 300_000 );
+
+  # Fetch the exons, represented as simple arrays of attributes, on
+  # the slice.
+  my @exons = @{ $collection->fetch_all_by_Slice($slice) };
+
+
+  # Fetch the exons on the slice and count them into 50 bins (each
+  # bin contains the number of exons overlapping that bin).
+  my @bins = @{
+    $collection->fetch_bins_by_Slice( -slice  => $slice,
+                                      -nbins  => 50,
+                                      -method => 'density'
+    ) };
+
+  # Fetch the exons on the slice and calculate the coverage of 50
+  # bins (each bin contains the coverage of that bin by any exon as
+  # a number between 0 and 1).
+  my @bins = @{
+    $collection->fetch_bins_by_Slice( -slice  => $slice,
+                                      -nbins  => 50,
+                                      -method => 'coverage'
+    ) };
+
+=cut
 
 use strict;
 use warnings;
