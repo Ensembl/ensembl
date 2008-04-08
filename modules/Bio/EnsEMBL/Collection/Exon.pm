@@ -17,10 +17,18 @@ sub _create_feature {
   my $feature = $this->SUPER::_create_feature( $feature_type, $args );
 
   if ( !$this->_lightweight() ) {
-    my ( $analysis, $stable_id, $version ) =
-      rearrange( [ 'STABLE_ID', 'VERSION', ], %{$args} );
+    my ( $phase, $end_phase, $stable_id, $version, $created_date,
+         $modified_date, $is_current )
+      = rearrange( [ 'PHASE',        'END_PHASE',
+                     'STABLE_ID',    'VERSION',
+                     'CREATED_DATE', 'MODIFIED_DATE',
+                     'IS_CURRENT'
+                   ],
+                   %{$args} );
 
-    push( @{$feature}, $stable_id, $version );
+    push( @{$feature},
+          $phase, $end_phase, $stable_id, $version, $created_date,
+          $modified_date, $is_current );
   }
 
   return $feature;
