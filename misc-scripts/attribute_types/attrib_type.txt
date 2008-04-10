@@ -105,8 +105,8 @@
 34	NovPTCount	processed_transcript_NOVEL	Number of Novel Processed Transcripts
 35	PutPTCount	processed_transcript_PUTATIVE	Number of Putative Processed Transcripts
 36	PredPCCount	protein_coding_PREDICTED	Number of Predicted Protein Coding
-37	NovIgGeneCount	IG_gene_NOVEL	Number of Novel IG Genes
-38	NovIgPsGenCount	IG_pseudogene_NOVEL	Number of Novel IG Pseudogenes
+37	NovIGGeneCount	IG_gene_NOVEL	Number of Novel IG Genes
+38	NovIGPsGenCount	IG_pseudogene_NOVEL	Number of Novel IG Pseudogenes
 39	TotPsCount	total_pseudogene	Total Number of Pseudogenes
 40	KnwnProcPsCount	processed_pseudogene	Number of Known Processed Pseudogenes
 41	KnwnUnPsCount	unprocessed_pseudogene	Number of Known Unprocessed Pseudogenes
@@ -268,5 +268,5 @@
 159	NovUnPsCount	novel_unprocessed_pseudogene	Number of Novel Unprocessed Pseudogenes
 160	NovTPsCount	novel_transcribed_pseudogene	Number of Novel Transcribed Pseudogenes
 161	NovTECCount	novel_TEC	Number of Novel TEC Genes
-162	KnwnIgGeneCount	IG_gene_KNOWN	Number of Known IG Genes
-163	KnwnIgPsGeCount	IG_pseudogene_KNOWN	Number of Known IG Pseudogenes
+162	KnwnIGGeneCount	IG_gene_KNOWN	Number of Known IG Genes
+163	KnwnIGPsGeCount	IG_pseudogene_KNOWN	Number of Known IG Pseudogenes
