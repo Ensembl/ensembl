@@ -120,17 +120,6 @@ ALTER table qtl_feature ADD FOREIGN KEY (seq_region_id) REFERENCES seq_region(se
 
 ALTER table qtl_synonym ADD FOREIGN KEY (qtl_id) REFERENCES qtl(qtl_id);
 
-ALTER table regulatory_factor_coding ADD FOREIGN KEY (gene_id) REFERENCES gene(gene_id);
-ALTER table regulatory_factor_coding ADD FOREIGN KEY (regulatory_factor_id) REFERENCES regulatory_factor(regulatory_factor_id);
-ALTER table regulatory_factor_coding ADD FOREIGN KEY (transcript_id) REFERENCES transcript(transcript_id);
-
-ALTER table regulatory_feature ADD FOREIGN KEY (analysis_id) REFERENCES analysis(analysis_id);
-ALTER table regulatory_feature ADD FOREIGN KEY (regulatory_factor_id) REFERENCES regulatory_factor(regulatory_factor_id);
-ALTER table regulatory_feature ADD FOREIGN KEY (seq_region_id) REFERENCES seq_region(seq_region_id);
-
-ALTER table regulatory_search_region ADD FOREIGN KEY (analysis_id) REFERENCES analysis(analysis_id);
-ALTER table regulatory_search_region ADD FOREIGN KEY (seq_region_id) REFERENCES seq_region(seq_region_id);
-
 ALTER table repeat_feature ADD FOREIGN KEY (analysis_id) REFERENCES analysis(analysis_id);
 ALTER table repeat_feature ADD FOREIGN KEY (repeat_consensus_id) REFERENCES repeat_consensus(repeat_consensus_id);
 ALTER table repeat_feature ADD FOREIGN KEY (seq_region_id) REFERENCES seq_region(seq_region_id);
