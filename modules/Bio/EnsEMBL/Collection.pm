@@ -44,6 +44,91 @@ classes.
                                       -method => 'coverage'
     ) };
 
+=head1 DESCRIPTION
+
+This is the abstract base class for feature collections.
+
+In short, this class replaces the object creation routines in
+Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor with routines that creates
+flat arrays.  It also provides a way of binning features on a slice in
+various different ways (see below).
+
+A feature collection provides a compact representation of features of
+a particular type on a slice.  Each feature is represented by a short
+array of attribute data.  This data is divided into two halfs:
+
+=over 4
+
+=item 1.
+
+Basic feature representation.
+
+=item 2.
+
+Extended feature representation.
+
+=back
+
+=head2 Basic feature representation
+
+The basic feature representation is common to all features of any type
+and consists of a minimal set of values.  Each feature is represented by
+an array that contains at least the following data (in this order)
+
+=over 4
+
+=item 1.
+
+Ensembl internal database ID.
+
+=item 2.
+
+Ensembl internal sequence region ID.
+
+=item 3.
+
+Feature start position.
+
+=item 4.
+
+Feature end position.
+
+=item 5.
+
+Feature strand.
+
+=back
+
+The module defines a number of constants that may be used in place
+of the index numbers 0 to 4: FEATURE_DBID, FEATURE_SEQREGIONID,
+FEATURE_START, FEATURE_END, FEATURE_STRAND.  For a feature $f,
+$f->[Bio::EnsEMBL::Collection::FEATURE_END] will thus be the end
+position for the feature that the array @{$f} represents.
+
+The position of the feature is in the same coordinate system as the
+slice used to fetch the features.
+
+=head2 Extended feature representation
+
+A sub-class of this abstract base class will specify further
+data to be added to the features in order to account for the
+particular feature type.  A feature from a gene feature collection
+(Bio::EnsEMBL::Collection::Gene) might, for example, contain the Ensembl
+Stable ID of the gene.
+
+The extended feature representation is defined by the method
+_create_feature() or _create_feature_fast() which is implemented by the
+sub-class.  The extended representation is also documented in the POD of
+each sub-class.
+
+=head2 Light-weight features
+
+A light-weight feature is a feature whose representation does not
+contain the extended feature representation.
+
+Light-weight features may be fetched by using the argument
+'-lightweight=>1' in the fetch_bins_by_Slice() method.
+
 =cut
 
 use strict;
