@@ -87,13 +87,15 @@ as well.
 
 =item B<-recalc_display_xrefs>
 
-recalculate the display xrefs for all the genes and transcripts
-and also recalculate the gene descriptions. This only reads the 
-data already stored in the core database and set these attributes 
-based on what is already stored. Useful if you have changed the 
-prioritys for the display xrefs etc or what sources are used in 
-which order for gene desriptions and merely want to recalc what 
-should be displayed. 
+recalculate the display xrefs for all the genes and transcripts and
+also recalculate the gene descriptions. This only reads the data
+already stored in the core database and set these attributes based on
+what is already stored. Useful if you have changed the prioritys for
+the display xrefs etc or what sources are used in which order for gene
+desriptions and merely want to recalc what should be
+displayed. Generates .txt and .sql files into the species-specific
+location specified by the --file. The --upload flag determines whether
+these files are loaded into the target DB manually.
 
 =item B<-notriage>
 
