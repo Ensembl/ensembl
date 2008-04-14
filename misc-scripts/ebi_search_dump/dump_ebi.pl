@@ -18,7 +18,7 @@ use Bio::EnsEMBL::Variation::DBSQL::DBAdaptor;
 
 use HTML::Entities;
 
-my ($host, $user, $pass, $port, $dbpattern, $max_genes, $nogzip, $no_variation, $parallel, $dir);
+my ($host, $user, $pass, $port, $dbpattern, $max_genes, $nogzip, $no_variation, $parallel, $dir, $no_vega);
 
 GetOptions( "host=s",              \$host,
 	    "user=s",              \$user,
@@ -28,6 +28,7 @@ GetOptions( "host=s",              \$host,
 	    "nogzip!",             \$nogzip,
             "max_genes=i",         \$max_genes,
 	    "no_variation",        \$no_variation,
+	    "no_vega",             \$no_vega,
 	    "parallel",            \$parallel,
 	    "dir=s",               \$dir,
 	    "help" ,               \&usage
@@ -39,7 +40,7 @@ $port    = $port ||  "3306";
 $dbpattern = $dbpattern || "_core_";
 $dir     = $dir || "/lustre/scratch1/ensembl/gp1/xml";
 
-my $entry_count;
+my $entry_count = 0;
 
 my $fh;
 
@@ -67,8 +68,6 @@ sub run() {
 
     my $file = $dir . "/" . $dbname . ".xml";
     $file .= ".gz" unless ($nogzip);
-
-  
 
     if ($parallel) {
 
@@ -175,7 +174,23 @@ sub content {
 
   my ($dba) = @_;
 
-  $entry_count = 0;
+  dump_genes($dba);
+
+  unless ($no_vega) {
+
+    my $db_vega = vega_attach($dba);
+
+    dump_genes($db_vega);
+
+  }
+
+}
+
+# -------------------------------------------------------------------------------
+
+sub dump_genes {
+
+  my ($dba) = @_;
 
   my $gene_adaptor = $dba->get_GeneAdaptor();
 
@@ -188,6 +203,8 @@ sub content {
   if ($db_variation) { # not all species have variation databases
     $trv_adaptor = $db_variation->get_TranscriptVariationAdaptor();
   }
+
+  my ($db_adaptor) = @_;
 
   my $genes = $gene_adaptor->fetch_all();
 
@@ -404,6 +421,39 @@ sub variation_attach {
 
 # -------------------------------------------------------------------------------
 
+#
+# Figure out the name of a vega database from the core database name
+#
+
+sub vega_attach {
+
+  my $db = shift;
+
+  my $core_db_name;
+  $core_db_name = $db->dbc->dbname();
+  return undef if ($core_db_name !~ /_core_/);
+
+  my $dbc = $db->dbc();
+  my $sth = $dbc->prepare("show databases");
+  $sth->execute();
+  my $all_db_names = $sth->fetchall_arrayref();
+  my %all_db_names = map {( $_->[0] , 1)} @$all_db_names;
+  my $vega_db_name = $core_db_name;
+  $vega_db_name =~ s/_core_/_vega_/;
+
+  return undef if (! exists $all_db_names{$vega_db_name});
+
+  # register the dbadaptor with the Registry
+  return Bio::EnsEMBL::DBSQL::DBAdaptor->new(-host => $dbc->host(),
+					     -user => $dbc->username(),
+					     -pass => $dbc->password(),
+					     -port => $dbc->port(),
+					     -dbname => $vega_db_name);
+
+}
+
+# -------------------------------------------------------------------------------
+
 sub usage {
   print <<EOF; exit(0);
 
@@ -426,6 +476,8 @@ Usage: perl $0 <options>
   -max_genes    Only dump this many genes for testing.
 
   -no_variation Don't dump variation IDs.
+
+  -no_vega      Don't attach to Vega databases.
 
   -parallel     Submit jobs in parallel.
 
