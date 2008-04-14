@@ -180,7 +180,7 @@ sub content {
 
     my $db_vega = vega_attach($dba);
 
-    dump_genes($db_vega);
+    dump_genes($db_vega) if ($db_vega);
 
   }
 
