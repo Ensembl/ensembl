@@ -354,7 +354,7 @@ $mapper->xref($xref); # attach xref object to mapper object
 
 if(defined($recalc_display_xrefs)){
   $mapper->genes_and_transcripts_attributes_set();
-  print "Finished recalculating display xrefs and gene descriptions";
+  print "Finished recalculating display xrefs and gene descriptions\n";
   exit;
 }
 
@@ -421,6 +421,12 @@ $mapper->run_coordinatemapping($upload);
 if ($upload) {
   $mapper->species_specific_pre_attributes_set();
   $mapper->genes_and_transcripts_attributes_set();
+}
+else {
+  print "Gene descriptions, display_xrefs and status cannot be set until "
+      . "xrefs have been uploaded;\n"
+      . "  The -recalc_display_xrefs flag can be used to retrofit "
+      . "these data after manual upload";
 }
 
 print "*** All finished ***\n";

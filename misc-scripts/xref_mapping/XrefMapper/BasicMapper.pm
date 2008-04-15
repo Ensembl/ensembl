@@ -2615,8 +2615,37 @@ sub dump_core_xrefs {
 
 
 sub build_transcript_and_gene_display_xrefs {
+  # Called by $self->genes_and_transcripts_attributes_set
   my ($self) = @_;
   my $dir = $self->core->dir();
+
+  # Open file handles to recieve SQL and text data used to set 
+  # display_xrefs 
+  my $gene_dx_file       = "$dir/gene_display_xref.sql"; 
+  my $tran_dx_file       = "$dir/transcript_display_xref.sql";
+  my $unset_gene_dx_file = "$dir/gene_unset_display_xref.sql";
+  my $unset_tran_dx_file = "$dir/transcript_unset_display_xref.sql";
+
+  open (GENE_DX, ">$gene_dx_file")
+      or die( "Could not open $gene_dx_file: $!" );
+  open (TRANSCRIPT_DX, ">$tran_dx_file") 
+      or die( "Could not open $tran_dx_file: $!" );
+  open (GENE_DX_UNSET, ">$unset_gene_dx_file")
+      or die( "Could not open $unset_gene_dx_file: $!" );
+  open (TRAN_DX_UNSET, ">$unset_tran_dx_file") 
+      or die( "Could not open $unset_tran_dx_file: $!" );
+  open (GENE_DX_TXT, ">$dir/gene_display_xref.txt");
+  open (TRANSCRIPT_DX_TXT, ">$dir/transcript_display_xref.txt");
+
+  # These are the files that this method will return
+  my @files = ($unset_gene_dx_file,$gene_dx_file, 
+               $unset_tran_dx_file,$tran_dx_file);
+
+  # Write the 'unset' sql to the files, and cose them
+  print GENE_DX_UNSET qq(UPDATE gene       SET display_xref_id=NULL;\n);
+  print TRAN_DX_UNSET qq(UPDATE transcript SET display_xref_id=NULL;\n);
+  close( GENE_DX_UNSET );
+  close( TRAN_DX_UNSET );
 
   my %external_name_to_id;
   my %ex_db_id_to_status;
@@ -2637,9 +2666,12 @@ sub build_transcript_and_gene_display_xrefs {
   #create the tempory table
   #############################
 
-  my $sth = $self->core->dbc->prepare("create table identity_xref_temp like identity_xref");
+  my $sql_t = "create table identity_xref_temp like identity_xref";
+  my $sth = $self->core->dbc->prepare( $sql_t );
+
   print "creating table identity_xref_temp\n";
-  $sth->execute() || die "Could not \ncreate table identity_xref_temp like identity_xref\n";
+
+  $sth->execute() || die( "Could not \n$sql_t\n", $sth->errstr );
 
 
   #############################
@@ -2648,24 +2680,25 @@ sub build_transcript_and_gene_display_xrefs {
   my $file = $dir."/identity_xref_temp.txt";
   
   if(-s $file){
-    my $sth = $self->core->dbc->prepare("LOAD DATA LOCAL INFILE \'$file\' IGNORE INTO TABLE identity_xref_temp");
+    my $sth = $self->core->dbc->prepare("
+LOAD DATA LOCAL INFILE \'$file\' 
+IGNORE INTO TABLE identity_xref_temp");
     print "Uploading data in $file to identity_xref_temp\n";
     $sth->execute();
   }
   else{
-    print "NO file or zero size file, so not able to load file $file to identity_xref_temp\n";
+    print( "NO file or zero size file, so not able to load ",
+           "file $file to identity_xref_temp\n" );
   }
 
   #
-  # get a list of sources to use
+  # create a prioritised list of sources to use
   # and also a list of those xrefs to ignore 
   # where the source name is the key and the value is the string to test for 
   # 
   my ($presedence, $ignore) = @{$self->transcript_display_xref_sources()};
-
   my $i=0;
   my %level;
-
   foreach my $ord (reverse (@$presedence)){
     $i++;
     if(!defined($external_name_to_id{$ord})){
@@ -2674,78 +2707,86 @@ sub build_transcript_and_gene_display_xrefs {
     $level{$external_name_to_id{$ord}} = $i;
   }
 
+  # Generate genes_to_transcripts and translation_to_transcript mappings
+  # if needed
   if(!scalar(keys %genes_to_transcripts)){
     $self->build_genes_to_transcripts();
   }
-
   if(!scalar(keys %translation_to_transcript)){
     $self->load_translation_to_transcript();
   }
 
-
-
+  # Gets object and identity xref data for 'SEQUENCE_MATCH' xrefs
+  # for a given db_id of a given object type (gene/transcript/translation) 
   my $sql = (<<ESQL);
-  SELECT ox.xref_id, ix.query_identity, ix.target_identity,  x.external_db_id, x.display_label, e.db_name, ox.linkage_annotation
+  SELECT ox.xref_id, ix.query_identity, ix.target_identity, 
+         x.external_db_id, x.display_label, 
+         e.db_name, ox.linkage_annotation
     FROM (object_xref ox, xref x, external_db e) 
-      LEFT JOIN identity_xref ix ON (ox.object_xref_id = ix.object_xref_id) 
-	WHERE x.xref_id = ox.xref_id AND ox.ensembl_object_type = ? 
-              AND ox.ensembl_id = ? AND x.info_type = 'SEQUENCE_MATCH'
-              AND e.external_db_id = x.external_db_id
+      LEFT JOIN identity_xref ix 
+        ON (ox.object_xref_id = ix.object_xref_id) 
+   WHERE x.xref_id = ox.xref_id 
+     AND ox.ensembl_object_type = ? 
+     AND ox.ensembl_id = ? 
+     AND x.info_type = 'SEQUENCE_MATCH'
+     AND e.external_db_id = x.external_db_id
 ESQL
+  my $primary_sth = $self->core->dbc->prepare($sql)
+    || die "prepare failed for $sql\n";
 
-  my $primary_sth = $self->core->dbc->prepare($sql) || die "prepare failed for $sql\n";
 
-
-
+  # Gets object and identity xref data for 'DEPENDENT' xrefs
+  # for a given db_id of a given object type (gene/transcript/translation) 
   $sql = (<<ZSQL);
-  SELECT ox.xref_id, ix.query_identity, ix.target_identity, x.external_db_id, x.display_label, e.db_name, ox.linkage_annotation
+  SELECT ox.xref_id, ix.query_identity, ix.target_identity, 
+         x.external_db_id, x.display_label, 
+         e.db_name, ox.linkage_annotation
     FROM (object_xref ox, xref x, external_db e) 
-      LEFT JOIN identity_xref_temp ix ON (ox.object_xref_id = ix.object_xref_id) 
-	WHERE x.xref_id = ox.xref_id and ox.ensembl_object_type = ? 
-              and ox.ensembl_id = ? and x.info_type = 'DEPENDENT'
-              AND e.external_db_id = x.external_db_id
+      LEFT JOIN identity_xref_temp ix 
+        ON (ox.object_xref_id = ix.object_xref_id) 
+   WHERE x.xref_id = ox.xref_id and ox.ensembl_object_type = ? 
+     AND ox.ensembl_id = ? and x.info_type = 'DEPENDENT'
+     AND e.external_db_id = x.external_db_id
 ZSQL
- 
-  my $dependent_sth = $self->core->dbc->prepare($sql) || die "prepare failed for $sql\n";
+  my $dependent_sth = $self->core->dbc->prepare($sql) 
+    || die "prepare failed for $sql\n";
 
 
-
+  # Gets object xref data for 'DIRECT' xrefs
+  # for a given db_id of a given object type (gene/transcript/translation) 
   $sql = (<<QSQL);
-  SELECT  x.xref_id, x.external_db_id, x.display_label, e.db_name, o.linkage_annotation
-   FROM object_xref o, xref x, external_db e 
+  SELECT  x.xref_id, x.external_db_id, x.display_label, 
+          e.db_name, o.linkage_annotation
+     FROM object_xref o, xref x, external_db e 
     WHERE x.xref_id = o.xref_id 
-        and o.ensembl_object_type = ? and o.ensembl_id = ? and x.info_type = 'DIRECT'
-              AND e.external_db_id = x.external_db_id
+      AND o.ensembl_object_type = ?
+      AND o.ensembl_id = ? 
+      AND x.info_type = 'DIRECT'
+      AND e.external_db_id = x.external_db_id
 QSQL
                              
-  my $direct_sth = $self->core->dbc->prepare($sql) || die "prepare failed for $sql\n";
+  my $direct_sth = $self->core->dbc->prepare($sql) 
+    || die "prepare failed for $sql\n";
 
-
-
-# get xrefs connect directly to the gene.
-
+  # Gets object xrefs data for any type of xref
+  # for a given gene id.
   $sql = (<<GSQL);
   SELECT x.xref_id, x.external_db_id, e.db_name, o.linkage_annotation
-   FROM object_xref o, xref x, external_db e   
-    WHERE x.xref_id = o.xref_id 
-        and o.ensembl_object_type = 'Gene' and o.ensembl_id = ?
-              AND e.external_db_id = x.external_db_id
+    FROM object_xref o, xref x, external_db e   
+   WHERE x.xref_id = o.xref_id 
+     AND o.ensembl_object_type = 'Gene'
+     AND o.ensembl_id = ?
+     AND e.external_db_id = x.external_db_id
 GSQL
                              
-  my $gene_sth = $self->core->dbc->prepare($sql) || die "prepare failed for $sql\n";
+  my $gene_sth = $self->core->dbc->prepare($sql) 
+    || die "prepare failed for $sql\n";
 
   my $count =0;
   
   my ($xref_id, $qid, $tid, $ex_db_id, $display_label, $external_db_name, $linkage_annotation);
-  
-  
-
-  open (TRANSCRIPT_DX, ">$dir/transcript_display_xref.sql");
-  open (TRANSCRIPT_DX_TXT, ">$dir/transcript_display_xref.txt");
-  open (GENE_DX, ">$dir/gene_display_xref.sql");
-  open (GENE_DX_TXT, ">$dir/gene_display_xref.txt");
-    
-  
+      
+  # Loop for each gene_id
   foreach my $gene_id (keys %genes_to_transcripts) {
     my %percent_id;
     my %level_db;
@@ -2753,21 +2794,28 @@ GSQL
     my %percent_id_via_acc;
     my @gene_xrefs = ();
     
+    # Query for object_xrefs attached directly o gene
     $gene_sth->execute($gene_id) || die "execute failed";
-    $gene_sth->bind_columns(\$xref_id, \$ex_db_id, \$external_db_name, \$linkage_annotation);
-    
+    $gene_sth->bind_columns
+        (\$xref_id, \$ex_db_id, \$external_db_name, \$linkage_annotation);
     
     my $best_gene_xref  = 0;    # store xref
     my $best_gene_level = 0;    # store level
     my $best_gene_percent = 0;  # additoon of precentage ids
 
     while($gene_sth->fetch()){
+
+      # Skip certain hard-coded external_db.names. 
       if(defined($$ignore{$external_db_name})){
 	if($linkage_annotation =~ /$$ignore{$external_db_name}/){
-#	  print "Ignoring $xref_id as linkage_annotation has ".$$ignore{$external_db_name}." in it. DELETE THIS MESSAGE AFTER TESTING\n";
+	  #print( "Ignoring $xref_id as linkage_annotation has ",
+          #       $$ignore{$external_db_name}." in it." ); # DEBUG
+
 	  next;
 	}
       }
+
+      # 
       if(defined($level{$ex_db_id})){
 	if($level{$ex_db_id} > $best_gene_level){
 	  $best_gene_xref = $xref_id;
@@ -2915,6 +2963,9 @@ GSQL
   close TRANSCRIPT_DX_TXT;
   close GENE_DX;
   close GENE_DX_TXT;
+
+  # Done
+  return @files;
 
 }
 
@@ -3185,100 +3236,65 @@ sub do_upload {
 }
 
 sub genes_and_transcripts_attributes_set{
+  # Runs build_transcript_and_gene_display_xrefs,
+  # new_build_gene_descriptions, build_gene_transcript_status and
+  # build_meta_timestamp, and, if "-upload" is set, uses the SQL files
+  # produced to update the core database.
+
   my ($self) = @_;
 
   my $ensembl = $self->core;
   my $core_db = $ensembl->dbc;
-  #use the core data that is already there.
 
-  $self->build_transcript_and_gene_display_xrefs();
-  $self->new_build_gene_descriptions();
+  # Create the sql files needed to update the database
+  my @displayxref_files = $self->build_transcript_and_gene_display_xrefs();
+  my @description_files = $self->new_build_gene_descriptions();
+  my @status_files      = $self->build_gene_transcript_status();
+  my @timestamp_files   = $self->build_meta_timestamp;
 
-  if(!defined($self->upload)){
-    print "Not clearing genes and transcript attrubutes and loading new ones as upload NOT set\n";
+  unless( $self->upload ){
+    print "[INFO] created the following files "
+        ."(load by hand or use the --upload flag)\n       "
+        .join( "\n       ", 
+               @displayxref_files,
+               @description_files,
+               @status_files,
+               @timestamp_files )
+        ."\n";
+
     return;
   }
-
-  # gene & transcript display_xrefs
-  my $sth = $core_db->prepare(<<GADES);
-  UPDATE gene g 
-    SET g.display_xref_id=NULL 
-GADES
-  print "Setting all existing display_xref_id in gene to null\n";
-  $sth->execute();
   
+  # Get the command needed to run mysql on the shell
+  my $mysql_command = $self->get_mysql_command($core_db);  
 
-  $sth = $core_db->prepare(<<TRAN);
-  UPDATE transcript t 
-    SET t.display_xref_id=NULL
-TRAN
-  print "Setting all existing display_xref_id in transcript to null\n";
-  $sth->execute();
-
-  # gene descriptions
-  $sth = $core_db->prepare(<<GENE);
-  UPDATE gene g
-    SET g.description=NULL 
-GENE
-  print "Setting all existing descriptions in gene table to null\n";
-  $sth->execute();
-
-  # gene_display_xref.sql etc
-  foreach my $table ("gene", "transcript") {
-
-    my $file = $ensembl->dir() . "/" . $table . "_display_xref.sql";
-
-    print "Setting $table display_xrefs from $file\n";
-    my $mysql_command = $self->get_mysql_command($core_db);
+  # Load the display_xrefs
+  print "Setting gene and transcript display_xrefs\n";
+  foreach my $file( @displayxref_files ){
     system( "$mysql_command < $file" ) == 0 
         or print( "ERROR: parsing $file in mysql\n" );
   }
 
-  # gene descriptions
-  my $file = $ensembl->dir() . "/gene_description.sql";
-  print "Setting gene descriptions from $file\n";
-  my $mysql_command = $self->get_mysql_command($core_db);
-  system( "$mysql_command < $file" ) == 0 
-      or print( "ERROR: parsing $file in mysql\n" );
+  # Load the gene descriptions from the appropriate file
+  foreach my $file( @description_files ){
+    system( "$mysql_command < $file" ) == 0 
+        or print( "ERROR: parsing $file in mysql\n" );
+  }
 
   # update meta table with timestamp saying when xrefs were last updated
-  $file =  $ensembl->dir() . "/meta_timestamp.sql";
-  open (FILE, ">$file");
-  print FILE "DELETE FROM meta WHERE meta_key='xref.timestamp';\n";
-  print FILE "INSERT INTO meta (meta_key,meta_value) VALUES ('xref.timestamp', NOW())\n";
-  close(FILE);
+  foreach my $file( @timestamp_files ){
+    system( "$mysql_command < $file" ) == 0 
+        or print( "ERROR: parsing $file in mysql\n" );
+  }
 
-  $mysql_command = $self->get_mysql_command($core_db);
-  system( "$mysql_command < $file" ) == 0 
-      or print( "ERROR: parsing $file in mysql\n" );
-
-  # set gene and transcript statuses to KNOWN or NOVEL based on external_db status
+  # set gene and transcript statuses to KNOWN or NOVEL
   print "Setting gene and transcript status from external_db KNOWN/NOVEL\n";
-  $file =  $ensembl->dir() . "/gene_transcript_status.sql";
-  open (FILE, ">$file");
-  print FILE "UPDATE transcript SET status=\'NOVEL\';\n";
-  print FILE "UPDATE gene SET status=\'NOVEL\';\n";
+  foreach my $file( @status_files ){
+    system( "$mysql_command < $file" ) == 0 
+        or print( "ERROR: parsing $file in mysql\n" );    
+  }
 
-  print FILE "UPDATE gene g, xref x, external_db e SET g.status = \'KNOWN\' ";
-  print FILE    "WHERE g.display_xref_id = x.xref_id ";
-  print FILE     "AND x.external_db_id = e.external_db_id AND e.status=\'KNOWN\';\n";
-
-  print FILE "UPDATE gene g, xref x, external_db e SET g.status = \'KNOWN\' ";
-  print FILE    "WHERE g.display_xref_id = x.xref_id ";
-  print FILE     "AND x.external_db_id = e.external_db_id AND e.status=\'KNOWNXREF\';\n";
-
-  print FILE "UPDATE transcript t, xref x, external_db e SET t.status = \'KNOWN\' ";
-  print FILE    "WHERE t.display_xref_id = x.xref_id ";
-  print FILE    "AND x.external_db_id = e.external_db_id AND e.status=\'KNOWN\';\n";
-
-  print FILE "UPDATE transcript t, xref x, external_db e SET t.status = \'KNOWN\' ";
-  print FILE    "WHERE t.display_xref_id = x.xref_id ";
-  print FILE    "AND x.external_db_id = e.external_db_id AND e.status=\'KNOWNXREF\';\n";
-  close(FILE);
-
-  $mysql_command = $self->get_mysql_command($core_db);
-  system( "$mysql_command < $file" ) == 0 
-      or print( "ERROR: parsing $file in mysql\n" );
+  return 1;
 }
 
 
@@ -3305,6 +3321,20 @@ sub new_build_gene_descriptions{
   
   my $dir = $self->core->dir();
 
+  # Open the handles on files that will contain the sql
+  my @files = (); # Names of files returned from this method
+  my $gene_desc_file = "$dir/gene_description.sql";
+  my $unset_gene_desc_file = "$dir/gene_unset_description.sql";
+  open(GENE_DESCRIPTIONS,">$gene_desc_file")
+    || die "Could not open $gene_desc_file: $!";
+  open(GENE_DESC_UNSET, ">$unset_gene_desc_file" )
+    || die "Could not open $unset_gene_desc_file: $!";
+  push @files, $unset_gene_desc_file, $gene_desc_file;
+  
+  # Write the file that unsets the descriptions
+  print GENE_DESC_UNSET qq(UPDATE gene g SET g.description=NULL;\n);
+  close(GENE_DESC_UNSET);
+
   my @regexps = $self->gene_description_filter_regexps();
 
   if(scalar(@regexps) == 0){
@@ -3323,7 +3353,8 @@ sub new_build_gene_descriptions{
   my %ex_db_id_to_name;
   my $sql1 = "SELECT external_db_id, db_name, status from external_db";
   
-  my $sth1 = $self->core->dbc->prepare($sql1) || die "prepare failed for $sql1\n";
+  my $sth1 = $self->core->dbc->prepare($sql1) 
+    || die "prepare failed for $sql1\n";
   $sth1->execute() || die "execute failed";
   my ($db_id, $name, $status);
   $sth1->bind_columns(\$db_id, \$name, \$status);
@@ -3360,8 +3391,6 @@ sub new_build_gene_descriptions{
 ESQL
 
   my $primary_sth = $self->core->dbc->prepare($sql) || die "prepare failed for $sql\n";
-
-
 
   $sql = (<<ZSQL);
   SELECT ox.xref_id, ix.query_identity, ix.target_identity, x.external_db_id, x.description, x.dbprimary_acc
@@ -3405,9 +3434,6 @@ GSQL
   my $checked = 0;
   my $added   = 0;
   my $removed = 0; 
-
-  open(GENE_DESCRIPTIONS,">$dir/gene_description.sql") || die "Could not open $dir/gene_description.sql";
-
 
   foreach my $gene_id (keys %genes_to_transcripts) {
     
@@ -3597,12 +3623,51 @@ GSQL
   print "dropping table identity_xref_temp\n";
   $sth->execute() || die "Could not drop table identity_xref_temp\n";
   
+  # Done
+  return @files;
 }
 
+sub build_gene_transcript_status{
+  # Creates the files that contain the SQL needed to (re)set the
+  # gene.status and transcript.status values
+  my $self = shift;
+  my @files;
+  my $dir = $self->core->dir();
+  my $unset_file_t = $dir .'/%s_unset_status.sql';
+  my $set_file_t   = $dir .'/%s_set_status.sql';
+  
+  foreach my $type ( 'gene','transcript' ){
+    # Queries needed to unset status
+    my $unset_file = sprintf( $unset_file_t, $type );
+    open( UNSET, ">$unset_file" ) or die( "Cannot open $unset_file: $!" );
+    print UNSET qq(UPDATE $type SET status='NOVEL';\n);
+    close( UNSET );
+    push @files, $unset_file;
 
+    # Queries needed to set status
+    my $set_file   = sprintf( $set_file_t, $type );
+    open( SET, ">$set_file" ) or die( "Cannot open $set_file: $!" );
+    print SET qq(UPDATE $type f, xref x, external_db e SET f.status = 'KNOWN'
+ WHERE f.display_xref_id = x.xref_id
+   AND x.external_db_id = e.external_db_id
+   AND e.status IN ('KNOWN', 'KNOWNXREF');\n);
+    push @files, $set_file;
+  }
+  
+  return @files;
+}
 
-
-
+sub build_meta_timestamp{
+  # Creates a file that contains the SQL needed to (re)set the 
+  # 'xref.timestamp' key of the meta table.
+  my $self = shift;
+  my $file = $self->core->dir() . "/meta_timestamp.sql";
+  open (FILE, ">$file") or die( "Cannot open $file: $!" );
+  print FILE qq(DELETE FROM meta WHERE meta_key='xref.timestamp';
+INSERT INTO meta (meta_key,meta_value) VALUES ('xref.timestamp', NOW());\n);
+  close(FILE);
+  return ($file);
+}
 
 
 # Check if any .err files exist that have non-zero size;
