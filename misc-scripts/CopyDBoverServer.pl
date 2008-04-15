@@ -102,17 +102,16 @@ my %mysql_directory_per_svr = ('genebuild1:3306'   => "/mysql/data_3306/database
 			       'ens-research:3309' => "/mysql/data_3309/databases");
 
 my %tables = (
+			  #xref tables are required for transcript/gene generation
 			  xref => [('xref', 'object_xref', 'identity_xref', 'go_xref', 
 						'external_db', 'external_synonym', 'unmapped_reason', 'unmapped_object')],
 
 			  probe_mapping => [('oligo_array', 'oligo_probe', 'oligo_feature', 'coord_system', 
-								 'seq_region', 'seq_region_attrib', 'analysis', 
+								 'seq_region', 'assembly_exception', 'attrib_type', 'analysis',
+								 'exon', 'exon_stable_id', 'exon_transcript', 'assembly', 'dna',
 								 'analysis_description', 'transcript', 'transcript_stable_id', 
-								 'transcript_attrib', 'transcript_supporting_feature', 
-								 'unconventional_transcript_association', 'meta', 'meta_coord')],
-			  #Maybe remove meta unconventional_transcript_association, attribute, supporting_feature & seq_region_attribute?
-			  #Check adaptors
-
+								 'translation', 'translation_stable_id', 'meta', 'meta_coord')],
+			  #translation & dna required for generating annotated UTRs
 			 );
 
 #add xref tables to probe mapping tables
