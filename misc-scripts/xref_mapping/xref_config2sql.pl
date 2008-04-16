@@ -69,9 +69,9 @@ foreach my $source_section ( sort( $config->GroupMembers('source') ) ) {
 
   if ( length($spaces) > 1 ) {
     die(
-         sprintf( "Too many spaces between the words 'source' and '%s' "
-                    . "when reading source section '[%s]'\n",
-                  $source_name, $source_section
+         sprintf("Too many spaces between the words 'source' and '%s'\n"
+                   . "while reading source section '[%s]'\n",
+                 $source_name, $source_section
          ) );
   }
 
@@ -106,9 +106,10 @@ foreach my $species_section ( sort( $config->GroupMembers('species') ) )
 
   if ( length($spaces) > 1 ) {
     die(
-         sprintf("Too many spaces between the words 'species' and '%s' "
-                   . "when reading species section '[%s]'\n",
-                 $species_name, $species_section
+         sprintf(
+                "Too many spaces between the words 'species' and '%s'\n"
+                  . "while reading species section '[%s]'\n",
+                $species_name, $species_section
          ) );
   }
 
