@@ -63,10 +63,19 @@ print("# SOURCES\n");
 print("\n");
 
 my $source_id = 0;
-foreach my $section ( sort( $config->GroupMembers('source') ) ) {
-  my $source_name = substr( $section, 7 );
+foreach my $source_section ( sort( $config->GroupMembers('source') ) ) {
+  my ( $spaces, $source_name ) =
+    $source_section =~ /^source(\s+)(\S+)\s*$/;
 
-  $config->newval( $section, 'id', ++$source_id );
+  if ( length($spaces) > 1 ) {
+    die(
+         sprintf( "Too many spaces between the words 'source' and '%s' "
+                    . "when reading source section '[%s]'\n",
+                  $source_name, $source_section
+         ) );
+  }
+
+  $config->newval( $source_section, 'id', ++$source_id );
 
   printf( "# Source '%s' (id = %d)\n", $source_name, $source_id );
 
@@ -92,7 +101,16 @@ print("\n");
 
 foreach my $species_section ( sort( $config->GroupMembers('species') ) )
 {
-  my $species_name = substr( $species_section, 8 );
+  my ( $spaces, $species_name ) =
+    $species_section =~ /^species(\s+)(\S+)\s*$/;
+
+  if ( length($spaces) > 1 ) {
+    die(
+         sprintf("Too many spaces between the words 'species' and '%s' "
+                   . "when reading species section '[%s]'\n",
+                 $species_name, $species_section
+         ) );
+  }
 
   my @taxonomy_ids =
     split( /\n/, $config->val( $species_section, 'taxonomy_id' ) );
