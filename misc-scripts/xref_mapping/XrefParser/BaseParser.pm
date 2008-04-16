@@ -1511,20 +1511,32 @@ sub get_xref{
 }
 
 sub add_xref {
+  my ( $self, $acc, $version, $label, $description, $source_id,
+       $species_id )
+    = @_;
 
-  my ($self,$acc,$version,$label,$description,$source_id,$species_id) = @_;
-
-  if(!defined($add_xref_sth)){
-    $add_xref_sth = dbi->prepare("INSERT INTO xref (accession,version,label,description,source_id,species_id) VALUES(?,?,?,?,?,?)");
+  if ( !defined($add_xref_sth) ) {
+    $add_xref_sth =
+      dbi->prepare( "INSERT INTO xref "
+         . "(accession,version,label,description,source_id,species_id) "
+         . "VALUES(?,?,?,?,?,?)" );
   }
-  $add_xref_sth->execute(
-      $acc, $version || 0, $label,
-      $description, $source_id, $species_id
+
+  # If the description is more than 255 characters, chop it off and add
+  # an indication that it has been truncated to the end of it.
+
+  if ( length($description) > 255 ) {
+    my $truncmsg = ' /.../';
+    substr( $description, 255 - length($truncmsg),
+            length($truncmsg), $truncmsg );
+  }
+
+  $add_xref_sth->execute( $acc, $version || 0, $label,
+                          $description, $source_id, $species_id
   ) or croak("$acc\t$label\t\t$source_id\t$species_id\n");
 
   return $add_xref_sth->{'mysql_insertid'};
-
-}
+} ## end sub add_xref
 
 
 sub add_to_xrefs{
@@ -1670,16 +1682,28 @@ sub create {
     chomp $reply;
 
     if ( lc( substr( $reply, 0, 1 ) ) eq 'y' ) {
-      my $cmd = "perl "
-        . catfile( $sql_dir, 'xref_config2sql.pl' )
-        . " $ini_file >"
-        . $metadata_file;
+      my $cmd = sprintf( "perl %s %s >%s",
+                         catfile( $sql_dir, 'xref_config2sql.pl' ),
+                         $ini_file, $metadata_file );
 
-      system($cmd) == 0 and print("==> Done.\n")
-        or croak(
-             "Cannot execute the following command (exit $?):\n$cmd\n");
+      if ( system($cmd) == 0 ) {
+        print("==> Done.\n");
+      } else {
+        if ( $? == -1 ) {
+          croak("Failed to execute: $!\n");
+        } elsif ( $? & 127 ) {
+          croak(
+                 sprintf( "Command died with signal %d, %s coredump\n",
+                          ( $? & 127 ),
+                          ( $? & 128 ) ? 'with' : 'without'
+                 ) );
+        } else {
+          croak( sprintf( "Command exited with value %d\n", $? >> 8 ) );
+        }
+      }
+
     }
-  }
+  } ## end if ( !defined($meta_tm...
 
   # check to see if the database already exists
   my %dbs = map {$_->[0] => 1} @{$dbh->selectall_arrayref('SHOW DATABASES')};
