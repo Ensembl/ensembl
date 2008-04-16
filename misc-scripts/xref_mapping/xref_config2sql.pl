@@ -84,14 +84,14 @@ foreach my $source_section ( sort( $config->GroupMembers('source') ) ) {
          . "priority, priority_description)\n" );
 
   printf( "VALUES ('%s', '1', '%s', %d, %d, '%s');\n",
-          $config->val( $section, 'name' ),
-          $config->val( $section, 'download' ),
-          $config->val( $section, 'order' ),
-          $config->val( $section, 'priority' ),
-          $config->val( $section, 'prio_descr' ) );
+          $config->val( $source_section, 'name' ),
+          $config->val( $source_section, 'download' ),
+          $config->val( $source_section, 'order' ),
+          $config->val( $source_section, 'priority' ),
+          $config->val( $source_section, 'prio_descr' ) );
 
   print("\n");
-}
+} ## end foreach my $source_section ...
 
 # Do the data files.
 
