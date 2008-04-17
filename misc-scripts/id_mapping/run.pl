@@ -57,6 +57,7 @@ use FindBin qw($Bin);
 use Bio::EnsEMBL::Utils::ConfParser;
 use Bio::EnsEMBL::Utils::Logger;
 use Bio::EnsEMBL::Utils::ScriptUtils qw(path_append);
+use Bio::EnsEMBL::IdMapping::Cache;
 
 my %valid_modes = (
   'check_only'  => 1,
@@ -86,6 +87,7 @@ $conf->parse_options(
   'chromosomes|chr=s@' => 0,
   'region=s' => 0,
   'biotypes=s@' => 0,
+  'cache_method=s' => 0,
   'min_exon_length|minexonlength=i' => 0,
   'exonerate_path|exoneratepath=s' => 1,
   'exonerate_threshold|exoneratethreshold=f' => 0,
@@ -99,6 +101,7 @@ $conf->parse_options(
   'lsf_opt_run|lsfoptrun=s' => 0,
   'lsf_opt_dump_cache|lsfoptdumpcache=s' => 0,
   'no_check!' => 0,
+  'no_check_empty_tables' => 0,
 );
 
 # set default logpath
@@ -127,7 +130,7 @@ my $mode = $conf->param('mode') || 'normal';
 # run). the 'no_check' option prevents the checks to be re-run after automatic
 # lsf submission
 unless ($conf->param('no_check')) {
-  unless (&init_check($mode)) {
+  if (&init_check($mode) > 0) {
     $logger->error("Configuration check failed. See above for details.\n");
   }
 
@@ -160,9 +163,6 @@ $options{'id_mapping'} = $conf->create_commandline_options(
   is_component  => 1,
 );
 
-# $logger->info("Nothing to do, just testing.\n");
-# exit;
-
 # run components, depending on mode
 my $sub = "run_$mode";
 no strict 'refs';
@@ -178,32 +178,70 @@ $logger->finish_log;
 sub init_check {
   my $mode = shift;
 
-  my $ok = 1;
+  my $err = 0;
 
   $logger->info("Checking configuration...\n", 0, 'stamped');
 
+  #
   # check for valid mode
+  #
   unless ($valid_modes{$mode}) {
     $logger->warning("Invalid mode: $mode.\n");
-    $ok = 0;
+    $err++;
+  } else {
+    $logger->debug("Run mode ok.\n");
   }
 
+  #
   # create the base directory, throw if this fails
+  #
   my $basedir = $conf->param('basedir');
   unless (-d $basedir) {
-    system("mkdir -p $basedir") == 0 or
-      die("Unable to create directory $basedir: $!\n");
+    if (system("mkdir -p $basedir") == 0) {
+      $logger->debug("Base directory created successfully.\n");
+    } else {
+      $logger->warning("Unable to create base directory $basedir: $!\n");
+      $err++;
+    }
   }
+
+  #
+  # check db connection and permissions (SELECT for source, INSERT for target)
+  #
+  my $cache = Bio::EnsEMBL::IdMapping::Cache->new(
+    -LOGGER       => $logger,
+    -CONF         => $conf,
+  );
+
+  # source db
+  $err += $cache->check_db_connection('source');
+  $err += $cache->check_db_read_permissions('source');
+  
+  # target db
+  $err += $cache->check_db_connection('target');
+  $err += $cache->check_db_read_permissions('target');
+  $err += $cache->check_db_write_permissions('target');
+  
+  #
+  # check stable ID and archive tables in target db are empty
+  #
+  $err += $cache->check_empty_tables('target');
+  
+  #
+  # check both dbs have sequence
+  #
+  $err += $cache->check_sequence('source');
+  $err += $cache->check_sequence('target');
+  
+  #
+  # check for required meta table entries
+  #
+  $err += $cache->check_meta_entries('source');
+  $err += $cache->check_meta_entries('target');
   
   $logger->info("Done.\n\n", 0, 'stamped');
 
-  return $ok;
-}
-
-
-sub run_check_only {
-  # this is a pseudo mode which does nothing; only init_check() will be executed
-  return;
+  return $err;
 }
 
 
