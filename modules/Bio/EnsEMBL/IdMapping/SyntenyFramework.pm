@@ -231,7 +231,7 @@ sub rescore_gene_matrix_lsf {
   $self->logger->debug("Done.\n", 0, 'stamped');
 
   # create an empty lsf log directory
-  my $logpath = path_append($self->logger->logpath, 'lsf_synteny_rescore');
+  my $logpath = path_append($self->logger->logpath, 'synteny_rescore');
   system("rm -rf $logpath") == 0 or
     $self->logger->error("Unable to delete lsf log dir $logpath: $!\n");
   system("mkdir -p $logpath") == 0 or
@@ -242,7 +242,7 @@ sub rescore_gene_matrix_lsf {
 
   my $options = $self->conf->create_commandline_options(
       logauto       => 1,
-      logautobase   => "synteny_rescore_",
+      logautobase   => "synteny_rescore",
       logpath       => $logpath,
       interactive   => 0,
       is_component  => 1,
@@ -283,7 +283,7 @@ sub rescore_gene_matrix_lsf {
   sleep(5);
   my $err;
   foreach my $i (1..$num_jobs) {
-    $err++ unless (-e "$logpath/synteny_rescore_$i.success");
+    $err++ unless (-e "$logpath/synteny_rescore.$i.success");
   }
 
   if ($err) {

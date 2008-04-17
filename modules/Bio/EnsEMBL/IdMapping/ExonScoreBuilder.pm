@@ -380,7 +380,7 @@ sub run_exonerate {
   }
 
   # create an empty lsf log directory
-  my $logpath = path_append($self->logger->logpath, 'lsf_exonerate');
+  my $logpath = path_append($self->logger->logpath, 'exonerate');
   system("rm -rf $logpath") == 0 or
     $self->logger->error("Unable to delete lsf log dir $logpath: $!\n");
   system("mkdir -p $logpath") == 0 or

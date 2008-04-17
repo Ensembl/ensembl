@@ -73,7 +73,7 @@ $conf->parse_options(
 
 # append job index to logfile name
 my $index = $conf->param('index');
-my $logautobase = ($conf->param('logautobase') || 'synteny_rescore_') . $index;
+my $logautobase = $conf->param('logautobase') || 'synteny_rescore';
 
 # get log filehandle and print heading and parameters to logfile
 my $logger = new Bio::EnsEMBL::Utils::Logger(
@@ -117,7 +117,7 @@ $gene_scores = $sf->rescore_gene_matrix($gene_scores);
 $gene_scores->write_to_file;
 
 # set flag to indicate everything went fine
-my $success_file = $conf->param('logpath')."/synteny_rescore_$index.success";
+my $success_file = $conf->param('logpath')."/synteny_rescore.$index.success";
 open(TMPFILE, '>', $success_file) and close TMPFILE
   or die "Can't open $success_file for writing: $!";
 
