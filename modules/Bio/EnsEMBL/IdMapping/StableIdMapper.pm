@@ -692,32 +692,19 @@ sub generate_mapping_stats {
 
   # no split into known and novel for exons
   unless ( $type eq 'exon' ) {
-    if ( $known_total > 0 ) {
-      $result .= sprintf( $fmt2,
-                          'known',
-                          $stats->{'mapped_known'},
-                          $stats->{'lost_known'},
-                          $stats->{'mapped_known'}/$known_total*100 );
-    } else {    # Avoid division by zero
-      $result .= sprintf( $fmt2,
-                          'known',
-                          $stats->{'mapped_known'},
-                          $stats->{'lost_known'}, 0 );
-    }
+    $result .= sprintf( $fmt2,
+	'known',
+	$stats->{'mapped_known'},
+	$stats->{'lost_known'},
+	($known_total ? $stats->{'mapped_known'}/$known_total*100 : 0)
+    );
 
-    if ( $novel_total > 0 ) {
-      $result .= sprintf( $fmt2,
-                          'novel',
-                          $stats->{'mapped_novel'},
-                          $stats->{'lost_novel'},
-                          $stats->{'mapped_novel'}/$novel_total*100 );
-    } else {    # Avoid division by zero
-      $result .= sprintf( $fmt2,
-                          'novel',
-                          $stats->{'mapped_novel'},
-                          $stats->{'lost_novel'}, 0 );
-    }
-
+    $result .= sprintf( $fmt2,
+	'novel',
+	$stats->{'mapped_novel'},
+	$stats->{'lost_novel'},
+	($novel_total ? $stats->{'mapped_novel'}/$novel_total*100 : 0)
+    );
   } ## end unless ( $type eq 'exon' )
 
   $result .= sprintf($fmt2, 'total', $mapped_total, $lost_total,
