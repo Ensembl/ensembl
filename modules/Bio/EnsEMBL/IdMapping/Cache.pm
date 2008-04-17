@@ -155,6 +155,9 @@ sub build_cache_by_slice {
   # write cache to file, then flush cache to reclaim memory
   my $size = $self->write_all_to_file($type);
 
+  # set cache method (required for loading cache later)
+  $self->cache_method('BY_SEQ_REGION');
+
   return $num_genes, $size;
 }
 
@@ -198,6 +201,9 @@ sub build_cache_all {
 
   # write cache to file, then flush cache to reclaim memory
   my $size = $self->write_all_to_file($type);
+
+  # set cache method (required for loading cache later)
+  $self->cache_method('ALL');
 
   return $num_genes, $size;
 }
@@ -1052,8 +1058,16 @@ sub read_and_merge {
     throw("Db type must be 'source' or 'target'.");
   }
 
-  foreach my $slice_name (@{ $self->slice_names($dbtype) }) {
-    $self->read_from_file("$dbtype.$slice_name");
+  # read cache from single or multiple files, depending on caching strategy
+  my $cache_method = $self->cache_method;
+  if ($cache_method eq 'ALL') {
+    $self->read_from_file("$dbtype.ALL");
+  } elsif ($cache_method eq 'BY_SEQ_REGION') {
+    foreach my $slice_name (@{ $self->slice_names($dbtype) }) {
+      $self->read_from_file("$dbtype.$slice_name");
+    }
+  } else {
+    throw("Unknown cache method: $cache_method.");
   }
 
   $self->merge($dbtype);
@@ -1193,6 +1207,13 @@ sub conf {
   my $self = shift;
   $self->{'conf'} = shift if (@_);
   return $self->{'conf'};
+}
+
+
+sub cache_method {
+  my $self = shift;
+  $self->{'instance'}->{'cache_method'} = shift if (@_);
+  return $self->{'instance'}->{'cache_method'};
 }
 
 
