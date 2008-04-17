@@ -171,6 +171,11 @@ sub build_cache_by_seq_region {
 
     close($fh);
 
+    unless ($num_jobs) {
+      $logger->info("All cache files for $dbtype exist.\n");
+      next;
+    }
+
     # build lsf command
     my $lsf_name = 'dump_by_seq_region_'.time;
     my $concurrent = $conf->param('dump_cache_concurrent_jobs') || 200;
@@ -248,13 +253,13 @@ sub build_cache_all {
   foreach my $dbtype (qw(source target)) {
 
     $logger->info("\n".ucfirst($dbtype)." db...\n", 0, 'stamped');
-    $logger->info("Building cache for whole genome...\n", 1);
+    $logger->info("Building cache for whole genome...\n");
 
     my $i = 0;
     my $size = 0;
     ($i, $size) = $cache->build_cache_all($dbtype);
 
-    $logger->info("Done with $dbtype (genes: $i, filesize: $size.\n", 1,
+    $logger->info("Done with $dbtype (genes: $i, filesize: $size).\n", 0,
       'stamped');
   }
 
