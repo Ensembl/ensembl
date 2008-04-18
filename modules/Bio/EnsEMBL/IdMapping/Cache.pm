@@ -79,7 +79,8 @@ sub new {
   my $caller = shift;
   my $class = ref($caller) || $caller;
 
-  my ($logger, $conf) = rearrange(['LOGGER', 'CONF'], @_);
+  my ($logger, $conf, $load_instance) =
+    rearrange(['LOGGER', 'CONF', 'LOAD_INSTANCE'], @_);
 
   unless ($logger->isa('Bio::EnsEMBL::Utils::Logger')) {
     throw("You must provide a Bio::EnsEMBL::Utils::Logger for logging.");
@@ -95,6 +96,10 @@ sub new {
   # initialise
   $self->logger($logger);
   $self->conf($conf);
+
+  if ($load_instance) {
+    $self->read_instance_from_file;
+  }
   
   return $self;
 }
