@@ -89,10 +89,10 @@ my $logger = new Bio::EnsEMBL::Utils::Logger(
 
 # loading cache from file
 my $cache = Bio::EnsEMBL::IdMapping::Cache->new(
-  -LOGGER       => $logger,
-  -CONF         => $conf,
+  -LOGGER         => $logger,
+  -CONF           => $conf,
+  -LOAD_INSTANCE  => 1,
 );
-$cache->read_instance_from_file;
 
 # load SyntenyFramework and gene ScoredMappingMatrix from files
 my $basedir = $conf->param('basedir');

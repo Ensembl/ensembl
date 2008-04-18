@@ -127,10 +127,10 @@ my $translation_mappings;
 
 # loading cache from file
 my $cache = Bio::EnsEMBL::IdMapping::Cache->new(
-  -LOGGER       => $logger,
-  -CONF         => $conf,
+  -LOGGER         => $logger,
+  -CONF           => $conf,
+  -LOAD_INSTANCE  => 1,
 );
-$cache->read_instance_from_file;
 
 
 # get a stable ID mapper
