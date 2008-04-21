@@ -77,21 +77,27 @@ GetOptions(
            'help'                   => sub { usage(); exit(0); }
 		  );
 
+#Can we exit if unknown options specified?
+
 @arrays = split(/,/,join(',',@arrays));#?
+
+print 'Running on probe2trascript.pl on: '.`hostname`."\n";
 
 if(($utr_length =~ /\D/) && ($utr_length ne 'annotated')){
   die("Invalid utr_length parameter($utr_length).  Must be a number or 'annotated'");
 }
 else{
   $three_utr = $utr_length;
+  print "Default UTR length is $three_utr\n";
 }
+print "Default annotated UTR length is $unannotated_utr_length\n" if $three_utr eq 'annotated';
+print "Allowed mismatches = $max_mismatches\n";
 
 #we need to do a check here on utr_length and unannotated_utr_length
 
 usage() if(!$transcript_user || !$transcript_dbname || !$transcript_host);
 
 
-print 'Running on probe2trascript.pl on: '.`hostname`."\n";
 
 my $transcript_db = new Bio::EnsEMBL::DBSQL::DBAdaptor('-host'   => $transcript_host,
 						       '-port'   => $transcript_port,
@@ -188,7 +194,8 @@ my $total =  scalar(@transcripts);
 
 throw('Could not find any transcripts') if $total == 0;
 
-print "Identified ".scalar(@transcripts)." transcripts for probe mappinng\n";
+print "Identified ".scalar(@transcripts)." transcripts for probe mapping\n";
+print "Using UTR length:\t$utr_length\n";
 print "Mapping, percentage complete: ";
 
 my $no_annotated_utr = 0;
@@ -209,11 +216,13 @@ foreach my $transcript (@transcripts) {
   my $stable_id = $transcript->stable_id();
   $transcript_ids{$stable_id} = $transcript->dbID(); # needed later
 
+
+
   if($utr_length eq 'annotated'){
 	#$five_utr = Do we need to implement this?
 	my $utr = $transcript->three_prime_utr;
 
-	if(defined $utr){
+	if(defined $utr && $utr->length != 0){
 	  $three_utr = $utr->length;
 	}
 	else{
@@ -249,7 +258,6 @@ foreach my $transcript (@transcripts) {
 
   my $oligo_features;
 
- 
   if (@arrays) {
     $oligo_features = $extended_slice->get_all_OligoFeatures(@arrays);
   } else {
@@ -260,6 +268,7 @@ foreach my $transcript (@transcripts) {
   #This works on the assumption that probesets are identical between arrays
   #i.e. if a probe set is present on different arrays, their probes are identical.
  
+
   foreach my $feature (@$oligo_features) {
   	#Here we need to skip the assignment if we have already seen the dbID for this transcript
 	#Actually we need to count each dbID mapping
@@ -496,7 +505,10 @@ foreach my $aname(keys %array_xrefs){
 }
 
 print 'Mapped '. scalar(keys(%transcript_xrefs))."/$total transcripts\n";
-print "Default $unannotated_utr_length bp UTR used for $no_annotated_utr transcript with no annotated UTRs\n";
+if($utr_length eq 'annotated'){
+  print "Default $unannotated_utr_length bp UTR used for $no_annotated_utr transcript with no annotated UTRs\n";
+}
+
 print "Top 5 most mapped transcripts:\n";
 
 #sort keys with respect to values.
@@ -657,19 +669,30 @@ sub add_xref {
   $array_xrefs{$array}++;
   $transcript_xrefs{$transcript_id}++;
 
-  my $dbe = new Bio::EnsEMBL::DBEntry( -adaptor              => $dbea,
-				       -primary_id           => $probeset,
-				       -version              => "1",
-				       -dbname               => $array,
-				       -release              => "1",
-				       -display_id           => $probeset,
-				       -description          => undef,
-				       -primary_id_linkable  => 1,
-				       -display_id_linkable  => 0,
-				       -priority             => 1,
-				       -db_display_name      => $array,
-				       -info_type            => "MISC",  # TODO - change to PROBE when available
-				       -info_text            => $txt);
+  my $dbe = new Bio::EnsEMBL::DBEntry
+	( 
+	 -adaptor              => $dbea,
+	 -primary_id           => $probeset,
+	 -version              => "1",
+	 -dbname               => $array,
+	 -release              => "1",
+	 -display_id           => $probeset,
+	 -description          => undef,
+	 -primary_id_linkable  => 1,
+	 -display_id_linkable  => 0,
+	 -priority             => 1,
+	 -db_display_name      => $array,
+	 -info_type            => "PROBE",
+	 #-info_text            => $txt,#This could hold how many mapping there are for a given probeset.
+	 -linkage_annotation   => $txt
+	);
+
+
+  #Can we add ox linkage annotation to this for specific transcript xref i.e. Score or how many probes hit?
+  #is info_text generic for probeset xref entry or specific to a ox transcript?
+  #No this is wrong!!!!!!! We are currently storing the first ox's number of probes in the xref for all ox's
+  #We need to put this in the ox linkage annotation
+  #DBEntryAdaptor does no handle storing or retrieving linkage annotation!!!???
 
   $dbea->store($dbe, $transcript_id, "Transcript");
 
