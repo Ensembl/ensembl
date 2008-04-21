@@ -188,6 +188,17 @@ sub build_cache_by_slice {
 
 sub build_cache_all {
   my $self = shift;
+<<<<<<< Cache.pm
+  my $dbtype = shift;
+  
+  my $dba = $self->get_DBAdaptor($dbtype);
+  my $ga = $dba->get_GeneAdaptor;
+  
+  my $genes = $ga->fetch_all;
+
+  # find common coord_system
+  my $common_cs_found = $self->find_common_coord_systems;
+=======
   my $dbtype = shift;
   
   my $dba = $self->get_DBAdaptor($dbtype);
@@ -203,12 +214,26 @@ sub build_cache_all {
   my $type = "$dbtype.ALL";
   my $num_genes = $self->build_cache_from_genes($type, $genes, 'CHECK');
   undef $genes;
+>>>>>>> 1.16
 
+<<<<<<< Cache.pm
+  # Build cache. Setting $need_project to 'CHECK' will cause
+  # build_cache_from_genes() to check the coordinate system for each gene.
+  my $type = "$dbtype.ALL";
+  my $num_genes = $self->build_cache_from_genes($type, $genes, 'CHECK');
+  undef $genes;
+=======
   # write cache to file, then flush cache to reclaim memory
   my $size = $self->write_all_to_file($type);
+>>>>>>> 1.16
 
+<<<<<<< Cache.pm
+  # write cache to file, then flush cache to reclaim memory
+  my $size = $self->write_all_to_file($type);
+=======
   # set cache method (required for loading cache later)
   $self->cache_method('ALL');
+>>>>>>> 1.16
 
   return $num_genes, $size;
 }
