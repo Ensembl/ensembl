@@ -453,10 +453,12 @@ sub store {
             FROM object_xref
             WHERE xref_id = ?
             AND   ensembl_object_type = ?
-            AND   ensembl_id = ?");
+            AND   ensembl_id = ?
+            AND   linkage_annotation = ?");
   $sth->bind_param(1,$dbX,SQL_INTEGER);
   $sth->bind_param(2,$ensType,SQL_VARCHAR);
   $sth->bind_param(3,$ensembl_id,SQL_INTEGER);
+  $sth->bind_param(4,$exObj->linkage_annotation,SQL_VARCHAR);
   $sth->execute();
   my ($tst) = $sth->fetchrow_array;
   $sth->finish();
@@ -466,11 +468,12 @@ sub store {
     #
     $sth = $self->prepare(
          "INSERT ignore INTO object_xref
-          SET xref_id = ?, ensembl_object_type = ?, ensembl_id = ?");
+          SET xref_id = ?, ensembl_object_type = ?, ensembl_id = ?, linkage_annotation = ?");
 
     $sth->bind_param(1,$dbX,SQL_INTEGER);
     $sth->bind_param(2,$ensType,SQL_VARCHAR);
     $sth->bind_param(3,$ensembl_id,SQL_INTEGER);
+	$sth->bind_param(4,$exObj->linkage_annotation,SQL_VARCHAR);
     #print "stored xref id $dbX in obejct_xref\n";
     $sth->execute();
     $exObj->dbID( $dbX );
@@ -731,6 +734,7 @@ sub remove_from_object {
   }
 
   # obtain the identifier of the link from the object_xref table
+  #No need to compare linkage_annotation here
   my $sth = $self->prepare
     ("SELECT ox.object_xref_id " .
      "FROM   object_xref ox ".
@@ -819,6 +823,7 @@ sub _fetch_by_object_type {
            idt.cigar_line, idt.score, idt.evalue, idt.analysis_id,
            gx.linkage_type,
            xref.info_type, xref.info_text, exDB.type, gx.source_xref_id
+           oxr.linkage_annotation
     FROM   (xref xref, external_db exDB, object_xref oxr)
     LEFT JOIN external_synonym es on es.xref_id = xref.xref_id 
     LEFT JOIN identity_xref idt on idt.object_xref_id = oxr.object_xref_id
@@ -857,7 +862,7 @@ SSQL
            $evalue,                 $analysis_id,
            $linkage_type,           $info_type,
            $info_text,              $type,
-           $source_xref_id
+           $source_xref_id,          $link_annotation
       ) = @$arrRef;
 
       my $linkage_key =
@@ -874,7 +879,8 @@ SSQL
                        'type'               => $type,
                        'secondary_db_name'  => $exDB_secondary_db_name,
                        'secondary_db_table' => $exDB_secondary_db_table,
-                       'dbname'             => $dbname );
+                       'dbname'             => $dbname,
+					   'linkage_annotation' => $link_annotation);
 
       # Using an outer join on the synonyms as well as on identity_xref,
       # we now have to filter out the duplicates (see v.1.18 for
