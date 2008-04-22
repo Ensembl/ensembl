@@ -129,6 +129,9 @@ sub build_cache_by_slice {
   my $dbtype = shift;
   my $slice_name = shift;
   
+  # set cache method (required for loading cache later)
+  $self->cache_method('BY_SEQ_REGION');
+
   my $dba = $self->get_DBAdaptor($dbtype);
   my $sa = $dba->get_SliceAdaptor;
   
@@ -160,9 +163,6 @@ sub build_cache_by_slice {
   # write cache to file, then flush cache to reclaim memory
   my $size = $self->write_all_to_file($type);
 
-  # set cache method (required for loading cache later)
-  $self->cache_method('BY_SEQ_REGION');
-
   return $num_genes, $size;
 }
 
@@ -190,6 +190,9 @@ sub build_cache_all {
   my $self = shift;
   my $dbtype = shift;
   
+  # set cache method (required for loading cache later)
+  $self->cache_method('ALL');
+
   my $dba = $self->get_DBAdaptor($dbtype);
   my $ga = $dba->get_GeneAdaptor;
   
@@ -206,9 +209,6 @@ sub build_cache_all {
 
   # write cache to file, then flush cache to reclaim memory
   my $size = $self->write_all_to_file($type);
-
-  # set cache method (required for loading cache later)
-  $self->cache_method('ALL');
 
   return $num_genes, $size;
 }
