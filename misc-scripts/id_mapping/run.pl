@@ -88,6 +88,8 @@ $conf->parse_options(
   'region=s' => 0,
   'biotypes=s@' => 0,
   'cache_method=s' => 0,
+  'build_cache_auto_threshold=n' => 0,
+  'build_cache_concurrent_jobs=n' => 0,
   'min_exon_length|minexonlength=i' => 0,
   'exonerate_path|exoneratepath=s' => 1,
   'exonerate_threshold|exoneratethreshold=f' => 0,

@@ -91,6 +91,8 @@ $conf->parse_options(
   'biotypes=s@' => 0,
   'lsf_opt_dump_cache|lsfoptdumpcache=s' => 0,
   'cache_method=s' => 0,
+  'build_cache_auto_threshold=n' => 0,
+  'build_cache_concurrent_jobs=n' => 0,
 );
 
 # set default logpath
@@ -116,7 +118,7 @@ $logger->init_log($conf->list_param_values);
 # determin cache method to use.
 # this can be used to support different caching strategies or access to old
 # database schemas.
-my $cache_method = $conf->param('cache_method') || 'build_cache_by_seq_region';
+my $cache_method = $conf->param('cache_method') || 'build_cache_auto';
 no strict 'refs';
 my $retval = &$cache_method;
 
@@ -127,6 +129,40 @@ exit($retval);
 
 
 ### END main ###
+
+
+sub build_cache_auto {
+  # load the cache implementation
+  my $cache_impl = 'Bio::EnsEMBL::IdMapping::Cache';
+  dynamic_use($cache_impl);
+
+  my $cache = $cache_impl->new(
+    -LOGGER       => $logger,
+    -CONF         => $conf,
+  );
+
+  $logger->debug("\nChecking number of toplevel seq_regions...\n");
+  my $max = 0;
+
+  foreach my $dbtype (qw(source target)) {
+    my $num = scalar(@{ $cache->slice_names($dbtype) });
+    $max = $num if ($num > $max);
+    $logger->debug("$dbtype: $num.\n", 1);
+  }
+
+  my $threshold = $conf->param('build_cache_auto_threshold') || 100;
+  my $retval;
+
+  if ($max > $threshold) {
+    $logger->debug("\nWill use build_cache_all.\n");
+    $retval = &build_cache_all;
+  } else {
+    $logger->debug("\nWill use build_cache_by_seq_region.\n");
+    $retval = &build_cache_by_seq_region;
+  }
+
+  return $retval;
+}
 
 
 sub build_cache_by_seq_region {
@@ -178,7 +214,7 @@ sub build_cache_by_seq_region {
 
     # build lsf command
     my $lsf_name = 'dump_by_seq_region_'.time;
-    my $concurrent = $conf->param('dump_cache_concurrent_jobs') || 200;
+    my $concurrent = $conf->param('build_cache_concurrent_jobs') || 200;
 
     my $options = $conf->create_commandline_options(
         logauto       => 1,
