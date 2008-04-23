@@ -87,6 +87,8 @@ $conf->parse_options(
   'exonerate_jobs|exoneratejobs=i' => 0,
   'exonerate_bytes_per_job|exoneratebytesperjob=f' => 0,
   'exonerate_extra_params|exonerateextraparams=s' => 0,
+  'mapping_types=s@' => 1,
+  'plugin_stable_id_generator=s' => 0,
   'upload_events|uploadevents=s' => 0,
   'upload_stable_ids|uploadstableids=s' => 0,
   'upload_archive|uploadarchive=s' => 0,
@@ -139,6 +141,13 @@ my $stable_id_mapper = Bio::EnsEMBL::IdMapping::StableIdMapper->new(
   -CONF         => $conf,
   -CACHE        => $cache
 );
+
+
+# find out which entities we want to map
+my %mapping_types = ();
+foreach my $type ($conf->param('mapping_types')) {
+  $mapping_types{$type} = 1;
+}
 
 
 # run in requested mode
@@ -237,21 +246,23 @@ sub map {
     $transcript_scores, $gsb);
 
   # map transcripts
-  $transcript_mappings = $internal_id_mapper->map_transcripts(
-    $transcript_scores, $gene_mappings, $tsb);
+  if ($mapping_types{'transcript'} or $mapping_types{'exon'} or
+      $mapping_types{'translation'}) {
+    $transcript_mappings = $internal_id_mapper->map_transcripts(
+      $transcript_scores, $gene_mappings, $tsb);
+  }
 
   # map exons
-  $exon_mappings = $internal_id_mapper->map_exons($exon_scores,
-    $transcript_mappings, $esb);
+  if ($mapping_types{'exon'}) {
+    $exon_mappings = $internal_id_mapper->map_exons($exon_scores,
+      $transcript_mappings, $esb);
+  }
 
   # map translations
-  $translation_mappings = $internal_id_mapper->map_translations(
-    $transcript_mappings);
-
-  # the java application adds mapping hashmaps (source => target) to the cache.
-  # not sure if I will need it (don't think so) [todo]
-  #$cache->add_mappings($gene_mappings, $transcript_mappings, $exon_mappings,
-  #  $translation_mappings);
+  if ($mapping_types{'translation'}) {
+    $translation_mappings = $internal_id_mapper->map_translations(
+      $transcript_mappings);
+  }
 }
 
 
@@ -262,16 +273,24 @@ sub assign_stable_ids {
   #
 
   # exons
-  $stable_id_mapper->map_stable_ids($exon_mappings, 'exon');
+  if ($mapping_types{'exon'}) {
+    $stable_id_mapper->map_stable_ids($exon_mappings, 'exon');
+  }
 
   # transcripts
-  $stable_id_mapper->map_stable_ids($transcript_mappings, 'transcript');
+  if ($mapping_types{'transcript'}) {
+    $stable_id_mapper->map_stable_ids($transcript_mappings, 'transcript');
+  }
 
   # translations
-  $stable_id_mapper->map_stable_ids($translation_mappings, 'translation');
+  if ($mapping_types{'translation'}) {
+    $stable_id_mapper->map_stable_ids($translation_mappings, 'translation');
+  }
 
   # genes
-  $stable_id_mapper->map_stable_ids($gene_mappings, 'gene');
+  if ($mapping_types{'gene'}) {
+    $stable_id_mapper->map_stable_ids($gene_mappings, 'gene');
+  }
 
 
   # dump mappings to file for debug purposes
@@ -288,23 +307,31 @@ sub generate_similarity_events {
   $logger->info("Generating similarity events...\n", 0, 'stamped');
 
   # genes
-  $logger->debug("genes\n", 1);
-  $stable_id_mapper->generate_similarity_events($gene_mappings, $gene_scores,
-    'gene');
+  if ($mapping_types{'gene'}) {
+    $logger->debug("genes\n", 1);
+    $stable_id_mapper->generate_similarity_events($gene_mappings, $gene_scores,
+      'gene');
+  }
 
   # transcripts
-  $logger->debug("transcripts\n", 1);
-  my $filtered_transcript_scores =
-    $stable_id_mapper->filter_same_gene_transcript_similarities(
-      $transcript_scores);
+  if ($mapping_types{'transcript'} or $mapping_types{'translation'}) {
+    my $filtered_transcript_scores =
+      $stable_id_mapper->filter_same_gene_transcript_similarities(
+        $transcript_scores);
+  }
 
-  $stable_id_mapper->generate_similarity_events($transcript_mappings,
-    $filtered_transcript_scores, 'transcript');
+  if ($mapping_types{'transcript'}) {
+    $logger->debug("transcripts\n", 1);
+    $stable_id_mapper->generate_similarity_events($transcript_mappings,
+      $filtered_transcript_scores, 'transcript');
+  }
 
   # translations
-  $logger->debug("translations\n", 1);
-  $stable_id_mapper->generate_translation_similarity_events(
-    $translation_mappings, $filtered_transcript_scores);
+  if ($mapping_types{'translation'}) {
+    $logger->debug("translations\n", 1);
+    $stable_id_mapper->generate_translation_similarity_events(
+      $translation_mappings, $filtered_transcript_scores);
+  }
 
   # write stable_id_events to file
   $stable_id_mapper->write_stable_id_events('similarity');
@@ -389,7 +416,7 @@ sub upload_stable_ids {
     
     $logger->info("Uploading stable ID tables...\n");
     
-    foreach my $t (qw(gene transcript translation exon)) {
+    foreach my $t ($conf->param('mapping_types')) {
       $logger->info("${t}_stable_id...\n", 1);
       my $i = $stable_id_mapper->upload_file_into_table('target',
         "${t}_stable_id", "${t}_stable_id.txt");

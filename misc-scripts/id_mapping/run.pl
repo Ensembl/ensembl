@@ -96,6 +96,8 @@ $conf->parse_options(
   'exonerate_jobs|exoneratejobs=i' => 0,
   'exonerate_bytes_per_job|exoneratebytesperjob=f' => 0,
   'exonerate_extra_params|exonerateextraparams=s' => 0,
+  'mapping_types=s@' => 1,
+  'plugin_stable_id_generator=s' => 0,
   'upload_events|uploadevents=s' => 0,
   'upload_stable_ids|uploadstableids=s' => 0,
   'upload_archive|uploadarchive=s' => 0,
