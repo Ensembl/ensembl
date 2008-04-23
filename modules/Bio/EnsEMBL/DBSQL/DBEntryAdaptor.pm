@@ -822,7 +822,7 @@ sub _fetch_by_object_type {
            idt.hit_end, idt.translation_start, idt.translation_end,
            idt.cigar_line, idt.score, idt.evalue, idt.analysis_id,
            gx.linkage_type,
-           xref.info_type, xref.info_text, exDB.type, gx.source_xref_id
+           xref.info_type, xref.info_text, exDB.type, gx.source_xref_id,
            oxr.linkage_annotation
     FROM   (xref xref, external_db exDB, object_xref oxr)
     LEFT JOIN external_synonym es on es.xref_id = xref.xref_id 
