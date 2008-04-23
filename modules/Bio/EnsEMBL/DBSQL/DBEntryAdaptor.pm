@@ -45,7 +45,6 @@ use strict;
 
 @ISA = qw( Bio::EnsEMBL::DBSQL::BaseAdaptor );
 
-
 =head2 fetch_by_dbID
 
   Arg [1]    : int $dbID
@@ -1020,7 +1019,7 @@ sub list_gene_ids_by_extids {
 
   Arg [1]    : string $external_name
   Arg [2]    : (optional) string $external_db_name
-  Example    : @tr_ids = $dbea->list_gene_ids_by_extids('BCRA2');
+  Example    : @tr_ids = $dbea->list_transcript_ids_by_extids('BCRA2');
   Description: Retrieve a list transcript ids by an external identifier that 
                is linked to any of the genes transcripts, translations or the 
                gene itself 
@@ -1049,7 +1048,7 @@ sub list_transcript_ids_by_extids {
 
   Arg [1]    : string $external_name
   Arg [2]    : (optional) string $external_db_name
-  Example    : @tr_ids = $dbea->list_gene_ids_by_extids('GO:0004835');
+  Example    : @tr_ids = $dbea->list_translation_ids_by_extids('GO:0004835');
   Description: Gets a list of translation IDs by external display IDs
   Returntype : list of Ints
   Exceptions : none
@@ -1141,71 +1140,79 @@ sub _type_by_external_id {
       . ' AND xdb.external_db_id = x.external_db_id AND';
   }
 
-  my @queries = (
-    "SELECT $ID_sql
-       FROM $from_sql xref x, object_xref oxr
-      WHERE $where_sql x.dbprimary_acc = ? AND
-             x.xref_id = oxr.xref_id AND
-             oxr.ensembl_object_type= ?",
-    "SELECT $ID_sql 
-       FROM $from_sql xref x, object_xref oxr
-      WHERE $where_sql x.display_label = ? AND
-             x.xref_id = oxr.xref_id AND
-             oxr.ensembl_object_type= ?"
-  );
+  my $query1 = qq(
+      SELECT    $ID_sql
+      FROM      $from_sql
+                xref x,
+                object_xref oxr
+      WHERE     $where_sql
+                ( x.dbprimary_acc = ? OR x.display_label = ? )
+      AND         x.xref_id = oxr.xref_id
+      AND         oxr.ensembl_object_type = ?);
+
+  my $query2;
 
   if ( defined $external_db_name ) {
     # If we are given the name of an external database, we need to join
     # between the 'xref' and the 'object_xref' tables on 'xref_id'.
 
-    push @queries, "SELECT $ID_sql
+    $query2 = "SELECT $ID_sql
        FROM $from_sql xref x, object_xref oxr, external_synonym syn
       WHERE $where_sql syn.synonym = ? AND
              x.xref_id = oxr.xref_id AND
              oxr.ensembl_object_type= ? AND
              syn.xref_id = oxr.xref_id";
+
   } else {
     # If we weren't given an external database name, we can get away
     # with less joins here.
 
-    push @queries, "SELECT $ID_sql
+    $query2 = "SELECT $ID_sql
        FROM $from_sql object_xref oxr, external_synonym syn
       WHERE $where_sql syn.synonym = ? AND
              oxr.ensembl_object_type= ? AND
              syn.xref_id = oxr.xref_id";
-  }
 
-  # Increase speed of query by splitting the OR in query into three
-  # separate queries.  This is because the 'or' statments render the
-  # index useless because MySQL can't use any fields in it.
+  }
 
   my %hash   = ();
   my @result = ();
 
-  foreach (@queries) {
-    my $sth = $self->prepare($_);
-    $sth->bind_param( 1, "$name", SQL_VARCHAR );
-    $sth->bind_param( 2, $ensType, SQL_VARCHAR );
-    $sth->execute();
+  my $sth = $self->prepare($query1);
 
-    while ( my $r = $sth->fetchrow_array() ) {
-      if ( !exists $hash{$r} ) {
-        $hash{$r} = 1;
-        push( @result, $r );
-      }
-    }
+  $sth->bind_param( 1, "$name",  SQL_VARCHAR );
+  $sth->bind_param( 2, "$name",  SQL_VARCHAR );
+  $sth->bind_param( 3, $ensType, SQL_VARCHAR );
+  $sth->execute();
+
+  while ( my $r = $sth->fetchrow_array() ) {
+    if ( exists( $hash{$r} ) ) { next }
+    $hash{$r} = 1;
+    push( @result, $r );
+  }
+
+  $sth = $self->prepare($query2);
+
+  $sth->bind_param( 1, "$name",  SQL_VARCHAR );
+  $sth->bind_param( 2, $ensType, SQL_VARCHAR );
+  $sth->execute();
+
+  while ( my $r = $sth->fetchrow_array() ) {
+    if ( exists( $hash{$r} ) ) { next }
+    $hash{$r} = 1;
+    push( @result, $r );
   }
 
   return @result;
 } ## end sub _type_by_external_id
 
-=head2 _type_by_external_type
+=head2 _type_by_external_db_id
 
   Arg [1]    : string $type - external_db type
   Arg [2]    : string $ensType - ensembl_object_type
   Arg [3]    : (optional) string $extraType
   	       other object type to be returned
-  Example    : $self->_type_by_external_id(1030, 'Translation');
+  Example    : $self->_type_by_external_db_id(1030, 'Translation');
   Description: Gets
   Returntype : list of dbIDs (gene_id, transcript_id, etc.)
   Exceptions : none
@@ -1265,24 +1272,21 @@ sub _type_by_external_db_id{
       WHERE $where_sql x.external_db_id = ? AND
   	     x.xref_id = oxr.xref_id AND oxr.ensembl_object_type= ?";
 
-# Increase speed of query by splitting the OR in query into three separate 
-# queries. This is because the 'or' statments render the index useless 
-# because MySQL can't use any fields in the index.
-
   my %hash = ();
   my @result = ();
 
-
-  my $sth = $self->prepare( $query );
-  $sth->bind_param(1, "$external_db_id", SQL_VARCHAR);
-  $sth->bind_param(2, $ensType, SQL_VARCHAR);
+  my $sth = $self->prepare($query);
+  $sth->bind_param( 1, "$external_db_id", SQL_VARCHAR );
+  $sth->bind_param( 2, $ensType,          SQL_VARCHAR );
   $sth->execute();
-  while( my $r = $sth->fetchrow_array() ) {
-    if( !exists $hash{$r} ) {
+
+  while ( my $r = $sth->fetchrow_array() ) {
+    if ( !exists $hash{$r} ) {
       $hash{$r} = 1;
       push( @result, $r );
     }
   }
+
   return @result;
 }
 
