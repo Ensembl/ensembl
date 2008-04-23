@@ -55,7 +55,7 @@ no warnings 'uninitialized';
 use FindBin qw($Bin);
 use Bio::EnsEMBL::Utils::ConfParser;
 use Bio::EnsEMBL::Utils::Logger;
-use Bio::EnsEMBL::Utils::ScriptUtils qw(dynamic_use path_append);
+use Bio::EnsEMBL::Utils::ScriptUtils qw(inject path_append);
 use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 
 # parse configuration and commandline arguments
@@ -110,7 +110,7 @@ my $logger = new Bio::EnsEMBL::Utils::Logger(
 
 # build cache
 my $cache_impl = $conf->param('cache_impl');
-dynamic_use($cache_impl);
+inject($cache_impl);
 
 my $cache = $cache_impl->new(
   -LOGGER       => $logger,
