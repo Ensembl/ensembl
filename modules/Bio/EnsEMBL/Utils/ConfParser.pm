@@ -194,8 +194,9 @@ sub parse_options {
     next if ($i++ % 2);
 
     my $required = $params{$param};
-    my $list = 1 if ($param =~ /\@$/);
-    my $flag = 1 if ($param =~ /!$/);
+    my ($list, $flag);
+    $list = 1 if ($param =~ /\@$/);
+    $flag = 1 if ($param =~ /!$/);
     $param =~ s/(^\w+).*/$1/;
     
     $self->comma_to_list($param) if ($list);
