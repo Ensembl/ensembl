@@ -69,6 +69,8 @@ my $conf = new Bio::EnsEMBL::Utils::ConfParser(
 $conf->parse_options(
   'basedir|basedir=s' => 1,
   'index|i=n' => 1,
+  'chromosomes|chr=s@' => 0,
+  'region=s' => 0,
 );
 
 # append job index to logfile name
