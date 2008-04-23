@@ -391,7 +391,7 @@ sub create_summary_email {
   #
   # timing
   #
-  print $fh "Run at:  ".localtime;
+  print $fh "Run at:  ".localtime()."\n";
   print $fh "Runtime: ";
   print $fh $self->logger->runtime, "\n\n";
 
