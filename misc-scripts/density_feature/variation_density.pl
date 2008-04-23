@@ -1,6 +1,7 @@
 #
 # calculates the variation density from given core database
-# It finds Variation database by itself using naming convention s/core/variation/
+# It finds Variation database by itself using naming convention
+# s/core/variation/
 #
 #
 
@@ -17,8 +18,8 @@ use Getopt::Long;
 use Data::Dumper;
 $Data::Dumper::Maxdepth = 2;
 
-my $bin_count = 150;
-my $long_slice_count = 100;
+my $bin_count        = 150;
+my $long_slice_count = 125;
 
 my ( $host, $user, $pass, $port, $dbname  );
 

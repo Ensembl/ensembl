@@ -7,8 +7,9 @@
 # It will only run on databases with genes ...
 #
 
-# I think the right thing here is too generate densities on the biggest 50-100 toplevel slices ...
-# The website will be happy with about 150 bins I think.
+# I think the right thing here is too generate densities on the longest
+# 125 toplevel slices... The website will be happy with about 150 bins I
+# think.
 
 
 use strict;
@@ -18,8 +19,8 @@ use Bio::EnsEMBL::DensityType;
 use Bio::EnsEMBL::DensityFeature;
 use Getopt::Long;
 
-my $bin_count = 150;
-my $long_slice_count = 100;
+my $bin_count        = 150;
+my $long_slice_count = 125;
 
 
 my ( $host, $user, $pass, $port, $dbname  );

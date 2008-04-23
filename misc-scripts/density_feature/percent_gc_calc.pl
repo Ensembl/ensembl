@@ -36,9 +36,8 @@ my $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(-host => $host,
 					    -dbname => $dbname);
 
 
-my $bin_count = 150;
-my $long_slice_count = 100;
-
+my $bin_count        = 150;
+my $long_slice_count = 125;
 
 #
 # Check wether the script should run on given database
