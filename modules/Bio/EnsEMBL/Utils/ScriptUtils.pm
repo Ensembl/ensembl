@@ -43,6 +43,7 @@ our @EXPORT_OK = qw(
   directory_hash
   path_append
   dynamic_use
+  inject
 );
 
 
@@ -221,10 +222,10 @@ sub path_append {
 }
 
 
-=head2 dynamic_use
+=head2 inject
 
   Arg [1]    : String $classname - The name of the class to require/import
-  Example    : $self->dynamic_use('Bio::EnsEMBL::DBSQL::DBAdaptor');
+  Example    : $self->inject('Bio::EnsEMBL::DBSQL::DBAdaptor');
   Description: Requires and imports the methods for the classname provided,
                checks the symbol table so that it doesnot re-require modules
                that have already been required.
@@ -234,7 +235,7 @@ sub path_append {
 
 =cut
 
-sub dynamic_use {
+sub inject {
   my $classname = shift;
   my ($parent_namespace, $module) = $classname =~/^(.*::)(.*)$/ ?
                                       ($1,$2) : ('::', $classname);
@@ -249,6 +250,11 @@ sub dynamic_use {
   $classname->import();
   
   return 1;
+}
+
+
+sub dynamic_use {
+  return inject(@_);
 }
 
 1;
