@@ -1,8 +1,3 @@
-#
-#
-# Please separate fields in this file with TABS not spaces!
-#
-#
 210	Anopheles_symbol	1	KNOWN	1	0	50	Anopheles symbol	MISC	\N	\N
 300	BRIGGSAE_HYBRID	1	KNOWNXREF	1	0	5	Briggsae Hybrid	MISC	\N	\N
 400	Celera_Gene	1	PRED	1	0	5	Celera gene	MISC	\N	\N
@@ -86,6 +81,8 @@
 2910	Genoscope_pred_transcript	1	XREF	1	0	39	Genoscope pred transcript	MISC	\N	\N
 2920	Genoscope_annotated_gene	1	KNOWN	1	0	40	Genoscope annotated gene	MISC	\N	\N
 2930	Genoscope_pred_translation	1	XREF	1	0	40	Genoscope pred translation	MISC	\N	\N
+2940	Genoscope_ann_transcript	1	KNOWN	1	0	40	Genoscope annotated transcript	MISC	\N	\N
+2950	Genoscope_ann_translation	1	KNOWN	1	0	40	Genoscope annotated translation	MISC	\N	\N
 3001	AFFY_MG_U74_all	1	XREF	1	0	1	Affymx Microarray U74	ARRAY	\N	\N
 3002	AFFY_MG_U74A	1	XREF	1	0	1	Affymx Microarray U74	ARRAY	\N	\N
 3003	AFFY_MG_U74Av2	1	XREF	1	0	1	Affymx Microarray U74	ARRAY	\N	\N
@@ -240,6 +237,8 @@
 9420	TetNig_human_econtig	1	XREF	1	0	40	Genoscope human exofish econtig	MISC	\N	\N
 9430	TetNig_human_IPI_econtig	1	XREF	1	0	40	Genoscope human IPI exofish econtig	MISC	\N	\N
 9440	TetNig_mouse_IPI_econtig	1	XREF	1	0	40	Genoscope mouse IPI exofish econtig	MISC	\N	\N
+9450	TetNig_rat_econtig	1	XREF	1	0	40	Genoscope rat exofish econtig	MISC	\N	\N
+9460	TetNig_chick_econtig	1	XREF	1	0	40	Genoscope chicken exofish econtig	MISC	\N	\N
 9500	OryLat_est	1	XREF	1	0	40	Medaka EST	MISC	\N	\N
 9600	Trace_archive	1	XREF	1	0	40	Trace Archive id	MISC	\N	\N
 9700	CioSav_est	1	XREF	1	0	40	Ciona savignyi EST	MISC	\N	\N
@@ -256,6 +255,7 @@
 10900	GI	1	XREF	1	0	5	GenInfo Identifier, a sequence identification number for a nucleotide sequence	MISC	\N	\N
 11000	UCSC	1	KNOWNXREF	1	0	100	UCSC Stable ID	MISC	\N	\N
 11100	Culex_ncRNA	1	XREF	1	0	70	Culex ncRNAs	MISC	\N	\N
+=======
 #
 #
 # Please separate fields in this file with TABS not spaces!
