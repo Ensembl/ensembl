@@ -215,25 +215,23 @@ sub dbc{
 # if primary key field is not supplied, tablename_id is assumed
 # returns listref of IDs
 sub _list_dbIDs {
+  my ( $self, $table, $pk, $ordered ) = @_;
 
-  my ($self, $table, $pk, $ordered) = @_;
-  if (!defined($pk)) {
-    $pk = $table . "_id";
+  if ( !defined($pk) ) { $pk = $table . "_id" }
+
+  my $sql = "SELECT " . $pk . "  FROM " . $table;
+
+  if ( defined($ordered) && $ordered ) {
+    $sql .= " order by seq_region_id, seq_region_start";
   }
+
+  my $sth = $self->prepare($sql);
+  $sth->execute();
 
   my @out;
-  my $sql = "SELECT " . $pk . "  FROM " . $table;
-  if(defined($ordered) and $ordered){
-    $sql .= " order by seq_region_id, seq_region_start"
-  }	
-  my $sth = $self->prepare($sql);
-  $sth->execute;
+  while ( my ($id) = $sth->fetchrow() ) { push( @out, $id ) }
 
-  while (my ($id) = $sth->fetchrow) {
-    push(@out, $id);
-  }
-
-  $sth->finish;
+  $sth->finish();
 
   return \@out;
 }
@@ -395,17 +393,20 @@ sub fetch_by_dbID{
 
 =head2 fetch_all_by_dbID_list
 
-  Arg [1]    : listref of ints $id_list
-               The unique database identifiers for the features to be obtained
+  Arg [1]    : listref of integers $id_list
+               The unique database identifiers for the features to
+               be obtained.
   Example    : @feats = @{$adaptor->fetch_by_dbID_list([1234, 2131, 982]))};
-  Description: Returns the features created from the database defined by the
-               the ids in contained in the id list $id_list.  The features 
-               will be returned in their native coordinate system. That is, 
-               the coordinate system in which they are stored in the database.
-               In order to convert the features to a particular coordinate 
-               system use the transfer() or transform() method.  If none of the
-               features are found in the database a reference to an empty 
-               list is returned.
+  Description: Returns the features created from the database
+               defined by the the IDs in contained in the provided
+               ID list $id_list.  The features will be returned
+               in their native coordinate system.  That is, the
+               coordinate system in which they are stored in the
+               database.  In order to convert the features to a
+               particular coordinate system use the transfer() or
+               transform() method.  If none of the features are
+               found in the database a reference to an empty list is
+               returned.
   Returntype : listref of Bio::EnsEMBL::Features
   Exceptions : thrown if $id arg is not provided
                does not exist
@@ -415,46 +416,52 @@ sub fetch_by_dbID{
 =cut
 
 sub fetch_all_by_dbID_list {
-  my ($self,$id_list_ref) = @_;
+  my ( $self, $id_list_ref ) = @_;
 
-  if(!defined($id_list_ref) || ref($id_list_ref) ne 'ARRAY') {
+  if ( !defined($id_list_ref) || ref($id_list_ref) ne 'ARRAY' ) {
     throw("id_list list reference argument is required");
   }
 
-  return [] if(!@$id_list_ref);
+  if ( !@{$id_list_ref} ) { return [] }
+
+  # Construct a constraint like 't1.table1_id = 123'
+  my @tabs = $self->_tables();
+  my ( $name, $syn ) = @{ $tabs[0] };
+
+  # Ensure that we do not exceed MySQL's max_allowed_packet (defaults to
+  # 1 MB) splitting large queries into smaller queries of at most 256 KB
+  # (32768 8-bit characters).  Assuming a (generous) average dbID string
+  # length of 16, this means 2048 dbIDs in each query.
+  my $max_size = 2048;
+
+  my @id_list = @{$id_list_ref};
 
   my @out;
-  #construct a constraint like 't1.table1_id = 123'
-  my @tabs = $self->_tables;
-  my ($name, $syn) = @{$tabs[0]};
 
-  # mysql is faster and we ensure that we do not exceed the max query size by
-  # splitting large queries into smaller queries of 200 ids
-  my $max_size = 200;
-  my @id_list = @$id_list_ref;
-
-  while(@id_list) {
+  while (@id_list) {
     my @ids;
-    if(@id_list > $max_size) {
-      @ids = splice(@id_list, 0, $max_size);
+    my $id_str;
+
+    if ( scalar(@id_list) > $max_size ) {
+      @ids = splice( @id_list, 0, $max_size );
     } else {
-      @ids = splice(@id_list, 0);
+      @ids     = @id_list;
+      @id_list = ();
     }
 
-    my $id_str;
-    if(@ids > 1)  {
-      $id_str = " IN (" . join(',', @ids). ")";
+    if ( scalar(@ids) > 1 ) {
+      $id_str = " IN (" . join( ',', @ids ) . ")";
     } else {
       $id_str = " = " . $ids[0];
     }
 
     my $constraint = "${syn}.${name}_id $id_str";
 
-    push @out, @{$self->generic_fetch($constraint)};
+    push @out, @{ $self->generic_fetch($constraint) };
   }
 
   return \@out;
-}
+} ## end sub fetch_all_by_dbID_list
 
 # might not be a good idea, but for convenience
 # shouldnt be called on the BIG tables though
