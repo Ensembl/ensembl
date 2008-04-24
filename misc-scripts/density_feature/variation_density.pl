@@ -1,12 +1,11 @@
+#!/software/bin/perl -w
+
 #
 # calculates the variation density from given core database
 # It finds Variation database by itself using naming convention
 # s/core/variation/
 #
 #
-
-
-
 use strict;
 
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
@@ -18,8 +17,8 @@ use Getopt::Long;
 use Data::Dumper;
 $Data::Dumper::Maxdepth = 2;
 
-my $bin_count        = 150;
-my $long_slice_count = 125;
+my $bin_count  = 150;
+my $max_slices = 100;
 
 my ( $host, $user, $pass, $port, $dbname  );
 
@@ -70,8 +69,12 @@ my $dta = $db->get_DensityTypeAdaptor();
 my $aa  = $db->get_AnalysisAdaptor();
 my $slice_adaptor = $db->get_SliceAdaptor();
 
-my $top_slices = $slice_adaptor->fetch_all( "toplevel" );
-my @sorted_slices =  sort { $b->seq_region_length() <=> $a->seq_region_length()} @$top_slices;
+
+# Sort slices by coordinate system rank, then by length.
+my @sorted_slices =
+  sort( {      $a->coord_system()->rank() <=> $b->coord_system()->rank()
+            || $b->seq_region_length() <=> $a->seq_region_length()
+  } @{ $slice_adaptor->fetch_all('toplevel') } );
 
 my $analysis =
   new Bio::EnsEMBL::Analysis(
@@ -157,7 +160,7 @@ foreach my $slice (@sorted_slices){
     $dfa->store($df);
   }
 
-  last if( $slice_count++ > $long_slice_count );
+  last if ( $slice_count++ > $max_slices );
 
 }
 

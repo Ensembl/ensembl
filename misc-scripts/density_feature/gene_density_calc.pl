@@ -1,3 +1,5 @@
+#!/software/bin/perl -w
+
 #
 # script to calculate the gene density features on a database
 # should work on any species database
@@ -19,9 +21,8 @@ use Bio::EnsEMBL::DensityType;
 use Bio::EnsEMBL::DensityFeature;
 use Getopt::Long;
 
-my $bin_count        = 150;
-my $long_slice_count = 125;
-
+my $bin_count  = 150;
+my $max_slices = 100;
 
 my ( $host, $user, $pass, $port, $dbname  );
 
@@ -113,12 +114,11 @@ my $aa  = $db->get_AnalysisAdaptor();
 my $slice_adaptor = $db->get_SliceAdaptor();
 
 
-#
-# block size estimation
-#
-
-my $top_slices = $slice_adaptor->fetch_all('toplevel');
-my @sorted_slices = sort { $b->seq_region_length() <=> $a->seq_region_length()} @$top_slices;
+# Sort slices by coordinate system rank, then by length.
+my @sorted_slices =
+  sort( {      $a->coord_system()->rank() <=> $b->coord_system()->rank()
+            || $b->seq_region_length() <=> $a->seq_region_length()
+  } @{ $slice_adaptor->fetch_all('toplevel') } );
 
 my $analysis =
   new Bio::EnsEMBL::Analysis(
@@ -222,7 +222,7 @@ foreach my $known (1, 0) {
     $dfa->store(@density_features);
     print "Created ", scalar @density_features, " gene density features.\n";
 
-    last if( $slice_count++ > $long_slice_count );
+    last if ( $slice_count++ > $max_slices );
   }
 }
 

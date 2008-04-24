@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w
+#!/software/bin/perl -w
 
 #
 # Calculate the GC content for top level seq_regions
@@ -36,8 +36,8 @@ my $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(-host => $host,
 					    -dbname => $dbname);
 
 
-my $bin_count        = 150;
-my $long_slice_count = 125;
+my $bin_count  = 150;
+my $max_slices = 100;
 
 #
 # Check wether the script should run on given database
@@ -78,8 +78,11 @@ my $dfa = $db->get_DensityFeatureAdaptor();
 my $dta = $db->get_DensityTypeAdaptor();
 my $aa  = $db->get_AnalysisAdaptor();
 
-my $slices = $slice_adaptor->fetch_all( "toplevel" );
-my @sorted_slices =  sort { $b->seq_region_length() <=> $a->seq_region_length()} @$slices;
+# Sort slices by coordinate system rank, then by length.
+my @sorted_slices =
+  sort( {      $a->coord_system()->rank() <=> $b->coord_system()->rank()
+            || $b->seq_region_length() <=> $a->seq_region_length()
+  } @{ $slice_adaptor->fetch_all('toplevel') } );
 
 #
 # Create new analysis object for density calculation.
@@ -157,7 +160,7 @@ foreach my $slice (@sorted_slices){
 
   }
 
-  last if( $slice_count++ > $long_slice_count );
+  last if ( $slice_count++ > $max_slices );
 }
 
 
