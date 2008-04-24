@@ -1088,11 +1088,11 @@ sub _type_by_external_id {
 
   my $from_sql  = '';
   my $where_sql = '';
-  my $ID_sql    = "oxr.ensembl_id";
+  my $ID_sql    = 'oxr.ensembl_id';
 
-  if ( defined $extraType ) {
+  if ( defined($extraType) ) {
     if ( lc($extraType) eq 'translation' ) {
-      $ID_sql = "tl.translation_id";
+      $ID_sql = 'tl.translation_id';
     } else {
       $ID_sql = "t.${extraType}_id";
     }
@@ -1152,31 +1152,39 @@ sub _type_by_external_id {
 
   my $query2;
 
-  if ( defined $external_db_name ) {
+  if ( defined($external_db_name) ) {
     # If we are given the name of an external database, we need to join
     # between the 'xref' and the 'object_xref' tables on 'xref_id'.
 
-    $query2 = "SELECT $ID_sql
-       FROM $from_sql xref x, object_xref oxr, external_synonym syn
-      WHERE $where_sql syn.synonym = ? AND
-             x.xref_id = oxr.xref_id AND
-             oxr.ensembl_object_type= ? AND
-             syn.xref_id = oxr.xref_id";
+    $query2 = qq(
+      SELECT    $ID_sql
+      FROM      $from_sql
+                external_synonym syn,
+                object_xref oxr,
+                xref x
+      WHERE     $where_sql
+                syn.synonym = ?
+      AND       syn.xref_id = oxr.xref_id
+      AND       oxr.ensembl_object_type = ?
+      AND       x.xref_id = oxr.xref_id);
 
   } else {
     # If we weren't given an external database name, we can get away
     # with less joins here.
 
-    $query2 = "SELECT $ID_sql
-       FROM $from_sql object_xref oxr, external_synonym syn
-      WHERE $where_sql syn.synonym = ? AND
-             oxr.ensembl_object_type= ? AND
-             syn.xref_id = oxr.xref_id";
+    $query2 = qq(
+      SELECT    $ID_sql
+      FROM      $from_sql
+                external_synonym syn,
+                object_xref oxr
+      WHERE     $where_sql
+                syn.synonym = ?
+      AND       syn.xref_id = oxr.xref_id
+      AND       oxr.ensembl_object_type = ?);
 
   }
 
-  my %hash   = ();
-  my @result = ();
+  my %result;
 
   my $sth = $self->prepare($query1);
 
@@ -1185,11 +1193,7 @@ sub _type_by_external_id {
   $sth->bind_param( 3, $ensType, SQL_VARCHAR );
   $sth->execute();
 
-  while ( my $r = $sth->fetchrow_array() ) {
-    if ( exists( $hash{$r} ) ) { next }
-    $hash{$r} = 1;
-    push( @result, $r );
-  }
+  while ( my $r = $sth->fetchrow_array() ) { $result{$r} = 1 }
 
   $sth = $self->prepare($query2);
 
@@ -1197,13 +1201,10 @@ sub _type_by_external_id {
   $sth->bind_param( 2, $ensType, SQL_VARCHAR );
   $sth->execute();
 
-  while ( my $r = $sth->fetchrow_array() ) {
-    if ( exists( $hash{$r} ) ) { next }
-    $hash{$r} = 1;
-    push( @result, $r );
-  }
+  while ( my $r = $sth->fetchrow_array() ) { $result{$r} = 1 }
 
-  return @result;
+  return keys(%result);
+
 } ## end sub _type_by_external_id
 
 =head2 _type_by_external_db_id
@@ -1272,22 +1273,17 @@ sub _type_by_external_db_id{
       WHERE $where_sql x.external_db_id = ? AND
   	     x.xref_id = oxr.xref_id AND oxr.ensembl_object_type= ?";
 
-  my %hash = ();
-  my @result = ();
+  my %result;
 
   my $sth = $self->prepare($query);
+
   $sth->bind_param( 1, "$external_db_id", SQL_VARCHAR );
   $sth->bind_param( 2, $ensType,          SQL_VARCHAR );
   $sth->execute();
 
-  while ( my $r = $sth->fetchrow_array() ) {
-    if ( !exists $hash{$r} ) {
-      $hash{$r} = 1;
-      push( @result, $r );
-    }
-  }
+  while ( my $r = $sth->fetchrow_array() ) { $result{$r} = 1 }
 
-  return @result;
+  return keys(%result);
 }
 
 
