@@ -314,8 +314,9 @@ sub generate_similarity_events {
   }
 
   # transcripts
+  my $filtered_transcript_scores;
   if ($mapping_types{'transcript'} or $mapping_types{'translation'}) {
-    my $filtered_transcript_scores =
+    $filtered_transcript_scores =
       $stable_id_mapper->filter_same_gene_transcript_similarities(
         $transcript_scores);
   }
