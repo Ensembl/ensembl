@@ -155,22 +155,38 @@ sub parse_options {
         "Unable to open configuration file $conffile for reading: $!");
 
     my $serverroot = $self->serverroot;
+    my $last;
 
-    while (<CONF>) {
-      chomp;
+    while (my $line = <CONF>) {
+      chomp $line;
+      
+      # remove leading and trailing whitespace
+      $line =~ s/^\s*//;
+      $line =~ s/\s*$//;
+
+      # join with next line if terminated with backslash (this is to allow
+      # multiline configuration settings
+      $line = $last . $line;
+      if ($line =~ /\\$/) {
+        $line =~ s/\\$//;
+        $last = $line;
+        next;
+      } else {
+        $last = undef;
+      }
 
       # remove comments
-      s/^[#;].*//;
-      s/\s+[;].*$//;
+      $line =~ s/^[#;].*//;
+      $line =~ s/\s+[;].*$//;
 
       # read options into internal parameter datastructure
-      next unless (/(\w\S*)\s*=\s*(.*)/);
+      next unless ($line =~ /(\w\S*)\s*=\s*(.*)/);
       my $name = $1;
       my $val = $2;
 
       # strip optional quotes from parameter values
       $val =~ s/^["'](.*)["']/$1/;
-      
+
       # replace $SERVERROOT with value
       if ($val =~ /\$SERVERROOT/) {
         $val =~ s/\$SERVERROOT/$serverroot/g;
