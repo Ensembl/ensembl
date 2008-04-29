@@ -56,7 +56,6 @@ sub init_basic {
 
   $mappings = $self->basic_mapping($gene_scores, "gene_mappings$num");
   $num++;
-  
   my $new_scores = $gsb->create_shrinked_matrix($gene_scores, $mappings,
     "gene_matrix$num");
 
