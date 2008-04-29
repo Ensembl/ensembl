@@ -279,7 +279,7 @@ sub map_stable_ids {
         $self->add_stable_id_event('new', $key);
       }
 
-      # increment the stable Id (to be assigned to the next unmapped gene)
+      # increment the stable Id (to be assigned to the next unmapped object)
       $new_stable_id = $self->stable_id_generator->increment_stable_id(
         $new_stable_id);
 
