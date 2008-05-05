@@ -1173,11 +1173,7 @@ sub slice_names {
 }
 
 
-#
-# getters/setters
-#
-
-=head2 
+=head2 logger
 
   Arg[1]      : 
   Example     : 
@@ -1196,7 +1192,7 @@ sub logger {
 }
 
 
-=head2 
+=head2 conf
 
   Arg[1]      : 
   Example     : 

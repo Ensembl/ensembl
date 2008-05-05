@@ -2,15 +2,41 @@ package Bio::EnsEMBL::IdMapping::Archiver;
 
 =head1 NAME
 
+Bio::EnsEMBL::IdMapping::Archiver - create gene_archive and peptide_archive
 
 =head1 SYNOPSIS
 
+my $archiver = Bio::EnsEMBL::IdMapping::Archiver->new(
+  -LOGGER       => $logger,
+  -CONF         => $conf,
+  -CACHE        => $cache
+);
+
+# create gene and peptide archive
+$archiver->create_archive($mapping_session_id);
+
+# dump existing archive tables to file
+my $num_entries = $archiver->dump_table_to_file('source', 'gene_archive',
+  'gene_archive_existing.txt', 1);
 
 =head1 DESCRIPTION
 
+This module creates the gene_archive and peptide_archive tables. Data is written
+to a file as tab-delimited text for loading into a MySQL database (this can be
+done manually, or using StableIdmapper->upload_file_into_table()).
+
+An archive entry for a given source gene is created if no target gene exists, or
+if any of its transcripts or their translations changed. Non-coding transcripts
+only have an entry in gene_archive (i.e. without a corresponding peptide_archive
+entry).
 
 =head1 METHODS
 
+create_archive
+dump_gene
+dump_tuple
+dump_nc_row
+mapping_session_id
 
 =head1 LICENCE
 
@@ -44,6 +70,22 @@ use Digest::MD5 qw(md5_hex);
 # instance variables
 my $pa_id;
 
+
+=head2 create_archive
+
+  Arg[1]      : Int $mapping_session_id - the mapping_session_id for this run
+  Example     : $archiver->create_archive($stable_id_mapper->mapping_session_id);
+  Description : Creates the gene_archive and peptide_archive tables and writes
+                the data to a tab-delimited file. The decision as to what to
+                archive is deferred to dump_gene(), see documentation there for
+                details.
+  Return type : none
+  Exceptions  : Thrown on missing argument.
+  Caller      : id_mapping.pl
+  Status      : At Risk
+              : under development
+
+=cut
 
 sub create_archive {
   my $self = shift;
@@ -92,6 +134,25 @@ sub create_archive {
 }
 
 
+=head2 dump_gene
+
+  Arg[1]      : Bio::EnsEMBL::IdMapping::TinyGene $s_gene - source gene
+  Arg[2]      : Bio::EnsEMBL::IdMapping::TinyGene $t_gene - target gene
+  Arg[3]      : Filehandle $ga_fh - filehandle for writing gene_archive data
+  Arg[4]      : Filehandle $pa_fh - filehandle for writing peptide_archive data
+  Example     : my $target_gene = $gene_mappings{$source_gene->stable_id};
+                $archiver->dump_gene($source_gene, $target_gene, $ga_fh, $pa_fh);
+  Description : Given a source gene, it will write a gene_achive and
+                peptide_achive entry for it if no target gene exists, or if any
+                of its transcripts or their translation changed. 
+  Return type : none
+  Exceptions  : none
+  Caller      : create_archive()
+  Status      : At Risk
+              : under development
+
+=cut
+
 sub dump_gene {
   my ($self, $s_gene, $t_gene, $ga_fh, $pa_fh) = @_;
 
@@ -113,7 +174,7 @@ sub dump_gene {
       if (! $t_gene) {
         $self->dump_tuple($s_gene, $s_tr, $s_tl, $ga_fh, $pa_fh);
 
-      # otherwise, only dump if translation of this transcript changed
+      # otherwise, only dump if any transcript or its translation changed
       } else {
 
         my $changed_flag = 1;
@@ -160,6 +221,23 @@ sub dump_gene {
 }
 
 
+=head2 dump_tuple
+
+  Arg[1]      : Bio::EnsEMBL::IdMapping::TinyGene $gene - gene to archive
+  Arg[2]      : Bio::EnsEMBL::IdMapping::TinyTrancript $tr - its transcript
+  Arg[3]      : Bio::EnsEMBL::IdMapping::TinyTranslation $tl - its translation
+  Arg[4]      : Filehandle $ga_fh - filehandle for writing gene_archive data
+  Arg[5]      : Filehandle $pa_fh - filehandle for writing peptide_archive data
+  Example     : $archive->dump_tuple($s_gene, $s_tr, $s_tl, $ga_fh, $pa_fh);
+  Description : Writes entry lines for gene_archive and peptide_archive.
+  Return type : none
+  Exceptions  : none
+  Caller      : dump_gene()
+  Status      : At Risk
+              : under development
+
+=cut
+
 sub dump_tuple {
   my ($self, $gene, $tr, $tl, $ga_fh, $pa_fh) = @_;
   
@@ -188,6 +266,22 @@ sub dump_tuple {
 }
 
 
+=head2 dump_nc_row
+
+  Arg[1]      : Bio::EnsEMBL::IdMapping::TinyGene $gene - gene to archive
+  Arg[2]      : Bio::EnsEMBL::IdMapping::TinyTrancript $tr - its transcript
+  Arg[3]      : Filehandle $ga_fh - filehandle for writing gene_archive data
+  Example     : $archive->dump_nc_row($s_gene, $s_tr, $ga_fh);
+  Description : Writes an entry line for gene_archive for non-coding
+                transcripts.
+  Return type : none
+  Exceptions  : none
+  Caller      : dump_gene()
+  Status      : At Risk
+              : under development
+
+=cut
+
 sub dump_nc_row {
   my ($self, $gene, $tr, $ga_fh) = @_;
   
@@ -207,6 +301,19 @@ sub dump_nc_row {
   print $ga_fh "\n";
 }
 
+
+=head2 mapping_session_id
+
+  Arg[1]      : (optional) Int - mapping_session_id to set
+  Example     : my $msi = $archiver->mapping_session_id;
+  Description : Getter/setter for mapping_session_id.
+  Return type : Int
+  Exceptions  : none
+  Caller      : create_archive()
+  Status      : At Risk
+              : under development
+
+=cut
 
 sub mapping_session_id {
   my $self = shift;

@@ -2,15 +2,51 @@ package Bio::EnsEMBL::IdMapping::SyntenyRegion;
 
 =head1 NAME
 
+Bio::EnsEMBL::IdMapping::SyntenyRegion - object representing syntenic regions
 
 =head1 SYNOPSIS
 
+# create a new SyntenyRegion from a source and a target gene
+my $sr = Bio::EnsEMBL::IdMapping::SyntenyRegion->new_fast([
+  $source_gene->start,
+  $source_gene->end,
+  $source_gene->strand,
+  $source_gene->seq_region_name,
+  $target_gene->start,
+  $target_gene->end,
+  $target_gene->strand,
+  $target_gene->seq_region_name,
+  $entry->score,
+]);
+
+# merge with another SyntenyRegion
+my $merged_sr = $sr->merge($sr1);
+
+# score a gene pair against this SyntenyRegion
+my $score = $sr->score_location_relationship($source_gene1, $target_gene1);
 
 =head1 DESCRIPTION
 
+This object represents a synteny between a source and a target location.
+SyntenyRegions are built from mapped genes, and the their score is defined as
+the score of the gene mapping. For merged SyntenyRegions, scores are combined.
 
 =head1 METHODS
 
+new_fast
+source_start
+source_end
+source_strand
+source_seq_region_name
+target_start
+target_end
+target_strand
+target_seq_region_name
+score
+merge
+stretch
+score_location_relationship
+to_string
 
 =head1 LICENCE
 
@@ -36,6 +72,22 @@ no warnings 'uninitialized';
 use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 
 
+=head2 new_fast
+
+  Arg[1]      : Arrayref $array_ref - the arrayref to bless into the
+                SyntenyRegion object 
+  Example     : my $sr = Bio::EnsEMBL::IdMapping::SyntenyRegion->new_fast([
+                  ]);
+  Description : Constructor. On instantiation, source and target regions are
+                reverse complemented so that source is always on forward strand.
+  Return type : a Bio::EnsEMBL::IdMapping::SyntenyRegion object
+  Exceptions  : none
+  Caller      : Bio::EnsEMBL::IdMapping::SyntenyFramework
+  Status      : At Risk
+              : under development
+
+=cut
+
 sub new_fast {
   my $class = shift;
   my $array_ref = shift;
@@ -52,12 +104,36 @@ sub new_fast {
 }
 
 
+=head2 source_start
+
+  Arg[1]      : (optional) Int - source location start coordinate
+  Description : Getter/setter for source location start coordinate.
+  Return type : Int
+  Exceptions  : none
+  Caller      : Bio::EnsEMBL::IdMapping::SyntenyFramework
+  Status      : At Risk
+              : under development
+
+=cut
+
 sub source_start {
   my $self = shift;
   $self->[0] = shift if (@_);
   return $self->[0];
 }
 
+
+=head2 source_end
+
+  Arg[1]      : (optional) Int - source location end coordinate
+  Description : Getter/setter for source location end coordinate.
+  Return type : Int
+  Exceptions  : none
+  Caller      : Bio::EnsEMBL::IdMapping::SyntenyFramework
+  Status      : At Risk
+              : under development
+
+=cut
 
 sub source_end {
   my $self = shift;
@@ -66,12 +142,36 @@ sub source_end {
 }
 
 
+=head2 source_strand
+
+  Arg[1]      : (optional) Int - source location strand
+  Description : Getter/setter for source location strand.
+  Return type : Int
+  Exceptions  : none
+  Caller      : Bio::EnsEMBL::IdMapping::SyntenyFramework
+  Status      : At Risk
+              : under development
+
+=cut
+
 sub source_strand {
   my $self = shift;
   $self->[2] = shift if (@_);
   return $self->[2];
 }
 
+
+=head2 source_seq_region_name
+
+  Arg[1]      : (optional) String - source location seq_region name
+  Description : Getter/setter for source location seq_region name.
+  Return type : String
+  Exceptions  : none
+  Caller      : Bio::EnsEMBL::IdMapping::SyntenyFramework
+  Status      : At Risk
+              : under development
+
+=cut
 
 sub source_seq_region_name {
   my $self = shift;
@@ -80,12 +180,36 @@ sub source_seq_region_name {
 }
 
 
+=head2 target_start
+
+  Arg[1]      : (optional) Int - target location start coordinate
+  Description : Getter/setter for target location start coordinate.
+  Return type : Int
+  Exceptions  : none
+  Caller      : Bio::EnsEMBL::IdMapping::SyntenyFramework
+  Status      : At Risk
+              : under development
+
+=cut
+
 sub target_start {
   my $self = shift;
   $self->[4] = shift if (@_);
   return $self->[4];
 }
 
+
+=head2 target_end
+
+  Arg[1]      : (optional) Int - target location end coordinate
+  Description : Getter/setter for target location end coordinate.
+  Return type : Int
+  Exceptions  : none
+  Caller      : Bio::EnsEMBL::IdMapping::SyntenyFramework
+  Status      : At Risk
+              : under development
+
+=cut
 
 sub target_end {
   my $self = shift;
@@ -94,12 +218,36 @@ sub target_end {
 }
 
 
+=head2 target_strand
+
+  Arg[1]      : (optional) Int - target location strand
+  Description : Getter/setter for target location strand.
+  Return type : Int
+  Exceptions  : none
+  Caller      : Bio::EnsEMBL::IdMapping::SyntenyFramework
+  Status      : At Risk
+              : under development
+
+=cut
+
 sub target_strand {
   my $self = shift;
   $self->[6] = shift if (@_);
   return $self->[6];
 }
 
+
+=head2 target_seq_region_name
+
+  Arg[1]      : (optional) String - target location seq_region name
+  Description : Getter/setter for target location seq_region name.
+  Return type : String
+  Exceptions  : none
+  Caller      : Bio::EnsEMBL::IdMapping::SyntenyFramework
+  Status      : At Risk
+              : under development
+
+=cut
 
 sub target_seq_region_name {
   my $self = shift;
@@ -108,12 +256,41 @@ sub target_seq_region_name {
 }
 
 
+=head2 score
+
+  Arg[1]      : (optional) Float - score
+  Description : Getter/setter for the score between source and target location.
+  Return type : Int
+  Exceptions  : none
+  Caller      : Bio::EnsEMBL::IdMapping::SyntenyFramework
+  Status      : At Risk
+              : under development
+
+=cut
+
 sub score {
   my $self = shift;
   $self->[8] = shift if (@_);
   return $self->[8];
 }
 
+
+=head2 merge
+
+  Arg[1]      : Bio::EnsEMBL::IdMapping::SyntenyRegion $sr - another
+                SyntenyRegion
+  Example     : $merged_sr = $sr->merge($other_sr);
+  Description : Merges two overlapping SyntenyRegions if they meet certain
+                criteria (see documentation in the code for details). Score is
+                calculated as a combined distance score. If the two
+                SyntenyRegions aren't mergeable, this method returns undef.
+  Return type : Bio::EnsEMBL::IdMapping::SyntenyRegion or undef
+  Exceptions  : warns on bad scores
+  Caller      : Bio::EnsEMBL::IdMapping::SyntenyFramework
+  Status      : At Risk
+              : under development
+
+=cut
 
 sub merge {
   my ($self, $sr) = @_;
@@ -181,9 +358,20 @@ sub merge {
   return $self;
 }
 
-#
-# extend this SyntenyRegion to span a $factor * $score more area
-#
+
+=head2 stretch
+
+  Arg[1]      : Float $factor - stretching factor
+  Example     : $stretched_sr = $sr->stretch(2);
+  Description : Extends this SyntenyRegion to span a $factor * $score more area.
+  Return type : Bio::EnsEMBL::IdMapping::SyntenyRegion
+  Exceptions  : none
+  Caller      : Bio::EnsEMBL::IdMapping::SyntenyFramework
+  Status      : At Risk
+              : under development
+
+=cut
+
 sub stretch {
   my ($self, $factor) = @_;
 
@@ -201,6 +389,41 @@ sub stretch {
 
   return $self;
 }
+
+
+=head2 score_location_relationship
+
+  Arg[1]      : Bio::EnsEMBL::IdMapping::TinyGene $source_gene - source gene
+  Arg[2]      : Bio::EnsEMBL::IdMapping::TinyGene $target_gene - target gene
+  Example     : my $score = $sr->score_location_relationship($source_gene,
+                  $target_gene);
+  Description : This function calculates how well the given source location
+                interpolates on given target location inside this SyntenyRegion.
+
+                Scoring is done the following way: Source and target location
+                are normalized with respect to this Regions source and target.
+                Source range will then be somewhere close to 0.0-1.0 and target
+                range anything around that.
+
+                The extend of the covered area between source and target range
+                is a measurement of how well they agree (smaller extend is
+                better). The extend (actually 2*extend) is reduced by the size
+                of the regions. This will result in 0.0 if they overlap
+                perfectly and bigger values if they dont.
+
+                This is substracted from 1.0 to give the score. The score is
+                likely to be below zero, but is cut off at 0.0f.
+
+                Finally, the score is multiplied with the score of the synteny
+                itself.
+  Return type : Float
+  Exceptions  : warns if score out of range
+  Caller      : Bio::EnsEMBL::IdMapping::SyntenyFramework
+  Status      : At Risk
+              : under development
+
+=cut
+
 
 
 sub score_location_relationship {
@@ -268,6 +491,19 @@ sub score_location_relationship {
   return $score;
 }
 
+
+=head2 to_string
+
+  Example     : print LOG $sr->to_string, "\n";
+  Description : Returns a string representation of the SyntenyRegion object.
+                Useful for debugging and logging.
+  Return type : String
+  Exceptions  : none
+  Caller      : Bio::EnsEMBL::IdMapping::SyntenyFramework
+  Status      : At Risk
+              : under development
+
+=cut
 
 sub to_string {
   my $self = shift;

@@ -2,15 +2,48 @@ package Bio::EnsEMBL::IdMapping::SyntenyFramework;
 
 =head1 NAME
 
+Bio::EnsEMBL::IdMapping::SyntenyFramework - framework representing syntenic
+regions across the genome
 
 =head1 SYNOPSIS
 
+# build the SyntenyFramework from unambiguous gene mappings
+my $sf = Bio::EnsEMBL::IdMapping::SyntenyFramework->new(
+  -DUMP_PATH    => $dump_path,
+  -CACHE_FILE   => 'synteny_framework.ser',
+  -LOGGER       => $self->logger,
+  -CONF         => $self->conf,
+  -CACHE        => $self->cache,
+);
+$sf->build_synteny($gene_mappings);
+
+# use it to rescore the genes
+$gene_scores = $sf->rescore_gene_matrix_lsf($gene_scores);
 
 =head1 DESCRIPTION
 
+The SyntenyFramework is a set of SyntenyRegions. These are pairs of locations
+very analoguous to the information in the assembly table (the locations dont
+have to be the same length though). They are built from genes that map uniquely
+between source and target.
+
+Once built, the SyntenyFramework is used to score source and target gene pairs
+to determine whether they are similar. This process is slow (it involves testing
+all gene pairs against all SyntenyRegions), this module therefor has built-in
+support to run the process in parallel via LSF.
 
 =head1 METHODS
 
+new
+build_synteny
+_by_overlap
+add_SyntenyRegion
+get_all_SyntenyRegions
+rescore_gene_matrix_lsf
+rescore_gene_matrix
+logger
+conf
+cache
 
 =head1 REALTED MODULES
 
@@ -48,6 +81,30 @@ use Bio::EnsEMBL::IdMapping::ScoredMappingMatrix;
 use FindBin qw($Bin);
 FindBin->again;
 
+
+=head2 new
+
+  Arg [LOGGER]: Bio::EnsEMBL::Utils::Logger $logger - a logger object
+  Arg [CONF]  : Bio::EnsEMBL::Utils::ConfParser $conf - a configuration object
+  Arg [CACHE] : Bio::EnsEMBL::IdMapping::Cache $cache - a cache object
+  Arg [DUMP_PATH] : String - path for object serialisation
+  Arg [CACHE_FILE] : String - filename of serialised object
+  Example     : my $sf = Bio::EnsEMBL::IdMapping::SyntenyFramework->new(
+                  -DUMP_PATH    => $dump_path,
+                  -CACHE_FILE   => 'synteny_framework.ser',
+                  -LOGGER       => $self->logger,
+                  -CONF         => $self->conf,
+                  -CACHE        => $self->cache,
+                );
+  Description : Constructor.
+  Return type : Bio::EnsEMBL::IdMapping::SyntenyFramework
+  Exceptions  : thrown on wrong or missing arguments
+  Caller      : InternalIdMapper plugins
+  Status      : At Risk
+              : under development
+
+=cut
+
 sub new {
   my $caller = shift;
   my $class = ref($caller) || $caller;
@@ -79,6 +136,23 @@ sub new {
   return $self;
 }
 
+
+=head2 build_synteny
+
+  Arg[1]      : Bio::EnsEMBL::IdMapping::MappingList $mappings - gene mappings
+                to build the SyntenyFramework from
+  Example     : $synteny_framework->build_synteny($gene_mappings);
+  Description : Builds the SyntenyFramework from unambiguous gene mappings.
+                SyntenyRegions are allowed to overlap. At most two overlapping
+                SyntenyRegions are merged (otherwise we'd get too large
+                SyntenyRegions with little information content).
+  Return type : none
+  Exceptions  : thrown on wrong or missing argument
+  Caller      : InternalIdMapper plugins
+  Status      : At Risk
+              : under development
+
+=cut
 
 sub build_synteny {
   my $self = shift;
@@ -169,6 +243,9 @@ sub build_synteny {
 }
 
 
+#
+# sort SyntenyRegions by overlap
+#
 sub _by_overlap {
   # first sort by seq_region
   my $retval = ($b->source_seq_region_name cmp $a->source_seq_region_name);
@@ -182,15 +259,64 @@ sub _by_overlap {
 }
 
 
+=head2 add_SyntenyRegion
+
+  Arg[1]      : Bio::EnsEMBL::IdMaping::SyntenyRegion - SyntenyRegion to add
+  Example     : $synteny_framework->add_SyntenyRegion($synteny_region);
+  Description : Adds a SyntenyRegion to the framework. For speed reasons (and
+                since this is an internal method), no argument check is done.
+  Return type : none
+  Exceptions  : none
+  Caller      : internal
+  Status      : At Risk
+              : under development
+
+=cut
+
 sub add_SyntenyRegion {
   push @{ $_[0]->{'cache'} }, $_[1];
 }
 
 
+=head2 get_all_SyntenyRegions
+
+  Example     : foreach my $sr (@{ $sf->get_all_SyntenyRegions }) {
+                  # do something with the SyntenyRegion
+                }
+  Description : Get a list of all SyntenyRegions in the framework.
+  Return type : Arrayref of Bio::EnsEMBL::IdMapping::SyntenyRegion
+  Exceptions  : none
+  Caller      : general
+  Status      : At Risk
+              : under development
+
+=cut
+
 sub get_all_SyntenyRegions {
   return $_[0]->{'cache'};
 }
 
+
+=head2 rescore_gene_matrix_lsf
+
+  Arg[1]      : Bio::EnsEMBL::IdMapping::ScoredmappingMatrix $matrix - gene
+                scores to rescore
+  Example     : my $new_scores = $sf->rescore_gene_matrix_lsf($gene_scores);
+  Description : This method runs rescore_gene_matrix() (via the
+                synteny_resocre.pl script) in parallel with lsf, then combines
+                the results to return a single rescored scoring matrix.
+                Parallelisation is done by chunking the scoring matrix into
+                several pieces (determined by the --synteny_rescore_jobs
+                configuration option).
+  Return type : Bio::EnsEMBL::IdMapping::ScoredMappingMatrix
+  Exceptions  : thrown on wrong or missing argument
+                thrown on filesystem I/O error
+                thrown on failure of one or mor lsf jobs
+  Caller      : InternalIdMapper plugins
+  Status      : At Risk
+              : under development
+
+=cut
 
 sub rescore_gene_matrix_lsf {
   my $self = shift;
@@ -314,8 +440,22 @@ sub rescore_gene_matrix_lsf {
 
 
 # 
-# retain 70% of old score and build other 30% from synteny match
 #
+=head2 rescore_gene_matrix
+
+  Arg[1]      : Bio::EnsEMBL::IdMapping::ScoredmappingMatrix $matrix - gene
+                scores to rescore
+  Example     : my $new_scores = $sf->rescore_gene_matrix($gene_scores);
+  Description : Rescores a gene matrix. Retains 70% of old score and builds
+                other 30% from the synteny match.
+  Return type : Bio::EnsEMBL::IdMapping::ScoredMappingMatrix
+  Exceptions  : thrown on wrong or missing argument
+  Caller      : InternalIdMapper plugins
+  Status      : At Risk
+              : under development
+
+=cut
+
 sub rescore_gene_matrix {
   my $self = shift;
   my $matrix = shift;

@@ -2,15 +2,23 @@ package Bio::EnsEMBL::IdMapping::ScoreBuilder;
 
 =head1 NAME
 
+Bio::EnsEMBL::IdMapping::ScoreBuilder - score builder base class
 
 =head1 SYNOPSIS
 
+This class is not instantiated. Please see subclasses for usage examples (e.g.
+GeneScoreBuilder).
 
 =head1 DESCRIPTION
 
+This is the base class for the score builders used in the stable Id mapping
+application. It contains methods which are used by more than one ScoreBuilder.
 
 =head1 METHODS
 
+create_shrinked_matrix
+internal_id_rescore
+log_matrix_stats
 
 =head1 LICENCE
 
@@ -41,9 +49,26 @@ use Bio::EnsEMBL::Utils::ScriptUtils qw(path_append);
 use Bio::EnsEMBL::IdMapping::ScoredMappingMatrix;
 
 
-#
-# create a shrinked matrix which doesn't contain entries which were already 
-# mapped
+=head2 create_shrinked_matrix
+
+  Arg[1]      : Bio::EnsEMBL::Idmapping::ScoredMappingMatrix $matrix - a scoring
+                matrix
+  Arg[2]      : Bio::EnsEMBL::Idmapping::MappingList $mappings - mappings
+  Arg[3]      : String $cache_file - base name of a cache file (extension '.ser'
+                will be added automatically) for the returned matrix
+  Example     : my $new_scores = $score_builder->create_shrinked_matrix(
+                  $gene_scores, $mappings, "gene_matrix1");
+  Description : Create a shrinked scoring matrix which doesn't contain entries
+                which were already mapped. It also logs how many new mappings
+                were added in this process.
+  Return type : Bio::EnsEMBL::IdMapping::ScoredMappingMatrix
+  Exceptions  : thrown on wrong or missing arguments
+  Caller      : InternalIdMapper plugin
+  Status      : At Risk
+              : under development
+
+=cut
+
 #
 sub create_shrinked_matrix {
   my $self = shift;
@@ -111,6 +136,27 @@ sub create_shrinked_matrix {
 }
 
 
+=head2 internal_id_rescore
+
+  Arg[1]      : Bio::EnsEMBL::Idmapping::ScoredMappingMatrix $matrix - a scoring
+                matrix
+  Example     : $score_builder->internal_id_rescore($gene_scores);
+  Description : Rescore ambiguous mappings based on internal Ids. This is the
+                last disambiguation step and is only useful if objects with the
+                same internal Id were used in source and target dbs (e.g. in
+                patch builds or if objects were copied from source to target).
+
+                If a source and target gene have the same internal Id and there
+                are mappings to other target genes then these *other* mappings
+                are penalised.
+  Return type : none
+  Exceptions  : thrown on wrong or missing argument
+  Caller      : InternalIdMapper plugins
+  Status      : At Risk
+              : under development
+
+=cut
+
 sub internal_id_rescore {
   my $self = shift;
   my $matrix = shift;
@@ -157,6 +203,21 @@ sub internal_id_rescore {
   $self->logger->debug("Scored entries with internal ID mismatch: $i\n", 1);
 }
 
+
+=head2 log_matrix_stats
+
+  Arg[1]      : Bio::EnsEMBL::Idmapping::ScoredMappingMatrix $matrix - a scoring
+                matrix
+  Example     : $score_builder->log_matrix_stats;
+  Description : Logs scoring matrix statistics (number of entries, min/max/avg
+                scores).
+  Return type : none
+  Exceptions  : thrown on wrong or missing argument
+  Caller      : general
+  Status      : At Risk
+              : under development
+
+=cut
 
 sub log_matrix_stats {
   my $self = shift;
