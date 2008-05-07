@@ -143,17 +143,29 @@ use constant { FEATURE_DBID        => 0,
                FEATURE_END         => 3,
                FEATURE_STRAND      => 4 };
 
+our %VALID_BINNING_METHODS = (
+               'count'            => 0,
+               'density'          => 0,    # Same as 'count'.
+             # 'indices'          => 1,
+             # 'index'            => 1,    # Same as 'indices'.
+             # 'features'         => 2,
+             # 'feature'          => 2,    # Same as 'features'.
+               'fractional_count' => 3,
+               'weight'           => 3,    # Same as 'fractional_count'.
+               'coverage'         => 4 );
+
 # ======================================================================
 # The public interface added by Feature Collection
 
 sub fetch_bins_by_Slice {
-  my $this = shift;
+  my ( $this, @args ) = @_;
+
   my ( $slice, $method, $nbins, $logic_name, $lightweight ) =
     rearrange( [ 'SLICE', 'METHOD',
                  'NBINS', 'LOGIC_NAME',
                  'LIGHTWEIGHT'
                ],
-               @_ );
+               @args );
 
   # Temporarily set the colleciton to be lightweight.
   my $old_value = $this->_lightweight();
@@ -173,7 +185,7 @@ sub fetch_bins_by_Slice {
   $this->_lightweight($old_value);
 
   return $bins;
-}
+} ## end sub fetch_bins_by_Slice
 
 # ======================================================================
 # Specialization of methods in Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor
@@ -199,6 +211,7 @@ sub _create_feature {
   my ( $dbid, $start, $end, $strand, $slice ) =
     rearrange( [ 'DBID', 'START', 'END', 'STRAND', 'SLICE' ],
                %{$args} );
+
   my $feature =
     [ $dbid, $slice->get_seq_region_id(), $start, $end, $strand ];
 
@@ -238,21 +251,11 @@ sub _lightweight {
   return $this->{'lightweight'} || 0;
 }
 
-our %VALID_BINNING_METHODS = (
-               'count'            => 0,
-               'density'          => 0,    # Same as 'count'.
-             # 'indices'          => 1,
-             # 'index'            => 1,    # Same as 'indices'.
-             # 'features'         => 2,
-             # 'feature'          => 2,    # Same as 'features'.
-               'fractional_count' => 3,
-               'weight'           => 3,    # Same as 'fractional_count'.
-               'coverage'         => 4 );
-
 sub _bin_features {
-  my $this = shift;
+  my ( $this, @args ) = @_;
+
   my ( $slice, $nbins, $method_name, $features ) =
-    rearrange( [ 'SLICE', 'NBINS', 'METHOD', 'FEATURES' ], @_ );
+    rearrange( [ 'SLICE', 'NBINS', 'METHOD', 'FEATURES' ], @args );
 
   if ( !defined($features) || !@{$features} ) { return [] }
 
@@ -308,36 +311,37 @@ sub _bin_features {
       # ----------------------------------------------------------------
       # For 'count' and 'density'.
 
-      for ( my $bin_index = $start_bin ;
-            $bin_index <= $end_bin ;
+      for ( my $bin_index = $start_bin;
+            $bin_index <= $end_bin;
             ++$bin_index )
       {
         ++$bins[$bin_index];
       }
 
-    } elsif ( $method == 1 ) {
-      # ----------------------------------------------------------------
-      # For 'indices' and 'index'
-
-      for ( my $bin_index = $start_bin ;
-            $bin_index <= $end_bin ;
-            ++$bin_index )
-      {
-        push( @{ $bins[$bin_index] }, $feature_index );
-      }
-
-      ++$feature_index;
-
-    } elsif ( $method == 2 ) {
-      # ----------------------------------------------------------------
-      # For 'features' and 'feature'.
-
-      for ( my $bin_index = $start_bin ;
-            $bin_index <= $end_bin ;
-            ++$bin_index )
-      {
-        push( @{ $bins[$bin_index] }, $feature );
-      }
+  # } elsif ( $method == 1 ) {
+  #   # ----------------------------------------------------------------
+  #   # For 'indices' and 'index'
+  #
+  #  for ( my $bin_index = $start_bin ;
+  #        $bin_index <= $end_bin ;
+  #        ++$bin_index )
+  #  {
+  #    push( @{ $bins[$bin_index] }, $feature_index );
+  #  }
+  #
+  #  ++$feature_index;
+  #
+  # } elsif ( $method == 2 ) {
+  #   # ----------------------------------------------------------------
+  #   # For 'features' and 'feature'.
+  #
+  #   for ( my $bin_index = $start_bin ;
+  #         $bin_index <= $end_bin ;
+  #         ++$bin_index )
+  #   {
+  #     push( @{ $bins[$bin_index] }, $feature );
+  #   }
+  #
 
     } elsif ( $method == 3 ) {
       # ----------------------------------------------------------------
@@ -357,8 +361,8 @@ sub _bin_features {
           $feature_length;
 
         # The intermediate bins (if there are any)...
-        for ( my $bin_index = $start_bin + 1 ;
-              $bin_index <= $end_bin - 1 ;
+        for ( my $bin_index = $start_bin + 1;
+              $bin_index <= $end_bin - 1;
               ++$bin_index )
         {
           $bins[$bin_index] += $bin_length/$feature_length;
@@ -388,16 +392,16 @@ sub _bin_features {
         # first).
         my $bin_start = int( $start_bin*$bin_length );
         my $bin_end = int( ( $start_bin + 1 )*$bin_length - 1 );
-        for ( my $pos = $feature_start ;
-              $pos <= $bin_end && $pos <= $feature_end ;
+        for ( my $pos = $feature_start;
+              $pos <= $bin_end && $pos <= $feature_end;
               ++$pos )
         {
           $bin_masks[$start_bin][ $pos - $bin_start ] = 1;
         }
       }
 
-      for ( my $bin_index = $start_bin + 1 ;
-            $bin_index <= $end_bin - 1 ;
+      for ( my $bin_index = $start_bin + 1;
+            $bin_index <= $end_bin - 1;
             ++$bin_index )
       {
         # Mark the middle bins between $start_bin and $end_bin as fully
@@ -416,8 +420,8 @@ sub _bin_features {
           # first).
           my $bin_start = int( $end_bin*$bin_length );
           my $bin_end = int( ( $end_bin + 1 )*$bin_length - 1 );
-          for ( my $pos = $bin_start ;
-                $pos <= $feature_end && $pos <= $bin_end ;
+          for ( my $pos = $bin_start;
+                $pos <= $feature_end && $pos <= $bin_end;
                 ++$pos )
           {
             $bin_masks[$end_bin][ $pos - $bin_start ] = 1;
@@ -436,7 +440,7 @@ sub _bin_features {
     # For the 'coverage' method: Finish up by going through @bin_masks
     # and sum up the arrays.
 
-    for ( my $bin_index = 0 ; $bin_index < $nbins ; ++$bin_index ) {
+    for ( my $bin_index = 0; $bin_index < $nbins; ++$bin_index ) {
       if ( defined( $bin_masks[$bin_index] ) ) {
         if ( !ref( $bin_masks[$bin_index] ) ) {
           $bins[$bin_index] = 1;
