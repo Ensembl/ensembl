@@ -53,22 +53,9 @@ use base( 'Bio::EnsEMBL::Collection',
 sub _create_feature {
   my ( $this, $feature_type, $args ) = @_;
 
-  my $feature = $this->SUPER::_create_feature( $feature_type, $args );
-
-  if ( !$this->lightweight() ) {
-    my ( $hstart, $hend, $score, $repeat_consensus, $analysis ) =
-      rearrange( [ 'HSTART', 'HEND',
-                   'SCORE',  'REPEAT_CONSENSUS',
-                   'ANALYSIS'
-                 ],
-                 @{$args} );
-
-    push( @{$feature},
-          $hstart, $hend, $score, $repeat_consensus->dbID(),
-          $analysis->dbID() );
-  }
-
-  return $feature;
+  throw(   '_create_feature() '
+         . 'is not implemented for '
+         . 'repeat feature collections' );
 }
 
 sub _create_feature_fast {

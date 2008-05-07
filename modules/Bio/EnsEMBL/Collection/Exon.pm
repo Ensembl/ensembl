@@ -84,10 +84,9 @@ sub _create_feature {
 sub _create_feature_fast {
   my ( $this, $feature_type, $args ) = @_;
 
-  my $feature =
-    $this->SUPER::_create_feature_fast( $feature_type, $args );
-
-  return $feature;
+  throw(   '_create_feature_fast() '
+         . 'is not implemented for '
+         . 'exon collections' );
 }
 
 sub _tables {
