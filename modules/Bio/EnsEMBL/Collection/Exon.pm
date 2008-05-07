@@ -63,7 +63,7 @@ sub _create_feature {
 
   my $feature = $this->SUPER::_create_feature( $feature_type, $args );
 
-  if ( !$this->_lightweight() ) {
+  if ( !$this->lightweight() ) {
     my ( $phase, $end_phase, $stable_id, $version, $created_date,
          $modified_date, $is_current )
       = rearrange( [ 'PHASE',        'END_PHASE',
@@ -95,7 +95,7 @@ sub _tables {
 
   my @tables = $this->SUPER::_tables();
 
-  if ( $this->_lightweight() ) { return ( $tables[0] ) }
+  if ( $this->lightweight() ) { return ( $tables[0] ) }
 
   return @tables;
 }
@@ -105,8 +105,9 @@ sub _columns {
 
   my @columns = $this->SUPER::_columns();
 
-  if ( $this->_lightweight() ) {
-    @columns[ 5 .. $#columns ] = map( 1, 5 .. $#columns );
+  if ( $this->lightweight() ) {
+    @columns[ Bio::EnsEMBL::Collection::BASIC_SLOTS .. $#columns ] =
+      map( 1, Bio::EnsEMBL::Collection::BASIC_SLOTS .. $#columns );
   }
 
   return @columns;
@@ -115,7 +116,7 @@ sub _columns {
 sub _default_where_clause {
   my ($this) = @_;
 
-  if ( $this->_lightweight() ) { return '' }
+  if ( $this->lightweight() ) { return '' }
 
   return $this->SUPER::_default_where_clause();
 }

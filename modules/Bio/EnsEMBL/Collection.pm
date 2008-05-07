@@ -126,8 +126,9 @@ each sub-class.
 A light-weight feature is a feature whose representation does not
 contain the extended feature representation.
 
-Light-weight features may be fetched by using the argument
-'-lightweight=>1' in the fetch_bins_by_Slice() method.
+Light-weight features may be fetched by setting the lightweight
+attribute using the lightweight() method before calling e.g.
+fetch_all_by_Slice().
 
 =cut
 
@@ -136,6 +137,8 @@ use warnings;
 
 use Bio::EnsEMBL::Utils::Argument  ('rearrange');
 use Bio::EnsEMBL::Utils::Exception ('throw');
+
+use constant BASIC_SLOTS => 5;
 
 use constant { FEATURE_DBID        => 0,
                FEATURE_SEQREGIONID => 1,
@@ -146,10 +149,6 @@ use constant { FEATURE_DBID        => 0,
 our %VALID_BINNING_METHODS = (
                'count'            => 0,
                'density'          => 0,    # Same as 'count'.
-             # 'indices'          => 1,
-             # 'index'            => 1,    # Same as 'indices'.
-             # 'features'         => 2,
-             # 'feature'          => 2,    # Same as 'features'.
                'fractional_count' => 3,
                'weight'           => 3,    # Same as 'fractional_count'.
                'coverage'         => 4 );
@@ -157,35 +156,39 @@ our %VALID_BINNING_METHODS = (
 # ======================================================================
 # The public interface added by Feature Collection
 
+sub lightweight {
+  my ( $this, $value ) = @_;
+
+  if ( defined($value) ) {
+    $this->{'lightweight'} = ( $value != 0 );
+  }
+
+  return $this->{'lightweight'} || 0;
+}
+
 sub fetch_bins_by_Slice {
   my ( $this, @args ) = @_;
 
   my ( $slice, $method, $nbins, $logic_name, $lightweight ) =
-    rearrange( [ 'SLICE', 'METHOD',
-                 'NBINS', 'LOGIC_NAME',
-                 'LIGHTWEIGHT'
-               ],
-               @args );
+    rearrange( [ 'SLICE', 'METHOD', 'NBINS', 'LOGIC_NAME' ], @args );
 
   # Temporarily set the colleciton to be lightweight.
-  my $old_value = $this->_lightweight();
-  if   ( defined($lightweight) ) { $this->_lightweight($lightweight) }
-  else                           { $this->_lightweight(1) }
+  my $old_value = $this->lightweight();
+  $this->lightweight(1);
 
   my $bins =
-    $this->_bin_features( -slice  => $slice,
-                          -nbins  => $nbins,
-                          -method => $method,
-                          -features =>
-                            $this->fetch_all_by_Slice_constraint(
-                                              $slice, undef, $logic_name
-                            ) );
+    $this->_bin_features(
+           -slice    => $slice,
+           -nbins    => $nbins,
+           -method   => $method,
+           -features => $this->fetch_all_by_Slice( $slice, $logic_name )
+    );
 
   # Reset the lightweightness to whatever it was before.
-  $this->_lightweight($old_value);
+  $this->lightweight($old_value);
 
   return $bins;
-} ## end sub fetch_bins_by_Slice
+}
 
 # ======================================================================
 # Specialization of methods in Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor
@@ -240,16 +243,6 @@ sub _create_feature_fast {
 
 # ======================================================================
 # Private methods
-
-sub _lightweight {
-  my ( $this, $value ) = @_;
-
-  if ( defined($value) ) {
-    $this->{'lightweight'} = ( $value != 0 );
-  }
-
-  return $this->{'lightweight'} || 0;
-}
 
 sub _bin_features {
   my ( $this, @args ) = @_;
@@ -318,32 +311,11 @@ sub _bin_features {
         ++$bins[$bin_index];
       }
 
-  # } elsif ( $method == 1 ) {
-  #   # ----------------------------------------------------------------
-  #   # For 'indices' and 'index'
-  #
-  #  for ( my $bin_index = $start_bin ;
-  #        $bin_index <= $end_bin ;
-  #        ++$bin_index )
-  #  {
-  #    push( @{ $bins[$bin_index] }, $feature_index );
-  #  }
-  #
-  #  ++$feature_index;
-  #
-  # } elsif ( $method == 2 ) {
-  #   # ----------------------------------------------------------------
-  #   # For 'features' and 'feature'.
-  #
-  #   for ( my $bin_index = $start_bin ;
-  #         $bin_index <= $end_bin ;
-  #         ++$bin_index )
-  #   {
-  #     push( @{ $bins[$bin_index] }, $feature );
-  #   }
-  #
+    }
 
-    } elsif ( $method == 3 ) {
+    # Method 1 & 2 were deleted.
+
+    elsif ( $method == 3 ) {
       # ----------------------------------------------------------------
       # For 'fractional_count' and 'weight'.
 
