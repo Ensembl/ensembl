@@ -2,6 +2,45 @@
 
 package Bio::EnsEMBL::Collection::RepeatFeature;
 
+=head1 NAME
+
+Bio::EnsEMBL::Collection::Exon - Feature collection implementation for
+repeat features.
+
+=head1 DESCRIPTION
+
+=head2 Extended feature representation
+
+A repeat feature is represented by the basic feature representation (see
+documentation of Bio::EnsEMBL::Collection) and by the following extended
+feature representation:
+
+=over 4
+
+=item 1.
+
+Hit start
+
+=item 2.
+
+Hit end
+
+=item 3.
+
+Score
+
+=item 4.
+
+Repeat consensus internal ID
+
+=item 5.
+
+Analysis internal ID
+
+=back
+
+=cut
+
 use strict;
 use warnings;
 
@@ -53,9 +92,7 @@ sub _tables {
 
   my @tables = $this->SUPER::_tables();
 
-  if ( $this->_lightweight() ) {
-    return ( $tables[0] );
-  }
+  if ( $this->_lightweight() ) { return ( $tables[0] ) }
 
   return @tables;
 }
@@ -75,9 +112,7 @@ sub _columns {
 sub _default_where_clause {
   my ($this) = @_;
 
-  if ( $this->_lightweight() ) {
-    return '';
-  }
+  if ( $this->_lightweight() ) { return '' }
 
   return $this->SUPER::_default_where_clause();
 }

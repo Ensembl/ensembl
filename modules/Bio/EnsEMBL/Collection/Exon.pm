@@ -2,6 +2,53 @@
 
 package Bio::EnsEMBL::Collection::Exon;
 
+=head1 NAME
+
+Bio::EnsEMBL::Collection::Exon - Feature collection implementation for
+exon features.
+
+=head1 DESCRIPTION
+
+=head2 Extended feature representation
+
+An exon is represented by the basic feature representation (see
+documentation of Bio::EnsEMBL::Collection) and by the following extended
+feature representation:
+
+=over 4
+
+=item 1.
+
+Phase
+
+=item 2.
+
+End phase
+
+=item 3.
+
+Stable ID
+
+=item 4.
+
+Version
+
+=item 5.
+
+Created date
+
+=item 6.
+
+Modified date
+
+=item 7.
+
+Is-current
+
+=back
+
+=cut
+
 use strict;
 use warnings;
 
@@ -48,9 +95,7 @@ sub _tables {
 
   my @tables = $this->SUPER::_tables();
 
-  if ( $this->_lightweight() ) {
-    return ( $tables[0] );
-  }
+  if ( $this->_lightweight() ) { return ( $tables[0] ) }
 
   return @tables;
 }
@@ -70,9 +115,7 @@ sub _columns {
 sub _default_where_clause {
   my ($this) = @_;
 
-  if ( $this->_lightweight() ) {
-    return '';
-  }
+  if ( $this->_lightweight() ) { return '' }
 
   return $this->SUPER::_default_where_clause();
 }
