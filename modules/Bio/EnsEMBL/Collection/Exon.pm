@@ -27,23 +27,23 @@ End phase
 
 =item 3.
 
-Stable ID
+Is-current
 
 =item 4.
 
-Version
+Stable ID
 
 =item 5.
 
-Created date
+Version
 
 =item 6.
 
-Modified date
+Created date
 
 =item 7.
 
-Is-current
+Modified date
 
 =back
 
@@ -64,18 +64,18 @@ sub _create_feature {
   my $feature = $this->SUPER::_create_feature( $feature_type, $args );
 
   if ( !$this->lightweight() ) {
-    my ( $phase, $end_phase, $stable_id, $version, $created_date,
-         $modified_date, $is_current )
-      = rearrange( [ 'PHASE',        'END_PHASE',
-                     'STABLE_ID',    'VERSION',
-                     'CREATED_DATE', 'MODIFIED_DATE',
-                     'IS_CURRENT'
+    my ( $phase, $end_phase, $is_current, $stable_id, $version,
+         $created_date, $modified_date )
+      = rearrange( [ 'PHASE',      'END_PHASE',
+                     'IS_CURRENT', 'STABLE_ID',
+                     'VERSION',    'CREATED_DATE',
+                     'MODIFIED_DATE'
                    ],
                    %{$args} );
 
     push( @{$feature},
-          $phase, $end_phase, $stable_id, $version, $created_date,
-          $modified_date, $is_current );
+          $phase, $end_phase, $is_current, $stable_id, $version,
+          $created_date, $modified_date );
   }
 
   return $feature;

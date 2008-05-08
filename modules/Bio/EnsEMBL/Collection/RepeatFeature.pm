@@ -19,23 +19,23 @@ feature representation:
 
 =item 1.
 
-Hit start
+Repeat start
 
 =item 2.
 
-Hit end
+Repeat end
 
 =item 3.
 
-Score
+Repeat consensus internal ID
 
 =item 4.
 
-Repeat consensus internal ID
+Analysis internal ID
 
 =item 5.
 
-Analysis internal ID
+Score
 
 =back
 
@@ -66,9 +66,10 @@ sub _create_feature_fast {
 
   if ( !$this->lightweight() ) {
     push( @{$feature},
-          $args->{'hstart'}, $args->{'hend'}, $args->{'score'},
+          $args->{'hstart'}, $args->{'hend'},
           $args->{'repeat_consensus'}->dbID(),
-          $args->{'analysis'}->dbID() );
+          $args->{'analysis'}->dbID(),
+          $args->{'score'} );
   }
 
   return $feature;
