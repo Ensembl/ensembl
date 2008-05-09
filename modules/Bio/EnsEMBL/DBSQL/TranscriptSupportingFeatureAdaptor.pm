@@ -127,7 +127,8 @@ sub store {
       "AND   hit_start = ? " . 
       "AND   hit_end   = ? " . 
       "AND   analysis_id = ? " . 
-      "AND   cigar_line = ? ";
+      "AND   cigar_line = ? " .
+      "AND   hcoverage = ? ";
 
   my $dna_check_sql = 
       "SELECT dna_align_feature_id " . 
@@ -140,7 +141,8 @@ sub store {
       "AND   hit_start = ? " . 
       "AND   hit_end   = ? " . 
       "AND   analysis_id = ? " . 
-      "AND   cigar_line = ? " . 
+      "AND   cigar_line = ? " .
+      "AND   hcoverage = ? " . 
       "AND   hit_strand = ? ";
 
   my $assoc_check_sql = 
@@ -185,7 +187,7 @@ sub store {
       throw("$f must be an align feature otherwise" .
             "it can't be stored");
     }
-    
+       
     my ($sf_dbID, $type, $adap, $check_sth);
     
     my @check_args = ($self->db->get_SliceAdaptor->get_seq_region_id($f->slice),
@@ -196,7 +198,8 @@ sub store {
                       $f->hstart,
                       $f->hend,
                       $f->analysis->dbID,
-                      $f->cigar_string);
+                      $f->cigar_string,
+		      $f->hcoverage);
     
     if($f->isa("Bio::EnsEMBL::DnaDnaAlignFeature")){
       $adap = $dna_adaptor;      
@@ -214,7 +217,9 @@ sub store {
 
     $check_sth->execute(@check_args);
     $sf_dbID = $check_sth->fetchrow_array;
+    
     if (not $sf_dbID) {
+ 
       $adap->store($f);
       $sf_dbID = $f->dbID;
     }
