@@ -168,7 +168,7 @@
 4305	AgilentCGH	1	XREF	1	0	5	Agilent CGH	ARRAY	\N	\N
 4400	Xenopus_Jamboree	1	KNOWN	1	0	1	Jamboree	MISC	\N	\N
 4500	Tiffin	1	XREF	1	0	1	Tiffin DNA motifs	MISC	\N	\N
-4600  OTTG  1 XREF  1 0 1 Havana gene  ALT_TRANS \N  \N
+4600	OTTG  1 XREF  1 0 1 Havana gene  ALT_TRANS \N  \N
 4610	OTTT	1	XREF	1	0	1	Havana transcript	ALT_TRANS	\N	\N
 4620	OTTP	1	XREF	1	0	1	Havana translation	MISC	\N	\N
 4650	shares_CDS_with	1	XREF	1	0	1	transcript having same CDS	ALT_TRANS	\N	\N
