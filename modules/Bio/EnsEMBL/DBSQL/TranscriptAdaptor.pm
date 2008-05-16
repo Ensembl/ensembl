@@ -99,7 +99,7 @@ sub _columns {
 	   'exdb.db_name' ,'exdb.status',
            'exdb.db_display_name',
 	   'x.xref_id', 'x.display_label', 'x.dbprimary_acc', 'x.version', 
-           'x.description', 'x.info_type', 'x.info_text',);
+           'x.description', 'x.info_type', 'x.info_text','exdb.priority');
 }
 
 
@@ -1140,7 +1140,7 @@ sub _objs_from_sth {
        $description, $biotype, $status,
        $external_db, $external_status, $external_db_name,
        $xref_id, $xref_display_label, $xref_primary_acc, $xref_version, 
-       $xref_description, $xref_info_type, $xref_info_text);
+       $xref_description, $xref_info_type, $xref_info_text, $priority);
 
   $sth->bind_columns( \$transcript_id, \$seq_region_id, \$seq_region_start,
                       \$seq_region_end, \$seq_region_strand, \$analysis_id,
@@ -1149,7 +1149,7 @@ sub _objs_from_sth {
 		      \$description, \$biotype, \$status,
                       \$external_db, \$external_status, \$external_db_name,
 		      \$xref_id, \$xref_display_label, \$xref_primary_acc, \$xref_version,
-                      \$xref_description, \$xref_info_type, \$xref_info_text);
+                      \$xref_description, \$xref_info_type, \$xref_info_text, \$priority);
 
   my $asm_cs;
   my $cmp_cs;
@@ -1279,6 +1279,7 @@ sub _objs_from_sth {
            'info_text'   => $xref_info_text,
            'adaptor' => $dbEntryAdaptor,
            'db_display_name' => $external_db_name,
+	   'priority'        => $priority,
            'dbname' => $external_db						       
       });
     }
