@@ -278,3 +278,6 @@
 166	  MolecularWeight	  Molecular weight	Pepstats attributes
 167	  NumResidues		  Number of residues	Pepstats attributes
 168	  AvgResWeight		  Ave. residue weight	Pepstats attributes
+
+#attribute to indicate whether the translation has a stop codon or not, mainly for the mart calculation
+169	  has_stop_codon	  Contains stop codon	Translation attribute	
