@@ -906,26 +906,27 @@ sub _dump{
 #    Caller      internal
 #
 
-sub _sort{
-   my ($self) = @_;
+sub _sort {
+  my ($self) = @_;
 
-   my $to = $self->{'to'};
-   my $from = $self->{'from'};
+  my $to   = $self->{'to'};
+  my $from = $self->{'from'};
 
-   foreach my $id ( keys %{$self->{"_pair_$from"}} ) {
-       @{$self->{"_pair_$from"}->{$id}} = sort { $a->{'from'}->{'start'} <=> $b->{'from'}->{'start'} } @{$self->{"_pair_$from"}->{$id}};
-   }
+  foreach my $id ( keys %{ $self->{"_pair_$from"} } ) {
+    @{ $self->{"_pair_$from"}->{$id} } =
+      sort { $a->{'from'}->{'start'} <=> $b->{'from'}->{'start'} }
+      @{ $self->{"_pair_$from"}->{$id} };
+  }
 
-   foreach my $id ( keys %{$self->{"_pair_$to"}} ) {
-       @{$self->{"_pair_$to"}->{$id}} = sort { $a->{'to'}->{'start'} <=> $b->{'to'}->{'start'} } @{$self->{"_pair_$to"}->{$id}};
-   }
+  foreach my $id ( keys %{ $self->{"_pair_$to"} } ) {
+    @{ $self->{"_pair_$to"}->{$id} } =
+      sort { $a->{'to'}->{'start'} <=> $b->{'to'}->{'start'} }
+      @{ $self->{"_pair_$to"}->{$id} };
+  }
 
-   $self->_merge_pairs();
-
-   $self->_is_sorted(1);
-
+  $self->_merge_pairs();
+  $self->_is_sorted(1);
 }
-
 
 # this function merges pairs that are adjacent into one
 sub _merge_pairs {
