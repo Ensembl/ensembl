@@ -59,11 +59,10 @@ use Bio::EnsEMBL::Utils::Logger;
 use Bio::EnsEMBL::Utils::ScriptUtils qw(path_append);
 use Bio::EnsEMBL::IdMapping::Cache;
 
-my %valid_modes = (
-  'check_only'  => 1,
-  'normal'      => 1,
-  'upload'      => 1,
-);
+my %valid_modes = ( 'check_only' => 1,
+                    'normal'     => 1,
+                    'upload'     => 1,
+                    'mapping'    => 1 );
 
 # parse configuration and commandline arguments
 my $conf = new Bio::EnsEMBL::Utils::ConfParser(
@@ -258,13 +257,18 @@ sub run_normal {
   &run_component('dump_cache', $options{'dump_cache'}, 'building cache');
 
   # ID mapping
-  &run_component('id_mapping', $options{'id_mapping'}, 'Id mapping');
+  &run_component('id_mapping', $options{'id_mapping'}, 'ID mapping');
 
   # QC
   #&run_component('qc', $options{'qc'}, 'QC');
 
 }
 
+sub run_mapping {
+  # Skip dumping and start at the ID mapping step.
+  &run_component( 'id_mapping', $options{'id_mapping'},
+                  'ID mapping (skipping the dumping step)' );
+}
 
 sub run_upload {
   # upload table data files into db

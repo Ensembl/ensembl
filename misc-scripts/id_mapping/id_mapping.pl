@@ -155,6 +155,7 @@ foreach my $type ($conf->param('mapping_types')) {
 
 # run in requested mode
 my $mode = $conf->param('mode') || 'normal';
+if ( $mode eq 'mapping' ) { $mode = 'normal' }
 my $run = "run_$mode";
 no strict 'refs';
 &$run;
@@ -165,7 +166,6 @@ $logger->finish_log;
 
 
 ### END main ###
-
 
 sub run_normal {
   
