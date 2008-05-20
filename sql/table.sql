@@ -427,7 +427,7 @@ CREATE TABLE gene (
   status                      ENUM('KNOWN', 'NOVEL', 'PUTATIVE', 'PREDICTED', 'KNOWN_BY_PROJECTION', 'UNKNOWN'),
   description                 TEXT,
   is_current                  BOOLEAN NOT NULL DEFAULT 1,
-  canonical_transcript_id     INT(10) UNSIGNED,
+  canonical_transcript_id     INT(10) UNSIGNED NOT NULL,
   canonical_annotation        VARCHAR(255) DEFAULT NULL,
 
   PRIMARY KEY (gene_id),
