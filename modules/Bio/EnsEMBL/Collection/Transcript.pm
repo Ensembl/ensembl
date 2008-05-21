@@ -92,15 +92,15 @@ sub _create_feature {
     my ( $stable_id,    $version,         $external_name,
          $external_db,  $external_status, $display_xref,
          $created_date, $modified_date,   $description,
-         $biotype,      $confidence,      $external_db,
-         $status,       $is_current )
+         $biotype,      $confidence,      $status,
+         $is_current )
       = rearrange( [ 'STABLE_ID',       'VERSION',
                      'EXTERNAL_NAME',   'EXTERNAL_DB',
                      'EXTERNAL_STATUS', 'DISPLAY_XREF',
                      'CREATED_DATE',    'MODIFIED_DATE',
                      'DESCRIPTION',     'BIOTYPE',
-                     'CONFIDENCE',      'EXTERNAL_DB',
-                     'STATUS',          'IS_CURRENT'
+                     'CONFIDENCE',      'STATUS',
+                     'IS_CURRENT'
                    ],
                    %{$args} );
 
