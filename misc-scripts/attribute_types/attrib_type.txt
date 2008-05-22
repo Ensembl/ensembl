@@ -273,11 +273,11 @@
 
 #pepstats attributes: will be calculated by release coordinator for the protview page
 
-164	  IsoPoint    Isoelectric point	 Pepstats attributes
-165	  Charge      Charge	  Pepstats attributes
-166	  MolecularWeight	  Molecular weight	Pepstats attributes
-167	  NumResidues		  Number of residues	Pepstats attributes
-168	  AvgResWeight		  Ave. residue weight	Pepstats attributes
+164	IsoPoint	Isoelectric point	Pepstats attributes
+165	Charge	Charge	Pepstats attributes
+166	MolecularWeight	Molecular weight	Pepstats attributes
+167	NumResidues	Number of residues	Pepstats attributes
+168	AvgResWeight	Ave. residue weight	Pepstats attributes
 
 #attribute to indicate whether the translation has a stop codon or not, mainly for the mart calculation
-169	  has_stop_codon	  Contains stop codon	Translation attribute	
+169	has_stop_codon	Contains stop codon	Translation attribute	
