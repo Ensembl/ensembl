@@ -598,24 +598,29 @@ sub remove_DBAdaptor{
   my ($class, $species, $group) = @_;
 
   $species = $class->get_alias($species);
-
+  
+ 
   delete $registry_register{$species}{$group};
   #This will remove the DBAdaptor and all the other adaptors
 
   #Now remove if from the _DBA array
   my $index;
 
+
   foreach my $i(0..$#{$registry_register{'_DBA'}}){
     my $dba = $registry_register{'_DBA'}->[$i];
+
     if(($dba->species eq $species) &&
        $dba->group eq $group){
       $index = $i;
+
       last;
     }
   }
   
-  @{$registry_register{'_DBA'}} = splice(@{$registry_register{'_DBA'}}, $index, 1);
-  
+  #Now remove from _DBA cache
+  splice(@{$registry_register{'_DBA'}}, $index, 1);
+
   return;
 }
 
@@ -665,6 +670,8 @@ sub reset_DBAdaptor{
 
   $self->remove_DBAdaptor($alias, $group);
   
+  my @adaptors = @{$self->get_all_adaptors};
+
 
   #ConfigRegistry should automatically add this to the Registry
   my $db = $class->new(
