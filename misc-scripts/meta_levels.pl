@@ -30,7 +30,7 @@ if ( !$host || ( !$dbpattern && !$sing_db_name ) ) {
 
 $dbpattern = $sing_db_name unless $dbpattern;
 
-my @feature_types = qw[gene transcript exon repeat_feature];
+my @feature_types = qw[gene transcript exon repeat_feature dna_align_feature protein_align_feature simple_feature prediction_transcript prediction_exon];
 
 # loop over databases
 
