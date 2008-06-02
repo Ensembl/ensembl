@@ -139,6 +139,10 @@
 3131	AFFY_RaEx_1_0_st_v1	1	XREF	1	0	1	Affymx Microarray Rat Exon 1.0 ST	ARRAY	\N	\N
 3132	AFFY_X_tropicalis	1	XREF	1	0	1	Affymx Microarray Xenopus Tropicalis	ARRAY	\N	\N
 3133	AFFY_MoEx_1_0_st_v1	1	XREF	1	0	1	Affymx Microarray Mouse Exon 1.0 ST	ARRAY	\N	\N
+3134	AFFY_MoGene_1_0_st_v1	1	XREF	1	0	1	Affymx Microarray Gene 1.0 ST	ARRAY	\N	\N
+3135	AFFY_HuEx_1_0_st_v2	1	XREF	1	0	1	Affymx Microarray Human Exon 1.0 ST v2	ARRAY	\N	\N
+3136	AFFY_HuGene_1_0_st_v1	1	XREF	1	0	1	Affymx Microarray Human Gene 1.0 ST	ARRAY	\N	\N
+3137	AFFY_RaGene_1_0_st_v1	1	XREF	1	0	1	Affymx Microarray Rat Gene 1.0 ST	ARRAY	\N	\N
 3200	VB_array	1	XREF	1	0	1	VectorBase Array	ARRAY	\N	\N
 3201	ARRAY_EMBL_MMC1_20k_v1	1	XREF	1	0	1	VectorBase Array	ARRAY	\N	\N
 3202	ARRAY_EMBL_MMC2_12k_v1	1	XREF	1	0	1	VectorBase Array	ARRAY	\N	\N
