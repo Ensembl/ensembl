@@ -104,8 +104,6 @@ $dta->store($dt);
 # Now the actual feature calculation loop
 #
 
-my ( $current_start, $current_end );
-
 my $slice_count = 0;
 my ( $current, $current_start, $current_end  );
 
