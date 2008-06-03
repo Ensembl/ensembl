@@ -110,12 +110,14 @@ sub new {
   my ( $stable_id, $version, $external_name, $type, $external_db, 
        $external_status, $display_xref, $description, $transcripts,
        $created_date, $modified_date, $confidence, $biotype, $source,
-       $status, $is_current ) = 
+       $status, $is_current, $canonical_transcript, $canonical_annotation ) = 
     rearrange( [ 'STABLE_ID', 'VERSION', 'EXTERNAL_NAME', 'TYPE',
 		 'EXTERNAL_DB', 'EXTERNAL_STATUS', 'DISPLAY_XREF',
                  'DESCRIPTION',
                  'TRANSCRIPTS', 'CREATED_DATE', 'MODIFIED_DATE', 
-	         'CONFIDENCE', 'BIOTYPE', 'SOURCE', 'STATUS', 'IS_CURRENT' ],
+	         'CONFIDENCE', 'BIOTYPE', 'SOURCE', 'STATUS', 'IS_CURRENT',
+		 'CANONICAL_TRANSCRIPT', 'CANONICAL_ANNOTATION'
+		 ],
                  @_ );
 
   if ($transcripts) {
@@ -144,6 +146,8 @@ sub new {
   $is_current = 1 unless (defined($is_current));
   $self->{'is_current'} = $is_current;
 
+  $self->canonical_transcript($canonical_transcript) if(defined $canonical_transcript);
+  $self->canonical_annotation($canonical_annotation) if (defined $canonical_annotation);
   return $self;
 }
 
@@ -313,6 +317,51 @@ sub description {
     $self->{'description'} = shift if( @_ );
     return $self->{'description'};
 }
+
+
+=head2 canonical_transcript
+
+  Arg [1]    : (optional) Bio::EnsEMBL::Transcipt - canonical_transcript object
+  Example    : $gene->canonical_transcript($canonical_transcript);
+  Description: Getter/setter for the canonical_transcript
+  Returntype : Bio::EnsEMBL::Transcript
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub canonical_transcript {
+    my $self = shift;
+    if (@_){
+	my $tr = shift;
+	if(defined($tr) && (!ref($tr) || !$tr->isa('Bio::EnsEMBL::Transcript'))) {
+	    throw('analysis argument must be a Bio::EnsEMBL::Transcript');
+	}
+	$self->{'canonical_transcript'} = $tr;
+    }
+    return $self->{'canonical_transcript'};
+}
+
+
+=head2 canonical_annotation
+
+  Arg [1]    : (optional) String - canonical_annotation
+  Example    : $gene->canonical_transcript('This is the canonical_annotation');
+  Description: Getter/setter for the canonical_annotation
+  Returntype : String
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub canonical_annotation {
+    my $self = shift;
+    $self->{'cannonical_annotation'} = shift if( @_ );
+    return $self->{'canonical_annotation'};
+}
+
 
 
 =head2 get_all_Attributes

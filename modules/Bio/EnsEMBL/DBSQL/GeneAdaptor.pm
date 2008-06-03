@@ -94,8 +94,9 @@ sub _columns {
   return ( 'g.gene_id', 'g.seq_region_id', 'g.seq_region_start',
            'g.seq_region_end', 'g.seq_region_strand',
            'g.analysis_id' ,'g.biotype', 'g.display_xref_id',
-	   'g.description', 'g.status', 'g.source', 'g.is_current',
-	   'gsi.stable_id', 'gsi.version', $created_date, $modified_date,
+	   'g.description', 'g.status', 'g.source', 'g.is_current', 
+	   'g.canonical_transcript_id', 'g.canonical_annotation',
+	   'gsi.stable_id', 'gsi.version',  $created_date, $modified_date,
 	   'x.display_label' ,'x.dbprimary_acc', 'x.description', 'x.version', 
 	   'exdb.db_name', 'exdb.status', 'exdb.db_release',
            'exdb.db_display_name', 'x.info_type', 'x.info_text');
@@ -1302,6 +1303,7 @@ sub _objs_from_sth {
 
   my $sa = $self->db()->get_SliceAdaptor();
   my $aa = $self->db->get_AnalysisAdaptor();
+  my $ta = $self->db->get_TranscriptAdaptor();
   my $dbEntryAdaptor = $self->db()->get_DBEntryAdaptor();
 
   my @genes;
@@ -1313,7 +1315,8 @@ sub _objs_from_sth {
   my ( $gene_id, $seq_region_id, $seq_region_start, $seq_region_end, 
        $seq_region_strand, $analysis_id, $biotype, $display_xref_id, 
        $gene_description, $stable_id, $version, $created_date, 
-       $modified_date, $xref_display_id, $status, $source, $is_current, 
+       $modified_date, $xref_display_id, $status, $source, $is_current,
+       $canonical_transcript_id, $canonical_annotation,
        $xref_primary_acc, $xref_desc, $xref_version, $external_name, 
        $external_db, $external_status, $external_release, $external_db_name,
        $info_type, $info_text);
@@ -1322,6 +1325,7 @@ sub _objs_from_sth {
 		      \$seq_region_end, \$seq_region_strand, \$analysis_id,
                       \$biotype, \$display_xref_id, \$gene_description,
                       \$status, \$source, \$is_current,
+		      \$canonical_transcript_id, \$canonical_annotation,
 		      \$stable_id, \$version,
 		      \$created_date, \$modified_date, 
 		      \$xref_display_id, \$xref_primary_acc, \$xref_desc,
@@ -1367,6 +1371,8 @@ sub _objs_from_sth {
     my $analysis = $analysis_hash{$analysis_id} ||=
       $aa->fetch_by_dbID($analysis_id);
 
+    #get the canonical_transcript object
+    my $canonical_transcript = $ta->fetch_by_dbID($canonical_transcript_id);
     my $slice = $slice_hash{"ID:".$seq_region_id};
 
     if(!$slice) {
@@ -1473,7 +1479,9 @@ sub _objs_from_sth {
                               '-display_xref'    => $display_xref,
                               '-status'          => $status,
                               '-source'          => $source,
-                              '-is_current'      => $is_current
+                              '-is_current'      => $is_current,
+			      '-canonical_transcript' => $canonical_transcript,
+			      '-canonical_annotation' => $canonical_annotation
                             } ) );
 
   }
