@@ -12,6 +12,11 @@
 #Added array level stats
 #added slice and transcript test modes
 
+
+#To do
+#Remove median & get_date and implement EFGUtils when migrating to eFG
+#Add unannotated UTR clipping dependant on nearest neighbour
+
 use strict;
 
 use Getopt::Long;
@@ -25,8 +30,8 @@ use Bio::EnsEMBL::Mapper::RangeRegistry;
 $| = 1; # auto flush stdout
 
 my ($transcript_host, $transcript_user, $transcript_pass, $transcript_dbname,
-    $oligo_host, $oligo_user, $oligo_pass, $oligo_dbname, $five_utr, $three_utr,
-    $xref_host, $xref_user, $xref_pass, $xref_dbname, $force_delete,
+    $oligo_host, $oligo_user, $oligo_pass, $oligo_dbname,
+    $xref_host, $xref_user, $xref_pass, $xref_dbname, $force_delete, $calc_utrs,
     $max_transcripts, @arrays, $delete, $no_triage, $health_check, $test_slice);
 
 my ($oligo_db, $xref_db, %promiscuous_probesets, %transcripts_per_probeset, @unmapped_objects, $um_obj,
@@ -39,7 +44,24 @@ my $oligo_port = 3306;
 my $xref_port = 3306;
 
 my $max_mismatches = 1;
-my $utr_length = 2000;
+
+#Need to remove these explicit defaults and -default flag
+#This way we can check for conflicting options?
+
+#We also want to use annotated
+#Without calc, but with an unannotated default e.g. yeast?
+#Do we ever want to use calc with out annotated?
+#So just use defaults?
+#What we want is to use annotated else use calc or preset default
+#so calc and preset default are mutually exclusive
+#but annotated can be used with both
+
+
+my $annotated_utrs;
+my %utr_defaults = (
+				   five  => 0,
+				   three => 2000,
+				  );
 my $unannotated_utr_length = 2000;
 my $max_transcripts_per_probeset = 100;
 my $mapping_threshold = 0.5;
@@ -61,7 +83,8 @@ GetOptions(
            'xref_pass=s'            => \$xref_pass,
            'xref_dbname=s'          => \$xref_dbname,
 		   'mismatches=i'           => \$max_mismatches,
-           'utr_length=s'           => \$utr_length,
+           'utr_length=s'           => \$utr_defaults{'three'},
+		   'calculate_utrs'          => \$calc_utrs,
 		   'unannotated_utr=s'      => \$unannotated_utr_length,
 		   'max_probesets=i'        => \$max_transcripts_per_probeset,
 		   'max_transcripts=i'      => \$max_transcripts,
@@ -78,20 +101,10 @@ GetOptions(
 		  );
 
 #Can we exit if unknown options specified?
-
+#change this to just @ARGV?
 @arrays = split(/,/,join(',',@arrays));#?
 
 print 'Running on probe2trascript.pl on: '.`hostname`."\n";
-
-if(($utr_length =~ /\D/) && ($utr_length ne 'annotated')){
-  die("Invalid utr_length parameter($utr_length).  Must be a number or 'annotated'");
-}
-else{
-  $three_utr = $utr_length;
-  print "Default UTR length is $three_utr\n";
-}
-print "Default annotated UTR length is $unannotated_utr_length\n" if $three_utr eq 'annotated';
-print "Allowed mismatches = $max_mismatches\n";
 
 #we need to do a check here on utr_length and unannotated_utr_length
 
@@ -148,6 +161,10 @@ check_existing_and_exit($oligo_db, $xref_db);#???
 
 
 if ($health_check){
+  warn "Check meta_coord entries and of.analysis_id=a.analysis_id";
+
+  #use Healtchecker for meta_coord update.
+
   print "Healthcheck passed\n";
   exit 0;
 }
@@ -195,10 +212,111 @@ my $total =  scalar(@transcripts);
 throw('Could not find any transcripts') if $total == 0;
 
 print "Identified ".scalar(@transcripts)." transcripts for probe mapping\n";
-print "Using UTR length:\t$utr_length\n";
-print "Mapping, percentage complete: ";
+
+
+#This does not account for hard 5' defaults
+#We also cannot test whether we are running with script or user defaults
+
+
+if(($utr_defaults{'three'} =~ /\D/) && ($utr_defaults{'three'} ne 'annotated')){
+  die("Invalid utr_length parameter(".$utr_defaults{'three'}.").  Must be a number or 'annotated'");
+}
+elsif($utr_defaults{'three'} eq 'annotated'){
+  $annotated_utrs = 1;
+  print "Using annotated UTRs\n";
+  
+  if(! $calc_utrs){
+	$utr_defaults{'three'} = $unannotated_utr_length;
+	print "Using hard unannotated 3' UTR length:\t".$utr_defaults{'three'}."\n";
+  }
+
+}
+else{
+  die('Cannot specify -calculate_utrs and -utr_length') if $calc_utrs;
+
+  #Cannot test this as we have a default on both!!!
+  #Just use -utr_length
+  #die('Cannot specify -unannotated_utr_length and -utr_length') if $utr_defaults{'three'};
+
+  print "Using hard 3' UTR length:\t".$utr_defaults{'three'}."\n";
+}
+
+print "Allowed mismatches = $max_mismatches\n";
+
+if($calc_utrs){
+  print 'Calculating default UTR lengths from max median|mean - '.get_date('time')."\n";
+  my ($five_utr, $three_utr, @five_lengths, @three_lengths);
+  my ($three_median, $five_median);
+  my $three_mean = 0;
+  my $five_mean = 0;
+  my $five_cnt  = 0;
+  my $three_cnt = 0;
+  my $five_zero_cnt = 0;
+  my $three_zero_cnt = 0;
+ 
+  foreach my $transcript(@transcripts){
+	$three_utr = $transcript->five_prime_utr;
+	$five_utr  = $transcript->three_prime_utr;
+
+	if(defined $five_utr){
+	  $five_cnt++;
+	  push @five_lengths, $five_utr->length;
+	  $five_zero_cnt++ if  $five_utr->length == 0;
+	}
+
+	if(defined $three_utr){
+	  $three_cnt++;
+	  push @three_lengths, $three_utr->length;
+	  $three_zero_cnt++ if  $three_utr->length == 0;
+	}
+  }
+
+  print "Seen $five_cnt 5' UTRs, $five_zero_cnt with length 0\n";
+  print "Seen $three_cnt 3' UTRs, $three_zero_cnt with length 0\n";
+  
+  #Use EFGUtils for this when we migrate to eFG? And remove sub median
+  my $remainder;
+  #use modulus here instead?
+
+  map $five_mean+=$_, @five_lengths;
+  $five_mean /= $total;
+  ($five_mean, $remainder) = split/\./, $five_mean;
+  $five_mean++ if $remainder =~ /^[5-9]/;
+
+  map $three_mean+=$_, @three_lengths;
+  $three_mean /= $total;
+  ($three_mean, $remainder) = split/\./, $three_mean;
+  $three_mean++ if $remainder =~ /^[5-9]/;
+
+
+  @five_lengths = sort {$a <=> $b} @five_lengths;
+  $five_median = median(\@five_lengths);
+  
+  @three_lengths = sort {$a <=> $b} @three_lengths;
+  $three_median = median(\@three_lengths);
+  
+  #print "5 mean and median, $five_mean, $five_median\n";
+  #print "3 mean and median, $three_mean, $three_median\n";
+  
+  $utr_defaults{'three'} = ($three_mean > $three_median) ? $three_mean : $three_median;
+  $utr_defaults{'five'}  = ($five_mean  > $five_median)  ? $five_mean  : $five_median;
+  
+  
+
+  print "Default 5' UTR length:\t".$utr_defaults{'five'}."\n";
+  print "Default 3' UTR length:\t".$utr_defaults{'three'}.' - '.get_date('time')."\n";
+}
+
 
 my $no_annotated_utr = 0;
+my %unannotated_utrs = (
+						five  => 0,
+						three => 0,
+					   );
+
+
+### Not getting any xrefs? Try checking the meta_coord table if you have migrated the oligo_features
+
 
 foreach my $transcript (@transcripts) {
 
@@ -216,44 +334,52 @@ foreach my $transcript (@transcripts) {
   my $stable_id = $transcript->stable_id();
   $transcript_ids{$stable_id} = $transcript->dbID(); # needed later
 
+  #we want to be able to test calc and annotated separatly
+  my %utr_lengths = %utr_defaults;
 
-
-  if($utr_length eq 'annotated'){
-	#$five_utr = Do we need to implement this?
-	my $utr = $transcript->three_prime_utr;
-
-	if(defined $utr && $utr->length != 0){
-	  $three_utr = $utr->length;
+  if($annotated_utrs){
+	my ($method, $utr);
+	
+	for my $flank('five', 'three'){
+	  $method = $flank.'_prime_utr';
+	  $utr = $transcript->$method;
+	  
+	  if(defined $utr){# && $utr->length != 0){
+		$utr_lengths{$flank} = $utr->length;
+	  }
+	  else{
+		$unannotated_utrs{$flank}++;
+	  }
 	}
-	else{
-	  $no_annotated_utr++;
-	  $three_utr = $unannotated_utr_length;
-	}
-	#Should we set UTR to 0 if no UTR?
-	#Should we default to 2000 here if UTR is less?
-	#Probably dependent on quality of gene build
   }
 
-  my $slice = $transcript->feature_Slice(); # note not ->slice() as this gets whole chromosome!
+  my $slice = $transcript->feature_Slice();
   #my $extended_slice = $slice->expand(0, $utr_length); # this takes account of strand
-  my $extended_slice = $slice->expand(0, $three_utr); # this takes account of strand
+  my $extended_slice = $slice->expand($utr_lengths{'five'}, $utr_lengths{'three'}); # this takes account of strand
   
 
-  my $exons = $transcript->get_all_Exons();
+  #we want to check here for overlap with other transcripts using the same extension params or annotated UTR
+  #There is no way of knowing how far to extend to capture annotated UTR overlap unless we know the max UTR size.
+  #Then we simply build UTR flanking slices using thi smax length and pull back and transcripts, clipping the extension 
+  #appropriately. Not clipping if we are using annotated UTRs and the overlap is real.
 
+  #Register exon and utr loci
   $rr->flush();
 
-
-  foreach my $exon (@$exons) {
-    my $start = $exon->start();
-    my $end = $exon->end();
+  foreach my $exon (@{$transcript->get_all_Exons}) {
+    my $start = $exon->start;
+    my $end   = $exon->end;
     $rr->check_and_register("exonic", $start, $end);
   }
 
-  if ($transcript->strand() == 1) {
-    $rr->check_and_register("utr", $extended_slice->end()-$three_utr, $extended_slice->end());
-  } else {
-    $rr->check_and_register("utr", $extended_slice->start(), $extended_slice->start() + $three_utr);
+  #start/ends are always handled as tho' they are on the +ve strand
+  if ($transcript->strand == 1) {
+    $rr->check_and_register('3utr', $extended_slice->end   - $utr_lengths{'three'}, $extended_slice->end);
+	$rr->check_and_register('5utr', $extended_slice->start, $extended_slice->start + $utr_lengths{'five'});
+  } 
+  else {#-1 reverse strand
+    $rr->check_and_register('3utr', $extended_slice->start(), $extended_slice->start() + $utr_lengths{'three'});
+	$rr->check_and_register('5utr', $extended_slice->end - $utr_lengths{'five'}, $extended_slice->end);
   }
 
   my $oligo_features;
@@ -325,19 +451,25 @@ foreach my $transcript (@transcripts) {
 
     
     my $transcript_key = $transcript->stable_id() . ":" . $probeset;
-    my $probe_length = $probe->probelength();
-    my $min_overlap = ($probe_length - $max_mismatches);
-    my $exon_overlap = $rr->overlap_size("exonic", $feature->seq_region_start(), $feature->seq_region_end());
-    my $utr_overlap  = $rr->overlap_size("utr",    $feature->seq_region_start(), $feature->seq_region_end());
+    my $min_overlap = ($probe->probelength - $max_mismatches);
+    my $exon_overlap = $rr->overlap_size('exonic', $feature->seq_region_start, $feature->seq_region_end);
+    my $three_utr_overlap = $rr->overlap_size('3utr',   $feature->seq_region_start, $feature->seq_region_end);
+	my $five_utr_overlap = $rr->overlap_size('5utr',   $feature->seq_region_start, $feature->seq_region_end);
 
-    if ($exon_overlap >= $min_overlap) {
-	  	  #print "Exon overlap $exon_overlap excedes minimum overlap $min_overlap\n";
-      $transcript_probeset_count{$transcript_key}{$dbID}++;
-    } 
-	elsif ($utr_overlap >= $min_overlap) {
-	  	  #print "UTR overlap $utr_overlap excedes minimum overlap $min_overlap\n";
-      $transcript_probeset_count{$transcript_key}{$dbID}++;
-    } 
+    #if ($exon_overlap >= $min_overlap) {
+	#  	  #print "Exon overlap $exon_overlap excedes minimum overlap $min_overlap\n";
+    #  $transcript_probeset_count{$transcript_key}{$dbID}++;
+    #} 
+	#elsif ($3utr_overlap >= $min_overlap) {
+	#  	  #print "UTR overlap $utr_overlap excedes minimum overlap $min_overlap\n";
+    #  $transcript_probeset_count{$transcript_key}{$dbID}++;
+    #}
+
+	if (($exon_overlap >= $min_overlap) ||
+		($three_utr_overlap >= $min_overlap) ||
+		($five_utr_overlap >= $min_overlap)){
+	  $transcript_probeset_count{$transcript_key}{$dbID}++;
+	}
 	else { # must be intronic
 	  #This is for an individual probe!
 	  print LOG "Unmapped intronic " . $transcript->stable_id . "\t${probeset}\tdbID:${dbID}\n";
@@ -369,7 +501,7 @@ print "\n";
 
 cache_arrays_per_probeset($oligo_db);
 
-print "Writing xrefs\n";
+print 'Writing xrefs - '.get_date('time')."\n";
 my $um_cnt = 0;
 
 # now loop over all the mappings and add xrefs for those that have a suitable number of matches
@@ -449,7 +581,7 @@ foreach my $key (keys %transcript_probeset_count) {
 
 
 #Now update promiscuous probesets
-print "Updating ".scalar(keys %promiscuous_probesets)." promiscuous probesets\n";
+print "Updating ".scalar(keys %promiscuous_probesets).' promiscuous probesets - '.get_date('time')."\n";
 
 foreach my $probeset(keys %promiscuous_probesets){
 
@@ -485,6 +617,7 @@ foreach my $probeset(keys %promiscuous_probesets){
 }
 
 # Find probesets that don't match any transcripts at all, write to log file
+#Why is this sub'd, we only call it once?
 log_orphan_probes();
 
 close (LOG);
@@ -504,9 +637,15 @@ foreach my $aname(keys %array_xrefs){
   print $aname." total xrefs mapped:\t".$array_xrefs{$aname}."\n";
 }
 
-print 'Mapped '. scalar(keys(%transcript_xrefs))."/$total transcripts\n";
-if($utr_length eq 'annotated'){
-  print "Default $unannotated_utr_length bp UTR used for $no_annotated_utr transcript with no annotated UTRs\n";
+print 'Mapped '. scalar(keys(%transcript_xrefs))."/$total transcripts - ".get_date('time')."\n";
+
+if($annotated_utrs){
+
+  my $method = ($calc_utrs) ? 'Calculated' : 'Hard';
+
+  for my $flank('five', 'three'){
+	print $method." unannnotated  ${flank}_prime default UTR length used for ".$utr_defaults{$flank}." UTRs\n";
+  }
 }
 
 print "Top 5 most mapped transcripts:\n";
@@ -521,7 +660,7 @@ for my $i(0..4){
 
 #Most mapped probesets?
 
-print "Completed probe mapping\n";
+print 'Completed probe mapping - '.get_date('time')."\n";
 
 
 
@@ -677,13 +816,13 @@ sub add_xref {
 	 -dbname               => $array,
 	 -release              => "1",
 	 -display_id           => $probeset,
-	 -description          => undef,
+	 -description          => undef,#'Affy probeset'?
 	 -primary_id_linkable  => 1,
 	 -display_id_linkable  => 0,
 	 -priority             => 1,
 	 -db_display_name      => $array,
-	 -info_type            => "PROBE",
-	 #-info_text            => $txt,#This could hold how many mapping there are for a given probeset.
+	 -info_type            => "PROBE",#Should be PROBE_SET?
+	 #-info_text            => $txt,#Could be probeset size
 	 -linkage_annotation   => $txt
 	);
 
@@ -713,7 +852,7 @@ sub delete_existing_xrefs {
   }
 
   #This deletes all unmapped objects, even if we're only (re-)running one array!
-  print "Deleting ALL unmapped records\n";
+  print "Deleting ALL unmapped records for probe2transcript\n";
   my $sql = 'DELETE a, ur, uo FROM analysis a, unmapped_reason ur, unmapped_object uo WHERE a.logic_name ="probe2transcript" AND a.analysis_id=uo.analysis_id AND uo.unmapped_reason_id=ur.unmapped_reason_id';
   $xref_db->dbc->do($sql);
 	
@@ -784,7 +923,6 @@ sub validate_arrays{
 
  my ($mismatch ,$sql);
  my %oligo_array_names;
-
 
  #Get all external_db entries and check probe_setsize
  #Name is not unique in core!!??
@@ -889,7 +1027,8 @@ sub validate_arrays{
 
 
  if ($mismatch) {
-   print "At least one oligo array name was found that does not appear in external_db; this needs to be rectified before this script can be run successfully.\n";
+
+   print "At least one oligo array name was found that does not appear in external_db; this needs to be rectified before this script can be run successfully. Maybe you want to specify -arrays?\n";
    exit(1);
  }
 
@@ -939,6 +1078,61 @@ sub get_or_create_analysis {
 
   return $analysis;
 
+}
+
+# ----------------------------------------------------------------------
+
+sub median{
+  my $scores = shift;
+
+  return undef if (! @$scores);
+
+  my ($median);
+  my $count = scalar(@$scores);
+  my $index = $count-1;
+  #need to deal with lines with no results!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  #deal with one score fastest
+  return  $scores->[0] if ($count == 1);
+  
+  #taken from Statistics::Descriptive
+  #remeber we're dealing with size starting with 1 but indices starting at 0
+  
+  if ($count % 2) { #odd number of scores
+    $median = $scores->[($index+1)/2];
+  }
+  else { #even, get mean of flanks
+    $median = ($scores->[($index)/2] + $scores->[($index/2)+1] ) / 2;
+  }
+
+
+  return $median;
+}
+
+# ----------------------------------------------------------------------
+
+sub get_date{
+	my ($format, $file) = @_;
+
+	my ($time, $sec, $min, $hour, $mday, $mon, $year, $wday, $yday, $isdst);	
+
+
+	warn("get_date need to add file -e test here");
+
+	($sec, $min, $hour, $mday, $mon, $year, $wday, $yday, $isdst) = (defined $file) ? 
+	  localtime((stat($file))[9]) : localtime();
+
+	
+	if((! defined $format && ! defined $file) || $format eq "date"){
+		$time = ($year+1900)."-".$mday."-".($mon+1);	
+	}
+	elsif($format eq "time"){#not working!
+		$time = "${hour}:${min}:${sec}";
+	}
+	else{#add mysql formats here, datetime etc...
+		croak("get_date does not handle format:\t$format");
+	}
+
+	return $time;
 }
 
 # ----------------------------------------------------------------------
