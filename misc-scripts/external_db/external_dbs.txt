@@ -58,9 +58,11 @@
 2201	Uniprot/SWISSPROT_predicted	1	PRED	1	1	15	Predicted UniProtKB/Swiss-Prot	MISC	\N	\N
 2202	Uniprot/Varsplic	1	KNOWN	1	1	15	UniprotKB/SpliceVariant	MISC	\N	\N
 2250	UniProtKB_all	1	XREF	1	0	40	UniProtKB generic accession number (TrEMBL or SwissProt not differentiated)	MISC	\N	\N
-2300	Vega_gene	1	XREF	1	0	5	Vega gene	MISC	\N	\N
-2310	Vega_transcript	1	XREF	1	0	5	Vega transcript	MISC	\N	\N
-2320	Vega_translation	1	XREF	1	0	5	Vega translation	MISC	\N	\N
+2300	Vega_gene	1	KNOWNXREF	1	0	5	Vega gene	MISC	\N	\N
+2305	Vega_gene_like	1	XREF	1	0	5	Vega gene like	MISC	\N	\N
+2310	Vega_transcript	1	KNOWNXREF	1	0	5	Vega transcript	MISC	\N	\N
+2315	Vega_transcript_like	1	XREF	1	0	5	Vega transcript like	MISC	\N	\N
+2320	Vega_translation	1	KNOWNXREF	1	0	5	Vega translation	MISC	\N	\N
 2400	wormbase_gene	1	KNOWN	1	0	5	Wormbase Gene	MISC	\N	\N
 2410	wormbase_transcript	1	KNOWN	1	0	5	Wormbase Transcript	MISC	\N	\N
 2420	wormpep_id	1	KNOWN	1	0	5	Wormpep ID	MISC	\N	\N
