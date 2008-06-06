@@ -1194,9 +1194,9 @@ sub load_registry_from_db {
   }
 
   for my $db (@dbnames) {
-    if ( $db =~ /^(\w+)_multispecies_core_(\d+)/ ) {
+    if ( $db =~ /^(\w+)_collection_core_(\d+)/ ) {
       if ( $2 eq $software_version ) {
-        $temp{$1} = 'multispecies_core_' . $2;
+        $temp{$1} = 'collection_core_' . $2;
       }
     } elsif ( $db =~ /^([a-z]+_[a-z]+_[a-z]+)_(\d+)_(\d+[a-z]*)/ ) {
       if ( $2 eq $software_version ) {
@@ -1247,8 +1247,8 @@ sub load_registry_from_db {
     }
   }
 
-  # Register multispecies databases
-  my @multi_dbs = grep { /_multispecies_core_\d+$/ } @dbnames;
+  # Register multi-species databases
+  my @multi_dbs = grep { /_collection_core_\d+$/ } @dbnames;
 
   foreach my $multidb (@multi_dbs) {
     my $sth =
