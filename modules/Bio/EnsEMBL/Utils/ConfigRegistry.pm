@@ -221,79 +221,43 @@ sub find_unique_species{
 
 
 
-sub load_adaptors{
+sub load_adaptors {
   my ($dba) = @_;
 
-  my %pairs = %{$dba->get_available_adaptors()};
-  
-  foreach my $key (keys %pairs){
-    Bio::EnsEMBL::Registry->add_adaptor($dba->species, $dba->group, $key, $pairs{$key});
+  my %pairs = %{ $dba->get_available_adaptors() };
+
+  foreach my $key ( keys %pairs ) {
+    Bio::EnsEMBL::Registry->add_adaptor( $dba->species, $dba->group,
+                                         $key, $pairs{$key} );
   }
-
 }
 
-sub load_and_attach_dnadb_to_core{
+sub load_and_attach_dnadb_to_core {
   my ($dba) = @_;
 
   load_adaptors($dba);
-  
-  $reg->add_DNAAdaptor($dba->species,$dba->group,$dba->species,"core"); 
+
+  $reg->add_DNAAdaptor( $dba->species, $dba->group,
+                        $dba->species, "core" );
 }
 
 
-sub load_core{
-  my ($dba) = @_;
-
-  load_adaptors($dba);
-}
-
-sub load_compara{
-  load_adaptors(@_);
-}
-
-sub load_hive{
-  load_adaptors(@_);
-}
-
-sub load_pipeline{
-  load_adaptors(@_);
-}
-
-sub load_lite{
-  load_adaptors(@_);
-}
-
-sub load_SNP{
-  load_adaptors(@_);
-}
-
-sub load_variation{
-  load_and_attach_dnadb_to_core(@_);
-}
-
-sub load_funcgen{
-  load_and_attach_dnadb_to_core(@_);
-}
-
-sub load_haplotype{
-  load_adaptors(@_);
-}
+sub load_core      { load_adaptors(@_) }
+sub load_compara   { load_adaptors(@_) }
+sub load_hive      { load_adaptors(@_) }
+sub load_pipeline  { load_adaptors(@_) }
+sub load_lite      { load_adaptors(@_) }
+sub load_SNP       { load_adaptors(@_) }
+sub load_variation { load_and_attach_dnadb_to_core(@_) }
+sub load_funcgen   { load_and_attach_dnadb_to_core(@_) }
+sub load_haplotype { load_adaptors(@_) }
 
 
 # these that need to attach to the core to get the sequense data
 
-sub load_estgene{
-  load_and_attach_dnadb_to_core(@_);
-}
-
-sub load_otherfeatures{
-  load_and_attach_dnadb_to_core(@_);
-}
-
-sub load_vega{
-  load_and_attach_dnadb_to_core(@_);
-}
-
+sub load_estgene       { load_and_attach_dnadb_to_core(@_) }
+sub load_otherfeatures { load_and_attach_dnadb_to_core(@_) }
+sub load_vega          { load_and_attach_dnadb_to_core(@_) }
 
 
 sub add_alias{
