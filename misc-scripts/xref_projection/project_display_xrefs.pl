@@ -236,7 +236,7 @@ sub project_display_names {
 
     if ($dbEntry) {
 
-      return if (!$all_sources && $dbEntry->dbname() ne 'HGNC');
+      return if (!$all_sources && $dbEntry->dbname() ne 'HGNC' && dbEntry->dbname() ne 'Vega_gene');
 
       # Modify the dbEntry to indicate it's not from this species - set info_type & info_text
       my $info_txt = "from $from_latin_species gene " . $from_gene->stable_id();
@@ -334,7 +334,7 @@ sub project_go_terms {
 
   my $to_go_xrefs = $to_translation->get_all_DBEntries("GO") if ($go_check);
 
- DBENTRY: foreach my $dbEntry (@{$from_translation->get_all_DBEntries("GO")}) {
+ DBENTRY: foreach my $dbEntry (@{$from_translation->get_all_DBEntries("GO")}) { 
 
     next if (!$dbEntry || $dbEntry->dbname() ne "GO" || ref($dbEntry) ne "Bio::EnsEMBL::GoXref");
 
