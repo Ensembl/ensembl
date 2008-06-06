@@ -901,10 +901,7 @@ CREATE TABLE species_meta (
   meta_value        VARCHAR(255) NOT NULL,
 
   PRIMARY KEY (species_meta_id),
-  UNIQUE KEY key_value_idx (meta_key, meta_value, species_id),
   KEY meta_key_idx (meta_key, species_id),
-  KEY meta_value_idx (meta_value, species_id)
-
 ) COLLATE=latin1_swedish_ci TYPE=MyISAM;
 
 
@@ -1363,10 +1360,9 @@ CREATE TABLE coord_system (
   rank                        INT NOT NULL,
   attrib                      SET('default_version', 'sequence_level'),
 
-  UNIQUE (name, version, species_id),
-  UNIQUE (rank, species_id),
   PRIMARY KEY (coord_system_id)
-
+  UNIQUE KEY name_idx (name, version, species_id),
+  UNIQUE KEY rank_idx (rank, species_id),
 ) COLLATE=latin1_swedish_ci TYPE=MyISAM;
 
 
