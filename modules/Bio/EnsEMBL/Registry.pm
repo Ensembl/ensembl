@@ -1162,7 +1162,6 @@ sub load_registry_from_db {
 
   my $go_version           = 0;
   my $compara_version      = 0;
-  my $multispecies_version = 0;
 
   $user ||= "ensro";
 
