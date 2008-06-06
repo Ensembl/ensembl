@@ -77,27 +77,6 @@ warn " Dumped $total entries ...\n";
 
 # -------------------------------------------------------------------------------
 
-sub submit {
-
-    my ( $dbname, $file ) = @_;
-
-    print "Submitting job for $dbname\n";
-
-    my $o = $dir . "/" . ${dbname} . ".out";
-    my $e = $dir . "/" . ${dbname} . ".err";
-
-    my $p = ($pass) ? "-pass $pass" : '';
-
-    my $n = substr( $dbname, 0, 10 );
-
-    my $g = ($nogzip) ? "-nogzip" : '';
-
-    system
-"bsub -o $o -e $e -J $n perl variation_dump.pl -user $user -host $host $p -port $port -dbpattern $dbname $g";
-
-}
-
-# -------------------------------------------------------------------------------
 
 sub text_month {
 
