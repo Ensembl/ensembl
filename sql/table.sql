@@ -881,14 +881,32 @@ CREATE TABLE meta (
 
 
 # Auto add schema version to database
-INSERT INTO meta (meta_key, meta_value) VALUES ("schema_version", "50");
+INSERT INTO meta (meta_key, meta_value) VALUES ("schema_version", "51");
 
 # patches included in this schema file
 # NOTE: at beginning of release cycle, remove patch entries from last release
-INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_49_50_a.sql|schema_version');
-INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_49_50_b.sql|coord_system_version_default');
-INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_49_50_c.sql|canonical_transcript');
-INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_49_50_d.sql|seq_region_indices');
+INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_50_51_a.sql|schema_version');
+INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_50_51_b.sql|multispecies');
+
+################################################################################
+#
+# Table structure for table 'species_meta'
+#
+
+CREATE TABLE species_meta (
+
+  species_meta_id   INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  species_id        INT(10) UNSIGNED NOT NULL DEFAULT 1,
+  meta_key          VARCHAR(40) NOT NULL,
+  meta_value        VARCHAR(255) NOT NULL,
+
+  PRIMARY KEY (species_meta_id),
+  UNIQUE KEY key_value_idx (meta_key, meta_value, species_id),
+  KEY meta_key_idx (meta_key, species_id),
+  KEY meta_value_idx (meta_value, species_id)
+
+) COLLATE=latin1_swedish_ci TYPE=MyISAM;
+
 
 ################################################################################
 #
@@ -1339,13 +1357,14 @@ CREATE TABLE assembly_exception (
 CREATE TABLE coord_system (
 
   coord_system_id             INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  species_id                  INT(10) UNSIGNED NOT NULL DEFAULT 1,
   name                        VARCHAR(40) NOT NULL,
   version                     VARCHAR(40) DEFAULT NULL,
   rank                        INT NOT NULL,
   attrib                      SET('default_version', 'sequence_level'),
 
-  UNIQUE (name, version),
-  UNIQUE (rank),
+  UNIQUE (name, version, species_id),
+  UNIQUE (rank, species_id),
   PRIMARY KEY (coord_system_id)
 
 ) COLLATE=latin1_swedish_ci TYPE=MyISAM;
