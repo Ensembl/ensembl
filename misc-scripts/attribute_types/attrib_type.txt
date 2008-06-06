@@ -165,6 +165,7 @@
 75	GeneNo_RNA_pseu	scRNA_pseudogene Gene Count	Number of scRNA_pseudogene Genes
 76	GeneNo_tRNA	tRNA Gene Count	 Number of tRNA Genes
 77	GeneNo_rettran	retrotransposed Gene Count	Number of retrotransposed Genes
+78	GeneNo_snlRNA	snlRNA Gene Count	Number of snlRNA Genes
 
 80	supercontig	SuperContig name	NULL
 81	well_name	Well plate name	NULL
