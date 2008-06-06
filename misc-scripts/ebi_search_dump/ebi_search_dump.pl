@@ -301,7 +301,7 @@ sub dumpSNP {
 
         # Get the sources
         my $csth = $dbh->prepare(
-qq{SELECT source_id, concat(name, if(version, version, '')) FROM source }
+				 qq{SELECT source_id, concat(name, if(version, version, '')) FROM source }
         );
         $csth->execute or die DBI::errstr;
         my @crow;
@@ -313,10 +313,10 @@ qq{SELECT source_id, concat(name, if(version, version, '')) FROM source }
         $csth->finish();
 
         my $sth = $dbh->prepare(
-"SELECT variation_id, variation_name, source_id FROM variation_feature"
+				"SELECT variation_id, variation_name, source_id FROM variation_feature"
         );
         my $sts = $dbh->prepare(
-"SELECT name, source_id FROM variation_synonym WHERE variation_id = ?"
+				"SELECT name, source_id FROM variation_synonym WHERE variation_id = ?"
         );
 
         my $ecount = $sth->execute() or die "Error:", $DBI::errstr;
@@ -381,7 +381,7 @@ sub dumpGenomicAlignment {
 
         unless ($nogzip) {
             $fh = new IO::Zlib;
-            $fh->open( "$dir/$file", "wb9" )
+            $fh->open( "$file", "wb9" )
               || die "Can't open compressed stream to $file: ", $!;
         }
         else {
@@ -424,7 +424,7 @@ sub dumpGenomicAlignment {
     <additional_fields>
         <field name="species">$dbspecies</field>
         <field name="analysis">$adesc</field>
-        <field name="type">$type</field>
+        <field name="featuretype">$type</field>
         <field name="source">$source</field>
         <field name="db">$db</field>
     </additional_fields>
@@ -570,6 +570,7 @@ sub QTLXML {
     <field name="flanking">$xml_data->{f2}</field>
     <field name="peak_marker">$xml_data->{pm}</field>
     <field name="pos">$xml_data->{pos}</field>
+    <field name="featuretype">QTL</field>
   </additional_fields>
   <cross_reference> };
 
@@ -662,6 +663,7 @@ sub markerXML {
     }
     $xml .= qq{
      <field name="species">$species"</field>
+    <field name="featuretype">marker</field>
   </additional_fields>
 </entry>};
 
@@ -727,6 +729,7 @@ qq{$xml_data->[0], $xml_data->[2] oligo probeset $xml_data->[0] hits the genome 
    <additional_fields>
       <field name="type">$xml_data->[2]</field>
      <field name="species">$species"</field>
+    <field name="featuretype">OligoProbe</field>
   </additional_fields>
 </entry>};
 
@@ -822,6 +825,7 @@ sub domainLineXML {
 
     $xml .= qq{
       <field name="species">$species</field>
+      <field name="featuretype">Domain</field>
   </additional_fields>
 </entry>};
     return $xml;
@@ -937,6 +941,7 @@ sub familyLineXML {
   </cross_references>
   <additional_fields>
      <field name="species">$xml_data->{species}</field>
+    <field name="featuretype">Family</field>
   <additional_fields>
 </entry>};
 
@@ -1162,6 +1167,7 @@ sub seqLineXML {
       <field name="type">$type</field>
       <field name="chromosome">$chr</field>
       <field name="length">$len</field>
+    <field name="featuretype">Genomic</field>
    <additional_fields>
  </entry>};
 
@@ -1169,36 +1175,6 @@ sub seqLineXML {
 
 }
 
-sub seqLine {
-    my ( $species, $type, $name, $chr, $val, $len, $sanger ) = @_;
-    my $Q = $val;
-    $Q =~ s/,//g;
-    my $SCRIPT     = $len > 0.5e6 ? 'cytoview' : 'contigview';
-    my $extra_IDS  = '';
-    my $extra_desc = '';
-    my %HASH;
-
-#   foreach ( split / +/,"$name $val" ) {
-#     foreach( keys %{$sanger->{$name}||{}} ) {
-#       $HASH{$_}=1;
-#     }
-#   }
-#   if( %HASH ) {
-#     $extra_IDS  = join ' ', '',sort keys %HASH;
-#     $extra_desc = " and corresponds to the following Sanger projects: ".join( ', ',sort keys %HASH );
-#   }
-
-    return join "\t",
-      "$species\t" . "[Type: $type] ",
-      "[Name: $name] ",
-      "[Extra IDS: $Q$extra_IDS]",
-      "$type $name is mapped to Chromosome $chr, and has"
-      . (
-        ( $val && ( $val ne "" ) )
-        ? " EMBL accession(s)/synonyms $val and "
-        : ""
-      ) . " length $len bps$extra_desc\n";
-}
 
 sub dumpGene {
     my ( $dbspecies, $conf ) = @_;
@@ -1431,7 +1407,8 @@ sub geneLineXML {
     <cross_references>};
 
     foreach my $ext_db ( keys %$external_identifiers ) {
-
+	s/^Affymx.*/OligoProbe/;
+	s/Havana transcript having same CDS/Vega/;
         map {
             $xml .=
               qq{      
@@ -1445,7 +1422,7 @@ sub geneLineXML {
     </cross_references>
     <additional_fields>
       <field name="species">$species</field>
-      <field name="type">$type</field>
+      <field name="featuretype">$type</field>
       <field name="transcript_count">$transcript_count</field> }
 
       . (
@@ -1588,6 +1565,7 @@ sub unmappedFeatureXML {
     <description>$xml_data->[3]; $xml_data->[4]</description>
     <additional_fields>
       <field name="species">$dbspecies</Field>
+      <field name="featuretype">UnmappedFeature</Field>
     </additional_fields>
  </entry>};
 
@@ -1708,7 +1686,7 @@ sub unmappedGeneXML {
     <description>$description</description>
     <additional_fields>
       <field name="species">$dbspecies</Field>
-      <field name="type">$type</field>
+      <field name="featuretype"Unmapped $type</field>
     </additional_fields>
  </entry>};
 
