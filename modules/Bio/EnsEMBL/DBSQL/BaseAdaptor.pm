@@ -114,29 +114,27 @@ use DBI qw(:sql_types);
 =cut
 
 sub new {
-  my ($class,$dbobj) = @_;
-  
-  my $self = {};
-  bless $self,$class;
-  
-  if( !defined $dbobj || !ref $dbobj ) {
+  my ( $class, $dbobj ) = @_;
+
+  my $self = bless {}, $class;
+
+  if ( !defined $dbobj || !ref $dbobj ) {
     throw("Don't have a db [$dbobj] for new adaptor");
   }
-  if($dbobj->isa('Bio::EnsEMBL::DBSQL::DBAdaptor')){
+
+  if ( $dbobj->isa('Bio::EnsEMBL::DBSQL::DBAdaptor') ) {
     $self->db($dbobj);
-    $self->dbc($dbobj->dbc);
-  }
-  elsif( ref($dbobj) =~ /DBAdaptor$/){
+    $self->dbc( $dbobj->dbc );
+    $self->species_id( $dbonj->species_id() );
+  } elsif ( ref($dbobj) =~ /DBAdaptor$/ ) {
     $self->db($dbobj);
-    $self->dbc($dbobj->dbc);
-  }
-  elsif( ref($dbobj) =~ /DBConnection$/){
-    $self->dbc($dbobj);    
-  }
-  else{
+    $self->dbc( $dbobj->dbc );
+  } elsif ( ref($dbobj) =~ /DBConnection$/ ) {
+    $self->dbc($dbobj);
+  } else {
     throw("Don't have a DBAdaptor [$dbobj] for new adaptor");
   }
-  
+
   return $self;
 }
 
@@ -175,17 +173,19 @@ sub prepare{
                using.
   Returntype : Bio::EnsEMBL::DBSQL::DBAdaptor
   Exceptions : none
-  Caller     : Adaptors inherited fro BaseAdaptor
+  Caller     : Adaptors inherited from BaseAdaptor
   Status     : Stable
 
 =cut
 
-sub db{
-  my $self = shift;
-  $self->{'db'} = shift if(@_);
+sub db {
+  my ( $self, $value ) = @_;
+
+  if ( defined($value) ) {
+    $self->{'db'} = $value;
+  }
 
   return $self->{'db'};
-
 }
 
 =head2 dbc
@@ -197,16 +197,43 @@ sub db{
                using.
   Returntype : Bio::EnsEMBL::DBSQL::DBConnection
   Exceptions : none
-  Caller     : Adaptors inherited fro BaseAdaptor
+  Caller     : Adaptors inherited from BaseAdaptor
   Status     : Stable
 
 =cut
 
-sub dbc{
-  my $self = shift;
-  $self->{'dbc'} = shift if(@_);
+sub dbc {
+  my ( $self, $value ) = @_;
+
+  if ( defined($value) ) {
+    $self->{'dbc'} = $value;
+  }
 
   return $self->{'dbc'};
+}
+
+=head2 species_id
+
+  Arg [1]    : (optional) int $species_id
+               The internal ID of the species in a multi-species database.
+  Example    : $db = $adaptor->db();
+  Description: Getter/Setter for the internal ID of the species in a
+               multi-species database.  The default species ID is 1.
+  Returntype : Integer
+  Exceptions : none
+  Caller     : Adaptors inherited from BaseAdaptor
+  Status     : Stable
+
+=cut
+
+sub species_id {
+  my ( $self, $value ) = @_;
+
+  if ( defined($value) ) {
+    $self->{'species_id'} = $value;
+  }
+
+  return $self->{'species_id'} || 1;
 }
 
 

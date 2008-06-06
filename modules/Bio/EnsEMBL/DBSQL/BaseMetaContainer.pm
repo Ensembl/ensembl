@@ -88,27 +88,43 @@ sub get_schema_version {
 =cut
 
 sub list_value_by_key {
-  my ($self,$key) = @_;
-  my @result;
+  my ( $self, $key ) = @_;
 
   $self->{'cache'} ||= {};
-  if( exists $self->{'cache'}->{$key} ) {
+
+  if ( exists $self->{'cache'}->{$key} ) {
     return $self->{'cache'}->{$key};
   }
 
-  my $sth = $self->prepare( "SELECT meta_value 
-                             FROM meta 
-                             WHERE meta_key = ? ORDER BY meta_id" );
-  $sth->execute( $key );
-  while( my $arrRef = $sth->fetchrow_arrayref() ) {
+  if ( $key eq 'schema_version' || $key eq 'patch' ) {
+    my $sth =
+      $self->prepare(   "SELECT meta_value "
+                      . "FROM meta "
+                      . "WHERE meta_key = ? "
+                      . "ORDER BY meta_id" );
+
+    $sth->execute($key);
+  } else {
+    my $sth =
+      $self->prepare(   "SELECT meta_value "
+                      . "FROM species_meta "
+                      . "WHERE meta_key = ? "
+                      . "AND species_id = ? "
+                      . "ORDER BY meta_id" );
+
+    $sth->execute( $key, $self->species_id() );
+  }
+
+  my @result;
+  while ( my $arrRef = $sth->fetchrow_arrayref() ) {
     push( @result, $arrRef->[0] );
   }
+
   $sth->finish();
   $self->{'cache'}->{$key} = \@result;
 
   return \@result;
 }
-
 
 =head2 store_key_value
 
