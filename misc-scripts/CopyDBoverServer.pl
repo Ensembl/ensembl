@@ -42,6 +42,8 @@ RESTRICTIONS:
    ecs4 port: 335[0-3]
    ia64[efgh] port: 3306
 3- -pass is compulsory and is expected to be the mysql password to connect as ensadmin
+4- If you add a new instance, remember to check there is a /tmp directory in the /mysql/databases,
+   otherwise rcp will complain
 
 This script MUST be run as the mysqlens Unix user.
 
@@ -99,7 +101,8 @@ my %mysql_directory_per_svr = ('genebuild1:3306'   => "/mysql/data_3306/database
 			       'ens-staging:3306'  => "/mysql/data_3306/databases",
 			       'ens-livemirror:3306'  => "/mysql/data_3306/databases",
 			       'ens-research:3306' => "/mysql/data_3306/databases",
-			       'ens-research:3309' => "/mysql/data_3309/databases");
+			       'ens-research:3309' => "/mysql/data_3309/databases",
+                               'ensdb-2-12:5106' => '/mysqlv5.1-test/data_5106/databases');
 
 my %tables = (
 			  #xref tables are required for transcript/gene generation
