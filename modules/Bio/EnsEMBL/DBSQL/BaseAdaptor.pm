@@ -125,7 +125,7 @@ sub new {
   if ( $dbobj->isa('Bio::EnsEMBL::DBSQL::DBAdaptor') ) {
     $self->db($dbobj);
     $self->dbc( $dbobj->dbc );
-    $self->species_id( $dbonj->species_id() );
+    $self->species_id( $dbobj->species_id() );
   } elsif ( ref($dbobj) =~ /DBAdaptor$/ ) {
     $self->db($dbobj);
     $self->dbc( $dbobj->dbc );
