@@ -96,8 +96,9 @@ sub list_value_by_key {
     return $self->{'cache'}->{$key};
   }
 
-  if ( $key eq 'schema_version' || $key eq 'patch' ) {
-    my $sth =
+  my $sth;
+  if ( $self->_key_is_meta($key) ) {
+    $sth =
       $self->prepare(   "SELECT meta_value "
                       . "FROM meta "
                       . "WHERE meta_key = ? "
@@ -105,12 +106,12 @@ sub list_value_by_key {
 
     $sth->execute($key);
   } else {
-    my $sth =
+    $sth =
       $self->prepare(   "SELECT meta_value "
                       . "FROM species_meta "
                       . "WHERE meta_key = ? "
                       . "AND species_id = ? "
-                      . "ORDER BY meta_id" );
+                      . "ORDER BY species_meta_id" );
 
     $sth->execute( $key, $self->species_id() );
   }
@@ -124,7 +125,7 @@ sub list_value_by_key {
   $self->{'cache'}->{$key} = \@result;
 
   return \@result;
-}
+} ## end sub list_value_by_key
 
 =head2 store_key_value
 
@@ -144,22 +145,30 @@ sub list_value_by_key {
 sub store_key_value {
   my ( $self, $key, $value ) = @_;
 
-  if ($self->key_value_exists($key, $value)) {
-    warn("Key/value pair $key/$value already exists in the meta table; not storing duplicate");
+  if ( $self->key_value_exists( $key, $value ) ) {
+    warn(   "Key-value pair '$key'-'$value' "
+          . "already exists in the meta table; "
+          . "not storing duplicate" );
     return;
   }
 
-  my $sth = $self->prepare( "INSERT INTO meta( meta_key, meta_value)
-                             VALUES( ?, ? )" );
+  if ( $self->_key_is_meta($key) ) {
+    my $sth = $self->prepare(
+                "INSERT INTO meta (meta_key, meta_value) VALUES(?, ?)");
 
-  my $res = $sth->execute( $key, $value );
+    $sth->execute( $key, $value );
+  } else {
+    my $sth = $self->prepare(
+          "INSERT INTO species_meta (meta_key, meta_value, species_id) "
+            . "VALUES (?, ?, ?)" );
+
+    $sth->execute( $key, $value, $self->species_id() );
+  }
 
   $self->{'cache'} ||= {};
 
   delete $self->{'cache'}->{$key};
-
-  return;
-}
+} ## end sub store_key_value
 
 =head2 update_key_value
 
@@ -179,10 +188,17 @@ sub store_key_value {
 sub update_key_value {
   my ( $self, $key, $value ) = @_;
 
-  my $sth = $self->prepare( "UPDATE meta SET meta_value = ? WHERE meta_key = ?" );
+  if ( $self->_key_is_meta($key) ) {
+    my $sth = $self->prepare(
+                   "UPDATE meta SET meta_value = ? WHERE meta_key = ?");
 
-  my $res = $sth->execute( $value, $key );
-  return;
+    $sth->execute( $value, $key );
+  } else {
+    my $sth = $self->prepare( "UPDATE species_meta "
+         . "SET meta_value = ? WHERE meta_key = ? AND species_id = ?" );
+
+    $sth->execute( $value, $key, $self->species_id() );
+  }
 }
 
 
@@ -201,15 +217,20 @@ sub update_key_value {
 =cut
 
 sub delete_key {
-  my ($self, $key) = @_;
+  my ( $self, $key ) = @_;
 
-  my $sth = $self->prepare("DELETE FROM meta WHERE meta_key = ?");
-  $sth->execute($key);
-  $sth->finish();
+  if ( $self->_key_is_meta($key) ) {
+    my $sth = $self->prepare("DELETE FROM meta WHERE meta_key = ?");
+
+    $sth->execute($key);
+  } else {
+    my $sth = $self->prepare( "DELETE FROM species_meta "
+                            . "WHERE meta_key = ? AND species_id = ?" );
+
+    $sth->execute( $key, $self->species_id() );
+  }
 
   delete $self->{'cache'}->{$key};
-
-  return;
 }
 
 =head2 delete_key_value
@@ -229,15 +250,21 @@ sub delete_key {
 =cut
 
 sub delete_key_value {
-  my ($self, $key, $value) = @_;
+  my ( $self, $key, $value ) = @_;
 
-  my $sth = $self->prepare("DELETE FROM meta WHERE meta_key = ? AND meta_value = ?");
-  $sth->execute($key, $value);
-  $sth->finish();
+  if ( $self->_key_is_meta($key) ) {
+    my $sth = $self->prepare(
+              "DELETE FROM meta WHERE meta_key = ? AND meta_value = ?");
+
+    $sth->execute( $key, $value );
+  } else {
+    my $sth = $self->prepare( "DELETE FROM species_meta "
+         . "WHERE meta_key = ? AND meta_value = ? AND species_id = ?" );
+
+    $sth->execute( $key, $value, $self->species_id() );
+  }
 
   delete $self->{'cache'}->{$key};
-
-  return;
 }
 
 =head2 key_value_exists
@@ -247,7 +274,8 @@ sub delete_key_value {
   Arg [2]    : string $value
                the value to check
   Example    : if ($meta_container->key_value_exists($key, $value)) ...
-  Description: Return true if a particular key/value pair exists, undef otherwise
+  Description: Return true (1) if a particular key/value pair exists,
+               false (0) otherwise.
   Returntype : boolean
   Exceptions : none
   Caller     : ?
@@ -256,20 +284,40 @@ sub delete_key_value {
 =cut
 
 sub key_value_exists {
+  my ( $self, $key, $value ) = @_;
 
-  my ($self, $key, $value) = @_;
+  my $sth;
+  if ( $self->_key_is_meta($key) ) {
+    $sth = $self->prepare(   "SELECT meta_value FROM meta "
+                           . "WHERE meta_key = ? AND meta_value = ?" );
+    $sth->execute( $key, $value );
+  } else {
+    $sth = $self->prepare( "SELECT meta_value FROM species_meta "
+         . "WHERE meta_key = ? AND meta_value = ? AND species_id = ?" );
 
-  my $sth = $self->prepare( "SELECT meta_value FROM meta WHERE meta_key = ? AND meta_value = ?" );
-  $sth->execute($key, $value);
+    $sth->execute( $key, $value, $self->species_id() );
+  }
 
-  while( my $arrRef = $sth->fetchrow_arrayref() ) {
-    if ($arrRef->[0] eq $value) {
+  while ( my $arrRef = $sth->fetchrow_arrayref() ) {
+    if ( $arrRef->[0] eq $value ) {
       $sth->finish();
       return 1;
     }
   }
 
-  return undef;
+  return 0;
+}
+
+# This utility method determines whether the key is to be found/stored
+# in the 'meta' or in the 'species_meta' table.  If the key is either
+# 'patch' or 'schema_version', then it goes into the 'meta' table
+# (a true boolean value is returned), otherwise it goes into the
+# 'species_meta' table (a false boolean value is returned).
+#
+
+sub _key_is_meta {
+  my ( $self, $key ) = @_;
+  return ( $key eq 'patch' || $key eq 'schema_version' );
 }
 
 1;
