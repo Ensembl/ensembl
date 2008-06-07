@@ -46,7 +46,8 @@ INSERT INTO species_meta (species_id, meta_key, meta_value)
   SELECT    1, m.meta_key, m.meta_value             -- Default species_id is 1
   FROM      meta m
   WHERE     m.meta_key != 'patch'
-    AND     m.meta_key != 'schema_version';
+    AND     m.meta_key != 'schema_version'
+  ORDER BY  m.meta_key, m.meta_id;
 
 DELETE FROM meta
   WHERE     meta_key != 'patch'
