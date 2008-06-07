@@ -59,4 +59,4 @@ OPTIMIZE TABLE coord_system;
 
 # patch identifier
 INSERT INTO meta (meta_key, meta_value)
-VALUES ('patch', 'patch_50_51_b.sql|mutlispecies');
+VALUES ('patch', 'patch_50_51_b.sql|multispecies');
