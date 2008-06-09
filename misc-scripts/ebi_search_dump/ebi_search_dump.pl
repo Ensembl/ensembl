@@ -131,8 +131,6 @@ Usage: perl $0 <options>
 
   -max_entries  Only dump this many entries for testing.
 
-  -parallel     Submit jobs in parallel.
-
   -help         This message.
 
   -inifile      First take the arguments from this file. Then overwrite with what is provided in the command line
@@ -641,7 +639,7 @@ sub markerXML {
 
     }
     $xml .= qq{
-     <field name="species">$species"</field>
+     <field name="species">$species</field>
     <field name="featuretype">marker</field>
   </additional_fields>
 </entry>};
@@ -707,7 +705,7 @@ qq{$xml_data->[0], $xml_data->[2] oligo probeset $xml_data->[0] hits the genome 
    <description>$desc</description>
    <additional_fields>
       <field name="type">$xml_data->[2]</field>
-     <field name="species">$species"</field>
+     <field name="species">$species</field>
     <field name="featuretype">OligoProbe</field>
   </additional_fields>
 </entry>};
@@ -761,10 +759,7 @@ sub dumpDomain {
         }
         else {
             if ( $old_acc ne '' ) {
-                print FILE domainLineXML(
-                    $dbspecies, $old_acc,     $IDS,
-                    $old_desc,  $description, $counter
-                );
+                 p domainLineXML($dbspecies, $old_acc, $IDS, $old_desc,  $description, $counter);
                 $ecount++;
             }
 
@@ -778,8 +773,7 @@ sub dumpDomain {
 
     }
     if ( $old_acc ne '' ) {
-        print FILE domainLineXML( $dbspecies, $old_acc, $IDS, $old_desc,
-            $description, $counter );
+        p domainLineXML($dbspecies, $old_acc, $IDS, $old_desc, $description, $counter);
         $ecount++;
     }
 
@@ -871,7 +865,7 @@ sub dumpFamily {
             push @{ $xml_data->{'IDS'} }, [ $dbid, $source_name ];
         }
         else {
-            print FILE familyLineXML( $xml_data, $counter );
+            p familyLineXML( $xml_data, $counter );
             $xml_data->{'IDS'}         = undef;
 ###             $IDS         = $dbid;
             $xml_data->{'IDS'}->[0] = [ $dbid, $source_name ];
@@ -882,7 +876,7 @@ sub dumpFamily {
 
         }
     }
-    print FILE familyLineXML( $xml_data, $counter );
+    p familyLineXML( $xml_data, $counter );
 
     footer( $counter->() );
 
