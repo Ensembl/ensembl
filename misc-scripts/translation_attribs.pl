@@ -87,7 +87,7 @@ my %PEPSTATS_CODES = ( 'Number of residues' => 'NumResidues',
 		       'Isoelectric point' => 'IsoPoint'
 		      );
 
-my %MET_AND_STOP = ( 'Initial methionine' => 'initial_met', 
+my %MET_AND_STOP = ( 'Starts with methionine' => 'starts_met', 
 		     'Contains stop codon' => 'has_stop_codon'
 		    );
 
