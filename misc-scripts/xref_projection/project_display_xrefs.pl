@@ -236,7 +236,12 @@ sub project_display_names {
 
     if ($dbEntry) {
 
-      return if (!$all_sources && $dbEntry->dbname() ne 'HGNC' && $dbEntry->dbname() ne 'Vega_gene' && $dbEntry->dbname() ne 'Vega_gene_like' );
+      my $dbname = $dbEntry->dbname();
+
+      return if (!$all_sources && $dbname ne 'HGNC' && $dbname ne 'Vega_gene' && $dbname ne 'Vega_gene_like' );
+
+      # skip Vega clone names
+      return if (($dbname eq 'Vega_gene' || $dbname eq 'Vega_gene_like') && $dbEntry->display_id() =~ /\./);
 
       # Modify the dbEntry to indicate it's not from this species - set info_type & info_text
       my $info_txt = "from $from_latin_species gene " . $from_gene->stable_id();
