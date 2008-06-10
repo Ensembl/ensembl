@@ -1,7 +1,7 @@
 package XrefMapper::homo_sapiens;
 
 use  XrefMapper::BasicMapper;
-
+use strict;
 use vars '@ISA';
 
 @ISA = qw{ XrefMapper::BasicMapper };
@@ -63,7 +63,8 @@ sub species_specific_cleanup{
   my $self = shift;
   my $dbname = $self->get_canonical_name;
 
-my $remove_old_ones = (<<JSQL);
+  print "Removing all $dbname from object_xref not on a Gene\n";
+  my $remove_old_ones = (<<JSQL);
 delete ox 
   from object_xref ox, xref x, external_db e
     where e.db_name like "$dbname" and 
@@ -72,9 +73,9 @@ delete ox
 	  x.external_db_id = e.external_db_id;
 JSQL
 
-#
-# First Delete all the hgnc object_xrefs not on a gene. (i.e these are copys).
-#
+  #
+  # First Delete all the hgnc object_xrefs not on a gene. (i.e these are copys).
+  #
 
   my $sth = $self->core->dbc->prepare($remove_old_ones);
 
@@ -84,374 +85,438 @@ JSQL
 
 }
 
+
 # For human we want to make a copy of the HGNC references on the genes and put them on 
-# the "canonical" transcripts. For now this means, go through all the HGNC xrefs which are all on genes
-# and if they are DIRECT ENSG then copy to the longest transcript of that gene. If they are DEPENDENT then 
-# copy xref to the transcript the dependent one is on.
+# the "canonical" transcripts
 
 sub species_specific_pre_attributes_set{
   my $self = shift;
   my $dbname = $self->get_canonical_name();
 
-  # Where does '$max_object_xref_id' come from here? (ak/2007-11-14)
+  my ($max_object_xref_id, $max_xref_id);
+
+  my $sth = $self->core->dbc->prepare("SELECT MAX(object_xref_id) FROM object_xref");
+  $sth->execute();
+  $sth->bind_columns(\$max_object_xref_id);
+  $sth->fetch;
+
+
+  $sth = $self->core->dbc->prepare("SELECT MAX(xref_id) FROM xref");
+  $sth->execute();
+  $sth->bind_columns(\$max_xref_id);
+  $sth->fetch;
+
   my $object_xref_id = $max_object_xref_id + 1;
 
+  if($object_xref_id == 1){
+    die "max_object_xref_id should not be 1\n";
+  }
 
-  my $direct_sql = (<<ESQL);
-select x.xref_id, x.info_text
-  from xref x, external_db e
+  my $sql = "select gene_id, canonical_transcript_id from gene";
+
+  my $object_sql = (<<FSQL);
+select x.xref_id, o.ensembl_id
+  from xref x, external_db e, object_xref o
     where x.external_db_id = e.external_db_id and 
-      e.db_name like "$dbname" and
-      x.info_type = "DIRECT"
-ESQL
-
-
-  my $dependent_sql = (<<FSQL);
-select x.xref_id, x.info_text
-  from xref x, external_db e
-    where x.external_db_id = e.external_db_id and 
-      e.db_name like "$dbname" and
-      x.info_type = "DEPENDENT"
+      e.db_name like "$dbname" and 
+      o.xref_id = x.xref_id  and
+      o.ensembl_object_type = "Gene";
 FSQL
 
-  my $get_gene_stable_id = (<<GSQL);
-select gsi.stable_id, t.transcript_id, tr.translation_id
-  from gene_stable_id gsi, transcript t 
-    left join translation tr on tr.transcript_id = t.transcript_id
-       where  gsi.gene_id     = t.gene_id 
-GSQL
 
-  my $longest_tran_sql = (<<HSQL);
-select gsi.gene_id , gsi.stable_id, t.transcript_id, (t.seq_region_end - t.seq_region_start) as size
-  from gene_stable_id gsi, transcript t 
-    where t.gene_id = gsi.gene_id order by gsi.stable_id, size 
-HSQL
-
-
-  my $object_xref_sql = (<<ISQL);
-select ox.xref_id, ox.ensembl_object_type, ox.ensembl_id
-  from object_xref ox, xref x
-    where x.dbprimary_acc like ? and x.xref_id = ox.xref_id 
-ISQL
-
-
-  my $translation_sql = "select transcript_id, translation_id from translation";
- 
-
- 
-  my $tsi_2_id_sql = "select stable_id, transcript_id from transcript_stable_id";
-
-
-
-#
-# find the longest transcript for each gene.
-#
-
-  my %stable_id_2_transcript_id;
-  my %gene_id_2_transcript_id;
-  my $translation_id_2_transcript_id;
-
-  my $sth = $self->core->dbc->prepare($longest_tran_sql);
-
-  $sth->execute();
-  my ($g_id, $gsi, $t_id, $size);
-  $sth->bind_columns(\$g_id, \$gsi, \$t_id, \$size);
-
-
-  
-  while ($sth->fetch){
-    $stable_id_2_transcript_id{$gsi} = $t_id;
-    $gene_id_2_transcript_id{$g_id} = $t_id;
-  }
-  $sth->finish;
-
-
-# now add the transcript_stable_ids
-
-  $sth = $self->core->dbc->prepare($tsi_2_id_sql);
-
-  my ($tsi, $tran_id);
-  $sth->execute();
-  $sth->bind_columns(\$tsi, \$tran_id);
-
-  while ($sth->fetch){
-    $stable_id_2_transcript_id{$tsi} = $tran_id;
-  }
-  $sth->finish;
-
-
-# what about translations ??? Add if needed.
-# but they should never be on the translations.
-
-#
-# open file to store new xref matches
-#
   my $file = $self->core->dir()."/hgnc_transcript_data.sql";
 
   open(HGNC_TRAN,">$file") || die "Could not open $file";
 
+  my $sth = $self->core->dbc->prepare($sql);
+  
+  $sth->execute();
+  my ($gene_id, $tran_id);
+  $sth->bind_columns(\$gene_id,\$tran_id);
+  my %gene_to_tran;
+  while ($sth->fetch){
+    $gene_to_tran{$gene_id} = $tran_id;
+  }
+  $sth->finish;
 
-#
-# Process the DIRECT ones first.
-#
-  $sth = $self->core->dbc->prepare($direct_sql);
+  $sth = $self->core->dbc->prepare($object_sql);
 
   $sth->execute();
+  my ($xref_id);
+  $sth->bind_columns(\$xref_id, \$gene_id);
 
-  my ($xref_id, $text);
-  $sth->bind_columns(\$xref_id, \$text);
-
-  while($sth->fetch){
-
-    if($text =~ /between (\S+) and /){
-      my $stable_id =  $1;
-      if(defined($stable_id_2_transcript_id{$stable_id})){
-	print HGNC_TRAN $object_xref_id++,"\t",
-	  $stable_id_2_transcript_id{$stable_id},
+  while ($sth->fetch){
+    if(defined($gene_to_tran{$gene_id})){
+      print HGNC_TRAN $object_xref_id++,"\t",
+	$gene_to_tran{$gene_id},
 	  "\tTranscript\t",
-	  $xref_id,"\\N\n";
-      }
-      else{
-	print STDERR "Could not find transcript id for stable id $stable_id\n";
-      }
+	    $xref_id,"\\N\n";
     }
     else{
-      print STDERR "$text\n failed regular expression test\n";
-    }
-  }
-
-
-#
-# Process the dependent ones.
-#
-
-  ( $gsi, $transcript_id, $translation_id ) = ( undef, undef, undef );
-  $sth = $self->core->dbc->prepare($get_gene_stable_id);
-  $sth->execute();
-
-  $sth->bind_columns(\$gsi, \$transcript_id, \$translation_id);
-  my %id_2_gsi;
-  while($sth->fetch){
-    $id_2_gsi{'Transcript'.$transcript_id} = $gsi;
-#    print STDERR "LOADING: Transcript $transcript_id -> $gsi\n";
-    if(defined($translation_id)){
-      $id_2_gsi{'Translation'.$translation_id} = $gsi;
+      print STDERR "Could not find canonical for gene $gene_id\n";
     }
   }
   $sth->finish;
 
+  close (HGNC_TRAN);
 
-  $sth = $self->core->dbc->prepare($dependent_sql);
+#
+# import data
+#
+  $sth = $self->core->dbc->prepare("LOAD DATA LOCAL INFILE \'$file\' IGNORE INTO TABLE object_xref");
+  print "Uploading data in $file to object_xref\n";
+  $sth->execute() || die "error loading file $file\n";
+
+
+
+#######################
+#Do the naming bit now.
+#######################
+
+# get the vega external_sources
+
+
+  my $xref_file        =  $self->core->dir()."/xref_vega_names.txt";
+  my $object_xref_file =  $self->core->dir()."/object_xref_vega_names.txt";
+
+  open(XREF, ">$xref_file" ) || die "Could not open file $xref_file";
+  open(OBJECT_XREF, ">$object_xref_file") || die "Could not open file $object_xref_file";
+
+
+  my ($vega_gene_id, $vega_transcript_id, $vega_gene_like_id, $vega_transcript_like_id);
+
+  $sth = $self->core->dbc->prepare("select external_db_id from external_db where db_name like ?");
+  
+  $sth->execute("Vega_gene");
+  $sth->bind_columns(\$vega_gene_id);
+  $sth->fetch;
+  
+  $sth->execute("Vega_transcript");
+  $sth->bind_columns(\$vega_transcript_id);
+  $sth->fetch;
+
+  $sth->execute("Vega_gene_like");
+  $sth->bind_columns(\$vega_gene_like_id);
+  $sth->fetch;
+  
+  $sth->execute("Vega_transcript_like");
+  $sth->bind_columns(\$vega_transcript_like_id);
+  $sth->fetch;
+  
+  if(!defined($vega_gene_id)){
+    die "Could not find external database name Vega_gene\n";
+  }
+  if(!defined($vega_transcript_id)){
+    die "Could not find external database name Vega_transcript\n";
+  }
+  if(!defined($vega_gene_like_id)){
+    die "Could not find external database name Vega_gene_like\n";
+  }
+  if(!defined($vega_transcript_like_id)){
+    die "Could not find external database name Vega_transcript_like\n";
+  }
+
+
+  ###########################
+  # Delete the old ones.
+  ###########################
+
+
+  my $del_vega_sql = "delete o from object_xref o, xref x where x.xref_id = o.xref_id and x.external_db_id in ($vega_gene_id, $vega_gene_like_id, $vega_transcript_like_id)";
+  print $del_vega_sql."\n";
+  $sth = $self->core->dbc->prepare($del_vega_sql);
+  $sth->execute();
+ 
+  $del_vega_sql = "delete x from xref x where x.external_db_id in ($vega_gene_id, $vega_gene_like_id, $vega_transcript_like_id)";
+  print $del_vega_sql."\n";
+  $sth = $self->core->dbc->prepare($del_vega_sql);
   $sth->execute();
 
-  $sth->bind_columns(\$xref_id, \$text);
 
+
+  ######################################################
+  # Get the current max values for xref and object_xref
+  ######################################################
+
+
+  my $ensembl = $self->core;
+  my $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(-dbconn => $ensembl->dbc);
+  my $gene_adaptor = $db->get_GeneAdaptor();
+
+  if(!defined($max_xref_id) or $max_xref_id == 0){
+    die "Sorry dont belives there are no xrefs  max = 0\n";
+  }
+  if(!defined($max_object_xref_id) or $max_object_xref_id == 0){
+    die "Sorry dont belives there are no object_xrefs  max = 0\n";
+  }
+
+
+  #####################################
+  # get synonyms to test NONE problems
+  #####################################
+
+  my %synonym;
+  $sth = $self->core->dbc->prepare('select es.synonym, x.display_label from external_synonym es, xref x, external_db e where x.xref_id = es.xref_id and x.external_db_id = e.external_db_id and e.db_name = "'.$dbname.'"' );
+  $sth->execute();
+  my ($syn, $name);
+  $sth->bind_columns(\$syn,\$name);
   while($sth->fetch){
-
-    if($text =~ /Generated via (\S+)/){
-      $acc_2_xref_id{$1} = $xref_id;
-    }
+    $synonym{$syn} = $name;
   }
   $sth->finish;
 
-
-
-  $sth = $self->core->dbc->prepare($translation_sql);
+  #Some hgnc synonyms are missing so use entrez gene instead a hack i know but will be fixed later.
+  $sth = $self->core->dbc->prepare('select es.synonym, x.display_label from external_synonym es, xref x, external_db e where x.xref_id = es.xref_id and x.external_db_id = e.external_db_id and e.db_name = "EntrezGene"' );
   $sth->execute();
-
-  my ($transcript_id, $translation_id);
-
-  $sth->bind_columns(\$transcript_id, \$translation_id);
-
+  $sth->bind_columns(\$syn,\$name);
   while($sth->fetch){
-
-      $translation_id_2_transcript_id{$translation_id} = $transcript_id;
+    $synonym{$syn} = $name;
   }
   $sth->finish;
 
+  ###########################
+  # Process each Gene
+  ###########################
 
-
-
-  ( $xref_id, $xref_type, $ensembl_id ) = ( undef, undef, undef );
-
-#
-# Need to change this so that only get object_xrefs fro this genes transcripts and translations
-#
-#
-  $sth = $self->core->dbc->prepare($object_xref_sql);
-
-
-  foreach my $acc (keys %acc_2_xref_id){
-    $sth->execute($acc) || die "Could not execute $!\n";
-    $sth->bind_columns(\$xref_id, \$xref_type, \$ensembl_id);
-    my $i = 0;
-    while($sth->fetch){
-      $i++
-    }
-
-    # matched to more than one transcript/translation so put later
-    # for canonicals "There can only be one".  
-    if($i > 0){ 
-      my $gsi = $id_2_gsi{$xref_type.$ensembl_id};
-      if(defined($gsi)){
-	if(defined( $stable_id_2_transcript_id{$gsi})){
-	  print HGNC_TRAN $object_xref_id++,"\t",
-	    $stable_id_2_transcript_id{$gsi},
-	      "\tTranscript\t",
-		$acc_2_xref_id{$acc},"\\N\n";
-	}
-	else{
-	  print STDERR "Could not get transcript_id for gene stable id $gsi\n";
-	}
+  my @genes = @{$gene_adaptor->fetch_all()};
+  
+  my $total_gene_vega = 0;
+  my $total_gene = 0;
+  my $total_clone_name = 0;
+  my $hgnc_count = 0;
+  
+  while (my $gene = shift @genes){
+    #    if($gene->biotype ne "protein_coding"){
+    #    $types{$gene->biotype}++;
+    #      next;
+    #  }
+    my @dbentries = @{$gene->get_all_DBEntries()};
+    my @HGNC=();
+    my @VEGA_NAME=();
+    my $CLONE_NAME = undef;
+    foreach my $dbe (@dbentries){
+      if($dbe->dbname eq "HGNC"){
+	push @HGNC, $dbe->display_id;
       }
-      else{
-	print STDERR "Could not find gene stable id for $xref_type $ensembl_id\n";
+    }
+    if(scalar(@HGNC)){
+      $hgnc_count++;
+    }
+    my @has_vega;
+    my @no_vega;
+    my $vega_count = 0;
+    foreach my $tr (@{$gene->get_all_Transcripts}){
+      my $VEGA = undef;
+      
+      my $count = 0;
+      foreach my $dbe (@{$tr->get_all_DBEntries}){
+	if($dbe->dbname eq "Vega_transcript"){
+	  my($hgnc_bit, $num) = split(/-0\d\d/,$dbe->display_id);
+	  if($hgnc_bit =~ /[.]/){
+	    $CLONE_NAME = $hgnc_bit;
+	  }
+	  else{
+	    $VEGA = $hgnc_bit;
+	    $vega_count++;
+	    my $multiple = 1;
+	    if(scalar(@VEGA_NAME)){
+	      foreach my $name (@VEGA_NAME){
+		if($name ne $VEGA){
+		  if(defined($synonym{$name}) and uc($synonym{$name}) eq $VEGA){
+		    $multiple = 0;
+		  }
+		  if(defined($synonym{$VEGA}) and uc($synonym{$VEGA}) eq uc($name)){
+		    $multiple = 0;
+		  }
+		}
+		else{
+		  $multiple = 0;
+		}
+	      }
+	      if($multiple){
+		push @VEGA_NAME , $hgnc_bit;
+	      }
+	    }
+	    else{
+	      push @VEGA_NAME , $hgnc_bit;
+	    }
+	  }	
+	  $count++;
+	}      
+      } # end of dbentries fro this transcript
+      if($count == 0){
+	push @no_vega, $tr->dbID;
       }
-      next;
+      if($count > 1){
+	print "Problem: ".$tr->stable_id." has more than one vega_transcript\n";
+      }
+      if($count == 1){
+	if(defined($VEGA) and scalar(@HGNC)){
+	  my $found = 0;
+	  foreach my $hgnc_name (@HGNC){
+	    if(uc($VEGA) eq uc($hgnc_name)){
+	      $found = 1;
+	    }
+	    elsif(defined($synonym{$VEGA}) and uc($synonym{$VEGA}) eq uc($hgnc_name)){
+	      $found = 1;
+	    }
+	  }
+	  if(!$found){
+	    print "Problem: ".$gene->stable_id." linked to hgnc (".join(', ',@HGNC).")   BUT ".$tr->stable_id." linked to vega_transcript $VEGA????\n";	
+	  }
+	}
+	push @has_vega, $tr->dbID;
+      }
+    } # end for each transcript
+    ####################################################################################
+    # if there is at least one transcript
+    # set vega_gene
+    # loop through no_vega array and set vega_transcript_like for each starting at 101
+    ####################################################################################
+    if(scalar(@VEGA_NAME) > 1){
+      print "Warning: gene ".$gene->stable_id." has more than one vega_transcript these are (".join(', ',@VEGA_NAME).")\n";
+    }	
+    if($vega_count){
+      foreach my $name (@VEGA_NAME){
+	$max_xref_id++;
+	$max_object_xref_id++;
+	print XREF  $max_xref_id . "\t"
+	  . $vega_gene_id. "\t" . $name . "\t".$name."\t" . "0" . "\t". "\n" ;
+	print OBJECT_XREF "$max_object_xref_id\t".$gene->dbID."\tGene\t" .$max_xref_id . "\t\\N\n";
+      }
+
+      my $name = $VEGA_NAME[0];
+      my $tran_name_ext = 201;
+      foreach my $tran (@no_vega){
+	$max_xref_id++;
+	$max_object_xref_id++;
+	print XREF  $max_xref_id . "\t"
+	  . $vega_transcript_like_id. "\t" . $name."-".$tran_name_ext . "\t".$name."-".$tran_name_ext."\t" . "0" . "\t". "\n" ;
+	print OBJECT_XREF "$max_object_xref_id\t".$tran."\tTranscript\t" .$max_xref_id . "\t\\N\n";
+	$tran_name_ext++;
+      }
     }
     
- 
+    ####################################################################################
+    # if no vega_transcript but hgnc
+    # set vega_gene_like to hgnc
+    # loop through both arrays and set vega_transcript_like to hgnc-101 etc
+    ####################################################################################
+    elsif(scalar(@HGNC)){
+      foreach my $name (@HGNC){
+	$max_xref_id++;
+	$max_object_xref_id++;
+	print XREF  $max_xref_id . "\t"
+	  . $vega_gene_like_id. "\t" . $name . "\t".$name."\t" . "0" . "\t". "\n" ;
+	print OBJECT_XREF "$max_object_xref_id\t".$gene->dbID."\tGene\t" .$max_xref_id . "\t\\N\n";
+      }
 
-    if ($xref_type =~/Transcript/){
-      print HGNC_TRAN $object_xref_id++,"\t",
-	$ensembl_id,
-	  "\tTranscript\t",
-	    $acc_2_xref_id{$acc},"\\N\n";
-    }
-    elsif($xref_type=~/Translation/){
-      if(defined( $translation_id_2_transcript_id{$ensembl_id})){
-	print HGNC_TRAN $object_xref_id++,"\t",
-	  $translation_id_2_transcript_id{$ensembl_id},
-	    "\tTranscript\t",
-	      $acc_2_xref_id{$acc},"\\N\n";
+      my $name = $HGNC[0];
+      my $tran_name_ext = 201;
+      foreach my $tran (@no_vega){
+	$max_xref_id++;
+	$max_object_xref_id++;
+	print XREF  $max_xref_id . "\t"
+	  . $vega_transcript_like_id. "\t" . $name."-".$tran_name_ext . "\t".$name."-".$tran_name_ext."\t" . "0" . "\t". "\n" ;
+	print OBJECT_XREF "$max_object_xref_id\t".$tran."\tTranscript\t" .$max_xref_id . "\t\\N\n";
+	$tran_name_ext++;
       }
-      else{
-	print STDERR "Could not find transcript id for translation_id $ensembl_id\n";
-      }
-    }
-    elsif($xref_type=~/Gene/){
-      if(defined( $gene_id_2_transcript_id{$ensembl_id})){
-        print HGNC_TRAN $object_xref_id++,"\t",
-	  $gene_id_2_transcript_id{$ensembl_id},
-	    "\tTranscript\t",
-	      $acc_2_xref_id{$acc},"\\N\n";
-      }
-      else{
-	print STDERR "Could not find transcript id for gene_id $ensembl_id\n";
-      }
-    }
+    }	
+    
+    
+    ####################################################################################
+    # if no vega_transcript and no hgnc use clone name
+    # set vega_gene_like to clone name
+    # loop through both arrays and set vega_transcript_like to clone_name-101 etc
+    ####################################################################################
     else{
-      print STDERR "ensembl type NOT Gene,Transcript or translation but $xref_type\n";
-    }
-  }
-
-
-
-
-
-  close (HGNC_TRAN);
-
-#
-# import data
-#
-  $sth = $self->core->dbc->prepare("LOAD DATA LOCAL INFILE \'$file\' IGNORE INTO TABLE object_xref");
-  print "Uploading data in $file to object_xref\n";
-  $sth->execute() || die "error loading file $file\n";
-
-          
-#
-# Some dependent accs match to more than one transcript which may not necessarily be in the same
-# gene. In this case we get genes with object_xref to XXXXs but no Transcripts for that gene due to the
-# moving to the largest transcript idea.
-# 
-
-# 1) get  all the object_xrefs linking genes to hugo.
-# 2)  for each of these genes see if the transcripts have the same hugo
-# 3) if not delete the object_xref for the gene one.
-
-my $get_all_object_xref_genes =(<<KSQL);
-   select ox.ensembl_id, ox.object_xref_id, ox.xref_id
-     from object_xref ox, xref x, external_db e
-       where ox.xref_id = x.xref_id and 
-             x.external_db_id = e.external_db_id and
-             e.db_name like '$dbname' and
-             ox.ensembl_object_type = 'Gene'
-KSQL
-
-my $get_all_object_xref_transcripts_for_a_gene =(<<LSQL);
-   select ox.xref_id
-     from object_xref ox, xref x, external_db e, transcript t
-       where ox.xref_id = x.xref_id and 
-             x.external_db_id = e.external_db_id and
-             t.transcript_id = ox.ensembl_id and
-             e.db_name like '$dbname' and
-             ox.ensembl_object_type = 'Transcript' and
-             t.gene_id = ? 
-LSQL
-
-
-
-
-  my $gene_id;
-  ( $object_xref_id, $xref_id ) = ( undef, undef );
-  $sth = $self->core->dbc->prepare($get_all_object_xref_genes);
-  $sth->execute();
-
-  $sth->bind_columns(\$gene_id, \$object_xref_id, \$xref_id);
-
-  my %gene_id_2_object_xref;
-#  my %gene_id_2_xref_id;
-  while($sth->fetch){
-    $gene_id_2_object_xref{$gene_id."|".$xref_id} = $object_xref_id;
-#    $gene_id_2_xref_id{$gene_id}     = $xref_id;
-     
-  }
-  $sth->finish;
-
-
-  $file = $self->core->dir()."/hgnc_transcript_data_cleanup.sql";
-
-  open(HGNC_TRAN,">$file") || die "Could not open $file";
-
-  foreach my $key (keys %gene_id_2_object_xref){
-    my ($gene_id, $gene_xref_id)  = split(/\|/,$key) ;  
-    $sth = $self->core->dbc->prepare($get_all_object_xref_transcripts_for_a_gene);
-    $sth->execute($gene_id);
-    $sth->bind_columns(\$xref_id);
-
-    my $found = 0;
-    while($sth->fetch){
-      if($xref_id == $gene_xref_id){
-         $found = 1;
-      } 
-    } 
-    if(!$found){
-      if(defined($gene_id_2_transcript_id{$gene_id})){
-	print HGNC_TRAN $object_xref_id++,"\t",
-	  $gene_id_2_transcript_id{$gene_id},
-	  "\tTranscript\t",
-	  $gene_xref_id,"\\N\n";
+      if(defined($CLONE_NAME)){
+	$max_xref_id++;
+	$max_object_xref_id++;
+	print XREF  $max_xref_id . "\t"
+	  . $vega_gene_id. "\t" . $CLONE_NAME . "\t".$CLONE_NAME."\t" . "0" . "\t". "\n" ;
+	print OBJECT_XREF "$max_object_xref_id\t".$gene->dbID."\tGene\t" .$max_xref_id . "\t\\N\n";
+	
+	my $tran_name_ext = 201;
+	foreach my $tran (@no_vega){
+	  $max_xref_id++;
+	  $max_object_xref_id++;
+	  print XREF  $max_xref_id . "\t"
+	    . $vega_transcript_like_id. "\t" . $CLONE_NAME."-".$tran_name_ext . "\t".$CLONE_NAME."-".$tran_name_ext."\t" . "0" . "\t". "\n" ;
+	  print OBJECT_XREF "$max_object_xref_id\t".$tran."\tTranscript\t" .$max_xref_id . "\t\\N\n";
+	  $tran_name_ext++;
+	}
+	
       }
       else{
-	print STDERR "Could not find transcript id for gene id $gene_id\n";
-        die "horribly";
+	#get the clone name
+	my $new_gene = $gene->transform('clone');
+	my $new_clone_name = undef;
+	if(defined($new_gene)){
+	  $new_clone_name = $new_gene->slice->seq_region_name;
+	}
+	else{
+	  # on more than one clone?? try  
+	  my $slice = $gene->slice->sub_Slice($gene->start,$gene->end,$gene->strand);
+	  my $clone_projection = $slice->project('clone');
+	  foreach my $seg (@$clone_projection) {
+	    my $clone = $seg->to_Slice();
+	    $new_clone_name = $clone->seq_region_name;
+	  }
+	  if(!defined($new_clone_name)){
+	    print "PROJECT failed for ".$gene->stable_id."\n";
+	    next;
+	  }
+	}
+	# store the data
+	$max_xref_id++;
+	$max_object_xref_id++;
+	print XREF  $max_xref_id . "\t"
+	  . $vega_gene_like_id. "\t" . $new_clone_name . "\t".$new_clone_name."\t" . "0" . "\t". "\n" ;
+	print OBJECT_XREF "$max_object_xref_id\t".$gene->dbID."\tGene\t" .$max_xref_id . "\t\\N\n";
+	
+	my $tran_name_ext = 201;
+	foreach my $tran (@no_vega){
+	  $max_xref_id++;
+	  $max_object_xref_id++;
+	  print XREF  $max_xref_id . "\t"
+	    . $vega_transcript_like_id. "\t" . $new_clone_name."-".$tran_name_ext . "\t".$new_clone_name."-".$tran_name_ext."\t" . "0" . "\t". "\n" ;
+	  print OBJECT_XREF "$max_object_xref_id\t".$tran."\tTranscript\t" .$max_xref_id . "\t\\N\n";
+	  $tran_name_ext++;
+	}
+	
+
+	
       }
+
+
     }
+    
+    if($vega_count){
+      $total_gene_vega++;
+    }
+    $total_gene++;
+    #  print "Finished Gene ".$gene->stable_id."\t$HGNC\t $vega_count\n"
   }
 
+  close XREF;
+  close OBJECT_XREF;
 
-  close (HGNC_TRAN);
+
 
 #
 # import data
 #
-
-  $sth = $self->core->dbc->prepare("LOAD DATA LOCAL INFILE \'$file\' IGNORE INTO TABLE object_xref");
-  print "Uploading data in $file to object_xref\n";
+  $sth = $self->core->dbc->prepare("LOAD DATA LOCAL INFILE \'$xref_file\' IGNORE INTO TABLE xref");
+  print "Uploading data in $file to xref\n";
   $sth->execute() || die "error loading file $file\n";
 
-
-
+  $sth = $self->core->dbc->prepare("LOAD DATA LOCAL INFILE \'$object_xref_file\' IGNORE INTO TABLE object_xref");
+  print "Uploading data in $file to object_xref\n";
+  $sth->execute() || die "error loading file $file\n";
+  
 }
+
+
 
 1;
