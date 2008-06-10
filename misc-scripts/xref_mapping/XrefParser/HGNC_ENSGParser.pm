@@ -43,24 +43,29 @@ sub run {
   $sth->bind_columns(\$hgnc_source_id, \$desc);
   my @arr;
   while($sth->fetch()){
-    if(lc($desc) eq "refseq" or lc($desc) eq "uniprot" or lc($desc) eq "entrezgene"){
-      push @arr, $hgnc_source_id;
-    }
+    push @arr, $hgnc_source_id;
   }
   $sth->finish;
   
   $sql = "select accession, label, version,  description from xref where source_id in (".join(", ",@arr).")";
+  print "$sql\n";;
   $sth = $dbi->prepare($sql);
   $sth->execute();
   my ($acc, $lab, $ver);
+  my $hgnc_loaded_count = 0;
   $sth->bind_columns(\$acc, \$lab, \$ver, \$desc);
   while (my @row = $sth->fetchrow_array()) {
     $label{$acc} = $lab;
     $version{$acc} = $ver;
     $description{$acc} = $desc;
+    $hgnc_loaded_count++;
   }
   $sth->finish;
+  if($hgnc_loaded_count == 0){
+    die "No point continuing no hgncs there\n";
+  }
 
+  print "$hgnc_loaded_count HGNC's to be used as labels\n";
 
   my $ignore_count = 0;
   my $ignore_examples ="";
