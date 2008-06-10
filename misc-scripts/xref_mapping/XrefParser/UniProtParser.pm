@@ -161,9 +161,12 @@ sub create_xrefs {
 
   my %dependent_sources = $self->get_dependent_xref_sources(); # name-id hash
 
+
   if(defined($dependent_sources{'HGNC'})){
     $dependent_sources{'HGNC'} = XrefParser::BaseParser->get_source_id_for_source_name("HGNC","uniprot");
   }	
+
+
   # Get predicted equivalents of various sources used here
     my $sp_pred_source_id =
       $self->get_source_id_for_source_name(
@@ -197,6 +200,8 @@ sub create_xrefs {
   my %species2tax = $self->species_id2taxonomy();
   my @tax_ids = @{$species2tax{$species_id}};
   my %taxonomy2species_id = map{ $_=>$species_id } @tax_ids;
+
+  my %dependent_xrefs;
 
   while ( $_ = $uniprot_io->getline() ) {
 
@@ -362,6 +367,7 @@ sub create_xrefs {
 	      $dep{SOURCE_NAME} = "MIM_MORBID";
 	      $dep{SOURCE_ID} = $dependent_sources{"MIM_MORBID"};
 	      if(defined($morbidmap{$acc})){
+		$dependent_xrefs{ $dep{SOURCE_NAME} }++; # get count of depenent xrefs.
 		push @{$xref->{DEPENDENT_XREFS}}, \%dep; # array of hashrefs
 	      }
 	      my %dep2;
@@ -370,6 +376,7 @@ sub create_xrefs {
 	      $dep2{SOURCE_NAME} = "MIM_GENE";
 	      $dep2{SOURCE_ID} = $dependent_sources{"MIM_GENE"};	      
 	      if(defined($genemap{$acc})){
+		$dependent_xrefs{ $dep2{SOURCE_NAME} }++; # get count of depenent xrefs.
 		push @{$xref->{DEPENDENT_XREFS}}, \%dep2; # array of hashrefs
 	      }
 	      next;
@@ -384,6 +391,7 @@ sub create_xrefs {
 	  };
 
 	  $dep{ACCESSION} = $acc;
+	  $dependent_xrefs{ $dep{SOURCE_NAME} }++; # get count of depenent xrefs.
 	  push @{$xref->{DEPENDENT_XREFS}}, \%dep; # array of hashrefs
 
 	  if($dep =~ /EMBL/){
@@ -401,6 +409,7 @@ sub create_xrefs {
 	      my ($prot_acc, $prot_version) = $protein_id =~ /([^.]+)\.([^.]+)/;
 	      $dep2{ACCESSION} = $prot_acc;
 	      $dep2{VERSION} = $prot_acc;
+	      $dependent_xrefs{ $dep2{SOURCE_NAME} }++; # get count of dependent xrefs.
 	      push @{$xref->{DEPENDENT_XREFS}}, \%dep2; # array of hashrefs
 	    }
 	  }
@@ -416,6 +425,11 @@ sub create_xrefs {
 
   print "Read $num_sp SwissProt xrefs and $num_sptr SPTrEMBL xrefs from $file\n";
   print "Found $num_sp_pred predicted SwissProt xrefs and $num_sptr_pred predicted SPTrEMBL xrefs\n" if ($num_sp_pred > 0 || $num_sptr_pred > 0);
+
+  print "Added the following dependent xrefs:-\n";
+  foreach my $key (keys %dependent_xrefs){
+    print $key."\t".$dependent_xrefs{$key}."\n";
+  }
 
   return \@xrefs;
 
