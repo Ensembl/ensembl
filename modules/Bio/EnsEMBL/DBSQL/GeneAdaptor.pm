@@ -1502,22 +1502,23 @@ sub _objs_from_sth {
 
 =cut
 
-sub cache_gene_seq_mappings{
+sub cache_gene_seq_mappings {
   my ($self) = @_;
 
   # get the sequence level to map too
 
-  my $sql = qq(
-    SELECT	name 
-    FROM	coord_system 
-    WHERE attrib like "%sequence_level%"
-  );
+  my $sql = sprintf( 'SELECT name '
+                       . 'FROM coord_system '
+                       . 'WHERE attrib like "%%sequence_level%%"'
+                       . 'AND species_id = %d',
+                     $self->species_id() );
+
 
   my $sth = $self->prepare($sql);
   $sth->execute();
-  
+
   my $sequence_level = $sth->fetchrow_array();
-  
+
   $sth->finish();
 
   my $csa = $self->db->get_CoordSystemAdaptor();
@@ -1527,14 +1528,15 @@ sub cache_gene_seq_mappings{
 
   # get level to map to two
 
-  my $mcc =  $self->db->get_MetaCoordContainerAdaptor();
+  my $mcc   = $self->db->get_MetaCoordContainerAdaptor();
   my $csnew = $mcc->fetch_all_CoordSystems_by_feature_type('gene');
 
   foreach my $cs2 (@$csnew) {
-    my $am = $ama->fetch_by_CoordSystems($cs1, $cs2);
-    $am->register_all();    
+    my $am = $ama->fetch_by_CoordSystems( $cs1, $cs2 );
+    $am->register_all();
   }
-}
+
+} ## end sub cache_gene_seq_mappings
 
 
 =head2 fetch_all_by_exon_supporting_evidence
