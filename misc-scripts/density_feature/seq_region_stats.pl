@@ -37,6 +37,10 @@ my %attrib_codes = ( 'miRNA'                => 'miRNA',
 		     'Mt_tRNA'              => 'MTtRNA',
 		     'Mt_rRNA'              => 'MTrRNA',
                      'ncRNA'                => 'ncRNA',
+                     #'havana_pseudogene'    => 'pseudo', ? unsure of correct code
+                     #'processed_pseudogene' => 'pseudo', ? unsure of correct code
+                     #'unprocessed_pseudogene' => 'pseudo', ? unsure of correct code
+                     #'Pseudogene'           => 'pseudo', ? unsure of correct code
 		     'scRNA_pseudogene'     => 'RNA_pseu',
 		     'tRNA_pseudogene'      => 'RNA_pseu',
 		     'rRNA_pseudogene'      => 'RNA_pseu',
@@ -45,10 +49,11 @@ my %attrib_codes = ( 'miRNA'                => 'miRNA',
 		     'misc_RNA_pseudogene'  => 'RNA_pseu',
 		     'miRNA_pseudogene'     => 'RNA_pseu',
 		     'Mt_tRNA_pseudogene'   => 'RNA_pseu',
-		     'V_segment'            => 'IgSeg',
-		     'J_segment'            => 'IgSeg',
-		     'D_segment'            => 'IgSeg',
-		     'C_segment'            => 'IgSeg',
+		     'IG_V_gene'            => 'IgSeg',
+		     'IG_J_gene'            => 'IgSeg',
+		     'IG_D_gene'            => 'IgSeg',
+		     'IG_C_gene'            => 'IgSeg',
+                     #'IG_pseudogene'        => 'IgSeg',
 		     'retrotransposed'      => 'rettran');
 
 
