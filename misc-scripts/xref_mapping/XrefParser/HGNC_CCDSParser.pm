@@ -32,8 +32,22 @@ sub run {
   my %description;
 
   my $dbi = $self->dbi();  
-  my $sql = "select accession, label, version,  description from xref where source_id in (1091, 1092, 1094)";
+
+  my $sql = 'select source_id, priority_description from source where name like "HGNC"';
   my $sth = $dbi->prepare($sql);
+  
+  $sth->execute();
+  my ($hgnc_source_id, $desc);
+  $sth->bind_columns(\$hgnc_source_id, \$desc);
+  my @arr;
+  while($sth->fetch()){
+    push @arr, $hgnc_source_id;
+  }
+  $sth->finish;
+  
+  $sql = "select accession, label, version,  description from xref where source_id in (".join(", ",@arr).")";
+
+  $sth = $dbi->prepare($sql);
   $sth->execute();
   my ($acc, $lab, $ver, $desc);
   $sth->bind_columns(\$acc, \$lab, \$ver, \$desc);
