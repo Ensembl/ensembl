@@ -2883,7 +2883,7 @@ GSQL
 	    }
 	    push @transcript_xrefs, $xref_id;
 	    if(!defined($qid) || !defined($tid)){
-	      print "DEPENDENT $xref_id\n" if($ex_db_id != 1100); #HGNC has added one with no %ids.
+#	      print "DEPENDENT $xref_id\n" if($ex_db_id != 1100); #HGNC has added one with no %ids.
 	      $percent_id{$xref_id} = 0;
 	    }
 	    else{
@@ -2980,6 +2980,10 @@ sub transcript_display_xref_sources {
   my @list = qw(RFAM
 		miRBase 
 		IMGT/GENE_DB
+		Vega_gene
+		Vega_gene_like
+		Vega_transcript
+		Vega_transcript_like
 		HGNC
 		SGD
 		MGI
@@ -3636,6 +3640,8 @@ sub build_gene_transcript_status{
   my $unset_file_t = $dir .'/%s_unset_status.sql';
   my $set_file_t   = $dir .'/%s_set_status.sql';
   
+
+
   foreach my $type ( 'gene','transcript' ){
     # Queries needed to unset status
     my $unset_file = sprintf( $unset_file_t, $type );
@@ -3643,17 +3649,67 @@ sub build_gene_transcript_status{
     print UNSET qq(UPDATE $type SET status='NOVEL';\n);
     close( UNSET );
     push @files, $unset_file;
-
-    # Queries needed to set status
-    my $set_file   = sprintf( $set_file_t, $type );
-    open( SET, ">$set_file" ) or die( "Cannot open $set_file: $!" );
-    print SET qq(UPDATE $type f, xref x, external_db e SET f.status = 'KNOWN'
- WHERE f.display_xref_id = x.xref_id
-   AND x.external_db_id = e.external_db_id
-   AND e.status IN ('KNOWN', 'KNOWNXREF');\n);
-    push @files, $set_file;
+    
   }
   
+
+  
+
+  my $set_file   = sprintf( $set_file_t, "gene" );
+  open( GENE, ">$set_file" ) or die( "Cannot open $set_file: $!" );
+  push @files, $set_file;
+
+  $set_file   = sprintf( $set_file_t, "transcript" );
+  open( TRAN, ">$set_file" ) or die( "Cannot open $set_file: $!" );
+  push @files, $set_file;
+
+
+  #create a hash known which ONLY has databases names of those that are KNOWN and KNOWNXREF
+  my %known;
+  my $sth = $self->core->dbc->prepare("select db_name from external_db where status in ('KNOWNXREF','KNOWN')");
+  $sth->execute();
+  my ($name);
+  $sth->bind_columns(\$name);
+  while($sth->fetch){
+    $known{$name} = 1;
+  }
+  $sth->finish;
+  
+  
+  # loop throught the gene and all transcript until you find KNOWN/KNOWNXREF as a status
+  my $ensembl = $self->core;
+  my $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(-dbconn => $ensembl->dbc);
+  my $gene_adaptor = $db->get_GeneAdaptor();
+
+  my @genes = @{$gene_adaptor->fetch_all()};
+
+  while (my $gene = shift @genes){
+    my $gene_found = 0;
+    my @dbentries = @{$gene->get_all_DBEntries()};
+    foreach my $dbe (@dbentries){
+      if(defined($known{$dbe->dbname})){
+	$gene_found =1;
+      }
+    }
+    foreach my $tr (@{$gene->get_all_Transcripts}){
+      my $tran_found = 0;
+      foreach my $dbe (@{$tr->get_all_DBEntries}){
+	if(defined($known{$dbe->dbname})){
+	  $tran_found = 1;
+	  $gene_found = 1;
+	}
+      }
+      if($tran_found){
+	print TRAN 'UPDATE transcript t set t.status = "KNOWN" where t.transcript_id = '.$tr->dbID.";\n";      
+      }
+    }
+    if($gene_found){
+      print GENE 'UPDATE gene g set g.status = "KNOWN" where g.gene_id = '.$gene->dbID.";\n";     
+    }
+  }
+  close GENE;
+  close TRAN;
+
   return @files;
 }
 
@@ -3796,13 +3852,13 @@ sub fix_mart_prob{
   print "Therefore moving all associations to the ".$to."s\n";
 
 
-  $ensembl_dbc->do("CREATE TABLE object_xref2 like object_xref");
+#  $ensembl_dbc->do("CREATE TABLE object_xref2 like object_xref");
 
-  $ensembl_dbc->do("ALTER TABLE object_xref DROP INDEX ensembl_object_type");
+#  $ensembl_dbc->do("ALTER TABLE object_xref DROP INDEX ensembl_object_type");
 
 # Move translations onto the transcripts
   my $sql =(<<EOF);
-  UPDATE object_xref, translation, xref
+  UPDATE IGNORE object_xref, translation, xref
      SET object_xref.ensembl_object_type = 'Transcript',
          object_xref.ensembl_id = translation.transcript_id 
      WHERE object_xref.ensembl_object_type = 'Translation' AND
@@ -3811,10 +3867,21 @@ sub fix_mart_prob{
            xref.external_db_id = $db_id;
 EOF
   $ensembl_dbc->do($sql);
+
+
+  $sql =(<<EOF2);
+  DELETE object_xref
+    FROM object_xref, xref
+    WHERE object_xref.ensembl_object_type = 'Translation' AND
+           xref.xref_id = object_xref.xref_id AND
+	     xref.external_db_id = $db_id;
+EOF2
+    
+    $ensembl_dbc->do($sql);
   
   if($to eq "Gene"){ #move transcripts to the gene
     my $sql =(<<GENE);
-  UPDATE object_xref, transcript, xref
+    UPDATE IGNORE object_xref, transcript, xref
      SET object_xref.ensembl_object_type = 'Gene',
          object_xref.ensembl_id = transcript.gene_id 
      WHERE object_xref.ensembl_object_type = 'Transcript' AND
@@ -3822,16 +3889,27 @@ EOF
            xref.xref_id = object_xref.xref_id AND
            xref.external_db_id = $db_id;
 GENE
-    $ensembl_dbc->do($sql);
+
+    $sql =(<<GEN2);
+    DELETE object_xref
+      FROM object_xref, xref
+	WHERE object_xref.ensembl_object_type = 'Transcript' AND
+	    xref.xref_id = object_xref.xref_id AND
+	      xref.external_db_id = $db_id;
+GEN2
+      $ensembl_dbc->do($sql);
+
+
+
     
   }
   
   
-  $ensembl_dbc->do("INSERT IGNORE INTO object_xref2 SELECT * FROM object_xref");
+#  $ensembl_dbc->do("INSERT IGNORE INTO object_xref2 SELECT * FROM object_xref");
   
-  $ensembl_dbc->do("DROP TABLE object_xref");
+#  $ensembl_dbc->do("DROP TABLE object_xref");
 
-  $ensembl_dbc->do("ALTER TABLE object_xref2 RENAME object_xref");
+#  $ensembl_dbc->do("ALTER TABLE object_xref2 RENAME object_xref");
 
 
 }
