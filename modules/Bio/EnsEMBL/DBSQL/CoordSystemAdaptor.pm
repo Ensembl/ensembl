@@ -144,11 +144,11 @@ sub new {
   $self->{'_is_default_version'} = {};
 
   my $sth = $self->prepare(
-                sprintf(
                   'SELECT coord_system_id, name, rank, version, attrib '
                     . 'FROM coord_system '
-                    . 'WHERE species_id = %d',
-                  $self->species_id() ) );
+                    . 'WHERE species_id = ?' );
+
+  $sth->bind_param( 1, $self->species_id(), SQL_INTEGER );
   $sth->execute();
 
   my ( $dbID, $name, $rank, $version, $attrib );
