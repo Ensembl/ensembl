@@ -157,7 +157,6 @@ sub get_databases {
     my $latest_release = 0;
     my ( $db_species, $db_release, $db_type );
     my $compara_hash;
-
     for my $dbname (@dbnames) {
         if ( ( $db_species, $db_type, $db_release ) =
             $dbname =~ /^([a-z]+_[a-z]+)_([a-z]+)_(\d+)_\w+$/ )
@@ -549,14 +548,14 @@ sub QTLXML {
     <field name="pos">$xml_data->{pos}</field>
     <field name="featuretype">QTL</field>
   </additional_fields>
-  <cross_reference> };
+  <cross_references> };
 
     foreach ( keys( %{ $xml_data->{cross_ref} } ) ) {
         $xml .=
           qq{\n    <ref dbname="$_" dbkey="$xml_data->{cross_ref}->{$_}"/>};
     }
 
-    $xml .= qq{\n  </cross_reference>
+    $xml .= qq{\n  </cross_references>
 </entry>};
     $counter->();
     return $xml;
@@ -905,7 +904,7 @@ sub familyLineXML {
         (
             map {
                 qq{
-    <ref dbname="$_->[1]">$_->[0]</ref>}
+    <ref dbname="$_->[1]" dbkey="$_->[0]"/>}
               } @{ $xml_data->{IDS} }
         )
       )
@@ -915,7 +914,7 @@ sub familyLineXML {
   <additional_fields>
      <field name="species">$xml_data->{species}</field>
     <field name="featuretype">Family</field>
-  <additional_fields>
+  </additional_fields>
 </entry>};
 
     return $xml;
@@ -1129,19 +1128,19 @@ sub seqLineXML {
         (
             map {
                 qq{
-      <ref dbname="EMBL">$_</ref>}
+      <ref dbname="EMBL" dbkey="$_"/>}
               } @$val
         )
       )
 
-      . qq{
+      . qq{</cross_references>
     <additional_fields>
       <field name="species">$species</field>
       <field name="type">$type</field>
       <field name="chromosome">$chr</field>
       <field name="length">$len</field>
     <field name="featuretype">Genomic</field>
-   <additional_fields>
+   </additional_fields>
  </entry>};
 
     return $xml;
@@ -1385,7 +1384,7 @@ sub geneLineXML {
         map {
             $xml .=
               qq{      
-      <ref dbname="$ext_db">$_</ref>}
+      <ref dbname="$ext_db" dbkey="$_"/>}
           }
           keys %{ $external_identifiers->{$ext_db} }
 
@@ -1431,7 +1430,7 @@ sub geneLineXML {
       )
 
       . qq{
-   <additional_fields>
+   </additional_fields>
  </entry>};
     $counter->();
     return $xml;
@@ -1537,8 +1536,8 @@ sub unmappedFeatureXML {
    <name>$xml_data->[1] $xml_data->[2]</name>
     <description>$xml_data->[3]; $xml_data->[4]</description>
     <additional_fields>
-      <field name="species">$dbspecies</Field>
-      <field name="featuretype">UnmappedFeature</Field>
+      <field name="species">$dbspecies</field>
+      <field name="featuretype">UnmappedFeature</field>
     </additional_fields>
  </entry>};
 
@@ -1658,8 +1657,8 @@ sub unmappedGeneXML {
    <name>$id</name>
     <description>$description</description>
     <additional_fields>
-      <field name="species">$dbspecies</Field>
-      <field name="featuretype"Unmapped $type</field>
+      <field name="species">$dbspecies</field>
+      <field name="featuretype>"Unmapped $type</field>
     </additional_fields>
  </entry>};
 
@@ -1668,6 +1667,5 @@ sub unmappedGeneXML {
 sub make_counter {
     my $start = shift;
     return sub { $start++ }
-
 }
 
