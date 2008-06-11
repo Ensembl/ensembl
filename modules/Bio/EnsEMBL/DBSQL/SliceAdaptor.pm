@@ -222,25 +222,31 @@ sub fetch_by_region {
   my @bind_vals;
   my $key;
 
-  if ($cs) {
- 
+  if ( defined($cs) ) {
+    $sql =
+        "SELECT sr.name, sr.seq_region_id, sr.length, "
+      . $cs->dbID()
+      . " FROM seq_region sr ";
+
+    $constraint = "sr.coord_system_id = ?";
     push @bind_vals, $cs->dbID();
-    $sql = "SELECT sr.name, sr.seq_region_id, sr.length, " .
-           $cs->dbID() ." FROM seq_region sr ";
 
-	      $constraint = "sr.coord_system_id = ?";
-
-    $key = "$seq_region_name:".$cs->dbID();
+    $key = "$seq_region_name:" . $cs->dbID();
   } else {
-    $sql = "SELECT sr.name, sr.seq_region_id, sr.length, " .
-           "       cs.coord_system_id " .
-           "FROM   seq_region sr, coord_system cs ";
+    $sql =
+        "SELECT sr.name, sr.seq_region_id, sr.length, "
+      . "       cs.coord_system_id "
+      . "FROM   seq_region sr, coord_system cs ";
 
-    $constraint = "sr.coord_system_id = cs.coord_system_id ";
-    if($version) {
+    $constraint = "sr.coord_system_id = cs.coord_system_id "
+      . "AND cs.species_id = ?";
+    push( @bind_vals, $self->species_id() );
+
+    if ($version) {
       $constraint .= "AND cs.version = ? ";
       push @bind_vals, $version;
     }
+
     $constraint .= "ORDER BY cs.rank ASC";
   }
 
@@ -449,11 +455,15 @@ sub fetch_by_seq_region_id {
     ($name, $cs_id, $length ) = ( $arr->[1], $arr->[2], $arr->[3] );
     $cs = $self->db->get_CoordSystemAdaptor->fetch_by_dbID($cs_id);
   } else {
-    my $sth = $self->prepare("SELECT name, length, coord_system_id " .
-                             "FROM seq_region " .
-                             "WHERE seq_region_id = ?");
+    my $sth =
+      $self->prepare(   "SELECT sr.name, sr.length, sr.coord_system_id "
+                      . "FROM seq_region sr, coord_system cs "
+                      . "WHERE sr.seq_region_id = ? "
+                      . "AND sr.coord_system_id = cs.coord_system_id "
+                      . "AND cs.species_id = ?" );
 
-    $sth->bind_param(1,$seq_region_id,SQL_INTEGER);
+    $sth->bind_param( 1, $seq_region_id,      SQL_INTEGER );
+    $sth->bind_param( 2, $self->species_id(), SQL_INTEGER );
     $sth->execute();
 
     return undef if($sth->rows() == 0);
@@ -637,23 +647,30 @@ sub fetch_all {
   #
   # Retrieve the seq_regions from the database
   #
-  if($orig_cs->is_top_level()) {
-   $sth =
-       $self->prepare("SELECT sr.seq_region_id, sr.name, sr.length, " .
-                      "       sr.coord_system_id " .
-                      "FROM seq_region sr, " .
-                      "     seq_region_attrib sra, attrib_type at " .
-                      "WHERE at.code='toplevel' " .
-                      "AND   at.attrib_type_id=sra.attrib_type_id " .
-                      "AND   sra.seq_region_id=sr.seq_region_id");
+  if ( $orig_cs->is_top_level() ) {
+    $sth =
+      $self->prepare(
+              'SELECT sr.seq_region_id, sr.name, '
+                        . 'sr.length, sr.coord_system_id '
+                        . 'FROM seq_region sr, seq_region_attrib sra, '
+                        . 'attrib_type at, coord_system cs '
+                        . 'WHERE at.code="toplevel" '
+                        . 'AND at.attrib_type_id=sra.attrib_type_id '
+                        . 'AND sra.seq_region_id=sr.seq_region_id '
+                        . 'AND sr.coord_system_id = cs.coord_system_id '
+                        . 'AND cs.species_id = ?');
+
+      $sth->bind_param( 1, $self->species_id(), SQL_INTEGER );
+
     $sth->execute();
   } else {
-     $sth =
-       $self->prepare('SELECT seq_region_id, name, length, coord_system_id ' .
-                      'FROM   seq_region ' .
-                      'WHERE  coord_system_id =?');
-     $sth->bind_param(1,$orig_cs->dbID,SQL_INTEGER);
-     $sth->execute();
+    $sth = $self->prepare(
+                  'SELECT seq_region_id, name, length, coord_system_id '
+                    . 'FROM   seq_region sr, coord_system cs '
+                    . 'WHERE  coord_system_id = ?' );
+
+    $sth->bind_param( 1, $orig_cs->dbID, SQL_INTEGER );
+    $sth->execute();
   }
 
   my ($seq_region_id, $name, $length, $cs_id);
@@ -729,20 +746,27 @@ sub fetch_all {
 
 =cut
 
-sub is_toplevel{
+sub is_toplevel {
   my $self = shift;
-  my $id = shift;
+  my $id   = shift;
 
-  my $sth = $self->prepare("SELECT at.code from seq_region_attrib sra, attrib_type at WHERE sra.seq_region_id = $id AND  at.attrib_type_id = sra.attrib_type_id AND at.code = 'toplevel'");
-  
+  my $sth = $self->prepare(
+            "SELECT at.code from seq_region_attrib sra, attrib_type at "
+              . "WHERE sra.seq_region_id = ?"
+              . "AND at.attrib_type_id = sra.attrib_type_id "
+              . "AND at.code = 'toplevel'" );
+
+  $sth->bin_param( 1, $id, SQL_INTEGER );
   $sth->execute();
-  
-  my $code = undef;
-  $sth->bind_columns(\$code);
-  while($sth->fetch){
+
+  my $code;
+  $sth->bind_columns( \$code );
+
+  while ( $sth->fetch ) {
     $sth->finish;
     return 1;
   }
+
   $sth->finish;
   return 0;
 }
@@ -1539,9 +1563,11 @@ sub cache_toplevel_seq_mappings {
   SELECT    name
   FROM  coord_system
   WHERE attrib like "%sequence_level%"
+  AND   species_id = ?
 SSQL
 
   my $sth = $self->prepare($sql);
+  $sth->bin_param( 1, $self->species_id(), SQL_INTEGER );
   $sth->execute();
 
   my $sequence_level = $sth->fetchrow_array();
@@ -1565,9 +1591,11 @@ SSQL
   AND   sra.attrib_type_id = at.attrib_type_id
   AND   at.code = "toplevel"
   AND   cs.coord_system_id = sr.coord_system_id;
+  AND   cs.species_id = ?
 LSQL
 
   $sth = $self->prepare($sql);
+  $sth->bind_param( 1, $self->species_id(), SQL_INTEGER );
   $sth->execute();
 
   while ( my $csn = $sth->fetchrow_array() ) {
@@ -1676,12 +1704,17 @@ sub fetch_by_clone_accession{
 
   #this unfortunately needs a version on the end to work
   if(! ($name =~ /\./)) {
-    my $sth = $self->prepare("SELECT sr.name " .
-                             "FROM   seq_region sr, coord_system cs " .
-                             "WHERE  cs.name = 'clone' " .
-                             "AND    cs.coord_system_id = sr.coord_system_id ".
-                             "AND    sr.name LIKE '$name.%'");
+    my $sth =
+      $self->prepare(  "SELECT sr.name "
+                     . "FROM   seq_region sr, coord_system cs "
+                     . "WHERE  cs.name = 'clone' "
+                     . "AND    cs.coord_system_id = sr.coord_system_id "
+                     . "AND    sr.name LIKE '$name.%'"
+                     . "AND    cs.species_id = ?" );
+
+    $sth->bind_param( 1, $self->species_id(), SQL_INTEGER );
     $sth->execute();
+
     if(!$sth->rows()) {
       $sth->finish();
       throw("Clone $name not found in database");
