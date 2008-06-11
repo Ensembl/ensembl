@@ -40,6 +40,8 @@ ALTER TABLE coord_system DROP INDEX name;
 -- Add new indexes to coord_system
 ALTER TABLE coord_system ADD UNIQUE INDEX rank_idx (rank, species_id);
 ALTER TABLE coord_system ADD UNIQUE INDEX name_idx (name, version, species_id);
+ALTER TABLE coord_system
+  ADD UNIQUE INDEX species_cs_idx (species_id, coord_system_id);
 
 -- Move data from the meta table into the species_meta table
 INSERT INTO species_meta (species_id, meta_key, meta_value)
