@@ -25,12 +25,12 @@ sub new {
   #
 
   my $sth = $self->prepare(
-            sprintf(
               'SELECT mc.table_name, mc.coord_system_id, mc.max_length '
                 . 'FROM meta_coord mc, coord_system cs '
                 . 'WHERE mc.coord_system_id = cs.coord_system_id '
-                . 'AND cs.species_id = %d',
-              $self->species_id() ) );
+                . 'AND cs.species_id = ?' );
+
+  $sth->bind_params( 1, $self->species_id(), SQL_INTEGER );
   $sth->execute();
 
   while ( my ( $table_name, $cs_id, $max_length ) =
