@@ -1363,7 +1363,7 @@ CREATE TABLE coord_system (
   PRIMARY KEY (coord_system_id)
   UNIQUE KEY name_idx (name, version, species_id),
   UNIQUE KEY rank_idx (rank, species_id),
-  UNIQUE KEY species_cs_idx (species_id, coord_system_id)
+  UNIQUE KEY species_idx (species_id)
 
 ) COLLATE=latin1_swedish_ci TYPE=MyISAM;
 
