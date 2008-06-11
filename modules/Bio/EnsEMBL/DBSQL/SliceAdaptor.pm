@@ -752,11 +752,11 @@ sub is_toplevel {
 
   my $sth = $self->prepare(
             "SELECT at.code from seq_region_attrib sra, attrib_type at "
-              . "WHERE sra.seq_region_id = ?"
+              . "WHERE sra.seq_region_id = ? "
               . "AND at.attrib_type_id = sra.attrib_type_id "
               . "AND at.code = 'toplevel'" );
 
-  $sth->bin_param( 1, $id, SQL_INTEGER );
+  $sth->bind_param( 1, $id, SQL_INTEGER );
   $sth->execute();
 
   my $code;

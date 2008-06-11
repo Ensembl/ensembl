@@ -30,7 +30,7 @@ sub new {
                 . 'WHERE mc.coord_system_id = cs.coord_system_id '
                 . 'AND cs.species_id = ?' );
 
-  $sth->bind_params( 1, $self->species_id(), SQL_INTEGER );
+  $sth->bind_param( 1, $self->species_id(), SQL_INTEGER );
   $sth->execute();
 
   while ( my ( $table_name, $cs_id, $max_length ) =
