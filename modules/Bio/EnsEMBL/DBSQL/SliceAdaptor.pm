@@ -264,7 +264,7 @@ sub fetch_by_region {
     $length = $arr->[3];
   } else {
     my $sth =
-      $self->prepare( $sql . " WHERE sr.name = ? " . $constraint );
+      $self->prepare( $sql . "WHERE sr.name = ? " . $constraint );
 
     unshift( @bind_params, [ $seq_region_name, SQL_VARCHAR ] );
 
