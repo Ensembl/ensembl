@@ -104,7 +104,8 @@ sub list_value_by_key {
                       . "WHERE meta_key = ? "
                       . "ORDER BY meta_id" );
 
-    $sth->execute($key);
+    $sth->bind_param( 1, $key, SQL_VARCHAR );
+    $sth->execute();
   } else {
     $sth =
       $self->prepare(   "SELECT meta_value "
@@ -113,7 +114,9 @@ sub list_value_by_key {
                       . "AND species_id = ? "
                       . "ORDER BY species_meta_id" );
 
-    $sth->execute( $key, $self->species_id() );
+    $sth->bind_param( 1, $key, SQL_VARCHAR );
+    $sth->bind_param( 2, $self->species_id(), SQL_INTEGER );
+    $sth->execute();
   }
 
   my @result;
