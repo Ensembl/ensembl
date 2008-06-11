@@ -145,7 +145,7 @@ sub sql_timing_start {
   $dump            = 1;
 }
 
-sub sql_timimg_pause  { $dump = 0 }
+sub sql_timing_pause  { $dump = 0 }
 sub sql_timing_resume { $dump = 1 }
 
 sub sql_timing_print {
