@@ -16,7 +16,12 @@ Required arguments:
 
   --pass=pass                         password for database
 
+
 Optional arguments:
+
+  --pattern=pattern                   calculate translation attribs for databases matching pattern
+                                      Note that this is a standard regular expression of the
+                                      form '^[a-b].*core.*' for all core databases starting with a or b
 
   --binpath=PATH                      directory where the binary script to calculate 
                                       pepstats is stored (default: /software/pubseq/bin/emboss)
@@ -44,9 +49,13 @@ translation_attrib values
 
 =head1 EXAMPLES
 
-Calculate translation_attributes for all databases in ens-staging (default in the release process)
+Calculate translation_attributes for all databases in ens-staging 
 
   $ ./translation_attribs.pl --user ensadmin --pass password
+
+Calculate translation_attributes for core databases starting with [a-c] in ens-staging 
+
+  $ ./translation_attribs.pl --user ensadmin --pass password --pattern '^[a-c].*core_50.*'
 
 Calculate pepstats for a single database in a ens-genomics1
 
@@ -75,6 +84,8 @@ use Bio::EnsEMBL::Translation;
 use Bio::EnsEMBL::Registry;
 use Bio::EnsEMBL::Attribute;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
+use Data::Dumper;
+use DBI;
 
 use Bio::EnsEMBL::Utils::Exception qw(throw);
 
@@ -104,7 +115,7 @@ my $port = 3306;
 my $help = undef;
 my $pepstats_only = undef;
 my $met_and_stop_only = undef;
-
+my $pattern = undef;
 
 GetOptions('binpath=s' => \$binpath,
 	   'tmpdir=s' => \$tmpdir,
@@ -115,7 +126,8 @@ GetOptions('binpath=s' => \$binpath,
 	   'port=s'    => \$port,
 	   'pepstats_only' => \$pepstats_only,
 	   'met_and_stop_only' => \$met_and_stop_only,
-	   'help'    => \$help
+	   'help'    => \$help,
+	   'pattern=s' => \$pattern
 	   );
 
 pod2usage(1) if($help);
@@ -124,7 +136,7 @@ throw("--pass argument required") if (!defined($pass));
 
 my $dbas;
 #load registry with all databses when no database defined
-if (!defined ($dbname)){
+if (!defined ($dbname) && !defined ($pattern)){
     Bio::EnsEMBL::Registry->load_registry_from_db(-host => $host,
 						  -user => $user,
 						  -pass => $pass,
@@ -132,7 +144,29 @@ if (!defined ($dbname)){
 						  );
       $dbas = Bio::EnsEMBL::Registry->get_all_DBAdaptors(-group=>'core'); #get all core adaptors for all species
   }
-else{
+elsif(defined ($pattern)){
+    #will only load core databases matching the pattern
+    my $database = 'information_schema';
+    my $dbh = DBI->connect("DBI:mysql:database=$database;host=$host;port=$port",$user,$pass);
+    #fetch all databases matching the pattern
+    my $sth = $dbh->prepare("SHOW DATABASES WHERE `database` REGEXP \'$pattern\'");
+    $sth->execute();
+    my $dbs = $sth->fetchall_arrayref();
+    foreach my $db_name (@{$dbs}){
+
+	my ($species) = ( $db_name->[0] =~ /(^[a-z]+_[a-z]+)_core_\d+/ );
+	my $dba = Bio::EnsEMBL::DBSQL::DBAdaptor->new(-host => $host,
+						      -user => $user,
+						      -pass => $pass,
+						      -port => $port,
+						      -group => 'core',
+						      -species => $species,
+						      -dbname => $db_name->[0]
+						      );
+	push @{$dbas},$dba;
+    }
+}
+elsif(defined ($dbname)){
 #only get a single DBAdaptor, the one for the database specified
     my $dba = Bio::EnsEMBL::DBSQL::DBAdaptor->new(-host => $host,
 						  -user => $user,
@@ -142,7 +176,9 @@ else{
 						  );
     push @{$dbas},$dba;
 }
-
+else{
+    thrown("Not entered properly database connection param. Read docs\n");
+}
 
 
 my %attributes; #hash containing attributes to be stored and removed from the databse
