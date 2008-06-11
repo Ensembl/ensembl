@@ -1300,8 +1300,8 @@ CREATE TABLE seq_region (
   coord_system_id             INT(10) UNSIGNED NOT NULL,
   length                      INT(10) NOT NULL,
 
-  UNIQUE (name, coord_system_id),
   PRIMARY KEY (seq_region_id),
+  UNIQUE KEY name_cs_idx (name, coord_system_id);
   KEY cs_idx (coord_system_id)
 
 ) COLLATE=latin1_swedish_ci TYPE=MyISAM;
