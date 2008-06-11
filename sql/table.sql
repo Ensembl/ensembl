@@ -1377,7 +1377,7 @@ CREATE TABLE meta_coord (
   coord_system_id             INT(10) UNSIGNED NOT NULL,
   max_length                  INT,
 
-  UNIQUE(table_name, coord_system_id)
+  UNIQUE KEY cs_table_name_idx (coord_system_id, table_name)
 
 ) COLLATE=latin1_swedish_ci TYPE=MyISAM;
 
