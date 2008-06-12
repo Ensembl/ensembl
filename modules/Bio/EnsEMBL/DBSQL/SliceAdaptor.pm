@@ -645,55 +645,64 @@ sub fetch_all {
   my $sth;
 
   my %bad_vals=();
+
   #
   # Get a hash of non reference seq regions
   #
-  if(!$include_non_reference){
-    my $sth2 = $self->prepare(
-			      "SELECT sr.seq_region_id ".
-			      "FROM seq_region sr, seq_region_attrib sra, attrib_type at ".
-			      " WHERE at.code='non_ref'".
-			      "  AND sra.seq_region_id=sr.seq_region_id ".
-			      "  AND at.attrib_type_id=sra.attrib_type_id " );
+  if ( !$include_non_reference ) {
+    my $sth2 =
+      $self->prepare(   'SELECT sr.seq_region_id '
+                      . 'FROM seq_region sr, seq_region_attrib sra, '
+                      . 'attrib_type at, coord_system cs '
+                      . 'WHERE at.code = "non_ref" '
+                      . 'AND sra.seq_region_id = sr.seq_region_id '
+                      . 'AND at.attrib_type_id = sra.attrib_type_id '
+                      . 'AND sr.coord_system_id = cs.coord_system_id '
+                      . 'AND cs.species_id = ?' );
+
+    $sth->bind_param( 1, $self->species_id(), SQL_INTEGER );
     $sth2->execute();
+
     my ($seq_region_id);
-    $sth2->bind_columns(\$seq_region_id);
-    while($sth2->fetch()) {
+    $sth2->bind_columns( \$seq_region_id );
+
+    while ( $sth2->fetch() ) {
       $bad_vals{$seq_region_id} = 1;
     }
+
     $sth2->finish();
   }
+
   #
   # Retrieve the seq_regions from the database
   #
   if ( $orig_cs->is_top_level() ) {
     $sth =
-      $self->prepare(
-              'SELECT sr.seq_region_id, sr.name, '
-                        . 'sr.length, sr.coord_system_id '
-                        . 'FROM seq_region sr, seq_region_attrib sra, '
-                        . 'attrib_type at, coord_system cs '
-                        . 'WHERE at.code="toplevel" '
-                        . 'AND at.attrib_type_id=sra.attrib_type_id '
-                        . 'AND sra.seq_region_id=sr.seq_region_id '
-                        . 'AND sr.coord_system_id = cs.coord_system_id '
-                        . 'AND cs.species_id = ?');
+      $self->prepare(   'SELECT sr.seq_region_id, sr.name, '
+                      . 'sr.length, sr.coord_system_id '
+                      . 'FROM seq_region sr, seq_region_attrib sra, '
+                      . 'attrib_type at, coord_system cs '
+                      . 'WHERE at.code = "toplevel" '
+                      . 'AND at.attrib_type_id = sra.attrib_type_id '
+                      . 'AND sra.seq_region_id = sr.seq_region_id '
+                      . 'AND sr.coord_system_id = cs.coord_system_id '
+                      . 'AND cs.species_id = ?' );
 
-      $sth->bind_param( 1, $self->species_id(), SQL_INTEGER );
-
+    $sth->bind_param( 1, $self->species_id(), SQL_INTEGER );
     $sth->execute();
   } else {
-    $sth = $self->prepare(
-                  'SELECT seq_region_id, name, length, coord_system_id '
-                    . 'FROM   seq_region sr, coord_system cs '
-                    . 'WHERE  coord_system_id = ?' );
+    $sth =
+      $self->prepare(   'SELECT seq_region_id, name, '
+                      . 'length, coord_system_id '
+                      . 'FROM seq_region sr, coord_system cs '
+                      . 'WHERE coord_system_id = ?' );
 
     $sth->bind_param( 1, $orig_cs->dbID, SQL_INTEGER );
     $sth->execute();
   }
 
-  my ($seq_region_id, $name, $length, $cs_id);
-  $sth->bind_columns(\$seq_region_id, \$name, \$length, \$cs_id);
+  my ( $seq_region_id, $name, $length, $cs_id );
+  $sth->bind_columns( \( $seq_region_id, $name, $length, $cs_id ) );
 
   my $cache_count = 0;
 
@@ -835,27 +844,32 @@ sub fetch_by_band {
 =cut
 
 sub fetch_by_chr_band {
-  my ($self,$chr,$band) = @_;
+  my ( $self, $chr, $band ) = @_;
 
-  my $chr_slice = $self->fetch_by_region('toplevel', $chr);
+  my $chr_slice = $self->fetch_by_region( 'toplevel', $chr );
   my $seq_region_id = $self->get_seq_region_id($chr_slice);
 
-  my $sth = $self->dbc->prepare
-        ("select min(k.seq_region_start), max(k.seq_region_end) " .
-         "from karyotype as k " .
-         "where k.seq_region_id = ? and k.band like ?");
+  my $sth =
+    $self->prepare(   'SELECT MIN(k.seq_region_start), '
+                    . 'MAX(k.seq_region_end) '
+                    . 'FROM karyotype k '
+                    . 'WHERE k.seq_region_id = ? '
+                    . 'AND k.band LIKE ?' );
 
-  $sth->bind_param(1,$seq_region_id,SQL_INTEGER);
-  $sth->bind_param(2,"$band%",SQL_VARCHAR);
+  $sth->bind_param( 1, $seq_region_id, SQL_INTEGER );
+  $sth->bind_param( 2, "$band%",       SQL_VARCHAR );
   $sth->execute();
-  my ( $slice_start, $slice_end) = $sth->fetchrow_array;
 
-  if(defined $slice_start) {
-    return $self->fetch_by_region('toplevel',$chr,$slice_start,$slice_end);
+  my ( $slice_start, $slice_end ) = $sth->fetchrow_array;
+
+  if ( defined $slice_start ) {
+    return
+      $self->fetch_by_region( 'toplevel',   $chr,
+                              $slice_start, $slice_end );
   }
 
   throw("Band not recognised in database");
-}
+} ## end sub fetch_by_chr_band
 
 
 
@@ -1524,13 +1538,9 @@ sub store_assembly{
 
 =cut
 
-
-
 sub prepare {
-  my $self = shift;
-  my $sql = shift;
-
-  return $self->db()->dnadb()->dbc->prepare( $sql );
+  my ( $self, $sql ) = @_;
+  return $self->db()->dnadb()->dbc->prepare($sql);
 }
 
 sub _build_exception_cache {
@@ -1538,27 +1548,30 @@ sub _build_exception_cache {
 
   # build up a cache of the entire assembly exception table
   # it should be small anyway
-  my $sth = $self->prepare
-    ("SELECT seq_region_id, seq_region_start, seq_region_end,
-             exc_type, exc_seq_region_id, exc_seq_region_start,
-             exc_seq_region_end
-        FROM assembly_exception");
+  my $sth =
+    $self->prepare( 'SELECT ae.seq_region_id, ae.seq_region_start, '
+              . 'ae.seq_region_end, ae.exc_type, ae.exc_seq_region_id, '
+              . 'ae.exc_seq_region_start, ae.exc_seq_region_end'
+              . 'FROM assembly_exception ae, '
+              . 'seq_region sr, coord_system cs '
+              . 'WHERE sr.seq_region_id = ar.seq_region_id '
+              . 'AND sr.coord_system_id = cs.coord_system_id '
+              . 'AND cs.species_id = ?' );
 
+  $sth->bind_param( 1, $self->species_id(), SQL_INTEGER );
   $sth->execute();
 
   my %hash;
   $self->{'asm_exc_cache'} = \%hash;
 
   my $row;
-  while($row = $sth->fetchrow_arrayref()) {
+  while ( $row = $sth->fetchrow_arrayref() ) {
     my @result = @$row;
-    $hash{$result[0]} ||= [];
-    push(@{$hash{$result[0]}}, \@result);
+    $hash{ $result[0] } ||= [];
+    push( @{ $hash{ $result[0] } }, \@result );
   }
   $sth->finish();
-
-  return;
-}
+} ## end sub _build_exception_cache
 
 =head2 cache_toplevel_seq_mappings
 
