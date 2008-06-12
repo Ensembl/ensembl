@@ -468,31 +468,26 @@ sub fetch_by_name {
 =cut
 
 sub fetch_by_seq_region_id {
-  my ($self, $seq_region_id,$start,$end,$strand) = @_;
+  my ( $self, $seq_region_id, $start, $end, $strand ) = @_;
 
-  my $arr = $self->{'sr_id_cache'}->{ $seq_region_id };
-  my ($name, $length, $cs);
+  my $arr = $self->{'sr_id_cache'}->{$seq_region_id};
+  my ( $name, $length, $cs, $cs_id );
 
-  if( $arr &&  defined($arr->[2])) {
-    my $cs_id;
-    ($name, $cs_id, $length ) = ( $arr->[1], $arr->[2], $arr->[3] );
+  if ( $arr && defined( $arr->[2] ) ) {
+    ( $name, $cs_id, $length ) = ( $arr->[1], $arr->[2], $arr->[3] );
     $cs = $self->db->get_CoordSystemAdaptor->fetch_by_dbID($cs_id);
   } else {
     my $sth =
-      $self->prepare(   "SELECT sr.name, sr.length, sr.coord_system_id "
-                      . "FROM seq_region sr, coord_system cs "
-                      . "WHERE sr.seq_region_id = ? "
-                      . "AND sr.coord_system_id = cs.coord_system_id "
-                      . "AND cs.species_id = ?" );
+      $self->prepare(   "SELECT sr.name, sr.coord_system_id, sr.length "
+                      . "FROM seq_region sr"
+                      . "WHERE sr.seq_region_id = ? " );
 
-    $sth->bind_param( 1, $seq_region_id,      SQL_INTEGER );
-    $sth->bind_param( 2, $self->species_id(), SQL_INTEGER );
+    $sth->bind_param( 1, $seq_region_id, SQL_INTEGER );
     $sth->execute();
 
-    return undef if($sth->rows() == 0);
+    if ( $sth->rows() == 0 ) { return undef }
 
-    my $cs_id;
-    ($name, $length, $cs_id) = $sth->fetchrow_array();
+    ( $name, $cs_id, $length ) = $sth->fetchrow_array();
     $sth->finish();
 
     $cs = $self->db->get_CoordSystemAdaptor->fetch_by_dbID($cs_id);
@@ -504,14 +499,15 @@ sub fetch_by_seq_region_id {
     $self->{'sr_id_cache'}->{"$seq_region_id"} = $arr;
   }
 
-  return Bio::EnsEMBL::Slice->new(-COORD_SYSTEM      => $cs,
-                                  -SEQ_REGION_NAME   => $name,
-                                  -SEQ_REGION_LENGTH => $length,
-                                  -START             => $start || 1,
-                                  -END               => $end || $length,
-                                  -STRAND            => $strand || 1,
-                                  -ADAPTOR           => $self);
-}
+  return
+    Bio::EnsEMBL::Slice->new( -COORD_SYSTEM      => $cs,
+                              -SEQ_REGION_NAME   => $name,
+                              -SEQ_REGION_LENGTH => $length,
+                              -START             => $start || 1,
+                              -END               => $end || $length,
+                              -STRAND            => $strand || 1,
+                              -ADAPTOR           => $self );
+} ## end sub fetch_by_seq_region_id
 
 
 
