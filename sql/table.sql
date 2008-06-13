@@ -869,40 +869,28 @@ CREATE TABLE prediction_transcript (
 CREATE TABLE meta (
 
   meta_id 		      INT NOT NULL AUTO_INCREMENT,
+  species_id                  INT DEFAULT NULL,
   meta_key                    VARCHAR(40) NOT NULL,
   meta_value                  VARCHAR(255) NOT NULL,
 
   PRIMARY KEY (meta_id),
-  UNIQUE KEY key_value (meta_key, meta_value),
-  KEY meta_key_index (meta_key),
-  KEY meta_value_index (meta_value)
+  UNIQUE KEY species_key_value_idx (species_id, meta_key, meta_value),
+  KEY species_value_idx (species_id, meta_value)
 
 ) COLLATE=latin1_swedish_ci TYPE=MyISAM;
 
 
 # Auto add schema version to database
-INSERT INTO meta (meta_key, meta_value) VALUES ("schema_version", "51");
+INSERT INTO meta (meta_key, meta_value)
+  VALUES ("schema_version", "51");
 
-# patches included in this schema file
-# NOTE: at beginning of release cycle, remove patch entries from last release
-INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_50_51_a.sql|schema_version');
-INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_50_51_b.sql|multispecies');
-
-################################################################################
-#
-# Table structure for table 'species_meta'
-#
-
-CREATE TABLE species_meta (
-
-  species_meta_id   INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  species_id        INT(10) UNSIGNED NOT NULL DEFAULT 1,
-  meta_key          VARCHAR(40) NOT NULL,
-  meta_value        VARCHAR(255) NOT NULL,
-
-  PRIMARY KEY (species_meta_id),
-  KEY meta_key_idx (meta_key, species_id),
-) COLLATE=latin1_swedish_ci TYPE=MyISAM;
+# Patches included in this schema file.
+# NOTE: At beginning of release cycle, remove patch entries from last
+#       release.
+INSERT INTO meta (meta_key, meta_value)
+  VALUES ('patch', 'patch_50_51_a.sql|schema_version');
+INSERT INTO meta (meta_key, meta_value)
+  VALUES ('patch', 'patch_50_51_b.sql|multispecies');
 
 
 ################################################################################
