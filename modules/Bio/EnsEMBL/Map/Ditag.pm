@@ -39,6 +39,11 @@ use Carp;
 use base qw(Bio::EnsEMBL::Root);
 
 
+sub new_fast {
+    my ($class, $hashref) = @_;
+
+    return bless $hashref, $class;
+}
 
 =head2 new
 

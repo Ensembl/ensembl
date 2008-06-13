@@ -42,6 +42,12 @@ package Bio::EnsEMBL::Map::DitagFeature;
 use strict;
 use base qw(Bio::EnsEMBL::SeqFeature);
 
+sub new_fast {
+    my ($class, $hashref) = @_;
+
+    return bless $hashref, $class;
+}
+
 
 =head2 new
 
