@@ -936,17 +936,24 @@ sub validate_arrays{
 
  while(my ($oa_name, $ps_size) = $oligo_sth->fetchrow_array()){
 
-   my ($edb_name) = $dbentry_adaptor->dbc->db_handle->selectrow_array("SELECT db_name FROM external_db where db_name='${oa_name}'");
-
-   #Try AFFY_ Can remove this when we change the naming convention
-   if(! defined $edb_name){
-	 ($edb_name) = $dbentry_adaptor->dbc->db_handle->selectrow_array("SELECT db_name FROM external_db where db_name='AFFY_${oa_name}'");
-   }
-
    print "Array $oa_name does not have a probeset_size set, please rectify\n" if ! $ps_size;#boolean as we don't want 0 size
 
 
-   #Should we add another try here using s/-/_/g?
+   #Define possible external_db.db_names
+   my $dbname = 'AFFY_'.$oa_name;
+   my ($dbname1, $edb_name);
+   ($dbname1 = $dbname) =~ s/-/_/g;
+   my @dbnames = ($oa_name, $dbname, $dbname1); 
+
+
+   foreach my $dbn(@dbnames){
+
+	 ($edb_name) = $dbentry_adaptor->dbc->db_handle->selectrow_array("SELECT db_name FROM external_db where db_name='${dbn}'");
+
+	 last if defined $edb_name;
+   }
+
+    
 
    if( ! defined $edb_name){
 	 print "Cannot find external_db for oligo_array:\t$oa_name\n";
