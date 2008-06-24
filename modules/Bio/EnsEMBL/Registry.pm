@@ -1166,6 +1166,7 @@ sub load_registry_from_db {
 
   my $go_version = 0;
   my $compara_version =0;
+  my $ancestral_version =0;
 
   $user ||= "ensro";
   if(!defined($port)){
@@ -1199,6 +1200,11 @@ sub load_registry_from_db {
     elsif($db =~ /^ensembl_compara_(\d+)/){
       if($1 eq $software_version){
 	$compara_version = $1;
+      }
+    }
+    elsif($db =~ /^ensembl_ancestral_(\d+)/){
+      if($1 eq $software_version){
+	$ancestral_version = $1;
       }
     }
     elsif($db =~ /^ensembl_go_(\d+)/){
@@ -1368,6 +1374,26 @@ sub load_registry_from_db {
   }
   else{
     print "No Compara database found" if ($verbose);
+  }
+
+
+  #Ancestral sequences
+  if($ancestral_version){
+    my $ancestral_db = "ensembl_ancestral_".$ancestral_version;
+    my $dba = Bio::EnsEMBL::DBSQL::DBAdaptor->new
+      ( -group => "core",
+        -species => "Ancestral sequences",
+        -host => $host,
+        -user => $user,
+        -pass => $pass,
+        -port => $port,
+        -wait_timeout => $wait_timeout,
+        -dbname => $ancestral_db
+      );
+    print $ancestral_db." loaded\n" if ($verbose);       
+  }
+  else{
+    print "No Ancestral database found" if ($verbose);
   }
 
 
