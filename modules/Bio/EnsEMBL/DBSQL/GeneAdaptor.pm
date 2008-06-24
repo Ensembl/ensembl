@@ -1507,14 +1507,14 @@ sub cache_gene_seq_mappings {
 
   # get the sequence level to map too
 
-  my $sql = sprintf( 'SELECT name '
-                       . 'FROM coord_system '
-                       . 'WHERE attrib like "%%sequence_level%%"'
-                       . 'AND species_id = %d',
-                     $self->species_id() );
-
+  my $sql =
+      'SELECT name '
+    . 'FROM coord_system '
+    . 'WHERE attrib like "%%sequence_level%%"'
+    . 'AND species_id = ?';
 
   my $sth = $self->prepare($sql);
+  $sth->bind_param( 1, $self->species_id(), SQL_INTEGER );
   $sth->execute();
 
   my $sequence_level = $sth->fetchrow_array();
