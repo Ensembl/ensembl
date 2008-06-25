@@ -244,6 +244,7 @@ sub format_datetime {
     return sprintf "$d-$ms-$y %02d:%02d:%02d", $hh, $mm, $ss;
 }
 
+
 sub dumpSNP {
     my ( $dbspecies, $conf ) = @_;
 
@@ -251,165 +252,63 @@ sub dumpSNP {
 
     warn "\n", '*' x 20, "\n";
 
-    foreach my $db ('variation') {
-        my $dbname = $conf->{$db}->{$release} or next;
-        my $file = "$dir/SNP_$dbname.xml";
-        $file .= ".gz" unless $nogzip;
-        my $start_time = time;
-        warn "Dumping $dbname to $file ... ", format_datetime($start_time),
-          "\n";
-        unless ($nogzip) {
-            $fh = new IO::Zlib;
-            $fh->open( "$file", "wb9" )
-              || die "Can't open compressed stream to $file: $!";
-        }
-        else {
-            open( FILE, ">$file" ) || die "Can't open $file: $!";
-        }
 
-        header( $dbname, $dbspecies, $db );
-        my $dsn = "DBI:mysql:host=$host";
-        $dsn .= ";port=$port" if ($port);
-        my $ecount;
-        my $dbh = DBI->connect( "$dsn:$dbname", $user, $pass )
-          or die "DBI::error";
-
-        # Get the sources
-        my $csth = $dbh->prepare(
-qq{SELECT source_id, concat(name, if(version, version, '')) FROM source }
-        );
-        $csth->execute or die DBI::errstr;
-        my @crow;
-        my $source_hash;
-
-        while ( @crow = $csth->fetchrow_array ) {
-            $source_hash->{ $crow[0] } = $crow[1];
-        }
-        $csth->finish();
-
-        my $sth = $dbh->prepare(
-"SELECT variation_id, variation_name, source_id FROM variation_feature"
-        );
-        my $sts = $dbh->prepare(
-"SELECT name, source_id FROM variation_synonym WHERE variation_id = ?"
-        );
-
-        my $ecount = $sth->execute() or die "Error:", $DBI::errstr;
-
-        my @variation_feature;
-        my @variation_synonym;
-
-        my $counter  = 0;
-        my $scounter = 0;
-        while ( @variation_feature = $sth->fetchrow_array() ) {
-            $counter++;
-
-            print "$counter ...\n" if ( ( $counter % 100000 ) == 0 );
-
-            p( sprintf qq{<entry id="%s">},  $variation_feature[1] );
-            p( sprintf qq{ <name>%s</name>}, $variation_feature[1] );
-            my $sc = $sts->execute( $variation_feature[0] );
-
-            if ( $sc > 0 ) {
-                p(" <cross_references>");
-                while ( @variation_synonym = $sts->fetchrow_array() ) {
-                    p(
-                        sprintf qq{  <ref dbname="%s" dbkey="%s"/>},
-                        $source_hash->{ $variation_synonym[1] }
-                          || $variation_synonym[1],
-                        $variation_synonym[0]
-                    );
-                }
-                p("</cross_references>");
-            }
-            my $dsc = $sc > 0 ? "with $sc synonyms" : "with no synonyms";
-            p( sprintf qq{ <description>%s SNP $dsc</description>},
-                $source_hash->{ $variation_feature[2] } );
-            p(" <additional_fields>");
-            p(qq{  <field name="species">$species</field>});
-            p(" </additional_fields>");
-            p("</entry>");
-        }
-        $sth->finish();
-        $sts->finish();
-        $dbh->disconnect();
-        footer($ecount);
-        print_time($start_time);
+    my $dbname = $conf->{variation}->{$release} or next;
+    my $file = "$dir/SNP_$dbname.xml";
+    $file .= ".gz" unless $nogzip;
+    my $start_time = time;
+    warn "Dumping $dbname to $file ... ", format_datetime($start_time),
+      "\n";
+    unless ($nogzip) {
+	$fh = new IO::Zlib;
+	$fh->open( "$file", "wb9" )
+	  || die "Can't open compressed stream to $file: $!";
     }
-}
+    else {
+	open( FILE, ">$file" ) || die "Can't open $file: $!";
+    }
+
+    header( $dbname, $dbspecies, $dbname );
+    my $dsn = "DBI:mysql:host=$host";
+    $dsn .= ";port=$port" if ($port);
+    my $ecount;
+    my $dbh = DBI->connect( "$dsn:$dbname", $user, $pass )
+      or die "DBI::error";
 
 
 
-sub dumpSNPX {
-    my ( $dbspecies, $conf ) = @_;
-
-    #    warn Dumper $conf;
-
-    warn "\n", '*' x 20, "\n";
-
-
-        my $dbname = $conf->{variation}->{$release} or next;
-        my $file = "$dir/SNP_$dbname.xml";
-        $file .= ".gz" unless $nogzip;
-        my $start_time = time;
-        warn "Dumping $dbname to $file ... ", format_datetime($start_time),
-          "\n";
-        unless ($nogzip) {
-            $fh = new IO::Zlib;
-            $fh->open( "$file", "wb9" )
-              || die "Can't open compressed stream to $file: $!";
-        }
-        else {
-            open( FILE, ">$file" ) || die "Can't open $file: $!";
-        }
-
-        header( $dbname, $dbspecies, $dbname );
-        my $dsn = "DBI:mysql:host=$host";
-        $dsn .= ";port=$port" if ($port);
-        my $ecount;
-        my $dbh = DBI->connect( "$dsn:$dbname", $user, $pass )
-          or die "DBI::error";
+    my $source_hash = $dbh->selectall_hashref(qq{SELECT source_id, name FROM source} ,[qw(source_id)]);
 
 
 
-my $source_hash = $dbh->selectall_hashref(qq{SELECT source_id, name FROM source} ,[qw(source_id)]);
-
-
-
-my $sth = $dbh->prepare("select vf.variation_name, vf.source_id, group_concat(vs.source_id, ' ',vs.name) 
+    my $sth = $dbh->prepare("select vf.variation_name, vf.source_id, group_concat(vs.source_id, ' ',vs.name) 
 from variation_feature vf 
 left join variation_synonym vs on vf.variation_id = vs.variation_id 
  group by vf.variation_id");
 
 
-        $sth->execute() or die "Error:", $DBI::errstr;
+    $sth->execute() or die "Error:", $DBI::errstr;
 
-	my $xml;
-        my @variation_synonym;
-
-
-	my $rows = [];
- 	while (my $row = (shift(@$rows) || 
- 			  shift( @{ $rows= $sth->fetchall_arrayref(undef, 10_000) || []  } ))
- 			 ){
-	
+    my $xml;
+    my @variation_synonym;
 
 
+    my $rows = [];
+    while (my $row = (shift(@$rows) || 
+		      shift( @{ $rows= $sth->fetchall_arrayref(undef, 10_000) || []  } ))
+	  ){
 
-	    my @synonyms = split /,/, @$row->[2];
-	    my $snp_source = $source_hash->{$row->[1]}->{name};
-	
+	my @synonyms = split /,/, @$row->[2];
+	my $snp_source = $source_hash->{$row->[1]}->{name};
 
-    my $description =
+	my $description =
         "A $snp_source SNP with "
       . scalar @synonyms
       . ' synonym'
-      . (  @synonyms > 1 | @synonyms < 1 ? 's '   : ' ' ).
+      . (  @synonyms > 1 | @synonyms < 1 ? 's '   : ' ' )
+      . ( @synonyms > 0 ? "( " . (join "",  map{  map{  $source_hash->{$_->[0]}->{name} , ':', $_->[1] , ' ' } [split]  } @synonyms ) . ")" : '' );
 
-( @synonyms > 0 ? "( " . (join "",  map{  map{  $source_hash->{$_->[0]}->{name} , ':', $_->[1] , ' ' } [split]  } @synonyms ) . ")" : '' );
-
-
- $xml =   qq{<entry id="$row->[0]">
+	$xml =   qq{<entry id="$row->[0]">
   <description>$description</description>
   <additional_fields>
     <field name="species">$species</field>
@@ -419,35 +318,16 @@ left join variation_synonym vs on vf.variation_id = vs.variation_id
   </cross_references>
 </entry>};
 
-p($xml);
+	p($xml);
 
 
-	}
+    }
 
-         footer($sth->rows);
-         print_time($start_time);
+    footer($sth->rows);
+    print_time($start_time);
 
 }
 
-# sub SNPXML {
-# my $xml = shift;
-
-# $xml = 
-#   qq{<entry id="$xml->">
-#     <name>$type:$adesc:$hid</name>
-#     <description>$adesc $hid hits the genome in $count locations.</description>
-#     <additional_fields>
-#         <field name="species">$dbspecies</field>
-#         <field name="analysis">$adesc</field>
-#         <field name="featuretype">GenomicAlignment</field>
-#         <field name="source">$source</field>
-#         <field name="db">$db</field>
-#     </additional_fields>
-#   </entry>};
-
-
-
-# }
 
 sub dumpGenomicAlignment {
     my ( $dbspecies, $conf ) = @_;
