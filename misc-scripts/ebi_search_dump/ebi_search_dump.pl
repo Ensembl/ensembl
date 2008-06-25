@@ -77,7 +77,6 @@ warn " Dumped $total entries ...\n";
 
 # -------------------------------------------------------------------------------
 
-
 sub text_month {
 
     my $m = shift;
@@ -277,7 +276,7 @@ sub dumpSNP {
 
         # Get the sources
         my $csth = $dbh->prepare(
-				 qq{SELECT source_id, concat(name, if(version, version, '')) FROM source }
+qq{SELECT source_id, concat(name, if(version, version, '')) FROM source }
         );
         $csth->execute or die DBI::errstr;
         my @crow;
@@ -289,39 +288,43 @@ sub dumpSNP {
         $csth->finish();
 
         my $sth = $dbh->prepare(
-				"SELECT variation_id, variation_name, source_id FROM variation_feature"
+"SELECT variation_id, variation_name, source_id FROM variation_feature"
         );
         my $sts = $dbh->prepare(
-				"SELECT name, source_id FROM variation_synonym WHERE variation_id = ?"
+"SELECT name, source_id FROM variation_synonym WHERE variation_id = ?"
         );
 
         my $ecount = $sth->execute() or die "Error:", $DBI::errstr;
 
-        my @v;
-        my @vs;
+        my @variation_feature;
+        my @variation_synonym;
 
         my $counter  = 0;
         my $scounter = 0;
-        while ( @v = $sth->fetchrow_array() ) {
+        while ( @variation_feature = $sth->fetchrow_array() ) {
             $counter++;
 
             print "$counter ...\n" if ( ( $counter % 100000 ) == 0 );
 
-            p( sprintf qq{<entry id="%s">},  $v[1] );
-            p( sprintf qq{ <name>%s</name>}, $v[1] );
-            my $sc = $sts->execute( $v[0] );
+            p( sprintf qq{<entry id="%s">},  $variation_feature[1] );
+            p( sprintf qq{ <name>%s</name>}, $variation_feature[1] );
+            my $sc = $sts->execute( $variation_feature[0] );
 
             if ( $sc > 0 ) {
                 p(" <cross_references>");
-                while ( @vs = $sts->fetchrow_array() ) {
-                    p( sprintf qq{  <ref dbname="%s" dbkey="%s"/>},
-                        $source_hash->{ $vs[1] } || $vs[1], $vs[0] );
+                while ( @variation_synonym = $sts->fetchrow_array() ) {
+                    p(
+                        sprintf qq{  <ref dbname="%s" dbkey="%s"/>},
+                        $source_hash->{ $variation_synonym[1] }
+                          || $variation_synonym[1],
+                        $variation_synonym[0]
+                    );
                 }
                 p("</cross_references>");
             }
             my $dsc = $sc > 0 ? "with $sc synonyms" : "with no synonyms";
             p( sprintf qq{ <description>%s SNP $dsc</description>},
-                $source_hash->{ $v[2] } );
+                $source_hash->{ $variation_feature[2] } );
             p(" <additional_fields>");
             p(qq{  <field name="species">$species</field>});
             p(" </additional_fields>");
@@ -335,6 +338,117 @@ sub dumpSNP {
     }
 }
 
+
+
+sub dumpSNPX {
+    my ( $dbspecies, $conf ) = @_;
+
+    #    warn Dumper $conf;
+
+    warn "\n", '*' x 20, "\n";
+
+
+        my $dbname = $conf->{variation}->{$release} or next;
+        my $file = "$dir/SNP_$dbname.xml";
+        $file .= ".gz" unless $nogzip;
+        my $start_time = time;
+        warn "Dumping $dbname to $file ... ", format_datetime($start_time),
+          "\n";
+        unless ($nogzip) {
+            $fh = new IO::Zlib;
+            $fh->open( "$file", "wb9" )
+              || die "Can't open compressed stream to $file: $!";
+        }
+        else {
+            open( FILE, ">$file" ) || die "Can't open $file: $!";
+        }
+
+        header( $dbname, $dbspecies, $dbname );
+        my $dsn = "DBI:mysql:host=$host";
+        $dsn .= ";port=$port" if ($port);
+        my $ecount;
+        my $dbh = DBI->connect( "$dsn:$dbname", $user, $pass )
+          or die "DBI::error";
+
+
+
+my $source_hash = $dbh->selectall_hashref(qq{SELECT source_id, name FROM source} ,[qw(source_id)]);
+
+
+
+my $sth = $dbh->prepare("select vf.variation_name, vf.source_id, group_concat(vs.source_id, ' ',vs.name) 
+from variation_feature vf 
+left join variation_synonym vs on vf.variation_id = vs.variation_id 
+ group by vf.variation_id");
+
+
+        $sth->execute() or die "Error:", $DBI::errstr;
+
+	my $xml;
+        my @variation_synonym;
+
+
+	my $rows = [];
+ 	while (my $row = (shift(@$rows) || 
+ 			  shift( @{ $rows= $sth->fetchall_arrayref(undef, 10_000) || []  } ))
+ 			 ){
+	
+
+
+
+	    my @synonyms = split /,/, @$row->[2];
+	    my $snp_source = $source_hash->{$row->[1]}->{name};
+	
+
+    my $description =
+        "A $snp_source SNP with "
+      . scalar @synonyms
+      . ' synonym'
+      . (  @synonyms > 1 | @synonyms < 1 ? 's '   : ' ' ).
+
+( @synonyms > 0 ? "( " . (join "",  map{  map{  $source_hash->{$_->[0]}->{name} , ':', $_->[1] , ' ' } [split]  } @synonyms ) . ")" : '' );
+
+
+ $xml =   qq{<entry id="$row->[0]">
+  <description>$description</description>
+  <additional_fields>
+    <field name="species">$species</field>
+    <field name="featuretype">SNP</field>
+  <cross_references>
+    <ref dbname="$source_hash->{$row->[1]}->{name}" dbkey="$row->[0]"/>
+  </cross_references>
+</entry>};
+
+p($xml);
+
+
+	}
+
+         footer($sth->rows);
+         print_time($start_time);
+
+}
+
+# sub SNPXML {
+# my $xml = shift;
+
+# $xml = 
+#   qq{<entry id="$xml->">
+#     <name>$type:$adesc:$hid</name>
+#     <description>$adesc $hid hits the genome in $count locations.</description>
+#     <additional_fields>
+#         <field name="species">$dbspecies</field>
+#         <field name="analysis">$adesc</field>
+#         <field name="featuretype">GenomicAlignment</field>
+#         <field name="source">$source</field>
+#         <field name="db">$db</field>
+#     </additional_fields>
+#   </entry>};
+
+
+
+# }
+
 sub dumpGenomicAlignment {
     my ( $dbspecies, $conf ) = @_;
 
@@ -343,13 +457,16 @@ sub dumpGenomicAlignment {
     warn "\n", '*' x 20, "\n";
     my %tables = (
         'dna_align_feature' => [ 'DnaAlignFeature', 'DNA alignment feature' ],
-        'protein_align_feature' => [ 'ProteinAlignFeature', 'Protein alignment feature' ]
+        'protein_align_feature' =>
+          [ 'ProteinAlignFeature', 'Protein alignment feature' ]
     );
     my $ecount;
+
     foreach my $db (  'core', 'cdna', 'otherfeatures' ) {
-	my $ecount = 0;
+
+        my $ecount  = 0;
         my $DB_NAME = $conf->{$db}->{$release} or next;
-        my $file = "$dir/GenomicAlignment_$DB_NAME.xml";
+        my $file    = "$dir/GenomicAlignment_$DB_NAME.xml";
         $file .= ".gz" unless $nogzip;
         my $start_time = time;
         warn "Dumping $DB_NAME to $file ... ", format_datetime($start_time),
@@ -372,50 +489,94 @@ sub dumpGenomicAlignment {
           or die "DBI::error";
         foreach my $table ( keys %tables ) {
             my $source = $tables{$table}[0];
-            #	    $source .= ";db=$db" unless $db eq 'core';
+
+            #	    $source .= ";db=$db" unless $db eq 'core';\
+
             my $type = $tables{$table}[1];
 
+            # Due to the sheer number of features - generating this
+            # dump causes temp table to be written on the mysqld
+            # filesys. /tmp space can (and has) be easily filled.
+            # Have split the feature fetching to happen by an
+            # analysis_id at a time.  The changes below gave a x3
+            # speed up on XML dumping as compared to fetching all at
+            # features in one query once.
 
+            # make a lookup for the analysis display labels.
+            my $logic_name_lookup = $dbh->selectall_hashref(
+                "select a.analysis_id, a.logic_name
+                                                    from $DB_NAME.analysis as a
+                                                ", [qw(analysis_id)]
+            ) or die $DBI::Err;
+
+            my $display_label_lookup = $dbh->selectall_hashref(
+                "select ad.analysis_id, ad.display_label
+                                                    from $DB_NAME.analysis_description as ad
+                                                ", [qw(analysis_id)]
+            ) or die $DBI::Err;
 
             my $sth = $dbh->prepare(
-            "select a.logic_name, ad.display_label, t.hit_name, count(*) as hits
-           from ($DB_NAME.analysis as a, $DB_NAME.$table as t) left join
-                $DB_NAME.analysis_description as ad on ad.analysis_id = a.analysis_id
-          where a.analysis_id = t.analysis_id
-          group by a.logic_name, t.hit_name"
-            );
+                "select t.analysis_id,t.hit_name, count(*) as hits
+                                         from $DB_NAME.$table as t where t.analysis_id = ?
+                                        group by t.analysis_id, t.hit_name"
+            ) or die $DBI::Err;
 
-            $sth->execute();
-            #   next if ($DBI::error);
-            my $tcount = 0;
-            while ( my ( $logic_name, $label, $hid, $count ) =
-                $sth->fetchrow_array )
+            foreach my $ana_id (
+                @{$dbh->selectall_arrayref("select distinct distinct(analysis_id) from $DB_NAME.$table")
+                }
+              )
             {
-                my $adesc = ( $label || $logic_name );
-     #                 last if ( $max_entries && ( $tcount++ > $max_entries ) );
-                my $xml = qq{
+
+                my $adesc =
+                  ( $display_label_lookup->{ $ana_id->[0] }->{display_label}
+                      || $logic_name_lookup->{ $ana_id->[0] }->{logic_name} );
+
+                $sth->execute( $ana_id->[0] ) or die $DBI::Err;
+
+                my $rows = [];    # cache for batches of rows
+                while (
+                    my $row = (
+                        shift(@$rows) ||    # get row from cache,
+                                            # or reload cache:
+                          shift(
+                            @{
+                                $rows =
+                                  $sth->fetchall_arrayref( undef, 100_000 )
+                                  || []
+                              }
+                          )
+                    )
+                  )
+                {
+
+                    my $hid   = $row->[1];
+                    my $count = $row->[2];
+
+                    my $xml = qq{
   <entry id="$hid">
     <name>$type:$adesc:$hid</name>
     <description>$adesc $hid hits the genome in $count locations.</description>
     <additional_fields>
         <field name="species">$dbspecies</field>
         <field name="analysis">$adesc</field>
-        <field name="featuretype">$type</field>
+        <field name="featuretype">GenomicAlignment</field>
         <field name="source">$source</field>
         <field name="db">$db</field>
     </additional_fields>
   </entry>};
-                p($xml);
+                    p($xml);
+
+                }
+
+                $ecount += $sth->rows;
 
             }
-            $ecount += $sth->rows;
+
         }
         print_time($start_time);
-	footer($ecount);    
+        footer($ecount);
     }
 }
-
-
 
 sub dumpQTL {
     my ( $dbspecies, $conf ) = @_;
@@ -517,7 +678,7 @@ sub dumpQTL {
             $xml_data->{cross_ref}->{ $T->{source_database} } =
               $T->{source_primary_id};
             $old_qtl = $T->{qtl_id};
-	    $xml_data->{pos} = $old_pos;
+            $xml_data->{pos} = $old_pos;
             if ( $xml_data->{pm_name} ) {
                 p( QTLXML( $xml_data, $counter ) );
             }
@@ -758,7 +919,10 @@ sub dumpDomain {
         }
         else {
             if ( $old_acc ne '' ) {
-                 p domainLineXML($dbspecies, $old_acc, $IDS, $old_desc,  $description, $counter);
+                p domainLineXML(
+                    $dbspecies, $old_acc,     $IDS,
+                    $old_desc,  $description, $counter
+                );
                 $ecount++;
             }
 
@@ -772,7 +936,8 @@ sub dumpDomain {
 
     }
     if ( $old_acc ne '' ) {
-        p domainLineXML($dbspecies, $old_acc, $IDS, $old_desc, $description, $counter);
+        p domainLineXML( $dbspecies, $old_acc, $IDS, $old_desc, $description,
+            $counter );
         $ecount++;
     }
 
@@ -830,64 +995,42 @@ sub dumpFamily {
     my $dbh = DBI->connect( "$dsn:$dbname", $user, $pass ) or die "DBI::error";
 
     my $FAMDB = $conf->{'compara'}->{$release};
+
     my $CORE  = $conf->{'core'}->{$release};
-    my $t_sth = $dbh->prepare(qq{select meta_value from $CORE.meta where meta_key='species.taxonomy_id'});
+    my $t_sth = $dbh->prepare(
+qq{select meta_value from $CORE.meta where meta_key='species.taxonomy_id'}
+    );
     $t_sth->execute;
     my $taxon_id = ( $t_sth->fetchrow );
 
     return unless $taxon_id;
 
+    $dbh->do("SET SESSION group_concat_max_len = 100000");
     my $sth = $dbh->prepare(
-        "select f.stable_id, f.description, m.stable_id, m.source_name
-            from $FAMDB.family as f, $FAMDB.family_member as fm, 
-                 $FAMDB.member as m
-           where fm.family_id = f.family_id and fm.member_id = m.member_id and
-                 m.taxon_id = $taxon_id
-           order by f.stable_id, m.stable_id"
+qq{ select f.stable_id as fid , f.description, group_concat(m.stable_id, unhex('1D') ,m.source_name) as IDS 
+from $FAMDB.family as f, $FAMDB.family_member as fm, $FAMDB.member as m 
+ where fm.family_id = f.family_id and fm.member_id = m.member_id and m.taxon_id = $taxon_id  group by fid}
     );
+    $sth->execute;
+    foreach my $xml_data ( @{ $sth->fetchall_arrayref( {} ) } ) {
 
-    $sth->execute();
+        my @bits = split /,/, delete $xml_data->{IDS};
+        map { push @{ $xml_data->{IDS} }, [ split /\x1D/ ] } @bits;
+        $xml_data->{species} = $dbspecies;
+        p familyLineXML($xml_data);
 
-    #     open O, ">$conf->{'directory'}/Family.txt";
-    my $old_id      = '';
-    my $IDS         = '';
-    my $description = '';
-
-    my ( $id, $dbid, $desc, $old_desc, $source_name );
-    my $xml_data;
-    $xml_data->{'species'} = $dbspecies;
-    my $counter = make_counter(0);
-
-    while ( ( $id, $desc, $dbid, $source_name ) = $sth->fetchrow_array() ) {
-
-        if ( $id eq $old_id ) {
-            push @{ $xml_data->{'IDS'} }, [ $dbid, $source_name ];
-        }
-        else {
-            p familyLineXML( $xml_data, $counter );
-            $xml_data->{'IDS'}         = undef;
-###             $IDS         = $dbid;
-            $xml_data->{'IDS'}->[0] = [ $dbid, $source_name ];
-            $xml_data->{'fid'}      = $old_id;
-            $xml_data->{'desc'}     = $desc;
-            $old_id                 = $id;
-            $old_desc               = $desc;
-
-        }
     }
-    p familyLineXML( $xml_data, $counter );
 
-    footer( $counter->() );
+    footer( $sth->rows );
 
 }
 
 sub familyLineXML {
     my ( $xml_data, $counter ) = @_;
-    return if $xml_data->{fid} eq '';
-    $counter->();
+
     my $description_line =
         "Ensembl protein family $xml_data->{fid} "
-      . "[$xml_data->{desc}] "
+      . "[$xml_data->{description}] "
       . ( join( " ", map { $_->[0] } @{ $xml_data->{IDS} }[ 1 .. 8 ] ) )
       . ' ...' . " has "
       . scalar @{ $xml_data->{IDS} }
@@ -904,12 +1047,13 @@ sub familyLineXML {
         (
             map {
                 qq{
-    <ref dbname="$_->[1]" dbkey="$_->[0]"/>}
+     <ref dbname="$1" dbkey="$_->[0]"/>} if $_->[1] =~ /(Uniprot|ENSEMBL).*/
               } @{ $xml_data->{IDS} }
         )
       )
+    .
 
-      . qq{
+      qq{
   </cross_references>
   <additional_fields>
      <field name="species">$xml_data->{species}</field>
@@ -958,7 +1102,6 @@ sub dumpSequence {
         ]
     );
 
-
     my $dbname = $conf->{'core'}->{$release} or next;
 
     my $file = "$dir/Sequence_$dbname.xml";
@@ -981,14 +1124,13 @@ sub dumpSequence {
     my $dbh = DBI->connect( "$dsn:$dbname", $user, $pass ) or die "DBI::error";
 
     my $COREDB = $dbname;
-     my $ESTDB  = $conf->{otherfeatures}->{$release};
+    my $ESTDB  = $conf->{otherfeatures}->{$release};
 
     my @types = @{ $config{$dbspecies} || [] };
     my $ecounter;
     foreach my $arrayref (@types) {
 
         my ( $TYPE, $mapsets, $annotationtypes, $DB ) = @$arrayref;
-
 
         my $DB = $DB eq 'otherfeatures' ? $ESTDB : $COREDB;
         my @temp = split( ',', $mapsets );
@@ -1061,8 +1203,8 @@ sub dumpSequence {
                 $ecounter += 1;
             }
         }
-        p seqLineXML( $dbspecies, $TYPE, $NAME, $oldchr, $emblaccs,
-            $oldlen, $sanger )
+        p seqLineXML( $dbspecies, $TYPE, $NAME, $oldchr, $emblaccs, $oldlen,
+            $sanger )
           if $old_ID;
     }
 
@@ -1147,16 +1289,15 @@ sub seqLineXML {
 
 }
 
-
 sub dumpGene {
     my ( $dbspecies, $conf ) = @_;
 
     foreach my $DB ( 'core', 'otherfeatures', 'vega' ) {
-	my $counter = make_counter(0);
+        my $counter = make_counter(0);
 
-
-        my $DBNAME = $conf->{$DB}->{$release} or warn "$dbspecies $DB $release: no database not found";
-	next unless $DBNAME;
+        my $DBNAME = $conf->{$DB}->{$release}
+          or warn "$dbspecies $DB $release: no database not found";
+        next unless $DBNAME;
         print "START... $DB";
         my $file = "$dir/Gene_$DBNAME.xml";
         $file .= ".gz" unless $nogzip;
@@ -1276,7 +1417,7 @@ sub dumpGene {
                     },
                     'exons'                => {},
                     'external_identifiers' => {},
-                    'alt' => $xref_display_label
+                    'alt'                  => $xref_display_label
                     ? "($extdb_db_display_name: $xref_display_label)"
                     : "(novel gene)",
                     'ana_desc_label' => $analysis_description_display_label,
@@ -1295,7 +1436,6 @@ sub dumpGene {
                     foreach my $K ( keys %{ $xrefs{'Gene'}{$gene_id}{$db} } ) {
                         $old{'external_identifiers'}{$db}{$K} = 1;
 
-
                     }
                 }
                 foreach my $db (
@@ -1306,11 +1446,14 @@ sub dumpGene {
                     {
                         $old{'external_identifiers'}{$db}{$K} = 1;
 
-
                     }
                 }
-                foreach my $db ( keys %{ $xrefs{'Translation'}{$translation_id} || {} } ) {
-                    foreach my $K ( keys %{ $xrefs{'Translation'}{$translation_id}{$db} } ) {
+                foreach my $db (
+                    keys %{ $xrefs{'Translation'}{$translation_id} || {} } )
+                {
+                    foreach my $K (
+                        keys %{ $xrefs{'Translation'}{$translation_id}{$db} } )
+                    {
                         $old{'external_identifiers'}{$db}{$K} = 1;
                     }
                 }
@@ -1352,7 +1495,7 @@ sub dumpGene {
 }
 
 sub geneLineXML {
-    my ( $species, $xml_data,$counter ) = @_;
+    my ( $species, $xml_data, $counter ) = @_;
 
     return warn "gene id not set" if $xml_data->{'gene_stable_id'} eq '';
 
@@ -1379,15 +1522,17 @@ sub geneLineXML {
     <cross_references>};
 
     foreach my $ext_db ( keys %$external_identifiers ) {
-	s/^Affymx.*/OligoProbe/;
-	s/Havana transcript having same CDS/Vega/;
-        map {
-            $xml .=
-              qq{      
-      <ref dbname="$ext_db" dbkey="$_"/>}
-          }
-          keys %{ $external_identifiers->{$ext_db} }
+        foreach my $dbkey ( keys %{ $external_identifiers->{$ext_db} } ) {
+            $ext_db =~ s/^Affymx.*/ensembl/;
+            $ext_db =~ s/^Agilent.*/ensembl/;
+            $ext_db =~ s/^Illumina.*/ensembl/;
+            $ext_db =~ s/^GE Healthcare\/Amersham Codelink WGA/ensembl/;
+            $ext_db =~ s/^Havana.*/Vega/;
+            $ext_db =~ s/^Uniprot.*/Uniprot/i;
 
+            $xml .= qq{<ref dbname="$ext_db" dbkey="$dbkey"/>
+};
+        }
     }
 
     $xml .= qq{
@@ -1622,7 +1767,7 @@ sub dumpUnmappedGenes {
             if (@current_sis) {
 
                 my $description =
-		  qq{$type $osi is no longer in the Ensembl database but it has been mapped to the following current identifiers: @current_sis}
+qq{$type $osi is no longer in the Ensembl database but it has been mapped to the following current identifiers: @current_sis}
                   . (
                     @deprecated_sis
                     ? "; and the following deprecated identifiers: @deprecated_sis"
@@ -1634,13 +1779,13 @@ sub dumpUnmappedGenes {
             elsif (@deprecated_sis) {
 
                 my $description =
-		  qq($type $osi is no longer in the Ensembl database but it has been mapped to the following identifiers: @deprecated_sis);
+qq($type $osi is no longer in the Ensembl database but it has been mapped to the following identifiers: @deprecated_sis);
                 p unmappedGeneXML( $osi, $dbspecies, $description, lc($type) );
             }
             else {
 
                 my $description =
-		  qq($type $osi is no longer in the Ensembl database and it has not been mapped to any newer identifiers);
+qq($type $osi is no longer in the Ensembl database and it has not been mapped to any newer identifiers);
                 p unmappedGeneXML( $osi, $dbspecies, $description, lc($type) );
             }
         }
@@ -1658,7 +1803,7 @@ sub unmappedGeneXML {
     <description>$description</description>
     <additional_fields>
       <field name="species">$dbspecies</field>
-      <field name="featuretype>"Unmapped $type</field>
+      <field name="featuretype">Unmapped $type</field>
     </additional_fields>
  </entry>};
 
