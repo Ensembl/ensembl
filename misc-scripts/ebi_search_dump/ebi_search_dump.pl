@@ -274,53 +274,42 @@ sub dumpSNP {
     my $ecount;
     my $dbh = DBI->connect( "$dsn:$dbname", $user, $pass )
       or die "DBI::error";
-
-
-
     my $source_hash = $dbh->selectall_hashref(qq{SELECT source_id, name FROM source} ,[qw(source_id)]);
-
-
-
-    my $sth = $dbh->prepare("select vf.variation_name, vf.source_id, group_concat(vs.source_id, ' ',vs.name) 
-from variation_feature vf 
-left join variation_synonym vs on vf.variation_id = vs.variation_id 
- group by vf.variation_id");
-
+    my $sth = $dbh->prepare("select vf.variation_name, vf.source_id, group_concat(vs.source_id, ' ',vs.name), vf.variation_id 
+    from variation_feature vf 
+    left join variation_synonym vs on vf.variation_id = vs.variation_id 
+   group by vf.variation_id");
 
     $sth->execute() or die "Error:", $DBI::errstr;
 
-    my $xml;
-    my @variation_synonym;
+    while (my $rowcache = $sth->fetchall_arrayref(undef, 10_000)) {
 
+	my $xml;
+	while (my $row = shift(@{$rowcache})) {
+	    my $name = $row->[0];
+	    my @synonyms = split /,/, @$row->[2];
+	    my $snp_source = $source_hash->{$row->[1]}->{name};
 
-    my $rows = [];
-    while (my $row = (shift(@$rows) || 
-		      shift( @{ $rows= $sth->fetchall_arrayref(undef, 10_000) || []  } ))
-	  ){
+	    my $description =
+	      "A $snp_source SNP with "
+		. scalar @synonyms
+		  . ' synonym'
+		    . (  @synonyms > 1 | @synonyms < 1 ? 's '   : ' ' )
+		      . ( @synonyms > 0 ? "( " . (join "",  map{  map{  $source_hash->{$_->[0]}->{name} , ':', $_->[1] , ' ' } [split]  } @synonyms ) . ")" : '' );
 
-	my @synonyms = split /,/, @$row->[2];
-	my $snp_source = $source_hash->{$row->[1]}->{name};
-
-	my $description =
-        "A $snp_source SNP with "
-      . scalar @synonyms
-      . ' synonym'
-      . (  @synonyms > 1 | @synonyms < 1 ? 's '   : ' ' )
-      . ( @synonyms > 0 ? "( " . (join "",  map{  map{  $source_hash->{$_->[0]}->{name} , ':', $_->[1] , ' ' } [split]  } @synonyms ) . ")" : '' );
-
-	$xml =   qq{<entry id="$row->[0]">
+	    $xml .=   qq{<entry id="$name">
+<name>$name</name>
   <description>$description</description>
   <additional_fields>
     <field name="species">$species</field>
     <field name="featuretype">SNP</field>
+  </additional_fields>
   <cross_references>
     <ref dbname="$source_hash->{$row->[1]}->{name}" dbkey="$row->[0]"/>
   </cross_references>
 </entry>};
-
+	}
 	p($xml);
-
-
     }
 
     footer($sth->rows);
