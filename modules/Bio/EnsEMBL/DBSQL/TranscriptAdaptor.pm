@@ -7,10 +7,14 @@ interaction relating to the storage and retrieval of Transcripts
 
 =head1 SYNOPSIS
 
-  $db = Bio::EnsEMBL::DBSQL::DBAdaptor->new(...);
-  $slice_adaptor = $db->get_SliceAdaptor();
+  use Bio::EnsEMBL::Registry;
 
-  $transcript_adaptor = $db->get_TranscriptAdaptor();
+  Bio::EnsEMBL::Registry->load_registry_from_db(
+              -host => 'ensembldb.ensembl.org',
+              -user => 'anonymous'
+  );
+
+  $transcript_adaptor = Bio::EnsEMBL::Registry->get_adaptor("human", "core", "transcript");
 
   $transcript = $transcript_adaptor->fetch_by_dbID(1234);
 

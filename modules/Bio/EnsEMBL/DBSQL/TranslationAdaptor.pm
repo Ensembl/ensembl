@@ -23,10 +23,17 @@ Transcript object first, and then fetching the Translation.
 
 =head1 SYNOPSIS
 
-  my $db = Bio::EnsEMBL::DBSQL::DBAdaptor->new(...);
+  use Bio::EnsEMBL::Registry;
 
-  my $transcript_adaptor = $db->get_TranscriptAdaptor();
-  my $translation_adaptor = $db->get_TranslationAdaptor();
+  Bio::EnsEMBL::Registry->load_registry_from_db(
+              -host => 'ensembldb.ensembl.org',
+              -user => 'anonymous'
+  );
+
+  $transcript_adaptor = Bio::EnsEMBL::Registry->get_adaptor("human", "core", "transcript");
+  $translation_adaptor = Bio::EnsEMBL::Registry->get_adaptor("human", "core", "translation");
+
+
   my $transcript = $transcript_adaptor->fetch_by_dbID(131243);
   my $translation = $translation_adaptor->fetch_by_Transcript($transcript);
 

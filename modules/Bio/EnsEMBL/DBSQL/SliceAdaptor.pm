@@ -16,12 +16,17 @@ the creation of Slice objects.
 
 =head1 SYNOPSIS
 
-  use Bio::EnsEMBL::DBSQL::DBAdaptor;
   use Bio::EnsEMBL::Utils::Slice qw(split_Slices);
+  use Bio::EnsEMBL::Registry;
 
-  $db = Bio::EnsEMBL::DBSQL::DBAdaptor->new(...);
+  Bio::EnsEMBL::Registry->load_registry_from_db(
+              -host => 'ensembldb.ensembl.org',
+              -user => 'anonymous'
+  );
 
-  $slice_adaptor = $db->get_SliceAdaptor();
+  $slice_adaptor = Bio::EnsEMBL::Registry->get_adaptor("human", "core", "slice");
+
+
 
   # get a slice on the entire chromosome X
   $chr_slice = $slice_adaptor->fetch_by_region('chromosome','X');

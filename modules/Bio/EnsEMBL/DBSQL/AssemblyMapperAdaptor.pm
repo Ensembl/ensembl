@@ -13,10 +13,15 @@
 
 =head1 SYNOPSIS
 
-  my $db = Bio::EnsEMBL::DBSQL::DBAdaptor->new(...);
+  use Bio::EnsEMBL::Registry;
 
-  my $asma = $dba->get_AssemblyMapperAdaptor();
-  my $csa  = $dba->get_CoordSystemAdaptor();
+  Bio::EnsEMBL::Registry->load_registry_from_db(
+              -host => 'ensembldb.ensembl.org',
+              -user => 'anonymous'
+  );
+
+  $asma = Bio::EnsEMBL::Registry->get_adaptor("human", "core", "assemblymapper");
+  $csa = Bio::EnsEMBL::Registry->get_adaptor("human", "core", "coordsystem");
 
   my $chr33_cs   = $csa->fetch_by_name('chromosome', 'NCBI33');
   my $chr34_cs   = $csa->fetch_by_name('chromosome', 'NCBI34');

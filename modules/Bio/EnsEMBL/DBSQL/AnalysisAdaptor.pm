@@ -15,11 +15,14 @@ Bio::EnsEMBL::DBSQL::AnalysisAdaptor
 
 =head1 SYNOPSIS
 
-  use Bio::EnsEMBL::DBSQL::DBAdaptor;
+  use Bio::EnsEMBL::Registry;
 
-  $db = Bio::EnsEMBL::DBSQL::DBAdaptor->new(...);
+  Bio::EnsEMBL::Registry->load_registry_from_db(
+              -host => 'ensembldb.ensembl.org',
+              -user => 'anonymous'
+  );
 
-  $analysis_adaptor = $db_adaptor->get_AnalysisAdaptor;
+  $analysis_adaptor = Bio::EnsEMBL::Registry->get_adaptor("human", "core", "analysis");
 
   my $analysis = $analysis_adaptor->fetch_by_logic_name('genscan');
 
