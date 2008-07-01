@@ -13,9 +13,10 @@ Bio::EnsEMBL::DBSQL::UnconventionalTranscriptAssociationAdaptor
 
 =head1 SYNOPSIS
 
-$utaa = $database_adaptor->get_UnconventionalTranscriptAssociationAdaptor();
+  $utaa = $registry->get_adaptor( 'Human', 'Core',
+                                'UnconventionalTranscriptAssociation' );
 
-my $uta = $utaa->fetch_all_by_type('antisense');
+  my $uta = $utaa->fetch_all_by_type('antisense');
 
 =head1 DESCRIPTION
 
@@ -175,6 +176,7 @@ sub fetch_all_by_transcript {
   Caller     : general
   Status     : At Risk
              : under development
+
 =cut
 
 sub store {

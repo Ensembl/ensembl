@@ -14,13 +14,17 @@ MySQL Database queries to load and store external object references.
 
 =head1 SYNOPSIS
 
-$db_entry_adaptor = $db_adaptor->get_DBEntryAdaptor();
-$db_entry = $db_entry_adaptor->fetch_by_dbID($id);
+  $db_entry_adaptor =
+    $registry->get_adaptor( 'Human', 'Core', 'DBEntry' );
 
-my $gene = $db_adaptor->get_GeneAdaptor->fetch_by_stable_id('ENSG00000101367');
-@db_entries = @{$db_entry_adaptor->fetch_all_by_Gene($gene)};
-@gene_ids = $db_entry_adaptor->list_gene_ids_by_extids('BAB15482');
+  $db_entry = $db_entry_adaptor->fetch_by_dbID($id);
 
+  my $gene_adaptor = $registry->get_adaptor( 'Human', 'Core', 'Gene' );
+
+  my $gene = $gene_adaptor->fetch_by_stable_id('ENSG00000101367');
+
+  @db_entries = @{ $db_entry_adaptor->fetch_all_by_Gene($gene) };
+  @gene_ids   = $db_entry_adaptor->list_gene_ids_by_extids('BAB15482');
 
 =head1 CONTACT
 

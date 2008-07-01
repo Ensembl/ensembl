@@ -13,8 +13,10 @@ Bio::EnsEMBL::DBSQL::SequenceAdaptor - produce sequence strings from locations
 
 =head1 SYNOPSIS
 
-$seq_adptr = $database_adaptor->get_SequenceAdaptor();
-$dna = ${$seq_adptr->fetch_by_Slice_start_end_strand($slice, 1, 1000, -1);}
+  my $sa = $registry->get_adaptor( 'Human', 'Core', 'Sequence' );
+
+  my $dna =
+    ${ $sa->fetch_by_Slice_start_end_strand( $slice, 1, 1000, -1 ) };
 
 =head1 DESCRIPTION
 

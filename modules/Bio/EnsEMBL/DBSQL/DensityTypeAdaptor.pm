@@ -12,10 +12,12 @@ Bio::EnsEMBL::DBSQL::DensityTypeAdaptor
 
 =head1 SYNOPSIS
 
-my $density_type_adaptor = $database_adaptor->get_DensityTypeAdaptor();
-@density_types = @{$density_type_adaptor->fetch_all()};
+  my $density_type_adaptor =
+    $registry->get_adaptor( 'Human', 'Core', 'DensityType' );
 
-my $dt = $density_type_adaptor->fetch_by_dbID(12);
+  my @density_types = @{ $density_type_adaptor->fetch_all() };
+
+  my $dt = $density_type_adaptor->fetch_by_dbID(12);
 
 
 =head1 DESCRIPTION
