@@ -7,11 +7,14 @@ storage of Gene objects
 
 =head1 SYNOPSIS
 
-  use Bio::EnsEMBL::DBSQL::DBAdaptor;
+  use Bio::EnsEMBL::Registry;
 
-  $dba = Bio::EnsEMBL::DBSQL::DBAdaptor->new(...);
+  Bio::EnsEMBL::Registry->load_registry_from_db(
+              -host => 'ensembldb.ensembl.org',
+              -user => 'anonymous',
+  );
 
-  $gene_adaptor = $dba->get_GeneAdaptor();
+  $gene_adaptor = Bio::EnsEMBL::Registry->get_adaptor("human", "core", "gene");
 
   $gene = $gene_adaptor->fetch_by_dbID(1234);
 
@@ -19,7 +22,7 @@ storage of Gene objects
 
   @genes = @{$gene_adaptor->fetch_all_by_external_name('BRCA2')};
 
-  $slice_adaptor = $db->get_SliceAdaptor;
+  $slice_adaptor = Bio::EnsEMBL::Registry->get_adaptor("human", "core", "slice");;
   $slice = $slice_adaptor->fetch_by_region('chromosome', '1', 1, 1000000);
   @genes = @{$gene_adaptor->fetch_all_by_Slice($slice)};
 

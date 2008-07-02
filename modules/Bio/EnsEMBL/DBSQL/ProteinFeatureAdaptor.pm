@@ -15,14 +15,14 @@ Bio::EnsEMBL::DBSQL::ProteinFeatureAdaptor
 
 =head1 SYNOPSIS
 
-  use Bio::EnsEMBL::DBSQL::DBAdaptor;
-  use Bio::EnsEMBL::DBSQL::ProteinFeatureAdaptor;
+  use Bio::EnsEMBL::Registry;
 
-  $db = new Bio::EnsEMBL::DBSQL::DBAdaptor( -user => 'root', 
-                                            -db => 'pog' ,
-                                            -host => 'caldy' ,
-                                            -driver => 'mysql' );
-  my $pfa = $db->get_ProteinFeatureAdaptor();
+  Bio::EnsEMBL::Registry->load_registry_from_db(
+              -host => 'ensembldb.ensembl.org',
+              -user => 'anonymous'
+  );
+
+  $pfa = Bio::EnsEMBL::Registry->get_adaptor("human", "core", "proteinfeature");
 
   my @prot_feats = @{$pfa->fetch_all_by_translation_id(1231)};
 

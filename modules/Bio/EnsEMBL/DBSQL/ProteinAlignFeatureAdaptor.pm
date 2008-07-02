@@ -14,12 +14,12 @@ Adaptor for ProteinAlignFeatures
 
 =head1 SYNOPSIS
 
-    $pafa = $dbadaptor->get_ProteinAlignFeatureAdaptor();
+  $pafa =
+    $registry->get_adaptor( 'Human', 'Core', 'ProteinAlignFeature' );
 
-    my @features = @{$pafa->fetch_all_by_Slice($slice)};
+  my @features = @{ $pafa->fetch_all_by_Slice($slice) };
 
-    $pafa->store(@features);
-
+  $pafa->store(@features);
 
 =head1 DESCRIPTION
 

@@ -9,9 +9,15 @@ Bio::EnsEMBL::DBSQL::CoordSystemAdaptor
 
 =head1 SYNOPSIS
 
-  my $db = Bio::EnsEMBL::DBSQL::DBAdaptor->new(...);
 
-  my $csa = $db->get_CoordSystemAdaptor();
+  use Bio::EnsEMBL::Registry;
+
+  Bio::EnsEMBL::Registry->load_registry_from_db(
+              -host => 'ensembldb.ensembl.org',
+              -user => 'anonymous'
+  );
+
+  $csa = Bio::EnsEMBL::Registry->get_adaptor("human", "core", "coordsystem");
 
   #
   # Get all coord systems in the database:

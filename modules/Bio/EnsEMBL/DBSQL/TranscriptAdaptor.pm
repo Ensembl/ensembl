@@ -7,10 +7,14 @@ interaction relating to the storage and retrieval of Transcripts
 
 =head1 SYNOPSIS
 
-  $db = Bio::EnsEMBL::DBSQL::DBAdaptor->new(...);
-  $slice_adaptor = $db->get_SliceAdaptor();
+  use Bio::EnsEMBL::Registry;
 
-  $transcript_adaptor = $db->get_TranscriptAdaptor();
+  Bio::EnsEMBL::Registry->load_registry_from_db(
+              -host => 'ensembldb.ensembl.org',
+              -user => 'anonymous'
+  );
+
+  $transcript_adaptor = Bio::EnsEMBL::Registry->get_adaptor("human", "core", "transcript");
 
   $transcript = $transcript_adaptor->fetch_by_dbID(1234);
 
@@ -1390,8 +1394,9 @@ sub fetch_all_by_exon_supporting_evidence {
                one of "dna_align_feature" or "protein_align_feature"
   Arg [3]    : (optional) Bio::Ensembl::Analysis
   Example    : $transcripts = $transcript_adaptor->fetch_all_by_transcript_supporting_evidence('XYZ', 'dna_align_feature');
-  Description: Gets all the transcripts with evidence for a specified hit on a
-               particular type of feature. Optionally filter by analysis.
+  Description: Gets all the transcripts with evidence from a specified hit_name on a particular type of feature, stored in the  
+               transcript_supporting_feature table. Optionally filter by analysis.  For hits stored in the supporting_feature 
+               table (linked to exons) use fetch_all_by_exon_supporting_evidence instead.
   Returntype : Listref of Bio::EnsEMBL::Transcript objects
   Exceptions : If feature_type is not of correct type.
   Caller     : general
@@ -1410,7 +1415,7 @@ sub fetch_all_by_transcript_supporting_evidence {
   my $anal_from = "";
   $anal_from = ", analysis a " if ($analysis);
   my $anal_where = "";
-  $anal_from = "AND a.analysis_id = f.analysis_id AND a.analysis_id=? "
+  $anal_where = "AND a.analysis_id = f.analysis_id AND a.analysis_id=? "
     if ($analysis);
 
   my $sql = qq(

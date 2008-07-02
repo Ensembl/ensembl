@@ -106,7 +106,7 @@ sub DESTROY {
 # Comment out this "__END__" for printing out handy debug information
 # (every query if you want).
 
-__END__
+#__END__
 
 # To stop caching messing up your timings, try doing the following on
 # any adapter:

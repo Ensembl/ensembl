@@ -15,10 +15,13 @@
 
 =head1 SYNOPSIS
 
-  my $meta_container = $db_adaptor->get_MetaContainer();
+  my $meta_container =
+    $registry->get_adaptor( 'Human', 'Core', 'MetaContainer' );
+
   my $species = $meta_container->get_Species();
 
-  my @mapping_info = @{$meta_container->list_value_by_key('assembly.mapping')};
+  my @mapping_info =
+    @{ $meta_container->list_value_by_key('assembly.mapping') };
 
 =head1 DESCRIPTION
 

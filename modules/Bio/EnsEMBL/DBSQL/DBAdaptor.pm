@@ -3,28 +3,29 @@
 
 =head1 SYNOPSIS
 
-    $db = Bio::EnsEMBL::DBSQL::DBAdaptor->new(
-        -user   => 'root',
-        -dbname => 'pog',
-        -host   => 'caldy',
-        -driver => 'mysql'
-        );
+    $db =
+      Bio::EnsEMBL::DBSQL::DBAdaptor->new( -user   => 'root',
+                                           -dbname => 'pog',
+                                           -host   => 'caldy',
+                                           -driver => 'mysql' );
 
     $gene_adaptor = $db->get_GeneAdaptor();
 
-    $gene = $gene_adaptor()->fetch_by_stable_id($stable_id);
+    $gene = $gene_adaptor->fetch_by_stable_id($stable_id);
 
-    $slice = $db->get_SliceAdaptor()->fetch_by_chr_start_end('X', 1, 10000);
+    $slice =
+      $db->get_SliceAdaptor()->fetch_by_chr_start_end( 'X', 1, 10000 );
 
 =head1 DESCRIPTION
 
 
 Formerly this class provided database connectivity and a means to retrieve
 object adaptors.  This class is now provided for convenience and backwards
-compatibility, but delegates its connection responsibilities to the
+compatibility, and delegates its connection responsibilities to the
 DBConnection class (no longer inherited from) and its object adaptor
 retrieval to the static Bio::EnsEMBL::Registry.
 
+Please use Bio::EnsEMBL::Registry to retrieve object adaptors.
 
 =head1 CONTACT
 

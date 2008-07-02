@@ -15,13 +15,11 @@ Bio::EnsEMBL::MiscSet objects.
 
 =head1 SYNOPSIS
 
-  #$db is a Bio::EnsEMBL::DBSQL::DBAdaptor object:
-  $msa = $db->get_MiscSetAdaptor();
+  my $msa = $registry->get_adaptor( 'Human', 'Core', 'MiscSet' );
 
-  $misc_set = $msa->fetch_by_dbID(1234);
+  my $misc_set = $msa->fetch_by_dbID(1234);
 
   $misc_set = $msa->fetch_by_code('clone');
-
 
 =head1 DESCRIPTION
 

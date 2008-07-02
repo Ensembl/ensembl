@@ -1160,11 +1160,11 @@ sub load_registry_from_db {
              [qw(HOST PORT USER PASS VERBOSE DB_VERSION WAIT_TIMEOUT )],
              @args );
 
-  my $go_version           = 0;
-  my $compara_version      = 0;
+  my $go_version = 0;
+  my $compara_version =0;
+  my $ancestral_version =0;
 
   $user ||= "ensro";
-
   if ( !defined($port) ) {
     $port = 3306;
     if ( $host eq "ensembldb.ensembl.org" ) {
@@ -1205,6 +1205,10 @@ sub load_registry_from_db {
     } elsif ( $db =~ /^ensembl_compara_(\d+)/ ) {
       if ( $1 eq $software_version ) {
         $compara_version = $1;
+      }
+    } elsif ( $db =~ /^ensembl_ancestral_(\d+)/ ) {
+      if ( $1 eq $software_version ) {
+        $ancestral_version = $1;
       }
     } elsif ( $db =~ /^ensembl_go_(\d+)/ ) {
       if ( $1 eq $software_version ) {
@@ -1434,21 +1438,37 @@ sub load_registry_from_db {
     print("No Compara database found\n");
   }
 
+  # Ancestral sequences
+  if ($ancestral_version) {
+    my $ancestral_db = "ensembl_ancestral_" . $ancestral_version;
+    my $dba =
+      Bio::EnsEMBL::DBSQL::DBAdaptor->new(
+                                      -group   => "core",
+                                      -species => "Ancestral sequences",
+                                      -host    => $host,
+                                      -user    => $user,
+                                      -pass    => $pass,
+                                      -port    => $port,
+                                      -wait_timeout => $wait_timeout,
+                                      -dbname       => $ancestral_db );
+    print $ancestral_db. " loaded\n" if ($verbose);
+  } else {
+    print "No Ancestral database found" if ($verbose);
+  }
+
+
   # GO
   if ($go_version) {
     eval "require Bio::EnsEMBL::ExternalData::GO::GOAdaptor";
     if ($@) {
-      # Ignore GO as code required not there for this
+      #ignore go as code required not there for this
       #      print $@;
       if ($verbose) {
-        printf( "GO software not installed "
-                  . "so go database ensemb_go_%d "
-                  . "will be ignored\n",
-                $go_version );
+        print "GO software not installed "
+          . "so GO database ensemb_go_$go_version will be ignored\n";
       }
     } else {
       my $go_db = "ensembl_go_" . $go_version;
-
       my $dba =
         Bio::EnsEMBL::ExternalData::GO::GOAdaptor->new(
                                                     -group   => "go",
@@ -1459,9 +1479,7 @@ sub load_registry_from_db {
                                                     -port    => $port,
                                                     -dbname  => $go_db
         );
-      if ($verbose) {
-        printf( "%s loaded\n", $go_db );
-      }
+      print $go_db. " loaded\n" if ($verbose);
     }
   } elsif ($verbose) {
     print("No GO database found\n");

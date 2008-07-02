@@ -11,11 +11,11 @@ Bio::EnsEMBL::DBSQL::DnaAlignFeatureAdaptor - Adaptor for DnaAlignFeatures
 
 =head1 SYNOPSIS
 
-    $dafa = $dbadaptor->get_DnaAlignFeatureAdaptor();
+  $dafa = $registry->get_adaptor( 'Human', 'Core', 'DnaAlignFeature' );
 
-    @features = @{$dafa->fetch_by_Slice($slice)};
+  my @features = @{ $dafa->fetch_by_Slice($slice) };
 
-    $dafa->store(@features);
+  $dafa->store(@features);
 
 =head1 DESCRIPTION
 

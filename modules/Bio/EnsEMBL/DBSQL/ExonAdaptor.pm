@@ -18,8 +18,9 @@ storage of exon objects
 
 =head1 SYNOPSIS
 
-  $exon_adaptor = $database_adaptor->get_ExonAdaptor();
-  $exon = $exon_adaptor->fetch_by_dbID($dbID);
+  my $exon_adaptor = $registry->get_adaptor( 'Human', 'Core', 'Exon' );
+
+  my $exon = $exon_adaptor->fetch_by_dbID($dbID);
 
 =head1 DESCRIPTION
 

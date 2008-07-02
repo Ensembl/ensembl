@@ -12,11 +12,10 @@ features from the database.
 
 =head1 SYNOPSIS
 
-  $supporting_feature_adaptor =
-    $database_adaptor->get_SupportingFeatureAdaptor();
+  my $sfa =
+    $registry->get_adaptor( 'Human', 'Core', 'SupportingFeature' );
 
-  @supporting_feats =
-    @{ $supporting_feat_adaptor->fetch_all_by_Exon($exon) };
+  my @supporting_feats = @{ $sfa->fetch_all_by_Exon($exon) };
 
 =head1 CONTACT
 
