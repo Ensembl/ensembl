@@ -238,10 +238,10 @@ sub project_display_names {
 
       my $dbname = $dbEntry->dbname();
 
-      return if (!$all_sources && $dbname ne 'HGNC' && $dbname ne 'Vega_gene' && $dbname ne 'Vega_gene_like' );
+      return if (!$all_sources && $dbname !~ /HGNC/);
 
-      # skip Vega clone names
-      return if (($dbname eq 'Vega_gene' || $dbname eq 'Vega_gene_like') && $dbEntry->display_id() =~ /\./);
+      # skip Vega clone names (possibly not needed)
+      #return if (lc($dbname) =~ /vega/ && $dbEntry->display_id() =~ /\./);
 
       # Modify the dbEntry to indicate it's not from this species - set info_type & info_text
       my $info_txt = "from $from_latin_species gene " . $from_gene->stable_id();
@@ -268,19 +268,22 @@ sub project_display_names {
       # other xrefs from this dbname as assigned to (see build_db_to_type)
       # Note that if type is not found, it means that we're dealing with a db that has no
       # xrefs in the target database, e.g. MarkerSymbol in mouse -> rat
-      # In this case just assign to transcripts
+      # In this case just assign to transcripts, except for special cases (e.g. 
+      # HGNC_curated_gene should always go to genes
 
       my @to_transcripts = @{$to_gene->get_all_Transcripts};
       my $to_transcript = $to_transcripts[0];
 
-      my $type = $db_to_type{$dbEntry->dbname()};
+      my $dbname = $dbEntry->dbname();
 
-      if ($type eq "Gene") {
+      my $type = $db_to_type{$dbname};
+
+      if ($type eq "Gene" || $dbname =~ /HGNC_.*gene/) {
 
 	$to_gene->add_DBEntry($dbEntry);
 	$to_dbea->store($dbEntry, $to_gene->dbID(), 'Gene', 1) if (!$print);
 
-      } elsif ($type eq "Transcript" || !$type) {
+      } elsif ($type eq "Transcript" || $dbname =~ /HGNC_.*transcript/ || !$type) {
 	
 	$to_transcript->add_DBEntry($dbEntry);
 	$to_dbea->store($dbEntry, $to_transcript->dbID(), 'Transcript', 1) if (!$print);
