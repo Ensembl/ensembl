@@ -44,7 +44,7 @@ $species ||= 'ALL';
 $ind     ||= 'ALL';
 $dir     ||= ".";
 $release ||= 'LATEST';
-
+$port    ||= 3306;
 usage() and exit unless ( $host && $port && $user );
 
 my $entry_count;
@@ -111,27 +111,15 @@ sub usage {
 Usage: perl $0 <options>
 
   -host         Database host to connect to. Defaults to ens-staging.
-
   -port         Database port to connect to. Defaults to 3306.
-
   -species      Species name. Defaults to ALL.
-
   -index        Index to create. Defaults to ALL.
-
   -release      Release of the database to dump. Defaults to 'latest'.
-
   -user         Database username. Defaults to ensro.
-
   -pass         Password for user.
-
   -dir          Directory to write output to. Defaults to /lustre/scratch1/ensembl/gp1/xml.
-
   -nogzip       Don't compress output as it's written.
-
-  -max_entries  Only dump this many entries for testing.
-
   -help         This message.
-
   -inifile      First take the arguments from this file. Then overwrite with what is provided in the command line
 
 EOF
@@ -301,12 +289,14 @@ sub dumpSNP {
 <name>$name</name>
   <description>$description</description>
   <additional_fields>
-    <field name="species">$species</field>
-    <field name="featuretype">SNP</field>
+    <field name="species">$dbspecies</field>
+    <field name="featuretype">SNP</field>};
+# 	    foreach my $syn(@synonyms) {
+# 		$xml .= qq{
+#     <field name="synonym">$syn</field>};
+# 	    }
+$xml .= qq{
   </additional_fields>
-  <cross_references>
-    <ref dbname="$source_hash->{$row->[1]}->{name}" dbkey="$row->[0]"/>
-  </cross_references>
 </entry>};
 	}
 	p($xml);
@@ -709,13 +699,14 @@ sub dumpOligoProbe {
     );
     $sth->execute();
 
-    my $count = 0;
-    while ( my $data = $sth->fetchrow_arrayref ) {
-        p OligoProbeXML( $data, $species );
 
-#      print  join "\t", ("$dbspecies\t")."$type Oligo Probe set",
-#     $hid, "/$species/featureview?type=OligoProbe;id=$hid",
-#    $hid, qq($type oligo probeset $hid hits the genome in $count locations.\n);
+    while ( my $rowcache = $sth->fetchall_arrayref( undef, '10_000' ) ) {
+my $xml;
+        while ( my $data = shift( @{$rowcache} ) ) {
+            $xml .=  OligoProbeXML( $data, $dbspecies );
+
+        }
+            p $xml;
     }
 
     footer( $sth->rows );
@@ -723,7 +714,7 @@ sub dumpOligoProbe {
 }
 
 sub OligoProbeXML {
-    my ( $xml_data, $species ) = @_;
+    my ( $xml_data, $dbspecies ) = @_;
 
     my $desc =
 qq{$xml_data->[0], $xml_data->[2] oligo probeset $xml_data->[0] hits the genome in $xml_data->[1] locations.};
@@ -734,7 +725,7 @@ qq{$xml_data->[0], $xml_data->[2] oligo probeset $xml_data->[0] hits the genome 
    <description>$desc</description>
    <additional_fields>
       <field name="type">$xml_data->[2]</field>
-     <field name="species">$species</field>
+     <field name="species">$dbspecies</field>
     <field name="featuretype">OligoProbe</field>
   </additional_fields>
 </entry>};
