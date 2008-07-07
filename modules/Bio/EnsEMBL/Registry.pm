@@ -837,6 +837,7 @@ sub get_adaptor{
 
   my $ret = $registry_register{$species}{lc($group)}{lc($type)};
   if(!defined($ret)){
+      
     return undef;
   }
   if(!ref($ret)){ # not instantiated yet
@@ -1162,8 +1163,6 @@ sub load_registry_from_db {
   my ($host, $port, $user, $pass, $verbose, $db_version, $wait_timeout) =
     rearrange([qw(HOST PORT USER PASS VERBOSE DB_VERSION WAIT_TIMEOUT )], @args);
 
-
-
   my $go_version = 0;
   my $compara_version =0;
   my $ancestral_version =0;
@@ -1184,18 +1183,21 @@ sub load_registry_from_db {
 
   my $res = $db->selectall_arrayref( "show databases" );
   my @dbnames = map {$_->[0] } @$res;
-  
+
   my %temp;
   my $software_version = $self->software_version();
   if (defined($db_version)) {
     $software_version = $db_version;
   }
-  print "Will only load $software_version databases\n" if ($verbose);
+  print "Will only load release $software_version databases\n" if ($verbose);
   for my $db (@dbnames){
     if($db =~ /^([a-z]+_[a-z]+_[a-z]+)_(\d+)_(\d+[a-z]*)/){
       if($2 eq $software_version){
 	$temp{$1} = $2."_".$3;
       }
+    }
+    elsif($db =~ /^(.+)_(userdata)$/){
+	$temp{$1} = $2;
     }
     elsif($db =~ /^ensembl_compara_(\d+)/){
       if($1 eq $software_version){
@@ -1299,6 +1301,24 @@ sub load_registry_from_db {
       print $other_db." loaded\n" if ($verbose);       
   }
   
+  my @userupload_dbs = grep { /_userdata$/ } @dbnames;
+  for my $userupload_db ( @userupload_dbs ) {
+    my ($species) = ( $userupload_db =~ /(^.+)_userdata$/ );
+    my $dba = Bio::EnsEMBL::DBSQL::DBAdaptor->new
+      ( -group => "userupload",
+	-species => $species,
+	-host => $host,
+	-user => $user,
+	-pass => $pass,
+	-port => $port,
+        -wait_timeout => $wait_timeout,
+	-dbname => $userupload_db
+      );
+      (my $sp = $species ) =~ s/_/ /g;
+      $self->add_alias( $species, $sp );
+      print $userupload_db." loaded\n" if ($verbose);       
+  }
+
   
   eval "require Bio::EnsEMBL::Variation::DBSQL::DBAdaptor";
   if($@) {
