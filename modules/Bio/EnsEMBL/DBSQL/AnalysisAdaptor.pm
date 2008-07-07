@@ -419,7 +419,6 @@ sub store {
   }
 
   my $dbID;
-
   # if we need to fetch the timestamp, or the insert failed due to existance
   # of an existing entry, we need to retrieve the entry from the db
   # note: $sth->execute can return 0E0 on error which is zero, but true
@@ -434,16 +433,13 @@ sub store {
 
     $dbID = $new_analysis->dbID();
     $analysis->created($new_analysis->created());
-    $sth->finish();
-  } else {
-    $dbID = $sth->{'mysql_insertid'};
-    $sth->finish();
+  } 
+  
+  $dbID ||= $sth->{'mysql_insertid'};
+  $sth->finish();
 
-    # store description and display_label
-    if( defined( $analysis->description() ) ||
-	defined( $analysis->display_label() )) {
-
-
+  # store description and display_label
+  if( defined( $analysis->description() ) || defined( $analysis->display_label() )) {
       $sth = $self->prepare( "INSERT IGNORE INTO analysis_description (analysis_id, display_label, description, displayable, web_data) VALUES (?,?,?,?, ?)");
 
       $sth->bind_param(1,$dbID,SQL_INTEGER);
@@ -454,8 +450,8 @@ sub store {
       $sth->execute();
 
       $sth->finish();
-    }
   }
+  
 
 
   $self->{_cache}->{$dbID} = $analysis;
