@@ -7,8 +7,8 @@
 
 -- Add the new species_id column after meta_id
 ALTER TABLE meta ADD COLUMN
-  species_id INT DEFAULT 1      -- Default species_id is 1
-                                -- NULL means "not speices specific"
+  species_id INT UNSIGNED DEFAULT 1 -- Default species_id is 1
+                                    -- NULL means "not species specific"
   AFTER meta_id;
 
 -- Redo the indexes on the meta table

@@ -869,7 +869,7 @@ CREATE TABLE prediction_transcript (
 CREATE TABLE meta (
 
   meta_id 		      INT NOT NULL AUTO_INCREMENT,
-  species_id                  INT DEFAULT NULL,
+  species_id                  INT UNSIGNED DEFAULT 1,
   meta_key                    VARCHAR(40) NOT NULL,
   meta_value                  VARCHAR(255) NOT NULL,
 
@@ -1342,7 +1342,7 @@ CREATE TABLE assembly_exception (
 CREATE TABLE coord_system (
 
   coord_system_id             INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  species_id                  INT(10) UNSIGNED NOT NULL DEFAULT 1,
+  species_id                  INT UNSIGNED NOT NULL DEFAULT 1,
   name                        VARCHAR(40) NOT NULL,
   version                     VARCHAR(40) DEFAULT NULL,
   rank                        INT NOT NULL,
