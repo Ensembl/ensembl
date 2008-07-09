@@ -181,7 +181,7 @@
 4610	OTTT	1	XREF	1	0	1	Havana transcript	ALT_TRANS	\N	\N
 4620	OTTP	1	XREF	1	0	1	Havana translation	MISC	\N	\N
 4650	shares_CDS_with	1	XREF	1	0	1	transcript having same CDS	ALT_TRANS	\N	\N
-4660	shares_CDS_with_ENST	1	XREF	1	0	1	HAVANA transcripts (Shares CDS with ENST)	ALT_TRANS	\N	\N
+4660	shares_CDS_with_ENST	1	XREF	1	0	1	Imported HAVANA transcripts (Shares CDS with ENST)	ALT_TRANS	\N	\N
 4670	shares_CDS_with_OTTT	1	XREF	1	0	1	Ensembl transcripts (Shares CDS with OTTT)	ALT_TRANS	\N	\N
 4680	shares_CDS_and_UTR_with_OTTT	1	XREF	1	0	1	Ensembl transcripts (Identical to OTTT)	ALT_TRANS	\N	\N
 4700	Medaka	1	XREF	1	0	1	Medaka Genome Project	MISC	\N	\N
