@@ -374,8 +374,9 @@ sub _objs_from_sth {
       $dta->fetch_by_dbID($density_type_id);
 
     #get the slice object
+    #need to get the internal_seq_region, if present
+    $seq_region_id = $self->get_seq_region_id_internal($seq_region_id);
     my $slice = $slice_hash{"ID:".$seq_region_id};
-
     if(!$slice) {
       $slice = $sa->fetch_by_seq_region_id($seq_region_id);
       $slice_hash{"ID:".$seq_region_id} = $slice;

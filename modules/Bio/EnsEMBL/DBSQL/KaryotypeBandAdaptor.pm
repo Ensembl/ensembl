@@ -117,6 +117,9 @@ sub _objs_from_sth {
                      \$seq_region_end, \$band, \$stain);
 
   while ( $sth->fetch() ) {
+    #need to get the internal_seq_region, if present
+    $seq_region_id = $self->get_seq_region_id_internal($seq_region_id);
+
     my $slice = $slice_cache{$seq_region_id} ||=
       $slice_adaptor->fetch_by_seq_region_id($seq_region_id);
 

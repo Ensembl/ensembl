@@ -150,6 +150,12 @@ sub new {
   $self->{'_is_sequence_level'} = {};
   $self->{'_is_default_version'} = {};
 
+  #cache to store the seq_region_mapping information
+  #from internal->external
+  $self->{'_internal_seq_region_mapping'} = {};
+  #from external->internal
+  $self->{'_external_seq_region_mapping'} = {};
+
   my $sth = $self->prepare(
     'SELECT coord_system_id, name, rank, version, attrib ' .
     'FROM coord_system');
@@ -191,8 +197,29 @@ sub new {
 
   $self->_cache_mapping_paths;
 
+  $self->_cache_seq_region_mapping;
 
   return $self;
+}
+
+#this cache will load the information from the seq_region_table, if any, to allow mapping
+#between internal and external seq_region_id
+sub _cache_seq_region_mapping{
+    my $self = shift;
+
+    #for a given core database, will return the schema_build information
+    my $schema_build = $self->db->_get_schema_build();
+    #prepare the query to get relation for the current database being used
+    my $sql = 'SELECT s.internal_seq_region_id, s.external_seq_region_id from seq_region_mapping s, mapping_set ms where ms.mapping_set_id = s.mapping_set_id and ms.schema_build="'.$schema_build.'"';
+    #load the cache: 
+    foreach my $row (@{$self->db->dbc->db_handle->selectall_arrayref($sql)}){
+	#the internal->external
+	$self->{'_internal_seq_region_mapping'}->{$row->[0]} = $row->[1];
+	#the external->internal
+	$self->{'_external_seq_region_mapping'}->{$row->[1]} = $row->[0];
+    }
+    #and return
+    return;
 }
 
 sub _cache_mapping_paths{

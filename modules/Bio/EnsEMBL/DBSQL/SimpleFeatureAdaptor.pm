@@ -229,6 +229,8 @@ sub _objs_from_sth {
     my $analysis = $analysis_hash{$analysis_id} ||=
       $aa->fetch_by_dbID($analysis_id);
 
+    #need to get the internal_seq_region, if present
+    $seq_region_id = $self->get_seq_region_id_internal($seq_region_id);
     #get the slice object
     my $slice = $slice_hash{"ID:".$seq_region_id};
 

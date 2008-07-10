@@ -1376,6 +1376,9 @@ sub _objs_from_sth {
 
     #get the canonical_transcript object
     my $canonical_transcript = $ta->fetch_by_dbID($canonical_transcript_id);
+
+    #need to get the internal_seq_region, if present
+    $seq_region_id = $self->get_seq_region_id_internal($seq_region_id);
     my $slice = $slice_hash{"ID:".$seq_region_id};
 
     if(!$slice) {

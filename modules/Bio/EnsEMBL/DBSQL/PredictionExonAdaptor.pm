@@ -42,6 +42,7 @@ use Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor;
 use Bio::EnsEMBL::PredictionExon;
 use Bio::EnsEMBL::Utils::Exception qw( warning throw deprecate );
 
+
 @ISA = qw( Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor );
 
 
@@ -347,6 +348,8 @@ sub _objs_from_sth {
   }
 
   FEATURE: while($sth->fetch()) {
+    #need to get the internal_seq_region, if present
+    $seq_region_id = $self->get_seq_region_id_internal($seq_region_id);
     my $slice = $slice_hash{"ID:".$seq_region_id};
     my $dest_mapper = $mapper;
 

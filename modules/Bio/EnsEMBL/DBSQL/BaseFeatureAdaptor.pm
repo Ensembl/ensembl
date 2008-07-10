@@ -163,7 +163,7 @@ sub fetch_all_by_Slice_and_score {
 sub fetch_all_by_Slice_constraint {
   my($self, $slice, $constraint, $logic_name) = @_;
 
-  my @result;
+  my @result = ();
 
   if(!ref($slice) || !$slice->isa("Bio::EnsEMBL::Slice")) {
     throw("Bio::EnsEMBL::Slice argument expected.");
@@ -352,7 +352,8 @@ sub _slice_fetch {
       } else {
 	$sr_id = $self->db()->get_SliceAdaptor()->get_seq_region_id($slice);
       }
-
+      #if there is mapping information, use the external_seq_region_id to get features
+      my $sr_id = $self->get_seq_region_id_external($sr_id);
       $constraint .= " AND " if($constraint);
       $constraint .=
           "${tab_syn}.seq_region_id = $sr_id AND " .
@@ -400,7 +401,6 @@ sub _slice_fetch {
         my $id_str = join(',', @ids);
         $constraint .= " AND " if($constraint);
         $constraint .= "${tab_syn}.seq_region_id IN ($id_str)";
-
         my $fs = $self->generic_fetch($constraint, $mapper, $slice);
 
         $fs = $self->_remap( $fs, $mapper, $slice );
@@ -427,7 +427,6 @@ sub _slice_fetch {
             $constraint .=
               " AND ${tab_syn}.seq_region_start >= $min_start";
           }
-
           my $fs = $self->generic_fetch($constraint,$mapper,$slice);
 
           $fs = $self->_remap( $fs, $mapper, $slice );
@@ -442,6 +441,22 @@ sub _slice_fetch {
 }
 
 
+#for a given seq_region_id, gets the one used in an external database, if present, otherwise, returns the internal one
+sub get_seq_region_id_external{
+    my $self = shift;
+    my $sr_id = shift;
+ 
+    return (exists $self->db->get_CoordSystemAdaptor->{'_internal_seq_region_mapping'}->{$sr_id} ? $self->db->get_CoordSystemAdaptor->{'_internal_seq_region_mapping'}->{$sr_id} : $sr_id);
+}
+
+#for a given seq_region_id and coord_system, gets the one used in the internal (core) database
+sub get_seq_region_id_internal{
+    my $self = shift;
+    my $sr_id = shift;
+
+    return (exists $self->db->get_CoordSystemAdaptor->{'_external_seq_region_mapping'}->{$sr_id} ? $self->db->get_CoordSystemAdaptor->{'_external_seq_region_mapping'}->{$sr_id} : $sr_id);
+
+}
 
 #
 # Helper function containing some common feature storing functionality
