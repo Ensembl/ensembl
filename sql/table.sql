@@ -1515,3 +1515,34 @@ CREATE TABLE unconventional_transcript_association (
        KEY (gene_id)
 
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+
+################################################################################
+#
+# Table structure for seq_region mapping between releases
+#
+# Stores how the core seq_region_id have changed from release to release
+
+CREATE TABLE seq_region_mapping (
+
+	external_seq_region_id	INT(10) UNSIGNED NOT NULL,
+	internal_seq_region_id	INT(10) UNSIGNED NOT NULL,
+	mapping_set_id		INT(10) UNSIGNED NOT NULL,
+
+	KEY (mapping_set_id)
+
+) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+
+################################################################################
+#
+# Table structure for seq_region mapping between releases
+#
+# Stores how which mapping group the seq_region are for a particular schema
+
+CREATE TABLE mapping_set (
+
+	mapping_set_id	INT(10)	UNSIGNED NOT NULL,
+	schema_build	VARCHAR(20) NOT NULL,
+
+	PRIMARY KEY(schema_build)
+
+) ENGINE=MyISAM DEFAULT CHARSET=latin1;
