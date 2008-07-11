@@ -40,7 +40,7 @@ my $verbose = 0;
             'seq_region_name:s' => \$seq_region_name,
             'write!' => \$write,
             'include_non_ref!' => \$include_non_ref,
-            'verbose!' => \$verbose;
+            'verbose!' => \$verbose,
            );
 
 
