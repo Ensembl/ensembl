@@ -977,9 +977,12 @@ sub get_all_Attributes {
     $self->{'attributes'} = $attribute_adaptor->fetch_all_by_Transcript($self);
   }
 
-  if( defined $attrib_code ) {
-    my @results = grep { uc($_->code()) eq uc($attrib_code) }
-    @{$self->{'attributes'}};
+  if( defined $attrib_code) {
+    my @results;
+    if(defined $_){
+      @results = grep { uc($_->code()) eq uc($attrib_code) }
+	@{$self->{'attributes'}};
+    }
     return \@results;
   } else {
     return $self->{'attributes'};

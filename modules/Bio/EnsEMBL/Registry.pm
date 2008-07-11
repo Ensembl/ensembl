@@ -599,22 +599,27 @@ sub remove_DBAdaptor{
 
   $species = $class->get_alias($species);
 
+ 
   delete $registry_register{$species}{$group};
   #This will remove the DBAdaptor and all the other adaptors
 
   #Now remove if from the _DBA array
   my $index;
 
+
   foreach my $i(0..$#{$registry_register{'_DBA'}}){
     my $dba = $registry_register{'_DBA'}->[$i];
+
     if(($dba->species eq $species) &&
        $dba->group eq $group){
       $index = $i;
+
       last;
     }
   }
   
-  @{$registry_register{'_DBA'}} = splice(@{$registry_register{'_DBA'}}, $index, 1);
+  #Now remove from _DBA cache
+  splice(@{$registry_register{'_DBA'}}, $index, 1);
   
   return;
 }
@@ -665,6 +670,8 @@ sub reset_DBAdaptor{
 
   $self->remove_DBAdaptor($alias, $group);
   
+  my @adaptors = @{$self->get_all_adaptors};
+
 
   #ConfigRegistry should automatically add this to the Registry
   my $db = $class->new(
@@ -830,6 +837,7 @@ sub get_adaptor{
 
   my $ret = $registry_register{$species}{lc($group)}{lc($type)};
   if(!defined($ret)){
+      
     return undef;
   }
   if(!ref($ret)){ # not instantiated yet
@@ -1155,10 +1163,9 @@ sub load_registry_from_db {
   my ($host, $port, $user, $pass, $verbose, $db_version, $wait_timeout) =
     rearrange([qw(HOST PORT USER PASS VERBOSE DB_VERSION WAIT_TIMEOUT )], @args);
 
-
-
   my $go_version = 0;
   my $compara_version =0;
+  my $ancestral_version =0;
 
   $user ||= "ensro";
   if(!defined($port)){
@@ -1182,16 +1189,24 @@ sub load_registry_from_db {
   if (defined($db_version)) {
     $software_version = $db_version;
   }
-  print "Will only load $software_version databases\n" if ($verbose);
+  print "Will only load release $software_version databases\n" if ($verbose);
   for my $db (@dbnames){
     if($db =~ /^([a-z]+_[a-z]+_[a-z]+)_(\d+)_(\d+[a-z]*)/){
       if($2 eq $software_version){
 	$temp{$1} = $2."_".$3;
       }
     }
+    elsif($db =~ /^(.+)_(userdata)$/){
+	$temp{$1} = $2;
+    }
     elsif($db =~ /^ensembl_compara_(\d+)/){
       if($1 eq $software_version){
 	$compara_version = $1;
+      }
+    }
+    elsif($db =~ /^ensembl_ancestral_(\d+)/){
+      if($1 eq $software_version){
+	$ancestral_version = $1;
       }
     }
     elsif($db =~ /^ensembl_go_(\d+)/){
@@ -1286,6 +1301,24 @@ sub load_registry_from_db {
       print $other_db." loaded\n" if ($verbose);       
   }
   
+  my @userupload_dbs = grep { /_userdata$/ } @dbnames;
+  for my $userupload_db ( @userupload_dbs ) {
+    my ($species) = ( $userupload_db =~ /(^.+)_userdata$/ );
+    my $dba = Bio::EnsEMBL::DBSQL::DBAdaptor->new
+      ( -group => "userupload",
+	-species => $species,
+	-host => $host,
+	-user => $user,
+	-pass => $pass,
+	-port => $port,
+        -wait_timeout => $wait_timeout,
+	-dbname => $userupload_db
+      );
+      (my $sp = $species ) =~ s/_/ /g;
+      $self->add_alias( $species, $sp );
+      print $userupload_db." loaded\n" if ($verbose);       
+  }
+
   
   eval "require Bio::EnsEMBL::Variation::DBSQL::DBAdaptor";
   if($@) {
@@ -1361,6 +1394,26 @@ sub load_registry_from_db {
   }
   else{
     print "No Compara database found" if ($verbose);
+  }
+
+
+  #Ancestral sequences
+  if($ancestral_version){
+    my $ancestral_db = "ensembl_ancestral_".$ancestral_version;
+    my $dba = Bio::EnsEMBL::DBSQL::DBAdaptor->new
+      ( -group => "core",
+        -species => "Ancestral sequences",
+        -host => $host,
+        -user => $user,
+        -pass => $pass,
+        -port => $port,
+        -wait_timeout => $wait_timeout,
+        -dbname => $ancestral_db
+      );
+    print $ancestral_db." loaded\n" if ($verbose);       
+  }
+  else{
+    print "No Ancestral database found" if ($verbose);
   }
 
 
