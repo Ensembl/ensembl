@@ -163,7 +163,7 @@ sub fetch_all_by_Slice_and_score {
 sub fetch_all_by_Slice_constraint {
   my($self, $slice, $constraint, $logic_name) = @_;
 
-  my @result;
+  my @result = ();
 
   if(!ref($slice) || !$slice->isa("Bio::EnsEMBL::Slice")) {
     throw("Bio::EnsEMBL::Slice argument expected.");
@@ -352,7 +352,8 @@ sub _slice_fetch {
       } else {
 	$sr_id = $self->db()->get_SliceAdaptor()->get_seq_region_id($slice);
       }
-
+      #if there is mapping information, use the external_seq_region_id to get features
+      my $sr_id = $self->get_seq_region_id_external($sr_id);
       $constraint .= " AND " if($constraint);
       $constraint .=
           "${tab_syn}.seq_region_id = $sr_id AND " .
@@ -400,7 +401,6 @@ sub _slice_fetch {
         my $id_str = join(',', @ids);
         $constraint .= " AND " if($constraint);
         $constraint .= "${tab_syn}.seq_region_id IN ($id_str)";
-
         my $fs = $self->generic_fetch($constraint, $mapper, $slice);
 
         $fs = $self->_remap( $fs, $mapper, $slice );
@@ -427,7 +427,6 @@ sub _slice_fetch {
             $constraint .=
               " AND ${tab_syn}.seq_region_start >= $min_start";
           }
-
           my $fs = $self->generic_fetch($constraint,$mapper,$slice);
 
           $fs = $self->_remap( $fs, $mapper, $slice );
@@ -442,6 +441,22 @@ sub _slice_fetch {
 }
 
 
+#for a given seq_region_id, gets the one used in an external database, if present, otherwise, returns the internal one
+sub get_seq_region_id_external{
+    my $self = shift;
+    my $sr_id = shift;
+ 
+    return (exists $self->db->get_CoordSystemAdaptor->{'_internal_seq_region_mapping'}->{$sr_id} ? $self->db->get_CoordSystemAdaptor->{'_internal_seq_region_mapping'}->{$sr_id} : $sr_id);
+}
+
+#for a given seq_region_id and coord_system, gets the one used in the internal (core) database
+sub get_seq_region_id_internal{
+    my $self = shift;
+    my $sr_id = shift;
+
+    return (exists $self->db->get_CoordSystemAdaptor->{'_external_seq_region_mapping'}->{$sr_id} ? $self->db->get_CoordSystemAdaptor->{'_external_seq_region_mapping'}->{$sr_id} : $sr_id);
+
+}
 
 #
 # Helper function containing some common feature storing functionality
@@ -477,6 +492,71 @@ sub _pre_store {
   }
 
   # make sure feature coords are relative to start of entire seq_region
+
+  if($slice->start != 1 || $slice->strand != 1) {
+    #move feature onto a slice of the entire seq_region
+    $slice = $slice_adaptor->fetch_by_region($slice->coord_system->name(),
+                                             $slice->seq_region_name(),
+                                             undef, #start
+                                             undef, #end
+                                             undef, #strand
+                                             $slice->coord_system->version());
+
+    $feature = $feature->transfer($slice);
+
+    if(!$feature) {
+      throw('Could not transfer Feature to slice of ' .
+            'entire seq_region prior to storing');
+    }
+  }
+
+  # Ensure this type of feature is known to be stored in this coord system.
+  my $cs = $slice->coord_system;
+
+  my ($tab) = $self->_tables();
+  my $tabname = $tab->[0];
+
+  my $mcc = $db->get_MetaCoordContainer();
+
+  $mcc->add_feature_type($cs, $tabname, $feature->length);
+
+  my $seq_region_id = $slice_adaptor->get_seq_region_id($slice);
+
+  if(!$seq_region_id) {
+    throw('Feature is associated with seq_region which is not in this DB.');
+  }
+
+  return ($feature, $seq_region_id);
+}
+
+
+# The same function as _pre_store
+# This one is used to store user uploaded features in XXX_userdata db
+# In the case of user features $self->db will point to XXX_userdata , but to get the slice information
+# we need XXX_core database. Hence we use $feature->slice->adaptor to get it.
+
+sub _pre_store_userdata {
+  my $self    = shift;
+  my $feature = shift;
+
+  if(!ref($feature) || !$feature->isa('Bio::EnsEMBL::Feature')) {
+    throw('Expected Feature argument.');
+  }
+
+  $self->_check_start_end_strand($feature->start(),$feature->end(),
+                                 $feature->strand());
+
+
+  my $slice = $feature->slice();
+  my $db = $slice->adaptor->db;
+  my $slice_adaptor = $slice->adaptor;
+
+  if(!ref($slice) || !$slice->isa('Bio::EnsEMBL::Slice')) {
+    throw('Feature must be attached to Slice to be stored.');
+  }
+
+  # make sure feature coords are relative to start of entire seq_region
+
   if($slice->start != 1 || $slice->strand != 1) {
     #move feature onto a slice of the entire seq_region
     $slice = $slice_adaptor->fetch_by_region($slice->coord_system->name(),
@@ -874,6 +954,39 @@ sub remove_by_RawContig {
   my $self = shift;
   deprecate("Use remove_by_Slice instead");
   return $self->remove_by_Slice(@_);
+}
+
+
+sub remove_by_analysis_id {
+  my ($self, $analysis_id) = @_;
+
+  $analysis_id or throw("Must call with analysis id");
+
+  my @tabs = $self->_tables;
+  my ($tablename) = @{$tabs[0]};
+
+  my $sql = "DELETE FROM $tablename WHERE analysis_id = $analysis_id";
+#  warn "SQL : $sql";
+      
+  my $sth = $self->prepare($sql);
+  $sth->execute();
+  $sth->finish();
+}
+
+sub remove_by_feature_id {
+  my ($self, $features_list) = @_;
+
+  my @feats = @$features_list or throw("Must call store with features");
+
+  my @tabs = $self->_tables;
+  my ($tablename) = @{$tabs[0]};
+
+  my $sql = sprintf "DELETE FROM $tablename WHERE ${tablename}_id IN (%s)", join ', ', @feats;
+#  warn "SQL : $sql";
+      
+  my $sth = $self->prepare($sql);
+  $sth->execute();
+  $sth->finish();
 }
 
 

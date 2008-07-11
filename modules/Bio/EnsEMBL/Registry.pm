@@ -1202,6 +1202,8 @@ sub load_registry_from_db {
       if ( $2 eq $software_version ) {
         $temp{$1} = $2 . "_" . $3;
       }
+    } elsif ( $db =~ /^(.+)_(userdata)$/ ) {
+      $temp{$1} = $2;
     } elsif ( $db =~ /^ensembl_compara_(\d+)/ ) {
       if ( $1 eq $software_version ) {
         $compara_version = $1;
@@ -1215,7 +1217,7 @@ sub load_registry_from_db {
         $go_version = $1;
       }
     }
-  }
+  } ## end for my $db (@dbnames)
 
   @dbnames = ();
 
@@ -1331,6 +1333,8 @@ sub load_registry_from_db {
     print $vegadb. " loaded\n" if ($verbose);
   }
 
+  # Otherfeatures
+
   my @other_dbs = grep { /^[a-z]+_[a-z]+_otherfeatures_\d+_/ } @dbnames;
 
   for my $other_db (@other_dbs) {
@@ -1351,7 +1355,28 @@ sub load_registry_from_db {
     print $other_db. " loaded\n" if ($verbose);
   }
 
+  # User upload DBs
+
+  my @userupload_dbs = grep { /_userdata$/ } @dbnames;
+  for my $userupload_db ( @userupload_dbs ) {
+    my ($species) = ( $userupload_db =~ /(^.+)_userdata$/ );
+    my $dba = Bio::EnsEMBL::DBSQL::DBAdaptor->new
+      ( -group => "userupload",
+	-species => $species,
+	-host => $host,
+	-user => $user,
+	-pass => $pass,
+	-port => $port,
+        -wait_timeout => $wait_timeout,
+	-dbname => $userupload_db
+      );
+      (my $sp = $species ) =~ s/_/ /g;
+      $self->add_alias( $species, $sp );
+      print $userupload_db." loaded\n" if ($verbose);       
+  }
+
   # Variation
+
   eval "require Bio::EnsEMBL::Variation::DBSQL::DBAdaptor";
   if ($@) {
     # Ignore variations as code required not there for this
@@ -1407,6 +1432,7 @@ sub load_registry_from_db {
   }
 
   # Compara
+
   if ($compara_version) {
     eval "require Bio::EnsEMBL::Compara::DBSQL::DBAdaptor";
     if ($@) {
@@ -1439,6 +1465,7 @@ sub load_registry_from_db {
   }
 
   # Ancestral sequences
+
   if ($ancestral_version) {
     my $ancestral_db = "ensembl_ancestral_" . $ancestral_version;
     my $dba =
@@ -1456,8 +1483,8 @@ sub load_registry_from_db {
     print "No Ancestral database found" if ($verbose);
   }
 
-
   # GO
+
   if ($go_version) {
     eval "require Bio::EnsEMBL::ExternalData::GO::GOAdaptor";
     if ($@) {

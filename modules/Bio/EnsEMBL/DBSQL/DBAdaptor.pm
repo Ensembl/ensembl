@@ -683,6 +683,25 @@ sub get_SeqRegionCache {
 }
 
 
+#convenient method to retrieve the schema_build version for the database being used
+
+sub _get_schema_build{
+  my ($self) = @_;
+
+  #avoided using dnadb by default to avoid obfuscation of behaviour
+  
+  my @dbname = split/_/, $self->dbc->dbname();
+
+  #warn "dbname is $schema_build";
+
+  my $schema_build = pop @dbname;
+  $schema_build = pop(@dbname).'_'.$schema_build;
+
+
+  return $schema_build;
+}
+
+
 =head2 dnadb
 
  Title   : dnadb
