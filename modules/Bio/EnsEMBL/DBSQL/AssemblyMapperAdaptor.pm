@@ -134,13 +134,21 @@ sub cache_seq_ids_with_mult_assemblys{
 
   $self->{'multi_seq_ids'} = {};
 
-  my $sql=(<<SQL);  
-    SELECT seq_region_id 
-      FROM seq_region_attrib sra, attrib_type at
-	WHERE sra.attrib_type_id = at.attrib_type_id and code = "MultAssem"
-SQL
+  my $sql = qq(
+  SELECT    sra.seq_region_id
+  FROM      seq_region_attrib sra,
+            attrib_type at,
+            seq_region sr,
+            coord_system cs
+  WHERE     sra.attrib_type_id = at.attrib_type_id
+    AND     code = "MultAssem"
+    AND     sra.seq_region_id = sr.seq_region_id
+    AND     sr.coord_system_id = cs.coord_system_id
+    AND     cs.species_id = ?);
 
   my $sth = $self->prepare($sql);
+
+  $sth->bind_param( 1, $self->species_id(), SQL_INTEGER );
 
   $sth->execute();
 
