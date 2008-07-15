@@ -126,7 +126,12 @@ sub list_dbIDs {
 	# Can't use _list_dbIDs because only want OligoArray objects of type AFFY
 	
 	my @out;
+
+        # FIXME: This SQL will not work as expected on multi-species
+        # databases.  It needs to be anchored in a coord_system entry
+        # coord_system.species_id = $self->species_id(). /ak4@2008-07-15
 	my $sql = "SELECT oligo_array_id  FROM oligo_array WHERE type='AFFY'";
+
 	my $sth = $self->prepare($sql);
 	$sth->execute;
 	
