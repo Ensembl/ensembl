@@ -829,10 +829,9 @@ sub get_adaptor{
       $group = $dnadb_group;
   }
 
-  my $ret = $registry_register{$species}{lc($group)}{lc($type)};
-  if(!defined($ret)){
-    return undef;
-  }
+  my $ret = $registry_register{$species}{ lc($group) }{ lc($type) };
+  if ( !defined($ret) ) { return undef; }
+
   if(!ref($ret)){ # not instantiated yet
     my $dba = $registry_register{$species}{lc($group)}{'_DB'};
     my $module = $ret;
