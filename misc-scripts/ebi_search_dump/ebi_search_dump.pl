@@ -6,7 +6,6 @@
 # scp *.xml.gz glenn@puffin.ebi.ac.uk:xml/
 #
 # Email eb-eye@ebi.ac.uk after copying so the files can be indexed.
-
 package ebi_search_dump;
 
 use strict;
@@ -16,7 +15,6 @@ use Getopt::Long;
 use IO::Zlib;
 
 use Data::Dumper;
-use HTML::Entities;
 
 my (
     $host,    $user,        $pass,   $port,     $species, $ind,
@@ -418,8 +416,7 @@ sub dumpGenomicAlignment {
     <additional_fields>
         <field name="species">$dbspecies</field>
         <field name="analysis">$adesc</field>
-        <field name="featuretype">GenomicAlignment</field>
-        <field name="source">$source</field>
+        <field name="featuretype">$source</field>
         <field name="db">$db</field>
     </additional_fields>
   </entry>};
@@ -646,20 +643,28 @@ sub markerXML {
       . ' synonym'
       . ( scalar @keys > 1 ? 's ' : ' ' ) . '('
       . join( " ", @keys ) . ')';
+
+
+    $desc =~ s/</&lt;/g;
+    $desc =~ s/>/&gt;/g;
+
     $xml = qq{ 
 <entry id="$marker">   
-  <name>$marker</name>
+  <name>Ensembl Marker: $marker</name>
    <description>$desc</description>
    <additional_fields>};
 
     foreach (@keys) {
+     s/</&lt;/g;
+     s/>/&gt;/g;
+
         $xml .= qq{
       <field name="synonym">$_</field>}
 
     }
     $xml .= qq{
      <field name="species">$species</field>
-    <field name="featuretype">marker</field>
+    <field name="featuretype">Marker</field>
   </additional_fields>
 </entry>};
 
@@ -720,7 +725,7 @@ sub OligoProbeXML {
 qq{$xml_data->[0], $xml_data->[2] oligo probeset $xml_data->[0] hits the genome in $xml_data->[1] locations.};
 
     return qq{ 
-<entry id="$xml_data->[0]"> 
+<entry id="$xml_data->[2]: $xml_data->[0]"> 
   <name>$xml_data->[0]</name>
    <description>$desc</description>
    <additional_fields>
@@ -810,7 +815,7 @@ sub domainLineXML {
 
     my $xml = qq{
 <entry id="$did"> 
-  <name>$did</name>
+  <name>Interpro domain: $did</name>
    <description>InterPro domain $did [$desc] has $counter associated external database identifiers: $description.</description>
    <additional_fields>
       <field name="type">Interpro domain</field>};
@@ -898,7 +903,7 @@ sub familyLineXML {
 
     my $xml = qq{ 
 <entry id="$xml_data->{fid}"> 
-  <name>$xml_data->{fid}</name>
+  <name>Ensembl protein family: $xml_data->{fid}</name>
    <description>$description_line</description>
    <cross_references>} .
 
@@ -1152,7 +1157,8 @@ sub seqLineXML {
 sub dumpGene {
     my ( $dbspecies, $conf ) = @_;
 
-    foreach my $DB ( 'core', 'otherfeatures', 'vega' ) {
+     foreach my $DB ( 'core', 'otherfeatures', 'vega' ) {
+#      foreach my $DB ( 'core' ) {
         my $counter = make_counter(0);
 
         my $DBNAME = $conf->{$DB}->{$release}
@@ -1260,6 +1266,8 @@ sub dumpGene {
             ) = @$row;
             if ( $old{'gene_id'} != $gene_id ) {
                 if ( $old{'gene_id'} ) {
+
+
                     p &geneLineXML( $dbspecies, \%old, $counter );
 
                 }
@@ -1345,7 +1353,9 @@ sub dumpGene {
             }
         }
 
-        p geneLineXML( $dbspecies, \%old, $counter );
+
+       
+	p geneLineXML( $dbspecies, \%old, $counter );
 
         footer( $counter->() );
         warn "FINISHED...... genes $DB ...";
@@ -1374,32 +1384,56 @@ sub geneLineXML {
 
     my $exon_count       = scalar keys %$exons;
     my $transcript_count = scalar keys %$transcripts;
+    $description =~ s/</&lt;/g;
+    $description =~ s/>/&gt;/g;
+$description =~ s/'/&apos;/g;
+$description =~ s/&/&amp;/g;
+
+$gene_id  =~ s/</&lt;/g;
+$gene_id  =~ s/>/&gt;/g;
+
+$altid  =~ s/</&lt;/g;
+$altid   =~ s/>/&gt;/g;
 
     my $xml = qq{ 
  <entry id="$gene_id"> 
    <name>$gene_id $altid</name>
-    <description>$description</description>
-    <cross_references>};
+    <description>$description</description>};
 
-    foreach my $ext_db ( keys %$external_identifiers ) {
-        foreach my $dbkey ( keys %{ $external_identifiers->{$ext_db} } ) {
-            $ext_db =~ s/^Affymx.*/ensembl/;
-            $ext_db =~ s/^Agilent.*/ensembl/;
-            $ext_db =~ s/^Illumina.*/ensembl/;
-            $ext_db =~ s/^GE Healthcare\/Amersham Codelink WGA/ensembl/;
-            $ext_db =~ s/^Havana.*/Vega/;
-            $ext_db =~ s/^Uniprot.*/Uniprot/i;
 
-            $xml .= qq{<ref dbname="$ext_db" dbkey="$dbkey"/>
-};
-        }
+    my $cross_references = qq{
+       <cross_references>};
+
+
+    foreach my $ext_db_name ( keys %$external_identifiers ) {
+
+	if 
+	 ($ext_db_name =~ /(Uniprot|GO|Interpro|Medline|Sequence_Publications|EMBL)/) { 
+
+          map { $cross_references .=  qq{
+         <ref dbname="$1" dbkey="$_"/>}; } keys %{ $external_identifiers->{$ext_db_name} } 
+
+     } else {
+	  foreach my $key  (keys %{ $external_identifiers->{$ext_db_name} }) {
+	      $key  =~ s/</&lt;/g;
+	      $key   =~ s/>/&gt;/g;
+	      $key   =~ s/&/&amp;/g;
+
+	      $cross_references .=  qq{
+        <ref dbname="$ext_db_name" dbkey="$key"/>}; 
+	  }
+
+
+    }
     }
 
-    $xml .= qq{
-    </cross_references>
+    $cross_references .= qq{</cross_references>};
+
+    my $additional_fields .= qq{
     <additional_fields>
       <field name="species">$species</field>
-      <field name="featuretype">$type</field>
+      <field name="featuretype">Gene</field>
+      <field name="source">$type</field>
       <field name="transcript_count">$transcript_count</field> }
 
       . (
@@ -1423,7 +1457,6 @@ sub geneLineXML {
               } keys %$exons
         )
       )
-
       . (
         join "",
         (
@@ -1433,12 +1466,13 @@ sub geneLineXML {
               } keys %$peptides
         )
       )
-
       . qq{
-   </additional_fields>
- </entry>};
+   </additional_fields>};
+
+
+
     $counter->();
-    return $xml;
+    return $xml . $cross_references . $additional_fields . '</entry>';
 
 }
 
@@ -1663,7 +1697,7 @@ sub unmappedGeneXML {
     <description>$description</description>
     <additional_fields>
       <field name="species">$dbspecies</field>
-      <field name="featuretype">Unmapped $type</field>
+      <field name="featuretype">Unmapped$type</field>
     </additional_fields>
  </entry>};
 
