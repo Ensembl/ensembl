@@ -97,7 +97,8 @@ sub fetch {
     my ($self) = @_;
  
     my $id=$self->id();   
-    my $sth = $self->_db_obj->prepare("select internal_id,id from clone where id = \"$id\";");    
+    my $sth = $self->_db_obj->prepare(
+               "SELECT internal_id, id FROM clone WHERE id = \"$id\";");
     my $res = $sth ->execute();   
     my $rowhash = $sth->fetchrow_hashref;
     if( ! $rowhash ) {
@@ -134,7 +135,8 @@ sub delete {
    my @dnas;
 
    # get a list of contigs to zap
-   my $sth = $self->_db_obj->prepare("select internal_id,dna from contig where clone = $internal_id");
+  my $sth = $self->_db_obj->prepare(
+      "SELECT internal_id, dna FROM contig WHERE clone = $internal_id");
    my $res = $sth->execute;
 
    while( my $rowhash = $sth->fetchrow_hashref) {
@@ -145,24 +147,28 @@ sub delete {
    # Delete from DNA table, Contig table, Clone table
    
    foreach my $contig ( @contigs ) {
-       my $sth = $self->_db_obj->prepare("delete from contig where internal_id = $contig");
+      my $sth = $self->_db_obj->prepare(
+                      "DELETE FROM contig WHERE internal_id = $contig");
        my $res = $sth->execute;
    }
 
 
    foreach my $dna (@dnas) {
-       $sth = $self->_db_obj->prepare("delete from dna where id = $dna");
+      $sth = $self->_db_obj->prepare("DELETE FROM dna WHERE id = $dna");
        $res = $sth->execute;
 
        # Mysql does not optimise or statements in where clauses
-       $sth = $self->_db_obj->prepare("delete from contigoverlap where dna_a_id = $dna;");
+      $sth = $self->_db_obj->prepare(
+                    "DELETE FROM contigoverlap WHERE dna_a_id = $dna;");
        $res = $sth ->execute;
-       $sth = $self->_db_obj->prepare("delete from contigoverlap where dna_b_id = $dna;");
+      $sth = $self->_db_obj->prepare(
+                    "DELETE FROM contigoverlap WHERE dna_b_id = $dna;");
        $res = $sth ->execute;
 
    }
 
-   $sth = $self->_db_obj->prepare("delete from clone where internal_id = $internal_id");
+  $sth = $self->_db_obj->prepare(
+                  "DELETE FROM clone WHERE internal_id = $internal_id");
    $res = $sth->execute;
 }
 
@@ -257,16 +263,17 @@ sub get_all_my_geneid {
 
    my $cloneid = $self->_internal_id;
 
-   my $sth = $self->_db_obj->prepare("select count(*),cont.clone ,ex.contig,tran.gene  " .
-			    "from   contig          as cont, ".
-			    "       transcript      as tran, " .
-			    "       exon_transcript as et, " .
-			    "       exon            as ex " .
-			    "where  ex.id            = et.exon " .
-			    "and    tran.id          = et.transcript " .
-			    "and    cont.clone       = $cloneid  " .
-			    "and    cont.internal_id = ex.contig " .
-			    "group by tran.gene");
+  my $sth = $self->_db_obj->prepare(
+                     "SELECT COUNT(*), cont.clone, ex.contig, tran.gene  "
+                       . "FROM   contig          AS cont, "
+                       . "       transcript      AS tran, "
+                       . "       exon_transcript AS et, "
+                       . "       exon            AS ex "
+                       . "WHERE  ex.id            = et.exon "
+                       . "AND    tran.id          = et.transcript "
+                       . "AND    cont.clone       = $cloneid  "
+                       . "AND    cont.internal_id = ex.contig "
+                       . "GROUP BY tran.gene" );
 
    my @out;
 
@@ -295,8 +302,9 @@ sub get_all_Contigs {
    my @res;
    my $internal_id = $self->_internal_id();
 
-   my $sql = "select id,internal_id from contig where clone = $internal_id";
-warn $sql;
+  my $sql =
+    "SELECT id, internal_id FROM contig WHERE clone = $internal_id";
+  # warn $sql;
    $sth= $self->_db_obj->prepare($sql);
    my $res  = $sth->execute();
    my $seen = 0;
@@ -431,7 +439,8 @@ sub htg_phase {
 
    my $internal_id = $self->_internal_id();
 
-   my $sth = $self->_db_obj->prepare("select htg_phase from clone where internal_id = $internal_id");
+  my $sth = $self->_db_obj->prepare(
+        "SELECT htg_phase FROM clone WHERE internal_id = $internal_id");
    $sth->execute();
    my $rowhash = $sth->fetchrow_hashref();
    $self->{'_htg_phase'} = $rowhash->{'htg_phase'};
@@ -456,7 +465,8 @@ sub created {
 
    my $internal_id = $self->_internal_id();
 
-   my $sth = $self->_db_obj->prepare("select UNIX_TIMESTAMP(created) from clone where internal_id = $internal_id");
+  my $sth = $self->_db_obj->prepare( "SELECT UNIX_TIMESTAMP(created) "
+                      . "FROM clone WHERE internal_id = $internal_id" );
    $sth->execute();
    my $rowhash = $sth->fetchrow_hashref();
    return $rowhash->{'UNIX_TIMESTAMP(created)'};
@@ -480,7 +490,8 @@ sub modified {
 
    my $internal_id = $self->_internal_id();
 
-   my $sth = $self->_db_obj->prepare("select UNIX_TIMESTAMP(modified) from clone where internal_id = $internal_id");
+  my $sth = $self->_db_obj->prepare( "SELECT UNIX_TIMESTAMP(modified) "
+                      . "FROM clone WHERE internal_id = $internal_id" );
    $sth->execute();
    my $rowhash = $sth->fetchrow_hashref();
    return $rowhash->{'UNIX_TIMESTAMP(modified)'};
@@ -505,7 +516,8 @@ sub version {
 
    my $internal_id = $self->_internal_id();
 
-   my $sth = $self->_db_obj->prepare("select version from clone where internal_id = $internal_id");
+  my $sth = $self->_db_obj->prepare(
+          "SELECT version FROM clone WHERE internal_id = $internal_id");
    $sth->execute();
    my $rowhash = $sth->fetchrow_hashref();
    return $rowhash->{'version'};
@@ -548,7 +560,8 @@ sub embl_version {
    my $self = shift;
    my $internal_id = $self->_internal_id();
 
-   my $sth = $self->_db_obj->prepare("select embl_version from clone where internal_id = $internal_id");
+  my $sth = $self->_db_obj->prepare(
+     "SELECT embl_version FROM clone WHERE internal_id = $internal_id");
    $sth->execute();
    my $rowhash = $sth->fetchrow_hashref();
    return $rowhash->{'embl_version'};
@@ -624,7 +637,8 @@ sub embl_id {
 
    my $internal_id = $self->_internal_id();
 
-   my $sth = $self->_db_obj->prepare("select embl_id from clone where internal_id = $internal_id");
+  my $sth = $self->_db_obj->prepare(
+          "SELECT embl_id FROM clone WHERE internal_id = $internal_id");
    $sth->execute();
    my $rowhash = $sth->fetchrow_hashref();
    return $rowhash->{'embl_id'};
