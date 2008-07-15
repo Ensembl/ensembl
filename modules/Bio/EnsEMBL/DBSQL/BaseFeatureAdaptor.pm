@@ -886,12 +886,20 @@ sub _list_seq_region_ids {
   my @out;
   
   my $sql = qq(
-    SELECT distinct(sr.seq_region_id)
-    FROM seq_region sr, $table a
-    WHERE sr.seq_region_id = a.seq_region_id
-  );
+  SELECT DISTINCT
+            sr.seq_region_id
+  FROM      seq_region sr,
+            $table a,
+            coord_system cs
+  WHERE     sr.seq_region_id = a.seq_region_id
+    AND     sr.coord_system_id = cs.coord_system_id
+    AND     cs.species_id = ?);
+
   my $sth = $self->prepare($sql);
-  $sth->execute;
+
+  $sth->bin_param( 1, $self->species_id(), SQL_INTEGER );
+
+  $sth->execute();
 
   while (my ($id) = $sth->fetchrow) {
     push(@out, $id);
