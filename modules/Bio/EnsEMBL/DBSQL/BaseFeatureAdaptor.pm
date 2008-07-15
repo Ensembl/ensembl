@@ -353,7 +353,7 @@ sub _slice_fetch {
 	$sr_id = $self->db()->get_SliceAdaptor()->get_seq_region_id($slice);
       }
       #if there is mapping information, use the external_seq_region_id to get features
-      my $sr_id = $self->get_seq_region_id_external($sr_id);
+      $sr_id = $self->get_seq_region_id_external($sr_id);
       $constraint .= " AND " if($constraint);
       $constraint .=
           "${tab_syn}.seq_region_id = $sr_id AND " .
