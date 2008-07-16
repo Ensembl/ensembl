@@ -1992,6 +1992,7 @@ sub get_all_Genes_by_source {
                actually going to be used right away.
   Arg [2]    : (optional) string $logic_name
                the logic name of the type of features to obtain
+  Arg [3]    : (optional) string $db_type
   Example    : @transcripts = @{$slice->get_all_Transcripts)_};
   Description: Gets all transcripts which overlap this slice.  If you want to
                specify a particular analysis or type, then you are better off
@@ -2008,13 +2009,28 @@ sub get_all_Transcripts {
   my $self = shift;
   my $load_exons = shift;
   my $logic_name = shift;
-
+  my $dbtype     = shift;
   if(!$self->adaptor()) {
     warning('Cannot get Transcripts without attached adaptor');
     return [];
   }
 
-  my $ta = $self->adaptor()->db()->get_TranscriptAdaptor();
+
+  my $ta;
+  if($dbtype) {
+    my $db = $reg->get_db($self->adaptor()->db(), $dbtype);
+    if(defined($db)){
+      $ta = $reg->get_adaptor( $db->species(), $db->group(), "Transcript" );
+    } else{
+      $ta = $reg->get_adaptor( $self->adaptor()->db()->species(), $dbtype, "Transcript" );
+    }
+    if(!defined $ta) {
+      warning( "$dbtype genes not available" );
+      return [];
+    }
+  } else {
+    $ta =  $self->adaptor->db->get_TranscriptAdaptor();
+  }
   return $ta->fetch_all_by_Slice($self, $load_exons, $logic_name);
 }
 

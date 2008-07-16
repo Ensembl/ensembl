@@ -87,7 +87,8 @@ sub new_fast {
                     -info_text => $info_text,
                     -type => $type,
                     -secondary_db_name => $secondary_db_name,
-                    -secondary_db_table => $secondary_db_table);
+                    -secondary_db_table => $secondary_db_table
+                    -linkage_annotation => $object_xref_text);
   Description: Creates a new DBEntry object
   Returntype : Bio::EnsEMBL::DBEntry
   Exceptions : none
@@ -103,19 +104,19 @@ sub new_fast {
 
 sub new {
   my ($class, @args) = @_;
-
+  
   my $self = bless {},$class;
 
   my ( $adaptor, $dbID, $primary_id, $version,
        $dbname, $release, $display_id, $description,
        $primary_id_linkable, $display_id_linkable, $priority,
        $db_display_name, $info_type, $info_text, $type,
-       $secondary_db_name, $secondary_db_table) =
+       $secondary_db_name, $secondary_db_table, $link_annotation) =
     rearrange ( ['ADAPTOR','DBID','PRIMARY_ID','VERSION',
                  'DBNAME','RELEASE','DISPLAY_ID','DESCRIPTION',
 		 'PRIMARY_ID_LINKABLE','DISPLAY_ID_LINKABLE','PRIORITY',
 		 'DB_DISPLAY_NAME', 'INFO_TYPE', 'INFO_TEXT', 'TYPE',
-                 'SECONDARY_DB_NAME', 'SECONDARY_DB_TABLE'], @args );
+                 'SECONDARY_DB_NAME', 'SECONDARY_DB_TABLE', 'LINKAGE_ANNOTATION'], @args );
 
   $self->{'adaptor'} = $adaptor;
   $self->{'dbID'}    = $dbID;
@@ -136,6 +137,8 @@ sub new {
   if( defined $type) { $self->type($type) }
   if( defined $secondary_db_name) { $self->secondary_db_name($secondary_db_name) }
   if( defined $secondary_db_table) { $self->secondary_db_table($secondary_db_table) }
+  $self->linkage_annotation($link_annotation) if defined $link_annotation;
+
 
   return $self;
 }
@@ -472,6 +475,26 @@ sub info_text {
   } 
   return $self->{info_text};
 }
+
+=head2 linkage_annotation
+
+  Arg [1]    : String $object_xref_text
+  Example    : none
+  Description: Getter/setter for attribute 'linkage_annotation'.
+  Returntype : String
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub linkage_annotation {
+  my ( $self, $arg ) = @_;
+
+  $self->{linkage_annotation} = $arg if defined $arg;
+  
+  return $self->{linkage_annotation};
+}
+
 
 =head2 type
 

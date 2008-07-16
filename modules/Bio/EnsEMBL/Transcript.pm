@@ -977,9 +977,9 @@ sub get_all_Attributes {
     $self->{'attributes'} = $attribute_adaptor->fetch_all_by_Transcript($self);
   }
 
-  if( defined $attrib_code ) {
+  if( defined $attrib_code) {
     my @results = grep { uc($_->code()) eq uc($attrib_code) }
-    @{$self->{'attributes'}};
+      @{$self->{'attributes'}};
     return \@results;
   } else {
     return $self->{'attributes'};
@@ -1022,6 +1022,7 @@ sub add_Attributes {
   }
   if($seq_change){
     foreach my $ex(@{$self->get_all_Exons()}){
+      $ex->{'_trans_exon_array'} = undef;
       $ex->{'_seq_cache'} = undef;
     }
     my $translation = $self->translation;
