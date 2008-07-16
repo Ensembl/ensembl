@@ -11,6 +11,9 @@ CREATE TABLE `gene` (
   `status` enum('KNOWN','NOVEL','PUTATIVE','PREDICTED','KNOWN_BY_PROJECTION') collate latin1_bin default NULL,
   `description` text collate latin1_bin,
   `is_current` BOOLEAN DEFAULT 1,
+  canonical_transcript_id     INT(10) UNSIGNED NOT NULL,
+  canonical_annotation        VARCHAR(255) DEFAULT NULL,
+
   PRIMARY KEY  (`gene_id`),
   KEY `seq_region_idx` (`seq_region_id`,`seq_region_start`),
   KEY `xref_id_index` (`display_xref_id`),
