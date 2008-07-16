@@ -38,7 +38,7 @@ my %xref_dependent_mapped;
 my ( $host,             $port,    $dbname,        $user,
      $pass,             $create,  $release,       $cleanup,
      $deletedownloaded, $drop_db, $checkdownload, $dl_path,
-     $unzip );
+     $unzip, $stats );
 
 # --------------------------------------------------------------------------------
 # Get info about files to be parsed from the database
@@ -51,7 +51,7 @@ sub run {
        my $sourcesr,      $checkdownload, $create,
        $release,          $cleanup,       $drop_db,
        $deletedownloaded, $dl_path,       my $notsourcesr,
-       $unzip
+       $unzip, $stats
     ) = @_;
 
     $base_dir = $dl_path if $dl_path;
@@ -114,7 +114,7 @@ sub run {
       . $source_sql
       . $species_sql
       . "ORDER BY s.ordered";
-    # print $sql . "\n";
+    #print $sql . "\n";
 
     my $sth = $dbi->prepare($sql);
     $sth->execute();
@@ -129,6 +129,15 @@ sub run {
 
     my $dir;
     my %summary = ();
+
+    my %sum_xrefs;
+    my %sum_prim;
+    my %sum_dep;
+    my %sum_dir;
+    my %sum_coord;
+    my %sum_list;
+    my %sum_syn;
+
 
     while ( my @row = $sth->fetchrow_array() ) {
         print '-' x 4, "{ $name }", '-' x ( 72 - length($name) ), "\n";
@@ -179,69 +188,6 @@ sub run {
                 next;
             }
 
-            if (0) {
-                # Local files need to be dealt with
-                # specially; assume they are specified as
-                # file:location/of/file/relative/to/xref_mapper
-
-                my ($urls) = ( $file =~ s#^LOCAL:#file:# );
-
-                my ($file) = $urls =~ /.*\/(.*)/;
-                if ( $urls =~ /^file:(.*)/i ) {
-                    my $local_file = $1;
-                    if ( !defined( $cs = md5sum($local_file) ) ) {
-                        print "Download '$local_file'\n";
-                        ++$summary{$name}->{$parser};
-                    } else {
-                        $file_cs .= ':' . $cs;
-                        if ( !defined $checksum
-                             || index( $checksum, $file_cs ) == -1 )
-                        {
-                            print
-                              "Checksum for '$file' does not match, "
-                              . "will parse...\n";
-                            print "Parsing local file '$local_file' "
-                              . "with $parser\n";
-                            eval "require XrefParser::$parser";
-                            my $new = "XrefParser::$parser"->new();
-                            if (
-                                 $new->run( $source_id, $species_id,
-                                            $local_file ) )
-                            {
-                                ++$summary{$name}->{$parser};
-                            } else {
-                                update_source( $dbi,     $source_url_id,
-                                               $file_cs, $local_file );
-                            }
-                        } else {
-                            print
-                              "Ignoring '$file' as checksums match\n";
-                        }
-                    } ## end else [ if ( !defined( $cs = md5sum...
-                    next;
-                } ## end if ( $urls =~ /^file:(.*)/i)
-
-                # This part deals with Zip archives.  It is unclear if
-                # this is useful at all.  If so, then this should be
-                # handled by the fatch_files() method.
-                if (0) {
-                   # Deal with URLs with '#' notation denoting filenames
-                   # from archive If the '#' is used, set $file and
-                   # $file_from_archive approprately.
-                    my $file_from_archive;
-                    if ( $file =~ /(.*)\#(.*)/ ) {
-                        $file              = $1;
-                        $file_from_archive = $2;
-                        if ( !$file_from_archive ) {
-                            croak(
-"$file specifies a .zip file without using "
-                                  . "the # notation to specify the file "
-                                  . "in the archive to be used." );
-                        }
-                        print "Using $file_from_archive from $file\n";
-                    }
-                }
-            } ## end if (0)
 
             if ( $unzip && ( $file =~ /\.(gz|Z)$/ ) ) {
                 printf( "Uncompressing '%s' using 'gunzip'\n", $file );
@@ -336,6 +282,136 @@ sub run {
                 unlink($file);
             }
         }
+	if($stats){
+	# produce summary of what has been added
+	  my %sum_line;
+	  
+	  # first the number of xrefs;
+	  my $group_sql = "SELECT count(*), s.name from source s, xref x where s.source_id = x.source_id group by s.name";
+	  
+	  my $sum_sth = $dbi->prepare($group_sql);
+	  $sum_sth->execute();
+	  
+	  my ($sum_count, $sum_name);
+	  $sum_sth->bind_columns(\$sum_count, \$sum_name);
+	  
+	  while($sum_sth->fetch){
+	    if(defined($sum_xrefs{$sum_name})){
+	      if($sum_count != $sum_xrefs{$sum_name}){
+		my $diff = ($sum_count - $sum_xrefs{$sum_name});
+		$sum_line{$sum_name} = [$diff, 0, 0, 0, 0, 0];	    
+	      }
+#	      else{
+#		$sum_line{$sum_name} = [0, 0, 0, 0, 0, 0];
+#	      }
+	    }
+	    else{
+	      $sum_line{$sum_name}  = [$sum_count, 0, 0, 0, 0, 0];
+	    }
+	    $sum_xrefs{$sum_name} = $sum_count;
+	  }
+	  $sum_sth->finish;
+	  
+
+	  # second the number of primary xrefs
+	  $group_sql = "SELECT count(*), s.name from source s, primary_xref px, xref x where s.source_id = x.source_id and px.xref_id = x.xref_id group by s.name";
+	  
+	  my $sum_sth = $dbi->prepare($group_sql);
+	  $sum_sth->execute();
+	  
+	  $sum_sth->bind_columns(\$sum_count, \$sum_name);
+	  
+	  while($sum_sth->fetch){
+	    if($sum_count != $sum_prim{$sum_name}){
+	      my $diff = ($sum_count - $sum_prim{$sum_name});
+	      $sum_line{$sum_name}[1] = $diff;	    
+	    }
+	    $sum_prim{$sum_name} = $sum_count;
+	  }
+	  $sum_sth->finish;
+	  
+	  
+	  
+	  # third the number of dependent xrefs
+	  $group_sql = "SELECT count(*), s.name from source s, dependent_xref dx, xref x where s.source_id = x.source_id and dx.dependent_xref_id = x.xref_id group by s.name";
+	  
+	  my $sum_sth = $dbi->prepare($group_sql);
+	  $sum_sth->execute();
+	  
+	  $sum_sth->bind_columns(\$sum_count, \$sum_name);
+	  
+	  while($sum_sth->fetch){
+	    if($sum_count != $sum_dep{$sum_name}){
+	      my $diff = ($sum_count - $sum_dep{$sum_name});
+	      $sum_line{$sum_name}[2] = $diff;	    
+	    }
+	    $sum_dep{$sum_name} = $sum_count;
+	  }
+	  $sum_sth->finish;
+
+	  
+	  
+	  # fourth the number of direct xrefs
+	  $group_sql = "SELECT count(*), s.name from source s, direct_xref dx, xref x where s.source_id = x.source_id and dx.general_xref_id = x.xref_id group by s.name";
+	  
+	  my $sum_sth = $dbi->prepare($group_sql);
+	  $sum_sth->execute();
+	  
+	  $sum_sth->bind_columns(\$sum_count, \$sum_name);
+	  
+	  while($sum_sth->fetch){
+	    if($sum_count != $sum_dir{$sum_name}){
+	      my $diff = ($sum_count - $sum_dir{$sum_name});
+	      $sum_line{$sum_name}[3] = $diff;	    
+	    }
+	    $sum_dir{$sum_name} = $sum_count;
+	  }
+	  $sum_sth->finish;
+	  
+	  # fifth the number of coordinate xrefs
+	  $group_sql = "SELECT count(*), s.name from source s, coordinate_xref cx  where s.source_id = cx.source_id group by s.name";
+	  
+	  my $sum_sth = $dbi->prepare($group_sql);
+	  $sum_sth->execute();
+	  
+	  $sum_sth->bind_columns(\$sum_count, \$sum_name);
+	  
+	  while($sum_sth->fetch){
+	    if($sum_count != $sum_coord{$sum_name}){
+	      my $diff = ($sum_count - $sum_coord{$sum_name});
+	      $sum_line{$sum_name}[4] = $diff;	    
+	    }
+	    $sum_coord{$sum_name} = $sum_count;
+	  }
+	  $sum_sth->finish;
+	  
+
+	  # sixth the number of synonyms
+	  $group_sql = "select count(*), s.name from source s, xref x, synonym o where s.source_id = x.source_id and x.xref_id = o.xref_id group by s.name";
+	  
+	  my $sum_sth = $dbi->prepare($group_sql);
+	  $sum_sth->execute();
+	  
+	  $sum_sth->bind_columns(\$sum_count, \$sum_name);
+	  
+	  while($sum_sth->fetch){
+	    if($sum_count != $sum_syn{$sum_name}){
+	      my $diff = ($sum_count - $sum_syn{$sum_name});
+	      $sum_line{$sum_name}[5] = $diff;	    
+	    }
+	    $sum_syn{$sum_name} = $sum_count;
+	  }
+	  $sum_sth->finish;
+
+
+	  print "source                      xrefs\tprim\tdep\tdir\tcoord\tsynonyms\n";
+	  foreach my $sum_name (keys %sum_line){
+	    printf ("%-28s",$sum_name);
+	    print join("\t",@{$sum_line{$sum_name}})."\n";
+	  }
+	  
+	}	
+	
 
     } ## end while ( my @row = $sth->fetchrow_array...
 
@@ -354,6 +430,103 @@ sub run {
                        : 'OKAY'
                     ) );
         }
+    }
+
+
+    if($stats){
+      my %sum_line;
+      
+      # first the number of xrefs;
+      my $group_sql = "SELECT count(*), s.name from source s, xref x where s.source_id = x.source_id group by s.name";
+      
+      my $sum_sth = $dbi->prepare($group_sql);
+      $sum_sth->execute();
+      
+      my ($sum_count, $sum_name);
+      $sum_sth->bind_columns(\$sum_count, \$sum_name);
+      
+      while($sum_sth->fetch){
+	$sum_line{$sum_name} = [$sum_count, 0, 0, 0, 0, 0];
+      }
+      $sum_sth->finish;
+      
+      
+      # second the number of primary xrefs
+      $group_sql = "SELECT count(*), s.name from source s, primary_xref px, xref x where s.source_id = x.source_id and px.xref_id = x.xref_id group by s.name";
+      
+      my $sum_sth = $dbi->prepare($group_sql);
+      $sum_sth->execute();
+      
+      $sum_sth->bind_columns(\$sum_count, \$sum_name);
+      
+      while($sum_sth->fetch){
+	$sum_line{$sum_name}[1] = $sum_count;	    
+      }
+      $sum_sth->finish;
+      
+      
+      
+      # third the number of dependent xrefs
+      $group_sql = "SELECT count(*), s.name from source s, dependent_xref dx, xref x where s.source_id = x.source_id and dx.dependent_xref_id = x.xref_id group by s.name";
+      
+      my $sum_sth = $dbi->prepare($group_sql);
+      $sum_sth->execute();
+      
+      $sum_sth->bind_columns(\$sum_count, \$sum_name);
+      
+      while($sum_sth->fetch){
+	$sum_line{$sum_name}[2] = $sum_count;	    
+      }
+      
+      
+      
+      # fourth the number of direct xrefs
+      $group_sql = "SELECT count(*), s.name from source s, direct_xref dx, xref x where s.source_id = x.source_id and dx.general_xref_id = x.xref_id group by s.name";
+      
+      my $sum_sth = $dbi->prepare($group_sql);
+      $sum_sth->execute();
+      
+      $sum_sth->bind_columns(\$sum_count, \$sum_name);
+      
+      while($sum_sth->fetch){
+	$sum_line{$sum_name}[3] = $sum_count;	    
+      }
+      
+      $sum_sth->finish;
+      
+      # fifth the number of coordinate xrefs
+      $group_sql = "SELECT count(*), s.name from source s, coordinate_xref cx  where s.source_id = cx.source_id group by s.name";
+      
+      my $sum_sth = $dbi->prepare($group_sql);
+      $sum_sth->execute();
+      
+      $sum_sth->bind_columns(\$sum_count, \$sum_name);
+      
+      while($sum_sth->fetch){
+	$sum_line{$sum_name}[4] = $sum_count;	    
+      }
+      $sum_sth->finish;
+      
+      
+      # sixth the number of synonyms
+      $group_sql = "select count(*), s.name from source s, xref x, synonym o where s.source_id = x.source_id and x.xref_id = o.xref_id group by s.name";
+      
+      my $sum_sth = $dbi->prepare($group_sql);
+      $sum_sth->execute();
+      
+      $sum_sth->bind_columns(\$sum_count, \$sum_name);
+      
+      while($sum_sth->fetch){
+	$sum_line{$sum_name}[5] = $sum_count;	    
+      }
+    
+      print "---------------------------------------------------------------------------------------\n";
+      print "TOTAL source                xrefs\tprim\tdep\tdir\tcoord\tsynonyms\n";
+      foreach my $sum_name (keys %sum_line){
+	printf ("%-28s",$sum_name);
+	print join("\t",@{$sum_line{$sum_name}})."\n";
+      }
+      
     }
 
     # remove last working directory
