@@ -219,18 +219,43 @@ sub connect {
                                'odbc_cursortype' => 2});
     };
   }
+elsif ( $self->driver() eq "Sybase" ) {
+
+  $dsn = "DBI:" . $self->driver() .
+    
+    ":server=" . $self->host() .
+      
+      ";database=" . $self->dbname() .
+	
+	";tdsLevel=CS_TDS_495";
+  
+  eval{ $dbh = DBI->connect($dsn,
+			    
+			    $self->username(),
+			    
+			    $self->password(),
+			    
+			    {'LongTruncOk' => 1,
+			     
+			     'RaiseError' => 1,
+			     
+			     'PrintError' => 0});
+	
+      };
+
+  }
   else{ 
     $dsn = "DBI:" . $self->driver() .
-           ":database=". $self->dbname() .
-           ";host=" . $self->host() .
-           ";port=" . $self->port();
+      ":database=". $self->dbname() .
+	";host=" . $self->host() .
+	  ";port=" . $self->port();
     eval{ $dbh = DBI->connect($dsn,
                               $self->username(),
                               $self->password(),
                               {'RaiseError' => 1});
-    };
-}
-
+	};
+  }
+  
   if(!$dbh || $@ || !$dbh->ping()) {
     warn("Could not connect to database " . $self->dbname() .
          " as user " . $self->username() . 
