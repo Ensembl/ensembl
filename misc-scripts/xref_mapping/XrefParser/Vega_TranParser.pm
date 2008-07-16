@@ -15,6 +15,11 @@ sub run {
 
   my $vega_io = $self->get_filehandle($file);
 
+  my $clone_source_id =
+    $self->get_source_id_for_source_name('Clone_based_vega_transcript');
+  my $curated_source_id =
+    $self->get_source_id_for_source_name('HGNC_curated_transcript');
+  
   if ( !defined $vega_io ) {
     print "Could not open $file\n";
     return 1;
@@ -39,7 +44,11 @@ sub run {
 
   foreach my $stable_id (keys %vega_name){
     my $name = $vega_name{$stable_id};
-    my $xref_id = $self->add_xref($name, "" , $name , "", $source_id, $species_id);
+    my $id = $curated_source_id;
+    if($name =~ /[.]/){
+      $id = $clone_source_id;
+    }
+    my $xref_id = $self->add_xref($name, "" , $name , "", $id, $species_id);
     $xref_count++;
     
     
