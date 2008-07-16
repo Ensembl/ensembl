@@ -49,7 +49,7 @@ sub run {
   }    
   print "Parsed identifiers from $file\n".
         "\tadded $dependent_xref_count GO xrefs dependent on InterPro\n".
-        "\tskipped $skip_count GO terms due to missing InterPros";
+        "\tskipped $skip_count GO terms due to missing InterPros\n";
 
   return 0;
 }
