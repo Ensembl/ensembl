@@ -210,26 +210,42 @@ sub new {
 # This cache will load the information from the seq_region_table, if
 # any, to allow mapping between internal and external seq_region_id.
 sub _cache_seq_region_mapping {
-  my $self = shift;
+  my ($self) = @_;
 
-  #for a given core database, will return the schema_build information
+  # For a given core database, will return the schema_build information.
   my $schema_build = $self->db->_get_schema_build();
-  #prepare the query to get relation for the current database being used
-  my $sql =
-'SELECT s.internal_seq_region_id, s.external_seq_region_id from seq_region_mapping s, mapping_set ms where ms.mapping_set_id = s.mapping_set_id and ms.schema_build="'
-    . $schema_build . '"';
-  #load the cache:
-  foreach
-    my $row ( @{ $self->db->dbc->db_handle->selectall_arrayref($sql) } )
-  {
+
+  # Prepare the query to get relation for the current database being
+  # used.
+  my $sql = qq(
+  SELECT    s.internal_seq_region_id,
+            s.external_seq_region_id
+  FROM      seq_region_mapping s,
+            mapping_set ms,
+            seq_region sr,
+            coord_system cs
+  WHERE     ms.mapping_set_id = s.mapping_set_id
+    AND     ms.schema_build = ?
+    AND     s.internal_seq_region_id = sr.seq_region_id
+    AND     sr.coord_system_id = cs.coord_system_id
+    AND     cs.species_id = ?);
+
+  my $sth = $self->prepare($sql);
+
+  $sth->bind_param( 1, $schema_build,       SQL_VARCHAR );
+  $sth->bind_param( 2, $self->species_id(), SQL_INTEGER );
+
+  # Load the cache:
+  foreach my $row ( @{ $sth->selectall_arrayref($sql) } ) {
     #the internal->external
     $self->{'_internal_seq_region_mapping'}->{ $row->[0] } = $row->[1];
     #the external->internal
     $self->{'_external_seq_region_mapping'}->{ $row->[1] } = $row->[0];
   }
-  #and return
-  return;
-}
+
+  $sth->finish();
+
+} ## end sub _cache_seq_region_mapping
 
 sub _cache_mapping_paths {
   #
