@@ -235,11 +235,13 @@ sub _cache_seq_region_mapping {
   $sth->bind_param( 1, $schema_build,       SQL_VARCHAR );
   $sth->bind_param( 2, $self->species_id(), SQL_INTEGER );
 
+  $sth->execute();
+
   # Load the cache:
-  foreach my $row ( @{ $sth->selectall_arrayref($sql) } ) {
-    #the internal->external
+  foreach my $row ( @{ $sth->fetchall_arrayref() } ) {
+    # internal->external
     $self->{'_internal_seq_region_mapping'}->{ $row->[0] } = $row->[1];
-    #the external->internal
+    # external->internal
     $self->{'_external_seq_region_mapping'}->{ $row->[1] } = $row->[0];
   }
 
