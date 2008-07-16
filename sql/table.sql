@@ -427,7 +427,8 @@ CREATE TABLE gene (
   status                      ENUM('KNOWN', 'NOVEL', 'PUTATIVE', 'PREDICTED', 'KNOWN_BY_PROJECTION', 'UNKNOWN'),
   description                 TEXT,
   is_current                  BOOLEAN NOT NULL DEFAULT 1,
-  canonical_transcript        INT(10) UNSIGNED,
+  canonical_transcript_id     INT(10) UNSIGNED NOT NULL,
+  canonical_annotation        VARCHAR(255) DEFAULT NULL,
 
   PRIMARY KEY (gene_id),
   KEY seq_region_idx (seq_region_id, seq_region_start),
@@ -880,16 +881,14 @@ CREATE TABLE meta (
 
 
 # Auto add schema version to database
-INSERT INTO meta (meta_key, meta_value) VALUES ("schema_version", "49");
+INSERT INTO meta (meta_key, meta_value) VALUES ("schema_version", "50");
 
 # patches included in this schema file
 # NOTE: at beginning of release cycle, remove patch entries from last release
-INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_48_49_a.sql|schema_version');
-INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_48_49_b.sql|new_canonical_transcript_column');
-INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_48_49_c.sql|regulatory_support_removal');
-INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_48_49_d.sql|new_info_type_enum');
-INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_48_49_e.sql|ensembl_object_type_not_null');
-
+INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_49_50_a.sql|schema_version');
+INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_49_50_b.sql|coord_system_version_default');
+INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_49_50_c.sql|canonical_transcript');
+INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_49_50_d.sql|seq_region_indices');
 
 ################################################################################
 #
@@ -1301,9 +1300,9 @@ CREATE TABLE seq_region (
   coord_system_id             INT(10) UNSIGNED NOT NULL,
   length                      INT(10) NOT NULL,
 
-  UNIQUE (coord_system_id, name),
   PRIMARY KEY (seq_region_id),
-  KEY name_idx (name)  
+  UNIQUE KEY name_cs_idx (name, coord_system_id),
+  KEY cs_idx (coord_system_id)
 
 ) COLLATE=latin1_swedish_ci TYPE=MyISAM;
 
@@ -1341,7 +1340,7 @@ CREATE TABLE coord_system (
 
   coord_system_id             INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
   name                        VARCHAR(40) NOT NULL,
-  version                     VARCHAR(40),
+  version                     VARCHAR(40) DEFAULT NULL,
   rank                        INT NOT NULL,
   attrib                      SET('default_version', 'sequence_level'),
 
@@ -1514,5 +1513,36 @@ CREATE TABLE unconventional_transcript_association (
 
        KEY (transcript_id),
        KEY (gene_id)
+
+) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+
+################################################################################
+#
+# Table structure for seq_region mapping between releases
+#
+# Stores how the core seq_region_id have changed from release to release
+
+CREATE TABLE seq_region_mapping (
+
+	external_seq_region_id	INT(10) UNSIGNED NOT NULL,
+	internal_seq_region_id	INT(10) UNSIGNED NOT NULL,
+	mapping_set_id		INT(10) UNSIGNED NOT NULL,
+
+	KEY (mapping_set_id)
+
+) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+
+################################################################################
+#
+# Table structure for seq_region mapping between releases
+#
+# Stores how which mapping group the seq_region are for a particular schema
+
+CREATE TABLE mapping_set (
+
+	mapping_set_id	INT(10)	UNSIGNED NOT NULL,
+	schema_build	VARCHAR(20) NOT NULL,
+
+	PRIMARY KEY(schema_build)
 
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
