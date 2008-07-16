@@ -112,8 +112,11 @@ sub _new_fast {
 
   Args       : None
   Example    : my @feature_ids = @{$afa->list_dbIDs()};
-  Description: Gets an array of internal IDs for all AffyFeature objects in
-               the current database.
+  Description: Gets an array of internal IDs for all AffyFeature objects
+               in the current database.  NOTE: In a multi-species
+               database, this method will return the dbIDs of all
+               AffyFeature objects, not just the ones associated with
+               the current species.
   Returntype : List of ints
   Exceptions : None
   Caller     : ?

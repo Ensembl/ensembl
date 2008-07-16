@@ -110,8 +110,11 @@ sub _objs_from_sth {
 
   Args       : None
   Example    : my @array_ids = @{$aaa->list_dbIDs()};
-  Description: Gets an array of internal IDs for all AffyArray objects in the
-               current database.
+  Description: Gets an array of internal IDs for all AffyArray objects
+               in the current database.  NOTE: In a multi-species
+               database, this method will return the dbIDs of all
+               AffyArray objects, not just the ones associated with the
+               current species.
   Returntype : List of ints
   Exceptions : None
   Caller     : ?

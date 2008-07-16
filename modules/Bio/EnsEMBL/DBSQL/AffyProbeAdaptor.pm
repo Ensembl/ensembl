@@ -158,8 +158,11 @@ sub _objs_from_sth {
 
   Arg [1]    : none
   Example    : my @probe_ids = @{$apa->list_dbIDs()};
-  Description: Gets an array of internal IDs for all AffyProbe objects in the
-               current database.
+  Description: Gets an array of internal IDs for all AffyProbe objects
+               in the current database.  NOTE: In a multi-species
+               database, this method will return the dbIDs of all
+               AffyProbe objects, not just the ones associated with
+               the current species.
   Returntype : List of ints
   Exceptions : None
   Caller     : ?
