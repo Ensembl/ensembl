@@ -256,32 +256,26 @@ sub type_variation {
 
   ##to find if a SNP is overlapping with the transcript of the regulatory region, also the SNP should be within 5kb on both side of the transcript, then check whether they overlapping
 
-#   if ($g and ref($g) and $tr->isa('Bio::EnsEMBL::Genes')) {
-#     foreach my $rf (@{$g->fetch_all_regulatory_features()}) {
-#       my $rf_start = $rf->seq_region_start;
-#       my $rf_end  = $rf->seq_region_end;
-
-#       if ($var->end >= $rf_start and $var->start <= $rf_end) {
-#  	$var->type('REGULATORY_REGION');
-# 	last;
-#       }
-#     }
-#   }
-
-
   if ($tr and ref($tr) and $tr->isa('Bio::EnsEMBL::Transcript')) {
-      my $dbFunc = $tr->adaptor->db->get_db_adaptor("funcgen");
-      my $rfa = $dbFunc->get_ExternalFeatureAdaptor();      
-      foreach my $rf (@{$rfa->fetch_all_by_Slice($tr->feature_Slice)}){
-	  next if (($rf->feature_set->name !~ /miRNA/) && ($rf->feature_set->name !~ /cisRED/));
-#    foreach my $rf (@{$tr->fetch_all_regulatory_features()}) {
+    my $dbFunc = $tr->adaptor->db->get_db_adaptor("funcgen");
+    my $efa = $dbFunc->get_ExternalFeatureAdaptor();
+    my $rfa = $dbFunc->get_RegulatoryFeatureAdaptor();
+    my @rf;
+    foreach my $f  (@{$efa->fetch_all_by_Slice($tr->feature_Slice)}) {
+      if ($f->feature_set->name =~ /VISTA\s+enhancer\s+set/i or $f->feature_set->name =~ /cisRED\s+group\s+motifs/i) {
+	push @rf, $f;
+      }
+    }
+
+    push @rf, @{$rfa->fetch_all_by_Slice($tr->feature_Slice)};
+    foreach my $rf (@rf){
       my $rf_start = $rf->start;
       my $rf_end  = $rf->end;
 
       if ($var->end >= $rf_start and $var->start <= $rf_end) {
- 	$var->type('REGULATORY_REGION') if (!defined $var->type || $var->type !~ /REGULATORY/);
-#	print $var->start, " has regulatiory_region near",$tr->dbID,"\n";
-        last;
+	$var->type('REGULATORY_REGION') if (!defined $var->type || $var->type !~ /REGULATORY/);
+	#	print $var->start, " has regulatiory_region near",$tr->dbID,"\n";
+	last;
       }
     }
   }
@@ -352,7 +346,18 @@ sub type_variation {
 
     # variation must be intronic since mapped to cdna gap, but is within
     # transcript, note that ESSENTIAL_SPLICE_SITE only consider first (AG) and last (GT) 2 bases inside the intron.
+    # if variation is in intron, we need to check the lenth of intron, if it's shoter than 6, we call it SYNONYMOUS_CODING rather then INTRONIC
 
+    foreach my $intron (@{$tr->get_all_Introns()}) {
+      if ($intron->length <=5) {#the length of frameshift intron could be 1,2,4,5 bases
+	if ($var->start>=$intron->start and $var->end<=$intron->end) {
+	  #this is a type of SYNONYMOUS_CODING since changes happen in frameshift intron, which don't change exon structure
+	  $var->type('SYNONYMOUS_CODING');
+	  return [$var];
+	}
+      }
+    }
+    #if it's not in frameshift intron, then it's in normal intron
     $var->type('INTRONIC');
 
     if ($splice_site_2) {
