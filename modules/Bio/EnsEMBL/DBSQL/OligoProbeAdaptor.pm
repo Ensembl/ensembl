@@ -53,9 +53,12 @@ use vars qw(@ISA);
   Arg [2]    : (optional) string - name of probeset
   Arg [3]    : string - name of probe
   Example    : my $probe = $opa->fetch_by_array_probeset_probe('Array-1', 'Probeset-1', 'Probe-1');
-  Description: Returns a probe given a combination of array name, probeset and
-               probe name. This will uniquely define an Affy probe. Only one
-			   probe is ever returned.
+  Description: Returns a probe given a combination of array name,
+               probeset and probe name.  This will uniquely define an
+               Affy probe.  Only one probe is ever returned.
+               NOTE:  In a multi-species database, this method will
+               return all the entries matching the search criteria, not
+               just the ones associated with the current species.
   Returntype : Bio::EnsEMBL::OligoProbe
   Exceptions : None
   Caller     : General
