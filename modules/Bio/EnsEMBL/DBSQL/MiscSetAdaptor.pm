@@ -89,7 +89,10 @@ sub new {
   Example    : foreach my $ms (@{$msa->fetch_all()}) {
                  print $ms->code(), ' ', $ms->name(), "\n";
                }
-  Description: Retrieves every MiscSet defined in the DB
+  Description: Retrieves every MiscSet defined in the DB.
+               NOTE:  In a multi-species database, this method will
+               return all the entries matching the search criteria, not
+               just the ones associated with the current species.
   Returntype : listref of Bio::EnsEMBL::MiscSets
   Exceptions : none
   Caller     : general
