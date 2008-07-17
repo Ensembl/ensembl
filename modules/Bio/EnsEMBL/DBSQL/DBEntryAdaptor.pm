@@ -54,7 +54,8 @@ use strict;
   Arg [1]    : int $dbID
                the unique database identifier for the DBEntry to retrieve
   Example    : my $db_entry = $db_entry_adaptor->fetch_by_dbID($dbID);
-  Description: retrieves a dbEntry from the database via its unique identifier
+  Description: Retrieves a dbEntry from the database via its unique
+               identifier.
   Returntype : Bio::EnsEMBL::DBEntry
   Exceptions : none
   Caller     : general
@@ -153,9 +154,13 @@ sub fetch_by_dbID {
                retrieve.
   Example    : my $xref = $dbea->fetch_by_db_accession('Interpro','IPR003439');
                print $xref->description(), "\n" if($xref);
-  Description: Retrieves a DBEntry (xref) via the name of the database it is
-               from and its primary accession in that database. Undef is
-               returned if the xref cannot be found in the database.
+  Description: Retrieves a DBEntry (xref) via the name of the database
+               it is from and its primary accession in that database.
+               Undef is returned if the xref cannot be found in the
+               database.
+               NOTE:  In a multi-species database, this method will
+               return all the entries matching the search criteria, not
+               just the ones associated with the current species.
   Returntype : Bio::EnsEMBL::DBSQL::DBEntry
   Exceptions : thrown if arguments are incorrect
   Caller     : general, domainview
@@ -788,6 +793,9 @@ sub remove_from_object {
   Arf [4]    : optional $exdb_type (external database type)
   Example    : $self->_fetch_by_object_type( $translation_id, 'Translation' )
   Description: Fetches DBEntry by Object type
+               NOTE:  In a multi-species database, this method will
+               return all the entries matching the search criteria, not
+               just the ones associated with the current species.
   Returntype : arrayref of DBEntry objects; may be of type IdentityXref if
                there is mapping data, or GoXref if there is linkage data.
   Exceptions : none
@@ -968,10 +976,15 @@ SSQL
 
   Arg [1]    : string $external_id
   Example    : @gene_ids = $dbea->list_gene_ids_by_external_db_id(1020);
-  Description: Retrieve a list of geneid by an external identifier that is
-               linked to  any of the genes transcripts, translations or the
-               gene itself. NOTE: if more than one external identifier has the
-               same primary accession then genes for each of these is returned.
+  Description: Retrieve a list of geneid by an external identifier that
+               is linked to any of the genes transcripts, translations
+               or the gene itself.
+               NOTE:  If more than one external identifier has the
+               same primary accession then genes for each of these is
+               returned.
+               NOTE:  In a multi-species database, this method will
+               return all the entries matching the search criteria, not
+               just the ones associated with the current species.
   Returntype : list of ints
   Exceptions : none
   Caller     : unknown
@@ -1077,6 +1090,9 @@ sub list_translation_ids_by_extids {
   Arg [4]    : (optional) string $external_db_name
   	       other object type to be returned
   Example    : $self->_type_by_external_id($name, 'Translation');
+               NOTE:  In a multi-species database, this method will
+               return all the entries matching the search criteria, not
+               just the ones associated with the current species.
   Description: Gets
   Returntype : list of dbIDs (gene_id, transcript_id, etc.)
   Exceptions : none
@@ -1219,6 +1235,9 @@ sub _type_by_external_id {
   	       other object type to be returned
   Example    : $self->_type_by_external_db_id(1030, 'Translation');
   Description: Gets
+               NOTE:  In a multi-species database, this method will
+               return all the entries matching the search criteria, not
+               just the ones associated with the current species.
   Returntype : list of dbIDs (gene_id, transcript_id, etc.)
   Exceptions : none
   Caller     : list_translation_ids_by_extids
@@ -1298,8 +1317,11 @@ sub _type_by_external_db_id{
 
   Example    : @canc_refs = @{$db_entry_adaptor->fetch_all_by_description("%cancer%")};
                @db_entries = @{$db_entry_adaptor->fetch_all_by_description("%cancer%","MIM_MORBID")};
-  Description: Retrieves DBEntrys that match the description. Optionally you can search on
-               external databases tpye
+  Description: Retrieves DBEntries that match the description.
+               Optionally you can search on external databases type.
+               NOTE:  In a multi-species database, this method will
+               return all the entries matching the search criteria, not
+               just the ones associated with the current species.
   Returntype : ref to array of Bio::EnsEMBL::DBSQL::DBEntry
   Exceptions : None.
   Caller     : General
