@@ -334,20 +334,26 @@ sub fetch_all_by_domain {
   throw("domain argument is required") unless ($domain);
 
   my $sth = $self->prepare(qq(
-      SELECT tr.gene_id
-      FROM interpro i,
-           protein_feature pf,
-           transcript tr,
-           translation tl
-      WHERE i.interpro_ac = ?
-      AND   i.id = pf.hit_id
-      AND   pf.translation_id = tl.translation_id
-      AND   tr.transcript_id = tl.transcript_id
-      AND   tr.is_current = 1
-      GROUP BY tr.gene_id
-  ));
+  SELECT    tr.gene_id
+  FROM      interpro i,
+            protein_feature pf,
+            transcript tr,
+            translation tl,
+            seq_region sr,
+            coord_system cs
+  WHERE     cs.species_id = ?
+    AND     cs.coord_system_id = sr.coord_system_id
+    AND     sr.seq_region_id = tr.seq_region_id
+    AND     tr.is_current = 1
+    AND     tr.transcript_id = tl.transcript_id
+    AND     tl.translation_id = pf.translation_id
+    AND     pf.hit_id = i.id
+    AND     i.interpro_ac = ?
+  GROUP BY  tr.gene_id));
 
-  $sth->bind_param(1, $domain, SQL_VARCHAR);
+  $sth->bind_param( 1, $self->species_id(), SQL_VARCHAR );
+  $sth->bind_param( 2, $domain,             SQL_VARCHAR );
+
   $sth->execute();
 
   my @array = @{$sth->fetchall_arrayref()};
@@ -962,17 +968,17 @@ sub store {
   # column status is used from schema version 34 onwards (before it was
   # confidence)
 
-  my $sth = $self->prepare( $store_gene_sql );
-  $sth->bind_param(1, $type, SQL_VARCHAR);
-  $sth->bind_param(2, $analysis_id, SQL_INTEGER);
-  $sth->bind_param(3, $seq_region_id, SQL_INTEGER);
-  $sth->bind_param(4, $gene->start, SQL_INTEGER);
-  $sth->bind_param(5, $gene->end, SQL_INTEGER);
-  $sth->bind_param(6, $gene->strand, SQL_TINYINT);
-  $sth->bind_param(7, $gene->description, SQL_LONGVARCHAR);
-  $sth->bind_param(8, $gene->source, SQL_VARCHAR);
-  $sth->bind_param(9, $gene->status, SQL_VARCHAR);
-  $sth->bind_param(10, $is_current, SQL_TINYINT);
+  my $sth = $self->prepare($store_gene_sql);
+  $sth->bind_param( 1,  $type,              SQL_VARCHAR );
+  $sth->bind_param( 2,  $analysis_id,       SQL_INTEGER );
+  $sth->bind_param( 3,  $seq_region_id,     SQL_INTEGER );
+  $sth->bind_param( 4,  $gene->start,       SQL_INTEGER );
+  $sth->bind_param( 5,  $gene->end,         SQL_INTEGER );
+  $sth->bind_param( 6,  $gene->strand,      SQL_TINYINT );
+  $sth->bind_param( 7,  $gene->description, SQL_LONGVARCHAR );
+  $sth->bind_param( 8,  $gene->source,      SQL_VARCHAR );
+  $sth->bind_param( 9,  $gene->status,      SQL_VARCHAR );
+  $sth->bind_param( 10, $is_current,        SQL_TINYINT );
 
   $sth->execute();
   $sth->finish();
@@ -1129,8 +1135,8 @@ sub remove {
   }
 
   # remove all alternative allele entries associated with this gene
-  my $sth = $self->prepare("delete from alt_allele where gene_id = ?");
-  $sth->bind_param(1, $gene->dbID, SQL_INTEGER);
+  my $sth = $self->prepare("DELETE FROM alt_allele WHERE gene_id = ?");
+  $sth->bind_param( 1, $gene->dbID, SQL_INTEGER );
   $sth->execute();
   $sth->finish();
 
@@ -1146,22 +1152,25 @@ sub remove {
 
   # remove the gene stable identifier
 
-  $sth = $self->prepare( "delete from gene_stable_id where gene_id = ? " );
-  $sth->bind_param(1, $gene->dbID, SQL_INTEGER);
+  $sth =
+    $self->prepare("DELETE FROM gene_stable_id WHERE gene_id = ? ");
+  $sth->bind_param( 1, $gene->dbID, SQL_INTEGER );
   $sth->execute();
   $sth->finish();
 
   # remove any unconventional transcript associations involving this gene
 
-  $sth = $self->prepare( "delete from unconventional_transcript_association where gene_id = ? " );
-  $sth->bind_param(1, $gene->dbID, SQL_INTEGER);
+  $sth =
+    $self->prepare( "DELETE FROM unconventional_transcript_association "
+                    . "WHERE gene_id = ? " );
+  $sth->bind_param( 1, $gene->dbID, SQL_INTEGER );
   $sth->execute();
   $sth->finish();
 
   # remove this gene from the database
 
-  $sth = $self->prepare( "delete from gene where gene_id = ? " );
-  $sth->bind_param(1, $gene->dbID, SQL_INTEGER);
+  $sth = $self->prepare("DELETE FROM gene WHERE gene_id = ? ");
+  $sth->bind_param( 1, $gene->dbID, SQL_INTEGER );
   $sth->execute();
   $sth->finish();
 
@@ -1190,26 +1199,28 @@ sub remove {
 
 sub get_Interpro_by_geneid {
   my ($self, $gene_stable_id) = @_;
-  
+ 
   my $sql = qq(
-	SELECT	i.interpro_ac, 
-		x.description 
-        FROM	transcript t,
-                translation tl, 
-		protein_feature pf, 
-		interpro i, 
-                xref x,
-		gene_stable_id gsi
-	WHERE	gsi.stable_id = '$gene_stable_id' 
-	  AND	t.gene_id = gsi.gene_id
-          AND   t.is_current = 1
-          AND   tl.transcript_id = t.transcript_id
-	  AND	tl.translation_id = pf.translation_id 
-	  AND	i.id = pf.hit_id 
-	  AND	i.interpro_ac = x.dbprimary_acc
-  );
-   
+  SELECT    i.interpro_ac,
+            x.description
+  FROM      transcript t,
+            translation tl,
+            protein_feature pf,
+            interpro i,
+            xref x,
+            gene_stable_id gsi
+  WHERE     gsi.stable_id = ?
+    AND     t.gene_id = gsi.gene_id
+    AND     t.is_current = 1
+    AND     tl.transcript_id = t.transcript_id
+    AND     tl.translation_id = pf.translation_id
+    AND     i.id = pf.hit_id
+    AND     i.interpro_ac = x.dbprimary_acc);
+
   my $sth = $self->prepare($sql);
+
+  $sth->bind_param( 1, $gene_stable_id, SQL_VARCHAR );
+
   $sth->execute;
 
   my @out;
