@@ -247,8 +247,9 @@ sub remove {
     return undef;
   }
 
-  my $sth = $self->prepare( "delete from prediction_exon where prediction_exon_id = ?" );
-  $sth->bind_param(1,$pexon->dbID,SQL_INTEGER);
+  my $sth = $self->prepare(
+            "DELETE FROM prediction_exon WHERE prediction_exon_id = ?");
+  $sth->bind_param( 1, $pexon->dbID, SQL_INTEGER );
   $sth->execute();
 
   $pexon->dbID(undef);
