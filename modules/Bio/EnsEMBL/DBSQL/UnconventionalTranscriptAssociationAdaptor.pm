@@ -51,8 +51,11 @@ use vars qw(@ISA);
   Arg [1]    : String type
                the type of associations to obtain
   Example    : $utas = $utaa->fetch_all_by_type('antisense');
-  Description: Obtains all unconventional transcript associations that have
-               a particular interaction type.
+  Description: Obtains all unconventional transcript associations that
+               have a particular interaction type.
+               NOTE:  In a multi-species database, this method will
+               return all the entries matching the search criteria, not
+               just the ones associated with the current species.
   Returntype : listREF of Bio::EnsEMBL::UnconventionalTranscriptAssociations
   Exceptions : none
   Caller     : general
