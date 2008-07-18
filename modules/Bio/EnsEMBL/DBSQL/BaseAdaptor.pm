@@ -382,8 +382,10 @@ sub generic_fetch {
   my $bind_parameters = $self->bind_param_generic_fetch();
   if (defined $bind_parameters){
       #if we have bind the parameters, call the DBI to bind them
-      for(my $i=0;$i<length @{$bind_parameters};$i++){
-	  $sth->bind_param($i+1,$bind_parameters->[$i]->[0],$bind_parameters->[$i]->[1]);
+      my $i = 1;
+      foreach my $param (@{$bind_parameters}){
+	  $sth->bind_param($i,$param->[0],$param->[1]);
+	  $i++;
       }
       #after binding parameters, undef for future queries
       $self->{'_bind_param_generic_fetch'} = ();
@@ -425,7 +427,8 @@ sub fetch_by_dbID{
   #construct a constraint like 't1.table1_id = 123'
   my @tabs = $self->_tables;
   my ($name, $syn) = @{$tabs[0]};
-  my $constraint = "${syn}.${name}_id = $id";
+  $self->bind_param_generic_fetch($id,SQL_INTEGER);
+  my $constraint = "${syn}.${name}_id = ?";
 
   #Should only be one
   my ($feat) = @{$self->generic_fetch($constraint)};
