@@ -168,6 +168,73 @@ FSQL
   $sth->execute() || die "error loading file $file\n";
 
 
+##########################################################################################
+# HGNC synonyms are special as they are only on some prioritys so copy all the synonyms
+# from the xref database to the core database. Granted some will already be there but use
+# update ignore just in case.
+###########################################################################################
+
+
+#get the xref synonyms store as a hash of arrays.
+
+
+my $sql = 'select distinct(s.synonym), x.accession from xref x, synonym s, source so where so.source_id = x.source_id and x.xref_id = s.xref_id and so.name like "HGNC"';
+
+#+--------------------------+-----------+
+#| synonym                  | accession |
+#+--------------------------+-----------+
+#| FWP007                   | 7         |
+#| S863-7                   | 7         |
+#| CPAMD5                   | 7         |
+#| AACT                     | 16        |
+#| ACT                      | 16        |
+
+
+  $sth = $self->xref->dbc->prepare($sql);
+  
+  $sth->execute();
+  my ($syn, $acc);
+  $sth->bind_columns(\$syn,\$acc);
+  my %acc_to_syn;
+  while ($sth->fetch){
+    push @{$acc_to_syn{$acc}}, $syn;
+  }
+  $sth->finish;
+
+# get the HGNC xrefs in the core and add the synonyms
+  
+  my $hgnc_file  =  $self->core->dir()."/hgnc_syn.txt";
+  open(SYN, ">$hgnc_file" ) || die "Could not open file $hgnc_file";
+
+  $sql = 'select x.dbprimary_acc, x.xref_id from xref x, external_db e where e.external_db_id = x.external_db_id and e.db_name like "HGNC"';
+
+
+  $sth = $self->core->dbc->prepare($sql);
+  
+  $sth->execute();
+  my ($xref_id);
+  $sth->bind_columns(\$acc,\$xref_id);
+  while($sth->fetch){
+    if(defined($acc_to_syn{$acc})){
+      foreach my $a ( @{$acc_to_syn{$acc}} ){
+	print SYN "$xref_id\t$a\n";
+      }
+    }
+  }
+  $sth->finish;
+
+  close SYN;
+
+
+
+#
+# import hgnc synonyms
+#
+  $sth = $self->core->dbc->prepare("LOAD DATA LOCAL INFILE \'$hgnc_file\' IGNORE INTO TABLE external_synonym");
+  print "Uploading data in $hgnc_file to external_synonym\n";
+  $sth->execute() || die "error loading file $hgnc_file\n";
+  $sth->finish;
+
 
 #######################
 #Do the naming bit now.
@@ -183,38 +250,74 @@ FSQL
   open(OBJECT_XREF, ">$object_xref_file") || die "Could not open file $object_xref_file";
 
 
-  my ($vega_gene_id, $vega_transcript_id, $vega_gene_like_id, $vega_transcript_like_id);
+#  my ($vega_gene_id, $vega_transcript_id, $vega_gene_like_id, $vega_transcript_like_id);
+
+  my ($hgnc_curated_gene_id, $hgnc_automatic_gene_id, $clone_based_vega_gene_id, $clone_based_ensembl_gene_id);
+  my ($hgnc_curated_tran_id, $hgnc_automatic_tran_id, $clone_based_vega_tran_id, $clone_based_ensembl_tran_id);
 
   $sth = $self->core->dbc->prepare("select external_db_id from external_db where db_name like ?");
   
-  $sth->execute("Vega_gene");
-  $sth->bind_columns(\$vega_gene_id);
+  $sth->execute("HGNC_curated_gene");
+  $sth->bind_columns(\$hgnc_curated_gene_id);
   $sth->fetch;
   
-  $sth->execute("Vega_transcript");
-  $sth->bind_columns(\$vega_transcript_id);
+  $sth->execute("HGNC_automatic_gene");
+  $sth->bind_columns(\$hgnc_automatic_gene_id);
   $sth->fetch;
 
-  $sth->execute("Vega_gene_like");
-  $sth->bind_columns(\$vega_gene_like_id);
+  $sth->execute("Clone_based_vega_gene");
+  $sth->bind_columns(\$clone_based_vega_gene_id);
   $sth->fetch;
   
-  $sth->execute("Vega_transcript_like");
-  $sth->bind_columns(\$vega_transcript_like_id);
+  $sth->execute("Clone_based_ensembl_gene");
+  $sth->bind_columns(\$clone_based_ensembl_gene_id);
   $sth->fetch;
   
-  if(!defined($vega_gene_id)){
-    die "Could not find external database name Vega_gene\n";
+  if(!defined($hgnc_curated_gene_id)){
+    die "Could not find external database name HGNC_curated_gene\n";
   }
-  if(!defined($vega_transcript_id)){
-    die "Could not find external database name Vega_transcript\n";
+  if(!defined($hgnc_automatic_gene_id)){
+    die "Could not find external database name HGNC_automatic_gene\n";
   }
-  if(!defined($vega_gene_like_id)){
-    die "Could not find external database name Vega_gene_like\n";
+  if(!defined($clone_based_vega_gene_id)){
+    die "Could not find external database name Clone_based_vega_gene\n";
   }
-  if(!defined($vega_transcript_like_id)){
-    die "Could not find external database name Vega_transcript_like\n";
+  if(!defined($clone_based_ensembl_gene_id)){
+    die "Could not find external database name Clone_based_ensembl_gene\n";
   }
+
+
+
+
+  $sth->execute("HGNC_curated_transcript");
+  $sth->bind_columns(\$hgnc_curated_tran_id);
+  $sth->fetch;
+  
+  $sth->execute("HGNC_automatic_transcript");
+  $sth->bind_columns(\$hgnc_automatic_tran_id);
+  $sth->fetch;
+
+  $sth->execute("Clone_based_vega_transcript");
+  $sth->bind_columns(\$clone_based_vega_tran_id);
+  $sth->fetch;
+  
+  $sth->execute("Clone_based_ensembl_transcri");
+  $sth->bind_columns(\$clone_based_ensembl_tran_id);
+  $sth->fetch;
+  
+  if(!defined($hgnc_curated_tran_id)){
+    die "Could not find external database name HGNC_curated_transcript\n";
+  }
+  if(!defined($hgnc_automatic_tran_id)){
+    die "Could not find external database name HGNC_automatic_transcript\n";
+  }
+  if(!defined($clone_based_vega_tran_id)){
+    die "Could not find external database name Clone_based_vega_transcript\n";
+  }
+  if(!defined($clone_based_ensembl_tran_id)){
+    die "Could not find external database name Clone_based_ensembl_transcri\n";
+  }
+
 
 
   ###########################
@@ -222,13 +325,13 @@ FSQL
   ###########################
 
 
-  my $del_vega_sql = "delete o from object_xref o, xref x where x.xref_id = o.xref_id and x.external_db_id in ($vega_gene_id, $vega_gene_like_id, $vega_transcript_like_id)";
-  print $del_vega_sql."\n";
+  my $del_vega_sql = "delete o from object_xref o, xref x where x.xref_id = o.xref_id and x.external_db_id in ( $hgnc_curated_gene_id, $hgnc_automatic_gene_id, $clone_based_vega_gene_id, $clone_based_ensembl_gene_id,$hgnc_automatic_tran_id, $clone_based_ensembl_tran_id)";
+
   $sth = $self->core->dbc->prepare($del_vega_sql);
   $sth->execute();
  
-  $del_vega_sql = "delete x from xref x where x.external_db_id in ($vega_gene_id, $vega_gene_like_id, $vega_transcript_like_id)";
-  print $del_vega_sql."\n";
+  $del_vega_sql = "delete x from xref x where x.external_db_id in ($hgnc_curated_gene_id, $hgnc_automatic_gene_id, $clone_based_vega_gene_id, $clone_based_ensembl_gene_id,$hgnc_automatic_tran_id, $clone_based_ensembl_tran_id)";
+
   $sth = $self->core->dbc->prepare($del_vega_sql);
   $sth->execute();
 
@@ -310,7 +413,7 @@ FSQL
       
       my $count = 0;
       foreach my $dbe (@{$tr->get_all_DBEntries}){
-	if($dbe->dbname eq "Vega_transcript"){
+	if($dbe->dbname eq "HGNC_curated_transcript" or $dbe->dbname eq "Clone_based_vega_transcript"){
 	  my($hgnc_bit, $num) = split(/-0\d\d/,$dbe->display_id);
 	  if($hgnc_bit =~ /[.]/){
 	    $CLONE_NAME = $hgnc_bit;
@@ -381,7 +484,7 @@ FSQL
 	$max_xref_id++;
 	$max_object_xref_id++;
 	print XREF  $max_xref_id . "\t"
-	  . $vega_gene_id. "\t" . $name . "\t".$name."\t" . "0" . "\t". "\n" ;
+	  . $hgnc_curated_gene_id. "\t" . $name . "\t".$name."\t" . "0" . "\t". "\n" ;
 	print OBJECT_XREF "$max_object_xref_id\t".$gene->dbID."\tGene\t" .$max_xref_id . "\t\\N\n";
       }
 
@@ -391,7 +494,7 @@ FSQL
 	$max_xref_id++;
 	$max_object_xref_id++;
 	print XREF  $max_xref_id . "\t"
-	  . $vega_transcript_like_id. "\t" . $name."-".$tran_name_ext . "\t".$name."-".$tran_name_ext."\t" . "0" . "\t". "\n" ;
+	  . $hgnc_automatic_tran_id. "\t" . $name."-".$tran_name_ext . "\t".$name."-".$tran_name_ext."\t" . "0" . "\t". "\n" ;
 	print OBJECT_XREF "$max_object_xref_id\t".$tran."\tTranscript\t" .$max_xref_id . "\t\\N\n";
 	$tran_name_ext++;
       }
@@ -407,7 +510,7 @@ FSQL
 	$max_xref_id++;
 	$max_object_xref_id++;
 	print XREF  $max_xref_id . "\t"
-	  . $vega_gene_like_id. "\t" . $name . "\t".$name."\t" . "0" . "\t". "\n" ;
+	  . $hgnc_automatic_gene_id. "\t" . $name . "\t".$name."\t" . "0" . "\t". "\n" ;
 	print OBJECT_XREF "$max_object_xref_id\t".$gene->dbID."\tGene\t" .$max_xref_id . "\t\\N\n";
       }
 
@@ -417,7 +520,7 @@ FSQL
 	$max_xref_id++;
 	$max_object_xref_id++;
 	print XREF  $max_xref_id . "\t"
-	  . $vega_transcript_like_id. "\t" . $name."-".$tran_name_ext . "\t".$name."-".$tran_name_ext."\t" . "0" . "\t". "\n" ;
+	  . $hgnc_automatic_tran_id. "\t" . $name."-".$tran_name_ext . "\t".$name."-".$tran_name_ext."\t" . "0" . "\t". "\n" ;
 	print OBJECT_XREF "$max_object_xref_id\t".$tran."\tTranscript\t" .$max_xref_id . "\t\\N\n";
 	$tran_name_ext++;
       }
@@ -434,7 +537,7 @@ FSQL
 	$max_xref_id++;
 	$max_object_xref_id++;
 	print XREF  $max_xref_id . "\t"
-	  . $vega_gene_id. "\t" . $CLONE_NAME . "\t".$CLONE_NAME."\t" . "0" . "\t". "\n" ;
+	  . $clone_based_vega_gene_id. "\t" . $CLONE_NAME . "\t".$CLONE_NAME."\t" . "0" . "\t". "\n" ;
 	print OBJECT_XREF "$max_object_xref_id\t".$gene->dbID."\tGene\t" .$max_xref_id . "\t\\N\n";
 	
 	my $tran_name_ext = 201;
@@ -442,7 +545,7 @@ FSQL
 	  $max_xref_id++;
 	  $max_object_xref_id++;
 	  print XREF  $max_xref_id . "\t"
-	    . $vega_transcript_like_id. "\t" . $CLONE_NAME."-".$tran_name_ext . "\t".$CLONE_NAME."-".$tran_name_ext."\t" . "0" . "\t". "\n" ;
+	    . $clone_based_vega_tran_id. "\t" . $CLONE_NAME."-".$tran_name_ext . "\t".$CLONE_NAME."-".$tran_name_ext."\t" . "0" . "\t". "\n" ;
 	  print OBJECT_XREF "$max_object_xref_id\t".$tran."\tTranscript\t" .$max_xref_id . "\t\\N\n";
 	  $tran_name_ext++;
 	}
@@ -472,7 +575,7 @@ FSQL
 	$max_xref_id++;
 	$max_object_xref_id++;
 	print XREF  $max_xref_id . "\t"
-	  . $vega_gene_like_id. "\t" . $new_clone_name . "\t".$new_clone_name."\t" . "0" . "\t". "\n" ;
+	  . $clone_based_ensembl_gene_id. "\t" . $new_clone_name . "\t".$new_clone_name."\t" . "0" . "\t". "\n" ;
 	print OBJECT_XREF "$max_object_xref_id\t".$gene->dbID."\tGene\t" .$max_xref_id . "\t\\N\n";
 	
 	my $tran_name_ext = 201;
@@ -480,7 +583,7 @@ FSQL
 	  $max_xref_id++;
 	  $max_object_xref_id++;
 	  print XREF  $max_xref_id . "\t"
-	    . $vega_transcript_like_id. "\t" . $new_clone_name."-".$tran_name_ext . "\t".$new_clone_name."-".$tran_name_ext."\t" . "0" . "\t". "\n" ;
+	    . $clone_based_ensembl_tran_id. "\t" . $new_clone_name."-".$tran_name_ext . "\t".$new_clone_name."-".$tran_name_ext."\t" . "0" . "\t". "\n" ;
 	  print OBJECT_XREF "$max_object_xref_id\t".$tran."\tTranscript\t" .$max_xref_id . "\t\\N\n";
 	  $tran_name_ext++;
 	}
@@ -516,6 +619,9 @@ FSQL
   $sth->execute() || die "error loading file $file\n";
   
 }
+
+
+
 
 
 
