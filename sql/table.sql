@@ -887,6 +887,7 @@ INSERT INTO meta (meta_key, meta_value) VALUES ("schema_version", "51");
 # NOTE: at beginning of release cycle, remove patch entries from last release
 INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_50_51_a.sql|schema_version');
 INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_50_51_b.sql|protein_feature_hit_name');
+INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_50_51_c.sql|meta_index');
 
 ################################################################################
 #
@@ -1360,7 +1361,7 @@ CREATE TABLE meta_coord (
   coord_system_id             INT(10) UNSIGNED NOT NULL,
   max_length                  INT,
 
-  UNIQUE(table_name, coord_system_id)
+  UNIQUE KEY cs_table_name_idx (coord_system_id, table_name)
 
 ) COLLATE=latin1_swedish_ci TYPE=MyISAM;
 
