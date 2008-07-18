@@ -340,7 +340,7 @@ sub fetch_all_by_domain {
            transcript tr,
            translation tl
       WHERE i.interpro_ac = ?
-      AND   i.id = pf.hit_id
+      AND   i.id = pf.hit_name
       AND   pf.translation_id = tl.translation_id
       AND   tr.transcript_id = tl.transcript_id
       AND   tr.is_current = 1
@@ -1205,7 +1205,7 @@ sub get_Interpro_by_geneid {
           AND   t.is_current = 1
           AND   tl.transcript_id = t.transcript_id
 	  AND	tl.translation_id = pf.translation_id 
-	  AND	i.id = pf.hit_id 
+	  AND	i.id = pf.hit_name
 	  AND	i.interpro_ac = x.dbprimary_acc
   );
    

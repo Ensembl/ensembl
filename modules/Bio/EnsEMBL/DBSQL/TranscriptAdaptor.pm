@@ -821,7 +821,7 @@ sub get_Interpro_by_transid {
       WHERE   tsi.stable_id = ?
       AND     tl.transcript_id = tsi.transcript_id
       AND     tl.translation_id = pf.translation_id
-      AND     i.id = pf.hit_id
+      AND     i.id = pf.hit_name
       AND     i.interpro_ac = x.dbprimary_acc
       AND     tsi.transcript_id = t.transcript_id
       AND     t.is_current = 1
