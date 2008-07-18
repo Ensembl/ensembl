@@ -8,7 +8,7 @@ my ( $host,             $port,          $dbname,
      @sources,          $checkdownload, $create,
      $release,          $cleanup,       $drop_existing_db,
      $deletedownloaded, $dl_path,       @notsource,
-     $unzip );
+     $unzip, $stats );
 
 $unzip = 0;    # Do not decompress gzipped files by default
 
@@ -25,6 +25,7 @@ GetOptions(
     'create'         => \$create,
     'setrelease=s'   => \$release,
     'cleanup'        => \$cleanup,
+    'stats'          => \$stats,
     'notsource=s'    => \@notsource,
     'drop_db|dropdb!' =>
       \$drop_existing_db,    # Drop xref db without user interaction
@@ -53,7 +54,7 @@ $base_parser->run(
                $create,           $release,
                $cleanup,          $drop_existing_db,
                $deletedownloaded, $dl_path,
-               \@notsource,       $unzip );
+               \@notsource,       $unzip, $stats );
 
 # --------------------------------------------------------------------------------
 
@@ -64,7 +65,7 @@ sub usage {
   xref_parser.pl -user {user} -pass {password} -host {host} \\
     -port {port} -dbname {database} -species {species1,species2} \\
     -source {source1,source2} -notsource {source1,source2} \\
-    -create -setrelease
+    -create -setrelease -stats
 
   -user             User name to access database. Must allow writing.
 
@@ -118,6 +119,8 @@ sub usage {
 
   -unzip            Decompress gzipped files (default is to use compressed
                     files).
+
+  -stats            Generate the stats for the number of types of xrefs added.
 
 EOF
 
