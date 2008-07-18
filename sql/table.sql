@@ -868,14 +868,14 @@ CREATE TABLE prediction_transcript (
 
 CREATE TABLE meta (
 
-  meta_id 		      INT NOT NULL AUTO_INCREMENT,
+  meta_id                     INT NOT NULL AUTO_INCREMENT,
+  species_id                  INT UNSIGNED DEFAULT 1,
   meta_key                    VARCHAR(40) NOT NULL,
   meta_value                  VARCHAR(255) NOT NULL,
 
-  PRIMARY KEY (meta_id),
-  UNIQUE KEY key_value (meta_key, meta_value),
-  KEY meta_key_index (meta_key),
-  KEY meta_value_index (meta_value)
+  PRIMARY   KEY (meta_id),
+  UNIQUE    KEY species_key_value_idx (species_id, meta_key, meta_value),
+            KEY species_value_idx (species_id, meta_value)
 
 ) COLLATE=latin1_swedish_ci TYPE=MyISAM;
 
@@ -885,9 +885,10 @@ INSERT INTO meta (meta_key, meta_value) VALUES ("schema_version", "51");
 
 # patches included in this schema file
 # NOTE: at beginning of release cycle, remove patch entries from last release
-INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_50_51_a.sql|schema_version');
-INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_50_51_b.sql|protein_feature_hit_name');
-INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_50_51_c.sql|meta_index');
+INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_50_51_a.sql|schema_version');
+INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_50_51_b.sql|protein_feature_hit_name');
+INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_50_51_c.sql|meta_coord_index');
+INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_50_51_d.sql|multispecies');
 
 ################################################################################
 #
@@ -1338,14 +1339,16 @@ CREATE TABLE assembly_exception (
 CREATE TABLE coord_system (
 
   coord_system_id             INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  species_id                  INT(10) UNSIGNED NOT NULL DEFAULT 1,
   name                        VARCHAR(40) NOT NULL,
   version                     VARCHAR(40) DEFAULT NULL,
   rank                        INT NOT NULL,
   attrib                      SET('default_version', 'sequence_level'),
 
-  UNIQUE (name, version),
-  UNIQUE (rank),
-  PRIMARY KEY (coord_system_id)
+  PRIMARY   KEY (coord_system_id),
+  UNIQUE    KEY rank_idx (rank, species_id),
+  UNIQUE    KEY name_idx (name, version, species_id),
+            KEY species_idx (species_id)
 
 ) COLLATE=latin1_swedish_ci TYPE=MyISAM;
 
