@@ -98,7 +98,6 @@ sub _columns {
            'g.seq_region_end', 'g.seq_region_strand',
            'g.analysis_id' ,'g.biotype', 'g.display_xref_id',
 	   'g.description', 'g.status', 'g.source', 'g.is_current',
-	   'g.canonical_transcript_id', 'g.canonical_annotation',
 	   'gsi.stable_id', 'gsi.version',  $created_date, $modified_date,
 	   'x.display_label' ,'x.dbprimary_acc', 'x.description', 'x.version', 
 	   'exdb.db_name', 'exdb.status', 'exdb.db_release',
@@ -340,7 +339,7 @@ sub fetch_all_by_domain {
            transcript tr,
            translation tl
       WHERE i.interpro_ac = ?
-      AND   i.id = pf.hit_id
+      AND   i.id = pf.hit_name
       AND   pf.translation_id = tl.translation_id
       AND   tr.transcript_id = tl.transcript_id
       AND   tr.is_current = 1
@@ -1205,7 +1204,7 @@ sub get_Interpro_by_geneid {
           AND   t.is_current = 1
           AND   tl.transcript_id = t.transcript_id
 	  AND	tl.translation_id = pf.translation_id 
-	  AND	i.id = pf.hit_id 
+	  AND	i.id = pf.hit_name
 	  AND	i.interpro_ac = x.dbprimary_acc
   );
    
@@ -1318,8 +1317,13 @@ sub _objs_from_sth {
   my ( $gene_id, $seq_region_id, $seq_region_start, $seq_region_end, 
        $seq_region_strand, $analysis_id, $biotype, $display_xref_id, 
        $gene_description, $stable_id, $version, $created_date, 
+<<<<<<< GeneAdaptor.pm
        $modified_date, $xref_display_id, $status, $source, $is_current, 
        $canonical_transcript_id, $canonical_annotation,
+=======
+       $modified_date, $xref_display_id, $status, $source, $is_current,
+       $canonical_transcript_id, $canonical_annotation,
+>>>>>>> 1.150
        $xref_primary_acc, $xref_desc, $xref_version, $external_name, 
        $external_db, $external_status, $external_release, $external_db_name,
        $info_type, $info_text);
