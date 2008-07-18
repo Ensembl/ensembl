@@ -346,11 +346,12 @@ sub create_xrefs {
           $dep{SOURCE_ID} = $dependent_sources{$source};
 	  if($source =~ /HGNC/){
 	    $acc =~ s/HGNC://;
-	    $dep{LABEL} = $extra[0]
+	    $extra[0] =~ s/[.]//;
+	    $dep{LABEL} = $extra[0];
 	  }
 	  if($source =~ /MGI/){
 	    $extra[0] =~ s/[.]$//;
-	    $dep{LABEL} = $extra[0]
+	    $dep{LABEL} = $extra[0];
 	  }
 	  $dep{ACCESSION} = $acc;
 	  if($dep =~ /MIM/){
