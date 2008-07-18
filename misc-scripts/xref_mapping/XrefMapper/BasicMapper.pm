@@ -149,12 +149,15 @@ SQL
   $sth->bind_columns(\$source_id,\$name, \$priority);
   my %more_than_one;
   while($sth->fetch()){
-      if(!defined($more_than_one{$name})){
-	  $more_than_one{$name} = $priority;
-      }
-      else{
-	  $priority_source_name{$name} = $priority;
-      }
+    if($name eq "RefSeq_dna"){
+      next;
+    }
+    if(!defined($more_than_one{$name})){
+      $more_than_one{$name} = $priority;
+    }
+    else{
+      $priority_source_name{$name} = $priority;
+    }
   }
   $sth->finish;
 
@@ -1168,7 +1171,6 @@ sub parse_mappings {
     # get or create the appropriate analysis ID
     # XXX restore when using writeable database
     my $analysis_id = $self->get_analysis_id($type);
-    #    my $analysis_id = 999;
 
     while (<FILE>) {
 
@@ -1241,27 +1243,27 @@ sub parse_mappings {
       }
       # note we add on $xref_id_offset to avoid clashes
       $object_succesfully_mapped{$query_id} = 1;
-      print OBJECT_XREF "$max_object_xref_id\t$target_id\t$type\t" . ($query_id+$xref_id_offset) . "\t\\N\n";
+      if(!defined($primary_xref_ids{$query_id}{$target_id."|".$type})){
+	print OBJECT_XREF "$max_object_xref_id\t$target_id\t$type\t" . ($query_id+$xref_id_offset) . "\t\\N\n";
 
 
-      my $identity_string =  join("\t", ($query_identity, $target_identity, $query_start+1, $query_end, $target_start+1, $target_end, $cigar_line, $score, "\\N", $analysis_id)) . "\n";
+	my $identity_string =  join("\t", ($query_identity, $target_identity, $query_start+1, $query_end, $target_start+1, $target_end, $cigar_line, $score, "\\N", $analysis_id)) . "\n";
  
-     print IDENTITY_XREF $max_object_xref_id."\t".$identity_string;
+	print IDENTITY_XREF $max_object_xref_id."\t".$identity_string;
 
-      $max_object_xref_id++;
-      # TODO - evalue?
+	$max_object_xref_id++;
+      	
+	# store mapping for later - note NON-OFFSET xref_id is used
+	my $key = $type . "|" . $target_id;
+	my $xref_id = $query_id;
+	
 
-      # store mapping for later - note NON-OFFSET xref_id is used
-      my $key = $type . "|" . $target_id;
-      my $xref_id = $query_id;
-
-
-      # note the NON-OFFSET xref_id is stored here as the values are used in
-      # a query against the original xref database
-      $primary_xref_ids{$query_id}{$target_id."|".$type} = $target_id."|".$type;
-      $primary_identity{$query_id}{$target_id."|".$type} = $identity_string;      
+	# note the NON-OFFSET xref_id is stored here as the values are used in
+	# a query against the original xref database
+	$primary_xref_ids{$query_id}{$target_id."|".$type} = $target_id."|".$type;
+	$primary_identity{$query_id}{$target_id."|".$type} = $identity_string;      
+      }
     }
-
     close(FILE);
     $last_lines = $total_lines;
   }
@@ -1406,7 +1408,10 @@ PSQL
 	print IDENTITY_XREF_TEMP $object_xref_id."\t".$primary_identity{$xref_id}{$id."|".$type};
 	$object_xref_id++;	  
       }
-    } 
+    }
+    elsif($source_name eq "HGNC"){
+      print "HGNC $xref_id has no object_xref?\n";
+    }	
   }
 
   foreach my $key (keys %priority_xref){
@@ -2980,10 +2985,14 @@ sub transcript_display_xref_sources {
   my @list = qw(RFAM
 		miRBase 
 		IMGT/GENE_DB
-		Vega_gene
-		Vega_gene_like
-		Vega_transcript
-		Vega_transcript_like
+		HGNC_curated_gene
+		HGNC_automatic_gene
+		Clone_based_vega_gene
+		Clone_based_ensembl_gene
+		HGNC_curated_transcript
+		HGNC_automatic_transcript
+		Clone_based_vega_transcript
+		Clone_based_ensembl_transcri
 		HGNC
 		SGD
 		MGI
@@ -3832,6 +3841,7 @@ ESQL
   else{
     print "External databases only associate to one ensembl type (FAIL)\n";
   }
+
 }
 
 
@@ -3839,7 +3849,11 @@ sub fix_mart_prob{
   my ($self,$db_name,$db_id,$type1,$type2) = @_;
   my $ensembl_dbc = $self->core->dbc;
 
-  print "$db_name is associated with both $type1 and $type2 object types\n";
+  my $dbh = $self->core->dbc->db_handle;
+
+
+  print "$db_name ($db_id) is associated with both $type1 and $type2 object types\n";
+
 
   my $to;
   if($type1 eq "Gene" or $type2 eq "Gene"){
@@ -3852,9 +3866,6 @@ sub fix_mart_prob{
   print "Therefore moving all associations to the ".$to."s\n";
 
 
-#  $ensembl_dbc->do("CREATE TABLE object_xref2 like object_xref");
-
-#  $ensembl_dbc->do("ALTER TABLE object_xref DROP INDEX ensembl_object_type");
 
 # Move translations onto the transcripts
   my $sql =(<<EOF);
@@ -3866,7 +3877,8 @@ sub fix_mart_prob{
            xref.xref_id = object_xref.xref_id AND
            xref.external_db_id = $db_id;
 EOF
-  $ensembl_dbc->do($sql);
+  my $result =  $ensembl_dbc->do($sql) ;
+
 
 
   $sql =(<<EOF2);
@@ -3889,6 +3901,7 @@ EOF2
            xref.xref_id = object_xref.xref_id AND
            xref.external_db_id = $db_id;
 GENE
+    $ensembl_dbc->do($sql);
 
     $sql =(<<GEN2);
     DELETE object_xref
@@ -3898,19 +3911,9 @@ GENE
 	      xref.external_db_id = $db_id;
 GEN2
       $ensembl_dbc->do($sql);
-
-
-
     
   }
   
-  
-#  $ensembl_dbc->do("INSERT IGNORE INTO object_xref2 SELECT * FROM object_xref");
-  
-#  $ensembl_dbc->do("DROP TABLE object_xref");
-
-#  $ensembl_dbc->do("ALTER TABLE object_xref2 RENAME object_xref");
-
 
 }
 
@@ -3920,15 +3923,6 @@ GEN2
 # sorted into DEcreasing order of priority
 
 sub gene_description_sources {
-
-#  return ("Uniprot/SPTREMBL",
-#	  "Uniprot/Varsplic",
-#	  "RefSeq_dna",
-#	  "RefSeq_peptide",
-#	  "Uniprot/SWISSPROT",
-#          "IMGT/GENE_DB",
-#	  "miRBase",
-#	  "RFAM");
 
   return ("RFAM",
 	  "miRBase",
@@ -4285,7 +4279,7 @@ EOS
 	    print OBJECT_XREF2 "$max_object_xref_id\t";
 	    print OBJECT_XREF2 $translation_2_transcript{$ens_int_id}."\tTranscript\t" ;
 	    print OBJECT_XREF2 $xref_id+$xref_id_offset;
-	    print OBJECT_XREF2 "\\N\n";	
+	    print OBJECT_XREF2 "\t\\N\n";	
 	    
 	    if(defined($linkage_annotation) and $linkage_annotation ne ""){
 	      print GO_XREF2 "$max_object_xref_id\t$linkage_annotation\t\\N\n";
