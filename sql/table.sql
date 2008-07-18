@@ -628,7 +628,7 @@ CREATE TABLE protein_feature (
   seq_end                     INT(10) NOT NULL,
   hit_start                   INT(10) NOT NULL,
   hit_end                     INT(10) NOT NULL,
-  hit_id                      VARCHAR(40) NOT NULL,
+  hit_name                    VARCHAR(40) NOT NULL,
   analysis_id                 SMALLINT UNSIGNED NOT NULL,
   score                       DOUBLE NOT NULL,
   evalue                      DOUBLE,
@@ -636,7 +636,7 @@ CREATE TABLE protein_feature (
 
   PRIMARY KEY (protein_feature_id),
   KEY (translation_id),
-  KEY hid_index (hit_id),
+  KEY hitname_idx (hit_name),
   KEY analysis_idx (analysis_id)
 
 ) COLLATE=latin1_swedish_ci TYPE=MyISAM;
@@ -881,14 +881,12 @@ CREATE TABLE meta (
 
 
 # Auto add schema version to database
-INSERT INTO meta (meta_key, meta_value) VALUES ("schema_version", "50");
+INSERT INTO meta (meta_key, meta_value) VALUES ("schema_version", "51");
 
 # patches included in this schema file
 # NOTE: at beginning of release cycle, remove patch entries from last release
-INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_49_50_a.sql|schema_version');
-INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_49_50_b.sql|coord_system_version_default');
-INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_49_50_c.sql|canonical_transcript');
-INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_49_50_d.sql|seq_region_indices');
+INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_50_51_a.sql|schema_version');
+INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_50_51_b.sql|protein_feature_hit_name');
 
 ################################################################################
 #
