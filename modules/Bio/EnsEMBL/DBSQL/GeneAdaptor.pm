@@ -1377,8 +1377,6 @@ sub _objs_from_sth {
     #get the canonical_transcript object
     my $canonical_transcript = $ta->fetch_by_dbID($canonical_transcript_id);
 
-    #need to get the internal_seq_region, if present
-    $seq_region_id = $self->get_seq_region_id_internal($seq_region_id);
     my $slice = $slice_hash{"ID:".$seq_region_id};
 
     if(!$slice) {
@@ -1462,33 +1460,29 @@ sub _objs_from_sth {
     }				
 
     # Finally, create the new Gene.
-    push( @genes,
-          $self->_create_feature(
-                            'Bio::EnsEMBL::Gene', {
-                              '-analysis'     => $analysis,
-                              '-biotype'      => $biotype,
-                              '-start'        => $seq_region_start,
-                              '-end'          => $seq_region_end,
-                              '-strand'       => $seq_region_strand,
-                              '-adaptor'      => $self,
-                              '-slice'        => $slice,
-                              '-dbID'         => $gene_id,
-                              '-stable_id'    => $stable_id,
-                              '-version'      => $version,
-                              '-created_date' => $created_date || undef,
-                              '-modified_date' => $modified_date
-                                || undef,
-                              '-description'     => $gene_description,
-                              '-external_name'   => $external_name,
-                              '-external_db'     => $external_db,
-                              '-external_status' => $external_status,
-                              '-display_xref'    => $display_xref,
-                              '-status'          => $status,
-                              '-source'          => $source,
-                              '-is_current'      => $is_current,
-			      '-canonical_transcript' => $canonical_transcript,
-			      '-canonical_annotation' => $canonical_annotation
-                            } ) );
+    push @genes, Bio::EnsEMBL::Gene->new('-analysis'     => $analysis,
+					 '-biotype'      => $biotype,
+					 '-start'        => $seq_region_start,
+					 '-end'          => $seq_region_end,
+					 '-strand'       => $seq_region_strand,
+					 '-adaptor'      => $self,
+					 '-slice'        => $slice,
+					 '-dbID'         => $gene_id,
+					 '-stable_id'    => $stable_id,
+					 '-version'      => $version,
+					 '-created_date' => $created_date || undef,
+					 '-modified_date' => $modified_date
+					 || undef,
+					 '-description'     => $gene_description,
+					 '-external_name'   => $external_name,
+					 '-external_db'     => $external_db,
+					 '-external_status' => $external_status,
+					 '-display_xref'    => $display_xref,
+					 '-status'          => $status,
+					 '-source'          => $source,
+					 '-is_current'      => $is_current,
+					 '-canonical_transcript' => $canonical_transcript,
+					 '-canonical_annotation' => $canonical_annotation);
 
   }
 
