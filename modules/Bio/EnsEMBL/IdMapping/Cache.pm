@@ -43,7 +43,7 @@ use Bio::EnsEMBL::IdMapping::TinyTranscript;
 use Bio::EnsEMBL::IdMapping::TinyTranslation;
 use Bio::EnsEMBL::IdMapping::TinyExon;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
-use Storable qw(nfreeze thaw nstore retrieve);
+use Storable qw(nstore retrieve);
 use Digest::MD5 qw(md5_hex);
 
 
@@ -79,7 +79,8 @@ sub new {
   my $caller = shift;
   my $class = ref($caller) || $caller;
 
-  my ($logger, $conf) = rearrange(['LOGGER', 'CONF'], @_);
+  my ($logger, $conf, $load_instance) =
+    rearrange(['LOGGER', 'CONF', 'LOAD_INSTANCE'], @_);
 
   unless ($logger->isa('Bio::EnsEMBL::Utils::Logger')) {
     throw("You must provide a Bio::EnsEMBL::Utils::Logger for logging.");
@@ -95,21 +96,25 @@ sub new {
   # initialise
   $self->logger($logger);
   $self->conf($conf);
+
+  if ($load_instance) {
+    $self->read_instance_from_file;
+  }
   
   return $self;
 }
 
 
-=head2 build_cache
+=head2 build_cache_by_slice
 
   Arg[1]      : String $dbtype - db type (source|target)
   Arg[2]      : String $slice_name - the name of a slice (format as returned by
                 Bio::EnsEMBL::Slice->name)
-  Example     : my ($num_genes, $filesize) = $cache->build_cache('source',
-                  'chromosome:NCBI36:X:1:1000000:-1');
+  Example     : my ($num_genes, $filesize) = $cache->build_cache_by_slice(
+                  'source', 'chromosome:NCBI36:X:1:1000000:-1');
   Description : Builds a cache of genes, transcripts, translations and exons
                 needed by the IdMapping application and serialises the resulting
-                cache object to a file.
+                cache object to a file, one slice at a time.
   Return type : list of the number of genes processed and the size of the
                 serialised cache file
   Exceptions  : thrown on invalid slice name
@@ -119,11 +124,14 @@ sub new {
 
 =cut
 
-sub build_cache {
+sub build_cache_by_slice {
   my $self = shift;
   my $dbtype = shift;
   my $slice_name = shift;
   
+  # set cache method (required for loading cache later)
+  $self->cache_method('BY_SEQ_REGION');
+
   my $dba = $self->get_DBAdaptor($dbtype);
   my $sa = $dba->get_SliceAdaptor;
   
@@ -133,10 +141,6 @@ sub build_cache {
   }
   
   my $genes = $slice->get_all_Genes(undef, undef, 1);
-
-  # biotype filter
-  $genes = $self->filter_biotype($genes) if ($self->conf->param('biotypes'));
-  my $i = scalar(@$genes);
 
   # find common coord_system
   my $common_cs_found = $self->find_common_coord_systems;
@@ -153,41 +157,60 @@ sub build_cache {
   
   # build cache
   my $type = "$dbtype.$slice_name";
-  $self->build_cache_from_genes($type, $genes, $need_project);
+  my $num_genes = $self->build_cache_from_genes($type, $genes, $need_project);
   undef $genes;
 
   # write cache to file, then flush cache to reclaim memory
   my $size = $self->write_all_to_file($type);
 
-  return $i, $size;
+  return $num_genes, $size;
 }
 
 
-=head2 filter_biotypes
+=head2 build_cache_all
 
-  Arg[1]      : Listref of Bio::EnsEMBL::Genes $genes - the genes to filter
-  Example     : my @filtered = @{ $cache->filter_biotypes(\@genes) };
-  Description : Filters a list of genes by biotype. Biotypes are taken from the
-                IdMapping configuration parameter 'biotypes'.
-  Return type : Listref of Bio::EnsEMBL::Genes (or empty list)
-  Exceptions  : none
-  Caller      : internal
+  Arg[1]      : String $dbtype - db type (source|target)
+  Example     : my ($num_genes, $filesize) = $cache->build_cache_all('source');
+  Description : Builds a cache of genes, transcripts, translations and exons
+                needed by the IdMapping application and serialises the
+                resulting cache object to a file. All genes across the genome
+                are processed in one go. This method should be used when
+                build_cache_by_seq_region can't be used due to a large number
+                of toplevel seq_regions (e.g. 2x genomes).
+  Return type : list of the number of genes processed and the size of the
+                serialised cache file
+  Exceptions  : thrown on invalid slice name
+  Caller      : general
   Status      : At Risk
               : under development
 
 =cut
 
-sub filter_biotypes {
+sub build_cache_all {
   my $self = shift;
-  my $genes = shift;
+  my $dbtype = shift;
+  
+  # set cache method (required for loading cache later)
+  $self->cache_method('ALL');
 
-  my $filtered = [];
+  my $dba = $self->get_DBAdaptor($dbtype);
+  my $ga = $dba->get_GeneAdaptor;
+  
+  my $genes = $ga->fetch_all;
 
-  foreach my $biotype ($self->conf->param('biotypes')) {
-    push @$filtered, grep { $_->biotype eq $biotype } @$genes;
-  }
+  # find common coord_system
+  my $common_cs_found = $self->find_common_coord_systems;
 
-  return $filtered;
+  # Build cache. Setting $need_project to 'CHECK' will cause
+  # build_cache_from_genes() to check the coordinate system for each gene.
+  my $type = "$dbtype.ALL";
+  my $num_genes = $self->build_cache_from_genes($type, $genes, 'CHECK');
+  undef $genes;
+
+  # write cache to file, then flush cache to reclaim memory
+  my $size = $self->write_all_to_file($type);
+
+  return $num_genes, $size;
 }
 
 
@@ -208,7 +231,7 @@ sub filter_biotypes {
                 to be projected to a commond coordinate system if their native
                 coordinate system isn't common to source and target assembly
                 itself.
-  Return type : none
+  Return type : int - number of genes after filtering
   Exceptions  : thrown on wrong or missing arguments
   Caller      : internal
   Status      : At Risk
@@ -225,6 +248,13 @@ sub build_cache_from_genes {
   throw("You must provide a type.") unless $type;
   throw("You must provide a listref of genes.") unless (ref($genes) eq 'ARRAY');
 
+  # biotype filter
+  $genes = $self->filter_biotype($genes) if ($self->conf->param('biotypes'));
+  my $num_genes = scalar(@$genes);
+
+  # initialise cache for the given type.
+  $self->{'cache'}->{$type} = {};
+
   #my $i = 0;
   #my $num_genes = scalar(@$genes);
   #my $progress_id = $self->logger->init_progress($num_genes);
@@ -235,6 +265,21 @@ sub build_cache_from_genes {
   foreach my $gene (sort { $a->start <=> $b->start } @$genes) {
     #$self->logger->log_progressbar($progress_id, ++$i, 2);
     #$self->logger->log_progress($num_genes, ++$i, 20, 3, 1);
+
+    if ($need_project eq 'CHECK') {
+      # find out whether native coord_system is a common coord_system.
+      # if so, you don't need to project.
+      # also don't project if no common coord_system present
+      if ($self->highest_common_cs) {
+        my $csid = join(':', $gene->slice->coord_system_name,
+                             $gene->slice->coord_system->version);
+        if ($self->is_common_cs($csid)) {
+          $need_project = 0;
+        }
+      } else {
+        $need_project = 0;
+      }
+    }
 
     # create lightweigt gene
     my $lgene = Bio::EnsEMBL::IdMapping::TinyGene->new_fast([
@@ -250,7 +295,6 @@ sub build_cache_from_genes {
         $gene->biotype,
         $gene->status,
         $gene->analysis->logic_name,
-        $gene->display_id,
         ($gene->is_known ? 1 : 0),
     ]);
 
@@ -268,6 +312,7 @@ sub build_cache_from_genes {
           $tr->start,
           $tr->end,
           $tr->strand,
+          $tr->length,
           md5_hex($tr->spliced_seq),
           ($tr->is_known ? 1 : 0),
       ]);
@@ -345,6 +390,35 @@ sub build_cache_from_genes {
     undef $gene;
   }
 
+  return $num_genes;
+}
+
+
+=head2 filter_biotypes
+
+  Arg[1]      : Listref of Bio::EnsEMBL::Genes $genes - the genes to filter
+  Example     : my @filtered = @{ $cache->filter_biotypes(\@genes) };
+  Description : Filters a list of genes by biotype. Biotypes are taken from the
+                IdMapping configuration parameter 'biotypes'.
+  Return type : Listref of Bio::EnsEMBL::Genes (or empty list)
+  Exceptions  : none
+  Caller      : internal
+  Status      : At Risk
+              : under development
+
+=cut
+
+sub filter_biotypes {
+  my $self = shift;
+  my $genes = shift;
+
+  my $filtered = [];
+
+  foreach my $biotype ($self->conf->param('biotypes')) {
+    push @$filtered, grep { $_->biotype eq $biotype } @$genes;
+  }
+
+  return $filtered;
 }
 
 
@@ -376,9 +450,9 @@ sub add {
   throw("You must provide a cache type.") unless $type;
   throw("You must provide a cache key (e.g. a gene dbID).") unless $key;
 
-  $self->{'cache'}->{$name}->{$type}->{$key} = $val;
+  $self->{'cache'}->{$type}->{$name}->{$key} = $val;
 
-  return $self->{'cache'}->{$name}->{$type}->{$key};
+  return $self->{'cache'}->{$type}->{$name}->{$key};
 }
 
 =head2 add_list
@@ -411,9 +485,9 @@ sub add_list {
   throw("You must provide a cache type.") unless $type;
   throw("You must provide a cache key (e.g. a gene dbID).") unless $key;
 
-  push @{ $self->{'cache'}->{$name}->{$type}->{$key} }, @vals;
+  push @{ $self->{'cache'}->{$type}->{$name}->{$key} }, @vals;
 
-  return $self->{'cache'}->{$name}->{$type}->{$key};
+  return $self->{'cache'}->{$type}->{$name}->{$key};
 }
 
 sub get_by_key {
@@ -427,11 +501,11 @@ sub get_by_key {
   throw("You must provide a cache key (e.g. a gene dbID).") unless $key;
 
   # transparently load cache from file unless already loaded
-  unless ($self->{'instance'}->{'loaded'}->{"$name:$type"}) {
-    $self->read_and_merge($name, $type);
+  unless ($self->{'instance'}->{'loaded'}->{"$type"}) {
+    $self->read_and_merge($type);
   }
 
-  return $self->{'cache'}->{$name}->{$type}->{$key};
+  return $self->{'cache'}->{$type}->{$name}->{$key};
 }
 
 sub get_by_name {
@@ -443,11 +517,11 @@ sub get_by_name {
   throw("You must provide a cache type.") unless $type;
   
   # transparently load cache from file unless already loaded
-  unless ($self->{'instance'}->{'loaded'}->{"$name:$type"}) {
-    $self->read_and_merge($name, $type);
+  unless ($self->{'instance'}->{'loaded'}->{$type}) {
+    $self->read_and_merge($type);
   }
 
-  return $self->{'cache'}->{$name}->{$type} || {};
+  return $self->{'cache'}->{$type}->{$name} || {};
 }
 
 
@@ -460,8 +534,8 @@ sub get_count_by_name {
   throw("You must provide a cache type.") unless $type;
   
   # transparently load cache from file unless already loaded
-  unless ($self->{'instance'}->{'loaded'}->{"$name:$type"}) {
-    $self->read_and_merge($name, $type);
+  unless ($self->{'instance'}->{'loaded'}->{$type}) {
+    $self->read_and_merge($type);
   }
 
   return scalar(keys %{ $self->get_by_name($name, $type) });
@@ -568,6 +642,268 @@ sub seq_regions_compatible {
 }
 
 
+sub check_db_connection {
+  my $self = shift;
+  my $dbtype = shift;
+  
+  my $err = 0;
+  
+  eval {
+    my $dba = $self->get_DBAdaptor($dbtype);
+    $dba->dbc->connect;
+  };
+  
+  if ($@) {
+    $self->logger->warning("Can't connect to $dbtype db: $@\n");
+    $err++;
+  } else {
+    $self->logger->debug("Connection to $dbtype db ok.\n");
+    $self->{'_db_conn_ok'}->{$dbtype} = 1;
+  }
+
+  return $err;
+}
+
+  
+sub check_db_read_permissions {
+  my $self = shift;
+  my $dbtype = shift;
+
+  # skip this check if db connection failed (this prevents re-throwing
+  # exceptions).
+  return 1 unless ($self->{'_db_conn_ok'}->{$dbtype});
+  
+  my $err = 0;
+  my %privs = %{ $self->get_db_privs($dbtype) };
+  
+  unless ($privs{'SELECT'} or $privs{'ALL PRIVILEGES'}) {
+    $self->logger->warning("User doesn't have read permission on $dbtype db.\n");
+    $err++;
+  } else {
+    $self->logger->debug("Read permission on $dbtype db ok.\n");
+  }
+
+  return $err;
+}
+
+  
+sub check_db_write_permissions {
+  my $self = shift;
+  my $dbtype = shift;
+  
+  # skip this check if db connection failed (this prevents re-throwing
+  # exceptions).
+  return 1 unless ($self->{'_db_conn_ok'}->{$dbtype});
+  
+  my $err = 0;
+
+  unless ($self->do_upload) {
+    $self->logger->debug("No uploads, so write permission on $dbtype db not required.\n");
+    return $err;
+  }
+
+  my %privs = %{ $self->get_db_privs($dbtype) };
+
+  unless ($privs{'INSERT'} or $privs{'ALL PRIVILEGES'}) {
+    $self->logger->warning("User doesn't have write permission on $dbtype db.\n");
+    $err++;
+  } else {
+    $self->logger->debug("Write permission on $dbtype db ok.\n");
+  }
+
+  return $err;
+}
+
+
+sub do_upload {
+  my $self = shift;
+
+  if ($self->conf->param('dry_run') or
+    ! ($self->conf->param('upload_events') or
+       $self->conf->param('upload_stable_ids') or
+       $self->conf->param('upload_archive'))) {
+    return 0;
+  } else {
+    return 1;
+  }
+}   
+
+
+sub get_db_privs {
+  my $self = shift;
+  my $dbtype = shift;
+
+  my %privs = ();
+  my $r;
+
+  # get privileges from mysql db
+  eval {
+    my $dbc = $self->get_DBAdaptor($dbtype)->dbc;
+    my $sql = qq(SHOW GRANTS FOR ).$dbc->username;
+    my $sth = $dbc->prepare($sql);
+    $sth->execute;
+    ($r) = $sth->fetchrow_array;
+    $sth->finish;
+  };
+
+  if ($@) {
+    $self->logger->warning("Error obtaining privileges from $dbtype db: $@\n");
+    return {};
+  }
+
+  # parse the output
+  $r =~ s/GRANT (.*) ON .*/$1/i;
+  foreach my $p (split(',', $r)) {
+    # trim leading and trailing whitespace
+    $p =~ s/^\s+//;
+    $p =~ s/\s+$//;
+    $privs{uc($p)} = 1;
+  }
+
+  return \%privs;
+}
+
+
+sub check_empty_tables {
+  my $self = shift;
+  my $dbtype = shift;
+  
+  # skip this check if db connection failed (this prevents re-throwing
+  # exceptions).
+  return 1 unless ($self->{'_db_conn_ok'}->{$dbtype});
+  
+  my $err = 0;
+  my $c = 0;
+
+  if ($self->conf->param('no_check_empty_tables') or !$self->do_upload) {
+    $self->logger->debug("Won't check for empty stable ID and archive tables in $dbtype db.\n");
+    return $err;
+  }
+
+  eval {
+    my @tables = qw(
+      gene_stable_id
+      transcript_stable_id
+      translation_stable_id
+      exon_stable_id
+      stable_id_event
+      mapping_session
+      gene_archive
+      peptide_archive
+    );
+
+    my $dba = $self->get_DBAdaptor($dbtype);
+    foreach my $table (@tables) {
+      if ($c = $self->fetch_value_from_db($dba, "SELECT COUNT(*) FROM $table")) {
+        $self->logger->warning("$table table in $dbtype db has $c entries.\n");
+        $err++;
+      }
+    }
+  };
+
+  if ($@) {
+    $self->logger->warning("Error retrieving stable ID and archive table row counts from $dbtype db: $@\n");
+    $err++;
+  } elsif (!$err) {
+    $self->logger->debug("All stable ID and archive tables in $dbtype db are empty.\n");
+  }
+  return $err;
+}
+
+
+sub check_sequence {
+  my $self = shift;
+  my $dbtype = shift;
+  
+  # skip this check if db connection failed (this prevents re-throwing
+  # exceptions).
+  return 1 unless ($self->{'_db_conn_ok'}->{$dbtype});
+  
+  my $err = 0;
+  my $c = 0;
+  
+  eval {
+    my $dba = $self->get_DBAdaptor($dbtype);
+    unless ($c = $self->fetch_value_from_db($dba, "SELECT COUNT(*) FROM dna")) {
+      $err++;
+    }
+  };
+  
+  if ($@) {
+    $self->logger->warning("Error retrieving dna table row count from $dbtype db: $@\n");
+    $err++;
+  } elsif ($err) {
+    $self->logger->warning("No sequence found in $dbtype db.\n");
+  } else {
+    $self->logger->debug(ucfirst($dbtype)." db has sequence ($c entries).\n");
+  }
+
+  return $err;
+}
+
+
+sub check_meta_entries {
+  my $self = shift;
+  my $dbtype = shift;
+  
+  # skip this check if db connection failed (this prevents re-throwing
+  # exceptions).
+  return 1 unless ($self->{'_db_conn_ok'}->{$dbtype});
+  
+  my $err = 0;
+  my $assembly_default;
+  my $schema_version;
+  
+  eval {
+    my $dba = $self->get_DBAdaptor($dbtype);
+    $assembly_default = $self->fetch_value_from_db($dba,
+      qq(SELECT meta_value FROM meta WHERE meta_key = 'assembly.default'));
+    $schema_version = $self->fetch_value_from_db($dba,
+      qq(SELECT meta_value FROM meta WHERE meta_key = 'schema_version'));
+  };
+  
+  if ($@) {
+    $self->logger->warning("Error retrieving dna table row count from $dbtype db: $@\n");
+    return ++$err;
+  }
+  
+  unless ($assembly_default) {
+    $self->logger->warning("No meta.assembly_default value found in $dbtype db.\n");
+    $err++;
+  } else {
+    $self->logger->debug("meta.assembly_default value found ($assembly_default).\n");
+  }
+
+  unless ($schema_version) {
+    $self->logger->warning("No meta.schema.version value found in $dbtype db.\n");
+    $err++;
+  } else {
+    $self->logger->debug("meta.schema.version value found ($schema_version).\n");
+  }
+
+  return $err;
+}
+
+
+sub fetch_value_from_db {
+  my $self = shift;
+  my $dba = shift;
+  my $sql = shift;
+
+  unless ($dba and ref($dba) and $dba->isa('Bio::EnsEMBL::DBSQL::DBAdaptor')) {
+    throw("Need a Bio::EnsEMBL::DBSQL::DBAdaptor.");
+  }
+  unless ($sql) {
+    throw("Need an SQL statement to execute.\n");
+  }
+
+  my $sth = $dba->dbc->prepare($sql);
+  $sth->execute;
+  my ($c) = $sth->fetchrow_array;
+  return $c;
+}
+
+  
 sub get_DBAdaptor {
   my $self = shift;
   my $prefix = shift;
@@ -594,43 +930,21 @@ sub get_DBAdaptor {
 }
 
 
-sub all_cache_files_exist {
-  my $self = shift;
-  my $type = shift;
-
-  throw("You must provide a cache type.") unless $type;
-
-  my $i = 1;
-  foreach my $name (@{ $self->cache_names }) {
-    $i *= $self->cache_file_exists($name, $type);
-  }
-
-  return $i;
-}
-
-
-sub cache_names {
-  return \@cache_names;
-}
-
-
 sub cache_file_exists {
   my $self = shift;
-  my $name = shift;
   my $type = shift;
 
-  throw("You must provide a cache name (e.g. genes_by_id.") unless $name;
   throw("You must provide a cache type.") unless $type;
 
-  my $cache_file = $self->cache_file($name, $type);
+  my $cache_file = $self->cache_file($type);
 
   if (-e $cache_file) {
-    $self->logger->info("Cache file found for $name.\n", 3);
-    $self->logger->debug("Will read from $cache_file.\n", 3);
+    $self->logger->info("Cache file found for $type.\n", 2);
+    $self->logger->debug("Will read from $cache_file.\n", 2);
     return 1;
   } else {
-    $self->logger->info("No cache file found for $name.\n", 3);
-    $self->logger->info("Will build cache from db.\n", 3);
+    $self->logger->info("No cache file found for $type.\n", 2);
+    $self->logger->info("Will build cache from db.\n", 2);
     return 0;
   }
 }
@@ -638,13 +952,11 @@ sub cache_file_exists {
 
 sub cache_file {
   my $self = shift;
-  my $name = shift;
   my $type = shift;
 
-  throw("You must provide a cache name (e.g. genes_by_id.") unless $name;
   throw("You must provide a cache type.") unless $type;
 
-  return $self->dump_path."/$name.$type.object_cache.ser";
+  return $self->dump_path."/$type.object_cache.ser";
 }
 
 
@@ -658,7 +970,7 @@ sub instance_file {
 sub dump_path {
   my $self = shift;
 
-  $self->{'dump_path'} ||= path_append($self->conf->param('dumppath'), 'cache');
+  $self->{'dump_path'} ||= path_append($self->conf->param('basedir'), 'cache');
 
   return $self->{'dump_path'};
 }
@@ -671,11 +983,7 @@ sub write_all_to_file {
   throw("You must provide a cache type.") unless $type;
 
   my $size = 0;
-
-  foreach my $name (@{ $self->cache_names }) {
-    $size += $self->write_to_file($name, $type);
-  }
-
+  $size += $self->write_to_file($type);
   $size += $self->write_instance_to_file;
 
   return parse_bytes($size);
@@ -684,20 +992,18 @@ sub write_all_to_file {
 
 sub write_to_file {
   my $self = shift;
-  my $name = shift;
   my $type = shift;
 
-  throw("You must provide a cache name (e.g. genes_by_id.") unless $name;
   throw("You must provide a cache type.") unless $type;
 
-  unless ($self->{'cache'}->{$name}->{$type}) {
-    $self->logger->warning("No features found in $name/$type. Won't write cache file.\n");
+  unless ($self->{'cache'}->{$type}) {
+    $self->logger->warning("No features found in $type. Won't write cache file.\n");
     return;
   }
 
-  my $cache_file = $self->cache_file($name, $type);
+  my $cache_file = $self->cache_file($type);
 
-  eval { nstore($self->{'cache'}->{$name}->{$type}, $cache_file) };
+  eval { nstore($self->{'cache'}->{$type}, $cache_file) };
   if ($@) {
     throw("Unable to store $cache_file: $@\n");
   }
@@ -724,19 +1030,17 @@ sub write_instance_to_file {
 
 sub read_from_file {
   my $self = shift;
-  my $name = shift;
   my $type = shift;
 
-  throw("You must provide a cache name (e.g. genes_by_id.") unless $name;
   throw("You must provide a cache type.") unless $type;
 
-  my $cache_file = $self->cache_file($name, $type);
+  my $cache_file = $self->cache_file($type);
 
   if (-s $cache_file) {
     
     #$self->logger->info("Reading cache from file...\n", 0, 'stamped');
     #$self->logger->info("Cache file $cache_file.\n", 1);
-    eval { $self->{'cache'}->{$name}->{$type} = retrieve($cache_file); };
+    eval { $self->{'cache'}->{$type} = retrieve($cache_file); };
     if ($@) {
       throw("Unable to retrieve cache: $@");
     }
@@ -747,58 +1051,65 @@ sub read_from_file {
   }
 
 
-  return $self->{'cache'}->{$name}->{$type};
+  return $self->{'cache'}->{$type};
 }
 
 
 sub read_and_merge {
   my $self = shift;
-  my $name = shift;
   my $dbtype = shift;
 
-  throw("You must provide a cache name (e.g. genes_by_id.") unless $name;
   unless ($dbtype eq 'source' or $dbtype eq 'target') {
     throw("Db type must be 'source' or 'target'.");
   }
 
-  foreach my $slice_name (@{ $self->slice_names($dbtype) }) {
-    $self->read_from_file($name, "$dbtype.$slice_name");
+  # read cache from single or multiple files, depending on caching strategy
+  my $cache_method = $self->cache_method;
+  if ($cache_method eq 'ALL') {
+    $self->read_from_file("$dbtype.ALL");
+  } elsif ($cache_method eq 'BY_SEQ_REGION') {
+    foreach my $slice_name (@{ $self->slice_names($dbtype) }) {
+      $self->read_from_file("$dbtype.$slice_name");
+    }
+  } else {
+    throw("Unknown cache method: $cache_method.");
   }
 
-  $self->merge($name, $dbtype);
+  $self->merge($dbtype);
 
   # flag as being loaded
-  $self->{'instance'}->{'loaded'}->{"$name:$dbtype"} = 1;
+  $self->{'instance'}->{'loaded'}->{$dbtype} = 1;
 }
 
 
 sub merge {
   my $self = shift;
-  my $name = shift;
   my $dbtype = shift;
 
-  throw("You must provide a cache name (e.g. genes_by_id.") unless $name;
   unless ($dbtype eq 'source' or $dbtype eq 'target') {
     throw("Db type must be 'source' or 'target'.");
   }
 
-  foreach my $type (keys %{ $self->{'cache'}->{$name} || {} }) {
+  foreach my $type (keys %{ $self->{'cache'} || {} }) {
     next unless ($type =~ /^$dbtype/);
-    
-    (my $merged_type = $type) =~ s/^(\w+)\..+/$1/;
-    
-    foreach my $key (keys %{ $self->{'cache'}->{$name}->{$type} || {} }) {
-      if (defined $self->{'cache'}->{$name}->{$merged_type}->{$key}) {
-        # warning("Duplicate key in cache: $name|$merged_type|$key. Skipping.\n");
-      } else {
-        $self->{'cache'}->{$name}->{$merged_type}->{$key} =
-          $self->{'cache'}->{$name}->{$type}->{$key};
-      }
 
-      delete $self->{'cache'}->{$name}->{$type}->{$key};
+    foreach my $name (keys %{ $self->{'cache'}->{$type} || {} }) {
+    
+      foreach my $key (keys %{ $self->{'cache'}->{$type}->{$name} || {} }) {
+        if (defined $self->{'cache'}->{$dbtype}->{$name}->{$key}) {
+          # warning("Duplicate key in cache: $name|$dbtype|$key. Skipping.\n");
+        } else {
+          $self->{'cache'}->{$dbtype}->{$name}->{$key} =
+            $self->{'cache'}->{$type}->{$name}->{$key};
+        }
+
+        delete $self->{'cache'}->{$type}->{$name}->{$key};
+      }
+      
+      delete $self->{'cache'}->{$type}->{$name};
     }
     
-    delete $self->{'cache'}->{$name}->{$type};
+    delete $self->{'cache'}->{$type};
 
   }
 }
@@ -862,11 +1173,7 @@ sub slice_names {
 }
 
 
-#
-# getters/setters
-#
-
-=head2 
+=head2 logger
 
   Arg[1]      : 
   Example     : 
@@ -885,7 +1192,7 @@ sub logger {
 }
 
 
-=head2 
+=head2 conf
 
   Arg[1]      : 
   Example     : 
@@ -901,6 +1208,13 @@ sub conf {
   my $self = shift;
   $self->{'conf'} = shift if (@_);
   return $self->{'conf'};
+}
+
+
+sub cache_method {
+  my $self = shift;
+  $self->{'instance'}->{'cache_method'} = shift if (@_);
+  return $self->{'instance'}->{'cache_method'};
 }
 
 

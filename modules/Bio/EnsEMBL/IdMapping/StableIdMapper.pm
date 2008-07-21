@@ -37,13 +37,40 @@ use Bio::EnsEMBL::IdMapping::BaseObject;
 our @ISA = qw(Bio::EnsEMBL::IdMapping::BaseObject);
 
 use Bio::EnsEMBL::Utils::Exception qw(throw warning);
-use Bio::EnsEMBL::Utils::ScriptUtils qw(path_append);
-use POSIX qw(strftime);
+use Bio::EnsEMBL::Utils::ScriptUtils qw(inject path_append);
 use Bio::EnsEMBL::IdMapping::ScoredMappingMatrix;
+use POSIX qw(strftime);
 
 
 # instance variables
 my %debug_mappings;
+
+
+sub new {
+  my $caller = shift;
+  my $class = ref($caller) || $caller;
+  my $self = $class->SUPER::new(@_);
+
+  # inject a StableIdGenerator
+  #
+  # If you write your own generators, make sure they extend
+  # Bio::EnsEMBL::Idmapping::BaseObject and additionally implement these three
+  # methods: initial_stable_id(), increment_stable_id() and calculate_version().
+  my $stable_id_generator = $self->conf->param('plugin_stable_id_generator') ||
+    'Bio::EnsEMBL::IdMapping::StableIdGenerator::EnsemblGeneric';
+  $self->logger->debug("Using $stable_id_generator to generate stable Ids.\n");
+  inject($stable_id_generator);
+  
+  # create a new StableIdGenerator object
+  my $generator_instance = $stable_id_generator->new(
+      -LOGGER       => $self->logger,
+      -CONF         => $self->conf,
+      -CACHE        => $self->cache
+  );
+  $self->stable_id_generator($generator_instance);
+
+  return $self;
+}
 
 
 sub generate_mapping_session {
@@ -177,7 +204,7 @@ sub map_stable_ids {
   }
 
   # determine starting stable ID for new assignments
-  my $new_stable_id = $self->find_highest_stable_id($type);
+  my $new_stable_id = $self->stable_id_generator->initial_stable_id($type);
 
   #
   # assign mapped and new stable IDs
@@ -196,7 +223,8 @@ sub map_stable_ids {
       $t_obj->created_date($s_obj->created_date);
 
       # calculate and set version
-      $t_obj->version($self->calculate_version($s_obj, $t_obj));
+      $t_obj->version($self->stable_id_generator->calculate_version(
+        $s_obj, $t_obj));
 
       # change modified_date if version changed
       if ($s_obj->version == $t_obj->version) {
@@ -232,7 +260,6 @@ sub map_stable_ids {
     # no mapping was found, assign a new stable ID
     } else {
       
-      $new_stable_id = $self->increment_stable_id($new_stable_id);
       $t_obj->stable_id($new_stable_id);
       $t_obj->version(1);
       $t_obj->created_date($self->mapping_session_date);
@@ -251,6 +278,10 @@ sub map_stable_ids {
         );
         $self->add_stable_id_event('new', $key);
       }
+
+      # increment the stable Id (to be assigned to the next unmapped object)
+      $new_stable_id = $self->stable_id_generator->increment_stable_id(
+        $new_stable_id);
 
       # stats
       $stats{'new'}++;
@@ -414,7 +445,7 @@ sub generate_similarity_events {
       # add similarities for all entries within 5% of top scorer
       while (my $e = shift(@entries)) {
         
-        if ($e->score > ($top_score * 0.98)) {
+        if ($e->score > ($top_score * 0.95)) {
           
           my $s_obj = $self->cache->get_by_key("${type}s_by_id", 'source',
             $e->source);
@@ -453,13 +484,15 @@ sub filter_same_gene_transcript_similarities {
 
   # create a new matrix for the filtered entries
   my $filtered_scores = Bio::EnsEMBL::IdMapping::ScoredMappingMatrix->new(
-    -DUMP_PATH   => $self->conf->param('dumppath'),
+    -DUMP_PATH   => path_append($self->conf->param('basedir'), 'matrix'),
     -CACHE_FILE  => 'filtered_transcript_scores.ser',
   );
 
   # lookup hash for all target transcripts
   my %all_targets = map { $_->stable_id => 1 }
     values %{ $self->cache->get_by_name("transcripts_by_id", 'target') };
+
+  my $i = 0;
 
   foreach my $e (@{ $transcript_scores->get_all_Entries }) {
 
@@ -469,14 +502,25 @@ sub filter_same_gene_transcript_similarities {
       $e->source);
     my $t_gene = $self->cache->get_by_key('genes_by_transcript_id', 'target',
       $e->target);
+    # workaround for caching issue: only gene objects in 'genes_by_id' cache
+    # have a stable ID assigned
+    #$t_gene = $self->cache->get_by_key('genes_by_id', 'target', $t_gene->id);
+
+    #$self->logger->debug("xxx ".join(":", $s_tr->stable_id, $s_gene->stable_id,
+    #  $t_gene->stable_id)."\n");
 
     # skip if source and target transcript are in same gene, BUT keep events for
     # deleted transcripts
-    next if (($s_gene->stable_id eq $t_gene->stable_id) and
-      $all_targets{$s_tr->stable_id});
+    if (($s_gene->stable_id eq $t_gene->stable_id) and
+      $all_targets{$s_tr->stable_id}) {
+        $i++;
+        next;
+    }
 
     $filtered_scores->add_Entry($e);
   }
+  
+  $self->logger->debug("Skipped $i same gene transcript mappings.\n");
 
   return $filtered_scores;
 }
@@ -500,7 +544,7 @@ sub generate_translation_similarity_events {
 
   # create a fake translation scoring matrix
   my $translation_scores = Bio::EnsEMBL::IdMapping::ScoredMappingMatrix->new(
-    -DUMP_PATH   => $self->conf->param('dumppath'),
+    -DUMP_PATH   => path_append($self->conf->param('basedir'), 'matrix'),
     -CACHE_FILE  => 'translation_scores.ser',
   );
 
@@ -521,95 +565,6 @@ sub generate_translation_similarity_events {
   # now generate similarity events using this fake scoring matrix
   $self->generate_similarity_events($mappings, $translation_scores,
     'translation');
-}
-
-
-sub calculate_version {
-  my $self = shift;
-  my $s_obj = shift;
-  my $t_obj = shift;
-
-  my $version = $s_obj->version;
-
-  if ($s_obj->isa('Bio::EnsEMBL::IdMapping::TinyExon')) {
-    
-    # increment version if sequence changed
-    $version++ unless ($s_obj->seq eq $t_obj->seq);
-  
-  } elsif ($s_obj->isa('Bio::EnsEMBL::IdMapping::TinyTranscript')) {
-  
-    # increment version if spliced exon sequence changed
-    $version++ unless ($s_obj->seq_md5_sum eq $t_obj->seq_md5_sum);
-
-  } elsif ($s_obj->isa('Bio::EnsEMBL::IdMapping::TinyTranslation')) {
-
-    # increment version if transcript changed
-    my $s_tr = $self->cache->get_by_key('transcripts_by_id', 'source',
-      $s_obj->transcript_id);
-    my $t_tr = $self->cache->get_by_key('transcripts_by_id', 'target',
-      $t_obj->transcript_id);
-
-    $version++ unless ($s_tr->seq_md5_sum eq $t_tr->seq_md5_sum);
-    
-  } elsif ($s_obj->isa('Bio::EnsEMBL::IdMapping::TinyGene')) {
-    
-    # increment version if any transcript changed
-    my $s_tr_ident = join(":", map { $_->stable_id.'.'.$_->version }
-      sort { $a->stable_id cmp $b->stable_id }
-        @{ $s_obj->get_all_Transcripts });
-    my $t_tr_ident = join(":", map { $_->stable_id.'.'.$_->version }
-      sort { $a->stable_id cmp $b->stable_id }
-        @{ $t_obj->get_all_Transcripts });
-
-    $version++ unless ($s_tr_ident eq $t_tr_ident);
-    
-  } else {
-    throw("Unknown object type: ".ref($s_obj));
-  }
-
-  return $version;
-}
-
-
-sub find_highest_stable_id {
-  my $self = shift;
-  my $type = shift;
-
-  my $max_stable_id;
-
-  # use stable ID from configuration if set
-  if ($max_stable_id = $self->conf->param("starting_${type}_stable_id")) {
-    $self->logger->debug("Using pre-configured $max_stable_id as base for new $type stable IDs\n");
-    return $max_stable_id;
-  }
-
-  my $s_dba = $self->cache->get_DBAdaptor('source');
-  my $s_dbh = $s_dba->dbc->db_handle;
-  my $sql = qq(SELECT MAX(stable_id) FROM ${type}_stable_id);
-  $max_stable_id = $self->fetch_value_from_db($s_dbh, $sql);
-
-  if ($max_stable_id) {
-    $self->logger->debug("Using $max_stable_id as base for new $type stable IDs\n");
-  } else {
-    $self->logger->warning("Can't find highest ${type}_stable_id in source db.\n");
-  }
-
-  return $max_stable_id;
-}
-
-
-sub increment_stable_id {
-  my $self = shift;
-  my $stable_id = shift;
-
-  unless ($stable_id and ($stable_id =~ /ENS([A-Z]{1,4})(\d{11})/)) {
-    throw("Unknown or missing stable ID: $stable_id.");
-  }
-
-  my $number = $2;
-  my $new_stable_id = 'ENS'.$1.(++$number);
-
-  return $new_stable_id;
 }
 
 
@@ -678,13 +633,22 @@ sub generate_mapping_stats {
   my $novel_total = $stats->{'mapped_novel'} + $stats->{'lost_novel'};
 
   # no split into known and novel for exons
-  unless ($type eq 'exon') {
-    $result .= sprintf($fmt2, 'known', $stats->{'mapped_known'},
-      $stats->{'lost_known'}, $stats->{'mapped_known'}/$known_total*100);
-    $result .= sprintf($fmt2, 'novel', $stats->{'mapped_novel'},
-      $stats->{'lost_novel'}, $stats->{'mapped_novel'}/$novel_total*100);
-  }
-  
+  unless ( $type eq 'exon' ) {
+    $result .= sprintf( $fmt2,
+	'known',
+	$stats->{'mapped_known'},
+	$stats->{'lost_known'},
+	($known_total ? $stats->{'mapped_known'}/$known_total*100 : 0)
+    );
+
+    $result .= sprintf( $fmt2,
+	'novel',
+	$stats->{'mapped_novel'},
+	$stats->{'lost_novel'},
+	($novel_total ? $stats->{'mapped_novel'}/$novel_total*100 : 0)
+    );
+  } ## end unless ( $type eq 'exon' )
+
   $result .= sprintf($fmt2, 'total', $mapped_total, $lost_total,
     $mapped_total/($known_total + $novel_total)*100);
 
@@ -757,7 +721,7 @@ sub get_all_stable_id_events {
   # argument check
   throw("Need an event type (new|similarity).") unless ($type);
 
-  return [ values %{ $self->{'stable_id_events'}->{$type} } ];
+  return [ keys %{ $self->{'stable_id_events'}->{$type} } ];
 }
 
 
@@ -779,6 +743,13 @@ sub mapping_session_date_fmt {
   my $self = shift;
   $self->{'_mapping_session_date_fmt'} = shift if (@_);
   return $self->{'_mapping_session_date_fmt'};
+}
+
+
+sub stable_id_generator {
+  my $self = shift;
+  $self->{'_stable_id_generator'} = shift if (@_);
+  return $self->{'_stable_id_generator'};
 }
 
 

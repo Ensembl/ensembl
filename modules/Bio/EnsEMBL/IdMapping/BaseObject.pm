@@ -112,13 +112,13 @@ sub new {
 =head2 get_filehandle 
 
   Arg[1]      : String $filename - filename for filehandle
-  Arg[2]      : String $path_append - append subdirectory name to dumppath
+  Arg[2]      : String $path_append - append subdirectory name to basedir
   Arg[3]      : String $mode - filehandle mode (<|>|>>)
   Example     : my $fh = $object->get_filehandle('mapping_stats.txt', 'stats',
                   '>');
                 print $fh "Stats:\n";
   Description : Returns a filehandle to a file for reading or writing. The file
-                is qualified with the dumppath defined in the configuration and
+                is qualified with the basedir defined in the configuration and
                 an optional subdirectory name.
   Return type : filehandle
   Exceptions  : thrown on missing filename
@@ -136,7 +136,7 @@ sub get_filehandle {
 
   throw("Need a filename for this filehandle.") unless (defined($filename));
   
-  my $path = $self->conf->param('dumppath');
+  my $path = $self->conf->param('basedir');
   $path = path_append($path, $path_append) if (defined($path_append));
 
   $mode ||= '>';
@@ -151,7 +151,7 @@ sub get_filehandle {
 =head2 file_exists
 
   Arg[1]      : String $filename - filename to test
-  Arg[2]      : Boolean $path_append - turn on pre-pending of dumppath
+  Arg[2]      : Boolean $path_append - turn on pre-pending of basedir
   Example     : unless ($object->file_exists('gene_mappings.ser', 1)) {
                   $object->do_gene_mapping;
                 }
@@ -169,7 +169,7 @@ sub file_exists {
   my $filename = shift;
   my $path_append = shift;
 
-  my $path = $self->conf->param('dumppath');
+  my $path = $self->conf->param('basedir');
   $path = path_append($path, $path_append) if (defined($path_append));
 
   return (-s "$path/$filename");
@@ -219,7 +219,7 @@ sub fetch_value_from_db {
                   'stable_id_event', 'stable_id_event_existing.txt');
   Description : Dumps the contents of a db table to a tab-delimited file. The
                 dump file will be written to a subdirectory called 'tables'
-                under the dumppath from your configuration.
+                under the basedir from your configuration.
   Return type : Int - the number of rows dumped
   Exceptions  : thrown on wrong or missing arguments
   Caller      : general
@@ -280,12 +280,13 @@ sub dump_table_to_file {
   Arg[1]      : String $dbtype - db type (source|target)
   Arg[2]      : String $table - name of table to upload the data to
   Arg[3]      : String $filename - name of dump file
+  Arg[4]      : Boolean $no_check_empty - don't check if table is empty
   Example     : my $rows_uploaded = $object->upload_file_into_table('target',
                   'stable_id_event', 'stable_id_event_new.txt');
   Description : Uploads a tab-delimited data file into a db table. The data file
                 will be taken from a subdirectory 'tables' under your configured
-                dumppath. If the db table isn't empty, no data is uploaded (and
-                a warning is issued).
+                basedir. If the db table isn't empty and $no_check_empty isn't
+                set, no data is uploaded (and a warning is issued).
   Return type : Int - the number of rows uploaded
   Exceptions  : thrown on wrong or missing arguments
   Caller      : general
@@ -299,6 +300,7 @@ sub upload_file_into_table {
   my $dbtype = shift;
   my $table = shift;
   my $filename = shift;
+  my $no_check_empty = shift;
 
   # argument check
   unless (($dbtype eq 'source') or ($dbtype eq 'target')) {
@@ -313,7 +315,7 @@ sub upload_file_into_table {
     return;
   }
   
-  my $file = join('/', $self->conf->param('dumppath'), 'tables', $filename);
+  my $file = join('/', $self->conf->param('basedir'), 'tables', $filename);
   my $r = 0;
   
   if (-s $file) {
@@ -324,16 +326,19 @@ sub upload_file_into_table {
     my $dbh = $dba->dbc->db_handle;
 
     # check table is empty
-    my $sql = qq(SELECT count(*) FROM $table);
-    my $sth = $dbh->prepare($sql);
-    $sth->execute;
-    my ($c) = $sth->fetchrow_array;
-    $sth->finish;
+    my ($sql, $sth);
+    unless ($no_check_empty) {
+      $sql = qq(SELECT count(*) FROM $table);
+      $sth = $dbh->prepare($sql);
+      $sth->execute;
+      my ($c) = $sth->fetchrow_array;
+      $sth->finish;
 
-    if ($c) {
-      $self->logger->warning("Table $table not empty: found $c entries.\n", 1);
-      $self->logger->info("Data not uploaded!\n", 1);
-      return $r;
+      if ($c) {
+        $self->logger->warning("Table $table not empty: found $c entries.\n", 1);
+        $self->logger->info("Data not uploaded!\n", 1);
+        return $r;
+      }
     }
     
     # now upload the data
@@ -374,7 +379,7 @@ sub logger {
 
   Arg[1]      : (optional) Bio::EnsEMBL::Utils::ConfParser - the configuration
                 to set
-  Example     : my $dumppath = $object->conf->param('dumppath');
+  Example     : my $basedir = $object->conf->param('basedir');
   Description : Getter/setter for configuration object
   Return type : Bio::EnsEMBL::Utils::ConfParser
   Exceptions  : none
@@ -394,7 +399,7 @@ sub conf {
 =head2 cache
 
   Arg[1]      : (optional) Bio::EnsEMBL::IdMapping::Cache - the cache to set
-  Example     : $object->cache->read_from_file('genes_by_id', 'source');
+  Example     : $object->cache->read_from_file('source');
   Description : Getter/setter for cache object
   Return type : Bio::EnsEMBL::IdMapping::Cache
   Exceptions  : none

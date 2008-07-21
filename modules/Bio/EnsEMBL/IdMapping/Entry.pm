@@ -2,15 +2,24 @@ package Bio::EnsEMBL::IdMapping::Entry;
 
 =head1 NAME
 
+Bio::EnsEMBL::IdMapping::Entry - object representing a ScoredMappingMatrix entry
 
 =head1 SYNOPSIS
 
 
 =head1 DESCRIPTION
 
+This object represents a ScoredMappingMatrix entry. It is defined by a pair of a
+source and target object's internal Id and a score for this mapping.
 
 =head1 METHODS
 
+new
+new_fast
+source
+target
+score
+to_string
 
 =head1 LICENCE
 
@@ -35,6 +44,20 @@ no warnings 'uninitialized';
 use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 
 
+=head2 new
+
+  Example     : my $entry = Bio::EnsEMBL::IdMapping::Entry->new();
+  Description : Constructor. This is a no-argument constructor, so you need to
+                populate the object manually. Rarely used since in most cases
+                new_fast() is preferred.
+  Return type : a Bio::EnsEMBL::IdMapping::Entry object
+  Exceptions  : none
+  Caller      : general
+  Status      : At Risk
+              : under development
+
+=cut
+
 sub new {
   my $caller = shift;
   my $class = ref($caller) || $caller;
@@ -46,12 +69,39 @@ sub new {
 }
 
 
+=head2 new_fast
+
+  Arg[1]      : Arrayref $array_ref - the arrayref to bless into the Entry
+                object 
+  Example     : my $entry = Bio::EnsEMBL::IdMapping::Entry->new_fast([
+                  $source_gene->id, $target_gene->id, 0.9]);
+  Description : Fast constructor.
+  Return type : a Bio::EnsEMBL::IdMapping::Entry object
+  Exceptions  : none
+  Caller      : general
+  Status      : At Risk
+              : under development
+
+=cut
+
 sub new_fast {
   my $class = shift;
   my $array_ref = shift;
   return bless $array_ref, $class;
 }
 
+
+=head2 source
+
+  Arg[1]      : (optional) Int - source object's internal Id
+  Description : Getter/setter for source object's internal Id.
+  Return type : Int
+  Exceptions  : none
+  Caller      : general
+  Status      : At Risk
+              : under development
+
+=cut
 
 sub source {
   my $self = shift;
@@ -60,12 +110,37 @@ sub source {
 }
 
 
+=head2 target
+
+  Arg[1]      : (optional) Int - target object's internal Id
+  Description : Getter/setter for target object's internal Id.
+  Return type : Int
+  Exceptions  : none
+  Caller      : general
+  Status      : At Risk
+              : under development
+
+=cut
+
 sub target {
   my $self = shift;
   $self->[1] = shift if (@_);
   return $self->[1];
 }
 
+
+=head2 score
+
+  Arg[1]      : (optional) Float - a score
+  Description : Getter/setter for score for the mapping between source and
+                target object.
+  Return type : Float
+  Exceptions  : none
+  Caller      : general
+  Status      : At Risk
+              : under development
+
+=cut
 
 sub score {
   my $self = shift;
@@ -74,9 +149,22 @@ sub score {
 }
 
 
+=head2 to_string
+
+  Example     : print LOG $entry->to_string, "\n";
+  Description : Returns a string representation of the Entry object. Useful for
+                debugging and logging.
+  Return type : String
+  Exceptions  : none
+  Caller      : general
+  Status      : At Risk
+              : under development
+
+=cut
+
 sub to_string {
   my $self = shift;
-  return sprintf('%-10s%-10s%-5f', $self->source, $self->target, $self->score);
+  return sprintf('%-10s%-10s%-5.6f', $self->source, $self->target, $self->score);
 }
 
 

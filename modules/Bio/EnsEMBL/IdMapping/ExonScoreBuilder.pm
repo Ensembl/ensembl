@@ -69,6 +69,11 @@ sub score_exons {
   $matrix->merge($exonerate_matrix);
   $self->logger->info("Done.\n\n", 0, 'stamped');
 
+  # debug logging
+  if ($self->logger->loglevel eq 'debug') {
+    $matrix->log('exon', $self->conf->param('basedir'));
+  }
+
   # log stats of combined matrix
   $self->logger->info("Combined scoring matrix:\n");
   $self->log_matrix_stats($matrix);
@@ -85,7 +90,7 @@ sub score_exons {
 sub overlap_score {
   my $self = shift;
 
-  my $dump_path = path_append($self->conf->param('dumppath'), 'matrix');
+  my $dump_path = path_append($self->conf->param('basedir'), 'matrix');
   
   my $matrix = Bio::EnsEMBL::IdMapping::ScoredMappingMatrix->new(
     -DUMP_PATH   => $dump_path,
@@ -134,7 +139,7 @@ sub exonerate_score {
     throw('Need a Bio::EnsEMBL::IdMapping::ScoredMappingMatrix.');
   }
 
-  my $dump_path = path_append($self->conf->param('dumppath'), 'matrix');
+  my $dump_path = path_append($self->conf->param('basedir'), 'matrix');
 
   my $exonerate_matrix = Bio::EnsEMBL::IdMapping::ScoredMappingMatrix->new(
     -DUMP_PATH   => $dump_path,
@@ -375,23 +380,23 @@ sub run_exonerate {
   }
 
   # create an empty lsf log directory
-  my $logpath = path_append($self->logger->logpath, 'lsf_exonerate');
+  my $logpath = path_append($self->logger->logpath, 'exonerate');
   system("rm -rf $logpath") == 0 or
     $self->logger->error("Unable to delete lsf log dir $logpath: $!\n");
   system("mkdir -p $logpath") == 0 or
     $self->logger->error("Can't create lsf log dir $logpath: $!\n");
 
   # delete exonerate output from previous runs
-  my $dumppath = $self->cache->dump_path;
+  my $dump_path = $self->cache->dump_path;
 
-  opendir(DUMPDIR, $dumppath) or
-    $self->logger->error("Can't open $dumppath for reading: $!");
+  opendir(DUMPDIR, $dump_path) or
+    $self->logger->error("Can't open $dump_path for reading: $!");
 
   while (defined(my $file = readdir(DUMPDIR))) {
     next unless /exonerate_map\.\d+/;
 
-    unlink("$dumppath/$file") or
-      $self->logger->error("Can't delete $dumppath/$file: $!");
+    unlink("$dump_path/$file") or
+      $self->logger->error("Can't delete $dump_path/$file: $!");
   }
   
   closedir(DUMPDIR);
@@ -409,10 +414,6 @@ sub run_exonerate {
   #
   # run exonerate jobs using lsf
   #
-  local *BSUB;
-  open BSUB, "|bsub -J$lsf_name\[1-$num_jobs\] -o $logpath/exonerate.\%I.out"
-    or $self->logger->error("Could not open open pipe to bsub: $!\n");
-
   my $exonerate_job = qq{$exonerate_path } .
     qq{--query $source_file --target $target_file } .
     q{--querychunkid $LSB_JOBINDEX } .
@@ -421,17 +422,21 @@ sub run_exonerate {
     qq{--percent $percent } .
     $self->conf->param('exonerate_extra_params') . " " .
     q{--ryo 'myinfo: %qi %ti %et %ql %tl\n' } .
-    qq{| grep '^myinfo:' > $dumppath/exonerate_map.\$LSB_JOBINDEX} . "\n";
+    qq{| grep '^myinfo:' > $dump_path/exonerate_map.\$LSB_JOBINDEX} . "\n";
   
-  $self->logger->info("Submitting $num_jobs exonerate jobs to lsf:\n\n");
-  $self->logger->info("$exonerate_job\n\n");
+  $self->logger->info("Submitting $num_jobs exonerate jobs to lsf.\n");
+  $self->logger->debug("$exonerate_job\n\n");
+
+  local *BSUB;
+  open BSUB, "|bsub -J$lsf_name\[1-$num_jobs\] -o $logpath/exonerate.\%I.out"
+    or $self->logger->error("Could not open open pipe to bsub: $!\n");
 
   print BSUB $exonerate_job;
   $self->logger->error("Error submitting exonerate jobs: $!\n")
     unless ($? == 0); 
   close BSUB;
 
-  # submit depended job to monitor finishing of exonerate jobs
+  # submit dependent job to monitor finishing of exonerate jobs
   $self->logger->info("Waiting for exonerate jobs to finish...\n", 0, 'stamped');
 
   my $dependent_job = qq{bsub -K -w "ended($lsf_name)" -q small } .
@@ -451,7 +456,7 @@ sub run_exonerate {
   for (my $i = 1; $i <= $num_jobs; $i++) {
   
     # check that output file exists
-    my $outfile = "$dumppath/exonerate_map.$i";
+    my $outfile = "$dump_path/exonerate_map.$i";
     push @missing, $outfile unless (-s "$outfile");
 
     # check no errors occurred
@@ -537,7 +542,10 @@ sub write_filtered_exons {
   # loop over exons, dump sequence to fasta file if longer than threshold and
   # score < 1
   EXON:
-  foreach my $exon (values %{$self->cache->get_by_name('exons_by_id', $type)}) {
+  foreach my $eid (sort { $b <=> $a }
+                   keys %{ $self->cache->get_by_name('exons_by_id', $type) }) {
+
+    my $exon = $self->cache->get_by_key('exons_by_id', $type, $eid);
 
     $total_exons++;
 
@@ -546,17 +554,17 @@ sub write_filtered_exons {
 
     # skip if overlap score with any other exon is 1
     if ($type eq 'source') {
-      foreach my $target (@{ $matrix->get_targets_for_source($exon->id) }) {
-        next EXON if ($matrix->get_score($exon->id, $target) > 0.9999);
+      foreach my $target (@{ $matrix->get_targets_for_source($eid) }) {
+        next EXON if ($matrix->get_score($eid, $target) > 0.9999);
       }
     } else {
-      foreach my $source (@{ $matrix->get_sources_for_target($exon->id) }) {
-        next EXON if ($matrix->get_score($source, $exon->id) > 0.9999);
+      foreach my $source (@{ $matrix->get_sources_for_target($eid) }) {
+        next EXON if ($matrix->get_score($source, $eid) > 0.9999);
       }
     }
 
     # write exon to fasta file
-    print $fh '>', $exon->id, "\n", $exon->seq, "\n";
+    print $fh '>', $eid, "\n", $exon->seq, "\n";
 
     $dumped_exons++;
 
@@ -588,19 +596,19 @@ sub parse_exonerate_results {
   $self->logger->info("Parsing exonerate results...\n", 0, 'stamped');
 
   # loop over all result files
-  my $dumppath = $self->cache->dump_path;
+  my $dump_path = $self->cache->dump_path;
   my $num_files = 0;
   my $num_lines = 0;
 
-  opendir(DUMPDIR, $dumppath) or
-    $self->logger->error("Can't open $dumppath for reading: $!");
+  opendir(DUMPDIR, $dump_path) or
+    $self->logger->error("Can't open $dump_path for reading: $!");
 
   while (defined(my $file = readdir(DUMPDIR))) {
     next unless $file =~ /exonerate_map\.\d+/;
 
     $num_files++;
 
-    open(F, '<', "$dumppath/$file");
+    open(F, '<', "$dump_path/$file");
 
     while (<F>) {
       $num_lines++;
