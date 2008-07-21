@@ -174,7 +174,8 @@ sub fetch_by_display_label {
   my $self = shift;
   my $label = shift;
 
-  my $constraint = "x.display_label = '$label' AND g.is_current = 1";
+  my $constraint = "x.display_label = ? AND g.is_current = 1";
+  $self->bind_param_generic_fetch($label,SQL_VARCHAR);
   my ($gene) = @{ $self->generic_fetch($constraint) };
 
   return $gene;
@@ -203,7 +204,8 @@ sub fetch_by_display_label {
 sub fetch_by_stable_id {
   my ($self, $stable_id) = @_;
 
-  my $constraint = "gsi.stable_id = '$stable_id' AND g.is_current = 1";
+  my $constraint = "gsi.stable_id = ? AND g.is_current = 1";
+  $self->bind_param_generic_fetch($stable_id,SQL_VARCHAR);
   my ($gene) = @{ $self->generic_fetch($constraint) };
 
   return $gene;
@@ -232,7 +234,8 @@ sub fetch_by_stable_id {
 sub fetch_all_by_biotype {
   my ($self, $biotype) = @_;
 
-  my $constraint = "g.biotype = '$biotype' and g.is_current = 1" ;
+  my $constraint = "g.biotype = ? and g.is_current = 1" ;
+  $self->bind_param_generic_fetch($biotype,SQL_VARCHAR);
   my @genes  = @{ $self->generic_fetch($constraint) };
   return \@genes ;
 }
@@ -257,8 +260,8 @@ sub fetch_all_by_biotype {
 sub fetch_all_versions_by_stable_id {
   my ($self, $stable_id) = @_;
 
-  my $constraint = "gsi.stable_id = '$stable_id'";
-
+  my $constraint = "gsi.stable_id = ?";
+  $self->bind_param_generic_fetch($stable_id,SQL_VARCHAR);
   return $self->generic_fetch($constraint);
 }
 

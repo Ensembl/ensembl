@@ -64,7 +64,9 @@ sub fetch_by_name {
     my $self = shift;
     my $name = shift;
     
-    my $result = $self->generic_fetch("oa.name = '$name'");
+    $self->bind_param_generic_fetch($name,SQL_VARCHAR);
+
+    my $result = $self->generic_fetch("oa.name = ?");
 	
     if (scalar @$result > 1) {
 		warning("Array $name is not unique in the database, but only one result has been returned");
@@ -92,7 +94,8 @@ sub fetch_all_by_type {
 	
 	my $constraint;
 	if (scalar @types == 1) {
-		$constraint = qq( oa.type = '$types[0]' );
+		$constraint = qq( oa.type = ? );
+		$self->bind_param_generic_fetch($types[0],SQL_VARCHAR);
 	} else {
 		$constraint = join q(','), @types;
 		$constraint = qq( oa.type IN ('$constraint') );

@@ -71,7 +71,8 @@ sub fetch_all_by_Probe {
 		throw('fetch_all_by_Probe requires a stored Bio::EnsEMBL::OligoProbe object');
 	}
 	
-	return $self->generic_fetch( 'of.oligo_probe_id = ' . $probe->dbID() );
+	$self->bind_param_generic_fetch($probe->dbID(),SQL_INTEGER);
+	return $self->generic_fetch( 'of.oligo_probe_id = ?' );
 }
 
 =head2 fetch_all_by_probeset
@@ -94,7 +95,8 @@ sub fetch_all_by_probeset {
 		throw('fetch_all_by_probeset requires a probeset argument');
 	}
 	
-	return $self->generic_fetch( "op.probeset = '$probeset'" );
+	$self->bind_param_generic_fetch($probeset,SQL_VARCHAR);
+	return $self->generic_fetch( "op.probeset = ?" );
 }
 
 =head2 fetch_all_by_Slice_arrayname

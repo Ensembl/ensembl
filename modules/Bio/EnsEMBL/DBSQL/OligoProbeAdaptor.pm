@@ -117,7 +117,8 @@ sub fetch_all_by_probeset {
 	my $self     = shift;
 	my $probeset = shift;
 
-	return $self->generic_fetch("op.probeset = '$probeset'");
+	$self->bind_param_generic_fetch($probeset,SQL_VARCHAR);
+	return $self->generic_fetch("op.probeset = ?");
 }
 
 =head2 fetch_all_by_Array
@@ -147,7 +148,8 @@ sub fetch_all_by_Array {
 		return [];
 	}
 	
-	return $self->generic_fetch("op.oligo_array_id = $array_id");
+	$self->bind_param_generic_fetch($array_id, SQL_INTEGER);
+	return $self->generic_fetch("op.oligo_array_id = ?");
 }
 
 =head2 fetch_by_OligoFeature

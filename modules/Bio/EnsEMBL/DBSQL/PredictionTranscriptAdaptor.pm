@@ -109,7 +109,8 @@ sub fetch_by_stable_id {
 
   my $syn = $self->_tables()->[1];
 
-  my $pts = $self->generic_fetch("$syn.display_label = '$stable_id'");
+  $self->bind_param_generic_fetch($stable_id,SQL_VARCHAR);
+  my $pts = $self->generic_fetch("$syn.display_label = ?");
 
   return (@$pts) ? $pts->[0] : undef;
 }

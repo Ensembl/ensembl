@@ -125,7 +125,9 @@ sub _final_clause {
 sub fetch_by_stable_id {
   my ($self, $stable_id) = @_;
 
-  my $constraint = "esi.stable_id = '$stable_id' AND e.is_current = 1";
+  my $constraint = "esi.stable_id = ? AND e.is_current = 1";
+
+  $self->bind_param_generic_fetch($stable_id,SQL_VARCHAR);
   my ($exon) = @{ $self->generic_fetch($constraint) };
 
   return $exon;
@@ -150,7 +152,9 @@ sub fetch_by_stable_id {
 sub fetch_all_versions_by_stable_id {
   my ($self, $stable_id) = @_;
 
-  my $constraint = "esi.stable_id = '$stable_id'";
+  my $constraint = "esi.stable_id = ?";
+
+  $self->bind_param_generic_fetch($stable_id,SQL_VARCHAR);
 
   return $self->generic_fetch($constraint);
 }
