@@ -57,6 +57,12 @@ use FindBin qw($Bin);
 use Bio::EnsEMBL::Utils::ConfParser;
 use Bio::EnsEMBL::Utils::Logger;
 use Bio::EnsEMBL::Utils::ScriptUtils qw(path_append);
+use Bio::EnsEMBL::IdMapping::Cache;
+
+my %valid_modes = ( 'check_only' => 1,
+                    'normal'     => 1,
+                    'upload'     => 1,
+                    'mapping'    => 1 );
 
 # parse configuration and commandline arguments
 my $conf = new Bio::EnsEMBL::Utils::ConfParser(
@@ -76,27 +82,37 @@ $conf->parse_options(
   'targetpass|target_pass=s' => 0,
   'targetdbname|target_dbname=s' => 1,
   'mode=s' => 0,
-  'dumppath|dump_path=s' => 1,
+  'basedir|basedir=s' => 1,
   'chromosomes|chr=s@' => 0,
   'region=s' => 0,
   'biotypes=s@' => 0,
+  'cache_method=s' => 0,
+  'build_cache_auto_threshold=n' => 0,
+  'build_cache_concurrent_jobs=n' => 0,
   'min_exon_length|minexonlength=i' => 0,
   'exonerate_path|exoneratepath=s' => 1,
   'exonerate_threshold|exoneratethreshold=f' => 0,
   'exonerate_jobs|exoneratejobs=i' => 0,
   'exonerate_bytes_per_job|exoneratebytesperjob=f' => 0,
   'exonerate_extra_params|exonerateextraparams=s' => 0,
+  'plugin_internal_id_mappers_gene=s@' => 0,
+  'plugin_internal_id_mappers_transcript=s@' => 0,
+  'plugin_internal_id_mappers_exon=s@' => 0,
+  'mapping_types=s@' => 1,
+  'plugin_stable_id_generator=s' => 0,
   'upload_events|uploadevents=s' => 0,
   'upload_stable_ids|uploadstableids=s' => 0,
   'upload_archive|uploadarchive=s' => 0,
   'lsf!' => 0,
   'lsf_opt_run|lsfoptrun=s' => 0,
   'lsf_opt_dump_cache|lsfoptdumpcache=s' => 0,
+  'no_check!' => 0,
+  'no_check_empty_tables' => 0,
 );
 
 # set default logpath
 unless ($conf->param('logpath')) {
-  $conf->param('logpath', path_append($conf->param('dumppath'), 'log'));
+  $conf->param('logpath', path_append($conf->param('basedir'), 'log'));
 }
 
 # get log filehandle and print heading and parameters to logfile
@@ -109,12 +125,30 @@ my $logger = new Bio::EnsEMBL::Utils::Logger(
   -LOGLEVEL     => $conf->param('loglevel'),
 );
 
+# initialise log
+$logger->init_log($conf->list_param_values);
+
+my $mode = $conf->param('mode') || 'normal';
+
+# check configuration and resources.
+# this is deliberately done before submitting to lsf (doesn't need much
+# resources and you will know about config errors before waiting for job to
+# run). the 'no_check' option prevents the checks to be re-run after automatic
+# lsf submission
+unless ($conf->param('no_check')) {
+  if (&init_check($mode) > 0) {
+    $logger->error("Configuration check failed. See above for details.\n");
+  }
+
+  if ($mode eq 'check_only') {
+    $logger->info("Nothing else to do for 'check_only' mode. Exiting.\n");
+    exit;
+  }
+}
+
 # if user wants to run via lsf, submit script with bsub (this will exit this
 # instance of the script)
 &bsubmit if ($conf->param('lsf'));
-
-# initialise log
-$logger->init_log($conf->list_param_values);
 
 # this script is only a wrapper and will run one or more components.
 # define options for the components here.
@@ -136,7 +170,6 @@ $options{'id_mapping'} = $conf->create_commandline_options(
 );
 
 # run components, depending on mode
-my $mode = $conf->param('mode') || 'normal';
 my $sub = "run_$mode";
 no strict 'refs';
 &$sub;
@@ -145,6 +178,77 @@ no strict 'refs';
 $logger->finish_log;
 
 ### END main ###
+  # add one more job to 
+
+
+sub init_check {
+  my $mode = shift;
+
+  my $err = 0;
+
+  $logger->info("Checking configuration...\n", 0, 'stamped');
+
+  #
+  # check for valid mode
+  #
+  unless ($valid_modes{$mode}) {
+    $logger->warning("Invalid mode: $mode.\n");
+    $err++;
+  } else {
+    $logger->debug("Run mode ok.\n");
+  }
+
+  #
+  # create the base directory, throw if this fails
+  #
+  my $basedir = $conf->param('basedir');
+  unless (-d $basedir) {
+    if (system("mkdir -p $basedir") == 0) {
+      $logger->debug("Base directory created successfully.\n");
+    } else {
+      $logger->warning("Unable to create base directory $basedir: $!\n");
+      $err++;
+    }
+  }
+
+  #
+  # check db connection and permissions (SELECT for source, INSERT for target)
+  #
+  my $cache = Bio::EnsEMBL::IdMapping::Cache->new(
+    -LOGGER       => $logger,
+    -CONF         => $conf,
+  );
+
+  # source db
+  $err += $cache->check_db_connection('source');
+  $err += $cache->check_db_read_permissions('source');
+  
+  # target db
+  $err += $cache->check_db_connection('target');
+  $err += $cache->check_db_read_permissions('target');
+  $err += $cache->check_db_write_permissions('target');
+  
+  #
+  # check stable ID and archive tables in target db are empty
+  #
+  $err += $cache->check_empty_tables('target');
+  
+  #
+  # check both dbs have sequence
+  #
+  $err += $cache->check_sequence('source');
+  $err += $cache->check_sequence('target');
+  
+  #
+  # check for required meta table entries
+  #
+  $err += $cache->check_meta_entries('source');
+  $err += $cache->check_meta_entries('target');
+  
+  $logger->info("Done.\n\n", 0, 'stamped');
+
+  return $err;
+}
 
 
 sub run_normal {
@@ -153,13 +257,18 @@ sub run_normal {
   &run_component('dump_cache', $options{'dump_cache'}, 'building cache');
 
   # ID mapping
-  &run_component('id_mapping', $options{'id_mapping'}, 'Id mapping');
+  &run_component('id_mapping', $options{'id_mapping'}, 'ID mapping');
 
   # QC
   #&run_component('qc', $options{'qc'}, 'QC');
 
 }
 
+sub run_mapping {
+  # Skip dumping and start at the ID mapping step.
+  &run_component( 'id_mapping', $options{'id_mapping'},
+                  'ID mapping (skipping the dumping step)' );
+}
 
 sub run_upload {
   # upload table data files into db
@@ -208,9 +317,10 @@ sub bsubmit {
 
   # options for this script
   my $options = $conf->create_commandline_options(
-    logautoid => $logger->log_auto_id,
-    interactive   => 0,
-    lsf       => 0,
+    logautoid   => $logger->log_auto_id,
+    interactive => 0,
+    lsf         => 0,
+    no_check    => 1,
   );
   $cmd .= " $options";
 

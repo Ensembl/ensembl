@@ -55,7 +55,8 @@ no warnings 'uninitialized';
 use FindBin qw($Bin);
 use Bio::EnsEMBL::Utils::ConfParser;
 use Bio::EnsEMBL::Utils::Logger;
-use Bio::EnsEMBL::Utils::ScriptUtils qw(dynamic_use path_append);
+use Bio::EnsEMBL::Utils::ScriptUtils qw(inject path_append);
+use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 
 # parse configuration and commandline arguments
 my $conf = new Bio::EnsEMBL::Utils::ConfParser(
@@ -74,55 +75,64 @@ $conf->parse_options(
   'targetuser|target_user=s' => 1,
   'targetpass|target_pass=s' => 0,
   'targetdbname|target_dbname=s' => 1,
-  'dumppath|dump_path=s' => 1,
+  'basedir|basedir=s' => 1,
   'biotypes=s@' => 0,
   'dbtype=s' => 1,
-  'slice_name=s' => 1,
   'cache_impl=s' => 1,
+  'index|i=n' => 1,
 );
 
 # set default logpath
 unless ($conf->param('logpath')) {
-  $conf->param('logpath', path_append($conf->param('dumppath'), 'log'));
+  $conf->param('logpath', path_append($conf->param('basedir'), 'log'));
 }
 # log to a subdirectory to prevent clutter
 $conf->param('logpath', path_append($conf->param('logpath'),
   'dump_by_seq_region'));  
 
+# append job index to logfile name
+my $dbtype = $conf->param('dbtype');
+my $index = $conf->param('index');
+my $logautobase = ($conf->param('logautobase') || 'dump_by_seq_region').
+  ".$dbtype";
+
 # get log filehandle and print heading and parameters to logfile
 my $logger = new Bio::EnsEMBL::Utils::Logger(
   -LOGFILE      => $conf->param('logfile'),
   -LOGAUTO      => $conf->param('logauto'),
-  -LOGAUTOBASE  => $conf->param('logautobase') || 'dump_by_seq_region',
+  -LOGAUTOBASE  => $logautobase,
   -LOGAUTOID    => $conf->param('logautoid'),
   -LOGPATH      => $conf->param('logpath'),
-  -LOGAPPEND    => $conf->param('logappend'),
+  -LOGAPPEND    => 1,
   -LOGLEVEL     => $conf->param('loglevel'),
   -IS_COMPONENT => 1,
 );
 
 # build cache
 my $cache_impl = $conf->param('cache_impl');
-
-dynamic_use($cache_impl);
+inject($cache_impl);
 
 my $cache = $cache_impl->new(
   -LOGGER       => $logger,
   -CONF         => $conf,
 );
 
-my $dbtype = $conf->param('dbtype');
-my $slice_name = $conf->param('slice_name');
-my $i = 0;
-my $size = 0;
-($i, $size) = $cache->build_cache($dbtype, $slice_name);
+# determine which slice to process. to do so, read the file containing the
+# slices to be processed, and take the one at position $index
+my $logpath = $conf->param('logpath');
+my $filename = "$dbtype.dump_cache.slices.txt";
+open(my $fh, '<', "$logpath/$filename") or
+  throw("Unable to open $logpath/$filename for reading: $!");
+my @slice_names = <$fh>;
+my $slice_name = $slice_names[$index-1];
+chomp($slice_name);
+close($fh);
+
+# no build the cache for this slice
+$cache->build_cache_by_slice($dbtype, $slice_name);
 
 # set flag to indicate everything went fine
-my $success_file = $conf->param('logpath')."/dump_by_seq_region.$dbtype.$slice_name.success";
+my $success_file = $conf->param('logpath')."/$logautobase.$index.success";
 open(TMPFILE, '>', $success_file) and close TMPFILE
-  or die "Can't open $success_file for writing: $!";
-
-# log success
-$logger->info("Done with $dbtype $slice_name (genes: $i, filesize: $size, runtime: ".$logger->runtime." ".$logger->date_and_mem."\n");
-
+  or throw "Can't open $success_file for writing: $!";
 

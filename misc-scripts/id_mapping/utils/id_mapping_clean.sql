@@ -33,3 +33,13 @@ DELETE FROM stable_id_event;
 DELETE FROM gene_archive;
 DELETE FROM peptide_archive;
 
+# drop backup tables
+DROP TABLE gene_stable_id_bak;
+DROP TABLE transcript_stable_id_bak;
+DROP TABLE translation_stable_id_bak;
+DROP TABLE exon_stable_id_bak;
+DROP TABLE mapping_session_bak;
+DROP TABLE stable_id_event_bak;
+DROP TABLE gene_archive_bak;
+DROP TABLE peptide_archive_bak;
+
