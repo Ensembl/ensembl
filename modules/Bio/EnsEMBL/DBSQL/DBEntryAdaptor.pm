@@ -1384,6 +1384,94 @@ sub fetch_all_by_description {
   return \@results;
 } ## end sub fetch_all_by_description
 
+
+=head2 fetch_all_by_source
+
+  Arg [1]    : string source to search for. Include % etc in this string
+               if you want to use SQL patterns
+
+  Example    : @unigene_refs = @{$db_entry_adaptor->fetch_all_by_source("%unigene%")};
+  Description: Retrieves DBEntrys that match the source name.               
+  Returntype : ref to array of Bio::EnsEMBL::DBSQL::DBEntry
+  Exceptions : None.
+  Caller     : General
+  Status     : At Risk
+
+=cut
+
+sub fetch_all_by_source {
+  my ( $self, $source ) = @_;
+
+  my @results = ();
+
+  my $sql =
+    "SELECT xref.xref_id, xref.dbprimary_acc, xref.display_label,
+           xref.version, xref.description,
+           exDB.dbprimary_acc_linkable, exDB.display_label_linkable, exDB.priority,
+           exDB.db_name, exDB.db_display_name, exDB.db_release, es.synonym,
+           xref.info_type, xref.info_text, exDB.type, exDB.secondary_db_name,
+           exDB.secondary_db_table
+    FROM   (xref, external_db exDB)
+    LEFT JOIN external_synonym es on es.xref_id = xref.xref_id
+    WHERE  exDB.db_name like ?
+    AND    xref.external_db_id = exDB.external_db_id";
+
+
+  my $sth = $self->prepare($sql);
+
+  $sth->bind_param( 1, $source, SQL_VARCHAR );
+
+  $sth->execute();
+
+  my $max_rows = 1000;
+
+  while ( my $rowcache = $sth->fetchall_arrayref( undef, $max_rows ) ) {
+    while ( my $arrayref = shift( @{$rowcache} ) ) {
+      my ( $dbID,                $dbprimaryId,
+           $displayid,           $version,
+           $desc,                $primary_id_linkable,
+           $display_id_linkable, $priority,
+           $dbname,              $db_display_name,
+           $release,             $synonym,
+           $info_type,           $info_text,
+           $type,                $secondary_db_name,
+           $secondary_db_table
+      ) = @$arrayref;
+
+      my $exDB =
+        Bio::EnsEMBL::DBEntry->new(
+                           -adaptor             => $self,
+                           -dbID                => $dbID,
+                           -primary_id          => $dbprimaryId,
+                           -display_id          => $displayid,
+                           -version             => $version,
+                           -release             => $release,
+                           -dbname              => $dbname,
+                           -primary_id_linkable => $primary_id_linkable,
+                           -display_id_linkable => $display_id_linkable,
+                           -priority            => $priority,
+                           -db_display_name     => $db_display_name,
+                           -info_type           => $info_type,
+                           -info_text           => $info_text,
+                           -type                => $type,
+                           -secondary_db_name   => $secondary_db_name,
+                           -secondary_db_table  => $secondary_db_table
+        );
+
+      if ($desc)    { $exDB->description($desc) }
+      if ($synonym) { $exDB->add_synonym($synonym) }
+
+      push @results, $exDB;
+
+    } ## end while ( my $arrayref = shift...
+  } ## end while ( my $rowcache = $sth...
+
+  $sth->finish();
+
+  return \@results;
+} ## end sub fetch_all_by_source
+
+
 =head2 fetch_all_synonyms
 
   Arg [1]    : dbID of DBEntry to fetch synonyms for. Used in lazy loading of synonyms.
@@ -1416,6 +1504,33 @@ sub fetch_all_synonyms {
   @synonyms = () if (!@synonyms);
 
   return \@synonyms;
+
+}
+
+
+=head2 get_db_name_from_external_db_id
+
+  Arg [1]    : external_dbid of database to get the database_name
+  Example    : my $db_name = $db_entry_adaptor->get_db_name_from_external_db_id(1100);
+  Description: Gets the database name for a certain external_db_id
+  Returntype : scalar
+  Exceptions : None.
+  Caller     : General
+  Status     : At Risk
+
+=cut
+
+sub get_db_name_from_external_db_id{
+    my $self = shift;
+    my $external_db_id = shift;
+
+    my $sth = $self->prepare("SELECT db_name FROM external_db WHERE external_db_id = ?");
+
+    $sth->bind_param(1, $external_db_id, SQL_INTEGER);
+    $sth->execute();
+    my ($db_name) = $sth->fetchrow_array();
+    $sth->finish();
+    return $db_name;
 
 }
 
