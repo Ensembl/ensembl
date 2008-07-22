@@ -3,7 +3,7 @@ use warnings;
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 59;
+	plan tests => 61;
 }
 
 use Bio::EnsEMBL::Test::MultiTestDB;
@@ -408,7 +408,13 @@ ok(@$dbes == 1);
 $dbes = $gene->get_all_DBLinks(undef,"RUBBISH");
 ok(@$dbes == 0);
 
+# test fetch_all_by_source
 
+$xrefs = $dbEntryAdaptor->fetch_all_by_source("%Uniprot%");
+ok(@{$xrefs} == 23);  #test 60
+
+my $db_name = $dbEntryAdaptor->get_db_name_from_external_db_id(4100);
+ok($db_name eq 'UniGene');
 
 sub print_dbEntries {
   my $dbes = shift;
