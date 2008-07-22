@@ -3,7 +3,7 @@ use warnings;
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 84;
+	plan tests => 86;
 }
 
 use Bio::EnsEMBL::Test::MultiTestDB;
@@ -751,3 +751,8 @@ $new_gene->remove_unconventional_transcript_associations();
 
 my $utaa = $db->get_UnconventionalTranscriptAssociationAdaptor();
 ok(@{$utaa->fetch_all_by_gene($new_gene)} == 0);
+
+#testing canonical_transcript information
+$new_gene = $ga->fetch_by_dbID(18256);
+ok($new_gene->canonical_transcript->dbID == 21716);  #test 85
+ok($new_gene->canonical_annotation eq 'longest transcript in gene'); #test 86
