@@ -358,7 +358,7 @@ sub canonical_transcript {
 
 sub canonical_annotation {
     my $self = shift;
-    $self->{'cannonical_annotation'} = shift if( @_ );
+    $self->{'canonical_annotation'} = shift if( @_ );
     return $self->{'canonical_annotation'};
 }
 
