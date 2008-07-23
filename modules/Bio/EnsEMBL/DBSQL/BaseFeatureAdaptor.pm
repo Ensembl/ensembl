@@ -67,10 +67,43 @@ sub new {
 
   #initialize an LRU cache
   my %cache;
-  tie(%cache, 'Bio::EnsEMBL::Utils::Cache', $SLICE_FEATURE_CACHE_SIZE);
+  tie( %cache, 'Bio::EnsEMBL::Utils::Cache',
+       { Debug => 0, MaxCount => $SLICE_FEATURE_CACHE_SIZE } );
   $self->{'_slice_feature_cache'} = \%cache;
 
   return $self;
+}
+
+=head2 clear_cache
+
+  Args      : None
+  Example   : my $sa =
+                $registry->get_adaptor( 'Mus musculus', 'Core',
+                                        'Slice' );
+              my $ga =
+                $registry->get_adaptor( 'Mus musculus', 'Core',
+                                        'Gene' );
+
+              my $slice =
+                $sa->fetch_by_region( 'Chromosome', '1', 1e8,
+                                      1.05e8 );
+
+              my $genes = $ga->fetch_all_by_Slice($slice);
+
+              $ga->clear_cache();
+
+  Description   : Empties the feature cache associated with this
+                  feature adaptor.
+  Return type   : None
+  Exceptions    : None
+  Caller        : General
+  Status        : At risk (under development)
+
+=cut
+
+sub clear_cache {
+  my ($self) = @_;
+  $self->{'_slice_feature_cache'} = ();
 }
 
 =head2 fetch_all_by_Slice
