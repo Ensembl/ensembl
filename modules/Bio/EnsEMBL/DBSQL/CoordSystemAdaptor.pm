@@ -970,16 +970,20 @@ sub store {
   # store the coordinate system in the database
   #
 
-  my $sth = $db->dbc->prepare('INSERT INTO coord_system ' .
-                         'SET name    = ?, ' .
-                             'version = ?, ' .
-                             'attrib  = ?,' .
-                             'rank    = ?');
+  my $sth =
+    $db->dbc->prepare(   'INSERT INTO coord_system '
+                       . 'SET name = ?, '
+                       . 'version = ?, '
+                       . 'attrib = ?,'
+                       . 'rank = ?,'
+                       . 'species_id = ?' );
 
-  $sth->bind_param(1,$name,SQL_VARCHAR);
-  $sth->bind_param(2,$version,SQL_VARCHAR);
-  $sth->bind_param(3,$attrib_str,SQL_VARCHAR);
-  $sth->bind_param(4,$rank,SQL_INTEGER);
+  $sth->bind_param( 1, $name,               SQL_VARCHAR );
+  $sth->bind_param( 2, $version,            SQL_VARCHAR );
+  $sth->bind_param( 3, $attrib_str,         SQL_VARCHAR );
+  $sth->bind_param( 4, $rank,               SQL_INTEGER );
+  $sth->bind_param( 5, $self->species_id(), SQL_INTEGER );
+
   $sth->execute();
   my $dbID = $sth->{'mysql_insertid'};
   $sth->finish();
