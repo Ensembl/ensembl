@@ -1,9 +1,12 @@
-CREATE TABLE `meta` (
-  `meta_id` int(11) NOT NULL auto_increment,
-  `meta_key` varchar(40) collate latin1_bin NOT NULL default '',
-  `meta_value` varchar(255) collate latin1_bin NOT NULL default '',
-  PRIMARY KEY  (`meta_id`),
-  KEY `meta_key_index` (`meta_key`),
-  KEY `meta_value_index` (`meta_value`)
-) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_bin;
+CREATE TABLE meta (
 
+  meta_id                     INT NOT NULL AUTO_INCREMENT,
+  species_id                  INT UNSIGNED DEFAULT 1,
+  meta_key                    VARCHAR(40) NOT NULL,
+  meta_value                  VARCHAR(255) NOT NULL,
+
+  PRIMARY   KEY (meta_id),
+  UNIQUE    KEY species_key_value_idx (species_id, meta_key, meta_value),
+            KEY species_value_idx (species_id, meta_value)
+
+) COLLATE=latin1_swedish_ci TYPE=MyISAM;
