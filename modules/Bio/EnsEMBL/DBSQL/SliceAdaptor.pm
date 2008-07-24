@@ -484,7 +484,7 @@ sub fetch_by_seq_region_id {
   } else {
     my $sth =
       $self->prepare(   "SELECT sr.name, sr.coord_system_id, sr.length "
-                      . "FROM seq_region sr"
+                      . "FROM seq_region sr "
                       . "WHERE sr.seq_region_id = ? " );
 
     $sth->bind_param( 1, $seq_region_id, SQL_INTEGER );
@@ -665,7 +665,7 @@ sub fetch_all {
                       . 'AND sr.coord_system_id = cs.coord_system_id '
                       . 'AND cs.species_id = ?' );
 
-    $sth->bind_param( 1, $self->species_id(), SQL_INTEGER );
+    $sth2->bind_param( 1, $self->species_id(), SQL_INTEGER );
     $sth2->execute();
 
     my ($seq_region_id);
@@ -1556,10 +1556,10 @@ sub _build_exception_cache {
   my $sth =
     $self->prepare( 'SELECT ae.seq_region_id, ae.seq_region_start, '
               . 'ae.seq_region_end, ae.exc_type, ae.exc_seq_region_id, '
-              . 'ae.exc_seq_region_start, ae.exc_seq_region_end'
+              . 'ae.exc_seq_region_start, ae.exc_seq_region_end '
               . 'FROM assembly_exception ae, '
               . 'seq_region sr, coord_system cs '
-              . 'WHERE sr.seq_region_id = ar.seq_region_id '
+              . 'WHERE sr.seq_region_id = ae.seq_region_id '
               . 'AND sr.coord_system_id = cs.coord_system_id '
               . 'AND cs.species_id = ?' );
 

@@ -245,7 +245,7 @@ sub delete_key {
                       . 'WHERE meta_key = ?'
                       . 'AND species_id IS NULL' );
 
-    $sth->bin_param( 1, $key, SQL_VARCHAR );
+    $sth->bind_param( 1, $key, SQL_VARCHAR );
     $sth->execute();
   } else {
     my $sth =
@@ -253,8 +253,8 @@ sub delete_key {
                       . 'WHERE meta_key = ? '
                       . 'AND species_id = ?' );
 
-    $sth->bin_param( 1, $key, SQL_VARCHAR );
-    $sth->bin_param( 2, $self->species_id(), SQL_INTEGER );
+    $sth->bind_param( 1, $key, SQL_VARCHAR );
+    $sth->bind_param( 2, $self->species_id(), SQL_INTEGER );
     $sth->execute();
   }
 
@@ -287,8 +287,8 @@ sub delete_key_value {
                       . 'AND meta_value = ?'
                       . 'AND species_id IS NULL' );
 
-    $sth->bin_param( 1, $key,   SQL_VARCHAR );
-    $sth->bin_param( 2, $value, SQL_VARCHAR );
+    $sth->bind_param( 1, $key,   SQL_VARCHAR );
+    $sth->bind_param( 2, $value, SQL_VARCHAR );
     $sth->execute();
   } else {
     my $sth =
@@ -297,9 +297,9 @@ sub delete_key_value {
                       . 'AND meta_value = ? '
                       . 'AND species_id = ?' );
 
-    $sth->bin_param( 1, $key,                SQL_VARCHAR );
-    $sth->bin_param( 2, $value,              SQL_VARCHAR );
-    $sth->bin_param( 3, $self->species_id(), SQL_INTEGER );
+    $sth->bind_param( 1, $key,                SQL_VARCHAR );
+    $sth->bind_param( 2, $value,              SQL_VARCHAR );
+    $sth->bind_param( 3, $self->species_id(), SQL_INTEGER );
     $sth->execute();
   }
 
@@ -334,8 +334,8 @@ sub key_value_exists {
                       . 'AND meta_value = ?'
                       . 'AND species_id IS NULL' );
 
-    $sth->bin_param( 1, $key,   SQL_VARCHAR );
-    $sth->bin_param( 2, $value, SQL_VARCHAR );
+    $sth->bind_param( 1, $key,   SQL_VARCHAR );
+    $sth->bind_param( 2, $value, SQL_VARCHAR );
     $sth->execute();
   } else {
     $sth =
@@ -345,9 +345,9 @@ sub key_value_exists {
                       . 'AND meta_value = ? '
                       . 'AND species_id = ?' );
 
-    $sth->bin_param( 1, $key,                SQL_VARCHAR );
-    $sth->bin_param( 2, $value,              SQL_VARCHAR );
-    $sth->bin_param( 3, $self->species_id(), SQL_INTEGER );
+    $sth->bind_param( 1, $key,                SQL_VARCHAR );
+    $sth->bind_param( 2, $value,              SQL_VARCHAR );
+    $sth->bind_param( 3, $self->species_id(), SQL_INTEGER );
     $sth->execute();
   }
 
