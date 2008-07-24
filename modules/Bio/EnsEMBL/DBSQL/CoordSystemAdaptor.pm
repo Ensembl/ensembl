@@ -207,9 +207,12 @@ sub new {
   return $self;
 } ## end sub new
 
-# This cache will load the information from the seq_region_table, if
-# any, to allow mapping between internal and external seq_region_id.
 sub _cache_seq_region_mapping {
+  #
+  # This cache will load the information from the seq_region_table, if
+  # any, to allow mapping between internal and external seq_region_id.
+  #
+
   my ($self) = @_;
 
   # For a given core database, will return the schema_build information.
@@ -248,6 +251,7 @@ sub _cache_seq_region_mapping {
   $sth->finish();
 
 } ## end sub _cache_seq_region_mapping
+
 
 sub _cache_mapping_paths {
   #
