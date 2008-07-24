@@ -86,9 +86,9 @@ sub fetch_all_by_translation_id {
   my $sth = $self->prepare
     ("SELECT protein_feature_id, p.seq_start, p.seq_end, p.analysis_id, " .
      "       p.score, p.perc_ident, p.evalue, p.hit_start, p.hit_end, " .
-     "       p.hit_id, x.display_label, i.interpro_ac " .
+     "       p.hit_name, x.display_label, i.interpro_ac " .
      "FROM   protein_feature p " .
-     "LEFT JOIN interpro AS i ON p.hit_id = i.id " .
+     "LEFT JOIN interpro AS i ON p.hit_name = i.id " .
      "LEFT JOIN xref AS x ON x.dbprimary_acc = i.interpro_ac " .
      "WHERE p.translation_id = ?");
 
@@ -150,10 +150,10 @@ sub fetch_by_dbID{
   my $sth = $self->prepare(
 	      "SELECT p.seq_start, p.seq_end, p.analysis_id, " .
         "       p.score, p.perc_ident, p.evalue, " .
-        "       p.hit_start, p.hit_end, p.hit_id, " .
+        "       p.hit_start, p.hit_end, p.hit_name, " .
         "       x.display_label, i.interpro_ac " .
         "FROM   protein_feature p " .
-        "LEFT JOIN interpro AS i ON p.hit_id = i.id " .
+        "LEFT JOIN interpro AS i ON p.hit_name = i.id " .
         "LEFT JOIN xref AS x ON x.dbprimary_acc = i.interpro_ac " .
         "WHERE  p.protein_feature_id = ?");
   
@@ -245,7 +245,7 @@ sub store {
                    "            analysis_id    = ?, ".
                    "            hit_start      = ?, ".
                    "            hit_end        = ?, ".
-                   "            hit_id         = ?, ".
+                   "            hit_name       = ?, ".
                    "            score          = ?, ".
                    "            perc_ident     = ?, ".
                    "            evalue         = ?");

@@ -286,6 +286,42 @@ sub _straight_join {
 }
 
 
+=head2 bind_param_generic_fetch
+
+ Arg [1]   : (optional)  scalar $param
+              This is the parameter to bind
+ Arg [2]   : (optional) int $sql_type
+              Type of the parameter (from DBI (:sql_types))
+ Example   :  $adaptor->bind_param_generic_fetch($stable_id,SQL_VARCHAR);
+              $adaptor->generic_fetch();
+ Description:  When using parameters for the query, will call the bind_param to avoid
+               some security issues. If there are no arguments, will return the bind_parameters
+ ReturnType : listref
+ Exceptions:  if called with one argument
+
+=cut
+
+sub bind_param_generic_fetch{
+    my $self = shift;
+    my $param = shift;
+    my $sql_type = shift;
+
+    if (defined $param && !defined $sql_type){
+	throw("Need to specify sql_type for parameter $param\n");
+    }
+    elsif (defined $param && defined $sql_type){
+	#both paramters have been entered, push it to the bind_param array
+	push @{$self->{'_bind_param_generic_fetch'}},[$param,$sql_type];
+    }
+    elsif (!defined $param && !defined $sql_type){
+	#when there are no arguments, return the array
+	return $self->{'_bind_param_generic_fetch'};
+    }
+	
+}
+
+
+
 =head2 generic_fetch
 
   Arg [1]    : (optional) string $constraint
@@ -307,7 +343,6 @@ sub _straight_join {
 
 sub generic_fetch {
   my ($self, $constraint, $mapper, $slice) = @_;
-
   my @tabs = $self->_tables;
   my $columns = join(', ', $self->_columns());
 
@@ -371,6 +406,18 @@ sub generic_fetch {
   # printf(STDERR "SQL:\n%s\n", $sql);
 
   my $sth = $db->dbc->prepare($sql);
+  my $bind_parameters = $self->bind_param_generic_fetch();
+  if (defined $bind_parameters){
+      #if we have bind the parameters, call the DBI to bind them
+      my $i = 1;
+      foreach my $param (@{$bind_parameters}){
+	  $sth->bind_param($i,$param->[0],$param->[1]);
+	  $i++;
+      }
+      #after binding parameters, undef for future queries
+      $self->{'_bind_param_generic_fetch'} = ();
+  }
+#  print STDERR $sql,"\n";
   $sth->execute;
   my $res = $self->_objs_from_sth($sth, $mapper, $slice);
   $sth->finish();
@@ -407,7 +454,8 @@ sub fetch_by_dbID{
   #construct a constraint like 't1.table1_id = 123'
   my @tabs = $self->_tables;
   my ($name, $syn) = @{$tabs[0]};
-  my $constraint = "${syn}.${name}_id = $id";
+  $self->bind_param_generic_fetch($id,SQL_INTEGER);
+  my $constraint = "${syn}.${name}_id = ?";
 
   #Should only be one
   my ($feat) = @{$self->generic_fetch($constraint)};

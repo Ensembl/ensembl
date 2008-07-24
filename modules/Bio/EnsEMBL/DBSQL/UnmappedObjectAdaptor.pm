@@ -320,7 +320,8 @@ sub fetch_all_by_type {
   unless($type) {
     throw("type argument is required");
   }
-  $self->generic_fetch("uo.type = \'$type\'");
+  $self->bind_param_generic_fetch($type,SQL_VARCHAR);
+  $self->generic_fetch("uo.type = ?");
   
 }
 
@@ -345,7 +346,8 @@ sub fetch_all_by_analysis {
   unless($analysis) {
     throw("analysis argument is required");
   }
-  my $constraint = "uo.analysis_id = ".$analysis->dbID;
+  $self->bind_param_generic_fetch($analysis->dbID,SQL_INTEGER);
+  my $constraint = "uo.analysis_id = ?";
   if(defined($dbname)){
     my $db_id =0;
     my $sth = $self->prepare('select external_db_id from external_db where db_name like "'.
@@ -356,9 +358,9 @@ sub fetch_all_by_analysis {
     if(!defined($db_id) or $db_id == 0){
       throw("$dbname could not be found in the external database table\n");
     }
-    $constraint .= " AND uo.external_db_id = $db_id";
+    $self->bind_param_generic_fetch($db_id,SQL_INTEGER);
+    $constraint .= " AND uo.external_db_id = ?";
   }
-  #print $constraint."\n";
   $self->generic_fetch($constraint);
   
 }
@@ -383,7 +385,9 @@ sub fetch_by_identifier {
   unless($identifier) {
     throw("identifier argument is required");
   }
-  my $constraint = 'uo.identifier like "'.$identifier.'"';
+  $self->bind_param_generic_fetch($identifier,SQL_VARCHAR);
+  my $constraint = 'uo.identifier like ?';
+
   if(defined($dbname)){
     my $db_id =0;
     my $sth = $self->prepare('select external_db_id from external_db where db_name like "'.
@@ -394,9 +398,9 @@ sub fetch_by_identifier {
     if(!defined($db_id) or $db_id == 0){
       throw("$dbname could not be found in the external database table\n");
     }
-    $constraint .= " AND uo.external_db_id = $db_id";
+    $self->bind_param_generic_fetch($db_id,SQL_INTEGER);
+    $constraint .= " AND uo.external_db_id = ?";
   }
-  # print $constraint."\n";
   return $self->generic_fetch($constraint);
 }
 

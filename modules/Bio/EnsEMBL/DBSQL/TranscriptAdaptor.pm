@@ -130,7 +130,10 @@ sub _left_join {
 sub fetch_by_stable_id {
   my ($self, $stable_id) = @_;
 
-  my $constraint = "tsi.stable_id = '$stable_id' AND t.is_current = 1";
+  my $constraint = "tsi.stable_id = ? AND t.is_current = 1";
+
+  $self->bind_param_generic_fetch($stable_id,SQL_VARCHAR);
+
   my ($transcript) = @{ $self->generic_fetch($constraint) };
 
   return $transcript;
@@ -155,7 +158,9 @@ sub fetch_by_stable_id {
 sub fetch_all_versions_by_stable_id {
   my ($self, $stable_id) = @_;
 
-  my $constraint = "tsi.stable_id = '$stable_id'";
+  my $constraint = "tsi.stable_id = ?";
+
+  $self->bind_param_generic_fetch($stable_id,SQL_VARCHAR);
 
   return $self->generic_fetch($constraint);
 }
@@ -474,7 +479,10 @@ sub fetch_by_display_label {
   my $self = shift;
   my $label = shift;
 
-  my $constraint = "x.display_label = '$label' AND t.is_current = 1";
+  my $constraint = "x.display_label = ? AND t.is_current = 1";
+
+  $self->bind_param_generic_fetch($label,SQL_VARCHAR);
+
   my ($transcript) = @{ $self->generic_fetch($constraint) };
 
   return $transcript;
@@ -823,7 +831,7 @@ sub get_Interpro_by_transid {
       WHERE   tsi.stable_id = ?
       AND     tl.transcript_id = tsi.transcript_id
       AND     tl.translation_id = pf.translation_id
-      AND     i.id = pf.hit_id
+      AND     i.id = pf.hit_name
       AND     i.interpro_ac = x.dbprimary_acc
       AND     tsi.transcript_id = t.transcript_id
       AND     t.is_current = 1
