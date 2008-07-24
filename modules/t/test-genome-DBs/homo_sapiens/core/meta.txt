@@ -1,5 +1,5 @@
 1	\N	schema_version	51
-2	\N	assembly.default	NCBI34
+2	1	assembly.default	NCBI34
 33	1	species.classification	Chordata
 32	1	species.classification	Vertebrata
 31	1	species.classification	Mammalia
