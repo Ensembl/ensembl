@@ -88,27 +88,48 @@ sub get_schema_version {
 =cut
 
 sub list_value_by_key {
-  my ($self,$key) = @_;
-  my @result;
+  my ( $self, $key ) = @_;
 
   $self->{'cache'} ||= {};
-  if( exists $self->{'cache'}->{$key} ) {
+
+  if ( exists $self->{'cache'}->{$key} ) {
     return $self->{'cache'}->{$key};
   }
 
-  my $sth = $self->prepare( "SELECT meta_value 
-                             FROM meta 
-                             WHERE meta_key = ? ORDER BY meta_id" );
-  $sth->execute( $key );
-  while( my $arrRef = $sth->fetchrow_arrayref() ) {
+  my $sth;
+  if ( !$self->_species_specific_key($key) ) {
+    $sth =
+      $self->prepare(   "SELECT meta_value "
+                      . "FROM meta "
+                      . "WHERE meta_key = ? "
+                      . "AND species_id IS NULL "
+                      . "ORDER BY meta_id" );
+
+    $sth->bind_param( 1, $key, SQL_VARCHAR );
+    $sth->execute();
+  } else {
+    $sth =
+      $self->prepare(   "SELECT meta_value "
+                      . "FROM meta "
+                      . "WHERE meta_key = ? "
+                      . "AND species_id = ? "
+                      . "ORDER BY meta_id" );
+
+    $sth->bind_param( 1, $key, SQL_VARCHAR );
+    $sth->bind_param( 2, $self->species_id(), SQL_INTEGER );
+    $sth->execute();
+  }
+
+  my @result;
+  while ( my $arrRef = $sth->fetchrow_arrayref() ) {
     push( @result, $arrRef->[0] );
   }
+
   $sth->finish();
   $self->{'cache'}->{$key} = \@result;
 
   return \@result;
-}
-
+} ## end sub list_value_by_key
 
 =head2 store_key_value
 
@@ -128,22 +149,36 @@ sub list_value_by_key {
 sub store_key_value {
   my ( $self, $key, $value ) = @_;
 
-  if ($self->key_value_exists($key, $value)) {
-    warn("Key/value pair $key/$value already exists in the meta table; not storing duplicate");
+  if ( $self->key_value_exists( $key, $value ) ) {
+    warn(   "Key-value pair '$key'-'$value' "
+          . "already exists in the meta table; "
+          . "not storing duplicate" );
     return;
   }
 
-  my $sth = $self->prepare( "INSERT INTO meta( meta_key, meta_value)
-                             VALUES( ?, ? )" );
+  if ( !$self->_species_specific_key($key) ) {
+    my $sth = $self->prepare(
+                  'INSERT INTO meta (species_id, meta_key, meta_value) '
+                    . 'VALUES(\N, ?, ?)' );
 
-  my $res = $sth->execute( $key, $value );
+    $sth->bind_param( 1, $key,   SQL_VARCHAR );
+    $sth->bind_param( 2, $value, SQL_VARCHAR );
+    $sth->execute();
+  } else {
+    my $sth = $self->prepare(
+                  'INSERT INTO meta (species_id, meta_key, meta_value) '
+                    . 'VALUES (?, ?, ?)' );
+
+    $sth->bind_param( 1, $self->species_id(), SQL_INTEGER );
+    $sth->bind_param( 2, $key,                SQL_VARCHAR );
+    $sth->bind_param( 3, $value,              SQL_VARCHAR );
+    $sth->execute();
+  }
 
   $self->{'cache'} ||= {};
 
   delete $self->{'cache'}->{$key};
-
-  return;
-}
+} ## end sub store_key_value
 
 =head2 update_key_value
 
@@ -163,11 +198,28 @@ sub store_key_value {
 sub update_key_value {
   my ( $self, $key, $value ) = @_;
 
-  my $sth = $self->prepare( "UPDATE meta SET meta_value = ? WHERE meta_key = ?" );
+  if ( !$self->_species_specific_key($key) ) {
+    my $sth =
+      $self->prepare(   'UPDATE meta SET meta_value = ? '
+                      . 'WHERE meta_key = ?'
+                      . 'AND species_id IS NULL' );
 
-  my $res = $sth->execute( $value, $key );
-  return;
-}
+    $sth->bind_param( 1, $value, SQL_VARCHAR );
+    $sth->bind_param( 2, $key,   SQL_VARCHAR );
+    $sth->execute();
+  } else {
+    my $sth =
+      $self->prepare(   'UPDATE meta '
+                      . 'SET meta_value = ? '
+                      . 'WHERE meta_key = ? '
+                      . 'AND species_id = ?' );
+
+    $sth->bind_param( 1, $value,              SQL_VARCHAR );
+    $sth->bind_param( 2, $key,                SQL_VARCHAR );
+    $sth->bind_param( 3, $self->species_id(), SQL_INTEGER );
+    $sth->execute();
+  }
+} ## end sub update_key_value
 
 
 =head2 delete_key
@@ -185,15 +237,28 @@ sub update_key_value {
 =cut
 
 sub delete_key {
-  my ($self, $key) = @_;
+  my ( $self, $key ) = @_;
 
-  my $sth = $self->prepare("DELETE FROM meta WHERE meta_key = ?");
-  $sth->execute($key);
-  $sth->finish();
+  if ( !$self->_species_specific_key($key) ) {
+    my $sth =
+      $self->prepare(   'DELETE FROM meta '
+                      . 'WHERE meta_key = ?'
+                      . 'AND species_id IS NULL' );
+
+    $sth->bin_param( 1, $key, SQL_VARCHAR );
+    $sth->execute();
+  } else {
+    my $sth =
+      $self->prepare(   'DELETE FROM meta '
+                      . 'WHERE meta_key = ? '
+                      . 'AND species_id = ?' );
+
+    $sth->bin_param( 1, $key, SQL_VARCHAR );
+    $sth->bin_param( 2, $self->species_id(), SQL_INTEGER );
+    $sth->execute();
+  }
 
   delete $self->{'cache'}->{$key};
-
-  return;
 }
 
 =head2 delete_key_value
@@ -213,16 +278,33 @@ sub delete_key {
 =cut
 
 sub delete_key_value {
-  my ($self, $key, $value) = @_;
+  my ( $self, $key, $value ) = @_;
 
-  my $sth = $self->prepare("DELETE FROM meta WHERE meta_key = ? AND meta_value = ?");
-  $sth->execute($key, $value);
-  $sth->finish();
+  if ( !$self->_species_specific_key($key) ) {
+    my $sth =
+      $self->prepare(   'DELETE FROM meta '
+                      . 'WHERE meta_key = ? '
+                      . 'AND meta_value = ?'
+                      . 'AND species_id IS NULL' );
+
+    $sth->bin_param( 1, $key,   SQL_VARCHAR );
+    $sth->bin_param( 2, $value, SQL_VARCHAR );
+    $sth->execute();
+  } else {
+    my $sth =
+      $self->prepare(   'DELETE FROM meta '
+                      . 'WHERE meta_key = ? '
+                      . 'AND meta_value = ? '
+                      . 'AND species_id = ?' );
+
+    $sth->bin_param( 1, $key,                SQL_VARCHAR );
+    $sth->bin_param( 2, $value,              SQL_VARCHAR );
+    $sth->bin_param( 3, $self->species_id(), SQL_INTEGER );
+    $sth->execute();
+  }
 
   delete $self->{'cache'}->{$key};
-
-  return;
-}
+} ## end sub delete_key_value
 
 =head2 key_value_exists
 
@@ -231,7 +313,8 @@ sub delete_key_value {
   Arg [2]    : string $value
                the value to check
   Example    : if ($meta_container->key_value_exists($key, $value)) ...
-  Description: Return true if a particular key/value pair exists, undef otherwise
+  Description: Return true (1) if a particular key/value pair exists,
+               false (0) otherwise.
   Returntype : boolean
   Exceptions : none
   Caller     : ?
@@ -240,20 +323,51 @@ sub delete_key_value {
 =cut
 
 sub key_value_exists {
+  my ( $self, $key, $value ) = @_;
 
-  my ($self, $key, $value) = @_;
+  my $sth;
+  if ( !$self->_species_specific_key($key) ) {
+    $sth =
+      $self->prepare(   'SELECT meta_value '
+                      . 'FROM meta '
+                      . 'WHERE meta_key = ? '
+                      . 'AND meta_value = ?'
+                      . 'AND species_id IS NULL' );
 
-  my $sth = $self->prepare( "SELECT meta_value FROM meta WHERE meta_key = ? AND meta_value = ?" );
-  $sth->execute($key, $value);
+    $sth->bin_param( 1, $key,   SQL_VARCHAR );
+    $sth->bin_param( 2, $value, SQL_VARCHAR );
+    $sth->execute();
+  } else {
+    $sth =
+      $self->prepare(   'SELECT meta_value '
+                      . 'FROM meta '
+                      . 'WHERE meta_key = ? '
+                      . 'AND meta_value = ? '
+                      . 'AND species_id = ?' );
 
-  while( my $arrRef = $sth->fetchrow_arrayref() ) {
-    if ($arrRef->[0] eq $value) {
+    $sth->bin_param( 1, $key,                SQL_VARCHAR );
+    $sth->bin_param( 2, $value,              SQL_VARCHAR );
+    $sth->bin_param( 3, $self->species_id(), SQL_INTEGER );
+    $sth->execute();
+  }
+
+  while ( my $arrRef = $sth->fetchrow_arrayref() ) {
+    if ( $arrRef->[0] eq $value ) {
       $sth->finish();
       return 1;
     }
   }
 
-  return undef;
+  return 0;
+} ## end sub key_value_exists
+
+# This utility method determines whether the key is a species-specific
+# meta key or not.  If the key is either 'patch' or 'schema_version',
+# then it is not species-specific.
+
+sub _species_specific_key {
+  my ( $self, $key ) = @_;
+  return ( $key ne 'patch' && $key ne 'schema_version' );
 }
 
 1;

@@ -235,18 +235,18 @@ sub _fetch_seq {
       } else {
         # retrieve uncached portions of the sequence
 
-        my $sth = $self->prepare
-          ("SELECT SUBSTRING( d.sequence, ?, ?)
-            FROM dna d
-            WHERE d.seq_region_id = ?");
+        my $sth =
+          $self->prepare(   "SELECT SUBSTRING(d.sequence, ?, ?) "
+                          . "FROM dna d "
+                          . "WHERE d.seq_region_id = ?" );
 
         my $tmp_seq;
 
         my $min = ($i << $SEQ_CHUNK_PWR) + 1;
 
-	$sth->bind_param(1,$min,SQL_INTEGER);
-	$sth->bind_param(2,1 << $SEQ_CHUNK_PWR,SQL_INTEGER);
-	$sth->bind_param(3,$seq_region_id,SQL_INTEGER);
+        $sth->bind_param( 1, $min,                SQL_INTEGER );
+        $sth->bind_param( 2, 1 << $SEQ_CHUNK_PWR, SQL_INTEGER );
+        $sth->bind_param( 3, $seq_region_id,      SQL_INTEGER );
 
         $sth->execute();
         $sth->bind_columns(\$tmp_seq);
@@ -260,24 +260,24 @@ sub _fetch_seq {
     }
 
     # return only the requested portion of the entire sequence
-    my $min =  ($chunk_min    << $SEQ_CHUNK_PWR) + 1;
-    my $max = ($chunk_max+1) << $SEQ_CHUNK_PWR;
-    my $seq = substr($entire_seq, $start-$min, $length);
+    my $min = ( $chunk_min << $SEQ_CHUNK_PWR ) + 1;
+    my $max = ( $chunk_max + 1 ) << $SEQ_CHUNK_PWR;
+    my $seq = substr( $entire_seq, $start - $min, $length );
 
     return \$seq;
   } else {
 
     # do not do any caching for requests of very large sequences
-    my $sth = $self->prepare
-      ("SELECT SUBSTRING( d.sequence, ?, ?)
-        FROM dna d
-        WHERE d.seq_region_id = ?");
+    my $sth =
+      $self->prepare(   "SELECT SUBSTRING(d.sequence, ?, ?) "
+                      . "FROM dna d "
+                      . "WHERE d.seq_region_id = ?" );
 
     my $tmp_seq;
 
-    $sth->bind_param(1,$start,SQL_INTEGER);
-    $sth->bind_param(2,$length,SQL_INTEGER);
-    $sth->bind_param(3,$seq_region_id,SQL_INTEGER);
+    $sth->bind_param( 1, $start,         SQL_INTEGER );
+    $sth->bind_param( 2, $length,        SQL_INTEGER );
+    $sth->bind_param( 3, $seq_region_id, SQL_INTEGER );
 
     $sth->execute();
     $sth->bind_columns(\$tmp_seq);

@@ -20,22 +20,31 @@ sub new {
   my $self = $class->SUPER::new(@_);
 
   #
-  # Retrieve the list of the coordinate systems that features are stored in
-  # and cache them
+  # Retrieve the list of the coordinate systems that features are stored
+  # in and cache them.
   #
-  my $sth = $self->prepare
-    ('SELECT table_name, coord_system_id, max_length  FROM meta_coord');
+
+  my $sth = $self->prepare(
+              'SELECT mc.table_name, mc.coord_system_id, mc.max_length '
+                . 'FROM meta_coord mc, coord_system cs '
+                . 'WHERE mc.coord_system_id = cs.coord_system_id '
+                . 'AND cs.species_id = ?' );
+
+  $sth->bind_param( 1, $self->species_id(), SQL_INTEGER );
   $sth->execute();
 
-  while(my ($table_name, $cs_id, $max_length) = $sth->fetchrow_array()) {
-    $self->{'_feature_cache'}->{lc($table_name)} ||= [];
-    push @{$self->{'_feature_cache'}->{lc($table_name)}}, $cs_id;
-    $self->{'_max_len_cache'}->{$cs_id}->{lc($table_name)} = $max_length;
+  while ( my ( $table_name, $cs_id, $max_length ) =
+          $sth->fetchrow_array() )
+  {
+    $self->{'_feature_cache'}->{ lc($table_name) } ||= [];
+    push @{ $self->{'_feature_cache'}->{ lc($table_name) } }, $cs_id;
+    $self->{'_max_len_cache'}->{$cs_id}->{ lc($table_name) } =
+      $max_length;
   }
   $sth->finish();
 
   return $self;
-}
+} ## end sub new
 
 
 

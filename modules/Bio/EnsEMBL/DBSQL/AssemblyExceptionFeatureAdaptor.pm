@@ -97,11 +97,26 @@ sub fetch_all {
     return $self->{'_aexc_cache'};
   }
 
-  my $sth = $self->prepare
-    ("SELECT assembly_exception_id, seq_region_id, seq_region_start,
-             seq_region_end, exc_type, exc_seq_region_id, exc_seq_region_start,
-             exc_seq_region_end, ori
-      FROM assembly_exception");
+  my $statement = qq(
+  SELECT    ae.assembly_exception_id,
+            ae.seq_region_id,
+            ae.seq_region_start,
+            ae.seq_region_end,
+            ae.exc_type,
+            ae.exc_seq_region_id,
+            ae.exc_seq_region_start,
+            ae.exc_seq_region_end,
+            ae.ori
+  FROM      assembly_exception ae,
+            coord_system cs,
+            seq_region sr
+  WHERE     cs.species_id = ?
+    AND     sr.coord_system_id = cs.coord_system_id
+    AND     sr.seq_region_id = ae.seq_region_id);
+
+  my $sth = $self->prepare($statement);
+
+  $sth->bind_param( 1, $self->species_id(), SQL_INTEGER );
 
   $sth->execute();
 

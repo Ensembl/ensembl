@@ -158,8 +158,11 @@ sub _objs_from_sth {
 
   Arg [1]    : none
   Example    : my @probe_ids = @{$apa->list_dbIDs()};
-  Description: Gets an array of internal IDs for all AffyProbe objects in the
-               current database.
+  Description: Gets an array of internal IDs for all AffyProbe objects
+               in the current database.  NOTE: In a multi-species
+               database, this method will return the dbIDs of all
+               AffyProbe objects, not just the ones associated with
+               the current species.
   Returntype : List of ints
   Exceptions : None
   Caller     : ?
@@ -174,6 +177,10 @@ sub list_dbIDs {
 	# Can't use _list_dbIDs because only want OligoProbe objects on arrays of type AFFY
 	
 	my @out;
+
+        # FIXME: This SQL will not work as expected on multi-species
+        # databases.  It needs to be anchored in a coord_system entry
+        # coord_system.species_id = $self->species_id(). /ak4@2008-07-15
 	my $sql = "
 		SELECT DISTINCT op.oligo_probe_id
 		FROM   oligo_probe op, oligo_array oa

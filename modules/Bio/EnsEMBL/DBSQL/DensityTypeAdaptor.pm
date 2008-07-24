@@ -70,7 +70,10 @@ sub new {
 
   Arg [1]    : none
   Example    : my @density_types = @{$density_type_adaptor->fetch_all};
-  Description: Retrieves every density type in the database
+  Description: Retrieves every density type in the database.
+               NOTE:  In a multi-species database, this method will
+               return all the entries, not just the ones associated with
+               the current species.
   Returntype : reference to list of Bio::EnsEMBL::DensityType objects
   Exceptions : none
   Caller     : general, new
@@ -150,7 +153,10 @@ sub fetch_by_dbID {
 
   Arg [1]    : string $logic_name
   Example    : my @dts = @{$dtype_adaptor->fetch_all('repeat_coverage')};
-  Description: Retrieves all density types with a given logic name
+  Description: Retrieves all density types with a given logic name.
+               NOTE:  In a multi-species database, this method will
+               return all the entries matching the search criteria, not
+               just the ones associated with the current species.
   Returntype : reference to list of Bio::EnsEMBL::DensityTypes
   Exceptions : thrown if logic_name argument is not provided
   Caller     : general

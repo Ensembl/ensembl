@@ -126,28 +126,27 @@ use vars qw(@ISA);
 =cut
 
 sub new {
-  my $caller = shift;
+  my ( $proto, @args ) = @_;
 
-  my $class = ref($caller) || $caller;
-
-  my $self = $class->SUPER::new(@_);
+  my $class = ref($proto) || $proto;
+  my $self = $class->SUPER::new(@args);
 
   #
   # Cache the entire contents of the coord_system table cross-referenced
-  # by dbID and name
+  # by dbID and name.
   #
 
-  #keyed on name, list of coord_system value
+  # keyed on name, list of coord_system value
   $self->{'_name_cache'} = {};
 
-  #keyed on id, coord_system value
+  # keyed on id, coord_system value
   $self->{'_dbID_cache'} = {};
 
-  #keyed on rank
+  # keyed on rank
   $self->{'_rank_cache'} = {};
 
-  #keyed on id, 1/undef values
-  $self->{'_is_sequence_level'} = {};
+  # keyed on id, 1/undef values
+  $self->{'_is_sequence_level'}  = {};
   $self->{'_is_default_version'} = {};
 
   #cache to store the seq_region_mapping information
@@ -157,143 +156,184 @@ sub new {
   $self->{'_external_seq_region_mapping'} = {};
 
   my $sth = $self->prepare(
-    'SELECT coord_system_id, name, rank, version, attrib ' .
-    'FROM coord_system');
+                  'SELECT coord_system_id, name, rank, version, attrib '
+                    . 'FROM coord_system '
+                    . 'WHERE species_id = ?' );
+
+  $sth->bind_param( 1, $self->species_id(), SQL_INTEGER );
   $sth->execute();
 
-  my ($dbID, $name, $rank, $version, $attrib);
-  $sth->bind_columns(\$dbID, \$name, \$rank, \$version, \$attrib);
+  my ( $dbID, $name, $rank, $version, $attrib );
+  $sth->bind_columns( \( $dbID, $name, $rank, $version, $attrib ) );
 
-  while($sth->fetch()) {
+  while ( $sth->fetch() ) {
     my $seq_lvl = 0;
     my $default = 0;
-    if($attrib) {
-      foreach my $attrib (split(',', $attrib)) {
+
+    if ( defined($attrib) ) {
+      foreach my $attrib ( split( ',', $attrib ) ) {
         $self->{"_is_$attrib"}->{$dbID} = 1;
-        if($attrib eq 'sequence_level') {
+        if ( $attrib eq 'sequence_level' ) {
           $seq_lvl = 1;
-        } elsif($attrib eq 'default_version') {
+        } elsif ( $attrib eq 'default_version' ) {
           $default = 1;
         }
       }
     }
 
-    my $cs = Bio::EnsEMBL::CoordSystem->new
-      (-DBID           => $dbID,
-       -ADAPTOR        => $self,
-       -NAME           => $name,
-       -VERSION        => $version,
-       -RANK           => $rank,
-       -SEQUENCE_LEVEL => $seq_lvl,
-       -DEFAULT        => $default);
+    my $cs =
+      Bio::EnsEMBL::CoordSystem->new( -DBID           => $dbID,
+                                      -ADAPTOR        => $self,
+                                      -NAME           => $name,
+                                      -VERSION        => $version,
+                                      -RANK           => $rank,
+                                      -SEQUENCE_LEVEL => $seq_lvl,
+                                      -DEFAULT        => $default );
 
     $self->{'_dbID_cache'}->{$dbID} = $cs;
 
-    $self->{'_name_cache'}->{lc($name)} ||= [];
+    $self->{'_name_cache'}->{ lc($name) } ||= [];
     $self->{'_rank_cache'}->{$rank} = $cs;
-    push @{$self->{'_name_cache'}->{lc($name)}}, $cs;
-  }
+
+    push @{ $self->{'_name_cache'}->{ lc($name) } }, $cs;
+
+  } ## end while ( $sth->fetch() )
   $sth->finish();
 
-  $self->_cache_mapping_paths;
+  $self->_cache_mapping_paths();
 
-  $self->_cache_seq_region_mapping;
+  $self->_cache_seq_region_mapping();
 
   return $self;
-}
+} ## end sub new
 
-#this cache will load the information from the seq_region_table, if any, to allow mapping
-#between internal and external seq_region_id
-sub _cache_seq_region_mapping{
-    my $self = shift;
-
-    #for a given core database, will return the schema_build information
-    my $schema_build = $self->db->_get_schema_build();
-    #prepare the query to get relation for the current database being used
-    my $sql = 'SELECT s.internal_seq_region_id, s.external_seq_region_id from seq_region_mapping s, mapping_set ms where ms.mapping_set_id = s.mapping_set_id and ms.schema_build="'.$schema_build.'"';
-    #load the cache: 
-    foreach my $row (@{$self->db->dbc->db_handle->selectall_arrayref($sql)}){
-	#the internal->external
-	$self->{'_internal_seq_region_mapping'}->{$row->[0]} = $row->[1];
-	#the external->internal
-	$self->{'_external_seq_region_mapping'}->{$row->[1]} = $row->[0];
-    }
-    #and return
-    return;
-}
-
-sub _cache_mapping_paths{
+sub _cache_seq_region_mapping {
   #
-  # Retrieve a list of available mappings from the meta table.
-  # this may eventually be moved a table of its own if this proves too
-  # cumbersome
+  # This cache will load the information from the seq_region_table, if
+  # any, to allow mapping between internal and external seq_region_id.
   #
-  my $self = shift;
+
+  my ($self) = @_;
+
+  # For a given core database, will return the schema_build information.
+  my $schema_build = $self->db->_get_schema_build();
+
+  # Prepare the query to get relation for the current database being
+  # used.
+  my $sql = qq(
+  SELECT    s.internal_seq_region_id,
+            s.external_seq_region_id
+  FROM      seq_region_mapping s,
+            mapping_set ms,
+            seq_region sr,
+            coord_system cs
+  WHERE     ms.mapping_set_id = s.mapping_set_id
+    AND     ms.schema_build = ?
+    AND     s.internal_seq_region_id = sr.seq_region_id
+    AND     sr.coord_system_id = cs.coord_system_id
+    AND     cs.species_id = ?);
+
+  my $sth = $self->prepare($sql);
+
+  $sth->bind_param( 1, $schema_build,       SQL_VARCHAR );
+  $sth->bind_param( 2, $self->species_id(), SQL_INTEGER );
+
+  $sth->execute();
+
+  # Load the cache:
+  foreach my $row ( @{ $sth->fetchall_arrayref() } ) {
+    # internal->external
+    $self->{'_internal_seq_region_mapping'}->{ $row->[0] } = $row->[1];
+    # external->internal
+    $self->{'_external_seq_region_mapping'}->{ $row->[1] } = $row->[0];
+  }
+
+  $sth->finish();
+
+} ## end sub _cache_seq_region_mapping
+
+
+sub _cache_mapping_paths {
+  #
+  # Retrieve a list of available mappings from the meta table.  This
+  # may eventually be moved a table of its own if this proves too
+  # cumbersome.
+  #
+
+  my ($self) = @_;
 
   my %mapping_paths;
   my $mc = $self->db()->get_MetaContainer();
 
- MAP_PATH:
-  foreach my $map_path (@{$mc->list_value_by_key('assembly.mapping')}) {
-    my @cs_strings = split(/[|#]/, $map_path);
+MAP_PATH:
+  foreach
+    my $map_path ( @{ $mc->list_value_by_key('assembly.mapping') } )
+  {
+    my @cs_strings = split( /[|#]/, $map_path );
 
-    if(@cs_strings < 2) {
-      warning("Incorrectly formatted assembly.mapping value in meta " .
-              "table: $map_path");
+    if ( @cs_strings < 2 ) {
+      warning(   "Incorrectly formatted assembly.mapping value in meta "
+               . "table: $map_path" );
       next MAP_PATH;
     }
 
     my @coord_systems;
     foreach my $cs_string (@cs_strings) {
-      my($name, $version) = split(/:/, $cs_string);
-      my $cs = $self->fetch_by_name($name, $version);
-      if(!$cs) {
-        warning("Unknown coordinate system specified in meta table " .
-                " assembly.mapping:\n  $name:$version");
+      my ( $name, $version ) = split( /:/, $cs_string );
+
+      my $cs = $self->fetch_by_name( $name, $version );
+
+      if ( !$cs ) {
+        warning(   "Unknown coordinate system specified in meta table "
+                 . " assembly.mapping:\n  $name:$version" );
         next MAP_PATH;
       }
+
       push @coord_systems, $cs;
     }
 
-    # if the delimiter is a # we want a special case, multiple parts of the same
-    # componente map to same assembly part. As this looks like the "long" mapping
-    # we just make the path a bit longer :-)
+    # If the delimiter is a # we want a special case, multiple parts of
+    # the same componente map to same assembly part.  As this looks like
+    # the "long" mapping we just make the path a bit longer :-)
 
-    if( $map_path =~ /\#/ && scalar( @coord_systems ) == 2 ) {
-      splice( @coord_systems, 1, 0, ( undef ));
+    if ( $map_path =~ /#/ && scalar(@coord_systems) == 2 ) {
+      splice( @coord_systems, 1, 0, (undef) );
     }
 
     my $cs1 = $coord_systems[0];
-    my $cs2  = $coord_systems[$#coord_systems];
+    my $cs2 = $coord_systems[$#coord_systems];
 
-    my $key1 = $cs1->name().':'.$cs1->version();
-    my $key2 = $cs2->name().':'.$cs2->version();
+    my $key1 = $cs1->name() . ':' . $cs1->version();
+    my $key2 = $cs2->name() . ':' . $cs2->version();
 
-    if(exists($mapping_paths{"$key1|$key2"})) {
-      warning("Meta table specifies multiple mapping paths between " .
-              "coord systems $key1 and $key2.\n" .
-              "Choosing shorter path arbitrarily.");
+    if ( exists( $mapping_paths{"$key1|$key2"} ) ) {
+      warning(   "Meta table specifies multiple mapping paths between "
+               . "coord systems $key1 and $key2.\n"
+               . "Choosing shorter path arbitrarily." );
 
-      next MAP_PATH if(@{$mapping_paths{"$key1|$key2"}} < @coord_systems);
+      if ( @{ $mapping_paths{"$key1|$key2"} } < @coord_systems ) {
+        next MAP_PATH;
+      }
     }
 
     $mapping_paths{"$key1|$key2"} = \@coord_systems;
-  }
+  } ## end foreach my $map_path ( @{ $mc...
 
   #
-  # Create the pseudo coord system 'toplevel' and cache it so that
-  # only one of these is created for each db...
+  # Create the pseudo coord system 'toplevel' and cache it so that only
+  # one of these is created for each db...
   #
-  my $toplevel = Bio::EnsEMBL::CoordSystem->new(-TOP_LEVEL => 1,
-                                                -NAME      => 'toplevel',
-                                                -ADAPTOR   => $self);
+
+  my $toplevel =
+    Bio::EnsEMBL::CoordSystem->new( -TOP_LEVEL => 1,
+                                    -NAME      => 'toplevel',
+                                    -ADAPTOR   => $self );
   $self->{'_top_level'} = $toplevel;
 
   $self->{'_mapping_paths'} = \%mapping_paths;
 
-  return 1;                           
-}
-
+  return 1;
+} ## end sub _cache_mapping_paths
 
 =head2 fetch_all
 
@@ -934,16 +974,20 @@ sub store {
   # store the coordinate system in the database
   #
 
-  my $sth = $db->dbc->prepare('INSERT INTO coord_system ' .
-                         'SET name    = ?, ' .
-                             'version = ?, ' .
-                             'attrib  = ?,' .
-                             'rank    = ?');
+  my $sth =
+    $db->dbc->prepare(   'INSERT INTO coord_system '
+                       . 'SET name = ?, '
+                       . 'version = ?, '
+                       . 'attrib = ?,'
+                       . 'rank = ?,'
+                       . 'species_id = ?' );
 
-  $sth->bind_param(1,$name,SQL_VARCHAR);
-  $sth->bind_param(2,$version,SQL_VARCHAR);
-  $sth->bind_param(3,$attrib_str,SQL_VARCHAR);
-  $sth->bind_param(4,$rank,SQL_INTEGER);
+  $sth->bind_param( 1, $name,               SQL_VARCHAR );
+  $sth->bind_param( 2, $version,            SQL_VARCHAR );
+  $sth->bind_param( 3, $attrib_str,         SQL_VARCHAR );
+  $sth->bind_param( 4, $rank,               SQL_INTEGER );
+  $sth->bind_param( 5, $self->species_id(), SQL_INTEGER );
+
   $sth->execute();
   my $dbID = $sth->{'mysql_insertid'};
   $sth->finish();

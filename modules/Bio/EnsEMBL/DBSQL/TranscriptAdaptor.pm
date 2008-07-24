@@ -718,8 +718,10 @@ sub store {
     }
 
     if(defined($dxref_id)) {
-      my $sth = $self->prepare( "update transcript set display_xref_id = ?".
-                                " where transcript_id = ?");
+      my $sth =
+        $self->prepare(   "UPDATE transcript "
+                        . "SET display_xref_id = ? "
+                        . "WHERE transcript_id = ?" );
       $sth->bind_param(1, $dxref_id, SQL_INTEGER);
       $sth->bind_param(2, $transc_dbID, SQL_INTEGER);
       $sth->execute();
@@ -738,9 +740,9 @@ sub store {
   #
   # Link transcript to exons in exon_transcript table
   #
-  my $etst =
-    $self->prepare("insert into exon_transcript (exon_id,transcript_id,rank)"
-                   ." values (?,?,?)");
+  my $etst = $self->prepare(
+             "INSERT INTO exon_transcript (exon_id,transcript_id,rank) "
+               . "VALUES (?,?,?)" );
   my $rank = 1;
   foreach my $exon ( @{$transcript->get_all_Exons} ) {
     $etst->bind_param(1, $exon->dbID, SQL_INTEGER);

@@ -81,36 +81,28 @@ my $reg = "Bio::EnsEMBL::Registry";
 =cut
 
 sub new {
-  my($class, @args) = @_;
+  my ( $class, @args ) = @_;
 
-  my $self ={};
-  bless $self,$class;
+  my $self = bless {}, $class;
 
-  
-  my ($species, $group, $con, $dnadb) =
-    rearrange([qw(SPECIES GROUP DBCONN DNADB)], @args);
+  my ( $species, $species_id, $group, $con, $dnadb ) =
+    rearrange( [qw(SPECIES SPECIES_ID GROUP DBCONN DNADB)], @args );
 
-  if(defined($con)){
-    $self->dbc($con);
-  }
-  else{
-    $self->dbc(new Bio::EnsEMBL::DBSQL::DBConnection(@args));
-  }
-  
-  if(defined($species)){
-    $self->species($species);
+  if ( defined($con) ) { $self->dbc($con) }
+  else {
+    $self->dbc( new Bio::EnsEMBL::DBSQL::DBConnection(@args) );
   }
 
-  if(defined($group)){
-    $self->group($group);
-  }
+  if ( defined($species) ) { $self->species($species) }
+  if ( defined($group) )   { $self->group($group) }
+
+  $species_id ||= 1;
+  $self->species_id($species_id);
 
   $self = Bio::EnsEMBL::Utils::ConfigRegistry::gen_load($self);
 
-  if(defined $dnadb) {
-    $self->dnadb($dnadb);
-  }
- 
+  if ( defined $dnadb ) { $self->dnadb($dnadb) }
+
   return $self;
 }
 
@@ -587,8 +579,7 @@ sub add_GenericFeatureAdaptor {
   $self->{'generic_feature_adaptors'}->{$name} = $adaptor_obj;
 }
 
-=head2 species
-
+=head2 species 
   Arg [1]    : (optional) string $arg
                The new value of the species used by this DBAdaptor. 
   Example    : $species = $dba->species()
@@ -604,10 +595,40 @@ sub add_GenericFeatureAdaptor {
 =cut
 
 sub species {
-  my ($self, $arg ) = @_;
-  ( defined $arg ) &&
-    ( $self->{_species} = $arg );
+  my ( $self, $arg ) = @_;
+
+  if ( defined($arg) ) {
+    $self->{_species} = $arg;
+  }
+
   $self->{_species};
+}
+
+=head2 species_id
+
+  Arg [1]    : (optional) string $arg
+               The new value of the species_id used by this DBAdaptor
+               when dealing with multi-species databases.
+  Example    : $species_id = $dba->species_id()
+  Description: Getter/Setter for the species_id of to use for this
+               connection.  There is currently no point in setting
+               this value after the connection has already been
+               established by the constructor.
+  Returntype : string
+  Exceptions : none
+  Caller     : new
+  Status     : Stable
+
+=cut
+
+sub species_id {
+  my ( $self, $arg ) = @_;
+
+  if ( defined($arg) ) {
+    $self->{_species_id} = $arg;
+  }
+
+  $self->{_species_id};
 }
 
 
