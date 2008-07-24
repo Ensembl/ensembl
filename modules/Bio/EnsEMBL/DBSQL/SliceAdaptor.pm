@@ -697,10 +697,10 @@ sub fetch_all {
     $sth->execute();
   } else {
     $sth =
-      $self->prepare(   'SELECT seq_region_id, name, '
-                      . 'length, coord_system_id '
-                      . 'FROM seq_region sr, coord_system cs '
-                      . 'WHERE coord_system_id = ?' );
+      $self->prepare(   'SELECT sr.seq_region_id, sr.name, '
+                      . 'sr.length, sr.coord_system_id '
+                      . 'FROM seq_region sr '
+                      . 'WHERE sr.coord_system_id = ?' );
 
     $sth->bind_param( 1, $orig_cs->dbID, SQL_INTEGER );
     $sth->execute();
