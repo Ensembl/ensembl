@@ -119,7 +119,7 @@ use DBI;
 
 use vars qw(%registry_register);
 
-my $API_VERSION = 50;
+my $API_VERSION = 51;
 
 =head2 load_all
 
@@ -442,25 +442,31 @@ sub get_db{
 
 =cut
 
-sub get_all_db_adaptors{
-  my ($class,$db) = @_;
-  my %ret=();
+sub get_all_db_adaptors {
+  my ( $class, $db ) = @_;
+  my %ret = ();
 
-# we now also want to add all the DBAdaptors for the same species.
-# as add_db_adaptor does not add if it is from the same species.
+  # we now also want to add all the DBAdaptors for the same species.
+  # as add_db_adaptor does not add if it is from the same species.
 
-  foreach my $dba (@{$registry_register{'_DBA'}}){
-    if(lc($dba->species()) eq lc($db->species())){
-      $ret{$dba->group()} = $dba;
-    } 
+  foreach my $dba ( @{ $registry_register{'_DBA'} } ) {
+    if ( lc( $dba->species() ) eq lc( $db->species() ) ) {
+      $ret{ $dba->group() } = $dba;
+    }
   }
 
- foreach my $key (keys %{$registry_register{$class->get_alias($db->species())}{lc($db->group())}{'_special'}}){
-   $ret{$key} = $registry_register{$class->get_alias($db->species())}{lc($db->group())}{'_special'}{$key};
- }
+  foreach my $key (
+             keys %{
+               $registry_register{ $class->get_alias( $db->species() ) }
+                 { lc( $db->group() ) }{'_special'} } )
+  {
+    $ret{$key} =
+      $registry_register{ $class->get_alias( $db->species() ) }
+      { lc( $db->group() ) }{'_special'}{$key};
+  }
 
   return \%ret;
-}
+} ## end sub get_all_db_adaptors
 
 
 #
