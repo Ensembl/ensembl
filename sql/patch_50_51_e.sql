@@ -10,6 +10,6 @@ ALTER TABLE protein_feature ADD COLUMN external_data TEXT;
 ALTER TABLE dna_align_feature ADD COLUMN external_data TEXT;
 
 # patch identifier
-INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_50_51_e.sql|feature_external_data');
+INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_50_51_e.sql|feature_external_data');
 
 
