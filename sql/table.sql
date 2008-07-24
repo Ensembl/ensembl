@@ -348,6 +348,7 @@ CREATE TABLE dna_align_feature (
   cigar_line                  TEXT,
   external_db_id              SMALLINT UNSIGNED,
   hcoverage                   DOUBLE,
+  external_data               TEXT, 
 
   PRIMARY KEY (dna_align_feature_id),
   KEY seq_region_idx (seq_region_id, analysis_id, seq_region_start, score),
@@ -633,6 +634,7 @@ CREATE TABLE protein_feature (
   score                       DOUBLE NOT NULL,
   evalue                      DOUBLE,
   perc_ident                  FLOAT,
+  external_data               TEXT,
 
   PRIMARY KEY (protein_feature_id),
   KEY (translation_id),
@@ -889,6 +891,8 @@ INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patc
 INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_50_51_b.sql|protein_feature_hit_name');
 INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_50_51_c.sql|meta_coord_index');
 INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_50_51_d.sql|multispecies');
+INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_50_51_e.sql|feature_external_data');
+
 
 ################################################################################
 #
