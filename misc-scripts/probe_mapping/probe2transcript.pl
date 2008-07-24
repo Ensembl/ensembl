@@ -16,6 +16,7 @@
 #To do
 #Remove median & get_date and implement EFGUtils when migrating to eFG
 #Add unannotated UTR clipping dependant on nearest neighbour
+#Extend UTRs to default length is they are less than defaults, so long as they don't overlap neighbour, then use annotated if present or clip to neighbour start/end if not, also accounting for default UTRs in the neighbour.
 
 use strict;
 
@@ -55,6 +56,7 @@ my $max_mismatches = 1;
 #What we want is to use annotated else use calc or preset default
 #so calc and preset default are mutually exclusive
 #but annotated can be used with both
+#shouldn't median be mode?
 
 
 my $annotated_utrs;
@@ -258,6 +260,21 @@ if($calc_utrs){
 	$three_utr = $transcript->five_prime_utr;
 	$five_utr  = $transcript->three_prime_utr;
 
+	#We actually want to extend the potentially conservative ensembl UTRs
+	#to the calculated default if they are shorter, but only if this does 
+	#not cause overlap with a neighbouring gene.
+	#Do not implement UTR extension until clipping is in place
+	#This will require knowledge of genomic context
+	#What is fastest solution here?
+	#1. Run in a slice context to fetch all genes, then we know the previous transcript
+	#and can easily access the next transcript
+	#2. Simply generate an extended slice from the transcript and pull back genes
+	#We would have to either do this for every trans or just for the longest
+	#
+	#1 is probably most efficient altho' and will actually reduce the memory usage by
+	#chunking by chromosome
+
+
 	if(defined $five_utr){
 	  $five_cnt++;
 	  push @five_lengths, $five_utr->length;
@@ -337,6 +354,8 @@ foreach my $transcript (@transcripts) {
   #we want to be able to test calc and annotated separatly
   my %utr_lengths = %utr_defaults;
 
+  #Need to rework the logic slightly considering UTRs are included in the transcript start/end if they are annotated.
+
   if($annotated_utrs){
 	my ($method, $utr);
 	
@@ -345,7 +364,10 @@ foreach my $transcript (@transcripts) {
 	  $utr = $transcript->$method;
 	  
 	  if(defined $utr){# && $utr->length != 0){
-		$utr_lengths{$flank} = $utr->length;
+		#$utr_lengths{$flank} = $utr->length;
+		#Set extend to 0 if there are already included in the transcript
+		#need to rename this hash
+		$utr_lengths{$flank} = 0;
 	  }
 	  else{
 		$unannotated_utrs{$flank}++;
@@ -355,6 +377,9 @@ foreach my $transcript (@transcripts) {
 
   my $slice = $transcript->feature_Slice();
   #my $extended_slice = $slice->expand(0, $utr_length); # this takes account of strand
+
+  #The UTRs are already included in the transcript!!
+  #We only need to extend if we have no annotated UTR.
   my $extended_slice = $slice->expand($utr_lengths{'five'}, $utr_lengths{'three'}); # this takes account of strand
   
 
