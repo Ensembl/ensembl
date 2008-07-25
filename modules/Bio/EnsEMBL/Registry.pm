@@ -1199,7 +1199,7 @@ sub load_registry_from_db {
   }
 
   for my $db (@dbnames) {
-    if ( $db =~ /^(\w+)_collection_core_(\w+)/ ) { # NEEDS TO BE FIRST
+    if ( $db =~ /^([a-z]+)_collection_core_(\w+)/ ) { # NEEDS TO BE FIRST
       if ( $2 eq $software_version ) {
         $temp{$1} = 'collection_core_' . $2;
       }
@@ -1235,6 +1235,8 @@ sub load_registry_from_db {
   my @core_dbs = grep { /^[a-z]+_[a-z]+_core_\d+_/ } @dbnames;
 
   foreach my $coredb (@core_dbs) {
+    next if ($coredb =~ /collection/);  # Skip multi-species databases
+
     my ( $species, $num ) =
       ( $coredb =~ /(^[a-z]+_[a-z]+)_core_(\d+)/ );
 
@@ -1259,14 +1261,15 @@ sub load_registry_from_db {
   }
 
   # Register multi-species databases
-  my @multi_dbs = grep { /_collection_core_\w+$/ } @dbnames;
+  my @multi_dbs = grep { /^[a-z]+_collection_core_\w+$/ } @dbnames;
 
   foreach my $multidb (@multi_dbs) {
     my $sth =
       $dbh->prepare(
-         sprintf( 'SELECT species_id, meta_value FROM %s.meta ',
-                  $dbh->quote_identifier($multidb) )
-           . "WHERE meta_key = 'species.db_name'" );
+                 sprintf( 'SELECT species_id, meta_value FROM %s.meta ',
+                          $dbh->quote_identifier($multidb) )
+                   . "WHERE meta_key = 'species.db_name'" );
+
     $sth->execute();
 
     my ( $species_id, $species );
