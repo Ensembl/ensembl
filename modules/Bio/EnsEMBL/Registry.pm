@@ -1264,7 +1264,7 @@ sub load_registry_from_db {
   foreach my $multidb (@multi_dbs) {
     my $sth =
       $dbh->prepare(
-         sprintf( 'SELECT species_id, meta_value FROM %s.species_meta ',
+         sprintf( 'SELECT species_id, meta_value FROM %s.meta ',
                   $dbh->quote_identifier($multidb) )
            . "WHERE meta_key = 'species.db_name'" );
     $sth->execute();
