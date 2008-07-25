@@ -339,7 +339,7 @@ sub fetch_all_by_domain {
            transcript tr,
            translation tl
       WHERE i.interpro_ac = ?
-      AND   i.id = pf.hit_name
+      AND   i.id = pf.hit_id
       AND   pf.translation_id = tl.translation_id
       AND   tr.transcript_id = tl.transcript_id
       AND   tr.is_current = 1
@@ -1204,7 +1204,7 @@ sub get_Interpro_by_geneid {
           AND   t.is_current = 1
           AND   tl.transcript_id = t.transcript_id
 	  AND	tl.translation_id = pf.translation_id 
-	  AND	i.id = pf.hit_name
+	  AND	i.id = pf.hit_id 
 	  AND	i.interpro_ac = x.dbprimary_acc
   );
    
@@ -1305,7 +1305,6 @@ sub _objs_from_sth {
 
   my $sa = $self->db()->get_SliceAdaptor();
   my $aa = $self->db->get_AnalysisAdaptor();
-  my $ta = $self->db->get_TranscriptAdaptor();
   my $dbEntryAdaptor = $self->db()->get_DBEntryAdaptor();
 
   my @genes;
@@ -1317,13 +1316,7 @@ sub _objs_from_sth {
   my ( $gene_id, $seq_region_id, $seq_region_start, $seq_region_end, 
        $seq_region_strand, $analysis_id, $biotype, $display_xref_id, 
        $gene_description, $stable_id, $version, $created_date, 
-<<<<<<< GeneAdaptor.pm
        $modified_date, $xref_display_id, $status, $source, $is_current, 
-       $canonical_transcript_id, $canonical_annotation,
-=======
-       $modified_date, $xref_display_id, $status, $source, $is_current,
-       $canonical_transcript_id, $canonical_annotation,
->>>>>>> 1.150
        $xref_primary_acc, $xref_desc, $xref_version, $external_name, 
        $external_db, $external_status, $external_release, $external_db_name,
        $info_type, $info_text);
@@ -1332,7 +1325,6 @@ sub _objs_from_sth {
 		      \$seq_region_end, \$seq_region_strand, \$analysis_id,
                       \$biotype, \$display_xref_id, \$gene_description,
                       \$status, \$source, \$is_current,
-		      \$canonical_transcript_id, \$canonical_annotation,
 		      \$stable_id, \$version,
 		      \$created_date, \$modified_date, 
 		      \$xref_display_id, \$xref_primary_acc, \$xref_desc,
@@ -1378,11 +1370,6 @@ sub _objs_from_sth {
     my $analysis = $analysis_hash{$analysis_id} ||=
       $aa->fetch_by_dbID($analysis_id);
 
-    #get the canonical_transcript object
-    my $canonical_transcript = $ta->fetch_by_dbID($canonical_transcript_id);
-
-    #need to get the internal_seq_region, if present
-    $seq_region_id = $self->get_seq_region_id_internal($seq_region_id);
     my $slice = $slice_hash{"ID:".$seq_region_id};
 
     if(!$slice) {
@@ -1465,35 +1452,29 @@ sub _objs_from_sth {
       $display_xref->status( $external_status );
     }				
 
-    # Finally, create the new Gene.
-    push( @genes,
-          $self->_create_feature(
-                            'Bio::EnsEMBL::Gene', {
-                              '-analysis'     => $analysis,
-                              '-biotype'      => $biotype,
-                              '-start'        => $seq_region_start,
-                              '-end'          => $seq_region_end,
-                              '-strand'       => $seq_region_strand,
-                              '-adaptor'      => $self,
-                              '-slice'        => $slice,
-                              '-dbID'         => $gene_id,
-                              '-stable_id'    => $stable_id,
-                              '-version'      => $version,
-                              '-created_date' => $created_date || undef,
-                              '-modified_date' => $modified_date
-                                || undef,
-                              '-description'     => $gene_description,
-                              '-external_name'   => $external_name,
-                              '-external_db'     => $external_db,
-                              '-external_status' => $external_status,
-                              '-display_xref'    => $display_xref,
-                              '-status'          => $status,
-                              '-source'          => $source,
-                              '-is_current'      => $is_current,
-			      '-canonical_transcript' => $canonical_transcript,
-			      '-canonical_annotation' => $canonical_annotation
-                            } ) );
-
+    #finally, create the new gene
+    push @genes, Bio::EnsEMBL::Gene->new(
+        '-analysis'      =>  $analysis,
+        '-biotype'       =>  $biotype,
+        '-start'         =>  $seq_region_start,
+        '-end'           =>  $seq_region_end,
+        '-strand'        =>  $seq_region_strand,
+        '-adaptor'       =>  $self,
+        '-slice'         =>  $slice,
+        '-dbID'          =>  $gene_id,
+        '-stable_id'     =>  $stable_id,
+        '-version'       =>  $version,
+	'-created_date'  =>  $created_date || undef,
+	'-modified_date' =>  $modified_date || undef,
+        '-description'   =>  $gene_description,
+        '-external_name' =>  $external_name,
+        '-external_db'   =>  $external_db,
+        '-external_status' => $external_status,
+        '-display_xref'  => $display_xref,
+	'-status'        => $status,
+        '-source'        => $source,
+        '-is_current'    => $is_current
+    );
   }
 
   return \@genes;
