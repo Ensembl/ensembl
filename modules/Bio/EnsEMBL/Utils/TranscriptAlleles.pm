@@ -268,9 +268,8 @@ sub type_variation {
 #     }
 #   }
 
-
-  if ($tr and ref($tr) and $tr->isa('Bio::EnsEMBL::Transcript')) {
       my $dbFunc = $tr->adaptor->db->get_db_adaptor("funcgen");
+  if ($tr and ref($tr) and $tr->isa('Bio::EnsEMBL::Transcript') and (defined $dbFunc)) {
       my $rfa = $dbFunc->get_ExternalFeatureAdaptor();      
       foreach my $rf (@{$rfa->fetch_all_by_Slice($tr->feature_Slice)}){
 	  next if (($rf->feature_set->name !~ /miRNA/) && ($rf->feature_set->name !~ /cisRED/));
