@@ -255,9 +255,8 @@ sub type_variation {
   }
 
   ##to find if a SNP is overlapping with the transcript of the regulatory region, also the SNP should be within 5kb on both side of the transcript, then check whether they overlapping
-
-  if ($tr and ref($tr) and $tr->isa('Bio::EnsEMBL::Transcript')) {
-    my $dbFunc = $tr->adaptor->db->get_db_adaptor("funcgen");
+  my $dbFunc = $tr->adaptor->db->get_db_adaptor("funcgen");
+  if ($tr and ref($tr) and $tr->isa('Bio::EnsEMBL::Transcript') and (defined $dbFunc)) {
     my $efa = $dbFunc->get_ExternalFeatureAdaptor();
     my $rfa = $dbFunc->get_RegulatoryFeatureAdaptor();
     my @rf;
