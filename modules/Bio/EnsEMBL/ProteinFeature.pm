@@ -68,7 +68,7 @@ sub new {
 
   my $class = ref($caller) || $caller;
 
-  my ($idesc, $interpro_ac) = rearrange(['IDESC', 'INTERPRO_AC'], @_);
+  my ($idesc, $interpro_ac, $translation_id) = rearrange(['IDESC', 'INTERPRO_AC', 'TRANSLATION_ID'], @_);
 
   my $self = $class->SUPER::new(@_);
 
@@ -76,6 +76,7 @@ sub new {
   $self->{'strand'}      = 0;
   $self->{'idesc'}       = $idesc || '';
   $self->{'interpro_ac'} = $interpro_ac || '';
+  $self->{'translation_id'} = $translation_id || '';
 
   return $self;
 }
@@ -139,5 +140,24 @@ sub interpro_ac{
   return $self->{'interpro_ac'};
 }
 
+
+=head2 idesc
+
+  Arg [1]    : (optional) string The interpro description
+  Example    : print $protein_feature->idesc();
+  Description: Getter/Setter for the interpro description of this protein 
+               feature.
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub translation_id{
+  my $self = shift;
+  $self->{'translation_id'} = shift if(@_);
+  return $self->{'translation_id'};
+}
 
 1;
