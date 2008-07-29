@@ -883,7 +883,7 @@ CREATE TABLE meta (
 
 
 # Auto add schema version to database
-INSERT INTO meta (meta_key, meta_value) VALUES ("schema_version", "51");
+INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, "schema_version", "51");
 
 # patches included in this schema file
 # NOTE: at beginning of release cycle, remove patch entries from last release
