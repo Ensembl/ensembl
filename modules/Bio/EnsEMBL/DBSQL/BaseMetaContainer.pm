@@ -97,16 +97,20 @@ sub list_value_by_key {
   }
 
   my $sth;
-  if ( !$self->_species_specific_key($key) ) {
+
+  if ( ref($self) =~ /Compara|Funcgen|Variation/ ) {
+    $sth =
+      $self->prepare(   "SELECT meta_value "
+                      . "FROM meta "
+                      . "WHERE meta_key = ? "
+                      . "ORDER BY meta_id" );
+  } elsif ( !$self->_species_specific_key($key) ) {
     $sth =
       $self->prepare(   "SELECT meta_value "
                       . "FROM meta "
                       . "WHERE meta_key = ? "
                       . "AND species_id IS NULL "
                       . "ORDER BY meta_id" );
-
-    $sth->bind_param( 1, $key, SQL_VARCHAR );
-    $sth->execute();
   } else {
     $sth =
       $self->prepare(   "SELECT meta_value "
@@ -114,11 +118,11 @@ sub list_value_by_key {
                       . "WHERE meta_key = ? "
                       . "AND species_id = ? "
                       . "ORDER BY meta_id" );
-
-    $sth->bind_param( 1, $key, SQL_VARCHAR );
     $sth->bind_param( 2, $self->species_id(), SQL_INTEGER );
-    $sth->execute();
   }
+
+  $sth->bind_param( 1, $key, SQL_VARCHAR );
+  $sth->execute();
 
   my @result;
   while ( my $arrRef = $sth->fetchrow_arrayref() ) {
@@ -156,24 +160,25 @@ sub store_key_value {
     return;
   }
 
-  if ( !$self->_species_specific_key($key) ) {
-    my $sth = $self->prepare(
-                  'INSERT INTO meta (species_id, meta_key, meta_value) '
-                    . 'VALUES(\N, ?, ?)' );
+  my $sth;
 
-    $sth->bind_param( 1, $key,   SQL_VARCHAR );
-    $sth->bind_param( 2, $value, SQL_VARCHAR );
-    $sth->execute();
+  if ( ref($self) =~ /Compara|Funcgen|Variation/ ) {
+    $sth = $self->prepare(
+                'INSERT INTO meta (meta_key, meta_value) VALUES(?, ?)');
+  } elsif ( !$self->_species_specific_key($key) ) {
+    $sth = $self->prepare(
+                  'INSERT INTO meta (meta_key, meta_value, species_id) '
+                    . 'VALUES(?, ?, \N)' );
   } else {
-    my $sth = $self->prepare(
-                  'INSERT INTO meta (species_id, meta_key, meta_value) '
+    $sth = $self->prepare(
+                  'INSERT INTO meta (meta_key, meta_value, species_id) '
                     . 'VALUES (?, ?, ?)' );
-
-    $sth->bind_param( 1, $self->species_id(), SQL_INTEGER );
-    $sth->bind_param( 2, $key,                SQL_VARCHAR );
-    $sth->bind_param( 3, $value,              SQL_VARCHAR );
-    $sth->execute();
+    $sth->bind_param( 3, $self->species_id(), SQL_INTEGER );
   }
+
+  $sth->bind_param( 1, $key,   SQL_VARCHAR );
+  $sth->bind_param( 2, $value, SQL_VARCHAR );
+  $sth->execute();
 
   $self->{'cache'} ||= {};
 
@@ -198,27 +203,29 @@ sub store_key_value {
 sub update_key_value {
   my ( $self, $key, $value ) = @_;
 
-  if ( !$self->_species_specific_key($key) ) {
-    my $sth =
+  my $sth;
+
+  if ( ref($self) =~ /Compara|Funcgen|Variation/ ) {
+    $sth = $self->prepare(
+             'UPDATE meta SET meta_value = ? WHERE meta_key = ?' );
+  } elsif ( !$self->_species_specific_key($key) ) {
+    $sth =
       $self->prepare(   'UPDATE meta SET meta_value = ? '
                       . 'WHERE meta_key = ?'
                       . 'AND species_id IS NULL' );
-
-    $sth->bind_param( 1, $value, SQL_VARCHAR );
-    $sth->bind_param( 2, $key,   SQL_VARCHAR );
-    $sth->execute();
   } else {
-    my $sth =
+    $sth =
       $self->prepare(   'UPDATE meta '
                       . 'SET meta_value = ? '
                       . 'WHERE meta_key = ? '
                       . 'AND species_id = ?' );
-
-    $sth->bind_param( 1, $value,              SQL_VARCHAR );
-    $sth->bind_param( 2, $key,                SQL_VARCHAR );
     $sth->bind_param( 3, $self->species_id(), SQL_INTEGER );
-    $sth->execute();
   }
+
+  $sth->bind_param( 1, $value, SQL_VARCHAR );
+  $sth->bind_param( 2, $key,   SQL_VARCHAR );
+  $sth->execute();
+
 } ## end sub update_key_value
 
 
@@ -239,24 +246,25 @@ sub update_key_value {
 sub delete_key {
   my ( $self, $key ) = @_;
 
-  if ( !$self->_species_specific_key($key) ) {
-    my $sth =
+  my $sth;
+
+  if ( ref($self) =~ /Compara|Funcgen|Variation/ ) {
+    $sth = $self->prepare( 'DELETE FROM meta WHERE meta_key = ?' );
+  } elsif ( !$self->_species_specific_key($key) ) {
+    $sth =
       $self->prepare(   'DELETE FROM meta '
                       . 'WHERE meta_key = ?'
                       . 'AND species_id IS NULL' );
-
-    $sth->bind_param( 1, $key, SQL_VARCHAR );
-    $sth->execute();
   } else {
-    my $sth =
+    $sth =
       $self->prepare(   'DELETE FROM meta '
                       . 'WHERE meta_key = ? '
                       . 'AND species_id = ?' );
-
-    $sth->bind_param( 1, $key, SQL_VARCHAR );
     $sth->bind_param( 2, $self->species_id(), SQL_INTEGER );
-    $sth->execute();
   }
+
+  $sth->bind_param( 1, $key, SQL_VARCHAR );
+  $sth->execute();
 
   delete $self->{'cache'}->{$key};
 }
@@ -280,28 +288,31 @@ sub delete_key {
 sub delete_key_value {
   my ( $self, $key, $value ) = @_;
 
-  if ( !$self->_species_specific_key($key) ) {
-    my $sth =
+  my $sth;
+
+  if ( ref($self) =~ /Compara|Funcgen|Variation/ ) {
+    $sth =
+      $self->prepare(   'DELETE FROM meta '
+                      . 'WHERE meta_key = ? '
+                      . 'AND meta_value = ?' );
+  } elsif ( !$self->_species_specific_key($key) ) {
+    $sth =
       $self->prepare(   'DELETE FROM meta '
                       . 'WHERE meta_key = ? '
                       . 'AND meta_value = ?'
                       . 'AND species_id IS NULL' );
-
-    $sth->bind_param( 1, $key,   SQL_VARCHAR );
-    $sth->bind_param( 2, $value, SQL_VARCHAR );
-    $sth->execute();
   } else {
-    my $sth =
+    $sth =
       $self->prepare(   'DELETE FROM meta '
                       . 'WHERE meta_key = ? '
                       . 'AND meta_value = ? '
                       . 'AND species_id = ?' );
-
-    $sth->bind_param( 1, $key,                SQL_VARCHAR );
-    $sth->bind_param( 2, $value,              SQL_VARCHAR );
     $sth->bind_param( 3, $self->species_id(), SQL_INTEGER );
-    $sth->execute();
   }
+
+  $sth->bind_param( 1, $key,   SQL_VARCHAR );
+  $sth->bind_param( 2, $value, SQL_VARCHAR );
+  $sth->execute();
 
   delete $self->{'cache'}->{$key};
 } ## end sub delete_key_value
@@ -326,17 +337,20 @@ sub key_value_exists {
   my ( $self, $key, $value ) = @_;
 
   my $sth;
-  if ( !$self->_species_specific_key($key) ) {
+
+  if ( ref($self) =~ /Compara|Funcgen|Variation/ ) {
+    $sth =
+      $self->prepare(   'SELECT meta_value '
+                      . 'FROM meta '
+                      . 'WHERE meta_key = ? '
+                      . 'AND meta_value = ?' );
+  } elsif ( !$self->_species_specific_key($key) ) {
     $sth =
       $self->prepare(   'SELECT meta_value '
                       . 'FROM meta '
                       . 'WHERE meta_key = ? '
                       . 'AND meta_value = ?'
                       . 'AND species_id IS NULL' );
-
-    $sth->bind_param( 1, $key,   SQL_VARCHAR );
-    $sth->bind_param( 2, $value, SQL_VARCHAR );
-    $sth->execute();
   } else {
     $sth =
       $self->prepare(   'SELECT meta_value '
@@ -344,12 +358,12 @@ sub key_value_exists {
                       . 'WHERE meta_key = ? '
                       . 'AND meta_value = ? '
                       . 'AND species_id = ?' );
-
-    $sth->bind_param( 1, $key,                SQL_VARCHAR );
-    $sth->bind_param( 2, $value,              SQL_VARCHAR );
     $sth->bind_param( 3, $self->species_id(), SQL_INTEGER );
-    $sth->execute();
   }
+
+  $sth->bind_param( 1, $key,   SQL_VARCHAR );
+  $sth->bind_param( 2, $value, SQL_VARCHAR );
+  $sth->execute();
 
   while ( my $arrRef = $sth->fetchrow_arrayref() ) {
     if ( $arrRef->[0] eq $value ) {
