@@ -54,21 +54,21 @@ sub run {
             return 1;
         }
 	
-        my $label       = $antibody_id;
+        my $label       = $antibody;
 	my $type        = 'translation';
         my $description = '';
         my $version     = '1';
 
         ++$parsed_count;
 
-        my $xref_id = XrefParser::BaseParser->get_xref( $antibody, $source_id );
+        my $xref_id = XrefParser::BaseParser->get_xref( $antibody_id, $source_id );
 
         if ( !defined($xref_id) || $xref_id eq '' ) {
-            $xref_id = XrefParser::BaseParser->add_xref($antibody, $version, $label, $description, $source_id, $species_id);
+            $xref_id = XrefParser::BaseParser->add_xref($antibody_id, $version, $label, $description, $source_id, $species_id);
         }
 	
 	
-	XrefParser::BaseParser->add_direct_xref( $xref_id, $ensembl_peptide_id, $type, $antibody);
+	XrefParser::BaseParser->add_direct_xref( $xref_id, $ensembl_peptide_id, $type, '');
 	
     } ## end while ( defined( my $line...
 
