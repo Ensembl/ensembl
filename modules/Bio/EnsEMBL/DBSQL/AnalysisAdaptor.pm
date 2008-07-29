@@ -342,7 +342,6 @@ sub store {
   }
     
 
-
   my $rows_inserted = 0;
   my $sth;
 
@@ -439,14 +438,17 @@ sub store {
   $sth->finish();
 
   # store description and display_label
-  if( defined( $analysis->description() ) || defined( $analysis->display_label() )) {
+  if( defined( $analysis->description() ) || defined( $analysis->display_label() )|| defined( $analysis->web_data() )) {
       $sth = $self->prepare( "INSERT IGNORE INTO analysis_description (analysis_id, display_label, description, displayable, web_data) VALUES (?,?,?,?, ?)");
 
       $sth->bind_param(1,$dbID,SQL_INTEGER);
       $sth->bind_param(2,$analysis->display_label(),SQL_VARCHAR);
       $sth->bind_param(3,$analysis->description,SQL_LONGVARCHAR);
       $sth->bind_param(4,$analysis->displayable,SQL_TINYINT);
-      $sth->bind_param(5,$analysis->web_data(),SQL_LONGVARCHAR);
+#      $sth->bind_param(5,$analysis->web_data(),SQL_LONGVARCHAR);
+  
+      my $web_data = $self->dump_data($analysis->web_data());
+      $sth->bind_param(5,$web_data,SQL_LONGVARCHAR);
       $sth->execute();
 
       $sth->finish();
@@ -524,17 +526,18 @@ sub update {
   $sth->execute($a->dbID);
 
   if ($sth->fetchrow_hashref) { # update if exists
-
+      my $web_data = $self->dump_data($a->web_data());
     $sth = $self->prepare
       ("UPDATE analysis_description SET description = ?, display_label = ?, displayable = ?, web_data = ? WHERE analysis_id = ?");
 
-    $sth->execute($a->description(), $a->display_label(), $a->displayable(), $a->web_data(), $a->dbID);
+    $sth->execute($a->description(), $a->display_label(), $a->displayable(), $web_data, $a->dbID);
 
   } else { # create new entry
 
-    if( $a->description() || $a->display_label()) {
+    if( $a->description() || $a->display_label() || $a->web_data) {
+      my $web_data = $self->dump_data($a->web_data());
       $sth = $self->prepare( "INSERT IGNORE INTO analysis_description (analysis_id, display_label, description, displayable, web_data) VALUES (?,?,?,?,?)");
-      $sth->execute( $a->dbID(), $a->display_label(), $a->description(), $a->displayable(), $a->web_data() );
+      $sth->execute( $a->dbID(), $a->display_label(), $a->description(), $a->displayable(), $web_data );
       $sth->finish();
     }
 
@@ -659,6 +662,7 @@ sub _objFromHashref {
   my $self = shift;
   my $rowHash = shift;
 
+  my $web_data = $rowHash->{web_data} ? $self->get_dumped_data($rowHash->{web_data}) : '';
   my $analysis = Bio::EnsEMBL::Analysis->new(
       -id              => $rowHash->{analysis_id},
       -adaptor         => $self,
@@ -678,7 +682,7 @@ sub _objFromHashref {
       -description     => $rowHash->{description},
       -display_label   => $rowHash->{display_label},
       -displayable     => $rowHash->{displayable},
-      -web_data        => $rowHash->{web_data}
+					     -web_data        => $web_data,
     );
 
   return $analysis;
