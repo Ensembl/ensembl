@@ -631,7 +631,7 @@ CREATE TABLE protein_feature (
   hit_end                     INT(10) NOT NULL,
   hit_name                    VARCHAR(40) NOT NULL,
   analysis_id                 SMALLINT UNSIGNED NOT NULL,
-  score                       DOUBLE NOT NULL,
+  score                       DOUBLE,
   evalue                      DOUBLE,
   perc_ident                  FLOAT,
   external_data               TEXT,
@@ -893,7 +893,7 @@ INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patc
 INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_50_51_d.sql|multispecies');
 INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_50_51_e.sql|feature_external_data');
 INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_50_51_f.sql|meta_species_id_values');
-
+INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_50_51_g.sql|protein_feature_score');
 
 ################################################################################
 #
