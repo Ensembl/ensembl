@@ -656,4 +656,25 @@ sub _objs_from_sth {
          . "by implementing subclass of BaseAdaptor" );
 }
 
+sub dump_data {
+    my $self = shift;
+    my $data = shift;
+
+    my $dumper = Data::Dumper->new([$data]);
+    $dumper->Indent(0);
+    my $dump = $dumper->Dump();
+ #$dump =~ s/'/\\'/g;
+    $dump =~ s/^\$VAR1 = //;
+    return $dump;
+}
+
+sub get_dumped_data {
+    my $self = shift;
+    my $data = shift;
+
+    $data =~ s/\n|\r|\f|\\//g;
+    return eval ($data);
+}
+
+
 1;
