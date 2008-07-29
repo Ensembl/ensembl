@@ -34,7 +34,7 @@ Post questions to the EnsEMBL development list <ensembl-dev@ebi.ac.uk>
 package Bio::EnsEMBL::DBSQL::DnaAlignFeatureAdaptor;
 use vars qw(@ISA);
 use strict;
-
+use Data::Dumper;
 use Bio::EnsEMBL::DnaDnaAlignFeature;
 use Bio::EnsEMBL::DBSQL::BaseAlignFeatureAdaptor;
 use Bio::EnsEMBL::Utils::Exception qw(throw warning);
@@ -214,7 +214,7 @@ sub save {
   my $db = $self->db();
   my $analysis_adaptor = $db->get_AnalysisAdaptor();
 
-  my $sql = qq{INSERT INTO $tablename (seq_region_id, seq_region_start, seq_region_end, seq_region_strand, hit_start, hit_end, hit_strand, hit_name, cigar_line, analysis_id, score, evalue, perc_ident, external_db_id, hcoverage) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)};
+  my $sql = qq{INSERT INTO $tablename (seq_region_id, seq_region_start, seq_region_end, seq_region_strand, hit_start, hit_end, hit_strand, hit_name, cigar_line, analysis_id, score, evalue, perc_ident, external_db_id, hcoverage, extra_data) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)};
 
   my $sth = $self->prepare($sql);
      
@@ -260,6 +260,8 @@ sub save {
     my $seq_region_id;
     ($feat, $seq_region_id) = $self->_pre_store_userdata($feat);
 
+    my $extra_data = $feat->extra_data ? $self->dump_data($feat->extra_data) : '';
+
     $sth->bind_param(1,$seq_region_id,SQL_INTEGER);
     $sth->bind_param(2,$feat->start,SQL_INTEGER);
     $sth->bind_param(3,$feat->end,SQL_INTEGER);
@@ -275,6 +277,7 @@ sub save {
     $sth->bind_param(13,$feat->percent_id,SQL_FLOAT);
     $sth->bind_param(14,$feat->external_db_id,SQL_INTEGER);
     $sth->bind_param(15,$feat->hcoverage,SQL_DOUBLE);
+    $sth->bind_param(16,$extra_data,SQL_LONGVARCHAR);
 
     $sth->execute();
     $original->dbID($sth->{'mysql_insertid'});
@@ -322,13 +325,13 @@ sub _objs_from_sth {
   my($dna_align_feature_id, $seq_region_id, $analysis_id, $seq_region_start,
      $seq_region_end, $seq_region_strand, $hit_start, $hit_end, $hit_name,
      $hit_strand, $cigar_line, $evalue, $perc_ident, $score,
-     $external_db_id, $hcoverage );
+     $external_db_id, $hcoverage, $extra_data );
 
   $sth->bind_columns(
     \$dna_align_feature_id, \$seq_region_id, \$analysis_id, \$seq_region_start,
     \$seq_region_end, \$seq_region_strand, \$hit_start, \$hit_end, \$hit_name,
     \$hit_strand, \$cigar_line, \$evalue, \$perc_ident, \$score,
-    \$external_db_id, \$hcoverage );
+    \$external_db_id, \$hcoverage, \$extra_data );
 
 
   my $asm_cs;
@@ -447,7 +450,8 @@ sub _objs_from_sth {
                                     'adaptor'      => $self,
                                     'dbID' => $dna_align_feature_id,
                                     'external_db_id' => $external_db_id,
-                                    'hcoverage'      => $hcoverage
+                                    'hcoverage'      => $hcoverage,
+				    'extra_data'     => $extra_data ? $self->get_dumped_data($extra_data) : '',
                                   } ) );
 
   }
