@@ -315,7 +315,7 @@ sub save {
   my $db = $self->db();
   my $analysis_adaptor = $db->get_AnalysisAdaptor();
 
-  my $sql = qq{INSERT INTO $tablename (translation_id, seq_start, seq_end, hit_start, hit_end, hit_id, analysis_id, score, evalue, perc_ident, extra_data) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)};
+  my $sql = qq{INSERT INTO $tablename (translation_id, seq_start, seq_end, hit_start, hit_end, hit_name, analysis_id, score, evalue, perc_ident, external_data) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)};
 
   my $sth = $self->prepare($sql);
      
