@@ -25,10 +25,12 @@ sub new {
   #
 
   my $sth = $self->prepare(
+            sprintf(
               'SELECT mc.table_name, mc.coord_system_id, mc.max_length '
-                . 'FROM meta_coord mc, coord_system cs '
+                . 'FROM meta_coord mc, %s.coord_system cs '
                 . 'WHERE mc.coord_system_id = cs.coord_system_id '
-                . 'AND cs.species_id = ?' );
+                . 'AND cs.species_id = ?',
+              $self->db()->dnadb()->dbc()->dbname() ) );
 
   $sth->bind_param( 1, $self->species_id(), SQL_INTEGER );
   $sth->execute();
