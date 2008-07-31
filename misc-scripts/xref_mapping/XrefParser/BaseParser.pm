@@ -1799,6 +1799,23 @@ sub add_to_syn{
   }
 }
 
+
+sub add_synonym{
+  my ($self, $xref_id, $syn) = @_;
+
+  my $add_synonym_sth;
+  
+  if(!defined($add_synonym_sth)){
+    $add_synonym_sth =  $dbi->prepare("INSERT INTO synonym VALUES(?,?)");
+  }
+
+    $add_synonym_sth->execute( $xref_id, $syn )
+      or croak( $dbi->errstr() . "\n $xref_id\n $syn\n" );
+
+}
+
+
+
 # --------------------------------------------------------------------------------
 # Add a single record to the direct_xref table.
 # Note that an xref must already have been added to the xref table (xref_id passed as 1st arg)
