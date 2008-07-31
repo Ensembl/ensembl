@@ -3,6 +3,8 @@ package XrefParser::DBASSParser;
 use strict;
 
 use base qw( XrefParser::BaseParser);
+use DBI;
+use Carp;
 
 # This parser will read direct xrefs from a simple comma-delimited file downloaded from the DBASS database.
 # The columns of the file should be the following:
@@ -12,6 +14,10 @@ use base qw( XrefParser::BaseParser);
 # 3)    Ensembl Gene ID
 
 
+my $dbi;
+my $xref_id;
+my $source_id;
+
 sub new {
     my $proto = shift;
 
@@ -20,6 +26,7 @@ sub new {
 
     return $self;
 }
+
 
 sub run {
     my $self = shift;
@@ -52,10 +59,28 @@ sub run {
             return 1;
         }
 	
-        my $label       = $dbass_gene_name;
+	
+	my $first_gene_name;
+	my $second_gene_name;
+	
+	
+	if ($dbass_gene_name =~ /.\/./){
+		($first_gene_name, $second_gene_name) = split( /\//, $dbass_gene_name );
+	}
+	
+	if ($dbass_gene_name =~ /(.*)\((.*)\)/){
+		$first_gene_name = $1;
+	 	$second_gene_name = $2;
+		print $first_gene_name, "\n", $second_gene_name, "\n";
+	}
+       
+       
+       
+        my $label       = $first_gene_name;
 	my $type        = 'gene';
         my $description = '';
         my $version     = '1';
+	my $synonym	= $second_gene_name;
 
         ++$parsed_count;
 
@@ -65,8 +90,18 @@ sub run {
             $xref_id = XrefParser::BaseParser->add_xref($dbass_gene_id, $version, $label, $description, $source_id, $species_id);
         }
 	
+	XrefParser::BaseParser->add_direct_xref( $xref_id, $ensembl_id, $type, '');
 	
-	XrefParser::BaseParser->add_direct_xref( $xref_id, $ensembl_id, $type, $dbass_gene_id);
+	if (defined ($synonym)) {
+		XrefParser::DBASSParser->add_synonym($xref_id, $synonym);
+	}
+	elsif ($synonym =~ /^\s/){
+		print "There is white space! \n";	
+	}
+	else {
+		next;
+	}
+	
 	
     } ## end while ( defined( my $line...
 
@@ -78,5 +113,6 @@ sub run {
 
     return 0;
 } ## end sub run
+
 
 1;
