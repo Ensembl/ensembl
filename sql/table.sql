@@ -798,7 +798,7 @@ CREATE TABLE external_synonym (
 CREATE TABLE external_db (
 
   external_db_id 	      SMALLINT UNSIGNED NOT NULL,
-  db_name                     VARCHAR(28) NOT NULL,
+  db_name                     VARCHAR(40) NOT NULL,
   db_release                  VARCHAR(255),
   status                      ENUM('KNOWNXREF','KNOWN','XREF','PRED','ORTH',
                                    'PSEUDO')
@@ -894,6 +894,7 @@ INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patc
 INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_50_51_e.sql|feature_external_data');
 INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_50_51_f.sql|meta_species_id_values');
 INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_50_51_g.sql|protein_feature_score');
+INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_50_51_h.sql|external_db_db_name');
 
 ################################################################################
 #
