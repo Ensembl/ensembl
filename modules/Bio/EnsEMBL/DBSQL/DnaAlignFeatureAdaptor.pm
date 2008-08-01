@@ -94,7 +94,7 @@ sub _columns {
             daf.perc_ident
             daf.score
             daf.external_db_id
-            daf.hcoverage,
+            daf.hcoverage
 	    daf.external_data);
 }
 
