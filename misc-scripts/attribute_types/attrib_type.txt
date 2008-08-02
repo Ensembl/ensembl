@@ -286,3 +286,5 @@
 
 #old attribute used by the API to translate the sequence
 170	initial_met	Initial methionine	Set first amino acid to methionine
+#added for procavia capensis in release 51
+171	NonGapHCov	NonGapHCov
