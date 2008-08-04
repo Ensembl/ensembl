@@ -4,11 +4,11 @@ use strict;
 # Remember to check/set the various config optons
 
 # ------------------------------ config -------------------------------
-my $release = 48;
+my $release = 50;
 
 my $base_dir = "/lustre/scratch1/ensembl/gp1/projections/";
 
-my $conf = "release_48.ini"; # registry config file, specifies Compara location
+my $conf = "release_50.ini"; # registry config file, specifies Compara location
 
 # location of other databases
 my $host = "ens-staging";
@@ -32,7 +32,7 @@ if (! -e $dir) {
 }
 
 # common options
-my $script_opts = "-conf $conf -host $host -user $user -port $port -pass $pass -version $release -release $release -quiet -nobackup";
+my $script_opts = "-conf $conf -host $host -user $user -port $port -pass $pass -version $release -release $release -quiet";
 
 #my $bsub_opts = "-R'select[myens-staging<200]'";
 my $bsub_opts = "";
@@ -61,6 +61,12 @@ my @names_1_1 = (["human", "chimp"            ],
 		 ["human", "mouse_lemur"      ],
 		 ["human", "horse"            ],
 		 ["human", "orang_utan"       ],
+		 ["human", "dolphin"          ],
+		 ["human", "hyrax"            ],
+		 ["human", "megabat"          ],
+		 ["human", "tarsier"          ],
+		 ["human", "alpaca"           ],
+		 ["mouse", "kangaroo_rat"     ],
 		 ["mouse", "rat"              ]);
 
 my @names_1_many = (["human", "zebrafish"  ],
@@ -92,8 +98,14 @@ my @go_terms = (["human",      "mouse"          ],
 		["human",      "tree_shrew"     ],
 		["human",      "pika"           ],
 		["human",      "mouse_lemur"    ],
-		["human", "horse"               ],
-		["human", "orang_utan"          ],
+		["human",      "horse"          ],
+		["human",      "orang_utan"     ],
+		["human",      "dolphin"        ],
+		["human",      "hyrax"          ],
+		["human",      "megabat"        ],
+		["human",      "tarsier"        ],
+		["human",      "alpaca"         ],
+		["human",      "kangaroo_rat"   ],
 		["mouse",      "human"          ],
 		["mouse",      "rat"            ],
 		["mouse",      "dog"            ],
@@ -116,9 +128,15 @@ my @go_terms = (["human",      "mouse"          ],
 		["mouse",      "squirrel"       ],
 		["mouse",      "tree_shrew"     ],
 		["mouse",      "pika"           ],
+        	["mouse",      "horse"          ],
+		["mouse",      "orang_utan"     ],
 		["mouse",      "mouse_lemur"    ],
-         	 ["human", "horse"              ],
-		 ["human", "orang_utan"         ],
+		["mouse",      "dolphin"        ],
+		["mouse",      "hyrax"          ],
+		["mouse",      "megabat"        ],
+		["mouse",      "tarsier"        ],
+		["mouse",      "alpaca"         ],
+		["mouse",      "kangaroo_rat"   ],
 		["rat",        "human"          ],
 		["rat",        "mouse"          ],
 		["drosophila", "anopheles"      ],
@@ -127,7 +145,6 @@ my @go_terms = (["human",      "mouse"          ],
 		["danio",      "fugu"           ],
 		["danio",      "tetraodon"      ],
 		["xenopus",    "danio"          ]);
-
 
 my ($from, $to, $o, $e, $n);
 
