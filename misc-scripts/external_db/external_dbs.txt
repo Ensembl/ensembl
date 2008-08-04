@@ -273,6 +273,9 @@
 12405	HGNC_automatic_transcript	1	KNOWNXREF	1	0	5	HGNC (automatic)	MISC	\N	\N
 12410	Clone_based_vega_transcript	1	KNOWNXREF	1	0	5	Clone-based (Vega)	MISC	\N	\N
 12415	Clone_based_ensembl_transcript	1	XREF	1	0	5	Clone-based (Ensembl)	MISC	\N	\N
+12500	DBASS3	1	XREF	1	0	50	DataBase of Aberrant 3' Splice Sites	MISC	\N	\N
+12505	DBASS5	1	XREF	1	0	50	DataBase of Aberrant 5' Splice Sites	MISC	\N	\N
+12510	HPA	1	XREF	1	0	50	Human Protein Atlas	MISC	\N	\N
 #
 #
 # Please separate fields in this file with TABS not spaces!
