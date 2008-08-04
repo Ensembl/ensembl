@@ -1751,6 +1751,42 @@ sub load_registry_from_db {
                                   -alias => [ 'horse', 'Equuscaballus' ]
   );
 
+
+ Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
+                                  -species => "Tursiops_truncatus",
+                                  -alias => [ 'dolphin', 'Tursiopstruncatus' ]
+  );
+
+ Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
+                                  -species => "Procavia capensis",
+                                  -alias => [ 'rock_hyrax', 'hyrax', 'Procaviacapensis' ]
+  );
+
+ Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
+                                  -species => "Dipodomys_ordii",
+                                  -alias => [ 'kangaroo_rat', 'Dipodomysordii' ]
+  );
+
+ Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
+                                  -species => "Pteropus_vampyrus",
+                                  -alias => [ 'megabat', 'Pteropusvampyrus' ]
+  );
+
+ Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
+                                  -species => "Tarsius syrichta",
+                                  -alias => [ 'philippine tarsier', 'tarsier', 'Tarsiussyrichta' ]
+  );
+
+ Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
+                                  -species => "Vicugna_pacos",
+                                  -alias => [ 'alpaca', 'vicugnapacos' ]
+  );
+
+
+
+
+
+
   @aliases = ('compara');
   Bio::EnsEMBL::Utils::ConfigRegistry->add_alias( -species => "multi",
                                                   -alias   => \@aliases
