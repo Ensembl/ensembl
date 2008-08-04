@@ -824,8 +824,9 @@ sub add_adaptor {
 
 sub get_adaptor{
   my ($class,$species,$group,$type)= @_;
- 
+
   $species = $class->get_alias($species);
+
   my %dnadb_adaptors = qw(sequence  1 assemblymapper 1  karyotypeband 1 repeatfeature 1 coordsystem 1  assemblyexceptionfeature 1 );
 
   my $dnadb_group =  $registry_register{$species}{lc($group)}{_DNA};
@@ -1078,8 +1079,8 @@ my $self = shift;
 
 =head2 load_registry_from_url
 
-  Arg [1]    : string $url
-  Example : load_registry_from_url("mysql://anonymous@ensembldb.ensembl.org:3306");
+  Arg [1] : string $url
+  Example : load_registry_from_url(mysql://anonymous@ensembldb.ensembl.org:3306);
   Description: Will load the correct versions of the ensembl databases for the
                software release it can find on a database instance into the 
                registry. Also adds a set of standard aliases. The url format is:
@@ -1758,7 +1759,7 @@ sub load_registry_from_db {
   );
 
  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
-                                  -species => "Procavia capensis",
+                                  -species => "Procavia_capensis",
                                   -alias => [ 'rock_hyrax', 'hyrax', 'Procaviacapensis' ]
   );
 
@@ -1773,7 +1774,7 @@ sub load_registry_from_db {
   );
 
  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
-                                  -species => "Tarsius syrichta",
+                                  -species => "Tarsius_syrichta",
                                   -alias => [ 'philippine tarsier', 'tarsier', 'Tarsiussyrichta' ]
   );
 
