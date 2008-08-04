@@ -4,11 +4,11 @@ use strict;
 # Remember to check/set the various config optons
 
 # ------------------------------ config -------------------------------
-my $release = 50;
+my $release = 51;
 
 my $base_dir = "/lustre/scratch1/ensembl/gp1/projections/";
 
-my $conf = "release_50.ini"; # registry config file, specifies Compara location
+my $conf = "release_51.ini"; # registry config file, specifies Compara location
 
 # location of other databases
 my $host = "ens-staging";
