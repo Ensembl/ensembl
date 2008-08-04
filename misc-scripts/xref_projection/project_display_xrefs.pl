@@ -145,7 +145,7 @@ my %projections_by_source;
 foreach my $to_species (@to_multi) {
 
   my $to_ga   = Bio::EnsEMBL::Registry->get_adaptor($to_species, 'core', 'Gene');
-  die("Can't get gene adaptor for $to_species - check database connection details\n") if (!$to_ga);
+  die("Can't get gene adaptor for $to_species - check database connection details; if species is new, add alias to Registry.pm\n") if (!$to_ga);
   my $to_dbea = Bio::EnsEMBL::Registry->get_adaptor($to_species, 'core', 'DBEntry');
 
   write_to_projection_db($to_ga->dbc(), $release, $from_species, $from_ga->dbc(), $to_species) unless ($no_database);
