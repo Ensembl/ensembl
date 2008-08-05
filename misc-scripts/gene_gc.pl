@@ -81,7 +81,7 @@ sub delete_existing {
   my $dba = shift;
 
   print STDERR "Deleting existing 'GeneGC' gene attributes\n";
-  my $dsth = $dba->dbc()->prepare("DELETE ga, at FROM gene_attrib ga, attrib_type at WHERE at.attrib_type_id=ga.attrib_type_id AND at.code='GeneGC'");
+  my $dsth = $dba->dbc()->prepare("DELETE ga FROM gene_attrib ga, attrib_type at WHERE at.attrib_type_id=ga.attrib_type_id AND at.code='GeneGC'");
   $dsth->execute();
 
 }

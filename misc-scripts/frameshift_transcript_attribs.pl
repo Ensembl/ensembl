@@ -52,7 +52,7 @@ for my $dbname ( @dbnames ) {
   if (!$nodelete) {
 
     print STDERR "Deleting existing 'Frameshift' transcript attributes\n";
-    my $dsth = $db_adaptor->dbc()->prepare("DELETE ta, at FROM transcript_attrib ta, attrib_type at WHERE at.attrib_type_id=ta.attrib_type_id AND at.code='Frameshift'");
+    my $dsth = $db_adaptor->dbc()->prepare("DELETE ta FROM transcript_attrib ta, attrib_type at WHERE at.attrib_type_id=ta.attrib_type_id AND at.code='Frameshift'");
     $dsth->execute();
 
   }
