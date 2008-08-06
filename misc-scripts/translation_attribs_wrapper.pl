@@ -17,6 +17,7 @@ Required arguments:
 
   --pass=pass                         password for database
 
+  --release=release                   release number
 
 Optional arguments:
 
@@ -46,7 +47,7 @@ submit jobs to the farm grouping the core databases in patterns
 
 Calculate translation_attributes for all databases in ens-staging 
 
-  $ ./translation_attribs_wrapper.pl --user ensadmin --pass password
+  $ ./translation_attribs_wrapper.pl --user ensadmin --pass password --release 51
 
 =head1 LICENCE
 
@@ -75,6 +76,7 @@ use Bio::EnsEMBL::Utils::Exception qw(throw);
 my $binpath = '/software/pubseq/bin/emboss'; 
 my $tmpdir = '/tmp';
 my $host = 'ens-staging';
+my $release = undef;
 my $user = undef;
 my $pass = undef;
 my $port = 3306;
@@ -88,6 +90,7 @@ GetOptions('binpath=s' => \$binpath,
 	   'user=s'    => \$user,
 	   'pass=s'    => \$pass,
 	   'port=s'    => \$port,
+	   'release=i' => \$release,
 	   'pepstats_only' => \$pepstats_only,
 	   'met_and_stop_only' => \$met_and_stop_only,
 	   'help'    => \$help
@@ -96,6 +99,7 @@ GetOptions('binpath=s' => \$binpath,
 pod2usage(1) if($help);
 throw("--user argument required") if (!defined($user));
 throw("--pass argument required") if (!defined($pass));
+throw("--release argument required") if (!defined($release));
 
 my $queue = 'long';
 my $memory = "'select[mem>4000] rusage[mem=4000]' -M4000000";
@@ -119,11 +123,11 @@ if (defined $met_and_stop_only){
     $options .= "--met_and_stop_only "
 }
 my @ranges = ('^[a-c]','^[d-g]','^[h-m]','^[n-r]','^[s-z]');
-my $core_db = '.*core_49_.*';
+my $core_db = ".*core_$release\_.*";
 my $call;
 foreach my $pattern (@ranges){
     $call = "bsub -o /lustre/scratch1/ensembl/dr2/tmp_smallfiles/output_translation_$pattern.txt -q $queue -R$memory ./translation_attribs.pl -user $user -pass $pass $options";
-    $call .= " --pattern $pattern$core_db";
+    $call .= " --pattern '" . $pattern . $core_db. "'";
 
     system($call);
 #print $call,"\n";
