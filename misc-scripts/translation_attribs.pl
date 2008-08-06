@@ -307,10 +307,10 @@ sub get_met_and_stop{
 	$translation_attribs->{'Contains stop codon'} = 0;
     }
     if ($peptide_seq =~ /^M/){
-	$translation_attribs->{'Initial methionine'} = 1;
+	$translation_attribs->{'Starts with methionine'} = 1;
     }
     else{
-	$translation_attribs->{'Initial methionine'} = 0;
+	$translation_attribs->{'Starts with methionine'} = 0;
     }
 
 }
