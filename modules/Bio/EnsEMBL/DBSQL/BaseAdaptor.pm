@@ -374,7 +374,8 @@ sub generic_fetch {
 
   # Hack for feature types that needs to be restricted to species_id (in
   # coord_system).
-  if ( $self->isa('Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor')
+  if (    $self->is_multispecies()
+       && $self->isa('Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor')
        && !$self->isa('Bio::EnsEMBL::DBSQL::UnmappedObjectAdaptor') )
   {
     push @tabs, [ 'seq_region', 'sr' ], [ 'coord_system', 'cs' ];
