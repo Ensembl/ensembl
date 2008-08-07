@@ -126,6 +126,7 @@ sub new {
     $self->db($dbobj);
     $self->dbc( $dbobj->dbc );
     $self->species_id( $dbobj->species_id() );
+    $self->is_multispecies( $dbobj->is_multispecies() );
   } elsif ( ref($dbobj) =~ /DBAdaptor$/ ) {
     $self->db($dbobj);
     $self->dbc( $dbobj->dbc );
@@ -210,6 +211,29 @@ sub dbc {
   }
 
   return $self->{'dbc'};
+}
+
+=head2 is_multispecies
+
+  Arg [1]    : (optional) boolean $arg
+  Example    : if ($adaptor->is_multispecies()) { }
+  Description: Getter/Setter for the is_multispecies boolean of
+               to use for this adaptor.
+  Returntype : boolean
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub is_multispecies {
+  my ( $self, $arg ) = @_;
+
+  if ( defined($arg) ) {
+    $self->{_is_multispecies} = $arg;
+  }
+
+  return $self->{_is_multispecies};
 }
 
 =head2 species_id

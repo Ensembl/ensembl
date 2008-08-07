@@ -85,8 +85,10 @@ sub new {
 
   my $self = bless {}, $class;
 
-  my ( $species, $species_id, $group, $con, $dnadb ) =
-    rearrange( [qw(SPECIES SPECIES_ID GROUP DBCONN DNADB)], @args );
+  my ( $is_multispecies, $species, $species_id, $group, $con, $dnadb ) =
+    rearrange(
+            [qw(MULTISPECIES_DB SPECIES SPECIES_ID GROUP DBCONN DNADB)],
+            @args );
 
   if ( defined($con) ) { $self->dbc($con) }
   else {
@@ -98,6 +100,9 @@ sub new {
 
   $species_id ||= 1;
   $self->species_id($species_id);
+
+  $self->is_multispecies( defined($is_multispecies)
+                          && $is_multispecies == 1 );
 
   $self = Bio::EnsEMBL::Utils::ConfigRegistry::gen_load($self);
 
@@ -604,6 +609,32 @@ sub species {
   $self->{_species};
 }
 
+=head2 is_multispecies
+
+  Arg [1]    : (optional) boolean $arg
+  Example    : if ($dba->is_multispecies()) { }
+  Description: Getter/Setter for the is_multispecies boolean of
+               to use for this connection.  There is currently no
+               point in setting this value after the connection has
+               already been established by the constructor.
+  Returntype : boolean
+  Exceptions : none
+  Caller     : new
+  Status     : Stable
+
+=cut
+
+sub is_multispecies {
+  my ( $self, $arg ) = @_;
+
+  if ( defined($arg) ) {
+    $self->{_is_multispecies} = $arg;
+  }
+
+  return $self->{_is_multispecies};
+}
+
+
 =head2 species_id
 
   Arg [1]    : (optional) string $arg
@@ -628,7 +659,7 @@ sub species_id {
     $self->{_species_id} = $arg;
   }
 
-  $self->{_species_id};
+  return $self->{_species_id};
 }
 
 
