@@ -122,7 +122,7 @@ if (defined $pepstats_only){
 if (defined $met_and_stop_only){
     $options .= "--met_and_stop_only "
 }
-my @ranges = ('^[a-c]','^[d-g]','^[h-m]','^[n-r]','^[s-z]');
+my @ranges = ('^[a-b]','^[c-d]','^[e-f]','^[g-h]','^[i-m]','^[n-p]','^[q-r]','^[s-t]','^[u-z]');
 my $core_db = ".*core_$release\_.*";
 my $call;
 foreach my $pattern (@ranges){
