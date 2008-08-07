@@ -343,7 +343,25 @@ sub bind_param_generic_fetch{
 
 sub generic_fetch {
   my ($self, $constraint, $mapper, $slice) = @_;
-  my @tabs = $self->_tables;
+
+  my @tabs = $self->_tables();
+
+  my $extra_default_where;
+
+  # Hack for feature types that needs to be restricted to species_id (in
+  # coord_system).
+  if ( $self->isa('Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor') ) {
+    push @tabs, [ 'seq_region', 'sr' ], [ 'coord_system', 'cs' ];
+
+    $extra_default_where = sprintf(
+                      '%s.seq_region_id = sr.seq_region_id '
+                        . 'AND sr.coord_system_id = cs.coord_system_id '
+                        . 'AND cs.species_id = ?',
+                      $tabs[0]->[1] );
+
+    $self->bind_param_generic_fetch( $self->species_id(), SQL_INTEGER );
+  }
+
   my $columns = join(', ', $self->_columns());
 
   my $db = $self->db();
@@ -386,16 +404,24 @@ sub generic_fetch {
       "SELECT $straight_join $columns\n"
     . "FROM $left_join_prefix ($tablenames) $left_join";
 
-  my $default_where = $self->_default_where_clause;
+  my $default_where = $self->_default_where_clause();
   my $final_clause = $self->_final_clause;
 
+  if ($extra_default_where) {
+    if ($default_where) {
+      $default_where .= "\n AND $extra_default_where";
+    } else {
+      $default_where = $extra_default_where;
+    }
+  }
+
   #append a where clause if it was defined
-  if($constraint) {
+  if ($constraint) {
     $sql .= "\n WHERE $constraint ";
-    if($default_where) {
+    if ($default_where) {
       $sql .= " AND\n       $default_where ";
     }
-  } elsif($default_where) {
+  } elsif ($default_where) {
     $sql .= "\n WHERE $default_where ";
   }
 
