@@ -159,6 +159,9 @@ my $notriage=undef;
 my $recalc_display_xrefs = undef;
 my $external_db_file="../external_db/external_dbs.txt";
 
+
+print "Options: ".join(" ",@ARGV)."\n";
+
 GetOptions ('file=s'                    => \$file,
             'verbose'                   => \$verbose,
 	    'dumpcheck'                 => \$dumpcheck,
@@ -416,9 +419,10 @@ if ($upload) {
   $mapper->check_special_sources();
 } ## end if ($upload)
 
-$mapper->run_coordinatemapping($upload);
 
 if ($upload) {
+  $mapper->run_coordinatemapping($upload);
+  $mapper->cleanup_database();
   $mapper->species_specific_pre_attributes_set();
   $mapper->genes_and_transcripts_attributes_set();
 }
