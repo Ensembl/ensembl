@@ -637,7 +637,7 @@ sub all_species {
     . "FROM meta "
     . "WHERE meta_key = 'species.db_name'";
 
-  my $sth = $self->dbc()->db_handle()->prepare($statment);
+  my $sth = $self->dbc()->db_handle()->prepare($statement);
 
   $sth->execute();
 
