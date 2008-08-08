@@ -584,7 +584,8 @@ sub add_GenericFeatureAdaptor {
   $self->{'generic_feature_adaptors'}->{$name} = $adaptor_obj;
 }
 
-=head2 species 
+=head2 species
+
   Arg [1]    : (optional) string $arg
                The new value of the species used by this DBAdaptor. 
   Example    : $species = $dba->species()
@@ -608,6 +609,49 @@ sub species {
 
   $self->{_species};
 }
+
+=head2 all_species
+
+  Args       : NONE
+  Example    : @all_species = @{$dba->all_species()};
+  Description: Returns the names of all species contained in the
+               database to which this DBAdaptor is connected.
+  Returntype : array reference
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub all_species {
+  my ($self) = @_;
+
+  if ( !$self->is_multispecies() ) { return [ $self->species() ] }
+
+  if ( exists( $self->{'_all_species'} ) ) {
+    return $self->{'_all_species'};
+  }
+
+  my $statement =
+      "SELECT meta_value "
+    . "FROM meta "
+    . "WHERE meta_key = 'species.db_name'";
+
+  my $sth = $self->dbc()->db_handle()->prepare($statment);
+
+  $sth->execute();
+
+  my $species;
+  $sth->bind_values( \$species );
+
+  my @all_species;
+  while ( $sth->fetch() ) { push( @all_species, $species ) }
+
+  $self->{'_all_species'} = \@all_species;
+
+  return $self->{'_all_species'};
+} ## end sub all_species
+
 
 =head2 is_multispecies
 
