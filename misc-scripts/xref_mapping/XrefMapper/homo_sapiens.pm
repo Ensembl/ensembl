@@ -301,7 +301,7 @@ my $sql = 'select distinct(s.synonym), x.accession from xref x, synonym s, sourc
   $sth->bind_columns(\$clone_based_vega_tran_id);
   $sth->fetch;
   
-  $sth->execute("Clone_based_ensembl_transcri");
+  $sth->execute("Clone_based_ensembl_transcript");
   $sth->bind_columns(\$clone_based_ensembl_tran_id);
   $sth->fetch;
   
@@ -315,7 +315,7 @@ my $sql = 'select distinct(s.synonym), x.accession from xref x, synonym s, sourc
     die "Could not find external database name Clone_based_vega_transcript\n";
   }
   if(!defined($clone_based_ensembl_tran_id)){
-    die "Could not find external database name Clone_based_ensembl_transcri\n";
+    die "Could not find external database name Clone_based_ensembl_transcript\n";
   }
 
 
