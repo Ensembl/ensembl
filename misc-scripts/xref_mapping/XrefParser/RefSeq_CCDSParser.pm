@@ -14,6 +14,8 @@ sub run {
 
   my $refseq_io = $self->get_filehandle($file);
 
+  my $dna_pred = XrefParser::BaseParser->get_source_id_for_source_name("RefSeq_dna_predicted");
+
   if ( !defined $refseq_io ) {
     print "Could not open $file\n";
     return 1;
@@ -76,11 +78,15 @@ sub run {
 	  $seen{$refseq} = 1;
 	  my $key = "CCDS".$ccds;
 	  if(defined($ensembl_stable_id{$key})){
-	      my $xref_id = $self->add_xref($refseq, $version{$refseq} , $label{$refseq}||$refseq , 
-					    $description{$refseq}, $source_id, $species_id);
-	      $self->add_direct_xref($xref_id, $ensembl_stable_id{$key}, $ensembl_type{$key}, "");
-	      $old_to_new{$old_xref{$refseq}} = $xref_id;
-	      $xref_count++;
+	    my $new_source_id = $source_id;
+	    if($refseq =~ /^XM/){
+	      $new_source_id = $dna_pred;
+	    }
+	    my $xref_id = $self->add_xref($refseq, $version{$refseq} , $label{$refseq}||$refseq , 
+					    $description{$refseq}, $new_source_id, $species_id);
+	    $self->add_direct_xref($xref_id, $ensembl_stable_id{$key}, $ensembl_type{$key}, "");
+	    $old_to_new{$old_xref{$refseq}} = $xref_id;
+	    $xref_count++;
 	  }
       }
   }
