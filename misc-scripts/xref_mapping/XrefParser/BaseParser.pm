@@ -1712,6 +1712,39 @@ sub add_xref {
 } ## end sub add_xref
 
 
+sub add_to_direct_xrefs{
+  my ($self,$direct_xref,$type, $acc,$version,$label,$description,$linkage,$source_id,$species_id) = @_;
+
+  $direct_xref || die( "Need a direct_xref on which this xref linked too" );
+  $acc         || die( "Need an accession of this dependent xref" );
+  $version     ||= 0;
+  $label       ||= $acc;
+  $description ||= undef;
+  $linkage     ||= undef;
+  $source_id   || die( "Need a source_id for this dependent xref" );
+  $species_id  || die( "Need a species_id for this dependent xref" );
+
+  if(!defined($add_xref_sth)){
+    $add_xref_sth = dbi->prepare("
+INSERT INTO xref 
+  (accession,version,label,description,source_id,species_id)
+VALUES
+  (?,?,?,?,?,?)");
+  }
+
+
+  my $direct_id = $self->get_xref($acc, $source_id);
+  if(!defined($direct_id)){
+    $add_xref_sth->execute(
+        $acc, $version || 0, $label,
+        $description, $source_id, $species_id
+    ) or croak("$acc\t$label\t\t$source_id\t$species_id\n");
+  }
+  $direct_id = $self->get_xref($acc, $source_id);
+
+  $self->add_direct_xref($direct_id, $direct_xref, $type, "");
+}
+
 sub add_to_xrefs{
   my ($self,$master_xref,$acc,$version,$label,$description,$linkage,$source_id,$species_id) = @_;
 
