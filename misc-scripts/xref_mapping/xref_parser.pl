@@ -10,6 +10,8 @@ my ( $host,             $port,          $dbname,
      $deletedownloaded, $dl_path,       @notsource,
      $unzip, $stats );
 
+print "Options: ".join(" ",@ARGV)."\n";
+
 $unzip = 0;    # Do not decompress gzipped files by default
 
 GetOptions(
