@@ -56,6 +56,10 @@ sub run {
   if(!defined($hgnc_entrezgene_mapped)){
     die  "Could not get source id for HGNC with priority description of entrezgene_mapped\n";
   }
+  my $hgnc_ensembl_mapped  = XrefParser::BaseParser->get_source_id_for_source_name("HGNC","ensembl_mapped");
+  if(!defined($hgnc_ensembl_mapped)){
+    die  "Could not get source id for HGNC with priority description of ensembl_mapped\n";
+  }
 
 #  my (%swiss)  =  %{XrefParser::BaseParser->get_valid_codes("uniprot",$species_id)};
   my (%refseq) =  %{XrefParser::BaseParser->get_valid_codes("refseq",$species_id)};
@@ -67,6 +71,7 @@ sub run {
   my $swiss_count = 0;
   my $refseq_count = 0;
   my $entrezgene_count = 0;
+  my $ensembl_count = 0;
   my $mismatch = 0;
 
   my $hugo_io = $self->get_filehandle($file);
@@ -91,6 +96,7 @@ sub run {
     # 6 RefSeq ID       manually curated
     # 7 entrezgene ID   mapped
     # 8 RefSeq ID       mapped
+    # 9 Ensembl ID     mapped
 
     my @array = split(/\t/,$_);
 
@@ -98,6 +104,26 @@ sub run {
     # If no RefSeq, use the Swissprot instead
 
     my $seen = 0;
+    if ($array[9]){              # Ensembl direct xref
+      $seen =1;
+      $ensembl_count++;
+      XrefParser::BaseParser->add_to_direct_xrefs($array[9],'gene', $array[0], '', $array[1], $array[2], "", $hgnc_ensembl_mapped, $species_id);
+
+      if (defined($array[3])) {     # dead name, add to synonym
+	my @array2 = split(',\s*', $array[3]);
+	foreach my $arr (@array2){
+	  XrefParser::BaseParser->add_to_syn($array[0], $hgnc_ensembl_mapped, $arr);
+	}
+      }
+      
+      if (defined($array[4])) {     # alias, add to synonym
+	my @array2 = split(',\s*', $array[4]);
+	foreach my $arr (@array2){
+	  XrefParser::BaseParser->add_to_syn($array[0], $hgnc_ensembl_mapped, $arr);
+	}
+      }
+      
+    }
     if ($array[6]) {             # RefSeq
       if(defined($refseq{$array[6]})){
 	$seen = 1;
