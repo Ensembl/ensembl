@@ -149,9 +149,9 @@ SQL
   $sth->bind_columns(\$source_id,\$name, \$priority);
   my %more_than_one;
   while($sth->fetch()){
-    if($name eq "RefSeq_dna"){
-      next;
-    }
+#    if($name eq "RefSeq_dna"){
+#      next;
+#    }
     if(!defined($more_than_one{$name})){
       $more_than_one{$name} = $priority;
     }
@@ -2143,7 +2143,7 @@ sub dump_interpro {
 
   # Get a mapping of protein domains to ensembl translations for 
   # interpro dependent xrefs
-  my $core_sql = "SELECT hit_id, translation_id FROM protein_feature" ;
+  my $core_sql = "SELECT hit_name, translation_id FROM protein_feature" ;
   my $core_sth = $self->core->dbc->prepare($core_sql);
   $core_sth->execute();
   my %domain_to_translation = ();
@@ -2704,12 +2704,14 @@ IGNORE INTO TABLE identity_xref_temp");
   my ($presedence, $ignore) = @{$self->transcript_display_xref_sources()};
   my $i=0;
   my %level;
+  print "precedense in reverse order:-\n";
   foreach my $ord (reverse (@$presedence)){
     $i++;
     if(!defined($external_name_to_id{$ord})){
       print STDERR "unknown external database name *$ord* being used\n";
     }
     $level{$external_name_to_id{$ord}} = $i;
+    print "\t".$ord."\t$i\n";
   }
 
   # Generate genes_to_transcripts and translation_to_transcript mappings
@@ -2766,7 +2768,7 @@ ZSQL
     WHERE x.xref_id = o.xref_id 
       AND o.ensembl_object_type = ?
       AND o.ensembl_id = ? 
-      AND x.info_type = 'DIRECT'
+      AND (x.info_type = 'DIRECT' or x.info_type is NULL)
       AND e.external_db_id = x.external_db_id
 QSQL
                              
@@ -2982,17 +2984,17 @@ GSQL
 
 sub transcript_display_xref_sources {
 
-  my @list = qw(RFAM
-		miRBase 
-		IMGT/GENE_DB
-		HGNC_curated_gene
+  my @list = qw(HGNC_curated_gene
 		HGNC_automatic_gene
 		Clone_based_vega_gene
 		Clone_based_ensembl_gene
 		HGNC_curated_transcript
 		HGNC_automatic_transcript
 		Clone_based_vega_transcript
-		Clone_based_ensembl_transcri
+		Clone_based_ensembl_transcript
+		RFAM
+		miRBase
+		IMGT/GENE_DB
 		HGNC
 		SGD
 		MGI
@@ -3101,10 +3103,10 @@ sub map_source_to_external_db {
       $source_to_external_db{$source_id} = $row[0];
       if($source_release ne "1"){
 	if($source_release =~ /RefSeq/){
-	  $external_db_release{$row[0]} = substr($source_release,-40); # At the moment max is 40
+	  $external_db_release{$row[0]} = substr($source_release,-255); # At the moment max is 255
 	}
 	else{
-	  $external_db_release{$row[0]} = substr($source_release,0,40);  # At the moment max is 40
+	  $external_db_release{$row[0]} = substr($source_release,0,255);  # At the moment max is 255
 	}
 	
 #	print "Source name $source_name id $source_id corresponds to core external_db_id " . $row[0] . "and  release is *".$external_db_release{$row[0]}."*\n";
@@ -3700,19 +3702,20 @@ sub build_gene_transcript_status{
 	$gene_found =1;
       }
     }
+    my $one_tran_found = 0;
     foreach my $tr (@{$gene->get_all_Transcripts}){
       my $tran_found = 0;
-      foreach my $dbe (@{$tr->get_all_DBEntries}){
+      foreach my $dbe (@{$tr->get_all_DBLinks}){
 	if(defined($known{$dbe->dbname})){
 	  $tran_found = 1;
-	  $gene_found = 1;
+	  $one_tran_found = 1;
 	}
       }
-      if($tran_found){
+      if($tran_found or $gene_found){
 	print TRAN 'UPDATE transcript t set t.status = "KNOWN" where t.transcript_id = '.$tr->dbID.";\n";      
       }
     }
-    if($gene_found){
+    if($gene_found or $one_tran_found){
       print GENE 'UPDATE gene g set g.status = "KNOWN" where g.gene_id = '.$gene->dbID.";\n";     
     }
   }
@@ -5064,11 +5067,11 @@ DEPEND
 	    my $dir = $self->core->dir();
 	    my $file = $dir."/identity_xref_temp.txt";
 	    
+	    my $sth = $self->core->dbc->prepare("create table identity_xref_temp like identity_xref");
+	    print "creating table identity_xref_temp\n";
+	    $sth->execute() || die "Could not \ncreate table identity_xref_temp like identity_xref\n";
+	    $sth->finish;
 	    if(-s $file){
-	      my $sth = $self->core->dbc->prepare("create table identity_xref_temp like identity_xref");
-	      print "creating table identity_xref_temp\n";
-	      $sth->execute() || die "Could not \ncreate table identity_xref_temp like identity_xref\n";
-	      $sth->finish;
 	      my $temp_sth = $self->core->dbc->prepare("LOAD DATA LOCAL INFILE \'$file\' IGNORE INTO TABLE identity_xref_temp");
 	      print "Uploading data in $file to identity_xref_temp\n";
 	      $temp_sth->execute();
@@ -5088,22 +5091,14 @@ DEPEND
 	  $depend_sth->bind_columns(\$target_id, \$query_id);
 	  if($depend_sth->fetch()){
 	    $percent_id_total{$xref} = $target_id + $query_id;
-#	    if($i < 5){
-#	      print "\t**  $target_id\t$query_id\n";
-#	    }
 	  }
 	  else{
-#	    if($i < 5){
 	      print "No percent_id for object_xref ".$object_xref{$xref}."\n";
-#	    }
 	  }
-#	  $depend_sth->finish;
 	}
 	else{
 	  print STDERR "hmm ".$info_type{$xref}." not on list??\n";
 	}
-	#      elsif($info_type{$xref} eq "INFERRED_PAIR"){
-	#      }
       } # end foreach my $xref
       
       
@@ -5113,20 +5108,10 @@ DEPEND
       
       my $best =0;
       foreach my $key (keys %object_xref){
-#	if($i < 5){
-#	  print "\tobject_xref:".$object_xref{$key}."\n";
-#	  print "\t\%id = ".$percent_id_total{$key}."\n";
-#	}
 	if($best < $percent_id_total{$key}){
 	  $best = $percent_id_total{$key};
 	}
       }
-      
-#      if($i < 5){
-#	print "\tbest = $best\n";
-#      }
-
-#     $i++;
       
       # go through others again and if < best remove from object_xref and identity_xref
       
@@ -5137,9 +5122,6 @@ DEPEND
 	  $object_xrefs_removed++;
 	  print DOI "delete o from object_xref o where o.object_xref_id = ".$object_xref{$key}."\n";
 	  print DOI "delete i from identity_xref i where i.object_xref_id = ".$object_xref{$key}."\n";
-#	  if($i < 5){
-#	    print "remove object xref and identity xref where object_xref = ".$object_xref{$key}."\n";
-#	  }
 	}
       }
       if($alt){
