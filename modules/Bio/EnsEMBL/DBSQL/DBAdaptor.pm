@@ -642,7 +642,7 @@ sub all_species {
   $sth->execute();
 
   my $species;
-  $sth->bind_values( \$species );
+  $sth->bind_columns( \$species );
 
   my @all_species;
   while ( $sth->fetch() ) { push( @all_species, $species ) }
