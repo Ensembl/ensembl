@@ -120,7 +120,7 @@ foreach my $pair (@names_and_go) {
   $e = "$dir/names_${from}_$to.err";
   $n = substr("n_${from}_$to", 0, 10); # job name display limited to 10 chars
   my $all = ($from eq "human") ? "" : "--all_sources"; # non-human from species -> use all sources
-  print "Submitting name projection from $from to $to\n";
+  print "Submitting name and GO term projection from $from to $to\n";
   system "bsub $bsub_opts -o $o -e $e -J $n perl project_display_xrefs.pl $script_opts -from $from -to $to -names -delete_names -go_terms -delete_go_terms -no_database $all";
 }
 
