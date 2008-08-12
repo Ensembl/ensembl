@@ -176,7 +176,7 @@ foreach my $to_species (@to_multi) {
   my $total_genes = scalar(keys %$homologies);
   my $last_pc = -1;
 
-  print "Percentage complete: ";
+  print "Percentage complete: " if (!$quiet);
 
   foreach my $from_stable_id (keys %$homologies) {
 
