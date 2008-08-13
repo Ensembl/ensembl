@@ -65,11 +65,15 @@ sub new {
 
   my $self = $class->SUPER::new(@_);
 
-  #initialize an LRU cache
-  my %cache;
-  tie( %cache, 'Bio::EnsEMBL::Utils::Cache',
-       { Debug => 0, MaxCount => $SLICE_FEATURE_CACHE_SIZE } );
-  $self->{'_slice_feature_cache'} = \%cache;
+  if (defined $self->db->no_cache && $self->db->no_cache){
+      warning("You are using the API without caching most recent features. Performance might be affected.");
+  }
+  else{
+      #initialize an LRU cache
+      my %cache;
+      tie(%cache, 'Bio::EnsEMBL::Utils::Cache', $SLICE_FEATURE_CACHE_SIZE);
+      $self->{'_slice_feature_cache'} = \%cache;
+  }
 
   return $self;
 }
@@ -211,10 +215,12 @@ sub fetch_all_by_Slice_constraint {
   #check the cache and return if we have already done this query
   my $key = uc(join(':', $slice->name, $constraint));
 
-  if(exists($self->{'_slice_feature_cache'}->{$key})) {
-    return $self->{'_slice_feature_cache'}->{$key};
+  #will only use feature_cache if hasn't been no_cache attribute set
+  if (!defined $self->db->no_cache || !$self->db->no_cache){
+      if(exists($self->{'_slice_feature_cache'}->{$key})) {
+	  return $self->{'_slice_feature_cache'}->{$key};
+      }
   }
-
   my $sa = $slice->adaptor();
 
   # Hap/PAR support: retrieve normalized 'non-symlinked' slices
@@ -281,11 +287,13 @@ sub fetch_all_by_Slice_constraint {
     else {
       push @result, @$features;
     }
+}
+
+  #will only use feature_cache when set attribute no_cache in DBAdaptor
+  if (!defined $self->db->no_cache || !$self->db->no_cache){
+      $self->{'_slice_feature_cache'}->{$key} = \@result;
   }
-
-  $self->{'_slice_feature_cache'}->{$key} = \@result;
-
-
+  
   return \@result;
 }
 

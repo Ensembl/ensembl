@@ -143,6 +143,13 @@ my $API_VERSION = 51;
                If not 0, the db connection will not be cleared, if 0 or
                if not set the db connections will be cleared (this is
                the default).
+  Arg [4]:     (optional) int 1
+               This option will turn off caching for slice features, so, 
+               every time a set of features is retrieved, they will come from
+               the database instead of the cache. This option is only recommended
+               for advanced users, specially if you need to store and retrieve
+               features. It might reduce performance when querying the database if 
+               not used properly. If in doubt, do not use it or ask in ensembl-dev            
   Example    : Bio::EnsEMBL::Registry->load_all();
   Returntype : none
   Exceptions : none
@@ -152,13 +159,14 @@ my $API_VERSION = 51;
 
 sub load_all {
     my $class = shift;
-    my ( $config_file, $verbose, $no_clear ) = @_;
+    my ( $config_file, $verbose, $no_clear, $no_cache ) = @_;
 
     $config_file ||= $ENV{ENSEMBL_REGISTRY}
       || $ENV{HOME} . "/.ensembl_init";
 
     $verbose  ||= 0;
     $no_clear ||= 0;
+    $no_cache ||= 0;
 
     if ( !defined($config_file) ) {
         if ($verbose) {
@@ -302,6 +310,10 @@ sub load_all {
                 foreach my $parameter ( $cfg->Parameters($section) ) {
                     $adaptor_args{ '-' . $parameter } =
                       $cfg->val( $section, $parameter );
+		    #when set, do not use the feature cache in the different adaptors
+		    if ($no_cache){
+			$adaptor_args{'-no_cache'} = 1;
+		    }
                 }
 
                 if ($verbose) {
@@ -1080,6 +1092,15 @@ my $self = shift;
 =head2 load_registry_from_url
 
   Arg [1] : string $url
+  Arg [2] : (optional) integer
+               If not 0, will print out all information.
+  Arg [3] : (optional) integer
+               This option will turn off caching for slice features, so, 
+               every time a set of features is retrieved, they will come from
+               the database instead of the cache. This option is only recommended
+               for advanced users, specially if you need to store and retrieve
+               features. It might reduce performance when querying the database if 
+               not used properly. If in doubt, do not use it or ask in ensembl-dev           
   Example : load_registry_from_url(mysql://anonymous@ensembldb.ensembl.org:3306);
   Description: Will load the correct versions of the ensembl databases for the
                software release it can find on a database instance into the 
@@ -1094,7 +1115,7 @@ my $self = shift;
 =cut
 
 sub load_registry_from_url {
-  my ($self, $url, $verbose) = @_;
+  my ($self, $url, $verbose, $no_cache) = @_;
 
   if ($url =~ /mysql\:\/\/([^\@]+\@)?([^\:\/]+)(\:\d+)?(\/\d+)?/) {
     my $user_pass = $1;
@@ -1114,7 +1135,8 @@ sub load_registry_from_url {
         -pass => $pass,
         -port => $port,
         -db_version => $version,
-        -verbose => $verbose);
+        -verbose => $verbose,
+	-no_cache => $no_cache);
   } else {
     throw("Only MySQL URLs are accepted at the moment");
   }
@@ -1143,6 +1165,13 @@ sub load_registry_from_url {
                  the connection is deleted if not used. By default this is 28800 (8 hours)
                  So set this to greater than this if your connection are getting deleted.
                  Only set this if you are having problems and know what you are doing.
+   Arg [-NO_CACHE]: (optional) int 1
+                 This option will turn off caching for slice features, so, 
+                 every time a set of features is retrieved, they will come from
+                 the database instead of the cache. This option is only recommended
+                 for advanced users, specially if you need to store and retrieve
+                 features. It might reduce performance when querying the database if 
+                 not used properly. If in doubt, do not use it or ask in ensembl-dev       
 
   Example : load_registry_from_db( -host => 'ensembldb.ensembl.org',
 				   -user => 'anonymous',
@@ -1161,9 +1190,9 @@ sub load_registry_from_db {
   my ( $self, @args ) = @_;
 
   my ( $host, $port, $user, $pass, $verbose, $db_version,
-       $wait_timeout ) =
+       $wait_timeout, $no_cache ) =
     rearrange(
-             [qw(HOST PORT USER PASS VERBOSE DB_VERSION WAIT_TIMEOUT )],
+             [qw(HOST PORT USER PASS VERBOSE DB_VERSION WAIT_TIMEOUT NO_CACHE)],
              @args );
 
   my $go_version = 0;
@@ -1250,7 +1279,8 @@ sub load_registry_from_db {
                                           -pass         => $pass,
                                           -port         => $port,
                                           -dbname       => $coredb,
-                                          -wait_timeout => $wait_timeout
+                                          -wait_timeout => $wait_timeout,
+					  -no_cache     => $no_cache
       );
 
     ( my $sp = $species ) =~ s/_/ /g;
@@ -1289,7 +1319,8 @@ sub load_registry_from_db {
                                           -pass            => $pass,
                                           -port            => $port,
                                           -dbname          => $multidb,
-                                          -wait_timeout => $wait_timeout
+                                          -wait_timeout => $wait_timeout,
+					  -no_cache     => $no_cache
         );
 
       ( my $sp = $species ) =~ s/_/ /g;
@@ -1317,7 +1348,8 @@ sub load_registry_from_db {
                                           -pass         => $pass,
                                           -port         => $port,
                                           -dbname       => $cdnadb,
-                                          -wait_timeout => $wait_timeout
+                                          -wait_timeout => $wait_timeout,
+					  -no_cache     => $no_cache
       );
     ( my $sp = $species ) =~ s/_/ /g;
     $self->add_alias( $species, $sp );
@@ -1338,7 +1370,8 @@ sub load_registry_from_db {
                                          -pass         => $pass,
                                          -port         => $port,
                                          -wait_timeout => $wait_timeout,
-                                         -dbname       => $vegadb );
+                                         -dbname       => $vegadb,
+					 -no_cache     => $no_cache);
     ( my $sp = $species ) =~ s/_/ /g;
     $self->add_alias( $species, $sp );
     print $vegadb. " loaded\n" if ($verbose);
@@ -1360,7 +1393,8 @@ sub load_registry_from_db {
                                          -pass    => $pass,
                                          -port    => $port,
                                          -wait_timeout => $wait_timeout,
-                                         -dbname       => $other_db );
+                                         -dbname       => $other_db,
+					 -no_cache     => $no_cache );
     ( my $sp = $species ) =~ s/_/ /g;
     $self->add_alias( $species, $sp );
     print $other_db. " loaded\n" if ($verbose);
@@ -1379,7 +1413,8 @@ sub load_registry_from_db {
 	-pass => $pass,
 	-port => $port,
         -wait_timeout => $wait_timeout,
-	-dbname => $userupload_db
+	-dbname => $userupload_db,
+	-no_cache     => $no_cache
       );
       (my $sp = $species ) =~ s/_/ /g;
       $self->add_alias( $species, $sp );
@@ -1410,7 +1445,8 @@ sub load_registry_from_db {
                                          -pass         => $pass,
                                          -port         => $port,
                                          -wait_timeout => $wait_timeout,
-                                         -dbname       => $variation_db
+                                         -dbname       => $variation_db,
+					 -no_cache     => $no_cache
         );
       print $variation_db. " loaded\n" if ($verbose);
     }
@@ -1437,7 +1473,8 @@ sub load_registry_from_db {
                                          -pass         => $pass,
                                          -port         => $port,
                                          -wait_timeout => $wait_timeout,
-                                         -dbname       => $funcgen_db );
+                                         -dbname       => $funcgen_db,
+					 -no_cache     => $no_cache );
       print $funcgen_db. " loaded\n" if ($verbose);
     }
   }
@@ -1466,7 +1503,8 @@ sub load_registry_from_db {
                                          -pass         => $pass,
                                          -port         => $port,
                                          -wait_timeout => $wait_timeout,
-                                         -dbname       => $compara_db );
+                                         -dbname       => $compara_db,
+					 -no_cache     => $no_cache );
       if ($verbose) {
         printf( "%s loaded\n", $compara_db );
       }
@@ -1488,7 +1526,8 @@ sub load_registry_from_db {
                                       -pass    => $pass,
                                       -port    => $port,
                                       -wait_timeout => $wait_timeout,
-                                      -dbname       => $ancestral_db );
+                                      -dbname       => $ancestral_db,
+				      -no_cache     => $no_cache);
     print $ancestral_db. " loaded\n" if ($verbose);
   } else {
     print "No Ancestral database found" if ($verbose);
@@ -1515,7 +1554,8 @@ sub load_registry_from_db {
                                                     -user    => $user,
                                                     -pass    => $pass,
                                                     -port    => $port,
-                                                    -dbname  => $go_db
+                                                    -dbname  => $go_db,
+						    -no_cache     => $no_cache
         );
       print $go_db. " loaded\n" if ($verbose);
     }

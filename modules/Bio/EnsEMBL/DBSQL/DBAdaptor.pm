@@ -58,6 +58,13 @@ my $reg = "Bio::EnsEMBL::Registry";
   Arg [-DNADB]: (optional) Bio::EnsEMBL::DBSQL::DBAdaptor DNADB 
                All sequence, assembly, contig information etc, will be
                retrieved from this database instead.
+  Arg [-NO_CACHE]: (optional) int 1
+               This option will turn off caching for slice features, so, 
+               every time a set of features is retrieved, they will come from
+               the database instead of the cache. This option is only recommended
+               for advanced users, specially if you need to store and retrieve
+               features. It might reduce performance when querying the database if 
+               not used properly. If in doubt, do not use it or ask in ensembl-dev               
   Arg [..]   : Other args are passed to superclass
                Bio::EnsEMBL::DBSQL::DBConnection
   Example    : $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(
@@ -85,9 +92,9 @@ sub new {
 
   my $self = bless {}, $class;
 
-  my ( $is_multispecies, $species, $species_id, $group, $con, $dnadb ) =
+  my ( $is_multispecies, $species, $species_id, $group, $con, $dnadb, $no_cache ) =
     rearrange(
-            [qw(MULTISPECIES_DB SPECIES SPECIES_ID GROUP DBCONN DNADB)],
+            [qw(MULTISPECIES_DB SPECIES SPECIES_ID GROUP DBCONN DNADB NO_CACHE)],
             @args );
 
   if ( defined($con) ) { $self->dbc($con) }
@@ -106,7 +113,13 @@ sub new {
 
   $self = Bio::EnsEMBL::Utils::ConfigRegistry::gen_load($self);
 
-  if ( defined $dnadb ) { $self->dnadb($dnadb) }
+  if(defined $dnadb) {
+    $self->dnadb($dnadb);
+  }
+ 
+  if (defined $no_cache){
+      $self->no_cache($no_cache);
+  }
 
   return $self;
 }
@@ -704,6 +717,35 @@ sub species_id {
   }
 
   return $self->{_species_id};
+}
+
+
+=head2 no_cache
+
+  Arg [1]    : (optional) int $arg
+               The new value of the no cache attribute used by this DBAdaptor. 
+  Example    : $no_cache = $dba->no_cache();
+  Description: Getter/Setter for the no_cache to use for 
+               this connection.  There is currently no point in setting 
+               this value after the connection has already been established 
+               by the constructor.
+  Returntype : int
+  Exceptions : none
+  Caller     : new
+  Status     : Stable
+
+=cut
+
+sub no_cache {
+  my ($self, $arg ) = @_;
+
+  if ( defined $arg ){
+      if ($arg != 1 && $arg != 0){
+	  throw("$arg is not allowed for this attribute. Only value 1|0 is allowed");
+      }
+      $self->{_no_cache} = $arg;
+  }
+  $self->{_no_cache};
 }
 
 
