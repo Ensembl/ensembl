@@ -542,8 +542,8 @@ sub delete_names {
 
   my ($to_ga) = @_;
 
-  print "Setting gene display_xrefs that were projected to NULL\n";
-  my $sth = $to_ga->dbc()->prepare("UPDATE gene, xref SET gene.display_xref_id = null WHERE gene.display_xref_id=xref.xref_id AND xref.info_type='PROJECTION'");
+  print "Setting gene display_xrefs and descriptions that were projected to NULL, and status to NOVEL\n";
+  my $sth = $to_ga->dbc()->prepare("UPDATE gene g, xref x SET g.display_xref_id = NULL, g.description=NULL, g.STATUS='NOVEL' WHERE g.display_xref_id=x.xref_id AND x.info_type='PROJECTION'");
   $sth->execute();
 
   print "Deleting projected xrefs, object_xrefs and synonyms\n";
@@ -566,6 +566,7 @@ sub delete_go_terms {
   $sth->execute();
 
   # note don't need to delete synonyms as GO terms don't have any
+  # Also no effect on descriptions or status
 }
 
 # ----------------------------------------------------------------------
