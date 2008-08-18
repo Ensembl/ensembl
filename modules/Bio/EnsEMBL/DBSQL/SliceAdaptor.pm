@@ -1604,7 +1604,7 @@ sub cache_toplevel_seq_mappings {
 SSQL
 
   my $sth = $self->prepare($sql);
-  $sth->bin_param( 1, $self->species_id(), SQL_INTEGER );
+  $sth->bind_param( 1, $self->species_id(), SQL_INTEGER );
   $sth->execute();
 
   my $sequence_level = $sth->fetchrow_array();
@@ -1627,7 +1627,7 @@ SSQL
   WHERE sra.seq_region_id = sr.seq_region_id
   AND   sra.attrib_type_id = at.attrib_type_id
   AND   at.code = "toplevel"
-  AND   cs.coord_system_id = sr.coord_system_id;
+  AND   cs.coord_system_id = sr.coord_system_id
   AND   cs.species_id = ?
 LSQL
 
