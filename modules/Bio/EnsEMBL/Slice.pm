@@ -2573,7 +2573,7 @@ sub get_all_compara_DnaAlignFeatures {
   }
 
   if(!defined($compara_db)){
-    $compara_db = $self->adaptor->db->get_db_adaptor('compara');
+    $compara_db = Bio::EnsEMBL::Registry->get_DBAdaptor("compara", "compara");
   }
   unless($compara_db) {
     warning("Compara database must be attached to core database or passed ".
@@ -2590,8 +2590,8 @@ sub get_all_compara_DnaAlignFeatures {
 
   Arg [1]    : string $query_species e.g. "Mus_musculus" or "Mus musculus"
   Arg [2]    : string $method_link_type, default is "SYNTENY"
-  Arg [3]    : <optional> compara dbadptor to use.
-  Description: gets al the conpara syntenys fro a specfic species
+  Arg [3]    : <optional> compara dbadaptor to use.
+  Description: gets all the compara syntenyies for a specfic species
   Returns    : arrayref of Bio::EnsEMBL::Compara::SyntenyRegion
   Status     : Stable
 
@@ -2614,7 +2614,7 @@ sub get_all_compara_Syntenies {
   }
 
   if(!defined($compara_db)){
-    $compara_db = $self->adaptor->db->get_db_adaptor('compara');
+    $compara_db = Bio::EnsEMBL::Registry->get_DBAdaptor("compara", "compara");
   }
   unless($compara_db) {
     warning("Compara database must be attached to core database or passed ".
