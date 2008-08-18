@@ -193,7 +193,7 @@
 99	GeneNo_ncRNA	ncRNA Gene Count	Number of ncRNA Genes
 
 # Ig segment gene counts for seq regions stats script ds5 2/2/07
-100	GeneNo_IgSeg	Ig segment Gene Count	Number of Ig segment Genes
+100	GeneNo_Ig	Ig Gene Count	Number of Ig Genes
 
 # cat missing atts
 109	HitSimilarity	hit similarity	percentage id to parent transcripts
