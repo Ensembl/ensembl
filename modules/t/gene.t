@@ -3,7 +3,7 @@ use warnings;
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 86;
+	plan tests => 88;
 }
 
 use Bio::EnsEMBL::Test::MultiTestDB;
@@ -294,7 +294,6 @@ ok(1);
 
 my $genes = $slice->get_all_Genes();
 
-
 ok(scalar( @$genes) == 1 );
 
 my $gene_out = $genes->[0];
@@ -454,8 +453,16 @@ my @interpro = @{$ga->get_Interpro_by_geneid('ENSG00000174873')};
 ok(@interpro == 1);
 debug($interpro[0]);
 
-
 ok($gene->display_id eq $gene->stable_id);
+
+#
+# test GeneAdaptor::fetch_all_by_biotype
+#
+debug("Test fetch_all_by_biotype");
+@genes = @{$ga->fetch_all_by_biotype('protein_coding')};
+ok(@genes == 20);
+@genes = @{$ga->fetch_all_by_biotype(['protein_coding','sRNA'])};
+ok(@genes == 20);
 
 #
 # test Gene: get_all_alt_alleles
