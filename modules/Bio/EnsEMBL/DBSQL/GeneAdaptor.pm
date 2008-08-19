@@ -216,9 +216,12 @@ sub fetch_by_stable_id {
 =head2 fetch_all_by_biotype 
 
   Arg [1]    : String $biotype 
-               The biotype of the gene to retrieve
-  Example    : $gene = $gene_adaptor->fetch_all_by_biotype('protein_coding') ; 
-  Description: Retrieves an array reference of gene objects from the database via its biotype.
+               listref of $biotypes
+               The biotype of the gene to retrieve. You can have as an argument a reference
+               to a list of biotypes
+  Example    : $gene = $gene_adaptor->fetch_all_by_biotype('protein_coding'); 
+               $gene = $gene_adaptor->fetch_all_by_biotypes(['protein_coding', 'sRNA', 'miRNA']);
+  Description: Retrieves an array reference of gene objects from the database via its biotype or biotypes.
                The genes will be retrieved in its native coordinate system (i.e.
                in the coordinate system it is stored in the database). It may
                be converted to a different coordinate system through a call to
@@ -234,8 +237,24 @@ sub fetch_by_stable_id {
 sub fetch_all_by_biotype {
   my ($self, $biotype) = @_;
 
-  my $constraint = "g.biotype = ? and g.is_current = 1" ;
-  $self->bind_param_generic_fetch($biotype,SQL_VARCHAR);
+  if (!defined $biotype){
+      throw("Biotype or listref of biotypes expected");
+  }
+  my $constraint;
+  if (ref($biotype) eq 'ARRAY'){
+      $constraint = "g.biotype IN (";
+      foreach my $b (@{$biotype}){
+	  $constraint .= "?,";	  
+	  $self->bind_param_generic_fetch($b,SQL_VARCHAR);
+      }
+      chop($constraint); #remove last , from expression
+      $constraint .= ") and g.is_current = 1";
+      
+  }
+  else{
+      $constraint = "g.biotype = ? and g.is_current = 1";
+      $self->bind_param_generic_fetch($biotype,SQL_VARCHAR);
+  }
   my @genes  = @{ $self->generic_fetch($constraint) };
   return \@genes ;
 }
