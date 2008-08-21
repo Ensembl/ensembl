@@ -201,20 +201,23 @@ my $sql = 'select distinct(s.synonym), x.accession from xref x, synonym s, sourc
   }
   $sth->finish;
 
-# get the HGNC xrefs in the core and add the synonyms
+# get the HGNC xrefs in the core and add the synonyms, plus cretae hash to get id from the display name
   
+  my %display_label_to_id;
+
   my $hgnc_file  =  $self->core->dir()."/hgnc_syn.txt";
   open(SYN, ">$hgnc_file" ) || die "Could not open file $hgnc_file";
 
-  $sql = 'select x.dbprimary_acc, x.xref_id from xref x, external_db e where e.external_db_id = x.external_db_id and e.db_name like "HGNC"';
+  $sql = 'select x.dbprimary_acc, x.xref_id, x.display_label from xref x, external_db e where e.external_db_id = x.external_db_id and e.db_name like "HGNC"';
 
 
   $sth = $self->core->dbc->prepare($sql);
   
   $sth->execute();
-  my ($xref_id);
-  $sth->bind_columns(\$acc,\$xref_id);
+  my ($xref_id, $display_label);
+  $sth->bind_columns(\$acc,\$xref_id,\$display_label);
   while($sth->fetch){
+    $display_label_to_id{$display_label} = $acc;
     if(defined($acc_to_syn{$acc})){
       foreach my $a ( @{$acc_to_syn{$acc}} ){
 	print SYN "$xref_id\t$a\n";
@@ -405,8 +408,9 @@ my $sql = 'select distinct(s.synonym), x.accession from xref x, synonym s, sourc
     if(scalar(@HGNC)){
       $hgnc_count++;
     }
-    my @has_vega;
-    my @no_vega;
+#    my @has_vega;
+    my %no_vega; # hash now as we want to sort by stable id and hence need a key value pair
+#    my @no_vega;
     my $vega_count = 0;
     foreach my $tr (@{$gene->get_all_Transcripts}){
       my $VEGA = undef;
@@ -448,7 +452,7 @@ my $sql = 'select distinct(s.synonym), x.accession from xref x, synonym s, sourc
 	}      
       } # end of dbentries fro this transcript
       if($count == 0){
-	push @no_vega, $tr->dbID;
+	$no_vega{$tr->stable_id} = $tr->dbID;
       }
       if($count > 1){
 	print "Problem: ".$tr->stable_id." has more than one vega_transcript\n";
@@ -468,7 +472,7 @@ my $sql = 'select distinct(s.synonym), x.accession from xref x, synonym s, sourc
 	    print "Problem: ".$gene->stable_id." linked to hgnc (".join(', ',@HGNC).")   BUT ".$tr->stable_id." linked to vega_transcript $VEGA????\n";	
 	  }
 	}
-	push @has_vega, $tr->dbID;
+#	push @has_vega, $tr->dbID;
       }
     } # end for each transcript
     ####################################################################################
@@ -483,19 +487,24 @@ my $sql = 'select distinct(s.synonym), x.accession from xref x, synonym s, sourc
       foreach my $name (@VEGA_NAME){
 	$max_xref_id++;
 	$max_object_xref_id++;
+	my $id = $display_label_to_id{$name};
+	if(!defined($id)){
+	  $id = $name;
+	  print "Warning Could not find id for $name\n";
+	}
 	print XREF  $max_xref_id . "\t"
-	  . $hgnc_curated_gene_id. "\t" . $name . "\t".$name."\t" . "0" . "\t". "\n" ;
+	  . $hgnc_curated_gene_id. "\t" . $id . "\t".$name."\t" . "0" . "\t". "\n" ;
 	print OBJECT_XREF "$max_object_xref_id\t".$gene->dbID."\tGene\t" .$max_xref_id . "\t\\N\n";
       }
 
       my $name = $VEGA_NAME[0];
       my $tran_name_ext = 201;
-      foreach my $tran (@no_vega){
+      foreach my $tran (sort keys %no_vega){
 	$max_xref_id++;
 	$max_object_xref_id++;
 	print XREF  $max_xref_id . "\t"
 	  . $hgnc_automatic_tran_id. "\t" . $name."-".$tran_name_ext . "\t".$name."-".$tran_name_ext."\t" . "0" . "\t". "\n" ;
-	print OBJECT_XREF "$max_object_xref_id\t".$tran."\tTranscript\t" .$max_xref_id . "\t\\N\n";
+	print OBJECT_XREF "$max_object_xref_id\t".$no_vega{$tran}."\tTranscript\t" .$max_xref_id . "\t\\N\n";
 	$tran_name_ext++;
       }
     }
@@ -509,19 +518,24 @@ my $sql = 'select distinct(s.synonym), x.accession from xref x, synonym s, sourc
       foreach my $name (@HGNC){
 	$max_xref_id++;
 	$max_object_xref_id++;
+	my $id = $display_label_to_id{$name};
+	if(!defined($id)){
+	  $id = $name;
+	  print "Warning Could not find id for $name\n";
+	}
 	print XREF  $max_xref_id . "\t"
-	  . $hgnc_automatic_gene_id. "\t" . $name . "\t".$name."\t" . "0" . "\t". "\n" ;
+	  . $hgnc_automatic_gene_id. "\t" . $id . "\t".$name."\t" . "0" . "\t". "\n" ;
 	print OBJECT_XREF "$max_object_xref_id\t".$gene->dbID."\tGene\t" .$max_xref_id . "\t\\N\n";
       }
 
       my $name = $HGNC[0];
       my $tran_name_ext = 201;
-      foreach my $tran (@no_vega){
+      foreach my $tran (sort keys %no_vega){
 	$max_xref_id++;
 	$max_object_xref_id++;
 	print XREF  $max_xref_id . "\t"
 	  . $hgnc_automatic_tran_id. "\t" . $name."-".$tran_name_ext . "\t".$name."-".$tran_name_ext."\t" . "0" . "\t". "\n" ;
-	print OBJECT_XREF "$max_object_xref_id\t".$tran."\tTranscript\t" .$max_xref_id . "\t\\N\n";
+	print OBJECT_XREF "$max_object_xref_id\t".$no_vega{$tran}."\tTranscript\t" .$max_xref_id . "\t\\N\n";
 	$tran_name_ext++;
       }
     }	
@@ -541,12 +555,12 @@ my $sql = 'select distinct(s.synonym), x.accession from xref x, synonym s, sourc
 	print OBJECT_XREF "$max_object_xref_id\t".$gene->dbID."\tGene\t" .$max_xref_id . "\t\\N\n";
 	
 	my $tran_name_ext = 201;
-	foreach my $tran (@no_vega){
+	foreach my $tran (sort keys %no_vega){
 	  $max_xref_id++;
 	  $max_object_xref_id++;
 	  print XREF  $max_xref_id . "\t"
 	    . $clone_based_vega_tran_id. "\t" . $CLONE_NAME."-".$tran_name_ext . "\t".$CLONE_NAME."-".$tran_name_ext."\t" . "0" . "\t". "\n" ;
-	  print OBJECT_XREF "$max_object_xref_id\t".$tran."\tTranscript\t" .$max_xref_id . "\t\\N\n";
+	  print OBJECT_XREF "$max_object_xref_id\t".$no_vega{$tran}."\tTranscript\t" .$max_xref_id . "\t\\N\n";
 	  $tran_name_ext++;
 	}
 	
@@ -579,12 +593,12 @@ my $sql = 'select distinct(s.synonym), x.accession from xref x, synonym s, sourc
 	print OBJECT_XREF "$max_object_xref_id\t".$gene->dbID."\tGene\t" .$max_xref_id . "\t\\N\n";
 	
 	my $tran_name_ext = 201;
-	foreach my $tran (@no_vega){
+	foreach my $tran (sort keys %no_vega){
 	  $max_xref_id++;
 	  $max_object_xref_id++;
 	  print XREF  $max_xref_id . "\t"
 	    . $clone_based_ensembl_tran_id. "\t" . $new_clone_name."-".$tran_name_ext . "\t".$new_clone_name."-".$tran_name_ext."\t" . "0" . "\t". "\n" ;
-	  print OBJECT_XREF "$max_object_xref_id\t".$tran."\tTranscript\t" .$max_xref_id . "\t\\N\n";
+	  print OBJECT_XREF "$max_object_xref_id\t".$no_vega{$tran}."\tTranscript\t" .$max_xref_id . "\t\\N\n";
 	  $tran_name_ext++;
 	}
 	
