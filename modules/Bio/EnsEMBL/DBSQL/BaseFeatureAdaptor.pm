@@ -938,7 +938,7 @@ sub _list_seq_region_ids {
 
   my $sth = $self->prepare($sql);
 
-  $sth->bin_param( 1, $self->species_id(), SQL_INTEGER );
+  $sth->bind_param( 1, $self->species_id(), SQL_INTEGER );
 
   $sth->execute();
 
