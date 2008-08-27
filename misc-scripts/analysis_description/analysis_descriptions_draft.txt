@@ -1,0 +1,47 @@
+118	Hits to the miRBase database (Griffiths-Jones S. Nucleic Acids Res., 2004, 32 Database Issue D109-D111 or http://microrna.sanger.ac.uk)	BlastmiRNA	1
+9	Prediction of CpG islands by a program identical to newcpgreport (G. Miklem, http://helix.nih.gov/docs/online/emboss/newcpgreport.html)	CpG	1	
+7	Low-complexity DNA sequence identified by Dust	Dust	1	
+94	Alignment of human ESTs from dbEST using Est2genome	Est2genomehuman	1	
+97	Alignment of mouse ESTs from dbEST using Est2genome	Est2genomemouse	1	
+98	Alignment of non-human, non-mouse ESTs from dbEST using Est2genome	Est2genomeother	1	
+1	Prediction of transcription start sites in mammalian genomic DNA by Eponine-TSS (T. Down et al., Genome. Res. 2002 12:458-61)	Eponine	1	
+5237	These are short sequence tags from the start sites of polyA transcripts. These ditags were downloaded from http://fantom31p.gsc.riken.jp/cage/download/mm5/ and aligned to the genome using Exonerate (G. Slater et al., BMC Bioinformatics. 2005 6:31).	FANTOMCAGE	1	
+5	Ab initio prediction of protein coding genes by Genscan (C. Burge et al., J. Mol. Biol. 1997 268:78-94). The splice site models used are described in more detail in C. Burge, Modelling dependencies in pre-mRNA splicing signals. 1998 In Salzberg, S., Searls, D. and Kasif, S., eds. Computational Methods in Molecular Biology, Elsevier Science, Amsterdam, 127-163.	Genscan	1	
+15	UniSTS markers aligned to the genome using e-PCR (G. Schuler, Genome. Res. 1997 7:541-550)	Marker	1	
+114	Hits to the PIR SuperFamily database (C.H. Wu et al., Nucleic Acids Res. 2004 32:D112-D114). Part of the Interpro Consortium (http://www.ebi.ac.uk/interpro/).	PIRSF	1	
+103	Hits to the Pfam database (protein family/domain Hidden Markov Models; A. Bateman et al., Nucleic Acids Res. 2004 32:D138-41). Part of the Interpro consortium (http://www.ebi.ac.uk/interpro/)	Pfam	1	
+110	Hits to the PRINTS database (protein family/domain models based on groups of motifs ("fingerprints"); T. K. Attwood et al., Nuc. Acids. Res. 2003 31:400-2). Part of the Interpro consortium (http://www.ebi.ac.uk/interpro/)	Prints	1	
+2	Interspersed repeats and low complexity sequence identified by RepeatMasker (http://www.repeatmasker.org/)	RepeatMask	1	
+120	Hits to the Rfam database (non-coding RNAs; S.Griffiths-Jones et al.,  Nucleic Acids Res. 2005 33:D121-D124).	RfamBlast	1	
+105	Identification of peptide low complexity sequences by Seg (J. C. Wooten et al., Comput. Chem. 1993 17:149-163)	Seg	1	
+109	Prediction of signal peptide cleavage sites by SignalP (J. D. Bendtsen et al. J. Mol. Biol. 2004 340:783-95)	Signalp	1	
+106	Hits to the SMART database (I. Letunic et al., Nucleic Acids Res. 2006 34:D257-D260). Part of the Interpro consortium (http://www.ebi.ac.uk/interpro/)	Smart	1	
+104	Hits to the SUPERFAMILY database (J. Gough et al., Journal Molecular Biol. 2001 313:903-919). Part of the Interpro consortium (http://www.ebi.ac.uk/interpro/)	Superfamily	1	
+6	Tandem repeats identified by Tandem Repeats Finder (G. Benson, Nuc. Acids Res. 1999 27:573-580)	TRF	1	
+113	Hits to the TIGRFAMs database (D.H. Haft et al., Nucleic Acids Res. 2003 31:371-373). Part of the Interpro consortium (http://www.ebi.ac.uk/interpro/)	Tigrfam	1	
+4	TBLASTN of Genscan-predicted peptides against the Unigene database	Unigene	1	
+34	BLASTP of Genscan-predicted mammalian peptides against the Uniprot knowledgebase	Uniprotmammal	1	
+13	BLASTP of Genscan-predicted non-mammalian peptides against the Uniprot knowledgebase	Uniprotnonmammal	1	
+11	TBLAST of Genscan-predicted predicted peptides against vertebrate mRNA sequences from the EMBL database	Vertrna	1	
+119	Exonerate (G.Slater et al., BMC Bioinformatics. 2005 6:31) was used to map external DNA sequences to Ensembl transcripts	XrefExonerateDNA	1	
+5242	Transcript which belongs to the Consensus CDS set (www.ncbi.nlm.nih.gov/CCDS/CcdsBrowse.cgi).	ccds	1	
+92	Genes were annotated by the Ensembl automatic analysis pipeline using either a GeneWise/Exonerate model from a database protein or a set of aligned cDNAs followed by an ORF prediction. GeneWise/Exonerate models are further combined with available aligned cDNAs to annotate UTRs (For more information see V.Curwen et al., Genome Res. 2004 14:942-50)	ensembl	1	
+5238	Gene containing both Ensembl predicted transcripts and Havana manual annotation	ensemblhavanagene	1	
+5239	Transcript where the Ensembl predicted transcript and Havana manually annotated transcript have the same CDS.	ensemblhavanatranscript	1	
+83	Transcripts produced by manual annotation from the Sanger Institute Havana group	havana	1	
+54	Human cDNAs from RefSeq and EMBL aligned to the genome using Exonerate (G. Slater et al., BMC Bioinformatics. 2005 6:31)	humancdna	1	
+45	Homo sapiens ESTs from dbEST aligned to the genome using Exonerate (G. Slater et al., BMC Bioinformatics. 2005 6:31)	humanest	1	
+5240	Genes were annotated by the Ensembl automatic analysis pipeline using either a GeneWise model from Uniprot human protein	humanprotein	1	
+100	ncRNA genes are predicted using covariance models and sequences from <a href=http://www.sanger.ac.uk/Software/Rfam/index.shtml>RFAM<a> and <a href=http://microrna.sanger.ac.uk/sequences/index.shtml>miRBase<a>.	ncRNA	1	
+112	Prediction of coiled-coil regions in peptides by Ncoils (A. N. Lupas et al., Science 1991 252:1162-1164)	ncoils	1	
+5241	Uniprot proteins aligned to the genome with GeneWise (E.Birney et al., Genome Res. 2004 14:988-95)	otherprotein	1	
+108	Hits to the PROSITE profiles database (protein family/domain models based on weight matrices; N. Hulu et al., Nuc. Acids. Res. 2004 32:D134-7). Part of the Interpro consortium (http://www.ebi.ac.uk/interpro/)	pfscan	1	
+107	Hits to the PROSITE patterns database (protein family/domain models based on regular expressions; N. Hulu etal., Nuc. Acids. Res. 2004 32:D134-7). Part of the Interpro consortium (http://www.ebi.ac.uk/interpro/)	scanprosite	1	
+8	Prediction of tRNAs in genomic sequence by tRNAscan-SE (T. Lowe et al., Nucleic Acids Res. 1997 25:955-64)	tRNAscan	1	
+111	Prediction of transmembrane helices in peptides by TMHMM (A. Krogh et al., J. Mol. Biol. 2001 305:567-80)	tmhmm	1	
+101	Genes were annotated by aligning Ig/TcR genes from the IMGT database (M.-P. Lefranc et al, NAR 2005 33:D593-D597) using Exonerate (G.Slater et al, BMC Bioinformatics. 2005 6:31)	ensemblIGgene	1	
+102	Alignment of Ig/TcR genes from the IMGT database (M.-P. Lefranc et al, NAR 2005 33:D593-D597) using Exonerate (G.Slater et al. BMC Bioinformatics. 2005 6:31)	ExonerateIGgene	1	
+5256	Density of SNP features on the sequence	snpDensity	1	
+5257	Known gene density features in a database as calculated by gene_density_calc.pl	knownGeneDensity	1	
+5259	Percentage of repetetive elements for top level seq_regions.	PercentageRepeat	1	
+5260	Percentage of G/C bases in the sequence.	PercentGC	1	
