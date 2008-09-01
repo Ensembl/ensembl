@@ -1,7 +1,7 @@
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 24;
+	plan tests => 26;
 }
 
 
@@ -41,7 +41,6 @@ debug("Got " . scalar(@$feats) . " features back");
 ok(@$feats == 2429);
 print_features($feats);
 
-
 my $ctg_slice;
 $ctg_slice  = $db->get_SliceAdaptor->fetch_by_region('contig',
                                                      'AL031658.11.1.162976',
@@ -61,7 +60,8 @@ my $feat = $pafa->fetch_by_dbID(5339568);
 debug('--- fetching by dbID ---');
 ok($feat);
 print_features([$feat]);
-
+ok($feat->db_name eq 'EMBL');
+ok($feat->db_display_name eq 'EMBL');
 
 $feat = $feat->transform('supercontig');
 debug('--- transforming to supercontig coords ---');

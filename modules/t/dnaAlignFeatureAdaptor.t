@@ -2,7 +2,7 @@ use strict;
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 25;
+	plan tests => 27;
 }
 
 
@@ -60,6 +60,8 @@ my $feat = $dafa->fetch_by_dbID(22171863);
 debug('--- fetching by dbID ---');
 ok($feat);
 print_features([$feat]);
+ok($feat->db_name eq 'EMBL');
+ok($feat->db_display_name eq 'EMBL');
 
 
 $feat = $feat->transform('supercontig');
