@@ -190,13 +190,13 @@ sub _objs_from_sth {
   my ($protein_align_feature_id, $seq_region_id, $seq_region_start,
       $seq_region_end, $analysis_id, $seq_region_strand, $hit_start,
       $hit_end, $hit_name, $cigar_line, $evalue, $perc_ident, $score,
-      $external_db_id, $hcoverage );
+      $external_db_id, $hcoverage, $external_db_name, $external_display_db_name );
 
   $sth->bind_columns(\$protein_align_feature_id, \$seq_region_id,
            \$seq_region_start,\$seq_region_end, \$analysis_id,
            \$seq_region_strand, \$hit_start,\$hit_end, \$hit_name,
            \$cigar_line, \$evalue, \$perc_ident, \$score,
-           \$external_db_id, \$hcoverage );
+           \$external_db_id, \$hcoverage, \$external_db_name, \$external_display_db_name );
 
   my $asm_cs;
   my $cmp_cs;
@@ -316,7 +316,9 @@ sub _objs_from_sth {
           'adaptor'      => $self,
           'dbID'           => $protein_align_feature_id,
           'external_db_id' => $external_db_id,
-          'hcoverage'      => $hcoverage
+          'hcoverage'      => $hcoverage,
+	  'dbname'         => $external_db_name,
+	  'db_display_name' => $external_display_db_name
         } ) );
 
   }
@@ -329,7 +331,7 @@ sub _objs_from_sth {
 sub _tables {
   my $self = shift;
 
-  return ['protein_align_feature', 'paf'];
+  return (['protein_align_feature', 'paf'], ['external_db','exdb']);
 }
 
 
@@ -351,7 +353,13 @@ sub _columns {
              paf.perc_ident
              paf.score
              paf.external_db_id
-             paf.hcoverage );
+             paf.hcoverage
+	     exdb.db_name
+	     exdb.db_display_name);
+}
+
+sub _left_join{
+    return (['external_db',"exdb.external_db_id = paf.external_db_id"]);
 }
 
 =head2 list_dbIDs

@@ -58,9 +58,13 @@ use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 sub _tables {
   my $self = shift;
 
-  return ['dna_align_feature', 'daf'];
+  return (['dna_align_feature', 'daf'],['external_db','exdb']);
 }
 
+
+sub _left_join{
+    return (['external_db',"exdb.external_db_id = daf.external_db_id"]);
+}
 
 =head2 _columns
 
@@ -95,7 +99,9 @@ sub _columns {
             daf.score
             daf.external_db_id
             daf.hcoverage
-	    daf.external_data);
+	    daf.external_data
+	    exdb.db_name
+	    exdb.db_display_name);
 }
 
 
@@ -326,13 +332,13 @@ sub _objs_from_sth {
   my($dna_align_feature_id, $seq_region_id, $analysis_id, $seq_region_start,
      $seq_region_end, $seq_region_strand, $hit_start, $hit_end, $hit_name,
      $hit_strand, $cigar_line, $evalue, $perc_ident, $score,
-     $external_db_id, $hcoverage, $extra_data );
+     $external_db_id, $hcoverage, $extra_data, $external_db_name, $external_display_db_name );
 
   $sth->bind_columns(
     \$dna_align_feature_id, \$seq_region_id, \$analysis_id, \$seq_region_start,
     \$seq_region_end, \$seq_region_strand, \$hit_start, \$hit_end, \$hit_name,
     \$hit_strand, \$cigar_line, \$evalue, \$perc_ident, \$score,
-    \$external_db_id, \$hcoverage, \$extra_data );
+    \$external_db_id, \$hcoverage, \$extra_data, \$external_db_name, \$external_display_db_name );
 
 
   my $asm_cs;
@@ -453,6 +459,8 @@ sub _objs_from_sth {
                                     'external_db_id' => $external_db_id,
                                     'hcoverage'      => $hcoverage,
 				    'extra_data'     => $extra_data ? $self->get_dumped_data($extra_data) : '',
+				    'dbname'         => $external_db_name,
+				    'db_display_name' => $external_display_db_name
                                   } ) );
 
   }

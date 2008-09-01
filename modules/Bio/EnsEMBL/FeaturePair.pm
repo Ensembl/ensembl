@@ -119,10 +119,10 @@ sub new {
   my $self = $class->SUPER::new(@_);
 
   my ($hstart,$hend,$hstrand,$percent_id,$score, $species, $hspecies,
-      $p_value, $hseqname, $f1,$f2, $coverage, $hcoverage, $group_id,$level_id, $external_db_id, $extra_data) =
+      $p_value, $hseqname, $f1,$f2, $coverage, $hcoverage, $group_id,$level_id, $external_db_id, $extra_data, $external_db_name, $external_display_db_name) =
     rearrange(['HSTART','HEND','HSTRAND','PERCENT_ID','SCORE','SPECIES',
                'HSPECIES', 'P_VALUE', 'HSEQNAME', 'FEATURE1','FEATURE2',
-               'COVERAGE', 'HCOVERAGE', 'GROUP_ID','LEVEL_ID', 'EXTERNAL_DB_ID', 'EXTRA_DATA'], @_);
+               'COVERAGE', 'HCOVERAGE', 'GROUP_ID','LEVEL_ID', 'EXTERNAL_DB_ID', 'EXTRA_DATA', 'DBNAME', 'DB_DISPLAY_NAME'], @_);
 
   if(defined($hstart) && defined($hend) && ($hend < $hstart)) {
     throw('HSTART must be less than or equal to HEND');
@@ -147,6 +147,8 @@ sub new {
   $self->{'level_id'}   = $level_id;
   $self->{'external_db_id'} = $external_db_id;
   $self->{'extra_data'} = $extra_data;
+  $self->{'dbname'} = $external_db_name;
+  $self->{'db_display_name'} = $external_display_db_name;
 
   #
   # Feature1 and Feature2 arg handling for backwards compatibility
@@ -541,6 +543,43 @@ sub external_db_id {
   return $self->{'external_db_id'};
 }
 
+
+=head2 dbname
+
+  Arg [1]    : string  $external_db_name (optional)
+  Example    : $ex_db_name = $fp->dbname();
+  Description: Getter/Setter for the external_db_name attribute, name of external database
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+  Status     : At Risk
+
+=cut
+
+sub db_name {
+  my $self = shift;
+  $self->{'dbname'} = shift if(@_);
+  return $self->{'dbname'};
+}
+
+=head2 db_display_name
+
+  Arg [1]    : string  $db_display_name (optional)
+  Example    : $ex_db_display_name = $fp->db_display_name();
+  Description: Getter/Setter for the db_display_name attribute 
+               The preferred display name for the external database. 
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+  Status     : At Risk
+
+=cut
+
+sub db_display_name {
+  my $self = shift;
+  $self->{'db_display_name'} = shift if(@_);
+  return $self->{'db_display_name'};
+}
 
 
 
