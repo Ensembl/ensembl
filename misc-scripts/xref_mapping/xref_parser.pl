@@ -8,7 +8,7 @@ my ( $host,             $port,          $dbname,
      @sources,          $checkdownload, $create,
      $release,          $cleanup,       $drop_existing_db,
      $deletedownloaded, $dl_path,       @notsource,
-     $unzip, $stats );
+     $unzip, $stats, $verbose );
 
 print "Options: ".join(" ",@ARGV)."\n";
 
@@ -28,6 +28,7 @@ GetOptions(
     'setrelease=s'   => \$release,
     'cleanup'        => \$cleanup,
     'stats'          => \$stats,
+    'verbose'        => \$verbose,
     'notsource=s'    => \@notsource,
     'drop_db|dropdb!' =>
       \$drop_existing_db,    # Drop xref db without user interaction
@@ -56,7 +57,7 @@ $base_parser->run(
                $create,           $release,
                $cleanup,          $drop_existing_db,
                $deletedownloaded, $dl_path,
-               \@notsource,       $unzip, $stats );
+               \@notsource,       $unzip, $stats, $verbose );
 
 # --------------------------------------------------------------------------------
 
@@ -67,7 +68,8 @@ sub usage {
   xref_parser.pl -user {user} -pass {password} -host {host} \\
     -port {port} -dbname {database} -species {species1,species2} \\
     -source {source1,source2} -notsource {source1,source2} \\
-    -create -setrelease -stats
+    -create -setrelease -deletedownloaded -checkdownload -stats -verbose \\
+    -cleanup -drop_db -download_path -unzip
 
   -user             User name to access database. Must allow writing.
 
@@ -121,6 +123,8 @@ sub usage {
 
   -unzip            Decompress gzipped files (default is to use compressed
                     files).
+
+  -verbose          Output messages about the parsing.
 
   -stats            Generate the stats for the number of types of xrefs added.
 
