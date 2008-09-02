@@ -8,18 +8,34 @@ use base qw( XrefParser::BaseParser );
 
 # Parse file of Refseq records and assign direct xrefs
 
-sub run {
+sub run_script {
 
-  my ($self, $source_id, $species_id, $file) = @_;
+  my $self = shift if (defined(caller(1)));
+  my $file = shift;
+  my $source_id  = shift;
+  my $species_id = shift;
+  my $verbose    = shift;
 
-  my $refseq_io = $self->get_filehandle($file);
+  my $user = "ensro";
+  my $host;
+  my $port;
+  my $dbname;
+  my $pass;
+
+  if($file =~ /host[=][>](\S+?)[,]/){
+    $host = $1;
+  }
+  if($file =~ /port[=][>](\S+?)[,]/){
+    $port =  $1;
+  }
+  if($file =~ /dbname[=][>](\S+?)[,]/){
+    $dbname = $1;
+  }
+  if($file =~ /pass[=][>](\S+?)[,]/){
+    $pass = $1;
+  }
 
   my $dna_pred = XrefParser::BaseParser->get_source_id_for_source_name("RefSeq_dna_predicted");
-
-  if ( !defined $refseq_io ) {
-    print "Could not open $file\n";
-    return 1;
-  }
 
   # becouse the direct mapping have no descriptions etc
   # we have to steal these from the previous Refseq parser.
@@ -67,31 +83,36 @@ sub run {
   my %seen;
   my %old_to_new;
 
-  $refseq_io->getline();    # header
-
-  while ( $_ = $refseq_io->getline() ) {
-      chomp;
-      my ($ccds,$refseq) = split;
+  my $dbi2 = $self->dbi2($host, $port, $user, $dbname, $pass);
+  
+  my $sql = "select  cu.ccds_uid, a.nuc_acc from Accessions a, Accessions_GroupVersions agv, GroupVersions  gv, CcdsUids cu where a.accession_uid = agv.accession_uid and a.organization_uid=1 and agv.group_version_uid=gv.group_version_uid and gv.ccds_status_val_uid in (3) and cu.group_uid=gv.group_uid  order by gv.ccds_status_val_uid, cu.ccds_uid";
+  
+  
+  my $sth = $dbi2->prepare($sql); 
+  $sth->execute() or croak( $dbi2->errstr() );
+  while ( my @row = $sth->fetchrow_array() ) {
+    my $ccds = $row[0];
+    my $refseq = $row[1];
     
-      $line_count++;
-      if(!defined($seen{$refseq})){
-	  $seen{$refseq} = 1;
-	  my $key = "CCDS".$ccds;
-	  if(defined($ensembl_stable_id{$key})){
-	    my $new_source_id = $source_id;
-	    if($refseq =~ /^XM/){
-	      $new_source_id = $dna_pred;
-	    }
-	    my $xref_id = $self->add_xref($refseq, $version{$refseq} , $label{$refseq}||$refseq , 
-					    $description{$refseq}, $new_source_id, $species_id);
-	    $self->add_direct_xref($xref_id, $ensembl_stable_id{$key}, $ensembl_type{$key}, "");
-	    $old_to_new{$old_xref{$refseq}} = $xref_id;
-	    $xref_count++;
-	  }
+    $line_count++;
+    if(!defined($seen{$refseq})){
+      $seen{$refseq} = 1;
+      my $key = "CCDS".$ccds;
+      if(defined($ensembl_stable_id{$key})){
+	my $new_source_id = $source_id;
+	if($refseq =~ /^XM/){
+	  $new_source_id = $dna_pred;
+	}
+	my $xref_id = $self->add_xref($refseq, $version{$refseq} , $label{$refseq}||$refseq , 
+				      $description{$refseq}, $new_source_id, $species_id);
+	$self->add_direct_xref($xref_id, $ensembl_stable_id{$key}, $ensembl_type{$key}, "");
+	$old_to_new{$old_xref{$refseq}} = $xref_id;
+	$xref_count++;
       }
+    }
   }
   
-#for each one seen get all its dependent xrefs and load them fro the new one too;
+  #for each one seen get all its dependent xrefs and load them fro the new one too;
 
   my $add_dependent_xref_sth = $dbi->prepare("INSERT INTO dependent_xref VALUES(?,?,?,?)");
   my $get_dependent_xref_sth = $dbi->prepare("SELECT dependent_xref_id, linkage_annotation "
@@ -107,9 +128,8 @@ sub run {
       }   
   }
 
-  $refseq_io->close();
 
-  print "Parsed $line_count RefSeq_dna identifiers from $file, added $xref_count xrefs and $xref_count direct_xrefs  from $line_count lines.\n";
+  print "Parsed $line_count RefSeq_dna identifiers from $file, added $xref_count xrefs and $xref_count direct_xrefs  from $line_count lines.\n" if ($verbose);
 
 
   return 0;

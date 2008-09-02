@@ -9,17 +9,69 @@ use base qw( XrefParser::BaseParser );
 # Parse file of HGNC records and assign direct xrefs
 # All assumed to be linked to genes
 
-sub run {
+sub run_script {
 
-  my ($self, $source_id, $species_id, $file) = @_;
+  my ($self, $file, $source_id, $species_id, $verbose) = @_;
 
-  my $hugo_io = $self->get_filehandle($file);
+  my $user = "ensro";
+  my $host;
+  my $port;
+  my $dbname;
+  my $pass;
+  my $wget = "";
 
-  if ( !defined $hugo_io ) {
-    print "Could not open $file\n";
-    return 1;
+  if($file =~ /host[=][>](\S+?)[,]/){
+    $host = $1;
+  }
+  if($file =~ /port[=][>](\S+?)[,]/){
+    $port =  $1;
+  }
+  if($file =~ /dbname[=][>](\S+?)[,]/){
+    $dbname = $1;
+  }
+  if($file =~ /pass[=][>](\S+?)[,]/){
+    $pass = $1;
+  }
+  if($file =~ /wget[=][>](\S+?)[,]/){
+    $wget = $1;
   }
 
+
+  my $ua = LWP::UserAgent->new();
+  $ua->timeout(10);
+  $ua->env_proxy();
+  
+
+  my %refseq_to_hgnc;
+  my %refseq_to_ccds;
+
+  my $response = $ua->get($wget);
+  
+  if ( !$response->is_success() ) {
+    die $response->status_line;
+  }
+  else{
+    my @lines = split(/\n/,$response->content);
+    foreach my $line (@lines){
+      my($hgnc, $refseq) = split(/\s+/,$line);
+      if(defined($refseq) and $refseq ne ""){
+	$refseq_to_hgnc{$refseq} = $hgnc;
+      }
+    }
+    
+  }
+
+  my $dbi2 = $self->dbi2($host, $port, $user, $dbname, $pass);
+
+  my $sql = "select  cu.ccds_uid, a.nuc_acc from Accessions a, Accessions_GroupVersions agv, GroupVersions  gv, CcdsUids cu where a.accession_uid = agv.accession_uid and a.organization_uid=1 and agv.group_version_uid=gv.group_version_uid and gv.ccds_status_val_uid in (3) and cu.group_uid=gv.group_uid  order by gv.ccds_status_val_uid, cu.ccds_uid";
+
+
+  my $sth = $dbi2->prepare($sql); 
+  $sth->execute() or croak( $dbi2->errstr() );
+  while ( my @row = $sth->fetchrow_array() ) {
+    $refseq_to_ccds{$row[1]} = $row[0];
+  }
+  $sth->finish;
 
 
   # becouse the direct mapping have no descriptions etc
@@ -75,27 +127,16 @@ sub run {
   }
   $sth->finish;
   
- 
   my $line_count = 0;
   my $xref_count = 0;
   my %seen;
   my $ignore_count = 0;
   my $ignore_examples ="";
 
-  while( $_ = $hugo_io->getline() ) {
-    chomp;
-    my ($ccds,$hgnc) = split;
-    
-    $line_count++;
-    if(!defined($label{$hgnc})){
-      $ignore_count++;
-      if($ignore_count < 10){
-	$ignore_examples .= " ".$hgnc;
-      }
-      next;
-    }
-    if(!defined($seen{$hgnc})){
-      $seen{$hgnc} = 1;
+  foreach my $refseq (keys %refseq_to_ccds){
+    if(defined($refseq_to_hgnc{$refseq})){
+      my $ccds = $refseq_to_ccds{$refseq};
+      my $hgnc = $refseq_to_hgnc{$refseq};
       my $key = "CCDS".$ccds;
       if(defined($ensembl_stable_id{$key})){
 	my $xref_id = $self->add_xref($hgnc, $version{$hgnc} , $label{$hgnc}||$hgnc , 
@@ -105,14 +146,7 @@ sub run {
       }
     }
   }
-  print "Parsed $line_count HGNC identifiers from $file, added $xref_count xrefs and $xref_count direct_xrefs  from $line_count lines.\n";
-  if($ignore_count){
-    print $ignore_count." ignoreed due to numbers no identifiers being no longer valid :- $ignore_examples\n";
-  }
 
-  $hugo_io->close();
-
-  return 0;
 
 }
 

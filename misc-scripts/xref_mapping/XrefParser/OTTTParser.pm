@@ -1,58 +1,108 @@
 package XrefParser::OTTTParser;
 
 use strict;
-
-use DBI;
+use File::Basename;
 
 use base qw( XrefParser::BaseParser );
 
-# Parse file of Ensembl - Vega OTTT transcript mappings
-# ENST00000373795:	OTTHUMT00000010392
-# ENST00000374603:	OTTHUMT00000057024
-# ENST00000372604:	OTTHUMT00000057746
-# ENST00000329151:	OTTHUMT00000011475
+use strict;
 
-sub run {
+my $dbi2;
 
-  my ($self, $source_id, $species_id, $file) = @_;
+if (!defined(caller())) {
 
-  my $ottt_io = $self->get_filehandle($file);
-
-  if ( !defined $ottt_io ) {
-    print "Could not open $file\n";
-    return 1;
+  if (scalar(@ARGV) != 1) {
+    print "\nUsage: OTTTParser.pm file <source_id> <species_id>\n\n";
+    exit(1);
   }
 
-  my $line_count = 0;
+  run(@ARGV);
+}
+
+sub run_script {
+  my $self = shift if (defined(caller(1)));
+
+  my $file = shift;
+  my $source_id = shift;
+  my $species_id = shift;
+
+  my ($type, $my_args) = split(/:/,$file);
+  
+  my $user = "ensro";
+  my $host ="ensdb-1-11";
+  my $port = "5317";
+  my $dbname = "homo_sapiens_vega_49_20080328";
+  my $pass;
+
+  if($my_args =~ /host[=][>](\S+?)[,]/){
+    $host = $1;
+  }
+  if($my_args =~ /port[=][>](\S+?)[,]/){
+    $port =  $1;
+  }
+  if($my_args =~ /dbname[=][>](\S+?)[,]/){
+    $dbname = $1;
+  }
+  if($my_args =~ /pass[=][>](\S+?)[,]/){
+    $pass = $1;
+  }
+
+ 
+  my $sql = 'select tsi.stable_id, x.display_label from xref x, object_xref ox , transcript_stable_id tsi, external_db e where e.external_db_id = x.external_db_id and x.xref_id = ox.xref_id and tsi.transcript_id = ox.ensembl_id and e.db_name like ?';
+
+
+  my %ott_to_enst;
+  
+  $dbi2 = $self->dbi2($host, $port, $user, $dbname, $pass);
+  
+  my $sth = $dbi2->prepare($sql);   # funny number instead of stable id ?????
+  $sth->execute("ENST_CDS") or croak( $dbi2->errstr() );
+  while ( my @row = $sth->fetchrow_array() ) {
+    $ott_to_enst{$row[0]} = $row[1];
+  }
+  $sth->finish;
+
+  $sth = $dbi2->prepare($sql);
+  $sth->execute("ENST_ident") or croak( $dbi2->errstr() );
+  while ( my @row = $sth->fetchrow_array() ) {
+    $ott_to_enst{$row[0]} = $row[1];
+  }
+  $sth->finish;
+
   my $xref_count = 0;
-
-  my $xref_sth = $self->dbi()->prepare("SELECT xref_id FROM xref WHERE accession=? AND source_id=$source_id AND species_id=$species_id");
-
-  while ( $_ = $ottt_io->getline() ) {
-    my ($ens, $ottt) = split;
-
-    $ens =~ s/://g;
-
-    $line_count++;
-
-    # check if an xref already exists
-    $xref_sth->execute($ottt);
-    my $xref_id = ($xref_sth->fetchrow_array())[0];
-    if (!$xref_id) {
-      $xref_id = $self->add_xref($ottt, '', $ottt, "", $source_id, $species_id);
-      $xref_count++;
-    }
-
-    $self->add_direct_xref($xref_id, $ens, "transcript", "");
-
+  foreach my $ott (keys %ott_to_enst){
+  
+    my $xref_id = $self->add_xref($ott, "" , $ott , "", $source_id, $species_id);
+    $xref_count++;
+    
+    
+    $self->add_direct_xref($xref_id, $ott_to_enst{$ott}, "transcript", "");
+    
   }
-
-  $ottt_io->close();
-
-  print "Parsed $line_count OTTT identifiers from $file, added $xref_count xrefs and $line_count direct_xrefs\n";
+}
 
 
-  return 0;
+
+
+sub dbi2{
+
+    my $self = shift;
+    my ($host, $port, $user, $dbname, $pass) = @_;
+
+    if ( !defined $dbi2 || !$dbi2->ping() ) {
+        my $connect_string =
+          sprintf( "dbi:mysql:host=%s;port=%s;database=%s",
+            $host, $port, $dbname );
+
+        $dbi2 =
+          DBI->connect( $connect_string, $user, $pass,
+            { 'RaiseError' => 1 } )
+          or croak( "Can't connect to database: " . $DBI::errstr );
+        $dbi2->{'mysql_auto_reconnect'} = 1; # Reconnect on timeout
+    }
+    
+    return $dbi2;
 }
 
 1;
+
