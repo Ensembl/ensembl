@@ -15,14 +15,17 @@ use File::Basename;
 
 use base qw( XrefParser::BaseParser );
 
+
+my $verbose;
+
 # --------------------------------------------------------------------------------
 # Parse command line and run if being run directly
 
 if (!defined(caller())) {
 
   if (scalar(@ARGV) != 3) {
-    print "\nUsage: UniProtParser.pm file.SPC <source_id> <species_id>\n\n";
-    print scalar(@ARGV);
+    print STDERR "\nUsage: UniProtParser.pm file.SPC <source_id> <species_id>\n\n";
+    print STDERR scalar(@ARGV);
     exit(1);
   }
 
@@ -38,8 +41,11 @@ sub run {
 
   my $source_id = shift;
   my $species_id = shift;
-  my $file = shift;
-  my $release_file = shift;
+  my $files       = shift;
+  my $release_file   = shift;
+  $verbose       = shift;
+
+  my $file = @{$files}[0];
 
   my $species_name;
 
@@ -54,8 +60,8 @@ sub run {
   $sptr_source_id =
     $self->get_source_id_for_source_name('Uniprot/SPTREMBL');
 
-  print "SwissProt source id for $file: $sp_source_id\n";
-  print "SpTREMBL source id for $file: $sptr_source_id\n";
+  print "SwissProt source id for $file: $sp_source_id\n" if ($verbose);
+  print "SpTREMBL source id for $file: $sptr_source_id\n" if ($verbose);
  
 
   my @xrefs =
@@ -68,7 +74,7 @@ sub run {
 
   # delete previous if running directly rather than via BaseParser
   if (!defined(caller(1))) {
-    print "Deleting previous xrefs for these sources\n";
+    print "Deleting previous xrefs for these sources\n" if($verbose);
     $self->delete_by_source(\@xrefs);
   }
 
@@ -93,10 +99,10 @@ sub run {
         while ( defined( my $line = $release_io->getline() ) ) {
             if ( $line =~ m#(UniProtKB/Swiss-Prot Release .*)# ) {
                 $sp_release = $1;
-                print "Swiss-Prot release is '$sp_release'\n";
+                print "Swiss-Prot release is '$sp_release'\n" if($verbose);
             } elsif ( $line =~ m#(UniProtKB/TrEMBL Release .*)# ) {
                 $sptr_release = $1;
-                print "SpTrEMBL release is '$sptr_release'\n";
+                print "SpTrEMBL release is '$sptr_release'\n" if($verbose);
             }
         }
         $release_io->close();
@@ -133,11 +139,11 @@ sub get_species {
 
   if (defined $species_name) {
 
-    print "Taxonomy ID " . $taxonomy_id . " corresponds to species ID " . $species_id . " name " . $species_name . "\n";
+    print "Taxonomy ID " . $taxonomy_id . " corresponds to species ID " . $species_id . " name " . $species_name . "\n" if($verbose);
 
   } else {
 
-    print "Cannot find species corresponding to taxonomy ID " . $species_id . " - check species table\n";
+    print STDERR "Cannot find species corresponding to taxonomy ID " . $species_id . " - check species table\n";
     exit(1);
 
   }
@@ -178,10 +184,10 @@ sub create_xrefs {
 #  my $go_source_id = $self->get_source_id_for_source_name('GO');
   my $embl_pred_source_id = $dependent_sources{'EMBL_predicted'};
   my $protein_id_pred_source_id = $dependent_sources{'protein_id_predicted'};
-  print "Predicted SwissProt source id for $file: $sp_pred_source_id\n";
-  print "Predicted SpTREMBL source id for $file: $sptr_pred_source_id\n";
-  print "Predicted EMBL source id for $file: $embl_pred_source_id\n";
-  print "Predicted protein_id source id for $file: $protein_id_pred_source_id\n";
+  print "Predicted SwissProt source id for $file: $sp_pred_source_id\n" if($verbose);
+  print "Predicted SpTREMBL source id for $file: $sptr_pred_source_id\n" if($verbose);
+  print "Predicted EMBL source id for $file: $embl_pred_source_id\n" if($verbose);
+  print "Predicted protein_id source id for $file: $protein_id_pred_source_id\n" if($verbose);
 #  print "GO source id for $file: $go_source_id\n";
 
     my (%genemap) =
@@ -424,12 +430,12 @@ sub create_xrefs {
 
   $uniprot_io->close();
 
-  print "Read $num_sp SwissProt xrefs and $num_sptr SPTrEMBL xrefs from $file\n";
-  print "Found $num_sp_pred predicted SwissProt xrefs and $num_sptr_pred predicted SPTrEMBL xrefs\n" if ($num_sp_pred > 0 || $num_sptr_pred > 0);
+  print "Read $num_sp SwissProt xrefs and $num_sptr SPTrEMBL xrefs from $file\n" if($verbose);
+  print "Found $num_sp_pred predicted SwissProt xrefs and $num_sptr_pred predicted SPTrEMBL xrefs\n" if (($num_sp_pred > 0 || $num_sptr_pred > 0) and $verbose);
 
-  print "Added the following dependent xrefs:-\n";
+  print "Added the following dependent xrefs:-\n" if($verbose);
   foreach my $key (keys %dependent_xrefs){
-    print $key."\t".$dependent_xrefs{$key}."\n";
+    print $key."\t".$dependent_xrefs{$key}."\n" if($verbose);
   }
 
   return \@xrefs;

@@ -8,6 +8,7 @@ use warnings;
 use Carp;
 
 use base qw( XrefParser::BaseParser );
+my $verbose;
 
 # The object types we'd like to parse.
 our %object_types = ( gene       => 1,
@@ -106,7 +107,7 @@ sub get_source_id_for_source_name {
       $self->SUPER::get_source_id_for_source_name(@_);
 
     printf( "source_id for source '%s' is %d\n",
-            $source_name, $source_id{$source_name} );
+            $source_name, $source_id{$source_name} ) if ($verbose);
   }
 
   if ( !defined( $source_id{$source_name} )
@@ -121,8 +122,18 @@ sub get_source_id_for_source_name {
 }
 
 sub run {
-  my $self = shift;
-  my ( $source_id, $species_id, $data_file, $release_file ) = @_;
+  my $self = shift if (defined(caller(1)));
+
+  my $source_id = shift;
+  my $species_id = shift;
+  my $files       = shift;
+  my $release_file   = shift;
+  $verbose       = shift;
+
+  my $data_file = @{$files}[0];
+
+#  my $self = shift;
+#  my ( $source_id, $species_id, $data_file, $release_file ) = @_;
 
   # Fetch hashes of already stored Uniprot and Interpro accessions.
   my %pre_xref_ids = (
@@ -141,7 +152,7 @@ sub run {
     printf( "%d lines read, %d skipped, %d parsed; %d lines/s\n",
             $count_read, $count_skipped,
             $count_read - $count_skipped,
-            ( $count_read - $last_count_read )/$status_interval );
+            ( $count_read - $last_count_read )/$status_interval ) if($verbose);
     $last_count_read = $count_read;
     alarm($status_interval);
   };
@@ -359,10 +370,10 @@ sub run {
   } ## end while ( defined( my $line...
   $data_io->close();
 
-  print("FlybaseParser Summary:\n");
+  print("FlybaseParser Summary:\n") if($verbose);
   foreach my $label ( sort( keys(%xref_ids) ) ) {
     my $accessions = $xref_ids{$label};
-    printf( "\t%-32s %6d\n", $label, scalar( keys( %{$accessions} ) ) );
+    printf( "\t%-32s %6d\n", $label, scalar( keys( %{$accessions} ) ) ) if($verbose);
   }
 
 } ## end sub run

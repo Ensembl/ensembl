@@ -12,7 +12,7 @@ use base qw( XrefParser::BaseParser );
 if (!defined(caller())) {
 
   if (scalar(@ARGV) != 1) {
-    print "\nUsage: ncRNAParser.pm file <source_id> <species_id>\n\n";
+    print STDERR "\nUsage: ncRNAParser.pm file <source_id> <species_id>\n\n";
     exit(1);
   }
 
@@ -41,7 +41,7 @@ sub run {
   my $file_io = $self->get_filehandle($file);
 
   if ( !defined $file_io ) {
-    print "ERROR: Could not open file $file\n";
+    print STDERR "ERROR: Could not open file $file\n";
     return 1;
   }
 
@@ -67,7 +67,7 @@ sub run {
       }
       $name_2_source_id{$source_name} = $tmp;
     }
-    my $xref_id = $self->get_xref($acc,$name_2_source_id{$source_name});
+    my $xref_id = $self->get_xref($acc,$name_2_source_id{$source_name}, $species_id);
     if(!defined($xref_id)){
       $xref_id = $self->add_xref($acc,"",$display_label,$description,$name_2_source_id{$source_name}, $species_id);
       $added++;
@@ -82,7 +82,7 @@ sub run {
 
   $file_io->close();
 
-  print "Added $added Xrefs for ncRNAs\n";
+  print "Added $added Xrefs for ncRNAs\n" if($verbose);
   return 0;
 }
 

@@ -26,7 +26,11 @@ sub run {
 
   my $source_id = shift;
   my $species_id = shift;
-  my $file = shift;
+  my $files_ref  = shift;
+  my $rel_file   = shift;
+  my $verbose = shift;
+
+  my $file = @{$files_ref}[0];
 
   if(!defined($source_id)){
     $source_id = XrefParser::BaseParser->get_source_id_for_filename($file);
@@ -35,12 +39,12 @@ sub run {
     $species_id = XrefParser::BaseParser->get_species_id_for_filename($file);
   }
   
-  
+ 
 
   my $sgd_io = $self->get_filehandle($file);
 
   if ( !defined $sgd_io ) {
-    print "ERROR: Could not open $file\n";
+    print STDERR "ERROR: Could not open $file\n";
     return 1;    # 1 is an error
   }
 
@@ -55,14 +59,14 @@ sub run {
     $self->add_xref($sgd_id,"",$locus_name,$desc,$source_id,$species_id);
     $xref_count++;
     foreach my $synonym (@syn){
-      $self->add_to_syn($sgd_id, $source_id, $synonym);
+      $self->add_to_syn($sgd_id, $source_id, $synonym, $species_id);
       $syn_count++;
     }
   }
 
   $sgd_io->close();
 
-  print $xref_count." SGD Xrefs added with $syn_count synonyms\n";
+  print $xref_count." SGD Xrefs added with $syn_count synonyms\n" if($verbose);
   return 0; #successful
 }
 

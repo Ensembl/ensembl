@@ -14,7 +14,15 @@ use base qw( XrefParser::BaseParser );
 
 sub run {
 
-  my ($self, $source_id, $species_id, $file) = @_;
+  my $self = shift if (defined(caller(1)));
+
+  my $source_id = shift;
+  my $species_id = shift;
+  my $files       = shift;
+  my $release_file   = shift;
+  my $verbose       = shift;
+
+  my $file = @{$files}[0];
 
   my @xrefs;
 
@@ -22,7 +30,7 @@ sub run {
 
   my $codelink_io = $self->get_filehandle($file);
   if ( !defined $codelink_io ) {
-    print "ERROR: Could not open $file\n";
+    print STDERR "ERROR: Could not open $file\n";
     return 1;    # 1 = error
   }
 
@@ -52,11 +60,11 @@ sub run {
 
   $codelink_io->close();
 
-  print scalar(@xrefs) . " Codelink xrefs succesfully parsed\n";
 
   XrefParser::BaseParser->upload_xref_object_graphs(\@xrefs);
 
-  print "Done\n";
+  print scalar(@xrefs) . " Codelink xrefs succesfully parsed\n" if($verbose);
+
   return 0; #successful
 }
 

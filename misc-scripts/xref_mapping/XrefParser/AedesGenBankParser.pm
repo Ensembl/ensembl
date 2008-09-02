@@ -13,7 +13,16 @@ use base qw( XrefParser::BaseParser );
 
 sub run {
 
-  my ($self, $source_id, $species_id, $file) = @_;
+  my $self = shift if (defined(caller(1)));
+
+  my $source_id = shift;
+  my $species_id = shift;
+  my $files       = shift;
+  my $release_file   = shift;
+  my $verbose       = shift;
+
+  my $file = @{$files}[0];
+
   my $cpt = 0 ;
 
   next if (/^File:/);   # skip header
@@ -38,7 +47,7 @@ sub run {
 
     if ($header eq "") {
       $header = "Aedes_GenBank".$cpt ;
-      print STDERR "One sequence with a random name ... \n" ;
+      print STDERR "One sequence with a random name ... \n" if($verbose);
       $cpt++ ;
     }
 
@@ -74,7 +83,7 @@ sub run {
 
   $file_io->close();
 
-  print scalar(@xrefs) . " AedesGenBank xrefs succesfully parsed\n";
+  print scalar(@xrefs) . " AedesGenBank xrefs succesfully parsed\n" if($verbose);
 
   XrefParser::BaseParser->upload_xref_object_graphs(\@xrefs);
 

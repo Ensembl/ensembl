@@ -6,14 +6,22 @@ use vars qw(@ISA);
 @ISA = qw(XrefParser::BaseParser);
 
 sub run {
-  my( $self, $source_id, $species_id, $file ) = @_;
+  my $self = shift if (defined(caller(1)));
+
+  my $source_id = shift;
+  my $species_id = shift;
+  my $files       = shift;
+  my $release_file   = shift;
+  my $verbose       = shift;
+
+  my $file = @{$files}[0];
 
   my $file_io = $self->get_filehandle($file)
       || ( print( "ERROR: Cannot open $file\n" ) && return 1 );
 
   my %interpros = %{$self->get_valid_codes("interpro",$species_id)};
   scalar( keys %interpros )
-      || ( print( "ERROR: No InterPro xrefs found in DB" ) && return 1 );
+      || ( print STDERR  "ERROR: No InterPro xrefs found in DB"  && return 1 );
 
   #get the "main" GO source id.
   $source_id = $self->get_source_id_for_source_name("GO","main");
@@ -49,7 +57,7 @@ sub run {
   }    
   print "Parsed identifiers from $file\n".
         "\tadded $dependent_xref_count GO xrefs dependent on InterPro\n".
-        "\tskipped $skip_count GO terms due to missing InterPros\n";
+        "\tskipped $skip_count GO terms due to missing InterPros\n" if($verbose);
 
   return 0;
 }

@@ -10,8 +10,7 @@ use strict;
 use base qw( XrefParser::DatabaseParser );
 
 sub run {
-
-  my ($self, $dsn, $source_id, $species_id) = @_;
+  my ($self, $dsn, $source_id, $species_id, $verbose) = @_;
 
   my $db = $self->connect($dsn); # source db (probably core)
   my $xref_db = $self->dbi();
@@ -22,7 +21,7 @@ sub run {
   # read stable IDs
   foreach my $type ('gene', 'transcript') {
 
-    print "Building xrefs from $type stable IDs\n";
+    print "Building xrefs from $type stable IDs\n" if($verbose);
 
     my $wb_source_id = $self->get_source_id_for_source_name("wormbase_$type");
 

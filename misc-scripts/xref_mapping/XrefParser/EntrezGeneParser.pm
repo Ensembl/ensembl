@@ -23,9 +23,16 @@ if (!defined(caller())) {
 sub run {
 
   my $self = shift if (defined(caller(1)));
+
   my $source_id = shift;
   my $species_id = shift;
-  my $file = shift;
+  my $files       = shift;
+  my $release_file   = shift;
+  my $verbose       = shift;
+
+  my $file = @{$files}[0];
+
+
 
   if(!defined($source_id)){
     $source_id = XrefParser::BaseParser->get_source_id_for_filename($file);
@@ -39,7 +46,7 @@ sub run {
 
   my $eg_io = $self->get_filehandle($file);
   if ( !defined $eg_io ) {
-    print "ERROR: Could not open $file\n";
+    print STDERR "ERROR: Could not open $file\n";
     return 1;    # 1 is an error
   }
 
@@ -111,7 +118,7 @@ sub run {
     my (@syn) = split(/\|/ ,$arr[$gene_synonyms_index]);
     foreach my $synonym (@syn){
       if($synonym ne "-"){
-	$self->add_to_syn($acc, $source_id, $synonym);
+	$self->add_to_syn($acc, $source_id, $synonym, $species_id);
 	$syn_count++;
       }
     }
@@ -119,7 +126,7 @@ sub run {
 
   $eg_io->close();
 
-  print $xref_count." EntrezGene Xrefs added with $syn_count synonyms\n";
+  print $xref_count." EntrezGene Xrefs added with $syn_count synonyms\n" if($verbose);
   return 0; #successful
 }
 

@@ -25,7 +25,12 @@ sub run {
 
   my $source_id = shift;
   my $species_id = shift;
-  my $file = shift;
+  my $files_ref  = shift;
+  my $rel_file   = shift;
+  my $verbose = shift;
+
+  my $file = @{$files_ref}[0];
+
 
   if(!defined($source_id)){
     $source_id = XrefParser::BaseParser->get_source_id_for_filename($file);
@@ -40,7 +45,7 @@ sub run {
   my $file_io = $self->get_filehandle($file);
 
   if ( !defined $file_io ) {
-    print "ERROR: Could not open file $file\n";
+    print STDERR "ERROR: Could not open file $file\n";
     return 1;
   }
 
@@ -58,7 +63,7 @@ sub run {
       }
       $name_2_source_id{$source_name} = $tmp;
     }
-    my $xref_id = $self->get_xref($acc,$name_2_source_id{$source_name});
+    my $xref_id = $self->get_xref($acc,$name_2_source_id{$source_name}, $species_id);
     if(!defined($xref_id)){
       $xref_id = $self->add_xref($acc,"",$display_label,$description,$name_2_source_id{$source_name}, $species_id);
       $added++;
@@ -72,7 +77,7 @@ sub run {
 
   $file_io->close();
 
-  print "Added $added Xrefs for Gene segments\n";
+  print "Added $added Xrefs for Gene segments\n" if($verbose);
   return 0;
 }
 

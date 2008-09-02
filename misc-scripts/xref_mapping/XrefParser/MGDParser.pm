@@ -31,7 +31,11 @@ sub run {
 
   my $source_id = shift;
   my $species_id = shift;
-  my $file = shift;
+  my $files       = shift;
+  my $release_file   = shift;
+  $verbose       = shift;
+
+  my $file = @{$files}[0];
 
   die "No longer used. MGI is taken form the uniprot file\n";
 
@@ -92,7 +96,7 @@ sub run {
       chomp ;
       my ($key,$syn) = (split)[0,4];
       if(defined($mgi_good{$key})){
-	$self->add_to_syn($key, $source_id, $syn);
+	$self->add_to_syn($key, $source_id, $syn, $species_id);
 	$synonyms++;
       }
     }

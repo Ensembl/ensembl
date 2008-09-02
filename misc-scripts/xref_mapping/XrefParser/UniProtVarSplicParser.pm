@@ -18,7 +18,15 @@ use base qw( XrefParser::BaseParser );
 
 sub run {
 
-  my ( $self, $source_id, $species_id, $file, $release_file ) = @_;
+  my $self = shift if (defined(caller(1)));
+
+  my $source_id = shift;
+  my $species_id = shift;
+  my $files       = shift;
+  my $release_file   = shift;
+  my $verbose       = shift;
+
+  my $file = @{$files}[0];
 
   my @xrefs;
 
@@ -27,12 +35,13 @@ sub run {
   my $file_io = $self->get_filehandle($file);
 
   if ( !defined $file_io ) {
-    print "ERROR: Could not open $file\n";
+    print STDERR "ERROR: Could not open $file\n";
     return 1;    # 1 error
   }
 
   my %swiss = %{ $self->get_valid_codes( "uniprot", $species_id ) };
 
+  print scalar(%swiss)." uniprot entries will be used as tests\n" if($verbose);
   my $missed = 0;
   while ( $_ = $file_io->getline() ) {
     my $xref;
@@ -68,8 +77,8 @@ sub run {
 
   $file_io->close();
 
-  print $missed." ignored as original uniprot not found in database\n";
-  print scalar(@xrefs) . " UniProtVarSplic xrefs succesfully parsed\n";
+  print $missed." ignored as original uniprot not found in database\n" if($verbose);
+  print scalar(@xrefs) . " UniProtVarSplic xrefs succesfully parsed\n" if($verbose);
 
   $self->upload_xref_object_graphs(\@xrefs);
 
@@ -79,7 +88,7 @@ sub run {
         my $release_io = $self->get_filehandle($release_file);
         while ( defined( my $line = $release_io->getline() ) ) {
             if ( $line =~ m#(UniProtKB/Swiss-Prot Release .*)# ) {
-                print "Swiss-Prot release is '$1'\n";
+                print "Swiss-Prot release is '$1'\n" if($verbose);
                 $self->set_release( $source_id, $1 );
             }
         }
@@ -87,7 +96,6 @@ sub run {
     }
 
 
-  print "Done\n";
   return 0;
 }
 

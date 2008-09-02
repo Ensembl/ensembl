@@ -8,6 +8,8 @@ use File::Basename;
 
 use base qw( XrefParser::BaseParser );
 
+my $verbose;
+
 # --------------------------------------------------------------------------------
 # Parse command line and run if being run directly
 
@@ -30,13 +32,16 @@ sub run {
 
   my $source_id = shift;
   my $species_id = shift;
-  my $uniq_file = shift;
-  my $data_file = shift;
-  my $release_file = shift;
+  my $files       = shift;
+  my $release_file   = shift;
+  $verbose       = shift;
+
+  my $uniq_file = @{$files}[0];
+  my $data_file = @{$files}[1];
 
   my $unigene_source_id = $self->get_source_id_for_source_name('UniGene');
 
-  print "UniGene source ID = $unigene_source_id.\n";
+  print "UniGene source ID = $unigene_source_id.\n" if($verbose);
 
   if ( !defined($species_id) ) {
     $species_id =
@@ -83,8 +88,7 @@ sub run {
             $release =~ s/\s{2,}/ /g;
             $release =~ s/^(.*) UniGene/$1, UniGene/;
 
-            print "UniGene release: '$release'\n";
-            #$self->set_release( $source_id,         $release );
+            print "UniGene release: '$release'\n" if($verbose);
             $self->set_release( $unigene_source_id, $release );
         }
     }
@@ -107,7 +111,7 @@ sub get_desc{
   my $desc_io = $self->get_filehandle( $data_file );
 
   if ( !defined $desc_io ) {
-    print "ERROR: Can't open $data_file\n";
+    print STDERR "ERROR: Can't open $data_file\n";
     return undef;
   }
 
@@ -149,7 +153,7 @@ sub create_xrefs {
   my $unigene_io = $self->get_filehandle($uniq_file);
 
   if ( !defined $unigene_io ) {
-    print "Can't open RefSeq file $uniq_file\n";
+    print STDERR "Can't open RefSeq file $uniq_file\n";
     return undef;
   }
 
@@ -205,7 +209,7 @@ sub create_xrefs {
   $unigene_io->close();
 
   %geneid_2_desc=();
-  print "Read " . scalar(@xrefs) ." xrefs from $uniq_file\n";
+  print "Read " . scalar(@xrefs) ." xrefs from $uniq_file\n" if($verbose);
 
   return \@xrefs;
 

@@ -22,17 +22,24 @@ use base qw( XrefParser::BaseParser );
 
 sub run
 {
-    my $self = shift;
-    my ( $source_id, $species_id, $file_name ) = @_;
+  my $self = shift if (defined(caller(1)));
 
-    my $file_io = $self->get_filehandle($file_name);
-
-    if ( !defined $file_io ) {
-        return 1;    # Failed.
-    }
-
-    my @xrefs;
-    while ( defined( my $line = $file_io->getline() ) ) {
+  my $source_id = shift;
+  my $species_id = shift;
+  my $files_ref  = shift;
+  my $rel_file   = shift;
+  my $verbose = shift;
+  
+  my $file_name = @{$files_ref}[0];
+  
+  my $file_io = $self->get_filehandle($file_name);
+  
+  if ( !defined $file_io ) {
+    return 1;    # Failed.
+  }
+  
+  my @xrefs;
+  while ( defined( my $line = $file_io->getline() ) ) {
         chomp $line;
 
         if ( substr( $line, 0, 1 ) eq '>' ) {
@@ -62,11 +69,10 @@ sub run
         }
     }
 
-    print scalar(@xrefs) . " Vega Fasta Xrefs successfully parsed\n";
 
     $self->upload_xref_object_graphs( \@xrefs );
 
-    print "Done\n";
+    print scalar(@xrefs) . " Vega Fasta Xrefs successfully parsed\n" if($verbose);
 
     return 0;    # Successful.
 }

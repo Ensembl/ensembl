@@ -13,7 +13,7 @@ use base qw( XrefParser::BaseParser );
 if (!defined(caller())) {
 
   if (scalar(@ARGV) != 1) {
-    print "\nUsage: ZFINParser.pm file <source_id> <species_id>\n\n";
+    print STDERR "\nUsage: ZFINParser.pm file <source_id> <species_id>\n\n";
     exit(1);
   }
 
@@ -21,13 +21,18 @@ if (!defined(caller())) {
 
 }
 
+
 sub run {
 
   my $self = shift if (defined(caller(1)));
 
   my $source_id = shift;
   my $species_id = shift;
-  my $file = shift;
+  my $files       = shift;
+  my $release_file   = shift;
+  my $verbose       = shift;
+
+  my $file = @{$files}[0];
 
   if(!defined($source_id)){
     $source_id = XrefParser::BaseParser->get_source_id_for_filename($file);
@@ -46,8 +51,7 @@ sub run {
     $self->get_filehandle( catfile( $dir, 'uniprot.txt' ) );
 
   if ( !defined $swissprot_io ) {
-    print( "ERROR: Could not open " . catfile( $dir, 'uniprot.txt' ),
-           "\n" );
+    print STDERR "ERROR: Could not open " . catfile( $dir, 'uniprot.txt' ). "\n" ;
     return 1;    # 1 error
   }
 
@@ -78,8 +82,7 @@ sub run {
   my $refseq_io = $self->get_filehandle( catfile( $dir, 'refseq.txt' ) );
 
   if ( !defined $refseq_io ) {
-    print( "ERROR: Could not open " . catfile( $dir, 'refseq.txt' ),
-           "\n" );
+    print STDERR "ERROR: Could not open " . catfile( $dir, 'refseq.txt' ),"\n" ;
     return 1;
   }
 
@@ -106,8 +109,7 @@ sub run {
   my $zfin_io = $self->get_filehandle( catfile( $dir, 'aliases.txt' ) );
 
   if ( !defined $zfin_io ) {
-    print( "ERROR: Could not open " . catfile( $dir, 'aliases.txt' ),
-           "\n" );
+    print STDERR  "ERROR: Could not open " . catfile( $dir, 'aliases.txt' ), "\n" ;
     return 1;
   }
 
@@ -120,17 +122,19 @@ sub run {
     chomp;
     my ($acc, undef, undef, $syn) = split (/\t/,$_);
     if(defined($zfin{$acc})){
-      XrefParser::BaseParser->add_to_syn($acc, $source_id, $syn);
+      XrefParser::BaseParser->add_to_syn($acc, $source_id, $syn, $species_id);
       $syncount++;
     }
   }
 
   $zfin_io->close();
 
-  print "\t$spcount xrefs from UniProt and\n";
-  print "\t$rscount xrefs from RefSeq succesfully loaded\n";
-  print "\t$syncount synonyms loaded\n";
-  print "\t$mismatch xrefs ignored\n";
+  if($verbose){
+    print "\t$spcount xrefs from UniProt and\n";
+    print "\t$rscount xrefs from RefSeq succesfully loaded\n";
+    print "\t$syncount synonyms loaded\n";
+    print "\t$mismatch xrefs ignored\n";
+  }
   return 0;
 }
 

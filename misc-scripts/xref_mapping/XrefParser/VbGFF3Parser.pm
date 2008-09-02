@@ -12,10 +12,18 @@ use base qw( XrefParser::CoordinateParser );
 
 # Parser for GFF3-format probe mappings from Vectorbase
 sub run {
-	my ($self, $source_id, $species_id, $file) = @_;
+  my $self = shift if (defined(caller(1)));
+
+  my $source_id = shift;
+  my $species_id = shift;
+  my $files       = shift;
+  my $release_file   = shift;
+  my $verbose       = shift;
+
+  my $file = @{$files}[0];
+
 	open (INFILE, "<$file");
 	my $i=0; my $type = "transcript";
-	print STDERR "source: ".$source_id."\tspecies: ".$species_id."\n";
 	while (my $ln = <INFILE>) {
 #	# parse GFF line:
 		chomp($ln); $i++;
@@ -62,12 +70,12 @@ sub run {
                 			 'cdsEnd'     => $end,
                 			 'exonStarts' => $start,
                 			 'exonEnds'   => $end );
-				print STDERR "$name, $start, $end\n";
+				print STDERR "$name, $start, $end\n" if($verbose);
     			$self->add_xref( $source_id, $species_id, \%xref );
 				}
 			}
 		}
-	print STDERR $i." VB GFF3 xrefs succesfully parsed\n";
+	print STDERR $i." VB GFF3 xrefs succesfully parsed\n" if($verbose);
 	close(INFILE);
 
   return 0;

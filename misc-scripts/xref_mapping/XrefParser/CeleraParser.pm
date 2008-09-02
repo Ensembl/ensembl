@@ -16,7 +16,15 @@ use base qw( XrefParser::BaseParser );
 
 sub run {
 
-  my ($self, $source_id, $species_id, $file) = @_;
+  my $self = shift if (defined(caller(1)));
+
+  my $source_id = shift;
+  my $species_id = shift;
+  my $files       = shift;
+  my $release_file   = shift;
+  my $verbose       = shift;
+
+  my $file = @{$files}[0];
 
   my $celera_gene_source_id = $self->get_source_id_for_source_name('Celera_Gene');
 
@@ -27,7 +35,7 @@ sub run {
   my $file_io = $self->get_filehandle($file);
 
   if ( !defined $file_io ) {
-    print "Could not open $file\n";
+    print STDERR "Could not open $file\n";
     return 1;
   }
 
@@ -70,11 +78,10 @@ sub run {
 
   $file_io->close();
 
-  print scalar(@xrefs) . " Celera xrefs succesfully parsed\n";
 
   XrefParser::BaseParser->upload_xref_object_graphs(\@xrefs);
+  print scalar(@xrefs) . " Celera xrefs succesfully parsed\n" if($verbose);
 
-  print "Done\n";
   return 0;
 }
 

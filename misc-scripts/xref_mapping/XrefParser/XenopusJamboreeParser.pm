@@ -15,7 +15,15 @@ use base qw( XrefParser::BaseParser );
 
 sub run {
 
-  my ($self, $source_id, $species_id, $file) = @_;
+  my $self = shift if (defined(caller(1)));
+
+  my $source_id = shift;
+  my $species_id = shift;
+  my $files       = shift;
+  my $release_file   = shift;
+  my $verbose       = shift;
+
+  my $file = @{$files}[0];
 
   my @xrefs;
 
@@ -24,7 +32,7 @@ sub run {
   my $file_io = $self->getline($file);
 
   if ( !defined $file_io ) {
-    print "ERROR: Could not open $file\n";
+    print STDERR "ERROR: Could not open $file\n";
     return 1;    # 1 error
   }
 
@@ -56,13 +64,12 @@ sub run {
 
   $file_io->close();
 
-  print scalar(@xrefs) . " XenopusJamboreeParser xrefs succesfully parsed\n";
+  print scalar(@xrefs) . " XenopusJamboreeParser xrefs succesfully parsed\n" if($verbose);
 
   if(!defined(XrefParser::BaseParser->upload_xref_object_graphs(\@xrefs))){
     return 1; #1 error
   }
 
-  print "Done\n";
   return 0;
 }
 

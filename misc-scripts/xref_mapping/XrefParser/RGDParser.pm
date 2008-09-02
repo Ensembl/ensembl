@@ -30,7 +30,11 @@ sub run {
 
   my $source_id = shift;
   my $species_id = shift;
-  my $file = shift;
+  my $files       = shift;
+  my $release_file   = shift;
+  my $verbose       = shift;
+
+  my $file = @{$files}[0];
 
   if(!defined($source_id)){
     $source_id = XrefParser::BaseParser->get_source_id_for_filename($file);
@@ -104,8 +108,8 @@ sub run {
 
   $rgd_io->close();
 
-  print "\t$count xrefs succesfully loaded and dependent on refseq\n";
-  print "\t$mismatch xrefs added but with NO dependencies\n";
+  print "\t$count xrefs succesfully loaded and dependent on refseq\n" if($verbose);
+  print "\t$mismatch xrefs added but with NO dependencies\n" if($verbose);
   return 0;
 }
 

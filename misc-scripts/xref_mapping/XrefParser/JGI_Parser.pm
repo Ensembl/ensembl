@@ -13,7 +13,15 @@ use base qw( XrefParser::BaseParser );
 
 sub run {
 
-  my ($self, $source_id, $species_id, $file) = @_;
+  my $self = shift if (defined(caller(1)));
+
+  my $source_id = shift;
+  my $species_id = shift;
+  my $files       = shift;
+  my $release_file   = shift;
+  my $verbose       = shift;
+
+  my $file = @{$files}[0];
 
   
   my $source_name = $self->get_source_name_for_source_id ($source_id) ;  
@@ -50,7 +58,7 @@ sub run {
   my $file_io = $self->get_filehandle($file);
 
   if ( !defined $file_io ) {
-    print "ERROR: Could not open $file\n";
+    print STDERR "ERROR: Could not open $file\n";
     return 1;    # 1 is an error
   }
 
@@ -88,7 +96,7 @@ sub run {
       $version = "JGI 2.0" ;  
 
     }else { 
-      print "WARNING : The source-name specified in the populate_metatable.sql file is\n" .
+      print STDERR "WARNING : The source-name specified in the populate_metatable.sql file is\n" .
         "WARNING : not matching the differnt cases specified in JGI_Parser.pm - plese\n" .  
           "WARNING : edit the parser \n" ; 
       return 1;    
@@ -124,11 +132,10 @@ sub run {
 
   $file_io->close();
 
-  print scalar(@xrefs) . " JGI_ xrefs succesfully parsed\n";
+  print scalar(@xrefs) . " JGI_ xrefs succesfully parsed\n" if($verbose);
 
   XrefParser::BaseParser->upload_xref_object_graphs(\@xrefs);
 
-  print "Done\n";
   return 0; # successful
 }
 
@@ -137,8 +144,6 @@ sub new
 {
     my $proto = shift;
     my $self  = $proto->SUPER::new(@_);
-
-    print "\n\nhave new jp\n";
 
     return $self;
 }

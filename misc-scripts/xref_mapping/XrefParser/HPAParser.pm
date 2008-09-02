@@ -14,19 +14,16 @@ use base qw( XrefParser::BaseParser);
 # 4)	Link (URL)
 
 
-sub new {
-    my $proto = shift;
-
-    my $class = ref $proto || $proto;
-    my $self = bless {}, $class;
-
-    return $self;
-}
-
 sub run {
-    my $self = shift;
+  my $self = shift if (defined(caller(1)));
 
-    my ( $source_id, $species_id, $filename ) = @_;
+  my $source_id = shift;
+  my $species_id = shift;
+  my $files       = shift;
+  my $rel_url   = shift;
+  my $verbose       = shift;
+
+  my $filename = @{$files}[0];
 
     my $file_io = $self->get_filehandle($filename);
     if ( !defined($file_io) ) {
@@ -34,9 +31,6 @@ sub run {
     }
 
     my $parsed_count = 0;
-
-    printf( STDERR "source = %d\t species = %d\n",
-            $source_id, $species_id );
 
     $file_io->getline();
     
@@ -61,7 +55,7 @@ sub run {
 
         ++$parsed_count;
 
-        my $xref_id = XrefParser::BaseParser->get_xref( $antibody_id, $source_id );
+        my $xref_id = XrefParser::BaseParser->get_xref( $antibody_id, $source_id, $species_id );
 
         if ( !defined($xref_id) || $xref_id eq '' ) {
             $xref_id = XrefParser::BaseParser->add_xref($antibody_id, $version, $label, $description, $source_id, $species_id);
@@ -72,11 +66,9 @@ sub run {
 	
     } ## end while ( defined( my $line...
 
-    printf( "%d direct xrefs succesfully parsed\n", $parsed_count );
+    printf( "%d direct xrefs succesfully parsed\n", $parsed_count ) if($verbose);
 
     $file_io->close();
-
-    print "Done\n";
 
     return 0;
 } ## end sub run

@@ -8,8 +8,15 @@ use warnings;
 use base qw( XrefParser::CoordinateParser );
 
 sub run {
-  my $self = shift;
-  my ( $source_id, $species_id, $data_file, $release_file ) = @_;
+  my $self = shift if (defined(caller(1)));
+
+  my $source_id = shift;
+  my $species_id = shift;
+  my $files       = shift;
+  my $release_file   = shift;
+  my $verbose       = shift;
+
+  my $data_file = @{$files}[0];
 
   # Get the $source_id for the "UCSC" source.
   $source_id = $self->get_source_id_for_source_name('UCSC');

@@ -38,7 +38,8 @@ my %xref_dependent_mapped;
 my ( $host,             $port,    $dbname,        $user,
      $pass,             $create,  $release,       $cleanup,
      $deletedownloaded, $drop_db, $checkdownload, $dl_path,
-     $unzip, $stats );
+     $unzip, $stats, $verbose);
+
 
 # --------------------------------------------------------------------------------
 # Get info about files to be parsed from the database
@@ -51,7 +52,7 @@ sub run {
        my $sourcesr,      $checkdownload, $create,
        $release,          $cleanup,       $drop_db,
        $deletedownloaded, $dl_path,       my $notsourcesr,
-       $unzip, $stats
+       $unzip, $stats, $verbose
     ) = @_;
 
     $base_dir = $dl_path if $dl_path;
@@ -140,7 +141,7 @@ sub run {
 
 
     while ( my @row = $sth->fetchrow_array() ) {
-        print '-' x 4, "{ $name }", '-' x ( 72 - length($name) ), "\n";
+        print '-' x 4, "{ $name }", '-' x ( 72 - length($name) ), "\n" if ($verbose);
 
         my $cs;
         my $file_cs = "";
@@ -176,21 +177,32 @@ sub run {
             # Database parsing
             if ( $file =~ /^mysql:/i ) {
                 $dsn = $file;
-                print "Parsing $dsn with $parser\n";
+                print "Parsing $dsn with $parser\n" if ($verbose);
                 eval "require XrefParser::$parser";
                 my $new = "XrefParser::$parser"->new();
                 if (
                      $new->run( $dsn,  $source_id, $species_id,
-                                $name, undef ) )
+                                $name, undef, $verbose ) )
                 {
                     ++$summary{$name}->{$parser};
                 }
                 next;
             }
-
-
-            if ( $unzip && ( $file =~ /\.(gz|Z)$/ ) ) {
-                printf( "Uncompressing '%s' using 'gunzip'\n", $file );
+	    if ( $file =~ /^script:/i ) {
+	      print "Parsing $file with $parser\n" if ($verbose);
+	      eval "require XrefParser::$parser";
+	      my $new = "XrefParser::$parser"->new();
+	      if (
+		  $new->run_script( $file,  $source_id, $species_id, $verbose ) )
+		{
+		  ++$summary{$name}->{$parser};
+		}
+	      next;
+	    }
+	    
+	    
+	    if ( $unzip && ( $file =~ /\.(gz|Z)$/ ) ) {
+	      printf( "Uncompressing '%s' using 'gunzip'\n", $file ) if ($verbose);
                 system( "gunzip", "-f", $file );
             }
             if ($unzip) { $file =~ s/\.(gz|Z)$// }
@@ -199,7 +211,7 @@ sub run {
             # check file size as some .SPC files can be of zero length
 
             if ( !defined( $cs = md5sum($file) ) ) {
-                printf( "Download '%s'\n", $file );
+                printf( "Download '%s'\n", $file ) if($verbose);
                 ++$summary{$name}->{$parser};
             } else {
                 $file_cs .= ':' . $cs;
@@ -209,7 +221,7 @@ sub run {
                     if ( -s $file ) {
                         $parse = 1;
                         print "Checksum for '$file' does not match, "
-                          . "will parse...\n";
+                          . "will parse...\n" if ($verbose);
 
                         # Files from sources "Uniprot/SWISSPROT" and
                         # "Uniprot/SPTREMBL" are all parsed with the
@@ -223,7 +235,7 @@ sub run {
                         $empty = 1;
                         printf(
                             "The file '%s' has zero length, skipping\n",
-                            $file );
+                            $file ) if ($verbose);
                     }
                 }
             } ## end else [ if ( !defined( $cs = md5sum...
@@ -237,7 +249,7 @@ sub run {
         if ( $parse and @files_to_parse and defined $file_cs ) {
             print "Parsing '"
               . join( "', '", @files_to_parse )
-              . "' with $parser\n";
+              . "' with $parser\n" if ($verbose);
 
             eval "require XrefParser::$parser";
             $@ && warn( "[ERROR] Cannot require $parser: $@" );
@@ -247,7 +259,7 @@ sub run {
                 # Run with $release_url.
                 if (
                      $new->run( $source_id,      $species_id,
-                                @files_to_parse, $release_url ) )
+                                \@files_to_parse, $release_url, $verbose ) )
                 {
                     ++$summary{$name}->{$parser};
                 }
@@ -255,7 +267,7 @@ sub run {
                 # Run without $release_url.
                 if (
                      $new->run( $source_id, $species_id,
-                                @files_to_parse ) )
+                                \@files_to_parse, undef, $verbose ) )
                 {
                     ++$summary{$name}->{$parser};
                 }
@@ -273,12 +285,12 @@ sub run {
         } elsif ( !$dsn && !$empty && @files_to_parse ) {
             print(   "Ignoring '"
                    . join( "', '", @files_to_parse )
-                   . "' as checksums match\n" );
+                   . "' as checksums match\n" ) if ($verbose);
         }
 
         if ($cleanup) {
             foreach my $file (@files_to_parse) {
-                printf( "Deleting '%s'\n", $file );
+                printf( "Deleting '%s'\n", $file ) if($verbose);
                 unlink($file);
             }
         }
@@ -410,7 +422,7 @@ sub run {
 	    print join("\t",@{$sum_line{$sum_name}})."\n";
 	  }
 	  
-	}	
+	} # if ($stats)	
 	
 
     } ## end while ( my @row = $sth->fetchrow_array...
@@ -418,20 +430,21 @@ sub run {
     print "\n", '=' x 80, "\n";
     print "Summary of status\n";
     print '=' x 80, "\n";
-
+    
+    
     foreach my $source_name ( sort keys %summary ) {
-        foreach my $parser_name ( keys %{ $summary{$source_name} } ) {
-            printf( "%30s %-20s\t%s\n",
-                    $source_name,
-                    $parser_name, (
-                       defined $summary{$source_name}->{$parser_name}
-                         && $summary{$source_name}->{$parser_name}
-                       ? 'FAILED'
-                       : 'OKAY'
-                    ) );
-        }
+      foreach my $parser_name ( keys %{ $summary{$source_name} } ) {
+	printf( "%30s %-20s\t%s\n",
+		$source_name,
+		$parser_name, (
+			       defined $summary{$source_name}->{$parser_name}
+			       && $summary{$source_name}->{$parser_name}
+			       ? 'FAILED'
+			       : 'OKAY'
+			      ) );
+      }
     }
-
+    
 
     if($stats){
       my %sum_line;
@@ -555,7 +568,11 @@ sub fetch_files {
         # Change old-style 'LOCAL:' URIs into 'file:'.
         $user_uri =~ s#^LOCAL:#file:#i;
         my $uri = URI->new($user_uri);
-        if ( $uri->scheme() eq 'file' ) {
+
+#	print "\n*******$user_uri\n*********\n";
+	if ( $uri->scheme() eq 'script'){
+	  push( @processed_files, $user_uri );	  
+	}elsif ( $uri->scheme() eq 'file' ) {
             # Deal with local files.
 
             my @local_files;
@@ -574,7 +591,7 @@ sub fetch_files {
               catfile( $dest_dir, basename( $uri->path() ) );
 
             if ( $deletedownloaded && -f $file_path ) {
-                printf( "Deleting '%s'\n", $file_path );
+                printf( "Deleting '%s'\n", $file_path ) if ($verbose);
                 unlink($file_path);
             }
 
@@ -584,12 +601,12 @@ sub fetch_files {
                 # used (for globbing FTP URIs, we always need to connect
                 # to a FTP site to see what files are there).
 
-                printf( "File '%s' already exists\n", $file_path );
+                printf( "File '%s' already exists\n", $file_path ) if ($verbose);
                 push( @processed_files, $file_path );
                 next;
             }
 
-            printf( "Connecting to FTP host '%s'\n", $uri->host() );
+            printf( "Connecting to FTP host '%s'\n", $uri->host() ) if ($verbose);
 
             my $ftp = Net::FTP->new( $uri->host(), 'Debug' => 0 );
             if ( !defined($ftp) ) {
@@ -624,17 +641,17 @@ sub fetch_files {
                   catfile( $dest_dir, basename($remote_file) );
 
                 if ( $deletedownloaded && -f $file_path ) {
-                    printf( "Deleting '%s'\n", $file_path );
+                    printf( "Deleting '%s'\n", $file_path ) if($verbose);
                     unlink($file_path);
                 }
 
                 if ( $checkdownload && -f $file_path ) {
-                    printf( "File '%s' already exists\n", $file_path );
+                    printf( "File '%s' already exists\n", $file_path ) if ($verbose);
                 } else {
 
                     if ( !-d dirname($file_path) ) {
                         printf( "Creating directory '%s'\n",
-                                dirname($file_path) );
+                                dirname($file_path) ) if($verbose);
                         if ( !mkdir( dirname($file_path) ) ) {
                             printf(
                                 "==> Can not create directory '%s': %s",
@@ -645,8 +662,8 @@ sub fetch_files {
 
                     printf( "Fetching '%s' (size = %s)\n",
                             $remote_file,
-                            $ftp->size($remote_file) || '(unknown)' );
-                    printf( "Local file is '%s'\n", $file_path );
+                            $ftp->size($remote_file) || '(unknown)' ) if ($verbose);
+                    printf( "Local file is '%s'\n", $file_path ) if($verbose);
 
                     if ( !$ftp->get( $remote_file, $file_path ) ) {
                         printf( "==> Could not get '%s': %s\n",
@@ -667,7 +684,7 @@ sub fetch_files {
               catfile( $dest_dir, basename( $uri->path() ) );
 
             if ( $deletedownloaded && -f $file_path ) {
-                printf( "Deleting '%s'\n", $file_path );
+                printf( "Deleting '%s'\n", $file_path ) if($verbose);
                 unlink($file_path);
             }
 
@@ -675,14 +692,14 @@ sub fetch_files {
                 # The file is already there, no need to connect to a
                 # HTTP server.
 
-                printf( "File '%s' already exists\n", $file_path );
+                printf( "File '%s' already exists\n", $file_path ) if ($verbose);
                 push( @processed_files, $file_path );
                 next;
             }
 
             if ( !-d dirname($file_path) ) {
                 printf( "Creating directory '%s'\n",
-                        dirname($file_path) );
+                        dirname($file_path) ) if($verbose);
                 if ( !mkdir( dirname($file_path) ) ) {
                     printf( "==> Can not create directory '%s': %s",
                             dirname($file_path), $! );
@@ -690,14 +707,14 @@ sub fetch_files {
                 }
             }
 
-            printf( "Connecting to HTTP host '%s'\n", $uri->host() );
-            printf( "Fetching '%s'\n",                $uri->path() );
+            printf( "Connecting to HTTP host '%s'\n", $uri->host() ) if($verbose);
+            printf( "Fetching '%s'\n",                $uri->path() ) if($verbose);
 
             if ( $checkdownload && -f $file_path ) {
-                printf( "File '%s' already exists\n", $file_path );
+                printf( "File '%s' already exists\n", $file_path ) if($verbose);
             } else {
 
-                printf( "Local file is '%s'\n", $file_path );
+                printf( "Local file is '%s'\n", $file_path ) if($verbose);
 
                 my $ua = LWP::UserAgent->new();
                 $ua->env_proxy();
@@ -766,7 +783,7 @@ sub get_filehandle
 
     if ( !defined $io ) { return undef }
 
-    print "Reading from '$file_name'...\n";
+    print "Reading from '$file_name'...\n" if($verbose);
 
     return $io;
 }
@@ -787,7 +804,7 @@ sub new
 sub get_source_id_for_filename {
 
   my ($self, $file) = @_;
-  print STDERR "FILE $file\n" ; 
+  print "FILE $file\n" if($verbose) ; 
   my $sql = "SELECT s.source_id FROM source s, source_url su WHERE su.source_id=s.source_id AND su.url LIKE  '%/" . $file . "%'";
   my $sth = dbi()->prepare($sql);
   $sth->execute();
@@ -1065,7 +1082,7 @@ sub get_existing_mappings {
     #print "mgi_to_uniprot{" . $row[1] . "} = " . $row[2] . "\n";
   }
 
-  print "Got " . scalar(keys(%mappings)) . " $from_source_name -> $to_source_name mappings\n";
+  print "Got " . scalar(keys(%mappings)) . " $from_source_name -> $to_source_name mappings\n" if($verbose);
 
   return \%mappings;
 
@@ -1078,7 +1095,7 @@ sub upload_xref_object_graphs {
   my ($self, $rxrefs) = @_;
 
   my $dbi = dbi();
-  print "count = ".$#$rxrefs."\n";
+  print "count = ".$#$rxrefs."\n" if($verbose);
 
   if ($#$rxrefs > -1) {
 
@@ -1086,7 +1103,7 @@ sub upload_xref_object_graphs {
 #    $self->delete_by_source($rxrefs);
 
     # upload new ones
-    print "Uploading xrefs\n";
+    print "Uploading xrefs\n" if($verbose);
     my $xref_sth = $dbi->prepare("INSERT INTO xref (accession,version,label,description,source_id,species_id) VALUES(?,?,?,?,?,?)");
     my $pri_insert_sth = $dbi->prepare("INSERT INTO primary_xref VALUES(?,?,?,?)");
     my $pri_update_sth = $dbi->prepare("UPDATE primary_xref SET sequence=? WHERE xref_id=?");
@@ -1106,30 +1123,30 @@ sub upload_xref_object_graphs {
 	 return undef;
        }
       # Create entry in xref table and note ID
-      if(! $xref_sth->execute($xref->{ACCESSION},
+       if(! $xref_sth->execute($xref->{ACCESSION},
 			 $xref->{VERSION} || 0,
 			 $xref->{LABEL},
 			 $xref->{DESCRIPTION},
 			 $xref->{SOURCE_ID},
 			 $xref->{SPECIES_ID})){
-	if(!defined($xref->{SOURCE_ID})){
-	  print "your xref: $xref->{ACCESSION} does not have a source-id\n";
-	  return undef;
-	}
-	$xref_id = insert_or_select($xref_sth, $dbi->err, $xref->{ACCESSION}, $xref->{SOURCE_ID}, $xref->{SPECIES_ID});
-	$xref_update_label_sth->execute($xref->{LABEL},$xref_id) if (defined($xref->{LABEL}));
-	$xref_update_descr_sth->execute($xref->{DESCRIPTION},$xref_id,) if (defined($xref->{DESCRIPTION}));
-      }
-      else{
-	$xref_id = insert_or_select($xref_sth, $dbi->err, $xref->{ACCESSION}, $xref->{SOURCE_ID}, $xref->{SPECIES_ID});
-      }
-
+	 if(!defined($xref->{SOURCE_ID})){
+	   print "your xref: $xref->{ACCESSION} does not have a source-id\n";
+	   return undef;
+	 }
+	 $xref_id = $self->insert_or_select($xref_sth, $dbi->err, $xref->{ACCESSION}, $xref->{SOURCE_ID}, $xref->{SPECIES_ID});
+	 $xref_update_label_sth->execute($xref->{LABEL},$xref_id) if (defined($xref->{LABEL}));
+	 $xref_update_descr_sth->execute($xref->{DESCRIPTION},$xref_id,) if (defined($xref->{DESCRIPTION}));
+       }
+       else{
+	 $xref_id = $self->insert_or_select($xref_sth, $dbi->err, $xref->{ACCESSION}, $xref->{SOURCE_ID}, $xref->{SPECIES_ID});
+       }
+       
 
        # create entry in primary_xref table with sequence; if this is a "cumulative"
-      # entry it may already exist, and require an UPDATE rather than an INSERT
+       # entry it may already exist, and require an UPDATE rather than an INSERT
        if(defined($xref->{SEQUENCE})){
 	 if(!(defined($xref_id) and $xref_id)){
-	   print STDERR "xref_id is not set for :\n$xref->{ACCESSION}\n$xref->{LABEL}\n$xref->{DESCRIPTION}\n$xref->{SOURCE_ID}\n";
+	   print STDERR "xref_id is not set for :\n$xref->{ACCESSION}\n$xref->{LABEL}\n$xref->{DESCRIPTION}\n$xref->{SOURCE_ID}\n$xref->{SPECIES_ID}\n";
 	 }
 	 if ( primary_xref_id_exists($xref_id) ) {
 	   $pri_update_sth->execute( $xref->{SEQUENCE}, $xref_id )
@@ -1161,7 +1178,7 @@ sub upload_xref_object_graphs {
 			   $dep{SOURCE_ID},
 			   $xref->{SPECIES_ID});
 
-	my $dep_xref_id = insert_or_select($xref_sth, $dbi->err, $dep{ACCESSION}, $dep{SOURCE_ID}, $xref->{SPECIES_ID});
+	my $dep_xref_id = $self->insert_or_select($xref_sth, $dbi->err, $dep{ACCESSION}, $dep{SOURCE_ID}, $xref->{SPECIES_ID});
 
 	if($dbi->err){
 	  print STDERR "dbi\t$dbi->err \n$dep{ACCESSION} \n $dep{SOURCE_ID} \n";
@@ -1194,8 +1211,8 @@ sub upload_xref_object_graphs {
 sub upload_direct_xrefs{
   my ($self, $direct_xref)  = @_;
   for my $dr(@$direct_xref) {
-    # print "having now direct-XREF : $dr->{ENSEMBL_STABLE_ID} \n" ;
-    my $general_xref_id = get_xref_id_by_accession_and_source($dr->{ACCESSION},$dr->{SOURCE_ID});
+#    print "having now direct-XREF : ".$dr->{ENSEMBL_STABLE_ID}."\t".$dr->{SPECIES_ID}." \n" ;
+    my $general_xref_id = get_xref($dr->{ACCESSION},$dr->{SOURCE_ID},$dr->{SPECIES_ID});
     if ($general_xref_id){
       # print "direct_xref:\n$general_xref_id\n$dr->{ENSEMBL_STABLE_ID}\n$dr->{ENSEMBL_TYPE}\t$dr->{LINKAGE_XREF}\n\n";
       $self->add_direct_xref($general_xref_id, $dr->{ENSEMBL_STABLE_ID},$dr->{ENSEMBL_TYPE},$dr->{LINKAGE_XREF});
@@ -1388,6 +1405,28 @@ sub update_source
 
 
 # --------------------------------------------------------------------------------
+sub dbi2{
+
+    my $self = shift;
+    my ($host, $port, $user, $dbname, $pass) = @_;
+    my $dbi2;
+
+    if ( !defined $dbi2 || !$dbi2->ping() ) {
+        my $connect_string =
+          sprintf( "dbi:mysql:host=%s;port=%s;database=%s",
+            $host, $port, $dbname );
+
+        $dbi2 =
+          DBI->connect( $connect_string, $user, $pass,
+            { 'RaiseError' => 1 } )
+          or croak( "Can't connect to database: " . $DBI::errstr );
+        $dbi2->{'mysql_auto_reconnect'} = 1; # Reconnect on timeout
+    }
+    
+    return $dbi2;
+}
+
+# --------------------------------------------------------------------------------
 
 sub dbi
 {
@@ -1432,7 +1471,7 @@ sub md5sum
 
 # --------------------------------------------------------------------------------
 
-sub get_xref_id_by_accession_and_source {
+sub get_xref_id_by_accession_and_source_OLD {
 
   my ($acc, $source_id, $species_id ) = @_;
 
@@ -1460,15 +1499,14 @@ SELECT xref_id FROM xref WHERE accession=? AND source_id=?';
 
 sub insert_or_select {
 
-  my ($sth, $error, $acc, $source, $species) = @_;
+  my ($self, $sth, $error, $acc, $source, $species) = @_;
 
   my $id;
 
   # TODO - check for specific error code rather than for just any error
   if ($error) {
 
-    $id = get_xref_id_by_accession_and_source($acc, $source, $species);
-#    print STDERR "Got existing xref id " . $id . " for " . $acc . " " . $source . "\n";
+    $id = $self->get_xref($acc, $source, $species);
 	
   } else {
 	
@@ -1535,17 +1573,17 @@ sub delete_by_source {
 
   # now delete them
   foreach my $source (keys %source_ids) {
-    print "Deleting pairs with source ID $source \n";
+    print "Deleting pairs with source ID $source \n" if($verbose);
     $pairs_sth->execute($source);
-    print "Deleting direct xrefs with source ID $source \n";
+    print "Deleting direct xrefs with source ID $source \n" if($verbose);
     $direct_sth->execute($source);
-    print "Deleting synonyms of xrefs with source ID $source \n";
+    print "Deleting synonyms of xrefs with source ID $source \n" if($verbose);
     $syn_sth->execute($source);
-    print "Deleting dependent xrefs of xrefs with source ID $source \n";
+    print "Deleting dependent xrefs of xrefs with source ID $source \n" if($verbose);
     $dep_sth->execute($source);
-    print "Deleting primary xrefs with source ID $source \n";
+    print "Deleting primary xrefs with source ID $source \n" if($verbose);
 #    $p_xref_sth->execute($source);
-    print "Deleting xrefs with source ID $source \n";
+    print "Deleting xrefs with source ID $source \n" if($verbose);
     $xref_sth->execute($source);
   }
 
@@ -1569,7 +1607,7 @@ sub validate_sources {
 
     my $rv = $sth->execute(lc($source));
     if ( $rv > 0 ) {
-      print "Source $source is valid\n";
+      print "Source $source is valid\n" if($verbose);
     } else {
       print "\nSource $source is not valid; valid sources are:\n";
       show_valid_sources();
@@ -1603,18 +1641,19 @@ sub validate_species {
   my @species_ids;
 
   my $dbi = dbi();
-  my $sth = $dbi->prepare("SELECT species_id, name FROM species WHERE LOWER(name)=? OR LOWER(aliases) LIKE ?");
+  my $sth = $dbi->prepare("SELECT species_id, name FROM species WHERE LOWER(name)=? OR LOWER(aliases) REGEXP ?");
   my ($species_id, $species_name);
 
   foreach my $sp (@species) {
 
-    $sth->execute(lc($sp), "%" . lc($sp) . "%");
+#    $sth->execute(lc($sp), "%" . lc($sp) . "%");  # no longer allow % as this generates tomany possible errors
+    $sth->execute(lc($sp),  "^".lc($sp).",|[ ]".lc($sp)."[,]|^".lc($sp)."\$|[,] ".lc($sp)."\$" );
     $sth->bind_columns(\$species_id, \$species_name);
     if (my @row = $sth->fetchrow_array()) {
-      print "Species $sp is valid (name = " . $species_name . ", ID = " . $species_id . ")\n";
+      print "Species $sp is valid (name = " . $species_name . ", ID = " . $species_id . ")\n" if($verbose);
       push @species_ids, $species_id;
     } else {
-      print "Species $sp is not valid; valid species are:\n";
+      print STDERR "Species $sp is not valid; valid species are:\n";
       show_valid_species();
       exit(1);
     }
@@ -1631,7 +1670,7 @@ sub show_valid_species() {
 
   $sth->execute();
   while (my @row = $sth->fetchrow_array()) {
-    print $row[0] . " (aliases: " . $row[1] . ")\n";
+    print STDERR $row[0] . " (aliases: " . $row[1] . ")\n";
   }
 
 }
@@ -1669,14 +1708,14 @@ sub get_direct_xref{
 
 
 sub get_xref{
-  my ($self,$acc,$source) = @_;
+  my ($self,$acc,$source, $species_id) = @_;
 
   if(!defined($get_xref_sth)){
-    my $sql = "select xref_id from xref where accession = ? and source_id = ?";
+    my $sql = "select xref_id from xref where accession = ? and source_id = ? and species_id = ?";
     $get_xref_sth = $dbi->prepare($sql);  
   }
   
-  $get_xref_sth->execute( $acc, $source ) or croak( $dbi->errstr() );
+  $get_xref_sth->execute( $acc, $source, $species_id ) or croak( $dbi->errstr() );
   if(my @row = $get_xref_sth->fetchrow_array()) {
     return $row[0];
   }   
@@ -1688,6 +1727,10 @@ sub add_xref {
        $species_id )
     = @_;
 
+  my $xref_id = $self->get_xref($acc,$source_id, $species_id);
+  if(defined($xref_id)){
+    return $xref_id;
+  }
   if ( !defined($add_xref_sth) ) {
     $add_xref_sth =
       dbi->prepare( "INSERT INTO xref "
@@ -1733,14 +1776,14 @@ VALUES
   }
 
 
-  my $direct_id = $self->get_xref($acc, $source_id);
+  my $direct_id = $self->get_xref($acc, $source_id, $species_id);
   if(!defined($direct_id)){
     $add_xref_sth->execute(
         $acc, $version || 0, $label,
         $description, $source_id, $species_id
     ) or croak("$acc\t$label\t\t$source_id\t$species_id\n");
   }
-  $direct_id = $self->get_xref($acc, $source_id);
+  $direct_id = $self->get_xref($acc, $source_id, $species_id);
 
   $self->add_direct_xref($direct_id, $direct_xref, $type, "");
 }
@@ -1772,14 +1815,14 @@ VALUES
   (?,?,?,?)");
   }
   
-  my $dependent_id = $self->get_xref($acc, $source_id);
+  my $dependent_id = $self->get_xref($acc, $source_id, $species_id);
   if(!defined($dependent_id)){
     $add_xref_sth->execute(
         $acc, $version || 0, $label,
         $description, $source_id, $species_id
     ) or croak("$acc\t$label\t\t$source_id\t$species_id\n");
   }
-  $dependent_id = $self->get_xref($acc, $source_id);
+  $dependent_id = $self->get_xref($acc, $source_id, $species_id);
   if(!defined($dependent_id)){
     croak("$acc\t$label\t\t$source_id\t$species_id\n");
   }
@@ -1793,14 +1836,14 @@ VALUES
 }
 
 sub add_to_syn_for_mult_sources{
-  my ($self, $acc, $sources, $syn) = @_;
+  my ($self, $acc, $sources, $syn, $species_id) = @_;
 
   if(!defined($add_synonym_sth)){
     $add_synonym_sth =  $dbi->prepare("INSERT INTO synonym VALUES(?,?)");
   }
   my $found =0;
   foreach my $source_id (@$sources){
-    my $xref_id = $self->get_xref($acc, $source_id);
+    my $xref_id = $self->get_xref($acc, $source_id, $species_id);
     if(defined($xref_id)){
       $add_synonym_sth->execute( $xref_id, $syn )
         or croak( $dbi->errstr() . "\n $xref_id\n $syn\n" );
@@ -1816,19 +1859,19 @@ sub add_to_syn_for_mult_sources{
 
 
 sub add_to_syn{
-  my ($self, $acc, $source_id, $syn) = @_;
+  my ($self, $acc, $source_id, $syn, $species_id) = @_;
 
   if(!defined($add_synonym_sth)){
     $add_synonym_sth =  $dbi->prepare("INSERT INTO synonym VALUES(?,?)");
   }
-  my $xref_id = $self->get_xref($acc, $source_id);
+  my $xref_id = $self->get_xref($acc, $source_id, $species_id);
   if(defined($xref_id)){
     $add_synonym_sth->execute( $xref_id, $syn )
       or croak( $dbi->errstr() . "\n $xref_id\n $syn\n" );
   }
   else {
       croak(  "Could not find acc $acc in "
-            . "xref table source = $source_id\n" );
+            . "xref table source = $source_id of species $species_id\n" );
   }
 }
 
@@ -1910,7 +1953,7 @@ sub create {
                          $ini_file, $metadata_file );
 
       if ( system($cmd) == 0 ) {
-        print("==> Done.\n");
+        print("==> Done.\n") if($verbose);
       } else {
         if ( $? == -1 ) {
           croak("Failed to execute: $!\n");
@@ -1935,7 +1978,7 @@ sub create {
 
     if ( $drop_db ) {     
 	$dbh->do( "DROP DATABASE $dbname" );
-	print "Database $dbname dropped\n" ; 
+	print "Database $dbname dropped\n" if($verbose) ; 
     }
   
     if ( $create && !$drop_db ) {
@@ -1944,7 +1987,7 @@ sub create {
       chomp $p;
       if ($p eq "yes") {
 	$dbh->do( "DROP DATABASE $dbname" );
-	print "Removed existing database $dbname\n";
+	print "Removed existing database $dbname\n" if($verbose);
       } else {
 	print "$dbname NOT removed\n";
 	exit(1);
@@ -1959,7 +2002,7 @@ sub create {
 
   my $table_file = catfile( $sql_dir, 'sql', 'table.sql' );
 
-  printf( "Creating %s from %s\n", $dbname, $table_file );
+  printf( "Creating %s from %s\n", $dbname, $table_file ) if($verbose);
   if ( !-e $table_file ) {
     croak( "Cannot open  " . $table_file );
   }
@@ -1970,7 +2013,7 @@ sub create {
     or croak("Cannot execute the following command (exit $?):\n$cmd\n");
 
   printf( "Populating metadata in %s from %s\n",
-          $dbname, $metadata_file );
+          $dbname, $metadata_file ) if($verbose);
   if ( !-e $metadata_file ) {
     croak( "Cannot open " . $metadata_file );
   }
@@ -2042,7 +2085,7 @@ sub set_release
       $dbi->prepare(
         "UPDATE source SET source_release=? WHERE source_id=?");
 
-    print "Setting release to '$release' for source ID '$source_id'\n";
+    print "Setting release to '$release' for source ID '$source_id'\n" if($verbose);
 
     $sth->execute( $release, $source_id );
 }

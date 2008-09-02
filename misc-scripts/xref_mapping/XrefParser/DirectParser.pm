@@ -63,7 +63,7 @@ sub run {
         ++$parsed_count;
 
         my $xref_id =
-          XrefParser::BaseParser->get_xref( $accession, $source_id );
+          XrefParser::BaseParser->get_xref( $accession, $source_id, $species_id );
 
         if ( !defined($xref_id) || $xref_id eq '' ) {
             $xref_id =

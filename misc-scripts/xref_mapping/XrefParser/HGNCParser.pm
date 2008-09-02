@@ -15,7 +15,7 @@ my $syn_sth;
 if (!defined(caller())) {
 
   if (scalar(@ARGV) != 1) {
-    print "\nUsage: HGNCParser.pm file <source_id> <species_id>\n\n";
+    print STDERR "\nUsage: HGNCParser.pm file <source_id> <species_id>\n\n";
     exit(1);
   }
 
@@ -28,9 +28,12 @@ sub run {
 
   my $source_id = shift;
   my $species_id = shift;
-  my $file = shift;
+  my $files_ref  = shift;
+  my $rel_file   = shift;
+  my $verbose = shift;
 
-  print STDERR "source = $source_id\tspecies = $species_id\n";
+  my $file = @{$files_ref}[0];
+
   if(!defined($source_id)){
     $source_id = XrefParser::BaseParser->get_source_id_for_filename($file);
   }
@@ -68,7 +71,6 @@ sub run {
   push @list, "refseq_dna";
   my (%entrezgene) = %{XrefParser::BaseParser->get_valid_xrefs_for_dependencies("EntrezGene",@list)};
 
-  my $swiss_count = 0;
   my $refseq_count = 0;
   my $entrezgene_count = 0;
   my $ensembl_count = 0;
@@ -112,14 +114,14 @@ sub run {
       if (defined($array[3])) {     # dead name, add to synonym
 	my @array2 = split(',\s*', $array[3]);
 	foreach my $arr (@array2){
-	  XrefParser::BaseParser->add_to_syn($array[0], $hgnc_ensembl_mapped, $arr);
+	  XrefParser::BaseParser->add_to_syn($array[0], $hgnc_ensembl_mapped, $arr, $species_id);
 	}
       }
       
       if (defined($array[4])) {     # alias, add to synonym
 	my @array2 = split(',\s*', $array[4]);
 	foreach my $arr (@array2){
-	  XrefParser::BaseParser->add_to_syn($array[0], $hgnc_ensembl_mapped, $arr);
+	  XrefParser::BaseParser->add_to_syn($array[0], $hgnc_ensembl_mapped, $arr, $species_id);
 	}
       }
       
@@ -133,14 +135,14 @@ sub run {
 	if (defined($array[3])) {     # dead name, add to synonym
 	  my @array2 = split(',\s*', $array[3]);
 	  foreach my $arr (@array2){
-	    XrefParser::BaseParser->add_to_syn($array[0], $hgnc_refseq_manual, $arr);
+	    XrefParser::BaseParser->add_to_syn($array[0], $hgnc_refseq_manual, $arr, $species_id);
 	  }
 	}
 
 	if (defined($array[4])) {     # alias, add to synonym
 	  my @array2 = split(',\s*', $array[4]);
 	  foreach my $arr (@array2){
-	    XrefParser::BaseParser->add_to_syn($array[0], $hgnc_refseq_manual, $arr);
+	    XrefParser::BaseParser->add_to_syn($array[0], $hgnc_refseq_manual, $arr, $species_id);
 	  }
 	}
       }
@@ -154,14 +156,14 @@ sub run {
 	if (defined($array[3])) {     # dead name, add to synonym
 	  my @array2 = split(',\s*', $array[3]);
 	  foreach my $arr (@array2){
-	    XrefParser::BaseParser->add_to_syn($array[0], $hgnc_refseq_mapped, $arr);
+	    XrefParser::BaseParser->add_to_syn($array[0], $hgnc_refseq_mapped, $arr, $species_id);
 	  }
 	}
 
 	if (defined($array[4])) {     # alias, add to synonym
 	  my @array2 = split(',\s*', $array[4]);
 	  foreach my $arr (@array2){
-	    XrefParser::BaseParser->add_to_syn($array[0], $hgnc_refseq_mapped, $arr);
+	    XrefParser::BaseParser->add_to_syn($array[0], $hgnc_refseq_mapped, $arr, $species_id);
 	  }
 	}
       }
@@ -176,17 +178,17 @@ sub run {
 	if (defined($array[3])) {     # dead name, add to synonym
 	  my @array2 = split(',\s*', $array[3]);
 	  foreach my $arr (@array2){
-	    XrefParser::BaseParser->add_to_syn($array[0], $hgnc_entrezgene_manual, $arr);
+	    XrefParser::BaseParser->add_to_syn($array[0], $hgnc_entrezgene_manual, $arr, $species_id);
 	  }
 	}
 	
 	if (defined($array[4])) {     # alias, add to synonym
 	  my @array2 = split(',\s*', $array[4]);
 	  foreach my $arr (@array2){
-	    XrefParser::BaseParser->add_to_syn($array[0], $hgnc_entrezgene_manual, $arr);
+	    XrefParser::BaseParser->add_to_syn($array[0], $hgnc_entrezgene_manual, $arr, $species_id);
 	  }
 	}
-      }    
+      }   
     }
 
     if(defined($array[7])){
@@ -198,30 +200,31 @@ sub run {
 	if (defined($array[3])) {     # dead name, add to synonym
 	  my @array2 = split(',\s*', $array[3]);
 	  foreach my $arr (@array2){
-	    XrefParser::BaseParser->add_to_syn($array[0], $hgnc_entrezgene_mapped, $arr);
+	    XrefParser::BaseParser->add_to_syn($array[0], $hgnc_entrezgene_mapped, $arr, $species_id);
 	  }
 	}
 	
 	if (defined($array[4])) {     # alias, add to synonym
 	  my @array2 = split(',\s*', $array[4]);
 	  foreach my $arr (@array2){
-	    XrefParser::BaseParser->add_to_syn($array[0], $hgnc_entrezgene_mapped, $arr);
+	    XrefParser::BaseParser->add_to_syn($array[0], $hgnc_entrezgene_mapped, $arr, $species_id);
 	  }
 	}
       }    
     }
     if(!$seen){ # Store to keep descriptions etc
       $self->add_xref($array[0], "", $array[1], $array[2], $source_id, $species_id);      
+      $mismatch++;
     }
 
 
   } # while HGNC
 
-  $hugo_io->getline();
-
-  print "Loaded a total of " . ($refseq_count + $entrezgene_count) . " HGNC xrefs, $refseq_count from RefSeq curated mappings and $entrezgene_count from EntrezGene mappings\n";
-
-  print "$mismatch xrefs could not be associated via RefSeq or EntrezGene\n";
+  $hugo_io->close();
+  
+  print "Loaded a total of " . ($refseq_count + $entrezgene_count) . " HGNC xrefs, $refseq_count from RefSeq curated mappings and $entrezgene_count from EntrezGene mappings and $ensembl_count from ensembl_mapping\n" if($verbose);
+  
+  print "$mismatch xrefs could not be associated via RefSeq, EntrezGene or ensembl\n" if($verbose);
 
   return 0; # successful
 

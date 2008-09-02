@@ -18,32 +18,28 @@ my $dbi;
 my $xref_id;
 my $source_id;
 
-sub new {
-    my $proto = shift;
-
-    my $class = ref $proto || $proto;
-    my $self = bless {}, $class;
-
-    return $self;
-}
-
 
 sub run {
-    my $self = shift;
+  my $self = shift if (defined(caller(1)));
 
-    my ( $source_id, $species_id, $filename ) = @_;
+  my $source_id = shift;
+  my $species_id = shift;
+  my $files       = shift;
+  my $rel_url   = shift;
+  my $verbose       = shift;
+
+  my $filename = @{$files}[0];
+
+#    my ( $source_id, $species_id, $filename, $rel_url,$verbose ) = @_;
 
     my $file_io = $self->get_filehandle($filename);
     if ( !defined($file_io) ) {
         return 1;
     }
 
-    my $parsed_count = 0;
+     my $parsed_count = 0;
 
-    printf( STDERR "source = %d\t species = %d\n",
-            $source_id, $species_id );
-
-    $file_io->getline();
+     $file_io->getline();
     
     while ( defined( my $line = $file_io->getline() ) ) {
  
@@ -53,14 +49,14 @@ sub run {
         my ( $dbass_gene_id, $dbass_gene_name, $ensembl_id) = split( /,/, $line );
 
         if ( !defined($dbass_gene_id) || !defined($ensembl_id) ) {
-            printf( "Line %d contains  has less than two columns.\n",
+            printf STDERR ( "Line %d contains  has less than two columns.\n",
                     1 + $parsed_count );
-            print ("The parsing failed\n");
+            print STDERR ("The parsing failed\n");
             return 1;
         }
 	
 	
-	my $first_gene_name;
+	my $first_gene_name = $dbass_gene_name;
 	my $second_gene_name;
 	
 	
@@ -71,9 +67,8 @@ sub run {
 	if ($dbass_gene_name =~ /(.*)\((.*)\)/){
 		$first_gene_name = $1;
 	 	$second_gene_name = $2;
-		print $first_gene_name, "\n", $second_gene_name, "\n";
+#		print $first_gene_name, "\n", $second_gene_name, "\n" if($verbose);
 	}
-       
        
        
         my $label       = $first_gene_name;
@@ -84,7 +79,7 @@ sub run {
 
         ++$parsed_count;
 
-        my $xref_id = XrefParser::BaseParser->get_xref( $dbass_gene_id, $source_id );
+        my $xref_id = XrefParser::BaseParser->get_xref( $dbass_gene_id, $source_id, $species_id );
 
         if ( !defined($xref_id) || $xref_id eq '' ) {
             $xref_id = XrefParser::BaseParser->add_xref($dbass_gene_id, $version, $label, $description, $source_id, $species_id);
@@ -96,7 +91,7 @@ sub run {
 		XrefParser::DBASSParser->add_synonym($xref_id, $synonym);
 	}
 	elsif ($synonym =~ /^\s/){
-		print "There is white space! \n";	
+		print "There is white space! \n" if($verbose);	
 	}
 	else {
 		next;
@@ -105,11 +100,10 @@ sub run {
 	
     } ## end while ( defined( my $line...
 
-    printf( "%d direct xrefs succesfully parsed\n", $parsed_count );
+    printf( "%d direct xrefs succesfully parsed\n", $parsed_count ) if($verbose);
 
     $file_io->close();
 
-    print "Done\n";
 
     return 0;
 } ## end sub run

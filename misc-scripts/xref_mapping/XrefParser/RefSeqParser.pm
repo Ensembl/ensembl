@@ -8,6 +8,8 @@ use File::Basename;
 
 use base qw( XrefParser::BaseParser );
 
+
+my $verbose;
 # --------------------------------------------------------------------------------
 # Parse command line and run if being run directly
 
@@ -28,10 +30,13 @@ sub run {
 
   my $self = shift if (defined(caller(1)));
 
-  my $source_id = shift;
+  my $source_id  = shift;
   my $species_id = shift;
-  my @files = @_;
+  my $files_ref  = shift;
+  my $rel_file   = shift;
+  $verbose       = shift;
 
+  my @files = @{$files_ref};
   my $release_file;
 
     if ( $files[-1] =~ /RefSeq-release/ ) {
@@ -43,8 +48,8 @@ sub run {
     my $dna_source_id =
       $self->get_source_id_for_source_name('RefSeq_dna');
 
-    print "RefSeq_peptide source ID = $peptide_source_id\n";
-    print "RefSeq_dna source ID = $dna_source_id\n";
+    print "RefSeq_peptide source ID = $peptide_source_id\n" if($verbose);
+    print "RefSeq_dna source ID = $dna_source_id\n" if($verbose);
 
     my $pred_peptide_source_id =
       $self->get_source_id_for_source_name('RefSeq_peptide_predicted');
@@ -52,8 +57,8 @@ sub run {
       $self->get_source_id_for_source_name('RefSeq_dna_predicted');
 
     print "RefSeq_peptide_predicted source ID = "
-      . "$pred_peptide_source_id\n";
-    print "RefSeq_dna_predicted source ID = $pred_dna_source_id\n";
+      . "$pred_peptide_source_id\n" if($verbose);
+    print "RefSeq_dna_predicted source ID = $pred_dna_source_id\n" if($verbose);
 
     my @xrefs;
     foreach my $file (@files) {
@@ -128,7 +133,7 @@ sub create_xrefs {
   my $refseq_io = $self->get_filehandle($file);
 
   if ( !defined $refseq_io ) {
-      print "ERROR: Can't open RefSeq file $file\n";
+      print STDERR "ERROR: Can't open RefSeq file $file\n";
       return undef;
   }
 
@@ -205,7 +210,7 @@ sub create_xrefs {
 
   $refseq_io->close();
 
-  print "Read " . scalar(@xrefs) ." xrefs from $file\n";
+  print "Read " . scalar(@xrefs) ." xrefs from $file\n" if($verbose);
 
   return \@xrefs;
 

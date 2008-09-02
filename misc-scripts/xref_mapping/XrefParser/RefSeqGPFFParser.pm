@@ -24,13 +24,20 @@ if (!defined(caller())) {
 
 # --------------------------------------------------------------------------------
 
+my $verbose;
+
 sub run {
 
   my $self = shift if (defined(caller(1)));
 
   my $source_id = shift;
   my $species_id = shift;
-  my @files = @_;
+  my $files_ref  = shift;
+  my $rel_file   = shift;
+  $verbose       = shift;
+
+  my @files = @{$files_ref};
+
 
   my $release_file;
 
@@ -43,8 +50,8 @@ sub run {
     my $dna_source_id =
       $self->get_source_id_for_source_name('RefSeq_dna');
 
-    print "RefSeq_peptide source ID = $peptide_source_id\n";
-    print "RefSeq_dna source ID = $dna_source_id\n";
+    print "RefSeq_peptide source ID = $peptide_source_id\n" if($verbose);
+    print "RefSeq_dna source ID = $dna_source_id\n" if($verbose);
 
     my $pred_peptide_source_id =
       $self->get_source_id_for_source_name('RefSeq_peptide_predicted');
@@ -52,8 +59,8 @@ sub run {
       $self->get_source_id_for_source_name('RefSeq_dna_predicted');
 
     print "RefSeq_peptide_predicted source ID = "
-      . "$pred_peptide_source_id\n";
-    print "RefSeq_dna_predicted source ID = $pred_dna_source_id\n";
+      . "$pred_peptide_source_id\n" if($verbose);
+    print "RefSeq_dna_predicted source ID = $pred_dna_source_id\n" if($verbose);
 
     my @xrefs;
     foreach my $file (@files) {
@@ -96,7 +103,7 @@ sub run {
         # Put a comma after the release number to make it more readable.
         $release =~ s/Release (\d+)/Release $1,/;
 
-        print "RefSeq release: '$release'\n";
+        print "RefSeq release: '$release'\n" if($verbose);
 
         $self->set_release( $source_id,              $release );
         $self->set_release( $peptide_source_id,      $release );
@@ -128,18 +135,13 @@ sub create_xrefs {
   my @tax_ids = @{$species2tax{$species_id}};
   my %name2species_id     = map{ $_=>$species_id } @names;
   my %taxonomy2species_id = map{ $_=>$species_id } @tax_ids;
-  # my %name2species_id     = $self->name2species_id();
-  # my %taxonomy2species_id = $self->taxonomy2species_id();
 
   my %dependent_sources =  $self->get_dependent_xref_sources();
-
-#  my (%genemap) = %{$self->get_valid_codes("mim_gene",$species_id)};
-#  my (%morbidmap) = %{$self->get_valid_codes("mim_morbid",$species_id)};
 
   my $refseq_io = $self->get_filehandle($file);
 
   if ( !defined $refseq_io ) {
-    print "ERROR: Can't open RefSeqGPFF file $file\n";
+    print STDERR "ERROR: Can't open RefSeqGPFF file $file\n";
     return undef;
   }
 
@@ -165,7 +167,7 @@ sub create_xrefs {
     $type = 'peptide';
 
   }else{
-    print "Could not work out sequence type for $file\n";
+    print STDERR "Could not work out sequence type for $file\n";
     return undef;
   }
 
@@ -293,7 +295,7 @@ sub create_xrefs {
 
   $refseq_io->close();
 
-  print "Read " . scalar(@xrefs) ." xrefs from $file\n";
+  print "Read " . scalar(@xrefs) ." xrefs from $file\n" if($verbose);
 
   return \@xrefs;
 

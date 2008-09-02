@@ -13,6 +13,8 @@ sub run {
 
   my ($self, $source_id, $species_id, $file) = @_;
 
+  die "No longer used try HGNC_curated_transcript\n";
+
   my $vega_io = $self->get_filehandle($file);
 
   my $clone_source_id =
@@ -21,7 +23,7 @@ sub run {
     $self->get_source_id_for_source_name('HGNC_curated_transcript');
   
   if ( !defined $vega_io ) {
-    print "Could not open $file\n";
+    print STDERR "Could not open $file\n";
     return 1;
   }
 
@@ -55,7 +57,7 @@ sub run {
     $self->add_direct_xref($xref_id, $stable_id, "transcript", "");
   }
 
-  print "Parsed $line_count lines from $file, added $xref_count xrefs and $xref_count direct_xrefs\n";
+  print "Parsed $line_count lines from $file, added $xref_count xrefs and $xref_count direct_xrefs\n" if($verbose);
 
   $vega_io->close();
 

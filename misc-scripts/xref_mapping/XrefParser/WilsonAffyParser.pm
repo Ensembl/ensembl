@@ -10,9 +10,16 @@ my $syn_sth;
 
 sub run {
 
-  my ($self, $source_id, $species_id, $file) = @_;
+ my $self = shift if (defined(caller(1)));
 
-  my @xrefs = $self->create_xrefs($source_id, $species_id, $file);
+  my $source_id = shift;
+  my $species_id = shift;
+  my $files       = shift;
+  my $release_file   = shift;
+  my $verbose       = shift;
+#  my ($self, $source_id, $species_id, $file) = @_;
+
+  my @xrefs = $self->create_xrefs($source_id, $species_id, @{$files}[0], $verbose);
 
   if(!@xrefs){
     return 1; #  1 error
@@ -27,7 +34,7 @@ sub run {
 
 sub create_xrefs {
 
-  my ($self, $source_id, $species_id, $file) = @_;
+  my ($self, $source_id, $species_id, $file, $verbose) = @_;
 
   my ($count, $noseq, $direct) = (0,0,0);
 
@@ -38,7 +45,7 @@ sub create_xrefs {
   my $file_io = $self->get_filehandle($file);
 
   if ( !defined $file_io ) {
-    print "ERROR: Could not open $file\n";
+    print STDERR "ERROR: Could not open $file\n";
     return 1;    # 1 error
   }
 
@@ -98,17 +105,15 @@ sub create_xrefs {
 	# Add description noting where the mapping came from
 	$xref->{DESCRIPTION} = $target . " used as mapping target";
 
-	#print $xref->{ACCESSION} . " " . $target . " " . $? . "\n";
-
 	$count++;
 
-	print "$count " if ($count % 100 == 0);
+	print "$count " if (($count % 100 == 0) and $verbose);
 
 	push @xrefs, $xref;
 
       } else {
 
-	print "Couldn't get sequence for $target\n";
+	print STDERR "Couldn't get sequence for $target\n";
 	$noseq++;
 
       }
@@ -119,9 +124,11 @@ sub create_xrefs {
 
   $file_io->close();
 
-  print "\n\nParsed $count primary xrefs.\n";
-  print "Couldn't get sequence for $noseq primary_xrefs\n" if ($noseq);
-  print "Added $direct direct xrefs.\n";
+  if($verbose){
+    print "\n\nParsed $count primary xrefs.\n";
+    print "Couldn't get sequence for $noseq primary_xrefs\n" if ($noseq);
+    print "Added $direct direct xrefs.\n";
+  }
 
   return \@xrefs;
 

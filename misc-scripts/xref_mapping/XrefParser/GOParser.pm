@@ -25,16 +25,17 @@ if (!defined(caller())) {
 sub run {
 
   my $self = shift if (defined(caller(1)));
+
   my $source_id = shift;
   my $species_id = shift;
-  my $file = shift;
-  my $release_file = shift;
+  my $files       = shift;
+  my $release_file   = shift;
+  my $verbose       = shift;
+
+  my $file = @{$files}[0];
+
 
   my %wrongtype;
-
-#  if(!defined($source_id)){
-#    $source_id = $self->get_source_id_for_filename($file);
-#  }
 
   #get the "main" GO source id.
   $source_id = $self->get_source_id_for_source_name("GO","main");
@@ -80,11 +81,11 @@ sub run {
     my $go_io = $self->get_filehandle($file);
     
     if ( !defined $go_io ) {
-      print "ERROR: Could not open $file\n";
+      print STDERR "ERROR: Could not open $file\n";
       return 1;    # 1 error
     }
     
-    print "processing for taxon: $tax_id\n";
+    print "processing for taxon: $tax_id\n" if($verbose);
     my $taxon_line = "taxon:".$tax_id;
     my $miss =0;
     while ( $_ = $go_io->getline() ) {
@@ -142,7 +143,7 @@ sub run {
 	  if(defined($worm{$worm_acc})){ 	
 	    my ($xref_id, $stable_id, $type, $link) = split(/::/,$worm{$worm_acc});
 	    
-	    my $new_xref_id=$self->get_xref($array[4],$source_id);
+	    my $new_xref_id=$self->get_xref($array[4],$source_id, $species_id);
 	    
 	    if(!defined($new_xref_id)){
 	      $new_xref_id = $self->add_xref($array[4],undef,$array[4],"", $source_id, $species_id);
@@ -181,7 +182,7 @@ sub run {
 	}
 	
 	elsif(!defined($wrongtype{$array[0]})){
-	  print STDERR "WARNING: unknown type ".$array[0]."\n";
+	  print STDERR "WARNING: unknown type ".$array[0]."\n" if($verbose);
 	  $wrongtype{$array[0]} = 1;
 	}
       }
@@ -189,7 +190,7 @@ sub run {
     
     $go_io->close();
 
-    print "\t$count GO dependent xrefs added $refseq_miss refseq not found and $swiss_miss Swissprot not found \n"; 
+    print "\t$count GO dependent xrefs added $refseq_miss refseq not found and $swiss_miss Swissprot not found \n" if($verbose); 
   }
   if ( defined $release_file ) {
     # Parse and set release information from $release_file.
@@ -205,7 +206,7 @@ sub run {
           s#.*The following table describes.*?of (GOA.*?)<ul>.*#$1#;
 	    $release =~ s#<[^>]+>##g;
 	      
-	      print "GO release: '$release'\n";
+	      print "GO release: '$release'\n" if($verbose);
     $self->set_release( $source_id, $release );
   }
   

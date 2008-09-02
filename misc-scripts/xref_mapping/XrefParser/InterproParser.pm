@@ -30,10 +30,13 @@ sub run {
 
   my $source_id = shift;
   my $species_id = shift;
-  my $file = shift;
+  my $files_ref = shift;
   my $release_file = shift;
+  my $verbose = shift;
 
-  print STDERR "source = $source_id\tspecies = $species_id\n";
+
+  my $file = @{$files_ref}[0];
+
   if(!defined($source_id)){
     $source_id = $self->get_source_id_for_filename($file);
   }
@@ -56,10 +59,10 @@ sub run {
         . "(accession,version,label,description,source_id,species_id) "
         . "VALUES(?,?,?,?,?,?)" );
 
-  my $get_xref_sth =
-    $self->dbi()
-    ->prepare( "SELECT xref_id FROM xref "
-        . "WHERE accession = ? AND source_id = ?" );
+#  my $get_xref_sth =
+#    $self->dbi()
+#    ->prepare( "SELECT xref_id FROM xref "
+#        . "WHERE accession = ? AND source_id = ?" );
 
   my $dir = dirname($file);
 
@@ -70,7 +73,7 @@ sub run {
   my $xml_io = $self->get_filehandle($file);
 
   if ( !defined $xml_io ) {
-    print "ERROR: Can't open hugo interpro file $dir/interpro.xml\n";
+    print "ERROR: Can't open hugo interpro file $file\n";
     return 1;    # 1= error
   }
 
@@ -92,7 +95,7 @@ sub run {
 
     if ($interpro) {
         #      print $interpro."\n";
-        if ( !get_xref( $get_xref_sth, $interpro, $source_id ) ) {
+        if ( !$self->get_xref( $interpro, $source_id, $species_id ) ) {
             $count{INTERPRO}++;
             if (
                 !$add_xref_sth->execute(
@@ -101,7 +104,7 @@ sub run {
                 )
               )
             {
-                print "Problem adding '$interpro'\n";
+                print STDERR "Problem adding '$interpro'\n";
                 return 1;    # 1 is an error
             }
         }
@@ -115,7 +118,7 @@ sub run {
             my ( $db_type, $id ) = ( $1, $2 );
             if( $db_type eq 'SSF' ){ $id =~ s/^SSF// } # Strip SSF prefix
 
-            if ( !get_xref( $get_interpro_sth, $interpro, $id ) ) {
+            if ( !$self->get_xref( $interpro, $id, $species_id ) ) {
                 $add_interpro_sth->execute( $interpro, $id );
                 $count{$db_type}++;
             }
@@ -126,7 +129,7 @@ sub run {
   $xml_io->close();
 
     for my $db ( keys %count ) {
-        print "\t" . $count{$db} . " $db loaded.\n";
+        print "\t" . $count{$db} . " $db loaded.\n" if($verbose);
     }
 
     if ( defined $release_file ) {
@@ -145,24 +148,24 @@ sub run {
         $release_io->close();
 
         if ( defined $release ) {
-            print "Interpro release is '$release'\n";
+            print "Interpro release is '$release'\n" if($verbose);
             $self->set_release( $source_id, $release );
         } else {
-            print "Did not find release info in '$release_file'\n";
+            print "Did not find release info in '$release_file'\n" if($verbose);
         }
     }
 
     return 0;
 }
 
-sub get_xref{
-  my ($get_xref_sth, $acc, $source) = @_;
-
-  $get_xref_sth->execute($acc, $source) || die "FAILED $acc  $source\n";
-  if(my @row = $get_xref_sth->fetchrow_array()) {
-    return $row[0];
-  }   
-  return 0;
-}
+#sub get_xref{
+#  my ($get_xref_sth, $acc, $source) = @_;
+#
+#  $get_xref_sth->execute($acc, $source) || die "FAILED $acc  $source\n";
+#  if(my @row = $get_xref_sth->fetchrow_array()) {
+#    return $row[0];
+#  }   
+#  return 0;
+#}
 
 1;

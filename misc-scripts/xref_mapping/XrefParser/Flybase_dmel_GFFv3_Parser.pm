@@ -44,6 +44,7 @@ use base qw( XrefParser::BaseParser );
 
 my %cache_source =();
 
+my $verbose;
 
 # --------------------------------------------------------------------------------
 # Parse command line and run if being run directly
@@ -175,10 +176,20 @@ sub get_source{
 }
 
 sub run {
+
   my $self = shift if (defined(caller(1)));
+
   my $source_id = shift;
   my $species_id = shift;
-  my $file = shift;
+  my $files       = shift;
+  my $release_file   = shift;
+  $verbose       = shift;
+
+  my $file = @{$files}[0];
+#   my $self = shift if (defined(caller(1)));
+#  my $source_id = shift;
+#  my $species_id = shift;
+#  my $file = shift;
 
   my $species_name;
 
@@ -202,14 +213,14 @@ sub run {
 
   # delete previous if running directly rather than via BaseParser
   if (!defined(caller(1))) {
-    print "Deleting previous xrefs for these sources\n";
+    print "Deleting previous xrefs for these sources\n" if($verbose);
     XrefParser::BaseParser->delete_by_source(\@xrefs);
   }
-  print "... parsed.\n";
-  print STDERR "uploading ".scalar(@xrefs)." xrefs's\n";
+  print "... parsed.\n" if($verbose);
+  print STDERR "uploading ".scalar(@xrefs)." xrefs's\n" if($verbose);
   XrefParser::BaseParser->upload_xref_object_graphs(\@xrefs);
 
-  print STDERR "uploading ".scalar(@direct_xrefs)." direct-xrefs's\n";
+  print STDERR "uploading ".scalar(@direct_xrefs)." direct-xrefs's\n" if($verbose);
   XrefParser::BaseParser->upload_direct_xrefs(\@direct_xrefs);
 
   return 0;
@@ -232,12 +243,12 @@ sub relink_synonyms_to_xrefs{
 sub create_xrefs {
   my ($self, $flybase_source_id, $file) = @_;
 
-  print STDERR "starting to parse $file...." ;
+  print STDERR "starting to parse $file...." if($verbose);
 
   my $gff_io = $self->get_filehandle($file);
 
   if ( !defined $gff_io ) {
-    print "ERROR: Can't open the GFF file $file\n";
+    print STDERR "ERROR: Can't open the GFF file $file\n";
     return 0;
   }
 
@@ -1079,7 +1090,7 @@ sub get_species {
   $sth->finish;
 
   if (defined $species_name) {
-    print "Taxonomy ID " . $taxonomy_id . " corresponds to species ID " . $species_id . " name " . $species_name . "\n";
+    print "Taxonomy ID " . $taxonomy_id . " corresponds to species ID " . $species_id . " name " . $species_name . "\n" if($verbose);
   } else {
     throw("Cannot find species corresponding to taxonomy ID " . $species_id . " - check species table\n");
   }

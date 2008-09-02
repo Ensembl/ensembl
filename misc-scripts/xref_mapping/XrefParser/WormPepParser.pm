@@ -17,14 +17,20 @@ my $dep_sth;
 
 sub run {
 
-  my ($self, $source_id, $species_id, $file) = @_;
+  my $self = shift if (defined(caller(1)));
 
-  print STDERR "WORMPep source = $source_id\tspecies = $species_id\n";
+  my $source_id = shift;
+  my $species_id = shift;
+  my $files       = shift;
+  my $release_file   = shift;
+  my $verbose       = shift;
+
+  my $file = @{$files}[0];
+
 
   my $worm_source_id = XrefParser::BaseParser->get_source_id_for_source_name('wormpep_id');
   my $worm_locus_id = XrefParser::BaseParser->get_source_id_for_source_name('wormbase_locus');
 
-  print STDERR "source = $worm_source_id, locus = $worm_locus_id.\n";
 
   my $xref_sth = $self->dbi()->prepare("SELECT xref_id FROM xref WHERE accession=? AND source_id=$worm_source_id AND species_id=$species_id");
   my $xref_sth2 = $self->dbi()->prepare("SELECT xref_id FROM xref WHERE accession=? AND source_id=$worm_locus_id AND species_id=$species_id");
@@ -32,7 +38,7 @@ sub run {
   my $pep_io = $self->get_filehandle($file);
 
   if ( !defined $pep_io ) {
-    print "ERROR: Could not open $file\n";
+    print STDERR "ERROR: Could not open $file\n";
     return 1;    # 1 error
   }
 
@@ -69,7 +75,7 @@ sub run {
 
   $pep_io->close();
 
-  print "Added $d_count direct xrefs and $x_count xrefs\n";
+  print "Added $d_count direct xrefs and $x_count xrefs\n" if($verbose);
   return 0;
 }
 

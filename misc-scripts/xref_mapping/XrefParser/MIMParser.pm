@@ -26,7 +26,11 @@ sub run {
 
   my $general_source_id = shift;
   my $species_id = shift;
-  my $file = shift;
+  my $files       = shift;
+  my $release_file   = shift;
+  my $verbose       = shift;
+
+  my $file = @{$files}[0];
 
   my %old_to_new;
   my %removed;
@@ -46,7 +50,7 @@ sub run {
   my $morbid_source_id =  XrefParser::BaseParser->get_source_id_for_source_name("MIM_MORBID");
   push @sources, $morbid_source_id;
 
-  print "sources are:- ".join(", ",@sources)."\n";
+  print "sources are:- ".join(", ",@sources)."\n" if($verbose);
     
   local $/ = "*RECORD*";
 
@@ -115,12 +119,12 @@ sub run {
       $new = $old_to_new{$new};
     }
     if(!defined($removed{$new})){
-      $self->add_to_syn_for_mult_sources($new, \@sources, $old);
+      $self->add_to_syn_for_mult_sources($new, \@sources, $old, $species_id);
       $syn_count++;
     }
   }
-  print "$gene genemap and $phenotype phenotype MIM xrefs added\n";
-  print "added $syn_count synonyms (defined by MOVED TO)\n";
+  print "$gene genemap and $phenotype phenotype MIM xrefs added\n" if($verbose);
+  print "added $syn_count synonyms (defined by MOVED TO)\n" if($verbose);
   return 0; #successful
 }
 
