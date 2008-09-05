@@ -1470,9 +1470,10 @@ sub get_all_LD_values{
 
 =head2 get_all_VariationFeatures
 
-    Args       : none
+    Args       : $filter [optional]
     Description :returns all variation features on this slice. This function will only work 
                 correctly if the variation database has been attached to the core database.
+		 If $filter is "genotyped" return genotyped Snps only... (nice likkle hack);
     ReturnType : listref of Bio::EnsEMBL::Variation::VariationFeature
     Exceptions : none
     Caller     : contigview, snpview
@@ -1483,6 +1484,7 @@ sub get_all_LD_values{
 
 sub get_all_VariationFeatures{
   my $self = shift;
+  my $filter = shift;
 
   if(!$self->adaptor()) {
     warning('Cannot get variation features without attached adaptor');
@@ -1491,7 +1493,11 @@ sub get_all_VariationFeatures{
 
   my $vf_adaptor = Bio::EnsEMBL::DBSQL::MergedAdaptor->new(-species => $self->adaptor()->db()->species, -type => "VariationFeature");
   if( $vf_adaptor ) {
-    return $vf_adaptor->fetch_all_by_Slice($self);
+    if( $filter eq 'genotyped' ) {
+      return $vf_adaptor->fetch_all_genotyped_by_Slice($self);
+    } else {
+      return $vf_adaptor->fetch_all_by_Slice($self);
+    }
   } else {
        warning("Variation database must be attached to core database to " .
  		"retrieve variation information" );
