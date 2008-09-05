@@ -23,6 +23,7 @@ xref_mapper.pl - Create Ensembl gene model xref mappings
 [B<-recalc_display_xrefs>}
 [B<-dumpcheck>]
 [B<-external_db_file>]
+[B<-nofarm>]
 
 =back
 
@@ -101,6 +102,10 @@ these files are loaded into the target DB manually.
 
 don't dump triage data
 
+=item B<-nofarm>
+
+run exonerate locally and do not use compute farm
+
 =item B<EXAMPLE:>
 
 perl xref_mapper.pl -file mapper.input
@@ -155,6 +160,7 @@ my $upload = undef;
 my $delete_external_db ; 
 my $location;
 my $logic_name;
+my $nofarm;
 my $notriage=undef;
 my $recalc_display_xrefs = undef;
 my $external_db_file="../external_db/external_dbs.txt";
@@ -175,6 +181,7 @@ GetOptions ('file=s'                    => \$file,
 	    'recalc_display_xrefs_only' => \$recalc_display_xrefs,
 	    'external_db_file=s'        => \$external_db_file,
             'help'                      => \$help,
+	    'nofarm'                    => \$nofarm,
             'man'                       => \$man );
 pod2usage(1)            if ($help);
 pod2usage(VERBOSE => 2) if ($man);
@@ -329,6 +336,9 @@ if(defined($species_hash{'species'})){
   }
   if(defined($maxdump)){
     $mapper->maxdump($maxdump);
+  }
+  if(defined($nofarm)){
+    $mapper->nofarm("yes");
   }
   if(defined($use_existing_mappings)){
     $mapper->use_existing_mappings("yes");

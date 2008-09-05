@@ -56,9 +56,9 @@ sub jobcount {
 
 sub run() {
 
-  my ($self, $query, $target, $dir) = @_;
+  my ($self, $query, $target, $dir, $nofarm) = @_;
 
-  my $name = $self->submit_exonerate($query, $target, $dir, $self->options());
+  my $name = $self->submit_exonerate($query, $target, $dir, $nofarm, $self->options());
 
 #  $self->check_err($dir);
 #  no point until after the depend job done.
@@ -97,10 +97,18 @@ sub options() {
 
 sub submit_exonerate {
 
-  my ($self, $query, $target, $root_dir, @options) = @_;
+  my ($self, $query, $target, $root_dir, $nofarm, @options) = @_;
 
   my $queryfile = basename($query);
   my $targetfile = basename($target);
+
+  my $prefix = $root_dir . "/" . basename($query);
+  $prefix =~ s/\.\w+$//;
+
+  my ($ensembl_type) = $prefix =~ /.*_(dna|peptide)$/; # dna or prot
+  my $options_str = join(" ", @options);
+
+  my $unique_name = $self->get_class_name() . "_" . time();
 
   my $disk_space_needed = (stat($query))[7]+(stat($target))[7];
 
@@ -111,6 +119,19 @@ sub submit_exonerate {
 
   my $num_jobs = calculate_num_jobs($query);
 
+  if(defined($nofarm)){
+    my $output = $self->get_class_name() . "_" . $ensembl_type . "_1.map";
+    my $cmd = <<EON;
+$exonerate_path $query $target --showvulgar false --showalignment FALSE --ryo "xref:%qi:%ti:%ei:%ql:%tl:%qab:%qae:%tab:%tae:%C:%s\n" $options_str | grep '^xref' > $root_dir/$output
+
+EON
+    print "none farm command is $cmd\n";
+    system($cmd);
+    $self->jobcount(1);
+    return "nofarm";
+  }
+
+
   # array features barf if just one job 
   if($num_jobs == 1){
     $num_jobs++;
@@ -118,41 +139,26 @@ sub submit_exonerate {
 
   $self->jobcount($self->jobcount()+$num_jobs);
 
-  my $options_str = join(" ", @options);
-
-  my $unique_name = $self->get_class_name() . "_" . time();
-
-  my $prefix = $root_dir . "/" . basename($query);
-  $prefix =~ s/\.\w+$//;
-
-  my ($ensembl_type) = $prefix =~ /.*_(dna|peptide)$/; # dna or prot
 
 
   my $output = $self->get_class_name() . "_" . $ensembl_type . "_" . "\$LSB_JOBINDEX.map";
 
   my @main_bsub = ( 'bsub', '-R' .'select[linux] -Rrusage[tmp='.$disk_space_needed.']',  '-J' . $unique_name . "[1-$num_jobs]%200", '-o', "$prefix.%J-%I.out", '-e', "$prefix.%J-%I.err");
 
-#  my @main_bsub = ( 'bsub', '-J' . $unique_name . "[1-$num_jobs]", '-o', "$prefix.%J-%I.out", '-e', "$prefix.%J-%I.err");
 
-#  print "bsub command: " . join(" ", @main_bsub) . "\n\n";
+
+
 
   # Create actual execute script to be executed with LSF, and write to pipe
   my $main_job = <<EOF;
 . /usr/local/lsf/conf/profile.lsf
 
-#cd /tmp
-
-#rm -f /tmp/\$LSB_JOBINDEX.$queryfile /tmp/\$LSB_JOBINDEX.$targetfile /tmp/$output
-
-#lsrcp ecs2c:$target /tmp/\$LSB_JOBINDEX.$targetfile
-#lsrcp ecs2c:$query  /tmp/\$LSB_JOBINDEX.$queryfile
 
 $exonerate_path $query $target --querychunkid \$LSB_JOBINDEX --querychunktotal $num_jobs --showvulgar false --showalignment FALSE --ryo "xref:%qi:%ti:%ei:%ql:%tl:%qab:%qae:%tab:%tae:%C:%s\n" $options_str | grep '^xref' > $root_dir/$output
 
-#lsrcp /tmp/$output ecs2c:$root_dir/$output
-
-#rm -f /tmp/\$LSB_JOBINDEX.$queryfile /tmp/\$LSB_JOBINDEX.$targetfile /tmp/$output
 EOF
+
+
 
   # now submit it
   my $jobid = 0;

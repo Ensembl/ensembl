@@ -800,6 +800,15 @@ sub upload {
   return $self->{_upload};
 }
 
+sub nofarm{
+  my ($self, $arg) = @_;
+
+  (defined $arg) &&
+    ($self->{_nofarm} = $arg );
+  return $self->{_nofarm};
+}
+
+
 
 =head2 maxdump
  
@@ -958,7 +967,7 @@ sub run_mapping {
 
 
       if (!defined($self->use_existing_mappings)) {
-	my $job_name = $obj->run($queryfile, $targetfile, $self->core->dir());
+	my $job_name = $obj->run($queryfile, $targetfile, $self->core->dir(),$self->nofarm);
 	push @job_names, $job_name;
         push @running_methods, $obj;
 	sleep 1; # make sure unique names really are unique
@@ -977,7 +986,7 @@ sub run_mapping {
       }
     }
     # Submit generic depend job. Defaults to LSF
-    submit_depend_job($self->core->dir, @job_names);
+    $self->submit_depend_job($self->core->dir, @job_names);
   }
   $self->check_err($self->core->dir); 
 
@@ -998,7 +1007,12 @@ sub run_mapping {
 
 sub submit_depend_job {
 
-  my ($root_dir, @job_names) = @_;
+  my ($self, $root_dir, @job_names) = @_;
+
+
+  if(defined($self->nofarm)){
+    return;
+  }	
 
   # Submit a job that does nothing but wait on the main jobs to
   # finish. This job is submitted interactively so the exec does not
