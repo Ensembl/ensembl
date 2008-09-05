@@ -295,3 +295,8 @@
 # Temporary attrib using during the merge of the havana and ensembl gene sets to stablish a relation between a
 # havana transcript that shares CDS with an Ensembl transcript but the have different UTR structure
 173	enst_link	enst link	Code to link a OTTT with an ENST when they both share the CDS of ENST
+
+# Attribute that show the start genomic position of an alternative ATG found for a transcript. Checks are made 
+# up to 200 bases upstream for genes with no UTR, and for genes with UTR is made up to 200 bases of the UTR sequence
+# or to the max extent of the UTR if this is shorter than 200.
+174	upstream_ATG	upstream ATG	Alternative ATG found upstream of the defined as start ATG for the transcript
