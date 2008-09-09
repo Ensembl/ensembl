@@ -92,10 +92,14 @@ sub new {
 
   my $self = bless {}, $class;
 
-  my ( $is_multispecies, $species, $species_id, $group, $con, $dnadb, $no_cache ) =
-    rearrange(
-            [qw(MULTISPECIES_DB SPECIES SPECIES_ID GROUP DBCONN DNADB NO_CACHE)],
-            @args );
+  my ( $is_multispecies, $species, $species_id, $group, $con, $dnadb,
+       $no_cache )
+    = rearrange( [ 'MULTISPECIES_DB', 'SPECIES',
+                   'SPECIES_ID',      'GROUP',
+                   'DBCONN',          'DNADB',
+                   'NO_CACHE'
+                 ],
+                 @args );
 
   if ( defined($con) ) { $self->dbc($con) }
   else {
@@ -105,24 +109,18 @@ sub new {
   if ( defined($species) ) { $self->species($species) }
   if ( defined($group) )   { $self->group($group) }
 
-  $species_id ||= 1;
-  $self->species_id($species_id);
+  $self->species_id( $species_id || 1 );
 
   $self->is_multispecies( defined($is_multispecies)
                           && $is_multispecies == 1 );
 
   $self = Bio::EnsEMBL::Utils::ConfigRegistry::gen_load($self);
 
-  if(defined $dnadb) {
-    $self->dnadb($dnadb);
-  }
- 
-  if (defined $no_cache){
-      $self->no_cache($no_cache);
-  }
+  if ( defined($dnadb) )    { $self->dnadb($dnadb) }
+  if ( defined($no_cache) ) { $self->no_cache($no_cache) }
 
   return $self;
-}
+} ## end sub new
 
 
 
