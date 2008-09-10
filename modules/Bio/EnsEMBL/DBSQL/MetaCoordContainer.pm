@@ -24,24 +24,30 @@ sub new {
   # in and cache them.
   #
 
-  my $sth = $self->prepare(
-            sprintf(
-              'SELECT mc.table_name, mc.coord_system_id, mc.max_length '
-                . 'FROM meta_coord mc, %s.coord_system cs '
-                . 'WHERE mc.coord_system_id = cs.coord_system_id '
-                . 'AND cs.species_id = ?',
-              $self->db()->dnadb()->dbc()->dbname() ) );
+  my @coord_systems =
+    @{ $self->db()->dnadb()->get_CoordSystemAdaptor->fetch_all() };
 
-  $sth->bind_param( 1, $self->species_id(), SQL_INTEGER );
+  my @cs_ids;
+  foreach my $cs (@coord_systems) { push( @cs_ids, $cs->dbID() ) }
+
+  my $sth = $self->prepare(
+              'SELECT mc.table_name, mc.coord_system_id, mc.max_length '
+                . 'FROM meta_coord mc '
+                . 'WHERE mc.coord_system_id in ('
+                . join( ',', @cs_ids )
+                . ')' );
+
   $sth->execute();
 
   while ( my ( $table_name, $cs_id, $max_length ) =
           $sth->fetchrow_array() )
   {
-    $self->{'_feature_cache'}->{ lc($table_name) } ||= [];
-    push @{ $self->{'_feature_cache'}->{ lc($table_name) } }, $cs_id;
-    $self->{'_max_len_cache'}->{$cs_id}->{ lc($table_name) } =
-      $max_length;
+    $table_name = lc($table_name);
+
+    $self->{'_feature_cache'}->{$table_name} ||= [];
+
+    push( @{ $self->{'_feature_cache'}->{$table_name} }, $cs_id );
+    $self->{'_max_len_cache'}->{$cs_id}->{$table_name} = $max_length;
   }
   $sth->finish();
 
