@@ -94,6 +94,7 @@ use strict;
 
 use Bio::EnsEMBL::Utils::Exception qw(throw);
 use DBI qw(:sql_types);
+use Data::Dumper;
 
 @ISA = qw(Exporter);
 @EXPORT = (@{$DBI::EXPORT_TAGS{'sql_types'}});
