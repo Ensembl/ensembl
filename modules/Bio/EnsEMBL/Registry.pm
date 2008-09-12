@@ -557,47 +557,81 @@ sub get_DBAdaptor{
 
 =cut
 
-sub get_all_DBAdaptors{
-  my ($class,@args)=@_;
-  my @ret;
+sub get_all_DBAdaptors {
+  my ( $class, @args ) = @_;
 
-  my ($species, $group) = 
-    rearrange([qw(SPECIES GROUP)], @args);
-  if(defined($species)){
+  my @ret;
+  my ( $species, $group ) = rearrange( [qw(SPECIES GROUP)], @args );
+
+  if ( defined($species) ) {
     $species = $class->get_alias($species);
   }
-  foreach my $dba (@{$registry_register{'_DBA'}}){
-    if(!defined($species) || lc($species) eq lc($dba->species)){
-      if(!defined($group) || lc($group) eq lc($dba->group)){
-	push @ret, $dba;
+
+  foreach my $dba ( @{ $registry_register{'_DBA'} } ) {
+    if ( !defined($species) || lc($species) eq lc( $dba->species ) ) {
+      if ( !defined($group) || lc($group) eq lc( $dba->group ) ) {
+        push( @ret, $dba );
       }
     }
   }
-
 
   return \@ret;
 }
 
 =head2 get_all_DBAdaptors_by_connection
 
-  Arg [1]    :dbconnection to use to find DBAdaptors
+  Arg [1]    : DBConnection used to find DBAdaptors
   Returntype : reference to list of DBAdaptors
-  Exceptions : none.
-  Example    : @dba = @{Bio::EnsEMBL::Registry->get_all_DBAdaptors_by_connection($dbc);
+  Exceptions : none
+  Example    : @dba = @{ Bio::EnsEMBL::Registry
+                  ->get_all_DBAdaptors_by_connection($dbc) };
   Status     : Stable
 
 =cut
 
-sub get_all_DBAdaptors_by_connection{
-  my ($self, $dbc_orig) = @_;
+sub get_all_DBAdaptors_by_connection {
+  my ( $self, $dbc_orig ) = @_;
+
   my @return;
 
-  foreach my $dba ( @{$registry_register{'_DBA'}}){
-    my $dbc = $dba->dbc;
-    if($dbc && $dbc->can('equals') && $dbc->equals($dbc_orig)){
-      push @return, $dba;
+  foreach my $dba ( @{ $registry_register{'_DBA'} } ) {
+    my $dbc = $dba->dbc();
+
+    if (    defined($dbc)
+         && $dbc->can('equals')
+         && $dbc->equals($dbc_orig) )
+    {
+      push( @return, $dba );
     }
   }
+
+  return \@return;
+}
+
+=head2 get_all_DBAdaptors_by_dbname
+
+  Arg [1]    : string, name of database
+  Returntype : reference to list of DBAdaptors
+  Exceptions : none
+  Example    : @dba = @{ Bio::EnsEMBL::Registry
+                  ->get_all_DBAdaptors_by_dbname($dbname) };
+  Status     : Stable
+
+=cut
+
+sub get_all_DBAdaptors_by_dbname {
+  my ( $self, $dbname ) = @_;
+
+  my @return;
+
+  foreach my $dba ( @{ $registry_register{'_DBA'} } ) {
+    my $dbc = $dba->dbc();
+
+    if ( defined($dbc) && $dbc->dbname() eq $dbname ) {
+      push( @return, $dba );
+    }
+  }
+
   return \@return;
 }
 
@@ -1310,18 +1344,17 @@ sub load_registry_from_db {
     while ( $sth->fetch() ) {
       my $dba =
         Bio::EnsEMBL::DBSQL::DBAdaptor->new(
-                                          -group      => "core",
-                                          -species    => $species,
-                                          -species_id => $species_id,
-                                          -multispecies_db => 1,
-                                          -host            => $host,
-                                          -user            => $user,
-                                          -pass            => $pass,
-                                          -port            => $port,
-                                          -dbname          => $multidb,
-                                          -wait_timeout => $wait_timeout,
-					  -no_cache     => $no_cache
-        );
+                                         -group      => "core",
+                                         -species    => $species,
+                                         -species_id => $species_id,
+                                         -multispecies_db => 1,
+                                         -host            => $host,
+                                         -user            => $user,
+                                         -pass            => $pass,
+                                         -port            => $port,
+                                         -dbname          => $multidb,
+                                         -wait_timeout => $wait_timeout,
+                                         -no_cache     => $no_cache );
 
       ( my $sp = $species ) =~ s/_/ /g;
       $self->add_alias( $species, $sp );
