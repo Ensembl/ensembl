@@ -11,7 +11,7 @@ CREATE TABLE xref (
   accession                   varchar(255) not null,
   version                     int unsigned,
   label                       varchar(255),
-  description                 varchar(255),
+  description                 text,
   source_id                   int unsigned not null,
   species_id                  int unsigned not null,
 
