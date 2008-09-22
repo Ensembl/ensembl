@@ -18,9 +18,9 @@ sub run_script {
   my ($type, $my_args) = split(/:/,$file);
 
   my $user = "ensro";
-  my $host ="ensdb-1-11";
-  my $port = "5317";
-  my $dbname = "homo_sapiens_vega_49_20080328";
+  my $host ="ens-staging";
+  my $port = "3306";
+  my $dbname = "homo_sapiens_vega_51_36m";
   my $pass;
 
   if($my_args =~ /host[=][>](\S+?)[,]/){

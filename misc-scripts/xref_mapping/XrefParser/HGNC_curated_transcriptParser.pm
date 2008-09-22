@@ -32,9 +32,9 @@ sub run_script {
   my ($type, $my_args) = split(/:/,$file);
   
   my $user = "ensro";
-  my $host ="ensdb-1-11";
-  my $port = "5317";
-  my $dbname = "homo_sapiens_vega_49_20080328";
+  my $host ="ens-staging";
+  my $port = "3306";
+  my $dbname = "homo_sapiens_vega_51_36m";
   my $pass;
 
   if($my_args =~ /host[=][>](\S+?)[,]/){
@@ -56,8 +56,6 @@ sub run_script {
     $self->get_source_id_for_source_name('HGNC_curated_transcript');
  
   my $sql = 'select tsi.stable_id, x.display_label from xref x, object_xref ox , transcript_stable_id tsi, external_db e where e.external_db_id = x.external_db_id and x.xref_id = ox.xref_id and tsi.transcript_id = ox.ensembl_id and e.db_name like ?';
-
-#  my $hgnc_sql = 'select tsi.stable_id, x.dbprimary_acc from xref x, object_xref ox , gene_stable_id tsi, external_db e where e.external_db_id = x.external_db_id and x.xref_id = ox.xref_id and tsi.gene_id = ox.ensembl_id and ox.ensembl_object_type = "Gene" and e.db_name like "HGNC"';
 
 
   my %ott_to_vega_name;
