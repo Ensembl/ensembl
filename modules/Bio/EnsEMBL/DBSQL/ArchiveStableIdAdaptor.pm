@@ -6,24 +6,39 @@ Bio::EnsEMBL::ArchiveStableIdAdaptor
 
 =head1 SYNOPSIS
 
-my $reg = "Bio::EnsEMBL::Registry";
-my $archiveStableIdAdaptor =
-  $reg->get_adaptor('human', 'core', 'ArchiveStableId');
+  my $registry = "Bio::EnsEMBL::Registry";
 
-my $stable_id = 'ENSG00000068990';
-  
-my $arch_id = $archiveStableIdAdaptor->fetch_by_stable_id($stable_id);
-print "Latest incarnation of this stable ID:\n";
-print "  Stable ID: ".$a->stable_id.".".$a->version."\n";
-print "  Release: ".$a->release." (".$a->assembly.", ".$a->db_name.")\n");
+  my $archiveStableIdAdaptor =
+    $registry->get_adaptor( 'Human', 'Core', 'ArchiveStableId' );
 
-print "\nStable ID history:\n\n";
-my $history = $archiveStableIdAdaptor->fetch_history_tree_by_stable_id($stable_id);
+  my $stable_id = 'ENSG00000068990';
 
-foreach my $a (@{ $history->get_all_ArchiveStableIds }) {
-  print "  Stable ID: ".$a->stable_id.".".$a->version."\n";
-  print "  Release: ".$a->release." (".$a->assembly.", ".$a->db_name.")\n\n");
-}
+  my $arch_id =
+    $archiveStableIdAdaptor->fetch_by_stable_id($stable_id);
+
+  print("Latest incarnation of this stable ID:\n");
+  printf( "  Stable ID: %s.%d\n",
+          $arch_id->stable_id(), $arch_id->version() );
+  print(   "  Release: "
+         . $arch_id->release() . " ("
+         . $arch_id->assembly() . ", "
+         . $arch_id->db_name()
+         . ")\n" );
+
+  print "\nStable ID history:\n\n";
+
+  my $history =
+    $archiveStableIdAdaptor->fetch_history_tree_by_stable_id(
+                                                        $stable_id);
+
+  foreach my $a ( @{ $history->get_all_ArchiveStableIds } ) {
+    printf( "  Stable ID: %s.%d\n", $a->stable_id(), $a->version() );
+    print(   "  Release: "
+           . $a->release() . " ("
+           . $a->assembly() . ", "
+           . $a->db_name()
+           . ")\n\n" );
+  }
 
 =head1 DESCRIPTION
 
@@ -54,7 +69,7 @@ This whole module has a status of At Risk as it is under development.
     get_peptide
     get_current_release
     get_current_assembly
-    
+
 =head1 RELATED MODULES
 
 Bio::EnsEMBL::ArchiveStableId
