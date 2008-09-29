@@ -4,10 +4,10 @@ use Getopt::Long;
 use XrefParser::BaseParser;
 
 my ( $host,             $port,          $dbname,
-     $user,             $pass,          @species,
-     @sources,          $checkdownload, $create,
+     $user,             $pass,          $species,
+     $sources,          $checkdownload, $create,
      $release,          $cleanup,       $drop_existing_db,
-     $deletedownloaded, $dl_path,       @notsource,
+     $deletedownloaded, $dl_path,       $notsource,
      $unzip, $stats, $verbose );
 
 print "Options: ".join(" ",@ARGV)."\n";
@@ -20,8 +20,8 @@ GetOptions(
     'dbhost|host=s'  => \$host,
     'dbport|port=i'  => \$port,
     'dbname=s'       => \$dbname,
-    'species=s'      => \@species,
-    'source=s'       => \@sources,
+    'species=s'      => \$species,
+    'source=s'       => \$sources,
     'download_dir=s' => \$dl_path,
     'checkdownload!' => \$checkdownload,    # Don't download if exists
     'create'         => \$create,
@@ -29,7 +29,7 @@ GetOptions(
     'cleanup'        => \$cleanup,
     'stats'          => \$stats,
     'verbose'        => \$verbose,
-    'notsource=s'    => \@notsource,
+    'notsource=s'    => \$notsource,
     'drop_db|dropdb!' =>
       \$drop_existing_db,    # Drop xref db without user interaction
     'delete_downloaded' => \$deletedownloaded,
@@ -37,8 +37,9 @@ GetOptions(
     'unzip' => \$unzip,                   # Force decompression of files
     'help'  => sub { usage(); exit(0); } );
 
-@species = split(/,/,join(',',@species));
-@sources  = split(/,/,join(',',@sources));
+my @species = split(/,/,join(',',$species));
+my @sources  = split(/,/,join(',',$sources));
+my @notsource  = split(/,/,join(',',$notsource));
 
 $| = 1;
 
