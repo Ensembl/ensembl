@@ -73,8 +73,8 @@ sub run {
     my @species_ids = validate_species(@species);
 
     # validate source names
-    exit(1) if ( !validate_sources(@sources) );
-    exit(1) if ( !validate_sources(@notsources) );
+    exit(1) if ( !validate_sources(\@species_ids,@sources) );
+    exit(1) if ( !validate_sources(\@species_ids,@notsources) );
 
     # build SQL
     my $species_sql = "";
@@ -1597,8 +1597,7 @@ sub delete_by_source {
 # --------------------------------------------------------------------------------
 
 sub validate_sources {
-
-  my @sources = @_;
+  my ($speciesref, @sources) = @_;
 
   my $dbi = dbi();
   my $sth = $dbi->prepare("SELECT * FROM source WHERE LOWER(name)=?");
@@ -1610,7 +1609,9 @@ sub validate_sources {
       print "Source $source is valid\n" if($verbose);
     } else {
       print "\nSource $source is not valid; valid sources are:\n";
-      show_valid_sources();
+      foreach my $sp (@{$speciesref}){
+	show_valid_sources($sp);
+      }
       return 0;
     }
 
@@ -1623,9 +1624,10 @@ sub validate_sources {
 # --------------------------------------------------------------------------------
 
 sub show_valid_sources() {
+  my $species = shift;
 
   my $dbi = dbi();
-  my $sth = $dbi->prepare("SELECT name FROM source WHERE download='Y'");
+  my $sth = $dbi->prepare("SELECT distinct(name) FROM source s, source_url su WHERE s.download='Y' and s.source_id = su.source_id and su.species_id = $species");
 
   $sth->execute();
   while (my @row = $sth->fetchrow_array()) {
