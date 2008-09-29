@@ -103,7 +103,7 @@ use warnings;
 package Bio::EnsEMBL::DBSQL::CoordSystemAdaptor;
 
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
-use Bio::EnsEMBL::Utils::Exception qw(throw warning);
+use Bio::EnsEMBL::Utils::Exception qw(throw warning deprecate);
 use Bio::EnsEMBL::CoordSystem;
 
 use vars qw(@ISA);
@@ -838,8 +838,21 @@ sub store_mapping_path{
   return [@retlist];
 }
 
+=head2 fetch_by_attrib
 
-sub _fetch_by_attrib {
+  Arg [1]    : string attrib
+  Arg [2]    : (optional) string version
+  Example    : $csa->fetch_by_attrib('default_version','NCBIM37');
+  Description: Retrieves a CoordSystem object from the database that have the specified
+               attrib and version, if no version is specified, returns the default version
+  Returntype : Bio::EnsEMBL::CoordSystem object
+  Exceptions : throw when attrib not present
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub fetch_by_attrib {
   my $self = shift;
   my $attrib = shift;
   my $version = shift;
@@ -875,7 +888,31 @@ sub _fetch_by_attrib {
 }
 
 
-sub _fetch_all_by_attrib {
+sub _fetch_by_attrib{
+    my $self = shift;
+    my $attrib = shift;
+    my $version = shift;
+
+    deprecate("You should be using the public method fetch_by_attrib ".
+	      "(without initial underscore) instead");
+
+    return $self->fetch_by_attrib($attrib,$version);
+}
+
+=head2 fetch_all_by_attrib
+
+  Arg [1]    : string attrib
+  Example    : $csa->fetch_all_by_attrib('default_version');
+  Description: Retrieves all CoordSystem object from the database that have the specified
+               attrib.
+  Returntype : reference to a list of Bio::EnsEMBL::CoordSystem objects
+  Exceptions : throw when attrib not present
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub fetch_all_by_attrib {
   my $self = shift;
   my $attrib = shift;
 
@@ -887,6 +924,15 @@ sub _fetch_all_by_attrib {
   return \@coord_systems;
 }
 
+sub _fetch_all_by_attrib{
+    my $self = shift;
+    my $attrib = shift;
+
+    deprecate("You should be using the public method fetch_all_by_attrib ".
+	      "(without initial underscore) instead");
+
+    return $self->fetch_all_by_attrib($attrib);
+}
 
 =head2 store
 
