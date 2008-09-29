@@ -3379,18 +3379,18 @@ sub new_build_gene_descriptions{
 
   my %external_name_to_id;  
   my %ex_db_id_to_status;
-  my %ex_db_id_to_name;
-  my $sql1 = "SELECT external_db_id, db_name, status from external_db";
+  my %ex_db_id_to_display_name;
+  my $sql1 = "SELECT external_db_id, db_name, status, db_display_name from external_db";
   
   my $sth1 = $self->core->dbc->prepare($sql1) 
     || die "prepare failed for $sql1\n";
   $sth1->execute() || die "execute failed";
-  my ($db_id, $name, $status);
-  $sth1->bind_columns(\$db_id, \$name, \$status);
+  my ($db_id, $name, $status, $display_name);
+  $sth1->bind_columns(\$db_id, \$name, \$status, \$display_name);
   while($sth1->fetch()){
     $external_name_to_id{$name} = $db_id;
     $ex_db_id_to_status{$db_id} = $status;
-    $ex_db_id_to_name{$db_id}      = $name;
+    $ex_db_id_to_display_name{$db_id}      = $display_name;
   }
   $sth1->finish;
 
@@ -3639,7 +3639,7 @@ GSQL
       
       $description =~ s/\"//ig; # remove " as they will cause problems in .sql files
       
-      my $desc = $description . " [Source:".$ex_db_id_to_name{$ex_db{$best_gene_xref}}.";Acc:$acc]";
+      my $desc = $description . " [Source:".$ex_db_id_to_display_name{$ex_db{$best_gene_xref}}.";Acc:$acc]";
       
       print GENE_DESCRIPTIONS "UPDATE gene g SET g.description=\"$desc\" ".
 	"WHERE g.gene_id=$gene_id;\n" if ($description);
