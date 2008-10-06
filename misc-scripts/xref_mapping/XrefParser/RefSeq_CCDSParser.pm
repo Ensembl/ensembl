@@ -84,6 +84,9 @@ sub run_script {
   my %old_to_new;
 
   my $dbi2 = $self->dbi2($host, $port, $user, $dbname, $pass);
+  if(!defined($dbi2)){
+    return 1;
+  }
   
   my $sql = "select  cu.ccds_uid, a.nuc_acc from Accessions a, Accessions_GroupVersions agv, GroupVersions  gv, CcdsUids cu where a.accession_uid = agv.accession_uid and a.organization_uid=1 and agv.group_version_uid=gv.group_version_uid and gv.ccds_status_val_uid in (3) and cu.group_uid=gv.group_uid  order by gv.ccds_status_val_uid, cu.ccds_uid";
   

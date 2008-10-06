@@ -1409,7 +1409,7 @@ sub dbi2{
 
     my $self = shift;
     my ($host, $port, $user, $dbname, $pass) = @_;
-    my $dbi2;
+    my $dbi2 = undef;
 
     if ( !defined $dbi2 || !$dbi2->ping() ) {
         my $connect_string =
@@ -1418,8 +1418,9 @@ sub dbi2{
 
         $dbi2 =
           DBI->connect( $connect_string, $user, $pass,
-            { 'RaiseError' => 1 } )
-          or croak( "Can't connect to database: " . $DBI::errstr );
+#            { 'RaiseError' => 1 } )
+			)
+          or warn( "Can't connect to database: " . $DBI::errstr ) and return undef;
         $dbi2->{'mysql_auto_reconnect'} = 1; # Reconnect on timeout
     }
     

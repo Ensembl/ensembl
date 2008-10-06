@@ -48,6 +48,10 @@ sub run_script {
 
   my $dbi2 = $self->dbi2($host, $port, $user, $dbname, $pass);
 
+  if(!defined($dbi2)){
+    return 1;
+  }
+
   my $sth = $dbi2->prepare($sql); 
   $sth->execute() or croak( $dbi2->errstr() );
   while ( my @row = $sth->fetchrow_array() ) {

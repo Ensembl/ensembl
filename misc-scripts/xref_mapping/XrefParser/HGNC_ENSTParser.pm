@@ -49,6 +49,9 @@ sub run_script {
   my %ott_to_enst;
 
   my $dbi2 = $self->dbi2($host, $port, $user, $dbname, $pass);
+  if(!defined($dbi2)){
+    return 1;
+  }
 
 
   my $sth = $dbi2->prepare($sql);   # funny number instead of stable id ?????
