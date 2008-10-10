@@ -78,6 +78,7 @@
 1	Uniprot_vertebrate_mammal	Proteins (UniProt mammal)	Mammalian proteins from the <a rel="external" href="http://uniprot.org">UniProtKB</a> database, positioned on the genome through BLASTP of Genscan-predicted mammalian peptides to UniProtKB proteins.
 1	Uniprot_non_mammal	Proteins (UniProt non-mammal)	Non-mammal proteins from the <a rel="external" href="http://uniprot.org">UniProtKB</a> database, positioned on the genome through BLASTP of Genscan-predicted (non-mammalian) peptides to UniProtKB proteins.
 1	Uniprot_vertebrate_non_mammal	Proteins (UniProt non-mammal)	Non-mammal proteins from the <a rel="external" href="http://uniprot.org">UniProtKB</a> database, positioned on the genome through BLASTP of Genscan-predicted (non-mammalian) peptides to UniProtKB proteins.
+1	Uniprot_non_vertebrate	Proteins (UniProt non-vertebrate)	Non-vertebrate proteins from the <a rel="external" href="http://uniprot.org">UniProtKB</a> database, positioned on the genome through BLASTP of Genscan-predicted (non-mammalian) peptides to UniProtKB proteins.
 1	Uniprot_wublastx	Proteins (UniProtKB)	Proteins from the <a rel="external" href="http://uniprot.org">UniProtKB </a> database, positioned on the genome through BLASTP of Genscan-predicted peptides to UniProtKB proteins.
 1	Uniprot_SW	Protein (UniProt)	Proteins from the <a rel="external"href="http://uniprot.org">UniProtKB Swiss-Prot</a> database, aligned to the genome.
 1	Uniprot_TR	Protein (TrEMBL)	Proteins from the <a rel="external"href="http://uniprot.org">UniProtKB TrEMBL</a> database, aligned to the genome.
