@@ -300,12 +300,12 @@ sub type_variation {
 	my ($attribute) = @{$tr->get_all_Attributes('miRNA')};
 	#the value is the mature miRNA coordinate within miRNA transcript
 	if ( $attribute->value =~ /(\d+)-(\d+)/ ) {
-	  @mapper_objs = $trans->cdna2genomic($1, $2, $tr->strand);#transfer cdna value to genomic coordinates
+    my @mapper_objs = $tr->cdna2genomic($1, $2, $tr->strand);#transfer cdna value to genomic coordinates
 	  foreach my $obj ( @mapper_objs ){#Note you can get more than one mature seq per miRNA
 	    if( $obj->isa("Bio::EnsEMBL::Mapper::Coordinate")){
 	      if ($var->start >= $obj->start() and $var->end <= $obj->end()) {
 		$var->type("WITHIN_MATURE_miRNA");
-		$return [$var];
+    return [$var];
 	      }
 	    }
 	  }
