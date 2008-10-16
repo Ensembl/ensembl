@@ -1268,7 +1268,9 @@ sub load_registry_from_db {
       if ( $3 eq $software_version ) {
         $temp{$1} = $2;
       }
-    } elsif ( $db =~ /^([a-z]+_[a-z]+_[a-z]+)_(\d+)_(\d+[a-z]*)/ ) {
+    } elsif (
+           $db =~ /^([a-z]+_[a-z]+_[a-z]+)_(?:\d+_)?(\d+)_(\d+[a-z]*)/ )
+    {
       if ( $2 eq $software_version ) {
         $temp{$1} = $2 . "_" . $3;
       }
@@ -1297,13 +1299,13 @@ sub load_registry_from_db {
 
   # Register Core databases
 
-  my @core_dbs = grep { /^[a-z]+_[a-z]+_core_\d+_/ } @dbnames;
+  my @core_dbs = grep { /^[a-z]+_[a-z]+_core_(?:\d+)?\d+_/ } @dbnames;
 
   foreach my $coredb (@core_dbs) {
     next if ($coredb =~ /collection/);  # Skip multi-species databases
 
     my ( $species, $num ) =
-      ( $coredb =~ /(^[a-z]+_[a-z]+)_core_(\d+)/ );
+      ( $coredb =~ /(^[a-z]+_[a-z]+)_core_(?:\d+_)?(\d+)/ );
 
     my $dba =
       Bio::EnsEMBL::DBSQL::DBAdaptor->new(-group        => "core",
