@@ -6,10 +6,10 @@ Bio::EnsEMBL::DBSQL::AssemblyExceptionFeatureAdaptor
 
 =head1 SYNOPSIS
 
-my $assembly_exception_feature_adaptor =
+  my $assembly_exception_feature_adaptor =
     $database_adaptor->get_AssemblyExceptionFeatureAdaptor();
-@assembly_exception_features =
-    $assembly_exception_feature_adaptor->fetch_by_Slice($slice);
+  @assembly_exception_features =
+    $assembly_exception_feature_adaptor->fetch_all_by_Slice($slice);
 
 =head1 DESCRIPTION
 
