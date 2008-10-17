@@ -341,6 +341,16 @@ sub get_all_AlleleFeatures_Slice{
     my $self = shift;
     my $with_coverage = shift;
 
+    my $variation_db = $self->adaptor->db->get_db_adaptor('variation');
+
+    unless($variation_db) {
+	warning("Variation database must be attached to core database to " .
+		"retrieve variation information" );
+	return '';
+    }
+    my $indAdaptor = $variation_db->get_IndividualAdaptor();
+    my $ref_name =  $indAdaptor->get_reference_strain_name;
+    return [] if ($self->strain_name eq $ref_name);
     $with_coverage ||= 0; #by default, get all AlleleFeatures
     if ($with_coverage == 1){
 	my $new_allele_features = $self->_filter_af_by_coverage($self->{'alleleFeatures'});
