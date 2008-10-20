@@ -456,36 +456,48 @@ sub store {
   #
   # check if the object mapping was already stored
   #
-  $sth = $self->prepare (
-           "SELECT xref_id
-            FROM object_xref
-            WHERE xref_id = ?
-            AND   ensembl_object_type = ?
-            AND   ensembl_id = ?
-            AND   linkage_annotation = ?");
-  $sth->bind_param(1,$dbX,SQL_INTEGER);
-  $sth->bind_param(2,$ensType,SQL_VARCHAR);
-  $sth->bind_param(3,$ensembl_id,SQL_INTEGER);
-  $sth->bind_param(4,$exObj->linkage_annotation,SQL_VARCHAR);
+  $sth = $self->prepare(
+    qq(
+SELECT  xref_id
+FROM    object_xref
+WHERE   xref_id = ?
+  AND   ensembl_object_type = ?
+  AND   ensembl_id = ?
+  AND   (   linkage_annotation = ?
+    OR      linkage_annotation IS NULL  )) );
+
+  $sth->bind_param( 1, $dbX,                         SQL_INTEGER );
+  $sth->bind_param( 2, $ensType,                     SQL_VARCHAR );
+  $sth->bind_param( 3, $ensembl_id,                  SQL_INTEGER );
+  $sth->bind_param( 4, $exObj->linkage_annotation(), SQL_VARCHAR );
+
   $sth->execute();
-  my ($tst) = $sth->fetchrow_array;
+
+  my ($tst) = $sth->fetchrow_array();
+
   $sth->finish();
+
   if(!$tst) {
     #
     # Store the reference to the internal ensembl object
     #
     $sth = $self->prepare(
-         "INSERT ignore INTO object_xref
-          SET xref_id = ?, ensembl_object_type = ?, ensembl_id = ?, linkage_annotation = ?");
+      qq(
+INSERT IGNORE INTO object_xref
+  SET   xref_id = ?,
+        ensembl_object_type = ?,
+        ensembl_id = ?,
+        linkage_annotation = ?) );
 
-    $sth->bind_param(1,$dbX,SQL_INTEGER);
-    $sth->bind_param(2,$ensType,SQL_VARCHAR);
-    $sth->bind_param(3,$ensembl_id,SQL_INTEGER);
-	$sth->bind_param(4,$exObj->linkage_annotation,SQL_VARCHAR);
+    $sth->bind_param( 1, $dbX,                         SQL_INTEGER );
+    $sth->bind_param( 2, $ensType,                     SQL_VARCHAR );
+    $sth->bind_param( 3, $ensembl_id,                  SQL_INTEGER );
+    $sth->bind_param( 4, $exObj->linkage_annotation(), SQL_VARCHAR );
+
     #print "stored xref id $dbX in obejct_xref\n";
     $sth->execute();
-    $exObj->dbID( $dbX );
-    $exObj->adaptor( $self );
+    $exObj->dbID($dbX);
+    $exObj->adaptor($self);
     my $Xidt = $sth->{'mysql_insertid'};
 
     #
@@ -891,7 +903,7 @@ SSQL
                        'secondary_db_name'  => $exDB_secondary_db_name,
                        'secondary_db_table' => $exDB_secondary_db_table,
                        'dbname'             => $dbname,
-					   'linkage_annotation' => $link_annotation);
+                       'linkage_annotation' => $link_annotation );
 
       # Using an outer join on the synonyms as well as on identity_xref,
       # we now have to filter out the duplicates (see v.1.18 for
