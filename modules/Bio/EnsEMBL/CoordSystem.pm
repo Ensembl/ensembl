@@ -208,6 +208,24 @@ sub version {
 
 
 
+=head2 species
+
+  Arg [1]    : none
+  Example    : print $coord->species();
+  Description: Shortcut method to get the species this CoordSystem refers to.
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub species {
+  my $self = shift;
+  return $self->adaptor->db->species;
+}
+
+
 
 =head2 equals
 
@@ -229,7 +247,10 @@ sub equals {
   my $cs = shift;
 
   if(!$cs || !ref($cs) || !$cs->isa('Bio::EnsEMBL::CoordSystem')) {
-    throw('Argument must be a Bio::EnsEMBL::CoordSystem');
+    if ($cs->isa('Bio::EnsEMBL::ExternalData::DAS::CoordSystem')) {
+      return $cs->equals($self);
+    }
+    throw('Argument must be a CoordSystem');
   }
 
   if($self->{'version'} eq $cs->version() && $self->{'name'} eq $cs->name()) {
