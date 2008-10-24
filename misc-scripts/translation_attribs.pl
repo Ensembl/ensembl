@@ -153,8 +153,8 @@ elsif(defined ($pattern)){
     $sth->execute();
     my $dbs = $sth->fetchall_arrayref();
     foreach my $db_name (@{$dbs}){
-
-	my ($species) = ( $db_name->[0] =~ /(^[a-z]+_[a-z]+)_core_\d+/ );
+	#this is a core database
+	my ($species) = ( $db_name->[0] =~ /(^[a-z]+_[a-z]+)_(core|vega|otherfeatures)_\d+/ );
 	my $dba = Bio::EnsEMBL::DBSQL::DBAdaptor->new(-host => $host,
 						      -user => $user,
 						      -pass => $pass,
@@ -162,7 +162,20 @@ elsif(defined ($pattern)){
 						      -group => 'core',
 						      -species => $species,
 						      -dbname => $db_name->[0]
-						      );
+						   );
+	if ($db_name->[0] =~ /(vega|otherfeatures)/){
+	    my $other_dbname = $db_name->[0];
+	    $other_dbname =~ s/$1/core/;
+	    #for vega databases, add the core as the dna database
+	    my $core_db  = Bio::EnsEMBL::DBSQL::DBAdaptor->new(-host => $host,
+							       -user => $user,
+							       -pass => $pass,
+							       -port => $port,
+							       -species => $species,
+							       -dbname => $other_dbname
+							       );
+	    $dba->dnadb($core_db);
+	}
 	push @{$dbas},$dba;
     }
 }
@@ -174,12 +187,23 @@ elsif(defined ($dbname)){
 						  -port => $port,
 						  -dbname => $dbname
 						  );
+    if ($dbname =~ /(vega|otherfeatures)/){
+	my $other_dbname = $dbname;
+	$other_dbname =~ s/$1/core/;
+	#for vega databases, add the core as the dna database
+	my $core_db  = Bio::EnsEMBL::DBSQL::DBAdaptor->new(-host => $host,
+							   -user => $user,
+							   -pass => $pass,
+							   -port => $port,
+							   -dbname => $other_dbname
+							   );
+	$dba->dnadb($core_db);
+    }
     push @{$dbas},$dba;
 }
 else{
     thrown("Not entered properly database connection param. Read docs\n");
 }
-
 
 my %attributes; #hash containing attributes to be stored and removed from the databse
 my $run_both = undef;
@@ -250,7 +274,7 @@ sub get_pepstats {
 
     
     my $peptide_seq ;
-    eval { $peptide_seq = $translation->seq ; };
+    eval { $peptide_seq = $translation->seq};
     return {} if ($@ || $peptide_seq =~ m/[BZX]/ig);
     if( $peptide_seq !~ /\n$/ ){ $peptide_seq .= "\n" }
     $peptide_seq =~ s/\*$//;
@@ -291,7 +315,8 @@ sub get_met_and_stop{
     
     my $peptide_seq ;
     eval { $peptide_seq = $translation->seq ; };
-    return {} if ($@ || $peptide_seq =~ m/[BZX]/ig);
+#    return {} if ($@ || $peptide_seq =~ m/[BZX]/ig);
+    return if ($@); #if there is no translation, return
     if( $peptide_seq !~ /\n$/ ){ $peptide_seq .= "\n" }
 
     #need to get transleatable_seq to find out if there is a stop codon

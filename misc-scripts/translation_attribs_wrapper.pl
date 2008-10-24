@@ -133,3 +133,19 @@ foreach my $pattern (@ranges){
 #print $call,"\n";
 }
 
+#we now need to run it for the otherfeatures|vega databases, but only the pepstats
+$options .= "--pepstats_only ";
+
+my $vega_db = ".*_vega_$release\_.*";
+$call = "bsub -o /lustre/scratch1/ensembl/dr2/tmp_smallfiles/output_translation_vega.txt -q $queue -R$memory ./translation_attribs.pl -user $user -pass $pass $options";
+$call .= " --pattern '" . $vega_db. "'";
+
+system($call);
+#print $call,"\n";
+
+my $other_db = ".*_otherfeatures_$release\_.*";
+$call = "bsub -o /lustre/scratch1/ensembl/dr2/tmp_smallfiles/output_translation_other.txt -q $queue -R$memory ./translation_attribs.pl -user $user -pass $pass $options";
+$call .= " --pattern '" . $other_db. "'";
+
+system($call);
+#print $call,"\n";
