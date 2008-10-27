@@ -130,7 +130,7 @@ CREATE TABLE analysis (
   program                     VARCHAR(80),
   program_version             VARCHAR(40),
   program_file                VARCHAR(80),
-  parameters                  VARCHAR(255),
+  parameters                  TEXT,
   module                      VARCHAR(80),
   module_version              VARCHAR(40),
   gff_source                  VARCHAR(40),
@@ -170,7 +170,7 @@ CREATE TABLE analysis_description (
 CREATE TABLE dna (
 
   seq_region_id       INT(10) UNSIGNED NOT NULL,
-  sequence            MEDIUMTEXT NOT NULL,
+  sequence            LONGTEXT NOT NULL,
 
   PRIMARY KEY (seq_region_id)
 
@@ -349,13 +349,15 @@ CREATE TABLE dna_align_feature (
   external_db_id              SMALLINT UNSIGNED,
   hcoverage                   DOUBLE,
   external_data               TEXT, 
+  pair_dna_align_feature_id   INT(10) UNSIGNED,
 
   PRIMARY KEY (dna_align_feature_id),
   KEY seq_region_idx (seq_region_id, analysis_id, seq_region_start, score),
   KEY seq_region_idx_2 (seq_region_id, seq_region_start),
   KEY hit_idx (hit_name),
   KEY analysis_idx (analysis_id),
-  KEY external_db_idx (external_db_id)
+  KEY external_db_idx (external_db_id),
+  KEY pair_idx (pair_dna_align_feature_id)
 
 ) COLLATE=latin1_swedish_ci TYPE=MyISAM MAX_ROWS=100000000 AVG_ROW_LENGTH=80;
 
@@ -759,7 +761,7 @@ CREATE TABLE xref (
    dbprimary_acc              VARCHAR(40) NOT NULL,
    display_label              VARCHAR(128) NOT NULL,
    version                    VARCHAR(10) DEFAULT '0' NOT NULL,
-   description                VARCHAR(255),
+   description                TEXT,
    info_type                  ENUM( 'PROJECTION', 'MISC', 'DEPENDENT',
                                     'DIRECT', 'SEQUENCE_MATCH',
                                     'INFERRED_PAIR', 'PROBE',
@@ -810,6 +812,7 @@ CREATE TABLE external_db (
   type                        ENUM('ARRAY', 'ALT_TRANS', 'MISC', 'LIT', 'PRIMARY_DB_SYNONYM'),
   secondary_db_name           VARCHAR(255) DEFAULT NULL,
   secondary_db_table          VARCHAR(255) DEFAULT NULL,
+  description                 TEXT,
 	
   PRIMARY KEY (external_db_id) 
 
@@ -883,19 +886,14 @@ CREATE TABLE meta (
 
 
 # Auto add schema version to database
-INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, "schema_version", "51");
+INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, "schema_version", "52");
 
 # patches included in this schema file
 # NOTE: at beginning of release cycle, remove patch entries from last release
-INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_50_51_a.sql|schema_version');
-INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_50_51_b.sql|protein_feature_hit_name');
-INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_50_51_c.sql|meta_coord_index');
-INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_50_51_d.sql|multispecies');
-INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_50_51_e.sql|feature_external_data');
-INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_50_51_f.sql|meta_species_id_values');
-INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_50_51_g.sql|protein_feature_score');
-INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_50_51_h.sql|external_db_db_name');
-INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_50_51_i.sql|meta_value_binary');
+INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_51_52_a.sql|schema_version');
+INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_51_52_a.sql|widen_columns');
+INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_51_52_c.sql|pair_dna_align_feature_id');
+INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_51_52_d.sql|external_db_description');
 
 ################################################################################
 #
@@ -1348,7 +1346,7 @@ CREATE TABLE coord_system (
   coord_system_id             INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
   species_id                  INT(10) UNSIGNED NOT NULL DEFAULT 1,
   name                        VARCHAR(40) NOT NULL,
-  version                     VARCHAR(40) DEFAULT NULL,
+  version                     VARCHAR(255) DEFAULT NULL,
   rank                        INT NOT NULL,
   attrib                      SET('default_version', 'sequence_level'),
 
