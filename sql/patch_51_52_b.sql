@@ -12,6 +12,6 @@ ALTER TABLE xref MODIFY description TEXT;
 ALTER TABLE coord_system MODIFY version VARCHAR(255) DEFAULT NULL;
 
 # patch identifier
-INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_51_52_a.sql|widen_columns');
+INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_51_52_b.sql|widen_columns');
 
 
