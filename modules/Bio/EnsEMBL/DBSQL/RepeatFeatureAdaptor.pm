@@ -382,7 +382,7 @@ sub store {
     if ($cons->repeat_class eq 'trf') {
 
       # Look for matches already stored
-      my @match = @{$rca->fetch_by_class_seq('trf', $cons->repeat_consensus)};
+      my @match = @{$rca->fetch_all_by_class_seq('trf', $cons->repeat_consensus)};
       if (@match) {
         $cons->dbID($match[0]->dbID());
       }
