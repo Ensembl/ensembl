@@ -71,7 +71,6 @@ sub fetch_by_dbID {
             xref.dbprimary_acc,
             xref.display_label,
             xref.version,
-            xref.description,
             exDB.dbprimary_acc_linkable,
             exDB.display_label_linkable,
             exDB.priority,
@@ -83,7 +82,8 @@ sub fetch_by_dbID {
             xref.info_text,
             exDB.type,
             exDB.secondary_db_name,
-            exDB.secondary_db_table
+            exDB.secondary_db_table,
+            exDB.description
     FROM    (xref, external_db exDB)
     LEFT JOIN external_synonym es ON
             es.xref_id = xref.xref_id
@@ -98,16 +98,17 @@ sub fetch_by_dbID {
   my $max_rows = 1000;
 
   while ( my $rowcache = $sth->fetchall_arrayref( undef, $max_rows ) ) {
+      #$description refers to the external_db description, while $desc was referring the xref description
     while ( my $arrayref = shift( @{$rowcache} ) ) {
       my ( $refID,               $dbprimaryId,
            $displayid,           $version,
-           $desc,                $primary_id_linkable,
+	   $primary_id_linkable,
            $display_id_linkable, $priority,
            $dbname,              $db_display_name,
            $release,             $synonym,
            $info_type,           $info_text,
            $type,                $secondary_db_name,
-           $secondary_db_table
+           $secondary_db_table,  $description
       ) = @$arrayref;
 
       if ( !defined($exDB) ) {
@@ -128,10 +129,10 @@ sub fetch_by_dbID {
                            -info_text           => $info_text,
                            -type                => $type,
                            -secondary_db_name   => $secondary_db_name,
-                           -secondary_db_table  => $secondary_db_table
+                           -secondary_db_table  => $secondary_db_table,
+			   -description         => $description
           );
 
-        if ( defined($desc) ) { $exDB->description($desc) }
 
       }
 
@@ -176,7 +177,6 @@ sub fetch_by_db_accession {
             xref.dbprimary_acc,
             xref.display_label,
             xref.version,
-            xref.description,
             exDB.dbprimary_acc_linkable,
             exDB.display_label_linkable,
             exDB.priority,
@@ -188,7 +188,8 @@ sub fetch_by_db_accession {
             xref.info_text,
             exDB.type,
             exDB.secondary_db_name,
-            exDB.secondary_db_table
+            exDB.secondary_db_table,
+            exDB.description
     FROM    (xref, external_db exDB)
     LEFT JOIN external_synonym es ON
             es.xref_id = xref.xref_id
@@ -231,13 +232,13 @@ sub fetch_by_db_accession {
     while ( my $arrayref = shift( @{$rowcache} ) ) {
       my ( $dbID,                $dbprimaryId,
            $displayid,           $version,
-           $desc,                $primary_id_linkable,
+           $primary_id_linkable,
            $display_id_linkable, $priority,
            $dbname,              $db_display_name,
            $release,             $synonym,
            $info_type,           $info_text,
            $type,                $secondary_db_name,
-           $secondary_db_table
+           $secondary_db_table,  $description
       ) = @$arrayref;
 
       if ( !defined($exDB) ) {
@@ -258,10 +259,10 @@ sub fetch_by_db_accession {
                            -info_text           => $info_text,
                            -type                => $type,
                            -secondary_db_name   => $secondary_db_name,
-                           -secondary_db_table  => $secondary_db_table
+                           -secondary_db_table  => $secondary_db_table,
+			   -description         => $description
           );
 
-        if ( defined($desc) ) { $exDB->description($desc) }
 
       }
 
@@ -834,7 +835,6 @@ sub _fetch_by_object_type {
   #  my $sth = $self->prepare("
   my $sql = (<<SSQL);
     SELECT xref.xref_id, xref.dbprimary_acc, xref.display_label, xref.version,
-           xref.description,
            exDB.dbprimary_acc_linkable, exDB.display_label_linkable,
            exDB.priority,
            exDB.db_name, exDB.db_release, exDB.status, exDB.db_display_name,
@@ -846,7 +846,7 @@ sub _fetch_by_object_type {
            idt.cigar_line, idt.score, idt.evalue, idt.analysis_id,
            gx.linkage_type,
            xref.info_type, xref.info_text, exDB.type, gx.source_xref_id,
-           oxr.linkage_annotation
+           oxr.linkage_annotation, exDB.description
     FROM   (xref xref, external_db exDB, object_xref oxr)
     LEFT JOIN external_synonym es on es.xref_id = xref.xref_id 
     LEFT JOIN identity_xref idt on idt.object_xref_id = oxr.object_xref_id
@@ -872,7 +872,7 @@ SSQL
     while ( my $arrRef = shift( @{$rowcache} ) ) {
       my ( $refID,                  $dbprimaryId,
            $displayid,              $version,
-           $desc,                   $primary_id_linkable,
+           $primary_id_linkable,
            $display_id_linkable,    $priority,
            $dbname,                 $release,
            $exDB_status,            $exDB_db_display_name,
@@ -885,7 +885,8 @@ SSQL
            $evalue,                 $analysis_id,
            $linkage_type,           $info_type,
            $info_text,              $type,
-           $source_xref_id,          $link_annotation
+           $source_xref_id,          $link_annotation,
+	   $description
       ) = @$arrRef;
 
       my $linkage_key =
@@ -903,15 +904,16 @@ SSQL
                        'secondary_db_name'  => $exDB_secondary_db_name,
                        'secondary_db_table' => $exDB_secondary_db_table,
                        'dbname'             => $dbname,
+                       'description'        => $description,
                        'linkage_annotation' => $link_annotation );
 
       # Using an outer join on the synonyms as well as on identity_xref,
       # we now have to filter out the duplicates (see v.1.18 for
       # original). Since there is at most one identity_xref row per
       # xref, this is easy enough; all the 'extra' bits are synonyms.
+      my $source_xref;
       if ( !$seen{$refID} ) {
         my $exDB;
-
         if ( ( defined($queryid) ) ) {  # an xref with similarity scores
           $exDB = Bio::EnsEMBL::IdentityXref->new_fast( \%obj_hash );
           $exDB->query_identity($queryid);
@@ -934,7 +936,7 @@ SSQL
 
         } elsif ( defined $linkage_type && $linkage_type ne "" ) {
           $exDB = Bio::EnsEMBL::GoXref->new_fast( \%obj_hash );
-          my $source_xref = ( defined($source_xref_id)
+          $source_xref = ( defined($source_xref_id)
                               ? $self->fetch_by_dbID($source_xref_id)
                               : undef );
           $exDB->add_linkage_type( $linkage_type, $source_xref || () );
@@ -944,7 +946,6 @@ SSQL
           $exDB = Bio::EnsEMBL::DBEntry->new_fast( \%obj_hash );
         }
 
-        if ( defined($desc) )        { $exDB->description($desc) }
         if ( defined($exDB_status) ) { $exDB->status($exDB_status) }
 
         $exDB->primary_id_linkable($primary_id_linkable);
@@ -971,7 +972,7 @@ SSQL
            && $linkage_type ne ""
            && !$linkage_types{$refID}->{$linkage_key} )
       {
-        my $source_xref = ( defined($source_xref_id)
+        $source_xref = ( defined($source_xref_id)
                             ? $self->fetch_by_dbID($source_xref_id)
                             : undef );
         $seen{$refID}
@@ -1224,8 +1225,8 @@ sub _type_by_external_id {
   $sth->bind_param( 2, "$name",  SQL_VARCHAR );
   $sth->bind_param( 3, $ensType, SQL_VARCHAR );
   $sth->execute();
-
-  while ( my $r = $sth->fetchrow_array() ) { $result{$r} = 1 }
+  my $r;
+  while ( $r = $sth->fetchrow_array() ) { $result{$r} = 1 }
 
   $sth = $self->prepare($query2);
 
@@ -1233,7 +1234,7 @@ sub _type_by_external_id {
   $sth->bind_param( 2, $ensType, SQL_VARCHAR );
   $sth->execute();
 
-  while ( my $r = $sth->fetchrow_array() ) { $result{$r} = 1 }
+  while ( $r = $sth->fetchrow_array() ) { $result{$r} = 1 }
 
   return keys(%result);
 
@@ -1348,11 +1349,11 @@ sub fetch_all_by_description {
 
   my $sql =
     "SELECT xref.xref_id, xref.dbprimary_acc, xref.display_label,
-           xref.version, xref.description,
+           xref.version,
            exDB.dbprimary_acc_linkable, exDB.display_label_linkable, exDB.priority,
            exDB.db_name, exDB.db_display_name, exDB.db_release, es.synonym,
            xref.info_type, xref.info_text, exDB.type, exDB.secondary_db_name,
-           exDB.secondary_db_table
+           exDB.secondary_db_table, exDB.description
     FROM   (xref, external_db exDB)
     LEFT JOIN external_synonym es on es.xref_id = xref.xref_id
     WHERE  xref.description like ?
@@ -1376,13 +1377,13 @@ sub fetch_all_by_description {
     while ( my $arrayref = shift( @{$rowcache} ) ) {
       my ( $dbID,                $dbprimaryId,
            $displayid,           $version,
-           $desc,                $primary_id_linkable,
+           $primary_id_linkable,
            $display_id_linkable, $priority,
-           $dbname,              $db_display_name,
+           $ex_dbname,           $db_display_name,
            $release,             $synonym,
            $info_type,           $info_text,
            $type,                $secondary_db_name,
-           $secondary_db_table
+           $secondary_db_table,  $ex_description
       ) = @$arrayref;
 
       my $exDB =
@@ -1393,7 +1394,7 @@ sub fetch_all_by_description {
                            -display_id          => $displayid,
                            -version             => $version,
                            -release             => $release,
-                           -dbname              => $dbname,
+                           -dbname              => $ex_dbname,
                            -primary_id_linkable => $primary_id_linkable,
                            -display_id_linkable => $display_id_linkable,
                            -priority            => $priority,
@@ -1402,10 +1403,10 @@ sub fetch_all_by_description {
                            -info_text           => $info_text,
                            -type                => $type,
                            -secondary_db_name   => $secondary_db_name,
-                           -secondary_db_table  => $secondary_db_table
+                           -secondary_db_table  => $secondary_db_table,
+                           -description         => $ex_description
         );
 
-      if ($desc)    { $exDB->description($desc) }
       if ($synonym) { $exDB->add_synonym($synonym) }
 
       push @results, $exDB;
@@ -1440,11 +1441,11 @@ sub fetch_all_by_source {
 
   my $sql =
     "SELECT xref.xref_id, xref.dbprimary_acc, xref.display_label,
-           xref.version, xref.description,
+           xref.version,
            exDB.dbprimary_acc_linkable, exDB.display_label_linkable, exDB.priority,
            exDB.db_name, exDB.db_display_name, exDB.db_release, es.synonym,
            xref.info_type, xref.info_text, exDB.type, exDB.secondary_db_name,
-           exDB.secondary_db_table
+           exDB.secondary_db_table, exDB.description
     FROM   (xref, external_db exDB)
     LEFT JOIN external_synonym es on es.xref_id = xref.xref_id
     WHERE  exDB.db_name like ?
@@ -1463,13 +1464,13 @@ sub fetch_all_by_source {
     while ( my $arrayref = shift( @{$rowcache} ) ) {
       my ( $dbID,                $dbprimaryId,
            $displayid,           $version,
-           $desc,                $primary_id_linkable,
+           $primary_id_linkable,
            $display_id_linkable, $priority,
            $dbname,              $db_display_name,
            $release,             $synonym,
            $info_type,           $info_text,
            $type,                $secondary_db_name,
-           $secondary_db_table
+           $secondary_db_table,  $description
       ) = @$arrayref;
 
       my $exDB =
@@ -1489,10 +1490,10 @@ sub fetch_all_by_source {
                            -info_text           => $info_text,
                            -type                => $type,
                            -secondary_db_name   => $secondary_db_name,
-                           -secondary_db_table  => $secondary_db_table
+                           -secondary_db_table  => $secondary_db_table,
+                           -description         => $description
         );
 
-      if ($desc)    { $exDB->description($desc) }
       if ($synonym) { $exDB->add_synonym($synonym) }
 
       push @results, $exDB;

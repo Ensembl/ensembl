@@ -100,6 +100,7 @@ sub _columns {
             daf.external_db_id
             daf.hcoverage
 	    daf.external_data
+	    daf.pair_dna_align_feature_id
 	    exdb.db_name
 	    exdb.db_display_name);
 }
@@ -140,8 +141,9 @@ sub store {
      "INSERT INTO $tablename (seq_region_id, seq_region_start, seq_region_end,
                              seq_region_strand, hit_start, hit_end,
                              hit_strand, hit_name, cigar_line,
-                             analysis_id, score, evalue, perc_ident, external_db_id, hcoverage)
-     VALUES (?,?,?,?,?,?,?,?,?,?,?, ?, ?, ?, ?)");
+                             analysis_id, score, evalue, perc_ident, external_db_id, 
+                             hcoverage, pair_dna_align_feature_id)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?, ?, ?, ?, ?, ?)");
 
  FEATURE: foreach my $feat ( @feats ) {
     if( !ref $feat || !$feat->isa("Bio::EnsEMBL::DnaDnaAlignFeature") ) {
@@ -199,6 +201,7 @@ sub store {
     $sth->bind_param(13,$feat->percent_id,SQL_FLOAT);
     $sth->bind_param(14,$feat->external_db_id,SQL_INTEGER);
     $sth->bind_param(15,$feat->hcoverage,SQL_DOUBLE);
+    $sth->bind_param(16,$feat->pair_dna_align_feature_id, SQL_INTEGER);
 
     $sth->execute();
     $original->dbID($sth->{'mysql_insertid'});
@@ -221,7 +224,7 @@ sub save {
   my $db = $self->db();
   my $analysis_adaptor = $db->get_AnalysisAdaptor();
 
-  my $sql = qq{INSERT INTO $tablename (seq_region_id, seq_region_start, seq_region_end, seq_region_strand, hit_start, hit_end, hit_strand, hit_name, cigar_line, analysis_id, score, evalue, perc_ident, external_db_id, hcoverage, external_data) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)};
+  my $sql = qq{INSERT INTO $tablename (seq_region_id, seq_region_start, seq_region_end, seq_region_strand, hit_start, hit_end, hit_strand, hit_name, cigar_line, analysis_id, score, evalue, perc_ident, external_db_id, hcoverage, pair_dna_align_feature_id, external_data) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)};
 
   my $sth = $self->prepare($sql);
      
@@ -284,7 +287,9 @@ sub save {
     $sth->bind_param(13,$feat->percent_id,SQL_FLOAT);
     $sth->bind_param(14,$feat->external_db_id,SQL_INTEGER);
     $sth->bind_param(15,$feat->hcoverage,SQL_DOUBLE);
-    $sth->bind_param(16,$extra_data,SQL_LONGVARCHAR);
+    $sth->bind_param(16,$feat->pair_dna_align_feature_id,SQL_INTEGER);
+    $sth->bind_param(17,$extra_data,SQL_LONGVARCHAR);
+
 
     $sth->execute();
     $original->dbID($sth->{'mysql_insertid'});
@@ -332,14 +337,15 @@ sub _objs_from_sth {
   my($dna_align_feature_id, $seq_region_id, $analysis_id, $seq_region_start,
      $seq_region_end, $seq_region_strand, $hit_start, $hit_end, $hit_name,
      $hit_strand, $cigar_line, $evalue, $perc_ident, $score,
-     $external_db_id, $hcoverage, $extra_data, $external_db_name, $external_display_db_name );
+     $external_db_id, $hcoverage, $extra_data, $pair_dna_align_feature_id,
+     $external_db_name, $external_display_db_name);
 
   $sth->bind_columns(
     \$dna_align_feature_id, \$seq_region_id, \$analysis_id, \$seq_region_start,
     \$seq_region_end, \$seq_region_strand, \$hit_start, \$hit_end, \$hit_name,
     \$hit_strand, \$cigar_line, \$evalue, \$perc_ident, \$score,
-    \$external_db_id, \$hcoverage, \$extra_data, \$external_db_name, \$external_display_db_name );
-
+    \$external_db_id, \$hcoverage, \$extra_data, \$pair_dna_align_feature_id,
+     \$external_db_name, \$external_display_db_name);
 
   my $asm_cs;
   my $cmp_cs;
@@ -460,7 +466,8 @@ sub _objs_from_sth {
                                     'hcoverage'      => $hcoverage,
 				    'extra_data'     => $extra_data ? $self->get_dumped_data($extra_data) : '',
 				    'dbname'         => $external_db_name,
-				    'db_display_name' => $external_display_db_name
+				    'db_display_name' => $external_display_db_name,
+				    'pair_dna_align_feature_id' => $pair_dna_align_feature_id
                                   } ) );
 
   }
