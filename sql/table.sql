@@ -1,8 +1,4 @@
-# revisited schema naming issues
-# Author: Arne Stabenau
-# Date: 12.11.2001
-#
-# Glenn Proctor July 2003 - adapted for new schema structure
+# Ensembl table definitions
 # 
 # Note that more information about each table can be found in
 # ensembl/docs/schema_description/
@@ -891,7 +887,7 @@ INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, "schema_versio
 # patches included in this schema file
 # NOTE: at beginning of release cycle, remove patch entries from last release
 INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_51_52_a.sql|schema_version');
-INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_51_52_a.sql|widen_columns');
+INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_51_52_b.sql|widen_columns');
 INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_51_52_c.sql|pair_dna_align_feature_id');
 INSERT INTO meta (meta_key, meta_value) VALUES ('patch', 'patch_51_52_d.sql|external_db_description');
 
