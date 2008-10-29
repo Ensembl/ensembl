@@ -33,3 +33,23 @@ runtests.pl t/gene.t t/exon.t t/densityFeature.t
 
 # run a single test
 perl t/gene.t
+
+If you need to modify the schema of the database and dump the new
+table structure and data before commiting to CVS, the quickest way 
+to do it is:
+
+Example: we want to dump the external_db table
+
+#to dump the table structure, without headers or any additional MySQL specific information
+mysqldump -d --compact -h ens-research -u ensro my_database external_db > external_db.sql
+
+#to dump the data in a tab delimited file format and replacing NULL with \N
+mysql -BN -e 'select * from external_db' -h ens-research -u ensro my_database | sed 's/NULL/\\N/g' > external_db.txt
+
+The 2 files that are created, (in the above example are external_db.sql and external_db.txt) 
+are the ones that will have to be committed to CVS under:
+
+ensembl/modules/t/test-genome-DBs/homo_sapiens/core/
+
+This way to dump data is only suitable for small tables, (like the ones in the unit tests). For bigger tables, you might need
+to use the standard mysqldump.
