@@ -119,7 +119,7 @@ use DBI;
 
 use vars qw(%registry_register);
 
-my $API_VERSION = 51;
+my $API_VERSION = 52;
 
 =head2 load_all
 
@@ -2085,155 +2085,91 @@ sub version_check{
 
 =head2 get_species_and_object_type
   
-  get the species and ensembl type (Gene, Transcript , Translation or Exon) for a given stable_id
+  get the species, ensembl type (Gene, Transcript , Translation or Exon) 
+  and database type (core, vega, otherfeatures) for a given stable_id
   
   Arg[1]     : stable_id to find species and ensembl type for.
   Arg[2]     : (optional) integer. force searching of other databases that do not have a set format
                for the stable_id by connecting to the databases and trying to retrieve each of the
                ensembl object fetching using the stabke_id.
-  Example    : my ($species, $type) = Bio::EnsEMBL::Registry->get_species_and_object_type(ENST00000326632);
-  Returntype : array. consisting of the species name and ensembl type. undef, undef returned if not found
+  Example    : my ($species, $type, $db_type) = Bio::EnsEMBL::Registry->get_species_and_object_type(ENST00000326632);
+  Returntype : array. consisting of the species name, ensembl type and database type (core,vega,otherfeatures). undef, undef, undef returned if not found
   Exceptions : none
   Status     : At Risk.
 
 =cut
+
+#hashes containing codes of species and different database types to return
   
+our %ensembl_type = qw(T Transcript G Gene P Translation E Exon);
+our %ensembl_species = qw(
+			  ENS     Homo_sapiens
+			  ENSRNO  Rattus_norvegicus
+			  ENSMUS  Mus_musculus
+			  ENSGAL  Gallus_gallus
+			  ENSBTA  Bos_taurus
+			  ENSDAR  Danio_rerio
+			  ENSCAF  Canis_familiaris
+			  ENSPTR  Pan_troglodytes
+			  ENSCPO  Cavia_porcellus
+			  ENSCIN  Ciona_intestinalis
+			  ENSCSAV Ciona_savignyi
+			  ENSDNO  Dasypus_novemcinctus
+			  ENSETE  Echinops_telfairi
+			  ENSEEU  Erinaceus_europaeus
+			  ENSFCA  Felis_catus
+			  ENSGAC  Gasterosteus_aculeatus
+			  ENSLAF  Loxodonta_africana
+			  ENSMMU  Macaca_mulatta
+			  ENSMOD  Monodelphis_domestica
+			  ENSMLU  Myotis_lucifugus
+			  ENSOAN  Ornithorhynchus_anatinus
+			  ENSOCU  Oryctolagus_cuniculus
+			  ENSORL  Oryzias_latipes
+			  ENSSAR  Otolemur_garnettii
+			  ENSSTO  Spermophilus_tridecemlineatus
+			  ENSTBE  Tupaia_belangeri
+			  SINFRU  Takifugu_rubripes
+			  ENSXET  Xenopus_tropicalis
+			  );
+our %vega_species = qw(
+		       OTTHUM  Homo_sapiens
+		       OTTMUS  Mus_musculus
+		       );
+our %ensembl_db_type = qw(EST otherfeatures);
+our %vectorbase_species = qw(
+			     AAEL Aedes_aegypti
+			     AGAP Anopheles_gambiae
+			     );
+our %vectorbase_type = qw(R Transcript P Translation);
+
 sub get_species_and_object_type{
   my ($self, $stable_id, $force) = @_;
  
-  my %type;
-  
-  $type{T} = "transcript";
-  $type{G} = "gene";
-  $type{P} = "translation";
-  $type{E} = "exon";
-
-  # Do each in turn in order of the usual suspects. This should increase speed on average.
-
-  if($stable_id =~ /^ENS([GTPE])000/){ # HUMAN  NOTE 000 needed else other species will match
-    return "Homo_sapiens", $type{$1};
+## Check for Ensembl/Vega style identifiers...
+  if( $stable_id =~ /(\w+?)(EST)?([GTPE])\d/ ) {
+      return $ensembl_species{$1},$ensembl_type{$3}, $ensembl_db_type{$2} ||'core' if $ensembl_species{$1};
+      return $vega_species{$1}, $ensembl_type{$3}, 'vega' if $vega_species{$1};
   }
-  elsif($stable_id =~ /^ENSRNO([GTPE])/){ #RAT
-    return "Rattus_norvegicus", $type{$1};
+## Check for Vector base style identifiers
+  if( $stable_id =~ /^([A-Z]+)\d+-?(RP)?\w?/ && $vectorbase_species{$1} ) {
+      return $vectorbase_species{$1}, $vectorbase_type{$2}||'Gene','core';
   }
-  elsif($stable_id =~ /^ENSMUS([GTPE])/){ #MOUSE
-    return "Mus_musculus", $type{$1};
+  if( $stable_id =~ /^([A-Z]+)?(\.e|E)\d+$/ && ($1 eq '' || $vectorbase_species{$1}) ) {
+      return $vectorbase_species{$1||'AGAP'}, 'Exon', 'core';
   }
-  elsif($stable_id =~ /^ENSGAL([GTPE])/){ #CHICKEN
-    return "Gallus_gallus", $type{$1};
-  }
-  elsif($stable_id =~ /^ENSBTA([GTPE])/){ #COW
-    return "Bos_taurus", $type{$1};
-  }
-  elsif($stable_id =~ /^ENSDAR([GTPE])/){ #ZEBRAFISH
-    return "Danio_rerio", $type{$1};
-  }
-  elsif($stable_id =~ /^ENSCAF([GTPE])/){ #DOG
-    return "Canis_familiaris", $type{$1};
-  }
-  elsif($stable_id =~ /^ENSPTR([GTPE])/){ #CHIMP
-    return "Pan_troglodytes", $type{$1};
-  }
-  
-  # Rest done alphabetically
-  elsif($stable_id =~ /^AAEL/){ #
-    if($stable_id =~ /-R\w$/){
-      return "aedes_aegypti", "Transcript";
-    }
-    elsif($stable_id =~ /-P\w$/){
-      return "Aedes_aegypti", "Translation";
-    }
-    elsif($stable_id =~ /\.e\d+$/){
-	return "Aedes_aegypti", "Exon";
-    }
-    return "Aedes_aegypti", "Gene";
-  }
-  elsif($stable_id =~ /^AGAP/){ #
-    if($stable_id =~ /-R\w$/){
-      return "Anopheles_gambiae", "Transcript";
-    }
-    elsif($stable_id =~ /-P\w$/){
-      return "Anopheles_gambiae", "Translation";
-    }
-    return "Anopheles_gambiae", "Gene";
-  }
-  elsif($stable_id =~ /ENSCPO([GTPE])/){ #
-    return "Cavia_porcellus", $type{$1};
-  }
-  elsif($stable_id =~ /ENSCIN([GTPE])/){ #
-    return "Ciona_intestinalis", $type{$1};
-  }
-  elsif($stable_id =~ /ENSCSAV([GTPE])/){ #
-    return "Ciona_savignyi", $type{$1};
-  }
-  elsif($stable_id =~ /ENSDNO([GTPE])/){ #
-    return "Dasypus_novemcinctus", $type{$1};
-  }
-  elsif($stable_id =~ /ENSETE([GTPE])/){ #
-    return "Echinops_telfairi", $type{$1};
-  }
-  elsif($stable_id =~ /ENSEEU([GTPE])/){ #
-    return "Erinaceus_europaeus", $type{$1};
-  }
-  elsif($stable_id =~ /ENSFCA([GTPE])/){ #
-    return "Felis_catus", $type{$1};
-  }
-  elsif($stable_id =~ /ENSGAC([GTPE])/){ #
-    return "Gasterosteus_aculeatus", $type{$1};
-  }
-  elsif($stable_id =~ /ENSLAF([GTPE])/){ #
-    return "Loxodonta_africana", $type{$1};
-  }
-  elsif($stable_id =~ /ENSMMU([GTPE])/){ #
-    return "Macaca_mulatta", $type{$1};
-  }
-  elsif($stable_id =~ /ENSMOD([GTPE])/){ #
-    return "Monodelphis_domestica", $type{$1};
-  }
-  elsif($stable_id =~ /ENSMLU([GTPE])/){ #
-    return "Myotis_lucifugus", $type{$1};
-  }
-  elsif($stable_id =~ /ENSOAN([GTPE])/){ #
-    return "Ornithorhynchus_anatinus", $type{$1};
-  }
-  elsif($stable_id =~ /ENSOCU([GTPE])/){ #
-    return "Oryctolagus_cuniculus", $type{$1};
-  }
-  elsif($stable_id =~ /ENSORL([GTPE])/){ #
-    return "Oryzias_latipes", $type{$1};
-  }
-  elsif($stable_id =~ /ENSSAR([GTPE])/){ #
-    return "Otolemur_garnettii", $type{$1};
-  }
-  elsif($stable_id =~ /ENSSTO([GTPE])/){ #
-    return "Spermophilus_tridecemlineatus", $type{$1};
-  }
-  elsif($stable_id =~ /ENSTBE([GTPE])/){ #
-    return "Tupaia_belangeri", $type{$1};
-  }
-  elsif($stable_id =~ /SINFRU([GTPE])/){ #
-    return "Takifugu_rubripes", $type{$1};
-  }
-  elsif($stable_id =~ /ENSXET([GTPe])/){ #
-    return "Xenopus_tropicalis", $type{$1};
-  }
-  elsif(defined($force) and $force){ #have to try and find the ones for species with no recognisable pattern
- 
-   foreach my $species (qw(saccharomyces_cerevisiae tetraodon_nigroviridis 
-                           drosophila_melanogaster caenorhabditis_elegans)){
+  return unless defined($force) && $force;
+## Finally if "force" is passed see if we can find a non-standard string...
+  foreach my $species (qw(saccharomyces_cerevisiae tetraodon_nigroviridis
+                          drosophila_melanogaster caenorhabditis_elegans)){
       foreach my $type (qw(Transcript Gene Translation Exon)){
-	my $adaptor = $self->get_adaptor($species, "core", $type);
-	if(defined($adaptor)){
+	  my $adaptor = $self->get_adaptor($species, 'core', $type);
+	  next unless defined($adaptor);
 	  my $entity = $adaptor->fetch_by_stable_id($stable_id);
-	  if(defined($entity)){
-	    return $species, $type;
-	  }
-	}
+	  return ucfirst( $species ), $type,'core' if defined $entity;
       }
-    }
-    
   }
-  return undef,undef;
+  return;
 
 }
 
