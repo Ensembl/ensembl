@@ -88,7 +88,7 @@ sub new_fast {
                     -type => $type,
                     -secondary_db_name => $secondary_db_name,
                     -secondary_db_table => $secondary_db_table
-                    -linkage_annotation => $object_xref_text);
+		    -linkage_annotation => $object_xref_text);
   Description: Creates a new DBEntry object
   Returntype : Bio::EnsEMBL::DBEntry
   Exceptions : none
@@ -137,6 +137,7 @@ sub new {
   if( defined $type) { $self->type($type) }
   if( defined $secondary_db_name) { $self->secondary_db_name($secondary_db_name) }
   if( defined $secondary_db_table) { $self->secondary_db_table($secondary_db_table) }
+
   $self->linkage_annotation($link_annotation) if defined $link_annotation;
 
 
@@ -302,7 +303,7 @@ sub version {
   Arg [1]    : (optional) String $arg - value to set
   Example    : none
   Description: Getter/setter for attribute 'description'.
-               The object's description.
+               The object's description, from the external_db table
   Returntype : String
   Exceptions : none
   Caller     : general
