@@ -1301,28 +1301,28 @@ sub _objs_from_sth {
 
     # Finally, create the new Transcript.
     push( @transcripts,
-          $self->_create_feature(
+          $self->_create_feature_fast(
                         'Bio::EnsEMBL::Transcript', {
-                          '-analysis'        => $analysis,
-                          '-start'           => $seq_region_start,
-                          '-end'             => $seq_region_end,
-                          '-strand'          => $seq_region_strand,
-                          '-adaptor'         => $self,
-                          '-slice'           => $slice,
-                          '-dbID'            => $transcript_id,
-                          '-stable_id'       => $stable_id,
-                          '-version'         => $version,
-                          '-created_date'    => $created_date || undef,
-                          '-modified_date'   => $modified_date || undef,
-                          '-external_name'   => $xref_display_label,
-                          '-external_db'     => $external_db,
-                          '-external_status' => $external_status,
-                          '-external_display_name' => $external_db_name,
-                          '-display_xref'          => $display_xref,
-                          '-description'           => $description,
-                          '-biotype'               => $biotype,
-                          '-status'                => $status,
-                          '-is_current'            => $is_current
+                          'analysis'        => $analysis,
+                          'start'           => $seq_region_start,
+                          'end'             => $seq_region_end,
+                          'strand'          => $seq_region_strand,
+                          'adaptor'         => $self,
+                          'slice'           => $slice,
+                          'dbID'            => $transcript_id,
+                          'stable_id'       => $stable_id,
+                          'version'         => $version,
+                          'created_date'    => $created_date || undef,
+                          'modified_date'   => $modified_date || undef,
+                          'external_name'   => $xref_display_label,
+                          'external_db'     => $external_db,
+                          'external_status' => $external_status,
+                          'external_display_name' => $external_db_name,
+                          'display_xref'          => $display_xref,
+                          'description'           => $description,
+                          'biotype'               => $biotype,
+                          'status'                => $status,
+                          'is_current'            => $is_current
                         } ) );
 
   }

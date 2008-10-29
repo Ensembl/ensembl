@@ -130,18 +130,19 @@ sub fetch_by_Transcript {
      throw("Could not find start or end exon in transcript_id=".$transcript->dbID."\n");
   }
 
-  my $translation = Bio::EnsEMBL::Translation->new
-   (
-     -dbID => $translation_id,
-     -adaptor => $self,
-     -seq_start => $seq_start,
-     -seq_end => $seq_end,
-     -start_exon => $start_exon,
-     -end_exon => $end_exon,
-     -stable_id => $stable_id,
-     -version => $version,
-     -created_date => $created_date || undef,
-     -modified_date => $modified_date || undef
+  my $translation = Bio::EnsEMBL::Translation->new_fast
+      ({
+     'dbID' => $translation_id,
+     'adaptor' => $self,
+     'start' => $seq_start,
+     'end' => $seq_end,
+     'start_exon' => $start_exon,
+     'end_exon' => $end_exon,
+     'stable_id' => $stable_id,
+     'version' => $version,
+     'created_date' => $created_date || undef,
+     'modified_date' => $modified_date || undef
+     }
    );
 
   return $translation;
