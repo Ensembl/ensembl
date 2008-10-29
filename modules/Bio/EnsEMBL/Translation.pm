@@ -91,10 +91,10 @@ sub new {
 
   my ( $start_exon, $end_exon, $seq_start, $seq_end,
        $stable_id, $version, $dbID, $adaptor, $seq,
-       $created_date, $modified_date ) = 
-    rearrange( [ "START_EXON", "END_EXON", "SEQ_START", "SEQ_END",
-                 "STABLE_ID", "VERSION", "DBID", "ADAPTOR",
-                 "SEQ", "CREATED_DATE", "MODIFIED_DATE" ], @_ );
+       $created_date, $modified_date ) =
+	   rearrange( [ "START_EXON", "END_EXON", "SEQ_START", "SEQ_END",
+			"STABLE_ID", "VERSION", "DBID", "ADAPTOR",
+			"SEQ", "CREATED_DATE", "MODIFIED_DATE" ], @_ );
 
   my $self = bless {
 		    'start_exon' => $start_exon,
@@ -111,6 +111,24 @@ sub new {
 		   }, $class;
 
   return $self;
+}
+
+=head2 new_fast
+
+  Arg [1]    : hashref to be blessed
+  Description: Construct a new Bio::EnsEMBL::Translation using the hashref.
+  Exceptions : none
+  Returntype : Bio::EnsEMBL::Translation
+  Caller     : general, subclass constructors
+  Status     : Stable
+
+=cut
+
+
+sub new_fast {
+  my $class = shift;
+  my $hashref = shift;
+  return bless $hashref, $class;
 }
 
 

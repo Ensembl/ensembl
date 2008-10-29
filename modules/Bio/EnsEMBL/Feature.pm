@@ -99,11 +99,9 @@ sub new {
   my $caller = shift;
 
   my $class = ref($caller) || $caller;
-
-  my($start, $end, $strand, $slice, $analysis,$seqname, $dbID, $adaptor) =
-    rearrange(['START','END','STRAND','SLICE','ANALYSIS', 'SEQNAME',
-               'DBID', 'ADAPTOR'], @_);
-
+  my ( $start, $end, $strand, $slice, $analysis,$seqname, $dbID, $adaptor ) =
+      rearrange(['START','END','STRAND','SLICE','ANALYSIS', 'SEQNAME',
+		 'DBID', 'ADAPTOR'], @_);   
   if($slice) {
     if(!ref($slice) || !$slice->isa('Bio::EnsEMBL::Slice')) {
       throw('-SLICE argument must be a Bio::EnsEMBL::Slice not '.$slice);
@@ -140,6 +138,23 @@ sub new {
 }
 
 
+=head2 new_fast
+
+  Arg [1]    : hashref to be blessed
+  Description: Construct a new Bio::EnsEMBL::Feature using the hashref.
+  Exceptions : none
+  Returntype : Bio::EnsEMBL::Feature
+  Caller     : general, subclass constructors
+  Status     : Stable
+
+=cut
+
+
+sub new_fast {
+  my $class = shift;
+  my $hashref = shift;
+  return bless $hashref, $class;
+}
 
 =head2 start
 

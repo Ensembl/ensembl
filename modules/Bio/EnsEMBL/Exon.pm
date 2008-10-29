@@ -103,11 +103,11 @@ sub new {
 
   my $self = $class->SUPER::new( @_ );
 
+  
   my ( $phase, $end_phase, $stable_id, $version, $created_date, $modified_date,
-       $is_current ) = 
-    rearrange( [ "PHASE", "END_PHASE", "STABLE_ID", "VERSION",
+       $is_current ) =
+      rearrange( [ "PHASE", "END_PHASE", "STABLE_ID", "VERSION",
 		 "CREATED_DATE", "MODIFIED_DATE", "IS_CURRENT" ], @_ );
-
   $self->phase($phase) if (defined $phase); # make sure phase is valid.
   $self->{'end_phase'} = $end_phase;
   $self->{'stable_id'} = $stable_id;
@@ -123,40 +123,40 @@ sub new {
 }
 
 
-=head2 new_fast
+# =head2 new_fast
 
-  Arg [1]    : Bio::EnsEMBL::Slice $slice
-  Arg [2]    : int $start
-  Arg [3]    : int $end
-  Arg [4]    : int $strand (1 or -1)
-  Example    : none
-  Description: create an Exon object
-  Returntype : Bio::EnsEMBL::Exon
-  Exceptions : throws if end < start
-  Caller     : general, creation in Bio::EnsEMBL::Lite::GeneAdaptor
-  Status     : Stable
+#   Arg [1]    : Bio::EnsEMBL::Slice $slice
+#   Arg [2]    : int $start
+#   Arg [3]    : int $end
+#   Arg [4]    : int $strand (1 or -1)
+#   Example    : none
+#   Description: create an Exon object
+#   Returntype : Bio::EnsEMBL::Exon
+#   Exceptions : throws if end < start
+#   Caller     : general, creation in Bio::EnsEMBL::Lite::GeneAdaptor
+#   Status     : Stable
 
-=cut
+# =cut
 
-sub new_fast {
-  my ($class, $slice, $start, $end, $strand) = @_;
+# sub new_fast {
+#   my ($class, $slice, $start, $end, $strand) = @_;
 
-  my $self = bless {}, $class;
+#   my $self = bless {}, $class;
 
-  # Swap start and end if they're in the wrong order
-  # We assume that the strand is correct and keep the input value.
+#   # Swap start and end if they're in the wrong order
+#   # We assume that the strand is correct and keep the input value.
 
-  if ($start > $end) {
-    throw( "End smaller than start not allowed" );
-  }
+#   if ($start > $end) {
+#     throw( "End smaller than start not allowed" );
+#   }
 
-  $self->start ($start);
-  $self->end   ($end);
-  $self->strand($strand);
-  $self->slice($slice);
+#   $self->start ($start);
+#   $self->end   ($end);
+#   $self->strand($strand);
+#   $self->slice($slice);
 
-  return $self;
-}
+#   return $self;
+# }
 
 
 =head2 end_phase

@@ -119,19 +119,19 @@ sub new {
     deprecate("Transcript constructor should use named arguments.\n" .
               'Use Bio::EnsEMBL::Transcript->new(-EXONS => \@exons);' .
               "\ninstead of Bio::EnsEMBL::Transcript->new(\@exons);");
-  }
+}
   else {
-    ( $exons, $stable_id, $version, $external_name, $external_db,
-      $external_status, $display_xref, $created_date, $modified_date,
-      $description, $biotype, $confidence, $external_db_name, $status,
-      $is_current ) = 
-        rearrange( [ "EXONS", 'STABLE_ID', 'VERSION', 'EXTERNAL_NAME', 
-                     'EXTERNAL_DB', 'EXTERNAL_STATUS', 'DISPLAY_XREF',
-		     'CREATED_DATE', 'MODIFIED_DATE', 'DESCRIPTION',
-		     'BIOTYPE', 'CONFIDENCE', 'EXTERNAL_DB_NAME', 'STATUS',
-                     'IS_CURRENT' ], @_ );
+      ( $exons, $stable_id, $version, $external_name, $external_db,
+	$external_status, $display_xref, $created_date, $modified_date,
+	$description, $biotype, $confidence, $external_db_name, $status,
+	$is_current ) = 
+	    rearrange( [ "EXONS", 'STABLE_ID', 'VERSION', 'EXTERNAL_NAME', 
+			 'EXTERNAL_DB', 'EXTERNAL_STATUS', 'DISPLAY_XREF',
+			 'CREATED_DATE', 'MODIFIED_DATE', 'DESCRIPTION',
+			 'BIOTYPE', 'CONFIDENCE', 'EXTERNAL_DB_NAME', 'STATUS',
+			 'IS_CURRENT' ], @_ );
   }
-
+  
   if( $exons ) {
     $self->{'_trans_exon_array'} = $exons;
     $self->recalculate_coordinates();

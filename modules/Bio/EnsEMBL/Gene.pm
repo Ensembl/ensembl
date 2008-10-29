@@ -106,19 +106,18 @@ sub new {
 
   my $class = ref($caller) || $caller;
   my $self = $class->SUPER::new(@_);
-
   my ( $stable_id, $version, $external_name, $type, $external_db, 
-       $external_status, $display_xref, $description, $transcripts,
-       $created_date, $modified_date, $confidence, $biotype, $source,
-       $status, $is_current, $canonical_transcript, $canonical_annotation ) = 
-    rearrange( [ 'STABLE_ID', 'VERSION', 'EXTERNAL_NAME', 'TYPE',
-		 'EXTERNAL_DB', 'EXTERNAL_STATUS', 'DISPLAY_XREF',
-                 'DESCRIPTION',
-                 'TRANSCRIPTS', 'CREATED_DATE', 'MODIFIED_DATE', 
-	         'CONFIDENCE', 'BIOTYPE', 'SOURCE', 'STATUS', 'IS_CURRENT',
-		 'CANONICAL_TRANSCRIPT', 'CANONICAL_ANNOTATION'
-		 ],
-                 @_ );
+     $external_status, $display_xref, $description, $transcripts,
+     $created_date, $modified_date, $confidence, $biotype, $source,
+     $status, $is_current, $canonical_transcript, $canonical_annotation ) =
+	 rearrange( [ 'STABLE_ID', 'VERSION', 'EXTERNAL_NAME', 'TYPE',
+		      'EXTERNAL_DB', 'EXTERNAL_STATUS', 'DISPLAY_XREF',
+		      'DESCRIPTION',
+		      'TRANSCRIPTS', 'CREATED_DATE', 'MODIFIED_DATE', 
+		      'CONFIDENCE', 'BIOTYPE', 'SOURCE', 'STATUS', 'IS_CURRENT',
+		      'CANONICAL_TRANSCRIPT', 'CANONICAL_ANNOTATION'
+		      ],
+		    @_ );  
 
   if ($transcripts) {
     $self->{'_transcript_array'} = $transcripts;
@@ -187,7 +186,7 @@ sub external_name {
 
   $self->{'external_name'} = shift if (@_);
 
-  if (exists $self->{'external_name'}) {
+  if (defined $self->{'external_name'}) {
     return $self->{'external_name'};
   }
 
