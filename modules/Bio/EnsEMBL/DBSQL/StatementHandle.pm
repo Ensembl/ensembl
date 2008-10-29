@@ -192,8 +192,19 @@ sub bind_param {
 sub execute {
   my ( $self, @args ) = @_;
 
+  my $retval;
   # Skip dumping if !$dump
-  if ( !$dump ) { return $self->SUPER::execute(@args) }
+  if ( !$dump ) { 
+ { 
+     local $self->{RaiseError};
+     $retval = $self->SUPER::execute(@args);
+     if (!defined($retval)) {
+	 throw("Failed to execute SQL statement");
+     }
+      return $retval;
+ }
+
+}
 
   my $sql = $self->sql();
   my @chrs = split( //, $sql );
@@ -212,7 +223,14 @@ sub execute {
   # print( STDERR "\n\nSQL:\n$str\n\n" );
 
   my $time = time();
-  my $res  = $self->SUPER::execute(@args);
+ { 
+     local $self->{RaiseError};
+     $retval = $self->SUPER::execute(@args);
+     if (!defined($retval)) {
+	 throw("Failed to execute SQL statement");
+     }
+ }
+#  my $res  = $self->SUPER::execute(@args);
   $time = time() - $time;
 
   if ( defined( $total_time{$sql} ) ) {
@@ -230,7 +248,7 @@ sub execute {
     $number_of_times{$sql} = 1;
   }
 
-  return $res;
+  return $retval;
 } ## end sub execute
 
 1;
