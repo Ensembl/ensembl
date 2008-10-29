@@ -1,4 +1,4 @@
- 614	6	GO:0006464	GO:0006464	1	description	\N	\N	1
+614	6	GO:0006464	GO:0006464	1	description	\N	\N	1
 6990	6	GO:0004835	GO:0004835	1	description	\N	\N	1
 102409	2	AL031658	AL031658	1	description	\N	\N	1
 152200	7	Q9BR19	Q9BR19	1	description	\N	\N	1

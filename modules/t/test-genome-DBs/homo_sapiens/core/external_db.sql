@@ -7,10 +7,9 @@ CREATE TABLE `external_db` (
   `display_label_linkable` tinyint(1) NOT NULL default '0',
   `priority` int(11) NOT NULL default '0',
   `db_display_name` varchar(255) collate latin1_bin default NULL,
-  `type`  ENUM('ARRAY', 'ALT_TRANS', 'MISC', 'LIT'),
-  `secondary_db_name`          VARCHAR(255),
-  `secondary_db_table`         VARCHAR(255),
-
+  `type` enum('ARRAY','ALT_TRANS','MISC','LIT') collate latin1_bin default NULL,
+  `secondary_db_name` varchar(255) collate latin1_bin default NULL,
+  `secondary_db_table` varchar(255) collate latin1_bin default NULL,
+  `description` text collate latin1_bin,
   PRIMARY KEY  (`external_db_id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_bin;
-

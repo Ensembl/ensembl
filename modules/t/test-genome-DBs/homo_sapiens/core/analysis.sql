@@ -8,7 +8,7 @@ CREATE TABLE `analysis` (
   `program` varchar(80) collate latin1_bin default NULL,
   `program_version` varchar(40) collate latin1_bin default NULL,
   `program_file` varchar(80) collate latin1_bin default NULL,
-  `parameters` varchar(255) collate latin1_bin default NULL,
+  `parameters` text collate latin1_bin,
   `module` varchar(80) collate latin1_bin default NULL,
   `module_version` varchar(40) collate latin1_bin default NULL,
   `gff_source` varchar(40) collate latin1_bin default NULL,
@@ -16,5 +16,4 @@ CREATE TABLE `analysis` (
   PRIMARY KEY  (`analysis_id`),
   UNIQUE KEY `logic_name` (`logic_name`),
   KEY `logic_name_idx` (`logic_name`)
-) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_bin;
-
+) ENGINE=MyISAM AUTO_INCREMENT=1504 DEFAULT CHARSET=latin1 COLLATE=latin1_bin;

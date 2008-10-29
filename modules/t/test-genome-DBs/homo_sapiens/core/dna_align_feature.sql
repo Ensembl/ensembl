@@ -16,11 +16,12 @@ CREATE TABLE `dna_align_feature` (
   `external_db_id` smallint(5) unsigned default NULL,
   `hcoverage` double default NULL,
   `external_data` text collate latin1_bin,
+  `pair_dna_align_feature_id` int(10) unsigned default NULL,
   PRIMARY KEY  (`dna_align_feature_id`),
   KEY `seq_region_idx` (`seq_region_id`,`analysis_id`,`seq_region_start`,`score`),
   KEY `seq_region_idx_2` (`seq_region_id`,`seq_region_start`),
   KEY `hit_idx` (`hit_name`),
   KEY `analysis_idx` (`analysis_id`),
-  KEY `external_db_idx` (`external_db_id`)
-) ENGINE=MyISAM AUTO_INCREMENT=29797332 DEFAULT CHARSET=latin1 COLLATE=latin1_bin MAX_ROWS=100000000 AVG_ROW_LENGTH=80;
-
+  KEY `external_db_idx` (`external_db_id`),
+  KEY `pair_idx` (`pair_dna_align_feature_id`)
+) ENGINE=MyISAM AUTO_INCREMENT=29797338 DEFAULT CHARSET=latin1 COLLATE=latin1_bin MAX_ROWS=100000000 AVG_ROW_LENGTH=80;
