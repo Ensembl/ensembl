@@ -151,31 +151,31 @@ sub fetch_all_by_Slice_and_external_db {
                $logic_name will be returned.
   Returntype : listref of Bio::EnsEMBL::BaseAlignFeatures
                in Slice coordinates
-  Exceptions : thrown if pid is not defined
+  Exceptions : none
   Caller     : general
   Status     : Stable
 
 =cut
 
 sub fetch_all_by_Slice_and_pid {
-  my ($self,$slice,$pid, $logic_name) = @_;
+  my ( $self, $slice, $pid, $logic_name ) = @_;
+
+  #  #get the primary table alias
+  #  my @tabs = $self->_tables;
+  #  my $alias = $tabs[0]->[1];
+
+  #  if(defined $pid) {
+  #    $constraint = "${alias}.perc_ident > $pid";
+  #  }
+
   my $constraint;
-
-
-#  #get the primary table alias
-#  my @tabs = $self->_tables;
-#  my $alias = $tabs[0]->[1];
-
-#  if(defined $pid) {
-#    $constraint = "${alias}.perc_ident > $pid";
-#  }
-
-  if(defined $pid){
+  if ( defined($pid) ) {
     $constraint = "perc_ident > $pid";
   }
 
-  return $self->fetch_all_by_Slice_constraint($slice, $constraint,
-                                              $logic_name);
+  return
+    $self->fetch_all_by_Slice_constraint( $slice, $constraint,
+                                          $logic_name );
 }
 
 
