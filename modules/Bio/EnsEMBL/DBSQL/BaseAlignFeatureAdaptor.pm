@@ -20,7 +20,7 @@ methods must be performed by subclasses.
 =head1 DESCRIPTION
 
 This is a base adaptor for the align feature adaptors
-DnaAlignFeatureAdaptor and PepAlignFeatureAdaptor.
+DnaAlignFeatureAdaptor and ProteinAlignFeatureAdaptor.
 
 =head1 CONTACT
 
@@ -77,6 +77,62 @@ sub fetch_all_by_Slice_and_hcoverage {
                                               $logic_name);
 }
 
+=head2 fetch_all_by_Slice_and_external_db
+
+  Arg [1]    : Bio::EnsEMBL::Slice $slice
+               The slice from which to obtain align features.
+  Arg [2]    : String $external_db_name
+               Name of the external DB to which the align features
+               should be restricted.
+  Arg [3]    : (optional) string $logic_name
+               The logic name of the type of features to obtain.
+  Example    : @feats =
+                $adaptor->fetch_all_by_Slice_and_external_db( $slice, 'EMBL' );
+  Description: Returns a listref of features created from the
+               database which are on the Slice $slice and associated
+               with external DB $external_db_name.  If logic name
+               is defined, only features with an analysis of type
+               $logic_name will be returned.
+  Returntype : listref of Bio::EnsEMBL::BaseAlignFeatures
+               in Slice coordinates
+  Exceptions : thrown if $external_db_name is not defined or if
+               the subclass does not return a table alias for the
+               external_db table from _tables()
+  Caller     : general
+  Status     : At Risk
+
+=cut
+
+sub fetch_all_by_Slice_and_external_db {
+  my ( $self, $slice, $external_db_name, $logic_name ) = @_;
+
+  if ( !defined($external_db_name) ) {
+    throw("Need name of external DB to restrict to");
+  }
+
+  my @join_tables = $self->_tables();
+
+  my $edb_alias;
+  foreach my $join_table (@join_tables) {
+    my ( $table, $table_alias ) = @{$join_table};
+    if ( $table eq 'external_db' ) {
+      $edb_alias = $table_alias;
+      last;
+    }
+  }
+
+  if ( !defined($edb_alias) ) {
+    throw("Can not find alias for external_db table");
+  }
+
+  my $constraint = sprintf( "%s.db_name = %s",
+                  $edb_alias,
+                  $self->dbc()->db_handle()->quote($external_db_name) );
+
+  return
+    $self->fetch_all_by_Slice_constraint( $slice, $constraint,
+                                          $logic_name );
+} ## end sub fetch_all_by_Slice_and_external_db
 
 =head2 fetch_all_by_Slice_and_pid
 
