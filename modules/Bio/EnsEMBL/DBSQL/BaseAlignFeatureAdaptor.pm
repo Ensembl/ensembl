@@ -172,7 +172,9 @@ sub fetch_all_by_Slice_and_pid {
 
   my $constraint;
   if ( defined($pid) ) {
-    $constraint = "perc_ident > $pid";
+    $constraint = sprintf( "perc_ident > %s",
+                           $self->dbc()->db_handle()
+                             ->quote( $pid, SQL_FLOAT ) );
   }
 
   return
