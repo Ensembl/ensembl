@@ -126,8 +126,10 @@ sub fetch_all_by_Slice_and_external_db {
   }
 
   my $constraint = sprintf( "%s.db_name = %s",
-                  $edb_alias,
-                  $self->dbc()->db_handle()->quote($external_db_name) );
+                            $edb_alias,
+                            $self->dbc()->db_handle()
+                              ->quote( $external_db_name, SQL_VARCHAR )
+  );
 
   return
     $self->fetch_all_by_Slice_constraint( $slice, $constraint,
@@ -211,8 +213,8 @@ sub fetch_all_by_hit_name {
   my ( $name, $syn ) = @{ $tabs[0] };
 
   my $constraint = sprintf( "%s.hit_name = %s",
-                          $syn,
-                          $self->dbc()->db_handle()->quote($hit_name) );
+           $syn,
+           $self->dbc()->db_handle()->quote( $hit_name, SQL_VARCHAR ) );
 
   if ( defined($logic_name) ) {
     # Add the $logic_name constraint
@@ -258,8 +260,8 @@ sub fetch_all_by_hit_name_unversioned {
   my ( $name, $syn ) = @{ $tabs[0] };
 
   my $constraint = sprintf( "%s.hit_name LIKE %s",
-                 $syn,
-                 $self->dbc()->db_handle()->quote( $hit_name . '.%' ) );
+    $syn,
+    $self->dbc()->db_handle()->quote( $hit_name . '.%', SQL_VARCHAR ) );
 
   if ( defined($logic_name) ) {
     # Add the $logic_name constraint
