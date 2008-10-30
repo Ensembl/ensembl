@@ -58,23 +58,23 @@ use Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor;
                $logic_name will be returned.
   Returntype : listref of Bio::EnsEMBL::BaseAlignFeatures
                in Slice coordinates
-  Exceptions : thrown if pid is not defined
+  Exceptions : none
   Caller     : general
   Status     : At Risk
 
 =cut
 
 sub fetch_all_by_Slice_and_hcoverage {
-  my ($self,$slice,$hcoverage, $logic_name) = @_;
+  my ( $self, $slice, $hcoverage, $logic_name ) = @_;
+
   my $constraint;
-
-
-  if(defined $hcoverage){
+  if ( defined($hcoverage) ) {
     $constraint = "hcoverage > $hcoverage";
   }
 
-  return $self->fetch_all_by_Slice_constraint($slice, $constraint,
-                                              $logic_name);
+  return
+    $self->fetch_all_by_Slice_constraint( $slice, $constraint,
+                                          $logic_name );
 }
 
 =head2 fetch_all_by_Slice_and_external_db
