@@ -337,19 +337,19 @@ sub _fetch_archive_id {
   my $sql = qq(
     (SELECT * FROM stable_id_event sie, mapping_session ms
     WHERE sie.mapping_session_id = ms.mapping_session_id
-    AND sie.old_stable_id = "$stable_id"
+    AND sie.old_stable_id = ?
     $extra_sql1)
     UNION
     (SELECT * FROM stable_id_event sie, mapping_session ms
     WHERE sie.mapping_session_id = ms.mapping_session_id
-    AND sie.new_stable_id = "$stable_id"
+    AND sie.new_stable_id = ?
     $extra_sql2)
     ORDER BY created DESC
     LIMIT 1
   );
 
   my $sth = $self->prepare($sql);
-  $sth->execute;
+  $sth->execute($stable_id,$stable_id);
   my $r = $sth->fetchrow_hashref;
   $sth->finish;
 
