@@ -247,18 +247,26 @@ sub fetch_all_by_hit_name {
 =cut
 
 sub fetch_all_by_hit_name_unversioned {
-  my( $self, $hit_name, $logic_name ) = @_;
-  throw("hit_name argument is required") if(! $hit_name);
+  my ( $self, $hit_name, $logic_name ) = @_;
+
+  if ( !defined($hit_name) ) {
+    throw("hit_name argument is required");
+  }
 
   #construct a constraint like 't1.hit_name = "123"'
   my @tabs = $self->_tables;
-  my ($name, $syn) = @{$tabs[0]};
-  my $constraint = ( "${syn}.hit_name LIKE '$hit_name.%'" );
+  my ( $name, $syn ) = @{ $tabs[0] };
 
-  if( $logic_name ){
+  my $constraint = sprintf( "%s.hit_name LIKE %s",
+                 $syn,
+                 $self->dbc()->db_handle()->quote( $hit_name . '.%' ) );
+
+  if ( defined($logic_name) ) {
     # Add the $logic_name constraint
-    $constraint = $self->_logic_name_to_constraint($constraint, $logic_name);
+    $constraint =
+      $self->_logic_name_to_constraint( $constraint, $logic_name );
   }
+
   return $self->generic_fetch($constraint);
 }
 
