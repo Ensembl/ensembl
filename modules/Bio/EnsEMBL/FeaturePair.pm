@@ -968,4 +968,13 @@ sub extra_data {
   return $self->{'extra_data'};
 }
 
+sub type {
+  my $self = shift;
+  $self->{'extra_data'}->{'type'} = shift if(@_);
+  if (exists $self->{'extra_data'}) {
+      return $self->{'extra_data'}->{'type'};
+  }
+  return;
+}
+
 1;
