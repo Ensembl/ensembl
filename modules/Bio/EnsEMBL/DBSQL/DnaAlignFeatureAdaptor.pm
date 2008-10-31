@@ -283,6 +283,7 @@ sub save {
     $sth->bind_param(9,$cigar_string,SQL_LONGVARCHAR);
     $sth->bind_param(10,$feat->analysis->dbID,SQL_INTEGER);
     $sth->bind_param(11,$feat->score,SQL_DOUBLE);
+#    $sth->bind_param(11,$feat->score); # if the above statement does not work it means you need to upgrade DBD::mysql, meantime you can replace it with this line
     $sth->bind_param(12,$feat->p_value,SQL_DOUBLE);
     $sth->bind_param(13,$feat->percent_id,SQL_FLOAT);
     $sth->bind_param(14,$feat->external_db_id,SQL_INTEGER);
@@ -325,7 +326,7 @@ sub _objs_from_sth {
   # a fair bit of gymnastics is used.
   #
 
-  my $sa = $self->db()->get_SliceAdaptor();
+  my $sa = $dest_slice->adaptor();
   my $aa = $self->db->get_AnalysisAdaptor();
 
   my @features;
