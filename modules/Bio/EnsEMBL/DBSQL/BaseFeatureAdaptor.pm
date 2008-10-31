@@ -165,7 +165,7 @@ sub fetch_all_by_Slice_and_score {
   my ( $self, $slice, $score, $logic_name ) = @_;
 
   my $constraint;
-  if ( defined $score ) {
+  if ( defined($score) ) {
     # Get the synonym of the primary_table
     my @tabs = $self->_tables();
     my $syn  = $tabs[0]->[1];
