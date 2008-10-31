@@ -320,7 +320,8 @@ sub _objs_from_sth {
   # a fair bit of gymnastics is used.
   #
 
-  my $sa = $self->db()->get_SliceAdaptor();
+#  my $sa = $self->db()->get_SliceAdaptor();
+  my $sa = $dest_slice->adaptor();
   my $aa = $self->db->get_AnalysisAdaptor();
 
   my @features;
