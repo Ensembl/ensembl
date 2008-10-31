@@ -162,17 +162,22 @@ sub fetch_all_by_Slice {
 =cut
 
 sub fetch_all_by_Slice_and_score {
-  my ($self, $slice, $score, $logic_name) = @_;
-  my $constraint;
+  my ( $self, $slice, $score, $logic_name ) = @_;
 
-  if(defined $score) {
-    #get the synonym of the primary_table
-    my @tabs = $self->_tables;
-    my $syn = $tabs[0]->[1];
-    $constraint = "${syn}.score > $score";
+  my $constraint;
+  if ( defined $score ) {
+    # Get the synonym of the primary_table
+    my @tabs = $self->_tables();
+    my $syn  = $tabs[0]->[1];
+
+    $constraint = sprintf( "%s.score > %s",
+                $syn,
+                $self->dbc()->db_handle()->quote( $score, SQL_FLOAT ) );
   }
-  return $self->fetch_all_by_Slice_constraint($slice, $constraint, 
-					      $logic_name);
+
+  return
+    $self->fetch_all_by_Slice_constraint( $slice, $constraint,
+                                          $logic_name );
 }
 
 
