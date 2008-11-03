@@ -254,30 +254,6 @@ sub type_variation {
       throw("Not possible to calculate the consequence type for ",ref($var)," : Bio::EnsEMBL::Variation::ConsequenceType object expected");
   }
 
-  ##to find if a SNP is overlapping with the transcript of the regulatory region, also the SNP should be within 5kb on both side of the transcript, then check whether they overlapping
-  my $dbFunc = $tr->adaptor->db->get_db_adaptor("funcgen");
-  if ($tr and ref($tr) and $tr->isa('Bio::EnsEMBL::Transcript') and (defined $dbFunc)) {
-    my $efa = $dbFunc->get_ExternalFeatureAdaptor();
-    my $rfa = $dbFunc->get_RegulatoryFeatureAdaptor();
-    my @rf;
-    foreach my $f  (@{$efa->fetch_all_by_Slice($tr->feature_Slice)}) {
-      if ($f->feature_set->name =~ /VISTA\s+enhancer\s+set/i or $f->feature_set->name =~ /cisRED\s+group\s+motifs/i) {
-	push @rf, $f;
-      }
-    }
-
-    push @rf, @{$rfa->fetch_all_by_Slice($tr->feature_Slice)};
-    foreach my $rf (@rf){
-      my $rf_start = $rf->start;
-      my $rf_end  = $rf->end;
-
-      if ($var->end >= $rf_start and $var->start <= $rf_end) {
-	$var->type('REGULATORY_REGION') if (!defined $var->type || $var->type !~ /REGULATORY/);
-	#	print $var->start, " has regulatiory_region near",$tr->dbID,"\n";
-	last;
-      }
-    }
-  }
 
   if (($var->start < $tr->start - $UPSTREAM) || ($var->end  > $tr->end + $DOWNSTREAM)){
     #since the variation is more than UPSTREAM and DOWNSTREAM of the transcript, there is no effect in the transcript
