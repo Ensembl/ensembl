@@ -110,7 +110,7 @@ my %tables = (
 						'external_db', 'external_synonym', 'unmapped_reason', 'unmapped_object')],
 
 			  probe_mapping => [('oligo_array', 'oligo_probe', 'oligo_feature', 'coord_system', 
-								 'seq_region', 'seq_region_attrib', 'assembly_exception', 'attrib_type', 'analysis',
+								 'seq_region', 'seq_region_attrib', 'seq_region_mapping', 'mapping_set', 'assembly_exception', 'attrib_type', 'analysis',
 								 'exon', 'exon_stable_id', 'exon_transcript', 'assembly', 'dna',
 								 'analysis_description', 'transcript', 'transcript_attrib', 'transcript_stable_id', 
 								 'translation', 'translation_stable_id', 'meta', 'meta_coord')],
