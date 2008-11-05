@@ -320,8 +320,9 @@ sub _objs_from_sth {
   # a fair bit of gymnastics is used.
   #
 
-#  my $sa = $self->db()->get_SliceAdaptor();
-  my $sa = $dest_slice->adaptor();
+# in case of userdata we need the features on the dest_slice
+# in case of get_all_supporting_features dest_slice is not provided .. 
+  my $sa = $dest_slice ? $dest_slice->adaptor() : $self->db()->get_SliceAdaptor();
   my $aa = $self->db->get_AnalysisAdaptor();
 
   my @features;
