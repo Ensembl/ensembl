@@ -1391,13 +1391,13 @@ sub get_all_translateable_Exons {
 
   Args       : none
   Example    : none
-  Description: return the peptide (plus eventuel stop codon) for this 
-               transcript. Does N padding of non phase matching exons. 
-               It uses translateable_seq internally.
-               Returns undef if this Transcript does not have a translation
-               (i.e. pseudogene).
+  Description: Return the peptide (plus eventual stop codon) for
+               this transcript.  Does N-padding of non-phase
+               matching exons.  It uses translateable_seq
+               internally.  Returns undef if this Transcript does
+               not have a translation (i.e. pseudogene).
   Returntype : Bio::Seq or undef
-  Exceptions : If no Translation is set in this Transcript
+  Exceptions : none
   Caller     : general
   Status     : Stable
 
