@@ -7,6 +7,16 @@ Introduction
 Gene display xrefs and GO terms are projected between species, using homology information from the Ensembl Compara database. This means that species that have little or no such data can have gene names and GO terms assigned based on homology with species that have more data, typically human and mouse.
 
 
+Prerequisites
+-------------
+
+The projection script needs all the core databases to be on ens-staging and the Compara homlogies to be available somewhere (see step 1). The homolgies are generally available in a database of their own a few days before the rest of Compara is finished, so keep in contact with the Compara team to find out when they're ready.
+
+It's useful to do a dry run using the previous release's Compara database, just to make sure things are working normally. This may cause some errors in individual jobs (errors of the type "Can't find homology for ..." occur when there are transcripts/translations in a new genebuild that don't appear in the "old" Compara - these will go away when the new Compara is used).
+
+Don't forget to update the .ini file to point to the new homology database when it's ready, and run the projections for real.
+
+
 Running the projection
 ----------------------
 
