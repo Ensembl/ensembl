@@ -61,21 +61,26 @@ our %desc_to_id;
 =cut
 
 sub new {
-  my $caller = shift;
+  my $proto = shift;
 
-  my $class = ref($caller) || $caller;
+  my $class = ref($proto) || $proto;
 
   my $self = $class->SUPER::new(@_);
 
-  my $sth = $self->prepare("select unmapped_reason_id, full_description from unmapped_reason");
+  my $sth =
+    $self->prepare(   "SELECT unmapped_reason_id, full_description "
+                    . "FROM unmapped_reason" );
 
   $sth->execute();
-  my ($id, $desc);
-  $sth->bind_columns(\$id, \$desc);
-  while($sth->fetch()) {
+
+  my ( $id, $desc );
+  $sth->bind_columns( \( $id, $desc ) );
+
+  while ( $sth->fetch() ) {
     $desc_to_id{$desc} = $id;
   }
-  $sth->finish;
+
+  $sth->finish();
 
   return $self;
 }
