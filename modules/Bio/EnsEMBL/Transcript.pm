@@ -1406,26 +1406,24 @@ sub get_all_translateable_Exons {
 sub translate {
   my ($self) = @_;
 
-  if(!$self->translation()) {
-    return undef;
-  }
-
+  if ( !defined( $self->translation() ) ) { return undef }
 
   my $mrna = $self->translateable_seq();
 
-  my $display_id = $self->translation->display_id || scalar($self->translation);
+  my $display_id = $self->translation->display_id()
+    || scalar( $self->translation() );
 
   # remove final stop codon from the mrna if it is present
   # produced peptides will not have '*' at end
   # if terminal stop codon is desired call translatable_seq directly
   # and produce a translation from it
 
-  if( CORE::length( $mrna ) % 3 == 0 ) {
+  if ( CORE::length($mrna) % 3 == 0 ) {
     $mrna =~ s/TAG$|TGA$|TAA$//i;
   }
 
-  if(CORE::length($mrna) <1){
-    return undef; 
+  if ( CORE::length($mrna) < 1 ) {
+    return undef;
   }
 
   my $peptide = Bio::Seq->new( -seq      => $mrna,
@@ -1433,27 +1431,30 @@ sub translate {
                                -alphabet => 'dna',
                                -id       => $display_id );
 
-  # Alternative codon tables (such as the mitochondrial codon table) can
-  # be sepcified for a sequence region via the seq_region_attrib table.
-  # A list of codon tables and their codes is at:
+  # Alternative codon tables (such as the mitochondrial codon table)
+  # can be sepcified for a sequence region via the seq_region_attrib
+  # table.  A list of codon tables and their codes is at:
   # http://www.ncbi.nlm.nih.gov/htbin-post/Taxonomy/wprintgc?mode=c
 
-  my $codon_table;
-  if($self->slice()) {
-    my ($attrib) = @{$self->slice()->get_all_Attributes('codon_table')};
-    $codon_table = $attrib->value() if($attrib);
+  my $codon_table = 1;    # default vertebrate codon table
+  if ( defined( $self->slice() ) ) {
+    my ($attrib) =
+      @{ $self->slice()->get_all_Attributes('codon_table') };
+
+    if ( defined($attrib) ) {
+      $codon_table = $attrib->value();
+    }
   }
 
-  $codon_table ||= 1; # default vertebrate codon table
+  my $translation =
+    $peptide->translate( undef, undef, undef, $codon_table );
 
-  my $translation = $peptide->translate(undef,undef,undef,$codon_table);
-
-  if($self->edits_enabled()) {
-    $self->translation()->modify_translation( $translation );
+  if ( $self->edits_enabled() ) {
+    $self->translation()->modify_translation($translation);
   }
 
   return $translation;
-}
+} ## end sub translate
 
 
 =head2 seq
