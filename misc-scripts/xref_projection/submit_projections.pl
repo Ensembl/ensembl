@@ -4,17 +4,20 @@ use strict;
 # Remember to check/set the various config optons
 
 # ------------------------------ config -------------------------------
-my $release = 51;
+my $release = 52;
 
 my $base_dir = "/lustre/scratch1/ensembl/gp1/projections/";
 
-my $conf = "release_51.ini"; # registry config file, specifies Compara location
+my $conf = "release_52.ini"; # registry config file, specifies Compara location
 
 # location of other databases
 my $host = "ens-staging";
 my $port = 3306;
 my $user = "ensadmin";
 my $pass = "ensembl";
+
+# load limit for ens-staging MySQL instance above which jobs won't be started
+my $limit = 200;
 
 # -------------------------- end of config ----------------------------
 
@@ -34,32 +37,42 @@ if (! -e $dir) {
 # common options
 my $script_opts = "-conf $conf -host $host -user $user -port $port -pass $pass -version $release -release $release -quiet";
 
-#my $bsub_opts = "-R'select[myens-staging<200]'";
 my $bsub_opts = "";
+$bsub_opts .= "-R'select[myens-staging<$limit]'";
 
-my @names_and_go = (["human", "alpaca"           ],
-		    ["human", "armadillo"        ],
-		    ["human", "bushbaby"         ],
-		    ["human", "cat"              ],
-		    ["human", "chicken"          ],
-		    ["human", "chimp"            ],
-		    ["human", "cow"              ],
-		    ["human", "dog"              ],
-		    ["human", "dolphin"          ],
-		    ["human", "elephant"         ],
-		    ["human", "ground_shrew"     ],
-		    ["human", "guinea_pig"       ],
-		    ["human", "horse"            ],
-		    ["human", "hyrax"            ],
-		    ["human", "kangaroo_rat"     ],
-		    ["human", "squirrel"         ],
-		    ["human", "tarsier"          ],
-		    ["human", "tenrec"           ],
-		    ["human", "tree_shrew"       ],
-		    ["human", "western_european_hedgehog"],
-		    ["human", "xenopus"          ],
-		    ["mouse", "kangaroo_rat"     ],
-		    ["mouse", "rat"              ]);
+
+my @names_1_1 = (["human", "chimp"            ],
+		 ["human", "opossum"          ],
+		 ["human", "dog"              ],
+		 ["human", "cow"              ],
+		 ["human", "macaque"          ],
+		 ["human", "chicken"          ],
+		 ["human", "xenopus"          ],
+		 ["human", "guinea_pig"       ],
+		 ["human", "armadillo"        ],
+		 ["human", "tenrec"           ],
+		 ["human", "western_european_hedgehog"],
+		 ["human", "cat"              ],
+		 ["human", "elephant"         ],
+		 ["human", "microbat"         ],
+		 ["human", "platypus"         ],
+		 ["human", "rabbit"           ],
+		 ["human", "bushbaby"         ],
+		 ["human", "ground_shrew"     ],
+		 ["human", "squirrel"         ],
+		 ["human", "tree_shrew"       ],
+		 ["human", "pika"             ],
+		 ["human", "mouse_lemur"      ],
+		 ["human", "horse"            ],
+		 ["human", "orang_utan"       ],
+		 ["human", "dolphin"          ],
+		 ["human", "hyrax"            ],
+		 ["human", "megabat"          ],
+		 ["human", "tarsier"          ],
+		 ["human", "alpaca"           ],
+		 ["human", "gorilla"          ],
+		 ["mouse", "kangaroo_rat"     ],
+		 ["mouse", "rat"              ]);
 
 my @names_1_many = (["human", "zebrafish"  ],
 		    ["human", "medaka"     ],
@@ -67,64 +80,96 @@ my @names_1_many = (["human", "zebrafish"  ],
 		    ["human", "fugu"       ],
 		    ["human", "stickleback"]);
 
-my @go_only = (["human",      "mouse"          ],
-	       ["human",      "rat"            ],
-	       ["mouse",      "alpaca"         ],
-	       ["mouse",      "armadillo"      ],
-	       ["mouse",      "bushbaby"       ],
-	       ["mouse",      "cat"            ],
-	       ["mouse",      "chicken"        ],
-	       ["mouse",      "chimp"          ],
-	       ["mouse",      "cow"            ],
-	       ["mouse",      "dog"            ],
-	       ["mouse",      "dolphin"        ],
-	       ["mouse",      "elephant"       ],
-	       ["mouse",      "ground_shrew"   ],
-	       ["mouse",      "guinea_pig"     ],
-	       ["mouse",      "human"          ],
-	       ["mouse",      "hyrax"          ],
-	       ["mouse",      "kangaroo_rat"   ],
-	       ["mouse",      "macaque"        ],
-	       ["mouse",      "megabat"        ],
-	       ["mouse",      "microbat"       ],
-	       ["mouse",      "mouse_lemur"    ],
-	       ["mouse",      "opossum"        ],
-	       ["mouse",      "orang_utan"     ],
-	       ["mouse",      "pika"           ],
-	       ["mouse",      "platypus"       ],
-	       ["mouse",      "rabbit"         ],
-	       ["mouse",      "rat"            ],
-	       ["mouse",      "squirrel"       ],
-	       ["mouse",      "tarsier"        ],
-	       ["mouse",      "tenrec"         ],
-	       ["mouse",      "tree_shrew"     ],
-	       ["mouse",      "western_european_hedgehog"],
-	       ["mouse",      "horse"          ],
-	       ["rat",        "human"          ],
-	       ["rat",        "mouse"          ],
-	       ["drosophila", "anopheles"      ],
-	       ["drosophila", "aedes"          ],
-	       ["danio",      "xenopus"        ],
-	       ["danio",      "fugu"           ],
-	       ["danio",      "tetraodon"      ],
-	       ["xenopus",    "danio"          ]);
+my @go_terms = (["human",      "mouse"          ],
+		["human",      "rat"            ],
+		["human",      "dog"            ],
+		["human",      "chicken"        ],
+		["human",      "cow"            ],
+		["human",      "chimp"          ],
+		["human",      "macaque"        ],
+		["human",      "guinea_pig"     ],
+		["human",      "bushbaby"       ],
+		["human",      "rabbit"         ],
+		["human",      "cat"            ],
+		["human",      "ground_shrew"   ],
+		["human",      "western_european_hedgehog"],
+		["human",      "microbat"       ],
+		["human",      "armadillo"      ],
+		["human",      "elephant"       ],
+		["human",      "tenrec"         ],
+		["human",      "opossum"        ],
+		["human",      "platypus"       ],
+		["human",      "squirrel"       ],
+		["human",      "tree_shrew"     ],
+		["human",      "pika"           ],
+		["human",      "mouse_lemur"    ],
+		["human",      "horse"          ],
+		["human",      "orang_utan"     ],
+		["human",      "dolphin"        ],
+		["human",      "hyrax"          ],
+		["human",      "megabat"        ],
+		["human",      "tarsier"        ],
+		["human",      "alpaca"         ],
+		["human",      "kangaroo_rat"   ],
+		["human",      "gorilla"        ],
+		["mouse",      "human"          ],
+		["mouse",      "rat"            ],
+		["mouse",      "dog"            ],
+		["mouse",      "chicken"        ],
+		["mouse",      "cow"            ],
+		["mouse",      "chimp"          ],
+		["mouse",      "macaque"        ],
+		["mouse",      "guinea_pig"     ],
+		["mouse",      "bushbaby"       ],
+		["mouse",      "rabbit"         ],
+		["mouse",      "cat"            ],
+		["mouse",      "ground_shrew"   ],
+		["mouse",      "western_european_hedgehog"],
+		["mouse",      "microbat"       ],
+		["mouse",      "armadillo"      ],
+		["mouse",      "elephant"       ],
+		["mouse",      "tenrec"         ],
+		["mouse",      "opossum"        ],
+		["mouse",      "platypus"       ],
+		["mouse",      "squirrel"       ],
+		["mouse",      "tree_shrew"     ],
+		["mouse",      "pika"           ],
+        	["mouse",      "horse"          ],
+		["mouse",      "orang_utan"     ],
+		["mouse",      "mouse_lemur"    ],
+		["mouse",      "dolphin"        ],
+		["mouse",      "hyrax"          ],
+		["mouse",      "megabat"        ],
+		["mouse",      "tarsier"        ],
+		["mouse",      "alpaca"         ],
+		["mouse",      "kangaroo_rat"   ],
+		["mouse",      "gorilla"        ],
+		["rat",        "human"          ],
+		["rat",        "mouse"          ],
+		["drosophila", "anopheles"      ],
+		["drosophila", "aedes"          ],
+		["danio",      "xenopus"        ],
+		["danio",      "fugu"           ],
+		["danio",      "tetraodon"      ],
+		["xenopus",    "danio"          ]);
 
 my ($from, $to, $o, $e, $n);
 
 # ----------------------------------------
-# Display names and GO terms
+# Display names
 
-foreach my $pair (@names_and_go) {
+# 1:1
+foreach my $pair (@names_1_1) {
   ($from, $to) = @$pair;
   $o = "$dir/names_${from}_$to.out";
   $e = "$dir/names_${from}_$to.err";
   $n = substr("n_${from}_$to", 0, 10); # job name display limited to 10 chars
   my $all = ($from eq "human") ? "" : "--all_sources"; # non-human from species -> use all sources
-  print "Submitting name and GO term projection from $from to $to\n";
-  system "bsub $bsub_opts -o $o -e $e -J $n perl project_display_xrefs.pl $script_opts -from $from -to $to -names -delete_names -go_terms -delete_go_terms -no_database $all";
+  print "Submitting name projection from $from to $to\n";
+  system "bsub $bsub_opts -o $o -e $e -J $n perl project_display_xrefs.pl $script_opts -from $from -to $to -names -delete_names -no_database $all";
 }
 
-# 1:many name projections
+# 1:many
 foreach my $pair (@names_1_many) {
   ($from, $to) = @$pair;
   $o = "$dir/names_${from}_$to.out";
@@ -135,11 +180,11 @@ foreach my $pair (@names_1_many) {
 }
 
 # ----------------------------------------
-# GO terms only
+# GO terms
 
 $script_opts .= " -nobackup";
 
-foreach my $pair (@go_only) {
+foreach my $pair (@go_terms) {
   ($from, $to) = @$pair;
   $o = "$dir/go_${from}_$to.out";
   $e = "$dir/go_${from}_$to.err";
