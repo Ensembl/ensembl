@@ -1860,6 +1860,10 @@ sub load_registry_from_db {
                                   -alias => [ 'alpaca', 'vicugnapacos' ]
   );
 
+ Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
+                                  -species => "Gorilla_gorilla",
+                                  -alias => [ 'gorilla', 'gorillagorilla' ]
+  );
 
 
 
