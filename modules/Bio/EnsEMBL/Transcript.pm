@@ -1415,16 +1415,16 @@ sub translate {
   # table.  A list of codon tables and their codes is at:
   # http://www.ncbi.nlm.nih.gov/htbin-post/Taxonomy/wprintgc?mode=c
 
-  my $codon_table;
+  my $codon_table_id;
   if ( defined( $self->slice() ) ) {
     my ($attrib) =
       @{ $self->slice()->get_all_Attributes('codon_table') };
 
     if ( defined($attrib) ) {
-      $codon_table = $attrib->value();
+      $codon_table_id = $attrib->value();
     }
   }
-  $codon_table ||= 1;    # default vertebrate codon table
+  $codon_table_id ||= 1;    # default vertebrate codon table
 
   # Remove final stop codon from the mrna if it is present.  Produced
   # peptides will not have '*' at end.  If terminal stop codon is
@@ -1432,7 +1432,12 @@ sub translate {
   # from it.
 
   if ( CORE::length($mrna) % 3 == 0 ) {
-    $mrna =~ s/TAG$|TGA$|TAA$//i;
+    my $codon_table =
+      Bio::Tools::CodonTable->new( -id => $codon_table_id );
+
+    if ( $codon_table->is_ter_codon( substr( $mrna, -3, 3 ) ) ) {
+      substr( $mrna, -3, 3, '' );
+    }
   }
 
   if ( CORE::length($mrna) < 1 ) { return undef }
@@ -1446,7 +1451,7 @@ sub translate {
                                -id       => $display_id );
 
   my $translation =
-    $peptide->translate( undef, undef, undef, $codon_table );
+    $peptide->translate( undef, undef, undef, $codon_table_id );
 
   if ( $self->edits_enabled() ) {
     $self->translation()->modify_translation($translation);
