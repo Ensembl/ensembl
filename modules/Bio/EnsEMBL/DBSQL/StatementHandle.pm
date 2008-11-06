@@ -186,6 +186,9 @@ sub bind_param {
   my ( $self, @args ) = @_;
 
   $bind_args[ $args[0] - 1 ] = $args[1];
+#  warn Data::Dumper::Dumper(\@args);
+#use Carp qw(cluck);
+#cluck 'ere';
   $self->SUPER::bind_param(@args);
 }
 

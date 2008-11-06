@@ -457,7 +457,8 @@ sub generic_fetch {
   $sql .= "\n$final_clause";
 
   # FOR DEBUG:
-  # printf(STDERR "SQL:\n%s\n", $sql);
+#warn "SQL:\n$sql\n";
+ #  printf(STDERR "SQL:\n%s\n", $sql);
 
   my $sth = $db->dbc->prepare($sql);
   my $bind_parameters = $self->bind_param_generic_fetch();
