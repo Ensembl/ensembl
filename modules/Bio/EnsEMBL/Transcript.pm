@@ -1411,7 +1411,7 @@ sub translate {
   my $mrna = $self->translateable_seq();
 
   # Alternative codon tables (such as the mitochondrial codon table)
-  # can be sepcified for a sequence region via the seq_region_attrib
+  # can be specified for a sequence region via the seq_region_attrib
   # table.  A list of codon tables and their codes is at:
   # http://www.ncbi.nlm.nih.gov/htbin-post/Taxonomy/wprintgc?mode=c
 
