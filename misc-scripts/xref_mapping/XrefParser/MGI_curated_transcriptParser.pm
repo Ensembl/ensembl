@@ -135,9 +135,12 @@ sub run_script {
 	  print "$mgi_bit has no description\n" if($verbose);
 	}
       }
-      my $xref_id = $self->add_xref($prim_acc, "" , $name , $desc, $id, $species_id);
+      my $xref_id = $self->add_xref($row[1], "" , $row[1] , $desc, $id, $species_id);
       $xref_count++;
       
+      if($xref_id == 712061){
+	print "712061 ".$row[0]."\t".$ott_to_enst{$row[0]}."\t".$row[1]."\n";
+      }
       $self->add_direct_xref($xref_id, $ott_to_enst{$row[0]}, "Transcript", "");
 
       
