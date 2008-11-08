@@ -40,10 +40,10 @@ sub run {
     $_ =~ s/\015//g;
 
     if(/^\[/){
-      print $_."\n";
+#      print $_."\n";
       if(/^\[Probes/){
 	my $header = $file_io->getline();
-	print $header."\n";
+#	print $header."\n";
 	$read =1;
 	my @bits = split("\t", $header);
 	my $index =0;

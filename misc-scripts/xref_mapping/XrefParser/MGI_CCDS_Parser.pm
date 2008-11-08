@@ -127,7 +127,7 @@ sub run_script {
     }
   }
   print "$ccds_missing ccds not resolved, $entrezgene_missing mgi not found. Added $count MGI xrefs via CCDS\n" if($verbose);
-  
+  return 0;
 }
 
 1;

@@ -83,6 +83,34 @@ sub run {
     return 1; 
   }
 
+
+#  NOTE this is done in the mapper
+#  #
+#  # Finally add the synonyms for MGI
+#  #
+
+#  my $synonym_sql = (<<SYNO);
+#SELECT x2.xref_id, s.synonym
+#  FROM synonym s
+#    INNER JOIN xref x1 ON  x1.xref_id = s.xref_id
+#    INNER JOIN xref x2 ON  x2.accession = x1.accession 
+#    INNER JOIN source s1 ON s1.source_id = x1.source_id
+#    INNER JOIN source s2 ON s2.source_id = x2.source_id    
+#      WHERE x2.xref_id != x1.xref_id
+#	AND s2.name = "MGI" 
+#	AND s2.priority_description = "uniprot" 
+#        AND s1.name = "MGI" 
+#        AND s1.priority_description = "descriptions"
+#SYNO
+
+#  my $sth = $self->dbi()->prepare($synonym_sql);
+  
+#  $sth->execute() or croak( $self->dbi()->errstr() );
+#  while ( my @row = $sth->fetchrow_array() ) {
+#    $self->add_synonym($row[0], $row[1]);
+#  }
+#  $sth->finish;  
+
     if ( defined $release_file ) {
         # These two lines are duplicated from the create_xrefs() method
         # below...
@@ -172,11 +200,16 @@ sub create_xrefs {
     $dependent_sources{'HGNC'} = XrefParser::BaseParser->get_source_id_for_source_name("HGNC","uniprot");
   }	
 
+  if(defined($dependent_sources{'MGI'})){
+    $dependent_sources{'MGI'} = XrefParser::BaseParser->get_source_id_for_source_name("MGI","uniprot");
+  }	
+
 
   # Get predicted equivalents of various sources used here
     my $sp_pred_source_id =
       $self->get_source_id_for_source_name(
         'Uniprot/SWISSPROT_predicted');
+
     my $sptr_pred_source_id =
       $self->get_source_id_for_source_name(
         'Uniprot/SPTREMBL_predicted');
@@ -206,6 +239,43 @@ sub create_xrefs {
   my %species2tax = $self->species_id2taxonomy();
   my @tax_ids = @{$species2tax{$species_id}};
   my %taxonomy2species_id = map{ $_=>$species_id } @tax_ids;
+
+
+#
+# MGI data needed---------------------------------------------------------
+#
+  my %mgi_acc_to_desc;
+  my %mgi_label_to_desc;
+  my %mgi_label_to_acc;
+
+  my $sth = $self->dbi()->prepare("SELECT x.accession, x.label, x.description from xref x, source s where x.source_id = s.source_id and s.name like 'MGI' and s.priority_description like 'descriptions'");
+  
+  $sth->execute() or croak( $self->dbi()->errstr() );
+  while ( my @row = $sth->fetchrow_array() ) {
+    $mgi_acc_to_desc{$row[0]}   = $row[2];
+    $mgi_label_to_desc{$row[1]} = $row[2];
+    $mgi_label_to_acc{$row[1]}  = $row[0];
+  }
+  $sth->finish;
+
+
+  #
+  # Get the MGI synonyms
+  #
+
+  $sth = $self->dbi()->prepare("SELECT sy.synonym, x.accession, x.description from xref x, source s, synonym sy where sy.xref_id = x.xref_id and x.source_id = s.source_id and s.name like 'MGI' and s.priority_description like 'descriptions'");
+  
+  $sth->execute() or croak( $self->dbi()->errstr() );
+  while ( my @row = $sth->fetchrow_array() ) {
+    $mgi_label_to_desc{$row[0]} = $row[2];
+    $mgi_label_to_acc{$row[0]}  = $row[1];
+  }
+  $sth->finish;
+
+  #
+  # end MGI data needed -------------------------------------------------
+  #
+
 
   my %dependent_xrefs;
 
@@ -442,16 +512,32 @@ sub create_xrefs {
           $dep{SOURCE_NAME} = $source;
           $dep{LINKAGE_SOURCE_ID} = $xref->{SOURCE_ID};
           $dep{SOURCE_ID} = $dependent_sources{$source};
+
 	  if($source =~ /HGNC/){
 	    $acc =~ s/HGNC://;
 	    $extra[0] =~ s/[.]//;
 	    $dep{LABEL} = $extra[0];
 	  }
+	  $dep{ACCESSION} = $acc;
+
 	  if($source =~ /MGI/){
 	    $extra[0] =~ s/[.]$//;
+            if($extra[0] =~ /ENSMUSG/){
+               next;  # no extra info gained and it could now link to different MGI
+            }
 	    $dep{LABEL} = $extra[0];
+	    if(defined($mgi_acc_to_desc{$acc})){
+	      $dep{DESCRIPTION} = $mgi_acc_to_desc{$acc};
+	    }
+	    elsif(defined($mgi_label_to_desc{$dep{LABEL}})){ # old mgi number ?? use label 
+              $dep{DESCRIPTION} = $mgi_label_to_desc{$dep{LABEL}};
+              $dep{ACCESSION}   = $mgi_label_to_acc{$dep{LABEL}};
+	    }
+            else{
+               print "Not found $acc, ".$extra[0]."\n" if($verbose);
+            }
 	  }
-	  $dep{ACCESSION} = $acc;
+
 	  if($dep =~ /MIM/){
 	    $dep{ACCESSION} = $acc;
 	    if(defined($morbidmap{$acc}) and $extra[0] eq "phenotype."){
@@ -489,7 +575,7 @@ sub create_xrefs {
 	    $dep{SOURCE_ID} = $embl_pred_source_id
 	  };
 
-	  $dep{ACCESSION} = $acc;
+#	  $dep{ACCESSION} = $acc;
 	  $dependent_xrefs{ $dep{SOURCE_NAME} }++; # get count of depenent xrefs.
 	  push @{$xref->{DEPENDENT_XREFS}}, \%dep; # array of hashrefs
 

@@ -1011,6 +1011,50 @@ sub get_valid_xrefs_for_direct_xrefs{
   return \%direct_2_xref;
 }
 
+sub label_to_acc{
+
+  my ($self,$source_name,$species_id) =@_;
+
+  # First cache synonyms so we can quickly add them later
+  my %synonyms;
+  my $syn_sth = dbi()->prepare("SELECT xref_id, synonym FROM synonym");
+  $syn_sth->execute();
+
+  my ($xref_id, $synonym);
+  $syn_sth->bind_columns(\$xref_id, \$synonym);
+  while ($syn_sth->fetch()) {
+
+    push @{$synonyms{$xref_id}}, $synonym;
+
+  }
+
+  my %valid_codes;
+  my @sources;
+
+  my $sql = "select source_id from source where upper(name) like '%".uc($source_name)."%'";
+  my $sth = dbi()->prepare($sql);
+  $sth->execute();
+  while(my @row = $sth->fetchrow_array()){
+    push @sources,$row[0];
+  }
+  $sth->finish;
+
+  foreach my $source (@sources){
+    $sql = "select label, xref_id from xref where species_id = $species_id and source_id = $source";
+    my $sth = dbi()->prepare($sql);
+    $sth->execute();
+    while(my @row = $sth->fetchrow_array()){
+      $valid_codes{$row[0]} =$row[1];
+      # add any synonyms for this xref as well
+      foreach my $syn (@{$synonyms{$row[1]}}) {
+	$valid_codes{$syn} = $row[1];
+      }
+    }
+  }
+  return \%valid_codes;
+}
+
+
 
 
 sub get_valid_codes{
@@ -1174,7 +1218,7 @@ sub upload_xref_object_graphs {
 	$xref_sth->execute($dep{ACCESSION},
 			   $dep{VERSION} || 0,
 			   $dep{LABEL},
-			   "",
+			   $dep{DESCRIPTION} || "",
 			   $dep{SOURCE_ID},
 			   $xref->{SPECIES_ID});
 
@@ -2027,20 +2071,92 @@ sub create {
     or croak("Cannot execute the following command (exit $?):\n$cmd\n");
 }
 
-sub get_label_to_accession{
-  my ($self, $name) = @_;
+sub get_label_to_acc{
+  my ($self, $name, $species_id, $prio_desc) = @_;
   my %hash1=();
 
   my $dbi = dbi();
   my $sql = "select xref.accession, xref.label from xref, source where source.name like '$name%' and xref.source_id = source.source_id";
+  if(defined($prio_desc)){
+    $sql .= " and source.priority_description like '".$prio_desc."'";
+  }	
+  if(defined($species_id)){
+    $sql .= " and xref.species_id  = $species_id";
+  }
   my $sub_sth = dbi->prepare($sql);    
 
   $sub_sth->execute();
   while(my @row = $sub_sth->fetchrow_array()) {
     $hash1{$row[1]} = $row[0];
   }   	  
+
+
+  #
+  # Remember synonyms
+  #
+
+ $sql = "select xref.accession, synonym.synonym from xref, source, synonym where synonym.xref_id = xref.xref_id and source.name like '$name%' and xref.source_id = source.source_id";
+  if(defined($prio_desc)){
+    $sql .= " and source.priority_description like '".$prio_desc."'";
+  }	
+  if(defined($species_id)){
+    $sql .= " and xref.species_id  = $species_id";
+  }
+  my $sub_sth = dbi->prepare($sql);    
+
+  $sub_sth->execute();
+  while(my @row = $sub_sth->fetchrow_array()) {
+    $hash1{$row[1]} = $row[0];
+  }   
+ 
+
   return \%hash1;
 }
+
+
+sub get_label_to_desc{
+  my ($self, $name, $species_id, $prio_desc) = @_;
+  my %hash1=();
+
+  my $dbi = dbi();
+  my $sql = "select xref.description, xref.label from xref, source where source.name like '$name%' and xref.source_id = source.source_id";
+  if(defined($prio_desc)){
+    $sql .= " and source.priority_description like '".$prio_desc."'";
+  }	
+  if(defined($species_id)){
+    $sql .= " and xref.species_id  = $species_id";
+  }
+  my $sub_sth = dbi->prepare($sql);    
+
+  $sub_sth->execute();
+  while(my @row = $sub_sth->fetchrow_array()) {
+    $hash1{$row[1]} = $row[0];
+  }   
+
+  #
+  # Also include the synonyms
+  #
+
+  $sql = "select xref.description, synonym.synonym from xref, source, synonym where synonym.xref_id = xref.xref_id and source.name like '$name%' and xref.source_id = source.source_id";
+  if(defined($prio_desc)){
+    $sql .= " and source.priority_description like '".$prio_desc."'";
+  }	
+  if(defined($species_id)){
+    $sql .= " and xref.species_id  = $species_id";
+  }
+  my $sub_sth = dbi->prepare($sql);    
+
+  $sub_sth->execute();
+  while(my @row = $sub_sth->fetchrow_array()) {
+    $hash1{$row[1]} = $row[0];
+  }   
+ 
+	  
+  return \%hash1;
+}
+
+
+
 
 
 sub get_accession_from_label{
