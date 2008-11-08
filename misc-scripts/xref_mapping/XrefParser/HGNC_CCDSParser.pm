@@ -42,8 +42,7 @@ sub run_script {
   $ua->env_proxy();
   
 
-  my %refseq_to_hgnc;
-  my %refseq_to_ccds;
+  my %ccds_to_hgnc;
 
   my $response = $ua->get($wget);
   
@@ -53,28 +52,52 @@ sub run_script {
   else{
     my @lines = split(/\n/,$response->content);
     foreach my $line (@lines){
-      my($hgnc, $refseq) = split(/\s+/,$line);
-      if(defined($refseq) and $refseq ne ""){
-	$refseq_to_hgnc{$refseq} = $hgnc;
+      my($hgnc, $junk, $ccds) = split(/\t/,$line);
+#      print "ccds:$ccds\n";
+      my @ccds_list = split(/, /,$ccds);
+      foreach my $c (@ccds_list){
+#	print $c."\t".$hgnc."\n";
+	$ccds_to_hgnc{$c} = $hgnc;
       }
     }
     
   }
-
+  
   my $dbi2 = $self->dbi2($host, $port, $user, $dbname, $pass);
   if(!defined($dbi2)){
     return 1;
   }
 
-  my $sql = "select  cu.ccds_uid, a.nuc_acc from Accessions a, Accessions_GroupVersions agv, GroupVersions  gv, CcdsUids cu where a.accession_uid = agv.accession_uid and a.organization_uid=1 and agv.group_version_uid=gv.group_version_uid and gv.ccds_status_val_uid in (3) and cu.group_uid=gv.group_uid  order by gv.ccds_status_val_uid, cu.ccds_uid";
 
 
+  my $sql = 'select ox.ensembl_id, x.dbprimary_acc from object_xref ox, xref x, external_db e where x.xref_id = ox.xref_id and x.external_db_id = e.external_db_id and e.db_name like "ENST" and x.dbprimary_acc like "ENST%"'; 
+
+
+  my %trans_id_to_stable_id;
   my $sth = $dbi2->prepare($sql); 
   $sth->execute() or croak( $dbi2->errstr() );
   while ( my @row = $sth->fetchrow_array() ) {
-    $refseq_to_ccds{$row[1]} = $row[0];
+    $trans_id_to_stable_id{$row[0]} = $row[1];
+  }
+  $sth->finish;  
+
+
+  
+  $sql = 'select ox.ensembl_id, x.display_label from object_xref ox, xref x, external_db e where x.xref_id = ox.xref_id and x.external_db_id = e.external_db_id and e.db_name like "CCDS"'; 
+
+  my %ccds_to_stable_id;
+  my $sth = $dbi2->prepare($sql); 
+  $sth->execute() or croak( $dbi2->errstr() );
+  while ( my @row = $sth->fetchrow_array() ) {
+    if(defined($trans_id_to_stable_id{$row[0]})){
+      $ccds_to_stable_id{$row[1]} = $trans_id_to_stable_id{$row[0]};
+    }
+    else{
+      print "NO transcript_stable_id for  for ".$row[0]."\n";
+    }
   }
   $sth->finish;
+  
 
 
   # becouse the direct mapping have no descriptions etc
@@ -107,50 +130,34 @@ sub run_script {
   my ($acc, $lab, $ver, $desc);
   $sth->bind_columns(\$acc, \$lab, \$ver, \$desc);
   while (my @row = $sth->fetchrow_array()) {
-    $label{$acc} = $lab;
-    $version{$acc} = $ver;
-    $description{$acc} = $desc;
-  }
-  $sth->finish;
- 
-  $sql = 'select x.accession, d.ensembl_stable_id, d.type 
-            from xref x, direct_xref d, source s 
-             where s.source_id = x.source_id and 
-                   x.xref_id = d.general_xref_id and s.name like "CCDS"'; 
- 
-  $sth = $dbi->prepare($sql);
-  $sth->execute();
-  my ($access, $stable_id, $type);
-  $sth->bind_columns(\$access, \$stable_id, \$type);
-  my %ensembl_stable_id;
-  my %ensembl_type;
-  while (my @row = $sth->fetchrow_array()) {
-    $ensembl_stable_id{$access} = $stable_id;
-    $ensembl_type{$access} = $type;
-  }
-  $sth->finish;
-  
-  my $line_count = 0;
-  my $xref_count = 0;
-  my %seen;
-  my $ignore_count = 0;
-  my $ignore_examples ="";
-
-  foreach my $refseq (keys %refseq_to_ccds){
-    if(defined($refseq_to_hgnc{$refseq})){
-      my $ccds = $refseq_to_ccds{$refseq};
-      my $hgnc = $refseq_to_hgnc{$refseq};
-      my $key = "CCDS".$ccds;
-      if(defined($ensembl_stable_id{$key})){
-	my $xref_id = $self->add_xref($hgnc, $version{$hgnc} , $label{$hgnc}||$hgnc , 
-				      $description{$hgnc}, $source_id, $species_id);
-	$self->add_direct_xref($xref_id, $ensembl_stable_id{$key}, $ensembl_type{$key}, "");
-	$xref_count++;
-      }
+    if(defined($desc)){
+      $label{$acc} = $lab;
+      $version{$acc} = $ver;
+      $description{$acc} = $desc;
     }
   }
+  $sth->finish;
+ 
+  my $xref_count = 0;
+  my $no_ccds_to_hgnc = 0;
+  foreach my $ccds (keys %ccds_to_stable_id){
+    if(defined($ccds_to_hgnc{$ccds})){
+      my $hgnc = $ccds_to_hgnc{$ccds};
+      $hgnc =~ s/HGNC://;
+      my $xref_id = $self->add_xref($hgnc, $version{$hgnc} , $label{$hgnc}||$hgnc , 
+				      $description{$hgnc}, $source_id, $species_id);
+      $self->add_direct_xref($xref_id, $ccds_to_stable_id{$ccds}, "Transcript", "");
+      $xref_count++;
 
+    }
+    else{
+         $no_ccds_to_hgnc++;
+#      print "no ccds to hgnc for $ccds\n";
 
+    }
+  }
+  print "$no_ccds_to_hgnc missed as no hgnc for the ccds. Added $xref_count HGNC xrefs via CCDS\n" if($verbose);
+  return 0;
 }
 
 1;
