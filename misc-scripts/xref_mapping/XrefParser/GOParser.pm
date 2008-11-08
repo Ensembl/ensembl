@@ -33,6 +33,34 @@ sub run {
   my $verbose       = shift;
 
   my $file = @{$files}[0];
+  my $file_desc = @{$files}[1];
+
+  #
+  # Get the descriptions from the desc file.
+  #
+  my $go_io = $self->get_filehandle($file_desc);
+    
+  if ( !defined $go_io ) {
+    print STDERR "ERROR: Could not open $file_desc\n";
+    return 1;    # 1 error
+  }
+  
+  my %go_to_desc;
+  print "description file for GO\n" if($verbose);
+  my $term = undef;
+  my $desc = undef;
+  while ( $_ = $go_io->getline() ) {
+    if(/\<id\>(GO:\d+)\<\/id\>/){
+      $term = $1;
+    }
+    elsif(/\<name\>(.*)\<\/name\>/){
+      if(defined($term)){
+        $go_to_desc{$term} = $1;
+      } 
+      $term = undef;
+    }
+  }
+  $go_io->close();
 
 
   my %wrongtype;
@@ -106,7 +134,7 @@ sub run {
 	}
 	elsif($array[0] =~ /RefSeq/){
 	  if($refseq{$array[1]}) {
-	    $self->add_to_xrefs($refseq{$array[1]},$array[4],'',$array[4],'',$array[6],$source_id,$species_id);
+	    $self->add_to_xrefs($refseq{$array[1]},$array[4],'',$array[4],$go_to_desc{$array[4]} || '',$array[6],$source_id,$species_id);
 	    $count++;
 	    #print join (" ", "RefSeq" ,$refseq{$array[1]}, $array[4], "\n");
 	  }
@@ -116,7 +144,7 @@ sub run {
 	}
 	elsif($array[0] =~ /UniProt/){
 	  if($swiss{$array[1]}){
-	    $self->add_to_xrefs($swiss{$array[1]},$array[4],'',$array[4],'',$array[6],$source_id,$species_id);
+	    $self->add_to_xrefs($swiss{$array[1]},$array[4],'',$array[4],$go_to_desc{$array[4]} || '',$array[6],$source_id,$species_id);
 	    $count++;
 	    #print join (" ", "UniProt" ,$swiss{$array[1]}, $array[4], "\n");
 	  }
@@ -175,7 +203,7 @@ sub run {
 	  # MGI	MGI:1923501	0610007P08Rik		GO:0004386	MGI:MGI:1354194	IEA		F	RIKEN cDNA 0610007P08 gene		gene	taxon:10090	20060213	UniProt
 	  #  0         1                2         3             4                  5        6             7         8
 	  if($mgi_to_uniprot{$array[1]}){
-	    $self->add_to_xrefs($mgi_to_uniprot{$array[1]}, $array[4], '', $array[4], '', $array[6], $source_id, $species_id);
+	    $self->add_to_xrefs($mgi_to_uniprot{$array[1]}, $array[4], '', $array[4], $go_to_desc{$array[4]} || '', $array[6], $source_id, $species_id);
 	    $count++;
 	    #print join (" ", "MGI" ,$mgi_to_uniprot{$array[1]}, $array[4], "\n");
 	  }
