@@ -277,6 +277,10 @@
 12500	DBASS3	1	XREF	1	0	50	DataBase of Aberrant 3' Splice Sites	MISC	\N	\N
 12505	DBASS5	1	XREF	1	0	50	DataBase of Aberrant 5' Splice Sites	MISC	\N	\N
 12510	HPA	1	XREF	1	0	50	Human Protein Atlas	MISC	\N	\N
+12550	MGI_curated_gene	1	KNOWNXREF	1	0	5	MGI (curated)	MISC	\N	\N
+12555	MGI_automatic_gene	1	KNOWNXREF	1	0	5	MGI (automatic)	MISC	\N	\N
+12560	MGI_curated_transcript	1	KNOWNXREF	1	0	5	MGI (curated)	MISC	\N	\N
+12565	MGI_automatic_transcript	1	KNOWNXREF	1	0	5	MGI (automatic)	MISC	\N	\N
 #
 #
 # Please separate fields in this file with TABS not spaces!
