@@ -27,7 +27,7 @@ package Bio::EnsEMBL::DBSQL::StatementHandle;
 use vars qw(@ISA);
 use strict;
 
-use Bio::EnsEMBL::Utils::Exception qw(warning stack_trace_dump);
+use Bio::EnsEMBL::Utils::Exception qw(warning throw);
 
 use DBD::mysql;
 use DBI;
