@@ -254,11 +254,9 @@ sub _cache_seq_region_mapping {
 
 
 sub _cache_mapping_paths {
-  #
   # Retrieve a list of available mappings from the meta table.  This
   # may eventually be moved a table of its own if this proves too
   # cumbersome.
-  #
 
   my ($self) = @_;
 
@@ -271,7 +269,7 @@ MAP_PATH:
   {
     my @cs_strings = split( /[|#]/, $map_path );
 
-    if ( @cs_strings < 2 ) {
+    if ( scalar(@cs_strings) < 2 ) {
       warning(   "Incorrectly formatted assembly.mapping value in meta "
                . "table: $map_path" );
       next MAP_PATH;
@@ -283,20 +281,22 @@ MAP_PATH:
 
       my $cs = $self->fetch_by_name( $name, $version );
 
-      if ( !$cs ) {
+      if ( !defined($cs) ) {
         warning(   "Unknown coordinate system specified in meta table "
                  . " assembly.mapping:\n  $name:$version" );
         next MAP_PATH;
       }
 
-      push @coord_systems, $cs;
+      push( @coord_systems, $cs );
     }
 
-    # If the delimiter is a # we want a special case, multiple parts of
-    # the same componente map to same assembly part.  As this looks like
-    # the "long" mapping we just make the path a bit longer :-)
+    # If the delimiter is a '#' we want a special case, multiple parts
+    # of the same component map to the same assembly part.  As this
+    # looks like the "long" mapping, we just make the path a bit longer
+    # :-)
 
-    if ( $map_path =~ /#/ && scalar(@coord_systems) == 2 ) {
+    if ( index( $map_path, '#' ) != -1 && scalar(@coord_systems) == 2 )
+    {
       splice( @coord_systems, 1, 0, (undef) );
     }
 
@@ -311,7 +311,9 @@ MAP_PATH:
                . "coord systems $key1 and $key2.\n"
                . "Choosing shorter path arbitrarily." );
 
-      if ( @{ $mapping_paths{"$key1|$key2"} } < @coord_systems ) {
+      if ( scalar( @{ $mapping_paths{"$key1|$key2"} } ) <
+           scalar(@coord_systems) )
+      {
         next MAP_PATH;
       }
     }
@@ -319,17 +321,15 @@ MAP_PATH:
     $mapping_paths{"$key1|$key2"} = \@coord_systems;
   } ## end foreach my $map_path ( @{ $mc...
 
-  #
   # Create the pseudo coord system 'toplevel' and cache it so that only
-  # one of these is created for each db...
-  #
+  # one of these is created for each database.
 
   my $toplevel =
     Bio::EnsEMBL::CoordSystem->new( -TOP_LEVEL => 1,
                                     -NAME      => 'toplevel',
                                     -ADAPTOR   => $self );
-  $self->{'_top_level'} = $toplevel;
 
+  $self->{'_top_level'}     = $toplevel;
   $self->{'_mapping_paths'} = \%mapping_paths;
 
   return 1;
