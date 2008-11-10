@@ -62,6 +62,8 @@ Results
 
 As jobs finish, they write .out and .err files to the working directory specified in the script. If a job finished successfully, the .err file will be of zero size (but will exist). .err files of non-zero length indicate that something has gone wrong.
 
+Note that if you need to re-run individual jobs, the command-line for doing so is at the top of the appropriate .out file.
+
 All databases that have been projected to should be healthchecked; in particular CoreForeignKeys and the xrefs group of healthchecks should be run. To do this, check out the ensj-healthcheck module, cd into ensj-healthcheck, configure database.properties, then run
 
 ./run-healthcheck.sh -d '.*_core_48.*' CoreForeignKeys xrefs
