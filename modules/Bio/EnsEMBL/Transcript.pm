@@ -1416,12 +1416,23 @@ sub translate {
   # http://www.ncbi.nlm.nih.gov/htbin-post/Taxonomy/wprintgc?mode=c
 
   my $codon_table_id;
+  my ( $complete5, $complete3 );
   if ( defined( $self->slice() ) ) {
-    my ($attrib) =
-      @{ $self->slice()->get_all_Attributes('codon_table') };
+    my $attrib;
 
+    ($attrib) = @{ $self->slice()->get_all_Attributes('codon_table') };
     if ( defined($attrib) ) {
       $codon_table_id = $attrib->value();
+    }
+
+    ($attrib) = @{ $self->slice()->get_all_Attributes('complete5') };
+    if ( defined($attrib) ) {
+      $complete5 = $attrib->value();
+    }
+
+    ($attrib) = @{ $self->slice()->get_all_Attributes('complete3') };
+    if ( defined($attrib) ) {
+      $complete3 = $attrib->value();
     }
   }
   $codon_table_id ||= 1;    # default vertebrate codon table
@@ -1451,7 +1462,8 @@ sub translate {
                                -id       => $display_id );
 
   my $translation =
-    $peptide->translate( undef, undef, undef, $codon_table_id );
+    $peptide->translate( undef, undef, undef, $codon_table_id, undef,
+                         undef, $complete5, $complete3 );
 
   if ( $self->edits_enabled() ) {
     $self->translation()->modify_translation($translation);
