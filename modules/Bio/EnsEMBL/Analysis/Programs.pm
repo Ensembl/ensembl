@@ -5,6 +5,7 @@ use vars qw( %Program_Paths );
 use Carp;
 use Cwd;
 use Sys::Hostname;
+use Bio::EnsEMBL::Utils::Exception qw ( throw ) ; 
 
 sub import {
     my $pkg = shift;
@@ -55,10 +56,9 @@ sub import {
     }
     
     # Give informative death message if programs weren't found
-    if (@missing) {
-        die "Unable to locate the following programs as '",
-            (getpwuid($<))[0], "' on host '", hostname(), "'\n",
-            map "--> $_\n", @missing;
+    if (@missing) { 
+        throw("Unable to locate the following programs as '". (getpwuid($<))[0]. "' on host '". hostname(). "' :\t".
+        join ( " --> " , @missing )) ; 
     }
 }
 
