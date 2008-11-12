@@ -138,9 +138,10 @@ sub run_script {
       my $xref_id = $self->add_xref($row[1], "" , $row[1] , $desc, $id, $species_id);
       $xref_count++;
       
-      if($xref_id == 712061){
-	print "712061 ".$row[0]."\t".$ott_to_enst{$row[0]}."\t".$row[1]."\n";
-      }
+#      if($xref_id == 707653){
+#	print $row[0]."\t".$ott_to_enst{$row[0]}."\t".$row[1]."\n";
+#      }
+
       $self->add_direct_xref($xref_id, $ott_to_enst{$row[0]}, "Transcript", "");
 
       
