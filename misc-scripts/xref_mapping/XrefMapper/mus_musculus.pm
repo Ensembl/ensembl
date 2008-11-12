@@ -19,11 +19,48 @@ sub consortium {
 
 }
 
+sub get_canonical_name{
+   return "MGI";
+}
+
+sub species_specific_pre_attributes_set{
+  my $self  = shift;
+  $self->official_naming();
+}
+
+sub species_specific_cleanup{
+  my $self = shift;
+  my $dbname = $self->get_canonical_name;
+
+  print "Removing all $dbname from object_xref not on a Gene\n";
+  my $remove_old_ones = (<<JSQL);
+delete ox 
+  from object_xref ox, xref x, external_db e
+    where e.db_name like "$dbname" and 
+          ox.ensembl_object_type != "Gene" and
+          ox.xref_id = x.xref_id and
+	  x.external_db_id = e.external_db_id;
+JSQL
+
+  #
+  # First Delete all the hgnc object_xrefs not on a gene. (i.e these are copys).
+  #
+
+  my $sth = $self->core->dbc->prepare($remove_old_ones);
+
+  $sth->execute() || die "Could not execute: \n$remove_old_ones \n";
+
+  $sth->finish;
+
+}
+
 sub gene_description_sources {
 
   return ("miRBase",
 	  "RFAM", 
           "IMGT/GENE_DB",
+	  "MGI_curated_gene",
+	  "MGI_curated_transcript",
 	  "MGI",
 	  "Uniprot/SWISSPROT", 
 	  "Uniprot/Varsplic", 
