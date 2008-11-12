@@ -38,7 +38,7 @@ if (! -e $dir) {
 my $script_opts = "-conf $conf -host $host -user $user -port $port -pass $pass -version $release -release $release -quiet";
 
 my $bsub_opts = "";
-$bsub_opts .= "-R'select[myens-staging<$limit]'";
+$bsub_opts .= "-R'select[myens_staging<$limit]'";
 
 
 my @names_1_1 = (["human", "chimp"            ],
