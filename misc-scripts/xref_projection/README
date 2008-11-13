@@ -66,4 +66,6 @@ Note that if you need to re-run individual jobs, the command-line for doing so i
 
 All databases that have been projected to should be healthchecked; in particular CoreForeignKeys and the xrefs group of healthchecks should be run. To do this, check out the ensj-healthcheck module, cd into ensj-healthcheck, configure database.properties, then run
 
-./run-healthcheck.sh -d '.*_core_48.*' CoreForeignKeys xrefs
+./run-healthcheck.sh -d '.*_core_48.*' CoreForeignKeys core_xrefs
+
+Once all the projections have been run and checked, inform the release coordinator.
