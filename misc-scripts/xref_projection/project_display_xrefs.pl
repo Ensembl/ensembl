@@ -208,8 +208,10 @@ foreach my $to_species (@to_multi) {
 
   }
 
-  print "\nCleaning up ...";
-  clean_up($to_ga->dbc());
+  if ($go_terms) {
+    print "\nCleaning up GO projections ...";
+    clean_up($to_ga->dbc());
+  }
 
   print "\n$to_species, after projection: \n";
   print_stats($to_ga);
