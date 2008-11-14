@@ -121,6 +121,27 @@ use vars qw(%registry_register);
 
 my $API_VERSION = 52;
 
+# This is a map from group names to Ensembl DB adaptors.
+#Used by load_all and reset_DBAdaptor
+my %group2adaptor = 
+  (
+   'blast'         => 'Bio::EnsEMBL::External::BlastAdaptor',
+   'compara'       => 'Bio::EnsEMBL::Compara::DBSQL::DBAdaptor',
+   'core'          => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
+   'estgene'       => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
+   'funcgen'       => 'Bio::EnsEMBL::Funcgen::DBSQL::DBAdaptor',
+   'haplotype'     => 'Bio::EnsEMBL::ExternalData::Haplotype::DBAdaptor',
+   'hive'          => 'Bio::EnsEMBL::Hive::DBSQL::DBAdaptor',
+   'lite'          => 'Bio::EnsEMBL::Lite::DBAdaptor',
+   'otherfeatures' => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
+   'pipeline'      => 'Bio::EnsEMBL::Pipeline::DBSQL::DBAdaptor',
+   'snp'           => 'Bio::EnsEMBL::ExternalData::SNPSQL::DBAdaptor',
+   'variation'     => 'Bio::EnsEMBL::Variation::DBSQL::DBAdaptor',
+   'vega'          => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
+  );
+
+
+
 =head2 load_all
 
  Will load the registry with the configuration file which is obtained
@@ -215,27 +236,7 @@ sub load_all {
         }
 
         if ( defined $cfg ) {
-            # This is a map from group names to Ensembl DB adaptors.
-            my %group2adaptor = (
-                 'blast'   => 'Bio::EnsEMBL::External::BlastAdaptor',
-                 'compara' => 'Bio::EnsEMBL::Compara::DBSQL::DBAdaptor',
-                 'core'    => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
-                 'estgene' => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
-                 'funcgen' => 'Bio::EnsEMBL::Funcgen::DBSQL::DBAdaptor',
-                 'haplotype' =>
-                   'Bio::EnsEMBL::ExternalData::Haplotype::DBAdaptor',
-                 'hive' => 'Bio::EnsEMBL::Hive::DBSQL::DBAdaptor',
-                 'lite' => 'Bio::EnsEMBL::Lite::DBAdaptor',
-                 'otherfeatures' => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
-                 'pipeline' =>
-                   'Bio::EnsEMBL::Pipeline::DBSQL::DBAdaptor',
-                 'snp' =>
-                   'Bio::EnsEMBL::ExternalData::SNPSQL::DBAdaptor',
-                 'variation' =>
-                   'Bio::EnsEMBL::Variation::DBSQL::DBAdaptor',
-                 'vega' => 'Bio::EnsEMBL::DBSQL::DBAdaptor' );
-
-            my %default_adaptor_args = ();
+		  my %default_adaptor_args = ();
 
             if ( $cfg->SectionExists('default') ) {
                 # The 'default' section is special.  It contain default
@@ -670,8 +671,9 @@ sub remove_DBAdaptor{
     }
   }
   
+  
   # Now remove from _DBA cache
-  splice(@{$registry_register{'_DBA'}}, $index, 1);
+  splice(@{$registry_register{'_DBA'}}, $index, 1) if defined $index;
 
   return;
 }
@@ -684,6 +686,7 @@ sub remove_DBAdaptor{
   Arg [2]:     string - DB group e.g. core
   Arg [3]:     string - new dbname
   Args [4-7]:  string - optional DB parameters, defaults to current db params if omitted
+  Arg [8]:     hashref - Hash ref of additional parameters e.g. eFG dnadb params for auto selecting dnadb
   Usage :      $reg->reset_registry_db('homo_sapiens', 'core', 'homo_sapiens_core_37_35j');
   Description: Resets a DB within the registry.
   Exceptions:  Throws if mandatory params not supplied
@@ -694,7 +697,7 @@ sub remove_DBAdaptor{
 =cut
 
 sub reset_DBAdaptor{
-  my ($self, $species, $group, $dbname, $host, $port, $user, $pass) = @_;
+  my ($self, $species, $group, $dbname, $host, $port, $user, $pass, $params) = @_;
 
   # Check mandatory params
   if(! (defined $species && defined $group && defined $dbname)){
@@ -705,36 +708,52 @@ sub reset_DBAdaptor{
   my $alias = $self->get_alias($species);
   throw("Could not find registry alias for species:\t$species") if(! defined $alias);
  
-
   # Get all current defaults if not defined
-  my $current_db = $self->get_DBAdaptor($alias, $group);
-  
-  if(! defined $current_db){
-	throw("There is not current registry DB for:\t${alias}\t${group}");
+
+  my $db = $self->get_DBAdaptor($alias, $group);
+  my $class;
+
+  if($db){
+	$class = ref($db);
+	$host ||= $db->dbc->host;
+	$port ||= $db->dbc->port;
+	$user ||= $db->dbc->username;
+	$pass ||= $db->dbc->password;
+  }
+  else{
+	#Now we need to test mandatory params
+	$class =  $group2adaptor{ lc($group) };
+
+	if(! ($host && $user)){
+	  throw("No comparable $alias $group DB present in Registry. You must pass at least a dbhost and dbuser");
+	}
   }
 
-
-  $host ||= $current_db->dbc->host;
-  $port ||= $current_db->dbc->port;
-  $user ||= $current_db->dbc->username;
-  $pass ||= $current_db->dbc->password;
-  my $class = ref($current_db);
-
+ 
   $self->remove_DBAdaptor($alias, $group);
+
+   
   
-  my @adaptors = @{$self->get_all_adaptors};
+  #my @adaptors = @{$self->get_all_adaptors};
+  #This is causing a loop as it was constantly trying to reset the db
+  #and never getting there.
+  #I think this was left over from testing
 
-
+  	
   # ConfigRegistry should automatically add this to the Registry
-  my $db = $class->new(
-					   -user => $user,
-					   -host => $host,
-					   -port => $port,
-					   -pass => $pass,
-					   -dbname => $dbname,
-					   -species => $alias,
-					   -group    => $group,
-					  );
+
+
+  $db = $class->new(
+					-user => $user,
+					-host => $host,
+					-port => $port,
+					-pass => $pass,
+					-dbname => $dbname,
+					-species => $alias,
+					-group    => $group,
+					%{$params}
+				   );
+
 
   return $db;
 }
@@ -874,6 +893,12 @@ sub get_adaptor{
   $species = $class->get_alias($species);
 
   my %dnadb_adaptors = qw(sequence  1 assemblymapper 1  karyotypeband 1 repeatfeature 1 coordsystem 1  assemblyexceptionfeature 1 );
+
+
+ 
+  #warn "$species, $group, $type";
+
+  $type = lc($type);
 
   my $dnadb_group =  $registry_register{$species}{lc($group)}{_DNA};
 
