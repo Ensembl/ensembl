@@ -136,7 +136,7 @@
 57	ccds	CCDS	CCDS identifier
 
 # make first amino acid methionine
-58	initial_met	Initial methionine	Set first amino acid to methionine
+58	starts_met	Starts with methionine	Translation attribute
 
 # label frameshifts modelled as short (1,2,4,5 bp) introns
 59	Frameshift	Frameshift	Frameshift modelled as intron
@@ -164,6 +164,8 @@
 74	GeneNo_MTtRNA	Mt_tRNA Gene Count	Number of Mt_tRNA Genes
 75	GeneNo_RNA_pseu	scRNA_pseudogene Gene Count	Number of scRNA_pseudogene Genes
 76	GeneNo_tRNA	tRNA Gene Count	 Number of tRNA Genes
+77	GeneNo_rettran	retrotransposed Gene Count	Number of retrotransposed Genes
+78	GeneNo_snlRNA	snlRNA Gene Count	Number of snlRNA Genes
 
 80	supercontig	SuperContig name	NULL
 81	well_name	Well plate name	NULL
@@ -191,7 +193,7 @@
 99	GeneNo_ncRNA	ncRNA Gene Count	Number of ncRNA Genes
 
 # Ig segment gene counts for seq regions stats script ds5 2/2/07
-100	GeneNo_IgSeg	Ig segment Gene Count	Number of Ig segment Genes
+100	GeneNo_Ig	Ig Gene Count	Number of Ig Genes
 
 # cat missing atts
 109	HitSimilarity	hit similarity	percentage id to parent transcripts
@@ -261,8 +263,8 @@
 152	TotPTCount	total_processed_transcript	Total Number of Processed Transcripts
 153	TotPCCount	total_protein_coding	Total Number of Protein Coding
 154	NovNcCount	novel_non_coding	Number of Novel Non Coding
-155	KnwnPolyCount	known_polymorphic	Number of Known Polymorphic
-156	NovPolyCount	novel_polymorphic	Number of Novel Polymorphic
+155	KnwnPolyPsCount	known_polymorphic	Number of Known Polymorphic Pseudogenes
+156	NovPolyPsCount	novel_polymorphic	Number of Novel Polymorphic Pseudogenes
 157	TotIGGeneCount	total_IG_gene	Total Number of IG Genes
 158	NovProcPsCount	novel_processed_pseudogene	Number of Novel Processed Pseudogenes
 159	NovUnPsCount	novel_unprocessed_pseudogene	Number of Novel Unprocessed Pseudogenes
@@ -270,3 +272,38 @@
 161	NovTECCount	novel_TEC	Number of Novel TEC Genes
 162	KnwnIGGeneCount	IG_gene_KNOWN	Number of Known IG Genes
 163	KnwnIGPsGeCount	IG_pseudogene_KNOWN	Number of Known IG Pseudogenes
+
+#pepstats attributes: will be calculated by release coordinator for the protview page
+
+164	IsoPoint	Isoelectric point	Pepstats attributes
+165	Charge	Charge	Pepstats attributes
+166	MolecularWeight	Molecular weight	Pepstats attributes
+167	NumResidues	Number of residues	Pepstats attributes
+168	AvgResWeight	Ave. residue weight	Pepstats attributes
+
+#attribute to indicate whether the translation has a stop codon or not, mainly for the mart calculation
+169	has_stop_codon	Contains stop codon	Translation attribute	
+
+#old attribute used by the API to translate the sequence
+170	initial_met	Initial methionine	Set first amino acid to methionine
+#added for procavia capensis in release 51
+171	NonGapHCov	NonGapHCov
+
+# attribute that shows if a transcript has an alternative ATG upstream of the defined start coding ATG
+172	otter_support	otter support	Evidence ID that was used as supporting feature for building a gene in Vega
+
+# Temporary attrib using during the merge of the havana and ensembl gene sets to stablish a relation between a
+# havana transcript that shares CDS with an Ensembl transcript but the have different UTR structure
+173	enst_link	enst link	Code to link a OTTT with an ENST when they both share the CDS of ENST
+
+# Attribute that show the start genomic position of an alternative ATG found for a transcript. Checks are made 
+# up to 200 bases upstream for genes with no UTR, and for genes with UTR is made up to 200 bases of the UTR sequence
+# or to the max extent of the UTR if this is shorter than 200.
+174	upstream_ATG	upstream ATG	Alternative ATG found upstream of the defined as start ATG for the transcript
+
+#more vega gene types
+175	NovTPPsCount	transcribed_processed_pseudogene_NOVEL	Number of Transcribed processed pseudogenes
+176	NovTUPsCount	transcribed_unprocessed_pseudogene_NOVEL	Number of Transcribed unprocessed pseudogenes
+177	NovUniPsCount	unitary_pseudogene_NOVEL	Number of Novel Unitary pseudogenes
+178	KnwnTECCount	TEC_KNOWN	Number of Known TEC genes
+179	TotTECGeneCount	TEC_all	Total number of TEC genes
