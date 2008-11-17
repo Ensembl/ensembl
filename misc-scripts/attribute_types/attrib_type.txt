@@ -263,8 +263,8 @@
 152	TotPTCount	total_processed_transcript	Total Number of Processed Transcripts
 153	TotPCCount	total_protein_coding	Total Number of Protein Coding
 154	NovNcCount	novel_non_coding	Number of Novel Non Coding
-155	KnwnPolyCount	known_polymorphic	Number of Known Polymorphic
-156	NovPolyCount	novel_polymorphic	Number of Novel Polymorphic
+155	KnwnPolyPsCount	known_polymorphic	Number of Known Polymorphic Pseudogenes
+156	NovPolyPsCount	novel_polymorphic	Number of Novel Polymorphic Pseudogenes
 157	TotIGGeneCount	total_IG_gene	Total Number of IG Genes
 158	NovProcPsCount	novel_processed_pseudogene	Number of Novel Processed Pseudogenes
 159	NovUnPsCount	novel_unprocessed_pseudogene	Number of Novel Unprocessed Pseudogenes
@@ -300,3 +300,10 @@
 # up to 200 bases upstream for genes with no UTR, and for genes with UTR is made up to 200 bases of the UTR sequence
 # or to the max extent of the UTR if this is shorter than 200.
 174	upstream_ATG	upstream ATG	Alternative ATG found upstream of the defined as start ATG for the transcript
+
+#more vega gene types
+175	NovTPPsCount	transcribed_processed_pseudogene_NOVEL	Number of Transcribed processed pseudogenes
+176	NovTUPsCount	transcribed_unprocessed_pseudogene_NOVEL	Number of Transcribed unprocessed pseudogenes
+177	NovUniPsCount	unitary_pseudogene_NOVEL	Number of Novel Unitary pseudogenes
+178	KnwnTECCount	TEC_KNOWN	Number of Known TEC genes
+179	TotTECGeneCount	TEC_all	Total number of TEC genes
