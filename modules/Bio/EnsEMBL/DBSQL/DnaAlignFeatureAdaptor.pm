@@ -237,11 +237,14 @@ sub save {
       next FEATURE;
     }
 
-    my $hstart = defined $feat->hstart ? $feat->hstart : $feat->start ;
-    my $hend   = defined $feat->hend ? $feat->hend : $feat->end;
-    my $hstrand = defined $feat->hstrand ? $feat->hstrand : $feat->strand;
-     $self->_check_start_end_strand($hstart,$hend, $hstrand);
-
+    my $hstart  = $feat->hstart || 0; # defined $feat->hstart  ? $feat->hstart : $feat->start ;
+    my $hend    = $feat->hend   || 0; # defined $feat->hend    ? $feat->hend : $feat->end;
+    my $hstrand = $feat->hstrand|| 0; # defined $feat->hstrand ? $feat->hstrand : $feat->strand;
+    if( $hstart && $hend ) {
+      if($hend < $hstart) {
+        throw("Invalid Feature start/end [$hstart/$hend]. Start must be less than or equal to end.");
+      }
+    }
     my $cigar_string = $feat->cigar_string();
     if(!$cigar_string) {
       $cigar_string = $feat->length() . 'M';
