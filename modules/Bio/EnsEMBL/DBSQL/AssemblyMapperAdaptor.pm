@@ -215,9 +215,11 @@ sub fetch_by_CoordSystems {
   my @mapping_path = @{$csa->get_mapping_path($cs1,$cs2)};
 
   if(!@mapping_path) {
-    warning("There is no mapping defined between these coord systems:\n" .
-          $cs1->name() . " " . $cs1->version() . " and " . $cs2->name() . " " .
-          $cs2->version());
+    warning(
+      "There is no mapping defined between these coord systems:\n" .
+      $cs1->name() . " " . $cs1->version() . " and " . $cs2->name() . " " .
+      $cs2->version()
+    );
     return undef;
   }
 
