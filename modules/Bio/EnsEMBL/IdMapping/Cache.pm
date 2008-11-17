@@ -249,7 +249,9 @@ sub build_cache_from_genes {
   throw("You must provide a listref of genes.") unless (ref($genes) eq 'ARRAY');
 
   # biotype filter
-  $genes = $self->filter_biotype($genes) if ($self->conf->param('biotypes'));
+  if ( $self->conf->param('biotypes') ) {
+    $genes = $self->filter_biotypes($genes);
+  }
   my $num_genes = scalar(@$genes);
 
   # initialise cache for the given type.
