@@ -5915,6 +5915,58 @@ FSQL
   print "Uploading data in $object_xref_file to object_xref\n";
   $sth->execute() || die "error loading file $object_xref_file\n";
   
+
+#
+# Now check for duplicate clone names as gene names.
+#
+  
+  my $clone_file =  $self->core->dir()."/clone_names.sql";
+  
+  open(CLONE, ">$xref_file" ) || die "Could not open file $xref_file";
+
+  my $xref_list_sql = 'select x.xref_id, x.dbprimary_acc from external_db e, xref x, gene g, gene_stable_id gsi where e.external_db_id =x.external_db_id and e.db_name like "Clone_based_ensembl_gene" and g.gene_id = gsi.gene_id and g.display_xref_id = x.xref_id and x.display_label = ? order by gsi.stable_id';
+  
+  my $gene_list_sql = 'SELECT DISTINCT(x.display_label), COUNT(*) AS count FROM gene g, xref x, external_db e WHERE e.external_db_id=x.external_db_id AND g.biotype = "protein_coding" AND x.xref_id=g.display_xref_id and e.db_name like "Clone_based_ensembl_gene" GROUP BY x.display_label, e.db_name HAVING COUNT > 1';
+  
+
+  my @xref_name_list;
+  
+  
+  $sth = $self->core->dbc->prepare($gene_list_sql);
+  
+  $sth->execute();
+  my ($xref_label, $count);
+  $sth->bind_columns(\$xref_label,\$count);
+  while($sth->fetch()){
+    push @xref_name_list, $xref_label;
+  }
+  $sth->finish;
+  
+  
+  
+  $sth = $self->core->dbc->prepare($xref_list_sql);
+  
+  foreach my $name (@xref_name_list){
+    my $count = 201;
+    $sth->execute($name);
+    $sth->bind_columns(\$xref_id,\$acc);
+    while($sth->fetch()){
+      my $new = $acc."-".$count;
+      print CLONE 'update xref set dbprimary_acc = "'.$new.'" where xref_id = '.$xref_id.";\n";
+      print CLONE 'update xref set display_label = "'.$new.'" where xref_id = '.$xref_id.";\n";
+      $count++;
+    }
+  }
+  $sth->finish;
+  close CLONE;
+
+  my $mysql_command = $self->get_mysql_command($self->core->dbc);  
+
+  # Load the new clone xrefs from the appropriate file
+  system( "$mysql_command < $clone_file" ) == 0 
+    or print( "ERROR: parsing $clone_file in mysql\n" );
+
+
 }
 
 
