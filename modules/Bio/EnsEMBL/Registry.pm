@@ -121,6 +121,31 @@ use vars qw(%registry_register);
 
 my $API_VERSION = 51;
 
+
+
+# This is a map from group names to Ensembl DB adaptors.
+#Used by load_all and reset_DBAdaptor
+my %group2adaptor = 
+  (
+   'blast'         => 'Bio::EnsEMBL::External::BlastAdaptor',
+   'compara'       => 'Bio::EnsEMBL::Compara::DBSQL::DBAdaptor',
+   'core'          => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
+   'estgene'       => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
+   'funcgen'       => 'Bio::EnsEMBL::Funcgen::DBSQL::DBAdaptor',
+   'haplotype'     => 'Bio::EnsEMBL::ExternalData::Haplotype::DBAdaptor',
+   'hive'          => 'Bio::EnsEMBL::Hive::DBSQL::DBAdaptor',
+   'lite'          => 'Bio::EnsEMBL::Lite::DBAdaptor',
+   'otherfeatures' => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
+   'pipeline'      => 'Bio::EnsEMBL::Pipeline::DBSQL::DBAdaptor',
+   'snp'           => 'Bio::EnsEMBL::ExternalData::SNPSQL::DBAdaptor',
+   'variation'     => 'Bio::EnsEMBL::Variation::DBSQL::DBAdaptor',
+   'vega'          => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
+  );
+
+
+
+
+
 =head2 load_all
 
  Will load the registry with the configuration file which is obtained
@@ -215,27 +240,7 @@ sub load_all {
         }
 
         if ( defined $cfg ) {
-            # This is a map from group names to Ensembl DB adaptors.
-            my %group2adaptor = (
-                 'blast'   => 'Bio::EnsEMBL::External::BlastAdaptor',
-                 'compara' => 'Bio::EnsEMBL::Compara::DBSQL::DBAdaptor',
-                 'core'    => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
-                 'estgene' => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
-                 'funcgen' => 'Bio::EnsEMBL::Funcgen::DBSQL::DBAdaptor',
-                 'haplotype' =>
-                   'Bio::EnsEMBL::ExternalData::Haplotype::DBAdaptor',
-                 'hive' => 'Bio::EnsEMBL::Hive::DBSQL::DBAdaptor',
-                 'lite' => 'Bio::EnsEMBL::Lite::DBAdaptor',
-                 'otherfeatures' => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
-                 'pipeline' =>
-                   'Bio::EnsEMBL::Pipeline::DBSQL::DBAdaptor',
-                 'snp' =>
-                   'Bio::EnsEMBL::ExternalData::SNPSQL::DBAdaptor',
-                 'variation' =>
-                   'Bio::EnsEMBL::Variation::DBSQL::DBAdaptor',
-                 'vega' => 'Bio::EnsEMBL::DBSQL::DBAdaptor' );
-
-            my %default_adaptor_args = ();
+		  my %default_adaptor_args = ();
 
             if ( $cfg->SectionExists('default') ) {
                 # The 'default' section is special.  It contain default
@@ -253,7 +258,7 @@ sub load_all {
                                      -species => $species,
                                      -alias => [ split( /\n/, $alias ) ]
                     );
-                }
+				  }
 
                 %default_adaptor_args =
                   map { '-' . $_ => $cfg->val( 'default', $_ ) }
@@ -671,7 +676,7 @@ sub remove_DBAdaptor{
   }
   
   # Now remove from _DBA cache
-  splice(@{$registry_register{'_DBA'}}, $index, 1);
+  splice(@{$registry_register{'_DBA'}}, $index, 1) if defined $index;
 
   return;
 }
@@ -694,7 +699,7 @@ sub remove_DBAdaptor{
 =cut
 
 sub reset_DBAdaptor{
-  my ($self, $species, $group, $dbname, $host, $port, $user, $pass) = @_;
+  my ($self, $species, $group, $dbname, $host, $port, $user, $pass, $params) = @_;
 
   # Check mandatory params
   if(! (defined $species && defined $group && defined $dbname)){
@@ -705,39 +710,59 @@ sub reset_DBAdaptor{
   my $alias = $self->get_alias($species);
   throw("Could not find registry alias for species:\t$species") if(! defined $alias);
  
-
   # Get all current defaults if not defined
-  my $current_db = $self->get_DBAdaptor($alias, $group);
-  
-  if(! defined $current_db){
-	throw("There is not current registry DB for:\t${alias}\t${group}");
+
+  my $db = $self->get_DBAdaptor($alias, $group);
+  my $class;
+
+  if($db){
+	$class = ref($db);
+	$host ||= $db->dbc->host;
+	$port ||= $db->dbc->port;
+	$user ||= $db->dbc->username;
+	$pass ||= $db->dbc->password;
+  }
+  else{
+	#Now we need to test mandatory params
+	$class =  $group2adaptor{ lc($group) };
+
+	if(! ($host && $user)){
+	  throw("No comparable $alias $group DB present in Registry. You must pass at least a dbhost and dbuser");
+	}
   }
 
-
-  $host ||= $current_db->dbc->host;
-  $port ||= $current_db->dbc->port;
-  $user ||= $current_db->dbc->username;
-  $pass ||= $current_db->dbc->password;
-  my $class = ref($current_db);
-
+ 
   $self->remove_DBAdaptor($alias, $group);
+
+   
   
-  my @adaptors = @{$self->get_all_adaptors};
+  #my @adaptors = @{$self->get_all_adaptors};
+  #This is causing a loop as it was constantly trying to reset the db
+  #and never getting there.
+  #I think this was left over from testing
 
-
+  	
   # ConfigRegistry should automatically add this to the Registry
-  my $db = $class->new(
-					   -user => $user,
-					   -host => $host,
-					   -port => $port,
-					   -pass => $pass,
-					   -dbname => $dbname,
-					   -species => $alias,
-					   -group    => $group,
-					  );
+
+
+  $db = $class->new(
+					-user => $user,
+					-host => $host,
+					-port => $port,
+					-pass => $pass,
+					-dbname => $dbname,
+					-species => $alias,
+					-group    => $group,
+					%{$params}
+				   );
+
 
   return $db;
 }
+
+
+
+
 
 
 #
@@ -1102,23 +1127,23 @@ sub disconnect_all {
 =cut
 
 sub change_access{
-my $self = shift;
-    my ($host,$port,$user,$dbname,$new_user,$new_pass) = @_;
-    foreach my $dba ( @{$registry_register{'_DBA'}}){
+  my $self = shift;
+  my ($host,$port,$user,$dbname,$new_user,$new_pass) = @_;
+  foreach my $dba ( @{$registry_register{'_DBA'}}){
 	my $dbc = $dba->dbc;
 	if((!defined($host) or $host eq $dbc->host) and
 	   (!defined($port) or $port eq $dbc->port) and
 	   (!defined($user) or $user eq $dbc->username) and
 	   (!defined($dbname) or $dbname eq $dbc->dbname)){
-	    if($dbc->connected()){
+	  if($dbc->connected()){
 		$dbc->db_handle->disconnect();
 		$dbc->connected(undef);
 	    }
-	    # over write the username and password
-	    $dbc->username($new_user);
-	    $dbc->password($new_pass);
+	  # over write the username and password
+	  $dbc->username($new_user);
+	  $dbc->password($new_pass);
 	}
-    }
+  }
 }
 
 
@@ -1253,6 +1278,9 @@ sub load_registry_from_db {
 
   my %temp;
   my $software_version = $self->software_version();
+
+
+  warn "db version is $db_version";
 
   if ( defined($db_version) ) {
     $software_version = $db_version;
