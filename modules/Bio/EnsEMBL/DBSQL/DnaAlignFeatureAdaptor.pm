@@ -223,6 +223,8 @@ sub save {
 
   my $sql = qq{INSERT INTO $tablename (seq_region_id, seq_region_start, seq_region_end, seq_region_strand, hit_start, hit_end, hit_strand, hit_name, cigar_line, analysis_id, score, evalue, perc_ident, external_db_id, hcoverage, external_data) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)};
 
+  my %analyses = ();
+
   my $sth = $self->prepare($sql);
      
  FEATURE: foreach my $feat ( @feats ) {
@@ -266,6 +268,8 @@ sub save {
       $analysis_adaptor->store($feat->analysis());
     }
 
+    $analyses{ $feat->analysis->dbID }++;
+
     my $original = $feat;
     my $seq_region_id;
     ($feat, $seq_region_id) = $self->_pre_store_userdata($feat);
@@ -295,6 +299,22 @@ sub save {
   }
 
   $sth->finish();
+
+## js5 hack to update meta_coord table... 
+  if( keys %analyses ) {
+    my $sth = $self->prepare( 'select sr.coord_system_id, max(daf.seq_region_end-daf.seq_region_start) from seq_region as sr, dna_align_feature as daf where daf.seq_region_id=sr.seq_region_id and analysis_id in ('.join(',',keys %analyses).') group by coord_system_id' );
+    $sth->execute;
+    foreach( @{ $sth->fetchall_arrayref } ) {
+      my $sth2 = $self->prepare( qq(insert ignore into meta_coord values("dna_align_feature",$_->[0],$_->[1])) );
+      $sth2->execute;
+      $sth2->finish;
+      my $sth2 = $self->prepare( qq(update meta_coord set max_length = $_->[1] where coord_system_id = $_->[0] and table_name="dna_align_feature" and max_length < $_->[1]) );
+      $sth2->execute;
+      $sth2->finish;
+    }
+    $sth->finish;
+  }
+
 }
 
 
