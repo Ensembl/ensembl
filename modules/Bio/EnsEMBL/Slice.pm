@@ -1486,6 +1486,7 @@ sub get_all_VariationFeatures{
   my $self = shift;
   my $filter = shift;
 
+  $filter ||= '';
   if(!$self->adaptor()) {
     warning('Cannot get variation features without attached adaptor');
     return [];
