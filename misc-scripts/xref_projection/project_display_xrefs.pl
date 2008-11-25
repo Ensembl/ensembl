@@ -242,8 +242,8 @@ sub project_display_names {
 
       return if (!$all_sources && $dbname !~ /HGNC/);
 
-      # skip Vega clone names (possibly not needed)
-      #return if (lc($dbname) =~ /vega/ && $dbEntry->display_id() =~ /\./);
+      # Skip clone names if projecting all sources
+      return if (lc($dbname) =~ /clone/);
 
       # Modify the dbEntry to indicate it's not from this species - set info_type & info_text
       my $info_txt = "from $from_latin_species gene " . $from_gene->stable_id();
