@@ -109,12 +109,12 @@ sub new {
   if ( defined($species) ) { $self->species($species) }
   if ( defined($group) )   { $self->group($group) }
 
+  $self = Bio::EnsEMBL::Utils::ConfigRegistry::gen_load($self);
+
   $self->species_id( $species_id || 1 );
 
   $self->is_multispecies( defined($is_multispecies)
                           && $is_multispecies == 1 );
-
-  $self = Bio::EnsEMBL::Utils::ConfigRegistry::gen_load($self);
 
   if ( defined($dnadb) )    { $self->dnadb($dnadb) }
   if ( defined($no_cache) ) { $self->no_cache($no_cache) }
