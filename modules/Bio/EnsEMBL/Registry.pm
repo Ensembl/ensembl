@@ -1279,9 +1279,6 @@ sub load_registry_from_db {
   my %temp;
   my $software_version = $self->software_version();
 
-
-  warn "db version is $db_version";
-
   if ( defined($db_version) ) {
     $software_version = $db_version;
   }
