@@ -280,11 +280,11 @@ sub store {
     return undef;
   }
   if( $self->{'disconnect_flag'} ) {
-    warn "HERE WE ARE DISCONNECTING....";
-    $self->dbc->db_handle->disconnect();
-    $self->dbc->connected(0);
-    warn "AND  WE ARE RECONNECTING....";
-    $self->dbc->connect();
+#    warn "HERE WE ARE DISCONNECTING....";
+#    $self->dbc->db_handle->disconnect();
+#    $self->dbc->connected(0);
+#    warn "AND  WE ARE RECONNECTING....";
+#    $self->dbc->connect();
   }
   return $ret_value;
 }
