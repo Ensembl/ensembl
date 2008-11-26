@@ -1294,7 +1294,7 @@ sub load_registry_from_db {
         $temp{$1} = $2;
       }
     } elsif (
-           $db =~ /^([a-z]+_[a-z]+_[a-z]+)_(?:\d+_)?(\d+)_(\d+[a-z]*)/ )
+           $db =~ /^([a-z]+_[a-z]+_[a-z]+(?:_\d+)?)_(\d+)_(\d+[a-z]*)/ )
     {
       if ( $2 eq $software_version ) {
         $temp{$1} = $2 . "_" . $3;
@@ -1324,7 +1324,7 @@ sub load_registry_from_db {
 
   # Register Core databases
 
-  my @core_dbs = grep { /^[a-z]+_[a-z]+_core_(?:\d+)?\d+_/ } @dbnames;
+  my @core_dbs = grep { /^[a-z]+_[a-z]+_core_(?:\d+_)?\d+_/ } @dbnames;
 
   foreach my $coredb (@core_dbs) {
     next if ($coredb =~ /collection/);  # Skip multi-species databases
@@ -1333,16 +1333,16 @@ sub load_registry_from_db {
       ( $coredb =~ /(^[a-z]+_[a-z]+)_core_(?:\d+_)?(\d+)/ );
 
     my $dba =
-      Bio::EnsEMBL::DBSQL::DBAdaptor->new(-group        => "core",
-                                          -species      => $species,
-                                          -host         => $host,
-                                          -user         => $user,
-                                          -pass         => $pass,
-                                          -port         => $port,
-                                          -dbname       => $coredb,
-                                          -wait_timeout => $wait_timeout,
-					  -no_cache     => $no_cache
-      );
+      Bio::EnsEMBL::DBSQL::DBAdaptor->new(
+                                         -group        => "core",
+                                         -species      => $species,
+                                         -host         => $host,
+                                         -user         => $user,
+                                         -pass         => $pass,
+                                         -port         => $port,
+                                         -dbname       => $coredb,
+                                         -wait_timeout => $wait_timeout,
+                                         -no_cache     => $no_cache );
 
     ( my $sp = $species ) =~ s/_/ /g;
     $self->add_alias( $species, $sp );
@@ -1401,19 +1401,22 @@ sub load_registry_from_db {
     my ( $species, $num ) =
       ( $cdnadb =~ /(^[a-z]+_[a-z]+)_cdna_(\d+)/ );
     my $dba =
-      Bio::EnsEMBL::DBSQL::DBAdaptor->new(-group        => "cdna",
-                                          -species      => $species,
-                                          -host         => $host,
-                                          -user         => $user,
-                                          -pass         => $pass,
-                                          -port         => $port,
-                                          -dbname       => $cdnadb,
-                                          -wait_timeout => $wait_timeout,
-					  -no_cache     => $no_cache
-      );
+      Bio::EnsEMBL::DBSQL::DBAdaptor->new(
+                                         -group        => "cdna",
+                                         -species      => $species,
+                                         -host         => $host,
+                                         -user         => $user,
+                                         -pass         => $pass,
+                                         -port         => $port,
+                                         -dbname       => $cdnadb,
+                                         -wait_timeout => $wait_timeout,
+                                         -no_cache     => $no_cache );
     ( my $sp = $species ) =~ s/_/ /g;
     $self->add_alias( $species, $sp );
-    print $cdnadb. " loaded\n" if ($verbose);
+
+    if ($verbose) {
+      printf( "%s loaded\n", $cdnadb );
+    }
   }
 
   my @vega_dbs = grep { /^[a-z]+_[a-z]+_vega_\d+_/ } @dbnames;
@@ -1431,10 +1434,13 @@ sub load_registry_from_db {
                                          -port         => $port,
                                          -wait_timeout => $wait_timeout,
                                          -dbname       => $vegadb,
-					 -no_cache     => $no_cache);
+                                         -no_cache     => $no_cache );
     ( my $sp = $species ) =~ s/_/ /g;
     $self->add_alias( $species, $sp );
-    print $vegadb. " loaded\n" if ($verbose);
+
+    if ($verbose) {
+      printf( "%s loaded\n", $vegadb );
+    }
   }
 
   # Otherfeatures
@@ -1454,31 +1460,37 @@ sub load_registry_from_db {
                                          -port    => $port,
                                          -wait_timeout => $wait_timeout,
                                          -dbname       => $other_db,
-					 -no_cache     => $no_cache );
+                                         -no_cache     => $no_cache );
     ( my $sp = $species ) =~ s/_/ /g;
     $self->add_alias( $species, $sp );
-    print $other_db. " loaded\n" if ($verbose);
+
+    if ($verbose) {
+      printf( "%s loaded\n", $other_db );
+    }
   }
 
   # User upload DBs
 
   my @userupload_dbs = grep { /_userdata$/ } @dbnames;
-  for my $userupload_db ( @userupload_dbs ) {
+  for my $userupload_db (@userupload_dbs) {
     my ($species) = ( $userupload_db =~ /(^.+)_userdata$/ );
-    my $dba = Bio::EnsEMBL::DBSQL::DBAdaptor->new
-      ( -group => "userupload",
-	-species => $species,
-	-host => $host,
-	-user => $user,
-	-pass => $pass,
-	-port => $port,
-        -wait_timeout => $wait_timeout,
-	-dbname => $userupload_db,
-	-no_cache     => $no_cache
-      );
-      (my $sp = $species ) =~ s/_/ /g;
-      $self->add_alias( $species, $sp );
-      print $userupload_db." loaded\n" if ($verbose);       
+    my $dba =
+      Bio::EnsEMBL::DBSQL::DBAdaptor->new(
+                                         -group        => "userupload",
+                                         -species      => $species,
+                                         -host         => $host,
+                                         -user         => $user,
+                                         -pass         => $pass,
+                                         -port         => $port,
+                                         -wait_timeout => $wait_timeout,
+                                         -dbname   => $userupload_db,
+                                         -no_cache => $no_cache );
+    ( my $sp = $species ) =~ s/_/ /g;
+    $self->add_alias( $species, $sp );
+
+    if ($verbose) {
+      printf( "%s loaded\n", $userupload_db );
+    }
   }
 
   # Variation
@@ -1486,9 +1498,11 @@ sub load_registry_from_db {
   eval "require Bio::EnsEMBL::Variation::DBSQL::DBAdaptor";
   if ($@) {
     # Ignore variations as code required not there for this
-    print
-"Bio::EnsEMBL::Variation::DBSQL::DBAdaptor module not found so variation databases will be ignored if found\n"
-      if ($verbose);
+    if ($verbose) {
+      print(
+           "Bio::EnsEMBL::Variation::DBSQL::DBAdaptor module not found "
+             . "so variation databases will be ignored if found\n" );
+    }
   } else {
     my @variation_dbs =
       grep { /^[a-z]+_[a-z]+_variation_\d+_/ } @dbnames;
@@ -1506,18 +1520,22 @@ sub load_registry_from_db {
                                          -port         => $port,
                                          -wait_timeout => $wait_timeout,
                                          -dbname       => $variation_db,
-					 -no_cache     => $no_cache
-        );
-      print $variation_db. " loaded\n" if ($verbose);
+                                         -no_cache     => $no_cache );
+
+      if ($verbose) {
+        printf( "%s loaded\n", $variation_db );
+      }
     }
   }
 
   eval "require Bio::EnsEMBL::Funcgen::DBSQL::DBAdaptor";
   if ($@) {
-    #ignore funcgen DBs as code required not there for this
-    print
-"Bio::EnsEMBL::Funcgen::DBSQL::DBAdaptor module not found so functional genomics databases will be ignored if found\n"
-      if ($verbose);
+    if ($verbose) {
+      # Ignore funcgen DBs as code required not there for this
+      print( "Bio::EnsEMBL::Funcgen::DBSQL::DBAdaptor module not found "
+         . "so functional genomics databases will be ignored if found\n"
+      );
+    }
   } else {
     my @funcgen_dbs = grep { /^[a-z]+_[a-z]+_funcgen_\d+_/ } @dbnames;
 
@@ -1534,8 +1552,11 @@ sub load_registry_from_db {
                                          -port         => $port,
                                          -wait_timeout => $wait_timeout,
                                          -dbname       => $funcgen_db,
-					 -no_cache     => $no_cache );
-      print $funcgen_db. " loaded\n" if ($verbose);
+                                         -no_cache     => $no_cache );
+
+      if ($verbose) {
+        printf( "%s loaded\n", $funcgen_db );
+      }
     }
   }
 
@@ -1564,7 +1585,8 @@ sub load_registry_from_db {
                                          -port         => $port,
                                          -wait_timeout => $wait_timeout,
                                          -dbname       => $compara_db,
-					 -no_cache     => $no_cache );
+                                         -no_cache     => $no_cache );
+
       if ($verbose) {
         printf( "%s loaded\n", $compara_db );
       }
@@ -1587,10 +1609,13 @@ sub load_registry_from_db {
                                       -port    => $port,
                                       -wait_timeout => $wait_timeout,
                                       -dbname       => $ancestral_db,
-				      -no_cache     => $no_cache);
-    print $ancestral_db. " loaded\n" if ($verbose);
-  } else {
-    print "No Ancestral database found" if ($verbose);
+                                      -no_cache     => $no_cache );
+
+    if ($verbose) {
+      printf( "%s loaded\n", $ancestral_db );
+    }
+  } elsif ($verbose) {
+    print("No Ancestral database found");
   }
 
   # GO
@@ -1608,16 +1633,19 @@ sub load_registry_from_db {
       my $go_db = "ensembl_go_" . $go_version;
       my $dba =
         Bio::EnsEMBL::ExternalData::GO::GOAdaptor->new(
-                                                    -group   => "go",
-                                                    -species => "multi",
-                                                    -host    => $host,
-                                                    -user    => $user,
-                                                    -pass    => $pass,
-                                                    -port    => $port,
-                                                    -dbname  => $go_db,
-						    -no_cache     => $no_cache
+                                                  -group    => "go",
+                                                  -species  => "multi",
+                                                  -host     => $host,
+                                                  -user     => $user,
+                                                  -pass     => $pass,
+                                                  -port     => $port,
+                                                  -dbname   => $go_db,
+                                                  -no_cache => $no_cache
         );
-      print $go_db. " loaded\n" if ($verbose);
+
+      if ($verbose) {
+        printf( "%s loaded\n", $go_db );
+      }
     }
   } elsif ($verbose) {
     print("No GO database found\n");
@@ -1854,45 +1882,40 @@ sub load_registry_from_db {
                                   -alias => [ 'horse', 'Equuscaballus' ]
   );
 
-
- Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
-                                  -species => "Tursiops_truncatus",
-                                  -alias => [ 'dolphin', 'Tursiopstruncatus' ]
+  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
+                            -species => "Tursiops_truncatus",
+                            -alias => [ 'dolphin', 'Tursiopstruncatus' ]
   );
 
- Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
-                                  -species => "Procavia_capensis",
-                                  -alias => [ 'rock_hyrax', 'hyrax', 'Procaviacapensis' ]
+  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
+                 -species => "Procavia_capensis",
+                 -alias => [ 'rock_hyrax', 'hyrax', 'Procaviacapensis' ]
   );
 
- Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
-                                  -species => "Dipodomys_ordii",
-                                  -alias => [ 'kangaroo_rat', 'Dipodomysordii' ]
+  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
+                          -species => "Dipodomys_ordii",
+                          -alias => [ 'kangaroo_rat', 'Dipodomysordii' ]
   );
 
- Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
-                                  -species => "Pteropus_vampyrus",
-                                  -alias => [ 'megabat', 'Pteropusvampyrus' ]
+  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
+                             -species => "Pteropus_vampyrus",
+                             -alias => [ 'megabat', 'Pteropusvampyrus' ]
   );
 
- Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
-                                  -species => "Tarsius_syrichta",
-                                  -alias => [ 'philippine tarsier', 'tarsier', 'Tarsiussyrichta' ]
+  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
+        -species => "Tarsius_syrichta",
+        -alias => [ 'philippine tarsier', 'tarsier', 'Tarsiussyrichta' ]
   );
 
- Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
+  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
                                   -species => "Vicugna_pacos",
                                   -alias => [ 'alpaca', 'vicugnapacos' ]
   );
 
- Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
-                                  -species => "Gorilla_gorilla",
-                                  -alias => [ 'gorilla', 'gorillagorilla' ]
+  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
+                               -species => "Gorilla_gorilla",
+                               -alias => [ 'gorilla', 'gorillagorilla' ]
   );
-
-
-
-
 
   @aliases = ('compara');
   Bio::EnsEMBL::Utils::ConfigRegistry->add_alias( -species => "multi",
