@@ -105,8 +105,8 @@
 34	NovPTCount	processed_transcript_NOVEL	Number of Novel Processed Transcripts
 35	PutPTCount	processed_transcript_PUTATIVE	Number of Putative Processed Transcripts
 36	PredPCCount	protein_coding_PREDICTED	Number of Predicted Protein Coding
-37	NovIGGeneCount	IG_gene_NOVEL	Number of Novel IG Genes
-38	NovIGPsGenCount	IG_pseudogene_NOVEL	Number of Novel IG Pseudogenes
+37	IGGeneCount	IG_gene	Number of IG Genes
+38	IGPsGenCount	IG_pseudogene	Number of IG Pseudogenes
 39	TotPsCount	total_pseudogene	Total Number of Pseudogenes
 40	KnwnProcPsCount	processed_pseudogene	Number of Known Processed Pseudogenes
 41	KnwnUnPsCount	unprocessed_pseudogene	Number of Known Unprocessed Pseudogenes
@@ -257,19 +257,19 @@
 
 # vega
 148	TotAssLength	Finished sequence length	Finished Sequence
-149	NovPsCount	novel_pseudogene	Number of Novel Pseudogenes
+149	PsCount	pseudogene	Number of Pseudogenes
 150	KnwnPsCount	known_pseudogene	Number of Known Pseudogenes
 151	KnwnTPsCount	known_transcribed_pseudogene	Number of Known Transcribed Pseudogenes
 152	TotPTCount	total_processed_transcript	Total Number of Processed Transcripts
 153	TotPCCount	total_protein_coding	Total Number of Protein Coding
 154	NovNcCount	novel_non_coding	Number of Novel Non Coding
 155	KnwnPolyPsCount	known_polymorphic	Number of Known Polymorphic Pseudogenes
-156	NovPolyPsCount	novel_polymorphic	Number of Novel Polymorphic Pseudogenes
+156	PolyPsCount	polymorphic_pseudogene	Number of Polymorphic Pseudogenes
 157	TotIGGeneCount	total_IG_gene	Total Number of IG Genes
-158	NovProcPsCount	novel_processed_pseudogene	Number of Novel Processed Pseudogenes
-159	NovUnPsCount	novel_unprocessed_pseudogene	Number of Novel Unprocessed Pseudogenes
-160	NovTPsCount	novel_transcribed_pseudogene	Number of Novel Transcribed Pseudogenes
-161	NovTECCount	novel_TEC	Number of Novel TEC Genes
+158	ProcPsCount	proc_pseudogene	Number of Processed Pseudogenes
+159	UnPsCount	unproc_pseudogene	Number of Unprocessed Pseudogenes
+160	TPsCount	transcribed_pseudogene	Number of Transcribed Pseudogenes
+161	TECCount	TEC	Number of TEC Genes
 162	KnwnIGGeneCount	IG_gene_KNOWN	Number of Known IG Genes
 163	KnwnIGPsGeCount	IG_pseudogene_KNOWN	Number of Known IG Pseudogenes
 
@@ -302,8 +302,8 @@
 174	upstream_ATG	upstream ATG	Alternative ATG found upstream of the defined as start ATG for the transcript
 
 #more vega gene types
-175	NovTPPsCount	transcribed_processed_pseudogene_NOVEL	Number of Transcribed processed pseudogenes
-176	NovTUPsCount	transcribed_unprocessed_pseudogene_NOVEL	Number of Transcribed unprocessed pseudogenes
-177	NovUniPsCount	unitary_pseudogene_NOVEL	Number of Novel Unitary pseudogenes
+175	TPPsCount	transcribed_processed_pseudogene	Number of Transcribed processed pseudogenes
+176	TUPsCount	transcribed_unprocessed_pseudogene	Number of Transcribed unprocessed pseudogenes
+177	UniPsCount	unitary_pseudogene	Number of Unitary pseudogenes
 178	KnwnTECCount	TEC_KNOWN	Number of Known TEC genes
 179	TotTECGeneCount	TEC_all	Total number of TEC genes
