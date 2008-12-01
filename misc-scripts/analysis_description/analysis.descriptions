@@ -271,3 +271,32 @@
 268	enhancer	Feature imported from <a rel="external" href="http://www.flybase.org">FlyBase</a>.	Enhancer	1	
 269	zfish_cDNA	Danio rerio cDNAs from <a rel="external" href="http://www.ncbi.nlm.nih.gov/RefSeq/">NCBI RefSeq</a> and <a rel="external" href="http://www.ebi.ac.uk/embl/">EMBL</a> are aligned to the genome using <a rel="external" href="http://www.biomedcentral.com/1471-2105/6/31">Exonerate</a>.	Zebrafish cDNA	1	 {'type' => 'cdna','default' => {'contigviewbottom' => 'stack'}}
 270	PercentageRepeat	Percentage of repetitive elements for top level sequences (such as chromosomes, scaffolds, etc.)	Repeats (percent)	1	
+271	CHIP_PET	Positions of mRNA start and end sequences are shown here, obtained by paired-end ditag (PET) sequencing on ChIP (chromatin immunoprecipitation) <a href="/Homo_sapiens_ditags/CHIP_PET.html">samples</a>.	Ditags (ChIP-PET) 	0	
+272	XrefExonerateProtein	match	Protein	0	
+273	CollapseAffy			0	
+274	FANTOM_GIS_PET_raw	These are short sequence tags from the start sites of polyA transcripts. These ditags were downloaded from the <a rel="external" href="http://fantom.gsc.riken.go.jp/">Riken Fantom</a> project and aligned to the genome using <a rel="external" href="http://www.biomedcentral.com/1471-2105/6/31">Exonerate</a>.	FANTOM GIS ditags raw	0	
+275	XrefCoordinateMapping			0	
+276	exonerate_IG_gene	Immunoglobulin (Ig) and T-cell receptor (TcR) genes were imported from the <a rel="external" href="http://nar.oxfordjournals.org/cgi/content/full/33/suppl_1/D593?maxtoshow=&amp;HITS=10&amp;hits=10&amp;RESULTFORMAT=1&amp;author1=Lefranc&amp;andorexacttitle=and&amp;andorexacttitleabs=and&amp;andorexactfulltext=and&amp;searchid=1&amp;FIRSTINDEX=0&amp;sortspec=relevance&amp;resourcetype=HWCIT">IMGT</a> database using <a rel="external" href="http://www.biomedcentral.com/1471-2105/6/31">Exonerate</a>.	Ig and TcR transcripts	0	 {'type' => 'cdna'}
+277	CHIP_PET_raw	Raw data for ChIP_PET <a href="/Homo_sapiens_ditags/CHIP_PET.html">sample</a> alignments.		0	
+278	manual_models	Manually curated transcript models made by VB	manual_models	0	
+279	Exonerate_segment	Immunoglubulin (Ig) and T-cell receptor (TcR) genes are imported from the <a rel="external" href="http://imgt.cines.fr">IMGT database</a> and aligned to the genome using <a rel="external" href="http://www.biomedcentral.com/1471-2105/6/31">Exonerate</a>.  See <a href="/info/docs/genebuild/ig_tcr.html" class="cp-external">article</a>.	Ig/T-cell receptor gene	0	 {'type' => 'cdna'}
+280	MergedByHuman			0	
+281	TargettedGenewise			0	
+282	GIS_PET_raw	Raw data.  See <a href="/Homo_sapiens_ditags/GIS_PET.html">method</a> described here.	Ditags (GIS raw)	0	
+283	FANTOM_GSC_PET_raw	These are short sequence tags from the start sites of polyA transcripts. These ditags were downloaded from the <a rel="external" href="http://fantom.gsc.riken.go.jp/">Riken Fantom</a> project and aligned to the genome using <a rel="external" href="http://www.biomedcentral.com/1471-2105/6/31">Exonerate</a>.	Fantom GSC raw	0	
+284	AlignOligoProbes	Microarray probes aligned to the genome, if probe sequences are provided by the manufacturer.	Aligned oligo	0	
+285	GIS_PET_Encode	See <a href="/Homo_sapiens_ditags/GIS_PET.html">method</a> described here.	Ditags (GIS Encode)	0	
+286	cdna_exonerate			0	
+287	SimilarityGenewise			0	
+288	community_models	Community provided transcript models from VB	community_models	0	
+289	steve_human_cdna			0	
+290	BeeBlast	WuBLASTX  of genomic segments against Bee protein set	BLAST Bee	0	
+291	XrefExonerateDNA	Sequences from various databases are matched to Ensembl transcripts using <a rel="external" href="http://www.biomedcentral.com/1471-2105/6/31">Exonerate</a>.  These are external references, or 'Xrefs'.	DNA match	0	
+292	steve_mouse_cdna			0	
+293	ExtendedByHuman			0	
+294	cdna_est_support	Anopheles ESTs and cDNAs aligned to the genome using Exonerate (G. Slater et al., BMC Bioinformatics. 2005 6:31) and used as support for estgenes	cdna_est_support	0	{'type'=>'est'}
+295	refseq_human			0	
+296	HumanOrthologue			0	
+297	ExtendedByMedaka			0	
+298	GIS_PET	Positions of mRNA start and end sequences are shown here, obtained by paired-end ditag (PET) sequencing by GIS (Genome Institute of Singapore). <a href="/Homo_sapiens_ditags/GIS_PET.html">Method</a> described here.	Ditags (GIS)	0	
+299	probe2transcript	Microarray probes from manufacturers are aligned to the genome by Ensembl, if the probe sequences are provided. The mapping is a two-step procedure outlined <a href="/info/docs/microarray_probe_set_mapping.html">here</a>.		0	
