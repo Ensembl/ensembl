@@ -457,7 +457,8 @@ sub generic_fetch {
   $sql .= "\n$final_clause";
 
   # FOR DEBUG:
-  # printf(STDERR "SQL:\n%s\n", $sql);
+#warn "SQL:\n$sql\n";
+ #  printf(STDERR "SQL:\n%s\n", $sql);
 
   my $sth = $db->dbc->prepare($sql);
   my $bind_parameters = $self->bind_param_generic_fetch();
@@ -711,15 +712,16 @@ sub _objs_from_sth {
 }
 
 sub dump_data {
-    my $self = shift;
-    my $data = shift;
+  my $self = shift;
+  my $data = shift;
 
-    my $dumper = Data::Dumper->new([$data]);
-    $dumper->Indent(0);
-    my $dump = $dumper->Dump();
- #$dump =~ s/'/\\'/g;
-    $dump =~ s/^\$VAR1 = //;
-    return $dump;
+  my $dumper = Data::Dumper->new([$data]);
+  $dumper->Indent(0);
+  $dumper->Terse(1);
+  my $dump = $dumper->Dump();
+# $dump =~ s/'/\\'/g;
+# $dump =~ s/^\$VAR1 = //;
+  return $dump;
 }
 
 sub get_dumped_data {
