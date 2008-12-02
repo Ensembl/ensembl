@@ -264,18 +264,18 @@ sub store {
   my $ret_value = undef;
   if( $obj->isa("Bio::Tools::Run::SearchMulti") ) {
     $ret_value = $self->store_search_multi( $obj, @_ );
-    warn "Just stored as Bio::Tools::Run::SearchMulti";
+#    warn "Just stored as Bio::Tools::Run::SearchMulti";
   } elsif( $obj->isa( "Bio::Search::Result::ResultI" ) ) {
     $ret_value = $self->store_result(       $obj, @_ );
-    warn "Just stored as Bio::Tools::Result::ResultI";
+#    warn "Just stored as Bio::Tools::Result::ResultI";
   } elsif( $obj->isa( "Bio::Search::Hit::HitI" ) ) {
     $ret_value = $self->store_hit(       $obj, @_ );
-    warn "Just stored as Bio::Tools::Hit::HitI";
+#    warn "Just stored as Bio::Tools::Hit::HitI";
   } elsif( $obj->isa( "Bio::Search::HSP::HSPI" ) ) {
     $ret_value = $self->store_hsp(       $obj, @_ );
-    warn "Just stored as Bio::Tools::HSP::HSPI";
+#    warn "Just stored as Bio::Tools::HSP::HSPI";
   } else {
-    warn "DID NOT STORE  ".ref($obj);
+#    warn "DID NOT STORE  ".ref($obj);
     $self->throw( "Do not know how to store objects of type ".ref($obj) );
     return undef;
   }
