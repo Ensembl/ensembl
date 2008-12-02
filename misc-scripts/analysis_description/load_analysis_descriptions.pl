@@ -1,4 +1,5 @@
-#!/usr/local/ensembl/bin/perl -w
+#!/opt/local/bin/perl -w
+###!/usr/local/ensembl/bin/perl -w
 
 # POD documentation - main docs before the code
 
@@ -21,6 +22,8 @@
  It will warn about analyses present in the database which don't have descriptions
  in the file.
 
+ To actually update analyses in the database you need to pass the update option.
+
 =head1 OPTIONS
 
      Database options
@@ -33,6 +36,7 @@
     -file        Path to file containing descriptions. The file 
                       analysis.descriptions in this directory can be used and is an 
                       example of the format
+	-update      Perform actual updates of analyses
     -help print out documentation
 
 =head1 EXAMPLES
@@ -55,16 +59,19 @@ my $dbuser;
 my $dbpass;
 my $dbport = 3306;
 my $dbname = '';
-my $file;
+my ($file, $update);
 my $help = 0;
 
-&GetOptions('host|dbhost=s'       => \$dbhost,
-            'dbname=s'            => \$dbname,
-            'user|dbuser=s'       => \$dbuser,
-            'pass|dbpass=s'       => \$dbpass,
-            'port|dbport=s'       => \$dbport,
-            'file|descriptions=s' => \$file,
-            'h|help!' => \$help);
+&GetOptions (
+	'host|dbhost=s'       => \$dbhost,
+	'dbname=s'            => \$dbname,
+	'user|dbuser=s'       => \$dbuser,
+	'pass|dbpass=s'       => \$dbpass,
+	'port|dbport=s'       => \$dbport,
+	'file|descriptions=s' => \$file,
+	'update'              => \$update,
+	'h|help!'             => \$help
+             );
 
 if(!$dbhost || !$dbname){
   print ("Need to pass in -dbhost $dbhost and -dbname $dbname\n");
@@ -83,56 +90,67 @@ if($help){
   useage();
 }
 
-my $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(-host   => $dbhost,
-					    -user   => $dbuser,
-					    -dbname => $dbname,
-					    -pass   => $dbpass,
-					    -port   => $dbport);
+my $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(
+                                            -host   => $dbhost,
+                                            -user   => $dbuser,
+                                            -dbname => $dbname,
+                                            -pass   => $dbpass,
+                                            -port   => $dbport
+                                            );
 
 open(FH, $file) or throw("Failed to open $file $@");
 my $aa = $db->get_AnalysisAdaptor();
 my $analyses = $aa->fetch_all();
 my %hash;
 foreach my $analysis(@$analyses){
-  $hash{lc($analysis->logic_name())} = $analysis;
+    $hash{lc($analysis->logic_name())} = $analysis;
 }
-LINE:while(my $row = <FH>){
 
-  chomp($row);
+LINE: while(my $row = <FH>){
+    
+    chomp($row);
+    
+    next if ($row =~ /^\#/);   # skip comments
+    next if ($row =~ /^$/);    # and blank lines
+    next if ($row =~ /^\s+$/); # and whitespace-only lines
+    
+    my ($nr, $logic_name, $description, $display_label, $displayable, $web_data) = split(/\t/, $row);
+    #print join("\t", $logic_name, $description, $display_label, $displayable, $web_data), "\n";
+    
+    $description =~ s/^\s+//;
+    $description =~ s/\s+$//;
+    
+    next if not $description;
+    
+    if (exists $hash{lc($logic_name)}) {
 
-  next if ($row =~ /^#/);    # skip comments
-  next if ($row =~ /^$/);    # and blank lines
-  next if ($row =~ /^\s+$/); # and whitespace-only lines
-
-  my ($displayable, $logic_name, $display_label, $description) = split(/\t/, $row);
-  #print join("\t", $displayable, $logic_name, $display_label, $description, "\n");
-
-  $description =~ s/^\s+//;
-  $description =~ s/\s+$//;
-
-  next if not $description;
-
-  if (exists $hash{lc($logic_name)}) {
-    my $analysis = $hash{lc($logic_name)};
-
-    $analysis->description($description);
-    $analysis->displayable($displayable);
-    $analysis->display_label($display_label);
-
-    $aa->update($analysis);
-
-    delete $hash{lc($logic_name)};
-  }
+        my $analysis = $hash{lc($logic_name)};
+        
+        $analysis->description($description);
+        $analysis->displayable($displayable);
+        $analysis->display_label($display_label);
+        $analysis->web_data($web_data) if $web_data;
+        
+        $aa->update($analysis) if $update;
+        
+        delete $hash{lc($logic_name)};
+    }
 }
 
 close(FH) or throw("Failed to close $file $@");
 
 if ( scalar(keys %hash)==0) {
-  print "\nAll analysis descriptions have been updated, every analysis has a description now\n" ;
+	if ($update) {
+		print STDERR "\nAll analysis descriptions have been updated, every analysis has a description now\n";
+	} else {
+		print STDERR "\nAll analysis descriptions can been updated, every analysis has a description in the file\n";
+	}
 }else{
-  foreach my $k (keys %hash) {
-    warning "No description was found for logic name $k ( ".$hash{$k}->dbID." ) \n";
-  }
+    foreach my $k (keys %hash) {
+        
+        warning "[$dbname] No description was found for logic name $k ( dbID=".$hash{$k}->dbID."; displayable=".$hash{$k}->displayable." ) \n";
+
+    }
 }
 
 
