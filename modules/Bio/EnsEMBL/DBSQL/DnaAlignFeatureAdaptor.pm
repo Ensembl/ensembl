@@ -226,6 +226,8 @@ sub save {
 
   my $sql = qq{INSERT INTO $tablename (seq_region_id, seq_region_start, seq_region_end, seq_region_strand, hit_start, hit_end, hit_strand, hit_name, cigar_line, analysis_id, score, evalue, perc_ident, external_db_id, hcoverage, pair_dna_align_feature_id, external_data) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)};
 
+  my %analyses = ();
+
   my $sth = $self->prepare($sql);
      
  FEATURE: foreach my $feat ( @feats ) {
@@ -240,11 +242,14 @@ sub save {
       next FEATURE;
     }
 
-    my $hstart = defined $feat->hstart ? $feat->hstart : $feat->start ;
-    my $hend   = defined $feat->hend ? $feat->hend : $feat->end;
-    my $hstrand = defined $feat->hstrand ? $feat->hstrand : $feat->strand;
-     $self->_check_start_end_strand($hstart,$hend, $hstrand);
-
+    my $hstart  = $feat->hstart || 0; # defined $feat->hstart  ? $feat->hstart : $feat->start ;
+    my $hend    = $feat->hend   || 0; # defined $feat->hend    ? $feat->hend : $feat->end;
+    my $hstrand = $feat->hstrand|| 0; # defined $feat->hstrand ? $feat->hstrand : $feat->strand;
+    if( $hstart && $hend ) {
+      if($hend < $hstart) {
+        throw("Invalid Feature start/end [$hstart/$hend]. Start must be less than or equal to end.");
+      }
+    }
     my $cigar_string = $feat->cigar_string();
     if(!$cigar_string) {
       $cigar_string = $feat->length() . 'M';
@@ -265,6 +270,8 @@ sub save {
     if(!$feat->analysis->is_stored($db)) {
       $analysis_adaptor->store($feat->analysis());
     }
+
+    $analyses{ $feat->analysis->dbID }++;
 
     my $original = $feat;
     my $seq_region_id;
@@ -298,6 +305,22 @@ sub save {
   }
 
   $sth->finish();
+
+## js5 hack to update meta_coord table... 
+  if( keys %analyses ) {
+    my $sth = $self->prepare( 'select sr.coord_system_id, max(daf.seq_region_end-daf.seq_region_start) from seq_region as sr, dna_align_feature as daf where daf.seq_region_id=sr.seq_region_id and analysis_id in ('.join(',',keys %analyses).') group by coord_system_id' );
+    $sth->execute;
+    foreach( @{ $sth->fetchall_arrayref } ) {
+      my $sth2 = $self->prepare( qq(insert ignore into meta_coord values("dna_align_feature",$_->[0],$_->[1])) );
+      $sth2->execute;
+      $sth2->finish;
+      my $sth2 = $self->prepare( qq(update meta_coord set max_length = $_->[1] where coord_system_id = $_->[0] and table_name="dna_align_feature" and max_length < $_->[1]) );
+      $sth2->execute;
+      $sth2->finish;
+    }
+    $sth->finish;
+  }
+
 }
 
 
@@ -326,7 +349,9 @@ sub _objs_from_sth {
   # a fair bit of gymnastics is used.
   #
 
-  my $sa = $dest_slice ? $dest_slice->adaptor() : $self->db()->get_SliceAdaptor();;
+# in case of userdata we need the features on the dest_slice
+# in case of get_all_supporting_features dest_slice is not provided .. 
+  my $sa = $dest_slice ? $dest_slice->adaptor() : $self->db()->get_SliceAdaptor();
   my $aa = $self->db->get_AnalysisAdaptor();
 
   my @features;
