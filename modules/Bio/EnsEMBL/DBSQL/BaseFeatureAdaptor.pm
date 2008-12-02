@@ -42,7 +42,7 @@ use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 
 @EXPORT = (@{$DBI::EXPORT_TAGS{'sql_types'}});
 
-our $SLICE_FEATURE_CACHE_SIZE = 4;
+our $SLICE_FEATURE_CACHE_SIZE    = 4;
 our $MAX_SPLIT_QUERY_SEQ_REGIONS = 3;
 
 =head2 new
@@ -65,14 +65,16 @@ sub new {
 
   my $self = $class->SUPER::new(@_);
 
-  if (defined $self->db->no_cache && $self->db->no_cache){
-      warning("You are using the API without caching most recent features. Performance might be affected.");
-  }
-  else{
-      #initialize an LRU cache
-      my %cache;
-      tie(%cache, 'Bio::EnsEMBL::Utils::Cache', $SLICE_FEATURE_CACHE_SIZE);
-      $self->{'_slice_feature_cache'} = \%cache;
+  if ( defined $self->db->no_cache() && $self->db->no_cache() ) {
+    warning(
+          "You are using the API without caching most recent features. "
+            . "Performance might be affected." );
+  } else {
+    # Initialize an LRU cache.
+    my %cache;
+    tie( %cache, 'Bio::EnsEMBL::Utils::Cache',
+         $SLICE_FEATURE_CACHE_SIZE );
+    $self->{'_slice_feature_cache'} = \%cache;
   }
 
   return $self;
@@ -214,28 +216,29 @@ sub fetch_all_by_Slice_constraint {
   $constraint ||= '';
   $constraint = $self->_logic_name_to_constraint($constraint, $logic_name);
 
-  #if the logic name was invalid, undef was returned
-  return [] if(!defined($constraint));
+  # If the logic name was invalid, undef was returned
+  return [] if ( !defined($constraint) );
 
-  #check the cache and return if we have already done this query
-  my $key = uc(join(':', $slice->name, $constraint));
+  # Check the cache and return if we have already done this query
+  my $key = uc( join( ':', $slice->name(), $constraint ) );
 
-  #will only use feature_cache if hasn't been no_cache attribute set
-  if (!defined $self->db->no_cache || !$self->db->no_cache){
-      if(exists($self->{'_slice_feature_cache'}->{$key})) {
-	  return $self->{'_slice_feature_cache'}->{$key};
-      }
+  # Will only use feature_cache if hasn't been no_cache attribute set
+  if ( !defined $self->db->no_cache() || !$self->db->no_cache() ) {
+    if ( exists( $self->{'_slice_feature_cache'}->{$key} ) ) {
+      return $self->{'_slice_feature_cache'}->{$key};
+    }
   }
   my $sa = $slice->adaptor();
 
   # Hap/PAR support: retrieve normalized 'non-symlinked' slices
-  my @proj = @{$sa->fetch_normalized_slice_projection($slice)};
+  my @proj = @{ $sa->fetch_normalized_slice_projection($slice) };
 
-  if(@proj == 0) {
-    throw('Could not retrieve normalized Slices. Database contains ' .
-          'incorrect assembly_exception information.');
+  if ( @proj == 0 ) {
+    throw( 'Could not retrieve normalized Slices. '
+         . 'Database contains incorrect assembly_exception information.'
+    );
   }
-  
+
   # Want to get features on the FULL original slice
   # as well as any symlinked slices
 
