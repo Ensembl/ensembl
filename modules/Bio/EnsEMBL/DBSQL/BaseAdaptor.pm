@@ -156,11 +156,12 @@ sub new {
 
 =cut
 
-sub prepare{
-  my ($self,$string) = @_;
- 
-# uncomment next line to cancel caching on the sql side. Needed for timing comparisons etc 
-#  $string =~ s/SELECT/SELECT SQL_NO_CACHE/i;
+sub prepare {
+  my ( $self, $string ) = @_;
+
+  # Uncomment next line to cancel caching on the SQL side.
+  # Needed for timing comparisons etc.
+  #$string =~ s/SELECT/SELECT SQL_NO_CACHE/i;
 
   return $self->dbc->prepare($string);
 }
