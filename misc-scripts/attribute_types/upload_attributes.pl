@@ -248,7 +248,7 @@ sub backup_attribute_types {
   my ( $host, $user, $pass, $port, $dbname ) = @_;
 
   unless (
-           system(     "mysql -h$host -P$port -u$user -p$pass -N "
+           system(     "mysql -h$host -P$port -u$user -p'$pass' -N "
                      . "-e 'select * from attrib_type' $dbname "
                      . "> $dbname.attrib_type.backup; "
                      . "gzip -9 -f $dbname.attrib_type.backup"
