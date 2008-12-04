@@ -113,8 +113,6 @@ my $cdbs  = $dbh->selectcol_arrayref($sql);
 
 foreach my $cdb (@$cdbs) {
 
-	### implements rule 1. ###
-	
 	(my $species = $cdb) =~ s/(.+)_core_${version}_\d+[a-z]$/$1/;
 	#print Dumper $species;
 
@@ -130,6 +128,8 @@ foreach my $cdb (@$cdbs) {
 
 	$caa = $cdba->get_AnalysisAdaptor();
 
+	### implements rule 1. ###
+	
 	my $cdaf_logic_names = get_af_logic_names($cdba, 'dna');
 	#print Dumper $cdaf_logic_names;
 
@@ -215,7 +215,7 @@ foreach my $cdb (@$cdbs) {
 			-group   => 'cdna'
 			);
 		#print Dumper $cdnadba;
-		$cdnaaa = $cdnadb->get_AnalysisAdaptor();
+		$cdnaaa = $cdnadba->get_AnalysisAdaptor();
 
 		my %alias = (
 			'homo_sapiens' => 'Human',
@@ -223,12 +223,12 @@ foreach my $cdb (@$cdbs) {
 		);
 
 		my $ln = lc($alias{$species}).'_cdna';
-		print "[$cdb] Switching off displayable for $ln\n";
+		print "<$cdb> Switching off displayable for $ln\n";
 		update_analysis($caa, $ln, 0);
 
 		my $dl = $alias{$species}.' cDNA';
-		print "[$cdnadb] Updating display_label for $ln to '$dl'\n";
-		update_analysis($cdnaaa, $ln, 1, $dl);
+		print "<$cdnadb> Updating display_label for cDNA_update to '$dl'\n";
+		update_analysis($cdnaaa, 'cDNA_update', 1, $dl);
 			
 
 		### implements rule 4. ###
@@ -244,7 +244,7 @@ foreach my $cdb (@$cdbs) {
 			-group   => 'vega'
 			);
 		#print Dumper $vegadba;
-		$vegaaa = $cdnadb->get_AnalysisAdaptor();
+		$vegaaa = $vegadba->get_AnalysisAdaptor();
 	
 		my $vega_daf_logic_names = get_af_logic_names($vegadba, 'dna');
 		my $vega_paf_logic_names = get_af_logic_names($vegadba, 'protein');
@@ -252,7 +252,7 @@ foreach my $cdb (@$cdbs) {
 		foreach my $ln (@$vega_daf_logic_names, @$vega_paf_logic_names) {
 
 			print "<$vegadb> Switching align_feature '$ln' displayable off\n";
-			update_analysis($cdnaaa, $ln, 0);
+			update_analysis($vegaaa, $ln, 0);
 			
 
 		}
@@ -281,13 +281,14 @@ sub update_analysis {
 	my ($aa, $logic_name, $displayable, $display_label) = @_;
 
 	my $analysis = $aa->fetch_by_logic_name($logic_name);
+	throw("Analysis '$logic_name' is not defined") unless defined $analysis;
 
 	if (defined $displayable) {
-		print "\t[".$aa->db->dbc->dbname."] Updating '$logic_name' displayable from ".$analysis->displayable()." to ".$displayable."\n";
+		print "\t[".$aa->db->dbc->dbname."] Updating '$logic_name' displayable from '".$analysis->displayable()."' to '".$displayable."'\n";
 		$analysis->displayable($displayable)
 	}
 	if (defined $display_label) {
-		print "\t[".$aa->db->dbc->dbname."] Updating '$logic_name' display_label from ".$analysis->display_label()." to ".$display_label."\n";
+		print "\t[".$aa->db->dbc->dbname."] Updating '$logic_name' display_label from '".$analysis->display_label()."' to '".$display_label."'\n";
 		$analysis->display_label($display_label);
 	}
 
