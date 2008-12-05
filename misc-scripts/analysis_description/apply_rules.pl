@@ -301,6 +301,40 @@ foreach my $cdb (@$cdbs) {
 
 		}
 
+		# 6) There are two more rules for the logic_name 'ensembl' in core databases 
+		#    depending on the species:
+		#	 - all but mouse, human and anopheles, use definition file.
+		#	 - anopheles needs a display_label of 'VectorBase gene'
+		#	 - mouse and human need a different web_data column:
+		#	   '{'caption' => 'Ensembl/Havana gene','name' => 'Merged Ensembl and Havana Genes',
+		#        'label_key' => '[text_label] [display_label]',
+		#        'default' => {'contigviewbottom' => 'transcript_label',
+		#        'contigviewtop' => 'gene_label',
+		#        'cytoview' => 'gene_label'},'key' => 'ensembl'}'
+
+		my $web_data = "'{'caption' => 'Ensembl/Havana gene',".
+			"'name' => 'Merged Ensembl and Havana Genes',".
+			"'label_key' => '[text_label] [display_label]',".
+			"'default' => {'contigviewbottom' => 'transcript_label',".
+			"'contigviewtop' => 'gene_label',".
+			"'cytoview' => 'gene_label'},".
+			"'key' => 'ensembl'}'";
+		print "<ensembl> Updating web_data\n";
+		update_analysis($caa, 'ensembl', undef, undef, $web_data);
+
+	}
+
+	if ($species =~ m/^(anopheles_gambiae)/) {
+
+		print "<ensembl> Updating display_label to 'VectorBase gene'\n";
+		update_analysis($caa, 'ensembl', undef, 'VectorBase gene');
+
+		print "<anopheles_cdna_est> Switching displayable on\n";
+		update_analysis($caa, 'anopheles_cdna_est', 1);
+
+		print "<anopheles_cdna_est> Updating display_label to 'RNA (best)'\n";
+		update_analysis($ofaa, 'anopheles_cdna_est', undef, 'RNA (best)');
+
 	}
 	
 
@@ -318,7 +352,7 @@ sub get_af_logic_names{
 
 sub update_analysis {
 
-	my ($aa, $logic_name, $displayable, $display_label) = @_;
+	my ($aa, $logic_name, $displayable, $display_label, $web_data) = @_;
 
 	my $analysis = $aa->fetch_by_logic_name($logic_name);
 	throw("Analysis '$logic_name' is not defined") unless defined $analysis;
@@ -330,6 +364,10 @@ sub update_analysis {
 	if (defined $display_label) {
 		print "\t[".$aa->db->dbc->dbname."] Updating '$logic_name' display_label from '".$analysis->display_label()."' to '".$display_label."'\n";
 		$analysis->display_label($display_label);
+	}
+	if (defined $web_data) {
+		print "\t[".$aa->db->dbc->dbname."] Updating '$logic_name' web_data from \"".$analysis->web_data()."\" to \"".$web_data."\"\n";
+		$analysis->web_data($web_data);
 	}
 
 	$aa->update($analysis) if $update;
