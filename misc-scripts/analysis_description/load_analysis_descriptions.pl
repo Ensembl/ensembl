@@ -47,6 +47,7 @@
 =cut
 
 use strict;
+use Data::Dumper;
 use Getopt::Long;
 use Bio::EnsEMBL::Utils::Exception qw(warning throw);
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
@@ -101,7 +102,7 @@ my $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(
 open(FH, $file) or throw("Failed to open $file $@");
 my $aa = $db->get_AnalysisAdaptor();
 my $analyses = $aa->fetch_all();
-my %hash;
+my (%hash,%reference);
 foreach my $analysis(@$analyses){
     $hash{lc($analysis->logic_name())} = $analysis;
 }
@@ -116,6 +117,14 @@ LINE: while(my $row = <FH>){
     
     my ($nr, $logic_name, $description, $display_label, $displayable, $web_data) = split(/\t/, $row);
     #print join("\t", $logic_name, $description, $display_label, $displayable, $web_data), "\n";
+
+	$reference{lc($logic_name)} = {
+		nr            => "$nr",
+		description   => "$description",
+		display_lable => "$display_label", 
+		displayable   => "$displayable", 
+		web_data      => "$web_data"
+		};
     
     $description =~ s/^\s+//;
     $description =~ s/\s+$//;
@@ -129,8 +138,9 @@ LINE: while(my $row = <FH>){
         $analysis->description($description);
         $analysis->displayable($displayable);
         $analysis->display_label($display_label);
-        $analysis->web_data($web_data) if $web_data;
-        
+        $web_data ? $analysis->web_data($web_data) : $analysis->{_web_data} = undef;
+		#print Dumper  $analysis->web_data();
+
         $aa->update($analysis) if $update;
         
         delete $hash{lc($logic_name)};
@@ -143,12 +153,15 @@ if ( scalar(keys %hash)==0) {
 	if ($update) {
 		print STDERR "\nAll analysis descriptions have been updated, every analysis has a description now\n";
 	} else {
-		print STDERR "\nAll analysis descriptions can been updated, every analysis has a description in the file\n";
+		print STDERR "\nAll analysis descriptions can be updated, every analysis has a description in the file\n";
 	}
-}else{
-    foreach my $k (keys %hash) {
-        
-        warning "[$dbname] No description was found for logic name $k ( dbID=".$hash{$k}->dbID."; displayable=".$hash{$k}->displayable." ) \n";
+} else {
+    foreach my $ln (keys %hash) {
+        throw ("Analysis '$ln' doesn't exist in reference file '$file'! It needs to be added first")
+			unless (exists $reference{$ln});
+        warning "[$dbname] No description was found for logic_name '$ln':\n".
+			"\tref:\t display_label='".$reference{$ln}{display_label}."'; displayable=".$reference{$ln}{displayable}."; nr=".$reference{$ln}{nr}."\n".
+			"\tdb: \t display_label='".$hash{$ln}->display_label."'; displayable=".$hash{$ln}->displayable."; dbID=".$hash{$ln}->dbID."\n";
 
     }
 }
