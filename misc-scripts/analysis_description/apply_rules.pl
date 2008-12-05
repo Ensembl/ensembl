@@ -48,6 +48,9 @@
     -dbname      For RDBs, what name to connect to (dbname= in locator)
     -dbuser      For RDBs, what username to connect as (dbuser= in locator)
     -dbpass      For RDBs, what password to use (dbpass= in locator)
+    -file        Path to file containing descriptions. The file 
+                   analysis.descriptions in this directory can be used and is 
+                   supposed to be the reference file
 	-update      Perform actual updates of analyses
     -help print out documentation
 
@@ -74,16 +77,19 @@ my $dbhost = '';
 my $dbuser;
 my $dbpass;
 my $dbport = 3306;
-my $dbname = '';
+my $dbname;
 my $help = 0;
 my $version = 52;
+my $file = 'analysis.descriptions';
 
 &GetOptions (
 	'host|dbhost=s'       => \$dbhost,
 	'port|dbport=s'       => \$dbport,
 	'user|dbuser=s'       => \$dbuser,
 	'pass|dbpass=s'       => \$dbpass,
+	'dbname=s'            => \$dbname,
 	'version=s'           => \$version,
+	'file|descriptions=s' => \$file,
 	'update'              => \$update,
 	'h|help!'             => \$help
 	);
@@ -97,8 +103,44 @@ if($help){
   usage();
 }
 
+my %reference;
+if ($file) {
 
-$dsn = "DBI:mysql:database=" . $dbname . ";host=" . $dbhost . ";port=" . $dbport;
+	open(FH, $file) 
+		or throw("Failed to open reference file '$file': $@");
+
+	while (<FH>) {
+		
+		chomp;
+		next if m/^\#/;   # skip comments
+		next if m/^$/;    # and blank lines
+		next if m/^\s+$/; # and whitespace-only lines
+    
+		my ($nr, $logic_name, $description, $display_label, $displayable, $web_data) = split(/\t/);
+		#print join("\t", $logic_name, $description, $display_label, $displayable, $web_data), "\n";
+
+		warn ("Displayable flag for analysis '$logic_name' has to be either 0 or 1, but not '$displayable'!")
+			unless ($displayable =~ m/^[01]$/);
+		
+		$reference{lc($logic_name)} = {
+			nr            => "$nr",
+			description   => "$description",
+			display_lable => "$display_label", 
+			displayable   => "$displayable", 
+			web_data      => "$web_data"
+		};
+		
+	}
+
+	close FH;
+	
+} else {
+
+	throw("Need to pass reference file with analysis descriptions!");
+
+}
+
+$dsn = "DBI:mysql:host=" . $dbhost . ";port=" . $dbport;
 eval{ 
 	$dbh = DBI->connect($dsn, $dbuser, $dbpass, 
 						{'RaiseError' => 1,
@@ -106,10 +148,10 @@ eval{
 };
 
 
-# get core databases;
-my $sql = "show databases like '%core_$version%'";
+# get core database(s);
+my $pat = defined $dbname ? $dbname : "%core_$version%";
+my $sql = "show databases like '$pat'";
 my $cdbs  = $dbh->selectcol_arrayref($sql);
-#print Dumper $cdbs;
 
 foreach my $cdb (@$cdbs) {
 
@@ -176,8 +218,9 @@ foreach my $cdb (@$cdbs) {
 				update_analysis($ofaa, $ln, 1);
 
 			} else {
-				print("<$ln> exists only in otherfeatures, setting displayable 1 for otherfeatures\n");
-				update_analysis($ofaa, $ln, 1);
+				
+				print("<$ln> exists only in otherfeatures, setting displayable according to reference file\n");
+				update_analysis($ofaa, $ln, $reference{lc($ln)}{displayable});
 	
 			}
 			delete $daf_logic_names{lc($ln)};
@@ -185,8 +228,9 @@ foreach my $cdb (@$cdbs) {
 		}
 
 		foreach my $ln (keys %daf_logic_names) {
-				print("<$ln> exists only in core, setting displayable 1 for core\n");			
-				update_analysis($caa, $ln, 1);
+
+				print("<$ln> exists only in core, setting displayable according to reference file\n");
+				update_analysis($caa, $ln, $reference{lc($ln)}{displayable});
 
 		}
 
@@ -261,10 +305,6 @@ foreach my $cdb (@$cdbs) {
 	
 
 }
-
-
-
-
 
 sub get_af_logic_names{
 
