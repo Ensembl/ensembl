@@ -308,16 +308,20 @@ sub save {
 
 ## js5 hack to update meta_coord table... 
   if( keys %analyses ) {
+
     my $sth = $self->prepare( 'select sr.coord_system_id, max(daf.seq_region_end-daf.seq_region_start) from seq_region as sr, dna_align_feature as daf where daf.seq_region_id=sr.seq_region_id and analysis_id in ('.join(',',keys %analyses).') group by coord_system_id' );
     $sth->execute;
+
     foreach( @{ $sth->fetchall_arrayref } ) {
       my $sth2 = $self->prepare( qq(insert ignore into meta_coord values("dna_align_feature",$_->[0],$_->[1])) );
       $sth2->execute;
       $sth2->finish;
-      my $sth2 = $self->prepare( qq(update meta_coord set max_length = $_->[1] where coord_system_id = $_->[0] and table_name="dna_align_feature" and max_length < $_->[1]) );
+
+      $sth2 = $self->prepare( qq(update meta_coord set max_length = $_->[1] where coord_system_id = $_->[0] and table_name="dna_align_feature" and max_length < $_->[1]) );
       $sth2->execute;
       $sth2->finish;
     }
+
     $sth->finish;
   }
 
