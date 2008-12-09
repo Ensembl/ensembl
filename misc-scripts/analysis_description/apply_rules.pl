@@ -337,6 +337,26 @@ foreach my $cdb (@$cdbs) {
 
 	}
 	
+	if ($species =~ m/^(caenorhabditis_elegans)/) {
+
+		# In C.elegans we have a couple of custom web_data columns that are 
+		# perhaps most easily patched by reading from another logic_name 
+		# - logic_name of 'ncRNA' has the same web_data as logic_name of 'tRNA'
+		# - logic_name of 'Pseudogene' has the same web_data as logic_name of 'wormbase' 
+
+		print "<$cdb> Overwriting web_data for logic_name 'ncRNA' ".
+			"with web_data from 'tRNA'\n";
+		my $tRNA = $caa->fetch_by_logic_name('tRNA');
+		update_analysis($caa, 'ncRNA', undef, undef, $tRNA->web_data());
+
+		print "<$cdb> Overwriting web_data for logic_name 'Pseudogene' ".
+			"with web_data from 'wormbase'\n";
+		my $wormbase = $caa->fetch_by_logic_name('wormbase');
+		update_analysis($caa, 'Pseudogene', undef, undef, $wormbase->web_data());
+		
+
+	}
+	
 
 }
 
