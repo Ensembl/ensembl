@@ -1,0 +1,241 @@
+package XrefMapper::CoreInfo;
+
+use vars '@ISA';
+@ISA = qw{ XrefMapper::BasicMapper };
+
+use strict;
+use warnings;
+use XrefMapper::BasicMapper;
+
+use Cwd;
+use DBI;
+use File::Basename;
+use IPC::Open3;
+
+# Get info from the core database.
+
+# Need to load tables:-
+#
+# gene_transcript_translation 
+# gene_stable_id
+# transcript_stable_id
+# translation_stable_id
+
+
+
+
+
+# Also for Direct xref process these and add to object_xref
+#   also add dependents while we are at it.
+
+
+
+sub new {
+  my($class, $mapper) = @_;
+
+  my $self ={};
+  bless $self,$class;
+  $self->core($mapper->core);
+  $self->xref($mapper->xref);
+  return $self;
+}
+
+
+sub test_return_codes {
+ my $self = shift;
+
+
+ my $sth = $self->xref->dbc->prepare("create table arse_test like object_xref");
+ $sth->execute();
+ $sth->finish;
+
+
+ my $ins_ox_ignore = $self->xref->dbc->prepare("insert into arse_test (object_xref_id, ensembl_id, xref_id, ensembl_object_type, linkage_type) values(?, ?,?,?,?)");
+ 
+ local $ins_ox_ignore->{RaiseError};
+
+ my $object_xref = 1;
+
+ my $out = $ins_ox_ignore->execute(1, 1, 1, "Gene", 'DIRECT');
+ print "one failed: $@\n" if $@;
+ print "successfull insert = $out\n";
+ if($ins_ox_ignore->err){
+   print $ins_ox_ignore->errstr."\n";
+ }
+
+ $out = $ins_ox_ignore->execute(2, 1, 1, "Gene", 'DIRECT');
+ if($ins_ox_ignore->err){
+   my $err = $ins_ox_ignore->errstr;
+   if($err =~ /Duplicate/){
+     print "2 not added becouse duplicate (correct)\n";
+   }
+   else{
+     die "Problem loading error is $err\n";
+   }
+ }
+ else{
+   print "AHHHHHHH insert 2 okay\n";
+ }
+
+
+ #same primary key should blow up
+ $out = $ins_ox_ignore->execute(1, 3, 3, "RUBBISH");
+ if($ins_ox_ignore->err){
+   my $err = $ins_ox_ignore->errstr;
+   if($err =~ /Duplicate/){
+     print "Not added becouse duplicate (WRNG)\n";
+   }
+   else{
+     $ins_ox_ignore->finish;
+     die "Problem loading data error is $err\n";
+   }
+ }
+
+
+ print "END\n";
+}
+
+
+
+sub get_core_data {
+ my $self = shift;
+
+# gene_transcript_translation 
+# gene_stable_id
+# transcript_stable_id
+# translation_stable_id
+
+  my $object_xref_id;
+  my $ox_sth = $self->xref->dbc->prepare("select max(object_xref_id) from object_xref");
+  $ox_sth->execute();
+  $ox_sth->bind_columns(\$object_xref_id);
+  $ox_sth->fetch();
+  $ox_sth->finish;
+
+ # load table gene_transcript_translation 
+
+ my $ins_sth =  $self->xref->dbc->prepare("insert into gene_transcript_translation (gene_id, transcript_id, translation_id) values (?, ?, ?)"); 
+
+ my $sql = "select tn.gene_id, tn.transcript_id, tl.translation_id from transcript tn left join translation tl on tl.transcript_id = tn.transcript_id";
+ my $sth = $self->core->dbc->prepare($sql);
+ $sth->execute();
+ my  ($gene_id, $transcript_id, $translation_id);
+ $sth->bind_columns(\$gene_id, \$transcript_id, \$translation_id); 
+ while($sth->fetch()){
+   $ins_sth->execute($gene_id, $transcript_id, $translation_id);
+ }
+ $ins_sth->finish;
+ $sth->finish;
+
+
+ # load table xxx_stable_id
+ my ($id, $stable_id);
+ foreach my $table (qw(gene transcript translation)){
+   my $sth = $self->core->dbc->prepare("select ".$table."_id, stable_id from ".$table."_stable_id");
+   my $ins_sth = $self->xref->dbc->prepare("insert into ".$table."_stable_id (internal_id, stable_id) values(?, ?)");
+   $sth->execute();
+   $sth->bind_columns(\$id, \$stable_id);
+   while($sth->fetch){
+     $ins_sth->execute($id, $stable_id);
+   }
+   $ins_sth->finish;
+   $sth->finish;
+ }
+
+ $sth = $self->xref->dbc->prepare("insert into process_status (status, date) values('core_data_loaded',now())");
+ $sth->execute();
+ $sth->finish;
+
+ # Now process the direct xrefs and add data to the object xrefs remember dependent xrefs.
+
+ my $ins_ox_sth = $self->xref->dbc->prepare("insert into object_xref (object_xref_id, ensembl_id, xref_id, ensembl_object_type, linkage_type) values(?, ?,?,?,?)");
+
+ local $ins_ox_sth->{RaiseError};  # want to see duplicates and not add de
+
+ local $ins_ox_sth->{PrintError}; 
+ 
+
+ my $ins_go_sth = $self->xref->dbc->prepare("insert into go_xref (object_xref_id, linkage_type, source_xref_id) values(?,?,?)");
+ my $dep_sth    = $self->xref->dbc->prepare("select dependent_xref_id, linkage_annotation from dependent_xref where master_xref_id = ?");
+
+my $stable_sql=(<<SQL);
+  SELECT dx.general_xref_id, s.internal_id, dx.ensembl_stable_id 
+    FROM TYPE_direct_xref dx left join TYPE_stable_id s on s.stable_id = dx.ensembl_stable_id
+SQL
+                       
+ foreach my $table (qw(gene transcript translation)){
+   my ($xref_id, $internal_id, $stable_id);
+   my $sql = $stable_sql;
+   $sql =~ s/TYPE/$table/g;
+   my $sth = $self->xref->dbc->prepare($sql);
+#   print "sql = $sql\n";
+   $sth->execute();
+   $sth->bind_columns(\$xref_id, \$internal_id, \$stable_id);
+   my $count =0;
+   my $duplicate_direct_count = 0;
+   my $duplicate_dependent_count = 0;
+   while($sth->fetch){
+     if(!defined($internal_id)){ # not found either it is an internal id already or stable_id no longer exists
+       if($stable_id =~ /^\d+$/){
+          $internal_id = $stable_id;
+       }
+       else{
+         print "COuld not find stable id $stable_id in table to get the internal id hence ignoring!!!\n";
+         next;
+       }
+     }
+     $object_xref_id++;
+     $count++;
+     my @master_xref_ids;
+     $ins_ox_sth->execute($object_xref_id, $internal_id, $xref_id, $table, 'DIRECT');
+     if($ins_ox_sth->err){
+       $duplicate_direct_count++;
+       next; #duplicate
+     }
+     else{
+       push  @master_xref_ids, $xref_id;
+     }
+     while(my $master_xref_id = pop(@master_xref_ids)){
+       my ($dep_xref_id, $link);
+       $dep_sth->execute($master_xref_id);
+       $dep_sth->bind_columns(\$dep_xref_id, \$link);
+       while($dep_sth->fetch){
+         $object_xref_id++;
+         $ins_ox_sth->execute($object_xref_id, $internal_id, $dep_xref_id, $table, 'DEPENDENT');
+	 if($ins_ox_sth->err){
+	   my $err = $ins_ox_sth->errstr;
+	   if($err =~ /Duplicate/){
+	     $duplicate_dependent_count++;
+	     next;
+	   }
+	   else{
+	     die "Problem loading error is $err\n";
+	   } 
+	 }
+	 push @master_xref_ids, $dep_xref_id; # get the dependent, dependents just in case
+
+         if(defined($link) and $link ne ""){ # we have a go term linkage type
+           $ins_go_sth->execute($object_xref_id, $link, $master_xref_id);
+         }
+       }
+     }
+   }
+   $sth->finish;
+   if($duplicate_direct_count or $duplicate_dependent_count){
+     print "duplicate entrys ignored for $duplicate_direct_count direct xrefs and  $duplicate_dependent_count dependent xrefs\n";
+   }
+   print $count." direct_xrefs added to ensembl ".$table."s\n";
+ }
+ $ins_go_sth->finish;
+ $ins_ox_sth->finish;
+ $dep_sth->finish;
+
+ $sth = $self->xref->dbc->prepare("insert into process_status (status, date) values('direct_xrefs_parsed',now())");
+ $sth->execute();
+ $sth->finish;
+
+
+
+}
+
+1;
