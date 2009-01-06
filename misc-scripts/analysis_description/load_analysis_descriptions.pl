@@ -34,15 +34,15 @@
     -dbuser      For RDBs, what username to connect as (dbuser= in locator)
     -dbpass      For RDBs, what password to use (dbpass= in locator)
     -file        Path to file containing descriptions. The file 
-                      analysis.descriptions in this directory can be used and is an 
-                      example of the format
-	-update      Perform actual updates of analyses
+                 analysis.descriptions in this directory can be used and is 
+                 an example of the format. Multiple -file args can be specified
+    -update      Perform actual updates of analyses
     -help print out documentation
 
 =head1 EXAMPLES
 
  perl load_analysis_descriptions.pl -dbhost my_host -dbuser user -dbpass ***** 
- -dbname my_db -description_file analysis.descriptions
+ -dbname my_db -file analysis.descriptions -file myanalysis.descriptions
 
 =cut
 
@@ -60,7 +60,8 @@ my $dbuser;
 my $dbpass;
 my $dbport = 3306;
 my $dbname = '';
-my ($file, $update);
+my @files = ();
+my $update;
 my $help = 0;
 
 &GetOptions (
@@ -69,7 +70,7 @@ my $help = 0;
 	'user|dbuser=s'       => \$dbuser,
 	'pass|dbpass=s'       => \$dbpass,
 	'port|dbport=s'       => \$dbport,
-	'file|descriptions=s' => \$file,
+	'file|descriptions=s' => \@files,
 	'update'              => \$update,
 	'h|help!'             => \$help
              );
@@ -79,9 +80,9 @@ if(!$dbhost || !$dbname){
   $help = 1;
 }
 
-if(!$file){
-  $file = shift;
-  if(!$file){
+unless(@files){
+  @files = @_;
+  unless(@files){
     $help = 1;
     print "Need to specify a description file on the commandline using -file\n";
   }
@@ -99,15 +100,19 @@ my $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(
                                             -port   => $dbport
                                             );
 
-open(FH, $file) or throw("Failed to open $file $@");
+# Pre-fetch all analyses in the database
 my $aa = $db->get_AnalysisAdaptor();
 my $analyses = $aa->fetch_all();
 my (%hash,%reference);
 foreach my $analysis(@$analyses){
-    $hash{lc($analysis->logic_name())} = $analysis;
+  $hash{lc($analysis->logic_name())} = $analysis;
 }
 
-LINE: while(my $row = <FH>){
+# Parse the description files
+foreach my $file( @files ){
+  open(FH, $file) or throw("Failed to open $file $@");
+
+ LINE: while(my $row = <FH>){
     
     chomp($row);
     
@@ -117,14 +122,13 @@ LINE: while(my $row = <FH>){
     
     my ($nr, $logic_name, $description, $display_label, $displayable, $web_data) = split(/\t/, $row);
     #print join("\t", $logic_name, $description, $display_label, $displayable, $web_data), "\n";
-
-	$reference{lc($logic_name)} = {
-		nr            => "$nr",
-		description   => "$description",
-		display_lable => "$display_label", 
-		displayable   => "$displayable", 
-		web_data      => "$web_data"
-		};
+    $reference{lc($logic_name)} = {
+      nr            => $nr,
+      description   => $description   || '',
+      display_lable => $display_label || '', 
+      displayable   => $displayable   || '', 
+      web_data      => $web_data      || '',
+    };
     
     $description =~ s/^\s+//;
     $description =~ s/\s+$//;
@@ -144,10 +148,10 @@ LINE: while(my $row = <FH>){
         $aa->update($analysis) if $update;
         
         delete $hash{lc($logic_name)};
-    }
+      }
+  }
+  close(FH) or throw("Failed to close $file $@");
 }
-
-close(FH) or throw("Failed to close $file $@");
 
 if ( scalar(keys %hash)==0) {
 	if ($update) {
@@ -157,7 +161,9 @@ if ( scalar(keys %hash)==0) {
 	}
 } else {
     foreach my $ln (keys %hash) {
-        throw ("Analysis '$ln' doesn't exist in reference file '$file'! It needs to be added first")
+        throw ("Analysis '$ln' doesn't exist in reference file(s) '"
+               . join( "','", @files )
+               . "'! It needs to be added first")
 			unless (exists $reference{$ln});
         warning "[$dbname] No description was found for logic_name '$ln':\n".
 			"\tref:\t display_label='".$reference{$ln}{display_label}."'; displayable=".$reference{$ln}{displayable}."; nr=".$reference{$ln}{nr}."\n".
