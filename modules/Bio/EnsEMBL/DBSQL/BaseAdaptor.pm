@@ -527,7 +527,7 @@ sub fetch_by_dbID{
   Arg [1]    : listref of integers $id_list
                The unique database identifiers for the features to
                be obtained.
-  Example    : @feats = @{$adaptor->fetch_by_dbID_list([1234, 2131, 982]))};
+  Example    : @feats = @{$adaptor->fetch_all_by_dbID_list([1234, 2131, 982]))};
   Description: Returns the features created from the database
                defined by the the IDs in contained in the provided
                ID list $id_list.  The features will be returned
