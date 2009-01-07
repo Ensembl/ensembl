@@ -142,6 +142,10 @@ sub map {
   my($self, $frm_seq_region_name, $frm_start, $frm_end, $frm_strand, $frm_cs,
     $fastmap) = @_;
 
+  if($frm_cs->is_top_level()) {
+    throw("The toplevel CoordSystem can only be mapped TO, not FROM.");
+  }
+
   my @tmp;
   push @tmp, $frm_seq_region_name;
   my $seq_region_id = @{$self->adaptor()->seq_regions_to_ids($frm_cs, \@tmp)}[0];
@@ -151,9 +155,6 @@ sub map {
   my $other_cs    = $self->{'other_cs'};
   my $adaptor     = $self->{'adaptor'};
 
-  if($frm_cs->is_top_level()) {
-    throw("The toplevel CoordSystem can only be mapped TO, not FROM.");
-  }
   if($frm_cs != $other_cs && !$frm_cs->equals($other_cs)) {
     throw("Coordinate system " . $frm_cs->name . " " . $frm_cs->version .
           " is neither the assembled nor the component coordinate system " .
