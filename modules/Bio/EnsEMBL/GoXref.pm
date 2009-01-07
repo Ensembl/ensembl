@@ -13,30 +13,28 @@ Bio::EnsEMBL::GoXref
 This class extends the DBEntry in order to associate Evidence Tags
 to the relationship between EnsEMBL objects and GO identifiers.  The
 relationship to GO that is stored in the database is actually derived
-through the relationship of EnsEMBL peptides to SwissProt peptides.
+through the relationship of EnsEMBL peptides to SwissProt peptides, i.e.
+the relationship is derived like this:
 
-I.e. The relationship is derived like this:
+  ENSP -> SWISSPROT -> GO
 
-ENSP -> SWISSPROT -> GO
-
-An the evidence tag describes the relationship between the SWISSPROT
+And the evidence tag describes the relationship between the SwissProt
 Peptide and the GO entry.
 
 In reality, however, we store this in the database like this:
 
-ENSP -> SWISSPROT
-ENSP -> GO
+  ENSP -> SWISSPROT
+  ENSP -> GO
 
-and the evidence tag hangs off of the relationship between the ENSP
-and the GO identifier. Some ENSPs are associated with multiple closely
+and the evidence tag hangs off of the relationship between the ENSP and
+the GO identifier.  Some ENSPs are associated with multiple closely
 related Swissprot entries which may both be associated with the same GO
 identifier but with different evidence tags.  For this reason a single
 'GoXref' can have multiple evidence tags.
 
-
 =head1 SYNOPSIS
 
-  my $goxref = Bio::EnsEMBL::GoXref->new;
+  my $goxref = Bio::EnsEMBL::GoXref->new();
   $goxref->add_linkage_type('IEA');
 
   foreach my $evtag ( @{ $goxref->get_all_linkage_types() } ) {
@@ -45,13 +43,14 @@ identifier but with different evidence tags.  For this reason a single
 
 =head1 CONTACT
 
-Post questions to the ensembl development list: <ensembl-dev@ebi.ac.uk>
+Post questions to the Ensembl development list: <ensembl-dev@ebi.ac.uk>
 
 =head1 METHODS
 
 =cut
 
 package Bio::EnsEMBL::GoXref;
+
 use vars qw(@ISA);
 use strict;
 
@@ -77,7 +76,9 @@ use strict;
 sub add_linkage_type {
   my ( $self, $lt, $source_dbentry ) = @_;
 
-  $self->throw("linkage type argument required") if ( !$lt );
+  if ( !defined($lt) ) {
+    $self->throw("linkage type argument required");
+  }
 
   if ( defined($source_dbentry)
        && !$source_dbentry->isa('Bio::EnsEMBL::DBEntry') )
