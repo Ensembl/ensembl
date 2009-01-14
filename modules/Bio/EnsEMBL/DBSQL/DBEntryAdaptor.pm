@@ -516,23 +516,23 @@ INSERT IGNORE INTO object_xref
       $sth = $self->prepare( "
              INSERT ignore INTO identity_xref
              SET object_xref_id = ?,
-             query_identity = ?,
-             target_identity = ?,
-             hit_start = ?,
-             hit_end   = ?,
-             translation_start = ?,
-             translation_end = ?,
+             xref_identity = ?,
+             ensembl_identity = ?,
+             xref_start = ?,
+             xref_end   = ?,
+             ensembl_start = ?,
+             ensembl_end = ?,
              cigar_line = ?,
              score = ?,
              evalue = ?,
              analysis_id = ?" );
       $sth->bind_param(1,$Xidt,SQL_INTEGER);
-      $sth->bind_param(2,$exObj->query_identity,SQL_INTEGER);
-      $sth->bind_param(3,$exObj->target_identity,SQL_INTEGER);
-      $sth->bind_param(4,$exObj->query_start,SQL_INTEGER);
-      $sth->bind_param(5,$exObj->query_end,SQL_INTEGER);
-      $sth->bind_param(6,$exObj->translation_start,SQL_INTEGER);
-      $sth->bind_param(7,$exObj->translation_end,SQL_INTEGER);
+      $sth->bind_param(2,$exObj->xref_identity,SQL_INTEGER);
+      $sth->bind_param(3,$exObj->ensembl_identity,SQL_INTEGER);
+      $sth->bind_param(4,$exObj->xref_start,SQL_INTEGER);
+      $sth->bind_param(5,$exObj->xref_end,SQL_INTEGER);
+      $sth->bind_param(6,$exObj->ensembl_start,SQL_INTEGER);
+      $sth->bind_param(7,$exObj->ensembl_end,SQL_INTEGER);
       $sth->bind_param(8,$exObj->cigar_line,SQL_LONGVARCHAR);
       $sth->bind_param(9,$exObj->score,SQL_DOUBLE);
       $sth->bind_param(10,$exObj->evalue,SQL_DOUBLE);
@@ -841,8 +841,8 @@ sub _fetch_by_object_type {
            exDB.secondary_db_name, exDB.secondary_db_table,
            oxr.object_xref_id,
            es.synonym,
-           idt.query_identity, idt.target_identity, idt.hit_start,
-           idt.hit_end, idt.translation_start, idt.translation_end,
+           idt.xref_identity, idt.ensembl_identity, idt.xref_start,
+           idt.xref_end, idt.ensembl_start, idt.ensembl_end,
            idt.cigar_line, idt.score, idt.evalue, idt.analysis_id,
            gx.linkage_type,
            xref.info_type, xref.info_text, exDB.type, gx.source_xref_id,
@@ -878,14 +878,14 @@ SSQL
            $exDB_status,            $exDB_db_display_name,
            $exDB_secondary_db_name, $exDB_secondary_db_table,
            $objid,                  $synonym,
-           $queryid,                $targetid,
-           $query_start,            $query_end,
-           $translation_start,      $translation_end,
+           $xrefid,                 $ensemblid,
+           $xref_start,             $xref_end,
+           $ensembl_start,          $ensembl_end,
            $cigar_line,             $score,
            $evalue,                 $analysis_id,
            $linkage_type,           $info_type,
            $info_text,              $type,
-           $source_xref_id,          $link_annotation,
+           $source_xref_id,         $link_annotation,
 	   $description
       ) = @$arrRef;
 
@@ -914,10 +914,10 @@ SSQL
       my $source_xref;
       if ( !$seen{$refID} ) {
         my $exDB;
-        if ( ( defined($queryid) ) ) {  # an xref with similarity scores
+        if ( ( defined($xrefid) ) ) {  # an xref with similarity scores
           $exDB = Bio::EnsEMBL::IdentityXref->new_fast( \%obj_hash );
-          $exDB->query_identity($queryid);
-          $exDB->target_identity($targetid);
+          $exDB->xref_identity($xrefid);
+          $exDB->ensembl_identity($ensemblid);
 
           if ( defined($analysis_id) ) {
             my $analysis =
@@ -928,9 +928,10 @@ SSQL
           }
 
           $exDB->cigar_line($cigar_line);
-          $exDB->query_start($query_start);
-          $exDB->translation_start($translation_start);
-          $exDB->translation_end($translation_end);
+          $exDB->xref_start($xref_start);
+          $exDB->xref_end($xref_end); # was not here before 14th Jan 2009 ????
+          $exDB->ensembl_start($ensembl_start);
+          $exDB->ensembl_end($ensembl_end);
           $exDB->score($score);
           $exDB->evalue($evalue);
 
