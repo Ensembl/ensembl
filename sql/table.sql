@@ -707,13 +707,13 @@ CREATE TABLE object_xref (
 CREATE TABLE identity_xref (
 
   object_xref_id          INT(10) UNSIGNED NOT NULL,
-  query_identity 	  INT(5),
-  target_identity         INT(5),
+  xref_identity 	  INT(5),
+  ensembl_identity        INT(5),
 
-  hit_start               INT,
-  hit_end                 INT,
-  translation_start       INT,
-  translation_end         INT,
+  xref_start              INT,
+  xref_end                INT,
+  ensembl_start           INT,
+  ensembl_end             INT,
   cigar_line              TEXT,
   
   score                   DOUBLE,
@@ -738,7 +738,6 @@ CREATE TABLE go_xref (
 		               'IPI', 'ISS', 'NAS', 'ND', 'TAS', 'NR', 'RCA')
                           NOT NULL,
   source_xref_id          INT(10) UNSIGNED DEFAULT NULL,
-  KEY (object_xref_id),
   KEY (source_xref_id),
   UNIQUE (object_xref_id, source_xref_id, linkage_type)
 
@@ -805,7 +804,7 @@ CREATE TABLE external_db (
   display_label_linkable      BOOLEAN DEFAULT 0 NOT NULL,
   priority                    INT NOT NULL,
   db_display_name             VARCHAR(255),
-  type                        ENUM('ARRAY', 'ALT_TRANS', 'MISC', 'LIT', 'PRIMARY_DB_SYNONYM'),
+  type                        ENUM('ARRAY', 'ALT_TRANS', 'MISC', 'LIT', 'PRIMARY_DB_SYNONYM', 'ENSEMBL'),
   secondary_db_name           VARCHAR(255) DEFAULT NULL,
   secondary_db_table          VARCHAR(255) DEFAULT NULL,
   description                 TEXT,
@@ -882,14 +881,14 @@ CREATE TABLE meta (
 
 
 # Auto add schema version to database
-INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, "schema_version", "52");
+INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, "schema_version", "53");
 
 # patches included in this schema file
 # NOTE: at beginning of release cycle, remove patch entries from last release
-INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_51_52_a.sql|schema_version');
-INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_51_52_b.sql|widen_columns');
-INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_51_52_c.sql|pair_dna_align_feature_id');
-INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_51_52_d.sql|external_db_description');
+INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_52_53_a.sql|schema_version');
+INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_52_53_b.sql|external_db_type_enum');
+INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_52_53_c.sql|identity_xref_rename');
+INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_52_53_d.sql|drop_go_xref_index');
 
 ################################################################################
 #
