@@ -1,6 +1,6 @@
 # patch_52_53_b.sql
 #
-# title: update schema version
+# title: external_db type enum
 #
 # description:
 # Add the enum value 'ENSEMBL' to the external_db.type column (primarily for eFG)
