@@ -169,12 +169,12 @@ sub get_max_assembly_contig {
 sub get_genebuild {
   my $self = shift;
 
-  my $arrRef = $self->list_value_by_key( 'genebuild.version' );
+  my $arrRef = $self->list_value_by_key( 'genebuild.start_date' );
 
   if( @$arrRef ) {
     return $arrRef->[0];
   } else {
-    warning("Please insert meta_key 'genebuild.version' " .
+    warning("Please insert meta_key 'genebuild.start_date' " .
             "in meta table at core db.\n");
   }
 }
