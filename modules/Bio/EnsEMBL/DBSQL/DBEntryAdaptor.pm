@@ -83,7 +83,7 @@ sub fetch_by_dbID {
             exDB.type,
             exDB.secondary_db_name,
             exDB.secondary_db_table,
-            exDB.description
+            xref.description
     FROM    (xref, external_db exDB)
     LEFT JOIN external_synonym es ON
             es.xref_id = xref.xref_id
@@ -189,7 +189,7 @@ sub fetch_by_db_accession {
             exDB.type,
             exDB.secondary_db_name,
             exDB.secondary_db_table,
-            exDB.description
+            xref.description
     FROM    (xref, external_db exDB)
     LEFT JOIN external_synonym es ON
             es.xref_id = xref.xref_id
@@ -359,6 +359,7 @@ sub store {
                       $exObj->dbname(), $exObj->release() ) );
     }
   } else {
+
     my $sth = $self->prepare( "
      SELECT external_db_id
        FROM external_db
@@ -846,7 +847,7 @@ sub _fetch_by_object_type {
            idt.cigar_line, idt.score, idt.evalue, idt.analysis_id,
            gx.linkage_type,
            xref.info_type, xref.info_text, exDB.type, gx.source_xref_id,
-           oxr.linkage_annotation, exDB.description
+           oxr.linkage_annotation, xref.description
     FROM   (xref xref, external_db exDB, object_xref oxr)
     LEFT JOIN external_synonym es on es.xref_id = xref.xref_id 
     LEFT JOIN identity_xref idt on idt.object_xref_id = oxr.object_xref_id
@@ -1354,7 +1355,7 @@ sub fetch_all_by_description {
            exDB.dbprimary_acc_linkable, exDB.display_label_linkable, exDB.priority,
            exDB.db_name, exDB.db_display_name, exDB.db_release, es.synonym,
            xref.info_type, xref.info_text, exDB.type, exDB.secondary_db_name,
-           exDB.secondary_db_table, exDB.description
+           exDB.secondary_db_table, xref.description
     FROM   (xref, external_db exDB)
     LEFT JOIN external_synonym es on es.xref_id = xref.xref_id
     WHERE  xref.description like ?
@@ -1384,7 +1385,7 @@ sub fetch_all_by_description {
            $release,             $synonym,
            $info_type,           $info_text,
            $type,                $secondary_db_name,
-           $secondary_db_table,  $ex_description
+           $secondary_db_table,  $description
       ) = @$arrayref;
 
       my $exDB =
@@ -1405,7 +1406,7 @@ sub fetch_all_by_description {
                            -type                => $type,
                            -secondary_db_name   => $secondary_db_name,
                            -secondary_db_table  => $secondary_db_table,
-                           -description         => $ex_description
+                           -description         => $description
         );
 
       if ($synonym) { $exDB->add_synonym($synonym) }
@@ -1446,7 +1447,7 @@ sub fetch_all_by_source {
            exDB.dbprimary_acc_linkable, exDB.display_label_linkable, exDB.priority,
            exDB.db_name, exDB.db_display_name, exDB.db_release, es.synonym,
            xref.info_type, xref.info_text, exDB.type, exDB.secondary_db_name,
-           exDB.secondary_db_table, exDB.description
+           exDB.secondary_db_table, xref.description
     FROM   (xref, external_db exDB)
     LEFT JOIN external_synonym es on es.xref_id = xref.xref_id
     WHERE  exDB.db_name like ?
