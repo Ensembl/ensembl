@@ -17,6 +17,9 @@
 #Remove median & get_date and implement EFGUtils when migrating to eFG
 #Add unannotated UTR clipping dependant on nearest neighbour
 #Extend UTRs to default length is they are less than defaults, so long as they don't overlap neighbour, then use annotated if present or clip to neighbour start/end if not, also accounting for default UTRs in the neighbour.
+#Fix extension to only extend if there are no UTRs!!!
+#Implement incremental update from list of stable IDs. Consider unmapped probe changes etc...
+#parallelise by probeset chunks, can't do this by chromosome slices as we need to know genomewide counts for a given probeset
 
 use strict;
 
@@ -67,6 +70,7 @@ my %utr_defaults = (
 my $unannotated_utr_length = 2000;
 my $max_transcripts_per_probeset = 100;
 my $mapping_threshold = 0.5;
+my $sense_interrogation = 0;
 
 GetOptions(
 		   'transcript_host=s'      => \$transcript_host,
@@ -96,8 +100,9 @@ GetOptions(
 		   'force_delete'           => \$force_delete,
 		   'no_triage'              => \$no_triage,
 		   'health_check'           => \$health_check,
-		   'slice=s'                => \$test_slice,
+		   'slice=s'                => \$test_slice,#Only for testing purposes!
 		   'transcript=s'           => \$transcript_sid,
+		   'sense_interrogation'    => \$sense_interrogation,
 		   #add a reduced log to minimize memory usage?
            'help'                   => sub { usage(); exit(0); }
 		  );
@@ -106,7 +111,8 @@ GetOptions(
 #change this to just @ARGV?
 @arrays = split(/,/,join(',',@arrays));#?
 
-print 'Running on probe2trascript.pl on: '.`hostname`."\n";
+
+print 'Running on probe2transcript.pl on: '.`hostname`."\n";
 
 #we need to do a check here on utr_length and unannotated_utr_length
 
@@ -333,7 +339,7 @@ my %unannotated_utrs = (
 
 
 ### Not getting any xrefs? Try checking the meta_coord table if you have migrated the oligo_features
-
+#Need to healtcheck this!!
 
 foreach my $transcript (@transcripts) {
 
@@ -364,10 +370,10 @@ foreach my $transcript (@transcripts) {
 	  $utr = $transcript->$method;
 	  
 	  if(defined $utr){# && $utr->length != 0){
-		#$utr_lengths{$flank} = $utr->length;
+		$utr_lengths{$flank} = $utr->length;
 		#Set extend to 0 if there are already included in the transcript
 		#need to rename this hash
-		$utr_lengths{$flank} = 0;
+		#$utr_lengths{$flank} = 0;
 	  }
 	  else{
 		$unannotated_utrs{$flank}++;
@@ -443,28 +449,38 @@ foreach my $transcript (@transcripts) {
 	#So if we get two we know we have >1 mapping
 	#So we need to test again.
 
-	if ($transcript->seq_region_strand() != $feature->seq_region_strand()){
-	  print LOG "Unmapped anti-sense ".$transcript->stable_id."\t${probeset}\tdbID:${dbID}\n";
+	if($sense_interrogation){
+
+	  if($transcript->seq_region_strand = $feature->seq_region_strand){
+		print LOG "Unmapped sense ".$transcript->stable_id."\t${probeset}\tdbID:${dbID}\n";
+		next;
+	  }
+
+	}else{
+
+	  if ($transcript->seq_region_strand() != $feature->seq_region_strand()){
+		print LOG "Unmapped anti-sense ".$transcript->stable_id."\t${probeset}\tdbID:${dbID}\n";
 	  
-	  if (! $no_triage) {
+		#if (! $no_triage) {
 		
 		#Use of internal dbID in identifier is dodge
 		#can we use the actual probe names here?
-		$um_obj = new Bio::EnsEMBL::UnmappedObject(
-												   -type       => 'probe2transcript',
-												   -analysis   => $analysis,
-												   -identifier => "${probeset}:${dbID}",
-												   -summary    => "Unmapped anti-sense",
-												   -full_desc  => "Probe mapped to opposite strand of transcript",
-												   -ensembl_object_type => 'Transcript',
-												   -ensembl_id => $transcript->dbID()
-												  );
+		#  $um_obj = new Bio::EnsEMBL::UnmappedObject(
+		#											 -type       => 'probe2transcript',
+		#											 -analysis   => $analysis,
+		#											 -identifier => "${probeset}:${dbID}",
+		#											 -summary    => "Unmapped anti-sense",
+		#											 -full_desc  => "Probe mapped to opposite strand of transcript",
+		#											 -ensembl_object_type => 'Transcript',
+		#											 -ensembl_id => $transcript->dbID()
+		#											);
+		#  
+		#  &cache_and_load_unmapped_objects($um_obj);
 		
-		&cache_and_load_unmapped_objects($um_obj);
+		
 
+		next;
 	  }
-
-	  next;
 	}
 
 
@@ -494,6 +510,7 @@ foreach my $transcript (@transcripts) {
 		($three_utr_overlap >= $min_overlap) ||
 		($five_utr_overlap >= $min_overlap)){
 	  $transcript_probeset_count{$transcript_key}{$dbID}++;
+	  #we inc here but we never use the count, just record the fact that is has mapped
 	}
 	else { # must be intronic
 	  #This is for an individual probe!
@@ -561,6 +578,11 @@ foreach my $key (keys %transcript_probeset_count) {
     if ($hits / $probeset_size >= $mapping_threshold) {
 	  #This is inc'ing an undef?
 	  $transcripts_per_probeset{$probeset}++;
+
+
+	  ###This is why we can't run on chr slices
+	  #as we need to know how many transcripts have mapped to a given probeset
+	  #We need to chunk on probesets to parallelise
 
 
 	  if ($transcripts_per_probeset{$probeset} <= $max_transcripts_per_probeset) {
@@ -871,14 +893,31 @@ sub add_xref {
 sub delete_existing_xrefs {
   my $xref_db = shift;
 
+  my $sql;
+
   if(@arrays && ! $force_delete){
 	die("You are attempting to delete all unampped objects even though you are only running a subsets of arrays.\n".
 		  "This may result in losing unmapped information for other arrays.  If you really want to do this you must specify -force_delete")
   }
 
   #This deletes all unmapped objects, even if we're only (re-)running one array!
+  #my 
+
   print "Deleting ALL unmapped records for probe2transcript\n";
-  my $sql = 'DELETE a, ur, uo FROM analysis a, unmapped_reason ur, unmapped_object uo WHERE a.logic_name ="probe2transcript" AND a.analysis_id=uo.analysis_id AND uo.unmapped_reason_id=ur.unmapped_reason_id';
+
+  #Can this be speeded up by deleting separately?
+  #Can't split ur and uo as would orphan ur records from analysis_id.
+ 
+  #We can now do this for arrays as we store the identifier either as 'op.probeset' or 'op.probeset:op.oligo_probe_id'
+  if(@arrays){
+	#Don't delete ur as this may be used for other probe2transcript stuff
+	$sql = 'DELETE uo FROM analysis a, unmapped_reason ur, unmapped_object uo, oligo_array oa, oligo_probe op WHERE a.logic_name ="probe2transcript" AND a.analysis_id=uo.analysis_id AND uo.unmapped_reason_id=ur.unmapped_reason_id and oa.name in ('.join('", "', values %array_name_cache).') and oa.oligo_array_id=op.oligo_array_id and (uo.identifier=op.probeset OR uo.indentifier=concat(op.probeset, ":", op.oligo_probe_id)'; 
+
+  }
+  else{
+	$sql = 'DELETE ur, uo FROM analysis a, unmapped_reason ur, unmapped_object uo WHERE a.logic_name ="probe2transcript" AND a.analysis_id=uo.analysis_id AND uo.unmapped_reason_id=ur.unmapped_reason_id';
+
+}
   $xref_db->dbc->do($sql);
 	
 
