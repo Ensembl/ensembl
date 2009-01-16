@@ -58,16 +58,25 @@ my @indexes = split ',', $ind;
 warn Dumper \@indexes;
 
 my $dbHash = get_databases();
-warn Dumper $dbHash;
+#warn Dumper $dbHash;
 
 #warn Dumper $dbcHash;
 
 foreach my $species ( sort keys %$dbHash ) {
+    my $conf = $dbHash->{$species};
     foreach my $index (@indexes) {
         my $function = "dump$index";
         no strict "refs";
-        &$function( $species, $dbHash->{$species} );
+
+	$species =~ s/_/ /g;
+        &$function( ucfirst($species), $conf );
+        print $function,"\n";
+
+
     }
+
+
+
 }
 
 print_time($global_start_time);
@@ -230,83 +239,466 @@ sub format_datetime {
     return sprintf "$d-$ms-$y %02d:%02d:%02d", $hh, $mm, $ss;
 }
 
+sub dumpFamily {
+   my ( $dbspecies, $conf ) = @_;
 
-sub dumpSNP {
-    my ( $dbspecies, $conf ) = @_;
+    my $FAMDB = $conf->{'compara'}->{$release} or next;
 
-    #    warn Dumper $conf;
+    my $db = 'core';
+    my $dbname = $conf->{$db}->{$release} or next;
 
-    warn "\n", '*' x 20, "\n";
-
-
-    my $dbname = $conf->{variation}->{$release} or next;
-    my $file = "$dir/SNP_$dbname.xml";
+    my $file = "$dir/Family_$dbname.xml";
     $file .= ".gz" unless $nogzip;
     my $start_time = time;
-    warn "Dumping $dbname to $file ... ", format_datetime($start_time),
-      "\n";
+    warn "Dumping $dbname to $file ... ", format_datetime($start_time), "\n";
+
     unless ($nogzip) {
-	$fh = new IO::Zlib;
-	$fh->open( "$file", "wb9" )
-	  || die "Can't open compressed stream to $file: $!";
+        $fh = new IO::Zlib;
+        $fh->open( "$file", "wb9" )
+          || die("Can't open compressed stream to $file: $!");
     }
     else {
-	open( FILE, ">$file" ) || die "Can't open $file: $!";
+        open( FILE, ">$file" ) || die "Can't open $file: $!";
     }
-
-    header( $dbname, $dbspecies, $dbname );
+    header( $dbname, $dbspecies, $db );
     my $dsn = "DBI:mysql:host=$host";
     $dsn .= ";port=$port" if ($port);
     my $ecount;
-    my $dbh = DBI->connect( "$dsn:$dbname", $user, $pass )
-      or die "DBI::error";
-    my $source_hash = $dbh->selectall_hashref(qq{SELECT source_id, name FROM source} ,[qw(source_id)]);
-    my $sth = $dbh->prepare("select vf.variation_name, vf.source_id, group_concat(vs.source_id, ' ',vs.name), vf.variation_id 
-    from variation_feature vf 
-    left join variation_synonym vs on vf.variation_id = vs.variation_id 
-   group by vf.variation_id");
+    my $dbh = DBI->connect( "$dsn:$dbname", $user, $pass ) or die "DBI::error";
 
-    $sth->execute() or die "Error:", $DBI::errstr;
 
-    while (my $rowcache = $sth->fetchall_arrayref(undef, 10_000)) {
 
-	my $xml;
-	while (my $row = shift(@{$rowcache})) {
-	    my $name = $row->[0];
-	    my @synonyms = split /,/, @$row->[2];
-	    my $snp_source = $source_hash->{$row->[1]}->{name};
+    my $CORE  = $conf->{'core'}->{$release};
+    my $t_sth = $dbh->prepare( qq{select meta_value from $CORE.meta where meta_key='species.taxonomy_id'});
+    $t_sth->execute;
+    my $taxon_id = ( $t_sth->fetchrow );
 
-	    my $description =
-	      "A $snp_source SNP with "
-		. scalar @synonyms
-		  . ' synonym'
-		    . (  @synonyms > 1 | @synonyms < 1 ? 's '   : ' ' )
-		      . ( @synonyms > 0 ? "( " . (join "",  map{  map{  $source_hash->{$_->[0]}->{name} , ':', $_->[1] , ' ' } [split]  } @synonyms ) . ")" : '' );
+    return unless $taxon_id;
 
-	    $xml .=   qq{<entry id="$name">
-<name>$name</name>
-  <description>$description</description>
-  <additional_fields>
-    <field name="species">$dbspecies</field>
-    <field name="featuretype">SNP</field>};
-# 	    foreach my $syn(@synonyms) {
-# 		$xml .= qq{
-#     <field name="synonym">$syn</field>};
-# 	    }
-$xml .= qq{
-  </additional_fields>
-</entry>};
-	}
-	p($xml);
+    $dbh->do("SET SESSION group_concat_max_len = 100000");
+    my $sth = $dbh->prepare(
+qq{ select f.family_id as id, f.stable_id as fid , f.description, group_concat(m.stable_id, unhex('1D') ,m.source_name) as IDS 
+from $FAMDB.family as f, $FAMDB.family_member as fm, $FAMDB.member as m 
+ where fm.family_id = f.family_id and fm.member_id = m.member_id and m.taxon_id = $taxon_id  group by fid}
+    );
+    $sth->execute;
+    foreach my $xml_data ( @{ $sth->fetchall_arrayref( {} ) } ) {
+
+        my @bits = split /,/, delete $xml_data->{IDS};
+        map { push @{ $xml_data->{IDS} }, [ split /\x1D/ ] } @bits;
+        $xml_data->{species} = $dbspecies;
+        p familyLineXML($xml_data);
+
     }
 
-    footer($sth->rows);
-    print_time($start_time);
+    footer( $sth->rows );
+
+}
+
+sub familyLineXML {
+    my ( $xml_data ) = @_;
+    
+    my $members = scalar @{ $xml_data->{IDS} };
+
+    my $xml = qq{ 
+<entry id="$xml_data->{id}"> 
+<name>$xml_data->{fid}</name> 
+   <description>[$xml_data->{description}]</description>
+   <cross_references>} .
+      (
+        join "",
+        (
+            map {
+                qq{
+     <ref dbname="$1" dbkey="$_->[0]"/>} if $_->[1] =~ /(Uniprot|ENSEMBL).*/
+              } @{ $xml_data->{IDS} }
+        )
+      )
+    .
+      qq{
+  </cross_references>
+  <additional_fields>
+     <field name="familymembers">$members</field>
+     <field name="species">$xml_data->{species}</field>
+    <field name="featuretype">Ensembl_protein_family</field>
+  </additional_fields>
+</entry>};
+    return $xml;
+
+}
+
+sub dumpGene {
+warn "in dumpGene";
+    my ( $dbspecies, $conf ) = @_;
+
+     foreach my $DB ( 'core', 'otherfeatures', 'vega' ) {
+#      foreach my $DB ( 'core' ) {
+        my $counter = make_counter(0);
+    my $SNPDB =  eval {$conf->{variation}->{$release}};
+        my $DBNAME = $conf->{$DB}->{$release}
+          or warn "$dbspecies $DB $release: no database not found";
+        next unless $DBNAME;
+        print "START... $DB";
+        my $file = "$dir/Gene_$DBNAME.xml";
+        $file .= ".gz" unless $nogzip;
+        my $start_time = time;
+
+        unless ($nogzip) {
+            $fh = new IO::Zlib;
+            $fh->open( "$file", "wb9" )
+              || die("Can't open compressed stream to $file: $!");
+        }
+        else {
+            open( FILE, ">$file" ) || die "Can't open $file: $!";
+        }
+        header( $DBNAME, $dbspecies, $DB );
+        my $dsn = "DBI:mysql:host=$host";
+        $dsn .= ";port=$port" if ($port);
+
+        warn "Dumping $DBNAME to $file ... ", format_datetime($start_time),
+          "\n";
+        my $extra = $DB ne 'core' ? ";db=$DB" : '';
+
+        my $dbh = DBI->connect( "$dsn:$DBNAME", $user, $pass )
+          or die "DBI::error";
+
+	# SNP query
+	my $snp_sth = eval {$dbh->prepare("select distinct(vf.variation_name) from $SNPDB.transcript_variation as tv, $SNPDB.variation_feature as vf where vf.variation_feature_id = tv.variation_feature_id and tv.transcript_id in(?)");};
+
+        my %xrefs      = ();
+        my %xrefs_desc = ();
+        my %disp_xrefs = ();
+        foreach my $type (qw(Gene Transcript Translation)) {
+            my $T = $dbh->selectall_arrayref(
+                "select ox.ensembl_id,
+                x.display_label, x.dbprimary_acc, ed.db_name, es.synonym, x.description
+           from ($DBNAME.object_xref as ox, $DBNAME.xref as x, $DBNAME.external_db as ed) left join $DBNAME.external_synonym as es on es.xref_id = x.xref_id
+          where ox.ensembl_object_type = '$type' and ox.xref_id = x.xref_id and x.external_db_id = ed.external_db_id"
+            );
+            foreach (@$T) {
+
+                $xrefs{$type}{ $_->[0] }{ $_->[3] }{ $_->[1] } = 1 if $_->[1];
+                $xrefs{$type}{ $_->[0] }{ $_->[3] }{ $_->[2] } = 1 if $_->[2];
+                $xrefs{$type}{ $_->[0] }{ $_->[3] }{ $_->[4] } = 1 if $_->[4];
+                $xrefs_desc{$type}{ $_->[0] }{ $_->[5] }       = 1 if $_->[5];
+            }
+
+            warn "XREF $type query...";
+        }
+
+        my %exons = ();
+        my $T     = $dbh->selectall_arrayref(
+            "select distinct t.gene_id, esi.stable_id
+         from transcript as t, exon_transcript as et, exon_stable_id as esi
+        where t.transcript_id = et.transcript_id and et.exon_id = esi.exon_id"
+        );
+        foreach (@$T) {
+            $exons{ $_->[0] }{ $_->[1] } = 1;
+        }
+        my $gene_info = $dbh->selectall_arrayref( "
+        select gsi.gene_id, tsi.transcript_id, trsi.translation_id,
+             gsi.stable_id as gsid, tsi.stable_id as tsid, trsi.stable_id as trsid,
+             g.description, ed.db_name, x.dbprimary_acc,x.display_label, ad.display_label, ad.description, g.source, g.status, g.biotype
+        from (((( $DBNAME.gene_stable_id as gsi, $DBNAME.gene as g,
+             $DBNAME.transcript_stable_id as tsi,
+             $DBNAME.analysis_description as ad,
+             $DBNAME.transcript as t) left join
+             $DBNAME.translation as tr on t.transcript_id = tr.transcript_id) left join
+             $DBNAME.translation_stable_id as trsi on tr.translation_id = trsi.translation_id) left join
+             $DBNAME.xref as x on g.display_xref_id = x.xref_id) left join
+             $DBNAME.external_db as ed on ed.external_db_id = x.external_db_id
+       where t.gene_id = gsi.gene_id and t.transcript_id = tsi.transcript_id and t.gene_id = g.gene_id 
+             and g.analysis_id = ad.analysis_id
+       order by gsi.stable_id, tsi.stable_id;
+    " );
+        warn "Gene query...";
+
+        my %hash = map { $_->[0] } @$gene_info;
+        my $ecount = scalar keys %hash, "\n\n";
+
+        my %old;
+
+        foreach my $row (@$gene_info) {
+
+            # g = gene_id, t = transcript_id , tr = translation_id ,
+            # gs = gene_stable_id, ts = transcript_stable_id , trs =
+            # translation_stable_id, d = description,
+            # ddb= external_db_dispay_name,
+            # dpa = xref_primary_accession,
+            # dn = xref display_label,
+            # a = analysis_description
+            # display label,
+            # ad = analysis description descripion,
+            #s = gene.source, st = gene.status, bt = gene.biotype
+
+            my (
+                $gene_id,                            $transcript_id,
+                $translation_id,                     $gene_stable_id,
+                $transcript_stable_id,               $translation_stable_id,
+                $gene_description,                   $extdb_db_display_name,
+                $xref_primary_acc,                   $xref_display_label,
+                $analysis_description_display_label, $analysis_description,
+                $gene_source,                        $gene_status,
+                $gene_biotype
+            ) = @$row;
+            if ( $old{'gene_id'} != $gene_id ) {
+                if ( $old{'gene_id'} ) {
+
+		    if ($SNPDB && $DB eq 'core') {
+			my @transcript_ids = keys %{$old{transcript_ids}};
+			$snp_sth->execute("@transcript_ids");
+			my $snps = $snp_sth->fetchall_arrayref; 
+		    $old{snps} = $snps;   
+		    }
+
+
+# 		    my @transcript_stable_ids = keys $old{'transcript_ids'};
+# 		    $snp_sth->execute(@transcript_stable_ids);
+# 		    my $snps = $snp_sth->fetchall_arrayref; 
+# 		    die Dumper($snps);
+                    p geneLineXML( $dbspecies, \%old, $counter );
+
+                }
+                %old = (
+                    'gene_id'                => $gene_id,
+                    'gene_stable_id'         => $gene_stable_id,
+                    'description'            => $gene_description,
+                    'translation_stable_ids' => {
+                        $translation_stable_id ? ( $translation_stable_id => 1 )
+                        : ()
+                    },
+                    'transcript_stable_ids' => {
+                        $transcript_stable_id ? ( $transcript_stable_id => 1 )
+                        : ()
+                    },
+                    'transcript_ids' => {
+                        $transcript_id ? ( $transcript_id => 1 )
+                        : ()
+                    },
+                    'exons'                => {},
+                    'external_identifiers' => {},
+                    'alt'                  => $xref_display_label
+                    ? "($extdb_db_display_name: $xref_display_label)"
+                    : "(novel gene)",
+                    'ana_desc_label' => $analysis_description_display_label,
+                    'ad'             => $analysis_description,
+                    'source'         => ucfirst($gene_source),
+                    'st'             => $gene_status,
+                    'biotype'        => $gene_biotype
+                );
+                $old{'source'} =~ s/base/Base/;
+                $old{'exons'} = $exons{$gene_id};
+                foreach my $K ( keys %{ $exons{$gene_id} } ) {
+                    $old{'i'}{$K} = 1;
+                }
+
+                foreach my $db ( keys %{ $xrefs{'Gene'}{$gene_id} || {} } ) {
+                    foreach my $K ( keys %{ $xrefs{'Gene'}{$gene_id}{$db} } ) {
+                        $old{'external_identifiers'}{$db}{$K} = 1;
+
+                    }
+                }
+                foreach my $db (
+                    keys %{ $xrefs{'Transcript'}{$transcript_id} || {} } )
+                {
+                    foreach my $K (
+                        keys %{ $xrefs{'Transcript'}{$transcript_id}{$db} } )
+                    {
+                        $old{'external_identifiers'}{$db}{$K} = 1;
+
+                    }
+                }
+                foreach my $db (
+                    keys %{ $xrefs{'Translation'}{$translation_id} || {} } )
+                {
+                    foreach my $K (
+                        keys %{ $xrefs{'Translation'}{$translation_id}{$db} } )
+                    {
+                        $old{'external_identifiers'}{$db}{$K} = 1;
+                    }
+                }
+
+            }
+            else {
+                $old{'transcript_stable_ids'}{$transcript_stable_id}   = 1;
+                $old{'transcript_ids'}{$transcript_id} = 1;
+                $old{'translation_stable_ids'}{$translation_stable_id} = 1;
+
+                foreach my $db (
+                    keys %{ $xrefs{'Transcript'}{$transcript_id} || {} } )
+                {
+                    foreach my $K (
+                        keys %{ $xrefs{'Transcript'}{$transcript_id}{$db} } )
+                    {
+                        $old{'external_identifiers'}{$db}{$K} = 1;
+                    }
+                }
+                foreach my $db (
+                    keys %{ $xrefs{'Translation'}{$translation_id} || {} } )
+                {
+                    foreach my $K (
+                        keys %{ $xrefs{'Translation'}{$translation_id}{$db} } )
+                    {
+                        $old{'external_identifiers'}{$db}{$K} = 1;
+
+                    }
+                }
+            }
+        }
+
+
+# 	my @transcript_stable_ids = keys %$old{'transcript_ids'};
+# 		    $snp_sth->execute(@transcript_ids);
+# 		    my $snps = $snp_sth->fetchall_arrayref; 
+# 		    die Dumper($snps);
+                    
+
+
+# 	$snp_sth->execute(keys %$old{transcript_ids});
+# 	my $snps = $snp_sth->fetchall_arrayref($snp_sth);
+	if ($SNPDB && $DB eq 'core') {
+	    my @transcript_ids = keys %{$old{transcript_ids}};
+	    $snp_sth->execute("@transcript_ids");
+	    my $snps = $snp_sth->fetchall_arrayref; 
+	    $old{snps} = $snps;
+	}
+
+	p geneLineXML( $dbspecies, \%old, $counter );
+
+        footer( $counter->() );
+        warn "FINISHED...... genes $DB ...";
+
+    }
+
+}
+
+sub geneLineXML {
+    my ( $species, $xml_data, $counter ) = @_;
+
+    return warn "gene id not set" if $xml_data->{'gene_stable_id'} eq '';
+
+    my $gene_id     = $xml_data->{'gene_stable_id'};
+    my $altid       = $xml_data->{'alt'} or die "altid not set";
+    my $transcripts = $xml_data->{'transcript_stable_ids'}
+      or die "transcripts not set";
+
+    my $snps = $xml_data->{'snps'};
+
+    my $peptides = $xml_data->{'translation_stable_ids'}
+      or die "peptides not set";
+    my $exons = $xml_data->{'exons'} or die "exons not set";
+    my $external_identifiers = $xml_data->{'external_identifiers'}
+      or die "external_identifiers not set";
+    my $description = $xml_data->{'description'};
+    my $type        = $xml_data->{'source'} . ' ' . $xml_data->{'biotype'}
+      or die "problem setting type";
+
+    my $exon_count       = scalar keys %$exons;
+    my $transcript_count = scalar keys %$transcripts;
+    $description =~ s/</&lt;/g;
+    $description =~ s/>/&gt;/g;
+    $description =~ s/'/&apos;/g;
+    $description =~ s/&/&amp;/g;
+
+    $gene_id  =~ s/</&lt;/g;
+    $gene_id  =~ s/>/&gt;/g;
+
+    $altid  =~ s/</&lt;/g;
+    $altid   =~ s/>/&gt;/g;
+
+    my $xml = qq{ 
+ <entry id="$gene_id"> 
+   <name>$gene_id $altid</name>
+    <description>$description</description>};
+
+    my $cross_references = qq{
+       <cross_references>};
+
+    foreach my $ext_db_name ( keys %$external_identifiers ) {
+	if ($ext_db_name =~ /(Uniprot|GO|Interpro|Medline|Sequence_Publications|EMBL)/) { 
+
+	    map { $cross_references .=  qq{
+         <ref dbname="$1" dbkey="$_"/>}; } keys %{ $external_identifiers->{$ext_db_name} } 
+
+     } else {
+	 foreach my $key  (keys %{ $external_identifiers->{$ext_db_name} }) {
+	      $key  =~ s/</&lt;/g;
+	      $key   =~ s/>/&gt;/g;
+	      $key   =~ s/&/&amp;/g;
+	      $ext_db_name =~s/^Ens*/ENSEMBL/;
+	      $cross_references .=  qq{
+        <ref dbname="$ext_db_name" dbkey="$key"/>}; 
+	  }
+
+     }
+    }
+
+    $cross_references .= (
+        join "",
+        (
+            map {
+                qq{
+      <ref dbname="ensemblvariation" dbkey="$_->[0]"/>}
+              } @$snps
+        )
+      );
+
+    $cross_references .= qq{</cross_references>};
+
+    my $additional_fields .= qq{
+    <additional_fields>
+      <field name="species">$species</field>
+      <field name="featuretype">Gene</field>
+      <field name="source">$type</field>
+      <field name="transcript_count">$transcript_count</field> }
+
+      . (
+        join "",
+        (
+            map {
+                qq{
+      <field name="transcript">$_</field>}
+              } keys %$transcripts
+        )
+      )
+
+      . qq{  <field name="exon_count">$exon_count</field> }
+
+      . (
+        join "",
+        (
+            map {
+                qq{
+      <field name="exon">$_</field>}
+              } keys %$exons
+        )
+      )
+      . (
+        join "",
+        (
+            map {
+                qq{
+      <field name="peptide">$_</field>}
+              } keys %$peptides
+        )
+      )
+      . qq{
+   </additional_fields>};
+
+
+
+    $counter->();
+    return $xml . $cross_references . $additional_fields . '</entry>';
 
 }
 
 
+
+
+
+
 sub dumpGenomicAlignment {
+warn "in dump Genomic";
     my ( $dbspecies, $conf ) = @_;
 
     #    warn Dumper $conf;
@@ -349,17 +741,18 @@ sub dumpGenomicAlignment {
 
             #	    $source .= ";db=$db" unless $db eq 'core';\
 
-            my $type = $tables{$table}[1];
+
 
             # Due to the sheer number of features - generating this
             # dump causes temp table to be written on the mysqld
-            # filesys. /tmp space can (and has) be easily filled.
+            # filesys. /tmp space can be easily filled.
             # Have split the feature fetching to happen by an
             # analysis_id at a time.  The changes below gave a x3
-            # speed up on XML dumping as compared to fetching all at
-            # features in one query once.
+            # speed up on XML dumping as compared to fetching all
+            # features in one query at once.
 
             # make a lookup for the analysis display labels.
+            my $type = $tables{$table}[1];
             my $logic_name_lookup = $dbh->selectall_hashref(
                 "select a.analysis_id, a.logic_name
                                                     from $DB_NAME.analysis as a
@@ -411,19 +804,18 @@ sub dumpGenomicAlignment {
 
                     my $xml = qq{
   <entry id="$hid">
-    <name>$type:$adesc:$hid</name>
-    <description>$adesc $hid hits the genome in $count locations.</description>
     <additional_fields>
         <field name="species">$dbspecies</field>
-        <field name="analysis">$adesc</field>
         <field name="featuretype">$source</field>
         <field name="db">$db</field>
+        <field name="genome_hits">$count</field>
+        <field name="adesc">$adesc</field>
     </additional_fields>
   </entry>};
                     p($xml);
-
+		    
                 }
-
+	      
                 $ecount += $sth->rows;
 
             }
@@ -434,7 +826,169 @@ sub dumpGenomicAlignment {
     }
 }
 
+
+sub dumpMarker {
+    warn "in dump MArker";
+    my ( $dbspecies, $conf ) = @_;
+
+    #    my $xml_data;
+    #   $xml_data->{species} = $dbspecies;
+
+    my $db     = 'core';
+    my $dbname = $conf->{$db}->{$release} or next;
+    my $file   = "$dir/Marker_$dbname.xml";
+    $file .= ".gz" unless $nogzip;
+    my $start_time = time;
+    warn "Dumping $dbname to $file ... ", format_datetime($start_time), "\n";
+
+    unless ($nogzip) {
+        $fh = new IO::Zlib;
+        $fh->open( "$file", "wb9" )
+          || die("can't open compressed stream to $file: $!");
+    }
+    else {
+        open( file, ">$file" ) || die "can't open $file: $!";
+    }
+    header( $dbname, $dbspecies, $db );
+    my $dsn = "dbi:mysql:host=$host";
+    $dsn .= ";port=$port" if ($port);
+    my $ecount;
+    my $dbh = DBI->connect( "$dsn:$dbname", $user, $pass ) or die "DBI::error";
+
+#   my $sth = $dbh->prepare(q{
+#   SELECT @rownum := @rownum+1 AS rownum,  ms2.name as marker, ms1.name
+#     from (select @rownum := 0) r, (marker_synonym as ms1, marker as m) left join
+#          marker_synonym as ms2 on ms2.marker_synonym_id = m.display_marker_synonym_id
+#   where ms1.marker_id = m.marker_id
+#  order by m.marker_id}
+#  );
+#  $sth->execute( );
+    my $sth = $dbh->prepare(
+        q{ SELECT  ms2.name as marker, ms1.name
+       from  (marker_synonym as ms1, marker as m) left join
+            marker_synonym as ms2 on ms2.marker_synonym_id = m.display_marker_synonym_id
+      where ms1.marker_id = m.marker_id
+      order by m.marker_id}
+    );
+
+    my $data = $dbh->selectall_hashref( $sth, [ 'marker', 'name' ] );
+    foreach my $marker ( keys %$data ) {
+        p markerXML( $marker, $data, $dbspecies );
+    }
+
+    footer( scalar keys(%$data) );
+
+}
+
+sub markerXML {
+    my ( $marker, $xml_data, $species ) = @_;
+
+    my $xml;
+
+    my @keys = keys %{ $xml_data->{$marker} };
+    my $desc =
+        'A marker with '
+      . scalar @keys
+      . ' synonym'
+      . ( scalar @keys > 1 ? 's ' : ' ' ) . '('
+      . join( " ", @keys ) . ')';
+
+
+    $desc =~ s/</&lt;/g;
+    $desc =~ s/>/&gt;/g;
+
+    $xml = qq{ 
+<entry id="$marker">   
+   <additional_fields>};
+
+    foreach (@keys) {
+     s/</&lt;/g;
+     s/>/&gt;/g;
+
+        $xml .= qq{
+      <field name="synonym">$_</field>}
+
+    }
+    $xml .= qq{
+     <field name="species">$species</field>
+    <field name="featuretype">Marker</field>
+  </additional_fields>
+</entry>};
+
+    return $xml;
+
+}
+
+
+
+sub dumpOligoProbe {
+    warn "in dump Oligo";
+    my ( $dbspecies, $conf ) = @_;
+
+    my $db     = 'core';
+    my $dbname = $conf->{$db}->{$release} or next;
+    my $file   = "$dir/OligoProbe_$dbname.xml";
+    $file .= ".gz" unless $nogzip;
+    my $start_time = time;
+    warn "Dumping $dbname to $file ... ", format_datetime($start_time), "\n";
+
+    unless ($nogzip) {
+        $fh = new IO::Zlib;
+        $fh->open( "$file", "wb9" )
+          || die("Can't open compressed stream to $file: $!");
+    }
+    else {
+        open( FILE, ">$file" ) || die "Can't open $file: $!";
+    }
+    header( $dbname, $dbspecies, $db );
+    my $dsn = "DBI:mysql:host=$host";
+    $dsn .= ";port=$port" if ($port);
+    my $ecount;
+    my $dbh = DBI->connect( "$dsn:$dbname", $user, $pass ) or die "DBI::error";
+
+    my $sth = $dbh->prepare(
+        "select p.probeset, count(*) as hits, a.type
+       from oligo_probe as p, oligo_feature as f, oligo_array as a
+      where p.oligo_probe_id = f.oligo_probe_id and p.oligo_array_id = a.oligo_array_id
+      group by p.probeset"
+    );
+    $sth->execute();
+
+
+    while ( my $rowcache = $sth->fetchall_arrayref( undef, '10_000' ) ) {
+	my $xml;
+        while ( my $data = shift( @{$rowcache} ) ) {
+            $xml .=  OligoProbeXML( $data, $dbspecies );
+
+        }
+            p $xml;
+    }
+
+    footer( $sth->rows );
+
+}
+
+sub OligoProbeXML {
+    my ( $xml_data, $dbspecies ) = @_;
+
+#     my $desc =qq{$xml_data->[0], $xml_data->[2] oligo probeset $xml_data->[0] hits the genome in $xml_data->[1] locations.};
+
+    return qq{ 
+<entry id="$xml_data->[0]"> 
+   <additional_fields>
+     <field name="type">$xml_data->[2]</field>
+     <field name="species">$dbspecies</field>
+     <field name="featuretype">OligoProbe</field>
+     <field name="genome_hits">$xml_data->[1]</field>
+   </additional_fields>
+</entry>};
+
+}
+
+
 sub dumpQTL {
+    warn "in dumpQTL";
+
     my ( $dbspecies, $conf ) = @_;
 
     # print Dumper($conf);
@@ -579,364 +1133,15 @@ sub QTLXML {
 
 }
 
-sub dumpMarker {
-    my ( $dbspecies, $conf ) = @_;
-
-    #    my $xml_data;
-    #   $xml_data->{species} = $dbspecies;
-
-    my $db     = 'core';
-    my $dbname = $conf->{$db}->{$release} or next;
-    my $file   = "$dir/Marker_$dbname.xml";
-    $file .= ".gz" unless $nogzip;
-    my $start_time = time;
-    warn "Dumping $dbname to $file ... ", format_datetime($start_time), "\n";
-
-    unless ($nogzip) {
-        $fh = new IO::Zlib;
-        $fh->open( "$file", "wb9" )
-          || die("Can't open compressed stream to $file: $!");
-    }
-    else {
-        open( FILE, ">$file" ) || die "Can't open $file: $!";
-    }
-    header( $dbname, $dbspecies, $db );
-    my $dsn = "DBI:mysql:host=$host";
-    $dsn .= ";port=$port" if ($port);
-    my $ecount;
-    my $dbh = DBI->connect( "$dsn:$dbname", $user, $pass ) or die "DBI::error";
-
-#   my $sth = $dbh->prepare(q{
-#   SELECT @rownum := @rownum+1 AS rownum,  ms2.name as marker, ms1.name
-#     from (select @rownum := 0) r, (marker_synonym as ms1, marker as m) left join
-#          marker_synonym as ms2 on ms2.marker_synonym_id = m.display_marker_synonym_id
-#   where ms1.marker_id = m.marker_id
-#  order by m.marker_id}
-#  );
-#  $sth->execute( );
-    my $sth = $dbh->prepare(
-        q{ SELECT  ms2.name as marker, ms1.name
-       from  (marker_synonym as ms1, marker as m) left join
-            marker_synonym as ms2 on ms2.marker_synonym_id = m.display_marker_synonym_id
-      where ms1.marker_id = m.marker_id
-      order by m.marker_id}
-    );
-
-    my $data = $dbh->selectall_hashref( $sth, [ 'marker', 'name' ] );
-    foreach my $marker ( keys %$data ) {
-        p markerXML( $marker, $data, $dbspecies );
-    }
-
-    footer( scalar keys(%$data) );
-
-}
-
-sub markerXML {
-    my ( $marker, $xml_data, $species ) = @_;
-
-    my $xml;
-
-    my @keys = keys %{ $xml_data->{$marker} };
-    my $desc =
-        'A marker with '
-      . scalar @keys
-      . ' synonym'
-      . ( scalar @keys > 1 ? 's ' : ' ' ) . '('
-      . join( " ", @keys ) . ')';
-
-
-    $desc =~ s/</&lt;/g;
-    $desc =~ s/>/&gt;/g;
-
-    $xml = qq{ 
-<entry id="$marker">   
-  <name>Ensembl Marker: $marker</name>
-   <description>$desc</description>
-   <additional_fields>};
-
-    foreach (@keys) {
-     s/</&lt;/g;
-     s/>/&gt;/g;
-
-        $xml .= qq{
-      <field name="synonym">$_</field>}
-
-    }
-    $xml .= qq{
-     <field name="species">$species</field>
-    <field name="featuretype">Marker</field>
-  </additional_fields>
-</entry>};
-
-    return $xml;
-
-}
-
-sub dumpOligoProbe {
-    my ( $dbspecies, $conf ) = @_;
-
-    my $db     = 'core';
-    my $dbname = $conf->{$db}->{$release} or next;
-    my $file   = "$dir/OligoProbe_$dbname.xml";
-    $file .= ".gz" unless $nogzip;
-    my $start_time = time;
-    warn "Dumping $dbname to $file ... ", format_datetime($start_time), "\n";
-
-    unless ($nogzip) {
-        $fh = new IO::Zlib;
-        $fh->open( "$file", "wb9" )
-          || die("Can't open compressed stream to $file: $!");
-    }
-    else {
-        open( FILE, ">$file" ) || die "Can't open $file: $!";
-    }
-    header( $dbname, $dbspecies, $db );
-    my $dsn = "DBI:mysql:host=$host";
-    $dsn .= ";port=$port" if ($port);
-    my $ecount;
-    my $dbh = DBI->connect( "$dsn:$dbname", $user, $pass ) or die "DBI::error";
-
-    my $sth = $dbh->prepare(
-        "select p.probeset, count(*) as hits, a.type
-       from oligo_probe as p, oligo_feature as f, oligo_array as a
-      where p.oligo_probe_id = f.oligo_probe_id and p.oligo_array_id = a.oligo_array_id
-      group by p.probeset"
-    );
-    $sth->execute();
-
-
-    while ( my $rowcache = $sth->fetchall_arrayref( undef, '10_000' ) ) {
-my $xml;
-        while ( my $data = shift( @{$rowcache} ) ) {
-            $xml .=  OligoProbeXML( $data, $dbspecies );
-
-        }
-            p $xml;
-    }
-
-    footer( $sth->rows );
-
-}
-
-sub OligoProbeXML {
-    my ( $xml_data, $dbspecies ) = @_;
-
-    my $desc =
-qq{$xml_data->[0], $xml_data->[2] oligo probeset $xml_data->[0] hits the genome in $xml_data->[1] locations.};
-
-    return qq{ 
-<entry id="$xml_data->[2]: $xml_data->[0]"> 
-  <name>$xml_data->[0]</name>
-   <description>$desc</description>
-   <additional_fields>
-      <field name="type">$xml_data->[2]</field>
-     <field name="species">$dbspecies</field>
-    <field name="featuretype">OligoProbe</field>
-  </additional_fields>
-</entry>};
-
-}
-
-sub dumpDomain {
-    my ( $dbspecies, $conf ) = @_;
-
-    my $db = 'core';
-    my $dbname = $conf->{$db}->{$release} or next;
-
-    my $file = "$dir/Domain_$dbname.xml";
-    $file .= ".gz" unless $nogzip;
-    my $start_time = time;
-    warn "Dumping $dbname to $file ... ", format_datetime($start_time), "\n";
-
-    unless ($nogzip) {
-        $fh = new IO::Zlib;
-        $fh->open( "$file", "wb9" )
-          || die("Can't open compressed stream to $file: $!");
-    }
-    else {
-        open( FILE, ">$file" ) || die "Can't open $file: $!";
-    }
-    header( $dbname, $dbspecies, $db );
-    my $dsn = "DBI:mysql:host=$host";
-    $dsn .= ";port=$port" if ($port);
-
-    my $dbh = DBI->connect( "$dsn:$dbname", $user, $pass ) or die "DBI::error";
-    my $sth = $dbh->prepare(
-        "select dbprimary_acc, i.id, x.description
-       from xref as x, interpro as i
-      where x.dbprimary_acc = i.interpro_ac
-      order by x.dbprimary_acc"
-    );
-    $sth->execute();
-    my $old_acc     = '';
-    my $IDS         = '';
-    my $description = '';
-    my $counter     = 0;
-    my ( $acc, $id, $desc, $old_desc, $ecount );
-
-    while ( ( $acc, $id, $desc ) = $sth->fetchrow_array() ) {
-        if ( $acc eq $old_acc ) {
-
-            #    $IDS         .= " $id";
-            push @$IDS, $id;
-            $description .= ", $id";
-            $counter++;
-        }
-        else {
-            if ( $old_acc ne '' ) {
-                p domainLineXML(
-                    $dbspecies, $old_acc,     $IDS,
-                    $old_desc,  $description, $counter
-                );
-                $ecount++;
-            }
-
-            $description = $id;
-            $IDS         = undef;
-            $IDS->[0]    = $id;
-            $old_acc     = $acc;
-            $old_desc    = $desc;
-            $counter     = 1;
-        }
-
-    }
-    if ( $old_acc ne '' ) {
-        p domainLineXML( $dbspecies, $old_acc, $IDS, $old_desc, $description,
-            $counter );
-        $ecount++;
-    }
-
-    footer($ecount);
-
-}
-
-sub domainLineXML {
-    my ( $species, $did, $IDS, $desc, $description, $counter ) = @_;
-
-    my $xml = qq{
-<entry id="$did"> 
-  <name>Interpro domain: $did</name>
-   <description>InterPro domain $did [$desc] has $counter associated external database identifiers: $description.</description>
-   <additional_fields>
-      <field name="type">Interpro domain</field>};
-
-    map {
-        $xml .= qq{
-      <field name="external_id">$_</field>}
-    } @$IDS;
-
-    $xml .= qq{
-      <field name="species">$species</field>
-      <field name="featuretype">Domain</field>
-  </additional_fields>
-</entry>};
-    return $xml;
-
-}
-
-sub dumpFamily {
-    my ( $dbspecies, $conf ) = @_;
-
-    my $db = 'core';
-    my $dbname = $conf->{$db}->{$release} or next;
-
-    my $file = "$dir/Family_$dbname.xml";
-    $file .= ".gz" unless $nogzip;
-    my $start_time = time;
-    warn "Dumping $dbname to $file ... ", format_datetime($start_time), "\n";
-
-    unless ($nogzip) {
-        $fh = new IO::Zlib;
-        $fh->open( "$file", "wb9" )
-          || die("Can't open compressed stream to $file: $!");
-    }
-    else {
-        open( FILE, ">$file" ) || die "Can't open $file: $!";
-    }
-    header( $dbname, $dbspecies, $db );
-    my $dsn = "DBI:mysql:host=$host";
-    $dsn .= ";port=$port" if ($port);
-    my $ecount;
-    my $dbh = DBI->connect( "$dsn:$dbname", $user, $pass ) or die "DBI::error";
-
-    my $FAMDB = $conf->{'compara'}->{$release};
-
-    my $CORE  = $conf->{'core'}->{$release};
-    my $t_sth = $dbh->prepare(
-qq{select meta_value from $CORE.meta where meta_key='species.taxonomy_id'}
-    );
-    $t_sth->execute;
-    my $taxon_id = ( $t_sth->fetchrow );
-
-    return unless $taxon_id;
-
-    $dbh->do("SET SESSION group_concat_max_len = 100000");
-    my $sth = $dbh->prepare(
-qq{ select f.stable_id as fid , f.description, group_concat(m.stable_id, unhex('1D') ,m.source_name) as IDS 
-from $FAMDB.family as f, $FAMDB.family_member as fm, $FAMDB.member as m 
- where fm.family_id = f.family_id and fm.member_id = m.member_id and m.taxon_id = $taxon_id  group by fid}
-    );
-    $sth->execute;
-    foreach my $xml_data ( @{ $sth->fetchall_arrayref( {} ) } ) {
-
-        my @bits = split /,/, delete $xml_data->{IDS};
-        map { push @{ $xml_data->{IDS} }, [ split /\x1D/ ] } @bits;
-        $xml_data->{species} = $dbspecies;
-        p familyLineXML($xml_data);
-
-    }
-
-    footer( $sth->rows );
-
-}
-
-sub familyLineXML {
-    my ( $xml_data, $counter ) = @_;
-
-    my $description_line =
-        "Ensembl protein family $xml_data->{fid} "
-      . "[$xml_data->{description}] "
-      . ( join( " ", map { $_->[0] } @{ $xml_data->{IDS} }[ 1 .. 8 ] ) )
-      . ' ...' . " has "
-      . scalar @{ $xml_data->{IDS} }
-      . " members.";
-
-    my $xml = qq{ 
-<entry id="$xml_data->{fid}"> 
-  <name>Ensembl protein family: $xml_data->{fid}</name>
-   <description>$description_line</description>
-   <cross_references>} .
-
-      (
-        join "",
-        (
-            map {
-                qq{
-     <ref dbname="$1" dbkey="$_->[0]"/>} if $_->[1] =~ /(Uniprot|ENSEMBL).*/
-              } @{ $xml_data->{IDS} }
-        )
-      )
-    .
-
-      qq{
-  </cross_references>
-  <additional_fields>
-     <field name="species">$xml_data->{species}</field>
-    <field name="featuretype">Family</field>
-  </additional_fields>
-</entry>};
-
-    return $xml;
-
-}
 
 sub dumpSequence {
+warn "in dump Sequence";
     my ( $dbspecies, $conf ) = @_;
 
     #    my $sanger = sanger_project_names( $conf );
     my $sanger = 'SANGER STUFF';
     my %config = (
-        "homo_sapiens" => [
+        "Homo sapiens" => [
             [
                 'Clone',
                 'tilepath, cloneset_1mb, cloneset_30k, cloneset_32k',
@@ -945,7 +1150,7 @@ sub dumpSequence {
             [ 'NT Contig',     'ntctgs', 'name' ],
             [ 'Encode region', 'encode', 'name,synonym,description' ],
         ],
-        "mus_musculus" => [
+        "Mus musculus" => [
             [
                 'BAC',
                 'cloneset_0_5mb,cloneset_1mb,bac_map,tilingpath_cloneset',
@@ -954,11 +1159,11 @@ sub dumpSequence {
             [ 'Fosmid',      'fosmid_map', 'name,clone_name' ],
             [ 'Supercontig', 'superctgs',  'name' ],
         ],
-        "anopheles_gambiae" => [
+        "Anopheles gambiae" => [
             [ 'BAC',      'bacs',       'name,synonym,clone_name' ],
             [ 'BAC band', 'bacs_bands', 'name,synonym,clone_name' ],
         ],
-        "gallus_gallus" => [
+        "Gallus gallus" => [
             [ 'BAC', 'bac_map', 'name,synonym,clone_name' ],
             [
                 'BAC ends',                'bacends',
@@ -1100,34 +1305,32 @@ sub seqLineXML {
     my ( $species, $type, $name, $chr, $val, $len, $sanger ) = @_;
 
     pop @$val;
-    my $description = "$type $name is mapped to Chromosome $chr" .
+#     my $description = "$type $name is mapped to Chromosome $chr" .
 
-      (
-        @$val > 0
-        ? ' and has ' 
-          . @$val 
-          . " EMBL accession"
-          . (
-            @$val > 1
-            ? 's'
-            : ''
-          )
-          . "/synonym"
-          . (
-            @$val > 1
-            ? 's '
-            : ' '
-          )
-          . "@$val"
-        : ''
-      )
+#       (
+#         @$val > 0
+#         ? ' and has ' 
+#           . @$val 
+#           . " EMBL accession"
+#           . (
+#             @$val > 1
+#             ? 's'
+#             : ''
+#           )
+#           . "/synonym"
+#           . (
+#             @$val > 1
+#             ? 's '
+#             : ' '
+#           )
+#           . "@$val"
+#         : ''
+#       )
 
-      . " and length $len bps\n";
+#       . " and length $len bps\n";
 
     my $xml = qq{ 
  <entry id="$name"> 
-   <name>$name</name>
-    <description>$description</description>
     <cross_references>}
 
       . (
@@ -1154,327 +1357,109 @@ sub seqLineXML {
 
 }
 
-sub dumpGene {
+
+
+
+
+sub dumpSNP {
     my ( $dbspecies, $conf ) = @_;
 
-     foreach my $DB ( 'core', 'otherfeatures', 'vega' ) {
-#      foreach my $DB ( 'core' ) {
-        my $counter = make_counter(0);
+    #    warn Dumper $conf;
 
-        my $DBNAME = $conf->{$DB}->{$release}
-          or warn "$dbspecies $DB $release: no database not found";
-        next unless $DBNAME;
-        print "START... $DB";
-        my $file = "$dir/Gene_$DBNAME.xml";
-        $file .= ".gz" unless $nogzip;
-        my $start_time = time;
+    warn "\n", '*' x 20, "\n";
 
-        unless ($nogzip) {
-            $fh = new IO::Zlib;
-            $fh->open( "$file", "wb9" )
-              || die("Can't open compressed stream to $file: $!");
-        }
-        else {
-            open( FILE, ">$file" ) || die "Can't open $file: $!";
-        }
-        header( $DBNAME, $dbspecies, $DB );
-        my $dsn = "DBI:mysql:host=$host";
-        $dsn .= ";port=$port" if ($port);
-
-        warn "Dumping $DBNAME to $file ... ", format_datetime($start_time),
-          "\n";
-        my $extra = $DB ne 'core' ? ";db=$DB" : '';
-
-        my $dbh = DBI->connect( "$dsn:$DBNAME", $user, $pass )
-          or die "DBI::error";
-
-        my %xrefs      = ();
-        my %xrefs_desc = ();
-        my %disp_xrefs = ();
-        foreach my $type (qw(Gene Transcript Translation)) {
-            my $T = $dbh->selectall_arrayref(
-                "select ox.ensembl_id,
-                x.display_label, x.dbprimary_acc, ed.db_display_name, es.synonym, x.description
-           from ($DBNAME.object_xref as ox, $DBNAME.xref as x, $DBNAME.external_db as ed) left join $DBNAME.external_synonym as es on es.xref_id = x.xref_id
-          where ox.ensembl_object_type = '$type' and ox.xref_id = x.xref_id and x.external_db_id = ed.external_db_id"
-            );
-            foreach (@$T) {
-
-                $xrefs{$type}{ $_->[0] }{ $_->[3] }{ $_->[1] } = 1 if $_->[1];
-                $xrefs{$type}{ $_->[0] }{ $_->[3] }{ $_->[2] } = 1 if $_->[2];
-                $xrefs{$type}{ $_->[0] }{ $_->[3] }{ $_->[4] } = 1 if $_->[4];
-                $xrefs_desc{$type}{ $_->[0] }{ $_->[5] }       = 1 if $_->[5];
-            }
-
-            warn "XREF $type query...";
-        }
-
-        my %exons = ();
-        my $T     = $dbh->selectall_arrayref(
-            "select distinct t.gene_id, esi.stable_id
-         from transcript as t, exon_transcript as et, exon_stable_id as esi
-        where t.transcript_id = et.transcript_id and et.exon_id = esi.exon_id"
-        );
-        foreach (@$T) {
-            $exons{ $_->[0] }{ $_->[1] } = 1;
-        }
-        my $gene_info = $dbh->selectall_arrayref( "
-        select gsi.gene_id, tsi.transcript_id, trsi.translation_id,
-             gsi.stable_id as gsid, tsi.stable_id as tsid, trsi.stable_id as trsid,
-             g.description, ed.db_display_name, x.dbprimary_acc,x.display_label, ad.display_label, ad.description, g.source, g.status, g.biotype
-        from (((( $DBNAME.gene_stable_id as gsi, $DBNAME.gene as g,
-             $DBNAME.transcript_stable_id as tsi,
-             $DBNAME.analysis_description as ad,
-             $DBNAME.transcript as t) left join
-             $DBNAME.translation as tr on t.transcript_id = tr.transcript_id) left join
-             $DBNAME.translation_stable_id as trsi on tr.translation_id = trsi.translation_id) left join
-             $DBNAME.xref as x on g.display_xref_id = x.xref_id) left join
-             $DBNAME.external_db as ed on ed.external_db_id = x.external_db_id
-       where t.gene_id = gsi.gene_id and t.transcript_id = tsi.transcript_id and t.gene_id = g.gene_id 
-             and g.analysis_id = ad.analysis_id
-       order by gsi.stable_id, tsi.stable_id;
-    " );
-        warn "Gene query...";
-
-        my %hash = map { $_->[0] } @$gene_info;
-        my $ecount = scalar keys %hash, "\n\n";
-
-        my %old;
-
-        foreach my $row (@$gene_info) {
-
-            # g = gene_id, t = transcript_id , tr = translation_id ,
-            # gs = gene_stable_id, ts = transcript_stable_id , trs =
-            # translation_stable_id, d = description,
-            # ddb= external_db_dispay_name,
-            # dpa = xref_primary_accession,
-            # dn = xref display_label,
-            # a = analysis_description
-            # display label,
-            # ad = analysis description descripion,
-            #s = gene.source, st = gene.status, bt = gene.biotype
-
-            my (
-                $gene_id,                            $transcript_id,
-                $translation_id,                     $gene_stable_id,
-                $transcript_stable_id,               $translation_stable_id,
-                $gene_description,                   $extdb_db_display_name,
-                $xref_primary_acc,                   $xref_display_label,
-                $analysis_description_display_label, $analysis_description,
-                $gene_source,                        $gene_status,
-                $gene_biotype
-            ) = @$row;
-            if ( $old{'gene_id'} != $gene_id ) {
-                if ( $old{'gene_id'} ) {
+    my $COREDB =     my $dbname = $conf->{'core'}->{$release};
 
 
-                    p &geneLineXML( $dbspecies, \%old, $counter );
-
-                }
-                %old = (
-                    'gene_id'                => $gene_id,
-                    'gene_stable_id'         => $gene_stable_id,
-                    'description'            => $gene_description,
-                    'translation_stable_ids' => {
-                        $translation_stable_id ? ( $translation_stable_id => 1 )
-                        : ()
-                    },
-                    'transcript_stable_ids' => {
-                        $transcript_stable_id ? ( $transcript_stable_id => 1 )
-                        : ()
-                    },
-                    'exons'                => {},
-                    'external_identifiers' => {},
-                    'alt'                  => $xref_display_label
-                    ? "($extdb_db_display_name: $xref_display_label)"
-                    : "(novel gene)",
-                    'ana_desc_label' => $analysis_description_display_label,
-                    'ad'             => $analysis_description,
-                    'source'         => ucfirst($gene_source),
-                    'st'             => $gene_status,
-                    'biotype'        => $gene_biotype
-                );
-                $old{'source'} =~ s/base/Base/;
-                $old{'exons'} = $exons{$gene_id};
-                foreach my $K ( keys %{ $exons{$gene_id} } ) {
-                    $old{'i'}{$K} = 1;
-                }
-
-                foreach my $db ( keys %{ $xrefs{'Gene'}{$gene_id} || {} } ) {
-                    foreach my $K ( keys %{ $xrefs{'Gene'}{$gene_id}{$db} } ) {
-                        $old{'external_identifiers'}{$db}{$K} = 1;
-
-                    }
-                }
-                foreach my $db (
-                    keys %{ $xrefs{'Transcript'}{$transcript_id} || {} } )
-                {
-                    foreach my $K (
-                        keys %{ $xrefs{'Transcript'}{$transcript_id}{$db} } )
-                    {
-                        $old{'external_identifiers'}{$db}{$K} = 1;
-
-                    }
-                }
-                foreach my $db (
-                    keys %{ $xrefs{'Translation'}{$translation_id} || {} } )
-                {
-                    foreach my $K (
-                        keys %{ $xrefs{'Translation'}{$translation_id}{$db} } )
-                    {
-                        $old{'external_identifiers'}{$db}{$K} = 1;
-                    }
-                }
-
-            }
-            else {
-                $old{'transcript_stable_ids'}{$transcript_stable_id}   = 1;
-                $old{'translation_stable_ids'}{$translation_stable_id} = 1;
-
-                foreach my $db (
-                    keys %{ $xrefs{'Transcript'}{$transcript_id} || {} } )
-                {
-                    foreach my $K (
-                        keys %{ $xrefs{'Transcript'}{$transcript_id}{$db} } )
-                    {
-                        $old{'external_identifiers'}{$db}{$K} = 1;
-                    }
-                }
-                foreach my $db (
-                    keys %{ $xrefs{'Translation'}{$translation_id} || {} } )
-                {
-                    foreach my $K (
-                        keys %{ $xrefs{'Translation'}{$translation_id}{$db} } )
-                    {
-                        $old{'external_identifiers'}{$db}{$K} = 1;
-
-                    }
-                }
-            }
-        }
-
-
-       
-	p geneLineXML( $dbspecies, \%old, $counter );
-
-        footer( $counter->() );
-        warn "FINISHED...... genes $DB ...";
-
+    my $dbname = $conf->{variation}->{$release} or next;
+    my $file = "$dir/SNP_$dbname.xml";
+    $file .= ".gz" unless $nogzip;
+    my $start_time = time;
+    warn "Dumping $dbname to $file ... ", format_datetime($start_time),
+      "\n";
+    unless ($nogzip) {
+	$fh = new IO::Zlib;
+	$fh->open( "$file", "wb9" )
+	  || die "Can't open compressed stream to $file: $!";
     }
+    else {
+	open( FILE, ">$file" ) || die "Can't open $file: $!";
+    }
+
+    header( $dbname, $dbspecies, $dbname );
+    my $dsn = "DBI:mysql:host=$host";
+    $dsn .= ";port=$port" if ($port);
+    my $ecount;
+    my $dbh = DBI->connect( "$dsn:$dbname", $user, $pass )
+      or die "DBI::error";
+    my $source_hash = $dbh->selectall_hashref(qq{SELECT source_id, name FROM source} ,[qw(source_id)]);
+
+#     my $tid_to_gene = $dbh->selectall_hashref(qq{select  t.transcript_id, gsi.stable_id from $COREDB.gene as g, $COREDB.gene_stable_id as gsi, $COREDB.transcript as t where gsi.gene_id = g.gene_id and t.gene_id = g.gene_id limit 10;},[qw(transcript_id)]);
+
+
+#     my $sth = $dbh->prepare("select vf.variation_name, vf.source_id, group_concat(vs.source_id, ' ',vs.name), vf.variation_feature_id,vf.variation_id from variation_feature vf , transcript_variation tv 
+# left join variation_synonym vs on vf.variation_id = vs.variation_id where tv.transcript_variation_id = vf.variation_feature_id group by vf.variation_id");
+
+    my $sth = $dbh->prepare("select vf.variation_name, vf.source_id, group_concat(vs.source_id, ' ',vs.name), vf.consequence_type from variation_feature vf left join variation_synonym vs on vf.variation_id = vs.variation_id group by vf.variation_id");
+
+
+ #     my $vfi2gene_sth = $dbh->prepare(qq{select distinct(gsi.stable_id) from $COREDB.gene as g, $COREDB.gene_stable_id as gsi, $COREDB.transcript as t where gsi.gene_id = g.gene_id and t.gene_id = g.gene_id and transcript_id in  
+# (select tv.transcript_id from transcript_variation tv , variation_feature vf where vf.variation_feature_id =tv.variation_feature_id and vf.variation_feature_id = ?)});
+
+    $sth->execute() or die "Error:", $DBI::errstr;
+
+    while (my $rowcache = $sth->fetchall_arrayref(undef, 10_000)) {
+
+
+	my $xml;
+	while (my $row = shift(@{$rowcache})) {
+# 	    $vfi2gene_sth->execute($row->[3]);
+# 	      my $gsi = $vfi2gene_sth->fetchall_arrayref;
+	    my $name = $row->[0];
+	    my @synonyms = split /,/, @$row->[2];
+	    my $snp_source = $source_hash->{$row->[1]}->{name};
+
+# 	    my $description =
+# 	      "A $snp_source SNP with "
+# 		. scalar @synonyms
+# 		  . ' synonym'
+# 		    . (  @synonyms > 1 | @synonyms < 1 ? 's '   : ' ' )
+# 		      . ( @synonyms > 0 ? "( " . (join "",  map{  map{  $source_hash->{$_->[0]}->{name} , ':', $_->[1] , ' ' } [split]  } @synonyms ) . ")" : '' );
+
+	    $xml .=   qq{<entry id="$name">
+  <additional_fields>
+    <field name="species">$dbspecies</field>
+    <field name="featuretype">SNP</field>
+    <field name="consequence">$row->[3]</field>};
+
+ 	    foreach my $syn(@synonyms) {
+		my @syn_bits = split / /, $syn;
+		$syn_bits[1] =~ s/:/ /;
+
+		my $source = $source_hash->{$syn_bits[0]}->{name};
+ 		$xml .= qq{
+     <field name="synonym">$syn_bits[1] [source; $source]</field>};
+ 	    }
+$xml .= qq{
+  </additional_fields>
+</entry>
+};
+
+	}
+
+	p($xml);
+    }
+
+    footer($sth->rows);
+    print_time($start_time);
 
 }
 
-sub geneLineXML {
-    my ( $species, $xml_data, $counter ) = @_;
-
-    return warn "gene id not set" if $xml_data->{'gene_stable_id'} eq '';
-
-    my $gene_id     = $xml_data->{'gene_stable_id'};
-    my $altid       = $xml_data->{'alt'} or die "altid not set";
-    my $transcripts = $xml_data->{'transcript_stable_ids'}
-      or die "transcripts not set";
-    my $peptides = $xml_data->{'translation_stable_ids'}
-      or die "peptides not set";
-    my $exons = $xml_data->{'exons'} or die "exons not set";
-    my $external_identifiers = $xml_data->{'external_identifiers'}
-      or die "external_identifiers not set";
-    my $description = $xml_data->{'description'};
-    my $type        = $xml_data->{'source'} . ' ' . $xml_data->{'biotype'}
-      or die "problem setting type";
-
-    my $exon_count       = scalar keys %$exons;
-    my $transcript_count = scalar keys %$transcripts;
-    $description =~ s/</&lt;/g;
-    $description =~ s/>/&gt;/g;
-$description =~ s/'/&apos;/g;
-$description =~ s/&/&amp;/g;
-
-$gene_id  =~ s/</&lt;/g;
-$gene_id  =~ s/>/&gt;/g;
-
-$altid  =~ s/</&lt;/g;
-$altid   =~ s/>/&gt;/g;
-
-    my $xml = qq{ 
- <entry id="$gene_id"> 
-   <name>$gene_id $altid</name>
-    <description>$description</description>};
-
-
-    my $cross_references = qq{
-       <cross_references>};
-
-
-    foreach my $ext_db_name ( keys %$external_identifiers ) {
-
-	if 
-	 ($ext_db_name =~ /(Uniprot|GO|Interpro|Medline|Sequence_Publications|EMBL)/) { 
-
-          map { $cross_references .=  qq{
-         <ref dbname="$1" dbkey="$_"/>}; } keys %{ $external_identifiers->{$ext_db_name} } 
-
-     } else {
-	  foreach my $key  (keys %{ $external_identifiers->{$ext_db_name} }) {
-	      $key  =~ s/</&lt;/g;
-	      $key   =~ s/>/&gt;/g;
-	      $key   =~ s/&/&amp;/g;
-
-	      $cross_references .=  qq{
-        <ref dbname="$ext_db_name" dbkey="$key"/>}; 
-	  }
-
-
-    }
-    }
-
-    $cross_references .= qq{</cross_references>};
-
-    my $additional_fields .= qq{
-    <additional_fields>
-      <field name="species">$species</field>
-      <field name="featuretype">Gene</field>
-      <field name="source">$type</field>
-      <field name="transcript_count">$transcript_count</field> }
-
-      . (
-        join "",
-        (
-            map {
-                qq{
-      <field name="transcript">$_</field>}
-              } keys %$transcripts
-        )
-      )
-
-      . qq{  <field name="exon_count">$exon_count</field> }
-
-      . (
-        join "",
-        (
-            map {
-                qq{
-      <field name="exon">$_</field>}
-              } keys %$exons
-        )
-      )
-      . (
-        join "",
-        (
-            map {
-                qq{
-      <field name="peptide">$_</field>}
-              } keys %$peptides
-        )
-      )
-      . qq{
-   </additional_fields>};
 
 
 
-    $counter->();
-    return $xml . $cross_references . $additional_fields . '</entry>';
 
-}
+
 
 sub dumpUnmappedFeatures {
     my ( $dbspecies, $conf ) = @_;
@@ -1693,7 +1678,6 @@ sub unmappedGeneXML {
 
     return qq{
  <entry id="$id">
-   <name>$id</name>
     <description>$description</description>
     <additional_fields>
       <field name="species">$dbspecies</field>
