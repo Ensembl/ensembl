@@ -911,7 +911,9 @@ sub delete_existing_xrefs {
   #We can now do this for arrays as we store the identifier either as 'op.probeset' or 'op.probeset:op.oligo_probe_id'
   if(@arrays){
 	#Don't delete ur as this may be used for other probe2transcript stuff
-	$sql = 'DELETE uo FROM analysis a, unmapped_reason ur, unmapped_object uo, oligo_array oa, oligo_probe op WHERE a.logic_name ="probe2transcript" AND a.analysis_id=uo.analysis_id AND uo.unmapped_reason_id=ur.unmapped_reason_id and oa.name in ('.join('", "', values %array_name_cache).') and oa.oligo_array_id=op.oligo_array_id and (uo.identifier=op.probeset OR uo.indentifier=concat(op.probeset, ":", op.oligo_probe_id)'; 
+	$sql = 'DELETE uo FROM analysis a, unmapped_reason ur, unmapped_object uo, oligo_array oa, oligo_probe op WHERE a.logic_name ="probe2transcript" AND a.analysis_id=uo.analysis_id AND uo.unmapped_reason_id=ur.unmapped_reason_id and oa.name in ("'.join('", "', values %array_name_cache).'") and oa.oligo_array_id=op.oligo_array_id and (uo.identifier=op.probeset OR uo.identifier=concat(op.probeset, ":", op.oligo_probe_id))'; 
+
+	warn $sql;
 
   }
   else{
