@@ -2773,7 +2773,7 @@ IGNORE INTO TABLE identity_xref_temp");
   # Gets object and identity xref data for 'SEQUENCE_MATCH' xrefs
   # for a given db_id of a given object type (gene/transcript/translation) 
   my $sql = (<<ESQL);
-  SELECT ox.xref_id, ix.query_identity, ix.target_identity, 
+  SELECT ox.xref_id, ix.xref_identity, ix.ensembl_identity, 
          x.external_db_id, x.display_label, 
          e.db_name, ox.linkage_annotation
     FROM (object_xref ox, xref x, external_db e) 
@@ -2792,7 +2792,7 @@ ESQL
   # Gets object and identity xref data for 'DEPENDENT' xrefs
   # for a given db_id of a given object type (gene/transcript/translation) 
   $sql = (<<ZSQL);
-  SELECT ox.xref_id, ix.query_identity, ix.target_identity, 
+  SELECT ox.xref_id, ix.xref_identity, ix.ensembl_identity, 
          x.external_db_id, x.display_label, 
          e.db_name, ox.linkage_annotation
     FROM (object_xref ox, xref x, external_db e) 
@@ -3452,7 +3452,7 @@ sub new_build_gene_descriptions{
 
 
   my $sql = (<<ESQL);
-  SELECT ox.xref_id, ix.query_identity, ix.target_identity,  x.external_db_id, x.description, x.dbprimary_acc
+  SELECT ox.xref_id, ix.xref_identity, ix.ensembl_identity,  x.external_db_id, x.description, x.dbprimary_acc
     FROM (object_xref ox, xref x) 
       LEFT JOIN identity_xref ix ON (ox.object_xref_id = ix.object_xref_id) 
 	WHERE x.xref_id = ox.xref_id and ox.ensembl_object_type = ? 
@@ -3462,7 +3462,7 @@ ESQL
   my $primary_sth = $self->core->dbc->prepare($sql) || die "prepare failed for $sql\n";
 
   $sql = (<<ZSQL);
-  SELECT ox.xref_id, ix.query_identity, ix.target_identity, x.external_db_id, x.description, x.dbprimary_acc
+  SELECT ox.xref_id, ix.xref_identity, ix.ensembl_identity, x.external_db_id, x.description, x.dbprimary_acc
     FROM (object_xref ox, xref x) 
       LEFT JOIN identity_xref_temp ix ON (ox.object_xref_id = ix.object_xref_id) 
 	WHERE x.xref_id = ox.xref_id and ox.ensembl_object_type = ? 
@@ -3970,7 +3970,7 @@ sub fix_mart_prob{
       $temp_loaded = 1;
       # get all the db_name %'s
       my $sql =(<<TIX);
-      SELECT i.target_identity, i.query_identity, x.dbprimary_acc 
+      SELECT i.ensembl_identity, i.xref_identity, x.dbprimary_acc 
 	FROM  identity_xref_temp i
 	  INNER JOIN  object_xref o ON i.object_xref_id = o.object_xref_id
 	    INNER JOIN  xref x        ON x.xref_id = o.xref_id
@@ -5097,14 +5097,14 @@ MULT
 XREFS
 
   my $primary_sql = (<<PRIMARY);
-    SELECT i.target_identity, i.query_identity
+    SELECT i.ensembl_identity, i.xref_identity
       FROM identity_xref i
 	WHERE i.object_xref_id = ?
 PRIMARY
 
 
   my $dependent_sql = (<<DEPEND);
-    SELECT i.target_identity, i.query_identity
+    SELECT i.ensembl_identity, i.xref_identity
       FROM identity_xref_temp i
 	WHERE i.object_xref_id = ?
 DEPEND
