@@ -3742,6 +3742,14 @@ sub build_gene_transcript_status{
   push @files, $set_file;
 
 
+
+  my ($presedence, $ignore) = @{$self->transcript_display_xref_sources()};
+  my $i=0;
+  my %list_extern;
+  foreach my $ord (reverse (@$presedence)){
+    $list_extern{$ord} = 1;
+  }
+
   #create a hash known which ONLY has databases names of those that are KNOWN and KNOWNXREF
   my %known;
   my $sth = $self->core->dbc->prepare("select db_name from external_db where status in ('KNOWNXREF','KNOWN')");
@@ -3749,7 +3757,9 @@ sub build_gene_transcript_status{
   my ($name);
   $sth->bind_columns(\$name);
   while($sth->fetch){
-    $known{$name} = 1;
+    if(defined($list_extern{$name})){
+      $known{$name} = 1;
+    }
   }
   $sth->finish;
   
