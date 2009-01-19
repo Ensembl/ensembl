@@ -48,6 +48,7 @@ usage() and exit unless ( $host && $port && $user );
 my $entry_count;
 my $global_start_time = time;
 my $total             = 0;
+my $FAMILY_DUMPED;
 
 my $fh;
 ## HACK 1 - if the INDEX is set to all grab all dumper methods...
@@ -65,16 +66,22 @@ my $dbHash = get_databases();
 foreach my $species ( sort keys %$dbHash ) {
     my $conf = $dbHash->{$species};
     foreach my $index (@indexes) {
+
+
         my $function = "dump$index";
         no strict "refs";
-
+	
 	$species =~ s/_/ /g;
-        &$function( ucfirst($species), $conf );
-        print $function,"\n";
-
-
+	if ($index ne 'Family'){
+	    &$function( ucfirst($species), $conf );
+	    print $function,"\n";
+	} elsif ($index eq 'Family' && !$FAMILY_DUMPED) {
+	    &dumpFamily($conf);
+	    
+	}
+	
     }
-
+    
 
 
 }
@@ -240,17 +247,17 @@ sub format_datetime {
 }
 
 sub dumpFamily {
-   my ( $dbspecies, $conf ) = @_;
+   my (  $conf ) = @_;
 
     my $FAMDB = $conf->{'compara'}->{$release} or next;
 
-    my $db = 'core';
-    my $dbname = $conf->{$db}->{$release} or next;
 
-    my $file = "$dir/Family_$dbname.xml";
+#    my $dbname = $conf->{'core'}->{$release} or next;
+
+    my $file = "$dir/Family_all_species_core_$FAMDB.xml";
     $file .= ".gz" unless $nogzip;
     my $start_time = time;
-    warn "Dumping $dbname to $file ... ", format_datetime($start_time), "\n";
+   warn "Dumping $FAMDB to $file ... ", format_datetime($start_time), "\n";
 
     unless ($nogzip) {
         $fh = new IO::Zlib;
@@ -260,39 +267,40 @@ sub dumpFamily {
     else {
         open( FILE, ">$file" ) || die "Can't open $file: $!";
     }
-    header( $dbname, $dbspecies, $db );
+    header( $FAMDB, 'compara_all_species', $FAMDB );
     my $dsn = "DBI:mysql:host=$host";
     $dsn .= ";port=$port" if ($port);
     my $ecount;
-    my $dbh = DBI->connect( "$dsn:$dbname", $user, $pass ) or die "DBI::error";
+    my $dbh = DBI->connect( "$dsn:$FAMDB", $user, $pass ) or die "DBI::error";
 
 
 
-    my $CORE  = $conf->{'core'}->{$release};
-    my $t_sth = $dbh->prepare( qq{select meta_value from $CORE.meta where meta_key='species.taxonomy_id'});
-    $t_sth->execute;
-    my $taxon_id = ( $t_sth->fetchrow );
+#     my $CORE  = $conf->{'core'}->{$release};
+#     my $t_sth = $dbh->prepare( qq{select meta_value from $CORE.meta where meta_key='species.taxonomy_id'});
+#     $t_sth->execute;
+#     my $taxon_id = ( $t_sth->fetchrow );
 
-    return unless $taxon_id;
+#    return unless $taxon_id;
 
     $dbh->do("SET SESSION group_concat_max_len = 100000");
     my $sth = $dbh->prepare(
 qq{ select f.family_id as id, f.stable_id as fid , f.description, group_concat(m.stable_id, unhex('1D') ,m.source_name) as IDS 
 from $FAMDB.family as f, $FAMDB.family_member as fm, $FAMDB.member as m 
- where fm.family_id = f.family_id and fm.member_id = m.member_id and m.taxon_id = $taxon_id  group by fid}
+ where fm.family_id = f.family_id and fm.member_id = m.member_id  group by fid}
     );
     $sth->execute;
     foreach my $xml_data ( @{ $sth->fetchall_arrayref( {} ) } ) {
 
         my @bits = split /,/, delete $xml_data->{IDS};
         map { push @{ $xml_data->{IDS} }, [ split /\x1D/ ] } @bits;
-        $xml_data->{species} = $dbspecies;
+#        $xml_data->{species} = $dbspecies;
+        $xml_data->{species} = '';
         p familyLineXML($xml_data);
 
     }
 
     footer( $sth->rows );
-
+   $FAMILY_DUMPED = 1;
 }
 
 sub familyLineXML {
@@ -301,7 +309,7 @@ sub familyLineXML {
     my $members = scalar @{ $xml_data->{IDS} };
 
     my $xml = qq{ 
-<entry id="$xml_data->{id}"> 
+<entry id="$xml_data->{fid}"> 
 <name>$xml_data->{fid}</name> 
    <description>[$xml_data->{description}]</description>
    <cross_references>} .
@@ -1692,3 +1700,7 @@ sub make_counter {
     return sub { $start++ }
 }
 
+sub FamilyDumped {
+    my $is_dumped;
+    return sub { $is_dumped }
+}
