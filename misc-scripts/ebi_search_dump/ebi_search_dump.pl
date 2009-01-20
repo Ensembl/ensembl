@@ -308,6 +308,22 @@ sub familyLineXML {
     
     my $members = scalar @{ $xml_data->{IDS} };
 
+
+    my $description = $xml_data->{description};
+
+    $description =~ s/</&lt;/g;
+    $description =~ s/>/&gt;/g;
+    $description =~ s/'/&apos;/g;
+    $description =~ s/&/&amp;/g;
+
+    $gene_id =~ s/</&lt;/g;
+    $gene_id =~ s/>/&gt;/g;
+
+    $altid =~ s/</&lt;/g;
+    $altid =~ s/>/&gt;/g;
+
+
+
     my $xml = qq{ 
 <entry id="$xml_data->{fid}"> 
 <name>$xml_data->{fid}</name> 
