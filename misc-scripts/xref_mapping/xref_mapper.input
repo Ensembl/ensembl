@@ -1,6 +1,6 @@
 xref
 host=ecs4
-port=3350
+port=3306
 dbname=gp1_mouse_xrefs
 user=ensadmin
 password=
@@ -8,7 +8,7 @@ dir=/nfs/acari/gp1/work/ensembl/misc-scripts/xref_mapping/xref
 
 species=mus_musculus
 host=ecs4
-port=3350
+port=3306
 dbname=gp1_mus_musculus_core_37_34e
 user=ensadmin
 password=
