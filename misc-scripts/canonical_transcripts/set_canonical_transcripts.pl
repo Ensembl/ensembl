@@ -43,6 +43,9 @@ my $verbose = 0;
             'verbose!' => \$verbose,
            );
 
+unless ( $write ) {  
+   print " you've not used the -write option so results will not be written into the database\n" ; 
+} 
 
 my $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(
                                               -host   => $host,
