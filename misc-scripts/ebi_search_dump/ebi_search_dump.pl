@@ -322,7 +322,7 @@ sub familyLineXML {
     my $xml = qq{ 
 <entry id="$xml_data->{fid}"> 
 <name>$xml_data->{fid}</name> 
-   <description>[$xml_data->{description}]</description>
+   <description>$description</description>
    <cross_references>} .
       (
         join "",
