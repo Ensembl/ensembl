@@ -316,11 +316,6 @@ sub familyLineXML {
     $description =~ s/'/&apos;/g;
     $description =~ s/&/&amp;/g;
 
-    $gene_id =~ s/</&lt;/g;
-    $gene_id =~ s/>/&gt;/g;
-
-    $altid =~ s/</&lt;/g;
-    $altid =~ s/>/&gt;/g;
 
 
 
