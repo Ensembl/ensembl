@@ -79,6 +79,16 @@ my $reg = "Bio::EnsEMBL::Registry";
 						    -dbname => 'pog',
 						    -host   => 'caldy',
 						    -driver => 'mysql');
+
+  Exmaple3   : $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(
+                                                    -species => 'staphylococcus_aureus',
+                                                    -group   => 'core'
+						                            -user   => 'root',
+						                            -dbname => 'staphylococcus_collection_1_52_1a',
+                                                    -multispecies_db => 1,
+						                            -host   => 'caldy',
+						                            -driver => 'mysql');
+
   Description: Constructor for DBAdaptor.
   Returntype : Bio::EnsEMBL::DBSQL::DBAdaptor
   Exceptions : none
