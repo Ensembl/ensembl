@@ -122,11 +122,11 @@ if (defined $pepstats_only){
 if (defined $met_and_stop_only){
     $options .= "--met_and_stop_only "
 }
-my @ranges = ('^[a-b]','^[c-d]','^[e-f]','^[g-h]','^[i-m]','^[n-p]','^[q-r]','^[s-t]','^[u-z]');
+my @ranges = ('^[a-b]','^c','^d','^e','^f','^[g-h]','^[i-l]','^m[a-i]','^m[j-z]','^[n-o]','^p','^[q-r]','^[s-t]','^[u-z]');
 my $core_db = ".*core_$release\_.*";
 my $call;
 foreach my $pattern (@ranges){
-    $call = "bsub -o /lustre/scratch1/ensembl/dr2/tmp_smallfiles/output_translation_$pattern.txt -q $queue -R$memory ./translation_attribs.pl -user $user -pass $pass $options";
+    $call = "bsub -o /lustre/work1/ensembl/dr2/e53_log/output_translation_$pattern.txt -q $queue -R$memory ./translation_attribs.pl --user $user --pass $pass $options";
     $call .= " --pattern '" . $pattern . $core_db. "'";
 
     system($call);
@@ -136,17 +136,22 @@ foreach my $pattern (@ranges){
 #we now need to run it for the otherfeatures|vega databases, but only the pepstats
 
 my $vega_db = ".*_vega_$release\_.*";
-$call = "bsub -o /lustre/scratch1/ensembl/dr2/tmp_smallfiles/output_translation_vega.txt -q $queue -R$memory ./translation_attribs.pl -user $user -pass $pass $options";
+$call = "bsub -o /lustre/work1/ensembl/dr2/e53_log/output_translation_vega.txt -q $queue -R$memory ./translation_attribs.pl --user $user --pass $pass $options";
 $call .= " --pattern '" . $vega_db. "'";
 
 system($call);
 #print $call,"\n";
 
+@ranges = ('^[a-b]','^c','^[d-e]','^[f-h]','^[i-m]','^[n-o]','^p','^[q-s]','^[t-z]');
+
 $options .= "--pepstats_only ";
 
 my $other_db = ".*_otherfeatures_$release\_.*";
-$call = "bsub -o /lustre/scratch1/ensembl/dr2/tmp_smallfiles/output_translation_other.txt -q $queue -R$memory ./translation_attribs.pl -user $user -pass $pass $options";
-$call .= " --pattern '" . $other_db. "'";
 
-system($call);
+foreach my $pattern (@ranges){
+    $call = "bsub -o /lustre/work1/ensembl/dr2/e53_log/output_translation_other.txt -q $queue -R$memory ./translation_attribs.pl --user $user --pass $pass $options";
+    $call .= " --pattern '" . $pattern . $other_db. "'";
+    
+    system($call);
 #print $call,"\n";
+}
