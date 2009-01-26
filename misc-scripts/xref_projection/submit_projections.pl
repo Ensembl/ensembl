@@ -6,7 +6,7 @@ use strict;
 # ------------------------------ config -------------------------------
 my $release = 53;
 
-my $base_dir = "/lustre/scratch1/ensembl/gp1/projections/";
+my $base_dir = "/lustre/scratch1/ensembl/rjk/projections/";
 
 my $conf = "release_53.ini"; # registry config file, specifies Compara location
 
@@ -71,6 +71,7 @@ my @names_1_1 = (["human", "chimp"            ],
 		 ["human", "tarsier"          ],
 		 ["human", "alpaca"           ],
 		 ["human", "gorilla"          ],
+		 ["human", "anolis"          ],
 		 ["human", "sloth"            ],
 		 ["human", "zebrafinch"       ],
 		 ["mouse", "kangaroo_rat"     ],
