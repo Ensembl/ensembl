@@ -1917,6 +1917,22 @@ sub load_registry_from_db {
                                -alias => [ 'gorilla', 'gorillagorilla' ]
   );
 
+ Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
+                               -species => "Anolis_carolinensis",
+                               -alias => [ 'anolis', 'anoliscarolinensis' ]
+  );
+
+ Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
+                               -species => "Choloepus_hoffmanni",
+                               -alias => [ 'sloth', 'choloepus', 'choloepushoffmanni' ]
+  );
+
+ Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
+                               -species => "Taeniopygia_guttata",
+                               -alias => [ 'finch', 'zebrafinch', 'taeniopygia', 'taeniopygiaguttata' ]
+  );
+
+
   @aliases = ('compara');
   Bio::EnsEMBL::Utils::ConfigRegistry->add_alias( -species => "multi",
                                                   -alias   => \@aliases
