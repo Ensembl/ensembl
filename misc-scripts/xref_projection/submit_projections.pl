@@ -4,11 +4,11 @@ use strict;
 # Remember to check/set the various config optons
 
 # ------------------------------ config -------------------------------
-my $release = 52;
+my $release = 53;
 
 my $base_dir = "/lustre/scratch1/ensembl/gp1/projections/";
 
-my $conf = "release_52.ini"; # registry config file, specifies Compara location
+my $conf = "release_53.ini"; # registry config file, specifies Compara location
 
 # location of other databases
 my $host = "ens-staging";
@@ -71,6 +71,8 @@ my @names_1_1 = (["human", "chimp"            ],
 		 ["human", "tarsier"          ],
 		 ["human", "alpaca"           ],
 		 ["human", "gorilla"          ],
+		 ["human", "sloth"            ],
+		 ["human", "zebrafinch"       ],
 		 ["mouse", "kangaroo_rat"     ],
 		 ["mouse", "rat"              ]);
 
@@ -112,6 +114,9 @@ my @go_terms = (["human",      "mouse"          ],
 		["human",      "alpaca"         ],
 		["human",      "kangaroo_rat"   ],
 		["human",      "gorilla"        ],
+		["human",      "sloth"          ],
+		["human",      "zebrafinch"     ],
+		["human",      "anolis"         ],
 		["mouse",      "human"          ],
 		["mouse",      "rat"            ],
 		["mouse",      "dog"            ],
@@ -144,6 +149,9 @@ my @go_terms = (["human",      "mouse"          ],
 		["mouse",      "alpaca"         ],
 		["mouse",      "kangaroo_rat"   ],
 		["mouse",      "gorilla"        ],
+		["mouse",      "sloth"          ],
+		["mouse",      "zebrafinch"     ],
+		["mouse",      "anolis"         ],
 		["rat",        "human"          ],
 		["rat",        "mouse"          ],
 		["drosophila", "anopheles"      ],
