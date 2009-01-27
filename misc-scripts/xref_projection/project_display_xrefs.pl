@@ -117,22 +117,25 @@ Bio::EnsEMBL::Registry->load_all($conf, 0, 1); # options mean "not verbose" and 
 my $mlssa;
 my $ha;
 my $ma;
+my $gdba;
 
 if ($compara) {
 
    $mlssa = Bio::EnsEMBL::Registry->get_adaptor($compara, 'compara', 'MethodLinkSpeciesSet');
    $ha    = Bio::EnsEMBL::Registry->get_adaptor($compara, 'compara', 'Homology');
    $ma    = Bio::EnsEMBL::Registry->get_adaptor($compara, 'compara', 'Member');
+   $gdba  = Bio::EnsEMBL::Registry->get_adaptor($compara, "compara", "GenomeDB");
 
-   die "Can't connect to Compara database specified by $compara - check command-line and registry file settings" if (!$mlssa || !$ha || !$ma);
+   die "Can't connect to Compara database specified by $compara - check command-line and registry file settings" if (!$mlssa || !$ha || !$ma ||!$gdba);
 
 } else {
 
    $mlssa = @{Bio::EnsEMBL::Registry->get_all_adaptors(-group => "compara", -type => "MethodLinkSpeciesSet")}[0];
-   $ha = @{Bio::EnsEMBL::Registry->get_all_adaptors(-group => "compara", -type => "Homology")}[0];
-   $ma = @{Bio::EnsEMBL::Registry->get_all_adaptors(-group => "compara", -type => "Member")}[0];
+   $ha    = @{Bio::EnsEMBL::Registry->get_all_adaptors(-group => "compara", -type => "Homology")}[0];
+   $ma    = @{Bio::EnsEMBL::Registry->get_all_adaptors(-group => "compara", -type => "Member")}[0];
+   $gdba  = @{Bio::EnsEMBL::Registry->get_all_adaptors(-group => "compara", -type => "GenomeDB")}[0];
 
-   die "Can't connect to Compara database from registry - check registry file settings" if (!$mlssa || !$ha || !$ma);
+   die "Can't connect to Compara database from registry - check registry file settings" if (!$mlssa || !$ha || !$ma ||!$gdba);
 
 }
 
@@ -155,7 +158,17 @@ foreach my $to_species (@to_multi) {
   delete_names($to_ga) if ($delete_names);
   delete_go_terms($to_ga) if ($delete_go_terms);
 
-  my $mlss = $mlssa->fetch_by_method_link_type_registry_aliases($method_link_type, [$from_species, $to_species]);
+  # get taxonomy ids from core databases
+  my $meta_container =  Bio::EnsEMBL::Registry->get_adaptor($from_species, 'Core', 'MetaContainer');
+  my $from_taxon_id = $meta_container->get_taxonomy_id();
+  $meta_container =  Bio::EnsEMBL::Registry->get_adaptor($to_species, 'Core', 'MetaContainer');
+  my $to_taxon_id = $meta_container->get_taxonomy_id();
+
+  # build Compara GenomeDB objects
+  my $from_GenomeDB = $gdba->fetch_by_taxon_id($from_taxon_id);
+  my $to_GenomeDB = $gdba->fetch_by_taxon_id($to_taxon_id);
+
+  my $mlss = $mlssa->fetch_by_method_link_type_GenomeDBs($method_link_type, [$from_GenomeDB, $to_GenomeDB]);
 
   # get homologies from compara - comes back as a hash of arrays
   my $homologies = fetch_homologies($ha, $mlss, $from_species);
