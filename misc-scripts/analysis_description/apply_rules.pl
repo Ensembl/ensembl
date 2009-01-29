@@ -243,10 +243,10 @@ foreach my $cdb (@$cdbs) {
 		### implements rule 5. ###
 
 		my $display_label = ($species eq 'homo_sapiens') ? 'Vega Havana gene' : 'Vega gene';
-		print "<$cdb> Updating display_label for logic_name havana to '$display_label'\n";
-		update_analysis($caa, 'havana', undef, $display_label);
+		print "<$cdb> Updating display_label for logic_name otter to '$display_label'\n";
+		update_analysis($caa, 'otter', undef, $display_label);
 
-		### implements rule 2. ans 3. ###
+		### implements rule 2. and 3. ###
 
 		(my $cdnadb = $cdb) =~ s/_core_/_cdna_/;
 		my $cdnadba = new Bio::EnsEMBL::DBSQL::DBAdaptor(
