@@ -526,7 +526,8 @@ sub update {
   $sth->execute($a->dbID);
 
   if ($sth->fetchrow_hashref) { # update if exists
-      my $web_data = $self->dump_data($a->web_data());
+      my $web_data;
+      $web_data = $self->dump_data($a->web_data()) if ($a->web_data());
     $sth = $self->prepare
       ("UPDATE analysis_description SET description = ?, display_label = ?, displayable = ?, web_data = ? WHERE analysis_id = ?");
 
@@ -535,7 +536,9 @@ sub update {
   } else { # create new entry
 
     if( $a->description() || $a->display_label() || $a->web_data) {
-      my $web_data = $self->dump_data($a->web_data());
+	my $web_data;
+      $web_data = $self->dump_data($a->web_data()) if ($a->web_data());
+      #my $web_data = $self->dump_data($a->web_data());
       $sth = $self->prepare( "INSERT IGNORE INTO analysis_description (analysis_id, display_label, description, displayable, web_data) VALUES (?,?,?,?,?)");
       $sth->execute( $a->dbID(), $a->display_label(), $a->description(), $a->displayable(), $web_data );
       $sth->finish();
