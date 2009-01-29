@@ -27,16 +27,18 @@
 
    2) Logic names of human_cdna and mouse_cdna are slightly different in that 
       they should be switched off (ie set the displayable entry to 0) in human 
-      and mouse respectively - they are superceded by the cDNA update features 
-      in the cDNA databases
+      and mouse core databases respectively - they are superceded by the cDNA
+      update features in the cDNA databases
 
    3) These cDNA_update features should have a display label of 'Mouse cDNA' in 
       the mouse_cdna database, and 'Human cDNA' in the human_cdna database
 
    4) All align_features from vega databases should be switched off
 
-   5) Genes with a logic_name of 'havana' have a display label of 'Vega gene' in 
-      mouse and 'Vega Havana gene' in human.
+   5) Genes with a logic_name of 'otter' have a display label of 'Vega gene' in
+      Vega mouse and 'Vega Havana gene' in Vega human.
+
+   6) and 7) see below
 
  
 =head1 OPTIONS
