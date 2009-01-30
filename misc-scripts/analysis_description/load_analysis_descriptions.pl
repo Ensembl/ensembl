@@ -1,5 +1,4 @@
-#!/opt/local/bin/perl -w
-###!/usr/local/ensembl/bin/perl -w
+#!/usr/local/ensembl/bin/perl -w
 
 # POD documentation - main docs before the code
 
@@ -42,7 +41,7 @@
 =head1 EXAMPLES
 
  perl load_analysis_descriptions.pl -dbhost my_host -dbuser user -dbpass ***** 
- -dbname my_db -file analysis.descriptions -file myanalysis.descriptions
+ -dbname my_db -file analysis.descriptions -file myanalysis.descriptions -update
 
 =cut
 
@@ -125,7 +124,7 @@ foreach my $file( @files ){
     $reference{lc($logic_name)} = {
       nr            => $nr,
       description   => $description   || '',
-      display_lable => $display_label || '', 
+      display_label => $display_label || '',
       displayable   => $displayable   || '', 
       web_data      => $web_data      || '',
     };
@@ -157,7 +156,9 @@ if ( scalar(keys %hash)==0) {
 	if ($update) {
 		print STDERR "\nAll analysis descriptions have been updated, every analysis has a description now\n";
 	} else {
-		print STDERR "\nAll analysis descriptions can be updated, every analysis has a description in the file\n";
+		print STDERR "\nEvery analysis has a description in the file, all analysis descriptions can be updated.\n".
+                                "To write analysis descriptions to the analysis_description table in your DB,\n".
+                                "please run this script including the -update option on the commandline\n";
 	}
 } else {
     foreach my $ln (keys %hash) {
