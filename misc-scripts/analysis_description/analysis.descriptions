@@ -160,7 +160,7 @@
 157	Mono_ab_initio_RepeatMask	Interspersed repeats and low complexity sequence identified by <a rel="external" href="http://www.repeatmasker.org/">RepeatMasker</a> using ab initio repeat profiles specific to Monodelphis.	Repeats (Recon)	1	
 158	Prints	Protein fingerprints (groups of conserved motifs) are aligned to the genome. These motifs come from the <a rel="external" href="http://nar.oxfordjournals.org/cgi/content/abstract/31/1/400?maxtoshow=&amp;HITS=10&amp;hits=10&amp;RESULTFORMAT=1&amp;author1=Attwood&amp;andorexacttitle=and&amp;andorexacttitleabs=and&amp;andorexactfulltext=and&amp;searchid=1&amp;FIRSTINDEX=0&amp;sortspec=relevance&amp;resourcetype=HWCIT">PRINTS</a> database.	Prints domain	1	{'type'=>'domain'}
 159	mature_peptide	Feature imported from <a rel="external" href="http://www.flybase.org">FlyBase</a>.	Mature Peptide	1	
-160	cDNA_exonerate	ESTs and cDNAs from Aedes placed on the genome with Exonerate	EST	1	 {'type' => 'cdna','default' => {'contigviewbottom' => 'stack'}}
+160	aedes_cdna_est	ESTs and cDNAs from Aedes placed on the genome with Exonerate	EST	1	 {'type' => 'cdna','default' => {'contigviewbottom' => 'stack'}}
 161	EG3_Hs	Evolutionary conserved regions ("Ecores") are inferred from alignments of the Human and Tetraodon genomes by <a rel="external" href="http://www.nature.com/ng/journal/v25/n2/abs/ng0600_235.html">Exofish, H. Roest Crollius et al.,</a> and grouped into contiguous, consistent sets ("Ecotigs")	Human Ecores	1	 {'default' => {'contigviewbottom' => 'stack'}}
 162	DrosophilaBlast	WuBLASTX  of genomic segments against FlyBase Drosophila protein set	Drosophila BLAST	1	
 163	Expression_pattern	This sequence has been shown to be expressed in situ hybridisation experiments. The complete expression data collection is hosted by <a href="http://zfin.org/cgi-bin/webdriver?MIval=aa-xpatselect.apg">ZFIN</a>	Expression pattern	1	{'type'=>'est'}
@@ -286,7 +286,7 @@
 283	FANTOM_GSC_PET_raw	These are short sequence tags from the start sites of polyA transcripts. These ditags were downloaded from the <a rel="external" href="http://fantom.gsc.riken.go.jp/">Riken Fantom</a> project and aligned to the genome using <a rel="external" href="http://www.biomedcentral.com/1471-2105/6/31">Exonerate</a>.	Fantom GSC raw	0	
 284	AlignOligoProbes	Microarray probes aligned to the genome, if probe sequences are provided by the manufacturer.	Aligned oligo	0	
 285	GIS_PET_Encode	See <a href="/Homo_sapiens_ditags/GIS_PET.html">method</a> described here.	Ditags (GIS Encode)	0	
-286	cdna_exonerate			0	
+286	cdna_exonerate	cDNA sequences are mapped onto the genome using <a rel="external" href="http://www.biomedcentral.com/1471-2105/6/31">Exonerate</a>.	cDNA	1	{'default' => {'contigviewbottom' => 'stack'},'type' => 'cdna'}
 287	SimilarityGenewise			0	
 288	community_models	Community provided transcript models from VB	community_models	0	
 289	steve_human_cdna			0	
