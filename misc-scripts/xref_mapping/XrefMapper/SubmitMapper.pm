@@ -119,6 +119,7 @@ sub dump_xref{
   if(!defined($xref->dir())){
     if(defined($self->dir)){
       $xref->species($self->dir);
+      $self->species_id($self->get_id_from_species_name($self->species));
     }
     else{
       $xref->dir(".");
