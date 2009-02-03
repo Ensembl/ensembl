@@ -27,7 +27,7 @@ sub process{
 
 
 
-  print "Prscess Pairs\n";
+  print "Process Pairs\n";
   my $object_xref_id;
 
   my $sth =  $self->xref->dbc->prepare("select MAX(object_xref_id) from object_xref");
@@ -197,7 +197,9 @@ sub process{
   foreach my $key (keys %change){
     print "\t$key\t".$change{$key}."\n";
   }
-  print "$refseq_count new relations ships added\n";
+  print "$refseq_count new relationships added\n";
+  my $sth_stat = $self->xref->dbc->prepare("insert into process_status (status, date) values('processed_pairs',now())");
+  $sth_stat->execute();
 }
 
 1;
