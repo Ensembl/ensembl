@@ -95,11 +95,13 @@ my %mysql_directory_per_svr = ('genebuild1:3306'   => "/mysql/data_3306/database
 			       'mart2:3306'        => "/mysql/data_3306/databases",
 			       'compara1:3306'     => "/mysql/data_3306/databases",
 			       'compara2:3306'     => "/mysql/data_3306/databases",
+			       'compara2:5316'     => "/mysql/data_5316/databases",
 			       'compara3:3306'     => "/mysql/data_3306/databases",
 			       'ens-genomics1:3306' => "/mysql/data_3306/databases",
 			       'ens-genomics2:3306' => "/mysql/data_3306/databases",
 			       'ens-staging:3306'  => "/mysql/data_3306/databases",
 			       'ens-livemirror:3306'  => "/mysql/data_3306/databases",
+			       'ensdb-archive:3304' => "/mysql/data_3304/databases",
 			       'ens-research:3306' => "/mysql/data_3306/databases",
 			       'ens-research:3309' => "/mysql/data_3309/databases",
                                'ensdb-2-12:5106' => '/mysqlv5.1-test/data_5106/databases');
