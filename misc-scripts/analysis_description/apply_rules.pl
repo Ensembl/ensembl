@@ -35,8 +35,8 @@
 
    4) All align_features from vega databases should be switched off
 
-   5) Genes with a logic_name of 'otter' have a display label of 'Vega gene' in
-      Vega mouse and 'Vega Havana gene' in Vega human.
+   5) Genes with a logic_name of 'otter' have a display label of 'Vega Havana gene' in
+      Vega mouse and Vega human.
 
    6) Anopholes, human and mose have different web_data columns from the definition file
 
@@ -244,13 +244,25 @@ foreach my $cdb (@$cdbs) {
 
   if ($species =~ m/^(homo_sapiens|mus_musculus)/) {
 
+    ### new rule:in human and mouse, the only align_features on by default
+    ### are cDNA update and CCDS
 
-    ### implements rule 5. ###
+      
+    my $core_daf_logic_names = get_af_logic_names($caa, 'dna');
+    my $core_paf_logic_names = get_af_logic_names($caa, 'protein');
+		
+    foreach my $ln (@$core_daf_logic_names, @$core_paf_logic_names) {
+	next if ($ln eq 'CCDS'); #this does not apply to CCDS
+      my $ad = $caa->fetch_by_logic_name($ln);
+      if ($ad->web_data() ne ''){
+	  my $new_display_label = $ad->web_data();
+	  delete $new_display_label->{'default'};
+#	  print "<$cdb> Switching align_feature '$ln' from " . $caa->dump_data($ad->web_data()) . " to " . $caa->dump_data($new_display_label) ."\n";
+	  update_analysis($caa, $ln, $ad->displayable(),$ad->display_label,$new_display_label);
+      }
+    }
 
-    my $display_label = ($species eq 'homo_sapiens') ? 'Vega Havana gene' : 'Vega gene';
-    print "<$cdb> Updating display_label for logic_name otter to '$display_label'\n";
-    update_analysis($caa, 'otter', undef, $display_label);
-
+   
     ### implements rule 2. and 3. ###
 
     (my $cdnadb = $cdb) =~ s/_core_/_cdna_/;
@@ -305,7 +317,13 @@ foreach my $cdb (@$cdbs) {
 			
 
     }
-    
+
+    ### implements rule 5. ###
+
+    my $display_label = 'Vega Havana gene';
+    print "<$cdb> Updating display_label for logic_name otter to '$display_label'\n";
+    update_analysis($vegaaa, 'otter', undef, $display_label);
+
     # 6) There are two more rules for the logic_name 'ensembl' in core databases 
     #    depending on the species:
     #	 - all but mouse, human and anopheles, use definition file.
@@ -318,17 +336,18 @@ foreach my $cdb (@$cdbs) {
     #        'contigviewtop' => 'gene_label',
     #        'cytoview' => 'gene_label'},'key' => 'ensembl'}'
     
-    my $web_data = "'{'colour_key' => '[biotype]_[status]'".
-      "'caption' => 'Ensembl/Havana gene',".
-      "'name' => 'Merged Ensembl and Havana Genes',".
-      "'label_key' => '[text_label] [display_label]',".
-      "'default' => {'contigviewbottom' => 'transcript_label',".
-      "'contigviewtop' => 'gene_label',".
-      "'cytoview' => 'gene_label'},".
-      "'key' => 'ensembl'}'";
+    #web_data should be a hash reference
+    my $web_data = {'colour_key' => '[biotype]_[status]',
+      'caption' => 'Ensembl/Havana gene',
+      'name' => 'Merged Ensembl and Havana Genes',
+      'label_key' => '[text_label] [display_label]',
+      'default' => {'contigviewbottom' => 'transcript_label',
+      'contigviewtop' => 'gene_label',
+      'cytoview' => 'gene_label'},
+      'key' => 'ensembl'};
     print "<ensembl> Updating web_data\n";
     update_analysis($caa, 'ensembl', undef, undef, $web_data);
-  }
+}
 
   if ($species =~ m/^(anopheles_gambiae)/) {
 
@@ -389,7 +408,7 @@ sub update_analysis {
     $analysis->display_label($display_label);
   }
   if (defined $web_data) {
-    print "\t[".$aa->db->dbc->dbname."] Updating '$logic_name' web_data from \"".$analysis->web_data()."\" to \"".$web_data."\"\n";
+    print "\t[".$aa->db->dbc->dbname."] Updating '$logic_name' web_data from \"".$aa->dump_data($analysis->web_data())."\" to \"".$aa->dump_data($web_data)."\"\n";
     $analysis->web_data($web_data);
   }
 
