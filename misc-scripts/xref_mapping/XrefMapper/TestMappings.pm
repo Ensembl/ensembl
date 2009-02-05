@@ -47,7 +47,17 @@ sub new {
   bless $self,$class;
   $self->core($mapper->core);
   $self->xref($mapper->xref);
+  $self->mapper($mapper);
   return $self;
+}
+
+
+sub mapper{
+  my ($self, $arg) = @_;
+
+  (defined $arg) &&
+    ($self->{_mapper} = $arg );
+  return $self->{_mapper};
 }
 
 
@@ -313,5 +323,52 @@ sub entry_number_check{
 
   return;
 }
+
+
+sub name_change_check{
+  my ($self) = @_;
+
+  my %old_name; # $old_name{$gene_id} = HGNC_%name
+
+
+  my $official_name = $self->mapper->get_official_name;
+  if(!defined($official_name)){
+    return;
+  }
+  print "Checking names\n";
+
+  my $sql = 'select x.label, gsi.internal_id from object_xref ox, xref x, gene_stable_id gsi, source s  where x.xref_id = ox.xref_id and ox.ensembl_object_type = "Gene" and gsi.internal_id = ox.ensembl_id and x.source_id = s.source_id and s.name like "'.$official_name.'_%"';
+
+  my $sth = $self->xref->dbc->prepare($sql);
+  $sth->execute();
+  my ($name, $gene_id);
+  $sth->bind_columns(\$name,\$gene_id);
+  my $count = 0;
+  while($sth->fetch()){
+    $old_name{$gene_id} = $name;
+  }
+  $sth->finish;
+  print $sql."\n";
+  print $count." etires found in xref database\n";
+
+  $sql = "select x.display_label, g.gene_id from gene g, xref x where g.display_xref_id = x.xref_id";
+
+  $sth = $self->core->dbc->prepare($sql);
+  $sth->execute();
+  $sth->bind_columns(\$name,\$gene_id);
+  $count =0;
+  my $total_count=0;
+  while($sth->fetch()){
+    if(defined($old_name{$gene_id})){
+      $total_count++;
+    }	
+    if(defined($old_name{$gene_id}) and $old_name{$gene_id}ne $name){
+      print "WARN: gene_id $gene_id old = ".$old_name{$gene_id}." new = $name\n";
+      $count++;
+    }	
+  }
+  print "$count entris with different names out of $total_count?\n";
+}
+
 
 1;
