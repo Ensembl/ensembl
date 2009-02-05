@@ -108,9 +108,12 @@ sub new {
   $self->{'description'} = $full_desc   || throw('FULL_DESC must be given');
   $self->{'summary'} = $summary         || throw('SUMMARY must be given');
   $self->{'type'} = $type               || throw('TYPE must be given');
+  $self->{'external_db_id'} = $ex_db_id;
+
   if (lc($type) eq "xref") {
-    $self->{'external_db_id'} = $ex_db_id || throw('EXTERNAL_DB_ID must be given');
+    throw('EXTERNAL_DB_ID must be given') if ! defined $ex_db_id;
   }
+
   $self->{'identifier'} = $identifier   || throw('IDENTIFIER must be given');
   $self->{'query_score'} = $query_score  if(defined($query_score));
   $self->{'target_score'} = $target_score  if(defined($target_score));
