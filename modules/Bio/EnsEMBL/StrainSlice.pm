@@ -115,11 +115,14 @@ sub new{
 	if ($ind_adaptor){
 	    my $individual = shift @{$ind_adaptor->fetch_all_by_name($self->{'strain_name'})}; #the name should be unique for a strain
 	    #check that the individua returned isin the database
-	    if (defined $individual){
-		my $allele_features = $af_adaptor->fetch_all_by_Slice($self,$individual);
-		my $vf_ids = {}; #hash containing the relation vf_id->af
+
+            if (defined $individual){
+                my $allele_features = $af_adaptor->fetch_all_by_Slice($self,$individual);
+                warning("No strain genotype data available for Slice ".$self->name." and Strain ".$individual->name) if ! defined $allele_features->[0];
+                my $vf_ids = {}; #hash containing the relation vf_id->af
 		$self->{'_strain'} = $individual;		
-		map {$vf_ids->{$_->{'_variation_feature_id'}} = $_} @{$allele_features};
+		map {defined $_->{'_variation_feature_id'} ? $vf_ids->{$_->{'_variation_feature_id'}} = $_ : ''
+} @{$allele_features};
 #		my $new_allele_features = $self->_filter_af_by_coverage($allele_features);
 #		$self->{'alleleFeatures'} = $new_allele_features;
 		$self->{'alleleFeatures'} = $allele_features;
@@ -127,8 +130,9 @@ sub new{
 		return $self;
 	    }
 	    else{ 
-		#warning("Strain not in the database");
-		return $self;
+		warning("Strain not in the database");
+		#return $self;
+                return '';
 	    }
 	}
 	else{
