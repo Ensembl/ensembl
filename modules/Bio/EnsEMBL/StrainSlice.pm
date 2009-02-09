@@ -131,8 +131,7 @@ sub new{
 	    }
 	    else{ 
 		warning("Strain not in the database");
-		#return $self;
-                return '';
+		return $self;
 	    }
 	}
 	else{
