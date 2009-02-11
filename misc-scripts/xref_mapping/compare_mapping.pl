@@ -9,7 +9,7 @@
 
 # ADDITIONALLY
 # read in the synonym conversion. This is created with something like:-
-#mysql -hecs4 -P3350 -uensadmin -pensembl -Dianl_xref_test -e"select x.accession, s.synonym from synonym s, xref x where x.xref_id = s.xref_id" > xref_synonym.txt
+#mysql -hecs4 -P3350 -uensadmin -pPASS -Dianl_xref_test -e"select x.accession, s.synonym from synonym s, xref x where x.xref_id = s.xref_id" > xref_synonym.txt
 
 #ALSO get list of deleted accesions no need to look at these.
 #down load wget http://us.expasy.org/txt/delac_tr.txt

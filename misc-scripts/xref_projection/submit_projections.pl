@@ -14,7 +14,7 @@ my $conf = "release_53.ini"; # registry config file, specifies Compara location
 my $host = "ens-staging";
 my $port = 3306;
 my $user = "ensadmin";
-my $pass = "ensembl";
+my $pass = "PASS";
 
 # load limit for ens-staging MySQL instance above which jobs won't be started
 my $limit = 200;

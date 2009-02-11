@@ -5,7 +5,7 @@ use warnings;
 use File::Basename;
 use Bio::SeqIO;
 
-# perl xref_parser.pl -user ensadmin -pass ensembl -host genebuild2 -dbname snr_anopheles_gambiae_48_xref_test -species anopheles_gambiae -source ARRAY_JHSPH_AGGAMBER_15k_v1 -download_path $mywork/VB_xref/downloads/ -checkdownload
+# perl xref_parser.pl -user ensadmin -pass PASS -host genebuild2 -dbname snr_anopheles_gambiae_48_xref_test -species anopheles_gambiae -source ARRAY_JHSPH_AGGAMBER_15k_v1 -download_path $mywork/VB_xref/downloads/ -checkdownload
 
 
 use base qw( XrefParser::CoordinateParser );

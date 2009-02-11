@@ -875,7 +875,7 @@ sub usage {
 
   e.g
 
-  perl project_display_xrefs.pl --conf compara_only.ini --host ens-staging -user ensadmin -pass ensembl -version 47 -names -delete_names -from human -to dog -nobackup -no_database
+  perl project_display_xrefs.pl --conf compara_only.ini --host ens-staging -user ensadmin -pass PASS -version 47 -names -delete_names -from human -to dog -nobackup -no_database
 
 EOF
 
