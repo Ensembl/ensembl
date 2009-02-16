@@ -163,8 +163,9 @@ sub fetch_all_by_Slice {
     }
   }
 
-  $min_start += $slice->start() - 1;
-  $max_end   += $slice->start() - 1;
+#  mades no sense, the limit for the slice will be defined by the transcripts
+#  $min_start += $slice->start() - 1;
+#  $max_end   += $slice->start() - 1;
 
   my $ext_slice;
 
