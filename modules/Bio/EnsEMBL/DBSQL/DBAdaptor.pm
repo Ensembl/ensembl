@@ -56,38 +56,45 @@ my $reg = "Bio::EnsEMBL::Registry";
 =head2 new
 
   Arg [-DNADB]: (optional) Bio::EnsEMBL::DBSQL::DBAdaptor DNADB 
-               All sequence, assembly, contig information etc, will be
-               retrieved from this database instead.
+               All sequence, assembly, contig information etc, will
+               be retrieved from this database instead.
+
   Arg [-NO_CACHE]: (optional) int 1
-               This option will turn off caching for slice features, so, 
-               every time a set of features is retrieved, they will come from
-               the database instead of the cache. This option is only recommended
-               for advanced users, specially if you need to store and retrieve
-               features. It might reduce performance when querying the database if 
-               not used properly. If in doubt, do not use it or ask in ensembl-dev               
+               This option will turn off caching for slice features,
+               so, every time a set of features is retrieved,
+               they will come from the database instead of the
+               cache.  This option is only recommended for advanced
+               users, specially if you need to store and retrieve
+               features.  It might reduce performance when querying
+               the database if not used properly.  If in doubt, do
+               not use it or ask in ensembl-dev.
+
   Arg [..]   : Other args are passed to superclass
                Bio::EnsEMBL::DBSQL::DBConnection
+
   Example    : $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(
-						    -user   => 'root',
-						    -dbname => 'pog',
-						    -host   => 'caldy',
-						    -driver => 'mysql' );
+                -user   => 'root',
+                -dbname => 'pog',
+                -host   => 'caldy',
+                -driver => 'mysql'
+              );
+
   Exmaple2   : $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(
-                                                    -species => 'Homo_sapiens',
-                                                    -group   => 'core'
-						    -user   => 'root',
-						    -dbname => 'pog',
-						    -host   => 'caldy',
-						    -driver => 'mysql');
+                -species => 'Homo_sapiens',
+                -group   => 'core' -user => 'root',
+                -dbname  => 'pog',
+                -host    => 'caldy',
+                -driver  => 'mysql'
+              );
 
   Exmaple3   : $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(
-                                                    -species => 'staphylococcus_aureus',
-                                                    -group   => 'core'
-						                            -user   => 'root',
-						                            -dbname => 'staphylococcus_collection_1_52_1a',
-                                                    -multispecies_db => 1,
-						                            -host   => 'caldy',
-						                            -driver => 'mysql');
+                -species         => 'staphylococcus_aureus',
+                -group           => 'core' -user => 'root',
+                -dbname          => 'staphylococcus_collection_1_52_1a',
+                -multispecies_db => 1,
+                -host            => 'caldy',
+                -driver          => 'mysql'
+              );
 
   Description: Constructor for DBAdaptor.
   Returntype : Bio::EnsEMBL::DBSQL::DBAdaptor
@@ -103,13 +110,13 @@ sub new {
   my $self = bless {}, $class;
 
   my ( $is_multispecies, $species, $species_id, $group, $con, $dnadb,
-       $no_cache )
-    = rearrange( [ 'MULTISPECIES_DB', 'SPECIES',
-                   'SPECIES_ID',      'GROUP',
-                   'DBCONN',          'DNADB',
-                   'NO_CACHE'
-                 ],
-                 @args );
+    $no_cache )
+    = rearrange( [
+      'MULTISPECIES_DB', 'SPECIES', 'SPECIES_ID', 'GROUP',
+      'DBCONN',          'DNADB',   'NO_CACHE'
+    ],
+    @args
+    );
 
   if ( defined($con) ) { $self->dbc($con) }
   else {
