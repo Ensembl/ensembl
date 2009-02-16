@@ -97,7 +97,7 @@ sub process_mappings {
       }
       else{ #err file checks out so process the mapping file.
 	if(-e $map_file){
-	  if($self->process_map_file($map_file, $query_cutoff{$job_id}, $target_cutoff{$job_id} ) >= 0){
+	  if($self->process_map_file($map_file, $query_cutoff{$job_id}, $target_cutoff{$job_id}, $job_id, $array_number ) >= 0){
 	    $processed_count++;
 	    $stat_sth->execute('SUCCESS',$job_id, $array_number);
 	  }
@@ -122,6 +122,7 @@ sub process_mappings {
   if(!$error_count){
     my $sth = $self->xref->dbc->prepare("insert into process_status (status, date) values('mapping_processed',now())");
     $sth->execute();
+    $sth->finish;
   }
 
 }
@@ -130,8 +131,9 @@ sub process_mappings {
 
 #return number of lines parsed if succesfull. -1 for fail
 sub process_map_file{
-  my ($self, $map_file, $query_cutoff, $target_cutoff) = @_;
+  my ($self, $map_file, $query_cutoff, $target_cutoff, $job_id, $array_number) = @_;
   my $ret = 1;
+
 
   my $ensembl_type = "Translation";
   if($map_file =~ /_dna_/){
@@ -146,8 +148,11 @@ sub process_map_file{
   my $total_lines = 0;
   my $root_dir = $self->core->dir;
 
- my $ins_go_sth = $self->xref->dbc->prepare("insert ignore into go_xref (object_xref_id, linkage_type, source_xref_id) values(?,?,?)");
- my $dep_sth    = $self->xref->dbc->prepare("select dependent_xref_id, linkage_annotation from dependent_xref where master_xref_id = ?");
+  my $ins_go_sth = $self->xref->dbc->prepare("insert ignore into go_xref (object_xref_id, linkage_type, source_xref_id) values(?,?,?)");
+  my $dep_sth    = $self->xref->dbc->prepare("select dependent_xref_id, linkage_annotation from dependent_xref where master_xref_id = ?");
+  my $start_sth  = $self->xref->dbc->prepare("update mapping_jobs set object_xref_start = ? where job_id = ? and array_number = ?");
+  my $end_sth    = $self->xref->dbc->prepare("update mapping_jobs set object_xref_end = ? where job_id = ? and array_number = ?");
+  my $update_dependent_xref_sth = $self->xref->dbc->prepare("update dependent_xref set object_xref_id = ? where master_xref_id = ? and dependent_xref_id =?");
 
   my $object_xref_id;
   my $sth = $self->xref->dbc->prepare("select max(object_xref_id) from object_xref");
@@ -162,10 +167,17 @@ sub process_map_file{
 
   my $identity_xref_sth = $self->xref->dbc->prepare("insert into identity_xref (object_xref_id, query_identity, target_identity, hit_start, hit_end, translation_start, translation_end, cigar_line, score ) values (?, ?, ?, ?, ?, ?, ?, ?, ?)");
  
+  $start_sth->execute(($object_xref_id+1),$job_id, $array_number);
   while(<MAP>){
     $total_lines++;
     chomp();
     my ($label, $query_id, $target_id, $identity, $query_length, $target_length, $query_start, $query_end, $target_start, $target_end, $cigar_line, $score) = split(/:/, $_);
+
+
+    if(!defined($score)){
+      $end_sth->execute(($object_xref_id),$job_id, $array_number);
+      die "No score on line. Possible file corruption\n$_\n";      
+    }
 
     # calculate percentage identities
     my $query_identity = int (100 * $identity / $query_length);
@@ -188,6 +200,7 @@ sub process_map_file{
 	next;
       }
       else{
+	$end_sth->execute(($object_xref_id),$job_id, $array_number);
 	die "Problem loading error is $err\n";
       } 
     }  
@@ -198,8 +211,10 @@ sub process_map_file{
     $cigar_line =~ s/([MDI])(\d+)/$2$1/ig;
 
 
-    $identity_xref_sth->execute($object_xref_id, $query_identity, $target_identity, $query_start+1, $query_end, $target_start+1, $target_end, $cigar_line, $score) || die "Problem loading identity_xref";
-
+    if(!$identity_xref_sth->execute($object_xref_id, $query_identity, $target_identity, $query_start+1, $query_end, $target_start+1, $target_end, $cigar_line, $score)){
+      $end_sth->execute(($object_xref_id),$job_id, $array_number);
+      die "Problem loading identity_xref";
+    }
 
      my @master_xref_ids;
      push @master_xref_ids, $query_id;
@@ -217,8 +232,13 @@ sub process_map_file{
 	     next;
 	   }
 	   else{
+	     $end_sth->execute($object_xref_id,$job_id, $array_number);
 	     die "Problem loading error is $err\n";
 	   } 
+	 }
+	 $update_dependent_xref_sth->execute($object_xref_id, $master_xref_id, $dep_xref_id);
+	 if($object_xref_sth->err){
+	   print "WARNING: Should not reach here??? object_xref_id = $object_xref_id\n";
 	 }
 	 push @master_xref_ids, $dep_xref_id; # get the dependent, dependents just in case
 	 if(defined($link) and $link ne ""){ # we have a go term linkage type
@@ -229,6 +249,9 @@ sub process_map_file{
 
   }	
   close MAP;
+  $end_sth->execute($object_xref_id,$job_id, $array_number);
+  $start_sth->finish;
+  $end_sth->finish;
   $dep_sth->finish;
   $ins_go_sth->finish;
   $object_xref_sth->finish;
