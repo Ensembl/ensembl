@@ -887,49 +887,62 @@ sub add_adaptor {
 
 =cut
 
-sub get_adaptor{
-  my ($class,$species,$group,$type)= @_;
+sub get_adaptor {
+  my ( $class, $species, $group, $type ) = @_;
 
   $species = $class->get_alias($species);
 
-  my %dnadb_adaptors = qw(sequence  1 assemblymapper 1  karyotypeband 1 repeatfeature 1 coordsystem 1  assemblyexceptionfeature 1 );
+  my %dnadb_adaptors = (
+    'sequence'                 => 1,
+    'assemblymapper'           => 1,
+    'karyotypeband'            => 1,
+    'repeatfeature'            => 1,
+    'coordsystem'              => 1,
+    'assemblyexceptionfeature' => 1
+  );
 
-
- 
-  #warn "$species, $group, $type";
+  ## warn "$species, $group, $type";
 
   $type = lc($type);
 
-  my $dnadb_group =  $registry_register{$species}{lc($group)}{_DNA};
+  my $dnadb_group = $registry_register{$species}{ lc($group) }{'_DNA'};
 
-  if( defined($dnadb_group) && defined($dnadb_adaptors{lc($type)}) ) {
-      $species = $registry_register{$species}{lc($group)}{'_DNA2'};
-      $group = $dnadb_group;
+  if ( defined($dnadb_group)
+    && defined( $dnadb_adaptors{ lc($type) } ) )
+  {
+    $species = $registry_register{$species}{ lc($group) }{'_DNA2'};
+    $group   = $dnadb_group;
   }
 
   my $ret = $registry_register{$species}{ lc($group) }{ lc($type) };
-  if ( !defined($ret) ) { return undef; }
+  if ( !defined($ret) ) { return undef }
+  if ( ref($ret) )      { return $ret }
 
-  if(!ref($ret)){ # not instantiated yet
-    my $dba = $registry_register{$species}{lc($group)}{'_DB'};
-    my $module = $ret;
-    eval "require $module";
+  # Not instantiated yet
 
-    if($@) {
-      warning("$module cannot be found.\nException $@\n");
-      return undef;
-    }
-    if(!defined($registry_register{$species}{lc($group)}{'CHECKED'})){
-      $registry_register{$species}{lc($group)}{'CHECKED'} = 1;
-      $class->version_check($dba);
-    }
-    my $adap = "$module"->new($dba);
-    Bio::EnsEMBL::Registry->add_adaptor($species, $group, $type, $adap, "reset");
-    $ret = $adap;
+  my $dba    = $registry_register{$species}{ lc($group) }{'_DB'};
+  my $module = $ret;
+
+  eval "require $module";
+  if ($@) {
+    warning("'$module' cannot be found.\nException $@\n");
+    return undef;
   }
 
+  if (
+    !defined( $registry_register{$species}{ lc($group) }{'CHECKED'} ) )
+  {
+    $registry_register{$species}{ lc($group) }{'CHECKED'} = 1;
+    $class->version_check($dba);
+  }
+
+  my $adap = "$module"->new($dba);
+  Bio::EnsEMBL::Registry->add_adaptor( $species, $group, $type, $adap,
+    'reset' );
+  $ret = $adap;
+
   return $ret;
-}
+} ## end sub get_adaptor
 
 =head2 get_all_adaptors
 
