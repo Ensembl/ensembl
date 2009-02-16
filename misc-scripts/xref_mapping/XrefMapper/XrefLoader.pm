@@ -139,8 +139,9 @@ sub update{
      master_xref_id         INT NOT NULL,
      dependent_xref_id      INT NOT NULL,
 
-     PRIMARY KEY( master_xref_id ),
-     KEY dependent ( dependent_xref_id )
+     PRIMARY KEY( object_xref_id ),
+     KEY dependent ( dependent_xref_id ),
+     KEY master_idx (master_xref_id)
 
    ) COLLATE=latin1_swedish_ci TYPE=MyISAM
 SQL
@@ -283,7 +284,8 @@ SQL
         }
 	if($last_xref != $xref_id or $last_ensembl != $ensembl_id){
 	  $add_object_xref_sth->execute(($object_xref_id+$object_xref_offset), $ensembl_id, $ensembl_type, ($xref_id+$xref_offset));
-	  $add_dependent_xref_sth->execute(($object_xref_id+$object_xref_offset), ($xref_id+$xref_offset), ($master_xref_id+$xref_offset) );	}
+	  $add_dependent_xref_sth->execute(($object_xref_id+$object_xref_offset), ($master_xref_id+$xref_offset), ($xref_id+$xref_offset) );
+	}
 	$last_ensembl = $ensembl_id;
       }  
       print "DEP $count\n";
