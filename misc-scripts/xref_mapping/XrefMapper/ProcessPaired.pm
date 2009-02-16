@@ -56,6 +56,7 @@ sub process{
   my $ox_get_id_sth = $self->xref->dbc->prepare("select object_xref_id,ox_status from object_xref where xref_id = ? and ensembl_id = ? and ensembl_object_type = ?");
 
   my $ox_update_sth =  $self->xref->dbc->prepare('update object_xref set ox_status = "DUMP_OUT", linkage_type = "INFERRED_PAIR" where object_xref_id = ?');
+  my $xref_update_sth =  $self->xref->dbc->prepare('update xref set info_type = "INFERRED_PAIR" where xref_id = ?');
 
   $psth->execute() || die "execute failed";
   my ($acc1, $acc2);
@@ -120,12 +121,14 @@ sub process{
 		die "Duplicate but can't find the original?? xref_id = $xref_id, ensembl_id = $transcript_id, type = Transcript\n";
 	      }
 	      $ox_update_sth->execute($old_object_xref_id)|| die "Could not set update for object_xref_id = $old_object_xref_id";
+	      $xref_update_sth->execute($xref_id)|| die "Could not set update for xref_id = $xref_id";
 	    }
 	    else{
 	      die "Problem loading error is $err\n";
 	    } 
 	  }
 	  else{
+	    $xref_update_sth->execute($xref_id)|| die "Could not set update for xref_id = $xref_id";
 	    $change{"NEW"}++;
 	  }
 #  	  print "insert $xref_id transcript $transcript_id ........\n";
@@ -172,12 +175,14 @@ sub process{
 		die "Duplicate but can't find the original?? xref_id = $xref_id, ensembl_id = $translation_id, type = Translation\n";
 	      }
 	      $ox_update_sth->execute($old_object_xref_id)|| die "Could not set update for object_xref_id = $old_object_xref_id";
+	      $xref_update_sth->execute($xref_id)|| die "Could not set update for xref_id = $xref_id";
 	    }
 	    else{
 	      die "Problem loading error is $err\n";
 	    } 
 	  }
 	  else{
+	    $xref_update_sth->execute($xref_id)|| die "Could not set update for xref_id = $xref_id";
 	    $change{"NEW"}++;
 	  }
 #	  print "insert $xref_id translation $translation_id ........\n";
@@ -193,6 +198,8 @@ sub process{
   $ox_count_sth->finish;
   $ox_transcript_sth->finish;
   $ox_translation_sth->finish;
+  $ox_update_sth->finish;
+  $xref_update_sth->finish;
   $xref_sth->finish;
   foreach my $key (keys %change){
     print "\t$key\t".$change{$key}."\n";
@@ -200,6 +207,7 @@ sub process{
   print "$refseq_count new relationships added\n";
   my $sth_stat = $self->xref->dbc->prepare("insert into process_status (status, date) values('processed_pairs',now())");
   $sth_stat->execute();
+  $sth_stat->finish;
 }
 
 1;
