@@ -32,8 +32,7 @@ use IPC::Open3;
 sub store_core_database_details{
   my ($self, $port, $user, $pass, $dbname, $dir);
 
-  
-  
+    
 }
 
 
@@ -129,6 +128,12 @@ sub dump_xref{
   my @method=();
   my @lists =@{$self->get_set_lists()};
 
+  my $k = 0;
+  foreach my $list (@lists){
+    $method[$k++] = shift @$list;
+  }
+  $self->method(\@method);
+  
   my $i=0;
   if(defined($self->dumpcheck())){
     my $skip = 1;
@@ -142,11 +147,6 @@ sub dump_xref{
       $i++;
     }
     if($skip){
-      my $k = 0;
-      foreach my $list (@lists){
-        $method[$k++] = shift @$list;
-      }
-      $self->method(\@method);
       print "Xref fasta files found and will be used (No new dumping)\n";
       return;
     }
@@ -232,6 +232,8 @@ sub fetch_and_dump_seq{
 
 
   if(defined($self->dumpcheck()) and -e $ensembl->protein_file() and -e $ensembl->dna_file()){
+    my $sth = $self->xref->dbc->prepare("insert into process_status (status, date) values('core_fasta_dumped',now())");
+    $sth->execute();    
     print "Ensembl Fasta files found (no new dumping)\n";
     return;
   }
@@ -436,11 +438,7 @@ sub run_mapping {
     } else {
 
       my $obj = $obj_name->new();
-      #      $method_query_threshold{$method} = $obj->query_identity_threshold();
-      #      $method_target_threshold{$method} = $obj->target_identity_threshold();
-      
-      
-#      my $job_name = $obj->run($queryfile, $targetfile, $self->core->dir(),$self->nofarm);
+ 
       my $job_name = $obj->run($queryfile, $targetfile, $self);
       push @job_names, $job_name;
       push @running_methods, $obj;
