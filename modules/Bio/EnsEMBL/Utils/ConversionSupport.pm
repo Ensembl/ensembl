@@ -69,15 +69,15 @@ use Data::Dumper;
 =cut
 
 sub new {
-    my $class = shift;
-    (my $serverroot = shift) or throw("You must supply a serverroot.");
-    my $self = {
-        '_serverroot'   => $serverroot,
-        '_param'        => { interactive => 1 },
-        '_warnings'     => 0,
-    };
-    bless ($self, $class);
-    return $self;
+  my $class = shift;
+  (my $serverroot = shift) or throw("You must supply a serverroot.");
+  my $self = {
+    '_serverroot'   => $serverroot,
+    '_param'        => { interactive => 1 },
+    '_warnings'     => 0,
+  };
+  bless ($self, $class);
+  return $self;
 }
 
 =head2 parse_common_options
@@ -96,61 +96,59 @@ sub new {
 =cut
 
 sub parse_common_options {
-    my $self = shift;
+  my $self = shift;
 
-    # read commandline options
-    my %h;
-    Getopt::Long::Configure("pass_through");
-    &GetOptions( \%h,
-        'dbname|db_name=s',
-        'host|dbhost|db_host=s',
-        'port|dbport|db_port=n',
-        'user|dbuser|db_user=s',
-        'pass|dbpass|db_pass=s',
-        'conffile|conf=s',
-        'logfile|log=s',
-        'logpath=s',
-        'logappend|log_append=s',
-        'verbose|v=s',
-        'interactive|i=s',
-        'dry_run|dry|n=s',
-        'help|h|?',
-    );
+  # read commandline options
+  my %h;
+  Getopt::Long::Configure("pass_through");
+  &GetOptions( \%h,
+	       'dbname|db_name=s',
+	       'host|dbhost|db_host=s',
+	       'port|dbport|db_port=n',
+	       'user|dbuser|db_user=s',
+	       'pass|dbpass|db_pass=s',
+	       'conffile|conf=s',
+	       'logfile|log=s',
+	       'logpath=s',
+	       'logappend|log_append=s',
+	       'verbose|v=s',
+	       'interactive|i=s',
+	       'dry_run|dry|n=s',
+	       'help|h|?',
+	     );
 
+  # reads config file
+  my $conffile = $h{'conffile'} || $self->serverroot . "/sanger-plugins/vega/conf/ini-files/Conversion.ini";
+  $conffile = abs_path($conffile);
+  if (-e $conffile) {
+    open(CONF, $conffile) or throw( 
+      "Unable to open configuration file $conffile for reading: $!");
+    my $serverroot = $self->serverroot;
+    while (<CONF>) {
+      chomp;
 
-    # reads config file
-    my $conffile = $h{'conffile'} || $self->serverroot . "/sanger-plugins/vega/conf/ini-files/Conversion.ini";
-    $conffile = abs_path($conffile);
-    if (-e $conffile) {
-        open(CONF, $conffile) or throw( 
-            "Unable to open configuration file $conffile for reading: $!");
-        my $serverroot = $self->serverroot;
-        while (<CONF>) {
-            chomp;
+      # remove comments
+      s/^[#;].*//;
+      s/\s+[;].*$//;
 
-            # remove comments
-            s/^[#;].*//;
-            s/\s+[;].*$//;
-
-            # read options into internal parameter datastructure, removing whitespace
-            next unless (/(\w\S*)\s*=\s*(\S*)\s*/);
-            my $name = $1;
-            my $val = $2;
-            if ($val =~ /\$SERVERROOT/) {
-                $val =~ s/\$SERVERROOT/$serverroot/g;
-                $val = abs_path($val);
-            }
-            $self->param($name, $val);
-        }
-        $self->param('conffile', $conffile);
-    } elsif ($conffile) {
-        warning("Unable to open configuration file $conffile for reading: $!");
+      # read options into internal parameter datastructure, removing whitespace
+      next unless (/(\w\S*)\s*=\s*(\S*)\s*/);
+      my $name = $1;
+      my $val = $2;
+      if ($val =~ /\$SERVERROOT/) {
+	$val =~ s/\$SERVERROOT/$serverroot/g;
+	$val = abs_path($val);
+      }
+      $self->param($name, $val);
     }
+    $self->param('conffile', $conffile);
+  } elsif ($conffile) {
+    warning("Unable to open configuration file $conffile for reading: $!");
+  }
 
-    
-    # override configured parameter with commandline options
-    map { $self->param($_, $h{$_}) } keys %h;
-    return(1);
+  # override configured parameter with commandline options
+  map { $self->param($_, $h{$_}) } keys %h;
+  return(1);
 }
 
 =head2 parse_extra_options
@@ -166,15 +164,15 @@ sub parse_common_options {
 =cut
 
 sub parse_extra_options {
-    my ($self, @params) = @_;
-    Getopt::Long::Configure("no_pass_through");
-    eval {
-        # catch warnings to pass to $self->error
-        local $SIG{__WARN__} = sub { die @_; };
-        &GetOptions(\%{ $self->{'_param'} }, @params);
-    };
-    $self->error($@) if $@;
-    return(1);
+  my ($self, @params) = @_;
+  Getopt::Long::Configure("no_pass_through");
+  eval {
+    # catch warnings to pass to $self->error
+    local $SIG{__WARN__} = sub { die @_; };
+    &GetOptions(\%{ $self->{'_param'} }, @params);
+  };
+  $self->error($@) if $@;
+  return(1);
 }
 
 =head2 allowed_params
@@ -220,19 +218,19 @@ sub allowed_params {
 =cut
 
 sub get_common_params {
-    return qw(
-        conffile
-        dbname
-        host
-        port
-        user
-        pass
-        logpath
-        logfile
-        logappend
-        verbose
-        interactive
-        dry_run
+  return qw(
+	    conffile
+	    dbname
+	    host
+	    port
+	    user
+	    pass
+	    logpath
+	    logfile
+	    logappend
+	    verbose
+	    interactive
+	    dry_run
     );
 }
 
@@ -249,25 +247,25 @@ sub get_common_params {
 =cut
 
 sub get_loutre_params {
-	my ($self,$p) = @_;
-	if ($p) {
-		return qw(
-				  loutrehost=s
-				  loutreport=s
-				  loutreuser=s
-				  loutrepass=s
-				  loutredbname=s
-			  );
-	}
-	else {
-		return qw(
-				  loutrehost
-				  loutreport
-				  loutreuser
-				  loutrepass
-				  loutredbname
-			  );
-	}
+  my ($self,$p) = @_;
+  if ($p) {
+    return qw(
+	      loutrehost=s
+	      loutreport=s
+	      loutreuser=s
+	      loutrepass=s
+	      loutredbname=s
+	    );
+  }
+  else {
+    return qw(
+	      loutrehost
+	      loutreport
+	      loutreuser
+	      loutrepass
+	      loutredbname
+	    );
+  }
 }
 
 =head2 remove_vega_params
@@ -282,10 +280,10 @@ sub get_loutre_params {
 =cut
 
 sub remove_vega_params {
-	my $self = shift;
-	foreach my $param (qw(dbname host port user pass)) {
-		$self->{'_param'}{$param} = undef;
-	}
+  my $self = shift;
+  foreach my $param (qw(dbname host port user pass)) {
+    $self->{'_param'}{$param} = undef;
+  }
 }
 
 =head2 confirm_params
@@ -301,21 +299,21 @@ sub remove_vega_params {
 =cut
 
 sub confirm_params {
-    my $self = shift;
+  my $self = shift;
 
-    # print parameter table
-    print "Running script with these parameters:\n\n";
-    print $self->list_all_params;
+  # print parameter table
+  print "Running script with these parameters:\n\n";
+  print $self->list_all_params;
 
-	if ($self->param('host') eq 'ensdb-1-10') {
-		# ask user if he wants to proceed
-		exit unless $self->user_proceed("**************\n\n You're working on ensdb-1-10! Is that correct and you want to continue ?\n\n**************");
-	}
-	else {
-		# ask user if he wants to proceed
-		exit unless $self->user_proceed("Continue?");
-    }
-    return(1);
+  if ($self->param('host') eq 'ensdb-1-10') {
+    # ask user if he wants to proceed
+    exit unless $self->user_proceed("**************\n\n You're working on ensdb-1-10! Is that correct and you want to continue ?\n\n**************");
+  }
+  else {
+    # ask user if he wants to proceed
+    exit unless $self->user_proceed("Continue?");
+  }
+  return(1);
 }
 
 =head2 list_all_params
@@ -1524,8 +1522,8 @@ sub commify {
   Arg[2]      : B::E::AttributeAdaptor
   Arg[3]      : string $coord_system_name (optional) - 'chromosome' by default
   Arg[4]      : string $coord_system_version (optional) - 'otter' by default
-  Example     : $chroms = $support->fetch_non_hidden_slice($sa);
-  Description : retrieve all slices from a loutra database that don't have a hidden attribute
+  Example     : $chroms = $support->fetch_non_hidden_slice($sa,$aa);
+  Description : retrieve all slices from a loutre database that don't have a hidden attribute
   Return type : arrayref
   Caller      : general
   Status      : stable
@@ -1533,30 +1531,71 @@ sub commify {
 =cut
 
 sub fetch_non_hidden_slices {
-	my $self = shift;
-	my $aa   = shift or throw("You must supply an attribute adaptor");
-	my $sa   = shift or throw("You must supply a slice adaptor");
-	my $cs   = shift || 'chromosome';
-	my $cv   = shift || 'Otter';
-	my $visible_chroms;
-	foreach my $chrom ( @{$sa->fetch_all($cs,$cv)} ) {
-		my $chrom_name = $chrom->name;
-		my $attribs = $aa->fetch_all_by_Slice($chrom,'hidden');
-		if ( scalar(@$attribs) > 1 ) {
-			$self->log_warning("More than one hidden attribute for chromosome $chrom_name\n");
-		}
-		elsif ($attribs->[0]->value == 0) {				
-			push @$visible_chroms, $chrom;
-		}
-		elsif ($attribs->[0]->value == 1) {	
-			$self->log_verbose("chromosome $chrom_name is hidden\n");	
-		}
-		else {
-			$self->log_warning("No hidden attribute for chromosome $chrom_name\n");
-		}
-	}
-	return $visible_chroms;
+  my $self = shift;
+  my $aa   = shift or throw("You must supply an attribute adaptor");
+  my $sa   = shift or throw("You must supply a slice adaptor");
+  my $cs   = shift || 'chromosome';
+  my $cv   = shift || 'Otter';
+  my $visible_chroms;
+  foreach my $chrom ( @{$sa->fetch_all($cs,$cv)} ) {
+    my $chrom_name = $chrom->name;
+    my $attribs = $aa->fetch_all_by_Slice($chrom,'hidden');
+    if ( scalar(@$attribs) > 1 ) {
+      $self->log_warning("More than one hidden attribute for chromosome $chrom_name\n");
+    }
+    elsif ($attribs->[0]->value == 0) {				
+      push @$visible_chroms, $chrom;
+    }
+    elsif ($attribs->[0]->value == 1) {	
+      $self->log_verbose("chromosome $chrom_name is hidden\n");	
+    }
+    else {
+      $self->log_warning("No hidden attribute for chromosome $chrom_name\n");
+    }
+  }
+  return $visible_chroms;
 }
+
+=head2 get_non_hidden_slice_names
+
+  Arg[1]      : B::E::SliceAdaptor
+  Arg[2]      : B::E::AttributeAdaptor
+  Arg[3]      : string $coord_system_name (optional) - 'chromosome' by default
+  Arg[4]      : string $coord_system_version (optional) - 'otter' by default
+  Example     : $chrom_names = $support->get_non_hidden_slice_names($sa,$aa);
+  Description : retrieve names of all slices from a loutre database that don't have a hidden attribute
+  Return type : arrayref of names of all non-hidden slices
+  Caller      : general
+  Status      : stable
+
+=cut
+
+sub get_non_hidden_slice_names {
+  my $self = shift;
+  my $aa   = shift or throw("You must supply an attribute adaptor");
+  my $sa   = shift or throw("You must supply a slice adaptor");
+  my $cs   = shift || 'chromosome';
+  my $cv   = shift || 'Otter';
+  my $visible_chrom_names;
+  foreach my $chrom ( @{$sa->fetch_all($cs,$cv)} ) {
+    my $chrom_name = $chrom->seq_region_name;
+    my $attribs = $aa->fetch_all_by_Slice($chrom,'hidden');
+    if ( scalar(@$attribs) > 1 ) {
+      $self->log_warning("More than one hidden attribute for chromosome $chrom_name\n");
+    }
+    elsif ($attribs->[0]->value == 0) {				
+      push @$visible_chrom_names, $chrom_name;
+    }
+    elsif ($attribs->[0]->value == 1) {	
+      $self->log_verbose("chromosome $chrom_name is hidden\n");	
+    }
+    else {
+      $self->log_warning("No hidden attribute for chromosome $chrom_name\n");
+    }
+  }
+  return $visible_chrom_names;
+}
+
 
 =head2 get_wanted_chromosomes
 
@@ -1565,47 +1604,47 @@ sub fetch_non_hidden_slices {
   Arg[3]      : B::E::AttributeAdaptor
   Arg[4]      : string $coord_system_name (optional) - 'chromosome' by default
   Arg[5]      : string $coord_system_version (optional) - 'otter' by default
-  Example     : @chr_names = &Slice::get_wanted_chromosomes($support,$laa,$lsa);
+  Example     : $chr_names = $support->get_wanted_chromosomes($laa,$lsa);
   Description : retrieve names of slices from a lutra database that are ready for dumping to Vega.
                 Deals with list of names to ignore (ignore_chr = LIST)
-  Return type : arrayref
+  Return type : arrayref of slices
   Caller      : general
   Status      : stable
 
 =cut
 
 sub get_wanted_chromosomes {
-	my $self = shift;
-	my $aa   = shift or throw("You must supply an attribute adaptor");
-	my $sa   = shift or throw("You must supply a slice adaptor");
-	my $cs   = shift || 'chromosome';
-	my $cv   = shift || 'Otter';
-	my $export_mode = $self->param('release_type');
-	my $release = $self->param('vega_release');
-	my $names;
-	my $chroms  = $self->fetch_non_hidden_slices($aa,$sa,$cs,$cv);
+  my $self = shift;
+  my $aa   = shift or throw("You must supply an attribute adaptor");
+  my $sa   = shift or throw("You must supply a slice adaptor");
+  my $cs   = shift || 'chromosome';
+  my $cv   = shift || 'Otter';
+  my $export_mode = $self->param('release_type');
+  my $release = $self->param('vega_release');
+  my $names;
+  my $chroms  = $self->fetch_non_hidden_slices($aa,$sa,$cs,$cv);
  CHROM:
-	foreach my $chrom (@$chroms) {
-		my $attribs = $aa->fetch_all_by_Slice($chrom);
-		my $vals = $self->get_attrib_values($attribs,'vega_export_mod');
-		if (scalar(@$vals > 1)) {
-			$self->log_warning ("Multiple attribs for \'vega_export_mod\', please fix before continuing");
-			exit;
-		}
-		next CHROM if (! grep { $_ eq $export_mode} @$vals);
-		$vals =  $self->get_attrib_values($attribs,'vega_release',$release);	
-		if (scalar(@$vals > 1)) {
-			$self->log_warning ("Multiple attribs for \'vega_release\' value = $release , please fix before continuing");
-			exit;
-		}
-		next CHROM if (! grep { $_ eq $release} @$vals);
-		my $name = $chrom->seq_region_name;
-		if (my @ignored = $self->param('ignore_chr')) {
-			next CHROM if (grep {$_ eq $name} @ignored);
-		}
-		push @{$names}, $name;
-	}
-	return $names;
+  foreach my $chrom (@$chroms) {
+    my $attribs = $aa->fetch_all_by_Slice($chrom);
+    my $vals = $self->get_attrib_values($attribs,'vega_export_mod');
+    if (scalar(@$vals > 1)) {
+      $self->log_warning ("Multiple attribs for \'vega_export_mod\', please fix before continuing");
+      exit;
+    }
+    next CHROM if (! grep { $_ eq $export_mode} @$vals);
+    $vals =  $self->get_attrib_values($attribs,'vega_release',$release);	
+    if (scalar(@$vals > 1)) {
+      $self->log_warning ("Multiple attribs for \'vega_release\' value = $release , please fix before continuing");
+      exit;
+    }
+    next CHROM if (! grep { $_ eq $release} @$vals);
+    my $name = $chrom->seq_region_name;
+    if (my @ignored = $self->param('ignore_chr')) {
+      next CHROM if (grep {$_ eq $name} @ignored);
+    }
+    push @{$names}, $name;
+  }
+  return $names;
 }
 
 
@@ -1629,33 +1668,33 @@ sub get_wanted_chromosomes {
 =cut
 
 sub get_attrib_values {
-	my $self    = shift;
-	my $attribs = shift;
-	my $code    = shift;
-	my $value   = shift;
-	if (my @atts = grep {$_->code eq $code } @$attribs) {
-		my $r = [];
-		if ($value) {
-			if (my @values = grep {$_->value eq $value} @atts) {
-				foreach (@values) {
-					push @$r, $_->value;
-				}
-				return $r;
-			}
-			else {
-				return [];
-			}
-		}
-		else {
-			foreach (@atts) {
-				push @$r, $_->value;
-			}
-			return $r;
-		}
+  my $self    = shift;
+  my $attribs = shift;
+  my $code    = shift;
+  my $value   = shift;
+  if (my @atts = grep {$_->code eq $code } @$attribs) {
+    my $r = [];
+    if ($value) {
+      if (my @values = grep {$_->value eq $value} @atts) {
+	foreach (@values) {
+	  push @$r, $_->value;
 	}
-	else {
-		return [];
-	}
+	return $r;
+      }
+      else {
+	return [];
+      }
+    }
+    else {
+      foreach (@atts) {
+	push @$r, $_->value;
+      }
+      return $r;
+    }
+  }
+  else {
+    return [];
+  }
 }
 
 =head2 fix_attrib_value
