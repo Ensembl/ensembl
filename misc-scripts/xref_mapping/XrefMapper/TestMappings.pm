@@ -69,6 +69,9 @@ sub unlinked_entries{
   my $xref_id;
   my $count;
 
+  my $sth_stat = $self->xref->dbc->prepare("insert into process_status (status, date) values('tests_started',now())");
+  $sth_stat->execute();
+
   #    dependent_xref            and xref
   my $count_sql = "select count(1) from dependent_xref d left join xref x on d.master_xref_id = x.xref_id where x.xref_id is null";
   my $sql = "select distinct(d.master_xref_id) from dependent_xref d left join xref x on d.master_xref_id = x.xref_id where x.xref_id is null limit 10";
@@ -259,7 +262,8 @@ sub unlinked_entries{
 
   $count_sql = "select count(1) from xref x, source s, object_xref o left join go_xref g on o.object_xref_id = g.object_xref_id where x.xref_id = o.xref_id and s.source_id = x.source_id and s.name like 'GO' and g.object_xref_id is null";
   $sql = "select distinct(o.object_xref_id) from xref x, source s, object_xref o left join go_xref g on o.object_xref_id = g.object_xref_id where x.xref_id = o.xref_id and s.source_id = x.source_id and s.name like 'GO' and g.object_xref_id is null limit 10";
-  my $sth = $self->xref->dbc->prepare($count_sql);
+
+  $sth = $self->xref->dbc->prepare($count_sql);
   $sth->execute();
   $sth->bind_columns(\$count);
   $sth->fetch();
@@ -277,8 +281,15 @@ sub unlinked_entries{
     $sth->finish;
   }
 
-
-
+  if(!$failed){
+    $sth_stat = $self->xref->dbc->prepare("insert into process_status (status, date) values('tests_finished',now())");
+    $sth_stat->execute();
+  }
+  else{
+    $sth_stat = $self->xref->dbc->prepare("insert into process_status (status, date) values('tests_failed',now())");
+    $sth_stat->execute();
+  }
+  $sth_stat->finish;
 
   return $failed;
 }
@@ -293,7 +304,7 @@ sub entry_number_check{
   my %old_object_xref_count;
   my %new_object_xref_count;
 
-  my $sth = $self->xref->dbc->prepare('select s.name, count(*) from xref x, object_xref ox, source s where ox.xref_id = x.xref_id  and x.source_id = s.source_id and ox_status = "DUMP_OUT" group by s.name');
+  my $sth = $self->xref->dbc->prepare('select s.name, count(*) from xref x, object_xref ox, source s where ox.xref_id = x.xref_id  and x.source_id = s.source_id and ox_status = "DUMP_OUT"and s.name not like "AFFY%"  group by s.name');
   $sth->execute();
   my ($name, $count);
   $sth->bind_columns(\$name,\$count);
@@ -303,12 +314,13 @@ sub entry_number_check{
   $sth->finish;
 
   
- $sth = $self->core->dbc->prepare('select e.db_name, count(*) from xref x, object_xref ox, external_db e where ox.xref_id = x.xref_id and x.external_db_id = e.external_db_id group by e.db_name');
+ $sth = $self->core->dbc->prepare('select e.db_name, count(*) from xref x, object_xref ox, external_db e where ox.xref_id = x.xref_id and x.external_db_id = e.external_db_id and e.db_name not like "AFFY%" group by e.db_name');
 
   $sth->execute();
   $sth->bind_columns(\$name,\$count);
   while($sth->fetch()){
     my $change = 0;
+    $old_object_xref_count{$name} = $count;
     if(defined($new_object_xref_count{$name})){
       $change = (($new_object_xref_count{$name} - $count)/$new_object_xref_count{$name}) * 100;
       if($change > 5){ # increase of 5%
@@ -317,10 +329,19 @@ sub entry_number_check{
       elsif($change < -5){ # decrease by 5%
 	print "WARNING: $name has decreased by $change\% was $count now ". $new_object_xref_count{$name}. "\n"; 
       }
-    }   
+    }
+    else{
+      print "WARNING: xrefs $name are not in the new database but are in the old???\n";
+    }
   }
   $sth->finish;
-
+  
+  foreach my $key (keys %new_object_xref_count){
+    if(!defined($old_object_xref_count{$key})){
+      print "WARNING: $key has ".$new_object_xref_count{$key}." xrefs in the new database but NONE in the old\n";
+    }
+  }
+  
   return;
 }
 
@@ -328,8 +349,8 @@ sub entry_number_check{
 sub name_change_check{
   my ($self) = @_;
 
-  my %old_name; # $old_name{$gene_id} = HGNC_%name
-
+  my %new_name; # $old_name{$gene_id} = HGNC_%name
+  my %id_to_stable_id;
 
   my $official_name = $self->mapper->get_official_name;
   if(!defined($official_name)){
@@ -337,21 +358,25 @@ sub name_change_check{
   }
   print "Checking names\n";
 
-  my $sql = 'select x.label, gsi.internal_id from object_xref ox, xref x, gene_stable_id gsi, source s  where x.xref_id = ox.xref_id and ox.ensembl_object_type = "Gene" and gsi.internal_id = ox.ensembl_id and x.source_id = s.source_id and s.name like "'.$official_name.'_%"';
+  my $sql = 'select x.label, gsi.internal_id, gsi.stable_id from object_xref ox, xref x, gene_stable_id gsi, source s  where x.xref_id = ox.xref_id and ox.ensembl_object_type = "Gene" and gsi.internal_id = ox.ensembl_id and x.source_id = s.source_id and s.name like "'.$official_name.'_%"';
 
   my $sth = $self->xref->dbc->prepare($sql);
   $sth->execute();
-  my ($name, $gene_id);
-  $sth->bind_columns(\$name,\$gene_id);
+  my ($name, $gene_id, $stable_id);
+  $sth->bind_columns(\$name,\$gene_id, \$stable_id);
   my $count = 0;
   while($sth->fetch()){
-    $old_name{$gene_id} = $name;
+    $new_name{$gene_id} = $name;
+    $id_to_stable_id{$gene_id} = $stable_id;
+    $count++;
   }
   $sth->finish;
-  print $sql."\n";
-  print $count." etires found in xref database\n";
+#  print $sql."\n";
+#  print $count." entries found in xref database\n";
 
-  $sql = "select x.display_label, g.gene_id from gene g, xref x where g.display_xref_id = x.xref_id";
+
+  # NOTE ncRNA has higher priority
+  $sql = "select x.display_label, g.gene_id from gene g, xref x where g.display_xref_id = x.xref_id and biotype = 'protein_coding'";
 
   $sth = $self->core->dbc->prepare($sql);
   $sth->execute();
@@ -359,15 +384,15 @@ sub name_change_check{
   $count =0;
   my $total_count=0;
   while($sth->fetch()){
-    if(defined($old_name{$gene_id})){
+    if(defined($new_name{$gene_id})){
       $total_count++;
     }	
-    if(defined($old_name{$gene_id}) and $old_name{$gene_id}ne $name){
-      print "WARN: gene_id $gene_id old = ".$old_name{$gene_id}." new = $name\n";
+    if(defined($new_name{$gene_id}) and $new_name{$gene_id}ne $name){
+      print "WARN: gene_id ($gene_id) ".$id_to_stable_id{$gene_id}." new = ".$new_name{$gene_id}." old = $name\n";
       $count++;
     }	
   }
-  print "$count entris with different names out of $total_count?\n";
+  print "$count entries with different names out of $total_count protein coding gene comparisons?\n";
 }
 
 
