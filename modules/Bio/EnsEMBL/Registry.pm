@@ -1165,22 +1165,29 @@ my $self = shift;
 
   Arg [1] : string $url
   Arg [2] : (optional) integer
-               If not 0, will print out all information.
+            If not 0, will print out all information.
   Arg [3] : (optional) integer
-               This option will turn off caching for slice features, so, 
-               every time a set of features is retrieved, they will come from
-               the database instead of the cache. This option is only recommended
-               for advanced users, specially if you need to store and retrieve
-               features. It might reduce performance when querying the database if 
-               not used properly. If in doubt, do not use it or ask in ensembl-dev           
-  Example : load_registry_from_url(mysql://anonymous@ensembldb.ensembl.org:3306);
-  Description: Will load the correct versions of the ensembl databases for the
-               software release it can find on a database instance into the 
-               registry. Also adds a set of standard aliases. The url format is:
-               mysql://[[username][:password]@]hostname[:port].
-               You can also request a specific version for the databases by adding
-               a slash and the version number but your script may crash as the API
-               version won't match the DB version.
+          This option will turn off caching for slice features,
+          so, every time a set of features is retrieved, they
+          will come from the database instead of the cache. This
+          option is only recommended for advanced users, specially
+          if you need to store and retrieve features. It might
+          reduce performance when querying the database if not used
+          properly. If in doubt, do not use it or ask in ensembl-dev
+
+  Example : load_registry_from_url(
+            'mysql://anonymous@ensembldb.ensembl.org:3306');
+
+  Description: Will load the correct versions of the ensembl
+               databases for the software release it can find on
+               a database instance into the registry. Also adds
+               a set of standard aliases. The url format is:
+               mysql://[[username][:password]@]hostname[:port].  You
+               can also request a specific version for the databases
+               by adding a slash and the version number but your
+               script may crash as the API version won't match the
+               DB version.
+
   Exceptions : None.
   Status     : Stable
  
@@ -1217,59 +1224,78 @@ sub load_registry_from_url {
 
 =head2 load_registry_from_db
 
-  Arg [HOST] : The domain name of the database host to connect to.
-               
+  Arg [HOST] : string
+                The domain name of the database host to connect to.
+
   Arg [USER] : string
-               The name of the database user to connect with
+                The name of the database user to connect with.
+
   Arg [PASS] : (optional) string
-               The password to be used to connect to the database
-  Arg [PORT] : int
-               The port to use when connecting to the database
-  Arg [VERBOSE]: (optional) Wether to print database messages 
-  Arg [DB_VERSION]: (optional) By default, only databases corresponding
-               to this API version are loaded. This allows the script to
-               use databases from another version although it might not
-               work properly. This option should only be used for
-               production or testing purposes and if you really know what
-               you are doing.
+                The password to be used to connect to the database.
+
+  Arg [PORT] : (optional) integer
+                The port to use when connecting to the database.
+
+  Arg [VERBOSE]: (optional) boolean
+                Whether to print database messages.
+
+  Arg [DB_VERSION]: (optional) integer
+                By default, only databases corresponding to this API
+                version are loaded. This allows the script to use
+                databases from another version although it might not
+                work properly.  This option should only be used for
+                production or testing purposes and if you really
+                know what you are doing.
+
   Arg [WAIT_TIMEOUT]: (optional) integer
-                 Time in seconds for the wait timeout to happen. Time after which
-                 the connection is deleted if not used. By default this is 28800 (8 hours)
-                 So set this to greater than this if your connection are getting deleted.
-                 Only set this if you are having problems and know what you are doing.
+                Time in seconds for the wait timeout to happen.
+                Time after which the connection is deleted if not
+                used.  By default this is 28800 (8 hours), so set
+                this to greater than this if your connection are
+                getting deleted.  Only set this if you are having
+                problems and know what you are doing.
+
    Arg [-NO_CACHE]: (optional) int 1
-                 This option will turn off caching for slice features, so, 
-                 every time a set of features is retrieved, they will come from
-                 the database instead of the cache. This option is only recommended
-                 for advanced users, specially if you need to store and retrieve
-                 features. It might reduce performance when querying the database if 
-                 not used properly. If in doubt, do not use it or ask in ensembl-dev       
+                This option will turn off caching for slice
+                features, so, every time a set of features is
+                retrieved, they will come from the database instead
+                of the cache.  This option is only recommended for
+                advanced users, specially if you need to store and
+                retrieve features.  It might reduce performance when
+                querying the database if not used properly.  If in
+                doubt, do not use it or ask in ensembl-dev.
 
-  Example : load_registry_from_db( -host => 'ensembldb.ensembl.org',
-				   -user => 'anonymous',
-				   -verbose => "1" );
+  Example : load_registry_from_db(
+              -host    => 'ensembldb.ensembl.org',
+              -user    => 'anonymous',
+              -verbose => '1'
+            );
 
-  Description: Will load the correct versions of the ensembl databases for the
-               software release it can find on a database instance into the 
-               registry. Also adds a set of standard aliases.
+  Description: Will load the correct versions of the ensembl
+               databases for the software release it can find on a
+               database instance into the registry.  Also adds a set
+               of standard aliases.
 
   Exceptions : None.
   Status     : Stable
- 
+
 =cut
 
 sub load_registry_from_db {
   my ( $self, @args ) = @_;
 
-  my ( $host, $port, $user, $pass, $verbose, $db_version,
-       $wait_timeout, $no_cache ) =
-    rearrange(
-             [qw(HOST PORT USER PASS VERBOSE DB_VERSION WAIT_TIMEOUT NO_CACHE)],
-             @args );
+  my ( $host, $port, $user, $pass, $verbose, $db_version, $wait_timeout,
+    $no_cache )
+    = rearrange( [
+      'HOST',    'PORT',       'USER',         'PASS',
+      'VERBOSE', 'DB_VERSION', 'WAIT_TIMEOUT', 'NO_CACHE'
+    ],
+    @args
+    );
 
-  my $go_version = 0;
-  my $compara_version =0;
-  my $ancestral_version =0;
+  my $go_version        = 0;
+  my $compara_version   = 0;
+  my $ancestral_version = 0;
 
   $user ||= "ensro";
   if ( !defined($port) ) {
