@@ -48,7 +48,6 @@ use vars qw(@ISA);
 use strict;
 
 use Bio::EnsEMBL::Registry;
-my $reg = "Bio::EnsEMBL::Registry";
 use Bio::EnsEMBL::Root;
 use DBI;
 
@@ -59,6 +58,7 @@ use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 
 @ISA = qw(Bio::EnsEMBL::Root); # for backwards compatibility
 
+my $reg = "Bio::EnsEMBL::Registry";
 
 =head2 new
 

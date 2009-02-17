@@ -58,18 +58,22 @@ use Bio::EnsEMBL::Utils::Exception qw(throw deprecate warning);
 sub get_schema_version {
   my $self = shift;
 
-  my $arrRef = $self->list_value_by_key( 'schema_version' );
-  
-  if( @$arrRef ) {
-    my ($ver) = ($arrRef->[0] =~ /^\s*(\d+)\s*$/);
-    if(!defined($ver)){ # old style format
+  my $arrRef = $self->list_value_by_key('schema_version');
+
+  if (@$arrRef) {
+    my ($ver) = ( $arrRef->[0] =~ /^\s*(\d+)\s*$/ );
+    if ( !defined($ver) ) {    # old style format
       return 0;
     }
     return $ver;
   } else {
-    warning("Please insert meta_key 'schema_version' " .
-	    "in meta table at core db.\n");
+    warning(
+      sprintf(
+        "Please insert meta_key 'schema_version' "
+          . "in meta table on core database '%s'\n",
+        $self->dbc()->dbname() ) );
   }
+
   return 0;
 }
 
