@@ -144,33 +144,39 @@ my %group2adaptor =
 
 =head2 load_all
 
- Will load the registry with the configuration file which is obtained
- from the first in the following and in that order.
+ Will load the registry with the configuration file which is
+ obtained from the first in the following and in that order.
 
-  1) If an argument is passed to this method, this is used as the name
-     of the configuration file to read.
+  1) If an argument is passed to this method, this is used as the
+     name of the configuration file to read.
 
-  2) If the enviroment variable ENSEMBL_REGISTRY is set, this is used as
-     the name of the configuration file to read.
+  2) If the enviroment variable ENSEMBL_REGISTRY is set, this is
+     used as the name of the configuration file to read.
 
-  3) If the file .ensembl_init exist in the home directory, it is used
-     as the configuration file.
+  3) If the file .ensembl_init exist in the home directory, it is
+     used as the configuration file.
 
   Arg [1]    : (optional) string
                Name of file to load the registry from.
+
   Arg [2]    : (optional) integer
                If not 0, will print out all information.
+
   Arg [3]    : (optional) integer
-               If not 0, the db connection will not be cleared, if 0 or
-               if not set the db connections will be cleared (this is
-               the default).
-  Arg [4]:     (optional) int 1
-               This option will turn off caching for slice features, so, 
-               every time a set of features is retrieved, they will come from
-               the database instead of the cache. This option is only recommended
-               for advanced users, specially if you need to store and retrieve
-               features. It might reduce performance when querying the database if 
-               not used properly. If in doubt, do not use it or ask in ensembl-dev            
+               If not 0, the database connection will not be
+               cleared, if 0 or if not set the database connections
+               will be cleared (this is the default).
+
+  Arg [4]:     (optional) boolean
+               This option will turn off caching for slice features,
+               so, every time a set of features is retrieved,
+               they will come from the database instead of the
+               cache.  This option is only recommended for advanced
+               users, specially if you need to store and retrieve
+               features.  It might reduce performance when querying
+               the database if not used properly.  If in doubt, do
+               not use it or ask in ensembl-dev.
+
   Example    : Bio::EnsEMBL::Registry->load_all();
   Returntype : none
   Exceptions : none
@@ -309,12 +315,14 @@ sub load_all {
                 # We trust the user to provide sensible key-value pairs.
                 my %adaptor_args = %default_adaptor_args;
                 foreach my $parameter ( $cfg->Parameters($section) ) {
-                    $adaptor_args{ '-' . $parameter } =
-                      $cfg->val( $section, $parameter );
-		    #when set, do not use the feature cache in the different adaptors
-		    if ($no_cache){
-			$adaptor_args{'-no_cache'} = 1;
-		    }
+                  $adaptor_args{ '-' . $parameter } =
+                    $cfg->val( $section, $parameter );
+
+                  # when set, do not use the feature cache in the
+                  # different adaptors
+                  if ($no_cache) {
+                    $adaptor_args{'-no_cache'} = 1;
+                  }
                 }
 
                 if ($verbose) {
@@ -378,18 +386,19 @@ sub clear{
   Returntype : none
   Exceptions : none
   Status     : At Risk.
-             : This is here for backwards compatibility only and may be removed 
-             : eventually. Solution is to make sure the db and the adaptor have
-             : the same species and the call is then no longer needed.
-             
+             : This is here for backwards compatibility only and may
+             : be removed eventually.  Solution is to make sure the
+             : db and the adaptor have the same species and the call
+             : is then no longer needed.
+
 =cut
 
-sub add_db{
-  my ($class, $db, $name, $adap) = @_;
+sub add_db {
+  my ( $class, $db, $name, $adap ) = @_;
 
-
-  if(lc($db->species()) ne lc($adap->species)){
-    $registry_register{lc($db->species())}{lc($db->group())}{'_special'}{lc($name)} = $adap;
+  if ( lc( $db->species() ) ne lc( $adap->species ) ) {
+    $registry_register{ lc( $db->species() ) }{ lc( $db->group() ) }
+      {'_special'}{ lc($name) } = $adap;
   }
 }
 
@@ -401,17 +410,22 @@ sub add_db{
   Returntype : adaptor
   Exceptions : none
   Status     : At Risk.
-             : This is here for backwards compatibility only and may be removed 
-             : eventually. Solution is to make sure the db and the adaptor have
-             : the same species and the call is then no longer needed.
+             : This is here for backwards compatibility only and may
+             : be removed eventually.  Solution is to make sure the
+             : db and the adaptor have the same species and the call
+             : is then no longer needed.
 
 =cut
 
-sub remove_db{
-  my ($class, $db, $name) = @_;
+sub remove_db {
+  my ( $class, $db, $name ) = @_;
 
-  my $ret = $registry_register{lc($db->species())}{lc($db->group())}{'_special'}{lc($name)};
-  $registry_register{lc($db->species())}{lc($db->group())}{'_special'}{lc($name)} = undef;
+  my $ret =
+    $registry_register{ lc( $db->species() ) }{ lc( $db->group() ) }
+    {'_special'}{ lc($name) };
+
+  $registry_register{ lc( $db->species() ) }{ lc( $db->group() ) }
+    {'_special'}{ lc($name) } = undef;
 
   return $ret;
 }
@@ -424,21 +438,23 @@ sub remove_db{
   Returntype : adaptor
   Exceptions : none
   Status     : At Risk.
-             : This is here for backwards compatibility only and may be removed 
-             : eventually. Solution is to make sure the db and the adaptor have
-             : the same species then call get_DBAdaptor instead.
+             : This is here for backwards compatibility only and may
+             : be removed eventually.  Solution is to make sure the
+             : db and the adaptor have the same species then call
+             : get_DBAdaptor instead.
 
 =cut
 
-sub get_db{
-  my ($class, $db, $name) = @_;
+sub get_db {
+  my ( $class, $db, $name ) = @_;
 
-  my $ret = Bio::EnsEMBL::Registry->get_DBAdaptor(lc($db->species),lc($name));
+  my $ret = Bio::EnsEMBL::Registry->get_DBAdaptor( lc( $db->species ),
+    lc($name) );
 
-  if(defined($ret)){
-    return $ret;
-  }
-  return $registry_register{lc($db->species())}{lc($db->group())}{'_special'}{lc($name)};
+  if ( defined($ret) ) { return $ret }
+
+  return $registry_register{ lc( $db->species() ) }
+    { lc( $db->group() ) }{'_special'}{ lc($name) };
 }
 
 =head2 get_all_db_adaptors
@@ -448,9 +464,10 @@ sub get_db{
   Returntype : adaptor
   Exceptions : none
   Status     : At Risk.
-             : This is here for backwards compatibility only and may be removed 
-             : eventually. Solution is to make sure the dbs all have
-             : the same species then call get_all_DBAdaptors(-species => "human");
+             : This is here for backwards compatibility only and
+             : may be removed eventually.  Solution is to make
+             : sure the dbs all have the same species then call
+             : get_all_DBAdaptors(-species => "human");
 
 
 =cut
@@ -469,9 +486,9 @@ sub get_all_db_adaptors {
   }
 
   foreach my $key (
-             keys %{
-               $registry_register{ $class->get_alias( $db->species() ) }
-                 { lc( $db->group() ) }{'_special'} } )
+    keys %{
+      $registry_register{ $class->get_alias( $db->species() ) }
+        { lc( $db->group() ) }{'_special'} } )
   {
     $ret{$key} =
       $registry_register{ $class->get_alias( $db->species() ) }
@@ -499,25 +516,23 @@ sub get_all_db_adaptors {
 
 =cut
 
-sub add_DBAdaptor{
-  my ($class, $species, $group, $adap) = @_;
+sub add_DBAdaptor {
+  my ( $class, $species, $group, $adap ) = @_;
 
-  if(!($class->alias_exists($species))){
-    $class->add_alias($species,$species);
+  if ( !( $class->alias_exists($species) ) ) {
+    $class->add_alias( $species, $species );
   }
-  
 
   $species = $class->get_alias($species);
 
-  $registry_register{$species}{lc($group)}{'_DB'} = $adap;
+  $registry_register{$species}{ lc($group) }{'_DB'} = $adap;
 
-  if(!defined($registry_register{'_DBA'})){
-    my @list =();
-    push(@list,$adap);
-    $registry_register{'_DBA'}= \@list;
-  }
-  else{
-    push(@{$registry_register{'_DBA'}},$adap);
+  if ( !defined( $registry_register{'_DBA'} ) ) {
+    my @list = ();
+    push( @list, $adap );
+    $registry_register{'_DBA'} = \@list;
+  } else {
+    push( @{ $registry_register{'_DBA'} }, $adap );
   }
 
 }
@@ -535,13 +550,12 @@ sub add_DBAdaptor{
 
 =cut
 
-sub get_DBAdaptor{
-  my ($class, $species, $group) = @_;
+sub get_DBAdaptor {
+  my ( $class, $species, $group ) = @_;
 
   $species = $class->get_alias($species);
 
-  return  $registry_register{$species}{lc($group)}{'_DB'};
-
+  return $registry_register{$species}{ lc($group) }{'_DB'};
 }
 
 =head2 get_all_DBAdaptors
@@ -550,8 +564,15 @@ sub get_DBAdaptor{
                   species name to get adaptors for
   Arg [GROUP]  : (optional) string 
                   group name to get adaptors for
-  Example      : @dba = @{Bio::EnsEMBL::Registry->get_all_DBAdaptors()};
-               : @human_dbas = @{Bio::EnsEMBL::Registry->get_all_DBAdaptors(-species => 'human')};
+  Example      : 
+                @dba =
+                  @{ Bio::EnsEMBL::Registry->get_all_DBAdaptors() };
+
+                @human_dbas =
+                  @{ Bio::EnsEMBL::Registry->get_all_DBAdaptors(
+                    -species => 'human'
+                  ) };
+
   Returntype   : list of DBAdaptors
   Exceptions   : none
   Status       : Stable
@@ -561,18 +582,16 @@ sub get_DBAdaptor{
 sub get_all_DBAdaptors {
   my ( $class, @args ) = @_;
 
-  my @ret;
   my ( $species, $group ) = rearrange( [qw(SPECIES GROUP)], @args );
 
-  if ( defined($species) ) {
-    $species = $class->get_alias($species);
-  }
+  if ( defined($species) ) { $species = $class->get_alias($species) }
 
+  my @ret;
   foreach my $dba ( @{ $registry_register{'_DBA'} } ) {
-    if ( !defined($species) || lc($species) eq lc( $dba->species ) ) {
-      if ( !defined($group) || lc($group) eq lc( $dba->group ) ) {
-        push( @ret, $dba );
-      }
+    if ( ( !defined($species) || lc($species) eq lc( $dba->species() ) )
+      && ( !defined($group) || lc($group) eq lc( $dba->group() ) ) )
+    {
+      push( @ret, $dba );
     }
   }
 
@@ -687,7 +706,8 @@ sub remove_DBAdaptor{
   Arg [3]:     string - new dbname
   Args [4-7]:  string - optional DB parameters, defaults to current db params if omitted
   Arg [8]:     hashref - Hash ref of additional parameters e.g. eFG dnadb params for auto selecting dnadb
-  Usage :      $reg->reset_registry_db('homo_sapiens', 'core', 'homo_sapiens_core_37_35j');
+  Usage :      $reg->reset_registry_db( 'homo_sapiens', 'core',
+                  'homo_sapiens_core_37_35j' );
   Description: Resets a DB within the registry.
   Exceptions:  Throws if mandatory params not supplied
                Throws if species name is not already seen by the registry
@@ -696,67 +716,66 @@ sub remove_DBAdaptor{
 
 =cut
 
-sub reset_DBAdaptor{
-  my ($self, $species, $group, $dbname, $host, $port, $user, $pass, $params) = @_;
+sub reset_DBAdaptor {
+  my (
+    $self, $species, $group, $dbname, $host,
+    $port, $user,    $pass,  $params
+  ) = @_;
 
   # Check mandatory params
-  if(! (defined $species && defined $group && defined $dbname)){
-	throw('Must provide at least a species, group and dbname parmeter to redefine a DB in the registry');
+  if ( !( defined $species && defined $group && defined $dbname ) ) {
+    throw(
+      'Must provide at least a species, group, and dbname parameter '
+        . 'to redefine a DB in the registry' );
   }
-  
+
   # Validate species here
   my $alias = $self->get_alias($species);
-  throw("Could not find registry alias for species:\t$species") if(! defined $alias);
- 
+  throw("Could not find registry alias for species:\t$species")
+    if ( !defined $alias );
+
   # Get all current defaults if not defined
 
-  my $db = $self->get_DBAdaptor($alias, $group);
+  my $db = $self->get_DBAdaptor( $alias, $group );
   my $class;
 
-  if($db){
-	$class = ref($db);
-	$host ||= $db->dbc->host;
-	$port ||= $db->dbc->port;
-	$user ||= $db->dbc->username;
-	$pass ||= $db->dbc->password;
+  if ($db) {
+    $class = ref($db);
+    $host ||= $db->dbc->host;
+    $port ||= $db->dbc->port;
+    $user ||= $db->dbc->username;
+    $pass ||= $db->dbc->password;
+  } else {
+    #Now we need to test mandatory params
+    $class = $group2adaptor{ lc($group) };
+
+    if ( !( $host && $user ) ) {
+      throw("No comparable $alias $group DB present in Registry. "
+          . "You must pass at least a dbhost and dbuser" );
+    }
   }
-  else{
-	#Now we need to test mandatory params
-	$class =  $group2adaptor{ lc($group) };
 
-	if(! ($host && $user)){
-	  throw("No comparable $alias $group DB present in Registry. You must pass at least a dbhost and dbuser");
-	}
-  }
+  $self->remove_DBAdaptor( $alias, $group );
 
- 
-  $self->remove_DBAdaptor($alias, $group);
-
-   
-  
   #my @adaptors = @{$self->get_all_adaptors};
   #This is causing a loop as it was constantly trying to reset the db
   #and never getting there.
   #I think this was left over from testing
 
-  	
   # ConfigRegistry should automatically add this to the Registry
 
-
   $db = $class->new(
-					-user => $user,
-					-host => $host,
-					-port => $port,
-					-pass => $pass,
-					-dbname => $dbname,
-					-species => $alias,
-					-group    => $group,
-					%{$params}
-				   );
-
+    -user    => $user,
+    -host    => $host,
+    -port    => $port,
+    -pass    => $pass,
+    -dbname  => $dbname,
+    -species => $alias,
+    -group   => $group,
+    %{$params} );
 
   return $db;
-}
+} ## end sub reset_DBAdaptor
 
 
 #
@@ -776,17 +795,17 @@ sub reset_DBAdaptor{
 
 =cut
 
-sub add_DNAAdaptor{
-  my ($class, $species, $group, $dnadb_species, $dnadb_group) = @_;
+sub add_DNAAdaptor {
+  my ( $class, $species, $group, $dnadb_species, $dnadb_group ) = @_;
 
-  $species = $class->get_alias($species);
+  $species       = $class->get_alias($species);
   $dnadb_species = $class->get_alias($dnadb_species);
-  if($dnadb_group->isa('Bio::EnsEMBL::DBSQL::DBAdaptor')){
+  if ( $dnadb_group->isa('Bio::EnsEMBL::DBSQL::DBAdaptor') ) {
     deprecated("");
-  }
-  else{
-    $registry_register{$species}{lc($group)}{'_DNA'} = $dnadb_group;
-    $registry_register{$species}{lc($group)}{'_DNA2'} = $dnadb_species;
+  } else {
+    $registry_register{$species}{ lc($group) }{'_DNA'} = $dnadb_group;
+    $registry_register{$species}{ lc($group) }{'_DNA2'} =
+      $dnadb_species;
   }
 }
 
@@ -801,17 +820,18 @@ sub add_DNAAdaptor{
 
 =cut
 
-sub get_DNAAdaptor{
-  my ($class, $species, $group) = @_;
+sub get_DNAAdaptor {
+  my ( $class, $species, $group ) = @_;
 
   $species = $class->get_alias($species);
-  my $new_group = $registry_register{$species}{lc($group)}{'_DNA'};
-  my $new_species = $registry_register{$species}{lc($group)}{'_DNA2'};
-  if( defined $new_group ) {
-    return  $class->get_DBAdaptor($new_species,$new_group);
-  } else {
-    return undef;
+  my $new_group   = $registry_register{$species}{ lc($group) }{'_DNA'};
+  my $new_species = $registry_register{$species}{ lc($group) }{'_DNA2'};
+
+  if ( defined $new_group ) {
+    return $class->get_DBAdaptor( $new_species, $new_group );
   }
+
+  return undef;
 }
 
 #
@@ -830,7 +850,6 @@ sub get_DNAAdaptor{
   Exceptions : none
   Caller     : internal
   Status     : Stable
-
 
 =cut
 
@@ -1294,8 +1313,6 @@ sub load_registry_from_db {
     );
 
   my $go_version        = 0;
-  my $compara_version   = 0;
-  my $ancestral_version = 0;
 
   $user ||= "ensro";
   if ( !defined($port) ) {
@@ -1312,7 +1329,7 @@ sub load_registry_from_db {
   my $dbh =
     DBI->connect( "DBI:mysql:host=$host;port=$port", $user, $pass );
 
-  my $res = $dbh->selectall_arrayref("show databases");
+  my $res = $dbh->selectall_arrayref('SHOW DATABASES');
   my @dbnames = map { $_->[0] } @$res;
 
   my %temp;
@@ -1332,26 +1349,28 @@ sub load_registry_from_db {
       if ( $3 eq $software_version ) {
         $temp{$1} = $2;
       }
-    } elsif (
-           $db =~ /^([a-z]+_[a-z]+_[a-z]+(?:_\d+)?)_(\d+)_(\d+[a-z]*)/ )
-    {
-      if ( $2 eq $software_version ) {
-        $temp{$1} = $2 . "_" . $3;
-      }
     } elsif ( $db =~ /^(.+)_(userdata)$/ ) {
       $temp{$1} = $2;
-    } elsif ( $db =~ /^ensembl_compara_(\d+)/ ) {
-      if ( $1 eq $software_version ) {
-        $compara_version = $1;
+    } elsif ( $db =~ /^(ensembl_compara(?:_\w+)*?)_(\d+)$/ ) {
+      if ( $2 eq $software_version ) {
+        $temp{$1} = $2;
       }
-    } elsif ( $db =~ /^ensembl_ancestral_(\d+)/ ) {
-      if ( $1 eq $software_version ) {
-        $ancestral_version = $1;
+    } elsif ( $db =~ /^(ensembl_ancestral(?:_\w+?)*?)_(\d+)$/ ) {
+      if ( $2 eq $software_version ) {
+        $temp{$1} = $2;
       }
     } elsif ( $db =~ /^ensembl_go_(\d+)/ ) {
       if ( $1 eq $software_version ) {
         $go_version = $1;
       }
+    } elsif (
+      $db =~ /^([a-z]+_[a-z]+_[a-z]+(?:_\d+)?)_(\d+)_(\d+[a-z]*)/)
+    {
+      if ( $2 eq $software_version ) {
+        $temp{$1} = $2 . "_" . $3;
+      }
+    } else {
+      # warn( sprintf( "Skipping database '%s'\n", $db ) );
     }
   } ## end for my $db (@dbnames)
 
@@ -1601,60 +1620,87 @@ sub load_registry_from_db {
 
   # Compara
 
-  if ($compara_version) {
+  my @compara_dbs = grep { /^ensembl_compara/ } @dbnames;
+
+  if (@compara_dbs) {
     eval "require Bio::EnsEMBL::Compara::DBSQL::DBAdaptor";
     if ($@) {
       # Ignore Compara as code required not there for this
       if ($verbose) {
-        printf( "Bio::EnsEMBL::Compara::DBSQL::DBAdaptor "
-                  . "not found so compara database "
-                  . "ensembl_compara_%d will be ignored\n",
-                $compara_version );
+        printf(
+          "Bio::EnsEMBL::Compara::DBSQL::DBAdaptor "
+            . "not found so the following compara "
+            . "databases will be ignored: %s\n",
+          join( ', ', @compara_dbs ) );
       }
     } else {
-      my $compara_db = "ensembl_compara_" . $compara_version;
+      foreach my $compara_db (@compara_dbs) {
+        # Looking for EnsEMBL Genomes Comparas.
+        # ensembl_compara_bacteria_2_53 is registered as
+        # 'bacteria', ensembl_compara_pan_homology_2_53 is
+        # registered as 'pan_homology', ensembl_compara_53 is
+        # registered as 'multi', and the alias 'compara' still
+        # operates.
 
-      my $dba =
-        Bio::EnsEMBL::Compara::DBSQL::DBAdaptor->new(
-                                         -group        => "compara",
-                                         -species      => "multi",
-                                         -host         => $host,
-                                         -user         => $user,
-                                         -pass         => $pass,
-                                         -port         => $port,
-                                         -wait_timeout => $wait_timeout,
-                                         -dbname       => $compara_db,
-                                         -no_cache     => $no_cache );
+        my ($species) =
+          $compara_db =~ /^ensembl_compara_(\w+)(?:_\d+){2}$/xm;
 
-      if ($verbose) {
-        printf( "%s loaded\n", $compara_db );
-      }
-    }
+        $species ||= 'multi';
+
+        my $dba = Bio::EnsEMBL::Compara::DBSQL::DBAdaptor->new(
+          -group        => 'compara',
+          -species      => $species,
+          -host         => $host,
+          -user         => $user,
+          -pass         => $pass,
+          -port         => $port,
+          -wait_timeout => $wait_timeout,
+          -dbname       => $compara_db,
+          -no_cache     => $no_cache
+        );
+
+        if ($verbose) {
+          printf( "%s loaded\n", $compara_db );
+        }
+      } ## end foreach my $compara_db (@compara_dbs)
+    } ## end else [ if ($@)
   } elsif ($verbose) {
-    print("No Compara database found\n");
+    print("No Compara databases found\n");
   }
 
   # Ancestral sequences
 
-  if ($ancestral_version) {
-    my $ancestral_db = "ensembl_ancestral_" . $ancestral_version;
-    my $dba =
-      Bio::EnsEMBL::DBSQL::DBAdaptor->new(
-                                      -group   => "core",
-                                      -species => "Ancestral sequences",
-                                      -host    => $host,
-                                      -user    => $user,
-                                      -pass    => $pass,
-                                      -port    => $port,
-                                      -wait_timeout => $wait_timeout,
-                                      -dbname       => $ancestral_db,
-                                      -no_cache     => $no_cache );
+  my @ancestral_dbs =
+    sort grep { /^ensembl_ancestral/ } @dbnames;
+
+  if (@ancestral_dbs) {
+    my $ancestral_db = shift @ancestral_dbs;
+
+    my $dba = Bio::EnsEMBL::DBSQL::DBAdaptor->new(
+      -group        => 'core',
+      -species      => 'Ancestral sequences',
+      -host         => $host,
+      -user         => $user,
+      -pass         => $pass,
+      -port         => $port,
+      -wait_timeout => $wait_timeout,
+      -dbname       => $ancestral_db,
+      -no_cache     => $no_cache
+    );
 
     if ($verbose) {
       printf( "%s loaded\n", $ancestral_db );
+
+      if (@ancestral_dbs) {
+        # If we still had some more then report the problem.
+        printf(
+          "Multiple ancestral databases found.\n"
+            . "Ignoring the following: %s\n",
+          join( ', ', @ancestral_dbs ) );
+      }
     }
   } elsif ($verbose) {
-    print("No Ancestral database found");
+    print("No ancestral database found\n");
   }
 
   # GO
@@ -1694,104 +1740,129 @@ sub load_registry_from_db {
 
   my @aliases = ( 'chimp', 'PanTro1', 'Pan', 'P_troglodytes' );
   Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
-                                          -species => "Pan_troglodytes",
-                                          -alias   => \@aliases );
+    -species => "Pan_troglodytes",
+    -alias   => \@aliases
+  );
 
   @aliases = ( 'elegans', 'worm' );
   Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
-                                   -species => "Caenorhabditis_elegans",
-                                   -alias   => \@aliases );
+    -species => "Caenorhabditis_elegans",
+    -alias   => \@aliases
+  );
 
   @aliases = ('tetraodon');
   Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
-                                   -species => "Tetraodon_nigroviridis",
-                                   -alias   => \@aliases );
+    -species => "Tetraodon_nigroviridis",
+    -alias   => \@aliases
+  );
 
-  @aliases = ( 'H_Sapiens',    'homo sapiens',
-               'Homo_Sapiens', 'Homo',
-               'human',        'Hg17',
-               'ensHS',        '9606' );
+  @aliases = (
+    'H_Sapiens', 'homo sapiens', 'Homo_Sapiens', 'Homo',
+    'human',     'Hg17',         'ensHS',        '9606'
+  );
   Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
-                                             -species => "Homo_sapiens",
-                                             -alias   => \@aliases );
+    -species => "Homo_sapiens",
+    -alias   => \@aliases
+  );
 
-  @aliases = ( 'M_Musculus',   'mus musculus',
-               'Mus_Musculus', 'Mus',
-               'mouse',        'Mm5',
-               'ensMM',        '10090' );
+  @aliases = (
+    'M_Musculus', 'mus musculus', 'Mus_Musculus', 'Mus',
+    'mouse',      'Mm5',          'ensMM',        '10090'
+  );
   Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
-                                             -species => "Mus_musculus",
-                                             -alias   => \@aliases );
+    -species => "Mus_musculus",
+    -alias   => \@aliases
+  );
 
-  @aliases = ( 'R_Norvegicus',      'rattus norvegicus',
-               'Rattus_Norvegicus', 'Rattus',
-               'rat',               'Rn3',
-               '10116' );
+  @aliases = (
+    'R_Norvegicus',      'rattus norvegicus',
+    'Rattus_Norvegicus', 'Rattus',
+    'rat',               'Rn3',
+    '10116'
+  );
   Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
-                                        -species => "Rattus_norvegicus",
-                                        -alias   => \@aliases );
+    -species => "Rattus_norvegicus",
+    -alias   => \@aliases
+  );
 
   @aliases = ( 'T_Rubripes', 'Fugu', 'takifugu' );
   Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
-                                        -species => "Takifugu_rubripes",
-                                        -alias   => \@aliases );
+    -species => "Takifugu_rubripes",
+    -alias   => \@aliases
+  );
 
   @aliases = ( 'G_Gallus', 'gallus gallus', 'Chicken', 'GalGal2' );
   Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
-                                            -species => "Gallus_Gallus",
-                                            -alias   => \@aliases );
+    -species => "Gallus_Gallus",
+    -alias   => \@aliases
+  );
 
-  @aliases = ( 'D_Rerio',     'danio rerio',
-               'Danio_Rerio', 'Danio',
-               'zebrafish',   'zfish' );
+  @aliases = (
+    'D_Rerio',   'danio rerio', 'Danio_Rerio', 'Danio',
+    'zebrafish', 'zfish'
+  );
   Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
-                                              -species => "Danio_rerio",
-                                              -alias   => \@aliases );
+    -species => "Danio_rerio",
+    -alias   => \@aliases
+  );
 
-  @aliases = ( 'X_Tropicalis',       'xenopus tropicalis',
-               'Xenopus_tropicalis', 'Xenopus' );
+  @aliases = (
+    'X_Tropicalis',       'xenopus tropicalis',
+    'Xenopus_tropicalis', 'Xenopus'
+  );
   Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
-                                       -species => "Xenopus_tropicalis",
-                                       -alias   => \@aliases );
+    -species => "Xenopus_tropicalis",
+    -alias   => \@aliases
+  );
 
-  @aliases = ( 'A_Gambiae',         'Anopheles Gambiae',
-               'Anopheles_gambiae', 'Anopheles',
-               'mosquito' );
+  @aliases = (
+    'A_Gambiae',         'Anopheles Gambiae',
+    'Anopheles_gambiae', 'Anopheles',
+    'mosquito'
+  );
   Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
-                                        -species => "Anopheles_gambiae",
-                                        -alias   => \@aliases );
+    -species => "Anopheles_gambiae",
+    -alias   => \@aliases
+  );
 
-  @aliases = ( 'D_Melanogaster',          'drosophila melanogaster',
-               'Drosophila_melanogaster', 'drosophila',
-               'fly' );
+  @aliases = (
+    'D_Melanogaster',          'drosophila melanogaster',
+    'Drosophila_melanogaster', 'drosophila',
+    'fly'
+  );
   Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
-                                  -species => "Drosophila_melanogaster",
-                                  -alias   => \@aliases );
+    -species => "Drosophila_melanogaster",
+    -alias   => \@aliases
+  );
 
-  @aliases = ( 'S_Cerevisiae',             'Saccharomyces Cerevisiae',
-               'Saccharomyces_cerevisiae', 'Saccharomyces',
-               'yeast' );
+  @aliases = (
+    'S_Cerevisiae',             'Saccharomyces Cerevisiae',
+    'Saccharomyces_cerevisiae', 'Saccharomyces',
+    'yeast'
+  );
   Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
-                                 -species => "Saccharomyces_cerevisiae",
-                                 -alias   => \@aliases );
+    -species => "Saccharomyces_cerevisiae",
+    -alias   => \@aliases
+  );
 
-  @aliases = ( 'C_Familiaris',     'Canis Familiaris',
-               'Canis_familiaris', 'Canis',
-               'dog' );
-
-  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
-                                         -species => "Canis_familiaris",
-                                         -alias   => \@aliases );
-
-  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
-                             -species => "Ciona_intestinalis",
-                             -alias => [ 'ciona', 'Ciona intestinalis' ]
+  @aliases = (
+    'C_Familiaris',     'Canis Familiaris',
+    'Canis_familiaris', 'Canis',
+    'dog'
   );
 
   Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
-                                       -species => "Bos_taurus",
-                                       -alias => [ 'cow', 'bos_taurus' ]
+    -species => "Canis_familiaris",
+    -alias   => \@aliases
   );
+
+  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
+    -species => "Ciona_intestinalis",
+    -alias   => [ 'ciona', 'Ciona intestinalis' ] );
+
+  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
+    -species => "Bos_taurus",
+    -alias   => [ 'cow', 'bos_taurus' ] );
 
   Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
     -species => "Macaca_mulatta",
@@ -1799,190 +1870,222 @@ sub load_registry_from_db {
   );
 
   Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
-                -species => "Otolemur_garnettii",
-                -alias => [ 'bushbaby', 'galago', 'Otolemur garnettii' ]
+    -species => "Otolemur_garnettii",
+    -alias   => [ 'bushbaby', 'galago', 'Otolemur garnettii' ] );
+
+  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
+    -species => "Oryctolagus_cuniculus",
+    -alias   => [ 'rabbit', 'Oryctolagus cuniculus' ] );
+
+  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
+    -species => "Felis_catus",
+    -alias   => [ 'cat', 'felis catus' ] );
+
+  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
+    -species => "Sus_scrofa",
+    -alias   => [ 'pig', 'sus scrofa' ] );
+
+  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
+    -species => "Sorex_araneus",
+    -alias =>
+      [ 'shrew', 'ground_shrew', 'european_shrew', 'Sorex araneus' ] );
+
+  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
+    -species => "Erinaceus_europaeus",
+    -alias   => [ 'western_european_hedgehog', 'Erinaceus europaeus' ]
   );
 
   Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
-                         -species => "Oryctolagus_cuniculus",
-                         -alias => [ 'rabbit', 'Oryctolagus cuniculus' ]
+    -species => "Myotis_lucifugus",
+    -alias   => [ 'microbat', 'little_brown_bat' ] );
+
+  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
+    -species => "Dasypus_novemcinctus",
+    -alias   => [ 'armadillo', 'arma', 'Dasypus novemcinctu' ] );
+
+  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
+    -species => "Loxodonta_africana",
+    -alias   => [ 'african_elephant', 'elephant', 'Loxodonta africana' ]
   );
 
   Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
-                                      -species => "Felis_catus",
-                                      -alias => [ 'cat', 'felis catus' ]
+    -species => "Echinops_telfairi",
+    -alias   => [
+      'tenrec',          'madagascar_hedgehog',
+      'lesser_hedgehog', 'Echinops telfairi'
+    ] );
+
+  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
+    -species => "Monodelphis_domestica",
+    -alias   => [ 'opossum', 'Monodelphis domestica' ] );
+
+  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
+    -species => "Ornithorhynchus_anatinus",
+    -alias   => [ 'platypus', 'Ornithorhynchus anatinus' ] );
+
+  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
+    -species => "Gasterosteus_aculeatus",
+    -alias   => [ 'stickleback', 'Gasterosteus aculeatus' ] );
+
+  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
+    -species => "Oryzias_latipes",
+    -alias   => [ 'medaka', 'Oryzias latipes' ] );
+
+  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
+    -species => "Cavia_porcellus",
+    -alias   => [ 'guinea_pig', '"Cavia porcellus' ] );
+
+  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
+    -species => "Aedes_aegypti",
+    -alias   => [ 'aedes', 'Aedes aegypti' ] );
+
+  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
+    -species => "Spermophilus_tridecemlineatus",
+    -alias   => [ 'squirrel', 'Spermophilus tridecemlineatus' ] );
+
+  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
+    -species => "Tupaia_belangeri",
+    -alias   => [ 'tree_shrew', 'Tupaia belangeri' ] );
+
+  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
+    -species => "Culex_pipiens",
+    -alias   => [ 'culex', 'Culex Pipiens' ] );
+
+  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
+    -species => "Ochotona_princeps",
+    -alias   => [ 'pika', 'Ochotona princeps' ] );
+
+  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
+    -species => "Anolis_carolinensis",
+    -alias   => [ 'anolis', 'anolis_lizard', 'Anolis carolinensis' ] );
+
+  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
+    -species => "Microcebus_murinus",
+    -alias   => [ 'mouse_lemur', 'Microcebus murinus' ] );
+
+  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
+    -species => "Pongo_pygmaeus",
+    -alias   => [ 'orang', 'orang_utan', 'orangutan', 'Pongo pygmaeus' ]
   );
 
   Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
-                                       -species => "Sus_scrofa",
-                                       -alias => [ 'pig', 'sus scrofa' ]
+    -species => "Equus_caballus",
+    -alias   => [ 'horse', 'Equuscaballus' ] );
+
+  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
+    -species => "Tursiops_truncatus",
+    -alias   => [ 'dolphin', 'Tursiopstruncatus' ] );
+
+  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
+    -species => "Procavia_capensis",
+    -alias   => [ 'rock_hyrax', 'hyrax', 'Procaviacapensis' ] );
+
+  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
+    -species => "Dipodomys_ordii",
+    -alias   => [ 'kangaroo_rat', 'Dipodomysordii' ] );
+
+  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
+    -species => "Pteropus_vampyrus",
+    -alias   => [ 'megabat', 'Pteropusvampyrus' ] );
+
+  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
+    -species => "Tarsius_syrichta",
+    -alias   => [ 'philippine tarsier', 'tarsier', 'Tarsiussyrichta' ]
   );
 
   Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
-        -species => "Sorex_araneus",
-        -alias =>
-          [ 'shrew', 'ground_shrew', 'european_shrew', 'Sorex araneus' ]
-  );
+    -species => "Vicugna_pacos",
+    -alias   => [ 'alpaca', 'vicugnapacos' ] );
 
   Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
-        -species => "Erinaceus_europaeus",
-        -alias => [ 'western_european_hedgehog', 'Erinaceus europaeus' ]
-  );
+    -species => "Gorilla_gorilla",
+    -alias   => [ 'gorilla', 'gorillagorilla' ] );
 
   Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
-                            -species => "Myotis_lucifugus",
-                            -alias => [ 'microbat', 'little_brown_bat' ]
-  );
+    -species => "Anolis_carolinensis",
+    -alias   => [ 'anolis', 'anoliscarolinensis' ] );
 
   Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
-                -species => "Dasypus_novemcinctus",
-                -alias => [ 'armadillo', 'arma', 'Dasypus novemcinctu' ]
-  );
+    -species => "Choloepus_hoffmanni",
+    -alias   => [ 'sloth', 'choloepus', 'choloepushoffmanni' ] );
 
   Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
-      -species => "Loxodonta_africana",
-      -alias => [ 'african_elephant', 'elephant', 'Loxodonta africana' ]
-  );
-
-  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
-                      -species => "Echinops_telfairi",
-                      -alias   => [
-                                  'tenrec', 'madagascar_hedgehog',
-                                  'lesser_hedgehog', 'Echinops telfairi'
-                      ] );
-
-  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
-                        -species => "Monodelphis_domestica",
-                        -alias => [ 'opossum', 'Monodelphis domestica' ]
-  );
-
-  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
-                    -species => "Ornithorhynchus_anatinus",
-                    -alias => [ 'platypus', 'Ornithorhynchus anatinus' ]
-  );
-
-  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
-                   -species => "Gasterosteus_aculeatus",
-                   -alias => [ 'stickleback', 'Gasterosteus aculeatus' ]
-  );
-
-  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
-                               -species => "Oryzias_latipes",
-                               -alias => [ 'medaka', 'Oryzias latipes' ]
-  );
-
-  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
-                          -species => "Cavia_porcellus",
-                          -alias => [ 'guinea_pig', '"Cavia porcellus' ]
-  );
-
-  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
-                                  -species => "Aedes_aegypti",
-                                  -alias => [ 'aedes', 'Aedes aegypti' ]
-  );
-
-  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
-               -species => "Spermophilus_tridecemlineatus",
-               -alias => [ 'squirrel', 'Spermophilus tridecemlineatus' ]
-  );
-
-  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
-                          -species => "Tupaia_belangeri",
-                          -alias => [ 'tree_shrew', 'Tupaia belangeri' ]
-  );
-
-  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
-                                  -species => "Culex_pipiens",
-                                  -alias => [ 'culex', 'Culex Pipiens' ]
-  );
-
-  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
-                               -species => "Ochotona_princeps",
-                               -alias => [ 'pika', 'Ochotona princeps' ]
-  );
-
-  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
-          -species => "Anolis_carolinensis",
-          -alias => [ 'anolis', 'anolis_lizard', 'Anolis carolinensis' ]
-  );
-
-  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
-                       -species => "Microcebus_murinus",
-                       -alias => [ 'mouse_lemur', 'Microcebus murinus' ]
-  );
-
-  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
-      -species => "Pongo_pygmaeus",
-      -alias => [ 'orang', 'orang_utan', 'orangutan', 'Pongo pygmaeus' ]
-  );
-
-  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
-                                  -species => "Equus_caballus",
-                                  -alias => [ 'horse', 'Equuscaballus' ]
-  );
-
-  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
-                            -species => "Tursiops_truncatus",
-                            -alias => [ 'dolphin', 'Tursiopstruncatus' ]
-  );
-
-  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
-                 -species => "Procavia_capensis",
-                 -alias => [ 'rock_hyrax', 'hyrax', 'Procaviacapensis' ]
-  );
-
-  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
-                          -species => "Dipodomys_ordii",
-                          -alias => [ 'kangaroo_rat', 'Dipodomysordii' ]
-  );
-
-  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
-                             -species => "Pteropus_vampyrus",
-                             -alias => [ 'megabat', 'Pteropusvampyrus' ]
-  );
-
-  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
-        -species => "Tarsius_syrichta",
-        -alias => [ 'philippine tarsier', 'tarsier', 'Tarsiussyrichta' ]
-  );
-
-  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
-                                  -species => "Vicugna_pacos",
-                                  -alias => [ 'alpaca', 'vicugnapacos' ]
-  );
-
-  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
-                               -species => "Gorilla_gorilla",
-                               -alias => [ 'gorilla', 'gorillagorilla' ]
-  );
-
- Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
-                               -species => "Anolis_carolinensis",
-                               -alias => [ 'anolis', 'anoliscarolinensis' ]
-  );
-
- Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
-                               -species => "Choloepus_hoffmanni",
-                               -alias => [ 'sloth', 'choloepus', 'choloepushoffmanni' ]
-  );
-
- Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
-                               -species => "Taeniopygia_guttata",
-                               -alias => [ 'finch', 'zebrafinch', 'taeniopygia', 'taeniopygiaguttata' ]
-  );
-
+    -species => "Taeniopygia_guttata",
+    -alias =>
+      [ 'finch', 'zebrafinch', 'taeniopygia', 'taeniopygiaguttata' ] );
 
   @aliases = ('compara');
-  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias( -species => "multi",
-                                                  -alias   => \@aliases
+  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
+    -species => "multi",
+    -alias   => \@aliases
   );
 
   @aliases = ('go');
-
-  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias( -species => "multi",
-                                                  -alias   => \@aliases
+  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
+    -species => "multi",
+    -alias   => \@aliases
   );
+
+  # Register aliases as found in adaptor meta tables.
+  $self->find_and_add_aliases();
+
 } ## end sub load_registry_from_db
+
+=head2 find_and_add_aliases
+
+  Arg [ADAPTOR] : (optional) Bio::EnsEMBL::DBSQL::DBAdaptor
+                  The adaptor to use to retrieve aliases from.
+
+  Arg [GROUP]   : (optional) string
+                  The group you want to find aliases for. If not given
+                  assumes all types.
+
+  Example       : Bio::EnsEMBL::Registry->find_and_add_aliases(
+                    -GROUP   => 'core',
+                    -ADAPTOR => $dba
+                  );
+
+  Description   : Looks in the meta container for each database for
+                  an entry called "species.alias".  If any are found
+                  then the species adaptor is registered to that
+                  set of aliases.  This can work across any adaptor
+                  which has a MetaContainer.
+
+  Return type   : none
+  Exceptions    : none
+  Status        : Stable
+
+=cut
+
+sub find_and_add_aliases {
+  my $class = shift @_;
+
+  my ( $group, $adaptor ) = rearrange( [qw(GROUP ADAPTOR)], @_ );
+
+  my @dbas;
+  if ( defined($adaptor) ) {
+    @dbas = ($adaptor);
+  } else {
+    @dbas = @{ $class->get_all_DBAdaptors( '-GROUP' => $group ) };
+  }
+
+  foreach my $dba (@dbas) {
+    my $species        = $dba->species();
+    my $meta_container = $dba->get_MetaContainer();
+
+    my @aliases =
+      @{ $meta_container->list_value_by_key('species.alias') };
+
+    # Need to disconnect so we do not spam the MySQL servers trying to
+    # get aliases.
+    $dba->dbc()->disconnect_if_idle();
+
+    foreach my $alias (@aliases) {
+      $class->add_alias( $species, $alias );
+    }
+  }
+
+} ## end sub find_and_add_aliases
 
 
 #
