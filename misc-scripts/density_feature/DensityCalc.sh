@@ -101,6 +101,17 @@ bsub -q normal -J seqreg_stats -oo ${outdir}/${dbname}_seqreg.out \
   -pass ${pass} \
   -dbname ${dbname}
 
+print "Submitting gene_gc content calculation to queue 'normal'"
+print "\tThe output from this job goes to the file"
+print "\t'${dbname}_genegc.out'"
+bsub -q normal -J genegc_stats -oo ${outdir}/${dbname}_genegc.out \
+  perl ../gene_gc.pl \
+  -host ${host} \
+  -port ${port} \
+  -user ${user} \
+  -pass ${pass} \
+  -pattern ${dbname}
+
 print "All jobs submitted."
 
 # $Id$
