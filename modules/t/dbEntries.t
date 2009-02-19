@@ -217,15 +217,15 @@ if($xref && $xref->isa('Bio::EnsEMBL::GoXref')) {
 
 #test the idxref mapping code a bit
 my $id_xref = Bio::EnsEMBL::IdentityXref->new
-  (-QUERY_IDENTITY    => 80.4,
-   -TARGET_IDENTITY   => 90.1,
+  (-XREF_IDENTITY    => 80.4,
+   -ENSEMBL_IDENTITY   => 90.1,
    -SCORE             => 100,
    -EVALUE            => 1,
    -CIGAR_LINE        => '10M5D10M5I10M',
-   -QUERY_START       => 1,
-   -QUERY_END         => 35,
-   -TRANSLATION_START => 10,
-   -TRANSLATION_END   => 45,
+   -XREF_START       => 1,
+   -XREF_END         => 35,
+   -ENSEMBL_START => 10,
+   -ENSEMBL_END   => 45,
    -ADAPTOR           => $dbEntryAdaptor);
 
 
