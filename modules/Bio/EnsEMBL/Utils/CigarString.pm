@@ -79,8 +79,12 @@ sub split_hsp {
     my ($qinc, $hinc) = $self->_findIncrements($qstrand,$hstrand,$qtype,$htype);
 
     my @gaps = ();
-    my @qchars = split(//, $hsp->query_string);
-    my @hchars = split(//, $hsp->hit_string);
+    my $string = $hsp->query_string;
+    my @qchars = unpack("A1" x length($string), $string);
+    # my @qchars = split(//, $hsp->query_string); # Speed up above
+    $string = $hsp->hit_string;
+    my @hchars = unpack("A1" x length($string), $string);
+    # my @hchars = split(//, $hsp->hit_string); # Speed up above
     my $qstart;
     if($qstrand == 1){
         $qstart = $hsp->query->start;
