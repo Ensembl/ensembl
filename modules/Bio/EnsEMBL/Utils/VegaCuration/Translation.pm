@@ -245,7 +245,7 @@ sub check_for_stops {
 	$support->log_warning("INTERNAL STOPS HAVANA: Transcript $tsi ($tname) has non \'$scodon\' stop codons [$mod_date]:\nSequence = $orig_seq\nStops at $positions)\n\n");
       }
       else {
-	$support->log_verbose("INTERNAL STOPS EXTERNAL: Transcript $tsi ($tname) has non \'$scodon\' stop codons[$mod_date]:\nSequence = $orig_seq\nStops at $positions)\n\n");
+	$support->log_warning("INTERNAL STOPS EXTERNAL: Transcript $tsi ($tname) has non \'$scodon\' stop codons[$mod_date]:\nSequence = $orig_seq\nStops at $positions)\n\n");
       }
 
     }
