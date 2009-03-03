@@ -1259,23 +1259,25 @@ sub _objs_from_sth {
     # If a destination slice was provided convert the coords
     # If the dest_slice starts at 1 and is foward strand, nothing needs doing
     #
-    if($dest_slice) {
-      if($dest_slice_start != 1 || $dest_slice_strand != 1) {
-        if($dest_slice_strand == 1) {
+    if ($dest_slice) {
+      if ( $dest_slice_start != 1 || $dest_slice_strand != 1 ) {
+        if ( $dest_slice_strand == 1 ) {
           $seq_region_start = $seq_region_start - $dest_slice_start + 1;
-          $seq_region_end   = $seq_region_end   - $dest_slice_start + 1;
+          $seq_region_end   = $seq_region_end - $dest_slice_start + 1;
         } else {
           my $tmp_seq_region_start = $seq_region_start;
           $seq_region_start = $dest_slice_end - $seq_region_end + 1;
-          $seq_region_end   = $dest_slice_end - $tmp_seq_region_start + 1;
+          $seq_region_end = $dest_slice_end - $tmp_seq_region_start + 1;
           $seq_region_strand *= -1;
         }
       }
 
-      #throw away features off the end of the requested slice
-      if($seq_region_end < 1 || $seq_region_start > $dest_slice_length || 
-	( $dest_slice_sr_id ne $seq_region_id )) {
-	next FEATURE;
+      # Throw away features off the end of the requested slice
+      if ( $seq_region_end < 1
+        || $seq_region_start > $dest_slice_length
+        || ( $dest_slice_sr_id ne $seq_region_id ) )
+      {
+        next FEATURE;
       }
 
       $slice = $dest_slice;
@@ -1283,47 +1285,50 @@ sub _objs_from_sth {
 
     my $display_xref;
 
-    if( $xref_id ) {
-      $display_xref = Bio::EnsEMBL::DBEntry->new_fast({
-           'dbID'        => $xref_id,
-           'display_id'  => $xref_display_label,
-           'primary_id'  => $xref_primary_acc,
-           'version'     => $xref_version,
-           'description' => $xref_description,
-           'info_type'   => $xref_info_type,
-           'info_text'   => $xref_info_text,
-           'adaptor' => $dbEntryAdaptor,
-           'db_display_name' => $external_db_name,
-           'dbname' => $external_db						       
-      });
+    if ($xref_id) {
+      $display_xref = Bio::EnsEMBL::DBEntry->new_fast( {
+          'dbID'            => $xref_id,
+          'display_id'      => $xref_display_label,
+          'primary_id'      => $xref_primary_acc,
+          'version'         => $xref_version,
+          'description'     => $xref_description,
+          'info_type'       => $xref_info_type,
+          'info_text'       => $xref_info_text,
+          'adaptor'         => $dbEntryAdaptor,
+          'db_display_name' => $external_db_name,
+          'dbname'          => $external_db
+      } );
     }
-				
+
 
     # Finally, create the new Transcript.
-    push( @transcripts,
-          $self->_create_feature_fast(
-                        'Bio::EnsEMBL::Transcript', {
-                          'analysis'        => $analysis,
-                          'start'           => $seq_region_start,
-                          'end'             => $seq_region_end,
-                          'strand'          => $seq_region_strand,
-                          'adaptor'         => $self,
-                          'slice'           => $slice,
-                          'dbID'            => $transcript_id,
-                          'stable_id'       => $stable_id,
-                          'version'         => $version,
-                          'created_date'    => $created_date || undef,
-                          'modified_date'   => $modified_date || undef,
-                          'external_name'   => $xref_display_label,
-                          'external_db'     => $external_db,
-                          'external_status' => $external_status,
-                          'external_display_name' => $external_db_name,
-                          'display_xref'          => $display_xref,
-                          'description'           => $description,
-                          'biotype'               => $biotype,
-                          'status'                => $status,
-                          'is_current'            => $is_current
-                        } ) );
+    push(
+      @transcripts,
+      $self->_create_feature_fast(
+        'Bio::EnsEMBL::Transcript',
+        {
+          'analysis'              => $analysis,
+          'start'                 => $seq_region_start,
+          'end'                   => $seq_region_end,
+          'strand'                => $seq_region_strand,
+          'adaptor'               => $self,
+          'slice'                 => $slice,
+          'dbID'                  => $transcript_id,
+          'stable_id'             => $stable_id,
+          'version'               => $version,
+          'created_date'          => $created_date || undef,
+          'modified_date'         => $modified_date || undef,
+          'external_name'         => $xref_display_label,
+          'external_db'           => $external_db,
+          'external_status'       => $external_status,
+          'external_display_name' => $external_db_name,
+          'display_xref'          => $display_xref,
+          'description'           => $description,
+          'biotype'               => $biotype,
+          'status'                => $status,
+          'is_current'            => $is_current,
+          'edits_enabled'         => 1
+        } ) );
 
   }
 
