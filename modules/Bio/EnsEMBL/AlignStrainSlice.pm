@@ -312,7 +312,8 @@ sub get_all_Slices {
 	  $new_feature = $self->alignFeature($af); #align feature in AlignSlice coordinates
 	  push @{$aligned_features},$new_feature if($new_feature->seq_region_start <= $strain->end); #some features might map outside slice
 	  if ($af->start != $af->end){ #an indel, need to add to the reference, and realign in the strain	     
-              #make a shallow copy of the indel
+              #make a shallow copy of the indel - clear it first!
+          $indel = undef;
 	      %{$indel} = %{$new_feature};
 	      bless $indel, ref($new_feature);
 	      $indel->allele_string('-');
