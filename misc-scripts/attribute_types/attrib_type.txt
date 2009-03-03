@@ -108,8 +108,8 @@
 37	IGGeneCount	IG_gene	Number of IG Genes
 38	IGPsGenCount	IG_pseudogene	Number of IG Pseudogenes
 39	TotPsCount	total_pseudogene	Total Number of Pseudogenes
-40	KnwnProcPsCount	processed_pseudogene	Number of Known Processed Pseudogenes
-41	KnwnUnPsCount	unprocessed_pseudogene	Number of Known Unprocessed Pseudogenes
+#40	KnwnProcPsCount	processed_pseudogene	Number of Known Processed Pseudogenes
+#41	KnwnUnPsCount	unprocessed_pseudogene	Number of Known Unprocessed Pseudogenes
 42	KnwnPCProgCount	protein_coding_in_progress_KNOWN	Number of Known Protein Coding in progress
 43	NovPCProgCount	protein_coding_in_progress_NOVEL	Number of Novel Protein Coding in progress
 
@@ -258,8 +258,8 @@
 # vega
 148	TotAssLength	Finished sequence length	Finished Sequence
 149	PsCount	pseudogene	Number of Pseudogenes
-150	KnwnPsCount	known_pseudogene	Number of Known Pseudogenes
-151	KnwnTPsCount	known_transcribed_pseudogene	Number of Known Transcribed Pseudogenes
+#150	KnwnPsCount	known_pseudogene	Number of Known Pseudogenes
+#151	KnwnTPsCount	known_transcribed_pseudogene	Number of Known Transcribed Pseudogenes
 152	TotPTCount	total_processed_transcript	Total Number of Processed Transcripts
 153	TotPCCount	total_protein_coding	Total Number of Protein Coding
 154	NovNcCount	novel_non_coding	Number of Novel Non Coding
@@ -302,8 +302,11 @@
 174	upstream_ATG	upstream ATG	Alternative ATG found upstream of the defined as start ATG for the transcript
 
 #more vega gene types
-175	TPPsCount	transcribed_processed_pseudogene	Number of Transcribed processed pseudogenes
-176	TUPsCount	transcribed_unprocessed_pseudogene	Number of Transcribed unprocessed pseudogenes
+175	TPPsCount	transcribed_processed_pseudogene	Number of Transcribed Processed Pseudogenes
+176	TUPsCount	transcribed_unprocessed_pseudogene	Number of Transcribed Unprocessed Useudogenes
 177	UniPsCount	unitary_pseudogene	Number of Unitary pseudogenes
 178	KnwnTECCount	TEC_KNOWN	Number of Known TEC genes
 179	TotTECGeneCount	TEC_all	Total number of TEC genes
+180	TUyPsCount	transcribed_unitary_pseudogene	Number of Transcribed Unitary Pseudogenes
+181	PolyCount	polymorphic	Number of Polymorphic Genes
+182	KnwnPolyCount	polymorphic	Number of Known Polymorphic Genes
