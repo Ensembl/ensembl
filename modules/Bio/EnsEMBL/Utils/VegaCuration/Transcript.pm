@@ -43,18 +43,18 @@ use Data::Dumper;
 =cut
 
 sub find_non_overlaps {
-	my $self = shift;
-	my ($all_transcripts) = @_;
-	my $non_overlaps = [];
-	foreach my $transcript1 (@{$all_transcripts}) {
-		foreach my $transcript2 (@{$all_transcripts}) {
-			if ($transcript1->end < $transcript2->start) {
-				push @{$non_overlaps}, $transcript1->stable_id;
-				push @{$non_overlaps}, $transcript2->stable_id;
-			}
-		}
-	}
-	return $non_overlaps;
+  my $self = shift;
+  my ($all_transcripts) = @_;
+  my $non_overlaps = [];
+  foreach my $transcript1 (@{$all_transcripts}) {
+    foreach my $transcript2 (@{$all_transcripts}) {
+      if ($transcript1->end < $transcript2->start) {
+	push @{$non_overlaps}, $transcript1->stable_id;
+	push @{$non_overlaps}, $transcript2->stable_id;
+      }
+    }
+  }
+  return $non_overlaps;
 }
 
 =head2 check_remarks_and_update names
@@ -64,125 +64,121 @@ sub find_non_overlaps {
    Arg[3]     : counter 2 (no. of patched transcripts)
    Example    : $support->update_names($gene,\$c1,\$c2)
    Description: - checks remarks and patches transcripts with identical names according to
-                CDS and length if there are no fragmented gene/transcript_remarks
-                - adds remark attribute to gene
+                CDS and length
+                - adds remark to gene if there arefragmented gene/transcript_remarks
    Returntype : true | false (depending on whether patched or not), counter1, counter2
 
 =cut
 
 sub check_remarks_and_update_names {
-	my $self = shift;
-	my ($gene,$gene_c,$trans_c) = @_;
-	my $action = ($self->param('dry_run')) ? 'Would add' : 'Added';
-	my $aa  = $gene->adaptor->db->get_AttributeAdaptor;
-	my $dbh = $gene->adaptor->db->dbc->db_handle;
+  my $self = shift;
+  my ($gene,$gene_c,$trans_c) = @_;
+  my $action = ($self->param('dry_run')) ? 'Would add' : 'Added';
+  my $aa  = $gene->adaptor->db->get_AttributeAdaptor;
+  my $dbh = $gene->adaptor->db->dbc->db_handle;
 
-	#get list of IDs that have previously been sent to annotators
-	my $seen_genes = $self->get_havana_fragmented_loci_comments;
+  #get list of IDs that have previously been sent to annotators
+  my $seen_genes = $self->get_havana_fragmented_loci_comments;
 
-	my $gsi    = $gene->stable_id;
-	my $gid    = $gene->dbID;
-	my $g_name;
-	eval {
-		$g_name = $gene->display_xref->display_id;
-	};	
-	if ($@) {
-		$g_name = $gene->get_all_Attributes('name')->[0]->value;
-	}
-	my $gene_remark = 'This locus has been annotated as fragmented because either there is not enough evidence covering the whole locus to identify the exact exon structure of the transcript, or because the transcript spans a gap in  the assembly';
-	my $attrib = [
-		Bio::EnsEMBL::Attribute->new(
-			-CODE => 'remark',
-			-NAME => 'Remark',
-			-DESCRIPTION => 'Annotation remark',
-			-VALUE => $gene_remark,
-		) ];
+  my $gsi    = $gene->stable_id;
+  my $gid    = $gene->dbID;
+  my $g_name;
+  eval {
+    $g_name = $gene->display_xref->display_id;
+  };	
+  if ($@) {
+    $g_name = $gene->get_all_Attributes('name')->[0]->value;
+  }
+  my $gene_remark = 'This locus has been annotated as fragmented because either there is not enough evidence covering the whole locus to identify the exact exon structure of the transcript, or because the transcript spans a gap in  the assembly';
+  my $attrib = [
+    Bio::EnsEMBL::Attribute->new(
+      -CODE => 'remark',
+      -NAME => 'Remark',
+      -DESCRIPTION => 'Annotation remark',
+      -VALUE => $gene_remark,
+    ) ];
 
-	#get existing gene and transcript remarks
-	my %remarks;
-	foreach my $type ('remark','hidden_remark') {
-		$remarks{$type}->{'gene'} = [ map {$_->value} @{$gene->get_all_Attributes($type)} ];
-		foreach my $trans (@{$gene->get_all_Transcripts()}) {
-			my $tsi = $trans->stable_id;
-			push @{$remarks{$type}->{'transcripts'}}, map {$_->value} @{$trans->get_all_Attributes('remark')};
-		}
-	}
+  #get existing gene and transcript remarks
+  my %remarks;
+  foreach my $type ('remark','hidden_remark') {
+    $remarks{$type}->{'gene'} = [ map {$_->value} @{$gene->get_all_Attributes($type)} ];
+    foreach my $trans (@{$gene->get_all_Transcripts()}) {
+      my $tsi = $trans->stable_id;
+      push @{$remarks{$type}->{'transcripts'}}, map {$_->value} @{$trans->get_all_Attributes('remark')};
+    }
+  }
 
-	#if any of the remarks identify this gene as being known by Havana as being fragmented...
-	if ( (grep {$_ =~ /fragmen/i } @{$remarks{'hidden_remark'}->{'gene'}},
-		  @{$remarks{'remark'}->{'gene'}},
-		  @{$remarks{'remark'}->{'transcripts'}}, 
-		  @{$remarks{'hidden_remark'}->{'transcripts'}} ) ) {
-		if (grep { $_ eq $gene_remark} @{$remarks{'remark'}->{'gene'}}) {
-			$self->log("Fragmented loci annotation remark for gene $gid already exists\n");
-		}
-		#add gene_attrib
-		else {
-			if (! $self->param('dry_run') ) {
-				$aa->store_on_Gene($gid,$attrib);
-			}			
-			$self->log("$action correctly formatted fragmented loci annotation remark for gene $gsi\n");
-		}
-		return (0,$gene_c,$trans_c);
-	}
-	#log if it's been reported before since the gene should have a remark.
-	elsif ($seen_genes->{$gsi} eq 'fragmented') {
-		$self->log_warning("PREVIOUS: $action correctly formatted fragmented loci annotation remark for gene $gsi (has previously been OKeyed by Havana as being fragmented but has no Annotation remark, please add one!)\n");
-		#add gene_attrib anyway.
-		if (! $self->param('dry_run') ) {
-			$aa->store_on_Gene($gid,$attrib);
-		}
-		return (0,$gene_c,$trans_c);
-	}
+  #if any of the remarks identify this gene as being known by Havana as being fragmented...
+  if ( (grep {$_ =~ /fragmen/i } @{$remarks{'hidden_remark'}->{'gene'}},
+	@{$remarks{'remark'}->{'gene'}},
+	@{$remarks{'remark'}->{'transcripts'}}, 
+	@{$remarks{'hidden_remark'}->{'transcripts'}} ) ) {
+    if (grep { $_ eq $gene_remark} @{$remarks{'remark'}->{'gene'}}) {
+      $self->log("Fragmented loci annotation remark for gene $gid already exists\n");
+    }
+    #add gene_attrib
+    else {
+      if (! $self->param('dry_run') ) {
+	$aa->store_on_Gene($gid,$attrib);
+      }			
+      $self->log("$action correctly formatted fragmented loci annotation remark for gene $gsi\n");
+    }
+  }
+  #log if it's been reported before since the gene should have a remark.
+  elsif ($seen_genes->{$gsi} eq 'fragmented') {
+    $self->log_warning("PREVIOUS: $action correctly formatted fragmented loci annotation remark for gene $gsi (has previously been OKeyed by Havana as being fragmented but has no Annotation remark, please add one!)\n");
+    #add gene_attrib anyway.
+    if (! $self->param('dry_run') ) {
+      $aa->store_on_Gene($gid,$attrib);
+    }
+  }
 
-	#otherwise patch transcript names according to length and CDS
-	else {
-		$gene_c++;
-		my @trans = $gene->get_all_Transcripts();
+  #patch transcript names according to length and CDS
+  $gene_c++;
+  my @trans = $gene->get_all_Transcripts();
 
-		#separate coding and non_coding transcripts
-		my $coding_trans = [];
-		my $noncoding_trans = [];
-		foreach my $trans ( @{$gene->get_all_Transcripts()} ) {
-			if ($trans->translate) {
-				push @$coding_trans, $trans;
-			}
-			else {
-				push @$noncoding_trans, $trans;
-			}
-		}
+  #separate coding and non_coding transcripts
+  my $coding_trans = [];
+  my $noncoding_trans = [];
+  foreach my $trans ( @{$gene->get_all_Transcripts()} ) {
+    if ($trans->translate) {
+      push @$coding_trans, $trans;
+    }
+    else {
+      push @$noncoding_trans, $trans;
+    }
+  }
 
-		#sort transcripts coding > non-coding, then on length
-		my $c = 0;
-		$self->log("\nPatching names according to CDS and length:\n",1);
-		foreach my $array_ref ($coding_trans,$noncoding_trans) {
-			foreach my $trans ( sort { $b->length <=> $a->length } @$array_ref ) {
-				$trans_c++;
-				my $tsi = $trans->stable_id;
-				my $t_name;
-				eval {
-					$t_name = $trans->display_xref->display_id;
-				};	
-				if ($@) {
-					$t_name = $trans->get_all_Attributes('name')->[0]->value;
-				}
-				$c++;
-				my $ext = sprintf("%03d", $c);
-				my $new_name = $g_name.'-'.$ext;
-				$self->log(sprintf("%-20s%-3s%-20s", "$t_name ", "-->", "$new_name")."\n",1);
-				if (! $self->param('dry_run')) {
-
-					# update transcript display xref
-					$dbh->do(qq(UPDATE  xref x, external_db edb
+  #sort transcripts coding > non-coding, then on length
+  my $c = 0;
+  $self->log("\nPatching names according to CDS and length:\n",1);
+  foreach my $array_ref ($coding_trans,$noncoding_trans) {
+    foreach my $trans ( sort { $b->length <=> $a->length } @$array_ref ) {
+      $trans_c++;
+      my $tsi = $trans->stable_id;
+      my $t_name;
+      eval {
+	$t_name = $trans->display_xref->display_id;
+      };	
+      if ($@) {
+	$t_name = $trans->get_all_Attributes('name')->[0]->value;
+      }
+      $c++;
+      my $ext = sprintf("%03d", $c);
+      my $new_name = $g_name.'-'.$ext;
+      $self->log(sprintf("%-20s%-3s%-20s", "$t_name ", "-->", "$new_name")."\n",1);
+      if (! $self->param('dry_run')) {
+	
+	# update transcript display xref
+	$dbh->do(qq(UPDATE  xref x, external_db edb
                                 SET     x.display_label  = "$new_name"
                                 WHERE   x.external_db_id = edb.external_db_id
                                 AND     x.dbprimary_acc  = "$tsi"
                                 AND     edb.db_name      = "Vega_transcript"));
-				}
-			}
-		}
-	}
-	return (1,$gene_c,$trans_c);
+      }
+    }
+  }
+  return (1,$gene_c,$trans_c);
 }
 
 =head2 check_names_and_overlap
