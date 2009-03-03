@@ -47,7 +47,7 @@ CREATE TABLE oligo_probe (
   oligo_probe_id      INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
   oligo_array_id      INT(10) UNSIGNED NOT NULL,
   probeset            VARCHAR(40),
-  name                VARCHAR(20),
+  name                VARCHAR(40),
   description         TEXT,
   length              SMALLINT NOT NULL,
 
@@ -119,7 +119,7 @@ CREATE TABLE analysis (
 
   analysis_id                 SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
   created                     datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
-  logic_name                  VARCHAR(40) NOT NULL,
+  logic_name                  VARCHAR(128) NOT NULL,
   db                          VARCHAR(120),
   db_version                  VARCHAR(40),
   db_file                     VARCHAR(120),
@@ -691,10 +691,12 @@ CREATE TABLE object_xref (
                               NOT NULL,
   xref_id                     INT UNSIGNED NOT NULL,
   linkage_annotation          VARCHAR(255) DEFAULT NULL,
+  analysis_id                 SMALLINT UNSIGNED NOT NULL,
 
   UNIQUE (ensembl_object_type, ensembl_id, xref_id),
   KEY oxref_idx (object_xref_id, xref_id, ensembl_object_type, ensembl_id),
-  KEY xref_idx (xref_id, ensembl_object_type)
+  KEY xref_idx (xref_id, ensembl_object_type),
+  KEY analysis_idx (analysis_id)
 
 ) COLLATE=latin1_swedish_ci TYPE=MyISAM;
 
@@ -718,10 +720,8 @@ CREATE TABLE identity_xref (
   
   score                   DOUBLE,
   evalue                  DOUBLE,
-  analysis_id             SMALLINT UNSIGNED NOT NULL,
 
-  PRIMARY KEY (object_xref_id),
-  KEY analysis_idx (analysis_id)
+  PRIMARY KEY (object_xref_id)
 
 ) COLLATE=latin1_swedish_ci TYPE=MyISAM;
 
@@ -795,7 +795,7 @@ CREATE TABLE external_synonym (
 CREATE TABLE external_db (
 
   external_db_id 	      SMALLINT UNSIGNED NOT NULL,
-  db_name                     VARCHAR(40) NOT NULL,
+  db_name                     VARCHAR(100) NOT NULL,
   db_release                  VARCHAR(255),
   status                      ENUM('KNOWNXREF','KNOWN','XREF','PRED','ORTH',
                                    'PSEUDO')
@@ -881,14 +881,13 @@ CREATE TABLE meta (
 
 
 # Auto add schema version to database
-INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, "schema_version", "53");
+INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, "schema_version", "54");
 
 # patches included in this schema file
 # NOTE: at beginning of release cycle, remove patch entries from last release
-INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_52_53_a.sql|schema_version');
-INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_52_53_b.sql|external_db_type_enum');
-INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_52_53_c.sql|identity_xref_rename');
-INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_52_53_d.sql|drop_go_xref_index');
+INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_53_54_a.sql|schema_version');
+INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_53_54_b.sql|widen_columns');
+INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_53_54_c.sql|identity_object_analysis_move');
 
 ################################################################################
 #
