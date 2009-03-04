@@ -31,10 +31,10 @@ sub run_script {
 
   my ($type, $my_args) = split(/:/,$file);
   
-  my $user = "ensro";
-  my $host ="ens-staging";
-  my $port = "3306";
-  my $dbname = "homo_sapiens_vega_51_36m";
+  my $user  ="ensro";
+  my $host;
+  my $port;
+  my $dbname;
   my $pass;
 
   if($my_args =~ /host[=][>](\S+?)[,]/){
@@ -49,6 +49,12 @@ sub run_script {
   if($my_args =~ /pass[=][>](\S+?)[,]/){
     $pass = $1;
   }
+  if($my_args =~ /user[=][>](\S+?)[,]/){
+    $user = $1;
+  }
+
+  print "Using $host $dbname for Vega\n";
+
 
   my $clone_source_id =
     $self->get_source_id_for_source_name('Clone_based_vega_transcript');
@@ -88,7 +94,9 @@ sub run_script {
   }
   $sth->finish;
 
+
   my $xref_count = 0;
+
   foreach my $ott (keys %ott_to_enst){
     if(defined($ott_to_vega_name{$ott})){
       my $id = $curated_source_id;
@@ -97,12 +105,10 @@ sub run_script {
       if($name =~ /[.]/){
 	$id = $clone_source_id;
       }
-      my $xref_id = $self->add_xref($name, "" , $name , "", $id, $species_id);
+      my $xref_id = $self->add_xref($name, "" , $name , "", $id, $species_id, "DIRECT");
       $xref_count++;
       
-      
       $self->add_direct_xref($xref_id, $ott_to_enst{$ott}, "transcript", "");
-      
     }
   }
 
