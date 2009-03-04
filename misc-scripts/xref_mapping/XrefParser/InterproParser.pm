@@ -56,8 +56,8 @@ sub run {
   my $add_xref_sth =
     $self->dbi()
     ->prepare( "INSERT INTO xref "
-        . "(accession,version,label,description,source_id,species_id) "
-        . "VALUES(?,?,?,?,?,?)" );
+        . "(accession,version,label,description,source_id,species_id, info_type) "
+        . "VALUES(?,?,?,?,?,?,?)" );
 
 #  my $get_xref_sth =
 #    $self->dbi()
@@ -100,7 +100,7 @@ sub run {
             if (
                 !$add_xref_sth->execute(
                     $interpro, '',         $short_name,
-                    $name,     $source_id, $species_id
+                    $name,     $source_id, $species_id, 'MISC'
                 )
               )
             {

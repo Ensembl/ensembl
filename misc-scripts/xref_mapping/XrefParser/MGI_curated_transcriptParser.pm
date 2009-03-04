@@ -135,7 +135,7 @@ sub run_script {
 	  print "$mgi_bit has no description\n" if($verbose);
 	}
       }
-      my $xref_id = $self->add_xref($row[1], "" , $row[1] , $desc, $id, $species_id);
+      my $xref_id = $self->add_xref($row[1], "" , $row[1] , $desc, $id, $species_id, "DIRECT");
       $xref_count++;
       
 #      if($xref_id == 707653){

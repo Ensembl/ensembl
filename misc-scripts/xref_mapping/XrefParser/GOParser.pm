@@ -174,7 +174,7 @@ sub run {
 	    my $new_xref_id=$self->get_xref($array[4],$source_id, $species_id);
 	    
 	    if(!defined($new_xref_id)){
-	      $new_xref_id = $self->add_xref($array[4],undef,$array[4],"", $source_id, $species_id);
+	      $new_xref_id = $self->add_xref($array[4],undef,$array[4],"", $source_id, $species_id, "DIRECT");
 	      $count++;
 	    }
 	    if(!defined($self->get_direct_xref($stable_id,$type, $array[6]))){

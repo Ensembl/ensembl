@@ -40,7 +40,8 @@ sub run {
   if(!defined($species_id)){
     $species_id = XrefParser::BaseParser->get_species_id_for_filename($file);
   }
-  
+  my $wiki_source_id = $self->get_source_id_for_source_name("WikiGene");
+
   my %species_tax_id = %{$self->get_taxonomy_from_species_id($species_id)};
   
 
@@ -112,7 +113,8 @@ sub run {
     }
     my $symbol = $arr[$gene_symbol_index];
     my $desc   = $arr[$gene_desc_index];
-    $self->add_xref($acc,"",$symbol,$desc,$source_id,$species_id);
+    $self->add_xref($acc,"",$symbol,$desc,$source_id,$species_id, "DEPENDENT");
+    $self->add_xref($acc,"",$symbol,$desc,$wiki_source_id,$species_id, "DEPENDENT","From EntrezGene $acc");
     $xref_count++;
 
     my (@syn) = split(/\|/ ,$arr[$gene_synonyms_index]);

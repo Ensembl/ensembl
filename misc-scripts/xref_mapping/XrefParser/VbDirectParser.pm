@@ -33,7 +33,7 @@ sub run {
 
 		my $xref_id = XrefParser::BaseParser->get_xref($probe, $source_id, $species_id);
 		if (!defined($xref_id) || $xref_id eq "") {
-			$xref_id = XrefParser::BaseParser->add_xref($probe, 1, $probe, $description, $source_id, $species_id);
+			$xref_id = XrefParser::BaseParser->add_xref($probe, 1, $probe, $description, $source_id, $species_id, "DIRECT");
 			}
 		XrefParser::BaseParser->add_direct_xref($xref_id, $ensembl_id, $type, $probe);
 		}

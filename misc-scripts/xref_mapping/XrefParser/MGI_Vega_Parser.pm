@@ -189,7 +189,7 @@ VSQL
       else{
 	print "VEGA: $name [".$row[2]."} has no description\n" if($verbose);
       }
-      my $xref_id = $self->add_xref($prim_acc, "" , $label , $desc, $source_id, $species_id);
+      my $xref_id = $self->add_xref($prim_acc, "" , $label , $desc, $source_id, $species_id, "DIRECT");
       my $ensg = $enst_to_ensg{$tran_stable_id};
       if(!defined($seen{$xref_id.$ensg})){
 	$xref_count++;

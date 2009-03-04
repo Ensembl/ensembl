@@ -58,7 +58,7 @@ sub run {
         my $xref_id = XrefParser::BaseParser->get_xref( $antibody_id, $source_id, $species_id );
 
         if ( !defined($xref_id) || $xref_id eq '' ) {
-            $xref_id = XrefParser::BaseParser->add_xref($antibody_id, $version, $label, $description, $source_id, $species_id);
+            $xref_id = XrefParser::BaseParser->add_xref($antibody_id, $version, $label, $description, $source_id, $species_id, "DIRECT");
         }
 	
 	

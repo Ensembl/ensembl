@@ -65,7 +65,7 @@ sub run {
       my ($junk, $acc, $chr, $pos, $label, $status, @part_desc) = split(/\s+/,$_);
     
       my $desc= join(" ",@part_desc);
-      $acc_to_xref{$acc} = $self->add_xref($acc,"",$label,$desc,$source_id,$species_id);
+      $acc_to_xref{$acc} = $self->add_xref($acc,"",$label,$desc,$source_id,$species_id,"MISC");
       if($verbose and $desc eq ""){
 	print "$acc has no description\n";
       }

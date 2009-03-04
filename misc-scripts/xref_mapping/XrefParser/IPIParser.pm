@@ -66,6 +66,7 @@ sub run {
     $xref->{SPECIES_ID}    = $species_id;
     $xref->{SEQUENCE_TYPE} = 'peptide';
     $xref->{STATUS}        = 'experimental';
+    $xref->{INFO_TYPE}     = "SEQUENCE_MATCH";
 
     push @xrefs, $xref;
 

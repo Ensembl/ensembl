@@ -199,6 +199,7 @@ sub create_xrefs {
       $xref->{DESCRIPTION} = $description;
       $xref->{SEQUENCE} = $sequence;
       $xref->{SPECIES_ID} = $species_id;
+      $xref->{INFO_TYPE} = "SEQUENCE_MATCH";
 
       # TODO synonyms, dependent xrefs etc
 

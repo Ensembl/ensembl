@@ -84,33 +84,6 @@ sub run {
   }
 
 
-#  NOTE this is done in the mapper
-#  #
-#  # Finally add the synonyms for MGI
-#  #
-
-#  my $synonym_sql = (<<SYNO);
-#SELECT x2.xref_id, s.synonym
-#  FROM synonym s
-#    INNER JOIN xref x1 ON  x1.xref_id = s.xref_id
-#    INNER JOIN xref x2 ON  x2.accession = x1.accession 
-#    INNER JOIN source s1 ON s1.source_id = x1.source_id
-#    INNER JOIN source s2 ON s2.source_id = x2.source_id    
-#      WHERE x2.xref_id != x1.xref_id
-#	AND s2.name = "MGI" 
-#	AND s2.priority_description = "uniprot" 
-#        AND s1.name = "MGI" 
-#        AND s1.priority_description = "descriptions"
-#SYNO
-
-#  my $sth = $self->dbi()->prepare($synonym_sql);
-  
-#  $sth->execute() or croak( $self->dbi()->errstr() );
-#  while ( my @row = $sth->fetchrow_array() ) {
-#    $self->add_synonym($row[0], $row[1]);
-#  }
-#  $sth->finish;  
-
     if ( defined $release_file ) {
         # These two lines are duplicated from the create_xrefs() method
         # below...
@@ -320,6 +293,7 @@ sub create_xrefs {
       push(@accessions, (split /;\s*/, $accessions_only)) if ($accessions_only);
     }
 
+    $xref->{INFO_TYPE} = "SEQUENCE_MATCH";
     $xref->{ACCESSION} = $accessions[0];
     for (my $a=1; $a <= $#accessions; $a++) {
       push(@{$xref->{"SYNONYMS"} }, $accessions[$a]);
@@ -495,6 +469,8 @@ sub create_xrefs {
     my @dep_lines = ();
     if ( defined $deps ) { @dep_lines = split /\n/, $deps }
 
+    my %seen=();  # per record basis
+
     foreach my $dep (@dep_lines) {
       #both GO and UniGene have the own sources so ignore those in the uniprot files
       #as the uniprot data should be older
@@ -577,14 +553,16 @@ sub create_xrefs {
 
 #	  $dep{ACCESSION} = $acc;
 	  $dependent_xrefs{ $dep{SOURCE_NAME} }++; # get count of depenent xrefs.
-	  push @{$xref->{DEPENDENT_XREFS}}, \%dep; # array of hashrefs
-
+	  if(!defined($seen{$dep{SOURCE_NAME}.":".$dep{ACCESSION}})){
+	    push @{$xref->{DEPENDENT_XREFS}}, \%dep; # array of hashrefs
+	    $seen{$dep{SOURCE_NAME}.":".$dep{ACCESSION}} =1;
+	  }
 	  if($dep =~ /EMBL/){
 	    my ($protein_id) = $extra[0];
-	    if($protein_id ne "-"){
+	    if($protein_id ne "-" and !defined($seen{$source.":".$protein_id})){
 	      my %dep2;
 	      $dep2{SOURCE_NAME} = $source;
-	      $dep2{SOURCE_ID} = $dependent_sources{protein_id};
+	      $dep2{SOURCE_ID} = $dependent_sources{"protein_id"};
 	      if ($is_predicted) {
 		$dep2{SOURCE_ID} = $protein_id_pred_source_id
 	      };
@@ -595,6 +573,7 @@ sub create_xrefs {
 	      $dep2{ACCESSION} = $prot_acc;
 	      $dep2{VERSION} = $prot_acc;
 	      $dependent_xrefs{ $dep2{SOURCE_NAME} }++; # get count of dependent xrefs.
+	      $seen{$source.":".$protein_id} = 1;
 	      push @{$xref->{DEPENDENT_XREFS}}, \%dep2; # array of hashrefs
 	    }
 	  }

@@ -100,7 +100,7 @@ sub run {
 
     if(!$done){
 #      print STDERR "$rgd FAILED for $failed_list\n";
-      $self->add_xref($rgd,"",$symbol,$name,$source_id,$species_id);
+      $self->add_xref($rgd,"",$symbol,$name,$source_id,$species_id,"MISC");
       $mismatch++;
     }
 

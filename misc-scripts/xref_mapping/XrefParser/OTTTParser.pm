@@ -7,8 +7,6 @@ use base qw( XrefParser::BaseParser );
 
 use strict;
 
-my $dbi2;
-
 if (!defined(caller())) {
 
   if (scalar(@ARGV) != 1) {
@@ -53,7 +51,10 @@ sub run_script {
 
   my %ott_to_enst;
   
-  $dbi2 = $self->dbi2($host, $port, $user, $dbname, $pass);
+  my $dbi2 = $self->dbi2($host, $port, $user, $dbname, $pass);
+  if(!defined($dbi2)){
+    return 1;
+  }
   
   my $sth = $dbi2->prepare($sql);   # funny number instead of stable id ?????
   $sth->execute("ENST_CDS") or croak( $dbi2->errstr() );
@@ -72,7 +73,7 @@ sub run_script {
   my $xref_count = 0;
   foreach my $ott (keys %ott_to_enst){
   
-    my $xref_id = $self->add_xref($ott, "" , $ott , "", $source_id, $species_id);
+    my $xref_id = $self->add_xref($ott, "" , $ott , "", $source_id, $species_id, "DIRECT");
     $xref_count++;
     
     
@@ -84,25 +85,26 @@ sub run_script {
 
 
 
-sub dbi2{
+#sub dbi2{
 
-    my $self = shift;
-    my ($host, $port, $user, $dbname, $pass) = @_;
+#  my $self = shift;
+#  my ($host, $port, $user, $dbname, $pass) = @_;
 
-    if ( !defined $dbi2 || !$dbi2->ping() ) {
-        my $connect_string =
-          sprintf( "dbi:mysql:host=%s;port=%s;database=%s",
-            $host, $port, $dbname );
+#  if ( !defined $dbi2 || !$dbi2->ping() ) {
+#    my $connect_string =
+#      sprintf( "dbi:mysql:host=%s;port=%s;database=%s",
+#	       $host, $port, $dbname );
 
-        $dbi2 =
-          DBI->connect( $connect_string, $user, $pass,
-            { 'RaiseError' => 1 } )
-          or croak( "Can't connect to database: " . $DBI::errstr );
-        $dbi2->{'mysql_auto_reconnect'} = 1; # Reconnect on timeout
-    }
+#    $dbi2 =
+#      DBI->connect( $connect_string, $user, $pass,
+#		    {
+#		     'RaiseError' => 1 } )
+#	or croak( "Can't connect to database: " . $DBI::errstr );
+#    $dbi2->{'mysql_auto_reconnect'} = 1; # Reconnect on timeout
+#  }
     
-    return $dbi2;
-}
+#  return $dbi2;
+#}
 
 1;
 

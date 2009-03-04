@@ -95,7 +95,7 @@ sub run_script {
       $xref_sth->execute($acc, $version);
       my $xref_id = ($xref_sth->fetchrow_array())[0];
       if (!$xref_id) {
-	$xref_id = $self->add_xref($acc, $version, $display_label, "", $source_id, $species_id);
+	$xref_id = $self->add_xref($acc, $version, $display_label, "", $source_id, $species_id, "DIRECT");
 	$xref_count++;
       }
       

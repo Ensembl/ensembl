@@ -65,7 +65,7 @@ sub run {
     }
     my $xref_id = $self->get_xref($acc,$name_2_source_id{$source_name}, $species_id);
     if(!defined($xref_id)){
-      $xref_id = $self->add_xref($acc,"",$display_label,$description,$name_2_source_id{$source_name}, $species_id);
+      $xref_id = $self->add_xref($acc,"",$display_label,$description,$name_2_source_id{$source_name}, $species_id, "DIRECT");
       $added++;
     }
     $self->add_direct_xref($xref_id, $transcript_id, "Transcript", "") if (defined($transcript_id));    

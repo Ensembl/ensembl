@@ -253,6 +253,7 @@ sub create_xrefs {
       $xref->{SEQUENCE} = $parsed_seq;
       $xref->{SEQUENCE_TYPE} = $type;
       $xref->{SPECIES_ID} = $species_id;
+      $xref->{INFO_TYPE} = "SEQUENCE_MATCH";
 
       # TODO experimental/predicted
 
@@ -276,6 +277,13 @@ sub create_xrefs {
 	$dep{LINKAGE_SOURCE_ID} = $source_id;
 	$dep{ACCESSION} = $ll;
 	push @{$xref->{DEPENDENT_XREFS}}, \%dep;
+
+	my %dep2;
+	$dep2{SOURCE_ID} = $dependent_sources{WikiGene} 
+          || die( 'No source for WikiGene!' );
+	$dep2{LINKAGE_SOURCE_ID} = $source_id;
+	$dep2{ACCESSION} = $ll;
+	push @{$xref->{DEPENDENT_XREFS}}, \%dep2;
       }
       foreach my $ll (@SGDGeneIDline) {
 	my %dep;

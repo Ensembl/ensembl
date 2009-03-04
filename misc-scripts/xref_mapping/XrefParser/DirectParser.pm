@@ -69,7 +69,7 @@ sub run {
             $xref_id =
               XrefParser::BaseParser->add_xref(
                                    $accession,   $version,   $label,
-                                   $description, $source_id, $species_id
+                                   $description, $source_id, $species_id, "DIRECT"
               );
         }
         XrefParser::BaseParser->add_direct_xref( $xref_id, $ensembl_id,

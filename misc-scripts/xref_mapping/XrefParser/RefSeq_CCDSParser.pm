@@ -57,8 +57,8 @@ sub run_script {
   }
   $sth->finish;
  
-  $sql = 'select x.accession, x.xref_id, d.ensembl_stable_id, d.type 
-            from xref x, direct_xref d, source s 
+  $sql = 'select x.accession, x.xref_id, d.ensembl_stable_id, "Transcript"
+            from xref x, transcript_direct_xref d, source s 
              where s.source_id = x.source_id and 
                    x.xref_id = d.general_xref_id and s.name like "CCDS"'; 
  
@@ -107,7 +107,7 @@ sub run_script {
 	  $new_source_id = $dna_pred;
 	}
 	my $xref_id = $self->add_xref($refseq, $version{$refseq} , $label{$refseq}||$refseq , 
-				      $description{$refseq}, $new_source_id, $species_id);
+				      $description{$refseq}, $new_source_id, $species_id, "DIRECT");
 	$self->add_direct_xref($xref_id, $ensembl_stable_id{$key}, $ensembl_type{$key}, "");
 	$old_to_new{$old_xref{$refseq}} = $xref_id;
 	$xref_count++;

@@ -56,7 +56,7 @@ sub run {
     my ($locus_name, $alias_name, $desc, $gene_prod, $phenotype, $orf_name, $sgd_id) = split(/\t/,$_);
 
     my (@syn) = split(/\|/,$alias_name);
-    $self->add_xref($sgd_id,"",$locus_name,$desc,$source_id,$species_id);
+    $self->add_xref($sgd_id,"",$locus_name,$desc,$source_id,$species_id,"MISC");
     $xref_count++;
     foreach my $synonym (@syn){
       $self->add_to_syn($sgd_id, $source_id, $synonym, $species_id);

@@ -50,7 +50,7 @@ sub run {
     if($name =~ /[.]/){
       $id = $clone_source_id;
     }
-    my $xref_id = $self->add_xref($name, "" , $name , "", $id, $species_id);
+    my $xref_id = $self->add_xref($name, "" , $name , "", $id, $species_id, "DIRECT");
     $xref_count++;
     
     

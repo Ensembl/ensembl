@@ -201,6 +201,7 @@ sub create_xrefs {
     $xref->{DESCRIPTION} = $geneid_2_desc{$acc_no_ver};
     $xref->{SEQUENCE} = $sequence;
     $xref->{SPECIES_ID} = $species_id;
+    $xref->{INFO_TYPE} = "SEQUENCE_MATCH";
     
     push @xrefs, $xref;
     
