@@ -22,7 +22,7 @@ use Bio::EnsEMBL::Utils::Exception;
 my $base_dir = File::Spec->curdir();
 
 my $add_xref_sth = undef;
-my $add_direct_xref_sth = undef;
+my %add_direct_xref_sth;
 my $add_dependent_xref_sth = undef;
 my $get_xref_sth = undef;
 my $add_synonym_sth = undef;
@@ -68,6 +68,8 @@ sub run {
     }
 
     my $dbi = dbi();
+    my $sth_c = $dbi->prepare("insert into process_status (status, date) values('xref_created',now())");
+    $sth_c->execute;
 
     # validate species names
     my @species_ids = validate_species(@species);
@@ -117,7 +119,10 @@ sub run {
       . "ORDER BY s.ordered";
     #print $sql . "\n";
 
-    my $sth = $dbi->prepare($sql);
+    my $sth = $dbi->prepare("insert into process_status (status, date) values('parsing_started',now())");
+    $sth->execute;
+
+    $sth = $dbi->prepare($sql);
     $sth->execute();
 
     my ( $source_id, $source_url_id, $name, $url, $release_url,
@@ -541,6 +546,9 @@ sub run {
       }
       
     }
+
+    $sth = $dbi->prepare("insert into process_status (status, date) values('parsing_finished',now())");
+    $sth->execute;
 
     # remove last working directory
     # TODO reinstate after debugging
@@ -1148,7 +1156,7 @@ sub upload_xref_object_graphs {
 
     # upload new ones
     print "Uploading xrefs\n" if($verbose);
-    my $xref_sth = $dbi->prepare("INSERT INTO xref (accession,version,label,description,source_id,species_id) VALUES(?,?,?,?,?,?)");
+    my $xref_sth = $dbi->prepare("INSERT INTO xref (accession,version,label,description,source_id,species_id, info_type) VALUES(?,?,?,?,?,?,?)");
     my $pri_insert_sth = $dbi->prepare("INSERT INTO primary_xref VALUES(?,?,?,?)");
     my $pri_update_sth = $dbi->prepare("UPDATE primary_xref SET sequence=? WHERE xref_id=?");
     my $syn_sth = $dbi->prepare("INSERT INTO synonym VALUES(?,?)");
@@ -1169,10 +1177,11 @@ sub upload_xref_object_graphs {
       # Create entry in xref table and note ID
        if(! $xref_sth->execute($xref->{ACCESSION},
 			 $xref->{VERSION} || 0,
-			 $xref->{LABEL},
+			 $xref->{LABEL}|| $xref->{ACCESSION},
 			 $xref->{DESCRIPTION},
 			 $xref->{SOURCE_ID},
-			 $xref->{SPECIES_ID})){
+			 $xref->{SPECIES_ID},
+			 $xref->{INFO_TYPE} || "MISC")){
 	 if(!defined($xref->{SOURCE_ID})){
 	   print "your xref: $xref->{ACCESSION} does not have a source-id\n";
 	   return undef;
@@ -1220,7 +1229,8 @@ sub upload_xref_object_graphs {
 			   $dep{LABEL},
 			   $dep{DESCRIPTION} || "",
 			   $dep{SOURCE_ID},
-			   $xref->{SPECIES_ID});
+			   $xref->{SPECIES_ID},
+                           "DEPENDENT");
 
 	my $dep_xref_id = $self->insert_or_select($xref_sth, $dbi->err, $dep{ACCESSION}, $dep{SOURCE_ID}, $xref->{SPECIES_ID});
 
@@ -1771,7 +1781,7 @@ sub get_xref{
 
 sub add_xref {
   my ( $self, $acc, $version, $label, $description, $source_id,
-       $species_id )
+       $species_id, $info_type )
     = @_;
 
   my $xref_id = $self->get_xref($acc,$source_id, $species_id);
@@ -1781,8 +1791,8 @@ sub add_xref {
   if ( !defined($add_xref_sth) ) {
     $add_xref_sth =
       dbi->prepare( "INSERT INTO xref "
-         . "(accession,version,label,description,source_id,species_id) "
-         . "VALUES(?,?,?,?,?,?)" );
+         . "(accession,version,label,description,source_id,species_id, info_type) "
+         . "VALUES(?,?,?,?,?,?,?)" );
   }
 
   # If the description is more than 255 characters, chop it off and add
@@ -1795,7 +1805,7 @@ sub add_xref {
   }
 
   $add_xref_sth->execute( $acc, $version || 0, $label,
-                          $description, $source_id, $species_id
+                          $description, $source_id, $species_id, $info_type
   ) or croak("$acc\t$label\t\t$source_id\t$species_id\n");
 
   return $add_xref_sth->{'mysql_insertid'};
@@ -1817,9 +1827,9 @@ sub add_to_direct_xrefs{
   if(!defined($add_xref_sth)){
     $add_xref_sth = dbi->prepare("
 INSERT INTO xref 
-  (accession,version,label,description,source_id,species_id)
+  (accession,version,label,description,source_id,species_id, info_type)
 VALUES
-  (?,?,?,?,?,?)");
+  (?,?,?,?,?,?,?)");
   }
 
 
@@ -1827,7 +1837,7 @@ VALUES
   if(!defined($direct_id)){
     $add_xref_sth->execute(
         $acc, $version || 0, $label,
-        $description, $source_id, $species_id
+        $description, $source_id, $species_id, "DIRECT"
     ) or croak("$acc\t$label\t\t$source_id\t$species_id\n");
   }
   $direct_id = $self->get_xref($acc, $source_id, $species_id);
@@ -1850,9 +1860,9 @@ sub add_to_xrefs{
   if(!defined($add_xref_sth)){
     $add_xref_sth = dbi->prepare("
 INSERT INTO xref 
-  (accession,version,label,description,source_id,species_id)
+  (accession,version,label,description,source_id,species_id, info_type)
 VALUES
-  (?,?,?,?,?,?)");
+  (?,?,?,?,?,?,?)");
   }
   if(!defined($add_dependent_xref_sth)){
     $add_dependent_xref_sth = dbi->prepare("
@@ -1866,7 +1876,7 @@ VALUES
   if(!defined($dependent_id)){
     $add_xref_sth->execute(
         $acc, $version || 0, $label,
-        $description, $source_id, $species_id
+        $description, $source_id, $species_id, "DEPENDENT"
     ) or croak("$acc\t$label\t\t$source_id\t$species_id\n");
   }
   $dependent_id = $self->get_xref($acc, $source_id, $species_id);
@@ -1897,11 +1907,7 @@ sub add_to_syn_for_mult_sources{
       $found = 1;
     }
   }
-    #if ( !$found ) {
-    #    croak(  "Could not find acc $acc in xref table for sources"
-    #          . join( ", ", @$sources )
-    #          . "\n" );
-    #}
+
 }
 
 
@@ -1947,10 +1953,24 @@ sub add_direct_xref {
 
   my ($self, $general_xref_id, $ensembl_stable_id, $ensembl_type, $linkage_type) = @_;
 
-  $add_direct_xref_sth = dbi->prepare("INSERT INTO direct_xref VALUES(?,?,?,?)") if (!defined($add_direct_xref_sth));
-
-  $add_direct_xref_sth->execute($general_xref_id, $ensembl_stable_id, $ensembl_type, $linkage_type);
-
+  if (!defined($add_direct_xref_sth{$ensembl_type})){
+    my $add_gene_direct_xref_sth = dbi->prepare("INSERT INTO gene_direct_xref VALUES(?,?,?)");
+    my $add_tr_direct_xref_sth = dbi->prepare("INSERT INTO transcript_direct_xref VALUES(?,?,?)");
+    my $add_tl_direct_xref_sth = dbi->prepare("INSERT INTO translation_direct_xref VALUES(?,?,?)");
+    $add_direct_xref_sth{"gene"} = $add_gene_direct_xref_sth;
+    $add_direct_xref_sth{"transcript"} = $add_tr_direct_xref_sth;
+    $add_direct_xref_sth{"translation"} = $add_tl_direct_xref_sth;
+    $add_direct_xref_sth{"Gene"} = $add_gene_direct_xref_sth;
+    $add_direct_xref_sth{"Transcript"} = $add_tr_direct_xref_sth;
+    $add_direct_xref_sth{"Translation"} = $add_tl_direct_xref_sth;
+  }
+  
+  if(!defined($add_direct_xref_sth{$ensembl_type})){
+    print "ERROR add_direct_xref_sth does not exist for $ensembl_type ???\n"; 
+  }
+  else{
+    $add_direct_xref_sth{$ensembl_type}->execute($general_xref_id, $ensembl_stable_id, $linkage_type);
+  }
 }
 
 # ------------------------------------------------------------------------------
@@ -2228,6 +2248,42 @@ sub get_dependent_mappings {
   $sth->finish;
 
 }
+
+sub get_hgnc_synonyms{
+  my $self = shift;
+  my %hgnc_syns;
+  my %seen;          # can be in more than once fro each type of hgnc.
+
+  my $sql = (<<SYN);
+SELECT  x.accession, x.label, sy.synonym 
+  FROM xref x, source so, synonym sy
+    WHERE x.xref_id = sy.xref_id
+      AND so.source_id = x.source_id
+      AND so.name like "HGNC"
+SYN
+
+  my $dbi = $self->dbi();
+  my $sth = $dbi->prepare($sql);    
+
+  $sth->execute;
+  my ($acc, $label, $syn);
+  $sth->bind_columns(\$acc, \$label, \$syn);
+
+  my $count = 0;
+  while($sth->fetch){
+    if(!defined($seen{$acc.":".$syn})){
+      push @{$hgnc_syns{$acc}}, $syn;
+      push @{$hgnc_syns{$label}}, $syn;
+      $count++;
+    }
+    $seen{$acc.":".$syn} = 1;
+  }
+  $sth->finish;
+
+  return \%hgnc_syns;
+
+}
+
 
 # --------------------------------------------------------------------------------
 1;
