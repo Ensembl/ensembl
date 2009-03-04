@@ -56,9 +56,13 @@ sub jobcount {
 
 sub run() {
 
-  my ($self, $query, $target, $dir, $nofarm) = @_;
+#  my ($self, $query, $target, $dir, $nofarm) = @_;
+#
+#  my $name = $self->submit_exonerate($query, $target, $dir, $nofarm, $self->options());
 
-  my $name = $self->submit_exonerate($query, $target, $dir, $nofarm, $self->options());
+  my ($self, $query, $target, $mapper) = @_;
+
+  my $name = $self->submit_exonerate($query, $target, $mapper, $self->options());
 
 #  $self->check_err($dir);
 #  no point until after the depend job done.
@@ -97,9 +101,15 @@ sub options() {
 
 sub submit_exonerate {
 
-  my ($self, $query, $target, $root_dir, $nofarm, @options) = @_;
+#  my ($self, $query, $target, $root_dir, $nofarm, @options) = @_;
+  my ($self, $query, $target, $mapper, @options) = @_;
 
+
+  my $root_dir = $mapper->core->dir;
+
+  print "query $query\n";
   my $queryfile = basename($query);
+  print "target $target\n";
   my $targetfile = basename($target);
 
   my $prefix = $root_dir . "/" . basename($query);
@@ -119,7 +129,7 @@ sub submit_exonerate {
 
   my $num_jobs = calculate_num_jobs($query);
 
-  if(defined($nofarm)){
+  if(defined($mapper->nofarm)){
     my $output = $self->get_class_name() . "_" . $ensembl_type . "_1.map";
     my $cmd = <<EON;
 $exonerate_path $query $target --showvulgar false --showalignment FALSE --ryo "xref:%qi:%ti:%ei:%ql:%tl:%qab:%qae:%tab:%tae:%C:%s\n" $options_str | grep '^xref' > $root_dir/$output
@@ -206,7 +216,32 @@ EOF
     warn("Job submission failed:\n$@\n");
     return 0;
   }
+  else{
+    # write details of job to database
+    my $command = "$exonerate_path $query $target --querychunkid \$LSB_JOBINDEX --querychunktotal $num_jobs --showvulgar false --showalignment FALSE --ryo ".
+      '"xref:%qi:%ti:%ei:%ql:%tl:%qab:%qae:%tab:%tae:%C:%s\n"'." $options_str | grep ".'"'."^xref".'"'." > $root_dir/$output";
 
+    my $sth = $mapper->xref->dbc->prepare("insert into process_status (status, date) values('mapping_submitted',now())");
+    $sth->execute();
+    my $insert = "insert into mapping (job_id, type, command_line, percent_query_cutoff, percent_target_cutoff, method, array_size) values($jobid, '$ensembl_type', '$command',".
+				       $self->query_identity_threshold.", ".$self->target_identity_threshold.", '".$self->get_class_name()."', $num_jobs)";
+#    print $insert."\n";
+
+    $sth = $mapper->xref->dbc->prepare($insert);
+    $sth->execute;
+ 
+    $sth = $mapper->xref->dbc->prepare("insert into mapping_jobs (root_dir, map_file, status, out_file, err_file, array_number, job_id) values (?,?,?,?,?,?,?)");
+    
+    for( my $i=1; $i<=$num_jobs; $i++){
+      my $map_file = $self->get_class_name()."_".$ensembl_type."_".$i.".map";
+      my $out_file = "xref_0_".$ensembl_type.".".$jobid."-".$i.".out";
+      my $err_file = "xref_0_".$ensembl_type.".".$jobid."-".$i.".err";
+      $sth->execute($root_dir, $map_file, 'SUBMITTED', $out_file, $err_file, $i, $jobid);
+    }
+    $sth->finish;
+    
+  }
+  
   return $unique_name;
 
 }
