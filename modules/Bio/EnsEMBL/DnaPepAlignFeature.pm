@@ -20,7 +20,8 @@
 
 =head1 NAME
 
-  Bio::EnsEMBL::DnaPepAlignFeature - Ensembl specific dna-pep pairwise alignment feature
+Bio::EnsEMBL::DnaPepAlignFeature - Ensembl specific dna-pep pairwise
+alignment feature
 
 =head1 SYNOPSIS
 

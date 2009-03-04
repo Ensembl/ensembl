@@ -20,8 +20,8 @@
 
 =head1 NAME
 
-  Bio::EnsEMBL::DBSQL::BaseMetaContainer - 
-  Encapsulates all generic access to database meta information
+Bio::EnsEMBL::DBSQL::BaseMetaContainer - Encapsulates all generic access
+to database meta information
 
 =head1 SYNOPSIS
 

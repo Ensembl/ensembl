@@ -20,7 +20,7 @@
 
 =head1 NAME
 
-  Bio::EnsEMBL::Utils::PolyA
+Bio::EnsEMBL::Utils::PolyA
 
 =head1 SYNOPSIS
 
