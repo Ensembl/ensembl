@@ -93,11 +93,21 @@ sub run_script {
 
   my $dbi = $self->dbi();  
 
+
+  my $sql = "insert into synonym (xref_id, synonym) values (?, ?)";
+  my $add_syn_sth = $dbi->prepare($sql);    
+  
+  my $syn_hash = $self->get_hgnc_synonyms();
+  
+
+
   #get the source ids for HGNC refseq, entrezgene and unitprot
-  my $sql = 'select source_id, priority_description from source where name like "HGNC"';
+  $sql = 'select source_id, priority_description from source where name like "HGNC"';
   $sth = $dbi->prepare($sql);
   
   $sth->execute();
+
+
   my ($hgnc_source_id, $desc);
   $sth->bind_columns(\$hgnc_source_id, \$desc);
   my @arr;
@@ -147,14 +157,22 @@ sub run_script {
 	my $version ="";
 	$line_count++;
 	
-	my $xref_id = $self->add_xref($hgnc, $version{$hgnc} , $label{$hgnc}||$hgnc , $description{$hgnc}, $source_id, $species_id);
+	my $xref_id = $self->add_xref($hgnc, $version{$hgnc} , $label{$hgnc}||$hgnc , $description{$hgnc}, $source_id, $species_id, "DIRECT");
 	$xref_count++;
 	
 	
 	$self->add_direct_xref($xref_id, $stable_id, "transcript", "");
+
+	if(defined($syn_hash->{$hgnc})){
+	  foreach my $syn (@{$syn_hash->{$hgnc}}){
+	    $add_syn_sth->execute($xref_id, $syn);
+	  }
+	}
+
       }
     }
   }
+  $add_syn_sth->finish;
   print "Parsed $line_count HGNC identifiers from $file, added $xref_count xrefs and $line_count direct_xrefs\n" if($verbose);
   if($ignore_count){
     print $ignore_count." ignoreed due to numbers no identifiers being no longer valid :- $ignore_examples\n" if($verbose);

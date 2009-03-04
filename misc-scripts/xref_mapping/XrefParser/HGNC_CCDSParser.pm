@@ -111,7 +111,12 @@ sub run_script {
 
   my $dbi = $self->dbi();  
 
-  my $sql = 'select source_id, priority_description from source where name like "HGNC"';
+  my $sql = "insert into synonym (xref_id, synonym) values (?, ?)";
+  my $add_syn_sth = $dbi->prepare($sql);    
+  
+  my $syn_hash = $self->get_hgnc_synonyms();
+
+  $sql = 'select source_id, priority_description from source where name like "HGNC"';
   my $sth = $dbi->prepare($sql);
   
   $sth->execute();
@@ -145,10 +150,16 @@ sub run_script {
       my $hgnc = $ccds_to_hgnc{$ccds};
       $hgnc =~ s/HGNC://;
       my $xref_id = $self->add_xref($hgnc, $version{$hgnc} , $label{$hgnc}||$hgnc , 
-				      $description{$hgnc}, $source_id, $species_id);
+				      $description{$hgnc}, $source_id, $species_id, "DIRECT");
       $self->add_direct_xref($xref_id, $ccds_to_stable_id{$ccds}, "Transcript", "");
       $xref_count++;
 
+      if(defined($syn_hash->{$hgnc})){
+	foreach my $syn (@{$syn_hash->{$hgnc}}){
+	  $add_syn_sth->execute($xref_id, $syn);
+	}
+      }
+      
     }
     else{
          $no_ccds_to_hgnc++;
@@ -156,6 +167,7 @@ sub run_script {
 
     }
   }
+  $add_syn_sth->finish;
   print "$no_ccds_to_hgnc missed as no hgnc for the ccds. Added $xref_count HGNC xrefs via CCDS\n" if($verbose);
   return 0;
 }
