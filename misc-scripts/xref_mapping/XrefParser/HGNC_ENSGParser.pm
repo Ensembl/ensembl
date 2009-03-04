@@ -87,7 +87,7 @@ sub run {
       my $version ="";
       $line_count++;
       
-      my $xref_id = $self->add_xref($hgnc, $version{$hgnc} , $label{$hgnc}||$hgnc , $description{$hgnc}, $source_id, $species_id);
+      my $xref_id = $self->add_xref($hgnc, $version{$hgnc} , $label{$hgnc}||$hgnc , $description{$hgnc}, $source_id, $species_id, "DIRECT");
       $xref_count++;
       
 
