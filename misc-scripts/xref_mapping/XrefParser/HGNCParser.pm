@@ -59,9 +59,15 @@ sub run {
   if(!defined($hgnc_entrezgene_mapped)){
     die  "Could not get source id for HGNC with priority description of entrezgene_mapped\n";
   }
+
   my $hgnc_ensembl_mapped  = XrefParser::BaseParser->get_source_id_for_source_name("HGNC","ensembl_mapped");
   if(!defined($hgnc_ensembl_mapped)){
     die  "Could not get source id for HGNC with priority description of ensembl_mapped\n";
+  }
+
+  my $hgnc_desc_only  = XrefParser::BaseParser->get_source_id_for_source_name("HGNC","desc_only");
+  if(!defined($hgnc_desc_only)){
+    die  "Could not get source id for HGNC with priority description of desc_only\n";
   }
 
 #  my (%swiss)  =  %{XrefParser::BaseParser->get_valid_codes("uniprot",$species_id)};
@@ -213,7 +219,20 @@ sub run {
       }    
     }
     if(!$seen){ # Store to keep descriptions etc
-      $self->add_xref($array[0], "", $array[1], $array[2], $source_id, $species_id);      
+      $self->add_xref($array[0], "", $array[1], $array[2], $hgnc_desc_only, $species_id, "MISC");      
+      if (defined($array[3])) {     # dead name, add to synonym
+	my @array2 = split(',\s*', $array[3]);
+	foreach my $arr (@array2){
+	  XrefParser::BaseParser->add_to_syn($array[0], $hgnc_desc_only, $arr, $species_id);
+	}
+      }
+      
+      if (defined($array[4])) {     # alias, add to synonym
+	my @array2 = split(',\s*', $array[4]);
+	foreach my $arr (@array2){
+	  XrefParser::BaseParser->add_to_syn($array[0], $hgnc_desc_only, $arr, $species_id);
+	}
+      }
       $mismatch++;
     }
 
