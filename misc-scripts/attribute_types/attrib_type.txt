@@ -135,9 +135,6 @@
 56	KnwnPTCount	processed_transcript_KNOWN	Number of Known Processed Transcripts
 57	ccds	CCDS	CCDS identifier
 
-# make first amino acid methionine
-58	starts_met	Starts with methionine	Translation attribute
-
 # label frameshifts modelled as short (1,2,4,5 bp) introns
 59	Frameshift	Frameshift	Frameshift modelled as intron
 
@@ -280,9 +277,6 @@
 166	MolecularWeight	Molecular weight	Pepstats attributes
 167	NumResidues	Number of residues	Pepstats attributes
 168	AvgResWeight	Ave. residue weight	Pepstats attributes
-
-#attribute to indicate whether the translation has a stop codon or not, mainly for the mart calculation
-169	has_stop_codon	Contains stop codon	Translation attribute	
 
 #old attribute used by the API to translate the sequence
 170	initial_met	Initial methionine	Set first amino acid to methionine
