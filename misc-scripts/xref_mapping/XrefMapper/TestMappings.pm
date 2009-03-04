@@ -33,6 +33,11 @@ use IPC::Open3;
 #    gene_transcript_translation   and transcript_stable_id
 #    gene_transcript_translation   and translation_stable_id
 
+# WARNNGS
+#    gene_direct_xref              and gene_stable_id
+#    transcript
+#    translation
+
 # All object_xref of type go have a go_xref entry
 
 
@@ -141,9 +146,9 @@ sub unlinked_entries{
   }
 
   foreach my $type (qw(transcript translation gene)){
-    $count_sql = "select count(1) from ".$type."_direct_xref d left join xref x on d.general_xref_id = x.xref_id where x.xref_id is null";
+    $count_sql =      "select count(1) from ".$type."_direct_xref d left join xref x on d.general_xref_id = x.xref_id where x.xref_id is null";
     
-    $sql = "select distinct(d.xref_id) from ".$type."_direct_xref d left join xref x on d.general_xref_id = x.xref_id where x.xref_id is null limit 10";
+    $sql = "select distinct(d.general_xref_id) from ".$type."_direct_xref d left join xref x on d.general_xref_id = x.xref_id where x.xref_id is null limit 10";
     
     $sth = $self->xref->dbc->prepare($count_sql);
     $sth->execute();
@@ -304,7 +309,7 @@ sub entry_number_check{
   my %old_object_xref_count;
   my %new_object_xref_count;
 
-  my $sth = $self->xref->dbc->prepare('select s.name, count(*) from xref x, object_xref ox, source s where ox.xref_id = x.xref_id  and x.source_id = s.source_id and ox_status = "DUMP_OUT"and s.name not like "AFFY%"  group by s.name');
+  my $sth = $self->xref->dbc->prepare('select s.name, count(*) from xref x, object_xref ox, source s where ox.xref_id = x.xref_id  and x.source_id = s.source_id and ox_status = "DUMP_OUT" and s.name not like "AFFY%"  group by s.name');
   $sth->execute();
   my ($name, $count);
   $sth->bind_columns(\$name,\$count);
@@ -356,7 +361,7 @@ sub name_change_check{
   if(!defined($official_name)){
     return;
   }
-  print "Checking names\n";
+#  print "Checking names\n";
 
   my $sql = 'select x.label, gsi.internal_id, gsi.stable_id from object_xref ox, xref x, gene_stable_id gsi, source s  where x.xref_id = ox.xref_id and ox.ensembl_object_type = "Gene" and gsi.internal_id = ox.ensembl_id and x.source_id = s.source_id and s.name like "'.$official_name.'_%"';
 
@@ -392,8 +397,34 @@ sub name_change_check{
       $count++;
     }	
   }
-  print "$count entries with different names out of $total_count protein coding gene comparisons?\n";
+  if($total_count){
+    print "$count entries with different names out of $total_count protein coding gene comparisons?\n";
+  }
 }
 
 
+sub direct_stable_id_check{
+  my ($self) = @_;
+
+
+  foreach my $type (qw(gene transcript translation)){
+    
+    my $sql = "select s.name, count(*) from source s, xref x, ".$type."_direct_xref gdx left join ".$type."_stable_id gsi on gdx.ensembl_stable_id = gsi.stable_id where s.source_id = x.source_id and x.xref_id = gdx.general_xref_id and gsi.stable_id is null group by s.name";
+    
+    my $sth = $self->xref->dbc->prepare($sql);
+    $sth->execute();
+    my ($name, $count);
+    $sth->bind_columns(\$name,\$count);
+    my $total_count=0;
+    while($sth->fetch()){
+      print "WARNING $name has $count invalid stable ids in ".$type."_direct_xrefs\n";
+      $total_count += $count;
+    }	
+    $sth->finish;
+    if($total_count){
+      print "USEFUL SQL: $sql\n";
+    }
+  }
+
+}
 1;
