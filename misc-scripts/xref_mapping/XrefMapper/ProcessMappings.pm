@@ -160,6 +160,9 @@ sub process_map_file{
   $sth->bind_columns(\$object_xref_id);
   $sth->fetch();
   $sth->finish;
+  if(!defined($object_xref_id)){
+    $object_xref_id = 0;
+  }
 
   my $object_xref_sth = $self->xref->dbc->prepare("insert into object_xref (object_xref_id, ensembl_id,ensembl_object_type, xref_id, linkage_type, ox_status ) values (?, ?, ?, ?, ?, ?)");
   local $object_xref_sth->{RaiseError}; #catch duplicates
