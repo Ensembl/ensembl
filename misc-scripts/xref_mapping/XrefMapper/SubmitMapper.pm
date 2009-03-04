@@ -178,6 +178,7 @@ sub dump_xref{
   }
   my $sth = $xref->dbc->prepare("insert into process_status (status, date) values('xref_fasta_dumped',now())");
   $sth->execute();
+  $sth->finish;
   
   
   return;
@@ -291,6 +292,7 @@ sub fetch_and_dump_seq{
   close PEP;
   my $sth = $self->xref->dbc->prepare("insert into process_status (status, date) values('core_fasta_dumped',now())");
   $sth->execute();
+  $sth->finish;
 
 }
 
@@ -573,6 +575,7 @@ sub submit_depend_job {
   else{
     my $sth = $self->xref->dbc->prepare("insert into process_status (status, date) values('mapping_finished',now())");
     $sth->execute();
+    $sth->finish;
   }	
 }
 
