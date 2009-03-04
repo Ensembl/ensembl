@@ -1,18 +1,18 @@
-{ 
- 'port'   => 3306,
- 'driver' => 'mysql',
- 'user'   => 'ensadmin',
- 'pass'   => 'ensembl',
- 'host'   => 'ecs1d',
- 'zip'    => 'test_genome.zip',
-  #add a line with the dbname and module
-  'databases'   => { 
-      'homo_sapiens' => {'core' => 'Bio::EnsEMBL::DBSQL::DBAdaptor'}
-        }
+{
+  'port'   => '3306',
+  'driver' => 'mysql',
+  'user'   => 'ensadmin',
+  'pass'   => 'XXX',
+  'host'   => 'ens-research',
+  'zip'    => 'test_genome.zip',
 
-#uncomment to use preloaded databases (useful when doing lots of testing)
-#  ,'preloaded'   => { 
-#        'homo_sapiens' => {'core' => 'mcvicker_new_schema' }
-#        }       	
-  	
+  # add a line with the dbname and module
+  'databases' => {
+    'homo_sapiens' => { 'core' => 'Bio::EnsEMBL::DBSQL::DBAdaptor' }
+  },
+
+  # uncomment to use preloaded databases (useful when doing lots of
+  # testing)
+  # 'preloaded' =>
+  #   { 'homo_sapiens' => { 'core' => 'mcvicker_new_schema' } }
 }
