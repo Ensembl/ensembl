@@ -1,10 +1,11 @@
 package XrefMapper::homo_sapiens;
 
 use  XrefMapper::BasicMapper;
+use  XrefMapper::SubmitMapper;
 use strict;
 use vars '@ISA';
 
-@ISA = qw{ XrefMapper::BasicMapper };
+@ISA = qw{ XrefMapper::SubmitMapper };
 
 sub get_set_lists {
 
@@ -55,6 +56,10 @@ sub gene_description_filter_regexps {
 }
 
 
+sub get_official_name{
+   return "HGNC";
+}
+
 sub get_canonical_name{
    return "HGNC";
 }
@@ -93,9 +98,6 @@ sub species_specific_pre_attributes_set{
   my $self  = shift;
   $self->official_naming();
 }
-
-
-
 
 
 
