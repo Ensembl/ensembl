@@ -1,11 +1,22 @@
-#
-# Ensembl module for Bio::EnsEMBL::SimpleFeature
-#
-# Copyright Ewan Birney
-#
-# You may distribute this module under the same terms as perl itself
+=head1 LICENSE
 
-# POD documentation - main docs before the code
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -13,30 +24,24 @@ Bio::EnsEMBL::SimpleFeature - A simple feature with a location and label
 
 =head1 SYNOPSIS
 
-use Bio::EnsEMBL::SimpleFeature;
+  use Bio::EnsEMBL::SimpleFeature;
 
-$feature = Bio::EnsEMBL::SimpleFeature->new(-start    => 100,
-                                            -end      => 220,
-                                            -strand   => -1,
-                                            -slice    => $slice,
-                                            -analysis => $analysis,
-                                            -score    => 58,
-                                            -display_label => 'EponineTSS',
-                                            -dbID     => 1230,
-                                            -adaptor  => $adaptor);
+  $feature = Bio::EnsEMBL::SimpleFeature->new(
+    -start         => 100,
+    -end           => 220,
+    -strand        => -1,
+    -slice         => $slice,
+    -analysis      => $analysis,
+    -score         => 58,
+    -display_label => 'EponineTSS',
+    -dbID          => 1230,
+    -adaptor       => $adaptor
+  );
 
 =head1 DESCRIPTION
 
-This is a simple feature which extends the Feature class to add display_label
-and score attributes.
-
-=head1 AUTHOR - Ewan Birney
-
-This modules is part of the Ensembl project http://www.ensembl.org
-
-=head1 CONTACT
-
-Post comments/questions to the ensembl development list: ensembl-dev@ebi.ac.uk
+This is a simple feature which extends the Feature class to add
+display_label and score attributes.
 
 =head1 METHODS
 

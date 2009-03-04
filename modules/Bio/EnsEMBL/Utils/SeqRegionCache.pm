@@ -1,9 +1,22 @@
-#
-# Ensembl module for Bio::EnsEMBL::Utils::SeqRegionCache
-#
-# Copyright (c) 2004 Ensembl
-#
-# You may distribute this module under the same terms as perl itself
+=head1 LICENSE
+
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -22,30 +35,25 @@ seq_regions
 
   $array = $seq_region_cache->{$key};
 
-  if($array) {
-    $name = $array->[1];
+  if ($array) {
+    $name   = $array->[1];
     $length = $array->[3];
   } else {
     # cache miss, get the info from the database
-    ...
+    # ...
 
     # cache the retrieved information
-    $seq_region_cache->{$key} = [$seq_region_id, $seq_region_name,
-                                 $coord_system_id, $seq_region_length];
+    $seq_region_cache->{$key} = [
+      $seq_region_id,   $seq_region_name,
+      $coord_system_id, $seq_region_length
+    ];
   }
-
-
 
 =head1 DESCRIPTION
 
 This module is simply a convenient place to put a cache of sequence
-region information which is shared by several adaptors for a given database.
-
-=head1 CONTACT
-
-This module is part of the Ensembl project http://www.ensembl.org
-
-For more information email <ensembl-dev@ebi.ac.uk>
+region information which is shared by several adaptors for a given
+database.
 
 =head1 METHODS
 

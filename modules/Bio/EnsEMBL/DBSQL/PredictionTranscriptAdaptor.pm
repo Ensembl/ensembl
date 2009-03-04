@@ -1,9 +1,22 @@
-# EnsEMBL Exon reading writing adaptor for mySQL
-#
-# Author: Arne Stabenau
-# 
-# Date : 22.11.2001
-#
+=head1 LICENSE
+
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -12,20 +25,18 @@ Performs database interaction related to PredictionTranscripts
 
 =head1 SYNOPSIS
 
-#get a prediction transcript adaptor from the database
-$pta = $database_adaptor->get_PredictionTranscriptAdaptor();
+  # get a prediction transcript adaptor from the database
+  $pta = $database_adaptor->get_PredictionTranscriptAdaptor();
 
-#get a slice on a region of chromosome 1
-$sa = $database_adaptor->get_SliceAdaptor();
+  # get a slice on a region of chromosome 1
+  $sa = $database_adaptor->get_SliceAdaptor();
 
-$slice = $sa->fetch_by_region('chromosome','x', 100000, 200000);
+  $slice = $sa->fetch_by_region( 'chromosome', 'x', 100000, 200000 );
 
-#get all the prediction transcripts from the slice region
-$prediction_transcripts = @{$pta->fetch_all_by_Slice($slice)};
+  # get all the prediction transcripts from the slice region
+  $prediction_transcripts = @{ $pta->fetch_all_by_Slice($slice) };
 
-=head1 CONTACT
-
-Email questions to the EnsEMBL developer list: <ensembl-dev@ebi.ac.uk>
+=head1 METHODS
 
 =cut
 

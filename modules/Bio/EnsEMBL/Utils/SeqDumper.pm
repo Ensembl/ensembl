@@ -1,37 +1,58 @@
-=head1 NAME - Bio::EnsEMBL::Utils::SeqDumper
+=head1 LICENSE
+
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
+
+=head1 NAME
+
+Bio::EnsEMBL::Utils::SeqDumper
 
 =head1 SYNOPSIS
 
   $seq_dumper = Bio::EnsEMBL::Utils::SeqDumper;
 
-  #don't dump snps or repeats
+  # don't dump snps or repeats
   $seq_dumper->disable_feature_type('repeat');
   $seq_dumper->disable_feature_type('variation');
 
-  #dump EMBL format to STDOUT
-  $seq_dumper->dump($slice, 'EMBL');
+  # dump EMBL format to STDOUT
+  $seq_dumper->dump( $slice, 'EMBL' );
 
-  #dump GENBANK format to a file
-  $seq_dumper->dump($slice, 'GENBANK', 'out.genbank');
+  # dump GENBANK format to a file
+  $seq_dumper->dump( $slice, 'GENBANK', 'out.genbank' );
 
-  #dump FASTA format to a file
-  $seq_dumper->dump($slice, 'FASTA', 'out.fasta');
+  # dump FASTA format to a file
+  $seq_dumper->dump( $slice, 'FASTA', 'out.fasta' );
 
 =head1 DESCRIPTION
 
-  A relatively simple and lite-weight flat file dumper for Ensembl slices.
-  The memory efficiency could be improved and this is currently
-  not very good for dumping very large sequences such as whole chromosomes.
+A relatively simple and lite-weight flat file dumper for Ensembl slices.
+The memory efficiency could be improved and this is currently not very
+good for dumping very large sequences such as whole chromosomes.
 
-=head1 CONTACT
-
-  Contact the Ensembl development list with questions: <ensembl-dev@ebi.ac.uk>
+=head1 METHODS
 
 =cut
 
-use strict;
 
 package Bio::EnsEMBL::Utils::SeqDumper;
+
+use strict;
 
 use IO::File;
 use vars qw(@ISA);

@@ -1,11 +1,22 @@
-# EnsEMBL module for DitagFeatures
-#
-# Copyright EMBL-EBI/Wellcome Trust Sanger Institute 2006
-#
-# You may distribute this module under the same terms as perl itself
-#
-# Cared for by EnsEMBL (ensembl-dev@ebi.ac.uk)
+=head1 LICENSE
 
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -13,27 +24,30 @@ Bio::EnsEMBL::Map::DitagFeature
 
 =head1 SYNOPSIS
 
- my $feature = Bio::EnsEMBL::Map::DitagFeature->new(
-						    -slice         => $slice,
-						    -start         => $qstart,
-						    -end           => $qend,
-						    -strand        => $qstrand,
-						    -hit_start     => $tstart,
-						    -hit_end       => $tend,
-						    -hit_strand    => $tstrand,
-						    -ditag_id      => $ditag_id,
-						    -ditag_side    => $ditag_side,
-						    -ditag_pair_id => $ditag_pair_id,
-						    -cigar_line    => $cigar_line,
-						    -analysis      => $analysis,
-						   );
+my $feature = Bio::EnsEMBL::Map::DitagFeature->new(
+  -slice         => $slice,
+  -start         => $qstart,
+  -end           => $qend,
+  -strand        => $qstrand,
+  -hit_start     => $tstart,
+  -hit_end       => $tend,
+  -hit_strand    => $tstrand,
+  -ditag_id      => $ditag_id,
+  -ditag_side    => $ditag_side,
+  -ditag_pair_id => $ditag_pair_id,
+  -cigar_line    => $cigar_line,
+  -analysis      => $analysis,
+);
 
 =head1 DESCRIPTION
 
-Represents a mapped ditag object in the EnsEMBL database.
-These are the original tags separated into start ("L") and end ("R") parts if applicable,
-successfully aligned to the genome. Two DitagFeatures usually relate to one parent Ditag.
-Alternatively there are CAGE tags e.g. which only have a 5\'tag ("F").
+Represents a mapped ditag object in the EnsEMBL database.  These are
+the original tags separated into start ("L") and end ("R") parts if
+applicable, successfully aligned to the genome. Two DitagFeatures
+usually relate to one parent Ditag.  Alternatively there are CAGE tags
+e.g. which only have a 5\'tag ("F").
+
+=head1 METHODS
 
 =cut
 

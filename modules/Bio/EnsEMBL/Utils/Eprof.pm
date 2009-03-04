@@ -1,13 +1,22 @@
-#
-# BioPerl module for Bio::EnsEMBL::Utils::Eprof
-#
-# Cared for by Ewan Birney <birney@ebi.ac.uk>
-#
-# Copyright EBI and GRL
-#
-# You may distribute this module under the same terms as perl itself
+=head1 LICENSE
 
-# POD documentation - main docs before the code
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -15,34 +24,25 @@ Bio::EnsEMBL::Utils::Eprof - Bespoke Ensembl profiler
 
 =head1 SYNOPSIS
 
-    use Bio::EnsEMBL::Utils::Eprof('eprof_start','eprof_end','eprof_dump');
+  use Bio::EnsEMBL::Utils::Eprof( 'eprof_start', 'eprof_end',
+    'eprof_dump' );
 
-    &eprof_start('function-a');
-    ... do something
-    &eprof_end('function-a');
+  &eprof_start('function-a');
+  # ... do something
+  &eprof_end('function-a');
 
+  &eprof_dump( \*STDERR );
 
-    &eprof_dump(\*STDERR);
-
-    # there is an object based set for above as well, for running
-    # multiple concurrent profilers
-
+  # there is an object based set for above as well, for running
+  # multiple concurrent profilers
 
 =head1 DESCRIPTION
 
 This is an Ensembl profiler as we broke the Perl profilers.
 
-=head1 CONTACT
-
-Describe contact details here
-
-=head1 APPENDIX
-
-The rest of the documentation details each of the object methods. Internal methods are usually preceded with a _
+=head1 METHODS
 
 =cut
-
-# Let the code begin...
 
 package Bio::EnsEMBL::Utils::Eprof;
 

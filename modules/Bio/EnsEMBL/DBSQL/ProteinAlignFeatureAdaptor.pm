@@ -1,11 +1,22 @@
-#
-# Ensembl module for Bio::EnsEMBL::DBSQL::ProteinAlignFeatureAdaptor
-#
-# Copyright Ewan Birney
-#
-# You may distribute this module under the same terms as perl itself
+=head1 LICENSE
 
-# POD documentation - main docs before the code
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -20,13 +31,6 @@ Adaptor for ProteinAlignFeatures
   my @features = @{ $pafa->fetch_all_by_Slice($slice) };
 
   $pafa->store(@features);
-
-=head1 DESCRIPTION
-
-
-=head1 CONTACT
-
-Post questions to the Ensembl development list: ensembl-dev@ebia.ac.uk
 
 =head1 METHODS
 

@@ -1,8 +1,22 @@
-# Ensembl module for Bio::EnsEMBL::Feature
-#
-# Copyright (c) 2003 Ensembl
-#
+=head1 LICENSE
 
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -10,49 +24,47 @@ Bio::EnsEMBL::Feature - Ensembl specific sequence feature.
 
 =head1 SYNOPSIS
 
-    my $feat = new Bio::EnsEMBL::Feature(-start   => 100,
-                                       -end     => 220,
-                                       -strand  => -1,
-                                       -slice   => $slice
-                                       -analysis => $analysis
-                                      );
+    my $feat = new Bio::EnsEMBL::Feature(
+      -start  => 100,
+      -end    => 220,
+      -strand => -1,
+      -slice  => $slice -analysis => $analysis
+    );
 
-    my $start  = $feat->start;
-    my $end    = $feat->end;
-    my $strand = $feat->strand;
+    my $start  = $feat->start();
+    my $end    = $feat->end();
+    my $strand = $feat->strand();
 
-    #move the feature to the chromosomal coordinate system
+    # Move the feature to the chromosomal coordinate system
     $feature = $feature->transform('chromosome');
 
-    #move the feature to a different slice (possibly on another coord system)
+    # Move the feature to a different slice (possibly on another coord
+    # system)
     $feature = $feature->transfer($new_slice);
 
-    #project the feature onto another coordinate system possibly across
-    #boundaries:
-    @projection = @{$feature->project('contig')};
+    # Project the feature onto another coordinate system possibly across
+    # boundaries:
+    @projection = @{ $feature->project('contig') };
 
-    #change the start, end, and strand of the feature in place
-    $feature->move($new_start, $new_end, $new_strand);
+    # Change the start, end, and strand of the feature in place
+    $feature->move( $new_start, $new_end, $new_strand );
 
 =head1 DESCRIPTION
 
-This is the Base feature class from which all Ensembl features inherit.  It
-provides a bare minimum functionality that all features require.  It basically
-describes a location on a sequence in an arbitrary coordinate system.
-
-=head1 CONTACT
-
-Post questions to the Ensembl development list: ensembl-dev@ebi.ac.uk
+This is the Base feature class from which all Ensembl features inherit.
+It provides a bare minimum functionality that all features require.  It
+basically describes a location on a sequence in an arbitrary coordinate
+system.
 
 =head1 METHODS
 
 =cut
 
 
+package Bio::EnsEMBL::Feature;
+
 use strict;
 use warnings;
-
-package Bio::EnsEMBL::Feature;
 
 use Bio::EnsEMBL::Storable;
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);

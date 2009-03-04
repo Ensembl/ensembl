@@ -1,9 +1,22 @@
-#
-# Ensembl module for Bio::EnsEMBL::UnmappedObject
-#
-# You may distribute this module under the same terms as perl itself
+=head1 LICENSE
 
-# POD documentation - main docs before the code
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -12,31 +25,27 @@ was NOT mapped to the ensembl.
 
 =head1 SYNOPSIS
 
-use Bio::EnsEMBL::UnmappedObject;
+  use Bio::EnsEMBL::UnmappedObject;
 
-my $uo = Bio::EnsEMBL::UnmappedObject->new (
-        -type           => 'xref',
-        -analysis       => $analysis,
-        -external_db_id => 4100,
-        -identifier     => "Q12345",
-        -query_score    => 45.5,
-        -target_score   => 29.2,
-        -ensembl_id     => 122346,
-        -ensembl_type   => 'Translation",
-        -summary        => "match failed for exonerate",
-        -full_desc      => "match failed for the xref exonerate run as mtch was below threshold of 90");
-
+  my $uo = Bio::EnsEMBL::UnmappedObject->new(
+    -type           => 'xref',
+    -analysis       => $analysis,
+    -external_db_id => 4100,
+    -identifier     => "Q12345",
+    -query_score    => 45.5,
+    -target_score   => 29.2,
+    -ensembl_id     => 122346,
+    -ensembl_type   => "Translation",
+    -summary        => "match failed for exonerate",
+    -full_desc      => "match failed for the xref exonerate run "
+      . "as match was below threshold of 90"
+  );
 
 =head1 DESCRIPTION
 
-UnmappedObjects represent entities NOT mapped to ensembl. Therefore this should help
-users to find out why certain accessions etc can not be found.
-
-This module is part of the Ensembl project http://www.ensembl.org
-
-=head1 CONTACT
-
-Post comments/questions to the ensembl development list: ensembl-dev@ebi.ac.uk
+UnmappedObjects represent entities NOT mapped to ensembl. Therefore this
+should help users to find out why certain accessions etc can not be
+found.
 
 =head1 METHODS
 
@@ -44,10 +53,10 @@ Post comments/questions to the ensembl development list: ensembl-dev@ebi.ac.uk
 
 
 
+package Bio::EnsEMBL::UnmappedObject;
+
 use strict;
 use warnings;
-
-package Bio::EnsEMBL::UnmappedObject;
 
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 use Bio::EnsEMBL::Utils::Exception qw(throw);

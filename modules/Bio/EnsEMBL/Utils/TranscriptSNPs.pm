@@ -1,10 +1,22 @@
-#
-# Ensembl module for TranscriptSNPs
-#
-# Copyright (c) 2004 Ensembl
-#
-# You may distribute this module under the same terms as perl itself
-#
+=head1 LICENSE
+
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -17,36 +29,37 @@ relationships between a transcript and SNPs
 
   # get and type all snps in the region of the transcript
 
-  %snps = %{Bio::EnsEMBL::Utils::TranscriptSNPs::get_all_SNPs($transcript,
-                                                              $flanking)};
+  %snps = %{
+    Bio::EnsEMBL::Utils::TranscriptSNPs::get_all_SNPs( $transcript,
+      $flanking ) };
 
   # get all snps overlapping the transcript in cdna coordinates
 
-  %snps = %{Bio::EnsEMBL::Utils::TranscriptSNPs::get_all_cdna_SNPs($transcript)};
+  %snps =
+    %{ Bio::EnsEMBL::Utils::TranscriptSNPs::get_all_cdna_SNPs(
+      $transcript) };
 
   # get the peptide variations caused by a set of SNPs
 
-  %variations = %{Bio::EnsEMBL::Utils::TranscriptSNPs::get_all_peptide_variations($transcript, $snps)};
-
+  %variations = %{
+    Bio::EnsEMBL::Utils::TranscriptSNPs::get_all_peptide_variations(
+      $transcript, $snps ) };
 
 =head1 DESCRIPTION
 
 This is a utility class which can be used to get snps associated with a
 transcript, and to determine the amino acid changes caused by the SNPs
 
-=head1 CONTACT
-
-Email questions to the ensembl developer mailing list <ensembl-dev@ebi.ac.uk>
-
 =head1 METHODS
 
 =cut
+
+package Bio::EnsEMBL::Utils::TranscriptSNPs;
 
 use strict;
 use warnings;
 no warnings 'uninitialized';
 
-package Bio::EnsEMBL::Utils::TranscriptSNPs;
 
 
 use Bio::EnsEMBL::Utils::Exception qw(throw warning);

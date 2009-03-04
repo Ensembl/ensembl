@@ -1,4 +1,22 @@
-package Bio::EnsEMBL::Utils::SchemaConversion;
+=head1 LICENSE
+
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -6,37 +24,29 @@ Bio::EnsEMBL::Utils::SchemaConversion - Utility module for Vega schema conversio
 
 =head1 SYNOPSIS
 
-    my $serverroot = '/path/to/ensembl';
-    my $conversion = Bio::EnsEMBL::Utils::ConversionSupport->new($serverroot);
+  my $serverroot = '/path/to/ensembl';
+  my $conversion =
+    Bio::EnsEMBL::Utils::ConversionSupport->new($serverroot);
 
-    # parse common options
-    $conversion->conv_usage->parse_common_options;
+  # parse common options
+  $conversion->conv_usage->parse_common_options;
 
-    # convert from schema 19 to 20+
-    $conversion->do_conversion()
-
+  # convert from schema 19 to 20+
+  $conversion->do_conversion()
 
 =head1 DESCRIPTION
 
-This module is a helper module for database conversion, for both vega-vega and 
-ensembl-vega schemas. It provides a wrapper around SeqStoreConverter::BasicConverter
-and the species specific methods therein. Also provides access to helper functions in
+This module is a helper module for database conversion, for
+both vega-vega and ensembl-vega schemas. It provides a wrapper
+around SeqStoreConverter::BasicConverter and the species specific
+methods therein. Also provides access to helper functions in
 Bio::EnsEMBL::Utils::ConversionSupport
 
-=head1 LICENCE
-
-This code is distributed under an Apache style licence:
-Please see http://www.ensembl.org/code_licence.html for details
-
-=head1 AUTHOR
-
-Steve Trevanion <st3@sanger.ac.uk>
-
-=head1 CONTACT
-
-Post questions to the EnsEMBL development list ensembl-dev@ebi.ac.uk
+=head1 METHODS
 
 =cut
+
+package Bio::EnsEMBL::Utils::SchemaConversion;
 
 use  Bio::EnsEMBL::Utils::ConversionSupport;
 use strict;

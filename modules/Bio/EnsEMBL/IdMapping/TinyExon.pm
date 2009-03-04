@@ -1,4 +1,22 @@
-package Bio::EnsEMBL::IdMapping::TinyExon;
+=head1 LICENSE
+
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -6,64 +24,54 @@ Bio::EnsEMBL::IdMapping::TinyExon - lightweight exon object
 
 =head1 SYNOPSIS
 
-# fetch an exon from the db and create a lightweight exon object from it
-my $exon = $exon_adaptor->fetch_by_stable_id('ENSE000345437');
-my $lightweight_exon = Bio::EnsEMBL::IdMapping::TinyExon->new_fast([
-    $exon->dbID,
-    $exon->stable_id,
-    $exon->version,
-    $exon->created_date,
-    $exon->modified_date,
-    $exon->start,
-    $exon->end,
-    $exon->strand,
-    $exon->slice->seq_region_name,
-    $exon->slice->coord_system_name,
-    $exon->slice->coord_system->version,
-    $exon->slice->subseq($exon->start, $exon->end, $exon->strand),
-    $exon->phase,
-    $need_project,
-]);
+  # fetch an exon from the db and create a lightweight exon object
+  # from it
+  my $exon = $exon_adaptor->fetch_by_stable_id('ENSE000345437');
+  my $lightweight_exon = Bio::EnsEMBL::IdMapping::TinyExon->new_fast( [
+      $exon->dbID,
+      $exon->stable_id,
+      $exon->version,
+      $exon->created_date,
+      $exon->modified_date,
+      $exon->start,
+      $exon->end,
+      $exon->strand,
+      $exon->slice->seq_region_name,
+      $exon->slice->coord_system_name,
+      $exon->slice->coord_system->version,
+      $exon->slice->subseq( $exon->start, $exon->end, $exon->strand ),
+      $exon->phase,
+      $need_project,
+  ] );
 
 =head1 DESCRIPTION
 
 This is a lightweight exon object for the stable Id mapping. See the
-documentation in TinyFeature for general considerations about its design.
+documentation in TinyFeature for general considerations about its
+design.
 
 =head1 METHODS
 
-start
-end
-strand
-seq_region_name
-coord_system_name
-coord_system_version
-seq
-phase
-need_project
-common_start
-common_end
-common_strand
-common_sr_name
-length
-is_known
-
-=head1 LICENCE
-
-This code is distributed under an Apache style licence. Please see
-http://www.ensembl.org/info/about/code_licence.html for details.
-
-=head1 AUTHOR
-
-Patrick Meidl <meidl@ebi.ac.uk>, Ensembl core API team
-
-=head1 CONTACT
-
-Please post comments/questions to the Ensembl development list
-<ensembl-dev@ebi.ac.uk>
+  start
+  end
+  strand
+  seq_region_name
+  coord_system_name
+  coord_system_version
+  seq
+  phase
+  need_project
+  common_start
+  common_end
+  common_strand
+  common_sr_name
+  length
+  is_known
 
 =cut
 
+
+package Bio::EnsEMBL::IdMapping::TinyExon;
 
 # internal data structure (array indices):
 #

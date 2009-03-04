@@ -1,4 +1,22 @@
-package Bio::EnsEMBL::MappedSlice;
+=head1 LICENSE
+
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -6,45 +24,44 @@ Bio::EnsEMBL::MappedSlice - an object representing a mapped slice
 
 =head1 SYNOPSIS
 
-# get a reference slice
-my $slice = $slice_adaptor->fetch_by_region('chromosome', 14, 900000, 950000);
+  # get a reference slice
+  my $slice =
+    $slice_adaptor->fetch_by_region( 'chromosome', 14, 900000, 950000 );
 
-# create MappedSliceContainer based on the reference slice
-my $msc = Bio::EnsEMBL::MappedSliceContainer->new(
-    -SLICE => $slice
-);
+  # create MappedSliceContainer based on the reference slice
+  my $msc = Bio::EnsEMBL::MappedSliceContainer->new( -SLICE => $slice );
 
-# set the adaptor for fetching AssemblySlices
-my $asa = $slice->adaptor->db->get_AssemblySliceAdaptor;
-$msc->set_AssemblySliceAdaptor($asa);
+  # set the adaptor for fetching AssemblySlices
+  my $asa = $slice->adaptor->db->get_AssemblySliceAdaptor;
+  $msc->set_AssemblySliceAdaptor($asa);
 
-# add an AssemblySlice to your MappedSliceContainer
-$msc->attach_AssemblySlice('NCBIM36');
+  # add an AssemblySlice to your MappedSliceContainer
+  $msc->attach_AssemblySlice('NCBIM36');
 
-foreach my $mapped_slice (@{ $msc->get_all_MappedSlices }) {
-  print $mapped_slice->name, "\n";
-  
-  foreach my $sf (@{ $mapped_slice->get_all_SimpleFeatures }) {
-    print "  ", &to_string($sf), "\n";
+  foreach my $mapped_slice ( @{ $msc->get_all_MappedSlices } ) {
+    print $mapped_slice->name, "\n";
+
+    foreach my $sf ( @{ $mapped_slice->get_all_SimpleFeatures } ) {
+      print "  ", &to_string($sf), "\n";
+    }
   }
-}
 
 =head1 DESCRIPTION
 
-NOTE: this code is under development and not fully functional nor tested yet. 
-Use only for development.
+NOTE: this code is under development and not fully functional nor tested
+yet.  Use only for development.
 
-This object represents a mapped slice, i.e. a slice that's attached to a
-reference slice and a mapper to convert coordinates to/from the reference. The
-attachment is done via a MappedSliceContainer which has the reference slice and
-the "container slice" defining the common coordinate system for all
-MappedSlices.
+This object represents a mapped slice, i.e. a slice that's attached
+to a reference slice and a mapper to convert coordinates to/from the
+reference. The attachment is done via a MappedSliceContainer which
+has the reference slice and the "container slice" defining the common
+coordinate system for all MappedSlices.
 
-A MappedSlice is supposed to behave as close to a Bio::EnsEMBL::Slice as
-possible. Most Slice methods are implemented in MappedSlice and will return an
-equivalent value to what Slice does. There are some exceptions of unimplemented
-methods, either because there is no useful equivalent for a MappedSlice to do,
-or they are too complicated.
+A MappedSlice is supposed to behave as close to a Bio::EnsEMBL::Slice
+as possible. Most Slice methods are implemented in MappedSlice and will
+return an equivalent value to what Slice does. There are some exceptions
+of unimplemented methods, either because there is no useful equivalent
+for a MappedSlice to do, or they are too complicated.
 
 Not supported Bio::EnsEMBL::Slice methods:
 
@@ -64,62 +81,49 @@ Not currently supported but maybe should/could:
   get_by_strain
   invert
 
-Internally, a MappedSlice is a collection of Bio::EnsEMBL::Slices and associated
-Bio::EnsEMBL::Mappers which map the slices to the common container coordinate
-system.
+Internally, a MappedSlice is a collection of Bio::EnsEMBL::Slices and
+associated Bio::EnsEMBL::Mappers which map the slices to the common
+container coordinate system.
 
-MappedSlices are usually created and attached to a MappedSliceContainer by an
-adaptor/factory.
+MappedSlices are usually created and attached to a MappedSliceContainer
+by an adaptor/factory.
 
 =head1 METHODS
 
-new
-add_Slice_Mapper_pair
-get_all_Slice_Mapper_pairs
-adaptor
-container
-name
-seq_region_name
-start
-end
-strand
-length
-seq_region_length
-centrepoint
-coord_system
-coord_system_name
-is_toplevel
-seq (not implemented yet)
-subseq (not implemented yet)
-get_repeatmasked_seq (not implemented yet)
-sub_MappedSlice (not implemented yet)
-project (not implemented yet)
+  new
+  add_Slice_Mapper_pair
+  get_all_Slice_Mapper_pairs
+  adaptor
+  container
+  name
+  seq_region_name
+  start
+  end
+  strand
+  length
+  seq_region_length
+  centrepoint
+  coord_system
+  coord_system_name
+  is_toplevel
+  seq (not implemented yet)
+  subseq (not implemented yet)
+  get_repeatmasked_seq (not implemented yet)
+  sub_MappedSlice (not implemented yet)
+  project (not implemented yet)
 
-=head1 REALTED MODULES
+=head1 RELATED MODULES
 
-Bio::EnsEMBL::MappedSlice
-Bio::EnsEMBL::DBSQL::AssemblySliceAdaptor
-Bio::EnsEMBL::Compara::AlignSlice
-Bio::EnsEMBL::Compara::AlignSlice::Slice
-Bio::EnsEMBL::AlignStrainSlice
-Bio::EnsEMBL::StrainSlice
-
-=head1 LICENCE
-
-This code is distributed under an Apache style licence. Please see
-http://www.ensembl.org/info/about/code_licence.html for details.
-
-=head1 AUTHOR
-
-Patrick Meidl <meidl@ebi.ac.uk>, Ensembl core API team
-
-=head1 CONTACT
-
-Please post comments/questions to the Ensembl development list
-<ensembl-dev@ebi.ac.uk>
+  Bio::EnsEMBL::MappedSlice
+  Bio::EnsEMBL::DBSQL::AssemblySliceAdaptor
+  Bio::EnsEMBL::Compara::AlignSlice
+  Bio::EnsEMBL::Compara::AlignSlice::Slice
+  Bio::EnsEMBL::AlignStrainSlice
+  Bio::EnsEMBL::StrainSlice
 
 =cut
 
+package Bio::EnsEMBL::MappedSlice;
 
 use strict;
 use warnings;

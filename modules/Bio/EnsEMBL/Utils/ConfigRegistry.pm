@@ -1,11 +1,22 @@
-#
-# Ensembl module for Registry
-#
-# Copyright EMBL/EBI
-##
-# You may distribute this module under the same terms as perl itself
+=head1 LICENSE
 
-# POD documentation - main docs before the code
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -14,28 +25,22 @@ Bio::EnsEMBL::Utils::ConfigRegistry;
 =head1 SYNOPSIS
 
 
-Bio::EnsEMBL::Utils::ConfigRegistry->load_core($dba );
- 
+  Bio::EnsEMBL::Utils::ConfigRegistry->load_core($dba);
+
 
 =head1 DESCRIPTION
 
-The ConfigRegistry will "Register" a set of adaptors based on the type of
-database that is being loaded.
-
-=head1 CONTACT
-
-Post questions to the Ensembl developer list: <ensembl-dev@ebi.ac.uk>
-
+The ConfigRegistry will "Register" a set of adaptors based on the type
+of database that is being loaded.
 
 =head1 METHODS
 
 =cut
 
+package Bio::EnsEMBL::Utils::ConfigRegistry;
 
 use strict;
 use warnings;
-
-package Bio::EnsEMBL::Utils::ConfigRegistry;
 
 use Bio::EnsEMBL::Registry;
 my $reg = "Bio::EnsEMBL::Registry";

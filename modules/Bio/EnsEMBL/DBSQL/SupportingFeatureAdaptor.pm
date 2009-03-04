@@ -1,9 +1,22 @@
-# EnsEMBL Adaptor for retrieving SupportingFeatures
-#
-# Author: Graham McVicker
-# 
-# Date : 11-Oct-2002
-#
+=head1 LICENSE
+
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -17,17 +30,13 @@ features from the database.
 
   my @supporting_feats = @{ $sfa->fetch_all_by_Exon($exon) };
 
-=head1 CONTACT
-
-Post questions to ensembl developer mailing list:
-<ensembl-dev@ebi.ac.uk>
+=head1 METHODS
 
 =cut
 
+package Bio::EnsEMBL::DBSQL::SupportingFeatureAdaptor;
 
 use strict;
-
-package Bio::EnsEMBL::DBSQL::SupportingFeatureAdaptor;
 
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 

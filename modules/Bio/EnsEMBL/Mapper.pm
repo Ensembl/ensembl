@@ -1,13 +1,22 @@
-#
-# Ensembl module for Bio::EnsEMBL::Mapper
-#
-# Written by Ewan Birney <birney@ebi.ac.uk>
-#
-# Copyright GRL/EBI
-#
-# You may distribute this module under the same terms as perl itself
+=head1 LICENSE
 
-# POD documentation - main docs before the code
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -15,30 +24,24 @@ Bio::EnsEMBL::Mapper
 
 =head1 SYNOPSIS
 
-  $map = Bio::EnsEMBL::Mapper->new('rawcontig', 'chromosome');
+  $map = Bio::EnsEMBL::Mapper->new( 'rawcontig', 'chromosome' );
 
   # add a coodinate mapping - supply two pairs or coordinates
   $map->add_map_coordinates(
     $contig_id, $contig_start, $contig_end, $contig_ori,
-    $chr_name, chr_start, $chr_end
+    $chr_name,  chr_start,     $chr_end
   );
 
   # map from one coordinate system to another
-  my @coordlist = $mapper->map_coordinates(627012, 2, 5, -1, "rawcontig");
+  my @coordlist =
+    $mapper->map_coordinates( 627012, 2, 5, -1, "rawcontig" );
 
 =head1 DESCRIPTION
 
-Generic mapper to provide coordinate transforms between two
-disjoint coordinate systems. This mapper is intended to be
-'context neutral' - in that it does not contain any code
-relating to any particular coordinate system. This is
-provided in, for example, Bio::EnsEMBL::AssemblyMapper.
-
-=head1 AUTHOR - Ewan Birney
-
-This module is part of the Ensembl project http://www.ensembl.org
-
-Post general queries to B<ensembl-dev@ebi.ac.uk>
+Generic mapper to provide coordinate transforms between two disjoint
+coordinate systems. This mapper is intended to be 'context neutral' - in
+that it does not contain any code relating to any particular coordinate
+system. This is provided in, for example, Bio::EnsEMBL::AssemblyMapper.
 
 =head1 METHODS
 

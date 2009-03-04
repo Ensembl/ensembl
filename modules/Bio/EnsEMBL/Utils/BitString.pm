@@ -1,4 +1,22 @@
-package Bio::EnsEMBL::Utils::BitString;
+=head1 LICENSE
+
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -6,25 +24,15 @@ Bio::EnsEMBL::Utils::BitString - bitstring object implementation
 
 =head1 DESCRIPTION
 
-This is an implementation of a bitstring object, taken from Damian Convey's book
-"Object Oriented Perl".
+This is an implementation of a bitstring object, taken from Damian
+Convey's book "Object Oriented Perl".
 
-=head1 LICENCE
-
-This code is distributed under an Apache style licence. Please see
-http://www.ensembl.org/info/about/code_licence.html for details.
-
-=head1 AUTHOR
-
-Patrick Meidl <meidl@ebi.ac.uk>, Ensembl core API team
-
-=head1 CONTACT
-
-Please post comments/questions to the Ensembl development list
-<ensembl-dev@ebi.ac.uk>
+=head1 METHODS
 
 =cut
 
+
+package Bio::EnsEMBL::Utils::BitString;
 
 use strict;
 use warnings;

@@ -1,40 +1,58 @@
+=head1 LICENSE
+
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=head1 AUTHOR
+
+  Originally from Steve Chervitz.  Refactored by Ewan Birney.
+
+=cut
+
 =head1 NAME
 
 Bio::EnsEMBL::Root
 
 =head1 DESCRIPTION
 
-Do not use Bio::EnsEMBL::Root anymore. It is included for backwards 
-compatibility (every object in EnsEMBL used to inherit from this class) but 
-will eventually be phased out. The replacement for the _rearrage method is the 
-rearrange method which can be imported in the following way:
+Do not use Bio::EnsEMBL::Root anymore. It is included for backwards
+compatibility (every object in EnsEMBL used to inherit from this class)
+but will eventually be phased out. The replacement for the _rearrage
+method is the rearrange method which can be imported in the following
+way:
 
-   use Bio::EnsEMBL::Utils::Argument qw(rearrange);
+  use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 
-   #can now call rearrange as a class method (instead as object method)
-   my ($start, $end) = rearrange(['START','END'], @args);
+  # can now call rearrange as a class method (instead as object method)
+  my ( $start, $end ) = rearrange( [ 'START', 'END' ], @args );
 
-If you want to use the throw or warn methods the replacement use the class
-methods throw and warning from the Bio::EnsEMBL::Utils::Exception class:
+If you want to use the throw or warn methods the replacement use the
+class methods throw and warning from the Bio::EnsEMBL::Utils::Exception
+class:
 
-   use Bio::EnsEMBL::Utils::Exception qw(throw warning);
+  use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 
-   #can now call throw or warning even without blessed reference
-   warning('This is a warning');
-   throw('This is an exception');
+  # can now call throw or warning even without blessed reference
+  warning('This is a warning');
+  throw('This is an exception');
 
+This module was stolen from BioPerl to avoid problems with moving to
+BioPerl 1 from 0.7
 
-This module was stolen from BioPerl to avoid problems with moving to BioPerl 1
-from 0.7
-
-=head1 CONTACT
-
-Functions originally from Steve Chervitz. Refactored by Ewan Birney.
-
-=head1 APPENDIX
-
-The rest of the documentation details each of the object
-methods. Internal methods are usually preceded with a _
+=head1 METHODS
 
 =cut
 

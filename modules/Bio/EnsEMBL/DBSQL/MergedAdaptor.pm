@@ -1,11 +1,22 @@
-#
-# Ensembl module for Registry
-#
-# Copyright EMBL/EBI
-##
-# You may distribute this module under the same terms as perl itself
+=head1 LICENSE
 
-# POD documentation - main docs before the code
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -13,18 +24,15 @@ Bio::EnsEMBL::DBSQL::MergedAdaptor
 
 =head1 SYNOPSIS
 
-$merged_adaptor = new Bio::EnsEMBL::DBSQL::MergedAdaptor(-species => "human", -type => "Population");
-
+  $merged_adaptor = new Bio::EnsEMBL::DBSQL::MergedAdaptor(
+    -species => "human",
+    -type    => "Population"
+  );
 
 =head1 DESCRIPTION
 
-The MergedAdaptor object is merely a list of adaptors. AUTOLOAD is used to
-call a subroutine on each adaptor and merge the results.
-
-=head1 CONTACT
-
-Post questions to the Ensembl developer list: <ensembl-dev@ebi.ac.uk>
-
+The MergedAdaptor object is merely a list of adaptors. AUTOLOAD is used
+to call a subroutine on each adaptor and merge the results.
 
 =head1 METHODS
 

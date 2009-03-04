@@ -1,11 +1,22 @@
-#
-# Ensembl module for Bio::EnsEMBL::RepeatMaskedSlice
-#
-#
-#
-# You may distribute this module under the same terms as perl itself
+=head1 LICENSE
 
-# POD documentation - main docs before the code
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -13,36 +24,25 @@ Bio::EnsEMBL::RepeatMaskedSlice - Arbitary Slice of a genome
 
 =head1 SYNOPSIS
 
-   $sa = $db->get_SliceAdaptor;
+  $sa = $db->get_SliceAdaptor();
 
-   $slice = $sa->fetch_by_region('chromosome', 'X', 1_000_000, 2_000_000);
+  $slice =
+    $sa->fetch_by_region( 'chromosome', 'X', 1_000_000, 2_000_000 );
 
-   $repeat_masked_slice = $slice->get_repeatmasked_seq();
+  $repeat_masked_slice = $slice->get_repeatmasked_seq();
 
-   #get repeat masked sequence:
-   my $dna = $repeat_masked_slice->seq();
-   $dna    = $repeat_masked_slice->subseq(1, 1000);
-
+  # get repeat masked sequence:
+  my $dna = $repeat_masked_slice->seq();
+  $dna = $repeat_masked_slice->subseq( 1, 1000 );
 
 =head1 DESCRIPTION
 
-This is a specialised B<Bio::EnsEMBL::Slice> class that is used to 
-retrieve repeat masked genomic sequence rather than normal genomic 
-sequence.
-
-=head1 AUTHOR - Graham McVicker
-
-=head1 CONTACT
-
-This modules is part of the Ensembl project http://www.ensembl.org
-
-Questions can be posted to the ensembl-dev mailing list:
-ensembl-dev@ebi.ac.uk
+This is a specialised Bio::EnsEMBL::Slice class that is used to retrieve
+repeat masked genomic sequence rather than normal genomic sequence.
 
 =head1 METHODS
 
 =cut
-
 
 package Bio::EnsEMBL::RepeatMaskedSlice;
 

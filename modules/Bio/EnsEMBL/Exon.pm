@@ -1,54 +1,61 @@
-package Bio::EnsEMBL::Exon;
+=head1 LICENSE
 
-#
-# EnsEMBL module for Bio::EnsEMBL::Exon
-#
-#
-# Copyright Ewan Birney
-#
-# You may distribute this module under the same terms as perl itself
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
 
-# POD documentation - main docs before the code
+  This software is distributed under a modified Apache license.
+  For license details, please see
 
-=pod 
+    http://www.ensembl.org/info/about/code_licence.html
 
-=head1 NAME Bio::EnsEMBL::Exon - A class representing an Exon
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
+
+=head1 NAME
+
+Bio::EnsEMBL::Exon - A class representing an Exon
 
 =head1 SYNOPSIS
 
-    $ex = new Bio::EnsEMBL::Exon(-START     => 100,
-                                 -END       => 200,
-                                 -STRAND    => 1,
-                                 -SLICE     => $slice,
-                                 -DBID      => $dbID,
-                                 -ANALYSIS  => $analysis,
-                                 -STABLE_ID => 'ENSE000000123',
-                                 -VERSION   => 2
-                                 );
+    $ex = new Bio::EnsEMBL::Exon(
+      -START     => 100,
+      -END       => 200,
+      -STRAND    => 1,
+      -SLICE     => $slice,
+      -DBID      => $dbID,
+      -ANALYSIS  => $analysis,
+      -STABLE_ID => 'ENSE000000123',
+      -VERSION   => 2
+    );
 
-   #seq returns a Bio::Seq
-   my $seq = $exon->seq->seq();
+  # seq() returns a Bio::Seq
+  my $seq = $exon->seq->seq();
 
-   #peptide only makes sense within transcript context
-   my $pep = $exon->peptide($transcript)->seq();
+  # Peptide only makes sense within transcript context
+  my $pep = $exon->peptide($transcript)->seq();
 
-   #normal feature operations can be performed:
-   $exon = $exon->transform('clone');
-   $exon->move($new_start, $new_end, $new_strand);
-   print $exon->slice->seq_region_name();
+  # Normal feature operations can be performed:
+  $exon = $exon->transform('clone');
+  $exon->move( $new_start, $new_end, $new_strand );
+  print $exon->slice->seq_region_name();
 
 =head1 DESCRIPTION
 
 This is a class which represents an exon which is part of a transcript.
 See Bio::EnsEMBL:Transcript
 
-=head1 CONTACT
-
-Post questions to the EnsEMBL developer list: <ensembl-dev@ebi.ac.uk>
-
 =head1 METHODS
 
 =cut
+
+package Bio::EnsEMBL::Exon;
 
 use strict;
 

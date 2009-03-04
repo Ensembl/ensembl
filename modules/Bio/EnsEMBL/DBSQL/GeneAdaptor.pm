@@ -1,4 +1,22 @@
-package Bio::EnsEMBL::DBSQL::GeneAdaptor;
+=head1 LICENSE
+
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -10,42 +28,37 @@ storage of Gene objects
   use Bio::EnsEMBL::Registry;
 
   Bio::EnsEMBL::Registry->load_registry_from_db(
-              -host => 'ensembldb.ensembl.org',
-              -user => 'anonymous',
+    -host => 'ensembldb.ensembl.org',
+    -user => 'anonymous',
   );
 
-  $gene_adaptor = Bio::EnsEMBL::Registry->get_adaptor("human", "core", "gene");
+  $gene_adaptor =
+    Bio::EnsEMBL::Registry->get_adaptor( "human", "core", "gene" );
 
   $gene = $gene_adaptor->fetch_by_dbID(1234);
 
   $gene = $gene_adaptor->fetch_by_stable_id('ENSG00000184129');
 
-  @genes = @{$gene_adaptor->fetch_all_by_external_name('BRCA2')};
+  @genes = @{ $gene_adaptor->fetch_all_by_external_name('BRCA2') };
 
-  $slice_adaptor = Bio::EnsEMBL::Registry->get_adaptor("human", "core", "slice");;
-  $slice = $slice_adaptor->fetch_by_region('chromosome', '1', 1, 1000000);
-  @genes = @{$gene_adaptor->fetch_all_by_Slice($slice)};
+  $slice_adaptor =
+    Bio::EnsEMBL::Registry->get_adaptor( "human", "core", "slice" );
+
+  $slice =
+    $slice_adaptor->fetch_by_region( 'chromosome', '1', 1, 1000000 );
+
+  @genes = @{ $gene_adaptor->fetch_all_by_Slice($slice) };
 
 =head1 DESCRIPTION
 
-This is a database aware adaptor for the retrieval and storage of gene objects.
+This is a database aware adaptor for the retrieval and storage of gene
+objects.
 
-=head1 LICENCE
-
-This code is distributed under an Apache style licence. Please see
-http://www.ensembl.org/info/about/code_licence.html for details.
-
-=head1 AUTHOR
-
-Arne Stabenau <stabenau@ebi.ac.uk>, Ensembl core API team
-Based on Elia Stupkas Gene_Obj
-
-=head1 CONTACT
-
-Please post comments/questions to the Ensembl development list
-<ensembl-dev@ebi.ac.uk>
+=head1 METHODS
 
 =cut
+
+package Bio::EnsEMBL::DBSQL::GeneAdaptor;
 
 use strict;
 

@@ -1,7 +1,22 @@
-# EnsEMBL module for Bio::EnsEMBL::RepeatFeature
-#
-# Copyright (c) 2003 EnsEMBL
-#
+=head1 LICENSE
+
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -10,41 +25,39 @@ sequence.
 
 =head1 SYNOPSIS
 
-    my $rf = new Bio::EnsEMBL::Feature(-start   => 100,
-                                       -end     => 220,
-                                       -strand  => -1,
-                                       -slice   => $slice
-                                       -analysis => $analysis
-                                       -repeat_consensus => $rc,
-                                       -hstart  => 10,
-                                       -hend    => 100,
-                                       -hstrand => 1,
-                                       -score => 83.2
-                                      );
+  my $rf = new Bio::EnsEMBL::Feature(
+    -start            => 100,
+    -end              => 220,
+    -strand           => -1,
+    -slice            => $slice,
+    -analysis         => $analysis,
+    -repeat_consensus => $rc,
+    -hstart           => 10,
+    -hend             => 100,
+    -hstrand          => 1,
+    -score            => 83.2
+  );
 
-    my $hstart  = $feat->hstart;
-    my $hend    = $feat->hend;
+  my $hstart = $feat->hstart;
+  my $hend   = $feat->hend;
 
-    #move the feature to the chromosomal coordinate system
-    $feature = $feature->transform('chromosome');
+  # move the feature to the chromosomal coordinate system
+  $feature = $feature->transform('chromosome');
 
-    #move the feature to a different slice (possibly on another coord system)
-    $feature = $feature->transfer($new_slice);
+  # move the feature to a different slice
+  # (possibly on another coord system)
+  $feature = $feature->transfer($new_slice);
 
-    #project the feature onto another coordinate system possibly across
-    #boundaries:
-    @projection = @{$feature->project('contig')};
+  # project the feature onto another coordinate system possibly across
+  # boundaries:
+  @projection = @{ $feature->project('contig') };
 
-    #change the start, end, and strand of the feature in place
-    $feature->move($new_start, $new_end, $new_strand);
+  # change the start, end, and strand of the feature in place
+  $feature->move( $new_start, $new_end, $new_strand );
 
 =head1 DESCRIPTION
 
 This a feature representing a repeat region on a sequence
-
-=head1 CONTACT
-
-Post questions to the EnsEMBL development list: ensembl-dev@ebi.ac.uk
 
 =head1 METHODS
 

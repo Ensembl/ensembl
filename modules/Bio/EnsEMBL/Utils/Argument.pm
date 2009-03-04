@@ -1,6 +1,22 @@
-# EnsEMBL module for Bio::EnsEMBL::Utils::Exception
-#
-#
+=head1 LICENSE
+
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -8,42 +24,39 @@ Bio::EnsEMBL::Utils::Argument - Utility functions for argument handling
 
 =head1 SYNOPSIS
 
-    use Bio::EnsEMBL::Utils::Argument qw(rearrange)
+  use Bio::EnsEMBL::Utils::Argument qw(rearrange)
 
-    package Feature;
+  package Feature;
 
-    sub new {
-      my $class = shift;
-      my ($start, $end, $strand) = rearrange(['START', 'END', 'STRAND'],@_);
-      return bless({'start'=>$start, 'end'=>$end, 'strand'=>$strand}, $class);
-    }
+  sub new {
+    my $class = shift;
+    my ( $start, $end, $strand ) =
+      rearrange( [ 'START', 'END', 'STRAND' ], @_ );
+
+    return
+      bless( { 'start' => $start, 'end' => $end, 'strand' => $strand },
+      $class );
+  }
 
 =head1 DESCRIPTION
 
 This is derived from the Bio::Root module in BioPerl.  The _rearrange
-object method taken from BioPerl has been renamed rearrange and is now a 
-static class method.  This method was originally written by Lincoln Stein, 
-and has since been refactored several times by various people (as described 
-below).
+object method taken from BioPerl has been renamed rearrange and is now
+a static class method.  This method was originally written by Lincoln
+Stein, and has since been refactored several times by various people (as
+described below).
 
-It is recommended that this package be used instead of inheriting 
+It is recommended that this package be used instead of inheriting
 unnecessarily from the Bio::EnsEMBL::Root or Bio::Root object.
 
-=head1 CONTACT
-
-Post questions to the EnsEMBL development list: ensembl-dev@ebi.ac.uk
-
-=head1 APPENDIX
-
-The rest of the documentation details exported static class methods. 
+=head1 METHODS
 
 =cut
 
+package Bio::EnsEMBL::Utils::Argument;
 
 use strict;
 use warnings;
-
-package Bio::EnsEMBL::Utils::Argument;
 
 use Exporter;
 

@@ -1,11 +1,22 @@
-# EnsEMBL External object reference reading writing adaptor for mySQL
-#
-# Copyright EMBL-EBI 2001
-#
-# Author: Arne Stabenau
-# 
-# Date : 06.03.2001
-#
+=head1 LICENSE
+
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -25,10 +36,6 @@ MySQL Database queries to load and store external object references.
 
   @db_entries = @{ $db_entry_adaptor->fetch_all_by_Gene($gene) };
   @gene_ids   = $db_entry_adaptor->list_gene_ids_by_extids('BAB15482');
-
-=head1 CONTACT
-
-Post questions to the EnsEMBL developer list <ensembl-dev@ebi.ac.uk>
 
 =head1 METHODS
 

@@ -1,4 +1,22 @@
-package Bio::EnsEMBL::DBSQL::AssemblySliceAdaptor;
+=head1 LICENSE
+
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -7,56 +25,42 @@ representing alternative assemblies
 
 =head1 SYNOPSIS
 
-my $slice = $slice_adaptor->fetch_by_region('chromosome', 14, 900000, 950000);
+  my $slice =
+    $slice_adaptor->fetch_by_region( 'chromosome', 14, 900000, 950000 );
 
-my $msc = Bio::EnsEMBL::MappedSliceContainer->new(
-    -SLICE => $slice
-);
+  my $msc = Bio::EnsEMBL::MappedSliceContainer->new( -SLICE => $slice );
 
-my $asa = Bio::EnsEMBL::DBSQL::AssemblySliceAdaptor->new;
+  my $asa = Bio::EnsEMBL::DBSQL::AssemblySliceAdaptor->new;
 
-my ($mapped_slice) = @{ $asa->fetch_by_version($msc, 'NCBIM36') };
+  my ($mapped_slice) = @{ $asa->fetch_by_version( $msc, 'NCBIM36' ) };
 
 =head1 DESCRIPTION
 
-NOTE: this code is under development and not fully functional nor tested yet. 
-Use only for development.
+NOTE: this code is under development and not fully functional nor tested
+yet.  Use only for development.
 
-This adaptor is a factory for creating MappedSlices representing alternative
-assemblies and attaching them to a MappedSliceContainer. A mapper will be
-created to map between the reference slice and the common container slice
-coordinate system.
+This adaptor is a factory for creating MappedSlices representing
+alternative assemblies and attaching them to a MappedSliceContainer. A
+mapper will be created to map between the reference slice and the common
+container slice coordinate system.
 
 =head1 METHODS
 
-new
-fetch_by_version
+  new
+  fetch_by_version
 
 =head1 REALTED MODULES
 
-Bio::EnsEMBL::MappedSlice
-Bio::EnsEMBL::MappedSliceContainer
-Bio::EnsEMBL::Compara::AlignSlice
-Bio::EnsEMBL::Compara::AlignSlice::Slice
-Bio::EnsEMBL::AlignStrainSlice
-Bio::EnsEMBL::StrainSlice
-
-=head1 LICENCE
-
-This code is distributed under an Apache style licence. Please see
-http://www.ensembl.org/info/about/code_licence.html for details.
-
-=head1 AUTHOR
-
-Patrick Meidl <meidl@ebi.ac.uk>, Ensembl core API team
-
-=head1 CONTACT
-
-Please post comments/questions to the Ensembl development list
-<ensembl-dev@ebi.ac.uk>
+  Bio::EnsEMBL::MappedSlice
+  Bio::EnsEMBL::MappedSliceContainer
+  Bio::EnsEMBL::Compara::AlignSlice
+  Bio::EnsEMBL::Compara::AlignSlice::Slice
+  Bio::EnsEMBL::AlignStrainSlice
+  Bio::EnsEMBL::StrainSlice
 
 =cut
 
+package Bio::EnsEMBL::DBSQL::AssemblySliceAdaptor;
 
 use strict;
 use warnings;

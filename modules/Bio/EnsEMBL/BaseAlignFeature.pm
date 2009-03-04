@@ -1,9 +1,22 @@
-# EnsEMBL module for storing dna-protein pairwise alignments
-#
-#
-# You may distribute this module under the same terms as perl itself
-#
-=pod
+=head1 LICENSE
+
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -12,26 +25,28 @@ implmentation for alignment features
 
 =head1 SYNOPSIS
 
-  my $feat = new Bio::EnsEMBL::DnaPepAlignFeature
-      (-slice    => $slice,
-       -start    => 100,
-       -end      => 120,
-       -strand   => 1,
-       -hseqname => 'SP:RF1231',
-       -hstart   => 200,
-       -hend     => 220,
-       -analysis => $analysis,
-       -cigar_string => '10M3D5M2I');
+  my $feat = new Bio::EnsEMBL::DnaPepAlignFeature(
+    -slice        => $slice,
+    -start        => 100,
+    -end          => 120,
+    -strand       => 1,
+    -hseqname     => 'SP:RF1231',
+    -hstart       => 200,
+    -hend         => 220,
+    -analysis     => $analysis,
+    -cigar_string => '10M3D5M2I'
+  );
 
   Alternatively if you have an array of ungapped features
 
-  my $feat = new Bio::EnsEMBL::DnaPepAlignFeature(-features => \@features);
+  my $feat =
+    new Bio::EnsEMBL::DnaPepAlignFeature( -features => \@features );
 
   Where @features is an array of Bio::EnsEMBL::FeaturePair
 
   There is a method to manipulate the cigar_string into ungapped features
 
-  my @ungapped_features = $feat->ungapped_features;
+  my @ungapped_features = $feat->ungapped_features();
 
   This converts the cigar string into an array of Bio::EnsEMBL::FeaturePair
 

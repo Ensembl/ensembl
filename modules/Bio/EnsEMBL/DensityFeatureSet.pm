@@ -1,9 +1,22 @@
-#
-# Ensembl module for Bio::EnsEMBL::DensityFeatureSet
-#
-# You may distribute this module under the same terms as perl itself
+=head1 LICENSE
 
-# POD documentation - main docs before the code
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -12,34 +25,30 @@ A feature representing a set of density features
 
 =head1 SYNOPSIS
 
-use Bio::EnsEMBL::DensityFeatureSet;
+  use Bio::EnsEMBL::DensityFeatureSet;
 
-my $densitySet = Bio::EnsEMBL::DensityFeatureSet->new
-		( -bin_array = \@out,
-		  -stretch   = 1,
-		);
+  my $densitySet = Bio::EnsEMBL::DensityFeatureSet->new(
+    -bin_array = \@out,
+    -stretch   = 1,
+  );
 
 =head1 DESCRIPTION
 
-A density feature set is a wrap around a array of density features
-with additional information about the collective density feature set,
-such as max_min_values and scale factors etc.  a given region.
+A density feature set is a wrap around a array of density features with
+additional information about the collective density feature set, such as
+max_min_values and scale factors etc. a given region.
 
 This module is part of the Ensembl project http://www.ensembl.org
-
-=head1 CONTACT
-
-Post comments/questions to the ensembl development list: ensembl-dev@ebi.ac.uk
 
 =head1 METHODS
 
 =cut
 
 
+package Bio::EnsEMBL::DensityFeatureSet;
+
 use strict;
 use warnings;
-
-package Bio::EnsEMBL::DensityFeatureSet;
 
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 use Bio::EnsEMBL::Utils::Exception qw(throw);

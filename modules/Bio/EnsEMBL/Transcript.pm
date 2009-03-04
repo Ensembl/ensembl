@@ -1,4 +1,22 @@
-package Bio::EnsEMBL::Transcript;
+=head1 LICENSE
+
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -8,20 +26,20 @@ Bio::EnsEMBL::Transcript - object representing an Ensembl transcript
 
 Creation:
 
-     my $tran = new Bio::EnsEMBL::Transcript();
-     my $tran = new Bio::EnsEMBL::Transcript(-EXONS => \@exons);
+  my $tran = new Bio::EnsEMBL::Transcript();
+  my $tran = new Bio::EnsEMBL::Transcript( -EXONS => \@exons );
 
 Manipulation:
 
-     # Returns an array of Exon objects
-     my @exons = @{$tran->get_all_Exons()};
+  # Returns an array of Exon objects
+  my @exons = @{ $tran->get_all_Exons() };
 
-     # Returns the peptide translation of the exons as a Bio::Seq
-     if($tran->translation() {
-       my $pep   = $tran->translate();
-     } else {
-       print "Transcript ", $tran->stable_id(), " is non-coding\n";
-     }
+  # Returns the peptide translation of the exons as a Bio::Seq
+  if ( $tran->translation() ) {
+    my $pep = $tran->translate();
+  } else {
+    print "Transcript ", $tran->stable_id(), " is non-coding\n";
+  }
 
 =head1 DESCRIPTION
 
@@ -29,21 +47,11 @@ A representation of a transcript within the Ensembl system.  A transcript
 consists of a set of Exons and (possibly) a Translation which defines the
 coding and non-coding regions of the exons.
 
-=head1 LICENCE
-
-This code is distributed under an Apache style licence. Please see
-http://www.ensembl.org/info/about/code_licence.html for details.
-
-=head1 AUTHOR
-
-Ensembl core API team
-
-=head1 CONTACT
-
-Please post comments/questions to the Ensembl development list
-<ensembl-dev@ebi.ac.uk>
+=head1 METHODS
 
 =cut
+
+package Bio::EnsEMBL::Transcript;
 
 use strict;
 

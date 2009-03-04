@@ -1,11 +1,22 @@
-#
-# Ensembl module for Bio::EnsEMBL::MiscSet
-#
-# Copyright (c) 2003 EnsEMBL
-#
-# You may distribute this module under the same terms as perl itself
+=head1 LICENSE
 
-# POD documentation - main docs before the code
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -16,38 +27,32 @@ a group of miscellaneuos features.
 
   use Bio::EnsEMBL::MiscSet;
 
-  ...
-
-  my $misc_set = Bio::EnsEMBL::MiscSet->new(1234, $adaptor,
-                                            'tilepath',
-                                            'Assembly Tiling Path',
-                                            'The tiling path of clones',
-                                            1e6);
+  my $misc_set = Bio::EnsEMBL::MiscSet->new(
+    1234, $adaptor, 'tilepath',
+    'Assembly Tiling Path',
+    'The tiling path of clones', 1e6
+  );
 
   my $misc_feature->add_set($misc_set);
 
-
 =head1 DESCRIPTION
 
-MiscSets represent classsifications or groupings of MiscFeatures.  Features are
-classified into sets essentially to define what they are and how they may be
-used.  Generally MiscFeatures are retrieved on the basis of their associated
-sets. See Bio::EnsEMBL::MiscFeature, Bio::EnsEMBL::DBSQL::MiscFeatureAdaptor.
+MiscSets represent classsifications or groupings of MiscFeatures.
+Features are classified into sets essentially to define what they are
+and how they may be used.  Generally MiscFeatures are retrieved on
+the basis of their associated sets. See Bio::EnsEMBL::MiscFeature,
+Bio::EnsEMBL::DBSQL::MiscFeatureAdaptor.
 
-Note that MiscSets and MiscFeatures were formerly known as MapSets and MapFrags
+Note that MiscSets and MiscFeatures were formerly known as MapSets and
+MapFrags
 
-=head1 CONTACT
-
-This modules is part of the Ensembl project http://www.ensembl.org
-
-Questions can be posted to the ensembl-dev mailing list:
-ensembl-dev@ebi.ac.uk
+=head1 METHODS
 
 =cut
 
-use strict;
-
 package Bio::EnsEMBL::MiscSet;
+
+use strict;
 
 use Bio::EnsEMBL::Storable;
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);

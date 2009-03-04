@@ -1,11 +1,22 @@
-# $Id$
+=head1 LICENSE
 
-# Ensembl module Bio::EnsEMBL::Collection
-#
-# You may distribute this module under the same terms as Perl itself.
-#
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
 
-package Bio::EnsEMBL::Collection;
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -131,6 +142,8 @@ attribute using the lightweight() method before calling e.g.
 fetch_all_by_Slice().
 
 =cut
+
+package Bio::EnsEMBL::Collection;
 
 use strict;
 use warnings;

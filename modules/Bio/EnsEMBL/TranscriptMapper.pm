@@ -1,10 +1,22 @@
-#
-# Ensembl module for TranscriptMapper
-#
-# Copyright (c) 2004 Ensembl
-#
-# You may distribute this module under the same terms as perl itself
-#
+=head1 LICENSE
+
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -15,34 +27,29 @@ between a number of coordinate systems relating to transcripts
 
   my $trmapper = Bio::EnsEMBL::TranscriptMapper->new($transcript);
 
-  @coords = $trmapper->cdna2genomic(123, 554);
+  @coords = $trmapper->cdna2genomic( 123, 554 );
 
-  @coords = $trmapper->genomic2cdna(141, 500, -1);
+  @coords = $trmapper->genomic2cdna( 141, 500, -1 );
 
-  @coords = $trmapper->genomic2cds(141, 500, -1);
+  @coords = $trmapper->genomic2cds( 141, 500, -1 );
 
-  @coords = $trmapper->pep2genomic(10, 60);
+  @coords = $trmapper->pep2genomic( 10, 60 );
 
-  @coords = $trmapper->genomic2pep(123, 400, 1);
-
+  @coords = $trmapper->genomic2pep( 123, 400, 1 );
 
 =head1 DESCRIPTION
 
 This is a utility class which can be used to perform coordinate conversions
 between a number of coordinate systems relating to transcripts.
 
-=head1 CONTACT
-
-Email questions to the ensembl developer mailing list <ensembl-dev@ebi.ac.uk>
-
 =head1 METHODS
 
 =cut
 
+package Bio::EnsEMBL::TranscriptMapper;
+
 use strict;
 use warnings;
-
-package Bio::EnsEMBL::TranscriptMapper;
 
 use Bio::EnsEMBL::Utils::Exception qw(throw);
 

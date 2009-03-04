@@ -1,4 +1,22 @@
-package Bio::EnsEMBL::IdMapping::StableIdGenerator::EnsemblGeneric;
+=head1 LICENSE
+
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -7,52 +25,56 @@ StableIdGenerator implementation
 
 =head1 SYNOPSIS
 
-# inject the confiured StableIdGenerator plugin
-my $stable_id_generator = $conf->param('plugin_stable_id_generator');
-inject($stable_id_generator);
+  # inject the confiured StableIdGenerator plugin
+  my $stable_id_generator = $conf->param('plugin_stable_id_generator');
+  inject($stable_id_generator);
 
-# create a new StableIdGenerator object
-my $generator_instance = $stable_id_generator->new(
-    -LOGGER       => $self->logger,
-    -CONF         => $self->conf,
-    -CACHE        => $self->cache
-);
+  # create a new StableIdGenerator object
+  my $generator_instance = $stable_id_generator->new(
+    -LOGGER => $self->logger,
+    -CONF   => $self->conf,
+    -CACHE  => $self->cache
+  );
 
-# determine starting stable ID for new assignments
-my $new_stable_id = $generator_instance->initial_stable_id('gene');
+  # determine starting stable ID for new assignments
+  my $new_stable_id = $generator_instance->initial_stable_id('gene');
 
-# loop over genes
-foreach my $target_gene (@all_target_genes) {
+  # loop over genes
+  foreach my $target_gene (@all_target_genes) {
 
-  # if the stable Id for this gene was mapped, assign it
-  if ($mapping_exists{$target_gene->id}) {
-    my $source_gene = $mappings{$target_gene->id};
-    $target_gene->stable_id($source_gene->stable_id);
+    # if the stable Id for this gene was mapped, assign it
+    if ( $mapping_exists{ $target_gene->id } ) {
+      my $source_gene = $mappings{ $target_gene->id };
+      $target_gene->stable_id( $source_gene->stable_id );
 
-    # calculate and set version
-    my $version = $generator_instance->calculate_version($source_gene,
-      $target_gene);
-    $target_gene->version($version);
+      # calculate and set version
+      my $version =
+        $generator_instance->calculate_version( $source_gene,
+        $target_gene );
+      $target_gene->version($version);
 
-  # no mapping exists, assign a new stable Id
-  } else {
-    $target_gene->stable_id($new_stable_id);
-    $target_gene->version('1');
+      # no mapping exists, assign a new stable Id
+    } else {
+      $target_gene->stable_id($new_stable_id);
+      $target_gene->version('1');
 
     # increment the stable Id (to be assigned to the next unmapped gene)
-    $new_stable_id = $generator_instance->increment_stable_id($new_stable_id);
+      $new_stable_id =
+        $generator_instance->increment_stable_id($new_stable_id);
+    }
   }
-}
 
 =head1 DESCRIPTION
 
-This is the default implementation for a StableIdGenerator, which is used by
-Bio::EnsEMBL::IdMapping::StableIdMapper to generate new stable Ids and increment
-versions on mapped stable Ids. Refer to the documentation in this module if you
-would like to implement your own StableIdGenerator.
+This is the default implementation for a StableIdGenerator, which
+is used by Bio::EnsEMBL::IdMapping::StableIdMapper to generate new
+stable Ids and increment versions on mapped stable Ids.  Refer to the
+documentation in this module if you would like to implement your own
+StableIdGenerator.
 
-The stable Id mapping application allows you to plugin your own implementation
-by specifying it with the --plugin_stable_id_generator configuration parameter.
+The stable Id mapping application allows you to plugin your own
+implementation by specifying it with the --plugin_stable_id_generator
+configuration parameter.
 
 Requirements for a StableIdGenerator plugin:
 
@@ -62,26 +84,13 @@ Requirements for a StableIdGenerator plugin:
 
 =head1 METHODS
 
-initial_stable_id
-increment_stable_id
-calculate_version
-
-=head1 LICENCE
-
-This code is distributed under an Apache style licence. Please see
-http://www.ensembl.org/info/about/code_licence.html for details.
-
-=head1 AUTHOR
-
-Patrick Meidl <meidl@ebi.ac.uk>, Ensembl core API team
-
-=head1 CONTACT
-
-Please post comments/questions to the Ensembl development list
-<ensembl-dev@ebi.ac.uk>
+  initial_stable_id
+  increment_stable_id
+  calculate_version
 
 =cut
 
+package Bio::EnsEMBL::IdMapping::StableIdGenerator::EnsemblGeneric;
 
 use strict;
 use warnings;

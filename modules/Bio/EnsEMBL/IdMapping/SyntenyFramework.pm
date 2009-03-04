@@ -1,4 +1,22 @@
-package Bio::EnsEMBL::IdMapping::SyntenyFramework;
+=head1 LICENSE
+
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -7,63 +25,47 @@ regions across the genome
 
 =head1 SYNOPSIS
 
-# build the SyntenyFramework from unambiguous gene mappings
-my $sf = Bio::EnsEMBL::IdMapping::SyntenyFramework->new(
-  -DUMP_PATH    => $dump_path,
-  -CACHE_FILE   => 'synteny_framework.ser',
-  -LOGGER       => $self->logger,
-  -CONF         => $self->conf,
-  -CACHE        => $self->cache,
-);
-$sf->build_synteny($gene_mappings);
+  # build the SyntenyFramework from unambiguous gene mappings
+  my $sf = Bio::EnsEMBL::IdMapping::SyntenyFramework->new(
+    -DUMP_PATH  => $dump_path,
+    -CACHE_FILE => 'synteny_framework.ser',
+    -LOGGER     => $self->logger,
+    -CONF       => $self->conf,
+    -CACHE      => $self->cache,
+  );
+  $sf->build_synteny($gene_mappings);
 
-# use it to rescore the genes
-$gene_scores = $sf->rescore_gene_matrix_lsf($gene_scores);
+  # use it to rescore the genes
+  $gene_scores = $sf->rescore_gene_matrix_lsf($gene_scores);
 
 =head1 DESCRIPTION
 
-The SyntenyFramework is a set of SyntenyRegions. These are pairs of locations
-very analoguous to the information in the assembly table (the locations dont
-have to be the same length though). They are built from genes that map uniquely
-between source and target.
+The SyntenyFramework is a set of SyntenyRegions. These are pairs of
+locations very analoguous to the information in the assembly table (the
+locations dont have to be the same length though). They are built from
+genes that map uniquely between source and target.
 
-Once built, the SyntenyFramework is used to score source and target gene pairs
-to determine whether they are similar. This process is slow (it involves testing
-all gene pairs against all SyntenyRegions), this module therefor has built-in
-support to run the process in parallel via LSF.
+Once built, the SyntenyFramework is used to score source and target gene
+pairs to determine whether they are similar. This process is slow (it
+involves testing all gene pairs against all SyntenyRegions), this module
+therefor has built-in support to run the process in parallel via LSF.
 
 =head1 METHODS
 
-new
-build_synteny
-_by_overlap
-add_SyntenyRegion
-get_all_SyntenyRegions
-rescore_gene_matrix_lsf
-rescore_gene_matrix
-logger
-conf
-cache
-
-=head1 REALTED MODULES
-
-
-=head1 LICENCE
-
-This code is distributed under an Apache style licence. Please see
-http://www.ensembl.org/info/about/code_licence.html for details.
-
-=head1 AUTHOR
-
-Patrick Meidl <meidl@ebi.ac.uk>, Ensembl core API team
-
-=head1 CONTACT
-
-Please post comments/questions to the Ensembl development list
-<ensembl-dev@ebi.ac.uk>
+  new
+  build_synteny
+  _by_overlap
+  add_SyntenyRegion
+  get_all_SyntenyRegions
+  rescore_gene_matrix_lsf
+  rescore_gene_matrix
+  logger
+  conf
+  cache
 
 =cut
 
+package Bio::EnsEMBL::IdMapping::SyntenyFramework;
 
 use strict;
 use warnings;

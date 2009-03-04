@@ -1,13 +1,22 @@
-#
-# BioPerl module for Bio::EnsEMBL::SeqFeature
-#
-# Cared for by Ewan Birney <birney@sanger.ac.uk>
-#
-# Copyright Ewan Birney
-#
-# You may distribute this module under the same terms as perl itself
+=head1 LICENSE
 
-# POD documentation - main docs before the code
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -15,35 +24,30 @@ Bio::EnsEMBL::SeqFeature - Ensembl specific sequence feature.
 
 =head1 DESCRIPTION
 
-Do not use this module if you can avoid it. It has been replaced by 
+Do not use this module if you can avoid it. It has been replaced by
 Bio::EnsEMBL::Feature.  This module has a long history of usage but has
-become very bloated, and quite unweildy.  It was decided to replace it 
-completely with a smaller, light-weight feature class rather than attempting
-to refactor this class, and maintain strict backwards compatibility.
+become very bloated, and quite unweildy.  It was decided to replace
+it completely with a smaller, light-weight feature class rather than
+attempting to refactor this class, and maintain strict backwards
+compatibility.
 
-Part of the complexity of this class was in its extensive inheritance. As an 
-example the following is a simplified inheritance heirarchy that was present
-for Bio::EnsEMBL::DnaAlignFeature:
+Part of the complexity of this class was in its extensive
+inheritance. As an example the following is a simplified inheritance
+heirarchy that was present for Bio::EnsEMBL::DnaAlignFeature:
 
-Bio::EnsEMBL::DnaAlignFeature
-Bio::EnsEMBL::BaseAlignFeature
-Bio::EnsEMBL::FeaturePair
-Bio::EnsEMBL::SeqFeature
-Bio::EnsEMBL::SeqFeatureI
-Bio::SeqFeatureI
-Bio::RangeI
-Bio::Root::RootI
+  Bio::EnsEMBL::DnaAlignFeature
+  Bio::EnsEMBL::BaseAlignFeature
+  Bio::EnsEMBL::FeaturePair
+  Bio::EnsEMBL::SeqFeature
+  Bio::EnsEMBL::SeqFeatureI
+  Bio::SeqFeatureI
+  Bio::RangeI
+  Bio::Root::RootI
 
-The new Bio::EnsEMBL::Feature class is much shorter, and hopefully much easier
-to understand and maintain.
+The new Bio::EnsEMBL::Feature class is much shorter, and hopefully much
+easier to understand and maintain.
 
-=head1 CONTACT
-
-Post questions to the ensembl development list: ensembl-dev@ebi.ac.uk
-
-=head1 APPENDIX
-
-The rest of the documentation details each of the object methods. Internal methods are usually preceded with a _
+=head1 METHODS
 
 =cut
 

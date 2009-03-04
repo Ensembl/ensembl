@@ -1,4 +1,22 @@
-package Bio::EnsEMBL::IdMapping::TinyTranslation;
+=head1 LICENSE
+
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -6,46 +24,31 @@ Bio::EnsEMBL::IdMapping::TinyTranslation - lightweight translation object
 
 =head1 SYNOPSIS
 
-if (my $tl = $tr->translation) {
-  my $lightweight_tl = Bio::EnsEMBL::IdMapping::TinyTranslation->new_fast([
-      $tl->dbID,
-      $tl->stable_id,
-      $tl->version,
-      $tl->created_date,
-      $tl->modified_date,
-      $tr->dbID,
-      $tr->translate->seq,
-      ($tr->is_known ? 1 : 0),
-  ]);
-}
+  if ( my $tl = $tr->translation ) {
+    my $lightweight_tl =
+      Bio::EnsEMBL::IdMapping::TinyTranslation->new_fast( [
+        $tl->dbID,          $tl->stable_id,
+        $tl->version,       $tl->created_date,
+        $tl->modified_date, $tr->dbID,
+        $tr->translate->seq, ( $tr->is_known ? 1 : 0 ),
+      ] );
+  }
 
 =head1 DESCRIPTION
 
-This is a lightweight translation object for the stable Id mapping. See the
-documentation in TinyFeature for general considerations about its design.
+This is a lightweight translation object for the stable Id mapping. See
+the documentation in TinyFeature for general considerations about its
+design.
 
 =head1 METHODS
 
-transcript_id
-seq
-is_known
-
-=head1 LICENCE
-
-This code is distributed under an Apache style licence. Please see
-http://www.ensembl.org/info/about/code_licence.html for details.
-
-=head1 AUTHOR
-
-Patrick Meidl <meidl@ebi.ac.uk>, Ensembl core API team
-
-=head1 CONTACT
-
-Please post comments/questions to the Ensembl development list
-<ensembl-dev@ebi.ac.uk>
+  transcript_id
+  seq
+  is_known
 
 =cut
 
+package Bio::EnsEMBL::IdMapping::TinyTranslation;
 
 # internal data structure (array indices):
 #

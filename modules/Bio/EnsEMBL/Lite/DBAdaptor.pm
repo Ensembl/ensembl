@@ -1,30 +1,47 @@
+=head1 LICENSE
 
-=Head1 NAME - Bio::EnsEMBL::Lite::DBAdaptor
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
 
-=head1 SYNOPSIS
+  This software is distributed under a modified Apache license.
+  For license details, please see
 
-    $db = Bio::EnsEMBL::DBSQL::DBAdaptor->new(
-        -user   => 'anonymous',
-        -dbname => 'homo_sapiens_lite_20_34c',
-        -host   => 'ensembldb.ensembl.org',
-        -driver => 'mysql');
-
-    $snp_adaptor = $db->get_SNPAdaptor();
-
-    @snps = @{$snp_adaptor->fetch_all_by_Slice($slice)}
-
-=head1 DESCRIPTION
-
-This is a database connection to the denormalised lite database.
-It allows for the rapid creation of drawable objects that are too slow
-to retreive from normalised data sources. Formerly this included many
-Ensembl objects such as genes, transcript, exons, etc. but is now limited
-to just SNPs.
+    http://www.ensembl.org/info/about/code_licence.html
 
 =head1 CONTACT
 
-This module is part of the Ensembl project: www.ensembl.org
-Post questions to the Ensembl development list: <ensembl-dev@ebi.ac.uk>
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
+
+=head1 NAME
+
+Bio::EnsEMBL::Lite::DBAdaptor
+
+=head1 SYNOPSIS
+
+  $db = Bio::EnsEMBL::DBSQL::DBAdaptor->new(
+    -user   => 'anonymous',
+    -dbname => 'homo_sapiens_lite_20_34c',
+    -host   => 'ensembldb.ensembl.org',
+    -driver => 'mysql'
+  );
+
+  $snp_adaptor = $db->get_SNPAdaptor();
+
+  @snps = @{ $snp_adaptor->fetch_all_by_Slice($slice) }
+
+=head1 DESCRIPTION
+
+This is a database connection to the denormalised lite database.  It
+allows for the rapid creation of drawable objects that are too slow
+to retreive from normalised data sources. Formerly this included many
+Ensembl objects such as genes, transcript, exons, etc. but is now
+limited to just SNPs.
 
 =head1 METHODS
 

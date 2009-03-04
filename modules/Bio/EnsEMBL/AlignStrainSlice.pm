@@ -1,12 +1,22 @@
-#
-# Ensembl module for Bio::EnsEMBL::AlignStrainSlice
-#
-#
-# Copyright Team Ensembl
-#
-# You may distribute this module under the same terms as perl itself
+=head1 LICENSE
 
-# POD documentation - main docs before the code
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -14,39 +24,37 @@ Bio::EnsEMBL::AlignStrainSlice - Represents the slice of the genome aligned with
 
 =head1 SYNOPSIS
 
-   $sa = $db->get_SliceAdaptor;
+  $sa = $db->get_SliceAdaptor;
 
-   $slice = $sa->fetch_by_region('chromosome', 'X', 1_000_000, 2_000_000);
+  $slice =
+    $sa->fetch_by_region( 'chromosome', 'X', 1_000_000, 2_000_000 );
 
-   $strainSlice1 = $slice->get_by_Strain($strain_name1);
-   $strainSlice2 = $slice->get_by_Strain($strain_name2);
+  $strainSlice1 = $slice->get_by_Strain($strain_name1);
+  $strainSlice2 = $slice->get_by_Strain($strain_name2);
 
-   my @strainSlices;
-   push @strainSlices, $strainSlice1;
-   push @strainSlices, $strainSlice2;
+  my @strainSlices;
+  push @strainSlices, $strainSlice1;
+  push @strainSlices, $strainSlice2;
 
-   $alignSlice = Bio::EnsEMBL::AlignStrainSlice->new(-SLICE => $slice,
-                                                     -STRAINS => \@strainSlices);
+  $alignSlice = Bio::EnsEMBL::AlignStrainSlice->new(
+    -SLICE   => $slice,
+    -STRAINS => \@strainSlices
+  );
 
-   #get coordinates of variation in alignSlice
-   my $alleleFeatures = $strainSlice1->get_all_AlleleFeature_Slice();
-   foreach my $af (@{$alleleFeatures}){
-       my $new_feature = $alignSlice->alignFeature($af, $strainSlice1);
-       print "Coordinates of the feature in AlignSlice are: ", $new_feature->start, "-", $new_feature->end, "\n";
-   }
+  # Get coordinates of variation in alignSlice
+  my $alleleFeatures = $strainSlice1->get_all_AlleleFeature_Slice();
 
+  foreach my $af ( @{$alleleFeatures} ) {
+    my $new_feature = $alignSlice->alignFeature( $af, $strainSlice1 );
+    print( "Coordinates of the feature in AlignSlice are: ",
+      $new_feature->start, "-", $new_feature->end, "\n" );
+  }
 
 =head1 DESCRIPTION
 
-A AlignStrainSlice object represents a region of a genome align for certain strains.  It can be used to align
-certain strains to a reference slice
-
-=head1 CONTACT
-
-This modules is part of the Ensembl project http://www.ensembl.org
-
-Questions can be posted to the ensembl-dev mailing list:
-ensembl-dev@ebi.ac.uk
+A AlignStrainSlice object represents a region of a genome align for
+certain strains.  It can be used to align certain strains to a reference
+slice.
 
 =head1 METHODS
 

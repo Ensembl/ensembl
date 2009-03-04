@@ -1,8 +1,22 @@
-#
-# Ensembl module for Bio::EnsEMBL::Mapper::RangeRegistry
-#
-#
-# You may distribute this module under the same terms as perl itself
+=head1 LICENSE
+
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -10,57 +24,53 @@ Bio::EnsEMBL::Mapper::RangeRegistry
 
 =head1 SYNOPSIS
 
-   use Bio::EnsEMBL::Mapper::RangeRegistry;
+  use Bio::EnsEMBL::Mapper::RangeRegistry;
 
-   $rr = Bio::EnsEMBL::Mapper::RangeRegistry->new();
+  $rr = Bio::EnsEMBL::Mapper::RangeRegistry->new();
 
-   #get a fixed width chunk around the range of intereset
-   #this will be used if any registration is actually necessary
-   $chunk_start = ($start >> 20) << 20 + 1;
-   $chunk_end   = (($end >> 20) + 1) << 20;
+  # Get a fixed width chunk around the range of intereset.  This
+  # will be used if any registration is actually necessary.
+  $chunk_start = ( $start >> 20 ) << 20 + 1;
+  $chunk_end = ( ( $end >> 20 ) + 1 ) << 20;
 
-  #check if any registration is necessary for the range.
-  #if it is register a large chunked area instead and return a listref
-  #of unregistered areas that need to be loaded.
-  if($pairs=$rr->check_and_register($id,$start,$end,$chunk_start,$chunk_end)) {
+  # Check if any registration is necessary for the range.  If it is
+  # register a large chunked area instead and return a listref of
+  # unregistered areas that need to be loaded.
+  if (
+    $pairs = $rr->check_and_register(
+      $id, $start, $end, $chunk_start, $chunk_end
+    ) )
+  {
     foreach my $pair (@$pairs) {
-      my ($pair_start, $pair_end) = @$pair;
-      #fetch mappings for these regions from the assembly table and load them
-      #into the mapper
-      ...
+      my ( $pair_start, $pair_end ) = @$pair;
+      # Fetch mappings for these regions from the assembly table and
+      # load them into the mapper.
+      ...;
     }
   } else {
-    #the range ($start - $end) is already registered
-    ...
+    # The range ($start - $end) is already registered
+    ...;
   }
 
-
-  #check if any registration is necessary
-  #if it is register the region and return a listref of pairs that
-  #need to be loaded.
-  if($pairs = $rr->check_and_register($id, $start,$end)) {
+  # Check if any registration is necessary.  If it is register the
+  # region and return a listref of pairs that need to be loaded.
+  if ( $pairs = $rr->check_and_register( $id, $start, $end ) ) {
+    ...;
   }
-
 
 =head1 DESCRIPTION
 
-This module maintains an internal list of registered regions and is used to
-quickly ascertain if and what regions of a provided range need registration.
+This module maintains an internal list of registered regions and is
+used to quickly ascertain if and what regions of a provided range need
+registration.
 
-=head1 AUTHOR - Graham McVicker
-
-=head1 CONTACT
-
-This modules is part of the Ensembl project http://www.ensembl.org
-
-Questions can be posted to the ensembl-dev mailing list:
-ensembl-dev@ebi.ac.uk
+=head1 METHODS
 
 =cut
 
-use strict;
-
 package Bio::EnsEMBL::Mapper::RangeRegistry;
+
+use strict;
 
 use Bio::EnsEMBL::Utils::Exception qw(throw);
 use integer;

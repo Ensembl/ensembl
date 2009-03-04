@@ -1,22 +1,38 @@
-=head1 NAME - Bio::EnsEMBL::DBSQL::StatementHandle
+=head1 LICENSE
 
-=head1 SYNOPSIS
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
 
-  Do not use this class directly.  It will automatically be used by
-  the Bio::EnsEMBL::DBSQL::DBConnection class.
+  This software is distributed under a modified Apache license.
+  For license details, please see
 
-=head1 DESCRIPTION
-
-  This class extends DBD::mysql::st so that the DESTROY method may be
-  overridden.  If the DBConnection::disconnect_when_inactive flag is set
-  this statement handle will cause the database connection to be closed
-  when it goes out of scope and there are no other open statement handles.
+    http://www.ensembl.org/info/about/code_licence.html
 
 =head1 CONTACT
 
-  This module is part of the Ensembl project: www.ensembl.org
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
 
-  Ensembl development mailing list: <ensembl-dev@ebi.ac.uk>
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
+
+=head1 NAME
+
+Bio::EnsEMBL::DBSQL::StatementHandle
+
+=head1 SYNOPSIS
+
+Do not use this class directly.  It will automatically be used by the
+Bio::EnsEMBL::DBSQL::DBConnection class.
+
+=head1 DESCRIPTION
+
+This class extends DBD::mysql::st so that the DESTROY method may be
+overridden.  If the DBConnection::disconnect_when_inactive flag is set
+this statement handle will cause the database connection to be closed
+when it goes out of scope and there are no other open statement handles.
 
 =head1 METHODS
 

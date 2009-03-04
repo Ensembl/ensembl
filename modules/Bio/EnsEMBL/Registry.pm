@@ -1,11 +1,22 @@
-#
-# Ensembl module for Registry
-#
-# Copyright EMBL/EBI
-##
-# You may distribute this module under the same terms as perl itself
+=head1 LICENSE
 
-# POD documentation - main docs before the code
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -13,10 +24,13 @@ Bio::EnsEMBL::Registry
 
 =head1 SYNOPSIS
 
-Bio::EnsEMBL::Registry->load_all("configuration_file");
+  use Bio::EnsEMBL::Registry;
 
-$gene_adaptor =
-  Bio::EnsEMBL::Registry->get_adaptor( "human", "core", "gene" );
+  my $registry = 'Bio::EnsEMBL::Registry';
+
+  $registry->load_all("configuration_file");
+
+  $gene_adaptor = $registry->get_adaptor( 'Human', 'Core', 'Gene' );
 
 
 =head1 DESCRIPTION
@@ -40,72 +54,68 @@ The registry can also be loaded via the method load_registry_from_db
 which given a database host will load the latest versions of the Ensembl
 databases from it.
 
-The four types of registries are for db adaptors, dba adaptors, dna adaptors
-and the standard type.
+The four types of registries are for db adaptors, dba adaptors, dna
+adaptors and the standard type.
 
 =head2 db
 
-These are registries for backwards compatibility and enable the subroutines
-to add other adaptors to connections. 
+These are registries for backwards compatibility and enable the
+subroutines to add other adaptors to connections.
 
-e.g. get_all_db_adaptors, get_db_adaptor, add_db_adaptor, remove_db_adaptor
-are the old DBAdaptor subroutines which are now redirected to the Registry.
+e.g. get_all_db_adaptors, get_db_adaptor, add_db_adaptor,
+remove_db_adaptor are the old DBAdaptor subroutines which are now
+redirected to the Registry.
 
 So if before we had
 
-    my $sfa = $self->adaptor()->db()->get_db_adaptor('blast');
+  my $sfa = $self->adaptor()->db()->get_db_adaptor('blast');
 
 We now want to change this to
 
-    my $sfa =
-      Bio::EnsEMBL::Registry->get_adaptor( "human", "core", "blast" );
+  my $sfa =
+    Bio::EnsEMBL::Registry->get_adaptor( "human", "core", "blast" );
 
 
 =head2 DBA
 
 These are the stores for the DBAdaptors
 
-The Registry will create all the DBConnections needed now if you set up the
-configuration correctly. So instead of the old commands like
+The Registry will create all the DBConnections needed now if you set up
+the configuration correctly. So instead of the old commands like
 
-    my $db           = Bio::EnsEMBL::DBSQL::DBAdaptor->new(...);
-    my $exon_adaptor = $db->get_ExonAdaptor;
+  my $db           = Bio::EnsEMBL::DBSQL::DBAdaptor->new(...);
+  my $exon_adaptor = $db->get_ExonAdaptor;
 
 we should now have just
 
-    my $exon_adaptor =
-      Bio::EnsEMBL::Registry->get_adaptor( "human", "core", "exon" );
+  my $exon_adaptor =
+    Bio::EnsEMBL::Registry->get_adaptor( "human", "core", "exon" );
 
 
 =head2 DNA
 
-This is an internal Registry and allows the configuration of a dnadb. 
-An example here is to set the est database to get its dna data from the core database.
+This is an internal Registry and allows the configuration of a dnadb.
+An example here is to set the est database to get its dna data from the
+core database.
 
-    ## set the est db to use the core for getting dna data.
-    # Bio::EnsEMBL::Utils::ConfigRegistry->dnadb_add(
-    #         "Homo Sapiens", "core", "Homo Sapiens", "est" );
+  ## set the est db to use the core for getting dna data.
+  # Bio::EnsEMBL::Utils::ConfigRegistry->dnadb_add( "Homo Sapiens",
+  #   "core", "Homo Sapiens", "est" );
 
 
 =head2 adaptors
 
-This is the registry for all the general types of adaptors like GeneAdaptor, ExonAdaptor, 
-Slice Adaptor etc.
+This is the registry for all the general types of adaptors like
+GeneAdaptor, ExonAdaptor, Slice Adaptor etc.
 
 These are accessed by the get_adaptor subroutine i.e.
 
-    my $exon_adaptor =
-      Bio::EnsEMBL::Registry->get_adaptor( "human", "core", "exon" );
-
-=head1 CONTACT
-
-Post questions to the Ensembl developer list: <ensembl-dev@ebi.ac.uk>
-
+  my $exon_adaptor =
+    Bio::EnsEMBL::Registry->get_adaptor( "human", "core", "exon" );
 
 =head1 METHODS
 
 =cut
-
 
 package Bio::EnsEMBL::Registry;
 

@@ -1,4 +1,22 @@
-package Bio::EnsEMBL::Utils::ConfParser;
+=head1 LICENSE
+
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -6,46 +24,34 @@ Bio::EnsEMBL::Utils::ConfParser - configuration parser for perl scripts
 
 =head1 SYNOPSIS
 
-    my $conf = new Bio::EnsEMBL::Utils::ConfParser(
-      -SERVERROOT => "/path/to/ensembl",
-      -DEFAULT_CONF => "my.default.conf"
-    );
+  my $conf = new Bio::EnsEMBL::Utils::ConfParser(
+    -SERVERROOT   => "/path/to/ensembl",
+    -DEFAULT_CONF => "my.default.conf"
+  );
 
-    # parse options from configuration file and commandline
-    $conf->parse_options(
-      'mandatory_string_opt=s' => 1,
-      'optional_numeric_opt=n' => 0,
-    );
+  # parse options from configuration file and commandline
+  $conf->parse_options(
+    'mandatory_string_opt=s' => 1,
+    'optional_numeric_opt=n' => 0,
+  );
 
-    # get a paramter value
-    my $val = $conf->param('manadatory_string_op');
+  # get a paramter value
+  my $val = $conf->param('manadatory_string_op');
 
 =head1 DESCRIPTION
 
-This module parses a configuration file and the commandline options passed to a
-script (the latter superseed the former). Configuration files contain ini-file
-style name-value pairs, and the commandline options are passed to Getopt::Long
-for parsing.
+This module parses a configuration file and the commandline options
+passed to a script (the latter superseed the former). Configuration
+files contain ini-file style name-value pairs, and the commandline
+options are passed to Getopt::Long for parsing.
 
-The parameter values are consequently accessible via the param() method. You
-can also create a commandline string of all current parameters and their values
-to pass to another script.
-
-=head1 LICENCE
-
-This code is distributed under an Apache style licence:
-Please see http://www.ensembl.org/code_licence.html for details
-
-=head1 AUTHOR
-
-Patrick Meidl <meidl@ebi.ac.uk>, Ensembl core API team
-
-=head1 CONTACT
-
-Please post comments/questions to the Ensembl development list
-<ensembl-dev@ebi.ac.uk>
+The parameter values are consequently accessible via the param()
+method. You can also create a commandline string of all current
+parameters and their values to pass to another script.
 
 =cut
+
+package Bio::EnsEMBL::Utils::ConfParser;
 
 use strict;
 use warnings;

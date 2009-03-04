@@ -1,4 +1,22 @@
-package Bio::EnsEMBL::MappedSliceContainer;
+=head1 LICENSE
+
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -6,100 +24,88 @@ Bio::EnsEMBL::MappedSliceContainer - container for mapped slices
 
 =head1 SYNOPSIS
 
-# get a reference slice
-my $slice = $slice_adaptor->fetch_by_region('chromosome', 14, 900000, 950000);
+  # get a reference slice
+  my $slice =
+    $slice_adaptor->fetch_by_region( 'chromosome', 14, 900000, 950000 );
 
-# create MappedSliceContainer based on the reference slice
-my $msc = Bio::EnsEMBL::MappedSliceContainer->new(
-    -SLICE => $slice
-);
+  # create MappedSliceContainer based on the reference slice
+  my $msc = Bio::EnsEMBL::MappedSliceContainer->new( -SLICE => $slice );
 
-# set the adaptor for fetching AssemblySlices
-my $asa = $slice->adaptor->db->get_AssemblySliceAdaptor;
-$msc->set_AssemblySliceAdaptor($asa);
+  # set the adaptor for fetching AssemblySlices
+  my $asa = $slice->adaptor->db->get_AssemblySliceAdaptor;
+  $msc->set_AssemblySliceAdaptor($asa);
 
-# add an AssemblySlice to your MappedSliceContainer
-$msc->attach_AssemblySlice('NCBIM36');
+  # add an AssemblySlice to your MappedSliceContainer
+  $msc->attach_AssemblySlice('NCBIM36');
 
-foreach my $mapped_slice (@{ $msc->get_all_MappedSlices }) {
-  print $mapped_slice->name, "\n";
-  
-  foreach my $sf (@{ $mapped_slice->get_all_SimpleFeatures }) {
-    print "  ", &to_string($sf), "\n";
+  foreach my $mapped_slice ( @{ $msc->get_all_MappedSlices } ) {
+    print $mapped_slice->name, "\n";
+
+    foreach my $sf ( @{ $mapped_slice->get_all_SimpleFeatures } ) {
+      print "  ", &to_string($sf), "\n";
+    }
   }
-}
 
 =head1 DESCRIPTION
 
-NOTE: this code is under development and not fully functional nor tested yet. 
-Use only for development.
+NOTE: this code is under development and not fully functional nor tested
+yet.  Use only for development.
 
 A MappedSliceContainer holds a collection of one or more
-Bio::EnsEMBL::MappedSlices. It is based on a real reference slice and contains
-an artificial "container slice" which defines the common coordinate system used
-by all attached MappedSlices. There is also a mapper to convert coordinates
-between the reference and the container slice.
+Bio::EnsEMBL::MappedSlices. It is based on a real reference slice and
+contains an artificial "container slice" which defines the common
+coordinate system used by all attached MappedSlices. There is also a
+mapper to convert coordinates between the reference and the container
+slice.
 
-Attaching MappedSlices to the container is delegated to adaptors (which act more
-as object factories than as traditional Ensembl db adaptors). The adaptors will
-also modify the container slice and associated mapper if required. This design
-allows us to keep the MappedSliceContainer generic and encapsulate the data
-source specific code in the adaptor/factory module.
+Attaching MappedSlices to the container is delegated to adaptors
+(which act more as object factories than as traditional Ensembl db
+adaptors). The adaptors will also modify the container slice and
+associated mapper if required. This design allows us to keep the
+MappedSliceContainer generic and encapsulate the data source specific
+code in the adaptor/factory module.
 
 In the simplest use case, all required MappedSlices are attached to the
-MappedSliceContainer at once (by a single call to the adaptor). This object
-should also allow "hot-plugging" of MappedSlices (e.g. attach a MappedSlice
-representing a strain to a container that already contains a multi-species
-alignment). The methods for attaching new MappedSlice will be responsable to
-perform the necessary adjustments to coordinates and mapper on the existing
-MappedSlices.
+MappedSliceContainer at once (by a single call to the adaptor). This
+object should also allow "hot-plugging" of MappedSlices (e.g. attach a
+MappedSlice representing a strain to a container that already contains a
+multi-species alignment). The methods for attaching new MappedSlice will
+be responsable to perform the necessary adjustments to coordinates and
+mapper on the existing MappedSlices.
 
 =head1 METHODS
 
-new
-set_adaptor
-get_adaptor
-set_AssemblySliceAdaptor
-get_AssemblySliceAdaptor
-set_AlignSliceAdaptor (not implemented yet)
-get_AlignSliceAdaptor (not implemented yet)
-set_StrainSliceAdaptor (not implemented yet)
-get_StrainSliceAdaptor (not implemented yet)
-attach_AssemblySlice
-attach_AlignSlice (not implemented yet)
-attach_StrainSlice (not implemented yet)
-get_all_MappedSlices
-sub_MappedSliceContainer (not implemented yet)
-ref_slice
-container_slice
-mapper
-expanded
+  new
+  set_adaptor
+  get_adaptor
+  set_AssemblySliceAdaptor
+  get_AssemblySliceAdaptor
+  set_AlignSliceAdaptor (not implemented yet)
+  get_AlignSliceAdaptor (not implemented yet)
+  set_StrainSliceAdaptor (not implemented yet)
+  get_StrainSliceAdaptor (not implemented yet)
+  attach_AssemblySlice
+  attach_AlignSlice (not implemented yet)
+  attach_StrainSlice (not implemented yet)
+  get_all_MappedSlices
+  sub_MappedSliceContainer (not implemented yet)
+  ref_slice
+  container_slice
+  mapper
+  expanded
 
-=head1 REALTED MODULES
+=head1 RELATED MODULES
 
-Bio::EnsEMBL::MappedSlice
-Bio::EnsEMBL::DBSQL::AssemblySliceAdaptor
-Bio::EnsEMBL::Compara::AlignSlice
-Bio::EnsEMBL::Compara::AlignSlice::Slice
-Bio::EnsEMBL::AlignStrainSlice
-Bio::EnsEMBL::StrainSlice
-
-=head1 LICENCE
-
-This code is distributed under an Apache style licence. Please see
-http://www.ensembl.org/info/about/code_licence.html for details.
-
-=head1 AUTHOR
-
-Patrick Meidl <meidl@ebi.ac.uk>, Ensembl core API team
-
-=head1 CONTACT
-
-Please post comments/questions to the Ensembl development list
-<ensembl-dev@ebi.ac.uk>
+  Bio::EnsEMBL::MappedSlice
+  Bio::EnsEMBL::DBSQL::AssemblySliceAdaptor
+  Bio::EnsEMBL::Compara::AlignSlice
+  Bio::EnsEMBL::Compara::AlignSlice::Slice
+  Bio::EnsEMBL::AlignStrainSlice
+  Bio::EnsEMBL::StrainSlice
 
 =cut
 
+package Bio::EnsEMBL::MappedSliceContainer;
 
 use strict;
 use warnings;

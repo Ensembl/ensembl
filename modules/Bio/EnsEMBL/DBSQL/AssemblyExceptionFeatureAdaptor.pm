@@ -1,4 +1,22 @@
-package Bio::EnsEMBL::DBSQL::AssemblyExceptionFeatureAdaptor;
+=head1 LICENSE
+
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -8,29 +26,20 @@ Bio::EnsEMBL::DBSQL::AssemblyExceptionFeatureAdaptor
 
   my $assembly_exception_feature_adaptor =
     $database_adaptor->get_AssemblyExceptionFeatureAdaptor();
+
   @assembly_exception_features =
     $assembly_exception_feature_adaptor->fetch_all_by_Slice($slice);
 
 =head1 DESCRIPTION
 
-Assembly Exception Feature Adaptor - database access for assembly exception
-features.
+Assembly Exception Feature Adaptor - database access for assembly
+exception features.
 
-=head1 LICENCE
-
-This code is distributed under an Apache style licence:
-Please see http://www.ensembl.org/code_licence.html for details
-
-=head1 AUTHOR
-
-Glenn Proctor <glenn@ebi.ac.uk>, Ensembl core API team
-
-=head1 CONTACT
-
-Please post comments/questions to the Ensembl development list
-<ensembl-dev@ebi.ac.uk>
+=head1 METHODS
 
 =cut
+
+package Bio::EnsEMBL::DBSQL::AssemblyExceptionFeatureAdaptor;
 
 use strict;
 use warnings;

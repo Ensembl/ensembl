@@ -1,14 +1,26 @@
-# Bio::EnsEMBL::Utils::Converter::ens_bio
-#
-# Created and cared for by Juguang Xiao <juguang@fugu-sg.org>
-# Created date: 5/3/2003
-# 
-# Copyright Juguang Xiao
-# 
-# You may distribute this module under the same terms as perl itself
-#
-# POD documentation
-#
+=head1 LICENSE
+
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=head1 AUTHOR
+
+Juguang Xiao <juguang@fugu-sg.org>
+
+=cut
 
 =head1 NAME
 
@@ -16,33 +28,18 @@ Bio::EnsEMBL::Utils::Converter::ens_bio
 
 =head1 SYNOPISIS
 
-You are not supposed to use this module directly. Please read 
+You are not supposed to use this module directly. Please read
 Bio::EnsEMBL::Utils::Converter
 
 =head1 DESCRIPTION
 
-This is a helper module to assist Bio::EnsEMBL::Utils::Converter find which 
-converter instance should be used, based on the -in and -out parameters.
+This is a helper module to assist Bio::EnsEMBL::Utils::Converter find
+which converter instance should be used, based on the -in and -out
+parameters.
 
-=head1 FEEDBACK
-
-=head2 Mailing Lists
-
-=head2 Reporting Bugs
-
-
-=head1 AUTHOR Juguang Xiao
-
-Juguang Xiao <juguang@fugu-sg.org>
-
-=head1 APPENDIX
-
-The rest of the documentation details each of the object methods.
-Internal methods are usually preceded with a _
+=head1 METHODS
 
 =cut
-
-# Let the code begin ...
 
 package Bio::EnsEMBL::Utils::Converter::ens_bio;
 

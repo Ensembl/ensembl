@@ -1,17 +1,27 @@
-#
-# Ensembl module for Bio::EnsEMBL::DBSQL::MiscSetAdaptor
-#
-# Copyright (c) 2003 EnsEMBL
-#
-# You may distribute this module under the same terms as perl itself
+=head1 LICENSE
 
-# POD documentation - main docs before the code
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
 Bio::EnsEMBL::DBSQL::MiscSetAdaptor - Provides database interaction for
 Bio::EnsEMBL::MiscSet objects.
-
 
 =head1 SYNOPSIS
 
@@ -23,22 +33,17 @@ Bio::EnsEMBL::MiscSet objects.
 
 =head1 DESCRIPTION
 
-This class provides database interactivity for MiscSet objects.  MiscSets
-are used to classify MiscFeatures into groups.
+This class provides database interactivity for MiscSet objects.
+MiscSets are used to classify MiscFeatures into groups.
 
-=head1 CONTACT
-
-This modules is part of the Ensembl project http://www.ensembl.org
-
-Questions can be posted to the ensembl-dev mailing list:
-ensembl-dev@ebi.ac.uk
+=head1 METHODS
 
 =cut
 
+package Bio::EnsEMBL::DBSQL::MiscSetAdaptor;
+
 use strict;
 use warnings;
-
-package Bio::EnsEMBL::DBSQL::MiscSetAdaptor;
 
 use Bio::EnsEMBL::MiscSet;
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;

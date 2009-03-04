@@ -1,4 +1,22 @@
-package Bio::EnsEMBL::DBEntry;
+=head1 LICENSE
+
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -7,30 +25,16 @@ Object representing an external reference (xref)
 
 =head1 SYNOPSIS
 
-
 =head1 DESCRIPTION
 
-This object holds information about external references (xrefs) to Ensembl
-objects.
+This object holds information about external references (xrefs) to
+Ensembl objects.
 
 =head1 METHODS
 
-
-=head1 LICENCE
-
-This code is distributed under an Apache style licence. Please see
-http://www.ensembl.org/info/about/code_licence.html for details.
-
-=head1 AUTHOR
-
-Arne Stabenau <stabenau@ebi.ac.uk>, Ensembl core API team
-
-=head1 CONTACT
-
-Please post comments/questions to the Ensembl development list
-<ensembl-dev@ebi.ac.uk>
-
 =cut
+
+package Bio::EnsEMBL::DBEntry;
 
 use strict;
 use warnings;

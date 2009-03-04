@@ -1,4 +1,22 @@
-package Bio::EnsEMBL::StableIdHistoryTree;
+=head1 LICENSE
+
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -6,60 +24,67 @@ Bio::EnsEMBL::StableIdHistoryTree - object representing a stable ID history tree
 
 =head1 SYNOPSIS
 
-my $reg = "Bio::EnsEMBL::Registry";
-my $archiveStableIdAdaptor =
-  $reg->get_adaptor('human', 'core', 'ArchiveStableId');
+  my $reg = "Bio::EnsEMBL::Registry";
+  my $archiveStableIdAdaptor =
+    $reg->get_adaptor( 'human', 'core', 'ArchiveStableId' );
 
-my $stable_id = 'ENSG00000068990';
-my $history = $archiveStableIdAdaptor->fetch_history_tree_by_stable_id('ENSG01');
+  my $stable_id = 'ENSG00000068990';
+  my $history =
+    $archiveStableIdAdaptor->fetch_history_tree_by_stable_id('ENSG01');
 
-print "Unique stable IDs in this tree:\n";
-print join(", ", @{ $history->get_unique_stable_ids }), "\n";
+  print "Unique stable IDs in this tree:\n";
+  print join( ", ", @{ $history->get_unique_stable_ids } ), "\n";
 
-print "\nReleases in this tree:\n";
-print join(", ", @{ $history->get_release_display_names }), "\n";
+  print "\nReleases in this tree:\n";
+  print join( ", ", @{ $history->get_release_display_names } ), "\n";
 
-print "\nCoordinates of nodes in the tree:\n\n";
-foreach my $a (@{ $history->get_all_ArchiveStableIds }) {
-  print "  Stable ID: ".$a->stable_id.".".$a->version."\n";
-  print "  Release: ".$a->release." (".$a->assembly.", ".$a->db_name.")\n");
-  print "  coords: ".join(', ', @{ $history->coords_by_ArchiveStableId($a) })."\n\n";
-}
+  print "\nCoordinates of nodes in the tree:\n\n";
+  foreach my $a ( @{ $history->get_all_ArchiveStableIds } ) {
+    print "  Stable ID: " . $a->stable_id . "." . $a->version . "\n";
+    print "  Release: "
+      . $a->release . " ("
+      . $a->assembly . ", "
+      . $a->db_name . ")\n";
+    print "  coords: "
+      . join( ', ', @{ $history->coords_by_ArchiveStableId($a) } )
+      . "\n\n";
+  }
 
 =head1 DESCRIPTION
 
 This object represents a stable ID history tree graph.
 
-The graph is implemented as a collection of nodes (ArchiveStableId objects) and
-links (StableIdEvent objects) which have positions on an (x,y) grid. The x axis
-is used for releases, the y axis for stable_ids. The idea is to create a plot
-similar to this (the numbers shown on the nodes are the stable ID versions):
+The graph is implemented as a collection of nodes (ArchiveStableId
+objects) and links (StableIdEvent objects) which have positions
+on an (x,y) grid. The x axis is used for releases, the y axis for
+stable_ids. The idea is to create a plot similar to this (the numbers
+shown on the nodes are the stable ID versions):
 
-ENSG001   1-------------- 2--
-                              \
-ENSG003                         1-----1
-                              /
-ENSG002   1-------2----------
+  ENSG001   1-------------- 2--
+                                \
+  ENSG003                         1-----1
+                                /
+  ENSG002   1-------2----------
 
-         38      39      40    41    42
+           38      39      40    41    42
 
-The grid coordinates of the ArchiveStableId objects in this example would
-be (note that coordinates are zero-based):
+The grid coordinates of the ArchiveStableId objects in this example
+would be (note that coordinates are zero-based):
 
-ENSG001.1               (0, 0)
-ENSG001.2               (2, 0)
-ENSG003.1 (release 41)  (3, 1) 
-ENSG003.1 (release 42)  (4, 1) 
-ENSG002.1               (0, 2)
-ENSG002.2               (1, 2)
+  ENSG001.1               (0, 0)
+  ENSG001.2               (2, 0)
+  ENSG003.1 (release 41)  (3, 1) 
+  ENSG003.1 (release 42)  (4, 1) 
+  ENSG002.1               (0, 2)
+  ENSG002.2               (1, 2)
 
 The tree will only contain those nodes which had a change in the stable
 ID version. Therefore, in the above example, in release 39 ENSG001 was
 present and had version 1 (but will not be drawn there, to unclutter the
 output).
 
-The grid positions will be calculated by the API and will try to untangle the
-tree (i.e. try to avoid overlapping lines).
+The grid positions will be calculated by the API and will try to
+untangle the tree (i.e. try to avoid overlapping lines).
 
 =head1 METHODS
 
@@ -89,26 +114,13 @@ tree (i.e. try to avoid overlapping lines).
 
 =head1 RELATED MODULES
 
-Bio::EnsEMBL::ArchiveStableId
-Bio::EnsEMBL::DBSQL::ArchiveStableIdAdaptor
-Bio::EnsEMBL::StableIdEvent
-
-=head1 LICENCE
-
-This code is distributed under an Apache style licence. Please see
-http://www.ensembl.org/info/about/code_licence.html for details.
-
-=head1 AUTHOR
-
-Patrick Meidl <meidl@ebi.ac.uk>, Ensembl core API team
-
-=head1 CONTACT
-
-Please post comments/questions to the Ensembl development list
-<ensembl-dev@ebi.ac.uk>
+  Bio::EnsEMBL::ArchiveStableId
+  Bio::EnsEMBL::DBSQL::ArchiveStableIdAdaptor
+  Bio::EnsEMBL::StableIdEvent
 
 =cut
 
+package Bio::EnsEMBL::StableIdHistoryTree;
 
 use strict;
 use warnings;

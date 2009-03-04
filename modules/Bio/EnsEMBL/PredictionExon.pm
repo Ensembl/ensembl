@@ -1,53 +1,57 @@
-#
-# EnsEMBL module for Bio::EnsEMBL::PredictionExon
-#
-#
-# Copyright Ewan Birney
-#
-# You may distribute this module under the same terms as perl itself
+=head1 LICENSE
 
-# POD documentation - main docs before the code
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
 
-=pod 
+  This software is distributed under a modified Apache license.
+  For license details, please see
 
-=head1 NAME Bio::EnsEMBL::PredictionExon - A class representing an Exon from an
-ab initio prediction method
-
-=head1 SYNOPSIS
-
-    $exon = new Bio::EnsEMBL::PredictionExon(-START  => 100,
-                                 -END       => 200,
-                                 -STRAND    => 1,
-                                 -SLICE     => $slice,
-                                 -DBID      => $dbID,
-                                 -P_VALUE   => 23.5,
-                                 -SCORE     => 99
-                                 );
-
-   #seq returns a Bio::Seq
-   my $seq = $exon->seq->seq();
-
-   #peptide only makes sense within transcript context
-   my $pep = $exon->peptide($transcript)->seq();
-
-   #normal feature operations can be performed:
-   $exon = $exon->transform('clone');
-   $exon->move($new_start, $new_end, $new_strand);
-   print $exon->slice->seq_region_name();
-
-=head1 DESCRIPTION
-
-This is a class which represents an prediction exon which is part of a 
-predcition transcript. See Bio::EnsEMBL:PredictionTranscript
+    http://www.ensembl.org/info/about/code_licence.html
 
 =head1 CONTACT
 
-Post questions to the EnsEMBL developer list: <ensembl-dev@ebi.ac.uk>
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
 
-=head1 APPENDIX
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
 
-The rest of the documentation details each of the object methods. Internal
-methods are usually preceded with a_
+=cut
+
+=head1 NAME
+
+Bio::EnsEMBL::PredictionExon - A class representing an Exon from an ab
+initio prediction method
+
+=head1 SYNOPSIS
+
+  $exon = new Bio::EnsEMBL::PredictionExon(
+    -START   => 100,
+    -END     => 200,
+    -STRAND  => 1,
+    -SLICE   => $slice,
+    -DBID    => $dbID,
+    -P_VALUE => 23.5,
+    -SCORE   => 99
+  );
+
+  # seq() returns a Bio::Seq
+  my $seq = $exon->seq->seq();
+
+  # peptide() only makes sense within transcript context
+  my $pep = $exon->peptide($transcript)->seq();
+
+  # Normal feature operations can be performed:
+  $exon = $exon->transform('clone');
+  $exon->move( $new_start, $new_end, $new_strand );
+  print $exon->slice->seq_region_name();
+
+=head1 DESCRIPTION
+
+This is a class which represents an prediction exon which is part of a
+predcition transcript. See Bio::EnsEMBL:PredictionTranscript
+
+=head1 METHODS
 
 =cut
 

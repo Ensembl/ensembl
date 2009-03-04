@@ -1,13 +1,22 @@
-#
-# EnsEMBL module for Bio::EnsEMBL::DBSQL::ProteinFeatureAdaptor
-#
-# Cared for by Emmanuel Mongin <mongin@ebi.ac.uk>
-#
-# Copyright Emmanuel Mongin
-#
-# You may distribute this module under the same terms as perl itself
+=head1 LICENSE
 
-# POD documentation - main docs before the code
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -18,24 +27,16 @@ Bio::EnsEMBL::DBSQL::ProteinFeatureAdaptor
   use Bio::EnsEMBL::Registry;
 
   Bio::EnsEMBL::Registry->load_registry_from_db(
-              -host => 'ensembldb.ensembl.org',
-              -user => 'anonymous'
+    -host => 'ensembldb.ensembl.org',
+    -user => 'anonymous'
   );
 
-  $pfa = Bio::EnsEMBL::Registry->get_adaptor("human", "core", "proteinfeature");
+  $pfa = Bio::EnsEMBL::Registry->get_adaptor( "human", "core",
+    "proteinfeature" );
 
-  my @prot_feats = @{$pfa->fetch_all_by_translation_id(1231)};
+  my @prot_feats = @{ $pfa->fetch_all_by_translation_id(1231) };
 
   my $prot_feat = $pfa->fetch_by_dbID(523);
-
-  
-=head1 DESCRIPTION
-
-
-=head1 CONTACT
-
-  Post questions to the EnsEMBl development mailing list : 
-  ensembl-dev@ebi.ac.uk
 
 =head1 METHODS
 

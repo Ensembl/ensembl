@@ -1,60 +1,70 @@
+=head1 LICENSE
 
-#
-# Ensembl module for Bio::EnsEMBL::ChainedAssemblyMapper
-#
-# Written by Graham McVicker
-#
-# Copyright GRL and EBI
-#
-# You may distribute this module under the same terms as perl itself
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
 
-# POD documentation - main docs before the code
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
 Bio::EnsEMBL::ChainedAssemblyMapper - 
-Handles mapping between two coordinate systems using the information stored in
-the assembly table
+Handles mapping between two coordinate systems using the information
+stored in the assembly table
 
 =head1 SYNOPSIS
 
-    $db = Bio::EnsEMBL::DBSQL::DBAdaptor->new(...);
+    $db   = Bio::EnsEMBL::DBSQL::DBAdaptor->new(...);
     $asma = $db->get_AssemblyMapperAdaptor();
     $csa  = $db->get_CoordSystemAdaptor();
 
-    my $chr_cs = $cs_adaptor->fetch_by_name('chromosome', 'NCBI33');
-    my $cln_cs   = $cs_adaptor->fetch_by_name('clone');
+    my $chr_cs = $cs_adaptor->fetch_by_name( 'chromosome', 'NCBI33' );
+    my $cln_cs = $cs_adaptor->fetch_by_name('clone');
 
-    $asm_mapper = $map_adaptor->fetch_by_CoordSystems($cs1, $cs2);
+    $asm_mapper = $map_adaptor->fetch_by_CoordSystems( $cs1, $cs2 );
 
-    #map to contig coordinate system from chromosomal
-    @cln_coords = $asm_mapper->map('X', 1_000_000, 2_000_000, 1, $chr_cs);
+    # Map to contig coordinate system from chromosomal
+    @cln_coords =
+      $asm_mapper->map( 'X', 1_000_000, 2_000_000, 1, $chr_cs );
 
-    #map to chromosome coordinate system from contig
-    @chr_coords = $asm_mapper->map('AL30421.1',100,10000,-1,$cln_cs);
+    # Map to chromosome coordinate system from contig
+    @chr_coords =
+      $asm_mapper->map( 'AL30421.1', 100, 10000, -1, $cln_cs );
 
-    #list contig names for a region of chromsome
-    @cln_ids = $asm_mapper->list_ids('13', 1_000_000, 1, $chr_cs);
+    # List contig names for a region of chromsome
+    @cln_ids = $asm_mapper->list_ids( '13', 1_000_000, 1, $chr_cs );
 
-    #list chromosome names for a contig region
-    @chr_ids = $asm_mapper->list_ids('AL30421.1',1,1000,-1,$cln_cs);
+    # List chromosome names for a contig region
+    @chr_ids =
+      $asm_mapper->list_ids( 'AL30421.1', 1, 1000, -1, $cln_cs );
 
 =head1 DESCRIPTION
 
-The ChainedAssemblyMapper is an extension of the regular AssemblyMapper that
-allows for mappings between coordinate systems that require multi-step mapping.
-For example if explicit mappings are defined between the following 
-coordinate systems,
+The ChainedAssemblyMapper is an extension of the regular AssemblyMapper
+that allows for mappings between coordinate systems that require
+multi-step mapping.  For example if explicit mappings are defined
+between the following coordinate systems,
+
   chromosome <-> contig
   contig     <-> clone
-the ChainedAssemblyMapper would be able to perform implicit mapping between
-the chromosome and clone coordinate systems.  This should be transparent to
-the user of this module, and users should not even realise that they are using
-a chained assembly mapper as opposed to a normal assembly mapper.
 
-=head1 CONTACT
-
-Post general queries to B<ensembl-dev@ebi.ac.uk>
+the ChainedAssemblyMapper would be able to perform implicit mapping
+between the chromosome and clone coordinate systems.  This should be
+transparent to the user of this module, and users should not even
+realise that they are using a chained assembly mapper as opposed to a
+normal assembly mapper.
 
 =head1 METHODS
 

@@ -1,34 +1,53 @@
+=head1 LICENSE
 
-=head1
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
 
-Sequence alignment hits were previously stored within the core database as 
-ungapped alignments. This imposed 2 major constraints on alignments:
+  This software is distributed under a modified Apache license.
+  For license details, please see
 
-a) alignments for a single hit record would require multiple rows in the 
-database, and
-b) it was not possible to accurately retrieve the exact original alignment.
+    http://www.ensembl.org/info/about/code_licence.html
 
-Therefore, in the new branch sequence alignments are now stored as ungapped 
-alignments in the cigar line format (where CIGAR stands for Concise 
-Idiosyncratic Gapped Alignment Report).
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
+
+=head1 DESCRIPTION
+
+Sequence alignment hits were previously stored within the core database
+as ungapped alignments. This imposed 2 major constraints on alignments:
+
+  a) alignments for a single hit record would require multiple rows in
+     the database, and
+  b) it was not possible to accurately retrieve the exact original alignment.
+
+Therefore, in the new branch sequence alignments are now stored as
+ungapped alignments in the cigar line format (where CIGAR stands for
+Concise Idiosyncratic Gapped Alignment Report).
 
 In the cigar line format alignments are sotred as follows:
 
-M: Match
-D: Deletino
-I: Insertion
+  M: Match
+  D: Deletino
+  I: Insertion
 
-An example of an alignment for a hypthetical protein match is shown below: 
+An example of an alignment for a hypthetical protein match is shown
+below:
 
 
-Query:   42 PGPAGLP----GSVGLQGPRGLRGPLP-GPLGPPL...
-            PG    P    G     GP   R      PLGP
-Sbjct: 1672 PGTP*TPLVPLGPWVPLGPSSPR--LPSGPLGPTD...
-            
-protein_align_feature table as the following cigar line: 
+  Query:   42 PGPAGLP----GSVGLQGPRGLRGPLP-GPLGPPL...
+              PG    P    G     GP   R      PLGP
+  Sbjct: 1672 PGTP*TPLVPLGPWVPLGPSSPR--LPSGPLGPTD...
 
-7M4D12M2I2MD7M 
+protein_align_feature table as the following cigar line:
 
+  7M4D12M2I2MD7M
 
 =cut
 

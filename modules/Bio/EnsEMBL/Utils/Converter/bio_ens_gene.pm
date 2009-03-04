@@ -1,14 +1,26 @@
-# Bio::EnsEMBL::Utils::Converter::bio_ens_gene
-#
-# Created and cared for by Juguang Xiao <juguang@tll.org.sg>
-# Created date: 26/3/2003
-# 
-# Copyright Juguang Xiao
-# 
-# You may distribute this module under the same terms as perl itself
-#
-# POD documentation
-#
+=head1 LICENSE
+
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=head1 AUTHOR
+
+Juguang Xiao <juguang@tll.org.sg>
+
+=cut
 
 =head1 NAME
 
@@ -16,32 +28,14 @@ Bio::EnsEMBL::Utils::Converter::bio_ens_gene
 
 =head1 SYNOPISIS
 
-
-
 =head1 DESCRIPTION
 
-This module is to convert from objects of Bio::SeqFeature::Gene::GeneStructure
-to those of Bio::EnsEMBL::Gene
+This module is to convert from objects of
+Bio::SeqFeature::Gene::GeneStructure to those of Bio::EnsEMBL::Gene
 
-=head1 FEEDBACK
-
-=head2 Mailing Lists
-
-=head2 Reporting Bugs
-
-
-=head1 AUTHOR Juguang Xiao
-
-Juguang Xiao <juguang@tll.org.sg>
-
-=head1 APPENDIX
-
-The rest of the documentation details each of the object methods.
-Internal methods are usually preceded with a _
+=head1 METHODS
 
 =cut
-
-# Let the code begin ...
 
 package Bio::EnsEMBL::Utils::Converter::bio_ens_gene;
 

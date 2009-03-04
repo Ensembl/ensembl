@@ -1,13 +1,22 @@
-# Perl module for Bio::EnsEMBL::DBSQL::AnalysisAdaptor
-#
-# Creator: Arne Stabenau <stabenau@ebi.ac.uk>
-# Date of creation: 25.01.2001
-# Last modified : 25.01.2001 by Arne Stabenau
-#
-# Copyright Ensembl 2000-2004
-#
-# You may distribute this module under the same terms as perl itself
-# POD documentation - main docs before the code
+=head1 LICENSE
+
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -18,24 +27,19 @@ Bio::EnsEMBL::DBSQL::AnalysisAdaptor
   use Bio::EnsEMBL::Registry;
 
   Bio::EnsEMBL::Registry->load_registry_from_db(
-              -host => 'ensembldb.ensembl.org',
-              -user => 'anonymous'
+    -host => 'ensembldb.ensembl.org',
+    -user => 'anonymous'
   );
 
-  $analysis_adaptor = Bio::EnsEMBL::Registry->get_adaptor("human", "core", "analysis");
+  $analysis_adaptor =
+    Bio::EnsEMBL::Registry->get_adaptor( "human", "core", "analysis" );
 
   my $analysis = $analysis_adaptor->fetch_by_logic_name('genscan');
-
 
 =head1 DESCRIPTION
 
   Module to encapsulate all db access for persistent class Analysis.
   There should be just one per application and database connection.
-
-=head1 CONTACT
-
-  Post questions/comments to the EnsEMBL development list:
-  ensembl-dev@ebi.ac.uk
 
 =head1 METHODS
 

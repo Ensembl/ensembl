@@ -1,47 +1,63 @@
-# EnsEMBL Utilities Module to Generate cigar line.
-#
-# Created and cared for by Juguang Xiao <juguang@tll.org.sg>
-#
-# Copyright EnsEMBL project 2003
-#
-# This module is fetched out from Bio::EnsEMBL::Pipeline::BlastWorn and
-# http:://www.ensembl.org/Docs/ensmebl9
-# 
-# POD documentation
+=head1 LICENSE
+
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=head1 AUTHOR
+
+Juguang Xiao <juguang@tll.org.sg>
+
+=cut
 
 =head1 NAME
 
-Bio::EnsEMBL::Utils::CigarString, a utilites module to generate cigar strings
-  
+Bio::EnsEMBL::Utils::CigarString, a utilites module to generate cigar
+strings
+
 =head1 DESCRIPTION
 
-Sequence alignment hits were previously stored within the core database as 
-ungapped alignments. This imposed 2 major constraints on alignments:
+Sequence alignment hits were previously stored within the core database
+as ungapped alignments. This imposed 2 major constraints on alignments:
 
-a) alignments for a single hit record would require multiple rows in the 
-database, and
-b) it was not possible to accurately retrieve the exact original alignment.
+a) alignments for a single hit record would require multiple rows in the
+   database, and
+b) it was not possible to accurately retrieve the exact original
+   alignment.
 
-Therefore, in the new branch sequence alignments are now stored as ungapped 
-alignments in the cigar line format (where CIGAR stands for Concise 
-Idiosyncratic Gapped Alignment Report).
+Therefore, in the new branch sequence alignments are now stored as
+ungapped alignments in the cigar line format (where CIGAR stands for
+Concise Idiosyncratic Gapped Alignment Report).
 
 In the cigar line format alignments are sotred as follows:
 
-M: Match
-D: Deletino
-I: Insertion
+  M: Match
+  D: Deletino
+  I: Insertion
 
-An example of an alignment for a hypthetical protein match is shown below: 
+An example of an alignment for a hypthetical protein match is shown
+below:
 
 
-Query:   42 PGPAGLP----GSVGLQGPRGLRGPLP-GPLGPPL...
-            PG    P    G     GP   R      PLGP
-Sbjct: 1672 PGTP*TPLVPLGPWVPLGPSSPR--LPSGPLGPTD...
-            
-protein_align_feature table as the following cigar line: 
+  Query:   42 PGPAGLP----GSVGLQGPRGLRGPLP-GPLGPPL...
+              PG    P    G     GP   R      PLGP
+  Sbjct: 1672 PGTP*TPLVPLGPWVPLGPSSPR--LPSGPLGPTD...
 
-7M4D12M2I2MD7M 
+protein_align_feature table as the following cigar line:
+
+  7M4D12M2I2MD7M 
 
 =cut
 
@@ -79,12 +95,8 @@ sub split_hsp {
     my ($qinc, $hinc) = $self->_findIncrements($qstrand,$hstrand,$qtype,$htype);
 
     my @gaps = ();
-    my $string = $hsp->query_string;
-    my @qchars = unpack("A1" x length($string), $string);
-    # my @qchars = split(//, $hsp->query_string); # Speed up above
-    $string = $hsp->hit_string;
-    my @hchars = unpack("A1" x length($string), $string);
-    # my @hchars = split(//, $hsp->hit_string); # Speed up above
+    my @qchars = split(//, $hsp->query_string);
+    my @hchars = split(//, $hsp->hit_string);
     my $qstart;
     if($qstrand == 1){
         $qstart = $hsp->query->start;

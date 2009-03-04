@@ -1,6 +1,22 @@
-#
-# Ensembl module for Bio::EnsEMBL::Storable
-#
+=head1 LICENSE
+
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -8,23 +24,16 @@ Bio::EnsEMBL::Storable
 
 =head1 SYNOPSIS
 
-  my $dbID = $storable_object->dbID();
+  my $dbID    = $storable_object->dbID();
   my $adaptor = $storable_object->adaptor();
-  if($storable_object->is_stored($db_adaptor))) {
-    ...
-  }
+  if ( $storable_object->is_stored($db_adaptor) ) { ... }
+
 =head1 DESCRIPTION
 
-This is a storable base class.  All objects which are storable in the database
-should inherit from this class.  It provides two getter/setters: dbID()
-adaptor().  And a is_stored() method that can be used to determine if an
-object is already stored in a database.
-
-=head1 AUTHOR - Graham McVicker
-
-=head1 CONTACT
-
-Post questions to the Ensembl development list B<ensembl-dev@ebi.ac.uk>
+This is a storable base class.  All objects which are storable
+in the database should inherit from this class.  It provides two
+getter/setters: dbID() adaptor().  And a is_stored() method that can be
+used to determine if an object is already stored in a database.
 
 =head1 METHODS
 

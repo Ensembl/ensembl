@@ -1,13 +1,22 @@
+=head1 LICENSE
 
-#
-# Ensembl module for Bio::EnsEMBL::DBSQL::SliceAdaptor
-#
-#
-# Copyright (c) 2004 Ensembl
-#
-# You may distribute this module under the same terms as perl itself
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
 
-# POD documentation - main docs before the code
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -20,69 +29,61 @@ the creation of Slice objects.
   use Bio::EnsEMBL::Registry;
 
   Bio::EnsEMBL::Registry->load_registry_from_db(
-              -host => 'ensembldb.ensembl.org',
-              -user => 'anonymous'
+    -host => 'ensembldb.ensembl.org',
+    -user => 'anonymous'
   );
 
-  $slice_adaptor = Bio::EnsEMBL::Registry->get_adaptor("human", "core", "slice");
-
-
+  $slice_adaptor =
+    Bio::EnsEMBL::Registry->get_adaptor( "human", "core", "slice" );
 
   # get a slice on the entire chromosome X
-  $chr_slice = $slice_adaptor->fetch_by_region('chromosome','X');
+  $chr_slice = $slice_adaptor->fetch_by_region( 'chromosome', 'X' );
 
   # get a slice for each clone in the database
-  foreach $cln_slice (@{$slice_adaptor->fetch_all('clone')}) {
-    #do something with clone
+  foreach $cln_slice ( @{ $slice_adaptor->fetch_all('clone') } ) {
+    # do something with clone
   }
 
   # get a slice which is part of NT_004321
-  $spctg_slice = $slice_adaptor->fetch_by_region('supercontig','NT_004321',
-                                                    200_000, 600_000);
+  $spctg_slice =
+    $slice_adaptor->fetch_by_region( 'supercontig', 'NT_004321',
+    200_000, 600_000 );
 
-
-  # get all non-redundant slices from the highest possible coordinate systems
+  # get all non-redundant slices from the highest possible coordinate
+  # systems
   $slices = $slice_adaptor->fetch_all('toplevel');
 
   # include non-reference regions
-  $slices = $slice_adaptor->fetch_all('toplevel',undef,1);
+  $slices = $slice_adaptor->fetch_all( 'toplevel', undef, 1 );
 
   # include non-duplicate regions
-  $slices = $slice_adaptor->fetch_all('toplevel', undef, 0, 1);
+  $slices = $slice_adaptor->fetch_all( 'toplevel', undef, 0, 1 );
 
   # split up a list of slices into smaller slices
-  $overlap = 1000;
+  $overlap    = 1000;
   $max_length = 1e6;
-  $slices = split_Slices($slices, $max_length, $overlap);
-
+  $slices     = split_Slices( $slices, $max_length, $overlap );
 
   # store a list of slice names in a file
-  open(FILE, ">$filename") or die("Could not open file $filename");
+  open( FILE, ">$filename" ) or die("Could not open file $filename");
   foreach my $slice (@$slices) {
     print FILE $slice->name(), "\n";
   }
   close FILE;
 
   # retreive a list of slices from a file
-  open(FILE, $filename) or die("Could not open file $filename");
-  while($name = <FILE>) {
+  open( FILE, $filename ) or die("Could not open file $filename");
+  while ( $name = <FILE> ) {
     chomp($name);
     $slice = $slice_adaptor->fetch_by_name($name);
-
     # do something with slice
   }
 
 =head1 DESCRIPTION
 
-This module is responsible for fetching Slices representing genomic regions
-from a database.  A Details on how slices can be used are in the
+This module is responsible for fetching Slices representing genomic
+regions from a database.  A Details on how slices can be used are in the
 Bio::EnsEMBL::Slice module.
-
-=head1 CONTACT
-
-This module is part of the Ensembl project http://www.ensembl.org
-
-For more information email <ensembl-dev@ebi.ac.uk>
 
 =head1 METHODS
 

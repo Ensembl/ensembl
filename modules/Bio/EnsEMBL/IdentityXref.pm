@@ -1,39 +1,44 @@
-#
-#
-# EnsEMBL module for IdentityXref
-#
-# Copyright Emmanuel Mongin
-#
-# You may distribute this module under the same terms as perl itself
+=head1 LICENSE
 
-# POD documentation - main docs before the code
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
 
-=head1 NAME
+  This software is distributed under a modified Apache license.
+  For license details, please see
 
-Bio::EnsEMBL::IdentiyXref
-
-=head1 SYNOPSIS
-
-my $xref = Bio::EnsEMBL::IdentityXref->new
-                               (-XREF_IDENTITY  => 80.4,
-                                -ENSEMBL_IDENTITY => 90.1,
-                                -SCORE           => 90,
-                                -EVALUE          => 12,
-                                -CIGAR_LINE      => '23MD3M2I40M',
-                                -XREF_START     => 1,
-                                -XREF_END       => 68,
-                                -ENSEMBL_START => 10,
-                                -ENSEMBL_END   => 77,
-                                -ANALYSIS        => $analysis,
-                                -ADAPTOR         => $adaptor,
-                                -PRIMARY_ID      => $primary_id,
-                                -DBNAME          => 'SwissProt');
-                                
-                                         
+    http://www.ensembl.org/info/about/code_licence.html
 
 =head1 CONTACT
 
-Post questions to the ensembl development list: <ensembl-dev@ebi.ac.uk>
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
+
+=head1 NAME
+
+Bio::EnsEMBL::IdentityXref
+
+=head1 SYNOPSIS
+
+  my $xref = Bio::EnsEMBL::IdentityXref->new(
+    -XREF_IDENTITY    => 80.4,
+    -ENSEMBL_IDENTITY => 90.1,
+    -SCORE            => 90,
+    -EVALUE           => 12,
+    -CIGAR_LINE       => '23MD3M2I40M',
+    -XREF_START       => 1,
+    -XREF_END         => 68,
+    -ENSEMBL_START    => 10,
+    -ENSEMBL_END      => 77,
+    -ANALYSIS         => $analysis,
+    -ADAPTOR          => $adaptor,
+    -PRIMARY_ID       => $primary_id,
+    -DBNAME           => 'SwissProt'
+  );
 
 =head1 METHODS
 

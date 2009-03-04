@@ -1,14 +1,22 @@
+=head1 LICENSE
 
-#
-# Ensembl module for Bio::EnsEMBL::MapperCoordinate
-#
-# Written by Ewan Birney <birney@ebi.ac.uk>
-#
-# Copyright GRL and EBI
-#
-# You may distribute this module under the same terms as perl itself
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
 
-# POD documentation - main docs before the code
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -18,14 +26,8 @@ Bio::EnsEMBL::Mapper::Coordinate
 
 =head1 DESCRIPTION
 
-Representation of a mapped region in a sequence; returned from
-Mapper.pm when the target region maps on to valid sequence.
-
-=head1 CONTACT
-
-This module is part of the Ensembl project http://www.ensembl.org
-
-Post general queries to B<ensembl-dev@ebi.ac.uk>
+Representation of a mapped region in a sequence; returned from Mapper.pm
+when the target region maps on to valid sequence.
 
 =head1 METHODS
 

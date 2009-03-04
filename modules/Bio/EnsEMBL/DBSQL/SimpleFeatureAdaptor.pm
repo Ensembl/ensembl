@@ -1,12 +1,22 @@
-#
-# EnsEMBL module for Bio::EnsEMBL::DBSQL::SimpleFeatureAdaptor
-#
-#
-# Copyright EMBL/EBI
-#
-# You may distribute this module under the same terms as perl itself
+=head1 LICENSE
 
-# POD documentation - main docs before the code
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -14,14 +24,15 @@ Bio::EnsEMBL::DBSQL::SimpleFeatureAdaptor
 
 =head1 SYNOPSIS
 
-my $simple_feature_adaptor = $database_adaptor->get_SimpleFeatureAdaptor();
-@simple_features = @{$simple_feature_adaptor->fetch_all_by_Slice($slice)};
+  my $simple_feature_adaptor =
+    $database_adaptor->get_SimpleFeatureAdaptor();
+
+  @simple_features =
+    @{ $simple_feature_adaptor->fetch_all_by_Slice($slice) };
 
 =head1 DESCRIPTION
 
 Simple Feature Adaptor - database access for simple features
-
-=head1 AUTHOR - Ewan Birney
 
 =head1 METHODS
 

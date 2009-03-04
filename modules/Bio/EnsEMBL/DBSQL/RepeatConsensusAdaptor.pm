@@ -1,36 +1,40 @@
-#
-# EnsEMBL module for Bio::EnsEMBL::DBSQL::RepeatFeatureAdaptor
-#
-# Copyright EMBL/EBI
-#
-# You may distribute this module under the same terms as perl itself
+=head1 LICENSE
 
-# POD documentation - main docs before the code
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
 Bio::EnsEMBL::DBSQL::RepeatConsensusAdaptor
 
-=head1 
+=head1 SYNOPSIS
 
-$rca = $database_adaptor->get_RepeatConsensusAdaptor();
+  $rca = $database_adaptor->get_RepeatConsensusAdaptor();
 
-$repeat_consensus = $rca->fetch_by_dbID(132);
-$repeat_consensus = $rca->fetch_by_name_class('AluSx', 'SINE/Alu');
+  $repeat_consensus = $rca->fetch_by_dbID(132);
+  $repeat_consensus = $rca->fetch_by_name_class( 'AluSx', 'SINE/Alu' );
 
-$rca->store($rc1, $rc2, $rc3);
+  $rca->store( $rc1, $rc2, $rc3 );
 
 =head1 DESCRIPTION
 
-This is an adaptor for the retrieval and storage of RepeatConsensus objects.
-
-=head1 AUTHOR - James Gilbert
-
-Email jgrg@ebi.ac.uk
-
-=head1 CONTACT
-
-Post questions to the EnsEMBL developer list ensembl-dev@ebi.ac.uk
+This is an adaptor for the retrieval and storage of RepeatConsensus
+objects.
 
 =head1 METHODS
 

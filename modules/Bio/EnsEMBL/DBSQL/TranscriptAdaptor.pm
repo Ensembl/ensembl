@@ -33,9 +33,9 @@ Bio::EnsEMBL::Transcript objects from a database.
 
 See Bio::EnsEMBL::Transcript for details of the Transcript class.
 
-=head1 LICENCE
+=head1 LICENSE
 
-This code is distributed under an Apache style licence. Please see
+This code is distributed under an Apache style license. Please see
 http://www.ensembl.org/info/about/code_licence.html for details.
 
 =head1 AUTHOR

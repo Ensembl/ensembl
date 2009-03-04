@@ -1,10 +1,22 @@
-#
-# Ensembl module for TranscriptAlleles
-#
-# Copyright (c) 2005 Ensembl
-#
-# You may distribute this module under the same terms as perl itself
-#
+=head1 LICENSE
+
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -15,24 +27,23 @@ relationships between a transcript and Alleles
 
   use Bio::EnsEMBL::Utils::TranscriptAlleles;
 
-
   # get the peptide variations caused by a set of Alleles
 
-  %variations = %{Bio::EnsEMBL::Utils::TranscriptAlleles::get_all_peptide_variations($transcript, $alleles)};
-
+  %variations = %{
+    Bio::EnsEMBL::Utils::TranscriptAlleles::get_all_peptide_variations(
+      $transcript, $alleles ) };
 
 =head1 DESCRIPTION
 
-This is a utility class which can be used to find consequence type of an AlleleFeature in a
-transcript, and to determine the amino acid changes caused by the AlleleFeature in the Transcript
+This is a utility class which can be used to find consequence type of an
+AlleleFeature in a transcript, and to determine the amino acid changes
+caused by the AlleleFeature in the Transcript
 
-=head1 CONTACT
-
-Email questions to the ensembl developer mailing list <ensembl-dev@ebi.ac.uk>
 
 =head1 METHODS
 
 =cut
+
 package Bio::EnsEMBL::Utils::TranscriptAlleles;
 
 use strict;

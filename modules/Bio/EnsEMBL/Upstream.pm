@@ -1,8 +1,22 @@
-# Copyright Ensembl
-#
-# You may distribute this module under the same terms as perl itself
-#
-# POD documentation - main docs before the code
+=head1 LICENSE
+
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -10,42 +24,42 @@ Bio::EnsEMBL::Upstream - Object that defines an upstream region
 
 =head1 SYNOPSIS
 
-use Bio::EnsEMBL::Upstream;
+  use Bio::EnsEMBL::Upstream;
 
-my $upstream = Bio::EnsEMBL::Upstream->new(-transcript => $transcript,
-					   -length     => 2000); # bp
+  my $upstream = Bio::EnsEMBL::Upstream->new(
+    -transcript => $transcript,
+    -length     => 2000           # bp
+  );
 
-# Retrieve coordinates of upstream region
-my $upstream_region_start = $upstream->upstart;
-my $upstream_region_end   = $upstream->upend;
+  # Retrieve coordinates of upstream region
+  my $upstream_region_start = $upstream->upstart;
+  my $upstream_region_end   = $upstream->upend;
 
-# Retrieve coordinates in 'downstream' first intron
-my $intron_region_start = $upstream->downstart;
-my $intron_region_end   = $upstream->downend;
+  # Retrieve coordinates in 'downstream' first intron
+  my $intron_region_start = $upstream->downstart;
+  my $intron_region_end   = $upstream->downend;
 
-# Coordinates are returned in the same scheme as the input transcript.
-# However, the coordinates of an upstream region can be transformed
-# to any other scheme using a slice
+  # Coordinates are returned in the same scheme as the input transcript.
+  # However, the coordinates of an upstream region can be transformed to
+  # any other scheme using a slice
 
-$upstream->transform($slice);
+  $upstream->transform($slice);
 
-# coordinates can be retrieved in scheme in the same manner as the above.
+  # Coordinates can be retrieved in scheme in the same manner as the
+  # above.
 
 =head1 DESCRIPTION
 
-An object that determines the upstream region of a transcript.  Such
-a region is non-coding and ensures that other genes or transcripts
-are not present.  Ultimately, these objects can be used to looking
-for promoter elements.  To this end, it is also possible to derive
-a region downstream of the first exon, within the first intron and
-where promoter elements sometimes are found.
+An object that determines the upstream region of a transcript.  Such a
+region is non-coding and ensures that other genes or transcripts are
+not present.  Ultimately, these objects can be used to looking for
+promoter elements.  To this end, it is also possible to derive a region
+downstream of the first exon, within the first intron and where promoter
+elements sometimes are found.
 
-=head1 CONTACT
-
-Contact the EnsEMBL development mailing list for info <ensembl-dev@ebi.ac.uk>
+=head1 METHODS
 
 =cut
-
 
 package Bio::EnsEMBL::Upstream;
 

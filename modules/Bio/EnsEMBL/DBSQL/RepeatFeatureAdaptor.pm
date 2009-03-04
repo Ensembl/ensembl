@@ -1,11 +1,22 @@
-#
-# EnsEMBL module for Bio::EnsEMBL::DBSQL::RepeatFeatureAdaptor
-#
-# Copyright EMBL/EBI
-#
-# You may distribute this module under the same terms as perl itself
+=head1 LICENSE
 
-# POD documentation - main docs before the code
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -13,22 +24,16 @@ Bio::EnsEMBL::DBSQL::RepeatFeatureAdaptor
 
 =head1 SYNOPSIS
 
-$rfa = $database_adaptor->get_RepeatFeatureAdaptor();
+  $rfa = $database_adaptor->get_RepeatFeatureAdaptor();
 
-my $repeat = $rfa->fetch_by_dbID(1234);
-my @repeats = @{$rfa->fetch_all_by_Slice($slice)};
+  my $repeat  = $rfa->fetch_by_dbID(1234);
+  my @repeats = @{ $rfa->fetch_all_by_Slice($slice) };
 
 =head1 DESCRIPTION
 
-This is an adaptor for the retrieval and storage of RepeatFeature objects
-from the database.  Most of the implementation is in the
+This is an adaptor for the retrieval and storage of RepeatFeature
+objects from the database.  Most of the implementation is in the
 superclass BaseFeatureAdaptor.
-
-=head1 AUTHOR - James Gilbert
-
-=head1 CONTACT
-
-Post questions to the EnsEMBL developer list: ensembl-dev@ebi.ac.uk
 
 =head1 METHODS
 

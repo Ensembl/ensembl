@@ -1,4 +1,22 @@
-package Bio::EnsEMBL::IdMapping::SyntenyRegion;
+=head1 LICENSE
+
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -6,64 +24,49 @@ Bio::EnsEMBL::IdMapping::SyntenyRegion - object representing syntenic regions
 
 =head1 SYNOPSIS
 
-# create a new SyntenyRegion from a source and a target gene
-my $sr = Bio::EnsEMBL::IdMapping::SyntenyRegion->new_fast([
-  $source_gene->start,
-  $source_gene->end,
-  $source_gene->strand,
-  $source_gene->seq_region_name,
-  $target_gene->start,
-  $target_gene->end,
-  $target_gene->strand,
-  $target_gene->seq_region_name,
-  $entry->score,
-]);
+  # create a new SyntenyRegion from a source and a target gene
+  my $sr = Bio::EnsEMBL::IdMapping::SyntenyRegion->new_fast( [
+      $source_gene->start,  $source_gene->end,
+      $source_gene->strand, $source_gene->seq_region_name,
+      $target_gene->start,  $target_gene->end,
+      $target_gene->strand, $target_gene->seq_region_name,
+      $entry->score,
+  ] );
 
-# merge with another SyntenyRegion
-my $merged_sr = $sr->merge($sr1);
+  # merge with another SyntenyRegion
+  my $merged_sr = $sr->merge($sr1);
 
-# score a gene pair against this SyntenyRegion
-my $score = $sr->score_location_relationship($source_gene1, $target_gene1);
+  # score a gene pair against this SyntenyRegion
+  my $score =
+    $sr->score_location_relationship( $source_gene1, $target_gene1 );
 
 =head1 DESCRIPTION
 
 This object represents a synteny between a source and a target location.
-SyntenyRegions are built from mapped genes, and the their score is defined as
-the score of the gene mapping. For merged SyntenyRegions, scores are combined.
+SyntenyRegions are built from mapped genes, and the their score is
+defined as the score of the gene mapping. For merged SyntenyRegions,
+scores are combined.
 
 =head1 METHODS
 
-new_fast
-source_start
-source_end
-source_strand
-source_seq_region_name
-target_start
-target_end
-target_strand
-target_seq_region_name
-score
-merge
-stretch
-score_location_relationship
-to_string
-
-=head1 LICENCE
-
-This code is distributed under an Apache style licence. Please see
-http://www.ensembl.org/info/about/code_licence.html for details.
-
-=head1 AUTHOR
-
-Patrick Meidl <meidl@ebi.ac.uk>, Ensembl core API team
-
-=head1 CONTACT
-
-Please post comments/questions to the Ensembl development list
-<ensembl-dev@ebi.ac.uk>
+  new_fast
+  source_start
+  source_end
+  source_strand
+  source_seq_region_name
+  target_start
+  target_end
+  target_strand
+  target_seq_region_name
+  score
+  merge
+  stretch
+  score_location_relationship
+  to_string
 
 =cut
 
+package Bio::EnsEMBL::IdMapping::SyntenyRegion;
 
 use strict;
 use warnings;

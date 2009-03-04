@@ -1,11 +1,22 @@
-#
-# Ensembl module for Bio::EnsEMBL::DBSQL::DensityFeatureAdaptor
-#
-# Copyright EMBL/EBI
-#
-# You may distribute this module under the same terms as perl itself
+=head1 LICENSE
 
-# POD documentation - main docs before the code
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -13,20 +24,15 @@ Bio::EnsEMBL::DBSQL::UnmappedObjectAdaptor
 
 =head1 SYNOPSIS
 
-my $uoa = $database_adaptor->get_UnmappedObjectAdaptor();
+  my $uoa = $database_adaptor->get_UnmappedObjectAdaptor();
 
+  my $missed = @{ $uoa->fetch_all_by_type('xref') };
 
-my $missed = @{$uoa->fetch_all_by_type('xref');
-          
 =head1 DESCRIPTION
 
-Unmapped ObjectAdaptor - An adaptor responsible for the creation, editing, 
-retrieval of Unmapped Objects. These being the Objects that where not mapped
-in a specific process i.e. xref, cDNA, Markers.
-
-=head1 CONTACT
-
-Post questions to the Ensembl developer list.
+Unmapped ObjectAdaptor - An adaptor responsible for the creation,
+editing, retrieval of Unmapped Objects. These being the Objects that
+where not mapped in a specific process i.e. xref, cDNA, Markers.
 
 =head1 METHODS
 

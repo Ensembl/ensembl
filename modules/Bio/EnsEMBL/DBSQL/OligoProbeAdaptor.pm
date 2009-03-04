@@ -1,7 +1,22 @@
-#
-# Ensembl module for Bio::EnsEMBL::DBSQL::OligoProbeAdaptor
-#
-# You may distribute this module under the same terms as Perl itself
+=head1 LICENSE
+
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -10,34 +25,24 @@ storing OligoProbe objects.
 
 =head1 SYNOPSIS
 
-my $opa = $db->get_OligoProbeAdaptor();
+  my $opa = $db->get_OligoProbeAdaptor();
 
-my $probe = $opa->fetch_by_array_probeset_probe('Array-1', undef, 'Probe-1');
+  my $probe =
+    $opa->fetch_by_array_probeset_probe( 'Array-1', undef, 'Probe-1' );
 
 =head1 DESCRIPTION
 
 The OligoProbeAdaptor is a database adaptor for storing and retrieving
 OligoProbe objects.
 
-=head1 AUTHOR
-
-This module was created by Ian Sealy, but is almost entirely based on the
-OligoProbeAdaptor module written by Arne Stabenau.
-
-This module is part of the Ensembl project: http://www.ensembl.org/
-
-=head1 CONTACT
-
-Post comments or questions to the Ensembl development list: ensembl-dev@ebi.ac.uk
-
 =head1 METHODS
 
 =cut
 
+package Bio::EnsEMBL::DBSQL::OligoProbeAdaptor;
+
 use strict;
 use warnings;
-
-package Bio::EnsEMBL::DBSQL::OligoProbeAdaptor;
 
 use Bio::EnsEMBL::Utils::Exception qw( throw warning );
 use Bio::EnsEMBL::OligoProbe;

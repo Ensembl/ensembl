@@ -1,10 +1,22 @@
-#
-# Ensembl module for Bio::EnsEMBL::SeqEdit
-#
-# Copyright (c) 2004 Ensembl
-#
-# You may distribute this module under the same terms as perl itself
+=head1 LICENSE
 
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -18,60 +30,53 @@ sequence.
 
   # construct a SeqEdit object using a Transcript attribute
 
-  ($attribute) = @{$translation->get_all_Attributes('_rna_edit')};
+  ($attribute) = @{ $translation->get_all_Attributes('_rna_edit') };
 
-  $seq_edit = Bio::EnsEMBL::SeqEdit(-ATTRIB => $attribute);
+  $seq_edit = Bio::EnsEMBL::SeqEdit( -ATTRIB => $attribute );
 
-  print $seq_edit->start(), "\n";
-  print $seq_edit->end(), "\n";
+  print $seq_edit->start(),   "\n";
+  print $seq_edit->end(),     "\n";
   print $seq_edit->alt_seq(), "\n";
 
   # apply the edit to some sequence
   $seq = $transcript->spliced_seq();
   print "Before modifiction: $seq\n";
-  $seq_edit->apply_edit(\$seq);
+
+  $seq_edit->apply_edit( \$seq );
   print "After modification: $seq\n";
 
+  # construct an attribute object from a SeqEdit and add it to a
+  # translation
 
-  # construct an attribute object from a SeqEdit and add it to a translation
-
-  $seq_edit = Bio::EnsEMBL::SeqEdit->new
-    (-CODE    => '_selenocysteine',
-     -NAME    => 'Selenocysteine',
-     -DESC    => 'Selenocysteine',
-     -START   => 10,
-     -END     => 10,
-     -ALT_SEQ => 'U');
+  $seq_edit = Bio::EnsEMBL::SeqEdit->new(
+    -CODE    => '_selenocysteine',
+    -NAME    => 'Selenocysteine',
+    -DESC    => 'Selenocysteine',
+    -START   => 10,
+    -END     => 10,
+    -ALT_SEQ => 'U'
+  );
 
   $attribute = $seq_edit->get_Attribute();
   $translation->add_Attributes($attribute);
 
-
 =head1 DESCRIPTION
 
 This is a class used to represent post transcriptional
-modifications to sequences.  SeqEdit objects are stored as
-ordinary Bio::EnsEMBL::Attributes with a parseable value and can be
- used to represent RNA editing, selenocysteines etc.
+modifications to sequences.  SeqEdit objects are stored as ordinary
+Bio::EnsEMBL::Attributes with a parseable value and can be used to
+represent RNA editing, selenocysteines etc.
 
 Also see B<Bio::EnsEMBL::Attribute>
-
-=head1 CONTACT
-
-This modules is part of the Ensembl project http://www.ensembl.org
-
-Questions can be posted to the ensembl-dev mailing list:
-ensembl-dev@ebi.ac.uk
 
 =head1 METHODS
 
 =cut
 
+package Bio::EnsEMBL::SeqEdit;
 
 use strict;
 use warnings;
-
-package Bio::EnsEMBL::SeqEdit;
 
 use Bio::EnsEMBL::Attribute;
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);

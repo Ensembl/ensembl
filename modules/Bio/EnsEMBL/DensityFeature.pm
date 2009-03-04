@@ -1,35 +1,46 @@
-#
-# Ensembl module for Bio::EnsEMBL::DensityFeature
-#
-# You may distribute this module under the same terms as perl itself
+=head1 LICENSE
 
-# POD documentation - main docs before the code
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
 
-=head1 NAME
+  This software is distributed under a modified Apache license.
+  For license details, please see
 
-Bio::EnsEMBL::DensityFeature - A feature representing a density, or precentage
-coverage etc. in a given region.
-
-=head1 SYNOPSIS
-
-use Bio::EnsEMBL::DensityFeature;
-
-$feature = Bio::EnsEMBL::DensityFeature->new(-seq_region    => $region,
-			                     -start         => 1,
-                                             -end           => 1e6,
-                                             -density_type  => $dt,
-			                     -density_value => 98.5)
-
-=head1 DESCRIPTION
-
-A density feature represents a count, density, or percentage coverage, etc. for
-a given region.
-
-This module is part of the Ensembl project http://www.ensembl.org
+    http://www.ensembl.org/info/about/code_licence.html
 
 =head1 CONTACT
 
-Post comments/questions to the ensembl development list: ensembl-dev@ebi.ac.uk
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
+
+=head1 NAME
+
+Bio::EnsEMBL::DensityFeature - A feature representing a density, or
+precentage coverage etc. in a given region.
+
+=head1 SYNOPSIS
+
+  use Bio::EnsEMBL::DensityFeature;
+
+  $feature = Bio::EnsEMBL::DensityFeature->new(
+    -seq_region    => $region,
+    -start         => 1,
+    -end           => 1e6,
+    -density_type  => $dt,
+    -density_value => 98.5
+  );
+
+=head1 DESCRIPTION
+
+A density feature represents a count, density, or percentage coverage,
+etc. for a given region.
+
+This module is part of the Ensembl project http://www.ensembl.org
 
 =head1 METHODS
 

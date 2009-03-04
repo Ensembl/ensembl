@@ -1,4 +1,22 @@
-package Bio::EnsEMBL::IdMapping::TinyFeature;
+=head1 LICENSE
+
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -6,50 +24,39 @@ Bio::EnsEMBL::IdMapping::TinyFeature - lightweight feature object
 
 =head1 SYNOPSIS
 
-This object isn't instantiated. See objects which inherit from it (TinyGene,
-TinyTranscript, etc.) for examples.
+This object isn't instantiated. See objects which inherit from it
+(TinyGene, TinyTranscript, etc.) for examples.
 
 =head1 DESCRIPTION
 
-This is the base class for the lightweight feature objects used by the stable Id
-maping application. For performance reasons, these objects are instantiated
-using a new_fast() method. The internal implementation is an arrayref (rather
-than the more common hashref), which optimises memory usage.
+This is the base class for the lightweight feature objects used by the
+stable Id maping application. For performance reasons, these objects
+are instantiated using a new_fast() method. The internal implementation
+is an arrayref (rather than the more common hashref), which optimises
+memory usage.
 
-There are no adaptors to fetch TinyFeatures from the database. You rather use
-the normal feature adaptors and then create the TinyFeatures from the heavy
-objects you get. The memory saving will therefore mainly take effect when
-serialising and reloading these objects.
+There are no adaptors to fetch TinyFeatures from the database. You
+rather use the normal feature adaptors and then create the TinyFeatures
+from the heavy objects you get. The memory saving will therefore mainly
+take effect when serialising and reloading these objects.
 
-Also note that TinyFeatures don't have a slice attached to them - all location
-information (where required) is stored on the feature object directly.
+Also note that TinyFeatures don't have a slice attached to them - all
+location information (where required) is stored on the feature object
+directly.
 
 =head1 METHODS
 
-new_fast
-id
-stable_id
-version
-created_date
-modified_date
-to_string
-
-=head1 LICENCE
-
-This code is distributed under an Apache style licence. Please see
-http://www.ensembl.org/info/about/code_licence.html for details.
-
-=head1 AUTHOR
-
-Patrick Meidl <meidl@ebi.ac.uk>, Ensembl core API team
-
-=head1 CONTACT
-
-Please post comments/questions to the Ensembl development list
-<ensembl-dev@ebi.ac.uk>
+  new_fast
+  id
+  stable_id
+  version
+  created_date
+  modified_date
+  to_string
 
 =cut
 
+package Bio::EnsEMBL::IdMapping::TinyFeature;
 
 # internal data structure (array indices):
 #

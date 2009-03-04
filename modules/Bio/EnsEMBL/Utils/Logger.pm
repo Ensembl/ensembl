@@ -1,4 +1,22 @@
-package Bio::EnsEMBL::Utils::Logger;
+=head1 LICENSE
+
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -7,40 +25,32 @@ schema conversion scripts
 
 =head1 SYNOPSIS
 
-    my $serverroot = '/path/to/ensembl';
-    my $suport = new Bio::EnsEMBL::Utils::ConversionSupport($serverroot);
+  my $serverroot = '/path/to/ensembl';
+  my $suport = new Bio::EnsEMBL::Utils::ConversionSupport($serverroot);
 
-    # parse common options
-    $support->parse_common_options;
+  # parse common options
+  $support->parse_common_options;
 
-    # parse extra options for your script
-    $support->parse_extra_options('string_opt=s', 'numeric_opt=n');
+  # parse extra options for your script
+  $support->parse_extra_options( 'string_opt=s', 'numeric_opt=n' );
 
-    # ask user if he wants to run script with these parameters
-    $support->confirm_params;
+  # ask user if he wants to run script with these parameters
+  $support->confirm_params;
 
-    # see individual method documentation for more stuff
+  # see individual method documentation for more stuff
 
 =head1 DESCRIPTION
 
-This module is a collection of common methods and provides helper functions 
-for the Vega release and schema conversion scripts. Amongst others, it reads
-options from a config file, parses commandline options and does logging.
+This module is a collection of common methods and provides helper
+functions for the Vega release and schema conversion scripts. Amongst
+others, it reads options from a config file, parses commandline options
+and does logging.
 
-=head1 LICENCE
-
-This code is distributed under an Apache style licence:
-Please see http://www.ensembl.org/code_licence.html for details
-
-=head1 AUTHOR
-
-Patrick Meidl <pm2@sanger.ac.uk>
-
-=head1 CONTACT
-
-Post questions to the EnsEMBL development list ensembl-dev@ebi.ac.uk
+=head1 METHODS
 
 =cut
+
+package Bio::EnsEMBL::Utils::Logger;
 
 use strict;
 use warnings;

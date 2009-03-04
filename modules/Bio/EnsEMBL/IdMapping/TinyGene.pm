@@ -1,4 +1,22 @@
-package Bio::EnsEMBL::IdMapping::TinyGene;
+=head1 LICENSE
+
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -6,59 +24,41 @@ Bio::EnsEMBL::IdMapping::TinyGene - lightweight gene object
 
 =head1 SYNOPSIS
 
-# fetch a gene from the db and create a lightweight gene object from it
-my $gene = $gene_adaptor->fetch_by_stable_id('ENSG000345437');
-my $lightweight_gene = Bio::EnsEMBL::IdMapping::TinyGene->new_fast([
-    $gene->dbID,
-    $gene->stable_id,
-    $gene->version,
-    $gene->created_date,
-    $gene->modified_date,
-    $gene->start,
-    $gene->end,
-    $gene->strand,
-    $gene->slice->seq_region_name,
-    $gene->biotype,
-    $gene->status,
-    $gene->analysis->logic_name,
-    ($gene->is_known ? 1 : 0),
-]);
+ # fetch a gene from the db and create a lightweight gene object from it
+  my $gene = $gene_adaptor->fetch_by_stable_id('ENSG000345437');
+  my $lightweight_gene = Bio::EnsEMBL::IdMapping::TinyGene->new_fast( [
+      $gene->dbID,                   $gene->stable_id,
+      $gene->version,                $gene->created_date,
+      $gene->modified_date,          $gene->start,
+      $gene->end,                    $gene->strand,
+      $gene->slice->seq_region_name, $gene->biotype,
+      $gene->status,                 $gene->analysis->logic_name,
+      ( $gene->is_known ? 1 : 0 ),
+  ] );
 
 =head1 DESCRIPTION
 
 This is a lightweight gene object for the stable Id mapping. See the
-documentation in TinyFeature for general considerations about its design.
+documentation in TinyFeature for general considerations about its
+design.
 
 =head1 METHODS
 
-start
-end
-strand
-seq_region_name
-biotype
-status
-logic_name
-is_known
-add_Transcript
-get_all_Transcripts
-length
-
-=head1 LICENCE
-
-This code is distributed under an Apache style licence. Please see
-http://www.ensembl.org/info/about/code_licence.html for details.
-
-=head1 AUTHOR
-
-Patrick Meidl <meidl@ebi.ac.uk>, Ensembl core API team
-
-=head1 CONTACT
-
-Please post comments/questions to the Ensembl development list
-<ensembl-dev@ebi.ac.uk>
+  start
+  end
+  strand
+  seq_region_name
+  biotype
+  status
+  logic_name
+  is_known
+  add_Transcript
+  get_all_Transcripts
+  length
 
 =cut
 
+package Bio::EnsEMBL::IdMapping::TinyGene;
 
 # internal data structure (array indices):
 #

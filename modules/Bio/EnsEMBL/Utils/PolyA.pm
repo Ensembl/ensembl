@@ -1,51 +1,52 @@
-#
-# EnsEMBL module for PolyA
-#
-# written by Eduardo Eyras
-#
-# You may distribute this module under the same terms as perl itself
-#
-# POD documentation - main docs before the code
+=head1 LICENSE
 
-=pod 
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
-  
+
   Bio::EnsEMBL::Utils::PolyA
 
 =head1 SYNOPSIS
 
-  my $seq    # a Bio::Seq object
+  my $seq;    # a Bio::Seq object
   my $polyA = Bio::EnsEMBL::Utils::PolyA->new();
 
   # returns a new Bio::Seq object with the trimmed sequence
   my $trimmed_seq = $polyA->clip($seq);
 
   # cat put Ns in the place of the polyA/polyT tail
-  my $masked_seq  = $polyA->mask($seq);  
+  my $masked_seq = $polyA->mask($seq);
 
   # can put in lower case the polyA/polyT using any flag:
-  my $softmasked_seq = $poly->mask($seq,'soft');
+  my $softmasked_seq = $poly->mask( $seq, 'soft' );
 
 =head1 DESCRIPTION
 
-  it reads a Bio::Seq object, it first finds out whether it has a polyA or a polyT
-  and then performs one operation in the seq string: clipping, masking or softmasking.
-  It then returns a new Bio::Seq object with the new sequence.
+  It reads a Bio::Seq object, it first finds out whether it has a
+  polyA or a polyT and then performs one operation in the seq string:
+  clipping, masking or softmasking.  It then returns a new Bio::Seq
+  object with the new sequence.
 
-=head1 CONTACT
-
-  Post questions to the EnsEMBL developer list: <ensembl-dev@ebi.ac.uk>
-
-=head1 APPENDIX
-
-  The rest of the documentation details each of the object methods. Internal 
-  methods are usually preceded with a_
+=head1 METHODS
 
 =cut
 
-# Let the code begin ...
-  
 package Bio::EnsEMBL::Utils::PolyA;
 
 use Bio::EnsEMBL::Root;

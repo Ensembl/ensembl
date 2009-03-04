@@ -1,9 +1,22 @@
-#
-# EnsEMBL module for Bio::EnsEMBL::DnaAlignFeatureAdaptor
-#
-# Copyright (c) 2003 EnsEMBL
-#
-# You may distribute this module under the same terms as perl itself
+=head1 LICENSE
+
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -19,14 +32,12 @@ Bio::EnsEMBL::DBSQL::DnaAlignFeatureAdaptor - Adaptor for DnaAlignFeatures
 
 =head1 DESCRIPTION
 
-This is an adaptor responsible for the retrieval and storage of 
-DnaDnaAlignFeatures from the database. This adaptor inherits most of its 
-functionality from the BaseAlignFeatureAdaptor and BaseFeatureAdaptor 
+This is an adaptor responsible for the retrieval and storage of
+DnaDnaAlignFeatures from the database. This adaptor inherits most of its
+functionality from the BaseAlignFeatureAdaptor and BaseFeatureAdaptor
 superclasses.
 
-=head1 CONTACT
-
-Post questions to the EnsEMBL development list <ensembl-dev@ebi.ac.uk>
+=head1 METHODS
 
 =cut
 

@@ -1,12 +1,22 @@
-#
-# Ensembl module for Bio::EnsEMBL::ProjectionSegment
-#
-#
-# Copyright Team Ensembl
-#
-# You may distribute this module under the same terms as perl itself
+=head1 LICENSE
 
-# POD documentation - main docs before the code
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -15,34 +25,24 @@ project function calls
 
 =head1 SYNOPSIS
 
+  $slice =
+    $sa->fetch_by_region( 'chromosome', 'X', 1_000_000, 2_000_000 );
 
-   $slice = $sa->fetch_by_region('chromosome', 'X', 1_000_000, 2_000_000);
+  my $projection = $slice->project("clone");
 
-   my $projection = $slice->project( "clone" );
-
-   foreach my $projection_segment ( @$projection ) {
-
-     print "  from_start ",$projection_segment->from_start(), "\n";
-     print "  from_end   ",$projection_segment->from_end(), "\n";
-     print "  to_Slice   ",$projection_segment->to_Slice()->name(), "\n";
-   }
-
+  foreach my $projection_segment (@$projection) {
+    print( "  from_start ", $projection_segment->from_start(), "\n" );
+    print( "  from_end   ", $projection_segment->from_end(),   "\n" );
+    print( "  to_Slice   ",
+      $projection_segment->to_Slice()->name(), "\n" );
+  }
 
 =head1 DESCRIPTION
 
-The ProjectionSegment is a helper object to make the arrays returned by 
-project more accessible. Instead of writing $segment->[0], $segment->[1] or
-$segment->[2] its possible to use the more descriptive notation of
+The ProjectionSegment is a helper object to make the arrays returned by
+project more accessible. Instead of writing $segment->[0], $segment->[1]
+or $segment->[2] its possible to use the more descriptive notation of
 $segment->from_start(), $segement->from_end(), $segment->to_Slice().
-
-=head1 AUTHOR - Arne Stabenau
-
-=head1 CONTACT
-
-This modules is part of the Ensembl project http://www.ensembl.org
-
-Questions can be posted to the ensembl-dev mailing list:
-ensembl-dev@ebi.ac.uk
 
 =head1 METHODS
 

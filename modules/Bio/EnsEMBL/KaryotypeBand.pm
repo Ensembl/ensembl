@@ -1,10 +1,22 @@
-#
-# Ensembl module for Bio::EnsEMBL::DBSQL::KaryotypeBand
-#
-#
-# Copyright James Stalker
-#
-# You may distribute this module under the same terms as perl itself
+=head1 LICENSE
+
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -12,45 +24,40 @@ Bio::EnsEMBL::DBSQL::KaryotypeBand
 
 =head1 SYNOPSIS
 
-use Bio::EnsEMBL::KaryotypeBand;
+  use Bio::EnsEMBL::KaryotypeBand;
 
-# create and populate a karyotype band (normally done by adaptor)
-$kb = Bio::EnsEMBL::KaryotyeBand(-START   => 1,
-                                 -END     => 1_000_000,
-                                 -SLICE   => $chrX_slice,
-                                 -NAME    => 'q31',
-                                 -STAIN   => 'gpos50',
-                                 -ADAPTOR => $db->get_KaryotypeBandAdaptor,
-                                 -DBID    => 10);
+  # Create and populate a karyotype band (normally done by adaptor)
+  $kb = Bio::EnsEMBL::KaryotyeBand(
+    -START   => 1,
+    -END     => 1_000_000,
+    -SLICE   => $chrX_slice,
+    -NAME    => 'q31',
+    -STAIN   => 'gpos50',
+    -ADAPTOR => $db->get_KaryotypeBandAdaptor(),
+    -DBID    => 10
+  );
 
-#can tranform this band into other coord systems, just like other features
-$kb = $kb->transform('supercontig');
+  # Can tranform this band into other coord systems, just like other
+  # features
+  $kb = $kb->transform('supercontig');
 
-$start      = $kb->start();
-$end        = $kb->end();
-$seq_region = $kb->slice->seq_region_name();
+  $start      = $kb->start();
+  $end        = $kb->end();
+  $seq_region = $kb->slice->seq_region_name();
 
-#karyotypes have internal ids as well
-$kary_id = $kb->dbID();
-
+  # Karyotypes have internal ids as well
+  $kary_id = $kb->dbID();
 
 =head1 DESCRIPTION
 
-KaryotypeBand objects encapsulate data pertaining to a single karyotype band.
-Access these objects through a Bio::EnsEMBL::DBSQL::KaryotypeBandAdaptor.
+KaryotypeBand objects encapsulate data pertaining to a
+single karyotype band.  Access these objects through a
+Bio::EnsEMBL::DBSQL::KaryotypeBandAdaptor.
 
-KarytoypeBand inherits from Bio::EnsEMBL::Feature and can be used just as
-any other feature can be.
+KarytoypeBand inherits from Bio::EnsEMBL::Feature and can be used just
+as any other feature can be.
 
-=head1 AUTHOR
-
-James Stalker
-
-This modules is part of the Ensembl project http://www.ensembl.org
-
-=head1 CONTACT
-
-Post questions to the EnsEMBL developer mailing list <ensembl-dev@ebi.ac.uk>
+=head1 METHODS
 
 =cut
 

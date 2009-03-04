@@ -1,11 +1,22 @@
-#
-# Ensembl module for Bio::EnsEMBL::MiscFeature
-#
-# Copyright (c) 2003 EnsEMBL
-#
-# You may distribute this module under the same terms as perl itself
+=head1 LICENSE
 
-# POD documentation - main docs before the code
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -18,32 +29,43 @@ associations.
   use Bio::EnsEMBL::MiscSet;
   use Bio::EnsEMBL::Attribute;
 
-  my $mfeat = Bio::EnsEMBL::MiscFeature->new(-START  => 1200,
-                                             -END    => 100_000,
-                                             -STRAND => 1,
-                                             -SLICE  => $slice);
+  my $mfeat = Bio::EnsEMBL::MiscFeature->new(
+    -START  => 1200,
+    -END    => 100_000,
+    -STRAND => 1,
+    -SLICE  => $slice
+  );
 
-  #  Can add attributes to the misc feature and associate with various sets
-  my $clone_set = Bio::EnsEMBL::MiscSet->new(-CODE => 'clone',
-                                         -NAME => '1MB clone set',
-                                         -DESCRIPTION => '1MB CloneSet');
+  # Can add attributes to the misc feature and associate with various
+  # sets
+  my $clone_set = Bio::EnsEMBL::MiscSet->new(
+    -CODE        => 'clone',
+    -NAME        => '1MB clone set',
+    -DESCRIPTION => '1MB CloneSet'
+  );
 
+  my $tiling_path_set = Bio::EnsEMBL::MiscSet->new(
+    -CODE => 'tilingpath',
+    -NAME => 'tiling path set'
+  );
 
-  my $tiling_path_set = Bio::EnsEMBL::MiscSet->new(-CODE => 'tilingpath',
-                                                   -NAME => 'tiling path set');
+  my $attrib1 = Bio::EnsEMBL::Attribute->new(
+    -VALUE => 'RLX12451',
+    -CODE  => 'name',
+    -NAME  => 'name'
+  );
 
+  my $attrib2 = Bio::EnsEMBL::Attribute->new(
+    -VALUE => '4',
+    -CODE  => 'version',
+    -NAME  => 'version'
+  );
 
-  my $attrib1 = Bio::EnsEMBL::Attribute->new(-VALUE => 'RLX12451',
-                                            -CODE => 'name',
-                                            -NAME => 'name');
-
-  my $attrib2 = Bio::EnsEMBL::Attribute->new(-VALUE => '4',
-                                            -CODE  => 'version',
-                                           -NAME  => 'version');
-
-  my $attrib3 = Bio::EnsEMBL::Attribute->new(-VALUE => 'AL42131.4',
-                                            -CODE  => 'synonym',
-                                            -NAME  => 'synonym');
+  my $attrib3 = Bio::EnsEMBL::Attribute->new(
+    -VALUE => 'AL42131.4',
+    -CODE  => 'synonym',
+    -NAME  => 'synonym'
+  );
 
   # can associate a misc feature with any number of sets
 
@@ -56,41 +78,35 @@ associations.
   $mfeat->add_Attribute($attrib2);
   $mfeat->add_Attribute($attrib3);
 
-  my ($name_attrib)   = @{$mfeat->get_all_Attributes('name')};
-  my @all_attribs     = @{$mfeat->get_all_Attributes()};
+  my ($name_attrib) = @{ $mfeat->get_all_Attributes('name') };
+  my @all_attribs = @{ $mfeat->get_all_Attributes() };
 
-  my @all_sets = @{$mfeat->get_all_MiscSets()};
-  my ($clone_set) = @{$mfeat->get_all_CloneSets('clone')};
+  my @all_sets = @{ $mfeat->get_all_MiscSets() };
+  my ($clone_set) = @{ $mfeat->get_all_CloneSets('clone') };
 
 
   # Can do normal feature operations as well
   $mfeat = $mfeat->transform('supercontig');
-  print $mfeat->slice->seq_region_name, ' ', $mfeat->start, '-', $mfeat->end;
+  print $mfeat->slice->seq_region_name, ' ', $mfeat->start, '-',
+    $mfeat->end;
 
 
 =head1 DESCRIPTION
 
-MiscFeatures are extremely general  features with a location, and an
-arbitrary group of attributes.  They are grouped with other features of the
-same 'type' through the use of MiscSets (see Bio::EnsEMBL::MiscSet).
+MiscFeatures are extremely general features with a location, and an
+arbitrary group of attributes.  They are grouped with other features of
+the same 'type' through the use of MiscSets (see Bio::EnsEMBL::MiscSet).
 Attributes are attached in the fom of Bio::EnsEMBL::Attribute objects.
 See Bio::EnsEMBL::DBSQL::MiscFeatureAdaptor for ways to fetch or store
 MiscFeatures.
 
-=head1 CONTACT
-
-This modules is part of the Ensembl project http://www.ensembl.org
-
-Questions can be posted to the ensembl-dev mailing list:
-ensembl-dev@ebi.ac.uk
-
 =cut
 
 
+package Bio::EnsEMBL::MiscFeature;
+
 use strict;
 use warnings;
-
-package Bio::EnsEMBL::MiscFeature;
 
 use Bio::EnsEMBL::Feature;
 

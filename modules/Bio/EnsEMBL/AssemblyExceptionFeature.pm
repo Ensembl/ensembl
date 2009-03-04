@@ -1,13 +1,22 @@
-#
-# Ensembl module for Bio::EnsEMBL::AssemblyExceptionFeature
-#
-# Cared for by Ewan Birney <birney@ebi.ac.uk>
-#
-# Copyright Ewan Birney
-#
-# You may distribute this module under the same terms as perl itself
+=head1 LICENSE
 
-# POD documentation - main docs before the code
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -15,37 +24,29 @@ Bio::EnsEMBL::AssemblyExceptionFeature - A feature that represents an assembly e
 
 =head1 SYNOPSIS
 
-use Bio::EnsEMBL::AssemblyExceptionFeature;
+  use Bio::EnsEMBL::AssemblyExceptionFeature;
 
-$feature = Bio::EnsEMBL::AssemblyExceptionFeature->new(-start    => 100,
-                                                       -end      => 220,
-                                                       -type     => 'HAP',
-                                                       -slice    => $slice,
-                                                       -adaptor  => $adaptor);
+  $feature = Bio::EnsEMBL::AssemblyExceptionFeature->new(
+    -start   => 100,
+    -end     => 220,
+    -type    => 'HAP',
+    -slice   => $slice,
+    -adaptor => $adaptor
+  );
 
 =head1 DESCRIPTION
 
-Certain features, e.g. Haplotypes and PARs, are represented as "exceptions" to the 
-normal assembly. This class represents such features.
+Certain features, e.g. Haplotypes and PARs, are represented as
+"exceptions" to the normal assembly.  This class represents such
+features.
 
-=head1 AUTHOR - Glenn Proctor
-
-This modules is part of the Ensembl project http://www.ensembl.org
-
-Email birney@ebi.ac.uk
-
-Describe contact details here
-
-=head1 APPENDIX
-
-The rest of the documentation details each of the object methods. Internal
-methods are usually preceded with a _
+=head1 METHODS
 
 =cut
 
-use strict;
-
 package Bio::EnsEMBL::AssemblyExceptionFeature;
+
+use strict;
 
 use vars qw(@ISA);
 

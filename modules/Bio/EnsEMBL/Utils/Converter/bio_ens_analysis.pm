@@ -1,45 +1,47 @@
-# Bio::EnsEMBL::Utils::Converter::bio_ens_analysis
-#
-# Created and cared for by Juguang Xiao <juguang@fugu-sg.org>
-# Created date: 15/3/2003
-# 
-# Copyright Juguang Xiao
-# 
-# You may distribute this module under the same terms as perl itself
-#
-# POD documentation
-#
+=head1 LICENSE
 
-=head1 NAME
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
 
-Bio::EnsEMBL::Utils::Converter::bio_ens_analysis, a converter instance specific for Analysis.
+  This software is distributed under a modified Apache license.
+  For license details, please see
 
-=head1 SYNOPISIS
+    http://www.ensembl.org/info/about/code_licence.html
 
-my $converter = Bio::EnsEMBL::Utils::Converter(
-    -in => 'Bio::Pipeline::Analysis',
-    -out => 'Bio::EnsEMBL::Analysis'
-);
-my $biopipe_analysis;
-my ($ens_analysis) = @{$converter->convert([$biopipe_analysis])};
+=head1 CONTACT
 
-=head1 DESCRIPTION
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
 
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
 
-=head1 FEEDBACK
-
-=head1 AUTHOR Juguang Xiao
+=head1 AUTHOR
 
 Juguang Xiao <juguang@fugu-sg.org>
 
-=head1 APPENDIX
+=cut
 
-The rest of the documentation details each of the object methods.
-Internal methods are usually preceded with a _
+=head1 NAME
+
+Bio::EnsEMBL::Utils::Converter::bio_ens_analysis, a converter instance
+specific for Analysis.
+
+=head1 SYNOPISIS
+
+  my $converter = Bio::EnsEMBL::Utils::Converter(
+    -in  => 'Bio::Pipeline::Analysis',
+    -out => 'Bio::EnsEMBL::Analysis'
+  );
+  my $biopipe_analysis;
+  my ($ens_analysis) = @{ $converter->convert( [$biopipe_analysis] ) };
+
+=head1 DESCRIPTION
+
+=head1 METHODS
 
 =cut
 
-# Let the code begin ...
 
 package Bio::EnsEMBL::Utils::Converter::bio_ens_analysis;
 

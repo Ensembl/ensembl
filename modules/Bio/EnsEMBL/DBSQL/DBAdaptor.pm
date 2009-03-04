@@ -1,45 +1,58 @@
+=head1 LICENSE
 
-=head1 NAME - Bio::EnsEMBL::DBSQL::DBAdaptor
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
 
-=head1 SYNOPSIS
+  This software is distributed under a modified Apache license.
+  For license details, please see
 
-    $db =
-      Bio::EnsEMBL::DBSQL::DBAdaptor->new( -user   => 'root',
-                                           -dbname => 'pog',
-                                           -host   => 'caldy',
-                                           -driver => 'mysql' );
-
-    $gene_adaptor = $db->get_GeneAdaptor();
-
-    $gene = $gene_adaptor->fetch_by_stable_id($stable_id);
-
-    $slice =
-      $db->get_SliceAdaptor()->fetch_by_chr_start_end( 'X', 1, 10000 );
-
-=head1 DESCRIPTION
-
-
-Formerly this class provided database connectivity and a means to retrieve
-object adaptors.  This class is now provided for convenience and backwards
-compatibility, and delegates its connection responsibilities to the
-DBConnection class (no longer inherited from) and its object adaptor
-retrieval to the static Bio::EnsEMBL::Registry.
-
-Please use Bio::EnsEMBL::Registry to retrieve object adaptors.
+    http://www.ensembl.org/info/about/code_licence.html
 
 =head1 CONTACT
 
-Post questions to the EnsEMBL development list <ensembl-dev@ebi.ac.uk>
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
+
+=head1 NAME
+
+Bio::EnsEMBL::DBSQL::DBAdaptor
+
+=head1 SYNOPSIS
+
+  $db = Bio::EnsEMBL::DBSQL::DBAdaptor->new(
+    -user   => 'root',
+    -dbname => 'pog',
+    -host   => 'caldy',
+    -driver => 'mysql'
+  );
+
+  $gene_adaptor = $db->get_GeneAdaptor();
+
+  $gene = $gene_adaptor->fetch_by_stable_id($stable_id);
+
+  $slice =
+    $db->get_SliceAdaptor()->fetch_by_chr_start_end( 'X', 1, 10000 );
+
+=head1 DESCRIPTION
+
+Formerly this class provided database connectivity and a means
+to retrieve object adaptors.  This class is now provided for
+convenience and backwards compatibility, and delegates its connection
+responsibilities to the DBConnection class (no longer inherited from)
+and its object adaptor retrieval to the static Bio::EnsEMBL::Registry.
+
+Please use Bio::EnsEMBL::Registry to retrieve object adaptors.
 
 =head1 METHODS
-
-The rest of the documentation details each of the object methods. Internal
-methods are usually preceded with a _
 
 =cut
 
 package Bio::EnsEMBL::DBSQL::DBAdaptor;
-
 
 use strict;
 

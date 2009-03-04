@@ -1,14 +1,22 @@
+=head1 LICENSE
 
-#
-# BioPerl module for ProteinFeature
-#
-# Cared for by Emmanuel Mongin <mongin@ebi.ac.uk>
-#
-# Copyright Emmanuel Mongin
-#
-# You may distribute this module under the same terms as perl itself
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
 
-# POD documentation - main docs before the code
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -16,22 +24,20 @@ Bio::EnsEMBL::ProteinFeature
 
 =head1 SYNOPSIS
 
-
-  my $feature = Bio::EnsEMBL::ProteinFeature->new
-    (-start   => $start,
-     -end     => $end,
-     -hstart  => $hit_start,
-     -hend    => $hit_end,
-     -hname   => $hit_name);
+  my $feature = Bio::EnsEMBL::ProteinFeature->new(
+    -start  => $start,
+    -end    => $end,
+    -hstart => $hit_start,
+    -hend   => $hit_end,
+    -hname  => $hit_name
+  );
 
 =head1 DESCRIPTION
 
-ProteinFeature objects represent domains or other features of interest 
+ProteinFeature objects represent domains or other features of interest
 on a peptide sequence.
 
-=head1 CONTACT
-
-  Post questions to the EnsEMBL development list ensembl-dev@sanger.ac.uk
+=head1 METHODS
 
 =cut
 

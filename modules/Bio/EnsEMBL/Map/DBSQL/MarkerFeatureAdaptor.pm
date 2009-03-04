@@ -1,11 +1,22 @@
-# EnsEMBL module for MarkerFeatureAdaptor
-# Copyright EMBL-EBI/Sanger center 2003
-#
-#
-#
-# You may distribute this module under the same terms as perl itself
+=head1 LICENSE
 
-# POD documentation - main docs before the code
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -13,15 +24,15 @@ Bio::EnsEMBL::Map::DBSQL::MarkerFeatureAdaptor
 
 =head1 SYNOPSIS
 
-
 =head1 DESCRIPTION
 
 This object is responisble for all database interaction involving marker
 features including the fetching and storing of marker features.
 
-The bulk of this objects methods are inherited from 
+The bulk of this objects' methods are inherited from
 Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor
 
+=head1 METHODS
 
 =cut
 

@@ -1,7 +1,22 @@
-#
-# Ensembl module for Bio::EnsEMBL::OligoProbe
-#
-# You may distribute this module under the same terms as Perl itself
+=head1 LICENSE
+
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -9,48 +24,39 @@ Bio::EnsEMBL::OligoProbe - A module to represent an oligonucleotide probe.
 
 =head1 SYNOPSIS
 
-use Bio::EnsEMBL::OligoProbe;
+  use Bio::EnsEMBL::OligoProbe;
 
-my $probe = Bio::EnsEMBL::OligoProbe->new(
-	-PROBENAME => 'Probe-1',
-	-ARRAY     => $array,
-);
+  my $probe = Bio::EnsEMBL::OligoProbe->new(
+    -PROBENAME => 'Probe-1',
+    -ARRAY     => $array,
+  );
 
 =head1 DESCRIPTION
 
-An OligoProbe object represents an oligonucleotide probe on a microarray. The
-data (currently the name, array, length, probeset and description) are stored
-in the oligo_probe table. Probeset is only really relevant for Affy probes.
-The complete name of a probe is the concatenation of the array name, the
-probeset (if relevant) and the probe name.
+An OligoProbe object represents an oligonucleotide probe on a
+microarray. The data (currently the name, array, length, probeset and
+description) are stored in the oligo_probe table. Probeset is only
+really relevant for Affy probes.  The complete name of a probe is the
+concatenation of the array name, the probeset (if relevant) and the
+probe name.
 
-For Affy arrays, a probe can be part of more than one array, but only part of
-one probeset. On each Affy array the probe has a slightly different name. For
-example, two different complete names for the same probe might be
-DrosGenome1:AFFX-LysX-5_at:535:35; and Drosophila_2:AFFX-LysX-5_at:460:51;. In
-the database, these two probes will have the same oligo_probe_id. Thus the same
-Affy probe can have a number of different names and complete names depending on
-which array it's on.
-
-=head1 AUTHOR
-
-This module was created by Ian Sealy, but is almost entirely based on the
-AffyProbe module written by Arne Stabenau.
-
-This module is part of the Ensembl project: http://www.ensembl.org/
-
-=head1 CONTACT
-
-Post comments or questions to the Ensembl development list: ensembl-dev@ebi.ac.uk
+For Affy arrays, a probe can be part of more than one array, but
+only part of one probeset. On each Affy array the probe has a
+slightly different name. For example, two different complete names
+for the same probe might be DrosGenome1:AFFX-LysX-5_at:535:35; and
+Drosophila_2:AFFX-LysX-5_at:460:51;. In the database, these two probes
+will have the same oligo_probe_id. Thus the same Affy probe can have a
+number of different names and complete names depending on which array
+it's on.
 
 =head1 METHODS
 
 =cut
 
+package Bio::EnsEMBL::OligoProbe;
+
 use strict;
 use warnings;
-
-package Bio::EnsEMBL::OligoProbe;
 
 use Bio::EnsEMBL::Utils::Argument qw( rearrange ) ;
 use Bio::EnsEMBL::Utils::Exception qw( throw warning );

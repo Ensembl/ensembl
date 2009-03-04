@@ -1,11 +1,22 @@
-package Bio::EnsEMBL::PepDnaAlignFeature;
+=head1 LICENSE
 
-# EnsEMBL module for storing dna-dna pairwise alignments
-#
-# Cared for by Michele Clamp <michele@sanger.ac.uk>
-#
-# You may distribute this module under the same terms as perl itself
-#
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -15,7 +26,11 @@ package Bio::EnsEMBL::PepDnaAlignFeature;
 
   See BaseAlignFeature
 
+=head1 METHODS
+
 =cut 
+
+package Bio::EnsEMBL::PepDnaAlignFeature;
 
 use Bio::EnsEMBL::BaseAlignFeature;
 

@@ -1,13 +1,22 @@
-#
-# Ensembl module for Bio::EnsEMBL::Mapper::IndelCoordinate
-#
-# Written by Ewan Birney <birney@ebi.ac.uk>
-#
-# Copyright GRL and EBI
-#
-# You may distribute this module under the same terms as perl itself
+=head1 LICENSE
 
-# POD documentation - main docs before the code
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -17,14 +26,8 @@ Bio::EnsEMBL::Mapper::IndelCoordinate
 
 =head1 DESCRIPTION
 
-Representation of a indel in a sequence; returned from
-Mapper.pm when the target region is in a deletion.
-
-=head1 AUTHOR - Ewan Birney
-
-This modules is part of the Ensembl project http://www.ensembl.org
-
-Post general queries to B<ensembl-dev@ebi.ac.uk>
+Representation of a indel in a sequence; returned from Mapper.pm when
+the target region is in a deletion.
 
 =head1 METHODS
 

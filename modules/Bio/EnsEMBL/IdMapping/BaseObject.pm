@@ -1,4 +1,22 @@
-package Bio::EnsEMBL::IdMapping::BaseObject;
+=head1 LICENSE
+
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -6,47 +24,35 @@ Bio::EnsEMBL::IdMapping::BaseObject - base object for IdMapping objects
 
 =head1 SYNOPSIS
 
-# this object isn't instantiated directly but rather extended
-use Bio::EnsEMBL::IdMapping::BaseObject;
-our @ISA = qw(Bio::EnsEMBL::IdMapping::BaseObject);
+  # this object isn't instantiated directly but rather extended
+  use Bio::EnsEMBL::IdMapping::BaseObject;
+  our @ISA = qw(Bio::EnsEMBL::IdMapping::BaseObject);
 
 =head1 DESCRIPTION
 
 This is the base object for some of the objects used in the IdMapping
-application. An object that extends BaseObject will have a ConfParser, Logger
-and Cache object. BaseObject also implements some useful utility functions
-related to file and db access.
+application. An object that extends BaseObject will have a ConfParser,
+Logger and Cache object. BaseObject also implements some useful utility
+functions related to file and db access.
 
 This isn't very clean OO design but it's efficient and easy to use...
 
 =head1 METHODS
 
-new
-get_filehandle
-file_exists
-fetch_value_from_db
-dump_table_to_file
-upload_file_into_table
-logger
-conf
-cache
-
-=head1 LICENCE
-
-This code is distributed under an Apache style licence. Please see
-http://www.ensembl.org/info/about/code_licence.html for details.
-
-=head1 AUTHOR
-
-Patrick Meidl <meidl@ebi.ac.uk>, Ensembl core API team
-
-=head1 CONTACT
-
-Please post comments/questions to the Ensembl development list
-<ensembl-dev@ebi.ac.uk>
+  new
+  get_filehandle
+  file_exists
+  fetch_value_from_db
+  dump_table_to_file
+  upload_file_into_table
+  logger
+  conf
+  cache
 
 =cut
 
+
+package Bio::EnsEMBL::IdMapping::BaseObject;
 
 use strict;
 use warnings;

@@ -1,6 +1,22 @@
-# EnsEMBL module for Bio::EnsEMBL::Utils::Slice
-#
-#
+=head1 LICENSE
+
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -10,30 +26,24 @@ Bio::EnsEMBL::Utils::Slice - Utility functions for slices
 
   use Bio::EnsEMBL::Utils::Slice qw(split_Slices);
 
-  ...
+  # ...
 
   # get all chromosomes in the database
   my $slices = $slice_adaptor->fetch_all('chromosome');
 
   # split the chromosomes into equal chunks of size less than 1MB
   # with an overlap of 1kb
-  $slices = split_Slices($slices, 1e6, 1e3);
-
-
-=head1 CONTACT
-
- Post questions to the ensembl development list <ensembl-dev@ebi.ac.uk>
+  $slices = split_Slices( $slices, 1e6, 1e3 );
 
 =head1 METHODS
 
 =cut
 
 
+package Bio::EnsEMBL::Utils::Slice;
 
 use strict;
 use warnings;
-
-package Bio::EnsEMBL::Utils::Slice;
 
 use Exporter;
 

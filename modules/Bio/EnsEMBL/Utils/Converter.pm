@@ -1,13 +1,26 @@
-# EnsEMBL module for conversion of objects between EnsEMBL and other project, such as BioPerl
-#
-# Created and Cared for by Juguang Xiao <juguang@tll.org.sg>
-#
-# Copyright Juguang Xiao
-# 
-# You may distribute this module under the same terms as perl itself
-#
-# POD documentation
-#
+=head1 LICENSE
+
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=head1 AUTHOR
+
+Juguang Xiao <juguang@tll.org.sg>
+
+=cut
 
 =head1 NAME
 
@@ -15,18 +28,20 @@ Bio::EnsEMBL::Utils::Converter, a converter factory
 
 =head1 SYNOPSIS
 
-    my $converter = Bio::EnsEMBL::Utils::Converter->new(
-        -in => 'Bio::SeqFeature::Generic',
-        -out => 'Bio::EnsEMBL::SimpleFeature'
-    );
+  my $converter = Bio::EnsEMBL::Utils::Converter->new(
+    -in  => 'Bio::SeqFeature::Generic',
+    -out => 'Bio::EnsEMBL::SimpleFeature'
+  );
 
-    my ($fearture1, $feature2);
-    my $ens_simple_features = $converter->convert([$feature1, $feature2]);
-    my @ens_simple_features = @{$ens_simple_features};
+  my ( $fearture1, $feature2 );
+  my $ens_simple_features =
+    $converter->convert( [ $feature1, $feature2 ] );
+  my @ens_simple_features = @{$ens_simple_features};
 
 =head1 DESCRIPTION
-    
-Module to converter the business objects between EnsEMBL and any other projects, currently BioPerl.
+
+Module to converter the business objects between EnsEMBL and any other
+projects, currently BioPerl.
 
 What the ready conversions are,
 
@@ -37,24 +52,13 @@ What the ready conversions are,
     Bio::Tools::Prediction::Exon -> Bio::EnsEMBL::Exon
     Bio::Pipeline::Analysis -> Bio::EnsEMBL::Analysis
 
-=head1 FEEDBACK
-
-
-=head1 AUTHOR - Juguang Xiao
-
-Juguang Xiao <juguang@tll.org.sg>
-
-=head1 APPENDIX
-
-The rest of the documentation details each of the object methods. 
-Internal methods are usually preceded with a _
+=head1 METHODS
 
 =cut
 
-# Let the code begin ...
-
 
 package Bio::EnsEMBL::Utils::Converter;
+
 use strict;
 use Bio::EnsEMBL::Root;
 our @ISA =qw(Bio::EnsEMBL::Root);

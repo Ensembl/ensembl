@@ -1,14 +1,22 @@
+=head1 LICENSE
 
-#
-# BioPerl module for Bio::EnsEMBL::DBLoader
-#
-# Cared for by Ewan Birney <birney@sanger.ac.uk>
-#
-# Copyright Ewan Birney
-#
-# You may distribute this module under the same terms as perl itself
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
 
-# POD documentation - main docs before the code
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -16,33 +24,36 @@ Bio::EnsEMBL::DBLoader - Run time database loader
 
 =head1 SYNOPSIS
 
-    $db = Bio::EnsEMBL::DBLoader->new("Bio::EnsEMBL::DBSQL::DBAdaptor/host=localhost;dbname=homo_sapiens_core_19_34a;user=ensro;");
+    $db =
+      Bio::EnsEMBL::DBLoader->new( "Bio::EnsEMBL::DBSQL::DBAdaptor/"
+        . "host=localhost;"
+        . "dbname=homo_sapiens_core_19_34a;"
+        . "user=ensro;" );
 
     # $db is a database object
     $db = Bio::EnsEMBL::DBLoader->standard();
-    # equivalent to Bio::EnsEMBL::DBLoader->new($ENV{'ENSEMBL_DATABASE'});
 
+    # equivalent to
+    # Bio::EnsEMBL::DBLoader->new( $ENV{'ENSEMBL_DATABASE'} );
 
 =head1 DESCRIPTION
 
-This system provides a run-time loading of the database for ensembl, allowing two things
+This system provides a run-time loading of the database for ensembl,
+allowing two things
 
-    a) Only "using" the database module which is required for a particular implementation
+    a) Only "using" the database module which is required for a
+       particular implementation
 
-    b) Providing a simple string method to indicate where the database is, allowing per sites
-defaults and other things as such
+    b) Providing a simple string method to indicate where the database
+       is, allowing per sites defaults and other things as such
 
 
 The string is parsed as follows:
 
-Before the / is the Perl database object to load, after are the parameters to pass
-to that database. The parameters are series of key=values separated by semi-colons.
-These are passed as a hash to the new method of the database object
-
-=head1 CONTACT
-
-Post questions/comments to the Ensembl development list:
-B<ensembl-dev@ebi.ac.uk>
+Before the / is the Perl database object to load, after are the
+parameters to pass to that database.  The parameters are series of
+key=values separated by semi-colons.  These are passed as a hash to the
+new method of the database object
 
 =head1 METHODS
 

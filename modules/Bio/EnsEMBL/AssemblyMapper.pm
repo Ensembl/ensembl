@@ -1,20 +1,28 @@
+=head1 LICENSE
 
-#
-# Ensembl module for Bio::EnsEMBL::AssemblyMapper
-#
-# Written by Arne Stabenau <stabenau@ebi.ac.uk>
-#
-# Copyright GRL and EBI
-#
-# You may distribute this module under the same terms as perl itself
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
 
-# POD documentation - main docs before the code
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
 Bio::EnsEMBL::AssemblyMapper - 
-Handles mapping between two coordinate systems using the information stored in
-the assembly table
+Handles mapping between two coordinate systems using the information
+stored in the assembly table.
 
 =head1 SYNOPSIS
 
@@ -22,8 +30,7 @@ the assembly table
     $asma = $db->get_AssemblyMapperAdaptor();
     $csa  = $db->get_CoordSystemAdaptor();
 
-    my $chr_cs =
-      $cs_adaptor->fetch_by_name( 'chromosome', 'NCBI33' );
+    my $chr_cs = $cs_adaptor->fetch_by_name( 'chromosome', 'NCBI33' );
     my $ctg_cs = $cs_adaptor->fetch_by_name('contig');
 
     $asm_mapper = $map_adaptor->fetch_by_CoordSystems( $cs1, $cs2 );
@@ -35,7 +42,7 @@ the assembly table
     # Map to chromosome coordinate system from contig.
     @chr_coords =
       $asm_mapper->map( 'AL30421.1.200.92341', 100, 10000, -1,
-                        $ctg_cs );
+      $ctg_cs );
 
     # List contig names for a region of chromsome.
     @ctg_ids = $asm_mapper->list_ids( '13', 1_000_000, 1, $chr_cs );
@@ -43,7 +50,7 @@ the assembly table
     # List chromosome names for a contig region.
     @chr_ids =
       $asm_mapper->list_ids( 'AL30421.1.200.92341', 1, 1000, -1,
-                             $ctg_cs );
+      $ctg_cs );
 
 =head1 DESCRIPTION
 
@@ -55,10 +62,6 @@ coordinate systems.
 
 It is implemented using the Bio::EnsEMBL::Mapper object, which is a
 generic mapper object between disjoint coordinate systems.
-
-=head1 CONTACT
-
-Post general queries to B<ensembl-dev@ebi.ac.uk>
 
 =head1 METHODS
 

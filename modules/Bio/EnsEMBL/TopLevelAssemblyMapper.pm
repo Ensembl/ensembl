@@ -1,47 +1,58 @@
-#
-# Ensembl module for Bio::EnsEMBL::AssemblyMapper
-#
-# Written by Graham McVicker
-#
-# Copyright GRL and EBI
-#
-# You may distribute this module under the same terms as perl itself
+=head1 LICENSE
+
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
 Bio::EnsEMBL::TopLevelMapper -
-Handles mapping between a given coordinate system and the toplevel pseudo
-coordinate system.
+Handles mapping between a given coordinate system and the toplevel
+pseudo coordinate system.
 
 =head1 SYNOPSIS
 
-    $db = Bio::EnsEMBL::DBSQL::DBAdaptor->new(...);
-    $asma = $db->get_AssemblyMapperAdaptor();
-    $csa  = $db->get_CoordSystemAdaptor();
+  $db   = Bio::EnsEMBL::DBSQL::DBAdaptor->new(...);
+  $asma = $db->get_AssemblyMapperAdaptor();
+  $csa  = $db->get_CoordSystemAdaptor();
 
-    my $toplevel = $cs_adaptor->fetch_by_name('toplevel');
-    my $ctg_cs   = $cs_adaptor->fetch_by_name('contig');
+  my $toplevel = $cs_adaptor->fetch_by_name('toplevel');
+  my $ctg_cs   = $cs_adaptor->fetch_by_name('contig');
 
-    $asm_mapper = $map_adaptor->fetch_by_CoordSystems($cs1, $cs2);
+  $asm_mapper = $map_adaptor->fetch_by_CoordSystems( $cs1, $cs2 );
 
-    #map to toplevel coord system for this region
-    @chr_coords = $asm_mapper->map('AL30421.1.200.92341',100,10000,-1,$ctg_cs);
+  # map to toplevel coord system for this region
+  @chr_coords =
+    $asm_mapper->map( 'AL30421.1.200.92341', 100, 10000, -1, $ctg_cs );
 
-    #list toplevel seq_region_ids for this region
-    @chr_ids = $asm_mapper->list_ids('AL30421.1.200.92341',1,1000,-1,$ctg_cs);
+  # list toplevel seq_region_ids for this region
+  @chr_ids =
+    $asm_mapper->list_ids( 'AL30421.1.200.92341', 1, 1000, -1,
+    $ctg_cs );
 
 =head1 DESCRIPTION
 
-The TopLevelAssemblyMapper performs mapping between a provided coordinate
-system and the toplevel pseudo cooordinate system.  The toplevel coordinate
-system is not a real coordinate system, but represents the highest coordinate
-system that can be mapped to in a given region.  It is only possible to
-perform unidirectional mapping using this mapper, because it does not make
-sense to map from the toplevel coordinate system to another coordinate system.
-
-=head1 CONTACT
-
-Post general queries to B<ensembl-dev@ebi.ac.uk>
+The TopLevelAssemblyMapper performs mapping between a provided
+coordinate system and the toplevel pseudo cooordinate system.  The
+toplevel coordinate system is not a real coordinate system, but
+represents the highest coordinate system that can be mapped to in a
+given region.  It is only possible to perform unidirectional mapping
+using this mapper, because it does not make sense to map from the
+toplevel coordinate system to another coordinate system.
 
 =head1 METHODS
 

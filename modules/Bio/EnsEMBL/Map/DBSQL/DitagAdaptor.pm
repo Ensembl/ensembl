@@ -1,12 +1,22 @@
-# EnsEMBL module for DitagAdaptor
-#
-# Copyright EMBL-EBI/Wellcome Trust Sanger Center 2006
-#
-# You may distribute this module under the same terms as perl itself
-#
-# Cared for by EnsEMBL (ensembl-dev@ebi.ac.uk)
+=head1 LICENSE
 
-# POD documentation - main docs before the code
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -14,12 +24,14 @@ Bio::EnsEMBL::Map::DBSQL::DitagAdaptor
 
 =head1 SYNOPSIS
 
-my $ditagadaptor = $db->get_DitagAdaptor();
-my @ditags       = @{ $ditagadaptor->fetch_by_type("ZZ11") };
+  my $ditagadaptor = $db->get_DitagAdaptor();
+  my @ditags       = @{ $ditagadaptor->fetch_by_type("ZZ11") };
 
 =head1 DESCRIPTION
 
 Provides database interaction for the Bio::EnsEMBL::Map::Ditag object
+
+=head1 METHODS
 
 =cut
 

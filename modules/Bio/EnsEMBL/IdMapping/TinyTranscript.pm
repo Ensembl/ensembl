@@ -1,4 +1,22 @@
-package Bio::EnsEMBL::IdMapping::TinyTranscript;
+=head1 LICENSE
+
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -6,57 +24,41 @@ Bio::EnsEMBL::IdMapping::TinyTranscript - lightweight transcript object
 
 =head1 SYNOPSIS
 
-# fetch a transcript from the db and create a lightweight transcript object from
-# it
-my $tr = $transcript_adaptor->fetch_by_stable_id('ENST000345437');
-my $lightweight_tr = Bio::EnsEMBL::IdMapping::TinyTranscript->new_fast([
-    $tr->dbID,
-    $tr->stable_id,
-    $tr->version,
-    $tr->created_date,
-    $tr->modified_date,
-    $tr->start,
-    $tr->end,
-    $tr->strand,
-    $tr->length,
-    md5_hex($tr->spliced_seq),
-    ($tr->is_known ? 1 : 0),
-]);
+  # fetch a transcript from the db and create a lightweight
+  # transcript object from it
+  my $tr = $transcript_adaptor->fetch_by_stable_id('ENST000345437');
+  my $lightweight_tr =
+    Bio::EnsEMBL::IdMapping::TinyTranscript->new_fast( [
+      $tr->dbID,          $tr->stable_id,
+      $tr->version,       $tr->created_date,
+      $tr->modified_date, $tr->start,
+      $tr->end,           $tr->strand,
+      $tr->length,        md5_hex( $tr->spliced_seq ),
+      ( $tr->is_known ? 1 : 0 ),
+    ] );
 
 =head1 DESCRIPTION
 
-This is a lightweight transcript object for the stable Id mapping. See the
-documentation in TinyFeature for general considerations about its design.
+This is a lightweight transcript object for the stable Id mapping. See
+the documentation in TinyFeature for general considerations about its
+design.
 
 =head1 METHODS
 
-start
-end
-strand
-length
-seq_md5_sum
-is_known
-add_Translation
-translation
-add_Exon
-get_all_Exons
-
-=head1 LICENCE
-
-This code is distributed under an Apache style licence. Please see
-http://www.ensembl.org/info/about/code_licence.html for details.
-
-=head1 AUTHOR
-
-Patrick Meidl <meidl@ebi.ac.uk>, Ensembl core API team
-
-=head1 CONTACT
-
-Please post comments/questions to the Ensembl development list
-<ensembl-dev@ebi.ac.uk>
+  start
+  end
+  strand
+  length
+  seq_md5_sum
+  is_known
+  add_Translation
+  translation
+  add_Exon
+  get_all_Exons
 
 =cut
 
+package Bio::EnsEMBL::IdMapping::TinyTranscript;
 
 # internal data structure (array indices):
 #

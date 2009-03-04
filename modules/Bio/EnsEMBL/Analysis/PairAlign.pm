@@ -1,11 +1,22 @@
-#
-# BioPerl module for PairAlign object
-#
-# Cared for by Ewan Birney <birney@sanger.ac.uk>
-#
-# Copyright Ewan Birney
-#
-# You may distribute this module under the same terms as perl itself
+=head1 LICENSE
+
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 # POD documentation - main docs before the code
 
@@ -22,40 +33,32 @@ Give standard usage here
 Contains list of sub alignments making up a dna-dna alignment
 
 Creation:
-   
-    my $pair = new Bio::EnsEMBL::FeaturePair(-start  => $qstart,
-                                             -end    => $qend,
-                                             -strand => $qstrand, 
-                                             -hstart => $hstart,
-                                             -hend   => $hend, 
-                                              -hend   => $hstrand,        
-    );
 
-    my $pairaln   = new Bio::EnsEMBL::Analysis::PairAlign;
-    $pairaln->addFeaturePair($pair);
+  my $pair = new Bio::EnsEMBL::FeaturePair(
+    -start  => $qstart,
+    -end    => $qend,
+    -strand => $qstrand,
+    -hstart => $hstart,
+    -hend   => $hend,
+    -hend   => $hstrand,
+  );
+
+  my $pairaln = new Bio::EnsEMBL::Analysis::PairAlign;
+  $pairaln->addFeaturePair($pair);
 
 Any number of pair alignments can be added to the PairAlign object
 
 
 Manipulation:
 
-To convert between coordinates : 
+To convert between coordinates:
 
-    my $cdna_coord = $pair->genomic2cDNA($gen_coord);
-    my $gen_coord  = $pair->cDNA2genomic($cdna_coord);
+  my $cdna_coord = $pair->genomic2cDNA($gen_coord);
+  my $gen_coord  = $pair->cDNA2genomic($cdna_coord);
 
-=head1 CONTACT
-
-Describe contact details here
-
-=head1 APPENDIX
-
-The rest of the documentation details each of the object methods. Internal methods are usually preceded with a _
+=head1 METHODS
 
 =cut
-
-
-# Let the code begin...
 
 package Bio::EnsEMBL::Analysis::PairAlign;
 

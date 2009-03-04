@@ -1,40 +1,36 @@
+=head1 LICENSE
 
-#
-# BioPerl module for BinValue
-#
-# Cared for by Emmanuel Mongin <mongin@ebi.ac.uk>
-#
-# Copyright Emmanuel Mongin
-#
-# You may distribute this module under the same terms as perl itself
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
 
-# POD documentation - main docs before the code
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
-BinValue
+Bio::EnsEMBL::DensityPlot::BinValue
 
 =head1 SYNOPSIS
-
-Give standard usage here
 
 =head1 DESCRIPTION
 
 This object deals with the raw data to built the density plots
 
-=head1 CONTACT
-
-Describe contact details here
-
-=head1 APPENDIX
-
-The rest of the documentation details each of the object methods. Internal methods are usually preceded with a _
+=head1 METHODS
 
 =cut
-
-
-# Let the code begin...
-
 
 package Bio::EnsEMBL::DensityPlot::BinValue;
 use vars qw($AUTOLOAD @ISA);

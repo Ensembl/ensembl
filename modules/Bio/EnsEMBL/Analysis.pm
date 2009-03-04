@@ -1,15 +1,22 @@
-#
-# Object for storing sequence analysis details
-#
-# Cared for by Michele Clamp  <michele@sanger.ac.uk>
-#
-# Copyright Michele Clamp
-#
-# You may distribute this module under the same terms as perl itself
-#
-# POD documentation - main docs before the code
+=head1 LICENSE
 
-=pod 
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -17,34 +24,30 @@ Bio::EnsEMBL::Analysis.pm - Stores details of an analysis run
 
 =head1 SYNOPSIS
 
-    my $obj    = new Bio::EnsEMBL::Analysis(
-        -id              => $id,
-        -logic_name      => 'SWIRBlast',
-        -db              => $db,
-        -db_version      => $db_version,
-        -db_file         => $db_file,
-        -program         => $program,
-        -program_version => $program_version,
-        -program_file    => $program_file,
-        -gff_source      => $gff_source,
-        -gff_feature     => $gff_feature,
-        -module          => $module,
-        -module_version  => $module_version,
-        -parameters      => $parameters,
-        -created         => $created,
-        -description     => 'some warm words about this analysis',
-	-display_label   => 'UNIprot alignment',
-        -displayable     => '1',
-	-web_data        => 'web metadata info'
-        );
+    my $obj = new Bio::EnsEMBL::Analysis(
+      -id              => $id,
+      -logic_name      => 'SWIRBlast',
+      -db              => $db,
+      -db_version      => $db_version,
+      -db_file         => $db_file,
+      -program         => $program,
+      -program_version => $program_version,
+      -program_file    => $program_file,
+      -gff_source      => $gff_source,
+      -gff_feature     => $gff_feature,
+      -module          => $module,
+      -module_version  => $module_version,
+      -parameters      => $parameters,
+      -created         => $created,
+      -description     => 'some warm words about this analysis',
+      -display_label   => 'UNIprot alignment',
+      -displayable     => '1',
+      -web_data        => 'web metadata info'
+    );
 
 =head1 DESCRIPTION
 
-Object to store details of an analysis run
-
-=head1 CONTACT
-
-Post questions to the EnsEMBL dev mailing list: <ensembl-dev@ebi.ac.uk>
+Object to store details of an analysis run.
 
 =head1 METHODS
 

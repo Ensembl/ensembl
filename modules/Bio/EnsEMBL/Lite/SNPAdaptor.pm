@@ -1,11 +1,22 @@
-# EnsEMBL Gene reading writing adaptor for mySQL
-#
-# Copyright EMBL-EBI 2001
-#
-# Author: Arne Stabenau
-# 
-# Date : 15.07.2002
-#
+=head1 LICENSE
+
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -14,19 +25,14 @@ MySQL Database queries to retrieve genes quickly from denormalized tables.
 
 =head1 SYNOPSIS
 
-=head1 CONTACT
-
-  Arne Stabenau: stabenau@ebi.ac.uk
-  Ewan Birney  : birney@ebi.ac.uk
-
-=head1 APPENDIX
+=head1 METHODS
 
 =cut
 
-use strict;
 
 package Bio::EnsEMBL::Lite::SNPAdaptor;
 
+use strict;
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Bio::EnsEMBL::DBEntry;
 use Bio::EnsEMBL::SNP;

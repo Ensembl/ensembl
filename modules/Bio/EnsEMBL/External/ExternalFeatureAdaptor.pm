@@ -1,9 +1,22 @@
-#
-# EnsEMBL module for Bio::EnsEMBL::External::ExternalFeatureAdaptor
-#
-# You may distribute this module under the same terms as perl itself
+=head1 LICENSE
 
-# POD documentation - main docs before the code
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -11,63 +24,69 @@ Bio::EnsEMBL::External::ExternalFeatureAdaptor
 
 =head 1 SUMMARY
 
-Allows features created externally from Ensembl in a single coordinate system
-to be retrieved in several other (Ensembl-style) coordinate systems. This is
-intended to be a replacement for the old 
+Allows features created externally from Ensembl in a single
+coordinate system to be retrieved in several other (Ensembl-style)
+coordinate systems. This is intended to be a replacement for the old
 Bio::EnsEMBL::DB::ExternalFeatureFactoryI interface.
 
 =head1 SYNOPSIS
 
-  $database_adaptor = 
-    new Bio::EnsEMBL::DBSQL::DBAdaptor( -host   => 'kaka.sanger.ac.uk',
-                                        -dbname => 'homo_sapiens_core_9_30',
-                                        -pass   => 'anonymous' );
+  $database_adaptor = new Bio::EnsEMBL::DBSQL::DBAdaptor(
+    -host   => 'kaka.sanger.ac.uk',
+    -dbname => 'homo_sapiens_core_9_30',
+    -pass   => 'anonymous'
+  );
 
   $xf_adaptor = new ExternalFeatureAdaptorSubClass;
 
-  #Connect the Ensembl core database:
+  # Connect the Ensembl core database:
   $xf_adaptor->db($database_adaptor);
 
-  #get some features in vontig coords
-  @feats = @{$xf_adaptor->fetch_all_by_contig_name('AC000087.2.1.42071')};
+  # get some features in vontig coords
+  @feats =
+    @{ $xf_adaptor->fetch_all_by_contig_name('AC000087.2.1.42071') };
 
-  #get some features in assembly coords
-  @feats = @{$xf_adaptor->fetch_all_by_chr_start_end('X', 100000, 200000)};
+  # get some features in assembly coords
+  @feats =
+    @{ $xf_adaptor->fetch_all_by_chr_start_end( 'X', 100000, 200000 ) };
 
-  #get some features in clone coords
-  @feats = @{$xf_adaptor->fetch_all_by_clone_accession('AC000087')};
+  # get some features in clone coords
+  @feats = @{ $xf_adaptor->fetch_all_by_clone_accession('AC000087') };
 
-  #Add the adaptor to the ensembl core dbadaptor (implicitly sets db attribute)
+  # Add the adaptor to the ensembl core dbadaptor (implicitly sets db
+  # attribute)
   $database_adaptor->add_ExternalFeatureAdaptor($xf_adaptor);
 
-  #get some features in Slice coords
+  # get some features in Slice coords
   $slice_adaptor = $database_adaptor->get_SliceAdaptor;
-  $slice = $slice_adaptor->fetch_all_by_chr_start_end(1,100000,200000);
-  @feats = @{$xf_adaptor->fetch_all_by_Slice($slice)};
+  $slice =
+    $slice_adaptor->fetch_all_by_chr_start_end( 1, 100000, 200000 );
+  @feats = @{ $xf_adaptor->fetch_all_by_Slice($slice) };
 
-  #now features can be retrieved directly from Slice
-  @feats = @{$slice->get_all_ExternalFeatures};
-  
+  # now features can be retrieved directly from Slice
+  @feats = @{ $slice->get_all_ExternalFeatures };
 
 =head1 DESCRIPTION
 
-This class is intended to be used as a method of getting external features into
-EnsEMBL.  To work, this class must be extended and must implement the
-the coordinate_systems method.  As well, the subclass is required to implement
-a single fetch method so that the external features may be retrieved.  
-By implementing a single fetch_method in a single coordinate system all
-of the other ExternalFeatureAdaptor fetch methods become available for 
-retrieving the data in several different coordinate systems.
+This class is intended to be used as a method of getting external
+features into EnsEMBL.  To work, this class must be extended and must
+implement the the coordinate_systems method.  As well, the subclass
+is required to implement a single fetch method so that the external
+features may be retrieved.  By implementing a single fetch_method in a
+single coordinate system all of the other ExternalFeatureAdaptor fetch
+methods become available for retrieving the data in several different
+coordinate systems.
 
-The coordinate_systems method should return a list of strings indicating which
-coordinate system(s) have been implemented.  If a given string is returned 
-from the coordinate_systems method then the corresponding fetch method must be 
-implemented.  The reverse is also true: if a fetch method is implemented then
-coordinate_systems must return the appropriate string in its list of return 
-values.  The following are the valid coordinate system values and the 
-corresponding fetch methods that must be implemented:
+The coordinate_systems method should return a list of strings indicating
+which coordinate system(s) have been implemented.  If a given string is
+returned from the coordinate_systems method then the corresponding fetch
+method must be implemented.  The reverse is also true: if a fetch method
+is implemented then coordinate_systems must return the appropriate
+string in its list of return values.  The following are the valid
+coordinate system values and the corresponding fetch methods that must
+be implemented:
 
-  COORD SYSTEM STRING   FETCH_METHOD      
+  COORD SYSTEM STRING   FETCH_METHOD
   -------------------   ------------
   'ASSEMBLY'            fetch_all_by_chr_start_end
   'CLONE'               fetch_all_by_clone_accession
@@ -75,36 +94,25 @@ corresponding fetch methods that must be implemented:
   'SUPERCONTIG'         fetch_all_by_supercontig_name
   'SLICE'               fetch_all_by_Slice
 
-The objects returned by the fetch methods should be EnsEMBL or BioPerl style
-Feature objects.  These objects MUST have start, end and strand methods.
+The objects returned by the fetch methods should be EnsEMBL or BioPerl
+style Feature objects.  These objects MUST have start, end and strand
+methods.
 
-Before the non-overridden ExternalFeatureAdaptor fetch methods may be called
-an EnsEMBL core database adaptor must be attached to the ExternalFeatureAdaptor
-.  This database adaptor is required to perform the remappings between various
-coordinate system.  This may be done implicitly by adding the 
-ExternalFeatureAdaptor to the database adaptor through a call to the 
-DBAdaptor add_ExternalFeatureAdaptor method or explicitly by calling the 
-ExternalFeatureAdaptor ensembl_db method.
+Before the non-overridden ExternalFeatureAdaptor fetch methods may
+be called an EnsEMBL core database adaptor must be attached to the
+ExternalFeatureAdaptor . This database adaptor is required to perform
+the remappings between various coordinate system.  This may be done
+implicitly by adding the ExternalFeatureAdaptor to the database adaptor
+through a call to the DBAdaptor add_ExternalFeatureAdaptor method or
+explicitly by calling the ExternalFeatureAdaptor ensembl_db method.
 
-
-=head1 CONTACT
-
-Post questions to the EnsEMBL developer list: <ensembl-dev@ebi.ac.uk>
-
-=head1 AUTHOR
-
-Graham McVicker
-
-=head1 APPENDIX
-
-The rest of the documentation details each of the object methods. 
-Internal methods are usually preceded with a _
+=head1 METHODS
 
 =cut
 
-use strict;
-
 package Bio::EnsEMBL::External::ExternalFeatureAdaptor;
+
+use strict;
 
 use Bio::EnsEMBL::Utils::Exception qw(warning throw);
 

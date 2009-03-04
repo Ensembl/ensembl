@@ -1,7 +1,22 @@
-#
-# Ensembl module for Bio::EnsEMBL::AffyArray
-#
-# You may distribute this module under the same terms as Perl itself
+=head1 LICENSE
+
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -9,32 +24,22 @@ Bio::EnsEMBL::AffyArray - A module to represent an Affymetrix array.
 
 =head1 SYNOPSIS
 
-use Bio::EnsEMBL::AffyArray;
+  use Bio::EnsEMBL::AffyArray;
 
-my $array = Bio::EnsEMBL::AffyArray->new(
-	-NAME        => 'Affy-1',
-	-INCLUDED_IN => $another_array,
-	-SETSIZE     => 16,
-);
+  my $array = Bio::EnsEMBL::AffyArray->new(
+    -NAME        => 'Affy-1',
+    -INCLUDED_IN => $another_array,
+    -SETSIZE     => 16,
+  );
 
 =head1 DESCRIPTION
 
-An AffyArray object represents an Affymetrix array. The data (currently the
-name, probeset size and parent array) are stored in the oligo_array table.
+An AffyArray object represents an Affymetrix array. The data (currently
+the name, probeset size and parent array) are stored in the oligo_array
+table.
 
-Each array can have a parent array (another array that contains all the probes
-of this array). This is rarely (if ever) used.
-
-=head1 AUTHOR
-
-This module was originally written by Arne Stabenau, but was changed to be a
-subclass of OligoArray by Ian Sealy.
-
-This module is part of the Ensembl project: http://www.ensembl.org/
-
-=head1 CONTACT
-
-Post comments or questions to the Ensembl development list: ensembl-dev@ebi.ac.uk
+Each array can have a parent array (another array that contains all the
+probes of this array). This is rarely (if ever) used.
 
 =head1 METHODS
 

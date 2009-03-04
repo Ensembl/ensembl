@@ -1,7 +1,22 @@
-#
-# Ensembl module for Bio::EnsEMBL::OligoFeature
-#
-# You may distribute this module under the same terms as Perl itself
+=head1 LICENSE
+
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -10,41 +25,30 @@ genomic mapping.
 
 =head1 SYNOPSIS
 
-use Bio::EnsEMBL::OligoFeature;
+  use Bio::EnsEMBL::OligoFeature;
 
-my $feature = Bio::EnsEMBL::OligoFeature->new(
-	-PROBE         => $probe,
-	-MISMATCHCOUNT => 0,
-	-SLICE         => $chr_1_slice,
-	-START         => 1_000_000,
-	-END           => 1_000_024,
-	-STRAND        => -1,
-); 
+  my $feature = Bio::EnsEMBL::OligoFeature->new(
+    -PROBE         => $probe,
+    -MISMATCHCOUNT => 0,
+    -SLICE         => $chr_1_slice,
+    -START         => 1_000_000,
+    -END           => 1_000_024,
+    -STRAND        => -1,
+  );
 
 =head1 DESCRIPTION
 
 An OligoFeature object represents the genomic placement of an OligoProbe
 object. The data are stored in the oligo_feature table.
 
-=head1 AUTHOR
-
-This module was created by Ian Sealy, but is almost entirely based on the
-AffyFeature module written by Arne Stabenau.
-
-This module is part of the Ensembl project: http://www.ensembl.org/
-
-=head1 CONTACT
-
-Post comments or questions to the Ensembl development list: ensembl-dev@ebi.ac.uk
-
 =head1 METHODS
 
 =cut
 
+package Bio::EnsEMBL::OligoFeature;
+
 use strict;
 use warnings;
-
-package Bio::EnsEMBL::OligoFeature;
 
 use Bio::EnsEMBL::Utils::Argument qw( rearrange );
 use Bio::EnsEMBL::Utils::Exception qw( throw );

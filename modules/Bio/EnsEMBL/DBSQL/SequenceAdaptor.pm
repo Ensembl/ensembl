@@ -1,11 +1,22 @@
-#
-# Ensembl module for Bio::EnsEMBL::DBSQL::SequenceAdaptor
-#
-# Cared for by Arne Stabenau <stabenau@ebi.ac.uk>
-#
-# Copyright Ensembl
-#
-# You may distribute this module under the same terms as perl itself
+=head1 LICENSE
+
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -21,11 +32,6 @@ Bio::EnsEMBL::DBSQL::SequenceAdaptor - produce sequence strings from locations
 =head1 DESCRIPTION
 
 An adaptor for the retrieval of DNA sequence from the EnsEMBL database
-
-=head1 CONTACT
-
-Post questions/comments to the EnsEMBL development list:
-ensembl-dev@ebi.ac.uk
 
 =head1 METHODS
 

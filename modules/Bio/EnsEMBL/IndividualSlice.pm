@@ -1,52 +1,66 @@
-#
-# Ensembl module for Bio::EnsEMBL::IndividualSlice
-#
-#
-# Copyright Team Ensembl
-#
-# You may distribute this module under the same terms as perl itself
+=head1 LICENSE
 
-# POD documentation - main docs before the code
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
 
-=head1 NAME
+  This software is distributed under a modified Apache license.
+  For license details, please see
 
-Bio::EnsEMBL::IndividualSlice - SubClass of the Slice. Represents the slice of the genome 
-for a certain individual (applying the alleles for this individual)
-
-=head1 SYNOPSIS
-
-   $sa = $db->get_SliceAdaptor;
-
-   $slice = $sa->fetch_by_region('chromosome', 'X', 1_000_000, 2_000_000);
-
-   $individualSlice = $slice->get_by_Individual($individual_name);
-
-   #get the sequence from the Individual Slice: will contain IUPAC codes for SNPs and Ensembl ambiguity codes for indels
-   my $seq = $individualSlice->seq();
-   print $seq;
-
-   #get a subSlice of the Strain
-   my $subSlice_individual = $individualSlice->sub_Slice(5_000,8_000,1)
-
-   #compare two different individuals in the same Slice
-   my $sliceIndividual2 = $slice->get_by_Individual($individual_name2);
-   my $differences = $individualSlice->get_all_differences_IndividualSlice($sliceIndividual2);
-   foreach my $af (@{$differences}){
-      print "There is a difference between $individual_name and $individual_name2 at ", $af->start,"-",$af->end,
-            " with allele ", $af->allele_string(),"\n";
-   }
-
-=head1 DESCRIPTION
-
-A IndividualSlice object represents a region of a genome for a certain individual.  It can be used to retrieve
-sequence or features from a individual.
+    http://www.ensembl.org/info/about/code_licence.html
 
 =head1 CONTACT
 
-This modules is part of the Ensembl project http://www.ensembl.org
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
 
-Questions can be posted to the ensembl-dev mailing list:
-ensembl-dev@ebi.ac.uk
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
+
+=head1 NAME
+
+Bio::EnsEMBL::IndividualSlice - SubClass of the Slice. Represents the
+slice of the genome for a certain individual (applying the alleles for
+this individual)
+
+=head1 SYNOPSIS
+
+  $sa = $db->get_SliceAdaptor;
+
+  $slice =
+    $sa->fetch_by_region( 'chromosome', 'X', 1_000_000, 2_000_000 );
+
+  $individualSlice = $slice->get_by_Individual($individual_name);
+
+  # Get the sequence from the Individual Slice: will contain IUPAC codes
+  # for SNPs and Ensembl ambiguity codes for indels
+  my $seq = $individualSlice->seq();
+  print $seq;
+
+  # Get a subSlice of the Strain
+  my $subSlice_individual =
+    $individualSlice->sub_Slice( 5_000, 8_000, 1 )
+
+  # Compare two different individuals in the same Slice
+  my $sliceIndividual2 = $slice->get_by_Individual($individual_name2);
+  my $differences =
+    $individualSlice->get_all_differences_IndividualSlice(
+    $sliceIndividual2);
+
+  foreach my $af ( @{$differences} ) {
+    print
+      "There is a difference between $individual_name "
+      . "and $individual_name2 at ",
+      $af->start, "-", $af->end,
+      " with allele ", $af->allele_string(), "\n";
+  }
+
+=head1 DESCRIPTION
+
+A IndividualSlice object represents a region of a genome for a certain
+individual.  It can be used to retrieve sequence or features from a
+individual.
 
 =head1 METHODS
 

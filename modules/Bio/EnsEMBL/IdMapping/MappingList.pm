@@ -1,4 +1,22 @@
-package Bio::EnsEMBL::IdMapping::MappingList;
+=head1 LICENSE
+
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -6,58 +24,45 @@ Bio::EnsEMBL::IdMapping::MappingList - object holding a list of Entries
 
 =head1 SYNOPSIS
 
-# create a new MappingList
-my $mappings = Bio::EnsEMBL::IdMapping::MappingList->new(
-  -DUMP_PATH   => $dump_path,
-  -CACHE_FILE  => 'gene_mappings.ser',
-);
+  # create a new MappingList
+  my $mappings = Bio::EnsEMBL::IdMapping::MappingList->new(
+    -DUMP_PATH  => $dump_path,
+    -CACHE_FILE => 'gene_mappings.ser',
+  );
 
-# add entries
-my $mappings->add_Entry($entry1);
-my $mappings->add_all($entry2, $entry3);
+  # add entries
+  my $mappings->add_Entry($entry1);
+  my $mappings->add_all( $entry2, $entry3 );
 
-# serialise to file
-$mappings->write_to_file;
+  # serialise to file
+  $mappings->write_to_file;
 
-# later, read these mappings from file
-my $mappings1 = Bio::EnsEMBL::IdMapping::MappingList->new(
-  -DUMP_PATH   => $dump_path,
-  -CACHE_FILE  => 'gene_mappings.ser',
-);
-$mappings1->read_from_file;
+  # later, read these mappings from file
+  my $mappings1 = Bio::EnsEMBL::IdMapping::MappingList->new(
+    -DUMP_PATH  => $dump_path,
+    -CACHE_FILE => 'gene_mappings.ser',
+  );
+  $mappings1->read_from_file;
 
 =head1 DESCRIPTION
 
-This object represents a list of Bio::EnsEMBL::IdMapping::Entry objects. It's
-essentially an OO wrapper for an array with some type checking and convenience
-methods.
+This object represents a list of Bio::EnsEMBL::IdMapping::Entry
+objects. It's essentially an OO wrapper for an array with some type
+checking and convenience methods.
 
 =head1 METHODS
 
-new
-add_Entry
-get_all_Entries
-add_all
-get_entry_count
-log
-to_string
-
-=head1 LICENCE
-
-This code is distributed under an Apache style licence. Please see
-http://www.ensembl.org/info/about/code_licence.html for details.
-
-=head1 AUTHOR
-
-Patrick Meidl <meidl@ebi.ac.uk>, Ensembl core API team
-
-=head1 CONTACT
-
-Please post comments/questions to the Ensembl development list
-<ensembl-dev@ebi.ac.uk>
+  new
+  add_Entry
+  get_all_Entries
+  add_all
+  get_entry_count
+  log
+  to_string
 
 =cut
 
+package Bio::EnsEMBL::IdMapping::MappingList;
 
 use strict;
 use warnings;

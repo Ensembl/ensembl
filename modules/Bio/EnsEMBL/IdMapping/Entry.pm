@@ -1,4 +1,22 @@
-package Bio::EnsEMBL::IdMapping::Entry;
+=head1 LICENSE
+
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -6,36 +24,24 @@ Bio::EnsEMBL::IdMapping::Entry - object representing a ScoredMappingMatrix entry
 
 =head1 SYNOPSIS
 
-
 =head1 DESCRIPTION
 
-This object represents a ScoredMappingMatrix entry. It is defined by a pair of a
-source and target object's internal Id and a score for this mapping.
+This object represents a ScoredMappingMatrix entry. It is defined by a
+pair of a source and target object's internal Id and a score for this
+mapping.
 
 =head1 METHODS
 
-new
-new_fast
-source
-target
-score
-to_string
-
-=head1 LICENCE
-
-This code is distributed under an Apache style licence. Please see
-http://www.ensembl.org/info/about/code_licence.html for details.
-
-=head1 AUTHOR
-
-Patrick Meidl <meidl@ebi.ac.uk>, Ensembl core API team
-
-=head1 CONTACT
-
-Please post comments/questions to the Ensembl development list
-<ensembl-dev@ebi.ac.uk>
+  new
+  new_fast
+  source
+  target
+  score
+  to_string
 
 =cut
+
+package Bio::EnsEMBL::IdMapping::Entry;
 
 use strict;
 use warnings;

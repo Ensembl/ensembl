@@ -1,9 +1,6 @@
-#!/usr/local/bin/perl -w
-
-# 
-# This package, originally distributed by CPAN, has been modified from its
-# original version in order to be used by the ensembl project.
-# 
+# This package, originally distributed by CPAN, has been modified from
+# its original version in order to be used by the ensembl project.
+#
 # 8 July 2002 - changed package name
 #
 

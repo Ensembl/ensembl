@@ -1,4 +1,22 @@
-package Bio::EnsEMBL::IdMapping::ScoredMappingMatrix;
+=head1 LICENSE
+
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -7,80 +25,68 @@ Entries
 
 =head1 SYNOPSIS
 
-# create a new ScoredMappingMatrix
-my $gene_scores = Bio::EnsEMBL::IdMapping::ScoredMappingMatrix->new(
-  -DUMP_PATH   => $dump_path,
-  -CACHE_FILE  => 'gene_scores.ser',
-);
+  # create a new ScoredMappingMatrix
+  my $gene_scores = Bio::EnsEMBL::IdMapping::ScoredMappingMatrix->new(
+    -DUMP_PATH  => $dump_path,
+    -CACHE_FILE => 'gene_scores.ser',
+  );
 
-# add entries
-my $gene_scores->add_Entry($entry1);
+  # add entries
+  my $gene_scores->add_Entry($entry1);
 
-# serialise to file
-$gene_scores->write_to_file;
+  # serialise to file
+  $gene_scores->write_to_file;
 
-# later, read these gene_scores from file
-my $gene_scores1 = Bio::EnsEMBL::IdMapping::ScoredMappingMatrix->new(
-  -DUMP_PATH   => $dump_path,
-  -CACHE_FILE  => 'gene_gene_scores.ser',
-);
-$gene_scores1->read_from_file;
+  # later, read these gene_scores from file
+  my $gene_scores1 = Bio::EnsEMBL::IdMapping::ScoredMappingMatrix->new(
+    -DUMP_PATH  => $dump_path,
+    -CACHE_FILE => 'gene_gene_scores.ser',
+  );
+  $gene_scores1->read_from_file;
 
 =head1 DESCRIPTION
 
-This object represents a collection of scores between source and target objects.
-It holds a list of Bio::EnsEMBL::IdMapping::Entry objects and has methods to
-retrieve indiviual or all Entries, as well as derived data like number of unique
-sources or targets, or various counts and averages.
+This object represents a collection of scores between source and target
+objects.  It holds a list of Bio::EnsEMBL::IdMapping::Entry objects and
+has methods to retrieve indiviual or all Entries, as well as derived
+data like number of unique sources or targets, or various counts and
+averages.
 
-It is the main collection for dealing with scored relationships in the stable Id
-mapping application.
+It is the main collection for dealing with scored relationships in the
+stable Id mapping application.
 
 =head1 METHODS
 
-new
-flush
-sub_matrix
-add_Entry
-update_Entry
-remove_Entry
-add_score
-set_score
-get_Entry
-get_score
-get_targets_for_source
-get_Entries_for_source
-get_sources_for_target
-get_Entries_for_target
-get_all_Entries
-get_all_sources
-get_all_targets
-get_entry_count
-size
-get_source_count
-get_target_count
-get_min_max_scores
-get_average_score
-merge
-log
-to_string
-
-=head1 LICENCE
-
-This code is distributed under an Apache style licence. Please see
-http://www.ensembl.org/info/about/code_licence.html for details.
-
-=head1 AUTHOR
-
-Patrick Meidl <meidl@ebi.ac.uk>, Ensembl core API team
-
-=head1 CONTACT
-
-Please post comments/questions to the Ensembl development list
-<ensembl-dev@ebi.ac.uk>
+  new
+  flush
+  sub_matrix
+  add_Entry
+  update_Entry
+  remove_Entry
+  add_score
+  set_score
+  get_Entry
+  get_score
+  get_targets_for_source
+  get_Entries_for_source
+  get_sources_for_target
+  get_Entries_for_target
+  get_all_Entries
+  get_all_sources
+  get_all_targets
+  get_entry_count
+  size
+  get_source_count
+  get_target_count
+  get_min_max_scores
+  get_average_score
+  merge
+  log
+  to_string
 
 =cut
 
+package Bio::EnsEMBL::IdMapping::ScoredMappingMatrix;
 
 use strict;
 use warnings;

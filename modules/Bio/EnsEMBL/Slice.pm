@@ -1,12 +1,22 @@
-#
-# Ensembl module for Bio::EnsEMBL::Slice
-#
-#
-# Copyright Team Ensembl
-#
-# You may distribute this module under the same terms as perl itself
+=head1 LICENSE
 
-# POD documentation - main docs before the code
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -14,39 +24,32 @@ Bio::EnsEMBL::Slice - Arbitary Slice of a genome
 
 =head1 SYNOPSIS
 
-   $sa = $db->get_SliceAdaptor;
+  $sa = $db->get_SliceAdaptor;
 
-   $slice = $sa->fetch_by_region('chromosome', 'X', 1_000_000, 2_000_000);
+  $slice =
+    $sa->fetch_by_region( 'chromosome', 'X', 1_000_000, 2_000_000 );
 
-   #get some attributes of the slice
-   my $seqname = $slice->seq_region_name();
-   my $start = $slice->start();
-   my $end   = $slice->end();
+  # get some attributes of the slice
+  my $seqname = $slice->seq_region_name();
+  my $start   = $slice->start();
+  my $end     = $slice->end();
 
-   #get the sequence from the slice
-   my $seq = $slice->seq();
+  # get the sequence from the slice
+  my $seq = $slice->seq();
 
-   #get some features from the slice
-   foreach $gene ( @{$slice->get_all_Genes} ) {
-      # do something with a gene
-   }
+  # get some features from the slice
+  foreach $gene ( @{ $slice->get_all_Genes } ) {
+    # do something with a gene
+  }
 
-   foreach my $feature ( @{$slice->get_all_DnaAlignFeatures}) {
-     # do something with dna-dna alignments
-   }
-
+  foreach my $feature ( @{ $slice->get_all_DnaAlignFeatures } ) {
+    # do something with dna-dna alignments
+  }
 
 =head1 DESCRIPTION
 
 A Slice object represents a region of a genome.  It can be used to retrieve
 sequence or features from an area of interest.
-
-=head1 CONTACT
-
-This modules is part of the Ensembl project http://www.ensembl.org
-
-Questions can be posted to the ensembl-dev mailing list:
-ensembl-dev@ebi.ac.uk
 
 =head1 METHODS
 

@@ -1,41 +1,55 @@
-=head1 NAME - Bio::EnsEMBL::DBSQL::DBConnection
+=head1 LICENSE
 
-=head1 SYNOPSIS
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
 
-    $dbc = Bio::EnsEMBL::DBSQL::DBConnection->new(
-        -user    => 'anonymous',
-        -dbname  => 'homo_sapiens_core_20_34c',
-        -host    => 'ensembldb.ensembl.org',
-        -driver  => 'mysql',
-        );
+  This software is distributed under a modified Apache license.
+  For license details, please see
 
-
-   SQL statements should be created/executed through
-   this modules prepare() and do() methods.
-
-   $sth = $dbc->prepare( "SELECT something FROM yourtable" );
-
-   $sth->execute();
-
-   # do something with rows returned ...
-
-   $sth->finish();
-
-=head1 DESCRIPTION
-
-  This class is a wrapper around DBIs datbase handle.  It provides some
-  additional functionality such as the ability to automatically disconnect
-  when inactive and reconnect when needed.
-
-  Generally this class will be used through one of the object adaptors or the
-  Bio::EnsEMBL::Registry and will not be instantiated directly.
-
+    http://www.ensembl.org/info/about/code_licence.html
 
 =head1 CONTACT
 
-  This module is part of the Ensembl project: www.ensembl.org
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
 
-  Ensembl development mailing list: <ensembl-dev@ebi.ac.uk>
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
+
+=head1 NAME
+
+Bio::EnsEMBL::DBSQL::DBConnection
+
+=head1 SYNOPSIS
+
+  $dbc = Bio::EnsEMBL::DBSQL::DBConnection->new(
+    -user   => 'anonymous',
+    -dbname => 'homo_sapiens_core_20_34c',
+    -host   => 'ensembldb.ensembl.org',
+    -driver => 'mysql',
+  );
+
+  # SQL statements should be created/executed through this modules
+  # prepare() and do() methods.
+
+  $sth = $dbc->prepare("SELECT something FROM yourtable");
+
+  $sth->execute();
+
+  # do something with rows returned ...
+
+  $sth->finish();
+
+=head1 DESCRIPTION
+
+This class is a wrapper around DBIs datbase handle.  It provides some
+additional functionality such as the ability to automatically disconnect
+when inactive and reconnect when needed.
+
+Generally this class will be used through one of the object adaptors or
+the Bio::EnsEMBL::Registry and will not be instantiated directly.
 
 =head1 METHODS
 

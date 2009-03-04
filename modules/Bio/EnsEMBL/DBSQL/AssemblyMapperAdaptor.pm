@@ -1,66 +1,73 @@
+=head1 LICENSE
 
-#
-# Ensembl module for Bio::EnsEMBL::DBSQL::AssemblyMapperAdaptor
-#
-#
-# Copyright Ensembl
-#
-# You may distribute this module under the same terms as perl itself
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
 
-# POD documentation - main docs before the code
+  This software is distributed under a modified Apache license.
+  For license details, please see
 
-=Head1 NAME
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
+
+=head1 NAME
+
+Bio::EnsEMBL::DBSQL::AssemblyMapperAdaptor
 
 =head1 SYNOPSIS
 
   use Bio::EnsEMBL::Registry;
 
   Bio::EnsEMBL::Registry->load_registry_from_db(
-              -host => 'ensembldb.ensembl.org',
-              -user => 'anonymous'
+    -host => 'ensembldb.ensembl.org',
+    -user => 'anonymous'
   );
 
-  $asma = Bio::EnsEMBL::Registry->get_adaptor("human", "core", "assemblymapper");
-  $csa = Bio::EnsEMBL::Registry->get_adaptor("human", "core", "coordsystem");
+  $asma = Bio::EnsEMBL::Registry->get_adaptor( "human", "core",
+    "assemblymapper" );
 
-  my $chr33_cs   = $csa->fetch_by_name('chromosome', 'NCBI33');
-  my $chr34_cs   = $csa->fetch_by_name('chromosome', 'NCBI34');
-  my $ctg_cs     = $csa->fetch_by_name('contig');
-  my $clone_cs   = $csa->fetch_by_name('clone');
+  $csa = Bio::EnsEMBL::Registry->get_adaptor( "human", "core",
+    "coordsystem" );
+
+  my $chr33_cs = $csa->fetch_by_name( 'chromosome', 'NCBI33' );
+  my $chr34_cs = $csa->fetch_by_name( 'chromosome', 'NCBI34' );
+  my $ctg_cs   = $csa->fetch_by_name('contig');
+  my $clone_cs = $csa->fetch_by_name('clone');
 
   my $chr_ctg_mapper =
-    $asma->fetch_by_CoordSystems($chr33_cs, $ctg_cs);
+    $asma->fetch_by_CoordSystems( $chr33_cs, $ctg_cs );
 
   my $ncbi33_ncbi34_mapper =
-    $asm_adptr->fetch_by_CoordSystems($chr33,$chr34);
+    $asm_adptr->fetch_by_CoordSystems( $chr33, $chr34 );
 
   my $ctg_clone_mapper =
-    $asm_adptr->fetch_by_CoordSystems($ctg_cs,$clone_cs);
+    $asm_adptr->fetch_by_CoordSystems( $ctg_cs, $clone_cs );
 
 
 =head1 DESCRIPTION
 
-Adaptor for handling Assembly mappers.  This is a
-I<Singleton> class.  ie: There is only one per
-database (C<DBAdaptor>).
+Adaptor for handling Assembly mappers.  This is a I<Singleton> class.
+ie: There is only one per database (C<DBAdaptor>).
 
-This is used to retrieve mappers between any two coordinate systems whose
-makeup is described by the assembly table.  Currently one step (explicit) and
-two step (implicit) pairwise mapping is supported.  In one-step mapping
-an explicit relationship between the coordinate systems is defined in the
-assembly table.  In two-step 'chained' mapping no explicit mapping is present
-but the coordinate systems must share a common mapping to an intermediate
-coordinate system.
-
-=head1 CONTACT
-
-This module is part of the Ensembl project: www.ensembl.org
-Post general queries to B<ensembl-dev@ebi.ac.uk>
+This is used to retrieve mappers between any two coordinate systems
+whose makeup is described by the assembly table.  Currently one step
+(explicit) and two step (implicit) pairwise mapping is supported.  In
+one-step mapping an explicit relationship between the coordinate systems
+is defined in the assembly table.  In two-step 'chained' mapping no
+explicit mapping is present but the coordinate systems must share a
+common mapping to an intermediate coordinate system.
 
 =head1 METHODS
 
 =cut
-
 
 package Bio::EnsEMBL::DBSQL::AssemblyMapperAdaptor;
 use vars qw(@ISA);

@@ -1,10 +1,22 @@
-#EnsEMBL PredictionExon reading writing adaptor for mySQL
-#
-# Copyright EMBL-EBI 2003
-#
-# Author: Arne Stabenau
-# 
-#
+=head1 LICENSE
+
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -13,24 +25,17 @@ PredictionExons.
 
 =head1 SYNOPSIS
 
-$pea = $database_adaptor->get_PredictionExonAdaptor();
-$pexon = $pea->fetch_by_dbID();
+  $pea   = $database_adaptor->get_PredictionExonAdaptor();
+  $pexon = $pea->fetch_by_dbID();
 
-my $slice = $database_adaptor->get_SliceAdaptor->fetch_by_region('X',1,1e6);
+  my $slice =
+    $database_adaptor->get_SliceAdaptor->fetch_by_region( 'X', 1, 1e6 );
 
-my @pexons = @{$pea->fetch_all_by_Slice($slice)};
+  my @pexons = @{ $pea->fetch_all_by_Slice($slice) };
 
-
-=head1 CONTACT
-
-  Post questions to the EnsEMBL development list ensembl-dev@ebi.ac.uk
-
-=head1 APPENDIX
-
-  The rest of the documentation describes object methods.
+=head1 METHODS
 
 =cut
-
 
 package Bio::EnsEMBL::DBSQL::PredictionExonAdaptor;
 

@@ -1,6 +1,22 @@
-# EnsEMBL module for Bio::EnsEMBL::Utils::Exception
-#
-#
+=head1 LICENSE
+
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -8,84 +24,72 @@ Bio::EnsEMBL::Utils::Exception - Utility functions for error handling
 
 =head1 SYNOPSIS
 
-    use Bio::EnsEMBL::Utils::Exception qw(throw warning deprecate verbose try catch);
+  use Bio::EnsEMBL::Utils::Exception
+    qw(throw warning deprecate verbose try catch);
 
-    or to get all methods just
+  or to get all methods just
 
-    use Bio::EnsEMBL::Utils::Exception;
+  use Bio::EnsEMBL::Utils::Exception;
 
-    eval {
-      throw("this is an exception with a stack trace");
-    };
+  eval { throw("this is an exception with a stack trace") };
+  if ($@) {
+    print "Caught exception:\n$@";
+  }
 
-    if($@) {
-      print "Caught exception:\n$@";
-    }
+  # Or you can us the try/catch confortable syntax instead to deal with
+  # throw or die.  Don't forget the ";" after the catch block.  With
+  # this syntax, the original $@ is in $_ in the catch subroutine.
 
-    # or you can us the try/catch confortable syntax instead
-    # to deal with throw or die.
-    # don't forget the ";" after the catch block
-    # With this syntax, the original $@ is in $_ in the catch subroutine.
+  try {
+    throw("this is an exception with a stack trace");
+  }
+  catch { print "Caught exception:\n$_" };
 
-    try {
-      throw("this is an exception with a stack trace");
-    } catch {
-      print "Caught exception:\n$_";
-    };
+  # silence warnings
+  verbose('OFF');
 
-    #silence warnings
-    verbose('OFF');
+  warning('this is a silent warning');
 
-    warning('this is a silent warning');
+  #show deprecated and warning messages but not info
+  verbose('DEPRECATE');
 
-    #show deprecated and warning messages but not info
-    verbose('DEPRECATE');
-   
-    warning('this is a warning');
+  warning('this is a warning');
 
-    #show all messages
-    verbose('ALL');
+  # show all messages
+  verbose('ALL');
 
-    info('this is an informational message');
+  info('this is an informational message');
 
-    sub my_sub {
-      deprecate('use other_sub() instead');
-    }
+  sub my_sub { deprecate('use other_sub() instead') }
 
-    verbose('EXCEPTION');
-    info('This is a high priority info message.', 1000);
-
+  verbose('EXCEPTION');
+  info( 'This is a high priority info message.', 1000 );
 
 =head1 DESCRIPTION
 
-This is derived from the Bio::Root module in BioPerl.  Some formatting has
-been changed and the deprecate function has been added.  Most notably the
-object methods are now static class methods that can be called without 
-inheriting from Bio::Root or Bio::EnsEMBL::Root.  This is especially useful
-for throwing exceptions with stack traces outside of a blessed context.
+This is derived from the Bio::Root module in BioPerl.  Some formatting
+has been changed and the deprecate function has been added.  Most
+notably the object methods are now static class methods that can be
+called without inheriting from Bio::Root or Bio::EnsEMBL::Root.  This is
+especially useful for throwing exceptions with stack traces outside of a
+blessed context.
 
-The originaly implementations of these methods were by Steve Chervitz and
-refactored by Ewan Birney.
+The originaly implementations of these methods were by Steve Chervitz
+and refactored by Ewan Birney.
 
-It is recommended that these functions be used instead of inheriting 
-unnecessarily from the Bio::EnsEMBL::Root or Bio::Root object.
-The functions exported by this package provide a set of useful error handling
-methods.
-
-=head1 CONTACT
-
-Post questions to the EnsEMBL development list: ensembl-dev@ebi.ac.uk
+It is recommended that these functions be used instead of inheriting
+unnecessarily from the Bio::EnsEMBL::Root or Bio::Root object.  The
+functions exported by this package provide a set of useful error
+handling methods.
 
 =head1 METHODS
 
-The rest of the documentation details exported static class methods. 
-
 =cut
+
+package Bio::EnsEMBL::Utils::Exception;
 
 use strict;
 use warnings;
-
-package Bio::EnsEMBL::Utils::Exception;
 
 use Exporter;
 

@@ -1,8 +1,22 @@
-# EnsEMBL Gene reading writing adaptor for mySQL
-#
-# Copyright EMBL-EBI 2002
-#
-#
+=head1 LICENSE
+
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -10,23 +24,20 @@ Bio::EnsEMBL::DBSQL::ProxySNPAdaptor
 
 =head1 SYNOPSIS
 
-Designed as an abstraction over the database specific SNPAdaptors. This is 
-written right now to serve as a replacement for a core SNPadaptor which 
-doesn''t even exist yet and probably never will since SNPs are taken from
-external databases. In the future some sort of DBRegistry may remove the
-need for this class.  
-
-=head1 CONTACT
-
-  Post questions to the Ensembl development list <ensembl-dev@ebi.ac.uk>
+Designed as an abstraction over the database specific SNPAdaptors. This
+is written right now to serve as a replacement for a core SNPadaptor
+which doesn''t even exist yet and probably never will since SNPs are
+taken from external databases. In the future some sort of DBRegistry may
+remove the need for this class.
 
 =head1 METHODS
 
 =cut
 
+package Bio::EnsEMBL::DBSQL::ProxySNPAdaptor;
+
 use strict;
 
-package Bio::EnsEMBL::DBSQL::ProxySNPAdaptor;
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Bio::EnsEMBL::Utils::Exception qw(throw);
 

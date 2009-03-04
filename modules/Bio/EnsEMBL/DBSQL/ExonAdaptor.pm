@@ -1,15 +1,22 @@
-package Bio::EnsEMBL::DBSQL::ExonAdaptor;
+=head1 LICENSE
 
-#EnsEMBL Exon reading writing adaptor for mySQL
-#
-# Copyright EMBL-EBI 2001
-#
-# Author: Arne Stabenau
-# based on
-# Elia Stupkas Gene_Obj
-#
-# Date : 20.02.2001
-#
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -24,17 +31,15 @@ storage of exon objects
 
 =head1 DESCRIPTION
 
-The ExonAdaptor is responsible for retrieving and storing Exon objects from an
-Ensembl database.  Most of the ExonAdaptor functionality is inherited from the
-B<Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor> class.
-
-=head1 CONTACT
-
-Post questions/comments to the Ensembl dev list: ensembl-dev@ebi.ac.uk
+The ExonAdaptor is responsible for retrieving and storing Exon objects
+from an Ensembl database.  Most of the ExonAdaptor functionality is
+inherited from the B<Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor> class.
 
 =head1 METHODS
 
 =cut
+
+package Bio::EnsEMBL::DBSQL::ExonAdaptor;
 
 use strict;
 

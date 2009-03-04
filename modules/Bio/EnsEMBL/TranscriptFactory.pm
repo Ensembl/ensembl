@@ -1,13 +1,22 @@
-# Ensembl module for Bio::EnsEMBL::TranscriptFactory
-#
-# Cared for by EnsEMBL (www.ensembl.org)
-#
-# Copyright GRL and EBI
-#
-# You may distribute this module under the same terms as perl itself
-# POD documentation - main docs before the code
+=head1 LICENSE
 
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
 
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -16,9 +25,9 @@ subroutines
 
 =head1 SYNOPSIS
 
-    use Bio::EnsEMBL::TranscriptFactory;
+  use Bio::EnsEMBL::TranscriptFactory;
 
-    &Bio::EnsEMBL::TranscriptFactory::fset2transcript($fset_id);
+  &Bio::EnsEMBL::TranscriptFactory::fset2transcript($fset_id);
 
 =head1 DESCRIPTION
 
@@ -26,18 +35,9 @@ Module containing the subroutines fset2transcript*,
 which create transcripts from features (formally housed in
 Bio::EnsEMBL::DBSQL::Utils).
 
-=head1 CONTACT
-
-Ensembl - ensembl-dev@ebi.ac.uk
-
-=head1 APPENDIX
-
-The rest of the documentation details each of the object methods.
-Internal methods are usually preceded with a _
+=head1 METHODS
 
 =cut
-
-
 
 package Bio::EnsEMBL::TranscriptFactory;
 

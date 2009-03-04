@@ -1,14 +1,22 @@
+=head1 LICENSE
 
-#
-# BioPerl module for Bio::EnsEMBL::DBSQL::BaseAdaptor
-#
-# Cared for by Ewan Birney <birney@ebi.ac.uk>
-#
-# Copyright Ewan Birney
-#
-# You may distribute this module under the same terms as perl itself
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
 
-# POD documentation - main docs before the code
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -16,74 +24,64 @@ Bio::EnsEMBL::DBSQL::BaseAdaptor - Base Adaptor for DBSQL adaptors
 
 =head1 SYNOPSIS
 
-    # base adaptor provides
-    
-    # SQL prepare function
-    $adaptor->prepare("sql statement");
+  # base adaptor provides
 
-    # get of root DBAdaptor object
-    $adaptor->db();
+  # SQL prepare function
+  $adaptor->prepare("sql statement");
 
-    # constructor, ok for inheritence
-    $adaptor = Bio::EnsEMBL::DBSQL::SubClassOfBaseAdaptor->new($dbobj)
+  # get of root DBAdaptor object
+  $adaptor->db();
+
+  # constructor, ok for inheritence
+  $adaptor = Bio::EnsEMBL::DBSQL::SubClassOfBaseAdaptor->new($dbobj)
 
 =head1 DESCRIPTION
 
 This is a true base class for Adaptors in the Ensembl DBSQL
 system. Original idea from Arne
 
-
 Adaptors are expected to have the following functions
 
-    $obj = $adaptor->fetch_by_dbID($internal_id);
+  $obj = $adaptor->fetch_by_dbID($internal_id);
 
 which builds the object from the primary key of the object. This
-function is crucial because it allows adaptors to collaborate
-relatively independently of each other - in other words, we can change
-the schema under one adaptor without too many knock on changes through
-the other adaptors.
+function is crucial because it allows adaptors to collaborate relatively
+independently of each other - in other words, we can change the schema
+under one adaptor without too many knock on changes through the other
+adaptors.
 
 Most adaptors will also have
 
-    $dbid = $adaptor->store($obj);
+  $dbid = $adaptor->store($obj);
 
 which stores the object. Currently the storing of an object also causes
 the objects to set
 
-    $obj->dbID
+  $obj->dbID();
 
 correctly and attach the adaptor.
 
-
 Other fetch functions go by the convention of
 
-    @object_array = @{$adaptor->fetch_all_by_XXXX($arguments_for_XXXX)};
+  @object_array = @{ $adaptor->fetch_all_by_XXXX($arguments_for_XXXX) };
 
-sometimes it returns an array ref denoted by the 'all' in the name of the
-method, sometimes an individual object. For example
+sometimes it returns an array ref denoted by the 'all' in the name of
+the method, sometimes an individual object. For example
 
-    $gene = $gene_adaptor->fetch_by_stable_id($stable_id);
+  $gene = $gene_adaptor->fetch_by_stable_id($stable_id);
 
 or
 
-    @fp  = @{$simple_feature_adaptor->fetch_all_by_Slice($slice)};
+  @fp = @{ $simple_feature_adaptor->fetch_all_by_Slice($slice) };
 
+Occassionally adaptors need to provide access to lists of ids. In this
+case the convention is to go list_XXXX, such as
 
-Occassionally adaptors need to provide access to lists of ids. In this case the
-convention is to go list_XXXX, such as
-
-    @gene_ids = @{$gene_adaptor->list_geneIds()};
+  @gene_ids = @{ $gene_adaptor->list_geneIds() };
 
 (note: this method is poorly named)
 
-=head1 CONTACT
-
-Post questions to the EnsEMBL developer mailing list: <ensembl-dev@ebi.ac.uk>
-
-=head1 APPENDIX
-
-The rest of the documentation details each of the object methods.
-Internal methods are usually preceded with a _
+=head1 METHODS
 
 =cut
 

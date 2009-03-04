@@ -1,4 +1,26 @@
-#
+=head1 LICENSE
+
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=head1 AUTHOR
+
+Juguang Xiao <juguang@tll.org.sg>
+
+=cut
 
 =head1 NAME
 
@@ -6,55 +28,57 @@ Bio::EnsEMBL::Utils::EasyArgv
 
 =head1 SYNOPSIS
 
-    use Bio::EnsEMBL::Utils::EasyArgv;
-    my $db = get_ens_db_from_argv; # this method is exported.
-    use Getopt::Long;
-    my ($others);
-    &GetOptions(
-        'others=s' => \$others
-    );
+  use Bio::EnsEMBL::Utils::EasyArgv;
+
+  my $db = get_ens_db_from_argv;    # this method is exported.
+
+  use Getopt::Long;
+
+  my $others;
+  &GetOptions( 'others=s' => \$others );
 
 =head1 DESCRIPTION
 
-This is a lazy but easy way to get the db-related arguments. All you need to do
-is to invoke get_ens_db_from_argv before using standard Getopt. The below 
-options will be absorbed and removed from @ARGV.
+This is a lazy but easy way to get the db-related arguments. All you
+need to do is to invoke get_ens_db_from_argv before using standard
+Getopt. The below options will be absorbed and removed from @ARGV.
 
-db_file, host, db_host, dbhost, user, db_user, dbuser, pass, db_pass, dbpass,
-dbname, db_name.
+db_file, host, db_host, dbhost, user, db_user, dbuser, pass, db_pass,
+dbpass, dbname, db_name.
 
-Now you can take advantage of Perl's do method to execute a file as perl script and get returned the last line of it. For your most accessed db setting, you 
-can have a file named, say, ensdb_homo_core_18.perlobj, with the content like
+Now you can take advantage of Perl's do method to execute a file as perl
+script and get returned the last line of it. For your most accessed db
+setting, you can have a file named, say, ensdb_homo_core_18.perlobj,
+with the content like
 
-    use strict;  # The ceiling line
-    use Bio:: EnsEMBL::DBSQL::DBAdaptor;
-    my $db = Bio:: EnsEMBL::DBSQL::DBAdaptor->new(
-        -host => 'ensembldb.ensembl.org',
-        -user => 'anonymous',
-        -dbname => 'homo_sapiens_core_18_34'
-        );
-    $db;  # The floor line
+  use strict;    # The ceiling line
+
+  use Bio:: EnsEMBL::DBSQL::DBAdaptor;
+
+  my $db = Bio:: EnsEMBL::DBSQL::DBAdaptor->new(
+    -host   => 'ensembldb.ensembl.org',
+    -user   => 'anonymous',
+    -dbname => 'homo_sapiens_core_18_34'
+  );
+
+  $db;           # The floor line
 
 In the your command line, you just need to write like 
 
-perl my_script.pl -db_file ensdb_homo_core_18.perlobj
+  perl my_script.pl -db_file ensdb_homo_core_18.perlobj
 
-rather than verbose 
+rather than the verbose
 
--host ensembldb.ensembl.org -user anonymous -dbname homo_sapiens_core_18_34
+  -host ensembldb.ensembl.org -user anonymous \
+  -dbname homo_sapiens_core_18_34
 
-
-=head1 AUTHOR
-
-Juguang XIAO, juguang@tll.org.sg
-
-Other contributors' names here.
+=head1 METHODS
 
 =cut
 
-use strict;
-
 package Bio::EnsEMBL::Utils::EasyArgv;
+
+use strict;
 use vars qw($debug);
 use Exporter ();
 our @ISA= qw(Exporter);

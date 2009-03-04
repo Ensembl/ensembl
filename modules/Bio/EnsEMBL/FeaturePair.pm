@@ -1,11 +1,22 @@
-#
-# BioPerl module for Bio::EnsEMBL::FeaturePair
-#
-# Cared for by Ewan Birney <birney@sanger.ac.uk>
-#
-# Copyright Ewan Birney
-#
-# You may distribute this module under the same terms as perl
+=head1 LICENSE
+
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -14,17 +25,19 @@ themselves hits to other sequence features.
 
 =head1 SYNOPSIS
 
-    my $feat = Bio::EnsEMBL::FeaturePair->new(-start    => 132_231,
-                                              -end      => 132_321,
-                                              -strand   => -1,
-                                              -slice    => $slice,
-                                              -hstart   => 10,
-                                              -hend     => 100,
-                                              -hstrand  => 1,
-                                              -score    => 100,
-                                              -percent_id => 92.0,
-                                              -hseqname => 'ALUSX10.1',
-                                              -analysis => $analysis);
+    my $feat = Bio::EnsEMBL::FeaturePair->new(
+      -start      => 132_231,
+      -end        => 132_321,
+      -strand     => -1,
+      -slice      => $slice,
+      -hstart     => 10,
+      -hend       => 100,
+      -hstrand    => 1,
+      -score      => 100,
+      -percent_id => 92.0,
+      -hseqname   => 'ALUSX10.1',
+      -analysis   => $analysis
+    );
 
     my $hit_start  = $feat->hstart();
     my $hit_end    = $feat->hend();
@@ -33,32 +46,29 @@ themselves hits to other sequence features.
 
 =head1 DESCRIPTION
 
-A sequence feature object where the feature is itself a feature on another 
-sequence - e.g. a blast hit where residues 1-40 of a  protein sequence 
-SW:HBA_HUMAN has hit to bases 100 - 220 on a genomic sequence HS120G22.  
-The genomic sequence coordinates are represented by the start, end, strand
-attributes while the protein (hit) coordinates are represented by the hstart,
-hend, hstrand attributes.
+A sequence feature object where the feature is itself a feature on
+another sequence - e.g. a blast hit where residues 1-40 of a protein
+sequence SW:HBA_HUMAN has hit to bases 100 - 220 on a genomic sequence
+HS120G22.  The genomic sequence coordinates are represented by the
+start, end, strand attributes while the protein (hit) coordinates are
+represented by the hstart, hend, hstrand attributes.
 
-    $clone = $slice_adpator->fetch_by_region('clone', 'HS120G22');
+  $clone = $slice_adpator->fetch_by_region( 'clone', 'HS120G22' );
 
-    $fp = Bio::EnsEMBL::FeaturePair(-start    => 100,
-                                    -end      => 220,
-                                    -strand   => 1,
-                                    -slice    => $clone,
-                                    -hstart   => 1,
-                                    -hend     => 40,
-                                    -hstrand  => 1,
-                                    -percent_id => 92.0,
-                                    -score    => 100,
-                                    -hseqname => 'SW:HBA_HUMAN',
-                                    -species  => 'Homo sapiens',
-                                    -hspecies => 'Homo sapiens');
-
-
-=head1 CONTACT
-
-Post comments/questions to the EnsEMBL developer list: ensembl-dev@ebi.ac.uk
+  $fp = Bio::EnsEMBL::FeaturePair(
+    -start      => 100,
+    -end        => 220,
+    -strand     => 1,
+    -slice      => $clone,
+    -hstart     => 1,
+    -hend       => 40,
+    -hstrand    => 1,
+    -percent_id => 92.0,
+    -score      => 100,
+    -hseqname   => 'SW:HBA_HUMAN',
+    -species    => 'Homo sapiens',
+    -hspecies   => 'Homo sapiens'
+  );
 
 =head1 METHODS
 

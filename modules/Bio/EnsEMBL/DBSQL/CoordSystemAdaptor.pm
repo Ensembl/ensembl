@@ -1,7 +1,22 @@
-#
-# EnsEMBL module for Bio::EnsEMBL::DBSQL::CoordSystemAdaptor
-#
-#
+=head1 LICENSE
+
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -9,36 +24,36 @@ Bio::EnsEMBL::DBSQL::CoordSystemAdaptor
 
 =head1 SYNOPSIS
 
-
   use Bio::EnsEMBL::Registry;
 
   Bio::EnsEMBL::Registry->load_registry_from_db(
-              -host => 'ensembldb.ensembl.org',
-              -user => 'anonymous'
+    -host => 'ensembldb.ensembl.org',
+    -user => 'anonymous'
   );
 
-  $csa = Bio::EnsEMBL::Registry->get_adaptor("human", "core", "coordsystem");
+  $csa = Bio::EnsEMBL::Registry->get_adaptor( "human", "core",
+    "coordsystem" );
 
   #
   # Get all coord systems in the database:
   #
-  foreach my $cs (@{$csa->fetch_all()}) {
-    print $cs->name, ' ',  $cs->version, "\n";
+  foreach my $cs ( @{ $csa->fetch_all() } ) {
+    print $cs->name, ' ', $cs->version, "\n";
   }
 
   #
   # Fetching by name:
   #
 
-  #use the default version of coord_system 'chromosome' (e.g. NCBI33):
+  # use the default version of coord_system 'chromosome' (e.g. NCBI33):
   $cs = $csa->fetch_by_name('chromosome');
 
-  #get an explicit version of coord_system 'chromosome':
-  $cs = $csa->fetch_by_name('chromsome', 'NCBI34');
+  # get an explicit version of coord_system 'chromosome':
+  $cs = $csa->fetch_by_name( 'chromsome', 'NCBI34' );
 
-  #get all coord_systems of name 'chromosome':
-  foreach $cs (@{$csa->fetch_all_by_name('chromosome')}) {
-     print $cs->name, ' ', $cs->version, "\n";
+  # get all coord_systems of name 'chromosome':
+  foreach $cs ( @{ $csa->fetch_all_by_name('chromosome') } ) {
+    print $cs->name, ' ', $cs->version, "\n";
   }
 
   #
@@ -50,23 +65,23 @@ Bio::EnsEMBL::DBSQL::CoordSystemAdaptor
   # Fetching the pseudo coord system 'toplevel'
   #
 
-  #Get the default top_level coord system:
+  # Get the default top_level coord system:
   $cs = $csa->fetch_top_level();
 
-  #can also use an alias in fetch_by_name:
+  # can also use an alias in fetch_by_name:
   $cs = $csa->fetch_by_name('toplevel');
 
-  #can also request toplevel using rank=0
+  # can also request toplevel using rank=0
   $cs = $csa->fetch_by_rank(0);
 
   #
   # Fetching by sequence level:
   #
 
-  #Get the coord system which is used to store sequence:
+  # Get the coord system which is used to store sequence:
   $cs = $csa->fetch_sequence_level();
 
-  #can also use an alias in fetch_by_name:
+  # can also use an alias in fetch_by_name:
   $cs = $csa->fetch_by_name('seqlevel');
 
   #
@@ -77,30 +92,25 @@ Bio::EnsEMBL::DBSQL::CoordSystemAdaptor
 
 =head1 DESCRIPTION
 
-This adaptor allows the querying of information from the coordinate system
-adaptor.
+This adaptor allows the querying of information from the coordinate
+system adaptor.
 
 Note that many coordinate systems do not have a concept of a version
-for the entire coordinate system (though they may have a per-sequence version).
-The 'chromosome' coordinate system usually has a version (i.e. the
-assembly version) but the clonal coordinate system does not (despite having
-individual sequence versions).  In the case where a coordinate system does
-not have a version an empty string ('') is used instead.
-
-=head1 AUTHOR - Graham McVicker
-
-=head1 CONTACT
-
-Post questions to the EnsEMBL development list ensembl-dev@ebi.ac.uk
+for the entire coordinate system (though they may have a per-sequence
+version).  The 'chromosome' coordinate system usually has a version
+(i.e. the assembly version) but the clonal coordinate system does not
+(despite having individual sequence versions).  In the case where a
+coordinate system does not have a version an empty string ('') is used
+instead.
 
 =head1 METHODS
 
 =cut
 
+package Bio::EnsEMBL::DBSQL::CoordSystemAdaptor;
+
 use strict;
 use warnings;
-
-package Bio::EnsEMBL::DBSQL::CoordSystemAdaptor;
 
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Bio::EnsEMBL::Utils::Exception qw(throw warning deprecate);

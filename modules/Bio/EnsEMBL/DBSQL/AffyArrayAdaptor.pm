@@ -1,7 +1,22 @@
-#
-# Ensembl module for Bio::EnsEMBL::DBSQL::AffyArrayAdaptor
-#
-# You may distribute this module under the same terms as Perl itself
+=head1 LICENSE
+
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -10,35 +25,24 @@ storing AffyArray objects.
 
 =head1 SYNOPSIS
 
-my $aaa = $db->get_AffyArrayAdaptor();
+  my $aaa = $db->get_AffyArrayAdaptor();
 
-my $array = $aaa->fetch_by_name('Affy-1');
-my @arrays = @{$aaa->fetch_all()};
+  my $array  = $aaa->fetch_by_name('Affy-1');
+  my @arrays = @{ $aaa->fetch_all() };
 
 =head1 DESCRIPTION
 
 The AffyArrayAdaptor is a database adaptor for storing and retrieving
 AffyArray objects.
 
-=head1 AUTHOR
-
-This module was originally written by Arne Stabenau, but was changed to be a
-subclass of OligoArrayAdaptor by Ian Sealy.
-
-This module is part of the Ensembl project: http://www.ensembl.org/
-
-=head1 CONTACT
-
-Post comments or questions to the Ensembl development list: ensembl-dev@ebi.ac.uk
-
 =head1 METHODS
 
 =cut
 
+package Bio::EnsEMBL::DBSQL::AffyArrayAdaptor;
+
 use strict;
 use warnings;
-
-package Bio::EnsEMBL::DBSQL::AffyArrayAdaptor;
 
 use Bio::EnsEMBL::AffyArray;
 use Bio::EnsEMBL::DBSQL::OligoArrayAdaptor;

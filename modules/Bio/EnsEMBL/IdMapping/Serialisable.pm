@@ -1,4 +1,22 @@
-package Bio::EnsEMBL::IdMapping::Serialisable;
+=head1 LICENSE
+
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -6,62 +24,51 @@ Bio::EnsEMBL::IdMapping::Serialisable - base class for serialisable objects
 
 =head1 SYNOPSIS
 
-# instantiate an object which extends Serialisable
-my $object = YourObject->new(
-  -DUMP_PATH    => '/tmp',
-  -CACHE_FILE   => 'object_cache.ser',
-);
+  # instantiate an object which extends Serialisable
+  my $object = YourObject->new(
+    -DUMP_PATH  => '/tmp',
+    -CACHE_FILE => 'object_cache.ser',
+  );
 
-# serialise object to file
-my $filesize = $object->write_to_file;
-print LOG "Serialised object to file of size $filesize.\n";
+  # serialise object to file
+  my $filesize = $object->write_to_file;
+  print LOG "Serialised object to file of size $filesize.\n";
 
-# later, create another object defining the same serialisation location.
-# specifying -LOAD_AUTO will automatically load it from the serialisation file.
-my $object1 = YourObject->new(
-  -DUMP_PATH    => '/tmp',
-  -CACHE_FILE   => 'object_cache.ser',
-  -LOAD_AUTO    => 1,
-);
+  # later, create another object defining the same serialisation
+  # location. specifying -LOAD_AUTO will automatically load it from the
+  # serialisation file.
+  my $object1 = YourObject->new(
+    -DUMP_PATH  => '/tmp',
+    -CACHE_FILE => 'object_cache.ser',
+    -LOAD_AUTO  => 1,
+  );
 
-# alternatively, manually load the object from file
-$object1->load_from_file;
+  # alternatively, manually load the object from file
+  $object1->load_from_file;
 
 =head1 DESCRIPTION
 
-This is the base class for serialisable objects used by the stable Id mapping.
-It's essentially an OO wrapper for Storable, providing a method to store
-(write_to_file(()) and one to retrieve (read_from_file()) serialised objects.
+This is the base class for serialisable objects used by the
+stable Id mapping.  It's essentially an OO wrapper for Storable,
+providing a method to store (write_to_file(()) and one to retrieve
+(read_from_file()) serialised objects.
 
-This class is not instantiated itself, but rather extended by implementing
-classes.
+This class is not instantiated itself, but rather extended by
+implementing classes.
 
 =head1 METHODS
 
-new
-write_to_file
-read_from_file
-dump_path
-cache_file_name
-cache_file
-loaded
-
-=head1 LICENCE
-
-This code is distributed under an Apache style licence. Please see
-http://www.ensembl.org/info/about/code_licence.html for details.
-
-=head1 AUTHOR
-
-Patrick Meidl <meidl@ebi.ac.uk>, Ensembl core API team
-
-=head1 CONTACT
-
-Please post comments/questions to the Ensembl development list
-<ensembl-dev@ebi.ac.uk>
+  new
+  write_to_file
+  read_from_file
+  dump_path
+  cache_file_name
+  cache_file
+  loaded
 
 =cut
 
+package Bio::EnsEMBL::IdMapping::Serialisable;
 
 use strict;
 use warnings;

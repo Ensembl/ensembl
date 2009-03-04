@@ -1,4 +1,22 @@
-package Bio::EnsEMBL::IdMapping::Archiver;
+=head1 LICENSE
+
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -6,54 +24,44 @@ Bio::EnsEMBL::IdMapping::Archiver - create gene_archive and peptide_archive
 
 =head1 SYNOPSIS
 
-my $archiver = Bio::EnsEMBL::IdMapping::Archiver->new(
-  -LOGGER       => $logger,
-  -CONF         => $conf,
-  -CACHE        => $cache
-);
+  my $archiver = Bio::EnsEMBL::IdMapping::Archiver->new(
+    -LOGGER => $logger,
+    -CONF   => $conf,
+    -CACHE  => $cache
+  );
 
-# create gene and peptide archive
-$archiver->create_archive($mapping_session_id);
+  # create gene and peptide archive
+  $archiver->create_archive($mapping_session_id);
 
-# dump existing archive tables to file
-my $num_entries = $archiver->dump_table_to_file('source', 'gene_archive',
-  'gene_archive_existing.txt', 1);
+  # dump existing archive tables to file
+  my $num_entries =
+    $archiver->dump_table_to_file( 'source', 'gene_archive',
+    'gene_archive_existing.txt', 1 );
 
 =head1 DESCRIPTION
 
-This module creates the gene_archive and peptide_archive tables. Data is written
-to a file as tab-delimited text for loading into a MySQL database (this can be
-done manually, or using StableIdmapper->upload_file_into_table()).
+This module creates the gene_archive and peptide_archive
+tables. Data is written to a file as tab-delimited text for
+loading into a MySQL database (this can be done manually, or using
+StableIdmapper->upload_file_into_table()).
 
-An archive entry for a given source gene is created if no target gene exists, or
-if any of its transcripts or their translations changed. Non-coding transcripts
-only have an entry in gene_archive (i.e. without a corresponding peptide_archive
-entry).
+An archive entry for a given source gene is created if no target
+gene exists, or if any of its transcripts or their translations
+changed. Non-coding transcripts only have an entry in gene_archive (i.e.
+without a corresponding peptide_archive entry).
 
 =head1 METHODS
 
-create_archive
-dump_gene
-dump_tuple
-dump_nc_row
-mapping_session_id
-
-=head1 LICENCE
-
-This code is distributed under an Apache style licence. Please see
-http:#www.ensembl.org/info/about/code_licence.html for details.
-
-=head1 AUTHOR
-
-Patrick Meidl <meidl@ebi.ac.uk>, Ensembl core API team
-
-=head1 CONTACT
-
-Please post comments/questions to the Ensembl development list
-<ensembl-dev@ebi.ac.uk>
+  create_archive
+  dump_gene
+  dump_tuple
+  dump_nc_row
+  mapping_session_id
 
 =cut
 
+
+package Bio::EnsEMBL::IdMapping::Archiver;
 
 use strict;
 use warnings;

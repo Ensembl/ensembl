@@ -1,4 +1,22 @@
-package Bio::EnsEMBL::Utils::AssemblyProjector;
+=head1 LICENSE
+
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -16,8 +34,8 @@ utility class to post-process projections from one assembly to another
     -group  => 'core_old',
   );
 
-  # connect to the new database containing the mapping between old and new
-  # assembly
+  # connect to the new database containing the mapping between old and
+  # new assembly
   my $dba_new = new Bio::EnsEMBL::DBSQL::DBAdaptor(
     -host   => 'ensembldb.ensembl.org',
     -port   => 3306,
@@ -27,93 +45,82 @@ utility class to post-process projections from one assembly to another
   );
 
   my $assembly_projector = Bio::EnsEMBL::Utils::AssemblyProjector->new(
-      -OLD_ASSEMBLY    => 'NCBIM36',
-      -NEW_ASSEMBLY    => 'NCBIM37',
-      -ADAPTOR         => $dba_new,
-      -EXTERNAL_SOURCE => 1,
-      -MERGE_FRAGMENTS => 1,
-      -CHECK_LENGTH    => 0,
+    -OLD_ASSEMBLY    => 'NCBIM36',
+    -NEW_ASSEMBLY    => 'NCBIM37',
+    -ADAPTOR         => $dba_new,
+    -EXTERNAL_SOURCE => 1,
+    -MERGE_FRAGMENTS => 1,
+    -CHECK_LENGTH    => 0,
   );
 
   # fetch a slice on the old assembly
   my $slice_adaptor = $dba_old->get_SliceAdaptor;
-  my $slice = $slice_adaptor->fetch_by_region('chromosome', 1, undef, undef,
-    undef, 'NCBIM36');
+  my $slice =
+    $slice_adaptor->fetch_by_region( 'chromosome', 1, undef, undef,
+    undef, 'NCBIM36' );
 
   my $new_slice = $assembly_projector->old_to_new($slice);
-  
+
   print $new_slice->name, " (", $assembly_projector->last_status, ")\n";
 
 =head1 DESCRIPTION
 
-This class implements some utility functions for converting coordinates between
-assemblies. A mapping between the two assemblies has to present the database for
-this to work, see the 'Related Modules' section below on how to generate the
-mapping.
+This class implements some utility functions for converting coordinates
+between assemblies. A mapping between the two assemblies has to present
+the database for this to work, see the 'Related Modules' section below
+on how to generate the mapping.
 
-In addition to the "raw" projecting of features and slices, the methods in this
-module also apply some sensible rules to the results of the projection (like
-discarding unwanted results or merging fragmented projections). These are the
-rules (depending on configuration):
+In addition to the "raw" projecting of features and slices, the methods
+in this module also apply some sensible rules to the results of the
+projection (like discarding unwanted results or merging fragmented
+projections). These are the rules (depending on configuration):
 
 Discard the projected feature/slice if:
 
   1. it doesn't project at all (no segments returned)
   2. [unless MERGE_FRAGMENTS is set] the projection is fragmented (more
      than one segment)
-  3. [if CHECK_LENGTH is set] the projection doesn't have the same length
-     as the original feature/slice
+  3. [if CHECK_LENGTH is set] the projection doesn't have the same
+     length as the original feature/slice
   4. all segments are on same chromosome and strand
 
-If a projection fails any of these rules, undef is returned instead of a
-projected feature/slice. You can use the last_status() method to find out about
-the results of the rules tests.
+If a projection fails any of these rules, undef is returned instead of
+a projected feature/slice. You can use the last_status() method to find
+out about the results of the rules tests.
 
-Also note that when projecting features, only a shallow projection is performed,
-i.e. other features attached to your features (e.g. the transcripts of a gene)
-are not projected automatically, so it will be the responsability of the user
-code project all levels of features involved.
+Also note that when projecting features, only a shallow projection is
+performed, i.e. other features attached to your features (e.g. the
+transcripts of a gene) are not projected automatically, so it will be
+the responsability of the user code project all levels of features
+involved.
 
 =head1 METHODS
 
-new
-project
-old_to_new
-new_to_old
-adaptor
-external_source
-old_assembly
-new_assembly
-merge_fragments
-check_length
+  new
+  project
+  old_to_new
+  new_to_old
+  adaptor
+  external_source
+  old_assembly
+  new_assembly
+  merge_fragments
+  check_length
 
-=head1 REALTED MODULES
+=head1 RELATED MODULES
 
-The process of creating a whole genome alignment between two assemblies (which
-is the basis for the use of the methods in this class) is done by a series of
-scripts. Please see
+The process of creating a whole genome alignment between two assemblies
+(which is the basis for the use of the methods in this class) is done by
+a series of scripts. Please see
 
   ensembl/misc-scripts/assembly/README
 
-for a high-level description of this process, and POD in the individual scripts
-for the details.
-
-=head1 LICENCE
-
-This code is distributed under an Apache style licence. Please see
-http://www.ensembl.org/info/about/code_licence.html for details.
-
-=head1 AUTHOR
-
-Patrick Meidl <meidl@ebi.ac.uk>, Ensembl core API team
-
-=head1 CONTACT
-
-Please post comments/questions to the Ensembl development list
-<ensembl-dev@ebi.ac.uk>
+for a high-level description of this process, and POD in the individual
+scripts for the details.
 
 =cut
 
+package Bio::EnsEMBL::Utils::AssemblyProjector;
 
 use strict;
 use warnings;

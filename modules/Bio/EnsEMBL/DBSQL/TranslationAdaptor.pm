@@ -1,11 +1,22 @@
-# EnsEMBL Translation reading writing adaptor for mySQL
-#
-# Copyright EMBL-EBI 2001
-#
-# Author: Arne Stabenau
-#
-# Date : 21.07.2001
-#
+=head1 LICENSE
+
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -14,38 +25,42 @@ Translation objects from a database.
 
 =head1 DESCRIPTION
 
-This adaptor provides a means to retrieve and store Bio::EnsEMBL::Translation
-objects from/in a database.
+This adaptor provides a means to retrieve and store
+Bio::EnsEMBL::Translation objects from/in a database.
 
-Translation objects only truly make sense in the context of their transcripts
-so the recommended means to retrieve Translations is by retrieving the
-Transcript object first, and then fetching the Translation.
+Translation objects only truly make sense in the context of their
+transcripts so the recommended means to retrieve Translations is
+by retrieving the Transcript object first, and then fetching the
+Translation.
 
 =head1 SYNOPSIS
 
   use Bio::EnsEMBL::Registry;
 
   Bio::EnsEMBL::Registry->load_registry_from_db(
-              -host => 'ensembldb.ensembl.org',
-              -user => 'anonymous'
+    -host => 'ensembldb.ensembl.org',
+    -user => 'anonymous'
   );
 
-  $transcript_adaptor = Bio::EnsEMBL::Registry->get_adaptor("human", "core", "transcript");
-  $translation_adaptor = Bio::EnsEMBL::Registry->get_adaptor("human", "core", "translation");
+  $transcript_adaptor =
+    Bio::EnsEMBL::Registry->get_adaptor( "human", "core",
+    "transcript" );
 
+  $translation_adaptor =
+    Bio::EnsEMBL::Registry->get_adaptor( "human", "core",
+    "translation" );
 
   my $transcript = $transcript_adaptor->fetch_by_dbID(131243);
-  my $translation = $translation_adaptor->fetch_by_Transcript($transcript);
+  my $translation =
+    $translation_adaptor->fetch_by_Transcript($transcript);
 
-  print "Translation Start Site: " .
-        $translation->start_Exon()->stable_id(), " ", $translation->start();
-  print "Translation Stop: " . 
-        $translation->end_Exon()->stable_id(), " ", $translation->end();
-
-
-=head1 CONTACT
-
-  ensembl-dev@ebi.ac.uk
+  print("Translation Start Site: "
+      . $translation->start_Exon()->stable_id() . " "
+      . $translation->start()
+      . "\n" );
+  print("Translation Stop: "
+      . $translation->end_Exon()->stable_id() . " "
+      . $translation->end() );
 
 =head1 METHODS
 

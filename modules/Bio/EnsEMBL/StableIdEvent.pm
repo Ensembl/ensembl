@@ -1,4 +1,22 @@
-package Bio::EnsEMBL::StableIdEvent;
+=head1 LICENSE
+
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -6,26 +24,26 @@ Bio::EnsEMBL::StableIdEvent- object representing a stable ID mapping event
 
 =head1 SYNOPSIS
 
-my $old_id = Bio::EnsEMBL::ArchiveStableId->new(
-  -stable_id => 'ENSG001'
-  -version => 1,
-  -type => 'Gene',
-);
+  my $old_id = Bio::EnsEMBL::ArchiveStableId->new(
+    -stable_id => 'ENSG001',
+    -version   => 1,
+    -type      => 'Gene',
+  );
 
-my $new_id = Bio::EnsEMBL::ArchiveStableId->new(
-  -stable_id => 'ENSG001'
-  -version => 2,
-  -type => 'Gene',
-);
+  my $new_id = Bio::EnsEMBL::ArchiveStableId->new(
+    -stable_id => 'ENSG001',
+    -version   => 2,
+    -type      => 'Gene',
+  );
 
-my $event = Bio::EnsEMBL::StableIdEvent->new(
-  -old_id => $old_id,
-  -new_id => $new_id,
-  -score => 0.997
-);
+  my $event = Bio::EnsEMBL::StableIdEvent->new(
+    -old_id => $old_id,
+    -new_id => $new_id,
+    -score  => 0.997
+  );
 
-# directly access attributes in old and new ArchiveStableId
-my $old_stable_id = $event->get_attribute('old', 'stable_id');
+  # directly access attributes in old and new ArchiveStableId
+  my $old_stable_id = $event->get_attribute( 'old', 'stable_id' );
 
 =head1 DESCRIPTION
 
@@ -34,35 +52,22 @@ ArchiveStableIds with a mapping score.
 
 =head1 METHODS
 
-new
-old_ArchiveStableId
-new_ArchiveStableId
-score
-get_attribute
-ident_string
+  new
+  old_ArchiveStableId
+  new_ArchiveStableId
+  score
+  get_attribute
+  ident_string
 
 =head1 RELATED MODULES
 
-Bio::EnsEMBL::ArchiveStableId
-Bio::EnsEMBL::DBSQL::ArchiveStableIdAdaptor
-Bio::EnsEMBL::StableIdHistoryTree
-
-=head1 LICENCE
-
-This code is distributed under an Apache style licence. Please see
-http://www.ensembl.org/info/about/code_licence.html for details.
-
-=head1 AUTHOR
-
-Patrick Meidl <meidl@ebi.ac.uk>, Ensembl core API team
-
-=head1 CONTACT
-
-Please post comments/questions to the Ensembl development list
-<ensembl-dev@ebi.ac.uk>
+  Bio::EnsEMBL::ArchiveStableId
+  Bio::EnsEMBL::DBSQL::ArchiveStableIdAdaptor
+  Bio::EnsEMBL::StableIdHistoryTree
 
 =cut
 
+package Bio::EnsEMBL::StableIdEvent;
 
 use strict;
 use warnings;

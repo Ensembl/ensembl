@@ -1,4 +1,22 @@
-package Bio::EnsEMBL::Gene;
+=head1 LICENSE
+
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -7,15 +25,16 @@ Bio::EnsEMBL::Gene - Object representing a genes
 =head1 SYNOPSIS
 
   my $gene = Bio::EnsEMBL::Gene->new(
-      -START    => 123,
-      -END      => 1045,
-      -STRAND   => 1,
-      -SLICE    => $slice
+    -START  => 123,
+    -END    => 1045,
+    -STRAND => 1,
+    -SLICE  => $slice
   );
 
   # print gene information
-  print "gene start:end:strand is " . join(":", map { $gene->$_ }
-    qw(start end strand)) . "\n";
+  print("gene start:end:strand is "
+      . join( ":", map { $gene->$_ } qw(start end strand) )
+      . "\n" );
 
   # set some additional attributes
   $gene->stable_id('ENSG000001');
@@ -26,21 +45,11 @@ Bio::EnsEMBL::Gene - Object representing a genes
 A representation of a Gene within the Ensembl system. A gene is a set of one or
 more alternative transcripts.
 
-=head1 LICENCE
-
-This code is distributed under an Apache style licence. Please see
-http://www.ensembl.org/info/about/code_licence.html for details.
-
-=head1 AUTHOR
-
-Ensembl core API team
-
-=head1 CONTACT
-
-Please post comments/questions to the Ensembl development list
-<ensembl-dev@ebi.ac.uk>
+=head1 METHODS
 
 =cut
+
+package Bio::EnsEMBL::Gene;
 
 use strict;
 

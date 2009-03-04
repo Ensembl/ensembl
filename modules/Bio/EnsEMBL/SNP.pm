@@ -1,10 +1,22 @@
-#
-# Ensembl module for Bio::EnsEMBL::SNP
-#
-# Copyright Ensembl
-#
-# You may distribute this module under the same terms as perl itself
+=head1 LICENSE
 
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -12,34 +24,27 @@ Bio::EnsEMBL::SNP
 
 =head1 SYNOPSIS
 
-    $snp = new Bio::EnsEMBL::SNP
-                (-start => 10, 
-		 -end => 10,
-		 -strand => 1,
-		 -source => 'The SNP Consortium',
-		 -score  => 99,           #new meaning
-		 -status = > 'suspected', #new
-		 -alleles => 't|c'        #new
-		 );
+    $snp = new Bio::EnsEMBL::SNP(
+      -start   => 10,
+      -end     => 10,
+      -strand  => 1,
+      -source  => 'The SNP Consortium',
+      -score   => 99,                     # new meaning
+      -status  => 'suspected',            # new
+      -alleles => 't|c'                   # new
+    );
 
    # add it to an annotated sequence
 
-   $annseq->add_SeqFeature($feat);
-
+  $annseq->add_SeqFeature($feat);
 
 =head1 DESCRIPTION
 
-This class was written because the EnsEMBL::ExternalData::Variation object
-is way too slow.  There was simply too much chaining to bioperl methods many,
-many layers deep.  This object behaves like a Variation but has a
-much faster constructor, and faster accessors for the relevant methods
-needed by the web.
-
-=head1 CONTACT
-
-Post questions to the Ensmebl development list.
-
-=cut
+This class was written because the EnsEMBL::ExternalData::Variation
+object is way too slow.  There was simply too much chaining to bioperl
+methods many, many layers deep.  This object behaves like a Variation
+but has a much faster constructor, and faster accessors for the relevant
+methods needed by the web.
 
 =head1 METHODS
 

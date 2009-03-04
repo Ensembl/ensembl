@@ -1,4 +1,22 @@
-package Bio::EnsEMBL::IdMapping::ResultAnalyser;
+=head1 LICENSE
+
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -6,68 +24,56 @@ Bio::EnsEMBL::IdMapping::ResultAnalyser - analyse stable Id mapping results
 
 =head1 SYNOPSIS
 
-# get a result analyser
-my $analyser = Bio::EnsEMBL::IdMapping::ResultAnalyser->new(
-  -LOGGER       => $logger,
-  -CONF         => $conf,
-  -CACHE        => $cache
-);
+  # get a result analyser
+  my $analyser = Bio::EnsEMBL::IdMapping::ResultAnalyser->new(
+    -LOGGER => $logger,
+    -CONF   => $conf,
+    -CACHE  => $cache
+  );
 
-# analyse results
-$analyser->analyse($gene_mappings,
-  $stable_id_mapper->get_all_stable_id_events('similarity'));
+  # analyse results
+  $analyser->analyse( $gene_mappings,
+    $stable_id_mapper->get_all_stable_id_events('similarity') );
 
-# write results to file
-$analyser->write_results_to_file;
+  # write results to file
+  $analyser->write_results_to_file;
 
-# create click lists
-$analyser->create_clicklist;
+  # create click lists
+  $analyser->create_clicklist;
 
-# summary email
-$analyser->create_summary_email;
+  # summary email
+  $analyser->create_summary_email;
 
 =head1 DESCRIPTION
 
-This is a utility module which analyses the stable Id mapping results by
-providing various sorts of mapping statistics. It also creates clicklists and a
-summary email.
+This is a utility module which analyses the stable Id mapping results
+by providing various sorts of mapping statistics. It also creates
+clicklists and a summary email.
 
 =head1 METHODS
 
-analyse
-analyse_db
-classify_source_genes_by_type
-classify_genes_by_mapping_simple
-classify_genes_by_mapping
-add
-get
-get_all_by_subclass
-get_all_by_class
-get_count_by_subclass
-get_count_by_class
-get_all_classes
-class_key
-write_results_to_file 
-create_clicklist
-create_summary_email
-read_from_file
-
-=head1 LICENCE
-
-This code is distributed under an Apache style licence. Please see
-http:#www.ensembl.org/info/about/code_licence.html for details.
-
-=head1 AUTHOR
-
-Patrick Meidl <meidl@ebi.ac.uk>, Ensembl core API team
-
-=head1 CONTACT
-
-Please post comments/questions to the Ensembl development list
-<ensembl-dev@ebi.ac.uk>
+  analyse
+  analyse_db
+  classify_source_genes_by_type
+  classify_genes_by_mapping_simple
+  classify_genes_by_mapping
+  add
+  get
+  get_all_by_subclass
+  get_all_by_class
+  get_count_by_subclass
+  get_count_by_class
+  get_all_classes
+  class_key
+  write_results_to_file 
+  create_clicklist
+  create_summary_email
+  read_from_file
 
 =cut
 
+
+package Bio::EnsEMBL::IdMapping::ResultAnalyser;
 
 use strict;
 use warnings;

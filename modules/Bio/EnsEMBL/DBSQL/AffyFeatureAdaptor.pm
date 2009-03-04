@@ -1,7 +1,22 @@
-#
-# Ensembl module for Bio::EnsEMBL::DBSQL::AffyFeatureAdaptor
-#
-# You may distribute this module under the same terms as Perl itself
+=head1 LICENSE
+
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -10,35 +25,25 @@ storing AffyFeature objects.
 
 =head1 SYNOPSIS
 
-my $afa = $db->get_AffyFeatureAdaptor();
+  my $afa = $db->get_AffyFeatureAdaptor();
 
-my $features = $afa->fetch_all_by_AffyProbe($probe);
-$features = $afa->fetch_all_by_Slice_arrayname($slice, 'Affy-1', 'Affy-2');
+  my $features = $afa->fetch_all_by_AffyProbe($probe);
+  $features =
+    $afa->fetch_all_by_Slice_arrayname( $slice, 'Affy-1', 'Affy-2' );
 
 =head1 DESCRIPTION
 
 The AffyFeatureAdaptor is a database adaptor for storing and retrieving
 AffyFeature objects.
 
-=head1 AUTHOR
-
-This module was originally written by Arne Stabenau, but was changed to be a
-subclass of OligoFeatureAdaptor by Ian Sealy.
-
-This module is part of the Ensembl project: http://www.ensembl.org/
-
-=head1 CONTACT
-
-Post comments or questions to the Ensembl development list: ensembl-dev@ebi.ac.uk
-
 =head1 METHODS
 
 =cut
 
+package Bio::EnsEMBL::DBSQL::AffyFeatureAdaptor;
+
 use strict;
 use warnings;
-
-package Bio::EnsEMBL::DBSQL::AffyFeatureAdaptor;
 
 use Bio::EnsEMBL::AffyFeature;
 use Bio::EnsEMBL::DBSQL::OligoFeatureAdaptor;
