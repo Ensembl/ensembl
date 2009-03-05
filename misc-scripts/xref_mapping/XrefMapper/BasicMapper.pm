@@ -1019,7 +1019,6 @@ sub biomart_fix{
 		  source.name = "$db_name";
 EOF
   my $result =  $xref_dbc->do($sql) ;
-  $result->finish;
 #  print "\n$sql\n";
 
   $sql =(<<EOF2);
@@ -1033,7 +1032,6 @@ EOF
 EOF2
     
   $result = $xref_dbc->do($sql);
-  $result->finish;
 #  print "\n$sql\n";
 }
 
@@ -1207,6 +1205,34 @@ SYN
   return \%hgnc_syns;
 
 }
+
+sub get_species_id_from_species_name{
+  my ($self,$species) = @_;
+
+
+  my $sql = "select species_id from species where name = '".$species."'";
+  my $sth = $self->dbc->prepare($sql);
+  $sth->execute();
+  my @row = $sth->fetchrow_array();
+  my $species_id;
+  if (@row) {
+    $species_id = $row[0];
+  } else {
+    print STDERR "Couldn't get ID for species ".$species."\n";
+    print STDERR "It must be one of :-\n";
+    $sql = "select name from species";
+    $sth = $self->dbc->prepare($sql);
+    $sth->execute();
+    while(my @row = $sth->fetchrow_array()){
+      print STDERR $row[0]."\n";
+    }
+    die("Please try again :-)\n");
+  }
+  $sth->finish();
+
+  return $species_id;
+}
+
 
 
 1;
