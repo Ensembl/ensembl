@@ -35,6 +35,7 @@ sub process{
   $sth->bind_columns(\$object_xref_id);
   $sth->fetch;
   $object_xref_id++;
+  $sth->finish;
 
   print "Starting at object_xref of $object_xref_id\n";
 
