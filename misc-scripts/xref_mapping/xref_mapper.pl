@@ -17,7 +17,7 @@ use XrefMapper::TestMappings;
 use XrefMapper::XrefLoader;
 use XrefMapper::Interpro;
 use XrefMapper::DisplayXrefs;
-
+use XrefMapper::CoordinateMapper;
 
 use vars qw(@INC);
 
@@ -25,7 +25,7 @@ $| = 1;
 
 my $file;
 my $dumpcheck;
-my $upload;
+my $upload = 0;
 my $nofarm;
 
 print "Options: ".join(" ",@ARGV)."\n";
@@ -150,10 +150,10 @@ if($status eq "official_naming_done" || $status eq "tests_started" || $status eq
 
 # load into core database
 $status = $mapper->xref_latest_status();
-if($status eq "tests_finished"){
+if($status eq "tests_finished" and $upload){
 
-
-  $mapper->run_coordinatemapping($upload);
+  my $coord = XrefMapper::CoordinateMapper->new($mapper);
+  $coord->run_coordinatemapping($upload);
  
 
   my $loader = XrefMapper::XrefLoader->new($mapper);
@@ -164,7 +164,7 @@ if($status eq "tests_finished"){
 # generate display_xrefs and descriptions for gene and transcripts. 
 
 $status = $mapper->xref_latest_status();
-if($status eq "core_loaded" or $status eq "display_xref_done"){
+if(($status eq "core_loaded" or $status eq "display_xref_done") and $upload){
 
   my $display = XrefMapper::DisplayXrefs->new($mapper);
   $display->genes_and_transcripts_attributes_set();
