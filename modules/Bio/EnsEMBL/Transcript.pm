@@ -913,10 +913,11 @@ sub coding_region_end {
 =cut
 
 sub edits_enabled {
-  my $self = shift;
+  my ( $self, $boolean ) = @_;
 
-  if(@_) {
-    $self->{'edits_enabled'} = shift;
+  if ( defined($boolean) ) {
+    $self->{'edits_enabled'} = $boolean;
+
     # flush cached values that will be different with/without edits
     $self->{'cdna_coding_start'} = undef;
     $self->{'cdna_coding_end'}   = undef;
@@ -1011,41 +1012,40 @@ sub get_all_Attributes {
 =cut
 
 sub add_Attributes {
-  my $self = shift;
+  my $self    = shift;
   my @attribs = @_;
 
-  if( ! exists $self->{'attributes'} ) {
+  if ( !exists $self->{'attributes'} ) {
     $self->{'attributes'} = [];
   }
 
   my $seq_change = 0;
-  for my $attrib ( @attribs ) {
-    if( ! $attrib->isa( "Bio::EnsEMBL::Attribute" )) {
-     throw( "Argument to add_Attribute has to be an Bio::EnsEMBL::Attribute" );
+  for my $attrib (@attribs) {
+    if ( !$attrib->isa("Bio::EnsEMBL::Attribute") ) {
+      throw("Argument to add_Attribute "
+          . "has to be an Bio::EnsEMBL::Attribute" );
     }
-    push( @{$self->{'attributes'}}, $attrib );
-    if($attrib->code eq "_rna_edit"){
+    push( @{ $self->{'attributes'} }, $attrib );
+    if ( $attrib->code eq "_rna_edit" ) {
       $seq_change = 1;
     }
   }
-  if($seq_change){
-    foreach my $ex(@{$self->get_all_Exons()}){
+  if ($seq_change) {
+    foreach my $ex ( @{ $self->get_all_Exons() } ) {
       $ex->{'_trans_exon_array'} = undef;
-      $ex->{'_seq_cache'} = undef;
+      $ex->{'_seq_cache'}        = undef;
     }
     my $translation = $self->translation;
-    if(defined($translation)){
-      $translation->{seq}=undef;
+    if ( defined($translation) ) {
+      $translation->{seq} = undef;
     }
   }
 
   # flush cdna coord cache b/c we may have added a SeqEdit
   $self->{'cdna_coding_start'} = undef;
-  $self->{'cdna_coding_end'} = undef;
+  $self->{'cdna_coding_end'}   = undef;
   $self->{'transcript_mapper'} = undef;
-
-  return;
-}
+} ## end sub add_Attributes
 
 
 =head2 add_Exon
@@ -1234,18 +1234,19 @@ sub length {
 
 =cut
 
-sub flush_Exons{
-   my ($self,@args) = @_;
-   $self->{'transcript_mapper'} = undef;
-   $self->{'coding_region_start'} = undef;
-   $self->{'coding_region_end'} = undef;
-   $self->{'cdna_coding_start'} = undef;
-   $self->{'cdna_coding_end'} = undef;
-   $self->{'start'} = undef;
-   $self->{'end'} = undef;
-   $self->{'strand'} = undef;
+sub flush_Exons {
+  my ($self) = @_;
 
-   $self->{'_trans_exon_array'} = [];
+  $self->{'transcript_mapper'}   = undef;
+  $self->{'coding_region_start'} = undef;
+  $self->{'coding_region_end'}   = undef;
+  $self->{'cdna_coding_start'}   = undef;
+  $self->{'cdna_coding_end'}     = undef;
+  $self->{'start'}               = undef;
+  $self->{'end'}                 = undef;
+  $self->{'strand'}              = undef;
+
+  $self->{'_trans_exon_array'} = [];
 }
 
 
@@ -1908,11 +1909,11 @@ sub transform {
 
 
   # flush cached internal values that depend on the exon coords
-  $new_transcript->{'transcript_mapper'} = undef;
+  $new_transcript->{'transcript_mapper'}   = undef;
   $new_transcript->{'coding_region_start'} = undef;
-  $new_transcript->{'coding_region_end'} = undef;
-  $new_transcript->{'cdna_coding_start'} = undef;
-  $new_transcript->{'cdna_coding_end'} = undef;
+  $new_transcript->{'coding_region_end'}   = undef;
+  $new_transcript->{'cdna_coding_start'}   = undef;
+  $new_transcript->{'cdna_coding_end'}     = undef;
 
   return $new_transcript;
 }
@@ -1974,11 +1975,11 @@ sub transfer {
 
 
   # flush cached internal values that depend on the exon coords
-  $new_transcript->{'transcript_mapper'} = undef;
+  $new_transcript->{'transcript_mapper'}   = undef;
   $new_transcript->{'coding_region_start'} = undef;
-  $new_transcript->{'coding_region_end'} = undef;
-  $new_transcript->{'cdna_coding_start'} = undef;
-  $new_transcript->{'cdna_coding_end'} = undef;
+  $new_transcript->{'coding_region_end'}   = undef;
+  $new_transcript->{'cdna_coding_start'}   = undef;
+  $new_transcript->{'cdna_coding_end'}     = undef;
 
   return $new_transcript;
 }
@@ -1999,64 +2000,71 @@ sub transfer {
 =cut
 
 sub recalculate_coordinates {
-  my $self = shift;
+  my ($self) = @_;
 
   my $exons = $self->get_all_Exons();
 
-  return if(!$exons || !@$exons);
+  if ( !$exons || !@$exons ) { return }
 
   my ( $slice, $start, $end, $strand );
+
   my $e_index;
-  for ($e_index=0; $e_index<@$exons; $e_index++) {
+  for ( $e_index = 0; $e_index < @$exons; $e_index++ ) {
     my $e = $exons->[$e_index];
     # Skip missing or unmapped exons!
-    next if (!defined($e) or !defined($e->start));
-    $slice = $e->slice();
+    next if ( !defined($e) or !defined( $e->start ) );
+    $slice  = $e->slice();
     $strand = $e->strand();
-    $start = $e->start();
-    $end = $e->end();
+    $start  = $e->start();
+    $end    = $e->end();
     last;
   }
 
   my $transsplicing = 0;
 
   # Start loop after first exon with coordinates
-  for (; $e_index<@$exons; $e_index++) {
+  for ( ; $e_index < @$exons; $e_index++ ) {
     my $e = $exons->[$e_index];
+
     # Skip missing or unmapped exons!
-    next if (!defined($e) or !defined($e->start));
-    if( $e->start() < $start ) {
+    if ( !defined($e) or !defined( $e->start ) ) { next }
+
+    if ( $e->start() < $start ) {
       $start = $e->start();
     }
 
-    if( $e->end() > $end ) {
+    if ( $e->end() > $end ) {
       $end = $e->end();
     }
 
-    if( $slice && $e->slice() && $e->slice()->name() ne $slice->name() ) {
-      throw( "Exons with different slices not allowed on one Transcript" );
+    if ( $slice
+      && $e->slice()
+      && $e->slice()->name() ne $slice->name() )
+    {
+      throw("Exons with different slices "
+          . "are not allowed on one Transcript" );
     }
 
-    if( $e->strand() != $strand ) {
+    if ( $e->strand() != $strand ) {
       $transsplicing = 1;
     }
   }
-  if( $transsplicing ) {
-    warning( "Transcript contained trans splicing event" );
+  if ($transsplicing) {
+    warning("Transcript contained trans splicing event");
   }
 
-  $self->start( $start );
-  $self->end( $end );
-  $self->strand( $strand );
-  $self->slice( $slice );
+  $self->start($start);
+  $self->end($end);
+  $self->strand($strand);
+  $self->slice($slice);
 
   # flush cached internal values that depend on the exon coords
-  $self->{'transcript_mapper'} = undef;
+  $self->{'transcript_mapper'}   = undef;
   $self->{'coding_region_start'} = undef;
-  $self->{'coding_region_end'} = undef;
-  $self->{'cdna_coding_start'} = undef;
-  $self->{'cdna_coding_end'} = undef;
-}
+  $self->{'coding_region_end'}   = undef;
+  $self->{'cdna_coding_start'}   = undef;
+  $self->{'cdna_coding_end'}     = undef;
+} ## end sub recalculate_coordinates
 
 
 =head2 display_id
