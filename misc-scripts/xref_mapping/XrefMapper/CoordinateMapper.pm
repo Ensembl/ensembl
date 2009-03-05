@@ -1,9 +1,15 @@
+package XrefMapper::CoordinateMapper;
+
+use vars '@ISA';
+@ISA = qw{ XrefMapper::BasicMapper };
+
+use XrefMapper::BasicMapper;
+
 # $Id$
 
 # This is a set of subroutines used for creating Xrefs based on
 # coordinate overlaps.
 
-package XrefMapper::CoordinateMapper;
 
 use strict;
 use warnings;
@@ -15,6 +21,7 @@ use Carp;
 use IO::File;
 use File::Spec::Functions;
 
+
 use base qw( Exporter );
 
 our @EXPORT = qw( run_coordinatemapping );
@@ -24,16 +31,35 @@ our $ens_weight    = 3;
 
 our $transcript_score_threshold = 0.75;
 
-sub run_coordinatemapping {
-  my ( $mapper, $do_upload ) = @_;
+sub new {
+  my($class, $mapper) = @_;
 
-  my $xref_db = $mapper->xref();
-  my $core_db = $mapper->core();
+  my $self ={};
+  bless $self,$class;
+  $self->core($mapper->core);
+  $self->xref($mapper->xref);
+  $self->mapper($mapper);
+  return $self;
+}
+
+sub mapper{
+  my ($self, $arg) = @_;
+
+  (defined $arg) &&
+    ($self->{_mapper} = $arg );
+  return $self->{_mapper};
+}
+
+
+sub run_coordinatemapping {
+  my ( $self, $do_upload ) = @_;
+
+  my $xref_db = $self->xref();
+  my $core_db = $self->core();
 
   my $species = $core_db->species();
   my $species_id =
-    XrefMapper::BasicMapper::get_species_id_from_species_name( $xref_db,
-                                                             $species );
+    XrefMapper::BasicMapper::get_species_id_from_species_name( $xref_db, $species );
 
   # We only do coordinate mapping for mouse and human for now.
   if ( !( $species eq 'mus_musculus' || $species eq 'homo_sapiens' ) ) {
