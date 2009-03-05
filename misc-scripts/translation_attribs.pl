@@ -2,9 +2,8 @@
 
 =head1 NAME
 
-translation_attribs.pl - script to calculate peptide statistics, if the first aminoacid is
-                         methionine and there is a stop codon in the aminoacid sequence
-                         and store them in translation_attrib table
+translation_attribs.pl - script to calculate peptide statistics and store 
+                         them in translation_attrib table
 
 =head1 SYNOPSIS
 
@@ -35,17 +34,12 @@ Optional arguments:
 
   --port=port                         port (default=3306)
 
-  --pepstats_only                     when used, will only run the pepstats calculation
-
-  --met_and_stop_only                 when used, will only run the methionine and stop codon calculation
-  
   --help                              print help (this message)
 
 =head1 DESCRIPTION
 
-This script will calculate the peptide statistics, if the first aminoacid is methionine and
-there is a stop codon  for all core databases in the server and store them as a 
-translation_attrib values
+This script will calculate the peptide statistics for all core databases in the server 
+and store them as a translation_attrib values
 
 =head1 EXAMPLES
 
@@ -53,13 +47,13 @@ Calculate translation_attributes for all databases in ens-staging
 
   $ ./translation_attribs.pl --user ensadmin --pass password
 
-Calculate translation_attributes for core databases starting with [a-c] in ens-staging 
+Calculate translation_attributes for core databases starting with [a-c] in ens-staging (output LSF to PWD) 
 
   $ ./translation_attribs.pl --user ensadmin --pass password --pattern '^[a-c].*core_50.*'
 
-Calculate pepstats for a single database in a ens-genomics1
+Calculate translation_attribs for a single database in a ens-genomics1
 
-  $ ./translation_attribs.pl --binpath /ensemblweb/shared/bin/ --tmpfile file --host ens-genomics1 --user ensadmin --pass password --dbname my_core_db --pepstats_only
+  $ ./translation_attribs.pl  --host ens-genomics1 --user ensadmin --pass password --dbname my_core_db
 
 =head1 LICENCE
 
@@ -113,8 +107,6 @@ my $user = undef;
 my $pass = undef;
 my $port = 3306;
 my $help = undef;
-my $pepstats_only = undef;
-my $met_and_stop_only = undef;
 my $pattern = undef;
 
 GetOptions('binpath=s' => \$binpath,
@@ -124,8 +116,6 @@ GetOptions('binpath=s' => \$binpath,
 	   'user=s'    => \$user,
 	   'pass=s'    => \$pass,
 	   'port=s'    => \$port,
-	   'pepstats_only' => \$pepstats_only,
-	   'met_and_stop_only' => \$met_and_stop_only,
 	   'help'    => \$help,
 	   'pattern=s' => \$pattern
 	   );
@@ -205,21 +195,10 @@ else{
     thrown("Not entered properly database connection param. Read docs\n");
 }
 
-my %attributes; #hash containing attributes to be stored and removed from the databse
-my $run_both = undef;
-if (!defined($pepstats_only) and !defined($met_and_stop_only)){
-#this is the default option, calculate all attributes
-    %attributes = (%PEPSTATS_CODES,%MET_AND_STOP);
-    $run_both = 1;
-}
-if (defined($pepstats_only)){
-    #will only store and remove the peptide stats
-    %attributes = %PEPSTATS_CODES;
-}
-if (defined($met_and_stop_only)){
-    #will only store and remove the methionince and stop codon
-    %attributes = %MET_AND_STOP;
-}
+my %attributes_to_delete; #hash containing attributes to be removed from the database
+#from release 54, only PEPSTATS_CODES will be calculated, but we will leave the MET_AND_STOP
+#removal in case the database run is very old
+%attributes_to_delete = (%PEPSTATS_CODES,%MET_AND_STOP);
 
 my $translation_attribs = {};
 my $translation;
@@ -228,7 +207,7 @@ my $dbID;
 foreach my $dba (@{$dbas}){
     next if (defined $dbname and $dba->dbc->dbname ne $dbname);
     print "Removing attributes from database ", $dba->dbc->dbname,"\n";
-    remove_old_attributes($dba,\%attributes);
+    remove_old_attributes($dba,\%attributes_to_delete);
 
     my $translationAdaptor = $dba->get_TranslationAdaptor();
     my $transcriptAdaptor = $dba->get_TranscriptAdaptor();
@@ -242,16 +221,16 @@ foreach my $dba (@{$dbas}){
 	#foreach translation, retrieve object
 	$translation = $translationAdaptor->fetch_by_dbID($dbID);
 	#calculate pepstats
-	get_pepstats($translation,$binpath,$tmpdir,$translation_attribs) if($run_both || $pepstats_only);
-	#calculate methionine and stop codon
-	get_met_and_stop($translation,$translation_attribs,$transcriptAdaptor) if($run_both || $met_and_stop_only);
+	get_pepstats($translation,$binpath,$tmpdir,$translation_attribs);
 	#and store results in database
-	store_translation_attribs($attributeAdaptor,$translation_attribs,$translation,\%attributes);    	
+	store_translation_attribs($attributeAdaptor,$translation_attribs,$translation,\%PEPSTATS_CODES);    	
 	$translation_attribs = {};
     }        
 }
 
 #will remove any entries in the translation_attrib table for the attributes, if any
+#this method will try to remove the old starts_met and has_stop_codon attributes, if present
+#this is to allow to be run on old databases, but removing the not used attributes
 sub remove_old_attributes{
     my $dba = shift;
     my $attributes = shift;
@@ -305,39 +284,6 @@ sub get_pepstats {
 	    $translation_attribs = {};
 	}
     }
-}
-
-#method to calculate if the first aminoacid is methionine and there is a stop codon
-sub get_met_and_stop{
-    my $translation = shift;
-    my $translation_attribs = shift;
-    my $transcriptAdaptor = shift;
-    
-    my $peptide_seq ;
-    eval { $peptide_seq = $translation->seq ; };
-#    return {} if ($@ || $peptide_seq =~ m/[BZX]/ig);
-    return if ($@); #if there is no translation, return
-    if( $peptide_seq !~ /\n$/ ){ $peptide_seq .= "\n" }
-
-    #need to get transleatable_seq to find out if there is a stop codon
-    my $transcript = $transcriptAdaptor->fetch_by_translation_id($translation->dbID);
-
-    my $translateable_seq = $transcript->translateable_seq();
-
-    if ($translateable_seq =~ /TAG$|TGA$|TAA$/i){
-	#there is stop codon
-	$translation_attribs->{'Contains stop codon'} = 1;
-    }
-    else{
-	$translation_attribs->{'Contains stop codon'} = 0;
-    }
-    if ($peptide_seq =~ /^M/){
-	$translation_attribs->{'Starts with methionine'} = 1;
-    }
-    else{
-	$translation_attribs->{'Starts with methionine'} = 0;
-    }
-
 }
 
 sub store_translation_attribs{

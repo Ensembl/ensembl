@@ -2,10 +2,9 @@
 
 =head1 NAME
 
-translation_attribs_wrapper.pl - script to calculate peptide statistics, if the first aminoacid is
-                                methionine and there is a stop codon in the aminoacid sequence
-                                and store them in translation_attrib table. This is mainly a wrapper
-                                around the translation_attribs script to submit several jobs to the farm
+translation_attribs_wrapper.pl - script to calculate peptide statistics and store them in 
+                                translation_attrib table. This is mainly a wrapper around 
+                                the translation_attribs script to submit several jobs to the farm
 
 =head1 SYNOPSIS
 
@@ -30,24 +29,21 @@ Optional arguments:
 
   --port=port                         port (default=3306)
 
-  --pepstats_only                     when used, will only run the pepstats calculation
-
-  --met_and_stop_only                 when used, will only run the methionine and stop codon calculation
+  --path=path                         path where the LSF output will be stored (default=pwd)
   
   --help                              print help (this message)
 
 =head1 DESCRIPTION
 
-This script will calculate the peptide statistics, if the first aminoacid is methionine and
-there is a stop codon  for all core databases in the server and store them as a 
-translation_attrib values. This is a wraper around the translation_attrib and will simply
-submit jobs to the farm grouping the core databases in patterns
+This script will calculate the peptide statistics for all core databases in the server
+and store them as a translation_attrib values. This is a wraper around the translation_attrib 
+and will simply submit jobs to the farm grouping the core databases in patterns
 
 =head1 EXAMPLES
 
 Calculate translation_attributes for all databases in ens-staging 
 
-  $ ./translation_attribs_wrapper.pl --user ensadmin --pass password --release 51
+  $ ./translation_attribs_wrapper.pl --user ensadmin --pass password --release 51 --path /my/path/to/lsf/output
 
 =head1 LICENCE
 
@@ -73,16 +69,15 @@ use Bio::EnsEMBL::Utils::Exception qw(throw);
 
 ## Command line options
 
-my $binpath = '/software/pubseq/bin/emboss'; 
-my $tmpdir = '/tmp';
-my $host = 'ens-staging';
+my $binpath = "'/software/pubseq/bin/emboss'"; 
+my $tmpdir = "'/tmp'";
+my $host = "ens-staging";
+my $path = $ENV{PWD};
 my $release = undef;
 my $user = undef;
 my $pass = undef;
 my $port = 3306;
 my $help = undef;
-my $pepstats_only = undef;
-my $met_and_stop_only = undef;
 
 GetOptions('binpath=s' => \$binpath,
 	   'tmpdir=s' => \$tmpdir,
@@ -91,8 +86,7 @@ GetOptions('binpath=s' => \$binpath,
 	   'pass=s'    => \$pass,
 	   'port=s'    => \$port,
 	   'release=i' => \$release,
-	   'pepstats_only' => \$pepstats_only,
-	   'met_and_stop_only' => \$met_and_stop_only,
+	   'path=s'    => \$path,
 	   'help'    => \$help
 	   );
 
@@ -116,42 +110,35 @@ if (defined $host){
 if (defined $port){
     $options .= "--port $port ";
 }
-if (defined $pepstats_only){
-    $options .= "--pepstats_only ";
-}
-if (defined $met_and_stop_only){
-    $options .= "--met_and_stop_only "
-}
+
 my @ranges = ('^[a-b]','^c','^d','^e','^f','^[g-h]','^[i-l]','^m[a-i]','^m[j-z]','^[n-o]','^p','^[q-r]','^[s-t]','^[u-z]');
 my $core_db = ".*core_$release\_.*";
 my $call;
 foreach my $pattern (@ranges){
-    $call = "bsub -o /lustre/work1/ensembl/dr2/e53_log/output_translation_$pattern.txt -q $queue -R$memory ./translation_attribs.pl --user $user --pass $pass $options";
+    $call = "bsub -o '" . "$path/output_translation_$pattern.txt" . "' -q $queue -R$memory ./translation_attribs.pl --user $user --pass $pass $options";
     $call .= " --pattern '" . $pattern . $core_db. "'";
 
-    system($call);
-#print $call,"\n";
+ #   system($call);
+print $call,"\n";
 }
 
 #we now need to run it for the otherfeatures|vega databases, but only the pepstats
 
 my $vega_db = ".*_vega_$release\_.*";
-$call = "bsub -o /lustre/work1/ensembl/dr2/e53_log/output_translation_vega.txt -q $queue -R$memory ./translation_attribs.pl --user $user --pass $pass $options";
+$call = "bsub -o '" . "$path/output_translation_vega.txt" . "' -q $queue -R$memory ./translation_attribs.pl --user $user --pass $pass $options";
 $call .= " --pattern '" . $vega_db. "'";
 
-system($call);
-#print $call,"\n";
+#system($call);
+print $call,"\n";
 
 @ranges = ('^[a-b]','^c','^[d-e]','^[f-h]','^[i-m]','^[n-o]','^p','^[q-s]','^[t-z]');
-
-$options .= "--pepstats_only ";
 
 my $other_db = ".*_otherfeatures_$release\_.*";
 
 foreach my $pattern (@ranges){
-    $call = "bsub -o /lustre/work1/ensembl/dr2/e53_log/output_translation_other.txt -q $queue -R$memory ./translation_attribs.pl --user $user --pass $pass $options";
+    $call = "bsub -o '" . "$path/output_translation_other.txt" . "' -q $queue -R$memory ./translation_attribs.pl --user $user --pass $pass $options";
     $call .= " --pattern '" . $pattern . $other_db. "'";
     
-    system($call);
-#print $call,"\n";
+    #system($call);
+print $call,"\n";
 }
