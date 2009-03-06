@@ -27,12 +27,14 @@ my $file;
 my $dumpcheck;
 my $upload = 0;
 my $nofarm;
+my $verbose;
 
 print "Options: ".join(" ",@ARGV)."\n";
 
 GetOptions ('file=s'                    => \$file,
             'dumpcheck'                 => \$dumpcheck, 
             'upload'                    => \$upload,
+	    'verbose'                   => \$verbose,  
             'nofarm'                    => \$nofarm );
 
 
@@ -53,16 +55,21 @@ if(defined($dumpcheck)){
 if(defined($nofarm)){
   $mapper->nofarm("yes");
 }
- 
+if(defined($verbose)){
+  $mapper->verbose(1);
+}
+else{
+  $mapper->verbose(0);
+}
 
 # find out what stage the database is in at present.
-my $status = $mapper->xref_latest_status(1);
-print "current status is $status\n";
+my $status = $mapper->xref_latest_status($mapper->verbose);
+print "current status is $status\n" if ($mapper->verbose);
 
 
 
 if( $status eq "parsing_finished"){ 
-  print "\nDumping xref & Ensembl sequences\n";
+  print "\nDumping xref & Ensembl sequences\n"  if ($mapper->verbose);
   $mapper->dump_seqs();
   $status =  $mapper->xref_latest_status();
 }
