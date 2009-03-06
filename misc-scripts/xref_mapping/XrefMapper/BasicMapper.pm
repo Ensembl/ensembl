@@ -251,6 +251,22 @@ sub dumpcheck {
   return $self->{_dumpcheck};
 }
 
+sub nofarm {
+  my ($self, $arg) = @_;
+
+  (defined $arg) &&
+    ($self->{_nofarm} = $arg );
+  return $self->{_nofarm};
+}
+
+sub verbose {
+  my ($self, $arg) = @_;
+
+  (defined $arg) &&
+    ($self->{_verbose} = $arg );
+  return $self->{_verbose};
+}
+
 sub species_id {
   my ($self, $arg) = @_;
 
@@ -732,7 +748,7 @@ FSQL
 	  $xref_added{$id.":".$odn_curated_gene_id} = $max_xref_id;
 	  if(defined($syn_hash->{$name})){
 	    foreach my $syn (@{$syn_hash->{$name}}){
-	      $add_syn_sth->execute($xref_id, $syn);
+	      $add_syn_sth->execute(max_$xref_id, $syn);
 	    }
 	  }
 	  
@@ -776,7 +792,7 @@ FSQL
 	  $xref_added{$id.":".$odn_automatic_gene_id} = $max_xref_id;
 	  if(defined($syn_hash->{$name})){
 	    foreach my $syn (@{$syn_hash->{$name}}){
-	      $add_syn_sth->execute($xref_id, $syn);
+	      $add_syn_sth->execute($max_xref_id, $syn);
 	    }
 	  }
 	}	
