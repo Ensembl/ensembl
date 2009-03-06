@@ -188,6 +188,7 @@ sub get_havana_seleno_comments {
 sub check_for_stops {
   my $support = shift;
   my ($gene,$seen_transcripts) = @_;
+  my $gname = $gene->get_all_Attributes('name')->[0]->value;
   my $scodon = 'TGA';
   my $mod_date = $support->date_format( $gene->modified_date,'%d/%m/%y' );
 
@@ -242,10 +243,10 @@ sub check_for_stops {
     #...no - an internal stop codon error in the database...
     if ($num_tga < $num_stops) {
       if ($source eq 'havana') {
-	$support->log_warning("INTERNAL STOPS HAVANA: Transcript $tsi ($tname) has non \'$scodon\' stop codons [$mod_date]:\nSequence = $orig_seq\nStops at $positions)\n\n");
+	$support->log_warning("INTERNAL STOPS HAVANA: Transcript $tsi ($tname) from gene $gname has non \'$scodon\' stop codons [$mod_date]:\nSequence = $orig_seq\nStops at $positions)\n\n");
       }
       else {
-	$support->log_warning("INTERNAL STOPS EXTERNAL: Transcript $tsi ($tname) has non \'$scodon\' stop codons[$mod_date]:\nSequence = $orig_seq\nStops at $positions)\n\n");
+	$support->log_warning("INTERNAL STOPS EXTERNAL: Transcript $tsi ($tname) from gene $gname has non \'$scodon\' stop codons[$mod_date]:\nSequence = $orig_seq\nStops at $positions)\n\n");
       }
 
     }
@@ -315,7 +316,7 @@ sub check_for_stops {
 	    $support->log_verbose("Transcript $tsi ($tname) has potential selenocysteines but has been discounted by annotators:\n\t".$seen_transcripts->{$tsi}.") [$mod_date]\n");
 	  }
 	  else {
-	    $support->log("POTENTIAL SELENO ($seq) in $tsi ($tname) found at $pos) [$mod_date]\n");
+	    $support->log("POTENTIAL SELENO ($seq) in $tsi ($tname, gene $gname) found at $pos [$mod_date]\n");
 	  }
 	}
       }
