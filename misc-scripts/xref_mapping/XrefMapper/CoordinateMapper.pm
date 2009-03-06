@@ -31,6 +31,8 @@ our $ens_weight    = 3;
 
 our $transcript_score_threshold = 0.75;
 
+my $verbose = 0;
+
 sub new {
   my($class, $mapper) = @_;
 
@@ -39,6 +41,7 @@ sub new {
   $self->core($mapper->core);
   $self->xref($mapper->xref);
   $self->mapper($mapper);
+  $verbose = $mapper->verbose();
   return $self;
 }
 
@@ -54,12 +57,18 @@ sub mapper{
 sub run_coordinatemapping {
   my ( $self, $do_upload ) = @_;
 
+
+  my $sth_stat = $self->xref->dbc->prepare("insert into process_status (status, date) values('coordinate_xrefs_started',now())");
+  $sth_stat->execute();
+  $sth_stat->finish;
+
   my $xref_db = $self->xref();
   my $core_db = $self->core();
 
   my $species = $core_db->species();
-  my $species_id =
-    XrefMapper::BasicMapper::get_species_id_from_species_name( $xref_db, $species );
+  my $species_id = $self->mapper->species_id;
+#    XrefMapper::BasicMapper::get_species_id_from_species_name( $xref_db, $species );
+
 
   # We only do coordinate mapping for mouse and human for now.
   if ( !( $species eq 'mus_musculus' || $species eq 'homo_sapiens' ) ) {
@@ -580,6 +589,10 @@ sub run_coordinatemapping {
     upload_data( 'xref', $xref_filename, $external_db_id, $core_dbh );
   }
 
+  $sth_stat = $self->xref->dbc->prepare("insert into process_status (status, date) values('coordinate_xref_finished',now())");
+  $sth_stat->execute();
+  $sth_stat->finish;
+  
 } ## end sub run_coordinatemapping
 
 #-----------------------------------------------------------------------
@@ -817,6 +830,8 @@ sub upload_data {
 
 sub log_progress {
   my ( $fmt, @params ) = @_;
+  
+  return if (!$verbose);
   printf( STDERR "COORD==> %s", sprintf( $fmt, @params ) );
 }
 
