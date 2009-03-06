@@ -65,9 +65,9 @@ sub process {
 
   my @names = $self->get_priority_names();
 
-  print "The foillowing will be processed as priority xrefs\n";
+  print "The foillowing will be processed as priority xrefs\n" if($self->verbose);
   foreach my $name (@names){
-    print "\t$name\n";
+    print "\t$name\n" if($self->verbose);
   }
 
 
@@ -94,7 +94,7 @@ SQL
   foreach my $name (@names){
     my %priority_clash_seq;
     my %priority_clash_depend;
-    print "processing $name source\n";
+    print "processing $name source\n" if($self->verbose);
     $sth->execute($name);
     my ($ox,$acc,$priority, $type, $xref_id, $ox_status);
     $sth->bind_columns(\$ox,\$acc,\$priority,\$type, \$xref_id, \$ox_status);
@@ -115,7 +115,7 @@ SQL
 	      $priority_clash_depend{$acc} = 1;
 	    }
 	    else{
-	      print "type $type????? $acc, $name\n";
+	      print STDERR "type $type????? $acc, $name\n";
 	    }
 	  }
 	  else{
@@ -161,14 +161,14 @@ SQL
 
   #Sanity check make sure only one instance of each priority xref in object_xref table with ox_status = DUMP_OUT
   foreach my $name (@names){
-    print "checking $name source\n";
+    print "checking $name source\n" if($self->verbose);
     $sth->execute($name);
     my ($ox,$acc,$priority, $type, $xref_id, $ox_status);
     $sth->bind_columns(\$ox,\$acc,\$priority,\$type, \$xref_id, \$ox_status);
     my $last_acc = "";
     while($sth->fetch()){
       if($acc eq $last_acc and defined($ox_status) and $ox_status eq "DUMP_OUT"){
-	print "ERROR: $acc still has more than one viable entry in object_xref\n";
+	print STDERR "ERROR: $acc ($name) still has more than one viable entry in object_xref\n";
       }
       if(defined($ox_status) and $ox_status eq "DUMP_OUT"){
 	$last_acc = $acc;

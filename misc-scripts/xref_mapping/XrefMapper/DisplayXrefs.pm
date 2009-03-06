@@ -75,7 +75,7 @@ sub genes_and_transcripts_attributes_set{
 sub build_transcript_and_gene_display_xrefs {
   my ($self) = @_;
 
-  print "Building Transcript and Gene display_xrefs\n";
+  print "Building Transcript and Gene display_xrefs\n" if ($self->verbose);
 
 
   my %external_name_to_id;
@@ -99,14 +99,14 @@ sub build_transcript_and_gene_display_xrefs {
   my ($presedence, $ignore) = @{$self->transcript_display_xref_sources()};
   my $i=0;
   my %level;
-  print "precedense in reverse order:-\n";
+#  print "precedense in reverse order:-\n";
   foreach my $name (reverse (@$presedence)){
     $i++;
     if(!defined($external_name_to_id{$name})){
       print STDERR "unknown external database name *$name* being used\n";
     }
     $level{$external_name_to_id{$name}} = $i;
-    print "\t".$name."\t$i\n";
+#    print "\t".$name."\t$i\n";
   }
 
   $self->build_genes_to_transcripts();
@@ -266,14 +266,13 @@ GSQL
 	  if($level{$ex_db_id}  and $display_label =~ /\D+/ ){ #correct level and label is not just a number 	
 	    if(defined($$ignore{$external_db_name})){
 	      if($linkage_annotation =~ /$$ignore{$external_db_name}/){
-#		print "Ignoring $xref_id as linkage_annotation has ".$$ignore{$external_db_name}." in it. DELETE THIS MESSAGE AFTER TESTING\n";
 		next;
 	      }
 	    }
 
 	    push @transcript_xrefs, $xref_id;
 	    if(!defined($qid) || !defined($tid)){
-	      print "PRIMARY $xref_id\n";
+	      print STDERR "PROBLEM:: PRIMARY $xref_id\n";
 	      $percent_id{$xref_id} = 0;
 	    }
 	    else{
@@ -292,13 +291,11 @@ GSQL
 	  if($level{$ex_db_id}  and $display_label =~ /\D+/){
 	    if( defined($$ignore{$external_db_name}) and defined($linkage_annotation) ){
 	      if($linkage_annotation =~ /$$ignore{$external_db_name}/){
-#		print "Ignoring $xref_id as linkage_annotation has ".$$ignore{$external_db_name}." in it. DELETE THIS MESSAGE AFTER TESTING\n";
 		next;
 	      }
 	    }
 	    push @transcript_xrefs, $xref_id;
 	    if(!defined($qid) || !defined($tid)){
-#	      print "DEPENDENT $xref_id\n" if($ex_db_id != 1100); #HGNC has added one with no %ids.
 	      $percent_id{$xref_id} = 0;
 	    }
 	    else{
@@ -315,7 +312,6 @@ GSQL
 	  if($level{$ex_db_id}  and $display_label =~ /\D+/){ 	
 	    if(defined($$ignore{$external_db_name})){
 	      if($linkage_annotation =~ /$$ignore{$external_db_name}/){
-#		print "Ignoring $xref_id as linkage_annotation has ".$$ignore{$external_db_name}." in it. DELETE THIS MESSAGE AFTER TESTING\n";
 		next;
 	      }
 	    }
@@ -350,8 +346,6 @@ GSQL
       
       if($best_tran_xref){
 	$update_tran_sth->execute($best_tran_xref, $transcript_id);
-#        print TRANSCRIPT_DX "UPDATE transcript SET display_xref_id=" .$best_tran_xref. 
-#            " WHERE transcript_id=" . $transcript_id . ";\n";
       }
 
       if($best_tran_level < $best_gene_level){
@@ -370,8 +364,6 @@ GSQL
   
     if($best_gene_xref){
       $update_gene_sth->execute($best_gene_xref, $gene_id);
-#      print GENE_DX "UPDATE gene g SET g.display_xref_id=" . $best_gene_xref . 
-#	" WHERE g.gene_id=" . $gene_id . ";\n";
     }
   }
 
@@ -423,7 +415,7 @@ sub new_build_gene_descriptions{
   my ($self) = @_;
   
 
-  print "Building gene Descriptions\n";
+  print "Building gene Descriptions\n" if ($self->verbose);
 
   my $update_gene_desc_sth =  $self->core->dbc->prepare("UPDATE gene SET description = ? where gene_id = ?");
 
@@ -434,7 +426,7 @@ sub new_build_gene_descriptions{
   my @regexps = $self->gene_description_filter_regexps();
 
   if(scalar(@regexps) == 0){
-    warn "no reg exps\n";
+    warn "no reg exps\n" if($self->verbose);
   }
   my @presedence = $self->gene_description_sources();
 
@@ -612,7 +604,7 @@ GSQL
 		  $percent_id{$xref_id}  = $qid + $tid;
 		}
 		else{
-		  print "WARN: xref_id $xref_id PRIMARY can't find percrnt id\n";
+		  print STDERR "WARN: xref_id $xref_id PRIMARY can't find percent id\n";
 		  $percent_id{$xref_id} = 50;
 		}
 		push @transcript_xrefs, $xref_id;  # added ?
@@ -737,6 +729,10 @@ GSQL
       
     }
   }
+  # remove until dependent_xref added to core database
+  my $sth = $self->core->dbc->prepare("drop table dependent_xref");
+  $sth->execute || die "Could not drop temp table dependent_xref\n";
+  $sth->finish;  
 
   return;
 }

@@ -41,61 +41,6 @@ sub new {
 }
 
 
-sub test_return_codes {
- my $self = shift;
-
-
- my $sth = $self->xref->dbc->prepare("create table arse_test like object_xref");
- $sth->execute();
- $sth->finish;
-
-
- my $ins_ox_ignore = $self->xref->dbc->prepare("insert into arse_test (object_xref_id, ensembl_id, xref_id, ensembl_object_type, linkage_type) values(?, ?,?,?,?)");
- 
- local $ins_ox_ignore->{RaiseError};
-
- my $object_xref = 1;
-
- my $out = $ins_ox_ignore->execute(1, 1, 1, "Gene", 'DIRECT');
- print "one failed: $@\n" if $@;
- print "successfull insert = $out\n";
- if($ins_ox_ignore->err){
-   print $ins_ox_ignore->errstr."\n";
- }
-
- $out = $ins_ox_ignore->execute(2, 1, 1, "Gene", 'DIRECT');
- if($ins_ox_ignore->err){
-   my $err = $ins_ox_ignore->errstr;
-   if($err =~ /Duplicate/){
-     print "2 not added becouse duplicate (correct)\n";
-   }
-   else{
-     die "Problem loading error is $err\n";
-   }
- }
- else{
-   print "AHHHHHHH insert 2 okay\n";
- }
-
-
- #same primary key should blow up
- $out = $ins_ox_ignore->execute(1, 3, 3, "RUBBISH");
- if($ins_ox_ignore->err){
-   my $err = $ins_ox_ignore->errstr;
-   if($err =~ /Duplicate/){
-     print "Not added becouse duplicate (WRNG)\n";
-   }
-   else{
-     $ins_ox_ignore->finish;
-     die "Problem loading data error is $err\n";
-   }
- }
-
-
- print "END\n";
-}
-
-
 
 sub get_core_data {
  my $self = shift;
@@ -162,7 +107,9 @@ my $stable_sql=(<<SQL);
   SELECT dx.general_xref_id, s.internal_id, dx.ensembl_stable_id 
     FROM TYPE_direct_xref dx left join TYPE_stable_id s on s.stable_id = dx.ensembl_stable_id
 SQL
-                       
+                      
+ my $err_count = 0;
+ 
  foreach my $table (qw(gene transcript translation)){
    my ($xref_id, $internal_id, $stable_id);
    my $sql = $stable_sql;
@@ -180,7 +127,8 @@ SQL
           $internal_id = $stable_id;
        }
        else{
-         print "COuld not find stable id $stable_id in table to get the internal id hence ignoring!!!\n";
+         print "Could not find stable id $stable_id in table to get the internal id hence ignoring!!!\n" if($self->verbose);
+	 $err_count++;
          next;
        }
      }
@@ -222,9 +170,11 @@ SQL
    }
    $sth->finish;
    if($duplicate_direct_count or $duplicate_dependent_count){
-     print "duplicate entrys ignored for $duplicate_direct_count direct xrefs and  $duplicate_dependent_count dependent xrefs\n";
+     print "duplicate entrys ignored for $duplicate_direct_count direct xrefs and  $duplicate_dependent_count dependent xrefs\n" if($self->verbose);
    }
-   print $count." direct_xrefs added to ensembl ".$table."s\n";
+   if($err_count or $self->verbose){
+     print STDERR $count." direct_xrefs added to ensembl ".$table."s BUT $err_count stable ids could not be found\n";
+   }
  }
  $ins_go_sth->finish;
  $ins_ox_sth->finish;

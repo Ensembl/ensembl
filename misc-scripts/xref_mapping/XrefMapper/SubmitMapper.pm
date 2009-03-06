@@ -152,7 +152,7 @@ sub dump_xref{
     }
   }
 
-  print "Dumping Xref fasta files\n";
+  print "Dumping Xref fasta files\n" if($self->verbose());
   for my $sequence_type ('dna', 'peptide') {
 
     my $filename = $xref->dir() . "/xref_0_" . $sequence_type . ".fasta";
@@ -235,11 +235,11 @@ sub fetch_and_dump_seq{
   if(defined($self->dumpcheck()) and -e $ensembl->protein_file() and -e $ensembl->dna_file()){
     my $sth = $self->xref->dbc->prepare("insert into process_status (status, date) values('core_fasta_dumped',now())");
     $sth->execute();    
-    print "Ensembl Fasta files found (no new dumping)\n";
+    print "Ensembl Fasta files found (no new dumping)\n" if($self->verbose());
     return;
   }
 
-  print "Dumping Ensembl Fasta files\n";
+  print "Dumping Ensembl Fasta files\n" if($self->verbose());
 
   open(DNA,">".$ensembl->dna_file())
     || die("Could not open dna file for writing: ".$ensembl->dna_file."\n");
@@ -409,7 +409,7 @@ sub run_mapping {
   # delete old output files in target directory if we're going to produce new ones
 
   my $dir = $self->core->dir();
-  print "Deleting out, err and map files from output dir: $dir\n";
+  print "Deleting out, err and map files from output dir: $dir\n" if($self->verbose());
   unlink (<$dir/*.map $dir/*.out $dir/*.err>);
 
   $self->remove_all_old_output_files();
@@ -478,7 +478,7 @@ sub check_err {
 
   foreach my $err (glob("$dir/*.err")) {
 
-    print "\n\n*** Warning: $err has non-zero size; may indicate".
+    print STDERR "\n\n*** Warning: $err has non-zero size; may indicate".
       " problems with exonerate run\n\n\n" if (-s $err);
 
   }
@@ -539,10 +539,9 @@ sub submit_depend_job {
 
     if ( ( $reader = open( BSUB_READER, '-|' ) ) ) {
       while (<BSUB_READER>) {
-        #print "YES:$_";
         if (/^Job <(\d+)> is submitted/) {
           $jobid = $1;
-          print "LSF job ID for depend job: $jobid\n";
+          print "LSF job ID for depend job: $jobid\n" if($self->verbose);
         }
       }
       close(BSUB_READER);
@@ -584,7 +583,7 @@ sub remove_all_old_output_files{
 
   my $dir = $self->core->dir();
 
-  print "Deleting txt and sql files from output dir: $dir\n";
+  print "Deleting txt and sql files from output dir: $dir\n" if($self->verbose);
   unlink(<$dir/*.txt $dir/*.sql>);
 #  $self->cleanup_projections_file();  # now to be done when we load core.
 }

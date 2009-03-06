@@ -37,7 +37,7 @@ sub update{
   # remove xref, object_xref, identity_xref, depenedent_xref, go_xref, unmapped_object, (interpro???), external_synonym, projections.
 
 
-
+ my $verbose = $self->verbose;
 
   #####################################
   # first remove all the projections. #
@@ -112,7 +112,7 @@ sub update{
   while($sth->fetch()){
     my $ex_id = $name_to_external_db_id{$name};
 
-    print "Deleting data for $name from core before updating from new xref database\n";
+    print "Deleting data for $name from core before updating from new xref database\n" if ($verbose);
     $synonym_sth->execute($ex_id);
     $go_sth->execute($ex_id);
     $identity_sth->execute($ex_id);
@@ -182,7 +182,7 @@ SQL
   my %analysis_ids = $self->get_analysis(); # 
 
 
-  print "xref offset is $xref_offset, object_xref offset is $object_xref_offset\n";
+  print "xref offset is $xref_offset, object_xref offset is $object_xref_offset\n" if ($verbose);
 
   #####################################
   # Now add the new ones              #
@@ -222,7 +222,7 @@ SQL
     }	
     my $ex_id = $name_to_external_db_id{$name};
 
-    print "updating ($source_id) $name in core (for $type xrefs)\n";
+    print "updating ($source_id) $name in core (for $type xrefs)\n" if ($verbose);
 
     my @xref_list=();  # process at end. Add synonyms and set dumped = 1;
 
@@ -249,7 +249,7 @@ SQL
         }
         $add_object_xref_sth->execute(($object_xref_id+$object_xref_offset), $ensembl_id, $ensembl_type, ($xref_id+$xref_offset));
       }  
-      print "DIRECT $count\n";
+      print "DIRECT $count\n" if ($verbose);
     }
  
     ### If DEPENDENT,       xref, object_xref , dependent_xref  (order by xref_id)  # maybe linked to more than one?
@@ -272,7 +272,7 @@ SQL
 	 $add_object_xref_sth->execute( ($object_xref_id+$object_xref_offset), $ensembl_id, $ensembl_type, ($xref_id+$xref_offset) );
 	 $add_go_xref_sth->execute( ($object_xref_offset+$object_xref_id), $linkage_type);
        }       
-       print "GO $count\n";     
+       print "GO $count\n" if ($verbose);     
      }
     else{
       my $count = 0;
@@ -294,7 +294,7 @@ SQL
 	}
 	$last_ensembl = $ensembl_id;
       }  
-      print "DEP $count\n";
+      print "DEP $count\n" if ($verbose);
     }
    }
    ### If SEQUENCE_MATCH   xref, object_xref,  identity_xref   (order by xref_id)  # maybe linked to more than one?
@@ -318,10 +318,10 @@ SQL
 	$add_identity_xref_sth->execute( ($object_xref_id+$object_xref_offset), $query_identity, $target_identity, $hit_start, $hit_end, 
 					 $translation_start, $translation_end, $cigar_line, $score, $evalue, $analysis_ids{$ensembl_type});  
       }  
-      print "SEQ $count\n";
+      print "SEQ $count\n" if ($verbose);
     }
     else{
-      print "ARSE what type is $type\n";
+      print "PROBLEM:: what type is $type\n";
     }	
 
 
@@ -400,13 +400,7 @@ SQL
       $sth->finish
     }
     $reason_id{$key} = $failed_id;
-    print "failed id = $failed_id\n";
   }
-
-  foreach my $key (keys %summary_failed){
-    print "$key\t".$summary_failed{$key}."\t id = ".$reason_id{$key}."\n";
-  }
-
 
 
   ## Dump interpro xrefs and interpro table
@@ -426,7 +420,6 @@ SQL
   
   my $ex_id = $name_to_external_db_id{"Interpro"};
   my $analysis_id = $analysis_ids{'Transcript'};   # No real analysis here but in table it is set to not NULL
-  print "ex_id = $ex_id \t analysis_id = $analysis_id\n";
  
   
   $get_xref_interpro_sth->execute();
@@ -676,11 +669,6 @@ WEL
   $sth_stat->execute();
   $sth_stat->finish;
 
-  # remove after testing
-#  $sth = $self->core->dbc->prepare("drop table dependent_xref");
-#  $sth->execute || die "Could not drop temp table dependent_xref\n";
-#  $sth->finish;  
-
 
 
 }
@@ -711,7 +699,7 @@ sub get_analysis{
       
     } else {
       
-      print "No analysis with logic_name $logic_name found, creating ...\n";
+      print "No analysis with logic_name $logic_name found, creating ...\n" if ($self->verbose);
       $sth = $self->core->dbc->prepare("INSERT INTO analysis (logic_name, created) VALUES ('" . $logic_name. "',NOW())");
       # TODO - other fields in analysis table
       $sth->execute();

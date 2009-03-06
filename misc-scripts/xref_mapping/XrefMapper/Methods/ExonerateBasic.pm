@@ -107,9 +107,9 @@ sub submit_exonerate {
 
   my $root_dir = $mapper->core->dir;
 
-  print "query $query\n";
+  print "query $query\n" if($mapper->verbose);
   my $queryfile = basename($query);
-  print "target $target\n";
+  print "target $target\n" if($mapper->verbose);
   my $targetfile = basename($target);
 
   my $prefix = $root_dir . "/" . basename($query);
@@ -135,7 +135,7 @@ sub submit_exonerate {
 $exonerate_path $query $target --showvulgar false --showalignment FALSE --ryo "xref:%qi:%ti:%ei:%ql:%tl:%qab:%qae:%tab:%tae:%C:%s\n" $options_str | grep '^xref' > $root_dir/$output
 
 EON
-    print "none farm command is $cmd\n";
+    print "none farm command is $cmd\n" if($mapper->verbose);
     system($cmd);
     $self->jobcount(1);
     return "nofarm";
@@ -185,7 +185,7 @@ EOF
 
 	if (/^Job <(\d+)> is submitted/) {
 	  $jobid = $1;
-	  print "LSF job ID for main mapping job: $jobid (job array with $num_jobs jobs)\n"
+	  print "LSF job ID for main mapping job: $jobid (job array with $num_jobs jobs)\n" if($mapper->verbose);
 	}
       }
       close(BSUB_READER);
