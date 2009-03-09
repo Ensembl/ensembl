@@ -9,8 +9,6 @@ CREATE TABLE `identity_xref` (
   `cigar_line` text collate latin1_bin,
   `score` double default NULL,
   `evalue` double default NULL,
-  `analysis_id` int(11) default NULL,
-  PRIMARY KEY  (`object_xref_id`),
-  KEY `analysis_idx` (`analysis_id`)
+  PRIMARY KEY  (`object_xref_id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_bin;
 

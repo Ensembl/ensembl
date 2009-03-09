@@ -24,6 +24,7 @@
 44	0000-00-00 00:00:00	Seg	low_complexity	NULL	NULL	/usr/local/ensembl/bin/seg	NULL	/usr/local/ensembl/bin/seg	NULL	Seg	NULL	Seg	annot
 42	0000-00-00 00:00:00	scanprosite	prosite	NULL	/acari/analysis/iprscan/data/prosite.patterns	/acari/analysis/iprscan/bin/scanregexpf.pl	/acari/analysis/iprscan/data/confirm.pat	/acari/analysis/iprscan/bin/scanregexpf.pl		Prosite	NULL	PROSITE	domain
 71	0000-00-00 00:00:00	Superfamily	Superfamily	1	/data/blastdb/Ensembl/sam/superfamily	/acari/work1/mongin/superfamily/superfamily.pl	1	/acari/work1/mongin/superfamily/superfamily.pl		Superfamily	1	Superfamily	annot
+119	2006-03-14 15:48:36	XrefExonerateDNA	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N
 1292	0000-00-00 00:00:00	SNPDensity	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N
 1293	0000-00-00 00:00:00	RepeatCoverage	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N
 1500	0000-00-00 00:00:00	miRanda	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N
