@@ -490,20 +490,30 @@ WHERE   xref_id = ?
     #
     # Store the reference to the internal ensembl object
     #
+    my $analysis_id;
+    if($exObj->analysis()) {
+      $analysis_id =
+	$self->db()->get_AnalysisAdaptor->store($exObj->analysis());
+    } else {
+      $analysis_id = undef;
+    }
+
     $sth = $self->prepare(
       qq(
 INSERT IGNORE INTO object_xref
   SET   xref_id = ?,
         ensembl_object_type = ?,
         ensembl_id = ?,
-        linkage_annotation = ?) );
+        linkage_annotation = ?,
+        analysis_id = ? ) );
 
     $sth->bind_param( 1, $dbX,                         SQL_INTEGER );
     $sth->bind_param( 2, $ensType,                     SQL_VARCHAR );
     $sth->bind_param( 3, $ensembl_id,                  SQL_INTEGER );
     $sth->bind_param( 4, $exObj->linkage_annotation(), SQL_VARCHAR );
-
-    #print "stored xref id $dbX in obejct_xref\n";
+    $sth->bind_param( 5, $analysis_id,                 SQL_INTEGER);
+ 
+   #print "stored xref id $dbX in obejct_xref\n";
     $sth->execute();
     $exObj->dbID($dbX);
     $exObj->adaptor($self);
@@ -514,13 +524,6 @@ INSERT IGNORE INTO object_xref
     # If its GoXref add the linkage type to go_xref table
     #
     if ($exObj->isa('Bio::EnsEMBL::IdentityXref')) {
-      my $analysis_id;
-      if($exObj->analysis()) {
-        $analysis_id =
-          $self->db()->get_AnalysisAdaptor->store($exObj->analysis());
-      } else {
-        $analysis_id = undef;
-      }
       $sth = $self->prepare( "
              INSERT ignore INTO identity_xref
              SET object_xref_id = ?,
@@ -532,8 +535,7 @@ INSERT IGNORE INTO object_xref
              ensembl_end = ?,
              cigar_line = ?,
              score = ?,
-             evalue = ?,
-             analysis_id = ?" );
+             evalue = ?" );
       $sth->bind_param(1,$Xidt,SQL_INTEGER);
       $sth->bind_param(2,$exObj->xref_identity,SQL_INTEGER);
       $sth->bind_param(3,$exObj->ensembl_identity,SQL_INTEGER);
@@ -544,7 +546,6 @@ INSERT IGNORE INTO object_xref
       $sth->bind_param(8,$exObj->cigar_line,SQL_LONGVARCHAR);
       $sth->bind_param(9,$exObj->score,SQL_DOUBLE);
       $sth->bind_param(10,$exObj->evalue,SQL_DOUBLE);
-      $sth->bind_param(11,$analysis_id,SQL_INTEGER);
       $sth->execute();
     } elsif( $exObj->isa( 'Bio::EnsEMBL::GoXref' )) {
       $sth = $self->prepare( "
@@ -851,7 +852,7 @@ sub _fetch_by_object_type {
            es.synonym,
            idt.xref_identity, idt.ensembl_identity, idt.xref_start,
            idt.xref_end, idt.ensembl_start, idt.ensembl_end,
-           idt.cigar_line, idt.score, idt.evalue, idt.analysis_id,
+           idt.cigar_line, idt.score, idt.evalue, oxr.analysis_id,
            gx.linkage_type,
            xref.info_type, xref.info_text, exDB.type, gx.source_xref_id,
            oxr.linkage_annotation, xref.description
@@ -900,6 +901,13 @@ SSQL
       my $linkage_key =
         ( $linkage_type || '' ) . ( $source_xref_id || '' );
 
+
+      my $analysis = undef;
+      if ( defined($analysis_id) ) {
+	$analysis =
+	  $self->db()->get_AnalysisAdaptor()->fetch_by_dbID($analysis_id);
+      }
+
       my %obj_hash = ( 'adaptor'            => $self,
                        'dbID'               => $refID,
                        'primary_id'         => $dbprimaryId,
@@ -913,7 +921,8 @@ SSQL
                        'secondary_db_table' => $exDB_secondary_db_table,
                        'dbname'             => $dbname,
                        'description'        => $description,
-                       'linkage_annotation' => $link_annotation );
+                       'linkage_annotation' => $link_annotation,
+                       'analysis'           => $analysis);
 
       # Using an outer join on the synonyms as well as on identity_xref,
       # we now have to filter out the duplicates (see v.1.18 for
@@ -921,19 +930,12 @@ SSQL
       # xref, this is easy enough; all the 'extra' bits are synonyms.
       my $source_xref;
       if ( !$seen{$refID} ) {
-        my $exDB;
+	
+	my $exDB;
         if ( ( defined($xrefid) ) ) {  # an xref with similarity scores
           $exDB = Bio::EnsEMBL::IdentityXref->new_fast( \%obj_hash );
           $exDB->xref_identity($xrefid);
           $exDB->ensembl_identity($ensemblid);
-
-          if ( defined($analysis_id) ) {
-            my $analysis =
-              $self->db()->get_AnalysisAdaptor()
-              ->fetch_by_dbID($analysis_id);
-
-            if ( defined($analysis) ) { $exDB->analysis($analysis) }
-          }
 
           $exDB->cigar_line($cigar_line);
           $exDB->xref_start($xref_start);

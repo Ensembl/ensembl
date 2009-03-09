@@ -115,12 +115,12 @@ sub new {
        $dbname, $release, $display_id, $description,
        $primary_id_linkable, $display_id_linkable, $priority,
        $db_display_name, $info_type, $info_text, $type,
-       $secondary_db_name, $secondary_db_table, $link_annotation) =
+       $secondary_db_name, $secondary_db_table, $link_annotation, $analysis) =
     rearrange ( ['ADAPTOR','DBID','PRIMARY_ID','VERSION',
                  'DBNAME','RELEASE','DISPLAY_ID','DESCRIPTION',
 		 'PRIMARY_ID_LINKABLE','DISPLAY_ID_LINKABLE','PRIORITY',
 		 'DB_DISPLAY_NAME', 'INFO_TYPE', 'INFO_TEXT', 'TYPE',
-                 'SECONDARY_DB_NAME', 'SECONDARY_DB_TABLE', 'LINKAGE_ANNOTATION'], @args );
+                 'SECONDARY_DB_NAME', 'SECONDARY_DB_TABLE', 'LINKAGE_ANNOTATION', 'ANALYSIS'], @args );
 
   $self->{'adaptor'} = $adaptor;
   $self->{'dbID'}    = $dbID;
@@ -143,6 +143,7 @@ sub new {
   if( defined $secondary_db_table) { $self->secondary_db_table($secondary_db_table) }
 
   $self->linkage_annotation($link_annotation) if defined $link_annotation;
+  $self->analysis($analysis) if defined $analysis;
 
 
   return $self;
@@ -323,6 +324,23 @@ sub description {
   return $self->{description};
 }
 
+=head2 analysis
+
+  Arg [1]    : Bio::EnsEMBL::Analysis $analysis
+  Example    : none
+  Description: get/set for attribute analysis
+  Returntype : Bio::EnsEMBL::Analysis
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub analysis {
+   my $self = shift;
+  $self->{analysis} = shift if( @_ );
+  return $self->{analysis};
+}
 
 =head2 comment
 

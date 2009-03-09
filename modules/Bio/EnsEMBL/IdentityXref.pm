@@ -34,7 +34,6 @@ Bio::EnsEMBL::IdentityXref
     -XREF_END         => 68,
     -ENSEMBL_START    => 10,
     -ENSEMBL_END      => 77,
-    -ANALYSIS         => $analysis,
     -ADAPTOR          => $adaptor,
     -PRIMARY_ID       => $primary_id,
     -DBNAME           => 'SwissProt'
@@ -57,7 +56,7 @@ use Bio::EnsEMBL::Utils::Exception qw( deprecate );
 
   Arg [...]  : XREF_IDENTITY ENSEMBL_IDENTITY SCORE EVALUE CIGAR_LINE
              : XREF_START XREF_END ENSEMBL_START ENSEMBL_END
-             : ANALYSIS   pairs
+             : ANALYSIS pairs
   Example    : see synopsis 
   Description: Create a new Bio::EnsEMBL::IdentityXref object
   Returntype : Bio::EnsEMBL::IdentityXref
@@ -283,25 +282,6 @@ sub evalue {
    my $self = shift;
   $self->{'evalue'} = shift if( @_ );
   return $self->{'evalue'};
-}
-
-
-=head2 analysis
-
-  Arg [1]    : Bio::EnsEMBL::Analysis $analysis
-  Example    : none
-  Description: get/set for attribute analysis
-  Returntype : Bio::EnsEMBL::Analysis
-  Exceptions : none
-  Caller     : general
-  Status     : Stable
-
-=cut
-
-sub analysis {
-   my $self = shift;
-  $self->{'analysis'} = shift if( @_ );
-  return $self->{'analysis'};
 }
 
 
