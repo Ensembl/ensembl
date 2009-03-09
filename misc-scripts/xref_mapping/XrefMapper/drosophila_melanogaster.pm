@@ -42,11 +42,10 @@ sub xref_offset{
 
 sub gene_display_xref_sources {
 
-  my @list = qw(
-                FlyBaseName_gene
-                gadfly_gene_cgid
-                flybase_gene_id
-                );
+		my @list = qw(FlyBaseName_gene FlyBaseCGID_gene flybase_gene_id);
+#                gadfly_gene_cgid
+#                flybase_gene_id
+#                );
 
   my %ignore;
   $ignore{"EntrezGene"}= 'FROM:RefSeq_[pd][en][pa].*_predicted';
@@ -189,14 +188,41 @@ GSQL
   
   my ($xref_id, $qid, $tid, $ex_db_id, $display_label, $external_db_name, $linkage_annotation);
   
-  
 
-  open (TRANSCRIPT_DX, ">$dir/transcript_display_xref.sql");
-  open (TRANSCRIPT_DX_TXT, ">$dir/transcript_display_xref.txt");
-  open (GENE_DX, ">$dir/gene_display_xref.sql");
+
+  # Open file handles to recieve SQL and text data used to set 
+  # display_xrefs 
+  my $gene_dx_file       = "$dir/gene_display_xref.sql"; 
+  my $tran_dx_file       = "$dir/transcript_display_xref.sql";
+  my $unset_gene_dx_file = "$dir/gene_unset_display_xref.sql";
+  my $unset_tran_dx_file = "$dir/transcript_unset_display_xref.sql";
+
+  open (GENE_DX, ">$gene_dx_file")
+      or die( "Could not open $gene_dx_file: $!" );
+  open (TRANSCRIPT_DX, ">$tran_dx_file") 
+      or die( "Could not open $tran_dx_file: $!" );
+  open (GENE_DX_UNSET, ">$unset_gene_dx_file")
+      or die( "Could not open $unset_gene_dx_file: $!" );
+  open (TRAN_DX_UNSET, ">$unset_tran_dx_file") 
+      or die( "Could not open $unset_tran_dx_file: $!" );
   open (GENE_DX_TXT, ">$dir/gene_display_xref.txt");
-    
-  
+  open (TRANSCRIPT_DX_TXT, ">$dir/transcript_display_xref.txt");
+
+  # These are the files that this method will return
+  my @files = ($unset_gene_dx_file,$gene_dx_file, 
+               $unset_tran_dx_file,$tran_dx_file);
+
+  # Write the 'unset' sql to the files, and cose them
+  print GENE_DX_UNSET qq(UPDATE gene       SET display_xref_id=NULL;\n);
+  print TRAN_DX_UNSET qq(UPDATE transcript SET display_xref_id=NULL;\n);
+  close( GENE_DX_UNSET );
+  close( TRAN_DX_UNSET );
+#  open (TRANSCRIPT_DX, ">$dir/transcript_display_xref.sql");
+#  open (TRANSCRIPT_DX_TXT, ">$dir/transcript_display_xref.txt");
+#  open (GENE_DX, ">$dir/gene_display_xref.sql");
+#  open (GENE_DX_TXT, ">$dir/gene_display_xref.txt");
+#   
+
   foreach my $gene_id (keys %genes_to_transcripts) {
     my %percent_id;
     my %level_db;
@@ -362,6 +388,8 @@ GSQL
   close GENE_DX;
   close GENE_DX_TXT;
 
+  return @files;
+
 }
 
 sub build_genes_to_transcripts {
@@ -400,18 +428,17 @@ sub load_translation_to_transcript{
 sub gene_description_sources {
   return (
           "FlyBaseName_gene",
-          "gadfly_gene_cgid",
+					"FlyBaseCGID_gene",
+#          "gadfly_gene_cgid",
           "flybase_annotation_id",
          );
 }
 
 sub transcript_display_xref_sources {
 
-  my @list = qw(
-                FlyBaseName_transcript
-                gadfly_transcript_cgid
-                flybase_annotation_id
-                );
+		my @list = qw(FlyBaseName_transcript FlyBaseCGID_transcript flybase_annotation_id);
+                
+#                gadfly_transcript_cgid
 
   my %ignore;
   $ignore{"EntrezGene"}= 'FROM:RefSeq_[pd][en][pa].*_predicted';
