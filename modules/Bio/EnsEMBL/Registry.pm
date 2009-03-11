@@ -1722,7 +1722,7 @@ sub load_registry_from_db {
       #      print $@;
       if ($verbose) {
         print "GO software not installed "
-          . "so GO database ensemb_go_$go_version will be ignored\n";
+          . "so GO database ensembl_go_$go_version will be ignored\n";
       }
     } else {
       my $go_db = "ensembl_go_" . $go_version;
@@ -2051,15 +2051,17 @@ sub load_registry_from_db {
                   assumes all types.
 
   Example       : Bio::EnsEMBL::Registry->find_and_add_aliases(
-                    -GROUP   => 'core',
-                    -ADAPTOR => $dba
+                    -ADAPTOR => $dba,
+                    -GROUP   => 'core'
                   );
 
   Description   : Looks in the meta container for each database for
                   an entry called "species.alias".  If any are found
                   then the species adaptor is registered to that
                   set of aliases.  This can work across any adaptor
-                  which has a MetaContainer.
+                  which has a MetaContainer.  If no MetaContainer
+                  can be returned from a given adaptor then no alias
+                  searching is performed.
 
   Return type   : none
   Exceptions    : none
@@ -2070,7 +2072,7 @@ sub load_registry_from_db {
 sub find_and_add_aliases {
   my $class = shift @_;
 
-  my ( $group, $adaptor ) = rearrange( [qw(GROUP ADAPTOR)], @_ );
+  my ( $adaptor, $group ) = rearrange( [qw(ADAPTOR GROUP)], @_ );
 
   my @dbas;
   if ( defined($adaptor) ) {
@@ -2080,17 +2082,21 @@ sub find_and_add_aliases {
   }
 
   foreach my $dba (@dbas) {
-    my $species        = $dba->species();
-    my $meta_container = $dba->get_MetaContainer();
+    my $species = $dba->species();
+    my $meta_container = eval { $dba->get_MetaContainer() };
 
-    my @aliases =
-      @{ $meta_container->list_value_by_key('species.alias') };
+    my $aliases = [];
+    if ( defined($meta_container) ) {
+      $aliases = $meta_container->list_value_by_key('species.alias');
+    }
 
     # Need to disconnect so we do not spam the MySQL servers trying to
-    # get aliases.
-    $dba->dbc()->disconnect_if_idle();
+    # get aliases.  Can only call disonnect if dbc was defined.
+    if ( defined( $dba->dbc() ) ) {
+      $dba->dbc()->disconnect_if_idle();
+    }
 
-    foreach my $alias (@aliases) {
+    foreach my $alias ( @{$aliases} ) {
       $class->add_alias( $species, $alias );
     }
   }
