@@ -14,7 +14,7 @@ use FindBin;
 
 
 my ( $host, $user, $pass, $port, @dbnames, $file, $release_num,
-     $nobackup );
+     $nobackup,$forceTableWrite );
 
 GetOptions( "host=s",        \$host,
             "user=s",        \$user,
@@ -23,7 +23,8 @@ GetOptions( "host=s",        \$host,
             "file=s",        \$file,
             "nobackup",      \$nobackup,
             "dbnames=s@",    \@dbnames,
-            "release_num=i", \$release_num );
+            "release_num=i", \$release_num,
+	    "force_table_write", \$forceTableWrite);
 
 $file ||= $FindBin::Bin . "/attrib_type.txt";
 usage() if ( !$host );
@@ -66,6 +67,7 @@ if ( $input ne 'yes' ) {
 
 my $attribs = read_attrib_file( $file );
 
+my $table_consistent;
 # if any attrib_types are loaded that are different from the file, a
 # consistency problem is reported and the upload is not done.
 for my $database (@dbnames) {
@@ -73,7 +75,11 @@ for my $database (@dbnames) {
   backup_attribute_types( $host, $user, $pass, $port, $database )
     if ( !$nobackup );
 
-  if ( check_consistency( $attribs, $database, $db ) ) {
+  $table_consistent = check_consistency($attribs,$database,$db);
+  #this has been introduced in e54: when we are sure that the data in the file is consistent
+  #(e.g. some attributes have been removed from the file since they are not longer are needed)
+  #you should force the writing option
+  if ( $table_consistent || $forceTableWrite ) {
     # consistent
     $db->do("use $database");
     $db->do("delete from attrib_type");
@@ -82,6 +88,8 @@ for my $database (@dbnames) {
   } else {
     print STDERR "Repairing $database, not consistent!\n";
     repair( $attribs, $database, $db );
+    print STDERR "If you are sure the file is up to date, you can use the --force_table_write".
+	"to overwrite the information in the attrib_table, check RelCoord for more information\n";
   }
 }
 
@@ -271,7 +279,9 @@ sub usage {
               "port=i",        \$port,
               "file=s",        \$file,
               "dbnames=s@",    \@dbnames,
-              "release_num=i", \$release_num );
+              "release_num=i", \$release_num,
+	      "nobackup",      \$nobackup,
+	      "force_table_write", \$forceTableWrite);
 
   print STDERR <<EOC;
 Usage:
@@ -286,6 +296,14 @@ Usage:
    --release_num ...
 
   Use --file ... if not using the default 'attrib_type.txt'.
+
+  The new option force_table_write has been introduced: when you run the script and there
+  is inconsistency between the database and the file (there is the "not consistent!!" in 
+  the output), you should first ensure if the consistency is expected (some attributes were
+  removed from the file because they are not longer needed), or not expected (someone introduced
+  a new attribute_type in the database but forgot to update the attrib_type.txt file). In the first
+  situation, you should use the --force_table_write when running the script. In the second situation,
+  the new attrib_type must be added to the file and run it again without the force flag
 
 EOC
   exit;
