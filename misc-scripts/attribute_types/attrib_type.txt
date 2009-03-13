@@ -303,8 +303,8 @@
 
 #more vega gene types
 175	TPPsCount	transcribed_processed_pseudogene	Number of Transcribed Processed Pseudogenes
-176	TUPsCount	transcribed_unprocessed_pseudogene	Number of Transcribed Unprocessed Useudogenes
-177	UniPsCount	unitary_pseudogene	Number of Unitary pseudogenes
+176	TUPsCount	transcribed_unprocessed_pseudogene	Number of Transcribed Unprocessed Pseudogenes
+177	UniPsCount	unitary_pseudogene	Number of Unitary Pseudogenes
 178	KnwnTECCount	TEC_KNOWN	Number of Known TEC genes
 179	TotTECGeneCount	TEC_all	Total number of TEC genes
 180	TUyPsCount	transcribed_unitary_pseudogene	Number of Transcribed Unitary Pseudogenes
