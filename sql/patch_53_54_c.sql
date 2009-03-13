@@ -6,7 +6,7 @@
 # Add analysis_xref column to object_xref, copy values from identity_xref, remove column from identity_xref.
 # Will allow all object_xref relationships to have an analysis, not just those from sequence matching.
 
-ALTER TABLE object_xref ADD COLUMN analysis_id SMALLINT UNSIGNED;
+ALTER TABLE object_xref ADD COLUMN analysis_id SMALLINT UNSIGNED DEFAULT NULL;
 
 UPDATE object_xref ox, identity_xref ix SET ox.analysis_id=ix.analysis_id WHERE ox.object_xref_id=ix.object_xref_id;
 
