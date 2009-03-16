@@ -143,7 +143,7 @@ foreach my $file( @files ){
         $analysis->displayable($displayable);
         $analysis->display_label($display_label);
         $web_data ? $analysis->web_data($aa->get_dumped_data($web_data)) : $analysis->{_web_data} = undef;
-	print Dumper  $analysis->web_data();
+#	print Dumper  $analysis->web_data();
 
         $aa->update($analysis) if $update;
         
