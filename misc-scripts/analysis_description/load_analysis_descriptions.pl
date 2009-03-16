@@ -163,7 +163,7 @@ if ( scalar(keys %hash)==0) {
 	}
 } else {
     foreach my $ln (keys %hash) {
-        throw ("Analysis '$ln' doesn't exist in reference file(s) '"
+        warning ("Analysis '$ln' doesn't exist in reference file(s) '"
                . join( "','", @files )
                . "'! It needs to be added first")
 			unless (exists $reference{$ln});
