@@ -121,6 +121,7 @@ foreach my $file( @files ){
     
     my ($nr, $logic_name, $description, $display_label, $displayable, $web_data) = split(/\t/, $row);
     #print join("\t", $logic_name, $description, $display_label, $displayable, $web_data), "\n";
+    
     $reference{lc($logic_name)} = {
       nr            => $nr,
       description   => $description   || '',
@@ -135,14 +136,14 @@ foreach my $file( @files ){
     next if not $description;
     
     if (exists $hash{lc($logic_name)}) {
-
+	
         my $analysis = $hash{lc($logic_name)};
         
         $analysis->description($description);
         $analysis->displayable($displayable);
         $analysis->display_label($display_label);
-        $web_data ? $analysis->web_data($web_data) : $analysis->{_web_data} = undef;
-		#print Dumper  $analysis->web_data();
+        $web_data ? $analysis->web_data($aa->get_dumped_data($web_data)) : $analysis->{_web_data} = undef;
+	print Dumper  $analysis->web_data();
 
         $aa->update($analysis) if $update;
         
