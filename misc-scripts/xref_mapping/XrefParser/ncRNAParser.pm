@@ -26,7 +26,14 @@ sub run {
 
   my $source_id = shift;
   my $species_id = shift;
-  my $file = shift;
+  my $files       = shift;
+  my $release_file   = shift;
+  my $verbose       = shift;
+
+  my $file = @{$files}[0];
+
+  print "source_id = $source_id, species= $species_id, file = $file\n";
+
 
   if(!defined($source_id)){
     $source_id = XrefParser::BaseParser->get_source_id_for_filename($file);
