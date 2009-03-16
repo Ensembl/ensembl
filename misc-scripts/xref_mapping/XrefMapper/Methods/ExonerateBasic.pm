@@ -56,16 +56,9 @@ sub jobcount {
 
 sub run() {
 
-#  my ($self, $query, $target, $dir, $nofarm) = @_;
-#
-#  my $name = $self->submit_exonerate($query, $target, $dir, $nofarm, $self->options());
-
   my ($self, $query, $target, $mapper) = @_;
 
   my $name = $self->submit_exonerate($query, $target, $mapper, $self->options());
-
-#  $self->check_err($dir);
-#  no point until after the depend job done.
 
   return $name;
 
@@ -223,13 +216,16 @@ EOF
 
     my $sth = $mapper->xref->dbc->prepare("insert into process_status (status, date) values('mapping_submitted',now())");
     $sth->execute();
+    $sth->finish;
+
     my $insert = "insert into mapping (job_id, type, command_line, percent_query_cutoff, percent_target_cutoff, method, array_size) values($jobid, '$ensembl_type', '$command',".
 				       $self->query_identity_threshold.", ".$self->target_identity_threshold.", '".$self->get_class_name()."', $num_jobs)";
-#    print $insert."\n";
+
 
     $sth = $mapper->xref->dbc->prepare($insert);
     $sth->execute;
- 
+    $sth->finish;
+
     $sth = $mapper->xref->dbc->prepare("insert into mapping_jobs (root_dir, map_file, status, out_file, err_file, array_number, job_id) values (?,?,?,?,?,?,?)");
     
     for( my $i=1; $i<=$num_jobs; $i++){
