@@ -93,7 +93,11 @@ sub get_core_data {
 
  # Now process the direct xrefs and add data to the object xrefs remember dependent xrefs.
 
- my $ins_ox_sth = $self->xref->dbc->prepare("insert into object_xref (object_xref_id, ensembl_id, xref_id, ensembl_object_type, linkage_type) values(?, ?,?,?,?)");
+ my $ins_ox_sth = $self->xref->dbc->prepare("insert into object_xref (object_xref_id, ensembl_id, xref_id, ensembl_object_type, linkage_type) values(?, ?, ?, ?, ?)");
+
+
+ # Direct xrefs can be considered to be 100% matching
+ my $ins_ix_sth = $self->xref->dbc->prepare("insert into identity_xref (object_xref_id, query_identity, target_identity) values(?, 100, 100)");
 
  local $ins_ox_sth->{RaiseError};  # want to see duplicates and not add de
 
@@ -141,6 +145,7 @@ SQL
        next; #duplicate
      }
      else{
+       $ins_ix_sth->execute($object_xref_id);
        push  @master_xref_ids, $xref_id;
      }
      while(my $master_xref_id = pop(@master_xref_ids)){
@@ -160,6 +165,7 @@ SQL
 	     die "Problem loading error is $err\n";
 	   } 
 	 }
+	 $ins_ix_sth->execute($object_xref_id);
 	 push @master_xref_ids, $dep_xref_id; # get the dependent, dependents just in case
 
          if(defined($link) and $link ne ""){ # we have a go term linkage type

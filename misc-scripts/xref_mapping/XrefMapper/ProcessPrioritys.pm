@@ -70,115 +70,73 @@ sub process {
     print "\t$name\n" if($self->verbose);
   }
 
+  my $update_ox_sth = $self->xref->dbc->prepare('update object_xref set ox_status = "FAILED_PRIORITY" where object_xref_id = ?');
+  my $update_x_sth = $self->xref->dbc->prepare('update xref set dumped = 0 where xref_id = ?');
 
+  #
+  # Change of tact here to make the sql easier...
+  #
 
-  my $sql =(<<SQL);
-   SELECT ox.object_xref_id, x.accession, s.priority, ox.linkage_type, x.xref_id, ox.ox_status
+  # 1) Set to failed all those that have no object xrefs.
+
+  my $f_sql =(<<FSQL);
+   SELECT x.xref_id
      FROM  source s, xref x 
      LEFT JOIN object_xref ox ON  ox.xref_id = x.xref_id 
        WHERE x.source_id = s.source_id
          AND s.name = ? 
-       ORDER BY x.accession, s.priority
-SQL
+         AND ox.object_xref_id is null
+FSQL
 
-  my $sth =  $self->xref->dbc->prepare($sql);
-
-  my $seq_sth = $self->xref->dbc->prepare('select ox.object_xref_id, x.xref_id, (ix.query_identity + ix.target_identity) as identity from object_xref ox, xref x, source s, identity_xref ix where ix.object_xref_id = ox.object_xref_id and x.xref_id = ox.xref_id and ox.ox_status = "DUMP_OUT" and x.source_id = s.source_id and s.name = ? and x.accession = ?  order by identity DESC');
-
-  my $dep_sth = $self->xref->dbc->prepare('select distinct dox.object_xref_id, x.xref_id, (ix.query_identity+ ix.target_identity) as identity from dependent_xref dx, object_xref dox, xref x, source s, object_xref mox, identity_xref ix where ix.object_xref_id = mox.object_xref_id and mox.xref_id = dx.master_xref_id and dx.dependent_xref_id = dox.xref_id and dox.xref_id = x.xref_id and s.source_id = x.source_id and x.accession = ? and s.name = ? and dox.ox_status = "DUMP_OUT"');
-
-
-  my $update_ox_sth = $self->xref->dbc->prepare('update object_xref set ox_status = "FAILED_PRIORITY" where object_xref_id = ?');
-  my $update_x_sth = $self->xref->dbc->prepare('update xref set dumped = 0 where xref_id = ?');
-
+  my $f_sth =  $self->xref->dbc->prepare($f_sql);
   foreach my $name (@names){
-    my %priority_clash_seq;
-    my %priority_clash_depend;
-    print "processing $name source\n" if($self->verbose);
-    $sth->execute($name);
-    my ($ox,$acc,$priority, $type, $xref_id, $ox_status);
-    $sth->bind_columns(\$ox,\$acc,\$priority,\$type, \$xref_id, \$ox_status);
-    my $last_acc = "";
-    my $top_priority = 0;
-    while($sth->fetch()){
-      if($acc eq $last_acc){
-	if(!defined($ox_status)){                # NO MAPPINGS AT ALL
-	  $update_x_sth->execute($xref_id);
-	  next;
-	}
-	elsif($ox_status eq "DUMP_OUT"){
-	  if($priority == $top_priority and $type ne "DIRECT"){
-	    if($type eq "SEQUENCE_MATCH"){
-	      $priority_clash_seq{$acc} = 1;
-	    }	
-	    elsif($type eq "DEPENDENT"){
-	      $priority_clash_depend{$acc} = 1;
-	    }
-	    else{
-	      print STDERR "type $type????? $acc, $name\n";
-	    }
-	  }
-	  else{
-	    $update_ox_sth->execute($ox);
-	    $update_x_sth->execute($xref_id);
-	  }
-	}
-      }
-      else{
-	$top_priority = $priority;
-      }
-	
-      $last_acc = $acc;
-    }	
-
-    # Easy case of sequence matches
-    my $identity;
-#    print "need to sort out those with the same priority status:-\n";
-    foreach my $key (keys %priority_clash_seq){
-      $seq_sth->execute($name, $key);
-      $seq_sth->bind_columns(\$ox, \$xref_id, \$identity);
-      $seq_sth->fetch();  # keep first one
-      while( $seq_sth->fetch()){
-	$update_ox_sth->execute($ox);
-	$update_x_sth->execute($xref_id);
-      }
-    }
-    
-    # now the hard one dependent xrefs!!
-    foreach my $key (keys %priority_clash_depend){
-      $dep_sth->execute($key, $name);
-      $dep_sth->bind_columns(\$ox, \$xref_id, \$identity);
-      $dep_sth->fetch();  # keep first one
-      while( $dep_sth->fetch()){
-	$update_ox_sth->execute($ox); # remove others
-	$update_x_sth->execute($xref_id);
-      }
-    }
-
-
-
-  }
-
-  #Sanity check make sure only one instance of each priority xref in object_xref table with ox_status = DUMP_OUT
-  foreach my $name (@names){
-    print "checking $name source\n" if($self->verbose);
-    $sth->execute($name);
-    my ($ox,$acc,$priority, $type, $xref_id, $ox_status);
-    $sth->bind_columns(\$ox,\$acc,\$priority,\$type, \$xref_id, \$ox_status);
-    my $last_acc = "";
-    while($sth->fetch()){
-      if($acc eq $last_acc and defined($ox_status) and $ox_status eq "DUMP_OUT"){
-	print STDERR "ERROR: $acc ($name) still has more than one viable entry in object_xref\n";
-      }
-      if(defined($ox_status) and $ox_status eq "DUMP_OUT"){
-	$last_acc = $acc;
-      }
+    $f_sth->execute($name);
+    my ($xref_id);
+    $f_sth->bind_columns(\$xref_id);
+    while($f_sth->fetch()){
+      $update_x_sth->execute($xref_id);
     }
   }
+  $f_sth->finish;
 
 
-  $seq_sth->finish;
+  # 
+  # Now ALL object_xrefs have an identity_xref :-)
+  # So we can do a straight join and treat all info_types the same way.
+  # 
+  my $new_sql =(<<NEWS);
+   SELECT ox.object_xref_id, x.accession, x.xref_id, (ix.query_identity + ix.target_identity) as identity
+      FROM object_xref ox, xref x, source s, identity_xref ix
+        WHERE ox.object_xref_id = ix.object_xref_id 
+          AND ox.xref_id = x.xref_id
+          AND s.source_id = x.source_id
+          AND ox.ox_status = "DUMP_OUT"
+          AND s.name = ?
+         ORDER BY x.accession DESC, s.priority ASC , identity DESC, x.xref_id DESC
+NEWS
+
+  my $sth = $self->xref->dbc->prepare($new_sql);
+  foreach my $name (@names){
+    $sth->execute($name);
+    my ($object_xref_id, $acc, $xref_id, $identity);
+    $sth->bind_columns(\$object_xref_id, \$acc, \$xref_id, \$identity);
+    my $last_acc = "";
+    my $best_xref_id = undef;
+    while($sth->fetch){
+      if($last_acc eq $acc){
+         if($xref_id != $best_xref_id){
+            $update_x_sth->execute($xref_id);
+            $update_ox_sth->execute($object_xref_id);            
+         }
+      }
+      else{ # NEW
+        $last_acc = $acc;
+        $best_xref_id = $xref_id;
+      } 
+    }
+  }
   $sth->finish;
+
   $update_ox_sth->finish;
   $update_x_sth->finish;
 

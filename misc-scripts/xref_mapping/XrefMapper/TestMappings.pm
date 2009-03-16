@@ -91,9 +91,9 @@ sub unlinked_entries{
     $sth = $self->xref->dbc->prepare($sql);
     $sth->execute();
     $sth->bind_columns(\$xref_id);
-    print "SQL QUERY: $sql\n";
+    print STDERR "SQL QUERY: $sql\n";
     while($sth->fetch){
-      print "Problem with master xref $xref_id\n";
+      print STDERR "Problem with master xref $xref_id\n";
     }
     $sth->finish;
   }
@@ -116,9 +116,9 @@ sub unlinked_entries{
     $sth = $self->xref->dbc->prepare($sql);
     $sth->execute();
     $sth->bind_columns(\$xref_id);
-    print "SQL QUERY: $sql\n";
+    print STDERR "SQL QUERY: $sql\n";
     while($sth->fetch){
-      print "Problem with dependent xref $xref_id\n";
+      print STDERR "Problem with dependent xref $xref_id\n";
     }
     $sth->finish;
   }
@@ -138,9 +138,9 @@ sub unlinked_entries{
     $sth = $self->xref->dbc->prepare($sql);
     $sth->execute();
     $sth->bind_columns(\$xref_id);
-    print "SQL QUERY: $sql\n";
+    print STDERR "SQL QUERY: $sql\n";
     while($sth->fetch){
-      print "Problem with primary xref $xref_id\n";
+      print STDERR "Problem with primary xref $xref_id\n";
     }
     $sth->finish;
   }
@@ -161,9 +161,9 @@ sub unlinked_entries{
       $sth = $self->xref->dbc->prepare($sql);
       $sth->execute();
       $sth->bind_columns(\$xref_id);
-      print "SQL QUERY: $sql\n";
+      print STDERR "SQL QUERY: $sql\n";
       while($sth->fetch){
-	print "Problem with ".$type."_direct_xref $xref_id\n";
+	print STDERR "Problem with ".$type."_direct_xref $xref_id\n";
       }
       $sth->finish;
     }
@@ -186,9 +186,9 @@ sub unlinked_entries{
     $sth = $self->xref->dbc->prepare($sql);
     $sth->execute();
     $sth->bind_columns(\$xref_id);
-    print "SQL QUERY: $sql\n";
+    print STDERR "SQL QUERY: $sql\n";
     while($sth->fetch){
-      print "Problem with synonym $xref_id\n";
+      print STDERR "Problem with synonym $xref_id\n";
     }
     $sth->finish;
   }
@@ -196,7 +196,7 @@ sub unlinked_entries{
 
   $count_sql = "select count(1) from identity_xref d left join object_xref o on d.object_xref_id = o.object_xref_id where o.object_xref_id is null";
 
-  $sql = "select distinct(d.object_xref_id) from identity d left join object_xref o on d.object_xref_id = o.object_xref_id where o.object_xref_id is null limit 10";
+  $sql = "select distinct(d.object_xref_id) from identity_xref d left join object_xref o on d.object_xref_id = o.object_xref_id where o.object_xref_id is null limit 10";
 
   $sth = $self->xref->dbc->prepare($count_sql);
   $sth->execute();
@@ -209,9 +209,9 @@ sub unlinked_entries{
     $sth = $self->xref->dbc->prepare($sql);
     $sth->execute();
     $sth->bind_columns(\$xref_id);
-    print "SQL QUERY: $sql\n";
+    print STDERR "SQL QUERY: $sql\n";
     while($sth->fetch){
-      print "Problem with object_xref $xref_id\n";
+      print STDERR "Problem with object_xref $xref_id\n";
     }
     $sth->finish;
   }
@@ -231,9 +231,9 @@ sub unlinked_entries{
     $sth = $self->xref->dbc->prepare($sql);
     $sth->execute();
     $sth->bind_columns(\$xref_id);
-    print "SQL QUERY: $sql\n";
+    print STDERR "SQL QUERY: $sql\n";
     while($sth->fetch){
-      print "Problem with object_xref $xref_id\n";
+      print STDERR "Problem with object_xref $xref_id\n";
     }
     $sth->finish;
   }
@@ -255,9 +255,9 @@ sub unlinked_entries{
       $sth = $self->xref->dbc->prepare($sql);
       $sth->execute();
       $sth->bind_columns(\$xref_id);
-      print "SQL QUERY: $sql\n";
+      print STDERR "SQL QUERY: $sql\n";
       while($sth->fetch){
-	print "Problem with ".$type."_id $xref_id\n";
+	print STDERR "Problem with ".$type."_id $xref_id\n";
       }
       $sth->finish;
     }
@@ -279,9 +279,9 @@ sub unlinked_entries{
     $sth = $self->xref->dbc->prepare($sql);
     $sth->execute();
     $sth->bind_columns(\$xref_id);
-    print "SQL QUERY: $sql\n";
+    print STDERR "SQL QUERY: $sql\n";
     while($sth->fetch){
-      print "Problem with object_xref $xref_id which is linked to a GO source but has no go_xref reference\n";
+      print STDERR "Problem with object_xref $xref_id which is linked to a GO source but has no go_xref reference\n";
     }
     $sth->finish;
   }
@@ -329,21 +329,21 @@ sub entry_number_check{
     if(defined($new_object_xref_count{$name})){
       $change = (($new_object_xref_count{$name} - $count)/$new_object_xref_count{$name}) * 100;
       if($change > 5){ # increase of 5%
-	print "WARNING: $name has increased by $change\% was $count now ". $new_object_xref_count{$name}. "\n"; 
+	print "WARNING: $name has increased by $change\% was $count now ". $new_object_xref_count{$name}. "\n" if($self->verbose); 
       }
       elsif($change < -5){ # decrease by 5%
-	print "WARNING: $name has decreased by $change\% was $count now ". $new_object_xref_count{$name}. "\n"; 
+	print "WARNING: $name has decreased by $change\% was $count now ". $new_object_xref_count{$name}. "\n" if($self->verbose); 
       }
     }
     else{
-      print "WARNING: xrefs $name are not in the new database but are in the old???\n";
+      print "WARNING: xrefs $name are not in the new database but are in the old???\n" if($self->verbose);
     }
   }
   $sth->finish;
   
   foreach my $key (keys %new_object_xref_count){
     if(!defined($old_object_xref_count{$key})){
-      print "WARNING: $key has ".$new_object_xref_count{$key}." xrefs in the new database but NONE in the old\n";
+      print "WARNING: $key has ".$new_object_xref_count{$key}." xrefs in the new database but NONE in the old\n" if($self->verbose);
     }
   }
   
@@ -393,12 +393,12 @@ sub name_change_check{
       $total_count++;
     }	
     if(defined($new_name{$gene_id}) and $new_name{$gene_id}ne $name){
-      print "WARN: gene_id ($gene_id) ".$id_to_stable_id{$gene_id}." new = ".$new_name{$gene_id}." old = $name\n";
+      print STDERR "WARN: gene_id ($gene_id) ".$id_to_stable_id{$gene_id}." new = ".$new_name{$gene_id}." old = $name\n";
       $count++;
     }	
   }
   if($total_count){
-    print "$count entries with different names out of $total_count protein coding gene comparisons?\n";
+    print STDERR "$count entries with different names out of $total_count protein coding gene comparisons?\n";
   }
 }
 
@@ -417,12 +417,12 @@ sub direct_stable_id_check{
     $sth->bind_columns(\$name,\$count);
     my $total_count=0;
     while($sth->fetch()){
-      print "WARNING $name has $count invalid stable ids in ".$type."_direct_xrefs\n";
+      print STDERR "WARNING $name has $count invalid stable ids in ".$type."_direct_xrefs\n";
       $total_count += $count;
     }	
     $sth->finish;
     if($total_count){
-      print "USEFUL SQL: $sql\n";
+      print STDERR "USEFUL SQL: $sql\n";
     }
   }
 

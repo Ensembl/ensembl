@@ -85,7 +85,9 @@ sub update{
   }
   $sth->finish;
 
-
+  $sth = $self->xref->dbc->prepare("update xref set dumped = null"); # just incase this is being ran again
+  $sth->execute;
+  $sth->finish;
   
   ######################################
   # For each external_db to be updated #
@@ -107,8 +109,8 @@ sub update{
   my $unmapped_sth =  $self->core->dbc->prepare('DELETE FROM unmapped_object WHERE type="xref" and external_db_id = ?');
 
 
-  my $test =1;  # Can take a while so make optional when testing
-  if(!$test){
+#  my $test =1;  # Can take a while so make optional when testing
+#  if(!$test){
   while($sth->fetch()){
     my $ex_id = $name_to_external_db_id{$name};
 
@@ -122,7 +124,7 @@ sub update{
     $unmapped_sth->execute($ex_id);
   }
   $sth->finish;
-}
+#}
   $synonym_sth->finish;
   $go_sth->finish;  
   $identity_sth->finish;
@@ -166,6 +168,7 @@ SQL
   $sth->bind_columns(\$xref_offset);
   $sth->fetch();
   $sth->finish;
+  $xref_offset = 0 if(!defined($xref_offset));
 
   $sth = $self->core->dbc->prepare('select MAX(object_xref_id) from object_xref');
   my $object_xref_offset;
@@ -173,6 +176,7 @@ SQL
   $sth->bind_columns(\$object_xref_offset);
   $sth->fetch();
   $sth->finish;
+  $object_xref_offset = 0 if(!defined($object_xref_offset));
 
 
   ####################
@@ -205,8 +209,8 @@ SQL
      #########################
  
      my $add_xref_sth           = $self->core->dbc->prepare('insert ignore into xref (xref_id, external_db_id, dbprimary_acc, display_label, version, description, info_type, info_text) values (?, ?, ?, ?, ?, ?, ?, ?)');
-     my $add_object_xref_sth    = $self->core->dbc->prepare('insert into object_xref (object_xref_id, ensembl_id, ensembl_object_type, xref_id) values (?, ?, ?, ?)');
-     my $add_identity_xref_sth  = $self->core->dbc->prepare('insert into identity_xref (object_xref_id, xref_identity, ensembl_identity, xref_start, xref_end, ensembl_start, ensembl_end, cigar_line, score, evalue, analysis_id) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+     my $add_object_xref_sth    = $self->core->dbc->prepare('insert into object_xref (object_xref_id, ensembl_id, ensembl_object_type, xref_id, analysis_id) values (?, ?, ?, ?, ?)');
+     my $add_identity_xref_sth  = $self->core->dbc->prepare('insert into identity_xref (object_xref_id, xref_identity, ensembl_identity, xref_start, xref_end, ensembl_start, ensembl_end, cigar_line, score, evalue) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
      my $add_go_xref_sth        = $self->core->dbc->prepare('insert into go_xref (object_xref_id, linkage_type) values (?, ?)');
      my $add_dependent_xref_sth = $self->core->dbc->prepare('insert into dependent_xref (object_xref_id, master_xref_id, dependent_xref_id) values (?, ?, ?)');
      my $add_syn_sth            = $self->core->dbc->prepare('insert ignore into external_synonym (xref_id, synonym) values (?, ?)');
@@ -247,7 +251,7 @@ SQL
 	  $add_xref_sth->execute(($xref_id+$xref_offset), $ex_id, $acc, $label, $version, $desc, $type, $info || $where_from);
 	  $last_xref = $xref_id;
         }
-        $add_object_xref_sth->execute(($object_xref_id+$object_xref_offset), $ensembl_id, $ensembl_type, ($xref_id+$xref_offset));
+        $add_object_xref_sth->execute(($object_xref_id+$object_xref_offset), $ensembl_id, $ensembl_type, ($xref_id+$xref_offset), $analysis_ids{$ensembl_type});
       }  
       print "DIRECT $count\n" if ($verbose);
     }
@@ -269,7 +273,7 @@ SQL
 	   $last_xref = $xref_id;
 	 }
 	 $add_dependent_xref_sth->execute(($object_xref_id+$object_xref_offset), ($xref_id+$xref_offset), ($master_xref_id+$xref_offset) );
-	 $add_object_xref_sth->execute( ($object_xref_id+$object_xref_offset), $ensembl_id, $ensembl_type, ($xref_id+$xref_offset) );
+	 $add_object_xref_sth->execute( ($object_xref_id+$object_xref_offset), $ensembl_id, $ensembl_type, ($xref_id+$xref_offset), $analysis_ids{$ensembl_type} );
 	 $add_go_xref_sth->execute( ($object_xref_offset+$object_xref_id), $linkage_type);
        }       
        print "GO $count\n" if ($verbose);     
@@ -289,7 +293,7 @@ SQL
 	  $last_xref = $xref_id;
         }
 	if($last_xref != $xref_id or $last_ensembl != $ensembl_id){
-	  $add_object_xref_sth->execute(($object_xref_id+$object_xref_offset), $ensembl_id, $ensembl_type, ($xref_id+$xref_offset));
+	  $add_object_xref_sth->execute(($object_xref_id+$object_xref_offset), $ensembl_id, $ensembl_type, ($xref_id+$xref_offset), $analysis_ids{$ensembl_type});
 	  $add_dependent_xref_sth->execute(($object_xref_id+$object_xref_offset), ($master_xref_id+$xref_offset), ($xref_id+$xref_offset) );
 	}
 	$last_ensembl = $ensembl_id;
@@ -314,9 +318,9 @@ SQL
 	  $add_xref_sth->execute(($xref_id+$xref_offset), $ex_id, $acc, $label, $version, $desc, $type, $info || $where_from);
 	  $last_xref = $xref_id;
         }
-        $add_object_xref_sth->execute(($object_xref_id+$object_xref_offset), $ensembl_id, $ensembl_type, ($xref_id+$xref_offset));
+        $add_object_xref_sth->execute(($object_xref_id+$object_xref_offset), $ensembl_id, $ensembl_type, ($xref_id+$xref_offset), $analysis_ids{$ensembl_type});
 	$add_identity_xref_sth->execute( ($object_xref_id+$object_xref_offset), $query_identity, $target_identity, $hit_start, $hit_end, 
-					 $translation_start, $translation_end, $cigar_line, $score, $evalue, $analysis_ids{$ensembl_type});  
+					 $translation_start, $translation_end, $cigar_line, $score, $evalue);  
       }  
       print "SEQ $count\n" if ($verbose);
     }
@@ -338,7 +342,7 @@ SQL
       }
       $syn_sth->finish;
 
-      my $xref_dumped_sth = $self->xref->dbc->prepare("update xref set dumped = 1 where xref_id in (".join(", ",@xref_list).")");
+      my $xref_dumped_sth = $self->xref->dbc->prepare("update xref set dumped = 2 where xref_id in (".join(", ",@xref_list).")");
       $xref_dumped_sth->execute(); 
       $xref_dumped_sth->finish;
     }	
@@ -435,7 +439,7 @@ SQL
   $set_unmapped_sth->finish;
 
   if(@xref_list){
-    my $xref_dumped_sth = $self->xref->dbc->prepare("update xref set dumped = 2 where xref_id in (".join(", ",@xref_list).")");
+    my $xref_dumped_sth = $self->xref->dbc->prepare("update xref set dumped = 3 where xref_id in (".join(", ",@xref_list).")");
     $xref_dumped_sth->execute(); 
     $xref_dumped_sth->finish;
   }
@@ -488,7 +492,7 @@ DIR
 
 
   if(@xref_list){
-    my $xref_dumped_sth = $self->xref->dbc->prepare("update xref set dumped = 2 where xref_id in (".join(", ",@xref_list).")");
+    my $xref_dumped_sth = $self->xref->dbc->prepare("update xref set dumped = 4 where xref_id in (".join(", ",@xref_list).")");
     $xref_dumped_sth->execute(); 
     $xref_dumped_sth->finish;
   }
@@ -522,7 +526,7 @@ MIS
 
 
   if(@xref_list){
-    my $xref_dumped_sth = $self->xref->dbc->prepare("update xref set dumped = 3 where xref_id in (".join(", ",@xref_list).")");
+    my $xref_dumped_sth = $self->xref->dbc->prepare("update xref set dumped = 5 where xref_id in (".join(", ",@xref_list).")");
     $xref_dumped_sth->execute(); 
     $xref_dumped_sth->finish;
   }
@@ -551,7 +555,7 @@ DEP
   @xref_list = ();
   while($dep_unmapped_sth->fetch()){
     my $ex_id = $name_to_external_db_id{$dbname};
-    $add_xref_sth->execute(($xref_id+$xref_offset), $ex_id, $acc, $label, $version, $desc, $type, $info);   
+    $add_xref_sth->execute(($xref_id+$xref_offset), $ex_id, $acc, $label||$acc, $version, $desc, $type, $info);   
     $set_unmapped_sth->execute($analysis_id, $ex_id, $acc, $parent);
     push @xref_list, $xref_id;
   }
@@ -559,7 +563,7 @@ DEP
   $set_unmapped_sth->finish;
 
   if(@xref_list){
-    my $xref_dumped_sth = $self->xref->dbc->prepare("update xref set dumped = 2 where xref_id in (".join(", ",@xref_list).")");
+    my $xref_dumped_sth = $self->xref->dbc->prepare("update xref set dumped = 6 where xref_id in (".join(", ",@xref_list).")");
     $xref_dumped_sth->execute(); 
     $xref_dumped_sth->finish;
   }
@@ -618,7 +622,7 @@ SEQ
 
 
   if(@xref_list){
-    my $xref_dumped_sth = $self->xref->dbc->prepare("update xref set dumped = 2 where xref_id in (".join(", ",@xref_list).")");
+    my $xref_dumped_sth = $self->xref->dbc->prepare("update xref set dumped = 7 where xref_id in (".join(", ",@xref_list).")");
     $xref_dumped_sth->execute(); 
     $xref_dumped_sth->finish;
   }
@@ -658,7 +662,7 @@ WEL
   $set_unmapped_sth->finish;
 
   if(@xref_list){
-    my $xref_dumped_sth = $self->xref->dbc->prepare("update xref set dumped = 4 where xref_id in (".join(", ",@xref_list).")");
+    my $xref_dumped_sth = $self->xref->dbc->prepare("update xref set dumped = 8 where xref_id in (".join(", ",@xref_list).")");
     $xref_dumped_sth->execute(); 
     $xref_dumped_sth->finish;
   }

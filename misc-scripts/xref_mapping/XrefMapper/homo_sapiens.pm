@@ -5,7 +5,7 @@ use  XrefMapper::SubmitMapper;
 use strict;
 use vars '@ISA';
 
-@ISA = qw{ XrefMapper::SubmitMapper };
+@ISA = qw{ XrefMapper::BasicMapper };
 
 sub get_set_lists {
 
@@ -94,10 +94,10 @@ JSQL
 # For human we want to make a copy of the HGNC references on the genes and put them on 
 # the "canonical" transcripts
 
-sub species_specific_pre_attributes_set{
-  my $self  = shift;
-  $self->official_naming();
-}
+#sub species_specific_pre_attributes_set{
+#  my $self  = shift;
+#  $self->official_naming();
+#}
 
 
 

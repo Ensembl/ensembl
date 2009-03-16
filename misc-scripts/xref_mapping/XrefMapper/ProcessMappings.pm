@@ -82,14 +82,14 @@ sub process_mappings {
     else{
       if(-s $err_file){
 	$error_count++;
-	print "Problem $err_file is non zero\n";
+	print STDERR "Problem $err_file is non zero\n";
 	if(open(ERR,"<$err_file")){
 	  while(<ERR>){
-	    print "#".$_;
+	    print STDERR "#".$_;
 	  }
 	}
 	else{
-	  print "No file exists $err_file???\n Resubmit this job\n";
+	  print STDERR "No file exists $err_file???\n Resubmit this job\n";
 	}
 	if($status eq "SUBMITTED"){
 	  $stat_sth->execute('FAILED',$job_id, $array_number);
@@ -108,7 +108,7 @@ sub process_mappings {
 	}
 	else{
 	  $error_count++;
-	  print "Could not open file $map_file???\n Resubmit this job\n";
+	  print STDERR "Could not open file $map_file???\n Resubmit this job\n";
 	  $stat_sth->execute('FAILED',$job_id, $array_number);
 	}
       }      
@@ -117,7 +117,7 @@ sub process_mappings {
   $map_sth->finish;
   $stat_sth->finish;
 
-  print "already processed = $already_processed_count, processed = $processed_count, errors = $error_count\n"; 
+  print "already processed = $already_processed_count, processed = $processed_count, errors = $error_count\n" if($self->verbose); 
 
   if(!$error_count){
     my $sth = $self->xref->dbc->prepare("insert into process_status (status, date) values('mapping_processed',now())");
@@ -141,7 +141,7 @@ sub process_map_file{
   }
 
   if(!open(MAP ,"<$map_file")){
-    print "Could not open file $map_file\n Resubmit this job??\n";
+    print STDERR "Could not open file $map_file\n Resubmit this job??\n";
     return -1;
   }
 
@@ -170,6 +170,9 @@ sub process_map_file{
 
   my $identity_xref_sth = $self->xref->dbc->prepare("insert into identity_xref (object_xref_id, query_identity, target_identity, hit_start, hit_end, translation_start, translation_end, cigar_line, score ) values (?, ?, ?, ?, ?, ?, ?, ?, ?)");
  
+
+  my $ins_dep_ix_sth = $self->xref->dbc->prepare("insert into identity_xref (object_xref_id, query_identity, target_identity) values(?, ?, ?)");
+
   $start_sth->execute(($object_xref_id+1),$job_id, $array_number);
   while(<MAP>){
     $total_lines++;
@@ -239,10 +242,13 @@ sub process_map_file{
 	     die "Problem loading error is $err\n";
 	   } 
 	 }
-	 $update_dependent_xref_sth->execute($object_xref_id, $master_xref_id, $dep_xref_id);
 	 if($object_xref_sth->err){
-	   print "WARNING: Should not reach here??? object_xref_id = $object_xref_id\n";
+	   print STDERR "WARNING: Should not reach here??? object_xref_id = $object_xref_id\n";
 	 }
+
+	 $ins_dep_ix_sth->execute($object_xref_id, $query_identity, $target_identity);
+	 $update_dependent_xref_sth->execute($object_xref_id, $master_xref_id, $dep_xref_id);
+
 	 push @master_xref_ids, $dep_xref_id; # get the dependent, dependents just in case
 	 if(defined($link) and $link ne ""){ # we have a go term linkage type
            $ins_go_sth->execute($object_xref_id, $link, $master_xref_id);
@@ -259,6 +265,7 @@ sub process_map_file{
   $ins_go_sth->finish;
   $object_xref_sth->finish;
   $identity_xref_sth->finish;
+  $ins_dep_ix_sth->finish;
 
   return $total_lines;
 }

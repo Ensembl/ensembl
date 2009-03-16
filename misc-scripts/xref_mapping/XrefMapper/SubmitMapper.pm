@@ -29,28 +29,32 @@ use IPC::Open3;
 # submit coordinate xrefs if not processed
 
 
+sub new {
+  my($class, $mapper) = @_;
+
+  my $self ={};
+  bless $self,$class;
+  $self->core($mapper->core);
+  $self->xref($mapper->xref);
+  $self->mapper($mapper);
+  return $self;
+}
+
+
+sub mapper{
+  my ($self, $arg) = @_;
+
+  (defined $arg) &&
+    ($self->{_mapper} = $arg );
+  return $self->{_mapper};
+}
+
+
 sub store_core_database_details{
   my ($self, $port, $user, $pass, $dbname, $dir);
 
     
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -78,8 +82,24 @@ sub dump_seqs{
 
   my ($self, $location) = @_;
 
+  $self->core->dbc->disconnect_if_idle(1);
+  $self->core->dbc->disconnect_when_inactive(1);
+
   $self->dump_xref();
+
+  $self->core->dbc->disconnect_if_idle(0);
+  $self->core->dbc->disconnect_when_inactive(0);
+
+
+
+
+  $self->xref->dbc->disconnect_when_inactive(1);
+  $self->xref->dbc->disconnect_if_idle(1);
+
   $self->dump_ensembl($location);
+
+  $self->xref->dbc->disconnect_if_idle(0);
+  $self->xref->dbc->disconnect_when_inactive(0);
 
 }
 
@@ -147,7 +167,7 @@ sub dump_xref{
       $i++;
     }
     if($skip){
-      print "Xref fasta files found and will be used (No new dumping)\n";
+      print "Xref fasta files found and will be used (No new dumping)\n" if($self->verbose);
       return;
     }
   }
@@ -459,6 +479,10 @@ sub run_mapping {
   }
   # Submit generic depend job. Defaults to LSF
   $self->submit_depend_job($self->core->dir, @job_names);
+  $self->core->dbc->disconnect_if_idle(0);
+  $self->xref->dbc->disconnect_if_idle(0);
+  $self->core->dbc->disconnect_when_inactive(0);
+  $self->xref->dbc->disconnect_when_inactive(0);
 
   $self->check_err($self->core->dir);
 

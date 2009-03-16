@@ -27,7 +27,7 @@ sub process{
 
 
 
-  print "Process Pairs\n";
+  print "Process Pairs\n" if($self->verbose);
   my $object_xref_id;
 
   my $sth =  $self->xref->dbc->prepare("select MAX(object_xref_id) from object_xref");
@@ -37,14 +37,14 @@ sub process{
   $object_xref_id++;
   $sth->finish;
 
-  print "Starting at object_xref of $object_xref_id\n";
+  print "Starting at object_xref of $object_xref_id\n" if($self->verbose);
 
   my $psth = $self->xref->dbc->prepare("select p.accession1, p.accession2 from pairs p");
   my $ox_count_sth =  $self->xref->dbc->prepare('select count(1) from object_xref ox, xref x where ox.xref_id = x.xref_id and ox.ox_status = "DUMP_OUT" and x.accession = ?');
  
-  my $ox_transcript_sth =   $self->xref->dbc->prepare('select gtt.transcript_id  from object_xref ox, xref x, gene_transcript_translation gtt where ox.ox_status = "DUMP_OUT" and ox.xref_id = x.xref_id and gtt.translation_id = ox.ensembl_id and x.accession = ?');
+  my $ox_transcript_sth =   $self->xref->dbc->prepare('select gtt.transcript_id, ix.query_identity, ix.target_identity  from identity_xref ix, object_xref ox, xref x, gene_transcript_translation gtt where ox.object_xref_id = ix.object_xref_id and ox.ox_status = "DUMP_OUT" and ox.xref_id = x.xref_id and gtt.translation_id = ox.ensembl_id and x.accession = ?');
 
-  my $ox_translation_sth =  $self->xref->dbc->prepare('select gtt.translation_id from object_xref ox, xref x, gene_transcript_translation gtt where ox.ox_status = "DUMP_OUT" and ox.xref_id = x.xref_id and gtt.transcript_id  = ox.ensembl_id and x.accession = ?');
+  my $ox_translation_sth =  $self->xref->dbc->prepare('select gtt.translation_id, ix.query_identity, ix.target_identity from identity_xref ix, object_xref ox, xref x, gene_transcript_translation gtt where ox.object_xref_id = ix.object_xref_id and ox.ox_status = "DUMP_OUT" and ox.xref_id = x.xref_id and gtt.transcript_id  = ox.ensembl_id and x.accession = ?');
  
   my $xref_sth =  $self->xref->dbc->prepare("select xref_id from xref where accession = ?");
  
@@ -58,6 +58,7 @@ sub process{
 
   my $ox_update_sth =  $self->xref->dbc->prepare('update object_xref set ox_status = "DUMP_OUT", linkage_type = "INFERRED_PAIR" where object_xref_id = ?');
   my $xref_update_sth =  $self->xref->dbc->prepare('update xref set info_type = "INFERRED_PAIR" where xref_id = ?');
+  my $ins_dep_ix_sth = $self->xref->dbc->prepare("insert into identity_xref (object_xref_id, query_identity, target_identity) values(?, ?, ?)");
 
   $psth->execute() || die "execute failed";
   my ($acc1, $acc2);
@@ -98,9 +99,11 @@ sub process{
       # "maybe" the original failed the cutoff!!! so will have an entry alread but no good.
       $ox_transcript_sth->execute($acc1);
       my $transcript_id=undef;
-      $ox_transcript_sth->bind_columns(\$transcript_id);
+      my ($q_id,$t_id);
+      
+      $ox_transcript_sth->bind_columns(\$transcript_id,\$q_id, \$t_id);
       while($ox_transcript_sth->fetch){
-	if(defined($transcript_id)){ # remember not all transcripts ahve translations.
+	if(defined($transcript_id)){ # remember not all transcripts have translations.
 
 	  $object_xref_id++;
 	  $ox_insert_sth->execute($object_xref_id, $xref_id, $transcript_id, "Transcript") ;
@@ -116,7 +119,7 @@ sub process{
 	      $ox_get_id_sth->bind_columns(\$old_object_xref_id, \$status);
 	      $ox_get_id_sth->fetch();
 	      if($status eq "DUMP_OUT"){
-		print "Problem status for object_xref_id is DUMP_OUT but this should never happen as it was not found earlier??? (transcript_id = $transcript_id, $xref_id\n";
+		print STDERR "Problem status for object_xref_id is DUMP_OUT but this should never happen as it was not found earlier??? (transcript_id = $transcript_id, $xref_id\n";
 	      }
 	      if(!defined($old_object_xref_id)){
 		die "Duplicate but can't find the original?? xref_id = $xref_id, ensembl_id = $transcript_id, type = Transcript\n";
@@ -129,6 +132,7 @@ sub process{
 	    } 
 	  }
 	  else{
+	    $ins_dep_ix_sth->execute($object_xref_id, $q_id, $t_id);
 	    $xref_update_sth->execute($xref_id)|| die "Could not set update for xref_id = $xref_id";
 	    $change{"NEW"}++;
 	  }
@@ -153,7 +157,8 @@ sub process{
       # "maybe" the original failed the cutoff!!! so will have an entry alread but no good.
       $ox_translation_sth->execute($acc2);
       my $translation_id = undef;
-      $ox_translation_sth->bind_columns(\$translation_id);
+      my ($q_id, $t_id);
+      $ox_translation_sth->bind_columns(\$translation_id, \$q_id, \$t_id);
       while($ox_translation_sth->fetch){
 	if(defined($translation_id)){ # remember not all transcripts ahve translations.
 	  $object_xref_id++;
@@ -170,7 +175,7 @@ sub process{
 	      $ox_get_id_sth->bind_columns(\$old_object_xref_id,\$status);
 	      $ox_get_id_sth->fetch();
 	      if($status eq "DUMP_OUT"){
-		print "Problem status for object_xref_id is DUMP_OUT but this should never happen as it was not found earlier??? (trasnlation_id = $translation_id, $xref_id\n";
+		print STDERR "Problem status for object_xref_id is DUMP_OUT but this should never happen as it was not found earlier??? (trasnlation_id = $translation_id, $xref_id\n";
 	      }
 	      if(!defined($old_object_xref_id)){
 		die "Duplicate but can't find the original?? xref_id = $xref_id, ensembl_id = $translation_id, type = Translation\n";
@@ -183,6 +188,7 @@ sub process{
 	    } 
 	  }
 	  else{
+	    $ins_dep_ix_sth->execute($object_xref_id, $q_id, $t_id);
 	    $xref_update_sth->execute($xref_id)|| die "Could not set update for xref_id = $xref_id";
 	    $change{"NEW"}++;
 	  }
@@ -192,7 +198,7 @@ sub process{
       }
     }
     else{
-      print "HMMM how did i get here. This should be impossible. {logic error]\n";
+      print STDERR "HMMM how did i get here. This should be impossible. [logic error]\n";
    }
   }
   $psth->finish;
@@ -202,10 +208,11 @@ sub process{
   $ox_update_sth->finish;
   $xref_update_sth->finish;
   $xref_sth->finish;
+  $ins_dep_ix_sth->finish;
   foreach my $key (keys %change){
-    print "\t$key\t".$change{$key}."\n";
+    print "\t$key\t".$change{$key}."\n" if($self->verbose);
   }
-  print "$refseq_count new relationships added\n";
+  print "$refseq_count new relationships added\n" if($self->verbose);
   my $sth_stat = $self->xref->dbc->prepare("insert into process_status (status, date) values('processed_pairs',now())");
   $sth_stat->execute();
   $sth_stat->finish;

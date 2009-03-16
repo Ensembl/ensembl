@@ -13,10 +13,8 @@ sub get_set_lists {
 
 }
 
-sub consortium {
-
-  return "MGI";
-
+sub get_official_name{
+   return "MGI";
 }
 
 sub get_canonical_name{
@@ -132,12 +130,12 @@ sub gene_description_filter_regexps {
 
 }
 
-sub get_list_of_sources_for_one_max_per_transcript{
-  my $self = shift;
+#sub get_list_of_sources_for_one_max_per_transcript{
+#  my $self = shift;
 
-  my @list = qw(MGI);
+#  my @list = qw(MGI);
 
-  return @list;
-}
+#  return @list;
+#}
 
 1;

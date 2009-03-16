@@ -21,7 +21,7 @@ sub new {
 sub process{
   my $self = shift;
 
-  print "Writing InterPro\n";
+  print "Writing InterPro\n" if($self->verbose);
   my( $ipro_count, $xref_count, $oxref_count, $goxref_count ) = (0,0,0,0);
   
   my $object_xref_id;
@@ -93,14 +93,14 @@ sub process{
   $sth->finish();
   
   
-  print "\n".$dup." already existed\n\n";
+  print "\n".$dup." already existed\n\n" if($self->verbose);
 
-  print("  Wrote $ipro_count interpro table entries\n");
-  print("    including $oxref_count object xrefs, \n");
-  print("    and $goxref_count go xrefs\n");
-  foreach my $key (keys %added){
-    print "id= $key has ".$added{$key}. " object xrefs added\n";
-  }
+  print("  Wrote $ipro_count interpro table entries\n") if($self->verbose);
+  print("    including $oxref_count object xrefs, \n") if($self->verbose);
+  print("    and $goxref_count go xrefs\n") if($self->verbose);
+#  foreach my $key (keys %added){
+#    print "id= $key has ".$added{$key}. " object xrefs added\n";
+#  }
 }
 
 1;

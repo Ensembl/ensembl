@@ -72,6 +72,9 @@ sub run_coordinatemapping {
 
   # We only do coordinate mapping for mouse and human for now.
   if ( !( $species eq 'mus_musculus' || $species eq 'homo_sapiens' ) ) {
+    my $sth_stat = $self->xref->dbc->prepare("insert into process_status (status, date) values('coordinate_xref_finished',now())");
+    $sth_stat->execute();
+    $sth_stat->finish;
     return;
   }
 

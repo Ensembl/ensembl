@@ -79,7 +79,7 @@ sub xref_latest_status {
   my ($id, $status, $date);
   $sth->bind_columns(\$id, \$status,\$date);
   while($sth->fetch){
-    print "$status\t$date\n" if($verbose);
+    print "$status\t$date\n" if($verbose and $self->verbose);
   }
   return $status;
 
@@ -89,6 +89,7 @@ sub xref_latest_status {
 sub process_file {
   my $self = shift;
   my $file = shift;
+  my $verbose = shift;
   
 
   open(FILE, $file) or die ("\nCannot open input file '$file':\n $!\n");
@@ -126,6 +127,7 @@ sub process_file {
   
 
   my $value = $species_hash{'species'};
+
   if ($value !~ /_/) {
     print STDERR "\'$value\' is not a recognised species - please use full species name (e.g. homo_sapiens) in $file\n";
     exit(1);
@@ -139,7 +141,7 @@ sub process_file {
   };
   if($@) {
     if ($@ =~ /Can\'t locate $class/) {
-      warn("Did not find a specific mapping module XrefMapper::$value - using XrefMapper::BasicMapper instead\n");
+      warn("Did not find a specific mapping module XrefMapper::$value - using XrefMapper::BasicMapper instead\n") if(defined($verbose) and $verbose);
       require XrefMapper::BasicMapper;
 	$module = "BasicMapper";
     } else {
@@ -224,8 +226,6 @@ sub process_file {
     
     $core->species($value);
   }
-
-  
 
   return $mapper;
 }
@@ -319,9 +319,12 @@ sub official_naming {
   my $dbname = $self->get_official_name();
   
   if(!defined($dbname)){
+    my $sth_stat = $self->xref->dbc->prepare("insert into process_status (status, date) values('official_naming_done',now())");
+    $sth_stat->execute();
+    $sth_stat->finish;    
     return;
   }
-  print "Official naming started. Copy $dbname from gene to canonical transcript\n";
+  print "Official naming started. Copy $dbname from gene to canonical transcript\n" if($self->verbose);
   my ($max_object_xref_id, $max_xref_id);
 
 
@@ -357,9 +360,10 @@ sub official_naming {
   }
 
   my $object_sql = (<<FSQL);
-select x.xref_id, o.ensembl_id, o.linkage_type, o.ox_status
-  from xref x, source s, object_xref o
+select x.xref_id, o.ensembl_id, o.linkage_type, o.ox_status, ix.query_identity, ix.target_identity
+  from xref x, source s, object_xref o, identity_xref ix
     where x.source_id = s.source_id and 
+      ix.object_xref_id  = o.object_xref_id and
       o.ox_status = "DUMP_OUT" and
       s.name like "$dbname" and 
       o.xref_id = x.xref_id  and
@@ -378,20 +382,24 @@ FSQL
   }
   $sth->finish;
 
-  print "Pre copy all HGNC from gene to canonical transcripts\n";
+  print "Pre copy all $dbname from gene to canonical transcripts\n" if($self->verbose);
 
   $self->biomart_test();
+
+  my $ins_dep_ix_sth = $self->xref->dbc->prepare("insert into identity_xref (object_xref_id, query_identity, target_identity) values(?, ?, ?)");
 
   $sth = $self->xref->dbc->prepare($object_sql);
 
   $sth->execute();
-  my ($xref_id, $linkage_type, $ox_status);
-  $sth->bind_columns(\$xref_id, \$gene_id, \$linkage_type, \$ox_status);
+  my ($xref_id, $linkage_type, $ox_status, $q_id, $t_id);
+  $sth->bind_columns(\$xref_id, \$gene_id, \$linkage_type, \$ox_status, \$q_id, \$t_id);
 
 
   while ($sth->fetch){
     if(defined($gene_to_tran_canonical{$gene_id})){
-      $sth_add_ox->execute($max_object_xref_id++, $xref_id, $gene_to_tran_canonical{$gene_id}, $linkage_type, $ox_status) || print "(Gene id - $gene_id) Could not add  $max_object_xref_id, .".$gene_to_tran_canonical{$gene_id}.", $xref_id, $linkage_type, $ox_status to object_xref\n";
+      $max_object_xref_id++;
+      $sth_add_ox->execute($max_object_xref_id, $xref_id, $gene_to_tran_canonical{$gene_id}, $linkage_type, $ox_status) || print STDERR "(Gene id - $gene_id) Could not add  $max_object_xref_id, .".$gene_to_tran_canonical{$gene_id}.", $xref_id, $linkage_type, $ox_status to object_xref\n";
+      $ins_dep_ix_sth->execute($max_object_xref_id, $q_id, $t_id);
     }
     else{
       print STDERR "Could not find canonical for gene $gene_id\n";
@@ -399,7 +407,7 @@ FSQL
   }
   $sth->finish;
 
-  print "Post copy all HGNC from gene to canonical transcripts\n";
+  print "Post copy all $dbname from gene to canonical transcripts\n" if($self->verbose);
 
   $self->biomart_test();
 
@@ -630,7 +638,7 @@ FSQL
 
 
 
-  $sql = "insert into xref (xref_id, source_id, accession, label, version, species_id, info_type, dumped) values (?, ?, ?, ?,  0, ".$self->species_id.", 'MISC', 0)";
+  $sql = "insert into xref (xref_id, source_id, accession, label, version, species_id, info_type) values (?, ?, ?, ?,  0, ".$self->species_id.", 'MISC' )";
   my $ins_xref_sth = $self->xref->dbc->prepare($sql);
 
 
@@ -640,6 +648,7 @@ FSQL
   
   my $ins_object_xref_sth =  $self->xref->dbc->prepare("insert into object_xref (object_xref_id, ensembl_id, ensembl_object_type, xref_id, linkage_type, ox_status) values (?, ?, ?, ?, 'MISC', 'DUMP_OUT')");
   
+
   foreach my $gene_id (keys %gene_to_transcripts){
     
     my @ODN=();
@@ -708,7 +717,7 @@ FSQL
 	$no_vega{$tran_id_to_stable_id{$tran_id}} = $tran_id;
       }
       if($count > 1){
-	print "Problem: ".$tran_id_to_stable_id{$tran_id}." has more than one vega_transcript\n";
+	print STDERR "Problem: ".$tran_id_to_stable_id{$tran_id}." has more than one vega_transcript\n";
       }
       if($count == 1){
 	if(defined($VEGA) and scalar(@ODN)){
@@ -722,7 +731,7 @@ FSQL
 	    }
 	  }
 	  if(!$found){
-	    print "Problem: ".$gene_id_to_stable_id{$gene_id}." linked to ".$dbname." (".join(', ',@ODN).")   BUT ".$tran_id_to_stable_id{$tran_id}." linked to vega_transcript $VEGA????\n";	
+	    print STDERR "Problem: ".$gene_id_to_stable_id{$gene_id}." linked to ".$dbname." (".join(', ',@ODN).")   BUT ".$tran_id_to_stable_id{$tran_id}." linked to vega_transcript $VEGA????\n";	
 	  }
 	}
       }
@@ -733,28 +742,30 @@ FSQL
     # loop through no_vega array and set vega_transcript_like for each starting at 201
     ####################################################################################
     if(scalar(@VEGA_NAME) > 1){
-      print "Warning: gene ".$gene_id_to_stable_id{$gene_id}." has more than one vega_transcript these are (".join(', ',@VEGA_NAME).")\n";
+      print STDERR "Warning: gene ".$gene_id_to_stable_id{$gene_id}." has more than one vega_transcript these are (".join(', ',@VEGA_NAME).")\n";
     }	
     if($vega_count){
       foreach my $name (@VEGA_NAME){
 	my $id = $display_label_to_id{$name};
 	if(!defined($id)){
 	  $id = $name;
-	  print "Warning Could not find id for $name\n";
+	  print STDERR "Warning Could not find id for $name\n";
 	}
 	if(!defined($xref_added{$id.":".$odn_curated_gene_id})){
 	  $max_xref_id++;
 	  $ins_xref_sth->execute($max_xref_id, $odn_curated_gene_id, $id, $name);
+
 	  $xref_added{$id.":".$odn_curated_gene_id} = $max_xref_id;
 	  if(defined($syn_hash->{$name})){
 	    foreach my $syn (@{$syn_hash->{$name}}){
-	      $add_syn_sth->execute(max_$xref_id, $syn);
+	      $add_syn_sth->execute($max_xref_id, $syn);
 	    }
 	  }
 	  
 	}
 	$max_object_xref_id++;
 	$ins_object_xref_sth->execute($max_object_xref_id, $gene_id, 'Gene', $xref_added{$id.":".$odn_curated_gene_id});
+	$ins_dep_ix_sth->execute($max_object_xref_id, 100, 100);
       }
 
       my $name = $VEGA_NAME[0];
@@ -768,6 +779,7 @@ FSQL
 	}	
 	$max_object_xref_id++;
 	$ins_object_xref_sth->execute($max_object_xref_id, $no_vega{$tran}, 'Transcript', $xref_added{$id.":".$odn_automatic_tran_id});
+	$ins_dep_ix_sth->execute($max_object_xref_id, 100, 100);
 
 	$tran_name_ext++;
       }
@@ -783,7 +795,7 @@ FSQL
 	my $id = $display_label_to_id{$name};
 	if(!defined($id)){
 	  $id = $name;
-	  print "Warning Could not find id for $name\n";
+	  print STDERR "Warning Could not find id for $name\n";
 	}
 
 	if(!defined($xref_added{$id.":".$odn_automatic_gene_id})){
@@ -798,6 +810,7 @@ FSQL
 	}	
 	$max_object_xref_id++;
 	$ins_object_xref_sth->execute($max_object_xref_id, $gene_id, 'Gene', $xref_added{$id.":".$odn_automatic_gene_id});
+	$ins_dep_ix_sth->execute($max_object_xref_id, 100, 100);
 
 
       }
@@ -813,6 +826,7 @@ FSQL
 	}	
 	$max_object_xref_id++;
 	$ins_object_xref_sth->execute($max_object_xref_id, $no_vega{$tran}, 'Transcript', $xref_added{$id.":".$odn_automatic_tran_id});
+	$ins_dep_ix_sth->execute($max_object_xref_id, 100, 100);
 	$tran_name_ext++;
       }
     }	
@@ -834,6 +848,7 @@ FSQL
 
 	$max_object_xref_id++;
 	$ins_object_xref_sth->execute($max_object_xref_id, $gene_id, 'Gene', $xref_added{$id.":".$clone_based_vega_gene_id});	
+	$ins_dep_ix_sth->execute($max_object_xref_id, 100 , 100);
 
 
 	my $tran_name_ext = 201;
@@ -847,6 +862,7 @@ FSQL
 	  
 	  $max_object_xref_id++;
 	  $ins_object_xref_sth->execute($max_object_xref_id, $no_vega{$tran}, 'Transcript', $xref_added{$id.":".$clone_based_vega_tran_id});	
+	  $ins_dep_ix_sth->execute($max_object_xref_id, 100, 100);
 	  
 
 	  $tran_name_ext++;
@@ -883,7 +899,7 @@ FSQL
 	      $new_clone_name = $clone->seq_region_name;
 	    }
 	    if(!defined($new_clone_name)){
-	      print "PROJECT failed for ".$gene->stable_id."\n";
+	      print STDERR "PROJECT failed for ".$gene->stable_id."\n";
 	      next;
 	    }
 	  }
@@ -898,6 +914,7 @@ FSQL
 	
 	$max_object_xref_id++;
 	$ins_object_xref_sth->execute($max_object_xref_id, $gene->dbID, 'Gene', $xref_added{$new_clone_name.":".$clone_based_ensembl_gene_id});	
+	$ins_dep_ix_sth->execute($max_object_xref_id, 100, 100);
 	  	
 	my $tran_name_ext = 201;
 	foreach my $tran (sort keys %no_vega){
@@ -910,6 +927,7 @@ FSQL
 	  
 	  $max_object_xref_id++;
 	  $ins_object_xref_sth->execute($max_object_xref_id, $no_vega{$tran}, 'Transcript', $xref_added{$id.":".$clone_based_ensembl_tran_id});	
+	  $ins_dep_ix_sth->execute($max_object_xref_id, 100, 100);
 
 
 
@@ -973,7 +991,7 @@ FSQL
 	  $xref_added{$new_name.":".$clone_based_ensembl_gene_id} = $max_xref_id;
 	}
 	else{
-	  print "$new_name already exists????\n";
+	  print STDERR "$new_name already exists????\n";
 	}
 	$change_ox_sth->execute($max_xref_id, $xref, $ensembl_id);  
       }
@@ -984,6 +1002,7 @@ FSQL
   $change_ox_sth->finish;
   $update_first_sth->finish;
   $ox_list_sth->finish;
+  $ins_dep_ix_sth->finish;
 
   my $sth_stat = $self->xref->dbc->prepare("insert into process_status (status, date) values('official_naming_done',now())");
   $sth_stat->execute();
@@ -994,7 +1013,7 @@ sub biomart_fix{
   my ($self, $db_name, $type1, $type2) = @_;
   my $xref_dbc = $self->xref->dbc;
 
-  print "$db_name is associated with both $type1 and $type2 object types\n";
+  print "$db_name is associated with both $type1 and $type2 object types\n" if($self->verbose);
   
   my $to;
   my $from;
@@ -1019,7 +1038,7 @@ sub biomart_fix{
     $from_id = "translation_id";
   }
   
-  print "Therefore moving all associations from $from to ".$to."\n";
+  print "Therefore moving all associations from $from to ".$to."\n" if($self->verbose);
   
   
 
@@ -1038,9 +1057,10 @@ EOF
 #  print "\n$sql\n";
 
   $sql =(<<EOF2);
-  DELETE object_xref
-    FROM object_xref, xref, source
+  DELETE object_xref, identity_xref
+    FROM object_xref, xref, source, identity_xref
       WHERE object_xref.ensembl_object_type = "$from" AND
+        identity_xref.object_xref_id = object_xref.object_xref_id AND
 	xref.xref_id = object_xref.xref_id AND
 	  xref.source_id = source.source_id AND
             object_xref.ox_status = "DUMP_OUT"  AND
@@ -1102,11 +1122,11 @@ sub biomart_test{
   while ($sth->fetch){
     if($last_name eq $name){
       if($first){
-	print "\nProblem Biomart test fails\n";
+	print STDERR "\nProblem Biomart test fails\n";
 	$first=0;
       }
-      print "$last_name\t$last_count\t$last_type\n";
-      print "$name\t$count\t$type\n";
+      print STDERR "$last_name\t$last_count\t$last_type\n";
+      print STDERR "$name\t$count\t$type\n";
     }
     $last_name = $name;
     $last_type= $type;
