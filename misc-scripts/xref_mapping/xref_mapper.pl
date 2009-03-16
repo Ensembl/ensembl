@@ -35,18 +35,11 @@ GetOptions ('file=s'                    => \$file,
             'dumpcheck'                 => \$dumpcheck, 
             'upload'                    => \$upload,
 	    'verbose'                   => \$verbose,  
-            'nofarm'                    => \$nofarm );
+            'nofarm'                    => \$nofarm, 
+            'help'                      => sub { usage(); exit(0); } );
 
 
-
-my $mapper = XrefMapper::SubmitMapper->process_file($file);
-
-########################TEST########################
-#my $core_info = XrefMapper::CoreInfo->new($mapper);
-#$core_info->test_return_codes();
-#exit;
-####################################################
-
+my $mapper = XrefMapper::BasicMapper->process_file($file, $verbose);
 
 
 if(defined($dumpcheck)){
@@ -67,21 +60,21 @@ my $status = $mapper->xref_latest_status($mapper->verbose);
 print "current status is $status\n" if ($mapper->verbose);
 
 
+my $submitter = XrefMapper::SubmitMapper->new($mapper);
 
 if( $status eq "parsing_finished"){ 
   print "\nDumping xref & Ensembl sequences\n"  if ($mapper->verbose);
-  $mapper->dump_seqs();
-  $status =  $mapper->xref_latest_status();
+  $submitter->dump_seqs();
 }
 else{
-  $mapper->no_dump_xref()
+  $submitter->no_dump_xref()
 }
 
 
 
 $status = $mapper->xref_latest_status();
 if($status eq "core_fasta_dumped"){
-  $mapper->build_list_and_map();
+  $submitter->build_list_and_map();
   $status =  $mapper->xref_latest_status();
 }
 else{
@@ -120,7 +113,6 @@ if($status eq "prioritys_flagged"){  # process the inferred pairs and interpro x
   my $inter = XrefMapper::Interpro->new($mapper);
   $inter->process();
 }
-#$mapper->biomart_test();
 
 
 # Biomart test each external_db on one ensembl type only and fix it
@@ -132,13 +124,10 @@ if($status eq "processed_pairs"){
 # species specific processing
 # i.e. for mouse and human add MGI_curated_gene and HGNC_curated_gene
 
-#$mapper->biomart_test();
-
 $status = $mapper->xref_latest_status();
 if($status eq "processed_pairs"){ 
   $mapper->official_naming();
 }
-#$mapper->biomart_test();
 
 
 # Coordinate xrefs
@@ -161,11 +150,14 @@ if($status eq "tests_finished" and $upload){
 
   my $coord = XrefMapper::CoordinateMapper->new($mapper);
   $coord->run_coordinatemapping($upload);
- 
+}
+
+$status = $mapper->xref_latest_status();
+if($status eq "coordinate_xref_finished" and $upload){
 
   my $loader = XrefMapper::XrefLoader->new($mapper);
   $loader->update();
-
+  
 }
 
 # generate display_xrefs and descriptions for gene and transcripts. 
@@ -178,6 +170,52 @@ if(($status eq "core_loaded" or $status eq "display_xref_done") and $upload){
 
 }
 
+sub usage {
+
+  print << "EOF";
+  xref_mapper.pl -file {config_file} -verbose -upload -nofarm 
+
+  -file             Name of configuration file.
+                    For more info on this file see end of help.
+
+  -dumpcheck        Check if the fasta files already exist.
+                    If so do not redump them.
+
+  -upload           Write data from xref database to core database.
+
+  -verbose          Give information about progress and possible warnings.
+                    (Very much recomended)
+
+  -nofarm           Run the exonerate jobs locally and not on the compute farm.
+
+
+Below is an example of the configuration file
+####################################################
+xref
+host=host1
+port=3306
+dbname=hedgehog_xref_54
+user=user1
+password=pass1
+dir=./xref
+
+species=erinaceus_europaeus
+host=host2
+port=3306
+dbname=erinaceus_europaeus_core_54_1e
+user=user2
+password=pass2
+dir=./ensembl
+####################################################
+host1 can be the same as host2.
+user1 can be the same as user2 but user2 must have write access and user1 must have at least read access.
+The directorys set by dir= must already exist.
+
+
+
+EOF
+
+}
 
 
 
