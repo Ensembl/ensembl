@@ -113,7 +113,7 @@ while (my ($dbname) = $sth->fetchrow_array) {
 	if (defined $web_data and $web_data ne ''){
 	    $ref_web_data = eval($web_data); 
 	    #print Dumper($ref_web_data);
-	    if (! defined $ref_web_data){
+	    if (ref($ref_web_data) ne 'HASH'){
 		print "Analysis $analysis_id with display_label $display_label in $dbname has a wrong web_data column--$web_data-- cannot be eval into hash\n";
 		$db_found = 1;
 	    }
