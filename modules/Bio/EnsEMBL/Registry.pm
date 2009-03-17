@@ -2097,14 +2097,15 @@ sub find_and_add_aliases {
       my $sth    = $dbh->prepare(
         sprintf(
           "SELECT meta_value FROM %s.meta "
-            . "WHERE meta_key = 'species.alias'",
+            . "WHERE meta_key = 'species.alias' "
+            . "AND species_id = ?",
           $dbh->quote_identifier($dbname) ) );
 
       # Execute, and don't care about errors (there will be errors for
       # databases without a 'meta' table, such as ensembl_ontology_NN).
       $sth->{'PrintError'} = 0;
       $sth->{'RaiseError'} = 0;
-      if ( !$sth->execute() ) { next }
+      if ( !$sth->execute( $dba->species_id() ) ) { next }
       $sth->{'PrintError'} = $dbh->{'PrintError'};
       $sth->{'RaiseError'} = $dbh->{'RaiseError'};
 
