@@ -381,10 +381,11 @@ sub _obj_from_sth {
 
   my @results;
   while($sth->fetch()) {
-    push @results, Bio::EnsEMBL::Attribute->new(-CODE => $code,
-                                                -NAME => $name,
-                                                -DESCRIPTION => $desc,
-                                                -VALUE => $value);
+    push @results, Bio::EnsEMBL::Attribute->new_fast
+                                             ( {'code' => $code,
+                                                'name' => $name,
+                                                'description' => $desc,
+                                                'value' => $value} );
   }
 
   return \@results;
