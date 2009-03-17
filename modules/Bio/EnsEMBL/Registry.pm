@@ -131,8 +131,8 @@ use vars qw(%registry_register);
 
 my $API_VERSION = 54;
 
-# This is a map from group names to Ensembl DB adaptors.
-#Used by load_all and reset_DBAdaptor
+# This is a map from group names to Ensembl DB adaptors.  Used by
+# load_all() and reset_DBAdaptor().
 my %group2adaptor = 
   (
    'blast'         => 'Bio::EnsEMBL::External::BlastAdaptor',
@@ -1322,7 +1322,8 @@ sub load_registry_from_db {
     @args
     );
 
-  my $go_version        = 0;
+  my $go_version       = 0;
+  my $ontology_version = 0;
 
   $user ||= "ensro";
   if ( !defined($port) ) {
@@ -1373,8 +1374,12 @@ sub load_registry_from_db {
       if ( $1 eq $software_version ) {
         $go_version = $1;
       }
+    } elsif ( $db =~ /^(ensembl_ontology)_(\d+)/ ) {
+      if ( $2 eq $software_version ) {
+        $ontology_version = $2;
+      }
     } elsif (
-      $db =~ /^([a-z]+_[a-z]+_[a-z]+(?:_\d+)?)_(\d+)_(\d+[a-z]*)/)
+      $db =~ /^([a-z]+_[a-z]+_[a-z]+(?:_\d+)?)_(\d+)_(\d+[a-z]*)/ )
     {
       if ( $2 eq $software_version ) {
         $temp{$1} = $2 . "_" . $3;
@@ -1746,6 +1751,31 @@ sub load_registry_from_db {
     print("No GO database found\n");
   }
 
+  # Ontology
+
+  if ( $ontology_version != 0 ) {
+    require Bio::EnsEMBL::DBSQL::OntologyDBAdaptor;
+
+    my $ontology_db =
+      sprintf( "ensembl_ontology_%d", $ontology_version );
+
+    my $dba = Bio::EnsEMBL::DBSQL::OntologyDBAdaptor->new(
+      '-species' => 'multi',
+      '-group'   => 'ontology',
+      '-host'    => $host,
+      '-port'    => $port,
+      '-user'    => $user,
+      '-pass'    => $pass,
+      '-dbname'  => $ontology_db,
+    );
+
+    if ($verbose) {
+      printf( "%s loaded\n", $ontology_db );
+    }
+  } elsif ($verbose) {
+    print("No ontology database found\n");
+  }
+
   # Hard coded aliases for the different species
 
   my @aliases = ( 'chimp', 'PanTro1', 'Pan', 'P_troglodytes' );
@@ -2036,6 +2066,10 @@ sub load_registry_from_db {
     -alias   => \@aliases
   );
 
+  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
+    -species => 'multi',
+    -alias   => ['ontology'] );
+
   # Register aliases as found in adaptor meta tables.
   $self->find_and_add_aliases( '-handle' => $dbh );
   $dbh->disconnect();
@@ -2044,12 +2078,17 @@ sub load_registry_from_db {
 
 =head2 find_and_add_aliases
 
+  Arg [DBH]     : (optional) DBI handle
+                  A connected DBI database handle.  Used instead
+                  of the database handles stored in the DBAdaptor
+                  objects.  Bypasses the use of MetaContainer.
+
   Arg [ADAPTOR] : (optional) Bio::EnsEMBL::DBSQL::DBAdaptor
                   The adaptor to use to retrieve aliases from.
 
   Arg [GROUP]   : (optional) string
-                  The group you want to find aliases for. If not given
-                  assumes all types.
+                  The group you want to find aliases for. If not
+                  given assumes all types.
 
   Arg [HANDLE]  : (optional) DBI database handle
                   A connected database handle to use instead of the
@@ -2127,7 +2166,6 @@ sub find_and_add_aliases {
       if ( defined( $dba->dbc() ) ) {
         $dba->dbc()->disconnect_if_idle();
       }
-
     }
 
     foreach my $alias (@aliases) {
@@ -2297,50 +2335,73 @@ sub no_version_check {
 =cut
   
   
-sub version_check{
-  my ($self, $dba) = @_;
-  
+sub version_check {
+  my ( $self, $dba ) = @_;
+
   # Check the datbase and versions match
   # give warning if they do not.
   my $check = no_version_check();
-  if( (defined($ENV{HOME}) and (-e $ENV{HOME}."/.ensemblapi_no_version_check"))
-   or (defined($check) and ($check != 0))){
+
+  if ( (
+      defined( $ENV{HOME} )
+      and ( -e $ENV{HOME} . "/.ensemblapi_no_version_check" ) )
+    or ( defined($check) and ( $check != 0 ) ) )
+  {
     return 1;
   }
-  my $mca = $self->get_adaptor($dba->species(),$dba->group(),"MetaContainer");
+
+  my $mca =
+    $self->get_adaptor( $dba->species(), $dba->group(),
+    "MetaContainer" );
+
   my $database_version = 0;
-  if(defined($mca)){
+  if ( defined($mca) ) {
     $database_version = $mca->get_schema_version();
   }
-  if($database_version == 0){
+
+  if ( $database_version == 0 ) {
     # Try to work out the version
-    if($dba->dbc->dbname() =~ /^_test_db_/){
+    if ( $dba->dbc()->dbname() =~ /^_test_db_/ ) {
       return 1;
     }
-    if($dba->dbc->dbname() =~ /(\d+)_\S+$/){
+    if ( $dba->dbc()->dbname() =~ /(\d+)_\S+$/ ) {
       $database_version = $1;
-    }
-    elsif($dba->dbc->dbname() =~ /ensembl_compara_(\d+)/){
+    } elsif ( $dba->dbc()->dbname() =~ /ensembl_compara_(\d+)/ ) {
       $database_version = $1;
-    }
-    elsif($dba->dbc->dbname() =~ /ensembl_go_(\d+)/){
+    } elsif ( $dba->dbc()->dbname() =~ /ensembl_go_(\d+)/ ) {
       $database_version = $1;
-    }
-    elsif($dba->dbc->dbname() =~ /ensembl_help_(\d+)/){
+    } elsif ( $dba->dbc()->dbname() =~ /ensembl_help_(\d+)/ ) {
       $database_version = $1;
+    } elsif ( $dba->dbc()->dbname() =~ /ensembl_ontology_(\d+)/ ) {
+      $database_version = $1;
+    } else {
+      warn(
+        sprintf(
+          "No database version for database %s "
+            . ". You must be using a pre version 34 database "
+            . "with version 34 or later code.\n"
+            . "You need to update your database "
+            . "or use the appropriate Ensembl software release "
+            . "to ensure your script does not crash\n",
+          $dba->dbc()->dbname() ) );
     }
-    else{
-      warn("No database version for database ".$dba->dbc->dbname().". You must be using a pre version 34 database with version 34 or later code. You need to update your database or use the appropriate ensembl software release to ensure your script does not crash\n");
-    }
-  }
-  if($database_version != $API_VERSION){
-    warn("For ".$dba->dbc->dbname()." there is a difference in the software release (".$API_VERSION.") and the database release (".$database_version."). You should change one of these to ensure your script does not crash.\n");
+  } ## end if ( $database_version...
+
+  if ( $database_version != $API_VERSION ) {
+    warn(
+      sprintf(
+        "For %s there is a difference in the software release (%s) "
+          . "and the database release (%s). "
+          . "You should update one of these to ensure that your script "
+          . "does not crash.\n",
+        $dba->dbc()->dbname(),
+        $API_VERSION, $database_version
+      ) );
     return 0;
   }
-  else {
-    return 1;
-  }
-}
+
+  return 1;    # Ok
+} ## end sub version_check
 
 
 =head2 get_species_and_object_type
