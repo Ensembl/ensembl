@@ -2037,7 +2037,8 @@ sub load_registry_from_db {
   );
 
   # Register aliases as found in adaptor meta tables.
-  $self->find_and_add_aliases();
+  $self->find_and_add_aliases( '-handle' => $dbh );
+  $dbh->disconnect();
 
 } ## end sub load_registry_from_db
 
@@ -2049,6 +2050,11 @@ sub load_registry_from_db {
   Arg [GROUP]   : (optional) string
                   The group you want to find aliases for. If not given
                   assumes all types.
+
+  Arg [HANDLE]  : (optional) DBI database handle
+                  A connected database handle to use instead of the
+                  database handles stored in the DBAdaptors.  Bypasses
+                  the use of MetaContainer.
 
   Example       : Bio::EnsEMBL::Registry->find_and_add_aliases(
                     -ADAPTOR => $dba,
@@ -2072,7 +2078,8 @@ sub load_registry_from_db {
 sub find_and_add_aliases {
   my $class = shift @_;
 
-  my ( $adaptor, $group ) = rearrange( [qw(ADAPTOR GROUP)], @_ );
+  my ( $adaptor, $group, $dbh ) =
+    rearrange( [qw(ADAPTOR GROUP HANDLE)], @_ );
 
   my @dbas;
   if ( defined($adaptor) ) {
@@ -2082,24 +2089,50 @@ sub find_and_add_aliases {
   }
 
   foreach my $dba (@dbas) {
+    my @aliases;
     my $species = $dba->species();
-    my $meta_container = eval { $dba->get_MetaContainer() };
 
-    my $aliases = [];
-    if ( defined($meta_container) ) {
-      $aliases = $meta_container->list_value_by_key('species.alias');
+    if ( defined($dbh) ) {
+      my $dbname = $dba->dbc()->dbname();
+      my $sth    = $dbh->prepare(
+        sprintf(
+          "SELECT meta_value FROM %s.meta "
+            . "WHERE meta_key = 'species.alias'",
+          $dbh->quote_identifier($dbname) ) );
+
+      # Execute, and don't care about errors (there will be errors for
+      # databases without a 'meta' table, such as ensembl_ontology_NN).
+      $sth->{'PrintError'} = 0;
+      $sth->{'RaiseError'} = 0;
+      if ( !$sth->execute() ) { next }
+      $sth->{'PrintError'} = $dbh->{'PrintError'};
+      $sth->{'RaiseError'} = $dbh->{'RaiseError'};
+
+      my $alias;
+      $sth->bind_columns( \$alias );
+      while ( $sth->fetch() ) {
+        push( @aliases, $alias );
+      }
+    } else {
+      my $meta_container = eval { $dba->get_MetaContainer() };
+
+      if ( defined($meta_container) ) {
+        @aliases =
+          @{ $meta_container->list_value_by_key('species.alias') };
+      }
+
+      # Need to disconnect so we do not spam the MySQL servers trying to
+      # get aliases.  Can only call disonnect if dbc was defined.
+      if ( defined( $dba->dbc() ) ) {
+        $dba->dbc()->disconnect_if_idle();
+      }
+
     }
 
-    # Need to disconnect so we do not spam the MySQL servers trying to
-    # get aliases.  Can only call disonnect if dbc was defined.
-    if ( defined( $dba->dbc() ) ) {
-      $dba->dbc()->disconnect_if_idle();
-    }
-
-    foreach my $alias ( @{$aliases} ) {
+    foreach my $alias (@aliases) {
       $class->add_alias( $species, $alias );
     }
-  }
+  } ## end foreach my $dba (@dbas)
 
 } ## end sub find_and_add_aliases
 
