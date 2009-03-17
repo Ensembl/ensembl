@@ -110,8 +110,9 @@ my $snps_present = $snpstats && variation_attach( $db );
 my $slice_adaptor = $db->get_SliceAdaptor();
 my $attrib_adaptor = $db->get_AttributeAdaptor();
 
-# Include non-reference sequences ie. haplotypes for human
-my $top_slices = $slice_adaptor->fetch_all( "toplevel" , undef, 1);
+# Do not include non-reference sequences ie. haplotypes for human
+#my $top_slices = $slice_adaptor->fetch_all( "toplevel" , undef, 1);
+my $top_slices = $slice_adaptor->fetch_all( "toplevel" );
 
 
 foreach my $slice (@$top_slices) {
