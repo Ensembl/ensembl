@@ -184,7 +184,13 @@ sub process_file {
     $mapper->xref($xref);
     if(defined($xref_hash{'dir'})){
       $xref->dir($xref_hash{'dir'});
+      if(!-d $xref_hash{'dir'}){
+	die "directory ".$xref_hash{'dir'}." does not exist please create this\n";
+      }
     }
+    else{
+      die "No directory specified for the xref fasta files\n";
+    }	
     
   }
   else{
@@ -222,7 +228,13 @@ sub process_file {
 
     if(defined($species_hash{'dir'})){
       $core->dir($species_hash{'dir'});
-    }
+      if(!-d $species_hash{'dir'}){
+	die "directory ".$species_hash{'dir'}." does not exist please create this\n";
+      }
+    }    
+    else{
+      die "No directory specified for the ensembl fasta files\n";
+    }	
     
     $core->species($value);
   }
@@ -952,6 +964,7 @@ FSQL
 
 #
 # Now check for duplicate clone names as gene names.
+# AND duplicate gene names now too.
 #
   
 
