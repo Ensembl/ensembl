@@ -32,15 +32,15 @@ sub run_script {
   my ($type, $my_args) = split(/:/,$file);
   
   my $cuser = "ensro";
-  my $chost ="ens-staging";
+  my $chost = "";
   my $cport = "3306";
   my $cdbname = "";
   my $cpass;
 
   my $vuser = "ensro";
-  my $vhost ="ens-staging";
+  my $vhost = "";
   my $vport = "3306";
-  my $vdbname = "mus_musculus_vega_51_37d";
+  my $vdbname = "";
   my $vpass;
 
   if($my_args =~ /chost[=][>](\S+?)[,]/){
@@ -135,13 +135,9 @@ sub run_script {
 	  print "$mgi_bit has no description\n" if($verbose);
 	}
       }
-      my $xref_id = $self->add_xref($row[1], "" , $row[1] , $desc, $id, $species_id, "DIRECT");
+      my $xref_id = $self->add_xref($prim_acc, "" , $name , $desc, $id, $species_id, "DIRECT");
       $xref_count++;
       
-#      if($xref_id == 707653){
-#	print $row[0]."\t".$ott_to_enst{$row[0]}."\t".$row[1]."\n";
-#      }
-
       $self->add_direct_xref($xref_id, $ott_to_enst{$row[0]}, "Transcript", "");
 
       
