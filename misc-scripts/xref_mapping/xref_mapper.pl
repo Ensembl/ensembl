@@ -62,7 +62,7 @@ print "current status is $status\n" if ($mapper->verbose);
 
 my $submitter = XrefMapper::SubmitMapper->new($mapper);
 
-if( $status eq "parsing_finished"){ 
+if( $status eq "parsing_finished" or $status = "xref_fasta_dumped"){ 
   print "\nDumping xref & Ensembl sequences\n"  if ($mapper->verbose);
   $submitter->dump_seqs();
 }
