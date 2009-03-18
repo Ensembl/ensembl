@@ -31,6 +31,7 @@ sub new {
   bless $self,$class;
   $self->core($mapper->core);
   $self->xref($mapper->xref);
+  $self->verbose($mapper->verbose);
   return $self;
 }
 
@@ -117,7 +118,7 @@ sub process_mappings {
   $map_sth->finish;
   $stat_sth->finish;
 
-  print "already processed = $already_processed_count, processed = $processed_count, errors = $error_count\n" if($self->mapper->verbose); 
+  print "already processed = $already_processed_count, processed = $processed_count, errors = $error_count\n" if($self->verbose); 
 
   if(!$error_count){
     my $sth = $self->xref->dbc->prepare("insert into process_status (status, date) values('mapping_processed',now())");
