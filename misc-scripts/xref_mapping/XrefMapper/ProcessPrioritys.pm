@@ -32,6 +32,7 @@ sub new {
   bless $self,$class;
 #  $self->core($mapper->core);
   $self->xref($mapper->xref);
+  $self->verbose($mapper->verbose);
   return $self;
 }
 
@@ -65,9 +66,9 @@ sub process {
 
   my @names = $self->get_priority_names();
 
-  print "The foillowing will be processed as priority xrefs\n" if($self->mapper->verbose);
+  print "The foillowing will be processed as priority xrefs\n" if($self->verbose);
   foreach my $name (@names){
-    print "\t$name\n" if($self->mapper->verbose);
+    print "\t$name\n" if($self->verbose);
   }
 
   my $update_ox_sth = $self->xref->dbc->prepare('update object_xref set ox_status = "FAILED_PRIORITY" where object_xref_id = ?');
