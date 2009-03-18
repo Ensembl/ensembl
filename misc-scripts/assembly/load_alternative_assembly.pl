@@ -268,7 +268,7 @@ $c = 0;
 foreach my $cs (@coord_systems) {
   $sql = qq(
       INSERT INTO $ref_db.coord_system
-      SELECT coord_system_id+$csi_adjust, name, version,
+      SELECT coord_system_id+$csi_adjust, 1,name, version,
         (SELECT MAX(rank)+1 FROM $ref_db.coord_system), ''
       FROM coord_system
       WHERE name = '$cs'
