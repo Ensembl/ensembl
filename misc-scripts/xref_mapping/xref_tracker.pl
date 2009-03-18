@@ -74,13 +74,18 @@ if($status eq "mapping_submitted"){
 elsif($status eq "mapping_finished"){
   print "Summary of jobs being processed\n";
 
+  my %label;
+
+  $label{"SUBMITTED"} = "jobs still to be processed.";
+  $label{"SUCCESS"}   = "jobs succcessfully parsed.";
+  $label{"FAILED"}    = "jobs failed and could not be parsed successfully.";
   my $sql = "select status, count(1) from mapping_jobs group by status";
   my $sth = $mapper->xref->dbc->prepare($sql);
   $sth->execute;
   my ($status, $count);
   $sth->bind_columns(\$status, \$count);
   while($sth->fetch()){
-    print "$status\t$count\n";
+    print "\t$count ".$label{$status}."\n";
   }
   $sth->finish;
 }
