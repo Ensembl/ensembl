@@ -37,6 +37,7 @@ sub new {
   $self->core($mapper->core);
   $self->xref($mapper->xref);
   $self->mapper($mapper);
+  $self->verbose($mapper->verbose);
   return $self;
 }
 
@@ -155,7 +156,7 @@ sub dump_xref{
   $self->method(\@method);
   
   my $i=0;
-  if(defined($self->dumpcheck())){
+  if(defined($self->mapper->dumpcheck())){
     my $skip = 1;
     foreach my $list (@lists){
       if(!-e $xref->dir()."/xref_".$i."_dna.fasta"){
@@ -252,7 +253,7 @@ sub fetch_and_dump_seq{
   $ensembl->protein_file($ensembl->dir."/".$ensembl->species."_protein.fasta");
 
 
-  if(defined($self->dumpcheck()) and -e $ensembl->protein_file() and -e $ensembl->dna_file()){
+  if(defined($self->mapper->dumpcheck()) and -e $ensembl->protein_file() and -e $ensembl->dna_file()){
     my $sth = $self->xref->dbc->prepare("insert into process_status (status, date) values('core_fasta_dumped',now())");
     $sth->execute();    
     print "Ensembl Fasta files found (no new dumping)\n" if($self->verbose());
@@ -466,7 +467,7 @@ sub run_mapping {
       push @running_methods, $obj;
       sleep 1; # make sure unique names really are unique
       
-      $self->jobcount($self->jobcount+$obj->jobcount);
+      $self->jobcount(($self->jobcount||0)+$obj->jobcount);
     }
   } # foreach method
 

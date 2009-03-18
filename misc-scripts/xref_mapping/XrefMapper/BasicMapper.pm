@@ -964,7 +964,6 @@ FSQL
 
 #
 # Now check for duplicate clone names as gene names.
-# AND duplicate gene names now too.
 #
   
 

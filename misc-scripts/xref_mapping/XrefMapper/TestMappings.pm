@@ -329,21 +329,21 @@ sub entry_number_check{
     if(defined($new_object_xref_count{$name})){
       $change = (($new_object_xref_count{$name} - $count)/$new_object_xref_count{$name}) * 100;
       if($change > 5){ # increase of 5%
-	print "WARNING: $name has increased by $change\% was $count now ". $new_object_xref_count{$name}. "\n" if($self->verbose); 
+	print "WARNING: $name has increased by $change\% was $count now ". $new_object_xref_count{$name}. "\n" if($self->mapper->verbose); 
       }
       elsif($change < -5){ # decrease by 5%
-	print "WARNING: $name has decreased by $change\% was $count now ". $new_object_xref_count{$name}. "\n" if($self->verbose); 
+	print "WARNING: $name has decreased by $change\% was $count now ". $new_object_xref_count{$name}. "\n" if($self->mapper->verbose); 
       }
     }
     else{
-      print "WARNING: xrefs $name are not in the new database but are in the old???\n" if($self->verbose);
+      print "WARNING: xrefs $name are not in the new database but are in the old???\n" if($self->mapper->verbose);
     }
   }
   $sth->finish;
   
   foreach my $key (keys %new_object_xref_count){
     if(!defined($old_object_xref_count{$key})){
-      print "WARNING: $key has ".$new_object_xref_count{$key}." xrefs in the new database but NONE in the old\n" if($self->verbose);
+      print "WARNING: $key has ".$new_object_xref_count{$key}." xrefs in the new database but NONE in the old\n" if($self->mapper->verbose);
     }
   }
   
@@ -380,6 +380,31 @@ sub name_change_check{
 #  print $count." entries found in xref database\n";
 
 
+
+  # Use synonyms as well.
+  my %alias;
+  $sql = 'select x.label, sy.synonym from xref x, synonym sy, source so where x.xref_id = sy.xref_id and so.source_id = x.source_id and so.name like "'.$official_name.'_%" ';
+  $sth = $self->xref->dbc->prepare($sql);
+  $sth->execute();
+  my ($syn);
+  $sth->bind_columns(\$name,\$syn);
+  my $count = 0;
+  while($sth->fetch()){
+    $alias{$syn} = $name;
+  }
+  $sth->finish;  
+
+  $sql = 'select x.label, sy.synonym from xref x, synonym sy, source so where x.xref_id = sy.xref_id and so.source_id = x.source_id and so.name like "EntrezGene"';
+  $sth = $self->xref->dbc->prepare($sql);
+  $sth->execute();
+  $sth->bind_columns(\$name,\$syn);
+  while($sth->fetch()){
+    $alias{$syn} = $name;
+  }
+  $sth->finish;
+
+
+
   # NOTE ncRNA has higher priority
   $sql = "select x.display_label, g.gene_id from gene g, xref x where g.display_xref_id = x.xref_id and biotype = 'protein_coding'";
 
@@ -392,9 +417,11 @@ sub name_change_check{
     if(defined($new_name{$gene_id})){
       $total_count++;
     }	
-    if(defined($new_name{$gene_id}) and $new_name{$gene_id}ne $name){
-      print STDERR "WARN: gene_id ($gene_id) ".$id_to_stable_id{$gene_id}." new = ".$new_name{$gene_id}." old = $name\n";
-      $count++;
+    if(defined($new_name{$gene_id}) and $new_name{$gene_id} ne $name){
+      if(!defined($alias{$name}) or $alias{$name} ne $new_name{$gene_id}){
+	print STDERR "WARN: gene_id ($gene_id) ".$id_to_stable_id{$gene_id}." new = ".$new_name{$gene_id}." old = $name\n";
+	$count++;
+      }
     }	
   }
   if($total_count){

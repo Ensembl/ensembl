@@ -131,7 +131,7 @@ SQL
           $internal_id = $stable_id;
        }
        else{
-         print "Could not find stable id $stable_id in table to get the internal id hence ignoring!!!\n" if($self->verbose);
+         print "Could not find stable id $stable_id in table to get the internal id hence ignoring!!!\n" if($self->mapper->verbose);
 	 $err_count++;
          next;
        }
@@ -176,9 +176,9 @@ SQL
    }
    $sth->finish;
    if($duplicate_direct_count or $duplicate_dependent_count){
-     print "duplicate entrys ignored for $duplicate_direct_count direct xrefs and  $duplicate_dependent_count dependent xrefs\n" if($self->verbose);
+     print "duplicate entrys ignored for $duplicate_direct_count direct xrefs and  $duplicate_dependent_count dependent xrefs\n" if($self->mapper->verbose);
    }
-   if($err_count or $self->verbose){
+   if($err_count or $self->mapper->verbose){
      print STDERR $count." direct_xrefs added to ensembl ".$table."s BUT $err_count stable ids could not be found\n";
    }
  }
