@@ -37,7 +37,7 @@ sub update{
   # remove xref, object_xref, identity_xref, depenedent_xref, go_xref, unmapped_object, (interpro???), external_synonym, projections.
 
 
- my $verbose = $self->verbose;
+ my $verbose = $self->mapper->verbose;
 
   #####################################
   # first remove all the projections. #
