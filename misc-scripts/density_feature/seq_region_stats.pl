@@ -41,6 +41,7 @@ my %attrib_codes = ( 'miRNA'                => 'miRNA',
                      'processed_pseudogene' => 'pseudo', 
                      'unprocessed_pseudogene' => 'pseudo', 
                      'Pseudogene'           => 'pseudo', 
+                     'transcribed_pseudogene' => 'pseudo', # added for v54, else is flagged as "Unspecified biotype"
 		     'scRNA_pseudogene'     => 'RNA_pseu',
 		     'tRNA_pseudogene'      => 'RNA_pseu',
 		     'rRNA_pseudogene'      => 'RNA_pseu',
@@ -49,14 +50,14 @@ my %attrib_codes = ( 'miRNA'                => 'miRNA',
 		     'misc_RNA_pseudogene'  => 'RNA_pseu',
 		     'miRNA_pseudogene'     => 'RNA_pseu',
 		     'Mt_tRNA_pseudogene'   => 'RNA_pseu',
-		     'IG_V_gene'            => 'IgSeg',
-		     'IG_J_gene'            => 'IgSeg',
-		     'IG_D_gene'            => 'IgSeg',
-		     'IG_C_gene'            => 'IgSeg',
-		     'C_segment'            => 'IgSeg',
-		     'D_segment'            => 'IgSeg',
-		     'J_segment'            => 'IgSeg',
-		     'V_segment'            => 'IgSeg',
+		     'IG_V_gene'            => 'Ig',
+		     'IG_J_gene'            => 'Ig',
+		     'IG_D_gene'            => 'Ig',
+		     'IG_C_gene'            => 'Ig',
+		     'C_segment'            => 'Ig',
+		     'D_segment'            => 'Ig',
+		     'J_segment'            => 'Ig',
+		     'V_segment'            => 'Ig',
                      'IG_pseudogene'        => 'pseudo',
 		     'retrotransposed'      => 'rettran');
 
@@ -145,8 +146,9 @@ foreach my $slice (@$top_slices) {
 	print STDERR "Unspecified biotype \"$biotype\".\n";
 	next;
       }
-      my $no_space = $biotype;
-      $no_space =~ s/ /_/g;
+      # not used:
+      # my $no_space = $biotype;
+      # $no_space =~ s/ /_/g;
 
       push @attribs, Bio::EnsEMBL::Attribute->new
 	(-NAME => $biotype.' Gene Count',
