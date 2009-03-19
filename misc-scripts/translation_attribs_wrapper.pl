@@ -118,8 +118,8 @@ foreach my $pattern (@ranges){
     $call = "bsub -o '" . "$path/output_translation_$pattern.txt" . "' -q $queue -R$memory ./translation_attribs.pl --user $user --pass $pass $options";
     $call .= " --pattern '" . $pattern . $core_db. "'";
 
- #   system($call);
-print $call,"\n";
+    system($call);
+#print $call,"\n";
 }
 
 #we now need to run it for the otherfeatures|vega databases, but only the pepstats
@@ -128,17 +128,17 @@ my $vega_db = ".*_vega_$release\_.*";
 $call = "bsub -o '" . "$path/output_translation_vega.txt" . "' -q $queue -R$memory ./translation_attribs.pl --user $user --pass $pass $options";
 $call .= " --pattern '" . $vega_db. "'";
 
-#system($call);
-print $call,"\n";
+system($call);
+#print $call,"\n";
 
 @ranges = ('^[a-b]','^c','^[d-e]','^[f-h]','^[i-m]','^[n-o]','^p','^[q-s]','^[t-z]');
 
 my $other_db = ".*_otherfeatures_$release\_.*";
 
 foreach my $pattern (@ranges){
-    $call = "bsub -o '" . "$path/output_translation_other.txt" . "' -q $queue -R$memory ./translation_attribs.pl --user $user --pass $pass $options";
+    $call = "bsub -o '" . "$path/output_translation_other_$pattern.txt" . "' -q $queue -R$memory ./translation_attribs.pl --user $user --pass $pass $options";
     $call .= " --pattern '" . $pattern . $other_db. "'";
     
-    #system($call);
-print $call,"\n";
+    system($call);
+#print $call,"\n";
 }
