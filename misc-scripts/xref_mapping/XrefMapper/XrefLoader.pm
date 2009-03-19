@@ -208,7 +208,7 @@ SQL
      # SQL to add data to core
      #########################
  
-     my $add_xref_sth           = $self->core->dbc->prepare('insert ignore into xref (xref_id, external_db_id, dbprimary_acc, display_label, version, description, info_type, info_text) values (?, ?, ?, ?, ?, ?, ?, ?)');
+     my $add_xref_sth           = $self->core->dbc->prepare('insert into xref (xref_id, external_db_id, dbprimary_acc, display_label, version, description, info_type, info_text) values (?, ?, ?, ?, ?, ?, ?, ?)');
      my $add_object_xref_sth    = $self->core->dbc->prepare('insert into object_xref (object_xref_id, ensembl_id, ensembl_object_type, xref_id, analysis_id) values (?, ?, ?, ?, ?)');
      my $add_identity_xref_sth  = $self->core->dbc->prepare('insert into identity_xref (object_xref_id, xref_identity, ensembl_identity, xref_start, xref_end, ensembl_start, ensembl_end, cigar_line, score, evalue) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
      my $add_go_xref_sth        = $self->core->dbc->prepare('insert into go_xref (object_xref_id, linkage_type) values (?, ?)');
@@ -273,8 +273,8 @@ SQL
 	   $last_xref = $xref_id;
 	 }
 	 $add_dependent_xref_sth->execute(($object_xref_id+$object_xref_offset), ($xref_id+$xref_offset), ($master_xref_id+$xref_offset) );
-	 $add_object_xref_sth->execute( ($object_xref_id+$object_xref_offset), $ensembl_id, $ensembl_type, ($xref_id+$xref_offset), $analysis_ids{$ensembl_type} );
-	 $add_go_xref_sth->execute( ($object_xref_offset+$object_xref_id), $linkage_type);
+	 $add_object_xref_sth->execute(   ($object_xref_id+$object_xref_offset), $ensembl_id, $ensembl_type, ($xref_id+$xref_offset), $analysis_ids{$ensembl_type} );
+	 $add_go_xref_sth->execute(       ($object_xref_id+$object_xref_offset), $linkage_type);
        }       
        print "GO $count\n" if ($verbose);     
      }
@@ -318,7 +318,7 @@ SQL
 	  $add_xref_sth->execute(($xref_id+$xref_offset), $ex_id, $acc, $label, $version, $desc, $type, $info || $where_from);
 	  $last_xref = $xref_id;
         }
-        $add_object_xref_sth->execute(($object_xref_id+$object_xref_offset), $ensembl_id, $ensembl_type, ($xref_id+$xref_offset), $analysis_ids{$ensembl_type});
+        $add_object_xref_sth->execute(   ($object_xref_id+$object_xref_offset), $ensembl_id, $ensembl_type, ($xref_id+$xref_offset), $analysis_ids{$ensembl_type});
 	$add_identity_xref_sth->execute( ($object_xref_id+$object_xref_offset), $query_identity, $target_identity, $hit_start, $hit_end, 
 					 $translation_start, $translation_end, $cigar_line, $score, $evalue);  
       }  
@@ -543,6 +543,7 @@ MIS
           AND dx.master_xref_id = mx.xref_id 
           AND x.dumped is null 
           AND x.info_type = 'DEPENDENT'
+          ORDER BY x.xref_id
 DEP
 
   my $dep_unmapped_sth = $self->xref->dbc->prepare($sql);
@@ -553,9 +554,13 @@ DEP
   $set_unmapped_sth  =  $self->core->dbc->prepare("insert into unmapped_object (type, analysis_id, external_db_id, identifier, unmapped_reason_id, parent ) values ('xref', ?, ?, ?, '".$reason_id{"MASTER_FAILED"}."', ?)");
 
   @xref_list = ();
+  my $last_xref= 0;
   while($dep_unmapped_sth->fetch()){
     my $ex_id = $name_to_external_db_id{$dbname};
-    $add_xref_sth->execute(($xref_id+$xref_offset), $ex_id, $acc, $label||$acc, $version, $desc, $type, $info);   
+    if($last_xref != $xref_id){
+      $add_xref_sth->execute(($xref_id+$xref_offset), $ex_id, $acc, $label||$acc, $version, $desc, $type, $info);   
+    }
+    $last_xref = $xref_id;
     $set_unmapped_sth->execute($analysis_id, $ex_id, $acc, $parent);
     push @xref_list, $xref_id;
   }
@@ -584,6 +589,8 @@ DEP
 	  AND px.xref_id = x.xref_id
           AND x.dumped is null 
           AND x.info_type = 'SEQUENCE_MATCH'
+          ORDER  BY x.xref_id
+          
 SEQ
 
 
@@ -597,9 +604,13 @@ SEQ
 
 
   @xref_list = ();
+  $last_xref = 0;
   while($seq_unmapped_sth->fetch()){
     my $ex_id = $name_to_external_db_id{$dbname};
-    $add_xref_sth->execute(($xref_id+$xref_offset), $ex_id, $acc, $label, $version, $desc, $type, $info);   
+    if($last_xref != $xref_id){
+      $add_xref_sth->execute(($xref_id+$xref_offset), $ex_id, $acc, $label, $version, $desc, $type, $info);   
+    }
+    $last_xref = $xref_id;
     if(defined($ensembl_id)){
       $analysis_id= $analysis_ids{$ensembl_object_type};
       $set_unmapped_failed_sth->execute($analysis_id, $ex_id, $acc, $q_id, $t_id, $ensembl_id, $ensembl_object_type );
