@@ -213,8 +213,9 @@ sub children {
 
   Arg           : None
 
-  Description   : Returns the complete set of descendant terms of
-                  this ontology term.
+  Description   : Returns the complete set of 'is_a' and 'part_of'
+                  descendant terms of this ontology term, down to
+                  and including any leaf terms.
 
   Example       : my @desc = @{ $term->descendants() };
 
@@ -261,8 +262,9 @@ sub parents {
 
   Arg           : None
 
-  Description   : Returns the complete set of ancestor terms of this
-                  ontology term.
+  Description   : Returns the complete set of 'is_a' and 'part_of'
+                  ancestor terms of this ontology term, up to and
+                  including the root term.
 
   Example       : my @desc = @{ $term->descendants() };
 
