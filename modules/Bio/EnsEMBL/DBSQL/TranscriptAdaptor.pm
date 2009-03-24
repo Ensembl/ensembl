@@ -442,7 +442,7 @@ sub fetch_all_by_Slice {
                Transcript::transform method can be used to convert them.
                If no transcripts with the external identifier are found,
                a reference to an empty list is returned.
-  Returntype : Listref of Bio::EnsEMBL::Transcript objects
+  Returntype : listref of Bio::EnsEMBL::Transcript
   Exceptions : none
   Caller     : general
   Status     : Stable
@@ -459,6 +459,52 @@ sub fetch_all_by_external_name {
                                                   $external_db_name );
 
   return $self->fetch_all_by_dbID_list( \@ids );
+}
+
+=head2 fetch_all_by_GOTerm
+
+  Arg [1]   : Bio::EnsEMBL::OntologyTerm
+              The GO term for which transcripts should be fetched.
+
+  Example:  @transcripts = @{
+              $transcript_adaptor->fetch_all_by_GOTerm(
+                $go_adaptor->fetch_by_accession('GO:0030326') ) };
+
+  Description   : Retrieves a list of transcripts that are
+                  associated with the given GO term, or with any of
+                  its descendent GO terms.  The transcripts returned
+                  are in their native coordinate system, i.e. in
+                  the coordinate system in which they are stored
+                  in the database.  If another coordinate system
+                  is required then the Transcript::transfer or
+                  Transcript::transform method can be used.
+
+  Return type   : listref of Bio::EnsEMBL::Transcript
+  Exceptions    : none
+  Caller        : general
+  Status        : Stable
+
+=cut
+
+sub fetch_all_by_GOTerm {
+  my ( $self, $term ) = @_;
+
+  my $entryAdaptor = $self->db->get_DBEntryAdaptor();
+
+  my %unique_dbIDs;
+  foreach my $accession ( map { $_->accession() }
+    ( $term, @{ $term->descendants() } ) )
+  {
+    my @ids =
+      $entryAdaptor->list_transcript_ids_by_extids( $accession, 'GO' );
+    foreach my $dbID (@ids) { $unique_dbIDs{$dbID} = 1 }
+  }
+
+  my @result = @{
+    $self->fetch_all_by_dbID_list(
+      [ sort { $a <=> $b } keys(%unique_dbIDs) ] ) };
+
+  return \@result;
 }
 
 =head2 fetch_by_display_label

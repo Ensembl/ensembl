@@ -742,7 +742,7 @@ sub fetch_by_translation_stable_id {
                system they are stored in the database in.  If another
                coordinate system is required then the Gene::transfer or
                Gene::transform method can be used.
-  Returntype : listref of Bio::EnsEMBL::Genes
+  Returntype : listref of Bio::EnsEMBL::Gene
   Exceptions : none
   Caller     : goview, general
   Status     : Stable
@@ -766,6 +766,51 @@ sub fetch_all_by_external_name {
   return \@result;
 }
 
+=head2 fetch_all_by_GOTerm
+
+  Arg [1]   : Bio::EnsEMBL::OntologyTerm
+              The GO term for which genes should be fetched.
+
+  Example:  @genes = @{
+              $gene_adaptor->fetch_all_by_GOTerm(
+                $go_adaptor->fetch_by_accession('GO:0030326') ) };
+
+  Description   : Retrieves a list of genes that are associated with
+                  the given GO term, or with any of its descendent
+                  GO terms.  The genes returned are in their native
+                  coordinate system, i.e. in the coordinate system
+                  in which they are stored in the database.  If
+                  another coordinate system is required then the
+                  Gene::transfer or Gene::transform method can be
+                  used.
+
+  Return type   : listref of Bio::EnsEMBL::Gene
+  Exceptions    : none
+  Caller        : general
+  Status        : Stable
+
+=cut
+
+sub fetch_all_by_GOTerm {
+  my ( $self, $term ) = @_;
+
+  my $entryAdaptor = $self->db->get_DBEntryAdaptor();
+
+  my %unique_dbIDs;
+  foreach my $accession ( map { $_->accession() }
+    ( $term, @{ $term->descendants() } ) )
+  {
+    my @ids =
+      $entryAdaptor->list_gene_ids_by_extids( $accession, 'GO' );
+    foreach my $dbID (@ids) { $unique_dbIDs{$dbID} = 1 }
+  }
+
+  my @result = @{
+    $self->fetch_all_by_dbID_list(
+      [ sort { $a <=> $b } keys(%unique_dbIDs) ] ) };
+
+  return \@result;
+}
 
 =head2 fetch_all_alt_alleles
 

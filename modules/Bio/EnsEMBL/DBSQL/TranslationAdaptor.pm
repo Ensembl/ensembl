@@ -213,7 +213,55 @@ sub fetch_all_by_external_name {
   return \@out;
 }
 
+=head2 fetch_all_by_GOTerm
 
+  Arg [1]   : Bio::EnsEMBL::OntologyTerm
+              The GO term for which translations should be fetched.
+
+  Example:  @translations = @{
+              $translation_adaptor->fetch_all_by_GOTerm(
+                $go_adaptor->fetch_by_accession('GO:0030326') ) };
+
+  Description   : Retrieves a list of translations that are
+                  associated with the given GO term, or with any of
+                  its descendent GO terms.
+
+  Return type   : listref of Bio::EnsEMBL::Translation
+  Exceptions    : none
+  Caller        : general
+  Status        : Stable
+
+=cut
+
+sub fetch_all_by_GOTerm {
+  my ( $self, $term ) = @_;
+
+  my $entryAdaptor = $self->db->get_DBEntryAdaptor();
+
+  my %unique_dbIDs;
+  foreach my $accession ( map { $_->accession() }
+    ( $term, @{ $term->descendants() } ) )
+  {
+    my @ids =
+      $entryAdaptor->list_translation_ids_by_extids( $accession, 'GO' );
+    foreach my $dbID (@ids) { $unique_dbIDs{$dbID} = 1 }
+  }
+
+  my @result;
+  if ( scalar( keys(%unique_dbIDs) ) > 0 ) {
+    my $transcript_adaptor = $self->db()->get_TranscriptAdaptor();
+
+    foreach my $dbID ( sort { $a <=> $b } keys(%unique_dbIDs) ) {
+      my $transcript =
+        $transcript_adaptor->fetch_by_translation_id($dbID);
+      if ( defined($transcript) ) {
+        push( @result, $self->fetch_by_Transcript($transcript) );
+      }
+    }
+  }
+
+  return \@result;
+} ## end sub fetch_all_by_GOTerm
 
 =head2 store
 
