@@ -143,6 +143,7 @@ sub run_script {
     if(defined($ott_to_enst{$key} )){
       
       my $hgnc = $ott_to_hgnc{$key};
+      $hgnc =~ s/HGNC://;
       my $stable_id = $ott_to_enst{$key};
 
       if(!defined($label{$hgnc})){
