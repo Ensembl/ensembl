@@ -21,7 +21,7 @@
  It will warn about analyses present in the database which don't have descriptions
  in the file.
 
- To actually update analyses in the database you need to pass the update option.
+ To not update analyses in the database you need to pass the -noupdate option.
 
 =head1 OPTIONS
 
@@ -35,7 +35,7 @@
     -file        Path to file containing descriptions. The file 
                  analysis.descriptions in this directory can be used and is 
                  an example of the format. Multiple -file args can be specified
-    -update      Perform actual updates of analyses
+    -noupdate    Do not perform actual updates of analyses
     -help print out documentation
 
 =head1 EXAMPLES
@@ -60,7 +60,7 @@ my $dbpass;
 my $dbport = 3306;
 my $dbname = '';
 my @files = ();
-my $update;
+my $noupdate;
 my $help = 0;
 
 &GetOptions (
@@ -70,7 +70,7 @@ my $help = 0;
 	'pass|dbpass=s'       => \$dbpass,
 	'port|dbport=s'       => \$dbport,
 	'file|descriptions=s' => \@files,
-	'update'              => \$update,
+	'noupdate'              => \$noupdate,
 	'h|help!'             => \$help
              );
 
@@ -145,7 +145,9 @@ foreach my $file( @files ){
         $web_data ? $analysis->web_data($aa->get_dumped_data($web_data)) : $analysis->{_web_data} = undef;
 #	print Dumper  $analysis->web_data();
 
-        $aa->update($analysis) if $update;
+        unless ( $noupdate ) { 
+          $aa->update($analysis) ; 
+        }
         
         delete $hash{lc($logic_name)};
       }
@@ -154,7 +156,7 @@ foreach my $file( @files ){
 }
 
 if ( scalar(keys %hash)==0) {
-	if ($update) {
+	unless  ($noupdate) {
 		print STDERR "\nAll analysis descriptions have been updated, every analysis has a description now\n";
 	} else {
 		print STDERR "\nEvery analysis has a description in the file, all analysis descriptions can be updated.\n".
