@@ -129,7 +129,7 @@ SELECT  term.term_id,
         term.definition,
         ontology.namespace
 FROM    ontology,
-        ontology_term term
+        term
 WHERE   ontology.name = ?
   AND   ontology.ontology_id = term.ontology_id
   AND   term.accession = ?);
@@ -185,8 +185,8 @@ SELECT  child_term.term_id,
         child_term.definition,
         rt.name
 FROM    ontology,
-        ontology_term child_term,
-        ontology_term parent_term,
+        term child_term,
+        term parent_term,
         relation,
         relation_type rt
 WHERE   ontology.name = ?
@@ -238,7 +238,9 @@ WHERE   ontology.name = ?
 
   Description   : Given a parent ontology term, returns a list of
                   all its descendant terms, down to and including
-                  any leaf terms.
+                  any leaf terms.  In GO, relations of the type
+                  'is_a' and 'part_of' ar followed, but not
+                  'regulates' etc.
 
   Example       : my @descendants =
                     @{ $ot_adaptor->fetch_all_by_parent_term($term) };
@@ -257,8 +259,8 @@ SELECT DISTINCT
         child_term.name,
         child_term.definition
 FROM    ontology,
-        ontology_term child_term,
-        ontology_term parent_term,
+        term child_term,
+        term parent_term,
         closure
 WHERE   ontology.name = ?
   AND   ontology.ontology_id = child_term.ontology_id
@@ -323,8 +325,8 @@ SELECT  parent_term.term_id,
         parent_term.definition,
         rt.name
 FROM    ontology,
-        ontology_term child_term,
-        ontology_term parent_term,
+        term child_term,
+        term parent_term,
         relation,
         relation_type rt
 WHERE   ontology.name = ?
@@ -376,7 +378,8 @@ WHERE   ontology.name = ?
 
   Description   : Given a child ontology term, returns a list of all
                   its ancestor terms, up to and including any root
-                  term.
+                  term.  In GO, relations of the type 'is_a' and
+                  'part_of' ar followed, but not 'regulates' etc.
 
   Example       : my @ancestors =
                     @{ $ot_adaptor->fetch_all_by_parent_term($term) };
@@ -395,8 +398,8 @@ SELECT DISTINCT
         parent_term.name,
         parent_term.definition
 FROM    ontology,
-        ontology_term child_term,
-        ontology_term parent_term,
+        term child_term,
+        term parent_term,
         closure
 WHERE   ontology.name = ?
   AND   ontology.ontology_id = child_term.ontology_id
