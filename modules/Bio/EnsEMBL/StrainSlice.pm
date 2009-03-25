@@ -117,15 +117,15 @@ sub new{
 	    #check that the individua returned isin the database
 
             if (defined $individual){
-                my $allele_features = $af_adaptor->fetch_all_by_Slice($self,$individual);
-                warning("No strain genotype data available for Slice ".$self->name." and Strain ".$individual->name) if ! defined $allele_features->[0];
+                my @allele_features = grep { $_->variation->var_class ne 'in-del' } @{$af_adaptor->fetch_all_by_Slice($self,$individual)||[]};
+                warning("No strain genotype data available for Slice ".$self->name." and Strain ".$individual->name) if ! defined $allele_features[0];
                 my $vf_ids = {}; #hash containing the relation vf_id->af
 		$self->{'_strain'} = $individual;		
 		map {defined $_->{'_variation_feature_id'} ? $vf_ids->{$_->{'_variation_feature_id'}} = $_ : ''
-} @{$allele_features};
+} @allele_features;
 #		my $new_allele_features = $self->_filter_af_by_coverage($allele_features);
 #		$self->{'alleleFeatures'} = $new_allele_features;
-		$self->{'alleleFeatures'} = $allele_features;
+		$self->{'alleleFeatures'} = \@allele_features;
 		$self->{'_vf_ids'} = $vf_ids;
 		return $self;
 	    }
