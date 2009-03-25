@@ -181,28 +181,29 @@ sub defintion {
 
 =head2 children
 
-  Arg           : (optional) String
-                  The type of relation to retrieve children for.
+  Args          : (optional) List of strings
+                  The type of relations to retrieve children for.
 
   Description   : Returns the children terms of this ontology term.
 
-  Example       : my @children = @{ $term->children('is_a') };
+  Example       : my @children =
+                    @{ $term->children( 'is_a', 'part_of' ) };
 
   Return type   : listref of Bio::EnsEMBL::OntologyTerm
 
 =cut
 
 sub children {
-  my ( $this, $relation ) = @_;
+  my ( $this, @relations ) = @_;
 
-  my @terms;
+  my @terms = @{ $this->adaptor()->fetch_by_parent_term($this) };
 
-  @terms = @{ $this->adaptor()->fetch_by_parent_term($this); };
-  if ( defined($relation) ) {
-    if ( exists( $this->{'children'}{$relation} ) ) {
-      @terms = @{ $this->{'children'}{$relation} };
-    } else {
-      @terms = ();
+  if (@relations) {
+    @terms = ();
+    foreach my $relation (@relations) {
+      if ( exists( $this->{'children'}{$relation} ) ) {
+        push( @terms, @{ $this->{'children'}{$relation} } );
+      }
     }
   }
 
@@ -230,28 +231,29 @@ sub descendants {
 
 =head2 parents
 
-  Arg           : (optional) String
-                  The type of relation to retrieve parents for.
+  Args          : (optional) List of strings
+                  The type of relations to retrieve parents for.
 
   Description   : Returns the parent terms of this ontology term.
 
-  Example       : my @parents = @{ $term->parents('is_a')) };
+  Example       : my @parents =
+                    @{ $term->parents( 'is_a', 'part_of' ) };
 
   Return type   : listref of Bio::EnsEMBL::OntologyTerm
 
 =cut
 
 sub parents {
-  my ( $this, $relation ) = @_;
+  my ( $this, @relations ) = @_;
 
-  my @terms;
+  my @terms = @{ $this->adaptor()->fetch_by_child_term($this) };
 
-  @terms = @{ $this->adaptor()->fetch_by_child_term($this); };
-  if ( defined($relation) ) {
-    if ( exists( $this->{'parents'}{$relation} ) ) {
-      @terms = @{ $this->{'parents'}{$relation} };
-    } else {
-      @terms = ();
+  if (@relations) {
+    @terms = ();
+    foreach my $relation (@relations) {
+      if ( exists( $this->{'parents'}{$relation} ) ) {
+        push( @terms, @{ $this->{'parents'}{$relation} } );
+      }
     }
   }
 
