@@ -239,7 +239,7 @@ WHERE   ontology.name = ?
   Description   : Given a parent ontology term, returns a list of
                   all its descendant terms, down to and including
                   any leaf terms.  In GO, relations of the type
-                  'is_a' and 'part_of' ar followed, but not
+                  'is_a' and 'part_of' are followed, but not
                   'regulates' etc.
 
   Example       : my @descendants =
@@ -379,7 +379,7 @@ WHERE   ontology.name = ?
   Description   : Given a child ontology term, returns a list of all
                   its ancestor terms, up to and including any root
                   term.  In GO, relations of the type 'is_a' and
-                  'part_of' ar followed, but not 'regulates' etc.
+                  'part_of' are followed, but not 'regulates' etc.
 
   Example       : my @ancestors =
                     @{ $ot_adaptor->fetch_all_by_parent_term($term) };
@@ -435,5 +435,92 @@ ORDER BY closure.distance, parent_term.accession);
 
   return \@terms;
 } ## end sub fetch_all_by_child_term
+
+#-----------------------------------------------------------------------
+# Useful public methods that implement functionality not properly
+# provided by the parent class Bio::EnsEMBL::DBSQL::BaseAdaptor.
+
+sub fetch_by_dbID {
+  my ( $this, $dbid ) = @_;
+
+  my $statement = q(
+SELECT  term.accession,
+        term.name,
+        term.definition,
+        ontology.namespace
+FROM    ontology,
+        term
+WHERE   ontology.ontology_id = term.ontology_id
+  AND   term.term_id = ?);
+
+  my $sth = $this->dbc()->prepare($statement);
+  $sth->bind_param( 1, $dbid, SQL_INTEGER );
+
+  $sth->execute();
+
+  my ( $accession, $name, $definition, $namespace );
+  $sth->bind_columns( \( $accession, $name, $definition, $namespace ) );
+
+  $sth->fetch();
+  my $term = Bio::EnsEMBL::OntologyTerm->new(
+    '-dbid'       => $dbid,
+    '-adaptor'    => $this,
+    '-accession'  => $accession,
+    '-namespace'  => $namespace,
+    '-name'       => $name,
+    '-definition' => $definition
+  );
+  $sth->finish();
+
+  return $term;
+} ## end sub fetch_by_dbID
+
+sub fetch_by_dbID_list {
+  my ( $this, $dbids ) = @_;
+
+  if ( !@{$dbids} ) { return [] }
+
+  my $stmt = q(
+SELECT  term.term_id,
+        term.accession,
+        term.name,
+        term.definition,
+        ontology.namespace
+FROM    ontology,
+        term
+WHERE   ontology.ontology_id = term.ontology_id
+  AND   term.term_id IN (%s));
+
+  my $statement = sprintf(
+    $stmt,
+    join( ',',
+      map { $this->dbc()->db_handle()->quote( $_, SQL_INTEGER ) }
+        @{$dbids} ) );
+
+  my $sth = $this->dbc()->prepare($statement);
+
+  $sth->execute();
+
+  my ( $dbid, $accession, $name, $definition, $namespace );
+  $sth->bind_columns(
+    \( $dbid, $accession, $name, $definition, $namespace ) );
+
+  my @terms;
+  while ( $sth->fetch() ) {
+    push(
+      @terms,
+      Bio::EnsEMBL::OntologyTerm->new(
+        '-dbid'       => $dbid,
+        '-adaptor'    => $this,
+        '-accession'  => $accession,
+        '-namespace'  => $namespace,
+        '-name'       => $name,
+        '-definition' => $definition
+      ) );
+  }
+
+  return \@terms;
+} ## end sub fetch_by_dbID_list
+
 
 1;
