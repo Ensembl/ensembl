@@ -1,4 +1,3 @@
-
 =head1 LICENSE
 
   Copyright (c) 1999-2009 The European Bioinformatics Institute and
@@ -52,6 +51,8 @@ use warnings;
 use DBI qw( :sql_types );
 
 use Bio::EnsEMBL::Utils::Argument qw( rearrange );
+use Bio::EnsEMBL::Utils::Exception qw( throw );
+
 use Bio::EnsEMBL::OntologyTerm;
 
 use base qw( Bio::EnsEMBL::DBSQL::BaseAdaptor );
@@ -79,6 +80,11 @@ use base qw( Bio::EnsEMBL::DBSQL::BaseAdaptor );
 
 sub new {
   my ( $proto, $dba, $ontology ) = @_;
+
+  if ( !ref($dba) || !$dba->isa('Bio::EnsEMBL::DBSQL::DBAdaptor') ) {
+    throw('First argument needs to be a '
+        . 'Bio::EnsEMBL::DBSQL::DBAdaptor object' );
+  }
 
   my $this = $proto->SUPER::new($dba);
 
@@ -176,6 +182,10 @@ WHERE   ontology.name = ?
 sub fetch_by_parent_term {
   my ( $this, $term ) = @_;
 
+  if ( !ref($term) || !$term->isa('Bio::EnsEMBL::OntologyTerm') ) {
+    throw('Argument needs to be a Bio::EnsEMBL::OntologyTerm object');
+  }
+
   my @terms;
 
   if ( !$term->{'child_terms_fetched'} ) {
@@ -253,6 +263,10 @@ WHERE   ontology.name = ?
 sub fetch_all_by_parent_term {
   my ( $this, $term ) = @_;
 
+  if ( !ref($term) || !$term->isa('Bio::EnsEMBL::OntologyTerm') ) {
+    throw('Argument needs to be a Bio::EnsEMBL::OntologyTerm object');
+  }
+
   my $statement = q(
 SELECT DISTINCT
         child_term.term_id,
@@ -315,6 +329,10 @@ ORDER BY closure.distance, child_term.accession);
 
 sub fetch_by_child_term {
   my ( $this, $term ) = @_;
+
+  if ( !ref($term) || !$term->isa('Bio::EnsEMBL::OntologyTerm') ) {
+    throw('Argument needs to be a Bio::EnsEMBL::OntologyTerm object');
+  }
 
   my @terms;
 
@@ -391,6 +409,10 @@ WHERE   ontology.name = ?
 
 sub fetch_all_by_child_term {
   my ( $this, $term ) = @_;
+
+  if ( !ref($term) || !$term->isa('Bio::EnsEMBL::OntologyTerm') ) {
+    throw('Argument needs to be a Bio::EnsEMBL::OntologyTerm object');
+  }
 
   my $statement = q(
 SELECT DISTINCT
