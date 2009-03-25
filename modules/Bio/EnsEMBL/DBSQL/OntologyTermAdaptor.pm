@@ -1,3 +1,4 @@
+
 =head1 LICENSE
 
   Copyright (c) 1999-2009 The European Bioinformatics Institute and
@@ -134,7 +135,7 @@ WHERE   ontology.name = ?
   AND   ontology.ontology_id = term.ontology_id
   AND   term.accession = ?);
 
-  my $sth = $this->dbc()->prepare($statement);
+  my $sth = $this->prepare($statement);
   $sth->bind_param( 1, $this->{'ontology'}, SQL_VARCHAR );
   $sth->bind_param( 2, $accession,          SQL_VARCHAR );
 
@@ -197,7 +198,7 @@ WHERE   ontology.name = ?
   AND   relation.relation_type_id = rt.relation_type_id
   AND   parent_term.accession = ?);
 
-    my $sth = $this->dbc()->prepare($statement);
+    my $sth = $this->prepare($statement);
     $sth->bind_param( 1, $this->{'ontology'},  SQL_VARCHAR );
     $sth->bind_param( 2, $term->{'accession'}, SQL_VARCHAR );
 
@@ -271,7 +272,7 @@ WHERE   ontology.name = ?
   AND   parent_term.accession = ?
 ORDER BY closure.distance, child_term.accession);
 
-  my $sth = $this->dbc()->prepare($statement);
+  my $sth = $this->prepare($statement);
   $sth->bind_param( 1, $this->{'ontology'},  SQL_VARCHAR );
   $sth->bind_param( 2, $term->{'accession'}, SQL_VARCHAR );
 
@@ -337,7 +338,7 @@ WHERE   ontology.name = ?
   AND   relation.relation_type_id = rt.relation_type_id
   AND   child_term.accession = ?);
 
-    my $sth = $this->dbc()->prepare($statement);
+    my $sth = $this->prepare($statement);
     $sth->bind_param( 1, $this->{'ontology'},  SQL_VARCHAR );
     $sth->bind_param( 2, $term->{'accession'}, SQL_VARCHAR );
 
@@ -410,7 +411,7 @@ WHERE   ontology.name = ?
   AND   child_term.accession = ?
 ORDER BY closure.distance, parent_term.accession);
 
-  my $sth = $this->dbc()->prepare($statement);
+  my $sth = $this->prepare($statement);
   $sth->bind_param( 1, $this->{'ontology'},  SQL_VARCHAR );
   $sth->bind_param( 2, $term->{'accession'}, SQL_VARCHAR );
 
@@ -453,7 +454,7 @@ FROM    ontology,
 WHERE   ontology.ontology_id = term.ontology_id
   AND   term.term_id = ?);
 
-  my $sth = $this->dbc()->prepare($statement);
+  my $sth = $this->prepare($statement);
   $sth->bind_param( 1, $dbid, SQL_INTEGER );
 
   $sth->execute();
@@ -497,7 +498,7 @@ WHERE   ontology.ontology_id = term.ontology_id
       map { $this->dbc()->db_handle()->quote( $_, SQL_INTEGER ) }
         @{$dbids} ) );
 
-  my $sth = $this->dbc()->prepare($statement);
+  my $sth = $this->prepare($statement);
 
   $sth->execute();
 
@@ -521,6 +522,5 @@ WHERE   ontology.ontology_id = term.ontology_id
 
   return \@terms;
 } ## end sub fetch_by_dbID_list
-
 
 1;
