@@ -55,19 +55,20 @@ if( ! $dna_count ) {
 print "Deleting old PercentGC features\n";
 $sth = $db->dbc->prepare(
   qq(
-DELETE df, dt, a
-FROM density_feature df, density_type dt, analysis a
+DELETE df, dt, a, ad
+FROM density_feature df, density_type dt, analysis a, analysis_description ad
 WHERE a.analysis_id=dt.analysis_id
+AND ad.analysis_id = a.analysis_id
 AND dt.density_type_id=df.density_type_id
 AND a.logic_name='PercentGC') );
 $sth->execute();
 
-$sth = $db->dbc()->prepare(
-  qq(
-  DELETE ad
-  FROM analysis_description ad
-  WHERE ad.display_label = 'PercentGC') );
-$sth->execute();
+# $sth = $db->dbc()->prepare(
+#   qq(
+#   DELETE ad
+#   FROM analysis_description ad
+#   WHERE ad.display_label = 'PercentGC') );
+# $sth->execute();
 
 #
 # Get the adaptors needed;

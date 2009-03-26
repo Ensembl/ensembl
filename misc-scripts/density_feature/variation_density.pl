@@ -50,15 +50,15 @@ if( ! variation_attach( $db )) {
 # Clean up old features first. Also remove analysis and density type entry as these are recreated.
 #
 
-my $sth = $db->dbc->prepare("DELETE df, dt, a FROM density_feature df, density_type dt, analysis a WHERE a.analysis_id=dt.analysis_id AND dt.density_type_id=df.density_type_id AND a.logic_name='snpDensity'");
+my $sth = $db->dbc->prepare("DELETE df, dt, a, ad FROM analysis_description ad, density_feature df, density_type dt, analysis a WHERE ad.analysis_id = a.analysis_id AND a.analysis_id=dt.analysis_id AND dt.density_type_id=df.density_type_id AND a.logic_name='snpDensity'");
 $sth->execute();
 
-$sth = $db->dbc()->prepare(
-  qq(
-  DELETE ad
-  FROM analysis_description ad
-  WHERE ad.display_label = 'snpDensity') );
-$sth->execute();
+# $sth = $db->dbc()->prepare(
+#   qq(
+#   DELETE ad
+#   FROM analysis_description ad
+#   WHERE ad.display_label = 'snpDensity') );
+# $sth->execute();
 
 #
 # Get the adaptors needed;
