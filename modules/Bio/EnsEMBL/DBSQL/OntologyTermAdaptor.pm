@@ -34,6 +34,8 @@ Bio::EnsEMBL::DBSQL::OntologyTermAdaptor
   my @parent_terms   = @{ $goa->fetch_by_child_term($term) };
   my @ancestor_terms = @{ $goa->fetch_all_by_child_term($term) };
 
+  my %ancestor_chart = %{ $goa->fetch_ancestor_chart($term) };
+
 =head1 DESCRIPTION
 
 An adaptor for fetching ontology terms, creates
@@ -195,22 +197,15 @@ SELECT  child_term.term_id,
         child_term.name,
         child_term.definition,
         rt.name
-FROM    ontology,
-        term child_term,
-        term parent_term,
+FROM    term child_term,
         relation,
         relation_type rt
-WHERE   ontology.name = ?
-  AND   ontology.ontology_id = child_term.ontology_id
-  AND   ontology.ontology_id = parent_term.ontology_id
-  AND   relation.child_term_id = child_term.term_id
-  AND   relation.parent_term_id = parent_term.term_id
-  AND   relation.relation_type_id = rt.relation_type_id
-  AND   parent_term.accession = ?);
+WHERE   relation.child_term_id = child_term.term_id
+  AND   relation.parent_term_id = ?
+  AND   relation.relation_type_id = rt.relation_type_id);
 
     my $sth = $this->prepare($statement);
-    $sth->bind_param( 1, $this->{'ontology'},  SQL_VARCHAR );
-    $sth->bind_param( 2, $term->{'accession'}, SQL_VARCHAR );
+    $sth->bind_param( 1, $term->dbID(), SQL_INTEGER );
 
     $sth->execute();
 
@@ -273,22 +268,15 @@ SELECT DISTINCT
         child_term.accession,
         child_term.name,
         child_term.definition
-FROM    ontology,
-        term child_term,
-        term parent_term,
+FROM    term child_term,
         closure
-WHERE   ontology.name = ?
-  AND   ontology.ontology_id = child_term.ontology_id
-  AND   ontology.ontology_id = parent_term.ontology_id
-  AND   closure.child_term_id = child_term.term_id
-  AND   closure.parent_term_id = parent_term.term_id
+WHERE   closure.child_term_id = child_term.term_id
+  AND   closure.parent_term_id = ?
   AND   closure.distance > 0
-  AND   parent_term.accession = ?
 ORDER BY closure.distance, child_term.accession);
 
   my $sth = $this->prepare($statement);
-  $sth->bind_param( 1, $this->{'ontology'},  SQL_VARCHAR );
-  $sth->bind_param( 2, $term->{'accession'}, SQL_VARCHAR );
+  $sth->bind_param( 1, $term->dbID(), SQL_INTEGER );
 
   $sth->execute();
 
@@ -343,22 +331,15 @@ SELECT  parent_term.term_id,
         parent_term.name,
         parent_term.definition,
         rt.name
-FROM    ontology,
-        term child_term,
-        term parent_term,
+FROM    term parent_term,
         relation,
         relation_type rt
-WHERE   ontology.name = ?
-  AND   ontology.ontology_id = child_term.ontology_id
-  AND   ontology.ontology_id = parent_term.ontology_id
-  AND   relation.child_term_id = child_term.term_id
+WHERE   relation.child_term_id = ?
   AND   relation.parent_term_id = parent_term.term_id
-  AND   relation.relation_type_id = rt.relation_type_id
-  AND   child_term.accession = ?);
+  AND   relation.relation_type_id = rt.relation_type_id);
 
     my $sth = $this->prepare($statement);
-    $sth->bind_param( 1, $this->{'ontology'},  SQL_VARCHAR );
-    $sth->bind_param( 2, $term->{'accession'}, SQL_VARCHAR );
+    $sth->bind_param( 1, $term->dbID(), SQL_INTEGER );
 
     $sth->execute();
 
@@ -420,22 +401,15 @@ SELECT DISTINCT
         parent_term.accession,
         parent_term.name,
         parent_term.definition
-FROM    ontology,
-        term child_term,
-        term parent_term,
+FROM    term parent_term,
         closure
-WHERE   ontology.name = ?
-  AND   ontology.ontology_id = child_term.ontology_id
-  AND   ontology.ontology_id = parent_term.ontology_id
-  AND   closure.child_term_id = child_term.term_id
+WHERE   closure.child_term_id = ?
   AND   closure.parent_term_id = parent_term.term_id
   AND   closure.distance > 0
-  AND   child_term.accession = ?
 ORDER BY closure.distance, parent_term.accession);
 
   my $sth = $this->prepare($statement);
-  $sth->bind_param( 1, $this->{'ontology'},  SQL_VARCHAR );
-  $sth->bind_param( 2, $term->{'accession'}, SQL_VARCHAR );
+  $sth->bind_param( 1, $term->dbID(), SQL_INTEGER );
 
   $sth->execute();
 
@@ -458,6 +432,46 @@ ORDER BY closure.distance, parent_term.accession);
 
   return \@terms;
 } ## end sub fetch_all_by_child_term
+
+
+sub fetch_ancestor_chart {
+  my ( $this, $term ) = @_;
+
+  my $statement = q(
+SELECT  subparent_term.accession,
+        parent_term.accession,
+        relation_type.name
+FROM    closure,
+        relation,
+        relation_type,
+        term subparent_term,
+        term parent_term
+WHERE   closure.child_term_id = ?
+  AND   relation.parent_term_id = closure.parent_term_id
+  AND   relation.child_term_id = closure.subparent_term_id
+  AND   relation.relation_type_id = relation_type.relation_type_id
+  AND   subparent_term.term_id = closure.subparent_term_id
+  AND   parent_term.term_id = closure.parent_term_id
+ORDER BY closure.distance);
+
+  my $sth = $this->prepare($statement);
+  $sth->bind_param( 1, $term->dbID(), SQL_INTEGER );
+
+  $sth->execute();
+
+  my ( $subparent_id, $parent_id, $relation );
+  $sth->bind_columns( \( $subparent_id, $parent_id, $relation ) );
+
+  my %chart;
+  while ( $sth->fetch() ) {
+    if ( !exists( $chart{$parent_id} ) ) {
+      $chart{$parent_id} = {};
+    }
+    push( @{ $chart{$subparent_id}{$relation} }, $parent_id );
+  }
+
+  return \%chart;
+} ## end sub fetch_ancestor_chart
 
 #-----------------------------------------------------------------------
 # Useful public methods that implement functionality not properly
