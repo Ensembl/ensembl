@@ -83,6 +83,7 @@ sub check_remarks_and_update_names {
   my $gsi    = $gene->stable_id;
   my $gid    = $gene->dbID;
   my $g_name;
+  my $study_more = 1;
   eval {
     $g_name = $gene->display_xref->display_id;
   };	
@@ -109,12 +110,13 @@ sub check_remarks_and_update_names {
   }
 
   #if any of the remarks identify this gene as being known by Havana as being fragmented...
-  if ( (grep {$_ =~ /fragmen/i } @{$remarks{'hidden_remark'}->{'gene'}},
+  if ( (grep {$_ =~ /fragmen/i }
+        @{$remarks{'hidden_remark'}->{'gene'}},
 	@{$remarks{'remark'}->{'gene'}},
 	@{$remarks{'remark'}->{'transcripts'}}, 
 	@{$remarks{'hidden_remark'}->{'transcripts'}} ) ) {
     if (grep { $_ eq $gene_remark} @{$remarks{'remark'}->{'gene'}}) {
-      $self->log("Fragmented loci annotation remark for gene $gid already exists\n");
+      $self->log_verbose("Fragmented loci annotation remark for gene $gsi already exists\n");
     }
     #add gene_attrib
     else {
@@ -123,6 +125,7 @@ sub check_remarks_and_update_names {
       }			
       $self->log("$action correctly formatted fragmented loci annotation remark for gene $gsi\n");
     }
+    $study_more = 0;
   }
   #log if it's been reported before since the gene should have a remark.
   elsif ($seen_genes->{$gsi} eq 'fragmented') {
@@ -178,7 +181,7 @@ sub check_remarks_and_update_names {
       }
     }
   }
-  return (1,$gene_c,$trans_c);
+  return ($study_more,$gene_c,$trans_c);
 }
 
 =head2 check_names_and_overlap
@@ -195,50 +198,50 @@ sub check_remarks_and_update_names {
 =cut
 
 sub check_names_and_overlap {
-	my $self = shift;
-	my ($transcript_info,$gene,$n_flist_fh) = @_;
-	my $ta  = $gene->adaptor->db->get_TranscriptAdaptor;
-	my $gsi = $gene->stable_id;
-	my $g_name = $gene->get_all_Attributes('name')->[0]->value;
-	foreach my $set (values %{$transcript_info} ) {
-		next if (scalar @{$set} == 1);
-		my $transcripts = [];
-		my $all_t_names;
-		my %ids_to_names;
-		foreach my $id1 (@{$set}) {
-			my ($name1,$tsi1) = split /\|/, $id1;
-			$ids_to_names{$tsi1} = $name1;
-			$all_t_names .= "$tsi1 [$name1] ";
-			my $t = $ta->fetch_by_stable_id($tsi1);
-			push @{$transcripts}, $t;
-		}
+  my $self = shift;
+  my ($transcript_info,$gene,$n_flist_fh) = @_;
+  my $ta  = $gene->adaptor->db->get_TranscriptAdaptor;
+  my $gsi = $gene->stable_id;
+  my $g_name = $gene->get_all_Attributes('name')->[0]->value;
+  foreach my $set (values %{$transcript_info} ) {
+    next if (scalar @{$set} == 1);
+    my $transcripts = [];
+    my $all_t_names;
+    my %ids_to_names;
+    foreach my $id1 (@{$set}) {
+      my ($name1,$tsi1) = split /\|/, $id1;
+      $ids_to_names{$tsi1} = $name1;
+      $all_t_names .= "$tsi1 [$name1] ";
+      my $t = $ta->fetch_by_stable_id($tsi1);
+      push @{$transcripts}, $t;
+    }
 
-		my $non_overlaps;
-		eval {
-			$non_overlaps = $self->find_non_overlaps($transcripts);
-		};
-		if ($@) {
-			$self->log_warning("Problem looking for overlapping transcripts for gene $gsi (is_current = 0 ?). Skipping this bit\n");
-		}
+    my $non_overlaps;
+    eval {
+      $non_overlaps = $self->find_non_overlaps($transcripts);
+    };
+    if ($@) {
+      $self->log_warning("Problem looking for overlapping transcripts for gene $gsi (is_current = 0 ?). Skipping this bit\n");
+    }
 
-		#if the transcripts don't overlap
-		elsif (@{$non_overlaps}) {
-			my $tsi_string;
-			foreach my $id (@{$non_overlaps}) {
-				my $string = " $id [ $ids_to_names{$id} ] ";
-				$tsi_string .= $string;
-			}
-	
-			$self->log_warning("NEW: Non-overlapping: $gsi ($g_name) has non-overlapping transcripts ($tsi_string) with duplicated Vega names, and it has no \'Annotation_remark- fragmented_loci\' on the gene or \'\%fragmen\%\' remark on any transcripts. Neither has it been OKeyed by Havana before. Transcript names are being patched but this needs checking by Havana.\n");
-			#log gsi (to be sent to Havana)
-			print $n_flist_fh "$gsi\n";
-		}
-		#...otherwise if the transcripts do overlap
-		else {
-			$self->log_warning("NEW: Overlapping: $gsi ($g_name) has overlapping transcripts ($all_t_names) with Vega duplicated names and it has no \'Annotation_remark- fragmented_loci\' on the gene or \'\%fragmen\%\' remark on any transcripts. Neither has it been OKeyed by Havana before. Transcript names are being patched but this could be checked by Havana if they were feeling keen.\n");
-			print $n_flist_fh "$gsi\n";
-		}
-	}
+    #if the transcripts don't overlap
+    elsif (@{$non_overlaps}) {
+      my $tsi_string;
+      foreach my $id (@{$non_overlaps}) {
+	my $string = " $id [ $ids_to_names{$id} ] ";
+	$tsi_string .= $string;
+      }
+
+      $self->log_warning("NEW: Non-overlapping: $gsi ($g_name) has non-overlapping transcripts ($tsi_string) with duplicated Vega names, and it has no \'Annotation_remark- fragmented_loci\' on the gene or \'\%fragmen\%\' remark on any transcripts. Neither has it been OKeyed by Havana before. Transcript names are being patched but this needs checking by Havana.\n");
+      #log gsi (to be sent to Havana)
+      print $n_flist_fh "$gsi\n";
+    }
+    #...otherwise if the transcripts do overlap
+    else {
+      $self->log_warning("NEW: Overlapping: $gsi ($g_name) has overlapping transcripts ($all_t_names) with Vega duplicated names and it has no \'Annotation_remark- fragmented_loci\' on the gene or \'\%fragmen\%\' remark on any transcripts. Neither has it been OKeyed by Havana before. Transcript names are being patched but this could be checked by Havana if they were feeling keen.\n");
+      print $n_flist_fh "$gsi\n";
+    }
+  }
 }		
 
 =head2 get_havana_fragmented_loci_comments
