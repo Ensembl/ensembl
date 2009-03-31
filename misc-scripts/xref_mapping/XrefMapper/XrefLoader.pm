@@ -71,7 +71,8 @@ sub update{
   $sth->finish;
 
   my %source_id_to_external_db_id;
-  $sql = "select s.source_id, s.name from source s, xref x where x.source_id = s.source_id group by s.source_id"; # only get those of interest
+ 
+  $sql = 'select s.source_id, s.name from source s, xref x where x.source_id = s.source_id group by s.source_id'; # only get those of interest
   $sth = $self->xref->dbc->prepare($sql);
   $sth->execute();
   $sth->bind_columns(\$id, \$name);
@@ -94,14 +95,13 @@ sub update{
   # Delete the existing ones           # 
   ######################################
 
-
-  $sth = $self->xref->dbc->prepare('select s.name, count(*) from xref x, object_xref ox, source s where ox.xref_id = x.xref_id  and x.source_id = s.source_id and ox_status = "DUMP_OUT"  group by s.name');
+  $sth = $self->xref->dbc->prepare('select s.name, count(*) from xref x, object_xref ox, source s where ox.xref_id = x.xref_id and x.source_id = s.source_id and ox_status = "DUMP_OUT"  group by s.name');
   $sth->execute();
   my $count;
   $sth->bind_columns(\$name,\$count);
 
   my $synonym_sth  =  $self->core->dbc->prepare('DELETE external_synonym FROM external_synonym, xref WHERE external_synonym.xref_id = xref.xref_id AND xref.external_db_id = ?');
-  my $go_sth       =  $self->core->dbc->prepare('DELETE gx FROM xref x, object_xref ox LEFT JOIN go_xref gx ON ox.object_xref_id = gx.object_xref_id WHERE x.xref_id = ox.xref_id AND x.external_db_id = ? AND gx.linkage_type is not null');
+  my $go_sth       =  $self->core->dbc->prepare('DELETE FROM go_xref');
   my $identity_sth =  $self->core->dbc->prepare('DELETE identity_xref FROM identity_xref, object_xref, xref WHERE identity_xref.object_xref_id = object_xref.object_xref_id AND object_xref.xref_id = xref.xref_id AND xref.external_db_id = ?');
   my $object_sth   =  $self->core->dbc->prepare('DELETE object_xref FROM object_xref, xref WHERE object_xref.xref_id = xref.xref_id AND xref.external_db_id = ?');
 #  my $dependent_sth = $self->core->dbc->prepare('DELETE dependent_xref FROM dependent_xref, xref  WHERE dependent_xref.dependent_xref_id = xref.xref_id and xref.external_db_id = ?');
@@ -116,7 +116,9 @@ sub update{
 
     print "Deleting data for $name from core before updating from new xref database\n" if ($verbose);
     $synonym_sth->execute($ex_id);
-    $go_sth->execute($ex_id);
+    if($name eq "GO"){
+      $go_sth->execute();
+    }
     $identity_sth->execute($ex_id);
     $object_sth->execute($ex_id);  
 #    $dependent_sth->execute($ex_id);
@@ -198,9 +200,21 @@ SQL
 
      my $direct_sth = $self->xref->dbc->prepare('select x.xref_id, x.accession, x.label, x.version, x.description, x.info_text, ox.object_xref_id, ox.ensembl_id, ox.ensembl_object_type from xref x, object_xref ox  where ox.ox_status = "DUMP_OUT" and ox.xref_id = x.xref_id and x.source_id = ? and x.info_type = ? order by x.xref_id');
  
-     my $dependent_sth = $self->xref->dbc->prepare('select  x.xref_id, x.accession, x.label, x.version, x.description, x.info_text, ox.object_xref_id, ox.ensembl_id, ox.ensembl_object_type, d.master_xref_id from xref x, object_xref ox,  dependent_xref d where ox.ox_status = "DUMP_OUT" and ox.xref_id = x.xref_id and d.dependent_xref_id = x.xref_id and x.source_id = ? and x.info_type = ? order by x.xref_id, ox.ensembl_id');
+     my $dependent_sth = $self->xref->dbc->prepare('select  x.xref_id, x.accession, x.label, x.version, x.description, x.info_text, ox.object_xref_id, ox.ensembl_id, ox.ensembl_object_type, d.master_xref_id from xref x, object_xref ox,  dependent_xref d where ox.ox_status = "DUMP_OUT" and ox.xref_id = x.xref_id and d.object_xref_id = ox.object_xref_id and x.source_id = ? and x.info_type = ? order by x.xref_id, ox.ensembl_id');
 
-     $go_sth = $self->xref->dbc->prepare('select  x.xref_id, x.accession, x.label, x.version, x.description, x.info_text, ox.object_xref_id, ox.ensembl_id, ox.ensembl_object_type, d.master_xref_id, g.linkage_type from xref x, object_xref ox,  dependent_xref d, go_xref g where ox.ox_status = "DUMP_OUT" and  g.object_xref_id = ox.object_xref_id and x.xref_id = ox.xref_id and d.object_xref_id = ox.object_xref_id and x.source_id = ? and x.info_type = ? order by x.xref_id, ox.ensembl_id');
+
+  my $go_sql =(<<GSQL);
+  SELECT  x.xref_id, x.accession, x.label, x.version, x.description, x.info_text, ox.object_xref_id, ox.ensembl_id, ox.ensembl_object_type, dx.master_xref_id, g.linkage_type 
+    FROM (xref x, object_xref ox, go_xref g) 
+      LEFT JOIN dependent_xref dx on dx.object_xref_id = ox.object_xref_id
+      WHERE ox.ox_status = "DUMP_OUT" and  
+            g.object_xref_id = ox.object_xref_id and 
+            x.xref_id = ox.xref_id and 
+            x.source_id = ? and x.info_type = ? 
+            order by x.xref_id, ox.ensembl_id
+GSQL
+
+     $go_sth = $self->xref->dbc->prepare($go_sql);
 
      my $seq_sth   =   $self->xref->dbc->prepare('select x.xref_id, x.accession, x.label, x.version, x.description, x.info_text, ox.object_xref_id, ox.ensembl_id, ox.ensembl_object_type, i.query_identity, i.target_identity, i.hit_start, i.hit_end, i.translation_start, i.translation_end, i.cigar_line, i.score, i.evalue from xref x, object_xref ox, identity_xref i  where ox.ox_status = "DUMP_OUT" and i.object_xref_id = ox.object_xref_id and ox.xref_id = x.xref_id and x.source_id = ? and x.info_type = ? order by x.xref_id');
 
@@ -215,7 +229,9 @@ SQL
      my $add_dependent_xref_sth = $self->core->dbc->prepare('insert into dependent_xref (object_xref_id, master_xref_id, dependent_xref_id) values (?, ?, ?)');
      my $add_syn_sth            = $self->core->dbc->prepare('insert ignore into external_synonym (xref_id, synonym) values (?, ?)');
 
-  $sth = $self->xref->dbc->prepare('select s.name, s.source_id, count(*), x.info_type, s.priority_description from xref x, object_xref ox, source s where ox.xref_id = x.xref_id  and x.source_id = s.source_id and ox_status = "DUMP_OUT"  group by s.name, s.source_id, x.info_type');
+
+
+  $sth = $self->xref->dbc->prepare('select s.name, s.source_id, count(*), x.info_type, s.priority_description from xref x, object_xref ox, source s where ox.xref_id = x.xref_id  and x.source_id = s.source_id and ox_status = "DUMP_OUT" group by s.name, s.source_id, x.info_type');
   $sth->execute();
   my ($type, $source_id, $where_from);
   $sth->bind_columns(\$name,\$source_id, \$count, \$type, \$where_from);
@@ -272,34 +288,36 @@ SQL
 	   $add_xref_sth->execute(($xref_id+$xref_offset), $ex_id, $acc, $label, $version, $desc, $type, $info || $where_from);
 	   $last_xref = $xref_id;
 	 }
-	 $add_dependent_xref_sth->execute(($object_xref_id+$object_xref_offset), ($xref_id+$xref_offset), ($master_xref_id+$xref_offset) );
+	 if(defined($master_xref_id)){  # need to sort this out as all should habe one really. (interpro generates go without these!!)
+	   $add_dependent_xref_sth->execute(($object_xref_id+$object_xref_offset), ($xref_id+$xref_offset), ($master_xref_id+$xref_offset) );
+	 }
 	 $add_object_xref_sth->execute(   ($object_xref_id+$object_xref_offset), $ensembl_id, $ensembl_type, ($xref_id+$xref_offset), $analysis_ids{$ensembl_type} );
 	 $add_go_xref_sth->execute(       ($object_xref_id+$object_xref_offset), $linkage_type);
        }       
        print "GO $count\n" if ($verbose);     
      }
-    else{
-      my $count = 0;
-      $dependent_sth->execute($source_id, $type);
-      my ($xref_id, $acc, $label, $version, $desc, $info, $object_xref_id, $ensembl_id, $ensembl_type, $master_xref_id); 
-      $dependent_sth->bind_columns(\$xref_id, \$acc, \$label, \$version, \$desc, \$info, \$object_xref_id, \$ensembl_id, \$ensembl_type, \$master_xref_id);
-      my $last_xref = 0;
-      my $last_ensembl = 0;
-      while($dependent_sth->fetch){
-        if($last_xref != $xref_id){
-	  push @xref_list, $xref_id;
-	  $count++;
-	  $add_xref_sth->execute(($xref_id+$xref_offset), $ex_id, $acc, $label || $acc, $version, $desc, $type, $info || $where_from);
-	  $last_xref = $xref_id;
-        }
-	if($last_xref != $xref_id or $last_ensembl != $ensembl_id){
-	  $add_object_xref_sth->execute(($object_xref_id+$object_xref_offset), $ensembl_id, $ensembl_type, ($xref_id+$xref_offset), $analysis_ids{$ensembl_type});
-	  $add_dependent_xref_sth->execute(($object_xref_id+$object_xref_offset), ($master_xref_id+$xref_offset), ($xref_id+$xref_offset) );
-	}
-	$last_ensembl = $ensembl_id;
-      }  
-      print "DEP $count\n" if ($verbose);
-    }
+     else{
+       my $count = 0;
+       $dependent_sth->execute($source_id, $type);
+       my ($xref_id, $acc, $label, $version, $desc, $info, $object_xref_id, $ensembl_id, $ensembl_type, $master_xref_id); 
+       $dependent_sth->bind_columns(\$xref_id, \$acc, \$label, \$version, \$desc, \$info, \$object_xref_id, \$ensembl_id, \$ensembl_type, \$master_xref_id);
+       my $last_xref = 0;
+       my $last_ensembl = 0;
+       while($dependent_sth->fetch){
+	 if($last_xref != $xref_id){
+	   push @xref_list, $xref_id;
+	   $count++;
+	   $add_xref_sth->execute(($xref_id+$xref_offset), $ex_id, $acc, $label || $acc, $version, $desc, $type, $info || $where_from);
+	   $last_xref = $xref_id;
+	 }
+	 if($last_xref != $xref_id or $last_ensembl != $ensembl_id){
+	   $add_object_xref_sth->execute(($object_xref_id+$object_xref_offset), $ensembl_id, $ensembl_type, ($xref_id+$xref_offset), $analysis_ids{$ensembl_type});
+	   $add_dependent_xref_sth->execute(($object_xref_id+$object_xref_offset), ($master_xref_id+$xref_offset), ($xref_id+$xref_offset) );
+	 }
+	 $last_ensembl = $ensembl_id;
+       }  
+       print "DEP $count\n" if ($verbose);
+     }
    }
    ### If SEQUENCE_MATCH   xref, object_xref,  identity_xref   (order by xref_id)  # maybe linked to more than one?
 
