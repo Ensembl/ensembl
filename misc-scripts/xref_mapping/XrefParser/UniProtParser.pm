@@ -498,7 +498,7 @@ sub create_xrefs {
 
 	  if($source =~ /MGI/){
 	    $extra[0] =~ s/[.]$//;
-            if($extra[0] =~ /ENSMUSG/){
+            if($extra[0] =~ /ENSMUSG/ or $extra[0] =~ /OTTMUSG/ ){
                next;  # no extra info gained and it could now link to different MGI
             }
 	    $dep{LABEL} = $extra[0];
