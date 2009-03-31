@@ -336,6 +336,10 @@ sub official_naming {
     $sth_stat->finish;    
     return;
   }
+  if($dbname eq "MGI"){ # first Copy MGI to Genes
+    $self->biomart_fix("MGI","Translation","Gene");
+    $self->biomart_fix("MGI","Transcript","Gene");
+  } 
   print "Official naming started. Copy $dbname from gene to canonical transcript\n" if($self->verbose);
   my ($max_object_xref_id, $max_xref_id);
 
@@ -831,11 +835,18 @@ FSQL
       my $tran_name_ext = 201;
       foreach my $tran (sort keys %no_vega){
 	my $id = $name."-".$tran_name_ext;
+	while(defined($xref_added{$id.":".$odn_automatic_tran_id})){
+	  $tran_name_ext++;
+	  $id = $name."-".$tran_name_ext;
+	}
 	if(!defined($xref_added{$id.":".$odn_automatic_tran_id})){
 	  $max_xref_id++;
 	  $ins_xref_sth->execute($max_xref_id, $odn_automatic_tran_id, $id, $id);
 	  $xref_added{$id.":".$odn_automatic_tran_id} = $max_xref_id;
-	}	
+	}
+	else{
+	  print "ERROR: should not get here $id already defined?\n";
+	}
 	$max_object_xref_id++;
 	$ins_object_xref_sth->execute($max_object_xref_id, $no_vega{$tran}, 'Transcript', $xref_added{$id.":".$odn_automatic_tran_id});
 	$ins_dep_ix_sth->execute($max_object_xref_id, 100, 100);
