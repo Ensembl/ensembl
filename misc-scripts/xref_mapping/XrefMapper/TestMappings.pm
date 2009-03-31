@@ -388,7 +388,7 @@ sub name_change_check{
   $sth->execute();
   my ($syn);
   $sth->bind_columns(\$name,\$syn);
-  my $count = 0;
+  $count = 0;
   while($sth->fetch()){
     $alias{$syn} = $name;
   }
