@@ -26,6 +26,7 @@ sub new {
   $self->core($mapper->core);
   $self->xref($mapper->xref);
   $self->mapper($mapper);
+  $self->verbose($mapper->verbose);
   return $self;
 }
 
@@ -99,14 +100,14 @@ sub build_transcript_and_gene_display_xrefs {
   my ($presedence, $ignore) = @{$self->transcript_display_xref_sources()};
   my $i=0;
   my %level;
-#  print "precedense in reverse order:-\n";
+  print "precedense in reverse order:-\n" if($self->verbose);
   foreach my $name (reverse (@$presedence)){
     $i++;
     if(!defined($external_name_to_id{$name})){
       print STDERR "unknown external database name *$name* being used\n";
     }
     $level{$external_name_to_id{$name}} = $i;
-#    print "\t".$name."\t$i\n";
+    print "\t".$name."\t$i\n" if($self->verbose);
   }
 
   $self->build_genes_to_transcripts();
@@ -816,6 +817,131 @@ sub build_meta_timestamp{
   $sth->finish;
 
   return;
+}
+
+
+
+sub pump_up_the_jam{
+  my $self = shift;
+
+my $sql =(<<SQL); 
+  CREATE TABLE display_xref_prioritys(
+    source_id INT NOT NULL,
+    priority       INT NOT NULL,
+    PRIMARY KEY (source_id)
+  ) COLLATE=latin1_swedish_ci TYPE=InnoDB
+SQL
+
+  my $sth = $self->xref->dbc->prepare($sql);
+  $sth->execute;
+  $sth->finish;
+
+  my ($presedence, $ignore) = @{$self->transcript_display_xref_sources()};
+  my $i=0;
+  
+  my $ins_p_sth = $self->xref->dbc->prepare("INSERT into display_xref_prioritys (source_id, priority) values(?, ?)");
+  my $get_source_id_sth = $self->xref->dbc->prepare("select source_id from source where name like ?");
+
+#
+# So the higher the number the better then 
+#
+
+
+  foreach my $name (reverse (@$presedence)){
+    $i++;
+    $get_source_id_sth->execute($name);
+    my $source_id;
+    $get_source_id_sth->bind_columns(\$source_id);
+    while($get_source_id_sth->fetch){
+      $ins_p_sth->execute($source_id, $i);
+    }	
+  }
+  $ins_p_sth->finish;
+  $get_source_id_sth->finish;
+
+#my $display_xref_sql =(<<DXS);
+#  SELECT (if(gtt1.gene_id,gtt1.gene_id,0)+if(gtt2.gene_id,gtt2.gene_id,0)+if(gtt3.gene_id,gtt3.gene_id,0)) as gene,(if(gtt1.transcript_id,gtt1.transcript_id,0)+if(gtt2.transcript_id,gtt2.transcript_id,0)+if(gtt3.transcript_id,gtt3.transcript_id,0)) ,  p.priority, x.xref_id, ox.ensembl_object_type, x.label  
+#    FROM (source s, xref x, identity_xref ix, display_xref_prioritys p, object_xref ox)
+#     LEFT JOIN gene_transcript_translation gtt1 on (gtt1.gene_id = ox.ensembl_id and ox.ensembl_object_type = "Gene")
+#     LEFT JOIN gene_transcript_translation gtt2 on (gtt2.transcript_id = ox.ensembl_id and ox.ensembl_object_type = "Transcript")
+#     LEFT JOIN gene_transcript_translation gtt3 on (gtt3.translation_id = ox.ensembl_id and ox.ensembl_object_type = "Translation")
+#     WHERE  x.source_id = s.source_id 
+#       AND x.xref_id = ox.xref_id 
+#       AND ox.ox_status = "DUMP_OUT"   
+#       AND ox.object_xref_id = ix.object_xref_id 
+#       AND p.source_id = s.source_id
+#  ORDER BY gene DESC, p.priority DESC, (ix.target_identity+ix.query_identity) DESC
+#DXS
+
+#######################################################################
+
+my $display_xref_sql =(<<DXS);
+  SELECT gtt.gene_id, gtt.transcript_id, p.priority, x.xref_id, ox.ensembl_object_type, x.label  
+    FROM source s, xref x, object_xref ox, identity_xref ix, gene_transcript_translation gtt, display_xref_prioritys p
+     WHERE  x.source_id = s.source_id 
+       AND x.xref_id = ox.xref_id 
+       AND ox.ox_status = "DUMP_OUT"   
+       AND (          (ox.ensembl_object_type = "Transcript" and gtt.transcript_id = ox.ensembl_id)       
+                 OR   (ox.ensembl_object_type = "Translation" and gtt.translation_id = ox.ensembl_id)
+                 OR   (ox.ensembl_object_type = "Gene" and gtt.gene_id = ox.ensembl_id)     
+           )
+       AND ox.object_xref_id = ix.object_xref_id 
+       AND p.source_id = s.source_id
+  ORDER BY gtt.gene_id DESC, p.priority DESC, (ix.target_identity+ix.query_identity) DESC
+DXS
+
+########################################################################
+
+  my %seen_transcript; # first time we see it is the best due to ordering :-)
+                         # so either write data to database or store
+
+  
+  my $gene_sth = $self->core->dbc->prepare("select x.display_label from gene g, xref x where g.display_xref_id = x.xref_id and g.gene_id = ?"); 
+  my $tran_sth = $self->core->dbc->prepare("select x.display_label from transcript t, xref x where t.display_xref_id = x.xref_id and t.transcript_id = ?"); 
+
+
+  my $last_gene = 0;
+
+  my $display_xref_sth = $self->xref->dbc->prepare($display_xref_sql);
+
+  $display_xref_sth->execute();
+  my ($gene_id, $transcript_id, $p, $xref_id, $type, $label);  # remove labvel after testig it is not needed
+  $display_xref_sth->bind_columns(\$gene_id, \$transcript_id, \$p, \$xref_id, \$type, \$label);
+  while($display_xref_sth->fetch()){
+#    print "$gene_id, $transcript_id, $p, $xref_id, $type, $label\n";
+#    if(defined($label) && $label =~ /\D+/){  # not just a number
+      if($gene_id != $last_gene){
+       $self->check($gene_id,$label, $gene_sth, "Gene");
+       $last_gene = $gene_id;
+      } 
+      if($type ne "Gene"){
+        if(!defined($seen_transcript{$transcript_id})){ # not seen yet so its the best
+	  $self->check($transcript_id, $label, $tran_sth, "Transcript");
+        }
+        $seen_transcript{$transcript_id} = $xref_id;
+      
+      }
+#    }
+  }
+  $display_xref_sth->finish;
+}
+
+
+sub check{
+  my $self  = shift;
+  my $id    = shift;
+  my $label = shift;
+  my $sth   = shift;
+  my $type  = shift;
+
+  $sth->execute($id);
+  my $old_label;
+  $sth->bind_columns(\$old_label);
+  $sth->fetch;
+
+  if($old_label ne $label){
+    print "ERROR: $type ($id) has different display_xrefs ???  old:$old_label   new:$label\n";
+  }
 }
 
 
