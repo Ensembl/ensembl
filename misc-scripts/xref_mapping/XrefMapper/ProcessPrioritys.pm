@@ -72,7 +72,7 @@ sub process {
   }
 
   my $update_ox_sth = $self->xref->dbc->prepare('update object_xref set ox_status = "FAILED_PRIORITY" where object_xref_id = ?');
-  my $update_x_sth = $self->xref->dbc->prepare('update xref set dumped = 0 where xref_id = ?');
+  my $update_x_sth = $self->xref->dbc->prepare('update xref set dumped = 100 where xref_id = ?');
 
   #
   # Change of tact here to make the sql easier...
