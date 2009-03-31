@@ -20,218 +20,178 @@ if (!defined(caller())) {
 
   run(@ARGV);
 }
-
 sub run_script {
-  my $self = shift if (defined(caller(1)));
 
-  my $file = shift;
-  my $source_id = shift;
-  my $species_id = shift;
-  my $verbose = shift;
+  my ($self, $file, $source_id, $species_id, $verbose) = @_;
 
   my ($type, $my_args) = split(/:/,$file);
-  
-  my $cuser = "ensro";
-  my $chost ="ens-staging";
-  my $cport = "3306";
-  my $cdbname = "";
-  my $cpass;
 
-  my $vuser = "ensro";
-  my $vhost ="ens-staging";
-  my $vport = "3306";
-  my $vdbname = "mus_musculus_vega_51_37d";
-  my $vpass;
+  my $user = "ensro";
+  my $host ="ens-staging";
+  my $port = "3306";
+  my $dbname = "";
+  my $pass;
 
-  if($my_args =~ /chost[=][>](\S+?)[,]/){
-    $chost = $1;
+  if($my_args =~ /host[=][>](\S+?)[,]/){
+    $host = $1;
   }
-  if($my_args =~ /cport[=][>](\S+?)[,]/){
-    $cport =  $1;
+  if($my_args =~ /port[=][>](\S+?)[,]/){
+    $port =  $1;
   }
-  if($my_args =~ /cdbname[=][>](\S+?)[,]/){
-    $cdbname = $1;
+  if($my_args =~ /dbname[=][>](\S+?)[,]/){
+    $dbname = $1;
   }
-  if($my_args =~ /cpass[=][>](\S+?)[,]/){
-    $cpass = $1;
+  if($my_args =~ /pass[=][>](\S+?)[,]/){
+    $pass = $1;
   }
 
-  if($my_args =~ /vhost[=][>](\S+?)[,]/){
-    $vhost = $1;
-  }
-  if($my_args =~ /vport[=][>](\S+?)[,]/){
-    $vport =  $1;
-  }
-  if($my_args =~ /vdbname[=][>](\S+?)[,]/){
-    $vdbname = $1;
-  }
-  if($my_args =~ /vpass[=][>](\S+?)[,]/){
-    $vpass = $1;
-  }
+  $source_id = XrefParser::BaseParser->get_source_id_for_source_name("MGI","vega");
 
 
-  my $xref_count = 0;
+  my $sql = 'select tsi.stable_id, x.display_label from xref x, object_xref ox , transcript_stable_id tsi, external_db e where e.external_db_id = x.external_db_id and x.xref_id = ox.xref_id and tsi.transcript_id = ox.ensembl_id and e.db_name like ?';
 
 
-  my $clone_source_id =
-    $self->get_source_id_for_source_name('Clone_based_vega_transcript');
-  my $curated_source_id =
-    $self->get_source_id_for_source_name('MGI_curated_transcript');
- 
-
-  #
-  # need to get label and derscriptions fro primary acc.
-  #
-
-  my %mgi_to_label;
-  my %mgi_to_desc;
-  my %mgi_syn;
-
-  my $sth = $self->dbi()->prepare("SELECT x.accession, x.label, x.description from xref x, source s where x.source_id = s.source_id and s.name like 'MGI' and s.priority_description like 'descriptions'");
-  
-  $sth->execute() or croak( $self->dbi()->errstr() );
-  while ( my @row = $sth->fetchrow_array() ) {
-    $mgi_to_label{$row[0]} = $row[1];
-    $mgi_to_desc{$row[0]} = $row[2];
-  }
-  $sth->finish;
-
-  #
-  # Also add synonyms
-  #
-
-  $sth = $self->dbi()->prepare("SELECT sy.synonym, x.accession from xref x, source s, synonym sy where sy.xref_id = x.xref_id and x.source_id = s.source_id and s.name like 'MGI' and s.priority_description like 'descriptions'");
-  
-  $sth->execute() or croak( $self->dbi()->errstr() );
-  while ( my @row = $sth->fetchrow_array() ) {
-    $mgi_syn{$row[0]} = $row[1]; 
-  }
-  $sth->finish;
+  my $hgnc_sql = 'select tsi.stable_id, x.dbprimary_acc from xref x, object_xref ox , transcript_stable_id tsi, gene g, external_db e, transcript t  where t.gene_id = g.gene_id and g.gene_id = ox.ensembl_id and tsi.transcript_id = t.transcript_id and e.external_db_id = x.external_db_id and x.xref_id = ox.xref_id and ox.ensembl_object_type = "Gene" and e.db_name like "MGI"';
 
 
-
-
-  my $core_sql = 'select tsi.stable_id, x.dbprimary_acc from transcript_stable_id tsi, transcript t, object_xref ox, xref x, external_db e where tsi.transcript_id = t.transcript_id and ox.ensembl_id = t.transcript_id and ox.ensembl_object_type = "Transcript" and ox.xref_id = x.xref_id and x.external_db_id = e.external_db_id and e.db_name like "%OTTT"';
-
-
+  my %ott_to_hgnc;
   my %ott_to_enst;
-  
-  my $dbi2 = $self->dbi2($chost, $cport, $cuser, $cdbname, $cpass);
+
+  my $dbi2 = $self->dbi2($host, $port, $user, $dbname, $pass);
   if(!defined($dbi2)){
     return 1;
   }
-  
-  
-  $sth = $dbi2->prepare($core_sql); 
-  $sth->execute() or croak( $dbi2->errstr() );
-  while ( my @row = $sth->fetchrow_array() ) {
-    $ott_to_enst{$row[1]} = $row[0];
-  }
-  $sth->finish;
-  
 
-  #
-  # get the enst->ensg mappings.
-  #
-  my %enst_to_ensg;
-  $sth = $dbi2->prepare("select gsi.stable_id, tsi.stable_id from transcript t, gene_stable_id gsi, transcript_stable_id tsi where tsi.transcript_id = t.transcript_id and t.gene_id = gsi.gene_id"); 
-  $sth->execute() or croak( $dbi2->errstr() );
+
+  my $sth = $dbi2->prepare($sql);   # funny number instead of stable id ?????
+  $sth->execute("ENST_CDS") or croak( $dbi2->errstr() );
   while ( my @row = $sth->fetchrow_array() ) {
-    $enst_to_ensg{$row[1]} = $row[0];
+    $ott_to_enst{$row[0]} = $row[1];
   }
   $sth->finish;
 
+  $sth = $dbi2->prepare($sql);
+  $sth->execute("ENST_ident") or croak( $dbi2->errstr() );
+  while ( my @row = $sth->fetchrow_array() ) {
+    $ott_to_enst{$row[0]} = $row[1];
+  }
+  $sth->finish;
+  print "We have ".scalar(%ott_to_enst)." ott to enst entries\n " if($verbose);
 
-  #
-  # Get the ott -> mgi mappings
-  #
+  $sth = $dbi2->prepare($hgnc_sql);
+  $sth->execute() or croak( $dbi2->errstr() );
+
+  while ( my @row = $sth->fetchrow_array() ) {
+    $ott_to_hgnc{$row[0]} = $row[1];
+  }
+  $sth->finish;
+  print "We have ".scalar(%ott_to_hgnc)." ott to mgi entries\n" if($verbose);
 
 
-  my $vega_sql = (<<VSQL);
-  SELECT DISTINCT(tsi.stable_id) , x.dbprimary_acc, x.display_label    
-    FROM        transcript_stable_id tsi      
-     INNER JOIN transcript t              ON tsi.transcript_id = t.transcript_id      
-     INNER JOIN gene g                    ON g.gene_id = t.gene_id      
-     INNER JOIN object_xref ox            ON ox.ensembl_id = g.gene_id      
-     INNER JOIN xref x                    ON x.xref_id = ox.xref_id      
-     INNER JOIN external_db e             ON e.external_db_id = x.external_db_id      
-     WHERE ox.ensembl_object_type = "Gene"         
-       AND e.db_name like "MGI"
-VSQL
+  my $line_count = 0;
+  my $xref_count = 0;
 
-  my $dbi3 = $self->dbi2($vhost, $vport, $vuser, $vdbname, $vpass);
-  if(!defined($dbi3)){
-    return 1;
+  # becouse the direct mapping have no descriptions etc
+  # we have to steal these fromt he previous HGNC parser.
+  # This is why the order states this is after the other one.
+  # maybe 1091,1092 is not right maybe should use name = HGNC and priority = 30r4 ??
+
+  my %label;
+  my %version;
+  my %description;
+
+  my $dbi = $self->dbi();  
+
+
+  my $sql = "insert into synonym (xref_id, synonym) values (?, ?)";
+  my $add_syn_sth = $dbi->prepare($sql);    
+  
+  my $syn_hash = $self->get_hgnc_synonyms();
+  
+
+
+  #get the source ids for HGNC refseq, entrezgene and unitprot
+  $sql = 'select source_id, priority_description from source where name like "MGI"';
+  $sth = $dbi->prepare($sql);
+  
+  $sth->execute();
+
+
+  my ($hgnc_source_id, $desc);
+  $sth->bind_columns(\$hgnc_source_id, \$desc);
+  my @arr;
+  while($sth->fetch()){
+    push @arr, $hgnc_source_id;
+  }
+  $sth->finish;
+  
+  $sql = "select accession, label, version,  description from xref where source_id in (".join(", ",@arr).")";
+#  print "$sql\n";;
+  $sth = $dbi->prepare($sql);
+  $sth->execute();
+  my ($acc, $lab, $ver);
+  my $hgnc_loaded_count = 0;
+  $sth->bind_columns(\$acc, \$lab, \$ver, \$desc);
+  while (my @row = $sth->fetchrow_array()) {
+    $label{$acc} = $lab;
+    $version{$acc} = $ver;
+    $description{$acc} = $desc;
+    $hgnc_loaded_count++;
+  }
+  $sth->finish;
+  if($hgnc_loaded_count == 0){
+    die "No point continuing no hgncs there\n";
   }
 
 
-  my %seen;
-  $sth = $dbi3->prepare($vega_sql); 
-  $sth->execute() or croak( $dbi3->errstr() );
-  while ( my @row = $sth->fetchrow_array() ) {
-    # [0] OTTMUST...,   [1] MGI:123456 [2]  Asx15 etc 
-    my $desc= "";
-    my $prim_acc = $row[1];
-    if(defined($ott_to_enst{$row[0]})){
-      my $tran_stable_id = $ott_to_enst{$row[0]};
-      my $name = $prim_acc;
-      my $desc = "";
-      my $label = "";
-      if(defined($mgi_to_desc{$name})){
-	$desc = $mgi_to_desc{$name};
-	$label  = $mgi_to_label{$name};
-      }	
-      elsif( defined( $mgi_syn{$row[2]} ) and defined( $mgi_to_desc{$mgi_syn{$row[2]}})){ # synonym
-        $prim_acc = $mgi_syn{$row[2]};
-	$desc = $mgi_to_desc{$prim_acc};
-        $label = $mgi_to_label{$name};
+  my $ignore_count = 0;
+  my $ignore_examples ="";
+  my %acc;
+
+  foreach my $key ( keys %ott_to_hgnc){
+    if(defined($ott_to_enst{$key} )){
+      
+      my $hgnc = $ott_to_hgnc{$key};
+#      $hgnc =~ s/HGNC://;
+      my $stable_id = $ott_to_enst{$key};
+
+      if(!defined($label{$hgnc})){
+	$ignore_count++;
+	if($ignore_count < 10){
+	  $ignore_examples .= " ".$hgnc;
+	}
+	next;
       }
-      else{
-	print "VEGA: $name [".$row[2]."} has no description\n" if($verbose);
-      }
-      my $xref_id = $self->add_xref($prim_acc, "" , $label , $desc, $source_id, $species_id, "DIRECT");
-      my $ensg = $enst_to_ensg{$tran_stable_id};
-      if(!defined($seen{$xref_id.$ensg})){
+      if(!defined($acc{$hgnc})){
+	$acc{$hgnc} = 1;
+	my $version ="";
+	$line_count++;
+	
+	my $xref_id = $self->add_xref($hgnc, $version{$hgnc} , $label{$hgnc}||$hgnc , $description{$hgnc}, $source_id, $species_id, "DIRECT");
 	$xref_count++;
-	$self->add_direct_xref($xref_id, $ensg , "Gene", "");
-	$seen{$xref_id.$ensg} = 1;
-      }	
+	
+	
+	$self->add_direct_xref($xref_id, $stable_id, "transcript", "");
+
+	if(defined($syn_hash->{$hgnc})){
+	  foreach my $syn (@{$syn_hash->{$hgnc}}){
+	    $add_syn_sth->execute($xref_id, $syn);
+	  }
+	}
+
+      }
     }
   }
-
-  print "$xref_count direct xrefs succesfully parsed\n" if($verbose);
- 
-
-# Done in the mapper
-#  #
-#  # Finally addd the synonyms
-#  #
-
-#  my $synonym_sql = (<<SYNO);
-#SELECT x2.xref_id, s.synonym
-#  FROM synonym s
-#    INNER JOIN xref x1 ON  x1.xref_id = s.xref_id
-#    INNER JOIN xref x2 ON  x2.accession = x1.accession 
-#    INNER JOIN source s1 ON s1.source_id = x1.source_id
-#    INNER JOIN source s2 ON s2.source_id = x2.source_id    
-#      WHERE x2.xref_id != x1.xref_id
-#	AND s2.name = "MGI" 
-#	AND s2.priority_description = "vega" 
-#        AND s1.name = "MGI" 
-#        AND s1.priority_description = "descriptions"
-#SYNO
-
-#  $sth = $self->dbi()->prepare($synonym_sql);
+  $add_syn_sth->finish;
+  print "Parsed $line_count MGI identifiers from $file, added $xref_count xrefs and $line_count direct_xrefs\n" if($verbose);
+  if($ignore_count){
+    print $ignore_count." ignoreed due to numbers no identifiers being no longer valid :- $ignore_examples\n" if($verbose);
+  }
   
-#  $sth->execute() or croak( $self->dbi()->errstr() );
-#  while ( my @row = $sth->fetchrow_array() ) {
-#    $self->add_synonym($row[0], $row[1]);
-#  }
-#  $sth->finish;  
-
-
-return 0;
+  
+  return 0;
 }
+
 
 
 
