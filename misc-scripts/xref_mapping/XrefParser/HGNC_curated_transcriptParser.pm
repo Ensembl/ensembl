@@ -53,7 +53,7 @@ sub run_script {
     $user = $1;
   }
 
-  print "Using $host $dbname for Vega\n";
+  print "Using $host $dbname for Vega\n" if($verbose);
 
 
   my $clone_source_id =
@@ -112,7 +112,7 @@ sub run_script {
     }
   }
 
-  print "xref_count direct xrefs succesfully parsed\n" if($verbose);
+  print "$xref_count direct xrefs succesfully parsed\n" if($verbose);
   return 0;
 }
 
