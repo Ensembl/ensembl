@@ -433,13 +433,42 @@ ORDER BY closure.distance, parent_term.accession);
   return \@terms;
 } ## end sub fetch_all_by_child_term
 
+=head2 fetch_ancestor_chart
+
+  Arg [1]       : Bio::EnsEMBL::OntologyTerm
+                  The term whose ancestor terms should be fetched.
+
+  Description   : Given a child ontology term, returns a hash
+                  structure containing its ancestor terms, up to and
+                  including any root term.  In GO, relations of the
+                  type 'is_a' and 'part_of' are included, but not
+                  'regulates' etc.
+
+  Example       : my %chart =
+                    %{ $ot_adaptor->fetch_ancestor_chart($term) };
+
+  Return type   : A reference to a hash structure like this:
+
+    {
+      'GO:XXXXXXX' => {
+        'term' =>           # ref to Bio::EnsEMBL::OntologyTerm object
+        'is_a'    => [...], # listref of Bio::EnsEMBL::OntologyTerm
+        'part_of' => [...], # listref of Bio::EnsEMBL::OntologyTerm
+      },
+      'GO:YYYYYYY' => {
+        # Similarly for all ancestors,
+        # and including the query term itself.
+      }
+    }
+
+=cut
 
 sub fetch_ancestor_chart {
   my ( $this, $term ) = @_;
 
   my $statement = q(
-SELECT  subparent_term.accession,
-        parent_term.accession,
+SELECT  subparent_term.term_id,
+        parent_term.term_id,
         relation_type.name
 FROM    closure,
         relation,
@@ -462,15 +491,39 @@ ORDER BY closure.distance);
   my ( $subparent_id, $parent_id, $relation );
   $sth->bind_columns( \( $subparent_id, $parent_id, $relation ) );
 
-  my %chart;
+  my %id_chart;
+  my %acc_chart;
+
   while ( $sth->fetch() ) {
-    if ( !exists( $chart{$parent_id} ) ) {
-      $chart{$parent_id} = {};
+    if ( !exists( $id_chart{$parent_id} ) ) {
+      $id_chart{$parent_id} = {};
     }
-    push( @{ $chart{$subparent_id}{$relation} }, $parent_id );
+    push( @{ $id_chart{$subparent_id}{$relation} }, $parent_id );
   }
 
-  return \%chart;
+  my @terms = @{ $this->fetch_by_dbID_list( [ keys(%id_chart) ] ) };
+
+  foreach my $term (@terms) {
+    $id_chart{ $term->dbID() }{'term'}       = $term;
+    $acc_chart{ $term->accession() }{'term'} = $term;
+  }
+
+  foreach my $term (@terms) {
+    my $accession = $term->accession();
+    my $dbID      = $term->dbID();
+
+    foreach my $relation ( keys( %{ $id_chart{$dbID} } ) ) {
+      if ( $relation eq 'term' ) { next }
+
+      foreach my $id ( @{ $id_chart{$dbID}{$relation} } ) {
+        push(
+          @{ $acc_chart{$accession}{$relation} },
+          $id_chart{$id}{'term'} );
+      }
+    }
+  }
+
+  return \%acc_chart;
 } ## end sub fetch_ancestor_chart
 
 #-----------------------------------------------------------------------
