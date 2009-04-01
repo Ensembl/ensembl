@@ -389,7 +389,7 @@ sub store_search_multi{
     $sth->execute( $frozen, $ticket ) || $self->throw( $sth->errstr );
     $sth->finish;
   }
-  my $sth = $self->prepare('show tables'); $sth->execute(); $sth->finish;
+  $sth = $self->prepare('show tables'); $sth->execute(); $sth->finish;
   return $search_multi->token();
 }
 
@@ -1137,4 +1137,37 @@ sub rotate_daily_tables {
 }
 
 #----------------------------------------------------------------------
+
+=head2 cleanup_processes
+
+  Arg [1]   : none
+  Function  : Kills any sleeping processes older that 1000
+  Returntype: boolean
+  Exceptions: 
+  Caller    : 
+  Example   : 
+
+=cut
+
+sub cleanup_processes {
+  my $self = shift;
+  my $dbh = $self->dbc->db_handle;
+  my $sth = $self->prepare( 'show processlist' );
+  my $kill_sth = $self->prepare('kill ?');
+  $sth->execute;
+  my $res = $sth->fetchall_arrayref([0,3,4,5]);
+  my $c = 0;
+  foreach my $ps (@$res) {
+    my ($pid,$db,$stat,$time) = @$ps;
+    if ($db eq 'ensembl_blast') {
+      if ( ($stat eq 'Sleep') && ($time > 1000) ) {
+	$kill_sth->execute($pid);
+	$c++;
+      }
+    }
+  }
+  warn "Killed $c processes";
+  return 1;
+}
+
 1;
