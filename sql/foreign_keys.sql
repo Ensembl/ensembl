@@ -58,7 +58,7 @@ ALTER table gene_stable_id ADD FOREIGN KEY (gene_id) REFERENCES gene(gene_id);
 ALTER table go_xref ADD FOREIGN KEY (object_xref_id) REFERENCES object_xref(object_xref_id);
 ALTER table go_xref ADD FOREIGN KEY (source_xref_id) REFERENCES xref(xref_id);
 
-ALTER table identity_xref ADD FOREIGN KEY (analysis_id) REFERENCES analysis(analysis_id);
+
 ALTER table identity_xref ADD FOREIGN KEY (object_xref_id) REFERENCES object_xref(object_xref_id);
 
 ALTER table karyotype ADD FOREIGN KEY (seq_region_id) REFERENCES seq_region(seq_region_id);
@@ -88,6 +88,7 @@ ALTER table misc_feature_misc_set ADD FOREIGN KEY (misc_feature_id) REFERENCES m
 ALTER table misc_feature_misc_set ADD FOREIGN KEY (misc_set_id) REFERENCES misc_set(misc_set_id);
 
 ALTER table object_xref ADD FOREIGN KEY (xref_id) REFERENCES xref(xref_id);
+ALTER table object_xref ADD FOREIGN KEY (analysis_id) REFERENCES analysis(analysis_id);
 
 ALTER table oligo_array ADD FOREIGN KEY (parent_array_id) REFERENCES oligo_array(oligo_array_id);
 
