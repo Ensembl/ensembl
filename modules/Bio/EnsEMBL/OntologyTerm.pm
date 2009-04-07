@@ -53,7 +53,7 @@ use base qw( Bio::EnsEMBL::Storable );
   Arg [-NAME]       : String
                       The name of the ontology term.
 
-  Arg [-DEFINITION] : String
+  Arg [-DEFINITION] : (optional) String
                       The definition of the ontology term.
 
   Arg               : Further arguments required for parent class
