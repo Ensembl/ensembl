@@ -78,15 +78,15 @@ use Data::Dumper;
 =cut
 
 sub new {
-    my $class = shift;
-    (my $serverroot = shift) or throw("You must supply a serverroot.");
-    my $self = {
-        '_serverroot'   => $serverroot,
-        '_param'        => { interactive => 1 },
-        '_warnings'     => 0,
-    };
-    bless ($self, $class);
-    return $self;
+  my $class = shift;
+  (my $serverroot = shift) or throw("You must supply a serverroot.");
+  my $self = {
+    '_serverroot'   => $serverroot,
+    '_param'        => { interactive => 1 },
+    '_warnings'     => 0,
+  };
+  bless ($self, $class);
+  return $self;
 }
 
 =head2 parse_common_options
@@ -105,61 +105,59 @@ sub new {
 =cut
 
 sub parse_common_options {
-    my $self = shift;
+  my $self = shift;
 
-    # read commandline options
-    my %h;
-    Getopt::Long::Configure("pass_through");
-    &GetOptions( \%h,
-        'dbname|db_name=s',
-        'host|dbhost|db_host=s',
-        'port|dbport|db_port=n',
-        'user|dbuser|db_user=s',
-        'pass|dbpass|db_pass=s',
-        'conffile|conf=s',
-        'logfile|log=s',
-        'logpath=s',
-        'logappend|log_append=s',
-        'verbose|v=s',
-        'interactive|i=s',
-        'dry_run|dry|n=s',
-        'help|h|?',
-    );
+  # read commandline options
+  my %h;
+  Getopt::Long::Configure("pass_through");
+  &GetOptions( \%h,
+	       'dbname|db_name=s',
+	       'host|dbhost|db_host=s',
+	       'port|dbport|db_port=n',
+	       'user|dbuser|db_user=s',
+	       'pass|dbpass|db_pass=s',
+	       'conffile|conf=s',
+	       'logfile|log=s',
+	       'logpath=s',
+	       'logappend|log_append=s',
+	       'verbose|v=s',
+	       'interactive|i=s',
+	       'dry_run|dry|n=s',
+	       'help|h|?',
+	     );
 
+  # reads config file
+  my $conffile = $h{'conffile'} || $self->serverroot . "/sanger-plugins/vega/conf/ini-files/Conversion.ini";
+  $conffile = abs_path($conffile);
+  if (-e $conffile) {
+    open(CONF, $conffile) or throw( 
+      "Unable to open configuration file $conffile for reading: $!");
+    my $serverroot = $self->serverroot;
+    while (<CONF>) {
+      chomp;
 
-    # reads config file
-    my $conffile = $h{'conffile'} || $self->serverroot . "/sanger-plugins/vega/conf/ini-files/Conversion.ini";
-    $conffile = abs_path($conffile);
-    if (-e $conffile) {
-        open(CONF, $conffile) or throw( 
-            "Unable to open configuration file $conffile for reading: $!");
-        my $serverroot = $self->serverroot;
-        while (<CONF>) {
-            chomp;
+      # remove comments
+      s/^[#;].*//;
+      s/\s+[;].*$//;
 
-            # remove comments
-            s/^[#;].*//;
-            s/\s+[;].*$//;
-
-            # read options into internal parameter datastructure, removing whitespace
-            next unless (/(\w\S*)\s*=\s*(\S*)\s*/);
-            my $name = $1;
-            my $val = $2;
-            if ($val =~ /\$SERVERROOT/) {
-                $val =~ s/\$SERVERROOT/$serverroot/g;
-                $val = abs_path($val);
-            }
-            $self->param($name, $val);
-        }
-        $self->param('conffile', $conffile);
-    } elsif ($conffile) {
-        warning("Unable to open configuration file $conffile for reading: $!");
+      # read options into internal parameter datastructure, removing whitespace
+      next unless (/(\w\S*)\s*=\s*(\S*)\s*/);
+      my $name = $1;
+      my $val = $2;
+      if ($val =~ /\$SERVERROOT/) {
+	$val =~ s/\$SERVERROOT/$serverroot/g;
+	$val = abs_path($val);
+      }
+      $self->param($name, $val);
     }
+    $self->param('conffile', $conffile);
+  } elsif ($conffile) {
+    warning("Unable to open configuration file $conffile for reading: $!");
+  }
 
-    
-    # override configured parameter with commandline options
-    map { $self->param($_, $h{$_}) } keys %h;
-    return(1);
+  # override configured parameter with commandline options
+  map { $self->param($_, $h{$_}) } keys %h;
+  return(1);
 }
 
 =head2 parse_extra_options
@@ -175,15 +173,15 @@ sub parse_common_options {
 =cut
 
 sub parse_extra_options {
-    my ($self, @params) = @_;
-    Getopt::Long::Configure("no_pass_through");
-    eval {
-        # catch warnings to pass to $self->error
-        local $SIG{__WARN__} = sub { die @_; };
-        &GetOptions(\%{ $self->{'_param'} }, @params);
-    };
-    $self->error($@) if $@;
-    return(1);
+  my ($self, @params) = @_;
+  Getopt::Long::Configure("no_pass_through");
+  eval {
+    # catch warnings to pass to $self->error
+    local $SIG{__WARN__} = sub { die @_; };
+    &GetOptions(\%{ $self->{'_param'} }, @params);
+  };
+  $self->error($@) if $@;
+  return(1);
 }
 
 =head2 allowed_params
@@ -201,19 +199,19 @@ sub parse_extra_options {
 =cut
 
 sub allowed_params {
-    my $self = shift;
+  my $self = shift;
 
-    # setter
-    if (@_) {
-        @{ $self->{'_allowed_params'} } = @_;
-    }
+  # setter
+  if (@_) {
+    @{ $self->{'_allowed_params'} } = @_;
+  }
 
-    # getter
-    if (ref($self->{'_allowed_params'}) eq 'ARRAY') {
-        return @{ $self->{'_allowed_params'} };
-    } else {
-        return ();
-    }
+  # getter
+  if (ref($self->{'_allowed_params'}) eq 'ARRAY') {
+    return @{ $self->{'_allowed_params'} };
+  } else {
+    return ();
+  }
 }
 
 =head2 get_common_params
@@ -229,20 +227,20 @@ sub allowed_params {
 =cut
 
 sub get_common_params {
-    return qw(
-        conffile
-        dbname
-        host
-        port
-        user
-        pass
-        logpath
-        logfile
-        logappend
-        verbose
-        interactive
-        dry_run
-    );
+  return qw(
+	    conffile
+	    dbname
+	    host
+	    port
+	    user
+	    pass
+	    logpath
+	    logfile
+	    logappend
+	    verbose
+	    interactive
+	    dry_run
+	  );
 }
 
 =head2 get_loutre_params
@@ -256,13 +254,13 @@ sub get_common_params {
 =cut
 
 sub get_loutre_params {
-	return qw(
-			  loutrehost
-			  loutreport
-			  loutreuser
-			  loutrepass
-			  loutredbname
-		  );
+  return qw(
+	    loutrehost
+	    loutreport
+	    loutreuser
+	    loutrepass
+	    loutredbname
+	  );
 }
 
 =head2 remove_vega_params
@@ -277,10 +275,10 @@ sub get_loutre_params {
 =cut
 
 sub remove_vega_params {
-	my $self = shift;
-	foreach my $param (qw(dbname host port user pass)) {
-		$self->{'_param'}{$param} = undef;
-	}
+  my $self = shift;
+  foreach my $param (qw(dbname host port user pass)) {
+    $self->{'_param'}{$param} = undef;
+  }
 }
 
 =head2 confirm_params
@@ -296,21 +294,21 @@ sub remove_vega_params {
 =cut
 
 sub confirm_params {
-    my $self = shift;
+  my $self = shift;
 
-    # print parameter table
-    print "Running script with these parameters:\n\n";
-    print $self->list_all_params;
+  # print parameter table
+  print "Running script with these parameters:\n\n";
+  print $self->list_all_params;
 
-	if ($self->param('host') eq 'web-4-11') {
-		# ask user if he wants to proceed
-		exit unless $self->user_proceed("**************\n\n You're working on web-4-11! Is that correct and you want to continue ?\n\n**************");
-	}
-	else {
-		# ask user if he wants to proceed
-		exit unless $self->user_proceed("Continue?");
-    }
-    return(1);
+  if ($self->param('host') eq 'web-4-11') {
+    # ask user if he wants to proceed
+    exit unless $self->user_proceed("**************\n\n You're working on web-4-11! Is that correct and you want to continue ?\n\n**************");
+  }
+  else {
+    # ask user if he wants to proceed
+    exit unless $self->user_proceed("Continue?");
+  }
+  return(1);
 }
 
 =head2 list_all_params
@@ -324,12 +322,12 @@ sub confirm_params {
 =cut
 
 sub list_all_params {
-    my $self = shift;
-    my $txt = sprintf "    %-21s%-40s\n", qw(PARAMETER VALUE);
-    $txt .= "    " . "-"x71 . "\n";
-    $Text::Wrap::colums = 72;
-    my @params = $self->allowed_params;
-    foreach my $key (@params) {
+  my $self = shift;
+  my $txt = sprintf "    %-21s%-40s\n", qw(PARAMETER VALUE);
+  $txt .= "    " . "-"x71 . "\n";
+  $Text::Wrap::colums = 72;
+  my @params = $self->allowed_params;
+  foreach my $key (@params) {
         my @vals = $self->param($key);
         if (@vals) {
             $txt .= Text::Wrap::wrap( sprintf('   %-21s', $key),
