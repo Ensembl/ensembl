@@ -32,16 +32,14 @@
     -dbname      For RDBs, what name to connect to (dbname= in locator)
     -dbuser      For RDBs, what username to connect as (dbuser= in locator)
     -dbpass      For RDBs, what password to use (dbpass= in locator)
-    -file        Path to file containing descriptions. The file 
-                 analysis.descriptions in this directory can be used and is 
-                 an example of the format. Multiple -file args can be specified
+    -file        Path to file containing descriptions.
     -noupdate    Do not perform actual updates of analyses
     -help print out documentation
 
 =head1 EXAMPLES
 
  perl update_misc_set_descripitons.pl -dbhost my_host -dbuser user -dbpass ***** 
- -dbname my_db -file misc_set.descriptions  -update
+ -dbname my_db -file misc_set.descriptions
 
 =cut
 
@@ -137,7 +135,6 @@ foreach my $file( @files ){
         my $misc_set = $hash{lc($name)};
         
         $misc_set->description($description);
-#	print Dumper  $analysis->web_data();
 
         unless ( $noupdate ) { 
           $msa->update($misc_set) ; 

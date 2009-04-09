@@ -1,4 +1,4 @@
-name	description
+#name	description
 Encode regions	Regions that were examined in the <a rel="external" href="http://www.genome.gov/10005107">Encode</a> pilot project.
 NT contigs	The largest contigs constructed by <a rel="external" href="http://www.ncbi.nlm.nih.gov/">NCBI</a> for this genomic assembly.
 Tilepath	BAC clones upon which the current genomic assembly was based.  Colours indicate a finished sequence (gold clones), phase 1 sequencing (dark pink), phase 0 (light pink) or other (grey).  Clones that have been fluorescence in situ hybridisation (FISH) mapped are marked with a black triangle in the top left corner.  If a clone is shown in outline, the mapping to the genome is problematic and the true length may not be displayed. 
