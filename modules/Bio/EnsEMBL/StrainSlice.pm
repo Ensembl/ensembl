@@ -730,19 +730,14 @@ sub get_all_VariationFeatures {
 
   Arg  [1]   : int $position
                relative to start of slice, which is 1.
-  Description: This Slice is made of several Bio::EnsEMBL::Slices mapped
-               on it with gaps inside and regions with no matching
-               sequence. This method returns the original seq_region_position
-               in the original Slice of the requested position in AlignSlice
-               coordinates
-  Example    : my ($strainSlice, $seq_region_position) = $as_slice->
-                   get_original_seq_region_position(100);
+  Description: Placeholder method - this method has no explicit use beyond
+			   providiing compatibility with AlignSlice. To map positions
+			   between the StrainSlice and the reference slice, use the
+			   mapper and its methods.
   Returntype : ($strainSlice, $seq_region_position), an array where the first
                element is a Bio::EnsEMBL::StrainSlice and the second one is the
                requested seq_region_position.
-  Exceptions : if the position corresponds to a gap, the slice will be a fake GAP
-               slice and the position will be the requested one (in AlignSlice
-               coordinates)
+  Exceptions : none
   Caller     : general
 
 =cut
