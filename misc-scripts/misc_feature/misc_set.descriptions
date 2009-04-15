@@ -1,0 +1,7 @@
+#name	description
+Encode regions	Regions that were examined in the <a rel="external" href="http://www.genome.gov/10005107">Encode</a> pilot project.
+NT contigs	The largest contigs constructed by <a rel="external" href="http://www.ncbi.nlm.nih.gov/">NCBI</a> for this genomic assembly.
+Tilepath	BAC clones upon which the current genomic assembly was based.  Colours indicate a finished sequence (gold clones), phase 1 sequencing (dark pink), phase 0 (light pink) or other (grey).  Clones that have been fluorescence in situ hybridisation (FISH) mapped are marked with a black triangle in the top left corner.  If a clone is shown in outline, the mapping to the genome is problematic and the true length may not be displayed. 
+1Mb clone set	Clones were selected at approximately 1MB intervals in the genome to help identify breakpoints of chromosomal rearrangements.  Fluorescence in situ hybridisation (FISH) mapped clones are marked by a black triangle in the upper left corner.  Gold clones are also in the tilepath.
+32k clone set	Clones were re-arrayed by and available at <a rel="external" href="http://bacpac.chori.org/pHumanMinSet.htm">CHORI</a>. Fluorescence in situ hybridisation (FISH) mapped clones are marked by a black triangle in the upper left corner.  Gold clones are also in the tilepath.
+30k clone set	Clone positions were determined by a Wellcome Trust Sanger Institute  <a rel="external" href="https://decipher.sanger.ac.uk/perl/application?action=arraytypes;array_id=20">internal project</a>.
