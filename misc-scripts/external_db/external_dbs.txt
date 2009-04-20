@@ -284,6 +284,7 @@
 12560	MGI_curated_transcript	1	KNOWNXREF	1	0	5	MGI (curated)	MISC	\N	\N
 12565	MGI_automatic_transcript	1	KNOWNXREF	1	0	5	MGI (automatic)	MISC	\N	\N
 12600	WikiGene	1	XREF	0	1	50	WikiGene	MISC	\N	\N
+12601	Tgut_symbol	1	KNOWNXREF	0	0	100	Tgut symbol	PRIMARY_DB_SYNONYM	\N	\N
 #
 #
 # Please separate fields in this file with TABS not spaces!
