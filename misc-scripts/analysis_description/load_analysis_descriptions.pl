@@ -36,23 +36,33 @@
                  analysis.descriptions in this directory can be used and is 
                  an example of the format. Multiple -file args can be specified
     -noupdate    Do not perform actual updates of analyses
+    -pattern     check databases matching this PATTERN
+                 Note that this is a database pattern of the form %core_53_%
     -help print out documentation
 
 =head1 EXAMPLES
 
  perl load_analysis_descriptions.pl -dbhost my_host -dbuser user -dbpass ***** 
- -dbname my_db -file analysis.descriptions -file myanalysis.descriptions -update
+ -dbname my_db -file analysis.descriptions -file myanalysis.descriptions
+
+if you want to update all databases for a type
+
+perl load_analysis_descriptions.pl -dbhost my_host -dbuser user -dbpass ***** 
+ -pattern '%core_55_%' -file analysis.descriptions
 
 =cut
 
 use strict;
 use Data::Dumper;
 use Getopt::Long;
+use DBI;
 use Bio::EnsEMBL::Utils::Exception qw(warning throw);
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::EnsEMBL::Gene;
 
 $! = 1;
+
+my ($dsn,$dbh);
 
 my $dbhost = '';
 my $dbuser;
@@ -62,6 +72,7 @@ my $dbname = '';
 my @files = ();
 my $noupdate;
 my $help = 0;
+my $pattern;
 
 &GetOptions (
 	'host|dbhost=s'       => \$dbhost,
@@ -70,13 +81,18 @@ my $help = 0;
 	'pass|dbpass=s'       => \$dbpass,
 	'port|dbport=s'       => \$dbport,
 	'file|descriptions=s' => \@files,
-	'noupdate'              => \$noupdate,
+	'noupdate'            => \$noupdate,
+	'pattern=s'           => \$pattern,
 	'h|help!'             => \$help
              );
 
-if(!$dbhost || !$dbname){
-  print ("Need to pass in -dbhost $dbhost and -dbname $dbname\n");
-  $help = 1;
+if (!$dbhost){
+    print ("Need to pass a dbhost\n");
+    $help =1;
+}
+if (!$dbname and !$pattern){
+    print("Need to enter either a database name in -dbname or a pattern in -pattern\n");
+    $help = 1;
 }
 
 unless(@files){
@@ -88,96 +104,115 @@ unless(@files){
 }
 
 if($help){
-  useage();
+  usage();
 }
 
-my $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(
-                                            -host   => $dbhost,
-                                            -user   => $dbuser,
-                                            -dbname => $dbname,
-                                            -pass   => $dbpass,
-                                            -port   => $dbport
-                                            );
+#connect to database
+$dsn = "DBI:mysql:host=" . $dbhost . ";port=" . $dbport;
 
+eval{ 
+  $dbh = DBI->connect($dsn, $dbuser, $dbpass, 
+		      {'RaiseError' => 1,
+		       'PrintError' => 0});
+};
+
+# get all database names that match pattern
+my ($sth, $sql);
+my $sql_pattern = $pattern || $dbname;
+$sql = "SHOW DATABASES LIKE '". $sql_pattern ."'";
+$sth = $dbh->prepare($sql);
+$sth->execute;
+
+while (my ($dbname) = $sth->fetchrow_array){
+    print "Looking at ... $dbname\n";
+    my $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(
+						-host   => $dbhost,
+						-user   => $dbuser,
+						-dbname => $dbname,
+						-pass   => $dbpass,
+						-port   => $dbport
+						);
+    
 # Pre-fetch all analyses in the database
-my $aa = $db->get_AnalysisAdaptor();
-my $analyses = $aa->fetch_all();
-my (%hash,%reference);
-foreach my $analysis(@$analyses){
-  $hash{lc($analysis->logic_name())} = $analysis;
-}
-
+    my $aa = $db->get_AnalysisAdaptor();
+    my $analyses = $aa->fetch_all();
+    my (%hash,%reference);
+    foreach my $analysis(@$analyses){
+	$hash{lc($analysis->logic_name())} = $analysis;
+    }
+    
 # Parse the description files
-foreach my $file( @files ){
-  open(FH, $file) or throw("Failed to open $file $@");
-
- LINE: while(my $row = <FH>){
-    
-    chomp($row);
-    
-    next if ($row =~ /^\#/);   # skip comments
-    next if ($row =~ /^$/);    # and blank lines
-    next if ($row =~ /^\s+$/); # and whitespace-only lines
-    
-    my ($nr, $logic_name, $description, $display_label, $displayable, $web_data) = split(/\t/, $row);
-    #print join("\t", $logic_name, $description, $display_label, $displayable, $web_data), "\n";
-    
-    $reference{lc($logic_name)} = {
-      nr            => $nr,
-      description   => $description   || '',
-      display_label => $display_label || '',
-      displayable   => $displayable   || '', 
-      web_data      => $web_data      || '',
-    };
-    
-    $description =~ s/^\s+//;
-    $description =~ s/\s+$//;
-    
-    next if not $description;
-    
-    if (exists $hash{lc($logic_name)}) {
+    foreach my $file( @files ){
+	open(FH, $file) or throw("Failed to open $file $@");
 	
-        my $analysis = $hash{lc($logic_name)};
-        
-        $analysis->description($description);
-        $analysis->displayable($displayable);
-        $analysis->display_label($display_label);
-        $web_data ? $analysis->web_data($aa->get_dumped_data($web_data)) : $analysis->{_web_data} = undef;
+      LINE: while(my $row = <FH>){
+	  
+	  chomp($row);
+	  
+	  next if ($row =~ /^\#/);   # skip comments
+	  next if ($row =~ /^$/);    # and blank lines
+	  next if ($row =~ /^\s+$/); # and whitespace-only lines
+	  
+	  my ($nr, $logic_name, $description, $display_label, $displayable, $web_data) = split(/\t/, $row);
+	  #print join("\t", $logic_name, $description, $display_label, $displayable, $web_data), "\n";
+	  
+	  $reference{lc($logic_name)} = {
+	      nr            => $nr,
+	      description   => $description   || '',
+	      display_label => $display_label || '',
+	      displayable   => $displayable   || '', 
+	      web_data      => $web_data      || '',
+	  };
+	  
+	  $description =~ s/^\s+//;
+	  $description =~ s/\s+$//;
+	  
+	  next if not $description;
+	  
+	  if (exists $hash{lc($logic_name)}) {
+	      
+	      my $analysis = $hash{lc($logic_name)};
+	      
+	      $analysis->description($description);
+	      $analysis->displayable($displayable);
+	      $analysis->display_label($display_label);
+	      $web_data ? $analysis->web_data($aa->get_dumped_data($web_data)) : $analysis->{_web_data} = undef;
 #	print Dumper  $analysis->web_data();
-
-        unless ( $noupdate ) { 
-          $aa->update($analysis) ; 
-        }
-        
-        delete $hash{lc($logic_name)};
+	      
+	      unless ( $noupdate ) { 
+		  $aa->update($analysis) ; 
+	      }
+	      
+	      delete $hash{lc($logic_name)};
+	  }
       }
-  }
-  close(FH) or throw("Failed to close $file $@");
-}
-
-if ( scalar(keys %hash)==0) {
+	close(FH) or throw("Failed to close $file $@");
+    }
+    
+    if ( scalar(keys %hash)==0) {
 	unless  ($noupdate) {
-		print STDERR "\nAll analysis descriptions have been updated, every analysis has a description now\n";
+	    print STDERR "\nAll analysis descriptions have been updated, every analysis has a description now\n";
 	} else {
-		print STDERR "\nEvery analysis has a description in the file, all analysis descriptions can be updated.\n".
-                                "To write analysis descriptions to the analysis_description table in your DB,\n".
-                                "please run this script including the -update option on the commandline\n";
+	    print STDERR "\nEvery analysis has a description in the file, all analysis descriptions can be updated.\n".
+		"To write analysis descriptions to the analysis_description table in your DB,\n".
+		"please run this script including the -update option on the commandline\n";
 	}
-} else {
-    foreach my $ln (keys %hash) {
-        warning ("Analysis '$ln' doesn't exist in reference file(s) '"
-               . join( "','", @files )
-               . "'! It needs to be added first")
-			unless (exists $reference{$ln});
-        warning "[$dbname] No description was found for logic_name '$ln':\n".
-			"\tref:\t display_label='".$reference{$ln}{display_label}."'; displayable=".$reference{$ln}{displayable}."; nr=".$reference{$ln}{nr}."\n".
-			"\tdb: \t display_label='".$hash{$ln}->display_label."'; displayable=".$hash{$ln}->displayable."; dbID=".$hash{$ln}->dbID."\n";
-
+    } 
+    else {
+	foreach my $ln (keys %hash) {
+	    warning ("Analysis '$ln' doesn't exist in reference file(s) '"
+		     . join( "','", @files )
+		     . "'! It needs to be added first")
+		unless (exists $reference{$ln});
+	    warning "[$dbname] No description was found for logic_name '$ln':\n".
+		"\tref:\t display_label='".$reference{$ln}{display_label}."'; displayable=".$reference{$ln}{displayable}."; nr=".$reference{$ln}{nr}."\n".
+		"\tdb: \t display_label='".$hash{$ln}->display_label."'; displayable=".$hash{$ln}->displayable."; dbID=".$hash{$ln}->dbID."\n";
+	    
+	}
     }
 }
 
-
-sub useage{
+sub usage{
   exec('perldoc', $0);
   exit;
 }
