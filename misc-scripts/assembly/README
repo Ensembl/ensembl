@@ -163,7 +163,7 @@ the sequence of the projected fragments in the alternative database.
 Finally, once you are happy with the results, delete all temporary and backup
 tables no longer needed.
 
-  $ ensembl/misc-scripts/cleanup_tmp_tables.pl
+  $ ensembl/misc-scripts/assembly/cleanup_tmp_tables.sql
   
 
 -------------------------------------------------------------------------------
@@ -184,7 +184,7 @@ Scripts and main modules used
   ensembl/misc-scripts/assembly/mapping_stats.pl
   ensembl/misc-scripts/assembly/check_mapping.pl
 
-  ensembl/misc-scripts/cleanup_tmp_tables.pl
+  ensembl/misc-scripts/assembly/cleanup_tmp_tables.sql
 
 
 -------------------------------------------------------------------------------
