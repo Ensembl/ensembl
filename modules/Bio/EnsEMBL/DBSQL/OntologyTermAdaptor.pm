@@ -34,7 +34,7 @@ Bio::EnsEMBL::DBSQL::OntologyTermAdaptor
   my @parent_terms   = @{ $goa->fetch_by_child_term($term) };
   my @ancestor_terms = @{ $goa->fetch_all_by_child_term($term) };
 
-  my %ancestor_chart = %{ $goa->fetch_ancestor_chart($term) };
+  my %ancestor_chart = %{ $goa->_fetch_ancestor_chart($term) };
 
 =head1 DESCRIPTION
 
@@ -433,7 +433,7 @@ ORDER BY closure.distance, parent_term.accession);
   return \@terms;
 } ## end sub fetch_all_by_child_term
 
-=head2 fetch_ancestor_chart
+=head2 _fetch_ancestor_chart
 
   Arg [1]       : Bio::EnsEMBL::OntologyTerm
                   The term whose ancestor terms should be fetched.
@@ -445,7 +445,7 @@ ORDER BY closure.distance, parent_term.accession);
                   'regulates' etc.
 
   Example       : my %chart =
-                    %{ $ot_adaptor->fetch_ancestor_chart($term) };
+                    %{ $ot_adaptor->_fetch_ancestor_chart($term) };
 
   Return type   : A reference to a hash structure like this:
 
@@ -463,7 +463,7 @@ ORDER BY closure.distance, parent_term.accession);
 
 =cut
 
-sub fetch_ancestor_chart {
+sub _fetch_ancestor_chart {
   my ( $this, $term ) = @_;
 
   my $statement = q(
@@ -524,7 +524,7 @@ ORDER BY closure.distance);
   }
 
   return \%acc_chart;
-} ## end sub fetch_ancestor_chart
+} ## end sub _fetch_ancestor_chart
 
 #-----------------------------------------------------------------------
 # Useful public methods that implement functionality not properly
