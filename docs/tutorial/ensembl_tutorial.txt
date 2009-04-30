@@ -55,12 +55,12 @@ cvs -d :pserver:cvs@cvs.bioperl.org:/home/repository/bioperl \
 
 To obtain the Ensembl API code perform these CVS commands, substituting 24 with the appropriate branch number:
 
-cvs -d :pserver:cvsuser@cvsro.sanger.ac.uk:/cvsroot/CVSmaster \
+cvs -d :pserver:cvsuser@cvs.sanger.ac.uk:/cvsroot/ensembl \
   login
 
 when prompted, the password is 'CVSUSER'
 
-cvs -d :pserver:cvsuser@cvsro.sanger.ac.uk:/cvsroot/CVSmaster \
+cvs -d :pserver:cvsuser@cvs.sanger.ac.uk:/cvsroot/ensembl \
   checkout -r branch-ensembl-24 ensembl
 
 
