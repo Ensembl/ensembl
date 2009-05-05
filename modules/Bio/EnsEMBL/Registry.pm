@@ -1204,59 +1204,76 @@ sub load_registry_from_url {
 
 =head2 load_registry_from_db
 
-  Arg [HOST] : The domain name of the database host to connect to.
-               
+  Arg [HOST] : string
+                The domain name of the database host to connect to.
+
   Arg [USER] : string
-               The name of the database user to connect with
+                The name of the database user to connect with.
+
   Arg [PASS] : (optional) string
-               The password to be used to connect to the database
-  Arg [PORT] : int
-               The port to use when connecting to the database
-  Arg [VERBOSE]: (optional) Wether to print database messages 
-  Arg [DB_VERSION]: (optional) By default, only databases corresponding
-               to this API version are loaded. This allows the script to
-               use databases from another version although it might not
-               work properly. This option should only be used for
-               production or testing purposes and if you really know what
-               you are doing.
+                The password to be used to connect to the database.
+
+  Arg [PORT] : (optional) integer
+                The port to use when connecting to the database.
+
+  Arg [VERBOSE]: (optional) boolean
+                Whether to print database messages.
+
+  Arg [DB_VERSION]: (optional) integer
+                By default, only databases corresponding to this API
+                version are loaded. This allows the script to use
+                databases from another version although it might not
+                work properly.  This option should only be used for
+                production or testing purposes and if you really
+                know what you are doing.
+
   Arg [WAIT_TIMEOUT]: (optional) integer
-                 Time in seconds for the wait timeout to happen. Time after which
-                 the connection is deleted if not used. By default this is 28800 (8 hours)
-                 So set this to greater than this if your connection are getting deleted.
-                 Only set this if you are having problems and know what you are doing.
+                Time in seconds for the wait timeout to happen.
+                Time after which the connection is deleted if not
+                used.  By default this is 28800 (8 hours), so set
+                this to greater than this if your connection are
+                getting deleted.  Only set this if you are having
+                problems and know what you are doing.
+
    Arg [-NO_CACHE]: (optional) int 1
-                 This option will turn off caching for slice features, so, 
-                 every time a set of features is retrieved, they will come from
-                 the database instead of the cache. This option is only recommended
-                 for advanced users, specially if you need to store and retrieve
-                 features. It might reduce performance when querying the database if 
-                 not used properly. If in doubt, do not use it or ask in ensembl-dev       
+                This option will turn off caching for slice
+                features, so, every time a set of features is
+                retrieved, they will come from the database instead
+                of the cache.  This option is only recommended for
+                advanced users, specially if you need to store and
+                retrieve features.  It might reduce performance when
+                querying the database if not used properly.  If in
+                doubt, do not use it or ask in ensembl-dev.
 
-  Example : load_registry_from_db( -host => 'ensembldb.ensembl.org',
-				   -user => 'anonymous',
-				   -verbose => "1" );
+  Example : load_registry_from_db(
+              -host    => 'ensembldb.ensembl.org',
+              -user    => 'anonymous',
+              -verbose => '1'
+            );
 
-  Description: Will load the correct versions of the ensembl databases for the
-               software release it can find on a database instance into the 
-               registry. Also adds a set of standard aliases.
+  Description: Will load the correct versions of the ensembl
+               databases for the software release it can find on a
+               database instance into the registry.  Also adds a set
+               of standard aliases.
 
   Exceptions : None.
   Status     : Stable
- 
+
 =cut
 
 sub load_registry_from_db {
   my ( $self, @args ) = @_;
 
-  my ( $host, $port, $user, $pass, $verbose, $db_version,
-       $wait_timeout, $no_cache ) =
-    rearrange(
-             [qw(HOST PORT USER PASS VERBOSE DB_VERSION WAIT_TIMEOUT NO_CACHE)],
-             @args );
+  my ( $host, $port, $user, $pass, $verbose, $db_version, $wait_timeout,
+    $no_cache )
+    = rearrange( [
+      'HOST',    'PORT',       'USER',         'PASS',
+      'VERBOSE', 'DB_VERSION', 'WAIT_TIMEOUT', 'NO_CACHE'
+    ],
+    @args
+    );
 
-  my $go_version = 0;
-  my $compara_version =0;
-  my $ancestral_version =0;
+  my $go_version       = 0;
 
   $user ||= "ensro";
   if ( !defined($port) ) {
@@ -1273,7 +1290,7 @@ sub load_registry_from_db {
   my $dbh =
     DBI->connect( "DBI:mysql:host=$host;port=$port", $user, $pass );
 
-  my $res = $dbh->selectall_arrayref("show databases");
+  my $res = $dbh->selectall_arrayref('SHOW DATABASES');
   my @dbnames = map { $_->[0] } @$res;
 
   my %temp;
@@ -1293,26 +1310,28 @@ sub load_registry_from_db {
       if ( $3 eq $software_version ) {
         $temp{$1} = $2;
       }
-    } elsif (
-           $db =~ /^([a-z]+_[a-z]+_[a-z]+(?:_\d+)?)_(\d+)_(\d+[a-z]*)/ )
-    {
-      if ( $2 eq $software_version ) {
-        $temp{$1} = $2 . "_" . $3;
-      }
     } elsif ( $db =~ /^(.+)_(userdata)$/ ) {
       $temp{$1} = $2;
-    } elsif ( $db =~ /^ensembl_compara_(\d+)/ ) {
-      if ( $1 eq $software_version ) {
-        $compara_version = $1;
+    } elsif ( $db =~ /^(ensembl_compara(?:_\w+)*?)_(\d+)$/ ) {
+      if ( $2 eq $software_version ) {
+        $temp{$1} = $2;
       }
-    } elsif ( $db =~ /^ensembl_ancestral_(\d+)/ ) {
-      if ( $1 eq $software_version ) {
-        $ancestral_version = $1;
+    } elsif ( $db =~ /^(ensembl_ancestral(?:_\w+?)*?)_(\d+)$/ ) {
+      if ( $2 eq $software_version ) {
+        $temp{$1} = $2;
       }
     } elsif ( $db =~ /^ensembl_go_(\d+)/ ) {
       if ( $1 eq $software_version ) {
         $go_version = $1;
       }
+    } elsif (
+      $db =~ /^([a-z]+_[a-z]+_[a-z]+(?:_\d+)?)_(\d+)_(\w+)/ )
+    {
+      if ( $2 eq $software_version ) {
+        $temp{$1} = $2 . "_" . $3;
+      }
+    } else {
+      # warn( sprintf( "Skipping database '%s'\n", $db ) );
     }
   } ## end for my $db (@dbnames)
 
@@ -1395,11 +1414,11 @@ sub load_registry_from_db {
 
   # register cdna databases
 
-  my @cdna_dbs = grep { /^[a-z]+_[a-z]+_cdna_\d+_/ } @dbnames;
+  my @cdna_dbs = grep { /^[a-z]+_[a-z]+_cdna_(?:\d+_)?\d+_/ } @dbnames;
 
   for my $cdnadb (@cdna_dbs) {
     my ( $species, $num ) =
-      ( $cdnadb =~ /(^[a-z]+_[a-z]+)_cdna_(\d+)/ );
+      ( $cdnadb =~ /(^[a-z]+_[a-z]+)_cdna_(?:\d+_)?(\d+)_/ );
     my $dba =
       Bio::EnsEMBL::DBSQL::DBAdaptor->new(
                                          -group        => "cdna",
@@ -1445,11 +1464,11 @@ sub load_registry_from_db {
 
   # Otherfeatures
 
-  my @other_dbs = grep { /^[a-z]+_[a-z]+_otherfeatures_\d+_/ } @dbnames;
+  my @other_dbs = grep { /^[a-z]+_[a-z]+_otherfeatures_(?:\d+_)?\d+_/ } @dbnames;
 
   for my $other_db (@other_dbs) {
     my ( $species, $num ) =
-      ( $other_db =~ /(^[a-z]+_[a-z]+)_otherfeatures_(\d+)/ );
+      ( $other_db =~ /(^[a-z]+_[a-z]+)_otherfeatures_(?:\d+_)?(\d+)_/ );
     my $dba =
       Bio::EnsEMBL::DBSQL::DBAdaptor->new(
                                          -group   => "otherfeatures",
@@ -1505,11 +1524,11 @@ sub load_registry_from_db {
     }
   } else {
     my @variation_dbs =
-      grep { /^[a-z]+_[a-z]+_variation_\d+_/ } @dbnames;
+      grep { /^[a-z]+_[a-z]+_variation_(?:\d+_)?\d+_/ } @dbnames;
 
     for my $variation_db (@variation_dbs) {
       my ( $species, $num ) =
-        ( $variation_db =~ /(^[a-z]+_[a-z]+)_variation_(\d+)/ );
+        ( $variation_db =~ /(^[a-z]+_[a-z]+)_variation_(?:\d+_)?(\d+)_/ );
       my $dba =
         Bio::EnsEMBL::Variation::DBSQL::DBAdaptor->new(
                                          -group        => "variation",
@@ -1537,11 +1556,11 @@ sub load_registry_from_db {
       );
     }
   } else {
-    my @funcgen_dbs = grep { /^[a-z]+_[a-z]+_funcgen_\d+_/ } @dbnames;
+    my @funcgen_dbs = grep { /^[a-z]+_[a-z]+_funcgen_(?:\d+_)?\d+_/ } @dbnames;
 
     for my $funcgen_db (@funcgen_dbs) {
       my ( $species, $num ) =
-        ( $funcgen_db =~ /(^[a-z]+_[a-z]+)_funcgen_(\d+)/ );
+        ( $funcgen_db =~ /(^[a-z]+_[a-z]+)_funcgen_(?:\d+_)?(\d+)_/ );
       my $dba =
         Bio::EnsEMBL::Funcgen::DBSQL::DBAdaptor->new(
                                          -group        => "funcgen",
@@ -1562,60 +1581,87 @@ sub load_registry_from_db {
 
   # Compara
 
-  if ($compara_version) {
+  my @compara_dbs = grep { /^ensembl_compara/ } @dbnames;
+
+  if (@compara_dbs) {
     eval "require Bio::EnsEMBL::Compara::DBSQL::DBAdaptor";
     if ($@) {
       # Ignore Compara as code required not there for this
       if ($verbose) {
-        printf( "Bio::EnsEMBL::Compara::DBSQL::DBAdaptor "
-                  . "not found so compara database "
-                  . "ensembl_compara_%d will be ignored\n",
-                $compara_version );
+        printf(
+          "Bio::EnsEMBL::Compara::DBSQL::DBAdaptor "
+            . "not found so the following compara "
+            . "databases will be ignored: %s\n",
+          join( ', ', @compara_dbs ) );
       }
     } else {
-      my $compara_db = "ensembl_compara_" . $compara_version;
+      foreach my $compara_db (@compara_dbs) {
+        # Looking for EnsEMBL Genomes Comparas.
+        # ensembl_compara_bacteria_2_53 is registered as
+        # 'bacteria', ensembl_compara_pan_homology_2_53 is
+        # registered as 'pan_homology', ensembl_compara_53 is
+        # registered as 'multi', and the alias 'compara' still
+        # operates.
 
-      my $dba =
-        Bio::EnsEMBL::Compara::DBSQL::DBAdaptor->new(
-                                         -group        => "compara",
-                                         -species      => "multi",
-                                         -host         => $host,
-                                         -user         => $user,
-                                         -pass         => $pass,
-                                         -port         => $port,
-                                         -wait_timeout => $wait_timeout,
-                                         -dbname       => $compara_db,
-                                         -no_cache     => $no_cache );
+        my ($species) =
+          $compara_db =~ /^ensembl_compara_(\w+)(?:_\d+){2}$/xm;
 
-      if ($verbose) {
-        printf( "%s loaded\n", $compara_db );
-      }
-    }
+        $species ||= 'multi';
+
+        my $dba = Bio::EnsEMBL::Compara::DBSQL::DBAdaptor->new(
+          -group        => 'compara',
+          -species      => $species,
+          -host         => $host,
+          -user         => $user,
+          -pass         => $pass,
+          -port         => $port,
+          -wait_timeout => $wait_timeout,
+          -dbname       => $compara_db,
+          -no_cache     => $no_cache
+        );
+
+        if ($verbose) {
+          printf( "%s loaded\n", $compara_db );
+        }
+      } ## end foreach my $compara_db (@compara_dbs)
+    } ## end else [ if ($@)
   } elsif ($verbose) {
-    print("No Compara database found\n");
+    print("No Compara databases found\n");
   }
 
   # Ancestral sequences
 
-  if ($ancestral_version) {
-    my $ancestral_db = "ensembl_ancestral_" . $ancestral_version;
-    my $dba =
-      Bio::EnsEMBL::DBSQL::DBAdaptor->new(
-                                      -group   => "core",
-                                      -species => "Ancestral sequences",
-                                      -host    => $host,
-                                      -user    => $user,
-                                      -pass    => $pass,
-                                      -port    => $port,
-                                      -wait_timeout => $wait_timeout,
-                                      -dbname       => $ancestral_db,
-                                      -no_cache     => $no_cache );
+  my @ancestral_dbs =
+    sort grep { /^ensembl_ancestral/ } @dbnames;
+
+  if (@ancestral_dbs) {
+    my $ancestral_db = shift @ancestral_dbs;
+
+    my $dba = Bio::EnsEMBL::DBSQL::DBAdaptor->new(
+      -group        => 'core',
+      -species      => 'Ancestral sequences',
+      -host         => $host,
+      -user         => $user,
+      -pass         => $pass,
+      -port         => $port,
+      -wait_timeout => $wait_timeout,
+      -dbname       => $ancestral_db,
+      -no_cache     => $no_cache
+    );
 
     if ($verbose) {
       printf( "%s loaded\n", $ancestral_db );
+
+      if (@ancestral_dbs) {
+        # If we still had some more then report the problem.
+        printf(
+          "Multiple ancestral databases found.\n"
+            . "Ignoring the following: %s\n",
+          join( ', ', @ancestral_dbs ) );
+      }
     }
   } elsif ($verbose) {
-    print("No Ancestral database found");
+    print("No ancestral database found\n");
   }
 
   # GO
@@ -1627,7 +1673,7 @@ sub load_registry_from_db {
       #      print $@;
       if ($verbose) {
         print "GO software not installed "
-          . "so GO database ensemb_go_$go_version will be ignored\n";
+          . "so GO database ensembl_go_$go_version will be ignored\n";
       }
     } else {
       my $go_db = "ensembl_go_" . $go_version;
@@ -1927,7 +1973,111 @@ sub load_registry_from_db {
   Bio::EnsEMBL::Utils::ConfigRegistry->add_alias( -species => "multi",
                                                   -alias   => \@aliases
   );
+  
+  # Register aliases as found in adaptor meta tables.
+  $self->find_and_add_aliases( '-handle' => $dbh );
+  $dbh->disconnect();
+  
 } ## end sub load_registry_from_db
+
+=head2 find_and_add_aliases
+
+  Arg [DBH]     : (optional) DBI handle
+                  A connected DBI database handle.  Used instead
+                  of the database handles stored in the DBAdaptor
+                  objects.  Bypasses the use of MetaContainer.
+
+  Arg [ADAPTOR] : (optional) Bio::EnsEMBL::DBSQL::DBAdaptor
+                  The adaptor to use to retrieve aliases from.
+
+  Arg [GROUP]   : (optional) string
+                  The group you want to find aliases for. If not
+                  given assumes all types.
+
+  Arg [HANDLE]  : (optional) DBI database handle
+                  A connected database handle to use instead of the
+                  database handles stored in the DBAdaptors.  Bypasses
+                  the use of MetaContainer.
+
+  Example       : Bio::EnsEMBL::Registry->find_and_add_aliases(
+                    -ADAPTOR => $dba,
+                    -GROUP   => 'core'
+                  );
+
+  Description   : Looks in the meta container for each database for
+                  an entry called "species.alias".  If any are found
+                  then the species adaptor is registered to that
+                  set of aliases.  This can work across any adaptor
+                  which has a MetaContainer.  If no MetaContainer
+                  can be returned from a given adaptor then no alias
+                  searching is performed.
+
+  Return type   : none
+  Exceptions    : none
+  Status        : Stable
+
+=cut
+
+sub find_and_add_aliases {
+  my $class = shift @_;
+
+  my ( $adaptor, $group, $dbh ) =
+    rearrange( [qw(ADAPTOR GROUP HANDLE)], @_ );
+
+  my @dbas;
+  if ( defined($adaptor) ) {
+    @dbas = ($adaptor);
+  } else {
+    @dbas = @{ $class->get_all_DBAdaptors( '-GROUP' => $group ) };
+  }
+
+  foreach my $dba (@dbas) {
+    my @aliases;
+    my $species = $dba->species();
+
+    if ( defined($dbh) ) {
+      my $dbname = $dba->dbc()->dbname();
+      my $sth    = $dbh->prepare(
+        sprintf(
+          "SELECT meta_value FROM %s.meta "
+            . "WHERE meta_key = 'species.alias' "
+            . "AND species_id = ?",
+          $dbh->quote_identifier($dbname) ) );
+
+      # Execute, and don't care about errors (there will be errors for
+      # databases without a 'meta' table, such as ensembl_ontology_NN).
+      $sth->{'PrintError'} = 0;
+      $sth->{'RaiseError'} = 0;
+      if ( !$sth->execute( $dba->species_id() ) ) { next }
+      $sth->{'PrintError'} = $dbh->{'PrintError'};
+      $sth->{'RaiseError'} = $dbh->{'RaiseError'};
+
+      my $alias;
+      $sth->bind_columns( \$alias );
+      while ( $sth->fetch() ) {
+        push( @aliases, $alias );
+      }
+    } else {
+      my $meta_container = eval { $dba->get_MetaContainer() };
+
+      if ( defined($meta_container) ) {
+        @aliases =
+          @{ $meta_container->list_value_by_key('species.alias') };
+      }
+
+      # Need to disconnect so we do not spam the MySQL servers trying to
+      # get aliases.  Can only call disonnect if dbc was defined.
+      if ( defined( $dba->dbc() ) ) {
+        $dba->dbc()->disconnect_if_idle();
+      }
+    }
+
+    foreach my $alias (@aliases) {
+      $class->add_alias( $species, $alias );
+    }
+  } ## end foreach my $dba (@dbas)
+
+} ## end sub find_and_add_aliases
 
 
 #
