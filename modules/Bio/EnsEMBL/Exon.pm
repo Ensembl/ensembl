@@ -110,21 +110,34 @@ sub new {
 
   my $self = $class->SUPER::new( @_ );
 
-  
-  my ( $phase, $end_phase, $stable_id, $version, $created_date, $modified_date,
-       $is_current ) =
-      rearrange( [ "PHASE", "END_PHASE", "STABLE_ID", "VERSION",
-		 "CREATED_DATE", "MODIFIED_DATE", "IS_CURRENT" ], @_ );
-  $self->phase($phase) if (defined $phase); # make sure phase is valid.
-  $self->{'end_phase'} = $end_phase;
-  $self->{'stable_id'} = $stable_id;
-  $self->{'version'} = $version;
-  $self->{'created_date'} = $created_date;
+  my ( $phase, $end_phase, $stable_id, $version, $created_date,
+    $modified_date, $is_current, $is_constitutive )
+    = rearrange( [
+      "PHASE",        "END_PHASE",
+      "STABLE_ID",    "VERSION",
+      "CREATED_DATE", "MODIFIED_DATE",
+      "IS_CURRENT",   "IS_CONSTITUTIVE"
+    ],
+    @_
+    );
+
+  if ( defined($phase) ) {    # make sure phase is valid.
+    $self->phase($phase);
+  }
+
+  $self->{'end_phase'}     = $end_phase;
+  $self->{'stable_id'}     = $stable_id;
+  $self->{'version'}       = $version;
+  $self->{'created_date'}  = $created_date;
   $self->{'modified_date'} = $modified_date;
 
-  # default is_current
-  $is_current = 1 unless (defined($is_current));
+  # Default is_current
+  if ( !defined($is_current) ) { $is_current = 1 }
   $self->{'is_current'} = $is_current;
+
+  # Default is_constitutive
+  if ( !defined($is_constitutive) ) { $is_constitutive = 0 }
+  $self->{'is_constitutive'} = $is_constitutive;
 
   return $self;
 }
@@ -1123,9 +1136,33 @@ sub version {
 =cut
 
 sub is_current {
-  my $self = shift;
-  $self->{'is_current'} = shift if (@_);
+  my ( $self, $value ) = @_;
+
+  if ( defined($value) ) {
+    $self->{'is_current'} = $value;
+  }
   return $self->{'is_current'};
+}
+
+=head2 is_constitutive
+
+  Arg [1]    : Boolean $is_constitutive
+  Example    : $exon->is_constitutive(0)
+  Description: Getter/setter for is_constitutive state of this exon.
+  Returntype : Int
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub is_constitutive {
+  my ( $self, $value ) = @_;
+
+  if ( defined($value) ) {
+    $self->{'is_constitutive'} = $value;
+  }
+  return $self->{'is_constitutive'};
 }
 
 

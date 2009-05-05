@@ -1137,11 +1137,20 @@ sub add_Exon{
 
 =head2 get_all_Exons
 
-  Arg [1]    : none
-  Example    : my @exons = @{$transcript->get_all_Exons()};
-  Description: Returns an listref of the exons in this transcipr in order.
-               i.e. the first exon in the listref is the 5prime most exon in 
-               the transcript.
+  Arg [CONSTITUTIVE]    : Boolean
+                          Only return constitutive exons if true (non-zero)
+
+  Examples  :   my @exons = @{ $transcript->get_all_Exons() };
+
+                my @exons =
+                  @{ $transcript->get_all_Exons( -constitutive => 1 ) };
+
+  Description: Returns an listref of the exons in this transcript
+               in order, i.e. the first exon in the listref is the
+               5prime most exon in the transcript.  Only returns
+               constitutive exons if the CONSTITUTIVE argument is
+               true.
+
   Returntype : a list reference to Bio::EnsEMBL::Exon objects
   Exceptions : none
   Caller     : general
@@ -1150,13 +1159,31 @@ sub add_Exon{
 =cut
 
 sub get_all_Exons {
-   my ($self) = @_;
-   if( ! defined $self->{'_trans_exon_array'} && defined $self->adaptor() ) {
-     $self->{'_trans_exon_array'} = $self->adaptor()->db()->
-       get_ExonAdaptor()->fetch_all_by_Transcript( $self );
-   }
-   return $self->{'_trans_exon_array'};
-}
+  my ( $self, @args ) = @_;
+
+  my ($constitutive) = rearrange( 'CONSTITUTIVE', @args );
+
+  if (!defined( $self->{'_trans_exon_array'} )
+    && defined( $self->adaptor() ) )
+  {
+    $self->{'_trans_exon_array'} =
+      $self->adaptor()->db()->get_ExonAdaptor()
+      ->fetch_all_by_Transcript($self);
+  }
+
+  my @result;
+  if ( defined($constitutive) && $constitutive != 0 ) {
+    foreach my $exon ( @{ $self->{'_trans_exon_array'} } ) {
+      if ( $exon->is_constitutive() ) {
+        push( @result, $exon );
+      }
+    }
+  } else {
+    @result = @{ $self->{'_trans_exon_array'} };
+  }
+
+  return \@result;
+} ## end sub get_all_Exons
 
 
 =head2 get_all_Introns
