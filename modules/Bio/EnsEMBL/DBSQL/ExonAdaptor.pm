@@ -84,17 +84,22 @@ sub _tables {
 sub _columns {
   my $self = shift;
 
-  my $created_date = $self->db->dbc->from_date_to_seconds("created_date");
-  my $modified_date = $self->db->dbc->from_date_to_seconds("modified_date");
+  my $created_date =
+    $self->db->dbc->from_date_to_seconds("created_date");
+  my $modified_date =
+    $self->db->dbc->from_date_to_seconds("modified_date");
 
-  return ( 'e.exon_id', 'e.seq_region_id', 'e.seq_region_start',
-           'e.seq_region_end', 'e.seq_region_strand', 'e.phase','e.end_phase',
-           'e.is_current',
-	   'esi.stable_id', 'esi.version', $created_date, $modified_date );
+  return (
+    'e.exon_id',        'e.seq_region_id',     'e.seq_region_start',
+    'e.seq_region_end', 'e.seq_region_strand', 'e.phase',
+    'e.end_phase',      'e.is_current',        ###FIXME 'e.is_constitutive',
+    'esi.stable_id',    'esi.version',         $created_date,
+    $modified_date
+  );
 }
 
 sub _left_join {
-  return ( [ 'exon_stable_id', "esi.exon_id = e.exon_id" ]);
+  return ( [ 'exon_stable_id', "esi.exon_id = e.exon_id" ] );
 }
 
 
@@ -254,14 +259,18 @@ sub store {
     throw("Exon does not have all attributes to store");
   }
 
-  # default to is_current = 1 if this attribute is not set
-  my $is_current = $exon->is_current;
-  $is_current = 1 unless (defined($is_current));
+  # Default to is_current = 1 if this attribute is not set
+  my $is_current = $exon->is_current();
+  if ( !defined($is_current) ) { $is_current = 1 }
+
+  # Default to is_constitutive = 0 if this attribute is not set
+  my $is_constitutive = $exon->is_constitutive();
+  if ( !defined($is_constitutive) ) { $is_constitutive = 0 }
 
   my $exon_sql = q{
     INSERT into exon ( seq_region_id, seq_region_start,
 		       seq_region_end, seq_region_strand, phase,
-		       end_phase, is_current )
+		       end_phase, is_current ) -- FIXME , is_constitutive )
     VALUES ( ?, ?, ?, ?, ?, ?, ? )
   };
 
@@ -274,13 +283,14 @@ sub store {
   ($exon, $seq_region_id) = $self->_pre_store($exon);
 
   #store the exon
-  $exonst->bind_param(1, $seq_region_id, SQL_INTEGER);
-  $exonst->bind_param(2, $exon->start, SQL_INTEGER);
-  $exonst->bind_param(3, $exon->end, SQL_INTEGER);
-  $exonst->bind_param(4, $exon->strand, SQL_TINYINT);
-  $exonst->bind_param(5, $exon->phase, SQL_TINYINT);
-  $exonst->bind_param(6, $exon->end_phase, SQL_TINYINT);
-  $exonst->bind_param(7, $is_current, SQL_TINYINT);
+  $exonst->bind_param( 1, $seq_region_id,   SQL_INTEGER );
+  $exonst->bind_param( 2, $exon->start,     SQL_INTEGER );
+  $exonst->bind_param( 3, $exon->end,       SQL_INTEGER );
+  $exonst->bind_param( 4, $exon->strand,    SQL_TINYINT );
+  $exonst->bind_param( 5, $exon->phase,     SQL_TINYINT );
+  $exonst->bind_param( 6, $exon->end_phase, SQL_TINYINT );
+  $exonst->bind_param( 7, $is_current,      SQL_TINYINT );
+  ###FIXME $exonst->bind_param( 8, $is_constitutive, SQL_TINYINT );
 
   $exonst->execute();
   $exonId = $exonst->{'mysql_insertid'};
@@ -506,15 +516,21 @@ sub _objs_from_sth {
   my %sr_name_hash;
   my %sr_cs_hash;
 
-  my ( $exon_id, $seq_region_id, $seq_region_start,
-       $seq_region_end, $seq_region_strand, $phase,
-       $end_phase, $is_current, $stable_id, $version, $created_date, 
-       $modified_date );
+  my (
+    $exon_id,        $seq_region_id,     $seq_region_start,
+    $seq_region_end, $seq_region_strand, $phase,
+    $end_phase,      $is_current,        $is_constitutive,
+    $stable_id,      $version,           $created_date,
+    $modified_date
+  );
 
-  $sth->bind_columns( \$exon_id, \$seq_region_id, \$seq_region_start,
-                      \$seq_region_end, \$seq_region_strand, \$phase,
-		      \$end_phase, \$is_current, \$stable_id, \$version,
-                      \$created_date, \$modified_date );
+  $sth->bind_columns(
+    \$exon_id,        \$seq_region_id,     \$seq_region_start,
+    \$seq_region_end, \$seq_region_strand, \$phase,
+    \$end_phase,      \$is_current,        ###FIXME \$is_constitutive,
+    \$stable_id,      \$version,           \$created_date,
+    \$modified_date
+  );
 
   my $asm_cs;
   my $cmp_cs;
@@ -630,24 +646,26 @@ sub _objs_from_sth {
     }
 
     # Finally, create the new exon.
-    push( @exons,
-          $self->_create_feature_fast( 'Bio::EnsEMBL::Exon', {
-                                    'start'     => $seq_region_start,
-                                    'end'       => $seq_region_end,
-                                    'strand'    => $seq_region_strand,
-                                    'adaptor'   => $self,
-                                    'slice'     => $slice,
-                                    'dbID'      => $exon_id,
-                                    'stable_id' => $stable_id,
-                                    'version'   => $version,
-                                    'created_date' => $created_date
-                                      || undef,
-                                    'modified_date' => $modified_date
-                                      || undef,
-                                    'phase'      => $phase,
-                                    'end_phase'  => $end_phase,
-                                    'is_current' => $is_current
-                                  } ) );
+    push(
+      @exons,
+      $self->_create_feature_fast(
+        'Bio::EnsEMBL::Exon',
+        {
+          'start'          => $seq_region_start,
+          'end'            => $seq_region_end,
+          'strand'         => $seq_region_strand,
+          'adaptor'        => $self,
+          'slice'          => $slice,
+          'dbID'           => $exon_id,
+          'stable_id'      => $stable_id,
+          'version'        => $version,
+          'created_date'   => $created_date || undef,
+          'modified_date'  => $modified_date || undef,
+          'phase'          => $phase,
+          'end_phase'      => $end_phase,
+          'is_current'     => $is_current,
+          'is_consecutive' => $is_consecutive
+        } ) );
 
   }
 
