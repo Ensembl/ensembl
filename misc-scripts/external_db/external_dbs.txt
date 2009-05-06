@@ -28,7 +28,7 @@
 882	FlyGrid	1	KNOWNXREF	1	0	5	FlyGRID Interaction Data, The General Repository for Interaction Datasets	MISC	\N	\N
 890	DEDb	1	KNOWNXREF	1	0	5	Drosophila melanogaster Exon DataBase	MISC	\N	\N
 900	GKB	1	XREF	1	0	5	GKB	MISC	\N	\N
-1000	GO	1	KNOWNXREF	1	0	5	GO	MISC	\N	\N
+1000	GO	1	XREF	1	0	5	GO	MISC	\N	\N
 1100	HGNC	1	KNOWNXREF	1	1	100	HGNC Symbol	PRIMARY_DB_SYNONYM	\N	\N
 1200	Interpro	1	XREF	1	0	5	Interpro	MISC	\N	\N
 1300	EntrezGene	1	KNOWNXREF	1	0	10	EntrezGene	MISC	\N	\N
@@ -285,6 +285,8 @@
 12565	MGI_automatic_transcript	1	KNOWNXREF	1	0	5	MGI (automatic)	MISC	\N	\N
 12600	WikiGene	1	XREF	0	1	50	WikiGene	MISC	\N	\N
 12601	Tgut_symbol	1	KNOWNXREF	0	0	100	Tgut symbol - Prof. David Burt, Roslin Institute and Royal (Dick) School of Veterinary Studies, Edinburgh University, UK	PRIMARY_DB_SYNONYM	\N	\N
+12610	Fantom	1	XREF	0	1	50	Fantom	MISC	\N	\N
+
 #
 #
 # Please separate fields in this file with TABS not spaces!
