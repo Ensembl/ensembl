@@ -18,6 +18,46 @@ my %transcript_to_translation;
 my %transcript_length;
 
 
+sub transcript_display_xref_sources {
+
+
+  my @list = qw(miRBase
+                RFAM
+                HGNC_curated_gene
+                HGNC_automatic_gene
+                MGI_curated_gene
+                MGI_automatic_gene
+                Clone_based_vega_gene
+                Clone_based_ensembl_gene
+                HGNC_curated_transcript
+                HGNC_automatic_transcript
+                MGI_curated_transcript
+                MGI_automatic_transcript
+                Clone_based_vega_transcript
+                Clone_based_ensembl_transcript
+                IMGT/GENE_DB
+                HGNC
+                SGD
+                MGI
+                flybase_symbol
+                Anopheles_symbol
+                Genoscope_annotated_gene
+                Uniprot/SWISSPROT
+                Uniprot/Varsplic
+                RefSeq_peptide
+                RefSeq_dna
+                Uniprot/SPTREMBL
+                EntrezGene
+                IPI);
+
+  my %ignore;
+  $ignore{"EntrezGene"}= 'FROM:RefSeq_[pd][en][pa].*_predicted';
+
+  return [\@list,\%ignore];
+
+}
+
+
 sub new {
   my($class, $mapper) = @_;
 
@@ -911,12 +951,12 @@ DXS
 #    print "$gene_id, $transcript_id, $p, $xref_id, $type, $label\n";
 #    if(defined($label) && $label =~ /\D+/){  # not just a number
       if($gene_id != $last_gene){
-       $self->check($gene_id,$label, $gene_sth, "Gene");
+       $self->check_label($gene_id,$label, $gene_sth, "Gene");
        $last_gene = $gene_id;
       } 
       if($type ne "Gene"){
         if(!defined($seen_transcript{$transcript_id})){ # not seen yet so its the best
-	  $self->check($transcript_id, $label, $tran_sth, "Transcript");
+	  $self->check_label($transcript_id, $label, $tran_sth, "Transcript");
         }
         $seen_transcript{$transcript_id} = $xref_id;
       
@@ -927,7 +967,7 @@ DXS
 }
 
 
-sub check{
+sub check_label{
   my $self  = shift;
   my $id    = shift;
   my $label = shift;
@@ -943,6 +983,138 @@ sub check{
     print "ERROR: $type ($id) has different display_xrefs ???  old:$old_label   new:$label\n";
   }
 }
+
+
+
+
+
+
+sub while_your_feet_are_stomping{
+  my $self = shift;
+
+my $sql =(<<SQL); 
+  CREATE TABLE gene_desc_prioritys(
+    source_id INT NOT NULL,
+    priority       INT NOT NULL,
+    PRIMARY KEY (source_id)
+  ) COLLATE=latin1_swedish_ci TYPE=InnoDB
+SQL
+
+  my $sth = $self->xref->dbc->prepare($sql);
+  $sth->execute;
+  $sth->finish;
+
+  my @presedence = $self->gene_description_sources();
+  my @regexps = $self->gene_description_filter_regexps();
+  my $i=0;
+  
+  my $ins_p_sth = $self->xref->dbc->prepare("INSERT into gene_desc_prioritys (source_id, priority) values(?, ?)");
+  my $get_source_id_sth = $self->xref->dbc->prepare("select source_id from source where name like ?");
+
+#
+# So the higher the number the better then 
+#
+
+
+  foreach my $name (reverse (@presedence)){
+    $i++;
+    $get_source_id_sth->execute($name);
+    my $source_id;
+    $get_source_id_sth->bind_columns(\$source_id);
+    while($get_source_id_sth->fetch){
+      $ins_p_sth->execute($source_id, $i);
+    }	
+  }
+  $ins_p_sth->finish;
+  $get_source_id_sth->finish;
+
+
+#######################################################################
+
+my $gene_desc_sql =(<<DXS);
+  SELECT gtt.gene_id, x.xref_id
+    FROM source s, xref x, object_xref ox, identity_xref ix, gene_transcript_translation gtt, gene_desc_prioritys p
+     WHERE  x.source_id = s.source_id 
+       AND s.source_id = p.source_id
+       AND x.xref_id = ox.xref_id 
+       AND ox.ox_status = "DUMP_OUT"   
+       AND (          (ox.ensembl_object_type = "Transcript" and gtt.transcript_id = ox.ensembl_id)       
+                 OR   (ox.ensembl_object_type = "Translation" and gtt.translation_id = ox.ensembl_id)
+                 OR   (ox.ensembl_object_type = "Gene" and gtt.gene_id = ox.ensembl_id)     
+           )
+       AND ox.object_xref_id = ix.object_xref_id 
+  ORDER BY gtt.gene_id DESC, p.priority DESC, (ix.target_identity+ix.query_identity) DESC
+DXS
+
+########################################################################
+
+#  my $get_desc_sql = "select description from xref where xref_id = ?";
+  
+  
+  my $gene_sth = $self->core->dbc->prepare("select g.description from gene g where g.gene_id = ?"); 
+
+
+  my $last_gene = 0;
+
+  my $gene_desc_sth = $self->xref->dbc->prepare($gene_desc_sql);
+
+  $gene_desc_sth->execute();
+  my ($gene_id, $transcript_id, $p, $desc);  # remove labvel after testig it is not needed
+  $gene_desc_sth->bind_columns(\$gene_id, \$transcript_id, \$p, \$desc);
+  
+  my $gene_count = 0;
+
+  while($gene_desc_sth->fetch()){
+#    print "$gene_id, $transcript_id, $p, $xref_id, $type, $label\n";
+    if($gene_id != $last_gene){
+      my $filtered_description = $self->filter_by_regexp($desc, \@regexps);
+      if ($filtered_description ne "") {
+	$self->check_desc($gene_id, $desc, $gene_sth, "Gene");
+        $gene_count++;
+	$last_gene = $gene_id;
+      } 
+    }
+  }
+  $gene_desc_sth->finish;
+  print "$gene_count gene descriptions added\n";
+}
+
+sub filter_by_regexp {
+
+  my ($self, $str, $regexps) = @_;
+
+  foreach my $regexp (@$regexps) {
+    $str =~ s/$regexp//ig;
+  }
+
+  return $str;
+
+}
+
+sub check_desc{
+  my $self  = shift;
+  my $id    = shift;
+  my $desc = shift;
+  my $sth   = shift;
+  my $type  = shift;
+
+  $sth->execute($id);
+  my $old_desc;
+  $sth->bind_columns(\$old_desc);
+  $sth->fetch;
+
+  if($old_desc ne $desc){
+    print "ERROR: $type ($id) has different descriptions ???  old:$old_desc   new:$desc\n";
+  }
+}
+
+sub gene_description_filter_regexps {
+
+  return ();
+
+}
+
+
 
 
 1;
