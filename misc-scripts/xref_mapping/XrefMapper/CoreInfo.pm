@@ -109,20 +109,21 @@ sub get_core_data {
  my $dep_sth    = $self->xref->dbc->prepare("select dependent_xref_id, linkage_annotation from dependent_xref where master_xref_id = ?");
 
 my $stable_sql=(<<SQL);
-  SELECT dx.general_xref_id, s.internal_id, dx.ensembl_stable_id 
-    FROM TYPE_direct_xref dx left join TYPE_stable_id s on s.stable_id = dx.ensembl_stable_id
+  SELECT so.name, dx.general_xref_id, s.internal_id, dx.ensembl_stable_id 
+    FROM source so, xref x, TYPE_direct_xref dx left join TYPE_stable_id s on s.stable_id = dx.ensembl_stable_id
+      WHERE x.xref_id = dx.general_xref_id and x.source_id = so.source_id 
 SQL
                       
- my $err_count = 0;
+ my %err_count;
  
  foreach my $table (qw(gene transcript translation)){
-   my ($xref_id, $internal_id, $stable_id);
+   my ($dbname, $xref_id, $internal_id, $stable_id);
    my $sql = $stable_sql;
    $sql =~ s/TYPE/$table/g;
    my $sth = $self->xref->dbc->prepare($sql);
 #   print "sql = $sql\n";
    $sth->execute();
-   $sth->bind_columns(\$xref_id, \$internal_id, \$stable_id);
+   $sth->bind_columns(\$dbname, \$xref_id, \$internal_id, \$stable_id);
    my $count =0;
    my $duplicate_direct_count = 0;
    my $duplicate_dependent_count = 0;
@@ -132,8 +133,11 @@ SQL
           $internal_id = $stable_id;
        }
        else{
-         print "Could not find stable id $stable_id in table to get the internal id hence ignoring!!!\n" if($self->verbose);
-	 $err_count++;
+	 if(!defined($err_count{$dbname}) or $err_count{$dbname} < 10){
+	   print "Could not find stable id $stable_id in table to get the internal id hence ignoring!!! (for $dbname)\n" if($self->verbose);
+	 }
+	 $err_count{$dbname}++;
+#	 $err_count++;
          next;
        }
      }
@@ -179,9 +183,12 @@ SQL
    if($duplicate_direct_count or $duplicate_dependent_count){
      print "duplicate entrys ignored for $duplicate_direct_count direct xrefs and  $duplicate_dependent_count dependent xrefs\n" if($self->verbose);
    }
-   if($err_count or $self->verbose){
-     print STDERR $count." direct_xrefs added to ensembl ".$table."s BUT $err_count stable ids could not be found\n";
-   }
+#   if($err_count or $self->verbose){
+#     print STDERR $count." direct_xrefs added to ensembl ".$table."s BUT $err_count stable ids could not be found\n";
+#   }
+ }
+ foreach my $key (%err_count){
+   print STDERR "*WARNING*: ".$err_count{$key}." direct xrefs for database $key could not be added as their stable_ids could not be found\n";
  }
  $ins_go_sth->finish;
  $ins_ox_sth->finish;
