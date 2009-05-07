@@ -277,7 +277,7 @@ sub translation {
     $Xseq = "N"x$start_phase . $Xseq;
   }
 
-  my $tmpSeq = new Bio::Seq( -id => "dummy",
+  my $tmpSeq = new Bio::Seq( -id => $self->display_id,
 			     -seq => $Xseq,
 			     -moltype => "dna" );
 
@@ -309,8 +309,25 @@ sub translate {
   my ($self) = @_;
 
   my $dna = $self->translateable_seq();
+
+  my $codon_table_id;
+  if ( defined( $self->slice() ) ) {
+      my $attrib;
+      
+      ($attrib) = @{ $self->slice()->get_all_Attributes('codon_table') };
+      if ( defined($attrib) ) {
+	  $codon_table_id = $attrib->value();
+      }
+  }
+  $codon_table_id ||= 1; #default will be vertebrates
+
   if( CORE::length( $dna ) % 3 == 0 ) {
-    $dna =~ s/TAG$|TGA$|TAA$//i;
+   # $dna =~ s/TAG$|TGA$|TAA$//i;
+      my $codon_table =  Bio::Tools::CodonTable->new( -id => $codon_table_id );
+      
+      if ( $codon_table->is_ter_codon( substr( $dna, -3, 3 ) ) ) {
+	  substr( $dna, -3, 3, '' );
+      }
   }
   # the above line will remove the final stop codon from the mrna
   # sequence produced if it is present, this is so any peptide produced
@@ -318,9 +335,11 @@ sub translate {
   # if you want to have a terminal stop codon either comment this line out
   # or call translatable seq directly and produce a translation from it
 
-  my $bioseq = new Bio::Seq( -seq => $dna, -moltype => 'dna' );
+  my $bioseq = new Bio::Seq(  -id => $self->display_id, -seq => $dna, -moltype => 'dna' );
 
-  return $bioseq->translate();
+  my $translation = $bioseq->translate(undef,undef,undef,$codon_table_id);
+
+  return $translation;
 }
 
 
