@@ -389,13 +389,14 @@ sub fetch_by_region {
   }
 
   return
-    Bio::EnsEMBL::Slice->new( -COORD_SYSTEM      => $cs,
-                              -SEQ_REGION_NAME   => $seq_region_name,
-                              -SEQ_REGION_LENGTH => $length,
-                              -START             => $start,
-                              -END               => $end,
-                              -STRAND            => $strand,
-                              -ADAPTOR           => $self );
+    Bio::EnsEMBL::Slice->new_fast({ 
+	                      'coord_system'      => $cs,
+                              'seq_region_name'   => $seq_region_name,
+                              'seq_region_length' => $length,
+                              'start'             => $start,
+                              'end'               => $end,
+                              'strand'            => $strand,
+                              'adaptor'           => $self} );
 } ## end sub fetch_by_region
 
 
@@ -506,13 +507,14 @@ sub fetch_by_seq_region_id {
   }
 
   return
-    Bio::EnsEMBL::Slice->new( -COORD_SYSTEM      => $cs,
-                              -SEQ_REGION_NAME   => $name,
-                              -SEQ_REGION_LENGTH => $length,
-                              -START             => $start || 1,
-                              -END               => $end || $length,
-                              -STRAND            => $strand || 1,
-                              -ADAPTOR           => $self );
+    Bio::EnsEMBL::Slice->new_fast({ 
+	                      'coord_system'     => $cs,
+                              'seq_region_name'  => $name,
+                              'seq_region_length'=> $length,
+                              'start'            => $start || 1,
+                              'end'              => $end || $length,
+                              'strand'           => $strand || 1,
+                              'adaptor'           => $self} );
 } ## end sub fetch_by_seq_region_id
 
 
@@ -732,14 +734,14 @@ sub fetch_all {
         $cache_count++;
       }
 
-      my $slice = Bio::EnsEMBL::Slice->new
-        (-START             => 1,
-         -END               => $length,
-         -STRAND            => 1,
-         -SEQ_REGION_NAME   => $name,
-         -SEQ_REGION_LENGTH => $length,
-         -COORD_SYSTEM      => $cs,
-         -ADAPTOR           => $self);
+      my $slice = Bio::EnsEMBL::Slice->new_fast({
+	  'start'           => 1,
+          'end'             => $length,
+          'strand'          => 1,
+         'seq_region_name'  => $name,
+         'seq_region_length'=> $length,
+         'coord_system'     => $cs,
+         'adaptor'          => $self});
 
       if(!defined($include_duplicates) or !$include_duplicates){
         # test if this slice *could* have a duplicate (exception) region
@@ -1085,14 +1087,14 @@ sub fetch_by_Feature{
   $size = int( ($1-100)/200 * ($fend-$fstart+1) ) if( $size =~/([\d+\.]+)%/ );
 
   #return a new slice covering the region of the feature
-  my $S = Bio::EnsEMBL::Slice->new
-    (-seq_region_name   => $slice->seq_region_name,
-     -seq_region_length => $slice->seq_region_length,
-     -coord_system      => $slice->coord_system,
-     -start             => $fstart - $size,
-     -end               => $fend + $size,
-     -strand            => 1,
-     -adaptor           => $self);
+  my $S = Bio::EnsEMBL::Slice->new_fast({
+    'seq_region_name'   => $slice->seq_region_name,
+    'seq_region_length' => $slice->seq_region_length,
+    'coord_system'      => $slice->coord_system,
+    'start'             => $fstart - $size,
+    'end'               => $fend + $size,
+    'strand'            => 1,
+     'adaptor'          => $self});
   $S->{'_raw_feature_strand'}  = $feature->strand * $slice_strand if $feature->can('strand');
   return $S;
 }
@@ -1258,28 +1260,28 @@ sub fetch_normalized_slice_projection {
   my @out;
   for my $coord ( @linked ) {
     if( $coord->isa( "Bio::EnsEMBL::Mapper::Gap" )) {
-      my $exc_slice = Bio::EnsEMBL::Slice->new
-        (-START             => $coord->start(),
-         -END               => $coord->end(),
-         -STRAND            => $slice->strand(),
-         -COORD_SYSTEM      => $slice->coord_system(),
-         -ADAPTOR           => $self,
-         -SEQ_REGION_NAME   => $slice->seq_region_name(),
-         -SEQ_REGION_LENGTH => $slice->seq_region_length());
+	my $exc_slice = Bio::EnsEMBL::Slice->new_fast({
+        'start'             => $coord->start(),
+        'end'               => $coord->end(),
+        'strand'            => $slice->strand(),
+        'coord_system'      => $slice->coord_system(),
+         'adaptor'          => $self,
+         'seq_region_name'  => $slice->seq_region_name(),
+         'seq_region_length' => $slice->seq_region_length()});
       push( @out, bless ( [ $rel_start, $coord->length()+$rel_start-1,
                         $exc_slice ], "Bio::EnsEMBL::ProjectionSegment") );
     } else {
       my $exc_slice = $self->fetch_by_seq_region_id( $coord->id() );
-      my $exc2_slice = Bio::EnsEMBL::Slice->new
-        (
-         -START             => $coord->start(),
-         -END               => $coord->end(),
-         -STRAND            => $coord->strand(),
-         -SEQ_REGION_NAME   => $exc_slice->seq_region_name(),
-         -SEQ_REGION_LENGTH => $exc_slice->seq_region_length(),
-         -COORD_SYSTEM      => $exc_slice->coord_system(),
-         -ADAPTOR           => $self
-        );
+      my $exc2_slice = Bio::EnsEMBL::Slice->new_fast({
+        
+         'start'             => $coord->start(),
+         'end'               => $coord->end(),
+         'strand'            => $coord->strand(),
+         'seq_region_name'   => $exc_slice->seq_region_name(),
+         'seq_region_length' => $exc_slice->seq_region_length(),
+         'coord_system'      => $exc_slice->coord_system(),
+         'adaptor'           => $self
+        });
 	
       push( @out, bless( [ $rel_start, $coord->length() + $rel_start - 1,
                     $exc2_slice ], "Bio::EnsEMBL::ProjectionSegment") );

@@ -194,6 +194,23 @@ sub new {
                 'adaptor'           => $adaptor}, $class;
 }
 
+=head2 new_fast
+
+  Arg [1]    : hashref to be blessed
+  Description: Construct a new Bio::EnsEMBL::Slice using the hashref.
+  Exceptions : none
+  Returntype : Bio::EnsEMBL::Slice
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+
+sub new_fast {
+  my $class = shift;
+  my $hashref = shift;
+  return bless $hashref, $class;
+}
 
 =head2 adaptor
 
@@ -782,8 +799,7 @@ sub project {
           # trim off regions which are not defined
           return $self->_constrain_to_region();
         }
-
-        #create slices for the mapped-to coord system
+	#create slices for the mapped-to coord system
         my $slice = $slice_adaptor->fetch_by_seq_region_id(
                                                     $coord->id(),
                                                     $coord_start,
