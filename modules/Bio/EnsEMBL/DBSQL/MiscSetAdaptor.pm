@@ -272,6 +272,46 @@ sub store {
   return;
 }
 
+=head2 update
 
+  Arg [1]    : Bio::EnsEMBL::MiscSet $miscset
+  Example    : $adaptor->update($miscset)
+  Description: Updates this misc_set in the database
+  Returntype : int 1 if update is performed, undef if it is not
+  Exceptions : throw if arg is not an misc_set object
+  Caller     : ?
+  Status     : Stable
+
+=cut
+
+sub update {
+  my $self = shift;
+  my $m    = shift;
+
+  if (!ref($m) || !$m->isa('Bio::EnsEMBL::MiscSet')) {
+    throw("Expected Bio::EnsEMBL::MiscSet argument.");
+  }
+
+  if(!$m->is_stored($self->db())) {
+    return undef;
+  }
+
+  my $sth = $self->prepare("UPDATE misc_set ".
+			   "SET code =?, name =?, description = ?, max_length = ? ".
+			   "WHERE misc_set_id = ?");
+
+  $sth->bind_param(1,$m->code,SQL_VARCHAR);
+  $sth->bind_param(2,$m->name,SQL_VARCHAR);
+  $sth->bind_param(3,$m->description,SQL_VARCHAR);
+  $sth->bind_param(4,$m->longest_feature,SQL_INTEGER);
+  $sth->bind_param(5,$m->dbID,SQL_INTEGER);
+
+  $sth->execute();
+  $sth->finish();
+
+ # update the internal caches
+  $self->{'_id_cache'}->{$m->dbID} = $m;
+  $self->{'_code_cache'}->{lc($m->code())} = $m;
+}
 
 1;
