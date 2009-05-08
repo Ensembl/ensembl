@@ -368,24 +368,31 @@ sub run {
 
 	  
 	  
-	  # fourth the number of direct xrefs
-	  $group_sql = "SELECT count(*), s.name from source s, direct_xref dx, xref x where s.source_id = x.source_id and dx.general_xref_id = x.xref_id group by s.name";
 	  
-	  my $sum_sth = $dbi->prepare($group_sql);
-	  $sum_sth->execute();
+	  # fourth,fifth and sixth the number of direct xrefs
+
+	  my $type_count =0;
+	  foreach my $type (qw (gene transcript translation)){
+
+	    $group_sql = "SELECT count(*), s.name from source s, ".$type."_direct_xref dx, xref x where s.source_id = x.source_id and dx.general_xref_id = x.xref_id group by s.name";
 	  
-	  $sum_sth->bind_columns(\$sum_count, \$sum_name);
-	  
-	  while($sum_sth->fetch){
-	    if($sum_count != $sum_dir{$sum_name}){
-	      my $diff = ($sum_count - $sum_dir{$sum_name});
-	      $sum_line{$sum_name}[3] = $diff;	    
+	    my $sum_sth = $dbi->prepare($group_sql);
+	    $sum_sth->execute();
+	    
+	    $sum_sth->bind_columns(\$sum_count, \$sum_name);
+	    
+	    while($sum_sth->fetch){
+	      if($sum_count != $sum_dir{$sum_name}){
+		my $diff = ($sum_count - $sum_dir{$sum_name});
+		$sum_line{$sum_name}[3+$type_count] = $diff;	    
+	      }
+	      $sum_dir{$sum_name} = $sum_count;
 	    }
-	    $sum_dir{$sum_name} = $sum_count;
+	    $sum_sth->finish;
+	    $type_count++;
 	  }
-	  $sum_sth->finish;
-	  
-	  # fifth the number of coordinate xrefs
+
+	  # seventh the number of coordinate xrefs
 	  $group_sql = "SELECT count(*), s.name from source s, coordinate_xref cx  where s.source_id = cx.source_id group by s.name";
 	  
 	  my $sum_sth = $dbi->prepare($group_sql);
@@ -396,14 +403,14 @@ sub run {
 	  while($sum_sth->fetch){
 	    if($sum_count != $sum_coord{$sum_name}){
 	      my $diff = ($sum_count - $sum_coord{$sum_name});
-	      $sum_line{$sum_name}[4] = $diff;	    
+	      $sum_line{$sum_name}[6] = $diff;	    
 	    }
 	    $sum_coord{$sum_name} = $sum_count;
 	  }
 	  $sum_sth->finish;
 	  
 
-	  # sixth the number of synonyms
+	  # eigth the number of synonyms
 	  $group_sql = "select count(*), s.name from source s, xref x, synonym o where s.source_id = x.source_id and x.xref_id = o.xref_id group by s.name";
 	  
 	  my $sum_sth = $dbi->prepare($group_sql);
@@ -414,14 +421,14 @@ sub run {
 	  while($sum_sth->fetch){
 	    if($sum_count != $sum_syn{$sum_name}){
 	      my $diff = ($sum_count - $sum_syn{$sum_name});
-	      $sum_line{$sum_name}[5] = $diff;	    
+	      $sum_line{$sum_name}[7] = $diff;	    
 	    }
 	    $sum_syn{$sum_name} = $sum_count;
 	  }
 	  $sum_sth->finish;
 
 
-	  print "source                      xrefs\tprim\tdep\tdir\tcoord\tsynonyms\n";
+	  print "source                      xrefs\tprim\tdep\tgdir\ttdir\ttdir\tcoord\tsynonyms\n";
 	  foreach my $sum_name (keys %sum_line){
 	    printf ("%-28s",$sum_name);
 	    print join("\t",@{$sum_line{$sum_name}})."\n";
@@ -498,21 +505,26 @@ sub run {
       
       
       
-      # fourth the number of direct xrefs
-      $group_sql = "SELECT count(*), s.name from source s, direct_xref dx, xref x where s.source_id = x.source_id and dx.general_xref_id = x.xref_id group by s.name";
+      # fourth,fifth and sixth the number of direct xrefs
       
-      my $sum_sth = $dbi->prepare($group_sql);
-      $sum_sth->execute();
-      
-      $sum_sth->bind_columns(\$sum_count, \$sum_name);
-      
-      while($sum_sth->fetch){
-	$sum_line{$sum_name}[3] = $sum_count;	    
+      my $type_count =0;
+      foreach my $type (qw (gene transcript translation)){
+	
+	$group_sql = "SELECT count(*), s.name from source s, ".$type."_direct_xref dx, xref x where s.source_id = x.source_id and dx.general_xref_id = x.xref_id group by s.name";
+	
+	my $sum_sth = $dbi->prepare($group_sql);
+	$sum_sth->execute();
+	
+	$sum_sth->bind_columns(\$sum_count, \$sum_name);
+	
+	while($sum_sth->fetch){
+	  $sum_line{$sum_name}[3+$type_count] = $sum_count;	    
+	}
+	$sum_sth->finish;
+	$type_count++;
       }
       
-      $sum_sth->finish;
-      
-      # fifth the number of coordinate xrefs
+      # seventh the number of coordinate xrefs
       $group_sql = "SELECT count(*), s.name from source s, coordinate_xref cx  where s.source_id = cx.source_id group by s.name";
       
       my $sum_sth = $dbi->prepare($group_sql);
@@ -521,12 +533,12 @@ sub run {
       $sum_sth->bind_columns(\$sum_count, \$sum_name);
       
       while($sum_sth->fetch){
-	$sum_line{$sum_name}[4] = $sum_count;	    
+	$sum_line{$sum_name}[6] = $sum_count;	    
       }
       $sum_sth->finish;
       
       
-      # sixth the number of synonyms
+      # eigth the number of synonyms
       $group_sql = "select count(*), s.name from source s, xref x, synonym o where s.source_id = x.source_id and x.xref_id = o.xref_id group by s.name";
       
       my $sum_sth = $dbi->prepare($group_sql);
@@ -535,11 +547,11 @@ sub run {
       $sum_sth->bind_columns(\$sum_count, \$sum_name);
       
       while($sum_sth->fetch){
-	$sum_line{$sum_name}[5] = $sum_count;	    
+	$sum_line{$sum_name}[7] = $sum_count;	    
       }
     
       print "---------------------------------------------------------------------------------------\n";
-      print "TOTAL source                xrefs\tprim\tdep\tdir\tcoord\tsynonyms\n";
+      print "TOTAL source                xrefs\tprim\tdep\tgdir\ttdir\ttdir\tcoord\tsynonyms\n";
       foreach my $sum_name (keys %sum_line){
 	printf ("%-28s",$sum_name);
 	print join("\t",@{$sum_line{$sum_name}})."\n";
