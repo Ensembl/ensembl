@@ -41,6 +41,7 @@ package Bio::EnsEMBL::DBSQL::SequenceAdaptor;
 
 use vars qw(@ISA @EXPORT);
 use strict;
+use warnings;
 
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Bio::EnsEMBL::Utils::Exception qw(throw deprecate);
@@ -81,6 +82,28 @@ sub new {
 
   $self->{'seq_cache'} = \%seq_cache;
 
+
+#
+# See if this has any seq_region_attrib of type "_rna_edit_cache" if so store these
+# in a  hash.
+#
+
+  my $sth = $self->dbc->prepare('select sra.seq_region_id, sra.value from seq_region_attrib sra, attrib_type at where sra.attrib_type_id = at.attrib_type_id and code like "_rna_edit"');
+  
+  $sth->execute();
+  my ($seq_region_id, $value);
+  $sth->bind_columns(\$seq_region_id, \$value);
+  my %edits;
+  my $count = 0;
+  while($sth->fetch()){
+    $count++;
+    push @{$edits{$seq_region_id}}, $value;
+  }
+  $sth->finish;
+  if($count){
+    $self->{_rna_edits_cache} = \%edits;
+  }
+  
   return $self;
 }
 
@@ -212,12 +235,31 @@ sub fetch_by_Slice_start_end_strand {
      $seq .= 'N' x ($slice->length() - length($seq));
    }
 
+   if(defined($self->{_rna_edits_cache}) and defined($self->{_rna_edits_cache}->{$slice->get_seq_region_id})){
+     $self->_rna_edit($slice,\$seq);
+   }
+
    #if they asked for the negative slice strand revcomp the whole thing
    reverse_comp(\$seq) if($strand == -1);
 
    return \$seq;
 }
 
+
+
+sub _rna_edit {
+  my $self  = shift;
+  my $slice = shift;
+  my $seq   = shift; #reference to string
+
+  my $offset = $slice->start;   #substr start at 0 , but seq starts at 1 (so no -1 here)
+
+  foreach my $edit (@{$self->{_rna_edits_cache}->{$slice->get_seq_region_id}}){
+    my ($start, $end, $txt) = split (/\s+/, $edit);
+    substr($$seq,$start-$offset, ($end-$start)+1, $txt);
+  }
+  return;
+}
 
 
 sub _fetch_seq {
