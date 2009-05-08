@@ -308,8 +308,8 @@ sub get_available_adaptors {
         RepeatFeature            Sequence             SimpleFeature
         Slice                    SupportingFeature    Transcript
         TranscriptSupportingFeature Translation       UnmappedObject
-        UnconventionalTranscriptAssociation
-        AssemblySlice
+        UnconventionalTranscriptAssociation           AssemblySlice
+        SplicingEvent            SplicingEventFeature SplicingTranscriptPair
         ) ),
     # Those whose adaptors are in Map::DBSQL
     map( { $_ => "Bio::EnsEMBL::Map::DBSQL::${_}Adaptor" } qw(
