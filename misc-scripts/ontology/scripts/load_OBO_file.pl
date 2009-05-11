@@ -195,7 +195,7 @@ if (
     'dbport|port|P=i' => \$dbport,
     'dbuser|user|u=s' => \$dbuser,
     'dbpass|pass|p=s' => \$dbpass,
-    'dbname|d=s'      => \$dbname,
+    'dbname|name|d=s' => \$dbname,
     'truncate|t'      => \$truncate,
     'file|f=s'        => \$obo_file_name,
     'help|?'          => sub { usage(); exit } )
