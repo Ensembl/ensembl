@@ -1,3 +1,17 @@
+-- ---------------------------------------------------------------------
+-- The schema for the ensembl_ontology_NN database.
+-- ---------------------------------------------------------------------
+
+DROP TABLE IF EXISTS meta;
+CREATE TABLE meta (
+  meta_id       INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  meta_key      VARCHAR(64) NOT NULL,
+  meta_value    VARCHAR(128),
+
+  PRIMARY KEY (meta_id),
+  UNIQUE INDEX key_value_idx (meta_key, meta_value)
+);
+
 DROP TABLE IF EXISTS ontology;
 CREATE TABLE ontology (
   ontology_id   INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -55,3 +69,5 @@ CREATE TABLE closure (
     (parent_term_id, child_term_id, subparent_term_id),
   INDEX child_distance_idx (child_term_id, distance)
 );
+
+-- $Id$
