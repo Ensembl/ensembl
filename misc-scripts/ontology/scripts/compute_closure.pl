@@ -22,12 +22,12 @@ sub usage {
   printf( "\t%s\t-?\n", $0 );
   print("\n");
   print("Arguments:\n");
-  print("\t-h dbhost\tDatabase server host name\n");
-  print("\t-P dbport\tDatabase server port (optional)\n");
-  print("\t-u dbuser\tDatabase user name\n");
-  print("\t-p dbpass\tUser password (optional)\n");
-  print("\t-d dbname\tDatabase name\n");
-  print("\t-?\t\tDisplays this information\n");
+  print("\t-h/--host dbhost\tDatabase server host name\n");
+  print("\t-P/--port dbport\tDatabase server port (optional)\n");
+  print("\t-u/--user dbuser\tDatabase user name\n");
+  print("\t-p/--pass dbpass\tUser password (optional)\n");
+  print("\t-d/--name dbname\tDatabase name\n");
+  print("\t-?/--help\t\tDisplays this information\n");
 }
 
 #-----------------------------------------------------------------------
@@ -44,7 +44,7 @@ if (
     'dbport|port|P=i' => \$dbport,
     'dbuser|user|u=s' => \$dbuser,
     'dbpass|pass|p=s' => \$dbpass,
-    'dbname|d=s'      => \$dbname,
+    'dbname|name|d=s' => \$dbname,
     'help|?'          => sub { usage(); exit } )
   || !defined($dbhost)
   || !defined($dbuser)
@@ -127,3 +127,7 @@ while ( !defined($newsize) || $newsize > $oldsize ) {
 
 $dbh->do('ALTER TABLE closure ENABLE KEYS');
 $dbh->do('OPTIMIZE TABLE closure');
+
+$dbh->disconnect();
+
+# $Id$
