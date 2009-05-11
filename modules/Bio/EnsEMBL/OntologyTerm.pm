@@ -181,7 +181,7 @@ sub defintion {
 
 =head2 children
 
-  Args          : (optional) List of strings
+  Arg           : (optional) List of strings
                   The type of relations to retrieve children for.
 
   Description   : Returns the children terms of this ontology term.
@@ -231,7 +231,7 @@ sub descendants {
 
 =head2 parents
 
-  Args          : (optional) List of strings
+  Arg           : (optional) List of strings
                   The type of relations to retrieve parents for.
 
   Description   : Returns the parent terms of this ontology term.
