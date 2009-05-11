@@ -217,6 +217,7 @@ CREATE TABLE exon (
   end_phase                   TINYINT(2) NOT NULL,
 
   is_current                  BOOLEAN NOT NULL DEFAULT 1,
+  is_constitutive             BOOLEAN NOT NULL DEFAULT 0,
   
   PRIMARY KEY (exon_id),
   KEY seq_region_idx (seq_region_id, seq_region_start)
