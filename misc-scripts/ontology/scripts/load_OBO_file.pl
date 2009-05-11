@@ -15,30 +15,34 @@ sub usage {
   print("Usage:\n");
   printf( "\t%s\t-h dbhost [-P dbport] \\\n"
       . "\t%s\t-u dbuser [-p dbpass] \\\n"
-      . "\t%2\$s\t-d dbname \\\n"
+      . "\t%2\$s\t-d dbname [-t] \\\n"
       . "\t%2\$s\t-f file\n",
     $0, ' ' x length($0) );
   print("\n");
   printf( "\t%s\t-?\n", $0 );
   print("\n");
   print("Arguments:\n");
-  print("\t-h dbhost\tDatabase server host name\n");
-  print("\t-P dbport\tDatabase server port (optional)\n");
-  print("\t-u dbuser\tDatabase user name\n");
-  print("\t-p dbpass\tUser password (optional)\n");
-  print("\t-d dbname\tDatabase name\n");
-  print("\t-f file\t\tThe OBO file to parse\n");
-  print("\t-?\t\tDisplays this information\n");
+  print("\t-h/--host dbhost\tDatabase server host name\n");
+  print("\t-P/--port dbport\tDatabase server port (optional)\n");
+  print("\t-u/--user dbuser\tDatabase user name\n");
+  print("\t-p/--pass dbpass\tUser password (optional)\n");
+  print("\t-d/--name dbname\tDatabase name\n");
+  print(
+    "\t-t/--truncate\t\tTruncate (empty) each table\n");
+  print("\t\t\t\tbefore writing (optional)\n");
+  print("\t-f/--file file\t\tThe OBO file to parse\n");
+  print("\t-?/--help\t\tDisplays this information\n");
 }
 
 #-----------------------------------------------------------------------
 
 sub write_ontology {
-  my ( $dbh, $namespaces ) = @_;
+  my ( $dbh, $truncate, $namespaces ) = @_;
 
   print("Writing to 'ontology' table...\n");
 
-  $dbh->do("TRUNCATE TABLE ontology");
+  if ($truncate) { $dbh->do("TRUNCATE TABLE ontology") }
+
   $dbh->do("LOCK TABLE ontology WRITE");
 
   my $statement = "INSERT INTO ontology (name, namespace) VALUES (?,?)";
@@ -46,7 +50,9 @@ sub write_ontology {
   my $sth = $dbh->prepare($statement);
 
   my $count = 0;
-  while ( my ( $namespace, $ontology ) = each( %{$namespaces} ) ) {
+  foreach my $namespace ( keys( %{$namespaces} ) ) {
+    my $ontology = $namespaces->{$namespace};
+
     $sth->bind_param( 1, $ontology,  SQL_VARCHAR );
     $sth->bind_param( 2, $namespace, SQL_VARCHAR );
 
@@ -65,11 +71,12 @@ sub write_ontology {
 #-----------------------------------------------------------------------
 
 sub write_term {
-  my ( $dbh, $terms, $namespaces ) = @_;
+  my ( $dbh, $truncate, $terms, $namespaces ) = @_;
 
   print("Writing to 'term' table...\n");
 
-  $dbh->do("TRUNCATE TABLE term");
+  if ($truncate) { $dbh->do("TRUNCATE TABLE term") }
+
   $dbh->do("LOCK TABLE term WRITE");
 
   my $statement =
@@ -80,7 +87,9 @@ sub write_term {
   my $sth = $dbh->prepare($statement);
 
   my $count = 0;
-  while ( my ( $accession, $term ) = each( %{$terms} ) ) {
+  foreach my $accession ( keys( %{$terms} ) ) {
+    my $term = $terms->{$accession};
+
     $sth->bind_param( 1, $namespaces->{ $term->{'namespace'} }{'id'},
       SQL_INTEGER );
     $sth->bind_param( 2, $accession,            SQL_VARCHAR );
@@ -101,11 +110,12 @@ sub write_term {
 #-----------------------------------------------------------------------
 
 sub write_relation_type {
-  my ( $dbh, $relation_types ) = @_;
+  my ( $dbh, $truncate, $relation_types ) = @_;
 
   print("Writing to 'relation_type' table...\n");
 
-  $dbh->do("TRUNCATE TABLE relation_type");
+  if ($truncate) { $dbh->do("TRUNCATE TABLE relation_type") }
+
   $dbh->do("LOCK TABLE relation_type WRITE");
 
   my $statement = "INSERT INTO relation_type (name) VALUES (?)";
@@ -130,11 +140,12 @@ sub write_relation_type {
 #-----------------------------------------------------------------------
 
 sub write_relation {
-  my ( $dbh, $terms, $relation_types ) = @_;
+  my ( $dbh, $truncate, $terms, $relation_types ) = @_;
 
   print("Writing to 'relation' table...\n");
 
-  $dbh->do("TRUNCATE TABLE relation");
+  if ($truncate) { $dbh->do("TRUNCATE TABLE relation") }
+
   $dbh->do("LOCK TABLE relation WRITE");
 
   my $statement =
@@ -173,9 +184,10 @@ sub write_relation {
 
 my ( $dbhost, $dbport );
 my ( $dbuser, $dbpass );
-my ( $dbname, $obofile );
+my ( $dbname, $truncate, $obo_file_name );
 
-$dbport = '3306';
+$dbport   = '3306';
+$truncate = 0;
 
 if (
   !GetOptions(
@@ -184,12 +196,13 @@ if (
     'dbuser|user|u=s' => \$dbuser,
     'dbpass|pass|p=s' => \$dbpass,
     'dbname|d=s'      => \$dbname,
-    'file|f=s'        => \$obofile,
+    'truncate|t'      => \$truncate,
+    'file|f=s'        => \$obo_file_name,
     'help|?'          => sub { usage(); exit } )
   || !defined($dbhost)
   || !defined($dbuser)
   || !defined($dbname)
-  || !defined($obofile) )
+  || !defined($obo_file_name) )
 {
   usage();
   exit;
@@ -202,18 +215,43 @@ my $dbh =
   DBI->connect( $dsn, $dbuser, $dbpass,
   { 'RaiseError' => 1, 'PrintError' => 2 } );
 
-my $obo = IO::File->new( $obofile, 'r' ) or die;
+my $statement =
+  "SELECT meta_value FROM meta WHERE meta_key = 'OBO_file_date'";
+
+my $stored_obo_file_date = $dbh->selectall_arrayref($statement)->[0][0];
+my $obo_file_date;
+
+my $obo = IO::File->new( $obo_file_name, 'r' ) or die;
 
 my ( $state, $accession, $name, $namespace, $definition, %parents );
 my ( %terms, %namespaces, %relation_types );
 
-printf( "Reading OBO file '%s'...\n", $obofile );
+printf( "Reading OBO file '%s'...\n", $obo_file_name );
+
+my $date_is_checked = 0;
 
 while ( defined( my $line = $obo->getline() ) ) {
   chomp($line);
 
   if ( !defined($state) ) {
-    if ( $line =~ /^\[(\w+)\]$/ ) { $state = $1 }
+    if ( $line =~ /^\[(\w+)\]$/ ) { $state = $1; next }
+
+    if ( !$date_is_checked && $line =~ /^date: (.+)$/ ) {
+      $obo_file_date = sprintf( "%s/%s", $obo_file_name, $1 );
+
+      if ( defined($stored_obo_file_date)
+        && $stored_obo_file_date eq $obo_file_date )
+      {
+        print("This OBO file has already been processed.\n");
+        $obo->close();
+        $dbh->disconnect();
+        exit;
+      }
+
+      $date_is_checked = 1;
+
+    }
+
     next;
   }
 
@@ -272,9 +310,47 @@ $obo->close();
 
 print("Finished reading OBO file, now writing to database...\n");
 
-write_ontology( $dbh, \%namespaces );
-write_term( $dbh, \%terms, \%namespaces );
-write_relation_type( $dbh, \%relation_types );
-write_relation( $dbh, \%terms, \%relation_types );
+write_ontology( $dbh, $truncate, \%namespaces );
+write_term( $dbh, $truncate, \%terms, \%namespaces );
+write_relation_type( $dbh, $truncate, \%relation_types );
+write_relation( $dbh, $truncate, \%terms, \%relation_types );
+
+print("Updating meta table...\n");
+
+my $sth =
+  $dbh->prepare( "DELETE FROM meta "
+      . "WHERE meta_key = 'OBO_file_date' "
+      . "AND meta_value LIKE ?" );
+  $sth->bind_param( 1, sprintf( "%s/%%", $obo_file_name ),
+    SQL_VARCHAR );
+  $sth->execute();
+  $sth->finish();
+
+$sth = $dbh->prepare( "INSERT INTO meta (meta_key, meta_value)"
+    . "VALUES ('OBO_file_date', ?)" );
+$sth->bind_param( 1, $obo_file_date, SQL_VARCHAR );
+$sth->execute();
+$sth->finish();
+
+my $obo_load_date =
+  sprintf( "%s/%s", $obo_file_name, scalar( localtime() ) );
+
+$sth =
+  $dbh->prepare( "DELETE FROM meta "
+    . "WHERE meta_key = 'OBO_load_date' "
+    . "AND meta_value LIKE ?" );
+$sth->bind_param( 1, sprintf( "%s/%%", $obo_file_name ), SQL_VARCHAR );
+$sth->execute();
+$sth->finish();
+
+$sth = $dbh->prepare( "INSERT INTO meta (meta_key, meta_value)"
+    . "VALUES ('OBO_load_date', ?)" );
+$sth->bind_param( 1, $obo_load_date, SQL_VARCHAR );
+$sth->execute();
+$sth->finish();
 
 $dbh->disconnect();
+
+print("Done.\n");
+
+# $Id$
