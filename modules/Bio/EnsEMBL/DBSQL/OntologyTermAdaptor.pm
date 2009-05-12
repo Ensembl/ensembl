@@ -52,7 +52,6 @@ use warnings;
 
 use DBI qw( :sql_types );
 
-use Bio::EnsEMBL::Utils::Argument qw( rearrange );
 use Bio::EnsEMBL::Utils::Exception qw( throw );
 
 use Bio::EnsEMBL::OntologyTerm;
