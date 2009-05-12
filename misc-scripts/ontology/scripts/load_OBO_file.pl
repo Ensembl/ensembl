@@ -239,21 +239,34 @@ while ( defined( my $line = $obo->getline() ) ) {
     if ( !$date_is_checked && $line =~ /^date: (.+)$/ ) {
       $obo_file_date = sprintf( "%s/%s", $obo_file_name, $1 );
 
-      if ( defined($stored_obo_file_date)
-        && $stored_obo_file_date eq $obo_file_date )
-      {
-        print("This OBO file has already been processed.\n");
-        $obo->close();
-        $dbh->disconnect();
-        exit;
+      if ( defined($stored_obo_file_date) ) {
+        if ( $stored_obo_file_date eq $obo_file_date ) {
+          print("This OBO file has already been processed.\n");
+          $obo->close();
+          $dbh->disconnect();
+          exit;
+        } elsif ( index( $stored_obo_file_date, $obo_file_name ) != 1
+          && $truncate == 0 )
+        {
+          print <<EOT;
+==> Trying to load a newer (?) OBO file that has already been loaded.
+==> Please clean the database manually of data associated with this
+==> file and try again... or use the -t (truncate) switch to empty the
+==> tables completely (unless you want to preserve some of the data,
+==> obviously).
+EOT
+          $obo->close();
+          $dbh->disconnect();
+          exit;
+        }
       }
 
       $date_is_checked = 1;
 
-    }
+    } ## end if ( !$date_is_checked...
 
     next;
-  }
+  } ## end if ( !defined($state) )
 
   if ( $state eq 'Term' ) {
     if ( $line eq '' ) {
