@@ -735,38 +735,40 @@ sub do_upload {
 
 
 sub get_db_privs {
-  my $self = shift;
-  my $dbtype = shift;
+  my ( $self, $dbtype ) = @_;
 
   my %privs = ();
-  my $r;
+  my $rs;
 
   # get privileges from mysql db
   eval {
-    my $dbc = $self->get_DBAdaptor($dbtype)->dbc;
-    my $sql = qq(SHOW GRANTS FOR ).$dbc->username;
+    my $dbc = $self->get_DBAdaptor($dbtype)->dbc();
+    my $sql = qq(SHOW GRANTS FOR ) . $dbc->username();
     my $sth = $dbc->prepare($sql);
-    $sth->execute;
-    ($r) = $sth->fetchrow_array;
-    $sth->finish;
+    $sth->execute();
+    $rs = $sth->fetchall_arrayref();
+    $sth->finish();
   };
 
   if ($@) {
-    $self->logger->warning("Error obtaining privileges from $dbtype db: $@\n");
+    $self->logger->warning(
+      "Error obtaining privileges from $dbtype db: $@\n");
     return {};
   }
 
   # parse the output
-  $r =~ s/GRANT (.*) ON .*/$1/i;
-  foreach my $p (split(',', $r)) {
-    # trim leading and trailing whitespace
-    $p =~ s/^\s+//;
-    $p =~ s/\s+$//;
-    $privs{uc($p)} = 1;
+  foreach my $r ( map { $_->[0] } @{$rs} ) {
+    $r =~ s/GRANT (.*) ON .*/$1/i;
+    foreach my $p ( split( ',', $r ) ) {
+      # trim leading and trailing whitespace
+      $p =~ s/^\s+//;
+      $p =~ s/\s+$//;
+      $privs{ uc($p) } = 1;
+    }
   }
 
   return \%privs;
-}
+} ## end sub get_db_privs
 
 
 sub check_empty_tables {
