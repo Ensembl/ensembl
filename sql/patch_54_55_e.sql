@@ -7,7 +7,7 @@
 # for exons that are constitutive.  This is done by a script in
 # 'misc-scripts'.
 
-ALTER TABLE exon ADD COLUMN 'is_constitutive' BOOLEAN NOT NULL DEFAULT 0;
+ALTER TABLE exon ADD COLUMN is_constitutive BOOLEAN NOT NULL DEFAULT 0;
 
 # patch identifier
 INSERT INTO meta (species_id, meta_key, meta_value)
