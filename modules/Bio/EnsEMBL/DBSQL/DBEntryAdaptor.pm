@@ -344,17 +344,26 @@ sub store {
   # Check for the existance of the external_db, throw if it does not exist
   #
 
-  my $dbRef;
+  my ($dbRef, $release_clause);
 
   if ( !$ignore_release ) {
+
+	if(defined $exObj->release()){
+	  $release_clause = " AND db_release = ?";
+	}
+	else{
+	  $release_clause = " AND db_release is NULL";
+	}
+
+
     my $sth = $self->prepare( "
      SELECT external_db_id
        FROM external_db
       WHERE db_name    = ?
-        AND db_release = ?" );
+        $release_clause" );
 
     $sth->bind_param( 1, $exObj->dbname(),  SQL_VARCHAR );
-    $sth->bind_param( 2, $exObj->release(), SQL_VARCHAR );
+    $sth->bind_param( 2, $exObj->release(), SQL_VARCHAR ) if defined $exObj->release();
 
     $sth->execute();
 
