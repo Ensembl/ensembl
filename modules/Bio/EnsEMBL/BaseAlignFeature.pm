@@ -346,7 +346,7 @@ sub reverse_complement {
   Status     : Medium Risk
              : deprecation needs to be removed at some time
 
-=cut
+cut
 
 sub transform {
   my $self = shift;
