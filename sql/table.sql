@@ -737,8 +737,7 @@ CREATE TABLE go_xref (
   object_xref_id          INT(10) UNSIGNED DEFAULT '0' NOT NULL,
   linkage_type            ENUM('IC', 'IDA', 'IEA', 'IEP', 'IGI', 'IMP', 
 		               'IPI', 'ISS', 'NAS', 'ND', 'TAS', 'NR', 'RCA',
-			       'EXP','ISO','ISA','ISM','IGC')
-                          NOT NULL,
+			       'EXP','ISO','ISA','ISM','IGC'),
   source_xref_id          INT(10) UNSIGNED DEFAULT NULL,
   KEY (source_xref_id),
   UNIQUE (object_xref_id, source_xref_id, linkage_type)
