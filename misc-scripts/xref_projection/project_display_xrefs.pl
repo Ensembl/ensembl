@@ -602,8 +602,8 @@ sub check_overwrite_display_xref {
 
   if ($to_dbname eq "RefSeq_dna_predicted" || $to_dbname eq "RefSeq_peptide_predicted") {
 
-    if (($from_species eq "human" && $from_dbname eq "HGNC") ||
-	($from_species eq "mouse" && $from_dbname eq "MarkerSymbol")) {
+    if (($from_species eq "human" && $from_dbname =~ /HGNC/) ||
+	($from_species eq "mouse" && $from_dbname =~ /MarkerSymbol/)) {
 
       return 1;
 
