@@ -163,13 +163,18 @@ $dbh->{'alt'} = $dba->{'alt'}->dbc->db_handle;
 #
 $support->log_stamped("Creating table backups...\n");
 $support->log_stamped("seq_region...\n", 1);
-$dbh->{'ref'}->do('CREATE TABLE seq_region_bak SELECT * FROM seq_region');
+$dbh->{'ref'}->do('CREATE TABLE seq_region_bak LIKE seq_region');
+$dbh->{'ref'}->do('INSERT INTO seq_region_bak SELECT * FROM seq_region');
+
 $support->log_stamped("assembly...\n", 1);
-$dbh->{'ref'}->do('CREATE TABLE assembly_bak SELECT * FROM assembly');
+$dbh->{'ref'}->do('CREATE TABLE assembly_bak LIKE assembly');
+$dbh->{'ref'}->do('INSERT INTO assembly_bak SELECT * FROM assembly');
 $support->log_stamped("meta...\n", 1);
-$dbh->{'ref'}->do('CREATE TABLE meta_bak SELECT * FROM meta');
+$dbh->{'ref'}->do('CREATE TABLE meta_bak LIKE meta');
+$dbh->{'ref'}->do('INSERT INTO meta_bak SELECT * FROM meta');
 $support->log_stamped("coord_system...\n", 1);
-$dbh->{'ref'}->do('CREATE TABLE coord_system_bak SELECT * FROM coord_system');
+$dbh->{'ref'}->do('CREATE TABLE coord_system_bak LIKE coord_system');
+$dbh->{'ref'}->do('INSERT INTO coord_system_bak SELECT * FROM coord_system');
 $support->log_stamped("Done.\n\n");
 
 #####
@@ -243,7 +248,7 @@ my $alt_assembly = $support->param('altassembly');
 # fetch and insert alternative seq_regions with adjusted seq_region_id and
 # coord_system_id
 $sql = qq(
-    INSERT INTO $ref_db.seq_region
+    INSERT IGNORE INTO $ref_db.seq_region
     SELECT
         sr.seq_region_id+$sri_adjust,
         sr.name,
@@ -267,7 +272,7 @@ $support->log_stamped("Adding coord_system entries...\n");
 $c = 0;
 foreach my $cs (@coord_systems) {
   $sql = qq(
-      INSERT INTO $ref_db.coord_system
+      INSERT IGNORE INTO $ref_db.coord_system
       SELECT coord_system_id+$csi_adjust, 1,name, version,
         (SELECT MAX(rank)+1 FROM $ref_db.coord_system), ''
       FROM coord_system
@@ -287,7 +292,7 @@ foreach my $cs (@coord_systems) {
   my $mappingstring = "$cs:".$support->param('assembly').
       "#$cs:".$support->param('altassembly');
   $sql = qq(
-      INSERT INTO meta (meta_key, meta_value)
+      INSERT IGNORE INTO meta (meta_key, meta_value)
       VALUES ('assembly.mapping', '$mappingstring')
   );
   $c += $dbh->{'ref'}->do($sql);
