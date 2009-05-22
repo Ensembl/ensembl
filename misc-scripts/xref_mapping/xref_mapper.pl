@@ -27,19 +27,25 @@ my $file;
 my $dumpcheck;
 my $upload = 0;
 my $nofarm;
-my $verbose;
+my $partupdate;
+my $notverbose ;
 
+
+my $options = join(" ",@ARGV);
 print "Options: ".join(" ",@ARGV)."\n";
 
 GetOptions ('file=s'                    => \$file,
             'dumpcheck'                 => \$dumpcheck, 
             'upload'                    => \$upload,
-	    'verbose'                   => \$verbose,  
+	    'notverbose'                => \$notverbose,  
             'nofarm'                    => \$nofarm, 
+            'partupdate'                  => \$partupdate,
             'help'                      => sub { usage(); exit(0); } );
 
 
-my $mapper = XrefMapper::BasicMapper->process_file($file, $verbose);
+my $mapper = XrefMapper::BasicMapper->process_file($file, !$notverbose);
+
+$mapper->add_meta_pair("mapper options",$options);
 
 
 if(defined($dumpcheck)){
@@ -48,10 +54,12 @@ if(defined($dumpcheck)){
 if(defined($nofarm)){
   $mapper->nofarm("yes");
 }
-if(defined($verbose)){
+if(!defined($notverbose)){
+    print "running in verbose mode\n";
   $mapper->verbose(1);
 }
 else{
+  print "running in quite mode.\n";
   $mapper->verbose(0);
 }
 
@@ -163,12 +171,43 @@ if($status eq "coordinate_xref_finished" and $upload){
 # generate display_xrefs and descriptions for gene and transcripts. 
 
 $status = $mapper->xref_latest_status();
+
+my $fullmode;
+if(defined($partupdate)){
+  print "partupdate is set to $partupdate over ruling the precalulated value\n" if($mapper->verbose);
+  $fullmode = 0;
+}
+else{
+  if($mapper->get_meta_value("fullmode") eq "yes"){
+    $fullmode = 1;
+  }
+  elsif($mapper->get_meta_value("fullmode") eq "no"){
+    $fullmode = 0;
+  }
+  else{
+    print "WARNING: No value for fullmode in meta table using fullmode anyway\n";
+    $fullmode = 1;
+  }
+}
+
+
 if(($status eq "core_loaded" or $status eq "display_xref_done") and $upload){
 
+  
   my $display = XrefMapper::DisplayXrefs->new($mapper);
-  $display->genes_and_transcripts_attributes_set();
-
+  $display->genes_and_transcripts_attributes_set($fullmode);
+  
 }
+#}
+#else{
+#  my $display = XrefMapper::DisplayXrefs->new($mapper);
+#  $display->pump_up_the_jam();
+#  #$display->while_your_feet_are_stomping();
+#  #$display->set_status(); # set KNOWN,NOVEL etc 
+
+#}
+
+
 
 sub usage {
 
@@ -183,11 +222,16 @@ sub usage {
 
   -upload           Write data from xref database to core database.
 
-  -verbose          Give information about progress and possible warnings.
-                    (Very much recomended)
+  -notverbose       Do not give information about progress and possible warnings.
 
   -nofarm           Run the exonerate jobs locally and not on the compute farm.
 
+  -partupdate       Not all xrefs have been updated hence to get the gene descriptions
+                    etc we need to work out these via the core database.
+                    (Note this is much slower, but has to be done if you are only updating 
+                     a few xref sources) 
+                    By default this is calulated from the parsing options used.
+                    ONLY set if you know what the consequences will be!!
 
 Below is an example of the configuration file
 ####################################################
