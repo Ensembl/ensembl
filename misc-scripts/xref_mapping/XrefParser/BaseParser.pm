@@ -1286,6 +1286,17 @@ sub upload_direct_xrefs{
   }
 }
 
+sub add_meta_pair {
+
+  my ($self, $key, $value) = @_;
+
+  my $dbi = dbi();
+  my $sth = $dbi->prepare('insert into meta (meta_key, meta_value, date) values("'.$key.'", "'.$value.'", now())');
+  $sth->execute;
+  $sth->finish;
+
+}
+
 
 
 # --------------------------------------------------------------------------------
@@ -1306,6 +1317,7 @@ sub get_dependent_xref_sources {
       my $source_id = $row[1];
       $dependent_sources{$source_name} = $source_id;
     }
+    $sth->finish;
   }
 
   return %dependent_sources;
@@ -2296,6 +2308,65 @@ SYN
 
 }
 
+#
+# Store data needed to beable to revert to same stage as after parsing
+#
+
+sub parsing_finished_store_data{
+  my $self = shift;
+
+# Store max id for 
+
+# gene/transcript/translation_direct_xref     general_xref_id  #Does this change??
+
+# xref                                        xref_id
+
+# dependent_xref                              object_xref_id is all null
+
+# go_xref                                     object_xref_id
+# object_xref                                 object_xref_id
+# identity_xref                               object_xref_id
+
+  my %table_and_key = ('xref' => "xref_id", 'object_xref' => "object_xref_id");
+
+  my $dbi = $self->dbi();
+  foreach my  $table (keys %table_and_key){
+    print "select MAX(".$table_and_key{$table}.") from $table\n";
+    my $sth = $dbi->prepare("select MAX(".$table_and_key{$table}.") from $table");
+    $sth->execute;
+    my $max_val;
+    $sth->bind_columns(\$max_val);
+    $sth->fetch;
+    $self->add_meta_pair("PARSED_".$table_and_key{$table}, $max_val);
+    $sth->finish;
+  }
+  
+}
+
+
+
+sub reset_to_just_parsed{
+  my $self= shift;
+
+ # for dependent_xref set object_xref_id to NULL
+
+
+ # delete all from gene_transcript_translation, gene/transcript/translation_stable_id, object_xref, identity_xref, go_xref
+
+ # delete from xref where xref_id > MAX
+
+
+ # set process_status to "parsing_finished"
+
+
+}
+
+
+sub reset_to_mapping_finished{
+  my $self= shift;
+ $self->reset_to_parsed();
+#set process_status to "mapping_finished"
+}
 
 # --------------------------------------------------------------------------------
 1;
