@@ -77,7 +77,8 @@ CREATE TABLE source (
 
   source_id                   int unsigned not null auto_increment,
   name                        varchar(255) not null,
-  source_release                     varchar(255),
+  status                      enum('KNOWN','XREF','PRED','ORTH','PSEUDO','NOIDEA') not null default 'NOIDEA',
+  source_release              varchar(255),
   download                    enum('Y', 'N') default 'Y',
   ordered                     int unsigned not null, 
   priority                    int unsigned default 1,
@@ -371,5 +372,22 @@ CREATE TABLE go_xref (
   UNIQUE (object_xref_id, source_xref_id, linkage_type)
 
 ) COLLATE=latin1_swedish_ci TYPE=InnoDB;
+
+
+CREATE TABLE meta (
+
+  meta_id                     INT NOT NULL AUTO_INCREMENT,
+  species_id                  INT UNSIGNED DEFAULT 1,
+  meta_key                    VARCHAR(40) NOT NULL,
+  meta_value                  VARCHAR(255) BINARY NOT NULL,
+  date                        DATETIME NOT NULL,
+
+  PRIMARY   KEY (meta_id),
+  UNIQUE    KEY species_key_value_idx (meta_id, species_id, meta_key, meta_value),
+            KEY species_value_idx (species_id, meta_value)
+
+) COLLATE=latin1_swedish_ci TYPE=InnoDB;
+
+
 
 
