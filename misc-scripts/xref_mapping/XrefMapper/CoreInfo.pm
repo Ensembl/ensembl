@@ -51,6 +51,37 @@ sub get_core_data {
 # transcript_stable_id
 # translation_stable_id
 
+
+ # Get the status for the sources from the core database to work out status's later
+ 
+ my %external_name_to_status;
+
+ my $sth = $self->core->dbc->prepare("select db_name, status from external_db");
+ $sth->execute();
+ my  ($name, $status, $id);
+ $sth->bind_columns(\$name,\$status); 
+ while($sth->fetch()){
+   $external_name_to_status{$name} = $status;
+ }
+ $sth->finish;
+
+
+ my $sth_up = $self->xref->dbc->prepare("update source set status = 'KNOWN' where source_id = ?");
+ 
+
+ my $sql = 'select s.source_id, s.name from source s, xref x where x.source_id = s.source_id group by s.source_id'; # only get those of interest
+ $sth = $self->xref->dbc->prepare($sql);
+ $sth->execute();
+ $sth->bind_columns(\$id, \$name);
+ while($sth->fetch()){
+   if(defined($external_name_to_status{$name})){
+     # set status
+     $sth_up->execute($id);
+   }
+ }
+ $sth->finish;
+ $sth_up->finish;
+
   my $object_xref_id;
   my $ox_sth = $self->xref->dbc->prepare("select max(object_xref_id) from object_xref");
   $ox_sth->execute();
@@ -62,8 +93,8 @@ sub get_core_data {
 
  my $ins_sth =  $self->xref->dbc->prepare("insert into gene_transcript_translation (gene_id, transcript_id, translation_id) values (?, ?, ?)"); 
 
- my $sql = "select tn.gene_id, tn.transcript_id, tl.translation_id from transcript tn left join translation tl on tl.transcript_id = tn.transcript_id";
- my $sth = $self->core->dbc->prepare($sql);
+ $sql = "select tn.gene_id, tn.transcript_id, tl.translation_id from transcript tn left join translation tl on tl.transcript_id = tn.transcript_id";
+ $sth = $self->core->dbc->prepare($sql);
  $sth->execute();
  my  ($gene_id, $transcript_id, $translation_id);
  $sth->bind_columns(\$gene_id, \$transcript_id, \$translation_id); 
@@ -75,7 +106,7 @@ sub get_core_data {
 
 
  # load table xxx_stable_id
- my ($id, $stable_id);
+ my ($stable_id);
  foreach my $table (qw(gene transcript translation)){
    my $sth = $self->core->dbc->prepare("select ".$table."_id, stable_id from ".$table."_stable_id");
    my $ins_sth = $self->xref->dbc->prepare("insert into ".$table."_stable_id (internal_id, stable_id) values(?, ?)");
@@ -87,6 +118,8 @@ sub get_core_data {
    $ins_sth->finish;
    $sth->finish;
  }
+
+
 
  $sth = $self->xref->dbc->prepare("insert into process_status (status, date) values('core_data_loaded',now())");
  $sth->execute();
@@ -121,7 +154,6 @@ SQL
    my $sql = $stable_sql;
    $sql =~ s/TYPE/$table/g;
    my $sth = $self->xref->dbc->prepare($sql);
-#   print "sql = $sql\n";
    $sth->execute();
    $sth->bind_columns(\$dbname, \$xref_id, \$internal_id, \$stable_id);
    my $count =0;
@@ -137,7 +169,6 @@ SQL
 	   print "Could not find stable id $stable_id in table to get the internal id hence ignoring!!! (for $dbname)\n" if($self->verbose);
 	 }
 	 $err_count{$dbname}++;
-#	 $err_count++;
          next;
        }
      }
@@ -188,7 +219,7 @@ SQL
 #   }
  }
  foreach my $key (%err_count){
-   print STDERR "*WARNING*: ".$err_count{$key}." direct xrefs for database $key could not be added as their stable_ids could not be found\n";
+   print STDERR "*WARNING*: ".$err_count{$key}." direct xrefs for database ".$key." could not be added as their stable_ids could not be found\n";
  }
  $ins_go_sth->finish;
  $ins_ox_sth->finish;
