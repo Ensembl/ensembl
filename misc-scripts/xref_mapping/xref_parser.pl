@@ -8,11 +8,15 @@ my ( $host,             $port,          $dbname,
      $sources,          $checkdownload, $create,
      $release,          $cleanup,       $drop_existing_db,
      $deletedownloaded, $dl_path,       $notsource,
-     $unzip, $stats, $verbose );
+     $unzip, $stats, $notverbose );
+
+my $options = join(" ",@ARGV);
 
 print "Options: ".join(" ",@ARGV)."\n";
 
 $unzip = 0;    # Do not decompress gzipped files by default
+
+$notverbose = 0;
 
 GetOptions(
     'dbuser|user=s'  => \$user,
@@ -28,7 +32,7 @@ GetOptions(
     'setrelease=s'   => \$release,
     'cleanup'        => \$cleanup,
     'stats'          => \$stats,
-    'verbose'        => \$verbose,
+    'notverbose'     => \$notverbose,
     'notsource=s'    => \$notsource,
     'drop_db|dropdb!' =>
       \$drop_existing_db,    # Drop xref db without user interaction
@@ -48,7 +52,17 @@ if ( !$user || !$host || !$dbname ) {
     exit(1);
 }
 
+
+print "host os $host\n";
+
 my $base_parser = XrefParser::BaseParser->new();
+
+
+#
+# If any sources are missing then we need to calculate the display xrefs from the core.
+# As the xref database will not have all the data. Using the core is much slower!!
+#
+
 
 $base_parser->run(
                $host, ( defined $port ? $port : '3306' ),
@@ -58,7 +72,18 @@ $base_parser->run(
                $create,           $release,
                $cleanup,          $drop_existing_db,
                $deletedownloaded, $dl_path,
-               \@notsource,       $unzip, $stats, $verbose );
+               \@notsource,       $unzip, $stats, !($notverbose) );
+
+$base_parser->add_meta_pair("options",$options);
+
+if($options =~ /source/ ){
+  $base_parser->add_meta_pair("fullmode","no");
+}
+else{
+  $base_parser->add_meta_pair("fullmode","yes");
+}
+
+$base_parser->parsing_finished_store_data();
 
 # --------------------------------------------------------------------------------
 
@@ -125,7 +150,7 @@ sub usage {
   -unzip            Decompress gzipped files (default is to use compressed
                     files).
 
-  -verbose          Output messages about the parsing.
+  -notverbose       Do not output messages about the parsing. (NOT recomended)
 
   -stats            Generate the stats for the number of types of xrefs added.
 
