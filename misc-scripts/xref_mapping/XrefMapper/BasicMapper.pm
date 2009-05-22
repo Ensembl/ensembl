@@ -67,6 +67,16 @@ sub core{
 }
 
 
+sub add_meta_pair {
+
+  my ($self, $key, $value) = @_;
+
+  my $sth = $self->xref->dbc->prepare('insert into meta (meta_key, meta_value, date) values("'.$key.'", "'.$value.'", now())');
+  $sth->execute;
+  $sth->finish;
+
+}
+
 
 sub xref_latest_status { 
   my $self = shift;
@@ -85,6 +95,19 @@ sub xref_latest_status {
 
 }
 
+sub get_meta_value {
+  my ($self, $key) = @_;
+
+  my $sth = $self->xref->dbc->prepare('select meta_value from meta where meta_key like "'.$key.'"');
+  
+  $sth->execute();
+  my $value;
+  $sth->bind_columns(\$value);
+  $sth->fetch;
+  $sth->finish;
+
+  return $value;  
+}
 
 sub process_file {
   my $self = shift;
@@ -182,6 +205,7 @@ sub process_file {
 			       -dbname => $dbname);
     
     $mapper->xref($xref);
+    $mapper->add_meta_pair("xref", $host.":".$dbname);
     if(defined($xref_hash{'dir'})){
       $xref->dir($xref_hash{'dir'});
       if(!-d $xref_hash{'dir'}){
@@ -225,6 +249,7 @@ sub process_file {
 				  -dbname => $dbname);
     
     $mapper->core($core);
+    $mapper->add_meta_pair("species", $host.":".$dbname);
 
     if(defined($species_hash{'dir'})){
       $core->dir($species_hash{'dir'});
