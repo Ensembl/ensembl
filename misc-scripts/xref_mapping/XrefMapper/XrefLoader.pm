@@ -104,7 +104,7 @@ sub update{
   my $go_sth       =  $self->core->dbc->prepare('DELETE FROM go_xref');
   my $identity_sth =  $self->core->dbc->prepare('DELETE identity_xref FROM identity_xref, object_xref, xref WHERE identity_xref.object_xref_id = object_xref.object_xref_id AND object_xref.xref_id = xref.xref_id AND xref.external_db_id = ?');
   my $object_sth   =  $self->core->dbc->prepare('DELETE object_xref FROM object_xref, xref WHERE object_xref.xref_id = xref.xref_id AND xref.external_db_id = ?');
-#  my $dependent_sth = $self->core->dbc->prepare('DELETE dependent_xref FROM dependent_xref, xref  WHERE dependent_xref.dependent_xref_id = xref.xref_id and xref.external_db_id = ?');
+  my $dependent_sth = $self->core->dbc->prepare('DELETE dependent_xref FROM dependent_xref, xref  WHERE dependent_xref.dependent_xref_id = xref.xref_id and xref.external_db_id = ?');
   my $xref_sth     =  $self->core->dbc->prepare('DELETE FROM xref WHERE xref.external_db_id = ?');
   my $unmapped_sth =  $self->core->dbc->prepare('DELETE FROM unmapped_object WHERE type="xref" and external_db_id = ?');
 
@@ -121,7 +121,7 @@ sub update{
     }
     $identity_sth->execute($ex_id);
     $object_sth->execute($ex_id);  
-#    $dependent_sth->execute($ex_id);
+    $dependent_sth->execute($ex_id);
     $xref_sth->execute($ex_id);
     $unmapped_sth->execute($ex_id);
   }
@@ -131,7 +131,7 @@ sub update{
   $go_sth->finish;  
   $identity_sth->finish;
   $object_sth->finish;  
-#  $dependent_sth->finish;
+  $dependent_sth->finish;
   $xref_sth->finish;
   $unmapped_sth->finish; 
 
@@ -139,23 +139,27 @@ sub update{
   ##### Create temp table dependent_xref (until schema changes) #
   ###############################################################
 
+#
+# This has now been added. :-)
+#
+
  
-  $sql = (<<SQL);
-  Create TABLE dependent_xref(
-     object_xref_id         INT NOT NULL,
-     master_xref_id         INT NOT NULL,
-     dependent_xref_id      INT NOT NULL,
+#  $sql = (<<SQL);
+#  Create TABLE dependent_xref(
+#     object_xref_id         INT NOT NULL,
+#     master_xref_id         INT NOT NULL,
+#     dependent_xref_id      INT NOT NULL,
 
-     PRIMARY KEY( object_xref_id ),
-     KEY dependent ( dependent_xref_id ),
-     KEY master_idx (master_xref_id)
+#     PRIMARY KEY( object_xref_id ),
+#     KEY dependent ( dependent_xref_id ),
+#     KEY master_idx (master_xref_id)
 
-   ) COLLATE=latin1_swedish_ci TYPE=MyISAM
-SQL
+#   ) COLLATE=latin1_swedish_ci TYPE=MyISAM
+#SQL
 
-  $sth = $self->core->dbc->prepare($sql);
-  $sth->execute || die "Could not create temp table dependent_xref\n";
-  $sth->finish;
+#  $sth = $self->core->dbc->prepare($sql);
+#  $sth->execute || die "Could not create temp table dependent_xref\n";
+#  $sth->finish;
 
   ##### Delete this ONLY after the gene/transcript display_xref and description calculations.
 
@@ -172,6 +176,8 @@ SQL
   $sth->finish;
   $xref_offset = 0 if(!defined($xref_offset));
 
+  $self->add_meta_pair("xref_offset", $xref_offset);
+
   $sth = $self->core->dbc->prepare('select MAX(object_xref_id) from object_xref');
   my $object_xref_offset;
   $sth->execute;
@@ -179,6 +185,8 @@ SQL
   $sth->fetch();
   $sth->finish;
   $object_xref_offset = 0 if(!defined($object_xref_offset));
+
+  $self->add_meta_pair("object_xref_offset", $object_xref_offset);
 
 
   ####################
@@ -200,7 +208,7 @@ SQL
 
      my $direct_sth = $self->xref->dbc->prepare('select x.xref_id, x.accession, x.label, x.version, x.description, x.info_text, ox.object_xref_id, ox.ensembl_id, ox.ensembl_object_type from xref x, object_xref ox  where ox.ox_status = "DUMP_OUT" and ox.xref_id = x.xref_id and x.source_id = ? and x.info_type = ? order by x.xref_id');
  
-     my $dependent_sth = $self->xref->dbc->prepare('select  x.xref_id, x.accession, x.label, x.version, x.description, x.info_text, ox.object_xref_id, ox.ensembl_id, ox.ensembl_object_type, d.master_xref_id from xref x, object_xref ox,  dependent_xref d where ox.ox_status = "DUMP_OUT" and ox.xref_id = x.xref_id and d.object_xref_id = ox.object_xref_id and x.source_id = ? and x.info_type = ? order by x.xref_id, ox.ensembl_id');
+     $dependent_sth = $self->xref->dbc->prepare('select  x.xref_id, x.accession, x.label, x.version, x.description, x.info_text, ox.object_xref_id, ox.ensembl_id, ox.ensembl_object_type, d.master_xref_id from xref x, object_xref ox,  dependent_xref d where ox.ox_status = "DUMP_OUT" and ox.xref_id = x.xref_id and d.object_xref_id = ox.object_xref_id and x.source_id = ? and x.info_type = ? order by x.xref_id, ox.ensembl_id');
 
 
   my $go_sql =(<<GSQL);
@@ -308,12 +316,12 @@ GSQL
 	   push @xref_list, $xref_id;
 	   $count++;
 	   $add_xref_sth->execute(($xref_id+$xref_offset), $ex_id, $acc, $label || $acc, $version, $desc, $type, $info || $where_from);
-	   $last_xref = $xref_id;
 	 }
 	 if($last_xref != $xref_id or $last_ensembl != $ensembl_id){
 	   $add_object_xref_sth->execute(($object_xref_id+$object_xref_offset), $ensembl_id, $ensembl_type, ($xref_id+$xref_offset), $analysis_ids{$ensembl_type});
 	   $add_dependent_xref_sth->execute(($object_xref_id+$object_xref_offset), ($master_xref_id+$xref_offset), ($xref_id+$xref_offset) );
 	 }
+	 $last_xref = $xref_id;
 	 $last_ensembl = $ensembl_id;
        }  
        print "DEP $count\n" if ($verbose);
