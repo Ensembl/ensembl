@@ -87,20 +87,33 @@ sub genes_and_transcripts_attributes_set{
   # build_meta_timestamp, and, if "-upload" is set, uses the SQL files
   # produced to update the core database.
 
-  my ($self) = @_;
+  my ($self,$fullmode) = @_;
 
   my $status = $self->mapper->xref_latest_status();
-  if($status ne "display_xref_done"){
-    $self->build_transcript_and_gene_display_xrefs();
+  
+  if(!$fullmode){
     
+    if($status ne "display_xref_done"){
+      $self->build_transcript_and_gene_display_xrefs();
+      
+      my $sth_stat = $self->xref->dbc->prepare("insert into process_status (status, date) values('display_xref_done',now())");
+      $sth_stat->execute();
+      $sth_stat->finish;
+      
+    }
+    
+    $self->new_build_gene_descriptions();
+    $self->build_gene_transcript_status();
+  }
+  else{
+    $self->set_display_xrefs();
     my $sth_stat = $self->xref->dbc->prepare("insert into process_status (status, date) values('display_xref_done',now())");
     $sth_stat->execute();
     $sth_stat->finish;
-    
+    $self->set_gene_descriptions();
+    $self->set_status(); # set KNOWN,NOVEL etc 
   }
 
-  $self->new_build_gene_descriptions();
-  $self->build_gene_transcript_status();
   $self->build_meta_timestamp;
 
   my $sth_stat = $self->xref->dbc->prepare("insert into process_status (status, date) values('gene_description_done',now())");
@@ -110,13 +123,65 @@ sub genes_and_transcripts_attributes_set{
   return 1;
 }
 
+sub set_status{
+  my $self = shift;
+# set all genes to NOVEL
+  
+  my $reset_sth = $self->core->dbc->prepare('UPDATE gene SET status = "NOVEL"');
+  $reset_sth->execute();
+  $reset_sth->finish;
 
+  $reset_sth = $self->core->dbc->prepare('UPDATE transcript SET status = "NOVEL"');
+  $reset_sth->execute();
+  $reset_sth->finish;
+  
+  my $update_gene_sth = $self->core->dbc->prepare('UPDATE gene SET status = "KNOWN" where gene_id = ?');
+  my $update_tran_sth = $self->core->dbc->prepare('UPDATE transcript SET status = "KNOWN" where transcript_id = ?');
+
+  
+my $known_xref_sql =(<<DXS);
+  SELECT distinct (gtt.gene_id), gtt.transcript_id 
+    FROM source s, xref x, object_xref ox, identity_xref ix, gene_transcript_translation gtt
+     WHERE  x.source_id = s.source_id 
+       AND x.xref_id = ox.xref_id 
+       AND ox.ox_status = "DUMP_OUT"   
+       AND (          (ox.ensembl_object_type = "Transcript" and gtt.transcript_id = ox.ensembl_id)       
+                 OR   (ox.ensembl_object_type = "Translation" and gtt.translation_id = ox.ensembl_id)
+                 OR   (ox.ensembl_object_type = "Gene" and gtt.gene_id = ox.ensembl_id)     
+           )
+       AND ox.object_xref_id = ix.object_xref_id 
+       AND s.status like "KNOWN"
+  ORDER BY gtt.gene_id DESC, gtt.transcript_id DESC
+DXS
+
+
+  my $last_gene = 0;
+
+  my $known_xref_sth = $self->xref->dbc->prepare($known_xref_sql);
+
+  $known_xref_sth->execute();
+  my ($gene_id, $transcript_id);  # remove labvel after testig it is not needed
+  $known_xref_sth->bind_columns(\$gene_id, \$transcript_id);
+  while($known_xref_sth->fetch()){
+    if($gene_id != $last_gene){
+      $update_gene_sth->execute($gene_id);
+      $last_gene = $gene_id;
+    } 
+    $update_tran_sth->execute($transcript_id);
+  }
+  $known_xref_sth->finish;
+  $update_gene_sth->finish;
+  $update_tran_sth->finish;
+  
+
+}
 
 
 sub build_transcript_and_gene_display_xrefs {
   my ($self) = @_;
 
   print "Building Transcript and Gene display_xrefs\n" if ($self->verbose);
+
 
 
   my %external_name_to_id;
@@ -304,7 +369,7 @@ GSQL
 				   \$display_label, \$external_db_name, 
 				   \$linkage_annotation);
 	while($primary_sth->fetch()){
-	  if($level{$ex_db_id}  and $display_label =~ /\D+/ ){ #correct level and label is not just a number 	
+	  if(defined($level{$ex_db_id})  and $display_label =~ /\D+/ ){ #correct level and label is not just a number 	
 	    if(defined($$ignore{$external_db_name})){
 	      if($linkage_annotation =~ /$$ignore{$external_db_name}/){
 		next;
@@ -350,7 +415,7 @@ GSQL
 	$direct_sth->bind_columns(\$xref_id, \$ex_db_id, \$display_label,
 				  \$external_db_name, \$linkage_annotation);
 	while($direct_sth->fetch()){
-	  if($level{$ex_db_id}  and $display_label =~ /\D+/){ 	
+	  if(defined($level{$ex_db_id})  and $display_label =~ /\D+/){ 	
 	    if(defined($$ignore{$external_db_name})){
 	      if($linkage_annotation =~ /$$ignore{$external_db_name}/){
 		next;
@@ -431,7 +496,6 @@ sub load_translation_to_transcript{
 
 
 sub build_genes_to_transcripts {
-
   my ($self) = @_;
 
   my $sql = "SELECT gene_id, transcript_id, seq_region_start, seq_region_end FROM transcript";
@@ -457,6 +521,7 @@ sub new_build_gene_descriptions{
   
 
   print "Building gene Descriptions\n" if ($self->verbose);
+
 
   my $update_gene_desc_sth =  $self->core->dbc->prepare("UPDATE gene SET description = ? where gene_id = ?");
 
@@ -771,9 +836,12 @@ GSQL
     }
   }
   # remove until dependent_xref added to core database
-  my $sth = $self->core->dbc->prepare("drop table dependent_xref");
-  $sth->execute || die "Could not drop temp table dependent_xref\n";
-  $sth->finish;  
+
+  # Now is part of the xref system.
+
+#  my $sth = $self->core->dbc->prepare("drop table dependent_xref");
+#  $sth->execute || die "Could not drop temp table dependent_xref\n";
+#  $sth->finish;  
 
   return;
 }
@@ -861,8 +929,27 @@ sub build_meta_timestamp{
 
 
 
-sub pump_up_the_jam{
+sub set_display_xrefs{
   my $self = shift;
+
+
+  print "Building Transcript and Gene display_xrefs\n" if ($self->verbose);
+
+  my $xref_offset = $self->get_meta_value("xref_offset");
+
+  print "Using xref_off set of $xref_offset\n" if($self->verbose);
+
+  my $reset_sth = $self->core->dbc->prepare("UPDATE gene SET display_xref_id = null");
+  $reset_sth->execute();
+  $reset_sth->finish;
+ 
+  $reset_sth = $self->core->dbc->prepare("UPDATE transcript SET display_xref_id = null");
+  $reset_sth->execute();
+  $reset_sth->finish;
+
+  my $update_gene_sth = $self->core->dbc->prepare("UPDATE gene g SET g.display_xref_id= ? WHERE g.gene_id=?");
+  my $update_tran_sth = $self->core->dbc->prepare("UPDATE transcript t SET t.display_xref_id= ? WHERE t.transcript_id=?");
+
 
 my $sql =(<<SQL); 
   CREATE TABLE display_xref_prioritys(
@@ -886,7 +973,7 @@ SQL
 # So the higher the number the better then 
 #
 
-
+  print "Presedence for the display xrefs\n" if($self->verbose);
   foreach my $name (reverse (@$presedence)){
     $i++;
     $get_source_id_sth->execute($name);
@@ -894,24 +981,13 @@ SQL
     $get_source_id_sth->bind_columns(\$source_id);
     while($get_source_id_sth->fetch){
       $ins_p_sth->execute($source_id, $i);
+      print "\t$name\t$i\n" if ($self->verbose);
     }	
   }
   $ins_p_sth->finish;
   $get_source_id_sth->finish;
 
-#my $display_xref_sql =(<<DXS);
-#  SELECT (if(gtt1.gene_id,gtt1.gene_id,0)+if(gtt2.gene_id,gtt2.gene_id,0)+if(gtt3.gene_id,gtt3.gene_id,0)) as gene,(if(gtt1.transcript_id,gtt1.transcript_id,0)+if(gtt2.transcript_id,gtt2.transcript_id,0)+if(gtt3.transcript_id,gtt3.transcript_id,0)) ,  p.priority, x.xref_id, ox.ensembl_object_type, x.label  
-#    FROM (source s, xref x, identity_xref ix, display_xref_prioritys p, object_xref ox)
-#     LEFT JOIN gene_transcript_translation gtt1 on (gtt1.gene_id = ox.ensembl_id and ox.ensembl_object_type = "Gene")
-#     LEFT JOIN gene_transcript_translation gtt2 on (gtt2.transcript_id = ox.ensembl_id and ox.ensembl_object_type = "Transcript")
-#     LEFT JOIN gene_transcript_translation gtt3 on (gtt3.translation_id = ox.ensembl_id and ox.ensembl_object_type = "Translation")
-#     WHERE  x.source_id = s.source_id 
-#       AND x.xref_id = ox.xref_id 
-#       AND ox.ox_status = "DUMP_OUT"   
-#       AND ox.object_xref_id = ix.object_xref_id 
-#       AND p.source_id = s.source_id
-#  ORDER BY gene DESC, p.priority DESC, (ix.target_identity+ix.query_identity) DESC
-#DXS
+
 
 #######################################################################
 
@@ -936,37 +1012,46 @@ DXS
                          # so either write data to database or store
 
   
-  my $gene_sth = $self->core->dbc->prepare("select x.display_label from gene g, xref x where g.display_xref_id = x.xref_id and g.gene_id = ?"); 
-  my $tran_sth = $self->core->dbc->prepare("select x.display_label from transcript t, xref x where t.display_xref_id = x.xref_id and t.transcript_id = ?"); 
+#  my $gene_sth = $self->core->dbc->prepare("select x.display_label from gene g, xref x where g.display_xref_id = x.xref_id and g.gene_id = ?"); 
+#  my $tran_sth = $self->core->dbc->prepare("select x.display_label from transcript t, xref x where t.display_xref_id = x.xref_id and t.transcript_id = ?"); 
 
 
   my $last_gene = 0;
 
   my $display_xref_sth = $self->xref->dbc->prepare($display_xref_sql);
 
+  my $gene_count = 0;
   $display_xref_sth->execute();
   my ($gene_id, $transcript_id, $p, $xref_id, $type, $label);  # remove labvel after testig it is not needed
   $display_xref_sth->bind_columns(\$gene_id, \$transcript_id, \$p, \$xref_id, \$type, \$label);
   while($display_xref_sth->fetch()){
-#    print "$gene_id, $transcript_id, $p, $xref_id, $type, $label\n";
-#    if(defined($label) && $label =~ /\D+/){  # not just a number
-      if($gene_id != $last_gene){
-       $self->check_label($gene_id,$label, $gene_sth, "Gene");
-       $last_gene = $gene_id;
-      } 
-      if($type ne "Gene"){
-        if(!defined($seen_transcript{$transcript_id})){ # not seen yet so its the best
-	  $self->check_label($transcript_id, $label, $tran_sth, "Transcript");
-        }
-        $seen_transcript{$transcript_id} = $xref_id;
-      
+    if($gene_id != $last_gene){
+      $update_gene_sth->execute($xref_id+$xref_offset, $gene_id);
+      $last_gene = $gene_id;
+      $gene_count++;
+    } 
+    if($type ne "Gene"){
+      if(!defined($seen_transcript{$transcript_id})){ # not seen yet so its the best
+	$update_tran_sth->execute($xref_id+$xref_offset, $transcript_id);
       }
-#    }
+      $seen_transcript{$transcript_id} = $xref_id+$xref_offset;
+      
+    }
   }
   $display_xref_sth->finish;
+  $update_gene_sth->finish;
+  $update_tran_sth->finish;
+
+  $sth = $self->xref->dbc->prepare("drop table display_xref_prioritys");
+  $sth->execute || die "Could not drop temp table display_xref_prioritys\n";
+  $sth->finish;  
+
+
+  print "Updated $gene_count display_xrefs for genes\n" if($self->verbose);
 }
 
 
+# Remove after sure everything is cool
 sub check_label{
   my $self  = shift;
   my $id    = shift;
@@ -989,10 +1074,56 @@ sub check_label{
 
 
 
-sub while_your_feet_are_stomping{
+sub set_gene_descriptions{
   my $self = shift;
 
-my $sql =(<<SQL); 
+
+  my $update_gene_desc_sth =  $self->core->dbc->prepare("UPDATE gene SET description = ? where gene_id = ?");
+
+  my $reset_sth = $self->core->dbc->prepare("UPDATE gene SET description = null");
+  $reset_sth->execute();
+  $reset_sth->finish;
+
+
+
+  ##########################################
+  # Get source_id to external_disaply_name #
+  ##########################################
+
+  my %name_to_external_name;
+  my $sql = "select external_db_id, db_name, db_display_name from external_db";
+  my $sth = $self->core->dbc->prepare($sql);
+  $sth->execute();
+  my ($id, $name, $display_name);
+  $sth->bind_columns(\$id, \$name, \$display_name);
+  while($sth->fetch()){
+    $name_to_external_name{$name} = $display_name;
+   }
+  $sth->finish;
+
+  my %source_id_to_external_name;
+ 
+  $sql = 'select s.source_id, s.name from source s, xref x where x.source_id = s.source_id group by s.source_id'; # only get those of interest
+  $sth = $self->xref->dbc->prepare($sql);
+  $sth->execute();
+  $sth->bind_columns(\$id, \$name);
+  while($sth->fetch()){
+     if(defined($name_to_external_name{$name})){
+      $source_id_to_external_name{$id} = $name_to_external_name{$name};
+    }
+    else{
+      die "ERROR: Could not find $name in external_db table please add this too continue\n";
+    }
+  }
+  $sth->finish;
+
+  $sth = $self->xref->dbc->prepare("update xref set dumped = null"); # just incase this is being ran again
+  $sth->execute;
+  $sth->finish;
+
+
+
+  $sql =(<<SQL); 
   CREATE TABLE gene_desc_prioritys(
     source_id INT NOT NULL,
     priority       INT NOT NULL,
@@ -1000,7 +1131,7 @@ my $sql =(<<SQL);
   ) COLLATE=latin1_swedish_ci TYPE=InnoDB
 SQL
 
-  my $sth = $self->xref->dbc->prepare($sql);
+  $sth = $self->xref->dbc->prepare($sql);
   $sth->execute;
   $sth->finish;
 
@@ -1016,6 +1147,7 @@ SQL
 #
 
 
+  print "Presedence for Gene Descriptions\n" if($self->verbose);
   foreach my $name (reverse (@presedence)){
     $i++;
     $get_source_id_sth->execute($name);
@@ -1023,6 +1155,7 @@ SQL
     $get_source_id_sth->bind_columns(\$source_id);
     while($get_source_id_sth->fetch){
       $ins_p_sth->execute($source_id, $i);
+      print "\t$name\t$i\n" if ($self->verbose);
     }	
   }
   $ins_p_sth->finish;
@@ -1032,7 +1165,7 @@ SQL
 #######################################################################
 
 my $gene_desc_sql =(<<DXS);
-  SELECT gtt.gene_id, x.xref_id
+  SELECT gtt.gene_id, x.description, s.source_id, x.accession
     FROM source s, xref x, object_xref ox, identity_xref ix, gene_transcript_translation gtt, gene_desc_prioritys p
      WHERE  x.source_id = s.source_id 
        AND s.source_id = p.source_id
@@ -1059,8 +1192,8 @@ DXS
   my $gene_desc_sth = $self->xref->dbc->prepare($gene_desc_sql);
 
   $gene_desc_sth->execute();
-  my ($gene_id, $transcript_id, $p, $desc);  # remove labvel after testig it is not needed
-  $gene_desc_sth->bind_columns(\$gene_id, \$transcript_id, \$p, \$desc);
+  my ($gene_id, $desc,$source_id,$label);  # remove labvel after testig it is not needed
+  $gene_desc_sth->bind_columns(\$gene_id, \$desc, \$source_id, \$label);
   
   my $gene_count = 0;
 
@@ -1069,14 +1202,20 @@ DXS
     if($gene_id != $last_gene){
       my $filtered_description = $self->filter_by_regexp($desc, \@regexps);
       if ($filtered_description ne "") {
-	$self->check_desc($gene_id, $desc, $gene_sth, "Gene");
+        $desc .= " [Source:".$source_id_to_external_name{$source_id}.";Acc:".$label."]";
+        $update_gene_desc_sth->execute($desc,$gene_id);
         $gene_count++;
 	$last_gene = $gene_id;
       } 
     }
   }
+  $update_gene_desc_sth->finish;
   $gene_desc_sth->finish;
-  print "$gene_count gene descriptions added\n";
+  print "$gene_count gene descriptions added\n" if($self->verbose);
+
+  $sth = $self->xref->dbc->prepare("drop table gene_desc_prioritys");
+  $sth->execute || die "Could not drop temp table gene_desc_prioritys\n";
+  $sth->finish;  
 }
 
 sub filter_by_regexp {
@@ -1104,7 +1243,7 @@ sub check_desc{
   $sth->fetch;
 
   if($old_desc ne $desc){
-    print "ERROR: $type ($id) has different descriptions ???  old:$old_desc   new:$desc\n";
+    print "ERROR: $type ($id) has different descriptions ???  \n\told:$old_desc \n\tnew:$desc\n";
   }
 }
 
