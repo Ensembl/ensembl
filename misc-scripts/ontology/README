@@ -1,0 +1,223 @@
+    THE ENSEMBL ONTOLOGY DATABASE
+    ====================================================================
+
+    MOTIVATION
+    --------------------------------------------------------------------
+
+    Starting with release 54 of Ensembl we provide an
+    ensembl_ontology_NN database.  It replaces the older ensembl_go_NN
+    database which used to be loaded straight from the public table
+    dumps provided by the Gene Ontology group (and hence weren't really
+    an Ensembl database to start with).  The older ensembl_go_NN
+    database also had an external Perl API associated with it which
+    often made working with GO terms in Ensembl slightly awkward, or at
+    least more cumbersome than what it needed to be.
+
+    The new database, and its associated native Ensembl Core API, is an
+    attempt to make it simple to work with ontology terms in Ensembl.
+
+    The database also contains (from release 56) Sequence Ontology (SO)
+    terms.
+
+
+    THE DATABASE SCHEMA
+    --------------------------------------------------------------------
+
+    The ensembl_ontology_NN database consist of six tables:
+
+    - ontology
+      The 'ontology' table contains one entry for each "namespace",
+      that is, for what the Gene Ontology group calls "ontology" and
+      which is called "namespace" in OBO files, for GO this boils down
+      to entries for 'molecular_function', 'cellular_component', and
+      'biological_process', and for SO this is a single 'sequence'
+      entry.
+
+      The fields are 'name' (either 'GO' or 'SO' for now) and
+      'namespace'.  The function of this table is to separate ontology
+      terms belonging to different ontologies and/or namespaces.
+
+    - term
+      The 'term' table contains the ontology term accession, name,
+      and definition as well as a reference to its namespace in the
+      'ontology' table.
+
+    - relation_type
+      The 'relation_type' table simply contains the different types
+      of relationships that are defined between the ontology terms.
+
+      For GO, the relationship types are currently 'is_a', 'part_of',
+      'regulates', 'positively_regulates', and 'negatively_regulates'.
+
+      For SO, the relationship types are currently 'is_a',
+      'adjacent_to', 'derives_from', 'has_part', 'member_of',
+      'non_functional_homolog_of', 'part_of', 'position_of',
+      'sequence_of', and 'variant_of'.
+
+    - relation
+      The 'relation' table ties together the 'relation_type' table with
+      the 'term' table.  Each entry consists of reference to a child
+      term, to a parent term, and to a relation type.
+
+      There should not exist any relation between two terms belonging to
+      different namespaces.
+
+      For relation types that OBO defines as being reflexive and
+      anti-symmetric, we normalize the relation so that the child term
+      is more specific then the parent term (where this makes sense).
+      This means, for example, that we change all "A 'has_part' B" into
+      "B 'part_of' A".  The 'has_part' relationship type is only present
+      in SO and is the only relationship type affected by this.
+
+    - closure
+      The 'closure' table contains the transitive closure over all
+      transitive relation types.  The transitive relation types
+      currently covered are 'is_a', 'part_of', but OBO also defines the
+      following relation types as being transitive: 'integral_part_of',
+      'proper_part_of', 'located_in', 'transformation_of',
+      'derives_from', and 'preceded_by'.
+
+      Each entry in the 'closure' table consists of a reference to
+      a child term, to one of its ancestor terms, a reference to an
+      immediate child of the ancestor, called the sub-parent, and
+      the distance between the child and the ancestor through the
+      sub-parent.
+
+      This table is computed by a Perl program (see below) from the
+      'relation' table and allows for quick retrieval of all ancestors
+      of a particular ontology term, or of all its descendants.
+
+    - meta
+      The 'meta' table holds meta information about the data in the
+      database, such as the time-stamp from the OBO files that were
+      loaded into it and when the load into the database happened.
+
+
+    SCOPE OF API IMPLEMENTATION
+    --------------------------------------------------------------------
+
+    The aim of the re-design of the way ontology terms are used with
+    Ensembl is not to provide a generic API for ontology terms but
+    instead to provide the ability to use ontology terms in straight
+    forward querying for standard Ensembl objects such as genes,
+    transcripts, and translations.  Hence, the API will treat the
+    ontology database as read-only.
+
+    The operations available on the ontology terms themselves are
+    restricted to querying them for their basic attributes such as
+    the term accession, name, and definition, as well as relational
+    information such as their immediate parent and/or child terms.
+    Following a selection of relationship types (currently the
+    transitive relation types 'is_a' and 'part_of') we also provide fast
+    access to the set of all parent and/or child terms of any given
+    term.
+
+    The connection between the ontology terms and the genes,
+    transcripts, and translations of Ensembl is currently based on GO
+    term cross references (Xrefs).  We do not yet cross reference SO
+    terms to any of these object types.
+
+
+    SUPPORTED OPERATIONS
+    --------------------------------------------------------------------
+
+    The ontology term adaptor, Bio::EnsEMBL::DBSQL::OntologyTermAdaptor,
+    supports the following operations:
+
+    1.  Fetching one ontology term from the database
+
+      1.a   by accession
+            $adaptor->fetch_by_accession($accession)
+
+      1.b   by internal ID
+            $adaptor->fetch_by_dbID($dbID)
+
+    2.  Fetching a set of terms from the database
+
+      2.a   by a collection of internal IDs
+            $adaptor->fetch_by_dbID_list( \@dbIDs );
+
+      2.b   by their (immediate) parent term
+            $adaptor->fetch_by_parent_term($object)
+
+      2.c   by their (immediate) child term
+            $adaptor->fetch_by_child_term($object)
+
+      2.d   by an ancestor term
+            $adaptor->fetch_all_by_parent_term($object)
+
+      2.e   by a descendant term
+            $adaptor->fetch_all_by_child_term($object)
+
+    3.  Fetching a structure that encodes the ancestor relationships of
+        a term.
+        $adaptor->_fetch_ancestor_chart()
+
+    Given  an  ontology  term,  which  is  a  Bio::EnsEMBL::OntologyTerm
+    object, some operations from the  second set of operations above are
+    also available on the object itself (2.b--2.e):
+
+    4.  Fetching a set of terms from the database
+
+      4.a   by their (immediate) parent term
+            $object->children()
+
+      4.b   by their (immediate) child term
+            $object->parents()
+
+      4.c   by an ancestor term
+            $object->descendants()
+
+      4.d   by a descendant term
+            $object->ancestors()
+
+
+    ADDITIONS TO THE EXISTING API
+    --------------------------------------------------------------------
+
+    To enable to use ontology terms in querying for Ensembl objects,
+    a method called fetch_all_by_GOTerm() was added to GeneAdaptor,
+    TranscriptAdaptor, and to TranslationAdaptor.  Given a GO term
+    object, this method uses the DBEntryAdaptor to fetch objects
+    that are cross referenced with the GO term or with any of its
+    descendants.
+
+
+    COMPLETE EXAMPLE PROGRAMS
+    --------------------------------------------------------------------
+
+    See the Perl programs 'scripts/demo1.pl' and 'scripts/demo2.pl'.
+
+
+    CREATING THE ONTOLOGY DATABASE
+    --------------------------------------------------------------------
+
+    To create the ensembl_ontology_NN database for a release, the
+    following steps needs to be followed:
+
+    1.  Create the empty database by doing "CREATE DATABASE
+        ensembl_ontology_NN" (where 'NN' is the current release).
+
+    2.  Load the schema from 'table.sql' located in
+        ensembl/misc-scripts/ontology/sql/
+
+    3.  Download the file 'gene_ontology.1_2.obo' from
+        http://www.geneontology.org/ontology/obo_format_1_2/
+
+    4.  Load the data into the database using the script
+        'load_OBO_file.pl' (run the script without arguments
+        for help on usage, it's simple).  The script lives in
+        ensembl/misc-scripts/ontology/scripts/
+
+        Optionally, also download the SO ontology from
+        http://song.cvs.sourceforge.net/viewvc/*checkout*/song/ontology/so.obo
+        and repeat the two previous steps.
+
+    5.  Compute the transitive closure (the 'closure' table in the
+        database) by running the 'compute_closure.pl' in almost the same
+        way as in the last step.  This step may take some time.
+
+    6.  Done.
+
+
+$Id$
