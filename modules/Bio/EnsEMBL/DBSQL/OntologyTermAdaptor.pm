@@ -465,6 +465,10 @@ ORDER BY closure.distance, parent_term.accession);
 sub _fetch_ancestor_chart {
   my ( $this, $term ) = @_;
 
+  if ( !ref($term) || !$term->isa('Bio::EnsEMBL::OntologyTerm') ) {
+    throw('Argument needs to be a Bio::EnsEMBL::OntologyTerm object');
+  }
+
   my $statement = q(
 SELECT  subparent_term.term_id,
         parent_term.term_id,
