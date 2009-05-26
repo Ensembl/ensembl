@@ -119,6 +119,24 @@ sub accession {
   return $this->{'accession'};
 }
 
+=head2 ontology
+
+  Arg           : none
+
+  Description   : Accesses the ontology for the ontology term in
+                  question.
+
+  Example       : my $ontology = $term->ontology();
+
+  Return type   : String
+
+=cut
+
+sub ontology {
+  my ($this) = @_;
+  return $this->adaptor()->ontology();
+}
+
 =head2 namespace
 
   Arg           : (optional) String
