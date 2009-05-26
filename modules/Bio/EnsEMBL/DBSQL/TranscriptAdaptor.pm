@@ -480,7 +480,7 @@ sub fetch_all_by_external_name {
                   Transcript::transform method can be used.
 
   Return type   : listref of Bio::EnsEMBL::Transcript
-  Exceptions    : none
+  Exceptions    : Throws of argument is not a GO term
   Caller        : general
   Status        : Stable
 
@@ -488,6 +488,13 @@ sub fetch_all_by_external_name {
 
 sub fetch_all_by_GOTerm {
   my ( $self, $term ) = @_;
+
+  if ( !ref($term)
+    || !$term->isa('Bio::EnsEMBL::OntologyTerm')
+    || $term->ontology() ne 'GO' )
+  {
+    throw('Argument is not a GO term');
+  }
 
   my $entryAdaptor = $self->db->get_DBEntryAdaptor();
 
