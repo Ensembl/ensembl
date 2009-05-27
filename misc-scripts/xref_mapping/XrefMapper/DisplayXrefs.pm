@@ -18,8 +18,15 @@ my %transcript_to_translation;
 my %transcript_length;
 
 
-sub transcript_display_xref_sources {
+#
+# ignore should be some sql to return object_xref_ids that should be ignored. FOR full mode METHOD 
+# ignore should return regexp and source name as key for update METHODS
+#
 
+
+sub transcript_display_xref_sources {
+  my $self     = shift;
+  my $fullmode = shift;
 
   my @list = qw(miRBase
                 RFAM
@@ -48,10 +55,23 @@ sub transcript_display_xref_sources {
                 RefSeq_dna
                 Uniprot/SPTREMBL
                 EntrezGene
-                IPI);
+                IPI
+                RefSeq_dna_predicted
+                Refseq_peptide_predicted);
 
   my %ignore;
-  $ignore{"EntrezGene"}= 'FROM:RefSeq_[pd][en][pa].*_predicted';
+  
+
+  # Both methods
+
+  if(!$fullmode){
+    $ignore{"EntrezGene"}= 'FROM:RefSeq_[pd][en][pa].*_predicted';
+  }
+  else{
+    $ignore{"EntrezGene"} = 'select ox.object_xref_id from object_xref ox, dependent_xref dx, source s1, xref x1, source s2, xref x2 where ox.object_xref_id = dx.object_xref_id and dx.dependent_xref_id = x1.xref_id and x1.source_id = s1.source_id and s1.name = "EntrezGene" and x2.xref_id = dx.master_xref_id and x2.source_id = s2.source_id and (s2.name like "Refseq_dna_predicted" or s2.name like "RefSeq_peptide_predicted") and ox.ox_status = "DUMP_OUT"';
+
+  }
+
 
   return [\@list,\%ignore];
 
@@ -202,7 +222,7 @@ sub build_transcript_and_gene_display_xrefs {
   # and also a list of those xrefs to ignore 
   # where the source name is the key and the value is the string to test for 
   # 
-  my ($presedence, $ignore) = @{$self->transcript_display_xref_sources()};
+  my ($presedence, $ignore) = @{$self->transcript_display_xref_sources(0)}; # UPDATE MODE
   my $i=0;
   my %level;
   print "precedense in reverse order:-\n" if($self->verbose);
@@ -598,13 +618,7 @@ ESQL
      AND ox.ensembl_id = ? and x.info_type = 'DEPENDENT'
      AND e.external_db_id = x.external_db_id
 ZSQL
-#  $sql = (<<ZSQL);
-#  SELECT ox.xref_id, ix.query_identity, ix.target_identity, x.external_db_id, x.description, x.dbprimary_acc
-#    FROM (object_xref ox, xref x) 
-#      LEFT JOIN identity_xref_temp ix ON (ox.object_xref_id = ix.object_xref_id) 
-#	WHERE x.xref_id = ox.xref_id and ox.ensembl_object_type = ? 
-#              and ox.ensembl_id = ? and x.info_type = 'DEPENDENT'
-#ZSQL
+
  
   my $dependent_sth = $self->core->dbc->prepare($sql) || die "prepare failed for $sql\n";
 
@@ -963,7 +977,7 @@ SQL
   $sth->execute;
   $sth->finish;
 
-  my ($presedence, $ignore) = @{$self->transcript_display_xref_sources()};
+  my ($presedence, $ignore) = @{$self->transcript_display_xref_sources(1)};  # FULL update mode pass 1
   my $i=0;
   
   my $ins_p_sth = $self->xref->dbc->prepare("INSERT into display_xref_prioritys (source_id, priority) values(?, ?)");
@@ -972,6 +986,7 @@ SQL
 #
 # So the higher the number the better then 
 #
+
 
   print "Presedence for the display xrefs\n" if($self->verbose);
   foreach my $name (reverse (@$presedence)){
@@ -987,6 +1002,38 @@ SQL
   $ins_p_sth->finish;
   $get_source_id_sth->finish;
 
+
+
+#
+# Set status to 'FAILED_CUTOFF' for those that match the ignore REGEXP in object_xref
+# Xrefs have already been dump to core etc so no damage done.
+#
+
+  my $update_ignore_sth = $self->xref->dbc->prepare('UPDATE object_xref SET ox_status = "NO_DISPLAY" where object_xref_id = ?');
+
+  foreach my $ignore_sql (values %$ignore){
+    print "IGNORE SQL: $ignore_sql\n" if($self->verbose);
+    my $ignore_sth = $self->xref->dbc->prepare($ignore_sql);
+
+    my $gene_count = 0;
+    $ignore_sth->execute();
+    my ($object_xref_id); 
+    $ignore_sth->bind_columns(\$object_xref_id);
+    while($ignore_sth->fetch()){    
+      $update_ignore_sth->execute($object_xref_id);
+    }
+    $ignore_sth->finish;
+  }
+  $update_ignore_sth->finish;
+
+#
+# Do a similar thing for those with a display_label that is just numeric;
+#
+
+  $update_ignore_sth = $self->xref->dbc->prepare('UPDATE object_xref ox, source s, xref x SET ox_status = "NO_DISPLAY" where s.source_id = x.source_id and x.label REGEXP "^[0-9]+$" and ox.xref_id = x.xref_id');
+
+  $update_ignore_sth->execute();
+  $update_ignore_sth->finish;
 
 
 #######################################################################
