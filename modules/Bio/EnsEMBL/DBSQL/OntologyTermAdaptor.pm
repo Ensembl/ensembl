@@ -243,9 +243,8 @@ WHERE   relation.child_term_id = child_term.term_id
 
   Description   : Given a parent ontology term, returns a list of
                   all its descendant terms, down to and including
-                  any leaf terms.  In GO, relations of the type
-                  'is_a' and 'part_of' are followed, but not
-                  'regulates' etc.
+                  any leaf terms.  Relations of the type 'is_a' and
+                  'part_of' are followed.
 
   Example       : my @descendants =
                     @{ $ot_adaptor->fetch_all_by_parent_term($term) };
@@ -377,8 +376,8 @@ WHERE   relation.child_term_id = ?
 
   Description   : Given a child ontology term, returns a list of all
                   its ancestor terms, up to and including any root
-                  term.  In GO, relations of the type 'is_a' and
-                  'part_of' are followed, but not 'regulates' etc.
+                  term.  Relations of the type 'is_a' and 'part_of'
+                  are followed.
 
   Example       : my @ancestors =
                     @{ $ot_adaptor->fetch_all_by_parent_term($term) };
@@ -439,9 +438,8 @@ ORDER BY closure.distance, parent_term.accession);
 
   Description   : Given a child ontology term, returns a hash
                   structure containing its ancestor terms, up to and
-                  including any root term.  In GO, relations of the
-                  type 'is_a' and 'part_of' are included, but not
-                  'regulates' etc.
+                  including any root term.  Relations of the type
+                  'is_a' and 'part_of' are included.
 
   Example       : my %chart =
                     %{ $ot_adaptor->_fetch_ancestor_chart($term) };
