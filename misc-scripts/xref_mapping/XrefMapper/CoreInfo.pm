@@ -56,7 +56,7 @@ sub get_core_data {
  
  my %external_name_to_status;
 
- my $sth = $self->core->dbc->prepare("select db_name, status from external_db");
+ my $sth = $self->core->dbc->prepare('select db_name, status from external_db where status like "KNOWN%"');
  $sth->execute();
  my  ($name, $status, $id);
  $sth->bind_columns(\$name,\$status); 
