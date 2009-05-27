@@ -64,7 +64,7 @@ sub run_script {
 # 
 #
 
-  my $sql = 'select ox.ensembl_id, x.dbprimary_acc from object_xref ox, xref x, external_db e where x.xref_id = ox.xref_id and x.external_db_id = e.external_db_id and e.db_name like "ENST" and x.dbprimary_acc like "'.$tran_name.'%"'; 
+  my $sql = 'select ox.ensembl_id, x.dbprimary_acc from object_xref ox, xref x, external_db e where x.xref_id = ox.xref_id and x.external_db_id = e.external_db_id and e.db_name like "Ens_%_transcript" and x.dbprimary_acc like "'.$tran_name.'%"'; 
 
 
   my %trans_id_to_stable_id;
