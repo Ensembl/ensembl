@@ -43,8 +43,6 @@ sub write_ontology {
 
   if ($truncate) { $dbh->do("TRUNCATE TABLE ontology") }
 
-  $dbh->do("LOCK TABLE ontology WRITE");
-
   my $statement = "INSERT INTO ontology (name, namespace) VALUES (?,?)";
 
   my $sth = $dbh->prepare($statement);
@@ -63,7 +61,6 @@ sub write_ontology {
   }
 
   $dbh->do("OPTIMIZE TABLE ontology");
-  $dbh->do("UNLOCK TABLES");
 
   printf( "\tWrote %d entries\n", $count );
 } ## end sub write_ontology
@@ -116,28 +113,60 @@ sub write_relation_type {
 
   if ($truncate) { $dbh->do("TRUNCATE TABLE relation_type") }
 
-  $dbh->do("LOCK TABLE relation_type WRITE");
+  my $select_stmt =
+    "SELECT relation_type_id FROM relation_type WHERE name = ?";
+  my $select_sth = $dbh->prepare($select_stmt);
 
-  my $statement = "INSERT INTO relation_type (name) VALUES (?)";
-
-  my $sth = $dbh->prepare($statement);
+  my $insert_stmt = "INSERT INTO relation_type (name) VALUES (?)";
+  my $insert_sth  = $dbh->prepare($insert_stmt);
 
   my $count = 0;
   foreach my $relation_type ( keys( %{$relation_types} ) ) {
-    $sth->bind_param( 1, $relation_type, SQL_VARCHAR );
+    $select_sth->bind_param( 1, $relation_type, SQL_VARCHAR );
+    $select_sth->execute();
 
-    $sth->execute();
+    my $id;
+    my $found = 0;
 
-    $relation_types->{$relation_type} = { 'id' => ++$count };
+    $select_sth->bind_columns( \$id );
+
+    while ( $select_sth->fetch() ) {
+      $relation_types->{$relation_type} = { 'id' => $id };
+      $found = 1;
+    }
+
+    if ( !$found ) {
+      $insert_sth->bind_param( 1, $relation_type, SQL_VARCHAR );
+      $insert_sth->execute();
+      $relation_types->{$relation_type} = {
+        'id' => $dbh->last_insert_id(
+          undef, undef, 'relation_type', 'relation_type_id'
+        ) };
+      ++$count;
+    }
   }
 
   $dbh->do("OPTIMIZE TABLE relation_type");
-  $dbh->do("UNLOCK TABLES");
 
   printf( "\tWrote %d entries\n", $count );
 } ## end sub write_relation_type
 
 #-----------------------------------------------------------------------
+
+# Relation types to invert (from => to).
+# Extracted from http://www.obofoundry.org/ro/ro.obo (May 27, 2009)
+our %inverse_type = (
+  'has_part'          => 'part_of',
+  'has_integral_part' => 'integral_part_of',
+  'has_proper_part'   => 'proper_part_of',
+  'location_of'       => 'located_in',
+  'contains'          => 'contained_in',
+  'derived_into'      => 'derives_from',
+  'precedes'          => 'preceded_by',
+  'has_participant'   => 'participates_in',
+  'has_agent'         => 'agent_in',
+  'has_improper_part' => 'improper_part_of'    # obsolete
+);
 
 sub write_relation {
   my ( $dbh, $truncate, $terms, $relation_types ) = @_;
@@ -162,10 +191,21 @@ sub write_relation {
       foreach
         my $parent_acc ( @{ $child_term->{'parents'}{$relation_type} } )
       {
-        $sth->bind_param( 1, $child_term->{'id'},         SQL_INTEGER );
-        $sth->bind_param( 2, $terms->{$parent_acc}{'id'}, SQL_INTEGER );
-        $sth->bind_param( 3, $relation_types->{$relation_type}{'id'},
-          SQL_INTEGER );
+        if ( exists( $inverse_type{$relation_type} ) ) {
+          $relation_type = $inverse_type{$relation_type};
+
+          $sth->bind_param( 1, $terms->{$parent_acc}{'id'},
+            SQL_INTEGER );
+          $sth->bind_param( 2, $child_term->{'id'}, SQL_INTEGER );
+          $sth->bind_param( 3, $relation_types->{$relation_type}{'id'},
+            SQL_INTEGER );
+        } else {
+          $sth->bind_param( 1, $child_term->{'id'}, SQL_INTEGER );
+          $sth->bind_param( 2, $terms->{$parent_acc}{'id'},
+            SQL_INTEGER );
+          $sth->bind_param( 3, $relation_types->{$relation_type}{'id'},
+            SQL_INTEGER );
+        }
 
         $sth->execute();
 
@@ -228,7 +268,7 @@ my ( %terms, %namespaces, %relation_types );
 
 printf( "Reading OBO file '%s'...\n", $obo_file_name );
 
-my $date_is_checked = 0;
+my $default_namespace;
 
 while ( defined( my $line = $obo->getline() ) ) {
   chomp($line);
@@ -236,41 +276,49 @@ while ( defined( my $line = $obo->getline() ) ) {
   if ( !defined($state) ) {
     if ( $line =~ /^\[(\w+)\]$/ ) { $state = $1; next }
 
-    if ( !$date_is_checked && $line =~ /^date: (.+)$/ ) {
-      $obo_file_date = sprintf( "%s/%s", $obo_file_name, $1 );
+    if ( $line =~ /^([\w-]+): (.+)$/ ) {
+      my $type = $1;
+      my $data = $2;
 
-      if ( defined($stored_obo_file_date) ) {
-        if ( $stored_obo_file_date eq $obo_file_date ) {
-          print("This OBO file has already been processed.\n");
-          $obo->close();
-          $dbh->disconnect();
-          exit;
-        } elsif ( index( $stored_obo_file_date, $obo_file_name ) != 1
-          && $truncate == 0 )
-        {
-          print <<EOT;
+      if ( $type eq 'date' ) {
+        $obo_file_date = sprintf( "%s/%s", $obo_file_name, $data );
+
+        if ( defined($stored_obo_file_date) ) {
+          if ( $stored_obo_file_date eq $obo_file_date
+            && !$truncate )
+          {
+            print("This OBO file has already been processed.\n");
+            $obo->close();
+            $dbh->disconnect();
+            exit;
+          } elsif ( index( $stored_obo_file_date, $obo_file_name ) != -1
+            && !$truncate )
+          {
+            print <<EOT;
 ==> Trying to load a newer (?) OBO file that has already been loaded.
 ==> Please clean the database manually of data associated with this
 ==> file and try again... or use the -t (truncate) switch to empty the
 ==> tables completely (unless you want to preserve some of the data,
 ==> obviously).
 EOT
-          $obo->close();
-          $dbh->disconnect();
-          exit;
+            $obo->close();
+            $dbh->disconnect();
+            exit;
+          }
         }
+
+      } elsif ( $type eq 'default-namespace' ) {
+        $default_namespace = $data;
       }
-
-      $date_is_checked = 1;
-
-    } ## end if ( !$date_is_checked...
+    } ## end if ( $line =~ /^(\w+): (.+)$/)
 
     next;
   } ## end if ( !defined($state) )
 
   if ( $state eq 'Term' ) {
     if ( $line eq '' ) {
-      $namespaces{$namespace} = 'GO';
+      $namespace ||= $default_namespace;
+      ($namespaces{$namespace}) = $accession =~ /^([^:]+):/;
       $terms{$accession}      = {
         'namespace'  => $namespace,
         'name'       => $name,
@@ -329,6 +377,10 @@ write_relation_type( $dbh, $truncate, \%relation_types );
 write_relation( $dbh, $truncate, \%terms, \%relation_types );
 
 print("Updating meta table...\n");
+
+if ($truncate) {
+  $dbh->do("TRUNCATE TABLE meta");
+}
 
 my $sth =
   $dbh->prepare( "DELETE FROM meta "
