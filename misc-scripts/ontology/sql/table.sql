@@ -38,7 +38,7 @@ CREATE TABLE term (
 DROP TABLE IF EXISTS relation_type;
 CREATE TABLE relation_type (
   relation_type_id  INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  name              VARCHAR(24) NOT NULL,
+  name              VARCHAR(64) NOT NULL,
 
   PRIMARY KEY (relation_type_id),
   UNIQUE INDEX name_idx (name)
