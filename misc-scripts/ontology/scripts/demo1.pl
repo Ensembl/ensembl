@@ -1,5 +1,14 @@
 #!/usr/bin/perl -w
 
+#-----------------------------------------------------------------------
+# Demo program for the Ensembl ontology database and API.
+#
+# This program fetches a GO term and uses it to retrive genes.  The
+# genes retrived will be ones that are cross-referenced with either the
+# GO term itself or with any of its descendant terms (following the
+# transitive relation types 'is_a' or 'part_of').
+#-----------------------------------------------------------------------
+
 use strict;
 use warnings;
 

@@ -1,5 +1,13 @@
 #!/usr/bin/perl -w
 
+#-----------------------------------------------------------------------
+# Demo program for the Ensembl ontology database and API.
+#
+# This program fetches a GO term and displays its ancestors (following
+# the transitive relation types 'is_a' and 'part_of').  The terms are
+# indented with increasing distance from the original term.
+#-----------------------------------------------------------------------
+
 use strict;
 use warnings;
 
