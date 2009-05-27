@@ -346,12 +346,11 @@ sub project_go_terms {
   my ($to_ga, $to_dbea, $ma, $from_gene, $to_gene) = @_;
 
   # GO xrefs are linked to translations, not genes
-  # For historical reasons we only project GO terms between the longest translations of each gene
-  # TODO - consider projecting *all* GO terms from *all* source translations to one translation of target?
-  # TODO - getting the translation's length seem to involve lots of database accesses - some way to do
-  # this quicker? Via SQL?
-  my $from_translation = get_longest_translation($from_gene);
-  my $to_translation   = get_longest_translation($to_gene);
+  # Project GO terms between the translations of the canonical transcripts of each gene
+  my $from_translation = get_canonical_translation($from_gene);
+  my $to_translation   = get_canonical_translation($to_gene);
+
+  return if (!$from_translation || !$to_translation);
 
   my $from_latin_species = ucfirst(Bio::EnsEMBL::Registry->get_alias($from_species));
 
@@ -384,7 +383,7 @@ sub project_go_terms {
 
     $to_translation->add_DBEntry($dbEntry);
 
-    print $to_translation->stable_id() . " --> " . $dbEntry->display_id() . "\n" if ($print);
+    print $from_gene->stable_id() . " " . $from_translation->stable_id() . " " .  $dbEntry->display_id() . " --> " . $to_gene->stable_id() . " " . $to_translation->stable_id() . "\n" if ($print);
 
     $to_dbea->store($dbEntry, $to_translation->dbID(), 'Translation', 1) if (!$print);
 
@@ -735,26 +734,20 @@ sub homology_type_allowed {
 }
 
 # ----------------------------------------------------------------------
+# Get the translation associated with the gene's canonical transcript
 
-sub get_longest_translation {
+sub get_canonical_translation {
 
   my $gene = shift;
 
-  my $longest_translation;
-  my $max_length = -1;
+  my $canonical_transcript = $gene->canonical_transcript();
 
-  foreach my $transcript (@{$gene->get_all_Transcripts()}) {
-
-    my $translation = $transcript->translation();
-    if ($translation && $translation->length() > $max_length) {
-      $longest_translation = $translation;
-    }
-
+  if (!$canonical_transcript) {
+    warn("Can't get canonical transcript for " . $gene->stable_id() . ", skipping this homology");
+    return undef;
   }
 
-  warn("Can't find longest translation for " . $gene->stable_id()) if (!$longest_translation);
-
-  return $longest_translation;
+  return $canonical_transcript->translation();;
 
 }
 
