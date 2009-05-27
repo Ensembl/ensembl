@@ -114,7 +114,7 @@
 
     The connection between the ontology terms and the genes,
     transcripts, and translations of Ensembl is currently based on GO
-    term cross references (Xrefs).  We do not yet cross reference SO
+    term cross-references (Xrefs).  We do not yet cross-reference SO
     terms to any of these object types.
 
 
@@ -179,7 +179,7 @@
     a method called fetch_all_by_GOTerm() was added to GeneAdaptor,
     TranscriptAdaptor, and to TranslationAdaptor.  Given a GO term
     object, this method uses the DBEntryAdaptor to fetch objects
-    that are cross referenced with the GO term or with any of its
+    that are cross-referenced with the GO term or with any of its
     descendants.
 
 
