@@ -327,7 +327,7 @@ CREATE TABLE object_xref (
                                     'DIRECT', 'SEQUENCE_MATCH',
                                     'INFERRED_PAIR', 'PROBE',
                                     'UNMAPPED', 'COORDINATE_OVERLAP' ),
-  ox_status                   ENUM( 'DUMP_OUT','FAILED_PRIORITY', 'FAILED_CUTOFF')  NOT NULL DEFAULT 'DUMP_OUT',
+  ox_status                   ENUM( 'DUMP_OUT','FAILED_PRIORITY', 'FAILED_CUTOFF', 'NO_DISPLAY')  NOT NULL DEFAULT 'DUMP_OUT',
 -- set ox_status to 0 if non used priority_xref or failed cutoff
   unused_priority             INT UNSIGNED,
 
