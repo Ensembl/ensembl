@@ -61,13 +61,14 @@ CREATE TABLE closure (
   closure_id        INT UNSIGNED NOT NULL AUTO_INCREMENT,
   child_term_id     INT UNSIGNED NOT NULL,
   parent_term_id    INT UNSIGNED NOT NULL,
-  distance          TINYINT UNSIGNED NOT NULL,
   subparent_term_id INT UNSIGNED,
+  distance          TINYINT UNSIGNED NOT NULL,
 
   PRIMARY KEY (closure_id),
-  UNIQUE INDEX parent_child_idx
-    (parent_term_id, child_term_id, subparent_term_id),
-  INDEX child_distance_idx (child_term_id, distance)
+  UNIQUE INDEX child_parent_idx
+    (child_term_id, parent_term_id, subparent_term_id),
+  INDEX parent_subparent_idx
+    (parent_term_id, subparent_term_id)
 );
 
 -- $Id$
