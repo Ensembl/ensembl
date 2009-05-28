@@ -79,7 +79,10 @@ INSERT INTO closure
 SELECT  child_term_id, parent_term_id, 1, child_term_id
 FROM    relation r,
         relation_type rt
-WHERE rt.name IN ('is_a', 'part_of')
+WHERE rt.name IN (
+    'is_a', 'part_of',                        -- in GO and SO
+    'has_part', 'derives_from', 'member_of'   -- in SO only
+  )
   AND r.relation_type_id = rt.relation_type_id
 ) );
 
