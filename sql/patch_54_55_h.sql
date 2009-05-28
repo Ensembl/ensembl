@@ -3,10 +3,11 @@
 # title: Change translation-related fields in gene_archive to allow for NULLs.
 #
 # description:
-# The gene_archive table holds depricated genes.  The fields
+# The gene_archive table holds deprecated genes.  The fields
 # translation_stable_id, translation_version, peptide_archive_id ought
 # to be NULL for genes that lack a translation.  This patch fixes these
-# fields to allow for NULLs.
+# fields to allow for NULLs.  The patch also changes any entry with an
+# empty string as translation_stable_id into NULLs for all these fields.
 
 ALTER TABLE gene_archive
   MODIFY COLUMN translation_stable_id   VARCHAR(128),
