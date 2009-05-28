@@ -77,7 +77,10 @@ $dbh->do(
 INSERT INTO closure
   (child_term_id, parent_term_id, distance, subparent_term_id)
 SELECT  child_term_id, parent_term_id, 1, child_term_id
-FROM    relation r
+FROM    relation r,
+        relation_type rt
+WHERE rt.name IN ('is_a', 'part_of')
+  AND r.relation_type_id = rt.relation_type_id
 ) );
 
 my $select_sth = $dbh->prepare(
