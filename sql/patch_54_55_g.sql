@@ -4,7 +4,7 @@
 #
 # description:
 # Display labels are generally supposed to be non-NULL and non-empty.
-# The display_labelfield in the analysis_description table allows for
+# The display_label field in the analysis_description table allows for
 # NULLs.  This patch fixes this.
 
 ALTER TABLE analysis_description
