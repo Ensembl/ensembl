@@ -52,7 +52,8 @@ CREATE TABLE relation (
   relation_type_id  INT UNSIGNED NOT NULL,
 
   PRIMARY KEY (relation_id),
-  UNIQUE INDEX child_parent_idx (child_term_id, parent_term_id),
+  UNIQUE INDEX child_parent_idx
+    (child_term_id, parent_term_id, relation_type_id),
   INDEX parent_idx (parent_term_id)
 );
 
