@@ -148,7 +148,7 @@ CREATE TABLE analysis_description (
 
   analysis_id	               SMALLINT UNSIGNED NOT NULL,
   description                  TEXT,
-  display_label                VARCHAR(255),
+  display_label                VARCHAR(255) NOT NULL,
   displayable                  BOOLEAN NOT NULL DEFAULT 1,
   web_data                     TEXT,
 
