@@ -1275,9 +1275,9 @@ CREATE TABLE gene_archive (
   gene_version                SMALLINT NOT NULL,
   transcript_stable_id        VARCHAR(128) NOT NULL,
   transcript_version          SMALLINT NOT NULL,
-  translation_stable_id       VARCHAR(128) NOT NULL,
-  translation_version         SMALLINT NOT NULL,
-  peptide_archive_id          INT(10) UNSIGNED NOT NULL,
+  translation_stable_id       VARCHAR(128),
+  translation_version         SMALLINT,
+  peptide_archive_id          INT(10) UNSIGNED,
   mapping_session_id          INT(10) UNSIGNED NOT NULL,
 
   KEY gene_idx (gene_stable_id, gene_version),
