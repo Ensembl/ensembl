@@ -48,7 +48,7 @@ sub write_ontology {
   my $sth = $dbh->prepare($statement);
 
   my $count = 0;
-  foreach my $namespace ( keys( %{$namespaces} ) ) {
+  foreach my $namespace ( sort( keys( %{$namespaces} ) ) ) {
     my $ontology = $namespaces->{$namespace};
 
     $sth->bind_param( 1, $ontology,  SQL_VARCHAR );
@@ -84,7 +84,7 @@ sub write_term {
   my $sth = $dbh->prepare($statement);
 
   my $count = 0;
-  foreach my $accession ( keys( %{$terms} ) ) {
+  foreach my $accession ( sort( keys( %{$terms} ) ) ) {
     my $term = $terms->{$accession};
 
     $sth->bind_param( 1, $namespaces->{ $term->{'namespace'} }{'id'},
@@ -121,7 +121,7 @@ sub write_relation_type {
   my $insert_sth  = $dbh->prepare($insert_stmt);
 
   my $count = 0;
-  foreach my $relation_type ( keys( %{$relation_types} ) ) {
+  foreach my $relation_type ( sort( keys( %{$relation_types} ) ) ) {
     $select_sth->bind_param( 1, $relation_type, SQL_VARCHAR );
     $select_sth->execute();
 
@@ -185,11 +185,14 @@ sub write_relation {
   my $sth = $dbh->prepare($statement);
 
   my $count = 0;
-  foreach my $child_term ( values( %{$terms} ) ) {
-    foreach my $relation_type ( keys( %{ $child_term->{'parents'} } ) )
+  foreach my $child_term ( sort { $a->{'id'} <=> $b->{'id'} }
+    values( %{$terms} ) )
+  {
+    foreach my $relation_type (
+      sort( keys( %{ $child_term->{'parents'} } ) ) )
     {
-      foreach
-        my $parent_acc ( @{ $child_term->{'parents'}{$relation_type} } )
+      foreach my $parent_acc (
+        sort( @{ $child_term->{'parents'}{$relation_type} } ) )
       {
         if ( exists( $inverse_type{$relation_type} ) ) {
           $relation_type = $inverse_type{$relation_type};
@@ -211,8 +214,8 @@ sub write_relation {
 
         ++$count;
       }
-    }
-  }
+    } ## end foreach my $relation_type (...
+  } ## end foreach my $child_term ( sort...
 
   $dbh->do("OPTIMIZE TABLE relation");
   $dbh->do("UNLOCK TABLES");
