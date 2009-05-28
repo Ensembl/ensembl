@@ -4,7 +4,7 @@
     MOTIVATION
     --------------------------------------------------------------------
 
-    Starting with release 54 of Ensembl we provide an
+    Starting with release 55 of Ensembl we provide an
     ensembl_ontology_NN database.  It replaces the older ensembl_go_NN
     database which used to be loaded straight from the public table
     dumps provided by the Gene Ontology group (and hence weren't really
@@ -16,8 +16,8 @@
     The new database, and its associated native Ensembl Core API, is an
     attempt to make it simple to work with ontology terms in Ensembl.
 
-    The database also contains (from release 56) Sequence Ontology (SO)
-    terms.
+    The database also contains Sequence Ontology (SO) terms even though
+    these are not yet cross-referenced by Ensembl.
 
 
     THE DATABASE SCHEMA
@@ -70,12 +70,9 @@
       in SO and is the only relationship type affected by this.
 
     - closure
-      The 'closure' table contains the transitive closure over all
-      transitive relation types.  The transitive relation types
-      currently covered are 'is_a', 'part_of', but OBO also defines the
-      following relation types as being transitive: 'integral_part_of',
-      'proper_part_of', 'located_in', 'transformation_of',
-      'derives_from', and 'preceded_by'.
+      The 'closure' table contains the transitive closure over a
+      selection of transitive relation types.  The transitive relation
+      types currently covered are 'is_a', 'part_of'.
 
       Each entry in the 'closure' table consists of a reference to
       a child term, to one of its ancestor terms, a reference to an
@@ -135,19 +132,19 @@
     2.  Fetching a set of terms from the database
 
       2.a   by a collection of internal IDs
-            $adaptor->fetch_by_dbID_list( \@dbIDs );
+            $adaptor->fetch_by_dbID_list(\@dbIDs)
 
       2.b   by their (immediate) parent term
-            $adaptor->fetch_by_parent_term($object)
+            $adaptor->fetch_by_parent_term($term)
 
       2.c   by their (immediate) child term
-            $adaptor->fetch_by_child_term($object)
+            $adaptor->fetch_by_child_term($term)
 
       2.d   by an ancestor term
-            $adaptor->fetch_all_by_parent_term($object)
+            $adaptor->fetch_all_by_parent_term($term)
 
       2.e   by a descendant term
-            $adaptor->fetch_all_by_child_term($object)
+            $adaptor->fetch_all_by_child_term($term)
 
     3.  Fetching a structure that encodes the ancestor relationships of
         a term.
@@ -160,16 +157,16 @@
     4.  Fetching a set of terms from the database
 
       4.a   by their (immediate) parent term
-            $object->children()
+            $term->children()
 
       4.b   by their (immediate) child term
-            $object->parents()
+            $term->parents()
 
       4.c   by an ancestor term
-            $object->descendants()
+            $term->descendants()
 
       4.d   by a descendant term
-            $object->ancestors()
+            $term->ancestors()
 
 
     ADDITIONS TO THE EXISTING API
