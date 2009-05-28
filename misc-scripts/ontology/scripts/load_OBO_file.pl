@@ -56,8 +56,13 @@ sub write_ontology {
 
     $sth->execute();
 
-    $namespaces->{$namespace} =
-      { 'id' => ++$count, 'name' => $ontology };
+    $namespaces->{$namespace} = {
+      'id' =>
+        $dbh->last_insert_id( undef, undef, 'ontology', 'ontology_id' ),
+      'name' => $ontology
+    };
+
+    ++$count;
   }
 
   $dbh->do("OPTIMIZE TABLE ontology");
@@ -95,7 +100,9 @@ sub write_term {
 
     $sth->execute();
 
-    $term->{'id'} = ++$count;
+    $term->{'id'} =
+      $dbh->last_insert_id( undef, undef, 'term', 'term_id' );
+    ++$count;
   }
 
   $dbh->do("OPTIMIZE TABLE term");
@@ -153,21 +160,6 @@ sub write_relation_type {
 
 #-----------------------------------------------------------------------
 
-# Relation types to invert (from => to).
-# Extracted from http://www.obofoundry.org/ro/ro.obo (May 27, 2009)
-our %inverse_type = (
-  'has_part'          => 'part_of',
-  'has_integral_part' => 'integral_part_of',
-  'has_proper_part'   => 'proper_part_of',
-  'location_of'       => 'located_in',
-  'contains'          => 'contained_in',
-  'derived_into'      => 'derives_from',
-  'precedes'          => 'preceded_by',
-  'has_participant'   => 'participates_in',
-  'has_agent'         => 'agent_in',
-  'has_improper_part' => 'improper_part_of'    # obsolete
-);
-
 sub write_relation {
   my ( $dbh, $truncate, $terms, $relation_types ) = @_;
 
@@ -194,28 +186,17 @@ sub write_relation {
       foreach my $parent_acc (
         sort( @{ $child_term->{'parents'}{$relation_type} } ) )
       {
-        if ( exists( $inverse_type{$relation_type} ) ) {
-          $relation_type = $inverse_type{$relation_type};
-
-          $sth->bind_param( 1, $terms->{$parent_acc}{'id'},
-            SQL_INTEGER );
-          $sth->bind_param( 2, $child_term->{'id'}, SQL_INTEGER );
-          $sth->bind_param( 3, $relation_types->{$relation_type}{'id'},
-            SQL_INTEGER );
-        } else {
-          $sth->bind_param( 1, $child_term->{'id'}, SQL_INTEGER );
-          $sth->bind_param( 2, $terms->{$parent_acc}{'id'},
-            SQL_INTEGER );
-          $sth->bind_param( 3, $relation_types->{$relation_type}{'id'},
-            SQL_INTEGER );
-        }
+        $sth->bind_param( 1, $child_term->{'id'},         SQL_INTEGER );
+        $sth->bind_param( 2, $terms->{$parent_acc}{'id'}, SQL_INTEGER );
+        $sth->bind_param( 3, $relation_types->{$relation_type}{'id'},
+          SQL_INTEGER );
 
         $sth->execute();
 
         ++$count;
       }
-    } ## end foreach my $relation_type (...
-  } ## end foreach my $child_term ( sort...
+    }
+  }
 
   $dbh->do("OPTIMIZE TABLE relation");
   $dbh->do("UNLOCK TABLES");
