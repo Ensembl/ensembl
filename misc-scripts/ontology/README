@@ -148,7 +148,7 @@
 
     3.  Fetching a structure that encodes the ancestor relationships of
         a term.
-        $adaptor->_fetch_ancestor_chart()
+        $adaptor->_fetch_ancestor_chart($term)
 
     Given  an  ontology  term,  which  is  a  Bio::EnsEMBL::OntologyTerm
     object, some operations from the  second set of operations above are
