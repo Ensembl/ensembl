@@ -493,9 +493,9 @@ sub fetch_all_by_Slice_and_external_dbname_link {
                immediately rather than lazy-loading them later.  This
                is more efficient when there are a lot of genes whose
                transcripts are going to be used.
-  Returntype : reference to list of transcripts
+  Returntype : reference to list of genes 
   Exceptions : thrown if exon cannot be placed on transcript slice
-  Caller     : Slice::get_all_Transcripts
+  Caller     : Slice::get_all_Genes
   Status     : Stable
 
 =cut
