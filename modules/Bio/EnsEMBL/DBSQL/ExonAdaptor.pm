@@ -92,7 +92,7 @@ sub _columns {
   return (
     'e.exon_id',        'e.seq_region_id',     'e.seq_region_start',
     'e.seq_region_end', 'e.seq_region_strand', 'e.phase',
-    'e.end_phase',      'e.is_current',        ###FIXME 'e.is_constitutive',
+    'e.end_phase',      'e.is_current',        'e.is_constitutive',
     'esi.stable_id',    'esi.version',         $created_date,
     $modified_date
   );
@@ -270,8 +270,8 @@ sub store {
   my $exon_sql = q{
     INSERT into exon ( seq_region_id, seq_region_start,
 		       seq_region_end, seq_region_strand, phase,
-		       end_phase, is_current ) -- FIXME , is_constitutive )
-    VALUES ( ?, ?, ?, ?, ?, ?, ? )
+		       end_phase, is_current, is_constitutive )
+    VALUES ( ?,?,?,?,?,?,?,? )
   };
 
   my $exonst = $self->prepare($exon_sql);
@@ -290,7 +290,7 @@ sub store {
   $exonst->bind_param( 5, $exon->phase,     SQL_TINYINT );
   $exonst->bind_param( 6, $exon->end_phase, SQL_TINYINT );
   $exonst->bind_param( 7, $is_current,      SQL_TINYINT );
-  ###FIXME $exonst->bind_param( 8, $is_constitutive, SQL_TINYINT );
+  $exonst->bind_param( 8, $is_constitutive, SQL_TINYINT );
 
   $exonst->execute();
   $exonId = $exonst->{'mysql_insertid'};
@@ -527,7 +527,7 @@ sub _objs_from_sth {
   $sth->bind_columns(
     \$exon_id,        \$seq_region_id,     \$seq_region_start,
     \$seq_region_end, \$seq_region_strand, \$phase,
-    \$end_phase,      \$is_current,        ###FIXME \$is_constitutive,
+    \$end_phase,      \$is_current,        \$is_constitutive,
     \$stable_id,      \$version,           \$created_date,
     \$modified_date
   );
