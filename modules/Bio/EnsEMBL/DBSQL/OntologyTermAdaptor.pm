@@ -26,13 +26,13 @@ Bio::EnsEMBL::DBSQL::OntologyTermAdaptor
 
   my $goa = $registry->get_adaptor( 'Multi', 'Ontology', 'GOTerm' );
 
-  my $term             = $goa->fetch_by_accession('GO:0010885');
+  my $term = $goa->fetch_by_accession('GO:0010885');
 
-  my @child_terms      = @{ $goa->fetch_by_parent_term($term) };
-  my @descendant_terms = @{ $goa->fetch_all_by_parent_term($term) };
+  my @children    = @{ $goa->fetch_all_by_parent_term($term) };
+  my @descendants = @{ $goa->fetch_all_by_ancestor_term($term) };
 
-  my @parent_terms   = @{ $goa->fetch_by_child_term($term) };
-  my @ancestor_terms = @{ $goa->fetch_all_by_child_term($term) };
+  my @parents   = @{ $goa->fetch_all_by_child_term($term) };
+  my @ancestors = @{ $goa->fetch_all_by_descendant_term($term) };
 
   my %ancestor_chart = %{ $goa->_fetch_ancestor_chart($term) };
 
@@ -67,6 +67,9 @@ use base qw( Bio::EnsEMBL::DBSQL::BaseAdaptor );
   Arg [2]       : String
                   The particular ontology that this ontology adaptor
                   deals with.
+
+  Caller        : Bio::EnsEMBL::DBSQL::GOTermAdaptor
+                  Bio::EnsEMBL::DBSQL::SOTermAdaptor
 
   Description   : Creates an ontology term adaptor.
 
@@ -165,7 +168,7 @@ WHERE   ontology.name = ?
   return $term;
 } ## end sub fetch_by_accession
 
-=head2 fetch_by_parent_term
+=head2 fetch_all_by_parent_term
 
   Arg [1]       : Bio::EnsEMBL::OntologyTerm
                   The term whose children terms should be fetched.
@@ -173,14 +176,16 @@ WHERE   ontology.name = ?
   Description   : Given a parent ontology term, returns a list of
                   its immediate children terms.
 
-  Example       : my @children =
-                    @{ $ot_adaptor->fetch_by_parent_term($term) };
+  Example       :
+
+    my @children =
+      @{ $ot_adaptor->fetch_all_by_parent_term($term) };
 
   Return type   : listref of Bio::EnsEMBL::OntologyTerm
 
 =cut
 
-sub fetch_by_parent_term {
+sub fetch_all_by_parent_term {
   my ( $this, $term ) = @_;
 
   if ( !ref($term) || !$term->isa('Bio::EnsEMBL::OntologyTerm') ) {
@@ -234,9 +239,9 @@ WHERE   relation.child_term_id = child_term.term_id
   }
 
   return \@terms;
-} ## end sub fetch_by_parent_term
+} ## end sub fetch_all_by_parent_term
 
-=head2 fetch_all_by_parent_term
+=head2 fetch_all_by_ancestor_term
 
   Arg [1]       : Bio::EnsEMBL::OntologyTerm
                   The term whose descendant terms should be fetched.
@@ -246,14 +251,16 @@ WHERE   relation.child_term_id = child_term.term_id
                   any leaf terms.  Relations of the type 'is_a' and
                   'part_of' are followed.
 
-  Example       : my @descendants =
-                    @{ $ot_adaptor->fetch_all_by_parent_term($term) };
+  Example       :
+
+    my @descendants =
+      @{ $ot_adaptor->fetch_all_by_ancestor_term($term) };
 
   Return type   : listref of Bio::EnsEMBL::OntologyTerm
 
 =cut
 
-sub fetch_all_by_parent_term {
+sub fetch_all_by_ancestor_term {
   my ( $this, $term ) = @_;
 
   if ( !ref($term) || !$term->isa('Bio::EnsEMBL::OntologyTerm') ) {
@@ -296,9 +303,9 @@ ORDER BY closure.distance, child_term.accession);
   }
 
   return \@terms;
-} ## end sub fetch_all_by_parent_term
+} ## end sub fetch_all_by_ancestor_term
 
-=head2 fetch_by_child_term
+=head2 fetch_all_by_child_term
 
   Arg [1]       : Bio::EnsEMBL::OntologyTerm
                   The term whose parent terms should be fetched.
@@ -306,14 +313,15 @@ ORDER BY closure.distance, child_term.accession);
   Description   : Given a child ontology term, returns a list of
                   its immediate parent terms.
 
-  Example       : my @parents =
-                    @{ $ot_adaptor->fetch_by_child_term($term) };
+  Example       :
+
+    my @parents = @{ $ot_adaptor->fetch_all_by_child_term($term) };
 
   Return type   : listref of Bio::EnsEMBL::OntologyTerm
 
 =cut
 
-sub fetch_by_child_term {
+sub fetch_all_by_child_term {
   my ( $this, $term ) = @_;
 
   if ( !ref($term) || !$term->isa('Bio::EnsEMBL::OntologyTerm') ) {
@@ -367,9 +375,9 @@ WHERE   relation.child_term_id = ?
   }
 
   return \@terms;
-} ## end sub fetch_by_child_term
+} ## end sub fetch_all_by_child_term
 
-=head2 fetch_all_by_child_term
+=head2 fetch_all_by_descendant_term
 
   Arg [1]       : Bio::EnsEMBL::OntologyTerm
                   The term whose ancestor terms should be fetched.
@@ -379,14 +387,16 @@ WHERE   relation.child_term_id = ?
                   term.  Relations of the type 'is_a' and 'part_of'
                   are followed.
 
-  Example       : my @ancestors =
-                    @{ $ot_adaptor->fetch_all_by_parent_term($term) };
+  Example       :
+
+    my @ancestors =
+      @{ $ot_adaptor->fetch_all_by_descendant_term($term) };
 
   Return type   : listref of Bio::EnsEMBL::OntologyTerm
 
 =cut
 
-sub fetch_all_by_child_term {
+sub fetch_all_by_descendant_term {
   my ( $this, $term ) = @_;
 
   if ( !ref($term) || !$term->isa('Bio::EnsEMBL::OntologyTerm') ) {
@@ -429,7 +439,7 @@ ORDER BY closure.distance, parent_term.accession);
   }
 
   return \@terms;
-} ## end sub fetch_all_by_child_term
+} ## end sub fetch_all_by_descendant_term
 
 =head2 _fetch_ancestor_chart
 
@@ -441,8 +451,9 @@ ORDER BY closure.distance, parent_term.accession);
                   including any root term.  Relations of the type
                   'is_a' and 'part_of' are included.
 
-  Example       : my %chart =
-                    %{ $ot_adaptor->_fetch_ancestor_chart($term) };
+  Example       :
+
+    my %chart = %{ $ot_adaptor->_fetch_ancestor_chart($term) };
 
   Return type   : A reference to a hash structure like this:
 
