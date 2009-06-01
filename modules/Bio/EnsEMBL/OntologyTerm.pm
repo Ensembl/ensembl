@@ -101,11 +101,9 @@ sub new {
 
 =head2 accession
 
-  Arg           : (optional) String
-                  The new accession of this ontology term.
+  Arg           : None
 
-  Description   : Accesses and/or assigns the accession for the
-                  ontology term in question.
+  Description   : Returns the accession for the ontology term in question.
 
   Example       : my $accession = $term->accession();
 
@@ -114,17 +112,15 @@ sub new {
 =cut
 
 sub accession {
-  my ( $this, $value ) = @_;
-  if ( defined($value) ) { $this->{'accession'} = $value }
+  my ($this) = @_;
   return $this->{'accession'};
 }
 
 =head2 ontology
 
-  Arg           : none
+  Arg           : None
 
-  Description   : Accesses the ontology for the ontology term in
-                  question.
+  Description   : Returns the ontology for the ontology term in question.
 
   Example       : my $ontology = $term->ontology();
 
@@ -139,11 +135,9 @@ sub ontology {
 
 =head2 namespace
 
-  Arg           : (optional) String
-                  The new namespace of this ontology term.
+  Arg           : None
 
-  Description   : Accesses and/or assigns the namespace for the
-                  ontology term in question.
+  Description   : Returns the namespace for the ontology term in question.
 
   Example       : my $acc = $term->namespace();
 
@@ -152,18 +146,15 @@ sub ontology {
 =cut
 
 sub namespace {
-  my ( $this, $value ) = @_;
-  if ( defined($value) ) { $this->{'namespace'} = $value }
+  my ($this) = @_;
   return $this->{'namespace'};
 }
 
 =head2 name
 
-  Arg           : (optional) String
-                  The new name of this ontology term.
+  Arg           : None
 
-  Description   : Accesses and/or assigns the name for the ontology
-                  term in question.
+  Description   : Returns the name for the ontology term in question.
 
   Example       : my $name = $term->name();
 
@@ -172,18 +163,15 @@ sub namespace {
 =cut
 
 sub name {
-  my ( $this, $value ) = @_;
-  if ( defined($value) ) { $this->{'name'} = $value }
+  my ($this) = @_;
   return $this->{'name'};
 }
 
 =head2 definition
 
-  Arg           : (optional) String
-                  The new definition of this ontology term.
+  Arg           : None
 
-  Description   : Accesses and/or assigns the definition for the
-                  ontology term in question.
+  Description   : Returns the definition for the ontology term in question.
 
   Example       : my $definition = $term->definition();
 
@@ -192,8 +180,7 @@ sub name {
 =cut
 
 sub defintion {
-  my ( $this, $value ) = @_;
-  if ( defined($value) ) { $this->{'defintion'} = $value }
+  my ($this) = @_;
   return $this->{'definition'};
 }
 
@@ -214,7 +201,7 @@ sub defintion {
 sub children {
   my ( $this, @relations ) = @_;
 
-  my @terms = @{ $this->adaptor()->fetch_by_parent_term($this) };
+  my @terms = @{ $this->adaptor()->fetch_all_by_parent_term($this) };
 
   if (@relations) {
     @terms = ();
@@ -236,7 +223,7 @@ sub children {
                   descendant terms of this ontology term, down to
                   and including any leaf terms.
 
-  Example       : my @desc = @{ $term->descendants() };
+  Example       : my @descendants = @{ $term->descendants() };
 
   Return type   : listref of Bio::EnsEMBL::OntologyTerm
 
@@ -244,7 +231,7 @@ sub children {
 
 sub descendants {
   my ($this) = @_;
-  return $this->adaptor()->fetch_all_by_parent_term($this);
+  return $this->adaptor()->fetch_all_by_ancestor_term($this);
 }
 
 =head2 parents
@@ -264,7 +251,7 @@ sub descendants {
 sub parents {
   my ( $this, @relations ) = @_;
 
-  my @terms = @{ $this->adaptor()->fetch_by_child_term($this) };
+  my @terms = @{ $this->adaptor()->fetch_all_by_child_term($this) };
 
   if (@relations) {
     @terms = ();
@@ -286,7 +273,7 @@ sub parents {
                   ancestor terms of this ontology term, up to and
                   including the root term.
 
-  Example       : my @desc = @{ $term->descendants() };
+  Example       : my @ancestors = @{ $term->ancestors() };
 
   Return type   : listref of Bio::EnsEMBL::OntologyTerm
 
@@ -294,7 +281,7 @@ sub parents {
 
 sub ancestors {
   my ($this) = @_;
-  return $this->adaptor()->fetch_all_by_child_term($this);
+  return $this->adaptor()->fetch_all_by_descendant_term($this);
 }
 
 1;
