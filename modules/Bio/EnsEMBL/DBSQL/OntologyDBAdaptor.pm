@@ -39,7 +39,10 @@ use warnings;
 use base qw ( Bio::EnsEMBL::DBSQL::DBAdaptor );
 
 sub get_available_adaptors {
-  return { 'GOTerm' => 'Bio::EnsEMBL::DBSQL::GOTermAdaptor' };
+  return {
+    'GOTerm' => 'Bio::EnsEMBL::DBSQL::GOTermAdaptor',
+    'SOTerm' => 'Bio::EnsEMBL::DBSQL::SOTermAdaptor'
+  };
 }
 
 1;
