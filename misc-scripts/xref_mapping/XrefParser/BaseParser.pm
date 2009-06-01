@@ -381,6 +381,7 @@ sub run {
 	    
 	    $sum_sth->bind_columns(\$sum_count, \$sum_name);
 	    
+	    $sum_name .= "_$type";
 	    while($sum_sth->fetch){
 	      if($sum_count != $sum_dir{$sum_name}){
 		my $diff = ($sum_count - $sum_dir{$sum_name});
@@ -2331,7 +2332,7 @@ sub parsing_finished_store_data{
 
   my $dbi = $self->dbi();
   foreach my  $table (keys %table_and_key){
-    print "select MAX(".$table_and_key{$table}.") from $table\n";
+#    print "select MAX(".$table_and_key{$table}.") from $table\n";
     my $sth = $dbi->prepare("select MAX(".$table_and_key{$table}.") from $table");
     $sth->execute;
     my $max_val;
