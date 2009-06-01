@@ -135,23 +135,23 @@
             $adaptor->fetch_by_dbID_list(\@dbIDs)
 
       2.b   by their (immediate) parent term
-            $adaptor->fetch_by_parent_term($term)
-
-      2.c   by their (immediate) child term
-            $adaptor->fetch_by_child_term($term)
-
-      2.d   by an ancestor term
             $adaptor->fetch_all_by_parent_term($term)
 
-      2.e   by a descendant term
+      2.c   by their (immediate) child term
             $adaptor->fetch_all_by_child_term($term)
+
+      2.d   by an ancestor term
+            $adaptor->fetch_all_by_ancestor_term($term)
+
+      2.e   by a descendant term
+            $adaptor->fetch_all_by_descendant_term($term)
 
     3.  Fetching a structure that encodes the ancestor relationships of
         a term.
         $adaptor->_fetch_ancestor_chart($term)
 
-    Given  an  ontology  term,  which  is  a  Bio::EnsEMBL::OntologyTerm
-    object, some operations from the  second set of operations above are
+    Given an ontology term, which is a Bio::EnsEMBL::OntologyTerm
+    object, some operations from the second set of operations above are
     also available on the object itself (2.b--2.e):
 
     4.  Fetching a set of terms from the database
@@ -173,11 +173,18 @@
     --------------------------------------------------------------------
 
     To enable to use ontology terms in querying for Ensembl objects,
-    a method called fetch_all_by_GOTerm() was added to GeneAdaptor,
-    TranscriptAdaptor, and to TranslationAdaptor.  Given a GO term
-    object, this method uses the DBEntryAdaptor to fetch objects
-    that are cross-referenced with the GO term or with any of its
-    descendants.
+    two methods were added to GeneAdaptor, TranscriptAdaptor, and to
+    TranslationAdaptor:
+
+      - fetch_all_by_GOTerm()
+
+      - fetch_all_by_GOTerm_accession()
+
+    Given a GO term object, the fetch_all_by_GOTerm() method uses
+    the DBEntryAdaptor to fetch objects that are cross-referenced
+    with the GO term or with any of its descendants.  The
+    fetch_all_by_GOTerm_accession() method works similarly, but
+    instead of a GO term object it takes a GO term accession.
 
 
     COMPLETE EXAMPLE PROGRAMS
