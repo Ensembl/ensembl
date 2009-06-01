@@ -514,6 +514,50 @@ sub fetch_all_by_GOTerm {
   return \@result;
 }
 
+=head2 fetch_all_by_GOTerm_accession
+
+  Arg [1]   : String
+              The GO term accession for which genes should be
+              fetched.
+
+  Example   :
+
+    @genes =
+      @{ $gene_adaptor->fetch_all_by_GOTerm_accession(
+        'GO:0030326') };
+
+  Description   : Retrieves a list of genes that are associated with
+                  the given GO term, or with any of its descendent
+                  GO terms.  The genes returned are in their native
+                  coordinate system, i.e. in the coordinate system
+                  in which they are stored in the database.  If
+                  another coordinate system is required then the
+                  Gene::transfer or Gene::transform method can be
+                  used.
+
+  Return type   : listref of Bio::EnsEMBL::Gene
+  Exceptions    : Throws of argument is not a GO term accession
+  Caller        : general
+  Status        : Stable
+
+=cut
+
+sub fetch_all_by_GOTerm_accession {
+  my ( $self, $accession ) = @_;
+
+  if ( $accession !~ /^GO:/ ) {
+    throw('Argument is not a GO term accession');
+  }
+
+  my $goAdaptor =
+    Bio::EnsEMBL::Registry->get_adaptor( 'Multi', 'Ontology',
+    'GOTerm' );
+
+  my $term = $goAdaptor->fetch_by_accession($accession);
+
+  return $self->fetch_all_by_GOTerm($term);
+}
+
 =head2 fetch_by_display_label
 
   Arg [1]    : String $label - display label of transcript to fetch
