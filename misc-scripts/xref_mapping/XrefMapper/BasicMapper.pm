@@ -608,7 +608,19 @@ FSQL
   # Delete the old ones.
   ###########################
 
+  # delete the synonyms first
 
+  my $del_synonym_sql = "delete s from synonym s, xref x where s.xref_id = x.xref_id and x.source_id in ( $odn_curated_gene_id, $odn_automatic_gene_id, $clone_based_vega_gene_id, $clone_based_ensembl_gene_id,$odn_automatic_tran_id, $clone_based_ensembl_tran_id)";
+
+  $sth = $self->xref->dbc->prepare($del_synonym_sql);
+  $sth->execute();
+
+ 
+  my $del_identity_sql = "delete i from object_xref o, xref x, identity_xref i where i.object_xref_id = o.object_xref_id and x.xref_id = o.xref_id and x.source_id in ( $odn_curated_gene_id, $odn_automatic_gene_id, $clone_based_vega_gene_id, $clone_based_ensembl_gene_id,$odn_automatic_tran_id, $clone_based_ensembl_tran_id)";
+
+  $sth = $self->xref->dbc->prepare($del_identity_sql);
+  $sth->execute();
+ 
   my $del_vega_sql = "delete o from object_xref o, xref x where x.xref_id = o.xref_id and x.source_id in ( $odn_curated_gene_id, $odn_automatic_gene_id, $clone_based_vega_gene_id, $clone_based_ensembl_gene_id,$odn_automatic_tran_id, $clone_based_ensembl_tran_id)";
 
   $sth = $self->xref->dbc->prepare($del_vega_sql);
