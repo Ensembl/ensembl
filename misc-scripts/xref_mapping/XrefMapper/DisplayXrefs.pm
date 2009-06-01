@@ -1030,7 +1030,7 @@ SQL
 # Do a similar thing for those with a display_label that is just numeric;
 #
 
-  $update_ignore_sth = $self->xref->dbc->prepare('UPDATE object_xref ox, source s, xref x SET ox_status = "NO_DISPLAY" where s.source_id = x.source_id and x.label REGEXP "^[0-9]+$" and ox.xref_id = x.xref_id');
+  $update_ignore_sth = $self->xref->dbc->prepare('UPDATE object_xref ox, source s, xref x SET ox_status = "NO_DISPLAY" where ox_status like "DUMP_OUT" and s.source_id = x.source_id and x.label REGEXP "^[0-9]+$" and ox.xref_id = x.xref_id');
 
   $update_ignore_sth->execute();
   $update_ignore_sth->finish;
