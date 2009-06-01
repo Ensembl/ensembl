@@ -25,7 +25,7 @@ Bio::EnsEMBL::DBSQL::GOTermAdaptor
 =head1 DESCRIPTION
 
 A specialization of Bio::EnsEMBL::DBSQL::OntologyTermAdaptor,
-specifically for GO terms.  See the documentation of
+specifically for Gene Ontology (GO) terms.  See the documentation of
 Bio::EnsEMBL::DBSQL::OntologyTermAdaptor for further information.
 
 =head1 METHODS
