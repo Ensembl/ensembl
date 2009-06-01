@@ -218,7 +218,7 @@ SQL
 #     print STDERR $count." direct_xrefs added to ensembl ".$table."s BUT $err_count stable ids could not be found\n";
 #   }
  }
- foreach my $key (%err_count){
+ foreach my $key ( keys %err_count){
    print STDERR "*WARNING*: ".$err_count{$key}." direct xrefs for database ".$key." could not be added as their stable_ids could not be found\n";
  }
  $ins_go_sth->finish;
