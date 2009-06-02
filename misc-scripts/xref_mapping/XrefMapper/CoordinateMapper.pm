@@ -1,9 +1,9 @@
 package XrefMapper::CoordinateMapper;
 
-use vars '@ISA';
-@ISA = qw{ XrefMapper::BasicMapper };
+#use vars '@ISA';
+#@ISA = qw{ XrefMapper::BasicMapper };
 
-use XrefMapper::BasicMapper;
+#use XrefMapper::BasicMapper;
 
 # $Id$
 
@@ -22,7 +22,7 @@ use IO::File;
 use File::Spec::Functions;
 
 
-use base qw( Exporter );
+use base qw( Exporter XrefMapper::BasicMapper);
 
 our @EXPORT = qw( run_coordinatemapping );
 
@@ -55,7 +55,7 @@ sub mapper{
 
 
 sub run_coordinatemapping {
-  my ( $self, $do_upload ) = @_;
+  my ( $self, $do_upload) = @_;
 
 
   my $sth_stat = $self->xref->dbc->prepare("insert into process_status (status, date) values('coordinate_xrefs_started',now())");
@@ -66,8 +66,8 @@ sub run_coordinatemapping {
   my $core_db = $self->core();
 
   my $species = $core_db->species();
-  my $species_id = $self->mapper->species_id;
-#    XrefMapper::BasicMapper::get_species_id_from_species_name( $xref_db, $species );
+#  my $species_id = $self->mapper->core->species;
+  my $species_id = XrefMapper::BasicMapper::get_species_id_from_species_name( $xref_db, $species );
 
 
   # We only do coordinate mapping for mouse and human for now.
@@ -208,11 +208,18 @@ sub run_coordinatemapping {
   $xref_sth->execute($species_id);
 
   my $external_db_id;
+  my $i=0;
   while ( my $xref = $xref_sth->fetchrow_hashref() ) {
     $external_db_id ||=
       $XrefMapper::BasicMapper::source_to_external_db{ $xref->{
         'source_id'} };
     $external_db_id ||= 11000;    # FIXME (11000 is 'UCSC')
+    
+    if($i <20){
+      print "ext $external_db_id\n";
+      $i++;
+    }
+    
 
     $unmapped{ $xref->{'coord_xref_id'} } = {
                    'external_db_id' => $external_db_id,
