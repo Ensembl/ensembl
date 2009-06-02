@@ -74,11 +74,25 @@
       selection of transitive relation types.  The transitive relation
       types currently covered are 'is_a', 'part_of'.
 
-      Each entry in the 'closure' table consists of a reference to
-      a child term, to one of its ancestor terms, a reference to an
-      immediate child of the ancestor, called the sub-parent, and
-      the distance between the child and the ancestor through the
-      sub-parent.
+      Each entry in the 'closure' table consists of a reference to a
+      child term, to one of its ancestor terms ("parent"), a reference
+      to an immediate child of the ancestor, called the sub-parent,
+      and the distance between the child and the ancestor through the
+      sub-parent (see figure below).
+
+                    [parent]
+                       |
+                       +--------------------------+
+                       |                          |
+                   [subparent]    [other children of parent term]
+                       |                          |
+                       :          +---------------+
+                       :          :
+              [other terms in the hierarchy]
+                             :
+                             :
+                             |
+                          [child]
 
       This table is computed by a Perl program (see below) from the
       'relation' table and allows for quick retrieval of all ancestors
