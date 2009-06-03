@@ -17,7 +17,7 @@
     attempt to make it simple to work with ontology terms in Ensembl.
 
     The database also contains Sequence Ontology (SO) terms even though
-    these are not yet cross-referenced by Ensembl.
+    these are not yet cross-referenced or otherwise used by Ensembl.
 
 
     THE DATABASE SCHEMA
