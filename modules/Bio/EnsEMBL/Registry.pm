@@ -2054,6 +2054,11 @@ sub load_registry_from_db {
     -alias =>
       [ 'finch', 'zebrafinch', 'taeniopygia', 'taeniopygiaguttata' ] );
 
+  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
+    -species => "Macropus_eugenii",
+    -alias =>
+      [ 'wallaby', 'macropus', 'macropuseugenii' ] );
+
   @aliases = ('compara');
   Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
     -species => "multi",
