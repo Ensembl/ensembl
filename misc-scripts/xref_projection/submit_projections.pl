@@ -4,17 +4,17 @@ use strict;
 # Remember to check/set the various config optons
 
 # ------------------------------ config -------------------------------
-my $release = 53;
+my $release = 55;
 
 my $base_dir = "/lustre/scratch1/ensembl/rjk/projections/";
 
-my $conf = "release_53.ini"; # registry config file, specifies Compara location
+my $conf = "release_55.ini"; # registry config file, specifies Compara location
 
 # location of other databases
 my $host = "ens-staging";
 my $port = 3306;
 my $user = "ensadmin";
-my $pass = "PASS";
+my $pass = "ensembl";
 
 # load limit for ens-staging MySQL instance above which jobs won't be started
 my $limit = 200;
@@ -63,6 +63,7 @@ my @names_1_1 = (["human", "chimp"            ],
 		 ["human", "tree_shrew"       ],
 		 ["human", "pika"             ],
 		 ["human", "mouse_lemur"      ],
+		 ["human", "wallaby"          ],
 		 ["human", "horse"            ],
 		 ["human", "orang_utan"       ],
 		 ["human", "dolphin"          ],
@@ -106,6 +107,7 @@ my @go_terms = (["human",      "mouse"          ],
 		["human",      "tree_shrew"     ],
 		["human",      "pika"           ],
 		["human",      "mouse_lemur"    ],
+		["human", 	"wallaby"       ],
 		["human",      "horse"          ],
 		["human",      "orang_utan"     ],
 		["human",      "dolphin"        ],
@@ -143,6 +145,7 @@ my @go_terms = (["human",      "mouse"          ],
         	["mouse",      "horse"          ],
 		["mouse",      "orang_utan"     ],
 		["mouse",      "mouse_lemur"    ],
+		["mouse",      "wallaby"    ],
 		["mouse",      "dolphin"        ],
 		["mouse",      "hyrax"          ],
 		["mouse",      "megabat"        ],
