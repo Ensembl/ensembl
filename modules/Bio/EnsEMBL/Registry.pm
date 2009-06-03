@@ -2457,6 +2457,7 @@ our %ensembl_species = qw(
 			  ENSTBE  Tupaia_belangeri
 			  SINFRU  Takifugu_rubripes
 			  ENSXET  Xenopus_tropicalis
+			  ENSMEU  Macropus_eugenii
 			  );
 our %vega_species = qw(
 		       OTTHUM  Homo_sapiens
