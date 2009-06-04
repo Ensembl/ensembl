@@ -127,7 +127,8 @@ __END__
 # To stop caching messing up your timings, try doing the following on
 # any adapter:
 #
-# $slice_adaptor->dbc()->db_handle()->do("SET SESSION query_cache_type = OFF");
+#   $slice_adaptor->dbc()->db_handle()
+#       ->do("SET SESSION query_cache_type = OFF");
 #
 # To start logging:
 # Bio::EnsEMBL::DBSQL::StatementHandle->sql_timing_start();
@@ -183,15 +184,12 @@ sub sql_timing_print {
     print( $fh $key, "\n" );
 
     print( $fh
-           "total\t \tnum\tfirst \t\tavg\t \t[min     ,max      ]\n" );
+        "total\t \tnum\tfirst \t\tavg\t \t[min     ,max      ]\n" );
 
     printf( $fh "%6f\t%d\t%6f\t%6f\t[%6f, %6f]\n\n",
-            $total_time{$key},
-            $number_of_times{$key},
-            $first_time{$key},
-            ( $total_time{$key}/$number_of_times{$key} ),
-            $min_time{$key},
-            $max_time{$key} );
+      $total_time{$key}, $number_of_times{$key},
+      $first_time{$key}, ( $total_time{$key}/$number_of_times{$key} ),
+      $min_time{$key}, $max_time{$key} );
   }
 
   printf( $fh "\ntotal time %6f\n\n", $grand_total );
@@ -210,24 +208,21 @@ sub execute {
 
   my $retval;
   # Skip dumping if !$dump
-  if ( !$dump ) { 
- { 
-     local $self->{RaiseError};
-     $retval = $self->SUPER::execute(@args);
-     if (!defined($retval)) {
-	 throw("Failed to execute SQL statement");
-     }
+  if ( !$dump ) {
+      local $self->{RaiseError};
+      $retval = $self->SUPER::execute(@args);
+      if ( !defined($retval) ) {
+        throw("Failed to execute SQL statement");
+      }
       return $retval;
- }
-
-}
+  }
 
   my $sql = $self->sql();
   my @chrs = split( //, $sql );
 
   my $j = 0;
 
-  for ( my $i = 0 ; $i < @chrs ; $i++ ) {
+  for ( my $i = 0; $i < @chrs; $i++ ) {
     if ( $chrs[$i] eq '?' && defined( $bind_args[$j] ) ) {
       $chrs[$i] = $bind_args[ $j++ ];
     }
@@ -239,14 +234,14 @@ sub execute {
   # print( STDERR "\n\nSQL:\n$str\n\n" );
 
   my $time = time();
- { 
-     local $self->{RaiseError};
-     $retval = $self->SUPER::execute(@args);
-     if (!defined($retval)) {
-	 throw("Failed to execute SQL statement");
-     }
- }
-#  my $res  = $self->SUPER::execute(@args);
+  {
+    local $self->{RaiseError};
+    $retval = $self->SUPER::execute(@args);
+    if ( !defined($retval) ) {
+      throw("Failed to execute SQL statement");
+    }
+  }
+  #  my $res  = $self->SUPER::execute(@args);
   $time = time() - $time;
 
   if ( defined( $total_time{$sql} ) ) {
