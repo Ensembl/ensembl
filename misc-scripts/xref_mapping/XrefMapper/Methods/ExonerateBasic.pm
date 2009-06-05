@@ -126,9 +126,41 @@ sub submit_exonerate {
     my $output = $self->get_class_name() . "_" . $ensembl_type . "_1.map";
     my $cmd = <<EON;
 $exonerate_path $query $target --showvulgar false --showalignment FALSE --ryo "xref:%qi:%ti:%ei:%ql:%tl:%qab:%qae:%tab:%tae:%C:%s\n" $options_str | grep '^xref' > $root_dir/$output
-
 EON
     print "none farm command is $cmd\n" if($mapper->verbose);
+
+
+    # write details of job to database
+    
+    my $sth = $mapper->xref->dbc->prepare("insert into process_status (status, date) values('mapping_submitted',now())");
+    $sth->execute();
+    $sth->finish;
+    
+    my $jobid = 1;
+    if($ensembl_type eq "peptide"){
+      $jobid = 2;
+    }
+
+    for( my $i=1; $i<=1; $i++){
+      my $command = "$exonerate_path $query $target --showvulgar false --showalignment FALSE --ryo ".
+	'"xref:%qi:%ti:%ei:%ql:%tl:%qab:%qae:%tab:%tae:%C:%s\n"'." $options_str | grep ".'"'."^xref".'"'." > $root_dir/$output";
+      my $insert = "insert into mapping (job_id, type, command_line, percent_query_cutoff, percent_target_cutoff, method, array_size) values($jobid, '$ensembl_type', '$command',".
+				       $self->query_identity_threshold.", ".$self->target_identity_threshold.", '".$self->get_class_name()."', $i)";
+      
+      $sth = $mapper->xref->dbc->prepare($insert);
+      $sth->execute;
+      $sth->finish;
+      
+      $sth = $mapper->xref->dbc->prepare("insert into mapping_jobs (root_dir, map_file, status, out_file, err_file, array_number, job_id) values (?,?,?,?,?,?,?)");
+      
+      my $map_file = $self->get_class_name()."_".$ensembl_type."_".$i.".map";
+      my $out_file = "xref_0_".$ensembl_type.".".$jobid."-".$i.".out";
+      my $err_file = "xref_0_".$ensembl_type.".".$jobid."-".$i.".err";
+      $sth->execute($root_dir, $map_file, 'SUBMITTED', $out_file, $err_file, $i, $jobid);
+    }
+    $sth->finish;
+    
+
     system($cmd);
     $self->jobcount(1);
     return "nofarm";

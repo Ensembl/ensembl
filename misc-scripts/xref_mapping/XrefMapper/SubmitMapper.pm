@@ -38,6 +38,7 @@ sub new {
   $self->xref($mapper->xref);
   $self->mapper($mapper);
   $self->verbose($mapper->verbose);
+  $self->nofarm($mapper->nofarm);
   return $self;
 }
 
@@ -528,6 +529,9 @@ sub submit_depend_job {
 
 
   if(defined($self->nofarm)){
+    my $sth = $self->xref->dbc->prepare("insert into process_status (status, date) values('mapping_finished',now())");
+    $sth->execute();
+    $sth->finish;
     return;
   }
 
