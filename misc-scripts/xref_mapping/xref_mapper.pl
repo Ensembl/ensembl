@@ -29,6 +29,8 @@ my $upload = 0;
 my $nofarm;
 my $partupdate;
 my $notverbose ;
+my $reset_to_mapping_finished;
+my $reset_to_parsing_finished;
 
 
 my $options = join(" ",@ARGV);
@@ -39,7 +41,9 @@ GetOptions ('file=s'                    => \$file,
             'upload'                    => \$upload,
 	    'notverbose'                => \$notverbose,  
             'nofarm'                    => \$nofarm, 
-            'partupdate'                  => \$partupdate,
+            'partupdate'                => \$partupdate,
+            'reset_to_mapping_finished' => \$reset_to_mapping_finished,
+            'reset_to_parsing_finished' => \$reset_to_parsing_finished,
             'help'                      => sub { usage(); exit(0); } );
 
 
@@ -66,6 +70,17 @@ else{
 # find out what stage the database is in at present.
 my $status = $mapper->xref_latest_status($mapper->verbose);
 print "current status is $status\n" if ($mapper->verbose);
+
+
+if(defined($reset_to_mapping_finished)){
+  $mapper->revert_to_mapping_finished();
+  exit();
+}
+
+if(defined($reset_to_parsing_finished)){
+  $mapper->revert_to_parsing_finished();
+  exit();
+}
 
 
 my $submitter = XrefMapper::SubmitMapper->new($mapper);
