@@ -155,7 +155,7 @@ sub check_and_register {
   }
 
   if ( $start > $end ) {
-    throw("start argument must be less than end argument");
+    throw("start argument [$start] must be less than end argument [$end]");
   }
 
   if ( $rstart > $rend ) {
@@ -165,11 +165,11 @@ sub check_and_register {
   }
 
   if ( $rstart > $start ) {
-    throw("rstart must be less than or equal to start");
+    throw("rstart [$rstart] must be less than or equal to start [$start]");
   }
 
   if ( $rend < $end ) {
-    throw("rend must be greater than or equal to end");
+    throw("rend [$rend] must be greater than or equal to end [$end]");
   }
 
   my $reg = $self->{'registry'};
