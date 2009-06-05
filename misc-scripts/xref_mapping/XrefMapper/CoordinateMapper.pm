@@ -77,6 +77,7 @@ sub run_coordinatemapping {
     $sth_stat->finish;
     return;
   }
+  print "species = $species ($species_id))\n";
 
   my $output_dir = $core_db->dir();
 
@@ -208,17 +209,12 @@ sub run_coordinatemapping {
   $xref_sth->execute($species_id);
 
   my $external_db_id;
-  my $i=0;
+
   while ( my $xref = $xref_sth->fetchrow_hashref() ) {
     $external_db_id ||=
       $XrefMapper::BasicMapper::source_to_external_db{ $xref->{
         'source_id'} };
     $external_db_id ||= 11000;    # FIXME (11000 is 'UCSC')
-    
-    if($i <20){
-      print "ext $external_db_id\n";
-      $i++;
-    }
     
 
     $unmapped{ $xref->{'coord_xref_id'} } = {
@@ -230,6 +226,10 @@ sub run_coordinatemapping {
     };
   }
   $xref_sth->finish();
+
+  if(!defined($external_db_id)){
+    die "External_db_id is undefined  species_id = $species_id\n";
+  }
 
   ######################################################################
   # Do coordinate matching.                                            #
@@ -602,6 +602,9 @@ sub run_coordinatemapping {
   $sth_stat = $self->xref->dbc->prepare("insert into process_status (status, date) values('coordinate_xref_finished',now())");
   $sth_stat->execute();
   $sth_stat->finish;
+
+  $self->biomart_fix("UCSC","Translation","Gene");
+  $self->biomart_fix("UCSC","Transcript","Gene");
   
 } ## end sub run_coordinatemapping
 
