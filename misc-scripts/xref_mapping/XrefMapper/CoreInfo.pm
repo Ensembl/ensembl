@@ -128,14 +128,20 @@ sub get_core_data {
  # Now process the direct xrefs and add data to the object xrefs remember dependent xrefs.
 
  my $ins_ox_sth = $self->xref->dbc->prepare("insert into object_xref (object_xref_id, ensembl_id, xref_id, ensembl_object_type, linkage_type) values(?, ?, ?, ?, ?)");
+ my $ins_ox_sth2 = $self->xref->dbc->prepare("insert into object_xref (object_xref_id, ensembl_id, xref_id, ensembl_object_type, linkage_type, master_xref_id) values(?, ?, ?, ?, ?, ?)");
 
 
  # Direct xrefs can be considered to be 100% matching
  my $ins_ix_sth = $self->xref->dbc->prepare("insert into identity_xref (object_xref_id, query_identity, target_identity) values(?, 100, 100)");
+# my $update_dependent_xref_sth = $self->xref->dbc->prepare("update dependent_xref set object_xref_id = ? where master_xref_id = ? and dependent_xref_id =?");
 
  local $ins_ox_sth->{RaiseError};  # want to see duplicates and not add de
 
  local $ins_ox_sth->{PrintError}; 
+ 
+ local $ins_ox_sth2->{RaiseError};  # want to see duplicates and not add de
+
+ local $ins_ox_sth2->{PrintError}; 
  
 
  my $ins_go_sth = $self->xref->dbc->prepare("insert into go_xref (object_xref_id, linkage_type, source_xref_id) values(?,?,?)");
@@ -190,9 +196,9 @@ SQL
        $dep_sth->bind_columns(\$dep_xref_id, \$link);
        while($dep_sth->fetch){
          $object_xref_id++;
-         $ins_ox_sth->execute($object_xref_id, $internal_id, $dep_xref_id, $table, 'DEPENDENT');
-	 if($ins_ox_sth->err){
-	   my $err = $ins_ox_sth->errstr;
+         $ins_ox_sth2->execute($object_xref_id, $internal_id, $dep_xref_id, $table, 'DEPENDENT', $master_xref_id);
+	 if($ins_ox_sth2->err){
+	   my $err = $ins_ox_sth2->errstr;
 	   if($err =~ /Duplicate/){
 	     $duplicate_dependent_count++;
 	     next;
@@ -202,6 +208,7 @@ SQL
 	   } 
 	 }
 	 $ins_ix_sth->execute($object_xref_id);
+#	 $update_dependent_xref_sth->execute($object_xref_id, $master_xref_id, $dep_xref_id);
 	 push @master_xref_ids, $dep_xref_id; # get the dependent, dependents just in case
 
          if(defined($link) and $link ne ""){ # we have a go term linkage type

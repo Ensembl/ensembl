@@ -34,7 +34,7 @@ sub process{
 
   $object_xref_id++;
 
-  my $add_object_xref_sth = $self->xref->dbc->prepare('insert into object_xref (object_xref_id, ensembl_id,ensembl_object_type, xref_id, linkage_type, ox_status ) values (?, ?, ?, ?, ?, "DUMP_OUT")');
+  my $add_object_xref_sth = $self->xref->dbc->prepare('insert into object_xref (object_xref_id, ensembl_id,ensembl_object_type, xref_id, linkage_type, ox_status, master_xref_id ) values (?, ?, ?, ?, ?, "DUMP_OUT", ?)');
   local $add_object_xref_sth->{RaiseError}; #catch duplicates
   local $add_object_xref_sth->{PrintError}; # cut down on error messages
   
@@ -56,7 +56,7 @@ sub process{
   # Get a list of interpro data, including dependent xrefs if avail
   $sth = $self->xref->dbc->prepare("
     SELECT ip.interpro, ip.pfam, x2.xref_id, x2.source_id,
-           dx.linkage_annotation
+           dx.linkage_annotation, dx.master_xref_id
       FROM interpro ip, xref x
         LEFT JOIN dependent_xref dx ON x.xref_id=dx.master_xref_id
           LEFT JOIN xref x2 ON dx.dependent_xref_id=x2.xref_id
@@ -66,11 +66,11 @@ sub process{
   my %added;
   my $dup=0;
   while( my $row = $sth->fetchrow_arrayref() ){
-    my ( $interpro, $pfam, $dx_xref_id, $dx_source_id, $go_linkage ) = @$row;
+    my ( $interpro, $pfam, $dx_xref_id, $dx_source_id, $go_linkage, $master_id ) = @$row;
     if( $dx_xref_id ){
       foreach my $ensembl_id( @{$domain_to_translation{$pfam}||[]} ){
         #...And the interpro domain maps to a translation
-	$add_object_xref_sth->execute($object_xref_id, $ensembl_id, 'Translation', $dx_xref_id, 'DEPENDENT');	  
+	$add_object_xref_sth->execute($object_xref_id, $ensembl_id, 'Translation', $dx_xref_id, 'DEPENDENT', $master_id);	  
 	if($add_object_xref_sth->err){
 	  my $err = $add_object_xref_sth->errstr;
 	  if($err =~ /Duplicate/){

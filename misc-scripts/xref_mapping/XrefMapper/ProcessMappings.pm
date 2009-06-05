@@ -153,7 +153,7 @@ sub process_map_file{
   my $dep_sth    = $self->xref->dbc->prepare("select dependent_xref_id, linkage_annotation from dependent_xref where master_xref_id = ?");
   my $start_sth  = $self->xref->dbc->prepare("update mapping_jobs set object_xref_start = ? where job_id = ? and array_number = ?");
   my $end_sth    = $self->xref->dbc->prepare("update mapping_jobs set object_xref_end = ? where job_id = ? and array_number = ?");
-  my $update_dependent_xref_sth = $self->xref->dbc->prepare("update dependent_xref set object_xref_id = ? where master_xref_id = ? and dependent_xref_id =?");
+#  my $update_dependent_xref_sth = $self->xref->dbc->prepare("update dependent_xref set object_xref_id = ? where master_xref_id = ? and dependent_xref_id =?");
 
   my $object_xref_id;
   my $sth = $self->xref->dbc->prepare("select max(object_xref_id) from object_xref");
@@ -166,8 +166,11 @@ sub process_map_file{
   }
 
   my $object_xref_sth = $self->xref->dbc->prepare("insert into object_xref (object_xref_id, ensembl_id,ensembl_object_type, xref_id, linkage_type, ox_status ) values (?, ?, ?, ?, ?, ?)");
+  my $object_xref_sth2 = $self->xref->dbc->prepare("insert into object_xref (object_xref_id, ensembl_id,ensembl_object_type, xref_id, linkage_type, ox_status, master_xref_id ) values (?, ?, ?, ?, ?, ?, ?)");
   local $object_xref_sth->{RaiseError}; #catch duplicates
   local $object_xref_sth->{PrintError}; # cut down on error messages
+  local $object_xref_sth2->{RaiseError}; #catch duplicates
+  local $object_xref_sth2->{PrintError}; # cut down on error messages
 
   my $identity_xref_sth = $self->xref->dbc->prepare("insert into identity_xref (object_xref_id, query_identity, target_identity, hit_start, hit_end, translation_start, translation_end, cigar_line, score ) values (?, ?, ?, ?, ?, ?, ?, ?, ?)");
  
@@ -231,8 +234,8 @@ sub process_map_file{
        $dep_sth->bind_columns(\$dep_xref_id, \$link);
        while($dep_sth->fetch){
          $object_xref_id++;
-         $object_xref_sth->execute($object_xref_id, $target_id, $ensembl_type, $dep_xref_id, 'DEPENDENT', $status);
-	 if($object_xref_sth->err){
+         $object_xref_sth2->execute($object_xref_id, $target_id, $ensembl_type, $dep_xref_id, 'DEPENDENT', $status, $master_xref_id);
+	 if($object_xref_sth2->err){
 	   my $err = $object_xref_sth->errstr;
 	   if($err =~ /Duplicate/){
 #	     $duplicate_dependent_count++;
@@ -243,12 +246,12 @@ sub process_map_file{
 	     die "Problem loading error is $err\n";
 	   } 
 	 }
-	 if($object_xref_sth->err){
+	 if($object_xref_sth2->err){
 	   print STDERR "WARNING: Should not reach here??? object_xref_id = $object_xref_id\n";
 	 }
 
 	 $ins_dep_ix_sth->execute($object_xref_id, $query_identity, $target_identity);
-	 $update_dependent_xref_sth->execute($object_xref_id, $master_xref_id, $dep_xref_id);
+# now store in object_xref	 $update_dependent_xref_sth->execute($object_xref_id, $master_xref_id, $dep_xref_id);
 
 	 push @master_xref_ids, $dep_xref_id; # get the dependent, dependents just in case
 	 if(defined($link) and $link ne ""){ # we have a go term linkage type
