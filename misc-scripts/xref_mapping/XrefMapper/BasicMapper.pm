@@ -390,7 +390,7 @@ sub official_naming {
 ########################################################
 
   # remove the ignore later on after testing
-  my $sth_add_ox = $self->xref->dbc->prepare("insert ignore into object_xref (object_xref_id, xref_id, ensembl_id, ensembl_object_type, linkage_type, ox_status) values(?, ?, ?, 'Transcript', ?, ?)");
+  my $sth_add_ox = $self->xref->dbc->prepare("insert ignore into object_xref (object_xref_id, xref_id, ensembl_id, ensembl_object_type, linkage_type, ox_status, master_xref_id) values(?, ?, ?, 'Transcript', ?, ?, ?)");
 
 #  my $object_xref_id = $max_object_xref_id + 1;
 
@@ -401,7 +401,7 @@ sub official_naming {
   }
 
   my $object_sql = (<<FSQL);
-select x.xref_id, o.ensembl_id, o.linkage_type, o.ox_status, ix.query_identity, ix.target_identity
+select x.xref_id, o.ensembl_id, o.linkage_type, o.ox_status, o.master_xref_id, ix.query_identity, ix.target_identity
   from xref x, source s, object_xref o, identity_xref ix
     where x.source_id = s.source_id and 
       ix.object_xref_id  = o.object_xref_id and
@@ -432,14 +432,14 @@ FSQL
   $sth = $self->xref->dbc->prepare($object_sql);
 
   $sth->execute();
-  my ($xref_id, $linkage_type, $ox_status, $q_id, $t_id);
-  $sth->bind_columns(\$xref_id, \$gene_id, \$linkage_type, \$ox_status, \$q_id, \$t_id);
+  my ($xref_id, $linkage_type, $ox_status, $q_id, $t_id, $master_id);
+  $sth->bind_columns(\$xref_id, \$gene_id, \$linkage_type, \$ox_status, \$q_id, \$t_id, \$master_id);
 
 
   while ($sth->fetch){
     if(defined($gene_to_tran_canonical{$gene_id})){
       $max_object_xref_id++;
-      $sth_add_ox->execute($max_object_xref_id, $xref_id, $gene_to_tran_canonical{$gene_id}, $linkage_type, $ox_status) || print STDERR "(Gene id - $gene_id) Could not add  $max_object_xref_id, .".$gene_to_tran_canonical{$gene_id}.", $xref_id, $linkage_type, $ox_status to object_xref\n";
+      $sth_add_ox->execute($max_object_xref_id, $xref_id, $gene_to_tran_canonical{$gene_id}, $linkage_type, $ox_status, $master_id) || print STDERR "(Gene id - $gene_id) Could not add  $max_object_xref_id, .".$gene_to_tran_canonical{$gene_id}.", $xref_id, $linkage_type, $ox_status to object_xref, master_xref_id to $master_id\n";
       $ins_dep_ix_sth->execute($max_object_xref_id, $q_id, $t_id);
     }
     else{
@@ -1330,5 +1330,105 @@ sub get_species_id_from_species_name{
 }
 
 
+sub clean_up{
+  my $self = shift;
+  my $stats = shift;
+  
+
+  # remove all object_xref, identity_xref  entries
+
+  my $sql = "DELETE from object_xref";
+  my $sth = $self->xref->dbc->prepare($sql);
+  $sth->execute(); 
+
+  $sql = "DELETE from go_xref";
+  $sth = $self->xref->dbc->prepare($sql);
+  $sth->execute(); 
+
+  $sql = "DELETE from identity_xref";
+  $sth = $self->xref->dbc->prepare($sql);
+  $sth->execute(); 
+ 
+  # remove all xrefs after PARSED_xref_id
+  # set dumped to NULL fro all xrefs.
+
+  my $max_xref_id = $self->get_meta_value("PARSED_xref_id");
+
+  if($max_xref_id){
+    $sql = "DELETE from xref where xref_id > $max_xref_id";
+    $sth = $self->xref->dbc->prepare($sql);
+    $sth->execute(); 
+  }
+
+  $sql = "UPDATE xref set dumped = null";
+  $sth = $self->xref->dbc->prepare($sql);
+  $sth->execute(); 
+
+
+  
+  # remove all from core_info tables
+  #        gene_transcript_translation
+  #        [gene/transcript/translation]_stable_id
+  #
+  $sql = "DELETE from gene_transcript_translation";
+  $sth = $self->xref->dbc->prepare($sql);
+  $sth->execute(); 
+
+  $sql = "DELETE from gene_stable_id";
+  $sth = $self->xref->dbc->prepare($sql);
+  $sth->execute(); 
+ 
+  $sql = "DELETE from transcript_stable_id";
+  $sth = $self->xref->dbc->prepare($sql);
+  $sth->execute(); 
+ 
+  $sql = "DELETE from translation_stable_id";
+  $sth = $self->xref->dbc->prepare($sql);
+  $sth->execute(); 
+ 
+
+}
+
+sub remove_mapping_data{
+  my $self = shift;
+
+  my $sql = "DELETE from mapping_jobs";
+  my $sth = $self->xref->dbc->prepare($sql);
+  $sth->execute(); 
+
+  $sql = "DELETE from mapping";
+  $sth = $self->xref->dbc->prepare($sql);
+  $sth->execute(); 
+
+}
+
+
+sub revert_to_parsing_finished{
+  my $self = shift;
+
+
+  $self->clean_up();
+  $self->remove_mapping_data();
+  my $sth_stat = $self->xref->dbc->prepare("insert into process_status (status, date) values('parsing_finished',now())");
+  $sth_stat->execute();
+  $sth_stat->finish;    
+}
+
+
+sub revert_to_mapping_finished{
+  my $self = shift;
+
+  $self->clean_up();
+
+  # set mapping jobs to SUBMITTED
+  my $sql = 'UPDATE mapping_jobs set status = "SUBMITTED"';;
+  my $sth = $self->xref->dbc->prepare($sql);
+  $sth->execute(); 
+
+  my $sth_stat = $self->xref->dbc->prepare("insert into process_status (status, date) values('mapping_finished',now())");
+  $sth_stat->execute();
+  $sth_stat->finish;    
+
+}
 
 1;
