@@ -330,6 +330,7 @@ CREATE TABLE object_xref (
   ox_status                   ENUM( 'DUMP_OUT','FAILED_PRIORITY', 'FAILED_CUTOFF', 'NO_DISPLAY')  NOT NULL DEFAULT 'DUMP_OUT',
 -- set ox_status to 0 if non used priority_xref or failed cutoff
   unused_priority             INT UNSIGNED,
+  master_xref_id              INT UNSIGNED DEFAULT NULL,
 
   UNIQUE (ensembl_object_type, ensembl_id, xref_id, ox_status),
   KEY oxref_idx (object_xref_id, xref_id, ensembl_object_type, ensembl_id),
