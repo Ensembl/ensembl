@@ -135,33 +135,6 @@ sub update{
   $xref_sth->finish;
   $unmapped_sth->finish; 
 
-  ###############################################################
-  ##### Create temp table dependent_xref (until schema changes) #
-  ###############################################################
-
-#
-# This has now been added. :-)
-#
-
- 
-#  $sql = (<<SQL);
-#  Create TABLE dependent_xref(
-#     object_xref_id         INT NOT NULL,
-#     master_xref_id         INT NOT NULL,
-#     dependent_xref_id      INT NOT NULL,
-
-#     PRIMARY KEY( object_xref_id ),
-#     KEY dependent ( dependent_xref_id ),
-#     KEY master_idx (master_xref_id)
-
-#   ) COLLATE=latin1_swedish_ci TYPE=MyISAM
-#SQL
-
-#  $sth = $self->core->dbc->prepare($sql);
-#  $sth->execute || die "Could not create temp table dependent_xref\n";
-#  $sth->finish;
-
-  ##### Delete this ONLY after the gene/transcript display_xref and description calculations.
 
 
   ##########################################
@@ -208,13 +181,14 @@ sub update{
 
      my $direct_sth = $self->xref->dbc->prepare('select x.xref_id, x.accession, x.label, x.version, x.description, x.info_text, ox.object_xref_id, ox.ensembl_id, ox.ensembl_object_type from xref x, object_xref ox  where ox.ox_status = "DUMP_OUT" and ox.xref_id = x.xref_id and x.source_id = ? and x.info_type = ? order by x.xref_id');
  
-     $dependent_sth = $self->xref->dbc->prepare('select  x.xref_id, x.accession, x.label, x.version, x.description, x.info_text, ox.object_xref_id, ox.ensembl_id, ox.ensembl_object_type, d.master_xref_id from xref x, object_xref ox,  dependent_xref d where ox.ox_status = "DUMP_OUT" and ox.xref_id = x.xref_id and d.object_xref_id = ox.object_xref_id and x.source_id = ? and x.info_type = ? order by x.xref_id, ox.ensembl_id');
+#     $dependent_sth = $self->xref->dbc->prepare('select  x.xref_id, x.accession, x.label, x.version, x.description, x.info_text, ox.object_xref_id, ox.ensembl_id, ox.ensembl_object_type, d.master_xref_id from xref x, object_xref ox,  dependent_xref d where ox.ox_status = "DUMP_OUT" and ox.xref_id = x.xref_id and d.object_xref_id = ox.object_xref_id and x.source_id = ? and x.info_type = ? order by x.xref_id, ox.ensembl_id');
+ 
+    $dependent_sth = $self->xref->dbc->prepare('select  x.xref_id, x.accession, x.label, x.version, x.description, x.info_text, ox.object_xref_id, ox.ensembl_id, ox.ensembl_object_type, ox.master_xref_id from xref x, object_xref ox where ox.ox_status = "DUMP_OUT" and ox.xref_id = x.xref_id and x.source_id = ? and x.info_type = ? order by x.xref_id, ox.ensembl_id');
 
 
   my $go_sql =(<<GSQL);
-  SELECT  x.xref_id, x.accession, x.label, x.version, x.description, x.info_text, ox.object_xref_id, ox.ensembl_id, ox.ensembl_object_type, dx.master_xref_id, g.linkage_type 
+  SELECT  x.xref_id, x.accession, x.label, x.version, x.description, x.info_text, ox.object_xref_id, ox.ensembl_id, ox.ensembl_object_type, ox.master_xref_id, g.linkage_type 
     FROM (xref x, object_xref ox, go_xref g) 
-      LEFT JOIN dependent_xref dx on dx.object_xref_id = ox.object_xref_id
       WHERE ox.ox_status = "DUMP_OUT" and  
             g.object_xref_id = ox.object_xref_id and 
             x.xref_id = ox.xref_id and 
@@ -306,6 +280,7 @@ GSQL
      }
      else{
        my $count = 0;
+       my $ox_count = 0;
        $dependent_sth->execute($source_id, $type);
        my ($xref_id, $acc, $label, $version, $desc, $info, $object_xref_id, $ensembl_id, $ensembl_type, $master_xref_id); 
        $dependent_sth->bind_columns(\$xref_id, \$acc, \$label, \$version, \$desc, \$info, \$object_xref_id, \$ensembl_id, \$ensembl_type, \$master_xref_id);
@@ -320,11 +295,12 @@ GSQL
 	 if($last_xref != $xref_id or $last_ensembl != $ensembl_id){
 	   $add_object_xref_sth->execute(($object_xref_id+$object_xref_offset), $ensembl_id, $ensembl_type, ($xref_id+$xref_offset), $analysis_ids{$ensembl_type});
 	   $add_dependent_xref_sth->execute(($object_xref_id+$object_xref_offset), ($master_xref_id+$xref_offset), ($xref_id+$xref_offset) );
+	   $ox_count++;
 	 }
 	 $last_xref = $xref_id;
 	 $last_ensembl = $ensembl_id;
        }  
-       print "DEP $count\n" if ($verbose);
+       print "DEP $count xrefs, $ox_count object_xrefs\n" if ($verbose);
      }
    }
    ### If SEQUENCE_MATCH   xref, object_xref,  identity_xref   (order by xref_id)  # maybe linked to more than one?
