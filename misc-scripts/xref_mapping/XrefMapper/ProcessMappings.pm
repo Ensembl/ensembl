@@ -164,6 +164,7 @@ sub process_map_file{
   if(!defined($object_xref_id)){
     $object_xref_id = 0;
   }
+  
 
   my $object_xref_sth = $self->xref->dbc->prepare("insert into object_xref (object_xref_id, ensembl_id,ensembl_object_type, xref_id, linkage_type, ox_status ) values (?, ?, ?, ?, ?, ?)");
   my $object_xref_sth2 = $self->xref->dbc->prepare("insert into object_xref (object_xref_id, ensembl_id,ensembl_object_type, xref_id, linkage_type, ox_status, master_xref_id ) values (?, ?, ?, ?, ?, ?, ?)");
@@ -177,7 +178,7 @@ sub process_map_file{
 
   my $ins_dep_ix_sth = $self->xref->dbc->prepare("insert into identity_xref (object_xref_id, query_identity, target_identity) values(?, ?, ?)");
 
-  $start_sth->execute(($object_xref_id+1),$job_id, $array_number);
+  my $first = 1;
   while(<MAP>){
     $total_lines++;
     chomp();
@@ -214,6 +215,10 @@ sub process_map_file{
 	die "Problem loading error is $err\n";
       } 
     }  
+    if($first){
+      $start_sth->execute($object_xref_id,$job_id, $array_number);
+      $first = 0;
+    }
 
 
 
