@@ -3,6 +3,7 @@
 package XrefMapper::Methods::ExonerateBasic;
 
 use strict;
+use warnings;
 
 use File::Basename;
 use IPC::Open3;
@@ -81,6 +82,81 @@ sub options() {
 
 }
 
+
+=head2 resubmit_exonerate
+
+=cut
+
+sub resubmit_exonerate {
+  my ($self, $mapper, $command, $outfile, $errfile, $job_id, $array_number, $root_dir) = @_;
+
+
+
+  my ($junk,$query, $target, @rest) = split(/\s+/,$command);
+
+  my $disk_space_needed = (stat($query))[7]+(stat($target))[7];
+  
+  $disk_space_needed /= 1024000; # convert to MB
+  $disk_space_needed = int($disk_space_needed);
+  $disk_space_needed += 1;
+  
+  my $unique_name = $self->get_class_name() . "_" . time();
+  
+#  my @main_bsub = ( 'bsub', '-R' .'select[linux] -Rrusage[tmp='.$disk_space_needed.']',  '-J' . $unique_name . '-o', $outfile, '-e', $errfile);
+  
+  my $exe_file = $root_dir."/resub_".$job_id."_".$array_number;
+  open(RUN,">$exe_file") || die "Could not open file $exe_file";
+  
+  print RUN ". /usr/local/lsf/conf/profile.lsf\n";
+  print RUN $command."\n";
+
+  close(RUN);
+
+  chmod 0755, $exe_file;
+
+
+  my $usage = '-R "select[linux] rusage[tmp='.$disk_space_needed.']" -J "'.$unique_name.'"';
+
+
+  my $com = "bsub $usage -o $outfile -e $errfile ".$exe_file;
+
+  if($mapper->nofarm){
+    print "Running job locally for job number $job_id [$array_number]\n" if($mapper->verbose);
+    my $line = `$exe_file`;
+    my $sth = $mapper->xref->dbc->prepare('update mapping_jobs set status = "SUBMITTED"'." where job_id = $job_id and array_number = $array_number");
+    $sth->execute();
+    $sth->finish;
+    return 1;
+  }
+
+
+  my $line = `$com`;
+
+  my $jobid  = 0;
+  if ($line =~ /^Job <(\d+)> is submitted/) {
+     $jobid = $1;
+     print "LSF job ID for main mapping job: $jobid (job array with 1 job ($array_number))\n" if($mapper->verbose);
+  }
+
+
+  if (!$jobid) {
+    # Something went wrong
+    warn("Job submission failed:\n$@\n");
+    print STDERR "bsub command was $com\n";
+    print STDERR $line."\n";
+    return 0;
+  }
+  else{
+    # write details of job to database
+    my $sth = $mapper->xref->dbc->prepare('update mapping_jobs set status = "SUBMITTED"'." where job_id = $job_id and array_number = $array_number");
+    $sth->execute();
+    $sth->finish;
+  }
+  
+  return $jobid;
+
+}
+
 =head2 submit_exonerate
 
   Args       : none
@@ -100,9 +176,9 @@ sub submit_exonerate {
 
   my $root_dir = $mapper->core->dir;
 
-  print "query $query\n" if($mapper->verbose);
+#  print "query $query\n" if($mapper->verbose);
   my $queryfile = basename($query);
-  print "target $target\n" if($mapper->verbose);
+#  print "target $target\n" if($mapper->verbose);
   my $targetfile = basename($target);
 
   my $prefix = $root_dir . "/" . basename($query);
@@ -143,7 +219,7 @@ EON
 
     for( my $i=1; $i<=1; $i++){
       my $command = "$exonerate_path $query $target --showvulgar false --showalignment FALSE --ryo ".
-	'"xref:%qi:%ti:%ei:%ql:%tl:%qab:%qae:%tab:%tae:%C:%s\n"'." $options_str | grep ".'"'."^xref".'"'." > $root_dir/$output";
+	'"xref:%qi:%ti:%ei:%ql:%tl:%qab:%qae:%tab:%tae:%C:%s\\\n"'." $options_str | grep ".'"'."^xref".'"'." > $root_dir/$output";
       my $insert = "insert into mapping (job_id, type, command_line, percent_query_cutoff, percent_target_cutoff, method, array_size) values($jobid, '$ensembl_type', '$command',".
 				       $self->query_identity_threshold.", ".$self->target_identity_threshold.", '".$self->get_class_name()."', $i)";
       
@@ -178,73 +254,47 @@ EON
 
   my $output = $self->get_class_name() . "_" . $ensembl_type . "_" . "\$LSB_JOBINDEX.map";
 
-  my @main_bsub = ( 'bsub', '-R' .'select[linux] -Rrusage[tmp='.$disk_space_needed.']',  '-J' . $unique_name . "[1-$num_jobs]%200", '-o', "$prefix.%J-%I.out", '-e', "$prefix.%J-%I.err");
+  my $usage = '-R "select[linux] -rusage[tmp='.$disk_space_needed.']" '.'-J "'.$unique_name.'[1-'.$num_jobs.']%200" -o '.$prefix.'.%J-%I.out -e  '.$prefix.'.%J-%I.err';
+
+#  print "usage :- ".$usage ."\n";
+
+#  my @main_bsub = ( 'bsub', '-R' .'select[linux] -Rrusage[tmp='.$disk_space_needed.']',  '-J' . $unique_name . "[1-$num_jobs]%200", '-o', "$prefix.%J-%I.out", '-e', "$prefix.%J-%I.err");
+
+  my $command = $exonerate_path." ".$query." ".$target.' --querychunkid $LSB_JOBINDEX --querychunktotal '.$num_jobs.' --showvulgar false --showalignment FALSE --ryo "xref:%qi:%ti:%ei:%ql:%tl:%qab:%qae:%tab:%tae:%C:%s\n" '.$options_str;
+  $command .= " | grep '^xref' > $root_dir/$output";
+
+  my $exe_file = $root_dir."/".$unique_name.".submit";
+  open(RUN,">$exe_file") || die "Could not open file $exe_file";
+  
+  print RUN ". /usr/local/lsf/conf/profile.lsf\n";
+  print RUN $command."\n";
+
+  close(RUN);
+
+  chmod 0755, $exe_file;
+
+  my $com = "bsub $usage $exe_file";
+
+  my $line = `$com`;
+
+  my $jobid  = 0;
+  if ($line =~ /^Job <(\d+)> is submitted/) {
+     $jobid = $1;
+     print "LSF job ID for main mapping job: $jobid, name $unique_name with $num_jobs arrays elements)\n" if($mapper->verbose);
+  }
 
 
-
-
-
-  # Create actual execute script to be executed with LSF, and write to pipe
-  my $main_job = <<EOF;
-. /usr/local/lsf/conf/profile.lsf
-
-
-$exonerate_path $query $target --querychunkid \$LSB_JOBINDEX --querychunktotal $num_jobs --showvulgar false --showalignment FALSE --ryo "xref:%qi:%ti:%ei:%ql:%tl:%qab:%qae:%tab:%tae:%C:%s\n" $options_str | grep '^xref' > $root_dir/$output
-
-EOF
-
-
-
-  # now submit it
-  my $jobid = 0;
-
-  eval {
-    my $pid;
-    my $reader;
-
-    local *BSUB;
-    local *BSUB_READER;
-
-    if (($reader = open(BSUB_READER, '-|'))) {
-      while (<BSUB_READER>) {
-
-	if (/^Job <(\d+)> is submitted/) {
-	  $jobid = $1;
-	  print "LSF job ID for main mapping job: $jobid (job array with $num_jobs jobs)\n" if($mapper->verbose);
-	}
-      }
-      close(BSUB_READER);
-    } else {
-      die("Could not fork : $!\n") unless (defined($reader));
-      open(STDERR, ">&STDOUT");
-      if (($pid = open(BSUB, '|-'))) {
-	
-	print BSUB $main_job;
-	close BSUB;
-	if ($? != 0) {
-	  die("bsub exited with non-zero status - job not submitted\n");
-	}
-      } else {
-	if (defined($pid)) {
-	  exec(@main_bsub);
-	  die("Could not exec bsub : $!\n");
-	} else {
-	  die("Could not fork : $!\n");
-	}
-      }
-      exit(0);
-    }
-  };
-
-  if ($@) {
+  if (!$jobid) {
     # Something went wrong
     warn("Job submission failed:\n$@\n");
+    print STDERR "bsub command was $com\n";
+    print STDERR $line."\n";
     return 0;
-  }
+  } 
   else{
     # write details of job to database
     my $command = "$exonerate_path $query $target --querychunkid \$LSB_JOBINDEX --querychunktotal $num_jobs --showvulgar false --showalignment FALSE --ryo ".
-      '"xref:%qi:%ti:%ei:%ql:%tl:%qab:%qae:%tab:%tae:%C:%s\n"'." $options_str | grep ".'"'."^xref".'"'." > $root_dir/$output";
+      '"xref:%qi:%ti:%ei:%ql:%tl:%qab:%qae:%tab:%tae:%C:%s\\\n"'." $options_str | grep ".'"'."^xref".'"'." > $root_dir/$output";
 
     my $sth = $mapper->xref->dbc->prepare("insert into process_status (status, date) values('mapping_submitted',now())");
     $sth->execute();
