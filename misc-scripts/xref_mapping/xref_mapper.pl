@@ -31,6 +31,7 @@ my $partupdate;
 my $notverbose ;
 my $reset_to_mapping_finished;
 my $reset_to_parsing_finished;
+my $resubmit_failed_jobs;
 
 
 my $options = join(" ",@ARGV);
@@ -44,6 +45,7 @@ GetOptions ('file=s'                    => \$file,
             'partupdate'                => \$partupdate,
             'reset_to_mapping_finished' => \$reset_to_mapping_finished,
             'reset_to_parsing_finished' => \$reset_to_parsing_finished,
+            'resubmit_failed_jobs'      => \$resubmit_failed_jobs,
             'help'                      => sub { usage(); exit(0); } );
 
 
@@ -68,8 +70,9 @@ else{
 }
 
 # find out what stage the database is in at present.
-my $status = $mapper->xref_latest_status($mapper->verbose);
+my $status = $mapper->xref_latest_status(0);
 print "current status is $status\n" if ($mapper->verbose);
+
 
 
 if(defined($reset_to_mapping_finished)){
@@ -84,6 +87,11 @@ if(defined($reset_to_parsing_finished)){
 
 
 my $submitter = XrefMapper::SubmitMapper->new($mapper);
+
+if(defined($resubmit_failed_jobs)){
+  print STDERR "Resubmitting failed jobs\n";
+  $submitter->fix_mappings();
+}
 
 if( $status eq "parsing_finished" or $status eq "xref_fasta_dumped"){ 
   print "\nDumping xref & Ensembl sequences\n"  if ($mapper->verbose);
@@ -106,7 +114,7 @@ else{
 
 $status = $mapper->xref_latest_status();
 if($status eq "mapping_started"){
-  die "Status is $status so a job is already doing the mapping. Please wait till it has finished";
+  die "Status is $status so a job is already doing the mapping. Please wait till it has finished\n If this is not the case then you will have to manually change the status and try again\n";
 }
 elsif($status eq "mapping_finished"){
   my $parser = XrefMapper::ProcessMappings->new($mapper);
@@ -248,6 +256,17 @@ sub usage {
                     By default this is calulated from the parsing options used.
                     ONLY set if you know what the consequences will be!!
 
+  -reset_to_mapping_finished
+                    Reset the status of the database (cleaning up the tables) to be equivalent
+                    of the mapping having been finished and the map files are ready to be processed.
+
+  -reset_to_parsing_finished
+                    Reset the status of the database (cleaning up the tables) to be equivalent
+                    of the parsing having just been done.
+
+  -resubmit_failed_jobs
+                    This will find the failed mapping jobs and rerun these and then contiune as normal.
+ 
 Below is an example of the configuration file
 ####################################################
 xref
