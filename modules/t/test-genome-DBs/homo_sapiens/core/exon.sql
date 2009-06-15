@@ -7,6 +7,7 @@ CREATE TABLE `exon` (
   `phase` tinyint(2) NOT NULL default '0',
   `end_phase` tinyint(2) NOT NULL default '0',
   `is_current` BOOLEAN DEFAULT 1,
+  `is_constitutive` BOOLEAN DEFAULT 0,
   PRIMARY KEY  (`exon_id`),
   KEY `seq_region_idx` (`seq_region_id`,`seq_region_start`)
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_bin;
