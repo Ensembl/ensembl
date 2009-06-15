@@ -1,0 +1,401 @@
+Questions
+---------
+
+1)  What code do i need to run the external database cross reference mapping.
+2)  What is the recommended way to run the extrnal databse cross references for 
+    an already entered species?
+3)  How do i add a new species?
+4)  How do i add a new external database source?
+5)  How do i track my process?
+6)  I have mapping errors how do i fix them?
+7)  How do i  start again from the parsing has finished stage?
+8)  How do i start again from the mapping_finished stage?
+9)  What is fullmode and partupdate?
+10) How do i run my external database references without a compute farm?
+11) I want to use a different list of external database sources for my 
+    display_xrefs (names)?
+12) I want to use a different list of external database sources for my gene 
+    descriptions?
+
+
+Answers
+-------
+
+1) What software do i need to run the external database cross reference mapping?
+
+   You will need a copy of exonerate and the ensembl API code.
+   Exonerate installation intructions can be found at
+       http://www.ebi.ac.uk/~guy/exonerate/
+   To install the ensembl API see 
+       http://www.ensembl.org/info/docs/api/api_installation.html
+
+
+
+2) What is the recommended way to run the xrefs for an already entered species?
+
+   The xref system comes in two parts, first parsing the external database sources
+   into an tempory xref database and then mapping these to the core database.
+
+   a) To parse the data into the xref database you should use the script 
+      xref_parser.pl, which can be found in ensembl/misc-scripts/xref_mapping 
+      directory.     
+ 
+      xref_parser.pl -user rwuser -pass XXX -host host1 -species human 
+                     -dbname human_xref -stats -create >& PARSER.OUT
+
+      check the file PARSER.OUT to make sure everything is okay. It could be that
+      it was unable to connect to an external site and may not have loaded 
+      everything.
+      If there was a problem with the connections try again but this time use the
+      option -checkdownload as this will not download data you already have but 
+      will try to get the data you are missing, saving time.
+
+      The xref_parser.pl script may wait for you to answer a couple of questions 
+      about overwriting the database or redoing the configuration so you will also
+      have to look at what is in the output file, but this is usually worth doing
+      to keep a record of what the parser did. 
+
+      At the end of the parsing you should get a summary which should look 
+      something like:-
+
+      ============================================================================
+      Summary of status
+      ============================================================================
+                    EntrezGene EntrezGeneParser         OKAY
+                            GO GOParser                 OKAY
+                            GO InterproGoParser         OKAY
+                      Interpro InterproParser           OKAY
+                    RefSeq_dna RefSeqParser             OKAY
+                RefSeq_peptide RefSeqGPFFParser         OKAY
+                       UniGene UniGeneParser            OKAY
+              Uniprot/SPTREMBL UniProtParser            OKAY
+             Uniprot/SWISSPROT UniProtParser            OKAY
+                         ncRNA ncRNA_DBParser           OKAY
+
+
+      If any of these are not OKAY then ther has been a problem so look further 
+      up in the file to find out why it failed.
+
+   b) Map the external databases entries to the core database.
+
+      First you need to create a configuration file.
+      Below is an example of a configuration file
+      ####################################################
+      xref
+      host=host1
+      port=3306
+      dbname=macaca_xref
+      user=user1
+      password=pass1
+      dir=./xref_dir
+
+      species=macaca_mulatta
+      host=host2
+      port=3306
+      dbname=macaca_core
+      user=user2
+      password=pass2
+      dir=./ensembl_dir
+      ####################################################
+      Note that the Directorys specified must exist when the mapping is done.
+
+
+      Now we can do the mapping.
+      Ideally this should be done in two steps so that after the first step you 
+      can check the output to make sure you are happy with everything before 
+      loading into the core database.
+
+      i) Map the entitys in the xref database and do some checks etc.
+         xref_mapper.pl -file xref_config >& MAPPER1.OUT
+
+         If you have no compute farm then add the -nofarm option.
+         Check the output file if warning about xref number increasing do not 
+         worry the main thing to be concerned about is a reduction in the number 
+         of that none are in the xref database abut are in the core database.
+
+         If you get errors about the mapping files then a couple of things could 
+         have gone wrong, first and usual culprit is that the system ran out of 
+         disk space or the compute farm job got lost.
+         In this case you have two options
+            1) reset then database to the parsing stage and rerun all the mappings
+
+              To reset the database use the option -reset_to_parsing_finished
+
+              xref_mapper.pl -file xref_config -reset_to_parsing_finished
+
+              then redo the mapping
+ 
+              xref_mapper.pl -file xref_config -dumpcheck >& MAPPER.OUT
+
+              Note here we use -dumpcheck to make the program does not dump the 
+              fasta files if they  are already there as this process can take 
+              along time and the fasta files will not have changed.
+
+
+             2) just redo those jobs that failed.
+
+              Run the mapper with the -resubmit_failed_jobs flag
+
+              xref_mapper.pl -file xref_config -resubmit_failed_jobs
+
+           Option 2 will be much faster as it will only redo the jobs that failed.
+
+
+      ii) Load the data into the core database and calculate the display_xrefs etc
+
+          xref_mapper.pl -file xref_config -upload >& MAPPER2.OUT
+
+
+
+3) How do i add a new species?
+
+   Edit the file xref_config.ini and add a new entry in the species section
+   Here is an example:-
+
+[species macaca_mulatta]
+taxonomy_id     = 9544
+aliases         = macaque, rhesus, rhesus macaque, rmacaque
+source          = EntrezGene::MULTI
+source          = GO::MULTI
+source          = InterproGO::MULTI
+source          = Interpro::MULTI
+source          = RefSeq_dna::MULTI-vertebrate_mammalian
+source          = RefSeq_peptide::MULTI-vertebrate_mammalian
+source          = Uniprot/SPTREMBL::MULTI
+source          = Uniprot/SWISSPROT::MULTI
+source          = UniGene::macaca_mulatta
+source          = ncRNA::MULTI
+
+   [species xxxx] and  taxonomy_id must be present.
+  
+   It is usually best just to cut and paste an already existing similar species 
+   and start from that. 
+
+
+
+4) How do i add a new external database source?
+
+   Edit the file xref_config.ini and add a new entry in the sources section
+   Here is an example:-
+
+
+[source Fantom::mus_musculus]
+# Used by mus_muscullus
+name            = Fantom
+download        = Y
+order           = 100
+priority        = 1
+prio_descr      =
+parser          = FantomParser
+release_uri     =
+data_uri        = ftp://fantom.gsc.riken.jp/DDBJ_fantom3_HTC_accession.txt.gz
+
+
+   name: The name you want to call the external database.
+         You must also add this to the core databases
+
+   download: Y if the data needs to be obtained online (i.e. not a local file)
+             N if you are getting the data from a file.
+
+   order: The order in which the source shpuld be parsed. 1 beinging the first.
+          
+   priority: This is for sources where we get the data from multiple places
+             i.e. HGNC. For most sources just set this to 1.
+
+   prio_desc: Only used for priority sources. And sets a description to give 
+              a way to diffentiate them and track which is which.
+              
+   parser: Which parser to use. If this is a new source then you will probably 
+           need a new parser. Find a parser that is similar and start from this.
+           Parsers must be in the ensembl/misc-scripts/xref_mapping/XrefParser 
+           directory.
+           
+   release_uri: a uri to get the release information from. The parser should 
+                handle this.
+
+   data_uri: Explains how and where to get the data from. There can be multiple 
+             lines of this.
+             
+
+   The uri can get data via several methods and here is the list and a brief 
+   explaination.
+    
+       ftp:    Get the file via ftp
+
+       script: Passes argumant to the parser. This might be things like a database
+               to connect to to run smome sql to get the data..
+
+       file:   The name with full path of the file to be parsed.
+       
+       http: To get data via an external webpage/cgi script.
+
+
+
+5) How do i track my process?
+
+     If you did not use -noverbose then the output file should give you a general
+     idea of what stage you are at. By directly examining the xref database you 
+     can see the last stage that was completed by viewing the entries in the 
+     process_status table.
+     
+     Another option is to use the script xref_tracker.pl which will give you some 
+     information about the status. The script is ran similar to the xref_mapper.pl
+     code in that it needs a config_file.
+
+     xref_tracker.pl -file xref_config
+
+     This script gives more information when the xref_mapper is running the 
+     mapping jobs or processing the mapping files as it will tell you how many 
+     have finished and how many are left to run etc. These are the longer stages
+     of the process.
+
+
+6) I have mapping errors how do i fix them?
+
+   If for some reason a mapping job failed this tends to be things like running 
+   out of disk space, the compute farm loosing a job etc then you have a couple 
+   of options.
+
+   i) reset the database to the parsing stage and rerun all the mappings
+
+   To reset the database use the option -reset_to_parsing_finished
+
+      xref_mapper.pl -file xref_config -reset_to_parsing_finished
+
+   then redo the mapping
+ 
+     xref_mapper.pl -file xref_config -dumpcheck
+
+   Note here we use -dumpcheck to make sure the program does not dump the fasta 
+   files if they are already there as this process can take along time and the 
+   fasta files will not have changed.
+
+ 
+   ii) just redo those jobs that failed.
+
+   Run the mapper with the -resubmit_failed_jobs flag
+
+     xref_mapper.pl -file xref_config -resubmit_failed_jobs
+
+
+
+7) How do i start again from the parsing has finished stage?
+
+   To reset the database use the option -reset_to_parsing_finished
+
+      xref_mapper.pl -file xref_config -reset_to_parsing_finished
+
+
+
+8) How do i start again from the mapping_finished stage?
+
+   To reset the database use the option -reset_to_mapping_finished
+
+      xref_mapper.pl -file xref_config -reset_to_mapping_finished
+
+   Remember to use -dumpcheck when you run xref_mapper.pl the next
+   time to save time.
+
+
+
+9) What is fullmode and partupdate?
+
+   Fullmode means that all the xrefs are being updated and not just a few specific
+   external database sources. This is important as this affects the way the 
+   display_xrefs, descriptions are calculated at the end.The user can override 
+   this by setting -partupdate option in the mapper options or change the entry 
+   in the table (key is "fullmode" in meta table).
+
+   If we are doing all the xref sources then we know that all the data is local 
+   and hence can do some SQL to get  the display_xrefs etc But if this is not the
+   case then the core database will have extra information in it that may be 
+   needed so we have to query the core database. The xref database has extra 
+   information that is not in the xref database and so simple SQL can be used 
+   whereas with the core 
+   database we have to go for each gene and then for each transcript etc using the
+   API which is alot slower.
+
+   In summary only alter the mode here if you know what you are doing and what 
+   consequences there are.
+
+
+10) How do i run my external database references without a compute farm?
+
+  Simply use the -nofarm option with the xref_mapper.pl script.
+
+  This will run the exonerate jobs locally.
+
+
+
+11) I want to use a different list of external database sources for my 
+    display_xrefs (names)?
+
+   The external databases to be used for the display_xrefs are taken from either 
+   the BasicMapper.pm subroutine transcript_display_sources  i.e.
+
+   sub transcript_display_xref_sources {
+     my @list = qw(miRBase
+                RFAM
+                HGNC_curated_gene
+		HGNC_automatic_gene
+                MGI_curated_gene
+		MGI_automatic_gene
+		Clone_based_vega_gene
+		Clone_based_ensembl_gene
+		HGNC_curated_transcript
+		HGNC_automatic_transcript
+		MGI_curated_transcript
+		MGI_automatic_transcript
+		Clone_based_vega_transcript
+		Clone_based_ensembl_transcript
+		IMGT/GENE_DB
+		HGNC
+		SGD
+		MGI
+		flybase_symbol
+		Anopheles_symbol
+		Genoscope_annotated_gene
+		Uniprot/SWISSPROT
+		Uniprot/Varsplic
+		RefSeq_peptide
+		RefSeq_dna
+		Uniprot/SPTREMBL
+		EntrezGene
+	        IPI);
+
+     my %ignore;
+     $ignore{"EntrezGene"}= 'FROM:RefSeq_[pd][en][pa].*_predicted';
+  
+     return [\@list,\%ignore];
+
+   }
+
+
+
+
+   or if you want to create your own list then you need to create a species.pm 
+   file and create a new subroutine there an example here is for 
+   drosophila_melanogaster.
+   So in the file drosophila_melanogaster.pm  
+   (found in the directory ensembl/misc-scripts/xref_mapping/XrefMapper)
+   we have :-
+
+   sub transcript_display_xref_sources {
+
+     my @list = qw(FlyBaseName_transcript FlyBaseCGID_transcript flybase_annotation_id);
+                
+
+     my %ignore;
+     $ignore{"EntrezGene"}= 'FROM:RefSeq_[pd][en][pa].*_predicted';
+
+     return [\@list,\%ignore];
+
+  }
+
+
+
+12) I want to use a different list of external database sources for my gene 
+    descriptions?
+
+   As above but this time we use the sub gene_description_sources.
+
