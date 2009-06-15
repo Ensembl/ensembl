@@ -2083,11 +2083,6 @@ sub load_registry_from_db {
 
 =head2 find_and_add_aliases
 
-  Arg [DBH]     : (optional) DBI handle
-                  A connected DBI database handle.  Used instead
-                  of the database handles stored in the DBAdaptor
-                  objects.  Bypasses the use of MetaContainer.
-
   Arg [ADAPTOR] : (optional) Bio::EnsEMBL::DBSQL::DBAdaptor
                   The adaptor to use to retrieve aliases from.
 
@@ -2123,7 +2118,7 @@ sub find_and_add_aliases {
   my $class = shift @_;
 
   my ( $adaptor, $group, $dbh ) =
-    rearrange( [qw(ADAPTOR GROUP HANDLE)], @_ );
+    rearrange( [ 'ADAPTOR', 'GROUP', 'HANDLE' ], @_ );
 
   my @dbas;
   if ( defined($adaptor) ) {
@@ -2146,7 +2141,7 @@ sub find_and_add_aliases {
           $dbh->quote_identifier($dbname) ) );
 
       # Execute, and don't care about errors (there will be errors for
-      # databases without a 'meta' table, such as ensembl_ontology_NN).
+      # databases without a 'meta' table.
       $sth->{'PrintError'} = 0;
       $sth->{'RaiseError'} = 0;
       if ( !$sth->execute( $dba->species_id() ) ) { next }
