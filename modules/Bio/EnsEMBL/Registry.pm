@@ -133,23 +133,22 @@ my $API_VERSION = 55;
 
 # This is a map from group names to Ensembl DB adaptors.  Used by
 # load_all() and reset_DBAdaptor().
-my %group2adaptor = 
-  (
-   'blast'         => 'Bio::EnsEMBL::External::BlastAdaptor',
-   'compara'       => 'Bio::EnsEMBL::Compara::DBSQL::DBAdaptor',
-   'core'          => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
-   'estgene'       => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
-   'funcgen'       => 'Bio::EnsEMBL::Funcgen::DBSQL::DBAdaptor',
-   'haplotype'     => 'Bio::EnsEMBL::ExternalData::Haplotype::DBAdaptor',
-   'hive'          => 'Bio::EnsEMBL::Hive::DBSQL::DBAdaptor',
-   'lite'          => 'Bio::EnsEMBL::Lite::DBAdaptor',
-   'otherfeatures' => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
-   'pipeline'      => 'Bio::EnsEMBL::Pipeline::DBSQL::DBAdaptor',
-   'snp'           => 'Bio::EnsEMBL::ExternalData::SNPSQL::DBAdaptor',
-   'variation'     => 'Bio::EnsEMBL::Variation::DBSQL::DBAdaptor',
-   'vega'          => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
-  );
-
+my %group2adaptor = (
+  'blast'         => 'Bio::EnsEMBL::External::BlastAdaptor',
+  'compara'       => 'Bio::EnsEMBL::Compara::DBSQL::DBAdaptor',
+  'core'          => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
+  'estgene'       => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
+  'funcgen'       => 'Bio::EnsEMBL::Funcgen::DBSQL::DBAdaptor',
+  'haplotype'     => 'Bio::EnsEMBL::ExternalData::Haplotype::DBAdaptor',
+  'hive'          => 'Bio::EnsEMBL::Hive::DBSQL::DBAdaptor',
+  'lite'          => 'Bio::EnsEMBL::Lite::DBAdaptor',
+  'ontology'      => 'Bio::EnsEMBL::DBSQL::OntologyDBAdaptor',
+  'otherfeatures' => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
+  'pipeline'      => 'Bio::EnsEMBL::Pipeline::DBSQL::DBAdaptor',
+  'snp'           => 'Bio::EnsEMBL::ExternalData::SNPSQL::DBAdaptor',
+  'variation'     => 'Bio::EnsEMBL::Variation::DBSQL::DBAdaptor',
+  'vega'          => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
+);
 
 
 =head2 load_all
