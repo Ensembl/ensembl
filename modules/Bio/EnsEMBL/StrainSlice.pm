@@ -750,4 +750,25 @@ sub get_original_seq_region_position {
     return ($self,$position);
 }
 
+
+=head2 remove_indels
+
+    Args        : none
+    Example     : $strainSlice->remove_indels();
+    Description : Removes insertions and deletions from the allele features
+				  of this object
+    ReturnType  : none
+    Exceptions  : none
+    Caller      : webteam
+
+=cut
+
+sub remove_indels {
+	my $self = shift;
+	
+	my @new_afs = grep { $_->variation->var_class ne 'in-del' } @{$self->{'alleleFeatures'}};
+	
+	$self->{'alleleFeatures'} = \@new_afs;
+}
+
 1;
