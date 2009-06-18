@@ -2377,7 +2377,7 @@ sub version_check {
       warn(
         sprintf(
           "No database version for database %s "
-            . ". You must be using a pre version 34 database "
+            . ". You must be using a post version 34 database "
             . "with version 34 or later code.\n"
             . "You need to update your database "
             . "or use the appropriate Ensembl software release "
