@@ -590,8 +590,6 @@ sub _pre_store {
 
 # The same function as _pre_store
 # This one is used to store user uploaded features in XXX_userdata db
-# In the case of user features $self->db will point to XXX_userdata , but to get the slice information
-# we need XXX_core database. Hence we use $feature->slice->adaptor to get it.
 
 sub _pre_store_userdata {
   my $self    = shift;
@@ -606,7 +604,6 @@ sub _pre_store_userdata {
 
 
   my $slice = $feature->slice();
-  my $db = $slice->adaptor->db;
   my $slice_adaptor = $slice->adaptor;
 
   if(!ref($slice) || !$slice->isa('Bio::EnsEMBL::Slice')) {
@@ -638,6 +635,7 @@ sub _pre_store_userdata {
   my ($tab) = $self->_tables();
   my $tabname = $tab->[0];
 
+  my $db = $self->db;
   my $mcc = $db->get_MetaCoordContainer();
 
   $mcc->add_feature_type($cs, $tabname, $feature->length);
