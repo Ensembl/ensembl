@@ -294,7 +294,7 @@
 291	XrefExonerateDNA	Sequences from various databases are matched to Ensembl transcripts using <a rel="external" href="http://www.biomedcentral.com/1471-2105/6/31">Exonerate</a>.  These are external references, or 'Xrefs'.	DNA match	0	
 292	steve_mouse_cdna			0	
 293	ExtendedByHuman			0	
-294	cdna_est_support	Anopheles ESTs and cDNAs aligned to the genome using Exonerate (G. Slater et al., BMC Bioinformatics. 2005 6:31) and used as support for estgenes	cdna_est_support	0	{'type'=>'est'}
+294	est_support_estgenes	ESTs and cDNAs aligned to the genome using Exonerate (G. Slater et al., BMC Bioinformatics. 2005 6:31) and used as support for estgenes	EST support estgenes	0	{'type'=>'est'}
 295	refseq_human			0	
 296	HumanOrthologue			0	
 297	ExtendedByMedaka			0	
@@ -304,7 +304,7 @@
 301	green_anole_cdna	Green anole cDNAs from <a rel="external" href="http://www.ncbi.nlm.nih.gov/RefSeq/">NCBI RefSeq</a> and <a rel="external" href="http://www.ebi.ac.uk/embl/">EMBL</a> are aligned to the genome using <a rel="external" href="http://www.biomedcentral.com/1471-2105/6/31">Exonerate</a>.	Green anole cDNA	1	{'default' => {'contigviewbottom' => 'stack'},'type' => 'cdna'}
 302	green_anole_protein	Green anole proteins from <a rel="external" href="http://uniprot.org">UniProtKB</a> are aligned to the genome using <a rel="external" href="http://genome.cshlp.org/cgi/content/abstract/14/5/988?maxtoshow=&amp;HITS=10&amp;hits=10&amp;RESULTFORMAT=&amp;andorexactfulltext=and&amp;searchid=1&amp;FIRSTINDEX=0&amp;sortspec=relevance&amp;volume=14&amp;firstpage=988&amp;resourcetype=HWCIT">GeneWise</a>.	Green anole UniProtKB prot.	1	
 303	ensembl_chicken_protein	Chicken protein sequences from <a rel="external" href="http://www.ensembl.org">Ensembl</a> are aligned to the genome using <a rel="external" href="http://www.biomedcentral.com/1471-2105/ 6/31">Exonerate</a>.	Ensembl chicken protein	1	
-304	est_support_genes	Anopheles ESTs and cDNAs aligned to the genome using Exonerate (G. Slater et al., BMC Bioinformatics. 2005 6:31) and used as support for VectorBase genes	EST support	1	{'type' => 'est','default' => {'contigviewbottom' => 'stack'}}
+304	est_support_genes	ESTs and cDNAs aligned to the genome using Exonerate (G. Slater et al., BMC Bioinformatics. 2005 6:31) and used as support for VectorBase genes	EST support	1	{'type' => 'est','default' => {'contigviewbottom' => 'stack'}}
 305	chicken_RepeatMask	<a rel="external" href="http://www.repeatmasker.org">RepeatMasker</a> is used to find repeats and low-complexity sequences using a chicken repeat library. This track usually shows repeats alone (not low-complexity sequences).	Repeats (Chicken)	1	
 306	zebra_finch_cdna	Taeniopygia guttata cDNAs from <a rel="external" href="http://www.ncbi.nlm.nih.gov/RefSeq/">NCBI RefSeq</a> and <a rel="external" href="http://www.ebi.ac.uk/embl/">EMBL</a> are aligned to the genome using <a rel="external" href="http://www.biomedcentral.com/1471-2105/6/31">Exonerate</a>.	Zebra finch cDNA	1	{'default' => {'contigviewbottom' => 'stack'},'type' => 'cdna'}
 307	zebra_finch_est	Taeniopygia guttata 'Expressed Sequence Tags' (ESTs) from <a rel="external" href="http://www.ncbi.nlm.nih.gov/dbEST/">dbEST</a> are aligned to the genome using <a rel="external" href="http://www.biomedcentral.com/1471-2105/6/31">Exonerate</a>.	Zebra finch EST	1	{'type'=>'est'}
