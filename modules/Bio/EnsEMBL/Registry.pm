@@ -1972,7 +1972,7 @@ sub load_registry_from_db {
 
   Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
     -species => "Cavia_porcellus",
-    -alias   => [ 'guinea_pig', '"Cavia porcellus' ] );
+    -alias   => [ 'guinea_pig', 'Cavia porcellus' ] );
 
   Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
     -species => "Aedes_aegypti",
