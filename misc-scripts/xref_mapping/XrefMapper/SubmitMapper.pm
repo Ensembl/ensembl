@@ -218,26 +218,49 @@ sub dump_xref{
 =cut
 
 sub dump_ensembl{
-  my ($self, $location) = @_;
+  my ($self) = @_;
+  
 
-  $self->fetch_and_dump_seq($location);
+  my $num_seqs = 0;
+  my $sth = $self->core->dbc->prepare("select count(distinct (seq_region_id)) from gene");
+  $sth->execute;
+  $sth->bind_columns(\$num_seqs);
+  $sth->fetch;
+  $sth->finish;
+
+  my $num_genes;
+  $sth = $self->core->dbc->prepare("select count(1) from gene");
+  $sth->execute;
+  $sth->bind_columns(\$num_genes);
+  $sth->fetch;
+  $sth->finish;
+
+
+  if ($num_genes < $num_seqs) {
+    $self->fetch_and_dump_seq_via_genes();
+  }
+  else { 
+    $self->fetch_and_dump_seq_via_toplevel();
+  }
 
 }
 
-=head2 fetch_and_dump_seq
 
-  Description: Dumps the ensembl data to a file in fasta format.
-  Returntype : none
-  Exceptions : wil die if the are errors in db connection or file creation.
-  Caller     : dump_ensembl
 
-=cut
-
-sub fetch_and_dump_seq{
+sub fetch_and_dump_seq_via_toplevel{
   my ($self) = @_;
 
+  my $inc_dupes  = 0;   # do not include duplicate regions like PARs?
+  my $inc_nonref = 1;   # include non-reference regions like haplotypes?
   my $ensembl = $self->core;
-  my $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(-dbconn => $ensembl->dbc);
+  $self->add_meta_pair("dump_method","fetch_and_dump_seq_via_toplevel");
+
+  if(defined($self->mapper->dumpcheck()) and -e $ensembl->protein_file() and -e $ensembl->dna_file()){
+    my $sth = $self->xref->dbc->prepare("insert into process_status (status, date) values('core_fasta_dumped',now())");
+    $sth->execute();    
+    print "Ensembl Fasta files found (no new dumping)\n" if($self->verbose());
+    return;
+  }
 
   #
   # store ensembl dna file name and open it
@@ -253,6 +276,133 @@ sub fetch_and_dump_seq{
   #
   $ensembl->protein_file($ensembl->dir."/".$ensembl->species."_protein.fasta");
 
+  print "Dumping Ensembl Fasta files\n" if($self->verbose());
+
+  open(DNA,">".$ensembl->dna_file())
+    || die("Could not open dna file for writing: ".$ensembl->dna_file."\n");
+
+  open(PEP,">".$ensembl->protein_file())
+    || die("Could not open protein file for writing: ".$ensembl->protein_file."\n");
+
+  my $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(-dbconn => $ensembl->dbc);
+
+  my $slice_adaptor = $db->get_SliceAdaptor();
+
+  my $slices = $slice_adaptor->fetch_all( 'toplevel', undef, $inc_nonref, $inc_dupes )  || [];
+  my $script_count = 0;
+  my $lation_count = 0;
+  my $ama = $slice_adaptor->db()->get_AssemblyMapperAdaptor();
+  my $seqa = $slice_adaptor->db()->get_SequenceAdaptor();
+
+  while(my $slice = shift @$slices){
+
+    #get genes from this slice
+    my $genes = $slice->get_all_Genes(undef,undef,1);
+
+    while(my $gene = shift @$genes){
+      next if $gene->biotype eq 'J_segment';
+      next if $gene->biotype eq 'D_segment';
+      foreach my $transcript (@{$gene->get_all_Transcripts()}) {
+	my $seq = $transcript->spliced_seq();
+	$seq =~ s/(.{60})/$1\n/g;
+	print DNA ">" . $transcript->dbID() . "\n" .$seq."\n" || die "Error writing for transcript ".$transcript->dbID."\n$!\n";
+	$script_count++;
+	my $trans = $transcript->translation();
+	my $translation = $transcript->translate();
+	
+	if(defined($translation)){
+	  my $pep_seq = $translation->seq();
+	  $pep_seq =~ s/(.{60})/$1\n/g;
+	  print PEP ">".$trans->dbID()."\n".$pep_seq."\n" || die "Error writing for translation ".$trans->dbID."\n$!\n";
+	  $lation_count++;
+	}
+      }
+    }
+
+    # Zap caches!
+    %{ $slice_adaptor->{'sr_name_cache'} } = ();
+    %{ $slice_adaptor->{'sr_id_cache'} }   = ();
+
+    $ama->delete_cache();
+
+    %{ $seqa->{'seq_cache'} } = ();
+  }
+
+  close DNA || die "unable to close dna file\n$!\n";
+  close PEP || die "unable to close peptide file\n$!\n"; 
+
+
+
+  sleep(10); # give the disks a chance.
+
+  #####################################################
+  # Sanity check as some of the disks get timeouts etc.
+  #####################################################
+
+  my $line = 'grep "^>" '.$ensembl->dna_file().' | wc -l';
+  my $out = `$line`;
+  chomp $out;
+  if($out != $script_count){
+    die "Problem writing DNA file as there should be $script_count entries but file has only $out\n";
+  }
+
+
+  $line = 'grep "^>" '.$ensembl->protein_file().' | wc -l';
+  $out = `$line`;
+  chomp $out;
+  if($out != $lation_count){
+    die "Problem writing PEPTIDE file as there should be $lation_count entries but file has only $out\n";
+  }
+
+
+  print $script_count ." Transcripts dumped ". $lation_count. " Transaltions dumped\n" if($self->verbose);
+
+  #######################################
+  # Update the database about the status.
+  #######################################
+
+  my $sth = $self->xref->dbc->prepare("insert into process_status (status, date) values('core_fasta_dumped',now())");
+  $sth->execute();
+  $sth->finish;
+}
+
+
+
+=head2 fetch_and_dump_seq_via_genes
+
+  Description: Dumps the ensembl data to a file in fasta format.
+  Returntype : none
+  Exceptions : wil die if the are errors in db connection or file creation.
+  Caller     : dump_ensembl
+
+=cut
+
+sub fetch_and_dump_seq_via_genes{
+  my ($self) = @_;
+
+  my $ensembl = $self->core;
+  my $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(-dbconn => $ensembl->dbc);
+
+  my $slice_adaptor = $db->get_SliceAdaptor();
+  my $ama           = $db->get_AssemblyMapperAdaptor();
+  my $seqa          = $db->get_SequenceAdaptor();
+  my $gene_adaptor  = $db->get_GeneAdaptor();
+
+  #
+  # store ensembl dna file name and open it
+  #
+  if(!defined($ensembl->dir())){
+    $ensembl->dir(".");
+  }
+  $ensembl->dna_file($ensembl->dir."/".$ensembl->species."_dna.fasta");
+
+
+  #
+  # store ensembl protein file name and open it
+  #
+  $ensembl->protein_file($ensembl->dir."/".$ensembl->species."_protein.fasta");
+
+  $self->add_meta_pair("dump_method","fetch_and_dump_seq_via_genes");
 
   if(defined($self->mapper->dumpcheck()) and -e $ensembl->protein_file() and -e $ensembl->dna_file()){
     my $sth = $self->xref->dbc->prepare("insert into process_status (status, date) values('core_fasta_dumped',now())");
@@ -269,7 +419,6 @@ sub fetch_and_dump_seq{
   open(PEP,">".$ensembl->protein_file())
     || die("Could not open protein file for writing: ".$ensembl->protein_file."\n");
 
-  my $gene_adaptor = $db->get_GeneAdaptor();
 
 
   # fetch by location, or everything if not defined
@@ -284,34 +433,70 @@ sub fetch_and_dump_seq{
 
 #  push @genes, $gene_adaptor->fetch_by_stable_id("ENSG00000139618");
 #####################################################################
-  my $max = undef;
+#  my $max = undef;
 
-  my $i =0;
-  my $rna = 0;
+  my $script_count=0;
+  my $lation_count=0;
   foreach my $gene (@genes){
     next if $gene->biotype eq 'J_segment';
     next if $gene->biotype eq 'D_segment';
 
     foreach my $transcript (@{$gene->get_all_Transcripts()}) {
-      $i++;
       my $seq = $transcript->spliced_seq();
       $seq =~ s/(.{60})/$1\n/g;
-      print DNA ">" . $transcript->dbID() . "\n" .$seq."\n";
+      print DNA ">" . $transcript->dbID() . "\n" .$seq."\n" || die "Error writing for transcript ".$transcript->dbID."\n$!\n";
+      $script_count++;
       my $trans = $transcript->translation();
       my $translation = $transcript->translate();
 
       if(defined($translation)){
         my $pep_seq = $translation->seq();
         $pep_seq =~ s/(.{60})/$1\n/g;
-        print PEP ">".$trans->dbID()."\n".$pep_seq."\n";
+        print PEP ">".$trans->dbID()."\n".$pep_seq."\n" || die "Error writing for translation ".$trans->dbID."\n$!\n";
+	$lation_count++;
       }
     }
 
-     last if(defined($max) and $i > $max);
+    # Zap caches!
+    %{ $slice_adaptor->{'sr_name_cache'} } = ();
+    %{ $slice_adaptor->{'sr_id_cache'} }   = ();
 
+    $ama->delete_cache();
+
+    %{ $seqa->{'seq_cache'} } = ();
   }
-  close DNA;
-  close PEP;
+  close DNA || die "unable to close dna file\n$!\n";
+  close PEP || die "unable to close peptide file\n$!\n"; 
+
+
+
+  sleep(10);
+
+  #####################################################
+  # Sanity check as some of the disks get timeouts etc.
+  #####################################################
+
+  my $line = 'grep "^>" '.$ensembl->dna_file().' | wc -l';
+  my $out = `$line`;
+  chomp $out;
+  if($out != $script_count){
+    die "Problem writing DNA file as there should be $script_count entries but file has only $out\n";
+  }
+
+
+  $line = 'grep "^>" '.$ensembl->protein_file().' | wc -l';
+  $out = `$line`;
+  chomp $out;
+  if($out != $lation_count){
+    die "Problem writing PEPTIDE file as there should be $lation_count entries but file has only $out\n";
+  }
+
+  print $script_count ." Transcripts dumped ". $lation_count. " Transaltions dumped\n" if($self->verbose);
+
+  #######################################
+  # Update the database about the status.
+  #######################################
+
   my $sth = $self->xref->dbc->prepare("insert into process_status (status, date) values('core_fasta_dumped',now())");
   $sth->execute();
   $sth->finish;
