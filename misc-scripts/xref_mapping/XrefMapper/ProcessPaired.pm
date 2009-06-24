@@ -18,6 +18,7 @@ sub new {
   my $self ={};
   bless $self,$class;
   $self->xref($mapper->xref);
+  $self->verbose($mapper->verbose);
   return $self;
 }
 
