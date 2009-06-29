@@ -79,10 +79,22 @@ sub new {
   if($e1->slice ne $e2->slice){
     if($e1->slice->seq_region_name ne $e2->slice->seq_region_name){
       throw("Exons on different slices. Not allowed");
-    }
+    } 
     else{
       warn("Exons have different slice references to the same seq_region\n");
     }
+
+    # the slice hash might be different, but the slices themselves
+    # might still refer to the same bit of sequence. This happens 
+    # when transform re-fetches slices instead of caching
+    if ($e1->slice->coord_system->equals($e2->slice->coord_system) &&
+        $e1->slice->start == $e2->slice->start &&
+        $e1->slice->end == $e2->slice->end && 
+        $e1->slice->strand == $e2->slice->strand) {
+      # we are ok
+      $self->{'slice'} = $e1->slice;
+    }
+
   }
   else{ 
     $self->{'slice'} = $e1->slice;
