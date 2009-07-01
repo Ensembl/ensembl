@@ -2061,6 +2061,41 @@ sub get_all_Transcripts {
 }
 
 
+=head2 get_all_TranscriptBestSupportingFeatures
+
+  Arg [1]    : (optional) string $logic_name
+               the logic name of the type of features to obtain
+  Arg [2]    : (optional) string $db_type
+  Example    : @transcripts = @{$slice->get_all_TranscriptBestSupportingFeatures};
+  Description: Gets the best supporting align features for each exon
+               in any transcript which overlaps this slice.
+  Returntype : reference to a list of Bio::EnsEMBL::BaseAlignFeatures
+  Exceptions : none
+  Caller     : general
+  Status     : Development
+
+=cut
+
+sub get_all_TranscriptBestSupportingFeatures {
+  my $self = shift;
+  my $load_exons = 1;
+  my $logic_name = shift;
+  my $dbtype     = shift;
+  if(!$self->adaptor()) {
+    warning('Cannot get Transcripts without attached adaptor');
+    return [];
+  }
+
+  # debugging
+  my $method = "get_all_TranscriptBestSupportingFeatures";
+  die sprintf "%s::%s()\nDied", __PACKAGE__, $method;
+
+  my $transcripts = $self->get_all_Transcripts($load_exons, $logic_name, $dbtype);
+
+  return;
+}
+
+
 =head2 get_all_Exons
 
   Arg [1]    : none
