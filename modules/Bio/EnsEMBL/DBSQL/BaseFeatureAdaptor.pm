@@ -228,11 +228,24 @@ sub fetch_all_by_Slice_constraint {
   # If the logic name was invalid, undef was returned
   return [] if ( !defined($constraint) );
 
-  # Check the cache and return if we have already done this query
-  my $key = uc( join( ':', $slice->name(), $constraint ) );
+  my $key;
 
   # Will only use feature_cache if hasn't been no_cache attribute set
-  if ( !defined $self->db->no_cache() || !$self->db->no_cache() ) {
+  if ( !defined( $self->db()->no_cache() ) || !$self->db()->no_cache() )
+  {
+
+    # Check the cache and return the cached results if we have already
+    # done this query.  The cache key is the made up from the slice
+    # name, the constraint, and the bound parameters (if there are any).
+    $key = uc( join( ':', $slice->name(), $constraint ) );
+
+    my $bind_params = $self->bind_param_generic_fetch();
+
+    if ( defined($bind_params) ) {
+      $key .= ':'
+        . join( ':', map { $_->[0] . '/' . $_->[1] } @{$bind_params} );
+    }
+
     if ( exists( $self->{'_slice_feature_cache'}->{$key} ) ) {
       return $self->{'_slice_feature_cache'}->{$key};
     }
@@ -307,11 +320,11 @@ sub fetch_all_by_Slice_constraint {
     }
 }
 
-  #will only use feature_cache when set attribute no_cache in DBAdaptor
-  if (!defined $self->db->no_cache || !$self->db->no_cache){
-      $self->{'_slice_feature_cache'}->{$key} = \@result;
+  # Will only use feature_cache when set attribute no_cache in DBAdaptor
+  if ( defined($key) ) {
+    $self->{'_slice_feature_cache'}->{$key} = \@result;
   }
-  
+
   return \@result;
 }
 
