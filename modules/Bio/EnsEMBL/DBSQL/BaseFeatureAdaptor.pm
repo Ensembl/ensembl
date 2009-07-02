@@ -237,6 +237,7 @@ sub fetch_all_by_Slice_constraint {
       return $self->{'_slice_feature_cache'}->{$key};
     }
   }
+
   my $sa = $slice->adaptor();
 
   # Hap/PAR support: retrieve normalized 'non-symlinked' slices
@@ -324,16 +325,21 @@ sub fetch_all_by_Slice_constraint {
                only features with an analysis of type $logic_name will be 
                returned. 
   Returntype : listref of Bio::EnsEMBL::SeqFeatures
-  Exceptions : thrown if $logic_name
+  Exceptions : thrown if no $logic_name
   Caller     : General
   Status     : Stable
 
 =cut
 
 sub fetch_all_by_logic_name {
-  my $self = shift;
-  my $logic_name = shift || throw( "Need a logic_name" );
-  my $constraint = $self->_logic_name_to_constraint( '',$logic_name );
+  my ( $self, $logic_name ) = @_;
+
+  if ( !defined($logic_name) ) {
+    throw("Need a logic_name");
+  }
+
+  my $constraint = $self->_logic_name_to_constraint( '', $logic_name );
+
   return $self->generic_fetch($constraint);
 }
 
