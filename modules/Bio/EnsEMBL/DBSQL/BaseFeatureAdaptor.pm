@@ -231,7 +231,8 @@ sub fetch_all_by_Slice_constraint {
   my $key;
 
   # Will only use feature_cache if hasn't been no_cache attribute set
-  if ( !defined( $self->db()->no_cache() ) || !$self->db()->no_cache() )
+  if (
+    !( defined( $self->db()->no_cache() ) && $self->db()->no_cache() ) )
   {
 
     # Check the cache and return the cached results if we have already
@@ -247,6 +248,8 @@ sub fetch_all_by_Slice_constraint {
     }
 
     if ( exists( $self->{'_slice_feature_cache'}->{$key} ) ) {
+      # Clear the bound parameters and return the cached data.
+      $self->{'_bind_param_generic_fetch'} = ();
       return $self->{'_slice_feature_cache'}->{$key};
     }
   }
