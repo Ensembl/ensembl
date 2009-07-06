@@ -62,13 +62,6 @@
       There should not exist any relation between two terms belonging to
       different namespaces.
 
-      For relation types that OBO defines as being reflexive and
-      anti-symmetric, we normalize the relation so that the child term
-      is more specific then the parent term (where this makes sense).
-      This means, for example, that we change all "A 'has_part' B" into
-      "B 'part_of' A".  The 'has_part' relationship type is only present
-      in SO and is the only relationship type affected by this.
-
     - closure
       The 'closure' table contains the transitive closure over a
       selection of transitive relation types.  The transitive relation
@@ -118,10 +111,9 @@
     restricted to querying them for their basic attributes such as
     the term accession, name, and definition, as well as relational
     information such as their immediate parent and/or child terms.
-    Following a selection of relationship types (currently the
-    transitive relation types 'is_a' and 'part_of') we also provide fast
-    access to the set of all parent and/or child terms of any given
-    term.
+    For a selection of transitive relationship types (currently the
+    relation types 'is_a' and 'part_of') we also provide fast access
+    to the set of all parent and/or child terms of any given term.
 
     The connection between the ontology terms and the genes,
     transcripts, and translations of Ensembl is currently based on GO
@@ -227,15 +219,15 @@
         for help on usage, it's simple).  The script lives in
         ensembl/misc-scripts/ontology/scripts/
 
-        Optionally, also download the SO ontology from
+    5.  Repeat steps 3 and 4 for the SO ontology.  A recent version of
+        the ontology may be found at
         http://song.cvs.sourceforge.net/viewvc/*checkout*/song/ontology/so.obo
-        and repeat the two previous steps.
 
-    5.  Compute the transitive closure (the 'closure' table in the
+    6.  Compute the transitive closure (the 'closure' table in the
         database) by running the 'compute_closure.pl' in almost the same
-        way as in the last step.  This step may take some time.
+        way as in step 4.  This step may take some time.
 
-    6.  Done.
+    7.  Done.
 
 
 $Id$
