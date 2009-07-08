@@ -166,11 +166,11 @@ sub fetch_all_by_Slice {
   # get extent of region spanned by transcripts
   my ($min_start, $max_end);
   foreach my $tr (@$transcripts) {
-    if(!defined($min_start) || $tr->start() < $min_start) {
-      $min_start = $tr->start();
+    if(!defined($min_start) || $tr->seq_region_start() < $min_start) {
+      $min_start = $tr->seq_region_start();
     }
-    if(!defined($max_end) || $tr->end() > $max_end) {
-      $max_end   = $tr->end();
+    if(!defined($max_end) || $tr->seq_region_end() > $max_end) {
+      $max_end   = $tr->seq_region_end();
     }
   }
 
