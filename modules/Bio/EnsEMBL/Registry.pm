@@ -406,8 +406,8 @@ sub add_db {
   my ( $class, $db, $name, $adap ) = @_;
 
   if ( lc( $db->species() ) ne lc( $adap->species ) ) {
-    $registry_register{ lc( $db->species() ) }{ lc( $db->group() ) }
-      {'_special'}{ lc($name) } = $adap;
+    $registry_register{_SPECIES}{ lc( $db->species() ) }
+      { lc( $db->group() ) }{'_special'}{ lc($name) } = $adap;
   }
 }
 
@@ -430,11 +430,11 @@ sub remove_db {
   my ( $class, $db, $name ) = @_;
 
   my $ret =
-    $registry_register{ lc( $db->species() ) }{ lc( $db->group() ) }
-    {'_special'}{ lc($name) };
+    $registry_register{_SPECIES}{ lc( $db->species() ) }
+    { lc( $db->group() ) }{'_special'}{ lc($name) };
 
-  $registry_register{ lc( $db->species() ) }{ lc( $db->group() ) }
-    {'_special'}{ lc($name) } = undef;
+  $registry_register{_SPECIES}{ lc( $db->species() ) }
+    { lc( $db->group() ) }{'_special'}{ lc($name) } = undef;
 
   return $ret;
 }
@@ -462,7 +462,7 @@ sub get_db {
 
   if ( defined($ret) ) { return $ret }
 
-  return $registry_register{ lc( $db->species() ) }
+  return $registry_register{_SPECIES}{ lc( $db->species() ) }
     { lc( $db->group() ) }{'_special'}{ lc($name) };
 }
 
@@ -496,12 +496,14 @@ sub get_all_db_adaptors {
 
   foreach my $key (
     keys %{
-      $registry_register{ $class->get_alias( $db->species() ) }
-        { lc( $db->group() ) }{'_special'} } )
+      $registry_register{_SPECIES}
+        { $class->get_alias( $db->species() ) }{ lc( $db->group() ) }
+        {'_special'} } )
   {
     $ret{$key} =
-      $registry_register{ $class->get_alias( $db->species() ) }
-      { lc( $db->group() ) }{'_special'}{$key};
+      $registry_register{_SPECIES}
+      { $class->get_alias( $db->species() ) }{ lc( $db->group() ) }
+      {'_special'}{$key};
   }
 
   return \%ret;
@@ -534,7 +536,7 @@ sub add_DBAdaptor {
 
   $species = $class->get_alias($species);
 
-  $registry_register{$species}{ lc($group) }{'_DB'} = $adap;
+  $registry_register{_SPECIES}{$species}{ lc($group) }{'_DB'} = $adap;
 
   if ( !defined( $registry_register{'_DBA'} ) ) {
     my @list = ();
@@ -564,7 +566,7 @@ sub get_DBAdaptor {
 
   $species = $class->get_alias($species);
 
-  return $registry_register{$species}{ lc($group) }{'_DB'};
+  return $registry_register{_SPECIES}{$species}{ lc($group) }{'_DB'};
 }
 
 =head2 get_all_DBAdaptors
@@ -675,36 +677,34 @@ sub get_all_DBAdaptors_by_dbname {
 
 =cut
 
-sub remove_DBAdaptor{
-  my ($class, $species, $group) = @_;
+sub remove_DBAdaptor {
+  my ( $class, $species, $group ) = @_;
 
   $species = $class->get_alias($species);
-  
- 
-  delete $registry_register{$species}{$group};
+
+  delete $registry_register{_SPECIES}{$species}{$group};
   # This will remove the DBAdaptor and all the other adaptors
 
   # Now remove if from the _DBA array
   my $index;
 
-
-  foreach my $i(0..$#{$registry_register{'_DBA'}}){
+  foreach my $i ( 0 .. $#{ $registry_register{'_DBA'} } ) {
     my $dba = $registry_register{'_DBA'}->[$i];
 
-    if(($dba->species eq $species) &&
-       $dba->group eq $group){
+    if ( ( $dba->species eq $species )
+      && $dba->group eq $group )
+    {
       $index = $i;
-
       last;
     }
   }
-  
-  
-  # Now remove from _DBA cache
-  splice(@{$registry_register{'_DBA'}}, $index, 1) if defined $index;
 
-  return;
-}
+  # Now remove from _DBA cache
+  if ( defined($index) ) {
+    splice( @{ $registry_register{'_DBA'} }, $index, 1 );
+  }
+
+} ## end sub remove_DBAdaptor
 
 
 
@@ -812,8 +812,9 @@ sub add_DNAAdaptor {
   if ( $dnadb_group->isa('Bio::EnsEMBL::DBSQL::DBAdaptor') ) {
     deprecated("");
   } else {
-    $registry_register{$species}{ lc($group) }{'_DNA'} = $dnadb_group;
-    $registry_register{$species}{ lc($group) }{'_DNA2'} =
+    $registry_register{_SPECIES}{$species}{ lc($group) }{'_DNA'} =
+      $dnadb_group;
+    $registry_register{_SPECIES}{$species}{ lc($group) }{'_DNA2'} =
       $dnadb_species;
   }
 }
@@ -833,8 +834,10 @@ sub get_DNAAdaptor {
   my ( $class, $species, $group ) = @_;
 
   $species = $class->get_alias($species);
-  my $new_group   = $registry_register{$species}{ lc($group) }{'_DNA'};
-  my $new_species = $registry_register{$species}{ lc($group) }{'_DNA2'};
+  my $new_group =
+    $registry_register{_SPECIES}{$species}{ lc($group) }{'_DNA'};
+  my $new_species =
+    $registry_register{_SPECIES}{$species}{ lc($group) }{'_DNA2'};
 
   if ( defined $new_group ) {
     return $class->get_DBAdaptor( $new_species, $new_group );
@@ -875,29 +878,36 @@ sub add_adaptor {
 
   if ( defined($reset) )
   {    # JUST REST THE HASH VALUE NO MORE PROCESSING NEEDED
-    $registry_register{$species}{ lc($group) }{ lc($type) } = $adap;
+    $registry_register{_SPECIES}{$species}{ lc($group) }{ lc($type) } =
+      $adap;
     return;
   }
+
   if (
-    defined( $registry_register{$species}{ lc($group) }{ lc($type) } ) )
+    defined(
+      $registry_register{_SPECIES}{$species}{ lc($group) }{ lc($type) }
+    ) )
   {
   # print STDERR (
   #      "Overwriting Adaptor in Registry for $species $group $type\n");
-    $registry_register{$species}{ lc($group) }{ lc($type) } = $adap;
+    $registry_register{_SPECIES}{$species}{ lc($group) }{ lc($type) } =
+      $adap;
     return;
   }
-  $registry_register{$species}{ lc($group) }{ lc($type) } = $adap;
+  $registry_register{_SPECIES}{$species}{ lc($group) }{ lc($type) } =
+    $adap;
 
-  if ( !defined( $registry_register{$species}{'list'} ) ) {
-    $registry_register{$species}{'list'} = [$type];
+  if ( !defined( $registry_register{_SPECIES}{$species}{'list'} ) ) {
+    $registry_register{_SPECIES}{$species}{'list'} = [$type];
   } else {
-    push( @{ $registry_register{$species}{'list'} }, $type );
+    push( @{ $registry_register{_SPECIES}{$species}{'list'} }, $type );
   }
 
-  if ( !defined( $registry_register{ lc($type) }{$species} ) ) {
-    $registry_register{ lc($type) }{$species} = [$type];
+  if ( !defined( $registry_register{_TYPE}{ lc($type) }{$species} ) ) {
+    $registry_register{_TYPE}{ lc($type) }{$species} = [$type];
   } else {
-    push( @{ $registry_register{ lc($type) }{$species} }, $adap );
+    push( @{ $registry_register{_TYPE}{ lc($type) }{$species} },
+      $adap );
   }
 
 } ## end sub add_adaptor
@@ -933,22 +943,26 @@ sub get_adaptor {
 
   $type = lc($type);
 
-  my $dnadb_group = $registry_register{$species}{ lc($group) }{'_DNA'};
+  my $dnadb_group =
+    $registry_register{_SPECIES}{$species}{ lc($group) }{'_DNA'};
 
   if ( defined($dnadb_group)
     && defined( $dnadb_adaptors{ lc($type) } ) )
   {
-    $species = $registry_register{$species}{ lc($group) }{'_DNA2'};
-    $group   = $dnadb_group;
+    $species =
+      $registry_register{_SPECIES}{$species}{ lc($group) }{'_DNA2'};
+    $group = $dnadb_group;
   }
 
-  my $ret = $registry_register{$species}{ lc($group) }{ lc($type) };
+  my $ret =
+    $registry_register{_SPECIES}{$species}{ lc($group) }{ lc($type) };
+
   if ( !defined($ret) ) { return undef }
   if ( ref($ret) )      { return $ret }
 
   # Not instantiated yet
 
-  my $dba    = $registry_register{$species}{ lc($group) }{'_DB'};
+  my $dba = $registry_register{_SPECIES}{$species}{ lc($group) }{'_DB'};
   my $module = $ret;
 
   eval "require $module";
@@ -958,9 +972,11 @@ sub get_adaptor {
   }
 
   if (
-    !defined( $registry_register{$species}{ lc($group) }{'CHECKED'} ) )
+    !defined(
+      $registry_register{_SPECIES}{$species}{ lc($group) }{'CHECKED'} )
+    )
   {
-    $registry_register{$species}{ lc($group) }{'CHECKED'} = 1;
+    $registry_register{_SPECIES}{$species}{ lc($group) }{'CHECKED'} = 1;
     $class->version_check($dba);
   }
 
@@ -1021,28 +1037,32 @@ sub get_all_adaptors{
       $group_hash{lc($dba->group())} = 1;
     }
   }
-  if(defined($type)){
-    $type_hash{$type} =1;
-  }
-  else{
-    foreach my $dba (@{$registry_register{'_DBA'}}){ 
-	foreach my $ty (@{$registry_register{lc($dba->species)}{'list'}}){
-	  $type_hash{lc($ty)} = 1;
-	}
-      }
-  }
-  
-  ### NOW NEED TO INSTANTIATE BY CALLING get_adaptor
-  foreach my $sp (keys %species_hash){
-    foreach my $gr (keys %group_hash){
-      foreach my $ty (keys %type_hash){
-	my $temp = $class->get_adaptor($sp,$gr,$ty);
-	if(defined($temp)){
-	  push @ret, $temp;
-	}
+
+  if ( defined($type) ) {
+    $type_hash{$type} = 1;
+  } else {
+    foreach my $dba ( @{ $registry_register{'_DBA'} } ) {
+      foreach my $ty (
+        @{ $registry_register{_SPECIES}{ lc( $dba->species ) }{'list'} }
+        )
+      {
+        $type_hash{ lc($ty) } = 1;
       }
     }
   }
+
+  ### NOW NEED TO INSTANTIATE BY CALLING get_adaptor
+  foreach my $sp ( keys %species_hash ) {
+    foreach my $gr ( keys %group_hash ) {
+      foreach my $ty ( keys %type_hash ) {
+        my $temp = $class->get_adaptor( $sp, $gr, $ty );
+        if ( defined($temp) ) {
+          push @ret, $temp;
+        }
+      }
+    }
+  }
+
   return (\@ret);
 }
 
@@ -1222,32 +1242,33 @@ my $self = shift;
 =cut
 
 sub load_registry_from_url {
-  my ($self, $url, $verbose, $no_cache) = @_;
+  my ( $self, $url, $verbose, $no_cache ) = @_;
 
-  if ($url =~ /mysql\:\/\/([^\@]+\@)?([^\:\/]+)(\:\d+)?(\/\d+)?/) {
+  if ( $url =~ /mysql\:\/\/([^\@]+\@)?([^\:\/]+)(\:\d+)?(\/\d+)?/ ) {
     my $user_pass = $1;
-    my $host = $2;
-    my $port = $3;
-    my $version = $4;
+    my $host      = $2;
+    my $port      = $3;
+    my $version   = $4;
 
     $user_pass =~ s/\@$//;
-    my ($user, $pass) = $user_pass =~ m/([^\:]+)(\:.+)?/;
-    $pass =~ s/^\:// if ($pass);
-    $port =~ s/^\:// if ($port);
+    my ( $user, $pass ) = $user_pass =~ m/([^\:]+)(\:.+)?/;
+    $pass    =~ s/^\:// if ($pass);
+    $port    =~ s/^\:// if ($port);
     $version =~ s/^\/// if ($version);
 
     $self->load_registry_from_db(
-        -host=> $host,
-        -user => $user,
-        -pass => $pass,
-        -port => $port,
-        -db_version => $version,
-        -verbose => $verbose,
-	-no_cache => $no_cache);
+      -host       => $host,
+      -user       => $user,
+      -pass       => $pass,
+      -port       => $port,
+      -db_version => $version,
+      -verbose    => $verbose,
+      -no_cache   => $no_cache
+    );
   } else {
     throw("Only MySQL URLs are accepted at the moment");
   }
-}
+} ## end sub load_registry_from_url
 
 
 =head2 load_registry_from_db
@@ -1293,11 +1314,13 @@ sub load_registry_from_url {
                 querying the database if not used properly.  If in
                 doubt, do not use it or ask in ensembl-dev.
 
-  Example : load_registry_from_db(
-              -host    => 'ensembldb.ensembl.org',
-              -user    => 'anonymous',
-              -verbose => '1'
-            );
+  Example :
+
+    $registry->load_registry_from_db(
+      -host    => 'ensembldb.ensembl.org',
+      -user    => 'anonymous',
+      -verbose => '1'
+    );
 
   Description: Will load the correct versions of the ensembl
                databases for the software release it can find on a
@@ -2175,11 +2198,90 @@ sub find_and_add_aliases {
 } ## end sub find_and_add_aliases
 
 
+=head2 load_registry_from_multiple_dbs
+
+  Arg [1]   : Array of hashes, each hash being a set of arguments to
+              load_registry_from_db() (see above).
+
+  Example   :
+
+    $registry->load_registry_from_multiple_dbs( {
+        '-host'    => 'ensembldb.ensembl.org',
+        '-user'    => 'anonymous',
+        '-verbose' => '1'
+      },
+      {
+        '-host'     => 'server.example.com',
+        '-user'     => 'anonymouse',
+        '-password' => 'cheese',
+        '-verbose'  => '1'
+      } );
+
+  Description:  Will call load_registry_from_db() (see above)
+                multiple times and merge the resulting registries
+                into one, effectively allowing a user to connect to
+                databases on multiple database servers from within
+                one program.
+
+                If a database is found on more than one server, the
+                first found instance of that database will be used.
+
+=cut
+
+sub load_registry_from_multiple_dbs {
+  my ( $self, @args ) = @_;
+
+  my %merged_register;
+
+  foreach my $arg (@args) {
+    local %registry_register;
+
+    my $verbose;
+
+    ($verbose) = rearrange( ['VERBOSE'], %{$arg} );
+
+    $self->load_registry_from_db( %{$arg} );
+
+    #
+    # Merge the localized %registry_register into %merged_register.
+    #
+
+    # Merge the _SPECIES and _ALIAS sections of %registry_register.
+    foreach my $section ( 'Species', 'Alias' ) {
+      my $section_key = '_' . uc($section);
+
+      while ( my ( $key, $value ) =
+        each( %{ $registry_register{$section_key} } ) )
+      {
+        if ( !exists( $merged_register{$section_key}{$key} ) ) {
+          $merged_register{$section_key}{$key} = $value;
+        } elsif ($verbose) {
+          printf( "%s '%s' found on multiple servers, "
+              . "using first found\n",
+            $section, $key );
+        }
+      }
+    }
+  } ## end foreach my $arg (@args)
+
+  # Add the DBAs from the _SPECIES section into the _DBA section.
+  foreach my $species_hash ( values( %{ $merged_register{_SPECIES} } ) )
+  {
+    foreach my $group_hash ( values( %{$species_hash} ) ) {
+      if ( ref($group_hash) eq 'HASH' && exists( $group_hash->{_DB} ) )
+      {
+        push( @{ $merged_register{_DBA} }, $group_hash->{_DB} );
+      }
+    }
+  }
+
+  %registry_register = %merged_register;
+
+} ## end sub load_registry_from_multiple_dbs
+
 #
 # Web specific routines
 #
-
-
 
 =head2 DEPRECATED load_registry_with_web_adaptors
 
@@ -2221,11 +2323,11 @@ sub load_registry_with_web_adaptors{
 
 =cut
 
-sub set_default_track{
-  my ($class, $species, $group) = @_;  
+sub set_default_track {
+  my ( $class, $species, $group ) = @_;
 
   $species = get_alias($species);
-  $registry_register{'def_track'}{$species}{lc($group)} = 1;
+  $registry_register{'def_track'}{$species}{ lc($group) } = 1;
 }
 
 =head2 default_track
@@ -2241,14 +2343,16 @@ sub set_default_track{
 
 =cut
 
-sub default_track{
-  my ($class, $species, $group) = @_;  
+sub default_track {
+  my ( $class, $species, $group ) = @_;
 
   $species = get_alias($species);
-  if(defined($registry_register{'def_track'}{$species}{lc($group)})){
+  if (
+    defined( $registry_register{'def_track'}{$species}{ lc($group) } ) )
+  {
     return 1;
   }
-  
+
   return 0;
 }
 
@@ -2316,8 +2420,10 @@ sub software_version{
 =cut
   
 sub no_version_check {
-  my ($self, $arg ) = @_;
-  ( defined $arg ) && ( $registry_register{'_no_version_check'} = $arg );
+  my ( $self, $arg ) = @_;
+  ( defined $arg )
+    && ( $registry_register{'_no_version_check'} = $arg );
+
   return $registry_register{'_no_version_check'};
 }
 
