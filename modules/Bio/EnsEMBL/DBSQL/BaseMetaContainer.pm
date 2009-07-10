@@ -109,26 +109,20 @@ sub list_value_by_key {
 
   my $sth;
 
-  if ( ref($self) =~ /Compara|Funcgen|Variation/ ) {
+  if ( !$self->_species_specific_key($key) ) {
     $sth =
-      $self->prepare(   "SELECT meta_value "
-                      . "FROM meta "
-                      . "WHERE meta_key = ? "
-                      . "ORDER BY meta_id" );
-  } elsif ( !$self->_species_specific_key($key) ) {
-    $sth =
-      $self->prepare(   "SELECT meta_value "
-                      . "FROM meta "
-                      . "WHERE meta_key = ? "
-                      . "AND species_id IS NULL "
-                      . "ORDER BY meta_id" );
+      $self->prepare( "SELECT meta_value "
+        . "FROM meta "
+        . "WHERE meta_key = ? "
+        . "AND species_id IS NULL "
+        . "ORDER BY meta_id" );
   } else {
     $sth =
-      $self->prepare(   "SELECT meta_value "
-                      . "FROM meta "
-                      . "WHERE meta_key = ? "
-                      . "AND species_id = ? "
-                      . "ORDER BY meta_id" );
+      $self->prepare( "SELECT meta_value "
+        . "FROM meta "
+        . "WHERE meta_key = ? "
+        . "AND species_id = ? "
+        . "ORDER BY meta_id" );
     $sth->bind_param( 2, $self->species_id(), SQL_INTEGER );
   }
 
@@ -173,17 +167,14 @@ sub store_key_value {
 
   my $sth;
 
-  if ( ref($self) =~ /Compara|Funcgen|Variation/ ) {
+  if ( !$self->_species_specific_key($key) ) {
     $sth = $self->prepare(
-                'INSERT INTO meta (meta_key, meta_value) VALUES(?, ?)');
-  } elsif ( !$self->_species_specific_key($key) ) {
-    $sth = $self->prepare(
-                  'INSERT INTO meta (meta_key, meta_value, species_id) '
-                    . 'VALUES(?, ?, \N)' );
+          'INSERT INTO meta (meta_key, meta_value, species_id) '
+        . 'VALUES(?, ?, \N)' );
   } else {
     $sth = $self->prepare(
-                  'INSERT INTO meta (meta_key, meta_value, species_id) '
-                    . 'VALUES (?, ?, ?)' );
+          'INSERT INTO meta (meta_key, meta_value, species_id) '
+        . 'VALUES (?, ?, ?)' );
     $sth->bind_param( 3, $self->species_id(), SQL_INTEGER );
   }
 
@@ -216,20 +207,17 @@ sub update_key_value {
 
   my $sth;
 
-  if ( ref($self) =~ /Compara|Funcgen|Variation/ ) {
-    $sth = $self->prepare(
-             'UPDATE meta SET meta_value = ? WHERE meta_key = ?' );
-  } elsif ( !$self->_species_specific_key($key) ) {
+  if ( !$self->_species_specific_key($key) ) {
     $sth =
-      $self->prepare(   'UPDATE meta SET meta_value = ? '
-                      . 'WHERE meta_key = ?'
-                      . 'AND species_id IS NULL' );
+      $self->prepare( 'UPDATE meta SET meta_value = ? '
+        . 'WHERE meta_key = ?'
+        . 'AND species_id IS NULL' );
   } else {
     $sth =
-      $self->prepare(   'UPDATE meta '
-                      . 'SET meta_value = ? '
-                      . 'WHERE meta_key = ? '
-                      . 'AND species_id = ?' );
+      $self->prepare( 'UPDATE meta '
+        . 'SET meta_value = ? '
+        . 'WHERE meta_key = ? '
+        . 'AND species_id = ?' );
     $sth->bind_param( 3, $self->species_id(), SQL_INTEGER );
   }
 
@@ -259,18 +247,16 @@ sub delete_key {
 
   my $sth;
 
-  if ( ref($self) =~ /Compara|Funcgen|Variation/ ) {
-    $sth = $self->prepare( 'DELETE FROM meta WHERE meta_key = ?' );
-  } elsif ( !$self->_species_specific_key($key) ) {
+  if ( !$self->_species_specific_key($key) ) {
     $sth =
-      $self->prepare(   'DELETE FROM meta '
-                      . 'WHERE meta_key = ?'
-                      . 'AND species_id IS NULL' );
+      $self->prepare( 'DELETE FROM meta '
+        . 'WHERE meta_key = ?'
+        . 'AND species_id IS NULL' );
   } else {
     $sth =
-      $self->prepare(   'DELETE FROM meta '
-                      . 'WHERE meta_key = ? '
-                      . 'AND species_id = ?' );
+      $self->prepare( 'DELETE FROM meta '
+        . 'WHERE meta_key = ? '
+        . 'AND species_id = ?' );
     $sth->bind_param( 2, $self->species_id(), SQL_INTEGER );
   }
 
@@ -301,23 +287,18 @@ sub delete_key_value {
 
   my $sth;
 
-  if ( ref($self) =~ /Compara|Funcgen|Variation/ ) {
+  if ( !$self->_species_specific_key($key) ) {
     $sth =
-      $self->prepare(   'DELETE FROM meta '
-                      . 'WHERE meta_key = ? '
-                      . 'AND meta_value = ?' );
-  } elsif ( !$self->_species_specific_key($key) ) {
-    $sth =
-      $self->prepare(   'DELETE FROM meta '
-                      . 'WHERE meta_key = ? '
-                      . 'AND meta_value = ?'
-                      . 'AND species_id IS NULL' );
+      $self->prepare( 'DELETE FROM meta '
+        . 'WHERE meta_key = ? '
+        . 'AND meta_value = ?'
+        . 'AND species_id IS NULL' );
   } else {
     $sth =
-      $self->prepare(   'DELETE FROM meta '
-                      . 'WHERE meta_key = ? '
-                      . 'AND meta_value = ? '
-                      . 'AND species_id = ?' );
+      $self->prepare( 'DELETE FROM meta '
+        . 'WHERE meta_key = ? '
+        . 'AND meta_value = ? '
+        . 'AND species_id = ?' );
     $sth->bind_param( 3, $self->species_id(), SQL_INTEGER );
   }
 
@@ -349,26 +330,20 @@ sub key_value_exists {
 
   my $sth;
 
-  if ( ref($self) =~ /Compara|Funcgen|Variation/ ) {
+  if ( !$self->_species_specific_key($key) ) {
     $sth =
-      $self->prepare(   'SELECT meta_value '
-                      . 'FROM meta '
-                      . 'WHERE meta_key = ? '
-                      . 'AND meta_value = ?' );
-  } elsif ( !$self->_species_specific_key($key) ) {
-    $sth =
-      $self->prepare(   'SELECT meta_value '
-                      . 'FROM meta '
-                      . 'WHERE meta_key = ? '
-                      . 'AND meta_value = ?'
-                      . 'AND species_id IS NULL' );
+      $self->prepare( 'SELECT meta_value '
+        . 'FROM meta '
+        . 'WHERE meta_key = ? '
+        . 'AND meta_value = ?'
+        . 'AND species_id IS NULL' );
   } else {
     $sth =
-      $self->prepare(   'SELECT meta_value '
-                      . 'FROM meta '
-                      . 'WHERE meta_key = ? '
-                      . 'AND meta_value = ? '
-                      . 'AND species_id = ?' );
+      $self->prepare( 'SELECT meta_value '
+        . 'FROM meta '
+        . 'WHERE meta_key = ? '
+        . 'AND meta_value = ? '
+        . 'AND species_id = ?' );
     $sth->bind_param( 3, $self->species_id(), SQL_INTEGER );
   }
 
