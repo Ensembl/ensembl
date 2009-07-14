@@ -27,8 +27,7 @@ sub usage {
   print("\t-u/--user dbuser\tDatabase user name\n");
   print("\t-p/--pass dbpass\tUser password (optional)\n");
   print("\t-d/--name dbname\tDatabase name\n");
-  print(
-    "\t-t/--truncate\t\tTruncate (empty) each table\n");
+  print("\t-t/--truncate\t\tTruncate (empty) each table\n");
   print("\t\t\t\tbefore writing (optional)\n");
   print("\t-f/--file file\t\tThe OBO file to parse\n");
   print("\t-?/--help\t\tDisplays this information\n");
@@ -294,7 +293,7 @@ EOT
       } elsif ( $type eq 'default-namespace' ) {
         $default_namespace = $data;
       }
-    } ## end if ( $line =~ /^(\w+): (.+)$/)
+    } ## end if ( $line =~ /^([\w-]+): (.+)$/)
 
     next;
   } ## end if ( !defined($state) )
@@ -302,8 +301,8 @@ EOT
   if ( $state eq 'Term' ) {
     if ( $line eq '' ) {
       $namespace ||= $default_namespace;
-      ($namespaces{$namespace}) = $accession =~ /^([^:]+):/;
-      $terms{$accession}      = {
+      ( $namespaces{$namespace} ) = $accession =~ /^([^:]+):/;
+      $terms{$accession} = {
         'namespace'  => $namespace,
         'name'       => $name,
         'definition' => $definition
@@ -349,7 +348,7 @@ EOT
     undef($state);
   }
 
-} ## end while ( defined( my $line...
+} ## end while ( defined( my $line...))
 
 $obo->close();
 
@@ -368,12 +367,11 @@ if ($truncate) {
 
 my $sth =
   $dbh->prepare( "DELETE FROM meta "
-      . "WHERE meta_key = 'OBO_file_date' "
-      . "AND meta_value LIKE ?" );
-  $sth->bind_param( 1, sprintf( "%s/%%", $obo_file_name ),
-    SQL_VARCHAR );
-  $sth->execute();
-  $sth->finish();
+    . "WHERE meta_key = 'OBO_file_date' "
+    . "AND meta_value LIKE ?" );
+$sth->bind_param( 1, sprintf( "%s/%%", $obo_file_name ), SQL_VARCHAR );
+$sth->execute();
+$sth->finish();
 
 $sth = $dbh->prepare( "INSERT INTO meta (meta_key, meta_value)"
     . "VALUES ('OBO_file_date', ?)" );
