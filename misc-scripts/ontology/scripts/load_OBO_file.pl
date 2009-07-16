@@ -1,6 +1,7 @@
 #!/usr/bin/perl -w
 
 # A simple OBO file reader/loader
+# for parsing/loadng OBO files from (at least) GO and SO
 
 use strict;
 use warnings;
@@ -129,7 +130,7 @@ sub write_term {
 
     my $term_subsets;
 
-    if ( @{ $term->{'subsets'} } ) {
+    if ( exists( $term->{'subsets'} ) && @{ $term->{'subsets'} } ) {
       $term_subsets = join( ',',
         map { $subsets->{$_}{'name'} } @{ $term->{'subsets'} } );
     }
@@ -290,8 +291,8 @@ my $obo_file_date;
 
 my $obo = IO::File->new( $obo_file_name, 'r' ) or die;
 
-my ( $state, $accession, $name, $namespace, $definition );
-my ( %parents, @subsets );
+my $state;
+my %term;
 
 my ( %terms, %namespaces, %relation_types, %subsets );
 
@@ -302,7 +303,7 @@ my $default_namespace;
 while ( defined( my $line = $obo->getline() ) ) {
   chomp($line);
 
-  if ( !defined($state) ) {
+  if ( !defined($state) ) {    # IN OBO FILE HEADER
     if ( $line =~ /^\[(\w+)\]$/ ) { $state = $1; next }
 
     if ( $line =~ /^([\w-]+): (.+)$/ ) {
@@ -349,57 +350,47 @@ EOT
     next;
   } ## end if ( !defined($state) )
 
-  if ( $state eq 'Term' ) {
-    if ( $line eq '' ) {
-      $namespace ||= $default_namespace;
-      ( $namespaces{$namespace} ) = $accession =~ /^([^:]+):/;
+  if ( $state eq 'Term' ) {    # IN OBO FILE BODY
+    if ( $line eq '' ) {       # END OF PREVIOUS TERM
+      $term{'namespace'} ||= $default_namespace;
+      ( $namespaces{ $term{'namespace'} } ) =
+        $term{'accession'} =~ /^([^:]+):/;
 
-      $terms{$accession} = {
-        'namespace'  => $namespace,
-        'name'       => $name,
-        'definition' => $definition,
-        'subsets'    => [@subsets] };
+      $terms{ $term{'accession'} } = {%term};
 
-      foreach my $relation_type ( keys(%parents) ) {
+      foreach my $relation_type ( keys( %{ $term{'parents'} } ) ) {
         if ( !exists( $relation_types{$relation_type} ) ) {
           $relation_types{$relation_type} = 1;
         }
-        $terms{$accession}{'parents'} = {%parents};
       }
 
       $state = 'clear';
-    } elsif ( $line =~ /^(\w+): (.+)$/ ) {
+    } elsif ( $line =~ /^(\w+): (.+)$/ ) {    # INSIDE TERM
       my $type = $1;
       my $data = $2;
 
-      if    ( $type eq 'id' )        { $accession = $data }
-      elsif ( $type eq 'name' )      { $name      = $data }
-      elsif ( $type eq 'namespace' ) { $namespace = $data }
+      if    ( $type eq 'id' )        { $term{'accession'} = $data }
+      elsif ( $type eq 'name' )      { $term{'name'}      = $data }
+      elsif ( $type eq 'namespace' ) { $term{'namespace'} = $data }
       elsif ( $type eq 'def' ) {
-        ($definition) = $data =~ /"([^"]+)"/;
+        ( $term{'definition'} ) = $data =~ /"([^"]+)"/;
       } elsif ( $type eq 'is_a' ) {
         my ($parent_acc) = $data =~ /(\S+)/;
-        push( @{ $parents{'is_a'} }, $parent_acc );
+        push( @{ $term{'parents'}{'is_a'} }, $parent_acc );
       } elsif ( $type eq 'relationship' ) {
         my ( $relation_type, $parent_acc ) = $data =~ /^(\w+) (\S+)/;
-        push( @{ $parents{$relation_type} }, $parent_acc );
+        push( @{ $term{'parents'}{$relation_type} }, $parent_acc );
       } elsif ( $type eq 'is_obsolete' ) {
         if ( $data eq 'true' ) { $state = 'clear' }
       } elsif ( $type eq 'subset' ) {
-        push( @subsets, $data );
+        push( @{ $term{'subsets'} }, $data );
       }
 
     }
   } ## end if ( $state eq 'Term' )
 
   if ( $state eq 'clear' ) {
-    undef($accession);
-    undef($name);
-    undef($namespace);
-    undef($definition);
-    %parents = ();
-    @subsets = ();
-
+    %term = ();
     undef($state);
   }
 
