@@ -22,10 +22,26 @@ CREATE TABLE ontology (
   UNIQUE INDEX name_namespace_idx (name, namespace)
 );
 
+DROP TABLE IF EXISTS subset;
+CREATE TABLE subset (
+  subset_id     INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  name          VARCHAR(64) NOT NULL,
+  definition    VARCHAR(128) NOT NULL,
+
+  PRIMARY KEY (subset_id),
+  UNIQUE INDEX name_idx (name)
+);
+
 DROP TABLE IF EXISTS term;
 CREATE TABLE term (
   term_id       INT UNSIGNED NOT NULL AUTO_INCREMENT,
   ontology_id   INT UNSIGNED NOT NULL,
+  subsets       SET(
+                  'SOFA', 'biosapiens', -- SO
+                  'gosubset_prok', 'goslim_candida',               -- GO
+                  'goslim_generic', 'goslim_goa', 'goslim_pir',    -- GO
+                  'goslim_plant', 'goslim_pombe', 'goslim_yeast'   -- GO
+                ),
   accession     CHAR(10) NOT NULL,
   name          VARCHAR(255) NOT NULL,
   definition    TEXT,
