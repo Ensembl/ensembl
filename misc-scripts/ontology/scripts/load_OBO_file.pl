@@ -71,8 +71,44 @@ sub write_ontology {
 
 #-----------------------------------------------------------------------
 
+sub write_subset {
+  my ( $dbh, $truncate, $subsets ) = @_;
+
+  print("Writing to 'subset' table...\n");
+
+  if ($truncate) { $dbh->do("TRUNCATE TABLE subset") }
+
+  $dbh->do("LOCK TABLE subset WRITE");
+
+  my $statement =
+    "INSERT INTO subset " . "(name, definition) " . "VALUES (?,?)";
+
+  my $sth = $dbh->prepare($statement);
+
+  my $count = 0;
+  foreach my $subset_name ( sort( keys( %{$subsets} ) ) ) {
+    my $subset = $subsets->{$subset_name};
+
+    $sth->bind_param( 1, $subset->{'name'},       SQL_VARCHAR );
+    $sth->bind_param( 2, $subset->{'definition'}, SQL_VARCHAR );
+
+    $sth->execute();
+
+    $subset->{'id'} =
+      $dbh->last_insert_id( undef, undef, 'subset', 'subset_id' );
+    ++$count;
+  }
+
+  $dbh->do("OPTIMIZE TABLE term");
+  $dbh->do("UNLOCK TABLES");
+
+  printf( "\tWrote %d entries\n", $count );
+} ## end sub write_subset
+
+#-----------------------------------------------------------------------
+
 sub write_term {
-  my ( $dbh, $truncate, $terms, $namespaces ) = @_;
+  my ( $dbh, $truncate, $terms, $subsets, $namespaces ) = @_;
 
   print("Writing to 'term' table...\n");
 
@@ -82,8 +118,8 @@ sub write_term {
 
   my $statement =
       "INSERT INTO term "
-    . "(ontology_id, accession, name, definition) "
-    . "VALUES (?,?,?,?)";
+    . "(ontology_id, subsets, accession, name, definition) "
+    . "VALUES (?,?,?,?,?)";
 
   my $sth = $dbh->prepare($statement);
 
@@ -91,11 +127,19 @@ sub write_term {
   foreach my $accession ( sort( keys( %{$terms} ) ) ) {
     my $term = $terms->{$accession};
 
+    my $term_subsets;
+
+    if ( @{ $term->{'subsets'} } ) {
+      $term_subsets = join( ',',
+        map { $subsets->{$_}{'name'} } @{ $term->{'subsets'} } );
+    }
+
     $sth->bind_param( 1, $namespaces->{ $term->{'namespace'} }{'id'},
       SQL_INTEGER );
-    $sth->bind_param( 2, $accession,            SQL_VARCHAR );
-    $sth->bind_param( 3, $term->{'name'},       SQL_VARCHAR );
-    $sth->bind_param( 4, $term->{'definition'}, SQL_VARCHAR );
+    $sth->bind_param( 2, $term_subsets,         SQL_VARCHAR );
+    $sth->bind_param( 3, $accession,            SQL_VARCHAR );
+    $sth->bind_param( 4, $term->{'name'},       SQL_VARCHAR );
+    $sth->bind_param( 5, $term->{'definition'}, SQL_VARCHAR );
 
     $sth->execute();
 
@@ -246,8 +290,10 @@ my $obo_file_date;
 
 my $obo = IO::File->new( $obo_file_name, 'r' ) or die;
 
-my ( $state, $accession, $name, $namespace, $definition, %parents );
-my ( %terms, %namespaces, %relation_types );
+my ( $state, $accession, $name, $namespace, $definition );
+my ( %parents, @subsets );
+
+my ( %terms, %namespaces, %relation_types, %subsets );
 
 printf( "Reading OBO file '%s'...\n", $obo_file_name );
 
@@ -292,6 +338,11 @@ EOT
 
       } elsif ( $type eq 'default-namespace' ) {
         $default_namespace = $data;
+      } elsif ( $type eq 'subsetdef' ) {
+        my ( $subset_name, $subset_def ) =
+          ( $data =~ /^(\w+)\s+"([^"]+)"/ );
+        $subsets{$subset_name}{'name'}       = $subset_name;
+        $subsets{$subset_name}{'definition'} = $subset_def;
       }
     } ## end if ( $line =~ /^([\w-]+): (.+)$/)
 
@@ -302,11 +353,12 @@ EOT
     if ( $line eq '' ) {
       $namespace ||= $default_namespace;
       ( $namespaces{$namespace} ) = $accession =~ /^([^:]+):/;
+
       $terms{$accession} = {
         'namespace'  => $namespace,
         'name'       => $name,
-        'definition' => $definition
-      };
+        'definition' => $definition,
+        'subsets'    => [@subsets] };
 
       foreach my $relation_type ( keys(%parents) ) {
         if ( !exists( $relation_types{$relation_type} ) ) {
@@ -333,6 +385,8 @@ EOT
         push( @{ $parents{$relation_type} }, $parent_acc );
       } elsif ( $type eq 'is_obsolete' ) {
         if ( $data eq 'true' ) { $state = 'clear' }
+      } elsif ( $type eq 'subset' ) {
+        push( @subsets, $data );
       }
 
     }
@@ -344,6 +398,7 @@ EOT
     undef($namespace);
     undef($definition);
     %parents = ();
+    @subsets = ();
 
     undef($state);
   }
@@ -355,7 +410,8 @@ $obo->close();
 print("Finished reading OBO file, now writing to database...\n");
 
 write_ontology( $dbh, $truncate, \%namespaces );
-write_term( $dbh, $truncate, \%terms, \%namespaces );
+write_subset( $dbh, $truncate, \%subsets );
+write_term( $dbh, $truncate, \%terms, \%subsets, \%namespaces );
 write_relation_type( $dbh, $truncate, \%relation_types );
 write_relation( $dbh, $truncate, \%terms, \%relation_types );
 
