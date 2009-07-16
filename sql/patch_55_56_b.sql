@@ -56,7 +56,7 @@ ALTER TABLE prediction_exon
   DROP INDEX prediction_transcript_id,
   DROP INDEX seq_region_id,
   ADD INDEX transcript_idx (prediction_transcript_id),
-  ADD INDEX seq_region_idx ((seq_region_id, seq_region_start);
+  ADD INDEX seq_region_idx (seq_region_id, seq_region_start);
 
 -- 'prediction_transcript'...
 ALTER TABLE prediction_transcript
