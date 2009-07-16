@@ -101,6 +101,24 @@ ALTER TABLE seq_region_mapping
   DROP INDEX mapping_set_id,
   ADD INDEX mapping_set_idx (mapping_set_id);
 
+-- Optimize affected tables.
+OPTIMIZE TABLE analysis;
+OPTIMIZE TABLE translation;
+OPTIMIZE TABLE assembly;
+OPTIMIZE TABLE protein_feature;
+OPTIMIZE TABLE interpro;
+OPTIMIZE TABLE object_xref;
+OPTIMIZE TABLE go_xref;
+OPTIMIZE TABLE prediction_exon;
+OPTIMIZE TABLE prediction_transcript;
+OPTIMIZE TABLE attrib_type;
+OPTIMIZE TABLE misc_set;
+OPTIMIZE TABLE qtl_feature;
+OPTIMIZE TABLE density_type;
+OPTIMIZE TABLE ditag_feature;
+OPTIMIZE TABLE unconventional_transcript_association;
+OPTIMIZE TABLE seq_region_mapping;
+
 # patch identifier
 INSERT INTO meta (species_id, meta_key, meta_value)
 VALUES (NULL, 'patch', 'patch_55_56_b.sql|add_index_names');
