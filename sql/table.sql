@@ -1578,7 +1578,7 @@ CREATE TABLE splicing_event (
   seq_region_end          INT(10) UNSIGNED NOT NULL,
   seq_region_strand       TINYINT(2) NOT NULL,
   type                    ENUM('CNE', 'CE', 'AFE', 'A5SS', 'A3SS',
-                          'MXE', 'IR', II', 'EI', 'AT', 'ALE', 'AI'),
+                          'MXE', 'IR', 'II', 'EI', 'AT', 'ALE', 'AI'),
 
   PRIMARY KEY (splicing_event_id),
   KEY gene_idx (gene_id),
