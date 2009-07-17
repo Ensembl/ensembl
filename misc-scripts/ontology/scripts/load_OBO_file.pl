@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 
 # A simple OBO file reader/loader
-# for parsing/loadng OBO files from (at least) GO and SO
+# for parsing/loading OBO files from (at least) GO and SO
 
 use strict;
 use warnings;
@@ -86,6 +86,7 @@ sub write_subset {
 
   my $sth = $dbh->prepare($statement);
 
+  my $id;
   my $count = 0;
   foreach my $subset_name ( sort( keys( %{$subsets} ) ) ) {
     my $subset = $subsets->{$subset_name};
@@ -95,8 +96,13 @@ sub write_subset {
 
     $sth->execute();
 
-    $subset->{'id'} =
-      $dbh->last_insert_id( undef, undef, 'subset', 'subset_id' );
+    if ( !defined($id) ) {
+      $id = $dbh->last_insert_id( undef, undef, 'subset', 'subset_id' );
+    } else {
+      ++$id;
+    }
+    $subset->{'id'} = $id;
+
     ++$count;
   }
 
@@ -124,6 +130,7 @@ sub write_term {
 
   my $sth = $dbh->prepare($statement);
 
+  my $id;
   my $count = 0;
   foreach my $accession ( sort( keys( %{$terms} ) ) ) {
     my $term = $terms->{$accession};
@@ -144,8 +151,13 @@ sub write_term {
 
     $sth->execute();
 
-    $term->{'id'} =
-      $dbh->last_insert_id( undef, undef, 'term', 'term_id' );
+    if ( !defined($id) ) {
+      $id = $dbh->last_insert_id( undef, undef, 'term', 'term_id' );
+    } else {
+      ++$id;
+    }
+    $term->{'id'} = $id;
+
     ++$count;
   }
 
@@ -408,9 +420,7 @@ write_relation( $dbh, $truncate, \%terms, \%relation_types );
 
 print("Updating meta table...\n");
 
-if ($truncate) {
-  $dbh->do("TRUNCATE TABLE meta");
-}
+if ($truncate) { $dbh->do("TRUNCATE TABLE meta") }
 
 my $sth =
   $dbh->prepare( "DELETE FROM meta "
