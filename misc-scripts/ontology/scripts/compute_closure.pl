@@ -114,6 +114,12 @@ my ($oldsize) =
 my $newsize;
 my $distance = 0;
 
+local $SIG{ALRM} = sub {
+  printf( "Distance = %d, Size = %d\n", $distance, $newsize );
+  alarm(10);
+};
+alarm(10);
+
 while ( !defined($newsize) || $newsize > $oldsize ) {
   $oldsize = $newsize || $oldsize;
   $newsize = $oldsize;
@@ -121,8 +127,6 @@ while ( !defined($newsize) || $newsize > $oldsize ) {
   $dbh->do('LOCK TABLES closure AS child READ, closure AS parent READ');
 
   $select_sth->execute( ++$distance );
-
-  printf( "Distance = %d\n", $distance );
 
   $dbh->do('LOCK TABLE closure WRITE');
   while ( my @data = $select_sth->fetchrow_array() ) {
