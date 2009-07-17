@@ -165,7 +165,7 @@ sub write_term {
 
     my $term_subsets;
 
-    if ( exists( $term->{'subsets'} ) && @{ $term->{'subsets'} } ) {
+    if ( exists( $term->{'subsets'} ) ) {
       $term_subsets = join( ',',
         map { $subsets->{$_}{'name'} } @{ $term->{'subsets'} } );
     }
@@ -271,7 +271,8 @@ sub write_relation {
   my $count = 0;
 
   local $SIG{ALRM} = sub {
-    printf( "%d entries...\n", $count );
+    printf( "%d entries, %d to go...\n",
+      $count, scalar( keys( %{$term} ) ) - $count );
     alarm(10);
   };
   alarm(10);
@@ -292,9 +293,10 @@ sub write_relation {
 
         $sth->execute();
 
-        ++$count;
       }
     }
+
+    ++$count;
   }
 
   $dbh->do("OPTIMIZE TABLE relation");
