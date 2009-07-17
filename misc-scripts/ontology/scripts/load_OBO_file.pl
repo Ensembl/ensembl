@@ -47,7 +47,16 @@ sub write_ontology {
 
   my $sth = $dbh->prepare($statement);
 
+  my $id;
   my $count = 0;
+
+  local $SIG{ALRM} = sub {
+    printf( "%d entries, %d to go...\n",
+      $count, scalar( keys( %{$namespaces} ) ) - $count );
+    alarm(10);
+  };
+  alarm(10);
+
   foreach my $namespace ( sort( keys( %{$namespaces} ) ) ) {
     my $ontology = $namespaces->{$namespace};
 
@@ -56,11 +65,14 @@ sub write_ontology {
 
     $sth->execute();
 
-    $namespaces->{$namespace} = {
-      'id' =>
-        $dbh->last_insert_id( undef, undef, 'ontology', 'ontology_id' ),
-      'name' => $ontology
-    };
+    if ( !defined($id) ) {
+      $id =
+        $dbh->last_insert_id( undef, undef, 'ontology', 'ontology_id' );
+    } else {
+      ++$id;
+    }
+
+    $namespaces->{$namespace} = { 'id' => $id, 'name' => $ontology };
 
     ++$count;
   }
@@ -88,6 +100,14 @@ sub write_subset {
 
   my $id;
   my $count = 0;
+
+  local $SIG{ALRM} = sub {
+    printf( "%d entries, %d to go...\n",
+      $count, scalar( keys( %{$subsets} ) ) - $count );
+    alarm(10);
+  };
+  alarm(10);
+
   foreach my $subset_name ( sort( keys( %{$subsets} ) ) ) {
     my $subset = $subsets->{$subset_name};
 
@@ -132,6 +152,14 @@ sub write_term {
 
   my $id;
   my $count = 0;
+
+  local $SIG{ALRM} = sub {
+    printf( "%d entries, %d to go...\n",
+      $count, scalar( keys( %{$terms} ) ) - $count );
+    alarm(10);
+  };
+  alarm(10);
+
   foreach my $accession ( sort( keys( %{$terms} ) ) ) {
     my $term = $terms->{$accession};
 
@@ -184,6 +212,14 @@ sub write_relation_type {
   my $insert_sth  = $dbh->prepare($insert_stmt);
 
   my $count = 0;
+
+  local $SIG{ALRM} = sub {
+    printf( "%d entries, %d to go...\n",
+      $count, scalar( keys( %{$relation_types} ) ) - $count );
+    alarm(10);
+  };
+  alarm(10);
+
   foreach my $relation_type ( sort( keys( %{$relation_types} ) ) ) {
     $select_sth->bind_param( 1, $relation_type, SQL_VARCHAR );
     $select_sth->execute();
@@ -233,6 +269,13 @@ sub write_relation {
   my $sth = $dbh->prepare($statement);
 
   my $count = 0;
+
+  local $SIG{ALRM} = sub {
+    printf( "%d entries...\n", $count );
+    alarm(10);
+  };
+  alarm(10);
+
   foreach my $child_term ( sort { $a->{'id'} <=> $b->{'id'} }
     values( %{$terms} ) )
   {
