@@ -51,7 +51,7 @@ sub write_ontology {
   my $count = 0;
 
   local $SIG{ALRM} = sub {
-    printf( "%d entries, %d to go...\n",
+    printf( "\t%d entries, %d to go...\n",
       $count, scalar( keys( %{$namespaces} ) ) - $count );
     alarm(10);
   };
@@ -102,7 +102,7 @@ sub write_subset {
   my $count = 0;
 
   local $SIG{ALRM} = sub {
-    printf( "%d entries, %d to go...\n",
+    printf( "\t%d entries, %d to go...\n",
       $count, scalar( keys( %{$subsets} ) ) - $count );
     alarm(10);
   };
@@ -154,7 +154,7 @@ sub write_term {
   my $count = 0;
 
   local $SIG{ALRM} = sub {
-    printf( "%d entries, %d to go...\n",
+    printf( "\t%d entries, %d to go...\n",
       $count, scalar( keys( %{$terms} ) ) - $count );
     alarm(10);
   };
@@ -214,7 +214,7 @@ sub write_relation_type {
   my $count = 0;
 
   local $SIG{ALRM} = sub {
-    printf( "%d entries, %d to go...\n",
+    printf( "\t%d entries, %d to go...\n",
       $count, scalar( keys( %{$relation_types} ) ) - $count );
     alarm(10);
   };
@@ -271,7 +271,7 @@ sub write_relation {
   my $count = 0;
 
   local $SIG{ALRM} = sub {
-    printf( "%d entries, %d to go...\n",
+    printf( "\t%d entries, %d to go...\n",
       $count, scalar( keys( %{$term} ) ) - $count );
     alarm(10);
   };
