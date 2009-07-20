@@ -185,7 +185,7 @@ sub name {
 
 =cut
 
-sub defintion {
+sub definition {
   my ($this) = @_;
   return $this->{'definition'};
 }
