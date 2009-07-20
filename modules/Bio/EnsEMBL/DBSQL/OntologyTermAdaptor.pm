@@ -158,6 +158,7 @@ WHERE   ontology.name = ?
     \( $dbid, $name, $definition, $subsets, $namespace ) );
 
   $sth->fetch();
+  $subsets ||= '';
   my $term = Bio::EnsEMBL::OntologyTerm->new(
     '-dbid'       => $dbid,
     '-adaptor'    => $this,
@@ -223,6 +224,8 @@ WHERE   relation.child_term_id = child_term.term_id
       \( $dbid, $accession, $name, $definition, $subsets, $relation ) );
 
     while ( $sth->fetch() ) {
+      $subsets ||= '';
+
       my $child_term = Bio::EnsEMBL::OntologyTerm->new(
         '-dbid'       => $dbid,
         '-adaptor'    => $this,
@@ -297,7 +300,10 @@ ORDER BY closure.distance, child_term.accession);
     \( $dbid, $accession, $name, $definition, $subsets ) );
 
   my @terms;
+
   while ( $sth->fetch() ) {
+    $subsets ||= '';
+
     push(
       @terms,
       Bio::EnsEMBL::OntologyTerm->new(
@@ -364,6 +370,8 @@ WHERE   relation.child_term_id = ?
       \( $dbid, $accession, $name, $definition, $subsets, $relation ) );
 
     while ( $sth->fetch() ) {
+      $subsets ||= '';
+
       my $parent_term = Bio::EnsEMBL::OntologyTerm->new(
         '-dbid'       => $dbid,
         '-adaptor'    => $this,
@@ -438,7 +446,10 @@ ORDER BY closure.distance, parent_term.accession);
     \( $dbid, $accession, $name, $definition, $subsets ) );
 
   my @terms;
+
   while ( $sth->fetch() ) {
+    $subsets ||= '';
+
     push(
       @terms,
       Bio::EnsEMBL::OntologyTerm->new(
@@ -580,6 +591,7 @@ WHERE   ontology.ontology_id = term.ontology_id
     \( $accession, $name, $definition, $subsets, $namespace ) );
 
   $sth->fetch();
+  $subsets ||= '';
   my $term = Bio::EnsEMBL::OntologyTerm->new(
     '-dbid'       => $dbid,
     '-adaptor'    => $this,
@@ -626,7 +638,10 @@ WHERE   ontology.ontology_id = term.ontology_id
     \( $dbid, $accession, $name, $definition, $subsets, $namespace ) );
 
   my @terms;
+
   while ( $sth->fetch() ) {
+    $subsets ||= '';
+
     push(
       @terms,
       Bio::EnsEMBL::OntologyTerm->new(
