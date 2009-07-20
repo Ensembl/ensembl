@@ -53,6 +53,10 @@ use base qw( Bio::EnsEMBL::Storable );
   Arg [-NAME]       : String
                       The name of the ontology term.
 
+  Arg [-SUBSETS]     : (optional) Listref of strings
+                      The subsets within the ontology to which this
+                      term belongs.
+
   Arg [-DEFINITION] : (optional) String
                       The definition of the ontology term.
 
@@ -85,13 +89,15 @@ sub new {
 
   my $this = $proto->SUPER::new(@_);
 
-  my ( $accession, $namespace, $name, $definition ) =
-    rearrange( [ 'ACCESSION', 'NAMESPACE', 'NAME', 'DEFINITION' ], @_ );
+  my ( $accession, $namespace, $name, $definition, $subsets ) =
+    rearrange(
+    [ 'ACCESSION', 'NAMESPACE', 'NAME', 'DEFINITION', 'SUBSETS' ], @_ );
 
   $this->{'accession'}  = $accession;
   $this->{'namespace'}  = $namespace;
   $this->{'name'}       = $name;
   $this->{'definition'} = $definition;
+  $this->{'subsets'}    = [ @{$subsets} ];
 
   $this->{'child_terms_fetched'}  = 0;
   $this->{'parent_terms_fetched'} = 0;
@@ -182,6 +188,24 @@ sub name {
 sub defintion {
   my ($this) = @_;
   return $this->{'definition'};
+}
+
+=head2 subsets
+
+  Arg           : None
+
+  Description   : Returns a list of subsets that this term is part
+                  of.  The list might be empty.
+
+  Example       : my @subsets = @{ $term->subsets() };
+
+  Return type   : listref of strings
+
+=cut
+
+sub subsets {
+  my ($this) = @_;
+  return $this->{'subsets'};
 }
 
 =head2 children
