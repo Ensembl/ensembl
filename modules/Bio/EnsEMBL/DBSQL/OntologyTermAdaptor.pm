@@ -401,10 +401,24 @@ WHERE   relation.child_term_id = ?
   Arg [1]       : Bio::EnsEMBL::OntologyTerm
                   The term whose ancestor terms should be fetched.
 
-  Description   : Given a child ontology term, returns a list of all
-                  its ancestor terms, up to and including any root
-                  term.  Relations of the type 'is_a' and 'part_of'
-                  are followed.
+  Arg [2]       : (optional) String
+                  The subset within the ontolgy to which the query
+                  should be restricted.  The subset may be specified
+                  as a SQL pattern, e.g., "goslim%".
+
+  Arg [3]       : (optional) Boolean
+                  If true (non-zero), only return the closest
+                  terms.  If this argument is true, and the previous
+                  argument is left undefined, this method will
+                  return the parents of the given term.
+
+  Description   : Given a child ontology term, returns a list of
+                  all its ancestor terms, up to and including any
+                  root term.  Relations of the type 'is_a' and
+                  'part_of' are followed.  Optionally, only terms in
+                  a given subset of the ontology may be returned,
+                  and additionally one may ask to only get the
+                  closest term(s) to the given child term.
 
   Example       :
 
@@ -416,11 +430,13 @@ WHERE   relation.child_term_id = ?
 =cut
 
 sub fetch_all_by_descendant_term {
-  my ( $this, $term ) = @_;
+  my ( $this, $term, $subset, $closest_only ) = @_;
 
   if ( !ref($term) || !$term->isa('Bio::EnsEMBL::OntologyTerm') ) {
     throw('Argument needs to be a Bio::EnsEMBL::OntologyTerm object');
   }
+
+  $closest_only ||= 0;
 
   my $statement = q(
 SELECT DISTINCT
@@ -428,39 +444,55 @@ SELECT DISTINCT
         parent_term.accession,
         parent_term.name,
         parent_term.definition,
-        parent_term.subsets
+        parent_term.subsets,
+        closure.distance
 FROM    term parent_term,
         closure
 WHERE   closure.child_term_id = ?
   AND   closure.parent_term_id = parent_term.term_id
-  AND   closure.distance > 0
+  AND   closure.distance > 0);
+
+  if ( defined($subset) ) {
+    $statement .= q(
+  AND   term.subset LIKE ?);
+  }
+
+  $statement .= q(
 ORDER BY closure.distance, parent_term.accession);
 
   my $sth = $this->prepare($statement);
   $sth->bind_param( 1, $term->dbID(), SQL_INTEGER );
 
+  if ( defined($subset) ) {
+    $sth->bind_param( 2, $subset, SQL_VARCHAR );
+  }
+
   $sth->execute();
 
-  my ( $dbid, $accession, $name, $definition, $subsets );
+  my ( $dbid, $accession, $name, $definition, $subsets, $distance );
   $sth->bind_columns(
-    \( $dbid, $accession, $name, $definition, $subsets ) );
+    \( $dbid, $accession, $name, $definition, $subsets, $distance ) );
 
   my @terms;
+  my $min_distance;
 
   while ( $sth->fetch() ) {
     $subsets ||= '';
+    $min_distance ||= $distance;
 
-    push(
-      @terms,
-      Bio::EnsEMBL::OntologyTerm->new(
-        '-dbid'       => $dbid,
-        '-adaptor'    => $this,
-        '-accession'  => $accession,
-        '-namespace'  => $term->{'namespace'},
-        '-subsets'    => [ split( /,/, $subsets ) ],
-        '-name'       => $name,
-        '-definition' => $definition,
-      ) );
+    if ( !$closest_only || $distance == $min_distance ) {
+      push(
+        @terms,
+        Bio::EnsEMBL::OntologyTerm->new(
+          '-dbid'       => $dbid,
+          '-adaptor'    => $this,
+          '-accession'  => $accession,
+          '-namespace'  => $term->{'namespace'},
+          '-subsets'    => [ split( /,/, $subsets ) ],
+          '-name'       => $name,
+          '-definition' => $definition,
+        ) );
+    }
   }
 
   return \@terms;
