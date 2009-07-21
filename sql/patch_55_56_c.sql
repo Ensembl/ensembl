@@ -125,6 +125,46 @@ DELETE from external_db  where external_db_id=3205 and db_name='ARRAY_JHU_AEG1_0
 DELETE from external_db  where external_db_id=3211 and db_name='ARRAY_LIV_AEGDETOX_0_25k_v2';
 
 
+-- Also need to remove xref only array data for db_name like AGILENT, Illumina, CODELINK
+
+--+----------------+-------------+
+--| external_db_id | db_name     |
+--+----------------+-------------+
+--|           3250 | Illumina    | 
+--|           3255 | Illumina_V1 | 
+--|           3256 | Illumina_V2 | 
+--|           4300 | AgilentProbe | 
+--|           4305 | AgilentCGH   | 
+--|           6000 | Codelink | 
+
+
+DELETE ox from external_db edb, xref x, object_xref ox where edb.external_db_id=3250 and edb.db_name='Illumina' and edb.external_db_id=x.external_db_id and x.xref_id=ox.xref_id;
+DELETE ox from external_db edb, xref x, object_xref ox where edb.external_db_id=3255 and edb.db_name='Illumina_V1' and edb.external_db_id=x.external_db_id and x.xref_id=ox.xref_id;
+DELETE ox from external_db edb, xref x, object_xref ox where edb.external_db_id=3256 and edb.db_name='Illumina_V2' and edb.external_db_id=x.external_db_id and x.xref_id=ox.xref_id;
+DELETE ox from external_db edb, xref x, object_xref ox where edb.external_db_id=4300 and edb.db_name='AgilentProbe' and edb.external_db_id=x.external_db_id and x.xref_id=ox.xref_id;
+DELETE ox from external_db edb, xref x, object_xref ox where edb.external_db_id=4306 and edb.db_name='AgilentCGH' and edb.external_db_id=x.external_db_id and x.xref_id=ox.xref_id;
+DELETE ox from external_db edb, xref x, object_xref ox where edb.external_db_id=6000 and edb.db_name='Codelink' and edb.external_db_id=x.external_db_id and x.xref_id=ox.xref_id;
+
+
+DELETE x from external_db edb, xref x where edb.external_db_id=3250 and edb.db_name='Illumina' and edb.external_db_id=x.external_db_id ;
+DELETE x from external_db edb, xref x where edb.external_db_id=3255 and edb.db_name='Illumina_V1' and edb.external_db_id=x.external_db_id ;
+DELETE x from external_db edb, xref x where edb.external_db_id=3256 and edb.db_name='Illumina_V2' and edb.external_db_id=x.external_db_id ;
+DELETE x from external_db edb, xref x where edb.external_db_id=4300 and edb.db_name='AgilentProbe' and edb.external_db_id=x.external_db_id ;
+DELETE x from external_db edb, xref x where edb.external_db_id=4305 and edb.db_name='AgilentCGH' and edb.external_db_id=x.external_db_id ;
+DELETE x from external_db edb, xref x where edb.external_db_id=6000 and edb.db_name='Codelink' and edb.external_db_id=x.external_db_id ;
+
+
+
+
+DELETE from external_db  where external_db_id=3250 and db_name='Illumina';
+DELETE from external_db  where external_db_id=3255 and db_name='Illumina_V1';
+DELETE from external_db  where external_db_id=3256 and db_name='Illumina_V2';
+DELETE from external_db  where external_db_id=4300 and db_name='AgilentProbe';
+DELETE from external_db  where external_db_id=4305 and db_name='AgilentCGH';
+DELETE from external_db  where external_db_id=6000 and db_name='Codelink';
+
+
+
 --Delete unmapped_reasons
 
 DELETE ur from unmapped_reason ur, unmapped_object uo where uo.type='probe2transcript' and uo.unmapped_reason_id=ur.unmapped_reason_id;
