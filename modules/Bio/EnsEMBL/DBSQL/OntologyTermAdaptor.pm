@@ -698,4 +698,41 @@ WHERE   ontology.ontology_id = term.ontology_id
   return \@terms;
 } ## end sub fetch_by_dbID_list
 
+sub fetch_all {
+  my ($this) = @_;
+
+  my $statement = q(
+SELECT  term.accession,
+        term.name,
+        term.definition,
+        term.subsets,
+        ontology.namespace
+FROM    ontology,
+        term
+WHERE   ontology.ontology_id = term.ontology_id);
+
+  my $sth = $this->prepare($statement);
+
+  $sth->execute();
+
+  my ( $accession, $name, $definition, $subsets, $namespace );
+  $sth->bind_columns(
+    \( $accession, $name, $definition, $subsets, $namespace ) );
+
+  $sth->fetch();
+  $subsets ||= '';
+  my $term = Bio::EnsEMBL::OntologyTerm->new(
+    '-dbid'       => $dbid,
+    '-adaptor'    => $this,
+    '-accession'  => $accession,
+    '-namespace'  => $namespace,
+    '-subsets'    => [ split( /,/, $subsets ) ],
+    '-name'       => $name,
+    '-definition' => $definition
+  );
+  $sth->finish();
+
+  return $term;
+} ## end sub fetch_all
+
 1;
