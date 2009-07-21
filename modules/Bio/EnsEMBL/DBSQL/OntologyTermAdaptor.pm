@@ -454,7 +454,7 @@ WHERE   closure.child_term_id = ?
 
   if ( defined($subset) ) {
     $statement .= q(
-  AND   term.subsets LIKE ?);
+  AND   parent_term.subsets LIKE ?);
   }
 
   $statement .= q(
