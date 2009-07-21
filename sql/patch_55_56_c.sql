@@ -1,4 +1,4 @@
-# patch_55_56_oligo.sql
+# patch_55_56_c.sql
 #
 # title: oligo tables and xrefs
 #
@@ -183,5 +183,5 @@ DROP table oligo_feature;
 -- Also need to remove xref only array data for db_name like AGILENT, Illumina, CODELINK
 
 
-INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_55_56_oligo.sql|drop_oligo_tables_and_xrefs');
+INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_55_56_c.sql|drop_oligo_tables_and_xrefs');
 
