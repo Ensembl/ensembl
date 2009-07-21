@@ -86,86 +86,6 @@
 2930	Genoscope_pred_translation	1	XREF	1	0	40	Genoscope pred translation	MISC	\N	\N
 2940	Genoscope_ann_transcript	1	KNOWN	1	0	40	Genoscope annotated transcript	MISC	\N	\N
 2950	Genoscope_ann_translation	1	KNOWN	1	0	40	Genoscope annotated translation	MISC	\N	\N
-3001	AFFY_MG_U74_all	1	XREF	1	0	1	Affymx Microarray U74	ARRAY	\N	\N
-3002	AFFY_MG_U74A	1	XREF	1	0	1	Affymx Microarray U74	ARRAY	\N	\N
-3003	AFFY_MG_U74Av2	1	XREF	1	0	1	Affymx Microarray U74	ARRAY	\N	\N
-3004	AFFY_MG_U74B	1	XREF	1	0	1	Affymx Microarray U74	ARRAY	\N	\N
-3005	AFFY_MG_U74Bv2	1	XREF	1	0	1	Affymx Microarray U74	ARRAY	\N	\N
-3006	AFFY_MG_U74C	1	XREF	1	0	1	Affymx Microarray U74	ARRAY	\N	\N
-3007	AFFY_MG_U74Cv2	1	XREF	1	0	1	Affymx Microarray U74	ARRAY	\N	\N
-3008	AFFY_MOE430_all	1	XREF	1	0	1	Affymx Microarray OE430	ARRAY	\N	\N
-3009	AFFY_MOE430A	1	XREF	1	0	1	Affymx Microarray MOE430	ARRAY	\N	\N
-3010	AFFY_MOE430B	1	XREF	1	0	1	Affymx Microarray MOE430	ARRAY	\N	\N
-3011	AFFY_Mu11Ksub_all	1	XREF	1	0	1	Affymx Microarray Mu11	ARRAY	\N	\N
-3012	AFFY_Mu11KsubA	1	XREF	1	0	1	Affymx Microarray Mu11	ARRAY	\N	\N
-3013	AFFY_Mu11KsubB	1	XREF	1	0	1	Affymx Microarray Mu11	ARRAY	\N	\N
-3014	AFFY_Mouse430_2	1	XREF	1	0	1	Affymx Microarray Mouse430	ARRAY	\N	\N
-3015	AFFY_Mouse430A_2	1	XREF	1	0	1	Affymx Microarray Mouse430	ARRAY	\N	\N
-3051	AFFY_RAE230_all	1	XREF	1	0	1	Affymx Microarray RAE230	ARRAY	\N	\N
-3052	AFFY_RAE230A	1	XREF	1	0	1	Affymx Microarray RAE230	ARRAY	\N	\N
-3053	AFFY_RAE230B	1	XREF	1	0	1	Affymx Microarray RAE230	ARRAY	\N	\N
-3054	AFFY_RG_U34_all	1	XREF	1	0	1	Affymx Microarray U34	ARRAY	\N	\N
-3055	AFFY_RG_U34A	1	XREF	1	0	1	Affymx Microarray U34	ARRAY	\N	\N
-3056	AFFY_RG_U34B	1	XREF	1	0	1	Affymx Microarray U34	ARRAY	\N	\N
-3057	AFFY_RG_U34C	1	XREF	1	0	1	Affymx Microarray U34	ARRAY	\N	\N
-3058	AFFY_RN_U34	1	XREF	1	0	1	Affymx Microarray U34	ARRAY	\N	\N
-3059	AFFY_RT_U34	1	XREF	1	0	1	Affymx Microarray U34	ARRAY	\N	\N
-3101	AFFY_HG_U133_all	1	XREF	1	0	1	Affymx Microarray U133	ARRAY	\N	\N
-3102	AFFY_HG_U133A	1	XREF	1	0	1	Affymx Microarray U133	ARRAY	\N	\N
-3103	AFFY_HG_U133B	1	XREF	1	0	1	Affymx Microarray U133	ARRAY	\N	\N
-3104	AFFY_HG_U95_all	1	XREF	1	0	1	Affymx Microarray U95	ARRAY	\N	\N
-3105	AFFY_HG_U95A	1	XREF	1	0	1	Affymx Microarray U95	ARRAY	\N	\N
-3106	AFFY_HG_U95Av2	1	XREF	1	0	1	Affymx Microarray U95	ARRAY	\N	\N
-3107	AFFY_HG_U95B	1	XREF	1	0	1	Affymx Microarray U95	ARRAY	\N	\N
-3108	AFFY_HG_U95C	1	XREF	1	0	1	Affymx Microarray U95	ARRAY	\N	\N
-3109	AFFY_HG_U95D	1	XREF	1	0	1	Affymx Microarray U95	ARRAY	\N	\N
-3110	AFFY_HG_U95E	1	XREF	1	0	1	Affymx Microarray U95	ARRAY	\N	\N
-3111	AFFY_HG_U133_Plus_2	1	XREF	1	0	1	Affymx Microarray U133	ARRAY	\N	\N
-3112	AFFY_HG_U133A_2	1	XREF	1	0	1	Affymx Microarray U133	ARRAY	\N	\N
-3113	AFFY_HG_Focus	1	XREF	1	0	1	Affymx Microarray Focus	ARRAY	\N	\N
-3114	AFFY_Rat230_2	1	XREF	1	0	1	Affymx Microarray Rat230	ARRAY	\N	\N
-3115	AFFY_Zebrafish	1	XREF	1	0	1	Affymx Microarray Zebrafish	ARRAY	\N	\N
-3116	AFFY_U133_X3P	1	XREF	1	0	1	Affymx Microarray U133	ARRAY	\N	\N
-3117	AFFY_Canine	1	XREF	1	0	1	Affymx Microarray Canine	ARRAY	\N	\N
-3118	AFFY_Chicken	1	XREF	1	0	1	Affymx Microarray Chicken	ARRAY	\N	\N
-3119	AFFY_HuGeneFL	1	XREF	1	0	1	Affymx Microarray HuGeneFL	ARRAY	\N	\N
-3120	AFFY_DrosGenome1	1	XREF	1	0	1	Affymx Microarray Drosophila	ARRAY	\N	\N
-3121	AFFY_Drosophila_2	1	XREF	1	0	1	Affymx Microarray Drosophila2.0	ARRAY	\N	\N
-3122	AFFY_HC_G110	1	XREF	1	0	1	Affymx Microarray HCG110	ARRAY	\N	\N
-3123	AFFY_C_elegans	1	XREF	1	0	1	Affymx Microarray C Elegans	ARRAY	\N	\N
-3124	AFFY_Plasmodium_Anopheles	1	XREF	1	0	1	Affymx Microarray Anopheles	ARRAY	\N	\N
-3125	AFFY_Bovine	1	XREF	1	0	1	Affymx Microarray Bovine	ARRAY	\N	\N
-3127	AFFY_YG_S98	1	XREF	1	0	1	Affymx Microarray YG-S98	ARRAY	\N	\N
-3128	AFFY_Yeast_2	1	XREF	1	0	1	Affymx Microarray Yeast_2	ARRAY	\N	\N
-3129	AFFY_Rhesus	1	XREF	1	0	1	Affymx Microarray R Macaque	ARRAY	\N	\N
-3130	AFFY_CINT06a520380F	1	XREF	1	0	1	Affymx Microarray C Intestinalis CINT06a520380F	ARRAY	\N	\N
-3131	AFFY_RaEx_1_0_st_v1	1	XREF	1	0	1	Affymx Microarray Rat Exon 1.0 ST	ARRAY	\N	\N
-3132	AFFY_X_tropicalis	1	XREF	1	0	1	Affymx Microarray Xenopus Tropicalis	ARRAY	\N	\N
-3133	AFFY_MoEx_1_0_st_v1	1	XREF	1	0	1	Affymx Microarray Mouse Exon 1.0 ST	ARRAY	\N	\N
-3134	AFFY_MoGene_1_0_st_v1	1	XREF	1	0	1	Affymx Microarray Gene 1.0 ST	ARRAY	\N	\N
-3135	AFFY_HuEx_1_0_st_v2	1	XREF	1	0	1	Affymx Microarray Human Exon 1.0 ST v2	ARRAY	\N	\N
-3136	AFFY_HuGene_1_0_st_v1	1	XREF	1	0	1	Affymx Microarray Human Gene 1.0 ST	ARRAY	\N	\N
-3137	AFFY_RaGene_1_0_st_v1	1	XREF	1	0	1	Affymx Microarray Rat Gene 1.0 ST	ARRAY	\N	\N
-3200	VB_array	1	XREF	1	0	1	VectorBase Array	ARRAY	\N	\N
-3201	ARRAY_EMBL_MMC1_20k_v1	1	XREF	1	0	1	VectorBase Array	ARRAY	\N	\N
-3202	ARRAY_EMBL_MMC2_12k_v1	1	XREF	1	0	1	VectorBase Array	ARRAY	\N	\N
-3203	ARRAY_JHU_GAM3_0_21k_v1	1	XREF	1	0	1	VectorBase Array	ARRAY	\N	\N
-3204	ARRAY_LIV_GAMDETOX_0_25k_v1	1	XREF	1	0	1	VectorBase Array	ARRAY	\N	\N
-3205	ARRAY_JHU_AEG1_0_20k_v1	1	XREF	1	0	1	VectorBase Array	ARRAY	\N	\N
-3206	ARRAY_LIV_AEGDETOX_0_25k_v1	1	XREF	1	0	1	VectorBase Array	ARRAY	\N	\N
-3207	ARRAY_ND_TIGRTC_9_6K_v1	1	XREF	1	0	1	VectorBase Array	ARRAY	\N	\N
-3208	ARRAY_UCR_GillMgMT_0_2K_v2	1	XREF	1	0	1	VectorBase Array	ARRAY	\N	\N
-3209	ARRAY_JHSPH_AGGAMBER_15k_v1	1	XREF	1	0	1	VectorBase Array	ARRAY	\N	\N
-3210	ARRAY_LIV_GAMDETOX_0_25k_v2	1	XREF	1	0	1	VectorBase Array	ARRAY	\N	\N
-3211	ARRAY_LIV_AEGDETOX_0_25k_v2	1	XREF	1	0	1	VectorBase Array	ARRAY	\N	\N
-3250	Illumina	1	XREF	1	0	1	Illumina	ARRAY	\N	\N
-3251	AGILENT_G2518A	1	XREF	1	0	1	Agilent Microarray G2518A	ARRAY	\N	\N
-3252	AGILENT_G2519F	1	XREF	1	0	1	Agilent Microarray G2519F	ARRAY	\N	\N
-3255	Illumina_V1	1	XREF	1	0	1	Illumina V1	ARRAY	\N	\N
-3256	Illumina_V2	1	XREF	1	0	1	Illumina V2	ARRAY	\N	\N
-3260	ARRAY_ZFISH_LEIDEN2	1	XREF	1	0	1	Zebrafish Leiden2 Microarray	ARRAY	\N	\N
-3261	ARRAY_ZFISH_LEIDEN3	1	XREF	1	0	1	Zebrafish Leiden3 Microarray	ARRAY	\N	\N
-3299	Platypus_exon	1	XREF	1	0	1	Platypus Exon Array	ARRAY	\N	\N
 3300	miRBase	1	KNOWNXREF	1	0	1	miRBase	MISC	\N	\N
 3310	miRBase_predicted	1	XREF	1	0	1	miRBase predicted	MISC	\N	\N
 3400	SGD	1	KNOWN	1	1	50	SGD	MISC	\N	\N
@@ -175,8 +95,6 @@
 4000	MEDLINE	1	KNOWN	1	0	5	MEDLINE	LIT	\N	\N
 4100	UniGene	1	KNOWN	1	0	5	UniGene	MISC	\N	\N
 4200	RFAM	1	XREF	1	0	5	RFAM	MISC	\N	\N
-4300	AgilentProbe	1	XREF	1	0	5	Agilent Probe	ARRAY	\N	\N
-4305	AgilentCGH	1	XREF	1	0	5	Agilent CGH	ARRAY	\N	\N
 4400	Xenopus_Jamboree	1	KNOWN	1	0	1	Jamboree	MISC	\N	\N
 4500	Tiffin	1	XREF	1	0	1	Tiffin DNA motifs	MISC	\N	\N
 4600	OTTG	1	XREF	1	0	1	Havana gene	MISC	\N	\N
@@ -206,7 +124,6 @@
 5810	Ens_Dr_transcript	1	XREF	1	0	5	Ensembl Zebrafish Transcript	MISC	\N	\N
 5820	Ens_Dr_translation	1	XREF	1	0	5	Ensembl Zebrafish Translation	MISC	\N	\N
 5900	Ens_Md_gene	1	XREF	1	0	5	Ensembl Monodelphis Gene	MISC	\N	\N
-6000	Codelink	1	XREF	1	0	1	GE Healthcare/Amersham Codelink WGA	ARRAY	\N	\N
 6100	Havana_gene	1	XREF	1	0	100	Havana gene ID	MISC	\N	\N
 6200	Ens_Rn_gene	1	XREF	1	0	5	Ensembl Rat Gene	MISC	\N	\N
 6300	Ens_Ol_gene	1	XREF	1	0	5	Ensembl Medaka Gene	MISC	\N	\N
