@@ -104,6 +104,7 @@ sub run_script {
       $name =~ s/WU://;
       if($name =~ /[.]/){
 	$id = $clone_source_id;
+        $name =~ s/[.]\d+//;    #remove .number
       }
       my $xref_id = $self->add_xref($name, "" , $name , "", $id, $species_id, "DIRECT");
       $xref_count++;
