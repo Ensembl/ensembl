@@ -39,8 +39,10 @@ Bio::EnsEMBL::DBSQL::OntologyTermAdaptor
 
 =head1 DESCRIPTION
 
-An adaptor for fetching ontology terms, creates
-Bio::EnsEMBL::OntologyTerm objects.
+An abstract adaptor class for fetching ontology
+terms, creates Bio::EnsEMBL::OntologyTerm objects.
+Specialized by Bio::EnsEMBL::DBSQL::GOTermAdaptor and
+Bio::EnsEMBL::DBSQL::SOTermAdaptor
 
 =head1 METHODS
 
@@ -709,9 +711,12 @@ SELECT  term.accession,
         ontology.namespace
 FROM    ontology,
         term
-WHERE   ontology.ontology_id = term.ontology_id);
+WHERE   ontology.ontology_id = term.ontology_id
+  AND   ontology.name = ?);
 
   my $sth = $this->prepare($statement);
+
+  $sth->bind_param( 1, $this->{'ontology'}, SQL_VARCHAR );
 
   $sth->execute();
 
