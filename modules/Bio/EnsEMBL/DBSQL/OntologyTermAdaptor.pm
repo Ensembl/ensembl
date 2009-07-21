@@ -408,9 +408,9 @@ WHERE   relation.child_term_id = ?
 
   Arg [3]       : (optional) Boolean
                   If true (non-zero), only return the closest
-                  terms.  If this argument is true, and the previous
-                  argument is left undefined, this method will
-                  return the parents of the given term.
+                  term(s).  If this argument is true, and the
+                  previous argument is left undefined, this method
+                  will return the parent(s) of the given term.
 
   Description   : Given a child ontology term, returns a list of
                   all its ancestor terms, up to and including any
@@ -454,7 +454,7 @@ WHERE   closure.child_term_id = ?
 
   if ( defined($subset) ) {
     $statement .= q(
-  AND   term.subset LIKE ?);
+  AND   term.subsets LIKE ?);
   }
 
   $statement .= q(
