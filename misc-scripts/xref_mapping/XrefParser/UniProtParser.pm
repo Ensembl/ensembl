@@ -482,6 +482,12 @@ sub create_xrefs {
 	if($source =~ "RGD"){  #using RGD file now instead.
 	  next;
 	}
+	if($source =~ "IPI"){  
+	  next;
+	}
+	if($source =~ "UCSC"){  
+	  next;
+	}
 	if (exists $dependent_sources{$source} ) {
 	  # create dependent xref structure & store it
 	  my %dep;
