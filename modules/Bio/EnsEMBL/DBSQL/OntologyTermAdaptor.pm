@@ -403,8 +403,10 @@ WHERE   relation.child_term_id = ?
 
   Arg [2]       : (optional) String
                   The subset within the ontolgy to which the query
-                  should be restricted.  The subset may be specified
-                  as a SQL pattern, e.g., "goslim%".
+                  should be restricted.  The subset may be specified as
+                  a SQL pattern, e.g., "%goslim%" (but "goslim%" might
+                  not do what you expect), or as a specific subset name,
+                  e.g., "goslim_goa".
 
   Arg [3]       : (optional) Boolean
                   If true (non-zero), only return the closest
@@ -453,8 +455,13 @@ WHERE   closure.child_term_id = ?
   AND   closure.distance > 0);
 
   if ( defined($subset) ) {
-    $statement .= q(
+    if ( index( $subset, '%' ) != -1 ) {
+      $statement .= q(
   AND   parent_term.subsets LIKE ?);
+    } else {
+      $statement .= q(
+  AND   FIND_IN_SET(?, parent_term.subsets) > 0);
+    }
   }
 
   $statement .= q(
@@ -480,6 +487,7 @@ ORDER BY closure.distance, parent_term.accession);
     $subsets ||= '';
     $min_distance ||= $distance;
 
+    print "min_distance = $min_distance\n";
     if ( !$closest_only || $distance == $min_distance ) {
       push(
         @terms,
