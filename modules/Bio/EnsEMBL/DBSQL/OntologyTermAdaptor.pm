@@ -489,7 +489,6 @@ ORDER BY closure.distance, parent_term.accession);
     $subsets ||= '';
     $min_distance ||= $distance;
 
-    print "min_distance = $min_distance\n";
     if ( !$closest_only || $distance == $min_distance ) {
       push(
         @terms,
@@ -704,7 +703,8 @@ sub fetch_all {
   my ($this) = @_;
 
   my $statement = q(
-SELECT  term.accession,
+SELECT  term.term_id,
+        term.accession,
         term.name,
         term.definition,
         term.subsets,
@@ -720,24 +720,31 @@ WHERE   ontology.ontology_id = term.ontology_id
 
   $sth->execute();
 
-  my ( $accession, $name, $definition, $subsets, $namespace );
+  my ( $dbid, $accession, $name, $definition, $subsets, $namespace );
   $sth->bind_columns(
-    \( $accession, $name, $definition, $subsets, $namespace ) );
+    \( $dbid, $accession, $name, $definition, $subsets, $namespace ) );
 
-  $sth->fetch();
-  $subsets ||= '';
-  my $term = Bio::EnsEMBL::OntologyTerm->new(
-    '-dbid'       => $dbid,
-    '-adaptor'    => $this,
-    '-accession'  => $accession,
-    '-namespace'  => $namespace,
-    '-subsets'    => [ split( /,/, $subsets ) ],
-    '-name'       => $name,
-    '-definition' => $definition
-  );
+  my @terms;
+
+  while ( $sth->fetch() ) {
+    $subsets ||= '';
+
+    push(
+      @terms,
+      Bio::EnsEMBL::OntologyTerm->new(
+        '-dbid'       => $dbid,
+        '-adaptor'    => $this,
+        '-accession'  => $accession,
+        '-namespace'  => $namespace,
+        '-subsets'    => [ split( /,/, $subsets ) ],
+        '-name'       => $name,
+        '-definition' => $definition
+      ) );
+  }
+
   $sth->finish();
 
-  return $term;
+  return \@terms;
 } ## end sub fetch_all
 
 1;
