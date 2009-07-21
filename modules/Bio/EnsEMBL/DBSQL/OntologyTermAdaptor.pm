@@ -242,6 +242,8 @@ WHERE   relation.child_term_id = child_term.term_id
       push( @{ $term->{'children'}{$relation} }, $child_term );
     }
 
+    $sth->finish();
+
     $term->{'child_terms_fetched'} = 1;
   } else {
     foreach my $relation ( values( %{ $term->{'children'} } ) ) {
@@ -319,6 +321,8 @@ ORDER BY closure.distance, child_term.accession);
       ) );
   }
 
+  $sth->finish();
+
   return \@terms;
 } ## end sub fetch_all_by_ancestor_term
 
@@ -387,6 +391,8 @@ WHERE   relation.child_term_id = ?
       push( @terms,                             $parent_term );
       push( @{ $term->{'parents'}{$relation} }, $parent_term );
     }
+
+    $sth->finish();
 
     $term->{'parent_terms_fetched'} = 1;
   } else {
@@ -501,8 +507,12 @@ ORDER BY closure.distance, parent_term.accession);
           '-name'       => $name,
           '-definition' => $definition,
         ) );
+    } else {
+      last;
     }
   }
+
+  $sth->finish();
 
   return \@terms;
 } ## end sub fetch_all_by_descendant_term
@@ -578,6 +588,8 @@ ORDER BY closure.distance);
     }
     push( @{ $id_chart{$subparent_id}{$relation} }, $parent_id );
   }
+
+  $sth->finish();
 
   my @terms = @{ $this->fetch_by_dbID_list( [ keys(%id_chart) ] ) };
 
@@ -695,6 +707,8 @@ WHERE   ontology.ontology_id = term.ontology_id
         '-definition' => $definition
       ) );
   }
+
+  $sth->finish();
 
   return \@terms;
 } ## end sub fetch_by_dbID_list
