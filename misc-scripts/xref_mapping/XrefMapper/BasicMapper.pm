@@ -701,7 +701,6 @@ FSQL
   
   my $ins_object_xref_sth =  $self->xref->dbc->prepare("insert into object_xref (object_xref_id, ensembl_id, ensembl_object_type, xref_id, linkage_type, ox_status) values (?, ?, ?, ?, 'MISC', 'DUMP_OUT')");
   
-
   foreach my $gene_id (keys %gene_to_transcripts){
     
     my @ODN=();
@@ -719,6 +718,7 @@ FSQL
     }
     
     my %no_vega; # hash now as we want to sort by stable id and hence need a key value pair
+    my %vega_clone;
     my $vega_count = 0;
     
     
@@ -726,7 +726,7 @@ FSQL
     foreach my $tran_id ( @{$gene_to_transcripts{$gene_id}} ){
       my $VEGA = undef;
       $count = 0 ;
-      
+
       $dbentrie_sth->execute($dbname."_curated_transcript", $tran_id, "Transcript");
       $dbentrie_sth->bind_columns(\$display);
       while($dbentrie_sth->fetch){
@@ -757,23 +757,23 @@ FSQL
 	}
 	$count++;
       }
-      
+       
       $dbentrie_sth->execute("Clone_based_vega_transcript", $tran_id, "Transcript");
       $dbentrie_sth->bind_columns(\$display);
       while($dbentrie_sth->fetch){
 	my($hgnc_bit, $num) = split(/-0\d\d/,$display);
 	$CLONE_NAME = $hgnc_bit;
-	$count++;
+        $vega_clone{$tran_id_to_stable_id{$tran_id}} = $tran_id;
       }
 
       if($count == 0){
 	$no_vega{$tran_id_to_stable_id{$tran_id}} = $tran_id;
-      }
+       }
       if($count > 1){
 	print STDERR "Problem: ".$tran_id_to_stable_id{$tran_id}." has more than one vega_transcript\n";
-      }
+       }
       if($count == 1){
-	if(defined($VEGA) and scalar(@ODN)){
+ 	if(defined($VEGA) and scalar(@ODN)){
 	  my $found = 0;
 	  foreach my $odn_name (@ODN){
 	    if(uc($VEGA) eq uc($odn_name)){
@@ -809,7 +809,8 @@ FSQL
 	  $ins_xref_sth->execute($max_xref_id, $odn_curated_gene_id, $id, $name);
 
 	  $xref_added{$id.":".$odn_curated_gene_id} = $max_xref_id;
-	  if(defined($syn_hash->{$name})){
+
+ 	  if(defined($syn_hash->{$name})){
 	    foreach my $syn (@{$syn_hash->{$name}}){
 	      $add_syn_sth->execute($max_xref_id, $syn);
 	    }
@@ -913,6 +914,7 @@ FSQL
 
 	my $tran_name_ext = 201;
 	foreach my $tran (sort keys %no_vega){
+	  next if(defined($vega_clone{$tran}));
 	  my $id = $CLONE_NAME."-".$tran_name_ext;
 	  if(!defined($xref_added{$id.":".$clone_based_vega_tran_id})){
 	    $max_xref_id++;
@@ -964,8 +966,15 @@ FSQL
 	    }
 	  }
 	}
+
+	if(defined($new_clone_name)){
+	  $new_clone_name =~ s/[.]\d+//;    #remove .number	
+	}
+	else{
+	  print "ERROR: No clone name can be found for ".$gene->stable_id."\n";
+	}
+
 	# store the data
-   
 	if(!defined($xref_added{$new_clone_name.":".$clone_based_ensembl_gene_id})){
 	  $max_xref_id++;
 	  $ins_xref_sth->execute($max_xref_id, $clone_based_ensembl_gene_id, $new_clone_name, $new_clone_name);
@@ -1067,6 +1076,7 @@ FSQL
   my $sth_stat = $self->xref->dbc->prepare("insert into process_status (status, date) values('official_naming_done',now())");
   $sth_stat->execute();
   $sth_stat->finish;
+
 }
 
 sub biomart_fix{
