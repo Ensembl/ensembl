@@ -272,7 +272,7 @@ sub write_relation {
 
   local $SIG{ALRM} = sub {
     printf( "\t%d entries, %d to go...\n",
-      $count, scalar( keys( %{$term} ) ) - $count );
+      $count, scalar( keys( %{$terms} ) ) - $count );
     alarm(10);
   };
   alarm(10);
