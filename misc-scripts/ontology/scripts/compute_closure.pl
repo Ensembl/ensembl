@@ -135,6 +135,7 @@ while ( !defined($newsize) || $newsize > $oldsize ) {
   }
   $dbh->do('UNLOCK TABLES');
 }
+alarm(0);
 
 $dbh->do('ALTER TABLE closure ENABLE KEYS');
 $dbh->do('OPTIMIZE TABLE closure');

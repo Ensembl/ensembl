@@ -76,6 +76,7 @@ sub write_ontology {
 
     ++$count;
   }
+  alarm(0);
 
   $dbh->do("OPTIMIZE TABLE ontology");
 
@@ -125,6 +126,7 @@ sub write_subset {
 
     ++$count;
   }
+  alarm(0);
 
   $dbh->do("OPTIMIZE TABLE term");
   $dbh->do("UNLOCK TABLES");
@@ -188,6 +190,7 @@ sub write_term {
 
     ++$count;
   }
+  alarm(0);
 
   $dbh->do("OPTIMIZE TABLE term");
   $dbh->do("UNLOCK TABLES");
@@ -244,6 +247,7 @@ sub write_relation_type {
       ++$count;
     }
   }
+  alarm(0);
 
   $dbh->do("OPTIMIZE TABLE relation_type");
 
@@ -298,6 +302,7 @@ sub write_relation {
 
     ++$count;
   }
+  alarm(0);
 
   $dbh->do("OPTIMIZE TABLE relation");
   $dbh->do("UNLOCK TABLES");
