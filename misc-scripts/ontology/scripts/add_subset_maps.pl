@@ -124,6 +124,8 @@ ORDER BY child_term.accession, closure.distance;
         next;
       }
 
+      printf( "%s...\n", $aux_table_name );
+
       $select_sth->bind_param( 1, $subset_name,   SQL_VARCHAR );
       $select_sth->bind_param( 2, $ontology_name, SQL_VARCHAR );
 
@@ -134,6 +136,8 @@ ORDER BY child_term.accession, closure.distance;
       $select_sth->bind_columns(
         \( $child_id, $parent_id, $distance ) );
 
+      $dbh->do( sprintf( "LOCK TABLE %s WRITE", $aux_table_name ) );
+
       my $insert_statement = sprintf(
         "INSERT IGNORE INTO %s "
           . "(term_id, subset_term_id) "
@@ -141,11 +145,7 @@ ORDER BY child_term.accession, closure.distance;
         $aux_table_name
       );
 
-      $dbh->do( sprintf( "LOCK TABLE %s WRITE", $aux_table_name ) );
-
       my $insert_sth = $dbh->prepare($insert_statement);
-
-      printf( "%s...\n", $aux_table_name );
 
       my $last_child_id;
       my $the_distance;
@@ -158,8 +158,7 @@ ORDER BY child_term.accession, closure.distance;
           $the_distance  = $distance;
         }
 
-        if ( $child_id == $last_child_id
-          && $distance != $the_distance )
+        if ( $child_id == $last_child_id && $distance != $the_distance )
         {
           next;
         }
