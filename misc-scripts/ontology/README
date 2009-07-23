@@ -33,14 +33,19 @@
       'biological_process', and for SO this is a single 'sequence'
       entry.
 
-      The fields are 'name' (either 'GO' or 'SO' for now) and
+      The fields are 'name' (either "GO" or "SO" for now) and
       'namespace'.  The function of this table is to separate ontology
       terms belonging to different ontologies and/or namespaces.
+
+    - subset
+      The 'subset' table contains information about each of the subsets
+      of the loaded ontologies.
 
     - term
       The 'term' table contains the ontology term accession, name,
       and definition as well as a reference to its namespace in the
-      'ontology' table.
+      'ontology' table and the set of subsets that it belongs to within
+      that ontology (if any).
 
     - relation_type
       The 'relation_type' table simply contains the different types
@@ -95,6 +100,16 @@
       The 'meta' table holds meta information about the data in the
       database, such as the time-stamp from the OBO files that were
       loaded into it and when the load into the database happened.
+
+    - aux_XX_YY_map
+      The various tables named 'aux_XX_YY_map', e.g.,
+      'aux_GO_goslim_goa_map' and 'aux_SO_SOFA_map', are simple mapping
+      tables that maps term IDs from the 'XX' ontology ("GO" or "SO") to
+      the closest parent term(s) in the 'YY' subset.
+
+      The mapping tables are created using the information stored in the
+      'closure' table, and therefore it will be based on the 'is_a' and
+      'part_of' relationships.
 
 
     SCOPE OF API IMPLEMENTATION
@@ -211,15 +226,15 @@
     2.  Load the schema from 'table.sql' located in
         ensembl/misc-scripts/ontology/sql/
 
-    3.  Download the file 'gene_ontology.1_2.obo' from
-        http://www.geneontology.org/ontology/obo_format_1_2/
+    3.  Download the latest file GO OBO file from
+        http://www.geneontology.org/ontology/obo_format_1_2/gene_ontology.1_2.obo
 
     4.  Load the data into the database using the script
         'load_OBO_file.pl' (run the script without arguments
-        for help on usage, it's simple).  The script lives in
+        for help on usage, it is simple).  The script lives in
         ensembl/misc-scripts/ontology/scripts/
 
-    5.  Repeat steps 3 and 4 for the SO ontology.  A recent version of
+    5.  Repeat steps 3 and 4 for the SO ontology.  The latest version of
         the ontology may be found at
         http://song.cvs.sourceforge.net/viewvc/*checkout*/song/ontology/so.obo
 
@@ -227,7 +242,11 @@
         database) by running the 'compute_closure.pl' in almost the same
         way as in step 4.  This step may take some time.
 
-    7.  Done.
+    7.  Add the auxiliary map tables by running 'add_subset_maps.pl'
+        with the same arguments that you used for the script in the
+        previous step.
+
+    8.  Done.
 
 
 $Id$
