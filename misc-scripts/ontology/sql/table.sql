@@ -88,4 +88,8 @@ CREATE TABLE closure (
     (parent_term_id, subparent_term_id)
 );
 
+-- There are additional tables in the released databases called
+-- "aux_XX_YY_map".  These are created by the "add_subset_maps.pl"
+-- scripts.  Please see the README document for further information.
+
 -- $Id$
