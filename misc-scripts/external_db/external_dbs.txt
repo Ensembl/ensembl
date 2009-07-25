@@ -205,6 +205,7 @@
 12600	WikiGene	1	XREF	0	1	50	WikiGene	MISC	\N	\N
 12601	Tgut_symbol	1	KNOWNXREF	0	0	100	Tgut symbol - Prof. David Burt, Roslin Institute and Royal (Dick) School of Veterinary Studies, Edinburgh University, UK	PRIMARY_DB_SYNONYM	\N	\N
 12610	Fantom	1	XREF	0	1	50	Fantom	MISC	\N	\N
+12700	GOSlim	1	XREF	1	0	5	GOSlim	MISC	\N	\N
 
 #
 #
