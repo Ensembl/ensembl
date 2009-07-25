@@ -39,7 +39,6 @@ sub run {
     $species_id = XrefParser::BaseParser->get_species_id_for_filename($file);
   }
 
-  my %name_2_source_id=();
   my $added=0;
 
   my $file_io = $self->get_filehandle($file);
@@ -51,28 +50,16 @@ sub run {
 
   while ( my $line = $file_io->getline() ) {
     chomp $line;
-    my ($gene_id,$transcript_id,$source_name,$acc,$display_label,$description, $status)
-      = split("\t",$line);
+    my ($gene_id,$acc,$description)  = split("\t",$line);
 
-      $source_name =~ tr/-/_/;  # No minuses allowed, change to underscore.
-
-    if(!defined($name_2_source_id{$source_name})){
-      my $tmp = $self->get_source_id_for_source_name($source_name);
-      if(!$tmp){
-	die("Could not get source_id for $source_name\n");
-      }
-      $name_2_source_id{$source_name} = $tmp;
-    }
-    my $xref_id = $self->get_xref($acc,$name_2_source_id{$source_name}, $species_id);
+    my $xref_id = $self->get_xref($acc,$source_id, $species_id);
     if(!defined($xref_id)){
-      $xref_id = $self->add_xref($acc,"",$display_label,$description,$name_2_source_id{$source_name}, $species_id, "DIRECT");
+      $xref_id = $self->add_xref($acc,"",$acc,$description,$source_id, $species_id, "DIRECT");
       $added++;
     }
-    $self->add_direct_xref($xref_id, $transcript_id, "Transcript", "") if (defined($transcript_id));    
+    print "$acc, $xref_id, $gene_id\n";
+    $self->add_direct_xref($xref_id, $gene_id, "Gene", "");
 
-    #just add to the transcript ONLY as the check at the end will move all
-    #the those mapped to the transcript to the genes anyway due to the
-    #biomart check
   }
 
   $file_io->close();
