@@ -68,7 +68,7 @@ sub run_script {
 
   }
   $xref_sth->finish;
-  print "Parsed GOSlim identifiers from $file, added $count dependent_xrefs\n" if($verbose);
+  print "Parsed GOSlim GOA identifiers from $file, added $count dependent_xrefs\n" if($verbose);
 
   return 0;
 }
