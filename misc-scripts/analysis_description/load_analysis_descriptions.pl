@@ -60,7 +60,7 @@ use Bio::EnsEMBL::Utils::Exception qw(warning throw);
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::EnsEMBL::Gene;
 
-$! = 1;
+$| = 1;
 
 my ($dsn,$dbh);
 
