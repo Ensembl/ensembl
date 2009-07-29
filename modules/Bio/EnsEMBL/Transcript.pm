@@ -1161,7 +1161,10 @@ sub add_Exon{
 sub get_all_Exons {
   my ( $self, @args ) = @_;
 
-  my ($constitutive) = rearrange( 'CONSTITUTIVE', @args );
+  my $constitutive;
+  if (@args) {
+    $constitutive = rearrange( 'CONSTITUTIVE', @args );
+  }
 
   if (!defined( $self->{'_trans_exon_array'} )
     && defined( $self->adaptor() ) )
