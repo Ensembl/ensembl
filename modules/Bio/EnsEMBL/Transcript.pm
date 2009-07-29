@@ -1188,6 +1188,27 @@ sub get_all_Exons {
   return \@result;
 } ## end sub get_all_Exons
 
+=head2 get_all_constitutive_Exons
+
+  Arg        :  None
+
+  Examples   :  my @exons = @{ $transcript->get_all_constitutive_Exons() };
+
+  Description:  Returns an listref of the constitutive exons in this
+                transcript in order, i.e. the first exon in the
+                listref is the 5prime most exon in the transcript.
+
+  Returntype : a list reference to Bio::EnsEMBL::Exon objects
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub get_all_constitutive_Exons {
+  my ($self) = @_;
+  return $self->get_all_Exons( '-constitutive' => 1 );
+}
 
 =head2 get_all_Introns
 
