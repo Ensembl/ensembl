@@ -1,4 +1,4 @@
-# patch_54_55_a.sql
+# patch_55_56_a.sql
 #
 # title: update schema version
 #
