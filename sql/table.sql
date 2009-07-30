@@ -1600,7 +1600,8 @@ CREATE TABLE splicing_event_feature (
   end                       INT(10)  UNSIGNED NOT NULL,
 
   PRIMARY KEY (splicing_event_feature_id,exon_id,transcript_id),
-  KEY se_idx (splicing_event_id)
+  KEY se_idx (splicing_event_id),
+  KEY transcript_idx (transcript_idx)
 
 ) COLLATE=latin1_swedish_ci TYPE=MyISAM;
 
