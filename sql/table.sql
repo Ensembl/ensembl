@@ -8,74 +8,6 @@
 #  - internal ids are integers named tablename_id
 #  - same name is given in foreign key relations
 
-
-################################################################################
-#
-# Table structure for table 'oligo_feature'
-#
-
-CREATE TABLE oligo_feature (
-  
-  oligo_feature_id      INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  seq_region_id         INT(10) UNSIGNED NOT NULL,
-  seq_region_start      INT(10) UNSIGNED  NOT NULL,
-  seq_region_end        INT(10) UNSIGNED  NOT NULL,
-  seq_region_strand     TINYINT NOT NULL,
-  mismatches            TINYINT,
-  oligo_probe_id        INT(10) UNSIGNED NOT NULL,
-  analysis_id           SMALLINT UNSIGNED NOT NULL,
-
-  PRIMARY KEY (oligo_feature_id),
-  KEY seq_region_idx (seq_region_id, seq_region_start),
-  KEY probe_idx (oligo_probe_id)
-  
-) COLLATE=latin1_swedish_ci TYPE=MyISAM;
-
-
-################################################################################
-#
-# Table structure for table 'oligo_probe'
-#
-# Note that the primary key contains both the probe ID and the array ID because
-# it is often possible to get the same probe on different arrays 
-# e.g. (older Affy arrays are often subsets of newer arrays).
-# We give them the same oligo_probe_id so that we only have to store the 
-# features once.
-
-CREATE TABLE oligo_probe (
-  
-  oligo_probe_id      INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  oligo_array_id      INT(10) UNSIGNED NOT NULL,
-  probeset            VARCHAR(40),
-  name                VARCHAR(40),
-  description         TEXT,
-  length              SMALLINT NOT NULL,
-
-  PRIMARY KEY (oligo_probe_id, oligo_array_id),
-  KEY probeset_idx (probeset),
-  KEY array_idx (oligo_array_id)
-
-) COLLATE=latin1_swedish_ci TYPE=MyISAM;
-
-
-################################################################################
-#
-# Table structure for table 'oligo_array'
-#
-
-CREATE TABLE oligo_array (
-
-  oligo_array_id      INT(10) UNSIGNED NOT NULL auto_increment,
-  parent_array_id     INT(10) UNSIGNED,
-  probe_setsize       TINYINT NOT NULL,
-  name                VARCHAR(40) NOT NULL,
-  type                ENUM( 'AFFY', 'OLIGO' ),
-
-  PRIMARY KEY (oligo_array_id)
-
-) COLLATE=latin1_swedish_ci TYPE=MyISAM;
-
-
 ################################################################################
 #
 # Table structure for table 'alt_allele'
@@ -899,13 +831,16 @@ CREATE TABLE meta (
 
 
 # Auto add schema version to database
-INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, "schema_version", "54");
+INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, "schema_version", "56");
 
 # patches included in this schema file
 # NOTE: at beginning of release cycle, remove patch entries from last release
-INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_53_54_a.sql|schema_version');
-INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_53_54_b.sql|widen_columns');
-INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_53_54_c.sql|identity_object_analysis_move');
+INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patc
+h_55_56_a.sql|schema_version');
+INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_55_56_b.sql|add_index_names');
+INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patc
+h_55_56_c.sql|drop_oligo_tables_and_xrefs');
+INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_55_56_d.sql|add_index_to_splicing_event_feature');
 
 ################################################################################
 #
