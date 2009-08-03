@@ -139,7 +139,7 @@
 59	Frameshift	Frameshift	Frameshift modelled as intron
 
 #more gene counts for Vega
-60	PTCount	processed_transcript_UNKNOWN	Number of Processed Transcripts
+60	PTCount	processed_transcript	Number of Processed Transcripts
 61	PredPTCount	processed_transcript_PREDICTED	Number of Predicted Processed Transcripts
 
 
@@ -303,7 +303,11 @@
 179	TotTECGeneCount	TEC_all	Total number of TEC genes
 180	TUyPsCount	transcribed_unitary_pseudogene	Number of Transcribed Unitary Pseudogenes
 181	PolyCount	polymorphic	Number of Polymorphic Genes
-182	KnwnPolyCount	polymorphic	Number of Known Polymorphic Genes 
+182	KnwnPolyCount	polymorphic	Number of Known Polymorphic Genes
+183	KnwnTRCount	TR_gene_known	Number of Known TR Genes
+184	TRGeneCount	TR_gene	Number of TR Genes
+185	TRPsCount	TR_pseudo	Number of TR Pseudogenes
+
 # Attributes like ie  split_tscript incons_strands incons_phases is_folded unwanted_evidence 
 # exon_too_long contains_stops borked_coords low_complex  evi_coverage are added by BlastMiniGenewise in the build process.
 # They can be deleted out of transcript_attrib and attrib_type table 
