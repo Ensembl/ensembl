@@ -164,7 +164,6 @@ DELETE from external_db  where external_db_id=4305 and db_name='AgilentCGH';
 DELETE from external_db  where external_db_id=6000 and db_name='Codelink';
 
 
-
 -- Delete unmapped_reasons
 
 DELETE ur from unmapped_reason ur, unmapped_object uo where uo.type='probe2transcript' and uo.unmapped_reason_id=ur.unmapped_reason_id;
@@ -173,15 +172,11 @@ DELETE ur from unmapped_reason ur, unmapped_object uo where uo.type='probe2trans
 DELETE from unmapped_object where type='probe2transcript';
 
 
-#Drop oligo tables last so we do not get errors, should we need to rerun
+-- Drop oligo tables last so we do not get errors, should we need to rerun
 
 DROP table oligo_array;
 DROP table oligo_probe;
 DROP table oligo_feature;
-
-
--- Also need to remove xref only array data for db_name like AGILENT, Illumina, CODELINK
-
 
 INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_55_56_c.sql|drop_oligo_tables_and_xrefs');
 
