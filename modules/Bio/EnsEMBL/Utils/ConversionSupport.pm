@@ -1122,6 +1122,9 @@ sub _by_chr_num {
 
   Arg[1]      : (optional) Int $cutoff - the cutoff in bp between small and
                 large chromosomes
+  Arg[2]      : (optional) Boolean to include duplicate regions, ie PAR or not
+                (default is no)
+
   Example     : my $chr_slices = $support->split_chromosomes_by_size;
                 foreach my $block_size (keys %{ $chr_slices }) {
                     print "Chromosomes with blocksize $block_size: ";
@@ -1144,40 +1147,40 @@ sub _by_chr_num {
 =cut
 
 sub split_chromosomes_by_size {
-    my $self = shift;
-    my $cutoff = shift || 5000000;
-    
-    my $slice_adaptor = $self->dba->get_SliceAdaptor;
-    my $top_slices;
-    if ($self->param('chromosomes')) {
-        foreach my $chr ($self->param('chromosomes')) {
-            push @{ $top_slices }, $slice_adaptor->fetch_by_region('chromosome', $chr);
-        }
-    } else {
-        $top_slices = $slice_adaptor->fetch_all('chromosome');
+  my $self   = shift;
+  my $cutoff = shift || 5000000;
+  my $dup    = shift || 0;
+  my $slice_adaptor = $self->dba->get_SliceAdaptor;
+  my $top_slices;
+  if ($self->param('chromosomes')) {
+    foreach my $chr ($self->param('chromosomes')) {
+      push @{ $top_slices }, $slice_adaptor->fetch_by_region('chromosome', $chr);
     }
+  } else {
+    $top_slices = $slice_adaptor->fetch_all('chromosome',undef,0,$dup);
+  }
 
-    my ($big_chr, $small_chr, $min_big_chr, $min_small_chr);
-    foreach my $slice (@{ $top_slices }) {
-        if ($slice->length < $cutoff) {
-            if (! $min_small_chr or ($min_small_chr > $slice->length)) {
-                $min_small_chr = $slice->length;
-            }
-            # push small chromosomes onto $small_chr
-            push @{ $small_chr }, $slice;
-        }
-        if (! $min_big_chr or ($min_big_chr > $slice->length) && $slice->length > $cutoff) {
-            $min_big_chr = $slice->length;
-        }
-        # push _all_ chromosomes onto $big_chr
-        push @{ $big_chr }, $slice;
+  my ($big_chr, $small_chr, $min_big_chr, $min_small_chr);
+  foreach my $slice (@{ $top_slices }) {
+    next if ($slice->length eq 10000); #hack for chrY pseudoslice
+    if ($slice->length < $cutoff) {
+      if (! $min_small_chr or ($min_small_chr > $slice->length)) {
+	$min_small_chr = $slice->length;
+      }
+      # push small chromosomes onto $small_chr
+      push @{ $small_chr }, $slice;
     }
+    if (! $min_big_chr or ($min_big_chr > $slice->length) && $slice->length > $cutoff) {
+      $min_big_chr = $slice->length;
+    }
+    # push _all_ chromosomes onto $big_chr
+    push @{ $big_chr }, $slice;
+  }
+  my $chr_slices;
+  $chr_slices->{int($min_big_chr/150)} = $big_chr if $min_big_chr;
+  $chr_slices->{int($min_small_chr/150)} = $small_chr if $min_small_chr;
 
-    my $chr_slices;
-    $chr_slices->{int($min_big_chr/150)} = $big_chr if $min_big_chr;
-    $chr_slices->{int($min_small_chr/150)} = $small_chr if $min_small_chr;
-
-    return $chr_slices;
+  return $chr_slices;
 }
 
 =head2 log
