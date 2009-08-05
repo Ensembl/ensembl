@@ -204,87 +204,106 @@ sub new {
 =cut
 
 sub connect {
-  my $self = shift;
+  my ($self) = @_;
 
-  return if($self->connected);
+  if ( $self->connected() ) { return }
+
   $self->connected(1);
 
-  if(defined($self->db_handle()) and $self->db_handle()->ping()) {
-    warning("unconnected db_handle is still pingable, reseting connected boolean\n");
+  if ( defined( $self->db_handle() ) and $self->db_handle()->ping() ) {
+    warning( "unconnected db_handle is still pingable, "
+        . "reseting connected boolean\n" );
   }
 
-  my ($dsn, $dbh);
+  my ( $dsn, $dbh );
+
   if ( $self->driver() eq "Oracle" ) {
-    $dsn = "DBI:" . $self->driver . ":";
-    eval { $dbh = DBI->connect($dsn,
-                               $self->username . "\@" . $self->dbname,
-                               $self->password,
-                               {'RaiseError' => 1, 'PrintError' => 0});
+
+    $dsn = "DBI:Oracle:";
+
+    eval {
+      $dbh =
+        DBI->connect( $dsn,
+        sprintf( "%s@%s", $self->username(), $self->dbname() ),
+        $self->password(), { 'RaiseError' => 1, 'PrintError' => 0 } );
     };
+
   } elsif ( $self->driver() eq "ODBC" ) {
-    $dsn = "DBI:" . $self->driver() . ":" . $self->dbname();
-    eval{ $dbh = DBI->connect($dsn,
-                              $self->username(),
-                              $self->password(),
-                              {'LongTruncOk' => 1,
-                               'LongReadLen' => 2**16 - 8,
-                               'RaiseError' => 1,
-                               'PrintError' => 0,
-                               'odbc_cursortype' => 2});
+
+    $dsn = sprintf( "DBI:ODBC:%s", $self->dbname() );
+
+    eval {
+      $dbh = DBI->connect(
+        $dsn,
+        $self->username(),
+        $self->password(),
+        {
+          'LongTruncOk'     => 1,
+          'LongReadLen'     => 2**16 - 8,
+          'RaiseError'      => 1,
+          'PrintError'      => 0,
+          'odbc_cursortype' => 2
+        } );
+    };
+
+  } elsif ( $self->driver() eq "Sybase" ) {
+
+    $dsn =
+      sprintf( "DBI:Sybase:server=%s;database=%s;tdsLevel=CS_TDS_495",
+      $self->host(), $self->dbname() );
+
+    eval {
+      $dbh = DBI->connect(
+        $dsn,
+        $self->username(),
+        $self->password(),
+        {
+          'LongTruncOk' => 1,
+          'RaiseError'  => 1,
+          'PrintError'  => 0
+        } );
+    };
+
+  } else {
+
+    $dsn = sprintf(
+      "DBI:%s:database=%s;host=%s;port=%s",
+      $self->driver(), $self->dbname(),
+      $self->host(),   $self->port() );
+
+    eval {
+      $dbh =
+        DBI->connect( $dsn, $self->username(), $self->password(),
+        { 'RaiseError' => 1 } );
     };
   }
-elsif ( $self->driver() eq "Sybase" ) {
 
-  $dsn = "DBI:" . $self->driver() .
-    
-    ":server=" . $self->host() .
-      
-      ";database=" . $self->dbname() .
-	
-	";tdsLevel=CS_TDS_495";
-  
-  eval{ $dbh = DBI->connect($dsn,
-			    
-			    $self->username(),
-			    
-			    $self->password(),
-			    
-			    {'LongTruncOk' => 1,
-			     
-			     'RaiseError' => 1,
-			     
-			     'PrintError' => 0});
-	
-      };
+  if ( !$dbh || $@ || !$dbh->ping() ) {
+    warn( "Could not connect to database "
+        . $self->dbname()
+        . " as user "
+        . $self->username()
+        . " using [$dsn] as a locator:\n"
+        . $DBI::errstr );
 
-  }
-  else{ 
-    $dsn = "DBI:" . $self->driver() .
-      ":database=". $self->dbname() .
-	";host=" . $self->host() .
-	  ";port=" . $self->port();
-    eval{ $dbh = DBI->connect($dsn,
-                              $self->username(),
-                              $self->password(),
-                              {'RaiseError' => 1});
-	};
-  }
-  
-  if(!$dbh || $@ || !$dbh->ping()) {
-    warn("Could not connect to database " . $self->dbname() .
-         " as user " . $self->username() . 
-         " using [$dsn] as a locator:\n" . $DBI::errstr);
     $self->connected(0);
-    throw("Could not connect to database " . $self->dbname() .
-          " as user " . $self->username() .
-          " using [$dsn] as a locator:\n" . $DBI::errstr);
+
+    throw("Could not connect to database "
+        . $self->dbname()
+        . " as user "
+        . $self->username()
+        . " using [$dsn] as a locator:\n"
+        . $DBI::errstr );
   }
+
   $self->db_handle($dbh);
-  if($self->timeout()){
-    $dbh->do("SET SESSION wait_timeout=".$self->timeout());
+
+  if ( $self->timeout() ) {
+    $dbh->do( "SET SESSION wait_timeout=" . $self->timeout() );
   }
+
   #print("CONNECT\n");
-}
+} ## end sub connect
 
 
 =head2 connected
