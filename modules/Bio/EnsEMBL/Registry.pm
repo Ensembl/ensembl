@@ -1436,9 +1436,6 @@ sub load_registry_from_db {
                                          -wait_timeout => $wait_timeout,
                                          -no_cache     => $no_cache );
 
-    ( my $sp = $species ) =~ s/_/ /g;
-    $self->add_alias( $species, $sp );
-
     if ($verbose) {
       printf( "Species '%s' loaded from database '%s'\n",
               $species, $coredb );
@@ -1475,9 +1472,6 @@ sub load_registry_from_db {
                                          -wait_timeout => $wait_timeout,
                                          -no_cache     => $no_cache );
 
-      ( my $sp = $species ) =~ s/_/ /g;
-      $self->add_alias( $species, $sp );
-
       if ($verbose) {
         printf( "Species '%s' (id:%d) loaded from database '%s'\n",
                 $species, $species_id, $multidb );
@@ -1503,8 +1497,6 @@ sub load_registry_from_db {
                                          -dbname       => $cdnadb,
                                          -wait_timeout => $wait_timeout,
                                          -no_cache     => $no_cache );
-    ( my $sp = $species ) =~ s/_/ /g;
-    $self->add_alias( $species, $sp );
 
     if ($verbose) {
       printf( "%s loaded\n", $cdnadb );
@@ -1527,8 +1519,6 @@ sub load_registry_from_db {
                                          -wait_timeout => $wait_timeout,
                                          -dbname       => $vegadb,
                                          -no_cache     => $no_cache );
-    ( my $sp = $species ) =~ s/_/ /g;
-    $self->add_alias( $species, $sp );
 
     if ($verbose) {
       printf( "%s loaded\n", $vegadb );
@@ -1553,8 +1543,6 @@ sub load_registry_from_db {
                                          -wait_timeout => $wait_timeout,
                                          -dbname       => $other_db,
                                          -no_cache     => $no_cache );
-    ( my $sp = $species ) =~ s/_/ /g;
-    $self->add_alias( $species, $sp );
 
     if ($verbose) {
       printf( "%s loaded\n", $other_db );
@@ -1577,8 +1565,6 @@ sub load_registry_from_db {
                                          -wait_timeout => $wait_timeout,
                                          -dbname   => $userupload_db,
                                          -no_cache => $no_cache );
-    ( my $sp = $species ) =~ s/_/ /g;
-    $self->add_alias( $species, $sp );
 
     if ($verbose) {
       printf( "%s loaded\n", $userupload_db );
@@ -1841,7 +1827,7 @@ sub load_registry_from_db {
                   searching is performed.
 
   Return type   : none
-  Exceptions    : none
+  Exceptions    : Throws if an alias is found in more than one species.
   Status        : Stable
 
 =cut
@@ -1863,12 +1849,57 @@ sub find_and_add_aliases {
     my @aliases;
     my $species = $dba->species();
 
+    # Some aliases are added programatically.
+    # 1) The "species_name"
+    # 2) The "species name"
+    # 3) The "sname" (1+last part)
+    # 4) The "snam" (1+3 letters)
+    # 5) The "spenam" (3+3 letters)
+
+    # Others are read from the meta table.
+    # 6) Any species.alias
+    # 7) The species.taxonomy_id
+    # 8) The assembly.name
+    # 9) The species.common_name (if it exists)
+
+    # Add the unaltered species name as an alias.
+    my $alias = $species;
+    push( @aliases, $alias );
+
+    # Remove the underscore from the species name and add the result as
+    # an alias.
+    $alias =~ tr [_] [ ];
+    push( @aliases, $alias );
+
+    # Add the first letter from the furst part of the species name,
+    # together with the whole second part as an alias.
+    $species =~ /^(.)[^_]*_(.*)$/;
+    $alias = $1 . $2;
+    push( @aliases, $alias );
+
+    # As above, but only use the three first letter from the second
+    # part.
+    $species =~ /^(.)[^_]*_(...).*$/;
+    $alias = $1 . $2;
+    push( @aliases, $alias );
+
+    # As above, but use three letters from first and second part.
+    $species =~ /^(...)[^_]*_(...).*$/;
+    $alias = $1 . $2;
+    push( @aliases, $alias );
+
+    # Get data from meta table:
+
     if ( defined($dbh) ) {
       my $dbname = $dba->dbc()->dbname();
       my $sth    = $dbh->prepare(
         sprintf(
           "SELECT meta_value FROM %s.meta "
-            . "WHERE meta_key = 'species.alias' "
+            . "WHERE meta_key IN ("
+            . "'species.alias', "
+            . "'species.taxonomy_id', "
+            . "'assembly.name', "
+            . "'species.common_name') "
             . "AND species_id = ?",
           $dbh->quote_identifier($dbname) ) );
 
@@ -1889,8 +1920,16 @@ sub find_and_add_aliases {
       my $meta_container = eval { $dba->get_MetaContainer() };
 
       if ( defined($meta_container) ) {
-        @aliases =
-          @{ $meta_container->list_value_by_key('species.alias') };
+        foreach my $key ( qw(
+          species.alias
+          species.taxonomy_id
+          assembly.name
+          species.common_name
+          ) )
+        {
+          push( @aliases,
+            @{ $meta_container->list_value_by_key($key) } );
+        }
       }
 
       # Need to disconnect so we do not spam the MySQL servers trying to
@@ -1903,6 +1942,12 @@ sub find_and_add_aliases {
     foreach my $alias (@aliases) {
       if ( !$class->alias_exists($alias) ) {
         $class->add_alias( $species, $alias );
+      } elsif ( $species ne $class->get_alias($alias) ) {
+        throw(
+          sprintf(
+            "Trying to add alias '%s' to species '%s', "
+              . " but it is already registrered for species '%s'\n",
+            $alias, $species, $class->get_alias($alias) ) );
       }
     }
 
