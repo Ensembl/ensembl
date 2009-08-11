@@ -115,7 +115,7 @@ my @ranges = ('^[a-b]','^c','^d','^e','^f','^[g-h]','^[i-l]','^m[a-i]','^m[j-z]'
 my $core_db = ".*core_$release\_.*";
 my $call;
 foreach my $pattern (@ranges){
-    $call = "bsub -o '" . "$path/output_translation_$pattern.txt" . "' -q $queue -R$memory ./translation_attribs.pl --user $user --pass $pass $options";
+    $call = "bsub -o ${path}/output_translation_${pattern}.txt -e ${path}/output_translation_${pattern}.err -q $queue -R$memory ./translation_attribs.pl --user $user --pass $pass $options";
     $call .= " --pattern '" . $pattern . $core_db. "'";
 
     system($call);
