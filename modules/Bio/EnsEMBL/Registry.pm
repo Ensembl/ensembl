@@ -1849,57 +1849,12 @@ sub find_and_add_aliases {
     my @aliases;
     my $species = $dba->species();
 
-    # Some aliases are added programatically.
-    # 1) The "species_name"
-    # 2) The "species name"
-    # 3) The "sname" (1+last part)
-    # 4) The "snam" (1+3 letters)
-    # 5) The "spenam" (3+3 letters)
-
-    # Others are read from the meta table.
-    # 6) Any species.alias
-    # 7) The species.taxonomy_id
-    # 8) The assembly.name
-    # 9) The species.common_name (if it exists)
-
-    # Add the unaltered species name as an alias.
-    my $alias = $species;
-    push( @aliases, $alias );
-
-    # Remove the underscore from the species name and add the result as
-    # an alias.
-    $alias =~ tr [_] [ ];
-    push( @aliases, $alias );
-
-    # Add the first letter from the furst part of the species name,
-    # together with the whole second part as an alias.
-    $species =~ /^(.)[^_]*_(.*)$/;
-    $alias = $1 . $2;
-    push( @aliases, $alias );
-
-    # As above, but only use the three first letter from the second
-    # part.
-    $species =~ /^(.)[^_]*_(...).*$/;
-    $alias = $1 . $2;
-    push( @aliases, $alias );
-
-    # As above, but use three letters from first and second part.
-    $species =~ /^(...)[^_]*_(...).*$/;
-    $alias = $1 . $2;
-    push( @aliases, $alias );
-
-    # Get data from meta table:
-
     if ( defined($dbh) ) {
       my $dbname = $dba->dbc()->dbname();
       my $sth    = $dbh->prepare(
         sprintf(
           "SELECT meta_value FROM %s.meta "
-            . "WHERE meta_key IN ("
-            . "'species.alias', "
-            . "'species.taxonomy_id', "
-            . "'assembly.name', "
-            . "'species.common_name') "
+            . "WHERE meta_key = 'species.alias' "
             . "AND species_id = ?",
           $dbh->quote_identifier($dbname) ) );
 
