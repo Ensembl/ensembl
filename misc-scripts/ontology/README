@@ -23,14 +23,15 @@
     THE DATABASE SCHEMA
     --------------------------------------------------------------------
 
-    The ensembl_ontology_NN database consist of six tables:
+    The ensembl_ontology_NN database consist of seven tables and a
+    number of auxiliary tables.
 
     - ontology
       The 'ontology' table contains one entry for each "namespace",
       that is, for what the Gene Ontology group calls "ontology" and
-      which is called "namespace" in OBO files, for GO this boils down
-      to entries for 'molecular_function', 'cellular_component', and
-      'biological_process', and for SO this is a single 'sequence'
+      which is called "namespace" in OBO files.  For GO this boils
+      down to entries for 'molecular_function', 'cellular_component',
+      and 'biological_process', and for SO this is a single 'sequence'
       entry.
 
       The fields are 'name' (either "GO" or "SO" for now) and
