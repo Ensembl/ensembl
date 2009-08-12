@@ -4,11 +4,11 @@ use strict;
 # Remember to check/set the various config optons
 
 # ------------------------------ config -------------------------------
-my $release = 55;
+my $release = 56;
 
-my $base_dir = "/lustre/scratch1/ensembl/rjk/projections/";
+my $base_dir = "/lustre/scratch103/ensembl/rjk/projections/";
 
-my $conf = "release_55.ini"; # registry config file, specifies Compara location
+my $conf = "release_56.ini"; # registry config file, specifies Compara location
 
 # location of other databases
 my $host = "ens-staging";
@@ -49,6 +49,8 @@ my @names_1_1 = (["human", "chimp"            ],
 		 ["human", "chicken"          ],
 		 ["human", "xenopus"          ],
 		 ["human", "guinea_pig"       ],
+		 ["human", "pig"              ],
+		 ["human", "marmoset"         ],
 		 ["human", "armadillo"        ],
 		 ["human", "tenrec"           ],
 		 ["human", "western_european_hedgehog"],
@@ -92,6 +94,8 @@ my @go_terms = (["human",      "mouse"          ],
 		["human",      "chimp"          ],
 		["human",      "macaque"        ],
 		["human",      "guinea_pig"     ],
+		["human",      "pig"            ],
+		["human",      "marmoset"       ],
 		["human",      "bushbaby"       ],
 		["human",      "rabbit"         ],
 		["human",      "cat"            ],
@@ -107,7 +111,7 @@ my @go_terms = (["human",      "mouse"          ],
 		["human",      "tree_shrew"     ],
 		["human",      "pika"           ],
 		["human",      "mouse_lemur"    ],
-		["human", 	"wallaby"       ],
+		["human",      "wallaby"        ],
 		["human",      "horse"          ],
 		["human",      "orang_utan"     ],
 		["human",      "dolphin"        ],
@@ -128,6 +132,8 @@ my @go_terms = (["human",      "mouse"          ],
 		["mouse",      "chimp"          ],
 		["mouse",      "macaque"        ],
 		["mouse",      "guinea_pig"     ],
+		["mouse",      "pig"            ],
+		["mouse",      "marmoset"       ],
 		["mouse",      "bushbaby"       ],
 		["mouse",      "rabbit"         ],
 		["mouse",      "cat"            ],
@@ -158,8 +164,6 @@ my @go_terms = (["human",      "mouse"          ],
 		["mouse",      "anolis"         ],
 		["rat",        "human"          ],
 		["rat",        "mouse"          ],
-		["drosophila", "anopheles"      ],
-		["drosophila", "aedes"          ],
 		["danio",      "xenopus"        ],
 		["danio",      "fugu"           ],
 		["danio",      "tetraodon"      ],
