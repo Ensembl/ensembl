@@ -2271,6 +2271,8 @@ our %ensembl_species = qw(
 			  SINFRU  Takifugu_rubripes
 			  ENSXET  Xenopus_tropicalis
 			  ENSMEU  Macropus_eugenii
+			  ENSSSC  Sus_scrofa
+			  ENSCJA  Callithrix_jaccus
 			  );
 our %vega_species = qw(
 		       OTTHUM  Homo_sapiens
