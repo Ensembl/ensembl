@@ -297,9 +297,12 @@ sub fetch_and_dump_seq_via_toplevel{
   while(my $slice = shift @$slices){
 
     #get genes from this slice
-    my $genes = $slice->get_all_Genes(undef,undef,1);
+    my @genes = sort { $a->start() <=> $b->start() } 
+                @{$slice->get_all_Genes(undef, undef, 1, undef, undef)};
+#    my $genes = $slice->get_all_Genes(undef,undef,1);
 
-    while(my $gene = shift @$genes){
+#    while(my $gene = shift @$genes){
+    while(my $gene = shift @genes){
       next if $gene->biotype eq 'J_segment';
       next if $gene->biotype eq 'D_segment';
       foreach my $transcript (@{$gene->get_all_Transcripts()}) {
