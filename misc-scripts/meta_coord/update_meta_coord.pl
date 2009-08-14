@@ -98,7 +98,7 @@ for my $dbname (@dbnames) {
   );
 
   unless (
-           system(     "mysql -h$host -P$port -u$user -p$pass -N "
+           system(     "mysql -h$host -P$port -u$user -p'$pass' -N "
                      . "-e 'SELECT * FROM meta_coord' $dbname "
                      . "> $dbname.meta_coord.backup"
            ) == 0 )
