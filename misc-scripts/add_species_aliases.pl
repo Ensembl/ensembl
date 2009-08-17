@@ -26,6 +26,9 @@ sub usage {
     is inserted.  In any case, the list of aliases will be displayed
     on the console.
 
+    The database will not be written to if there are no new aliases
+    to be written to the meta table.
+
     If the -d or --dbname options are *not* used, the script will
     iterate over all Core databases.  If the -d or --dbname option
     *is* used, only that Core database will be examined.
@@ -55,7 +58,7 @@ EOT
   print("\t-p/--pass dbpass\tUser password (optional)\n");
   print("\t-d/--name dbname\tDatabase name (optional)\n");
   print("\t-?/--help\t\tDisplays this information\n");
-}
+} ## end sub usage
 
 #-----------------------------------------------------------------------
 
@@ -93,78 +96,121 @@ my $select_stmt = qq(
 SELECT DISTINCT LCASE(meta_value)
 FROM    meta
 WHERE meta_key IN (
-  'species.alias', 'species.taxonomy_id', 'species.common_name',
+  'species.taxonomy_id', 'species.common_name',
   'species.ensembl_common_name', 'species.ensembl_alias_name'
 )
   AND species_id = 1
 );
 
+my $select_aliases_stmt = qq(
+SELECT DISTINCT LCASE(meta_value)
+FROM    meta
+WHERE meta_key = 'species.alias'
+  AND species_id = 1
+);
+
 my @dbas = @{ $registry->get_all_DBAdaptors( '-group' => 'Core' ) };
 
-foreach my $dba (@dbas) {
+foreach my $dba ( sort { $a->species() cmp $b->species() } @dbas ) {
   my $dbh = $dba->dbc()->db_handle();
   if ( defined($dbname) && $dbname ne $dba->dbc()->dbname() ) { next }
 
   my $species = $dba->species();
   if ( $species =~ /^Ancestral/ ) { next }
 
-  my %aliases;
+  printf( "%s{ %s }--\n",
+    '-' x ( 80 - ( 6 + length($species) ) ), $species );
+  printf( "Database = %s\n", $dba->dbc()->dbname() );
+
+  my %automatic_aliases;
+  my @existing_aliases;
 
   my $alias = $species;
-  $aliases{$alias} = 1;
+  $automatic_aliases{$alias} = 1;
 
   $alias =~ tr [_] [ ];
-  $aliases{$alias} = 1;
+  $automatic_aliases{$alias} = 1;
 
   $species =~ /^(.)[^_]*_(.*)$/;
   $alias = $1 . $2;
-  $aliases{$alias} = 1;
+  $automatic_aliases{$alias} = 1;
 
   $species =~ /^(.)[^_]*_(...).*$/;
   $alias = $1 . $2;
-  $aliases{$alias} = 1;
+  $automatic_aliases{$alias} = 1;
 
   $species =~ /^(...)[^_]*_(...).*$/;
   $alias = $1 . $2;
-  $aliases{$alias} = 1;
+  $automatic_aliases{$alias} = 1;
 
-  my $select_sth = $dbh->prepare($select_stmt);
+  {
+    my $select_sth = $dbh->prepare($select_stmt);
 
-  $select_sth->execute();
+    $select_sth->execute();
 
-  my $meta_value;
+    my $meta_value;
 
-  $select_sth->bind_columns( \$meta_value );
+    $select_sth->bind_columns( \$meta_value );
 
-  while ( $select_sth->fetch() ) {
-    $aliases{$meta_value} = 1;
+    while ( $select_sth->fetch() ) {
+      $automatic_aliases{$meta_value} = 1;
+    }
+  }
+  {
+    my $select_sth = $dbh->prepare($select_aliases_stmt);
+
+    $select_sth->execute();
+
+    my $meta_value;
+
+    $select_sth->bind_columns( \$meta_value );
+
+    while ( $select_sth->fetch() ) {
+      push( @existing_aliases, $meta_value );
+    }
   }
 
-  my @aliases =
-    sort { length($a) <=> length($b) || $a cmp $b } keys(%aliases);
+  my @old_aliases;
+  print("Aliases  =\n");
+  foreach my $existing_alias ( sort(@existing_aliases) ) {
+    if ( exists( $automatic_aliases{$existing_alias} ) ) {
+      printf( "\t'%s' (automatic, in database)\n", $existing_alias );
+      push( @old_aliases, $existing_alias );
+    } else {
+      printf( "\t'%s' (in database)\n", $existing_alias );
+    }
+  }
 
-  my $insert_stmt = sprintf(
-    "INSERT IGNORE INTO meta (species_id, meta_key, meta_value) "
-      . "VALUES %s",
-    join(
-      ', ',
-      map {
-        sprintf( "( 1, 'species.alias', %s )", $dbh->quote( lc($_) ) )
-        } @aliases
-    ) );
+  map { delete( $automatic_aliases{$_} ) } @old_aliases;
 
-  printf( "Database = %s\n", $dba->dbc()->dbname() );
-  printf( "Aliases  = \n\t%s\n", join( "\n\t", @aliases ) );
+  my @new_aliases =
+    sort { length($a) <=> length($b) || $a cmp $b }
+    keys(%automatic_aliases);
 
-  if ( !$dryrun ) {
-    # Delete old aliases.
-    $dbh->do( "DELETE FROM meta WHERE species_id = 1 "
-        . "AND meta_key = 'species.alias'" );
+  if (@new_aliases) {
+    foreach my $new_alias (@new_aliases) {
+      printf( "\t'%s' (new automatic alias)\n", $new_alias );
+    }
 
-    # Insert new aliases.
-    $dbh->do($insert_stmt);
+    my $insert_stmt = sprintf(
+      "INSERT IGNORE INTO meta (species_id, meta_key, meta_value) "
+        . "VALUES %s",
+      join(
+        ', ',
+        map {
+          sprintf( "( 1, 'species.alias', %s )", $dbh->quote( lc($_) ) )
+          } @new_aliases
+      ) );
+
+    if ( !$dryrun ) {
+      # Insert new aliases.
+      $dbh->do($insert_stmt);
+      print("Status   = wrote new aliases to database\n");
+    } else {
+      print("Status   = dry-run, not writing to database\n");
+    }
   } else {
-    print("(not writing to database)\n");
+    print("Status   = no new aliases to write to database\n");
   }
 
-} ## end foreach my $dba (@dbas)
+} ## end foreach my $dba ( sort { $a...})
