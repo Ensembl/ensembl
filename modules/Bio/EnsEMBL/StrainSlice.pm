@@ -138,7 +138,7 @@ sub new{
 		return $self;
 	    }
 	    else{ 
-		warning("Strain not in the database");
+		warning("Strain ($self->{strain_name}) not in the database");
 		return $self;
 	    }
 	}
@@ -177,7 +177,12 @@ sub _filter_af_by_coverage{
     
     my $rc_adaptor = $variation_db->get_ReadCoverageAdaptor();
     #this is ugly, but ReadCoverage is always defined in the positive strand
-    my $rcs = $rc_adaptor->fetch_all_by_Slice_Sample_depth($self,$self->{'_strain'},1);
+
+### EK : - it looks like the arguments to fetch_all_by_Slice_Sample_depth have changed
+###  passing 1 will only get you the coverage of level 1
+###  by omitting the parameter we take into account all coverage regions 
+#    my $rcs = $rc_adaptor->fetch_all_by_Slice_Sample_depth($self,$self->{'_strain'},1);
+    my $rcs = $rc_adaptor->fetch_all_by_Slice_Sample_depth($self,$self->{'_strain'});
     my $new_af;
     foreach my $af (@{$allele_features}){
 	foreach my $rc (@{$rcs}){
@@ -299,7 +304,11 @@ sub _add_coverage_information{
     }
     
     my $rc_adaptor = $variation_db->get_ReadCoverageAdaptor();
-    my $rcs = $rc_adaptor->fetch_all_by_Slice_Sample_depth($self,$self->{'_strain'},1);
+### EK : - it looks like the arguments to fetch_all_by_Slice_Sample_depth have changed
+###  passing 1 will only get you the coverage of level 1
+###  by omitting the parameter we take into account all coverage regions 
+#    my $rcs = $rc_adaptor->fetch_all_by_Slice_Sample_depth($self,$self->{'_strain'},1);
+    my $rcs = $rc_adaptor->fetch_all_by_Slice_Sample_depth($self,$self->{'_strain'});
     my $rcs_sorted;
     @{$rcs_sorted} = sort {$a->start <=> $b->start} @{$rcs} if ($self->strand == -1);
     $rcs = $rcs_sorted if ($self->strand == -1);
@@ -307,8 +316,9 @@ sub _add_coverage_information{
     foreach my $rc (@{$rcs}){
 	$rc->start(1) if ($rc->start < 0); #if the region lies outside the boundaries of the slice
 	$rc->end($self->end - $self->start + 1) if ($rc->end + $self->start > $self->end); 
-	substr($$reference_sequence, $start,($rc->start - $start - 1),'~' x ($rc->start - $start - 1)) if ($rc->start - 1 > $start); 
-	$start = $rc->end - 1;
+        substr($$reference_sequence, $start-1,($rc->start - $start - 1),'~' x ($rc->start - $start - 1)) if ($rc->start - 1 > $start);
+        $start = $rc->end;
+
     }
     substr($$reference_sequence, $start, ($self->length - $start) ,'~' x ($self->length - $start)) if ($self->length -1 > $start); 
 }
