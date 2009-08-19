@@ -355,7 +355,7 @@ sub canonical_transcript {
 =head2 canonical_annotation
 
   Arg [1]    : (optional) String - canonical_annotation
-  Example    : $gene->canonical_transcript('This is the canonical_annotation');
+  Example    : $gene->canonical_annotation('This is the canonical_annotation');
   Description: Getter/setter for the canonical_annotation
   Returntype : String
   Exceptions : none
