@@ -1,4 +1,22 @@
-package Bio::EnsEMBL::DBSQL::TranscriptAdaptor;
+=head1 LICENSE
+
+  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -54,6 +72,8 @@ Please post comments/questions to the Ensembl development list
 <ensembl-dev@ebi.ac.uk>
 
 =cut
+
+package Bio::EnsEMBL::DBSQL::TranscriptAdaptor;
 
 use strict;
 
