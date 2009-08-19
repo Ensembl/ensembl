@@ -28,7 +28,6 @@ table for all the following table names one by one
   marker_feature
   misc_feature
   qtl_feature
-  oligo_feature
   prediction_exon
   prediction_transcript
   protein_align_feature
