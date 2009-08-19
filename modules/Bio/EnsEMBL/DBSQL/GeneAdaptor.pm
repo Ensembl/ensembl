@@ -1104,25 +1104,30 @@ sub store {
                seq_region_start = ?,
                seq_region_end = ?,
                seq_region_strand = ?,
-	       description = ?,
+               description = ?,
                source = ?,
                status = ?,
-               is_current = ?
+               is_current = ?,
+               canonical_transcript_id = ?,
+               canonical_annotation = ?
   );
   # column status is used from schema version 34 onwards (before it was
   # confidence)
 
   my $sth = $self->prepare($store_gene_sql);
-  $sth->bind_param( 1,  $type,              SQL_VARCHAR );
-  $sth->bind_param( 2,  $analysis_id,       SQL_INTEGER );
-  $sth->bind_param( 3,  $seq_region_id,     SQL_INTEGER );
-  $sth->bind_param( 4,  $gene->start,       SQL_INTEGER );
-  $sth->bind_param( 5,  $gene->end,         SQL_INTEGER );
-  $sth->bind_param( 6,  $gene->strand,      SQL_TINYINT );
-  $sth->bind_param( 7,  $gene->description, SQL_LONGVARCHAR );
-  $sth->bind_param( 8,  $gene->source,      SQL_VARCHAR );
-  $sth->bind_param( 9,  $gene->status,      SQL_VARCHAR );
-  $sth->bind_param( 10, $is_current,        SQL_TINYINT );
+  $sth->bind_param( 1,  $type,                SQL_VARCHAR );
+  $sth->bind_param( 2,  $analysis_id,         SQL_INTEGER );
+  $sth->bind_param( 3,  $seq_region_id,       SQL_INTEGER );
+  $sth->bind_param( 4,  $gene->start(),       SQL_INTEGER );
+  $sth->bind_param( 5,  $gene->end(),         SQL_INTEGER );
+  $sth->bind_param( 6,  $gene->strand(),      SQL_TINYINT );
+  $sth->bind_param( 7,  $gene->description(), SQL_LONGVARCHAR );
+  $sth->bind_param( 8,  $gene->source(),      SQL_VARCHAR );
+  $sth->bind_param( 9,  $gene->status(),      SQL_VARCHAR );
+  $sth->bind_param( 10, $is_current,          SQL_TINYINT );
+  $sth->bind_param( 11, $gene->canonical_transcript()->dbID(),
+    SQL_TINYINT );
+  $sth->bind_param( 12, $gene->canonical_annotation(), SQL_VARCHAR );
 
   $sth->execute();
   $sth->finish();
@@ -1130,21 +1135,22 @@ sub store {
   my $gene_dbID = $sth->{'mysql_insertid'};
 
   # store stable ids if they are available
-  if (defined($gene->stable_id)) {
-
-    my $statement = "INSERT INTO gene_stable_id
-                        SET gene_id = ?,
-                            stable_id = ?,
-                            version = ?, ";
-    $statement .= "created_date = " .
-      $self->db->dbc->from_seconds_to_date($gene->created_date()) . ",";
-    $statement .= "modified_date = " .
-      $self->db->dbc->from_seconds_to_date($gene->modified_date());
+  if ( defined( $gene->stable_id() ) ) {
+    my $statement = sprintf(
+      "INSERT INTO gene_stable_id SET "
+        . "gene_id = ?, "
+        . "stable_id = ?, "
+        . "version = ?, "
+        . "created_date = %s, "
+        . "modified_date = %s",
+      $self->db()->dbc()->from_seconds_to_date( $gene->created_date() ),
+      $self->db()->dbc()->from_seconds_to_date( $gene->modified_date() )
+    );
 
     $sth = $self->prepare($statement);
-    $sth->bind_param(1, $gene_dbID, SQL_INTEGER);
-    $sth->bind_param(2, $gene->stable_id, SQL_VARCHAR);
-    $sth->bind_param(3, $gene->version, SQL_INTEGER);
+    $sth->bind_param( 1, $gene_dbID,         SQL_INTEGER );
+    $sth->bind_param( 2, $gene->stable_id(), SQL_VARCHAR );
+    $sth->bind_param( 3, $gene->version(),   SQL_INTEGER );
     $sth->execute();
     $sth->finish();
   }
@@ -1409,7 +1415,9 @@ sub update {
               display_xref_id = ?,
               status = ?,
               description = ?,
-              is_current = ?
+              is_current = ?,
+              canonical_transcript_id = ?,
+              canonical_annotation = ?
         WHERE gene_id = ?
   );
 
@@ -1424,13 +1432,16 @@ sub update {
 
   my $sth = $self->prepare( $update_gene_sql );
 
-  $sth->bind_param(1, $gene->biotype, SQL_VARCHAR);
-  $sth->bind_param(2, $gene->analysis->dbID, SQL_INTEGER);
-  $sth->bind_param(3, $display_xref_id, SQL_INTEGER);
-  $sth->bind_param(4, $gene->status, SQL_VARCHAR);
-  $sth->bind_param(5, $gene->description, SQL_VARCHAR);
-  $sth->bind_param(6, $gene->is_current, SQL_TINYINT);
-  $sth->bind_param(7, $gene->dbID, SQL_INTEGER);
+  $sth->bind_param( 1, $gene->biotype(),        SQL_VARCHAR );
+  $sth->bind_param( 2, $gene->analysis->dbID(), SQL_INTEGER );
+  $sth->bind_param( 3, $display_xref_id,        SQL_INTEGER );
+  $sth->bind_param( 4, $gene->status(),         SQL_VARCHAR );
+  $sth->bind_param( 5, $gene->description(),    SQL_VARCHAR );
+  $sth->bind_param( 6, $gene->is_current(),     SQL_TINYINT );
+  $sth->bind_param( 7, $gene->canonical_transcript()->dbID(),
+    SQL_INTEGER );
+  $sth->bind_param( 8, $gene->canonical_annotation, SQL_VARCHAR );
+  $sth->bind_param( 9, $gene->dbID(), SQL_INTEGER );
 
   $sth->execute();
 
