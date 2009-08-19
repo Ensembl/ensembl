@@ -124,7 +124,6 @@ my $stp_id = 1;
 my $i = 0;
 my $at_count = 0;
 while( my $line = <GFF>){
-  print $line;
   chomp $line;
   $i++;
   my ($chrom, $junk, $type, $start, $end, $junk2, $strand, $junk3, $feat) = split (/\t/, $line);
@@ -272,7 +271,6 @@ while( my $line = <GFF>){
     ### SitesA=e(41065096-41070145); 
     ### SitesB=e(41068761-41068917),e(41069749-41069853)
     foreach my $letter (qw(A B)){
-      print "Feature $letter\n";
       my $start_end = $feat_hash{"Sites".$letter};
       my @start;
       my @end;
@@ -301,7 +299,6 @@ while( my $line = <GFF>){
 	my $ta = 1;
 	foreach my $t (@trans){
 	  my $transcript_id = $stable_id_to_dbid{$t};
-	  print  "($ec)  $sef_id\t$i\t$exon_id\t$transcript_id\t$index\t$ta\texon\t".$start[$ec]."\t".$end[$ec]."\n";
 	  $ins_SEF_sth->execute($sef_id, $i, $exon_id, $transcript_id, $index, $ta, "exon", $start[$ec], $end[$ec]);
 	  $ta++;
 	}
