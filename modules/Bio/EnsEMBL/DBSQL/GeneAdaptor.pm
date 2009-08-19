@@ -1125,8 +1125,14 @@ sub store {
   $sth->bind_param( 8,  $gene->source(),      SQL_VARCHAR );
   $sth->bind_param( 9,  $gene->status(),      SQL_VARCHAR );
   $sth->bind_param( 10, $is_current,          SQL_TINYINT );
-  $sth->bind_param( 11, $gene->canonical_transcript()->dbID(),
-    SQL_TINYINT );
+
+  if ( defined( $gene->canonical_transcript() ) ) {
+    $sth->bind_param( 11, $gene->canonical_transcript()->dbID(),
+      SQL_TINYINT );
+  } else {
+    $sth->bind_param( 11, 0, SQL_TINYINT );
+  }
+
   $sth->bind_param( 12, $gene->canonical_annotation(), SQL_VARCHAR );
 
   $sth->execute();
@@ -1438,8 +1444,14 @@ sub update {
   $sth->bind_param( 4, $gene->status(),         SQL_VARCHAR );
   $sth->bind_param( 5, $gene->description(),    SQL_VARCHAR );
   $sth->bind_param( 6, $gene->is_current(),     SQL_TINYINT );
-  $sth->bind_param( 7, $gene->canonical_transcript()->dbID(),
-    SQL_INTEGER );
+
+  if ( defined( $gene->canonical_transcript() ) ) {
+    $sth->bind_param( 7, $gene->canonical_transcript()->dbID(),
+      SQL_INTEGER );
+  } else {
+    $sth->bind_param( 7, 0, SQL_INTEGER );
+  }
+
   $sth->bind_param( 8, $gene->canonical_annotation, SQL_VARCHAR );
   $sth->bind_param( 9, $gene->dbID(), SQL_INTEGER );
 
