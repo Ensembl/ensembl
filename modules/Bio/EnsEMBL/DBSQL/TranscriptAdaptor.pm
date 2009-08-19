@@ -83,10 +83,11 @@ use vars qw(@ISA);
 #  Status     : Stable
 
 sub _tables {
-  my $self = shift;
-
-  return ([ 'transcript', 't' ], [ 'transcript_stable_id', 'tsi' ],
-	  [ 'xref', 'x' ], [ 'external_db' , 'exdb' ] );
+  return (
+    [ 'transcript',           't' ],
+    [ 'transcript_stable_id', 'tsi' ],
+    [ 'xref',                 'x' ],
+    [ 'external_db',          'exdb' ] );
 }
 
 
@@ -100,27 +101,36 @@ sub _tables {
 #  Status     : Stable
 
 sub _columns {
-  my $self = shift;
+  my ($self) = @_;
 
-  my $created_date = $self->db->dbc->from_date_to_seconds("created_date");
-  my $modified_date = $self->db->dbc->from_date_to_seconds("modified_date");
+  my $created_date =
+    $self->db()->dbc()->from_date_to_seconds("created_date");
+  my $modified_date =
+    $self->db()->dbc()->from_date_to_seconds("modified_date");
 
-  return ( 't.transcript_id', 't.seq_region_id', 't.seq_region_start',
-           't.seq_region_end', 't.seq_region_strand', 't.analysis_id',
-           't.gene_id', 't.is_current',
-	   'tsi.stable_id','tsi.version', $created_date,
-	   $modified_date, 't.description', 't.biotype', 't.status',
-	   'exdb.db_name' ,'exdb.status',
-           'exdb.db_display_name',
-	   'x.xref_id', 'x.display_label', 'x.dbprimary_acc', 'x.version', 
-           'x.description', 'x.info_type', 'x.info_text' );
+  return (
+    't.transcript_id',     't.seq_region_id',
+    't.seq_region_start',  't.seq_region_end',
+    't.seq_region_strand', 't.analysis_id',
+    't.gene_id',           't.is_current',
+    'tsi.stable_id',       'tsi.version',
+    $created_date,         $modified_date,
+    't.description',       't.biotype',
+    't.status',            'exdb.db_name',
+    'exdb.status',         'exdb.db_display_name',
+    'x.xref_id',           'x.display_label',
+    'x.dbprimary_acc',     'x.version',
+    'x.description',       'x.info_type',
+    'x.info_text'
+  );
 }
 
-
 sub _left_join {
-  return ( [ 'transcript_stable_id', "tsi.transcript_id = t.transcript_id" ],
-	   [ 'xref', "x.xref_id = t.display_xref_id" ],
-	   [ 'external_db', "exdb.external_db_id = x.external_db_id" ] ); 
+  return (
+    [ 'transcript_stable_id', "tsi.transcript_id = t.transcript_id" ],
+    [ 'xref',                 "x.xref_id = t.display_xref_id" ],
+    [ 'external_db',          "exdb.external_db_id = x.external_db_id" ]
+  );
 }
 
 
