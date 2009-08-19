@@ -94,7 +94,8 @@ my $reg = "Bio::EnsEMBL::Registry";
 
   Exmaple2   : $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(
                 -species => 'Homo_sapiens',
-                -group   => 'core' -user => 'root',
+                -group   => 'core',
+                -user    => 'root',
                 -dbname  => 'pog',
                 -host    => 'caldy',
                 -driver  => 'mysql'
@@ -102,7 +103,8 @@ my $reg = "Bio::EnsEMBL::Registry";
 
   Exmaple3   : $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(
                 -species         => 'staphylococcus_aureus',
-                -group           => 'core' -user => 'root',
+                -group           => 'core',
+                -user            => 'root',
                 -dbname          => 'staphylococcus_collection_1_52_1a',
                 -multispecies_db => 1,
                 -host            => 'caldy',
