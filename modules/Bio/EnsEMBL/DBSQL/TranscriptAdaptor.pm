@@ -10,26 +10,31 @@ interaction relating to the storage and retrieval of Transcripts
   use Bio::EnsEMBL::Registry;
 
   Bio::EnsEMBL::Registry->load_registry_from_db(
-              -host => 'ensembldb.ensembl.org',
-              -user => 'anonymous'
+    -host => 'ensembldb.ensembl.org',
+    -user => 'anonymous'
   );
 
-  $transcript_adaptor = Bio::EnsEMBL::Registry->get_adaptor("human", "core", "transcript");
+  $transcript_adaptor =
+    Bio::EnsEMBL::Registry->get_adaptor( 'Human', 'Core',
+    'Transcript' );
 
   $transcript = $transcript_adaptor->fetch_by_dbID(1234);
 
-  $transcript = $transcript_adaptor->fetch_by_stable_id('ENST00000201961');
-  
-  $slice = $slice_adaptor->fetch_by_region('chromosome', '3', 1, 1000000);
-  @transcripts = @{$transcript_adaptor->fetch_all_by_Slice($slice)};
+  $transcript =
+    $transcript_adaptor->fetch_by_stable_id('ENST00000201961');
 
-  ($transcript) = @{$transcript_adaptor->fetch_all_by_external_name('NP_065811.1')};
+  $slice =
+    $slice_adaptor->fetch_by_region( 'Chromosome', '3', 1, 1000000 );
+  @transcripts = @{ $transcript_adaptor->fetch_all_by_Slice($slice) };
+
+  ($transcript) =
+    @{ $transcript_adaptor->fetch_all_by_external_name('NP_065811.1') };
 
 =head1 DESCRIPTION
 
-This adaptor provides a means to retrieve and store information related to
-Transcripts. Primarily this involves the retrieval or storage of
-Bio::EnsEMBL::Transcript objects from a database.  
+This adaptor provides a means to retrieve and store information related
+to Transcripts.  Primarily this involves the retrieval or storage of
+Bio::EnsEMBL::Transcript objects from a database.
 
 See Bio::EnsEMBL::Transcript for details of the Transcript class.
 
