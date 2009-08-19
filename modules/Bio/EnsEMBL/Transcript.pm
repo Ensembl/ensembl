@@ -574,19 +574,23 @@ sub display_xref {
 =cut
 
 sub translation {
-  my $self = shift;
-  if( @_ ) {
-    my $value = shift;
-    if( defined($value) &&
-        (!ref($value) || !$value->isa('Bio::EnsEMBL::Translation'))) {
+  my ( $self, $value ) = @_;
+
+  if ( defined($value) ) {
+    if ( !ref($value) || !$value->isa('Bio::EnsEMBL::Translation') ) {
       throw("Bio::EnsEMBL::Translation argument expected.");
     }
+
     $self->{'translation'} = $value;
-  } elsif( !exists($self->{'translation'}) and defined($self->adaptor())) {
+
+  } elsif ( !exists( $self->{'translation'} )
+    && defined( $self->adaptor() ) )
+  {
     $self->{'translation'} =
-      $self->adaptor()->db()->get_TranslationAdaptor()->
-        fetch_by_Transcript( $self );
+      $self->adaptor()->db()->get_TranslationAdaptor()
+      ->fetch_by_Transcript($self);
   }
+
   return $self->{'translation'};
 }
 
