@@ -56,21 +56,6 @@ Bio::EnsEMBL::Transcript objects from a database.
 
 See Bio::EnsEMBL::Transcript for details of the Transcript class.
 
-=head1 LICENSE
-
-This code is distributed under an Apache style license. Please see
-http://www.ensembl.org/info/about/code_licence.html for details.
-
-=head1 AUTHOR
-
-Arne Stabenau <stabenau@ebi.ac.uk>, Ensembl core API team
-Based on Elia Stupkas Gene_Obj
-
-=head1 CONTACT
-
-Please post comments/questions to the Ensembl development list
-<ensembl-dev@ebi.ac.uk>
-
 =cut
 
 package Bio::EnsEMBL::DBSQL::TranscriptAdaptor;
