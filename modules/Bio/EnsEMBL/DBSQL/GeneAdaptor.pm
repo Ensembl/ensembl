@@ -82,12 +82,11 @@ use vars '@ISA';
 #  Status     : Stable
 
 sub _tables {
-  my $self = shift;
-
-  return ([ 'gene', 'g' ],
-          [ 'gene_stable_id', 'gsi' ],
-          [ 'xref', 'x' ],
-          [ 'external_db' , 'exdb' ]);
+  return (
+    [ 'gene',           'g' ],
+    [ 'gene_stable_id', 'gsi' ],
+    [ 'xref',           'x' ],
+    [ 'external_db',    'exdb' ] );
 }
 
 
@@ -102,27 +101,37 @@ sub _tables {
 #  Status     : Stable
 
 sub _columns {
-  my $self = shift;
+  my ($self) = @_;
 
-  my $created_date = $self->db->dbc->from_date_to_seconds("gsi.created_date");
-  my $modified_date = $self->db->dbc->from_date_to_seconds("gsi.modified_date");
-  
-  return ( 'g.gene_id', 'g.seq_region_id', 'g.seq_region_start',
-           'g.seq_region_end', 'g.seq_region_strand',
-           'g.analysis_id' ,'g.biotype', 'g.display_xref_id',
-	   'g.description', 'g.status', 'g.source', 'g.is_current', 
-	   'g.canonical_transcript_id', 'g.canonical_annotation',
-	   'gsi.stable_id', 'gsi.version',  $created_date, $modified_date,
-	   'x.display_label' ,'x.dbprimary_acc', 'x.description', 'x.version', 
-	   'exdb.db_name', 'exdb.status', 'exdb.db_release',
-           'exdb.db_display_name', 'x.info_type', 'x.info_text');
-}
+  my $created_date =
+    $self->db()->dbc()->from_date_to_seconds("gsi.created_date");
+  my $modified_date =
+    $self->db()->dbc()->from_date_to_seconds("gsi.modified_date");
+
+  return (
+    'g.gene_id',                 'g.seq_region_id',
+    'g.seq_region_start',        'g.seq_region_end',
+    'g.seq_region_strand',       'g.analysis_id',
+    'g.biotype',                 'g.display_xref_id',
+    'g.description',             'g.status',
+    'g.source',                  'g.is_current',
+    'g.canonical_transcript_id', 'g.canonical_annotation',
+    'gsi.stable_id',             'gsi.version',
+    $created_date,               $modified_date,
+    'x.display_label',           'x.dbprimary_acc',
+    'x.description',             'x.version',
+    'exdb.db_name',              'exdb.status',
+    'exdb.db_release',           'exdb.db_display_name',
+    'x.info_type',               'x.info_text'
+  );
+} ## end sub _columns
 
 
 sub _left_join {
-  return ( [ 'gene_stable_id', "gsi.gene_id = g.gene_id" ],
-	   [ 'xref', "x.xref_id = g.display_xref_id" ],
-	   [ 'external_db', "exdb.external_db_id = x.external_db_id" ] );
+  return (
+    [ 'gene_stable_id', "gsi.gene_id = g.gene_id" ],
+    [ 'xref',           "x.xref_id = g.display_xref_id" ],
+    [ 'external_db',    "exdb.external_db_id = x.external_db_id" ] );
 }
 
 
