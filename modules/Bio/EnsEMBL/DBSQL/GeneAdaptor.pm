@@ -1493,27 +1493,40 @@ sub _objs_from_sth {
   my %sr_name_hash;
   my %sr_cs_hash;
 
-  my ( $gene_id, $seq_region_id, $seq_region_start, $seq_region_end, 
-       $seq_region_strand, $analysis_id, $biotype, $display_xref_id, 
-       $gene_description, $stable_id, $version, $created_date, 
-       $modified_date, $xref_display_id, $status, $source, $is_current,
-       $canonical_transcript_id, $canonical_annotation,
-       $xref_primary_acc, $xref_desc, $xref_version, $external_name,
-       $external_db, $external_status, $external_release, $external_db_name,
-       $info_type, $info_text);
+  my (
+    $gene_id,                 $seq_region_id,
+    $seq_region_start,        $seq_region_end,
+    $seq_region_strand,       $analysis_id,
+    $biotype,                 $display_xref_id,
+    $gene_description,        $status,
+    $source,                  $is_current,
+    $canonical_transcript_id, $canonical_annotation,
+    $stable_id,               $version,
+    $created_date,            $modified_date,
+    $xref_display_id,         $xref_primary_acc,
+    $xref_desc,               $xref_version,
+    $external_db,             $external_status,
+    $external_release,        $external_db_name,
+    $info_type,               $info_text
+  );
 
-  $sth->bind_columns( \$gene_id, \$seq_region_id, \$seq_region_start,
-		      \$seq_region_end, \$seq_region_strand, \$analysis_id,
-                      \$biotype, \$display_xref_id, \$gene_description,
-                      \$status, \$source, \$is_current,
-		      \$canonical_transcript_id, \$canonical_annotation,
-		      \$stable_id, \$version,
-		      \$created_date, \$modified_date, 
-		      \$xref_display_id, \$xref_primary_acc, \$xref_desc,
-                      \$xref_version,
-		      \$external_db, \$external_status,
-		      \$external_release, \$external_db_name,
-		      \$info_type, \$info_text);
+  $sth->bind_columns(
+    \(
+      $gene_id,                 $seq_region_id,
+      $seq_region_start,        $seq_region_end,
+      $seq_region_strand,       $analysis_id,
+      $biotype,                 $display_xref_id,
+      $gene_description,        $status,
+      $source,                  $is_current,
+      $canonical_transcript_id, $canonical_annotation,
+      $stable_id,               $version,
+      $created_date,            $modified_date,
+      $xref_display_id,         $xref_primary_acc,
+      $xref_desc,               $xref_version,
+      $external_db,             $external_status,
+      $external_release,        $external_db_name,
+      $info_type,               $info_text
+    ) );
 
   my $asm_cs;
   my $cmp_cs;
@@ -1622,51 +1635,53 @@ sub _objs_from_sth {
 
     my $display_xref;
 
-    if( $display_xref_id ) {
-     $display_xref = Bio::EnsEMBL::DBEntry->new_fast
-     	 ({ 'dbID' => $display_xref_id,
-     	    'adaptor' => $dbEntryAdaptor,
-     	    'display_id' => $xref_display_id,
-     	    'primary_id' => $xref_primary_acc,
-     	    'version'    => $xref_version,
-     	    'description' => $xref_desc,
-     	    'release' => $external_release,
-     	    'dbname' => $external_db,
-     	    'db_display_name' => $external_db_name,
-     	    'info_type' => $info_type,
-     	    'info_text' => $info_text
-     	  });
-      $display_xref->status( $external_status );
-    }				
+    if ($display_xref_id) {
+      $display_xref = Bio::EnsEMBL::DBEntry->new_fast( {
+          'dbID'            => $display_xref_id,
+          'adaptor'         => $dbEntryAdaptor,
+          'display_id'      => $xref_display_id,
+          'primary_id'      => $xref_primary_acc,
+          'version'         => $xref_version,
+          'description'     => $xref_desc,
+          'release'         => $external_release,
+          'dbname'          => $external_db,
+          'db_display_name' => $external_db_name,
+          'info_type'       => $info_type,
+          'info_text'       => $info_text
+      } );
+      $display_xref->status($external_status);
+    }
 
     # Finally, create the new Gene.
-    push( @genes,
-          $self->_create_feature_fast(
-                            'Bio::EnsEMBL::Gene', {
-                              'analysis'     => $analysis,
-                              'biotype'      => $biotype,
-                              'start'        => $seq_region_start,
-                              'end'          => $seq_region_end,
-                              'strand'       => $seq_region_strand,
-                              'adaptor'      => $self,
-                              'slice'        => $slice,
-                              'dbID'         => $gene_id,
-                              'stable_id'    => $stable_id,
-                              'version'      => $version,
-                              'created_date' => $created_date || undef,
-                              'modified_date' => $modified_date
-                                || undef,
-                              'description'     => $gene_description,
-                              'external_name'   => $external_name || undef,
-                              'external_db'     => $external_db,
-                              'external_status' => $external_status,
-                              'display_xref'    => $display_xref,
-                              'status'          => $status,
-                              'source'          => $source,
-                              'is_current'      => $is_current,
-			      'canonical_transcript' => $canonical_transcript,
-			      'canonical_annotation' => $canonical_annotation
-                            } ) );
+    push(
+      @genes,
+      $self->_create_feature_fast(
+        'Bio::EnsEMBL::Gene',
+        {
+          'analysis'      => $analysis,
+          'biotype'       => $biotype,
+          'start'         => $seq_region_start,
+          'end'           => $seq_region_end,
+          'strand'        => $seq_region_strand,
+          'adaptor'       => $self,
+          'slice'         => $slice,
+          'dbID'          => $gene_id,
+          'stable_id'     => $stable_id,
+          'version'       => $version,
+          'created_date'  => $created_date || undef,
+          'modified_date' => $modified_date || undef,
+          'description'   => $gene_description,
+          'external_name'   => undef,              # will use display_id
+                                                   # from display_xref
+          'external_db'     => $external_db,
+          'external_status' => $external_status,
+          'display_xref'    => $display_xref,
+          'status'          => $status,
+          'source'          => $source,
+          'is_current'      => $is_current,
+          'canonical_transcript' => $canonical_transcript,
+          'canonical_annotation' => $canonical_annotation
+        } ) );
 
   }
 
