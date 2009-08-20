@@ -194,14 +194,24 @@ sub run {
                 next;
             }
 	    if ( $file =~ /^script:/i ) {
-	      print "Parsing $file with $parser\n" if ($verbose);
-	      eval "require XrefParser::$parser";
-	      my $new = "XrefParser::$parser"->new();
-	      if (
-		  $new->run_script( $file,  $source_id, $species_id, $verbose ) )
-		{
-		  ++$summary{$name}->{$parser};
-		}
+	      if(!defined($checksum) || $checksum == 0){
+   	        print "Parsing $file with $parser\n" if ($verbose);
+		eval "require XrefParser::$parser";
+		my $new = "XrefParser::$parser"->new();
+		if (
+		    $new->run_script( $file,  $source_id, $species_id, $verbose ) )
+		  {
+		    ++$summary{$name}->{$parser};
+		  }
+                # set the checksum to 1 so that we know the script has been ran
+		my $sqlu =
+		  "UPDATE source_url SET checksum=1, upload_date=NOW() WHERE source_url_id=$source_url_id";
+		
+		$dbi->prepare($sqlu)->execute() || croak( $dbi->errstr() );		
+	      }
+              else{
+                print "$file has already been ran with $parser and so will not be ran again\n" if($verbose);
+	      }
 	      next;
 	    }
 	    
