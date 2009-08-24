@@ -386,7 +386,8 @@ sub canonical_transcript {
     # We have not attached a canoncical transcript, but we have the dbID
     # of one.
 
-    my $transcript_adaptor = $self->db()->get_TranscriptAdaptor();
+    my $transcript_adaptor =
+      $self->adaptor()->db()->get_TranscriptAdaptor();
 
     $self->{'canonical_transcript'} =
       $transcript_adaptor->fetch_by_dbID(
