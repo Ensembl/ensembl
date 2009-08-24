@@ -1452,7 +1452,7 @@ sub update {
     $sth->bind_param( 7, 0, SQL_INTEGER );
   }
 
-  $sth->bind_param( 8, $gene->canonical_annotation, SQL_VARCHAR );
+  $sth->bind_param( 8, $gene->canonical_annotation(), SQL_VARCHAR );
   $sth->bind_param( 9, $gene->dbID(), SQL_INTEGER );
 
   $sth->execute();
@@ -1482,9 +1482,8 @@ sub _objs_from_sth {
   # a fair bit of gymnastics is used.
   #
 
-  my $sa = $self->db()->get_SliceAdaptor();
-  my $aa = $self->db->get_AnalysisAdaptor();
-  my $ta = $self->db->get_TranscriptAdaptor();
+  my $sa             = $self->db()->get_SliceAdaptor();
+  my $aa             = $self->db()->get_AnalysisAdaptor();
   my $dbEntryAdaptor = $self->db()->get_DBEntryAdaptor();
 
   my @genes;
@@ -1564,9 +1563,6 @@ sub _objs_from_sth {
     #get the analysis object
     my $analysis = $analysis_hash{$analysis_id} ||=
       $aa->fetch_by_dbID($analysis_id);
-
-    #get the canonical_transcript object
-    my $canonical_transcript = $ta->fetch_by_dbID($canonical_transcript_id);
 
     #need to get the internal_seq_region, if present
     $seq_region_id = $self->get_seq_region_id_internal($seq_region_id);
@@ -1679,8 +1675,8 @@ sub _objs_from_sth {
           'status'          => $status,
           'source'          => $source,
           'is_current'      => $is_current,
-          'canonical_transcript' => $canonical_transcript,
-          'canonical_annotation' => $canonical_annotation
+          'canonical_transcript_id' => $canonical_transcript_id,
+          'canonical_annotation'    => $canonical_annotation
         } ) );
 
   }
