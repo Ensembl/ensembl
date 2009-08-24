@@ -115,47 +115,71 @@ sub new {
 
   my $class = ref($caller) || $caller;
   my $self = $class->SUPER::new(@_);
-  my ( $stable_id, $version, $external_name, $type, $external_db, 
-     $external_status, $display_xref, $description, $transcripts,
-     $created_date, $modified_date, $confidence, $biotype, $source,
-     $status, $is_current, $canonical_transcript, $canonical_annotation ) =
-	 rearrange( [ 'STABLE_ID', 'VERSION', 'EXTERNAL_NAME', 'TYPE',
-		      'EXTERNAL_DB', 'EXTERNAL_STATUS', 'DISPLAY_XREF',
-		      'DESCRIPTION',
-		      'TRANSCRIPTS', 'CREATED_DATE', 'MODIFIED_DATE', 
-		      'CONFIDENCE', 'BIOTYPE', 'SOURCE', 'STATUS', 'IS_CURRENT',
-		      'CANONICAL_TRANSCRIPT', 'CANONICAL_ANNOTATION'
-		      ],
-		    @_ );  
+  my (
+    $stable_id,               $version,
+    $external_name,           $type,
+    $external_db,             $external_status,
+    $display_xref,            $description,
+    $transcripts,             $created_date,
+    $modified_date,           $confidence,
+    $biotype,                 $source,
+    $status,                  $is_current,
+    $canonical_transcript_id, $canonical_transcript,
+    $canonical_annotation
+    )
+    = rearrange( [
+      'STABLE_ID',               'VERSION',
+      'EXTERNAL_NAME',           'TYPE',
+      'EXTERNAL_DB',             'EXTERNAL_STATUS',
+      'DISPLAY_XREF',            'DESCRIPTION',
+      'TRANSCRIPTS',             'CREATED_DATE',
+      'MODIFIED_DATE',           'CONFIDENCE',
+      'BIOTYPE',                 'SOURCE',
+      'STATUS',                  'IS_CURRENT',
+      'CANONICAL_TRANSCRIPT_ID', 'CANONICAL_TRANSCRIPT',
+      'CANONICAL_ANNOTATION'
+    ],
+    @_
+    );
 
   if ($transcripts) {
     $self->{'_transcript_array'} = $transcripts;
     $self->recalculate_coordinates();
   }
 
-  $self->stable_id( $stable_id );
-  $self->version( $version );
-  $self->{'created_date'} = $created_date;
+  $self->stable_id($stable_id);
+  $self->version($version);
+  $self->{'created_date'}  = $created_date;
   $self->{'modified_date'} = $modified_date;
 
-  $self->external_name( $external_name ) if( defined $external_name );
-  $self->external_db( $external_db ) if( defined $external_db );
-  $self->external_status( $external_status ) if( defined $external_status );
-  $self->display_xref( $display_xref ) if( defined $display_xref );
-  $self->biotype( $type ) if( defined $type );
-  $self->biotype( $biotype ) if( defined $biotype );
+  $self->external_name($external_name) if ( defined $external_name );
+  $self->external_db($external_db)     if ( defined $external_db );
+  $self->external_status($external_status)
+    if ( defined $external_status );
+  $self->display_xref($display_xref) if ( defined $display_xref );
+  $self->biotype($type)              if ( defined $type );
+  $self->biotype($biotype)           if ( defined $biotype );
   $self->description($description);
-  $self->status( $confidence ); # incase old naming is used.
-                                # kept to ensure routine is backwards compatible.
-  $self->status( $status);      # add new naming
-  $self->source( $source );
+  $self->status($confidence);    # incase old naming is used.
+      # kept to ensure routine is backwards compatible.
+  $self->status($status);    # add new naming
+  $self->source($source);
 
   # default to is_current
   $is_current = 1 unless (defined($is_current));
   $self->{'is_current'} = $is_current;
 
-  $self->canonical_transcript($canonical_transcript) if(defined $canonical_transcript);
-  $self->canonical_annotation($canonical_annotation) if (defined $canonical_annotation);
+  # Add the canonical transcript if we were given one, otherwise add the
+  # canonical transcript internal ID if we were given one.
+  if ( defined($canonical_transcript) ) {
+    $self->canonical_transcript($canonical_transcript);
+  } elsif ( defined($canonical_transcript_id) ) {
+    $self->{'canonical_transcript_id'} = $canonical_transcript_id;
+  }
+
+  $self->canonical_annotation($canonical_annotation)
+    if ( defined $canonical_annotation );
+
   return $self;
 }
 
@@ -340,16 +364,38 @@ sub description {
 =cut
 
 sub canonical_transcript {
-    my $self = shift;
-    if (@_){
-	my $tr = shift;
-	if(defined($tr) && (!ref($tr) || !$tr->isa('Bio::EnsEMBL::Transcript'))) {
-	    throw('analysis argument must be a Bio::EnsEMBL::Transcript');
-	}
-	$self->{'canonical_transcript'} = $tr;
+  my ( $self, $transcript ) = @_;
+
+  if ( defined($transcript) ) {
+    # We're attaching a new canonical transcript.
+
+    if (
+      !(
+        ref($transcript)
+        && $$transcript->isa('Bio::EnsEMBL::Transcript') ) )
+    {
+      throw('Argument must be a Bio::EnsEMBL::Transcript');
     }
-    return $self->{'canonical_transcript'};
-}
+
+    $self->{'canonical_transcript'}    = $transcript;
+    $self->{'canonical_transcript_id'} = $transcript->dbID();
+
+  } elsif ( !defined( $self->{'canonical_transcript'} )
+    && defined( $self->{'canonical_transcript_id'} ) )
+  {
+    # We have not attached a canoncical transcript, but we have the dbID
+    # of one.
+
+    my $transcript_adaptor = $self->db()->get_TranscriptAdaptor();
+
+    $self->{'canonical_transcript'} =
+      $transcript_adaptor->fetch_by_dbID(
+      $self->{'canonical_transcript_id'} );
+
+  }
+
+  return $self->{'canonical_transcript'};
+} ## end sub canonical_transcript
 
 
 =head2 canonical_annotation
