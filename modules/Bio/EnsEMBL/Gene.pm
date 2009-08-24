@@ -386,12 +386,17 @@ sub canonical_transcript {
     # We have not attached a canoncical transcript, but we have the dbID
     # of one.
 
-    my $transcript_adaptor =
-      $self->adaptor()->db()->get_TranscriptAdaptor();
+    if ( defined( $self->adaptor() ) ) {
+      my $transcript_adaptor =
+        $self->adaptor()->db()->get_TranscriptAdaptor();
 
-    $self->{'canonical_transcript'} =
-      $transcript_adaptor->fetch_by_dbID(
-      $self->{'canonical_transcript_id'} );
+      $self->{'canonical_transcript'} =
+        $transcript_adaptor->fetch_by_dbID(
+        $self->{'canonical_transcript_id'} );
+    } else {
+      warning( "Gene has no adaptor "
+          . "when trying to fetch canonical transcript." );
+    }
 
   }
 
