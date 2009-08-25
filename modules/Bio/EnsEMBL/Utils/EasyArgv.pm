@@ -53,9 +53,9 @@ with the content like
 
   use strict;    # The ceiling line
 
-  use Bio:: EnsEMBL::DBSQL::DBAdaptor;
+  use Bio::EnsEMBL::DBSQL::DBAdaptor;
 
-  my $db = Bio:: EnsEMBL::DBSQL::DBAdaptor->new(
+  my $db = Bio::EnsEMBL::DBSQL::DBAdaptor->new(
     -host   => 'ensembldb.ensembl.org',
     -user   => 'anonymous',
     -dbname => 'homo_sapiens_core_18_34'
