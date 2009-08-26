@@ -357,7 +357,7 @@ sub description {
   Example    : $gene->canonical_transcript($canonical_transcript);
   Description: Getter/setter for the canonical_transcript
   Returntype : Bio::EnsEMBL::Transcript
-  Exceptions : none
+  Exceptions : Throws if argument is not a transcript object.
   Caller     : general
   Status     : Stable
 
