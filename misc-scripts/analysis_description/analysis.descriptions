@@ -345,3 +345,8 @@
 344	havana_IG_gene	Immunoglobulin (Ig) and T-cell receptor (TcR) genes imported from the manually annotated IG gene set from the <a rel="external" href="http://www.sanger.ac.uk/HGP/havana/havana.shtml">Havana</a> project.	Vega gene	1	{'colour_key' => '[biotype]_[status]','caption' => 'Ensembl/Havana gene','label_key' => '[text_label] [display_label]','name' => 'Merged Ensembl and Havana Genes','default' => {'contigviewbottom' => 'transcript_label','contigviewtop' => 'gene_label','cytoview' => 'gene_label'},'key' => 'ensembl'}
 345	ncRNA_pseudogene	ncRNA pseudogenes imported from the manual annotation produced by Sean Eddy group.	ncRNA pseudogene	1	{'colour_key' => 'rna_[status]','label_key' => '[text_label] [display_label]','default' => {'contigviewbottom' => 'transcript_label','contigviewtop' => 'gene_label','cytoview' => 'gene_label'}}
 346	xrefcoordinatemapping	xrefcoordinatemapping	xrefcoordinatemapping	1
+347	ppapepX	Pristionchus pacificus proteins aligned by WU-BlastX	PpapepX	1	
+348	ppapepP	Pristionchus pacificus proteins aligned by WU-BlastP	PpapepP	1	
+349	jappepP	Caenorhabditis japonica proteins aligned by WU-BlastP	JappepP	1	
+350	jappepX	Caenorhabditis japonica proteins aligned by WU-BlastX	JappepX	1	
+
