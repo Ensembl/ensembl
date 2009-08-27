@@ -12,7 +12,9 @@
 =head1 SYNOPSIS
 
  script applies additonal rules to the analysis description table posterior to
- description loading
+ description loading. The script will create a file, debug_analysis_descriptions.txt
+ with some verbose information about the different updates being done. This
+ file should be kept for debugging purposes.
 
 =head1 DESCRIPTION
 
@@ -86,7 +88,7 @@ my $dbpass;
 my $dbport = 3306;
 my $dbname;
 my $help = 0;
-my $version = 52;
+my $version = 56;
 my $file = 'analysis.descriptions';
 
 &GetOptions (
@@ -110,6 +112,8 @@ if($help){
   usage();
 }
 
+open (OUT,">debug_analysis_descriptions.txt") or throw("Failed to open file  debug_analysis_descriptions.txt");
+
 my %reference;
 if ($file) {
 
@@ -124,26 +128,41 @@ if ($file) {
     next if m/^\s+$/; # and whitespace-only lines
 
     my ($nr, $logic_name, $description, $display_label, $displayable, $web_data) = split(/\t/);
-    #print join("\t", $logic_name, $description, $display_label, $displayable, $web_data), "\n";
-
+    
+    
     warn ("Displayable flag for analysis '$logic_name' has to be either 0 or 1, but not '$displayable'!")
       unless ($displayable =~ m/^[01]$/);
+    throw("The logic name '$logic_name' should contain, at least, 5 columns: Number, logic_name, description, display_label and displayable. Fix it !!") unless (defined $displayable);
 
-    $reference{lc($logic_name)} = {
-      nr            => "$nr",
-      description   => "$description",
-      display_lable => "$display_label", 
-      displayable   => "$displayable", 
-      web_data      => "$web_data"
-    };
-  }
-
+    #some entries in the file have no web_data defined, it is empty
+    if (defined $web_data){
+	#print OUT join("\t", $logic_name, $description, $display_label, $displayable, $web_data), "\n";
+	$reference{lc($logic_name)} = {
+	    nr            => "$nr",
+	    description   => "$description",
+	    display_lable => "$display_label", 
+	    displayable   => "$displayable", 
+	    web_data      => "$web_data"
+	    }
+    }
+    else{
+	#print OUT join("\t", $logic_name, $description, $display_label, $displayable), "\n";
+	$reference{lc($logic_name)} = {
+	    nr            => "$nr",
+	    description   => "$description",
+	    display_lable => "$display_label", 
+	    displayable   => "$displayable", 
+	    
+	} ;
+    }
+ }   
   close FH;
 	
 } else {
   throw("Need to pass reference file with analysis descriptions!");
 
 }
+
 
 $dsn = "DBI:mysql:host=" . $dbhost . ";port=" . $dbport;
 eval{ 
@@ -161,7 +180,7 @@ my $cdbs  = $dbh->selectcol_arrayref($sql);
 foreach my $cdb (@$cdbs) {
 
   (my $species = $cdb) =~ s/(.+)_core_${version}_\d+[a-z]$/$1/;
-  #print Dumper $species;
+  print OUT $species,"\n";
 
   my $cdba = new Bio::EnsEMBL::DBSQL::DBAdaptor(
     -host    => $dbhost,
@@ -186,14 +205,14 @@ foreach my $cdb (@$cdbs) {
 
   if (scalar(@$ofdbs) == 0) {
 		
-    print ("No otherfeatures db for " . $cdb . "! Setting all displayable entires to 1\n");
+    print OUT "No otherfeatures db for " . $cdb . "! Setting all displayable entires to 1\n";
     my $daf_logic_names = get_af_logic_names($cdba, 'dna');
 
     map { update_analysis($caa, $_, 1) } @$daf_logic_names;
 
   } else {
 
-    print ("Both core and otherfeatures dbs exist. Need to analyse dna_align_features ...\n");
+   print OUT "Both core and otherfeatures dbs exist. Need to analyse dna_align_features ...\n";
 
     my $ofdba = new Bio::EnsEMBL::DBSQL::DBAdaptor(
       -host    => $dbhost,
@@ -218,13 +237,13 @@ foreach my $cdb (@$cdbs) {
 
       if ($daf_logic_names{lc($ln)} == 2) {
 
-	print("<$ln> exists in both, setting displayable 0 for core and 1 for otherfeatures\n");
+	print OUT "<$ln> exists in both, setting displayable 0 for core and 1 for otherfeatures\n";
 	update_analysis($caa, $ln, 0);
 	update_analysis($ofaa, $ln, 1);
 	
       } else {
 	
-	print("<$ln> exists only in otherfeatures, setting displayable according to reference file\n");
+	print OUT "<$ln> exists only in otherfeatures, setting displayable according to reference file\n";
 	update_analysis($ofaa, $ln, $reference{lc($ln)}{displayable});
 	
       }
@@ -234,7 +253,7 @@ foreach my $cdb (@$cdbs) {
 
     foreach my $ln (keys %daf_logic_names) {
 
-      print("<$ln> exists only in core, setting displayable according to reference file\n");
+      print OUT "<$ln> exists only in core, setting displayable according to reference file\n";
       update_analysis($caa, $ln, $reference{lc($ln)}{displayable});
 
     }
@@ -257,7 +276,7 @@ foreach my $cdb (@$cdbs) {
       if ($ad->web_data() ne ''){
 	  my $new_display_label = $ad->web_data();
 	  delete $new_display_label->{'default'};
-#	  print "<$cdb> Switching align_feature '$ln' from " . $caa->dump_data($ad->web_data()) . " to " . $caa->dump_data($new_display_label) ."\n";
+	  print OUT "<$cdb> Switching align_feature '$ln' from " . $caa->dump_data($ad->web_data()) . " to " . $caa->dump_data($new_display_label) ."\n";
 	  update_analysis($caa, $ln, $ad->displayable(),$ad->display_label,$new_display_label);
       }
     }
@@ -284,11 +303,11 @@ foreach my $cdb (@$cdbs) {
     );
 
     my $ln = lc($alias{$species}).'_cdna';
-    print "<$cdb> Switching off displayable for $ln\n";
+    print OUT "<$cdb> Switching off displayable for $ln\n";
     update_analysis($caa, $ln, 0);
 
     my $dl = $alias{$species}.' cDNA';
-    print "<$cdnadb> Updating display_label for cDNA_update to '$dl'\n";
+    print OUT "<$cdnadb> Updating display_label for cDNA_update to '$dl'\n";
     update_analysis($cdnaaa, 'cDNA_update', 1, $dl);
 			
 
@@ -312,7 +331,7 @@ foreach my $cdb (@$cdbs) {
 		
     foreach my $ln (@$vega_daf_logic_names, @$vega_paf_logic_names) {
       
-      print "<$vegadb> Switching align_feature '$ln' displayable off\n";
+      print OUT "<$vegadb> Switching align_feature '$ln' displayable off\n";
       update_analysis($vegaaa, $ln, 0);
 			
 
@@ -321,7 +340,7 @@ foreach my $cdb (@$cdbs) {
     ### implements rule 5. ###
 
     my $display_label = 'Vega Havana gene';
-    print "<$cdb> Updating display_label for logic_name otter to '$display_label'\n";
+    print OUT "<$cdb> Updating display_label for logic_name otter to '$display_label'\n";
     update_analysis($vegaaa, 'otter', undef, $display_label);
 
     # 6) There are two more rules for the logic_name 'ensembl' in core databases 
@@ -345,19 +364,19 @@ foreach my $cdb (@$cdbs) {
       'contigviewtop' => 'gene_label',
       'cytoview' => 'gene_label'},
       'key' => 'ensembl'};
-    print "<ensembl> Updating web_data\n";
+    print OUT "<ensembl> Updating web_data\n";
     update_analysis($caa, 'ensembl', undef, undef, $web_data);
 }
 
   if ($species =~ m/^(anopheles_gambiae)/) {
 
-    print "<ensembl> Updating display_label to 'VectorBase gene'\n";
+    print OUT "<ensembl> Updating display_label to 'VectorBase gene'\n";
     update_analysis($caa, 'ensembl', undef, 'VectorBase gene');
 
-    print "<anopheles_cdna_est> Switching displayable on\n";
+    print OUT "<anopheles_cdna_est> Switching displayable on\n";
     update_analysis($caa, 'anopheles_cdna_est', 1);
 
-    print "<anopheles_cdna_est> Updating display_label to 'RNA (best)'\n";
+    print OUT "<anopheles_cdna_est> Updating display_label to 'RNA (best)'\n";
     update_analysis($ofaa, 'anopheles_cdna_est', undef, 'RNA (best)');
 
   }
@@ -370,17 +389,19 @@ foreach my $cdb (@$cdbs) {
     # - logic_name of 'ncRNA' has the same web_data as logic_name of 'tRNA'
     # - logic_name of 'Pseudogene' has the same web_data as logic_name of 'wormbase' 
 
-    print "<$cdb> Overwriting web_data for logic_name 'ncRNA' ".
+    print OUT "<$cdb> Overwriting web_data for logic_name 'ncRNA' ".
       "with web_data from 'tRNA'\n";
     my $tRNA = $caa->fetch_by_logic_name('tRNA');
     update_analysis($caa, 'ncRNA', undef, undef, $tRNA->web_data());
 
-    print "<$cdb> Overwriting web_data for logic_name 'Pseudogene' ".
+    print OUT "<$cdb> Overwriting web_data for logic_name 'Pseudogene' ".
       "with web_data from 'wormbase'\n";
     my $wormbase = $caa->fetch_by_logic_name('wormbase');
     update_analysis($caa, 'Pseudogene', undef, undef, $wormbase->web_data());
   }
 }
+
+close OUT;
 
 sub get_af_logic_names{
 
@@ -400,15 +421,15 @@ sub update_analysis {
   throw("Analysis '$logic_name' is not defined") unless defined $analysis;
 
   if (defined $displayable) {
-    print "\t[".$aa->db->dbc->dbname."] Updating '$logic_name' displayable from '".$analysis->displayable()."' to '".$displayable."'\n";
+    print OUT "\t[".$aa->db->dbc->dbname."] Updating '$logic_name' displayable from '".$analysis->displayable()."' to '".$displayable."'\n";
     $analysis->displayable($displayable)
   }
   if (defined $display_label) {
-    print "\t[".$aa->db->dbc->dbname."] Updating '$logic_name' display_label from '".$analysis->display_label()."' to '".$display_label."'\n";
+    print OUT "\t[".$aa->db->dbc->dbname."] Updating '$logic_name' display_label from '".$analysis->display_label()."' to '".$display_label."'\n";
     $analysis->display_label($display_label);
   }
   if (defined $web_data) {
-    print "\t[".$aa->db->dbc->dbname."] Updating '$logic_name' web_data from \"".$aa->dump_data($analysis->web_data())."\" to \"".$aa->dump_data($web_data)."\"\n";
+    print OUT "\t[".$aa->db->dbc->dbname."] Updating '$logic_name' web_data from \"".$aa->dump_data($analysis->web_data())."\" to \"".$aa->dump_data($web_data)."\"\n";
     $analysis->web_data($web_data);
   }
 
