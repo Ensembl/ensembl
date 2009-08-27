@@ -132,7 +132,7 @@ if ($file) {
     
     warn ("Displayable flag for analysis '$logic_name' has to be either 0 or 1, but not '$displayable'!")
       unless ($displayable =~ m/^[01]$/);
-    throw("The logic name '$logic_name' should contain, at least, 5 columns: Number, logic_name, description, display_label and displayable. Fix it !!") unless (defined $displayable);
+    throw("In the analysis_description file, logic name '$logic_name' should contain, at least, 5 columns: Number, logic_name, description, display_label and displayable. Fix it !!") unless (defined $displayable);
 
     #some entries in the file have no web_data defined, it is empty
     if (defined $web_data){
