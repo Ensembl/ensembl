@@ -33,7 +33,8 @@
       update features in the cDNA databases
 
    3) These cDNA_update features should have a display label of 'Mouse cDNA' in 
-      the mouse_cdna database, and 'Human cDNA' in the human_cdna database
+      the mouse_cdna database, and 'Human cDNA' in the human_cdna database. In addition
+      they need another label (multi_caption) for multi location views
 
    4) All align_features from vega databases should be switched off
 
@@ -271,7 +272,7 @@ foreach my $cdb (@$cdbs) {
     my $core_paf_logic_names = get_af_logic_names($caa, 'protein');
 		
     foreach my $ln (@$core_daf_logic_names, @$core_paf_logic_names) {
-	next if ($ln eq 'CCDS'); #this does not apply to CCDS
+      next if ($ln eq 'CCDS'); #this does not apply to CCDS
       my $ad = $caa->fetch_by_logic_name($ln);
       if ($ad->web_data() ne ''){
 	  my $new_display_label = $ad->web_data();
@@ -306,10 +307,12 @@ foreach my $cdb (@$cdbs) {
     print OUT "<$cdb> Switching off displayable for $ln\n";
     update_analysis($caa, $ln, 0);
 
-    my $dl = $alias{$species}.' cDNA';
-    print OUT "<$cdnadb> Updating display_label for cDNA_update to '$dl'\n";
-    update_analysis($cdnaaa, 'cDNA_update', 1, $dl);
-			
+    my $dl = $alias{$species}.' RefSeq/EMBL cDNA';
+    my $ad = $caa->fetch_by_logic_name($ln);
+    my $web_data = $ad->web_data();
+    $web_data->{'multi_caption'} = 'Mouse/Human specific cDNA';
+    print OUT "<$cdnadb> Updating display_label for cDNA_update to '$dl' and adding multi_caption entry to web_data\n";
+    update_analysis($cdnaaa, 'cDNA_update', 1, $dl, $web_data);
 
     ### implements rule 4. ###
 		
