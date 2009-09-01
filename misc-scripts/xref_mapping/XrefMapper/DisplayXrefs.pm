@@ -685,6 +685,7 @@ GSQL
 	    $best_gene_xref = $xref_id;
 	    $best_gene_level = $level{$ex_db_id};
 	  }
+          # if same level then use prioritys to work out best
 	  $added++;
 	} else {
           $removed++;
@@ -981,7 +982,7 @@ SQL
   my $i=0;
   
   my $ins_p_sth = $self->xref->dbc->prepare("INSERT into display_xref_prioritys (source_id, priority) values(?, ?)");
-  my $get_source_id_sth = $self->xref->dbc->prepare("select source_id from source where name like ?");
+  my $get_source_id_sth = $self->xref->dbc->prepare("select source_id from source where name like ? order by priority desc");
 
 #
 # So the higher the number the better then 
