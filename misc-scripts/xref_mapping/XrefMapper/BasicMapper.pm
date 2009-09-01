@@ -98,12 +98,13 @@ sub xref_latest_status {
 sub get_meta_value {
   my ($self, $key) = @_;
 
-  my $sth = $self->xref->dbc->prepare('select meta_value from meta where meta_key like "'.$key.'"');
+  my $sth = $self->xref->dbc->prepare('select meta_value from meta where meta_key like "'.$key.'" order by meta_id');
   
   $sth->execute();
   my $value;
   $sth->bind_columns(\$value);
-  $sth->fetch;
+  while($sth->fetch){   # get the last one
+  }
   $sth->finish;
 
   return $value;  
@@ -631,6 +632,15 @@ FSQL
   $sth = $self->xref->dbc->prepare($del_vega_sql);
   $sth->execute();
 
+
+
+
+
+  $del_vega_sql = "delete s from xref x, synonym s where s.xref_id = x.xref_id and x.source_id = $clone_based_vega_tran_id and x.info_type = 'MISC'"; # original ones added have info type of "DIRECT"
+
+  $sth = $self->xref->dbc->prepare($del_vega_sql);
+  $sth->execute();
+
   $del_vega_sql = "delete x from xref x where x.source_id = $clone_based_vega_tran_id and x.info_type = 'MISC'"; # original ones added have info type of "DIRECT"
 
   $sth = $self->xref->dbc->prepare($del_vega_sql);
@@ -686,7 +696,7 @@ FSQL
   my $total_clone_name = 0;
   my $odn_count = 0;
 
-  my $dbentrie_sth = $self->xref->dbc->prepare("select x.label from xref x, object_xref ox, source s where x.xref_id = ox.xref_id and 
+  my $dbentrie_sth = $self->xref->dbc->prepare("select x.label, s.priority from xref x, object_xref ox, source s where x.xref_id = ox.xref_id and 
                                                 x.source_id = s.source_id and s.name = ? and ox.ox_status = 'DUMP_OUT' and ox.ensembl_id = ? and ox.ensembl_object_type = ? ");
 
 
@@ -707,10 +717,18 @@ FSQL
     my @VEGA_NAME=();
     my $CLONE_NAME = undef;
     my $display;
+    my $level;
     $dbentrie_sth->execute($dbname, $gene_id, "Gene");
-    $dbentrie_sth->bind_columns(\$display);
+    $dbentrie_sth->bind_columns(\$display,\$level);
+    my $best_level=999;
     while($dbentrie_sth->fetch){
-      push @ODN, $display;
+      if($level < $best_level){
+	@ODN = ();
+	push @ODN, $display;
+      }
+      elsif($level == $best_level){
+	push @ODN, $display;
+      }
     }
     
     if(scalar(@ODN)){
@@ -728,7 +746,7 @@ FSQL
       $count = 0 ;
 
       $dbentrie_sth->execute($dbname."_curated_transcript", $tran_id, "Transcript");
-      $dbentrie_sth->bind_columns(\$display);
+      $dbentrie_sth->bind_columns(\$display,\$level);
       while($dbentrie_sth->fetch){
 	my($hgnc_bit, $num) = split(/-0\d\d/,$display);
 	$VEGA = $hgnc_bit;
@@ -759,7 +777,7 @@ FSQL
       }
        
       $dbentrie_sth->execute("Clone_based_vega_transcript", $tran_id, "Transcript");
-      $dbentrie_sth->bind_columns(\$display);
+      $dbentrie_sth->bind_columns(\$display,\$level);
       while($dbentrie_sth->fetch){
 	my($hgnc_bit, $num) = split(/-0\d\d/,$display);
 	$CLONE_NAME = $hgnc_bit;
