@@ -955,18 +955,20 @@ sub get_all_SeqEdits {
 =cut
 
 sub modify_translation {
-  my ($self, $seq) = @_;
+  my ( $self, $seq ) = @_;
 
-  my @seqeds = @{$self->get_all_SeqEdits()};
+  my @seqeds = @{ $self->get_all_SeqEdits() };
 
-  # sort in reverse order to avoid complication of adjusting downstream edits
-  @seqeds = sort {$b <=> $a} @seqeds;
+  # Sort in reverse order to avoid complication of adjusting
+  # downstream edits.
+  @seqeds = sort { $b->start() <=> $a->start() } @seqeds;
 
-  # apply all edits
+  # Apply all edits.
   my $peptide = $seq->seq();
   foreach my $se (@seqeds) {
-    $se->apply_edit(\$peptide);
+    $se->apply_edit( \$peptide );
   }
+
   $seq->seq($peptide);
 
   return $seq;
