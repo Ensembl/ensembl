@@ -879,34 +879,43 @@ sub dnadb {
 use vars '$AUTOLOAD';
 
 sub AUTOLOAD {
-  my ($self,@args) = @_;
+  my ( $self, @args ) = @_;
 
   my $type;
-  if($AUTOLOAD =~ /^.*::get_(\w+)Adaptor$/){ 
+  if ( $AUTOLOAD =~ /^.*::get_(\w+)Adaptor$/ ) {
     $type = $1;
-  }
-  elsif($AUTOLOAD =~ /^.*::get_(\w+)$/){ 
+  } elsif ( $AUTOLOAD =~ /^.*::get_(\w+)$/ ) {
     $type = $1;
-  }
-  else{
-    throw("Could not work out type for $AUTOLOAD \n");
+  } else {
+    throw( sprintf( "Could not work out type for %s\n", $AUTOLOAD ) );
   }
 
-  my  $ret = $reg->get_adaptor($self->species(),$self->group(),$type);
+  my $ret =
+    $reg->get_adaptor( $self->species(), $self->group(), $type );
 
-  if($ret){
+  if ($ret) {
+
+    return $ret;
+
+  } else {
+    throw(
+      sprintf(
+        "Could not get adaptor %s for %s %s\n",
+        $type, $self->species(), $self->group() ) );
+
+    warning(
+      sprintf(
+        "Could not find %s adaptor in the registry for %s %s\n",
+        $type, $self->species(), $self->group() ) );
+
     return $ret;
   }
-  else{
-    throw( "Couldnt get adaptor $type for ".$self->species." ".$self->group."\n");
-    warning("Could not find $type adaptor in the registry for ".$self->species." ".$self->group."\n");
-    return $ret;
-  }
-  die("No such method: $AUTOLOAD\n");
-}
 
+  die( sprintf( "No such method: %s\n", $AUTOLOAD ) );
 
-sub DESTROY {} # required due to AUTOLOAD
+} ## end sub AUTOLOAD
+
+sub DESTROY { }    # required due to AUTOLOAD
 
 
 #########################
