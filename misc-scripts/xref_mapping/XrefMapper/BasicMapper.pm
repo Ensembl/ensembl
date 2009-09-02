@@ -1052,66 +1052,6 @@ FSQL
   $add_syn_sth->finish;
 
 
-##
-## Now check for duplicate clone names as gene names.
-##
-  
-
-#  my $xref_list_sql = 'select x.xref_id, x.label, count(*) as count from source s, xref x, object_xref ox where s.source_id = x.source_id and s.name like "Clone_based_ensembl_gene" and x.xref_id = ox.xref_id and ox.ensembl_object_type = "Gene"  group by xref_id having count >1';
-  
-
-#  # may need to add gsi to get the order the same each time
-#  my $object_xref_list = "select object_xref_id, ensembl_id from object_xref where xref_id = ? order by ensembl_id";  # Can only be linked to a gene so no point checking really.
-#  my $ox_list_sth = $self->xref->dbc->prepare($object_xref_list);
-
-#  my $update_first_xref  = "update xref set accession = ?, label = ? where xref_id = ?"; # just rename xref;
-#  my $update_first_sth = $self->xref->dbc->prepare($update_first_xref);
-
-#  my $change_object_xref = "update object_xref set xref_id = ? where xref_id = ? and ensembl_id = ?";
-#  my $change_ox_sth = $self->xref->dbc->prepare($change_object_xref);
-
-
-#  my %gene_clone_name_count;
-
-#  $sth = $self->xref->dbc->prepare($xref_list_sql);
-#  $sth->execute;
-#  my ($xref, $count);
-#  $sth->bind_columns(\$xref, \$name, \$count);
-#  while($sth->fetch){
-#    $ox_list_sth->execute($xref);
-#    my ($object_xref_id, $ensembl_id);
-#    $count = 1;
-#    $ox_list_sth->bind_columns(\$object_xref_id, \$ensembl_id);
-#    while($ox_list_sth->fetch){
-#      my $new_name = $name.".".$count;
-#      $gene_name_change{$ensembl_id} = $count;
-#      if($count == 1){
-#	$update_first_sth->execute($new_name, $new_name, $xref);
-#	$xref_added{$new_name.":".$clone_based_ensembl_gene_id} = $xref;
-#      }
-#      else{
-#	#add new one
-#	if(!defined($xref_added{$new_name.":".$clone_based_ensembl_gene_id})){
-#	  $max_xref_id++;
-#	  $ins_xref_sth->execute($max_xref_id, $clone_based_ensembl_gene_id, $new_name, $new_name);
-#	  $xref_added{$new_name.":".$clone_based_ensembl_gene_id} = $max_xref_id;
-#	}
-#	else{
-#	  print STDERR "$new_name already exists????\n";
-#	}
-#	$change_ox_sth->execute($max_xref_id, $xref, $ensembl_id);  
-#      }
-#      $count++;
-
-#    }
-#  }
-#  $change_ox_sth->finish;
-#  $update_first_sth->finish;
-#  $ox_list_sth->finish;
-#  $ins_dep_ix_sth->finish;
-
-
-
   my $sth_stat = $self->xref->dbc->prepare("insert into process_status (status, date) values('official_naming_done',now())");
   $sth_stat->execute();
   $sth_stat->finish;
