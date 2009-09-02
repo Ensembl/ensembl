@@ -222,9 +222,21 @@ sub build_transcript_and_gene_display_xrefs {
   # and also a list of those xrefs to ignore 
   # where the source name is the key and the value is the string to test for 
   # 
-  my ($presedence, $ignore) = @{$self->transcript_display_xref_sources(0)}; # UPDATE MODE
+
+#if mapper can transcript_display_xref_sources # from species.pm file
+#do it else.....
+  my $presedence;
+  my $ignore; 
+  if( $self->mapper->can("transcript_display_xref_sources") ){
+    ($presedence, $ignore) = @{$self->mapper->transcript_display_xref_sources(0)}; # UPDATE MODE
+  }
+  else{
+    ($presedence, $ignore) = @{$self->transcript_display_xref_sources(0)}; # UPDATE MODE
+  }
   my $i=0;
   my %level;
+
+  my $last_name = "";
   print "precedense in reverse order:-\n" if($self->verbose);
   foreach my $name (reverse (@$presedence)){
     $i++;
@@ -232,7 +244,10 @@ sub build_transcript_and_gene_display_xrefs {
       print STDERR "unknown external database name *$name* being used\n";
     }
     $level{$external_name_to_id{$name}} = $i;
-    print "\t".$name."\t$i\n" if($self->verbose);
+    if($name ne $last_name){
+      print "\t".$name."\t$i\n" if($self->verbose);
+    }
+    $last_name = $name;
   }
 
   $self->build_genes_to_transcripts();
@@ -549,12 +564,28 @@ sub new_build_gene_descriptions{
   $reset_sth->execute();
   $reset_sth->finish;
  
-  my @regexps = $self->gene_description_filter_regexps();
+  my @presedence;
+  my @regexps;
+  if( $self->mapper->can("gene_description_sources") ){
+    @presedence = $self->mapper->gene_description_sources();
+  }
+  else{
+    @presedence = $self->gene_description_sources();
+  }
+
+  if( $self->mapper->can("gene_description_filter_regexps") ){
+    @regexps = $self->mapper->gene_description_filter_regexps();
+  }
+  else{
+    @regexps = $self->gene_description_filter_regexps();
+  }
+
+#  my @regexps = $self->gene_description_filter_regexps();
 
   if(scalar(@regexps) == 0){
     warn "no reg exps\n" if($self->verbose);
   }
-  my @presedence = $self->gene_description_sources();
+#  my @presedence = $self->gene_description_sources();
 
 
 
@@ -978,7 +1009,15 @@ SQL
   $sth->execute;
   $sth->finish;
 
-  my ($presedence, $ignore) = @{$self->transcript_display_xref_sources(1)};  # FULL update mode pass 1
+  my $presedence;
+  my $ignore; 
+  if( $self->mapper->can("transcript_display_xref_sources") ){
+    ($presedence, $ignore) = @{$self->mapper->transcript_display_xref_sources(1)}; # FULL update mode pass 1
+  }
+  else{
+    ($presedence, $ignore) = @{$self->transcript_display_xref_sources(1)}; # FULL update mode pass 1
+  }
+#  my ($presedence, $ignore) = @{$self->transcript_display_xref_sources(1)};  # FULL update mode pass 1
   my $i=0;
   
   my $ins_p_sth = $self->xref->dbc->prepare("INSERT into display_xref_prioritys (source_id, priority) values(?, ?)");
@@ -989,6 +1028,7 @@ SQL
 #
 
 
+  my $last_name = "";
   print "Presedence for the display xrefs\n" if($self->verbose);
   foreach my $name (reverse (@$presedence)){
     $i++;
@@ -997,13 +1037,14 @@ SQL
     $get_source_id_sth->bind_columns(\$source_id);
     while($get_source_id_sth->fetch){
       $ins_p_sth->execute($source_id, $i);
-      print "\t$name\t$i\n" if ($self->verbose);
-    }	
+      if($name ne $last_name){
+	print "\t$name\t$i\n" if ($self->verbose);
+      }	
+      $last_name = $name;
+    }
   }
   $ins_p_sth->finish;
   $get_source_id_sth->finish;
-
-
 
 #
 # Set status to 'FAILED_CUTOFF' for those that match the ignore REGEXP in object_xref
@@ -1183,8 +1224,24 @@ SQL
   $sth->execute;
   $sth->finish;
 
-  my @presedence = $self->gene_description_sources();
-  my @regexps = $self->gene_description_filter_regexps();
+#  my @presedence = $self->gene_description_sources();
+#  my @regexps = $self->gene_description_filter_regexps();
+  my @presedence;
+  my @regexps;
+  if( $self->mapper->can("gene_description_sources") ){
+    @presedence = $self->mapper->gene_description_sources();
+  }
+  else{
+    @presedence = $self->gene_description_sources();
+  }
+  if( $self->mapper->can("gene_description_filter_regexps") ){
+    @regexps = $self->mapper->gene_description_filter_regexps();
+  }
+  else{
+    @regexps = $self->gene_description_filter_regexps();
+  }
+
+
   my $i=0;
   
   my $ins_p_sth = $self->xref->dbc->prepare("INSERT into gene_desc_prioritys (source_id, priority) values(?, ?)");
@@ -1196,6 +1253,7 @@ SQL
 
 
   print "Presedence for Gene Descriptions\n" if($self->verbose);
+  my $last_name = "";
   foreach my $name (reverse (@presedence)){
     $i++;
     $get_source_id_sth->execute($name);
@@ -1203,8 +1261,11 @@ SQL
     $get_source_id_sth->bind_columns(\$source_id);
     while($get_source_id_sth->fetch){
       $ins_p_sth->execute($source_id, $i);
-      print "\t$name\t$i\n" if ($self->verbose);
-    }	
+      if($last_name ne $name){
+	print "\t$name\t$i\n" if ($self->verbose);
+      }
+      $last_name = $name;
+    }
   }
   $ins_p_sth->finish;
   $get_source_id_sth->finish;
