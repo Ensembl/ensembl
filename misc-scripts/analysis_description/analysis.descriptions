@@ -390,3 +390,7 @@
 530	T.Biweight	Weighted mean standardisation using the one step Tukey Biweight algorithm	Tukey Biweight	1
 531	WindowInterval	Window Interval	WindowInterval	1	
 532	probe2transcript	Microarray probes from manufacturers are aligned to the genome by Ensembl, if the probe sequences are provided. The mapping is a two-step procedure outlined <a href="/info/docs/microarray_probe_set_mapping.html">here</a>.	Probe2Transcript Annotation	0
+533	LEIDEN_ProbeTranscriptAlign	Transcript alignments for LEDIEN arrays	LEIDEN_ProbeTranscriptAlign	1	{'type' => '_oligo', 'key' => 'array_chip', 'colourset' => 'feature', 'display' =>'off' }
+534	LEIDEN_ProbeAlign	Genomic alignments for LEIDEN arrays	LEIDEN_ProbeAlign	1	{'type' => '_oligo', 'key' => 'array_chip', 'colourset' => 'feature', 'display' =>'off' }
+535	CODELINK_ProbeTranscriptAlign	Transcript alignments for CODELINK arrays	CODELINK_ProbeTranscriptAlign	1	{'type' => '_oligo', 'key' => 'array_chip', 'colourset' => 'feature', 'display' =>'off' }
+536	WormBaseExpressionXrefs	Imported Wormbase microarray annotations	WormBase Expression Xrefs	0
