@@ -50,8 +50,8 @@ if you want to update all databases for a type
 perl load_analysis_descriptions.pl -dbhost my_host -dbuser user -dbpass ***** 
  -pattern '%_55_%' -file analysis.descriptions > & load_analysis_descriptions.log
 
-to identify logic_names mising from the definition file:
-grep 'MSG' load_analysis_descriptions.log
+syntax errors found as the definition file is parsed (usually the use of spaces rather
+than tabs), cause the script to exit - fix each one and rerun.
 
 =cut
 
