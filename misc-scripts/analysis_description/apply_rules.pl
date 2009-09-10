@@ -50,6 +50,11 @@
    8) human and mouse have a different set of align_features switched on by default than
       is defined in the definition file (don't need the 'default'=>{'....'} entry
 
+TO DO for e57:
+
+- check that rat_cdna/rat_est are switched on in core and off in other_feature; if not add a rule
+- add a rule to update web_data for GSTEN in other_features (see tetraodon_nigroviridis_otherfeatures_56_8b)
+
 =head1 OPTIONS
 
      Database options
@@ -305,8 +310,10 @@ foreach my $cdb (@$cdbs) {
       my $dl = $alias{$species}.' RefSeq/EMBL cDNA';
       my $ad = $caa->fetch_by_logic_name($ln);
       my $web_data = $ad->web_data();
-     $web_data->{'multi_caption'} = 'Mouse/Human specific cDNA';
-      print OUT "<$cdnadb> Updating display_label for cDNA_update to '$dl' and adding multi_caption entry to web_data\n";
+      $web_data->{'multi_caption'} = 'Mouse/Human specific cDNA';
+      $web_data->{'key'}  = 'species_specific_cdna';
+      $web_data->{'name'} = $dl;
+      print OUT "<$cdnadb> Updating display_label for cDNA_update to '$dl' and adding multi_caption and other entries to web_data\n";
       update_analysis($cdnaaa, 'cDNA_update', 1, $dl, $web_data);
 
       ### implements rule 4. ###
