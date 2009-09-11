@@ -54,6 +54,8 @@ TO DO for e57:
 
 - check that rat_cdna/rat_est are switched on in core and off in other_feature; if not add a rule
 - add a rule to update web_data for GSTEN in other_features (see tetraodon_nigroviridis_otherfeatures_56_8b)
+- add a rule / mdify analysis.descriptions for chimp otherfeatures to not display chimp_cdna, chimp_est 
+  and human_cdna genes (see pan_troglodytes_otherfeatures_56_21l).
 
 =head1 OPTIONS
 
