@@ -104,7 +104,7 @@ sub update{
   my $go_sth       =  $self->core->dbc->prepare('DELETE FROM go_xref');
   my $identity_sth =  $self->core->dbc->prepare('DELETE identity_xref FROM identity_xref, object_xref, xref WHERE identity_xref.object_xref_id = object_xref.object_xref_id AND object_xref.xref_id = xref.xref_id AND xref.external_db_id = ?');
   my $object_sth   =  $self->core->dbc->prepare('DELETE object_xref FROM object_xref, xref WHERE object_xref.xref_id = xref.xref_id AND xref.external_db_id = ?');
-  my $dependent_sth = $self->core->dbc->prepare('DELETE dependent_xref FROM dependent_xref, xref  WHERE dependent_xref.dependent_xref_id = xref.xref_id and xref.external_db_id = ?');
+  my $dependent_sth = $self->core->dbc->prepare('DELETE FROM dependent_xref WHERE external_db_id = ?');
   my $xref_sth     =  $self->core->dbc->prepare('DELETE FROM xref WHERE xref.external_db_id = ?');
   my $unmapped_sth =  $self->core->dbc->prepare('DELETE FROM unmapped_object WHERE type="xref" and external_db_id = ?');
 
