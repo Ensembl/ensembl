@@ -1198,62 +1198,7 @@ sub filter_by_regexp {
 
 }
 
-sub gene_description_filter_regexps {
 
-  return ();
-
-}
-
-sub gene_description_sources {
-
-  return ("RFAM",
-	  "miRBase",
-          "IMGT/GENE_DB",
-	  "Uniprot/SWISSPROT",
-	  "RefSeq_peptide",
-	  "RefSeq_dna",
-	  "Uniprot/Varsplic",
-	  "Uniprot/SPTREMBL");
-
-}
-
-
-sub transcript_display_xref_sources {
-  my @list = qw(miRBase
-                RFAM
-                HGNC_curated_gene
-		HGNC_automatic_gene
-                MGI_curated_gene
-		MGI_automatic_gene
-		Clone_based_vega_gene
-		Clone_based_ensembl_gene
-		HGNC_curated_transcript
-		HGNC_automatic_transcript
-		MGI_curated_transcript
-		MGI_automatic_transcript
-		Clone_based_vega_transcript
-		Clone_based_ensembl_transcript
-		IMGT/GENE_DB
-		HGNC
-		SGD
-		MGI
-		flybase_symbol
-		Anopheles_symbol
-		Genoscope_annotated_gene
-		Uniprot/SWISSPROT
-		Uniprot/Varsplic
-		RefSeq_peptide
-		RefSeq_dna
-		Uniprot/SPTREMBL
-		EntrezGene
-	        IPI);
-
-  my %ignore;
-  $ignore{"EntrezGene"}= 'FROM:RefSeq_[pd][en][pa].*_predicted';
-  
-  return [\@list,\%ignore];
-
-}
 
 sub get_official_synonyms{
   my $self = shift;
