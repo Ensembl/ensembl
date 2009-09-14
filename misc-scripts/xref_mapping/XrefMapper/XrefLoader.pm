@@ -104,9 +104,15 @@ sub update{
   my $go_sth       =  $self->core->dbc->prepare('DELETE FROM go_xref');
   my $identity_sth =  $self->core->dbc->prepare('DELETE identity_xref FROM identity_xref, object_xref, xref WHERE identity_xref.object_xref_id = object_xref.object_xref_id AND object_xref.xref_id = xref.xref_id AND xref.external_db_id = ?');
   my $object_sth   =  $self->core->dbc->prepare('DELETE object_xref FROM object_xref, xref WHERE object_xref.xref_id = xref.xref_id AND xref.external_db_id = ?');
-  my $dependent_sth = $self->core->dbc->prepare('DELETE FROM dependent_xref WHERE external_db_id = ?');
+  my $dependent_sth = $self->core->dbc->prepare('DELETE d FROM dependent_xref d, xref x WHERE d.dependent_xref_id = x.xref_id and x.external_db_id = ?');
   my $xref_sth     =  $self->core->dbc->prepare('DELETE FROM xref WHERE xref.external_db_id = ?');
   my $unmapped_sth =  $self->core->dbc->prepare('DELETE FROM unmapped_object WHERE type="xref" and external_db_id = ?');
+
+
+#
+# ?? Is it faster to delete them all in one go with a external_db_id in (....) ???
+#
+
 
 
 #  my $test =1;  # Can take a while so make optional when testing
@@ -471,9 +477,11 @@ GSQL
   my $dbname;
   $sql =(<<DIR);
   SELECT  x.xref_id, x.accession, x.version, x.label, x.description, x.info_type, x.info_text, s.name 
-    FROM xref x, source s 
+    FROM source s,xref x
+      LEFT JOIN  object_xref ox ON ox.xref_id = x.xref_id
       WHERE x.source_id = s.source_id 
         AND x.dumped is null 
+        AND ox.ox_status != 'FAILED_PRIORITY'
         AND x.info_type = 'DIRECT'
 DIR
 
@@ -541,9 +549,11 @@ MIS
     SELECT  x.xref_id, x.accession, x.version, x.label, x.description, x.info_type, x.info_text, s.name, mx.accession 
       FROM xref mx, source s, xref x 
           LEFT JOIN dependent_xref dx ON  dx.dependent_xref_id = x.xref_id
+          LEFT JOIN object_xref ox ON ox.xref_id = x.xref_id
         WHERE x.source_id = s.source_id 
           AND dx.master_xref_id = mx.xref_id 
           AND x.dumped is null 
+          AND ox.ox_status != 'FAILED_PRIORITY'
           AND x.info_type = 'DEPENDENT'
           ORDER BY x.xref_id
 DEP
@@ -591,6 +601,7 @@ DEP
 	  AND px.xref_id = x.xref_id
           AND x.dumped is null 
           AND x.info_type = 'SEQUENCE_MATCH'
+          AND ox.ox_status != 'FAILED_PRIORITY'
           ORDER  BY x.xref_id
           
 SEQ
