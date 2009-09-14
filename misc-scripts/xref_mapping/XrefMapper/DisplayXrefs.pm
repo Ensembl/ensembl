@@ -1221,11 +1221,6 @@ sub set_gene_descriptions{
   }
   $sth->finish;
 
-# no idea why this is here??
-#  $sth = $self->xref->dbc->prepare("update xref set dumped = null"); # just incase this is being ran again
-#  $sth->execute;
-#  $sth->finish;
-
 
 
   $sql =(<<SQL); 
