@@ -23,6 +23,24 @@ my %transcript_length;
 # ignore should return regexp and source name as key for update METHODS
 #
 
+sub gene_description_sources {
+
+  return ("RFAM",
+	  "miRBase",
+          "IMGT/GENE_DB",
+	  "Uniprot/SWISSPROT",
+	  "RefSeq_peptide",
+	  "RefSeq_dna",
+	  "Uniprot/Varsplic",
+	  "Uniprot/SPTREMBL");
+
+}
+
+sub gene_description_filter_regexps {
+
+  return ();
+
+}
 
 sub transcript_display_xref_sources {
   my $self     = shift;
@@ -580,12 +598,9 @@ sub new_build_gene_descriptions{
     @regexps = $self->gene_description_filter_regexps();
   }
 
-#  my @regexps = $self->gene_description_filter_regexps();
-
   if(scalar(@regexps) == 0){
     warn "no reg exps\n" if($self->verbose);
   }
-#  my @presedence = $self->gene_description_sources();
 
 
 
@@ -1206,9 +1221,10 @@ sub set_gene_descriptions{
   }
   $sth->finish;
 
-  $sth = $self->xref->dbc->prepare("update xref set dumped = null"); # just incase this is being ran again
-  $sth->execute;
-  $sth->finish;
+# no idea why this is here??
+#  $sth = $self->xref->dbc->prepare("update xref set dumped = null"); # just incase this is being ran again
+#  $sth->execute;
+#  $sth->finish;
 
 
 
@@ -1224,8 +1240,6 @@ SQL
   $sth->execute;
   $sth->finish;
 
-#  my @presedence = $self->gene_description_sources();
-#  my @regexps = $self->gene_description_filter_regexps();
   my @presedence;
   my @regexps;
   if( $self->mapper->can("gene_description_sources") ){
@@ -1234,6 +1248,7 @@ SQL
   else{
     @presedence = $self->gene_description_sources();
   }
+
   if( $self->mapper->can("gene_description_filter_regexps") ){
     @regexps = $self->mapper->gene_description_filter_regexps();
   }
@@ -1355,14 +1370,5 @@ sub check_desc{
     print "ERROR: $type ($id) has different descriptions ???  \n\told:$old_desc \n\tnew:$desc\n";
   }
 }
-
-sub gene_description_filter_regexps {
-
-  return ();
-
-}
-
-
-
 
 1;
