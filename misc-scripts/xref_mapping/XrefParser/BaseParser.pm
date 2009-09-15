@@ -704,9 +704,26 @@ sub fetch_files {
                     }
                 } ## end else [ if ( $checkdownload &&...
 
+		if ( $file_path =~ /\.(gz|Z)$/ ) {
+		  # Read from zcat pipe
+		  #
+		  my $cmd = "gzip -t $file_path" ;
+		  if(system($cmd) != 0 ){
+		    print "system $cmd  failed: $? - Checking of gzip file failed - FILE CORRUPTED ?\n\n";
+		    
+		    if (-f $file_path ) {
+		      print ( "Deleting '%s'\n", $file_path ) if($verbose);
+		      unlink($file_path);
+		    }
+		    return ();
+		  }
+		  else{
+		    print "$file_path passed (gzip -t) corruption test.\n" if($verbose);
+		  }
+		}
                 push( @processed_files, $file_path );
-
-            } ## end foreach my $remote_file ( (...
+		
+	      } ## end foreach my $remote_file ( (...
 
         } elsif ( $uri->scheme() eq 'http' ) {
             # Deal with HTTP files.
