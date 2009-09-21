@@ -271,45 +271,57 @@ sub fetch_by_dbID {
 =cut
 
 sub fetch_by_logic_name {
-  my $self = shift;
-  my $logic_name = shift;
+  my ( $self, $logic_name ) = @_;
+
   my $analysis;
   my $rowHash;
 
-  #check the cache for the logic name
-  if(defined $self->{_logic_name_cache}{lc($logic_name)}) {
-    return $self->{_logic_name_cache}{lc($logic_name)};
+  # Check the cache for the logic name
+  if ( defined( $self->{_logic_name_cache}{ lc($logic_name) } ) ) {
+    return $self->{_logic_name_cache}{ lc($logic_name) };
   }
 
-  my $sth = $self->prepare( "
-    SELECT analysis.analysis_id, logic_name,
-           program, program_version, program_file,
-           db, db_version, db_file,
-           module, module_version,
-           gff_source, gff_feature,
-           created, parameters, description, display_label, displayable, web_data
-    FROM   analysis
-    LEFT JOIN analysis_description
-    ON analysis.analysis_id = analysis_description.analysis_id
-    WHERE  logic_name = ?" );
+  my $sth = $self->prepare(
+    qq(
+SELECT  analysis.analysis_id,
+        logic_name,
+        program,
+        program_version,
+        program_file,
+        db,
+        db_version,
+        db_file,
+        module,
+        module_version,
+        gff_source,
+        gff_feature,
+        created,
+        parameters,
+        description,
+        display_label,
+        displayable,
+        web_data
+FROM    analysis
+  LEFT JOIN analysis_description
+    ON  ( analysis.analysis_id = analysis_description.analysis_id )
+WHERE  LOWER(logic_name) = ?)
+  );
 
-  $sth->bind_param(1,$logic_name,SQL_VARCHAR);
+  $sth->bind_param( 1, lc($logic_name), SQL_VARCHAR );
   $sth->execute();
-  my $rowHashRef;
-  $rowHashRef = $sth->fetchrow_hashref;
+  my $rowHashRef = $sth->fetchrow_hashref();
 
-  unless(defined $rowHashRef) {
-    return undef;
-  }
+  if ( !defined($rowHashRef) ) { return undef }
 
-  $analysis = $self->_objFromHashref( $rowHashRef );
+  $analysis = $self->_objFromHashref($rowHashRef);
 
-  #place the analysis in the caches, cross referenced by dbID and logic_name
-  $self->{_cache}->{$analysis->dbID()} = $analysis;
-  $self->{_logic_name_cache}->{lc($logic_name)} = $analysis;
+  # place the analysis in the caches, cross referenced by dbID and
+  # logic_name
+  $self->{_cache}->{ $analysis->dbID() } = $analysis;
+  $self->{_logic_name_cache}->{ lc($logic_name) } = $analysis;
 
   return $analysis;
-}
+} ## end sub fetch_by_logic_name
 
 
 =head2 store
