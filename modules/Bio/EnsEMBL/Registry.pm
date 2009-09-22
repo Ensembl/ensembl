@@ -2290,7 +2290,7 @@ sub get_species_and_object_type{
  
 ## Check for Ensembl/Vega style identifiers...
   if( $stable_id =~ /(\w+?)(EST)?([GTPE])\d/ ) {
-      return $ensembl_species{$1},$ensembl_type{$3}, $ensembl_db_type{$2} ||'core' if $ensembl_species{$1};
+      return $ensembl_species{$1},$ensembl_type{$3}, (defined($2) ? ($ensembl_db_type{$2} || 'core') : 'core') if $ensembl_species{$1};
       return $vega_species{$1}, $ensembl_type{$3}, 'vega' if $vega_species{$1};
   }
 ## Check for Vector base style identifiers
