@@ -17,7 +17,6 @@ sub transcript_display_xref_sources {
 
 my @list = qw(RFAM
 	      miRBase
-	      HUGO
 	      RGD
 	      MGI
 	      flybase_symbol
@@ -25,8 +24,6 @@ my @list = qw(RFAM
 	      Genoscope_annotated_gene
 	      Uniprot/SWISSPROT
 	      Uniprot/Varsplic
-	      RefSeq_peptide
-	      RefSeq_dna
 	      Uniprot/SPTREMBL
 	      EntrezGene);
 
