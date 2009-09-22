@@ -109,14 +109,19 @@ sub update{
   my $unmapped_sth =  $self->core->dbc->prepare('DELETE FROM unmapped_object WHERE type="xref" and external_db_id = ?');
 
 
+  my $transaction_start_sth  =  $self->core->dbc->prepare('start transaction');
+  my $transaction_end_sth    =  $self->core->dbc->prepare('commit');
+
 #
 # ?? Is it faster to delete them all in one go with a external_db_id in (....) ???
+# alternative load ottt etc that are not obtained from xrefs into xref table and then delete tables fully??
 #
 
 
 
 #  my $test =1;  # Can take a while so make optional when testing
 #  if(!$test){
+  $transaction_start_sth->execute();
   while($sth->fetch()){
     my $ex_id = $name_to_external_db_id{$name};
 
@@ -132,6 +137,7 @@ sub update{
     $unmapped_sth->execute($ex_id);
   }
   $sth->finish;
+  $transaction_end_sth->execute();
 #}
   $synonym_sth->finish;
   $go_sth->finish;  
@@ -214,17 +220,17 @@ GSQL
      my $add_object_xref_sth    = $self->core->dbc->prepare('insert into object_xref (object_xref_id, ensembl_id, ensembl_object_type, xref_id, analysis_id) values (?, ?, ?, ?, ?)');
      my $add_identity_xref_sth  = $self->core->dbc->prepare('insert into identity_xref (object_xref_id, xref_identity, ensembl_identity, xref_start, xref_end, ensembl_start, ensembl_end, cigar_line, score, evalue) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
      my $add_go_xref_sth        = $self->core->dbc->prepare('insert into go_xref (object_xref_id, linkage_type) values (?, ?)');
-     my $add_dependent_xref_sth = $self->core->dbc->prepare('insert into dependent_xref (object_xref_id, master_xref_id, dependent_xref_id) values (?, ?, ?)');
+     my $add_dependent_xref_sth = $self->core->dbc->prepare('insert ignore into dependent_xref (object_xref_id, master_xref_id, dependent_xref_id) values (?, ?, ?)');
      my $add_syn_sth            = $self->core->dbc->prepare('insert ignore into external_synonym (xref_id, synonym) values (?, ?)');
-
-
 
   $sth = $self->xref->dbc->prepare('select s.name, s.source_id, count(*), x.info_type, s.priority_description from xref x, object_xref ox, source s where ox.xref_id = x.xref_id  and x.source_id = s.source_id and ox_status = "DUMP_OUT" group by s.name, s.source_id, x.info_type');
   $sth->execute();
   my ($type, $source_id, $where_from);
   $sth->bind_columns(\$name,\$source_id, \$count, \$type, \$where_from);
-  while($sth->fetch()){
  
+  $transaction_start_sth->execute();
+
+  while($sth->fetch()){
     if(defined($where_from) and $where_from ne ""){
       $where_from = "Generated via $where_from";
     }	
@@ -354,9 +360,11 @@ GSQL
       $xref_dumped_sth->execute(); 
       $xref_dumped_sth->finish;
     }	
+ 
 
   }
   $sth->finish;
+  $transaction_end_sth->execute();
 
 
   #######################################
@@ -421,6 +429,8 @@ GSQL
   # dump xrefs;
   # dump unmapped reasons
   # set xref status to dumped
+  
+  $transaction_start_sth->execute();
 
   my $get_xref_interpro_sth  = $self->xref->dbc->prepare("select x.xref_id, x.accession, x.version, x.label, x.description, x.info_type, x.info_text from xref x ,source s where s.source_id = x.source_id and s.name like 'Interpro'");
 
@@ -467,8 +477,11 @@ GSQL
   $get_interpro_sth->finish;
   $add_interpro_sth->finish;
 
+  $transaction_end_sth->execute();
+
 
 #  foreach my $type (qw(MISC DEPENDENT DIRECT SEQUENCE_MATCH INFERRED_PAIR)){
+  $transaction_start_sth->execute();
 
   ##########
   # DIRECT #
@@ -692,6 +705,7 @@ WEL
   }
 
 
+  $transaction_end_sth->execute();
 
   my $sth_stat = $self->xref->dbc->prepare("insert into process_status (status, date) values('core_loaded',now())");
   $sth_stat->execute();
