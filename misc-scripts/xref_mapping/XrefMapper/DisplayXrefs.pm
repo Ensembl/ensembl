@@ -69,13 +69,8 @@ sub transcript_display_xref_sources {
                 Genoscope_annotated_gene
                 Uniprot/SWISSPROT
                 Uniprot/Varsplic
-                RefSeq_peptide
-                RefSeq_dna
                 Uniprot/SPTREMBL
-                EntrezGene
-                IPI
-                RefSeq_dna_predicted
-                Refseq_peptide_predicted);
+                EntrezGene);
 
   my %ignore;
   
