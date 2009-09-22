@@ -145,6 +145,11 @@ sub run {
     my %sum_syn;
 
 
+    my $start_transaction_sth = $dbi->prepare("start transaction");
+
+    my $end_transaction_sth = $dbi->prepare("commit");
+
+
     while ( my @row = $sth->fetchrow_array() ) {
         print '-' x 4, "{ $name }", '-' x ( 72 - length($name) ), "\n" if ($verbose);
 
@@ -176,6 +181,7 @@ sub run {
             $release_url =
               $self->fetch_files( $dir, $release_url )->[-1];
         }
+	$start_transaction_sth->execute();
 
         foreach my $file (@files) {
 
@@ -391,8 +397,8 @@ sub run {
 	    
 	    $sum_sth->bind_columns(\$sum_count, \$sum_name);
 	    
-	    $sum_name .= "_$type";
 	    while($sum_sth->fetch){
+	      $sum_name .= "_$type";
 	      if($sum_count != $sum_dir{$sum_name}){
 		my $diff = ($sum_count - $sum_dir{$sum_name});
 		$sum_line{$sum_name}[3+$type_count] = $diff;	    
@@ -447,6 +453,7 @@ sub run {
 	  
 	} # if ($stats)	
 	
+	$end_transaction_sth->execute();
 
     } ## end while ( my @row = $sth->fetchrow_array...
 
@@ -637,7 +644,7 @@ sub fetch_files {
                 next;
             }
 
-            printf( "Connecting to FTP host '%s'\n", $uri->host() ) if ($verbose);
+            printf( "Connecting to FTP host '%s' for file '%s' \n", $uri->host(), $file_path ) if ($verbose);
 
             my $ftp = Net::FTP->new( $uri->host(), 'Debug' => 0 );
             if ( !defined($ftp) ) {
