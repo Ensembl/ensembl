@@ -283,7 +283,7 @@
 #added for procavia capensis in release 51
 171	NonGapHCov	NonGapHCov
 
-# attribute that shows if a transcript has an alternative ATG upstream of the defined start coding ATG
+# attribute that shows if a  supporting evidence was also used to build a Vega gene model
 172	otter_support	otter support	Evidence ID that was used as supporting feature for building a gene in Vega
 
 # Temporary attrib using during the merge of the havana and ensembl gene sets to stablish a relation between a
@@ -307,6 +307,12 @@
 183	KnwnTRCount	TR_gene_known	Number of Known TR Genes
 184	TRGeneCount	TR_gene	Number of TR Genes
 185	TRPsCount	TR_pseudo	Number of TR Pseudogenes
+
+# attribute that shows if a supporting evidence was also used to build a Vega gene model
+186	tp_otter_support	otter protein transcript support Evidence ID that was used as supporting feature for building a gene in Vega
+187	td_otter_support	otter dna transcript support Evidence ID that was used as supporting feature for building a gene in Vega
+188	ep_otter_support	otter protein exon support Evidence ID that was used as supporting feature for building a gene in Vega
+189	td_otter_support	otter dna exon support Evidence ID that was used as supporting feature for building a gene in Vega
 
 # Attributes like ie  split_tscript incons_strands incons_phases is_folded unwanted_evidence 
 # exon_too_long contains_stops borked_coords low_complex  evi_coverage are added by BlastMiniGenewise in the build process.
