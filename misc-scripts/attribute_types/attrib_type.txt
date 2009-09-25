@@ -312,7 +312,7 @@
 186	tp_otter_support	otter protein transcript support Evidence ID that was used as supporting feature for building a gene in Vega
 187	td_otter_support	otter dna transcript support Evidence ID that was used as supporting feature for building a gene in Vega
 188	ep_otter_support	otter protein exon support Evidence ID that was used as supporting feature for building a gene in Vega
-189	td_otter_support	otter dna exon support Evidence ID that was used as supporting feature for building a gene in Vega
+189	ed_otter_support	otter dna exon support Evidence ID that was used as supporting feature for building a gene in Vega
 
 # Attributes like ie  split_tscript incons_strands incons_phases is_folded unwanted_evidence 
 # exon_too_long contains_stops borked_coords low_complex  evi_coverage are added by BlastMiniGenewise in the build process.
