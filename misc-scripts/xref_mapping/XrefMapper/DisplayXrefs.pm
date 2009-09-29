@@ -120,18 +120,26 @@ sub genes_and_transcripts_attributes_set{
   # build_meta_timestamp, and, if "-upload" is set, uses the SQL files
   # produced to update the core database.
 
-  my ($self,$fullmode) = @_;
+  my ($self, $fullmode, $noxref_database) = @_;
 
-  my $status = $self->mapper->xref_latest_status();
-  
+  my $status;
+  if(defined($noxref_database)){
+    $status = "none";
+  }
+  else{
+    $status = $self->mapper->xref_latest_status();
+  }
+     
   if(!$fullmode){
     
     if($status ne "display_xref_done"){
       $self->build_transcript_and_gene_display_xrefs();
       
-      my $sth_stat = $self->xref->dbc->prepare("insert into process_status (status, date) values('display_xref_done',now())");
-      $sth_stat->execute();
-      $sth_stat->finish;
+      if(!defined($noxref_database)){
+	my $sth_stat = $self->xref->dbc->prepare("insert into process_status (status, date) values('display_xref_done',now())");
+	$sth_stat->execute();
+	$sth_stat->finish;
+      }
       
     }
     
@@ -149,10 +157,12 @@ sub genes_and_transcripts_attributes_set{
 
   $self->build_meta_timestamp;
 
-  my $sth_stat = $self->xref->dbc->prepare("insert into process_status (status, date) values('gene_description_done',now())");
-  $sth_stat->execute();
-  $sth_stat->finish;
-  
+  if(!defined($noxref_database)){
+    my $sth_stat = $self->xref->dbc->prepare("insert into process_status (status, date) values('gene_description_done',now())");
+    $sth_stat->execute();
+    $sth_stat->finish;
+  }
+
   return 1;
 }
 
@@ -722,6 +732,7 @@ GSQL
 	if ($filtered_description ne "") {
 	  $xref_descriptions{$xref_id} = $description;
 	  $xref_accessions{$xref_id} = $acc;
+	  $ex_db{$xref_id} = $ex_db_id;
 	  if($level{$ex_db_id} > $best_gene_level){
 	    $best_gene_xref = $xref_id;
 	    $best_gene_level = $level{$ex_db_id};
@@ -885,6 +896,9 @@ GSQL
       
       $description =~ s/\"//ig; # remove " as they will cause problems in .sql files
       
+      if(!defined($ex_db_id_to_display_name{$ex_db{$best_gene_xref}})){
+	print STDERR "Could not find display name for gene $best_gene_xref for external db ".$ex_db{$best_gene_xref}."\n";
+      }
       my $desc = $description . " [Source:".$ex_db_id_to_display_name{$ex_db{$best_gene_xref}}.";Acc:$acc]";
  
       $update_gene_desc_sth->execute($desc, $gene_id) if($description);
