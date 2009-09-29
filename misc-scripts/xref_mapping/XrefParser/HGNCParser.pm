@@ -60,9 +60,9 @@ sub run {
     die  "Could not get source id for HGNC with priority description of entrezgene_mapped\n";
   }
 
-  my $hgnc_ensembl_mapped  = XrefParser::BaseParser->get_source_id_for_source_name("HGNC","ensembl_mapped");
+  my $hgnc_ensembl_mapped  = XrefParser::BaseParser->get_source_id_for_source_name("HGNC","ensembl_manual");
   if(!defined($hgnc_ensembl_mapped)){
-    die  "Could not get source id for HGNC with priority description of ensembl_mapped\n";
+    die  "Could not get source id for HGNC with priority description of ensembl_manual\n";
   }
 
   my $hgnc_desc_only  = XrefParser::BaseParser->get_source_id_for_source_name("HGNC","desc_only");
@@ -104,7 +104,7 @@ sub run {
     # 6 RefSeq ID       manually curated
     # 7 entrezgene ID   mapped
     # 8 RefSeq ID       mapped
-    # 9 Ensembl ID     mapped
+    # 9 Ensembl ID     manual
 
     my @array = split(/\t/,$_);
 
