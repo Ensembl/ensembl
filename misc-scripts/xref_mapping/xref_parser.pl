@@ -1,6 +1,6 @@
 use strict;
 
-use Getopt::Long;
+use Getopt::Long qw(:config pass_through);
 use XrefParser::BaseParser;
 
 my ( $host,             $port,          $dbname,
@@ -40,6 +40,16 @@ GetOptions(
     'download_path=s'   => \$dl_path,
     'unzip' => \$unzip,                   # Force decompression of files
     'help'  => sub { usage(); exit(0); } );
+
+if($ARGV[0]){
+  print STDERR "Unknown command line arguments:-\n";
+  foreach my $a (@ARGV){
+    print STDERR "\t".$a."\n";
+  }
+  print STDERR "Stopping script. Please fix the command line.\n";
+  print STDERR "use -help for full list of command line options.\n";;
+  exit(1);
+}
 
 my @species = split(/,/,join(',',$species));
 my @sources  = split(/,/,join(',',$sources));
