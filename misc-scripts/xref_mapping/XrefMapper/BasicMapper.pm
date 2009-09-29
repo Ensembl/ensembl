@@ -114,7 +114,7 @@ sub process_file {
   my $self = shift;
   my $file = shift;
   my $verbose = shift;
-  
+  my $no_xref = shift;
 
   open(FILE, $file) or die ("\nCannot open input file '$file':\n $!\n");
   
@@ -180,7 +180,7 @@ sub process_file {
   $mapper = "XrefMapper::$module"->new();
 
 
-  if(defined($xref_hash{host})){
+  if(defined($xref_hash{host}) and !defined($no_xref)){
     my ($host, $user, $dbname, $pass, $port);
     $host = $xref_hash{'host'};
     $user = $xref_hash{'user'};
@@ -218,8 +218,11 @@ sub process_file {
     }	
     
   }
-  else{
+  elsif(!defined($no_xref)){
     die "No host name given for xref database\n";
+  }
+  else{
+    print "No xref database is too be used\n" if ($verbose)
   }
   
   
@@ -250,18 +253,19 @@ sub process_file {
 				  -dbname => $dbname);
     
     $mapper->core($core);
-    $mapper->add_meta_pair("species", $host.":".$dbname);
+    if(!defined($no_xref)){
+      $mapper->add_meta_pair("species", $host.":".$dbname);
 
-    if(defined($species_hash{'dir'})){
-      $core->dir($species_hash{'dir'});
-      if(!-d $species_hash{'dir'}){
-	die "directory ".$species_hash{'dir'}." does not exist please create this\n";
-      }
-    }    
-    else{
-      die "No directory specified for the ensembl fasta files\n";
-    }	
-    
+      if(defined($species_hash{'dir'})){
+	$core->dir($species_hash{'dir'});
+	if(!-d $species_hash{'dir'}){
+	  die "directory ".$species_hash{'dir'}." does not exist please create this\n";
+	}
+      }    
+      else{
+	die "No directory specified for the ensembl fasta files\n";
+      }	
+    }
     $core->species($value);
   }
 
