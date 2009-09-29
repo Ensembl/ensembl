@@ -52,6 +52,8 @@ sub process{
     $domain_to_translation{$domain} ||= [];
     push @{$domain_to_translation{$domain}}, $translation;
   }
+
+  my $dep_sth    = $self->xref->dbc->prepare("select dependent_xref_id, linkage_annotation from dependent_xref where master_xref_id = ?");
   
   # Get a list of interpro data, including dependent xrefs if avail
   $sth = $self->xref->dbc->prepare("
@@ -87,6 +89,33 @@ sub process{
 	  $add_go_xref_sth->execute($object_xref_id, $go_linkage );
 	  $goxref_count ++;
 	}
+
+
+
+	#
+	# Also add dependents of the xref and its etc...!!!
+	#
+	my @master_xref_ids;
+	push @master_xref_ids, $dx_xref_id;
+	while (my $new_master_id = pop(@master_xref_ids)){
+	  $dep_sth->execute($new_master_id);
+	  my $dep_xref_id;
+	  my $link;
+	  $dep_sth->bind_columns(\$dep_xref_id, \$link);
+	  while($dep_sth->fetch()){
+	    $add_object_xref_sth->execute($object_xref_id, $ensembl_id, 'Translation', $dep_xref_id, 'DEPENDENT', $new_master_id);	  
+	    if(!$add_object_xref_sth->err){
+	      push @master_xref_ids, $dep_xref_id;
+	      if($link){
+		$add_go_xref_sth->execute($object_xref_id, $link );
+	      }
+	    }
+	    $object_xref_id++;
+	  }
+	}
+
+
+
 	$object_xref_id++;
       }
     }
