@@ -4,7 +4,7 @@
 use strict;
 use warnings;
 
-use Getopt::Long;
+use Getopt::Long qw(:config pass_through);
 use Pod::Usage;
 use Cwd;
 use XrefMapper::db;
@@ -32,12 +32,13 @@ my $notverbose ;
 my $reset_to_mapping_finished;
 my $reset_to_parsing_finished;
 my $resubmit_failed_jobs;
+my $recalc_display_xrefs;
 
 
 my $options = join(" ",@ARGV);
 print "Options: ".join(" ",@ARGV)."\n";
 
-GetOptions ('file=s'                    => \$file,
+my $ret = Getopt::Long::GetOptions ('file=s'          => \$file,
             'dumpcheck'                 => \$dumpcheck, 
             'upload'                    => \$upload,
 	    'notverbose'                => \$notverbose,  
@@ -46,10 +47,48 @@ GetOptions ('file=s'                    => \$file,
             'reset_to_mapping_finished' => \$reset_to_mapping_finished,
             'reset_to_parsing_finished' => \$reset_to_parsing_finished,
             'resubmit_failed_jobs'      => \$resubmit_failed_jobs,
+            'recalc_display_xrefs=s'    => \$recalc_display_xrefs,
             'help'                      => sub { usage(); exit(0); } );
 
 
-my $mapper = XrefMapper::BasicMapper->process_file($file, !$notverbose);
+if($ARGV[0]){
+  print STDERR "Unknown command line arguments:-\n";
+  foreach my $a (@ARGV){
+    print STDERR "\t".$a."\n";
+  }
+  print STDERR "Stopping script. Please fix the command line.\n";
+  print STDERR "use -help for full list of command line options.\n";;
+  exit(1);
+}
+
+
+if(!defined($file)){
+  usage();
+  exit;
+}
+
+my $no_xref;
+my $fullmode_recalc = 0;
+if(defined($recalc_display_xrefs)){
+  if($recalc_display_xrefs eq "xref"){
+    $fullmode_recalc = 1;
+  }
+  elsif($recalc_display_xrefs eq "core"){
+    $no_xref = 1;
+  }
+  else{
+    die "The only options that are valid for -recalc_display_xrefs are:-\n\txref - to use xref database to recalc xrefs\n\tcore - to use the core database to recalc xrefs\n";
+  }
+}
+
+my $mapper = XrefMapper::BasicMapper->process_file($file, !$notverbose, $no_xref);
+
+
+if(defined($recalc_display_xrefs)){
+  my $display = XrefMapper::DisplayXrefs->new($mapper);
+  $display->genes_and_transcripts_attributes_set($fullmode_recalc, $no_xref);
+  exit();
+}
 
 $mapper->add_meta_pair("mapper options",$options);
 
@@ -221,21 +260,11 @@ if(($status eq "core_loaded" or $status eq "display_xref_done") and $upload){
   $display->genes_and_transcripts_attributes_set($fullmode);
   
 }
-#}
-#else{
-#  my $display = XrefMapper::DisplayXrefs->new($mapper);
-#  $display->pump_up_the_jam();
-#  #$display->while_your_feet_are_stomping();
-#  #$display->set_status(); # set KNOWN,NOVEL etc 
-
-#}
-
-
 
 sub usage {
 
   print << "EOF";
-  xref_mapper.pl -file {config_file} -verbose -upload -nofarm 
+  xref_mapper.pl -file {config_file} -upload -nofarm 
 
   -file             Name of configuration file.
                     For more info on this file see end of help.
@@ -249,24 +278,34 @@ sub usage {
 
   -nofarm           Run the exonerate jobs locally and not on the compute farm.
 
-  -partupdate       Not all xrefs have been updated hence to get the gene descriptions
-                    etc we need to work out these via the core database.
-                    (Note this is much slower, but has to be done if you are only updating 
-                     a few xref sources) 
+  -partupdate       Not all xrefs have been updated hence to get the gene 
+                    descriptions etc we need to work out these via the core database.
+                    (Note this is much slower, but has to be done if you are only 
+                    updating a few xref sources) 
                     By default this is calulated from the parsing options used.
                     ONLY set if you know what the consequences will be!!
 
   -reset_to_mapping_finished
-                    Reset the status of the database (cleaning up the tables) to be equivalent
-                    of the mapping having been finished and the map files are ready to be processed.
+                    Reset the status of the database (cleaning up the tables) to be 
+                    equivalent of the mapping having been finished and the map files 
+                    are ready to be processed.
 
   -reset_to_parsing_finished
-                    Reset the status of the database (cleaning up the tables) to be equivalent
-                    of the parsing having just been done.
+                    Reset the status of the database (cleaning up the tables) to be 
+                    equivalent of the parsing having just been done.
 
   -resubmit_failed_jobs
-                    This will find the failed mapping jobs and rerun these and then contiune as normal.
- 
+                    This will find the failed mapping jobs and rerun these and then 
+                    contiune as normal.
+
+  -recalc_display_xrefs
+                    Only recalculate the display xrefs and genes descriptions. 
+                    You must specify either xref or core as the argument here. xref 
+                    will use the fast method of getting the data from the xref database 
+                    whereas if you use core it will do the long method but does not need 
+                    an xref database.
+
+                  
 Below is an example of the configuration file
 ####################################################
 xref
@@ -286,8 +325,8 @@ password=pass2
 dir=./ensembl
 ####################################################
 host1 can be the same as host2.
-user1 can be the same as user2 but user2 must have write access and user1 must have at least read access.
-The directorys set by dir= must already exist.
+user1 can be the same as user2 but user2 must have write access and user1 must have at 
+least read access. The directorys set by dir= must already exist.
 
 
 
