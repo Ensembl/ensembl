@@ -112,7 +112,7 @@ sub run {
         my ($members) = $_ =~ /<member_list>(.+)<\/member_list>/s;
 
         while ( $members =~
-/db="(PROSITE|PFAM|PRINTS|PREFILE|PROFILE|TIGRFAMs|PIRSF|SMART|SSF)"\s+dbkey="(\S+)"/cgm
+/db="(PROSITE|PFAM|PREFILE|PROFILE|TIGRFAMs|PIRSF|SMART|SSF)"\s+dbkey="(\S+)"/cgm
           )
         {
             my ( $db_type, $id ) = ( $1, $2 );
