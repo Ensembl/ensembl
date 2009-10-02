@@ -354,7 +354,7 @@ sub centrepoint {
                start of the sequence region that it was created on.
                Coordinates are inclusive and start at 1.  Negative coordinates
                or coordinates exceeding the length of the sequence region are
-               permitted.  Start is always less than or equal to end 
+               permitted.  Start is always less than or equal to end
                regardless of the orientation of the slice.
   Returntype : int
   Exceptions : none
@@ -483,10 +483,10 @@ sub is_toplevel {
   if(!defined($self->{'toplevel'})){
     $self->{'toplevel'} = $self->adaptor->is_toplevel($self->get_seq_region_id);
   }
-  
+
   return $self->{'toplevel'};
 }
-  
+
 
 =head2 invert
 
@@ -807,7 +807,7 @@ sub project {
                                                     $coord->strand());
 
 	my $current_end = $current_start + $length - 1;
-	
+
         push @projection, bless([$current_start, $current_end, $slice],
                                 "Bio::EnsEMBL::ProjectionSegment");
       }
@@ -825,7 +825,7 @@ sub _constrain_to_region {
 
   my $entire_len = $self->seq_region_length();
 
-  #if the slice has negative coordinates or coordinates exceeding the 
+  #if the slice has negative coordinates or coordinates exceeding the
   #exceeding length of the sequence region we want to shrink the slice to
   #the defined region
 
@@ -850,7 +850,7 @@ sub _constrain_to_region {
     $new_slice = $self;
   }
 
-  return [bless [1-$left_contract, $self->length()+$right_contract, 
+  return [bless [1-$left_contract, $self->length()+$right_contract,
                  $new_slice], "Bio::EnsEMBL::ProjectionSegment" ];
 }
 
@@ -869,22 +869,22 @@ sub _constrain_to_region {
                negative make the slice smaller.
                Default = 0.
   Arg [3]    : (optional) bool $force_expand
-               if set to 1, then the slice will be contracted even in the case 
-               when shifts $five_prime_expand and $three_prime_expand overlap. 
-               In that case $five_prime_expand and $three_prime_expand will be set 
-               to a maximum possible number and that will result in the slice 
+               if set to 1, then the slice will be contracted even in the case
+               when shifts $five_prime_expand and $three_prime_expand overlap.
+               In that case $five_prime_expand and $three_prime_expand will be set
+               to a maximum possible number and that will result in the slice
                which would have only 2pbs.
                Default = 0.
   Arg [4]    : (optional) int* $fpref
                The reference to a number of basepairs to shift this slices five_prime
-               coordinate by. Normally it would be set to $five_prime_expand. 
-               But in case when $five_prime_expand shift can not be applied and 
+               coordinate by. Normally it would be set to $five_prime_expand.
+               But in case when $five_prime_expand shift can not be applied and
                $force_expand is set to 1, then $$fpref will contain the maximum possible
                shift
   Arg [5]    : (optional) int* $tpref
                The reference to a number of basepairs to shift this slices three_prime
-               coordinate by. Normally it would be set to $three_prime_expand. 
-               But in case when $five_prime_expand shift can not be applied and 
+               coordinate by. Normally it would be set to $three_prime_expand.
+               But in case when $five_prime_expand shift can not be applied and
                $force_expand is set to 1, then $$tpref will contain the maximum possible
                shift
   Example    : my $expanded_slice      = $slice->expand( 1000, 1000);
@@ -913,7 +913,7 @@ sub expand {
   my $force_expand = shift || 0;
   my $fpref = shift;
   my $tpref = shift;
-  
+
   if($self->{'seq'}){
     warning("Cannot expand a slice which has a manually attached sequence ");
     return undef;
@@ -1075,8 +1075,8 @@ sub seq_region_Slice {
   Description: Gets the internal identifier of the seq_region that this slice
                is on. Note that this function will not work correctly if this
                slice does not have an attached adaptor. Also note that it may
-               be better to go through the SliceAdaptor::get_seq_region_id 
-               method if you are working with multiple databases since is 
+               be better to go through the SliceAdaptor::get_seq_region_id
+               method if you are working with multiple databases since is
                possible to work with slices from databases with different
                internal seq_region identifiers.
   Returntype : int or undef if slices does not have attached adaptor
@@ -1128,7 +1128,7 @@ sub get_all_Attributes {
   my $attribute_adaptor = $self->adaptor->db->get_AttributeAdaptor();
 
   if( defined $attrib_code ) {
-    @results = grep { uc($_->code()) eq uc($attrib_code) }  
+    @results = grep { uc($_->code()) eq uc($attrib_code) }
       @{$attribute_adaptor->fetch_all_by_Slice( $self )};
     $result = \@results;
   } else {
@@ -1151,7 +1151,7 @@ sub get_all_Attributes {
                and the exons will be used.
   Example    : @transcripts = @{$slice->get_all_PredictionTranscripts};
   Description: Retrieves the list of prediction transcripts which overlap
-               this slice with logic_name $logic_name.  If logic_name is 
+               this slice with logic_name $logic_name.  If logic_name is
                not defined then all prediction transcripts are retrieved.
   Returntype : listref of Bio::EnsEMBL::PredictionTranscript
   Exceptions : warning if slice does not have attached adaptor
@@ -1187,8 +1187,8 @@ sub get_all_PredictionTranscripts {
                The minimum hcoverage od the featurs to retrieve
   Example    : @dna_dna_align_feats = @{$slice->get_all_DnaAlignFeatures};
   Description: Retrieves the DnaDnaAlignFeatures which overlap this slice with
-               logic name $logic_name and with score above $score.  If 
-               $logic_name is not defined features of all logic names are 
+               logic name $logic_name and with score above $score.  If
+               $logic_name is not defined features of all logic names are
                retrieved.  If $score is not defined features of all scores are
                retrieved.
   Returntype : listref of Bio::EnsEMBL::DnaDnaAlignFeatures
@@ -1239,14 +1239,14 @@ sub get_all_DnaAlignFeatures {
   Arg [2]    : (optional) float $score
                The mimimum score of the features to retrieve
   Arg [3]    : (optional) string $dbtype
-               The name of an attached database to retrieve features from 
+               The name of an attached database to retrieve features from
                instead.
   Arg [4]    : (optional) float hcoverage
                The minimum hcoverage od the featurs to retrieve
   Example    : @dna_pep_align_feats = @{$slice->get_all_ProteinAlignFeatures};
   Description: Retrieves the DnaPepAlignFeatures which overlap this slice with
-               logic name $logic_name and with score above $score.  If 
-               $logic_name is not defined features of all logic names are 
+               logic name $logic_name and with score above $score.  If
+               $logic_name is not defined features of all logic names are
                retrieved.  If $score is not defined features of all scores are
                retrieved.
   Returntype : listref of Bio::EnsEMBL::DnaPepAlignFeatures
@@ -1285,7 +1285,7 @@ sub get_all_ProteinAlignFeatures {
     return $pafa->fetch_all_by_Slice_and_score($self,$score, $logic_name);
   }
   return $pafa->fetch_all_by_Slice_and_hcoverage($self,$hcoverage, $logic_name);
-  
+
 }
 
 
@@ -1301,7 +1301,7 @@ sub get_all_ProteinAlignFeatures {
                with analysis named $logic_name and with score above $score.
                It is probably faster to use get_all_ProteinAlignFeatures or
                get_all_DnaAlignFeatures if a sepcific feature type is desired.
-               If $logic_name is not defined features of all logic names are 
+               If $logic_name is not defined features of all logic names are
                retrieved.  If $score is not defined features of all scores are
                retrieved.
   Returntype : listref of Bio::EnsEMBL::BaseAlignFeatures
@@ -1333,8 +1333,8 @@ sub get_all_SimilarityFeatures {
                The mimimum score of the features to retrieve
   Example    : @simple_feats = @{$slice->get_all_SimpleFeatures};
   Description: Retrieves the SimpleFeatures which overlap this slice with
-               logic name $logic_name and with score above $score.  If 
-               $logic_name is not defined features of all logic names are 
+               logic name $logic_name and with score above $score.  If
+               $logic_name is not defined features of all logic names are
                retrieved.  If $score is not defined features of all scores are
                retrieved.
   Returntype : listref of Bio::EnsEMBL::SimpleFeatures
@@ -1381,8 +1381,8 @@ sub get_all_SimpleFeatures {
                Key for database e.g. core/vega/cdna/....
   Example    : @repeat_feats = @{$slice->get_all_RepeatFeatures(undef,'LTR')};
   Description: Retrieves the RepeatFeatures which overlap  with
-               logic name $logic_name and with score above $score.  If 
-               $logic_name is not defined features of all logic names are 
+               logic name $logic_name and with score above $score.  If
+               $logic_name is not defined features of all logic names are
                retrieved.
   Returntype : listref of Bio::EnsEMBL::RepeatFeatures
   Exceptions : warning if slice does not have attached adaptor
@@ -1438,17 +1438,17 @@ sub get_all_LD_values{
 	warning('Cannot get LDFeatureContainer without attached adaptor');
 	return [];
     }
-    
+
     my $variation_db = $self->adaptor->db->get_db_adaptor('variation');
-    
+
     unless($variation_db) {
 	warning("Variation database must be attached to core database to " .
 		"retrieve variation information" );
 	return [];
     }
-    
+
     my $ld_adaptor = $variation_db->get_LDFeatureContainerAdaptor;
-    
+
     if( $ld_adaptor ) {
 	return $ld_adaptor->fetch_by_Slice($self,$population);
     } else {
@@ -1473,7 +1473,7 @@ sub get_all_LD_values{
 # 	      foreach my $key (keys %{$ld->{'variationFeatures'}}){
 # 		  $ld_value_merged->{'variationFeatures'}->{$key} = $ld->{'variationFeatures'}->{$key};
 # 	      }
-	      
+
 # 	  }
 # 	  return $ld_value_merged;
 #       }
@@ -1490,7 +1490,7 @@ sub get_all_LD_values{
 =head2 get_all_VariationFeatures
 
     Args       : $filter [optional]
-    Description :returns all variation features on this slice. This function will only work 
+    Description :returns all variation features on this slice. This function will only work
                 correctly if the variation database has been attached to the core database.
 		 If $filter is "genotyped" return genotyped Snps only... (nice likkle hack);
     ReturnType : listref of Bio::EnsEMBL::Variation::VariationFeature
@@ -1566,7 +1566,7 @@ sub get_all_IndividualSlice{
 sub get_by_Individual{
     my $self = shift;
     my $individual = shift;
-    
+
     return Bio::EnsEMBL::IndividualSlice->new(
 					  -START   => $self->{'start'},
 					  -END     => $self->{'end'},
@@ -1596,7 +1596,7 @@ sub get_by_Individual{
 sub get_by_strain{
     my $self = shift;
     my $strain_name = shift;
-    
+
     return Bio::EnsEMBL::StrainSlice->new(
 					  -START   => $self->{'start'},
 					  -END     => $self->{'end'},
@@ -1620,7 +1620,7 @@ sub calculate_theta{
 	return 0;
     }
     my $variation_db = $self->adaptor->db->get_db_adaptor('variation');
-    
+
     unless($variation_db) {
 	warning("Variation database must be attached to core database to " .
 		"retrieve variation information" );
@@ -1650,20 +1650,20 @@ sub calculate_theta{
 	#get all the differences in the slice coordinates
 	foreach my $strain_name (@{$strains}){
 	    my $strain = $self->get_by_strain($strain_name); #get the strainSlice for the strain
-	    
+
 	    my $results = $strain->get_all_differences_Slice;
 	    push @{$differences}, @{$results} if (defined $results);
 	}
 	#when we finish, we have, in max_level, the regions covered by all the sample
 	#sort the differences by the genomic position
 	my @differences_sorted = sort {$a->start <=> $b->start} @{$differences};
-	foreach my $slice (@{$slices}){	    	    	   
+	foreach my $slice (@{$slices}){
 	    my $regions_covered = $coverage_adaptor->fetch_all_regions_covered($slice,$strains);
 	    if (defined $regions_covered){
 		foreach my $range (@{$regions_covered}){
 		    $length_regions += ($range->[1] - $range->[0]) + 1; #add the length of the genomic region
 		    for (my $i = $last_position;$i<@differences_sorted;$i++){
-			if ($differences_sorted[$i]->start >= $range->[0] && $differences_sorted[$i]->end <= $range->[1]){		   		 
+			if ($differences_sorted[$i]->start >= $range->[0] && $differences_sorted[$i]->end <= $range->[1]){
 			    $snps++; #count differences in the region
 			}
 			elsif ($differences_sorted[$i]->end > $range->[1]){
@@ -1672,12 +1672,12 @@ sub calculate_theta{
 			}
 		    }
 		}
-		#when all the ranges have been iterated, calculate rho	    
+		#when all the ranges have been iterated, calculate rho
 		#this is an intermediate variable called a in the formula
 		#  a = sum i=2..strains 1/i-1
 	    }
 	}
-	my $a = _calculate_a($num_strains); 	   
+	my $a = _calculate_a($num_strains);
 	$theta = $snps / ($a * $length_regions);
 	return $theta;
     }
@@ -1691,7 +1691,7 @@ sub calculate_theta{
 
 sub _calculate_a{
     my $max_level = shift;
-    
+
     my $a = 0;
     for (my $i = 2; $i <= $max_level+1;$i++){
 	$a += 1/($i-1);
@@ -1709,7 +1709,7 @@ sub calculate_pi{
 	return 0;
     }
     my $variation_db = $self->adaptor->db->get_db_adaptor('variation');
-    
+
     unless($variation_db) {
 	warning("Variation database must be attached to core database to " .
 		"retrieve variation information" );
@@ -1733,25 +1733,25 @@ sub calculate_pi{
 	}
 	my @range_differences = ();
 	my $pi = 0;
-	my $regions = 0;	    
+	my $regions = 0;
 	my $last_position = 0; #last position visited in the sorted list of differences
 	my $triallelic = 0;
 	my $is_triallelic = 0;
-	foreach my $slice (@{$slices}){	    
+	foreach my $slice (@{$slices}){
 	    foreach my $strain_name (@{$strains}){
-		my $strain = $slice->get_by_strain($strain_name); #get the strainSlice for the strain	       
+		my $strain = $slice->get_by_strain($strain_name); #get the strainSlice for the strain
 		my $results = $strain->get_all_differences_Slice;
 		push @{$differences}, @{$results} if (defined $results);
 	    }
 	    my @differences_sorted = sort {$a->start <=> $b->start} @{$differences};
 
-	    my $regions_covered = $coverage_adaptor->fetch_all_regions_covered($slice,$strains);	    
+	    my $regions_covered = $coverage_adaptor->fetch_all_regions_covered($slice,$strains);
 	    #when we finish, we have, in max_level, the regions covered by all the sample
-	    #sort the differences	    
+	    #sort the differences
 	    if (defined $regions_covered){
 		foreach my $range (@{$regions_covered}){
-		    for (my $i = $last_position;$i<@differences_sorted;$i++){		    
-			if ($differences_sorted[$i]->start >= $range->[0] && $differences_sorted[$i]->end <= $range->[1]){		   
+		    for (my $i = $last_position;$i<@differences_sorted;$i++){
+			if ($differences_sorted[$i]->start >= $range->[0] && $differences_sorted[$i]->end <= $range->[1]){
 			    #check wether it is the same region or different
 			    if (!defined $range_differences[0] || ($differences_sorted[$i]->start == $range_differences[0]->start)){
 				if (defined $range_differences[0] && ($differences_sorted[$i]->allele_string ne $range_differences[0]->allele_string)){
@@ -1792,7 +1792,7 @@ sub calculate_pi{
     else{
 	return 0;
     }
-    
+
 }
 
 
@@ -1821,7 +1821,7 @@ sub get_all_genotyped_VariationFeatures{
   }
 
   my $vf_adaptor = Bio::EnsEMBL::DBSQL::MergedAdaptor->new(-species => $self->adaptor()->db()->species, -type => "VariationFeature");
-  
+
   if( $vf_adaptor ) {
       return $vf_adaptor->fetch_all_genotyped_by_Slice($self);
   } else {
@@ -1917,12 +1917,12 @@ sub get_all_SNPs_transcripts {
 
 sub get_all_Genes{
   my ($self, $logic_name, $dbtype, $load_transcripts, $source, $biotype) = @_;
-  
+
   if(!$self->adaptor()) {
     warning('Cannot get Genes without attached adaptor');
     return [];
   }
-  
+
   my $ga;
    if($dbtype) {
      my $db = $reg->get_db($self->adaptor()->db(), $dbtype);
@@ -2207,7 +2207,7 @@ sub get_repeatmasked_seq {
   Arg [1]    : reference to a string $dnaref
   Arg [2]    : array_ref $repeats
                reference to a list Bio::EnsEMBL::RepeatFeature
-               give the list of coordinates to replace with N or with 
+               give the list of coordinates to replace with N or with
                lower case
   Arg [3]    : int $soft_masking_enable (optional)
   Arg [4]    : hash reference $not_default_masking_cases (optional, default is {})
@@ -2217,17 +2217,17 @@ sub get_repeatmasked_seq {
                 e.g. "repeat_class_SINE/MIR"
                "repeat_name_" . $repeat_consensus->name
                 e.g. "repeat_name_MIR"
-               depending on which base you want to apply the not default masking either 
+               depending on which base you want to apply the not default masking either
                the repeat_class or repeat_name. Both can be specified in the same hash
-               at the same time, but in that case, repeat_name setting has priority over 
-               repeat_class. For example, you may have hard masking as default, and 
+               at the same time, but in that case, repeat_name setting has priority over
+               repeat_class. For example, you may have hard masking as default, and
                you may want soft masking of all repeat_class SINE/MIR,
                but repeat_name AluSp (which are also from repeat_class SINE/MIR).
                Your hash will be something like {"repeat_class_SINE/MIR" => 1,
                                                  "repeat_name_AluSp" => 0}
   Example    : none
   Description: replaces string positions described in the RepeatFeatures
-               with Ns (default setting), or with the lower case equivalent 
+               with Ns (default setting), or with the lower case equivalent
                (soft masking).  The reference to a dna string which is passed
                is changed in place.
   Returntype : none
@@ -2261,7 +2261,7 @@ sub _mask_features {
 
     # repeat partly outside slice range, so correct
     # the repeat start and length to the slice size if needed
-    if ($start < 1) { 
+    if ($start < 1) {
       $start = 1;
       $length = ($end - $start) + 1;
     }
@@ -2331,7 +2331,7 @@ sub get_all_SearchFeatures {
 
   my $features = $sfa ? $sfa->get_all_SearchFeatures($ticket, $self->seq_region_name, $self->start, $self->end) : [];
 
-  foreach( @$features ) { 
+  foreach( @$features ) {
     $_->start( $_->start - $offset );
     $_->end(   $_->end   - $offset );
   };
@@ -2389,7 +2389,7 @@ sub get_all_AssemblyExceptionFeatures {
 sub get_all_MiscFeatures {
   my $self = shift;
   my $misc_set = shift;
-  my $dbtype = shift; 
+  my $dbtype = shift;
   my $msa;
 
   my $adaptor = $self->adaptor();
@@ -2413,7 +2413,7 @@ sub get_all_MiscFeatures {
   } else {
     $mfa =  $adaptor->db->get_MiscFeatureAdaptor();
   }
-  
+
   if($misc_set) {
     return $mfa->fetch_all_by_Slice_and_set_code($self,$misc_set);
   }
@@ -2507,17 +2507,17 @@ sub get_all_OligoFeatures {
 
 sub get_all_OligoFeatures_by_type {
     my ($self, $type, $logic_name) = @_;
-    
+
     throw('Need type as parameter') if !$type;
-    
+
     my $sa = $self->adaptor();
     if ( ! $sa ) {
         warning( "Cannot retrieve features without attached adaptor." );
     }
     my $fa = $sa->db()->get_OligoFeatureAdaptor();
-    
+
     my $features = $fa->fetch_all_by_Slice_type( $self, $type, $logic_name );
-    
+
     return $features;
 }
 
@@ -2526,13 +2526,13 @@ sub get_all_OligoFeatures_by_type {
 =head2 get_all_MarkerFeatures
 
   Arg [1]    : (optional) string logic_name
-               The logic name of the marker features to retrieve 
-  Arg [2]    : (optional) int $priority 
+               The logic name of the marker features to retrieve
+  Arg [2]    : (optional) int $priority
                Lower (exclusive) priority bound of the markers to retrieve
-  Arg [3]    : (optional) int $map_weight 
+  Arg [3]    : (optional) int $map_weight
                Upper (exclusive) priority bound of the markers to retrieve
   Example    : my @markers = @{$slice->get_all_MarkerFeatures(undef,50, 2)};
-  Description: Retrieves all markers which lie on this slice fulfilling the 
+  Description: Retrieves all markers which lie on this slice fulfilling the
                specified map_weight and priority parameters (if supplied).
   Returntype : reference to a list of Bio::EnsEMBL::MarkerFeatures
   Exceptions : none
@@ -2551,9 +2551,9 @@ sub get_all_MarkerFeatures {
 
   my $ma = $self->adaptor->db->get_MarkerFeatureAdaptor;
 
-  my $feats = $ma->fetch_all_by_Slice_and_priority($self, 
-					      $priority, 
-					      $map_weight, 
+  my $feats = $ma->fetch_all_by_Slice_and_priority($self,
+					      $priority,
+					      $map_weight,
 					      $logic_name);
   return $feats;
 }
@@ -2648,19 +2648,20 @@ sub get_all_compara_Syntenies {
 	    "retrieve compara information");
     return [];
   }
-  my $binomial = $self->adaptor->db->get_MetaContainer->get_Species->binomial;
-  $qy_species =~ tr/_/ /;
-  my $mlssa = $compara_db->get_MethodLinkSpeciesSetAdaptor;
-  my $mlss = $mlssa->fetch_by_method_link_type_registry_aliases
-                    ($method_link_type,
-                     [ $binomial, $qy_species ]);
 
-  my $gdb = $compara_db->get_GenomeDBAdaptor->fetch_by_name_assembly($binomial);
-  my $dfa = $compara_db->get_DnaFragAdaptor;
-  my ($dnafrag) = @{$dfa->fetch_all_by_GenomeDB_region($gdb, $self->coord_system->name, $self->seq_region_name)};
-  my $sra = $compara_db->get_SyntenyRegionAdaptor;
+  my $gdba = $compara_db->get_GenomeDBAdaptor();
+  my $mlssa = $compara_db->get_MethodLinkSpeciesSetAdaptor();
+  my $dfa = $compara_db->get_DnaFragAdaptor();
+  my $sra = $compara_db->get_SyntenyRegionAdaptor();
 
-  return $sra->fetch_by_MethodLinkSpeciesSet_DnaFrag($mlss,$dnafrag,$self->start, $self->end);
+  my $this_gdb = $gdba->fetch_by_core_DBAdaptor($self->adaptor()->db());
+  my $query_gdb = $gdba->fetch_by_registry_name($qy_species);
+  my $mlss = $mlssa->fetch_by_method_link_type_GenomeDBs($method_link_type, [$this_gdb, $query_gdb]);
+
+	my $cs = $self->coord_system()->name();
+	my $sr = $self->seq_region_name();
+  my ($dnafrag) = @{$dfa->fetch_all_by_GenomeDB_region($this_gdb, $cs, $sr)};
+  return $sra->fetch_by_MethodLinkSpeciesSet_DnaFrag($mlss, $dnafrag, $self->start, $self->end);
 }
 
 =head2 get_all_Haplotypes
@@ -2670,7 +2671,7 @@ sub get_all_compara_Syntenies {
   Example    : @haplotypes = $slice->get_all_Haplotypes;
   Description: Retrieves all of the haplotypes on this slice.  Only works
                if the haplotype adaptor has been attached to the core adaptor
-               via $dba->add_db_adaptor('haplotype', $hdba); 
+               via $dba->add_db_adaptor('haplotype', $hdba);
   Returntype : listref of Bio::EnsEMBL::External::Haplotype::Haplotypes
   Exceptions : warning is Haplotype database is not available
   Caller     : contigview, general
@@ -2731,7 +2732,7 @@ sub get_all_DASFeatures_dsn {
     return [];
   }
   my @X = grep { $_->adaptor->dsn eq $dsn } $self->adaptor()->db()->_each_DASFeatureFactory;
-  
+
   return [ $X[0]->fetch_all_Features( $self, $source_type ) ];
 }
 
@@ -2756,7 +2757,7 @@ sub get_all_DAS_Features{
  if (ref $type eq 'ARRAY') {
    $type = shift @$type;
  }
- $type ||= $dasfact->adaptor->type; 
+ $type ||= $dasfact->adaptor->type;
     # Construct a cache key : SOURCE_URL/TYPE
     # Need the type to handle sources that serve multiple types of features
 
@@ -2812,14 +2813,14 @@ sub old_get_all_DASFeatures{
 =head2 get_all_ExternalFeatures
 
   Arg [1]    : (optional) string $track_name
-               If specified only features from ExternalFeatureAdaptors with 
-               the track name $track_name are retrieved.  
-               If not set, all features from every ExternalFeatureAdaptor are 
+               If specified only features from ExternalFeatureAdaptors with
+               the track name $track_name are retrieved.
+               If not set, all features from every ExternalFeatureAdaptor are
                retrieved.
   Example    : @x_features = @{$slice->get_all_ExternalFeatures}
-  Description: Retrieves features on this slice from external feature adaptors 
-  Returntype : listref of Bio::SeqFeatureI implementing objects in slice 
-               coordinates 
+  Description: Retrieves features on this slice from external feature adaptors
+  Returntype : listref of Bio::SeqFeatureI implementing objects in slice
+               coordinates
   Exceptions : none
   Caller     : general
   Status     : Stable
@@ -2898,7 +2899,7 @@ sub get_all_DitagFeatures {
                returned.
   Example    : my %features = %{$slice->get_generic_features()};
   Description: Gets generic features via the generic feature adaptors that
-               have been added via DBAdaptor->add_GenricFeatureAdaptor (if 
+               have been added via DBAdaptor->add_GenricFeatureAdaptor (if
                any)
   Returntype : Hash of named features.
   Exceptions : none
@@ -2924,7 +2925,7 @@ sub get_generic_features {
   my %adaptors = %{$db->get_GenericFeatureAdaptors(@names)};
 
   foreach my $adaptor_name (keys(%adaptors)) {
-		
+
     my $adaptor_obj = $adaptors{$adaptor_name};
     # get the features and add them to the hash
     my $features_ref = $adaptor_obj->fetch_all_by_Slice($self);
@@ -3036,7 +3037,7 @@ sub project_to_slice {
                                                     $coord->strand());
 
 	my $current_end = $current_start + $length - 1;
-	
+
         push @projection, bless([$current_start, $current_end, $slice],
                                 "Bio::EnsEMBL::ProjectionSegment");
       }
@@ -3046,7 +3047,7 @@ sub project_to_slice {
   }
 
 
-  # delete the cache as we may want to map to different set next time and old 
+  # delete the cache as we may want to map to different set next time and old
   # results will be cached.
 
   $mapper_aptr->delete_cache;
@@ -3155,7 +3156,7 @@ sub get_all_supercontig_Slices {
   my $result = [];
 
   if( $self->adaptor() ) {
-    my $superctg_names = 
+    my $superctg_names =
       $self->adaptor()->list_overlapping_supercontigs( $self );
 
     for my $name ( @$superctg_names ) {
