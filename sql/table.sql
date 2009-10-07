@@ -831,14 +831,11 @@ CREATE TABLE meta (
 
 
 # Auto add schema version to database
-INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, "schema_version", "56");
+INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, "schema_version", "57");
 
 # patches included in this schema file
 # NOTE: at beginning of release cycle, remove patch entries from last release
-INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_55_56_a.sql|schema_version');
-INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_55_56_b.sql|add_index_names');
-INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_55_56_c.sql|drop_oligo_tables_and_xrefs');
-INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_55_56_d.sql|add_index_to_splicing_event_feature');
+INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_56_57_a.sql|schema_version');
 
 ################################################################################
 #
