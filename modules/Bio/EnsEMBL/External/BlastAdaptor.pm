@@ -938,10 +938,13 @@ SELECT ticket
 FROM   blast_ticket
 WHERE  update_time < SUBDATE( NOW(), INTERVAL $days DAY ) /;
 
-  my $sth = $self->dbc->db_handle->prepare($q);
-  my $rv = $sth->execute() || $self->throw( $sth->errstr );
-  my $res = $sth->fetchall_arrayref;
-  $sth->finish;
+
+#need to dort this bit - use and a loop and "Delete ... limit 1000" to prevent tying up the database
+
+#  my $sth = $self->dbc->db_handle->prepare($q);
+#  my $rv = $sth->execute() || $self->throw( $sth->errstr );
+#  my $res = $sth->fetchall_arrayref;
+#  $sth->finish;
   
   # Delete result and ticket rows associated with old tickets
 #  my $q_del_tmpl = qq/
@@ -980,8 +983,9 @@ WHERE  update_time < SUBDATE( NOW(), INTERVAL $days DAY ) /;
     my $table_name  = $row->[0];  ## table name
     my $num_rows    = $row->[4];  ## # Rows...
     my $update_time = $row->[12]; ## update time ---  Should be a string like 2003-08-15 10:36:56
+		next unless $update_time; #cope with an occasional innodb table that has no update time
     my @time = split( /[-:\s]/, $update_time );
-    
+   
     my $epoch_then = timelocal( $time[5], $time[4],   $time[3], 
 				$time[2], $time[1]-1, $time[0] - 1900 );
     my $secs_old = time() - $epoch_then;
