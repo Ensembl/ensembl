@@ -96,9 +96,14 @@ if (!$dbhost){
   $help =1;
 }
 if (!$dbname and !$pattern){
-  print("Need to enter either a database name in -dbname or a pattern in -pattern\n");
-  $help = 1;
+  $help =1;
+  throw("Need to enter either a database name in -dbname or a pattern in -pattern\n");
 }
+
+if ($dbname and $pattern) {
+  $help =1;
+  throw("You should only either enter a database name using -dbname OR a pattern using -pattern but not both.\n");
+  }
 
 unless(@files){
   @files = @_;
@@ -127,10 +132,11 @@ my $sql_pattern = $pattern || $dbname;
 $sql = "SHOW DATABASES LIKE '". $sql_pattern ."'";
 $sth = $dbh->prepare($sql);
 $sth->execute;
-
 while (my ($dbname) = $sth->fetchrow_array){
-  next unless $dbname =~ /core|cdna|otherfeatures/;
-  next if $dbname =~ /coreexpression/;
+  if ($pattern) {   # only check dbname if a DB pattern has been specified.
+    next unless $dbname =~ /core|cdna|otherfeatures/;
+    next if $dbname =~ /coreexpression/;
+  }
   print "\n\nLooking at ... $dbname\n";
   my $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(
     -host   => $dbhost,
