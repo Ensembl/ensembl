@@ -11,10 +11,10 @@ my $base_dir = "/lustre/scratch103/ensembl/rjk/projections/";
 my $conf = "release_56.ini"; # registry config file, specifies Compara location
 
 # location of other databases
-my $host = "ens-staging";
-my $port = 3306;
-my $user = "ensadmin";
-my $pass = "ensembl";
+my $host = "xxx";
+my $port = "xxx";
+my $user = "xxx";
+my $pass = "xxx";
 
 # load limit for ens-staging MySQL instance above which jobs won't be started
 my $limit = 200;
