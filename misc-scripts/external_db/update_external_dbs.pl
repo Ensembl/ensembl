@@ -55,7 +55,7 @@ if($release_num) {
 
 my @field_names = qw(external_db_id db_name release status dbprimary_acc_linkable display_label_linkable priority  db_display_name type);
 
-my @types = qw(ARRAY ALT_TRANS MISC LIT PRIMARY_DB_SYNONYM);
+my @types = qw(ARRAY ALT_TRANS MISC LIT PRIMARY_DB_SYNONYM ALT_GENE);
 
 #
 # make sure the user wishes to continue
