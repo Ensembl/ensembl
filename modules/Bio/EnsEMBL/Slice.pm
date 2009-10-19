@@ -1525,6 +1525,44 @@ sub get_all_VariationFeatures{
   }
 }
 
+=head2 get_all_StructuralVariationFeatures
+
+    Args       : $class [optional]
+    Description :returns all structural variation features on this slice. This function will only work 
+                correctly if the variation database has been attached to the core database.
+                If $class is set, only structural variations of that class will be returned.
+    ReturnType : listref of Bio::EnsEMBL::Variation::StructuralVariationFeature
+    Exceptions : none
+    Caller     : contigview, snpview
+    Status     : At Risk
+
+=cut
+
+sub get_all_StructuralVariationFeatures{
+  my $self = shift;
+  my $sv_class = shift;
+  
+  if(!$self->adaptor()) {
+    warning('Cannot get structural variation features without attached adaptor');
+    return [];
+  }
+
+  my $svf_adaptor = Bio::EnsEMBL::DBSQL::MergedAdaptor->new(-species => $self->adaptor()->db()->species, -type => "StructuralVariationFeature");
+  if( $svf_adaptor ) {
+    if(defined $sv_class) {
+      return $svf_adaptor->fetch_all_by_Slice_constraint($self, qq{ svf.class = '$sv_class' });
+    }
+    else {
+      return $svf_adaptor->fetch_all_by_Slice($self);
+    }
+  }
+  else {
+       warning("Variation database must be attached to core database to " .
+ 		"retrieve variation information" );
+    return [];
+  }
+}
+
 
 =head2 get_all_IndividualSlice
 
