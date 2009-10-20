@@ -1,9 +1,11 @@
 #!/bin/ksh
 
+scriptname=$0
+
 function usage {
   cat <<EOT
 Usage:
-  $0 -h dbhost -P dbport -u dbuser -p dbpass -d dbname
+  $scriptname -h dbhost -P dbport -u dbuser -p dbpass -d dbname
 EOT
 }
 
