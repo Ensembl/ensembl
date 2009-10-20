@@ -1,10 +1,12 @@
-#!/usr/bin/ksh
+#!/bin/ksh
 
 scriptname=$0
 
 function usage {
   cat >&2 <<EOT
+
 Usage:
+
   ${scriptname} -c conf_file [ -m mode ]
 
   ... where 'conf_file' is the absolute path to the configuration file

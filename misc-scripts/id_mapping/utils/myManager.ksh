@@ -4,7 +4,9 @@ scriptname=$0
 
 function usage {
   cat <<EOT
+
 Usage:
+
   ${scriptname} -h dbhost [-P dbport] -u dbuser -p dbpass -d dbname
 
 EOT
