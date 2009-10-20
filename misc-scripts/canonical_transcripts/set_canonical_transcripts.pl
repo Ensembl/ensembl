@@ -86,13 +86,24 @@ SLICE:foreach my $slice(@$slices){
       if($transcript->translation && ($gene->biotype ne 'processed_transcript') 
          && ($gene->biotype ne 'pseudogene')){
         push(@with_translation, $transcript)
-      }else{ 
+      }else{
         push(@no_translation, $transcript);
       }
     }
+
     my @sorted;
     if(@with_translation){
-      @sorted = sort {$b->translate->length <=> $a->translate->length} @with_translation;
+      my @len_and_trans;
+      foreach my $trans (@with_translation) {
+        my $h = { trans => $trans, len => $trans->translate->length };
+        push @len_and_trans,$h;
+      }
+      my @tmp_sorted = sort { $b->{len} <=> $a->{len} } @len_and_trans;
+
+      foreach my $h (@tmp_sorted) {
+        #print "Adding to sorted " . $h->{trans}->dbID . "\n";
+        push @sorted,$h->{trans};
+      }
     }else{
       @sorted = sort {$b->length <=> $a->length} @no_translation;
     }
