@@ -119,12 +119,12 @@ foreach my $dbname (@dbnames) {
             $update_1, $update_0
           );
         }
-      } ## end foreach my $exon_dbID ( keys...
+      } ## end foreach my $exon_dbID ( keys...)
 
       ++$gene_counter;
 
-    } ## end while ( my $gene = shift(...
-  } ## end while ( my @gene_list = @...
+    } ## end while ( my $gene = shift(...))
+  } ## end while ( my @gene_list = @...)
 
   print( '-' x 4, '{ ', $dbname, ' }',
     '-' x ( 80 - ( length($dbname) + 4 ) ), "\n" );
@@ -133,6 +133,6 @@ foreach my $dbname (@dbnames) {
     $exon_counter, $gene_counter );
   printf( "\tUpdated %d exons to constitutive\n",     $update_1 );
   printf( "\tUpdated %d exons to non-constitutive\n", $update_0 );
-  print('-'x80, "\n");
+  print( '-' x 80, "\n" );
   print("\n");
 } ## end foreach my $dbname (@dbnames)
