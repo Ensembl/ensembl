@@ -14,6 +14,10 @@ sub usage {
   print <<EOT;
     Script to populate the meta table with species aliases.
 
+    >> The Release Coordinator runs this script <<
+    >> when all databases have been copied over <<
+    >> to the staging severs.                   <<
+
     The script reads the already existing aliases from the
     meta table (meta_key 'species.alias') and adds to this
     aliases computed from the species name.  It also uses the
@@ -22,9 +26,8 @@ sub usage {
     species.ensembl_alias_name as aliases.
 
     If the -n or --dryrun options are *not* specified, the existing
-    list of aliases is deleted from the meta table and the new list
-    is inserted.  In any case, the list of aliases will be displayed
-    on the console.
+    list of aliases is appended with any missing aliases.  In any
+    case, the list of aliases will be displayed on the console.
 
     The database will not be written to if there are no new aliases
     to be written to the meta table.
