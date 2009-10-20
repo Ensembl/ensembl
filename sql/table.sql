@@ -754,7 +754,7 @@ CREATE TABLE external_db (
   display_label_linkable      BOOLEAN DEFAULT 0 NOT NULL,
   priority                    INT NOT NULL,
   db_display_name             VARCHAR(255),
-  type                        ENUM('ARRAY', 'ALT_TRANS', 'MISC', 'LIT', 'PRIMARY_DB_SYNONYM', 'ENSEMBL'),
+  type                        ENUM('ARRAY', 'ALT_TRANS', 'ALT_GENE', 'MISC', 'LIT', 'PRIMARY_DB_SYNONYM', 'ENSEMBL'),
   secondary_db_name           VARCHAR(255) DEFAULT NULL,
   secondary_db_table          VARCHAR(255) DEFAULT NULL,
   description                 TEXT,
