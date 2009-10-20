@@ -5,7 +5,8 @@ scriptname=$0
 function usage {
   cat <<EOT
 Usage:
-  $scriptname -h dbhost -P dbport -u dbuser -p dbpass -d dbname
+  ${scriptname} -h dbhost [-P dbport] -u dbuser -p dbpass -d dbname
+
 EOT
 }
 
@@ -15,7 +16,7 @@ if [[ ! -e ./manage_id_mapping_tables.pl ]]; then
   exit
 fi
 
-dbport=3306
+dbport="3306"
 
 while getopts 'h:u:p:a:j:d:r:P:oci' opt; do
   case ${opt} in
@@ -43,6 +44,5 @@ fi
   -user ${dbuser} \
   -pass ${dbpass} \
   -dbname ${dbname}
-
 
 # $Id$
