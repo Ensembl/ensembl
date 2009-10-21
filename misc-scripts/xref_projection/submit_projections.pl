@@ -167,6 +167,7 @@ my @go_terms = (["human",      "mouse"          ],
 		["danio",      "xenopus"        ],
 		["danio",      "fugu"           ],
 		["danio",      "tetraodon"      ],
+		["danio",      "stickleback"    ],
 		["xenopus",    "danio"          ]);
 
 my ($from, $to, $o, $e, $n);
