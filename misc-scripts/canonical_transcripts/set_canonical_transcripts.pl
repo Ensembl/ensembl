@@ -73,6 +73,7 @@ SLICE:foreach my $slice(@$slices){
   my $genes = $slice->get_all_Genes(undef, undef, 1);
   my %canonical;
  GENE:foreach my $gene(@$genes){
+    print "Updating gene: ",$gene->dbID,"\n";
     my $transcripts = $gene->get_all_Transcripts;
     if(@$transcripts == 1){
       $canonical{$gene->dbID} = $transcripts->[0]->dbID;
@@ -85,7 +86,9 @@ SLICE:foreach my $slice(@$slices){
     foreach my $transcript(@$transcripts){
       if($transcript->translation && ($gene->biotype ne 'processed_transcript') 
          && ($gene->biotype ne 'pseudogene')){
-        push(@with_translation, $transcript)
+				unless($transcript->translation->seq =~ /\*/){
+          push(@with_translation, $transcript);
+				}
       }else{
         push(@no_translation, $transcript);
       }
