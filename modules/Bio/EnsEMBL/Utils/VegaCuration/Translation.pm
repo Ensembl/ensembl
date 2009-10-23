@@ -204,6 +204,7 @@ sub check_for_stops {
  TRANS:
   foreach my $trans (@{$gene->get_all_Transcripts}) {
     my $tsi = $trans->stable_id;
+#    next unless ($tsi eq 'OTTDART00000022820');
     my $tID = $trans->dbID;
     my $tname = $trans->get_all_Attributes('name')->[0]->value;
     $support->log_verbose("Studying transcript $tsi ($tname, $tID)\n",1);
@@ -277,13 +278,21 @@ sub check_for_stops {
 
       #parse remarks to check syntax for location of edits
       while (my ($attrib,$remarks)= each %$remarks) {
-	foreach my $text (@{$remarks}) {					
-	  if ( ($attrib eq 'remark') && ($text=~/^$alabel(.*)/) ){
-	    $support->log_warning("seleno remark for $tsi stored as Annotation_remark not hidden remark) [$mod_date]\n");
+	foreach my $text (@{$remarks}) {
+	  if ( $attrib eq 'remark') {
+	    if ($text=~/^$alabel([\d\s]+)/){
+	      $support->log_warning("seleno remark for $tsi stored as Annotation_remark not hidden remark [$mod_date]\n");
+	      $annot_stops=$1;
+	    }
+	    elsif ($text=~/^$alabel(.*)/) {
+	      $support->log_warning("non numerical seleno remark ($text) for $tsi stored as Annotation_remark not hidden remark [$mod_date]\n");
+	    }
+	  }
+	  elsif ($text =~ /^$alabel2([\d\s]+)/) {
 	    $annot_stops=$1;
 	  }
-	  elsif ($text =~ /^$alabel2(.*)/) {
-	    $annot_stops=$1;
+	  elsif ($text =~ /^$alabel2(.*)/) { 
+	    $support->log_warning("non numerical seleno remark ($text) for $tsi [$mod_date]\n");
 	  }
 	}
       }
@@ -293,8 +302,12 @@ sub check_for_stops {
       if ($annot_stops){
 	my $i = 0;
 	foreach my $offset (split(/\s+/, $annot_stops)) {
+	  if ($i > scalar(@found_stops)-1) {
+	    $support->log_warning("Transcript $tsi ($tname) has more annotated stops than there are actual stops\n");
+	  }
 	  # not a number - ignore
-	  if ($offset!~/^\d+$/){
+	  elsif ($offset !~ /^\d+$/){
+	    $support->log_warning("Non-numerical offset ($offset) found at $offset\n");
 	  }
 	  #OK if it matches a known stop
 	  elsif ($found_stops[$i]->[1] == $offset) {
@@ -302,14 +315,14 @@ sub check_for_stops {
 	  }
 	  # catch old annotations where number was in DNA not peptide coordinates
 	  elsif (($found_stops[$i]->[1] * 3) == $offset) {
-	    $support->log_warning("DNA: Annotated stop for transcript tsi ($tname) is in DNA not peptide coordinates) [$mod_date]\n");
+	    $support->log_warning("DNA: Annotated stop ($offset) for transcript $tsi ($tname) is in DNA not peptide coordinates) [$mod_date]\n");
 	  }
 	  # catch old annotations where number off by one
 	  elsif (($found_stops[$i]->[1]) == $offset+1) {
-	    $support->log_warning("PEPTIDE: Annotated stop for transcript $tsi ($tname) is out by one) [$mod_date]\n");
+	    $support->log_warning("PEPTIDE: Annotated stop ($offset) for transcript $tsi ($tname) is out by one) [$mod_date]\n");
 	  }
 	  else {
-	    $support->log_warning("Annotated stop for transcript $tsi ($tname) does not match a TGA codon) [$mod_date]\n");
+	    $support->log_warning("Annotated stop ($offset) for transcript $tsi ($tname) does not match a TGA codon) [$mod_date]\n");
 	    push  @annotated_stops, $offset;
 	  }						
 	  $i++;
