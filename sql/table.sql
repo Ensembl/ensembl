@@ -835,8 +835,10 @@ INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, "schema_versio
 
 # patches included in this schema file
 # NOTE: at beginning of release cycle, remove patch entries from last release
+# NOTE: Avoid line breaks in values
 INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_56_57_a.sql|schema_version');
 INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_56_57_b.sql|affy_analysis_tidy');
+INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_56_57_c.sql|external_db_type_enum');
 
 
 ################################################################################
