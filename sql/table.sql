@@ -836,6 +836,8 @@ INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, "schema_versio
 # patches included in this schema file
 # NOTE: at beginning of release cycle, remove patch entries from last release
 INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_56_57_a.sql|schema_version');
+INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_56_57_b.sql|affy_analysis_tidy');
+
 
 ################################################################################
 #
@@ -1366,7 +1368,7 @@ CREATE TABLE density_type (
 CREATE TABLE unmapped_object (
 
   unmapped_object_id    INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  type                  ENUM('xref', 'cDNA', 'Marker', 'probe2transcript') NOT NULL,
+  type                  ENUM('xref', 'cDNA', 'Marker') NOT NULL,
   analysis_id           SMALLINT UNSIGNED NOT NULL,
   external_db_id        SMALLINT UNSIGNED,
   identifier            VARCHAR(255) NOT NULL,
