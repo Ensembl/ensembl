@@ -1525,35 +1525,35 @@ sub get_all_VariationFeatures{
   }
 }
 
-=head2 get_all_StructuralVariationFeatures
+=head2 get_all_StructuralVariations
 
     Args       : $class [optional]
-    Description :returns all structural variation features on this slice. This function will only work 
+    Description :returns all structural variations on this slice. This function will only work 
                 correctly if the variation database has been attached to the core database.
                 If $class is set, only structural variations of that class will be returned.
-    ReturnType : listref of Bio::EnsEMBL::Variation::StructuralVariationFeature
+    ReturnType : listref of Bio::EnsEMBL::Variation::StructuralVariation
     Exceptions : none
     Caller     : contigview, snpview
     Status     : At Risk
 
 =cut
 
-sub get_all_StructuralVariationFeatures{
+sub get_all_StructuralVariations{
   my $self = shift;
   my $sv_class = shift;
   
   if(!$self->adaptor()) {
-    warning('Cannot get structural variation features without attached adaptor');
+    warning('Cannot get structural variations without attached adaptor');
     return [];
   }
 
-  my $svf_adaptor = Bio::EnsEMBL::DBSQL::MergedAdaptor->new(-species => $self->adaptor()->db()->species, -type => "StructuralVariationFeature");
-  if( $svf_adaptor ) {
+  my $sv_adaptor = Bio::EnsEMBL::DBSQL::MergedAdaptor->new(-species => $self->adaptor()->db()->species, -type => "StructuralVariation");
+  if( $sv_adaptor ) {
     if(defined $sv_class) {
-      return $svf_adaptor->fetch_all_by_Slice_constraint($self, qq{ svf.class = '$sv_class' });
+      return $sv_adaptor->fetch_all_by_Slice_constraint($self, qq{ sv.class = '$sv_class' });
     }
     else {
-      return $svf_adaptor->fetch_all_by_Slice($self);
+      return $sv_adaptor->fetch_all_by_Slice($self);
     }
   }
   else {
