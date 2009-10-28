@@ -196,9 +196,9 @@ sub feature_classes{
             DensityFeature
             DnaAlignFeature
             Gene
-            PredictionTranscript
             MarkerFeature
-			ProteinAlignFeature
+            PredictionTranscript
+            ProteinAlignFeature
             ProteinFeature
             QtlFeature
             RepeatFeature
