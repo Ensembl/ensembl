@@ -298,7 +298,7 @@ sub get_available_adaptors {
     # Firstly those that just have an adaptor named after there object
     # in the main DBSQL directory.
     map( { $_ => "Bio::EnsEMBL::DBSQL::${_}Adaptor" } qw(
-									 Analysis                 ArchiveStableId      Attribute
+        Analysis                 ArchiveStableId      Attribute
         AssemblyExceptionFeature AssemblyMapper       CoordSystem
         CompressedSequence       DBEntry              DnaAlignFeature
         DensityFeature           DensityType          Exon
@@ -326,7 +326,8 @@ sub get_available_adaptors {
     'TranscriptCollection' => 'Bio::EnsEMBL::Collection::Transcript',
     'ExonCollection'       => 'Bio::EnsEMBL::Collection::Exon',
     'RepeatFeatureCollection' =>
-      'Bio::EnsEMBL::Collection::RepeatFeature' );
+      'Bio::EnsEMBL::Collection::RepeatFeature'
+  );
 
   return ( \%pairs );
 } ## end sub get_available_adaptors
