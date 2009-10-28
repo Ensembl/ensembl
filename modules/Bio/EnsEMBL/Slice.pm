@@ -153,11 +153,11 @@ sub new {
     throw('SEQ_REGION_LENGTH must be > 0');
   }
 
-  if ( defined($seq) && length($seq) != ( $end - $start + 1 ) ) {
-    throw(   'SEQ must be the same length as the defined LENGTH not '
-           . length($seq)
-           . ' compared to '
-           . ( $end - $start + 1 ) );
+  if ( defined($seq) && CORE::length($seq) != ( $end - $start + 1 ) ) {
+    throw('SEQ must be the same length as the defined LENGTH not '
+        . CORE::length($seq)
+        . ' compared to '
+        . ( $end - $start + 1 ) );
   }
 
   if(defined($coord_system)) {
