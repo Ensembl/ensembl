@@ -1527,9 +1527,11 @@ sub get_all_VariationFeatures{
 
 =head2 get_all_StructuralVariations
 
-    Args       : $class [optional]
+    Arg[1]       : $source [optional]
+    Arg[2]       : $class [optional]
     Description :returns all structural variations on this slice. This function will only work 
                 correctly if the variation database has been attached to the core database.
+                If $source is set, only structural variations with that source name will be returned.
                 If $class is set, only structural variations of that class will be returned.
     ReturnType : listref of Bio::EnsEMBL::Variation::StructuralVariation
     Exceptions : none
@@ -1540,6 +1542,7 @@ sub get_all_VariationFeatures{
 
 sub get_all_StructuralVariations{
   my $self = shift;
+  my $source = shift;
   my $sv_class = shift;
   
   if(!$self->adaptor()) {
@@ -1549,7 +1552,14 @@ sub get_all_StructuralVariations{
 
   my $sv_adaptor = Bio::EnsEMBL::DBSQL::MergedAdaptor->new(-species => $self->adaptor()->db()->species, -type => "StructuralVariation");
   if( $sv_adaptor ) {
-    if(defined $sv_class) {
+    
+    if(defined $source && defined $sv_class) {
+      return $sv_adaptor->fetch_all_by_Slice_constraint($self, qq{ s.name = '$source' AND sv.class = '$sv_class'});
+    }
+    elsif(defined $source) {
+      return $sv_adaptor->fetch_all_by_Slice_constraint($self, qq{ s.name = '$source' });
+    }
+    elsif(defined $sv_class) {
       return $sv_adaptor->fetch_all_by_Slice_constraint($self, qq{ sv.class = '$sv_class' });
     }
     else {
