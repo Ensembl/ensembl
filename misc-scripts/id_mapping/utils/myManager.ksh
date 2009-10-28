@@ -20,7 +20,7 @@ fi
 
 dbport="3306"
 
-while getopts 'h:u:p:a:j:d:r:P:oci' opt; do
+while getopts 'h:P:u:p:d:' opt; do
   case ${opt} in
     h)  dbhost=${OPTARG}    ;;
     P)  dbport=${OPTARG}    ;;
