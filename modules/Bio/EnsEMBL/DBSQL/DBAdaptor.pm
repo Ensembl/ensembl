@@ -298,14 +298,12 @@ sub get_available_adaptors {
     # Firstly those that just have an adaptor named after there object
     # in the main DBSQL directory.
     map( { $_ => "Bio::EnsEMBL::DBSQL::${_}Adaptor" } qw(
-        AffyFeature              AffyArray            AffyProbe
-        Analysis                 ArchiveStableId      Attribute
+									 Analysis                 ArchiveStableId      Attribute
         AssemblyExceptionFeature AssemblyMapper       CoordSystem
         CompressedSequence       DBEntry              DnaAlignFeature
         DensityFeature           DensityType          Exon
         Gene                     KaryotypeBand        MiscSet
-        MiscFeature              OligoArray           OligoFeature
-        OligoProbe               PredictionTranscript PredictionExon
+        MiscFeature              PredictionTranscript PredictionExon
         ProteinFeature           ProteinAlignFeature  RepeatConsensus
         RepeatFeature            Sequence             SimpleFeature
         Slice                    SupportingFeature    Transcript

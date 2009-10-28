@@ -193,14 +193,12 @@ SELECT DISTINCT analysis_id FROM %s |;
 sub feature_classes{
   # Can't think of a way to do this programatically, so hard-coded
   return qw(
-            AffyFeature
             DensityFeature
             DnaAlignFeature
             Gene
             PredictionTranscript
             MarkerFeature
-            OligoFeature
-            ProteinAlignFeature
+			ProteinAlignFeature
             ProteinFeature
             QtlFeature
             RepeatFeature
