@@ -1542,24 +1542,27 @@ sub fetch_all_by_source {
 
 
 sub fetch_all_synonyms {
+  my ( $self, $dbID ) = @_;
 
-  my ($self, $dbID) = @_;
+  my @synonyms = ();
 
-  my @synonyms;
+  my $sth =
+    $self->prepare( "SELECT synonym "
+      . "FROM external_synonym "
+      . "WHERE xref_id = ?" );
 
-  my $sth = $self->prepare("SELECT synonym FROM external_synonym WHERE xref_id = ?");
+  $sth->bind_param( 1, $dbID, SQL_INTEGER );
 
-  $sth->bind_param(1, $dbID, SQL_INTEGER);
   $sth->execute();
-  while ( my $arrayref = $sth->fetchrow_arrayref()){
-    my ($synonym) = @$arrayref;
-    push (@synonyms, $synonym);
+
+  my $synonym;
+  $sth->bind_col(1, \$synonym);
+
+  while ( $sth->fetch() ) {
+    push( @synonyms, $synonym );
   }
 
-  @synonyms = () if (!@synonyms);
-
   return \@synonyms;
-
 }
 
 
