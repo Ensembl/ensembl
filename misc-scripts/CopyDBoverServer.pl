@@ -91,6 +91,8 @@ my %mysql_directory_per_svr = ('genebuild1:3306'   => "/mysql/data_3306/database
 			       'genebuild4:3306'   => "/mysql/data_3306/databases",
 			       'genebuild5:3306'   => "/mysql/data_3306/databases",
 			       'genebuild6:3306'   => "/mysql/data_3306/databases",
+							    'genebuild7:3306'   => "/mysql/data_3306/databases",
+							   'genebuild7:5306'   => "/mysql/data_3306/databases",
 			       'mart1:3306'        => "/mysql/data_3306/databases",
 			       'mart2:3306'        => "/mysql/data_3306/databases",
 			       'compara1:3306'     => "/mysql/data_3306/databases",
@@ -100,10 +102,15 @@ my %mysql_directory_per_svr = ('genebuild1:3306'   => "/mysql/data_3306/database
 			       'ens-genomics1:3306' => "/mysql/data_3306/databases",
 			       'ens-genomics2:3306' => "/mysql/data_3306/databases",
 			       'ens-staging:3306'  => "/mysql/data_3306/databases",
+							   'ens-staging1:3306'  => "/mysql/data_3306/databases",
+							   'ens-staging2:3306'  => "/mysql/data_3306/databases",
+							   
 			       'ens-livemirror:3306'  => "/mysql/data_3306/databases",
 			       'ensdb-archive:3304' => "/mysql/data_3304/databases",
 			       'ens-research:3306' => "/mysql/data_3306/databases",
-			       'ens-research:3309' => "/mysql/data_3309/databases",
+							   'ens-research:3309' => "/mysql/data_3309/databases",
+							   #'ensdb-1-11:5317' => '/mysql/data_5317/databases',
+							   #mysqlens doesn't have releod privelages here
                                'ensdb-2-12:5106' => '/mysqlv5.1-test/data_5106/databases');
 
 my %tables = (
@@ -139,6 +146,7 @@ my %already_flushed;
 
 # parsing/checking the input file
 
+#This does not catch unreadable files!
 open F, $input_file ||
   die "Can not open $input_file, $!\n";
 
