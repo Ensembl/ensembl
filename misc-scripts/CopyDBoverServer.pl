@@ -256,7 +256,7 @@ foreach my $db_to_copy (@dbs_to_copy) {
   $destination_srv =~ s/(ecs[1234]).*/$1/;
 
   if ($source_srv ne $destination_srv) {
-    $copy_executable = "/usr/bin/rcp";
+    $copy_executable = "/usr/bin/scp";
   }
 
   $source_srv = undef;
@@ -328,7 +328,7 @@ foreach my $db_to_copy (@dbs_to_copy) {
 	#Can we capture a CTRL-C here to exit the whole script
 	#Otherwise we exit the flush and the script acrries on trying to copy which can mess up tables.
 	#Need to use sub int_HANDLER and $SIG{'INT'} = 'INT_handler';
-	#OR is problem that we are interupting flush/rcp process and not perl process?
+	#OR is problem that we are interupting flush/scp process and not perl process?
 
     $already_flushed{$db_to_copy->{$flush_scope}} = 1;
   }
@@ -355,8 +355,8 @@ foreach my $db_to_copy (@dbs_to_copy) {
 	
 	print STDERR "// cp Copying $table_type $db_to_copy->{src_srv}:$source_db...";
  
-  } # OR rcp the db to $destination_tmp_directory in the destination server
-  elsif ($copy_executable eq "/usr/bin/rcp") {
+  } # OR scp the db to $destination_tmp_directory in the destination server
+  elsif ($copy_executable eq "/usr/bin/scp") {
     
 	if($table_type && ($db_to_copy->{src_db} =~ /_core_/)){#Copy core table subset
 	
@@ -369,7 +369,7 @@ foreach my $db_to_copy (@dbs_to_copy) {
 	  $copy_cmd = "$copy_executable -r $db_to_copy->{src_srv}:$source_db $destination_tmp_directory/$db_to_copy->{dest_db}";
 	}
 
-	print STDERR "// rcp Copying $table_type $db_to_copy->{src_srv}:$source_db...";
+	print STDERR "// scp Copying $table_type $db_to_copy->{src_srv}:$source_db...";
 
   }
 
