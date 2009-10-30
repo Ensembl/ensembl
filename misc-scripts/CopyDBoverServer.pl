@@ -2,21 +2,25 @@
 
 use strict;
 use Getopt::Long;
+use DBI;
 use Cwd 'chdir';
 use Sys::Hostname qw(hostname);
 
 $| = 1;
 
+
 my $usage = "\nUsage: $0 -pass XXXXX [-noflush -probe_mapping -xref] input_file
 
 Copy mysql databases between different servers and run myisamchk on the indices when copied.
 
--dbflush       Flushes only those DBs to be copied, default is to flush entire instance.
+-dbflush       Read locks and flushes only those DBs to be copied, default is to flush WITH READ LOCK entire instance.
 -noflush       Skips table flushing
--probe_mapping Only copies the tables relevant to running genomics and transcript probe mapping in isolation
 -xref          Only copies the xref tables, to enable running the transcript probe mapping with output to an isolation xref DB.
+#no longer implemented
+#-probe_mapping Only copies the tables relevant to running genomics and transcript probe mapping in isolation
 
-The input file should have the following format
+
+The input file should have the following format:
 
 source_server\\tsource_port\\tsource_db\\tdestination_server\\tdestination_port\\tdestination_db
 
@@ -63,9 +67,9 @@ GetOptions(
 		   'h'             => \$help,
 		   'pass=s'        => \$pass,
            'noflush'       => \$noflush,
-		   'probe_mapping' => \$probe_mapping,
+		   #'probe_mapping' => \$probe_mapping,
 		   'xref'          => \$xref,
-		   'dbflush'      => \$dbflush,
+		   'dbflush'       => \$dbflush,
 		  );
 
 if ($help || scalar @ARGV == 0 || ! defined $pass) {
@@ -86,12 +90,12 @@ my ($input_file) = @ARGV;
 my @dbs_to_copy;
 
 my %mysql_directory_per_svr = ('genebuild1:3306'   => "/mysql/data_3306/databases",
-			       'genebuild2:3306'   => "/mysql/data_3306/databases",
-			       'genebuild3:3306'   => "/mysql/data_3306/databases",
-			       'genebuild4:3306'   => "/mysql/data_3306/databases",
-			       'genebuild5:3306'   => "/mysql/data_3306/databases",
-			       'genebuild6:3306'   => "/mysql/data_3306/databases",
-							    'genebuild7:3306'   => "/mysql/data_3306/databases",
+							   'genebuild2:3306'   => "/mysql/data_3306/databases",
+							   'genebuild3:3306'   => "/mysql/data_3306/databases",
+							   'genebuild4:3306'   => "/mysql/data_3306/databases",
+							   'genebuild5:3306'   => "/mysql/data_3306/databases",
+							   'genebuild6:3306'   => "/mysql/data_3306/databases",
+							   'genebuild7:3306'   => "/mysql/data_3306/databases",
 							   'genebuild7:5306'   => "/mysql/data_3306/databases",
 			       'mart1:3306'        => "/mysql/data_3306/databases",
 			       'mart2:3306'        => "/mysql/data_3306/databases",
@@ -118,21 +122,21 @@ my %tables = (
 			  xref => [('xref', 'object_xref', 'identity_xref', 'go_xref', 
 						'external_db', 'external_synonym', 'unmapped_reason', 'unmapped_object')],
 
-			  probe_mapping => [('oligo_array', 'oligo_probe', 'oligo_feature', 'coord_system', 
-								 'seq_region', 'seq_region_attrib', 'seq_region_mapping', 'mapping_set', 'assembly_exception', 'attrib_type', 'analysis',
-								 'exon', 'exon_stable_id', 'exon_transcript', 'assembly', 'dna',
-								 'analysis_description', 'transcript', 'transcript_attrib', 'transcript_stable_id', 
-								 'translation', 'translation_stable_id', 'meta', 'meta_coord')],
+			  #probe_mapping => [('oligo_array', 'oligo_probe', 'oligo_feature', 'coord_system', 
+			#					 'seq_region', 'seq_region_attrib', 'seq_region_mapping', 'mapping_set', 'assembly_exception', 'attrib_type', 'analysis',
+			#					 'exon', 'exon_stable_id', 'exon_transcript', 'assembly', 'dna',
+			#					 'analysis_description', 'transcript', 'transcript_attrib', 'transcript_stable_id', 
+			#					 'translation', 'translation_stable_id', 'meta', 'meta_coord')],
 			  #translation & dna required for generating annotated UTRs
 			  			 );
 
 #add xref tables to probe mapping tables
-push @{$tables{'probe_mapping'}}, @{$tables{'xref'}};
+#push @{$tables{'probe_mapping'}}, @{$tables{'xref'}};
 
 #Set table sub set
 my $table_type = '';
 $table_type = 'xref' if $xref;
-$table_type = 'probe_mapping' if $probe_mapping;
+#$table_type = 'probe_mapping' if $probe_mapping;
 
 #Currently this fails if xref or probe_mapping is specified for a non-core DB
 #We need to default to normal copy if dbname !~ _core_
@@ -142,7 +146,7 @@ my $flush_scope = (defined $dbflush) ? 'src_db' : 'src_srv';
 my ($generic_working_host) = (gethostbyname(hostname));
 $generic_working_host =~ s/\..*//;
 my $working_dir = $ENV{'PWD'};
-my %already_flushed;
+my (%already_flushed, %db_handles);
 
 # parsing/checking the input file
 
@@ -218,7 +222,7 @@ foreach my $db_to_copy (@dbs_to_copy) {
 
   print STDERR "//\n// Starting new copy process\n//\n";
 
-  my $time;
+  my ($time, $dbh, $sql, @tables);
   my $source_srv = $db_to_copy->{src_srv};
   $source_srv =~ s/\..*//;
   
@@ -259,46 +263,72 @@ foreach my $db_to_copy (@dbs_to_copy) {
   $destination_srv = undef;
 
   # flush tables; in the source server
-  unless (defined $already_flushed{$db_to_copy->{$flush_scope}} || $noflush) {
+  #Need to change this $already_flushed functionality 
+  #if we chose release locks after each copy
+  #This will happen anyway as we redefine $dbh for each copy, so we need to keep
+  #dbh's in a global hash?
+ 
+
+  unless (exists $already_flushed{$db_to_copy->{$flush_scope}} || $noflush) {
   
+	#Get DBI for session READ locks
+	my $dsn = sprintf("DBI:%s:database=%s;host=%s;port=%s",
+					  'mysql', $db_to_copy->{src_db}, $db_to_copy->{src_srv}, $source_port);	
+	$dbh = DBI->connect($dsn, 'ensadmin', $pass,{ RaiseError => 1, AutoCommit => 0 });
 
-	#Is this sitll flushing the whole instance?
-	#Do we need to flush each individual table
-	#and reset the query cache?
-	print STDERR "// flushing tables in $db_to_copy->{$flush_scope} (".&get_time.")...\t";
-	my $flush_cmd;
+	#Store in hash so locks persist and we don't get errors when they go out of scope
+	$db_handles{$db_to_copy->{src_srv}} = $dbh;
 
+	#Lock tables
 	if($dbflush){
-	  my $tables_cmd = "echo 'show tables;' | mysql -h $db_to_copy->{src_srv} -u ensadmin -p$pass -P$source_port $db_to_copy->{src_db}";	  
-
-	  my @tables = split/\n/, `$tables_cmd`;
-	  shift @tables;#remove field header
-
-	  $flush_cmd = "echo 'flush tables ".join(', ', @tables).";' | mysql -h $db_to_copy->{src_srv} -u ensadmin -p$pass -P$source_port $db_to_copy->{src_db}";
+	  @tables = map{ $_ = "@$_"} @{$dbh->selectall_arrayref('show tables')};#Coudl use tables method here?
+	  print STDERR "// Acquiring READ LOCK in $db_to_copy->{$flush_scope} (".&get_time.")...";
+	  $sql = 'LOCK TABLES '.join(' READ, ', @tables).' READ';
+	  $dbh->do($sql);
+	  print STDERR ".DONE (".&get_time.")\n";
+	  $sql = 'flush tables';
+	  print STDERR "// Flushing tables in $db_to_copy->{$flush_scope} (".&get_time.")...";
 	}
 	else{
-	  $flush_cmd = "echo 'flush tables;' | mysql -h $db_to_copy->{src_srv} -u ensadmin -p$pass -P$source_port";
-	  #$flush_cmd .= ' '.$db_to_copy->{src_db} if $dbflush;
+	  print STDERR "// Flushing tables WITH READ LOCK in $db_to_copy->{$flush_scope} (".&get_time.")...";
+	  #This is actually a global lock across all DBs, so not tables required
+	  $sql = 'flush tables WITH READ LOCK';
 	}
 
+	#Flush tables
+	$dbh->do($sql);#Need to catch error here?
+	print STDERR ".DONE (".&get_time.")\n";
+
+
+	#OLD NON LOCKED FLUSH METHOD
+	#print STDERR "// Flushing tables in $db_to_copy->{$flush_scope} (".&get_time.")...\t";
+	#my $flush_cmd;
+	#if($dbflush){
+	#  my $tables_cmd = "echo 'show tables;' | mysql -h $db_to_copy->{src_srv} -u ensadmin -p$pass -P$source_port $db_to_copy->{src_db}";	  
+	#	  my @tables = split/\n/, `$tables_cmd`;
+	#	  shift @tables;#remove field header
+	#	  $flush_cmd = "echo 'flush tables  ".join(', ', @tables).";' | mysql -h $db_to_copy->{src_srv} -u ensadmin -p$pass -P$source_port $db_to_copy->{src_db}";
+	#}
+	#else{
+	#  $flush_cmd = "echo 'flush tables;' | mysql -h $db_to_copy->{src_srv} -u ensadmin -p$pass -P$source_port";
+	###$flush_cmd .= ' '.$db_to_copy->{src_db} if $dbflush;
+	#}
 	#Now flushes on db specific tables
 	#This was introduced to enable copying a an unused DB when others are being heavily used
 	#flush tables still reset the query cache, so will this provide an appreciable speed up?
 	#Apparently so.  But still slow due to burden on server from other queries
-	
-
-    if (system($flush_cmd) == 0) {
-      print STDERR "DONE (".&get_time.")\n";
-    } else {
-      print STDERR "FAILED
-skipped copy of ".$db_to_copy->{src_db}." from ".$db_to_copy->{src_srv}." to ". $db_to_copy->{dest_srv} . "\n";
-      next;
-    }
+    #if (system($flush_cmd) == 0) {
+    #  print STDERR "DONE (".&get_time.")\n";
+    #} else {
+    #  print STDERR "FAILED skipped copy of ".$db_to_copy->{src_db}." from ".$db_to_copy->{src_srv}." to ". $db_to_copy->{dest_srv} . "\n";
+    #  next;
+    #}
 
 
 	#Can we capture a CTRL-C here to exit the whole script
 	#Otherwise we exit the flush and the script acrries on trying to copy which can mess up tables.
-
+	#Need to use sub int_HANDLER and $SIG{'INT'} = 'INT_handler';
+	#OR is problem that we are interupting flush/rcp process and not perl process?
 
     $already_flushed{$db_to_copy->{$flush_scope}} = 1;
   }
@@ -352,6 +382,17 @@ print "$copy_cmd\n";
     next;
   }
 
+  
+  #release locks on individual DB tables
+  if($dbflush){
+	$db_handles{$db_to_copy->{src_srv}}->do('UNLOCK TABLES');
+	#Also remove from flush hash just incase we are copying this DB twice
+	#i.e. we re-lock and flush
+	$db_handles{$db_to_copy->{src_srv}}->disconnect;
+	delete 	$db_handles{$db_to_copy->{src_srv}};
+	delete $already_flushed{$db_to_copy->{$flush_scope}};
+  }
+ 
   # checks/fixes the indices
   print STDERR "// Checking $destination_tmp_directory/$db_to_copy->{dest_db}/*.MYI in progress...
 //\n";
@@ -379,7 +420,15 @@ skipped checking/copying of $db_to_copy->{dest_db}\n";
     next;
   }
   $db_to_copy->{status} = "SUCCEEDED";
+
 }
+
+#Now unlock any global read locks we have left on servers
+foreach my $dbh(values(%db_handles)){
+  $dbh->do('UNLOCK TABLES');
+  $dbh->disconnect;
+}
+
 
 print STDERR "//\n// End of all copy processes (".&get_time.")\n//\n// Processes summary\n";
 
