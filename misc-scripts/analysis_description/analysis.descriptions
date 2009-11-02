@@ -352,9 +352,7 @@
 351	zfish_protein	Zebrafish proteins from <a rel="external" href="http://uniprot.org">UniProtKB</a> are aligned to the genome using <a rel="external" href="http://genome.cshlp.org/cgi/content/abstract/14/5/988?maxtoshow=&amp;HITS=10&amp;hits=10&amp;RESULTFORMAT=&amp;andorexactfulltext=and&amp;searchid=1&amp;FIRSTINDEX=0&amp;sortspec=relevance&amp;volume=14&amp;firstpage=988&amp;resourcetype=HWCIT">GeneWise</a>.	Zebrafish prot.	1
 352	brepepP	Caenorhabditis brenneri proteins aligned by WU-BlastP	BrepepP	1
 353	brepepX	Caenorhabditis brenneri proteins aligned by WU-BlastX	BrepepX	1
-
-
-
+354	Vertrna_other	Positions of vertebrate non-coding mRNAs along the genome.  mRNAs are from the <a rel="external" href="http://www.ebi.ac.uk/embl/">EMBL</a> database.	EMBL vertebrate non-coding cDNA	1	{'type' => 'cdna','default' => {'contigviewbottom'=>'stack'}}
 
 #add new entries for core databases above, the following are for functional genomics
 #500	Nessie	Hidden Markov Model based predictions based on tiling array data	Nessie (TilingHMM)	1
