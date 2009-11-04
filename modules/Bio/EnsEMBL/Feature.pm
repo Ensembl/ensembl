@@ -364,7 +364,8 @@ sub slice {
 
   if(@_) {
     my $sl = shift;
-    if(defined($sl) && (!ref($sl) || !$sl->isa('Bio::EnsEMBL::Slice'))) {
+    if(defined($sl) && (!ref($sl) || 
+			(!$sl->isa('Bio::EnsEMBL::Slice')  && !$sl->isa('Bio::EnsEMBL::LRGSlice')))) {
       throw('slice argument must be a Bio::EnsEMBL::Slice');
     }
 
@@ -516,7 +517,9 @@ sub transfer {
   my $slice = shift;
 
   if(!$slice || !ref($slice) || !$slice->isa('Bio::EnsEMBL::Slice')) {
-    throw('Slice argument is required');
+    if( !$slice->isa('Bio::EnsEMBL::LRGSlice')){
+      throw('Slice argument is required');
+    }	
   }
 
   #make a shallow copy of the feature to be transfered
