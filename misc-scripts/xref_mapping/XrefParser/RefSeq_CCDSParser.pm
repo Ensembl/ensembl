@@ -57,6 +57,9 @@ sub run_script {
   }
   $sth->finish;
  
+
+
+
   $sql = 'select x.accession, x.xref_id, d.ensembl_stable_id, "Transcript"
             from xref x, transcript_direct_xref d, source s 
              where s.source_id = x.source_id and 
@@ -87,34 +90,65 @@ sub run_script {
   if(!defined($dbi2)){
     return 1;
   }
-  
-  my $sql = "select  cu.ccds_uid, a.nuc_acc from Accessions a, Accessions_GroupVersions agv, GroupVersions  gv, CcdsUids cu where a.accession_uid = agv.accession_uid and a.organization_uid=1 and agv.group_version_uid=gv.group_version_uid and gv.ccds_status_val_uid in (3) and cu.group_uid=gv.group_uid  order by gv.ccds_status_val_uid, cu.ccds_uid";
-  
-  
+
+
+##############################NEW#########################################
+
+  # get ccds -> xref transcript_id                 ensembl_stable_id{CCDS1} = ENST00001
+  # get ccds -> internal transcript_id             ccds_to_internal_id(CCDS1} = 12345
+
+  $sql = 'select x.dbprimary_acc, ox.ensembl_id from xref x, object_xref ox, external_db e where x.xref_id = ox.xref_id and x.external_db_id = e.external_db_id and e.db_name like ?';
+
+
+
+  # calculate internal_id -> xref transcript_id
+  my %internal_to_stable_id;
+  my ($acc, $internal_id);
+
   my $sth = $dbi2->prepare($sql); 
-  $sth->execute() or croak( $dbi2->errstr() );
+  $sth->execute("CCDS") or croak( $dbi2->errstr() );
   while ( my @row = $sth->fetchrow_array() ) {
-    my $ccds = $row[0];
-    my $refseq = $row[1];
-    
+    my $acc = $row[0];
+    my $internal_id = $row[1];
+    if(defined($ensembl_stable_id{$acc})){
+      $internal_to_stable_id{$internal_id} =  $ensembl_stable_id{$acc};
+    }
+    else{
+      print "$acc not found in ccds database????\n";
+    }
+  }    
+
+  # for each object_xref for refseq_dna change internal_id to xref transcript_id
+  $sth->execute("Refseq_dna") or croak( $dbi2->errstr() );
+  while ( my @row = $sth->fetchrow_array() ) {
+    my $refseq = $row[0];
+    my $internal_id = $row[1];
+
+    if(defined($internal_to_stable_id{$internal_id})){
+    }
+    else{
+      print "Problem no internal_to_stable_id for $internal_id\n"; 
+      next;
+    }
+  
     $line_count++;
     if(!defined($seen{$refseq})){
       $seen{$refseq} = 1;
-      my $key = "CCDS".$ccds;
-      if(defined($ensembl_stable_id{$key})){
-	my $new_source_id = $source_id;
-	if($refseq =~ /^XM/){
-	  $new_source_id = $dna_pred;
-	}
-	my $xref_id = $self->add_xref($refseq, $version{$refseq} , $label{$refseq}||$refseq , 
-				      $description{$refseq}, $new_source_id, $species_id, "DIRECT");
-	$self->add_direct_xref($xref_id, $ensembl_stable_id{$key}, $ensembl_type{$key}, "");
-	$old_to_new{$old_xref{$refseq}} = $xref_id;
-	$xref_count++;
+      my $new_source_id = $source_id;
+      if($refseq =~ /^XM/){
+	$new_source_id = $dna_pred;
       }
+      my $xref_id = $self->add_xref($refseq, $version{$refseq} , $label{$refseq}||$refseq , 
+				    $description{$refseq}, $new_source_id, $species_id, "DIRECT");
+
+      $self->add_direct_xref($xref_id, $internal_to_stable_id{$internal_id}, "Transcript", "");
+
+      $old_to_new{$old_xref{$refseq}} = $xref_id;
+      $xref_count++;
     }
   }
-  
+############################END NEW######################################
+
   #for each one seen get all its dependent xrefs and load them fro the new one too;
 
   my $add_dependent_xref_sth = $dbi->prepare("INSERT INTO dependent_xref VALUES(?,?,?,?)");
