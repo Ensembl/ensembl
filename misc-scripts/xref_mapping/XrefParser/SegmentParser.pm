@@ -57,7 +57,7 @@ sub run {
       $xref_id = $self->add_xref($acc,"",$acc,$description,$source_id, $species_id, "DIRECT");
       $added++;
     }
-    print "$acc, $xref_id, $gene_id\n";
+#    print "$acc, $xref_id, $gene_id\n";
     $self->add_direct_xref($xref_id, $gene_id, "Gene", "");
 
   }
