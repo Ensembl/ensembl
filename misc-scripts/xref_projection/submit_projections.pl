@@ -4,17 +4,29 @@ use strict;
 # Remember to check/set the various config optons
 
 # ------------------------------ config -------------------------------
-my $release = 56;
+my $release = 57;
 
-my $base_dir = "/lustre/scratch103/ensembl/rjk/projections/";
+my $base_dir = "/Your path/";
 
-my $conf = "release_56.ini"; # registry config file, specifies Compara location
+my $conf = "release_57.ini"; # registry config file, specifies Compara location
 
 # location of other databases
-my $host = "xxx";
-my $port = "xxx";
-my $user = "xxx";
-my $pass = "xxx";
+
+my @config = ({
+    '-host' => 'xx',
+    '-port' => 'xx',
+    '-user' => 'xx',
+    '-pass' => 'xx'
+    },
+    {
+    '-host' => 'xx',
+    '-port' => 'xx',
+    '-user' => 'xx',
+    '-pass' => 'xx'
+    });
+
+my ($host, $port, $user, $pass);
+
 
 # load limit for ens-staging MySQL instance above which jobs won't be started
 my $limit = 200;
@@ -35,7 +47,7 @@ if (! -e $dir) {
 }
 
 # common options
-my $script_opts = "-conf $conf -host $host -user $user -port $port -pass $pass -version $release -release $release -quiet";
+my $script_opts = "-conf '$conf' -registryconf '$registryconf' -version '$release' -release '$release' -quiet";
 
 my $bsub_opts = "";
 $bsub_opts .= "-R'select[myens_staging<$limit]'";
@@ -47,6 +59,7 @@ my @names_1_1 = (["human", "chimp"            ],
 		 ["human", "cow"              ],
 		 ["human", "macaque"          ],
 		 ["human", "chicken"          ],
+		 ["human", "turkey"           ],
 		 ["human", "xenopus"          ],
 		 ["human", "guinea_pig"       ],
 		 ["human", "pig"              ],
@@ -90,6 +103,7 @@ my @go_terms = (["human",      "mouse"          ],
 		["human",      "rat"            ],
 		["human",      "dog"            ],
 		["human",      "chicken"        ],
+		["human",      "turkey"         ],
 		["human",      "cow"            ],
 		["human",      "chimp"          ],
 		["human",      "macaque"        ],
@@ -128,6 +142,7 @@ my @go_terms = (["human",      "mouse"          ],
 		["mouse",      "rat"            ],
 		["mouse",      "dog"            ],
 		["mouse",      "chicken"        ],
+		["mouse",      "turkey"         ],
 		["mouse",      "cow"            ],
 		["mouse",      "chimp"          ],
 		["mouse",      "macaque"        ],
@@ -168,6 +183,8 @@ my @go_terms = (["human",      "mouse"          ],
 		["danio",      "fugu"           ],
 		["danio",      "tetraodon"      ],
 		["danio",      "stickleback"    ],
+		["human",      "stickleback"    ],
+		["mouse",      "stickleback"    ],
 		["xenopus",    "danio"          ]);
 
 my ($from, $to, $o, $e, $n);
