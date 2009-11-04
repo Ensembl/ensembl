@@ -107,8 +107,8 @@ my $ident_xref = Bio::EnsEMBL::IdentityXref->new
    -display_id => "Ens related Ident"
    );
 
-$ident_xref->query_identity( 100 );
-$ident_xref->target_identity( 95 );
+$ident_xref->xref_identity( 100 );
+$ident_xref->ensembl_identity( 95 );
 
 my $goref = Bio::EnsEMBL::GoXref->new
   (
