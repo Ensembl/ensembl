@@ -168,10 +168,10 @@ sub create_xrefs {
 
   my %dependent_sources = $self->get_dependent_xref_sources(); # name-id hash
 
-
-  if(defined($dependent_sources{'HGNC'})){
-    $dependent_sources{'HGNC'} = XrefParser::BaseParser->get_source_id_for_source_name("HGNC","uniprot");
-  }	
+# get from HGNC file
+#  if(defined($dependent_sources{'HGNC'})){
+#    $dependent_sources{'HGNC'} = XrefParser::BaseParser->get_source_id_for_source_name("HGNC","uniprot");
+#  }	
 
   if(defined($dependent_sources{'MGI'})){
     $dependent_sources{'MGI'} = XrefParser::BaseParser->get_source_id_for_source_name("MGI","uniprot");
@@ -486,6 +486,9 @@ sub create_xrefs {
 	  next;
 	}
 	if($source =~ "UCSC"){  
+	  next;
+	}
+	if($source =~ "HGNC"){
 	  next;
 	}
 	if (exists $dependent_sources{$source} ) {
