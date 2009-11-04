@@ -163,7 +163,7 @@
 76	GeneNo_tRNA	tRNA Gene Count	 Number of tRNA Genes
 77	GeneNo_rettran	retrotransposed Gene Count	Number of retrotransposed Genes
 78	GeneNo_snlRNA	snlRNA Gene Count	Number of snlRNA Genes
-
+79	GeneNo_proc_tr	processed_transcript Gene Count	Number of processed transcript Genes
 80	supercontig	SuperContig name	NULL
 81	well_name	Well plate name	NULL
 
@@ -309,11 +309,13 @@
 185	TRPsCount	TR_pseudo	Number of TR Pseudogenes
 
 # attribute that shows if a supporting evidence was also used to build a Vega gene model
-186	tp_otter_support	otter protein transcript support Evidence ID that was used as supporting feature for building a gene in Vega
-187	td_otter_support	otter dna transcript support Evidence ID that was used as supporting feature for building a gene in Vega
-188	ep_otter_support	otter protein exon support Evidence ID that was used as supporting feature for building a gene in Vega
-189	ed_otter_support	otter dna exon support Evidence ID that was used as supporting feature for building a gene in Vega
+186	tp_ott_support	otter protein transcript support Evidence ID that was used as supporting feature for building a gene in Vega
+187	td_ott_support	otter dna transcript support Evidence ID that was used as supporting feature for building a gene in Vega
+188	ep_ott_support	otter protein exon support Evidence ID that was used as supporting feature for building a gene in Vega
+189	ed_ott_support	otter dna exon support Evidence ID that was used as supporting feature for building a gene in Vega
 
 # Attributes like ie  split_tscript incons_strands incons_phases is_folded unwanted_evidence 
 # exon_too_long contains_stops borked_coords low_complex  evi_coverage are added by BlastMiniGenewise in the build process.
 # They can be deleted out of transcript_attrib and attrib_type table 
+
+190	GeneNo_lincRNA	lincRNA Gene Count	Number of lincRNA Genes
