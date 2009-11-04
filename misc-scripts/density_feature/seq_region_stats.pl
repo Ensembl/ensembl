@@ -59,7 +59,9 @@ my %attrib_codes = ( 'miRNA'                => 'miRNA',
 		     'J_segment'            => 'Ig',
 		     'V_segment'            => 'Ig',
                      'IG_pseudogene'        => 'pseudo',
-		     'retrotransposed'      => 'rettran');
+		     'retrotransposed'      => 'rettran',
+		     'processed_transcript' => 'proc_tr',
+		     'lincRNA'              => 'lincRNA',);
 
 
 # do both genestats and snpstats by default
