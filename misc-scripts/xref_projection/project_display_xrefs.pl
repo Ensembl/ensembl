@@ -12,9 +12,10 @@ use Bio::EnsEMBL::Utils::Eprof qw(eprof_start eprof_end eprof_dump);
 
 my $method_link_type = "ENSEMBL_ORTHOLOGUES";
 
-my ($conf, $host, $user, $port, $pass, $version, $compara, $from_species, @to_multi, $print, $names, $go_terms, $delete_names, $delete_go_terms, $no_backup, $full_stats, $descriptions, $release, $no_database, $quiet, $max_genes, $one_to_many, $go_check, $all_sources);
+my ($conf, $registryconf, $host, $user, $port, $pass, $version, $compara, $from_species, @to_multi, $print, $names, $go_terms, $delete_names, $delete_go_terms, $no_backup, $full_stats, $descriptions, $release, $no_database, $quiet, $max_genes, $one_to_many, $go_check, $all_sources);
 
 GetOptions('conf=s'          => \$conf,
+	   'registryconf=s'  => \$registryconf,
 	   'host=s'          => \$host,
 	   'user=s'          => \$user,
 	   'port=s'          => \$port,
@@ -45,9 +46,9 @@ $| = 1; # auto flush stdout
 
 $descriptions = 1;
 
-if (!$conf && !$host && !$user) {
+if (!$conf && !$registryconf) {
 
-  print STDERR "Configuration file must be supplied via -conf argument, or host/user must be specified\n";
+  print STDERR "Configuration file must be supplied via -conf or -registryconf argument\n";
   usage();
   exit(1);
 
@@ -104,11 +105,11 @@ my @evidence_codes = ( "IDA", "IEP", "IGI", "IMP", "IPI" );
 
 # load from database and conf file
 Bio::EnsEMBL::Registry->no_version_check(1);
-Bio::EnsEMBL::Registry->load_registry_from_db(-host       => $host,
-					      -port       => $port,
-					      -user       => $user,
-					      -pass       => $pass,
-					      -db_version => $version);
+
+my $args = eval($registryconf);
+
+Bio::EnsEMBL::Registry->load_registry_from_multiple_dbs(@{$args});
+
 Bio::EnsEMBL::Registry->load_all($conf, 0, 1); # options mean "not verbose" and "don't clear registry"
 
 # Get Compara adaptors - use the one specified on the command line, or the first one
@@ -148,7 +149,7 @@ my %projections_by_source;
 foreach my $to_species (@to_multi) {
 
   my $to_ga   = Bio::EnsEMBL::Registry->get_adaptor($to_species, 'core', 'Gene');
-  die("Can't get gene adaptor for $to_species - check database connection details; if species is new, add alias to Registry.pm\n") if (!$to_ga);
+  die("Can't get gene adaptor for $to_species - check database connection details; make sure meta table contains the correct species alias\n") if (!$to_ga);
   my $to_dbea = Bio::EnsEMBL::Registry->get_adaptor($to_species, 'core', 'DBEntry');
 
   write_to_projection_db($to_ga->dbc(), $release, $from_species, $from_ga->dbc(), $to_species) unless ($no_database);
