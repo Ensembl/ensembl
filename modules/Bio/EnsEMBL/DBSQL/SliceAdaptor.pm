@@ -98,7 +98,7 @@ use strict;
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Bio::EnsEMBL::Slice;
 use Bio::EnsEMBL::Mapper;
-
+use Bio::EnsEMBL::LRGSlice;
 use Bio::EnsEMBL::Utils::Exception qw(throw deprecate warning stack_trace_dump);
 
 
@@ -118,6 +118,17 @@ sub new {
 
   $self->{'sr_name_cache'} = $seq_region_cache->{'name_cache'};
   $self->{'sr_id_cache'}   = $seq_region_cache->{'id_cache'};
+
+  $self->{'lrg_region_test'} = undef;
+  my $meta_container = $self->db->get_MetaContainer();
+  my @values = $meta_container->list_value_by_key("LRG");
+  if(defined(@values) and scalar(@values) and $values[0]->[0]){
+    print "LRG is true and set to ".$values[0]->[0]."\n";
+    $self->{'lrg_region_test'} = $values[0]->[0];
+  }
+  else{
+    print "LRG NOT set\n";
+  }
 
   return $self;
 }
@@ -388,15 +399,28 @@ sub fetch_by_region {
            ) );
   }
 
-  return
-    Bio::EnsEMBL::Slice->new_fast({ 
-	                      'coord_system'      => $cs,
-                              'seq_region_name'   => $seq_region_name,
-                              'seq_region_length' => $length,
-                              'start'             => $start,
-                              'end'               => $end,
-                              'strand'            => $strand,
-                              'adaptor'           => $self} );
+  if(defined($self->{'lrg_region_test'}) and substr($cs->name,0,3) eq $self->{'lrg_region_test'}){
+    return
+      Bio::EnsEMBL::LRGSlice->new( -COORD_SYSTEM      => $cs,
+				   -SEQ_REGION_NAME   => $seq_region_name,
+				   -SEQ_REGION_LENGTH => $length,
+				   -START             => $start,
+				   -END               => $end,
+				   -STRAND            => $strand,
+				   -ADAPTOR           => $self );    
+  }
+  else{
+    
+    return
+      Bio::EnsEMBL::Slice->new( -COORD_SYSTEM      => $cs,
+				-SEQ_REGION_NAME   => $seq_region_name,
+				-SEQ_REGION_LENGTH => $length,
+				-START             => $start,
+				-END               => $end,
+				-STRAND            => $strand,
+				-ADAPTOR           => $self );
+  }
+
 } ## end sub fetch_by_region
 
 
@@ -1054,7 +1078,8 @@ sub fetch_by_Feature{
   }
 
   my $slice = $feature->slice();
-  if(!$slice || !$slice->isa('Bio::EnsEMBL::Slice')) {
+  if(!$slice || (!$slice->isa('Bio::EnsEMBL::Slice') && !$slice->isa('Bio::EnsEMBL::LRGSlice') )) {
+    print "slcie is ---".ref($slice)."\n";
     throw('Feature must be attached to a valid slice.');
   }
 
