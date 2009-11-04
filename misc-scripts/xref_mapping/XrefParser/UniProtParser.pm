@@ -250,6 +250,38 @@ sub create_xrefs {
   #
 
 
+  #
+  # HGNC data needed  QC ---------------------------------------------------------
+  #
+  my %hgnc_acc_to_desc;
+  my %hgnc_acc_to_label;
+  my %hgnc_syn_to_acc;
+
+  $sth = $self->dbi()->prepare("SELECT x.accession, x.label, x.description from xref x, source s where x.source_id = s.source_id and s.name like 'HGNC' and s.priority_description like 'desc_only'");
+  
+  $sth->execute() or croak( $self->dbi()->errstr() );
+  while ( my @row = $sth->fetchrow_array() ) {
+    $hgnc_acc_to_desc{$row[0]}   = $row[2];
+    $hgnc_acc_to_label{$row[0]}  = $row[1];
+  }
+  $sth->finish;
+
+  $sth = $self->dbi()->prepare("SELECT sy.synonym, x.accession from xref x, source s, synonym sy where sy.xref_id = x.xref_id and x.source_id = s.source_id and s.name like 'HGNC' and s.priority_description like 'desc_only'");
+  
+  $sth->execute() or croak( $self->dbi()->errstr() );
+  while ( my @row = $sth->fetchrow_array() ) {
+    $hgnc_syn_to_acc{$row[0]} = $row[1];
+  }
+  $sth->finish;
+
+  #
+  # end HGNC data QC -------------------------------------------------
+  #
+
+
+
+
+
   my %dependent_xrefs;
 
   while ( $_ = $uniprot_io->getline() ) {
@@ -500,8 +532,22 @@ sub create_xrefs {
 
 	  if($source =~ /HGNC/){
 	    $acc =~ s/HGNC://;
-	    $extra[0] =~ s/[.]//;
-	    $dep{LABEL} = $extra[0];
+	    if(defined($hgnc_acc_to_label{$acc})){
+	      $dep{LABEL} = $hgnc_acc_to_label{$acc};
+	      $dep{DESCRIPTION} = $hgnc_acc_to_desc{$acc};
+	    }
+	    else{
+	      $extra[0] =~ s/[.]//;
+	      if(defined($hgnc_syn_to_acc{$extra[0]})){
+		$acc = $extra[0];
+		$dep{LABEL} = $hgnc_acc_to_label{$acc};
+		$dep{DESCRIPTION} = $hgnc_acc_to_desc{$acc};
+	      }
+	      else{
+		print "Not found HGNC $acc, (".$extra[0].") so ignoring\n" if($verbose);
+		next;
+	      }
+	    }
 	  }
 	  $dep{ACCESSION} = $acc;
 
@@ -519,7 +565,7 @@ sub create_xrefs {
               $dep{ACCESSION}   = $mgi_label_to_acc{$dep{LABEL}};
 	    }
             else{
-               print "Not found $acc, ".$extra[0]."\n" if($verbose);
+               print "Not found MGI $acc, ".$extra[0]."\n" if($verbose);
             }
 	  }
 
