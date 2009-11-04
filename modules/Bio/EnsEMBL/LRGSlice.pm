@@ -62,6 +62,8 @@ use strict;
 use Bio::PrimarySeqI;
 
 
+#Test for LRG tag in cvs
+
 my $reg = "Bio::EnsEMBL::Registry";
 
 use Bio::EnsEMBL::Slice;
