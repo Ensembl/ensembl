@@ -1,7 +1,7 @@
 CREATE TABLE `unmapped_object` (
 
   `unmapped_object_id`    INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `type`                  ENUM("xref", "cDNA", "Marker"),
+  `type`                  ENUM("xref", "cDNA", "Marker") NOT NULL,
   `analysis_id`           INT(10) UNSIGNED NOT NULL,
   `external_db_id`        INT,
   `identifier`            VARCHAR(255) NOT NULL,

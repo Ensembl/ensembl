@@ -7,7 +7,7 @@ CREATE TABLE `external_db` (
   `display_label_linkable` tinyint(1) NOT NULL default '0',
   `priority` int(11) NOT NULL default '0',
   `db_display_name` varchar(255) collate latin1_bin default NULL,
-  `type` enum('ARRAY','ALT_TRANS','MISC','LIT') collate latin1_bin default NULL,
+  `type` enum('ARRAY','ALT_TRANS','ALT_GENE', 'MISC','LIT', 'PRIMARY_DB_SYNONYM', 'ENSEMBL'),
   `secondary_db_name` varchar(255) collate latin1_bin default NULL,
   `secondary_db_table` varchar(255) collate latin1_bin default NULL,
   `description` text collate latin1_bin,
