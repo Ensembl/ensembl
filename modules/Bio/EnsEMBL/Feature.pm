@@ -115,7 +115,8 @@ sub new {
       rearrange(['START','END','STRAND','SLICE','ANALYSIS', 'SEQNAME',
 		 'DBID', 'ADAPTOR'], @_);   
   if($slice) {
-    if(!ref($slice) || !$slice->isa('Bio::EnsEMBL::Slice')) {
+    if(defined($slice) && (!ref($slice) ||
+			(!$slice->isa('Bio::EnsEMBL::Slice')  && !$slice->isa('Bio::EnsEMBL::LRGSlice')))){
       throw('-SLICE argument must be a Bio::EnsEMBL::Slice not '.$slice);
     }
   }
