@@ -61,6 +61,7 @@ use strict;
 
 use Bio::PrimarySeqI;
 
+# Another try :-)
 
 my $reg = "Bio::EnsEMBL::Registry";
 
