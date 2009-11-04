@@ -112,6 +112,27 @@ sub run {
     # If no RefSeq, use the Swissprot instead
 
     my $seen = 0;
+
+    # store as list_only first 
+
+    $self->add_xref($array[0], "", $array[1], $array[2], $hgnc_desc_only, $species_id, "MISC");      
+    if (defined($array[3])) {     # dead name, add to synonym
+      my @array2 = split(',\s*', $array[3]);
+      foreach my $arr (@array2){
+	XrefParser::BaseParser->add_to_syn($array[0], $hgnc_desc_only, $arr, $species_id);
+      }
+    }
+    
+    if (defined($array[4])) {     # alias, add to synonym
+      my @array2 = split(',\s*', $array[4]);
+      foreach my $arr (@array2){
+	XrefParser::BaseParser->add_to_syn($array[0], $hgnc_desc_only, $arr, $species_id);
+      }
+    }
+
+
+
+
     if ($array[9]){              # Ensembl direct xref
       $seen =1;
       $ensembl_count++;
@@ -218,21 +239,7 @@ sub run {
 	}
       }    
     }
-    if(!$seen){ # Store to keep descriptions etc
-      $self->add_xref($array[0], "", $array[1], $array[2], $hgnc_desc_only, $species_id, "MISC");      
-      if (defined($array[3])) {     # dead name, add to synonym
-	my @array2 = split(',\s*', $array[3]);
-	foreach my $arr (@array2){
-	  XrefParser::BaseParser->add_to_syn($array[0], $hgnc_desc_only, $arr, $species_id);
-	}
-      }
-      
-      if (defined($array[4])) {     # alias, add to synonym
-	my @array2 = split(',\s*', $array[4]);
-	foreach my $arr (@array2){
-	  XrefParser::BaseParser->add_to_syn($array[0], $hgnc_desc_only, $arr, $species_id);
-	}
-      }
+    if(!$seen){
       $mismatch++;
     }
 

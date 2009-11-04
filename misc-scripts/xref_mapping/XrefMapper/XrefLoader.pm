@@ -139,6 +139,25 @@ sub update{
   $sth->finish;
   $transaction_end_sth->execute();
 #}
+
+  ######################################################
+  # Sort out Interpro  (xrefs added by unmapped entries)
+  ######################################################
+  
+  my $interpro_test_sth = $self->xref->dbc->prepare('select count(1) from xref x, source s where x.source_id = s.source_id and s.name like "InterPro"');
+  
+  $interpro_test_sth->execute();
+  my ($int_count);
+  $interpro_test_sth->bind_columns(\$int_count);
+  $interpro_test_sth->fetch();
+  if(defined($int_count) and $int_count){
+    my $ex_id = $name_to_external_db_id{"InterPro"}; 
+    $xref_sth->execute($ex_id);   
+  }	
+  $interpro_test_sth->finish;
+
+
+
   $synonym_sth->finish;
   $go_sth->finish;  
   $identity_sth->finish;
@@ -187,17 +206,17 @@ sub update{
   # Now add the new ones              #
   #####################################
 
-     ###########################
-     # SQL to get data from xref
-     ###########################
-
-     my $direct_sth = $self->xref->dbc->prepare('select x.xref_id, x.accession, x.label, x.version, x.description, x.info_text, ox.object_xref_id, ox.ensembl_id, ox.ensembl_object_type from xref x, object_xref ox  where ox.ox_status = "DUMP_OUT" and ox.xref_id = x.xref_id and x.source_id = ? and x.info_type = ? order by x.xref_id');
- 
-#     $dependent_sth = $self->xref->dbc->prepare('select  x.xref_id, x.accession, x.label, x.version, x.description, x.info_text, ox.object_xref_id, ox.ensembl_id, ox.ensembl_object_type, d.master_xref_id from xref x, object_xref ox,  dependent_xref d where ox.ox_status = "DUMP_OUT" and ox.xref_id = x.xref_id and d.object_xref_id = ox.object_xref_id and x.source_id = ? and x.info_type = ? order by x.xref_id, ox.ensembl_id');
- 
-    $dependent_sth = $self->xref->dbc->prepare('select  x.xref_id, x.accession, x.label, x.version, x.description, x.info_text, ox.object_xref_id, ox.ensembl_id, ox.ensembl_object_type, ox.master_xref_id from xref x, object_xref ox where ox.ox_status = "DUMP_OUT" and ox.xref_id = x.xref_id and x.source_id = ? and x.info_type = ? order by x.xref_id, ox.ensembl_id');
-
-
+  ###########################
+  # SQL to get data from xref
+  ###########################
+  
+  my $direct_sth = $self->xref->dbc->prepare('select x.xref_id, x.accession, x.label, x.version, x.description, x.info_text, ox.object_xref_id, ox.ensembl_id, ox.ensembl_object_type from xref x, object_xref ox  where ox.ox_status = "DUMP_OUT" and ox.xref_id = x.xref_id and x.source_id = ? and x.info_type = ? order by x.xref_id');
+  
+  #     $dependent_sth = $self->xref->dbc->prepare('select  x.xref_id, x.accession, x.label, x.version, x.description, x.info_text, ox.object_xref_id, ox.ensembl_id, ox.ensembl_object_type, d.master_xref_id from xref x, object_xref ox,  dependent_xref d where ox.ox_status = "DUMP_OUT" and ox.xref_id = x.xref_id and d.object_xref_id = ox.object_xref_id and x.source_id = ? and x.info_type = ? order by x.xref_id, ox.ensembl_id');
+  
+  $dependent_sth = $self->xref->dbc->prepare('select  x.xref_id, x.accession, x.label, x.version, x.description, x.info_text, ox.object_xref_id, ox.ensembl_id, ox.ensembl_object_type, ox.master_xref_id from xref x, object_xref ox where ox.ox_status = "DUMP_OUT" and ox.xref_id = x.xref_id and x.source_id = ? and x.info_type = ? order by x.xref_id, ox.ensembl_id');
+  
+  
   my $go_sql =(<<GSQL);
   SELECT  x.xref_id, x.accession, x.label, x.version, x.description, x.info_text, ox.object_xref_id, ox.ensembl_id, ox.ensembl_object_type, ox.master_xref_id, g.linkage_type 
     FROM (xref x, object_xref ox, go_xref g) 
@@ -208,28 +227,30 @@ sub update{
             order by x.xref_id, ox.ensembl_id
 GSQL
 
-     $go_sth = $self->xref->dbc->prepare($go_sql);
+  $go_sth = $self->xref->dbc->prepare($go_sql);
 
-     my $seq_sth   =   $self->xref->dbc->prepare('select x.xref_id, x.accession, x.label, x.version, x.description, x.info_text, ox.object_xref_id, ox.ensembl_id, ox.ensembl_object_type, i.query_identity, i.target_identity, i.hit_start, i.hit_end, i.translation_start, i.translation_end, i.cigar_line, i.score, i.evalue from xref x, object_xref ox, identity_xref i  where ox.ox_status = "DUMP_OUT" and i.object_xref_id = ox.object_xref_id and ox.xref_id = x.xref_id and x.source_id = ? and x.info_type = ? order by x.xref_id');
+  my $seq_sth   =   $self->xref->dbc->prepare('select x.xref_id, x.accession, x.label, x.version, x.description, x.info_text, ox.object_xref_id, ox.ensembl_id, ox.ensembl_object_type, i.query_identity, i.target_identity, i.hit_start, i.hit_end, i.translation_start, i.translation_end, i.cigar_line, i.score, i.evalue from xref x, object_xref ox, identity_xref i  where ox.ox_status = "DUMP_OUT" and i.object_xref_id = ox.object_xref_id and ox.xref_id = x.xref_id and x.source_id = ? and x.info_type = ? order by x.xref_id');
 
-     ########################
-     # SQL to add data to core
-     #########################
- 
-     my $add_xref_sth           = $self->core->dbc->prepare('insert into xref (xref_id, external_db_id, dbprimary_acc, display_label, version, description, info_type, info_text) values (?, ?, ?, ?, ?, ?, ?, ?)');
-     my $add_object_xref_sth    = $self->core->dbc->prepare('insert into object_xref (object_xref_id, ensembl_id, ensembl_object_type, xref_id, analysis_id) values (?, ?, ?, ?, ?)');
-     my $add_identity_xref_sth  = $self->core->dbc->prepare('insert into identity_xref (object_xref_id, xref_identity, ensembl_identity, xref_start, xref_end, ensembl_start, ensembl_end, cigar_line, score, evalue) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
-     my $add_go_xref_sth        = $self->core->dbc->prepare('insert into go_xref (object_xref_id, linkage_type) values (?, ?)');
-     my $add_dependent_xref_sth = $self->core->dbc->prepare('insert ignore into dependent_xref (object_xref_id, master_xref_id, dependent_xref_id) values (?, ?, ?)');
-     my $add_syn_sth            = $self->core->dbc->prepare('insert ignore into external_synonym (xref_id, synonym) values (?, ?)');
 
+  
+  ########################
+  # SQL to add data to core
+  #########################
+  
+  my $add_xref_sth           = $self->core->dbc->prepare('insert into xref (xref_id, external_db_id, dbprimary_acc, display_label, version, description, info_type, info_text) values (?, ?, ?, ?, ?, ?, ?, ?)');
+  my $add_object_xref_sth    = $self->core->dbc->prepare('insert into object_xref (object_xref_id, ensembl_id, ensembl_object_type, xref_id, analysis_id) values (?, ?, ?, ?, ?)');
+  my $add_identity_xref_sth  = $self->core->dbc->prepare('insert into identity_xref (object_xref_id, xref_identity, ensembl_identity, xref_start, xref_end, ensembl_start, ensembl_end, cigar_line, score, evalue) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+  my $add_go_xref_sth        = $self->core->dbc->prepare('insert into go_xref (object_xref_id, linkage_type) values (?, ?)');
+  my $add_dependent_xref_sth = $self->core->dbc->prepare('insert ignore into dependent_xref (object_xref_id, master_xref_id, dependent_xref_id) values (?, ?, ?)');
+  my $add_syn_sth            = $self->core->dbc->prepare('insert ignore into external_synonym (xref_id, synonym) values (?, ?)');
+  
   $sth = $self->xref->dbc->prepare('select s.name, s.source_id, count(*), x.info_type, s.priority_description from xref x, object_xref ox, source s where ox.xref_id = x.xref_id  and x.source_id = s.source_id and ox_status = "DUMP_OUT" group by s.name, s.source_id, x.info_type');
   $sth->execute();
   my ($type, $source_id, $where_from);
   $sth->bind_columns(\$name,\$source_id, \$count, \$type, \$where_from);
- 
+  
   $transaction_start_sth->execute();
-
+  
   while($sth->fetch()){
     if(defined($where_from) and $where_from ne ""){
       $where_from = "Generated via $where_from";

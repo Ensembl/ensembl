@@ -58,8 +58,9 @@ sub run_script {
 
   my $clone_source_id =
     $self->get_source_id_for_source_name('Clone_based_vega_transcript');
-  my $curated_source_id =
-    $self->get_source_id_for_source_name('HGNC_curated_transcript');
+
+  my $hgnc_source_id =
+    $self->get_source_id_for_source_name('HGNC','havana');
  
   my $sql = 'select tsi.stable_id, x.display_label from xref x, object_xref ox , transcript_stable_id tsi, external_db e where e.external_db_id = x.external_db_id and x.xref_id = ox.xref_id and tsi.transcript_id = ox.ensembl_id and e.db_name like ?';
 
@@ -97,22 +98,122 @@ sub run_script {
 
   my $xref_count = 0;
 
+
+
+  
+  my $dbi = $self->dbi();
+
+  my %synonym;
+  my $dbname = "HGNC";
+  my $syn;
+  my $name;
+
+  $sth = $dbi->prepare('select es.synonym, x.label from synonym es, xref x, source s where x.xref_id = es.xref_id and x.source_id = s.source_id and s.name = "EntrezGene"' );
+  $sth->execute();
+  $sth->bind_columns(\$syn,\$name);
+  while($sth->fetch){
+    $synonym{$syn} = $name;
+  }
+  $sth->finish;
+
+
+  $sth = $dbi->prepare('select es.synonym, x.label from synonym es, xref x, source s where x.xref_id = es.xref_id and x.source_id = s.source_id and s.name = "'.$dbname.'" and s.priority_description like "desc_only"');
+  $sth->execute();
+  $sth->bind_columns(\$syn,\$name);
+  while($sth->fetch){
+    $synonym{$syn} = $name;
+  }
+  $sth->finish;
+
+
+
+  #get the source ids for HGNC sources
+
+  my (%accession, %version, %description);
+
+  $sql  = 'select source_id from source where name like "HGNC" ';
+  $sql .= 'and priority_description like "desc_only" ';
+  $sth = $dbi->prepare($sql);
+  
+  $sth->execute();
+
+
+  my ($hgnc_source_id);
+  $sth->bind_columns(\$hgnc_source_id);
+  my @arr;
+  while($sth->fetch()){
+    push @arr, $hgnc_source_id;
+  }
+  $sth->finish;
+
+  $sql = "select accession, label, version,  description from xref where source_id in (".join(", ",@arr).")";
+  $sth = $dbi->prepare($sql);
+  $sth->execute();
+  my ($acc, $lab, $ver, $desc);
+  my $hgnc_loaded_count = 0;
+  $sth->bind_columns(\$acc, \$lab, \$ver, \$desc);
+  while (my @row = $sth->fetchrow_array()) {
+    $accession{$lab} = $acc;
+    $version{$lab} = $ver;
+    $description{$lab} = $desc;
+    $hgnc_loaded_count++;
+  }
+  $sth->finish;
+
+  if($hgnc_loaded_count == 0){
+    die "No point continuing no hgncs there\n";
+  }
+
+
+
+
+
+
+
+
+
+
+  my $not_in_hgnc = 0;
   foreach my $ott (keys %ott_to_enst){
     if(defined($ott_to_vega_name{$ott})){
-      my $id = $curated_source_id;
+      my $id = $hgnc_source_id;
       my $name  = $ott_to_vega_name{$ott};
+      my $acc = undef;
+      my $xref_id ;
       if($name =~ /[.]/){
 	$id = $clone_source_id;
         $name =~ s/[.]\d+//;    #remove .number
+	$xref_id = $self->add_xref($name, "" , $name , $description{$name}, $id, $species_id, "DIRECT");
       }
-      my $xref_id = $self->add_xref($name, "" , $name , "", $id, $species_id, "DIRECT");
+      else{ 
+	my $copy = $name;
+	$name =~ s/-\d+$//;    #remove -number
+	if(defined($accession{$name})){
+	}
+	elsif(defined($synonym{$name})){
+	  $name = $synonym{$name};
+	  if(!defined($accession{$name})){
+	    print "Havana name $copy which has a synonym of $name cannot be found in the HGNC data???\n";
+            $not_in_hgnc++;
+	    next;
+	  }
+          print "Havana uses old name $copy instead of $name\n";
+	}
+	else{
+	  print "Havana name ($copy)  $name cannot be found in the HGNC data???\n";
+          $not_in_hgnc++;
+	  next;
+	}
+	$xref_id = $self->add_xref($accession{$name}, "" , $name , $description{$name}, $id, $species_id, "DIRECT");	
+      }
       $xref_count++;
       
       $self->add_direct_xref($xref_id, $ott_to_enst{$ott}, "transcript", "");
     }
   }
-
+  
   print "$xref_count direct xrefs succesfully parsed\n" if($verbose);
+  print "$not_in_hgnc xrefs could not be loaded as they were not in HGNC\n)"  if($verbose and $not_in_hgnc);
   return 0;
 }
 
