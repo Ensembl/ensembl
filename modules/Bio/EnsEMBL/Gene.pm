@@ -372,7 +372,7 @@ sub canonical_transcript {
     if (
       !(
         ref($transcript)
-        && $$transcript->isa('Bio::EnsEMBL::Transcript') ) )
+        && $transcript->isa('Bio::EnsEMBL::Transcript') ) )
     {
       throw('Argument must be a Bio::EnsEMBL::Transcript');
     }
