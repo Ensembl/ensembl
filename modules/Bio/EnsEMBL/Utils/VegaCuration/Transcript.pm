@@ -99,7 +99,7 @@ sub check_remarks_and_update_names {
   if ($@) {
     $g_name = $gene->get_all_Attributes('name')->[0]->value;
   }
-  my $gene_remark = 'This locus has been annotated as fragmented because either there is not enough evidence covering the whole locus to identify the exact exon structure of the transcript, or because the transcript spans a gap in  the assembly';
+  my $gene_remark = 'This locus has been annotated as fragmented because either there is not enough evidence covering the whole locus to identify the exact exon structure of the transcript, or because the transcript spans a gap in the assembly';
   my $attrib = [
     Bio::EnsEMBL::Attribute->new(
       -CODE => 'remark',
