@@ -255,12 +255,6 @@ sub fetch_and_dump_seq_via_toplevel{
   my $ensembl = $self->core;
   $self->add_meta_pair("dump_method","fetch_and_dump_seq_via_toplevel");
 
-  if(defined($self->mapper->dumpcheck()) and -e $ensembl->protein_file() and -e $ensembl->dna_file()){
-    my $sth = $self->xref->dbc->prepare("insert into process_status (status, date) values('core_fasta_dumped',now())");
-    $sth->execute();    
-    print "Ensembl Fasta files found (no new dumping)\n" if($self->verbose());
-    return;
-  }
 
   #
   # store ensembl dna file name and open it
@@ -275,6 +269,13 @@ sub fetch_and_dump_seq_via_toplevel{
   # store ensembl protein file name and open it
   #
   $ensembl->protein_file($ensembl->dir."/".$ensembl->species."_protein.fasta");
+
+  if(defined($self->mapper->dumpcheck()) and -e $ensembl->protein_file() and -e $ensembl->dna_file()){
+    my $sth = $self->xref->dbc->prepare("insert into process_status (status, date) values('core_fasta_dumped',now())");
+    $sth->execute();    
+    print "Ensembl Fasta files found (no new dumping)\n" if($self->verbose());
+    return;
+  }
 
   print "Dumping Ensembl Fasta files\n" if($self->verbose());
 
@@ -680,7 +681,7 @@ sub fix_mappings {
 
     } else {
 
-      my $obj = $obj_name->new();
+      my $obj = $obj_name->new($self->mapper);
  
       print "DO resubmit for $array_number\n";
       my $job_name = $obj->resubmit_exonerate($self->mapper, $command_line, $out_file, $err_file, $job_id, $array_number, $root_dir);
@@ -767,7 +768,7 @@ sub run_mapping {
 
     } else {
 
-      my $obj = $obj_name->new();
+      my $obj = $obj_name->new($self->mapper);
  
       my $job_name = $obj->run($queryfile, $targetfile, $self);
       push @job_names, $job_name;
@@ -846,7 +847,7 @@ sub submit_depend_job {
   # return until everything is finished.
 
   # build up the bsub command; first part
-  my @depend_bsub = ('bsub', '-K');
+#  my @depend_bsub = ('bsub', '-K');
 
   # build -w 'ended(job1) && ended(job2)' clause
   my $ended_str = '-w "';
@@ -858,14 +859,16 @@ sub submit_depend_job {
   }
   $ended_str .= '"';
 
-  push @depend_bsub, $ended_str;
+#  push @depend_bsub, $ended_str;
 
   # rest of command
-  push @depend_bsub, ('-q', 'small', '-o', "$root_dir/depend.out", '-e', "$root_dir/depend.err");
+  
+  my $queue = $self->mapper->farm_queue || 'small';
+#  push @depend_bsub, ('-q', $queue, '-o', "$root_dir/depend.out", '-e', "$root_dir/depend.err");
 
   my $jobid = 0;
 
-  my $com = "bsub -K -q small -o $root_dir/depend.out -e $root_dir/depend.err $ended_str /bin/true";
+  my $com = "bsub -K -q ".$queue." -o $root_dir/depend.out -e $root_dir/depend.err $ended_str /bin/true";
 
 
   my $line = `$com`;

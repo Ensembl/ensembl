@@ -47,6 +47,42 @@ sub xref{
   return $self->{_xref};
 }
 
+=head2 farm_queue
+
+  Arg [1]    : (optional)
+  Example    : $mapper->farm_queue("long");
+  Description: Getter / Setter for the farm queue.
+  Returntype : string
+  Exceptions : none
+
+=cut
+
+sub farm_queue{
+  my ($self, $arg) = @_;
+
+  (defined $arg) &&
+    ($self->{_queue} = $arg );
+  return $self->{_queue};
+}
+
+=head2 exonerate
+
+  Arg [1]    : (optional)
+  Example    : $mapper->exonerate("/usr/local/exonerate1.1.1");
+  Description: Getter / Setter for the exonerate executable with full path.
+  Returntype : string
+  Exceptions : none
+
+=cut
+
+sub exonerate{
+  my ($self, $arg) = @_;
+
+  (defined $arg) &&
+    ($self->{_exonerate} = $arg );
+  return $self->{_exonerate};
+}
+
 =head2 core
 
   Arg [1]    : (optional)
@@ -125,6 +161,7 @@ sub process_file {
   
   my %xref_hash=();
   my %species_hash=();
+  my %farm_hash=();
   
   while( my $line = <FILE> ) {
     
@@ -141,11 +178,17 @@ sub process_file {
     elsif($key eq "xref"){
       $type = "xref";
     }
+    elsif($key eq "farm"){
+      $type = "farm";
+    }
     elsif($type eq "species"){ # processing species data
       $species_hash{lc($key)} = $value;
     }
     elsif($type eq "xref"){    # processing xref data
       $xref_hash{lc($key)} = $value;
+    }
+    elsif($type eq "farm"){
+      $farm_hash{lc($key)} = $value;
     }
   }
   
@@ -179,6 +222,13 @@ sub process_file {
   
   $mapper = "XrefMapper::$module"->new();
 
+  if(defined($farm_hash{'queue'})){
+    $mapper->farm_queue($farm_hash{'queue'});
+  }
+  if(defined($farm_hash{'exonerate'})){
+    $mapper->exonerate($farm_hash{'exonerate'});
+  }
+  
 
   if(defined($xref_hash{host}) and !defined($no_xref)){
     my ($host, $user, $dbname, $pass, $port);

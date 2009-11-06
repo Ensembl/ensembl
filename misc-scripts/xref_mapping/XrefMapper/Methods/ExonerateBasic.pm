@@ -10,19 +10,29 @@ use IPC::Open3;
 
 # Path to exonerate executable
 #my $exonerate_path = "/usr/local/ensembl/bin/exonerate-0.9.0";
-my $exonerate_path = "/software/ensembl/bin/exonerate-1.4.0";
+my $exonerate_path = "/rubbish/software/ensembl/bin/exonerate-1.4.0"; #  remove rubbish after wards as just to test
 
 sub new {
 
-  my($class) = @_;
+  my($class, $mapper) = @_;
 
   my $self ={};
   bless $self,$class;
+  $self->mapper($mapper);
   $self->jobcount(0);
 
   return $self;
 
 }
+
+sub mapper{
+  my ($self, $arg) = @_;
+
+  (defined $arg) &&
+    ($self->{_mapper} = $arg );
+  return $self->{_mapper};
+}
+
 
 =head2 jobcount
  
@@ -102,8 +112,6 @@ sub resubmit_exonerate {
   
   my $unique_name = $self->get_class_name() . "_" . time();
   
-#  my @main_bsub = ( 'bsub', '-R' .'select[linux] -Rrusage[tmp='.$disk_space_needed.']',  '-J' . $unique_name . '-o', $outfile, '-e', $errfile);
-  
   my $exe_file = $root_dir."/resub_".$job_id."_".$array_number;
   open(RUN,">$exe_file") || die "Could not open file $exe_file";
   
@@ -114,8 +122,9 @@ sub resubmit_exonerate {
 
   chmod 0755, $exe_file;
 
-
-  my $usage = '-R "select[linux] rusage[tmp='.$disk_space_needed.']" -J "'.$unique_name.'"';
+  my $queue = $self->mapper->farm_queue || 'long';
+  
+  my $usage = '-R "select[linux] rusage[tmp='.$disk_space_needed.']" -J "'.$unique_name.'" -q '.$queue;
 
 
   my $com = "bsub $usage -o $outfile -e $errfile ".$exe_file;
@@ -170,15 +179,12 @@ sub resubmit_exonerate {
 
 sub submit_exonerate {
 
-#  my ($self, $query, $target, $root_dir, $nofarm, @options) = @_;
   my ($self, $query, $target, $mapper, @options) = @_;
 
 
   my $root_dir = $mapper->core->dir;
 
-#  print "query $query\n" if($mapper->verbose);
   my $queryfile = basename($query);
-#  print "target $target\n" if($mapper->verbose);
   my $targetfile = basename($target);
 
   my $prefix = $root_dir . "/" . basename($query);
@@ -194,14 +200,17 @@ sub submit_exonerate {
   $disk_space_needed /= 1024000; # convert to MB
   $disk_space_needed = int($disk_space_needed);
   $disk_space_needed += 1;
-#  print "disk space needed = ".$disk_space_needed."\n";
 
   my $num_jobs = calculate_num_jobs($query);
+
+
+  my $exe = $self->mapper->exonerate || $exonerate_path;
+
 
   if(defined($mapper->nofarm)){
     my $output = $self->get_class_name() . "_" . $ensembl_type . "_1.map";
     my $cmd = <<EON;
-$exonerate_path $query $target --showvulgar false --showalignment FALSE --ryo "xref:%qi:%ti:%ei:%ql:%tl:%qab:%qae:%tab:%tae:%C:%s\n" $options_str | grep '^xref' > $root_dir/$output
+$exe $query $target --showvulgar false --showalignment FALSE --ryo "xref:%qi:%ti:%ei:%ql:%tl:%qab:%qae:%tab:%tae:%C:%s\n" $options_str | grep '^xref' > $root_dir/$output
 EON
     print "none farm command is $cmd\n" if($mapper->verbose);
 
@@ -218,7 +227,7 @@ EON
     }
 
     for( my $i=1; $i<=1; $i++){
-      my $command = "$exonerate_path $query $target --showvulgar false --showalignment FALSE --ryo ".
+      my $command = "$exe $query $target --showvulgar false --showalignment FALSE --ryo ".
 	'"xref:%qi:%ti:%ei:%ql:%tl:%qab:%qae:%tab:%tae:%C:%s\\\n"'." $options_str | grep ".'"'."^xref".'"'." > $root_dir/$output";
       my $insert = "insert into mapping (job_id, type, command_line, percent_query_cutoff, percent_target_cutoff, method, array_size) values($jobid, '$ensembl_type', '$command',".
 				       $self->query_identity_threshold.", ".$self->target_identity_threshold.", '".$self->get_class_name()."', $i)";
@@ -254,13 +263,13 @@ EON
 
   my $output = $self->get_class_name() . "_" . $ensembl_type . "_" . "\$LSB_JOBINDEX.map";
 
-  my $usage = '-R "select[linux] -rusage[tmp='.$disk_space_needed.']" '.'-J "'.$unique_name.'[1-'.$num_jobs.']%200" -o '.$prefix.'.%J-%I.out -e  '.$prefix.'.%J-%I.err';
+  my $queue = $self->mapper->farm_queue || 'long';
 
-#  print "usage :- ".$usage ."\n";
 
-#  my @main_bsub = ( 'bsub', '-R' .'select[linux] -Rrusage[tmp='.$disk_space_needed.']',  '-J' . $unique_name . "[1-$num_jobs]%200", '-o', "$prefix.%J-%I.out", '-e', "$prefix.%J-%I.err");
+  my $usage = "-q $queue ".'-R "select[linux] -rusage[tmp='.$disk_space_needed.']" '.'-J "'.$unique_name.'[1-'.$num_jobs.']%200" -o '.$prefix.'.%J-%I.out -e  '.$prefix.'.%J-%I.err';
 
-  my $command = $exonerate_path." ".$query." ".$target.' --querychunkid $LSB_JOBINDEX --querychunktotal '.$num_jobs.' --showvulgar false --showalignment FALSE --ryo "xref:%qi:%ti:%ei:%ql:%tl:%qab:%qae:%tab:%tae:%C:%s\n" '.$options_str;
+
+  my $command = $exe." ".$query." ".$target.' --querychunkid $LSB_JOBINDEX --querychunktotal '.$num_jobs.' --showvulgar false --showalignment FALSE --ryo "xref:%qi:%ti:%ei:%ql:%tl:%qab:%qae:%tab:%tae:%C:%s\n" '.$options_str;
   $command .= " | grep '^xref' > $root_dir/$output";
 
   my $exe_file = $root_dir."/".$unique_name.".submit";
