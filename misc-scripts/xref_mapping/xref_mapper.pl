@@ -323,6 +323,10 @@ dbname=erinaceus_europaeus_core_54_1e
 user=user2
 password=pass2
 dir=./ensembl
+
+farm
+queue=long
+exonerate=/software/ensembl/bin/exonerate-1.4.0
 ####################################################
 host1 can be the same as host2.
 user1 can be the same as user2 but user2 must have write access and user1 must have at 
