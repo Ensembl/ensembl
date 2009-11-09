@@ -415,4 +415,36 @@ sub fetch_by_identifier {
   return $self->generic_fetch($constraint);
 }
 
+=head2 fetch_all_by_object_type_id
+
+  Arg [1]  : string - The object type of the ensembl object e.g. Gene
+  Arg [2]  : int    - The internal dbID of the ensembl object
+  Example  : my @unmapped_objects = @{$uoa->fetch_all_by_object_type_id('Gene', 12341)};
+  Description : Retrieves the unmapped objects for a particular ensembl object
+                This is a base method which should be called by wrapper methods
+                defining the correct object type e.g. $uoa->fetch_all_by_Gene($gene)
+  Returntype  : array ref of Bio::EnsEMBL::UnmappedObject objects
+  Exceptions  : Throws if arguments are not defined
+  Caller      : general
+  Status      : At Risk
+
+=cut
+
+sub fetch_all_by_object_type_id {
+  my ($self, $object_type, $dbid) = @_;
+  
+  if(! ($object_type && $dbid)){
+    throw("object_type and dbid arguments required");
+  }
+  
+  $self->bind_param_generic_fetch($object_type, SQL_VARCHAR);
+  $self->bind_param_generic_fetch($dbid,        SQL_INTEGER);
+
+  my $constraint = 'uo.ensembl_object_type=? and uo.ensembl_id=?';
+
+  return $self->generic_fetch($constraint);
+}
+
+
+
 1;
