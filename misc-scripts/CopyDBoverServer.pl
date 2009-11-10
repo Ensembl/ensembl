@@ -162,34 +162,6 @@ my %executables = (
   'rsync'     => '/usr/bin/rsync'
 );
 
-my %instance_dir_map = (
-  'compara1:3306'       => '/mysql/data_3306/databases',
-  'compara2:3306'       => '/mysql/data_3306/databases',
-  'compara2:5316'       => '/mysql/data_5316/databases',
-  'compara3:3306'       => '/mysql/data_3306/databases',
-  'ens-genomics1:3306'  => '/mysql/data_3306/databases',
-  'ens-genomics2:3306'  => '/mysql/data_3306/databases',
-  'ens-livemirror:3306' => '/mysql/data_3306/databases',
-  'ens-research:3306'   => '/mysql/data_3306/databases',
-  'ens-research:3309'   => '/mysql/data_3309/databases',
-  'ens-staging1:3306'   => '/mysql/data_3306/databases',
-  'ens-staging2:3306'   => '/mysql/data_3306/databases',
-  'ens-staging:3306'    => '/mysql/data_3306/databases',
-  'ensdb-2-12:5106'     => '/mysqlv5.1-test/data_5106/databases',
-  'ensdb-archive:3304'  => '/mysql/data_3304/databases',
-  'genebuild1:3306'     => '/mysql/data_3306/databases',
-  'genebuild2:3306'     => '/mysql/data_3306/databases',
-  'genebuild3:3306'     => '/mysql/data_3306/databases',
-  'genebuild4:3306'     => '/mysql/data_3306/databases',
-  'genebuild5:3306'     => '/mysql/data_3306/databases',
-  'genebuild6:3306'     => '/mysql/data_3306/databases',
-  'genebuild7:3306'     => '/mysql/data_3306/databases',
-  'genebuild7:5306'     => '/mysql/data_3306/databases',
-  'mart1:3306'          => '/mysql/data_3306/databases',
-  # 'ensdb-1-11:5317'     => '/mysql/data_5317/databases',
-  # The ensadmin user doesn't have "reload" privileges here.
-);
-
 my %table_subsets = (
   'xref' => [
     'xref',            'object_xref',
@@ -268,16 +240,6 @@ while ( my $line = $in->getline() ) {
     $failed = 1;
   }
 
-  my $source_key = sprintf( "%s:%d", $source_server, $source_port );
-  if ( !( $failed || exists( $instance_dir_map{$source_key} ) ) ) {
-    warn(
-      sprintf(
-        "line %d: The source server and port '%s:%d' is not known.\n",
-        $lineno, $source_server, $source_port
-      ) );
-    $failed = 1;
-  }
-
   # Verify target server and port.
   if ( !defined($target_hostname) || $target_hostname eq '' ) {
     warn(
@@ -295,16 +257,6 @@ while ( my $line = $in->getline() ) {
       sprintf(
         "line %d: Target port '%s' is not a number.\n",
         $lineno, $target_port || ''
-      ) );
-    $failed = 1;
-  }
-
-  my $target_key = sprintf( "%s:%d", $target_server, $target_port );
-  if ( !( $failed || exists( $instance_dir_map{$target_key} ) ) ) {
-    warn(
-      sprintf(
-        "line %d: The target server and port '%s:%d' is not known.\n",
-        $lineno, $target_server, $target_port
       ) );
     $failed = 1;
   }
@@ -359,11 +311,63 @@ foreach my $spec (@todo) {
   my $label = sprintf( "{ %s -> %s }==", $source_db, $target_db );
   print( '=' x ( 80 - length($label) ), $label, "\n" );
 
-  my $source_key = sprintf( "%s:%d", $source_server, $source_port );
-  my $target_key = sprintf( "%s:%d", $target_server, $target_port );
+  print("CONNECTING TO SOURCE AND TARGET DATABASES "
+      . "TO GET 'datadir'\n" );
 
-  my $source_dir = canonpath( $instance_dir_map{$source_key} );
-  my $target_dir = canonpath( $instance_dir_map{$target_key} );
+  my $source_dsn = sprintf( "DBI:mysql:database=%s;host=%s;port=%d",
+    $source_db, $source_hostname, $source_port );
+
+  my $source_dbh =
+    DBI->connect( $source_dsn, 'ensadmin', $opt_password,
+    { 'PrintError' => 1, 'AutoCommit' => 0 } );
+
+  if ( !defined($source_dbh) ) {
+    warn(
+      sprintf(
+        "Failed to connect to the source database '%s:%d/%s'.\n",
+        $source_server, $source_port, $source_db
+      ) );
+
+    $spec->{'status'} =
+      sprintf( "FAILED: can not connect to source database '%s:%d/%s'.",
+      $source_server, $source_port, $source_db );
+    next;
+  }
+
+  my $target_dsn = sprintf( "DBI:mysql:host=%s;port=%d",
+    $target_hostname, $target_port );
+
+  my $target_dbh =
+    DBI->connect( $target_dsn, 'ensadmin', $opt_password,
+    { 'PrintError' => 1, 'AutoCommit' => 0 } );
+
+  if ( !defined($target_dbh) ) {
+    warn(
+      sprintf(
+        "Failed to connect to the target database '%s:%d/%s'.\n",
+        $target_server, $target_port, $target_db
+      ) );
+
+    $spec->{'status'} =
+      sprintf( "FAILED: can not connect to target database '%s:%d/%s'.",
+      $target_server, $target_port, $target_db );
+
+    $source_dbh->disconnect();
+    next;
+  }
+
+  # Get source and target server data directories.
+  my $source_dir =
+    $source_dbh->selectall_arrayref("SHOW VARIABLES LIKE 'datadir'")
+    ->[0][1];
+  my $target_dir =
+    $target_dbh->selectall_arrayref("SHOW VARIABLES LIKE 'datadir'")
+    ->[0][1];
+
+  $target_dbh->disconnect();
+
+  printf( "SOURCE 'datadir' = %s\n", $source_dir );
+  printf( "TARGET 'datadir' = %s\n", $target_dir );
 
   my $tmp_dir = canonpath( catdir( $target_dir, updir(), 'tmp' ) );
 
@@ -391,6 +395,8 @@ foreach my $spec (@todo) {
     $spec->{'status'} =
       sprintf( "FAILED: database destination directory '%s' exists.",
       $destination_dir );
+
+    $source_dbh->disconnect();
     next;
   }
 
@@ -401,6 +407,8 @@ foreach my $spec (@todo) {
 
     $spec->{'status'} =
       sprintf( "FAILED: staging directory '%s' exists.", $staging_dir );
+
+    $source_dbh->disconnect();
     next;
   }
 
@@ -413,35 +421,19 @@ foreach my $spec (@todo) {
       $spec->{'status'} =
         sprintf( "FAILED: can not create staging directory '%s'.",
         $staging_dir );
+
+      $source_dbh->disconnect();
       next;
     }
-  }
-
-  my $dsn = sprintf( "DBI:mysql:database=%s;host=%s;port=%d",
-    $source_db, $source_hostname, $source_port );
-
-  my $dbh =
-    DBI->connect( $dsn, 'ensadmin', $opt_password,
-    { 'PrintError' => 1, 'AutoCommit' => 0 } );
-
-  if ( !defined($dbh) ) {
-    warn(
-      sprintf(
-        "Failed to connect to the source database '%s:%d/%s'.\n",
-        $source_server, $source_port, $source_db
-      ) );
-
-    $spec->{'status'} =
-      sprintf( "FAILED: can not connect to source database '%s:%d/%s'.",
-      $source_server, $source_port, $source_db );
-    next;
   }
 
   my @tables;
   if ( defined($opt_subset) ) {
     @tables = @{ $table_subsets{$opt_subset} };
   } else {
-    foreach my $table ( @{ $dbh->selectall_arrayref('SHOW TABLES') } ) {
+    foreach
+      my $table ( @{ $source_dbh->selectall_arrayref('SHOW TABLES') } )
+    {
       push( @tables, $table->[0] );
     }
   }
@@ -450,11 +442,12 @@ foreach my $spec (@todo) {
     # Lock and flush tables.
 
     print("LOCKING TABLES...\n");
-    $dbh->do(
+    $source_dbh->do(
       sprintf( "LOCK TABLES %s READ", join( ' READ, ', @tables ) ) );
 
     print("FLUSHING TABLES...\n");
-    $dbh->do( sprintf( "FLUSH TABLES %s", join( ', ', @tables ) ) );
+    $source_dbh->do(
+      sprintf( "FLUSH TABLES %s", join( ', ', @tables ) ) );
   }
 
   ##------------------------------------------------------------------##
@@ -519,10 +512,11 @@ foreach my $spec (@todo) {
   if ($opt_flush) {
     # Unlock tables.
     print("UNLOCKING TABLES...\n");
-    $dbh->do('UNLOCK TABLES');
+    $source_dbh->do('UNLOCK TABLES');
 
-    $dbh->disconnect();
   }
+
+  $source_dbh->disconnect();
 
   if ($failed) {
     $spec->{'status'} =
