@@ -1,449 +1,668 @@
-#!/usr/local/ensembl/bin/perl -w
+#!/usr/local/bin/perl -w
 
 use strict;
-use Getopt::Long;
+use warnings;
+
 use DBI;
-use Cwd 'chdir';
-use Sys::Hostname qw(hostname);
+use File::Copy;
+use File::Spec::Functions
+  qw( rel2abs curdir canonpath updir catdir catfile );
+use Getopt::Long;
+use IO::File;
+use Sys::Hostname;
 
-$| = 1;
+my $start_time = time();
 
+sub short_usage {
+  my $indent = ' ' x length($0);
 
-my $usage = "\nUsage: $0 -pass XXXXX [-noflush -probe_mapping -xref] input_file
+  print <<EOT;
+Usage:
+  $0 --pass=XXX [--noflush] [--nocheck] [--force] \\
+  $indent [--subset=XXX] [--help] input_file\
 
-Copy mysql databases between different servers and run myisamchk on the indices when copied.
+  Use --help to get a much longer help text.
 
--dbflush       Read locks and flushes only those DBs to be copied, default is to flush WITH READ LOCK entire instance.
--noflush       Skips table flushing
--xref          Only copies the xref tables, to enable running the transcript probe mapping with output to an isolation xref DB.
-#no longer implemented
-#-probe_mapping Only copies the tables relevant to running genomics and transcript probe mapping in isolation
+EOT
+}
 
+sub long_usage {
+  my $indent = ' ' x length($0);
 
-The input file should have the following format:
+  print <<EOT;
+Usage:
+  $0 --pass=XXX [--noflush] [--nocheck] [--force] \\
+  $indent [--subset=XXX] [--help] input_file
 
-source_server\\tsource_port\\tsource_db\\tdestination_server\\tdestination_port\\tdestination_db
+Description:
 
-e.g.
+  Safetly copy MySQL databases between different servers and run
+  myisamchk on the indexes when done.
 
-#source_server\\tsource_port\\tsource_db\\tdestination_server\\tdestination_port\\tdestination_db
-ecs3.internal.sanger.ac.uk 3307 homo_sapiens_core_13_31 ecs2.internal.sanger.ac.uk 3364 homo_sapiens_core_14_31
-
-Lines starting with # are ignored and considered as comments.
-Blank (or whitespace-only) lines are ignored.
-
-Note fields can be separated by any number of tabs or spaces.
-
-RESTRICTIONS:
-============
-1- The destination_server has to match the generic server you are running the script on,
-   either ecs1, ecs2, ecs3, ecs4 or ia64[ef] otherwise the copying process for the corresponding database
-   is skipped
-2- This script works only for copy processes from and to ecs/ia64 nodes, namely
-   ecs1[abcdefgh] port 3306
-   ecs2 port: 336[1-6]
-   ecs3 port: 300[47]
-   ecs4 port: 335[0-3]
-   ia64[efgh] port: 3306
-3- -pass is compulsory and is expected to be the mysql password to connect as ensadmin
-4- If you add a new instance, remember to check there is a /tmp directory in the /mysql/databases,
-   otherwise rcp will complain
-
-This script MUST be run as the mysqlens Unix user.
-
-Also it is best to run it on the same node as the destination MySQL instance, e.g. for ecs2:3365 run
-
-caa_stat mysql_3365
-
-... which will reveal that it's running on ecs2e (caa_stat alone will show all instances). 
-Note that this only works for Tru64 CAA instances, i.e. ecs2 & ecs4.
-\n\n";
+  The script A) transfers the database files to a local staging
+  directory, B) checks the files for errors using myisamchk, and C)
+  moves them into place in the database server directory.
 
 
-my ($pass, $xref, $probe_mapping, $help, $noflush, $dbflush);
+Command line switches:
+
+  --pass=XXX        (Required)
+                    The password for the 'ensadmin' MySQL user to
+                    connect to the database.
+
+  --noflush         (Optional)
+                    Skips table flushing completely.  Use very
+                    sparsingly as copying un-flushed databases
+                    potentially means missing data not yet flushed to
+                    disk.  Use only after due consideration.
+
+  --nocheck         (Optional)
+                    Skip running myisamchk on the copied table files.
+                    Use this only if you are *absolutely* sure that the
+                    table files are ok and that you really do not have
+                    time to wait for the check to run.  Use only after
+                    due consideration.
+
+  --force           (Optional)
+                    Ordinarily, the script refuses to overwrite an
+                    already existing staging directory.  This switch
+                    will force it to re-use the directory if it exists.
+                    This is useful for continuing an aborted copy.
+
+                    NOTE: This switch will not ever force overwriting of
+                    a server database directory.
+
+  --subset=XXX      (Optional)
+                    Only copy a subset of the tables.  Currently, the
+                    only subsets defined are 'xref' and 'stable_id'.
+
+  --help            (Optional)
+                    Displays this text.
 
 
-GetOptions(
-		   'h'             => \$help,
-		   'pass=s'        => \$pass,
-           'noflush'       => \$noflush,
-		   #'probe_mapping' => \$probe_mapping,
-		   'xref'          => \$xref,
-		   'dbflush'       => \$dbflush,
-		  );
+Input file format:
 
-if ($help || scalar @ARGV == 0 || ! defined $pass) {
-  print $usage;
+  The input file should be a tab/space-separated file with six fields
+  per line:
+
+    1. Source server
+    2. Source server port
+    3. Source database name
+
+    4. Target server
+    5. Target server port
+    6. Target database name
+
+  For example:
+
+  genebuild1 3306 at6_gor2_wga ens-staging1 3306 gorilla_gorilla_core_57_1
+
+  (with each field being separated by a tab or space).
+
+  Blank lines, lines containing only whitespaces, and lines starting
+  with '#', are silently ignored.
+
+
+Script restrictions:
+
+  1. You must run the script on the destination server.
+
+  2. The script will only allow copying databases between a preset set
+     of servers.
+
+  3. The script must be run as the 'mysqlens' Unix user.  Talk to a
+     recent release coordinator for access.
+
+  4. The script will only copy MYISAM tables.  Databases with InnoDB
+     tables will have to be copied manually using mysqldump.  InnoDB
+     tables will make the script throw an error in the table checking
+     stage.
+
+EOT
+} ## end sub long_usage
+
+my (
+  $opt_password, $opt_flush,  $opt_check,
+  $opt_force,    $opt_subset, $opt_help
+);
+
+$opt_flush = 1;    # Flush by default.
+$opt_check = 1;    # Check tables by default.
+$opt_force = 0;    # Do not reuse existing staging directory by default.
+
+if (
+  !GetOptions(
+    'pass=s'   => \$opt_password,
+    'flush!'   => \$opt_flush,
+    'check!'   => \$opt_check,
+    'force!'   => \$opt_force,
+    'subset=s' => \$opt_subset,
+    'help'     => \$opt_help
+  )
+  || ( !defined($opt_password) && !defined($opt_help) ) )
+{
+  short_usage();
+  exit 1;
+}
+
+if ( defined($opt_help) ) {
+  long_usage();
   exit 0;
 }
 
-if($dbflush && $noflush){
-  die('Cannot specify mutually exclusive options -noflush and -dbflush');
+my $input_file = shift(@ARGV);
+
+if ( !defined($input_file) ) {
+  short_usage();
+  exit 1;
 }
 
-if($probe_mapping && $xref){
-  die('Cannot specify mutually exclusive options -probe_mapping and -xref');
+my %executables = (
+  'myisamchk' => '/usr/local/mysql/bin/myisamchk',
+  'rsync'     => '/usr/bin/rsync'
+);
+
+my %instance_dir_map = (
+  'compara1:3306'       => '/mysql/data_3306/databases',
+  'compara2:3306'       => '/mysql/data_3306/databases',
+  'compara2:5316'       => '/mysql/data_5316/databases',
+  'compara3:3306'       => '/mysql/data_3306/databases',
+  'ens-genomics1:3306'  => '/mysql/data_3306/databases',
+  'ens-genomics2:3306'  => '/mysql/data_3306/databases',
+  'ens-livemirror:3306' => '/mysql/data_3306/databases',
+  'ens-research:3306'   => '/mysql/data_3306/databases',
+  'ens-research:3309'   => '/mysql/data_3309/databases',
+  'ens-staging1:3306'   => '/mysql/data_3306/databases',
+  'ens-staging2:3306'   => '/mysql/data_3306/databases',
+  'ens-staging:3306'    => '/mysql/data_3306/databases',
+  'ensdb-2-12:5106'     => '/mysqlv5.1-test/data_5106/databases',
+  'ensdb-archive:3304'  => '/mysql/data_3304/databases',
+  'genebuild1:3306'     => '/mysql/data_3306/databases',
+  'genebuild2:3306'     => '/mysql/data_3306/databases',
+  'genebuild3:3306'     => '/mysql/data_3306/databases',
+  'genebuild4:3306'     => '/mysql/data_3306/databases',
+  'genebuild5:3306'     => '/mysql/data_3306/databases',
+  'genebuild6:3306'     => '/mysql/data_3306/databases',
+  'genebuild7:3306'     => '/mysql/data_3306/databases',
+  'genebuild7:5306'     => '/mysql/data_3306/databases',
+  'mart1:3306'          => '/mysql/data_3306/databases',
+  # 'ensdb-1-11:5317'     => '/mysql/data_5317/databases',
+  # The ensadmin user doesn't have "reload" privileges here.
+);
+
+my %table_subsets = (
+  'xref' => [
+    'xref',            'object_xref',
+    'identity_xref',   'go_xref',
+    'external_db',     'external_synonym',
+    'unmapped_reason', 'unmapped_object',
+  ],
+  'stable_id' => [
+    'gene_stable_id',        'transcript_stable_id',
+    'translation_stable_id', 'exon_stable_id',
+    'mapping_session',       'stable_id_event',
+    'gene_archive',          'peptide_archive',
+  ] );
+
+if ( defined($opt_subset) ) {
+  if ( !exists( $table_subsets{ lc($opt_subset) } ) ) {
+    die( sprintf( "Unknown table subset '%s'\n", $opt_subset ) );
+  }
+  $opt_subset = lc($opt_subset);
 }
 
+my $run_hostname = ( gethostbyname( hostname() ) )[0];
+my $working_dir  = rel2abs( curdir() );
 
-my ($input_file) = @ARGV;
-my @dbs_to_copy;
+$run_hostname =~ s/\..+//;    # Cut off everything but the first part.
 
-my %mysql_directory_per_svr = ('genebuild1:3306'   => "/mysql/data_3306/databases",
-							   'genebuild2:3306'   => "/mysql/data_3306/databases",
-							   'genebuild3:3306'   => "/mysql/data_3306/databases",
-							   'genebuild4:3306'   => "/mysql/data_3306/databases",
-							   'genebuild5:3306'   => "/mysql/data_3306/databases",
-							   'genebuild6:3306'   => "/mysql/data_3306/databases",
-							   'genebuild7:3306'   => "/mysql/data_3306/databases",
-							   'genebuild7:5306'   => "/mysql/data_3306/databases",
-			       'mart1:3306'        => "/mysql/data_3306/databases",
-			       'mart2:3306'        => "/mysql/data_3306/databases",
-			       'compara1:3306'     => "/mysql/data_3306/databases",
-			       'compara2:3306'     => "/mysql/data_3306/databases",
-			       'compara2:5316'     => "/mysql/data_5316/databases",
-			       'compara3:3306'     => "/mysql/data_3306/databases",
-			       'ens-genomics1:3306' => "/mysql/data_3306/databases",
-			       'ens-genomics2:3306' => "/mysql/data_3306/databases",
-			       'ens-staging:3306'  => "/mysql/data_3306/databases",
-							   'ens-staging1:3306'  => "/mysql/data_3306/databases",
-							   'ens-staging2:3306'  => "/mysql/data_3306/databases",
-							   
-			       'ens-livemirror:3306'  => "/mysql/data_3306/databases",
-			       'ensdb-archive:3304' => "/mysql/data_3304/databases",
-			       'ens-research:3306' => "/mysql/data_3306/databases",
-							   'ens-research:3309' => "/mysql/data_3309/databases",
-							   #'ensdb-1-11:5317' => '/mysql/data_5317/databases',
-							   #mysqlens doesn't have releod privelages here
-                               'ensdb-2-12:5106' => '/mysqlv5.1-test/data_5106/databases');
+##====================================================================##
+##  Read the configuration file line by line and try to validate all  ##
+##  parts of each line.  Store the validated in the @todo list (a     ##
+##  list of hashes) for later processing.                             ##
+##====================================================================##
 
-my %tables = (
-			  #xref tables are required for transcript/gene generation
-			  xref => [('xref', 'object_xref', 'identity_xref', 'go_xref', 
-						'external_db', 'external_synonym', 'unmapped_reason', 'unmapped_object')],
+my $in = IO::File->new( '<' . $input_file )
+  or die( sprintf( "Can not open '%s' for reading", $input_file ) );
 
-			  #probe_mapping => [('oligo_array', 'oligo_probe', 'oligo_feature', 'coord_system', 
-			#					 'seq_region', 'seq_region_attrib', 'seq_region_mapping', 'mapping_set', 'assembly_exception', 'attrib_type', 'analysis',
-			#					 'exon', 'exon_stable_id', 'exon_transcript', 'assembly', 'dna',
-			#					 'analysis_description', 'transcript', 'transcript_attrib', 'transcript_stable_id', 
-			#					 'translation', 'translation_stable_id', 'meta', 'meta_coord')],
-			  #translation & dna required for generating annotated UTRs
-			  			 );
+my @todo;      # List of verified databases etc. to copy.
 
-#add xref tables to probe mapping tables
-#push @{$tables{'probe_mapping'}}, @{$tables{'xref'}};
+my $lineno = 0;
+while ( my $line = $in->getline() ) {
+  ++$lineno;
 
-#Set table sub set
-my $table_type = '';
-$table_type = 'xref' if $xref;
-#$table_type = 'probe_mapping' if $probe_mapping;
+  $line =~ s/^\s+//;    # Strip leading whitespace.
+  $line =~ s/\s+$//;    # Strip trailing whitespace.
 
-#Currently this fails if xref or probe_mapping is specified for a non-core DB
-#We need to default to normal copy if dbname !~ _core_
+  if ( $line =~ /^\#/ )   { next }    # Comment line.
+  if ( $line =~ /^\s*$/ ) { next }    # Empty line.
 
+  my $failed = 0;    # Haven't failed so far...
 
-my $flush_scope = (defined $dbflush) ? 'src_db' : 'src_srv';
-my ($generic_working_host) = (gethostbyname(hostname));
-$generic_working_host =~ s/\..*//;
-my $working_dir = $ENV{'PWD'};
-my (%already_flushed, %db_handles);
+  my (
+    $source_server, $source_port, $source_db,
+    $target_server, $target_port, $target_db
+  ) = split( /\s/, $line );
 
-# parsing/checking the input file
+  my $source_hostname = ( gethostbyname($source_server) )[0];
+  my $target_hostname = ( gethostbyname($target_server) )[0];
 
-#This does not catch unreadable files!
-open F, $input_file ||
-  die "Can not open $input_file, $!\n";
+  # Verify source server and port.
+  if ( !defined($source_hostname) || $source_hostname eq '' ) {
+    warn(
+      sprintf(
+        "line %d: Source server '%s' is not valid.\n",
+        $lineno, $source_server
+      ) );
+    $failed = 1;
+  } else {
+    $source_hostname =~ s/\..+//;
+  }
 
-while (my $line = <F>) {
+  if ( !defined($source_port) || $source_port =~ /\D/ ) {
+    warn(
+      sprintf(
+        "line %d: Source port '%s' is not a number.\n",
+        $lineno, $source_port || ''
+      ) );
+    $failed = 1;
+  }
 
-  next if ($line =~ /^\#.*$/);
-  next if ($line =~ /^\s*$/);
+  my $source_key = sprintf( "%s:%d", $source_server, $source_port );
+  if ( !( $failed || exists( $instance_dir_map{$source_key} ) ) ) {
+    warn(
+      sprintf(
+        "line %d: The source server and port '%s:%d' is not known.\n",
+        $lineno, $source_server, $source_port
+      ) );
+    $failed = 1;
+  }
 
-  if ($line =~ /^(\S+)\s+(\d+)\s+(\S+)\s+(\S+)\s+(\d+)\s+(\S+)\s*$/) {
-    my ($src_srv,$src_port,$src_db,$dest_srv,$dest_port,$dest_db) = ($1,$2,$3,$4,$5,$6);
-    my ($dest_srv_host) = (gethostbyname($dest_srv));
-    $dest_srv_host =~ s/\..*//;
+  # Verify target server and port.
+  if ( !defined($target_hostname) || $target_hostname eq '' ) {
+    warn(
+      sprintf(
+        "line %d: Target server '%s' is not valid.\n",
+        $lineno, $target_server
+      ) );
+    $failed = 1;
+  } else {
+    $target_hostname =~ s/\..+//;
+  }
 
-    unless ($generic_working_host =~ /^$dest_srv_host/) {
-      warn "// skipped copy of $src_db from $src_srv to $dest_srv
-// this script should be run on a generic destination host $dest_srv\n";
+  if ( !defined($target_port) || $target_port =~ /\D/ ) {
+    warn(
+      sprintf(
+        "line %d: Target port '%s' is not a number.\n",
+        $lineno, $target_port || ''
+      ) );
+    $failed = 1;
+  }
+
+  my $target_key = sprintf( "%s:%d", $target_server, $target_port );
+  if ( !( $failed || exists( $instance_dir_map{$target_key} ) ) ) {
+    warn(
+      sprintf(
+        "line %d: The target server and port '%s:%d' is not known.\n",
+        $lineno, $target_server, $target_port
+      ) );
+    $failed = 1;
+  }
+
+  # Make sure we running on the target server.
+  if ( !$failed && $run_hostname ne $target_hostname ) {
+    warn(
+      sprintf(
+        "line %d: "
+          . "This script needs to be run on the destination server "
+          . "'%s' ('%s').\n",
+        $lineno, $target_server, $target_hostname
+      ) );
+    $failed = 1;
+  }
+
+  if ( !$failed ) {
+    push(
+      @todo,
+      {
+        'source_server'   => $source_server,
+        'source_hostname' => $source_hostname,
+        'source_port'     => $source_port,
+        'source_db'       => $source_db,
+        'target_server'   => $target_server,
+        'target_hostname' => $target_hostname,
+        'target_port'     => $target_port,
+        'target_db'       => $target_db,
+      } );
+  }
+} ## end while ( my $line = $in->getline...)
+
+$in->close();
+
+##====================================================================##
+##  Take the copy specifications from the @todo list and for each     ##
+##  sepcification copy the database to a staging area using rsync,    ##
+##  check it with myisamchk, and move it in place in the database     ##
+##  directory.                                                        ##
+##====================================================================##
+
+foreach my $spec (@todo) {
+  my $source_server   = $spec->{'source_server'};
+  my $source_hostname = $spec->{'source_hostname'};
+  my $source_port     = $spec->{'source_port'};
+  my $source_db       = $spec->{'source_db'};
+  my $target_server   = $spec->{'target_server'};
+  my $target_hostname = $spec->{'target_hostname'};
+  my $target_port     = $spec->{'target_port'};
+  my $target_db       = $spec->{'target_db'};
+
+  my $label = sprintf( "{ %s -> %s }==", $source_db, $target_db );
+  print( '=' x ( 80 - length($label) ), $label, "\n" );
+
+  my $source_key = sprintf( "%s:%d", $source_server, $source_port );
+  my $target_key = sprintf( "%s:%d", $target_server, $target_port );
+
+  my $source_dir = canonpath( $instance_dir_map{$source_key} );
+  my $target_dir = canonpath( $instance_dir_map{$target_key} );
+
+  my $tmp_dir = canonpath( catdir( $target_dir, updir(), 'tmp' ) );
+
+  my $staging_dir     = catdir( $tmp_dir,    $target_db );
+  my $destination_dir = catdir( $target_dir, $target_db );
+
+  $spec->{'status'} = 'SUCCESS';    # Assume success until failure.
+
+  # Try to make sure the temporary directory and the final destination
+  # directory actually exists, and that the staging directory within the
+  # temporary directory does *not* exist.  Allow the staging directory
+  # to be reused when the --force switch is used.
+
+  if ( !-d $tmp_dir ) {
+    die(
+      sprintf( "Can not find the temporary directory '%s'", $tmp_dir )
+    );
+  }
+
+  if ( -d $destination_dir ) {
+    warn(
+      sprintf( "Destination directory '%s' already exists",
+        $destination_dir ) );
+
+    $spec->{'status'} =
+      sprintf( "FAILED: database destination directory '%s' exists.",
+      $destination_dir );
+    next;
+  }
+
+  if ( !$opt_force && -d $staging_dir ) {
+    warn(
+      sprintf( "Staging directory '%s' already exists.\n", $staging_dir )
+    );
+
+    $spec->{'status'} =
+      sprintf( "FAILED: staging directory '%s' exists.", $staging_dir );
+    next;
+  }
+
+  if ( !mkdir($staging_dir) ) {
+    if ( !$opt_force || !-d $staging_dir ) {
+      warn(
+        sprintf( "Failed to create staging directory '%s'.\n",
+          $staging_dir ) );
+
+      $spec->{'status'} =
+        sprintf( "FAILED: can not create staging directory '%s'.",
+        $staging_dir );
       next;
     }
-    my $src_srv_ok = 0;
-    my $dest_srv_ok = 0;
-    foreach my $available_srv_port (keys %mysql_directory_per_svr) {
-      my ($srv,$port) = split ":", $available_srv_port;
-      if ($src_srv =~ /^$srv.*$/ && $src_port == $port) {
-	$src_srv_ok = 1;
-      }
-      if ($dest_srv =~ /^$srv.*$/ && $dest_port == $port) {
-	$dest_srv_ok = 1;
-      }
+  }
+
+  my $dsn = sprintf( "DBI:mysql:database=%s;host=%s;port=%d",
+    $source_db, $source_hostname, $source_port );
+
+  my $dbh =
+    DBI->connect( $dsn, 'ensadmin', $opt_password,
+    { 'PrintError' => 1, 'AutoCommit' => 0 } );
+
+  if ( !defined($dbh) ) {
+    warn(
+      sprintf(
+        "Failed to connect to the source database '%s:%d/%s'.\n",
+        $source_server, $source_port, $source_db
+      ) );
+
+    $spec->{'status'} =
+      sprintf( "FAILED: can not connect to source database '%s:%d/%s'.",
+      $source_server, $source_port, $source_db );
+    next;
+  }
+
+  my @tables;
+  if ( defined($opt_subset) ) {
+    @tables = @{ $table_subsets{$opt_subset} };
+  } else {
+    foreach my $table ( @{ $dbh->selectall_arrayref('SHOW TABLES') } ) {
+      push( @tables, $table->[0] );
     }
-    unless ($src_srv_ok && $dest_srv_ok) {
-      warn "// skipped copy of $src_db from $src_srv to $dest_srv
-// this script works only to copy dbs between certain nodes:mysql_port" .
-join(", ", keys %mysql_directory_per_svr) ."\n";
+  }
+
+  if ($opt_flush) {
+    # Lock and flush tables.
+
+    print("LOCKING TABLES...\n");
+    $dbh->do(
+      sprintf( "LOCK TABLES %s READ", join( ' READ, ', @tables ) ) );
+
+    print("FLUSHING TABLES...\n");
+    $dbh->do( sprintf( "FLUSH TABLES %s", join( ', ', @tables ) ) );
+  }
+
+  ##------------------------------------------------------------------##
+  ## COPY                                                             ##
+  ##------------------------------------------------------------------##
+
+  print( '-' x 37, ' COPY ', '-' x 37, "\n" );
+
+  # Set up database copying.  We're using rsync for this because it's
+  # using SSH for network transfers, because it may be used for local
+  # copy too, and because it has good inclusion/exclusion filter
+  # options.
+
+  my @copy_cmd = ( $executables{'rsync'}, '--archive', '--progress' );
+
+  if ($opt_force) {
+    push( @copy_cmd, '--delete', '--delete-excluded' );
+  }
+
+  if ( defined($opt_subset) ) {
+    # Subset copy.
+    push( @copy_cmd, "--include=db.opt" );
+    push( @copy_cmd,
+      map { sprintf( "--include=%s.*", $_ ) }
+        @{ $table_subsets{$opt_subset} } );
+    push( @copy_cmd, "--exclude=*" );
+  }
+
+  if ( $source_hostname eq $target_hostname ) {
+    # Local copy.
+    push( @copy_cmd,
+      sprintf( "%s/", catdir( $source_dir, $source_db ) ) );
+  } else {
+    # Copy from remote server.
+    push(
+      @copy_cmd,
+      sprintf( "%s:%s/",
+        $source_hostname, catdir( $source_dir, $source_db ) ) );
+  }
+
+  push( @copy_cmd, sprintf( "%s/", $staging_dir ) );
+
+  # Perform the copy and make sure it succeeds.
+
+  printf( "COPYING '%s:%d/%s' TO STAGING DIRECTORY '%s'\n",
+    $source_server, $source_port, $source_db, $staging_dir );
+
+  # For debugging:
+  # print( join( ' ', @copy_cmd ), "\n" );
+
+  my $failed = 0;
+  if ( system(@copy_cmd) != 0 ) {
+    warn(
+      sprintf(
+        "Failed to copy database.\n"
+          . "Please clean up '%s' (if needed).",
+        $staging_dir
+      ) );
+    $failed = 1;
+  }
+
+  if ($opt_flush) {
+    # Unlock tables.
+    print("UNLOCKING TABLES...\n");
+    $dbh->do('UNLOCK TABLES');
+
+    $dbh->disconnect();
+  }
+
+  if ($failed) {
+    $spec->{'status'} =
+      sprintf( "FAILED: copy failed (cleanup of '%s' may be needed).",
+      $staging_dir );
+    next;
+  }
+
+  ##------------------------------------------------------------------##
+  ## CHECK                                                            ##
+  ##------------------------------------------------------------------##
+
+  print( '-' x 36, ' CHECK ', '-' x 37, "\n" );
+
+  # Check the copied table files with myisamchk.  Let myisamchk
+  # automatically repair any broken or un-closed tables.
+
+  if ( !$opt_check ) {
+    print("NOT CHECKING...\n");
+  } else {
+    my @check_cmd = (
+      $executables{'myisamchk'},
+      '--force',
+      '--check',
+      '--check-only-changed',
+      '--update-state',
+      '--quick',
+      map { catfile( $staging_dir, $_ ) } @tables
+    );
+
+    print("CHECKING TABLES (ignore warnings from myisamchk)...\n");
+
+    if ( system(@check_cmd) != 0 ) {
+      warn(
+        sprintf(
+          "Failed to check some tables. "
+            . "Is this an InnoDB database maybe?\n"
+            . "Please clean up '%s'.\n",
+          $staging_dir
+        ) );
+
+      $spec->{'status'} = sprintf(
+        "FAILED: MYISAM table check failed "
+          . "(cleanup of '%s' may be needed).",
+        $staging_dir
+      );
       next;
     }
-    my %hash = ('src_srv' => $src_srv,
-		'src_db' => $src_db,
-		'src_port' => $src_port,
-		'dest_srv' => $dest_srv,
-		'dest_db' => $dest_db,
-		'dest_port' => $dest_port,
-		'status' => "FAILED");
-    push @dbs_to_copy, \%hash;
-  } else {
-    warn "
-The input file has the wrong format,
-$line
-source_server\\tsource_port\\tsource_db\\tdestination_server\\tdestination_port\\tdestination_db
-EXIT 1
-";
-    exit 1;
-  }
-}
+  } ## end else [ if ( !$opt_check ) ]
 
-close F;
+  ##------------------------------------------------------------------##
+  ## MOVE                                                             ##
+  ##------------------------------------------------------------------##
 
-my $copy_executable;
+  print( '-' x 37, ' MOVE ', '-' x 37, "\n" );
 
-if (-e "/usr/bin/cp") {
-  $copy_executable = "/usr/bin/cp";
-} elsif (-e "/bin/cp") {
-  $copy_executable = "/bin/cp";
-}
+  # Move table files into place in $destination_dir using
+  # File::Copy::move(), and remove the staging directory.  We already
+  # know that the destination directory does not exist.
 
-#change STDERR to STDOUT?
+  printf( "MOVING '%s' TO '%s'...\n", $staging_dir, $destination_dir );
 
-# starting copy processes
-foreach my $db_to_copy (@dbs_to_copy) {
+  if ( !mkdir($destination_dir) ) {
+    warn(
+      sprintf(
+        "Failed to create destination directory '%s'.\n"
+          . "Please clean up '%s'.\n",
+        $destination_dir, $staging_dir
+      ) );
 
-  print STDERR "//\n// Starting new copy process\n//\n";
-
-  my ($time, $dbh, $sql, @tables);
-  my $source_srv = $db_to_copy->{src_srv};
-  $source_srv =~ s/\..*//;
-  
-  my $source_port = $db_to_copy->{src_port};
-
-  my $source_db = $mysql_directory_per_svr{$source_srv . ":" . $source_port} . "/" . $db_to_copy->{src_db};
-
-  my $destination_srv = $db_to_copy->{dest_srv};
-  $destination_srv =~ s/\..*//;
-  my $destination_port = $db_to_copy->{dest_port};
-
-  my $destination_directory = $mysql_directory_per_svr{$destination_srv . ":" . $destination_port};
-  
-  my $destination_tmp_directory = $destination_directory;
-  $destination_tmp_directory =~ s/\/var//;
-  $destination_tmp_directory =~ s/\/databases//;
-  $destination_tmp_directory .= "/tmp";
-
-  # checking that destination db does not exist
-  if (-e "$destination_directory/$db_to_copy->{dest_db}") {
-    print STDERR "// $destination_directory/$db_to_copy->{dest_db} already exists, make sure to
-// delete it or use another destination name for the database
-// Skipped copy of $db_to_copy->{src_db} from $db_to_copy->{src_srv} to $db_to_copy->{dest_srv}
-";
-    next;
-  }
-  
-  my $myisamchk_executable = "/usr/local/ensembl/mysql/bin/myisamchk";
-  
-  $source_srv =~ s/(ecs[1234]).*/$1/;
-  $destination_srv =~ s/(ecs[1234]).*/$1/;
-
-  if ($source_srv ne $destination_srv) {
-    $copy_executable = "/usr/bin/scp";
-  }
-
-  $source_srv = undef;
-  $destination_srv = undef;
-
-  # flush tables; in the source server
-  #Need to change this $already_flushed functionality 
-  #if we chose release locks after each copy
-  #This will happen anyway as we redefine $dbh for each copy, so we need to keep
-  #dbh's in a global hash?
- 
-
-  unless (exists $already_flushed{$db_to_copy->{$flush_scope}} || $noflush) {
-  
-	#Get DBI for session READ locks
-	my $dsn = sprintf("DBI:%s:database=%s;host=%s;port=%s",
-					  'mysql', $db_to_copy->{src_db}, $db_to_copy->{src_srv}, $source_port);	
-	$dbh = DBI->connect($dsn, 'ensadmin', $pass,{ RaiseError => 1, AutoCommit => 0 });
-
-	#Store in hash so locks persist and we don't get errors when they go out of scope
-	$db_handles{$db_to_copy->{src_srv}} = $dbh;
-
-	#Lock tables
-	if($dbflush){
-	  @tables = map{ $_ = "@$_"} @{$dbh->selectall_arrayref('show tables')};#Coudl use tables method here?
-	  print STDERR "// Acquiring READ LOCK in $db_to_copy->{$flush_scope} (".&get_time.")...";
-	  $sql = 'LOCK TABLES '.join(' READ, ', @tables).' READ';
-	  $dbh->do($sql);
-	  print STDERR ".DONE (".&get_time.")\n";
-	  $sql = 'flush tables';
-	  print STDERR "// Flushing tables in $db_to_copy->{$flush_scope} (".&get_time.")...";
-	}
-	else{
-	  print STDERR "// Flushing tables WITH READ LOCK in $db_to_copy->{$flush_scope} (".&get_time.")...";
-	  #This is actually a global lock across all DBs, so not tables required
-	  $sql = 'flush tables WITH READ LOCK';
-	}
-
-	#Flush tables
-	$dbh->do($sql);#Need to catch error here?
-	print STDERR ".DONE (".&get_time.")\n";
-
-
-	#OLD NON LOCKED FLUSH METHOD
-	#print STDERR "// Flushing tables in $db_to_copy->{$flush_scope} (".&get_time.")...\t";
-	#my $flush_cmd;
-	#if($dbflush){
-	#  my $tables_cmd = "echo 'show tables;' | mysql -h $db_to_copy->{src_srv} -u ensadmin -p$pass -P$source_port $db_to_copy->{src_db}";	  
-	#	  my @tables = split/\n/, `$tables_cmd`;
-	#	  shift @tables;#remove field header
-	#	  $flush_cmd = "echo 'flush tables  ".join(', ', @tables).";' | mysql -h $db_to_copy->{src_srv} -u ensadmin -p$pass -P$source_port $db_to_copy->{src_db}";
-	#}
-	#else{
-	#  $flush_cmd = "echo 'flush tables;' | mysql -h $db_to_copy->{src_srv} -u ensadmin -p$pass -P$source_port";
-	###$flush_cmd .= ' '.$db_to_copy->{src_db} if $dbflush;
-	#}
-	#Now flushes on db specific tables
-	#This was introduced to enable copying a an unused DB when others are being heavily used
-	#flush tables still reset the query cache, so will this provide an appreciable speed up?
-	#Apparently so.  But still slow due to burden on server from other queries
-    #if (system($flush_cmd) == 0) {
-    #  print STDERR "DONE (".&get_time.")\n";
-    #} else {
-    #  print STDERR "FAILED skipped copy of ".$db_to_copy->{src_db}." from ".$db_to_copy->{src_srv}." to ". $db_to_copy->{dest_srv} . "\n";
-    #  next;
-    #}
-
-
-	#Can we capture a CTRL-C here to exit the whole script
-	#Otherwise we exit the flush and the script acrries on trying to copy which can mess up tables.
-	#Need to use sub int_HANDLER and $SIG{'INT'} = 'INT_handler';
-	#OR is problem that we are interupting flush/scp process and not perl process?
-
-    $already_flushed{$db_to_copy->{$flush_scope}} = 1;
-  }
-
-  # cp the db to $destination_tmp_directory in the destination server
-  my $copy_cmd;
-  #Need to make the tmp dir first for file copying
-  if($table_type && ! -e "$destination_tmp_directory/$db_to_copy->{dest_db}"){
-	$copy_cmd = "mkdir $destination_tmp_directory/$db_to_copy->{dest_db};"
-  }
-
-  if ($copy_executable =~ /\/bin\/cp$/) {
-
-	if($table_type && ($db_to_copy->{src_db} =~ /_core_/)){#Copy core table subset
-	
-	  foreach my $table(@{$tables{$table_type}}){
-		$copy_cmd .= "$copy_executable  $source_db/$table.* $destination_tmp_directory/$db_to_copy->{dest_db};";
-	  }
-	  
-	}#Full copy
-	else{
-	  $copy_cmd = "$copy_executable -r $source_db $destination_tmp_directory/$db_to_copy->{dest_db}";
-	}
-	
-	print STDERR "// cp Copying $table_type $db_to_copy->{src_srv}:$source_db...";
- 
-  } # OR scp the db to $destination_tmp_directory in the destination server
-  elsif ($copy_executable eq "/usr/bin/scp") {
-    
-	if($table_type && ($db_to_copy->{src_db} =~ /_core_/)){#Copy core table subset
-	
-	  foreach my $table(@{$tables{$table_type}}){
-		$copy_cmd .= "$copy_executable -r $db_to_copy->{src_srv}:$source_db/$table.* $destination_tmp_directory/$db_to_copy->{dest_db};";
-	  }
-	  
-	}#Full copy
-	else{
-	  $copy_cmd = "$copy_executable -r $db_to_copy->{src_srv}:$source_db $destination_tmp_directory/$db_to_copy->{dest_db}";
-	}
-
-	print STDERR "// scp Copying $table_type $db_to_copy->{src_srv}:$source_db...";
-
-  }
-
-  if (system("$copy_cmd") == 0) {
-    print STDERR "DONE (".&get_time.")\n";
-  } else {
-    print STDERR "FAILED
-skipped copy of $db_to_copy->{src_db} from $db_to_copy->{src_srv} to $db_to_copy->{dest_srv}\n";
-print "$copy_cmd\n";
+    $spec->{'status'} =
+      sprintf( "FAILED: can not create destination directory '%s' "
+        . "(cleanup of '%s' may be needed)",
+      $destination_dir, $staging_dir );
     next;
   }
 
-  
-  #release locks on individual DB tables
-  if($dbflush){
-	$db_handles{$db_to_copy->{src_srv}}->do('UNLOCK TABLES');
-	#Also remove from flush hash just incase we are copying this DB twice
-	#i.e. we re-lock and flush
-	$db_handles{$db_to_copy->{src_srv}}->disconnect;
-	delete 	$db_handles{$db_to_copy->{src_srv}};
-	delete $already_flushed{$db_to_copy->{$flush_scope}};
-  }
- 
-  # checks/fixes the indices
-  print STDERR "// Checking $destination_tmp_directory/$db_to_copy->{dest_db}/*.MYI in progress...
-//\n";
-  chdir "$destination_tmp_directory/$db_to_copy->{dest_db}";
-  my $myisamchk_cmd = "ls | grep MYI | xargs $myisamchk_executable -F -f -s --key_buffer_size=2000000000 --sort_buffer_size=2000000000 --read_buffer_size=2000000 --write_buffer_size=2000000";
-  if (system("$myisamchk_cmd") == 0) {
-    print STDERR "//
-// Checking $destination_tmp_directory/$db_to_copy->{dest_db}/*.MYI DONE\n";
-    chdir "$working_dir";
-  } else {
-    print STDERR "//
-// Checking $destination_tmp_directory/$db_to_copy->{dest_db}/*.MYI FAILED
-skipped checking/copying of $db_to_copy->{dest_db}\n";
-    system("rm -rf $destination_tmp_directory/$db_to_copy->{dest_db}");
-    chdir "$working_dir";
-    next;
+  foreach my $table ( 'db.opt', @tables ) {
+    my @files =
+      glob( catfile( $staging_dir, sprintf( "%s*", $table ) ) );
+
+    printf( "Moving %s...\n", $table );
+
+    foreach my $file (@files) {
+      if ( !move( $file, $destination_dir ) ) {
+        warn(
+          sprintf(
+            "Failed to move database.\n"
+              . "Please clean up '%s' and '%s'.\n",
+            $staging_dir, $destination_dir
+          ) );
+
+    $spec->{'status'} =
+      sprintf( "FAILED: move from staging directory failed "
+        . "(cleanup of '%s' and '%s' may be needed)",
+      $staging_dir, $destination_dir );
+        next;
+      }
+    }
   }
 
-  # moves db to mysql directory if checking went fine, skip otherwise
-  if (system("mv $destination_tmp_directory/$db_to_copy->{dest_db} $destination_directory") == 0) {
-    print STDERR "// moving $destination_tmp_directory/$db_to_copy->{dest_db} to $destination_directory DONE\n";
-  } else {
-    print STDERR "// moving $destination_tmp_directory/$db_to_copy->{dest_db} to $destination_directory FAILED\n";
-    system("rm -rf $destination_tmp_directory/$db_to_copy->{dest_db}");
-    next;
+  # Remove the now empty staging directory.
+  if ( !rmdir($staging_dir) ) {
+    warn(
+      sprintf(
+        "Failed to unlink the staging directory '%s'.\n"
+          . "Clean this up manually.\n",
+        $staging_dir
+      ) );
+
+    $spec->{'status'} =
+      sprintf( "SUCCESS: cleanup of '%s' may be needed", $staging_dir );
   }
-  $db_to_copy->{status} = "SUCCEEDED";
 
+} ## end foreach my $spec (@todo)
+
+# Display summary.
+
+my $label = '{ SUMMARY }~~';
+print( "\n", '~' x ( 80 - length($label) ), $label, "\n" );
+
+foreach my $spec (@todo) {
+  printf( "%s -> %s\n  %s\n\n",
+    $spec->{'source_db'}, $spec->{'target_db'}, $spec->{'status'} );
 }
 
-#Now unlock any global read locks we have left on servers
-foreach my $dbh(values(%db_handles)){
-  $dbh->do('UNLOCK TABLES');
-  $dbh->disconnect;
+print("DONE!\n\n");
+
+END {
+  my $seconds = time() - $start_time;
+
+  my $hours = int( $seconds/( 60*60 ) );
+  $seconds -= 60*60*$hours;
+
+  my $minutes = int( $seconds/60 );
+  $seconds -= 60*$minutes;
+
+  printf(
+    "Time taken: %s%dm%ds\n",
+    ( $hours > 0 ? sprintf( "%dh", $hours ) : '' ),
+    $minutes, $seconds
+  );
 }
-
-
-print STDERR "//\n// End of all copy processes (".&get_time.")\n//\n// Processes summary\n";
-
-
-foreach  my $db_to_copy (@dbs_to_copy) {
-  print STDERR "// $db_to_copy->{status} copy of $db_to_copy->{src_db} on $db_to_copy->{src_srv} to $db_to_copy->{dest_db} on $db_to_copy->{dest_srv} \n";
-}
-
-print STDERR "\n";
-
-sub get_time{
-
-  my ($sec, $min, $hour) = localtime;
-
-  return $hour.':'.$min.':'.$sec;
-}
-
-1;
