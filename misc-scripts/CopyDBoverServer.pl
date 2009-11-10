@@ -214,7 +214,7 @@ while ( my $line = $in->getline() ) {
   my (
     $source_server, $source_port, $source_db,
     $target_server, $target_port, $target_db
-  ) = split( /\s/, $line );
+  ) = split( /\s+/, $line );
 
   my $source_hostname = ( gethostbyname($source_server) )[0];
   my $target_hostname = ( gethostbyname($target_server) )[0];
