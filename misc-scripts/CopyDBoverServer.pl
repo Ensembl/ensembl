@@ -158,7 +158,7 @@ if ( !defined($input_file) ) {
 }
 
 my %executables = (
-  'myisamchk' => '/usr/local/mysql/bin/myisamchk',
+  'myisamchk' => '/usr/local/ensembl/mysql/bin/myisamchk',
   'rsync'     => '/usr/bin/rsync'
 );
 
