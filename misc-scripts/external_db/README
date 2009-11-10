@@ -23,18 +23,37 @@ The master list of external databases is stored in the file:
 ${ENSEMBL_HOME}/ensembl/misc-scripts/external_db/external_dbs.txt
 
 This file contains a tab-seperated list of values which are loaded into
-the external_db tables.  In order the columns are 'external_db_id', 'db_name',
-'release', 'status'.  The release column is currently not used by the 
-software and is always set to 1.  The status must be one of 'XREF', 'KNOWNXREF',
-'KNOWN', 'PRED', 'ORTH', 'PSEUDO'.  This is used by the webcode to determine
-which genes/transcripts can be considered to be known or unknown etc.
+the external_db tables.  In order the columns are:
+ 'external_db_id', 'db_name', 'release', 'status',
+'db_primary_acc_linkable', 'display_label_linkable', 'priority',
+'db_display_name', 'type', 'secondary_db_name', 'secondary_db_table',
+'description'
 
-90	UMCU_Hsapiens_19Kv1	1	XREF
-100	AFFY_HG_U133	1	XREF
-110	AFFY_HG_U95	1	XREF
-120	AFFY_MG_U74	1	XREF
-130	AFFY_MG_U74v2	1	XREF
-140	AFFY_Mu11Ksub	1	XREF
+- external_db_id -- internal identifier for this entry, primary key
+- release -- is currently not used by the software and is always set to 1
+- status -- must be one of 'KNOWNXREF','KNOWN', 'XREF', 'PRED', 'ORTH', 'PSEUDO'.  
+This is used by the webcode to determine which genes/transcripts can be considered 
+to be known or unknown etc.
+- dbprimary_acc_linkable -- used by the webcode to indicate if the linkable
+element is the internal name in the database (e.g. HGNC_curated_gene)
+- display_label_linkable -- used by the webcode to indicate if the linkable
+element is the name of the database (e.g. WikiGene )
+- priority -- used for the website to indicate priority of display in page
+( the higher the number, the closer to the top of the page)
+- db_display_name -- name to be displayed in the website might be different
+to name of database (e.g. HGNC Symbol rather than HGNC)
+- type -- indicates kind of information the xref database offers (e.g. ALT_GENE
+is used in OTTG to indicate that this external database produces alternative gene from Vega)
+- secondary_db_name --
+- secondary_db_table --
+- description -- free column to describe the external database
+
+...
+12300	HGNC_curated_gene	1	KNOWNXREF	1	0	5	HGNC (curated)	MISC	\N	\N
+12305	HGNC_automatic_gene	1	KNOWNXREF	1	0	5	HGNC (automatic)	MISC	\N	\N
+12310	Clone_based_vega_gene	1	KNOWNXREF	1	0	5	Clone-based (Vega)	MISC	\N	\N
+12315	Clone_based_ensembl_gene	1	XREF	1	0	5	Clone-based (Ensembl)	MISC	\N	\N
+12400	HGNC_curated_transcript	1	KNOWNXREF	1	0	5	HGNC (curated)	MISC	\N	\N
 ...
 
 
@@ -42,65 +61,53 @@ UPDATE PROCEDURE
 ----------------
 
 The following describes the steps necessary to update the external_db table
-and how to load new mart/GKB xrefs.
+
 
 (1) Add new external database(s) if the appropriate database(s) are not in the
 master list:
    (a) Add a row to the external_dbs.txt file.  The columns must be tab
        seperated and the external_db identifier must be unique.  The 
-       release should be set to 1 and the status should reflect the 
+       db_release should be set to 1 and the status should reflect the 
        how xrefs from this external database are used by web.
 
-       For example a new external_db 'AFFY_HG_U101' could be added as the 
+       For example a new external_db 'Celera_gene' could be added as the 
        following:
-       115	AFFY_HG_U101	1	XREF
+
+       400	Celera_Gene	1	PRED	1	0	5	Celera gene	MISC	\N	\N
 
    (b) Commit the external_dbs.txt file using cvs commit.  This is to 
        ensure that nobody else who may also be updating the file will use
-       the same identifier that you chose (in the example ID 115).
-
-   (c) Propagate the contents of the file to all of the release databases.
-       If not all of the databases have yet arrived on the mysql instance
-       then you will have to re-run the propogation script when they get there.
-   
-       The changes to the list can be applied to all of the databases by 
-       running the script:
-       ${ENSEMBL_HOME}/ensembl/misc-scripts/external_db/update_external_dbs.pl
-
-       To update all of the core databases for release 14 (note that vega 
-       may have to be applied seperately):
-
-       perl update_external_dbs.pl -host ecs2d -file external_dbs.txt \
-                                   -user ensadmin -pass secret -release 14
-
-       To update the homo_sapiens_core_13_31 and mus_musculus_core_14_30 
-       databases:
-
-       perl update_external_dbs.pl -host ecs2d -file external_dbs.txt \
-                                   -user ensadmin -pass secret -release 14
-
-       Upon executing the script it will display a list of dbs that the updates
-       will be applied and you will have to type 'yes' at a confirmation.
-
-       If the databases to be updated contain rows that are not in the file, 
-       a warning will be given and the database in question skipped.
-
-
-(2) Add new mart or GKB xrefs.  This can be done using the following scripts
-    and the appropriate input files from Damian / Imre. It is important to
-    ensure that any new external databases have been added as described in
-    step 1.
-
-    ${ENSEMBL_HOME}/ensembl/misc-scripts/external_db/load_additional_human_affy_xrefs.pl
- 
-    ${ENSEMBL_HOME}/ensembl/misc-scripts/external_db/load_additional_human_gkb_xrefs.pl
-
-    These scripts take database connection args for a single db and a filename.
-
-    To load affy xrefs for the homo_sapiens db:
-
-    perl load_additional_human_affy_xrefs.pl -host ecs2d -user ensadmin \
-       -pass secret -port 3306 -dbname homo_sapiens_core_14_31 -file affy.txt
+       the same identifier that you chose (in the example ID 400).
 
 
 
+
+(2) Propagate the contents of the file to all of the core style databases
+(core|cdna|vega|otherfeatures). To update all of the core style databases 
+for release  56:
+
+perl update_external_dbs.pl -host ens-staging -file external_dbs.txt \
+                              -user ensadmin -pass secret -release 56
+
+To update the human core database:
+
+perl update_external_dbs.pl -host ens-staging -file external_dbs.txt \
+                              -user ensadmin -pass secret -dbnames homo_sapiens_core_56_37a
+
+Upon executing the script it will display a list of dbs that the updates
+will be applied and you will have to type 'yes' at a confirmation.
+
+If the databases to be updated contain rows that are not in the file, 
+a warning will be given and the database in question skipped.
+
+The flag -nonreleasemode it is used when we we want to load the master
+database (use in combination with -master): e.g. we want to create a new
+database with all the external_db from the file
+
+The flag -force is used to update the databases even there is a difference
+between the master file and the databases. This should only be used when
+we are sure the data in the database is wrong/not necessary and we want to
+overwrite it with the information in the external_db.txt file.
+
+In Ensembl, the release coordinator is responsible for running this script
+during the release process.
