@@ -293,7 +293,7 @@ $in->close();
 
 ##====================================================================##
 ##  Take the copy specifications from the @todo list and for each     ##
-##  sepcification copy the database to a staging area using rsync,    ##
+##  specification copy the database to a staging area using rsync,    ##
 ##  check it with myisamchk, and move it in place in the database     ##
 ##  directory.                                                        ##
 ##====================================================================##
@@ -401,7 +401,7 @@ foreach my $spec (@todo) {
 
   my $tmp_dir = canonpath( catdir( $target_dir, updir(), 'tmp' ) );
 
-  my $staging_dir     = catdir( $tmp_dir,    $target_db );
+  my $staging_dir = catdir( $tmp_dir, sprintf( "tmp.%s", $target_db ) );
   my $destination_dir = catdir( $target_dir, $target_db );
 
   $spec->{'status'} = 'SUCCESS';    # Assume success until failure.
