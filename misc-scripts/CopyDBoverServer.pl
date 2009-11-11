@@ -197,19 +197,19 @@ $run_hostname =~ s/\..+//;    # Cut off everything but the first part.
 my $in = IO::File->new( '<' . $input_file )
   or die( sprintf( "Can not open '%s' for reading", $input_file ) );
 
-my @todo;      # List of verified databases etc. to copy.
+my @todo;                     # List of verified databases etc. to copy.
 
 my $lineno = 0;
 while ( my $line = $in->getline() ) {
   ++$lineno;
 
-  $line =~ s/^\s+//;    # Strip leading whitespace.
-  $line =~ s/\s+$//;    # Strip trailing whitespace.
+  $line =~ s/^\s+//;          # Strip leading whitespace.
+  $line =~ s/\s+$//;          # Strip trailing whitespace.
 
   if ( $line =~ /^\#/ )   { next }    # Comment line.
   if ( $line =~ /^\s*$/ ) { next }    # Empty line.
 
-  my $failed = 0;    # Haven't failed so far...
+  my $failed = 0;                     # Haven't failed so far...
 
   my (
     $source_server, $source_port, $source_db,
@@ -366,8 +366,38 @@ foreach my $spec (@todo) {
 
   $target_dbh->disconnect();
 
-  printf( "SOURCE 'datadir' = %s\n", $source_dir );
-  printf( "TARGET 'datadir' = %s\n", $target_dir );
+  if ( !defined($source_dir) ) {
+    warn(
+      sprintf(
+        "Failed to find data directory for source server at '%s:%d'.\n",
+        $source_server, $source_port
+      ) );
+
+    $spec->{'status'} = sprintf(
+      "FAILED: can not find data directory on source server '%s:%d'.",
+      $source_server, $source_port );
+
+    $source_dbh->disconnect();
+    next;
+  }
+
+  if ( !defined($target_dir) ) {
+    warn(
+      sprintf(
+        "Failed to find data directory for target server at '%s:%d'.\n",
+        $target_server, $target_port
+      ) );
+
+    $spec->{'status'} = sprintf(
+      "FAILED: can not find data directory on target server '%s:%d'.",
+      $target_server, $target_port );
+
+    $source_dbh->disconnect();
+    next;
+  }
+
+  printf( "SOURCE 'datadir' = '%s'\n", $source_dir );
+  printf( "TARGET 'datadir' = '%s'\n", $target_dir );
 
   my $tmp_dir = canonpath( catdir( $target_dir, updir(), 'tmp' ) );
 
@@ -402,8 +432,8 @@ foreach my $spec (@todo) {
 
   if ( !$opt_force && -d $staging_dir ) {
     warn(
-      sprintf( "Staging directory '%s' already exists.\n", $staging_dir )
-    );
+      sprintf( "Staging directory '%s' already exists.\n",
+        $staging_dir ) );
 
     $spec->{'status'} =
       sprintf( "FAILED: staging directory '%s' exists.", $staging_dir );
@@ -429,8 +459,11 @@ foreach my $spec (@todo) {
 
   my @tables;
   if ( defined($opt_subset) ) {
+    # Copy only a subset of the tables.
     @tables = @{ $table_subsets{$opt_subset} };
   } else {
+    # Copy all tables.
+
     foreach
       my $table ( @{ $source_dbh->selectall_arrayref('SHOW TABLES') } )
     {
@@ -513,7 +546,6 @@ foreach my $spec (@todo) {
     # Unlock tables.
     print("UNLOCKING TABLES...\n");
     $source_dbh->do('UNLOCK TABLES');
-
   }
 
   $source_dbh->disconnect();
@@ -609,10 +641,10 @@ foreach my $spec (@todo) {
             $staging_dir, $destination_dir
           ) );
 
-    $spec->{'status'} =
-      sprintf( "FAILED: move from staging directory failed "
-        . "(cleanup of '%s' and '%s' may be needed)",
-      $staging_dir, $destination_dir );
+        $spec->{'status'} =
+          sprintf( "FAILED: move from staging directory failed "
+            . "(cleanup of '%s' and '%s' may be needed)",
+          $staging_dir, $destination_dir );
         next;
       }
     }
