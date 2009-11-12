@@ -1291,20 +1291,45 @@ SQL
 
 
 #######################################################################
-
 my $gene_desc_sql =(<<DXS);
-  SELECT gtt.gene_id, x.description, s.source_id, x.accession
-    FROM source s, xref x, object_xref ox, identity_xref ix, gene_transcript_translation gtt, gene_desc_prioritys p
-     WHERE  x.source_id = s.source_id 
-       AND s.source_id = p.source_id
-       AND x.xref_id = ox.xref_id 
-       AND ox.ox_status = "DUMP_OUT"   
-       AND (          (ox.ensembl_object_type = "Transcript" and gtt.transcript_id = ox.ensembl_id)       
-                 OR   (ox.ensembl_object_type = "Translation" and gtt.translation_id = ox.ensembl_id)
-                 OR   (ox.ensembl_object_type = "Gene" and gtt.gene_id = ox.ensembl_id)     
-           )
-       AND ox.object_xref_id = ix.object_xref_id 
-  ORDER BY gtt.gene_id DESC, p.priority DESC, (ix.target_identity+ix.query_identity) DESC
+select  IF (ox.ensembl_object_type = 'Gene',        gtt_gene.gene_id,
+        IF (ox.ensembl_object_type = 'Transcript',  gtt_transcript.gene_id,
+          gtt_translation.gene_id)) AS gene_id,
+        x.description AS description,
+        s.source_id AS source_id,
+        x.accession AS accession
+from    (   gene_desc_prioritys p
+    join  (   source s
+      join    (   xref x
+        join      (   object_xref ox
+          join        (   identity_xref ix
+                      ) using (object_xref_id)
+                  ) using (xref_id)
+              ) using (source_id)
+          ) using (source_id)
+        )
+  left join gene_transcript_translation gtt_gene
+    on (gtt_gene.gene_id = ox.ensembl_id)
+  left join gene_transcript_translation gtt_transcript
+    on (gtt_transcript.transcript_id = ox.ensembl_id)
+  left join gene_transcript_translation gtt_translation
+    on (gtt_translation.translation_id = ox.ensembl_id)
+where   ox.ox_status = 'DUMP_OUT'
+order by    gene_id desc,
+            p.priority desc,
+            (ix.target_identity+ix.query_identity) desc
+#  SELECT gtt.gene_id, x.description, s.source_id, x.accession
+#    FROM source s, xref x, object_xref ox, identity_xref ix, gene_transcript_translation gtt, gene_desc_prioritys p
+#     WHERE  x.source_id = s.source_id 
+#       AND s.source_id = p.source_id
+#       AND x.xref_id = ox.xref_id 
+#       AND ox.ox_status = "DUMP_OUT"   
+#       AND (          (ox.ensembl_object_type = "Transcript" and gtt.transcript_id = ox.ensembl_id)       
+#                 OR   (ox.ensembl_object_type = "Translation" and gtt.translation_id = ox.ensembl_id)
+#                 OR   (ox.ensembl_object_type = "Gene" and gtt.gene_id = ox.ensembl_id)     
+#           )
+#       AND ox.object_xref_id = ix.object_xref_id 
+#  ORDER BY gtt.gene_id DESC, p.priority DESC, (ix.target_identity+ix.query_identity) DESC
 DXS
 
 ########################################################################
