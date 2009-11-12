@@ -471,12 +471,13 @@ foreach my $spec (@todo) {
     }
   }
 
-  if ($opt_flush) {
-    # Lock and flush tables.
+  # Lock tables with a read lock.
+  print("LOCKING TABLES...\n");
+  $source_dbh->do(
+    sprintf( "LOCK TABLES %s READ", join( ' READ, ', @tables ) ) );
 
-    print("LOCKING TABLES...\n");
-    $source_dbh->do(
-      sprintf( "LOCK TABLES %s READ", join( ' READ, ', @tables ) ) );
+  if ($opt_flush) {
+    # Flush tables.
 
     print("FLUSHING TABLES...\n");
     $source_dbh->do(
@@ -542,11 +543,9 @@ foreach my $spec (@todo) {
     $failed = 1;
   }
 
-  if ($opt_flush) {
-    # Unlock tables.
-    print("UNLOCKING TABLES...\n");
-    $source_dbh->do('UNLOCK TABLES');
-  }
+  # Unlock tables.
+  print("UNLOCKING TABLES...\n");
+  $source_dbh->do('UNLOCK TABLES');
 
   $source_dbh->disconnect();
 
@@ -575,11 +574,12 @@ foreach my $spec (@todo) {
       '--check',
       '--check-only-changed',
       '--update-state',
-      '--quick',
+      '--silent',
+      '--silent',    # Yes, twice.
       map { catfile( $staging_dir, $_ ) } @tables
     );
 
-    print("CHECKING TABLES (ignore warnings from myisamchk)...\n");
+    print("CHECKING TABLES...\n");
 
     if ( system(@check_cmd) != 0 ) {
       warn(
