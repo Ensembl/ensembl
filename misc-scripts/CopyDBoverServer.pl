@@ -150,6 +150,10 @@ if ( defined($opt_help) ) {
   exit 0;
 }
 
+if ( scalar( getpwuid($<) ) ne 'mysqlens' ) {
+  die("You need to run this script as the 'mysqlens' user.\n");
+}
+
 my $input_file = shift(@ARGV);
 
 if ( !defined($input_file) ) {
