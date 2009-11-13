@@ -2240,79 +2240,90 @@ sub version_check {
 
 #hashes containing codes of species and different database types to return
   
-our %ensembl_type = qw(T Transcript G Gene P Translation E Exon);
+our %ensembl_type    = qw(T Transcript G Gene P Translation E Exon);
 our %ensembl_species = qw(
-			  ENS     Homo_sapiens
-			  ENSRNO  Rattus_norvegicus
-			  ENSMUS  Mus_musculus
-			  ENSGAL  Gallus_gallus
-			  ENSBTA  Bos_taurus
-			  ENSDAR  Danio_rerio
-			  ENSCAF  Canis_familiaris
-			  ENSPTR  Pan_troglodytes
-			  ENSCPO  Cavia_porcellus
-			  ENSCIN  Ciona_intestinalis
-			  ENSCSAV Ciona_savignyi
-			  ENSDNO  Dasypus_novemcinctus
-			  ENSETE  Echinops_telfairi
-			  ENSEEU  Erinaceus_europaeus
-			  ENSFCA  Felis_catus
-			  ENSGAC  Gasterosteus_aculeatus
-			  ENSLAF  Loxodonta_africana
-			  ENSMMU  Macaca_mulatta
-			  ENSMOD  Monodelphis_domestica
-			  ENSMLU  Myotis_lucifugus
-			  ENSOAN  Ornithorhynchus_anatinus
-			  ENSOCU  Oryctolagus_cuniculus
-			  ENSORL  Oryzias_latipes
-			  ENSSAR  Otolemur_garnettii
-			  ENSSTO  Spermophilus_tridecemlineatus
-			  ENSTBE  Tupaia_belangeri
-			  SINFRU  Takifugu_rubripes
-			  ENSXET  Xenopus_tropicalis
-			  ENSMEU  Macropus_eugenii
-			  ENSSSC  Sus_scrofa
-			  ENSCJA  Callithrix_jaccus
-			  );
+  ENS     Homo_sapiens
+  ENSRNO  Rattus_norvegicus
+  ENSMUS  Mus_musculus
+  ENSGAL  Gallus_gallus
+  ENSBTA  Bos_taurus
+  ENSDAR  Danio_rerio
+  ENSCAF  Canis_familiaris
+  ENSPTR  Pan_troglodytes
+  ENSCPO  Cavia_porcellus
+  ENSCIN  Ciona_intestinalis
+  ENSCSAV Ciona_savignyi
+  ENSDNO  Dasypus_novemcinctus
+  ENSETE  Echinops_telfairi
+  ENSEEU  Erinaceus_europaeus
+  ENSFCA  Felis_catus
+  ENSGAC  Gasterosteus_aculeatus
+  ENSLAF  Loxodonta_africana
+  ENSMMU  Macaca_mulatta
+  ENSMOD  Monodelphis_domestica
+  ENSMLU  Myotis_lucifugus
+  ENSOAN  Ornithorhynchus_anatinus
+  ENSOCU  Oryctolagus_cuniculus
+  ENSORL  Oryzias_latipes
+  ENSSAR  Otolemur_garnettii
+  ENSSTO  Spermophilus_tridecemlineatus
+  ENSTBE  Tupaia_belangeri
+  SINFRU  Takifugu_rubripes
+  ENSXET  Xenopus_tropicalis
+  ENSMEU  Macropus_eugenii
+  ENSSSC  Sus_scrofa
+  ENSCJA  Callithrix_jaccus
+);
 our %vega_species = qw(
-		       OTTHUM  Homo_sapiens
-		       OTTMUS  Mus_musculus
-		       );
-our %ensembl_db_type = qw(EST otherfeatures);
+  OTTHUM  Homo_sapiens
+  OTTMUS  Mus_musculus
+);
+our %ensembl_db_type    = qw(EST otherfeatures);
 our %vectorbase_species = qw(
-			     AAEL Aedes_aegypti
-			     AGAP Anopheles_gambiae
-			     );
+  AAEL Aedes_aegypti
+  AGAP Anopheles_gambiae
+);
 our %vectorbase_type = qw(R Transcript P Translation);
 
-sub get_species_and_object_type{
-  my ($self, $stable_id, $force) = @_;
- 
-## Check for Ensembl/Vega style identifiers...
-  if( $stable_id =~ /(\w+?)(EST)?([GTPE])\d/ ) {
-      return $ensembl_species{$1},$ensembl_type{$3}, (defined($2) ? ($ensembl_db_type{$2} || 'core') : 'core') if $ensembl_species{$1};
-      return $vega_species{$1}, $ensembl_type{$3}, 'vega' if $vega_species{$1};
+sub get_species_and_object_type {
+  my ( $self, $stable_id, $force ) = @_;
+
+  ## Check for Ensembl/Vega style identifiers...
+  if ( $stable_id =~ /(\w+?)(EST)?([GTPE])\d/ ) {
+    return $ensembl_species{$1}, $ensembl_type{$3},
+      ( defined($2) ? ( $ensembl_db_type{$2} || 'core' ) : 'core' )
+      if $ensembl_species{$1};
+    return $vega_species{$1}, $ensembl_type{$3}, 'vega'
+      if $vega_species{$1};
   }
-## Check for Vector base style identifiers
-  if( $stable_id =~ /^([A-Z]+)\d+-?(RP)?\w?/ && $vectorbase_species{$1} ) {
-      return $vectorbase_species{$1}, $vectorbase_type{$2}||'Gene','core';
+
+  ## Check for Vector base style identifiers
+  if ( $stable_id =~ /^([A-Z]+)\d+-?(RP)?\w?/
+    && $vectorbase_species{$1} )
+  {
+    return $vectorbase_species{$1}, $vectorbase_type{$2} || 'Gene',
+      'core';
   }
-  if( $stable_id =~ /^([A-Z]+)?(\.e|E)\d+$/ && ($1 eq '' || $vectorbase_species{$1}) ) {
-      return $vectorbase_species{$1||'AGAP'}, 'Exon', 'core';
+  if ( $stable_id =~ /^([A-Z]+)?(\.e|E)\d+$/
+    && ( $1 eq '' || $vectorbase_species{$1} ) )
+  {
+    return $vectorbase_species{ $1 || 'AGAP' }, 'Exon', 'core';
   }
   return unless defined($force) && $force;
-## Finally if "force" is passed see if we can find a non-standard string...
-  foreach my $species (qw(saccharomyces_cerevisiae tetraodon_nigroviridis
-                          drosophila_melanogaster caenorhabditis_elegans)){
-      foreach my $type (qw(Transcript Gene Translation Exon)){
-	  my $adaptor = $self->get_adaptor($species, 'core', $type);
-	  next unless defined($adaptor);
-	  my $entity = $adaptor->fetch_by_stable_id($stable_id);
-	  return ucfirst( $species ), $type,'core' if defined $entity;
-      }
-  }
-  return;
 
-}
+  ## Finally if "force" is passed see if we can find a non-standard string...
+  foreach my $species (
+    qw(saccharomyces_cerevisiae tetraodon_nigroviridis
+    drosophila_melanogaster caenorhabditis_elegans)
+    )
+  {
+    foreach my $type (qw(Transcript Gene Translation Exon)) {
+      my $adaptor = $self->get_adaptor( $species, 'core', $type );
+      next unless defined($adaptor);
+      my $entity = $adaptor->fetch_by_stable_id($stable_id);
+      return ucfirst($species), $type, 'core' if defined $entity;
+    }
+  }
+} ## end sub get_species_and_object_type
 
 1;
