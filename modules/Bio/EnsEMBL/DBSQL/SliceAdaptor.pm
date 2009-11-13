@@ -123,11 +123,11 @@ sub new {
   my $meta_container = $self->db->get_MetaContainer();
   my @values = $meta_container->list_value_by_key("LRG");
   if(defined(@values) and scalar(@values) and $values[0]->[0]){
-    print "LRG is true and set to ".$values[0]->[0]."\n";
+#     "LRG is true and set to ".$values[0]->[0]."\n";
     $self->{'lrg_region_test'} = $values[0]->[0];
   }
   else{
-    print "LRG NOT set\n";
+#    print "LRG NOT set\n";
   }
 
   return $self;
@@ -1079,7 +1079,7 @@ sub fetch_by_Feature{
 
   my $slice = $feature->slice();
   if(!$slice || (!$slice->isa('Bio::EnsEMBL::Slice') && !$slice->isa('Bio::EnsEMBL::LRGSlice') )) {
-    print "slcie is ---".ref($slice)."\n";
+    warn "slcie is ---".ref($slice)."\n";
     throw('Feature must be attached to a valid slice.');
   }
 
