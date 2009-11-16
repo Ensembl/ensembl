@@ -1525,6 +1525,49 @@ sub get_all_VariationFeatures{
   }
 }
 
+=head2 get_all_VariationFeatures_with_phenotype
+
+    Arg [1]     : $variation_feature_source [optional]
+    Arg [2]     : $phenotype_source [optional]
+    Arg [3]     : $phenotype_name [optional]
+    Description :returns all variation features on this slice associated with a phenotype.
+                 This function will only work correctly if the variation database has been
+                 attached to the core database.
+                 If $variation_feature_source is set only variations from that source
+                 are retrieved.
+                 If $phenotype_source is set only variations whose phenotypes come from
+                 $phenotype_source will be retrieved.
+                 If $phenotype_name is set only variations with that phenotype will be retrieved.
+    ReturnType : listref of Bio::EnsEMBL::Variation::VariationFeature
+    Exceptions : none
+    Caller     : contigview, snpview
+    Status     : At Risk
+               : Variation database is under development.
+
+=cut
+
+sub get_all_VariationFeatures_with_phenotype{
+  my $self = shift;
+  my $source = shift;
+  my $p_source = shift;
+  my $phenotype = shift;
+
+  if(!$self->adaptor()) {
+    warning('Cannot get variation features without attached adaptor');
+    return [];
+  }
+
+  my $vf_adaptor = Bio::EnsEMBL::DBSQL::MergedAdaptor->new(-species => $self->adaptor()->db()->species, -type => "VariationFeature");
+  if( $vf_adaptor ) {
+  	return $vf_adaptor->fetch_all_with_phenotype_by_Slice($self, $source, $p_source, $phenotype);
+  }
+  else {
+       warning("Variation database must be attached to core database to " .
+ 		"retrieve variation information" );
+    return [];
+  }
+}
+
 =head2 get_all_StructuralVariations
 
     Arg[1]       : $source [optional]
