@@ -348,13 +348,13 @@ foreach my $spec (@todo) {
   if ( !defined($target_dbh) ) {
     warn(
       sprintf(
-        "Failed to connect to the target database '%s:%d/%s'.\n",
-        $target_server, $target_port, $target_db
+        "Failed to connect to the target server '%s:%d'.\n",
+        $target_server, $target_port
       ) );
 
     $spec->{'status'} =
-      sprintf( "FAILED: can not connect to target database '%s:%d/%s'.",
-      $target_server, $target_port, $target_db );
+      sprintf( "FAILED: can not connect to target server '%s:%d'.",
+      $target_server, $target_port );
 
     $source_dbh->disconnect();
     next;
