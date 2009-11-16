@@ -536,7 +536,7 @@ foreach my $spec (@todo) {
   # For debugging:
   # print( join( ' ', @copy_cmd ), "\n" );
 
-  my $failed = 0;
+  my $copy_failed = 0;
   if ( system(@copy_cmd) != 0 ) {
     warn(
       sprintf(
@@ -544,7 +544,7 @@ foreach my $spec (@todo) {
           . "Please clean up '%s' (if needed).",
         $staging_dir
       ) );
-    $failed = 1;
+    $copy_failed = 1;
   }
 
   # Unlock tables.
@@ -553,7 +553,7 @@ foreach my $spec (@todo) {
 
   $source_dbh->disconnect();
 
-  if ($failed) {
+  if ($copy_failed) {
     $spec->{'status'} =
       sprintf( "FAILED: copy failed (cleanup of '%s' may be needed).",
       $staging_dir );
@@ -572,35 +572,44 @@ foreach my $spec (@todo) {
   if ( !$opt_check ) {
     print("NOT CHECKING...\n");
   } else {
-    my @check_cmd = (
-      $executables{'myisamchk'},
-      '--force',
-      '--check',
-      '--check-only-changed',
-      '--update-state',
-      '--silent',
-      '--silent',    # Yes, twice.
-      map { catfile( $staging_dir, $_ ) } @tables
-    );
-
     print("CHECKING TABLES...\n");
 
-    if ( system(@check_cmd) != 0 ) {
-      warn(
-        sprintf(
-          "Failed to check some tables. "
-            . "Is this an InnoDB database maybe?\n"
-            . "Please clean up '%s'.\n",
-          $staging_dir
-        ) );
+    my $check_failed = 0;
 
-      $spec->{'status'} = sprintf(
-        "FAILED: MYISAM table check failed "
-          . "(cleanup of '%s' may be needed).",
-        $staging_dir
-      );
-      next;
-    }
+    foreach my $table (@tables) {
+      my @check_cmd = (
+        $executables{'myisamchk'},
+        '--force',
+        '--check',
+        '--check-only-changed',
+        '--update-state',
+        '--silent',
+        '--silent',    # Yes, twice.
+        catfile( $staging_dir, $table ) );
+
+      if ( system(@check_cmd) != 0 ) {
+        $check_failed = 1;
+
+        warn(
+          sprintf(
+            "Failed to check some tables. "
+              . "Is this an InnoDB database maybe?\n"
+              . "Please clean up '%s'.\n",
+            $staging_dir
+          ) );
+
+        $spec->{'status'} = sprintf(
+          "FAILED: MYISAM table check failed "
+            . "(cleanup of '%s' may be needed).",
+          $staging_dir
+        );
+
+        last;
+      }
+    } ## end foreach my $table (@tables)
+
+    if ($check_failed) { next }
+
   } ## end else [ if ( !$opt_check ) ]
 
   ##------------------------------------------------------------------##
@@ -630,9 +639,11 @@ foreach my $spec (@todo) {
     next;
   }
 
-  foreach my $table ( 'db.opt', @tables ) {
+  move( catfile( $staging_dir, 'db.opt' ), $destination_dir );
+
+  foreach my $table ( @tables ) {
     my @files =
-      glob( catfile( $staging_dir, sprintf( "%s*", $table ) ) );
+      glob( catfile( $staging_dir, sprintf( "%s.*", $table ) ) );
 
     printf( "Moving %s...\n", $table );
 
