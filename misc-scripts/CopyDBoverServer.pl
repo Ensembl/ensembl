@@ -423,7 +423,7 @@ foreach my $spec (@todo) {
 
   if ( -d $destination_dir ) {
     warn(
-      sprintf( "Destination directory '%s' already exists",
+      sprintf( "Destination directory '%s' already exists.\n",
         $destination_dir ) );
 
     $spec->{'status'} =
