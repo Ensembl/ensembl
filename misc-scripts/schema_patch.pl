@@ -22,12 +22,9 @@ Required arguments:
                                       Note that this is a database pattern of
                                       the form %core_41% rather than a regexp
   --schema, --dbschema=NUM            patch to schema version NUM
+  --schema_type                       Schema type to patch e.g. core|variation|funcgen
 
 Optional arguments:
-
-  --patch_variation_database         If this attribute is specified, will read
-                                     the sql from ensembl-variation and patch
-                                     the variation databases (default:false)
 
   --conffile, --conf=FILE             read parameters from FILE
                                       (default: conf/Conversion.ini)
@@ -74,6 +71,9 @@ Please post comments/questions to the Ensembl development list
 
 =cut
 
+# Should really add explicit --schema_type param to avoid applying core patches to non-core DBs
+# Could also validate this against meta schema.type = core|funcgen|variation
+
 use strict;
 use warnings;
 no warnings 'uninitialized';
@@ -99,18 +99,18 @@ my $support = new Bio::EnsEMBL::Utils::ConversionSupport($SERVERROOT);
 $support->parse_common_options(@_);
 $support->param('dbname', undef);
 $support->parse_extra_options(
-  'pattern|dbpattern=s',
-  'schema|dbschema=s',
-  'bindir=s',
-  'patch_variation_database'
-);
+							  'pattern|dbpattern=s',
+							  'schema|dbschema=s',
+ 							  'bindir=s',
+							  'schema_type=s',
+							 );
 my @params = map { $_ unless ($_ =~ /dbname/) } $support->get_common_params;
 $support->allowed_params(
   @params,
   'pattern',
   'schema',
   'bindir',
-  'patch_variation_database'
+  'schema_type'
 );
 
 if ($support->param('help') or $support->error) {
@@ -131,16 +131,27 @@ $support->init_log;
 $support->check_required_params(
   'pattern',
   'schema',
+								'schema_type'
 );
+
+my $schema_type = $support->param('schema_type');
+my %patch_dirs = (
+				  'core' => "$SERVERROOT/ensembl/sql",
+				  'funcgen' => "$SERVERROOT/ensembl-functgenomics/sql",
+				  'variation' => "$SERVERROOT/ensembl-variation/sql",
+				 );
+
+#check schema_type is valid
+if(! (defined $schema_type && exists $patch_dirs{$schema_type})){
+  $support->log_error('You must specify a valid --schema_type parameter e.g. core|variation|funcgen');
+}
 
 # connect to database
 my $dbh = $support->get_dbconnection;
 
 # read patches from file
 $support->log("Reading patches from file...\n");
-my $patchdir;
-$patchdir = "$SERVERROOT/ensembl/sql" if(!defined $support->param('patch_variation_database'));
-$patchdir = "$SERVERROOT/ensembl-variation/sql" if(defined $support->param('patch_variation_database'));
+my $patchdir = $patch_dirs{$schema_type};
 my $schema = $support->param('schema');
 my @patches;
 
