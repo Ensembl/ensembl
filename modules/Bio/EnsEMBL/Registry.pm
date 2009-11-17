@@ -2228,6 +2228,9 @@ sub version_check {
                 translation, or exon etc.), and database type for a
                 stable ID.
 
+                NOTE: No validation is done to see if the stable ID
+                      actually exists.
+
   Arg[1]     :  String
                 The stable ID to find species and object type for.
 
