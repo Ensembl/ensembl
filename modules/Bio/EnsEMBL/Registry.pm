@@ -2223,107 +2223,149 @@ sub version_check {
 
 
 =head2 get_species_and_object_type
-  
-  get the species, ensembl type (Gene, Transcript , Translation or Exon) 
-  and database type (core, vega, otherfeatures) for a given stable_id
-  
-  Arg[1]     : stable_id to find species and ensembl type for.
-  Arg[2]     : (optional) integer. force searching of other databases that do not have a set format
-               for the stable_id by connecting to the databases and trying to retrieve each of the
-               ensembl object fetching using the stabke_id.
-  Example    : my ($species, $type, $db_type) = Bio::EnsEMBL::Registry->get_species_and_object_type(ENST00000326632);
-  Returntype : array. consisting of the species name, ensembl type and database type (core,vega,otherfeatures). undef, undef, undef returned if not found
-  Exceptions : none
-  Status     : At Risk.
+
+  Description:  Get the species name, object type (gene, transcript,
+                translation, or exon etc.), and database type for a
+                stable ID.
+
+  Arg[1]     :  String
+                The stable ID to find species and object type for.
+
+  Example    :  my ( $species, $object_type, $db_type ) =
+                  $registry->get_species_and_object_type('ENST00000326632');
+
+  Return type:  Array consisting of the species name, object type,
+                and database type.  The array may be empty if no
+                match is found.
+
+  Exceptions :  none
+  Status     :  At Risk.
 
 =cut
 
-#hashes containing codes of species and different database types to return
-  
-our %ensembl_type    = qw(T Transcript G Gene P Translation E Exon);
-our %ensembl_species = qw(
-  ENS     Homo_sapiens
-  ENSRNO  Rattus_norvegicus
-  ENSMUS  Mus_musculus
-  ENSGAL  Gallus_gallus
-  ENSBTA  Bos_taurus
-  ENSDAR  Danio_rerio
-  ENSCAF  Canis_familiaris
-  ENSPTR  Pan_troglodytes
-  ENSCPO  Cavia_porcellus
-  ENSCIN  Ciona_intestinalis
-  ENSCSAV Ciona_savignyi
-  ENSDNO  Dasypus_novemcinctus
-  ENSETE  Echinops_telfairi
-  ENSEEU  Erinaceus_europaeus
-  ENSFCA  Felis_catus
-  ENSGAC  Gasterosteus_aculeatus
-  ENSLAF  Loxodonta_africana
-  ENSMMU  Macaca_mulatta
-  ENSMOD  Monodelphis_domestica
-  ENSMLU  Myotis_lucifugus
-  ENSOAN  Ornithorhynchus_anatinus
-  ENSOCU  Oryctolagus_cuniculus
-  ENSORL  Oryzias_latipes
-  ENSSAR  Otolemur_garnettii
-  ENSSTO  Spermophilus_tridecemlineatus
-  ENSTBE  Tupaia_belangeri
-  SINFRU  Takifugu_rubripes
-  ENSXET  Xenopus_tropicalis
-  ENSMEU  Macropus_eugenii
-  ENSSSC  Sus_scrofa
-  ENSCJA  Callithrix_jaccus
+our %stable_id_prefix;
+our @nonstandard_prefix_species;
+
+our %prefix_patterns = (
+  'core' => {
+    '^%sG\d' => 'gene',         # '%s' will be replaced by the stable ID
+    '^%sT\d' => 'transcript',   # prefix from the meta table.
+    '^%sP\d' => 'translation',
+    '^%sE\d' => 'exon',
+  },
+  'compara' => {
+    '^ENSGT\d' => 'gene-tree',
+    '^ENSFM\d' => 'family',
+    '^ENSRT\d' => 'RNA-tree',
+  },
+  'variation' => {
+    '^ENSSNP\d' => 'SNP',
+    '^rs\d'     => 'SNP',
+  },
+  'funcgen' => { '^%sR\d' => 'regulatory-feature', },
 );
-our %vega_species = qw(
-  OTTHUM  Homo_sapiens
-  OTTMUS  Mus_musculus
-);
-our %ensembl_db_type    = qw(EST otherfeatures);
-our %vectorbase_species = qw(
-  AAEL Aedes_aegypti
-  AGAP Anopheles_gambiae
-);
-our %vectorbase_type = qw(R Transcript P Translation);
 
 sub get_species_and_object_type {
-  my ( $self, $stable_id, $force ) = @_;
+  my ( $self, $stable_id ) = @_;
 
-  ## Check for Ensembl/Vega style identifiers...
-  if ( $stable_id =~ /(\w+?)(EST)?([GTPE])\d/ ) {
-    return $ensembl_species{$1}, $ensembl_type{$3},
-      ( defined($2) ? ( $ensembl_db_type{$2} || 'core' ) : 'core' )
-      if $ensembl_species{$1};
-    return $vega_species{$1}, $ensembl_type{$3}, 'vega'
-      if $vega_species{$1};
-  }
+  if ( !%stable_id_prefix ) {
+    # Fetch stable ID prefixes from all connected databases.
 
-  ## Check for Vector base style identifiers
-  if ( $stable_id =~ /^([A-Z]+)\d+-?(RP)?\w?/
-    && $vectorbase_species{$1} )
-  {
-    return $vectorbase_species{$1}, $vectorbase_type{$2} || 'Gene',
-      'core';
-  }
-  if ( $stable_id =~ /^([A-Z]+)?(\.e|E)\d+$/
-    && ( $1 eq '' || $vectorbase_species{$1} ) )
-  {
-    return $vectorbase_species{ $1 || 'AGAP' }, 'Exon', 'core';
-  }
-  return unless defined($force) && $force;
+    foreach
+      my $dba ( @{ $self->get_all_DBAdaptors( '-group' => 'core' ) } )
+    {
+      my $dbh = $dba->dbc()->db_handle();
 
-  ## Finally if "force" is passed see if we can find a non-standard string...
-  foreach my $species (
-    qw(saccharomyces_cerevisiae tetraodon_nigroviridis
-    drosophila_melanogaster caenorhabditis_elegans)
-    )
-  {
-    foreach my $type (qw(Transcript Gene Translation Exon)) {
-      my $adaptor = $self->get_adaptor( $species, 'core', $type );
-      next unless defined($adaptor);
-      my $entity = $adaptor->fetch_by_stable_id($stable_id);
-      return ucfirst($species), $type, 'core' if defined $entity;
+      my $statement =
+          "SELECT meta_value "
+        . "FROM meta "
+        . "WHERE meta_key = 'species.stable_id_prefix' "
+        . "AND species_id = ?";
+
+      my $sth = $dbh->prepare($statement);
+
+      $sth->{'PrintError'} = 0;
+      $sth->{'RaiseError'} = 0;
+      if ( !$sth->execute( $dba->species_id() ) ) { next }
+      $sth->{'PrintError'} = $dbh->{'PrintError'};
+      $sth->{'RaiseError'} = $dbh->{'RaiseError'};
+
+      my $prefix;
+      $sth->bind_columns( \($prefix) );
+
+      my $species = $dba->species();
+
+      while ( $sth->fetch() ) {
+        if ( substr( $prefix, 0, 3 ) ne 'ENS' ) {
+          # These will be further queried if we find no match.
+          push( @nonstandard_prefix_species, $species );
+        } else {
+          $stable_id_prefix{$prefix} = $species;
+        }
+      }
+
+    } ## end foreach my $dba ( @{ $self->get_all_DBAdaptors...})
+  } ## end if ( !%stable_id_prefix)
+
+  my @match;
+
+FIRSTLOOP:
+  foreach my $group ( keys(%prefix_patterns) ) {
+    while ( my ( $prefix_pattern, $type ) =
+      each( %{ $prefix_patterns{$group} } ) )
+    {
+
+      if ( index( $prefix_pattern, '%s' ) == -1 ) {
+        # The prefix pattern does not contain '%s', so we need not
+        # insert the stable ID prefixes read from the meta tables.
+
+        my $complete_pattern = $prefix_pattern;
+
+        if ( $stable_id =~ /$complete_pattern/ ) {
+          @match = ( 'multi', $type, $group );
+          last FIRSTLOOP;
+        }
+      } else {
+        # The prefix pattern contain '%s' which needs to be replaced
+        # with the stable ID prefix read from the meta table of each
+        # core database.
+
+        while ( my ( $prefix, $species ) = each(%stable_id_prefix) ) {
+          my $complete_pattern = sprintf( $prefix_pattern, $prefix );
+
+          if ( $stable_id =~ /$complete_pattern/ ) {
+            @match = ( $species, $type, $group );
+            last FIRSTLOOP;
+          }
+        }
+      }
+
+    } ## end while ( my ( $prefix_pattern...))
+  } ## end foreach my $group ( keys(%prefix_patterns...))
+
+  if (@match) { return @match }
+
+  # Go through the species in @nonstandard_prefix_species and query them
+  # for genes, transcripts, etc. (only core objects) until we have found
+  # a match for our stable ID or until we have exhausted the list.
+
+SECONDLOOP:
+  foreach my $species (@nonstandard_prefix_species) {
+    foreach my $type ( 'gene', 'transcript', 'translation', 'exon' ) {
+
+      my $adaptor = $self->get_adaptor( $species, 'Core', $type );
+
+      my $object = $adaptor->fetch_by_stable_id($stable_id);
+
+      if ( defined($object) ) {
+        @match = ( $species, $type, 'core' );
+        last SECONDLOOP;
+      }
+
     }
   }
+
+  return @match;
 } ## end sub get_species_and_object_type
 
 1;
