@@ -688,7 +688,7 @@ sub fetch_all_by_Transcript {
                (The translation to fetch database entries for)
   Arg [2]    : optional external database name
   Arg [3]    : optional externaldb type 
-  Example    : @db_entries = @{$db_entry_adptr->fetch_by_Translation($trans)};
+  Example    : @db_entries = @{$db_entry_adptr->fetch_all_by_Translation($trans)};
   Description: Retrieves external database entries for an EnsEMBL translation
   Returntype : listref of Bio::EnsEMBL::DBEntries; may be of type IdentityXref if
                there is mapping data, or GoXref if there is linkage data.
