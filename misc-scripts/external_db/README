@@ -44,8 +44,8 @@ element is the name of the database (e.g. WikiGene )
 to name of database (e.g. HGNC Symbol rather than HGNC)
 - type -- indicates kind of information the xref database offers (e.g. ALT_GENE
 is used in OTTG to indicate that this external database produces alternative gene from Vega)
-- secondary_db_name --
-- secondary_db_table --
+- secondary_db_name -- not used at the moment (requested by functional genomics team)
+- secondary_db_table -- not used at the moment (requested by functiona genomics team)
 - description -- free column to describe the external database
 
 ...
