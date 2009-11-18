@@ -178,6 +178,9 @@ while (my ($dbname) = $sth->fetchrow_array){
 	throw("Displayable flag for analysis '$logic_name' has to be either 0 or 1, but not '$displayable'!");
       }
 
+      if (exists $reference{lc($logic_name)} ) {
+        throw("Logic_name already seen in file: ".lc($logic_name));
+      }
       $reference{lc($logic_name)} = {
 	nr            => $nr,
 	description   => $description   || '',
