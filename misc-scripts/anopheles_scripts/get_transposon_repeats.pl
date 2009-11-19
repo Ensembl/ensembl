@@ -1,4 +1,4 @@
-#!/usr/local/bin/perl -w
+#!/usr/local/ensembl/bin/perl -w
 =head1 NAME
 
   delete_genes.pl

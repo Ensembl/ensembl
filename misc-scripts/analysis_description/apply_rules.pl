@@ -1,4 +1,4 @@
-#!/opt/local/bin/perl
+#!/usr/local/ensembl/bin/perl
 ###!/usr/local/ensembl/bin/perl
 
 # POD documentation - main docs before the code
