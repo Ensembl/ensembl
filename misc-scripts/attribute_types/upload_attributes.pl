@@ -1,4 +1,4 @@
-#!/software/bin/perl -w
+#!/usr/local/ensembl/bin/perl -w
 #
 # Stolen from external db directory this script performs
 # the similar function of uploading all valid attribute types

@@ -1,4 +1,4 @@
-#!/usr/local/bin/perl
+#!/usr/local/ensembl/bin/perl
 
 # Dump variation information to an XML file for indexing by the EBI's search engine.
 #

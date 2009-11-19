@@ -1,4 +1,4 @@
-#!/usr/local/bin/perl
+#!/usr/local/ensembl/bin/perl
 
 #This script reads a file which has nt contig and clone coordinates
 #then reads a fasta file of all nt contigs

@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w
+#!/usr/local/ensembl/bin/perl -w
 
 # A simple OBO file reader/loader
 # for parsing/loading OBO files from (at least) GO and SO

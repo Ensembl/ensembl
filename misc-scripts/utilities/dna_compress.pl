@@ -1,4 +1,4 @@
-#!/usr/local/bin/perl --    # -*-Perl-*-
+#!/usr/local/ensembl/bin/perl --    # -*-Perl-*-
 #
 # Copyright (c) 2003 Tim Hubbard (th@sanger.ac.uk)
 # Sanger Centre, Wellcome Trust Genome Campus, Cambs, UK

@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w
+#!/usr/local/ensembl/bin/perl -w
 
 #-----------------------------------------------------------------------
 # Demo program for the Ensembl ontology database and API.

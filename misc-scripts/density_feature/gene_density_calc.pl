@@ -1,4 +1,4 @@
-#!/software/bin/perl -w
+#!/usr/local/ensembl/bin/perl -w
 
 #
 # script to calculate the gene density features on a database

@@ -1,4 +1,4 @@
-#!/usr/local/bin/perl
+#!/usr/local/ensembl/bin/perl
 while(<>) {
     chomp;
     ($f,$c,$rid,$cstart,$cend,$fstart,$fend,$rstart,$rend,$ori,$type) = split;

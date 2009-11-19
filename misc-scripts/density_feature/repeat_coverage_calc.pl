@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w
+#!/usr/local/ensembl/bin/perl -w
 #
 # Calculate the repeat coverage for given database.
 # condition: 1k blocks to show contigview displays

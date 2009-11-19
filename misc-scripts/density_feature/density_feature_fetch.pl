@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w
+#!/usr/local/ensembl/bin/perl -w
 
 #
 # Ignore file anme this should calculate the gene count for a chromosome (X)
