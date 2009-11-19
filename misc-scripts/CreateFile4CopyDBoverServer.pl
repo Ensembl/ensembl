@@ -1,4 +1,4 @@
-#!/software/bin/perl -w
+#!/usr/local/ensembl/bin/perl -w
 ##########################################
 #
 # Simple but handy script that generate the input file
