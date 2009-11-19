@@ -1525,19 +1525,19 @@ sub get_all_VariationFeatures{
   }
 }
 
-=head2 get_all_VariationFeatures_with_phenotype
+=head2 get_all_VariationFeatures_with_annotation
 
     Arg [1]     : $variation_feature_source [optional]
-    Arg [2]     : $phenotype_source [optional]
-    Arg [3]     : $phenotype_name [optional]
+    Arg [2]     : $annotation_source [optional]
+    Arg [3]     : $annotation_name [optional]
     Description :returns all variation features on this slice associated with a phenotype.
                  This function will only work correctly if the variation database has been
                  attached to the core database.
                  If $variation_feature_source is set only variations from that source
                  are retrieved.
-                 If $phenotype_source is set only variations whose phenotypes come from
-                 $phenotype_source will be retrieved.
-                 If $phenotype_name is set only variations with that phenotype will be retrieved.
+                 If $annotation_source is set only variations whose annotations come from
+                 $annotation_source will be retrieved.
+                 If $annotation_name is set only variations with that annotation will be retrieved.
     ReturnType : listref of Bio::EnsEMBL::Variation::VariationFeature
     Exceptions : none
     Caller     : contigview, snpview
@@ -1546,11 +1546,11 @@ sub get_all_VariationFeatures{
 
 =cut
 
-sub get_all_VariationFeatures_with_phenotype{
+sub get_all_VariationFeatures_with_annotation{
   my $self = shift;
   my $source = shift;
   my $p_source = shift;
-  my $phenotype = shift;
+  my $annotation = shift;
 
   if(!$self->adaptor()) {
     warning('Cannot get variation features without attached adaptor');
@@ -1559,7 +1559,7 @@ sub get_all_VariationFeatures_with_phenotype{
 
   my $vf_adaptor = Bio::EnsEMBL::DBSQL::MergedAdaptor->new(-species => $self->adaptor()->db()->species, -type => "VariationFeature");
   if( $vf_adaptor ) {
-  	return $vf_adaptor->fetch_all_with_phenotype_by_Slice($self, $source, $p_source, $phenotype);
+  	return $vf_adaptor->fetch_all_with_annotation_by_Slice($self, $source, $p_source, $annotation);
   }
   else {
        warning("Variation database must be attached to core database to " .
