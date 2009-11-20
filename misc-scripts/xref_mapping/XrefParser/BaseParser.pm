@@ -1051,14 +1051,39 @@ sub get_valid_xrefs_for_direct_xrefs{
   $sth->finish;
 
   $sql  = "select d.general_xref_id, d.ensembl_stable_id, d.type, d.linkage_xref, x1.accession ";
-  $sql .= "  from direct_xref d, xref x1 ";
+  $sql .= "  from gene_direct_xref d, xref x1 ";
   $sql .= "    where x1.xref_id = d.general_xref_id and";
   $sql .= "          x1.source_id=?";
    
-  $sth = dbi()->prepare($sql);
+  my $sth1 = dbi()->prepare($sql);
+
+
+  $sql  = "select d.general_xref_id, d.ensembl_stable_id, d.type, d.linkage_xref, x1.accession ";
+  $sql .= "  from transcript_direct_xref d, xref x1 ";
+  $sql .= "    where x1.xref_id = d.general_xref_id and";
+  $sql .= "          x1.source_id=?";
+   
+  my $sth2 = dbi()->prepare($sql);
+
+
+  $sql  = "select d.general_xref_id, d.ensembl_stable_id, d.type, d.linkage_xref, x1.accession ";
+  $sql .= "  from translation_direct_xref d, xref x1 ";
+  $sql .= "    where x1.xref_id = d.general_xref_id and";
+  $sql .= "          x1.source_id=?";
+   
+  my $sth3 = dbi()->prepare($sql);
+
   foreach my $d (@direct_sources){
-    $sth->execute($d);
-    while(my @row = $sth->fetchrow_array()){
+    $sth1->execute($d);
+    while(my @row = $sth1->fetchrow_array()){
+      $direct_2_xref{$row[4]} = $row[0]."::".$row[1]."::".$row[2]."::".$row[3];
+    }    
+    $sth2->execute($d);
+    while(my @row = $sth2->fetchrow_array()){
+      $direct_2_xref{$row[4]} = $row[0]."::".$row[1]."::".$row[2]."::".$row[3];
+    }    
+    $sth3->execute($d);
+    while(my @row = $sth3->fetchrow_array()){
       $direct_2_xref{$row[4]} = $row[0]."::".$row[1]."::".$row[2]."::".$row[3];
     }
   }
