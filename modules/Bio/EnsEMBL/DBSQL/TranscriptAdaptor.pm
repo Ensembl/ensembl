@@ -376,17 +376,6 @@ sub fetch_all_by_Slice {
     }
   }
 
-  my $ext_slice;
-
-  if($min_start >= $slice->start() && $max_end <= $slice->end()) {
-    $ext_slice = $slice;
-  } else {
-    my $sa = $self->db()->get_SliceAdaptor();
-    $ext_slice = $sa->fetch_by_region
-      ($slice->coord_system->name(), $slice->seq_region_name(),
-       $min_start,$max_end, $slice->strand(), $slice->coord_system->version());
-  }
-
   # associate exon identifiers with transcripts
 
   my %tr_hash = map {$_->dbID => $_} @$transcripts;
@@ -412,24 +401,19 @@ sub fetch_all_by_Slice {
   $sth->finish();
 
   my $ea = $self->db()->get_ExonAdaptor();
-  my $exons = $ea->fetch_all_by_Slice($ext_slice);
+  my $exons = $ea->fetch_all_by_dbID_list( [ keys(%ex_tr_hash) ] );
 
-  # move exons onto transcript slice, and add them to transcripts
+  # Move exons onto transcript slice, and add them to transcripts.
   foreach my $ex (@$exons) {
-
-    my $new_ex;
-    if ($slice != $ext_slice) {
-      $new_ex = $ex->transfer($slice) if($slice != $ext_slice);
-      if (!$new_ex) {
-	throw("Unexpected. Exon could not be transfered onto transcript slice.");
-      }
-    } else {
-      $new_ex = $ex;
+    my $new_ex = $ex->transfer($slice);
+    if ( !$new_ex ) {
+      throw("Unexpected. "
+          . "Exon could not be transfered onto transcript slice." );
     }
 
-    foreach my $row (@{$ex_tr_hash{$new_ex->dbID()}}) {
-      my ($tr, $rank) = @$row;
-      $tr->add_Exon($new_ex, $rank);
+    foreach my $row ( @{ $ex_tr_hash{ $new_ex->dbID() } } ) {
+      my ( $tr, $rank ) = @$row;
+      $tr->add_Exon( $new_ex, $rank );
     }
   }
 
