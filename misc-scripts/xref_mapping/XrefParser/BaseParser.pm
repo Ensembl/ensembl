@@ -1050,7 +1050,7 @@ sub get_valid_xrefs_for_direct_xrefs{
   }
   $sth->finish;
 
-  $sql  = "select d.general_xref_id, d.ensembl_stable_id, d.type, d.linkage_xref, x1.accession ";
+  $sql  = "select d.general_xref_id, d.ensembl_stable_id, 'Gene', d.linkage_xref, x1.accession ";
   $sql .= "  from gene_direct_xref d, xref x1 ";
   $sql .= "    where x1.xref_id = d.general_xref_id and";
   $sql .= "          x1.source_id=?";
@@ -1058,7 +1058,7 @@ sub get_valid_xrefs_for_direct_xrefs{
   my $sth1 = dbi()->prepare($sql);
 
 
-  $sql  = "select d.general_xref_id, d.ensembl_stable_id, d.type, d.linkage_xref, x1.accession ";
+  $sql  = "select d.general_xref_id, d.ensembl_stable_id, 'Transcript', d.linkage_xref, x1.accession ";
   $sql .= "  from transcript_direct_xref d, xref x1 ";
   $sql .= "    where x1.xref_id = d.general_xref_id and";
   $sql .= "          x1.source_id=?";
@@ -1066,7 +1066,7 @@ sub get_valid_xrefs_for_direct_xrefs{
   my $sth2 = dbi()->prepare($sql);
 
 
-  $sql  = "select d.general_xref_id, d.ensembl_stable_id, d.type, d.linkage_xref, x1.accession ";
+  $sql  = "select d.general_xref_id, d.ensembl_stable_id, 'Translation', d.linkage_xref, x1.accession ";
   $sql .= "  from translation_direct_xref d, xref x1 ";
   $sql .= "    where x1.xref_id = d.general_xref_id and";
   $sql .= "          x1.source_id=?";
