@@ -346,56 +346,45 @@ sub fetch_all_by_Gene {
 =cut
 
 sub fetch_all_by_Slice {
-  my $self  = shift;
-  my $slice = shift;
-  my $load_exons = shift;
-  my $logic_name = shift;
+  my ($self,$slice,$load_exons,$logic_name) = @_;
 
-  my $transcripts = $self->SUPER::fetch_all_by_Slice_constraint($slice,
-    't.is_current = 1', $logic_name);
+  my $transcripts = $self->SUPER::fetch_all_by_Slice_constraint( $slice,
+    't.is_current = 1', $logic_name );
 
-  # if there are 0 or 1 transcripts still do lazy-loading
-  if (!$load_exons || @$transcripts < 2) {
+  # If there are 0 or 1 transcripts still do lazy-loading.
+  if ( !$load_exons || @$transcripts < 2 ) {
     return $transcripts;
   }
 
-  # preload all of the exons now, instead of lazy loading later
-  # faster than 1 query per transcript
+  # Preload all of the exons now, instead of lazy loading later,
+  # faster than one query per transcript.
 
-  # first check if the exons are already preloaded
-  return $transcripts if( exists $transcripts->[0]->{'_trans_exon_array'});
+  # First check if the exons are already preloaded.
+  # FIXME: Should check all exons.
+  return $transcripts
+    if ( exists $transcripts->[0]->{'_trans_exon_array'} );
 
-  # get extent of region spanned by transcripts
-  my ($min_start, $max_end);
-  foreach my $tr (@$transcripts) {
-    if(!defined($min_start) || $tr->seq_region_start() < $min_start) {
-      $min_start = $tr->seq_region_start();
-    }
-    if(!defined($max_end) || $tr->seq_region_end() > $max_end) {
-      $max_end   = $tr->seq_region_end();
-    }
-  }
+  # Associate exon identifiers with transcripts.
 
-  # associate exon identifiers with transcripts
+  my %tr_hash = map { $_->dbID => $_ } @$transcripts;
 
-  my %tr_hash = map {$_->dbID => $_} @$transcripts;
+  my $tr_id_str = join( ',', keys %tr_hash );
 
-  my $tr_id_str = '(' . join(',', keys %tr_hash) . ')';
-
-  my $sth = $self->prepare("SELECT transcript_id, exon_id, rank " .
-                           "FROM   exon_transcript " .
-                           "WHERE  transcript_id IN $tr_id_str");
+  my $sth =
+    $self->prepare( "SELECT transcript_id, exon_id, rank "
+      . "FROM exon_transcript "
+      . "WHERE transcript_id IN ($tr_id_str)" );
 
   $sth->execute();
 
-  my ($ex_id, $tr_id, $rank);
-  $sth->bind_columns(\$tr_id, \$ex_id, \$rank);
+  my ( $ex_id, $tr_id, $rank );
+  $sth->bind_columns( \( $ex_id, $tr_id, $rank ) );
 
   my %ex_tr_hash;
 
-  while($sth->fetch()) {
+  while ( $sth->fetch() ) {
     $ex_tr_hash{$ex_id} ||= [];
-    push @{$ex_tr_hash{$ex_id}}, [$tr_hash{$tr_id}, $rank];
+    push @{ $ex_tr_hash{$ex_id} }, [ $tr_hash{$tr_id}, $rank ];
   }
 
   $sth->finish();
@@ -423,7 +412,7 @@ sub fetch_all_by_Slice {
   $tla->fetch_all_by_Transcript_list($transcripts);
 
   return $transcripts;
-}
+} ## end sub fetch_all_by_Slice
 
 
 =head2 fetch_all_by_external_name
