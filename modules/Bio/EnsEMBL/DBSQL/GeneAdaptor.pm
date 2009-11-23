@@ -594,7 +594,7 @@ sub fetch_all_by_Slice {
 
   $sth->execute();
 
-  my ( $tr_id, $ex_id, $rank );
+  my ( $ex_id, $rank );    # $tr_id already declared.
   $sth->bind_columns( \( $tr_id, $ex_id, $rank ) );
 
   my %ex_tr_hash;
