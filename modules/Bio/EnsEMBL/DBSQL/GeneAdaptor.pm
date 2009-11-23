@@ -510,108 +510,108 @@ sub fetch_all_by_Slice_and_external_dbname_link {
 =cut
 
 sub fetch_all_by_Slice {
-  my $self  = shift;
-  my $slice = shift;
-  my $logic_name = shift;
-  my $load_transcripts = shift;
-  my $source = shift;
-  my $biotype = shift;
+  my ( $self, $slice, $logic_name, $load_transcripts, $source,
+    $biotype ) = @_;
 
   my $constraint = 'g.is_current = 1';
 
-  if(defined($source)){
+  if ( defined($source) ) {
     $constraint .= " and g.source = '$source'";
   }
-  if(defined($biotype)){
-    $constraint .= " and g.biotype = '$biotype'" ;
+  if ( defined($biotype) ) {
+    $constraint .= " and g.biotype = '$biotype'";
   }
 
-  my $genes = $self->SUPER::fetch_all_by_Slice_constraint($slice,
-    $constraint , $logic_name);
+  my $genes =
+    $self->SUPER::fetch_all_by_Slice_constraint( $slice, $constraint,
+    $logic_name );
 
-  # if there are 0 or 1 genes still do lazy-loading
-  if(!$load_transcripts || @$genes < 2) {
+  # If there are less than two genes, still do lazy-loading.
+  if ( !$load_transcripts || @$genes < 2 ) {
     return $genes;
   }
 
-  # preload all of the transcripts now, instead of lazy loading later
-  # faster than 1 query per transcript
+  # Preload all of the transcripts now, instead of lazy loading later,
+  # faster than one query per transcript.
 
-  # first check if transcripts are already preloaded
-  # coorectly we should check all of them ..
-  return $genes if( exists $genes->[0]->{'_transcript_array'} );
+  # First check if transcripts are already preloaded.
+  # FIXME: Should check all transcripts.
+  if ( exists( $genes->[0]->{'_transcript_array'} ) ) {
+    return $genes;
+  }
 
-  # get extent of region spanned by transcripts
-  my ($min_start, $max_end);
+  # Get extent of region spanned by transcripts.
+  my ( $min_start, $max_end );
   foreach my $g (@$genes) {
-    if(!defined($min_start) || $g->seq_region_start() < $min_start) {
+    if ( !defined($min_start) || $g->seq_region_start() < $min_start ) {
       $min_start = $g->seq_region_start();
     }
-    if(!defined($max_end) || $g->seq_region_end() > $max_end) {
-      $max_end   = $g->seq_region_end();
+    if ( !defined($max_end) || $g->seq_region_end() > $max_end ) {
+      $max_end = $g->seq_region_end();
     }
   }
 
   my $ext_slice;
 
-  if($min_start >= $slice->start() && $max_end <= $slice->end()) {
+  if ( $min_start >= $slice->start() && $max_end <= $slice->end() ) {
     $ext_slice = $slice;
   } else {
     my $sa = $self->db()->get_SliceAdaptor();
-    $ext_slice = $sa->fetch_by_region
-      ($slice->coord_system->name(), $slice->seq_region_name(),
-       $min_start,$max_end, $slice->strand(), $slice->coord_system->version());
+    $ext_slice = $sa->fetch_by_region(
+      $slice->coord_system->name(), $slice->seq_region_name(),
+      $min_start,                   $max_end,
+      $slice->strand(),             $slice->coord_system->version() );
   }
 
-  # associate transcript identifiers with genes
+  # Associate transcript identifiers with genes.
 
-  my %g_hash = map {$_->dbID => $_} @$genes;
+  my %g_hash = map { $_->dbID => $_ } @$genes;
 
-  my $g_id_str = '(' . join(',', keys %g_hash) . ')';
+  my $g_id_str = join( ',', keys(%g_hash) );
 
-  my $sth = $self->prepare("SELECT gene_id, transcript_id " .
-                           "FROM   transcript " .
-                           "WHERE  gene_id IN $g_id_str");
+  my $sth =
+    $self->prepare( "SELECT gene_id, transcript_id "
+      . "FROM   transcript "
+      . "WHERE  gene_id IN ($g_id_str)" );
 
   $sth->execute();
 
-  my ($g_id, $tr_id);
-  $sth->bind_columns(\$g_id, \$tr_id);
+  my ( $g_id, $tr_id );
+  $sth->bind_columns( \( $g_id, $tr_id ) );
 
   my %tr_g_hash;
 
-  while($sth->fetch()) {
+  while ( $sth->fetch() ) {
     $tr_g_hash{$tr_id} = $g_hash{$g_id};
   }
 
   $sth->finish();
 
   my $ta = $self->db()->get_TranscriptAdaptor();
-  my $transcripts = $ta->fetch_all_by_Slice($ext_slice, 1);
+  my $transcripts = $ta->fetch_all_by_Slice( $ext_slice, 1 );
 
-  # move transcripts onto gene slice, and add them to genes
-  foreach my $tr (@$transcripts) {
-    if( !exists $tr_g_hash{$tr->dbID()} ) {
+  # Move transcripts onto gene slice, and add them to genes.
+  foreach my $tr ( @{$transcripts} ) {
+    if ( !exists( $tr_g_hash{ $tr->dbID() } ) ) {
       next;
     }
 
     my $new_tr;
-    if($slice != $ext_slice) {
-      $new_tr = $tr->transfer($slice) if($slice != $ext_slice);
-      if(!$new_tr) {
-	throw("Unexpected. Transcript could not be transfered onto Gene slice.");
+    if ( $slice != $ext_slice ) {
+      $new_tr = $tr->transfer($slice);
+      if ( !defined($new_tr) ) {
+        throw("Unexpected. "
+            . "Transcript could not be transfered onto Gene slice." );
       }
     } else {
       $new_tr = $tr;
     }
 
-
-    $tr_g_hash{$tr->dbID()}->add_Transcript($new_tr);
+    $tr_g_hash{ $tr->dbID() }->add_Transcript($new_tr);
   }
 
   return $genes;
-}
-
+} ## end sub fetch_all_by_Slice
 
 =head2 fetch_by_transcript_id
 

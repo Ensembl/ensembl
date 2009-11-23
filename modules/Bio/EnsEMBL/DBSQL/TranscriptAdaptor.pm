@@ -351,7 +351,7 @@ sub fetch_all_by_Slice {
   my $transcripts = $self->SUPER::fetch_all_by_Slice_constraint( $slice,
     't.is_current = 1', $logic_name );
 
-  # If there are 0 or 1 transcripts still do lazy-loading.
+  # If there are less than two transcripts, still do lazy-loading.
   if ( !$load_exons || @$transcripts < 2 ) {
     return $transcripts;
   }
@@ -368,7 +368,7 @@ sub fetch_all_by_Slice {
 
   my %tr_hash = map { $_->dbID => $_ } @$transcripts;
 
-  my $tr_id_str = join( ',', keys %tr_hash );
+  my $tr_id_str = join( ',', keys(%tr_hash) );
 
   my $sth =
     $self->prepare( "SELECT transcript_id, exon_id, rank "
@@ -393,9 +393,9 @@ sub fetch_all_by_Slice {
   my $exons = $ea->fetch_all_by_dbID_list( [ keys(%ex_tr_hash) ] );
 
   # Move exons onto transcript slice, and add them to transcripts.
-  foreach my $ex (@$exons) {
+  foreach my $ex (@{$exons}) {
     my $new_ex = $ex->transfer($slice);
-    if ( !$new_ex ) {
+    if ( !defined($new_ex) ) {
       throw("Unexpected. "
           . "Exon could not be transfered onto transcript slice." );
     }
@@ -413,7 +413,6 @@ sub fetch_all_by_Slice {
 
   return $transcripts;
 } ## end sub fetch_all_by_Slice
-
 
 =head2 fetch_all_by_external_name
 
