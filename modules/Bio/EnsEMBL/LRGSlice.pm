@@ -153,6 +153,8 @@ sub AUTOLOAD {
   my $method = $AUTOLOAD;
   $method =~ s/.*:://;
 
+  return  $self->{'_orig_slice'}->$method(@_);
+
 
   if($method =~ /^get_all_Attribute/){
 #    print STDERR "get_all_Attribbutes called\n";
