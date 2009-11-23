@@ -346,7 +346,7 @@ sub fetch_all_by_Gene {
 =cut
 
 sub fetch_all_by_Slice {
-  my ($self,$slice,$load_exons,$logic_name) = @_;
+  my ( $self, $slice, $load_exons, $logic_name ) = @_;
 
   my $transcripts = $self->SUPER::fetch_all_by_Slice_constraint( $slice,
     't.is_current = 1', $logic_name );
@@ -361,8 +361,9 @@ sub fetch_all_by_Slice {
 
   # First check if the exons are already preloaded.
   # FIXME: Should check all exons.
-  return $transcripts
-    if ( exists $transcripts->[0]->{'_trans_exon_array'} );
+  if ( exists $transcripts->[0]->{'_trans_exon_array'} ) {
+    return $transcripts;
+  }
 
   # Associate exon identifiers with transcripts.
 
@@ -377,8 +378,8 @@ sub fetch_all_by_Slice {
 
   $sth->execute();
 
-  my ( $ex_id, $tr_id, $rank );
-  $sth->bind_columns( \( $ex_id, $tr_id, $rank ) );
+  my ( $tr_id, $ex_id, $rank );
+  $sth->bind_columns( \( $tr_id, $ex_id, $rank ) );
 
   my %ex_tr_hash;
 
@@ -393,7 +394,7 @@ sub fetch_all_by_Slice {
   my $exons = $ea->fetch_all_by_dbID_list( [ keys(%ex_tr_hash) ] );
 
   # Move exons onto transcript slice, and add them to transcripts.
-  foreach my $ex (@{$exons}) {
+  foreach my $ex ( @{$exons} ) {
     my $new_ex = $ex->transfer($slice);
     if ( !defined($new_ex) ) {
       throw("Unexpected. "
