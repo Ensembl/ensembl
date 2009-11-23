@@ -369,7 +369,7 @@ sub fetch_all_by_Slice {
 
   my %tr_hash = map { $_->dbID => $_ } @$transcripts;
 
-  my $tr_id_str = join( ',', keys(%tr_hash) );
+  my $tr_id_str = join( ',', sort { $a <=> $b } keys(%tr_hash) );
 
   my $sth =
     $self->prepare( "SELECT transcript_id, exon_id, rank "
@@ -390,8 +390,9 @@ sub fetch_all_by_Slice {
 
   $sth->finish();
 
-  my $ea = $self->db()->get_ExonAdaptor();
-  my $exons = $ea->fetch_all_by_dbID_list( [ keys(%ex_tr_hash) ] );
+  my $ea    = $self->db()->get_ExonAdaptor();
+  my $exons = $ea->fetch_all_by_dbID_list(
+    [ sort { $a <=> $b } keys(%ex_tr_hash) ] );
 
   # Move exons onto transcript slice, and add them to transcripts.
   foreach my $ex ( @{$exons} ) {
