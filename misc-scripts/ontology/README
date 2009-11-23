@@ -154,7 +154,7 @@
     2.  Fetching a set of terms from the database
 
       2.a   by a collection of internal IDs
-            $adaptor->fetch_by_dbID_list(\@dbIDs)
+            $adaptor->fetch_all_by_dbID_list(\@dbIDs)
 
       2.b   by their (immediate) parent term
             $adaptor->fetch_all_by_parent_term($term)
