@@ -365,9 +365,14 @@ sub fetch_all_by_Slice {
     return $transcripts;
   }
 
+  ######################################################################
+  # The following code is duplicated in fetch_all_by_Slice() in        #
+  # GeneAdaptor.  Any changes here will need to go in there too.       #
+  ######################################################################
+
   # Associate exon identifiers with transcripts.
 
-  my %tr_hash = map { $_->dbID => $_ } @$transcripts;
+  my %tr_hash = map { $_->dbID => $_ } @{$transcripts};
 
   my $tr_id_str = join( ',', sort { $a <=> $b } keys(%tr_hash) );
 
@@ -410,7 +415,7 @@ sub fetch_all_by_Slice {
 
   my $tla = $self->db()->get_TranslationAdaptor();
 
-  # load all of the translations at once
+  # Load all of the translations at once.
   $tla->fetch_all_by_Transcript_list($transcripts);
 
   return $transcripts;
