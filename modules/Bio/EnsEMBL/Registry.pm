@@ -2251,21 +2251,21 @@ our @nonstandard_prefix_species;
 
 our %prefix_patterns = (
   'core' => {
-    '^%sG\d' => 'gene',         # '%s' will be replaced by the stable ID
-    '^%sT\d' => 'transcript',   # prefix from the meta table.
-    '^%sP\d' => 'translation',
-    '^%sE\d' => 'exon',
+    '^%sG\d' => 'Gene',         # '%s' will be replaced by the stable ID
+    '^%sT\d' => 'Transcript',   # prefix from the meta table.
+    '^%sP\d' => 'Translation',
+    '^%sE\d' => 'Exon',
   },
   'compara' => {
-    '^ENSGT\d' => 'gene-tree',
-    '^ENSFM\d' => 'family',
-    '^ENSRT\d' => 'RNA-tree',
+    '^ENSGT\d' => 'Proteintree',    # "gene-tree"
+    '^ENSFM\d' => 'Family',
+    '^ENSRT\d' => 'NCTree',         # "ncRNA-tree"
   },
   'variation' => {
     '^ENSSNP\d' => 'SNP',
     '^rs\d'     => 'SNP',
   },
-  'funcgen' => { '^%sR\d' => 'regulatory-feature', },
+  'funcgen' => { '^%sR\d' => 'RegulatoryFeature', },
 );
 
 sub get_species_and_object_type {
