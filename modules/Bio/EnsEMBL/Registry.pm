@@ -2307,6 +2307,11 @@ sub get_species_and_object_type {
         }
       }
 
+      if ( !defined($prefix) ) {
+        # There was no prefix in the meta table.
+        push( @nonstandard_prefix_species, $species );
+      }
+
     } ## end foreach my $dba ( @{ $self->get_all_DBAdaptors...})
   } ## end if ( !%stable_id_prefix)
 
