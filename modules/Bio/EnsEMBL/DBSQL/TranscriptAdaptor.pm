@@ -390,10 +390,8 @@ sub fetch_all_by_Slice {
 
   while ( $sth->fetch() ) {
     $ex_tr_hash{$ex_id} ||= [];
-    push @{ $ex_tr_hash{$ex_id} }, [ $tr_hash{$tr_id}, $rank ];
+    push( @{ $ex_tr_hash{$ex_id} }, [ $tr_hash{$tr_id}, $rank ] );
   }
-
-  $sth->finish();
 
   my $ea    = $self->db()->get_ExonAdaptor();
   my $exons = $ea->fetch_all_by_dbID_list(
@@ -404,11 +402,11 @@ sub fetch_all_by_Slice {
     my $new_ex = $ex->transfer($slice);
     if ( !defined($new_ex) ) {
       throw("Unexpected. "
-          . "Exon could not be transfered onto transcript slice." );
+          . "Exon could not be transfered onto Transcript slice." );
     }
 
     foreach my $row ( @{ $ex_tr_hash{ $new_ex->dbID() } } ) {
-      my ( $tr, $rank ) = @$row;
+      my ( $tr, $rank ) = @{$row};
       $tr->add_Exon( $new_ex, $rank );
     }
   }
