@@ -333,6 +333,8 @@ sub fetch_all_by_Gene {
                lazy loaded later
   Arg [3]    : (optional) String $logic_name
                The logic name of the type of features to obtain
+  ARG [4]    : (optional) String $constraint
+               An extra contraint.
   Example    : my @transcripts = @{ $tr_adaptor->fetch_all_by_Slice($slice) };
   Description: Overrides superclass method to optionally load exons
                immediately rather than lazy-loading them later. This
@@ -346,78 +348,111 @@ sub fetch_all_by_Gene {
 =cut
 
 sub fetch_all_by_Slice {
-  my ( $self, $slice, $load_exons, $logic_name ) = @_;
+  my $self  = shift;
+  my $slice = shift;
+  my $load_exons = shift;
+  my $logic_name = shift;
+  my $constraint = shift;
 
-  my $transcripts = $self->SUPER::fetch_all_by_Slice_constraint( $slice,
-    't.is_current = 1', $logic_name );
+  my $transcripts;
+  if ( defined($constraint) && $constraint ne '' ) {
+    $transcripts = $self->SUPER::fetch_all_by_Slice_constraint( $slice,
+      't.is_current = 1 AND ' . $constraint, $logic_name );
+  } else {
+    $transcripts = $self->SUPER::fetch_all_by_Slice_constraint( $slice,
+      't.is_current = 1', $logic_name );
+  }
 
-  # If there are less than two transcripts, still do lazy-loading.
-  if ( !$load_exons || @$transcripts < 2 ) {
+  # if there are 0 or 1 transcripts still do lazy-loading
+  if (!$load_exons || @$transcripts < 2) {
     return $transcripts;
   }
 
-  # Preload all of the exons now, instead of lazy loading later,
-  # faster than one query per transcript.
+  # preload all of the exons now, instead of lazy loading later
+  # faster than 1 query per transcript
 
-  # First check if the exons are already preloaded.
-  # FIXME: Should check all exons.
-  if ( exists $transcripts->[0]->{'_trans_exon_array'} ) {
-    return $transcripts;
+  # first check if the exons are already preloaded
+  return $transcripts if( exists $transcripts->[0]->{'_trans_exon_array'});
+
+  # get extent of region spanned by transcripts
+  my ($min_start, $max_end);
+  foreach my $tr (@$transcripts) {
+    if(!defined($min_start) || $tr->seq_region_start() < $min_start) {
+      $min_start = $tr->seq_region_start();
+    }
+    if(!defined($max_end) || $tr->seq_region_end() > $max_end) {
+      $max_end   = $tr->seq_region_end();
+    }
   }
 
-  ######################################################################
-  # The following code is duplicated in fetch_all_by_Slice() in        #
-  # GeneAdaptor.  Any changes here will need to go in there too.       #
-  ######################################################################
+  my $ext_slice;
 
-  # Associate exon identifiers with transcripts.
+  if($min_start >= $slice->start() && $max_end <= $slice->end()) {
+    $ext_slice = $slice;
+  } else {
+    my $sa = $self->db()->get_SliceAdaptor();
+    $ext_slice = $sa->fetch_by_region
+      ($slice->coord_system->name(), $slice->seq_region_name(),
+       $min_start,$max_end, $slice->strand(), $slice->coord_system->version());
+  }
 
-  my %tr_hash = map { $_->dbID => $_ } @{$transcripts};
+  # associate exon identifiers with transcripts
 
-  my $tr_id_str = join( ',', sort { $a <=> $b } keys(%tr_hash) );
+  my %tr_hash = map {$_->dbID => $_} @$transcripts;
 
-  my $sth =
-    $self->prepare( "SELECT transcript_id, exon_id, rank "
-      . "FROM exon_transcript "
-      . "WHERE transcript_id IN ($tr_id_str)" );
+  my $tr_id_str = '(' . join(',', keys %tr_hash) . ')';
+
+  my $sth = $self->prepare("SELECT transcript_id, exon_id, rank " .
+                           "FROM   exon_transcript " .
+                           "WHERE  transcript_id IN $tr_id_str");
 
   $sth->execute();
 
-  my ( $tr_id, $ex_id, $rank );
-  $sth->bind_columns( \( $tr_id, $ex_id, $rank ) );
+  my ($ex_id, $tr_id, $rank);
+  $sth->bind_columns(\$tr_id, \$ex_id, \$rank);
 
   my %ex_tr_hash;
 
-  while ( $sth->fetch() ) {
+  while($sth->fetch()) {
     $ex_tr_hash{$ex_id} ||= [];
-    push( @{ $ex_tr_hash{$ex_id} }, [ $tr_hash{$tr_id}, $rank ] );
+    push @{$ex_tr_hash{$ex_id}}, [$tr_hash{$tr_id}, $rank];
   }
 
-  my $ea    = $self->db()->get_ExonAdaptor();
-  my $exons = $ea->fetch_all_by_dbID_list(
-    [ sort { $a <=> $b } keys(%ex_tr_hash) ] );
+  $sth->finish();
 
-  # Move exons onto transcript slice, and add them to transcripts.
-  foreach my $ex ( @{$exons} ) {
-    my $new_ex = $ex->transfer($slice);
-    if ( !defined($new_ex) ) {
-      throw("Unexpected. "
-          . "Exon could not be transfered onto Transcript slice." );
+  my $ea    = $self->db()->get_ExonAdaptor();
+  my $exons = $ea->fetch_all_by_Slice_constraint(
+    $ext_slice,
+    sprintf( "e.exon_id IN (%s)",
+      join( ',', sort { $a <=> $b } keys(%ex_tr_hash) ) ) );
+
+  # move exons onto transcript slice, and add them to transcripts
+  foreach my $ex (@$exons) {
+
+    my $new_ex;
+    if ($slice != $ext_slice) {
+      $new_ex = $ex->transfer($slice) if($slice != $ext_slice);
+      if (!$new_ex) {
+	throw("Unexpected. Exon could not be transfered onto transcript slice.");
+      }
+    } else {
+      $new_ex = $ex;
     }
 
-    foreach my $row ( @{ $ex_tr_hash{ $new_ex->dbID() } } ) {
-      my ( $tr, $rank ) = @{$row};
-      $tr->add_Exon( $new_ex, $rank );
+    foreach my $row (@{$ex_tr_hash{$new_ex->dbID()}}) {
+      my ($tr, $rank) = @$row;
+      $tr->add_Exon($new_ex, $rank);
     }
   }
 
   my $tla = $self->db()->get_TranslationAdaptor();
 
-  # Load all of the translations at once.
+  # load all of the translations at once
   $tla->fetch_all_by_Transcript_list($transcripts);
 
   return $transcripts;
-} ## end sub fetch_all_by_Slice
+}
+
 
 =head2 fetch_all_by_external_name
 
