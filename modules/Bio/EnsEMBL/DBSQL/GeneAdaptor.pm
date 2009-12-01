@@ -610,8 +610,13 @@ sub fetch_all_by_Slice {
   foreach my $ex ( @{$exons} ) {
     my $new_ex = $ex->transfer($slice);
     if ( !defined($new_ex) ) {
-      throw("Unexpected. "
-          . "Exon could not be transfered onto Gene slice." );
+      throw(
+        sprintf(
+          "Unexpected. "
+            . "Exon could not be transfered onto Gene slice.\n"
+            . "\tSource slice=%s\n\tTarget slice=%s\n",
+          $ex->slice()->name(),
+          $slice->name() ) );
     }
 
     foreach my $row ( @{ $ex_tr_hash{ $new_ex->dbID() } } ) {
@@ -626,8 +631,14 @@ sub fetch_all_by_Slice {
   foreach my $tr ( @{$transcripts} ) {
     my $new_tr = $tr->transfer($slice);
     if ( !defined($new_tr) ) {
-      throw("Unexpected. "
-          . "Transcript could not be transfered onto Gene slice." );
+      throw(
+        sprintf(
+          throw(
+            "Unexpected. "
+              . "Transcript could not be transfered onto Gene slice.\n"
+              . "\tSource slice=%s\n\tTarget slice=%s\n",
+            $tr->slice()->name(),
+            $slice->name() ) ) );
     }
 
     $tr_g_hash{ $tr->dbID() }->add_Transcript($new_tr);
