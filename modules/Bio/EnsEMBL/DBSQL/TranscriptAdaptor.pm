@@ -348,11 +348,7 @@ sub fetch_all_by_Gene {
 =cut
 
 sub fetch_all_by_Slice {
-  my $self  = shift;
-  my $slice = shift;
-  my $load_exons = shift;
-  my $logic_name = shift;
-  my $constraint = shift;
+  my ( $self, $slice, $load_exons, $logic_name, $constraint ) = @_;
 
   my $transcripts;
   if ( defined($constraint) && $constraint ne '' ) {
@@ -364,7 +360,7 @@ sub fetch_all_by_Slice {
   }
 
   # if there are 0 or 1 transcripts still do lazy-loading
-  if (!$load_exons || @$transcripts < 2) {
+  if ( !$load_exons || @$transcripts < 2 ) {
     return $transcripts;
   }
 
@@ -372,53 +368,57 @@ sub fetch_all_by_Slice {
   # faster than 1 query per transcript
 
   # first check if the exons are already preloaded
-  return $transcripts if( exists $transcripts->[0]->{'_trans_exon_array'});
+  # FIXME: Should test all exons.
+  if ( exists( $transcripts->[0]->{'_trans_exon_array'} ) ) {
+    return $transcripts;
+  }
 
   # get extent of region spanned by transcripts
-  my ($min_start, $max_end);
+  my ( $min_start, $max_end );
   foreach my $tr (@$transcripts) {
-    if(!defined($min_start) || $tr->seq_region_start() < $min_start) {
+    if ( !defined($min_start) || $tr->seq_region_start() < $min_start )
+    {
       $min_start = $tr->seq_region_start();
     }
-    if(!defined($max_end) || $tr->seq_region_end() > $max_end) {
-      $max_end   = $tr->seq_region_end();
+    if ( !defined($max_end) || $tr->seq_region_end() > $max_end ) {
+      $max_end = $tr->seq_region_end();
     }
   }
 
   my $ext_slice;
 
-  if($min_start >= $slice->start() && $max_end <= $slice->end()) {
+  if ( $min_start >= $slice->start() && $max_end <= $slice->end() ) {
     $ext_slice = $slice;
   } else {
     my $sa = $self->db()->get_SliceAdaptor();
-    $ext_slice = $sa->fetch_by_region
-      ($slice->coord_system->name(), $slice->seq_region_name(),
-       $min_start,$max_end, $slice->strand(), $slice->coord_system->version());
+    $ext_slice = $sa->fetch_by_region(
+      $slice->coord_system->name(), $slice->seq_region_name(),
+      $min_start,                   $max_end,
+      $slice->strand(),             $slice->coord_system->version() );
   }
 
   # associate exon identifiers with transcripts
 
-  my %tr_hash = map {$_->dbID => $_} @$transcripts;
+  my %tr_hash = map { $_->dbID => $_ } @{$transcripts};
 
-  my $tr_id_str = '(' . join(',', keys %tr_hash) . ')';
+  my $tr_id_str = join( ',', keys(%tr_hash) );
 
-  my $sth = $self->prepare("SELECT transcript_id, exon_id, rank " .
-                           "FROM   exon_transcript " .
-                           "WHERE  transcript_id IN $tr_id_str");
+  my $sth =
+    $self->prepare( "SELECT transcript_id, exon_id, rank "
+      . "FROM exon_transcript "
+      . "WHERE transcript_id IN ($tr_id_str)" );
 
   $sth->execute();
 
-  my ($ex_id, $tr_id, $rank);
-  $sth->bind_columns(\$tr_id, \$ex_id, \$rank);
+  my ( $tr_id, $ex_id, $rank );
+  $sth->bind_columns( \( $tr_id, $ex_id, $rank ) );
 
   my %ex_tr_hash;
 
-  while($sth->fetch()) {
+  while ( $sth->fetch() ) {
     $ex_tr_hash{$ex_id} ||= [];
-    push @{$ex_tr_hash{$ex_id}}, [$tr_hash{$tr_id}, $rank];
+    push( @{ $ex_tr_hash{$ex_id} }, [ $tr_hash{$tr_id}, $rank ] );
   }
-
-  $sth->finish();
 
   my $ea    = $self->db()->get_ExonAdaptor();
   my $exons = $ea->fetch_all_by_Slice_constraint(
@@ -427,21 +427,21 @@ sub fetch_all_by_Slice {
       join( ',', sort { $a <=> $b } keys(%ex_tr_hash) ) ) );
 
   # move exons onto transcript slice, and add them to transcripts
-  foreach my $ex (@$exons) {
-
+  foreach my $ex ( @{$exons} ) {
     my $new_ex;
-    if ($slice != $ext_slice) {
-      $new_ex = $ex->transfer($slice) if($slice != $ext_slice);
-      if (!$new_ex) {
-	throw("Unexpected. Exon could not be transfered onto transcript slice.");
+    if ( $slice != $ext_slice ) {
+      $new_ex = $ex->transfer($slice);
+      if ( !defined($new_ex) ) {
+        throw("Unexpected. "
+            . "Exon could not be transfered onto Transcript slice." );
       }
     } else {
       $new_ex = $ex;
     }
 
-    foreach my $row (@{$ex_tr_hash{$new_ex->dbID()}}) {
-      my ($tr, $rank) = @$row;
-      $tr->add_Exon($new_ex, $rank);
+    foreach my $row ( @{ $ex_tr_hash{ $new_ex->dbID() } } ) {
+      my ( $tr, $rank ) = @{$row};
+      $tr->add_Exon( $new_ex, $rank );
     }
   }
 
@@ -451,7 +451,7 @@ sub fetch_all_by_Slice {
   $tla->fetch_all_by_Transcript_list($transcripts);
 
   return $transcripts;
-}
+} ## end sub fetch_all_by_Slice
 
 
 =head2 fetch_all_by_external_name

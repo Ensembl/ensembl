@@ -565,7 +565,7 @@ sub fetch_all_by_Slice {
 
   # Associate transcript identifiers with genes.
 
-  my %g_hash = map { $_->dbID => $_ } @$genes;
+  my %g_hash = map { $_->dbID => $_ } @{$genes};
 
   my $g_id_str = join( ',', keys(%g_hash) );
 
@@ -585,8 +585,6 @@ sub fetch_all_by_Slice {
     $tr_g_hash{$tr_id} = $g_hash{$g_id};
   }
 
-  $sth->finish();
-
   my $ta          = $self->db()->get_TranscriptAdaptor();
   my $transcripts = $ta->fetch_all_by_Slice(
     $ext_slice,
@@ -596,9 +594,7 @@ sub fetch_all_by_Slice {
 
   # Move transcripts onto gene slice, and add them to genes.
   foreach my $tr ( @{$transcripts} ) {
-    if ( !exists( $tr_g_hash{ $tr->dbID() } ) ) {
-      next;
-    }
+    if ( !exists( $tr_g_hash{ $tr->dbID() } ) ) { next }
 
     my $new_tr;
     if ( $slice != $ext_slice ) {
