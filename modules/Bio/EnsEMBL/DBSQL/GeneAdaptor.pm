@@ -540,11 +540,34 @@ sub fetch_all_by_Slice {
     return $genes;
   }
 
+  # Get extent of region spanned by transcripts.
+  my ( $min_start, $max_end );
+  foreach my $g (@$genes) {
+    if ( !defined($min_start) || $g->seq_region_start() < $min_start ) {
+      $min_start = $g->seq_region_start();
+    }
+    if ( !defined($max_end) || $g->seq_region_end() > $max_end ) {
+      $max_end = $g->seq_region_end();
+    }
+  }
+
+  my $ext_slice;
+
+  if ( $min_start >= $slice->start() && $max_end <= $slice->end() ) {
+    $ext_slice = $slice;
+  } else {
+    my $sa = $self->db()->get_SliceAdaptor();
+    $ext_slice = $sa->fetch_by_region(
+      $slice->coord_system->name(), $slice->seq_region_name(),
+      $min_start,                   $max_end,
+      $slice->strand(),             $slice->coord_system->version() );
+  }
+
   # Associate transcript identifiers with genes.
 
   my %g_hash = map { $_->dbID => $_ } @$genes;
 
-  my $g_id_str = join( ',', sort { $a <=> $b } keys(%g_hash) );
+  my $g_id_str = join( ',', keys(%g_hash) );
 
   my $sth =
     $self->prepare( "SELECT gene_id, transcript_id "
@@ -562,92 +585,34 @@ sub fetch_all_by_Slice {
     $tr_g_hash{$tr_id} = $g_hash{$g_id};
   }
 
-  my $ta = $self->db()->get_TranscriptAdaptor();
-  my $transcripts = $ta->fetch_all_by_dbID_list(
-    [ sort { $a <=> $b } keys(%tr_g_hash) ] );
+  $sth->finish();
 
-  ######################################################################
-  # The following duplicates what happens in fetch_all_by_Slice() in   #
-  # TranscriptAdaptor.  We need to do this because there is no other   #
-  # efficient way of pre-loading the exons for what might be a small   #
-  # subset of the genes on a slice.                                    #
-  #                                                                    #
-  # The user case here is fetching the genes with a certain logic_name #
-  # on a slice which contains millions of transcripts.  The old code   #
-  # would run out of memory since it loaded *all* transcripts and      #
-  # *all* exons, not just the ones actually corresponding to the genes #
-  # of interest.                                                       #
-  ######################################################################
-
-  # Associate exon identifiers with transcripts.
-
-  my %tr_hash = map { $_->dbID => $_ } @{$transcripts};
-
-  my $tr_id_str = join( ',', sort { $a <=> $b } keys(%tr_hash) );
-
-  $sth =
-    $self->prepare( "SELECT transcript_id, exon_id, rank "
-      . "FROM exon_transcript "
-      . "WHERE transcript_id IN ($tr_id_str)" );
-
-  $sth->execute();
-
-  my ( $ex_id, $rank );    # $tr_id already declared.
-  $sth->bind_columns( \( $tr_id, $ex_id, $rank ) );
-
-  my %ex_tr_hash;
-
-  while ( $sth->fetch() ) {
-    $ex_tr_hash{$ex_id} ||= [];
-    push( @{ $ex_tr_hash{$ex_id} }, [ $tr_hash{$tr_id}, $rank ] );
-  }
-
-  my $ea    = $self->db()->get_ExonAdaptor();
-  my $exons = $ea->fetch_all_by_dbID_list(
-    [ sort { $a <=> $b } keys(%ex_tr_hash) ] );
-
-  # Move exons onto transcript slice, and add them to transcripts.
-  foreach my $ex ( @{$exons} ) {
-    my $new_ex = $ex->transfer($slice);
-    if ( !defined($new_ex) ) {
-      throw(
-        sprintf(
-          "Unexpected. "
-            . "Exon could not be transfered onto Gene slice.\n"
-            . "\tSource slice=%s\n\tTarget slice=%s\n",
-          $ex->slice()->name(),
-          $slice->name() ) );
-    }
-
-    foreach my $row ( @{ $ex_tr_hash{ $new_ex->dbID() } } ) {
-      my ( $tr, $rank ) = @{$row};
-      $tr->add_Exon( $new_ex, $rank );
-    }
-  }
-
-  # Code from TranscriptAdaptor ends here.
+  my $ta          = $self->db()->get_TranscriptAdaptor();
+  my $transcripts = $ta->fetch_all_by_Slice(
+    $ext_slice,
+    1, undef,
+    sprintf( "t.transcript_id IN (%s)",
+      join( ',', sort { $a <=> $b } keys(%tr_g_hash) ) ) );
 
   # Move transcripts onto gene slice, and add them to genes.
   foreach my $tr ( @{$transcripts} ) {
-    my $new_tr = $tr->transfer($slice);
-    if ( !defined($new_tr) ) {
-      throw(
-        sprintf(
-          throw(
-            "Unexpected. "
-              . "Transcript could not be transfered onto Gene slice.\n"
-              . "\tSource slice=%s\n\tTarget slice=%s\n",
-            $tr->slice()->name(),
-            $slice->name() ) ) );
+    if ( !exists( $tr_g_hash{ $tr->dbID() } ) ) {
+      next;
+    }
+
+    my $new_tr;
+    if ( $slice != $ext_slice ) {
+      $new_tr = $tr->transfer($slice);
+      if ( !defined($new_tr) ) {
+        throw("Unexpected. "
+            . "Transcript could not be transfered onto Gene slice." );
+      }
+    } else {
+      $new_tr = $tr;
     }
 
     $tr_g_hash{ $tr->dbID() }->add_Transcript($new_tr);
   }
-
-  my $tla = $self->db()->get_TranslationAdaptor();
-
-  # Load all of the translations at once.
-  $tla->fetch_all_by_Transcript_list($transcripts);
 
   return $genes;
 } ## end sub fetch_all_by_Slice
