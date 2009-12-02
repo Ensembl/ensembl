@@ -1406,7 +1406,7 @@ sub load_registry_from_db {
   }
 
   for my $db (@dbnames) {
-    if ( $db =~ /^(\w+)_(collection_core_(?:\d+_)?(\d+)_(\w+))/ )
+    if ( $db =~ /^(\w+)_(collection_\w_(?:\d+_)?(\d+)_(\w+))/ )
     {    # NEEDS TO BE FIRST
       if ( $3 eq $software_version ) {
         $temp{$1} = $2;
