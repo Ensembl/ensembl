@@ -252,11 +252,15 @@ sub _rna_edit {
   my $slice = shift;
   my $seq   = shift; #reference to string
 
-  my $offset = $slice->start;   #substr start at 0 , but seq starts at 1 (so no -1 here)
+  my $s_start = $slice->start;   #substr start at 0 , but seq starts at 1 (so no -1 here)
+  my $s_end = $s_start+length($$seq);
 
   foreach my $edit (@{$self->{_rna_edits_cache}->{$slice->get_seq_region_id}}){
     my ($start, $end, $txt) = split (/\s+/, $edit);
-    substr($$seq,$start-$offset, ($end-$start)+1, $txt);
+# check that RNA edit is not outside the requested region : happens quite often with LRG regions
+    next if ($end < $s_start);
+    next if ($s_end < $start);
+    substr($$seq,$start-$s_start, ($end-$start)+1, $txt);
   }
   return;
 }
