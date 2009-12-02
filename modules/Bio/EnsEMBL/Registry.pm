@@ -2300,6 +2300,16 @@ our %prefix_patterns = (
   'funcgen' => { '^%sR\d' => 'RegulatoryFeature', },
 );
 
+our @allowed_prefixes = (
+  'ENS',    # Standard Ensembl prefix.
+            # The rest are Ensembl Genomes prefixes.
+  'EB',
+  'EPr',
+  'EF',
+  'EPl',
+  'EM',
+);
+
 sub get_species_and_object_type {
   my ( $self, $stable_id ) = @_;
 
@@ -2331,17 +2341,28 @@ sub get_species_and_object_type {
       my $species = $dba->species();
 
       while ( $sth->fetch() ) {
-        if ( substr( $prefix, 0, 3 ) ne 'ENS' ) {
+        my $standard_prefix = 0;
+        foreach my $allowed_prefix (@allowed_prefixes) {
+          if (
+            substr( $prefix, 0, length($allowed_prefix) ) eq
+            $allowed_prefix )
+          {
+            $standard_prefix = 1;
+            last;
+          }
+        }
+
+        if ( !$standard_prefix ) {
           # These will be further queried if we find no match.
           push( @nonstandard_prefix_species, $species );
         } else {
-          $stable_id_prefix{$prefix} = $species;
+          if ( !exists( $stable_id_prefix{$prefix} ) ) {
+            $stable_id_prefix{$prefix} = [$species];
+          } else {
+            push( @{ $stable_id_prefix{$prefix} }, $species );
+          }
         }
-      }
 
-      if ( !defined($prefix) ) {
-        # There was no prefix in the meta table.
-        push( @nonstandard_prefix_species, $species );
       }
 
     } ## end foreach my $dba ( @{ $self->get_all_DBAdaptors...})
@@ -2351,9 +2372,9 @@ sub get_species_and_object_type {
 
 FIRSTLOOP:
   foreach my $group ( keys(%prefix_patterns) ) {
-    while ( my ( $prefix_pattern, $type ) =
-      each( %{ $prefix_patterns{$group} } ) )
+    foreach my $prefix_pattern ( keys( %{ $prefix_patterns{$group} } ) )
     {
+      my $type = $prefix_patterns{$group}{$prefix_pattern};
 
       if ( index( $prefix_pattern, '%s' ) == -1 ) {
         # The prefix pattern does not contain '%s', so we need not
@@ -2370,17 +2391,35 @@ FIRSTLOOP:
         # with the stable ID prefix read from the meta table of each
         # core database.
 
-        while ( my ( $prefix, $species ) = each(%stable_id_prefix) ) {
+        foreach my $prefix ( keys %stable_id_prefix ) {
+          my $species_array = $stable_id_prefix{$prefix};
           my $complete_pattern = sprintf( $prefix_pattern, $prefix );
 
           if ( $stable_id =~ /$complete_pattern/ ) {
-            @match = ( $species, $type, $group );
-            last FIRSTLOOP;
+            if ( scalar( @{$species_array} ) == 1 ) {
+              # Only one species possible for this prefix pattern.
+              @match = ( $species_array->[0], $type, $group );
+              last FIRSTLOOP;
+            } else {
+
+              # More than one possible species for this prefix pattern.
+              foreach my $species ( @{$species_array} ) {
+                my $adaptor =
+                  $self->get_adaptor( $species, $group, $type );
+                my $object = $adaptor->fetch_by_stable_id($stable_id);
+                if ( defined($object) ) {
+                  @match = ( $species, $type, $group );
+                  last FIRSTLOOP;
+                }
+              }
+
+            }
           }
         }
-      }
 
-    } ## end while ( my ( $prefix_pattern...))
+      } ## end else [ if ( index( $prefix_pattern...))]
+
+    } ## end foreach my $prefix_pattern ...
   } ## end foreach my $group ( keys(%prefix_patterns...))
 
   if (@match) { return @match }
@@ -2391,14 +2430,13 @@ FIRSTLOOP:
 
 SECONDLOOP:
   foreach my $species (@nonstandard_prefix_species) {
-    foreach my $type ( 'gene', 'transcript', 'translation', 'exon' ) {
+    foreach my $type ( 'Gene', 'Transcript', 'Translation', 'Exon' ) {
 
       my $adaptor = $self->get_adaptor( $species, 'Core', $type );
-
       my $object = $adaptor->fetch_by_stable_id($stable_id);
 
       if ( defined($object) ) {
-        @match = ( $species, $type, 'core' );
+        @match = ( $species, $type, 'Core' );
         last SECONDLOOP;
       }
 
