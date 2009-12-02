@@ -64,112 +64,106 @@ use Bio::EnsEMBL::Utils::Exception qw(warning throw  deprecate stack_trace_dump)
 #
 
 
-sub gen_load{
+sub gen_load {
   my ($dba) = @_;
   my $config_sub;
 
-# at some point we hope to set the group in the DBadaptor
-# hence this long check etc should be simpler
+  # At some point we hope to set the group in the DBadaptor, hence this
+  # long check etc. should be simpler.
 
-  if($dba->isa('Bio::EnsEMBL::Compara::DBSQL::DBAdaptor')){
-    if(!defined($dba->group())){
+  if ( $dba->isa('Bio::EnsEMBL::Compara::DBSQL::DBAdaptor') ) {
+    if ( !defined( $dba->group() ) ) {
       $dba->group('compara');
     }
-    $config_sub =  \&Bio::EnsEMBL::Utils::ConfigRegistry::load_compara; 
-  }
-  elsif($dba->isa('Bio::EnsEMBL::Lite::DBAdaptor')){
-    if(!defined($dba->group())){
+    $config_sub = \&Bio::EnsEMBL::Utils::ConfigRegistry::load_compara;
+  } elsif ( $dba->isa('Bio::EnsEMBL::Lite::DBAdaptor') ) {
+    if ( !defined( $dba->group() ) ) {
       $dba->group('lite');
     }
-    $config_sub =  \&Bio::EnsEMBL::Utils::ConfigRegistry::load_lite;
-  }
-  elsif($dba->isa('Bio::EnsEMBL::External::BlastAdaptor')){
-    if(!defined($dba->group())){
+    $config_sub = \&Bio::EnsEMBL::Utils::ConfigRegistry::load_lite;
+  } elsif ( $dba->isa('Bio::EnsEMBL::External::BlastAdaptor') ) {
+    if ( !defined( $dba->group() ) ) {
       $dba->group('blast');
     }
-    $config_sub =  \&Bio::EnsEMBL::Utils::ConfigRegistry::load_blast;
-  }
-  elsif($dba->isa('Bio::EnsEMBL::ExternalData::SNPSQL::DBAdaptor')){
-    if(!defined($dba->group())){
+    $config_sub = \&Bio::EnsEMBL::Utils::ConfigRegistry::load_blast;
+  } elsif ( $dba->isa('Bio::EnsEMBL::ExternalData::SNPSQL::DBAdaptor') )
+  {
+    if ( !defined( $dba->group() ) ) {
       $dba->group('SNP');
-    } 
-    $config_sub =  \&Bio::EnsEMBL::Utils::ConfigRegistry::load_SNP;
-  }
-  elsif($dba->isa('Bio::EnsEMBL::Pipeline::DBSQL::DBAdaptor')){
-    if(!defined($dba->group())){
+    }
+    $config_sub = \&Bio::EnsEMBL::Utils::ConfigRegistry::load_SNP;
+  } elsif ( $dba->isa('Bio::EnsEMBL::Pipeline::DBSQL::DBAdaptor') ) {
+    if ( !defined( $dba->group() ) ) {
       $dba->group('pipeline');
     }
-    $config_sub =  \&Bio::EnsEMBL::Utils::ConfigRegistry::load_pipeline;
-  }
-  elsif($dba->isa('Bio::EnsEMBL::Hive::DBSQL::DBAdaptor')){
-    if(!defined($dba->group())){
+    $config_sub = \&Bio::EnsEMBL::Utils::ConfigRegistry::load_pipeline;
+  } elsif ( $dba->isa('Bio::EnsEMBL::Hive::DBSQL::DBAdaptor') ) {
+    if ( !defined( $dba->group() ) ) {
       $dba->group('hive');
     }
-    $config_sub =  \&Bio::EnsEMBL::Utils::ConfigRegistry::load_hive;
-  }
-  elsif($dba->isa('Bio::EnsEMBL::ExternalData::Haplotype::DBAdaptor')){
-    if(!defined($dba->group())){
+    $config_sub = \&Bio::EnsEMBL::Utils::ConfigRegistry::load_hive;
+  } elsif (
+    $dba->isa('Bio::EnsEMBL::ExternalData::Haplotype::DBAdaptor') )
+  {
+    if ( !defined( $dba->group() ) ) {
       $dba->group('haplotype');
     }
-    $config_sub =  \&Bio::EnsEMBL::Utils::ConfigRegistry::load_haplotype;    
-  }
-  elsif($dba->isa('Bio::EnsEMBL::Variation::DBSQL::DBAdaptor')){
-    if(!defined($dba->group())){
+    $config_sub = \&Bio::EnsEMBL::Utils::ConfigRegistry::load_haplotype;
+  } elsif ( $dba->isa('Bio::EnsEMBL::Variation::DBSQL::DBAdaptor') ) {
+    if ( !defined( $dba->group() ) ) {
       $dba->group('variation');
     }
-    $config_sub =  \&Bio::EnsEMBL::Utils::ConfigRegistry::load_variation;
-  }
-  elsif($dba->isa('Bio::EnsEMBL::Funcgen::DBSQL::DBAdaptor')){
-    if(!defined($dba->group())){
+    $config_sub = \&Bio::EnsEMBL::Utils::ConfigRegistry::load_variation;
+  } elsif ( $dba->isa('Bio::EnsEMBL::Funcgen::DBSQL::DBAdaptor') ) {
+    if ( !defined( $dba->group() ) ) {
       $dba->group('funcgen');
-  }
-    $config_sub =  \&Bio::EnsEMBL::Utils::ConfigRegistry::load_funcgen;
-  }
-  elsif ( $dba->isa('Bio::Ensembl::DBSQL::OntologyTermAdaptor') ) {
+    }
+    $config_sub = \&Bio::EnsEMBL::Utils::ConfigRegistry::load_funcgen;
+  } elsif ( $dba->isa('Bio::Ensembl::DBSQL::OntologyTermAdaptor') ) {
     if ( !defined( $dba->group() ) ) {
       $dba->group('ontology');
     }
     $config_sub = \&Bio::EnsEMBL::Utils::ConfigRegistry::load_ontology;
-  }
-  elsif($dba->isa('Bio::EnsEMBL::DBSQL::DBAdaptor')){
+  } elsif ( $dba->isa('Bio::EnsEMBL::DBSQL::DBAdaptor') ) {
     #vega uses the core DBAdaptor so test if vega is in the dbname
-    if(!defined($dba->group())){
+    if ( !defined( $dba->group() ) ) {
       $dba->group('core');
     }
-    if($dba->group eq "estgene"){
-      $config_sub =  \&Bio::EnsEMBL::Utils::ConfigRegistry::load_estgene;
-     }
-    elsif($dba->group eq "otherfeatures"){
-      $config_sub =  \&Bio::EnsEMBL::Utils::ConfigRegistry::load_otherfeatures;
-     }
-    elsif($dba->group eq "vega"){
-      $config_sub =  \&Bio::EnsEMBL::Utils::ConfigRegistry::load_vega;
-     }
-    else{
-      $config_sub =  \&Bio::EnsEMBL::Utils::ConfigRegistry::load_core;
+
+    if ( $dba->group eq "estgene" ) {
+      $config_sub = \&Bio::EnsEMBL::Utils::ConfigRegistry::load_estgene;
+    } elsif ( $dba->group eq "otherfeatures" ) {
+      $config_sub =
+        \&Bio::EnsEMBL::Utils::ConfigRegistry::load_otherfeatures;
+    } elsif ( $dba->group eq "vega" ) {
+      $config_sub = \&Bio::EnsEMBL::Utils::ConfigRegistry::load_vega;
+    } else {
+      $config_sub = \&Bio::EnsEMBL::Utils::ConfigRegistry::load_core;
     }
-  }
-  else{
-    # none standard DBA adaptor 
-    if(!defined($dba->group())){
+
+  } else {
+    # none standard DBA adaptor
+    if ( !defined( $dba->group() ) ) {
       $dba->group('none_standard');
     }
-    $config_sub =  \&Bio::EnsEMBL::Utils::ConfigRegistry::load_and_attach_dnadb_to_core;
+    $config_sub =
+      \&Bio::EnsEMBL::Utils::ConfigRegistry::load_and_attach_dnadb_to_core;
     #    throw("Unknown DBAdaptor type $dba\n");
   }
 
-
   # return if the connection and species, group are the same
-
 
   if ( defined( $dba->species ) ) {
     my $db_reg = $reg->get_DBAdaptor( $dba->species, $dba->group );
     if ( defined($db_reg) ) {
       if ( $dba->dbc->equals( $db_reg->dbc ) ) { return $db_reg }
       else {
-        warn "WARN: Species and group same for two seperate databases\n"
-          . "Modify species name for one of these\n";
+        my $msg =
+          sprintf( 'WARN: Species (%s) and group (%s) '
+            . 'same for two seperate databases',
+          $dba->species(), $dba->group() );
 
+        warn "${msg}\nModify species name for one of these\n";
         $dba->species(
           find_unique_species( $dba->species, $dba->group ) );
       }
@@ -192,14 +186,14 @@ sub gen_load{
     }
   }
 
-
-  Bio::EnsEMBL::Registry->add_DBAdaptor($dba->species(), $dba->group(), $dba);
+  Bio::EnsEMBL::Registry->add_DBAdaptor( $dba->species(), $dba->group(),
+    $dba );
 
   #call the loading subroutine. (add the adaptors to the DBAdaptor)
   &{$config_sub}($dba);
-   
+
   return $dba;
-}
+} ## end sub gen_load
 
 
 
