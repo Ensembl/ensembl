@@ -455,9 +455,10 @@ sub generic_fetch {
   #append additional clauses which may have been defined
   $sql .= "\n$final_clause";
 
+
   # FOR DEBUG:
-#warn "SQL:\n$sql\n";
- #  printf(STDERR "SQL:\n%s\n", $sql);
+  # printf(STDERR "SQL:\n%s\n", $sql);
+
 
   my $sth = $db->dbc->prepare($sql);
   my $bind_parameters = $self->bind_param_generic_fetch();
@@ -471,8 +472,11 @@ sub generic_fetch {
       #after binding parameters, undef for future queries
       $self->{'_bind_param_generic_fetch'} = ();
   }
-#  print STDERR $sql,"\n";
-  $sth->execute;
+  eval { $sth->execute() };
+  if ($@) {
+    throw("Detected an error whilst executing SQL '${sql}': $@");
+  }
+
   my $res = $self->_objs_from_sth($sth, $mapper, $slice);
   $sth->finish();
   return $res;
