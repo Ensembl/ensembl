@@ -1105,6 +1105,38 @@ sub get_alias{
   return $registry_register{'_ALIAS'}{lc($key)};
 }
 
+=head2 get_all_aliases
+
+  Arg [1]    : Species name to retrieve aliases for
+               (may be an alias as well).
+  Example    : Bio::EnsEMBL::Registry->get_all_aliases('Homo sapiens');
+  Description: Returns all known aliases for a given species (but not the
+               species name/alias that was given).
+  Returntype : ArrayRef of all known aliases
+  Exceptions : none
+  Status     : Development
+
+=cut
+
+sub get_all_aliases {
+  my ( $class, $key ) = @_;
+
+  my $species = $registry_register{_ALIAS}{ lc($key) };
+
+  my @aliases;
+  if ( defined($species) ) {
+    foreach my $alias ( keys( %{ $registry_register{_ALIAS} } ) ) {
+      if ( $species ne $alias
+        && $species eq $registry_register{_ALIAS}{ lc($alias) } )
+      {
+        push( @aliases, $alias );
+      }
+    }
+  }
+
+  return \@aliases;
+}
+
 =head2 alias_exists
 
   Arg [1]    : name of the possible alias to get species for
