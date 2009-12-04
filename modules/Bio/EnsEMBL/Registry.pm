@@ -2428,8 +2428,13 @@ sub get_species_and_object_type {
 
       my $species = $dba->species();
 
+      my $fetched_something = 0;
+
       while ( $sth->fetch() ) {
+        $fetched_something = 1;
+
         my $standard_prefix = 0;
+
         foreach my $allowed_prefix (@allowed_prefixes) {
           if (
             substr( $prefix, 0, length($allowed_prefix) ) eq
@@ -2451,6 +2456,12 @@ sub get_species_and_object_type {
           }
         }
 
+      }
+
+      if ( !$fetched_something ) {
+        # This database didn't have a matching
+        # 'species.stable_id_prefix' key in its meta table.
+        push( @nonstandard_prefix_species, $species );
       }
 
     } ## end foreach my $dba ( @{ $self->get_all_DBAdaptors...})
