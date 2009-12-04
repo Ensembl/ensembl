@@ -2407,6 +2407,10 @@ sub get_species_and_object_type {
     foreach
       my $dba ( @{ $self->get_all_DBAdaptors( '-group' => 'core' ) } )
     {
+      my $species = $dba->species();
+
+      if ( lc($species) eq 'multi' ) { next }
+
       my $dbh = $dba->dbc()->db_handle();
 
       my $statement =
@@ -2425,8 +2429,6 @@ sub get_species_and_object_type {
 
       my $prefix;
       $sth->bind_columns( \($prefix) );
-
-      my $species = $dba->species();
 
       my $fetched_something = 0;
 
