@@ -334,6 +334,10 @@ sub bind_param_generic_fetch{
 	throw("Need to specify sql_type for parameter $param\n");
     }
     elsif (defined $param && defined $sql_type){
+	#check when there is a SQL_INTEGER type that the parameter is really a number
+	if ($sql_type eq SQL_INTEGER){
+	    throw "Trying to assign a non numerical parameter to an integer value in the database" if ($param !~ /^\d+$/);
+	}
 	#both paramters have been entered, push it to the bind_param array
 	push @{$self->{'_bind_param_generic_fetch'}},[$param,$sql_type];
     }
@@ -721,9 +725,9 @@ sub dump_data {
   my $dumper = Data::Dumper->new([$data]);
   $dumper->Indent(0);
   $dumper->Terse(1);
-  my $dump = $dumper->Dump();
-# $dump =~ s/'/\\'/g;
-# $dump =~ s/^\$VAR1 = //;
+   my $dump = $dumper->Dump();
+# $dump =~ s/'/\\'/g; 
+ # $dump =~ s/^\$VAR1 = //;
   return $dump;
 }
 
