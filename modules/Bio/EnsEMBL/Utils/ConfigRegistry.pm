@@ -167,9 +167,12 @@ sub gen_load{
     if ( defined($db_reg) ) {
       if ( $dba->dbc->equals( $db_reg->dbc ) ) { return $db_reg }
       else {
-        warn "WARN: Species and group same for two seperate databases\n"
-          . "Modify species name for one of these\n";
+        my $msg =
+          sprintf( 'WARN: Species (%s) and group (%s) '
+            . 'same for two seperate databases',
+          $dba->species(), $dba->group() );
 
+        warn "${msg}\nModify species name for one of these\n";
         $dba->species(
           find_unique_species( $dba->species, $dba->group ) );
       }

@@ -2648,19 +2648,19 @@ sub get_all_compara_Syntenies {
 	    "retrieve compara information");
     return [];
   }
-  my $binomial = $self->adaptor->db->get_MetaContainer->get_Species->binomial;
-  $qy_species =~ tr/_/ /;
-  my $mlssa = $compara_db->get_MethodLinkSpeciesSetAdaptor;
-  my $mlss = $mlssa->fetch_by_method_link_type_registry_aliases
-                    ($method_link_type,
-                     [ $binomial, $qy_species ]);
+  my $gdba = $compara_db->get_GenomeDBAdaptor();
+  my $mlssa = $compara_db->get_MethodLinkSpeciesSetAdaptor();
+  my $dfa = $compara_db->get_DnaFragAdaptor();
+  my $sra = $compara_db->get_SyntenyRegionAdaptor();
 
-  my $gdb = $compara_db->get_GenomeDBAdaptor->fetch_by_name_assembly($binomial);
-  my $dfa = $compara_db->get_DnaFragAdaptor;
-  my ($dnafrag) = @{$dfa->fetch_all_by_GenomeDB_region($gdb, $self->coord_system->name, $self->seq_region_name)};
-  my $sra = $compara_db->get_SyntenyRegionAdaptor;
+  my $this_gdb = $gdba->fetch_by_core_DBAdaptor($self->adaptor()->db());
+  my $query_gdb = $gdba->fetch_by_registry_name($qy_species);
+  my $mlss = $mlssa->fetch_by_method_link_type_GenomeDBs($method_link_type, [$this_gdb, $query_gdb]);
 
-  return $sra->fetch_by_MethodLinkSpeciesSet_DnaFrag($mlss,$dnafrag,$self->start, $self->end);
+  my $cs = $self->coord_system()->name();
+  my $sr = $self->seq_region_name();
+  my ($dnafrag) = @{$dfa->fetch_all_by_GenomeDB_region($this_gdb, $cs, $sr)};
+  return $sra->fetch_by_MethodLinkSpeciesSet_DnaFrag($mlss, $dnafrag, $self->start, $self->end);
 }
 
 =head2 get_all_Haplotypes
