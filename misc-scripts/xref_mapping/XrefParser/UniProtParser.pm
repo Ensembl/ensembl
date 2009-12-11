@@ -218,6 +218,7 @@ sub create_xrefs {
 # MGI data needed---------------------------------------------------------
 #
   my %mgi_acc_to_desc;
+  my %mgi_acc_to_label;
   my %mgi_label_to_desc;
   my %mgi_label_to_acc;
 
@@ -226,6 +227,7 @@ sub create_xrefs {
   $sth->execute() or croak( $self->dbi()->errstr() );
   while ( my @row = $sth->fetchrow_array() ) {
     $mgi_acc_to_desc{$row[0]}   = $row[2];
+    $mgi_acc_to_label{$row[0]}  = $row[1];
     $mgi_label_to_desc{$row[1]} = $row[2];
     $mgi_label_to_acc{$row[1]}  = $row[0];
   }
@@ -511,6 +513,9 @@ sub create_xrefs {
                next;  # no extra info gained and it could now link to different MGI
             }
 	    $dep{LABEL} = $extra[0];
+	    if(defined($mgi_acc_to_label{$acc})){
+	      $dep{LABEL} = $mgi_acc_to_label{$acc};
+	    }
 	    if(defined($mgi_acc_to_desc{$acc})){
 	      $dep{DESCRIPTION} = $mgi_acc_to_desc{$acc};
 	    }
