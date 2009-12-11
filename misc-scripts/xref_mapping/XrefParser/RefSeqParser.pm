@@ -37,11 +37,7 @@ sub run {
   $verbose       = shift;
 
   my @files = @{$files_ref};
-  my $release_file;
 
-    if ( $files[-1] =~ /RefSeq-release/ ) {
-        $release_file = pop @files;
-    }
 
     my $peptide_source_id =
       $self->get_source_id_for_source_name('RefSeq_peptide');
@@ -85,9 +81,9 @@ sub run {
         return 1;    # error
     }
 
-    if ( defined $release_file ) {
+    if ( defined $rel_file ) {
         # Parse and set release info.
-        my $release_io = $self->get_filehandle($release_file);
+        my $release_io = $self->get_filehandle($rel_file);
         local $/ = "\n*";
         my $release = $release_io->getline();
         $release_io->close();
