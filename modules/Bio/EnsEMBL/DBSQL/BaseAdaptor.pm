@@ -471,11 +471,8 @@ sub generic_fetch {
       #after binding parameters, undef for future queries
       $self->{'_bind_param_generic_fetch'} = ();
   }
-  eval { $sth->execute() };
-  if ($@) {
-    throw("Detected an error whilst executing SQL '${sql}': $@");
-  }
-
+#  print STDERR $sql,"\n";
+  $sth->execute;
   my $res = $self->_objs_from_sth($sth, $mapper, $slice);
   $sth->finish();
   return $res;
