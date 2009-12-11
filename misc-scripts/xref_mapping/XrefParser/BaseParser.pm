@@ -648,8 +648,7 @@ sub fetch_files {
 
             my $ftp = Net::FTP->new( $uri->host(), 'Debug' => 0 );
             if ( !defined($ftp) ) {
-                printf( "==> Can not open FTP connection: %s\n",
-                        $ftp->message() );
+                printf( "==> Can not open FTP connection: %s\n", $@ );
                 return ();
             }
 
