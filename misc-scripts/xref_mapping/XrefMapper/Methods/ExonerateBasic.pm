@@ -9,8 +9,7 @@ use File::Basename;
 use IPC::Open3;
 
 # Path to exonerate executable
-#my $exonerate_path = "/usr/local/ensembl/bin/exonerate-0.9.0";
-my $exonerate_path = "/rubbish/software/ensembl/bin/exonerate-1.4.0"; #  remove rubbish after wards as just to test
+my $exonerate_path = "/usr/local/ensembl/bin/exonerate-0.9.0";
 
 sub new {
 
