@@ -441,12 +441,14 @@ CREATE TABLE transcript (
   status                      ENUM('KNOWN', 'NOVEL', 'PUTATIVE', 'PREDICTED', 'KNOWN_BY_PROJECTION', 'UNKNOWN'),
   description                 TEXT,
   is_current                  BOOLEAN NOT NULL DEFAULT 1,
+  canonical_translation_id    INT(10) UNSIGNED,
 
   PRIMARY KEY (transcript_id),
   KEY seq_region_idx (seq_region_id, seq_region_start),
   KEY gene_index (gene_id),
   KEY xref_id_index (display_xref_id),
-  KEY analysis_idx (analysis_id)
+  KEY analysis_idx (analysis_id),
+  UNIQUE INDEX canonical_translation_idx (canonical_translation_id)
 
 ) COLLATE=latin1_swedish_ci TYPE=MyISAM;
 
@@ -840,6 +842,7 @@ INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patc
 INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_56_57_b.sql|affy_analysis_tidy');
 INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_56_57_c.sql|external_db_type_enum');
 INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_56_57_d.sql|allow_meta_null');
+INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_56_57_e.sql|canonical_translations');
 
 
 ################################################################################
