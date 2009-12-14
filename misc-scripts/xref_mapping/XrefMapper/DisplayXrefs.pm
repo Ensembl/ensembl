@@ -27,6 +27,7 @@ sub gene_description_sources {
 
   return ("RFAM",
 	  "miRBase",
+          "HGNC",
           "IMGT/GENE_DB",
 	  "Uniprot/SWISSPROT",
 	  "RefSeq_peptide",
@@ -1094,8 +1095,9 @@ SQL
   $ins_p_sth->finish;
   $get_source_id_sth->finish;
 
+
 #
-# Set status to 'FAILED_CUTOFF' for those that match the ignore REGEXP in object_xref
+# Set status to 'NO_DISPLAY' for those that match the ignore REGEXP in object_xref
 # Xrefs have already been dump to core etc so no damage done.
 #
 
@@ -1208,6 +1210,14 @@ DXS
   $display_xref_sth->finish;
   $update_gene_sth->finish;
   $update_tran_sth->finish;
+
+  #
+  # reset the staus to DUMP_OUT fro thise that where ignored for the display_xref;
+  #
+
+  my $reset_status_sth = $self->xref->dbc->prepare('UPDATE object_xref SET ox_status = "DUMP_OUT" where ox_status = "NO_DISPLAY"');
+  $reset_status_sth->execute();
+  $reset_status_sth->finish;
 
   $sth = $self->xref->dbc->prepare("drop table display_xref_prioritys");
   $sth->execute || die "Could not drop temp table display_xref_prioritys\n";
