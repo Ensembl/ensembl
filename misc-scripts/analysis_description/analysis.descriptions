@@ -347,6 +347,8 @@
 358	refseq_human_import	Human RefSeq gene models from <a rel="external" href="http://www.ncbi.nlm.nih.gov/RefSeq/">NCBI RefSeq</a> were imported into Ensembl in June 2009.	Human RefSeq import	1	{'label_key' => '[text_label] [display_label]','label' => '[text_label] [display_label]','colour_key' => '[biotype]'}
 359	turkey_est	Meleagris gallopavo 'Expressed Sequence Tags' (ESTs) from <a rel="external" href="http://www.ncbi.nlm.nih.gov/dbEST/">dbEST</a> are aligned to the genome using <a rel="external" href="http://www.biomedcentral.com/1471-2105/6/31">Exonerate</a>.	Turkey EST	1	{'type'=>'est'}
 360	turkey_cDNA	Turkey cDNAs from <a rel="external" href="http://www.ncbi.nlm.nih.gov/RefSeq/">NCBI RefSeq</a> and <a rel="external" href="http://www.ebi.ac.uk/embl/">EMBL</a> are aligned to the genome using <a rel="external" href="http://www.biomedcentral.com/1471-2105/6/31">Exonerate</a>.	turkey cDNA	1	{'type' => 'cdna','default' => {'contigviewbottom' => 'stack'}}
+361     rabbit_est      Oryctolagus cuniculus 'Expressed Sequence Tags' (ESTs) from <a rel="external" href="http://www.ncbi.nlm.nih.gov/dbEST/">dbEST</a> are aligned to the genome using <a rel="external" href="http://www.biomedcentral.com/1471-2105/6/31">Exonerate</a>.     Rabbit EST      1       {'type'=>'est'}
+362     rabbit_cdna     Rabbit cDNAs from <a rel="external" href="http://www.ncbi.nlm.nih.gov/RefSeq/">NCBI RefSeq</a> and <a rel="external" href="http://www.ebi.ac.uk/embl/">EMBL</a> are aligned to the genome using <a rel="external" href="http://www.biomedcentral.com/1471-2105/6/31">Exonerate</a>.     Rabbit cDNA     1       {'type' => 'cdna','default' => {'contigviewbottom' => 'stack'}}
 
 
 #add new entries for core databases above, the following are for functional genomics
