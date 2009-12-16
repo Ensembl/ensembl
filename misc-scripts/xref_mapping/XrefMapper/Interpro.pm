@@ -35,10 +35,13 @@ sub process{
   $object_xref_id++;
 
   my $add_object_xref_sth = $self->xref->dbc->prepare('insert into object_xref (object_xref_id, ensembl_id,ensembl_object_type, xref_id, linkage_type, ox_status, master_xref_id ) values (?, ?, ?, ?, ?, "DUMP_OUT", ?)');
+
   local $add_object_xref_sth->{RaiseError}; #catch duplicates
   local $add_object_xref_sth->{PrintError}; # cut down on error messages
   
   my $add_go_xref_sth = $self->xref->dbc->prepare('insert into go_xref (object_xref_id, linkage_type) values (?, ?)'); 
+
+  my $ins_ix_sth = $self->xref->dbc->prepare("insert into identity_xref (object_xref_id, query_identity, target_identity) values(?, 100, 100)");
 
   # Get a mapping of protein domains to ensembl translations for
   # interpro dependent xrefs
@@ -83,6 +86,7 @@ sub process{
 	    die "Problem adding object xref for interpro data\n";
 	  }
 	}
+	$ins_ix_sth->execute($object_xref_id);
 	$added{$dx_source_id}++;
 	$oxref_count++;
 	if($go_linkage){
@@ -97,6 +101,7 @@ sub process{
 	#
 	my @master_xref_ids;
 	push @master_xref_ids, $dx_xref_id;
+	$object_xref_id++;
 	while (my $new_master_id = pop(@master_xref_ids)){
 	  $dep_sth->execute($new_master_id);
 	  my $dep_xref_id;
@@ -109,7 +114,8 @@ sub process{
 	      if($link){
 		$add_go_xref_sth->execute($object_xref_id, $link );
 	      }
-	    }
+	      $ins_ix_sth->execute($object_xref_id);
+	    }	    
 	    $object_xref_id++;
 	  }
 	}
