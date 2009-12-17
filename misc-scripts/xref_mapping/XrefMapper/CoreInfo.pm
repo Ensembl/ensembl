@@ -145,10 +145,11 @@ sub get_core_data {
  
 
  my $ins_go_sth = $self->xref->dbc->prepare("insert into go_xref (object_xref_id, linkage_type, source_xref_id) values(?,?,?)");
+ my $insert_go_sth = $self->xref->dbc->prepare("insert into go_xref (object_xref_id, linkage_type) values(?,?)");
  my $dep_sth    = $self->xref->dbc->prepare("select dependent_xref_id, linkage_annotation from dependent_xref where master_xref_id = ?");
 
 my $stable_sql=(<<SQL);
-  SELECT so.name, dx.general_xref_id, s.internal_id, dx.ensembl_stable_id 
+  SELECT so.name, dx.general_xref_id, s.internal_id, dx.ensembl_stable_id , dx.linkage_xref
     FROM source so, xref x, TYPE_direct_xref dx left join TYPE_stable_id s on s.stable_id = dx.ensembl_stable_id
       WHERE x.xref_id = dx.general_xref_id and x.source_id = so.source_id 
 SQL
@@ -156,12 +157,12 @@ SQL
  my %err_count;
  
  foreach my $table (qw(gene transcript translation)){
-   my ($dbname, $xref_id, $internal_id, $stable_id);
+   my ($dbname, $xref_id, $internal_id, $stable_id, $linkage_type);
    my $sql = $stable_sql;
    $sql =~ s/TYPE/$table/g;
    my $sth = $self->xref->dbc->prepare($sql);
    $sth->execute();
-   $sth->bind_columns(\$dbname, \$xref_id, \$internal_id, \$stable_id);
+   $sth->bind_columns(\$dbname, \$xref_id, \$internal_id, \$stable_id, \$linkage_type);
    my $count =0;
    my $duplicate_direct_count = 0;
    my $duplicate_dependent_count = 0;
@@ -189,6 +190,9 @@ SQL
      else{
        $ins_ix_sth->execute($object_xref_id);
        push  @master_xref_ids, $xref_id;
+     }
+     if(defined($linkage_type) and $linkage_type ne ""){
+       $insert_go_sth->execute($object_xref_id, $linkage_type);
      }
      while(my $master_xref_id = pop(@master_xref_ids)){
        my ($dep_xref_id, $link);
@@ -235,7 +239,6 @@ SQL
  $sth = $self->xref->dbc->prepare("insert into process_status (status, date) values('direct_xrefs_parsed',now())");
  $sth->execute();
  $sth->finish;
-
 
 
 }
