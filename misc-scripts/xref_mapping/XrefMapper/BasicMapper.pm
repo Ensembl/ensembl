@@ -1173,7 +1173,6 @@ sub biomart_fix{
   
   print "Therefore moving all associations from $from to ".$to."\n" if($self->verbose);
   
-  
 
   my $sql =(<<EOF);
   UPDATE IGNORE object_xref, gene_transcript_translation, xref, source
@@ -1189,7 +1188,23 @@ EOF
   my $result =  $xref_dbc->do($sql) ;
 #  print "\n$sql\n";
 
-  $sql =(<<EOF2);
+  if($db_name eq "GO"){
+    $sql =(<<EOF2);
+  DELETE object_xref, identity_xref, go_xref
+    FROM object_xref, xref, source, identity_xref, go_xref
+      WHERE object_xref.ensembl_object_type = "$from" AND
+        identity_xref.object_xref_id = object_xref.object_xref_id AND
+	xref.xref_id = object_xref.xref_id AND
+          go_xref.object_xref_id = object_xref.object_xref_id AND
+	  xref.source_id = source.source_id AND
+            object_xref.ox_status = "DUMP_OUT"  AND
+	      source.name = "$db_name";
+EOF2
+    
+  $result = $xref_dbc->do($sql);  
+  }
+  else{
+    $sql =(<<EOF3);
   DELETE object_xref, identity_xref
     FROM object_xref, xref, source, identity_xref
       WHERE object_xref.ensembl_object_type = "$from" AND
@@ -1198,9 +1213,10 @@ EOF
 	  xref.source_id = source.source_id AND
             object_xref.ox_status = "DUMP_OUT"  AND
 	      source.name = "$db_name";
-EOF2
+EOF3
     
   $result = $xref_dbc->do($sql);
+  }
 #  print "\n$sql\n";
 }
 
