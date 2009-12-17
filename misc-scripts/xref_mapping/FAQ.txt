@@ -96,9 +96,16 @@ Answers
       user=user2
       password=pass2
       dir=./ensembl_dir
+
+      farm
+      queue=long
+      exonerate=/software/ensembl/bin/exonerate-1.4.0
       ####################################################
       Note that the Directorys specified must exist when the mapping is done.
 
+      The farm options are totally optional and can be left out but may be needed
+      if you have different queue names or have exonerate installed not in the 
+      default place
 
       Now we can do the mapping.
       Ideally this should be done in two steps so that after the first step you 
