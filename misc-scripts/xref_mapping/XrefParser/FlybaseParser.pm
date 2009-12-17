@@ -290,7 +290,7 @@ sub run {
           $xref_ids{$source_name}{$accession} = $xref_id;
         }
 
-        $self->add_direct_xref( $xref_id, $id, $type, '' );
+        $self->add_direct_xref( $xref_id, $id, $type, 'IEA' );
       }
     }
 
