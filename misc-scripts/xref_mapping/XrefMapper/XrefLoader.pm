@@ -86,9 +86,14 @@ sub update{
   }
   $sth->finish;
 
-  $sth = $self->xref->dbc->prepare("update xref set dumped = null"); # just incase this is being ran again
+
+  # 100 is the dumped status for the dumpoed status for the "FAILED_PRIORIY"'s do not clear these.
+  $sth = $self->xref->dbc->prepare("update xref set dumped = null where dumped != 100"); # just incase this is being ran again
   $sth->execute;
   $sth->finish;
+
+
+
   
   ######################################
   # For each external_db to be updated #
@@ -222,11 +227,12 @@ GSQL
      my $add_go_xref_sth        = $self->core->dbc->prepare('insert into go_xref (object_xref_id, linkage_type) values (?, ?)');
      my $add_dependent_xref_sth = $self->core->dbc->prepare('insert ignore into dependent_xref (object_xref_id, master_xref_id, dependent_xref_id) values (?, ?, ?)');
      my $add_syn_sth            = $self->core->dbc->prepare('insert ignore into external_synonym (xref_id, synonym) values (?, ?)');
+     my $add_release_info_sth   = $self->core->dbc->prepare('update external_db set db_release = ? where external_db_id = ?');
 
-  $sth = $self->xref->dbc->prepare('select s.name, s.source_id, count(*), x.info_type, s.priority_description from xref x, object_xref ox, source s where ox.xref_id = x.xref_id  and x.source_id = s.source_id and ox_status = "DUMP_OUT" group by s.name, s.source_id, x.info_type');
+  $sth = $self->xref->dbc->prepare('select s.name, s.source_id, count(*), x.info_type, s.priority_description, s.source_release from xref x, object_xref ox, source s where ox.xref_id = x.xref_id  and x.source_id = s.source_id and ox_status = "DUMP_OUT" group by s.name, s.source_id, x.info_type');
   $sth->execute();
-  my ($type, $source_id, $where_from);
-  $sth->bind_columns(\$name,\$source_id, \$count, \$type, \$where_from);
+  my ($type, $source_id, $where_from, $release_info);
+  $sth->bind_columns(\$name,\$source_id, \$count, \$type, \$where_from, \$release_info);
  
   $transaction_start_sth->execute();
 
@@ -357,11 +363,14 @@ GSQL
       $syn_sth->finish;
 
       my $xref_dumped_sth = $self->xref->dbc->prepare("update xref set dumped = 2 where xref_id in (".join(", ",@xref_list).")");
-      $xref_dumped_sth->execute(); 
+      $xref_dumped_sth->execute() || die "Could not set dumped status"; 
       $xref_dumped_sth->finish;
     }	
  
-
+    # Update the core databases release in for source form the xref database
+    if(defined($release_info) and $release_info ne "1"){
+       $add_release_info_sth->execute($release_info, $ex_id) || die "Failed to add release info **$release_info** for external source $ex_id\n";
+    }
   }
   $sth->finish;
   $transaction_end_sth->execute();
@@ -559,7 +568,7 @@ MIS
   #############
 
   $sql = (<<DEP);
-    SELECT  x.xref_id, x.accession, x.version, x.label, x.description, x.info_type, x.info_text, s.name, mx.accession 
+    SELECT  distinct x.xref_id, x.accession, x.version, x.label, x.description, x.info_type, x.info_text, s.name, mx.accession 
       FROM xref mx, source s, xref x 
           LEFT JOIN dependent_xref dx ON  dx.dependent_xref_id = x.xref_id
           LEFT JOIN object_xref ox ON ox.xref_id = x.xref_id
@@ -568,7 +577,7 @@ MIS
           AND x.dumped is null 
           AND ox.ox_status != 'FAILED_PRIORITY'
           AND x.info_type = 'DEPENDENT'
-          ORDER BY x.xref_id
+          ORDER BY s.name, x.accession
 DEP
 
   my $dep_unmapped_sth = $self->xref->dbc->prepare($sql);
@@ -579,13 +588,13 @@ DEP
   $set_unmapped_sth  =  $self->core->dbc->prepare("insert into unmapped_object (type, analysis_id, external_db_id, identifier, unmapped_reason_id, parent ) values ('xref', ?, ?, ?, '".$reason_id{"MASTER_FAILED"}."', ?)");
 
   @xref_list = ();
-  my $last_xref= 0;
+  my $last_acc= 0;
   while($dep_unmapped_sth->fetch()){
     my $ex_id = $name_to_external_db_id{$dbname};
-    if($last_xref != $xref_id){
+    if($last_acc ne $acc){
       $add_xref_sth->execute(($xref_id+$xref_offset), $ex_id, $acc, $label||$acc, $version, $desc, $type, $info);   
     }
-    $last_xref = $xref_id;
+    $last_acc = $acc;
     $set_unmapped_sth->execute($analysis_id, $ex_id, $acc, $parent);
     push @xref_list, $xref_id;
   }
@@ -630,7 +639,7 @@ SEQ
 
 
   @xref_list = ();
-  $last_xref = 0;
+  my $last_xref = 0;
   while($seq_unmapped_sth->fetch()){
     my $ex_id = $name_to_external_db_id{$dbname};
     if($last_xref != $xref_id){
@@ -673,7 +682,7 @@ SEQ
   # (e.g. EntrezGene, WikiGene, MIN_GENE, MIM_MORBID)
 
  $sql = (<<WEL);
-    SELECT  x.xref_id, x.accession, x.version, x.label, x.description, x.info_type, x.info_text, s.name
+    SELECT  distinct x.xref_id, x.accession, x.version, x.label, x.description, x.info_type, x.info_text, s.name
       FROM source s, xref x 
         WHERE x.source_id = s.source_id 
           AND x.dumped is null 
