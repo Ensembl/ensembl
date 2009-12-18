@@ -349,6 +349,8 @@
 360	turkey_cDNA	Turkey cDNAs from <a rel="external" href="http://www.ncbi.nlm.nih.gov/RefSeq/">NCBI RefSeq</a> and <a rel="external" href="http://www.ebi.ac.uk/embl/">EMBL</a> are aligned to the genome using <a rel="external" href="http://www.biomedcentral.com/1471-2105/6/31">Exonerate</a>.	turkey cDNA	1	{'type' => 'cdna','default' => {'contigviewbottom' => 'stack'}}
 361	rabbit_est	Oryctolagus cuniculus 'Expressed Sequence Tags' (ESTs) from <a rel="external" href="http://www.ncbi.nlm.nih.gov/dbEST/">dbEST</a> are aligned to the genome using <a rel="external" href="http://www.biomedcentral.com/1471-2105/6/31">Exonerate</a>.	Rabbit EST	1	{'type'=>'est'}
 362	rabbit_cdna	Rabbit cDNAs from <a rel="external" href="http://www.ncbi.nlm.nih.gov/RefSeq/">NCBI RefSeq</a> and <a rel="external" href="http://www.ebi.ac.uk/embl/">EMBL</a> are aligned to the genome using <a rel="external" href="http://www.biomedcentral.com/1471-2105/6/31">Exonerate</a>.	Rabbit cDNA	1	{'type' => 'cdna','default' => {'contigviewbottom' => 'stack'}}
+363	rabbit_protein	Rabbit proteins from <a rel="external" href="http://www.ncbi.nlm.nih.gov/RefSeq/">NCBI RefSeq</a> and <a rel="external" href="http://uniprot.org">UniProtKB/TrEMBL</a> are aligned to the genome using <a rel="external" href="http://genome.cshlp.org/cgi/content/abstract/14/5/988?maxtoshow=&amp;HITS=10&amp;hits=10&amp;RESULTFORMAT=&amp;andorexactfulltext=and&amp;searchid=1&amp;FIRSTINDEX=0&amp;sortspec=relevance&amp;volume=14&amp;firstpage=988&amp;resourcetype=HWCIT">GeneWise</a>.	Rabbit prot.	1
+
 
 
 #add new entries for core databases above, the following are for functional genomics
