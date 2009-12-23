@@ -577,35 +577,40 @@ foreach my $spec (@todo) {
     my $check_failed = 0;
 
     foreach my $table (@tables) {
-      my @check_cmd = (
-        $executables{'myisamchk'},
-        '--force',
-        '--check',
-        '--check-only-changed',
-        '--update-state',
-        '--silent',
-        '--silent',    # Yes, twice.
-        catfile( $staging_dir, $table ) );
-
-      if ( system(@check_cmd) != 0 ) {
-        $check_failed = 1;
-
-        warn(
-          sprintf(
-            "Failed to check some tables. "
-              . "Is this an InnoDB database maybe?\n"
-              . "Please clean up '%s'.\n",
-            $staging_dir
-          ) );
-
-        $spec->{'status'} = sprintf(
-          "FAILED: MYISAM table check failed "
-            . "(cleanup of '%s' may be needed).",
-          $staging_dir
+      foreach
+        my $index ( glob( catfile( $staging_dir, $table, '*.MYI' ) ) )
+      {
+        my @check_cmd = (
+          $executables{'myisamchk'},
+          '--force',
+          '--check',
+          '--check-only-changed',
+          '--update-state',
+          '--silent',
+          '--silent',    # Yes, twice.
+          $index
         );
 
-        last;
-      }
+        if ( system(@check_cmd) != 0 ) {
+          $check_failed = 1;
+
+          warn(
+            sprintf(
+              "Failed to check some tables. "
+                . "Is this an InnoDB database maybe?\n"
+                . "Please clean up '%s'.\n",
+              $staging_dir
+            ) );
+
+          $spec->{'status'} = sprintf(
+            "FAILED: MYISAM table check failed "
+              . "(cleanup of '%s' may be needed).",
+            $staging_dir
+          );
+
+          last;
+        }
+      } ## end foreach my $index ( glob( catfile...))
     } ## end foreach my $table (@tables)
 
     if ($check_failed) { next }
@@ -643,7 +648,7 @@ foreach my $spec (@todo) {
 
   foreach my $table ( @tables ) {
     my @files =
-      glob( catfile( $staging_dir, sprintf( "%s.*", $table ) ) );
+      glob( catfile( $staging_dir, sprintf( "%s*", $table ) ) );
 
     printf( "Moving %s...\n", $table );
 
