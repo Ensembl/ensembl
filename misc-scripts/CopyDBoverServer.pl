@@ -107,13 +107,10 @@ Script restrictions:
 
   1. You must run the script on the destination server.
 
-  2. The script will only allow copying databases between a preset set
-     of servers.
-
-  3. The script must be run as the 'mysqlens' Unix user.  Talk to a
+  2. The script must be run as the 'mysqlens' Unix user.  Talk to a
      recent release coordinator for access.
 
-  4. The script will only copy MYISAM tables.  Databases with InnoDB
+  3. The script will only copy MYISAM tables.  Databases with InnoDB
      tables will have to be copied manually using mysqldump.  InnoDB
      tables will make the script throw an error in the table checking
      stage.
@@ -194,8 +191,8 @@ $run_hostname =~ s/\..+//;    # Cut off everything but the first part.
 
 ##====================================================================##
 ##  Read the configuration file line by line and try to validate all  ##
-##  parts of each line.  Store the validated in the @todo list (a     ##
-##  list of hashes) for later processing.                             ##
+##  parts of each line.  Store the validated information in the @todo ##
+##  list (a list of hashes) for later processing.                     ##
 ##====================================================================##
 
 my $in = IO::File->new( '<' . $input_file )
