@@ -567,9 +567,12 @@ sub find_common_coord_systems {
 
   SOURCE:
   foreach my $s_cs (@s_coord_systems) {
-    
+    if ( !$s_cs->is_default() ) { next SOURCE }
+
     TARGET:
     foreach my $t_cs (@t_coord_systems) {
+      if ( !$t_cs->is_default() ) { next TARGET }
+
       if ($s_cs->name eq $t_cs->name) {
 
         # test for identical coord_system version
