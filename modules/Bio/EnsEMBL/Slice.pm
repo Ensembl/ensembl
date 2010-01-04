@@ -845,7 +845,13 @@ sub _constrain_to_region {
 
   my $new_slice;
   if($left_contract || $right_contract) {
-    $new_slice = $self->expand($left_contract, $right_contract);
+      #if slice in negative strand, need to swap contracts
+      if ($self->strand == 1) {
+	  $new_slice = $self->expand($left_contract, $right_contract);
+      }
+      elsif ($self->strand == -1) {
+	  $new_slice = $self->expand($right_contract, $left_contract);
+      }
   } else {
     $new_slice = $self;
   }
