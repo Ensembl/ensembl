@@ -574,8 +574,8 @@ foreach my $spec (@todo) {
     my $check_failed = 0;
 
     foreach my $table (@tables) {
-      foreach
-        my $index ( glob( catfile( $staging_dir, $table, '*.MYI' ) ) )
+      foreach my $index (
+        glob( catfile( $staging_dir, sprintf( '%s*.MYI', $table ) ) ) )
       {
         my @check_cmd = (
           $executables{'myisamchk'},
