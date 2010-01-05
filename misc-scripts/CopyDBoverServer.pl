@@ -496,7 +496,9 @@ foreach my $spec (@todo) {
   # copy too, and because it has good inclusion/exclusion filter
   # options.
 
-  my @copy_cmd = ( $executables{'rsync'}, '--archive', '--progress' );
+  my @copy_cmd =
+    ( $executables{'rsync'}, '--whole-file', '--archive',
+    '--progress' );
 
   if ($opt_force) {
     push( @copy_cmd, '--delete', '--delete-excluded' );
@@ -579,7 +581,6 @@ foreach my $spec (@todo) {
       {
         my @check_cmd = (
           $executables{'myisamchk'},
-          '--force',
           '--check',
           '--check-only-changed',
           '--update-state',
@@ -692,7 +693,16 @@ foreach my $spec (@todo) {
     $spec->{'source_db'}, $spec->{'target_db'}, $spec->{'status'} );
 }
 
-print("DONE!\n\n");
+print <<EOT;
+DONE!
+
+For best peace of mind, run analyze_db.ksh with the -c flag ('check') on
+these databases.  Use the -R flag ('repair') if anything was flagged as
+corrupt or crashed.  The analyze_db.ksh script lives in
+
+  ensembl-personal/release_coordination/scripts/
+
+EOT
 
 END {
   my $seconds = time() - $start_time;
