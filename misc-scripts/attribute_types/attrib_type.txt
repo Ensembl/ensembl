@@ -319,3 +319,8 @@
 # They can be deleted out of transcript_attrib and attrib_type table 
 
 190	GeneNo_lincRNA	lincRNA Gene Count	Number of lincRNA Genes
+
+# StopGained and StopLost are transcript attributes. 
+191	StopGained	SNP causes stop codon to be gained	This transcript has a variant that causes a stop codon to be gained in at least 10 percent of a HapMap population
+192	StopLost	SNP causes stop codon to be lost	This transcript has a variant that causes a stop codon to be lost in at least 10 percent of a HapMap population
+
