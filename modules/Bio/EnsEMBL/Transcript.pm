@@ -108,65 +108,75 @@ use vars qw(@ISA);
 =cut
 
 sub new {
-  my ($class) = shift;
+  my $proto = shift;
 
-  if (ref $class) { 
-      $class = ref $class;
-  }
+  my $class = ref($proto) || $proto;
 
   my $self = $class->SUPER::new(@_);
 
-  my ( $exons, $stable_id, $version, $external_name, $external_db,
-       $external_status, $display_xref, $created_date, $modified_date,
-       $description, $biotype, $confidence, $external_db_name, $status,
-       $is_current );
+  my (
+    $exons,            $stable_id,    $version,
+    $external_name,    $external_db,  $external_status,
+    $display_xref,     $created_date, $modified_date,
+    $description,      $biotype,      $confidence,
+    $external_db_name, $status,       $is_current
+  );
 
-  #catch for old style constructor calling:
-  if((@_ > 0) && ref($_[0])) {
+  # Catch for old style constructor calling:
+  if ( ( @_ > 0 ) && ref( $_[0] ) ) {
     $exons = [@_];
-    deprecate("Transcript constructor should use named arguments.\n" .
-              'Use Bio::EnsEMBL::Transcript->new(-EXONS => \@exons);' .
-              "\ninstead of Bio::EnsEMBL::Transcript->new(\@exons);");
-}
-  else {
-      ( $exons, $stable_id, $version, $external_name, $external_db,
-	$external_status, $display_xref, $created_date, $modified_date,
-	$description, $biotype, $confidence, $external_db_name, $status,
-	$is_current ) = 
-	    rearrange( [ "EXONS", 'STABLE_ID', 'VERSION', 'EXTERNAL_NAME', 
-			 'EXTERNAL_DB', 'EXTERNAL_STATUS', 'DISPLAY_XREF',
-			 'CREATED_DATE', 'MODIFIED_DATE', 'DESCRIPTION',
-			 'BIOTYPE', 'CONFIDENCE', 'EXTERNAL_DB_NAME', 'STATUS',
-			 'IS_CURRENT' ], @_ );
+    deprecate( "Transcript constructor should use named arguments.\n"
+        . "Use Bio::EnsEMBL::Transcript->new(-EXONS => \@exons);\n"
+        . "instead of Bio::EnsEMBL::Transcript->new(\@exons);" );
+  } else {
+    (
+      $exons,            $stable_id,    $version,
+      $external_name,    $external_db,  $external_status,
+      $display_xref,     $created_date, $modified_date,
+      $description,      $biotype,      $confidence,
+      $external_db_name, $status,       $is_current
+      )
+      = rearrange( [
+        'EXONS',            'STABLE_ID',
+        'VERSION',          'EXTERNAL_NAME',
+        'EXTERNAL_DB',      'EXTERNAL_STATUS',
+        'DISPLAY_XREF',     'CREATED_DATE',
+        'MODIFIED_DATE',    'DESCRIPTION',
+        'BIOTYPE',          'CONFIDENCE',
+        'EXTERNAL_DB_NAME', 'STATUS',
+        'IS_CURRENT'
+      ],
+      @_
+      );
   }
-  
-  if( $exons ) {
+
+  if ($exons) {
     $self->{'_trans_exon_array'} = $exons;
     $self->recalculate_coordinates();
   }
 
-  $self->stable_id( $stable_id );
-  $self->version( $version );
-  $self->{'created_date'} = $created_date;
+  $self->stable_id($stable_id);
+  $self->version($version);
+  $self->{'created_date'}  = $created_date;
   $self->{'modified_date'} = $modified_date;
-  $self->external_name( $external_name ) if( defined $external_name );
-  $self->external_db( $external_db ) if( defined $external_db );
-  $self->external_status( $external_status ) if( defined $external_status );
-  $self->display_xref( $display_xref ) if( defined $display_xref );
+  $self->external_name($external_name) if ( defined $external_name );
+  $self->external_db($external_db)     if ( defined $external_db );
+  $self->external_status($external_status)
+    if ( defined $external_status );
+  $self->display_xref($display_xref) if ( defined $display_xref );
   $self->edits_enabled(1);
 
-  $self->description( $description );
-  $self->status( $confidence );  # old style name
-  $self->status( $status );      # new style name
-  $self->biotype( $biotype );
+  $self->description($description);
+  $self->status($confidence);    # old style name
+  $self->status($status);        # new style name
+  $self->biotype($biotype);
 
   # default is_current
-  $is_current = 1 unless (defined($is_current));
+  $is_current = 1 unless ( defined($is_current) );
   $self->{'is_current'} = $is_current;
 
   return $self;
-}
-
+} ## end sub new
 
 =head2 get_all_DBLinks
 
