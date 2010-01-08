@@ -208,7 +208,7 @@ CREATE TABLE simple_feature (
   seq_region_start            INT(10) UNSIGNED NOT NULL,
   seq_region_end              INT(10) UNSIGNED NOT NULL,
   seq_region_strand           TINYINT(1) NOT NULL,
-  display_label               VARCHAR(40) NOT NULL,
+  display_label               VARCHAR(128) NOT NULL,
   analysis_id                 SMALLINT UNSIGNED NOT NULL,
   score                       DOUBLE,
 
@@ -843,6 +843,7 @@ INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patc
 INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_56_57_c.sql|external_db_type_enum');
 INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_56_57_d.sql|allow_meta_null');
 INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_56_57_e.sql|canonical_translations');
+INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_56_57_f.sql|simple_feature.display_label');
 
 
 ################################################################################
