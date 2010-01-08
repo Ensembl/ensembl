@@ -5,10 +5,10 @@
 # Description:
 # The display_label field of the simple_feature table needs to be
 # expanded from 40 characters to be able to hold some of the data
-# imported from Encode for the human datbase.
+# imported from Encode for the human database.
 
 ALTER TABLE simple_feature
-MODIFY COLUMN display_label VARCHAR(128) NOT NULL;
+MODIFY COLUMN display_label VARCHAR(255) NOT NULL;
 
 OPTIMIZE TABLE simple_feature;
 

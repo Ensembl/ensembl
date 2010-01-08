@@ -208,7 +208,7 @@ CREATE TABLE simple_feature (
   seq_region_start            INT(10) UNSIGNED NOT NULL,
   seq_region_end              INT(10) UNSIGNED NOT NULL,
   seq_region_strand           TINYINT(1) NOT NULL,
-  display_label               VARCHAR(128) NOT NULL,
+  display_label               VARCHAR(255) NOT NULL,
   analysis_id                 SMALLINT UNSIGNED NOT NULL,
   score                       DOUBLE,
 
