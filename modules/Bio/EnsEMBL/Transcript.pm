@@ -1177,7 +1177,7 @@ sub get_all_Exons {
 
   my $constitutive;
   if (@args) {
-    $constitutive = rearrange( 'CONSTITUTIVE', @args );
+    $constitutive = rearrange( ['CONSTITUTIVE'], @args );
   }
 
   if (!defined( $self->{'_trans_exon_array'} )
