@@ -129,9 +129,17 @@ my $reg = "Bio::EnsEMBL::Registry";
 sub new {
   my $class = shift;
 
-  my ($db,$host,$driver,$user,$password,$port, $inactive_disconnect, $dbconn, $wait_timeout) =
-    rearrange([qw(DBNAME HOST DRIVER USER PASS PORT 
-                  DISCONNECT_WHEN_INACTIVE DBCONN WAIT_TIMEOUT)], @_);
+  my (
+    $db,                  $host,     $driver,
+    $user,                $password, $port,
+    $inactive_disconnect, $dbconn,   $wait_timeout
+    )
+    = rearrange( [
+      'DBNAME', 'HOST', 'DRIVER', 'USER', 'PASS', 'PORT',
+      'DISCONNECT_WHEN_INACTIVE', 'DBCONN', 'WAIT_TIMEOUT'
+    ],
+    @_
+    );
 
   my $self = {};
   bless $self, $class;
@@ -358,15 +366,18 @@ sub query_count {
 =cut
 
   
-sub equals{
-  my ($self, $dbc) = @_;
+sub equals {
+  my ( $self, $dbc ) = @_;
 
-
-  if($dbc->host() eq $self->host and $dbc->dbname() eq $self->dbname
-     and $dbc->driver() eq $self->driver and $dbc->port() eq $self->port
-     and $dbc->username() eq $self->username){
+  if ( $dbc->host() eq $self->host()
+    && $dbc->dbname()   eq $self->dbname()
+    && $dbc->driver()   eq $self->driver()
+    && $dbc->port()     eq $self->port()
+    && $dbc->username() eq $self->username() )
+  {
     return 1;
   }
+
   return 0;
 }
 
@@ -411,11 +422,13 @@ sub driver {
 =cut
 
 sub port {
-  my ($self, $arg) = @_;
+  my ( $self, $value ) = @_;
 
-  (defined $arg) && 
-    ($self->{_port} = $arg );
-  return $self->{_port};
+  if ( defined($value) ) {
+    $self->{'_port'} = $value;
+  }
+
+  return $self->{'_port'};
 }
 
 
@@ -571,12 +584,12 @@ sub disconnect_when_inactive {
 
 
 sub locator {
-  my $self = shift;
+  my ($self) = @_;
 
-  my $ref = ref($self);
-
-  return "$ref/host=".$self->host.";port=".$self->port.";dbname=".
-    $self->dbname.";user=".$self->username.";pass=".$self->password;
+  return sprintf(
+    "%s/host=%s;port=%s;dbname=%s;user=%s;pass=%s",
+    ref($self),      $self->host(),     $self->port(),
+    $self->dbname(), $self->username(), $self->password() );
 }
 
 
