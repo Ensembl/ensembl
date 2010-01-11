@@ -115,7 +115,6 @@ Script restrictions:
      tables will make the script throw an error in the table checking
      stage.
 
-  4. Partitioned tables are currently copied but always fail checking
 
 EOT
 } ## end sub long_usage
@@ -597,7 +596,7 @@ foreach my $spec (@todo) {
           warn(
             sprintf(
               "Failed to check some tables. "
-                . "Is this an InnoDB database, or maybe your have partitioned tables?\n"
+                . "Is this an InnoDB database maybe?\n"
                 . "Please clean up '%s'.\n",
               $staging_dir
             ) );
