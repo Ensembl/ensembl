@@ -16,13 +16,13 @@ use FindBin;
 my ( $host, $user, $pass, $port, @dbnames, $file, $release_num,
      $nobackup,$forceTableWrite );
 
-GetOptions( "host=s",        \$host,
-            "user=s",        \$user,
-            "pass=s",        \$pass,
-            "port=i",        \$port,
+GetOptions( "dbhost|host=s",        \$host,
+            "dbuser|user=s",        \$user,
+            "dbpass|pass=s",        \$pass,
+            "dbport|port=i",        \$port,
             "file=s",        \$file,
             "nobackup",      \$nobackup,
-            "dbnames=s@",    \@dbnames,
+            "dbname|dbnames=s@",    \@dbnames,
             "release_num=i", \$release_num,
 	    "force_table_write", \$forceTableWrite);
 
