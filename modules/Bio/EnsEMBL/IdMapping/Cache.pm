@@ -750,7 +750,7 @@ sub get_db_privs {
     my $sth = $dbc->prepare($sql);
     $sth->execute();
     $rs = $sth->fetchall_arrayref();
-    $sth->finish();
+    #$sth->finish();
   };
 
   if ($@) {
