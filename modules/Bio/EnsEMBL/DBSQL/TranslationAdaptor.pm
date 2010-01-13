@@ -79,6 +79,108 @@ use Bio::EnsEMBL::Utils::Exception qw( throw warning deprecate );
 
 
 
+=head2 fetch_all_by_Transcript
+
+  Arg [1]    : Bio::EnsEMBL::Transcript $transcript
+  Example    :
+
+    @tl = @{ $translation_adaptor->fetch_by_Transcript($transcript) };
+
+  Description: Retrieves all Translation associated with a
+               particular transcript.  If no Translation is found, a
+               reference to an empty list is returned.
+  Returntype : listref of Bio::EnsEMBL::Translation
+  Exceptions : throw on incorrect argument
+  Caller     : Transcript
+  Status     : Stable
+
+=cut
+
+sub fetch_all_by_Transcript {
+  my ( $self, $transcript ) = @_;
+
+  if (
+    !(
+      ref($transcript) && $transcript->isa('Bio::EnsEMBL::Transcript') )
+    )
+  {
+    throw('Bio::EnsEMBL::Transcript argument is required.');
+  }
+
+  my $lsi_created_date =
+    $self->db()->dbc()->from_date_to_seconds('tlsi.created_date');
+  my $lsi_modified_date =
+    $self->db()->dbc()->from_date_to_seconds('tlsi.modified_date');
+
+  my $sql =
+    sprintf( "SELECT tl.translation_id, tl.start_exon_id, "
+      . "tl.end_exon_id, tl.seq_start, tl.seq_end, "
+      . "tlsi.stable_id, tlsi.version, %s, %s "
+      . "FROM translation tl "
+      . "LEFT JOIN translation_stable_id tlsi "
+      . "ON (tlsi.translation_id = tl.translation_id) "
+      . "WHERE tl.transcript_id = ?",
+    $lsi_created_date, $lsi_modified_date );
+
+  my $transcript_id = $transcript->dbID();
+  my $sth           = $self->prepare($sql);
+  $sth->bind_param( 1, $transcript_id, SQL_INTEGER );
+
+  $sth->execute();
+
+  my (
+    $translation_id, $start_exon_id, $end_exon_id,
+    $seq_start,      $seq_end,       $stable_id,
+    $version,        $created_date,  $modified_date
+  );
+
+  $sth->bind_columns(
+    \(
+      $translation_id, $start_exon_id, $end_exon_id,
+      $seq_start,      $seq_end,       $stable_id,
+      $version,        $created_date,  $modified_date
+    ) );
+
+  my @translations = ();
+  while ( $sth->fetch() ) {
+    if ( !defined($translation_id) ) { next }
+
+    my ( $start_exon, $end_exon );
+
+    # this will load all the exons whenever we load the translation
+    # but I guess thats ok ....
+
+    foreach my $exon ( @{ $transcript->get_all_Exons() } ) {
+      if ( $exon->dbID() == $start_exon_id ) { $start_exon = $exon }
+      if ( $exon->dbID() == $end_exon_id )   { $end_exon   = $exon }
+    }
+
+    if ( !( defined($start_exon) && defined($end_exon) ) ) {
+      throw(
+        sprintf(
+          "Could not find start or end exon in transcript_id=%d\n",
+          $transcript->dbID() ) );
+    }
+
+    push(
+      @translations,
+      Bio::EnsEMBL::Translation->new_fast( {
+          'dbID'          => $translation_id,
+          'adaptor'       => $self,
+          'start'         => $seq_start,
+          'end'           => $seq_end,
+          'start_exon'    => $start_exon,
+          'end_exon'      => $end_exon,
+          'stable_id'     => $stable_id,
+          'version'       => $version,
+          'created_date'  => $created_date || undef,
+          'modified_date' => $modified_date || undef
+        } ) );
+  } ## end while ( $sth->fetch() )
+
+  return \@translations;
+} ## end sub fetch_all_by_Transcript
+
 =head2 fetch_by_Transcript
 
   Arg [1]    : Bio::EnsEMBL::Transcript $transcript
@@ -95,73 +197,77 @@ use Bio::EnsEMBL::Utils::Exception qw( throw warning deprecate );
 sub fetch_by_Transcript {
   my ( $self, $transcript ) = @_;
 
-  if(!ref($transcript) || !$transcript->isa('Bio::EnsEMBL::Transcript')) {
-    throw("Bio::EnsEMBL::Transcript argument is required.");
+  if (
+    !(
+      ref($transcript) && $transcript->isa('Bio::EnsEMBL::Transcript') )
+    )
+  {
+    throw('Bio::EnsEMBL::Transcript argument is required.');
   }
 
-  my $lsi_created_date = $self->db->dbc->from_date_to_seconds("tlsi.created_date");
-  my $lsi_modified_date = $self->db->dbc->from_date_to_seconds("tlsi.modified_date");
+  my $lsi_created_date =
+    $self->db()->dbc()->from_date_to_seconds('tlsi.created_date');
+  my $lsi_modified_date =
+    $self->db()->dbc()->from_date_to_seconds('tlsi.modified_date');
 
-  my $sql = "
-    SELECT tl.translation_id, tl.start_exon_id,
-           tl.end_exon_id, tl.seq_start, tl.seq_end,
-           tlsi.stable_id, tlsi.version, " . $lsi_created_date . ", ". $lsi_modified_date . 
-	   " FROM translation tl
- LEFT JOIN translation_stable_id tlsi
-        ON tlsi.translation_id = tl.translation_id
-     WHERE tl.transcript_id = ?";
+  my $sql =
+    sprintf( "SELECT tl.translation_id, tl.start_exon_id, "
+      . "tl.end_exon_id, tl.seq_start, tl.seq_end, "
+      . "tlsi.stable_id, tlsi.version, %s, %s "
+      . "FROM translation tl "
+      . "JOIN transcript tr "
+      . "ON (tl.translation_id = tr.canonical_translation_id) "
+      . "LEFT JOIN translation_stable_id tlsi "
+      . "ON (tlsi.translation_id = tl.translation_id) "
+      . "WHERE tr.transcript_id = ?",
+    $lsi_created_date, $lsi_modified_date );
 
   my $transcript_id = $transcript->dbID();
-  my $sth = $self->prepare($sql);
-  $sth->bind_param(1,$transcript_id,SQL_INTEGER);
+  my $sth           = $self->prepare($sql);
+  $sth->bind_param( 1, $transcript_id, SQL_INTEGER );
 
   $sth->execute();
 
-  my ( $translation_id, $start_exon_id, $end_exon_id,
-       $seq_start, $seq_end, $stable_id, $version, $created_date, 
-       $modified_date ) = 
-	 $sth->fetchrow_array();
-  $sth->finish;
-  if( ! defined $translation_id ) {
-    return undef;
-  }
+  my (
+    $translation_id, $start_exon_id, $end_exon_id,
+    $seq_start,      $seq_end,       $stable_id,
+    $version,        $created_date,  $modified_date
+  ) = $sth->fetchrow_array();
+  $sth->finish();
 
-  my ($start_exon, $end_exon);
+  if ( !defined($translation_id) ) { return undef }
+
+  my ( $start_exon, $end_exon );
 
   # this will load all the exons whenever we load the translation
   # but I guess thats ok ....
 
-  foreach my $exon (@{$transcript->get_all_Exons()}) {
-    if($exon->dbID() == $start_exon_id ) {
-      $start_exon = $exon;
-    }
-
-    if($exon->dbID() == $end_exon_id ) {
-      $end_exon = $exon;
-    }
+  foreach my $exon ( @{ $transcript->get_all_Exons() } ) {
+    if ( $exon->dbID() == $start_exon_id ) { $start_exon = $exon }
+    if ( $exon->dbID() == $end_exon_id )   { $end_exon   = $exon }
   }
 
-  unless($start_exon && $end_exon) {
-     throw("Could not find start or end exon in transcript_id=".$transcript->dbID."\n");
+  if ( !( defined($start_exon) && defined($end_exon) ) ) {
+    throw(
+      sprintf( "Could not find start or end exon in transcript_id=%d\n",
+        $transcript->dbID() ) );
   }
 
-  my $translation = Bio::EnsEMBL::Translation->new_fast
-      ({
-     'dbID' => $translation_id,
-     'adaptor' => $self,
-     'start' => $seq_start,
-     'end' => $seq_end,
-     'start_exon' => $start_exon,
-     'end_exon' => $end_exon,
-     'stable_id' => $stable_id,
-     'version' => $version,
-     'created_date' => $created_date || undef,
-     'modified_date' => $modified_date || undef
-     }
-   );
+  my $translation = Bio::EnsEMBL::Translation->new_fast( {
+      'dbID'          => $translation_id,
+      'adaptor'       => $self,
+      'start'         => $seq_start,
+      'end'           => $seq_end,
+      'start_exon'    => $start_exon,
+      'end_exon'      => $end_exon,
+      'stable_id'     => $stable_id,
+      'version'       => $version,
+      'created_date'  => $created_date || undef,
+      'modified_date' => $modified_date || undef
+  } );
 
   return $translation;
-}
+} ## end sub fetch_by_Transcript
 
 
 
@@ -534,11 +640,11 @@ sub list_stable_ids {
   Arg [1]    : int $dbID
                The internal identifier of the Translation to obtain
   Example    : $translation = $translation_adaptor->fetch_by_dbID(1234);
-  Description: This fetches a Translation object via its internal id.  This
-               is only debatably useful since translations do not make much
-               sense outside of the context of their Translation.  Consider
-               using fetch_by_Transcript instead.
-  Returntype : Bio::EnsEMBL::Translation or undef if the translation is not
+  Description: This fetches a Translation object via its internal id.
+               This is only debatably useful since translations do
+               not make much sense outside of the context of their
+               Transcript.  Consider using fetch_by_Transcript instead.
+  Returntype : Bio::EnsEMBL::Translation, or undef if the translation is not
                found.
   Exceptions : warning if an additional (old style) Transcript argument is
                provided
@@ -573,10 +679,10 @@ sub fetch_by_dbID {
   Arg [1]    : string $stable_id
                The stable identifier of the Translation to obtain
   Example    : $translation = $translation_adaptor->fetch_by_stable_id("ENSP00001");
-  Description: This fetches a Translation object via its stable id.  This
-               is only debatably useful since translations do not make much
-               sense outside of the context of their Translation.  Consider
-               using fetch_by_Transcript instead.
+  Description: This fetches a Translation object via its stable id.
+               This is only debatably useful since translations do
+               not make much sense outside of the context of their
+               Transcript.  Consider using fetch_by_Transcript instead.
   Returntype : Bio::EnsEMBL::Translation or undef if the translation is not
                found.
   Exceptions : warning if an additional (old style) Transcript argument is
