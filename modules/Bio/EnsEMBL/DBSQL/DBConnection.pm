@@ -554,16 +554,15 @@ sub password {
 =cut
 
 sub disconnect_when_inactive {
-  my $self = shift;
+  my ( $self, $value ) = @_;
 
-  if(@_) {
-    my $val = shift;
-    $self->{'disconnect_when_inactive'} = $val;
-    if($val) {
+  if ( defined($value) ) {
+    $self->{'disconnect_when_inactive'} = $value;
+    if ($value) {
       $self->disconnect_if_idle();
     }
   }
-  
+
   return $self->{'disconnect_when_inactive'};
 }
 
