@@ -11,6 +11,7 @@ CREATE TABLE `transcript` (
   `status` enum('KNOWN','NOVEL','PUTATIVE','PREDICTED','KNOWN_BY_PROJECTION') collate latin1_bin default NULL,
   `description` text collate latin1_bin,
   `is_current` BOOLEAN DEFAULT 1,
+  `canonical_translation_id` int(10) unsigned,
   PRIMARY KEY  (`transcript_id`),
   KEY `seq_region_idx` (`seq_region_id`,`seq_region_start`),
   KEY `gene_index` (`gene_id`),
