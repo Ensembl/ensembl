@@ -1574,6 +1574,40 @@ sub get_all_VariationFeatures_with_annotation{
   }
 }
 
+=head2 get_all_VariationFeatures_by_VariationSet
+
+    Arg [1]     : Bio::EnsEMBL:Variation::VariationSet $set
+    Description :returns all variation features on this slice associated with a given set.
+                 This function will only work correctly if the variation database has been
+                 attached to the core database.
+    ReturnType : listref of Bio::EnsEMBL::Variation::VariationFeature
+    Exceptions : none
+    Caller     : contigview, snpview
+    Status     : At Risk
+               : Variation database is under development.
+
+=cut
+
+sub get_all_VariationFeatures_by_VariationSet {
+  my $self = shift;
+  my $set = shift;
+
+  if(!$self->adaptor()) {
+    warning('Cannot get variation features without attached adaptor');
+    return [];
+  }
+
+  my $vf_adaptor = Bio::EnsEMBL::DBSQL::MergedAdaptor->new(-species => $self->adaptor()->db()->species, -type => "VariationFeature");
+  if( $vf_adaptor ) {
+  	return $vf_adaptor->fetch_all_by_Slice_VariationSet($self, $set);
+  }
+  else {
+       warning("Variation database must be attached to core database to " .
+ 		"retrieve variation information" );
+    return [];
+  }
+}
+
 =head2 get_all_StructuralVariations
 
     Arg[1]       : $source [optional]
