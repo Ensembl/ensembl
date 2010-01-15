@@ -76,24 +76,8 @@ if ($seq_region_name) {
   my $slice =
     $sa->fetch_by_region( $coord_system, $seq_region_name, $include_non_ref );
   push( @$slices, $slice );
-
-  my $update_to_null = q(
-    UPDATE gene
-       SET canonical_transcript_id = NULL,
-           canonical_annotation = NULL
-     WHERE seq_region_id = ?);
-  my $seq_region_id = $slice->get_seq_region_id;
-
-  my $sth = $db->dbc->prepare($update_to_null);
-  $sth->bind_param(1, $seq_region_id, SQL_INTEGER);
-  $sth->execute();
-
 } else {
   $slices = $sa->fetch_all( $coord_system, '', $include_non_ref );
-
-  my $update_to_null = q(update gene set canonical_transcript_id = NULL, canonical_annotation = NULL);
-  $db->dbc->do($update_to_null);
-  # get $db->dbc->db_handle->do($update_to_null) instead if above not working
 }
 
 my $gene_update_sql = "update gene set canonical_transcript_id = ? where gene_id = ?";
