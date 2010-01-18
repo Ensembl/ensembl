@@ -302,17 +302,43 @@ sub type_variation {
     }
   }
 
+  # get a transcript mapper object
   my $tm = $tr->get_TranscriptMapper();
-  my @coords = $tm->genomic2cdna($var->start,
-                                 $var->end,
-                                 $var->strand);
+  
+  # map to CDNA coords
+  my @cdna_coords = $tm->genomic2cdna($var->start,$var->end,$var->strand);
+
+  # map to CDS cooords
+  my @cds_coords = $tm->genomic2cds($var->start, $var->end,$var->strand);
+  
+  # map to peptide coords
+  my @pep_coords = $tm->genomic2pep($var->start, $var->end, $var->strand);
+  
+  
+  # check for partial codon consequence
+  if(@cds_coords == 1) {
+	
+	# get the CDS sequence
+	my $cds = $tr->translateable_seq();
+	
+	my $start = $cds_coords[0]->start();
+	
+	if($start <= length($cds)) {
+	  my $test_seq = substr($cds, $start-1);
+	
+	  if(length($test_seq) < 3) {
+		$var->type("PARTIAL_CODON");
+		return [$var];
+	  }
+	}
+  }
+  
 
   # Handle simple cases where the variation is not split into parts.
   # Call method recursively with component parts in complicated case.
   # E.g. a single multi-base variation may be both intronic and coding
-
-
-  if(@coords > 1) {
+  
+  if(@cdna_coords > 1) {
     my @out;
     #this will be a new type, complex_indel
     $var->type('COMPLEX_INDEL');
@@ -330,6 +356,7 @@ sub type_variation {
 
   }
 
+  # look at different splice distances
   my @coords_splice_2 = $tm->genomic2cdna($var->start -2, $var->end +2, $var->strand);
   my @coords_splice_3 = $tm->genomic2cdna($var->start -3, $var->end +3, $var->strand);
   my @coords_splice_8 = $tm->genomic2cdna($var->start -8, $var->end +8, $var->strand);
@@ -347,7 +374,7 @@ sub type_variation {
   }
   
 
-  my $c = $coords[0];
+  my $c = $cdna_coords[0];
   if($c->isa('Bio::EnsEMBL::Mapper::Gap')) {
 
     # check if the variation is completely outside the transcript:
@@ -395,9 +422,7 @@ sub type_variation {
   $var->cdna_start( $c->start() );
   $var->cdna_end( $c->end() );
 
-  @coords = $tm->genomic2cds($var->start, $var->end,$var->strand);
-
-  if(@coords > 1) {
+  if(@cds_coords > 1) {
 #    my @out;
       #this is a new type, complex_indel
       $var->type('COMPLEX_INDEL');
@@ -413,7 +438,7 @@ sub type_variation {
 #     return \@out;
   }
 
-  $c = $coords[0];
+  $c = $cds_coords[0];
 
   if($c->isa('Bio::EnsEMBL::Mapper::Gap')) {
     # mapped successfully to CDNA but not to CDS, must be UTR
@@ -430,17 +455,20 @@ sub type_variation {
     return [$var];
   }
   
-  $var->cds_start( $c->start() );
-  $var->cds_end( $c->end() );
+  # get the phase of the first exon
+  my $exon_phase = $tr->start_Exon->phase;
+  
+  # we need to add the exon phase on in case of weird transcripts
+  # where the first exon is not in normal phase
+  $var->cds_start( $c->start() + ($exon_phase > 0 ? $exon_phase : 0));
+  $var->cds_end( $c->end() + ($exon_phase > 0 ? $exon_phase : 0));
 
-  @coords = $tm->genomic2pep($var->start, $var->end, $var->strand);
 
-
-  if(@coords != 1 || $coords[0]->isa('Bio::EnsEMBL::Mapper::Gap')) {
+  if(@pep_coords != 1 || $pep_coords[0]->isa('Bio::EnsEMBL::Mapper::Gap')) {
     throw("Unexpected: Could map to CDS but not to peptide coordinates.");
   }
 
-  $c = $coords[0];
+  $c = $pep_coords[0];
 
   $var->aa_start( $c->start());
   $var->aa_end( $c->end());
@@ -484,11 +512,16 @@ sub apply_aa_change {
   my $var_len = $var->cds_end - $var->cds_start + 1;
 
   my @aa_alleles = ($old_aa);
+  
+  my $ref_codon = substr($mrna, $codon_cds_start-1, $codon_len);
+  my @codons;
+  push @codons, $ref_codon;
 
   #here could generate multi type if have multi-allele change: "ACTAGT/-/T"
   foreach my $a (@alleles) {
     $a =~ s/\-//;
     my $cds = $tr->translateable_seq();
+	
     if($var_len != length($a)) {
       if(abs(length($a) - $var_len) % 3) {
         # frameshifting variation, do not set peptide_allele string
@@ -505,11 +538,14 @@ sub apply_aa_change {
     }
 
     my $new_aa;
-
+	
+	# change sequence
     substr($cds, $var->cds_start-1, $var_len) = $a;
 	
+	# get the new codon
     my $codon_str = substr($cds, $codon_cds_start-1, $codon_len + length($a)-$var_len);
     
+	push @codons, $codon_str;
     $var->codon($codon_str); #add the codon to the ConsequenceType object
     my $codon_seq = Bio::Seq->new(-seq      => $codon_str,
 				  -moltype  => 'dna',
@@ -543,6 +579,7 @@ sub apply_aa_change {
     $var->type('SYNONYMOUS_CODING');
   }
 
+  #$var->codons(\@codons);
   $var->aa_alleles(\@aa_alleles);
 }
 
