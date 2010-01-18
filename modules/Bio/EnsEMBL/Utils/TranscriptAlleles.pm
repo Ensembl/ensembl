@@ -314,6 +314,9 @@ sub type_variation {
   # map to peptide coords
   my @pep_coords = $tm->genomic2pep($var->start, $var->end, $var->strand);
   
+  # get the phase of the first exon
+  my $exon_phase = $tr->start_Exon->phase;
+  
   
   # check for partial codon consequence
   if(@cds_coords == 1) {
@@ -322,12 +325,18 @@ sub type_variation {
 	my $cds = $tr->translateable_seq();
 	
 	my $start = $cds_coords[0]->start();
+	my $end = $cds_coords[0]->end();
 	
 	if($start <= length($cds)) {
 	  my $test_seq = substr($cds, $start-1);
 	
 	  if(length($test_seq) < 3) {
 		$var->type("PARTIAL_CODON");
+		
+		# add the CDS coords
+		$var->cds_start($start + ($exon_phase > 0 ? $exon_phase : 0));
+		$var->cds_end($end + ($exon_phase > 0 ? $exon_phase : 0));
+		
 		return [$var];
 	  }
 	}
@@ -454,9 +463,6 @@ sub type_variation {
     }
     return [$var];
   }
-  
-  # get the phase of the first exon
-  my $exon_phase = $tr->start_Exon->phase;
   
   # we need to add the exon phase on in case of weird transcripts
   # where the first exon is not in normal phase
