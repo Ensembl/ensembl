@@ -319,23 +319,25 @@ sub type_variation {
   
   
   # check for partial codon consequence
-  if(@cds_coords == 1) {
+  if(@pep_coords == 1) {
 	
 	# get the CDS sequence
 	my $cds = $tr->translateable_seq();
 	
-	my $start = $cds_coords[0]->start();
-	my $end = $cds_coords[0]->end();
+	my $start = $pep_coords[0]->start();
+	my $codon_cds_start = ($start * 3) - 2;
+	
+	my $end = $pep_coords[0]->end();
 	
 	if($start <= length($cds)) {
-	  my $test_seq = substr($cds, $start-1);
-	
+	  my $test_seq = substr($cds, $codon_cds_start-1);
+	  
 	  if(length($test_seq) < 3) {
 		$var->type("PARTIAL_CODON");
 		
 		# add the CDS coords
-		$var->cds_start($start + ($exon_phase > 0 ? $exon_phase : 0));
-		$var->cds_end($end + ($exon_phase > 0 ? $exon_phase : 0));
+		$var->cds_start($cds_coords[0]->start + ($exon_phase > 0 ? $exon_phase : 0));
+		$var->cds_end($cds_coords[0]->end + ($exon_phase > 0 ? $exon_phase : 0));
 		
 		return [$var];
 	  }
