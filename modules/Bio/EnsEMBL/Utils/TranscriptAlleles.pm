@@ -327,20 +327,20 @@ sub type_variation {
 	my $start = $pep_coords[0]->start();
 	my $codon_cds_start = ($start * 3) - 2;
 	
-	my $end = $pep_coords[0]->end();
+	my $last_codon_length = length($cds) - ($codon_cds_start - 1);
 	
-	if($start <= length($cds)) {
-	  my $test_seq = substr($cds, $codon_cds_start-1);
+	if($last_codon_length < 3 && $last_codon_length >= 0) {
+	  $var->type("PARTIAL_CODON");
+		
+	  # add the CDS coords
+	  $var->cds_start($cds_coords[0]->start + ($exon_phase > 0 ? $exon_phase : 0));
+	  $var->cds_end($cds_coords[0]->end + ($exon_phase > 0 ? $exon_phase : 0));
 	  
-	  if(length($test_seq) < 3) {
-		$var->type("PARTIAL_CODON");
-		
-		# add the CDS coords
-		$var->cds_start($cds_coords[0]->start + ($exon_phase > 0 ? $exon_phase : 0));
-		$var->cds_end($cds_coords[0]->end + ($exon_phase > 0 ? $exon_phase : 0));
-		
-		return [$var];
-	  }
+	  # add the cDNA coords
+	  $var->cdna_start($cdna_coords[0]->start);
+	  $var->cdna_end($cdna_coords[0]->end);
+	  
+	  return [$var];
 	}
   }
   
