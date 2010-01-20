@@ -329,7 +329,7 @@ sub type_variation {
 	
 	my $last_codon_length = length($cds) - ($codon_cds_start - 1);
 	
-	if($last_codon_length < 3 && $last_codon_length >= 0) {
+	if($last_codon_length < 3 && $last_codon_length > 0) {
 	  $var->type("PARTIAL_CODON");
 		
 	  # add the CDS coords
