@@ -317,9 +317,13 @@ sub type_variation {
   # get the phase of the first exon
   my $exon_phase = $tr->start_Exon->phase;
   
-  
   # check for partial codon consequence
-  if(@pep_coords == 1) {
+  if(
+	 @pep_coords == 1
+	 && @cds_coords == 1
+	 && !($cds_coords[0]->isa('Bio::EnsEMBL::Mapper::Gap'))
+	 && !($pep_coords[0]->isa('Bio::EnsEMBL::Mapper::Gap'))
+  ) {
 	
 	# get the CDS sequence
 	my $cds = $tr->translateable_seq();
@@ -331,7 +335,7 @@ sub type_variation {
 	
 	if($last_codon_length < 3 && $last_codon_length > 0) {
 	  $var->type("PARTIAL_CODON");
-		
+	  
 	  # add the CDS coords
 	  $var->cds_start($cds_coords[0]->start + ($exon_phase > 0 ? $exon_phase : 0));
 	  $var->cds_end($cds_coords[0]->end + ($exon_phase > 0 ? $exon_phase : 0));
