@@ -2064,10 +2064,10 @@ sub find_and_add_aliases {
 sub load_registry_from_multiple_dbs {
   my ( $self, @args ) = @_;
 
-  my %merged_register;
+  my %merged_register = %registry_register;
 
   foreach my $arg (@args) {
-    local %registry_register = %registry_register;
+    local %registry_register;
 
     my $verbose;
 
