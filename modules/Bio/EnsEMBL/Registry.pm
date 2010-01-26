@@ -1813,6 +1813,11 @@ sub load_registry_from_db {
                   database handles stored in the DBAdaptors.  Bypasses
                   the use of MetaContainer.
 
+  Arg [IGNORE_CLASH] :  (optional) boolean
+                        If specified will cause the subroutine to warn when
+                        an alias has already been used. Otherwise expcetions
+                        will be raised 
+
   Example       : Bio::EnsEMBL::Registry->find_and_add_aliases(
                     -ADAPTOR => $dba,
                     -GROUP   => 'core'
@@ -1827,7 +1832,8 @@ sub load_registry_from_db {
                   searching is performed.
 
   Return type   : none
-  Exceptions    : Throws if an alias is found in more than one species.
+  Exceptions    : Throws if an alias is found in more than one species (see
+                  -IGNORE_CLASH to turn off this behaviour).
   Status        : Stable
 
 =cut
@@ -1835,8 +1841,8 @@ sub load_registry_from_db {
 sub find_and_add_aliases {
   my $class = shift @_;
 
-  my ( $adaptor, $group, $dbh ) =
-    rearrange( [ 'ADAPTOR', 'GROUP', 'HANDLE' ], @_ );
+  my ( $adaptor, $group, $dbh, $ignore_clash ) =
+    rearrange( [ 'ADAPTOR', 'GROUP', 'HANDLE', 'IGNORE_CLASH' ], @_ );
 
   my @dbas;
   if ( defined($adaptor) ) {
@@ -1898,11 +1904,15 @@ sub find_and_add_aliases {
       if ( !$class->alias_exists($alias) ) {
         $class->add_alias( $species, $alias );
       } elsif ( $species ne $class->get_alias($alias) ) {
-        throw(
-          sprintf(
-            "Trying to add alias '%s' to species '%s', "
+        my $msg = sprintf("Trying to add alias '%s' to species '%s', "
               . " but it is already registrered for species '%s'\n",
-            $alias, $species, $class->get_alias($alias) ) );
+            $alias, $species, $class->get_alias($alias) );
+        if($ignore_clash) {
+          warning($msg); 
+        }
+        else {
+          throw($msg);
+        }
       }
     }
 
@@ -1944,7 +1954,7 @@ sub find_and_add_aliases {
 sub load_registry_from_multiple_dbs {
   my ( $self, @args ) = @_;
 
-  my %merged_register;
+  my %merged_register = %registry_register; 
 
   foreach my $arg (@args) {
     local %registry_register;
