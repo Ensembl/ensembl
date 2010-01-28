@@ -756,7 +756,10 @@ FSQL
 
 
   $sql = "insert into xref (xref_id, source_id, accession, label, version, species_id, info_type, info_text) values (?, ?, ?, ?,  0, ".$self->species_id.", 'MISC', ? )";
-  my $ins_xref_sth = $self->xref->dbc->prepare($sql);
+  my $ins_xref_sth = $self->xref->dbc->prepare($sql); 
+
+  $sql = "insert into xref (xref_id, source_id, accession, label, version, species_id, info_type, info_text) values (?, ?, ?, ?,  ?, ".$self->species_id.", 'MISC', ? )";
+  my $ins_xref_ver_sth = $self->xref->dbc->prepare($sql);
 
 
   # important or will crash and burn!!!
@@ -764,8 +767,11 @@ FSQL
 
   my $get_xref_info_sth =  $self->xref->dbc->prepare("select x.label, x.accession, s.priority_description  from xref x, source s where xref_id = ? and s.source_id = x.source_id");
 
-  
-  my $ins_object_xref_sth =  $self->xref->dbc->prepare("insert into object_xref (object_xref_id, ensembl_id, ensembl_object_type, xref_id, linkage_type, ox_status) values (?, ?, ?, ?, 'MISC', 'DUMP_OUT')");
+  #
+  # Okay we assign unused_priority to be the number of time a vega transcript is attached to make sure
+  # we get the BEST name for the gene (i.e. the one that appears the most)
+  #
+  my $ins_object_xref_sth =  $self->xref->dbc->prepare("insert into object_xref (object_xref_id, ensembl_id, ensembl_object_type, xref_id, linkage_type, ox_status, unused_priority) values (?, ?, ?, ?, 'MISC', 'DUMP_OUT', ?)");
   my %gene_clone_name_count;  
   foreach my $gene_id (keys %gene_to_transcripts){
     
@@ -798,6 +804,7 @@ FSQL
     my %no_vega; # hash now as we want to sort by stable id and hence need a key value pair
     my %vega_clone;
     my $vega_count = 0;
+    my %name_count;
     
     
     my $count = 0;
@@ -810,6 +817,7 @@ FSQL
       while($dbentrie_sth->fetch){
 	my($hgnc_bit, $num) = split(/-\d\d\d/,$display);
 	$VEGA = $hgnc_bit;
+        $name_count{$VEGA}++;
 	$vega_count++;
 	my $multiple = 1;
 	if(scalar(@VEGA_NAME)){
@@ -884,7 +892,22 @@ FSQL
       print STDERR "Warning: gene ".$gene_id_to_stable_id{$gene_id}." has more than one vega_transcript these are (".join(', ',@VEGA_NAME).")\n";
     }	
     if($vega_count){
-      foreach my $name (@VEGA_NAME){
+
+#
+# Find the most common one
+#
+
+      my $v_name = $VEGA_NAME[0];
+      my $top =0;
+      foreach my $vn ( keys %name_count){
+	if($name_count{$vn} > $top){
+	  $top = $name_count{$vn};
+	  $v_name = $vn;
+	}
+      }
+
+
+      foreach my $name (keys %name_count){
 	my $id = $display_label_to_id{$name};
 	if(!defined($id)){
 	  $id = $name;
@@ -904,11 +927,11 @@ FSQL
 	  
 	}
 	$max_object_xref_id++;
-	$ins_object_xref_sth->execute($max_object_xref_id, $gene_id, 'Gene', $xref_added{$id.":".$odn_curated_gene_id});
+	$ins_object_xref_sth->execute($max_object_xref_id, $gene_id, 'Gene', $xref_added{$id.":".$odn_curated_gene_id}, $name_count{$name});
 	$ins_dep_ix_sth->execute($max_object_xref_id, 100, 100);
       }
 
-      my $name = $VEGA_NAME[0];
+      $name = $v_name;
       my $tran_name_ext = 201;
       foreach my $tran (sort keys %no_vega){
 	my $id = $name."-".$tran_name_ext;
@@ -918,7 +941,7 @@ FSQL
 	  $xref_added{$id.":".$odn_automatic_tran_id} = $max_xref_id;
 	}	
 	$max_object_xref_id++;
-	$ins_object_xref_sth->execute($max_object_xref_id, $no_vega{$tran}, 'Transcript', $xref_added{$id.":".$odn_automatic_tran_id});
+	$ins_object_xref_sth->execute($max_object_xref_id, $no_vega{$tran}, 'Transcript', $xref_added{$id.":".$odn_automatic_tran_id},undef);
 	$ins_dep_ix_sth->execute($max_object_xref_id, 100, 100);
 
 	$tran_name_ext++;
@@ -957,7 +980,7 @@ FSQL
 	  }
 	}	
 	$max_object_xref_id++;
-	$ins_object_xref_sth->execute($max_object_xref_id, $gene_id, 'Gene', $xref_added{$acc.":".$odn_automatic_gene_id});
+	$ins_object_xref_sth->execute($max_object_xref_id, $gene_id, 'Gene', $xref_added{$acc.":".$odn_automatic_gene_id}, undef);
 	$ins_dep_ix_sth->execute($max_object_xref_id, 100, 100);
 
 
@@ -988,7 +1011,7 @@ FSQL
 	  print "ERROR: should not get here $id already defined?\n";
 	}
 	$max_object_xref_id++;
-	$ins_object_xref_sth->execute($max_object_xref_id, $no_vega{$tran}, 'Transcript', $xref_added{$id.":".$odn_automatic_tran_id});
+	$ins_object_xref_sth->execute($max_object_xref_id, $no_vega{$tran}, 'Transcript', $xref_added{$id.":".$odn_automatic_tran_id}, undef);
 	$ins_dep_ix_sth->execute($max_object_xref_id, 100, 100);
 	$tran_name_ext++;
       }
@@ -1008,8 +1031,8 @@ FSQL
 	else{
 	  $gene_clone_name_count{$CLONE_NAME} = 1;
 	}
-	$CLONE_NAME .= ".".$gene_clone_name_count{$CLONE_NAME};
-	my $id = $CLONE_NAME;
+#	$CLONE_NAME .= ".".$gene_clone_name_count{$CLONE_NAME};
+	my $id = $CLONE_NAME.".".$gene_clone_name_count{$CLONE_NAME};
 	if(!defined($xref_added{$id.":".$clone_based_vega_gene_id})){
 	  $max_xref_id++;
 	  $ins_xref_sth->execute($max_xref_id, $clone_based_vega_gene_id, $id, $id, "via Vega clonename");
@@ -1017,7 +1040,7 @@ FSQL
 	}	
 
 	$max_object_xref_id++;
-	$ins_object_xref_sth->execute($max_object_xref_id, $gene_id, 'Gene', $xref_added{$id.":".$clone_based_vega_gene_id});	
+	$ins_object_xref_sth->execute($max_object_xref_id, $gene_id, 'Gene', $xref_added{$id.":".$clone_based_vega_gene_id}, undef);	
 	$ins_dep_ix_sth->execute($max_object_xref_id, 100 , 100);
 
 
@@ -1032,7 +1055,7 @@ FSQL
 	  }	
 	  
 	  $max_object_xref_id++;
-	  $ins_object_xref_sth->execute($max_object_xref_id, $no_vega{$tran}, 'Transcript', $xref_added{$id.":".$clone_based_vega_tran_id});	
+	  $ins_object_xref_sth->execute($max_object_xref_id, $no_vega{$tran}, 'Transcript', $xref_added{$id.":".$clone_based_vega_tran_id}, undef);	
 	  $ins_dep_ix_sth->execute($max_object_xref_id, 100, 100);
 	  
 
@@ -1089,17 +1112,17 @@ FSQL
 	else{
 	  $gene_clone_name_count{$new_clone_name} = 1;
 	}
-	$new_clone_name .= ".".$gene_clone_name_count{$new_clone_name};
+	my $gene_name = $new_clone_name . ".".$gene_clone_name_count{$new_clone_name};
 
 	# store the data
-	if(!defined($xref_added{$new_clone_name.":".$clone_based_ensembl_gene_id})){
+	if(!defined($xref_added{$gene_name.":".$clone_based_ensembl_gene_id})){
 	  $max_xref_id++;
-	  $ins_xref_sth->execute($max_xref_id, $clone_based_ensembl_gene_id, $new_clone_name, $new_clone_name, "via clonename");
-	  $xref_added{$new_clone_name.":".$clone_based_ensembl_gene_id} = $max_xref_id;
+	  $ins_xref_sth->execute($max_xref_id, $clone_based_ensembl_gene_id, $gene_name, $gene_name, "via clonename");
+	  $xref_added{$gene_name.":".$clone_based_ensembl_gene_id} = $max_xref_id;
 	}	
 	
 	$max_object_xref_id++;
-	$ins_object_xref_sth->execute($max_object_xref_id, $gene->dbID, 'Gene', $xref_added{$new_clone_name.":".$clone_based_ensembl_gene_id});	
+	$ins_object_xref_sth->execute($max_object_xref_id, $gene->dbID, 'Gene', $xref_added{$gene_name.":".$clone_based_ensembl_gene_id}, undef);	
 	$ins_dep_ix_sth->execute($max_object_xref_id, 100, 100);
 	  	
 	my $tran_name_ext = 201;
@@ -1112,7 +1135,7 @@ FSQL
 	  }	
 	  
 	  $max_object_xref_id++;
-	  $ins_object_xref_sth->execute($max_object_xref_id, $no_vega{$tran}, 'Transcript', $xref_added{$id.":".$clone_based_ensembl_tran_id});	
+	  $ins_object_xref_sth->execute($max_object_xref_id, $no_vega{$tran}, 'Transcript', $xref_added{$id.":".$clone_based_ensembl_tran_id}, undef);	
 	  $ins_dep_ix_sth->execute($max_object_xref_id, 100, 100);
 
 
