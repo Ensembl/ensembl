@@ -53,58 +53,33 @@ sub run_script {
   my $line_count = 0;
   my $xref_count = 0;
 
- my $xref_sth = $self->dbi()->prepare("SELECT xref_id FROM xref WHERE accession=? AND version=? AND source_id=$source_id AND species_id=$species_id");
+  my $sql = 'select tsi.stable_id, x.dbprimary_acc from xref x, object_xref ox, transcript_stable_id tsi, external_db e where x.xref_id=ox.xref_id and  ox.ensembl_object_type = "Transcript" and ox.ensembl_id = tsi.transcript_id and e.external_db_id = x.external_db_id and e.db_name like "Ens_%_transcript"';
 
 
-#
-# Need to get the stable_id via the ENST xrefs!!!!!
-#
+  my %seen;
 
-#
-# 
-#
-
-  my $sql = 'select ox.ensembl_id, x.dbprimary_acc from object_xref ox, xref x, external_db e where x.xref_id = ox.xref_id and x.external_db_id = e.external_db_id and e.db_name like "Ens_%_transcript" and x.dbprimary_acc like "'.$tran_name.'%"'; 
-
-
-  my %trans_id_to_stable_id;
-  my $sth = $dbi2->prepare($sql); 
-  $sth->execute() or croak( $dbi2->errstr() );
-  while ( my @row = $sth->fetchrow_array() ) {
-    $trans_id_to_stable_id{$row[0]} = $row[1];
-#    print $row[0]."\t".$row[1]."\n";
-  }
-  $sth->finish;
-
-  $sql = 'select ox.ensembl_id, x.dbprimary_acc, x.display_label, x.version from object_xref ox, xref x, external_db e where x.xref_id = ox.xref_id and x.external_db_id = e.external_db_id and e.db_name like "CCDS"';
-  
-  $sth = $dbi2->prepare($sql); 
-  $sth->execute() or croak( $dbi2->errstr() );
+  my $sth = $dbi2->prepare($sql) or "Could not prepare sql $sql\n";;
+  $sth->execute() or die "Could not execute $sql\n";;
   my $xref_count = 0;
   my $direct_count=0;
-  while ( my @row = $sth->fetchrow_array() ) {
-#    print "Processing ".$row[0]."\n";
-    if(defined($trans_id_to_stable_id{$row[0]})){
-      my $acc = $row[1];
-      my $version = $row[3];
-      my $display_label = $row[2];
-      my $tran_id = $row[0];
-      my $stable_id = $trans_id_to_stable_id{$tran_id};
+  my ($stable_id, $display_label);
+  $sth->bind_columns( \$display_label,\$stable_id);
+  while ( $sth->fetch ) {
 
-      # check if an xref already exists
-      $xref_sth->execute($acc, $version);
-      my $xref_id = ($xref_sth->fetchrow_array())[0];
-      if (!$xref_id) {
-	$xref_id = $self->add_xref($acc, $version, $display_label, "", $source_id, $species_id, "DIRECT");
-	$xref_count++;
-      }
-      
-      $self->add_direct_xref($xref_id, $stable_id, "Transcript", "");
-      $direct_count++;
+    my ($acc, $version) = split (/\./,$display_label);
+
+    my $xref_id;
+    if (!defined($seen{$display_label})) {
+      $xref_id = $self->add_xref($acc, $version, $display_label, "", $source_id, $species_id, "DIRECT");
+      $xref_count++;
+      $seen{$display_label} = $xref_id;
     }
     else{
-      print "Could not find trans_id_to_stable_id for ".$row[0]."\n";
+      $xref_id = $seen{$display_label};
     }
+
+    $self->add_direct_xref($xref_id, $stable_id, "Transcript", "");
+    $direct_count++;
   }
 
   print "Parsed CCDS identifiers from $file, added $xref_count xrefs and $direct_count direct_xrefs\n" if($verbose);
