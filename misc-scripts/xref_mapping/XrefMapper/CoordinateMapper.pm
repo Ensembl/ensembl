@@ -72,6 +72,7 @@ sub run_coordinatemapping {
 
   # We only do coordinate mapping for mouse and human for now.
   if ( !( $species eq 'mus_musculus' || $species eq 'homo_sapiens' ) ) {
+#  if ( !( $species eq 'mus_musculus') ) {
     my $sth_stat = $self->xref->dbc->prepare("insert into process_status (status, date) values('coordinate_xref_finished',now())");
     $sth_stat->execute();
     $sth_stat->finish;
@@ -558,24 +559,27 @@ sub run_coordinatemapping {
       # Pick the best match(es) for this gene.
       #-----------------------------------------------------------------
 
-      my $best_score;
-      foreach my $coord_xref_id (
-                         sort( { $gene_result{$b} <=> $gene_result{$a} }
-                               keys(%gene_result) ) )
-      {
-        my $score = $gene_result{$coord_xref_id};
+      # Do not want them on both Transcripts and Genes. For Biomart purposes. (Ianl)
+      # So no need to find the best one for the gene.
 
-        $best_score ||= $score;
-
-        if (
-           sprintf( "%.3f", $score ) eq sprintf( "%.3f", $best_score ) )
-        {
-          push( @{ $mapped{$coord_xref_id}{'mapped_to'} }, {
-                  'ensembl_id'          => $gene->dbID(),
-                  'ensembl_object_type' => 'Gene'
-                } );
-        }
-      }
+#      my $best_score;
+#      foreach my $coord_xref_id (
+#                         sort( { $gene_result{$b} <=> $gene_result{$a} }
+#                               keys(%gene_result) ) )
+#      {
+#        my $score = $gene_result{$coord_xref_id};
+#
+#        $best_score ||= $score;
+#
+#        if (
+#           sprintf( "%.3f", $score ) eq sprintf( "%.3f", $best_score ) )
+#        {
+#          push( @{ $mapped{$coord_xref_id}{'mapped_to'} }, {
+#                  'ensembl_id'          => $gene->dbID(),
+#                  'ensembl_object_type' => 'Gene'
+#                } );
+#        }
+#      }
 
     } ## end while ( my $gene = shift(...
   } ## end foreach my $chromosome (@chromosomes)
