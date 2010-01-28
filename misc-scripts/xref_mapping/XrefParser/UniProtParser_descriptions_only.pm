@@ -55,7 +55,7 @@ sub run {
   }
 
   $sp_source_id =
-    $self->get_source_id_for_source_name('Uniprot/SWISSPROT');
+    $self->get_source_id_for_source_name('Uniprot/SWISSPROT',"sequence_mapped");
   $sptr_source_id =
     $self->get_source_id_for_source_name('Uniprot/SPTREMBL');
 
