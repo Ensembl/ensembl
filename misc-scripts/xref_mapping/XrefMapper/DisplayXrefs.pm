@@ -1158,7 +1158,7 @@ from    (   display_xref_prioritys p
   left join gene_transcript_translation gtt_translation
     on (gtt_translation.translation_id = ox.ensembl_id)
 where   ox.ox_status = 'DUMP_OUT'
-order by    gene_id DESC, p.priority DESC, (ix.target_identity+ix.query_identity) DESC
+order by    gene_id DESC, p.priority DESC, (ix.target_identity+ix.query_identity) DESC, ox.unused_priority DESC
 
 DXS
 #  SELECT gtt.gene_id, gtt.transcript_id, p.priority, x.xref_id, ox.ensembl_object_type, x.label  
@@ -1212,7 +1212,7 @@ DXS
   $update_tran_sth->finish;
 
   #
-  # reset the staus to DUMP_OUT fro thise that where ignored for the display_xref;
+  # reset the status to DUMP_OUT fro thise that where ignored for the display_xref;
   #
 
   my $reset_status_sth = $self->xref->dbc->prepare('UPDATE object_xref SET ox_status = "DUMP_OUT" where ox_status = "NO_DISPLAY"');
@@ -1416,7 +1416,7 @@ DXS
 
   while($gene_desc_sth->fetch()){
 #    print "$gene_id, $transcript_id, $p, $xref_id, $type, $label\n";
-    if($gene_id != $last_gene){
+    if($gene_id != $last_gene and defined($desc) ){
       my $filtered_description = $self->filter_by_regexp($desc, \@regexps);
       if ($filtered_description ne "") {
         $desc .= " [Source:".$source_id_to_external_name{$source_id}.";Acc:".$label."]";
