@@ -831,7 +831,7 @@ sub store {
     my $old_dbid = $translation->dbID();
     $db->get_TranslationAdaptor()->store( $translation, $transc_dbID );
 
-    if ( $translation->dbID() != $old_dbid ) {
+    if ( defined($old_dbid) && $translation->dbID() != $old_dbid ) {
       # The dbID of the translation changed.  Need to update the
       # canonical_translation_id for this transcript.
 
