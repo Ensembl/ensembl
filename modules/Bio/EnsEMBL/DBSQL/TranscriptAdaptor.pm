@@ -828,7 +828,27 @@ sub store {
       }
     }
 
+    my $old_dbid = $translation->dbID();
     $db->get_TranslationAdaptor()->store( $translation, $transc_dbID );
+
+    if ( $translation->dbID() != $old_dbid ) {
+      # The dbID of the translation changed.  Need to update the
+      # canonical_translation_id for this transcript.
+
+      my $sth = $self->prepare(
+        qq(
+        UPDATE transcript
+        SET canonical_translation_id = ?
+        WHERE transcript_id = ?)
+      );
+
+      $sth->bind_param( 1, $translation->dbID(), SQL_INTEGER );
+      $sth->bind_param( 2, $transc_dbID,         SQL_INTEGER );
+
+      $sth->execute();
+    }
+
+
     # set values of the original translation, we may have copied it
     # when we transformed the transcript
     $original_translation->dbID( $translation->dbID() );
