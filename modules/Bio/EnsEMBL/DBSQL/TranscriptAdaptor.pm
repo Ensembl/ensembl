@@ -770,12 +770,8 @@ sub store {
   $tst->bind_param( 9,  $transcript->description(), SQL_LONGVARCHAR );
   $tst->bind_param( 10, $is_current,                SQL_TINYINT );
 
-  if ( defined( $transcript->translation() ) ) {
-    $tst->bind_param( 11, $transcript->translation()->dbID(),
-      SQL_INTEGER );
-  } else {
-    $tst->bind_param( 11, undef, SQL_INTEGER );
-  }
+  # If the transcript has a translation, this is updated later:
+  $tst->bind_param( 11, undef, SQL_INTEGER );
 
   $tst->execute();
   $tst->finish();
@@ -831,23 +827,19 @@ sub store {
     my $old_dbid = $translation->dbID();
     $db->get_TranslationAdaptor()->store( $translation, $transc_dbID );
 
-    if ( defined($old_dbid) && $translation->dbID() != $old_dbid ) {
-      # The dbID of the translation changed.  Need to update the
-      # canonical_translation_id for this transcript.
+    # Need to update the canonical_translation_id for this transcript.
 
-      my $sth = $self->prepare(
-        qq(
-        UPDATE transcript
-        SET canonical_translation_id = ?
-        WHERE transcript_id = ?)
-      );
+    my $sth = $self->prepare(
+      qq(
+      UPDATE transcript
+      SET canonical_translation_id = ?
+      WHERE transcript_id = ?)
+    );
 
-      $sth->bind_param( 1, $translation->dbID(), SQL_INTEGER );
-      $sth->bind_param( 2, $transc_dbID,         SQL_INTEGER );
+    $sth->bind_param( 1, $translation->dbID(), SQL_INTEGER );
+    $sth->bind_param( 2, $transc_dbID,         SQL_INTEGER );
 
-      $sth->execute();
-    }
-
+    $sth->execute();
 
     # set values of the original translation, we may have copied it
     # when we transformed the transcript
