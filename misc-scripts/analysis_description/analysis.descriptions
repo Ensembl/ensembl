@@ -355,6 +355,7 @@
 366	duck_cdna	Anas platyrhynchos cDNAs from <a rel="external" href="http://www.ncbi.nlm.nih.gov/RefSeq/">NCBI RefSeq</a> and <a rel="external" href="http://www.ebi.ac.uk/embl/">EMBL</a> are aligned to the genome using <a rel="external" href="http://www.biomedcentral.com/1471-2105/6/31">Exonerate</a>.	Duck cDNA	1	{'default' => {'contigviewbottom' => 'stack'},'type' => 'cdna'}
 367	duck_est	Anas platyrhynchos 'Expressed Sequence Tags' (ESTs) from <a rel="external" href="http://www.ncbi.nlm.nih.gov/dbEST/">dbEST</a> and the duck genome consortium are aligned to the genome using <a rel="external" href="http://www.biomedcentral.com/1471-2105/6/31">Exonerate</a>	Duck EST	1	{'type'=>'est'}
 368	duck_transcriptome	Assembled Anas platyrhynchos EST sequences supplied by the Beijing Genomics Institute (BGI).	Duck transcriptome	1	{'type'=>'est'}
+369	ncbi_ccds_import	Protein coding sequences agreed upon by the Consensus Coding Sequence project, or <a href="/info/docs/genebuild/ccds.html" class="cp-external">CCDS</a>.	CCDS set	1	 {'default' => {'contigviewbottom' => 'normal'},'type' => 'cdna'}
 
 #add new entries for core databases above, the following are for functional genomics
 #500	Nessie	Hidden Markov Model based predictions based on tiling array data	Nessie (TilingHMM)	1
