@@ -1736,8 +1736,10 @@ sub load_registry_from_db {
       $sth->bind_columns( \( $species_id, $species ) );
 
       while ( $sth->fetch() ) {
+         #Get the Core DB & assume this is the required DNADB
+        my $dnadb = $self->get_DBAdaptor($species, 'core');
         my $dba = Bio::EnsEMBL::Funcgen::DBSQL::DBAdaptor->new(
-          -group           => "funcgen",
+          -group           => 'funcgen',
           -species         => $species,
           -species_id      => $species_id,
           -multispecies_db => 1,
@@ -1747,7 +1749,8 @@ sub load_registry_from_db {
           -port            => $port,
           -dbname          => $multidb,
           -wait_timeout    => $wait_timeout,
-          -no_cache        => $no_cache
+          -no_cache        => $no_cache,
+          -dnadb           => $dnadb
         );
 
         if ($verbose) {
