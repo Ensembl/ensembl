@@ -129,7 +129,7 @@ my $analysis =
             -logic_name  => "knownGeneDensity",
             -description => 'Known gene density features in a database '
               . 'as calculated by gene_density_calc.pl',
-            -display_label => 'knownGeneDensity',
+            -display_label => 'Genes (density)',
             -displayable   => 1 );
 
 $aa->store($analysis);
