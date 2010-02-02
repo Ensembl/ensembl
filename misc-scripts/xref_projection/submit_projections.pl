@@ -1,32 +1,39 @@
 use strict;
 
+use Data::Dumper;
+
+$Data::Dumper::Useqq=1;
+$Data::Dumper::Terse = 1;
+$Data::Dumper::Indent = 0;
+
 # Submits the display name and GO term projections as farm jobs
 # Remember to check/set the various config optons
 
 # ------------------------------ config -------------------------------
-my $release = 57;
+my $release = X;
 
-my $base_dir = "/Your path/";
+my $base_dir = "/path/";
 
-my $conf = "release_57.ini"; # registry config file, specifies Compara location
+my $conf = "release_X.ini"; # registry config file, specifies Compara location
 
 # location of other databases
 
-my @config = ({
-    '-host' => 'xx',
-    '-port' => 'xx',
-    '-user' => 'xx',
-    '-pass' => 'xx'
-    },
-    {
-    '-host' => 'xx',
-    '-port' => 'xx',
-    '-user' => 'xx',
-    '-pass' => 'xx'
-    });
+my @config = ( {
+    '-host'       => 'XXXX',
+    '-port'       => 'XXXX',
+    '-user'       => 'XXXX',
+    '-pass'       => 'XXXX',
+    '-db_version' => $release
+  },
+  {
+    '-host'       => 'XXXX',
+    '-port'       => 'XXXX',
+    '-user'       => 'XXXX',
+    '-pass'       => 'XXXX',
+    '-db_version' => $release
+  } );
 
-my ($host, $port, $user, $pass);
-
+my $registryconf = Dumper(\@config);
 
 # load limit for ens-staging MySQL instance above which jobs won't be started
 my $limit = 200;
@@ -192,6 +199,12 @@ my ($from, $to, $o, $e, $n);
 # ----------------------------------------
 # Display names
 
+foreach my $pair (@names_1_1) {
+  ($from, $to) = @$pair;
+  print "Deleting projected names (one to one)\n";
+  system "perl project_display_xrefs.pl $script_opts -to $to -delete_names -delete_only";
+}
+
 # 1:1
 foreach my $pair (@names_1_1) {
   ($from, $to) = @$pair;
@@ -200,8 +213,16 @@ foreach my $pair (@names_1_1) {
   $n = substr("n_${from}_$to", 0, 10); # job name display limited to 10 chars
   my $all = ($from eq "human") ? "" : "--all_sources"; # non-human from species -> use all sources
   print "Submitting name projection from $from to $to\n";
-  system "bsub $bsub_opts -o $o -e $e -J $n perl project_display_xrefs.pl $script_opts -from $from -to $to -names -delete_names -no_database $all";
+  system "bsub $bsub_opts -o $o -e $e -J $n perl project_display_xrefs.pl $script_opts -from $from -to $to -names -no_database $all";
 }
+
+
+foreach my $pair (@names_1_many) {
+  ($from, $to) = @$pair;
+  print "Deleting projected names (one to many)\n";
+  system "perl project_display_xrefs.pl $script_opts -to $to -delete_names -delete_only";
+}
+
 
 # 1:many
 foreach my $pair (@names_1_many) {
@@ -210,7 +231,7 @@ foreach my $pair (@names_1_many) {
   $e = "$dir/names_${from}_$to.err";
   $n = substr("n_${from}_$to", 0, 10);
   print "Submitting name projection from $from to $to (1:many)\n";
-  system "bsub $bsub_opts -o $o -e $e -J $n perl project_display_xrefs.pl $script_opts -from $from -to $to -names -delete_names -no_database -one_to_many";
+  system "bsub $bsub_opts -o $o -e $e -J $n perl project_display_xrefs.pl $script_opts -from $from -to $to -names -no_database -one_to_many";
 }
 
 # ----------------------------------------
@@ -220,11 +241,19 @@ $script_opts .= " -nobackup";
 
 foreach my $pair (@go_terms) {
   ($from, $to) = @$pair;
+  print "Deleting projected GO terms\n";
+  system "perl project_display_xrefs.pl $script_opts -to $to -delete_go_terms -delete_only";
+}
+
+
+
+foreach my $pair (@go_terms) {
+  ($from, $to) = @$pair;
   $o = "$dir/go_${from}_$to.out";
   $e = "$dir/go_${from}_$to.err";
   $n = substr("g_${from}_$to", 0, 10);
   print "Submitting GO term projection from $from to $to\n";
-  system "bsub $bsub_opts -q long -o $o -e $e -J $n perl project_display_xrefs.pl $script_opts -from $from -to $to -go_terms -delete_go_terms";
+  system "bsub $bsub_opts -q long -o $o -e $e -J $n perl project_display_xrefs.pl $script_opts -from $from -to $to -go_terms";
 }
 
 # ----------------------------------------
