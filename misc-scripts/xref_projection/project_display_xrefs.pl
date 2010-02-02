@@ -4,6 +4,7 @@ use strict;
 # on their orthologs in the "from" database. Can also project GO xrefs.
 # Orthology relationships are read from a Compara database.
 
+use Data::Dumper;
 use Getopt::Long;
 use Bio::EnsEMBL::Registry;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
@@ -12,14 +13,10 @@ use Bio::EnsEMBL::Utils::Eprof qw(eprof_start eprof_end eprof_dump);
 
 my $method_link_type = "ENSEMBL_ORTHOLOGUES";
 
-my ($conf, $registryconf, $host, $user, $port, $pass, $version, $compara, $from_species, @to_multi, $print, $names, $go_terms, $delete_names, $delete_go_terms, $no_backup, $full_stats, $descriptions, $release, $no_database, $quiet, $max_genes, $one_to_many, $go_check, $all_sources);
+my ($conf, $registryconf, $version, $compara, $from_species, @to_multi, $print, $names, $go_terms, $delete_names, $delete_go_terms, $no_backup, $full_stats, $descriptions, $release, $no_database, $quiet, $max_genes, $one_to_many, $go_check, $all_sources, $delete_only);
 
 GetOptions('conf=s'          => \$conf,
 	   'registryconf=s'  => \$registryconf,
-	   'host=s'          => \$host,
-	   'user=s'          => \$user,
-	   'port=s'          => \$port,
-	   'pass=s'          => \$pass,
 	   'version=i'       => \$version,
 	   'compara=s'       => \$compara,
 	   'from=s'          => \$from_species,
@@ -40,19 +37,20 @@ GetOptions('conf=s'          => \$conf,
 	   'one_to_many'     => \$one_to_many,
 	   'go_check'        => \$go_check,
 	   'all_sources'     => \$all_sources,
+	   'delete_only'     => \$delete_only,
 	   'help'            => sub { usage(); exit(0); });
 
 $| = 1; # auto flush stdout
 
 $descriptions = 1;
 
-if (!$conf && !$registryconf) {
+if (!$conf && !$registryconf && !$delete_only) {
 
   print STDERR "Configuration file must be supplied via -conf or -registryconf argument\n";
   usage();
   exit(1);
 
-} elsif (!$from_species) {
+} elsif (!$from_species && !$delete_only)  {
 
   print STDERR "From species must be supplied via -from argument\n";
  usage();
@@ -72,9 +70,9 @@ if (!$conf && !$registryconf) {
 
 }
 
-if (!$go_terms && !$names) {
+if (!$go_terms && !$names && !$delete_only) {
 
-  print STDERR "One or both of --names or --go_terms must be specified\n";
+  print STDERR "One or both of --names or --go_terms must be specified unless only -delete_only is being used\n";
   print STDERR "Use --help for more detailed usage informaion\n";
   exit(1);
 
@@ -106,11 +104,43 @@ my @evidence_codes = ( "IDA", "IEP", "IGI", "IMP", "IPI" );
 # load from database and conf file
 Bio::EnsEMBL::Registry->no_version_check(1);
 
-my $args = eval($registryconf);
+
+# Registryconf is either the registry configuration passed from the submit_projections.pl 
+# script or a file name containing the same information that is passed on the command line.
+
+my $args;
+
+if (defined($registryconf)) {
+	if (-f $registryconf) {
+		open(CONF, $registryconf);
+		my @contents = <CONF>;
+		$args = eval(join("\n", @contents));
+		close(CONF);
+	} else {
+		$args = eval($registryconf);
+	}
+}
+
+
 
 Bio::EnsEMBL::Registry->load_registry_from_multiple_dbs(@{$args});
 
-Bio::EnsEMBL::Registry->load_all($conf, 0, 1); # options mean "not verbose" and "don't clear registry"
+Bio::EnsEMBL::Registry->load_all($conf, 1, 1); # options mean "not verbose" and "don't clear registry"
+
+# only delete names/GO terms if -delete_only has been specified
+if ($delete_only) {
+
+    print "Just deleting, no projection\n";
+    foreach my $to_species (@to_multi) {
+
+	my $to_ga  = Bio::EnsEMBL::Registry->get_adaptor($to_species, 'core', 'Gene');
+	die("Can't get gene adaptor for $to_species - check database connection details; make sure meta table contains the correct species alias\n") if (!$to_ga);
+	delete_names($to_ga) if ($delete_names);
+	delete_go_terms($to_ga) if ($delete_go_terms);
+    }
+
+    exit(0);
+}
 
 # Get Compara adaptors - use the one specified on the command line, or the first one
 # defined in the registry file if not specified
@@ -290,7 +320,7 @@ sub project_display_names {
       my @to_transcripts = @{$to_gene->get_all_Transcripts};
       my $to_transcript = $to_transcripts[0];
 
-      my $dbname = $dbEntry->dbname();
+      $dbname = $dbEntry->dbname();
 
       my $type = $db_to_type{$dbname};
 
@@ -806,10 +836,16 @@ sub usage {
                         if defined, if not ~/.ensembl_init will be used.
                         Note only the Compara database needs to be defined here,
                         assuming the rest of the databases are on the server
-                        defined by --host etc
+                        defined by --registryconf
+   
 
-   --host, --port,      Database connection details.
-   --user, --pass,
+   --registryconf       There are two ways in which the registry configuration
+                        information can be passed to the script. This information
+		        is a hash that encodes the registry configuration parameters
+			and can be passed as a string in a file or as a string on the 
+			commandline. 
+
+
    --version
 
                         Note that a combination of the host/user and conf files
@@ -867,9 +903,12 @@ sub usage {
 
   [--help]              This text.
 
+  Note that projected names or GO terms can be deleted from a database without doing any subsequent 
+  projection by specifying only the -to, -delete_only and -delete_go_terms or -delete_names options.
+
   e.g
 
-  perl project_display_xrefs.pl --conf compara_only.ini --host ens-staging -user ensadmin -pass PASS -version 47 -names -delete_names -from human -to dog -nobackup -no_database
+  perl project_display_xrefs.pl --conf compara_only.ini --host HOST -user USER -pass PASS -version 47 -names -delete_names -from human -to dog -nobackup -no_database
 
 EOF
 
