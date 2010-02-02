@@ -97,7 +97,7 @@ my $analysis =
              -gff_feature => "density",
              -logic_name  => "PercentGC",
              -description => 'Percentage of G/C bases in the sequence.',
-             -display_label => 'PercentGC',
+             -display_label => 'GC content',
              -displayable   => 1 );
 
 $aa->store($analysis);
