@@ -1105,6 +1105,38 @@ sub get_alias{
   return $registry_register{'_ALIAS'}{lc($key)};
 }
 
+=head2 get_all_aliases
+
+  Arg [1]    : Species name to retrieve aliases for
+               (may be an alias as well).
+  Example    : Bio::EnsEMBL::Registry->get_all_aliases('Homo sapiens');
+  Description: Returns all known aliases for a given species (but not the
+               species name/alias that was given).
+  Returntype : ArrayRef of all known aliases
+  Exceptions : none
+  Status     : Development
+
+=cut
+
+sub get_all_aliases {
+  my ( $class, $key ) = @_;
+
+  my $species = $registry_register{_ALIAS}{ lc($key) };
+
+  my @aliases;
+  if ( defined($species) ) {
+    foreach my $alias ( keys( %{ $registry_register{_ALIAS} } ) ) {
+      if ( $species ne $alias
+        && $species eq $registry_register{_ALIAS}{ lc($alias) } )
+      {
+        push( @aliases, $alias );
+      }
+    }
+  }
+
+  return \@aliases;
+}
+
 =head2 alias_exists
 
   Arg [1]    : name of the possible alias to get species for
@@ -1374,7 +1406,7 @@ sub load_registry_from_db {
   }
 
   for my $db (@dbnames) {
-    if ( $db =~ /^(\w+)_(collection_core_(?:\d+_)?(\d+)_(\w+))/ )
+    if ( $db =~ /^(\w+)_(collection_\w+_(?:\d+_)?(\d+)_(\w+))/ )
     {    # NEEDS TO BE FIRST
       if ( $3 eq $software_version ) {
         $temp{$1} = $2;
@@ -1397,9 +1429,7 @@ sub load_registry_from_db {
       if ( $2 eq $software_version ) {
         $ontology_version = $2;
       }
-    } elsif (
-      $db =~ /^([a-z]+_[a-z]+_[a-z]+(?:_\d+)?)_(\d+)_(\w+)/ )
-    {
+    } elsif ( $db =~ /^([a-z]+_[a-z]+_[a-z]+(?:_\d+)?)_(\d+)_(\w+)/ ) {
       if ( $2 eq $software_version ) {
         $temp{$1} = $2 . "_" . $3;
       }
@@ -1419,7 +1449,10 @@ sub load_registry_from_db {
   my @core_dbs = grep { /^[a-z]+_[a-z]+_core_(?:\d+_)?\d+_/ } @dbnames;
 
   foreach my $coredb (@core_dbs) {
-    next if ($coredb =~ /collection/);  # Skip multi-species databases
+    if ( index( $coredb, 'collection' ) != -1 ) {
+      # Skip multi-species databases.
+      next;
+    }
 
     my ( $species, $num ) =
       ( $coredb =~ /(^[a-z]+_[a-z]+)_core_(?:\d+_)?(\d+)/ );
@@ -1443,14 +1476,15 @@ sub load_registry_from_db {
   }
 
   # Register multi-species databases
+
   my @multi_dbs = grep { /^\w+_collection_core_\w+$/ } @dbnames;
 
   foreach my $multidb (@multi_dbs) {
-    my $sth =
-      $dbh->prepare(
-                 sprintf( 'SELECT species_id, meta_value FROM %s.meta ',
-                          $dbh->quote_identifier($multidb) )
-                   . "WHERE meta_key = 'species.db_name'" );
+    my $sth = $dbh->prepare(
+      sprintf(
+        "SELECT species_id, meta_value FROM %s.meta "
+          . "WHERE meta_key = 'species.db_name'",
+        $dbh->quote_identifier($multidb) ) );
 
     $sth->execute();
 
@@ -1458,23 +1492,23 @@ sub load_registry_from_db {
     $sth->bind_columns( \( $species_id, $species ) );
 
     while ( $sth->fetch() ) {
-      my $dba =
-        Bio::EnsEMBL::DBSQL::DBAdaptor->new(
-                                         -group      => "core",
-                                         -species    => $species,
-                                         -species_id => $species_id,
-                                         -multispecies_db => 1,
-                                         -host            => $host,
-                                         -user            => $user,
-                                         -pass            => $pass,
-                                         -port            => $port,
-                                         -dbname          => $multidb,
-                                         -wait_timeout => $wait_timeout,
-                                         -no_cache     => $no_cache );
+      my $dba = Bio::EnsEMBL::DBSQL::DBAdaptor->new(
+        -group           => "core",
+        -species         => $species,
+        -species_id      => $species_id,
+        -multispecies_db => 1,
+        -host            => $host,
+        -user            => $user,
+        -pass            => $pass,
+        -port            => $port,
+        -dbname          => $multidb,
+        -wait_timeout    => $wait_timeout,
+        -no_cache        => $no_cache
+      );
 
       if ($verbose) {
         printf( "Species '%s' (id:%d) loaded from database '%s'\n",
-                $species, $species_id, $multidb );
+          $species, $species_id, $multidb );
       }
     }
   } ## end foreach my $multidb (@multi_dbs)
@@ -1553,6 +1587,11 @@ sub load_registry_from_db {
 
   my @userupload_dbs = grep { /_userdata$/ } @dbnames;
   for my $userupload_db (@userupload_dbs) {
+    if ( index( $userupload_db, 'collection' ) != -1 ) {
+      # Skip multi-species databases.
+      next;
+    }
+
     my ($species) = ( $userupload_db =~ /(^.+)_userdata$/ );
     my $dba =
       Bio::EnsEMBL::DBSQL::DBAdaptor->new(
@@ -1570,6 +1609,43 @@ sub load_registry_from_db {
       printf( "%s loaded\n", $userupload_db );
     }
   }
+
+  # Register multi-species userupload databases.
+  my @userdata_multidbs = grep { /^.+_collection_userdata$/ } @dbnames;
+
+  foreach my $multidb (@userdata_multidbs) {
+    my $sth = $dbh->prepare(
+      sprintf(
+        "SELECT species_id, meta_value FROM %s.meta "
+          . "WHERE meta_key = 'species.db_name'",
+        $dbh->quote_identifier($multidb) ) );
+
+    $sth->execute();
+
+    my ( $species_id, $species );
+    $sth->bind_columns( \( $species_id, $species ) );
+
+    while ( $sth->fetch() ) {
+      my $dba = Bio::EnsEMBL::DBSQL::DBAdaptor->new(
+        -group           => "userupload",
+        -species         => $species,
+        -species_id      => $species_id,
+        -multispecies_db => 1,
+        -host            => $host,
+        -user            => $user,
+        -pass            => $pass,
+        -port            => $port,
+        -dbname          => $multidb,
+        -wait_timeout    => $wait_timeout,
+        -no_cache        => $no_cache
+      );
+
+      if ($verbose) {
+        printf( "Species '%s' (id:%d) loaded from database '%s'\n",
+          $species, $species_id, $multidb );
+      }
+    }
+  } ## end foreach my $multidb (@userdata_multidbs)
 
   # Variation
 
@@ -1610,33 +1686,77 @@ sub load_registry_from_db {
   if ($@) {
     if ($verbose) {
       # Ignore funcgen DBs as code required not there for this
-      print( "Bio::EnsEMBL::Funcgen::DBSQL::DBAdaptor module not found "
-         . "so functional genomics databases will be ignored if found\n"
+      print("Bio::EnsEMBL::Funcgen::DBSQL::DBAdaptor module not found "
+          . "so functional genomics databases will be ignored if found\n"
       );
     }
   } else {
-    my @funcgen_dbs = grep { /^[a-z]+_[a-z]+_funcgen_(?:\d+_)?\d+_/ } @dbnames;
+    my @funcgen_dbs =
+      grep { /^[a-z]+_[a-z]+_funcgen_(?:\d+_)?\d+_/ } @dbnames;
 
     for my $funcgen_db (@funcgen_dbs) {
+      if ( index( $funcgen_db, 'collection' ) != -1 ) {
+        # Skip multi-species databases.
+        next;
+      }
+
       my ( $species, $num ) =
         ( $funcgen_db =~ /(^[a-z]+_[a-z]+)_funcgen_(?:\d+_)?(\d+)_/ );
-      my $dba =
-        Bio::EnsEMBL::Funcgen::DBSQL::DBAdaptor->new(
-                                         -group        => "funcgen",
-                                         -species      => $species,
-                                         -host         => $host,
-                                         -user         => $user,
-                                         -pass         => $pass,
-                                         -port         => $port,
-                                         -wait_timeout => $wait_timeout,
-                                         -dbname       => $funcgen_db,
-                                         -no_cache     => $no_cache );
+      my $dba = Bio::EnsEMBL::Funcgen::DBSQL::DBAdaptor->new(
+        -group        => "funcgen",
+        -species      => $species,
+        -host         => $host,
+        -user         => $user,
+        -pass         => $pass,
+        -port         => $port,
+        -wait_timeout => $wait_timeout,
+        -dbname       => $funcgen_db,
+        -no_cache     => $no_cache
+      );
 
       if ($verbose) {
         printf( "%s loaded\n", $funcgen_db );
       }
     }
-  }
+
+    # Register functional genomics multispecies databases
+    my @funcgen_multidbs =
+      grep { /^\w+_collection_funcgen_\w+$/ } @dbnames;
+
+    foreach my $multidb (@funcgen_multidbs) {
+      my $sth = $dbh->prepare(
+        sprintf( 'SELECT species_id, meta_value FROM %s.meta ',
+          $dbh->quote_identifier($multidb) )
+          . "WHERE meta_key = 'species.db_name'"
+      );
+
+      $sth->execute();
+
+      my ( $species_id, $species );
+      $sth->bind_columns( \( $species_id, $species ) );
+
+      while ( $sth->fetch() ) {
+        my $dba = Bio::EnsEMBL::Funcgen::DBSQL::DBAdaptor->new(
+          -group           => "funcgen",
+          -species         => $species,
+          -species_id      => $species_id,
+          -multispecies_db => 1,
+          -host            => $host,
+          -user            => $user,
+          -pass            => $pass,
+          -port            => $port,
+          -dbname          => $multidb,
+          -wait_timeout    => $wait_timeout,
+          -no_cache        => $no_cache
+        );
+
+        if ($verbose) {
+          printf( "Species '%s' (id:%d) loaded from database '%s'\n",
+            $species, $species_id, $multidb );
+        }
+      }
+    } ## end foreach my $multidb (@funcgen_multidbs)
+  } ## end else [ if ($@) ]
 
   # Compara
 
@@ -1813,11 +1933,6 @@ sub load_registry_from_db {
                   database handles stored in the DBAdaptors.  Bypasses
                   the use of MetaContainer.
 
-  Arg [IGNORE_CLASH] :  (optional) boolean
-                        If specified will cause the subroutine to warn when
-                        an alias has already been used. Otherwise expcetions
-                        will be raised 
-
   Example       : Bio::EnsEMBL::Registry->find_and_add_aliases(
                     -ADAPTOR => $dba,
                     -GROUP   => 'core'
@@ -1832,8 +1947,7 @@ sub load_registry_from_db {
                   searching is performed.
 
   Return type   : none
-  Exceptions    : Throws if an alias is found in more than one species (see
-                  -IGNORE_CLASH to turn off this behaviour).
+  Exceptions    : Throws if an alias is found in more than one species.
   Status        : Stable
 
 =cut
@@ -1841,8 +1955,8 @@ sub load_registry_from_db {
 sub find_and_add_aliases {
   my $class = shift @_;
 
-  my ( $adaptor, $group, $dbh, $ignore_clash ) =
-    rearrange( [ 'ADAPTOR', 'GROUP', 'HANDLE', 'IGNORE_CLASH' ], @_ );
+  my ( $adaptor, $group, $dbh ) =
+    rearrange( [ 'ADAPTOR', 'GROUP', 'HANDLE' ], @_ );
 
   my @dbas;
   if ( defined($adaptor) ) {
@@ -1904,15 +2018,11 @@ sub find_and_add_aliases {
       if ( !$class->alias_exists($alias) ) {
         $class->add_alias( $species, $alias );
       } elsif ( $species ne $class->get_alias($alias) ) {
-        my $msg = sprintf("Trying to add alias '%s' to species '%s', "
+        throw(
+          sprintf(
+            "Trying to add alias '%s' to species '%s', "
               . " but it is already registrered for species '%s'\n",
-            $alias, $species, $class->get_alias($alias) );
-        if($ignore_clash) {
-          warning($msg); 
-        }
-        else {
-          throw($msg);
-        }
+            $alias, $species, $class->get_alias($alias) ) );
       }
     }
 
@@ -1954,7 +2064,7 @@ sub find_and_add_aliases {
 sub load_registry_from_multiple_dbs {
   my ( $self, @args ) = @_;
 
-  my %merged_register = %registry_register; 
+  my %merged_register = %registry_register;
 
   foreach my $arg (@args) {
     local %registry_register;
@@ -2233,96 +2343,208 @@ sub version_check {
 
 
 =head2 get_species_and_object_type
-  
-  get the species, ensembl type (Gene, Transcript , Translation or Exon) 
-  and database type (core, vega, otherfeatures) for a given stable_id
-  
-  Arg[1]     : stable_id to find species and ensembl type for.
-  Arg[2]     : (optional) integer. force searching of other databases that do not have a set format
-               for the stable_id by connecting to the databases and trying to retrieve each of the
-               ensembl object fetching using the stabke_id.
-  Example    : my ($species, $type, $db_type) = Bio::EnsEMBL::Registry->get_species_and_object_type(ENST00000326632);
-  Returntype : array. consisting of the species name, ensembl type and database type (core,vega,otherfeatures). undef, undef, undef returned if not found
-  Exceptions : none
-  Status     : At Risk.
+
+  Description:  Get the species name, object type (gene, transcript,
+                translation, or exon etc.), and database type for a
+                stable ID.
+
+                NOTE: No validation is done to see if the stable ID
+                      actually exists.
+
+  Arg[1]     :  String
+                The stable ID to find species and object type for.
+
+  Example    :  my ( $species, $object_type, $db_type ) =
+                  $registry->get_species_and_object_type('ENST00000326632');
+
+  Return type:  Array consisting of the species name, object type,
+                and database type.  The array may be empty if no
+                match is found.
+
+  Exceptions :  none
+  Status     :  At Risk.
 
 =cut
 
-#hashes containing codes of species and different database types to return
-  
-our %ensembl_type = qw(T Transcript G Gene P Translation E Exon);
-our %ensembl_species = qw(
-			  ENS     Homo_sapiens
-			  ENSRNO  Rattus_norvegicus
-			  ENSMUS  Mus_musculus
-			  ENSGAL  Gallus_gallus
-			  ENSBTA  Bos_taurus
-			  ENSDAR  Danio_rerio
-			  ENSCAF  Canis_familiaris
-			  ENSPTR  Pan_troglodytes
-			  ENSCPO  Cavia_porcellus
-			  ENSCIN  Ciona_intestinalis
-			  ENSCSAV Ciona_savignyi
-			  ENSDNO  Dasypus_novemcinctus
-			  ENSETE  Echinops_telfairi
-			  ENSEEU  Erinaceus_europaeus
-			  ENSFCA  Felis_catus
-			  ENSGAC  Gasterosteus_aculeatus
-			  ENSLAF  Loxodonta_africana
-			  ENSMMU  Macaca_mulatta
-			  ENSMOD  Monodelphis_domestica
-			  ENSMLU  Myotis_lucifugus
-			  ENSOAN  Ornithorhynchus_anatinus
-			  ENSOCU  Oryctolagus_cuniculus
-			  ENSORL  Oryzias_latipes
-			  ENSSAR  Otolemur_garnettii
-			  ENSSTO  Spermophilus_tridecemlineatus
-			  ENSTBE  Tupaia_belangeri
-			  SINFRU  Takifugu_rubripes
-			  ENSXET  Xenopus_tropicalis
-			  ENSMEU  Macropus_eugenii
-			  ENSSSC  Sus_scrofa
-			  ENSCJA  Callithrix_jaccus
-			  );
-our %vega_species = qw(
-		       OTTHUM  Homo_sapiens
-		       OTTMUS  Mus_musculus
-		       );
-our %ensembl_db_type = qw(EST otherfeatures);
-our %vectorbase_species = qw(
-			     AAEL Aedes_aegypti
-			     AGAP Anopheles_gambiae
-			     );
-our %vectorbase_type = qw(R Transcript P Translation);
+our %stable_id_prefix;
+our @nonstandard_prefix_species;
 
-sub get_species_and_object_type{
-  my ($self, $stable_id, $force) = @_;
- 
-## Check for Ensembl/Vega style identifiers...
-  if( $stable_id =~ /(\w+?)(EST)?([GTPE])\d/ ) {
-      return $ensembl_species{$1},$ensembl_type{$3}, $ensembl_db_type{$2} ||'core' if $ensembl_species{$1};
-      return $vega_species{$1}, $ensembl_type{$3}, 'vega' if $vega_species{$1};
-  }
-## Check for Vector base style identifiers
-  if( $stable_id =~ /^([A-Z]+)\d+-?(RP)?\w?/ && $vectorbase_species{$1} ) {
-      return $vectorbase_species{$1}, $vectorbase_type{$2}||'Gene','core';
-  }
-  if( $stable_id =~ /^([A-Z]+)?(\.e|E)\d+$/ && ($1 eq '' || $vectorbase_species{$1}) ) {
-      return $vectorbase_species{$1||'AGAP'}, 'Exon', 'core';
-  }
-  return unless defined($force) && $force;
-## Finally if "force" is passed see if we can find a non-standard string...
-  foreach my $species (qw(saccharomyces_cerevisiae tetraodon_nigroviridis
-                          drosophila_melanogaster caenorhabditis_elegans)){
-      foreach my $type (qw(Transcript Gene Translation Exon)){
-	  my $adaptor = $self->get_adaptor($species, 'core', $type);
-	  next unless defined($adaptor);
-	  my $entity = $adaptor->fetch_by_stable_id($stable_id);
-	  return ucfirst( $species ), $type,'core' if defined $entity;
+our %prefix_patterns = (
+  'core' => {
+    '^%sG\d' => 'Gene',         # '%s' will be replaced by the stable ID
+    '^%sT\d' => 'Transcript',   # prefix from the meta table.
+    '^%sP\d' => 'Translation',
+    '^%sE\d' => 'Exon',
+  },
+  'compara' => {
+    '^ENSGT\d' => 'Proteintree',    # "gene-tree"
+    '^ENSFM\d' => 'Family',
+    '^ENSRT\d' => 'NCTree',         # "ncRNA-tree"
+  },
+  'variation' => {
+    '^ENSSNP\d' => 'SNP',
+    '^rs\d'     => 'SNP',
+  },
+  'funcgen' => { '^%sR\d' => 'RegulatoryFeature', },
+);
+
+our @allowed_prefixes = (
+  'ENS',    # Standard Ensembl prefix.
+            # The rest are Ensembl Genomes prefixes.
+  'EB',
+  'EPr',
+  'EF',
+  'EPl',
+  'EM',
+);
+
+sub get_species_and_object_type {
+  my ( $self, $stable_id ) = @_;
+
+  if ( !%stable_id_prefix ) {
+    # Fetch stable ID prefixes from all connected databases.
+
+    foreach
+      my $dba ( @{ $self->get_all_DBAdaptors( '-group' => 'core' ) } )
+    {
+      my $species = $dba->species();
+
+      if ( lc($species) eq 'multi' ) { next }
+
+      my $dbh = $dba->dbc()->db_handle();
+
+      my $statement =
+          "SELECT meta_value "
+        . "FROM meta "
+        . "WHERE meta_key = 'species.stable_id_prefix' "
+        . "AND species_id = ?";
+
+      my $sth = $dbh->prepare($statement);
+
+      $sth->{'PrintError'} = 0;
+      $sth->{'RaiseError'} = 0;
+      if ( !$sth->execute( $dba->species_id() ) ) { next }
+      $sth->{'PrintError'} = $dbh->{'PrintError'};
+      $sth->{'RaiseError'} = $dbh->{'RaiseError'};
+
+      my $prefix;
+      $sth->bind_columns( \($prefix) );
+
+      my $fetched_something = 0;
+
+      while ( $sth->fetch() ) {
+        $fetched_something = 1;
+
+        my $standard_prefix = 0;
+
+        foreach my $allowed_prefix (@allowed_prefixes) {
+          if (
+            substr( $prefix, 0, length($allowed_prefix) ) eq
+            $allowed_prefix )
+          {
+            $standard_prefix = 1;
+            last;
+          }
+        }
+
+        if ( !$standard_prefix ) {
+          # These will be further queried if we find no match.
+          push( @nonstandard_prefix_species, $species );
+        } else {
+          if ( !exists( $stable_id_prefix{$prefix} ) ) {
+            $stable_id_prefix{$prefix} = [$species];
+          } else {
+            push( @{ $stable_id_prefix{$prefix} }, $species );
+          }
+        }
+
       }
-  }
-  return;
 
-}
+      if ( !$fetched_something ) {
+        # This database didn't have a matching
+        # 'species.stable_id_prefix' key in its meta table.
+        push( @nonstandard_prefix_species, $species );
+      }
+
+    } ## end foreach my $dba ( @{ $self->get_all_DBAdaptors...})
+  } ## end if ( !%stable_id_prefix)
+
+  my @match;
+
+FIRSTLOOP:
+  foreach my $group ( keys(%prefix_patterns) ) {
+    foreach my $prefix_pattern ( keys( %{ $prefix_patterns{$group} } ) )
+    {
+      my $type = $prefix_patterns{$group}{$prefix_pattern};
+
+      if ( index( $prefix_pattern, '%s' ) == -1 ) {
+        # The prefix pattern does not contain '%s', so we need not
+        # insert the stable ID prefixes read from the meta tables.
+
+        my $complete_pattern = $prefix_pattern;
+
+        if ( $stable_id =~ /$complete_pattern/ ) {
+          @match = ( 'multi', $type, $group );
+          last FIRSTLOOP;
+        }
+      } else {
+        # The prefix pattern contain '%s' which needs to be replaced
+        # with the stable ID prefix read from the meta table of each
+        # core database.
+
+        foreach my $prefix ( keys %stable_id_prefix ) {
+          my $species_array = $stable_id_prefix{$prefix};
+          my $complete_pattern = sprintf( $prefix_pattern, $prefix );
+
+          if ( $stable_id =~ /$complete_pattern/ ) {
+            if ( scalar( @{$species_array} ) == 1 ) {
+              # Only one species possible for this prefix pattern.
+              @match = ( $species_array->[0], $type, $group );
+              last FIRSTLOOP;
+            } else {
+
+              # More than one possible species for this prefix pattern.
+              foreach my $species ( @{$species_array} ) {
+                my $adaptor =
+                  $self->get_adaptor( $species, $group, $type );
+                my $object = $adaptor->fetch_by_stable_id($stable_id);
+                if ( defined($object) ) {
+                  @match = ( $species, $type, $group );
+                  last FIRSTLOOP;
+                }
+              }
+
+            }
+          }
+        }
+
+      } ## end else [ if ( index( $prefix_pattern...))]
+
+    } ## end foreach my $prefix_pattern ...
+  } ## end foreach my $group ( keys(%prefix_patterns...))
+
+  if (@match) { return @match }
+
+  # Go through the species in @nonstandard_prefix_species and query them
+  # for genes, transcripts, etc. (only core objects) until we have found
+  # a match for our stable ID or until we have exhausted the list.
+
+SECONDLOOP:
+  foreach my $species (@nonstandard_prefix_species) {
+    foreach my $type ( 'Gene', 'Transcript', 'Translation', 'Exon' ) {
+
+      my $adaptor = $self->get_adaptor( $species, 'Core', $type );
+      my $object = $adaptor->fetch_by_stable_id($stable_id);
+
+      if ( defined($object) ) {
+        @match = ( $species, $type, 'Core' );
+        last SECONDLOOP;
+      }
+
+    }
+  }
+
+  return @match;
+} ## end sub get_species_and_object_type
 
 1;
