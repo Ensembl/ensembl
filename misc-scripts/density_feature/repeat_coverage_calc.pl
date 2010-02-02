@@ -94,7 +94,7 @@ my $analysis =
        -logic_name  => "PercentageRepeat",
        -description =>
          'Percentage of repetetive elements for top level seq_regions.',
-       -display_label => 'PercentageRepeat',
+       -display_label => 'Repeats (percent)',
        -displayable   => 1 );
 
 $aa->store($analysis);
