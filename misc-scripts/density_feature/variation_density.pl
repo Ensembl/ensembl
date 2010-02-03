@@ -84,7 +84,7 @@ my $analysis =
               -gff_feature => "density",
               -logic_name  => "snpDensity",
               -description => 'Density of SNP features on the sequence',
-              -display_label => 'snpDensity',
+              -display_label => 'SNP Density',
               -displayable   => 1 );
 
 $aa->store($analysis);
