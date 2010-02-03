@@ -1,0 +1,40 @@
+Installation:
+------------
+
+This package uses GNU autoconf generated configure scripts, see the
+file INSTALL.configure for generic configure documentation.
+
+Pre-requisites:
+--------------
+
+You'll need to install 2 extra libraries that are used by the toolkit:
+
+* The Boost C++ libraries or boost for short (http://www.boost.org)
+  which provides free portable libraries compatible with standard
+  libraries.
+  We currently rely on boost version 1.37.0. 
+  This version can be downloaded at:
+  http://sourceforge.net/projects/boost/files/ 
+
+* Log for C++ library or Log4cpp for short.
+	Log4cpp is a library of C++ classes for flexible logging to files, 
+	syslog, IDSA and other destinations.
+	See the page of the project on SourceForge:
+	http://log4cpp.sourceforge.net/
+
+AltSplicingToolkit:
+------------------
+
+Once Boost and Log4cpp are installed, simply type:
+
+./configure --prefix=<altsplicingtoolkit installation path> \
+--with-boost-include=<boost installation path>/include/boost-1_37 \
+--with-boost-lib=<boost installation path>/lib \
+--with-log4cpp=<log4cpp installation path>
+
+make
+
+and (as root)
+
+make install
+
