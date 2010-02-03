@@ -1406,7 +1406,7 @@ sub load_registry_from_db {
   }
 
   for my $db (@dbnames) {
-    if ( $db =~ /^(\w+_collection_\w+)_(?:\d+_)?((\d+)_\w+)/ )
+    if ( $db =~ /^(\w+_collection_\w+(?:_\d+)?)_((\d+)_\w+)/ )
     {    # NEEDS TO BE FIRST TO PICK UP COLLECTION DBS
       if ( $3 eq $software_version ) {
         $temp{$1} = $2;
@@ -1441,6 +1441,7 @@ sub load_registry_from_db {
   @dbnames = ();
 
   foreach my $key ( keys %temp ) {
+    warn $key.'_'.$temp{$key};
     push @dbnames, $key . "_" . $temp{$key};
   }
 
@@ -1738,8 +1739,6 @@ sub load_registry_from_db {
       while ( $sth->fetch() ) {
          #Get the Core DB & assume this is the required DNADB
         my $dnadb = $self->get_DBAdaptor($species, 'core');
-#        use Data::Dumper;
-#        print Dumper(\%registry_register); die;
         my $dba = Bio::EnsEMBL::Funcgen::DBSQL::DBAdaptor->new(
           -group           => 'funcgen',
           -species         => $species,
