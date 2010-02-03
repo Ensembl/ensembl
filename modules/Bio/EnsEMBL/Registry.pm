@@ -1,6 +1,6 @@
 =head1 LICENSE
 
-  Copyright (c) 1999-2009 The European Bioinformatics Institute and
+  Copyright (c) 1999-2010 The European Bioinformatics Institute and
   Genome Research Limited.  All rights reserved.
 
   This software is distributed under a modified Apache license.
@@ -1441,7 +1441,6 @@ sub load_registry_from_db {
   @dbnames = ();
 
   foreach my $key ( keys %temp ) {
-    warn $key.'_'.$temp{$key};
     push @dbnames, $key . "_" . $temp{$key};
   }
 
