@@ -1,11 +1,22 @@
-#
-# Ensembl module for Bio::EnsEMBL::Attribute
-#
-# Copyright (c) 2004 Ensembl
-#
-# You may distribute this module under the same terms as perl itself
+=head1 LICENSE
 
-# POD documentation - main docs before the code
+  Copyright (c) 1999-2010 The European Bioinformatics Institute and
+  Genome Research Limited.  All rights reserved.
+
+  This software is distributed under a modified Apache license.
+  For license details, please see
+
+    http://www.ensembl.org/info/about/code_licence.html
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <ensembl-dev@ebi.ac.uk>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <helpdesk@ensembl.org>.
+
+=cut
 
 =head1 NAME
 
@@ -33,13 +44,6 @@ associated with seq_regions (and their Slices) and MiscFeatures.
 
 Also see B<Bio::EnsEMBL::Slice>, B<Bio::EnsEMBL::MiscFeature> and
 B<Bio::EnsEMBL::DBSQL::AttributeAdaptor>.
-
-=head1 CONTACT
-
-This modules is part of the Ensembl project http://www.ensembl.org
-
-Questions can be posted to the ensembl-dev mailing list:
-ensembl-dev@ebi.ac.uk
 
 =head1 METHODS
 
