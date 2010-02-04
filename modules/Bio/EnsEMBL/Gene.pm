@@ -930,15 +930,16 @@ sub transform {
     return $self->_deprecated_transform(@_);
   }
 
-  my $new_gene = $self->SUPER::transform( @_ );
-  if( ! defined $new_gene ) {
-    # check if this gene projects at all to requested coord system, 
+  my $new_gene = $self->SUPER::transform(@_);
+
+  if ( !defined($new_gene) ) {
+    # check if this gene projects at all to requested coord system,
     #  if not we are done.
-    my @segments = $self->project( @_ );
-    if( ! @segments ) {
+    my @segments = @{ $self->project(@_) };
+    if ( !@segments ) {
       return undef;
     }
-    $self->get_all_Transcripts();    
+    $self->get_all_Transcripts();
   }
 
   if( exists $self->{'_transcript_array'} ) {
