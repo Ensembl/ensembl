@@ -1465,11 +1465,13 @@ sub store_assembly{
           "the component Slice Coord_system" );
   }
 
-  my @path = $asm_cs->adaptor->get_mapping_path($asm_cs,$cmp_cs);
-  if(!@path) {
-    throw("No mapping path defined between ".
-          $asm_cs->name . " and " .
-          $cmp_cs->name);
+  my @path =
+    @{ $asm_cs->adaptor()->get_mapping_path( $asm_cs, $cmp_cs ) };
+
+  if ( !@path ) {
+    throw("No mapping path defined between "
+        . $asm_cs->name() . " and "
+        . $cmp_cs->name() );
   }
 
   if( $asm_slice->length != $cmp_slice->length ){
