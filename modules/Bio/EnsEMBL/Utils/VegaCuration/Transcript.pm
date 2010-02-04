@@ -147,7 +147,6 @@ sub check_remarks_and_update_names {
 
   #patch transcript names according to length and CDS
   $gene_c++;
-  my @trans = $gene->get_all_Transcripts();
 
   #separate coding and non_coding transcripts
   my $coding_trans = [];
