@@ -1,0 +1,113 @@
+altSpliceFinder Release Notes - User visible changes.
+
+Release 0.5.2 (03 February 2010)
+--------------------------------
+
+* First distribution as part of Ensembl
+
+Release 0.5.1 (15 January 2010)
+-------------------------------
+
+* Corrected options to compute statistics (--statistiscs|-s)
+  Released by Gautier Koscielny, based on stable version 0.5.
+
+Release 0.5 (08 December 2009)
+------------------------------
+
+* Major changes in altSpliceFinder 0.5 [stable]
+  Released by Gautier Koscielny, based on stable version 0.4.
+
+** relax mode: option ``-relax|-r'' to compute cassette exons and mutually
+   exclusive events with relaxed constraints on flanking exons.
+   In this mode, flanking exons are required to overlap but the constraints 
+   on the same 3p or 5p end is removed.
+
+** bug on A5SS computation fixed.
+
+** remove spurious STDERR logs on intron retention event 
+   computations.
+
+Release 0.4 (13 May 2009)
+-------------------------
+
+* Major changes in altSpliceFinder 0.4 (2009-05-13) [stable]
+  Released by Gautier Koscielny, based on stable version 0.3.
+
+** GFF output: each feature in featuresA or featuresB is followed by a list 
+   of corresponding transcripts in brackets.
+
+** constitutive mode: option ``-constitutives|-c'' to compute constitutive exons 
+   events only.
+
+** bug on constitutive exon computation fixed.
+
+Release 0.3 (27 January 2009)
+-----------------------------
+
+* Major changes in altSpliceFinder 0.3 (2009-01-27) [stable]
+  Released by Gautier Koscielny, based on stable version 0.2.
+
+** Unique ID for each event based on gene ID and event type: 
+   <gene_id>-<event_type>-number
+
+** Splice sites coordinates added for each feature of each type of events.
+
+** Extension of Intron Retention computations to catch more cases (not only 
+   exact exon 5p/3p but also overlapping cases).
+
+** Log4C++ Verbose mode added.
+
+** GNU Configure program with Log4CPP libraries dependencies.
+
+Release 0.2 (13 January 2009)
+-----------------------------
+
+* Major changes in altSpliceFinder 0.2 (2009-01-13) [stable]
+  Released by Gautier Koscielny, based on stable version 0.1.
+
+** Alternative First Exon (AFE) event computation.
+
+** Alternative Last Exon (ALE) event computation.
+
+** Constitutive Exon (CNE) event computation module added.
+
+** Source code directory structure reflects C++ namespace structure.
+
+** Replace the traditional Makefile with a GNU Configure program
+   including Boost libraries dependencies.
+
+** GPL license added.
+
+release 0.1 (December 2008)
+---------------------------
+
+* First release by Gautier Koscielny
+
+** Cassette Exon (CE)  event computation.
+
+** Intron Isoform (II) event computation.
+
+** Exon Isoform (EI) event computation.
+
+** Intron Retention (IR) event computation.
+
+** Mutually Exclusive (MXE) event computation.
+
+** Alternative Initiation (AI) event computation.
+
+** Alternative Termination (AT) event computation.
+
+** Simple makefile.
+
+-----
+
+Copyright (c) 1999-2010 The European Bioinformatics Institute and 
+Genome Research Limited, and others.  All rights reserved. 
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+Ensembl License for more details.
+
+You should have received a copy of the Ensembl License
+along with this program.  If not, see <http://www.ensembl.org/info/about/code_licence.html>.

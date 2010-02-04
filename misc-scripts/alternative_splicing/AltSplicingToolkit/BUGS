@@ -1,0 +1,10 @@
+-*- outline -*-
+
+This file lists the bugs you must be aware of.  Be sure to check this
+file before using programs from the AltSplicingToolkit.
+
+altSpliceFinder must not be used in production if there are ``Serious'' bugs.
+
+* Status: sane
+
+* No known serious or important bugs so far.
