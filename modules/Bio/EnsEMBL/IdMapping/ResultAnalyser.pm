@@ -338,8 +338,11 @@ sub get {
   Arg[1]      : String $dbtype - db type ('source' or 'target')
   Arg[2]      : String $class - key identifying a gene type (see class_key())
   Arg[3]      : String $subclass - status identifier (e.g. 'mapped', 'lost')
-  Example     : my @mapped_stable_ids = $analyser->get_all_by_subclass('source',
-                  'KNOWN-ensembl-protein_coding', 'mapped');
+  Example     : my @mapped_stable_ids = @{
+                  $analyser->get_all_by_subclass(
+                    'source', 'KNOWN-ensembl-protein_coding',
+                    'mapped'
+                  ) };
   Description : Gets a list of stable Id for a given subclass.
   Return type : Arrayref of String (stable Ids)
   Exceptions  : thrown on missing arguments
@@ -365,8 +368,9 @@ sub get_all_by_subclass {
 
   Arg[1]      : String $dbtype - db type ('source' or 'target')
   Arg[2]      : String $class - key identifying a gene type (see class_key())
-  Example     : my @stable_ids = $analyser->get_all_by_class('source',
-                  'KNOWN-ensembl-protein_coding');
+  Example     : my @stable_ids = @{
+                  $analyser->get_all_by_class( 'source',
+                    'KNOWN-ensembl-protein_coding' ) };
   Description : Gets a list of stable Id for a given class.
   Return type : Arrayref of String (stable Ids)
   Exceptions  : thrown on missing arguments

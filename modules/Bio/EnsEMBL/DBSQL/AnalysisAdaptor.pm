@@ -87,7 +87,7 @@ sub new {
 =head2 fetch_all
 
   Args       : none
-  Example    : my @analysis = $analysis_adaptor->fetch_all()
+  Example    : my @analysis = @{$analysis_adaptor->fetch_all()};
   Description: fetches all of the Analysis objects from the database and caches
                them internally.
   Returntype : listref of Bio::EnsEMBL::Analysis retrieved from the database

@@ -379,7 +379,7 @@ sub get_score {
 =head2 get_targets_for_source
 
   Arg[1]      : Int $source - source object's internal Id ("dbID")
-  Example     : my @targets = $gene_scores->get_targets_for_source(1234);
+  Example     : my @targets = @{ $gene_scores->get_targets_for_source(1234) };
   Description : Returns a list of all targets which have a score against a given
                 source object.
   Return type : Arrayref of Int (target objects' internal Ids)
@@ -401,7 +401,7 @@ sub get_targets_for_source {
 =head2 get_Entries_for_source
 
   Arg[1]      : Int $source - source object's internal Id ("dbID")
-  Example     : my @entries = $gene_scores->get_Entries_for_source(1234);
+  Example     : my @entries = @{ $gene_scores->get_Entries_for_source(1234) };
   Description : Returns a list of all Entries in the scoring matrix for a given
                 source object.
   Return type : Arrayref of Bio::EnsEMBL::IdMapping::Entry objects
@@ -424,7 +424,7 @@ sub get_Entries_for_source {
 =head2 get_sources_for_target
 
   Arg[1]      : Int $target - target object's internal Id ("dbID")
-  Example     : my @sources = $gene_scores->get_sources_for_target(5678);
+  Example     : my @sources = @{ $gene_scores->get_sources_for_target(5678) };
   Description : Returns a list of all sources which have a score against a given
                 target object.
   Return type : Arrayref of Int (source objects' internal Ids)
@@ -446,7 +446,7 @@ sub get_sources_for_target {
 =head2 get_Entries_for_target
 
   Arg[1]      : Int $target - target object's internal Id ("dbID")
-  Example     : my @entries = $gene_scores->get_Entries_for_target(5678);
+  Example     : my @entries = @{ $gene_scores->get_Entries_for_target(5678) };
   Description : Returns a list of all Entries in the scoring matrix for a given
                 target object.
   Return type : Arrayref of Bio::EnsEMBL::IdMapping::Entry objects

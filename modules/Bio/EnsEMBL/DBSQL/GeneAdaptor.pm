@@ -359,7 +359,7 @@ sub fetch_by_exon_stable_id {
 
   Arg [1]    : String $domain
                The domain to fetch genes from
-  Example    : my @genes = $gene_adaptor->fetch_all_by_domain($domain);
+  Example    : my @genes = @{ $gene_adaptor->fetch_all_by_domain($domain) };
   Description: Retrieves a listref of genes whose translation contain interpro
                domain $domain. The genes are returned in their native coord
                system (i.e. the coord_system they are stored in). If the coord
@@ -1343,7 +1343,9 @@ sub remove {
 
   Arg [1]    : String $gene_stable_id
                The stable ID of the gene to obtain
-  Example    : @i = $gene_adaptor->get_Interpro_by_geneid($gene->stable_id()); 
+  Example    : @i = @{
+                  $gene_adaptor->get_Interpro_by_geneid(
+                    $gene->stable_id() ) };
   Description: Gets interpro accession numbers by gene stable id. A hack really
                - we should have a much more structured system than this.
   Returntype : listref of strings (Interpro_acc:description)

@@ -55,8 +55,9 @@ use Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor;
                A lower bound for the hcoverage of feats to obtain.
   Arg [3]    : (optional) string $logic_name
                The logic name of the type of features to obtain.
-  Example    : @feats =
-                $adaptor->fetch_all_by_Slice_and_hcoverage( $slice, 50.0 );
+  Example    : @feats = @{
+                $adaptor->fetch_all_by_Slice_and_hcoverage( $slice,
+                  50.0 ) };
   Description: Returns a listref of features created from the
                database which are on the Slice $slice and with a
                hcoverage greater than $hcoverage.  If logic name
@@ -92,8 +93,9 @@ sub fetch_all_by_Slice_and_hcoverage {
                should be restricted.
   Arg [3]    : (optional) string $logic_name
                The logic name of the type of features to obtain.
-  Example    : @feats =
-                $adaptor->fetch_all_by_Slice_and_external_db( $slice, 'EMBL' );
+  Example    : @feats = @{
+                  $adaptor->fetch_all_by_Slice_and_external_db( $slice,
+                    'EMBL' ) };
   Description: Returns a listref of features created from the
                database which are on the Slice $slice and associated
                with external DB $external_db_name.  If logic name
@@ -151,7 +153,8 @@ sub fetch_all_by_Slice_and_external_db {
                to obtain.
   Arg [3]    : (optional) string $logic_name
                The logic name of the type of features to obtain.
-  Example    : @feats = $adaptor->fetch_all_by_Slice_and_pid( $slice, 50.0 );
+  Example    : @feats =
+                 @{ $adaptor->fetch_all_by_Slice_and_pid( $slice, 50.0 ) };
   Description: Returns a listref of features created from the
                database which are on the Slice $slice and with a
                percentage identity greater than $pid.  If logic name
@@ -197,7 +200,8 @@ sub fetch_all_by_Slice_and_pid {
                The analysis logic name of the type of features to
                obtain.
   Example    : @feats =
-                $adaptor->fetch_all_by_hit_name( $name, $logic_name );
+                 @{ $adaptor->fetch_all_by_hit_name( $name,
+                   $logic_name ); }
   Description: Returns a listref of features created from the
                database which correspond to the given hit_name.  If
                logic name is defined, only features with an analysis
@@ -244,7 +248,8 @@ sub fetch_all_by_hit_name {
                The analysis logic name of the type of features to
                obtain.
   Example    : @feats =
-                $adaptor->fetch_all_by_hit_name( $name, $logic_name );
+                  @{ $adaptor->fetch_all_by_hit_name( $name,
+                    $logic_name ) };
   Description: Returns a listref of features created from the
                database which start with the given hit_name.  If
                logic name is defined, only features with an analysis
