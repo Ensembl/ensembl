@@ -360,33 +360,35 @@ sub transform {
     return $self->transfer($new_feat->slice);
   }
 
-  my $new_feature = $self->SUPER::transform( @_ );
-  if( ! defined $new_feature or 
-      $new_feature->length != $self->length) {
-    my @segments = $self->project( @_ );
+  my $new_feature = $self->SUPER::transform(@_);
+  if ( !defined($new_feature)
+    || $new_feature->length() != $self->length() )
+  {
+    my @segments = @{ $self->project(@_) };
 
-    return undef if( ! @segments );  
+    if ( !@segments ) {
+      return undef;
+    }
 
     my @ungapped;
-    foreach my $f ($self->ungapped_features) {
-      $f = $f->transform( @_ );
-      if (defined $f) {
-        push @ungapped, $f;
+    foreach my $f ( $self->ungapped_features() ) {
+      $f = $f->transform(@_);
+      if ( defined($f) ) {
+        push( @ungapped, $f );
       } else {
-        warning("Failed to transform alignment feature; " .
-                "ungapped component could not be transformed");
+        warning( "Failed to transform alignment feature; "
+            . "ungapped component could not be transformed" );
         return undef;
       }
     }
 
-    eval {     
-      $new_feature = $self->new(-features => \@ungapped );
-    };
+    eval { $new_feature = $self->new( -features => \@ungapped ); };
+
     if ($@) {
       warning($@);
       return undef;
     }
-  }
+  } ## end if ( !defined($new_feature...))
 
   return $new_feature;
 }
