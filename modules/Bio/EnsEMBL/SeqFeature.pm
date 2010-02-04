@@ -676,14 +676,14 @@ sub entire_seq{
 
 =cut
 
-sub sub_SeqFeature{
-   my ($self) = @_;
+sub sub_SeqFeature {
+  my ($self) = @_;
 
-   if($self->{'_gsf_sub_array'}){
-     return @{$self->{'_gsf_sub_array'}};
-   }else{
-     return;
-   }
+  if ( $self->{'_gsf_sub_array'} ) {
+    return @{ $self->{'_gsf_sub_array'} };
+  } else {
+    return ();
+  }
 }
 
 =head2 add_sub_SeqFeature
