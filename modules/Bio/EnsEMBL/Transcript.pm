@@ -1855,12 +1855,14 @@ sub transform {
     return $self->transfer($new_ex->slice);
   }
 
-  my $new_transcript = $self->SUPER::transform( @_ );
-  if( ! defined $new_transcript ) {
-    my @segments = $self->project( @_ );
+  my $new_transcript = $self->SUPER::transform(@_);
+  if ( !defined($new_transcript) ) {
+    my @segments = @{ $self->project(@_) };
     # if it projects, maybe the exons transform well?
     # lazy load them here
-    return undef if( ! @segments );  
+    if ( !@segments ) {
+      return undef;
+    }
     $self->get_all_Exons();
   }
 
