@@ -273,7 +273,7 @@ sub fetch_by_translation_id {
   Arg [1]    : Bio::EnsEMBL::Gene $gene
                The gene to fetch transcripts of
   Example    : my $gene = $gene_adaptor->fetch_by_stable_id('ENSG0000123');
-               my @transcripts = $tr_adaptor->fetch_all_by_Gene($gene);
+               my @transcripts = { $tr_adaptor->fetch_all_by_Gene($gene) };
   Description: Retrieves Transcript objects for given gene. Puts Genes slice
                in each Transcript. 
   Returntype : Listref of Bio::EnsEMBL::Transcript objects
