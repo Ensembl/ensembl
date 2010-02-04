@@ -271,7 +271,7 @@ sub get_all_MiscSets {
 
   Arg [1]    : optional string $code
                The code of the Attribute objects to retrieve
-  Example    : @attributes = $misc_feature->get_all_Attributes('name');
+  Example    : @attributes = @{ $misc_feature->get_all_Attributes('name') };
   Description: Retrieves a list of Attribute objects for given code or all
                of the associated Attributes.
   Returntype : listref of Bio::EnsEMBL::Attribute
