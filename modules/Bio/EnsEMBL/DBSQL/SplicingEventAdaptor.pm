@@ -37,10 +37,6 @@ storage of SplicingEvent objects
 
   $se = $se_adaptor->fetch_by_dbID(12);
 
-  @ses = $se_adaptor->fetch_by_stable_id('ENSG00000184129');
-
-  @sess = @{ $se_adaptor->fetch_by__name('...-CNE-1') };
-
   $slice_adaptor =
     Bio::EnsEMBL::Registry->get_adaptor( "human", "core", "slice" );
 
