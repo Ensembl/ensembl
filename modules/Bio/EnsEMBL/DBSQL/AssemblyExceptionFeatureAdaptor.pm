@@ -147,6 +147,7 @@ sub fetch_all {
     # each row creates TWO features, each of which has alternate_slice
     # pointing to the "other" one
 
+   
     my $a = Bio::EnsEMBL::AssemblyExceptionFeature->new
           ('-dbID'            => $ax_id,
            '-start'           => $sr_start,
@@ -156,7 +157,7 @@ sub fetch_all {
            '-slice'           => $slice,
            '-alternate_slice' => $x_slice->sub_Slice($x_sr_start, $x_sr_end),
            '-type'            => $x_type);
-
+   
     push @features, $a;
     $self->{'_aexc_dbID_cache'}->{$ax_id} = $a;
 
@@ -344,7 +345,274 @@ sub _remap {
   return \@out;
 }
 
+=head2 store
 
+    Arg[1]       : Bio::EnsEMBL::AssemblyException $asx
+    Arg[2]       : Bio::EnsEMBL::AssemblyException $asx2
+
+    Example      : $asx = Bio::EnsEMBL::AssemblyExceptionFeature->new(...)
+                   $asx2 = Bio::EnsEMBL::AssemblyExceptionFeature->new(...)
+                   $asx_seq_region_id = $asx_adaptor->store($asx);
+    Description:  This stores a assembly exception feature in the 
+                  assembly_exception table and returns the assembly_exception_id.
+                  Needs 2 features: one pointing to the Assembly_exception, and the
+                  other pointing to the region in the reference that is being mapped to
+                  Will check that start, end and type are defined, and the alternate
+                  slice is present as well.
+    ReturnType:   int
+    Exceptions:   throw if assembly exception not defined (needs start, end,
+		  type and alternate_slice) of if $asx not a Bio::EnsEMBL::AssemblyException
+    Caller:       general
+    Status:       Stable
+=cut
+
+    use Data::Dumper;
+
+sub store{
+    my $self = shift;
+    my $asx = shift;
+    my $asx2 = shift;
+
+    if (! $asx->isa('Bio::EnsEMBL::AssemblyExceptionFeature')){
+	throw("$asx is not a Ensembl assemlby exception -- not stored");
+    }
+    #if already present, return ID in the database
+    my $db = $self->db();
+    if ($asx->is_stored($db)){
+	return $asx->dbID();
+    }
+    #do some checkings for the object
+    #at the moment, the orientation is always 1
+    if (! $asx->start || ! $asx->end ){
+	throw("Assembly exception does not have coordinates");
+    }
+    if ($asx->type !~ /PAR|HAP/){
+	throw("Only types of assembly exception features valid are PAR and HAP");
+    }
+    if (! $asx->alternate_slice->isa('Bio::EnsEMBL::Slice')){
+	throw("Alternate slice should be a Bio::EnsEMBL::Slice");
+    }
+    #now check the other Assembly exception feature, the one pointing to the REF
+    # region
+    if (!$asx2->isa('Bio::EnsEMBL::AssemblyExceptionFeature')){
+	throw("$asx2 is not a Ensembl assemlby exception -- not stored");
+    }
+     if (! $asx2->start || ! $asx2->end ){
+	throw("Assembly exception does not have coordinates");
+    }
+    if ($asx2->type !~ /HAP REF|PAR REF/){
+	throw("$asx2 should have  type of assembly exception features HAP REF or PAR REF");
+    }
+    if (! $asx->alternate_slice->isa('Bio::EnsEMBL::Slice')){
+	throw("Alternate slice should be a Bio::EnsEMBL::Slice");
+    }
+    #finally check that both features are pointing to each other slice
+    if ($asx->slice != $asx2->alternate_slice || $asx->alternate_slice != $asx2->slice){
+	throw("Slice and alternate slice in both features are not pointing to each other");
+    }
+    #prepare the SQL
+    my $asx_sql = q{
+	INSERT INTO assembly_exception( seq_region_id, seq_region_start,
+					seq_region_end, 
+					exc_type, exc_seq_region_id,
+					exc_seq_region_start, exc_seq_region_end,
+					ori)
+	    VALUES (?, ?, ?, ?, ?, ?, ?, 1)
+	};
+
+    my $asx_st = $self->prepare($asx_sql);
+    my $asx_id = undef;
+    my $asx_seq_region_id;
+    my $asx2_seq_region_id;
+    my $original = $asx;
+    my $original2 = $asx2;
+    #check all feature information
+    ($asx, $asx_seq_region_id) = $self->_pre_store($asx);
+    ($asx2, $asx2_seq_region_id) = $self->_pre_store($asx2);
+
+    #and store it
+    $asx_st->bind_param(1, $asx_seq_region_id, SQL_INTEGER);
+    $asx_st->bind_param(2, $asx->start(), SQL_INTEGER);
+    $asx_st->bind_param(3, $asx->end(), SQL_INTEGER);
+    $asx_st->bind_param(4, $asx->type(), SQL_VARCHAR);
+    $asx_st->bind_param(5, $asx2_seq_region_id, SQL_INTEGER);
+    $asx_st->bind_param(6, $asx2->start(), SQL_INTEGER);
+    $asx_st->bind_param(7, $asx2->end(), SQL_INTEGER);
+
+    $asx_st->execute();
+    $asx_id = $asx_st->{'mysql_insertid'};
+
+    #finally, update the dbID and adaptor of the asx and asx2
+    $original->adaptor($self);
+    $original->dbID($asx_id);
+    $original2->adaptor($self);
+    $original2->dbID($asx_id);
+    #and finally update dbID cache with new assembly exception
+    $self->{'_aexc_dbID_cache'}->{$asx_id} = $original;
+    #and update the other caches as well
+    push @{$self->{'_aexc_slice_cache'}->{uc($asx->slice->name)}},$original, $original2;
+    push @{$self->{'_aexc_cache'}}, $original, $original2;
+    
+    return $asx_id;
+}
+
+#
+# Helper function containing some common feature storing functionality
+#
+# Given a Feature this will return a copy (or the same feature if no changes 
+# to the feature are needed) of the feature which is relative to the start
+# of the seq_region it is on. The seq_region_id of the seq_region it is on
+# is also returned.
+#
+# This method will also ensure that the database knows which coordinate
+# systems that this feature is stored in.
+# Since this adaptor doesn't inherit from BaseFeatureAdaptor, we need to copy
+# the code
+#
+
+sub _pre_store {
+  my $self    = shift;
+  my $feature = shift;
+
+  if(!ref($feature) || !$feature->isa('Bio::EnsEMBL::Feature')) {
+    throw('Expected Feature argument.');
+  }
+
+  $self->_check_start_end_strand($feature->start(),$feature->end(),
+                                 $feature->strand());
+
+
+  my $db = $self->db();
+
+  my $slice_adaptor = $db->get_SliceAdaptor();
+  my $slice = $feature->slice();
+
+  if(!ref($slice) || !$slice->isa('Bio::EnsEMBL::Slice')) {
+    throw('Feature must be attached to Slice to be stored.');
+  }
+
+  # make sure feature coords are relative to start of entire seq_region
+
+  if($slice->start != 1 || $slice->strand != 1) {
+    #move feature onto a slice of the entire seq_region
+    $slice = $slice_adaptor->fetch_by_region($slice->coord_system->name(),
+                                             $slice->seq_region_name(),
+                                             undef, #start
+                                             undef, #end
+                                             undef, #strand
+                                             $slice->coord_system->version());
+
+    $feature = $feature->transfer($slice);
+
+    if(!$feature) {
+      throw('Could not transfer Feature to slice of ' .
+            'entire seq_region prior to storing');
+    }
+  }
+
+  # Ensure this type of feature is known to be stored in this coord system.
+  my $cs = $slice->coord_system;
+
+   my $mcc = $db->get_MetaCoordContainer();
+
+  $mcc->add_feature_type($cs, 'assembly_exception', $feature->length);
+
+  my $seq_region_id = $slice_adaptor->get_seq_region_id($slice);
+
+  if(!$seq_region_id) {
+    throw('Feature is associated with seq_region which is not in this DB.');
+  }
+
+  return ($feature, $seq_region_id);
+}
+
+#
+# helper function used to validate start/end/strand and 
+# hstart/hend/hstrand etc.
+#
+sub _check_start_end_strand {
+  my $self = shift;
+  my $start = shift;
+  my $end   = shift;
+  my $strand = shift;
+
+  #
+  # Make sure that the start, end, strand are valid
+  #
+  if(int($start) != $start) {
+    throw("Invalid Feature start [$start].  Must be integer.");
+  }
+  if(int($end) != $end) {
+    throw("Invalid Feature end [$end]. Must be integer.");
+  }
+  if(int($strand) != $strand || $strand < -1 || $strand > 1) {
+    throw("Invalid Feature strand [$strand]. Must be -1, 0 or 1.");
+  }
+  if($end < $start) {
+    throw("Invalid Feature start/end [$start/$end]. Start must be less " .
+          "than or equal to end.");
+  }
+
+  return 1;
+}
+
+=head2 remove
+
+  Arg [1]    : $asx Bio::EnsEMBL::AssemblyFeatureException 
+  Example    : $asx_adaptor->remove($asx);
+  Description: This removes a assembly exception feature from the database.  
+  Returntype : none
+  Exceptions : thrown if $asx arg does not implement dbID(), or if
+               $asx->dbID is not a true value
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+#again, this method is generic in BaseFeatureAdaptor, but since this class
+#is not inheriting, need to copy&paste
+sub remove {
+  my ($self, $feature) = @_;
+
+  if(!$feature || !ref($feature) || !$feature->isa('Bio::EnsEMBL::AssemblyExceptionFeature')) {
+    throw('AssemblyExceptionFeature argument is required');
+  }
+
+  if(!$feature->is_stored($self->db)) {
+    throw("This feature is not stored in this database");
+  }
+
+  my $asx_id = $feature->dbID();
+  my $key = uc($feature->slice->name);
+  my $sth = $self->prepare("DELETE FROM assembly_exception WHERE assembly_exception_id = ?");
+  $sth->bind_param(1,$feature->dbID,SQL_INTEGER);
+  $sth->execute();
+  
+  #and clear cache
+  #and finally update dbID cache
+  delete $self->{'_aexc_dbID_cache'}->{$asx_id};
+  #and remove from cache feature
+  my @features;
+  foreach my $asx (@{$self->{'_aexc_slice_cache'}->{$key}}){
+      if ($asx->dbID != $asx_id){
+	  push @features, $asx;
+      }
+  }
+  $self->{'_aexc_slice_cache'}->{$key} = \@features;
+  @features = ();
+  foreach my $asx (@{$self->{'_aexc_cache'}}){
+      if ($asx->dbID != $asx_id){
+	  push @features, $asx;
+      }
+  }
+  $self->{'_aexc_cache'} = \@features;
+
+#unset the feature dbID ad adaptor
+  $feature->dbID(undef);
+  $feature->adaptor(undef);
+
+  return;
+}
 
 
 1;
