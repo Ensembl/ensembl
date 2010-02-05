@@ -359,46 +359,49 @@ sub store {
   my $rows_inserted = 0;
   my $sth;
 
-  if($analysis->created ) {
+  if ( $analysis->created() ) {
 
-    # we use insert IGNORE so that this method can be used in a multi-process
-    # environment.  If another process has already written this record
-    # then there will not be a problem
+    # We use insert IGNORE so that this method can be used in a
+    # multi-process environment.  If another process has already written
+    # this record then there will not be a problem.
 
-    $sth = $self->prepare( q{
+    $sth = $self->prepare(
+      q{
       INSERT IGNORE INTO analysis
       SET created = ?,
           logic_name = ?,
-	        db = ?,
-	        db_version = ?,
+          db = ?,
+          db_version = ?,
           db_file = ?,
           program = ?,
           program_version = ?,
           program_file = ?,
-	        parameters = ?,
+          parameters = ?,
           module = ?,
           module_version = ?,
           gff_source = ?,
           gff_feature = ?
+      }
+    );
+    $sth->bind_param( 1,  $analysis->created,         SQL_DATETIME );
+    $sth->bind_param( 2,  $analysis->logic_name,      SQL_VARCHAR );
+    $sth->bind_param( 3,  $analysis->db,              SQL_VARCHAR );
+    $sth->bind_param( 4,  $analysis->db_version,      SQL_VARCHAR );
+    $sth->bind_param( 5,  $analysis->db_file,         SQL_VARCHAR );
+    $sth->bind_param( 6,  $analysis->program,         SQL_VARCHAR );
+    $sth->bind_param( 7,  $analysis->program_version, SQL_VARCHAR );
+    $sth->bind_param( 8,  $analysis->program_file,    SQL_VARCHAR );
+    $sth->bind_param( 9,  $analysis->parameters,      SQL_VARCHAR );
+    $sth->bind_param( 10, $analysis->module,          SQL_VARCHAR );
+    $sth->bind_param( 11, $analysis->module_version,  SQL_VARCHAR );
+    $sth->bind_param( 12, $analysis->gff_source,      SQL_VARCHAR );
+    $sth->bind_param( 13, $analysis->gff_feature,     SQL_VARCHAR );
 
-			    } );
-    $sth->bind_param(1,$analysis->created,SQL_DATETIME);
-    $sth->bind_param(2,$analysis->logic_name,SQL_VARCHAR);
-    $sth->bind_param(3,$analysis->db,SQL_VARCHAR);
-    $sth->bind_param(4,$analysis->db_version,SQL_VARCHAR);
-    $sth->bind_param(5,$analysis->db_file,SQL_VARCHAR);
-    $sth->bind_param(6,$analysis->program,SQL_VARCHAR);
-    $sth->bind_param(7,$analysis->program_version,SQL_VARCHAR);
-    $sth->bind_param(8,$analysis->program_file,SQL_VARCHAR);
-    $sth->bind_param(9,$analysis->parameters,SQL_VARCHAR);
-    $sth->bind_param(10,$analysis->module,SQL_VARCHAR);
-    $sth->bind_param(11,$analysis->module_version,SQL_VARCHAR);
-    $sth->bind_param(12,$analysis->gff_source,SQL_VARCHAR);
-    $sth->bind_param(13,$analysis->gff_feature,SQL_VARCHAR);
     $rows_inserted = $sth->execute();
 
   } else {
-    $sth = $self->prepare( q{
+    $sth = $self->prepare(
+      q{
       INSERT IGNORE INTO analysis
       SET created = now(),
           logic_name = ?,
@@ -408,45 +411,50 @@ sub store {
           program = ?,
           program_version = ?,
           program_file = ?,
-	        parameters = ?,
+          parameters = ?,
           module = ?,
           module_version = ?,
           gff_source = ?,
           gff_feature = ?
-	 } );
-    
-    $sth->bind_param(1,$analysis->logic_name,SQL_VARCHAR);
-    $sth->bind_param(2,$analysis->db,SQL_VARCHAR);
-    $sth->bind_param(3,$analysis->db_version,SQL_VARCHAR);
-    $sth->bind_param(4,$analysis->db_file,SQL_VARCHAR);
-    $sth->bind_param(5,$analysis->program,SQL_VARCHAR);
-    $sth->bind_param(6,$analysis->program_version,SQL_VARCHAR);
-    $sth->bind_param(7,$analysis->program_file,SQL_VARCHAR);
-    $sth->bind_param(8,$analysis->parameters,SQL_VARCHAR);
-    $sth->bind_param(9,$analysis->module,SQL_VARCHAR);
-    $sth->bind_param(10,$analysis->module_version,SQL_VARCHAR);
-    $sth->bind_param(11,$analysis->gff_source,SQL_VARCHAR);
-    $sth->bind_param(12,$analysis->gff_feature,SQL_VARCHAR);
+       }
+    );
+
+    $sth->bind_param( 1,  $analysis->logic_name,      SQL_VARCHAR );
+    $sth->bind_param( 2,  $analysis->db,              SQL_VARCHAR );
+    $sth->bind_param( 3,  $analysis->db_version,      SQL_VARCHAR );
+    $sth->bind_param( 4,  $analysis->db_file,         SQL_VARCHAR );
+    $sth->bind_param( 5,  $analysis->program,         SQL_VARCHAR );
+    $sth->bind_param( 6,  $analysis->program_version, SQL_VARCHAR );
+    $sth->bind_param( 7,  $analysis->program_file,    SQL_VARCHAR );
+    $sth->bind_param( 8,  $analysis->parameters,      SQL_VARCHAR );
+    $sth->bind_param( 9,  $analysis->module,          SQL_VARCHAR );
+    $sth->bind_param( 10, $analysis->module_version,  SQL_VARCHAR );
+    $sth->bind_param( 11, $analysis->gff_source,      SQL_VARCHAR );
+    $sth->bind_param( 12, $analysis->gff_feature,     SQL_VARCHAR );
 
     $rows_inserted = $sth->execute();
-  }
+
+  } ## end else [ if ( $analysis->created...)]
 
   my $dbID;
-  # if we need to fetch the timestamp, or the insert failed due to existance
-  # of an existing entry, we need to retrieve the entry from the db
-  # note: $sth->execute can return 0E0 on error which is zero, but true
-  # which is why the $rows_inserted clause was added.
-  if(!$analysis->created() || !$rows_inserted || $rows_inserted == 0) {
-    my $new_analysis = $self->fetch_by_logic_name($analysis->logic_name);
+  # If we need to fetch the timestamp, or the insert failed due to
+  # existance of an existing entry, we need to retrieve the entry from
+  # the database.  Note: $sth->execute() may return 0E0 on error which
+  # is zero, but true which is why the $rows_inserted clause was added.
+  if ( !$analysis->created() || !$rows_inserted || $rows_inserted == 0 )
+  {
+    my $new_analysis =
+      $self->fetch_by_logic_name( $analysis->logic_name );
 
-    if(!$new_analysis) {
-      throw("Could not retrieve just stored analysis from database.\n" .
-            "Possibly incorrect db permissions or missing analysis table\n");
+    if ( !$new_analysis ) {
+      throw("Could not retrieve just stored analysis from database.\n"
+          . "Possibly incorrect db permissions or missing analysis table\n"
+      );
     }
 
     $dbID = $new_analysis->dbID();
-    $analysis->created($new_analysis->created());
-  } 
+    $analysis->created( $new_analysis->created() );
+  }
   
   $dbID ||= $sth->{'mysql_insertid'};
   $sth->finish();
