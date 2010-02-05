@@ -781,4 +781,131 @@ sub remove_indels {
 	$self->{'alleleFeatures'} = \@new_afs;
 }
 
+
+=head2 _get_ReadCoverage
+
+	Args		: none
+	Example		: $ss->_get_ReadCoverage()
+	Description	: Internal method to add read coverage info to this strain slice
+	ReturnType	: none
+	Exceptions	: none
+	Caller		: Internal
+
+=cut
+
+sub _get_ReadCoverage {
+	my $self = shift;
+	
+	# check we have an adaptor
+	unless(defined $self->adaptor) {
+		warning('Cannot get Read Coverage info without attached adaptor');
+		return '';
+	}	
+	
+	# try and get a var DB connection
+	my $variation_db = $self->adaptor->db->get_db_adaptor('variation');
+
+    unless($variation_db) {
+		warning("Variation database must be attached to core database to ".
+				"retrieve variation information" );
+		return '';
+    }
+	
+	# try and get a RC adaptor
+	my $rc_adaptor = $variation_db->get_ReadCoverageAdaptor();
+	
+	unless($rc_adaptor) {
+		warning("Could not get ReadCoverageAdaptor");
+		return '';
+    }
+	
+	# try and get an individual adatpor
+	my $ind_adaptor = $variation_db->get_IndividualAdaptor;
+
+	unless($ind_adaptor){
+		warning("Could not get IndividualAdaptor");
+		return '';
+	}
+	
+	# get the individual object
+	my $ind = shift @{$ind_adaptor->fetch_all_by_name($self->{'strain_name'})};
+	
+	# get all read coverage units for this individual and slice
+	my @rcs = @{$rc_adaptor->fetch_all_by_Slice_Sample_depth($self, $ind)};
+	
+	# get indels
+	my @indels_ordered = sort {$b->start() <=> $a->start()} @{$self->{'alignIndels'}} if (defined $self->{'alignIndels'});
+	
+	# get length differences
+	my %length_changes;
+    foreach my $af (@indels_ordered) {
+		$length_changes{$af->start} = $af->length_diff;
+	}
+	
+	my @new_rcs;
+	
+	# change RC coordinates according to length diffs
+	foreach my $rc(@rcs) {
+		foreach my $pos(keys %length_changes) {
+			if($rc->start > $pos) {
+				$rc->start($rc->start + $length_changes{$pos});
+			}
+			
+			if($rc->end > $pos) {
+				$rc->end($rc->end + $length_changes{$pos});
+			}
+		}
+		
+		push @new_rcs, $rc;
+	}
+	
+	$self->{'_read_coverage'} = \@new_rcs;
+	
+	return $self->{'_read_coverage'};
+}
+
+
+=head2 masked_seq
+
+	Args		: none
+	Example		: my $seq = $ss->masked_seq()
+	Description	: Returns the sequence of this Strain Slice with "N"s in place
+				  of the sequence where there is no read coverage.
+	ReturnType	: none
+	Exceptions	: none
+	Caller		: General
+
+=cut
+
+sub masked_seq {
+	my $self = shift;
+	
+	# get the sequence of the strain
+	my $seq = $self->seq();
+	
+	# make an equivalent fully masked string
+	my $masked = "N" x length($seq);
+	
+	# make sure read coverage has been retrieved
+	if(!defined($self->{'_read_coverage'})) {
+		$self->_get_ReadCoverage();
+	}
+	
+	# iterate through read coverage units
+	foreach my $rc(@{$self->{'_read_coverage'}}) {
+		next unless $rc->level() >= 1;
+		
+		my ($start, $end) = ($rc->start, $rc->end);
+		
+		# adjust coords to within string bounds
+		$start = 1 if $start < 1;
+		$end = length($seq) if $end > length($seq);
+		
+		# unmask sequence over region of coverage
+		substr($masked, $start - 1, ($end - $start) + 1) = substr($seq, $start - 1, ($end - $start) + 1);
+	}
+	
+	return $masked;
+}
+
 1;
