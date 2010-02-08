@@ -105,6 +105,7 @@
 4660	shares_CDS_with_ENST	1	XREF	1	0	1	Imported HAVANA transcripts (Shares CDS with ENST)	ALT_TRANS	\N	\N
 4670	shares_CDS_with_OTTT	1	XREF	1	0	1	Havana transcript having same CDS	ALT_TRANS	\N	\N
 4680	shares_CDS_and_UTR_with_OTTT	1	XREF	1	0	1	Transcript having exact match between ENSEMBL and HAVANA	ALT_TRANS	\N	\N
+4690	ENSG	1	XREF	1	0	1	Ensembl gene	ALT_GENE	\N	\N
 4700	Medaka	1	XREF	1	0	1	Medaka Genome Project	MISC	\N	\N
 4800	ENST	1	XREF	1	0	1	Ensembl transcript having exact match with Havana	ALT_TRANS	\N	\N
 4810	ENST_ident	1	XREF	1	0	1	Ensembl transcript having exact match with Havana	ALT_TRANS	\N	\N
