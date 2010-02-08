@@ -1124,6 +1124,7 @@ sub _by_chr_num {
                 large chromosomes
   Arg[2]      : (optional) Boolean to include duplicate regions, ie PAR or not
                 (default is no)
+  Arg[3]      : (optional) Coordsystem version to retrieve
 
   Example     : my $chr_slices = $support->split_chromosomes_by_size;
                 foreach my $block_size (keys %{ $chr_slices }) {
@@ -1150,6 +1151,7 @@ sub split_chromosomes_by_size {
   my $self   = shift;
   my $cutoff = shift || 5000000;
   my $dup    = shift || 0;
+  my $cs_version = shift;
   my $slice_adaptor = $self->dba->get_SliceAdaptor;
   my $top_slices;
   if ($self->param('chromosomes')) {
@@ -1157,7 +1159,7 @@ sub split_chromosomes_by_size {
       push @{ $top_slices }, $slice_adaptor->fetch_by_region('chromosome', $chr);
     }
   } else {
-    $top_slices = $slice_adaptor->fetch_all('chromosome',undef,0,$dup);
+    $top_slices = $slice_adaptor->fetch_all('chromosome',$cs_version,0,$dup);
   }
 
   my ($big_chr, $small_chr, $min_big_chr, $min_small_chr);
