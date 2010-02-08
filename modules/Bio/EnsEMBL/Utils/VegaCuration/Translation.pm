@@ -127,10 +127,13 @@ sub check_CDS_start_end_remarks_loutre {
   foreach my $attribute (@{$trans->get_all_Attributes()}) {
     $attributes{$attribute->code} = $attribute;
   }
+#  warn $trans->stable_id;
+#  warn Data::Dumper::Dumper(\%attributes);
   my $coding_end   = $trans->cdna_coding_end;
   my $coding_start = $trans->cdna_coding_start;
   my $trans_end    = $trans->length;
   my $trans_seq    = $trans->seq->seq;
+  my $stop_codon_offset = 3 + $trans->translation->end_Exon->end_phase;
   my $stop_codon   = substr($trans_seq, $coding_end-3, 3);
   my $start_codon  = substr($trans_seq, $coding_start-1, 3);
 
@@ -138,36 +141,48 @@ sub check_CDS_start_end_remarks_loutre {
   my $results;
 
   #extra CDS end not found remarks
-  if ( ($attributes{'cds_end_NF'}->value == 1)
-	 && ($coding_end != $trans_end) 
+  if ($attributes{'cds_end_NF'}) {
+    if ( ($attributes{'cds_end_NF'}->value == 1)
+	   && ($coding_end != $trans_end) 
 	   && ( grep {$_ eq $stop_codon} @stops) ) {
-    $results->{'END_EXTRA'} = 1;
+#      warn $trans->stable_id.": $coding_end--$trans_end--$stop_codon";
+#      warn $trans->translation->end_Exon->end_phase;
+      $results->{'END_EXTRA'} = $stop_codon1;
+    }
   }
   #missing CDS end not found remark
   if ( $coding_end == $trans_end ) {
-    if ($attributes{'cds_end_NF'}->value == 0 ) {
-      if (grep {$_ eq $stop_codon} @stops) {
-	$results->{'END_MISSING_2'} = 1;
-      }
-      else {
-	$results->{'END_MISSING_1'} = $stop_codon;
+    if ($attributes{'cds_end_NF'}) {
+      if ($attributes{'cds_end_NF'}->value == 0 ) {
+	if (! grep {$_ eq $stop_codon} @stops) {
+#	  warn $trans->stable_id.": $coding_end--$trans_end--$stop_codon";
+#	  warn $trans->translation->end_Exon->end_phase;
+	  $results->{'END_MISSING'}{'WRONG'} = $stop_codon;
+	}
       }
     }
+    elsif (! grep {$_ eq $stop_codon} @stops) {
+      $results->{'END_MISSING'}{'ABSENT'} = $stop_codon;
+    }
   }
-  #extra CDS start not found remark
-  if ( ($attributes{'cds_start_NF'}->value == 1 )
-	 && ($coding_start != 1)
+  #extra CDS start not found remark 
+  if ( $attributes{'cds_start_NF'}) {
+    if ( ($attributes{'cds_start_NF'}->value == 1 )
 	   && ($start_codon eq 'ATG') ) {
-    $results->{'START_EXTRA'} = 1;
+      $results->{'START_EXTRA'} = $start_codon;
+    }
   }
   #missing CDS start not found remark
   if ( $coding_start == 1) {
-    if ( $attributes{'cds_start_NF'}->value == 0 ) {
-      if ($start_codon eq 'ATG') {
-	$results->{'START_MISSING_2'} = 1;
-      } else {
-	$results->{'START_MISSING_1'} = $start_codon;
+    if ( $attributes{'cds_start_NF'} ) {
+      if ( $attributes{'cds_start_NF'}->value == 0 ) {
+	if ($start_codon ne 'ATG') {
+	  $results->{'START_MISSING'}{'WRONG'} = $start_codon;
+	}
       }
+    }
+    elsif ($start_codon ne 'ATG') {
+      $results->{'START_MISSING'}{'ABSENT'} = $start_codon;
     }
   }
   return $results;
@@ -206,6 +221,14 @@ sub check_for_stops {
     my $tsi = $trans->stable_id;
     my $tID = $trans->dbID;
     my $tname = $trans->get_all_Attributes('name')->[0]->value;
+
+    foreach my $rem (@{$trans->get_all_Attributes('hidden_remark')}) {
+      if ($rem->value =~ /not_for_Vega/) {
+	$support->log_verbose("Skipping transcript $tname ($tsi) since 'not_for_Vega'\n",1);
+	next TRANS;
+      }
+    }
+
     $support->log_verbose("Studying transcript $tsi ($tname, $tID)\n",1);
 
     my $peptide;
