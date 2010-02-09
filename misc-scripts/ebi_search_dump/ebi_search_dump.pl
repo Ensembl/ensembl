@@ -1,4 +1,4 @@
-#!/usr/local/ensembl/bin/perl
+#!/usr/local/bin/perl
 
 # Dump variation information to an XML file for indexing by the EBI's search engine.
 #
@@ -64,21 +64,22 @@ my $dbHash = get_databases();
 #warn Dumper $dbcHash;
 
 foreach my $species ( sort keys %$dbHash ) {
+
     my $conf = $dbHash->{$species};
     foreach my $index (@indexes) {
-
-
+	# we don't dump compara anymore
+	next if $index =~/Family/;
         my $function = "dump$index";
         no strict "refs";
 	
 	$species =~ s/_/ /g;
-	if ($index ne 'Family'){
+	if ($index eq 'Gene'){
 	    &$function( ucfirst($species), $conf );
 	    print $function,"\n";
-	} elsif ($index eq 'Family' && !$FAMILY_DUMPED) {
-	    &dumpFamily($conf);
+	} #elsif ($index eq 'Family' && !$FAMILY_DUMPED) {
+	   # &dumpFamily($conf);
 	    
-	}
+	#}
 	
     }
     
@@ -152,18 +153,21 @@ sub get_databases {
 
     my @dbnames =
       map { $_->[0] } @{ $db->selectall_arrayref("show databases") };
-
     $db->disconnect();
 
     my $latest_release = 0;
     my ( $db_species, $db_release, $db_type );
     my $compara_hash;
     for my $dbname (@dbnames) {
+
+
         if ( ( $db_species, $db_type, $db_release ) =
             $dbname =~ /^([a-z]+_[a-z]+)_([a-z]+)_(\d+)_\w+$/ )
         {
 
+
             next if ( $species ne 'ALL' ) && ( $db_species ne $species );
+
             $latest_release = $db_release if ( $db_release > $latest_release );
             $dbHash->{$db_species}->{$db_type}->{$db_release} = $dbname;
 
@@ -176,6 +180,8 @@ sub get_databases {
         }
 
     }
+
+
 
     map { $dbHash->{$_}->{'compara'} = $compara_hash } keys %$dbHash;
     $release = $latest_release if ( $release eq 'LATEST' );
@@ -662,7 +668,8 @@ sub geneLineXML {
         )
       );
 
-    $cross_references .= qq{</cross_references>};
+    $cross_references .= qq{
+</cross_references>};
 
     my $additional_fields .= qq{
     <additional_fields>
@@ -702,7 +709,8 @@ sub geneLineXML {
         )
       )
       . qq{
-   </additional_fields>};
+   </additional_fields>
+};
 
 
 
