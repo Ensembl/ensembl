@@ -404,7 +404,7 @@ warn "in dumpGene";
 
                 $xrefs{$type}{ $_->[0] }{ $_->[3] }{ $_->[1] } = 1 if $_->[1];
                 $xrefs{$type}{ $_->[0] }{ $_->[3] }{ $_->[2] } = 1 if $_->[2];
-                $xrefs{$type}{ $_->[0] }{ $_->[3] }{ $_->[4] } = 1 if $_->[4];
+                $xrefs{$type}{ $_->[0] }{ $_->[3] . "_synonym" }{ $_->[4] } = 1 if $_->[4];
                 $xrefs_desc{$type}{ $_->[0] }{ $_->[5] }       = 1 if $_->[5];
             }
 
@@ -639,23 +639,30 @@ sub geneLineXML {
     my $cross_references = qq{
        <cross_references>};
 
+    # for some types of xref, merge the subtypes into the larger type
+    # e.g. Uniprot/SWISSPROT and Uniprot/TREMBL become just Uniprot
     foreach my $ext_db_name ( keys %$external_identifiers ) {
-	if ($ext_db_name =~ /(Uniprot|GO|Interpro|Medline|Sequence_Publications|EMBL)/) { 
 
-	    map { $cross_references .=  qq{
-         <ref dbname="$1" dbkey="$_"/>}; } keys %{ $external_identifiers->{$ext_db_name} } 
-
-     } else {
+      if ($ext_db_name =~ /(Uniprot|GO|Interpro|Medline|Sequence_Publications|EMBL)/) {
+	
+	my $matched_db_name = $1;
+	if ($ext_db_name =~ /_synonym/) {
+	  $matched_db_name .= "_synonym";
+	}
+	map { $cross_references .=  qq{
+         <ref dbname="$matched_db_name" dbkey="$_"/>}; } keys %{ $external_identifiers->{$ext_db_name} }
+	
+       } else {
 	 foreach my $key  (keys %{ $external_identifiers->{$ext_db_name} }) {
-	      $key  =~ s/</&lt;/g;
-	      $key   =~ s/>/&gt;/g;
-	      $key   =~ s/&/&amp;/g;
-	      $ext_db_name =~s/^Ens*/ENSEMBL/;
-	      $cross_references .=  qq{
+	   $key  =~ s/</&lt;/g;
+	   $key   =~ s/>/&gt;/g;
+	   $key   =~ s/&/&amp;/g;
+	   $ext_db_name =~s/^Ens.*/ENSEMBL/;
+	   $cross_references .=  qq{
         <ref dbname="$ext_db_name" dbkey="$key"/>}; 
-	  }
-
-     }
+	 }
+	
+       }
     }
 
     $cross_references .= (
