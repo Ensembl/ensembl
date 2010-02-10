@@ -4,17 +4,18 @@
     MOTIVATION
     --------------------------------------------------------------------
 
-    Starting with release 55 of Ensembl we provide an
-    ensembl_ontology_NN database.  It replaces the older ensembl_go_NN
-    database which used to be loaded straight from the public table
-    dumps provided by the Gene Ontology group (and hence weren't really
-    an Ensembl database to start with).  The older ensembl_go_NN
-    database also had an external Perl API associated with it which
-    often made working with GO terms in Ensembl slightly awkward, or at
-    least more cumbersome than what it needed to be.
+    Starting with release 55 of Ensembl we provide an ontology database
+    called ensembl_ontology_NN (where 'NN' is the number of the
+    release).  It replaces the older ensembl_go_NN database which used
+    to be loaded straight from the public table dumps provided by the
+    Gene Ontology group (and hence weren't really an Ensembl database to
+    start with).  The older ensembl_go_NN database also had an external
+    Perl API associated with it which often made working with GO terms
+    in Ensembl slightly awkward, or at least more cumbersome than what
+    it needed to be.
 
     The new database, and its associated native Ensembl Core API, is an
-    attempt to make it simple to work with ontology terms in Ensembl.
+    attempt to make it easy to work with ontology terms in Ensembl.
 
     The database also contains Sequence Ontology (SO) terms even though
     these are not yet cross-referenced or otherwise used by Ensembl.
@@ -40,7 +41,8 @@
 
     - subset
       The 'subset' table contains information about each of the subsets
-      of the loaded ontologies.
+      of the loaded ontologies.  GO subsets includes, for example,
+      GOSlim GOA ('goslim_goa').
 
     - term
       The 'term' table contains the ontology term accession, name,
@@ -191,7 +193,7 @@
             $term->ancestors()
 
 
-    ADDITIONS TO THE EXISTING API
+    ADDITIONS TO THE EXISTING ENSEMBL CORE API
     --------------------------------------------------------------------
 
     To enable to use ontology terms in querying for Ensembl objects,
