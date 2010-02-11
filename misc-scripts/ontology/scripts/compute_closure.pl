@@ -94,10 +94,10 @@ SELECT DISTINCT
         parent.parent_term_id,
         child.distance + 1,
         parent.child_term_id
-FROM    closure child,
-        closure parent
-WHERE   parent.child_term_id = child.parent_term_id
-  AND   child.distance  = ?
+FROM    closure child
+  JOIN  closure parent
+    ON  (parent.child_term_id = child.parent_term_id)
+WHERE   child.distance  = ?
   AND   parent.distance = 1
 ) );
 

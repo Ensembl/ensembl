@@ -1,10 +1,12 @@
-#!/usr/local/ensembl/bin/perl -w
+#!/usr/bin/env perl
 
 use strict;
 use warnings;
 
 use DBI qw( :sql_types );
 use Getopt::Long qw( :config no_ignore_case );
+
+use Data::Dumper;
 
 #-----------------------------------------------------------------------
 
@@ -57,6 +59,9 @@ my $dbh =
   DBI->connect( $dsn, $dbuser, $dbpass,
   { 'RaiseError' => 0, 'PrintError' => 0 } );
 
+# Associate all subsets in the ontology database with their respective
+# ontology.
+
 my %subsets;
 {
   my $statement = q(
@@ -81,23 +86,22 @@ WHERE   ontology.ontology_id = term.ontology_id
   while ( $sth->fetch() ) {
     push( @{ $subsets{$ontology_name} }, $subset_name );
   }
-
-  $sth->finish();
 }
 
 {
   my $select_statement = q(
-SELECT  child_term.term_id,
+SELECT DISTINCT
+        child_term.term_id,
         parent_term.term_id,
         closure.distance
-FROM    closure,
-        term child_term,
-        term parent_term,
-        ontology
-WHERE   closure.parent_term_id = parent_term.term_id
-  AND   closure.child_term_id = child_term.term_id
-  AND   FIND_IN_SET(?, parent_term.subsets) > 0
-  AND   parent_term.ontology_id = ontology.ontology_id
+FROM    ontology
+  JOIN  term parent_term
+    ON  (parent_term.ontology_id = ontology.ontology_id)
+  JOIN  closure
+    ON  (closure.parent_term_id = parent_term.term_id)
+  JOIN  term child_term
+    ON  (child_term.term_id = closure.child_term_id)
+WHERE   FIND_IN_SET(?, parent_term.subsets) > 0
   AND   ontology.name = ?
 ORDER BY child_term.accession, closure.distance;
 );
