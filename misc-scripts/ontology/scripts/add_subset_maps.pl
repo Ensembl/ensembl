@@ -177,8 +177,6 @@ ORDER BY child_term.accession, closure.distance;
         }
       }
 
-      $select_sth->finish();
-
       $dbh->do( sprintf( "OPTIMIZE TABLE %s", $aux_table_name ) );
       $dbh->do("UNLOCK TABLES");
 
