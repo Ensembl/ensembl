@@ -1066,12 +1066,14 @@ FSQL
       else{
 	#get the clone name
 	my $gene= $ga->fetch_by_dbID($gene_id);
-	my $new_gene = $gene->transform('clone');
+	
+
+#	my $new_gene = $gene->transform('clone');
 	my $new_clone_name = undef;
-	if(defined($new_gene)){
-	  $new_clone_name = $new_gene->slice->seq_region_name;
-	}
-	else{
+#	if(defined($new_gene)){
+#	  $new_clone_name = $new_gene->slice->seq_region_name;
+#	}
+#	else{
 	  # on more than one clone?? try  
 	  my $slice = $gene->slice->sub_Slice($gene->start,$gene->end,$gene->strand);
 	  my $clone_projection = $slice->project('clone');
@@ -1097,7 +1099,7 @@ FSQL
 	      next;
 	    }
 	  }
-	}
+#	}
 
 	if(defined($new_clone_name)){
 	  $new_clone_name =~ s/[.]\d+//;    #remove .number	
