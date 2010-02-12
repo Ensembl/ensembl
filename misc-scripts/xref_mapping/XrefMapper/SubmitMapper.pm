@@ -148,14 +148,76 @@ sub dump_xref{
   }
 
   my @method=();
-  my @lists =@{$self->get_set_lists()};
+  my @species=();
+  my @sources=();
 
-  my $k = 0;
-  foreach my $list (@lists){
-    $method[$k++] = shift @$list;
+
+  my @lists;
+
+  if($self->mapper->can('get_set_lists')){
+   @lists =@{$self->mapper->get_set_lists()};  }
+  else {
+    @lists =@{$self->get_set_lists()};
   }
+
+  my $k = -1;
+  my $all = -1;
+  my $exception = 0;
+  foreach my $list (@lists){
+    $k++;
+    $method[$k] = shift @$list;
+    my $rest = shift @$list;
+    $species[$k] = $$rest[0];
+    $sources[$k] = $$rest[1];
+    if($sources[$k] eq "*"){
+      $all = $k;
+    }	
+    else{
+      $exception  = 1;
+    }	
+  }
+
+
+
+  my $number_of_sets = $k;
+
+  my @exception_sql = ();
+  if($exception){
+    my $source_sth = $xref->dbc->prepare("select s.source_id from source s, species sp, source_url u where  u.source_id = s.source_id and u.species_id = sp.species_id and sp.name like ? and s.name like ?");    
+    $k = 0;
+    my @exception_list =();
+    while($k <= $number_of_sets){
+      my @tmp=();
+      if($k != $all){
+	$source_sth->execute($species[$k], $sources[$k]);
+	while(my @row = $source_sth->fetchrow_array()){
+#	  print $row[0]."\t".$species[$k]."\t".$sources[$k]."\n";
+	  push @tmp, $row[0];
+	  push @exception_list, $row[0]
+	}	
+	$exception_sql[$k] .= " AND x.source_id in (".join(', ',@tmp).") ";
+	
+      }
+      $k++;
+    }
+    if($all != -1){
+      $exception_sql[$all] = " AND x.source_id not in (".join(', ', @exception_list).")";
+    }
+
+  }
+  else{
+    $exception_sql[0] = "";
+  }
+
   $self->method(\@method);
-  
+
+#  $k = 0;
+#  while($k <= $number_of_sets){
+#    print $method[$k]."\t".$species[$k]."\t".$sources[$k]."\n";
+#    print $exception_sql[$k]."\n";
+#    $k++;
+#  }
+
   my $i=0;
   if(defined($self->mapper->dumpcheck())){
     my $skip = 1;
@@ -175,28 +237,33 @@ sub dump_xref{
   }
 
   print "Dumping Xref fasta files\n" if($self->verbose());
-  for my $sequence_type ('dna', 'peptide') {
+  $i = 0;
+  while($i <= $number_of_sets){
+    for my $sequence_type ('dna', 'peptide') {
 
-    my $filename = $xref->dir() . "/xref_0_" . $sequence_type . ".fasta";
-    open(XREF_DUMP,">$filename") || die "Could not open $filename";
-    
-    my $sql = "SELECT p.xref_id, p.sequence, x.species_id , x.source_id ";
-    $sql   .= "  FROM primary_xref p, xref x ";
-    $sql   .= "  WHERE p.xref_id = x.xref_id AND ";
-    $sql   .= "        p.sequence_type ='$sequence_type' ";
-    
-    my $sth = $xref->dbc->prepare($sql);
-    $sth->execute();
-    while(my @row = $sth->fetchrow_array()){
-      
-      $row[1] =~ s/(.{60})/$1\n/g;
-      print XREF_DUMP ">".$row[0]."\n".$row[1]."\n";
-      
+      my $filename = $xref->dir() . "/xref_".$i."_" . $sequence_type . ".fasta";
+      open(XREF_DUMP,">$filename") || die "Could not open $filename";
+
+      my $sql = "SELECT p.xref_id, p.sequence, x.species_id , x.source_id ";
+      $sql   .= "  FROM primary_xref p, xref x ";
+      $sql   .= "  WHERE p.xref_id = x.xref_id AND ";
+      $sql   .= "        p.sequence_type ='$sequence_type' ";
+      $sql   .= $exception_sql[$i];
+
+      my $sth = $xref->dbc->prepare($sql);
+      $sth->execute();
+      while(my @row = $sth->fetchrow_array()){
+	
+	$row[1] =~ s/(.{60})/$1\n/g;
+	print XREF_DUMP ">".$row[0]."\n".$row[1]."\n";
+	
+      }
+
+      close(XREF_DUMP);
+      $sth->finish();
+
     }
-    
-    close(XREF_DUMP);
-    $sth->finish();
-    
+    $i++;
   }
   my $sth = $xref->dbc->prepare("insert into process_status (status, date) values('xref_fasta_dumped',now())");
   $sth->execute();
