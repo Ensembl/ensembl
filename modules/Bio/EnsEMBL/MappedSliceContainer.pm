@@ -353,13 +353,27 @@ sub get_AlignSliceAdaptor {
 
 # [todo]
 sub set_StrainSliceAdaptor {
-  throw("Not implemented yet!");
+  my $self = shift;
+  my $strain_slice_adaptor = shift;
+
+  unless ($strain_slice_adaptor and ref($strain_slice_adaptor) and
+    $strain_slice_adaptor->isa('Bio::EnsEMBL::DBSQL::StrainSliceAdaptor')) {
+      throw("Need a Bio::EnsEMBL::StrainSliceAdaptor.");
+  }
+
+  $self->{'adaptors'}->{'StrainSlice'} = $strain_slice_adaptor;
 }
 
 
 # [todo]
 sub get_StrainSliceAdaptor {
-  throw("Not implemented yet!");
+  my $self = shift;
+
+  unless ($self->{'adaptors'}->{'StrainSlice'}) {
+    warning("No StrainSliceAdaptor attached to MappedSliceContainer.");
+  }
+
+  return $self->{'adaptors'}->{'StrainSlice'};
 }
 
 
@@ -390,6 +404,36 @@ sub attach_AssemblySlice {
 
   push @{ $self->{'mapped_slices'} }, @mapped_slices;
 }
+
+
+=head2 attach_StrainSlice
+
+  Arg[1]      : String $strain - name of strain to attach
+  Example     : $msc->attach_StrainSlice('Watson');
+  Description : Attaches a MappedSlice for an alternative strain to this
+                container.
+  Return type : none
+  Exceptions  : thrown on missing argument
+  Caller      : general, Bio::EnsEMBL::DBSQL::StrainSliceAdaptor
+  Status      : At Risk
+              : under development
+
+=cut
+
+sub attach_StrainSlice {
+  my $self = shift;
+  my $strain = shift;
+
+  throw("Need a strain.") unless ($strain);
+
+  my $ssa = $self->get_StrainSliceAdaptor;
+  return unless ($ssa);
+
+  my @mapped_slices = @{ $ssa->fetch_by_name($self, $strain) };
+
+  push @{ $self->{'mapped_slices'} }, @mapped_slices;
+}
+
 
 
 =head2 get_all_MappedSlices
