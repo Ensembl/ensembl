@@ -167,7 +167,12 @@ sub dump_xref{
     $k++;
     $method[$k] = shift @$list;
     my $rest = shift @$list;
-    $species[$k] = $$rest[0];
+    if($$rest[0] eq "*"){
+      $species[$k] = $self->mapper->core->species;
+    }
+    else{
+      $species[$k] = $$rest[0];
+    }
     $sources[$k] = $$rest[1];
     if($sources[$k] eq "*"){
       $all = $k;
