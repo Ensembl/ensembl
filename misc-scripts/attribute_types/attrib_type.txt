@@ -308,19 +308,29 @@
 184	TRGeneCount	TR_gene	Number of TR Genes
 185	TRPsCount	TR_pseudo	Number of TR Pseudogenes
 
-# attribute that shows if a supporting evidence was also used to build a Vega gene model
+# attribute that shows if a supporting evidence was also used to build a
+# Vega gene model
 186	tp_ott_support	otter protein transcript support Evidence ID that was used as supporting feature for building a gene in Vega
 187	td_ott_support	otter dna transcript support Evidence ID that was used as supporting feature for building a gene in Vega
 188	ep_ott_support	otter protein exon support Evidence ID that was used as supporting feature for building a gene in Vega
 189	ed_ott_support	otter dna exon support Evidence ID that was used as supporting feature for building a gene in Vega
 
-# Attributes like ie  split_tscript incons_strands incons_phases is_folded unwanted_evidence 
-# exon_too_long contains_stops borked_coords low_complex  evi_coverage are added by BlastMiniGenewise in the build process.
-# They can be deleted out of transcript_attrib and attrib_type table 
+# Attributes like split_tscript, incons_strands, incons_phases,
+# is_folded, unwanted_evidence, exon_too_long, contains_stops,
+# borked_coords, low_complex, and evi_coverage are added by
+# BlastMiniGenewise in the build process.  They can be deleted out of
+# transcript_attrib and attrib_type table
 
 190	GeneNo_lincRNA	lincRNA Gene Count	Number of lincRNA Genes
 
-# StopGained and StopLost are transcript attributes. 
+# StopGained and StopLost are transcript attributes.
 191	StopGained	SNP causes stop codon to be gained	This transcript has a variant that causes a stop codon to be gained in at least 10 percent of a HapMap population
 192	StopLost	SNP causes stop codon to be lost	This transcript has a variant that causes a stop codon to be lost in at least 10 percent of a HapMap population
 
+# For Ensembl Genomes dictyBase (2010-02-16).
+# (code 193 should have a trailing '_' as it is auto-generated)
+193	GeneNo_class_I_	class_I_RNA Gene Count	Number of class_I_RNA Genes
+194	GeneNo_SRP_RNA 	SRP_RNA Gene Count	Number of SRP_RNA Genes
+195	GeneNo_class_II	class_II_RNA Gene Count	Number of class_II_RNA Genes
+196	GeneNo_P_RNA	RNase_P_RNA Gene Count	Number of RNase_P_RNA Genes
+197	GeneNo_RNase_MR	RNase_MRP_RNA Gene Count	Number of RNase_MRP_RNA Genes
