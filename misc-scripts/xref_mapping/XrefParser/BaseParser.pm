@@ -1830,20 +1830,16 @@ sub get_taxonomy_from_species_id{
 }
 
 sub get_direct_xref{
-  my ($self,$stable_id,$type,$link) = @_;
+ my ($self,$stable_id,$type,$link) = @_;
 
-  my $direct_sth;
-  if(!defined($direct_sth)){
-    my $sql = "select general_xref_id from direct_xref d where ensembl_stable_id = ? and type = ?  and linkage_xref= ?";
-    $direct_sth = $dbi->prepare($sql);  
-  }
-  
-  $direct_sth->execute( $stable_id, $type, $link )
-    or croak( $dbi->errstr() );
-  if(my @row = $direct_sth->fetchrow_array()) {
-    return $row[0];
-  }   
-  return undef;
+ my $sql = "select general_xref_id from ${type}_direct_xref d where ensembl_stable_id = ?  and linkage_xref= ?";
+ my  $direct_sth = $dbi->prepare($sql);
+
+ $direct_sth->execute( $stable_id, $link ) or croak( $dbi->errstr() );
+ if(my @row = $direct_sth->fetchrow_array()) {
+   return $row[0];
+ }
+ return undef;
 }
 
 
