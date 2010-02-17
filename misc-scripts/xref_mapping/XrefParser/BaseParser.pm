@@ -1832,6 +1832,8 @@ sub get_taxonomy_from_species_id{
 sub get_direct_xref{
  my ($self,$stable_id,$type,$link) = @_;
 
+ $type = lc($type);
+
  my $sql = "select general_xref_id from ${type}_direct_xref d where ensembl_stable_id = ?  and linkage_xref= ?";
  my  $direct_sth = $dbi->prepare($sql);
 
