@@ -378,13 +378,24 @@ sub generic_fetch {
        && $self->isa('Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor')
        && !$self->isa('Bio::EnsEMBL::DBSQL::UnmappedObjectAdaptor') )
   {
-    push @tabs, [ 'seq_region', 'sr' ], [ 'coord_system', 'cs' ];
 
+    #We do a check to see if there is already seq_region & coord_system
+    #defined to ensure we get the right alias. We then do the extra query 
+    #irrelevant of what has already been specified by the user
+    my %thash =  map { $_->[0] => $_->[1] } @tabs;
+        
+    my $sr_alias = (exists $thash{seq_region})    ? $thash{seq_region}    : 'sr';
+    my $cs_alias = (exists $thash{coord_system})  ? $thash{coord_system}  : 'cs';
+    push @tabs, [ 'seq_region', 'sr' ]    unless exists $thash{seq_region};
+    push @tabs, [ 'coord_system', 'cs' ]  unless exists $thash{coord_system};
+    
     $extra_default_where = sprintf(
-                      '%s.seq_region_id = sr.seq_region_id '
-                        . 'AND sr.coord_system_id = cs.coord_system_id '
-                        . 'AND cs.species_id = ?',
-                      $tabs[0]->[1] );
+                      '%s.seq_region_id = %s.seq_region_id '
+                        . 'AND %s.coord_system_id = %s.coord_system_id '
+                        . 'AND %s.species_id = ?',
+                      $tabs[0]->[1], $sr_alias, 
+                      $sr_alias, $cs_alias, 
+                      $cs_alias );
 
     $self->bind_param_generic_fetch( $self->species_id(), SQL_INTEGER );
   }
