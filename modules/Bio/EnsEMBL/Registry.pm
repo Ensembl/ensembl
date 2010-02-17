@@ -1722,8 +1722,17 @@ sub load_registry_from_db {
     # Register functional genomics multispecies databases
     my @funcgen_multidbs =
       grep { /^\w+_collection_funcgen_\w+$/ } @dbnames;
+      
+    #Temporary fix to be removed in 58 and only applies to multispecies DBs
+    my $loaded_core_aliases = 0;
 
     foreach my $multidb (@funcgen_multidbs) {
+      
+      if(!$loaded_core_aliases) {
+        $self->find_and_add_aliases(-GROUP => 'core', -HANDLE => $dbh);
+        $loaded_core_aliases = 1;
+      }
+      
       my $sth = $dbh->prepare(
         sprintf( 'SELECT species_id, meta_value FROM %s.meta ',
           $dbh->quote_identifier($multidb) )
@@ -2020,7 +2029,7 @@ sub find_and_add_aliases {
     foreach my $alias (@aliases) {
       if ( !$class->alias_exists($alias) ) {
         $class->add_alias( $species, $alias );
-      } elsif ( $species ne $class->get_alias($alias) ) {
+      } elsif ( $class->get_alias($species) ne $class->get_alias($alias) ) {
         throw(
           sprintf(
             "Trying to add alias '%s' to species '%s', "
