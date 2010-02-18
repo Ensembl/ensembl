@@ -591,6 +591,48 @@ sub expanded {
   return $self->{'expanded'};
 }
 
+=head2 seq
+
+  Example     : my $seq = $container->seq()
+  Description : Retrieves the expanded sequence of the artificial container
+                slice, including "-" characters where there are inserts in any
+                of the attached mapped slices.
+  Return type : String
+  Exceptions  : none
+  Caller      : general
+  Status      : At Risk
+              : under development
+
+=cut
+
+sub seq {
+  my $self = shift;
+  
+  my $container_seq = '';
+  
+  # check there's a mapper
+  if(defined($self->mapper)) {
+    my $start = 0;
+    my $slice = $self->ref_slice();
+    my $seq = $slice->seq();
+    
+    foreach my $coord($self->mapper->map_coordinates($slice->seq_region_name, $slice->start, $slice->end, $slice->strand, 'ref_slice')) {
+      # if it is a normal coordinate insert sequence
+      if(!$coord->isa('Bio::EnsEMBL::Mapper::IndelCoordinate')) {
+        $container_seq .= substr($seq, $start, $coord->length());
+        $start += $coord->length;
+      }
+      
+      # if it is a gap or indel insert "-"
+      else {
+        $container_seq .= '-' x $coord->length();
+      }
+    }
+  }
+  
+  return $container_seq;
+}
+
 
 1;
 
