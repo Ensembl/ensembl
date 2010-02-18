@@ -2588,6 +2588,33 @@ sub get_all_MarkerFeatures {
 }
 
 
+=head2 get_MarkerFeatures_by_Name
+
+  Arg [1]    : string marker Name
+               The name (synonym) of the marker feature(s) to retrieve
+  Example    : my @markers = @{$slice->get_MarkerFeatures_by_Name('z1705')};
+  Description: Retrieves all markers with this ID
+  Returntype : reference to a list of Bio::EnsEMBL::MarkerFeatures
+  Exceptions : none
+  Caller     : contigview, general
+  Status     : Stable
+
+=cut
+
+sub get_MarkerFeatures_by_Name {
+  my ($self, $name) = @_;
+
+  if(!$self->adaptor()) {
+    warning('Cannot retrieve MarkerFeatures without attached adaptor.');
+    return [];
+  }
+
+  my $ma = $self->adaptor->db->get_MarkerFeatureAdaptor;
+
+  my $feats = $ma->fetch_all_by_Slice_and_MarkerName($self, $name);
+  return $feats;
+}
+
 
 =head2 get_all_compara_DnaAlignFeatures
 
