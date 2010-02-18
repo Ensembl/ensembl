@@ -508,42 +508,54 @@ sub is_toplevel {
 }
 
 
+=head2 seq
+
+  Example     : my $seq = $mapped_slice->seq()
+  Description : Retrieves the expanded sequence of this mapped slice,
+                including "-" characters where there are inserts in any other
+                mapped slices. This will align with the sequence returned by
+                the container's seq() method.
+  Return type : String
+  Exceptions  : none
+  Caller      : general
+  Status      : At Risk
+              : under development
+
+=cut
+
 sub seq {
-}
-
-sub subseq {
-}
-
-sub aligned_seq {
   my $self = shift;
   
-  my $seq = '';
+  # create an empty string
+  my $ms_seq = '';
+  
+  # this coord represents the current position in the MS sequence
   my $start = 0;
 
   # get slice/mapper pairs from mapped slice (usually only one anyway)
   foreach my $pair(@{$self->get_all_Slice_Mapper_pairs()}) {
     my ($s, $m) = @$pair;
-    my $strain_seq = $s->seq();
+    my $seq = $s->seq();
     
-    # project from mapped slice to reference slice
-    foreach my $ref_coord($m->map_coordinates('mapped_slice', 1, CORE::length($strain_seq), $s->strand, 'mapped_slice')) {
+    # project from mapped slice to reference slice using the mapper
+    foreach my $ref_coord($m->map_coordinates('mapped_slice', 1, CORE::length($seq), $s->strand, 'mapped_slice')) {
     
       # normal coord
       if(!$ref_coord->isa('Bio::EnsEMBL::Mapper::IndelCoordinate') && !$ref_coord->isa('Bio::EnsEMBL::Mapper::Gap')) {
       
-        # project from reference slice to container slice
+        # project from reference slice to container slice using the container's mapper
         foreach my $ms_coord($self->container->mapper->map_coordinates($self->container->ref_slice->seq_region_name, $ref_coord->start, $ref_coord->end, $ref_coord->strand, 'ref_slice')) {
           
           # normal coord
           if(!$ms_coord->isa('Bio::EnsEMBL::Mapper::IndelCoordinate') && !$ms_coord->isa('Bio::EnsEMBL::Mapper::Gap')) {
-            $seq .= substr($strain_seq, $start, $ms_coord->length);
+            $ms_seq .= substr($seq, $start, $ms_coord->length);
             
             $start += $ms_coord->length();
           }
           
           # indel coord
           else {
-            $seq .= '-' x $ms_coord->length();
+            $ms_seq .= '-' x $ms_coord->length();
           }
         }
       }
@@ -551,19 +563,22 @@ sub aligned_seq {
       # indel / gap
       else {
       
-        # if there's a gap aswell, add sequence
+        # if there's a gap here aswell, add corresponding sequence
         if($ref_coord->gap_length > 0) {
-          $seq .= substr($strain_seq, $start, $ref_coord->gap_length);
+          $ms_seq .= substr($seq, $start, $ref_coord->gap_length);
           $start += $ref_coord->gap_length;
         }
         
         # add "-" to the sequence
-        $seq .= '-' x ($ref_coord->length() - $ref_coord->gap_length());
+        $ms_seq .= '-' x ($ref_coord->length() - $ref_coord->gap_length());
       }
     }
   }
   
-  return $seq;
+  return $ms_seq;
+}
+
+sub subseq {
 }
 
 sub get_repeatmasked_seq {
