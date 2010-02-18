@@ -514,6 +514,58 @@ sub seq {
 sub subseq {
 }
 
+sub aligned_seq {
+  my $self = shift;
+  
+  my $seq = '';
+  my $start = 0;
+
+  # get slice/mapper pairs from mapped slice (usually only one anyway)
+  foreach my $pair(@{$self->get_all_Slice_Mapper_pairs()}) {
+    my ($s, $m) = @$pair;
+    my $strain_seq = $s->seq();
+    
+    # project from mapped slice to reference slice
+    foreach my $ref_coord($m->map_coordinates('mapped_slice', 1, CORE::length($strain_seq), $s->strand, 'mapped_slice')) {
+    
+      # normal coord
+      if(!$ref_coord->isa('Bio::EnsEMBL::Mapper::IndelCoordinate') && !$ref_coord->isa('Bio::EnsEMBL::Mapper::Gap')) {
+      
+        # project from reference slice to container slice
+        foreach my $ms_coord($self->container->mapper->map_coordinates($self->container->ref_slice->seq_region_name, $ref_coord->start, $ref_coord->end, $ref_coord->strand, 'ref_slice')) {
+          
+          # normal coord
+          if(!$ms_coord->isa('Bio::EnsEMBL::Mapper::IndelCoordinate') && !$ms_coord->isa('Bio::EnsEMBL::Mapper::Gap')) {
+            $seq .= substr($strain_seq, $start, $ms_coord->length);
+            
+            $start += $ms_coord->length();
+          }
+          
+          # indel coord
+          else {
+            $seq .= '-' x $ms_coord->length();
+          }
+        }
+      }
+      
+      # indel / gap
+      else {
+      
+        # if there's a gap aswell, add sequence
+        if($ref_coord->gap_length > 0) {
+          $seq .= substr($strain_seq, $start, $ref_coord->gap_length);
+          $start += $ref_coord->gap_length;
+        }
+        
+        # add "-" to the sequence
+        $seq .= '-' x ($ref_coord->length() - $ref_coord->gap_length());
+      }
+    }
+  }
+  
+  return $seq;
+}
+
 sub get_repeatmasked_seq {
 }
 
