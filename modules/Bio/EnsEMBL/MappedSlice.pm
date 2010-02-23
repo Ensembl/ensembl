@@ -535,7 +535,10 @@ sub seq {
   # get slice/mapper pairs from mapped slice (usually only one anyway)
   foreach my $pair(@{$self->get_all_Slice_Mapper_pairs()}) {
     my ($s, $m) = @$pair;
-    my $seq = $s->seq();
+    
+    # make sure to send extra args
+    # eg strain slices might need read coverage filtering
+    my $seq = $s->seq(@_);
     
     # project from mapped slice to reference slice using the mapper
     foreach my $ref_coord($m->map_coordinates('mapped_slice', 1, CORE::length($seq), $s->strand, 'mapped_slice')) {
