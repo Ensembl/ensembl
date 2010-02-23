@@ -116,6 +116,12 @@ foreach my $db (sort {$total_size{$b} <=> $total_size{$a}} keys %total_size) {
   printf("%8.1f\n", $total_size{$db} / 1024 / 1024);
 }
 
+my $total_bytes;
+map {$total_bytes+=$_} values %total_size;
+print "================================\n";
+printf("TOTAL SPACE USED %7.1f\n", $total_bytes / 1024 / 1024);
+print "================================\n";
+
 my $count++;
 print "==================\n";
 print "Top tables by size\n";
