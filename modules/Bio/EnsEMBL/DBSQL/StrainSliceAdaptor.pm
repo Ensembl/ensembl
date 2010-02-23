@@ -168,12 +168,6 @@ sub fetch_by_name {
   ## MAP STRAIN SLICE TO REF SLICE
   ################################
   
-  # get all allele features for this slice and individual
-  my @afs = sort {$a->start() <=> $b->start()} @{$af_adaptor->fetch_all_by_Slice($slice, $ind)};
-  
-  # check we got some data
-  warning("No strain genotype data available for slice ".$slice->name." and strain ".$ind->name) if ! defined $afs[0];
-  
   # create a mapper
   my $mapper = Bio::EnsEMBL::Mapper->new('mapped_slice', 'ref_slice');
   
@@ -183,8 +177,18 @@ sub fetch_by_name {
     -CONTAINER => $container,
     -NAME      => $slice->name."\#strain_$name",
   );
-
+  
+  # get the strain slice
   my $strain_slice = $slice->get_by_strain($ind->name);
+  
+  # get all allele features for this slice and individual
+  #my @afs = sort {$a->start() <=> $b->start()} @{$af_adaptor->fetch_all_by_Slice($slice, $ind)};
+  
+  # get allele features with coverage info
+  my $afs = $strain_slice->get_all_AlleleFeatures_Slice(1);
+  
+  # check we got some data
+  #warning("No strain genotype data available for slice ".$slice->name." and strain ".$ind->name) if ! defined $afs[0];
   
   
   my $start_slice = $slice->start;
@@ -196,41 +200,45 @@ sub fetch_by_name {
   my $indel_flag = 0;
   my $total_length_diff = 0;
   
-  # go through each AF
-  foreach my $af(@afs) {
-    
-    # find out if it changes the length
-    if($af->length_diff != 0) {
+  # check for AFs
+  if(defined($afs)) {
+  
+    # go through each AF
+    foreach my $af(@$afs) {
       
-      $indel_flag = 1;
-      $total_length_diff += $af->length_diff;
-      
-      # get the allele length
-      $allele_length = $af->length + $af->length_diff();
-      
-      $end_slice = $slice->start + $af->start() - 2;
-
-      if ($end_slice >= $start_slice){
-          $end_strain = $end_slice - $start_slice + $start_strain;
-          
-          #add the sequence that maps
-          $mapper->add_map_coordinates('mapped_slice', $start_strain, $end_strain, 1, $sr_name, $start_slice, $end_slice);
-          
-          #add the indel
-          $mapper->add_indel_coordinates('mapped_slice', $end_strain+1, $end_strain+$allele_length, 1, $sr_name,$end_slice+1,$end_slice + $af->length);
-          
-          $start_strain = $end_strain + $allele_length + 1;
-      }
-      
-      else{
+      # find out if it changes the length
+      if($af->length_diff != 0) {
         
-          #add the indel
-          $mapper->add_indel_coordinates('mapped_slice', $end_strain+1,$end_strain + $allele_length, 1, $sr_name,$end_slice+1,$end_slice + $af->length);
+        $indel_flag = 1;
+        $total_length_diff += $af->length_diff;
+        
+        # get the allele length
+        $allele_length = $af->length + $af->length_diff();
+        
+        $end_slice = $slice->start + $af->start() - 2;
+  
+        if ($end_slice >= $start_slice){
+            $end_strain = $end_slice - $start_slice + $start_strain;
+            
+            #add the sequence that maps
+            $mapper->add_map_coordinates('mapped_slice', $start_strain, $end_strain, 1, $sr_name, $start_slice, $end_slice);
+            
+            #add the indel
+            $mapper->add_indel_coordinates('mapped_slice', $end_strain+1, $end_strain+$allele_length, 1, $sr_name,$end_slice+1,$end_slice + $af->length);
+            
+            $start_strain = $end_strain + $allele_length + 1;
+        }
+        
+        else{
           
-          $start_strain += $allele_length;
+            #add the indel
+            $mapper->add_indel_coordinates('mapped_slice', $end_strain+1,$end_strain + $allele_length, 1, $sr_name,$end_slice+1,$end_slice + $af->length);
+            
+            $start_strain += $allele_length;
+        }
+        
+        $start_slice = $end_slice + $af->length+ 1;
       }
-      
-      $start_slice = $end_slice + $af->length+ 1;
     }
   }
   
