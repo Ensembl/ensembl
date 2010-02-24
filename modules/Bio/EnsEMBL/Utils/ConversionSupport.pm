@@ -1172,16 +1172,15 @@ sub split_chromosomes_by_size {
       # push small chromosomes onto $small_chr
       push @{ $small_chr }, $slice;
     }
-    if (! $min_big_chr or ($min_big_chr > $slice->length) && $slice->length > $cutoff) {
+    elsif (! $min_big_chr or ($min_big_chr > $slice->length) ){
       $min_big_chr = $slice->length;
     }
     # push _all_ chromosomes onto $big_chr
     push @{ $big_chr }, $slice;
   }
   my $chr_slices;
-  $chr_slices->{int($min_big_chr/150)} = $big_chr if $min_big_chr;
+  $chr_slices->{int($min_big_chr/150)}   = $big_chr if $min_big_chr;
   $chr_slices->{int($min_small_chr/150)} = $small_chr if $min_small_chr;
-
   return $chr_slices;
 }
 
