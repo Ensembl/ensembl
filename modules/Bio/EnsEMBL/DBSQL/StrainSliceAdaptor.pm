@@ -201,7 +201,7 @@ sub fetch_by_name {
   my $total_length_diff = 0;
   
   # check for AFs
-  if(defined($afs)) {
+  if(defined($afs) && scalar @$afs) {
   
     # go through each AF
     foreach my $af(@$afs) {
