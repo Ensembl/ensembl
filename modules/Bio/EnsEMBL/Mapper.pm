@@ -159,6 +159,8 @@ sub map_coordinates{
    
 
    
+
+
    # special case for handling inserts:
    if($start == $end + 1) {
      return $self->map_insert($id, $start, $end, $strand, $type);
@@ -213,7 +215,7 @@ sub map_coordinates{
    }
 
  
-   
+   my $rank = 0;
    my $orig_start = $start;
    my $last_target_coord = undef;
    for( my $i = $start_idx; $i<=$#$lr; $i++ ) {
@@ -221,16 +223,16 @@ sub map_coordinates{
      my $self_coord   = $pair->{$from};
      my $target_coord = $pair->{$to};
 
-
+     if($self_coord->{'start'} < $start){
+       $start = $orig_start;
+       $rank++;
+     }
 
 
      if(defined($last_target_coord) and $target_coord->{'id'} ne $last_target_coord){
        if($self_coord->{'start'} < $start){ # i.e. the same bit is being mapped to another assembled bit
 	 $start = $orig_start;
        }
-#       else{
-#	 #not a multi mapped component;
-#       }
      } 
      else{
        $last_target_coord = $target_coord->{'id'};
@@ -253,9 +255,9 @@ sub map_coordinates{
      
      if( $start < $self_coord->{'start'} ) {
        # gap detected
-       my $gap = Bio::EnsEMBL::Mapper::Gap->new($start, 
-                                                $self_coord->{'start'}-1);
-       
+       my $gap = Bio::EnsEMBL::Mapper::Gap->new($start,
+                                                $self_coord->{'start'}-1, $rank);
+
        push(@result,$gap);
        $start = $gap->{'end'}+1;
      }
@@ -313,7 +315,7 @@ sub map_coordinates{
 						      $target_start,
 						      $target_end,
 						      $pair->{'ori'} * $strand,
-						      $cs);
+						      $cs, $rank);
 
      }
 
@@ -321,6 +323,7 @@ sub map_coordinates{
      
      $last_used_pair = $pair;
      $start = $self_coord->{'end'}+1;
+
  }
 
    if( !defined $last_used_pair ) {
@@ -331,7 +334,7 @@ sub map_coordinates{
        # gap at the end
        my $gap = Bio::EnsEMBL::Mapper::Gap->new(
 			   $last_used_pair->{$from}->{'end'} + 1,
-			   $end);
+			   $end, $rank);
        push(@result,$gap);
    }
 

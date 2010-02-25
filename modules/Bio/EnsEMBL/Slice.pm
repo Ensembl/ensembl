@@ -780,14 +780,22 @@ sub project {
 						   $normal_slice->end());
     }
 
+
+    my $last_rank = 0;
     #construct a projection from the mapping results and return it
     foreach my $coord (@coords) {
       my $coord_start  = $coord->start();
       my $coord_end    = $coord->end();
       my $length       = $coord_end - $coord_start + 1;
+      
+      if( $last_rank != $coord->rank){
+	$current_start = 1;
+      }
+      $last_rank = $coord->rank;
 
       #skip gaps
       if($coord->isa('Bio::EnsEMBL::Mapper::Coordinate')) {
+
         my $coord_cs     = $coord->coord_system();
 
         # If the normalised projection just ended up mapping to the
@@ -3033,7 +3041,7 @@ sub project_to_slice {
 
   my $cs = $to_slice->coord_system();
   my $slice_cs = $self->coord_system();
-
+  my $to_slice_id = $to_slice->get_seq_region_id;
 
   my @projection;
   my $current_start = 1;
@@ -3064,14 +3072,25 @@ sub project_to_slice {
 						   $normal_slice->end());
     }
 
+    my $last_rank =0;
     #construct a projection from the mapping results and return it
     foreach my $coord (@coords) {
       my $coord_start  = $coord->start();
       my $coord_end    = $coord->end();
       my $length       = $coord_end - $coord_start + 1;
 
+
+      if( $last_rank != $coord->rank){
+	$current_start = 1;
+      }
+      $last_rank = $coord->rank;
+
       #skip gaps
       if($coord->isa('Bio::EnsEMBL::Mapper::Coordinate')) {
+	if($coord->id != $to_slice_id){ # for multiple mappings only get the correct one
+	  $current_start += $length;
+	  next;
+	}
         my $coord_cs     = $coord->coord_system();
 
         # If the normalised projection just ended up mapping to the
