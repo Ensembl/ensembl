@@ -160,6 +160,14 @@ sub fetch_by_stable_id {
 }
 
 
+sub fetch_all {
+  my ($self) = @_;
+
+  my $constraint = 't.biotype != "LRG_gene" and t.is_current = 1';
+  my @trans  = @{ $self->generic_fetch($constraint) };
+  return \@trans ;
+}
+
 =head2 fetch_all_versions_by_stable_id 
 
   Arg [1]     : String $stable_id 

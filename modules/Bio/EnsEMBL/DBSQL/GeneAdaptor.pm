@@ -282,6 +282,14 @@ sub fetch_all_by_biotype {
 }
 
 
+sub fetch_all {
+  my ($self) = @_;
+
+  my $constraint = 'g.biotype != "LRG_gene" and g.is_current = 1';
+  my @genes  = @{ $self->generic_fetch($constraint) };
+  return \@genes ;
+}
+
 
 =head2 fetch_all_versions_by_stable_id 
 

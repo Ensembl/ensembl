@@ -119,6 +119,14 @@ sub _final_clause {
 }
 
 
+sub fetch_all {
+  my ($self) = @_;
+
+  my $constraint = 'e.biotype != "LRG_gene" and e.is_current = 1';
+  my @exons  = @{ $self->generic_fetch($constraint) };
+  return \@exons ;
+}
+
 =head2 fetch_by_stable_id
 
   Arg [1]    : string $stable_id
