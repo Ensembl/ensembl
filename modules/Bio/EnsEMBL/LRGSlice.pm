@@ -154,39 +154,24 @@ sub AUTOLOAD {
   $method =~ s/.*:://;
 
 
-  if($method =~ /^get_all_Attribute/){
-    print STDERR "get_all_Attribbutes called\n";
-    return  $self->{'_orig_slice'}->$method(@_);    
-  }
-  elsif($method =~ /^get_all_/ ){
-    my $features = $self->{'_chrom_slice'}->$method(@_);
-    my @new_features;
-    foreach my $ft (@{$features}){
-      if($ft->start > $ft->end){
-	my $temp = $ft->start;
-        $ft->start($ft->end);
-        $ft->end($temp);
-      }	
-      if(($ft->start+$ft->slice->start) > $self->{'_chrom_slice'}->end or ($ft->end+$ft->slice->start) < $self->{'_chrom_slice'}->start){
-	print STDERR "start before orig start???\n";
-	next;
-      }
-      print STDERR "FT: ".$ft->dbID."\t(".$ft->start.") ".($ft->start+$ft->slice->start)."\t(".$ft->end.") ".($ft->end+$ft->slice->start)."   ".$ft->slice->seq_region_name."\n";
-      my $new_ft = $ft->transfer($self->{'_orig_slice'});  
-      if(defined($new_ft)){
-#	print "NEW FT: ".$new_ft."\t".($new_ft->start+$new_ft->slice->start)."\t".($new_ft->end+$new_ft->slice->start)."\n";
-	push @new_features, $new_ft;
-      }
-      else{
-      # DO i want to give a message here or just ignore them???
-	print STDERR "problem transfering $ft start =".($ft->start+$ft->slice->start)." end= ".($ft->end+$ft->slice->end)."\n";
-      }
-   }
-    
-    return \@new_features;
-  }
-#  print "CAlling $method on lrg slice\n";
+
   return  $self->{'_orig_slice'}->$method(@_);
+}
+
+sub stable_id {
+    my $self = shift;
+    return $self->seq_region_name;
+}
+
+
+sub display_xref {
+    my $self = shift;
+    return $self->seq_region_name;
+}
+
+sub feature_Slice {
+    my $self = shift;
+    return $self->{_chrom_slice};
 }
 
 sub DESTROY{
