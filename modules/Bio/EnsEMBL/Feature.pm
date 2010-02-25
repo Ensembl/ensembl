@@ -409,6 +409,8 @@ sub transform {
   my $self = shift;
   my $cs_name = shift;
   my $cs_version = shift;
+  my $to_slice = shift;
+
   #
   # For backwards compatibility check if the arguments are old style args
   #
@@ -458,28 +460,48 @@ sub transform {
 
   my $projection = $self->project( $cs_name, $cs_version );
 
-  if( @$projection != 1 ) {
+  if( @$projection != 1 and !defined($to_slice)) {
+     warn "MORE than one projection and NO slice specified ";
+     warn "from ".$self->slice->name." to $cs_name, $cs_version\n";
     return undef;
-  } else {
-    my $p_slice = $projection->[0]->[2];
-    my $slice_adaptor = $db->get_SliceAdaptor;
-    $slice = $slice_adaptor->fetch_by_region($p_slice->coord_system()->name(),
-					     $p_slice->seq_region_name(),
-					     undef, #start
-					     undef, #end
-					     1, #strand
-					     $p_slice->coord_system()->version);
-
-    my $new_feature;
-    %$new_feature = %$self;
-    bless $new_feature, ref $self;
-    $new_feature->{'start'}  = $p_slice->start();
-    $new_feature->{'end'}    = $p_slice->end();
+  }
+  my $index = 0;
+  if(defined($to_slice) and @$projection != 1 ){
+    my $found = 0;
+    my $i = 0;
+    foreach my $proj (@{$projection}) {
+      my $slice = $proj->[2];
+      if($to_slice->get_seq_region_id eq $slice->get_seq_region_id){
+	$found =1;
+	$index = $i;
+      }
+      $i++;
+    }
+    if(!$found){
+      warn "MORE than one projection and none to slice specified\n";
+      return undef;
+    }
+  }
+ 
+  my $p_slice = $projection->[$index]->[2];
+  my $slice_adaptor = $db->get_SliceAdaptor;
+  $slice = $slice_adaptor->fetch_by_region($p_slice->coord_system()->name(),
+					   $p_slice->seq_region_name(),
+					   undef, #start
+					   undef, #end
+					   1, #strand
+					   $p_slice->coord_system()->version);
+  
+  my $new_feature;
+  %$new_feature = %$self;
+  bless $new_feature, ref $self;
+  $new_feature->{'start'}  = $p_slice->start();
+  $new_feature->{'end'}    = $p_slice->end();
     $new_feature->{'strand'} =
       ($self->{'strand'} == 0) ? 0 : $p_slice->strand();
-    $new_feature->{'slice'}  = $slice;
-    return $new_feature;
-  }
+  $new_feature->{'slice'}  = $slice;
+  return $new_feature;
+
 }
 
 
@@ -536,7 +558,7 @@ sub transfer {
 
   #if we are not in the same coord system a transformation step is needed first
   if(!$dest_cs->equals($cur_cs)) {
-    $feature = $feature->transform($dest_cs->name, $dest_cs->version);
+    $feature = $feature->transform($dest_cs->name, $dest_cs->version, $slice);
     return undef if(!defined($feature));
     $current_slice = $feature->{'slice'};
   }
