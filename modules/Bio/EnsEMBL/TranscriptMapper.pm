@@ -308,7 +308,7 @@ sub genomic2cdna {
 sub pep2genomic {
   my ( $self, $start, $end ) = @_;
 
-  if ( !( defined(start) && defined($end) ) ) {
+  if ( !( defined($start) && defined($end) ) ) {
     throw("Must call with start and end");
   }
 
