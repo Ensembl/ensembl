@@ -306,21 +306,22 @@ sub genomic2cdna {
 =cut
 
 sub pep2genomic {
-  my ($self,$start,$end) = @_;
+  my ( $self, $start, $end ) = @_;
 
-  if( !defined $end ) {
-    throw("Must call with start/end");
+  if ( !( defined(start) && defined($end) ) ) {
+    throw("Must call with start and end");
   }
 
-  # move start end into translate cDNA coordinates now.
-  # much easier!
-  $start = 3* $start-2 + ($self->{'cdna_coding_start'} - 1);
-  $end   = 3* $end + ($self->{'cdna_coding_start'} - 1);
+  # Take possible N-padding at beginning of CDS into account.
+  my $start_phase = $self->{'start_phase'};
+  my $shift = ( $start_phase > 0 ) ? $start_phase : 0;
+
+  # Move start end into translate cDNA coordinates now.
+  $start = 3*$start - 2 + ( $self->{'cdna_coding_start'} - 1 ) - $shift;
+  $end = 3*$end + ( $self->{'cdna_coding_start'} - 1 ) - $shift;
 
   return $self->cdna2genomic( $start, $end );
 }
-
-
 
 =head2 genomic2cds
 
