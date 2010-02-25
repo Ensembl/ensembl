@@ -52,7 +52,7 @@ use strict;
 =cut
 
 sub new {
-  my ( $proto, $id, $start, $end, $strand, $coord_system ) = @_;
+  my ( $proto, $id, $start, $end, $strand, $coord_system, $rank ) = @_;
 
   my $class = ref($proto) || $proto;
 
@@ -61,7 +61,8 @@ sub new {
              'start'        => $start,
              'end'          => $end,
              'strand'       => $strand,
-             'coord_system' => $coord_system
+             'coord_system' => $coord_system,
+             'rank'         => $rank || 0
            },
            $class );
 }
@@ -192,6 +193,16 @@ sub length {
   my ($self) = @_;
 
   return $self->{'end'} - $self->{'start'} + 1;
+}
+
+sub rank {
+  my ( $self, $value ) = @_;
+
+  if ( defined($value) ) {
+    $self->{'rank'} = $value;
+  }
+
+  return $self->{'rank'};
 }
 
 1;

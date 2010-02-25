@@ -51,11 +51,11 @@ use strict;
 =cut
 
 sub new {
-  my ( $proto, $start, $end ) = @_;
+  my ( $proto, $start, $end, $rank ) = @_;
 
   my $class = ref($proto) || $proto;
 
-  return bless( { 'start' => $start, 'end' => $end }, $class );
+  return bless( { 'start' => $start, 'end' => $end, 'rank' => $rank  || 0 }, $class );
 }
 
 =head2 start
@@ -120,6 +120,16 @@ sub length {
   my ($self) = @_;
 
   return $self->{'end'} - $self->{'start'} + 1;
+}
+
+sub rank {
+  my ( $self, $value ) = @_;
+
+  if ( defined($value) ) {
+    $self->{'rank'} = $value;
+  }
+
+  return $self->{'rank'};
 }
 
 1;
