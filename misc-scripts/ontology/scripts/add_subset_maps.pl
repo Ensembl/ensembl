@@ -13,9 +13,9 @@ use Data::Dumper;
 sub usage {
   print("Usage:\n");
   printf( "\t%s\t-h dbhost [-P dbport] \\\n"
-      . "\t%s\t-u dbuser [-p dbpass] \\\n"
-      . "\t%2\$s\t-d dbname\n",
-    $0, ' ' x length($0) );
+            . "\t%s\t-u dbuser [-p dbpass] \\\n"
+            . "\t%2\$s\t-d dbname\n",
+          $0, ' ' x length($0) );
   print("\n");
   printf( "\t%s\t-?\n", $0 );
   print("\n");
@@ -37,34 +37,32 @@ my $dbname;
 $dbport = '3306';
 
 if (
-  !GetOptions(
-    'dbhost|host|h=s' => \$dbhost,
-    'dbport|port|P=i' => \$dbport,
-    'dbuser|user|u=s' => \$dbuser,
-    'dbpass|pass|p=s' => \$dbpass,
-    'dbname|name|d=s' => \$dbname,
-    'help|?'          => sub { usage(); exit } )
-  || !defined($dbhost)
-  || !defined($dbuser)
-  || !defined($dbname) )
+     !GetOptions( 'dbhost|host|h=s' => \$dbhost,
+                  'dbport|port|P=i' => \$dbport,
+                  'dbuser|user|u=s' => \$dbuser,
+                  'dbpass|pass|p=s' => \$dbpass,
+                  'dbname|name|d=s' => \$dbname,
+                  'help|?'          => sub { usage(); exit } )
+     || !defined($dbhost)
+     || !defined($dbuser)
+     || !defined($dbname) )
 {
   usage();
   exit;
 }
 
 my $dsn = sprintf( "DBI:mysql:database=%s;host=%s;port=%s",
-  $dbname, $dbhost, $dbport );
+                   $dbname, $dbhost, $dbport );
 
-my $dbh =
-  DBI->connect( $dsn, $dbuser, $dbpass,
-  { 'RaiseError' => 0, 'PrintError' => 0 } );
+my $dbh = DBI->connect( $dsn, $dbuser, $dbpass,
+                        { 'RaiseError' => 0, 'PrintError' => 0 } );
 
 # Associate all subsets in the ontology database with their respective
 # ontology.
 
 my %subsets;
-{
-  my $statement = q(
+
+my $statement = q(
 SELECT DISTINCT
         ontology.name,
         subset.name
@@ -75,25 +73,15 @@ WHERE   ontology.ontology_id = term.ontology_id
   AND   FIND_IN_SET(subset.name, term.subsets) > 0
 );
 
-  my $sth = $dbh->prepare($statement);
-
-  $sth->execute();
-
-  my ( $ontology_name, $subset_name );
-
-  $sth->bind_columns( \( $ontology_name, $subset_name ) );
-
-  while ( $sth->fetch() ) {
-    push( @{ $subsets{$ontology_name} }, $subset_name );
-  }
-}
-
-{
-  my $select_statement = q(
+my $table_template = q(
+CREATE TABLE %s (
+  term_id           INT UNSIGNED NOT NULL,
+  subset_term_id    INT UNSIGNED NOT NULL,
+  UNIQUE INDEX map_idx (term_id, subset_term_id)
+)
 SELECT DISTINCT
-        child_term.term_id,
-        parent_term.term_id,
-        closure.distance
+        child_term.term_id
+        parent_term.term_id
 FROM    ontology
   JOIN  term parent_term
     ON  (parent_term.ontology_id = ontology.ontology_id)
@@ -101,87 +89,32 @@ FROM    ontology
     ON  (closure.parent_term_id = parent_term.term_id)
   JOIN  term child_term
     ON  (child_term.term_id = closure.child_term_id)
-WHERE   FIND_IN_SET(?, parent_term.subsets) > 0
-  AND   ontology.name = ?
-ORDER BY child_term.accession, closure.distance;
+WHERE   ontology.name = %s
+  AND   FIND_IN_SET(%s, parent_term.subsets) > 0
 );
 
-  my $select_sth = $dbh->prepare($select_statement);
+my $sth = $dbh->prepare($statement);
 
-  foreach my $ontology_name ( keys(%subsets) ) {
-    foreach my $subset_name ( @{ $subsets{$ontology_name} } ) {
+$sth->execute();
 
-      my $aux_table_name = $dbh->quote_identifier(
-        sprintf( "aux_%s_%s_map", $ontology_name, $subset_name ) );
+my ( $ontology_name, $subset_name );
 
-      $dbh->do(
-        sprintf(
-          "CREATE TABLE %s ( "
-            . "term_id INT UNSIGNED NOT NULL, "
-            . "subset_term_id INT UNSIGNED NOT NULL, "
-            . "UNIQUE INDEX map_idx (term_id, subset_term_id) )",
-          $aux_table_name
-        ) );
+$sth->bind_columns( \( $ontology_name, $subset_name ) );
 
-      if ( $dbh->err() ) {
-        printf( "MySQL error, \"%s\", skipping...\n", $dbh->errstr() );
-        next;
-      }
+while ( $sth->fetch() ) {
 
-      printf( "%s...\n", $aux_table_name );
+  my $aux_table_name = $dbh->quote_identifier(
+             sprintf( "aux_%s_%s_map", $ontology_name, $subset_name ) );
 
-      $select_sth->bind_param( 1, $subset_name,   SQL_VARCHAR );
-      $select_sth->bind_param( 2, $ontology_name, SQL_VARCHAR );
+  $dbh->do(
+            sprintf( $table_template,
+                     $aux_table_name, $ontology_name, $subset_name ) );
 
-      $select_sth->execute();
+  if ( $dbh->err() ) {
+    printf( "MySQL error, \"%s\", skipping...\n", $dbh->errstr() );
+    next;
+  }
 
-      my ( $child_id, $parent_id, $distance );
-
-      $select_sth->bind_columns(
-        \( $child_id, $parent_id, $distance ) );
-
-      $dbh->do( sprintf( "LOCK TABLE %s WRITE", $aux_table_name ) );
-
-      my $insert_statement = sprintf(
-        "INSERT IGNORE INTO %s "
-          . "(term_id, subset_term_id) "
-          . "VALUES (?, ?)",
-        $aux_table_name
-      );
-
-      my $insert_sth = $dbh->prepare($insert_statement);
-
-      my $last_child_id;
-      my $the_distance;
-
-      while ( $select_sth->fetch() ) {
-        if ( !defined($last_child_id)
-          || $child_id != $last_child_id )
-        {
-          $last_child_id = $child_id;
-          $the_distance  = $distance;
-        }
-
-        if ( $child_id == $last_child_id && $distance != $the_distance )
-        {
-          next;
-        }
-
-        if ( $child_id == $last_child_id
-          && $distance == $the_distance )
-        {
-          $insert_sth->bind_param( 1, $child_id,  SQL_INTEGER );
-          $insert_sth->bind_param( 2, $parent_id, SQL_INTEGER );
-
-          $insert_sth->execute();
-        }
-      }
-
-      $dbh->do( sprintf( "OPTIMIZE TABLE %s", $aux_table_name ) );
-      $dbh->do("UNLOCK TABLES");
-
-    } ## end foreach my $subset_name ( @...)
-  } ## end foreach my $ontology_name (...)
 }
 
 # $Id$
