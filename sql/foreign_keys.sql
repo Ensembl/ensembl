@@ -23,6 +23,10 @@ ALTER table density_feature ADD FOREIGN KEY (seq_region_id) REFERENCES seq_regio
 
 ALTER table density_type ADD FOREIGN KEY (analysis_id) REFERENCES analysis(analysis_id);
 
+ALTER table dependent_xref ADD FOREIGN KEY (object_xref_id) REFERENCES object_xref(object_xref_id);
+ALTER table dependent_xref ADD FOREIGN KEY (master_xref_id) REFERENCES xref(xref_id);
+ALTER table dependent_xref ADD FOREIGN KEY (dependent_xref_id) REFERENCES xref(xref_id);
+
 ALTER table ditag_feature ADD FOREIGN KEY (ditag_id) REFERENCES ditag(ditag_id);
 ALTER table ditag_feature ADD FOREIGN KEY (seq_region_id) REFERENCES seq_region(seq_region_id);
 ALTER table ditag_feature ADD FOREIGN KEY (analysis_id) REFERENCES analysis(analysis_id);
@@ -32,6 +36,7 @@ ALTER table dna ADD FOREIGN KEY (seq_region_id) REFERENCES seq_region(seq_region
 ALTER table dna_align_feature ADD FOREIGN KEY (analysis_id) REFERENCES analysis(analysis_id);
 ALTER table dna_align_feature ADD FOREIGN KEY (seq_region_id) REFERENCES seq_region(seq_region_id);
 ALTER table dna_align_feature ADD FOREIGN KEY (external_db_id) REFERENCES external_db(external_db_id);
+ALTER table dna_align_feature ADD FOREIGN KEY (pair_dna_align_feature_id) REFERENCES dna_align_feature(dna_align_feature_id);
 
 ALTER table dnac ADD FOREIGN KEY (seq_region_id) REFERENCES seq_region(seq_region_id);
 
@@ -47,17 +52,18 @@ ALTER table external_synonym ADD FOREIGN KEY (xref_id) REFERENCES xref(xref_id);
 ALTER table gene ADD FOREIGN KEY (analysis_id) REFERENCES analysis(analysis_id);
 ALTER table gene ADD FOREIGN KEY (display_xref_id) REFERENCES xref(xref_id);
 ALTER table gene ADD FOREIGN KEY (seq_region_id) REFERENCES seq_region(seq_region_id);
+ALTER table gene ADD FOREIGN KEY (canonical_transcript_id) REFERENCES transcript(transcript_id);
 
 ALTER table gene_attrib ADD FOREIGN KEY (attrib_type_id) REFERENCES attrib_type(attrib_type_id);
 ALTER table gene_attrib ADD FOREIGN KEY (gene_id) REFERENCES gene(gene_id);
 
-ALTER table gene_archive ADD FOREIGN KEY (mapping_session_id) REFERENCES mapping_session (mapping_session_id);
+ALTER table gene_archive ADD FOREIGN KEY (mapping_session_id) REFERENCES mapping_session(mapping_session_id);
+ALTER table gene_archive ADD FOREIGN KEY (peptide_archive_id) REFERENCES peptide_archive(peptide_archive_id);
 
 ALTER table gene_stable_id ADD FOREIGN KEY (gene_id) REFERENCES gene(gene_id);
 
 ALTER table go_xref ADD FOREIGN KEY (object_xref_id) REFERENCES object_xref(object_xref_id);
 ALTER table go_xref ADD FOREIGN KEY (source_xref_id) REFERENCES xref(xref_id);
-
 
 ALTER table identity_xref ADD FOREIGN KEY (object_xref_id) REFERENCES object_xref(object_xref_id);
 
@@ -89,14 +95,6 @@ ALTER table misc_feature_misc_set ADD FOREIGN KEY (misc_set_id) REFERENCES misc_
 
 ALTER table object_xref ADD FOREIGN KEY (xref_id) REFERENCES xref(xref_id);
 ALTER table object_xref ADD FOREIGN KEY (analysis_id) REFERENCES analysis(analysis_id);
-
-ALTER table oligo_array ADD FOREIGN KEY (parent_array_id) REFERENCES oligo_array(oligo_array_id);
-
-ALTER table oligo_feature ADD FOREIGN KEY (analysis_id) REFERENCES analysis(analysis_id);
-ALTER table oligo_feature ADD FOREIGN KEY (seq_region_id) REFERENCES seq_region(seq_region_id);
-ALTER table oligo_feature ADD FOREIGN KEY (oligo_probe_id) REFERENCES oligo_probe (oligo_probe_id);
-
-ALTER table oligo_probe ADD FOREIGN KEY (oligo_array_id) REFERENCES oligo_array(oligo_array_id);
 
 ALTER table prediction_exon ADD FOREIGN KEY (prediction_transcript_id) REFERENCES prediction_transcript(prediction_transcript_id);
 ALTER table prediction_exon ADD FOREIGN KEY (seq_region_id) REFERENCES seq_region(seq_region_id);
@@ -130,8 +128,22 @@ ALTER table seq_region ADD FOREIGN KEY (coord_system_id) REFERENCES coord_system
 ALTER table seq_region_attrib ADD FOREIGN KEY (attrib_type_id) REFERENCES attrib_type(attrib_type_id);
 ALTER table seq_region_attrib ADD FOREIGN KEY (seq_region_id) REFERENCES seq_region(seq_region_id);
 
+ALTER table seq_region_mapping ADD FOREIGN KEY (internal_seq_region_id) REFERENCES seq_region(seq_region_id);
+ALTER table seq_region_mapping ADD FOREIGN KEY (mapping_set_id) REFERENCES mapping_set(mapping_set_id);
+
 ALTER table simple_feature ADD FOREIGN KEY (analysis_id) REFERENCES analysis(analysis_id);
 ALTER table simple_feature ADD FOREIGN KEY (seq_region_id) REFERENCES seq_region(seq_region_id);
+
+ALTER table splicing_event ADD FOREIGN KEY (seq_region_id) REFERENCES seq_region(seq_region_id);
+ALTER table splicing_event ADD FOREIGN KEY (gene_id) REFERENCES gene(gene_id);
+
+ALTER table splicing_event_feature ADD FOREIGN KEY (splicing_event_id) REFERENCES splicing_event(splicing_event_id);
+ALTER table splicing_event_feature ADD FOREIGN KEY (exon_id) REFERENCES exon(exon_id);
+ALTER table splicing_event_feature ADD FOREIGN KEY (transcript_id) REFERENCES transcript(transcript_id);
+
+ALTER table splicing_transcript_pair ADD FOREIGN KEY (splicing_event_id) REFERENCES splicing_event(splicing_event_id);
+ALTER table splicing_transcript_pair ADD FOREIGN KEY (transcript_id_1) REFERENCES transcript(transcript_id);
+ALTER table splicing_transcript_pair ADD FOREIGN KEY (transcript_id_2) REFERENCES transcript(transcript_id);
 
 ALTER table supporting_feature ADD FOREIGN KEY (exon_id) REFERENCES exon(exon_id);
 
@@ -139,6 +151,7 @@ ALTER table transcript ADD FOREIGN KEY (analysis_id) REFERENCES analysis(analysi
 ALTER table transcript ADD FOREIGN KEY (display_xref_id) REFERENCES xref(xref_id);
 ALTER table transcript ADD FOREIGN KEY (gene_id) REFERENCES gene(gene_id);
 ALTER table transcript ADD FOREIGN KEY (seq_region_id) REFERENCES seq_region(seq_region_id);
+ALTER table transcript ADD FOREIGN KEY (canonical_translation_id) REFERENCES translation(translation_id);
 
 ALTER table transcript_attrib ADD FOREIGN KEY (attrib_type_id) REFERENCES attrib_type(attrib_type_id);
 ALTER table transcript_attrib ADD FOREIGN KEY (transcript_id) REFERENCES transcript(transcript_id);
