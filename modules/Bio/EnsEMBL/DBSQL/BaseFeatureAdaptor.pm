@@ -225,6 +225,9 @@ sub fetch_all_by_Slice_constraint {
   $constraint ||= '';
   $constraint = $self->_logic_name_to_constraint($constraint, $logic_name);
 
+
+
+
   # If the logic name was invalid, undef was returned
   return [] if ( !defined($constraint) );
 
@@ -234,6 +237,17 @@ sub fetch_all_by_Slice_constraint {
   if (
     !( defined( $self->db()->no_cache() ) && $self->db()->no_cache() ) )
   {
+
+    #strain test and add to constraint if so to stop caching.
+    if($slice->isa('Bio::EnsEMBL::StrainSlice')){
+      my $string = $self->dbc->db_handle->quote($slice->strain_name);
+      if($constraint ne ""){
+	$constraint .= " AND $string = $string ";
+      }
+      else{
+	$constraint .= " $string = $string ";
+      }
+    }
 
     # Check the cache and return the cached results if we have already
     # done this query.  The cache key is the made up from the slice
