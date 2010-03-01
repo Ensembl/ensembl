@@ -70,6 +70,7 @@ use Bio::EnsEMBL::Storable;
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 use Bio::EnsEMBL::Utils::Exception qw(throw deprecate warning);
 use Bio::EnsEMBL::Slice;
+use Bio::EnsEMBL::StrainSlice;
 use vars qw(@ISA);
 
 @ISA = qw(Bio::EnsEMBL::Storable);
@@ -835,16 +836,27 @@ sub feature_Slice {
     return undef;
   }
 
-  return Bio::EnsEMBL::Slice->new
-    (-seq_region_name   => $slice->seq_region_name,
-     -seq_region_length => $slice->seq_region_length,
-     -coord_system      => $slice->coord_system,
-     -start             => $self->seq_region_start(),
-     -end               => $self->seq_region_end(),
-     -strand            => $self->seq_region_strand(),
-     -adaptor           => $slice->adaptor());
-
-  
+  if($slice->isa("Bio::EnsEMBL::StrainSlice")){
+    return Bio::EnsEMBL::StrainSlice->new
+      (-seq_region_name   => $slice->seq_region_name,
+       -seq_region_length => $slice->seq_region_length,
+       -coord_system      => $slice->coord_system,
+       -start             => $self->seq_region_start(),
+       -end               => $self->seq_region_end(),
+       -strand            => $self->seq_region_strand(),
+       -adaptor           => $slice->adaptor(),
+       -strain_name       => $slice->strain_name());
+  }
+  else{
+    return Bio::EnsEMBL::Slice->new
+      (-seq_region_name   => $slice->seq_region_name,
+       -seq_region_length => $slice->seq_region_length,
+       -coord_system      => $slice->coord_system,
+       -start             => $self->seq_region_start(),
+       -end               => $self->seq_region_end(),
+       -strand            => $self->seq_region_strand(),
+       -adaptor           => $slice->adaptor());
+  }
 }
 
 
