@@ -123,7 +123,7 @@ sub new {
   $self->{'lrg_region_test'} = undef;
   my $meta_container = $self->db->get_MetaContainer();
   my @values = $meta_container->list_value_by_key("LRG");
-  if(defined(@values) and scalar(@values) and $values[0]->[0]){
+  if(scalar(@values) and $values[0]->[0]){
     $self->{'lrg_region_test'} = $values[0]->[0];
   }
   return $self;
