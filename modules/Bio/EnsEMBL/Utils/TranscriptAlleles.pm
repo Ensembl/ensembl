@@ -301,6 +301,9 @@ sub type_variation {
       return [$var];
     }
   }
+  
+  # nonsense-mediated decay transcript
+  $var->type("NMD_TRANSCRIPT") if $tr->biotype() eq 'nonsense_mediated_decay';
 
   # get a transcript mapper object
   my $tm = $tr->get_TranscriptMapper();
