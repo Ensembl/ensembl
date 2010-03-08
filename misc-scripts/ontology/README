@@ -108,7 +108,7 @@
       The various tables named 'aux_XX_YY_map', e.g.,
       'aux_GO_goslim_goa_map' and 'aux_SO_SOFA_map', are simple mapping
       tables that maps term IDs from the 'XX' ontology ("GO" or "SO") to
-      the closest parent term(s) in the 'YY' subset.
+      the term(s) in the 'YY' subset.
 
       The mapping tables are created using the information stored in the
       'closure' table, and therefore it will be based on the 'is_a' and
