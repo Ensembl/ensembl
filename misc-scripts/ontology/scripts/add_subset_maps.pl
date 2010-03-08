@@ -36,8 +36,7 @@ my $dbname;
 
 $dbport = '3306';
 
-if (
-     !GetOptions( 'dbhost|host|h=s' => \$dbhost,
+if ( !GetOptions( 'dbhost|host|h=s' => \$dbhost,
                   'dbport|port|P=i' => \$dbport,
                   'dbuser|user|u=s' => \$dbuser,
                   'dbpass|pass|p=s' => \$dbpass,
@@ -77,11 +76,12 @@ my $table_template = q(
 CREATE TABLE %s (
   term_id           INT UNSIGNED NOT NULL,
   subset_term_id    INT UNSIGNED NOT NULL,
+  distance          TINYINT UNSIGNED NOT NULL,
   UNIQUE INDEX map_idx (term_id, subset_term_id)
 )
-SELECT DISTINCT
-        child_term.term_id
-        parent_term.term_id
+SELECT  child_term.term_id AS term_id,
+        parent_term.term_id AS subset_term_id,
+        MIN(distance) AS distance
 FROM    ontology
   JOIN  term parent_term
     ON  (parent_term.ontology_id = ontology.ontology_id)
@@ -91,6 +91,7 @@ FROM    ontology
     ON  (child_term.term_id = closure.child_term_id)
 WHERE   ontology.name = %s
   AND   FIND_IN_SET(%s, parent_term.subsets) > 0
+GROUP BY child_term.term_id, parent_term.term_id
 );
 
 my $sth = $dbh->prepare($statement);
@@ -106,9 +107,11 @@ while ( $sth->fetch() ) {
   my $aux_table_name = $dbh->quote_identifier(
              sprintf( "aux_%s_%s_map", $ontology_name, $subset_name ) );
 
-  $dbh->do(
-            sprintf( $table_template,
-                     $aux_table_name, $ontology_name, $subset_name ) );
+  printf( "Creating and populating %s...\n", $aux_table_name );
+
+  $dbh->do( sprintf( $table_template,
+                     $aux_table_name, $dbh->quote($ontology_name),
+                     $dbh->quote($subset_name) ) );
 
   if ( $dbh->err() ) {
     printf( "MySQL error, \"%s\", skipping...\n", $dbh->errstr() );
