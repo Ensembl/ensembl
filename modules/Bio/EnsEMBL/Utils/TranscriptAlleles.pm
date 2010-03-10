@@ -269,6 +269,13 @@ sub type_variation {
     #since the variation is more than UPSTREAM and DOWNSTREAM of the transcript, there is no effect in the transcript
     return [];
   }
+  
+  # nonsense-mediated decay transcript
+  if($tr->biotype() eq 'nonsense_mediated_decay') {
+	$var->type("NMD_TRANSCRIPT");
+	return [$var];
+  }
+  
 
   if (!$tr->translation()) {#for other biotype rather than coding/IG genes
     # check if the variation is completely outside the transcript:
@@ -301,9 +308,6 @@ sub type_variation {
       return [$var];
     }
   }
-  
-  # nonsense-mediated decay transcript
-  $var->type("NMD_TRANSCRIPT") if $tr->biotype() eq 'nonsense_mediated_decay';
 
   # get a transcript mapper object
   my $tm = $tr->get_TranscriptMapper();
