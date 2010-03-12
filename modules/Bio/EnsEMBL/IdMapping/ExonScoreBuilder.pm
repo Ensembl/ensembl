@@ -459,7 +459,7 @@ sub run_exonerate {
   
     # check that output file exists
     my $outfile = "$dump_path/exonerate_map.$i";
-    push @missing, $outfile unless (-s "$outfile");
+    push @missing, $outfile unless (-f "$outfile");
 
     # check no errors occurred
     my $errfile = "$logpath/exonerate.$i.err";
