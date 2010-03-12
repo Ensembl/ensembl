@@ -409,9 +409,10 @@ sub biotype_gene_rescore {
     my $target_gene = $self->cache->get_by_key('genes_by_id', 'target',
       $entry->target);
 
-    if ($source_gene->biotype ne $target_gene->biotype) {
+    if ( $source_gene->biotype() ne $target_gene->biotype() ) {
       #$self->logger->debug("biotype ".$entry->to_string."\n");
-      $matrix->set_score($entry->source, $entry->target, ($entry->score * 0.8));
+      $matrix->set_score( $entry->source(), $entry->target(),
+                          ( $entry->score()*0.5 ) );
       $i++;
     }
   }
