@@ -833,17 +833,14 @@ CREATE TABLE meta (
 
 
 # Auto add schema version to database
-INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, "schema_version", "57");
+INSERT INTO meta (species_id, meta_key, meta_value)
+  VALUES (NULL, "schema_version", "58");
 
 # patches included in this schema file
 # NOTE: at beginning of release cycle, remove patch entries from last release
 # NOTE: Avoid line breaks in values
-INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_56_57_a.sql|schema_version');
-INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_56_57_b.sql|affy_analysis_tidy');
-INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_56_57_c.sql|external_db_type_enum');
-INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_56_57_d.sql|allow_meta_null');
-INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_56_57_e.sql|canonical_translations');
-INSERT INTO meta (species_id, meta_key, meta_value) VALUES (NULL, 'patch', 'patch_56_57_f.sql|simple_feature.display_label');
+INSERT INTO meta (species_id, meta_key, meta_value)
+  VALUES (NULL, 'patch', 'patch_57_58_a.sql|schema_version');
 
 
 ################################################################################
