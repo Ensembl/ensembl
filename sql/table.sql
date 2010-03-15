@@ -965,7 +965,7 @@ CREATE TABLE misc_attrib (
 
   misc_feature_id             INT(10) UNSIGNED NOT NULL DEFAULT '0',
   attrib_type_id              SMALLINT(5) UNSIGNED NOT NULL DEFAULT '0',
-  value                       TEXT NOT NULL DEFAULT '',
+  value                       TEXT NOT NULL,
 
   KEY type_val_idx (attrib_type_id, value(40)),
   KEY val_only_idx (value(40)),
@@ -983,7 +983,7 @@ CREATE TABLE translation_attrib (
 
   translation_id              INT(10) UNSIGNED NOT NULL DEFAULT '0',
   attrib_type_id              SMALLINT(5) UNSIGNED NOT NULL DEFAULT '0',
-  value                       TEXT NOT NULL DEFAULT '',
+  value                       TEXT NOT NULL,
 
   KEY type_val_idx (attrib_type_id, value(40)),
   KEY val_only_idx (value(40)),
@@ -1000,7 +1000,7 @@ CREATE TABLE transcript_attrib (
 
   transcript_id               INT(10) UNSIGNED NOT NULL DEFAULT '0',
   attrib_type_id              SMALLINT(5) UNSIGNED NOT NULL DEFAULT '0',
-  value                       TEXT NOT NULL DEFAULT '',
+  value                       TEXT NOT NULL,
 
   KEY type_val_idx (attrib_type_id, value(40)),
   KEY val_only_idx (value(40)),
@@ -1018,7 +1018,7 @@ CREATE TABLE gene_attrib (
 
   gene_id                     INT(10) UNSIGNED NOT NULL DEFAULT '0',
   attrib_type_id              SMALLINT(5) UNSIGNED NOT NULL DEFAULT '0',
-  value                       TEXT NOT NULL DEFAULT '',
+  value                       TEXT NOT NULL,
 
   KEY type_val_idx (attrib_type_id, value(40)),
   KEY val_only_idx (value(40)),
@@ -1036,7 +1036,7 @@ CREATE TABLE seq_region_attrib (
 
   seq_region_id               INT(10) UNSIGNED NOT NULL DEFAULT '0',
   attrib_type_id              SMALLINT(5) UNSIGNED NOT NULL DEFAULT '0',
-  value                       TEXT NOT NULL DEFAULT '',
+  value                       TEXT NOT NULL,
 
   KEY type_val_idx (attrib_type_id, value(40)),
   KEY val_only_idx (value(40)),
