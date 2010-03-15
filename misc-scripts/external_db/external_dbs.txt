@@ -209,6 +209,7 @@
 12620	Duck_consortium	1	XREF	0	0	0	Duck consortium	MISC	\N	\N
 12630	BGI_duck_transcriptome	1	XREF	0	0	0	Beijing Genomics Institute (BGI) duck transcriptome	MISC	\N	\N
 12700	goslim_goa	1	XREF	1	0	5	GOSlim GOA	MISC	\N	\N
+12710	WTSI_gorilla_transcriptome	1	XREF	0	0	0	Wellcome Trust Sanger Institute (WTSI) gorilla transcriptome	MISC	\N	\N
 # Ensembl Genomes external dbs
 20005	UniParc	1	KNOWNXREF	1	\N	\N	UniParc	PRIMARY_DB_SYNONYM	\N	\N	\N
 20008	BRENDA	1	KNOWNXREF	1	\N	\N	BRENDA	PRIMARY_DB_SYNONYM	\N	\N	\N
