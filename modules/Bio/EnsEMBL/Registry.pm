@@ -129,7 +129,7 @@ use DBI;
 
 use vars qw(%registry_register);
 
-my $API_VERSION = 57;
+my $API_VERSION = 58;
 
 # This is a map from group names to Ensembl DB adaptors.  Used by
 # load_all() and reset_DBAdaptor().
