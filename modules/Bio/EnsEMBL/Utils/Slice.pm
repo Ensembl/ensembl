@@ -117,13 +117,12 @@ sub split_Slices{
 
       #any remainder gets added to the last slice of the seq_region
       $end = $slice->end if($i == $number-1);
-
       push @out, Bio::EnsEMBL::Slice->new
         (-START             => $start,
          -END               => $end,
          -STRAND            => 1,
          -SEQ_REGION_NAME   => $slice->seq_region_name,
-         -SEQ_REGION_LENGTH => $length,
+         -SEQ_REGION_LENGTH => $slice->seq_region_length,
          -COORD_SYSTEM      => $slice->coord_system,
          -ADAPTOR           => $slice->adaptor);
       $start += $multiple + 1;
