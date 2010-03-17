@@ -342,16 +342,16 @@ sub list_all_params {
   $Text::Wrap::colums = 72;
   my @params = $self->allowed_params;
   foreach my $key (@params) {
-        my @vals = $self->param($key);
-        if (@vals) {
-            $txt .= Text::Wrap::wrap( sprintf('   %-21s', $key),
-                                      ' 'x24,
-                                      join(", ", @vals)
-                                    ) . "\n";
-        }
+    my @vals = $self->param($key);
+    if (@vals) {
+      $txt .= Text::Wrap::wrap( sprintf('   %-21s', $key),
+				' 'x24,
+				join(", ", @vals)
+			      ) . "\n";
     }
-    $txt .= "\n";
-    return $txt;
+  }
+  $txt .= "\n";
+  return $txt;
 }
 
 =head2 create_commandline_options
@@ -376,38 +376,37 @@ sub list_all_params {
 =cut
 
 sub create_commandline_options {
-    my ($self, $settings) = @_;
-    my %param_hash;
+  my ($self, $settings) = @_;
+  my %param_hash;
 
-    # get all allowed parameters
-    if ($settings->{'allowed_params'}) {
-        # exclude params explicitly stated
-        my %exclude = map { $_ => 1 } @{ $settings->{'exclude'} || [] };
-        foreach my $param ($self->allowed_params) {
-            unless ($exclude{$param}) {
-                my ($first, @rest) = $self->param($param);
-                next unless (defined($first));
-
-                if (@rest) {
-                    $first = join(",", $first, @rest);
-                }
-                $param_hash{$param} = $first;
-            }
-        }
-
+  # get all allowed parameters
+  if ($settings->{'allowed_params'}) {
+    # exclude params explicitly stated
+    my %exclude = map { $_ => 1 } @{ $settings->{'exclude'} || [] };
+    foreach my $param ($self->allowed_params) {
+      unless ($exclude{$param}) {
+	my ($first, @rest) = $self->param($param);
+	next unless (defined($first));
+	
+	if (@rest) {
+	  $first = join(",", $first, @rest);
+	}
+	$param_hash{$param} = $first;
+      }
     }
+  }
 
-    # replace values
-    foreach my $key (keys %{ $settings->{'replace'} || {} }) {
-        $param_hash{$key} = $settings->{'replace'}->{$key};
-    }
+  # replace values
+  foreach my $key (keys %{ $settings->{'replace'} || {} }) {
+    $param_hash{$key} = $settings->{'replace'}->{$key};
+  }
 
-    # create the commandline options string
-    my $options_string;
-    foreach my $param (keys %param_hash) {
-        $options_string .= sprintf("--%s %s ", $param, $param_hash{$param});
-    }
-    return $options_string;
+  # create the commandline options string
+  my $options_string;
+  foreach my $param (keys %param_hash) {
+    $options_string .= sprintf("--%s %s ", $param, $param_hash{$param});
+  }
+  return $options_string;
 }
 
 =head2 check_required_params
@@ -423,15 +422,15 @@ sub create_commandline_options {
 =cut
 
 sub check_required_params {
-    my ($self, @params) = @_;
-    my @missing = ();
-    foreach my $param (@params) {
-        push @missing, $param unless $self->param($param);
-    }
-    if (@missing) {
-        throw("Missing parameters: @missing.\nYou must specify them on the commandline or in your conffile.\n");
-    }
-    return(1);
+  my ($self, @params) = @_;
+  my @missing = ();
+  foreach my $param (@params) {
+    push @missing, $param unless $self->param($param);
+  }
+  if (@missing) {
+    throw("Missing parameters: @missing.\nYou must specify them on the commandline or in your conffile.\n");
+  }
+  return(1);
 }
 
 =head2 user_proceed
@@ -455,20 +454,20 @@ sub check_required_params {
 =cut
 
 sub user_proceed {
-    my ($self, $text) = @_;
+  my ($self, $text) = @_;
 
-    if ($self->param('interactive')) {
-        print "$text\n" if $text;
-        print "[y/N] ";
-        my $input = lc(<>);
-        chomp $input;
-        unless ($input eq 'y') {
-            print "Skipping.\n";
-            return(0);
-        }
+  if ($self->param('interactive')) {
+    print "$text\n" if $text;
+    print "[y/N] ";
+    my $input = lc(<>);
+    chomp $input;
+    unless ($input eq 'y') {
+      print "Skipping.\n";
+      return(0);
     }
+  }
 
-    return(1);
+  return(1);
 }
 
 =head2 user_confirm
@@ -478,8 +477,8 @@ sub user_proceed {
 =cut
 
 sub user_confirm {
-    my $self = shift;
-    exit unless $self->user_proceed("Continue?");
+  my $self = shift;
+  exit unless $self->user_proceed("Continue?");
 }
 
 =head2 read_user_input
@@ -499,14 +498,14 @@ sub user_confirm {
 =cut
 
 sub read_user_input {
-    my ($self, $text) = @_;
+  my ($self, $text) = @_;
 
-    if ($self->param('interactive')) {
-        print "$text\n" if $text;
-        my $input = <>;
-        chomp $input;
-        return $input;
-    }
+  if ($self->param('interactive')) {
+    print "$text\n" if $text;
+    my $input = <>;
+    chomp $input;
+    return $input;
+  }
 }
 
 =head2 comma_to_list
@@ -524,12 +523,12 @@ sub read_user_input {
 =cut
 
 sub comma_to_list {
-    my $self = shift;
-    foreach my $param (@_) {
-        $self->param($param,
-            split (/,/, join (',', $self->param($param))));
-    }
-    return(1);
+  my $self = shift;
+  foreach my $param (@_) {
+    $self->param($param,
+		 split (/,/, join (',', $self->param($param))));
+  }
+  return(1);
 }
 
 =head2 list_or_file
@@ -545,24 +544,24 @@ sub comma_to_list {
 =cut
 
 sub list_or_file {
-    my ($self, $param) = @_;
-    my @vals = $self->param($param);
-    return unless (@vals);
+  my ($self, $param) = @_;
+  my @vals = $self->param($param);
+  return unless (@vals);
 
-    my $firstval = $vals[0];
-    if (scalar(@vals) == 1 && -e $firstval) {
-        # we didn't get a list of values, but a file to read values from
-        @vals = ();
-        open(IN, $firstval) or throw("Cannot open $firstval for reading: $!");
-        while(<IN>){
-            chomp;
-            push(@vals, $_);
-        }
-        close(IN);
-        $self->param($param, @vals);
+  my $firstval = $vals[0];
+  if (scalar(@vals) == 1 && -e $firstval) {
+    # we didn't get a list of values, but a file to read values from
+    @vals = ();
+    open(IN, $firstval) or throw("Cannot open $firstval for reading: $!");
+    while(<IN>){
+      chomp;
+      push(@vals, $_);
     }
-    $self->comma_to_list($param);
-    return(1);
+    close(IN);
+    $self->param($param, @vals);
+  }
+  $self->comma_to_list($param);
+  return(1);
 }
 
 =head2 param
@@ -582,31 +581,31 @@ sub list_or_file {
 =cut
 
 sub param {
-    my $self = shift;
-    my $name = shift or throw("You must supply a parameter name");
+  my $self = shift;
+  my $name = shift or throw("You must supply a parameter name");
 
-    # setter
-    if (@_) {
-        if (scalar(@_) == 1) {
-            # single value
-            $self->{'_param'}->{$name} = shift;
-        } else {
-            # list of values
-            undef $self->{'_param'}->{$name};
-            @{ $self->{'_param'}->{$name} } = @_;
-        }
-    }
-
-    # getter
-    if (ref($self->{'_param'}->{$name}) eq 'ARRAY') {
-        # list parameter
-        return @{ $self->{'_param'}->{$name} };
-    } elsif (defined($self->{'_param'}->{$name})) {
-        # single-value parameter
-        return $self->{'_param'}->{$name};
+  # setter
+  if (@_) {
+    if (scalar(@_) == 1) {
+      # single value
+      $self->{'_param'}->{$name} = shift;
     } else {
-        return ();
+      # list of values
+      undef $self->{'_param'}->{$name};
+      @{ $self->{'_param'}->{$name} } = @_;
     }
+  }
+
+  # getter
+  if (ref($self->{'_param'}->{$name}) eq 'ARRAY') {
+    # list parameter
+    return @{ $self->{'_param'}->{$name} };
+  } elsif (defined($self->{'_param'}->{$name})) {
+    # single-value parameter
+    return $self->{'_param'}->{$name};
+  } else {
+    return ();
+  }
 }
 
 =head2 error
@@ -622,9 +621,9 @@ sub param {
 =cut
 
 sub error {
-    my $self = shift;
-    $self->{'_error'} = shift if (@_);
-    return $self->{'_error'};
+  my $self = shift;
+  $self->{'_error'} = shift if (@_);
+  return $self->{'_error'};
 }
 
 =head2 warnings
@@ -639,8 +638,8 @@ sub error {
 =cut
 
 sub warnings {
-    my $self = shift;
-    return $self->{'_warnings'};
+  my $self = shift;
+  return $self->{'_warnings'};
 }
 
 =head2 serverroot
@@ -657,9 +656,9 @@ sub warnings {
 =cut
 
 sub serverroot {
-    my $self = shift;
-    $self->{'_serverroot'} = shift if (@_);
-    return $self->{'_serverroot'};
+  my $self = shift;
+  $self->{'_serverroot'} = shift if (@_);
+  return $self->{'_serverroot'};
 }
 
 =head2 get_database
@@ -677,54 +676,52 @@ sub serverroot {
 =cut
 
 sub get_database {
-    my $self = shift;
-    my $database = shift or throw("You must provide a database");
-    my $prefix = shift || '';
-    $self->check_required_params(
-        "${prefix}host",
-        "${prefix}port",
-        "${prefix}user",
-        # "${prefix}pass", not required since might be empty
-        "${prefix}dbname",
-    );
+  my $self = shift;
+  my $database = shift or throw("You must provide a database");
+  my $prefix = shift || '';
+  $self->check_required_params(
+    "${prefix}host",
+    "${prefix}port",
+    "${prefix}user",
+    "${prefix}dbname",
+  );
+  my %adaptors = (
+    core    => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
+    ensembl => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
+    evega   => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
+    otter   => 'Bio::Otter::DBSQL::DBAdaptor',
+    vega    => 'Bio::Otter::DBSQL::DBAdaptor',
+    compara => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
+    loutre  => 'Bio::Vega::DBSQL::DBAdaptor',
+  );
+  throw("Unknown database: $database") unless $adaptors{$database};
 
-    my %adaptors = (
-        core    => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
-        ensembl => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
-        evega   => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
-        otter   => 'Bio::Otter::DBSQL::DBAdaptor',
-        vega    => 'Bio::Otter::DBSQL::DBAdaptor',
-		compara => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
-		loutre  => 'Bio::Vega::DBSQL::DBAdaptor',
-    );
-    throw("Unknown database: $database") unless $adaptors{$database};
+  $self->dynamic_use($adaptors{$database});
+  my $dba = $adaptors{$database}->new(
+    -host   => $self->param("${prefix}host"),
+    -port   => $self->param("${prefix}port"),
+    -user   => $self->param("${prefix}user"),
+    -pass   => $self->param("${prefix}pass") || '',
+    -dbname => $self->param("${prefix}dbname"),
+    -group  => $database,
+  );
+  #can use this approach to get dna from another db
+#  my $dna_db = $adaptors{$database}->new(
+#    -host => 'otterlive',
+#    -port => '3301',
+#    -user => $self->param("${prefix}user"),
+#    -pass => $self->param("${prefix}pass"),
+#    -dbname => 'loutre_human',
+#  );
+#  $dba->dnadb($dna_db);
 
-    $self->dynamic_use($adaptors{$database});
-    my $dba = $adaptors{$database}->new(
-            -host   => $self->param("${prefix}host"),
-            -port   => $self->param("${prefix}port"),
-            -user   => $self->param("${prefix}user"),
-            -pass   => $self->param("${prefix}pass") || '',
-            -dbname => $self->param("${prefix}dbname"),
-            -group  => $database,
-    );
-	#can use this approach to get dna from another db
-#	my $dna_db = $adaptors{$database}->new(
-#			-host => 'otterlive',
-#            -port => '3301',
-#			-user => $self->param("${prefix}user"),
-#			-pass => $self->param("${prefix}pass"),
-#            -dbname => 'loutre_human',
-#		);
-#	$dba->dnadb($dna_db);
+  # otherwise explicitely set the dnadb to itself - by default the Registry assumes
+  # a group 'core' for this now
+  $dba->dnadb($dba);
 
-    # otherwise explicitely set the dnadb to itself - by default the Registry assumes
-    # a group 'core' for this now
-    $dba->dnadb($dba);
-
-    $self->{'_dba'}->{$database} = $dba;
-    $self->{'_dba'}->{'default'} = $dba unless $self->{'_dba'}->{'default'};
-    return $self->{'_dba'}->{$database};
+  $self->{'_dba'}->{$database} = $dba;
+  $self->{'_dba'}->{'default'} = $dba unless $self->{'_dba'}->{'default'};
+  return $self->{'_dba'}->{$database};
 }
 
 
@@ -780,60 +777,6 @@ sub get_dbconnection {
 
 }
 
-=head2 get_glovar_database
-
-  Example     : my $dba = $support->get_glovar_database;
-  Description : Connects to the Glovar database.
-  Return type : Bio::EnsEMBL::ExternalData::Glovar::DBAdaptor
-  Exceptions  : thrown if no connection to a core db exists
-  Caller      : general
-
-=cut
-
-sub get_glovar_database {
-    my $self = shift;
-    $self->check_required_params(qw(
-        glovarhost
-        glovarport
-        glovaruser
-        glovarpass
-        glovardbname
-        oracle_home
-        ld_library_path
-        glovar_snp_consequence_exp
-    ));
-
-    # check for core dbadaptor
-    my $core_db = $self->dba;
-    unless ($core_db && (ref($core_db) =~ /Bio::.*::DBSQL::DBAdaptor/)) {
-        $self->log_error("You have to connect to a core db before you can get a glovar dbadaptor.\n");
-        exit;
-    }
-    
-    # setup Oracle environment
-    $ENV{'ORACLE_HOME'} = $self->param('oracle_home');
-    $ENV{'LD_LIBRARY_PATH'} = $self->param('ld_library_path');
-
-    # connect to Glovar db
-    $self->dynamic_use('Bio::EnsEMBL::ExternalData::Glovar::DBAdaptor');
-    my $dba = Bio::EnsEMBL::ExternalData::Glovar::DBAdaptor->new(
-            -host   => $self->param("glovarhost"),
-            -port   => $self->param("glovarport"),
-            -user   => $self->param("glovaruser"),
-            -pass   => $self->param("glovarpass"),
-            -dbname => $self->param("glovardbname"),
-            -group  => 'glovar',
-    );
-
-    # setup adaptor inter-relationships
-    $dba->dnadb($core_db);
-    $self->dynamic_use('Bio::EnsEMBL::ExternalData::Glovar::GlovarSNPAdaptor');
-    my $glovar_snp_adaptor = $dba->get_GlovarSNPAdaptor;
-    $glovar_snp_adaptor->consequence_exp($self->param('glovar_snp_consequence_exp'));
-    $core_db->add_ExternalFeatureAdaptor($glovar_snp_adaptor);
-
-    return $dba;
-}
 
 =head2 dba
 
@@ -848,8 +791,8 @@ sub get_glovar_database {
 =cut
 
 sub dba {
-    my ($self, $database) = shift;
-    return $self->{'_dba'}->{$database} || $self->{'_dba'}->{'default'};
+  my ($self, $database) = shift;
+  return $self->{'_dba'}->{$database} || $self->{'_dba'}->{'default'};
 }
 
 =head2 dynamic_use
@@ -866,19 +809,18 @@ sub dba {
 =cut
 
 sub dynamic_use {
-    my ($self, $classname) = @_;
-    my ($parent_namespace, $module) = $classname =~/^(.*::)(.*)$/ ?
-                                        ($1,$2) : ('::', $classname);
+  my ($self, $classname) = @_;
+  my ($parent_namespace, $module) = $classname =~/^(.*::)(.*)$/ ? ($1,$2) : ('::', $classname);
 
-    no strict 'refs';
-    # return if module has already been imported
-    return 1 if $parent_namespace->{$module.'::'} && %{ $parent_namespace->{$module.'::'}||{} };
-    
-    eval "require $classname";
-    throw("Failed to require $classname: $@") if ($@);
-    $classname->import();
+  no strict 'refs';
+  # return if module has already been imported
+  return 1 if $parent_namespace->{$module.'::'} && %{ $parent_namespace->{$module.'::'}||{} };
 
-    return 1;
+  eval "require $classname";
+  throw("Failed to require $classname: $@") if ($@);
+  $classname->import();
+
+  return 1;
 }
 
 =head2 get_chrlength
@@ -898,48 +840,48 @@ sub dynamic_use {
 =cut
 
 sub get_chrlength {
-    my ($self, $dba, $version,$type,$include_non_reference) = @_;
-    $dba ||= $self->dba;
-	$type ||= 'toplevel';
-    throw("get_chrlength should be passed a Bio::EnsEMBL::DBSQL::DBAdaptor\n")
-        unless ($dba->isa('Bio::EnsEMBL::DBSQL::DBAdaptor'));
+  my ($self, $dba, $version,$type,$include_non_reference) = @_;
+  $dba ||= $self->dba;
+  $type ||= 'toplevel';
+  throw("get_chrlength should be passed a Bio::EnsEMBL::DBSQL::DBAdaptor\n")
+    unless ($dba->isa('Bio::EnsEMBL::DBSQL::DBAdaptor'));
 
-    my $sa = $dba->get_SliceAdaptor;
+  my $sa = $dba->get_SliceAdaptor;
 
-    my @chromosomes = map { $_->seq_region_name } 
-                            @{ $sa->fetch_all($type, $version,$include_non_reference) };
-    my %chr = map { $_ => $sa->fetch_by_region($type, $_, undef, undef, undef, $version)->length } @chromosomes;
+  my @chromosomes = map { $_->seq_region_name } 
+    @{ $sa->fetch_all($type, $version,$include_non_reference) };
+  my %chr = map { $_ => $sa->fetch_by_region($type, $_, undef, undef, undef, $version)->length } @chromosomes;
 
-    my @wanted = $self->param('chromosomes');
-    if (@wanted) {
-        # check if user supplied invalid chromosome names
-        foreach my $chr (@wanted) {
-            my $found = 0;
-            foreach my $chr_from_db (keys %chr) {
-                if ($chr_from_db eq $chr) {
-                    $found = 1;
-                    last;
-                }
-            }
-            unless ($found) {
-                warning("Didn't find chromosome $chr in database " .
-                         $self->param('dbname'));
-            }
-        }
-        
-        # filter to requested chromosomes only
-        HASH: 
-        foreach my $chr_from_db (keys %chr) {
-            foreach my $chr (@wanted) {
-                if ($chr_from_db eq $chr) {
-                    next HASH;
-                }
-            }
-            delete($chr{$chr_from_db});
-        }
+  my @wanted = $self->param('chromosomes');
+  if (@wanted) {
+    # check if user supplied invalid chromosome names
+    foreach my $chr (@wanted) {
+      my $found = 0;
+      foreach my $chr_from_db (keys %chr) {
+	if ($chr_from_db eq $chr) {
+	  $found = 1;
+	  last;
+	}
+      }
+      unless ($found) {
+	warning("Didn't find chromosome $chr in database " .
+		  $self->param('dbname'));
+      }
     }
 
-    return \%chr;
+    # filter to requested chromosomes only
+  HASH:
+    foreach my $chr_from_db (keys %chr) {
+      foreach my $chr (@wanted) {
+	if ($chr_from_db eq $chr) {
+	  next HASH;
+	}
+      }
+      delete($chr{$chr_from_db});
+    }
+  }
+
+  return \%chr;
 }
 
 =head2 get_ensembl_chr_mapping
@@ -989,15 +931,15 @@ sub get_ensembl_chr_mapping {
 =cut
 
 sub get_taxonomy_id {
-    my ($self, $dba) = @_;
-    $dba ||= $self->dba;
-    my $sql = 'SELECT meta_value FROM meta WHERE meta_key = "species.taxonomy_id"';
-    my $sth = $dba->dbc->db_handle->prepare($sql);
-    $sth->execute;
-    my ($tid) = $sth->fetchrow_array;
-    $sth->finish;
-    $self->throw("Could not determine taxonomy_id from database.") unless $tid;
-    return $tid;
+  my ($self, $dba) = @_;
+  $dba ||= $self->dba;
+  my $sql = 'SELECT meta_value FROM meta WHERE meta_key = "species.taxonomy_id"';
+  my $sth = $dba->dbc->db_handle->prepare($sql);
+  $sth->execute;
+  my ($tid) = $sth->fetchrow_array;
+  $sth->finish;
+  $self->throw("Could not determine taxonomy_id from database.") unless $tid;
+  return $tid;
 }
 
 =head2 get_species_scientific_name
@@ -1013,21 +955,21 @@ sub get_taxonomy_id {
 =cut
 
 sub get_species_scientific_name {
-    my ($self, $dba) = @_;
-    $dba ||= $self->dba;
-    my $sql_tmp = "SELECT meta_value FROM meta WHERE meta_key = \'species.classification\' ORDER BY meta_id";
-    my $sql = $dba->dbc->add_limit_clause($sql_tmp,2);
-    my $sth = $dba->dbc->db_handle->prepare($sql);
-    $sth->execute;
-    my @sp;
-    while (my @row = $sth->fetchrow_array) {
-        push @sp, $row[0];
-    }
-    $sth->finish;
-    my $species = join(" ", reverse @sp);
-    $self->throw("Could not determine species scientific name from database.")
-        unless $species;
-    return $species;
+  my ($self, $dba) = @_;
+  $dba ||= $self->dba;
+  my $sql_tmp = "SELECT meta_value FROM meta WHERE meta_key = \'species.classification\' ORDER BY meta_id";
+  my $sql = $dba->dbc->add_limit_clause($sql_tmp,2);
+  my $sth = $dba->dbc->db_handle->prepare($sql);
+  $sth->execute;
+  my @sp;
+  while (my @row = $sth->fetchrow_array) {
+    push @sp, $row[0];
+  }
+  $sth->finish;
+  my $species = join(" ", reverse @sp);
+  $self->throw("Could not determine species scientific name from database.")
+    unless $species;
+  return $species;
 }
 
 =head2 species
@@ -1044,14 +986,14 @@ sub get_species_scientific_name {
 =cut
 
 sub species {
-    my $self = shift;
-    $self->{'_species'} = shift if (@_);
-    # get species name from database if not set
-    unless ($self->{'_species'}) {
-        $self->{'_species'} = join('_',
-            split(/ /, $self->get_species_scientific_name));
-    }
-    return $self->{'_species'};
+  my $self = shift;
+  $self->{'_species'} = shift if (@_);
+  # get species name from database if not set
+  unless ($self->{'_species'}) {
+    $self->{'_species'} = join('_',
+			       split(/ /, $self->get_species_scientific_name));
+  }
+  return $self->{'_species'};
 }
 
 =head2 sort_chromosomes
@@ -1069,11 +1011,11 @@ sub species {
 =cut
 
 sub sort_chromosomes {
-    my ($self, $chr_hashref) = @_;
-    $chr_hashref = $self->get_chrlength unless ($chr_hashref);
-    throw("You have to pass a hashref of your chromosomes")
-        unless ($chr_hashref and ref($chr_hashref) eq 'HASH');
-    return (sort _by_chr_num keys %$chr_hashref);
+  my ($self, $chr_hashref) = @_;
+  $chr_hashref = $self->get_chrlength unless ($chr_hashref);
+  throw("You have to pass a hashref of your chromosomes")
+    unless ($chr_hashref and ref($chr_hashref) eq 'HASH');
+  return (sort _by_chr_num keys %$chr_hashref);
 }
 
 =head2 _by_chr_num
@@ -1088,34 +1030,34 @@ sub sort_chromosomes {
 =cut
 
 sub _by_chr_num {
-    my @awords = split /-/, $a;
-    my @bwords = split /-/, $b;
+  my @awords = split /-/, $a;
+  my @bwords = split /-/, $b;
 
-    my $anum = $awords[0];
-    my $bnum = $bwords[0];
+  my $anum = $awords[0];
+  my $bnum = $bwords[0];
 
-    if ($anum !~ /^[0-9]*$/) {
-        if ($bnum !~ /^[0-9]*$/) {
-            return $anum cmp $bnum;
-        } else {
-            return 1;
-        }
-    }
+  if ($anum !~ /^[0-9]*$/) {
     if ($bnum !~ /^[0-9]*$/) {
-        return -1;
-    }
-
-    if ($anum <=> $bnum) {
-        return $anum <=> $bnum;
+      return $anum cmp $bnum;
     } else {
-        if ($#awords == 0) {
-            return -1;
-        } elsif ($#bwords == 0) {
-            return 1;
-        } else {
-            return $awords[1] cmp $bwords[1];
-        }
+      return 1;
     }
+  }
+  if ($bnum !~ /^[0-9]*$/) {
+    return -1;
+  }
+
+  if ($anum <=> $bnum) {
+    return $anum <=> $bnum;
+  } else {
+    if ($#awords == 0) {
+      return -1;
+    } elsif ($#bwords == 0) {
+      return 1;
+    } else {
+      return $awords[1] cmp $bwords[1];
+    }
+  }
 }
 
 =head2 split_chromosomes_by_size
@@ -1200,17 +1142,17 @@ sub split_chromosomes_by_size {
 =cut
 
 sub log {
-    my ($self, $txt, $indent) = @_;
-    $indent ||= 0;
-    
-    # strip off leading linebreaks so that indenting doesn't break
-    $txt =~ s/^(\n*)//;
-    
-    $txt = $1."    "x$indent . $txt;
-    my $fh = $self->{'_log_filehandle'};
-    throw("Unable to obtain log filehandle") unless $fh;
-    print $fh "$txt";
-    return(1);
+  my ($self, $txt, $indent) = @_;
+  $indent ||= 0;
+
+  # strip off leading linebreaks so that indenting doesn't break
+  $txt =~ s/^(\n*)//;
+
+  $txt = $1."    "x$indent . $txt;
+  my $fh = $self->{'_log_filehandle'};
+  throw("Unable to obtain log filehandle") unless $fh;
+  print $fh "$txt";
+  return(1);
 }
 
 =head2 log_warning
@@ -1228,12 +1170,12 @@ sub log {
 =cut
 
 sub log_warning {
-    my ($self, $txt, $indent, $break) = @_;
-    $txt = "WARNING: " . $txt;
-	$txt = "\n$txt" if ($break);
-    $self->log($txt, $indent);
-    $self->{'_warnings'}++;
-    return(1);
+  my ($self, $txt, $indent, $break) = @_;
+  $txt = "WARNING: " . $txt;
+  $txt = "\n$txt" if ($break);
+  $self->log($txt, $indent);
+  $self->{'_warnings'}++;
+  return(1);
 }
 
 =head2 log_error
@@ -1250,11 +1192,11 @@ sub log_warning {
 =cut
 
 sub log_error {
-    my ($self, $txt, $indent) = @_;
-    $txt = "ERROR: ".$txt;
-    $self->log($txt, $indent);
-    $self->log("Exiting.\n");
-    exit;
+  my ($self, $txt, $indent) = @_;
+  $txt = "ERROR: ".$txt;
+  $self->log($txt, $indent);
+  $self->log("Exiting.\n");
+  exit;
 }
 
 =head2 log_verbose
@@ -1271,12 +1213,10 @@ sub log_error {
 =cut
 
 sub log_verbose {
-    my ($self, $txt, $indent) = @_;
-
-    return(0) unless $self->param('verbose');
-
-    $self->log($txt, $indent);
-    return(1);
+  my ($self, $txt, $indent) = @_;
+  return(0) unless $self->param('verbose');
+  $self->log($txt, $indent);
+  return(1);
 }
 
 =head2 log_stamped
@@ -1294,14 +1234,12 @@ sub log_verbose {
 =cut
 
 sub log_stamped {
-    my ($self, $txt, $indent) = @_;
-    
-    # append timestamp and memory usage to log text
-    $txt =~ s/(\n*)$//;
-    $txt .= " ".$self->date_and_mem.$1;
-    
-    $self->log($txt, $indent);
-    return(1);
+  my ($self, $txt, $indent) = @_;
+  # append timestamp and memory usage to log text
+  $txt =~ s/(\n*)$//;
+  $txt .= " ".$self->date_and_mem.$1;
+  $self->log($txt, $indent);
+  return(1);
 }
 
 =head2 log_filehandle
@@ -1325,23 +1263,23 @@ sub log_stamped {
 =cut
 
 sub log_filehandle {
-    my ($self, $mode) = @_;
-    $mode ||= '>';
-    $mode = '>>' if ($self->param('logappend'));
-    my $fh = \*STDERR;
-    if (my $logfile = $self->param('logfile')) {
-        if (my $logpath = $self->param('logpath')) {
-            unless (-e $logpath) {
-                system("mkdir $logpath") == 0 or
-                    $self->log_error("Can't create log dir $logpath: $!\n");
-            }
-            $logfile = "$logpath/$logfile";
-        }
-        open($fh, "$mode", $logfile) or throw(
-            "Unable to open $logfile for writing: $!");
+  my ($self, $mode) = @_;
+  $mode ||= '>';
+  $mode = '>>' if ($self->param('logappend'));
+  my $fh = \*STDERR;
+  if (my $logfile = $self->param('logfile')) {
+    if (my $logpath = $self->param('logpath')) {
+      unless (-e $logpath) {
+	system("mkdir $logpath") == 0 or
+	  $self->log_error("Can't create log dir $logpath: $!\n");
+      }
+      $logfile = "$logpath/$logfile";
     }
-    $self->{'_log_filehandle'} = $fh;
-    return $self->{'_log_filehandle'};
+    open($fh, "$mode", $logfile) or throw(
+      "Unable to open $logfile for writing: $!");
+  }
+  $self->{'_log_filehandle'} = $fh;
+  return $self->{'_log_filehandle'};
 }
 
 =head2 filehandle
@@ -1360,18 +1298,18 @@ sub log_filehandle {
 =cut
 
 sub filehandle {
-    my ($self, $mode, $file) = @_;
-    $mode ||= ">";
-    my $fh;
-    if ($file) {
-        open($fh, "$mode", $file) or throw(
-            "Unable to open $file for writing: $!");
-    } elsif ($mode =~ />/) {
-        $fh = \*STDOUT;
-    } elsif ($mode =~ /</) {
-        $fh = \*STDIN;
-    }
-    return $fh;
+  my ($self, $mode, $file) = @_;
+  $mode ||= ">";
+  my $fh;
+  if ($file) {
+    open($fh, "$mode", $file) or throw(
+      "Unable to open $file for writing: $!");
+  } elsif ($mode =~ />/) {
+    $fh = \*STDOUT;
+  } elsif ($mode =~ /</) {
+    $fh = \*STDIN;
+  }
+  return $fh;
 }
 
 =head2 init_log
@@ -1388,27 +1326,27 @@ sub filehandle {
 =cut
 
 sub init_log {
-    my $self = shift;
+  my $self = shift;
 
-    # get a log filehandle
-    my $log = $self->log_filehandle;
+  # get a log filehandle
+  my $log = $self->log_filehandle;
 
-    # print script name, date, user who is running it
-    my $hostname = `hostname`;
-    chomp $hostname;
-    my $script = "$hostname:$Bin/$Script";
-    my $user = `whoami`;
-    chomp $user;
-    $self->log("Script: $script\nDate: ".$self->date."\nUser: $user\n");
+  # print script name, date, user who is running it
+  my $hostname = `hostname`;
+  chomp $hostname;
+  my $script = "$hostname:$Bin/$Script";
+  my $user = `whoami`;
+  chomp $user;
+  $self->log("Script: $script\nDate: ".$self->date."\nUser: $user\n");
 
-    # print parameters the script is running with
-    $self->log("Parameters:\n\n");
-    $self->log($self->list_all_params);
+  # print parameters the script is running with
+  $self->log("Parameters:\n\n");
+  $self->log($self->list_all_params);
 
-    # remember start time
-    $self->{'_start_time'} = time;
+  # remember start time
+  $self->{'_start_time'} = time;
 
-    return $log;
+  return $log;
 }
 
 =head2 finish_log
@@ -1423,19 +1361,19 @@ sub init_log {
 =cut
 
 sub finish_log {
-    my $self = shift;
-    $self->log("\nAll done. ".$self->warnings." warnings. ");
-    if ($self->{'_start_time'}) {
-        $self->log("Runtime ");
-        my $diff = time - $self->{'_start_time'};
-        my $sec = $diff % 60;
-        $diff = ($diff - $sec) / 60;
-        my $min = $diff % 60;
-        my $hours = ($diff - $min) / 60;
-        $self->log("${hours}h ${min}min ${sec}sec ");
-    }
-    $self->log($self->date_and_mem."\n\n");
-    return(1);
+  my $self = shift;
+  $self->log("\nAll done. ".$self->warnings." warnings. ");
+  if ($self->{'_start_time'}) {
+    $self->log("Runtime ");
+    my $diff = time - $self->{'_start_time'};
+    my $sec = $diff % 60;
+    $diff = ($diff - $sec) / 60;
+    my $min = $diff % 60;
+    my $hours = ($diff - $min) / 60;
+    $self->log("${hours}h ${min}min ${sec}sec ");
+  }
+  $self->log($self->date_and_mem."\n\n");
+  return(1);
 }
 
 =head2 date_and_mem
@@ -1449,10 +1387,10 @@ sub finish_log {
 =cut
 
 sub date_and_mem {
-    my $date = strftime "%Y-%m-%d %T", localtime;
-    my $mem = `ps -p $$ -o vsz |tail -1`;
-    chomp $mem;
-    return "[$date, mem $mem]";
+  my $date = strftime "%Y-%m-%d %T", localtime;
+  my $mem = `ps -p $$ -o vsz |tail -1`;
+  chomp $mem;
+  return "[$date, mem $mem]";
 }
 
 =head2 date
@@ -1466,7 +1404,7 @@ sub date_and_mem {
 =cut
 
 sub date {
-    return strftime "%Y-%m-%d %T", localtime;
+  return strftime "%Y-%m-%d %T", localtime;
 }
 
 =head2 format_time
@@ -1480,7 +1418,7 @@ sub date {
 =cut
 
 
-sub date_format { 
+sub date_format {
   my( $self, $time, $format ) = @_;
   my( $d,$m,$y) = (localtime($time))[3,4,5];
   my %S = ('d'=>sprintf('%02d',$d),'m'=>sprintf('%02d',$m+1),'y'=>$y+1900);
@@ -1501,9 +1439,9 @@ sub date_format {
 =cut
 
 sub mem {
-    my $mem = `ps -p $$ -o vsz |tail -1`;
-    chomp $mem;
-    return $mem;
+  my $mem = `ps -p $$ -o vsz |tail -1`;
+  chomp $mem;
+  return $mem;
 }
 
 =head2 commify
@@ -1729,58 +1667,58 @@ sub get_attrib_values {
 =cut
 
 sub fix_attrib_value {
-	my $self        = shift;
-	my $attribs     = shift;
-	my $id          = shift;
-	my $name        = shift;
-	my $code        = shift;
-	my $value       = shift;
-	my $interact    = shift || 0;
-	my $table       = shift || 'seq_region_attrib';
+  my $self        = shift;
+  my $attribs     = shift;
+  my $id          = shift;
+  my $name        = shift;
+  my $code        = shift;
+  my $value       = shift;
+  my $interact    = shift || 0;
+  my $table       = shift || 'seq_region_attrib';
 
-	#transiently set interactive parameter to zero
-	my $int_before;
-	if (! $interact) {
-		$int_before = $self->param('interactive');
-		$self->param('interactive',0);
-	}
+  #transiently set interactive parameter to zero
+  my $int_before;
+  if (! $interact) {
+    $int_before = $self->param('interactive');
+    $self->param('interactive',0);
+  }
 
-	#get any existing value(s) for this attribute
-	my $existings = $self->get_attrib_values($attribs,$code);
+  #get any existing value(s) for this attribute
+  my $existings = $self->get_attrib_values($attribs,$code);
 	
-	#add a new attribute if there is none...
-	if (! @$existings ) {
-		if ($self->user_proceed("Do you want to set $name attrib (code = $code) to value $value ?")) {
-			my $r = $self->store_new_attribute($id,$code,$value);
-			
-			#reset interactive parameter
-			$self->param('interactive',$int_before) if (! $interact);
-			return $r;
-		}
-	}
-	#...warn and exit if you're trying to update more than one value for the same attribute...
-	elsif (scalar @$existings > 1) {
-		$self->log_warning("You shouldn't be trying to update multiple attributes with the same code at once ($name:$code,$value), looks like you have duplicate entries in the (seq_region_)attrib table\n");
-		exit;
-	}
+  #add a new attribute if there is none...
+  if (! @$existings ) {
+    if ($self->user_proceed("Do you want to set $name attrib (code = $code) to value $value ?")) {
+      my $r = $self->store_new_attribute($id,$code,$value);
 
-	#...or update an attribute with new values...
-	else {
-		my $existing = $existings->[0];
-		if ($existing ne $value) {
-			if ($self->user_proceed("Do you want to reset $name attrib (code = $code) from $existing to $value ?")) {
-				my $r = $self->update_attribute($id,$code,$value);
-				$self->param('interactive',$int_before) if (! $interact);
-				push @$r, $existing;
-				return $r;
-			}
+      #reset interactive parameter
+      $self->param('interactive',$int_before) if (! $interact);
+      return $r;
 		}
-		#...or make no change
-		else {
-			$self->param('interactive',$int_before) if (! $interact);
-			return [];
-		}
-	}
+  }
+  #...warn and exit if you're trying to update more than one value for the same attribute...
+  elsif (scalar @$existings > 1) {
+    $self->log_warning("You shouldn't be trying to update multiple attributes with the same code at once ($name:$code,$value), looks like you have duplicate entries in the (seq_region_)attrib table\n");
+    exit;
+  }
+
+  #...or update an attribute with new values...
+  else {
+    my $existing = $existings->[0];
+    if ($existing ne $value) {
+      if ($self->user_proceed("Do you want to reset $name attrib (code = $code) from $existing to $value ?")) {
+	my $r = $self->update_attribute($id,$code,$value);
+	$self->param('interactive',$int_before) if (! $interact);
+	push @$r, $existing;
+	return $r;
+      }
+    }
+    #...or make no change
+    else {
+      $self->param('interactive',$int_before) if (! $interact);
+      return [];
+    }
+  }
 }
 
 =head2 _get_attrib_id
@@ -1796,23 +1734,23 @@ sub fix_attrib_value {
 =cut
 
 sub _get_attrib_id {
-	my $self        = shift;
-	my $attrib_code = shift;
-	my $dbh         = shift;
-	my ($attrib_id) = $dbh->selectrow_array(
-		qq(select attrib_type_id
+  my $self        = shift;
+  my $attrib_code = shift;
+  my $dbh         = shift;
+  my ($attrib_id) = $dbh->selectrow_array(
+    qq(select attrib_type_id
            from attrib_type
            where code = ?),
-			{},
-		($attrib_code)
-	);
-	if (! $attrib_id) {
-		$self->log_warning("There is no attrib_type_id for code $attrib_code, please patch the attrib_table\n");
-		exit;
-	}
-	else {
-		return $attrib_id;
-	}
+    {},
+    ($attrib_code)
+  );
+  if (! $attrib_id) {
+    $self->log_warning("There is no attrib_type_id for code $attrib_code, please patch the attrib_table\n");
+    exit;
+  }
+  else {
+    return $attrib_id;
+  }
 }
 
 =head2 store_new_attribute
@@ -1831,24 +1769,24 @@ sub _get_attrib_id {
 =cut
 
 sub store_new_attribute {
-	my $self         = shift;
-	my $sr_id        = shift;
-	my $attrib_code  = shift;
-	my $attrib_value = shift || '';
-	my $table        = shift || 'seq_region_attrib';
+  my $self         = shift;
+  my $sr_id        = shift;
+  my $attrib_code  = shift;
+  my $attrib_value = shift || '';
+  my $table        = shift || 'seq_region_attrib';
 
-	#get database handle
-	my $dbh = $self->get_dbconnection('loutre');
-	#get attrib_type_id for this particular attribute
-	my $attrib_id = $self->_get_attrib_id($attrib_code,$dbh);
-	#store
-	my $r = $dbh->do(
-		qq(insert into $table
+  #get database handle
+  my $dbh = $self->get_dbconnection('loutre');
+  #get attrib_type_id for this particular attribute
+  my $attrib_id = $self->_get_attrib_id($attrib_code,$dbh);
+  #store
+  my $r = $dbh->do(
+    qq(insert into $table
            values (?,?,?)),
-        {},
-		($sr_id,$attrib_id,$attrib_value)
-	);
-	return ['Stored',$r];
+    {},
+    ($sr_id,$attrib_id,$attrib_value)
+  );
+  return ['Stored',$r];
 }
 
 =head2 update_attribute
@@ -1866,23 +1804,23 @@ sub store_new_attribute {
 =cut
 
 sub update_attribute {
-	my $self = shift;
-	my $sr_id = shift;
-	my $attrib_code  = shift;
-	my $attrib_value = shift;
-	my $table        = shift || 'seq_region_attrib';
-	my $dbh = $self->get_dbconnection('loutre');
-	my $attrib_id = $self->_get_attrib_id($attrib_code,$dbh);
-	#update
-	my $r = $dbh->do(
-		qq(update $table
+  my $self = shift;
+  my $sr_id = shift;
+  my $attrib_code  = shift;
+  my $attrib_value = shift;
+  my $table        = shift || 'seq_region_attrib';
+  my $dbh = $self->get_dbconnection('loutre');
+  my $attrib_id = $self->_get_attrib_id($attrib_code,$dbh);
+  #update
+  my $r = $dbh->do(
+    qq(update $table
            set value = ?
            where seq_region_id = $sr_id
            and attrib_type_id = $attrib_id),
-        {},
-		($attrib_value)
-	);
-	return ['Updated',$r];
+    {},
+    ($attrib_value)
+  );
+  return ['Updated',$r];
 }
 
 1;
