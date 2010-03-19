@@ -334,3 +334,7 @@
 195	GeneNo_class_II	class_II_RNA Gene Count	Number of class_II_RNA Genes
 196	GeneNo_P_RNA	RNase_P_RNA Gene Count	Number of RNase_P_RNA Genes
 197	GeneNo_RNase_MR	RNase_MRP_RNA Gene Count	Number of RNase_MRP_RNA Genes
+
+# Intron loss due to a frameshift on the query genome
+198	lost_frameshift	lost_frameshift	Frameshift on the query sequence is lost in the target sequence
+
