@@ -65,7 +65,7 @@ sub process{
       FROM interpro ip, xref x
         LEFT JOIN dependent_xref dx ON x.xref_id=dx.master_xref_id
           LEFT JOIN xref x2 ON dx.dependent_xref_id=x2.xref_id
-            WHERE ip.interpro = x.accession");
+            WHERE ip.interpro = x.accession and ip.dbtype ne 'PRINTS'");
   my $rv = $sth->execute();
 #  my %interpro_cache;
   my %added;
