@@ -46,7 +46,7 @@ sub run {
 
   my $add_interpro_sth =
     $self->dbi()
-    ->prepare("INSERT INTO interpro (interpro, pfam) VALUES(?,?)");
+    ->prepare("INSERT INTO interpro (interpro, pfam, dbtype ) VALUES(?,?,?)");
 
   my $get_interpro_sth =
     $self->dbi()
@@ -58,11 +58,6 @@ sub run {
     ->prepare( "INSERT INTO xref "
         . "(accession,version,label,description,source_id,species_id, info_type) "
         . "VALUES(?,?,?,?,?,?,?)" );
-
-#  my $get_xref_sth =
-#    $self->dbi()
-#    ->prepare( "SELECT xref_id FROM xref "
-#        . "WHERE accession = ? AND source_id = ?" );
 
   my $dir = dirname($file);
 
@@ -112,16 +107,16 @@ sub run {
         my ($members) = $_ =~ /<member_list>(.+)<\/member_list>/s;
 
         while ( $members =~
-/db="(PROSITE|PFAM|PREFILE|PROFILE|TIGRFAMs|PIRSF|SMART|SSF)"\s+dbkey="(\S+)"/cgm
+/db="(PROSITE|PFAM|PREFILE|PROFILE|TIGRFAMs|PRINTS|PIRSF|SMART|SSF)"\s+dbkey="(\S+)"/cgm
           )
         {
             my ( $db_type, $id ) = ( $1, $2 );
             if( $db_type eq 'SSF' ){ $id =~ s/^SSF// } # Strip SSF prefix
 
-            if ( !$self->get_xref( $interpro, $id, $species_id ) ) {
-                $add_interpro_sth->execute( $interpro, $id );
-                $count{$db_type}++;
-            }
+#            if ( !$self->get_xref( $interpro, $id, $species_id ) ) {#no idea why if was checking for something with source of the name it would never work
+	    $add_interpro_sth->execute( $interpro, $id, $db_type );
+	    $count{$db_type}++;
+#            }
         }
     }
   }
@@ -157,15 +152,5 @@ sub run {
 
     return 0;
 }
-
-#sub get_xref{
-#  my ($get_xref_sth, $acc, $source) = @_;
-#
-#  $get_xref_sth->execute($acc, $source) || die "FAILED $acc  $source\n";
-#  if(my @row = $get_xref_sth->fetchrow_array()) {
-#    return $row[0];
-#  }   
-#  return 0;
-#}
 
 1;
