@@ -78,6 +78,12 @@ sub run {
 
   my $add_dependent_xref_sth = $dbi->prepare("INSERT INTO dependent_xref (master_xref_id,dependent_xref_id,linkage_annotation, linkage_source_id) VALUES (?,?,?,?)");
 
+
+  my $get_aliases_sth =  $dbi->prepare("select synonym from synonym where xref_id = ?");
+  my $add_alias_sth   =  $dbi->prepare("INSERT INTO synonym (xref_id, synonym) VALUES (?, ?)");
+
+
+
   my $err_count;
   foreach my $key (keys %prot2ensembl){
 
@@ -108,13 +114,25 @@ sub run {
       $linkage_source_id{$dependent_xref_id} =  $linkage_source_id;
     }
 
-
 #    print $key."\t";
     #
     # Add the new xref
     #
 
     my $xref_id = XrefParser::BaseParser->add_xref($key, $version, $label, $description, $source_id, $species_id, "DIRECT");
+
+
+    #
+    # Add the synonyms
+    #
+    my $synonym;
+    $get_aliases_sth->execute($old_xref_id);
+    $get_aliases_sth->bind_columns(\$synonym);
+    while($get_aliases_sth->fetch()){
+      $add_alias_sth->execute($xref_id, $synonym) || die "Could not add synonym for $xref_id, $synonym";
+    }
+
+
     foreach my $trans (@{$prot2ensembl{$key}}){
       #
       #add the direct xref entry
