@@ -435,11 +435,22 @@ GSQL
   ## Dump interpro xrefs and interpro table
   # use NO_MAPPING as unmapped_reason
   
+  # remove the old set
   # dump xrefs;
   # dump unmapped reasons
   # set xref status to dumped
   
   $transaction_start_sth->execute();
+
+  #delete old set
+  # 1 delete unmapped_object
+  # 2 delete xrefs
+
+  my $del_x_sth = $self->core->dbc->prepare('delete x from xref x, external_db e where x.external_db_id = e.external_db_id and e.db_name like "interpro"') || die "Could not prepare interpro xref deletion";
+  $del_x_sth->execute() || die "Problem executing deletion of interpro xrefs";
+
+  my $del_uo_sth = $self->core->dbc->prepare('delete x from unmapped_object x, external_db e where x.external_db_id = e.external_db_id and e.db_name like "interpro"') || die "Could not prepare interpro unmapped_object deletion";
+  $del_uo_sth->execute() || die "Problem executing deletion of interpro xrefs";
 
   my $get_xref_interpro_sth  = $self->xref->dbc->prepare("select x.xref_id, x.accession, x.version, x.label, x.description, x.info_type, x.info_text from xref x ,source s where s.source_id = x.source_id and s.name like 'Interpro'");
 
