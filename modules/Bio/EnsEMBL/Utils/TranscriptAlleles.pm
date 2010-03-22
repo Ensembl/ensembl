@@ -270,12 +270,6 @@ sub type_variation {
     return [];
   }
   
-  # nonsense-mediated decay transcript
-  if($tr->biotype() eq 'nonsense_mediated_decay') {
-	$var->type("NMD_TRANSCRIPT");
-	return [$var];
-  }
-  
 
   if (!$tr->translation()) {#for other biotype rather than coding/IG genes
     # check if the variation is completely outside the transcript:
@@ -288,22 +282,27 @@ sub type_variation {
       $var->type( ($tr->strand() == 1) ? 'DOWNSTREAM' : 'UPSTREAM' );
       return [$var];
     }
+	
+	
+	
     if ($var->start >= $tr->start() and $var->end <= $tr->end()) {#within the transcript
       if ($tr->biotype() eq "miRNA") {
-	my ($attribute) = @{$tr->get_all_Attributes('miRNA')};
-	#the value is the mature miRNA coordinate within miRNA transcript
-	if ( $attribute->value =~ /(\d+)-(\d+)/ ) {
-	  my @mapper_objs = $tr->cdna2genomic($1, $2, $tr->strand);#transfer cdna value to genomic coordinates
-	  foreach my $obj ( @mapper_objs ){#Note you can get more than one mature seq per miRNA
-	    if( $obj->isa("Bio::EnsEMBL::Mapper::Coordinate")){
-	      if ($var->start >= $obj->start() and $var->end <= $obj->end()) {
-		$var->type("WITHIN_MATURE_miRNA");
-		return [$var];
-	      }
-	    }
-	  }
-	}
+		my ($attribute) = @{$tr->get_all_Attributes('miRNA')};
+		
+		#the value is the mature miRNA coordinate within miRNA transcript
+		if ( $attribute->value =~ /(\d+)-(\d+)/ ) {
+		  my @mapper_objs = $tr->cdna2genomic($1, $2, $tr->strand);#transfer cdna value to genomic coordinates
+		  foreach my $obj ( @mapper_objs ){#Note you can get more than one mature seq per miRNA
+			if( $obj->isa("Bio::EnsEMBL::Mapper::Coordinate")){
+			  if ($var->start >= $obj->start() and $var->end <= $obj->end()) {
+				$var->type("WITHIN_MATURE_miRNA");
+				return [$var];
+			  }
+			}
+		  }
+		}
       }
+	  
       $var->type("WITHIN_NON_CODING_GENE");
       return [$var];
     }
@@ -409,6 +408,12 @@ sub type_variation {
       $var->type( ($tr->strand() == 1) ? 'DOWNSTREAM' : 'UPSTREAM' );
       return [$var];
     }
+	
+	# nonsense-mediated decay transcript
+	if($tr->biotype() eq 'nonsense_mediated_decay') {
+	  $var->type("NMD_TRANSCRIPT");
+	  return [$var];
+	}
 
     # variation must be intronic since mapped to cdna gap, but is within
     # transcript, note that ESSENTIAL_SPLICE_SITE only consider first (AG) and last (GT) 2 bases inside the intron.
@@ -416,11 +421,11 @@ sub type_variation {
 
     foreach my $intron (@{$tr->get_all_Introns()}) {
       if ($intron->length <=5) {#the length of frameshift intron could be 1,2,4,5 bases
-	if ($var->start>=$intron->start and $var->end<=$intron->end) {
-	  #this is a type of SYNONYMOUS_CODING since changes happen in frameshift intron, which don't change exon structure
-	  $var->type('SYNONYMOUS_CODING');
-	  return [$var];
-	}
+		if ($var->start>=$intron->start and $var->end<=$intron->end) {
+		  #this is a type of SYNONYMOUS_CODING since changes happen in frameshift intron, which don't change exon structure
+		  $var->type('SYNONYMOUS_CODING');
+		  return [$var];
+		}
       }
     }
     #if it's not in frameshift intron, then it's in normal intron
@@ -433,6 +438,12 @@ sub type_variation {
       $var->type('SPLICE_SITE');
     }
     return [$var];
+  }
+  
+  # nonsense-mediated decay transcript
+  if($tr->biotype() eq 'nonsense_mediated_decay') {
+	$var->type("NMD_TRANSCRIPT");
+	return [$var];
   }
 
   #now variation must be in exons, the first 3 bs into exon could be splice_site
