@@ -344,7 +344,7 @@ sub create_xrefs {
         $description .= $1;
       }
       elsif($line =~ /SubName: Full=(.*);/){
-        $name .= $1;
+        $description .= $1;
       }
       elsif($line =~ /AltName: Full=(.*);/){
         $description .= "(".$1.")";        
