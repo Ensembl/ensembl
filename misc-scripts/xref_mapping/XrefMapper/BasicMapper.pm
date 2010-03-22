@@ -1130,12 +1130,15 @@ FSQL
 	my $tran_name_ext = 201;
 	foreach my $tran (sort keys %no_vega){
 	  my $id = $new_clone_name."-".$tran_name_ext;
-	  if(!defined($xref_added{$id.":".$clone_based_ensembl_tran_id})){
-	    $max_xref_id++;
-	    $ins_xref_sth->execute($max_xref_id, $clone_based_ensembl_tran_id, $id, $id, "via clonename");
-	    $xref_added{$id.":".$clone_based_ensembl_tran_id} = $max_xref_id;
-	  }	
-	  
+	  while(defined($xref_added{$id.":".$clone_based_ensembl_tran_id})){
+	    $tran_name_ext++;
+	    $id = $new_clone_name."-".$tran_name_ext;
+	  }
+
+	  $max_xref_id++;
+	  $ins_xref_sth->execute($max_xref_id, $clone_based_ensembl_tran_id, $id, $id, "via clonename");
+	  $xref_added{$id.":".$clone_based_ensembl_tran_id} = $max_xref_id;
+
 	  $max_object_xref_id++;
 	  $ins_object_xref_sth->execute($max_object_xref_id, $no_vega{$tran}, 'Transcript', $xref_added{$id.":".$clone_based_ensembl_tran_id}, undef);	
 	  $ins_dep_ix_sth->execute($max_object_xref_id, 100, 100);
