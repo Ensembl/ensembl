@@ -19,9 +19,12 @@ sub run {
   my $file_io = $self->get_filehandle($file)
       || ( print( "ERROR: Cannot open $file\n" ) && return 1 );
 
+
   my %interpros = %{$self->get_valid_codes("interpro",$species_id)};
+
   scalar( keys %interpros )
       || ( print STDERR  "ERROR: No InterPro xrefs found in DB"  && return 1 );
+
 
   #get the "main" GO source id.
   $source_id = $self->get_source_id_for_source_name("GO","main");
@@ -62,6 +65,49 @@ sub run {
   return 0;
 }
 
+sub get_valid_codes{
+
+  my ($self, $source_name,$species_id) =@_;
+
+  # First cache synonyms so we can quickly add them later
+  my %synonyms;
+  my $syn_sth = $self->dbi()->prepare("SELECT xref_id, synonym FROM synonym");
+  $syn_sth->execute();
+
+  my ($xref_id, $synonym);
+  $syn_sth->bind_columns(\$xref_id, \$synonym);
+  while ($syn_sth->fetch()) {
+
+    push @{$synonyms{$xref_id}}, $synonym;
+
+  }
+
+  my %valid_codes;
+  my @sources;
+
+  my $sql = "select source_id from source where upper(name) like '%".uc($source_name)."%'";
+  my $sth = $self->dbi()->prepare($sql);
+  $sth->execute();
+  while(my @row = $sth->fetchrow_array()){
+    push @sources,$row[0];
+  }
+  $sth->finish;
+
+  foreach my $source (@sources){
+    $sql = 'select x.accession, x.xref_id from xref x, interpro i where i.interpro = x.accession and x.species_id = '.$species_id.
+           ' and x.source_id = '.$source.' and i.dbtype ne "PRINTS"';
+    my $sth = $self->dbi()->prepare($sql);
+    $sth->execute();
+    while(my @row = $sth->fetchrow_array()){
+      $valid_codes{$row[0]} =$row[1];
+      # add any synonyms for this xref as well
+      foreach my $syn (@{$synonyms{$row[1]}}) {
+	$valid_codes{$syn} = $row[1];
+      }
+    }
+  }
+  return \%valid_codes;
+}
 
 sub new{
   my $self = {};
