@@ -5,8 +5,8 @@ use File::Basename;
 
 use base qw( XrefParser::BaseParser );
 
-use strict;
-use Bio::EnsEMBL::DBSQL::DBAdaptor;
+use Bio::EnsEMBL::Registry;
+my $reg = "Bio::EnsEMBL::Registry";
 
 
 #my $dbi2;
@@ -31,29 +31,93 @@ sub run_script {
 
   my ($type, $my_args) = split(/:/,$file);
   
-  my $user  ="ensro";
-  my $host;
-  my $port;
-  my $dbname;
-  my $pass;
+  my $host = "ens-staging1";
+  my $user = "ensro";
 
   if($my_args =~ /host[=][>](\S+?)[,]/){
     $host = $1;
-  }
-  if($my_args =~ /port[=][>](\S+?)[,]/){
-    $port =  $1;
-  }
-  if($my_args =~ /dbname[=][>](\S+?)[,]/){
-    $dbname = $1;
-  }
-  if($my_args =~ /pass[=][>](\S+?)[,]/){
-    $pass = $1;
   }
   if($my_args =~ /user[=][>](\S+?)[,]/){
     $user = $1;
   }
 
-  print "Using $host $dbname for Vega\n" if($verbose);
+  my $vuser  ="ensro";
+  my $vhost;
+  my $vport;
+  my $vdbname;
+  my $vpass;
+ 
+  my $cuser  ="ensro";
+  my $chost;
+  my $cport;
+  my $cdbname;
+  my $cpass;
+
+  if($my_args =~ /chost[=][>](\S+?)[,]/){
+    $chost = $1;
+  }
+  if($my_args =~ /cport[=][>](\S+?)[,]/){
+    $cport =  $1;
+  }
+  if($my_args =~ /cdbname[=][>](\S+?)[,]/){
+    $cdbname = $1;
+  }
+  if($my_args =~ /cpass[=][>](\S+?)[,]/){
+    $cpass = $1;
+  }
+  if($my_args =~ /cuser[=][>](\S+?)[,]/){
+    $cuser = $1;
+  }
+  if($my_args =~ /vhost[=][>](\S+?)[,]/){
+    $vhost = $1;
+  }
+  if($my_args =~ /vport[=][>](\S+?)[,]/){
+    $vport =  $1;
+  }
+  if($my_args =~ /vdbname[=][>](\S+?)[,]/){
+    $vdbname = $1;
+  }
+  if($my_args =~ /vpass[=][>](\S+?)[,]/){
+    $vpass = $1;
+  }
+  if($my_args =~ /vuser[=][>](\S+?)[,]/){
+    $vuser = $1;
+  }
+
+  my $vega_dbc;
+  my $core_dbc;
+  if(defined($vdbname)){
+    print "Using $host $vdbname for Vega and cdbname for Core\n";
+    $vega_dbc = $self->dbi2($vhost, $vport, $vuser, $vdbname, $vpass);
+    if(!defined($vega_dbc)){
+      print "Problem could not open connectipn to $vhost, $vport, $vuser, $vdbname, $vpass\n";
+      return 1;
+    }
+    $core_dbc = $self->dbi2($chost, $cport, $cuser, $cdbname, $cpass);
+    if(!defined($core_dbc)){
+      print "Problem could not open connectipn to $chost, $cport, $cuser, $cdbname, $cpass\n";
+      return 1;
+    }
+
+  }
+  else{
+    $reg->load_registry_from_db(
+                                -host => $host,
+                                -user => $user);
+
+    $vega_dbc = $reg->get_adaptor("human","vega","slice");
+    if(!defined($vega_dbc)){
+      print "Could not connect to human vega database using load_registry_from_db $host $user\n";
+      return 1;
+    }
+    $vega_dbc = $vega_dbc->dbc;
+    $core_dbc = $reg->get_adaptor("human","core","slice");
+    if(!defined($core_dbc)){
+      print "Could not connect to human core database using load_registry_from_db $host $user\n";
+      return 1;
+    }
+    $core_dbc= $core_dbc->dbc;
+  }
 
 
   my $clone_source_id =
@@ -67,33 +131,23 @@ sub run_script {
   my %ott_to_vega_name;
   my %ott_to_enst;
   
-  my $dbi2 = $self->dbi2($host, $port, $user, $dbname, $pass);
-  if(!defined($dbi2)){
-    return 1;
-  }
-  
+  my $sth = $core_dbc->prepare($sql) || die "Could not prepare for core $sql\n";
 
-  my $sth = $dbi2->prepare($sql);   # funny number instead of stable id ?????
-  $sth->execute("Vega_transcript") or croak( $dbi2->errstr() );
+  foreach my $external_db (qw(OTTT shares_CDS_and_UTR_with_OTTT shares_CDS_with_OTTT)){
+    $sth->execute($external_db) or croak( $core_dbc->errstr());
+    while ( my @row = $sth->fetchrow_array() ) {
+      $ott_to_enst{$row[1]} = $row[0];
+    }
+  }
+
+  print "We have ".scalar(%ott_to_enst)." ott to enst entries\n " if($verbose);
+
+  my $sth = $vega_dbc->prepare($sql);   # funny number instead of stable id ?????
+  $sth->execute("Vega_transcript") or croak( $vega_dbc->errstr() );
   while ( my @row = $sth->fetchrow_array() ) {
     $ott_to_vega_name{$row[0]} = $row[1];
   }
   $sth->finish;
-
-  $sth = $dbi2->prepare($sql);   # funny number instead of stable id ?????
-  $sth->execute("ENST_CDS") or croak( $dbi2->errstr() );
-  while ( my @row = $sth->fetchrow_array() ) {
-    $ott_to_enst{$row[0]} = $row[1];
-  }
-  $sth->finish;
-
-  $sth = $dbi2->prepare($sql);
-  $sth->execute("ENST_ident") or croak( $dbi2->errstr() );
-  while ( my @row = $sth->fetchrow_array() ) {
-    $ott_to_enst{$row[0]} = $row[1];
-  }
-  $sth->finish;
-
 
   my $xref_count = 0;
 
@@ -103,7 +157,8 @@ sub run_script {
       my $name  = $ott_to_vega_name{$ott};
       if($name =~ /[.]/){
 	$id = $clone_source_id;
-        $name =~ s/[.]\d+//;    #remove .number
+# number is no longer the clone version but the gene number so we need to keep it now.
+#        $name =~ s/[.]\d+//;    #remove .number  #
       }
       my $xref_id = $self->add_xref($name, "" , $name , "", $id, $species_id, "DIRECT");
       $xref_count++;

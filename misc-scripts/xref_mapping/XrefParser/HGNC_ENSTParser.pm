@@ -4,7 +4,9 @@ use strict;
 
 use DBI;
 
+use Bio::EnsEMBL::Registry;
 use base qw( XrefParser::BaseParser );
+my $reg = "Bio::EnsEMBL::Registry";
 
 # Parse file of HGNC records and assign direct xrefs
 # All assumed to be linked to genes
@@ -17,24 +19,89 @@ sub run_script {
 
   my ($type, $my_args) = split(/:/,$file);
 
+  my $host = "ens-staging1";
   my $user = "ensro";
-  my $host ="ens-staging";
-  my $port = "3306";
-  my $dbname = "homo_sapiens_vega_51_36m";
-  my $pass;
 
   if($my_args =~ /host[=][>](\S+?)[,]/){
     $host = $1;
   }
-  if($my_args =~ /port[=][>](\S+?)[,]/){
-    $port =  $1;
+  if($my_args =~ /user[=][>](\S+?)[,]/){
+    $user = $1;
   }
-  if($my_args =~ /dbname[=][>](\S+?)[,]/){
-    $dbname = $1;
+
+  my $vuser;
+  my $vhost;
+  my $vport;
+  my $vdbname;
+  my $vpass;
+
+  if($my_args =~ /vhost[=][>](\S+?)[,]/){
+    $vhost = $1;
   }
-  if($my_args =~ /pass[=][>](\S+?)[,]/){
-    $pass = $1;
+  if($my_args =~ /vport[=][>](\S+?)[,]/){
+    $vport =  $1;
   }
+  if($my_args =~ /vdbname[=][>](\S+?)[,]/){
+    $vdbname = $1;
+  }
+  if($my_args =~ /vpass[=][>](\S+?)[,]/){
+    $vpass = $1;
+  }
+
+  my $cuser;
+  my $chost;
+  my $cport;
+  my $cdbname;
+  my $cpass;
+
+  if($my_args =~ /chost[=][>](\S+?)[,]/){
+    $chost = $1;
+  }
+  if($my_args =~ /cport[=][>](\S+?)[,]/){
+    $cport =  $1;
+  }
+  if($my_args =~ /cdbname[=][>](\S+?)[,]/){
+    $cdbname = $1;
+  }
+  if($my_args =~ /cpass[=][>](\S+?)[,]/){
+    $cpass = $1;
+  }
+  my $vega_dbc;
+  my $core_dbc;
+  if(defined($vdbname)){
+    print "Using $host $vdbname for Vega and cdbname for Core\n";
+    $vega_dbc = $self->dbi2($vhost, $vport, $vuser, $vdbname, $vpass);
+    if(!defined($vega_dbc)){
+      print "Problem could not open connectipn to $vhost, $vport, $vuser, $vdbname, $vpass\n";
+      return 1;
+    }
+    $core_dbc = $self->dbi2($chost, $cport, $cuser, $cdbname, $cpass);
+    if(!defined($core_dbc)){
+      print "Problem could not open connectipn to $chost, $cport, $cuser, $cdbname, $cpass\n";
+      return 1;
+    }
+
+  }
+  else{
+    $reg->load_registry_from_db(
+                                -host => $host,
+                                -user => $user);
+
+    $vega_dbc = $reg->get_adaptor("human","vega","slice");
+    if(!defined($vega_dbc)){
+      print "Could not connect to human vega database using load_registry_from_db $host $user\n";
+      return 1;
+    }
+    $vega_dbc = $vega_dbc->dbc;
+    $core_dbc = $reg->get_adaptor("human","core","slice");
+    if(!defined($core_dbc)){
+      print "Could not connect to human core database using load_registry_from_db $host $user\n";
+      return 1;
+    }
+    $core_dbc= $core_dbc->dbc;
+  }
+
+
 
   $source_id = XrefParser::BaseParser->get_source_id_for_source_name("HGNC","havana");
 
@@ -48,29 +115,19 @@ sub run_script {
   my %ott_to_hgnc;
   my %ott_to_enst;
 
-  my $dbi2 = $self->dbi2($host, $port, $user, $dbname, $pass);
-  if(!defined($dbi2)){
-    return 1;
+  my $sth = $core_dbc->prepare($sql) || die "Could not prepare for core $sql\n";
+
+  foreach my $external_db (qw(OTTT shares_CDS_and_UTR_with_OTTT shares_CDS_with_OTTT)){
+    $sth->execute($external_db) or croak( $core_dbc->errstr());
+    while ( my @row = $sth->fetchrow_array() ) {
+      $ott_to_enst{$row[1]} = $row[0];
+    }
   }
 
-
-  my $sth = $dbi2->prepare($sql);   # funny number instead of stable id ?????
-  $sth->execute("ENST_CDS") or croak( $dbi2->errstr() );
-  while ( my @row = $sth->fetchrow_array() ) {
-    $ott_to_enst{$row[0]} = $row[1];
-  }
-  $sth->finish;
-
-  $sth = $dbi2->prepare($sql);
-  $sth->execute("ENST_ident") or croak( $dbi2->errstr() );
-  while ( my @row = $sth->fetchrow_array() ) {
-    $ott_to_enst{$row[0]} = $row[1];
-  }
-  $sth->finish;
   print "We have ".scalar(%ott_to_enst)." ott to enst entries\n " if($verbose);
 
-  $sth = $dbi2->prepare($hgnc_sql);
-  $sth->execute() or croak( $dbi2->errstr() );
+  $sth = $vega_dbc->prepare($hgnc_sql);
+  $sth->execute() or croak( $vega_dbc->errstr() );
 
   while ( my @row = $sth->fetchrow_array() ) {
     $ott_to_hgnc{$row[0]} = $row[1];
