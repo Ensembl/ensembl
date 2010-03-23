@@ -95,7 +95,7 @@ sub get_valid_codes{
 
   foreach my $source (@sources){
     $sql = 'select x.accession, x.xref_id from xref x, interpro i where i.interpro = x.accession and x.species_id = '.$species_id.
-           ' and x.source_id = '.$source.' and i.dbtype ne "PRINTS"';
+           ' and x.source_id = '.$source.' and i.dbtype != "PRINTS"';
     my $sth = $self->dbi()->prepare($sql);
     $sth->execute();
     while(my @row = $sth->fetchrow_array()){
