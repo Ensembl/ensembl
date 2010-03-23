@@ -50,6 +50,10 @@ sub run {
   if(!defined($hgnc_refseq_mapped)){
     die  "Could not get source id for HGNC with priority description of refseq_mapped\n";
   }
+  my $hgnc_swissprot_manual = XrefParser::BaseParser->get_source_id_for_source_name("HGNC","swissprot_manual");
+  if(!defined($hgnc_swissprot_manual)){
+    die  "Could not get source id for HGNC with priority description of swissprot_manual\n";
+  }
 
   my $hgnc_entrezgene_manual  = XrefParser::BaseParser->get_source_id_for_source_name("HGNC","entrezgene_manual");
   if(!defined($hgnc_entrezgene_manual)){
@@ -70,7 +74,7 @@ sub run {
     die  "Could not get source id for HGNC with priority description of desc_only\n";
   }
 
-#  my (%swiss)  =  %{XrefParser::BaseParser->get_valid_codes("uniprot",$species_id)};
+  my (%swissprot)  =  %{XrefParser::BaseParser->get_valid_codes("Uniprot/SWISSPROT",$species_id)};
   my (%refseq) =  %{XrefParser::BaseParser->get_valid_codes("refseq",$species_id)};
   my @list;
   push @list, "refseq_peptide";
@@ -78,6 +82,7 @@ sub run {
   my (%entrezgene) = %{XrefParser::BaseParser->get_valid_xrefs_for_dependencies("EntrezGene",@list)};
 
   my $refseq_count = 0;
+  my $swissprot_count = 0;
   my $entrezgene_count = 0;
   my $ensembl_count = 0;
   my $mismatch = 0;
@@ -105,6 +110,7 @@ sub run {
     # 7 entrezgene ID   mapped
     # 8 RefSeq ID       mapped
     # 9 Ensembl ID     manual
+    #10 Swissprot ID  manual
 
     my @array = split(/\t/,$_);
 
@@ -151,6 +157,13 @@ sub run {
 	    XrefParser::BaseParser->add_to_syn($array[0], $hgnc_refseq_manual, $arr, $species_id);
 	  }
 	}
+      }
+    }
+    if ($array[10]) {             # Swissprot
+      if(defined($swissprot{$array[10]})){
+	$seen = 1;
+	$swissprot_count++;
+	XrefParser::BaseParser->add_to_xrefs($swissprot{$array[10]}, $array[0], '', $array[1], $array[2], "", $hgnc_swissprot_manual, $species_id);
       }
     }
     if ($array[8]) {             # RefSeq
@@ -241,7 +254,7 @@ sub run {
 
   $hugo_io->close();
   
-  print "Loaded a total of " . ($refseq_count + $entrezgene_count) . " HGNC xrefs, $refseq_count from RefSeq curated mappings and $entrezgene_count from EntrezGene mappings and $ensembl_count from ensembl_mapping\n" if($verbose);
+  print "Loaded a total of " . ($refseq_count + $entrezgene_count + $swissprot_count) . " HGNC xrefs, $refseq_count from RefSeq curated mappings and $entrezgene_count from EntrezGene mappings $swissprot_count from Swissprot and $ensembl_count from ensembl_mapping\n" if($verbose);
   
   print "$mismatch xrefs could not be associated via RefSeq, EntrezGene or ensembl\n" if($verbose);
 
