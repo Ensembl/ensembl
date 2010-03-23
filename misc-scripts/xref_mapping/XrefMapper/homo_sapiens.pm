@@ -9,7 +9,10 @@ use vars '@ISA';
 
 sub get_set_lists {
 
-  return [["ExonerateGappedBest1", ["homo_sapiens","*"]]];
+#  return [["ExonerateGappedBest1", ["homo_sapiens","*"]]];
+
+  return [["ExonerateGappedBest_100_perc_id", ["homo_sapiens","Uniprot/SWISSPROT"]],
+          ["ExonerateGappedBest1", ["homo_sapiens","*"                ]] ];
 
 }
 
