@@ -523,40 +523,41 @@ FSQL
    
 
   #
-  # get the OFDN (HGNC/MGI) xrefs in the xrefs and add the synonyms, plus create hash to get id from the display name
+  # get the OFDN (HGNC/MGI) xrefs in the xrefs and add the synonyms, plus create hash to get id from the display name and desc
   # This is becouse not all MGI.HGNC's are loaded as these are priority xrefs.
   #
 
   my %display_label_to_id;
+  my %display_label_to_desc;
   
 
-  $sql = 'select x.accession, sy.synonym from synonym sy, xref x, source so where x.xref_id = sy.xref_id and so.source_id = x.source_id and so.name like "'.$dbname.'"';
+  $sql = 'select x.accession, sy.synonym, x.description from synonym sy, xref x, source so where x.xref_id = sy.xref_id and so.source_id = x.source_id and so.name like "'.$dbname.'"';
 
   
   $sth = $self->xref->dbc->prepare($sql);
   
   $sth->execute();
-  my ($display_label, $acc, $syn,);
-  $sth->bind_columns(\$acc,\$display_label);
+  my ($display_label, $acc, $syn, $desc);
+  $sth->bind_columns(\$acc,\$display_label, \$desc);
   while($sth->fetch){
     $display_label_to_id{$display_label} = $acc;
+    $display_label_to_desc{$display_label} = $desc;
   }
   $sth->finish;
 
   # get label to id from xref database to start with.
-  $sql = 'select x.accession, x.label from xref x, source s where s.source_id = x.source_id and s.name like "'.$dbname.'"';
+  $sql = 'select x.accession, x.label, x.description from xref x, source s where s.source_id = x.source_id and s.name like "'.$dbname.'"';
 
   
   $sth = $self->xref->dbc->prepare($sql);
   
   $sth->execute();
-  $sth->bind_columns(\$acc,\$display_label);
+  $sth->bind_columns(\$acc,\$display_label, \$desc);
   while($sth->fetch){
     $display_label_to_id{$display_label} = $acc;
+    $display_label_to_desc{$display_label} = $desc;
   }
   $sth->finish;
-
-
 
 
 
@@ -755,17 +756,17 @@ FSQL
 
 
 
-  $sql = "insert into xref (xref_id, source_id, accession, label, version, species_id, info_type, info_text) values (?, ?, ?, ?,  0, ".$self->species_id.", 'MISC', ? )";
+  $sql = "insert into xref (xref_id, source_id, accession, label, version, species_id, info_type, info_text, description) values (?, ?, ?, ?,  0, ".$self->species_id.", 'MISC', ?, ? )";
   my $ins_xref_sth = $self->xref->dbc->prepare($sql); 
 
-  $sql = "insert into xref (xref_id, source_id, accession, label, version, species_id, info_type, info_text) values (?, ?, ?, ?,  ?, ".$self->species_id.", 'MISC', ? )";
+  $sql = "insert into xref (xref_id, source_id, accession, label, version, species_id, info_type, info_text, description) values (?, ?, ?, ?,  ?, ".$self->species_id.", 'MISC', ?, ? )";
   my $ins_xref_ver_sth = $self->xref->dbc->prepare($sql);
 
 
   # important or will crash and burn!!!
   my %xref_added; # store those added already $xref_added{$accession:$source_id} = $xref_id;
 
-  my $get_xref_info_sth =  $self->xref->dbc->prepare("select x.label, x.accession, s.priority_description  from xref x, source s where xref_id = ? and s.source_id = x.source_id");
+  my $get_xref_info_sth =  $self->xref->dbc->prepare("select x.label, x.accession, s.priority_description, x.description  from xref x, source s where xref_id = ? and s.source_id = x.source_id");
 
   #
   # Okay we assign unused_priority to be the number of time a vega transcript is attached to make sure
@@ -863,9 +864,9 @@ FSQL
  	if(defined($VEGA) and scalar(@ODN)){
 	  my $found = 0;
 	  foreach my $xref_id (@ODN){
-	    my ($display, $acc, $text);
+	    my ($display, $acc, $text, $desc);
 	    $get_xref_info_sth->execute($xref_id);
-	    $get_xref_info_sth->bind_columns(\$display, \$acc, \$text);
+	    $get_xref_info_sth->bind_columns(\$display, \$acc, \$text, \$desc);
 	    $get_xref_info_sth->fetch();
 	    if(uc($VEGA) eq uc($display)){
 	      $found = 1;
@@ -908,14 +909,15 @@ FSQL
 
 
       foreach my $name (keys %name_count){
-	my $id = $display_label_to_id{$name};
+	my $id   = $display_label_to_id{$name};
+	my $desc = $display_label_to_desc{$name};
 	if(!defined($id)){
 	  $id = $name;
 	  print STDERR "Warning Could not find id for $name\n";
 	}
 	if(!defined($xref_added{$id.":".$odn_curated_gene_id})){
 	  $max_xref_id++;
-	  $ins_xref_sth->execute($max_xref_id, $odn_curated_gene_id, $id, $name, "via havana");
+	  $ins_xref_sth->execute($max_xref_id, $odn_curated_gene_id, $id, $name, "via havana", $desc);
 
 	  $xref_added{$id.":".$odn_curated_gene_id} = $max_xref_id;
 
@@ -932,12 +934,13 @@ FSQL
       }
 
       $name = $v_name;
+      my $desc = $display_label_to_desc{$v_name} || undef;
       my $tran_name_ext = 201;
       foreach my $tran (sort keys %no_vega){
 	my $id = $name."-".$tran_name_ext;
 	if(!defined($xref_added{$id.":".$odn_automatic_tran_id})){
 	  $max_xref_id++;
-	  $ins_xref_sth->execute($max_xref_id, $odn_automatic_tran_id, $id, $id, "via havana");
+	  $ins_xref_sth->execute($max_xref_id, $odn_automatic_tran_id, $id, $id, "via havana", $desc);
 	  $xref_added{$id.":".$odn_automatic_tran_id} = $max_xref_id;
 	}	
 	$max_object_xref_id++;
@@ -958,9 +961,9 @@ FSQL
 	# now store xref_id so get xref details from this.
 
 	# $get_xref_info_sth =  $self->xref->dbc->prepare("select x.label, x.accession, x.info_text  from xref x where xref_id = ?");
-	my ($display, $acc, $text);
+	my ($display, $acc, $text, $desc);
 	$get_xref_info_sth->execute($xref_id);
-	$get_xref_info_sth->bind_columns(\$display, \$acc, \$text);
+	$get_xref_info_sth->bind_columns(\$display, \$acc, \$text, \$desc);
 	$get_xref_info_sth->fetch();
 	my $id = $display_label_to_id{$display};
 	if(!defined($display)){
@@ -971,10 +974,10 @@ FSQL
 	  $max_xref_id++;
 	  #   "insert into xref (xref_id, source_id, accession, label, version, species_id          , info_type, info_text) 
           #              values (?      , ?        , ?        , ?    ,  0    , ".$self->species_id.", 'MISC'   , ? )";
-	  $ins_xref_sth->execute($max_xref_id, $odn_automatic_gene_id, $acc, $display, "via ".$text);
+	  $ins_xref_sth->execute($max_xref_id, $odn_automatic_gene_id, $acc, $display, "via ".$text, $desc);
 	  $xref_added{$acc.":".$odn_automatic_gene_id} = $max_xref_id;
-	  if(defined($syn_hash->{$name})){
-	    foreach my $syn (@{$syn_hash->{$name}}){
+	  if(defined($syn_hash->{$acc})){
+	    foreach my $syn (@{$syn_hash->{$acc}}){
 	      $add_syn_sth->execute($max_xref_id, $syn);
 	    }
 	  }
@@ -987,9 +990,9 @@ FSQL
       }
 
       my $xref_id = $ODN[0];
-      my ($display, $acc, $text);
+      my ($display, $acc, $text, $desc);
       $get_xref_info_sth->execute($xref_id);
-      $get_xref_info_sth->bind_columns(\$display, \$acc, \$text);
+      $get_xref_info_sth->bind_columns(\$display, \$acc, \$text, \$desc);
       $get_xref_info_sth->fetch();
 
       my $name = $display;
@@ -1004,7 +1007,7 @@ FSQL
 	}
 	if(!defined($xref_added{$id.":".$odn_automatic_tran_id})){
 	  $max_xref_id++;
-	  $ins_xref_sth->execute($max_xref_id, $odn_automatic_tran_id, $id, $id, "via ".$text);
+	  $ins_xref_sth->execute($max_xref_id, $odn_automatic_tran_id, $id, $id, "via ".$text, $desc);
 	  $xref_added{$id.":".$odn_automatic_tran_id} = $max_xref_id;
 	}
 	else{
@@ -1032,10 +1035,11 @@ FSQL
 	  $gene_clone_name_count{$CLONE_NAME} = 1;
 	}
 #	$CLONE_NAME .= ".".$gene_clone_name_count{$CLONE_NAME};
-	my $id = $CLONE_NAME.".".$gene_clone_name_count{$CLONE_NAME};
+#	my $id = $CLONE_NAME.".".$gene_clone_name_count{$CLONE_NAME};
+	my $id = $CLONE_NAME; # vega clone names should have the gene number and not the version at the end.
 	if(!defined($xref_added{$id.":".$clone_based_vega_gene_id})){
 	  $max_xref_id++;
-	  $ins_xref_sth->execute($max_xref_id, $clone_based_vega_gene_id, $id, $id, "via Vega clonename");
+	  $ins_xref_sth->execute($max_xref_id, $clone_based_vega_gene_id, $id, $id, "via Vega clonename",undef);
 	  $xref_added{$id.":".$clone_based_vega_gene_id} = $max_xref_id;
 	}	
 
@@ -1050,7 +1054,7 @@ FSQL
 	  my $id = $CLONE_NAME."-".$tran_name_ext;
 	  if(!defined($xref_added{$id.":".$clone_based_vega_tran_id})){
 	    $max_xref_id++;
-	    $ins_xref_sth->execute($max_xref_id, $clone_based_vega_tran_id, $id, $id, "via Vega clonename");
+	    $ins_xref_sth->execute($max_xref_id, $clone_based_vega_tran_id, $id, $id, "via Vega clonename",undef);
 	    $xref_added{$id.":".$clone_based_vega_tran_id} = $max_xref_id;
 	  }	
 	  
@@ -1119,7 +1123,7 @@ FSQL
 	# store the data
 	if(!defined($xref_added{$gene_name.":".$clone_based_ensembl_gene_id})){
 	  $max_xref_id++;
-	  $ins_xref_sth->execute($max_xref_id, $clone_based_ensembl_gene_id, $gene_name, $gene_name, "via clonename");
+	  $ins_xref_sth->execute($max_xref_id, $clone_based_ensembl_gene_id, $gene_name, $gene_name, "via clonename", undef);
 	  $xref_added{$gene_name.":".$clone_based_ensembl_gene_id} = $max_xref_id;
 	}	
 	
@@ -1129,14 +1133,14 @@ FSQL
 	  	
 	my $tran_name_ext = 201;
 	foreach my $tran (sort keys %no_vega){
-	  my $id = $new_clone_name."-".$tran_name_ext;
+	  my $id = $gene_name."-".$tran_name_ext;
 	  while(defined($xref_added{$id.":".$clone_based_ensembl_tran_id})){
 	    $tran_name_ext++;
-	    $id = $new_clone_name."-".$tran_name_ext;
+	    $id = $gene_name."-".$tran_name_ext;
 	  }
 
 	  $max_xref_id++;
-	  $ins_xref_sth->execute($max_xref_id, $clone_based_ensembl_tran_id, $id, $id, "via clonename");
+	  $ins_xref_sth->execute($max_xref_id, $clone_based_ensembl_tran_id, $id, $id, "via clonename", undef);
 	  $xref_added{$id.":".$clone_based_ensembl_tran_id} = $max_xref_id;
 
 	  $max_object_xref_id++;
