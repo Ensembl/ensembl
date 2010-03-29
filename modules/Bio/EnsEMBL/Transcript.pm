@@ -604,6 +604,67 @@ sub translation {
   return $self->{'translation'};
 }
 
+=head2 get_all_alternative_translations
+
+  Args       : None
+  Example    :
+
+    my @alt_translations =
+      @{ $transcript->get_all_alternative_translations() };
+
+  Description:  Fetches all alternative translations defined for this
+                transcript.  The canonical translation is not returned.
+
+  Returntype : Array reference to Bio::EnsEMBL::Translation
+  Exceptions : None
+  Caller     : General
+  Status     : Stable
+
+=cut
+
+sub get_all_alternative_translations {
+  my ($self) = @_;
+
+  if ( !defined( $self->{'alternative_translations'} ) ) {
+    my $pa = $self->adaptor()->db()->get_TranslationAdaptor();
+    $self->{'alternative_translations'} =
+      $pa->fetch_all_by_Transcript($self);
+  }
+
+  return $self->{'alternative_translations'};
+}
+
+=head2 add_alternative_translation
+
+  Args       : Bio::EnsEMBL::Translation $translation
+  Example    :
+
+    $transcript->add_alternative_translation($translation);
+
+  Description: Adds an alternative translation to this transcript.
+  Returntype : None
+  Exceptions : None
+  Caller     : General
+  Status     : Stable
+
+=cut
+
+sub add_alternative_translation {
+  my ( $self, $translation ) = @_;
+
+  if ( !(    defined($translation)
+          && ref($translation)
+          && $translation->isa('Bio::EnsEMBL::Translation') ) )
+  {
+    throw("Bio::EnsEMBL::Translation argument expected.");
+  }
+
+  # Load the existsing alternative translations from the database if
+  # they haven't already been loaded.
+  $self->get_all_alternative_translations();
+
+  push( @{ $self->{'alternative_translations'} }, $translation );
+}
 
 =head2 spliced_seq
 
