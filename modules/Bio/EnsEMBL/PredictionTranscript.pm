@@ -277,9 +277,10 @@ sub translation {
     $Xseq = "N"x$start_phase . $Xseq;
   }
 
-  my $tmpSeq = new Bio::Seq( -id => $self->display_id,
-			     -seq => $Xseq,
-			     -moltype => "dna" );
+  my $tmpSeq = new Bio::Seq( -id       => $self->display_id,
+                             -seq      => $Xseq,
+                             -moltype  => 'dna',
+                             -alphabet => 'dna' );
 
   return Bio::EnsEMBL::Translation->new
     (-ADAPTOR    => $pta,
@@ -335,7 +336,10 @@ sub translate {
   # if you want to have a terminal stop codon either comment this line out
   # or call translatable seq directly and produce a translation from it
 
-  my $bioseq = new Bio::Seq(  -id => $self->display_id, -seq => $dna, -moltype => 'dna' );
+  my $bioseq = new Bio::Seq( -id       => $self->display_id,
+                             -seq      => $dna,
+                             -moltype  => 'dna',
+                             -alphabet => 'dna' );
 
   my $translation = $bioseq->translate(undef,undef,undef,$codon_table_id);
 

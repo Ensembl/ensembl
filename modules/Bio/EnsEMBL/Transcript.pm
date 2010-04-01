@@ -1405,10 +1405,11 @@ sub five_prime_utr {
 
   return undef if(!$seq);
 
-  return Bio::Seq->new(
-	       -DISPLAY_ID => $self->display_id,
-	       -MOLTYPE    => 'dna',
-	       -SEQ        => $seq);
+  return
+    Bio::Seq->new( -id       => $self->display_id,
+                   -moltype  => 'dna',
+                   -alphabet => 'dna',
+                   -seq      => $seq );
 }
 
 
@@ -1439,10 +1440,11 @@ sub three_prime_utr {
 
   return undef if(!$seq);
 
-  return Bio::Seq->new(
-	       -DISPLAY_ID => $self->display_id,
-	       -MOLTYPE    => 'dna',
-	       -SEQ        => $seq);
+  return
+    Bio::Seq->new( -id       => $self->display_id,
+                   -moltype  => 'dna',
+                   -alphabet => 'dna',
+                   -seq      => $seq );
 }
 
 
@@ -1626,11 +1628,13 @@ sub translate {
 =cut
 
 sub seq {
-  my( $self ) = @_;
-  return Bio::Seq->new
-    (-DISPLAY_ID => $self->display_id,
-     -MOLTYPE    => 'dna',
-     -SEQ        => $self->spliced_seq);
+  my ($self) = @_;
+
+  return
+    Bio::Seq->new( -id       => $self->display_id,
+                   -moltype  => 'dna',
+                   -alphabet => 'dna',
+                   -seq      => $self->spliced_seq );
 }
 
 

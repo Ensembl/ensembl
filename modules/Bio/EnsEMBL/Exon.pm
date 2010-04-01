@@ -1260,10 +1260,11 @@ sub peptide {
     $pep_str = $tr->translate->subseq($start, $end);
   }
 
-  return Bio::Seq->new(-seq => $pep_str, 
-		       -moltype => 'protein',
-		       -alphabet => 'protein',
-                       -id => $self->display_id);
+  return
+    Bio::Seq->new( -seq      => $pep_str,
+                   -moltype  => 'protein',
+                   -alphabet => 'protein',
+                   -id       => $self->display_id );
 }
 
 
@@ -1309,9 +1310,11 @@ sub seq {
     $self->{'_seq_cache'} = $seq;
   }
 
-  return Bio::Seq->new(-seq     => $self->{'_seq_cache'},
-                       -id      => $self->display_id,
-                       -moltype => 'dna');
+  return
+    Bio::Seq->new( -seq      => $self->{'_seq_cache'},
+                   -id       => $self->display_id,
+                   -moltype  => 'dna',
+                   -alphabet => 'dna' );
 }
 
 
