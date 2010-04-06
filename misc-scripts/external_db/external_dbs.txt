@@ -322,6 +322,11 @@
 50530	AFFY_Vitis_Vinifera	1	XREF	1	0	1	Affymx GeneChip Vitis vinifera	ARRAY	\N	\N
 50540	AFFY_Poplar	1	XREF	1	0	1	Affymx GeneChip Poplar	ARRAY	\N	\N
 
+# LRG external dbs
+50541	LRG	1	KNOWN	1	0	10	Locus Reference Genomic	MISC	\N	\N	\N
+50542	ENS_LRG_gene	1	KNOWN	1	0	10	LRG display in Ensembl	MISC	\N	\N	\N
+50543	ENS_LRG_transcript	1	KNOWN	1	0	10	LRG display in Ensembl	MISC	\N	\N	\N
+
 #
 #
 # Please separate fields in this file with TABS not spaces!
