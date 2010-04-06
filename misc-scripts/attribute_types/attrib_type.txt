@@ -338,3 +338,6 @@
 # Intron loss due to a frameshift on the query genome
 198	lost_frameshift	lost_frameshift	Frameshift on the query sequence is lost in the target sequence
 
+#ÊAttributes added as gene_attribs to Ensembl genes that fall within a genomic region where a LRG record exists
+216	GeneInLRG	Gene in LRG	This gene is contained within an LRG region
+217	GeneOverlapLRG	Gene overlaps LRG	This gene is partially overlapped by a LRG region (start or end outside LRG)
