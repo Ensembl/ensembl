@@ -10,26 +10,26 @@ $Data::Dumper::Indent = 0;
 # Remember to check/set the various config optons
 
 # ------------------------------ config -------------------------------
-my $release = X;
+my $release = 58;
 
-my $base_dir = "/path/";
+my $base_dir = "/lustre/scratch103/ensembl/gp1/projections";
 
-my $conf = "release_X.ini"; # registry config file, specifies Compara location
+my $conf = "release_58.ini"; # registry config file, specifies Compara location
 
 # location of other databases
 
 my @config = ( {
-    '-host'       => 'XXXX',
-    '-port'       => 'XXXX',
-    '-user'       => 'XXXX',
-    '-pass'       => 'XXXX',
+    '-host'       => 'ens-staging1',
+    '-port'       => '3306',
+    '-user'       => 'ensadmin',
+    '-pass'       => 'ensembl',
     '-db_version' => $release
   },
   {
-    '-host'       => 'XXXX',
-    '-port'       => 'XXXX',
-    '-user'       => 'XXXX',
-    '-pass'       => 'XXXX',
+    '-host'       => 'ens-staging2',
+    '-port'       => '3306',
+    '-user'       => 'ensadmin',
+    '-pass'       => 'ensembl',
     '-db_version' => $release
   } );
 
@@ -66,7 +66,6 @@ my @names_1_1 = (["human", "chimp"            ],
 		 ["human", "cow"              ],
 		 ["human", "macaque"          ],
 		 ["human", "chicken"          ],
-		 ["human", "turkey"           ],
 		 ["human", "xenopus"          ],
 		 ["human", "guinea_pig"       ],
 		 ["human", "pig"              ],
@@ -110,7 +109,6 @@ my @go_terms = (["human",      "mouse"          ],
 		["human",      "rat"            ],
 		["human",      "dog"            ],
 		["human",      "chicken"        ],
-		["human",      "turkey"         ],
 		["human",      "cow"            ],
 		["human",      "chimp"          ],
 		["human",      "macaque"        ],
@@ -149,7 +147,6 @@ my @go_terms = (["human",      "mouse"          ],
 		["mouse",      "rat"            ],
 		["mouse",      "dog"            ],
 		["mouse",      "chicken"        ],
-		["mouse",      "turkey"         ],
 		["mouse",      "cow"            ],
 		["mouse",      "chimp"          ],
 		["mouse",      "macaque"        ],
@@ -199,9 +196,9 @@ my ($from, $to, $o, $e, $n);
 # ----------------------------------------
 # Display names
 
+print "Deleting projected names (one to one)\n";
 foreach my $pair (@names_1_1) {
   ($from, $to) = @$pair;
-  print "Deleting projected names (one to one)\n";
   system "perl project_display_xrefs.pl $script_opts -to $to -delete_names -delete_only";
 }
 
@@ -216,10 +213,9 @@ foreach my $pair (@names_1_1) {
   system "bsub $bsub_opts -o $o -e $e -J $n perl project_display_xrefs.pl $script_opts -from $from -to $to -names -no_database $all";
 }
 
-
+print "Deleting projected names (one to many)\n";
 foreach my $pair (@names_1_many) {
   ($from, $to) = @$pair;
-  print "Deleting projected names (one to many)\n";
   system "perl project_display_xrefs.pl $script_opts -to $to -delete_names -delete_only";
 }
 
@@ -239,9 +235,9 @@ foreach my $pair (@names_1_many) {
 
 $script_opts .= " -nobackup";
 
+print "Deleting projected GO terms\n";
 foreach my $pair (@go_terms) {
   ($from, $to) = @$pair;
-  print "Deleting projected GO terms\n";
   system "perl project_display_xrefs.pl $script_opts -to $to -delete_go_terms -delete_only";
 }
 
