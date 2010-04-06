@@ -21,15 +21,15 @@ my $conf = "release_58.ini"; # registry config file, specifies Compara location
 my @config = ( {
     '-host'       => 'ens-staging1',
     '-port'       => '3306',
-    '-user'       => 'XXX',
-    '-pass'       => 'XXX',
+    '-user'       => 'ensadmin',
+    '-pass'       => 'ensembl',
     '-db_version' => $release
   },
   {
     '-host'       => 'ens-staging2',
     '-port'       => '3306',
-    '-user'       => 'XXX',
-    '-pass'       => 'XXX',
+    '-user'       => 'ensadmin',
+    '-pass'       => 'ensembl',
     '-db_version' => $release
   } );
 
