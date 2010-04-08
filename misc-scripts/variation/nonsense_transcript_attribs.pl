@@ -59,6 +59,8 @@ my $store;
 my $clean;
 my $help;
 
+usage() if (!scalar(@ARGV));
+
 # options to be read in from the commandline
 &GetOptions(
   'chost:s'     => \$chost,
@@ -79,7 +81,7 @@ my $help;
   'help!'       => \$help
 );
 
-usage() if (defined($help) || !scalar(@ARGV));
+usage() if (defined($help));
 
 # some checks, if not explicitly specified otherwise, will use the same connection credentials for variation as for core but the database name must be specified
 if (!defined $chost || !defined $cuser || !defined $cdbname || !defined $cpass || !defined $cport || (!defined($file) && !defined $vdbname)) {
