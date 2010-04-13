@@ -33,6 +33,7 @@ table for all the following table names one by one
   protein_align_feature
   repeat_feature
   simple_feature
+  splicing_event
   transcript
   );
 
@@ -92,6 +93,7 @@ for my $dbname (@dbnames) {
     protein_align_feature
     repeat_feature
     simple_feature
+    splicing_event
     transcript
   );
 
