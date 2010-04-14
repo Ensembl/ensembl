@@ -27,6 +27,7 @@ use Bio::EnsEMBL::Attribute;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::EnsEMBL::Variation::DBSQL::DBAdaptor;
 use Bio::EnsEMBL::Utils::Exception qw(throw warning);
+use Bio::EnsEMBL::Utils::Sequence qw(reverse_comp); 
 use DBI qw(:sql_types);
 use Getopt::Long;
 
@@ -103,7 +104,7 @@ my $cdb = new Bio::EnsEMBL::DBSQL::DBAdaptor(
                                             -port => $cport,
                                             -dbname => $cdbname
 ) or die("Could not get a database adaptor to $cdbname on $chost");
-print "Connected to $cdbname on $chost:$cport\n";
+print "Connected to " . $cdb->dbc->dbname() . " on " . $cdb->dbc->host() . ":" . $cdb->dbc->port() . "\n";
 
 #Êconnect to the variation db if no input file has been specified
 my $vdb;
@@ -115,12 +116,12 @@ if (!defined($file)) {
                                             -port => $vport,
                                             -dbname => $vdbname
   ) or die("Could not get a database adaptor to $vdbname on $vhost");
-  print "Connected to $vdbname on $vhost:$vport\n";
+  print "Connected to " . $vdb->dbc->dbname() . " on " . $vdb->dbc->host() . ":" . $vdb->dbc->port() . "\n";
   
   # Check that the Core and Variation databases are on the same release, throw an error if they are not
   my $cversion = $cdb->get_MetaContainerAdaptor()->get_schema_version();
   my $vversion = $vdb->get_MetaContainerAdaptor()->get_schema_version();
-  throw("Core database is release $cversion but Variation database is release $vversion. The releases must match") if ($cversion != $vversion);
+  throw("Core database is release $cversion but Variation database is release $vversion. The releases should match") if ($cversion != $vversion);
 }
 
 # If -clean has not been specified but -store has, check that the database does not already contain old transcript_attribs for STOP_*. These should be cleaned out.
@@ -182,7 +183,8 @@ if (!defined($file)) {
       vf.variation_id,
       vf.variation_name,
       vf.allele_string,
-      tv.consequence_type
+      tv.consequence_type,
+      tv.transcript_variation_id
     FROM
       transcript_variation tv JOIN
       variation_feature vf USING (variation_feature_id)
@@ -192,12 +194,36 @@ if (!defined($file)) {
   my $sth = $vdb->dbc->prepare($stmt) or die("Error preparing statement $stmt");
   $sth->execute();
   
+  # Get a TranscriptVariationAdaptor
+  my $tv_adaptor = $vdb->get_TranscriptVariationAdaptor() or throw("Could not get a TranscriptVariationAdaptor from " . $vdb->dbc->dbname());
+  my $stop_codons = qq{TGA/TAA/TAG};
+  my %allele_is_stop;
+  
   # For each variation_feature, check that the source, population and minor allele frequencies are 'dbSNP', 'CSHL-HapMap-*' and '>= $FREQUENCY_CUTOFF'
-  while (my ($transcript_stable_id,$variation_id,$variation_name,$allele_string,$consequence_string) = $sth->fetchrow_array()) {
+  while (my ($transcript_stable_id,$variation_id,$variation_name,$allele_string,$consequence_string,$transcript_variation_id) = $sth->fetchrow_array()) {
     
     # Temp fix for getting stable_id from pre-58 variation database
     #$stmt = qq{SELECT stable_id FROM transcript_stable_id WHERE transcript_id = $transcript_stable_id LIMIT 1};
     #$transcript_stable_id = $cdb->dbc->db_handle->selectall_arrayref($stmt)->[0][0];
+    
+    # If there are more than two alleles, we need to check the codon to make sure we get the causative allele
+    my $n_alleles = ($allele_string =~ tr/\//\//) + 1;
+    if ($n_alleles > 2) {
+      
+      # Get a TranscriptVariation object from the API. Will need this to check the codon.
+      my $transcript_variation = $tv_adaptor->fetch_by_dbID($transcript_variation_id) or throw("Could not get TranscriptVariation object for $variation_name");
+      # Get the possible codons for the TranscriptVariation
+      my @codons = split(/\//,$transcript_variation->codons());
+      
+      # Get the allele within the codon, it will be capital letters while the rest of the codon is lowercase
+      for (my $i=0; $i<$n_alleles; $i++) {
+        my ($allele) = $codons[$i] =~ m/([A-Z]+)/;
+        # If the transcript is on the reverse strand, the allele needs to be flipped in order to match the variation alleles
+        reverse_comp(\$allele) if ($transcript_variation->transcript->strand() < 0);
+        # For each allele, store whether the codon with the allele encodes a stop using a hash with the allele as key 
+        $allele_is_stop{$allele} = $stop_codons =~ m/$codons[$i]/i;
+      }
+    }
     
     # Get the reference allele
     my ($ref_allele) = $allele_string =~ m/^([^\/]+)\//;
@@ -205,9 +231,11 @@ if (!defined($file)) {
     # Parse the consequence type we're interested in from the set of consequences
     my ($cons_type) = $consequence_string =~ m/(STOP\_[^\,]+)/;
     
+    # Get the HapMap population and non-reference allele that has an allele frequency above the $FREQUENCY_CUTOFF
     $stmt = qq{
       SELECT DISTINCT
-        s.name
+        s.name,
+        a.allele
       FROM
         variation v,
         source src,
@@ -234,9 +262,14 @@ if (!defined($file)) {
     $sub_sth->execute();
     
     #ÊFor each result, push a tab-separated result string into the null_transcripts-array
-    while (my ($population) = $sub_sth->fetchrow_array()) {
+    while (my ($population,$allele) = $sub_sth->fetchrow_array()) {
       my $str = join("\t",($transcript_stable_id,$population,$variation_name,$cons_type));
       #print $str . "\n";
+      
+      # Skip this allele if it does not cause the STOP_* event
+      next if ($n_alleles > 2 && $cons_type =~ m/GAIN/ && !$allele_is_stop{$allele});
+      next if ($n_alleles > 2 && $cons_type =~ m/LOSS/ && $allele_is_stop{$allele});
+      
       push(@null_transcripts,$str);
     }
     
