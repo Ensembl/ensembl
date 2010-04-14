@@ -1429,7 +1429,8 @@ sub load_registry_from_db {
       if ( $2 eq $software_version ) {
         $ontology_version = $2;
       }
-    } elsif ( $db =~ /^([a-z]+_[a-z]+_[a-z]+(?:_\d+)?)_(\d+)_(\w+)/ ) {
+    } elsif ( $db =~ /^([a-z]+_[a-z0-9]+_[a-z]+(?:_\d+)?)_(\d+)_(\w+)/ )
+    {
       if ( $2 eq $software_version ) {
         $temp{$1} = $2 . "_" . $3;
       }
