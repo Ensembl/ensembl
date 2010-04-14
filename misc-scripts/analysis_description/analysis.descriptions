@@ -357,7 +357,8 @@
 368	duck_transcriptome	Assembled Anas platyrhynchos EST sequences supplied by the Beijing Genomics Institute (BGI).	Duck transcriptome	1	{'type'=>'est'}
 369	ncbi_ccds_import	Protein coding sequences agreed upon by the Consensus Coding Sequence project, or <a href="/info/docs/genebuild/ccds.html" class="cp-external">CCDS</a>.	CCDS set	1	 {'default' => {'contigviewbottom' => 'normal'},'type' => 'cdna'}
 370	Gorilla_RNA-Seq	Illumina paired-end reads from Western lowland gorilla generated at the Wellcome Trust Sanger Institute (WTSI) aligned to the genome using <a rel="external" href="http://www.biomedcentral.com/1471-2105/6/31">Exonerate</a>.	Gorilla_RNA-Seq	1	{'label_key' => '[text_label] [display_label]','label' => '[text_label] [display_label]'}
-371	human_cdna2genome	Homo Sapiens cDNAs from <a rel="external" href="http://www.ncbi.nlm.nih.gov/RefSeq/">NCBI RefSeq</a> and <a rel="external" href="http://www.ebi.ac.uk/embl/">EMBL</a> are aligned to the genome using <a rel="external" href="http://www.biomedcentral.com/1471-2105/6/31">Exonerate cnda2geome model</a>.	Human RefSeq/EMBL cdna2genome	0
+371	human_cdna2genome	Homo Sapiens cDNAs from <a rel="external" href="http://www.ncbi.nlm.nih.gov/RefSeq/">NCBI RefSeq</a> and <a rel="external" href="http://www.ebi.ac.uk/embl/">EMBL</a> are aligned to the genome using <a rel="external" href="http://www.biomedcentral.com/1471-2105/6/31">Exonerate cdna2genome model</a>.	Human RefSeq/EMBL cdna2genome	0
+372	panda_protein	Aileleuca melanoleuca proteins from <a rel="external" href="http://uniprot.org">UniProtKB</a> are aligned to the genome using <a rel="external" href="http://www.biomedcentral.com/1471-2105/6/31">Exonerate</a>.	Panda protein	1	
 
 #add new entries for core databases above, the following are for functional genomics
 #500	Nessie	Hidden Markov Model based predictions based on tiling array data	Nessie (TilingHMM)	1
