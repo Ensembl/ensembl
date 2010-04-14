@@ -178,7 +178,7 @@ if (!defined($file)) {
   # Query the MySQL database directly for transcripts with consequence types STOP_*
   my $stmt = qq{
     SELECT
-      tv.transcript_id,
+      tv.transcript_stable_id,
       vf.variation_id,
       vf.variation_name,
       vf.allele_string,
@@ -196,8 +196,8 @@ if (!defined($file)) {
   while (my ($transcript_stable_id,$variation_id,$variation_name,$allele_string,$consequence_string) = $sth->fetchrow_array()) {
     
     # Temp fix for getting stable_id from pre-58 variation database
-    $stmt = qq{SELECT stable_id FROM transcript_stable_id WHERE transcript_id = $transcript_stable_id LIMIT 1};
-    $transcript_stable_id = $cdb->dbc->db_handle->selectall_arrayref($stmt)->[0][0];
+    #$stmt = qq{SELECT stable_id FROM transcript_stable_id WHERE transcript_id = $transcript_stable_id LIMIT 1};
+    #$transcript_stable_id = $cdb->dbc->db_handle->selectall_arrayref($stmt)->[0][0];
     
     # Get the reference allele
     my ($ref_allele) = $allele_string =~ m/^([^\/]+)\//;
