@@ -2,9 +2,10 @@
 
 =head1 NAME
 
-update_mapping_set.pl - script to update 2 tables: mapping_set and seq_region_id mapping.
-                        These tables are supposed to store different mapping of seq_region_id
-                        between releases
+update_mapping_set.pl   - script to update 2 tables: mapping_set and
+                          seq_region_id mapping.  These tables are
+                          supposed to store different mapping of
+                          seq_region_id between releases
 
 =head1 SYNOPSIS
 
@@ -12,39 +13,50 @@ update_mapping_set.pl [arguments]
 
 Required arguments:
 
-    --user=user                        username for the database
+  --user=user             username for the database
 
-    --pass=pass                        password for the database
+  --pass=pass             password for the database
 
-    --release=num_release              release we want to run the updating
+  --release=num_release   release we want to run the updating
 
 Optional arguments:
 
-    --host=host                        server where the core databases are stored (default: ens-staging)
+  --host=host             server where the core databases are stored
+                          (default: ens-staging)
 
-    --dbname=dbname                    if you want a single database to update the mapping_set information
-                                       (all databases by default)
+  --dbname=dbname         if you want a single database to update
+                          the mapping_set information (default: all
+                          databases)
 
-    --port=port                        port (default=3306)
+  --port=port             port (default: 3306)
 
-    --help                             print help (this message)
+  --help                  print help (this message)
 
 =head1 DESCRIPTION
 
-This script will update the mapping_set table with the current schema_build information and indicate if the seq_region
-table has changed from previous release. If it has, the table seq_region_mapping will contain the relation between old
-(external_seq_region_id) and the current (internal_seq_region_id). If it hasn't, a single entry in the mapping_set table
-with the same mapping_set_id as the previous release will be stored
+This script will update the mapping_set table with the current
+schema_build information and indicate if the seq_region table has
+changed from previous release.
+
+If it has, the table seq_region_mapping will contain the
+relation between old (external_seq_region_id) and the current
+(internal_seq_region_id).
+
+If it hasn't, a single entry in the mapping_set table with the same
+mapping_set_id as the previous release will be stored.
 
 =head1 EXAMPLES
 
-Update mapping_set information for all databases in ens-staging in release 50(usual use case in release process)
+Update mapping_set information for all databases in ens-staging in
+release 50(usual use case in release process)
 
-   $ ./update_mapping_set.pl --user ensadmin --pass password --release 50
+   $ ./update_mapping_set.pl --user ensadmin \
+      --pass password --release 50
 
 Update mapping_set information only for pig database in ens-genomics1
 
-   $ ./update_mapping_set.pl --host ens-genomics1 --user ensadmin --pass password --dbname my_pig_db --release 52
+   $ ./update_mapping_set.pl --host ens-genomics1 \
+      --user ensadmin --pass password --dbname my_pig_db --release 52
 
 =head1 LICENCE
 
