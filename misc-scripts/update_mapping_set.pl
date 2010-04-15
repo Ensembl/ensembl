@@ -48,15 +48,15 @@ mapping_set_id as the previous release will be stored.
 =head1 EXAMPLES
 
 Update mapping_set information for all databases in ens-staging in
-release 50(usual use case in release process)
+release NN (the usual use case in release process):
 
-   $ ./update_mapping_set.pl --user ensadmin \
-      --pass password --release 50
+  $ ./update_mapping_set.pl --user ensadmin \
+    --pass password --release NN
 
-Update mapping_set information only for pig database in ens-genomics1
+Update mapping_set information only for pig database in ens-genomics1:
 
-   $ ./update_mapping_set.pl --host ens-genomics1 \
-      --user ensadmin --pass password --dbname my_pig_db --release 52
+  $ ./update_mapping_set.pl --host ens-genomics1 \
+    --user ensadmin --pass password --dbname my_pig_db --release 52
 
 =head1 LICENCE
 
