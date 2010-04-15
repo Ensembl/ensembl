@@ -1,4 +1,7 @@
+#!/usr/bin/env perl
+
 use strict;
+use warnings;
 
 use Bio::EnsEMBL::Registry;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
@@ -118,7 +121,7 @@ my $attrib_adaptor = $db->get_AttributeAdaptor();
 my $top_slices = $slice_adaptor->fetch_all( "toplevel" );
 
 
-foreach my $slice (@$top_slices) {
+while (my $slice = shift(@{$top_slices})) {
   print STDERR "Processing seq_region ", $slice->seq_region_name(), "\n";
 
   my @attribs;
@@ -127,9 +130,9 @@ foreach my $slice (@$top_slices) {
     my %counts;
     my $biotype;
 
-    my @genes = @{$slice->get_all_Genes()};
+    my $genes = $slice->get_all_Genes();
     
-    foreach my $gene (@genes) {
+    while (my $gene = shift(@{$genes})) {
       $biotype = $gene->biotype();
       if( $biotype =~ /coding/i ) {
         if($gene->is_known()) {
@@ -217,10 +220,10 @@ if( ! exists $all_db_names{ $snp_db_name } ) {
 
  # this should register the dbadaptor with the Registry
  my $snp_db = Bio::EnsEMBL::Variation::DBSQL::DBAdaptor->new
-   ( -host => $db->host(),
-     -user => $db->username(),
-     -pass => $db->password(),
-     -port => $db->port(),
+   ( -host => $db->dbc()->host(),
+     -user => $db->dbc()->username(),
+     -pass => $db->dbc()->password(),
+     -port => $db->dbc()->port(),
      -dbname => $snp_db_name,
      -group => "variation",
      -species => "DEFAULT"
@@ -228,9 +231,3 @@ if( ! exists $all_db_names{ $snp_db_name } ) {
 
   return 1;
 }
-
-
-
-1;
-
-
