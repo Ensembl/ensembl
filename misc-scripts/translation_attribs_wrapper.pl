@@ -2,9 +2,11 @@
 
 =head1 NAME
 
-translation_attribs_wrapper.pl - script to calculate peptide statistics and store them in 
-                                translation_attrib table. This is mainly a wrapper around 
-                                the translation_attribs script to submit several jobs to the farm
+translation_attribs_wrapper.pl
+
+Script to calculate peptide statistics and store them in
+translation_attrib table.  This is mainly a wrapper around the
+translation_attribs.pl script to submit several jobs to the farm.
 
 =head1 SYNOPSIS
 
@@ -12,38 +14,44 @@ translation_attribs_wrapper.pl [arguments]
 
 Required arguments:
 
-  --user=user                         username for the database
+  --user=user           username for the database
 
-  --pass=pass                         password for database
+  --pass=pass           password for database
 
-  --release=release                   release number
+  --release=release     release number
 
 Optional arguments:
 
-  --binpath=PATH                      directory where the binary script to calculate 
-                                      pepstats is stored (default: /software/pubseq/bin/emboss)
+  --binpath=PATH        directory where the binary script to
+                        calculate pepstats is stored (default:
+                        /software/pubseq/bin/emboss)
 
-  --tmpfile=file                      file to store tmp results of pepstats (default=/tmp)
+  --tmpdir=directory    directory to store temporary results of pepstats
+                        (default: /tmp)
 
-  --host=host                         server where the core databases are stored (default: ens-staging)
+  --host=host           server where the core databases are stored
+                        (default: ens-staging)
 
-  --port=port                         port (default=3306)
+  --port=port           port (default: 3306)
 
-  --path=path                         path where the LSF output will be stored (default=pwd)
-  
-  --help                              print help (this message)
+  --path=path           path where the LSF output will be stored
+                        (default: the current directory)
+
+  --help                display help (this message)
 
 =head1 DESCRIPTION
 
-This script will calculate the peptide statistics for all core databases in the server
-and store them as a translation_attrib values. This is a wraper around the translation_attrib 
-and will simply submit jobs to the farm grouping the core databases in patterns
+This script will calculate the peptide statistics for all core databases
+in the server and store them as a translation_attrib values.  This is a
+wraper around the translation_attrib and will simply submit jobs to the
+farm grouping the core databases in patterns.
 
 =head1 EXAMPLES
 
-Calculate translation_attributes for all databases in ens-staging 
+Calculate translation_attributes for all databases in ens-staging
 
-  $ ./translation_attribs_wrapper.pl --user ensadmin --pass password --release 51 --path /my/path/to/lsf/output
+  $ ./translation_attribs_wrapper.pl --user ensadmin \
+    --pass password --release 51 --path /my/path/to/lsf/output
 
 =head1 LICENCE
 
