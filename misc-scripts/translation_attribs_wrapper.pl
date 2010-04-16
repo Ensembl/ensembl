@@ -123,8 +123,14 @@ my @ranges = ('^[a-b]','^c','^d','^e','^f','^[g-h]','^[i-l]','^m[a-i]','^m[j-z]'
 my $core_db = ".*core_$release\_.*";
 my $call;
 foreach my $pattern (@ranges){
-    $call = "bsub -R 'select[(myens_staging1<=800)&&(myens_staging2<=800)]' -o ${path}/output_translation_${pattern}.txt -e ${path}/output_translation_${pattern}.err -q $queue -R$memory ./translation_attribs.pl --user $user --pass $pass $options";
-    $call .= " --pattern '" . $pattern . $core_db. "'";
+    $call = "bsub "
+      . "-R 'select[(myens_staging1<=800)&&(myens_staging2<=800)]' "
+      . "-o ${path}/output_translation_${pattern}.txt "
+      . "-e ${path}/output_translation_${pattern}.err "
+      . "-q $queue "
+      . "-R$memory "
+      . "perl ./translation_attribs.pl --user $user --pass $pass $options";
+    $call .= " --pattern '" . $pattern . $core_db . "'";
 
     system($call);
 #print $call,"\n";
