@@ -139,7 +139,7 @@ foreach my $pattern (@ranges){
 #we now need to run it for the otherfeatures|vega databases, but only the pepstats
 
 my $vega_db = ".*_vega_$release\_.*";
-$call = "bsub -R 'select[(myens_staging1<=800)&&(myens_staging2<=800)]' -o '" . "$path/output_translation_vega.txt" . "' -q $queue -R$memory ./translation_attribs.pl --user $user --pass $pass $options";
+$call = "bsub -R 'select[(myens_staging1<=800)&&(myens_staging2<=800)]' -o '" . "$path/output_translation_vega.txt" . "' -q $queue -R$memory perl ./translation_attribs.pl --user $user --pass $pass $options";
 $call .= " --pattern '" . $vega_db. "'";
 
 system($call);
@@ -150,7 +150,7 @@ system($call);
 my $other_db = ".*_otherfeatures_$release\_.*";
 
 foreach my $pattern (@ranges){
-    $call = "bsub -R 'select[(myens_staging1<=800)&&(myens_staging2<=800)]' -o '" . "$path/output_translation_other_$pattern.txt" . "' -q $queue -R$memory ./translation_attribs.pl --user $user --pass $pass $options";
+    $call = "bsub -R 'select[(myens_staging1<=800)&&(myens_staging2<=800)]' -o '" . "$path/output_translation_other_$pattern.txt" . "' -q $queue -R$memory perl ./translation_attribs.pl --user $user --pass $pass $options";
     $call .= " --pattern '" . $pattern . $other_db. "'";
     
     system($call);
