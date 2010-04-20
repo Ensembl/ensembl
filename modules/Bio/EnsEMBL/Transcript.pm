@@ -616,7 +616,7 @@ sub translation {
                 transcript.  The canonical translation is not returned.
 
   Returntype : Array reference to Bio::EnsEMBL::Translation
-  Exceptions : None
+  Exceptions : Throws if no adaptor is attached.
   Caller     : General
   Status     : Stable
 
@@ -625,16 +625,29 @@ sub translation {
 sub get_all_alternative_translations {
   my ($self) = @_;
 
-  if (   !defined( $self->{'alternative_translations'} )
-       && defined( $self->adaptor() ) )
-  {
-    my $pa = $self->adaptor()->db()->get_TranslationAdaptor();
-    $self->{'alternative_translations'} =
-      $pa->fetch_all_by_Transcript($self);
+  my $canonical_translation = $self->translation();
+
+  if ( !defined($canonical_translation) ) { return [] }
+
+  if ( !defined( $self->{'alternative_translations'} ) ) {
+    if ( !defined( $self->adaptor() ) ) {
+      throw("No adaptor attached");
+    }
+
+    my $pa           = $self->adaptor()->db()->get_TranslationAdaptor();
+    my @translations = @{ $pa->fetch_all_by_Transcript($self) };
+
+    foreach my $translation (@translations) {
+      if ( $translation->dbID() == $canonical_translation->dbID() ) {
+        next;
+      }
+
+      push( @{ $self->{'alternative_translations'} }, $translation );
+    }
   }
 
   return $self->{'alternative_translations'};
-}
+} ## end sub get_all_alternative_translations
 
 =head2 add_alternative_translation
 
