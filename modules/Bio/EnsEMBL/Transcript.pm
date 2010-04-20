@@ -637,8 +637,13 @@ sub get_all_alternative_translations {
     my $pa           = $self->adaptor()->db()->get_TranslationAdaptor();
     my @translations = @{ $pa->fetch_all_by_Transcript($self) };
 
+    $self->{'alternative_translations'} = [];
+
     foreach my $translation (@translations) {
-      if ( $translation->dbID() == $canonical_translation->dbID() ) {
+      if (
+        $translation->stable_id() eq $canonical_translation->stable_id()
+        )
+      {
         next;
       }
 
