@@ -25,6 +25,11 @@
 826	FlyBaseCGID_gene	1	XREF	1	0	5	FlyBaseCGID gene	MISC	\N	\N
 827	FlyBaseCGID_transcript	1	XREF	1	0	50	FlyBaseCGID transcript	MISC	\N	\N
 828	FlyBaseCGID_translation	1	XREF	1	0	50	FlyBaseCGID translation	MISC	\N	\N
+829	BioGRID	1	KNOWNXREF	1	0	5	BioGRID Interaction data, The General Repository for Interaction Datasets gene	MISC	\N	\N
+830	FlyExpress	1	KNOWNXREF	1	0	5	FlyExpress, expression patterns of developmentally relevant genes in Drosophila embryogenesis gene	MISC	\N	\N
+831	GenomeRNAi	1	KNOWNXREF	1	0	5	GenomeRNAi, a database for cell-based RNAi phenotypes gene	MISC	\N	\N
+832	InteractiveFly	1	KNOWNXREF	0	1	5	The Interactive Fly gene	MISC	\N	\N
+833	MitoDrome	1	KNOWNXREF	1	0	5	Nuclear genes encoding proteins targeted to the mitochondrion gene	MISC	\N	\N
 880	BDGP_insitu_expr	1	KNOWNXREF	1	0	5	Berkeley Drosophila Genome Project in situ Gene Expression Database (embryogenesis)	MISC	\N	\N
 882	FlyGrid	1	KNOWNXREF	1	0	5	FlyGRID Interaction Data, The General Repository for Interaction Datasets	MISC	\N	\N
 883	FlyReactome	1	KNOWNXREF	1	0	5	FlyReactome, a Curated Knowledgebase of Drosophila Melanogaster Pathways	MISC	\N	\N
