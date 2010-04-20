@@ -277,7 +277,10 @@ sub _list_dbIDs {
   }
 
   my $sth = $self->prepare($sql);
-  $sth->execute();
+  eval { $sth->execute() };
+  if ($@) {
+    throw("Detected an error whilst executing SQL '${sql}': $@");
+  }
 
   my @out;
   while ( my ($id) = $sth->fetchrow() ) { push( @out, $id ) }
@@ -382,16 +385,33 @@ sub generic_fetch {
        && $self->isa('Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor')
        && !$self->isa('Bio::EnsEMBL::DBSQL::UnmappedObjectAdaptor') )
   {
-    push @tabs, [ 'seq_region', 'sr' ], [ 'coord_system', 'cs' ];
+    # We do a check to see if there is already seq_region
+    # and coord_system defined to ensure we get the right
+    # alias.  We then do the extra query irrespectively of
+    # what has already been specified by the user.
+    my %thash = map { $_->[0] => $_->[1] } @tabs;
+
+    my $sr_alias =
+      ( exists( $thash{seq_region} ) ? $thash{seq_region} : 'sr' );
+    my $cs_alias =
+      ( exists( $thash{coord_system} ) ? $thash{coord_system} : 'cs' );
+
+    if ( !exists( $thash{seq_region} ) ) {
+      push( @tabs, [ 'seq_region', $sr_alias ] );
+    }
+    if ( !exists( $thash{coord_system} ) ) {
+      push( @tabs, [ 'coord_system', $cs_alias ] );
+    }
 
     $extra_default_where = sprintf(
-                      '%s.seq_region_id = sr.seq_region_id '
-                        . 'AND sr.coord_system_id = cs.coord_system_id '
-                        . 'AND cs.species_id = ?',
-                      $tabs[0]->[1] );
+                      '%s.seq_region_id = %s.seq_region_id '
+                        . 'AND %s.coord_system_id = %s.coord_system_id '
+                        . 'AND %s.species_id = ?',
+                      $tabs[0]->[1], $sr_alias, $sr_alias,
+                      $cs_alias,     $cs_alias );
 
     $self->bind_param_generic_fetch( $self->species_id(), SQL_INTEGER );
-  }
+  } ## end if ( $self->is_multispecies...)
 
   my $columns = join(', ', $self->_columns());
 
