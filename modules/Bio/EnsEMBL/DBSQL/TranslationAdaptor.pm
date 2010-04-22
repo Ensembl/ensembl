@@ -77,18 +77,22 @@ use Bio::EnsEMBL::Utils::Exception qw( throw warning deprecate );
 
 @ISA = qw( Bio::EnsEMBL::DBSQL::BaseAdaptor );
 
-
-
 =head2 fetch_all_by_Transcript
 
   Arg [1]    : Bio::EnsEMBL::Transcript $transcript
   Example    :
 
-    @tl = @{ $translation_adaptor->fetch_by_Transcript($transcript) };
+    @tl =
+      @{ $translation_adaptor->fetch_all_by_Transcript($transcript) };
 
-  Description: Retrieves all Translation associated with a
-               particular transcript.  If no Translation is found, a
+  Description: Retrieves all translations associated with a
+               particular transcript.  If no translation is found, a
                reference to an empty list is returned.
+
+               The canonical translation will always be the first
+               Translation object in the returned list, if there are
+               any translations at all for the given transcript.
+
   Returntype : listref of Bio::EnsEMBL::Translation
   Exceptions : throw on incorrect argument
   Caller     : Transcript
@@ -107,6 +111,13 @@ sub fetch_all_by_Transcript {
     throw('Bio::EnsEMBL::Transcript argument is required.');
   }
 
+  # Get the canonical translation.
+  my $translations = $self->fetch_by_Transcript($transcript);
+
+  if ( !defined($translations) ) {
+    return [];
+  }
+
   my $lsi_created_date =
     $self->db()->dbc()->from_date_to_seconds('tlsi.created_date');
   my $lsi_modified_date =
@@ -119,7 +130,9 @@ sub fetch_all_by_Transcript {
       . "FROM translation tl "
       . "LEFT JOIN translation_stable_id tlsi "
       . "ON (tlsi.translation_id = tl.translation_id) "
-      . "WHERE tl.transcript_id = ?",
+      . "JOIN transcript t USING (transcript_id) "
+      . "WHERE tl.transcript_id = ? "
+      . "AND tl.translation_id != t.canonical_translation_id",
     $lsi_created_date, $lsi_modified_date );
 
   my $transcript_id = $transcript->dbID();
@@ -141,7 +154,7 @@ sub fetch_all_by_Transcript {
       $version,        $created_date,  $modified_date
     ) );
 
-  my @translations = ();
+  # Get all alternative translations.
   while ( $sth->fetch() ) {
     if ( !defined($translation_id) ) { next }
 
@@ -162,23 +175,22 @@ sub fetch_all_by_Transcript {
           $transcript->dbID() ) );
     }
 
-    push(
-      @translations,
-      Bio::EnsEMBL::Translation->new_fast( {
-          'dbID'          => $translation_id,
-          'adaptor'       => $self,
-          'start'         => $seq_start,
-          'end'           => $seq_end,
-          'start_exon'    => $start_exon,
-          'end_exon'      => $end_exon,
-          'stable_id'     => $stable_id,
-          'version'       => $version,
-          'created_date'  => $created_date || undef,
-          'modified_date' => $modified_date || undef
-        } ) );
+    push( @{$translations},
+          Bio::EnsEMBL::Translation->new_fast( {
+                              'dbID'          => $translation_id,
+                              'adaptor'       => $self,
+                              'start'         => $seq_start,
+                              'end'           => $seq_end,
+                              'start_exon'    => $start_exon,
+                              'end_exon'      => $end_exon,
+                              'stable_id'     => $stable_id,
+                              'version'       => $version,
+                              'created_date'  => $created_date || undef,
+                              'modified_date' => $modified_date || undef
+                            } ) );
   } ## end while ( $sth->fetch() )
 
-  return \@translations;
+  return $translations;
 } ## end sub fetch_all_by_Transcript
 
 =head2 fetch_by_Transcript
