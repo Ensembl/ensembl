@@ -625,11 +625,7 @@ sub translation {
 sub get_all_alternative_translations {
   my ($self) = @_;
 
-  my $canonical_translation = $self->translation();
-
-  if ( !defined($canonical_translation) ) { return [] }
-
-  if ( !defined( $self->{'alternative_translations'} ) ) {
+  if ( !exists( $self->{'alternative_translations'} ) ) {
     if ( !defined( $self->adaptor() ) ) {
       throw("No adaptor attached");
     }
@@ -637,22 +633,15 @@ sub get_all_alternative_translations {
     my $pa           = $self->adaptor()->db()->get_TranslationAdaptor();
     my @translations = @{ $pa->fetch_all_by_Transcript($self) };
 
-    $self->{'alternative_translations'} = [];
+    # The first in the list of translations is the canonical one,
+    # shift it off.
+    shift(@translations);
 
-    foreach my $translation (@translations) {
-      if (
-        $translation->stable_id() eq $canonical_translation->stable_id()
-        )
-      {
-        next;
-      }
-
-      push( @{ $self->{'alternative_translations'} }, $translation );
-    }
+    $self->{'alternative_translations'} = \@translations;
   }
 
   return $self->{'alternative_translations'};
-} ## end sub get_all_alternative_translations
+}
 
 =head2 add_alternative_translation
 
