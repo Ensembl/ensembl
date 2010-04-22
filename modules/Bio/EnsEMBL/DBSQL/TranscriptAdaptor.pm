@@ -789,7 +789,13 @@ sub store {
   #
   # store translation
   #
-  my $translation = $transcript->translation();
+
+  my @translations =
+    @{ $db->get_TranslationAdaptor()
+      ->fetch_all_by_Transcript($transcript) };
+
+  my $translation = shift(@translations);
+
   if ( defined($translation) ) {
     #make sure that the start and end exon are set correctly
     my $start_exon = $translation->start_Exon();
@@ -854,6 +860,47 @@ sub store {
     $original_translation->dbID( $translation->dbID() );
     $original_translation->adaptor( $translation->adaptor() );
   } ## end if ( defined($translation...))
+
+  #
+  # Store the alternative translations, if there are any.
+  #
+
+  foreach my $alt_translation (@translations) {
+    my $start_exon = $alt_translation->start_Exon();
+    my $end_exon   = $alt_translation->end_Exon();
+
+    if ( !defined($start_exon) ) {
+      throw("Translation does not define a start exon.");
+    } elsif ( !defined($end_exon) ) {
+      throw("Translation does not defined an end exon.");
+    }
+
+    if ( !defined( $start_exon->dbID() ) ) {
+      my $key = $start_exon->hashkey();
+      ($start_exon) = grep { $_->hashkey() eq $key } @{$exons};
+
+      if ( defined($start_exon) ) {
+        $alt_translation->start_Exon($start_exon);
+      } else {
+        throw(
+            "Translation's start_Exon does not appear to be one of the "
+              . "exons in its associated Transcript" );
+      }
+    } elsif ( !defined( $end_exon->dbID() ) ) {
+      my $key = $end_exon->hashkey();
+      ($end_exon) = grep { $_->hashkey() eq $key } @$exons;
+
+      if ( defined($end_exon) ) {
+        $translation->end_Exon($end_exon);
+      } else {
+        throw("Translation's end_Exon does not appear to be one of the "
+                . "exons in its associated Transcript." );
+      }
+    }
+
+    $db->get_TranslationAdaptor()
+      ->store( $alt_translation, $transc_dbID );
+  } ## end foreach my $alt_translation...
 
   #
   # store the xrefs/object xref mapping
@@ -952,55 +999,6 @@ sub store {
   $attr_adaptor->store_on_Transcript($transc_dbID,
                                      $transcript->get_all_Attributes);
 
-
-  #
-  # Store the alternative translations, if there are any.
-  #
-
-  my $alt_translations =
-    $transcript->get_all_alternative_translations();
-
-  if ( defined($alt_translations)
-       && scalar( @{$alt_translations} ) > 0 )
-  {
-    foreach my $alt_translation ( @{$alt_translations} ) {
-      my $start_exon = $alt_translation->start_Exon();
-      my $end_exon   = $alt_translation->end_Exon();
-
-      if ( !defined($start_exon) ) {
-        throw("Translation does not define a start exon.");
-      } elsif ( !defined($end_exon) ) {
-        throw("Translation does not defined an end exon.");
-      }
-
-      if ( !defined( $start_exon->dbID() ) ) {
-        my $key = $start_exon->hashkey();
-        ($start_exon) = grep { $_->hashkey() eq $key } @{$exons};
-
-        if ( defined($start_exon) ) {
-          $alt_translation->start_Exon($start_exon);
-        } else {
-          throw(
-            "Translation's start_Exon does not appear to be one of the "
-              . "exons in its associated Transcript" );
-        }
-      } elsif ( !defined( $end_exon->dbID() ) ) {
-        my $key = $end_exon->hashkey();
-        ($end_exon) = grep { $_->hashkey() eq $key } @$exons;
-
-        if ( defined($end_exon) ) {
-          $translation->end_Exon($end_exon);
-        } else {
-          throw(
-              "Translation's end_Exon does not appear to be one of the "
-                . "exons in its associated Transcript." );
-        }
-      }
-
-      $db->get_TranslationAdaptor()
-        ->store( $alt_translation, $transc_dbID );
-    } ## end foreach my $alt_translation...
-  } ## end if ( defined($alt_translations...))
 
   #update the original transcript object - not the transfered copy that
   #we might have created
