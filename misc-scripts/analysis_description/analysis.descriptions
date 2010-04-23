@@ -360,15 +360,15 @@
 371	human_cdna2genome	Homo Sapiens cDNAs from <a rel="external" href="http://www.ncbi.nlm.nih.gov/RefSeq/">NCBI RefSeq</a> and <a rel="external" href="http://www.ebi.ac.uk/embl/">EMBL</a> are aligned to the genome using <a rel="external" href="http://www.biomedcentral.com/1471-2105/6/31">Exonerate cdna2genome model</a>.	Human RefSeq/EMBL cdna2genome	0
 372	panda_protein	Aileleuca melanoleuca proteins from <a rel="external" href="http://uniprot.org">UniProtKB</a> are aligned to the genome using <a rel="external" href="http://www.biomedcentral.com/1471-2105/6/31">Exonerate</a>.	Panda protein	1	
 373	zfish_RNASeq	Gene models built using only <a href="/info/docs/genebuild/zebrafish_rnaseq_annotation.html" class="cp-external">Zebrafish RNASeq</a> data.	RNASeq gene	1	{'colour_key' => '[logic_name]','label_key' => 'RNASeq [biotype]','zmenu' => 'RNASeq', 'multi_caption' => 'RNASeq genes'}
-374	zfish_3dpf	RNASeq read support for exon from from 3 days post fertilization embryos	3dpf exon	1	{'colour_key' => 'exon_support','type' => 'support','zmenu' => 'Supporting_alignment'}
-375	zfish_2dpf	RNASeq read support for exon from from 2 days post fertilization embryos	2dpf exon	1	{'colour_key' => 'exon_support','type' => 'support','zmenu' => 'Supporting_alignment'}
-376	zfish_male_head	RNASeq read support for exon from from male head	Male head exon	1	{'colour_key' => 'exon_support','type' => 'support','zmenu' => 'Supporting_alignment'}
-377	zfish_5dpf	RNASeq read support for exon from from 5 days post fertilization embryos	5dpf exon	1	{'colour_key' => 'exon_support','type' => 'support','zmenu' => 'Supporting_alignment'}
-378	zfish_male_body	RNASeq read support for exon from from male body	Male body exon	1	{'colour_key' => 'exon_support','type' => 'support','zmenu' => 'Supporting_alignment'}
-379	zfish_female_body	RNASeq read support for exon from from female body	Female body exon	1	{'colour_key' => 'exon_support','type' => 'support','zmenu' => 'Supporting_alignment'}
-380	zfish_ovary	RNASeq read support for exon from from ovary	Ovary exon	1	{'colour_key' => 'exon_support','type' => 'support','zmenu' => 'Supporting_alignment'}
-381	zfish_female_head	RNASeq read support for exon from from female head	Female head exon	1	{'colour_key' => 'exon_support','type' => 'support','zmenu' => 'Supporting_alignment'}
-382	zfish_1dpf	RNASeq read support for exon from from 1 day post fertilization embryos	1dpf exon	1	{'colour_key' => 'exon_support','type' => 'support','zmenu' => 'Supporting_alignment'}
+374	zfish_3dpf	RNASeq read support for exon from 3 days post fertilization embryos	3dpf exon	1	{'colour_key' => 'exon_support','type' => 'support','zmenu' => 'Supporting_alignment'}
+375	zfish_2dpf	RNASeq read support for exon from 2 days post fertilization embryos	2dpf exon	1	{'colour_key' => 'exon_support','type' => 'support','zmenu' => 'Supporting_alignment'}
+376	zfish_male_head	RNASeq read support for exon from male head	Male head exon	1	{'colour_key' => 'exon_support','type' => 'support','zmenu' => 'Supporting_alignment'}
+377	zfish_5dpf	RNASeq read support for exon from 5 days post fertilization embryos	5dpf exon	1	{'colour_key' => 'exon_support','type' => 'support','zmenu' => 'Supporting_alignment'}
+378	zfish_male_body	RNASeq read support for exon from male body	Male body exon	1	{'colour_key' => 'exon_support','type' => 'support','zmenu' => 'Supporting_alignment'}
+379	zfish_female_body	RNASeq read support for exon from female body	Female body exon	1	{'colour_key' => 'exon_support','type' => 'support','zmenu' => 'Supporting_alignment'}
+380	zfish_ovary	RNASeq read support for exon from ovary	Ovary exon	1	{'colour_key' => 'exon_support','type' => 'support','zmenu' => 'Supporting_alignment'}
+381	zfish_female_head	RNASeq read support for exon from female head	Female head exon	1	{'colour_key' => 'exon_support','type' => 'support','zmenu' => 'Supporting_alignment'}
+382	zfish_1dpf	RNASeq read support for exon from 1 day post fertilization embryos	1dpf exon	1	{'colour_key' => 'exon_support','type' => 'support','zmenu' => 'Supporting_alignment'}
 383	zfish_2dpf_intron	Spliced RNASeq read support for intron from  2 days post fertilization embryos	2dpf intron	1	{'colour_key' => 'intron_support','type' => 'support','zmenu' => 'Supporting_alignment'}
 384	zfish_3dpf_intron	Spliced RNASeq read support for intron from  3 days post fertilization embryos	3dpf intron	1	{'colour_key' => 'intron_support','type' => 'support','zmenu' => 'Supporting_alignment'}
 385	zfish_male_head_intron	Spliced RNASeq read support for intron from  male head	Male head intron	1	{'colour_key' => 'intron_support','type' => 'support','zmenu' => 'Supporting_alignment'}
