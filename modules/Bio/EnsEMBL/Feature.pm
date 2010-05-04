@@ -538,7 +538,7 @@ sub transfer {
   my $self = shift;
   my $slice = shift;
 
-  if(!$slice || !ref($slice) || !$slice->isa('Bio::EnsEMBL::Slice')) {
+  if(!$slice || !ref($slice) || (!$slice->isa('Bio::EnsEMBL::Slice') && !$slice->isa('Bio::EnsEMBL::LRGSlice'))) {
     throw('Slice argument is required');
   }
 
