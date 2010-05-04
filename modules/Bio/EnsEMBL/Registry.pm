@@ -1447,7 +1447,7 @@ sub load_registry_from_db {
 
   # Register Core databases
 
-  my @core_dbs = grep { /^[a-z]+_[a-z]+_core_(?:\d+_)?\d+_/ } @dbnames;
+  my @core_dbs = grep { /^[a-z]+_[a-z0-9]+_core_(?:\d+_)?\d+_/ } @dbnames;
 
   foreach my $coredb (@core_dbs) {
     if ( index( $coredb, 'collection' ) != -1 ) {
@@ -1456,7 +1456,7 @@ sub load_registry_from_db {
     }
 
     my ( $species, $num ) =
-      ( $coredb =~ /(^[a-z]+_[a-z]+)_core_(?:\d+_)?(\d+)/ );
+      ( $coredb =~ /(^[a-z]+_[a-z0-9]+)_core_(?:\d+_)?(\d+)/ );
 
     my $dba =
       Bio::EnsEMBL::DBSQL::DBAdaptor->new(
@@ -1516,11 +1516,11 @@ sub load_registry_from_db {
 
   # register cdna databases
 
-  my @cdna_dbs = grep { /^[a-z]+_[a-z]+_cdna_(?:\d+_)?\d+_/ } @dbnames;
+  my @cdna_dbs = grep { /^[a-z]+_[a-z0-9]+_cdna_(?:\d+_)?\d+_/ } @dbnames;
 
   for my $cdnadb (@cdna_dbs) {
     my ( $species, $num ) =
-      ( $cdnadb =~ /(^[a-z]+_[a-z]+)_cdna_(?:\d+_)?(\d+)_/ );
+      ( $cdnadb =~ /(^[a-z]+_[a-z0-9]+)_cdna_(?:\d+_)?(\d+)_/ );
     my $dba =
       Bio::EnsEMBL::DBSQL::DBAdaptor->new(
                                          -group        => "cdna",
@@ -1562,11 +1562,11 @@ sub load_registry_from_db {
 
   # Otherfeatures
 
-  my @other_dbs = grep { /^[a-z]+_[a-z]+_otherfeatures_(?:\d+_)?\d+_/ } @dbnames;
+  my @other_dbs = grep { /^[a-z]+_[a-z0-9]+_otherfeatures_(?:\d+_)?\d+_/ } @dbnames;
 
   for my $other_db (@other_dbs) {
     my ( $species, $num ) =
-      ( $other_db =~ /(^[a-z]+_[a-z]+)_otherfeatures_(?:\d+_)?(\d+)_/ );
+      ( $other_db =~ /(^[a-z]+_[a-z0-9]+)_otherfeatures_(?:\d+_)?(\d+)_/ );
     my $dba =
       Bio::EnsEMBL::DBSQL::DBAdaptor->new(
                                          -group   => "otherfeatures",
@@ -1660,11 +1660,11 @@ sub load_registry_from_db {
     }
   } else {
     my @variation_dbs =
-      grep { /^[a-z]+_[a-z]+_variation_(?:\d+_)?\d+_/ } @dbnames;
+      grep { /^[a-z]+_[a-z0-9]+_variation_(?:\d+_)?\d+_/ } @dbnames;
 
     for my $variation_db (@variation_dbs) {
       my ( $species, $num ) =
-        ( $variation_db =~ /(^[a-z]+_[a-z]+)_variation_(?:\d+_)?(\d+)_/ );
+        ( $variation_db =~ /(^[a-z]+_[a-z0-9]+)_variation_(?:\d+_)?(\d+)_/ );
       my $dba =
         Bio::EnsEMBL::Variation::DBSQL::DBAdaptor->new(
                                          -group        => "variation",
@@ -1693,7 +1693,7 @@ sub load_registry_from_db {
     }
   } else {
     my @funcgen_dbs =
-      grep { /^[a-z]+_[a-z]+_funcgen_(?:\d+_)?\d+_/ } @dbnames;
+      grep { /^[a-z]+_[a-z0-9]+_funcgen_(?:\d+_)?\d+_/ } @dbnames;
 
     for my $funcgen_db (@funcgen_dbs) {
       if ( index( $funcgen_db, 'collection' ) != -1 ) {
@@ -1702,7 +1702,7 @@ sub load_registry_from_db {
       }
 
       my ( $species, $num ) =
-        ( $funcgen_db =~ /(^[a-z]+_[a-z]+)_funcgen_(?:\d+_)?(\d+)_/ );
+        ( $funcgen_db =~ /(^[a-z]+_[a-z0-9]+)_funcgen_(?:\d+_)?(\d+)_/ );
       my $dba = Bio::EnsEMBL::Funcgen::DBSQL::DBAdaptor->new(
         -group        => "funcgen",
         -species      => $species,
