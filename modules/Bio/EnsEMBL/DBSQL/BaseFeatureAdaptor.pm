@@ -218,7 +218,7 @@ sub fetch_all_by_Slice_constraint {
 
   my @result = ();
 
-  if(!ref($slice) || !$slice->isa("Bio::EnsEMBL::Slice")) {
+  if(!ref($slice) || (!$slice->isa('Bio::EnsEMBL::Slice') && !$slice->isa('Bio::EnsEMBL::LRGSlice'))) {
     throw("Bio::EnsEMBL::Slice argument expected.");
   }
 
