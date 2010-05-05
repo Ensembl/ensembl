@@ -625,10 +625,9 @@ sub translation {
 sub get_all_alternative_translations {
   my ($self) = @_;
 
-  if ( !exists( $self->{'alternative_translations'} ) ) {
-    if ( !defined( $self->adaptor() ) ) {
-      throw("No adaptor attached");
-    }
+  if (   !exists( $self->{'alternative_translations'} )
+       && defined( $self->adaptor() ) )
+  {
 
     my $pa           = $self->adaptor()->db()->get_TranslationAdaptor();
     my @translations = @{ $pa->fetch_all_by_Transcript($self) };
