@@ -616,7 +616,7 @@ sub translation {
                 transcript.  The canonical translation is not returned.
 
   Returntype : Array reference to Bio::EnsEMBL::Translation
-  Exceptions : Throws if no adaptor is attached.
+  Exceptions : None
   Caller     : General
   Status     : Stable
 
