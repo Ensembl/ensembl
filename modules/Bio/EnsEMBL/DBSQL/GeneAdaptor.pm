@@ -1894,9 +1894,9 @@ sub fetch_nearest_Gene_by_Feature{
 
   my $overlapping = $feat->get_overlapping_Genes();
 
-  if(defined(@{$overlapping}[0])){
+  return @{$overlapping}[0]  if(defined(@{$overlapping}[0]));
 #    print "found overlapping\n";
-    return @{$overlapping}[0];
+
 #  }
 #  else{
 #    print "No overlapping trying nearest\n";
@@ -1941,6 +1941,7 @@ sub fetch_nearest_Gene_by_Feature{
   }
 
   return undef;
+}
 }
 
 ##########################
