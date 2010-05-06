@@ -1942,7 +1942,6 @@ sub fetch_nearest_Gene_by_Feature{
 
   return undef;
 }
-}
 
 ##########################
 #                        #
