@@ -218,7 +218,7 @@ sub fetch_all_by_Slice_constraint {
 
   my @result = ();
 
-  if(!ref($slice) || (!$slice->isa('Bio::EnsEMBL::Slice') && !$slice->isa('Bio::EnsEMBL::LRGSlice'))) {
+  if(!ref($slice) || !($slice->isa('Bio::EnsEMBL::Slice') or $slice->isa('Bio::EnsEMBL::LRGSlice'))) {
     throw("Bio::EnsEMBL::Slice argument expected.");
   }
 
@@ -581,7 +581,7 @@ sub _pre_store {
   my $slice_adaptor = $db->get_SliceAdaptor();
   my $slice = $feature->slice();
 
-  if(!ref($slice) || !$slice->isa('Bio::EnsEMBL::Slice')) {
+  if(!ref($slice) || !($slice->isa('Bio::EnsEMBL::Slice') or $slice->isa('Bio::EnsEMBL::LRGSlice'))  ) {
     throw('Feature must be attached to Slice to be stored.');
   }
 
@@ -642,7 +642,7 @@ sub _pre_store_userdata {
   my $slice = $feature->slice();
   my $slice_adaptor = $slice->adaptor;
 
-  if(!ref($slice) || !$slice->isa('Bio::EnsEMBL::Slice')) {
+  if(!ref($slice) || !($slice->isa('Bio::EnsEMBL::Slice') or $slice->isa('Bio::EnsEMBL::LRGSlice')) ) {
     throw('Feature must be attached to Slice to be stored.');
   }
 
@@ -927,7 +927,7 @@ sub remove {
 sub remove_by_Slice {
   my ($self, $slice) = @_;
 
-  if(!$slice || !ref($slice) || !$slice->isa('Bio::EnsEMBL::Slice')) {
+  if(!$slice || !ref($slice) || !($slice->isa('Bio::EnsEMBL::Slice') or $slice->isa('Bio::EnsEMBL::LRGSlice')) ) {
     throw("Slice argument is required");
   }
 

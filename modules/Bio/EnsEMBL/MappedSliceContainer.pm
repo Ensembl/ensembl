@@ -154,7 +154,7 @@ sub new {
 
   # argument check
   unless ($ref_slice and ref($ref_slice) and
-          $ref_slice->isa('Bio::EnsEMBL::Slice')) {
+          ($ref_slice->isa('Bio::EnsEMBL::Slice') or $ref_slice->isa('Bio::EnsEMBL::LRGSlice')) ) {
     throw("You must provide a reference slice.");
   }
 
@@ -184,7 +184,7 @@ sub _create_container_slice {
 
   # argument check
   unless ($ref_slice and ref($ref_slice) and
-          $ref_slice->isa('Bio::EnsEMBL::Slice')) {
+          ($ref_slice->isa('Bio::EnsEMBL::Slice') or $ref_slice->isa('Bio::EnsEMBL::LRGSlice')) ) {
     throw("You must provide a reference slice.");
   }
 
@@ -483,7 +483,7 @@ sub ref_slice {
   if (@_) {
     my $slice = shift;
     
-    unless (ref($slice) and $slice->isa('Bio::EnsEMBL::Slice')) {
+    unless (ref($slice) and ($slice->isa('Bio::EnsEMBL::Slice') or $slice->isa('Bio::EnsEMBL::LRGSlice'))) {
       throw("Need a Bio::EnsEMBL::Slice.");
     }
     
@@ -517,7 +517,7 @@ sub container_slice {
   if (@_) {
     my $slice = shift;
     
-    unless (ref($slice) and $slice->isa('Bio::EnsEMBL::Slice')) {
+    unless (ref($slice) and ($slice->isa('Bio::EnsEMBL::Slice') or $slice->isa('Bio::EnsEMBL::LRGSlice')) ) {
       throw("Need a Bio::EnsEMBL::Slice.");
     }
     

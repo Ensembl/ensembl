@@ -125,7 +125,7 @@ sub store{
    }
 
    my $slice = $feat->slice();
-   if(!defined($slice) || !$slice->isa("Bio::EnsEMBL::Slice")) {
+   if(!defined($slice) || !($slice->isa("Bio::EnsEMBL::Slice") or $slice->isa('Bio::EnsEMBL::LRGSlice')) ) {
      throw("A slice must be attached to the features to be stored.");
    }
 

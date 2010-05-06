@@ -139,7 +139,7 @@ sub new {
 sub fetch_by_Slice_start_end_strand {
    my ( $self, $slice, $start, $end, $strand ) = @_;
 
-   if(!ref($slice) || !$slice->isa("Bio::EnsEMBL::Slice")) {
+   if(!ref($slice) || !($slice->isa("Bio::EnsEMBL::Slice") or $slice->isa('Bio::EnsEMBL::LRGSlice')) ) {
      throw("Slice argument is required.");
    }
 

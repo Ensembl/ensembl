@@ -185,7 +185,7 @@ sub transform {
   my $self = shift;
 
   # catch for old style transform calls
-  if( !@_ || ( ref $_[0] && $_[0]->isa( "Bio::EnsEMBL::Slice" ))) {
+  if( !@_ || ( ref $_[0] && ($_[0]->isa( "Bio::EnsEMBL::Slice" ) or $_[0]->isa( "Bio::EnsEMBL::LRGSlice" )))) {
     throw( "transform needs coordinate systems details now," .
            "please use transfer" );
   }

@@ -211,7 +211,7 @@ sub add_Slice_Mapper_pair {
   my $mapper = shift;
 
   # argument check
-  unless ($slice and ref($slice) and $slice->isa('Bio::EnsEMBL::Slice')) {
+  unless ($slice and ref($slice) and ($slice->isa('Bio::EnsEMBL::Slice') or $slice->isa('Bio::EnsEMBL::LRGSlice')) ) {
     throw("You must provide a slice.");
   }
 

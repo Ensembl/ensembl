@@ -302,7 +302,7 @@ sub hslice {
 
   if(@_) {
     my $sl = shift;
-    if(defined($sl) && (!ref($sl) || !$sl->isa('Bio::EnsEMBL::Slice'))) {
+    if(defined($sl) && (!ref($sl) || !($sl->isa('Bio::EnsEMBL::Slice') or $sl->isa('Bio::EnsEMBL::Slice')) )) {
       throw('slice argument must be a Bio::EnsEMBL::Slice');
     }
 

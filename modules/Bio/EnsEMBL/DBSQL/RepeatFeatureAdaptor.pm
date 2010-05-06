@@ -436,7 +436,7 @@ sub store {
     }
 
     my $slice = $rf->slice();
-    if(!ref($slice) || !$slice->isa("Bio::EnsEMBL::Slice")) {
+    if(!ref($slice) || !($slice->isa("Bio::EnsEMBL::Slice") or $slice->isa('Bio::EnsEMBL::LRGSlice'))) {
       throw("RepeatFeature cannot be stored without an associated slice.");
     }
 

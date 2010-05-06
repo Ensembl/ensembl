@@ -999,7 +999,7 @@ sub transform {
       # transform to slice coords from raw contig coords
       return $self->_transform_to_Slice($slice);
     }
-    elsif ($self->contig->isa( "Bio::EnsEMBL::Slice" )) {
+    elsif ($self->contig->isa( "Bio::EnsEMBL::Slice" ) or $self->contig->isa( "Bio::EnsEMBL::LRGSlice" )) {
 
       # transform to slice coords from other slice coords
       return $self->_transform_between_Slices($slice);
@@ -1088,7 +1088,7 @@ sub _transform_between_Slices {
   my $from_slice = $self->contig;
 
   $self->throw("New contig [$to_slice] is not a Bio::EnsEMBL::Slice")
-   unless $to_slice->isa("Bio::EnsEMBL::Slice");
+   unless ($to_slice->isa("Bio::EnsEMBL::Slice") or $to_slice->isa("Bio::EnsEMBL::LRGSlice") );
 
   if ((my $c1 = $from_slice->chr_name) ne (my $c2 = $to_slice->chr_name)) {
     $self->warn("Can't transform between chromosomes: $c1 and $c2");

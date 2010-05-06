@@ -559,7 +559,7 @@ sub get_seq_region_id {
   my $self = shift;
   my $slice = shift;
 
-  if(!$slice || !ref($slice) || (!$slice->isa('Bio::EnsEMBL::Slice') && !$slice->isa('Bio::EnsEMBL::LRGSlice'))) {
+  if(!$slice || !ref($slice) || !($slice->isa('Bio::EnsEMBL::Slice') or $slice->isa('Bio::EnsEMBL::LRGSlice'))) {
     throw('Slice argument is required');
   }
   
@@ -1073,7 +1073,7 @@ sub fetch_by_Feature{
   }
 
   my $slice = $feature->slice();
-  if(!$slice || (!$slice->isa('Bio::EnsEMBL::Slice') && !$slice->isa('Bio::EnsEMBL::LRGSlice') )) {
+  if(!$slice || !($slice->isa('Bio::EnsEMBL::Slice') or $slice->isa('Bio::EnsEMBL::LRGSlice') )) {
     throw('Feature must be attached to a valid slice.');
   }
 
@@ -1361,7 +1361,7 @@ sub store {
   # Get all of the sanity checks out of the way before storing anything
   #
 
-  if(!ref($slice) || !$slice->isa('Bio::EnsEMBL::Slice')) {
+  if(!ref($slice) || !($slice->isa('Bio::EnsEMBL::Slice') or $slice->isa('Bio::EnsEMBL::LRGSlice'))) {
     throw('Slice argument is required');
   }
 
@@ -1467,10 +1467,10 @@ sub store_assembly{
   # Get all of the sanity checks out of the way before storing anything
   #
 
-  if(!ref($asm_slice) || !$asm_slice->isa('Bio::EnsEMBL::Slice')) {
+  if(!ref($asm_slice) || !($asm_slice->isa('Bio::EnsEMBL::Slice') or $asm_slice->isa('Bio::EnsEMBL::LRGSlice'))) {
     throw('Assembled Slice argument is required');
   }
-  if(!ref($cmp_slice) || !$cmp_slice->isa('Bio::EnsEMBL::Slice')) {
+  if(!ref($cmp_slice) || !($cmp_slice->isa('Bio::EnsEMBL::Slice') or $cmp_slice->isa('Bio::EnsEMBL::LRGSlice')) ) {
     throw('Assembled Slice argument is required');
   }
 

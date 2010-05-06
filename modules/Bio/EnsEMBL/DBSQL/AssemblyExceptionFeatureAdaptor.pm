@@ -366,12 +366,13 @@ sub _remap {
     Status:       Stable
 =cut
 
-    use Data::Dumper;
+#    use Data::Dumper;
 
 sub store{
     my $self = shift;
     my $asx = shift;
     my $asx2 = shift;
+
 
     if (! $asx->isa('Bio::EnsEMBL::AssemblyExceptionFeature')){
 	throw("$asx is not a Ensembl assemlby exception -- not stored");
@@ -389,7 +390,7 @@ sub store{
     if ($asx->type !~ /PAR|HAP/){
 	throw("Only types of assembly exception features valid are PAR and HAP");
     }
-    if (! $asx->alternate_slice->isa('Bio::EnsEMBL::Slice')){
+    if ( !($asx->alternate_slice->isa('Bio::EnsEMBL::Slice') or $asx->alternate_slice->isa('Bio::EnsEMBL::LRGSlice')) ){
 	throw("Alternate slice should be a Bio::EnsEMBL::Slice");
     }
     #now check the other Assembly exception feature, the one pointing to the REF
@@ -403,8 +404,8 @@ sub store{
     if ($asx2->type !~ /HAP REF|PAR REF/){
 	throw("$asx2 should have  type of assembly exception features HAP REF or PAR REF");
     }
-    if (! $asx->alternate_slice->isa('Bio::EnsEMBL::Slice')){
-	throw("Alternate slice should be a Bio::EnsEMBL::Slice");
+    if (! ($asx2->alternate_slice->isa('Bio::EnsEMBL::Slice') or $asx2->alternate_slice->isa('Bio::EnsEMBL::LRGSlice'))){
+      throw("Alternate slice should be a Bio::EnsEMBL::Slice");
     }
     #finally check that both features are pointing to each other slice
     if ($asx->slice != $asx2->alternate_slice || $asx->alternate_slice != $asx2->slice){
@@ -487,7 +488,7 @@ sub _pre_store {
   my $slice_adaptor = $db->get_SliceAdaptor();
   my $slice = $feature->slice();
 
-  if(!ref($slice) || !$slice->isa('Bio::EnsEMBL::Slice')) {
+  if(!ref($slice) || !($slice->isa('Bio::EnsEMBL::Slice') or $slice->isa('Bio::EnsEMBL::LRGSlice'))  ) {
     throw('Feature must be attached to Slice to be stored.');
   }
 

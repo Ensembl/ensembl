@@ -925,7 +925,7 @@ sub transform {
   my $self = shift;
 
   # catch for old style transform calls
-  if( !@_  || ( ref $_[0] && $_[0]->isa( "Bio::EnsEMBL::Slice" ))) {
+  if( !@_  || ( ref $_[0] && ($_[0]->isa( "Bio::EnsEMBL::Slice" ) or $_[0]->isa( "Bio::EnsEMBL::LRGSlice" )) )) {
     deprecate('Calling transform without a coord system name is deprecated.');
     return $self->_deprecated_transform(@_);
   }
