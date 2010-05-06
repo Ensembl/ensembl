@@ -1317,13 +1317,31 @@ sub load_registry_from_url {
   Arg [VERBOSE]: (optional) boolean
                 Whether to print database messages.
 
+  Arg [SPECIES]: (optional) string
+                By default, all databases that are found on the
+                server and that corresponds to the correct release
+                are probed for aliases etc.  For some people,
+                depending on where they are in the world, this might
+                be a slow operation.  With the '-species' argument,
+                one may reduce the startup time by restricting the
+                set of databases that are probed to those of a
+                particular species.
+
+                Note that the latin name of the species is required,
+                e.g., 'homo sapiens', 'gallus gallus', 'callithrix
+                jacchus' etc.  It may be the whole species name,
+                or only the first part of the name, e.g. 'homo',
+                'gallus', or 'callithrix'.  This will be used in
+                matching against the name of the databases.
+
   Arg [DB_VERSION]: (optional) integer
-                By default, only databases corresponding to this API
-                version are loaded. This allows the script to use
-                databases from another version although it might not
-                work properly.  This option should only be used for
-                production or testing purposes and if you really
-                know what you are doing.
+                By default, only databases corresponding to the
+                current API version are loaded.  This argument
+                allows the script to use databases from another
+                version although it might not work properly.  This
+                argument should only be used for production or
+                testing purposes and if you really know what you are
+                doing.
 
   Arg [WAIT_TIMEOUT]: (optional) integer
                 Time in seconds for the wait timeout to happen.
@@ -1333,7 +1351,7 @@ sub load_registry_from_url {
                 getting deleted.  Only set this if you are having
                 problems and know what you are doing.
 
-   Arg [-NO_CACHE]: (optional) int 1
+   Arg [-NO_CACHE]: (optional) boolean
                 This option will turn off caching for slice
                 features, so, every time a set of features is
                 retrieved, they will come from the database instead
@@ -1351,7 +1369,7 @@ sub load_registry_from_url {
       -verbose => '1'
     );
 
-  Description: Will load the correct versions of the ensembl
+  Description: Will load the correct versions of the Ensembl
                databases for the software release it can find on a
                database instance into the registry.  Also adds a set
                of standard aliases.
@@ -1364,14 +1382,20 @@ sub load_registry_from_url {
 sub load_registry_from_db {
   my ( $self, @args ) = @_;
 
-  my ( $host, $port, $user, $pass, $verbose, $db_version, $wait_timeout,
-    $no_cache )
-    = rearrange( [
-      'HOST',    'PORT',       'USER',         'PASS',
-      'VERBOSE', 'DB_VERSION', 'WAIT_TIMEOUT', 'NO_CACHE'
-    ],
-    @args
-    );
+  my ( $host,         $port,     $user,
+       $pass,         $verbose,  $db_version,
+       $wait_timeout, $no_cache, $species )
+    = rearrange( [ 'HOST',         'PORT',
+                   'USER',         'PASS',
+                   'VERBOSE',      'DB_VERSION',
+                   'WAIT_TIMEOUT', 'NO_CACHE',
+                   'SPECIES' ],
+                 @args );
+
+  if ( defined($species) ) {
+    $species = lc($species);
+    $species =~ tr/ -/__/;
+  }
 
   my $go_version       = 0;
   my $ontology_version = 0;
@@ -1431,9 +1455,16 @@ sub load_registry_from_db {
       }
     } elsif ( $db =~ /^([a-z]+_[a-z0-9]+_[a-z]+(?:_\d+)?)_(\d+)_(\w+)/ )
     {
-      if ( $2 eq $software_version ) {
-        $temp{$1} = $2 . "_" . $3;
+      # Species specific databases (core, cdna, vega etc.)
+
+      my ( $one, $two, $three ) = ( $1, $2, $3 );
+
+      if ( !defined($species) || $one =~ /^$species/ ) {
+        if ( $two eq $software_version ) {
+          $temp{$one} = $two . "_" . $three;
+        }
       }
+
     } else {
       # warn( sprintf( "Skipping database '%s'\n", $db ) );
     }
