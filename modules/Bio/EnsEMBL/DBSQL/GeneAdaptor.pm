@@ -1872,6 +1872,76 @@ sub fetch_all_by_transcript_supporting_evidence {
   return \@genes;
 }
 
+=head2 fetch_nearest_Gene_by_Feature
+
+  Arg [1]    : Feature object
+  Example    : $genes = $gene_adaptor->fetch_nearest_Gene_by_Feature($feat);
+  Description: Gets the nearest gene to the feature 
+  Returntype : Listref of Bio::EnsEMBL::Gene
+  Caller     : general
+  Status     : UnStable
+
+=cut
+
+sub fetch_nearest_Gene_by_Feature{
+  my $self = shift;
+  my $feat = shift;
+
+  my $stranded = shift;
+
+  my $min_dist = 0;
+  my $gene_id = 0;
+
+  my $overlapping = $feat->get_overlapping_Genes();
+
+  if(defined(@{$overlapping}[0])){
+#    print "found overlapping\n";
+    return @{$overlapping}[0];
+#  }
+#  else{
+#    print "No overlapping trying nearest\n";
+#  }
+
+  my $seq_region_id = $feat->slice->adaptor->get_seq_region_id($feat->slice);
+  my $start = ($feat->start + $feat->slice->start) -1;
+  my $end   = ($feat->end   + $feat->slice->start) -1;
+
+  my $sql1 = "select g.gene_id, (? - g.seq_region_end)  as 'dist' from gene g where ";
+  if($stranded){
+    $sql1 .= "g.seq_region_strand = ".$feat->strand." and ";
+  }
+  $sql1 .= "seq_region_id = ? and g.seq_region_end < ? order by dist limit 1";
+
+
+  my $sql1_sth = $self->prepare($sql1) || die "Could not prepare $sql1";
+  $sql1_sth->execute($start, $seq_region_id, $start) || die "Could not execute sql";
+  $sql1_sth->bind_columns(\$gene_id, \$min_dist)     || die "Could mot bin columns";
+  $sql1_sth->fetch()                                 || die "Could not fetch result";
+  $sql1_sth->finish();
+
+  my $sql2 = "select g.gene_id, (g.seq_region_start - ?)  as 'dist' from gene g  where ";
+  if($stranded){
+    $sql2 .= "g.seq_region_strand = ".$feat->strand." and ";
+  }
+  $sql2 .= "seq_region_id = ? and g.seq_region_start > ? order by dist limit 1";
+  my $sql2_sth = $self->prepare($sql2) || die "could not prepare $sql2";
+
+  my ($tmp_min_dist, $tmp_gene_id);
+  $sql2_sth->execute($end, $seq_region_id, $end)             || die "Could not execute sql";
+  $sql2_sth->bind_columns(\$tmp_gene_id, \$tmp_min_dist)     || die "Could mot bin columns";
+  $sql2_sth->fetch()                                         || die "Could not fetch result";
+  $sql2_sth->finish();
+ 
+  if($tmp_min_dist < $min_dist || !$gene_id){
+    $gene_id = $tmp_gene_id
+  }
+  
+  if($gene_id){
+    return $self->fetch_by_dbID($gene_id);
+  }
+
+  return undef;
+}
 
 ##########################
 #                        #

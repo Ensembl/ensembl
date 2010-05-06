@@ -116,7 +116,7 @@ sub new {
       rearrange(['START','END','STRAND','SLICE','ANALYSIS', 'SEQNAME',
 		 'DBID', 'ADAPTOR'], @_);   
   if($slice) {
-    if(!ref($slice) || !$slice->isa('Bio::EnsEMBL::Slice')) {
+    if(!ref($slice) || !($slice->isa('Bio::EnsEMBL::Slice') or $slice->isa('Bio::EnsEMBL::LRGSlice')) ) {
       throw('-SLICE argument must be a Bio::EnsEMBL::Slice not '.$slice);
     }
   }
@@ -365,7 +365,7 @@ sub slice {
 
   if(@_) {
     my $sl = shift;
-    if(defined($sl) && (!ref($sl) || !$sl->isa('Bio::EnsEMBL::Slice'))) {
+    if(defined($sl) && (!ref($sl) || !($sl->isa('Bio::EnsEMBL::Slice') or $sl->isa('Bio::EnsEMBL::LRGSlice')) )) {
       throw('slice argument must be a Bio::EnsEMBL::Slice');
     }
 
@@ -462,8 +462,8 @@ sub transform {
   my $projection = $self->project( $cs_name, $cs_version );
 
   if( @$projection != 1 and !defined($to_slice)) {
-     warn "MORE than one projection and NO slice specified ";
-     warn "from ".$self->slice->name." to $cs_name, $cs_version\n";
+ #    warn "MORE than one projection and NO slice specified ";
+ #    warn "from ".$self->slice->name." to $cs_name, $cs_version\n";
     return undef;
   }
   my $index = 0;
@@ -1201,6 +1201,47 @@ sub overlaps {
   
   return ($self->end >= $f->start and $self->start <= $f->end);
 }
+
+
+=head2 get_overlapping_Genes
+
+  Description: Get all the genes that overlap this feature.
+  Returntype : list ref of Bio::EnsEMBL::Gene
+  Caller     : general
+  Status     : UnStable
+
+=cut
+
+sub get_overlapping_Genes{
+  my $self = shift;
+
+  my $slice = $self->feature_Slice;
+  return $slice->get_all_Genes();
+}
+
+# query for absolute nearest.
+# select x.display_label, g.gene_id, g.seq_region_start, ABS(cast((32921638 - g.seq_region_end) as signed))  as 'dist' from gene g, xref x where g.display_xref_id = x.xref_id and seq_region_id = 27513 order by ABS(cast((32921638 - g.seq_region_end) as signed)) limit 10;
+
+=head2 get_nearest_Gene
+
+  Description: Get all the nearest  gene to the feature
+  Returntype : Bio::EnsEMBL::Gene
+  Caller     : general
+  Status     : UnStable
+
+=cut
+
+sub get_nearest_Gene {
+  my $self = shift;
+  my $stranded = shift;
+
+  my $ga = Bio::EnsEMBL::Registry->get_adaptor($self->adaptor->db->species,"core","Gene");
+
+  return $ga->fetch_nearest_Gene_by_Feature($self, $stranded);
+
+}
+
+
 
 
 
