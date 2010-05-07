@@ -1234,10 +1234,11 @@ sub get_overlapping_Genes{
 sub get_nearest_Gene {
   my $self = shift;
   my $stranded = shift;
+  my $stream = shift;
 
   my $ga = Bio::EnsEMBL::Registry->get_adaptor($self->adaptor->db->species,"core","Gene");
 
-  return $ga->fetch_nearest_Gene_by_Feature($self, $stranded);
+  return $ga->fetch_nearest_Gene_by_Feature($self, $stranded, $stream);
 
 }
 
