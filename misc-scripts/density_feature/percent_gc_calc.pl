@@ -132,7 +132,7 @@ foreach my $slice (@sorted_slices){
   $current_end = 0;
   $current = 0;
 
-  while ($current_end < $slice->end()) {
+  while ($current_end < $slice->length) {
 
     $current += $block_size;
     $current_start = $current_end+1;

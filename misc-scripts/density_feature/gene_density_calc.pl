@@ -101,6 +101,10 @@ print "Deleting old knownGeneDensity and geneDensity features\n";
 $sth = $db->dbc->prepare("DELETE df, dt, a, ad FROM density_feature df, density_type dt, analysis a, analysis_description ad WHERE ad.analysis_id = a.analysis_id AND a.analysis_id=dt.analysis_id AND dt.density_type_id=df.density_type_id AND a.logic_name IN ('knownGeneDensity', 'geneDensity')");
 $sth->execute();
 
+$sth = $db->dbc->prepare("DELETE df, dt, a FROM density_feature df, density_type dt, analysis a WHERE a.analysis_id=dt.analysis_id AND dt.density_type_id=df.density_type_id AND a.logic_name IN ('knownGeneDensity', 'geneDensity')");
+$sth->execute();
+
+
 # $sth = $db->dbc()->prepare(
 #   qq(
 #   DELETE ad
@@ -139,9 +143,14 @@ $analysis = new Bio::EnsEMBL::Analysis (-program     => "gene_density_calc.pl",
 					-database    => "ensembl",
 					-gff_source  => "gene_density_calc.pl",
 					-gff_feature => "density",
-					-logic_name  => "geneDensity");
+					-logic_name  => "geneDensity",
+          -description => 'Gene density features in a database '
+            . 'as calculated by gene_density_calc.pl',
+          -display_label => 'Genes (density)',
+          -displayable   => 1 );
 
 $aa->store( $analysis );
+$aa->update($analysis);
 
 #
 # Now the actual feature calculation loop
@@ -176,24 +185,24 @@ foreach my $known (1, 0) {
 
     $block_size = $slice->length() / $bin_count;
 
-    my @density_features=();
+    my @density_features;#sf7
 
     print "Gene densities for ".$slice->seq_region_name().
       " with block size $block_size\n";
     $current_end = 0;
     $current = 0;
 
-    while($current_end < $slice->end()) {
+    while($current_end < $slice->length) {
       $current += $block_size;
       $current_start = $current_end+1;
       $current_end = int( $current + 1 );
 
       if( $current_end < $current_start ) { 
-	$current_end = $current_start;
+	      $current_end = $current_start;
       }
 
-      if( $current_end > $slice->end() ) {
-	$current_end = $slice->end();
+      if( $current_end > $slice->end ) {
+	      $current_end = $slice->end;
       }
 
 
@@ -206,9 +215,9 @@ foreach my $known (1, 0) {
       #
 
       foreach my $gene (@{$sub_slice->get_all_Genes()}){
-	if($gene->biotype() !~ /pseudogene/i and $gene->start >=1 ) {
-	  $count++ if(!$known || $gene->is_known());
-	}
+	      if($gene->biotype() !~ /pseudogene/i and $gene->start >=1 ) {
+	        $count++ if(!$known || $gene->is_known());
+	      }
       }
 
       push @density_features, Bio::EnsEMBL::DensityFeature->new
