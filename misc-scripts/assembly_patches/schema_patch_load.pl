@@ -2,13 +2,14 @@ use Bio::EnsEMBL::Registry;
 use strict;
 
 my $pass         = shift;
-my $fasta_file   = shift || "alt.scaf.fa";
-my $mapping_file = shift || "alt.scaf.agp";
-my $txt_file     = shift || "alt_scaffold_placement.txt";
+#my $fasta_file   = shift || "./data/alt.scaf.fa";
+my $mapping_file = shift || "./data/alt.scaf.agp";
+my $txt_file     = shift || "./data/alt_scaffold_placement.txt";
 
 my $dbname = shift || "ianl_homo_sapiens_core_57_37b";
 my $host   = "ens-research";
-my $user   = "ensadmin";
+#my $user   = "ensadmin";
+my $user    = "ensro";
 
 #connect to the database
 
@@ -20,25 +21,35 @@ my $user   = "ensadmin";
     '-species' => "load"
   );
 
-#Load fasta sequences first. Keep a record of the first so that if things
-#go wrong we can delete what has already been done.
 
 my $sth = $dba->dbc->prepare("select max(seq_region_id) from seq_region")
   || die "Could not get max seq_region_id";
 
-
-$sth->execute || die "priblkem executing";
+$sth->execute || die "problem executing get max seq_region_id";
 my $max_seq_region_id;
 $sth->bind_columns(\$max_seq_region_id) || die "problem binding";
 $sth->fetch() || die "problem fetching";
 $sth->finish;
 
 
-$max_seq_region_id++;
-my $start_seq_region_id = $max_seq_region_id;
+
+
+$sth = $dba->dbc->prepare("select max(assembly_exception_id) from assembly_exception")
+  || die "Could not get max assembly_exception_id";
+
+$sth->execute || die "problem executing get max sassembly_exception_id";
+my $max_assembly_exception_id;
+$sth->bind_columns(\$max_assembly_exception_id) || die "problem binding";
+$sth->fetch() || die "problem fetching";
+$sth->finish;
+
+
 
 print "starting new seq_region at seq_region_id of $max_seq_region_id\n";
-print "\nTo reset\ndelete from dna where seq_region_id >= $start_seq_region_id\ndelete from seq_region where seq_region_id >= $start_seq_region_id\n\n";
+print "\nTo reset\ndelete from dna where seq_region_id > $max_seq_region_id\ndelete from seq_region where seq_region_id > $max_seq_region_id\ndelete from assembly_exception where assembly_exception_id > $max_assembly_exception_id\n\n";
+
+$max_seq_region_id++;
+$max_assembly_exception_id++;
 
 my ($chr_coord_id, $contig_coord_id);
 
@@ -56,14 +67,19 @@ $sth->finish;
 
 
 my $get_seq_region_sth = $dba->dbc->prepare("select seq_region_id, length from seq_region where name like ?")
-  || die "Could not prepare get_seq_region";
+  || die "Could not prepare get_seq_region_sth";
 
+my $get_seq_region_id_sth = $dba->dbc->prepare("select seq_region_id from seq_region where coord_system_id = ? and name like ?")
+  || die "Could not prepare get_seq_region_id_sth";
+
+my $get_seq_id_sth = $dba->dbc->prepare("select sr.seq_region_id from seq_region sr , coord_system cs where sr.name like ? and cs.coord_system_id = sr.coord_system_id and cs.attrib like '%sequence%'");
 
 my $insert_seq_region_sth = $dba->dbc->prepare("insert into seq_region (seq_region_id, name, coord_system_id, length) values(?, ?, ?, ?)") || die "Could not prepare seq_region insert sql";
 
 my $insert_dna_sth =  $dba->dbc->prepare("insert into dna (seq_region_id, sequence) values (?, ?)")
   || die "Could not prepare insert dna sql";
 
+my $coord_sth = $dba->dbc->prepare("select coord_system_id from coord_system where name like ? order by rank limit 1");
 
 if(!defined($chr_coord_id) or !defined($contig_coord_id)){
   die "No coord_system_id for chromosome ($chr_coord_id) or contig ($contig_coord_id)\n";
@@ -71,40 +87,180 @@ if(!defined($chr_coord_id) or !defined($contig_coord_id)){
 
 #      Store contigs as seq_region + dna.
 
-open(FASTA, "<".$fasta_file)    || die "Could not open file $fasta_file";
+#open(FASTA, "<".$fasta_file)    || die "Could not open file $fasta_file";
 open(MAPPER,"<".$mapping_file)  || die "Could not open file $mapping_file";
+open(TXT,"<".$txt_file)         || die "Could not open file $txt_file";
 
-my $seq = "";
-my $name = undef;
-my $version = 0;
-my %name2id;
+my %acc_to_name;
+my %txt_data; 
+my %key_to_index;
+my %name_to_seq_id;
 
-while(<FASTA>){
-  chomp;
-  if($_ =~ /^>(\S*)/){
-#    print $1."\t".$2."\n";
-    if(defined($name)){
-      load_seq_region($name, \$seq);
+
+while(<TXT>){
+  if(/^#/){
+    chomp;
+    my @arr = split;
+    my $i = 0;
+    foreach my $name (@arr){
+      $key_to_index{$name} = $i;
+      $i++;
     }
-    $name = $1;
-    $version = $2;
-    $seq = "";
-  }	
+    foreach my $name (qw(alt_scaf_name alt_scaf_acc parent_type parent_name ori alt_scaf_start alt_scaf_stop parent_start parent_stop)){
+      if(!defined($key_to_index{$name})){
+	print "PROBLEM could not find index for $name\n";
+      }
+      else{
+	print $name."\t".$key_to_index{$name}."\n";
+      }
+    }	
+  }
   else{
-    $seq .= $_;
+    my @arr = split;
+    my $alt_acc = $arr[$key_to_index{'alt_scaf_acc'}];
+    my $alt_name = $arr[$key_to_index{'alt_scaf_name'}];
+
+
+    my $coord_sys;
+    $coord_sth->execute($arr[$key_to_index{'parent_type'}]);
+    $coord_sth->bind_columns(\$coord_sys);
+    $coord_sth->fetch();
+
+    if(!defined($coord_sys)){
+      die "COuld not get coord_system_id for ".$arr[$key_to_index{'parent_type'}];
+    }
+
+    my $seq_region_id;
+    $get_seq_region_id_sth->execute($coord_sys, $arr[$key_to_index{'parent_name'}]);
+    $get_seq_region_id_sth->bind_columns(\$seq_region_id);
+    $get_seq_region_id_sth->fetch();
+    if(!defined($seq_region_id)){
+      die "COuld not get seq_region_id for ".$arr[$key_to_index{'parent_name'}]. " on coord system $coord_sys";
+    }
+
+    my $length = ($arr[$key_to_index{'alt_scaf_stop'}] - $arr[$key_to_index{'alt_scaf_start'}]) +1;
+
+    print "insert into seq_region (seq_region_id, name, coord_system_id, length)\n";
+    print "\tvalues ($max_seq_region_id, '$alt_name', $coord_sys, $length);\n\n";
+
+    $name_to_seq_id{$alt_name} = $max_seq_region_id;
+    $name_to_seq_id{$alt_acc}  = $max_seq_region_id;
+
+
+    print "insert into assembly_exception (assembly_exception_id, seq_region_id, seq_region_start, seq_region_end, exc_type, exc_seq_region_id, exc_seq_region_start, exc_seq_region_end, ori)\n";
+    print "\tvalues($max_assembly_exception_id, $max_seq_region_id, ",
+      $arr[$key_to_index{'alt_scaf_start'}], ",",
+	$arr[$key_to_index{'alt_scaf_stop'}], ",",
+	  "'HAP',",
+	    $seq_region_id,", ",
+	      $arr[$key_to_index{'parent_start'}], ",",
+		$arr[$key_to_index{'parent_stop'}], ",",
+		  " 1)\n\n";
+
+    $max_seq_region_id++;
+    $max_assembly_exception_id++;
   }
 }
 
-if(defined($name)){
-  load_seq_region($name, \$seq);
-}
 
-close FASTA;
+#foreach my $name (keys %txt_data){
+#  print $name."\n";
+#  foreach my $type (keys %{$txt_data{$name}}){
+#    print "\t".$type."\t".$txt_data{$name}{$type}."\n";
+#  }
+#}
+#die "txt is parsed\n";
+
+#my $seq = "";
+#my $name = undef;
+#my $version = 0;
+#
+#while(<FASTA>){
+#  chomp;
+#  if($_ =~ /^>(\S*)/){
+#    if(defined($name)){
+#      load_seq_region($name, \$seq);
+#    }
+#    $name = $1;
+#    my @arr = split(/\|/, $name);
+#    print "$name\t";
+#    $name = $arr[3];
+#    print "name is $name\n";
+#    $name = $1;
+#    $version = $2;
+#    $seq = "";
+#  }	
+#  else{
+#    $seq .= $_;
+#  }
+#}
+
+#if(defined($name)){
+#  load_seq_region($name, \$seq);
+#}
+
+#close FASTA;
 
 
 #      Create haplotype seq_region (calulate length from mapping data)
 while(<MAPPER>){
-  next if($_ ~= /^#/); #ignore comemnts
+  next if(/^#/); #ignore comemnts
+  chomp;
+  my ($acc, $p_start, $p_end, $part, $type, $contig, $c_start, $c_end, $strand) = split;
+  if($type eq "F"){
+    if($strand eq "+"){
+      $strand = 1;
+    }
+    elsif($strand eq "-"){
+      $strand = -1;
+    }
+    else{
+      die "Strand is niether + or - ??\n";
+    }
+    my $cmp_seq_id = undef;
+
+    if(defined($name_to_seq_id{$contig})){
+      $cmp_seq_id = $name_to_seq_id{$contig};
+    }
+    else{
+      $get_seq_id_sth->execute($contig);
+      $get_seq_id_sth->bind_columns(\$cmp_seq_id);
+      $get_seq_id_sth->fetch;
+      if(!defined($cmp_seq_id)){
+	print "Could not get seq_region_id for $contig trying pfetch\n";
+	my $out = system("mfetch -d embl -v fasta $contig  > ./$contig.fa");
+	my $contig_seq ="";
+	open(FA,"<./$contig.fa") || die "Could not open file ./$contig.fa\n";
+	while (<FA>){
+	  if(/^>/){
+#	    $contig_name =~ /^>(S+)/;
+#	    print $contig_name."\n"
+	  }
+	  else{
+	    chomp;
+	    $contig_seq .= $_;
+	  }
+	}
+	close FA;
+	system("rm ./$contig.fa");
+	load_seq_region($contig, \$contig_seq);
+	$cmp_seq_id = $name_to_seq_id{$contig};
+      }
+      else{
+	print "$contig already stored :-)\n";
+      }
+    }
+
+    if(!defined($cmp_seq_id)){
+      die "Could not get seq id for $contig\n\n";
+    }
+    print "insert into assembly (asm_seq_region_id, cmp_seq_region_id, asm_start, asm_end, cmp_start , cmp_end, ori) \n";
+    print "               values(".$name_to_seq_id{$acc}.", ".$cmp_seq_id.", $p_start, $p_end, $c_start, $c_end, $strand)\n\n";
+  }
+  else{
+    print "GAP of $contig length\n";
+  }
+
 }	
 
 # add mappings
@@ -133,20 +289,19 @@ sub load_seq_region{
   if(defined($tmp_id)){
     if($tmp_len == length($$seq)){
       print "seq region $name already found and in database\n";
-      $name2id{$name} = $tmp_id;
+      $name_to_seq_id{$name} = $tmp_id;
       return;
     }
     die "Seq region found for $name but not the same length. In datatabse length = $tmp_len and in the new fasta file ".length($$seq);
   }
   print "adding new seq region $name length of sequence = ".length($$seq)."\n";
 
-  $insert_seq_region_sth->execute($max_seq_region_id, $name, $contig_coord_id, length($$seq))
-    || die "Could not insert seq region for $name";
-  $insert_dna_sth->execute($max_seq_region_id, $seq)
-    || die "Could not add seq for $name";
+#  $insert_seq_region_sth->execute($max_seq_region_id, $name, $contig_coord_id, length($$seq))
+#    || die "Could not insert seq region for $name";
+#  $insert_dna_sth->execute($max_seq_region_id, $seq)
+#    || die "Could not add seq for $name";
 
-  $name2id{$name} = $max_seq_rgion_id;
-
+  $name_to_seq_id{$name} = $max_seq_region_id;
   $max_seq_region_id++;
 
   return;
