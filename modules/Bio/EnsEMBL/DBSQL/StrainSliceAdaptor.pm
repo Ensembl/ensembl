@@ -28,11 +28,14 @@ representing alternative assemblies
   my $slice =
     $slice_adaptor->fetch_by_region( 'chromosome', 14, 900000, 950000 );
 
-  my $msc = Bio::EnsEMBL::MappedSliceContainer->new( -SLICE => $slice );
+  my $msc = Bio::EnsEMBL::MappedSliceContainer->new(-SLICE => $slice);
 
-  my $asa = Bio::EnsEMBL::DBSQL::StrainSliceAdaptor->new;
-
-  my ($mapped_slice) = @{ $asa->fetch_by_version( $msc, 'NCBIM36' ) };
+  # create a new strain slice adaptor and attach it to the MSC
+  my $ssa = Bio::EnsEMBL::DBSQL::StrainSliceAdaptor->new($sa->db);
+  $msc->set_StrainSliceAdaptor($ssa);
+  
+  # now attach strain
+  $msc->attach_StrainSlice('Watson');
 
 =head1 DESCRIPTION
 
