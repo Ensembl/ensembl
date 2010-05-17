@@ -56,7 +56,7 @@ my @indexes = split ',', $ind;
 @indexes = map { /dump(\w+)/ ? $1 : () } keys %ebi_search_dump::
   if $ind eq 'ALL';
 
-warn Dumper \@indexes;
+#warn Dumper \@indexes;
 
 my $dbHash = get_databases();
 #warn Dumper $dbHash;
@@ -353,7 +353,7 @@ sub familyLineXML {
 }
 
 sub dumpGene {
-warn "in dumpGene";
+
     my ( $dbspecies, $conf ) = @_;
 
      foreach my $DB ( 'core', 'otherfeatures', 'vega' ) {
@@ -404,8 +404,9 @@ warn "in dumpGene";
 
                 $xrefs{$type}{ $_->[0] }{ $_->[3] }{ $_->[1] } = 1 if $_->[1];
                 $xrefs{$type}{ $_->[0] }{ $_->[3] }{ $_->[2] } = 1 if $_->[2];
-                $xrefs{$type}{ $_->[0] }{ $_->[3] . "_synonym" }{ $_->[4] } = 1 if $_->[4];
+		$xrefs{$type}{ $_->[0] }{ $_->[3] . "_synonym" }{ $_->[4] } = 1 if $_->[4];
                 $xrefs_desc{$type}{ $_->[0] }{ $_->[5] }       = 1 if $_->[5];
+
             }
 
             warn "XREF $type query...";
@@ -542,7 +543,7 @@ warn "in dumpGene";
                         $old{'external_identifiers'}{$db}{$K} = 1;
                     }
                 }
-
+		
             }
             else {
                 $old{'transcript_stable_ids'}{$transcript_stable_id}   = 1;
@@ -636,30 +637,52 @@ sub geneLineXML {
    <name>$gene_id $altid</name>
     <description>$description</description>};
 
+    my $synonyms = "";
+
     my $cross_references = qq{
        <cross_references>};
 
     # for some types of xref, merge the subtypes into the larger type
     # e.g. Uniprot/SWISSPROT and Uniprot/TREMBL become just Uniprot
+    # synonyms are stored as additional fields rather than cross references
     foreach my $ext_db_name ( keys %$external_identifiers ) {
 
       if ($ext_db_name =~ /(Uniprot|GO|Interpro|Medline|Sequence_Publications|EMBL)/) {
-	
+
 	my $matched_db_name = $1;
+	# synonyms
 	if ($ext_db_name =~ /_synonym/) {
-	  $matched_db_name .= "_synonym";
-	}
-	map { $cross_references .=  qq{
-         <ref dbname="$matched_db_name" dbkey="$_"/>}; } keys %{ $external_identifiers->{$ext_db_name} }
+
+	  map { $synonyms .=  qq{
+         <field name="${matched_db_name}_synonym">$_</field>}; } keys %{ $external_identifiers->{$ext_db_name} }
 	
+	} else { # non-synonyms
+
+	  map { $cross_references .=  qq{ 
+         <ref dbname="$matched_db_name" dbkey="$_"/>}; } keys %{ $external_identifiers->{$ext_db_name} }
+
+	}
+
        } else {
+
 	 foreach my $key  (keys %{ $external_identifiers->{$ext_db_name} }) {
+
 	   $key  =~ s/</&lt;/g;
 	   $key   =~ s/>/&gt;/g;
 	   $key   =~ s/&/&amp;/g;
 	   $ext_db_name =~s/^Ens.*/ENSEMBL/;
-	   $cross_references .=  qq{
-        <ref dbname="$ext_db_name" dbkey="$key"/>}; 
+
+	   if ($ext_db_name =~ /_synonym/) {
+
+	     $synonyms .= qq{
+        <field name="$ext_db_name">$key"</field>};
+
+	   } else {
+
+	     $cross_references .= qq{
+        <ref dbname="$ext_db_name" dbkey="$key"/>};
+
+	   }
 	 }
 	
        }
@@ -686,39 +709,40 @@ sub geneLineXML {
       <field name="transcript_count">$transcript_count</field> }
 
       . (
-        join "",
-        (
-            map {
-                qq{
+	 join "",
+	 (
+	  map {
+	    qq{
       <field name="transcript">$_</field>}
-              } keys %$transcripts
-        )
-      )
+	  } keys %$transcripts
+	 )
+	)
 
-      . qq{  <field name="exon_count">$exon_count</field> }
+	. qq{  <field name="exon_count">$exon_count</field> }
 
-      . (
-        join "",
-        (
-            map {
+	  . (
+	     join "",
+	     (
+	      map {
                 qq{
       <field name="exon">$_</field>}
               } keys %$exons
-        )
-      )
-      . (
-        join "",
-        (
-            map {
-                qq{
+	     )
+	    )
+	    . (
+	       join "",
+	       (
+		map {
+		  qq{
       <field name="peptide">$_</field>}
-              } keys %$peptides
-        )
-      )
+		} keys %$peptides
+	       )
+	      )
+	      . $synonyms
+	
       . qq{
    </additional_fields>
 };
-
 
 
     $counter->();
