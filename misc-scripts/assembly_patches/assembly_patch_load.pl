@@ -65,19 +65,22 @@ $sth->bind_columns(\$contig_coord_id) || die "What a bind NOT";
 $sth->fetch() || die "Could not fetch coord_system_id";
 $sth->finish;
 
+my $get_code_sth = $dba->dbc->prepare("select attrib_type_id from attrib_type where code like ?");
 
 my $get_seq_region_sth = $dba->dbc->prepare("select seq_region_id, length from seq_region where name like ?")
   || die "Could not prepare get_seq_region_sth";
 
-my $get_seq_region_id_sth = $dba->dbc->prepare("select seq_region_id from seq_region where coord_system_id = ? and name like ?")
+my $get_seq_region_id_sth = $dba->dbc->prepare("select seq_region_id, length from seq_region where coord_system_id = ? and name like ?")
   || die "Could not prepare get_seq_region_id_sth";
 
 my $get_seq_id_sth = $dba->dbc->prepare("select sr.seq_region_id from seq_region sr , coord_system cs where sr.name like ? and cs.coord_system_id = sr.coord_system_id and cs.attrib like '%sequence%'");
 
-my $insert_seq_region_sth = $dba->dbc->prepare("insert into seq_region (seq_region_id, name, coord_system_id, length) values(?, ?, ?, ?)") || die "Could not prepare seq_region insert sql";
+#my $insert_seq_region_sth = $dba->dbc->prepare("insert into seq_region (seq_region_id, name, coord_system_id, length) values(?, ?, ?, ?)") || die "Could not prepare seq_region insert sql";
 
-my $insert_dna_sth =  $dba->dbc->prepare("insert into dna (seq_region_id, sequence) values (?, ?)")
-  || die "Could not prepare insert dna sql";
+#my $insert_dna_sth =  $dba->dbc->prepare("insert into dna (seq_region_id, sequence) values (?, ?)")
+#  || die "Could not prepare insert dna sql";
+
+#my $insert_attrib_sth = $dba->dbc->prepare("insert into seq_region_attrib (seq_region_id, attrib_type_id, value) values (?, ?, 1);";
 
 my $coord_sth = $dba->dbc->prepare("select coord_system_id from coord_system where name like ? order by rank limit 1");
 
@@ -85,17 +88,31 @@ if(!defined($chr_coord_id) or !defined($contig_coord_id)){
   die "No coord_system_id for chromosome ($chr_coord_id) or contig ($contig_coord_id)\n";
 }
 
+my $non_ref;
+my $toplevel;
+
+$get_code_sth->execute("toplevel");
+$get_code_sth->bind_columns(\$toplevel);
+$get_code_sth->fetch;
+
+$get_code_sth->execute("non_ref");
+$get_code_sth->bind_columns(\$non_ref);
+$get_code_sth->fetch;
+
+
 #      Store contigs as seq_region + dna.
 
 #open(FASTA, "<".$fasta_file)    || die "Could not open file $fasta_file";
 open(MAPPER,"<".$mapping_file)  || die "Could not open file $mapping_file";
 open(TXT,"<".$txt_file)         || die "Could not open file $txt_file";
 
+open(SQL,">sql.txt") || die "Could not open sql.txt for writing\n";
+
 my %acc_to_name;
 my %txt_data; 
 my %key_to_index;
 my %name_to_seq_id;
-
+my %seq_id_to_start;
 
 while(<TXT>){
   if(/^#/){
@@ -108,7 +125,7 @@ while(<TXT>){
     }
     foreach my $name (qw(alt_scaf_name alt_scaf_acc parent_type parent_name ori alt_scaf_start alt_scaf_stop parent_start parent_stop)){
       if(!defined($key_to_index{$name})){
-	print "PROBLEM could not find index for $name\n";
+	print STDERR "PROBLEM could not find index for $name\n";
       }
       else{
 	print $name."\t".$key_to_index{$name}."\n";
@@ -130,32 +147,41 @@ while(<TXT>){
       die "COuld not get coord_system_id for ".$arr[$key_to_index{'parent_type'}];
     }
 
-    my $seq_region_id;
+    my ($seq_region_id, $seq_length);
     $get_seq_region_id_sth->execute($coord_sys, $arr[$key_to_index{'parent_name'}]);
-    $get_seq_region_id_sth->bind_columns(\$seq_region_id);
+    $get_seq_region_id_sth->bind_columns(\$seq_region_id,\$seq_length);
     $get_seq_region_id_sth->fetch();
     if(!defined($seq_region_id)){
       die "COuld not get seq_region_id for ".$arr[$key_to_index{'parent_name'}]. " on coord system $coord_sys";
     }
 
-    my $length = ($arr[$key_to_index{'alt_scaf_stop'}] - $arr[$key_to_index{'alt_scaf_start'}]) +1;
-
-    print "insert into seq_region (seq_region_id, name, coord_system_id, length)\n";
-    print "\tvalues ($max_seq_region_id, '$alt_name', $coord_sys, $length);\n\n";
+#    my $length = ($arr[$key_to_index{'alt_scaf_stop'}] - $arr[$key_to_index{'alt_scaf_start'}]) +1;
 
     $name_to_seq_id{$alt_name} = $max_seq_region_id;
     $name_to_seq_id{$alt_acc}  = $max_seq_region_id;
+    $seq_id_to_start{$max_seq_region_id} = $arr[$key_to_index{'parent_start'}];
 
+    my $exc_len    = $arr[$key_to_index{'parent_stop'}]-$arr[$key_to_index{'parent_start'}];
+    my $new_length = $arr[$key_to_index{'alt_scaf_stop'}]-$arr[$key_to_index{'alt_scaf_start'}];
 
-    print "insert into assembly_exception (assembly_exception_id, seq_region_id, seq_region_start, seq_region_end, exc_type, exc_seq_region_id, exc_seq_region_start, exc_seq_region_end, ori)\n";
-    print "\tvalues($max_assembly_exception_id, $max_seq_region_id, ",
-      $arr[$key_to_index{'alt_scaf_start'}], ",",
-	$arr[$key_to_index{'alt_scaf_stop'}], ",",
-	  "'HAP',",
+    my $length = $seq_length + ($new_length-$exc_len);
+
+    print SQL "insert into seq_region (seq_region_id, name, coord_system_id, length)\n";
+    print SQL "\tvalues ($max_seq_region_id, '$alt_name', $coord_sys, $length);\n\n";
+
+    print SQL "insert into seq_region_attrib (seq_region_id, attrib_type_id, value) values ($max_seq_region_id, $toplevel, 1);\n";
+    print SQL "insert into seq_region_attrib (seq_region_id, attrib_type_id, value) values ($max_seq_region_id, $non_ref, 1);\n";
+
+    print SQL "insert into assembly_exception (assembly_exception_id, seq_region_id, seq_region_start, seq_region_end, exc_type, exc_seq_region_id, exc_seq_region_start, exc_seq_region_end, ori)\n";
+    print SQL "\tvalues($max_assembly_exception_id, $max_seq_region_id, ",
+      ($arr[$key_to_index{'alt_scaf_start'}]+$arr[$key_to_index{'parent_start'}])-1, ",",
+	($arr[$key_to_index{'alt_scaf_stop'}]+$arr[$key_to_index{'parent_start'}])-1, ",",
+#  ($new_length+$arr[$key_to_index{'parent_start'}], ",",
+	  "'HAP', ",
 	    $seq_region_id,", ",
-	      $arr[$key_to_index{'parent_start'}], ",",
+	      $arr[$key_to_index{'parent_start'}], ", ",
 		$arr[$key_to_index{'parent_stop'}], ",",
-		  " 1)\n\n";
+		  " 1);\n\n";
 
     $max_seq_region_id++;
     $max_assembly_exception_id++;
@@ -254,24 +280,16 @@ while(<MAPPER>){
     if(!defined($cmp_seq_id)){
       die "Could not get seq id for $contig\n\n";
     }
-    print "insert into assembly (asm_seq_region_id, cmp_seq_region_id, asm_start, asm_end, cmp_start , cmp_end, ori) \n";
-    print "               values(".$name_to_seq_id{$acc}.", ".$cmp_seq_id.", $p_start, $p_end, $c_start, $c_end, $strand)\n\n";
+    my $seq_id = $name_to_seq_id{$acc};
+    print SQL "insert into assembly (asm_seq_region_id, cmp_seq_region_id, asm_start, asm_end, cmp_start , cmp_end, ori) \n";
+    print SQL "               values(".$seq_id.", ".$cmp_seq_id.", ".(($seq_id_to_start{$seq_id}+$p_start)-1).", ".(($seq_id_to_start{$seq_id}+$p_end)-1).", $c_start, $c_end, $strand);\n\n";
   }
   else{
     print "GAP of $contig length\n";
   }
 
 }	
-
-# add mappings
-
-#      First the ref -> haplotype mappings
-#      Then haplo -> contig mappings
-
-# create haplotype in assembly_exception
-
-
-#Do these things just have names or versions too?
+close SQL;
 
 
 sub load_seq_region{
@@ -296,8 +314,10 @@ sub load_seq_region{
   }
   print "adding new seq region $name length of sequence = ".length($$seq)."\n";
 
+  print SQL "insert into seq_region (seq_region_id, name, coord_system_id, length) values ($max_seq_region_id, '$name', $contig_coord_id, ".length($$seq).");\n";
 #  $insert_seq_region_sth->execute($max_seq_region_id, $name, $contig_coord_id, length($$seq))
 #    || die "Could not insert seq region for $name";
+  print SQL "insert into dna (seq_region_id, sequence) values ($max_seq_region_id,'".$$seq."');\n\n";
 #  $insert_dna_sth->execute($max_seq_region_id, $seq)
 #    || die "Could not add seq for $name";
 
