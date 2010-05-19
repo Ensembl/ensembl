@@ -61,27 +61,46 @@ use strict;
 
 use Bio::PrimarySeqI;
 
-
-#Test for LRG tag in cvs
-
 my $reg = "Bio::EnsEMBL::Registry";
 
 use Bio::EnsEMBL::Slice;
+
+use vars qw(@ISA);
+
+@ISA = qw(Bio::EnsEMBL::Slice);
 
 sub new{
   my $class = shift;
 
   my $self = bless {}, $class ;
 
-  my $slice = Bio::EnsEMBL::Slice->new(@_);
-#  my $self = $class->SUPER::new( @_);
+  my $slice = $self = $class->SUPER::new( @_);
+
+ return $self;
+}
+
+sub stable_id {
+    my $self = shift;
+    return $self->seq_region_name;
+}
+
+
+sub display_xref {
+    my $self = shift;
+    return $self->seq_region_name;
+}
+
+sub feature_Slice {
+  my $self = shift;
+  return $self->{_chrom_slice} if defined($self->{_chrom_slice});
 
   my $max=-99999999999;
   my $min=9999999999;
   my $chrom;
   my $strand;
 
-  foreach my $segment (@{$slice->project('chromosome')}) {
+#  print STDERR "working out feature slcie\n";
+  foreach my $segment (@{$self->project('chromosome')}) {
     my $from_start = $segment->from_start();
     my $from_end    = $segment->from_end();
     my $to_name    = $segment->to_Slice->seq_region_name();
@@ -102,76 +121,15 @@ sub new{
       $min = $to_end;
     }
     my $ori        = $segment->to_Slice->strand();
-    $strand = $ori;   
-    
-#   print "$from_start-$from_end  => $to_name $to_start-$to_end ($ori) \n";
+    $strand = $ori;
   }
   if(!defined($chrom)){
-    die "Could not project to chromosome for ".$slice->name."??\n";
+    warn "Could not project to chromosome for ".$self->name."??\n";
+    return undef;
   }
-  my $sa = $slice->adaptor;
-#  print "creating chrom slice from $min to $max\n";
-  my $chrom_slice = $sa->fetch_by_region("chromosome",$chrom, $min, $max, $strand);
-
-#  print "chrom slcie start = ".$chrom_slice->start."  end = ".$chrom_slice->end."\n";
-
-#  print $chrom_slice."\n";
-  $self->{'_orig_slice'} = $slice;
-  $self->{'_chrom_slice'} = $chrom_slice;
-
-
-#  print "CHROM : ".$chrom_slice->seq_region_name."\t".$chrom_slice->start."\t".$chrom_slice->end."\n";
-#  print "LRG   : ".$slice->seq_region_name."\t".$slice->start."\t".$slice->end."\n";
-
-
-  my $asma = "Bio::EnsEMBL::Registry"->get_adaptor($sa->db->species,"core","assemblymapper");
-  my $csa = "Bio::EnsEMBL::Registry"->get_adaptor($sa->db->species,"core","coordsystem");
-  
-  
-  
-#  my $cs1 = $csa->fetch_by_name("Chromosome","GRCh37");
-#  my $cs1 = $csa->fetch_by_name("Chromosome","NCBI36");
-  my $cs1 = $chrom_slice->coord_system;
-  my $cs2 = $slice->coord_system;
-  
-  
-  my $asm = $asma->fetch_by_CoordSystems($cs1,$cs2);
-
-
-#  print "mapper to be used for lrg is ".ref($asm)."\n";
- $self->{'_asm'} = $asm;
-
- return $self;
-}
-
-use vars '$AUTOLOAD';
-
-
-sub AUTOLOAD {
-  my $self = shift;
-
-  my $method = $AUTOLOAD;
-  $method =~ s/.*:://;
-
-
-
-  return  $self->{'_orig_slice'}->$method(@_);
-}
-
-sub stable_id {
-    my $self = shift;
-    return $self->seq_region_name;
-}
-
-
-sub display_xref {
-    my $self = shift;
-    return $self->seq_region_name;
-}
-
-sub feature_Slice {
-    my $self = shift;
-    return $self->{_chrom_slice};
+  my $chrom_slice = $self->adaptor->fetch_by_region("chromosome",$chrom, $min, $max, $strand);
+  $self->{_chrom_slice} = $chrom_slice;
+  return $self->{_chrom_slice};
 }
 
 sub DESTROY{
