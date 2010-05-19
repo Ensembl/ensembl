@@ -292,7 +292,7 @@
 20225	thaps_jgi_v2_bd_transcript	1	KNOWNXREF	1	\N	\N	JGI transcript ID (JGI 2.0 unmapped sequence)	PRIMARY_DB_SYNONYM	\N	\N
 20226	thaps_jgi_v2_transcript	1	KNOWNXREF	1	\N	\N	JGI transcript ID (JGI 2.0)	PRIMARY_DB_SYNONYM	\N	\N
 20227	Diatom_EST_Cluster	1	XREF	1	0	0	ENS EST Cluster (Diatom ESTDB)	MISC	\N	\N
-
+20228	CADRE_Afum_A1163	1	KNOWNXREF	1	\N	\N	CADRE	PRIMARY_DB_SYNONYM	\N	\N	\N
 
 # Ensembl Plants/Gramene external dbs
 50000	BGI_EST_Cluster	1	XREF	1	0	0	EST Cluster (BGI Indica)	MISC	\N	\N
