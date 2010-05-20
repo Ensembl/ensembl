@@ -135,6 +135,9 @@
 56	KnwnPTCount	processed_transcript_KNOWN	Number of Known Processed Transcripts
 57	ccds	CCDS	CCDS identifier
 
+# Public Note provided by NCBI for CCDS models
+58	CCDS_PublicNote	CCDS Public Note	Public Note for CCDS identifier, provided by http://www.ncbi.nlm.nih.gov/CCDS 
+
 # label frameshifts modelled as short (1,2,4,5 bp) introns
 59	Frameshift	Frameshift	Frameshift modelled as intron
 
