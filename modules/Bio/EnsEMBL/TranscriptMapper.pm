@@ -139,8 +139,8 @@ sub _load_mapper {
 
   my $cdna_start = undef;
 
-# Take possible N-padding at beginning of CDS into account.
-  my $cdna_end   =  ( $start_phase > 0 ) ? $start_phase : 0;;
+  my $cdna_end = 0;
+
 
   foreach my $ex (@{$transcript->get_all_Exons}) {
     my $gen_start = $ex->start();
@@ -249,7 +249,8 @@ sub cdna2genomic {
 
   my $mapper = $self->{'exon_coord_mapper'};
 
-  return $mapper->map_coordinates( 'cdna', $start, $end, 1, "cdna" );
+  return  $mapper->map_coordinates( 'cdna', $start, $end, 1, "cdna" );
+
 }
 
 
@@ -324,11 +325,6 @@ sub pep2genomic {
   $start = 3*$start - 2 + ( $self->{'cdna_coding_start'} - 1 ) - $shift;
   $end = 3*$end + ( $self->{'cdna_coding_start'} - 1 ) - $shift;
 
-  print "start is $start  end is $end  shift is $shift cdna_coding_start is ".$self->{'cdna_coding_start'}."\n";
-#  if($start < 1){
-#    $start = 1;
-#  }
-#  print "start is $start  end is $end  shift is $shift cdna_coding_start is ".$self->{'cdna_coding_start'}."\n";
   return $self->cdna2genomic( $start, $end );
 }
 
