@@ -324,7 +324,7 @@ sub pep2genomic {
   $start = 3*$start - 2 + ( $self->{'cdna_coding_start'} - 1 ) - $shift;
   $end = 3*$end + ( $self->{'cdna_coding_start'} - 1 ) - $shift;
 
-  print "start is $start  end is $end  shift is $shift cdna_coding_start is ".$self->{'cdna_coding_start'}."\n";
+#  print "start is $start  end is $end  shift is $shift cdna_coding_start is ".$self->{'cdna_coding_start'}."\n";
 #  if($start < 1){
 #    $start = 1;
 #  }
