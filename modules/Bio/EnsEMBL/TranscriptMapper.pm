@@ -88,8 +88,6 @@ sub new {
     throw("Transcript argument is required.");
   }
 
-  # Create a cdna <-> genomic mapper and load it with exon coords
-  my $mapper = _load_mapper($transcript);
 
   my $exons = $transcript->get_all_Exons();
   my $start_phase;
@@ -98,6 +96,9 @@ sub new {
   } else {
     $start_phase = -1;
   }
+
+  # Create a cdna <-> genomic mapper and load it with exon coords
+  my $mapper = _load_mapper($transcript,$start_phase);
 
   my $self = bless({'exon_coord_mapper' => $mapper,
                     'start_phase'       => $start_phase,
@@ -122,6 +123,7 @@ sub new {
 
 sub _load_mapper {
   my $transcript = shift;
+  my $start_phase = shift;
 
   my $mapper = Bio::EnsEMBL::Mapper->new( 'cdna', 'genomic');
 
@@ -138,7 +140,6 @@ sub _load_mapper {
   my $cdna_start = undef;
 
 # Take possible N-padding at beginning of CDS into account.
-  my $start_phase = $self->{'start_phase'};
   my $cdna_end   =  ( $start_phase > 0 ) ? $start_phase : 0;;
 
   foreach my $ex (@{$transcript->get_all_Exons}) {
