@@ -1,4 +1,4 @@
-#!/usr/local/ensembl/bin/perl -w
+#!/usr/bin/env perl
 
 use strict;
 use warnings;
@@ -29,9 +29,9 @@ EOT
 sub long_usage {
   my $indent = ' ' x length($0);
 
-  print <<EOT;
+  print <<USAGE_END;
 Usage:
-  $0 --pass=XXX [--noflush] [--nocheck] [--force] \\
+  $0 --pass=XXX [--noflush] [--nocheck] [--noopt] [--force] \\
   $indent [--subset=XXX] [--help] input_file
 
 Description:
@@ -62,6 +62,13 @@ Command line switches:
                     table files are ok and that you really do not have
                     time to wait for the check to run.  Use only after
                     due consideration.
+
+  --noopt           (Optional)
+                    Skip the optimization step.  The database tables are
+                    optimized (as with "OPTIMIZE TABLE") to flush the
+                    index data onto disk.  This may be a time consuming
+                    operation for very large tables.  The --noopt flag
+                    disables the optimization.
 
   --force           (Optional)
                     Ordinarily, the script refuses to overwrite an
@@ -116,28 +123,25 @@ Script restrictions:
      stage.
 
 
-EOT
+USAGE_END
 } ## end sub long_usage
 
-my (
-  $opt_password, $opt_flush,  $opt_check,
-  $opt_force,    $opt_subset, $opt_help
-);
+my ( $opt_password, $opt_flush,  $opt_check, $opt_optimize,
+     $opt_force,    $opt_subset, $opt_help );
 
-$opt_flush = 1;    # Flush by default.
-$opt_check = 1;    # Check tables by default.
-$opt_force = 0;    # Do not reuse existing staging directory by default.
+$opt_flush    = 1; # Flush by default.
+$opt_check    = 1; # Check tables by default.
+$opt_optimize = 1; # Optimize the tables by default.
+$opt_force    = 0; # Do not reuse existing staging directory by default.
 
-if (
-  !GetOptions(
-    'pass=s'   => \$opt_password,
-    'flush!'   => \$opt_flush,
-    'check!'   => \$opt_check,
-    'force!'   => \$opt_force,
-    'subset=s' => \$opt_subset,
-    'help'     => \$opt_help
-  )
-  || ( !defined($opt_password) && !defined($opt_help) ) )
+if ( !GetOptions( 'pass=s'   => \$opt_password,
+                  'flush!'   => \$opt_flush,
+                  'check!'   => \$opt_check,
+                  'opt!'     => \$opt_optimize,
+                  'force!'   => \$opt_force,
+                  'subset=s' => \$opt_subset,
+                  'help'     => \$opt_help )
+     || ( !defined($opt_password) && !defined($opt_help) ) )
 {
   short_usage();
   exit 1;
@@ -484,6 +488,20 @@ foreach my $spec (@todo) {
     print("FLUSHING TABLES...\n");
     $source_dbh->do(
       sprintf( "FLUSH TABLES %s", join( ', ', @tables ) ) );
+  }
+
+  ##------------------------------------------------------------------##
+  ## OPTIMIZE                                                         ##
+  ##------------------------------------------------------------------##
+
+  if ($opt_optimize) {
+    print( '-' x 35, ' OPTIMIZE ', '-' x 35, "\n" );
+
+    foreach my $table (@tables) {
+      printf( "Optimizing table '%s'...", $table );
+      $source_dbh->do( sprintf( "OPTIMIZE TABLE %s", $table ) );
+      print("\tok\n");
+    }
   }
 
   ##------------------------------------------------------------------##
