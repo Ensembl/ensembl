@@ -16,20 +16,20 @@ my $start_time = time();
 sub short_usage {
   my $indent = ' ' x length($0);
 
-  print <<EOT;
+  print <<SHORT_USAGE_END;
 Usage:
   $0 --pass=XXX [--noflush] [--nocheck] [--force] \\
   $indent [--subset=XXX] [--help] input_file\
 
   Use --help to get a much longer help text.
 
-EOT
+SHORT_USAGE_END
 }
 
 sub long_usage {
   my $indent = ' ' x length($0);
 
-  print <<USAGE_END;
+  print <<LONG_USAGE_END;
 Usage:
   $0 --pass=XXX [--noflush] [--nocheck] [--noopt] [--force] \\
   $indent [--subset=XXX] [--help] input_file
@@ -123,7 +123,7 @@ Script restrictions:
      stage.
 
 
-USAGE_END
+LONG_USAGE_END
 } ## end sub long_usage
 
 my ( $opt_password, $opt_flush,  $opt_check, $opt_optimize,
@@ -712,16 +712,7 @@ foreach my $spec (@todo) {
     $spec->{'source_db'}, $spec->{'target_db'}, $spec->{'status'} );
 }
 
-print <<EOT;
-DONE!
-
-For best peace of mind, run analyze_db.ksh with the -c flag ('check') on
-these databases.  Use the -R flag ('repair') if anything was flagged as
-corrupt or crashed.  The analyze_db.ksh script lives in
-
-  ensembl-personal/release_coordination/scripts/
-
-EOT
+print("DONE!\n");
 
 END {
   my $seconds = time() - $start_time;
