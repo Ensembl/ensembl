@@ -132,7 +132,7 @@ sub run_script {
 
   my $sth = $core_dbc->prepare($sql) || die "Could not prepare for core $sql\n";
 
-  foreach my $external_db (qw(OTTT shares_CDS_and_UTR_with_OTTT shares_CDS_with_OTTT)){
+  foreach my $external_db (qw(Vega_transcript OTTT shares_CDS_and_UTR_with_OTTT shares_CDS_with_OTTT)){
     $sth->execute($external_db) or croak( $core_dbc->errstr());
     while ( my @row = $sth->fetchrow_array() ) {
       $ott_to_enst{$row[1]} = $row[0];
