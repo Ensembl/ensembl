@@ -32,6 +32,7 @@ sub run {
 
   my $file = @{$files}[0];
 
+
   my %old_to_new;
   my %removed;
   my $source_id;
@@ -68,6 +69,7 @@ sub run {
   $mim_io->getline();    # first record is empty with *RECORD* as the
                          # record seperator
 
+  my %check;
   while ( $_ = $mim_io->getline() ) {
     #get the MIM number
     my $number = 0;
@@ -83,17 +85,17 @@ sub run {
 	$description =~ s/\;\s[A-Z0-9]+$//; # strip gene name at end
 	if($type eq "*"){ # gene only
 	  $gene++;
-	  $self->add_xref($number,"",$number,$description,$gene_source_id,$species_id,"DEPENDENT");
+	  $self->add_xref($number,"",$type.$number,$description,$gene_source_id,$species_id,"DEPENDENT");
 	}
 	elsif(!defined($type) or $type eq "" or $type eq "#" or $type eq "%"){ #phenotype only
 	  $phenotype++;
-	  $self->add_xref($number,"",$number,$description,$morbid_source_id,$species_id,"DEPENDENT");
+	  $self->add_xref($number,"",$type.$number,$description,$morbid_source_id,$species_id,"DEPENDENT");
 	}
 	elsif($type eq "+"){ # both
 	  $gene++;
 	  $phenotype++;
-	  $self->add_xref($number,"",$number,$description,$gene_source_id,$species_id,"DEPENDENT");
-	  $self->add_xref($number,"",$number,$description,$morbid_source_id,$species_id,"DEPENDENT");
+	  $self->add_xref($number,"",$type.$number,$description,$gene_source_id,$species_id,"DEPENDENT");
+	  $self->add_xref($number,"",$type.$number,$description,$morbid_source_id,$species_id,"DEPENDENT");
 	}
 	elsif($type eq "^"){
 	  if(/\*FIELD\*\sTI\n[\^]\d+ MOVED TO (\d+)/){
