@@ -197,10 +197,11 @@ if (!defined($file)) {
   # Get a TranscriptVariationAdaptor
   my $tv_adaptor = $vdb->get_TranscriptVariationAdaptor() or throw("Could not get a TranscriptVariationAdaptor from " . $vdb->dbc->dbname());
   my $stop_codons = qq{TGA/TAA/TAG};
-  my %allele_is_stop;
   
   # For each variation_feature, check that the source, population and minor allele frequencies are 'dbSNP', 'CSHL-HapMap-*' and '>= $FREQUENCY_CUTOFF'
   while (my ($transcript_stable_id,$variation_id,$variation_name,$allele_string,$consequence_string,$transcript_variation_id) = $sth->fetchrow_array()) {
+    
+    my %allele_is_stop;
     
     # Temp fix for getting stable_id from pre-58 variation database
     #$stmt = qq{SELECT stable_id FROM transcript_stable_id WHERE transcript_id = $transcript_stable_id LIMIT 1};
@@ -267,8 +268,8 @@ if (!defined($file)) {
       #print $str . "\n";
       
       # Skip this allele if it does not cause the STOP_* event
-      next if ($n_alleles > 2 && $cons_type =~ m/GAIN/ && !$allele_is_stop{$allele});
-      next if ($n_alleles > 2 && $cons_type =~ m/LOSS/ && $allele_is_stop{$allele});
+      next if ($n_alleles > 2 && $cons_type =~ m/GAINED/ && !$allele_is_stop{$allele});
+      next if ($n_alleles > 2 && $cons_type =~ m/LOST/ && $allele_is_stop{$allele});
       
       push(@null_transcripts,$str);
     }
