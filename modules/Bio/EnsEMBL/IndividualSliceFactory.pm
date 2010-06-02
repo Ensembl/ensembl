@@ -27,8 +27,6 @@ use Bio::EnsEMBL::Slice;
 use Bio::EnsEMBL::Mapper;
 use Bio::EnsEMBL::Utils::Exception qw(throw deprecate warning);
 
-use Data::Dumper;
-
 =head2 new
 =cut
 

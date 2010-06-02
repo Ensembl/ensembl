@@ -50,7 +50,6 @@ use strict;
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Bio::EnsEMBL::ProteinFeature;
 use Bio::EnsEMBL::Utils::Exception qw(throw deprecate warning);
-use Data::Dumper;
 
 use vars qw(@ISA);
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);

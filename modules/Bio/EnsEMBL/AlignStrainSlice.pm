@@ -68,9 +68,6 @@ use Bio::EnsEMBL::Mapper;
 use Bio::EnsEMBL::Mapper::RangeRegistry;
 use Bio::EnsEMBL::Utils::Exception qw(throw deprecate warning);
 
-use Data::Dumper;
-
-
 =head2 new
 
     Arg[1]      : Bio::EnsEMBL::Slice $Slice

@@ -76,7 +76,6 @@ use Bio::EnsEMBL::Slice;
 use Bio::EnsEMBL::Mapper;
 use Bio::EnsEMBL::Utils::Exception qw(throw deprecate warning);
 
-use Data::Dumper;
 @ISA = qw(Bio::EnsEMBL::Slice);
 
 
