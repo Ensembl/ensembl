@@ -1361,6 +1361,10 @@ sub load_registry_from_url {
                 querying the database if not used properly.  If in
                 doubt, do not use it or ask in ensembl-dev.
 
+   Arg [SPECIES_SUFFIX]: (optional) string
+                This option will append the string to the species name
+                in the registry for all databases found on this server.
+
   Example :
 
     $registry->load_registry_from_db(
@@ -1384,17 +1388,20 @@ sub load_registry_from_db {
 
   my ( $host,         $port,     $user,
        $pass,         $verbose,  $db_version,
-       $wait_timeout, $no_cache, $species )
+       $wait_timeout, $no_cache, $species, $species_suffix )
     = rearrange( [ 'HOST',         'PORT',
                    'USER',         'PASS',
                    'VERBOSE',      'DB_VERSION',
                    'WAIT_TIMEOUT', 'NO_CACHE',
-                   'SPECIES' ],
+                   'SPECIES', 'SPECIES_SUFFIX' ],
                  @args );
 
   if ( defined($species) ) {
     $species = lc($species);
     $species =~ tr/ -/__/;
+  }
+  if (!defined($species_suffix)) {
+    $species_suffix = "";
   }
 
   my $go_version       = 0;
@@ -1492,7 +1499,7 @@ sub load_registry_from_db {
     my $dba =
       Bio::EnsEMBL::DBSQL::DBAdaptor->new(
                                          -group        => "core",
-                                         -species      => $species,
+                                         -species      => $species.$species_suffix,
                                          -host         => $host,
                                          -user         => $user,
                                          -pass         => $pass,
@@ -1526,7 +1533,7 @@ sub load_registry_from_db {
     while ( $sth->fetch() ) {
       my $dba = Bio::EnsEMBL::DBSQL::DBAdaptor->new(
         -group           => "core",
-        -species         => $species,
+        -species         => $species.$species_suffix,
         -species_id      => $species_id,
         -multispecies_db => 1,
         -host            => $host,
@@ -1555,7 +1562,7 @@ sub load_registry_from_db {
     my $dba =
       Bio::EnsEMBL::DBSQL::DBAdaptor->new(
                                          -group        => "cdna",
-                                         -species      => $species,
+                                         -species      => $species.$species_suffix,
                                          -host         => $host,
                                          -user         => $user,
                                          -pass         => $pass,
@@ -1577,7 +1584,7 @@ sub load_registry_from_db {
     my $dba =
       Bio::EnsEMBL::DBSQL::DBAdaptor->new(
                                          -group        => "vega",
-                                         -species      => $species,
+                                         -species      => $species.$species_suffix,
                                          -host         => $host,
                                          -user         => $user,
                                          -pass         => $pass,
@@ -1601,7 +1608,7 @@ sub load_registry_from_db {
     my $dba =
       Bio::EnsEMBL::DBSQL::DBAdaptor->new(
                                          -group   => "otherfeatures",
-                                         -species => $species,
+                                         -species => $species.$species_suffix,
                                          -host    => $host,
                                          -user    => $user,
                                          -pass    => $pass,
@@ -1628,7 +1635,7 @@ sub load_registry_from_db {
     my $dba =
       Bio::EnsEMBL::DBSQL::DBAdaptor->new(
                                          -group        => "userupload",
-                                         -species      => $species,
+                                         -species      => $species.$species_suffix,
                                          -host         => $host,
                                          -user         => $user,
                                          -pass         => $pass,
@@ -1660,7 +1667,7 @@ sub load_registry_from_db {
     while ( $sth->fetch() ) {
       my $dba = Bio::EnsEMBL::DBSQL::DBAdaptor->new(
         -group           => "userupload",
-        -species         => $species,
+        -species         => $species.$species_suffix,
         -species_id      => $species_id,
         -multispecies_db => 1,
         -host            => $host,
@@ -1699,7 +1706,7 @@ sub load_registry_from_db {
       my $dba =
         Bio::EnsEMBL::Variation::DBSQL::DBAdaptor->new(
                                          -group        => "variation",
-                                         -species      => $species,
+                                         -species      => $species.$species_suffix,
                                          -host         => $host,
                                          -user         => $user,
                                          -pass         => $pass,
@@ -1736,7 +1743,7 @@ sub load_registry_from_db {
         ( $funcgen_db =~ /(^[a-z]+_[a-z0-9]+)_funcgen_(?:\d+_)?(\d+)_/ );
       my $dba = Bio::EnsEMBL::Funcgen::DBSQL::DBAdaptor->new(
         -group        => "funcgen",
-        -species      => $species,
+        -species      => $species.$species_suffix,
         -host         => $host,
         -user         => $user,
         -pass         => $pass,
@@ -1772,7 +1779,7 @@ sub load_registry_from_db {
         my $dnadb = $self->get_DBAdaptor( $species, 'core' );
         my $dba = Bio::EnsEMBL::Funcgen::DBSQL::DBAdaptor->new(
           -group           => 'funcgen',
-          -species         => $species,
+          -species         => $species.$species_suffix,
           -species_id      => $species_id,
           -multispecies_db => 1,
           -host            => $host,
@@ -1824,7 +1831,7 @@ sub load_registry_from_db {
 
         my $dba = Bio::EnsEMBL::Compara::DBSQL::DBAdaptor->new(
           -group        => 'compara',
-          -species      => $species,
+          -species      => $species.$species_suffix,
           -host         => $host,
           -user         => $user,
           -pass         => $pass,
@@ -1853,7 +1860,7 @@ sub load_registry_from_db {
 
     my $dba = Bio::EnsEMBL::DBSQL::DBAdaptor->new(
       -group        => 'core',
-      -species      => 'Ancestral sequences',
+      -species      => 'Ancestral sequences'.$species_suffix,
       -host         => $host,
       -user         => $user,
       -pass         => $pass,
@@ -1894,7 +1901,7 @@ sub load_registry_from_db {
       my $dba =
         Bio::EnsEMBL::ExternalData::GO::GOAdaptor->new(
                                                   -group    => "go",
-                                                  -species  => "multi",
+                                                  -species  => "multi".$species_suffix,
                                                   -host     => $host,
                                                   -user     => $user,
                                                   -pass     => $pass,
@@ -1920,7 +1927,7 @@ sub load_registry_from_db {
       sprintf( "ensembl_ontology_%d", $ontology_version );
 
     my $dba = Bio::EnsEMBL::DBSQL::OntologyDBAdaptor->new(
-      '-species' => 'multi',
+      '-species' => 'multi'.$species_suffix,
       '-group'   => 'ontology',
       '-host'    => $host,
       '-port'    => $port,
@@ -1937,19 +1944,20 @@ sub load_registry_from_db {
   }
 
   Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
-    -species => 'multi',
-    -alias   => ['compara'] );
+    -species => 'multi'.$species_suffix,
+    -alias   => ['compara'.$species_suffix] );
 
   Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
-    -species => 'multi',
-    -alias   => ['go'] );
+    -species => 'multi'.$species_suffix,
+    -alias   => ['go'.$species_suffix] );
 
   Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
-    -species => 'multi',
-    -alias   => ['ontology'] );
+    -species => 'multi'.$species_suffix,
+    -alias   => ['ontology'.$species_suffix] );
 
   # Register aliases as found in adaptor meta tables.
-  $self->find_and_add_aliases( '-handle' => $dbh );
+
+  $self->find_and_add_aliases( '-handle' => $dbh, '-species_suffix' => $species_suffix );
   $dbh->disconnect();
 
 } ## end sub load_registry_from_db
@@ -1967,6 +1975,10 @@ sub load_registry_from_db {
                   A connected database handle to use instead of the
                   database handles stored in the DBAdaptors.  Bypasses
                   the use of MetaContainer.
+
+  Arg [SPECIES_SUFFIX]: (optional) string
+                 This option will append the string to the species name
+                 in the registry for all databases. 
 
   Example       : Bio::EnsEMBL::Registry->find_and_add_aliases(
                     -ADAPTOR => $dba,
@@ -1990,20 +2002,29 @@ sub load_registry_from_db {
 sub find_and_add_aliases {
   my $class = shift @_;
 
-  my ( $adaptor, $group, $dbh ) =
-    rearrange( [ 'ADAPTOR', 'GROUP', 'HANDLE' ], @_ );
+  my ( $adaptor, $group, $dbh, $species_suffix ) =
+    rearrange( [ 'ADAPTOR', 'GROUP', 'HANDLE', 'SPECIES_SUFFIX' ], @_ );
 
   my @dbas;
   if ( defined($adaptor) ) {
     @dbas = ($adaptor);
-  } else {
-    @dbas = @{ $class->get_all_DBAdaptors( '-GROUP' => $group ) };
+  }
+  elsif(defined($dbh)){
+    my @full =  @{ $class->get_all_DBAdaptors( '-GROUP' => $group  ) };
+    foreach my $db (@full){
+      if($db->species =~ /$species_suffix/){
+	push @dbas, $db;
+      }
+    }
+  }
+  else {
+    @dbas = @{ $class->get_all_DBAdaptors( '-GROUP' => $group  ) };
   }
 
   foreach my $dba (@dbas) {
     my @aliases;
     my $species = $dba->species();
-
+    
     if ( defined($dbh) ) {
       my $dbname = $dba->dbc()->dbname();
       my $sth    = $dbh->prepare(
@@ -2050,14 +2071,14 @@ sub find_and_add_aliases {
     }
 
     foreach my $alias (@aliases) {
-      if ( !$class->alias_exists($alias) ) {
-        $class->add_alias( $species, $alias );
-      } elsif ( $species ne $class->get_alias($alias) ) {
+      if ( !$class->alias_exists($alias.$species_suffix) and $species ne $alias.$species_suffix) {
+        $class->add_alias( $species, $alias.$species_suffix );
+      } elsif ( $species ne $class->get_alias($alias.$species_suffix) ) {
         throw(
           sprintf(
             "Trying to add alias '%s' to species '%s', "
               . " but it is already registrered for species '%s'\n",
-            $alias, $species, $class->get_alias($alias) ) );
+            $alias.$species_suffix, $species, $class->get_alias($alias.$species_suffix) ) );
       }
     }
 
