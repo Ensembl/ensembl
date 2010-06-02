@@ -834,13 +834,13 @@ CREATE TABLE meta (
 
 # Auto add schema version to database
 INSERT INTO meta (species_id, meta_key, meta_value)
-  VALUES (NULL, "schema_version", "58");
+  VALUES (NULL, "schema_version", "59");
 
 # patches included in this schema file
 # NOTE: at beginning of release cycle, remove patch entries from last release
 # NOTE: Avoid line breaks in values
 INSERT INTO meta (species_id, meta_key, meta_value)
-  VALUES (NULL, 'patch', 'patch_57_58_a.sql|schema_version');
+  VALUES (NULL, 'patch', 'patch_58_59_a.sql|schema_version');
 
 
 ################################################################################
