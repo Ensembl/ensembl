@@ -842,6 +842,9 @@ INSERT INTO meta (species_id, meta_key, meta_value)
 INSERT INTO meta (species_id, meta_key, meta_value)
   VALUES (NULL, 'patch', 'patch_58_59_a.sql|schema_version');
 
+INSERT INTO meta (species_id, meta_key, meta_value)
+  VALUES (NULL, 'patch',
+      'patch_58_59_b.sql|assembly_exception_exc_type_enum');
 
 ################################################################################
 #
