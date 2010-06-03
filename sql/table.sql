@@ -846,6 +846,10 @@ INSERT INTO meta (species_id, meta_key, meta_value)
   VALUES (NULL, 'patch',
       'patch_58_59_b.sql|assembly_exception_exc_type_enum');
 
+INSERT INTO meta (species_id, meta_key, meta_value)
+  VALUES (NULL, 'patch',
+      'patch_58_59_c.sql|splicing_event_attrib_type_id');
+
 ################################################################################
 #
 # Table structure for table 'marker_synonym'
@@ -1517,8 +1521,7 @@ CREATE TABLE splicing_event (
   seq_region_start        INT(10) UNSIGNED NOT NULL,
   seq_region_end          INT(10) UNSIGNED NOT NULL,
   seq_region_strand       TINYINT(2) NOT NULL,
-  type                    ENUM('CNE', 'CE', 'AFE', 'A5SS', 'A3SS',
-                          'MXE', 'IR', 'II', 'EI', 'AT', 'ALE', 'AI'),
+  attrib_type_id          SMALLINT(5) UNSIGNED NOT NULL DEFAULT 0,
 
   PRIMARY KEY (splicing_event_id),
   KEY gene_idx (gene_id),
