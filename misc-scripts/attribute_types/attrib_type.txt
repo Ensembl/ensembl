@@ -350,3 +350,20 @@
 
 # Attrib type for Havana readthrough transcripts
 218	readthrough_tra	readthrough transcript	Havana readthrough transcripts
+
+# -------------------------------------------------------------
+# attributes to annotate alternative splicing (created for e59)
+# -------------------------------------------------------------
+300	CNE	Constitutive exon	An exon that is always included in the mature mRNA, even in different mRNA isoforms
+301	CE	Cassette exon	One exon is spliced out of the primary transcript together with its flanking introns
+302	IR	Intron retention	A sequence is spliced out as an intron or remains in the mature mRNA transcript
+303	MXE	Mutually exclusive exons	In the simpliest case, one or two consecutive exons are retained but not both
+304	A3SS	Alternative 3' sites	Two or more splice sites are recognized at the 5' end of an exon. An alternative 3' splice junction (acceptor site) is used, changing the 5' boundary of the downstream exon
+305	A5SS	Alternative 5' sites	Two or more splice sites are recognized at the 3' end of an exon. An alternative 5' splice junction (donor site) is used, changing the 3' boundary of the upstream exon
+306	AFE	Alternative first exon	The second exons of each variant have identical boundaries, but the first exons don't overlap
+307	ALE	Alternative last exon	Penultimate exons of each splice variant have identical boundaries, but the last exons don't overlap
+308	II	Intron isoform	Alternative donor or acceptor splice sites lead to truncation or extension of introns, respectively
+309	EI	Exon isoform	Alternative donor or acceptor splice sites leads to truncation or extension of exons, respectively
+310	AI	Alternative initiation	Alternative choice of promoters
+311	AT	Alternative termination	Alternative choice of polyadenylation sites
+
