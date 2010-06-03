@@ -2005,16 +2005,22 @@ sub find_and_add_aliases {
   my ( $adaptor, $group, $dbh, $species_suffix ) =
     rearrange( [ 'ADAPTOR', 'GROUP', 'HANDLE', 'SPECIES_SUFFIX' ], @_ );
 
+
   my @dbas;
   if ( defined($adaptor) ) {
     @dbas = ($adaptor);
   }
   elsif(defined($dbh)){
-    my @full =  @{ $class->get_all_DBAdaptors( '-GROUP' => $group  ) };
-    foreach my $db (@full){
-      if($db->species =~ /$species_suffix/){
-	push @dbas, $db;
+    if(length($species_suffix) > 0){
+      my @full =  @{ $class->get_all_DBAdaptors( '-GROUP' => $group  ) };
+      foreach my $db (@full){
+	if($db->species =~ /$species_suffix/){
+	  push @dbas, $db;
+	}
       }
+    }
+    else{
+      @dbas =  @{ $class->get_all_DBAdaptors( '-GROUP' => $group  ) };
     }
   }
   else {
