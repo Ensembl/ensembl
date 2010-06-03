@@ -627,7 +627,9 @@ CREATE TABLE object_xref (
   linkage_annotation          VARCHAR(255) DEFAULT NULL,
   analysis_id                 SMALLINT UNSIGNED DEFAULT NULL,
 
-  UNIQUE KEY object_type_idx (ensembl_object_type, ensembl_id, xref_id),
+  UNIQUE KEY object_type_idx
+    (ensembl_object_type, ensembl_id, xref_id, analysis_id),
+
   KEY oxref_idx (object_xref_id, xref_id, ensembl_object_type, ensembl_id),
   KEY xref_idx (xref_id, ensembl_object_type),
   KEY analysis_idx (analysis_id)
@@ -849,6 +851,11 @@ INSERT INTO meta (species_id, meta_key, meta_value)
 INSERT INTO meta (species_id, meta_key, meta_value)
   VALUES (NULL, 'patch',
       'patch_58_59_c.sql|splicing_event_attrib_type_id');
+
+INSERT INTO meta (species_id, meta_key, meta_value)
+  VALUES (NULL, 'patch',
+      'patch_58_59_d.sql|object_xref_extend_index');
+
 
 ################################################################################
 #
