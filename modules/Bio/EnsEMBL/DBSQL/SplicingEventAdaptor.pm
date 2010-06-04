@@ -92,195 +92,247 @@ sub list_dbIDs {
                The slice to fetch genes on.
   Arg [2]    : type of Transcript event
   Arg [3]    : (optional) boolean $load_features
-               if true, transcript will be loaded immediately rather than
-               lazy loaded later.
+               If true, transcript will be loaded immediately rather
+               than lazy loaded later.
 =cut
 
-sub fetch_all_by_Slice{
-  my $self  = shift;
-  my $slice = shift;
-  my $type  = shift;
-  my $load_features = shift;
-  
-  my $constraint = "";
+sub fetch_all_by_Slice {
+  my ( $self, $slice, $type, $load_features ) = @_;
 
-  if(defined($type)){
-    $constraint .= " and se.type = '$type'";
+  my $constraint = '';
+
+  if ( defined($type) ) {
+    $constraint .= sprintf( " AND at.code = %s",
+                            $self->dbc()->db_handle()->quote($type) );
   }
 
-  my $tes = $self->SUPER::fetch_all_by_Slice_constraint($slice, $constraint);
+  my $tes =
+    $self->SUPER::fetch_all_by_Slice_constraint( $slice, $constraint );
 
+  # Is there any use in having a splice event without the pairs and
+  # features??
 
-  # Is there any use in having a splice event without the paris and features??
-
-
-  if(!$load_features || @$tes < 2) {
+  if ( !$load_features || scalar( @{$tes} ) < 2 ) {
     return $tes;
   }
 
-  ## do someother stuff..
-
-  foreach my $te (@$tes){
+  # Load pairs and features.
+  foreach my $te ( @{$tes} ) {
     $te->get_all_Features();
     $te->get_all_Pairs();
   }
 
   return $tes;
-}
- 
- 
+} ## end sub fetch_all_by_Slice
 
 
+sub fetch_all_by_Gene {
+  my ( $self, $gene ) = @_;
 
-sub fetch_all_by_Gene{
-  my $self = shift;
-  my $gene = shift;
-  
-  my ($splicing_event_id,$seq_region_id, $seq_region_start, $seq_region_end, $seq_region_strand, $name, $gene_id, $type);
-  
-  my $sth = $self->dbc->prepare("select se.splicing_event_id , se.seq_region_id, se.seq_region_start, se.seq_region_end, se.seq_region_strand, se.name, se.type  from splicing_event se where se.gene_id = ".$gene->dbID);
-  
+  my $sth = $self->dbc->prepare(
+    q(
+SELECT  se.splicing_event_id,
+        se.seq_region_id,
+        se.seq_region_start,
+        se.seq_region_end,
+        se.seq_region_strand,
+        se.name,
+        at.code
+FROM    splicing_event se
+  JOIN  attrib_type at USING (attrib_type_id)
+WHERE   se.gene_id =) . $gene->dbID() );
+
   $sth->execute();
-  
-  $sth->bind_columns(\$splicing_event_id, \$seq_region_id, \$seq_region_start, \$seq_region_end, \$seq_region_strand, \$name, \$type);   
-  
+
+  my ( $splicing_event_id, $seq_region_id, $seq_region_start,
+       $seq_region_end, $seq_region_strand, $name, $type );
+
+  $sth->bind_columns(
+               \( $splicing_event_id, $seq_region_id, $seq_region_start,
+                  $seq_region_end, $seq_region_strand, $name,
+                  $type ) );
+
+  my @splicing_events;
+
+  my $sa = $self->db()->get_SliceAdaptor();
+
+  while ( $sth->fetch() ) {
+    my $slice =
+      $sa->fetch_by_seq_region_id( $seq_region_id,
+                                   $seq_region_start,
+                                   $seq_region_end,
+                                   $seq_region_strand );
+
+    push( @splicing_events,
+          $self->_create_feature_fast( 'Bio::EnsEMBL::SplicingEvent', {
+                                         'start'  => $seq_region_start,
+                                         'end'    => $seq_region_end,
+                                         'strand' => $seq_region_strand,
+                                         'adaptor' => $self,
+                                         'slice'   => $slice,
+                                         'dbID' => $splicing_event_id,
+                                         'name' => $name,
+                                         'gene_id' => $gene->dbID(),
+                                         'type'    => $type } ) );
+  }
+
+  foreach my $te (@splicing_events) {
+    $te->get_all_Features();
+    $te->get_all_Pairs();
+  }
+
+  return \@splicing_events;
+} ## end sub fetch_all_by_Gene
+
+sub fetch_all_by_Exon {
+  my ( $self, $exon ) = @_;
+
+  my $sth = $self->dbc()->prepare(
+    q(
+SELECT DISTINCT splicing_event_id
+FROM    splicing_event_feature
+WHERE   exon_id =) . $exon->dbID() );
+
+  $sth->execute();
+
+  my $se_id;
+  $sth->bind_col( 1, \$se_id );
+
+  my @list;
+  while ( $sth->fetch() ) {
+    push( @list, $se_id );
+  }
+
+  $sth = $self->dbc->prepare(
+    q(
+SELECT  se.splicing_event_id,
+        se.seq_region_id,
+        se.seq_region_start,
+        se.seq_region_end,
+        se.seq_region_strand,
+        se.name,
+        at.code,
+        se.gene_id
+FROM    splicing_event se
+  JOIN  attrib_type at USING (attrib_type_id)
+WHERE   se.splicing_event_id in ) . '(' . join( ',', @list ) . ')' );
+
+  $sth->execute();
+
+  my ( $splicing_event_id, $seq_region_id, $seq_region_start,
+       $seq_region_end, $seq_region_strand, $name, $type, $gene_id );
+
+  $sth->bind_columns(
+               \( $splicing_event_id, $seq_region_id, $seq_region_start,
+                  $seq_region_end, $seq_region_strand, $name,
+                  $type,           $gene_id ) );
+
   my @splicing_events;
 
   my $sa = $self->db->get_SliceAdaptor();
 
-  while($sth->fetch){
-    
-    my $slice = $sa->fetch_by_seq_region_id($seq_region_id, $seq_region_start, $seq_region_end, $seq_region_strand);
-    
-    push( @splicing_events,
-	  $self->_create_feature_fast( 'Bio::EnsEMBL::SplicingEvent', {
-								       'start'     => $seq_region_start,
-								       'end'       => $seq_region_end,
-								       'strand'    => $seq_region_strand,
-								       'adaptor'   => $self,
-								       'slice'     => $slice,
-								       'dbID'      => $splicing_event_id,
-								       'name'      => $name,
-								       'gene_id'   => $gene->dbID,
-								       'type'      => $type
-								      } ) );
-  }
-  $sth->finish;
+  while ( $sth->fetch ) {
+    my $slice =
+      $sa->fetch_by_seq_region_id( $seq_region_id,
+                                   $seq_region_start,
+                                   $seq_region_end,
+                                   $seq_region_strand );
 
-  foreach my $te (@splicing_events){
+    push( @splicing_events,
+          $self->_create_feature_fast( 'Bio::EnsEMBL::SplicingEvent', {
+                                         'start'  => $seq_region_start,
+                                         'end'    => $seq_region_end,
+                                         'strand' => $seq_region_strand,
+                                         'adaptor' => $self,
+                                         'slice'   => $slice,
+                                         'dbID' => $splicing_event_id,
+                                         'name' => $name,
+                                         'gene_id' => $gene_id,
+                                         'type'    => $type } ) );
+  }
+
+  foreach my $te (@splicing_events) {
     $te->get_all_Features();
     $te->get_all_Pairs();
   }
+
   return \@splicing_events;
-}
+} ## end sub fetch_all_by_Exon
 
-sub fetch_all_by_Exon{
-  my $self = shift;
-  my $exon = shift;
-  
-  my $list = "(";
-  my $sth= $self->dbc->prepare("Select distinct(splicing_event_id)  from splicing_event_feature where exon_id = ".$exon->dbID);
-  $sth->execute;
-  my ($se_id);
-  $sth->bind_columns(\$se_id);
-  while($sth->fetch){
-    $list .= $se_id." ,";
-  }
-  $sth->finish;
-  chop $list; # get rid of last ","
-  $list .= ")";
+sub fetch_all_by_Transcript {
+  my ( $self, $transcript ) = @_;
 
-  my ($splicing_event_id,$seq_region_id, $seq_region_start, $seq_region_end, $seq_region_strand, $name, $gene_id, $type);
-  
-  $sth = $self->dbc->prepare("select se.splicing_event_id , se.seq_region_id, se.seq_region_start, se.seq_region_end, se.seq_region_strand, se.name, se.type, se.gene_id from splicing_event se where se.splicing_event_id in ".$list);
-  
+  my $sth = $self->dbc->prepare(
+    q(
+SELECT DISTINCT splicing_event_id
+FROM    splicing_event_feature
+WHERE   transcript_id =) . $transcript->dbID() );
+
   $sth->execute();
-  
-  $sth->bind_columns(\$splicing_event_id, \$seq_region_id, \$seq_region_start, \$seq_region_end, \$seq_region_strand, \$name, \$type, \$gene_id);   
-  
+
+  my $se_id;
+  $sth->bind_col( 1, \$se_id );
+
+  my @list;
+  while ( $sth->fetch() ) {
+    push( @list, $se_id );
+  }
+
+  $sth = $self->dbc->prepare(
+    q(
+SELECT  se.splicing_event_id,
+        se.seq_region_id,
+        se.seq_region_start,
+        se.seq_region_end,
+        se.seq_region_strand,
+        se.name,
+        at.code,
+        se.gene_id
+FROM    splicing_event se
+  JOIN  attrib_type at USING (attrib_type_id)
+WHERE   se.splicing_event_id in ) . '(' . join( ',', @list ) . ')' );
+
+  $sth->execute();
+
+  my ( $splicing_event_id, $seq_region_id, $seq_region_start,
+       $seq_region_end, $seq_region_strand, $name, $type, $gene_id );
+
+  $sth->bind_columns(
+               \( $splicing_event_id, $seq_region_id, $seq_region_start,
+                  $seq_region_end, $seq_region_strand, $name,
+                  $type,           $gene_id ) );
+
   my @splicing_events;
 
-  my $sa = $self->db->get_SliceAdaptor();
+  my $sa = $self->db()->get_SliceAdaptor();
 
-  while($sth->fetch){
-    
-    my $slice = $sa->fetch_by_seq_region_id($seq_region_id, $seq_region_start, $seq_region_end, $seq_region_strand);
-    
+  while ( $sth->fetch() ) {
+    my $slice =
+      $sa->fetch_by_seq_region_id( $seq_region_id,
+                                   $seq_region_start,
+                                   $seq_region_end,
+                                   $seq_region_strand );
+
     push( @splicing_events,
-	  $self->_create_feature_fast( 'Bio::EnsEMBL::SplicingEvent', {
-								       'start'     => $seq_region_start,
-								       'end'       => $seq_region_end,
-								       'strand'    => $seq_region_strand,
-								       'adaptor'   => $self,
-								       'slice'     => $slice,
-								       'dbID'      => $splicing_event_id,
-								       'name'      => $name,
-								       'gene_id'   => $gene_id,
-								       'type'      => $type
-								      } ) );
+          $self->_create_feature_fast( 'Bio::EnsEMBL::SplicingEvent', {
+                                         'start'  => $seq_region_start,
+                                         'end'    => $seq_region_end,
+                                         'strand' => $seq_region_strand,
+                                         'adaptor' => $self,
+                                         'slice'   => $slice,
+                                         'dbID' => $splicing_event_id,
+                                         'name' => $name,
+                                         'gene_id' => $gene_id,
+                                         'type'    => $type } ) );
   }
-  $sth->finish;
 
-  foreach my $te (@splicing_events){
+  foreach my $te (@splicing_events) {
     $te->get_all_Features();
     $te->get_all_Pairs();
   }
+
   return \@splicing_events;
-}
-
-sub fetch_all_by_Transcript{
-  my $self = shift;
-  my $tran = shift;
-  
-  my $list = "(";
-  my $sth= $self->dbc->prepare("Select distinct(splicing_event_id)  from splicing_event_feature where transcript_id = ".$tran->dbID);
-  $sth->execute;
-  my ($se_id);
-  $sth->bind_columns(\$se_id);
-  while($sth->fetch){
-    $list .= $se_id." ,";
-  }
-  $sth->finish;
-  chop $list; # get rid of last ","
-  $list .= ")";
-
-  my ($splicing_event_id,$seq_region_id, $seq_region_start, $seq_region_end, $seq_region_strand, $name, $gene_id, $type);
-  
-  $sth = $self->dbc->prepare("select se.splicing_event_id , se.seq_region_id, se.seq_region_start, se.seq_region_end, se.seq_region_strand, se.name, se.type, se.gene_id from splicing_event se where se.splicing_event_id in ".$list);
-  
-  $sth->execute();
-  
-  $sth->bind_columns(\$splicing_event_id, \$seq_region_id, \$seq_region_start, \$seq_region_end, \$seq_region_strand, \$name, \$type, \$gene_id);   
-  
-  my @splicing_events;
-
-  my $sa = $self->db->get_SliceAdaptor();
-
-  while($sth->fetch){
-    
-    my $slice = $sa->fetch_by_seq_region_id($seq_region_id, $seq_region_start, $seq_region_end, $seq_region_strand);
-    
-    push( @splicing_events,
-	  $self->_create_feature_fast( 'Bio::EnsEMBL::SplicingEvent', {
-								       'start'     => $seq_region_start,
-								       'end'       => $seq_region_end,
-								       'strand'    => $seq_region_strand,
-								       'adaptor'   => $self,
-								       'slice'     => $slice,
-								       'dbID'      => $splicing_event_id,
-								       'name'      => $name,
-								       'gene_id'   => $gene_id,
-								       'type'      => $type
-								      } ) );
-  }
-  $sth->finish;
-
-  foreach my $te (@splicing_events){
-    $te->get_all_Features();
-    $te->get_all_Pairs();
-  }
-  return \@splicing_events;
-}
+} ## end sub fetch_all_by_Transcript
 
 # _tables
 #  Arg [1]    : none
@@ -292,9 +344,7 @@ sub fetch_all_by_Transcript{
 #  Status     : At Risk
 
 sub _tables {
-  my $self = shift;
-
-  return ([ 'splicing_event', 'se' ]);
+  return ( [ 'splicing_event', 'se' ], [ 'attrib_type', 'at' ] );
 }
 
 # _columns
@@ -308,25 +358,28 @@ sub _tables {
 #  Status     : At Risk
 
 sub _columns {
-  my $self = shift;
+  return ( 'se.splicing_event_id', 'se.seq_region_id',
+           'se.seq_region_start',  'se.seq_region_end',
+           'se.seq_region_strand', 'se.name',
+           'se.gene_id',           'at.code' );
+}
 
-#  my $created_date = $self->db->dbc->from_date_to_seconds("gsi.created_date");
-#  my $modified_date = $self->db->dbc->from_date_to_seconds("gsi.modified_date");
-
-  return ( 'se.splicing_event_id', 'se.seq_region_id', 'se.seq_region_start', 'se.seq_region_end', 'se.seq_region_strand', 'se.name', 'se.gene_id', 'se.type' );
-
+sub _left_join {
+  return ( [ 'attrib_type', 'at.attrib_type_id = se.attrib_type_id' ] );
 }
 
 sub _objs_from_sth {
-  my ($self, $sth, $mapper, $dest_slice) = @_;
-  
-  my ($splicing_event_id,$seq_region_id, $seq_region_start, $seq_region_end, $seq_region_strand, $name, $gene_id, $type);
-  
-  
-  $sth->bind_columns(\$splicing_event_id, \$seq_region_id, \$seq_region_start, \$seq_region_end, \$seq_region_strand, \$name, \$gene_id, \$type);
+  my ( $self, $sth, $mapper, $dest_slice ) = @_;
+
+  my ( $splicing_event_id, $seq_region_id, $seq_region_start,
+       $seq_region_end, $seq_region_strand, $name, $gene_id, $type );
+
+  $sth->bind_columns(
+               \( $splicing_event_id, $seq_region_id, $seq_region_start,
+                  $seq_region_end, $seq_region_strand, $name,
+                  $gene_id,        $type ) );
 
   my $sa = $self->db()->get_SliceAdaptor();
-
 
   my @splicing_events;
   my %slice_hash;
@@ -339,9 +392,10 @@ sub _objs_from_sth {
   my $asm_cs_name;
   my $cmp_cs_vers;
   my $cmp_cs_name;
-  if($mapper) {
-    $asm_cs = $mapper->assembled_CoordSystem();
-    $cmp_cs = $mapper->component_CoordSystem();
+
+  if ( defined($mapper) ) {
+    $asm_cs      = $mapper->assembled_CoordSystem();
+    $cmp_cs      = $mapper->component_CoordSystem();
     $asm_cs_name = $asm_cs->name();
     $asm_cs_vers = $asm_cs->version();
     $cmp_cs_name = $cmp_cs->name();
@@ -356,38 +410,43 @@ sub _objs_from_sth {
   my $dest_slice_sr_name;
   my $dest_slice_sr_id;
   my $asma;
-  if($dest_slice) {
-    $dest_slice_start  = $dest_slice->start();
-    $dest_slice_end    = $dest_slice->end();
-    $dest_slice_strand = $dest_slice->strand();
-    $dest_slice_length = $dest_slice->length();
-    $dest_slice_cs     = $dest_slice->coord_system();
+
+  if ( defined($dest_slice) ) {
+    $dest_slice_start   = $dest_slice->start();
+    $dest_slice_end     = $dest_slice->end();
+    $dest_slice_strand  = $dest_slice->strand();
+    $dest_slice_length  = $dest_slice->length();
+    $dest_slice_cs      = $dest_slice->coord_system();
     $dest_slice_sr_name = $dest_slice->seq_region_name();
-    $dest_slice_sr_id = $dest_slice->get_seq_region_id();
-    $asma = $self->db->get_AssemblyMapperAdaptor();
+    $dest_slice_sr_id   = $dest_slice->get_seq_region_id();
+    $asma               = $self->db->get_AssemblyMapperAdaptor();
   }
 
-  FEATURE: while($sth->fetch()) {
-    #need to get the internal_seq_region, if present
+FEATURE:
+  while ( $sth->fetch() ) {
+    # Need to get the internal_seq_region, if present.
     $seq_region_id = $self->get_seq_region_id_internal($seq_region_id);
 
-    my $slice = $slice_hash{"ID:".$seq_region_id};
+    my $slice       = $slice_hash{ "ID:" . $seq_region_id };
     my $dest_mapper = $mapper;
 
-    if(!$slice) {
+    if ( !$slice ) {
       $slice = $sa->fetch_by_seq_region_id($seq_region_id);
-      $slice_hash{"ID:".$seq_region_id} = $slice;
-      $sr_name_hash{$seq_region_id} = $slice->seq_region_name();
-      $sr_cs_hash{$seq_region_id} = $slice->coord_system();
+      $slice_hash{ "ID:" . $seq_region_id } = $slice;
+      $sr_name_hash{$seq_region_id}         = $slice->seq_region_name();
+      $sr_cs_hash{$seq_region_id}           = $slice->coord_system();
     }
 
-    #obtain a mapper if none was defined, but a dest_seq_region was
-    if(!$dest_mapper && $dest_slice && 
-       !$dest_slice_cs->equals($slice->coord_system)) {
-      $dest_mapper = $asma->fetch_by_CoordSystems($dest_slice_cs,
-                                                 $slice->coord_system);
-      $asm_cs = $dest_mapper->assembled_CoordSystem();
-      $cmp_cs = $dest_mapper->component_CoordSystem();
+    # Obtain a mapper if none was defined, but a dest_seq_region was.
+    if (   !defined($dest_mapper)
+         && defined($dest_slice)
+         && !$dest_slice_cs->equals( $slice->coord_system ) )
+    {
+      $dest_mapper =
+        $asma->fetch_by_CoordSystems( $dest_slice_cs,
+                                      $slice->coord_system );
+      $asm_cs      = $dest_mapper->assembled_CoordSystem();
+      $cmp_cs      = $dest_mapper->component_CoordSystem();
       $asm_cs_name = $asm_cs->name();
       $asm_cs_vers = $asm_cs->version();
       $cmp_cs_name = $cmp_cs->name();
@@ -396,45 +455,45 @@ sub _objs_from_sth {
 
     my $sr_name = $sr_name_hash{$seq_region_id};
     my $sr_cs   = $sr_cs_hash{$seq_region_id};
-    #
-    # remap the feature coordinates to another coord system 
-    # if a mapper was provided
-    #
-    if($dest_mapper) {
 
-      ($seq_region_id,$seq_region_start,$seq_region_end,$seq_region_strand) =
-        $dest_mapper->fastmap($sr_name, $seq_region_start, $seq_region_end,
-                              $seq_region_strand, $sr_cs);
+    # Remap the feature coordinates to another coord system if a mapper
+    # was provided.
+    if ( defined($dest_mapper) ) {
+      ( $seq_region_id,  $seq_region_start,
+        $seq_region_end, $seq_region_strand )
+        = $dest_mapper->fastmap( $sr_name, $seq_region_start,
+                                 $seq_region_end, $seq_region_strand,
+                                 $sr_cs );
 
-      #skip features that map to gaps or coord system boundaries
-      next FEATURE if(!defined($seq_region_id));
+      # Skip features that map to gaps or coord system boundaries.
+      if ( !defined($seq_region_id) ) { next FEATURE }
 
-      #get a slice in the coord system we just mapped to
-        $slice = $slice_hash{"ID:".$seq_region_id} ||=
-          $sa->fetch_by_seq_region_id($seq_region_id);
+      # Get a slice in the coord system we just mapped to.
+      $slice = $slice_hash{ "ID:" . $seq_region_id } ||=
+        $sa->fetch_by_seq_region_id($seq_region_id);
     }
 
-    #
-    # If a destination slice was provided convert the coords
-    # If the dest_slice starts at 1 and is foward strand, nothing needs doing
-    #
-    if($dest_slice) {
-      if($dest_slice_start != 1 || $dest_slice_strand != 1) {
-	if($dest_slice_strand == 1) {
-	  $seq_region_start = $seq_region_start - $dest_slice_start + 1;
-	  $seq_region_end   = $seq_region_end   - $dest_slice_start + 1;
-	} else {
-	  my $tmp_seq_region_start = $seq_region_start;
-	  $seq_region_start = $dest_slice_end - $seq_region_end + 1;
-	  $seq_region_end   = $dest_slice_end - $tmp_seq_region_start + 1;
-	  $seq_region_strand *= -1;
-	}
+    # If a destination slice was provided convert the coords.  If the
+    # dest_slice starts at 1 and is foward strand, nothing needs doing.
+    if ( defined($dest_slice) ) {
+      if ( $dest_slice_start != 1 || $dest_slice_strand != 1 ) {
+        if ( $dest_slice_strand == 1 ) {
+          $seq_region_start = $seq_region_start - $dest_slice_start + 1;
+          $seq_region_end   = $seq_region_end - $dest_slice_start + 1;
+        } else {
+          my $tmp_seq_region_start = $seq_region_start;
+          $seq_region_start = $dest_slice_end - $seq_region_end + 1;
+          $seq_region_end = $dest_slice_end - $tmp_seq_region_start + 1;
+          $seq_region_strand = -$seq_region_strand;
+        }
       }
 
-      #throw away features off the end of the requested slice
-      if($seq_region_end < 1 || $seq_region_start > $dest_slice_length ||
-	 ( $dest_slice_sr_id != $seq_region_id )) {
-	next FEATURE;
+      # Throw away features off the end of the requested slice.
+      if (    $seq_region_end < 1
+           || $seq_region_start > $dest_slice_length
+           || ( $dest_slice_sr_id != $seq_region_id ) )
+      {
+        next FEATURE;
       }
 
       $slice = $dest_slice;
@@ -443,23 +502,20 @@ sub _objs_from_sth {
     # Finally, create the new splicing_event.
     push( @splicing_events,
           $self->_create_feature_fast( 'Bio::EnsEMBL::SplicingEvent', {
-                                    'start'     => $seq_region_start,
-                                    'end'       => $seq_region_end,
-                                    'strand'    => $seq_region_strand,
-                                    'adaptor'   => $self,
-                                    'slice'     => $slice,
-                                    'dbID'      => $splicing_event_id,
-                                    'name'      => $name,
-                                    'gene_id'   => $gene_id,
-                                    'type'      => $type
-                                  } ) );
+                                         'start'  => $seq_region_start,
+                                         'end'    => $seq_region_end,
+                                         'strand' => $seq_region_strand,
+                                         'adaptor' => $self,
+                                         'slice'   => $slice,
+                                         'dbID' => $splicing_event_id,
+                                         'name' => $name,
+                                         'gene_id' => $gene_id,
+                                         'type'    => $type } ) );
 
-  }
+  } ## end while ( $sth->fetch() )
 
   return \@splicing_events;
-}
+} ## end sub _objs_from_sth
 
 
 1;
-
-
