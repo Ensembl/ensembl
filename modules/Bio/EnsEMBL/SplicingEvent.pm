@@ -1,3 +1,4 @@
+
 =head1 LICENSE
 
   Copyright (c) 1999-2010 The European Bioinformatics Institute and
@@ -24,13 +25,12 @@ Bio::EnsEMBL::SlicingEvent - Object representing an alternative splicing event
 
 =head1 SYNOPSIS
 
-  my $ase = Bio::EnsEMBL::SplicingEvent->new(
-    -START  => 123,
-    -END    => 1045,
-    -STRAND => 1,
-    -GENE_ID => $gene->dbID,
-    -SLICE  => $slice
-  );
+  my $ase =
+    Bio::EnsEMBL::SplicingEvent->new( -START   => 123,
+                                      -END     => 1045,
+                                      -STRAND  => 1,
+                                      -GENE_ID => $gene->dbID,
+                                      -SLICE   => $slice );
 
   # set some additional attributes
   $ase->name('ENSG00000000003-CNE-3');
@@ -56,94 +56,94 @@ use Bio::EnsEMBL::Utils::Exception qw(throw warning deprecate);
 use vars qw(@ISA);
 @ISA = qw(Bio::EnsEMBL::Feature);
 
-
-
 ## Add to gene get_all_splicing_events
 
+sub gene_id {
+  my ( $self, $value ) = @_;
 
-
-sub gene_id{
-  my $self = shift;
-  $self->{'gene_id'} = shift if (@_);
-
-  if (defined $self->{'gene_id'}) {
-    return $self->{'gene_id'};
+  if ( defined($value) ) {
+    $self->{'gene_id'} = $value;
   }
 
-  return undef;
+  return $self->{'gene_id'};
 }
 
-sub name{
-  my $self = shift;
-  $self->{'name'} = shift if (@_);
+sub name {
+  my ( $self, $value ) = @_;
 
-  if (defined $self->{'name'}) {
-    return $self->{'name'};
+  if ( defined($value) ) {
+    $self->{'name'} = $value;
   }
 
-  return undef;
+  return $self->{'name'};
 }
 
-sub type{
-  my $self = shift;
-  $self->{'type'} = shift if (@_);
+sub type {
+  my ( $self, $value ) = @_;
 
-  if (defined $self->{'type'}) {
-    return $self->{'type'};
+  if ( defined($value) ) {
+    $self->{'type'} = $value;
   }
 
-  return undef;
+  return $self->{'type'};
 }
 
-sub add_Feature{
-   my ($self, $feat) = @_;
+sub add_Feature {
+  my ( $self, $feature ) = @_;
 
-   if( !ref $feat || ! $feat->isa("Bio::EnsEMBL::SplicingEventFeature") ) {
-       throw("$feat is not a Bio::EnsEMBL::SplicingEventFeature!");
-   }
+  if (    !ref($feature)
+       || !$feature->isa("Bio::EnsEMBL::SplicingEventFeature") )
+  {
+    throw("$feature is not a Bio::EnsEMBL::SplicingEventFeature!");
+  }
 
-   $self->{'_feature_array'} ||= [];
-   push(@{$self->{'_feature_array'}},$feat);
+  $self->{'_feature_array'} ||= [];
+
+  push( @{ $self->{'_feature_array'} }, $feature );
 }
-
 
 sub get_all_Features {
-  my $self = shift;
+  my ($self) = @_;
 
-  if( ! exists $self->{'_feature_array'} ) {
-    if( defined $self->adaptor() ) {
-      my $fta = $self->adaptor()->db()->get_SplicingEventFeatureAdaptor();
-      my $features = $fta->fetch_all_by_SplicingEvent( $self );
+  if ( !exists( $self->{'_feature_array'} ) ) {
+    if ( defined( $self->adaptor() ) ) {
+      my $fta =
+        $self->adaptor()->db()->get_SplicingEventFeatureAdaptor();
+      my $features = $fta->fetch_all_by_SplicingEvent($self);
       $self->{'_feature_array'} = $features;
     }
   }
+
   return $self->{'_feature_array'};
 }
 
-sub add_Pair{
-   my ($self, $feat) = @_;
+sub add_Pair {
+  my ( $self, $feature ) = @_;
 
-   if( !ref $feat || ! $feat->isa("Bio::EnsEMBL::SplicingEventPair") ) {
-       throw("$feat is not a Bio::EnsEMBL::SplicingEventPair!");
-   }
+  if (    !ref($feature)
+       || !$feature->isa("Bio::EnsEMBL::SplicingEventPair") )
+  {
+    throw("$feature is not a Bio::EnsEMBL::SplicingEventPair!");
+  }
 
-   $self->{'_pair_array'} ||= [];
-   push(@{$self->{'_pair_array'}},$feat);
+  $self->{'_pair_array'} ||= [];
+
+  push( @{ $self->{'_pair_array'} }, $feature );
 }
 
-
 sub get_all_Pairs {
-  my $self = shift;
+  my ($self) = @_;
 
-  if( ! exists $self->{'_pair_array'} ) {
-    if( defined $self->adaptor() ) {
-      my $pa = $self->adaptor()->db()->get_SplicingTranscriptPairAdaptor();
-      my $pairs = $pa->fetch_all_by_SplicingEvent( $self );
+  if ( !exists( $self->{'_pair_array'} ) ) {
+    if ( defined( $self->adaptor() ) ) {
+      my $pa =
+        $self->adaptor()->db()->get_SplicingTranscriptPairAdaptor();
+      my $pairs = $pa->fetch_all_by_SplicingEvent($self);
       $self->{'_pair_array'} = $pairs;
     }
   }
+
   return $self->{'_pair_array'};
 }
-
 
 1;
