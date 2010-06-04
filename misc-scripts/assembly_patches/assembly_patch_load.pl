@@ -1,15 +1,27 @@
+#!/usr/local/ensembl/bin/perl -w
+
 use Bio::EnsEMBL::Registry;
+use Getopt::Long;
+
 use strict;
 
-my $pass         = shift;
-#my $fasta_file   = shift || "./data/alt.scaf.fa";
-my $mapping_file = shift || "./data/alt.scaf.agp";
-my $txt_file     = shift || "./data/alt_scaffold_placement.txt";
+my $pass;
+my $mapping_file = "./data/alt.scaf.agp";
+my $txt_file     = "./data/alt_scaffold_placement.txt";
+my $dbname;
+my $host;
+my $user;
+my $port = 3306;
 
-my $dbname = shift || "ianl_homo_sapiens_core_57_37b";
-my $host   = "ens-research";
-#my $user   = "ensadmin";
-my $user    = "ensro";
+&GetOptions(
+            'pass=s'         => \$pass,
+            'mapping_file=s' => \$mapping_file,
+            'txt_file=s'     => \$txt_file,
+            'host=s'         => \$host,
+            'dbname=s'       => \$dbname,
+            'user=s'         => \$user,
+            'port=n'         => \$port,
+           );
 
 #connect to the database
 
