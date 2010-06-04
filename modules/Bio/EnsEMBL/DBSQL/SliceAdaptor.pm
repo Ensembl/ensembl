@@ -418,8 +418,83 @@ sub fetch_by_region {
   }
 } ## end sub fetch_by_region
 
+=head2 fetch_by_region_unique
 
+  Arg [1]    : string $coord_system_name (optional)
+               The name of the coordinate system of the slice to be created
+               This may be a name of an actual coordinate system or an alias
+               to a coordinate system.  Valid aliases are 'seqlevel' or
+               'toplevel'.
+  Arg [2]    : string $seq_region_name
+               The name of the sequence region that the slice will be
+               created on.
+  Arg [3]    : int $start (optional, default = 1)
+               The start of the slice on the sequence region
+  Arg [4]    : int $end (optional, default = seq_region length)
+               The end of the slice on the sequence region
+  Arg [5]    : int $strand (optional, default = 1)
+               The orientation of the slice on the sequence region
+  Arg [6]    : string $version (optional, default = default version)
+               The version of the coordinate system to use (e.g. NCBI33)
+  Arg [7]    : boolean $no_fuzz (optional, default = undef (false))
+               If true (non-zero), do not use "fuzzy matching" (see below).
+  Example    : $slice = $slice_adaptor->fetch_by_region_unique('chromosome', 'HSCHR6_MHC_COX');
+  Description: Retrieves a slice on the requested region but returns only the unique
+               parts of the slice.  At a minimum the
+               name the name of the seq_region to fetch must be provided.
 
+               If no coordinate system name is provided than a slice on the
+               highest ranked coordinate system with a matching
+               seq_region_name will be returned.  If a version but no
+               coordinate system name is provided, the same behaviour will
+               apply, but only coordinate systems of the appropriate version
+               are considered.  The same applies if the 'toplevel' coordinate
+               system is specified, however in this case the version is
+               ignored.  The coordinate system should always be specified if
+               it is known, since this is unambiguous and faster.
+
+               Some fuzzy matching is performed if no exact match for
+               the provided name is found.  This allows clones to be
+               fetched even when their version is not known.  For
+               example fetch_by_region('clone', 'AC008066') will
+               retrieve the sequence_region with name 'AC008066.4'.
+
+               The fuzzy matching can be turned off by setting the
+               $no_fuzz argument to a true value.
+
+               If the requested seq_region is not found in the database undef
+               is returned.
+
+  Returntype : listref Bio::EnsEMBL::Slice
+  Exceptions : throw if no seq_region_name is provided
+               throw if invalid coord_system_name is provided
+               throw if start > end is provided
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub fetch_by_region_unique {
+  my $self = shift;
+  my @out=();
+
+  my $slice = $self->fetch_by_region(@_);
+ 
+  $self->_build_exception_cache() if(!exists $self->{'asm_exc_cache'});
+  if(exists $self->{asm_exc_cache}->{$slice->dbID}) {
+    
+    # Dereference symlinked assembly regions.  Take out
+    # any regions which are symlinked because these are duplicates
+    my @projection = @{$self->fetch_normalized_slice_projection($slice)};
+    foreach my $segment ( @projection) {
+      if($segment->[2]->seq_region_name() eq $slice->seq_region_name() &&
+	 $segment->[2]->coord_system->equals($slice->coord_system)) {
+	push @out, $segment->[2];
+      }
+    }
+  }
+  return \@out;
+}
 
 =head2 fetch_by_name
 
