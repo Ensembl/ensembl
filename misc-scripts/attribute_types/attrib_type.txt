@@ -367,3 +367,6 @@
 310	AI	Alternative initiation	Alternative choice of promoters
 311	AT	Alternative termination	Alternative choice of polyadenylation sites
 
+# attribute to indicate that a toplevel non-reference sequence is an assembly patch
+312	patch_fix	Assembly patch that will, in the next assembly release, replace the corresponding sequence found in the current assembly 
+313	patch_novel	Assembly patch that will, in the next assembly release, be retained as an alternate non-reference sequence in a similar way to haplotypes
