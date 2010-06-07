@@ -5,8 +5,8 @@
 410	Celera_Pep	1	PRED	1	0	5	Celera peptide	MISC	\N	\N
 420	Celera_Trans	1	PRED	1	0	5	Celera transcript	MISC	\N	\N
 600	DROS_ORTH	1	ORTH	1	0	5	DROS ORTH	MISC	\N	\N
-700	EMBL	1	KNOWNXREF	1	0	5	EMBL	MISC	\N	\N
-701	EMBL_predicted	1	PRED	1	0	4	Predicted EMBL	MISC	\N	\N
+700	EMBL	1	KNOWNXREF	1	0	5	European Nucleotide Archive (was EMBL)	MISC	\N	\N
+701	EMBL_predicted	1	PRED	1	0	4	Predicted European Nucleotide Archive (was EMBL)	MISC	\N	\N
 800	flybase_gene_id	1	KNOWNXREF	1	0	5	Flybase Gene	MISC	\N	\N
 801	flybase_translation_id	1	KNOWNXREF	1	0	5	Flybase translation ID	MISC	\N	\N
 802	flybase_gff	1	KNOWNXREF	1	0	5	Flybase GFF	MISC	\N	\N
