@@ -12,6 +12,9 @@ CREATE TABLE meta (
   UNIQUE INDEX key_value_idx (meta_key, meta_value)
 );
 
+INSERT INTO meta (meta_key, meta_value)
+  VALUES ('schema_type', 'ontology');
+
 DROP TABLE IF EXISTS ontology;
 CREATE TABLE ontology (
   ontology_id   INT UNSIGNED NOT NULL AUTO_INCREMENT,
