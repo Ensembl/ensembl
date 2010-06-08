@@ -490,6 +490,9 @@ sub create_xrefs {
 	if($source =~ "UCSC"){  
 	  next;
 	}
+	if($source =~ "SGD"){  
+	  next;
+	}
 	if($source =~ "HGNC"){
 	  next;
 	}
