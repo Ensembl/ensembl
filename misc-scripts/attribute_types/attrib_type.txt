@@ -13,7 +13,7 @@
 # need to document and find out about each attrib_type
 
 
-1	embl_acc	EMBL accession
+1	embl_acc	European Nucleotide Archive (was EMBL) accession
 
 2	status	Status
 
@@ -182,12 +182,12 @@
 90	bacend_well_nam	BACend well name
 91	alt_well_name	Alt well name
 92	TranscriptEdge	Transcript Edge
-93	alt_embl_acc	Alt EMBL acc
+93	alt_embl_acc	Alt European Nucleotide Archive (was EMBL) acc
 94	alt_org	Alt org
 
 # anacode attribs added by ml6 29/11/06 - seen in yeast but not others
 95	intl_clone_name	International Clone Name
-96	embl_version	EMBL Version
+96	embl_version	European Nucleotide Archive (was EMBL) Version
 97	chr	Chromosome Name	Chromosome Name Contained in the Assembly
 98	equiv_asm	Equivalent EnsEMBL assembly	For full chromosomes made from NCBI AGPs
 99	GeneNo_ncRNA	ncRNA Gene Count	Number of ncRNA Genes
