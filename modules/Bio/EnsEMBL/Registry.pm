@@ -1957,7 +1957,9 @@ sub load_registry_from_db {
 
   # Register aliases as found in adaptor meta tables.
 
-  $self->find_and_add_aliases( '-handle' => $dbh, '-species_suffix' => $species_suffix );
+  $self->find_and_add_aliases( '-handle'         => $dbh,
+                               '-species_suffix' => $species_suffix );
+
   $dbh->disconnect();
 
 } ## end sub load_registry_from_db
@@ -1972,13 +1974,13 @@ sub load_registry_from_db {
                   given assumes all types.
 
   Arg [HANDLE]  : (optional) DBI database handle
-                  A connected database handle to use instead of the
-                  database handles stored in the DBAdaptors.  Bypasses
-                  the use of MetaContainer.
+                  A connected database handle to use instead of
+                  the database handles stored in the DBAdaptors.
+                  Bypasses the use of MetaContainer.
 
   Arg [SPECIES_SUFFIX]: (optional) string
-                 This option will append the string to the species name
-                 in the registry for all databases. 
+                  This option will append the string to the species
+                  name in the registry for all databases.
 
   Example       : Bio::EnsEMBL::Registry->find_and_add_aliases(
                     -ADAPTOR => $dba,
@@ -2005,40 +2007,39 @@ sub find_and_add_aliases {
   my ( $adaptor, $group, $dbh, $species_suffix ) =
     rearrange( [ 'ADAPTOR', 'GROUP', 'HANDLE', 'SPECIES_SUFFIX' ], @_ );
 
-
   my @dbas;
   if ( defined($adaptor) ) {
     @dbas = ($adaptor);
-  }
-  elsif(defined($dbh)){
-    if(length($species_suffix) > 0){
-      my @full =  @{ $class->get_all_DBAdaptors( '-GROUP' => $group  ) };
-      foreach my $db (@full){
-	if($db->species =~ /$species_suffix/){
-	  push @dbas, $db;
-	}
+  } elsif ( defined($dbh) ) {
+
+    if ( length($species_suffix) > 0 ) {
+      my @full = @{ $class->get_all_DBAdaptors( '-GROUP' => $group ) };
+
+      foreach my $db (@full) {
+        if ( $db->species =~ /$species_suffix/ ) {
+          push( @dbas, $db );
+        }
       }
+
+    } else {
+      @dbas = @{ $class->get_all_DBAdaptors( '-GROUP' => $group ) };
     }
-    else{
-      @dbas =  @{ $class->get_all_DBAdaptors( '-GROUP' => $group  ) };
-    }
-  }
-  else {
-    @dbas = @{ $class->get_all_DBAdaptors( '-GROUP' => $group  ) };
+
+  } else {
+    @dbas = @{ $class->get_all_DBAdaptors( '-GROUP' => $group ) };
   }
 
   foreach my $dba (@dbas) {
     my @aliases;
     my $species = $dba->species();
-    
+
     if ( defined($dbh) ) {
       my $dbname = $dba->dbc()->dbname();
-      my $sth    = $dbh->prepare(
-        sprintf(
-          "SELECT meta_value FROM %s.meta "
-            . "WHERE meta_key = 'species.alias' "
-            . "AND species_id = ?",
-          $dbh->quote_identifier($dbname) ) );
+      my $sth = $dbh->prepare( sprintf(
+                                 "SELECT meta_value FROM %s.meta "
+                                   . "WHERE meta_key = 'species.alias' "
+                                   . "AND species_id = ?",
+                                 $dbh->quote_identifier($dbname) ) );
 
       # Execute, and don't care about errors (there will be errors for
       # databases without a 'meta' table.
@@ -2057,16 +2058,9 @@ sub find_and_add_aliases {
       my $meta_container = eval { $dba->get_MetaContainer() };
 
       if ( defined($meta_container) ) {
-        foreach my $key ( qw(
-          species.alias
-          species.taxonomy_id
-          assembly.name
-          species.common_name
-          ) )
-        {
-          push( @aliases,
-            @{ $meta_container->list_value_by_key($key) } );
-        }
+        push( @aliases,
+              @{ $meta_container->list_value_by_key('species.alias') }
+        );
       }
 
       # Need to disconnect so we do not spam the MySQL servers trying to
@@ -2077,14 +2071,19 @@ sub find_and_add_aliases {
     }
 
     foreach my $alias (@aliases) {
-      if ( !$class->alias_exists($alias.$species_suffix) and $species ne $alias.$species_suffix) {
-        $class->add_alias( $species, $alias.$species_suffix );
-      } elsif ( $species ne $class->get_alias($alias.$species_suffix) ) {
-        throw(
-          sprintf(
-            "Trying to add alias '%s' to species '%s', "
-              . " but it is already registrered for species '%s'\n",
-            $alias.$species_suffix, $species, $class->get_alias($alias.$species_suffix) ) );
+      if (   !$class->alias_exists( $alias . $species_suffix )
+           && $species ne $alias . $species_suffix )
+      {
+        $class->add_alias( $species, $alias . $species_suffix );
+      } elsif (
+             $species ne $class->get_alias( $alias . $species_suffix ) )
+      {
+        throw(sprintf(
+                "Trying to add alias '%s' to species '%s', "
+                  . " but it is already registrered for species '%s'\n",
+                $alias . $species_suffix,
+                $species, $class->get_alias( $alias . $species_suffix )
+              ) );
       }
     }
 
