@@ -699,6 +699,10 @@ sub get_seq_region_id {
                then your slice will not start at position 1, so coordinates
                retrieved from this slice might not be what you expected.
 
+  Arg[5]     : bool $include_lrg (optional)  (default 0)
+               If set lrg regions will be returned aswell.
+
+
   Example    : @chromos = @{$slice_adaptor->fetch_all('chromosome','NCBI33')};
                @contigs = @{$slice_adaptor->fetch_all('contig')};
 
@@ -734,7 +738,7 @@ sub fetch_all {
   my $cs_name = shift;
   my $cs_version = shift || '';
 
-  my ($include_non_reference, $include_duplicates) = @_;
+  my ($include_non_reference, $include_duplicates, $include_lrg) = @_;
 
   #
   # verify existance of requested coord system and get its id
@@ -757,6 +761,33 @@ sub fetch_all {
                       . 'FROM seq_region sr, seq_region_attrib sra, '
                       . 'attrib_type at, coord_system cs '
                       . 'WHERE at.code = "non_ref" '
+                      . 'AND sra.seq_region_id = sr.seq_region_id '
+                      . 'AND at.attrib_type_id = sra.attrib_type_id '
+                      . 'AND sr.coord_system_id = cs.coord_system_id '
+                      . 'AND cs.species_id = ?' );
+
+    $sth2->bind_param( 1, $self->species_id(), SQL_INTEGER );
+    $sth2->execute();
+
+    my ($seq_region_id);
+    $sth2->bind_columns( \$seq_region_id );
+
+    while ( $sth2->fetch() ) {
+      $bad_vals{$seq_region_id} = 1;
+    }
+
+    $sth2->finish();
+  }
+
+  #
+  # if we do not want lrg's then add them to the bad list;
+  #
+  if (!$include_lrg) {
+    my $sth2 =
+      $self->prepare(   'SELECT sr.seq_region_id '
+                      . 'FROM seq_region sr, seq_region_attrib sra, '
+                      . 'attrib_type at, coord_system cs '
+                      . 'WHERE at.code = "LRG" '
                       . 'AND sra.seq_region_id = sr.seq_region_id '
                       . 'AND at.attrib_type_id = sra.attrib_type_id '
                       . 'AND sr.coord_system_id = cs.coord_system_id '
