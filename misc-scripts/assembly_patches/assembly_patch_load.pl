@@ -1,25 +1,40 @@
+#!/usr/local/ensembl/bin/perl -w
+
 use Bio::EnsEMBL::Registry;
+use Bio::EnsEMBL::Utils::Exception qw(throw);
+use Getopt::Long;
+
 use strict;
 
-my $pass         = shift;
-#my $fasta_file   = shift || "./data/alt.scaf.fa";
-my $mapping_file = shift || "./data/alt.scaf.agp";
-my $txt_file     = shift || "./data/alt_scaffold_placement.txt";
+my $pass;
+my $mapping_file = "./data/alt.scaf.agp";
+my $txt_file     = "./data/alt_scaffold_placement.txt";
+my $patchtype_file = "./data/patch_type";
+my $dbname;
+my $host;
+my $user;
+my $port = 3306;
 
-my $dbname = shift || "ianl_homo_sapiens_core_57_37b";
-my $host   = "ens-research";
-#my $user   = "ensadmin";
-my $user    = "ensro";
+&GetOptions(
+            'pass=s'         => \$pass,
+            'mapping_file=s' => \$mapping_file,
+            'txt_file=s'     => \$txt_file,
+            'patchtype_file=s' => \$patchtype_file,
+            'host=s'         => \$host,
+            'dbname=s'       => \$dbname,
+            'user=s'         => \$user,
+            'port=n'         => \$port,
+           );
 
 #connect to the database
 
-  my $dba = new Bio::EnsEMBL::DBSQL::DBAdaptor(
+my $dba = new Bio::EnsEMBL::DBSQL::DBAdaptor(
     '-host'    => $host,
     '-user'    => $user,
     '-pass'    => $pass,
     '-dbname'  => $dbname,
     '-species' => "load"
-  );
+    );
 
 
 my $sth = $dba->dbc->prepare("select max(seq_region_id) from seq_region")
@@ -90,6 +105,8 @@ if(!defined($chr_coord_id) or !defined($contig_coord_id)){
 
 my $non_ref;
 my $toplevel;
+my $patch_novel;
+my $patch_fix;
 
 $get_code_sth->execute("toplevel");
 $get_code_sth->bind_columns(\$toplevel);
@@ -99,12 +116,20 @@ $get_code_sth->execute("non_ref");
 $get_code_sth->bind_columns(\$non_ref);
 $get_code_sth->fetch;
 
+$get_code_sth->execute("patch_novel");
+$get_code_sth->bind_columns(\$patch_novel);
+$get_code_sth->fetch;
+
+$get_code_sth->execute("patch_fix");
+$get_code_sth->bind_columns(\$patch_fix);
+$get_code_sth->fetch;
 
 #      Store contigs as seq_region + dna.
 
 #open(FASTA, "<".$fasta_file)    || die "Could not open file $fasta_file";
 open(MAPPER,"<".$mapping_file)  || die "Could not open file $mapping_file";
 open(TXT,"<".$txt_file)         || die "Could not open file $txt_file";
+open(TYPE,"<".$patchtype_file)         || die "Could not open file $patchtype_file";
 
 open(SQL,">sql.txt") || die "Could not open sql.txt for writing\n";
 
@@ -113,6 +138,18 @@ my %txt_data;
 my %key_to_index;
 my %name_to_seq_id;
 my %seq_id_to_start;
+my %name_to_type;
+
+while (<TYPE>) {
+  chomp;
+  next if (/^#/);
+  my ($alt_scaf_name,$alt_scaf_acc,$type) = split(/\t/,$_);
+  if (!$alt_scaf_name || !$alt_scaf_acc || !$type) {
+    throw("Unable to find name, accession or type"); 
+  }
+  $name_to_type{$alt_scaf_name} = $type;
+}
+
 
 while(<TXT>){
   if(/^#/){
@@ -171,6 +208,19 @@ while(<TXT>){
 
     print SQL "insert into seq_region_attrib (seq_region_id, attrib_type_id, value) values ($max_seq_region_id, $toplevel, 1);\n";
     print SQL "insert into seq_region_attrib (seq_region_id, attrib_type_id, value) values ($max_seq_region_id, $non_ref, 1);\n";
+
+    # is this patch a novel or fix type?
+    if (exists $name_to_type{$alt_name} && defined $name_to_type{$alt_name}) {
+      if ($name_to_type{$alt_name} =~ /fix/i) {
+        print SQL "insert into seq_region_attrib (seq_region_id, attrib_type_id, value) values ($max_seq_region_id, $patch_fix, 1);\n";
+      } elsif ($name_to_type{$alt_name} =~ /novel/i) {
+        print SQL "insert into seq_region_attrib (seq_region_id, attrib_type_id, value) values ($max_seq_region_id, $patch_novel, 1);\n";
+      } else {
+        throw("Patch type ".$name_to_type{$alt_name}." for $alt_name not recognised");
+      }
+    } else {
+      throw("No alt_name $alt_name found in patchtypes_file");
+    }
 
     print SQL "insert into assembly_exception (assembly_exception_id, seq_region_id, seq_region_start, seq_region_end, exc_type, exc_seq_region_id, exc_seq_region_start, exc_seq_region_end, ori)\n";
     print SQL "\tvalues($max_assembly_exception_id, $max_seq_region_id, ",
