@@ -863,7 +863,7 @@ sub store {
   # Store the alternative translations, if there are any.
   #
 
-  if ( defined($alt_translations) ) {
+  if ( scalar( @{$alt_translations} ) > 0 ) {
     foreach my $alt_translation ( @{$alt_translations} ) {
       my $start_exon = $alt_translation->start_Exon();
       my $end_exon   = $alt_translation->end_Exon();
@@ -901,7 +901,7 @@ sub store {
       $db->get_TranslationAdaptor()
         ->store( $alt_translation, $transc_dbID );
     } ## end foreach my $alt_translation...
-  } ## end if ( defined($alt_translations...))
+  } ## end if ( scalar( @{$alt_translations...}))
 
   #
   # store the xrefs/object xref mapping
