@@ -334,6 +334,7 @@
 50542	ENS_LRG_gene	1	KNOWN	1	0	10	LRG display in Ensembl	MISC	\N	\N	\N
 50543	ENS_LRG_transcript	1	KNOWN	1	0	10	LRG display in Ensembl	MISC	\N	\N	\N
 
+50600	IKMCs_KOs	1	XREF	1	0	10	International Knockout Mouse Consortium Knockouts	MISC	\N	\N	Mouse lines produced as part of a high throughput strategy by the International Knockout Mouse Consortium to knock out every protein coding gene in mouse
 #
 #
 # Please separate fields in this file with TABS not spaces!
