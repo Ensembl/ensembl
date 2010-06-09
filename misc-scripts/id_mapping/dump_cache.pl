@@ -228,14 +228,16 @@ sub build_cache_by_seq_region {
 
     my $cmd = qq{./dump_by_seq_region.pl $options --index \$LSB_JOBINDEX};
 
-    my $pipe = qq{|bsub -J$lsf_name\[1-$num_jobs\]\%$concurrent } .
-      qq{-o $logpath/dump_by_seq_region.$dbtype.\%I.out } .
-      qq{-e $logpath/dump_by_seq_region.$dbtype.\%I.err } .
-      $conf->param('lsf_opt_dump_cache');
+    my $pipe =
+        qq{|bsub -J '$lsf_name\[1-$num_jobs\]\%$concurrent' }
+      . qq{-o $logpath/dump_by_seq_region.$dbtype.\%I.out }
+      . qq{-e $logpath/dump_by_seq_region.$dbtype.\%I.err }
+      . $conf->param('lsf_opt_dump_cache');
 
     # run lsf job array
     $logger->info("\nSubmitting $num_jobs jobs to lsf.\n");
     $logger->debug("$cmd\n\n");
+    $logger->debug("$pipe\n\n");
 
     local *BSUB;
     open BSUB, $pipe or
