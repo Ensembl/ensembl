@@ -1,16 +1,20 @@
-package XrefParser::MGI_curated_transcriptParser;
+package XrefParser::curated_transcriptParser;
 
 use strict;
 use File::Basename;
-use Bio::EnsEMBL::Registry;
+
 use base qw( XrefParser::BaseParser );
+
+use Bio::EnsEMBL::Registry;
 my $reg = "Bio::EnsEMBL::Registry";
 
+
+#my $dbi2;
 
 if (!defined(caller())) {
 
   if (scalar(@ARGV) != 1) {
-    print STDERR "\nUsage: MGI_curated_transcriptParser.pm file <source_id> <species_id>\n\n";
+    print STDERR "\nUsage: curated_transcriptParser.pm file <source_id> <species_id>\n\n";
     exit(1);
   }
 
@@ -27,18 +31,7 @@ sub run_script {
 
   my ($type, $my_args) = split(/:/,$file);
   
-  my $vuser  ="ensro";
-  my $vhost;
-  my $vport;
-  my $vdbname;
-  my $vpass;
-  my $cuser  ="ensro";
-  my $chost;
-  my $cport;
-  my $cdbname;
-  my $cpass;
-
-  my $host = "ens-staging2";
+  my $host = "ens-staging1";
   my $user = "ensro";
 
   if($my_args =~ /host[=][>](\S+?)[,]/){
@@ -47,24 +40,30 @@ sub run_script {
   if($my_args =~ /user[=][>](\S+?)[,]/){
     $user = $1;
   }
+  my %id2name = $self->species_id2name;
+  my $species_name = $id2name{$species_id}[0];
+  my $source_prefix;
+  if($species_name eq "homo_sapiens" ){
+    $source_prefix = "HGNC";
+  }
+  elsif($species_name eq "mus_musculus" ){
+    $source_prefix = "MGI";
+  }
+  else{
+    die "Species is $species_name and is not homo_sapines or mus_musculus the only two valid species\n";
+  }
 
-
-
-  if($my_args =~ /vhost[=][>](\S+?)[,]/){
-    $vhost = $1;
-  }
-  if($my_args =~ /vport[=][>](\S+?)[,]/){
-    $vport =  $1;
-  }
-  if($my_args =~ /vdbname[=][>](\S+?)[,]/){
-    $vdbname = $1;
-  }
-  if($my_args =~ /vpass[=][>](\S+?)[,]/){
-    $vpass = $1;
-  }
-  if($my_args =~ /vuser[=][>](\S+?)[,]/){
-    $vuser = $1;
-  }
+  my $vuser  ="ensro";
+  my $vhost;
+  my $vport;
+  my $vdbname;
+  my $vpass;
+ 
+  my $cuser  ="ensro";
+  my $chost;
+  my $cport;
+  my $cdbname;
+  my $cpass;
 
   if($my_args =~ /chost[=][>](\S+?)[,]/){
     $chost = $1;
@@ -81,7 +80,21 @@ sub run_script {
   if($my_args =~ /cuser[=][>](\S+?)[,]/){
     $cuser = $1;
   }
-
+  if($my_args =~ /vhost[=][>](\S+?)[,]/){
+    $vhost = $1;
+  }
+  if($my_args =~ /vport[=][>](\S+?)[,]/){
+    $vport =  $1;
+  }
+  if($my_args =~ /vdbname[=][>](\S+?)[,]/){
+    $vdbname = $1;
+  }
+  if($my_args =~ /vpass[=][>](\S+?)[,]/){
+    $vpass = $1;
+  }
+  if($my_args =~ /vuser[=][>](\S+?)[,]/){
+    $vuser = $1;
+  }
 
   my $vega_dbc;
   my $core_dbc;
@@ -91,39 +104,50 @@ sub run_script {
     if(!defined($vega_dbc)){
       print "Problem could not open connectipn to $vhost, $vport, $vuser, $vdbname, $vpass\n";
       return 1;
-    }    
+    }
     $core_dbc = $self->dbi2($chost, $cport, $cuser, $cdbname, $cpass);
     if(!defined($core_dbc)){
       print "Problem could not open connectipn to $chost, $cport, $cuser, $cdbname, $cpass\n";
       return 1;
-    }    
+    }
 
-  }	
+  }
   else{
+    my @dbas = @{$reg->get_all_adaptors()};
+    foreach my $db (@dbas){
+      print "DB: $db\n";
+    }
     $reg->load_registry_from_db(
-				-host => $host,
-				-user => $user);
+                                -host => $host,
+                                -user => $user);
 
-    $vega_dbc = $reg->get_adaptor("mouse","vega","slice");
+    @dbas = @{$reg->get_all_adaptors(-species => $species_name)};
+#    foreach my $db (@dbas){
+#      print "DB2: ".$db->db->group."\t$db\n";
+#    }
+    $vega_dbc = $reg->get_adaptor($species_name,"vega","slice");
     if(!defined($vega_dbc)){
-      print "Could not connect to mouse vega database using load_registry_from_db $host $user\n";
+      print "Could not connect to $species_name vega database using load_registry_from_db $host $user\n";
       return 1;
-    } 
+    }
     $vega_dbc = $vega_dbc->dbc;
-    $core_dbc = $reg->get_adaptor("mouse","core","slice");
+    $core_dbc = $reg->get_adaptor($species_name,"core","slice");
     if(!defined($core_dbc)){
-      print "Could not connect to mouse core database using load_registry_from_db $host $user\n";
+      print "Could not connect to $species_name core database using load_registry_from_db $host $user\n";
       return 1;
     }
     $core_dbc= $core_dbc->dbc;
   }
 
+
   my $clone_source_id =
     $self->get_source_id_for_source_name('Clone_based_vega_transcript');
   my $curated_source_id =
-    $self->get_source_id_for_source_name('MGI_curated_transcript');
+    $self->get_source_id_for_source_name($source_prefix."_curated_transcript");
  
-  my $sql = 'select tsi.stable_id, x.display_label from xref x, object_xref ox , transcript_stable_id tsi, external_db e where e.external_db_id = x.external_db_id and x.xref_id = ox.xref_id and tsi.transcript_id = ox.ensembl_id and e.db_name like ?';
+ print "source id is $source_id, curated_source_id is $curated_source_id\n";
+
+  my $sql = 'select tsi.stable_id, x.display_label, t.status from xref x, object_xref ox , transcript_stable_id tsi, external_db e, transcript t where e.external_db_id = x.external_db_id and x.xref_id = ox.xref_id and tsi.transcript_id = ox.ensembl_id and t.transcript_id = tsi.transcript_id and e.db_name like ?';
 
 
   my %ott_to_vega_name;
@@ -139,11 +163,11 @@ sub run_script {
     }
   }
 
-  
-  $sth = $vega_dbc->prepare($sql) || die "Could not prepare for vega $sql\n";
+  print "We have ".scalar(%ott_to_enst)." ott to enst entries\n " if($verbose);
+
+  my $sth = $vega_dbc->prepare($sql);   # funny number instead of stable id ?????
   $sth->execute("Vega_transcript") or croak( $vega_dbc->errstr() );
   while ( my @row = $sth->fetchrow_array() ) {
-     next if ($row[1] =~ /^OTT/); 
     $ott_to_vega_name{$row[0]} = $row[1];
   }
   $sth->finish;
@@ -154,10 +178,10 @@ sub run_script {
     if(defined($ott_to_vega_name{$ott})){
       my $id = $curated_source_id;
       my $name  = $ott_to_vega_name{$ott};
-      $name =~ s/WU://;
       if($name =~ /[.]/){
 	$id = $clone_source_id;
-# keep it apparently       $name =~ s/[.]\d+//;    #remove .number
+# number is no longer the clone version but the gene number so we need to keep it now.
+#        $name =~ s/[.]\d+//;    #remove .number  #
       }
       my $xref_id = $self->add_xref($name, "" , $name , "", $id, $species_id, "DIRECT");
       $xref_count++;
@@ -169,6 +193,9 @@ sub run_script {
   print "$xref_count direct xrefs succesfully parsed\n" if($verbose);
   return 0;
 }
+
+
+
 
 
 1;
