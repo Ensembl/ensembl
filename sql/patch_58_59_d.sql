@@ -14,6 +14,8 @@ ALTER TABLE object_xref
   ADD UNIQUE INDEX
     object_type_idx (ensembl_object_type, ensembl_id, xref_id, analysis_id);
 
+ANALYZE TABLE object_xref;
+
 # Insert patch identifier.
 INSERT INTO meta (species_id, meta_key, meta_value)
   VALUES (NULL, 'patch',
