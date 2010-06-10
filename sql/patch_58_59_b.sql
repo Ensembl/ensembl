@@ -9,7 +9,7 @@
 
 # Modify the assembly_exception table.
 ALTER TABLE assembly_exception MODIFY exc_type
-  ENUM('HAP', 'PAR', 'PATCH_FIX', 'PATCH_NOVEL') NOT NULL,
+  ENUM('HAP', 'PAR', 'PATCH_FIX', 'PATCH_NOVEL') NOT NULL;
 
 # Insert patch identifier.
 INSERT INTO meta (species_id, meta_key, meta_value)
