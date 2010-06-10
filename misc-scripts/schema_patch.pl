@@ -99,11 +99,11 @@ my $support = new Bio::EnsEMBL::Utils::ConversionSupport($SERVERROOT);
 $support->parse_common_options(@_);
 $support->param('dbname', undef);
 $support->parse_extra_options(
-							  'pattern|dbpattern=s',
-							  'schema|dbschema=s',
- 							  'bindir=s',
-							  'schema_type=s',
-							 );
+  'pattern|dbpattern=s',
+  'schema|dbschema=s',
+  'bindir=s',
+  'schema_type=s',
+);
 my @params = map { $_ unless ($_ =~ /dbname/) } $support->get_common_params;
 $support->allowed_params(
   @params,
@@ -131,15 +131,16 @@ $support->init_log;
 $support->check_required_params(
   'pattern',
   'schema',
-								'schema_type'
+  'schema_type'
 );
 
 my $schema_type = $support->param('schema_type');
 my %patch_dirs = (
-				  'core' => "$SERVERROOT/ensembl/sql",
-				  'funcgen' => "$SERVERROOT/ensembl-functgenomics/sql",
-				  'variation' => "$SERVERROOT/ensembl-variation/sql",
-				 );
+  'core' => "$SERVERROOT/ensembl/sql",
+  'funcgen' => "$SERVERROOT/ensembl-functgenomics/sql",
+  'variation' => "$SERVERROOT/ensembl-variation/sql",
+  'userdata' => "$SERVERROOT/ensembl/sql",
+);
 
 #check schema_type is valid
 if(! (defined $schema_type && exists $patch_dirs{$schema_type})){
@@ -174,13 +175,26 @@ $sth = $dbh->prepare($sql);
 $sth->execute;
 
 # loop over databases
+DB:
 while (my ($dbname) = $sth->fetchrow_array) {
   $support->log_stamped("$dbname\n");
   
   if ($support->user_proceed("\nPatch $dbname?")) {
 
+    if ($schema_type eq 'userdata') {
+      my $sql = qq(SELECT meta_value FROM $dbname.meta WHERE meta_key = 'schema_version');
+      my $sth = $dbh->prepare($sql);
+      $sth->execute;
+      while ( my ($existing_schema) = $sth->fetchrow_array ) {
+	unless ( $existing_schema < $schema ) {
+	  $support->log("database is already on schema $existing_schema, not patching to $schema.\n\n");
+	  next DB;
+	}
+      }
+    }
+
     # check which patches have already been applied
-    $sql = qq(SELECT meta_value FROM $dbname.meta WHERE meta_key = 'patch');
+    my $sql = qq(SELECT meta_value FROM $dbname.meta WHERE meta_key = 'patch');
     my $sth1 = $dbh->prepare($sql);
     $sth1->execute;
     
