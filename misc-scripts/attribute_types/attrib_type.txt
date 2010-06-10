@@ -373,3 +373,6 @@
 
 # attribute to indicate that a toplevel non-reference sequence is a LRG
 314	LRG	Locus Reference Genomic	Locus Reference Genomic sequence
+
+# attribute to indicate that human evidence for a low-coverage genomes' projected transcript has been removed
+315	NoEvidence	Supporting evidence for this projected transcript has been removed from the human database
