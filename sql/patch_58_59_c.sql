@@ -15,9 +15,9 @@ ALTER TABLE splicing_event
 # Update the new column using info from the old column and the
 # attrib_type table.
 UPDATE  splicing_event se
-  JOIN  attribute_type at ON (se.`type` = at.code)
-SET     se.attrib_type_id = at.attribut_type_id
-WHERE   at.attribut_type_id BETWEEN 300 AND 311;
+  JOIN  attrib_type at ON (se.`type` = at.code)
+SET     se.attrib_type_id = at.attrib_type_id
+WHERE   at.attrib_type_id BETWEEN 300 AND 311;
 
 # Drop the old column.
 ALTER TABLE splicing_event DROP COLUMN `type`;
