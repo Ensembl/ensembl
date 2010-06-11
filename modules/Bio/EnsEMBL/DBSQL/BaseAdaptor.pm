@@ -270,25 +270,29 @@ sub _list_dbIDs {
 
   if ( !defined($pk) ) { $pk = $table . "_id" }
 
-  my $sql = "SELECT " . $pk . "  FROM " . $table;
+  my $sql = sprintf( "SELECT %s FROM %s", $pk, $table );
 
   if ( defined($ordered) && $ordered ) {
-    $sql .= " order by seq_region_id, seq_region_start";
+    $sql .= " ORDER BY seq_region_id, seq_region_start";
   }
 
   my $sth = $self->prepare($sql);
+
   eval { $sth->execute() };
   if ($@) {
     throw("Detected an error whilst executing SQL '${sql}': $@");
   }
 
-  my @out;
-  while ( my ($id) = $sth->fetchrow() ) { push( @out, $id ) }
+  my $id;
+  $sth->bind_col( 1, \$id );
 
-  $sth->finish();
+  my @out;
+  while ( $sth->fetch() ) {
+    push( @out, $id );
+  }
 
   return \@out;
-}
+} ## end sub _list_dbIDs
 
 
 # _straight_join
