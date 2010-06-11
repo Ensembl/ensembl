@@ -56,7 +56,102 @@ use Bio::Species;
 
 # add well known meta info get-functions below
 
+=head2 get_production_name
 
+  Args          : none
+  Example       : $species = $meta_container->get_production_name();
+  Description   : Obtains the name of the species in a form usable as, for
+                  example, a table name, file name etc.
+  Returntype    : string
+  Exceptions    : none
+  Status        : Stable
+
+=cut
+
+sub get_production_name {
+  my ($self) = @_;
+
+  my $listref = $self->list_value_by_key('species.production_name');
+
+  my $name;
+  if ( defined($listref) && @{$listref} ) {
+    $name = $listref->[0];
+  }
+
+  return $name;
+}
+
+=head2 get_short_name
+
+  Args          : none
+  Example       : $species = $meta_container->get_short_name();
+  Description   : Obtains the name of the species in a form usable as, for
+                  example, a short label in a GUI.
+  Returntype    : string
+  Exceptions    : none
+  Status        : Stable
+
+=cut
+
+sub get_short_name {
+  my ($self) = @_;
+
+  my $listref = $self->list_value_by_key('species.short_name');
+
+  my $name;
+  if ( defined($listref) && @{$listref} ) {
+    $name = $listref->[0];
+  }
+
+  return $name;
+}
+
+=head2 get_common_name
+
+  Args          : none
+  Example       : $species = $meta_container->get_common_name();
+  Description   : Obtains the common name of the species.
+  Returntype    : string
+  Exceptions    : none
+  Status        : Stable
+
+=cut
+
+sub get_common_name {
+  my ($self) = @_;
+
+  my $listref = $self->list_value_by_key('species.common_name');
+
+  my $name;
+  if ( defined($listref) && @{$listref} ) {
+    $name = $listref->[0];
+  }
+
+  return $name;
+}
+
+=head2 get_short_name
+
+  Args          : none
+  Example       : $species = $meta_container->get_scientific_name();
+  Description   : Obtains the full scientific name of the species.
+  Returntype    : string
+  Exceptions    : none
+  Status        : Stable
+
+=cut
+sub get_scientific_name {
+  my ($self) = @_;
+
+  my $listref = $self->list_value_by_key('species.scientific_name');
+
+  my $name;
+  if ( defined($listref) && @{$listref} ) {
+    $name = $listref->[0];
+  }
+
+  return $name;
+}
 
 =head2 get_Species
 
