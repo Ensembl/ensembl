@@ -367,7 +367,10 @@ sub key_value_exists {
 
 sub _species_specific_key {
   my ( $self, $key ) = @_;
-  return ( $key ne 'patch' && $key ne 'schema_version' );
+
+  return (    $key ne 'patch'
+           && $key ne 'schema_version'
+           && $key ne 'schema_type' );
 }
 
 1;
