@@ -165,10 +165,18 @@ sub run_script {
 
   print "We have ".scalar(%ott_to_enst)." ott to enst entries\n " if($verbose);
 
-  my $sth = $vega_dbc->prepare($sql);   # funny number instead of stable id ?????
+
+  my $dbi = $self->dbi();
+
+  my $status_insert_sth = $dbi->prepare("INSERT IGNORE INTO havana_status (stable_id, status) values(?, ?)")
+    || die "Could not prepare status_insert_sth";
+
+  my %ott_to_status;
+  $sth = $vega_dbc->prepare($sql);   # funny number instead of stable id ?????
   $sth->execute("Vega_transcript") or croak( $vega_dbc->errstr() );
   while ( my @row = $sth->fetchrow_array() ) {
     $ott_to_vega_name{$row[0]} = $row[1];
+    $ott_to_status{$row[0]} = $row[2];
   }
   $sth->finish;
 
@@ -187,6 +195,29 @@ sub run_script {
       $xref_count++;
       
       $self->add_direct_xref($xref_id, $ott_to_enst{$ott}, "transcript", "");
+    }
+    if(defined($ott_to_status{$ott})){
+      $status_insert_sth->execute($ott_to_enst{$ott}, $ott_to_status{$ott});
+    }
+    
+  }
+ 
+
+  # need to add gene info to havana_status table
+  $sql = 'select gsi.stable_id, x.display_label from xref x, object_xref ox , gene_stable_id gsi, external_db e, gene g where e.external_db_id = x.external_db_id and x.xref_id = ox.xref_id and gsi.gene_id = ox.ensembl_id and g.gene_id = gsi.gene_id and e.db_name like "OTTG"';
+
+  $sth = $core_dbc->prepare($sql) || die "Could not prepare for core $sql\n";
+  $sth->execute() or croak( $core_dbc->errstr());
+  my %ottg_to_ensg;
+  while ( my @row = $sth->fetchrow_array() ) {
+    $ottg_to_ensg{$row[1]} = $row[0];
+  }
+
+  $sth = $vega_dbc->prepare("select gsi.stable_id, g.status from gene g, gene_stable_id gsi where g.gene_id = gsi.gene_id");
+  $sth->execute() or croak( $core_dbc->errstr());
+  while ( my @row = $sth->fetchrow_array() ) {
+    if(defined($ottg_to_ensg{$row[0]}) and defined($row[1])){
+      $status_insert_sth->execute($ottg_to_ensg{$row[0]}, $row[1]);
     }
   }
 

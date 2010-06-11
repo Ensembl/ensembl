@@ -255,6 +255,15 @@ CREATE TABLE core_database (
 ) COLLATE=latin1_swedish_ci TYPE=InnoDB;
   
 
+
+CREATE TABLE havana_status (
+
+  stable_id    VARCHAR(128),
+  status       enum('KNOWN','NOVEL','PUTATIVE','PREDICTED','KNOWN_BY_PROJECTION','UNKNOWN'),
+  UNIQUE KEY status_idx(stable_id)
+
+) COLLATE=latin1_swedish_ci TYPE=InnoDB;
+
 #
 # Try to keep the status in the correct order
 #   it will make it easier to see what is happening
