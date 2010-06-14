@@ -272,11 +272,29 @@ sub _list_dbIDs {
 
   my $sql = sprintf( "SELECT %s FROM %s", $pk, $table );
 
+  my $join_with_cs = 0;
+  if (    $self->is_multispecies()
+       && $self->isa('Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor')
+       && !$self->isa('Bio::EnsEMBL::DBSQL::UnmappedObjectAdaptor') )
+  {
+    $sql .= q(
+JOIN seq_region USING (seq_region_id)
+JOIN coord_system cs USING (coord_system_id)
+WHERE cs.species_id = ?
+);
+
+    $join_with_cs = 1;
+  }
+
   if ( defined($ordered) && $ordered ) {
     $sql .= " ORDER BY seq_region_id, seq_region_start";
   }
 
   my $sth = $self->prepare($sql);
+
+  if ($join_with_cs) {
+    $self->bind_param_generic_fetch( $self->species_id(), SQL_INTEGER );
+  }
 
   eval { $sth->execute() };
   if ($@) {
