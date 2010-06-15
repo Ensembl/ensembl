@@ -328,15 +328,54 @@ sub _add_coverage_information{
     my $rcs_sorted;
     @{$rcs_sorted} = sort {$a->start <=> $b->start} @{$rcs} if ($self->strand == -1);
     $rcs = $rcs_sorted if ($self->strand == -1);
-    my $start = 0;
-    foreach my $rc (@{$rcs}){
-	$rc->start(1) if ($rc->start < 0); #if the region lies outside the boundaries of the slice
-	$rc->end($self->end - $self->start + 1) if ($rc->end + $self->start > $self->end); 
-        substr($$reference_sequence, $start-1,($rc->start - $start - 1),'~' x ($rc->start - $start - 1)) if ($rc->start - 1 > $start);
-        $start = $rc->end;
-
-    }
-    substr($$reference_sequence, $start, ($self->length - $start) ,'~' x ($self->length - $start)) if ($self->length -1 > $start); 
+    my $start = 1;
+	
+	
+	# wm2 - new code to mask sequence, instead starts with masked string
+	# and unmasks seq where there is read coverage
+	
+	# get all length-changing vars
+	my @indels_ordered = sort {$a->start() <=> $b->start()} @{$self->{'alignIndels'}} if (defined $self->{'alignIndels'});
+	
+	my $masked_seq = '~' x length($$reference_sequence);
+	
+	foreach my $rc(@{$rcs}) {
+		my ($start, $end) = ($rc->start, $rc->end);
+		
+		# adjust region for indels
+		foreach my $indel(@indels_ordered) {
+			next if $rc->start > $end;
+			
+			# if within RC region, only need adjust the end
+			$start += $indel->length_diff unless $indel->start > $start;
+			$end += $indel->length_diff;
+		}
+		
+		# adjust coords for seq boundaries
+		$start = 1 if $start < 1;
+		$end = CORE::length($masked_seq) if $end > CORE::length($masked_seq);
+		
+		# now unmask the sequence using $$reference_sequence
+		substr($masked_seq, $start - 1, $end - $start + 1) = substr($$reference_sequence, $start - 1, $end - $start + 1);
+	}
+	
+	# wm2 - old code, starts with sequence and masks regions between read coverage - BUGGY
+#    foreach my $rc (@{$rcs}){
+#		$rc->start(1) if ($rc->start < 0); #if the region lies outside the boundaries of the slice
+#		$rc->end($self->end - $self->start + 1) if ($rc->end + $self->start > $self->end);
+#		
+#		warn "Adjusted: ", $rc->start, "-", $rc->end;
+#		
+#		warn "Covering from ", $start, " over ", ($rc->start - $start - 1), " bases";
+#		
+#        substr($$reference_sequence, $start-1,($rc->start - $start - 1),'~' x ($rc->start - $start - 1)) if ($rc->start - 1 > $start);
+#        $start = $rc->end;
+#
+#    }
+#    substr($$reference_sequence, $start, ($self->length - $start) ,'~' x ($self->length - $start)) if ($self->length -1 > $start);
+	
+	# copy the masked sequence to the reference sequence
+	$$reference_sequence = $masked_seq;
 }
 
 
