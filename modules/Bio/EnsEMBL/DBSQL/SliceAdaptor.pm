@@ -932,6 +932,41 @@ sub is_toplevel {
   return 0;
 }
 
+=head2 is_reference
+  Arg        : int seq_region_id 
+  Example    : my $reference = $slice_adptor->is_reference($seq_region_id)
+  Description: Returns 1 if slice is a reference slice else 0
+  Returntype : int
+  Caller     : Slice method is_reference
+  Status     : At Risk
+
+=cut
+
+sub is_reference {
+  my $self = shift;
+  my $id   = shift;
+
+  my $sth = $self->prepare(
+            "SELECT at.code from seq_region_attrib sra, attrib_type at "
+              . "WHERE sra.seq_region_id = ? "
+              . "AND at.attrib_type_id = sra.attrib_type_id "
+              . "AND at.code = 'non_ref'" );
+
+  $sth->bind_param( 1, $id, SQL_INTEGER );
+  $sth->execute();
+
+  my $code;
+  $sth->bind_columns( \$code );
+
+  while ( $sth->fetch ) {
+    $sth->finish;
+    return 0;
+  }
+
+  $sth->finish;
+  return 1;
+}
+
 =head2 fetch_by_band
 
  Title   : fetch_by_band

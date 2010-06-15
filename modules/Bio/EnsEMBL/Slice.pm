@@ -467,6 +467,26 @@ sub length {
   return $self->{'end'} - $self->{'start'} + 1;
 }
 
+=head2 is_reference
+  Arg        : none
+  Example    : my $reference = $slice->is_reference
+  Description: Returns 1 if slice is a reference  slice else 0
+  Returntype : int
+  Caller     : general
+  Status     : At Risk
+
+=cut
+
+sub is_reference {
+  my ($self) = @_;
+
+  if(!defined($self->{'is_reference'})){
+    $self->{'is_reference'} = $self->adaptor->is_reference($self->get_seq_region_id);
+  }
+
+  return $self->{'is_reference'};
+}
+
 =head2 is_toplevel
   Arg        : none
   Example    : my $top = $slice->is_toplevel
