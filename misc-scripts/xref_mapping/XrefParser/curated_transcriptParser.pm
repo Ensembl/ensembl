@@ -119,7 +119,8 @@ sub run_script {
     }
     $reg->load_registry_from_db(
                                 -host => $host,
-                                -user => $user);
+                                -user => $user,
+			        -species => $species_name);
 
     @dbas = @{$reg->get_all_adaptors(-species => $species_name)};
 #    foreach my $db (@dbas){

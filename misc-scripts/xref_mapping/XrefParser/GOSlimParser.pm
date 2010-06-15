@@ -5,6 +5,8 @@ use strict;
 use DBI;
 
 use base qw( XrefParser::BaseParser );
+use Bio::EnsEMBL::Registry;
+my $reg = "Bio::EnsEMBL::Registry";
 
 
 sub run_script {
@@ -39,9 +41,21 @@ sub run_script {
     $tran_name = $1;
   }
 
+  my $dbi2;
+  if(!defined($dbname)){
+    $reg->load_registry_from_db(
+                                -host => $host,
+                                -user => $user,
+			        -group => "ontology");
+    my $dbc = $reg->get_adaptor("multi","ontology","GOTerm");
+    $dbi2 = $dbc->dbc;
+  }	
+  else{
+    $dbi2 = $self->dbi2($host, $port, $user, $dbname, $pass);
+  }
+
   my $add_dependent_xref_sth = $self->dbi->prepare("INSERT INTO dependent_xref  (master_xref_id,dependent_xref_id, linkage_source_id) VALUES (?,?, $source_id)");
 
-  my $dbi2 = $self->dbi2($host, $port, $user, $dbname, $pass);
 
   if(!defined($dbi2)){
     return 1;
