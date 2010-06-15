@@ -1,4 +1,4 @@
-#!/usr/local/ensembl/bin/perl -w
+#!/usr/bin/env perl
 
 #-----------------------------------------------------------------------
 # Demo program for the Ensembl ontology database and API.
@@ -33,8 +33,8 @@ sub process_term {
 
     # Display the accession of this term and of its parents.
     printf( "%s%s %s: %s\n",
-      $indent, $term->accession(), $relation,
-      join( ',', map { $_->accession() } @parent_list ) );
+            $indent, $term->accession(), $relation,
+            join( ',', map { $_->accession() } @parent_list ) );
 
     foreach my $parent_term (@parent_list) {
       process_term( $chart, $parent_term, $depth + 1 );
@@ -45,10 +45,8 @@ sub process_term {
 
 my $registry = 'Bio::EnsEMBL::Registry';
 
-$registry->load_registry_from_db(
-  '-host' => 'ensembldb.ensembl.org',
-  '-user' => 'anonymous'
-);
+$registry->load_registry_from_db( '-host' => 'ensembldb.ensembl.org',
+                                  '-user' => 'anonymous' );
 
 my $accession = 'GO:0030326';
 
@@ -63,6 +61,5 @@ my %chart = %{ $go_adaptor->_fetch_ancestor_chart($term) };
 # Call the recursive process_term() subroutine with the term just
 # fetched.
 process_term( \%chart, $term );
-
 
 # $Id$

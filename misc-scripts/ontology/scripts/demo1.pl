@@ -1,4 +1,4 @@
-#!/usr/local/ensembl/bin/perl -w
+#!/usr/bin/env perl
 
 #-----------------------------------------------------------------------
 # Demo program for the Ensembl ontology database and API.
@@ -16,10 +16,8 @@ use Bio::EnsEMBL::Registry;
 
 my $registry = 'Bio::EnsEMBL::Registry';
 
-$registry->load_registry_from_db(
-  '-host' => 'ensembldb.ensembl.org',
-  '-user' => 'anonymous'
-);
+$registry->load_registry_from_db( '-host' => 'ensembldb.ensembl.org',
+                                  '-user' => 'anonymous' );
 
 my $accession = 'GO:0030326';
 
@@ -37,12 +35,12 @@ my $term = $go_adaptor->fetch_by_accession($accession);
 my @genes = @{ $gene_adaptor->fetch_all_by_GOTerm($term) };
 
 printf( "Genes associated with the term '%s' (%s):\n",
-  $term->accession(), $term->name() );
+        $term->accession(), $term->name() );
 
 foreach my $gene (@genes) {
   printf( "stable ID = %s, external DB = %s, external name = %s\n",
-    $gene->stable_id(), $gene->external_db(), $gene->external_name() );
+          $gene->stable_id(), $gene->external_db(),
+          $gene->external_name() );
 }
-
 
 # $Id$
