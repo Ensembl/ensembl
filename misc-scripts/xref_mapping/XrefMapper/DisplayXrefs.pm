@@ -169,7 +169,9 @@ sub genes_and_transcripts_attributes_set{
 
 sub set_status{
   my $self = shift;
+
 # set all genes to NOVEL
+
   
   my $reset_sth = $self->core->dbc->prepare('UPDATE gene SET status = "NOVEL"');
   $reset_sth->execute();
@@ -179,8 +181,8 @@ sub set_status{
   $reset_sth->execute();
   $reset_sth->finish;
   
-  my $update_gene_sth = $self->core->dbc->prepare('UPDATE gene SET status = "KNOWN" where gene_id = ?');
-  my $update_tran_sth = $self->core->dbc->prepare('UPDATE transcript SET status = "KNOWN" where transcript_id = ?');
+  my $update_gene_sth = $self->core->dbc->prepare('UPDATE gene SET status = ? where gene_id = ?');
+  my $update_tran_sth = $self->core->dbc->prepare('UPDATE transcript SET status = ? where transcript_id = ?');
 
   
 my $known_xref_sql =(<<DXS);
@@ -208,19 +210,6 @@ where   ox.ox_status = 'DUMP_OUT'
         AND s.status like "KNOWN%"
         ORDER BY gene_id DESC, transcript_id DESC
 DXS
-#  SELECT distinct (gtt.gene_id), gtt.transcript_id 
-#    FROM source s, xref x, object_xref ox, identity_xref ix, gene_transcript_translation gtt
-#     WHERE  x.source_id = s.source_id 
-#       AND x.xref_id = ox.xref_id 
-#       AND ox.ox_status = "DUMP_OUT"   
-#       AND (          (ox.ensembl_object_type = "Transcript" and gtt.transcript_id = ox.ensembl_id)       
-#                 OR   (ox.ensembl_object_type = "Translation" and gtt.translation_id = ox.ensembl_id)
-#                 OR   (ox.ensembl_object_type = "Gene" and gtt.gene_id = ox.ensembl_id)     
-#           )
-#       AND ox.object_xref_id = ix.object_xref_id 
-#       AND s.status like "KNOWN"
-#  ORDER BY gtt.gene_id DESC, gtt.transcript_id DESC
-#DXS
 
 
   my $last_gene = 0;
@@ -232,11 +221,92 @@ DXS
   $known_xref_sth->bind_columns(\$gene_id, \$transcript_id);
   while($known_xref_sth->fetch()){
     if($gene_id != $last_gene){
-      $update_gene_sth->execute($gene_id);
+      $update_gene_sth->execute("KNOWN",$gene_id);
       $last_gene = $gene_id;
     } 
-    $update_tran_sth->execute($transcript_id);
+    $update_tran_sth->execute("KNOWN",$transcript_id);
   }
+
+
+  # 1) load list of stable_gene_id from xref database and covert to internal id in
+  #    new core database table.
+  #    Use this table to reset havana gene/transcript status.
+
+  if(!scalar(keys %genes_to_transcripts)){
+    $self->build_genes_to_transcripts();
+  }
+
+  #
+  #need to create a gene_id to status hash and transcript
+  #
+
+  my %gene_id_to_status;
+  my $gene_status_sth = $self->xref->dbc->prepare("SELECT gsi.internal_id, hs.status FROM gene_stable_id gsi, havana_status hs WHERE hs.stable_id = gsi.stable_id") 
+    || die "Could not prepare gene_status_sth";
+
+  $gene_status_sth->execute();
+  my ($internal_id, $status);
+  $gene_status_sth->bind_columns(\$internal_id,\$status);
+  while($gene_status_sth->fetch()){
+    $gene_id_to_status{$internal_id} = $status;
+  }
+  $gene_status_sth->finish();
+
+  #
+  # need to create a transcript_id to status hash
+  #
+
+  my %transcript_id_to_status;
+  my $transcript_status_sth = $self->xref->dbc->prepare("SELECT tsi.internal_id, hs.status FROM transcript_stable_id tsi, havana_status hs WHERE hs.stable_id = tsi.stable_id") 
+    || die "Could not prepare transcript_status_sth";
+
+  $transcript_status_sth->execute();
+  $transcript_status_sth->bind_columns(\$internal_id,\$status);
+  while($transcript_status_sth->fetch()){
+    $transcript_id_to_status{$internal_id} = $status;
+  }
+  $transcript_status_sth->finish();
+
+
+  #
+  # Get some stats
+  #
+  my %count;
+
+  # Loop for each gene_id
+  foreach my $gene_id (keys %genes_to_transcripts) {
+    # if gene havana status is set
+    if(defined($gene_id_to_status{$gene_id})){
+      #if set check each transcript
+      my $missing = 0;
+      foreach my $tran_id (@{$genes_to_transcripts{$gene_id}}){
+	if(!defined($transcript_id_to_status{$tran_id})){
+	  $missing++;
+	}	
+      }
+      #if all transcript have havana status
+      if(!$missing){
+	#   set the status for each transcript and the gene
+	foreach my $tran_id (@{$genes_to_transcripts{$gene_id}}){
+	  $update_tran_sth->execute($transcript_id_to_status{$tran_id},$tran_id);
+	}
+	$update_gene_sth->execute($gene_id_to_status{$gene_id},$gene_id);
+	$count{"Setting for all transcripts and gene"}++;
+      }
+      else{
+	$count{"One or more transcripts failed test"}++;
+      }
+    }
+    else{
+      $count{"No havana gene status"}++;
+    }
+  }
+      
+  print "\n";
+  foreach my $key (keys %count){
+    print "$key\t".$count{$key}."\n";
+  }
+
   $known_xref_sth->finish;
   $update_gene_sth->finish;
   $update_tran_sth->finish;
