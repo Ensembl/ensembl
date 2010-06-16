@@ -863,7 +863,7 @@ sub store {
   # Store the alternative translations, if there are any.
   #
 
-  if ( defined @{$alt_translations} && scalar( @{$alt_translations} ) > 0 ) {
+  if ( defined ($alt_translations) && scalar( @{$alt_translations} ) > 0 ) {
     foreach my $alt_translation ( @{$alt_translations} ) {
       my $start_exon = $alt_translation->start_Exon();
       my $end_exon   = $alt_translation->end_Exon();
