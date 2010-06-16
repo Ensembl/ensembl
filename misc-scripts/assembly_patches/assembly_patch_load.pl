@@ -124,6 +124,8 @@ $get_code_sth->execute("patch_fix");
 $get_code_sth->bind_columns(\$patch_fix);
 $get_code_sth->fetch;
 
+# get time
+my $time = time();
 #      Store contigs as seq_region + dna.
 
 #open(FASTA, "<".$fasta_file)    || die "Could not open file $fasta_file";
@@ -212,9 +214,9 @@ while(<TXT>){
     # is this patch a novel or fix type?
     if (exists $name_to_type{$alt_name} && defined $name_to_type{$alt_name}) {
       if ($name_to_type{$alt_name} =~ /fix/i) {
-        print SQL "insert into seq_region_attrib (seq_region_id, attrib_type_id, value) values ($max_seq_region_id, $patch_fix, 1);\n";
+        print SQL "insert into seq_region_attrib (seq_region_id, attrib_type_id, value) values ($max_seq_region_id, $patch_fix, $time);\n";
       } elsif ($name_to_type{$alt_name} =~ /novel/i) {
-        print SQL "insert into seq_region_attrib (seq_region_id, attrib_type_id, value) values ($max_seq_region_id, $patch_novel, 1);\n";
+        print SQL "insert into seq_region_attrib (seq_region_id, attrib_type_id, value) values ($max_seq_region_id, $patch_novel, $time);\n";
       } else {
         throw("Patch type ".$name_to_type{$alt_name}." for $alt_name not recognised");
       }
