@@ -166,22 +166,18 @@ sub get_scientific_name {
 =cut
 
 sub get_Species {
-  my $self = shift;
+  my ($self) = @_;
 
-  my $arrRef = $self->list_value_by_key( 'species.common_name' );
-  my $common_name;
-  if( @$arrRef ) {
-    $common_name = $arrRef->[0];
-  }
-  
-  my $classification = $self->list_value_by_key( 'species.classification' );
-  if( ! @$classification ) {
+  my $common_name = $self->get_common_name();
+  my $classification =
+    $self->list_value_by_key('species.classification');
+  if ( !@$classification ) {
     return undef;
   }
 
   my $species = new Bio::Species;
-  $species->common_name( $common_name );
-  $species->classification( @$classification );
+  $species->common_name($common_name);
+  $species->classification(@$classification);
 
   return $species;
 }
