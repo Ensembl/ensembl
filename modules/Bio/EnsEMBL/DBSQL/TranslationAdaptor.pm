@@ -114,7 +114,9 @@ sub fetch_all_by_Transcript {
   # Get the canonical translation.
   my $translations = [ $self->fetch_by_Transcript($transcript) ];
 
-  if ( scalar( @{$translations} ) == 0 ) {
+  if ( scalar( @{$translations} ) == 0
+       || !defined( $translations->[0] ) )
+  {
     return [];
   }
 
