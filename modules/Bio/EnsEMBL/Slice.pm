@@ -1521,17 +1521,44 @@ sub get_all_LD_values{
 # }
 }
 
+sub _get_VariationFeatureAdaptor {
+    
+  my $self = shift;
+    
+  if(!$self->adaptor()) {
+    warning('Cannot get variation features without attached adaptor');
+    return undef;
+  }
+    
+  my $vf_adaptor = Bio::EnsEMBL::DBSQL::MergedAdaptor->new(
+    -species  => $self->adaptor()->db()->species, 
+    -type     => "VariationFeature"
+  );
+  
+  if( $vf_adaptor ) {
+    return $vf_adaptor;
+  }
+  else {
+    warning("Variation database must be attached to core database to " .
+            "retrieve variation information" );
+        
+    return undef;
+  }
+}
+
 =head2 get_all_VariationFeatures
 
-    Args       : $filter [optional]
-    Description :returns all variation features on this slice. This function will only work
-                correctly if the variation database has been attached to the core database.
-		 If $filter is "genotyped" return genotyped Snps only... (nice likkle hack);
-    ReturnType : listref of Bio::EnsEMBL::Variation::VariationFeature
-    Exceptions : none
-    Caller     : contigview, snpview
-    Status     : At Risk
-               : Variation database is under development.
+    Args        : $filter [optional] (deprecated)
+    Description : Returns all germline variation features on this slice. This function will 
+                  only work correctly if the variation database has been attached to the core 
+                  database.
+                  If (the deprecated parameter) $filter is "genotyped" return genotyped SNPs only, 
+                  otherwise return all germline variations.
+    ReturnType  : listref of Bio::EnsEMBL::Variation::VariationFeature
+    Exceptions  : none
+    Caller      : contigview, snpview
+    Status      : At Risk
+                : Variation database is under development.
 
 =cut
 
@@ -1539,22 +1566,38 @@ sub get_all_VariationFeatures{
   my $self = shift;
   my $filter = shift;
 
-  $filter ||= '';
-  if(!$self->adaptor()) {
-    warning('Cannot get variation features without attached adaptor');
+  if ($filter && $filter eq 'genotyped') {
+    deprecate("Don't pass 'genotyped' parameter, call get_all_genotyped_VariationFeatures instead");
+    return $self->get_all_genotyped_VariationFeatures;
+  }
+    
+  if (my $vf_adaptor = $self->_get_VariationFeatureAdaptor) {
+    return $vf_adaptor->fetch_all_by_Slice($self);
+  }
+  else {
     return [];
   }
+}
 
-  my $vf_adaptor = Bio::EnsEMBL::DBSQL::MergedAdaptor->new(-species => $self->adaptor()->db()->species, -type => "VariationFeature");
-  if( $vf_adaptor ) {
-    if( $filter eq 'genotyped' ) {
-      return $vf_adaptor->fetch_all_genotyped_by_Slice($self);
-    } else {
-      return $vf_adaptor->fetch_all_by_Slice($self);
-    }
-  } else {
-       warning("Variation database must be attached to core database to " .
- 		"retrieve variation information" );
+=head2 get_all_somatic_VariationFeatures
+
+    Args        : $filter [optional]
+    Description : Returns all somatic variation features on this slice. This function will only 
+                  work correctly if the variation database has been attached to the core database.
+    ReturnType  : listref of Bio::EnsEMBL::Variation::VariationFeature
+    Exceptions  : none
+    Status      : At Risk
+                : Variation database is under development.
+
+=cut
+
+sub get_all_somatic_VariationFeatures {
+  my $self = shift;
+    
+  if (my $vf_adaptor = $self->_get_VariationFeatureAdaptor) {
+    return $vf_adaptor->fetch_all_somatic_by_Slice($self);
+  }
+  else{
     return [];
   }
 }
@@ -1564,20 +1607,20 @@ sub get_all_VariationFeatures{
     Arg [1]     : $variation_feature_source [optional]
     Arg [2]     : $annotation_source [optional]
     Arg [3]     : $annotation_name [optional]
-    Description :returns all variation features on this slice associated with a phenotype.
-                 This function will only work correctly if the variation database has been
-                 attached to the core database.
-                 If $variation_feature_source is set only variations from that source
-                 are retrieved.
-                 If $annotation_source is set only variations whose annotations come from
-                 $annotation_source will be retrieved.
-                 If $annotation_name is set only variations with that annotation will be retrieved.
-                 $annotation_name can be a phenotype's internal dbID.
-    ReturnType : listref of Bio::EnsEMBL::Variation::VariationFeature
-    Exceptions : none
-    Caller     : contigview, snpview
-    Status     : At Risk
-               : Variation database is under development.
+    Description : returns all germline variation features on this slice associated with a phenotype.
+                  This function will only work correctly if the variation database has been
+                  attached to the core database.
+                  If $variation_feature_source is set only variations from that source
+                  are retrieved.
+                  If $annotation_source is set only variations whose annotations come from
+                  $annotation_source will be retrieved.
+                  If $annotation_name is set only variations with that annotation will be retrieved.
+                  $annotation_name can be a phenotype's internal dbID.
+    ReturnType  : listref of Bio::EnsEMBL::Variation::VariationFeature
+    Exceptions  : none
+    Caller      : contigview, snpview
+    Status      : At Risk
+                : Variation database is under development.
 
 =cut
 
@@ -1587,19 +1630,39 @@ sub get_all_VariationFeatures_with_annotation{
   my $p_source = shift;
   my $annotation = shift;
 
-  if(!$self->adaptor()) {
-    warning('Cannot get variation features without attached adaptor');
-    return [];
-  }
-
-  my $vf_adaptor = Bio::EnsEMBL::DBSQL::MergedAdaptor->new(-species => $self->adaptor()->db()->species, -type => "VariationFeature");
-  if( $vf_adaptor ) {
-  	return $vf_adaptor->fetch_all_with_annotation_by_Slice($self, $source, $p_source, $annotation);
+  if (my $vf_adaptor = $self->_get_VariationFeatureAdaptor) {
+    return $vf_adaptor->fetch_all_with_annotation_by_Slice($self, $source, $p_source, $annotation);
   }
   else {
-       warning("Variation database must be attached to core database to " .
- 		"retrieve variation information" );
     return [];
+  }
+}
+
+=head2 get_all_somatic_VariationFeatures_with_annotation
+
+    Arg [1]     : $variation_feature_source [optional]
+    Arg [2]     : $annotation_source [optional]
+    Arg [3]     : $annotation_name [optional]
+    Description : returns all somatic variation features on this slice associated with a phenotype.
+                  (see get_all_VariationFeatures_with_annotation for further documentation)
+    ReturnType  : listref of Bio::EnsEMBL::Variation::VariationFeature
+    Exceptions  : none
+    Status      : At Risk
+                : Variation database is under development.
+
+=cut
+
+sub get_all_somatic_VariationFeatures_with_annotation{
+  my $self = shift;
+  my $source = shift;
+  my $p_source = shift;
+  my $annotation = shift;
+
+  if (my $vf_adaptor = $self->_get_VariationFeatureAdaptor) {
+    return $vf_adaptor->fetch_all_somatic_with_annotation_by_Slice($self, $source, $p_source, $annotation);
+  }
+  else {
+    return [] unless $vf_adaptor;
   }
 }
 
@@ -1621,18 +1684,10 @@ sub get_all_VariationFeatures_by_VariationSet {
   my $self = shift;
   my $set = shift;
 
-  if(!$self->adaptor()) {
-    warning('Cannot get variation features without attached adaptor');
-    return [];
-  }
-
-  my $vf_adaptor = Bio::EnsEMBL::DBSQL::MergedAdaptor->new(-species => $self->adaptor()->db()->species, -type => "VariationFeature");
-  if( $vf_adaptor ) {
-  	return $vf_adaptor->fetch_all_by_Slice_VariationSet($self, $set);
+  if (my $vf_adaptor = $self->_get_VariationFeatureAdaptor) {
+    return $vf_adaptor->fetch_all_by_Slice_VariationSet($self, $set);  
   }
   else {
-       warning("Variation database must be attached to core database to " .
- 		"retrieve variation information" );
     return [];
   }
 }
@@ -1705,22 +1760,14 @@ sub get_all_StructuralVariations{
 =cut
 
 sub get_all_VariationFeatures_by_Population {
- my $self = shift;
+  my $self = shift;
 
- if(!$self->adaptor()) {
-  warning('Cannot get variation features without attached adaptor');
-  return [];
- }
-
- my $vf_adaptor = Bio::EnsEMBL::DBSQL::MergedAdaptor->new(-species => $self->adaptor()->db()->species, -type => "VariationFeature");
- if( $vf_adaptor ) {
+  if (my $vf_adaptor = $self->_get_VariationFeatureAdaptor) {
     return $vf_adaptor->fetch_all_by_Slice_Population($self, @_);
- }
- else {
-     warning("Variation database must be attached to core database to " .
-       "retrieve variation information" );
-  return [];
- }
+  }
+  else {
+    return [];
+  }
 }
 
 
@@ -2014,20 +2061,12 @@ sub calculate_pi{
 
 sub get_all_genotyped_VariationFeatures{
   my $self = shift;
-  my $vfa;
-  if(!$self->adaptor()) {
-    warning('Cannot get variation features without attached adaptor');
+
+  if( my $vf_adaptor = $self->_get_VariationFeatureAdaptor) {
+    return $vf_adaptor->fetch_all_genotyped_by_Slice($self);
+  } 
+  else {
     return [];
-  }
-
-  my $vf_adaptor = Bio::EnsEMBL::DBSQL::MergedAdaptor->new(-species => $self->adaptor()->db()->species, -type => "VariationFeature");
-
-  if( $vf_adaptor ) {
-      return $vf_adaptor->fetch_all_genotyped_by_Slice($self);
-  } else {
-      warning("Variation database must be attached to core database to " .
-	      "retrieve variation information" );
-      return [];
   }
 }
 
