@@ -31,12 +31,9 @@ sub run_script {
 
   my ($type, $my_args) = split(/:/,$file);
   
-  my $host = "ens-staging1";
+  my $host;
   my $user = "ensro";
 
-  if($my_args =~ /host[=][>](\S+?)[,]/){
-    $host = $1;
-  }
   if($my_args =~ /user[=][>](\S+?)[,]/){
     $user = $1;
   }
@@ -45,14 +42,19 @@ sub run_script {
   my $source_prefix;
   if($species_name eq "homo_sapiens" ){
     $source_prefix = "HGNC";
+    $host = "ens-staging1";
   }
   elsif($species_name eq "mus_musculus" ){
     $source_prefix = "MGI";
+    $host = "ens-staging2";
   }
   else{
     die "Species is $species_name and is not homo_sapines or mus_musculus the only two valid species\n";
   }
 
+  if($my_args =~ /host[=][>](\S+?)[,]/){
+    $host = $1;
+  }
   my $vuser  ="ensro";
   my $vhost;
   my $vport;
@@ -113,19 +115,12 @@ sub run_script {
 
   }
   else{
-    my @dbas = @{$reg->get_all_adaptors()};
-    foreach my $db (@dbas){
-      print "DB: $db\n";
-    }
+
     $reg->load_registry_from_db(
                                 -host => $host,
                                 -user => $user,
 			        -species => $species_name);
 
-    @dbas = @{$reg->get_all_adaptors(-species => $species_name)};
-#    foreach my $db (@dbas){
-#      print "DB2: ".$db->db->group."\t$db\n";
-#    }
     $vega_dbc = $reg->get_adaptor($species_name,"vega","slice");
     if(!defined($vega_dbc)){
       print "Could not connect to $species_name vega database using load_registry_from_db $host $user\n";
