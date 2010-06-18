@@ -799,36 +799,42 @@ sub length {
 =cut
 
 sub seq {
-  my $self = shift;
+  my ( $self, $sequence ) = @_;
 
-  if(@_) {
-    $self->{'seq'} = shift;
-    return $self->{'seq'};
+  if ( defined($sequence) ) {
+
+    $self->{'seq'} = $sequence;
+
+  } elsif ( !defined( $self->{'seq'} ) ) {
+
+    my $adaptor = $self->{'adaptor'};
+    if ( !defined($adaptor) ) {
+      warning(   "Cannot retrieve sequence from Translation "
+               . "- adaptor is not set." );
+    }
+
+    my $dbID = $self->{'dbID'};
+    if ( !defined($dbID) ) {
+      warning(   "Cannot retrieve sequence from Translation "
+               . "- dbID is not set." );
+    }
+
+    my $tr_adaptor = $adaptor->db()->get_TranscriptAdaptor();
+
+    my $seq = $tr_adaptor->fetch_by_translation_id($dbID)->translate();
+    if ( defined($seq) ) {
+      $self->{'seq'} = $seq->seq();
+    }
+
   }
 
-  return $self->{'seq'} if($self->{'seq'});
-
-  my $adaptor = $self->{'adaptor'};
-  if(!$adaptor) {
-    warning("Cannot retrieve sequence from Translation - adaptor is not set.");
+  if ( !defined( $self->{'seq'} ) ) {
+    return '';    # Empty string
   }
 
-  my $dbID = $self->{'dbID'};
-  if(!$dbID) {
-    warning("Cannot retrieve sequence from Translation - dbID is not set.");
-  }
-  
-  my $tr_adaptor = $self->{'adaptor'}->db()->get_TranscriptAdaptor;
+  return $self->{'seq'};
 
-  my $seq = $tr_adaptor->fetch_by_translation_id($dbID)->translate();
-  if($seq){
-    $self->{'seq'} = $seq->seq();
-    return $self->{'seq'};
-  }
-  else{
-    return ''; #empty string
-  }
-}
+} ## end sub seq
 
 
 =head2 get_all_Attributes
