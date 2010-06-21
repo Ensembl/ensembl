@@ -293,7 +293,7 @@ WHERE cs.species_id = ?
   my $sth = $self->prepare($sql);
 
   if ($join_with_cs) {
-    $self->bind_param_generic_fetch( $self->species_id(), SQL_INTEGER );
+    $sth->bind_param( 1, $self->species_id(), SQL_INTEGER );
   }
 
   eval { $sth->execute() };
