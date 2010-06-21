@@ -182,6 +182,7 @@ sub run_script {
     if(defined($ott_to_vega_name{$ott})){
       my $id = $curated_source_id;
       my $name  = $ott_to_vega_name{$ott};
+      $name =~ s/WU://;
       if($name =~ /[.]/){
 	$id = $clone_source_id;
 # number is no longer the clone version but the gene number so we need to keep it now.
