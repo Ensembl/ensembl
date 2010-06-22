@@ -214,22 +214,23 @@ sub fetch_all_by_Slice_and_score {
 =cut
 
 sub fetch_all_by_Slice_constraint {
-  my($self, $slice, $constraint, $logic_name) = @_;
+  my ( $self, $slice, $constraint, $logic_name ) = @_;
 
   my @result = ();
 
-  if(!ref($slice) || !($slice->isa('Bio::EnsEMBL::Slice') or $slice->isa('Bio::EnsEMBL::LRGSlice'))) {
+  if ( !ref($slice)
+       || !(    $slice->isa('Bio::EnsEMBL::Slice')
+             or $slice->isa('Bio::EnsEMBL::LRGSlice') ) )
+  {
     throw("Bio::EnsEMBL::Slice argument expected.");
   }
 
   $constraint ||= '';
-  $constraint = $self->_logic_name_to_constraint($constraint, $logic_name);
-
-
-
+  $constraint =
+    $self->_logic_name_to_constraint( $constraint, $logic_name );
 
   # If the logic name was invalid, undef was returned
-  return [] if ( !defined($constraint) );
+  if ( !defined($constraint) ) { return [] }
 
   my $key;
 
@@ -239,13 +240,14 @@ sub fetch_all_by_Slice_constraint {
   {
 
     #strain test and add to constraint if so to stop caching.
-    if($slice->isa('Bio::EnsEMBL::StrainSlice')){
-      my $string = $self->dbc->db_handle->quote($slice->strain_name);
-      if($constraint ne ""){
-	$constraint .= " AND $string = $string ";
-      }
-      else{
-	$constraint .= " $string = $string ";
+    if ( $slice->isa('Bio::EnsEMBL::StrainSlice') ) {
+      my $string =
+        $self->dbc()->db_handle()->quote( $slice->strain_name() );
+
+      if ( $constraint ne "" ) {
+        $constraint .= " AND $string = $string ";
+      } else {
+        $constraint .= " $string = $string ";
       }
     }
 
@@ -266,11 +268,11 @@ sub fetch_all_by_Slice_constraint {
       $self->{'_bind_param_generic_fetch'} = ();
       return $self->{'_slice_feature_cache'}->{$key};
     }
-  }
+  } ## end if ( !( defined( $self...)))
 
   my $sa = $slice->adaptor();
 
-  # Hap/PAR support: retrieve normalized 'non-symlinked' slices
+  # Hap/PAR support: retrieve normalized 'non-symlinked' slices.
   my @proj = @{ $sa->fetch_normalized_slice_projection($slice) };
 
   if ( @proj == 0 ) {
@@ -279,63 +281,66 @@ sub fetch_all_by_Slice_constraint {
     );
   }
 
-  # Want to get features on the FULL original slice
-  # as well as any symlinked slices
+  # Want to get features on the FULL original slice as well as any
+  # symlinked slices.
 
-  # Filter out partial slices from projection that are on
-  # same seq_region as original slice
+  # Filter out partial slices from projection that are on same
+  # seq_region as original slice.
 
   my $sr_id = $slice->get_seq_region_id();
 
   @proj = grep { $_->to_Slice->get_seq_region_id() != $sr_id } @proj;
 
-  my $segment = bless([1,$slice->length(),$slice ],
-                      'Bio::EnsEMBL::ProjectionSegment');
+  my $segment = bless( [ 1, $slice->length(), $slice ],
+                       'Bio::EnsEMBL::ProjectionSegment' );
   push( @proj, $segment );
-
 
   # construct list of Hap/PAR boundaries for entire seq region
   my @bounds;
+
   my $ent_slice = $sa->fetch_by_seq_region_id($sr_id);
-  $ent_slice    = $ent_slice->invert() if($slice->strand == -1);
-  my @ent_proj  = @{$sa->fetch_normalized_slice_projection($ent_slice)};
+  if ( $slice->strand() == -1 ) {
+    $ent_slice = $ent_slice->invert();
+  }
 
-  shift @ent_proj; # skip first
-  @bounds = map {$_->from_start - $slice->start() + 1} @ent_proj;
+  my @ent_proj =
+    @{ $sa->fetch_normalized_slice_projection($ent_slice) };
+  shift(@ent_proj);    # skip first
 
+  @bounds = map { $_->from_start() - $slice->start() + 1 } @ent_proj;
 
   # fetch features for the primary slice AND all symlinked slices
   foreach my $seg (@proj) {
-    my $offset = $seg->from_start();
-    my $seg_slice  = $seg->to_Slice();
-    my $features = $self->_slice_fetch($seg_slice, $constraint); ## NO RESULTS
+    my $offset    = $seg->from_start();
+    my $seg_slice = $seg->to_Slice();
+    my $features =
+      $self->_slice_fetch( $seg_slice, $constraint );    ## NO RESULTS
 
-    # if this was a symlinked slice offset the feature coordinates as needed
-    if($seg_slice->name() ne $slice->name()) {
+    # If this was a symlinked slice offset the feature coordinates as
+    # needed.
+    if ( $seg_slice->name() ne $slice->name() ) {
 
     FEATURE:
-      foreach my $f (@$features) {
-        if($offset != 1) {
-
-          $f->{'start'} += $offset-1;
-          $f->{'end'}   += $offset-1;
+      foreach my $f ( @{$features} ) {
+        if ( $offset != 1 ) {
+          $f->{'start'} += $offset - 1;
+          $f->{'end'}   += $offset - 1;
         }
 
         # discard boundary crossing features from symlinked regions
         foreach my $bound (@bounds) {
-          if($f->{'start'} < $bound && $f->{'end'} >= $bound) {
+          if ( $f->{'start'} < $bound && $f->{'end'} >= $bound ) {
             next FEATURE;
           }
         }
 
         $f->{'slice'} = $slice;
-        push @result, $f;
+        push( @result, $f );
       }
+    } else {
+      push( @result, @{$features} );
     }
-    else {
-      push @result, @$features;
-    }
-}
+  } ## end foreach my $seg (@proj)
 
   # Will only use feature_cache when set attribute no_cache in DBAdaptor
   if ( defined($key) ) {
@@ -343,7 +348,7 @@ sub fetch_all_by_Slice_constraint {
   }
 
   return \@result;
-}
+} ## end sub fetch_all_by_Slice_constraint
 
 
 =head2 fetch_all_by_logic_name
