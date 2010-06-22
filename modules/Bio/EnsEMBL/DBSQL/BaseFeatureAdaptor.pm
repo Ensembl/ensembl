@@ -275,7 +275,7 @@ sub fetch_all_by_Slice_constraint {
   # Hap/PAR support: retrieve normalized 'non-symlinked' slices.
   my @proj = @{ $sa->fetch_normalized_slice_projection($slice) };
 
-  if ( @proj == 0 ) {
+  if ( !@proj ) {
     throw( 'Could not retrieve normalized Slices. '
          . 'Database contains incorrect assembly_exception information.'
     );
