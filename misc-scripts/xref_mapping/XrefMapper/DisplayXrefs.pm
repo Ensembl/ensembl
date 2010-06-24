@@ -237,10 +237,10 @@ DXS
   }
 
   #
-  #need to create a gene_id to status hash and transcript
+  # Reset status for those from vega
   #
 
-  my %gene_id_to_status;
+#  my %gene_id_to_status;
   my $gene_status_sth = $self->xref->dbc->prepare("SELECT gsi.internal_id, hs.status FROM gene_stable_id gsi, havana_status hs WHERE hs.stable_id = gsi.stable_id") 
     || die "Could not prepare gene_status_sth";
 
@@ -248,7 +248,8 @@ DXS
   my ($internal_id, $status);
   $gene_status_sth->bind_columns(\$internal_id,\$status);
   while($gene_status_sth->fetch()){
-    $gene_id_to_status{$internal_id} = $status;
+#    $gene_id_to_status{$internal_id} = $status;
+    $update_gene_sth->execute($status, $internal_id);
   }
   $gene_status_sth->finish();
 
@@ -256,56 +257,57 @@ DXS
   # need to create a transcript_id to status hash
   #
 
-  my %transcript_id_to_status;
+#  my %transcript_id_to_status;
   my $transcript_status_sth = $self->xref->dbc->prepare("SELECT tsi.internal_id, hs.status FROM transcript_stable_id tsi, havana_status hs WHERE hs.stable_id = tsi.stable_id") 
     || die "Could not prepare transcript_status_sth";
 
   $transcript_status_sth->execute();
   $transcript_status_sth->bind_columns(\$internal_id,\$status);
   while($transcript_status_sth->fetch()){
-    $transcript_id_to_status{$internal_id} = $status;
+    #    $transcript_id_to_status{$internal_id} = $status;
+    $update_tran_sth->execute($status,$internal_id);  
   }
   $transcript_status_sth->finish();
 
 
-  #
-  # Get some stats
-  #
-  my %count;
+#  #
+#  # Get some stats
+#  #
+#  my %count;
 
-  # Loop for each gene_id
-  foreach my $gene_id (keys %genes_to_transcripts) {
-    # if gene havana status is set
-    if(defined($gene_id_to_status{$gene_id})){
-      #if set check each transcript
-      my $missing = 0;
-      foreach my $tran_id (@{$genes_to_transcripts{$gene_id}}){
-	if(!defined($transcript_id_to_status{$tran_id})){
-	  $missing++;
-	}	
-      }
-      #if all transcript have havana status
-      if(!$missing){
-	#   set the status for each transcript and the gene
-	foreach my $tran_id (@{$genes_to_transcripts{$gene_id}}){
-	  $update_tran_sth->execute($transcript_id_to_status{$tran_id},$tran_id);
-	}
-	$update_gene_sth->execute($gene_id_to_status{$gene_id},$gene_id);
-	$count{"Setting for all transcripts and gene"}++;
-      }
-      else{
-	$count{"One or more transcripts failed test"}++;
-      }
-    }
-    else{
-      $count{"No havana gene status"}++;
-    }
-  }
+#  # Loop for each gene_id
+#  foreach my $gene_id (keys %genes_to_transcripts) {
+#    # if gene havana status is set
+#    if(defined($gene_id_to_status{$gene_id})){
+#      #if set check each transcript
+#      my $missing = 0;
+#      foreach my $tran_id (@{$genes_to_transcripts{$gene_id}}){
+#	if(!defined($transcript_id_to_status{$tran_id})){
+#	  $missing++;
+#	}	
+#      }
+#      #if all transcript have havana status
+#      if(!$missing){
+#	#   set the status for each transcript and the gene
+#	foreach my $tran_id (@{$genes_to_transcripts{$gene_id}}){
+#	  $update_tran_sth->execute($transcript_id_to_status{$tran_id},$tran_id);
+#	}
+#	$update_gene_sth->execute($gene_id_to_status{$gene_id},$gene_id);
+#	$count{"Setting for all transcripts and gene"}++;
+#      }
+#      else{
+#	$count{"One or more transcripts failed test"}++;
+#      }
+#    }
+#    else{
+#      $count{"No havana gene status"}++;
+#    }
+#  }
       
-  print "\n";
-  foreach my $key (keys %count){
-    print "$key\t".$count{$key}."\n";
-  }
+#  print "\n";
+#  foreach my $key (keys %count){
+#    print "$key\t".$count{$key}."\n";
+#  }
 
   $known_xref_sth->finish;
   $update_gene_sth->finish;
