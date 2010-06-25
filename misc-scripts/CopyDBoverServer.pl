@@ -127,19 +127,20 @@ LONG_USAGE_END
 } ## end sub long_usage
 
 my ( $opt_password, $opt_flush,  $opt_check, $opt_optimize,
-     $opt_force,    $opt_subset, $opt_help );
+     $opt_force,    $opt_subset, $opt_help, $skip_innodb);
 
 $opt_flush    = 1; # Flush by default.
 $opt_check    = 1; # Check tables by default.
 $opt_optimize = 1; # Optimize the tables by default.
 $opt_force    = 0; # Do not reuse existing staging directory by default.
 
-if ( !GetOptions( 'pass=s'   => \$opt_password,
-                  'flush!'   => \$opt_flush,
-                  'check!'   => \$opt_check,
-                  'opt!'     => \$opt_optimize,
-                  'force!'   => \$opt_force,
-                  'subset=s' => \$opt_subset,
+if ( !GetOptions( 'pass=s'       => \$opt_password,
+                  'flush!'       => \$opt_flush,
+                  'check!'       => \$opt_check,
+                  'opt!'         => \$opt_optimize,
+                  'force!'       => \$opt_force,
+                  'subset=s'     => \$opt_subset,
+				  'skip_innodb!' => \$skip_innodb,
                   'help'     => \$opt_help )
      || ( !defined($opt_password) && !defined($opt_help) ) )
 {
@@ -470,10 +471,24 @@ foreach my $spec (@todo) {
   } else {
     # Copy all tables.
 
-    foreach
-      my $table ( @{ $source_dbh->selectall_arrayref('SHOW TABLES') } )
-    {
-      push( @tables, $table->[0] );
+    foreach my $table ( @{ $source_dbh->selectall_arrayref('SHOW TABLES') } )
+	  {
+
+		$table = $table->[0];
+		my ($engine) = $source_dbh->selectrow_array("select t.Engine from information_schema.TABLES t where t.TABLE_SCHEMA='${source_db}' and t.TABLE_NAME='${table}'");
+		
+	  if($engine eq 'InnoDB'){
+		
+		if($skip_innodb){
+		  warn("SKIPPING InnoDB table:\t$table\n");
+		  next;
+		}
+		else{
+		  die("Found InnoDB table:\t${source_db}.${table}\nPlease convert table engine or specify -skip_innodb");
+		}
+	  }
+
+		push( @tables, $table );
     }
   }
 
@@ -613,11 +628,10 @@ foreach my $spec (@todo) {
 
           warn(
             sprintf(
-              "Failed to check some tables. "
-                . "Is this an InnoDB database maybe?\n"
-                . "Please clean up '%s'.\n",
-              $staging_dir
-            ) );
+					"Failed to check some tables. "
+					. "Please clean up '%s'.\n",
+					$staging_dir
+				   ) );
 
           $spec->{'status'} = sprintf(
             "FAILED: MYISAM table check failed "
