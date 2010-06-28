@@ -3,7 +3,7 @@ CREATE TABLE `assembly_exception` (
   `seq_region_id` int(11) NOT NULL default '0',
   `seq_region_start` int(11) NOT NULL default '0',
   `seq_region_end` int(11) NOT NULL default '0',
-  `exc_type` enum('HAP','PAR') collate latin1_bin NOT NULL default 'HAP',
+  `exc_type` enum('HAP','PAR','PATCH_NOVEL','PATCH_FIX') collate latin1_bin NOT NULL default 'HAP',
   `exc_seq_region_id` int(11) NOT NULL default '0',
   `exc_seq_region_start` int(11) NOT NULL default '0',
   `exc_seq_region_end` int(11) NOT NULL default '0',
