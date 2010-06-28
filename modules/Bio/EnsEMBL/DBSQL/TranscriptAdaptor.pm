@@ -710,8 +710,9 @@ sub store {
   # Force lazy-loading of exons and ensure coords are correct.
   $transcript->recalculate_coordinates();
 
-  # default to is_current = 1 if this attribute is not set
-  my $is_current = $transcript->is_current() || 1;
+  my $is_current = ( defined( $transcript->is_current() )
+                     ? $transcript->is_current()
+                     : 1 );
 
   # store analysis
   my $analysis = $transcript->analysis();
@@ -991,9 +992,9 @@ sub store {
       ->from_seconds_to_date( $transcript->modified_date() );
 
     my $sth = $self->prepare($statement);
-    $sth->bind_param( 1, $transc_dbID,           SQL_INTEGER );
-    $sth->bind_param( 2, $transcript->stable_id, SQL_VARCHAR );
-    $sth->bind_param( 3, $transcript->version,   SQL_INTEGER );
+    $sth->bind_param( 1, $transc_dbID,             SQL_INTEGER );
+    $sth->bind_param( 2, $transcript->stable_id(), SQL_VARCHAR );
+    $sth->bind_param( 3, $transcript->version(),   SQL_INTEGER );
     $sth->execute();
     $sth->finish();
   } ## end if ( defined( $transcript...))
