@@ -364,55 +364,54 @@ sub _remap {
 		  type and alternate_slice) of if $asx not a Bio::EnsEMBL::AssemblyException
     Caller:       general
     Status:       Stable
+
 =cut
 
-#    use Data::Dumper;
-
 sub store{
-    my $self = shift;
-    my $asx = shift;
-    my $asx2 = shift;
+  my $self = shift;
+  my $asx = shift;
+  my $asx2 = shift;
 
 
-    if (! $asx->isa('Bio::EnsEMBL::AssemblyExceptionFeature')){
-	throw("$asx is not a Ensembl assemlby exception -- not stored");
-    }
-    #if already present, return ID in the database
-    my $db = $self->db();
-    if ($asx->is_stored($db)){
-	return $asx->dbID();
-    }
-    #do some checkings for the object
-    #at the moment, the orientation is always 1
-    if (! $asx->start || ! $asx->end ){
-	throw("Assembly exception does not have coordinates");
-    }
-    if ($asx->type !~ /PAR|HAP/){
-	throw("Only types of assembly exception features valid are PAR and HAP");
-    }
-    if ( !($asx->alternate_slice->isa('Bio::EnsEMBL::Slice') or $asx->alternate_slice->isa('Bio::EnsEMBL::LRGSlice')) ){
-	throw("Alternate slice should be a Bio::EnsEMBL::Slice");
-    }
-    #now check the other Assembly exception feature, the one pointing to the REF
-    # region
-    if (!$asx2->isa('Bio::EnsEMBL::AssemblyExceptionFeature')){
-	throw("$asx2 is not a Ensembl assemlby exception -- not stored");
-    }
-     if (! $asx2->start || ! $asx2->end ){
-	throw("Assembly exception does not have coordinates");
-    }
-    if ($asx2->type !~ /HAP REF|PAR REF/){
-	throw("$asx2 should have  type of assembly exception features HAP REF or PAR REF");
-    }
-    if (! ($asx2->alternate_slice->isa('Bio::EnsEMBL::Slice') or $asx2->alternate_slice->isa('Bio::EnsEMBL::LRGSlice'))){
-      throw("Alternate slice should be a Bio::EnsEMBL::Slice");
-    }
-    #finally check that both features are pointing to each other slice
-    if ($asx->slice != $asx2->alternate_slice || $asx->alternate_slice != $asx2->slice){
-	throw("Slice and alternate slice in both features are not pointing to each other");
-    }
-    #prepare the SQL
-    my $asx_sql = q{
+  if (! $asx->isa('Bio::EnsEMBL::AssemblyExceptionFeature')){
+    throw("$asx is not a Ensembl assemlby exception -- not stored");
+  }
+  #if already present, return ID in the database
+  my $db = $self->db();
+  if ($asx->is_stored($db)){
+    return $asx->dbID();
+  }
+  #do some checkings for the object
+  #at the moment, the orientation is always 1
+  if (! $asx->start || ! $asx->end ){
+    throw("Assembly exception does not have coordinates");
+  }
+  if ($asx->type !~ /PAR|HAP|PATCH_NOVEL|PATCH_FIX/){
+    throw("Only types of assembly exception features valid are PAR, HAP, PATCH_FIX or PATCH_NOVEL");
+  }
+  if ( !($asx->alternate_slice->isa('Bio::EnsEMBL::Slice')) ){
+    throw("Alternate slice should be a Bio::EnsEMBL::Slice");
+  }
+  #now check the other Assembly exception feature, the one pointing to the REF
+  # region
+  if (!$asx2->isa('Bio::EnsEMBL::AssemblyExceptionFeature')){
+    throw("$asx2 is not a Ensembl assemlby exception -- not stored");
+  }
+  if (! $asx2->start || ! $asx2->end ){
+    throw("Assembly exception does not have coordinates");
+  }
+  if ($asx2->type !~ /HAP REF|PAR REF|PATCH_NOVEL REF|PATCH_FIX REF/){
+    throw("$asx2 should have  type of assembly exception features HAP REF, PAR REF, PATCH_FIX REF or PATCH_NOVEL REF");
+  }
+  if (! ($asx2->alternate_slice->isa('Bio::EnsEMBL::Slice')) ){
+    throw("Alternate slice should be a Bio::EnsEMBL::Slice");
+  }
+  #finally check that both features are pointing to each other slice
+  if ($asx->slice != $asx2->alternate_slice || $asx->alternate_slice != $asx2->slice){
+    throw("Slice and alternate slice in both features are not pointing to each other");
+  }
+  #prepare the SQL
+  my $asx_sql = q{
 	INSERT INTO assembly_exception( seq_region_id, seq_region_start,
 					seq_region_end, 
 					exc_type, exc_seq_region_id,
@@ -420,41 +419,41 @@ sub store{
 					ori)
 	    VALUES (?, ?, ?, ?, ?, ?, ?, 1)
 	};
-
-    my $asx_st = $self->prepare($asx_sql);
-    my $asx_id = undef;
-    my $asx_seq_region_id;
-    my $asx2_seq_region_id;
-    my $original = $asx;
-    my $original2 = $asx2;
-    #check all feature information
-    ($asx, $asx_seq_region_id) = $self->_pre_store($asx);
-    ($asx2, $asx2_seq_region_id) = $self->_pre_store($asx2);
-
-    #and store it
-    $asx_st->bind_param(1, $asx_seq_region_id, SQL_INTEGER);
-    $asx_st->bind_param(2, $asx->start(), SQL_INTEGER);
-    $asx_st->bind_param(3, $asx->end(), SQL_INTEGER);
-    $asx_st->bind_param(4, $asx->type(), SQL_VARCHAR);
-    $asx_st->bind_param(5, $asx2_seq_region_id, SQL_INTEGER);
-    $asx_st->bind_param(6, $asx2->start(), SQL_INTEGER);
-    $asx_st->bind_param(7, $asx2->end(), SQL_INTEGER);
-
-    $asx_st->execute();
-    $asx_id = $asx_st->{'mysql_insertid'};
-
-    #finally, update the dbID and adaptor of the asx and asx2
-    $original->adaptor($self);
-    $original->dbID($asx_id);
-    $original2->adaptor($self);
-    $original2->dbID($asx_id);
-    #and finally update dbID cache with new assembly exception
-    $self->{'_aexc_dbID_cache'}->{$asx_id} = $original;
-    #and update the other caches as well
-    push @{$self->{'_aexc_slice_cache'}->{uc($asx->slice->name)}},$original, $original2;
-    push @{$self->{'_aexc_cache'}}, $original, $original2;
-    
-    return $asx_id;
+  
+  my $asx_st = $self->prepare($asx_sql);
+  my $asx_id = undef;
+  my $asx_seq_region_id;
+  my $asx2_seq_region_id;
+  my $original = $asx;
+  my $original2 = $asx2;
+  #check all feature information
+  ($asx, $asx_seq_region_id) = $self->_pre_store($asx);
+  ($asx2, $asx2_seq_region_id) = $self->_pre_store($asx2);
+  
+  #and store it
+  $asx_st->bind_param(1, $asx_seq_region_id, SQL_INTEGER);
+  $asx_st->bind_param(2, $asx->start(), SQL_INTEGER);
+  $asx_st->bind_param(3, $asx->end(), SQL_INTEGER);
+  $asx_st->bind_param(4, $asx->type(), SQL_VARCHAR);
+  $asx_st->bind_param(5, $asx2_seq_region_id, SQL_INTEGER);
+  $asx_st->bind_param(6, $asx2->start(), SQL_INTEGER);
+  $asx_st->bind_param(7, $asx2->end(), SQL_INTEGER);
+  
+  $asx_st->execute();
+  $asx_id = $asx_st->{'mysql_insertid'};
+  
+  #finally, update the dbID and adaptor of the asx and asx2
+  $original->adaptor($self);
+  $original->dbID($asx_id);
+  $original2->adaptor($self);
+  $original2->dbID($asx_id);
+  #and finally update dbID cache with new assembly exception
+  $self->{'_aexc_dbID_cache'}->{$asx_id} = $original;
+  #and update the other caches as well
+  push @{$self->{'_aexc_slice_cache'}->{uc($asx->slice->name)}},$original, $original2;
+  push @{$self->{'_aexc_cache'}}, $original, $original2;
+  
+  return $asx_id;
 }
 
 #
