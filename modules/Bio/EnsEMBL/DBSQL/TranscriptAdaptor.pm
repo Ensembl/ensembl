@@ -1252,12 +1252,12 @@ sub remove {
 =cut
 
 sub update {
-  my ($self, $transcript) = @_;
+  my ( $self, $transcript ) = @_;
 
-  my $update = 0;
-
-  if( !defined $transcript || !ref $transcript || 
-      !$transcript->isa('Bio::EnsEMBL::Transcript') ) {
+  if (    !defined($transcript)
+       || !ref($transcript)
+       || !$transcript->isa('Bio::EnsEMBL::Transcript') )
+  {
     throw("Must update a transcript object, not a $transcript");
   }
 
@@ -1268,39 +1268,44 @@ sub update {
               description = ?,
               biotype = ?,
               status = ?,
-              is_current = ?
+              is_current = ?,
+              canonical_translation_id = ?
         WHERE transcript_id = ?
   );
 
   my $display_xref = $transcript->display_xref();
   my $display_xref_id;
 
-  if( $display_xref && $display_xref->dbID() ) {
+  if ( defined($display_xref) && $display_xref->dbID() ) {
     $display_xref_id = $display_xref->dbID();
   } else {
     $display_xref_id = undef;
   }
 
-  my $sth = $self->prepare( $update_transcript_sql );
-  
-  $sth->bind_param(1, $transcript->analysis->dbID, SQL_INTEGER);
-  $sth->bind_param(2, $display_xref_id, SQL_INTEGER);
-  $sth->bind_param(3, $transcript->description, SQL_LONGVARCHAR);
-  $sth->bind_param(4, $transcript->biotype, SQL_VARCHAR);
-  $sth->bind_param(5, $transcript->status, SQL_VARCHAR);
-  $sth->bind_param(6, $transcript->is_current, SQL_TINYINT);
-  $sth->bind_param(7, $transcript->dbID, SQL_INTEGER);
+  my $sth = $self->prepare($update_transcript_sql);
+
+  $sth->bind_param( 1, $transcript->analysis()->dbID(), SQL_INTEGER );
+  $sth->bind_param( 2, $display_xref_id, SQL_INTEGER );
+  $sth->bind_param( 3, $transcript->description(), SQL_LONGVARCHAR );
+  $sth->bind_param( 4, $transcript->biotype(),     SQL_VARCHAR );
+  $sth->bind_param( 5, $transcript->status(),      SQL_VARCHAR );
+  $sth->bind_param( 6, $transcript->is_current(),  SQL_TINYINT );
+  $sth->bind_param( 7, (
+                      defined( $transcript->translation() )
+                      ? $transcript->translation()->dbID()
+                      : undef ),
+                    SQL_INTEGER );
+  $sth->bind_param( 8, $transcript->dbID(), SQL_INTEGER );
 
   $sth->execute();
-}
+} ## end sub update
 
 
 =head2 list_dbIDs
 
   Example    : @transcript_ids = @{ $t_adaptor->list_dbIDs };
   Description: Gets a list of internal ids for all transcripts in the db.
-  Arg[1]     : <optional> int. not 0 for the ids to be sorted by the seq_region.
-  Returntype : Listref of Ints
+  Arg[1]     : <optional> int. not 0 for the ids to be sorted by the seq_region.  Returntype : Listref of Ints
   Exceptions : none
   Caller     : general
   Status     : Stable
