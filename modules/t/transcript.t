@@ -557,25 +557,24 @@ $tr->is_current(0);
 $tr->dbID(undef);
 $tr->adaptor(undef);
 $ta->store($tr, $g->dbID);
-
 $tr = $ta->fetch_by_stable_id('ENST00000355555');
-ok($tr->is_current == 1);
+ok($tr->is_current == 1);   # 148
 
 @transcripts = @{ $ta->fetch_all_versions_by_stable_id('ENST00000355555') };
 foreach my $t (@transcripts) {
   next unless ($t->version == 4);
-  ok($t->is_current == 0);
+  ok($t->is_current == 0);  # 149
 }
 
 $tr->is_current(0);
 $ta->update($tr);
 my $t1 = $ta->fetch_by_stable_id('ENST00000355555');
-ok(!$t1);
+ok(!$t1);   # 150
 
 $tr->is_current(1);
 $ta->update($tr);
 $tr = $ta->fetch_by_stable_id('ENST00000355555');
-ok($tr->is_current == 1);
+ok($tr->is_current == 1);   # 151
 
 $multi->restore;
 
