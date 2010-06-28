@@ -1098,10 +1098,14 @@ sub get_all_alt_locations {
       push @alt, $axf;
     } elsif( $axf->type() eq "PATCH_FIX"){
       push @haps, $axf;
+    } elsif( $axf->type() eq "PATCH_FIX REF"){
+      push @haps, $axf;
     } elsif( $axf->type() eq "HAP REF" ) { 
       push @haps, $axf if $return_all > 0 ;
       # do nothing when you are on REF
     } elsif( $axf->type() eq "PATCH_NOVEL"){
+      push @haps, $axf;
+    }elsif( $axf->type() eq "PATCH_NOVEL REF"){
       push @haps, $axf;
     } else {
       warning("Unknown exception feature type ". $axf->type()."- ignoring.");
