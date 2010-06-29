@@ -148,8 +148,11 @@ package Bio::EnsEMBL::Collection;
 use strict;
 use warnings;
 
-use Bio::EnsEMBL::Utils::Argument  ('rearrange');
-use Bio::EnsEMBL::Utils::Exception ('throw');
+use Bio::EnsEMBL::Utils::Argument ('rearrange');
+use Bio::EnsEMBL::Utils::Exception ( 'throw', 'deprecate' );
+
+deprecate(   "The Bio::EnsEMBL::Collection module is deprecated\n"
+           . "and will be removed in Ensembl release 60.\n" );
 
 use constant BASIC_SLOTS => 5;
 
