@@ -137,6 +137,32 @@ sub new_fast {
   return bless $hashref, $class;
 }
 
+sub transcript {
+  my ( $self, $transcript ) = @_;
+
+  if ( defined($transcript) ) {
+
+    $self->{'transcript'} = $transcript;
+
+  } elsif ( !defined( $self->{'transcript'} ) ) {
+    my $adaptor = $self->{'adaptor'};
+    if ( !defined($adaptor) ) {
+      throw("Adaptor is not set.");
+    }
+
+    my $dbID = $self->{'dbID'};
+    if ( !defined($dbID) ) {
+      throw("dbID is not set.");
+    }
+
+    $self->{'transcript'} =
+      $adaptor->db()->get_TranscriptAdaptor()
+      ->fetch_by_translation_id($dbID);
+  }
+
+  return $self->{'transcript'};
+}
+
 
 =head2 start
 
@@ -807,26 +833,32 @@ sub seq {
 
   } elsif ( !defined( $self->{'seq'} ) ) {
 
-    my $adaptor = $self->{'adaptor'};
-    if ( !defined($adaptor) ) {
-      warning(   "Cannot retrieve sequence from Translation "
-               . "- adaptor is not set." );
+    my $transcript = $self->transcript();
+
+    my $canonical_translation = $transcript->translation();
+    my $is_alternative =
+      ( $canonical_translation->stable_id() ne $self->stable_id() );
+
+    if ($is_alternative) {
+      # To deal with non-canonical (alternative) translations, subsitute
+      # the canonical translation in the transcript with $self for a
+      # while.
+
+      $transcript->translation($self);
     }
 
-    my $dbID = $self->{'dbID'};
-    if ( !defined($dbID) ) {
-      warning(   "Cannot retrieve sequence from Translation "
-               . "- dbID is not set." );
-    }
-
-    my $tr_adaptor = $adaptor->db()->get_TranscriptAdaptor();
-
-    my $seq = $tr_adaptor->fetch_by_translation_id($dbID)->translate();
+    my $seq = $transcript->translate();
     if ( defined($seq) ) {
       $self->{'seq'} = $seq->seq();
     }
 
-  }
+    if ($is_alternative) {
+      # Reinstate the real canonical translation.
+
+      $transcript->translation($canonical_translation);
+    }
+
+  } ## end elsif ( !defined( $self->...))
 
   if ( !defined( $self->{'seq'} ) ) {
     return '';    # Empty string

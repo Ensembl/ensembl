@@ -179,17 +179,17 @@ sub fetch_all_by_Transcript {
 
     push( @{$translations},
           Bio::EnsEMBL::Translation->new_fast( {
-                              'dbID'          => $translation_id,
-                              'adaptor'       => $self,
-                              'start'         => $seq_start,
-                              'end'           => $seq_end,
-                              'start_exon'    => $start_exon,
-                              'end_exon'      => $end_exon,
-                              'stable_id'     => $stable_id,
-                              'version'       => $version,
-                              'created_date'  => $created_date || undef,
-                              'modified_date' => $modified_date || undef
-                            } ) );
+                             'dbID'          => $translation_id,
+                             'adaptor'       => $self,
+                             'start'         => $seq_start,
+                             'end'           => $seq_end,
+                             'start_exon'    => $start_exon,
+                             'end_exon'      => $end_exon,
+                             'stable_id'     => $stable_id,
+                             'version'       => $version,
+                             'created_date'  => $created_date || undef,
+                             'modified_date' => $modified_date || undef,
+                             'transcript'    => $transcript } ) );
   } ## end while ( $sth->fetch() )
 
   return $translations;
@@ -267,18 +267,19 @@ sub fetch_by_Transcript {
         $transcript->dbID() ) );
   }
 
-  my $translation = Bio::EnsEMBL::Translation->new_fast( {
-      'dbID'          => $translation_id,
-      'adaptor'       => $self,
-      'start'         => $seq_start,
-      'end'           => $seq_end,
-      'start_exon'    => $start_exon,
-      'end_exon'      => $end_exon,
-      'stable_id'     => $stable_id,
-      'version'       => $version,
-      'created_date'  => $created_date || undef,
-      'modified_date' => $modified_date || undef
-  } );
+  my $translation =
+    Bio::EnsEMBL::Translation->new_fast( {
+                             'dbID'          => $translation_id,
+                             'adaptor'       => $self,
+                             'start'         => $seq_start,
+                             'end'           => $seq_end,
+                             'start_exon'    => $start_exon,
+                             'end_exon'      => $end_exon,
+                             'stable_id'     => $stable_id,
+                             'version'       => $version,
+                             'created_date'  => $created_date || undef,
+                             'modified_date' => $modified_date || undef,
+                             'transcript'    => $transcript } );
 
   return $translation;
 } ## end sub fetch_by_Transcript

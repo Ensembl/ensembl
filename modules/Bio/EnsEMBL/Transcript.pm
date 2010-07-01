@@ -592,9 +592,18 @@ sub translation {
     }
 
     $self->{'translation'} = $value;
+    $value->transcript($self);
 
-  } elsif ( !exists( $self->{'translation'} )
-    && defined( $self->adaptor() ) )
+    $self->{'cdna_coding_start'}   = undef;
+    $self->{'cdna_coding_end'}     = undef;
+
+    $self->{'coding_region_start'} = undef;
+    $self->{'coding_region_end'}   = undef;
+
+    $self->{'transcript_mapper'}   = undef;
+
+  } elsif (   !exists( $self->{'translation'} )
+            && defined( $self->adaptor() ) )
   {
     $self->{'translation'} =
       $self->adaptor()->db()->get_TranslationAdaptor()
@@ -602,7 +611,7 @@ sub translation {
   }
 
   return $self->{'translation'};
-}
+} ## end sub translation
 
 =head2 get_all_alternative_translations
 
@@ -744,16 +753,16 @@ sub spliced_seq {
 sub translateable_seq {
   my ( $self ) = @_;
 
-  if(!$self->translation()) {
+  if ( !$self->translation() ) {
     return '';
   }
 
   my $mrna = $self->spliced_seq();
 
   my $start = $self->cdna_coding_start();
-  my $end = $self->cdna_coding_end();
+  my $end   = $self->cdna_coding_end();
 
-  $mrna = substr( $mrna, $start-1, $end-$start+1 );
+  $mrna = substr( $mrna, $start - 1, $end - $start + 1 );
 
   my $start_phase = $self->translation->start_Exon->phase();
   if( $start_phase > 0 ) {
