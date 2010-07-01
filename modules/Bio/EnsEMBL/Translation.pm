@@ -52,6 +52,8 @@ package Bio::EnsEMBL::Translation;
 use vars qw($AUTOLOAD @ISA);
 use strict;
 
+use Scalar::Util qw(weaken);
+
 use Bio::EnsEMBL::Utils::Exception qw( deprecate throw warning );
 use Bio::EnsEMBL::Utils::Argument qw( rearrange );
 
@@ -144,6 +146,8 @@ sub transcript {
 
     $self->{'transcript'} = $transcript;
 
+    weaken($self->{'transcript'});
+
   } elsif ( !defined( $self->{'transcript'} ) ) {
     my $adaptor = $self->{'adaptor'};
     if ( !defined($adaptor) ) {
@@ -158,6 +162,8 @@ sub transcript {
     $self->{'transcript'} =
       $adaptor->db()->get_TranscriptAdaptor()
       ->fetch_by_translation_id($dbID);
+
+    weaken($self->{'transcript'});
   }
 
   return $self->{'transcript'};
