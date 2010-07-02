@@ -36,7 +36,18 @@ else{
 
 my $dbi = dbi();
 
+# First get the attrib_type_ids for the splicing event types
 
+my %ase_type;
+my $ase_type_sql = 'select attrib_type_id, code, name from attrib_type where attrib_type_id between 300 and 311 order by attrib_type_id';
+my $ase_type_sth = $dbi->prepare($ase_type_sql);
+$ase_type_sth->execute();
+my ($attrib_type_id, $ase_code, $ase_name);
+$ase_type_sth->bind_columns(\$attrib_type_id, \$ase_code, \$ase_name);
+while($ase_type_sth->fetch()){
+		$ase_type{$ase_code} = $attrib_type_id;
+}
+$ase_type_sth->finish;
 
 my $name_sql = 'select s.seq_region_id, s.name from seq_region s, seq_region_attrib sra, attrib_type at where at.attrib_type_id = sra.attrib_type_id and at.name like "top_level" and s.seq_region_id  = sra.seq_region_id';
 
@@ -99,7 +110,7 @@ $sth->execute || die "Could not delete entries from table splicing_transcript_pa
 
 
 
-my $ins_SE_sql = "INSERT INTO splicing_event (splicing_event_id, name, gene_id, seq_region_id, seq_region_start, seq_region_end, seq_region_strand, type) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+my $ins_SE_sql = "INSERT INTO splicing_event (splicing_event_id, name, gene_id, seq_region_id, seq_region_start, seq_region_end, seq_region_strand, attrib_type_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
 my $ins_SE_sth = $dbi->prepare($ins_SE_sql);
 
 my $ins_SEF_sql = "INSERT INTO splicing_event_feature (splicing_event_feature_id, splicing_event_id, exon_id, transcript_id, feature_order, transcript_association, type, start, end) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
@@ -127,6 +138,7 @@ while( my $line = <GFF>){
   chomp $line;
   $i++;
   my ($chrom, $junk, $type, $start, $end, $junk2, $strand, $junk3, $feat) = split (/\t/, $line);
+	my $ase_attrib_type_id;
 
   if(!defined($type_hash{$type})){
     $missing_type{$type}++;
@@ -134,6 +146,7 @@ while( my $line = <GFF>){
   }
   else{
     $type_hash{$type}++;
+		$ase_attrib_type_id = $ase_type{$type};
   }
 
   if(!defined($feat)){
@@ -196,8 +209,8 @@ while( my $line = <GFF>){
     $okay = 0;
     print "ERROR: Could not get seq_region_id for $chrom from line $_\n";    
   }
-  $ins_SE_sth->execute($i,$name,$gene_id,$seq_region_id,$start,$end,$strand_id,$type) if($okay);
-  # print SE "$i\t$name\t$gene_id\t$seq_region_id\t$start\t$end\t$strand_id\t$type\n" if($okay);
+  $ins_SE_sth->execute($i,$name,$gene_id,$seq_region_id,$start,$end,$strand_id,$ase_attrib_type_id) if($okay);
+  # print SE "$i\t$name\t$gene_id\t$seq_region_id\t$start\t$end\t$strand_id\t$type($ase_attrib_type_id)\n" if($okay);
 
   if(defined($feat_hash{"Pair"})){
     my (@pairs) = split(/-/, $feat_hash{"Pair"});
