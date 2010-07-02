@@ -143,10 +143,15 @@ sub transcript {
   my ( $self, $transcript ) = @_;
 
   if ( defined($transcript) ) {
+    if (    !ref($transcript)
+         || !$transcript->isa('Bio::EnsEMBL::Transcript') )
+    {
+      throw("Argument is not a transcript");
+    }
 
     $self->{'transcript'} = $transcript;
 
-    weaken($self->{'transcript'});
+    weaken( $self->{'transcript'} );
 
   } elsif ( !defined( $self->{'transcript'} ) ) {
     my $adaptor = $self->{'adaptor'};
@@ -165,11 +170,11 @@ sub transcript {
       $adaptor->db()->get_TranscriptAdaptor()
       ->fetch_by_translation_id($dbID);
 
-    weaken($self->{'transcript'});
+    weaken( $self->{'transcript'} );
   }
 
   return $self->{'transcript'};
-}
+} ## end sub transcript
 
 
 =head2 start
@@ -302,35 +307,28 @@ sub end_Exon {
 =cut
 
 sub cdna_start {
-    my $self = shift;
-    my ($transcript) = @_;
+  my ( $self, $transcript ) = @_;
 
-    if ( defined $transcript
-         && (    !ref $transcript
-              || !$transcript->isa('Bio::EnsEMBL::Transcript') ) )
-    {
-        throw("Argument is not a transcript");
+  if ( defined($transcript)
+       && (    !ref($transcript)
+            || !$transcript->isa('Bio::EnsEMBL::Transcript') ) )
+  {
+    throw("Argument is not a transcript");
+  }
+
+  if ( !exists( $self->{'cdna_start'} ) ) {
+    if ( !defined($transcript) ) {
+      # We were not given a transcript, get the transcript out of
+      # the database.
+      $transcript = $self->transcript();
     }
 
-    if ( !exists $self->{'cdna_start'} ) {
-        if ( !defined $transcript ) {
-            # We were not given a transcript, get the transcript out of
-            # the database.
+    $self->{'cdna_start'} =
+      $self->start_Exon()->cdna_coding_start($transcript);
+  }
 
-            my $transcript_adaptor =
-              $self->adaptor()->db()->get_TranscriptAdaptor();
-
-            $transcript =
-              $transcript_adaptor->fetch_by_translation_id(
-                                                        $self->dbID() );
-        }
-
-        $self->{'cdna_start'} =
-          $self->start_Exon()->cdna_coding_start($transcript);
-    }
-
-    return $self->{'cdna_start'};
-} ## end sub cdna_start
+  return $self->{'cdna_start'};
+}
 
 =head2 cdna_end
 
@@ -351,35 +349,28 @@ sub cdna_start {
 =cut
 
 sub cdna_end {
-    my $self = shift;
-    my ($transcript) = @_;
+  my ( $self, $transcript ) = @_;
 
-    if ( defined $transcript
-         && (    !ref $transcript
-              || !$transcript->isa('Bio::EnsEMBL::Transcript') ) )
-    {
-        throw("Argument is not a transcript");
+  if ( defined($transcript)
+       && (    !ref($transcript)
+            || !$transcript->isa('Bio::EnsEMBL::Transcript') ) )
+  {
+    throw("Argument is not a transcript");
+  }
+
+  if ( !exists( $self->{'cdna_end'} ) ) {
+    if ( !defined($transcript) ) {
+      # We were not given a transcript, get the transcript out of
+      # the database.
+      $transcript = $self->transcript();
     }
 
-    if ( !exists $self->{'cdna_end'} ) {
-        if ( !defined $transcript ) {
-            # We were not given a transcript, get the transcript out of
-            # the database.
+    $self->{'cdna_end'} =
+      $self->end_Exon()->cdna_coding_end($transcript);
+  }
 
-            my $transcript_adaptor =
-              $self->adaptor()->db()->get_TranscriptAdaptor();
-
-            $transcript =
-              $transcript_adaptor->fetch_by_translation_id(
-                                                        $self->dbID() );
-        }
-
-        $self->{'cdna_end'} =
-          $self->end_Exon()->cdna_coding_end($transcript);
-    }
-
-    return $self->{'cdna_end'};
-} ## end sub cdna_end
+  return $self->{'cdna_end'};
+}
 
 =head2 genomic_start
 
