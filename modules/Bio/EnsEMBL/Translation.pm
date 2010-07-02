@@ -151,12 +151,14 @@ sub transcript {
   } elsif ( !defined( $self->{'transcript'} ) ) {
     my $adaptor = $self->{'adaptor'};
     if ( !defined($adaptor) ) {
-      throw("Adaptor is not set.");
+      throw(   "Adaptor is not set for translation, "
+             . "can not fecth its transcript." );
     }
 
     my $dbID = $self->{'dbID'};
     if ( !defined($dbID) ) {
-      throw("dbID is not set.");
+      throw(   "dbID is not set for translation, "
+             . " can not fetch its transcript." );
     }
 
     $self->{'transcript'} =
