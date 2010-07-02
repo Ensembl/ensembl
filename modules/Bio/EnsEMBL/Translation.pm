@@ -139,6 +139,16 @@ sub new_fast {
   return bless $hashref, $class;
 }
 
+=head2 transcript
+
+  Arg [1]       : Transcript object (optional)
+  Description   : Sets or retrieves the transcript object associated
+                  with this translation object.
+  Exceptions    : Throws if there is no adaptor or no dbID defined for
+                  the translation object.
+
+=cut
+
 sub transcript {
   my ( $self, $transcript ) = @_;
 
@@ -151,7 +161,7 @@ sub transcript {
 
     $self->{'transcript'} = $transcript;
 
-    weaken( $self->{'transcript'} );
+    weaken( $self->{'transcript'} );    # Avoid circular references.
 
   } elsif ( !defined( $self->{'transcript'} ) ) {
     my $adaptor = $self->{'adaptor'};
@@ -170,7 +180,7 @@ sub transcript {
       $adaptor->db()->get_TranscriptAdaptor()
       ->fetch_by_translation_id($dbID);
 
-    weaken( $self->{'transcript'} );
+    weaken( $self->{'transcript'} );    # Avoid circular references.
   }
 
   return $self->{'transcript'};
