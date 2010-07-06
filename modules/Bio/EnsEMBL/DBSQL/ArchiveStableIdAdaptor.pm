@@ -462,8 +462,13 @@ sub fetch_associated_archived {
   throw("Need a Bio::EnsEMBL::ArchiveStableId") unless ($arch_id
     and ref($arch_id) and $arch_id->isa('Bio::EnsEMBL::ArchiveStableId'));
 
-  my $type = $arch_id->type;
-  throw("Can't deduce ArchiveStableId type.") unless ($type);
+  my $type = $arch_id->type();
+
+  if ( !defined($type) ) {
+    throw("Can't deduce ArchiveStableId type.");
+  }
+
+  $type = lc($type);
 
   my $sql = qq(
     SELECT  ga.gene_stable_id,
@@ -1329,10 +1334,12 @@ sub _dbname_index {
 =cut
 
 sub get_peptide {
-  my $self = shift;
+  my $self    = shift;
   my $arch_id = shift;
 
-  return undef unless ($arch_id->type eq 'Translation');
+  if ( lc( $arch_id->type() ) eq 'translation' ) {
+    return undef;
+  }
 
   my $sql = qq(
     SELECT pa.peptide_seq
@@ -1342,16 +1349,16 @@ sub get_peptide {
        AND ga.peptide_archive_id = pa.peptide_archive_id
   );
 
-  my $sth = $self->prepare( $sql );
-  $sth->bind_param(1, $arch_id->stable_id, SQL_VARCHAR);
-  $sth->bind_param(2, $arch_id->version, SQL_SMALLINT);
+  my $sth = $self->prepare($sql);
+  $sth->bind_param( 1, $arch_id->stable_id, SQL_VARCHAR );
+  $sth->bind_param( 2, $arch_id->version,   SQL_SMALLINT );
   $sth->execute();
-  
+
   my ($peptide_seq) = $sth->fetchrow_array();
   $sth->finish();
 
   return $peptide_seq;
-}
+} ## end sub get_peptide
 
 
 =head2 get_current_release 
@@ -1424,22 +1431,22 @@ sub get_current_assembly {
 =cut
 
 sub lookup_current {
-  my $self = shift;
+  my $self    = shift;
   my $arch_id = shift;
 
-  my $type = lc($arch_id->type);
-  
+  my $type = lc( $arch_id->type );
+
   unless ($type) {
     warning("Can't lookup current version without a type.");
     return 0;
   }
-  
+
   my $sql = qq(
     SELECT version FROM ${type}_stable_id
     WHERE stable_id = ?
   );
   my $sth = $self->prepare($sql);
-  $sth->execute($arch_id->stable_id);
+  $sth->execute( $arch_id->stable_id );
   my ($version) = $sth->fetchrow_array;
   $sth->finish;
 
@@ -1450,7 +1457,7 @@ sub lookup_current {
 
   # didn't find a current version
   return 0;
-}
+} ## end sub lookup_current
 
 
 # infer type from stable ID format

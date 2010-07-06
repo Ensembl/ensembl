@@ -267,9 +267,9 @@ sub get_all_successors {
 sub get_peptide {
   my $self = shift;
 
-  if( $self->type() eq "Translation" ) {
-    return $self->adaptor->get_peptide( $self );
-  } else { 
+  if ( lc( $self->type() ) eq 'translation' ) {
+    return $self->adaptor->get_peptide($self);
+  } else {
     return undef;
   }
 }
