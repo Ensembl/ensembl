@@ -1231,6 +1231,38 @@ sub remove_unconventional_transcript_associations {
 
 }
 
+=head2 load
+
+  Arg [1]       : Boolean $load_xrefs
+                  Load (or don't load) xrefs.  Default is to load xrefs.
+  Example       : $gene->load();
+  Description   : The Ensembl API makes extensive use of
+                  lazy-loading.  Under some circumstances (e.g.,
+                  when copying genes between databases), all data of
+                  an object needs to be fully loaded.  This method
+                  loads the parts of the object that are usually
+                  lazy-loaded.
+  Returns       : Nothing.
+
+=cut
+
+sub load {
+  my ( $self, $load_xrefs ) = @_;
+
+  if ( !defined($load_xrefs) ) { $load_xrefs = 1 }
+
+  foreach my $transcript ( @{ $self->get_all_Transcripts() } ) {
+    $transcript->load($load_xrefs);
+  }
+
+  $self->analysis();
+  $self->get_all_Attributes();
+  $self->stable_id();
+
+  if ($load_xrefs) {
+    $self->get_all_DBEntries();
+  }
+}
 
 ###########################
 # DEPRECATED METHODS FOLLOW

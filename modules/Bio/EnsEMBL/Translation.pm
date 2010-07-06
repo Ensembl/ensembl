@@ -1021,6 +1021,36 @@ sub modify_translation {
   return $seq;
 }
 
+=head2 load
+
+  Arg [1]       : Boolean $load_xrefs
+                  Load (or don't load) xrefs.  Default is to load xrefs.
+  Example       : $translation->load();
+  Description   : The Ensembl API makes extensive use of
+                  lazy-loading.  Under some circumstances (e.g.,
+                  when copying genes between databases), all data of
+                  an object needs to be fully loaded.  This method
+                  loads the parts of the object that are usually
+                  lazy-loaded.
+  Returns       : Nothing.
+
+=cut
+
+sub load {
+  my ( $self, $load_xrefs ) = @_;
+
+  if ( !defined($load_xref) ) { $load_xrefs = 1 }
+
+  $translation->seq();
+
+  $translation->stable_id();
+  $translation->get_all_Attributes();
+  $translation->get_all_ProteinFeatures();
+
+  if ($load_xrefs) {
+    $translation->get_all_DBEntries();
+  }
+}
 
 =head2 temporary_id
 

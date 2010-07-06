@@ -1398,6 +1398,28 @@ sub display_id {
 }
 
 
+=head2 load
+
+  Args          : None
+  Example       : $exon->load();
+  Description   : The Ensembl API makes extensive use of
+                  lazy-loading.  Under some circumstances (e.g.,
+                  when copying genes between databases), all data of
+                  an object needs to be fully loaded.  This method
+                  loads the parts of the object that are usually
+                  lazy-loaded.
+  Returns       : Nothing.
+
+=cut
+
+sub load {
+  my ($self) = @_;
+
+  $self->analysis();
+  $self->stable_id();
+  $self->get_all_supporting_features();
+}
+
 =head1 DEPRECATED METHODS
 
 =cut

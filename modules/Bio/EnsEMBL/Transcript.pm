@@ -2355,6 +2355,53 @@ sub _compare_xrefs {
 }
 
 
+=head2 load
+
+  Arg [1]       : Boolean $load_xrefs
+                  Load (or don't load) xrefs.  Default is to load xrefs.
+  Example       : $transcript->load();
+  Description   : The Ensembl API makes extensive use of
+                  lazy-loading.  Under some circumstances (e.g.,
+                  when copying genes between databases), all data of
+                  an object needs to be fully loaded.  This method
+                  loads the parts of the object that are usually
+                  lazy-loaded.
+  Returns       : Nothing.
+
+=cut
+
+sub load {
+  my ( $self, $load_xrefs ) = @_;
+
+  if ( !defined($load_xref) ) { $load_xrefs = 1 }
+
+  my $translation = $self->translation();
+  if ( defined($translation) ) {
+    $translation->load($load_xrefs);
+
+    foreach my $alt_translation (
+                  @{ $transcript->get_all_alternative_translations() } )
+    {
+      $alt_translation->load($load_xrefs);
+    }
+  }
+
+  foreach my $exon ( @{ $transcript->get_all_Exons() } ) {
+    $exon->load();
+  }
+
+  $transcript->stable_id();
+  $transcript->analysis();
+  $transcript->get_all_Attributes();
+  $transcript->get_all_supporting_features();
+
+  if ($load_xrefs) {
+    $transcript->get_all_DBEntries();
+  }
+
+} ## end sub load
+
+
 ###########################
 # DEPRECATED METHODS FOLLOW
 ###########################
