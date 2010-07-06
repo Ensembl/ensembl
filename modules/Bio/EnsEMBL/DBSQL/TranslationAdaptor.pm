@@ -177,7 +177,7 @@ sub fetch_all_by_Transcript {
           $transcript->dbID() ) );
     }
 
-    my $tranlsation =
+    my $translation =
       Bio::EnsEMBL::Translation->new_fast( {
                              'dbID'          => $translation_id,
                              'adaptor'       => $self,
