@@ -808,10 +808,11 @@ sub project {
       my $coord_end    = $coord->end();
       my $length       = $coord_end - $coord_start + 1;
       
-      if( $last_rank != $coord->rank){
-	$current_start = 1;
-      }
-      $last_rank = $coord->rank;
+#      if( $last_rank != $coord->rank){
+#	$current_start = 1;
+#	print "LAST rank has changed to ".$coord->rank."from $last_rank \n";
+#     }
+#      $last_rank = $coord->rank;
 
       #skip gaps
       if($coord->isa('Bio::EnsEMBL::Mapper::Coordinate')) {

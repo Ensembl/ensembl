@@ -223,10 +223,17 @@ sub map_coordinates{
      my $self_coord   = $pair->{$from};
      my $target_coord = $pair->{$to};
 
-     if($self_coord->{'start'} < $start){
-       $start = $orig_start;
-       $rank++;
-     }
+
+
+#
+# But not the case for haplotypes!! need to test for this case???
+# so removing this till a better solution is found
+#
+#
+#     if($self_coord->{'start'} < $start){
+#       $start = $orig_start;
+#       $rank++;
+#     }
 
 
      if(defined($last_target_coord) and $target_coord->{'id'} ne $last_target_coord){
