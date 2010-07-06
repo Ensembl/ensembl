@@ -2373,30 +2373,30 @@ sub _compare_xrefs {
 sub load {
   my ( $self, $load_xrefs ) = @_;
 
-  if ( !defined($load_xref) ) { $load_xrefs = 1 }
+  if ( !defined($load_xrefs) ) { $load_xrefs = 1 }
 
   my $translation = $self->translation();
   if ( defined($translation) ) {
     $translation->load($load_xrefs);
 
     foreach my $alt_translation (
-                  @{ $transcript->get_all_alternative_translations() } )
+                        @{ $self->get_all_alternative_translations() } )
     {
       $alt_translation->load($load_xrefs);
     }
   }
 
-  foreach my $exon ( @{ $transcript->get_all_Exons() } ) {
+  foreach my $exon ( @{ $self->get_all_Exons() } ) {
     $exon->load();
   }
 
-  $transcript->stable_id();
-  $transcript->analysis();
-  $transcript->get_all_Attributes();
-  $transcript->get_all_supporting_features();
+  $self->stable_id();
+  $self->analysis();
+  $self->get_all_Attributes();
+  $self->get_all_supporting_features();
 
   if ($load_xrefs) {
-    $transcript->get_all_DBEntries();
+    $self->get_all_DBEntries();
   }
 
 } ## end sub load

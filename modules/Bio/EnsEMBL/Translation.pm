@@ -1039,16 +1039,16 @@ sub modify_translation {
 sub load {
   my ( $self, $load_xrefs ) = @_;
 
-  if ( !defined($load_xref) ) { $load_xrefs = 1 }
+  if ( !defined($load_xrefs) ) { $load_xrefs = 1 }
 
-  $translation->seq();
+  $self->seq();
 
-  $translation->stable_id();
-  $translation->get_all_Attributes();
-  $translation->get_all_ProteinFeatures();
+  $self->stable_id();
+  $self->get_all_Attributes();
+  $self->get_all_ProteinFeatures();
 
   if ($load_xrefs) {
-    $translation->get_all_DBEntries();
+    $self->get_all_DBEntries();
   }
 }
 
