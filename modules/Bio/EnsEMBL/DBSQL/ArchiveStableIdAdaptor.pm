@@ -1337,7 +1337,7 @@ sub get_peptide {
   my $self    = shift;
   my $arch_id = shift;
 
-  if ( lc( $arch_id->type() ) eq 'translation' ) {
+  if ( lc( $arch_id->type() ) ne 'translation' ) {
     return undef;
   }
 
