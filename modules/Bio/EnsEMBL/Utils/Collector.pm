@@ -97,6 +97,8 @@ our $max_view_width = 1000000;   # Max bp width in location/detailed view
 our $max_data_type_size = 16777216;    # Default is 16MB for long BLOB
 # This is really a guide value as this should be set in the inheriting
 # Collector class by deducting the rest of the row size from this value.
+# Is is upto the inheritor to handle checking whether this size has been 
+# exceeded.
 
 # NOTE: Theoretically the min window size is: slice_length/(16777216/2)
 # So for human chr1:  249,250,621/(16777216/2) = 29.7 => 30.  However,
@@ -135,7 +137,7 @@ sub new {
   return bless {}, $_[0];   # Simply blesses this class as an empty hash.
 
   # Do not set anything here, as will not be first in ISA for
-  # FeatureAdaptors.  Hence not guaranteed to be called.
+  # FeatureAdaptors.  Hence, not guaranteed to be called.
 }
 
 =head2 new_assembly
@@ -168,7 +170,7 @@ sub new_assembly {
 #   in Adaptor/Collector.
 
 # Package variables used here instead of attrs to enable easy
-# default config in inheriting class/run script method provided
+# default config in inheriting class/script method. Provided
 # for easy/standardised fetch access outside of this package
 # i.e. Collectors/Adaptors
 
@@ -789,10 +791,44 @@ sub _get_Slice_chunks {
   return $self->{'_slice_chunks'};
 } ## end sub _get_Slice_chunks
 
-# set_config basically replaces the constructor as 'new' will not be
-# called for Adaptor based Collectors.  Separating the confg like this
-# from the store method is largely redundant, as we normally submit
-# separate Slice based jobs.
+
+
+
+=head2 set_config
+
+  Arg[0]     : optional hash - parameter hash(see above methods for more info):
+
+        WINDOW_SIZES        => array ref - subset of defined window
+                               sizes
+        BIN_METHOD          => string
+        MAX_VIEW_WIDTH      => int
+        MAX_DATA_TYPE_SIZE  => int
+        PACK_TEMPLATE       => string
+        PACKED_SIZE         => int
+        BIN_MODEL           => string
+        NEW_ASSEMBLY        => string
+        METHOD_CONFIG       => hash of method specific config params
+        SKIP_ZERO_WINDOW    => boolean - skips generation of 0 wsize
+                               this is used if already generated
+                               from an assembly projection.
+
+               NOTE: Over-riding any of the default config may cause
+               problems when storing or retrieving Collection data,
+               except sub sets of default window sizes.
+
+  Description: This method replaces the constructor as new will not be
+               called for Adaptor based Collectors.
+               Separating this from the store method is currently 
+               redundant as jobs are normally submitetd in Slice based 
+               jobs. However, this will be required if the store method 
+               is further seaprated into fetch/generate and store methods
+  Returntype : None
+  Exceptions : Throws if no window sizes or max_view_width defined
+  Caller     : Inheritor Collector e.g. Bio::EnsEMBL::Funcgen:Collector::ResultFeature
+               or script.
+  Status     : At Risk
+
+=cut
 
 sub set_config {
   my ( $self, %config ) = @_;
@@ -833,7 +869,7 @@ sub set_config {
   # Other vars
   $self->new_assembly($new_assm);
   $self->{'_only_natural'} = 0;
-  $self->{'_store_natural'} = grep /^0/, @$window_sizes;
+  $self->{'_store_natural'} = grep /^0$/, @$window_sizes;
 
   ### Set window_sizes
 
@@ -841,6 +877,17 @@ sub set_config {
     print "Assembly projection may cause problems "
       . "for large Collections, "
       . "defaulting to window_sizes = (0)\n";
+
+
+	if ( $skip_zero_window ) {
+	  throw(   "You cannot -skip_zero_window or "
+			   . "omit 0 from -window_sizes "
+			   . "when projecting to a new assembly($new_assm) "
+			   . "which should only be generated using window_size=0" );
+	}
+	
+
+
 
     # Then build the bins on the projected 0 level single Features
 
@@ -857,29 +904,23 @@ sub set_config {
     $self->window_sizes( [0] );
   } else {
 
-    if ( $window_sizes && $skip_zero_window && grep /^0$/,
-         @$window_sizes )
-    {
+    if ( $wsizes && $skip_zero_window && 
+		 ( grep /^0$/, @$wsizes )) {
+	  #Only test passed params not default config
+
       throw(   "You have specied skip_zero_window "
-             . "and window_size 0 in your config, "
+             . "and window_size 0 in your parameters, "
              . "please remove one of these" );
-    } elsif ( defined($window_sizes) && !grep /^0$/, @$window_sizes ) {
+    } 
+	elsif ( defined($window_sizes) && !grep /^0$/, @$window_sizes ) {
       $skip_zero_window = 1;
       # re-add 0 window as we need this to build the collections
+	  # see ...
       unshift( @{$window_sizes}, 0 );
     }
-
-    # $window_sizes = $self->window_sizes($window_sizes);
   }
 
-  # This is already done in the script
-  if ( $skip_zero_window && $new_assm ) {
-    throw(   "You cannot -skip_zero_window or "
-           . "omit 0 from -window_sizes "
-           . "when projecting to a new assembly($new_assm) "
-           . "which should only be generated using window_size=0" );
-  }
-
+ 
   if ( $self->{'_store_natural'} && scalar( @{$window_sizes} ) == 1 ) {
     $self->{'_only_natural'} = 1;
   }
@@ -893,26 +934,7 @@ sub set_config {
 =head2 store_window_bin_by_Slice
 
   Arg[0]     : Bio::EnsEMBL:Slice
-  Arg[1]     : optional hash - parameter hash(see above methods for more info):
-
-        WINDOW_SIZES        => array ref - subset of defined window
-                               sizes
-        BIN_METHOD          => string
-        MAX_VIEW_WIDTH      => int
-        MAX_DATA_TYPE_SIZE  => int
-        PACK_TEMPLATE       => string
-        PACKED_SIZE         => int
-        BIN_MODEL           => string
-        NEW_ASSEMBLY        => string
-        SKIP_ZERO_WINDOW    => boolean - skips generation of 0 wsize
-                               this is used if already generated
-                               from an assembly projection.
-
-               NOTE: Over-riding any of the default config may cause
-               problems when storing or retrieving Collection data,
-               except sub sets of default window sizes.
-
-  Example    : $collector->store_window_bins_by_Slice($slice, %config);
+  Example    : $collector->store_window_bins_by_Slice($slice);
   Description: This is the main run method, it loops through
                optimal slice chunks from _define_window_chunks,
                calls _bin_features_by_Slice as appropriate and
@@ -1435,7 +1457,7 @@ sub _calculate_max_magnitude {
 } ## end sub _calculate_max_magnitude
 
 
-=head2 _post_process_mac_magnitude
+=head2 _post_process_max_magnitude
 
   Args[0]    : hashref - score bins
   Args[1]    : hashref - count bins
@@ -1522,34 +1544,35 @@ sub _calculate_RPKM {
 sub _post_process_RPKM {
   my ( $self, $bins_ref ) = @_;
 
-  # 10^9 x C / NGB
-  # C = Reads overlapping bin
-  # N = Total reads in the experiment
-  # G = Length of genome in bps
-  # (don't really have to account for non-ref/HAPs or gender here
-  # as should be close enough, CellTypes/gender differences will be
-  # miniscule)
-  # B = length of each bin
+  #10^9 x C / NGB
+  #C = Reads overlapping bin
+  #N = Total reads in the experiment
+  #G = Length of bin in bps 
+  #(don't really have to account for non-ref/HAPs or gender here 
+  #as should be close enough, CellTypes/gender differences will be miniscule)
+  #B = length of each bin
 
-  foreach my $wsize ( keys %{$bins_ref} ) {
-    foreach my $bin_index ( 0 .. $#{ $bins_ref->{$wsize} } ) {
-      $bins_ref->{$wsize}->[$bin_index] =
-        ( ( 10**9 )*$bins_ref->{$wsize}->[$bin_index] )/
-        ( ( $self->_RPKM_factor )*$wsize );
-    }
+  foreach my $wsize(keys %{$bins_ref}){
+	
+	foreach my $bin_index(0..$#{$bins_ref->{$wsize}}){
+	  $bins_ref->{$wsize}->[$bin_index] =  
+		((10**9) *  
+		 $bins_ref->{$wsize}->[$bin_index])/(($self->_RPKM_factor($wsize)) * $wsize);
+	}
   }
 
   return;
+
 }
 
 
 =head2 _set_up_RPKM
 
   Args[0]    : hashref - method config e.g
-
-                { DNADB         => Bio::EnsEMBL::DBSQL::DBAdaptor,
+                 {
+                  DNADB         => Bio::EnsEMBL::DBSQL::DBAdaptor,
                   TOTAL_FEATURE => $total_feature_count,
-                  GENDER        => 'female', }
+                 }
 
   Example    : $self->$set_up_method($config);
   Description: Sets the RPKM factor
@@ -1560,37 +1583,30 @@ sub _post_process_RPKM {
 
 =cut	
 
-sub _set_up_RPKM {
-  my ( $self, $config ) = @_;
 
-  my ( $dnadb, $total_features, $gender ) =
-    rearrange( [ 'DNADB', 'TOTAL_FEATURES', 'GENDER' ], %{$config} );
+sub _set_up_RPKM{
+  my ($self, $config) = @_;
 
-  if ( !defined($self->{'_RPKM_factor'}) ) {
-
-    # Test specifically here to notify about config hash
-    if ( !defined($total_features) ) {
-      throw(   "For RPKM you must pass a valid 'total_features' "
-             . "as part of the method config hash." );
-    }
-
-    if ( !defined($gender) ) {
-      warn("No gender specified from cell. Defaulting to 'female'");
-      $gender = 'female';
-    }
-
-    if ( !defined($dnadb) ) {
-      throw(   "For RPKM you must pass 'dnadb' "
-             . "as part of the method config hash." );
-    }
-    # Further validation done in get_diploid_genome_length_by_gender
-
-    my $dip_genome_length =
-      &get_diploid_genome_length_by_gender( $dnadb, $gender );
-
-    $self->_RPKM_factor( $dip_genome_length*$total_features );    # N*G
+  my ($dnadb, $total_features) = rearrange([ 'DNADB', 'TOTAL_FEATURES'], %{$config});
+  
+  #Test specifically here to notify about config hash
+  if(! $total_features){
+	throw("For RPKM you must pass a valid 'total_features' ".
+		  "as part of the method config hash.");
+  }
+  
+  if(! $dnadb){
+	throw("For RPKM you must pass 'dnadb' as part of the method config hash.");
   }
 
+  foreach my $wsize(@{$self->window_sizes}){
+	#Should never have 0 here
+	$self->_RPKM_factor($wsize, ($wsize * $total_features));	#N*G
+
+	warn "setting $wsize RPKM factor($wsize * $total_features) to ".	
+	  $self->_RPKM_factor($wsize);
+  }
+  
   return;
 } ## end sub _set_up_RPKM
 
@@ -1599,7 +1615,7 @@ sub _set_up_RPKM {
 
   Args[0]    : int - RPKM factor i.e.  (Total reads in the experiment *
                Genome length)
-  Example    : $self->_RPKM_factor$set_up_method($config);
+  Example    : $self->_RPKM_factor($wsize, $factor);
   Description: Gets/Sets the RPKM factor
   Returntype : int
   Exceptions : None
@@ -1608,16 +1624,25 @@ sub _set_up_RPKM {
 
 =cut	
 
-sub _RPKM_factor {
-  my ( $self, $factor ) = @_;
+sub _RPKM_factor{
+  my ($self, $wsize, $factor) = @_;
 
-  if ( defined($factor) ) {
-    $self->{'RPKM_factor'} = $factor;
+  if (! defined $wsize){
+	throw("You must pass at least window_size to get or set the RPKM factor");
   }
 
-  return $self->{'RPKM_factor'};
-}
+  if(defined $factor){
+	$self->{'RPKM_factor'}{$wsize} = $factor;
+  }
+  elsif(! exists $self->{'RPKM_factor'}{$wsize}){
+	#This should never happen unless the window sizes 
+	#are redefined after initialisation
+	throw("You have requested an RPKM factor for a window_size".
+		  " which has not been set:\t$wsize");
+  }
 
+  return $self->{'RPKM_factor'}{$wsize};
+}
 
 =head2 get_diploid_genome_length_by_gender
 
