@@ -2365,7 +2365,9 @@ sub _compare_xrefs {
                   when copying genes between databases), all data of
                   an object needs to be fully loaded.  This method
                   loads the parts of the object that are usually
-                  lazy-loaded.
+                  lazy-loaded.  It will also call the equivalent
+                  method on any translation and on all exons of the
+                  transcript.
   Returns       : Nothing.
 
 =cut
