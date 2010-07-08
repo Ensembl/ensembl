@@ -271,42 +271,51 @@ sub type_variation {
   }
   
 
-  if (!$tr->translation()) {#for other biotype rather than coding/IG genes
-    # check if the variation is completely outside the transcript:
+  if ( !defined( $tr->translation() ) )
+  {    # for other biotype rather than coding/IG genes
+        # check if the variation is completely outside the transcript:
 
-    if($var->end < $tr->start()) {
-      $var->type( ($tr->strand() == 1) ? 'UPSTREAM' : 'DOWNSTREAM' );
+    if ( $var->end() < $tr->start() ) {
+      $var->type( ( $tr->strand() == 1 ) ? 'UPSTREAM' : 'DOWNSTREAM' );
       return [$var];
     }
-    if($var->start > $tr->end()) {
-      $var->type( ($tr->strand() == 1) ? 'DOWNSTREAM' : 'UPSTREAM' );
+    if ( $var->start() > $tr->end() ) {
+      $var->type( ( $tr->strand() == 1 ) ? 'DOWNSTREAM' : 'UPSTREAM' );
       return [$var];
     }
-	
-	
-	
-    if ($var->start >= $tr->start() and $var->end <= $tr->end()) {#within the transcript
-      if ($tr->biotype() eq "miRNA") {
-		my ($attribute) = @{$tr->get_all_Attributes('miRNA')};
-		
-		#the value is the mature miRNA coordinate within miRNA transcript
-		if ( $attribute->value =~ /(\d+)-(\d+)/ ) {
-		  my @mapper_objs = $tr->cdna2genomic($1, $2, $tr->strand);#transfer cdna value to genomic coordinates
-		  foreach my $obj ( @mapper_objs ){#Note you can get more than one mature seq per miRNA
-			if( $obj->isa("Bio::EnsEMBL::Mapper::Coordinate")){
-			  if ($var->start >= $obj->start() and $var->end <= $obj->end()) {
-				$var->type("WITHIN_MATURE_miRNA");
-				return [$var];
-			  }
-			}
-		  }
-		}
+
+    if ( $var->start() >= $tr->start() and $var->end() <= $tr->end() )
+    {    # within the transcript
+      if ( $tr->biotype() eq "miRNA" ) {
+        my ($attribute) = @{ $tr->get_all_Attributes('miRNA') };
+
+        # the value is the mature miRNA coordinate within miRNA
+        # transcript
+        if ( defined($attribute)
+             && $attribute->value() =~ /(\d+)-(\d+)/ )
+        {
+          # transfer cdna value to genomic coordinates
+          my @mapper_objs = $tr->cdna2genomic( $1, $2, $tr->strand() );
+
+          foreach my $obj (@mapper_objs)
+          {    #Note you can get more than one mature seq per miRNA
+            if ( $obj->isa("Bio::EnsEMBL::Mapper::Coordinate") ) {
+              if (     $var->start() >= $obj->start()
+                   and $var->end() <= $obj->end() )
+              {
+                $var->type("WITHIN_MATURE_miRNA");
+                return [$var];
+              }
+            }
+          }
+        }
       }
-	  
+
       $var->type("WITHIN_NON_CODING_GENE");
       return [$var];
-    }
-  }
+
+    } ## end if ( $var->start() >= ...)
+  } ## end if ( !defined( $tr->translation...))
 
   # get a transcript mapper object
   my $tm = $tr->get_TranscriptMapper();
