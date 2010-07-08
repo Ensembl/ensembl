@@ -412,7 +412,7 @@ sub type_variation {
 	# nonsense-mediated decay transcript
 	if($tr->biotype() eq 'nonsense_mediated_decay') {
 	  $var->type("NMD_TRANSCRIPT");
-	  return [$var];
+	  #return [$var];
 	}
 
     # variation must be intronic since mapped to cdna gap, but is within
@@ -443,13 +443,24 @@ sub type_variation {
   # nonsense-mediated decay transcript
   if($tr->biotype() eq 'nonsense_mediated_decay') {
 	$var->type("NMD_TRANSCRIPT");
-	return [$var];
+	#return [$var];
   }
 
   #now variation must be in exons, the first 3 bs into exon could be splice_site
 
   if ($splice_site_2 or $splice_site_3) {
-    $var->type('SPLICE_SITE');
+	
+	# check coord relative to first exon
+	# near beginning of first exon is obv not a splice site
+	if($var->start < $tr->start_Exon->end) {
+	  if($tr->start_Exon->end - $var->start <= 3) {
+		$var->type('SPLICE_SITE');
+	  }
+	}
+	
+	else {
+	  $var->type('SPLICE_SITE');
+	}
   }
   
   $var->cdna_start( $c->start() );
