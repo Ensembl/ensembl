@@ -254,6 +254,14 @@ sub get_pepstats {
     
     my $peptide_seq ;
     eval { $peptide_seq = $translation->seq};
+
+    if ($@) {
+      warn("PEPSTAT: eval() failed: $!");
+      return {};
+    } elsif ( $peptide_seq =~ m/[BZX]/ig ) {
+      return {};
+    }
+
     return {} if ($@ || $peptide_seq =~ m/[BZX]/ig);
     if( $peptide_seq !~ /\n$/ ){ $peptide_seq .= "\n" }
     $peptide_seq =~ s/\*$//;
