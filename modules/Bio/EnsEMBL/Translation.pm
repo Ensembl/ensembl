@@ -180,7 +180,10 @@ sub transcript {
       $adaptor->db()->get_TranscriptAdaptor()
       ->fetch_by_translation_id($dbID);
 
-    weaken( $self->{'transcript'} );    # Avoid circular references.
+    # Do not weaken the reference if we had to get the transcript from the
+    # database.  The user is probably working on translations directly,
+    # not going through transcripts.
+    #weaken( $self->{'transcript'} );    # Avoid circular references.
   }
 
   return $self->{'transcript'};
