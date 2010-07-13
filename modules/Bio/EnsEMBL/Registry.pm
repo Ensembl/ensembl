@@ -563,7 +563,7 @@ sub add_DBAdaptor {
 
 sub get_DBAdaptor {
   my ( $class, $species, $group ) = @_;
-
+throw 'arrggh for '.$species if ! defined $species;
   $species = $class->get_alias($species);
 
   return $registry_register{_SPECIES}{$species}{ lc($group) }{'_DB'};
@@ -2006,6 +2006,9 @@ sub find_and_add_aliases {
 
   my ( $adaptor, $group, $dbh, $species_suffix ) =
     rearrange( [ 'ADAPTOR', 'GROUP', 'HANDLE', 'SPECIES_SUFFIX' ], @_ );
+  
+  #Can be undef; needs to be something to avoid warnings
+  $species_suffix ||=  q{};
 
   my @dbas;
   if ( defined($adaptor) ) {
@@ -2071,18 +2074,22 @@ sub find_and_add_aliases {
     }
 
     foreach my $alias (@aliases) {
-      if (   !$class->alias_exists( $alias . $species_suffix )
-           && $species ne $alias . $species_suffix )
+      my $alias_suffix = $alias.$species_suffix;
+      #Lowercase because stored aliases are lowercased
+      my $lc_species = lc($species);
+      my $lc_alias_suffix = lc($alias_suffix);
+      if (   !$class->alias_exists( $alias_suffix )
+           && $lc_species ne $lc_alias_suffix )
       {
-        $class->add_alias( $species, $alias . $species_suffix );
+        $class->add_alias( $species, $alias_suffix );
       } elsif (
-             $species ne $class->get_alias( $alias . $species_suffix ) )
+             $lc_species ne $class->get_alias( $alias_suffix ) )
       {
         throw(sprintf(
                 "Trying to add alias '%s' to species '%s', "
                   . " but it is already registrered for species '%s'\n",
-                $alias . $species_suffix,
-                $species, $class->get_alias( $alias . $species_suffix )
+                $alias_suffix,
+                $species, $class->get_alias( $alias_suffix )
               ) );
       }
     }
