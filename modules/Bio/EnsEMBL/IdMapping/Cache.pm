@@ -322,7 +322,8 @@ sub build_cache_from_genes {
           ($tr->is_known ? 1 : 0),
       ]);
 
-      if ( defined( $gene->display_xref() ) ) {    # EG
+      # EG to support improved discrimination, include the name
+      if ( defined( $gene->display_xref() ) ) {
         $lgene->gene_name( $gene->display_xref()->display_id() );
       }
 
@@ -371,7 +372,9 @@ sub build_cache_from_genes {
             $need_project,
         ]);
 
-        $lexon->gene_name( $lgene->gene_name() );    # EG
+        # EG to support improved discrimination, include the name of the
+        # gene tp which exon belongs
+        $lexon->gene_name( $lgene->gene_name() );
 
         # get coordinates in common coordinate system if needed
         if ($need_project) {
