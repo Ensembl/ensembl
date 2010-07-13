@@ -461,6 +461,28 @@ sub is_known {
   return 1;
 }
 
+=head2 gene_name
+
+  Description : optional name of gene to which exon belongs
+  Return type : String                                                         +  Exceptions  : none
+  Caller      : general
+  Status      : At Risk
+              : under development
+
+=cut
+
+sub gene_name {
+  my ($self, $value) = @_;
+
+  # EG optional gene name for exon for improved discrimination
+
+  if ( defined($value) ) {
+    $self->[18] = $value;
+  }
+
+  return $self->[18];
+}
+
 
 1;
 

@@ -86,7 +86,60 @@ sub mapped_transcript {
 
   return ($new_scores, $mappings);
 }
-  
+
+sub gene_name {
+
+  # EG gene_name is new supplementary method to support discrimination
+  # based on name
+
+  my ( $self, $num, $gsb, $mappings, $exon_scores ) = @_;
+
+  $self->logger->info( "Retry with exon name disambiguation...\n",
+                       0, 'stamped' );
+
+  if ( !$exon_scores->loaded() ) {
+    $gsb->name_exon_rescore($exon_scores);
+    $exon_scores->write_to_file();
+  }
+
+  my $new_mappings =
+    $self->basic_mapping( $exon_scores, "exon_mappings$num" );
+
+  $num++;
+
+  my $new_scores =
+    $gsb->create_shrinked_matrix( $exon_scores, $new_mappings,
+                                  "exon_matrix$num" );
+
+  return ( $new_scores, $new_mappings );
+} ## end sub gene_name
+
+sub bounds {
+
+  # EG new supplementary method to distuinguish based on bounds of exon
+
+  my ( $self, $num, $gsb, $mappings, $exon_scores ) = @_;
+
+  $self->logger->info( "Retry with exon bounds disambiguation...\n",
+                       0, 'stamped' );
+
+  if ( !$exon_scores->loaded() ) {
+    $gsb->bounds_exon_rescore($exon_scores);
+    $exon_scores->write_to_file();
+  }
+
+  my $new_mappings =
+    $self->basic_mapping( $exon_scores, "exon_mappings$num" );
+
+  $num++;
+
+  my $new_scores =
+    $gsb->create_shrinked_matrix( $exon_scores, $new_mappings,
+                                  "exon_matrix$num" );
+
+  return ( $new_scores, $new_mappings );
+} ## end sub bounds
+
 
 1;
 

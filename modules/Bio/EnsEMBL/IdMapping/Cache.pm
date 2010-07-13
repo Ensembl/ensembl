@@ -322,6 +322,10 @@ sub build_cache_from_genes {
           ($tr->is_known ? 1 : 0),
       ]);
 
+      if ( defined( $gene->display_xref() ) ) {    # EG
+        $lgene->gene_name( $gene->display_xref()->display_id() );
+      }
+
       $lgene->add_Transcript($ltr);
 
       # build transcript caches
@@ -367,6 +371,8 @@ sub build_cache_from_genes {
             $need_project,
         ]);
 
+        $lexon->gene_name( $lgene->gene_name() );    # EG
+
         # get coordinates in common coordinate system if needed
         if ($need_project) {
           my @seg = @{ $exon->project($self->highest_common_cs,
@@ -380,7 +386,7 @@ sub build_cache_from_genes {
             $lexon->common_sr_name($sl->seq_region_name);
           }
         }
-        
+
         $ltr->add_Exon($lexon);
 
         $self->add('exons_by_id', $type, $exon->dbID, $lexon);
@@ -913,24 +919,28 @@ sub fetch_value_from_db {
   return $c;
 }
 
-  
 sub get_DBAdaptor {
-  my $self = shift;
-  my $prefix = shift;
+  my ( $self, $prefix ) = @_;
 
-  unless ($self->{'_dba'}->{$prefix}) {
+  unless ( $self->{'_dba'}->{$prefix} ) {
     # connect to database
-    my $dba = new Bio::EnsEMBL::DBSQL::DBAdaptor(
-            -host   => $self->conf->param("${prefix}host"),
-            -port   => $self->conf->param("${prefix}port"),
-            -user   => $self->conf->param("${prefix}user"),
-            -pass   => $self->conf->param("${prefix}pass"),
-            -dbname => $self->conf->param("${prefix}dbname"),
-            -group  => $prefix,
-    );
-    
-    # explicitely set the dnadb to itself - by default the Registry assumes
-    # a group 'core' for this now
+    my %args = ( -host   => $self->conf->param("${prefix}host"),
+                 -port   => $self->conf->param("${prefix}port"),
+                 -user   => $self->conf->param("${prefix}user"),
+                 -pass   => $self->conf->param("${prefix}pass"),
+                 -dbname => $self->conf->param("${prefix}dbname"),
+                 -group  => $prefix );
+
+    if ( defined( $self->conf()->param('species_id') ) ) {    # EG
+      $args{-species_id}      = $self->conf->param('species_id');
+      $args{-species}         = $self->conf->param('species_name');
+      $args{-multispecies_db} = 1;
+    }
+
+    my $dba = new Bio::EnsEMBL::DBSQL::DBAdaptor(%args);
+
+    # explicitely set the dnadb to itself - by default the Registry
+    # assumes a group 'core' for this now
     $dba->dnadb($dba);
 
     $self->{'_dba'}->{$prefix} = $dba;

@@ -697,5 +697,84 @@ sub non_mapped_transcript_rescore {
 }
 
 
+sub name_exon_rescore {
+
+  # EG name_exon_rescore is additional method for rescoring exons based
+  # on name matches
+
+  my ( $self, $matrix ) = @_;
+
+  if ( !(   defined($matrix)
+         && ref($matrix)
+         && $matrix->isa('Bio::EnsEMBL::IdMapping::ScoredMappingMatrix')
+       ) )
+  {
+    throw('Need a Bio::EnsEMBL::IdMapping::ScoredMappingMatrix.');
+  }
+
+  my $i = 0;
+
+  foreach my $entry ( @{ $matrix->get_all_Entries() } ) {
+    my $source_exon =
+      $self->cache->get_by_key( 'exons_by_id', 'source',
+                                $entry->source() );
+    my $target_exon =
+      $self->cache->get_by_key( 'exons_by_id', 'target',
+                                $entry->target() );
+
+    if (    defined($source_exon)
+         && defined($target_exon)
+         && $source_exon->gene_name() ne $target_exon->gene_name() )
+    {
+      $matrix->set_score( $entry->source(), $entry->target(),
+                          ( $entry->score()*0.75 ) );
+      $i++;
+    }
+  }
+
+  $self->logger->debug( "Scored exons with name mismatch: $i\n", 1 );
+} ## end sub name_exon_rescore
+
+sub bounds_exon_rescore {
+
+  # EG additional method for rescoring exons based on bounds matching
+
+  my ( $self, $matrix ) = @_;
+
+  if ( !(   defined($matrix)
+         && ref($matrix)
+         && $matrix->isa('Bio::EnsEMBL::IdMapping::ScoredMappingMatrix')
+       ) )
+  {
+    throw('Need a Bio::EnsEMBL::IdMapping::ScoredMappingMatrix.');
+  }
+
+  my $i = 0;
+
+  foreach my $entry ( @{ $matrix->get_all_Entries() } ) {
+    my $source_exon =
+      $self->cache->get_by_key( 'exons_by_id', 'source',
+                                $entry->source() );
+    my $target_exon =
+      $self->cache->get_by_key( 'exons_by_id', 'target',
+                                $entry->target() );
+
+    if (    defined($target_exon)
+         && defined($source_exon)
+         && (    $source_exon->strand() != $target_exon->strand()
+              || $source_exon->start() != $target_exon->start()
+              || $source_exon->end() != $target_exon->end() ) )
+    {
+      my $new_score = ( $entry->score()*0.5 );
+      $matrix->set_score( $entry->source(), $entry->target(),
+                          $new_score );
+      $i++;
+    }
+  }
+
+  $self->logger->debug( "Scored exons with bounds mismatch: $i\n", 1 );
+} ## end sub bounds_exon_rescore
+
+
 1;
 

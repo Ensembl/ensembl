@@ -71,7 +71,8 @@ package Bio::EnsEMBL::IdMapping::TinyGene;
 # 10  status
 # 11  logic_name
 # 12  is_known
-# 13  [transcripts]
+# 13  gene_name
+# 14  [transcripts]
 
 
 use strict;
@@ -259,7 +260,7 @@ sub add_Transcript {
     throw('Need a Bio::EnsEMBL::IdMapping::TinyTranscript.');
   }
 
-  push @{ $self->[13] }, $tr;
+  push @{ $self->[14] }, $tr;
 }
 
 
@@ -278,7 +279,7 @@ sub add_Transcript {
 =cut
 
 sub get_all_Transcripts {
-  return $_[0]->[13] || [];
+  return $_[0]->[14] || [];
 }
 
 
@@ -296,6 +297,30 @@ sub get_all_Transcripts {
 sub length {
   my $self = shift;
   return ($self->end - $self->start + 1);
+}
+
+
+=head2 gene_name
+
+  Description : optional name of gene
+  Return type : String
+  Exceptions  : none
+  Caller      : general
+  Status      : At Risk
+              : under development
+
+=cut
+
+sub gene_name {
+  my ( $self, $value ) = @_;
+
+  # EG optional gene name for improved discrimination
+
+  if ( defined($value) ) {
+    $self->[13] = $value;
+  }
+
+  return $self->[13];
 }
 
 

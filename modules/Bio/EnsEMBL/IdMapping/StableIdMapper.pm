@@ -150,15 +150,17 @@ sub generate_mapping_session {
     $self->logger->info("old_assembly: $old_assembly, new_assembly $new_assembly\n", 2);
   }
 
-  print $fh join("\t",
-                 $mapping_session_id,
-                 $self->conf->param('sourcedbname'),
-                 $self->conf->param('targetdbname'),
-                 $old_release,
-                 $new_release,
-                 $old_assembly,
-                 $new_assembly,
-                 $self->mapping_session_date_fmt);
+  print $fh join( "\t",
+                  $mapping_session_id,
+                  $self->conf->param('sourcedbname'),
+                  $self->conf->param('targetdbname'),
+                  $old_release,
+                  $new_release,
+                  $old_assembly,
+                  $new_assembly,
+                  $self->mapping_session_date_fmt(),
+                  $self->conf->param('species_id')      # EG
+  );
 
   print $fh "\n";
   close($fh);
@@ -281,8 +283,9 @@ sub map_stable_ids {
       }
 
       # increment the stable Id (to be assigned to the next unmapped object)
-      $new_stable_id = $self->stable_id_generator->increment_stable_id(
-        $new_stable_id);
+      $new_stable_id =
+        $self->stable_id_generator->increment_stable_id( $new_stable_id,
+                                                         $type );
 
       # stats
       $stats{'new'}++;
