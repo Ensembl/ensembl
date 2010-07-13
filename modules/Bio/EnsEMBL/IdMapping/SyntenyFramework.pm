@@ -399,8 +399,10 @@ sub rescore_gene_matrix_lsf {
   # submit dependent job to monitor finishing of jobs
   $self->logger->info("Waiting for jobs to finish...\n", 0, 'stamped');
 
-  my $dependent_job = qq{bsub -K -w "ended($lsf_name)" -q small } .
-    qq{-o $logpath/synteny_rescore_depend.out /bin/true};
+  my $dependent_job =
+      qq{bsub -K -w "ended($lsf_name)" }
+    . $self->conf()->param('lsf_opt_run_small')
+    . qq{ -o $logpath/synteny_rescore_depend.out /bin/true};
 
   system($dependent_job) == 0 or
     $self->logger->error("Error submitting dependent job: $!\n");

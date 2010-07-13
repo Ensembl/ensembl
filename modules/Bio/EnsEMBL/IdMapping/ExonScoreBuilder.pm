@@ -430,7 +430,10 @@ sub run_exonerate {
   $self->logger->debug("$exonerate_job\n\n");
 
   local *BSUB;
-  open BSUB, "|bsub -J$lsf_name\[1-$num_jobs\] -o $logpath/exonerate.\%I.out"
+  open BSUB,
+      "|bsub "
+    . $self->conf()->param('lsf_opt_run')
+    . " -J$lsf_name\[1-$num_jobs\] -o $logpath/exonerate.\%I.out"
     or $self->logger->error("Could not open open pipe to bsub: $!\n");
 
   print BSUB $exonerate_job;
@@ -441,8 +444,10 @@ sub run_exonerate {
   # submit dependent job to monitor finishing of exonerate jobs
   $self->logger->info("Waiting for exonerate jobs to finish...\n", 0, 'stamped');
 
-  my $dependent_job = qq{bsub -K -w "ended($lsf_name)" -q small } .
-    qq{-o $logpath/exonerate_depend.out /bin/true};
+  my $dependent_job =
+      qq{bsub -K -w "ended($lsf_name)" }
+    . $self->conf()->param('lsf_opt_run_small')
+    . qq{ -o $logpath/exonerate_depend.out /bin/true};
 
   system($dependent_job) == 0 or
     $self->logger->error("Error submitting dependent job: $!\n");
