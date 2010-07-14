@@ -56,7 +56,8 @@ no warnings 'uninitialized';
 use FindBin qw($Bin);
 use Bio::EnsEMBL::Utils::ConfParser;
 use Bio::EnsEMBL::Utils::Logger;
-use Bio::EnsEMBL::Utils::ScriptUtils qw(path_append);
+use Bio::EnsEMBL::Utils::Exception qw(throw);
+use Bio::EnsEMBL::Utils::ScriptUtils qw(path_append inject);
 use Bio::EnsEMBL::IdMapping::Cache;
 use Bio::EnsEMBL::IdMapping::ExonScoreBuilder;
 use Bio::EnsEMBL::IdMapping::TranscriptScoreBuilder;
@@ -77,26 +78,38 @@ my $conf = new Bio::EnsEMBL::Utils::ConfParser(
 );
 
 $conf->parse_options(
-  'mode=s' => 0,
-  'basedir|basedir=s' => 1,
-  'chromosomes|chr=s@' => 0,
-  'region=s' => 0,
-  'biotypes=s@' => 0,
-  'min_exon_length|minexonlength=i' => 0,
-  'exonerate_path|exoneratepath=s' => 1,
-  'exonerate_threshold|exoneratethreshold=f' => 0,
-  'exonerate_jobs|exoneratejobs=i' => 0,
+  'mode=s'                                         => 0,
+  'basedir|basedir=s'                              => 1,
+  'chromosomes|chr=s@'                             => 0,
+  'region=s'                                       => 0,
+  'biotypes=s@'                                    => 0,
+  'min_exon_length|minexonlength=i'                => 0,
+  'exonerate_path|exoneratepath=s'                 => 1,
+  'exonerate_threshold|exoneratethreshold=f'       => 0,
+  'exonerate_jobs|exoneratejobs=i'                 => 0,
   'exonerate_bytes_per_job|exoneratebytesperjob=f' => 0,
-  'exonerate_extra_params|exonerateextraparams=s' => 0,
-  'plugin_internal_id_mappers_gene=s@' => 0,
-  'plugin_internal_id_mappers_transcript=s@' => 0,
-  'plugin_internal_id_mappers_exon=s@' => 0,
-  'mapping_types=s@' => 1,
-  'plugin_stable_id_generator=s' => 0,
-  'upload_events|uploadevents=s' => 0,
-  'upload_stable_ids|uploadstableids=s' => 0,
-  'upload_archive|uploadarchive=s' => 0,
-);
+  'exonerate_extra_params|exonerateextraparams=s'  => 0,
+  'plugin_internal_id_mappers_gene=s@'             => 0,
+  'plugin_internal_id_mappers_transcript=s@'       => 0,
+  'plugin_internal_id_mappers_exon=s@'             => 0,
+  'mapping_types=s@'                               => 1,
+  'plugin_stable_id_generator=s'                   => 0,
+  'upload_events|uploadevents=s'                   => 0,
+  'upload_stable_ids|uploadstableids=s'            => 0,
+  'upload_archive|uploadarchive=s'                 => 0,
+  # EG allow additional configs to be set on command line
+  'sourcedbname=s' => 1,
+  'sourcehost=s'   => 1,
+  'sourceuser=s'   => 1,
+  'sourcepass=s'   => 1,
+  'sourceport=i'   => 1,
+  'targetdbname=s' => 1,
+  'targethost=s'   => 1,
+  'targetuser=s'   => 1,
+  'targetpass=s'   => 1,
+  'targetport=i'   => 1,
+  'species_id'     => 0,
+  'species_name'   => 0 );
 
 # set default logpath
 unless ($conf->param('logpath')) {
@@ -131,35 +144,110 @@ my $transcript_mappings;
 my $gene_mappings;
 my $translation_mappings;
 
-# loading cache from file
-my $cache = Bio::EnsEMBL::IdMapping::Cache->new(
-  -LOGGER         => $logger,
-  -CONF           => $conf,
-  -LOAD_INSTANCE  => 1,
-);
-
-
-# get a stable ID mapper
-my $stable_id_mapper = Bio::EnsEMBL::IdMapping::StableIdMapper->new(
-  -LOGGER       => $logger,
-  -CONF         => $conf,
-  -CACHE        => $cache
-);
-
-
+# EG mapping code reworked to iterate over different species
 # find out which entities we want to map
 my %mapping_types = ();
-foreach my $type ($conf->param('mapping_types')) {
+foreach my $type ( $conf->param('mapping_types') ) {
   $mapping_types{$type} = 1;
 }
 
+# EG get list of species
+my @species_ids = @{ get_species_ids( "target", $conf ) };
+my $basedir = $conf->param('basedir');
 
-# run in requested mode
-my $mode = $conf->param('mode') || 'normal';
-if ( $mode eq 'mapping' ) { $mode = 'normal' }
-my $run = "run_$mode";
-no strict 'refs';
-&$run;
+# EG create placeholder cache based on the first species to allow us to
+# create a stable ID generator to reuse for all species
+my $cache;
+my $stable_id_mapper;
+my $s = $species_ids[0];
+$conf->param( 'basedir', path_append( $basedir, $$s[1] ) );
+$conf->param( 'species_id',   $$s[1] );
+$conf->param( 'species_name', $$s[0] );
+
+# loading cache from file
+my $cache = Bio::EnsEMBL::IdMapping::Cache->new(
+                                       -LOGGER        => $logger,
+                                       -CONF          => $conf,
+                                       -LOAD_INSTANCE => 1,
+                                       -SPECIES_ID    => $$s[1],    # EG
+                                       -SPECIES_NAME  => $$s[0]     # EG
+);
+
+my $type_count_sql = { gene => 'select count(*) '
+                         . 'from gene_stable_id '
+                         . 'join gene using (gene_id) '
+                         . 'join seq_region using (seq_region_id) '
+                         . 'join coord_system using (coord_system_id) '
+                         . 'where species_id=?',
+                       transcript => 'select count(*) '
+                         . 'from transcript_stable_id '
+                         . 'join transcript using (transcript_id) '
+                         . 'join seq_region using (seq_region_id) '
+                         . 'join coord_system using (coord_system_id) '
+                         . 'where species_id=?',
+                       exon => 'select count(*) '
+                         . 'from exon_stable_id '
+                         . 'join exon using (exon_id) '
+                         . 'join seq_region using (seq_region_id) '
+                         . 'join coord_system using (coord_system_id) '
+                         . 'where species_id=?',
+                       translation => 'select count(*) '
+                         . 'from translation_stable_id '
+                         . 'join translation using (translation_id) '
+                         . 'join transcript using (transcript_id) '
+                         . 'join seq_region using (seq_region_id) '
+                         . 'join coord_system using (coord_system_id) '
+                         . 'where species_id=?' };
+
+# eg get the stable id generator and inject the cache into it
+my $stable_id_generator = $conf->param('plugin_stable_id_generator')
+  || 'bio::ensembl::idmapping::stableidgenerator::ensemblgeneric';
+inject($stable_id_generator);
+
+# create a new stableidgenerator object
+my $generator_instance =
+  $stable_id_generator->new( -logger => $logger,
+                             -conf   => $conf,
+                             -cache  => $cache );
+
+# EG iterate over species
+for my $species (@species_ids) {
+  # EG create a new cache for the current species
+  print( "Handling species " . $$species[0] . "/" . $$species[1],
+         "\n" );
+
+  $conf->param( 'basedir', path_append( $basedir, $$species[1] ) );
+  $conf->param( 'species_id',   $$species[1] );
+  $conf->param( 'species_name', $$species[0] );
+
+  $cache =
+    Bio::EnsEMBL::IdMapping::Cache->new( -LOGGER        => $logger,
+                                         -CONF          => $conf,
+                                         -LOAD_INSTANCE => 1 );
+
+  # get a stable ID mapper
+  $stable_id_mapper =
+    Bio::EnsEMBL::IdMapping::StableIdMapper->new( -LOGGER => $logger,
+                                                  -CONF   => $conf,
+                                                  -CACHE  => $cache );
+
+  # EG replace the genny cache with the species specific one
+  $generator_instance->cache($cache);
+  $stable_id_mapper->stable_id_generator($generator_instance);
+
+  ##? # find out which entities we want to map
+  ##? my %mapping_types = ();
+  ##? foreach my $type ( $conf->param('mapping_types') ) {
+  ##?   $mapping_types{$type} = 1;
+  ##? }
+
+  # run in requested mode
+  my $mode = $conf->param('mode') || 'normal';
+  if ( $mode eq 'mapping' ) { $mode = 'normal' }
+  my $run = "run_$mode";
+  no strict 'refs';
+  &$run;
+} ## end for my $species (@species_ids)
 
 
 # finish logfile
@@ -387,49 +475,73 @@ sub archive {
 
 
 sub upload_mapping_session_and_events {
-  if ($conf->is_true('upload_events') and ! $conf->param('dry_run')) {
-    
-    $logger->info("Uploading mapping_session and stable_id_event tables...\n");
+  if ( $conf->is_true('upload_events') and !$conf->param('dry_run') ) {
+
+    $logger->info(
+           "Uploading mapping_session and stable_id_event tables...\n");
 
     my $i = 0;
     my $j = 0;
-    
-    $logger->info("mapping_session...\n", 1);
-    $i += $stable_id_mapper->upload_file_into_table('target', 'mapping_session',
-      'mapping_session.txt');
-    $logger->info("$i\n", 1);
-    
-    $logger->info("stable_id_event...\n", 1);
-    $j += $stable_id_mapper->upload_file_into_table('target', 'stable_id_event',
-      'stable_id_event_existing.txt');
-    $j += $stable_id_mapper->upload_file_into_table('target', 'stable_id_event',
-      'stable_id_event_new.txt', 1);
-    $j += $stable_id_mapper->upload_file_into_table('target', 'stable_id_event',
-      'stable_id_event_similarity.txt', 1);
-    $logger->info("$j\n", 1);
-    
+
+    $logger->info( "mapping_session...\n", 1 );
+
+    $i +=
+      $stable_id_mapper->upload_file_into_table( 'target',
+                               'mapping_session', 'mapping_session.txt',
+                               $conf->param('species_id') > 1 ? 1 : 0 );
+
+    $logger->info( "$i\n", 1 );
+
+    $logger->info( "stable_id_event...\n", 1 );
+
+    $j += $stable_id_mapper->upload_file_into_table( 'target',
+                    'stable_id_event', 'stable_id_event_existing.txt' );
+    $j += $stable_id_mapper->upload_file_into_table( 'target',
+                      'stable_id_event', 'stable_id_event_new.txt', 1 );
+    $j += $stable_id_mapper->upload_file_into_table( 'target',
+               'stable_id_event', 'stable_id_event_similarity.txt', 1 );
+    $logger->info( "$j\n", 1 );
+
     $logger->info("Done.\n\n");
-  
+
   } else {
-    $logger->info("Stable ID event and mapping session tables not uploaded.\n\n");
+    $logger->info(
+        "Stable ID event and mapping session tables not uploaded.\n\n");
   }
-}
+} ## end sub upload_mapping_session_and_events
 
 
 sub upload_stable_ids {
-  if ($conf->is_true('upload_stable_ids') and ! $conf->param('dry_run')) {
-    
+  if ( $conf->is_true('upload_stable_ids')
+       && !$conf->param('dry_run') )
+  {
+
+    my $species_id = $conf->param('species_id');
+
     $logger->info("Uploading stable ID tables...\n");
-    
-    foreach my $t ($conf->param('mapping_types')) {
-      $logger->info("${t}_stable_id...\n", 1);
-      my $i = $stable_id_mapper->upload_file_into_table('target',
-        "${t}_stable_id", "${t}_stable_id.txt");
-      $logger->info("$i\n", 1);
+
+    foreach my $t ( $conf->param('mapping_types') ) {
+      $logger->info( "${t}_stable_id...\n", 1 );
+
+      # EG check if empty for species
+      my $cnt = get_stable_id_count( $t, 'target', $species_id );
+      if ( $cnt > 0 ) {
+        $logger->warning( "Existing stable IDs found "
+                            . "for $t for species ID $species_id "
+                            . "- not uploading",
+                          1 );
+        $logger->info( "Data not uploaded!\n", 1 );
+      } else {
+
+        my $i = $stable_id_mapper->upload_file_into_table( 'target',
+                            "${t}_stable_id", "${t}_stable_id.txt", 1 );
+
+        $logger->info( "$i\n", 1 );
+      }
+
     }
-    
     $logger->info("Done.\n\n");
-  
+
   } else {
     $logger->info("Stable ID tables not uploaded.\n\n");
   }
@@ -539,4 +651,61 @@ sub log_cache_stats {
   }
 }
 
+sub get_stable_id_count {
+  my ( $type, $dbtype, $species_id ) = @_;
 
+  # EG new subroutine for finding if stable ID table has entries for
+  # this species already
+
+  my $dba = $cache->get_DBAdaptor($dbtype);
+  my $dbh = $dba->dbc->db_handle;
+
+  # check table is empty
+  my $sql = $type_count_sql->{$type};
+
+  if ( !defined($sql) ) {
+    throw("Cannot count stable ids of type $type");
+  }
+
+  my $sth = $dbh->prepare($sql);
+  $sth->execute($species_id);
+
+  my ($c) = $sth->fetchrow_array;
+  $sth->finish;
+
+  return $c;
+}
+
+sub get_species_ids {
+  my ( $prefix, $conf ) = @_;
+
+  # EG additional subroutine for determining which species IDs are
+  # present
+
+  my @speciesIds;
+
+  my $dsn =
+      "DBI:mysql:database="
+    . $conf->param("${prefix}dbname")
+    . ";host="
+    . $conf->param("${prefix}host")
+    . ";port="
+    . $conf->param("${prefix}port");
+
+  my $ensemblCoreDbh = DBI->connect( $dsn,
+                                     $conf->param("${prefix}user"),
+                                     $conf->param("${prefix}pass") )
+    || die "Cannot connect to server: $DBI::errstr\n";
+
+  my $query = "SELECT DISTINCT meta_value, species_id
+               FROM meta WHERE meta_key = 'species.db_name'";
+
+  my $psmt = $ensemblCoreDbh->prepare($query);
+  $psmt->execute();
+
+  while ( my (@results) = $psmt->fetchrow() ) {
+    push @speciesIds, [ $results[0], $results[1] ];
+  }
+
+  return \@speciesIds;
+} ## end sub get_species_ids
