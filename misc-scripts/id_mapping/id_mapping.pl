@@ -157,7 +157,6 @@ my $basedir = $conf->param('basedir');
 
 # EG create placeholder cache based on the first species to allow us to
 # create a stable ID generator to reuse for all species
-my $cache;
 my $stable_id_mapper;
 my $s = $species_ids[0];
 $conf->param( 'basedir', path_append( $basedir, $$s[1] ) );
