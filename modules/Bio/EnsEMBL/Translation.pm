@@ -1011,7 +1011,12 @@ sub modify_translation {
 
   # Sort in reverse order to avoid complication of adjusting
   # downstream edits.
-  @seqeds = sort { $b->start() <=> $a->start() } @seqeds;
+  # HACK:   The translation ENSP00000420939 somehow makes the next line
+  #         bomb out ($a or $b becomes undef) if the start() method
+  #         is used.  I haven't been able to find out why.  It has 10
+  #         Selenocysteine seqedits that looks correct.
+  #         /Andreas (release 59)
+  my @seqeds = sort { $b->{'start'} <=> $a->{'start'} } @seqeds;
 
   # Apply all edits.
   my $peptide = $seq->seq();
