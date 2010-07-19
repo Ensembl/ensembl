@@ -135,5 +135,139 @@ sub feature_Slice {
 sub DESTROY{
 }
 
+sub get_all_differences{
+  my $self = shift;
+  
+  my @results;
+  
+  # get seq_region_attrib diffs (always same-length substitutions)
+  ################################################################
+  
+  my $sth = $self->adaptor->prepare(qq{
+    SELECT sra.value
+    FROM seq_region_attrib sra, attrib_type at
+    WHERE at.code = '_rna_edit'
+    AND at.attrib_type_id = sra.attrib_type_id
+    AND sra.seq_region_id = ?
+  });
+  
+  $sth->execute($self->get_seq_region_id);
+  
+  my $edit_string;
+  
+  $sth->bind_columns(\$edit_string);
+  
+  while($sth->fetch()) {
+    my ($start, $end, $edit) = split " ", $edit_string;
+    
+    my $slice = $self->sub_Slice($start, $end);
+    my $chr_proj = $slice->project("chromosome");
+    my $ref_seq = '-';
+    if(scalar @$chr_proj == 1) {
+      $ref_seq = $chr_proj->[0]->[2]->seq;
+    }
+    
+    
+    my $diff = {
+      'start' => $start,
+      'end'   => $end,
+      'type'  => 'substitution',
+      'seq'   => $edit,
+      'ref'   => $ref_seq,
+    };
+    
+    push @results, $diff;
+  }
+  
+  # get more complex differences via projections
+  ##############################################
+  
+  # project the LRG slice to contig coordinates
+  my @segs = @{$self->project("contig")};
+  
+  # if the LRG projects into more than one segment
+  if(scalar @segs > 1) {
+    
+    my ($prev_end, $prev_chr_start, $prev_chr_end, $prev_was_chr);
+    
+    foreach my $seg(@segs) {
+      
+      # is this a novel LRG contig, or does it project to a chromosome?
+      my @chr_proj = @{$seg->[2]->project("chromosome")};
+      
+      # if it is a normal contig
+      if(scalar @chr_proj) {
+        
+        # check if there has been a deletion in LRG
+        if($prev_was_chr && $prev_end == $seg->[0] - 1) {
+          
+          # check it's not just a break in contigs
+          unless(
+             ($chr_proj[0]->[2]->strand != $self->strand && $prev_chr_start == $chr_proj[0]->[2]->end + 1) ||
+             ($chr_proj[0]->[2]->strand != $self->strand && $prev_chr_end == $chr_proj[0]->[2]->start - 1)
+          ) {
+            
+            # now get deleted slice coords, depends on the strand rel to LRG
+            my ($s, $e);
+            
+            # opposite strand
+            if($chr_proj[0]->[2]->strand != $self->strand) {
+              ($s, $e) = ($prev_chr_start - 1, $chr_proj[0]->[2]->end + 1);
+            }
+            
+            # same strand
+            else {
+              ($s, $e) = ($prev_chr_end + 1, $chr_proj[0]->[2]->start - 1);
+            }
+            
+            if($s > $e) {
+              warn "Oops, trying to create a slice from $s to $e (could have been ", $prev_chr_start - 1, "-", $chr_proj[0]->[2]->end + 1, " or ", $prev_chr_end + 1, "-", $chr_proj[0]->[2]->start - 1, ")";
+            }
+            
+            else {
+              # get a slice representing the sequence that was deleted
+              my $deleted_slice = $self->adaptor->fetch_by_region("chromosome", $chr_proj[0]->[2]->seq_region_name, $s, $e);
+              
+              my $diff = {
+                'start' => $seg->[0],
+                'end'   => $prev_end,
+                'type'  => 'deletion',
+                'seq'   => '-',
+                'ref'   => $deleted_slice->seq." ".$deleted_slice->start.'-'.$deleted_slice->end,
+              };
+              
+              push @results, $diff;
+            }
+          }
+        }
+        
+        $prev_was_chr = 1;
+        
+        $prev_chr_start = $chr_proj[0]->[2]->start;
+        $prev_chr_end = $chr_proj[0]->[2]->end;
+      }
+      
+      # if it is an LRG made-up contig for an insertion
+      else {
+        $prev_was_chr = 0;
+        
+        my $diff = {
+          'start' => $seg->[0],
+          'end'   => $seg->[1],
+          'type'  => 'insertion',
+          'seq'   => substr($self->seq, $seg->[0] - 1, $seg->[1] - $seg->[0] + 1),
+          'ref'   => '-',
+        };
+        
+        push @results, $diff;
+      }
+      
+      $prev_end = $seg->[1];
+    }
+  }
+  
+  # return results sorted by start, then end position
+  return [sort {$a->{start} <=> $b->{start} || $a->{end} <=> $b->{end}} @results];
+}
 
 1;
