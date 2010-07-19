@@ -187,9 +187,10 @@ sub map_stable_ids {
   # check if there are any objects of this type at all
   my %all_sources = %{ $self->cache->get_by_name("${type}s_by_id", 'source') };
   my %all_targets = %{ $self->cache->get_by_name("${type}s_by_id", 'target') };
-  unless (scalar(keys %all_sources)) {
-    $self->logger->info("No cached ${type}s found.\n\n");
-    return;
+  if ( scalar( keys(%all_sources) ) == 0 ) {
+    # EG may be possible to have no sources for new species
+    $self->logger->warning("No cached ${type}s found.\n\n");
+    %all_sources = ();
   }
 
   my %stats = map { $_ => 0 }
@@ -637,24 +638,31 @@ sub generate_mapping_stats {
   my $novel_total = $stats->{'mapped_novel'} + $stats->{'lost_novel'};
 
   # no split into known and novel for exons
-  unless ( $type eq 'exon' ) {
-    $result .= sprintf( $fmt2,
-	'known',
-	$stats->{'mapped_known'},
-	$stats->{'lost_known'},
-	($known_total ? $stats->{'mapped_known'}/$known_total*100 : 0)
-    );
+  if ( $type ne 'exon' ) {
+    $result .= sprintf( $fmt2, 'known',
+                        $stats->{'mapped_known'},
+                        $stats->{'lost_known'}, (
+                            $known_total
+                          ? $stats->{'mapped_known'}/$known_total*100
+                          : 0 ) );
 
-    $result .= sprintf( $fmt2,
-	'novel',
-	$stats->{'mapped_novel'},
-	$stats->{'lost_novel'},
-	($novel_total ? $stats->{'mapped_novel'}/$novel_total*100 : 0)
-    );
-  } ## end unless ( $type eq 'exon' )
+    $result .= sprintf( $fmt2, 'novel',
+                        $stats->{'mapped_novel'},
+                        $stats->{'lost_novel'}, (
+                            $novel_total
+                          ? $stats->{'mapped_novel'}/$novel_total*100
+                          : 0 ) );
+  }
 
-  $result .= sprintf($fmt2, 'total', $mapped_total, $lost_total,
-    $mapped_total/($known_total + $novel_total)*100);
+  if ( $mapped_total == 0 ) {
+    # EG different calculation needed when no mappings found for new
+    # species
+    $result .= sprintf( $fmt2, 'total', $mapped_total, $lost_total, 0 );
+  } else {
+    $result .= sprintf( $fmt2,
+                    'total', $mapped_total, $lost_total,
+                    $mapped_total/( $known_total + $novel_total )*100 );
+  }
 
   # log result
   $self->logger->info($result."\n");

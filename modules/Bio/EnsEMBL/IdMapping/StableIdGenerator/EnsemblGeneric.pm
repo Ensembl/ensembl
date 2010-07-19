@@ -120,30 +120,41 @@ sub initial_stable_id {
   my $self = shift;
   my $type = shift;
 
-  my $init_stable_id;
+  # EG modifications to permit the current stable ID to persist trohough
+  # different invocations
+  my $init_stable_id = $self->{stable_id_list}{$type};
 
-  # use stable ID from configuration if set
-  if ($init_stable_id = $self->conf->param("starting_${type}_stable_id")) {
-    $self->logger->debug("Using pre-configured $init_stable_id as base for new $type stable IDs.\n");
-    return $init_stable_id;
-  }
-
-  my $s_dba = $self->cache->get_DBAdaptor('source');
-  my $s_dbh = $s_dba->dbc->db_handle;
-
-  # look in the ${type}_stable_id table first
-  my $sql = qq(SELECT MAX(stable_id) FROM ${type}_stable_id);
-  $init_stable_id = $self->fetch_value_from_db($s_dbh, $sql);
-
-  # also look in gene_archive to make sure there are no larger Ids there
-  unless ($type eq 'exon') {
-    $sql = qq(SELECT MAX(${type}_stable_id) FROM gene_archive);
-    my $archived_stable_id = $self->fetch_value_from_db($s_dbh, $sql);
-    if ($archived_stable_id and $self->is_valid($archived_stable_id) and
-        ($archived_stable_id gt $init_stable_id)) {
-      $init_stable_id = $archived_stable_id;
+  if ( !defined($init_stable_id) ) {
+    # use stable ID from configuration if set
+    if ( $init_stable_id =
+         $self->conf->param("starting_${type}_stable_id") )
+    {
+      $self->logger->debug(   "Using pre-configured $init_stable_id "
+                            . "as base for new $type stable IDs.\n" );
+      return $init_stable_id;
     }
-  }
+
+    my $s_dba = $self->cache->get_DBAdaptor('source');
+    my $s_dbh = $s_dba->dbc->db_handle;
+
+    # look in the ${type}_stable_id table first
+    my $sql = qq(SELECT MAX(stable_id) FROM ${type}_stable_id);
+    $init_stable_id = $self->fetch_value_from_db( $s_dbh, $sql );
+
+    # also look in gene_archive to make sure there are no larger Ids
+    # there
+    unless ( $type eq 'exon' ) {
+      $sql = qq(SELECT MAX(${type}_stable_id) FROM gene_archive);
+      my $archived_stable_id =
+        $self->fetch_value_from_db( $s_dbh, $sql );
+      if (     $archived_stable_id
+           and $self->is_valid($archived_stable_id)
+           and ( $archived_stable_id gt $init_stable_id ) )
+      {
+        $init_stable_id = $archived_stable_id;
+      }
+    }
+  } ## end if ( !defined($init_stable_id...))
 
   if ($init_stable_id) {
     # since $init_stable_id now is the highest existing stable Id for this

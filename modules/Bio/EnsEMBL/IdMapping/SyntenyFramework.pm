@@ -376,12 +376,15 @@ sub rescore_gene_matrix_lsf {
       is_component  => 1,
   );
 
-  my $cmd = qq{$Bin/synteny_rescore.pl $options --index \$LSB_JOBINDEX};
+  my $cmd = qq{perl -I./modules $Bin/synteny_rescore.pl }
+    . qq{$options --index \$LSB_JOBINDEX};
 
-  my $pipe = qq{|bsub -J$lsf_name\[1-$num_jobs\] } .
-    qq{-o $logpath/synteny_rescore.\%I.out } .
-    qq{-e $logpath/synteny_rescore.\%I.err } .
-    $self->conf->param('lsf_opt_synteny_rescore');
+  my $pipe =
+      qq{|bsub -J$lsf_name\[1-$num_jobs\] }
+    . qq{-o $logpath/synteny_rescore.\%I.out }
+    . qq{-e $logpath/synteny_rescore.\%I.err }
+    . $self->conf()->param('lsf_opt_run')
+    . $self->conf()->param('lsf_opt_synteny_rescore');
 
   # run lsf job array
   $self->logger->info("Submitting $num_jobs jobs to lsf.\n");
