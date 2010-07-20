@@ -697,7 +697,7 @@ sub get_species_ids {
     || die "Cannot connect to server: $DBI::errstr\n";
 
   my $query = "SELECT DISTINCT meta_value, species_id
-               FROM meta WHERE meta_key = 'species.db_name'";
+               FROM meta WHERE meta_key = 'species.production_name'";
 
   my $psmt = $ensemblCoreDbh->prepare($query);
   $psmt->execute();
