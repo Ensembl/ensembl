@@ -673,18 +673,14 @@ sub non_mapped_transcript_rescore {
 
   foreach my $entry (@{ $matrix->get_all_Entries }) {
 
-    my @source_transcripts = @{ $self->cache->get_by_key(
-      'transcripts_by_exon_id', 'source', $entry->source) };
-    my @target_transcripts = @{ $self->cache->get_by_key(
-      'transcripts_by_exon_id', 'target', $entry->target) };
-
     # EG reworking of logic to allow no source/target e.g. for new
     # species in multispecies databases
     my $st =
       $self->cache()
       ->get_by_key( 'transcripts_by_exon_id', 'source',
                     $entry->source() );
-    my @source_transcripts;
+
+    my @source_transcripts = ();
     if ( !defined($st) ) {
       $self->logger->warning(
                           "Can't find source transcipts by exon_id for "
@@ -697,6 +693,7 @@ sub non_mapped_transcript_rescore {
       $self->cache()
       ->get_by_key( 'transcripts_by_exon_id', 'target',
                     $entry->target() );
+
     my @target_transcripts = ();
     if ( !defined($tt) ) {
       $self->logger->warning(
