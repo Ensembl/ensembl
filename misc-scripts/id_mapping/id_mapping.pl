@@ -200,7 +200,7 @@ my $type_count_sql = { gene => 'select count(*) '
 
 # eg get the stable id generator and inject the cache into it
 my $stable_id_generator = $conf->param('plugin_stable_id_generator')
-  || 'bio::ensembl::idmapping::stableidgenerator::ensemblgeneric';
+  || 'Bio::EnsEMBL::IdMapping::StableIdGenerator::EnsemblGeneric';
 inject($stable_id_generator);
 
 # create a new stableidgenerator object
