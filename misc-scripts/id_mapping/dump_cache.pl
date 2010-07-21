@@ -204,15 +204,17 @@ sub build_cache_by_seq_region {
 
     # determine which slices need to be done
     my $filename = "$dbtype.dump_cache.slices.txt";
-    open(my $fh, '>', "$logpath/$filename") or
-      throw("Unable to open $logpath/$filename for writing: $!");
-    
+    open( my $fh, '>', "$logpath/$filename" )
+      or throw("Unable to open $logpath/$filename for writing: $!");
+
     my $num_jobs = 0;
     for my $species (@species_ids) {
+
       # EG set config based on species ID in turn
       $conf->param( 'basedir', path_append( $basedir, $$species[1] ) );
       $conf->param( 'species_id',   $$species[1] );
       $conf->param( 'species_name', $$species[0] );
+
       # EG load cache for current species ID
       my $cache = $cache_impl->new( -LOGGER => $logger,
                                     -CONF   => $conf, );
@@ -233,7 +235,6 @@ sub build_cache_by_seq_region {
         foreach my $slice_name ( @{ $cache->slice_names($dbtype) } ) {
           my $type = "$dbtype.$slice_name";
           unless ( $cache->cache_file_exists($type) ) {
-            print $fh "$slice_name\n";
             print $fh "$slice_name,$$species[0],$$species[1],"
               . $src_species_id . "\n";
             $num_jobs++;
@@ -245,30 +246,31 @@ sub build_cache_by_seq_region {
         $logger->info("All cache files for $dbtype exist.\n");
         next;
       }
+
     } ## end for my $species (@species_ids)
     close($fh);
+
     # EG reset original basedir
     $conf->param( 'basedir', $basedir );
 
     # build lsf command
-    my $lsf_name = 'dump_by_seq_region_'.time;
+    my $lsf_name = 'dump_by_seq_region_' . time;
     my $concurrent = $conf->param('build_cache_concurrent_jobs') || 200;
 
-    my $options = $conf->create_commandline_options(
-        logauto       => 1,
-        logautobase   => "dump_by_seq_region",
-        interactive   => 0,
-        is_component  => 1,
-        dbtype        => $dbtype,
-        cache_impl    => $cache_impl,
-    );
+    my $options =
+      $conf->create_commandline_options(
+                                    logauto     => 1,
+                                    logautobase => "dump_by_seq_region",
+                                    interactive => 0,
+                                    is_component => 1,
+                                    dbtype       => $dbtype,
+                                    cache_impl   => $cache_impl, );
 
     # EG invoke perl with correct path rather than relying on shebang
     my $cmd =
         qq{perl -I ./modules }
       . qq{./misc-scripts/id_mapping/dump_by_seq_region.pl }
       . qq{$options --index \$LSB_JOBINDEX};
-
 
     my $pipe =
         '|bsub '
@@ -284,40 +286,42 @@ sub build_cache_by_seq_region {
     $logger->debug("$pipe\n\n");
 
     local *BSUB;
-    open BSUB, $pipe or
-      $logger->error("Could not open open pipe to bsub: $!\n");
+    open BSUB, $pipe
+      or $logger->error("Could not open open pipe to bsub: $!\n");
 
     print BSUB $cmd;
     $logger->error("Error submitting jobs: $!\n")
-      unless ($? == 0); 
+      unless ( $? == 0 );
     close BSUB;
 
     # submit dependent job to monitor finishing of jobs
-    $logger->info("Waiting for jobs to finish...\n", 0, 'stamped');
+    $logger->info( "Waiting for jobs to finish...\n", 0, 'stamped' );
 
     my $dependent_job =
         qq{bsub -K -w "ended($lsf_name)" }
       . $conf->param('lsf_opt_run_small')
       . qq{ -o $logpath/dump_cache.$dbtype.depend.out /bin/true};
 
-    system($dependent_job) == 0 or
-      $logger->error("Error submitting dependent job: $!\n");
+    system($dependent_job) == 0
+      or $logger->error("Error submitting dependent job: $!\n");
 
-    $logger->info("All jobs finished.\n", 0, 'stamped');
+    $logger->info( "All jobs finished.\n", 0, 'stamped' );
 
     # check for lsf errors
     sleep(5);
     my $err;
-    foreach my $i (1..$num_jobs) {
-      $err++ unless (-e "$logpath/dump_by_seq_region.$dbtype.$i.success");
+    foreach my $i ( 1 .. $num_jobs ) {
+      $err++
+        unless ( -e "$logpath/dump_by_seq_region.$dbtype.$i.success" );
     }
 
     if ($err) {
-      $logger->error("At least one of your jobs failed.\nPlease check the logfiles at $logpath for errors.\n");
+      $logger->error( "At least one of your jobs failed.\n"
+              . "Please check the logfiles at $logpath for errors.\n" );
       return 1;
     }
 
-  }
+  } ## end foreach my $dbtype (qw(source target))
 
   return 0;
 }
