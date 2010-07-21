@@ -232,13 +232,11 @@ sub build_cache_by_seq_region {
         $logger->info( "\n" . ucfirst($dbtype) . " db...\n",
                        0, 'stamped' );
 
-        foreach my $slice_name ( @{ $cache->slice_names($dbtype) } ) {
-          my $type = "$dbtype.$slice_name";
-          unless ( $cache->cache_file_exists($type) ) {
-            print $fh "$slice_name,$$species[0],$$species[1],"
-              . $src_species_id . "\n";
-            $num_jobs++;
-          }
+        my $type = "$dbtype.$slice_name";
+        unless ( $cache->cache_file_exists($type) ) {
+          print $fh "$slice_name,$$species[0],$$species[1],"
+            . $src_species_id . "\n";
+          $num_jobs++;
         }
       }
 
