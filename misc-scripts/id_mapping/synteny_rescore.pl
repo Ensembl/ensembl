@@ -67,12 +67,23 @@ my $conf = new Bio::EnsEMBL::Utils::ConfParser(
   -DEFAULT_CONF => "$Bin/default.conf"
 );
 
-$conf->parse_options(
-  'basedir|basedir=s' => 1,
-  'index|i=n' => 1,
-  'chromosomes|chr=s@' => 0,
-  'region=s' => 0,
-);
+$conf->parse_options( 'basedir|basedir=s'  => 1,
+                      'index|i=n'          => 1,
+                      'chromosomes|chr=s@' => 0,
+                      'region=s'           => 0,
+                      'species_id=i'       => 1,
+                      'species_name=s'     => 1,
+                      'sourcedbname=s'     => 1,
+                      'sourcehost=s'       => 1,
+                      'sourceuser=s'       => 1,
+                      'sourcepass=s'       => 0,
+                      'sourceport=i'       => 1,
+                      'targetdbname=s'     => 1,
+                      'targethost=s'       => 1,
+                      'targetuser=s'       => 1,
+                      'targetpass=s'       => 0,
+                      'targetport=i'       => 1 );
+
 
 # append job index to logfile name
 my $index = $conf->param('index');
