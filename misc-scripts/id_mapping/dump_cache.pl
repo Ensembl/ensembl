@@ -265,9 +265,7 @@ sub build_cache_by_seq_region {
                                     cache_impl   => $cache_impl, );
 
     # EG invoke perl with correct path rather than relying on shebang
-    my $cmd =
-        qq{perl -I ./modules }
-      . qq{./misc-scripts/id_mapping/dump_by_seq_region.pl }
+    my $cmd = 'perl dump_by_seq_region.pl '
       . qq{$options --index \$LSB_JOBINDEX};
 
     my $pipe =
