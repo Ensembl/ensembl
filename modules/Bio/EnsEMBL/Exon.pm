@@ -1231,29 +1231,39 @@ sub peptide {
   unless($tr && ref($tr) && $tr->isa('Bio::EnsEMBL::Transcript')) {
     throw("transcript arg must be Bio::EnsEMBL:::Transcript not [$tr]");
   }
-
+  
   #convert exons coordinates to peptide coordinates
   my $tmp_exon = $self->transfer($tr->slice);
   if (!$tmp_exon) {
     throw("Couldn't transfer exon to transcript's slice");
   }
-
+  
   my @coords = 
     $tr->genomic2pep($tmp_exon->start, $tmp_exon->end, $tmp_exon->strand);
-
+  
   #filter out gaps
   @coords = grep {$_->isa('Bio::EnsEMBL::Mapper::Coordinate')} @coords;
-
+  
   #if this is UTR then the peptide will be empty string
   my $pep_str = '';
-
-  if(scalar(@coords) > 1) {
-    throw("Error. Exon maps to multiple locations in peptide." .
-		 " Is this exon [$self] a member of this transcript [$tr]?");
-  } elsif(scalar(@coords) == 1) {
+  
+  
+  if(scalar(@coords) > 1) {    
+    my $coord = $self->_merge_ajoining_coords(\@coords);
+    if($coord) {
+      @coords = ($coord);
+    }
+    else {
+      my ($e_id, $tr_id) = ($self->stable_id(), $tr->stable_id());
+      throw("Error. Exon maps to multiple locations in peptide and those". 
+	    " locations are not continuous." .
+	    " Is this exon [$e_id] a member of this transcript [$tr_id]?");
+    }
+  } 
+  elsif(scalar(@coords) == 1) {
     my $c = $coords[0];
     my $pep = $tr->translate;
-
+    
     #bioperl doesn't give back residues for incomplete codons
     #make sure we don't subseq too far...
     my ($start, $end);
@@ -1261,13 +1271,53 @@ sub peptide {
     $start = ($c->start < $end) ? $c->start : $end;
     $pep_str = $tr->translate->subseq($start, $end);
   }
-
+  
   return
     Bio::Seq->new( -seq      => $pep_str,
                    -moltype  => 'protein',
                    -alphabet => 'protein',
                    -id       => $self->display_id );
 }
+
+=head2 _merge_ajoining_coords
+ 
+   Arg [1]     : ArrayRef of Bio::EnsEMBL::Mapper::Coordinate objects
+   Example     : 
+   Description : Merges coords which are ajoining or overlapping
+   Returntype  : Bio::EnsEMBL::Mapper::Coordinate or undef if it cannot happen
+   Exceptions  : Exception if the cooords cannot be condensed into one location
+   Caller      : internal
+   Status      : Development
+
+=cut
+ 
+sub _merge_ajoining_coords {
+  my ($self, $coords) = @_;
+  
+  my $okay = 1;
+  my $coord = shift @{$coords};
+  my $start = $coord->start();
+  my $last_end = $coord->end();
+  foreach my $other_coord (@{$coords}) {
+    if( ($last_end + 1) >= $other_coord->start() ) {
+      $last_end = $other_coord->end();
+    }
+    else {
+      $okay = 0;
+      last;
+    }
+  }
+  
+  if(!$okay) {
+    return;
+  }
+  
+  my $new_coord = Bio::EnsEMBL::Mapper::Coordinate->new(
+	$coord->id(), $start, $last_end, $coord->strand(), $coord->rank());
+  return $new_coord;
+}
+
+
 
 
 =head2 seq
