@@ -278,40 +278,45 @@ sub build_cache_by_seq_region {
 
     # run lsf job array
     $logger->info("\nSubmitting $num_jobs jobs to lsf.\n");
-    $logger->debug("$cmd\n\n");
-    $logger->debug("$pipe\n\n");
 
-    local *BSUB;
-    open BSUB, $pipe
-      or $logger->error("Could not open open pipe to bsub: $!\n");
+    if ( $num_jobs > 0 ) {
+      $logger->debug("$cmd\n\n");
+      $logger->debug("$pipe\n\n");
 
-    print BSUB $cmd;
-    $logger->error("Error submitting jobs: $!\n")
-      unless ( $? == 0 );
-    close BSUB;
+      local *BSUB;
+      open BSUB, $pipe
+        or $logger->error("Could not open open pipe to bsub: $!\n");
 
-    # submit dependent job to monitor finishing of jobs
-    $logger->info( "Waiting for jobs to finish...\n", 0, 'stamped' );
+      print BSUB $cmd;
+      $logger->error("Error submitting jobs: $!\n")
+        unless ( $? == 0 );
+      close BSUB;
 
-    my $dependent_job =
-        qq{bsub -K -w "ended($lsf_name)" }
-      . $conf->param('lsf_opt_run_small')
-      . qq{ -o $logpath/dump_cache.$dbtype.depend.out /bin/true};
+      # submit dependent job to monitor finishing of jobs
+      $logger->info( "Waiting for jobs to finish...\n", 0, 'stamped' );
 
-    system($dependent_job) == 0
-      or $logger->error("Error submitting dependent job: $!\n");
+      my $dependent_job =
+          qq{bsub -K -w "ended($lsf_name)" }
+        . $conf->param('lsf_opt_run_small')
+        . qq{ -o $logpath/dump_cache.$dbtype.depend.out /bin/true};
 
-    $logger->info( "All jobs finished.\n", 0, 'stamped' );
+      system($dependent_job) == 0
+        or $logger->error("Error submitting dependent job: $!\n");
+
+      $logger->info( "All jobs finished.\n", 0, 'stamped' );
+
+      sleep(5);
+    } ## end if ( $num_jobs > 0 )
 
     # check for lsf errors
-    sleep(5);
     my $err;
     foreach my $i ( 1 .. $num_jobs ) {
-      $err++
-        unless ( -e "$logpath/dump_by_seq_region.$dbtype.$i.success" );
+      if ( !-e "$logpath/dump_by_seq_region.$dbtype.$i.success" ) {
+        $err++;
+      }
     }
 
-    if ($err) {
+    if ( $err > 0 ) {
       $logger->error( "At least one of your jobs failed.\n"
               . "Please check the logfiles at $logpath for errors.\n" );
       return 1;
