@@ -1,2 +1,0 @@
-18256	10	This is a note on gene 18256
-18259	10	Another note on gene 18259
