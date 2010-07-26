@@ -157,23 +157,23 @@ sub db_connection {
   Status     : Stable
 
 	my $arr_ref = $helper->execute(
-		-SQL      => 'select a,b,c from tab where col =?',
-		-CALLBACK => sub {
+		-SQL 		=> 'select a,b,c from tab where col =?',
+		-CALLBACK 	=> sub {
 			my @row = @{shift @_};
 			return {A=>$row[0], B=>$row[1], C=>$row[2]};
 		},
-		-PARAMS   => ['A']
+		-PARAMS 	=> ['A']
 	);
 	
 	#Or with hashrefs
 	my $arr_ref = $helper->execute(
-		-SQL          => 'select a,b,c from tab where col =?',
-		-USE_HASHREFS => 1,
-		-PARAMS       => ['A'],
-		-CALLBACK     => sub {
+		-SQL 			=> 'select a,b,c from tab where col =?',
+		-USE_HASHREFS 	=> 1,
+		-CALLBACK 		=> sub {
 			my $row = shift @_;
 			return {A=>$row->{a}, B=>$row->{b}, C=>$row->{c}};
-		}
+		},
+		-PARAMS 		=> ['A']
 	);
 
 Uses a callback defined by the C<sub> decalaration. Here we specify how the 
@@ -184,7 +184,7 @@ Should you not specify a callback then a basic one will be assigned to you
 which will return a 2D array structure e.g.
 
   my $arr_ref = $helper->execute(
-		-SQL    => 'select a,b,c from tab where col =?',
+		-SQL 	=> 'select a,b,c from tab where col =?',
 		-PARAMS => ['A']
 	);
 	
@@ -197,14 +197,14 @@ it but there are occasions where you do need it. An example of usage would be:
 
 	my $conn = get_conn(); #From somwewhere
 	my $arr_ref = $conn->execute(
-		-SQL          => 'select a,b,c from tab where col =?',
-		-USE_HASHREFS => 1,
-		-PARAMS       => ['A'],
-		-CALLBACK     => sub {
+		-SQL 			=> 'select a,b,c from tab where col =?',
+		-USE_HASHREFS 	=> 1,
+		-CALLBACK 		=> sub {
 			my ($row, $sth) = @_;
 			#Then do something with sth
 			return {A=>$row->[0], B=>$row->[1], C=>$row->[2]};
-		}
+		},
+		-PARAMS 		=> ['A']
 	);
 
 Any arguments to bind to the incoming statement. This can be a set of scalars
@@ -257,7 +257,7 @@ sub execute {
   Status     : Stable
 
   my $classification = $helper->execute_simple(
-    -SQL    => 'select meta_val from meta where meta_key =? order by meta_id', 
+    -SQL 	=> 'select meta_val from meta where meta_key =? order by meta_id', 
     -PARAMS => ['species.classification']
   );
 
@@ -315,16 +315,15 @@ sub execute_no_return {
 
 =head2 execute_into_hash()
 
-  Arg [SQL]       : SQL to execute
-  Arg [CALLBACK]  : The callback to use for mapping to a value in a hash
-                    keyed by the first element in your result set; 
-                    leave blank for a default mapping to a scalar value
-                    of the second element
-  Arg [PARAMS]    : The binding parameters to the SQL statement
-  Returntype      : A HashRef keyed by column 1 & value is the return of
-                    the callback
-  Exceptions      : If errors occur in the execution of the SQL
-  Status          : Stable
+  Arg [SQL]           : SQL to execute
+  Arg [CALLBACK]      : The callback to use for mapping to a value in a hash
+                        keyed by the first element in your result set; 
+                        leave blank for a default mapping to a scalar value
+                        of the second element
+  Arg [PARAMS]        : The binding parameters to the SQL statement
+  Returntype : A HashRef keyed by column 1 & value is the return of callback
+  Exceptions : If errors occur in the execution of the SQL
+  Status     : Stable
 
 A variant of the execute methods but rather than returning a list of mapped
 results this will assume the first column of a returning map & the calling
@@ -393,9 +392,9 @@ sub execute_into_hash {
   Arg [USE_HASHREFS]  : If set to true will cause HashRefs to be returned 
                         to the callback & not ArrayRefs
   Arg [PARAMS]        : The binding parameters to the SQL statement
-  Returntype          : One data point
-  Exceptions          : If errors occur in the execution of the SQL
-  Status              : Stable
+  Returntype : One data point
+  Exceptions : If errors occur in the execution of the SQL
+  Status     : Stable
 
   my $meta_count = $helper->execute_single_result(
     -SQL => 'select count(*) from meta where species_id =?', 
@@ -435,12 +434,12 @@ sub execute_single_result {
 
 =head2 transaction()
 
-  Arg [CALLBACK]  : The callback used for transaction isolation; once 
-                    the subroutine exists the code will decide on rollback
-                    or commit
-  Returntype      : Return of the callback
-  Exceptions      : If errors occur in the execution of the SQL
-  Status          : Stable
+  Arg [CALLBACK]      : The callback used for transaction isolation; once 
+                        the subroutine exists the code will decide on rollback
+                        or commit
+  Returntype : Return of the callback
+  Exceptions : If errors occur in the execution of the SQL
+  Status     : Stable
 
   my $val = $helper->transaction(-CALLBACK => sub {
     my ($dbc) = @_;
@@ -520,14 +519,14 @@ sub transaction {
 
 =head2 execute_update()
 
-  Arg [SQL]       : SQL to execute
-  Arg [CALLBACK]  : The callback to use for calling methods on the 
-                    DBI statement handle or DBConnection object after an 
-                    update command
-  Arg [PARAMS]    : The binding parameters to the SQL statement
-  Returntype      : Number of rows affected
-  Exceptions      : If errors occur in the execution of the SQL
-  Status          : Stable
+  Arg [SQL]           : SQL to execute
+  Arg [CALLBACK]      : The callback to use for calling methods on the 
+                        DBI statement handle or DBConnection object after an 
+                        update command
+  Arg [PARAMS]        : The binding parameters to the SQL statement
+  Returntype : Number of rows affected
+  Exceptions : If errors occur in the execution of the SQL
+  Status     : Stable
 
 Used for performing updates but conforms to the normal execute statement
 subroutines.
@@ -577,18 +576,68 @@ sub execute_update {
   return $rv;
 }
 
+=head2 execute_with_sth()
+
+  Arg [SQL]           : SQL to execute
+  Arg [CALLBACK]      : The callback to use for working with the statement
+                        handle once returned. This is B<not> a mapper.
+  Arg [PARAMS]        : The binding parameters to the SQL statement
+  Description : A subrotuine which abstracts resource handling and statement
+                preparing leaving the developer to define how to handle
+                and process the statement.
+  Returntype  : Anything you wish to return from the callback
+  Exceptions  : If errors occur in the execution of the SQL
+  Status      : Stable
+
+  my $meta_count = $helper->execute_with_sth(
+    -SQL => 'select count(*) from meta where species_id =?', 
+    -PARAMS => [1],
+    -CALLBACK => sub {
+      my ($sth) = @_;
+      my $count;
+      $sth->bind_columns(\($count));
+      while ($sth->fetch) {
+        print $count, "\n";
+      }
+      return $count;
+    }
+  );
+
+Very similar to C<execute()> except this gives you full control over the
+lifecycle of the statement handle & how you wish to proceed with working
+with a statement handle. This is for situations where you believe going through
+the mappers causes too much of a slow-down (since we have to execute a
+subroutine for every row in order to map it correctly).
+
+However please benchmark before adopting this method as it increases the 
+complexity of your code and the mapper slow down only becomes apparent when
+working with very large numbers of rows.
+
+=cut
+
+sub execute_with_sth {
+  my ($self, @args) = @_;
+  my ($sql, $callback, $params) = rearrange([qw(sql callback params)], @args);
+  return $self->_base_execute( $sql, 1, $params, $callback );
+}
+
 =pod
 
 =head1 batch()
 
-  Arg [SQL]       : SQL to execute
-  Arg [CALLBACK]  : The callback to use for binding the data to execute in
-                    the batch statement; optional (if you specify DATA)
-  Arg [DATA]      : The data to use in the batch statement; optional (if you
-                    specify CALLBACK)
-  Returntype      : Number of rows affected
-  Exceptions      : If errors occur in the execution of the SQL
-  Status          : Stable
+  Arg [SQL]           : SQL to execute
+  Arg [CALLBACK]      : The callback to use for working with the statement
+                        handle once returned; specify this or -DATA
+  Arg [DATA]          : The data to insert; specify this or -CALLBACK
+  Arg [COMMIT_EVERY]  : Integer; defines the rate at which to issue commits to
+                        the DB handle. This is important when working with 
+                        InnoDB databases since it affects the speed of rollback
+                        (larger gaps inbetween commits means more to rollback).
+                        
+                        Ignored if using the callback version.
+  Returntype : Numbers of rows updated
+  Exceptions : If errors occur in the execution of the SQL
+  Status     : Stable
 
   my $alotofdata = getitfromsomewhere();
   $helper->batch(-SQL => 'insert into table (one,two) values(?,?)', -CALLBACk => sub {
@@ -624,13 +673,13 @@ This does exactly what the previous example.
 
 All batch statements will return the value the callback computes. If you are 
 using the previous example with a data array then the code will return the
-number affected rows by the query. 
+number affected rows by the query.
 
 =cut
 
 sub batch {
   my ($self, @args) = @_;
-  my ($sql, $callback, $data) = rearrange([qw(sql callback data)], @args);
+  my ($sql, $callback, $data, $commit_every) = rearrange([qw(sql callback data commit_every)], @args);
   
   if(! defined $callback && ! defined $data) {
     throw('You need to define a callback for insertion work or the 2D data array');
@@ -641,7 +690,7 @@ sub batch {
     $result = $self->_callback_batch($sql, $callback);
   }
   else {
-    $result = $self->_data_batch($sql, $data);
+    $result = $self->_data_batch($sql, $data, $commit_every);
   }
   return $result if defined $result;
   return;
@@ -711,8 +760,41 @@ sub _bind_params {
 
 sub _execute {
 	my ( $self, $sql, $callback, $has_return, $use_hashrefs, $params ) = @_;
-	
+
 	throw('Not given a mapper. _execute() must always been given a CodeRef') unless check_ref($callback, 'CODE');
+	
+  my @results;
+  
+  my $sth_processor;
+  if($use_hashrefs) {
+    
+    $sth_processor = sub {
+      my ($sth) = @_;
+      while( my $row = $sth->fetchrow_hashref() ) {
+		    push(@results, $callback->($row, $sth));
+		  }
+    };
+  }
+  else {
+    
+    $sth_processor = sub {
+      my ($sth) = @_;
+      while ( my $row = $sth->fetchrow_arrayref() ) {
+  			push(@results, $callback->($row, $sth));
+  		}
+    };
+  }
+  
+  $self->_base_execute($sql, $has_return, $params, $sth_processor);
+  
+  return \@results if $has_return;
+	return;
+}
+
+sub _base_execute {
+  my ( $self, $sql, $has_return, $params, $sth_processor ) = @_;
+  
+  throw('Not given a sth_processor. _base_execute() must always been given a CodeRef') unless check_ref($sth_processor, 'CODE');
 	
 	$params = [] unless $params;
 	
@@ -728,16 +810,7 @@ sub _execute {
 		throw("Cannot continue as prepare() did not return a handle") unless $sth;
 		$self->_bind_params( $sth, $params );
 		$sth->execute();
-		if($use_hashrefs) {
-		  while( my $row = $sth->fetchrow_hashref() ) {
-		    push(@results, $callback->($row, $sth));
-		  }
-		}
-		else {
-      while ( my $row = $sth->fetchrow_arrayref() ) {
-  			push(@results, $callback->($row, $sth));
-  		}
-		}
+    	$sth_processor->($sth);
 	};
 	
 	$error = $@;
@@ -774,7 +847,7 @@ sub _callback_batch {
 }
 
 sub _data_batch {
-  my ($self, $sql, $data) = @_;
+  my ($self, $sql, $data, $commit_every) = @_;
   
   #Input checks
   assert_ref($data, 'ARRAY');
@@ -796,7 +869,21 @@ sub _data_batch {
       }
       my $num_affected = ($affected) ? $affected :  0; #Get around DBI's 0E0
       $total_affected += $num_affected;
+      
+      #Lets us do a commit once every x rows apart from 0. We also finish
+      #off with a commit if the code told us we were doing it
+      if($commit_every) {
+        if( ($data_index % $commit_every == 0) && $data_index != 0) {
+          $dbc->db_handle()->commit();
+        }
+      }
     }
+    
+    #finish off with a commit if the code told us we were doing it
+    if($commit_every) {
+      $dbc->db_handle()->commit();
+    }
+    
     return $total_affected || 0;
   };
   
