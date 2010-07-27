@@ -137,26 +137,18 @@ sub build_cache_auto {
   my $cache_impl = 'Bio::EnsEMBL::IdMapping::Cache';
   inject($cache_impl);
 
-  # EG - populate cache for each species in turn
+  my $cache = $cache_impl->new(
+    -LOGGER       => $logger,
+    -CONF         => $conf,
+  );
+
   $logger->debug("\nChecking number of toplevel seq_regions...\n");
-  my $max         = 0;
-  my @species_ids = @{ get_species_ids("target") };
+  my $max = 0;
+
   foreach my $dbtype (qw(source target)) {
-
-    # populate the cache for each species in turn
-    for my $species (@species_ids) {
-      $conf->param( 'species_id',   $$species[1] );
-      $conf->param( 'species_name', $$species[0] );
-
-      my $cache = $cache_impl->new( -LOGGER => $logger,
-                                    -CONF   => $conf, );
-
-      my $num =
-        scalar( @{ $cache->slice_names( $dbtype, @$species ) } );
-
-      $max = $num if ( $num > $max );
-      $logger->debug( "$dbtype: $num.\n", 1 );
-    }
+    my $num = scalar(@{ $cache->slice_names($dbtype) });
+    $max = $num if ($num > $max);
+    $logger->debug("$dbtype: $num.\n", 1);
   }
 
   my $threshold = $conf->param('build_cache_auto_threshold') || 100;
@@ -185,144 +177,99 @@ sub build_cache_by_seq_region {
   system("mkdir -p $logpath") == 0 or
     $logger->error("Can't create lsf log dir $logpath: $!\n");
 
-
-  # EG get the list of species IDs for sources and targets
-  my @source_species_ids = @{ get_species_ids("source") };
-  my @species_ids        = @{ get_species_ids("target") };
-
   # load the cache implementation
   my $cache_impl = 'Bio::EnsEMBL::IdMapping::Cache';
   inject($cache_impl);
 
-  # EG store the base directory onto which the species ID will be added
-  my $basedir = $conf->param('basedir');
+  my $cache = $cache_impl->new(
+    -LOGGER       => $logger,
+    -CONF         => $conf,
+  );
 
   # submit jobs to lsf
   foreach my $dbtype (qw(source target)) {
 
-    # EG iterate over individual species for source and target
+    $logger->info("\n".ucfirst($dbtype)." db...\n", 0, 'stamped');
 
     # determine which slices need to be done
     my $filename = "$dbtype.dump_cache.slices.txt";
-    open( my $fh, '>', "$logpath/$filename" )
-      or throw("Unable to open $logpath/$filename for writing: $!");
-
+    open(my $fh, '>', "$logpath/$filename") or
+      throw("Unable to open $logpath/$filename for writing: $!");
+    
     my $num_jobs = 0;
-    for my $species (@species_ids) {
 
-      # EG set config based on species ID in turn
-      $conf->param( 'basedir', path_append( $basedir, $$species[1] ) );
-      $conf->param( 'species_id',   $$species[1] );
-      $conf->param( 'species_name', $$species[0] );
-
-      # EG load cache for current species ID
-      my $cache = $cache_impl->new( -LOGGER => $logger,
-                                    -CONF   => $conf, );
-      foreach my $slice_name (
-                        @{ $cache->slice_names( $dbtype, @$species ) } )
-      {
-        my $type = "$dbtype.$slice_name";
-        my $src_species_id;
-        for my $src_id (@source_species_ids) {
-          if ( $$species[1] == $$src_id[1] ) {
-            $src_species_id = $$src_id[1];
-            last;
-          }
-        }
-        $logger->info( "\n" . ucfirst($dbtype) . " db...\n",
-                       0, 'stamped' );
-
-        my $type = "$dbtype.$slice_name";
-        unless ( $cache->cache_file_exists($type) ) {
-          print $fh "$slice_name,$$species[0],$$species[1],"
-            . $src_species_id . "\n";
-          $num_jobs++;
-        }
+    foreach my $slice_name (@{ $cache->slice_names($dbtype) }) {
+      my $type = "$dbtype.$slice_name";
+      unless ($cache->cache_file_exists($type)) {
+        print $fh "$slice_name\n";
+        $num_jobs++;
       }
+    }
 
-      unless ($num_jobs) {
-        $logger->info("All cache files for $dbtype exist.\n");
-        next;
-      }
-
-    } ## end for my $species (@species_ids)
     close($fh);
 
-    # EG reset original basedir
-    $conf->param( 'basedir', $basedir );
+    unless ($num_jobs) {
+      $logger->info("All cache files for $dbtype exist.\n");
+      next;
+    }
 
     # build lsf command
-    my $lsf_name = 'dump_by_seq_region_' . time;
+    my $lsf_name = 'dump_by_seq_region_'.time;
     my $concurrent = $conf->param('build_cache_concurrent_jobs') || 200;
 
-    my $options =
-      $conf->create_commandline_options(
-                                    logauto     => 1,
-                                    logautobase => "dump_by_seq_region",
-                                    interactive => 0,
-                                    is_component => 1,
-                                    dbtype       => $dbtype,
-                                    cache_impl   => $cache_impl, );
+    my $options = $conf->create_commandline_options(
+        logauto       => 1,
+        logautobase   => "dump_by_seq_region",
+        interactive   => 0,
+        is_component  => 1,
+        dbtype        => $dbtype,
+        cache_impl    => $cache_impl,
+    );
 
-    # EG invoke perl with correct path rather than relying on shebang
-    my $cmd = 'perl dump_by_seq_region.pl '
-      . qq{$options --index \$LSB_JOBINDEX};
+    my $cmd = qq{./dump_by_seq_region.pl $options --index \$LSB_JOBINDEX};
 
-    my $pipe =
-        '|bsub '
-      . $conf->param('lsf_opt_run')
-      . qq{ -J '$lsf_name\[1-$num_jobs\]\%$concurrent' }
-      . qq{-o $logpath/dump_by_seq_region.$dbtype.\%I.out }
-      . qq{-e $logpath/dump_by_seq_region.$dbtype.\%I.err }
-      . $conf->param('lsf_opt_dump_cache');
+    my $pipe = qq{|bsub -J$lsf_name\[1-$num_jobs\]\%$concurrent } .
+      qq{-o $logpath/dump_by_seq_region.$dbtype.\%I.out } .
+      qq{-e $logpath/dump_by_seq_region.$dbtype.\%I.err } .
+      $conf->param('lsf_opt_dump_cache');
 
     # run lsf job array
     $logger->info("\nSubmitting $num_jobs jobs to lsf.\n");
+    $logger->debug("$cmd\n\n");
 
-    if ( $num_jobs > 0 ) {
-      $logger->debug("$cmd\n\n");
-      $logger->debug("$pipe\n\n");
+    local *BSUB;
+    open BSUB, $pipe or
+      $logger->error("Could not open open pipe to bsub: $!\n");
 
-      local *BSUB;
-      open BSUB, $pipe
-        or $logger->error("Could not open open pipe to bsub: $!\n");
+    print BSUB $cmd;
+    $logger->error("Error submitting jobs: $!\n")
+      unless ($? == 0); 
+    close BSUB;
 
-      print BSUB $cmd;
-      $logger->error("Error submitting jobs: $!\n")
-        unless ( $? == 0 );
-      close BSUB;
+    # submit dependent job to monitor finishing of jobs
+    $logger->info("Waiting for jobs to finish...\n", 0, 'stamped');
 
-      # submit dependent job to monitor finishing of jobs
-      $logger->info( "Waiting for jobs to finish...\n", 0, 'stamped' );
+    my $dependent_job = qq{bsub -K -w "ended($lsf_name)" -q small } .
+      qq{-o $logpath/dump_cache.$dbtype.depend.out /bin/true};
 
-      my $dependent_job =
-          qq{bsub -K -w "ended($lsf_name)" }
-        . $conf->param('lsf_opt_run_small')
-        . qq{ -o $logpath/dump_cache.$dbtype.depend.out /bin/true};
+    system($dependent_job) == 0 or
+      $logger->error("Error submitting dependent job: $!\n");
 
-      system($dependent_job) == 0
-        or $logger->error("Error submitting dependent job: $!\n");
-
-      $logger->info( "All jobs finished.\n", 0, 'stamped' );
-
-      sleep(5);
-    } ## end if ( $num_jobs > 0 )
+    $logger->info("All jobs finished.\n", 0, 'stamped');
 
     # check for lsf errors
+    sleep(5);
     my $err;
-    foreach my $i ( 1 .. $num_jobs ) {
-      if ( !-e "$logpath/dump_by_seq_region.$dbtype.$i.success" ) {
-        $err++;
-      }
+    foreach my $i (1..$num_jobs) {
+      $err++ unless (-e "$logpath/dump_by_seq_region.$dbtype.$i.success");
     }
 
-    if ( $err > 0 ) {
-      $logger->error( "At least one of your jobs failed.\n"
-              . "Please check the logfiles at $logpath for errors.\n" );
+    if ($err) {
+      $logger->error("At least one of your jobs failed.\nPlease check the logfiles at $logpath for errors.\n");
       return 1;
     }
 
-  } ## end foreach my $dbtype (qw(source target))
+  }
 
   return 0;
 }
@@ -357,32 +304,3 @@ sub build_cache_all {
 }
 
 
-# EG new method for getting species IDs
-sub get_species_ids {
-
-  my ($prefix) = @_;
-  my @speciesIds;
-  my $dsn =
-      "DBI:mysql:database="
-    . $conf->param("${prefix}dbname")
-    . ";host="
-    . $conf->param("${prefix}host")
-    . ";port="
-    . $conf->param("${prefix}port");
-
-  my $ensemblCoreDbh = DBI->connect( $dsn,
-                                     $conf->param("${prefix}user"),
-                                     $conf->param("${prefix}pass") )
-    || die "Cannot connect to server: $DBI::errstr\n";
-
-  my $query = "SELECT DISTINCT meta_value, species_id
-               FROM meta WHERE meta_key = 'species.production_name'";
-
-  my $psmt = $ensemblCoreDbh->prepare($query);
-  $psmt->execute();
-
-  while ( my (@results) = $psmt->fetchrow() ) {
-    push @speciesIds, [ $results[0], $results[1] ];
-  }
-  return \@speciesIds;
-} ## end sub get_species_ids

@@ -52,6 +52,6 @@ if [[ ${conf#/} == ${conf} ]]; then
   exit
 fi
 
-./run.pl --lsf --conf=${conf} --mode=${mode} --logauto
+./run.pl --lsf --conf=${conf} --logauto --mode=${mode}
 
 # $Id$

@@ -97,27 +97,6 @@ my $index = $conf->param('index');
 my $logautobase = ($conf->param('logautobase') || 'dump_by_seq_region').
   ".$dbtype";
 
-# EG - need to determine species before opening the cache and log
-# determine which slice to process.  To do so, read the file containing
-# the slices to be processed, and take the one at position $index.  This
-# includes the species_id.
-my $logpath  = $conf->param('logpath');
-my $filename = "$dbtype.dump_cache.slices.txt";
-open( my $fh, '<', "$logpath/$filename" )
-  or throw("Unable to open $logpath/$filename for reading: $!");
-my @slice_names  = <$fh>;
-my $slice_string = $slice_names[ $index - 1 ];
-chomp($slice_string);
-
-my ( $slice_name, $species_name, $species_id, $source_species_id ) =
-  split( ',', $slice_string );
-
-close($fh);
-
-$conf->param('basedir',path_append($conf->param('basedir'), $species_id));
-$conf->param('species_id',$species_id);
-$conf->param('species_name',$species_name);
-
 # get log filehandle and print heading and parameters to logfile
 my $logger = new Bio::EnsEMBL::Utils::Logger(
   -LOGFILE      => $conf->param('logfile'),
@@ -138,6 +117,17 @@ my $cache = $cache_impl->new(
   -LOGGER       => $logger,
   -CONF         => $conf,
 );
+
+# determine which slice to process. to do so, read the file containing the
+# slices to be processed, and take the one at position $index
+my $logpath = $conf->param('logpath');
+my $filename = "$dbtype.dump_cache.slices.txt";
+open(my $fh, '<', "$logpath/$filename") or
+  throw("Unable to open $logpath/$filename for reading: $!");
+my @slice_names = <$fh>;
+my $slice_name = $slice_names[$index-1];
+chomp($slice_name);
+close($fh);
 
 # no build the cache for this slice
 $cache->build_cache_by_slice($dbtype, $slice_name);
