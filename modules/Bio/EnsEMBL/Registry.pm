@@ -1955,6 +1955,10 @@ sub load_registry_from_db {
     -species => 'multi'.$species_suffix,
     -alias   => ['ontology'.$species_suffix] );
 
+  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
+    -species => 'Ancestral sequences'.$species_suffix,
+    -alias   => ['ancestral_sequences'.$species_suffix] );
+
   # Register aliases as found in adaptor meta tables.
 
   $self->find_and_add_aliases( '-handle'         => $dbh,
