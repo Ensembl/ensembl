@@ -430,10 +430,7 @@ sub run_exonerate {
   $self->logger->debug("$exonerate_job\n\n");
 
   local *BSUB;
-  open BSUB,
-      "|bsub "
-    . $self->conf()->param('lsf_opt_run')
-    . " -J$lsf_name\[1-$num_jobs\] -o $logpath/exonerate.\%I.out"
+  open BSUB, "|bsub -J$lsf_name\[1-$num_jobs\] -o $logpath/exonerate.\%I.out"
     or $self->logger->error("Could not open open pipe to bsub: $!\n");
 
   print BSUB $exonerate_job;
@@ -444,10 +441,8 @@ sub run_exonerate {
   # submit dependent job to monitor finishing of exonerate jobs
   $self->logger->info("Waiting for exonerate jobs to finish...\n", 0, 'stamped');
 
-  my $dependent_job =
-      qq{bsub -K -w "ended($lsf_name)" }
-    . $self->conf()->param('lsf_opt_run_small')
-    . qq{ -o $logpath/exonerate_depend.out /bin/true};
+  my $dependent_job = qq{bsub -K -w "ended($lsf_name)" -q small } .
+    qq{-o $logpath/exonerate_depend.out /bin/true};
 
   system($dependent_job) == 0 or
     $self->logger->error("Error submitting dependent job: $!\n");
@@ -673,35 +668,10 @@ sub non_mapped_transcript_rescore {
 
   foreach my $entry (@{ $matrix->get_all_Entries }) {
 
-    # EG reworking of logic to allow no source/target e.g. for new
-    # species in multispecies databases
-    my $st =
-      $self->cache()
-      ->get_by_key( 'transcripts_by_exon_id', 'source',
-                    $entry->source() );
-
-    my @source_transcripts = ();
-    if ( !defined($st) ) {
-      $self->logger->warning(
-                          "Can't find source transcipts by exon_id for "
-                            . $entry->source() );
-    } else {
-      @source_transcripts = @{$st};
-    }
-
-    my $tt =
-      $self->cache()
-      ->get_by_key( 'transcripts_by_exon_id', 'target',
-                    $entry->target() );
-
-    my @target_transcripts = ();
-    if ( !defined($tt) ) {
-      $self->logger->warning(
-                          "Can't find target transcipts by exon_id for "
-                            . $entry->target() );
-    } else {
-      @target_transcripts = @{$tt};
-    }
+    my @source_transcripts = @{ $self->cache->get_by_key(
+      'transcripts_by_exon_id', 'source', $entry->source) };
+    my @target_transcripts = @{ $self->cache->get_by_key(
+      'transcripts_by_exon_id', 'target', $entry->target) };
 
     my $found_mapped = 0;
 
@@ -725,85 +695,6 @@ sub non_mapped_transcript_rescore {
 
   $self->logger->debug("Scored exons in non-mapped transcripts: $i\n", 1);
 }
-
-
-sub name_exon_rescore {
-
-  # EG name_exon_rescore is additional method for rescoring exons based
-  # on name matches
-
-  my ( $self, $matrix ) = @_;
-
-  if ( !(   defined($matrix)
-         && ref($matrix)
-         && $matrix->isa('Bio::EnsEMBL::IdMapping::ScoredMappingMatrix')
-       ) )
-  {
-    throw('Need a Bio::EnsEMBL::IdMapping::ScoredMappingMatrix.');
-  }
-
-  my $i = 0;
-
-  foreach my $entry ( @{ $matrix->get_all_Entries() } ) {
-    my $source_exon =
-      $self->cache->get_by_key( 'exons_by_id', 'source',
-                                $entry->source() );
-    my $target_exon =
-      $self->cache->get_by_key( 'exons_by_id', 'target',
-                                $entry->target() );
-
-    if (    defined($source_exon)
-         && defined($target_exon)
-         && $source_exon->gene_name() ne $target_exon->gene_name() )
-    {
-      $matrix->set_score( $entry->source(), $entry->target(),
-                          ( $entry->score()*0.75 ) );
-      $i++;
-    }
-  }
-
-  $self->logger->debug( "Scored exons with name mismatch: $i\n", 1 );
-} ## end sub name_exon_rescore
-
-sub bounds_exon_rescore {
-
-  # EG additional method for rescoring exons based on bounds matching
-
-  my ( $self, $matrix ) = @_;
-
-  if ( !(   defined($matrix)
-         && ref($matrix)
-         && $matrix->isa('Bio::EnsEMBL::IdMapping::ScoredMappingMatrix')
-       ) )
-  {
-    throw('Need a Bio::EnsEMBL::IdMapping::ScoredMappingMatrix.');
-  }
-
-  my $i = 0;
-
-  foreach my $entry ( @{ $matrix->get_all_Entries() } ) {
-    my $source_exon =
-      $self->cache->get_by_key( 'exons_by_id', 'source',
-                                $entry->source() );
-    my $target_exon =
-      $self->cache->get_by_key( 'exons_by_id', 'target',
-                                $entry->target() );
-
-    if (    defined($target_exon)
-         && defined($source_exon)
-         && (    $source_exon->strand() != $target_exon->strand()
-              || $source_exon->start() != $target_exon->start()
-              || $source_exon->end() != $target_exon->end() ) )
-    {
-      my $new_score = ( $entry->score()*0.5 );
-      $matrix->set_score( $entry->source(), $entry->target(),
-                          $new_score );
-      $i++;
-    }
-  }
-
-  $self->logger->debug( "Scored exons with bounds mismatch: $i\n", 1 );
-} ## end sub bounds_exon_rescore
 
 
 1;

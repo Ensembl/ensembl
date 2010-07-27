@@ -376,15 +376,12 @@ sub rescore_gene_matrix_lsf {
       is_component  => 1,
   );
 
-  my $cmd = qq{perl -I./modules $Bin/synteny_rescore.pl }
-    . qq{$options --index \$LSB_JOBINDEX};
+  my $cmd = qq{$Bin/synteny_rescore.pl $options --index \$LSB_JOBINDEX};
 
-  my $pipe =
-      qq{|bsub -J$lsf_name\[1-$num_jobs\] }
-    . qq{-o $logpath/synteny_rescore.\%I.out }
-    . qq{-e $logpath/synteny_rescore.\%I.err }
-    . $self->conf()->param('lsf_opt_run')
-    . $self->conf()->param('lsf_opt_synteny_rescore');
+  my $pipe = qq{|bsub -J$lsf_name\[1-$num_jobs\] } .
+    qq{-o $logpath/synteny_rescore.\%I.out } .
+    qq{-e $logpath/synteny_rescore.\%I.err } .
+    $self->conf->param('lsf_opt_synteny_rescore');
 
   # run lsf job array
   $self->logger->info("Submitting $num_jobs jobs to lsf.\n");
@@ -402,10 +399,8 @@ sub rescore_gene_matrix_lsf {
   # submit dependent job to monitor finishing of jobs
   $self->logger->info("Waiting for jobs to finish...\n", 0, 'stamped');
 
-  my $dependent_job =
-      qq{bsub -K -w "ended($lsf_name)" }
-    . $self->conf()->param('lsf_opt_run_small')
-    . qq{ -o $logpath/synteny_rescore_depend.out /bin/true};
+  my $dependent_job = qq{bsub -K -w "ended($lsf_name)" -q small } .
+    qq{-o $logpath/synteny_rescore_depend.out /bin/true};
 
   system($dependent_job) == 0 or
     $self->logger->error("Error submitting dependent job: $!\n");

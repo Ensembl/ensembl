@@ -150,17 +150,15 @@ sub generate_mapping_session {
     $self->logger->info("old_assembly: $old_assembly, new_assembly $new_assembly\n", 2);
   }
 
-  print $fh join( "\t",
-                  $mapping_session_id,
-                  $self->conf->param('sourcedbname'),
-                  $self->conf->param('targetdbname'),
-                  $old_release,
-                  $new_release,
-                  $old_assembly,
-                  $new_assembly,
-                  $self->mapping_session_date_fmt(),
-                  $self->conf->param('species_id')      # EG
-  );
+  print $fh join("\t",
+                 $mapping_session_id,
+                 $self->conf->param('sourcedbname'),
+                 $self->conf->param('targetdbname'),
+                 $old_release,
+                 $new_release,
+                 $old_assembly,
+                 $new_assembly,
+                 $self->mapping_session_date_fmt);
 
   print $fh "\n";
   close($fh);
@@ -187,10 +185,9 @@ sub map_stable_ids {
   # check if there are any objects of this type at all
   my %all_sources = %{ $self->cache->get_by_name("${type}s_by_id", 'source') };
   my %all_targets = %{ $self->cache->get_by_name("${type}s_by_id", 'target') };
-  if ( scalar( keys(%all_sources) ) == 0 ) {
-    # EG may be possible to have no sources for new species
-    $self->logger->warning("No cached ${type}s found.\n\n");
-    %all_sources = ();
+  unless (scalar(keys %all_sources)) {
+    $self->logger->info("No cached ${type}s found.\n\n");
+    return;
   }
 
   my %stats = map { $_ => 0 }
@@ -284,9 +281,8 @@ sub map_stable_ids {
       }
 
       # increment the stable Id (to be assigned to the next unmapped object)
-      $new_stable_id =
-        $self->stable_id_generator->increment_stable_id( $new_stable_id,
-                                                         $type );
+      $new_stable_id = $self->stable_id_generator->increment_stable_id(
+        $new_stable_id);
 
       # stats
       $stats{'new'}++;
@@ -638,31 +634,24 @@ sub generate_mapping_stats {
   my $novel_total = $stats->{'mapped_novel'} + $stats->{'lost_novel'};
 
   # no split into known and novel for exons
-  if ( $type ne 'exon' ) {
-    $result .= sprintf( $fmt2, 'known',
-                        $stats->{'mapped_known'},
-                        $stats->{'lost_known'}, (
-                            $known_total
-                          ? $stats->{'mapped_known'}/$known_total*100
-                          : 0 ) );
-
-    $result .= sprintf( $fmt2, 'novel',
-                        $stats->{'mapped_novel'},
-                        $stats->{'lost_novel'}, (
-                            $novel_total
-                          ? $stats->{'mapped_novel'}/$novel_total*100
-                          : 0 ) );
-  }
-
-  if ( $mapped_total == 0 ) {
-    # EG different calculation needed when no mappings found for new
-    # species
-    $result .= sprintf( $fmt2, 'total', $mapped_total, $lost_total, 0 );
-  } else {
+  unless ( $type eq 'exon' ) {
     $result .= sprintf( $fmt2,
-                    'total', $mapped_total, $lost_total,
-                    $mapped_total/( $known_total + $novel_total )*100 );
-  }
+	'known',
+	$stats->{'mapped_known'},
+	$stats->{'lost_known'},
+	($known_total ? $stats->{'mapped_known'}/$known_total*100 : 0)
+    );
+
+    $result .= sprintf( $fmt2,
+	'novel',
+	$stats->{'mapped_novel'},
+	$stats->{'lost_novel'},
+	($novel_total ? $stats->{'mapped_novel'}/$novel_total*100 : 0)
+    );
+  } ## end unless ( $type eq 'exon' )
+
+  $result .= sprintf($fmt2, 'total', $mapped_total, $lost_total,
+    $mapped_total/($known_total + $novel_total)*100);
 
   # log result
   $self->logger->info($result."\n");

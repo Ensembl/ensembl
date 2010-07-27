@@ -184,34 +184,5 @@ sub internal_id {
 }
 
 
-sub gene_name {
-
-  # EG gene_name supplementary method for very similar genes (e.g.
-  # transposons in bacteria) to penalise where gene name is different
-
-  my ( $self, $num, $gsb, $mappings, $gene_scores ) = @_;
-
-  $self->logger->info( "Retry with gene name disambiguation...\n",
-                       0, 'stamped' );
-
-  if ( !$gene_scores->loaded() ) {
-    $gsb->name_gene_rescore($gene_scores);
-    $gene_scores->write_to_file();
-  }
-
-  my $new_mappings =
-    $self->basic_mapping( $gene_scores, "gene_mappings$num" );
-
-  $num++;
-
-  my $new_scores =
-    $gsb->create_shrinked_matrix( $gene_scores, $new_mappings,
-                                  "gene_matrix$num" );
-
-  return ( $new_scores, $new_mappings );
-} ## end sub gene_name
-
-
-
 1;
 

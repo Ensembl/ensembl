@@ -733,33 +733,28 @@ sub create_summary_email {
 
   print $fh "\n";
 
-  # EG genes_lost.txt file may not exist if species is new
-  if ( $self->file_exists( 'genes_lost.txt', 'debug' ) ) {
-    #
-    # clicklist of first 10 deleted genes
-    #
+  #
+  # clicklist of first 10 deleted genes
+  #
+  print $fh qq(\nFirst 10 deleted known genes:\n);
+  print $fh qq(=============================\n\n);
 
-    print $fh qq(\nFirst 10 deleted known genes:\n);
-    print $fh qq(=============================\n\n);
+  my $in_fh = $self->get_filehandle('genes_lost.txt', 'debug', '<');
+  my $prefix = $self->conf->param('urlprefix');
+  my $i;
+  
+  while (<$in_fh>) {
+    last if (++$i > 10);
+    
+    chomp;
+    my ($stable_id, $type) = split(/\s+/);
+    
+    next unless ($type eq 'known');
 
-    my $in_fh = $self->get_filehandle( 'genes_lost.txt', 'debug', '<' );
-    my $prefix = $self->conf->param('urlprefix');
-    my $i;
+    print $fh sprintf($fmt2, $stable_id, "${prefix}$stable_id");
+  }
 
-    while (<$in_fh>) {
-      last if ( ++$i > 10 );
-
-      chomp;
-      my ( $stable_id, $type ) = split(/\s+/);
-
-      next unless ( $type eq 'known' );
-
-      print $fh sprintf( $fmt2, $stable_id, "${prefix}$stable_id" );
-    }
-
-    close($in_fh);
-  } ## end if ( $self->file_exists...)
-
+  close($in_fh);
   close($fh);
 }
 
