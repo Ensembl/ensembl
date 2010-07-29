@@ -1016,7 +1016,7 @@ sub modify_translation {
   #         is used.  I haven't been able to find out why.  It has 10
   #         Selenocysteine seqedits that looks correct.
   #         /Andreas (release 59)
-  my @seqeds = sort { $b->{'start'} <=> $a->{'start'} } @seqeds;
+  @seqeds = sort { $b->{'start'} <=> $a->{'start'} } @seqeds;
 
   # Apply all edits.
   my $peptide = $seq->seq();
