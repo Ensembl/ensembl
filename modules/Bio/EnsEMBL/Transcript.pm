@@ -639,13 +639,9 @@ sub get_all_alternative_translations {
   if (   !exists( $self->{'alternative_translations'} )
        && defined( $self->adaptor() ) )
   {
-
-    my $pa           = $self->adaptor()->db()->get_TranslationAdaptor();
-    my @translations = @{ $pa->fetch_all_by_Transcript($self) };
-
-    # The first in the list of translations is the canonical one,
-    # shift it off.
-    shift(@translations);
+    my $pa = $self->adaptor()->db()->get_TranslationAdaptor();
+    my @translations =
+      @{ $pa->fetch_all_alternative_by_Transcript($self) };
 
     $self->{'alternative_translations'} = \@translations;
   }
