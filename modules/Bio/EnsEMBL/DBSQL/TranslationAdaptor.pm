@@ -74,24 +74,24 @@ use strict;
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Bio::EnsEMBL::Translation;
 use Bio::EnsEMBL::Utils::Exception qw( throw warning deprecate );
+use Bio::EnsEMBL::Utils::Scalar qw( assert_ref );
+
 
 @ISA = qw( Bio::EnsEMBL::DBSQL::BaseAdaptor );
 
-=head2 fetch_all_by_Transcript
+=head2 fetch_all_alternative_by_Transcript
 
   Arg [1]    : Bio::EnsEMBL::Transcript $transcript
   Example    :
 
-    @tl =
-      @{ $translation_adaptor->fetch_all_by_Transcript($transcript) };
+    @tl = @{
+      $translation_adaptor->fetch_all_alternative_by_Transcript(
+                                                            $transcript)
+      };
 
-  Description: Retrieves all translations associated with a
-               particular transcript.  If no translation is found, a
-               reference to an empty list is returned.
-
-               The canonical translation will always be the first
-               Translation object in the returned list, if there are
-               any translations at all for the given transcript.
+  Description: Retrieves all alternative translations associated with a
+               particular transcript.  If no alternative translation is
+               found, a reference to an empty list is returned.
 
   Returntype : listref of Bio::EnsEMBL::Translation
   Exceptions : throw on incorrect argument
@@ -100,25 +100,10 @@ use Bio::EnsEMBL::Utils::Exception qw( throw warning deprecate );
 
 =cut
 
-sub fetch_all_by_Transcript {
+sub fetch_all_alternative_by_Transcript {
   my ( $self, $transcript ) = @_;
 
-  if (
-    !(
-      ref($transcript) && $transcript->isa('Bio::EnsEMBL::Transcript') )
-    )
-  {
-    throw('Bio::EnsEMBL::Transcript argument is required.');
-  }
-
-  # Get the canonical translation.
-  my $translations = [ $self->fetch_by_Transcript($transcript) ];
-
-  if ( scalar( @{$translations} ) == 0
-       || !defined( $translations->[0] ) )
-  {
-    return [];
-  }
+  assert_ref($transcript, 'Bio::EnsEMBL::Transcript');
 
   my $lsi_created_date =
     $self->db()->dbc()->from_date_to_seconds('tlsi.created_date');
@@ -157,6 +142,7 @@ sub fetch_all_by_Transcript {
     ) );
 
   # Get all alternative translations.
+  my $translations = [];
   while ( $sth->fetch() ) {
     if ( !defined($translation_id) ) { next }
 
