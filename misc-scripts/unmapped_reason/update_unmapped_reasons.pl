@@ -11,10 +11,10 @@ use IO::File;
 
 my ( $host, $user, $pass, $port,@dbnames, $file, $release_num);
 
-GetOptions( "host=s", \$host,
-	    "user=s", \$user,
-	    "pass=s", \$pass,
-	    "port=i", \$port,
+GetOptions( "dbhost|host=s", \$host,
+	    "dbuser|user=s", \$user,
+	    "dbpass|pass=s", \$pass,
+	    "dbport|port=i", \$port,
 	    "file=s", \$file,
             "dbnames=s@", \@dbnames, # either provide -dbnames or -release  
 	    "release_num=i", \$release_num
