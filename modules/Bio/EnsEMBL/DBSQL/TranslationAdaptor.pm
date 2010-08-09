@@ -117,7 +117,8 @@ sub fetch_all_alternative_by_Transcript {
       . "FROM translation tl "
       . "LEFT JOIN translation_stable_id tlsi "
       . "ON (tlsi.translation_id = tl.translation_id) "
-      . "JOIN transcript t USING (transcript_id) "
+      . "JOIN transcript t "
+      . "ON (t.transcript_id = tl.transcript_id) "
       . "WHERE tl.transcript_id = ? "
       . "AND tl.translation_id != t.canonical_translation_id",
     $lsi_created_date, $lsi_modified_date );
