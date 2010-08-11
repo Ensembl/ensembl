@@ -149,8 +149,9 @@
 6820	Ens_Tr_transcript	1	XREF	1	0	40	Ensembl Fugu Transcript	MISC	\N	\N
 7120	Ens_Aa_translation	1	XREF	1	0	40	Ensembl Aedes Translation	MISC	\N	\N
 7159	AedesGenBank	1	PRED	1	0	30	Aedes GenBank	MISC	\N	\N
-7160	Aedes_ManualAnnotation	1	PRED	1	0	30	Aedes ManualAnnotation	MISC	\N	\N
-7170	Ixodes_ManualAnnotation	1	PRED	1	0	30	Ixodes ManualAnnotation	MISC	\N	\N
+7160	Aedes_ManualAnnotation	1	KNOWN	1	0	30	Aedes ManualAnnotation	MISC	\N	\N
+7170	Ixodes_ManualAnnotation	1	KNOWN	1	0	30	Ixodes ManualAnnotation	MISC	\N	\N
+7180	VB_Community_Annotation	1	KNOWN	1	0	30	VB Community Annotation	MISC	\N	\N
 7200	IMGT/LIGM_DB	200641-6	XREF	1	1	10	IMGT/LIGM-DB	MISC	\N	\N
 7201	IMGT/GENE_DB	200641-6	KNOWN	1	0	40	IMGT/GENE-DB	MISC	\N	\N
 8000	Vega_mouse_transcript	1	XREF	1	0	5	Vega mouse transcript	MISC	\N	\N
