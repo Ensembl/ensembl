@@ -451,13 +451,37 @@ sub _slice_fetch {
       } else {
 	$sr_id = $self->db()->get_SliceAdaptor()->get_seq_region_id($slice);
       }
-      #if there is mapping information, use the external_seq_region_id to get features
+
+      # If there is mapping information, use the external_seq_region_id
+      # to get features.
       $sr_id = $self->get_seq_region_id_external($sr_id);
       $constraint .= " AND " if($constraint);
-      $constraint .=
-          "${tab_syn}.seq_region_id = $sr_id AND " .
-          "${tab_syn}.seq_region_start <= $slice_end AND " .
-          "${tab_syn}.seq_region_end >= $slice_start";
+
+      if ( !$slice->is_circular() ) {
+        # Deal with the default case of a non-circular chromosome.
+        $constraint .=
+            "${tab_syn}.seq_region_id = $sr_id AND "
+          . "${tab_syn}.seq_region_start <= $slice_end AND "
+          . "${tab_syn}.seq_region_end >= $slice_start";
+      } else {
+        # Deal with the case of a circular chromosome.
+        if ( $slice_start > $slice_end ) {
+          $constraint .=
+              "${tab_syn}.seq_region_id = $sr_id "
+            . "AND ((${tab_syn}.seq_region_start >= $slice_start "
+            . "OR ${tab_syn}.seq_region_start <= $slice_end) "
+            . "OR (${tab_syn}.seq_region_end >= $slice_start "
+            . "OR ${tab_syn}.seq_region_end <= $slice_end))";
+        } else {
+          $constraint .=
+              "${tab_syn}.seq_region_id = $sr_id "
+            . "AND ((${tab_syn}.seq_region_start <= $slice_end "
+            . "AND ${tab_syn}.seq_region_end >= $slice_start) "
+            . "OR (${tab_syn}.seq_region_start > ${tab_syn}.seq_region_end "
+            . "AND (${tab_syn}.seq_region_start <= $slice_end "
+            . "OR ${tab_syn}.seq_region_end >= $slice_start)))";
+        }
+      }
 
       if($max_len) {
         my $min_start = $slice_start - $max_len;
