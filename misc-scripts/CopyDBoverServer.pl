@@ -18,7 +18,7 @@ sub short_usage {
 
   print <<SHORT_USAGE_END;
 Usage:
-  $0 --pass=XXX [--noflush] [--nocheck] [--force] \\
+  $0 --pass=XXX [--noflush] [--nocheck] [--noopt] [--noinndob] [--views] [--force] \\
   $indent [--subset=XXX] [--help] input_file\
 
   Use --help to get a much longer help text.
@@ -31,7 +31,7 @@ sub long_usage {
 
   print <<LONG_USAGE_END;
 Usage:
-  $0 --pass=XXX [--noflush] [--nocheck] [--noopt] [--force] \\
+  $0 --pass=XXX [--noflush] [--nocheck] [--noopt]  [--noinndob] [--views] [--force] \\
   $indent [--subset=XXX] [--help] input_file
 
 Description:
@@ -69,6 +69,13 @@ Command line switches:
                     index data onto disk.  This may be a time consuming
                     operation for very large tables.  The --noopt flag
                     disables the optimization.
+
+  --noinnodb        (Optional)
+                    Skip the copy of any InnoDB table encountered. Default
+                    is to include and fail when InnoDB seen.
+
+  --views           (Optional)
+                    Include 'view' tables in any copy. Default is to skip.
 
   --force           (Optional)
                     Ordinarily, the script refuses to overwrite an
@@ -126,22 +133,25 @@ Script restrictions:
 LONG_USAGE_END
 } ## end sub long_usage
 
-my ( $opt_password, $opt_flush,  $opt_check, $opt_optimize,
-     $opt_force,    $opt_subset, $opt_help, $skip_innodb);
+my ( $opt_password, $opt_subset, $opt_help);
 
-$opt_flush    = 1; # Flush by default.
-$opt_check    = 1; # Check tables by default.
-$opt_optimize = 1; # Optimize the tables by default.
-$opt_force    = 0; # Do not reuse existing staging directory by default.
+my $opt_flush       = 1; # Flush by default.
+my $opt_check       = 1; # Check tables by default.
+my $opt_optimize    = 1; # Optimize the tables by default.
+my $opt_force       = 0; # Do not reuse existing staging directory by default.
+my $opt_views       = 0; # Skip views by default
+my $opt_innodb      = 1; # Don't skip InnoDB by default
 
-if ( !GetOptions( 'pass=s'       => \$opt_password,
-                  'flush!'       => \$opt_flush,
-                  'check!'       => \$opt_check,
-                  'opt!'         => \$opt_optimize,
-                  'force!'       => \$opt_force,
-                  'subset=s'     => \$opt_subset,
-				  'skip_innodb!' => \$skip_innodb,
-                  'help'     => \$opt_help )
+
+if ( !GetOptions( 'pass=s'        => \$opt_password,
+                  'flush!'        => \$opt_flush,
+                  'check!'        => \$opt_check,
+                  'opt!'          => \$opt_optimize,
+                  'force!'        => \$opt_force,
+                  'subset=s'      => \$opt_subset,
+				  'innodb!'       => \$opt_innodb,
+				  'views!'        => \$opt_views,
+                  'help'          => \$opt_help )
      || ( !defined($opt_password) && !defined($opt_help) ) )
 {
   short_usage();
@@ -473,23 +483,31 @@ foreach my $spec (@todo) {
 
     foreach my $table ( @{ $source_dbh->selectall_arrayref('SHOW TABLES') } )
 	  {
-
+		
 		$table = $table->[0];
 		my ($engine) = $source_dbh->selectrow_array("select t.Engine from information_schema.TABLES t where t.TABLE_SCHEMA='${source_db}' and t.TABLE_NAME='${table}'");
 		
-	  if($engine eq 'InnoDB'){
-		
-		if($skip_innodb){
-		  warn("SKIPPING InnoDB table:\t$table\n");
+
+		if(defined $engine){
+		  
+		  if($engine eq 'InnoDB'){
+			
+			if(! $opt_innodb){
+			  warn("SKIPPING InnoDB table:\t$table\n");
+			  next;
+			}
+			else{
+			  die("Found InnoDB table:\t${source_db}.${table}\nPlease convert table engine or specify -skip_innodb");
+			}
+		  }
+		}
+		elsif(! $opt_views){ #engine ! defined i.e. is view
+		  warn("SKIPPING view table:\t$table\n");
 		  next;
 		}
-		else{
-		  die("Found InnoDB table:\t${source_db}.${table}\nPlease convert table engine or specify -skip_innodb");
-		}
-	  }
 
 		push( @tables, $table );
-    }
+	  }
   }
 
   # Lock tables with a read lock.
