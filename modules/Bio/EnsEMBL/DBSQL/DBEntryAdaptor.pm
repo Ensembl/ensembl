@@ -1167,19 +1167,31 @@ sub _type_by_external_id {
   }
 
   if ( lc($ensType) eq 'gene' ) {
-    $from_sql  = 'gene g, ';
-    $where_sql = 'g.gene_id = oxr.ensembl_id AND g.is_current = 1 AND ';
-  } elsif ( lc($ensType) eq 'transcript' ) {
-    $from_sql = 'transcript t, ';
+    $from_sql = 'gene g, seq_region s, coord_system cs, ';
     $where_sql =
-      't.transcript_id = oxr.ensembl_id AND t.is_current = 1 AND ';
+        'g.gene_id = oxr.ensembl_id AND '
+      . 'g.is_current = 1 AND '
+      . 'g.seq_region_id = s.seq_region_id AND '
+      . 's.coord_system_id = cs.coord_system_id AND '
+      . 'cs.species_id = ? AND ';
+  } elsif ( lc($ensType) eq 'transcript' ) {
+    $from_sql = 'transcript t, seq_region s, coord_system cs, ';
+    $where_sql =
+        't.transcript_id = oxr.ensembl_id AND '
+      . 't.is_current = 1 AND '
+      . 't.seq_region_id = s.seq_region_id AND '
+      . 's.coord_system_id = cs.coord_system_id AND '
+      . 'cs.species_id = ? AND ';
   } elsif ( lc($ensType) eq 'translation' ) {
-    $from_sql  = 'transcript t, translation tl, ';
-    $where_sql = qq(
-        t.transcript_id = tl.transcript_id AND
-        tl.translation_id = oxr.ensembl_id AND
-        t.is_current = 1 AND
-    );
+    $from_sql = 'transcript t, translation tl, '
+      . 'seq_region s, coord_system cs, ';
+    $where_sql =
+        't.transcript_id = tl.transcript_id AND '
+      . 'tl.translation_id = oxr.ensembl_id AND '
+      . 't.is_current = 1 AND '
+      . 't.seq_region_id = s.seq_region_id AND '
+      . 's.coord_system_id = cs.coord_system_id AND '
+      . 'cs.species_id = ? AND ';
   }
 
   if ( defined($external_db_name) ) {
@@ -1201,7 +1213,8 @@ sub _type_by_external_id {
       WHERE     $where_sql
                 ( x.dbprimary_acc = ? OR x.display_label = ? )
       AND         x.xref_id = oxr.xref_id
-      AND         oxr.ensembl_object_type = ?);
+      AND         oxr.ensembl_object_type = ?
+  );
 
   my $query2;
 
@@ -1241,16 +1254,17 @@ sub _type_by_external_id {
 
   my $sth = $self->prepare($query1);
 
-  $sth->bind_param( 1, "$name",  SQL_VARCHAR );
-  $sth->bind_param( 2, "$name",  SQL_VARCHAR );
-  $sth->bind_param( 3, $ensType, SQL_VARCHAR );
+  $sth->bind_param( 1, $self->species_id(), SQL_INTEGER );
+  $sth->bind_param( 2, $name,               SQL_VARCHAR );
+  $sth->bind_param( 3, $name,               SQL_VARCHAR );
+  $sth->bind_param( 4, $ensType,            SQL_VARCHAR );
   $sth->execute();
   my $r;
   while ( $r = $sth->fetchrow_array() ) { $result{$r} = 1 }
 
   $sth = $self->prepare($query2);
 
-  $sth->bind_param( 1, "$name",  SQL_VARCHAR );
+  $sth->bind_param( 1, $name,    SQL_VARCHAR );
   $sth->bind_param( 2, $ensType, SQL_VARCHAR );
   $sth->execute();
 
