@@ -196,12 +196,18 @@ sub fetch_all_by_Transcript {
   my $tslice = $transcript->slice();
   my $slice;
 
-  if(!$tslice) {
+  if ( !defined($tslice) ) {
     throw("Transcript must have attached slice to retrieve exons.");
   }
 
   # use a small slice the same size as the transcript
-  $slice = $self->db->get_SliceAdaptor->fetch_by_Feature($transcript);
+  if ( !$tslice->is_circular() ) {
+    $slice =
+      $self->db()->get_SliceAdaptor()->fetch_by_Feature($transcript);
+  } else {
+    # Circular.
+    $slice = $tslice;
+  }
 
   # override the tables definition to provide an additional join to
   # the exon_transcript table.  For efficiency we cannot afford to have
