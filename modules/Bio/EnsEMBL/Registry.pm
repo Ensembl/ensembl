@@ -32,7 +32,6 @@ Bio::EnsEMBL::Registry
 
   $gene_adaptor = $registry->get_adaptor( 'Human', 'Core', 'Gene' );
 
-
 =head1 DESCRIPTION
 
 All Adaptors are stored/registered using this module. This module should
@@ -125,11 +124,11 @@ use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::EnsEMBL::Utils::Exception qw( deprecate throw warning );
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 use Bio::EnsEMBL::Utils::ConfigRegistry;
+use Bio::EnsEMBL::ApiVersion;
+
 use DBI;
 
 use vars qw(%registry_register);
-
-my $API_VERSION = 59;
 
 # This is a map from group names to Ensembl DB adaptors.  Used by
 # load_all() and reset_DBAdaptor().
@@ -1426,7 +1425,7 @@ sub load_registry_from_db {
   my @dbnames = map { $_->[0] } @$res;
 
   my %temp;
-  my $software_version = $self->software_version();
+  my $software_version = software_version();
 
   if ( defined($db_version) ) {
     $software_version = $db_version;
@@ -2298,21 +2297,6 @@ sub add_new_tracks{
 
 }
 
-=head2 software_version
-  
-  get the software version.
-  
-  Args       : none
-  ReturnType : int
-  Status     : At Risk
-  
-=cut
-  
-sub software_version{
-  my ($self) = @_;
-  return $API_VERSION;
-}
-  
 =head2 no_version_check
   
   getter/setter for whether to run the version checking
@@ -2397,7 +2381,7 @@ sub version_check {
     }
   } ## end if ( $database_version...
 
-  if ( $database_version != $API_VERSION ) {
+  if ( $database_version != software_version() ) {
     warn(
       sprintf(
         "For %s there is a difference in the software release (%s) "
@@ -2405,7 +2389,7 @@ sub version_check {
           . "You should update one of these to ensure that your script "
           . "does not crash.\n",
         $dba->dbc()->dbname(),
-        $API_VERSION, $database_version
+        software_version(), $database_version
       ) );
     return 0;
   }
