@@ -91,6 +91,8 @@ package Bio::EnsEMBL::Utils::Exception;
 use strict;
 use warnings;
 
+use Bio::EnsEMBL::ApiVersion;
+
 use Exporter;
 
 use vars qw(@ISA @EXPORT);
@@ -144,10 +146,14 @@ sub throw {
 
   my $std = stack_trace_dump(3);
 
-  my $out = "\n-------------------- EXCEPTION --------------------\n" .
-              "MSG: $string\n" .
-              "$std" .
-              "---------------------------------------------------\n";
+  my $out =
+    sprintf( "\n"
+              . "-------------------- EXCEPTION --------------------\n"
+              . "MSG: %s\n" . "%s"
+              . "Ensembl API version = %s\n"
+              . "---------------------------------------------------\n",
+            $string, $std, software_version() );
+
   die $out;
 }
 
@@ -207,13 +213,18 @@ sub warning {
      }
   }
 
-  
-  my $out = "\n-------------------- WARNING ----------------------\n".
-              "MSG: $string\n".
-              "FILE: $file LINE: $line\n";
-  $out .=     "CALLED BY: $caller_file  LINE: $caller_line\n" if($caller_file);
-  $out .=     "---------------------------------------------------\n";
+  my $out =
+      "\n-------------------- WARNING ----------------------\n"
+    . "MSG: $string\n"
+    . "FILE: $file LINE: $line\n";
+  if ($caller_file) {
+    $out .= "CALLED BY: $caller_file  LINE: $caller_line\n";
+  }
+  $out .= "Ensembl API version = " . software_version() . "\n";
+  $out .= "---------------------------------------------------\n";
+
   print STDERR $out;
+
 }
 
 
@@ -450,12 +461,15 @@ sub deprecate {
   #once per deprecated call
   return if $DEPRECATED{"$line:$file:$subname"};
 
-  if($VERBOSITY > -1) {
-    print STDERR "\n------------------ DEPRECATED ---------------------\n" .
-                   "Deprecated method call in file $file line $line.\n" .
-                   "Method $subname is deprecated.\n" .
-                   "$mesg\n" .
-                   "---------------------------------------------------\n";
+  if ( $VERBOSITY > -1 ) {
+    print STDERR
+      "\n------------------ DEPRECATED ---------------------\n"
+      . "Deprecated method call in file $file line $line.\n"
+      . "Method $subname is deprecated.\n"
+      . "$mesg\n"
+      . "Ensembl API version = "
+      . software_version() . "\n"
+      . "---------------------------------------------------\n";
   }
 
   $DEPRECATED{"$line:$file:$subname"} = 1;
