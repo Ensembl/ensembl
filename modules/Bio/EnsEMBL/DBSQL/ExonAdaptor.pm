@@ -609,28 +609,24 @@ sub _objs_from_sth {
 
     my $sr_name = $sr_name_hash{$seq_region_id};
     my $sr_cs   = $sr_cs_hash{$seq_region_id};
+
     #
-    # remap the feature coordinates to another coord system 
-    # if a mapper was provided
+    # Remap the feature coordinates to another coord system if a mapper
+    # was provided.
     #
-    if($dest_mapper) {
+    if ( defined($dest_mapper) ) {
+      ( $seq_region_id,  $seq_region_start,
+        $seq_region_end, $seq_region_strand )
+        = $dest_mapper->fastmap( $sr_name, $seq_region_start,
+                                 $seq_region_end, $seq_region_strand,
+                                 $sr_cs );
 
-      ($seq_region_id,$seq_region_start,$seq_region_end,$seq_region_strand) =
-        $dest_mapper->fastmap($sr_name, $seq_region_start, $seq_region_end,
-                              $seq_region_strand, $sr_cs);
+      # Skip features that map to gaps or coord system boundaries.
+      if ( !defined($seq_region_id) ) { next FEATURE }
 
-      #skip features that map to gaps or coord system boundaries
-      next FEATURE if(!defined($seq_region_id));
-
-      #get a slice in the coord system we just mapped to
-#      if($asm_cs == $sr_cs || ($cmp_cs != $sr_cs && $asm_cs->equals($sr_cs))) {
-        $slice = $slice_hash{"ID:".$seq_region_id} ||=
-          $sa->fetch_by_seq_region_id($seq_region_id);
-#      } else {
-#        $slice = $slice_hash{"NAME:$sr_name:$asm_cs_name:$asm_cs_vers"} ||=
-#          $sa->fetch_by_seq_region_id($sr_name, undef, undef, undef,
-#                               $asm_cs_vers);
-#      }
+      # Get a slice in the coord system we just mapped to
+      $slice = $slice_hash{ "ID:" . $seq_region_id } ||=
+        $sa->fetch_by_seq_region_id($seq_region_id);
     }
 
     #
