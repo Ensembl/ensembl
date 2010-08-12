@@ -28,6 +28,8 @@ my $config =
       ( defined $ARGV[0] && -f $ARGV[0] ? $ARGV[0] : 'xref_config.ini' )
   );
 
+my %source_ids;
+
 # Do the species.
 
 print( '#' x 80, "\n" );
@@ -68,14 +70,26 @@ foreach my $source_section ( sort( $config->GroupMembers('source') ) ) {
     $source_section =~ /^source(\s+)(\S+)\s*$/;
 
   if ( length($spaces) > 1 ) {
-    die(
-         sprintf("Too many spaces between the words 'source' and '%s'\n"
+    die( sprintf("Too many spaces between the words 'source' and '%s'\n"
                    . "while reading source section '[%s]'\n",
-                 $source_name, $source_section
-         ) );
+                 $source_name, $source_section ) );
   }
 
-  $config->newval( $source_section, 'id', ++$source_id );
+#  if ( exists( $source_ids{$source_section} ) ) {
+#    # Won't happen because Config::IniFile will combine the configs
+#    # of multiple sections with the same name into one section with
+#    # multi-value values.  Sigh...
+#    die( sprintf( "The source section '[%s]' occurs more than once\n",
+#                  $source_section ) );
+#  }
+
+  if ( index( $config->val( $source_section, 'name' ), "\n" ) != -1 ) {
+    die( sprintf( "The source section '[%s]' occurs more\n"
+                    . "than once in the configuration file\n",
+                  $source_section ) );
+  }
+
+  $source_ids{$source_section} = ++$source_id;
 
   printf( "# Source '%s' (id = %d)\n", $source_name, $source_id );
 
@@ -91,6 +105,7 @@ foreach my $source_section ( sort( $config->GroupMembers('source') ) ) {
           $config->val( $source_section, 'prio_descr' ) );
 
   print("\n");
+
 } ## end foreach my $source_section ...
 
 # Do the data files.
@@ -105,12 +120,10 @@ foreach my $species_section ( sort( $config->GroupMembers('species') ) )
     $species_section =~ /^species(\s+)(\S+)\s*$/;
 
   if ( length($spaces) > 1 ) {
-    die(
-         sprintf(
+    die( sprintf(
                 "Too many spaces between the words 'species' and '%s'\n"
                   . "while reading species section '[%s]'\n",
-                $species_name, $species_section
-         ) );
+                $species_name, $species_section ) );
   }
 
   my @taxonomy_ids =
@@ -129,16 +142,14 @@ foreach my $species_section ( sort( $config->GroupMembers('species') ) )
   {
     my $source_section = sprintf( "source %s", $source_name );
 
-    if ( !defined( $config->val( $source_section, 'id' ) ) ) {
-      die(
-           sprintf( "Can not find source section '[%s]'\n"
+    if ( !exists( $source_ids{$source_section} ) ) {
+      die( sprintf( "Can not find source section '[%s]'\n"
                       . "while reading species section '[%s]'\n",
-                    $source_section, $species_section
-           ) );
+                    $source_section, $species_section ) );
     }
 
     printf( "# Data from source '%s' (id = %d)\n",
-            $source_name, $config->val( $source_section, 'id' ) );
+            $source_name, $source_ids{$source_section} );
 
     print(   "INSERT INTO source_url "
            . "(source_id, species_id, url, release_url, "
@@ -156,12 +167,10 @@ foreach my $species_section ( sort( $config->GroupMembers('species') ) )
     }
 
     printf( "VALUES (%d, %d, '%s', %s, now(), now(), '%s');\n",
-            $config->val( $source_section, 'id' ),
-            $species_id,
-            join( ' ', @uris ),
-            $release_uri,
+            $source_ids{$source_section}, $species_id,
+            join( ' ', @uris ), $release_uri,
             $config->val( $source_section, 'parser' ) );
 
     print("\n");
-  } ## end foreach my $source_name ( sort...
+  } ## end foreach my $source_name ( sort...)
 } ## end foreach my $species_section...
