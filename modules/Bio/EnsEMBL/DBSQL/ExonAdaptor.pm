@@ -631,8 +631,7 @@ FEATURE: while ( $sth->fetch() ) {
     }
 
     #
-    # If a destination slice was provided convert the coords.  If the
-    # dest_slice starts at 1 and is foward strand, nothing needs doing.
+    # If a destination slice was provided convert the coords.
     #
     if ( defined($dest_slice) ) {
       if ( $dest_slice_strand == 1 ) {
@@ -707,6 +706,7 @@ FEATURE: while ( $sth->fetch() ) {
           } ## end if ( $seq_region_start...)
         } else {
           # Non-circular chromosome.
+
           my $tmp_seq_region_start = $seq_region_start;
           $seq_region_start = $dest_slice_end - $seq_region_end + 1;
           $seq_region_end = $dest_slice_end - $tmp_seq_region_start + 1;
