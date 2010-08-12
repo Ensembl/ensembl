@@ -60,10 +60,10 @@ use Bio::EnsEMBL::DBSQL::DBConnection;
 use Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor;
 use Bio::EnsEMBL::Utils::SeqRegionCache;
 use Bio::EnsEMBL::Utils::Exception qw(throw warning deprecate);
-#use Bio::EnsEMBL::Utils::Exception qw(warning throw  deprecate stack_trace_dump);
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 use Bio::EnsEMBL::Registry;
 use Bio::EnsEMBL::Utils::ConfigRegistry;
+
 my $reg = "Bio::EnsEMBL::Registry";
 
 =head2 new
