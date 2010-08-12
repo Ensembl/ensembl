@@ -515,7 +515,7 @@ sub list_stable_ids {
 #  Caller     : internal
 
 sub _objs_from_sth {
-  my ($self, $sth, $mapper, $dest_slice) = @_;
+  my ( $self, $sth, $mapper, $dest_slice ) = @_;
 
   #
   # This code is ugly because an attempt has been made to remove as many
@@ -530,21 +530,17 @@ sub _objs_from_sth {
   my %sr_name_hash;
   my %sr_cs_hash;
 
-  my (
-    $exon_id,        $seq_region_id,     $seq_region_start,
-    $seq_region_end, $seq_region_strand, $phase,
-    $end_phase,      $is_current,        $is_constitutive,
-    $stable_id,      $version,           $created_date,
-    $modified_date
-  );
+  my ( $exon_id,        $seq_region_id,     $seq_region_start,
+       $seq_region_end, $seq_region_strand, $phase,
+       $end_phase,      $is_current,        $is_constitutive,
+       $stable_id,      $version,           $created_date,
+       $modified_date );
 
-  $sth->bind_columns(
-    \$exon_id,        \$seq_region_id,     \$seq_region_start,
-    \$seq_region_end, \$seq_region_strand, \$phase,
-    \$end_phase,      \$is_current,        \$is_constitutive,
-    \$stable_id,      \$version,           \$created_date,
-    \$modified_date
-  );
+  $sth->bind_columns( \( $exon_id, $seq_region_id, $seq_region_start,
+                         $seq_region_end, $seq_region_strand, $phase,
+                         $end_phase, $is_current, $is_constitutive,
+                         $stable_id, $version,    $created_date,
+                         $modified_date ) );
 
   my $asm_cs;
   my $cmp_cs;
@@ -552,9 +548,10 @@ sub _objs_from_sth {
   my $asm_cs_name;
   my $cmp_cs_vers;
   my $cmp_cs_name;
-  if($mapper) {
-    $asm_cs = $mapper->assembled_CoordSystem();
-    $cmp_cs = $mapper->component_CoordSystem();
+
+  if ($mapper) {
+    $asm_cs      = $mapper->assembled_CoordSystem();
+    $cmp_cs      = $mapper->component_CoordSystem();
     $asm_cs_name = $asm_cs->name();
     $asm_cs_vers = $asm_cs->version();
     $cmp_cs_name = $cmp_cs->name();
@@ -569,38 +566,42 @@ sub _objs_from_sth {
   my $dest_slice_sr_name;
   my $dest_slice_sr_id;
   my $asma;
-  if($dest_slice) {
-    $dest_slice_start  = $dest_slice->start();
-    $dest_slice_end    = $dest_slice->end();
-    $dest_slice_strand = $dest_slice->strand();
-    $dest_slice_length = $dest_slice->length();
-    $dest_slice_cs     = $dest_slice->coord_system();
+
+  if ($dest_slice) {
+    $dest_slice_start   = $dest_slice->start();
+    $dest_slice_end     = $dest_slice->end();
+    $dest_slice_strand  = $dest_slice->strand();
+    $dest_slice_length  = $dest_slice->length();
+    $dest_slice_cs      = $dest_slice->coord_system();
     $dest_slice_sr_name = $dest_slice->seq_region_name();
-    $dest_slice_sr_id = $dest_slice->get_seq_region_id();
-    $asma = $self->db->get_AssemblyMapperAdaptor();
+    $dest_slice_sr_id   = $dest_slice->get_seq_region_id();
+    $asma               = $self->db->get_AssemblyMapperAdaptor();
   }
 
-  FEATURE: while($sth->fetch()) {
+FEATURE: while ( $sth->fetch() ) {
     #need to get the internal_seq_region, if present
     $seq_region_id = $self->get_seq_region_id_internal($seq_region_id);
 
-    my $slice = $slice_hash{"ID:".$seq_region_id};
+    my $slice       = $slice_hash{ "ID:" . $seq_region_id };
     my $dest_mapper = $mapper;
 
-    if(!$slice) {
+    if ( !$slice ) {
       $slice = $sa->fetch_by_seq_region_id($seq_region_id);
-      $slice_hash{"ID:".$seq_region_id} = $slice;
-      $sr_name_hash{$seq_region_id} = $slice->seq_region_name();
-      $sr_cs_hash{$seq_region_id} = $slice->coord_system();
+      $slice_hash{ "ID:" . $seq_region_id } = $slice;
+      $sr_name_hash{$seq_region_id}         = $slice->seq_region_name();
+      $sr_cs_hash{$seq_region_id}           = $slice->coord_system();
     }
 
     #obtain a mapper if none was defined, but a dest_seq_region was
-    if(!$dest_mapper && $dest_slice && 
-       !$dest_slice_cs->equals($slice->coord_system)) {
-      $dest_mapper = $asma->fetch_by_CoordSystems($dest_slice_cs,
-                                                 $slice->coord_system);
-      $asm_cs = $dest_mapper->assembled_CoordSystem();
-      $cmp_cs = $dest_mapper->component_CoordSystem();
+    if (   !$dest_mapper
+         && $dest_slice
+         && !$dest_slice_cs->equals( $slice->coord_system ) )
+    {
+      $dest_mapper =
+        $asma->fetch_by_CoordSystems( $dest_slice_cs,
+                                      $slice->coord_system );
+      $asm_cs      = $dest_mapper->assembled_CoordSystem();
+      $cmp_cs      = $dest_mapper->component_CoordSystem();
       $asm_cs_name = $asm_cs->name();
       $asm_cs_vers = $asm_cs->version();
       $cmp_cs_name = $cmp_cs->name();
@@ -630,57 +631,126 @@ sub _objs_from_sth {
     }
 
     #
-    # If a destination slice was provided convert the coords
-    # If the dest_slice starts at 1 and is foward strand, nothing needs doing
+    # If a destination slice was provided convert the coords.  If the
+    # dest_slice starts at 1 and is foward strand, nothing needs doing.
     #
-    if($dest_slice) {
-      if($dest_slice_start != 1 || $dest_slice_strand != 1) {
-	if($dest_slice_strand == 1) {
-	  $seq_region_start = $seq_region_start - $dest_slice_start + 1;
-	  $seq_region_end   = $seq_region_end   - $dest_slice_start + 1;
-	} else {
-	  my $tmp_seq_region_start = $seq_region_start;
-	  $seq_region_start = $dest_slice_end - $seq_region_end + 1;
-	  $seq_region_end   = $dest_slice_end - $tmp_seq_region_start + 1;
-	  $seq_region_strand *= -1;
-	}
-      }
+    if ( defined($dest_slice) ) {
+      if ( $dest_slice_strand == 1 ) {
+        # On the positive strand.
 
-      #throw away features off the end of the requested slice
-      if($seq_region_end < 1 || $seq_region_start > $dest_slice_length ||
-	 ( $dest_slice_sr_id != $seq_region_id )) {
-	next FEATURE;
+        $seq_region_start = $seq_region_start - $dest_slice_start + 1;
+        $seq_region_end   = $seq_region_end - $dest_slice_start + 1;
+
+        # Handle circular chromosomes.
+        if ( $dest_slice->is_circular() ) {
+          if ( $seq_region_start > $seq_region_end ) {
+            # Looking at a feature overlapping the chromsome origin.
+
+            if ( $seq_region_end > $dest_slice_start ) {
+              # Looking at the region in the beginning of the
+              # chromosome.
+              $seq_region_start -= $dest_slice->seq_region_length();
+            }
+
+            if ( $seq_region_end < 0 ) {
+              $seq_region_end += $dest_slice->seq_region_length();
+            }
+
+          } elsif (    $dest_slice_start > $dest_slice_end
+                    && $seq_region_end < 0 )
+          {
+            # Looking at the region overlapping the chromosome
+            # origin and a feature which is at the beginning of the
+            # chromosome.
+            $seq_region_start += $dest_slice->seq_region_length();
+            $seq_region_end   += $dest_slice->seq_region_length();
+          }
+        }
+
+      } else {
+        # On the negative strand.
+
+        # Handle circular chromosomes.
+        if ( $dest_slice->is_circular() ) {
+          if ( $seq_region_start > $seq_region_end ) {
+
+            if ( $dest_slice_start > $dest_slice_end ) {
+              my $tmp_seq_region_start = $seq_region_start;
+              $seq_region_start = $dest_slice_end - $seq_region_end + 1;
+              $seq_region_end =
+                $dest_slice_end +
+                $dest_slice->seq_region_length -
+                $tmp_seq_region_start + 1;
+            } else {
+
+              if ( $seq_region_end > $dest_slice_start ) {
+                # Looking at the region in the beginning of the
+                # chromosome.
+                $seq_region_start =
+                  $dest_slice_end - $seq_region_end + 1;
+                $seq_region_end =
+                  $seq_region_end -
+                  $dest_slice->seq_region_length -
+                  $dest_slice_start + 1;
+              } else {
+                my $tmp_seq_region_start = $seq_region_start;
+                $seq_region_start =
+                  $dest_slice_end -
+                  $seq_region_end -
+                  $dest_slice->seq_region_length + 1;
+                $seq_region_end =
+                  $dest_slice_end - $tmp_seq_region_start + 1;
+              }
+
+            }
+
+          } ## end if ( $seq_region_start...)
+        } else {
+          # Non-circular chromosome.
+          my $tmp_seq_region_start = $seq_region_start;
+          $seq_region_start = $dest_slice_end - $seq_region_end + 1;
+          $seq_region_end = $dest_slice_end - $tmp_seq_region_start + 1;
+        }
+
+        $seq_region_strand = -$seq_region_strand;
+
+      } ## end else [ if ( $dest_slice_strand...)]
+
+      # Throw away features off the end of the requested slice.
+      if (    $seq_region_end < 1
+           || $seq_region_start > $dest_slice_length
+           || ( $dest_slice_sr_id != $seq_region_id ) )
+      {
+        next FEATURE;
       }
 
       $slice = $dest_slice;
-    }
+    } ## end if ( defined($dest_slice...))
 
     # Finally, create the new exon.
-    push(
-      @exons,
-      $self->_create_feature_fast(
-        'Bio::EnsEMBL::Exon',
-        {
-          'start'           => $seq_region_start,
-          'end'             => $seq_region_end,
-          'strand'          => $seq_region_strand,
-          'adaptor'         => $self,
-          'slice'           => $slice,
-          'dbID'            => $exon_id,
-          'stable_id'       => $stable_id,
-          'version'         => $version,
-          'created_date'    => $created_date || undef,
-          'modified_date'   => $modified_date || undef,
-          'phase'           => $phase,
-          'end_phase'       => $end_phase,
-          'is_current'      => $is_current,
-          'is_constitutive' => $is_constitutive
-        } ) );
+    push( @exons,
+          $self->_create_feature_fast(
+                           'Bio::EnsEMBL::Exon', {
+                             'start'         => $seq_region_start,
+                             'end'           => $seq_region_end,
+                             'strand'        => $seq_region_strand,
+                             'adaptor'       => $self,
+                             'slice'         => $slice,
+                             'dbID'          => $exon_id,
+                             'stable_id'     => $stable_id,
+                             'version'       => $version,
+                             'created_date'  => $created_date || undef,
+                             'modified_date' => $modified_date || undef,
+                             'phase'         => $phase,
+                             'end_phase'     => $end_phase,
+                             'is_current'    => $is_current,
+                             'is_constitutive' => $is_constitutive } )
+    );
 
-  }
+  } ## end while ( $sth->fetch() )
 
   return \@exons;
-}
+} ## end sub _objs_from_sth
 
 =head1 DEPRECATED METHODS
 
