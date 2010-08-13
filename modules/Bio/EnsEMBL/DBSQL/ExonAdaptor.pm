@@ -640,8 +640,9 @@ FEATURE: while ( $sth->fetch() ) {
         $seq_region_start = $seq_region_start - $dest_slice_start + 1;
         $seq_region_end   = $seq_region_end - $dest_slice_start + 1;
 
-        # Handle circular chromosomes.
         if ( $dest_slice->is_circular() ) {
+          # Handle circular chromosomes.
+
           if ( $seq_region_start > $seq_region_end ) {
             # Looking at a feature overlapping the chromsome origin.
 
@@ -655,30 +656,32 @@ FEATURE: while ( $sth->fetch() ) {
               $seq_region_end += $dest_slice->seq_region_length();
             }
 
-          } elsif (    $dest_slice_start > $dest_slice_end
-                    && $seq_region_end < 0 )
-          {
-            # Looking at the region overlapping the chromosome
-            # origin and a feature which is at the beginning of the
-            # chromosome.
-            $seq_region_start += $dest_slice->seq_region_length();
-            $seq_region_end   += $dest_slice->seq_region_length();
+          } else {
+            if (    $dest_slice_start > $dest_slice_end
+                 && $seq_region_end < 0 )
+            {
+              # Looking at the region overlapping the chromosome
+              # origin and a feature which is at the beginning of the
+              # chromosome.
+              $seq_region_start += $dest_slice->seq_region_length();
+              $seq_region_end   += $dest_slice->seq_region_length();
+            }
           }
-        }
+        } ## end if ( $dest_slice->is_circular...)
 
       } else {
         # On the negative strand.
 
-        # Handle circular chromosomes.
         if ( $dest_slice->is_circular() ) {
-          if ( $seq_region_start > $seq_region_end ) {
+          # Handle circular chromosomes.
 
+          if ( $seq_region_start > $seq_region_end ) {
             if ( $dest_slice_start > $dest_slice_end ) {
               my $tmp_seq_region_start = $seq_region_start;
               $seq_region_start = $dest_slice_end - $seq_region_end + 1;
               $seq_region_end =
                 $dest_slice_end +
-                $dest_slice->seq_region_length -
+                $dest_slice->seq_region_length() -
                 $tmp_seq_region_start + 1;
             } else {
 
@@ -689,21 +692,21 @@ FEATURE: while ( $sth->fetch() ) {
                   $dest_slice_end - $seq_region_end + 1;
                 $seq_region_end =
                   $seq_region_end -
-                  $dest_slice->seq_region_length -
+                  $dest_slice->seq_region_length() -
                   $dest_slice_start + 1;
               } else {
                 my $tmp_seq_region_start = $seq_region_start;
                 $seq_region_start =
                   $dest_slice_end -
                   $seq_region_end -
-                  $dest_slice->seq_region_length + 1;
+                  $dest_slice->seq_region_length() + 1;
                 $seq_region_end =
                   $dest_slice_end - $tmp_seq_region_start + 1;
               }
 
             }
-
           } ## end if ( $seq_region_start...)
+
         } else {
           # Non-circular chromosome.
 
