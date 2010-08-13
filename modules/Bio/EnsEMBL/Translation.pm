@@ -853,11 +853,21 @@ sub seq {
     if (    defined( $canonical_translation->stable_id() )
          && defined( $self->stable_id() ) )
     {
+      # Try stable ID.
       $is_alternative =
         ( $canonical_translation->stable_id() ne $self->stable_id() );
-    } else {
+    } elsif (    defined( $canonical_translation->dbID() )
+              && defined( $self->dbID() ) )
+    {
+      # Try dbID.
       $is_alternative =
         ( $canonical_translation->dbID() != $self->dbID() );
+    } else {
+      # Resort to using geomic start/end coordinates.
+      $is_alternative = ( ($canonical_translation->genomic_start() !=
+                             $self->genomic_start() )
+                           || ( $canonical_translation->genomic_end() !=
+                                $self->genomic_end() ) );
     }
 
     if ($is_alternative) {
