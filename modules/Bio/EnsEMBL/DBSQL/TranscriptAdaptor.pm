@@ -312,8 +312,12 @@ sub fetch_all_by_Gene {
     throw("Gene must have attached slice to retrieve transcripts.");
   }
 
-  if ($gene->start() < 1 || $gene->end() > $gslice->length()) {
-    $slice = $self->db->get_SliceAdaptor->fetch_by_Feature($gene);
+  if ( $gene->start() < 1 || $gene->end() > $gslice->length() ) {
+    if ( $gslice->is_circular() ) {
+      $slice = $gslice;
+    } else {
+      $slice = $self->db->get_SliceAdaptor->fetch_by_Feature($gene);
+    }
   } else {
     $slice = $gslice;
   }
@@ -1486,31 +1490,79 @@ sub _objs_from_sth {
     }
 
     #
-    # If a destination slice was provided convert the coords
-    # If the dest_slice starts at 1 and is foward strand, nothing needs doing
+    # If a destination slice was provided convert the coords.
     #
-    if ($dest_slice) {
-      if ( $dest_slice_start != 1 || $dest_slice_strand != 1 ) {
-        if ( $dest_slice_strand == 1 ) {
-          $seq_region_start = $seq_region_start - $dest_slice_start + 1;
-          $seq_region_end   = $seq_region_end - $dest_slice_start + 1;
+    if (defined($dest_slice)) {
+      if ( $dest_slice_strand == 1 ) {
+        $seq_region_start = $seq_region_start - $dest_slice_start + 1;
+        $seq_region_end   = $seq_region_end - $dest_slice_start + 1;
+
+        if ( $dest_slice->is_circular ) {
+          if ( $seq_region_start > $seq_region_end ) {
+            # Looking at a feature overlapping the chromsome origin.
+            if ( $seq_region_end > $dest_slice_start ) {
+              # Looking at the region in the beginning of the chromosome
+              $seq_region_start -= $dest_slice->seq_region_length();
+            }
+            if ( $seq_region_end < 0 ) {
+              $seq_region_end += $dest_slice->seq_region_length();
+            }
+          } else {
+            if (    $dest_slice_start > $dest_slice_end
+                 && $seq_region_end < 0 )
+            {
+              # Looking at the region overlapping the chromosome
+              # origin and a feature which is at the beginning of the
+              # chromosome.
+              $seq_region_start += $dest_slice->seq_region_length();
+              $seq_region_end   += $dest_slice->seq_region_length();
+            }
+          }
+        }
+      } else {
+        if (    $dest_slice->is_circular()
+             && $seq_region_start > $seq_region_end )
+        {
+          if ( $seq_region_end > $dest_slice_start ) {
+            # Looking at the region in the beginning of the chromosome.
+            $seq_region_start = $dest_slice_end - $seq_region_end + 1;
+            $seq_region_end =
+              $seq_region_end -
+              $dest_slice->seq_region_length() -
+              $dest_slice_start + 1;
+          } else {
+            my $tmp_seq_region_start = $seq_region_start;
+            $seq_region_start =
+              $dest_slice_end -
+              $seq_region_end -
+              $dest_slice->seq_region_length() + 1;
+            $seq_region_end =
+              $dest_slice_end - $tmp_seq_region_start + 1;
+          }
+
         } else {
           my $tmp_seq_region_start = $seq_region_start;
           $seq_region_start = $dest_slice_end - $seq_region_end + 1;
           $seq_region_end = $dest_slice_end - $tmp_seq_region_start + 1;
-          $seq_region_strand *= -1;
         }
-      }
+
+        $seq_region_strand = -$seq_region_strand;
+      } ## end else [ if ( $dest_slice_strand...)]
 
       # Throw away features off the end of the requested slice
-      if ( $seq_region_end < 1
-        || $seq_region_start > $dest_slice_length
-        || ( $dest_slice_sr_id ne $seq_region_id ) )
+      if (    $seq_region_end < 1
+           || $seq_region_start > $dest_slice_length
+           || ( $dest_slice_sr_id ne $seq_region_id ) )
       {
         next FEATURE;
       }
 
       $slice = $dest_slice;
+    } else {
+      $slice =
+        $sa->fetch_by_seq_region_id( $seq_region_id,  $seq_region_start,
+                                     $seq_region_end, $seq_region_strand
+        );
     }
 
     my $display_xref;
