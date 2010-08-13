@@ -7,10 +7,6 @@ use File::Basename;
 
 use base qw( XrefParser::BaseParser );
 
-# Xenopus Jamboree peptides file format: fasta, e.g.
-
-# >anxa2 BC061610
-# MSLIHEILGKLSLEGNQSSTRQSTLGSVKASSNFDAERDAAAIETAIKTKGVDELTII
 
 
 sub run {
@@ -25,50 +21,25 @@ sub run {
 
   my $file = @{$files}[0];
 
-  my @xrefs;
-
-  local $/ = "\n>";
-
-  my $file_io = $self->getline($file);
+  my $file_io = $self->get_filehandle($file);
 
   if ( !defined $file_io ) {
     print STDERR "ERROR: Could not open $file\n";
     return 1;    # 1 error
   }
 
+  my $count = 0;
   while ( $_ = $file_io->getline() ) {
-    my $xref;
+    chomp;
+    my ($acc, $label, $desc, $stable_id) = split /\t/;
 
-    my ($header, $sequence) = $_ =~ /^>?(.+?)\n([^>]*)/s or warn("Can't parse FASTA entry: $_\n");
-
-    # deconstruct header
-    my ($accession, @other) = split /\s+/, $header;
-    my $other = join(" ", @other);
-
-    # make sequence into one long string
-    $sequence =~ s/\n//g;
-
-    # build the xref object and store it
-    $xref->{ACCESSION}     = $accession;
-    $xref->{LABEL}         = $accession;
-    $xref->{DESCRIPTION}   = '';
-    $xref->{SEQUENCE}      = $sequence;
-    $xref->{SOURCE_ID}     = $source_id;
-    $xref->{SPECIES_ID}    = $species_id;
-    $xref->{SEQUENCE_TYPE} = 'peptide';
-    $xref->{STATUS}        = 'experimental';
-
-    push @xrefs, $xref;
-
+    XrefParser::BaseParser->add_to_direct_xrefs($stable_id,'gene', $acc, '', $label, $desc, "", $source_id, $species_id);
+    $count++;
   }
 
   $file_io->close();
 
-  print scalar(@xrefs) . " XenopusJamboreeParser xrefs succesfully parsed\n" if($verbose);
-
-  if(!defined(XrefParser::BaseParser->upload_xref_object_graphs(\@xrefs))){
-    return 1; #1 error
-  }
+  print $count . " XenopusJamboreeParser xrefs succesfully parsed\n" if($verbose);
 
   return 0;
 }
