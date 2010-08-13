@@ -1337,37 +1337,58 @@ sub _merge_ajoining_coords {
 =cut
 
 sub seq {
-  my $self = shift;
-  my $arg = shift;
+  my ( $self, $arg ) = @_;
 
-  if( defined $arg ) {
-    warning( "seq setting on Exon not supported currently" );
+  if ( defined $arg ) {
+    warning("seq setting on Exon not supported currently");
     $self->{'_seq_cache'} = $arg->seq();
   }
 
-  if(!defined($self->{'_seq_cache'})) {
+  if ( !defined( $self->{'_seq_cache'} ) ) {
     my $seq;
 
-    if ( ! defined $self->slice ) {
+    if ( !defined $self->slice() ) {
       warning("Cannot retrieve seq for exon without slice\n");
       return undef;
     }
 
-    if(!$self->strand()) {
+    if ( !$self->strand() ) {
       warning("Cannot retrieve seq for unstranded exon\n");
       return undef;
     }
 
-    $seq = $self->slice()->subseq($self->start, $self->end, $self->strand);
+    if (    $self->slice->start() > $self->slice->end()
+         && $self->slice->is_circular() )
+    {
+      my $mid_point =
+        $self->slice()->seq_region_length() -
+        $self->slice()->start() + 1;
+
+      my $seq1 =
+        $self->slice()
+        ->subseq( $self->start(), $mid_point, $self->strand() );
+
+      my $seq2 =
+        $self->slice()
+        ->subseq( $mid_point + 1, $self->end(), $self->strand() );
+
+      $seq = $self->strand() > 0 ? "$seq1$seq2" : "$seq2$seq1";
+
+    } else {
+      $seq =
+        $self->slice()
+        ->subseq( $self->start(), $self->end(), $self->strand() );
+    }
+
     $self->{'_seq_cache'} = $seq;
-  }
+  } ## end if ( !defined( $self->...))
 
   return
     Bio::Seq->new( -seq      => $self->{'_seq_cache'},
                    -id       => $self->display_id,
                    -moltype  => 'dna',
                    -alphabet => 'dna' );
-}
+} ## end sub seq
 
 
 =head2 hashkey
