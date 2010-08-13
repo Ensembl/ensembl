@@ -1,4 +1,3 @@
-
 =head1 LICENSE
 
   Copyright (c) 1999-2010 The European Bioinformatics Institute and
@@ -21,7 +20,7 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::Slice - Arbitary Slice of a genome
+Bio::EnsEMBL::CircularSlice - Arbitary Slice of a genome
 
 =head1 SYNOPSIS
 
