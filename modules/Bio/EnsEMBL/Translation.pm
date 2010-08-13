@@ -848,8 +848,17 @@ sub seq {
     my $transcript = $self->transcript();
 
     my $canonical_translation = $transcript->translation();
-    my $is_alternative =
-      ( $canonical_translation->stable_id() ne $self->stable_id() );
+    my $is_alternative;
+
+    if (    defined( $canonical_translation->stable_id() )
+         && defined( $self->stable_id() ) )
+    {
+      $is_alternative =
+        ( $canonical_translation->stable_id() ne $self->stable_id() );
+    } else {
+      $is_alternative =
+        ( $canonical_translation->dbID() != $self->dbID() );
+    }
 
     if ($is_alternative) {
       # To deal with non-canonical (alternative) translations, subsitute
