@@ -12,6 +12,13 @@ sub get_set_lists{
 
 }
 
+sub gene_description_filter_regexps {
+
+  return ('^UNKNOWN\s+.*',
+          '^undefined.*');
+
+}
+
 sub gene_description_sources {
 
   return ("Xenopus_Jamboree",
