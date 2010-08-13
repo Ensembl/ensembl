@@ -47,6 +47,7 @@ use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Bio::EnsEMBL::Utils::Exception qw(throw deprecate);
 use Bio::EnsEMBL::Utils::Sequence  qw(reverse_comp);
 use Bio::EnsEMBL::Utils::Cache;
+use Bio::EnsEMBL::Utils::Scalar qw( assert_ref );
 
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
 
@@ -145,9 +146,19 @@ sub fetch_by_Slice_start_end_strand {
 
    $start = 1 if(!defined($start));
 
-   $end = $slice->end() - $slice->start() + 1 if(!defined($end));
+  if ( !defined($end) ) {
+    $end = $slice->end() - $slice->start() + 1;
+  }
 
-   throw("Start must be less than or equal to end.") if($start > $end);
+  if ( $start > $end ) {
+    if ( $slice->is_circular() ) {
+      return
+        $self->_fetch_by_Slice_start_end_strand_circular( $slice,
+                                                $start, $end, $strand );
+    } else {
+      throw("Start must be less than or equal to end.");
+    }
+  }
 
    $strand ||= 1;
 
@@ -244,6 +255,148 @@ sub fetch_by_Slice_start_end_strand {
 
    return \$seq;
 }
+
+
+sub _fetch_by_Slice_start_end_strand_circular {
+  my ( $self, $slice, $start, $end, $strand ) = @_;
+
+  assert_ref( $slice, 'Bio::EnsEMBL::Slice' );
+
+  $strand ||= 1;
+  if ( !defined($start) ) {
+    $start ||= 1;
+  }
+
+  if ( !defined($end) ) {
+    $end = $slice->end() - $slice->start() + 1;
+  }
+
+  if ( $start > $end && $slice->is_circular() ) {
+    my $midpoint = $slice->seq_region_length - $slice->start + 1;
+
+    my $seq1 = ${
+      $self->_fetch_by_Slice_start_end_strand_circular( $slice, 1,
+                                                        $midpoint, 1 )
+      };
+
+    my $seq2 = ${
+      $self->_fetch_by_Slice_start_end_strand_circular( $slice,
+                                                   $midpoint + 1,
+                                                   $slice->length(), 1 )
+      };
+
+    my $seq = $slice->strand > 0 ? "$seq1$seq2" : "$seq2$seq1";
+
+    reverse_comp( \$seq ) if ( $strand == -1 );
+
+    return \$seq;
+  }
+
+  # Get a new slice that spans the exact region to retrieve dna from
+  my $right_expand = $end - $slice->length();    #negative is fine
+  my $left_expand  = 1 - $start;                 #negative is fine
+
+  if ( $right_expand || $left_expand ) {
+    $slice =
+        $slice->strand > 0
+      ? $slice->expand( $left_expand,  $right_expand )
+      : $slice->expand( $right_expand, $left_expand );
+  }
+
+  # Retrieve normalized 'non-symlinked' slices.  This allows us to
+  # support haplotypes and PARs.
+  my $slice_adaptor = $slice->adaptor();
+  my @symproj =
+    @{ $slice_adaptor->fetch_normalized_slice_projection($slice) };
+
+  if ( @symproj == 0 ) {
+    throw(   'Could not retrieve normalized Slices. Database contains '
+           . 'incorrect assembly_exception information.' );
+  }
+
+  # Call this method again with any slices that were 'symlinked' to by
+  # this slice.
+  if ( @symproj != 1 || $symproj[0]->[2] != $slice ) {
+    my $seq;
+    foreach my $segment (@symproj) {
+      my $symlink_slice = $segment->[2];
+
+      # Get sequence from each symlinked area.
+      $seq .= ${
+        $self->fetch_by_Slice_start_end_strand( $symlink_slice, 1,
+                                                undef, 1 ) };
+    }
+    if ( $strand == -1 ) {
+      reverse_comp( \$seq );
+    }
+
+    return \$seq;
+  }
+
+  # We need to project this slice onto the sequence coordinate system
+  # even if the slice is in the same coord system, we want to trim out
+  # flanking gaps (if the slice is past the edges of the seqregion).
+  my $csa      = $self->db->get_CoordSystemAdaptor();
+  my $seqlevel = $csa->fetch_sequence_level();
+
+  my @projection =
+    @{ $slice->project( $seqlevel->name(), $seqlevel->version() ) };
+
+  my $seq   = '';
+  my $total = 0;
+  my $tmp_seq;
+
+  # Fetch sequence from each of the sequence regions projected onto.
+  foreach my $segment (@projection) {
+    my ( $start, $end, $seq_slice ) = @{$segment};
+
+    # Check for gaps between segments and pad them with Ns
+    my $gap = $start - $total - 1;
+    if ($gap) {
+      $seq .= 'N' x $gap;
+    }
+
+    my $seq_region_id = $slice_adaptor->get_seq_region_id($seq_slice);
+
+    $tmp_seq = ${
+      $self->_fetch_seq( $seq_region_id, $seq_slice->start(),
+                         $seq_slice->length() ) };
+
+    # Reverse compliment on negatively oriented slices.
+    if ( $seq_slice->strand == -1 ) {
+      reverse_comp( \$tmp_seq );
+    }
+
+    $seq .= $tmp_seq;
+
+    $total = $end;
+  }
+
+  # Check for any remaining gaps at the end.
+  my $gap = $slice->length() - $total;
+
+  if ($gap) {
+    $seq .= 'N' x $gap;
+  }
+
+  # If the sequence is too short it is because we came in with a
+  # seqlevel slice that was partially off of the seq_region.  Pad the
+  # end with Ns to make long enough
+  if ( length($seq) != $slice->length() ) {
+    $seq .= 'N' x ( $slice->length() - length($seq) );
+  }
+
+  if ( defined( $self->{_rna_edits_cache} )
+       && defined(
+            $self->{_rna_edits_cache}->{ $slice->get_seq_region_id } ) )
+  {
+    $self->_rna_edit( $slice, \$seq );
+  }
+
+  return \$seq;
+} ## end sub _fetch_by_Slice_start_end_strand_circular
+
+
 
 
 
