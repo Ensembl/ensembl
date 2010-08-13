@@ -97,6 +97,7 @@ use strict;
 
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Bio::EnsEMBL::Slice;
+use Bio::EnsEMBL::CircularSlice;
 use Bio::EnsEMBL::Mapper;
 use Bio::EnsEMBL::LRGSlice;
 use Bio::EnsEMBL::Utils::Exception qw(throw deprecate warning stack_trace_dump);
@@ -221,11 +222,9 @@ sub fetch_by_region {
     }
 
     if ( !defined($cs) ) {
-      throw(
-             sprintf( "Unknown coordinate system:\n"
+      throw( sprintf( "Unknown coordinate system:\n"
                         . "name='%s' version='%s'\n",
-                      $coord_system_name, $version
-             ) );
+                      $coord_system_name, $version ) );
     }
 
     # fetching by toplevel is same as fetching w/o name or version
@@ -234,7 +233,7 @@ sub fetch_by_region {
       $version = undef;
     }
 
-  } ## end if ( defined($coord_system_name...
+  } ## end if ( defined($coord_system_name...))
 
   my $constraint;
   my $sql;
@@ -361,8 +360,7 @@ sub fetch_by_region {
               . "returned more than one result.\n"
               . "You might want to check whether the returned seq_region\n"
               . "(%s:%s) is the one you intended to fetch.\n",
-            $high_cs->name(), $seq_region_name
-          ) );
+            $high_cs->name(), $seq_region_name ) );
       }
 
       $cs = $high_cs;
@@ -383,38 +381,45 @@ sub fetch_by_region {
       $self->{'sr_id_cache'}->{"$id"}                       = $arr;
       $cs = $csa->fetch_by_dbID($cs_id);
     }
-  } ## end else [ if ( defined($arr) )
+  } ## end else [ if ( defined($arr) ) ]
 
   if ( !defined($end) ) { $end = $length }
 
   if ( $end + 1 < $start ) {
-    throw(
-           sprintf(
-                  "start [%d] must be less than or equal to end+1 [%d]",
-                  $start, $end + 1
-           ) );
+    my $new_sl =
+      Bio::EnsEMBL::CircularSlice->new(
+                                   -COORD_SYSTEM    => $cs,
+                                   -SEQ_REGION_NAME => $seq_region_name,
+                                   -SEQ_REGION_LENGTH => $length,
+                                   -START             => $start,
+                                   -END               => $end,
+                                   -STRAND            => 1,
+                                   -ADAPTOR           => $self );
+
+    return $new_sl;
   }
 
-  if(defined($self->{'lrg_region_test'}) and substr($cs->name,0,3) eq $self->{'lrg_region_test'}){
+  if ( defined( $self->{'lrg_region_test'} )
+       and substr( $cs->name, 0, 3 ) eq $self->{'lrg_region_test'} )
+  {
     return
-      Bio::EnsEMBL::LRGSlice->new( -COORD_SYSTEM      => $cs,
-				   -SEQ_REGION_NAME   => $seq_region_name,
-				   -SEQ_REGION_LENGTH => $length,
-				   -START             => $start,
-				   -END               => $end,
-				   -STRAND            => $strand,
-				   -ADAPTOR           => $self );    
-  }
-  else{
+      Bio::EnsEMBL::LRGSlice->new( -COORD_SYSTEM    => $cs,
+                                   -SEQ_REGION_NAME => $seq_region_name,
+                                   -SEQ_REGION_LENGTH => $length,
+                                   -START             => $start,
+                                   -END               => $end,
+                                   -STRAND            => $strand,
+                                   -ADAPTOR           => $self );
+  } else {
     return
-      Bio::EnsEMBL::Slice->new_fast({ 
-				     'coord_system'      => $cs,
-				     'seq_region_name'   => $seq_region_name,
-				     'seq_region_length' => $length,
-				     'start'             => $start,
-				     'end'               => $end,
-				     'strand'            => $strand,
-				     'adaptor'           => $self} );
+      Bio::EnsEMBL::Slice->new_fast( {
+                                  'coord_system'    => $cs,
+                                  'seq_region_name' => $seq_region_name,
+                                  'seq_region_length' => $length,
+                                  'start'             => $start,
+                                  'end'               => $end,
+                                  'strand'            => $strand,
+                                  'adaptor'           => $self } );
   }
 } ## end sub fetch_by_region
 
