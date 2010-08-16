@@ -957,19 +957,30 @@ sub seq_region_start {
   my $slice = $self->slice();
 
   if ( defined($slice) ) {
+    my $start;
+
     if ( $slice->strand() == 1 ) {
       if ( defined( $self->start() ) ) {
-        return $slice->start() + $self->start() - 1;
+        $start = $slice->start() + $self->start() - 1;
       }
     } else {
       if ( defined( $self->end() ) ) {
-        return $slice->end() - $self->end() + 1;
+        $start = $slice->end() - $self->end() + 1;
       }
     }
+
+    if (    defined($start)
+         && $slice->is_circular()
+         && $start > $slice->seq_region_length() )
+    {
+      $start -= $slice->seq_region_length();
+    }
+
+    return $start;
   }
 
   return undef;
-}
+} ## end sub seq_region_start
 
 
 =head2 seq_region_end
@@ -994,19 +1005,30 @@ sub seq_region_end {
   my $slice = $self->slice();
 
   if ( defined($slice) ) {
+    my $end;
+
     if ( $slice->strand() == 1 ) {
       if ( defined( $self->end() ) ) {
-        return $slice->start() + $self->end() - 1;
+        $end = $slice->start() + $self->end() - 1;
       }
     } else {
       if ( defined( $self->start() ) ) {
-        return $slice->end() - $self->start() + 1;
+        $end = $slice->end() - $self->start() + 1;
       }
     }
+
+    if (    defined($end)
+         && $slice->is_circular()
+         && $end > $slice->seq_region_length() )
+    {
+      $end -= $slice->seq_region_length();
+    }
+
+    return $end;
   }
 
   return undef;
-}
+} ## end sub seq_region_end
 
 
 =head2 coord_system_name
