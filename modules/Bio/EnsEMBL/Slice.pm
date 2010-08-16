@@ -465,7 +465,13 @@ sub name {
 sub length {
   my ($self) = @_;
 
-  return $self->{'end'} - $self->{'start'} + 1;
+  my $lenght = $self->{'end'} - $self->{'start'} + 1;
+
+  if ( $self->is_circular() && $self->{'start'} > $self->{'end'} ) {
+    $length += $self->{'seq_region_length'};
+  }
+
+  return $length;
 }
 
 =head2 is_reference
