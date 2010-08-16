@@ -459,14 +459,26 @@ sub type_variation {
 
   if ($splice_site_2 or $splice_site_3) {
 	
+	my ($se_s, $se_e, $ee_s, $ee_e) = ($tr->start_Exon->start, $tr->start_Exon->end, $tr->end_Exon->start, $tr->end_Exon->end);
+	($se_s, $se_e, $ee_s, $ee_e) = ($se_e, $se_s, $ee_e, $ee_s) if $tr->strand < 0;
+	
 	# check coord relative to first exon
 	# near beginning of first exon is obv not a splice site
-	if($var->start < $tr->start_Exon->end) {
-	  if($tr->start_Exon->end - $var->start <= 3) {
+	if($var->start <= $se_e) {
+	  if(abs($se_e - $var->start) <= 3) {
 		$var->type('SPLICE_SITE');
 	  }
 	}
 	
+	# also check relative to last exon
+	# near end of last exon is also not a splice site
+	elsif($var->start >= $ee_s) {
+	  if(abs($ee_s - $var->start) <= 3) {
+		$var->type('SPLICE_SITE');
+	  }
+	}
+	
+	# if not near either end of transcript, then it is definitely a splice site
 	else {
 	  $var->type('SPLICE_SITE');
 	}
