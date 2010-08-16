@@ -984,15 +984,16 @@ sub _constrain_to_region {
 =cut
 
 sub expand {
-  my $self = shift;
-  my $five_prime_shift = shift || 0;
+  my $self              = shift;
+  my $five_prime_shift  = shift || 0;
   my $three_prime_shift = shift || 0;
-  my $force_expand = shift || 0;
-  my $fpref = shift;
-  my $tpref = shift;
+  my $force_expand      = shift || 0;
+  my $fpref             = shift;
+  my $tpref             = shift;
 
-  if($self->{'seq'}){
-    warning("Cannot expand a slice which has a manually attached sequence ");
+  if ( $self->{'seq'} ) {
+    warning(
+       "Cannot expand a slice which has a manually attached sequence ");
     return undef;
   }
 
@@ -1001,42 +1002,66 @@ sub expand {
   my $sshift = $five_prime_shift;
   my $eshift = $three_prime_shift;
 
-  if($self->{'strand'} != 1) {
+  if ( $self->is_circular() ) {
+    if ( $new_start <= 0 ) {
+      $new_start = $self->seq_region_length() + $new_start;
+    }
+    if ( $new_start > $self->seq_region_length() ) {
+      $new_start -= $self->seq_region_length();
+    }
+
+    if ( $new_end <= 0 ) {
+      $new_end = $self->seq_region_length() + $new_end;
+    }
+    if ( $new_end > $self->seq_region_length() ) {
+      $new_end -= $self->seq_region_length();
+    }
+
+  } else {
+
+    if ( $self->{'strand'} != 1 ) {
       $eshift = $five_prime_shift;
       $sshift = $three_prime_shift;
-  }
+    }
 
-  $new_start = $self->{'start'} - $sshift;
-  $new_end   = $self->{'end'} + $eshift;
+    $new_start = $self->{'start'} - $sshift;
+    $new_end   = $self->{'end'} + $eshift;
 
-  if($new_start > $new_end) {
-      if ($force_expand) { # Apply max possible shift, if force_expand is set
-	  if ($sshift < 0) { # if we are contracting the slice from the start - move the start just before the end
-	      $new_start = $new_end - 1;
-	      $sshift = $self->{start} - $new_start;
-	  }
+    if ( $new_start > $new_end ) {
+      if ($force_expand) {
+        # Apply max possible shift, if force_expand is set
+        if ( $sshift < 0 ) {
+          # if we are contracting the slice from the start - move the
+          # start just before the end
+          $new_start = $new_end - 1;
+          $sshift    = $self->{start} - $new_start;
+        }
 
-	  if($new_start > $new_end) { # if the slice still has a negative length - try to move the end
-	      if ($eshift < 0) {
-		  $new_end = $new_start + 1;
-		  $eshift = $new_end - $self->{end};
-	      }
-	  }
-	  # return the values by which the primes were actually shifted
-	  $$tpref = $self->{strand} == 1 ? $eshift : $sshift;
-	  $$fpref = $self->{strand} == 1 ? $sshift : $eshift;
+        if ( $new_start > $new_end ) {
+          # if the slice still has a negative length - try to move the
+          # end
+          if ( $eshift < 0 ) {
+            $new_end = $new_start + 1;
+            $eshift  = $new_end - $self->{end};
+          }
+        }
+        # return the values by which the primes were actually shifted
+        $$tpref = $self->{strand} == 1 ? $eshift : $sshift;
+        $$fpref = $self->{strand} == 1 ? $sshift : $eshift;
       }
-      if($new_start > $new_end) {
-	  throw('Slice start cannot be greater than slice end');
+      if ( $new_start > $new_end ) {
+        throw('Slice start cannot be greater than slice end');
       }
-  }
+    } ## end if ( $new_start > $new_end)
+  } ## end else [ if ( $self->is_circular...)]
+
   #fastest way to copy a slice is to do a shallow hash copy
   my %new_slice = %$self;
   $new_slice{'start'} = int($new_start);
   $new_slice{'end'}   = int($new_end);
 
   return bless \%new_slice, ref($self);
-}
+} ## end sub expand
 
 
 
