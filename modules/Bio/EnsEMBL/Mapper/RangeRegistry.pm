@@ -154,15 +154,15 @@ sub check_and_register {
     throw("ID, start, end arguments are required");
   }
 
-  if ( $start > $end ) {
-    throw("start argument [$start] must be less than end argument [$end]");
-  }
+  ## if ( $start > $end ) {
+  ##   throw("start argument [$start] must be less than end argument [$end]");
+  ## }
 
-  if ( $rstart > $rend ) {
-    throw(
-      "rend [$rstart] argument must be less than rend [$rend]  argument"
-    );
-  }
+  ## if ( $rstart > $rend ) {
+  ##   throw(
+  ##     "rend [$rstart] argument must be less than rend [$rend]  argument"
+  ##   );
+  ## }
 
   if ( $rstart > $start ) {
     throw("rstart [$rstart] must be less than or equal to start [$start]");
