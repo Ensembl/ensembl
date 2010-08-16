@@ -838,7 +838,14 @@ sub project {
       my $coord_start  = $coord->start();
       my $coord_end    = $coord->end();
       my $length       = $coord_end - $coord_start + 1;
-      
+
+      if ( $coord_start > $coord_end ) {
+        $length =
+          $normal_slice->seq_region_length() -
+          $coord_start +
+          $coord_end + 1;
+      }
+
 #      if( $last_rank != $coord->rank){
 #	$current_start = 1;
 #	print "LAST rank has changed to ".$coord->rank."from $last_rank \n";
@@ -867,6 +874,10 @@ sub project {
                                                     $coord->strand());
 
 	my $current_end = $current_start + $length - 1;
+
+        if ( $current_end > $slice->seq_region_length() ) {
+          $current_end -= $slice->seq_region_length();
+        }
 
         push @projection, bless([$current_start, $current_end, $slice],
                                 "Bio::EnsEMBL::ProjectionSegment");
