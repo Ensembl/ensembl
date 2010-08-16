@@ -143,9 +143,10 @@ sub new {
   }
   if ( !defined($start) ) { throw('START argument is required') }
   if ( !defined($end) )   { throw('END argument is required') }
-  if ( $start > $end + 1 ) {
-    throw('start must be less than or equal to end+1');
-  }
+
+  ## if ( $start > $end + 1 ) {
+  ##   throw('start must be less than or equal to end+1');
+  ## }
 
   if ( !defined($seq_region_length) ) { $seq_region_length = $end }
 
