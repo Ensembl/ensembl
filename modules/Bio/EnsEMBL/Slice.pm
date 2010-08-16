@@ -476,7 +476,7 @@ sub length {
 
 =head2 is_reference
   Arg        : none
-  Example    : my $reference = $slice->is_reference
+  Example    : my $reference = $slice->is_reference()
   Description: Returns 1 if slice is a reference  slice else 0
   Returntype : int
   Caller     : general
@@ -487,8 +487,9 @@ sub length {
 sub is_reference {
   my ($self) = @_;
 
-  if(!defined($self->{'is_reference'})){
-    $self->{'is_reference'} = $self->adaptor->is_reference($self->get_seq_region_id);
+  if ( !defined( $self->{'is_reference'} ) ) {
+    $self->{'is_reference'} =
+      $self->adaptor()->is_reference( $self->get_seq_region_id() );
   }
 
   return $self->{'is_reference'};
@@ -496,7 +497,7 @@ sub is_reference {
 
 =head2 is_toplevel
   Arg        : none
-  Example    : my $top = $slice->is_toplevel
+  Example    : my $top = $slice->is_toplevel()
   Description: Returns 1 if slice is a toplevel slice else 0
   Returntype : int
   Caller     : general
@@ -507,13 +508,36 @@ sub is_reference {
 sub is_toplevel {
   my ($self) = @_;
 
-  if(!defined($self->{'toplevel'})){
-    $self->{'toplevel'} = $self->adaptor->is_toplevel($self->get_seq_region_id);
+  if ( !defined( $self->{'toplevel'} ) ) {
+    $self->{'toplevel'} =
+      $self->adaptor()->is_toplevel( $self->get_seq_region_id() );
   }
 
   return $self->{'toplevel'};
 }
 
+=head2 is_circular
+  Arg        : none
+  Example    : my $circ = $slice->is_circular()
+  Description: Returns 1 if slice is a circular slice else 0
+  Returntype : int
+  Caller     : general
+  Status     : At Risk
+
+=cut
+
+sub is_circular {
+  my ($self) = @_;
+
+  if ( !defined( $self->{'circular'} ) ) {
+    my $attrs = $self->get_all_Attributes('circular_seq');
+    if ( defined($attrs) ) {
+      $self->{'circular'} = ( scalar( @{$attrs} ) > 0 );
+    }
+  }
+
+  return $self->{'circular'};
+}
 
 =head2 invert
 
@@ -3303,17 +3327,6 @@ sub alphabet { return 'dna'; }
 =cut
 
 sub accession_number { name(@_); }
-
-
-=head2 is_circular
-
-  Description: Included for Bio::PrimarySeqI interface compliance (1.2)
-
-=cut
-
-sub is_circular { return 0; }
-
-
 
 
 # sub DEPRECATED METHODS #
