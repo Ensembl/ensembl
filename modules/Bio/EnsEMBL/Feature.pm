@@ -69,6 +69,7 @@ use warnings;
 use Bio::EnsEMBL::Storable;
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 use Bio::EnsEMBL::Utils::Exception qw(throw deprecate warning);
+use Bio::EnsEMBL::Utils::Scalar qw(check_ref);
 use Bio::EnsEMBL::Slice;
 use Bio::EnsEMBL::StrainSlice;
 use vars qw(@ISA);
@@ -192,8 +193,12 @@ sub new_fast {
 =cut
 
 sub start {
-  my $self = shift;
-  $self->{'start'} = shift if(@_);
+  my ( $self, $value ) = @_;
+
+  if ( defined($value) ) {
+    $self->{'start'} = $value;
+  }
+
   return $self->{'start'};
 }
 
@@ -216,8 +221,12 @@ sub start {
 =cut
 
 sub end {
-  my $self = shift;
-  $self->{'end'} = shift if(@_);
+  my ( $self, $value ) = @_;
+
+  if ( defined($value) ) {
+    $self->{'end'} = $value;
+  }
+
   return $self->{'end'};
 }
 
@@ -240,11 +249,10 @@ sub end {
 =cut
 
 sub strand {
-  my $self = shift;
+  my ( $self, $strand ) = @_;
 
-  if(@_) {
-    my $strand = shift || 0;
-    if(defined($strand) && $strand != 0 && $strand != 1 && $strand != -1) {
+  if ( defined($strand) ) {
+    if ( $strand != 0 && $strand != 1 && $strand != -1 ) {
       throw('strand argument must be 0, -1 or 1');
     }
 
@@ -361,15 +369,16 @@ sub analysis {
 =cut
 
 sub slice {
-  my $self = shift;
+  my ( $self, $slice ) = @_;
 
-  if(@_) {
-    my $sl = shift;
-    if(defined($sl) && (!ref($sl) || !($sl->isa('Bio::EnsEMBL::Slice') or $sl->isa('Bio::EnsEMBL::LRGSlice')) )) {
+  if ( defined($slice) ) {
+    if (    !check_ref( $slice, 'Bio::EnsEMBL::Slice' )
+         && !check_ref( $slice, 'Bio::EnsEMBL::LRGSlice' ) )
+    {
       throw('slice argument must be a Bio::EnsEMBL::Slice');
     }
 
-    $self->{'slice'} = $sl;
+    $self->{'slice'} = $slice;
   }
 
   return $self->{'slice'};
@@ -943,18 +952,23 @@ sub seq_region_strand {
 =cut
 
 sub seq_region_start {
-  my $self = shift;
-  my $slice = $self->{'slice'};
+  my ($self) = @_;
 
-  return undef if(!$slice);
+  my $slice = $self->slice();
 
-  if($slice->strand == 1) {
-    return undef if(!defined($self->{'start'}));
-    return $slice->start() + $self->{'start'} - 1;
-  } else {
-    return undef if(!defined($self->{'end'}));
-    return $slice->end() - $self->{'end'} + 1;
+  if ( defined($slice) ) {
+    if ( $slice->strand() == 1 ) {
+      if ( defined( $self->start() ) ) {
+        return $slice->start() + $self->start() - 1;
+      }
+    } else {
+      if ( defined( $self->end() ) ) {
+        return $slice->end() - $self->end() + 1;
+      }
+    }
   }
+
+  return undef;
 }
 
 
@@ -975,18 +989,23 @@ sub seq_region_start {
 =cut
 
 sub seq_region_end {
-  my $self = shift;
-  my $slice = $self->{'slice'};
+  my ($self) = @_;
 
-  return undef if(!$slice);
+  my $slice = $self->slice();
 
-  if($slice->strand == 1) {
-    return undef if(!defined($self->{'end'}));
-    return $slice->start() + $self->{'end'} - 1;
-  } else {
-    return undef if(!defined($self->{'start'}));
-    return $slice->end() - $self->{'start'} + 1;
+  if ( defined($slice) ) {
+    if ( $slice->strand() == 1 ) {
+      if ( defined( $self->end() ) ) {
+        return $slice->start() + $self->end() - 1;
+      }
+    } else {
+      if ( defined( $self->start() ) ) {
+        return $slice->end() - $self->start() + 1;
+      }
+    }
   }
+
+  return undef;
 }
 
 
