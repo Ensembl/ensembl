@@ -465,7 +465,7 @@ sub name {
 sub length {
   my ($self) = @_;
 
-  my $lenght = $self->{'end'} - $self->{'start'} + 1;
+  my $length = $self->{'end'} - $self->{'start'} + 1;
 
   if ( $self->is_circular() && $self->{'start'} > $self->{'end'} ) {
     $length += $self->{'seq_region_length'};
