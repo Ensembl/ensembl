@@ -379,6 +379,8 @@ sub slice {
     }
 
     $self->{'slice'} = $slice;
+  } elsif ( @_ > 1 ) {
+    undef $self->{'slice'};
   }
 
   return $self->{'slice'};
