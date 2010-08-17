@@ -529,6 +529,11 @@ sub is_toplevel {
 sub is_circular {
   my ($self) = @_;
 
+  if ( !defined( $self->adaptor() ) ) {
+    warning("Slice has no adaptor, assuming it's not circular.");
+    return 0;
+  }
+
   if ( !defined( $self->{'circular'} ) ) {
     my $attrs = $self->get_all_Attributes('circular_seq');
     if ( defined($attrs) ) {
@@ -875,9 +880,10 @@ sub project {
 
 	my $current_end = $current_start + $length - 1;
 
-        if ( $current_end > $slice->seq_region_length() ) {
-          $current_end -= $slice->seq_region_length();
-        }
+        ## EG BUG: FIXME
+        # if ( $current_end > $slice->seq_region_length() ) {
+        #   $current_end -= $slice->seq_region_length();
+        # }
 
         push @projection, bless([$current_start, $current_end, $slice],
                                 "Bio::EnsEMBL::ProjectionSegment");
