@@ -1101,8 +1101,11 @@ sub store {
 
   my $original             = $gene;
   my $original_transcripts = $gene->get_all_Transcripts();
-  my $canonical_transcript = $gene->canonical_transcript();
+  my $old_canonical_transcript_id =
+    $gene->canonical_transcript()->dbID();
+
   my $seq_region_id;
+
   ( $gene, $seq_region_id ) = $self->_pre_store($gene);
 
   my $store_gene_sql = qq(
@@ -1170,13 +1173,14 @@ sub store {
   # store the dbentries associated with this gene
   my $dbEntryAdaptor = $db->get_DBEntryAdaptor();
 
-  foreach my $dbe ( @{$gene->get_all_DBEntries} ) {
-    $dbEntryAdaptor->store($dbe, $gene_dbID, "Gene", $ignore_release);
+  foreach my $dbe ( @{ $gene->get_all_DBEntries } ) {
+    $dbEntryAdaptor->store( $dbe, $gene_dbID, "Gene", $ignore_release );
   }
-  
-  # we allow transcripts not to share equal exons and instead have copies
-  # For the database we still want sharing though, to have easier time with
-  # stable ids. So we need to have a step to merge exons together before store
+
+  # We allow transcripts not to share equal exons and instead have
+  # copies.  For the database we still want sharing though, to have
+  # easier time with stable ids. So we need to have a step to merge
+  # exons together before store.
   my %exons;
 
   foreach my $trans ( @{$gene->get_all_Transcripts} ) {
@@ -1194,35 +1198,46 @@ sub store {
 
   my $transcripts = $gene->get_all_Transcripts();
 
-  for(my $i = 0; $i < @$transcripts; $i++) {
+  my $new_canonical_transcript_id;
+  for ( my $i = 0; $i < @$transcripts; $i++ ) {
     my $new = $transcripts->[$i];
     my $old = $original_transcripts->[$i];
 
-    $transcript_adaptor->store($new, $gene_dbID, $analysis_id);
+    $transcript_adaptor->store( $new, $gene_dbID, $analysis_id );
+
+    if (   !defined($new_canonical_transcript_id)
+         && defined( $old->dbID() )
+         && $old->dbID() == $old_canonical_transcript_id )
+    {
+      $new_canonical_transcript_id = $new->dbID();
+    }
 
     # update the original transcripts since we may have made copies of
     # them by transforming the gene
-    $old->dbID($new->dbID());
-    $old->adaptor($new->adaptor());
-    if($new->translation) {
-      $old->translation->dbID($new->translation()->dbID);
-      $old->translation->adaptor($new->translation()->adaptor);
+    $old->dbID( $new->dbID() );
+    $old->adaptor( $new->adaptor() );
+
+    if ( $new->translation ) {
+      $old->translation->dbID( $new->translation()->dbID );
+      $old->translation->adaptor( $new->translation()->adaptor );
     }
   }
 
-  # Now the canonical transcript has been stored, so update the
-  # canonical_transcript_id of this gene with the new dbID.
-  my $sth = $self->prepare(
-    q(
-    UPDATE gene
-    SET canonical_transcript_id = ?
-    WHERE gene_id = ?)
-  );
+  if ( defined($new_canonical_transcript_id) ) {
+    # Now the canonical transcript has been stored, so update the
+    # canonical_transcript_id of this gene with the new dbID.
+    my $sth = $self->prepare(
+      q(
+      UPDATE gene
+      SET canonical_transcript_id = ?
+      WHERE gene_id = ?)
+    );
 
-  $sth->bind_param( 1, $canonical_transcript->dbID(), SQL_INTEGER );
-  $sth->bind_param( 2, $gene_dbID, SQL_INTEGER );
+    $sth->bind_param( 1, $new_canonical_transcript_id, SQL_INTEGER );
+    $sth->bind_param( 2, $gene_dbID, SQL_INTEGER );
 
-  $sth->execute();
+    $sth->execute();
+  }
 
   # update gene to point to display xref if it is set
   if(my $display_xref = $gene->display_xref) {
