@@ -1099,10 +1099,11 @@ sub store {
   my $is_current = $gene->is_current;
   $is_current = 1 unless (defined($is_current));
 
-  my $original = $gene;
+  my $original             = $gene;
   my $original_transcripts = $gene->get_all_Transcripts();
+  my $canonical_transcript = $gene->canonical_transcript();
   my $seq_region_id;
-  ($gene, $seq_region_id) = $self->_pre_store($gene);
+  ( $gene, $seq_region_id ) = $self->_pre_store($gene);
 
   my $store_gene_sql = qq(
         INSERT INTO gene
@@ -1134,12 +1135,9 @@ sub store {
   $sth->bind_param( 9,  $gene->status(),      SQL_VARCHAR );
   $sth->bind_param( 10, $is_current,          SQL_TINYINT );
 
-  if ( defined( $gene->canonical_transcript() ) ) {
-    $sth->bind_param( 11, $gene->canonical_transcript()->dbID(),
-      SQL_TINYINT );
-  } else {
-    $sth->bind_param( 11, 0, SQL_TINYINT );
-  }
+  # Canonical transcript ID will be updated later.
+  # Set it to zero for now.
+  $sth->bind_param( 11, 0, SQL_TINYINT );
 
   $sth->bind_param( 12, $gene->canonical_annotation(), SQL_VARCHAR );
 
@@ -1171,7 +1169,7 @@ sub store {
 
   # store the dbentries associated with this gene
   my $dbEntryAdaptor = $db->get_DBEntryAdaptor();
-  
+
   foreach my $dbe ( @{$gene->get_all_DBEntries} ) {
     $dbEntryAdaptor->store($dbe, $gene_dbID, "Gene", $ignore_release);
   }
@@ -1192,7 +1190,6 @@ sub store {
     }
   }
 
-
   my $transcript_adaptor = $db->get_TranscriptAdaptor();
 
   my $transcripts = $gene->get_all_Transcripts();
@@ -1212,6 +1209,20 @@ sub store {
       $old->translation->adaptor($new->translation()->adaptor);
     }
   }
+
+  # Now the canonical transcript has been stored, so update the
+  # canonical_transcript_id of this gene with the new dbID.
+  my $sth = $self->prepare(
+    q(
+    UPDATE gene
+    SET canonical_transcript_id = ?
+    WHERE gene_id = ?)
+  );
+
+  $sth->bind_param( 1, $canonical_transcript->dbID(), SQL_INTEGER );
+  $sth->bind_param( 2, $gene_dbID, SQL_INTEGER );
+
+  $sth->execute();
 
   # update gene to point to display xref if it is set
   if(my $display_xref = $gene->display_xref) {
