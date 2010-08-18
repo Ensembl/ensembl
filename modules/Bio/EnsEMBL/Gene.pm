@@ -57,6 +57,7 @@ use POSIX;
 use Bio::EnsEMBL::Feature;
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 use Bio::EnsEMBL::Utils::Exception qw(throw warning deprecate);
+use Bio::EnsEMBL::Utils::Scalar qw(assert_ref);
 
 use vars qw(@ISA);
 @ISA = qw(Bio::EnsEMBL::Feature);
@@ -369,19 +370,13 @@ sub canonical_transcript {
   if ( defined($transcript) ) {
     # We're attaching a new canonical transcript.
 
-    if (
-      !(
-        ref($transcript)
-        && $transcript->isa('Bio::EnsEMBL::Transcript') ) )
-    {
-      throw('Argument must be a Bio::EnsEMBL::Transcript');
-    }
+    assert_ref( $transcript, 'Bio::EnsEMBL::Transcript' );
 
     $self->{'canonical_transcript'}    = $transcript;
     $self->{'canonical_transcript_id'} = $transcript->dbID();
 
-  } elsif ( !defined( $self->{'canonical_transcript'} )
-    && defined( $self->{'canonical_transcript_id'} ) )
+  } elsif (   !defined( $self->{'canonical_transcript'} )
+            && defined( $self->{'canonical_transcript_id'} ) )
   {
     # We have not attached a canoncical transcript, but we have the dbID
     # of one.
@@ -392,10 +387,10 @@ sub canonical_transcript {
 
       $self->{'canonical_transcript'} =
         $transcript_adaptor->fetch_by_dbID(
-        $self->{'canonical_transcript_id'} );
+                                   $self->{'canonical_transcript_id'} );
     } else {
-      warning( "Gene has no adaptor "
-          . "when trying to fetch canonical transcript." );
+      warning(   "Gene has no adaptor "
+               . "when trying to fetch canonical transcript." );
     }
 
   }
@@ -421,8 +416,6 @@ sub canonical_annotation {
     $self->{'canonical_annotation'} = shift if( @_ );
     return $self->{'canonical_annotation'};
 }
-
-
 
 =head2 get_all_Attributes
 
@@ -1259,6 +1252,7 @@ sub load {
   $self->analysis();
   $self->get_all_Attributes();
   $self->stable_id();
+  $self->canonical_transcript();
 
   if ($load_xrefs) {
     $self->get_all_DBEntries();
