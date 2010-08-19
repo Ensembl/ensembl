@@ -124,6 +124,10 @@ $get_code_sth->execute("patch_fix");
 $get_code_sth->bind_columns(\$patch_fix);
 $get_code_sth->fetch;
 
+
+print "toplevel $toplevel, non_ref $non_ref, patch_novel $patch_novel, patch_fix $patch_fix\n";
+
+
 # get time
 my $time = time();
 #      Store contigs as seq_region + dna.
@@ -212,11 +216,14 @@ while(<TXT>){
     print SQL "insert into seq_region_attrib (seq_region_id, attrib_type_id, value) values ($max_seq_region_id, $non_ref, 1);\n";
 
     # is this patch a novel or fix type?
+    my $hap_type;
     if (exists $name_to_type{$alt_name} && defined $name_to_type{$alt_name}) {
       if ($name_to_type{$alt_name} =~ /fix/i) {
         print SQL "insert into seq_region_attrib (seq_region_id, attrib_type_id, value) values ($max_seq_region_id, $patch_fix, $time);\n";
+	$hap_type = "'PATCH_FIX'";
       } elsif ($name_to_type{$alt_name} =~ /novel/i) {
         print SQL "insert into seq_region_attrib (seq_region_id, attrib_type_id, value) values ($max_seq_region_id, $patch_novel, $time);\n";
+	$hap_type = "'PATCH_NOVEL'";
       } else {
         throw("Patch type ".$name_to_type{$alt_name}." for $alt_name not recognised");
       }
@@ -229,7 +236,7 @@ while(<TXT>){
       ($arr[$key_to_index{'alt_scaf_start'}]+$arr[$key_to_index{'parent_start'}])-1, ",",
 	($arr[$key_to_index{'alt_scaf_stop'}]+$arr[$key_to_index{'parent_start'}])-1, ",",
 #  ($new_length+$arr[$key_to_index{'parent_start'}], ",",
-	  "'HAP', ",
+	  "$hap_type, ",
 	    $seq_region_id,", ",
 	      $arr[$key_to_index{'parent_start'}], ", ",
 		$arr[$key_to_index{'parent_stop'}], ",",
@@ -240,44 +247,6 @@ while(<TXT>){
   }
 }
 
-
-#foreach my $name (keys %txt_data){
-#  print $name."\n";
-#  foreach my $type (keys %{$txt_data{$name}}){
-#    print "\t".$type."\t".$txt_data{$name}{$type}."\n";
-#  }
-#}
-#die "txt is parsed\n";
-
-#my $seq = "";
-#my $name = undef;
-#my $version = 0;
-#
-#while(<FASTA>){
-#  chomp;
-#  if($_ =~ /^>(\S*)/){
-#    if(defined($name)){
-#      load_seq_region($name, \$seq);
-#    }
-#    $name = $1;
-#    my @arr = split(/\|/, $name);
-#    print "$name\t";
-#    $name = $arr[3];
-#    print "name is $name\n";
-#    $name = $1;
-#    $version = $2;
-#    $seq = "";
-#  }	
-#  else{
-#    $seq .= $_;
-#  }
-#}
-
-#if(defined($name)){
-#  load_seq_region($name, \$seq);
-#}
-
-#close FASTA;
 
 
 #      Create haplotype seq_region (calulate length from mapping data)
