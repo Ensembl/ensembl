@@ -10,11 +10,11 @@ $Data::Dumper::Indent = 0;
 # Remember to check/set the various config optons
 
 # ------------------------------ config -------------------------------
-my $release = 58;
+my $release = 59;
 
-my $base_dir = "/lustre/scratch103/ensembl/gp1/projections";
+my $base_dir = "/lustre/scratch103/ensembl/jz1/projections";
 
-my $conf = "release_58.ini"; # registry config file, specifies Compara location
+my $conf = "release_59.ini"; # registry config file, specifies Compara location
 
 # location of other databases
 
@@ -96,6 +96,7 @@ my @names_1_1 = (["human", "chimp"            ],
 		 ["human", "anolis"          ],
 		 ["human", "sloth"            ],
 		 ["human", "zebrafinch"       ],
+                 ["human", "panda"            ],
 		 ["mouse", "kangaroo_rat"     ],
 		 ["mouse", "rat"              ]);
 
@@ -143,7 +144,8 @@ my @go_terms = (["human",      "mouse"          ],
 		["human",      "sloth"          ],
 		["human",      "zebrafinch"     ],
 		["human",      "anolis"         ],
-		["mouse",      "human"          ],
+		["human",      "panda"          ],
+                ["mouse",      "human"          ],
 		["mouse",      "rat"            ],
 		["mouse",      "dog"            ],
 		["mouse",      "chicken"        ],
@@ -181,7 +183,8 @@ my @go_terms = (["human",      "mouse"          ],
 		["mouse",      "sloth"          ],
 		["mouse",      "zebrafinch"     ],
 		["mouse",      "anolis"         ],
-		["rat",        "human"          ],
+		["mouse",      "panda"          ], 
+                ["rat",        "human"          ],
 		["rat",        "mouse"          ],
 		["danio",      "xenopus"        ],
 		["danio",      "fugu"           ],
