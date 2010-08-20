@@ -560,6 +560,30 @@ sub display_xref {
   return $self->{'display_xref'};
 }
 
+=head2 is_canonical
+
+  Args [1]      : (optional) Boolean is_canonical
+
+  Example       : if ($transcript->is_canonical()) { ... }
+
+  Description : Returns true (non-zero) if the transcript is the
+                canonical transcript of its gene, false (0) if not.
+
+  Return type   : Boolean
+
+  Status        : Stable
+
+=cut
+
+sub is_canonical {
+  my ( $self, $value ) = @_;
+
+  if ( defined($value) ) {
+    $self->{'is_canonical'} = ( $value != 0 );
+  }
+
+  return $self->{'is_canonical'};
+}
 
 =head2 translation
 

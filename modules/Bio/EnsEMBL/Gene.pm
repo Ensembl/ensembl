@@ -372,8 +372,16 @@ sub canonical_transcript {
 
     assert_ref( $transcript, 'Bio::EnsEMBL::Transcript' );
 
+    # If there's already a canonical transcript, make sure it doesn't
+    # think it's still canonical.
+    if ( defined( $self->{'canonical_transcript'} ) ) {
+      $self->{'canonical_transcript'}->is_canonical(0);
+    }
+
     $self->{'canonical_transcript'}    = $transcript;
     $self->{'canonical_transcript_id'} = $transcript->dbID();
+
+    $transcript->is_canonical(1);
 
   } elsif (   !defined( $self->{'canonical_transcript'} )
             && defined( $self->{'canonical_transcript_id'} ) )
@@ -388,6 +396,9 @@ sub canonical_transcript {
       $self->{'canonical_transcript'} =
         $transcript_adaptor->fetch_by_dbID(
                                    $self->{'canonical_transcript_id'} );
+
+      $self->{'canonical_transcript'}->is_canonical(1);
+
     } else {
       warning(   "Gene has no adaptor "
                . "when trying to fetch canonical transcript." );

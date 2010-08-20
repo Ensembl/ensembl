@@ -1101,12 +1101,6 @@ sub store {
 
   my $original             = $gene;
   my $original_transcripts = $gene->get_all_Transcripts();
-  my $old_canonical_transcript_id;
-
-  if ( defined( $gene->canonical_transcript() ) ) {
-    $old_canonical_transcript_id =
-      $gene->canonical_transcript()->dbID();
-  }
 
   my $seq_region_id;
 
@@ -1209,10 +1203,8 @@ sub store {
 
     $transcript_adaptor->store( $new, $gene_dbID, $analysis_id );
 
-    if (   !defined($new_canonical_transcript_id)
-         && defined($old_canonical_transcript_id)
-         && defined( $old->dbID() )
-         && $old->dbID() == $old_canonical_transcript_id )
+    if ( !defined($new_canonical_transcript_id)
+         && $new->is_canonical() )
     {
       $new_canonical_transcript_id = $new->dbID();
     }
