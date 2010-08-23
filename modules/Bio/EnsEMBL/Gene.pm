@@ -352,6 +352,79 @@ sub description {
 }
 
 
+=head2 equals
+
+  Arg [1]       : Bio::EnsEMBL::Gene gene
+  Example       : if ($geneA->equals($geneB)) { ... }
+  Description   : Compares two genes for equality.
+                  The test for eqality goes through the following list
+                  and terminates at the first true match:
+
+                  1. If Bio::EnsEMBL::Feature::equals() returns false,
+                     then the genes are *not* equal.
+                  2. If the biotypes differ, then the genes are *not*
+                     equal.
+                  3. If both genes have stable IDs: if these are the
+                     same, the genes are equal, otherwise not.
+                  4. If both genes have the same number of transcripts
+                     and if these are (when compared pair-wise sorted by
+                     start-position and length) the same, then they are
+                     equal, otherwise not.
+
+  Return type   : Boolean (0, 1)
+
+  Exceptions    : Thrown if a non-gene is passed as the argument.
+
+=cut
+
+sub equals {
+  my ( $self, $gene ) = @_;
+
+  assert_ref( $gene, 'Bio::EnsEMBL::Gene' );
+
+  my $feature_equals = $self->SUPER::equals($gene);
+  if ( defined($feature_equals) && $feature_equals == 0 ) {
+    return 0;
+  }
+
+  if ( $self->biotype() ne $gene->biotype() ) {
+    return 0;
+  }
+
+  if ( defined( $self->stable_id() ) && defined( $gene->stable_id() ) )
+  {
+    if ( $self->stable_id() eq $gene->stable_id() ) {
+      return 1;
+    } else {
+      return 0;
+    }
+  }
+
+  my @self_transcripts = sort {
+         $a->start() <=> $b->start()
+      || $a->length() <=> $b->length()
+  } @{ $self->get_all_Transcripts() };
+  my @gene_transcripts = sort {
+         $a->start() <=> $b->start()
+      || $a->length() <=> $b->length()
+  } @{ $gene->get_all_Transcripts() };
+
+  if ( scalar(@self_transcripts) != scalar(@gene_transcripts) ) {
+    return 0;
+  }
+
+  while (@self_transcripts) {
+    my $self_transcript = shift(@self_transcripts);
+    my $gene_transcript = shift(@gene_transcripts);
+
+    if ( !$self_transcript->equals($gene_transcript) ) {
+      return 0;
+    }
+  }
+
+  return 1;
+} ## end sub equals
+
 =head2 canonical_transcript
 
   Arg [1]    : (optional) Bio::EnsEMBL::Transcipt - canonical_transcript object
