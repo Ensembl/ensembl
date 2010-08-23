@@ -445,16 +445,32 @@ sub canonical_transcript {
 
     assert_ref( $transcript, 'Bio::EnsEMBL::Transcript' );
 
+    # Make sure that it is actually one of the transcripts of this gene.
+    my $transcripts = $self->get_all_Transcripts();
+
+    my $canonical_transcript;
+    foreach my $t ( @{$transcripts} ) {
+      if ( $transcript->equals($t) ) {
+        $canonical_transcript = $t;
+        last;
+      }
+    }
+
+    if ( !defined($canonical_transcript) ) {
+      throw("The canonical transcript is not part of this gene");
+    }
+
     # If there's already a canonical transcript, make sure it doesn't
     # think it's still canonical.
     if ( defined( $self->{'canonical_transcript'} ) ) {
       $self->{'canonical_transcript'}->is_canonical(0);
     }
 
-    $self->{'canonical_transcript'}    = $transcript;
-    $self->{'canonical_transcript_id'} = $transcript->dbID();
+    $self->{'canonical_transcript'}    = $canonical_transcript;
+    $self->{'canonical_transcript_id'} = $canonical_transcript->dbID();
 
-    $transcript->is_canonical(1);
+    $canonical_transcript->is_canonical(1);    # These may be different
+    $transcript->is_canonical(1);              # objects...
 
   } elsif (   !defined( $self->{'canonical_transcript'} )
             && defined( $self->{'canonical_transcript_id'} ) )
@@ -466,18 +482,21 @@ sub canonical_transcript {
       my $transcript_adaptor =
         $self->adaptor()->db()->get_TranscriptAdaptor();
 
-      $self->{'canonical_transcript'} =
+      my $canonical_transcript =
         $transcript_adaptor->fetch_by_dbID(
                                    $self->{'canonical_transcript_id'} );
 
-      $self->{'canonical_transcript'}->is_canonical(1);
+      if ( defined($canonical_transcript) ) {
+        # Recusive call...
+        $self->canonical_transcript($canonical_transcript);
+      }
 
     } else {
       warning(   "Gene has no adaptor "
                . "when trying to fetch canonical transcript." );
     }
 
-  }
+  } ## end elsif ( !defined( $self->...))
 
   return $self->{'canonical_transcript'};
 } ## end sub canonical_transcript
