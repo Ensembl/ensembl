@@ -63,6 +63,7 @@ use Bio::EnsEMBL::SeqEdit;
 
 use Bio::EnsEMBL::Utils::Argument qw( rearrange );
 use Bio::EnsEMBL::Utils::Exception qw( deprecate warning throw );
+use Bio::EnsEMBL::Utils::Scalar qw( assert_ref );
 
 use vars qw(@ISA);
 @ISA = qw(Bio::EnsEMBL::Feature);
@@ -1926,6 +1927,80 @@ sub swap_exons {
   }
 }
 
+
+=head2 equals
+
+  Arg [1]       : Bio::EnsEMBL::Transcript transcript
+  Example       : if ($transcriptA->equals($transcriptB)) { ... }
+  Description   : Compares two transcripts for equality.
+                  The test for eqality goes through the following list
+                  and terminates at the first true match:
+
+                  1. If Bio::EnsEMBL::Feature::equals() returns false,
+                     then the transcripts are *not* equal.
+                  2. If the biotypes differ, then the transcripts are
+                     *not* equal.
+                  3. If both transcripts have stable IDs: if these are
+                     the same, the transcripts are equal, otherwise not.
+                  4. If both transcripts have the same number of exons
+                     and if these are (when compared pair-wise sorted by
+                     start-position and length) the same, then they are
+                     equal, otherwise not.
+
+  Return type   : Boolean (0, 1)
+
+  Exceptions    : Thrown if a non-transcript is passed as the argument.
+
+=cut
+
+sub equals {
+  my ( $self, $transcript ) = @_;
+
+  assert_ref( $transcript, 'Bio::EnsEMBL::Transcript' );
+
+  my $feature_equals = $self->SUPER::equals($transcript);
+  if ( defined($feature_equals) && $feature_equals == 0 ) {
+    return 0;
+  }
+
+  if ( $self->biotype() ne $transcript->biotype() ) {
+    return 0;
+  }
+
+  if (    defined( $self->stable_id() )
+       && defined( $transcript->stable_id() ) )
+  {
+    if ( $self->stable_id() eq $transcript->stable_id() ) {
+      return 1;
+    } else {
+      return 0;
+    }
+  }
+
+  my @self_exons = sort {
+         $a->start() <=> $b->start()
+      || $a->length() <=> $b->length()
+  } @{ $self->get_all_Exons() };
+  my @transcript_exons = sort {
+         $a->start() <=> $b->start()
+      || $a->length() <=> $b->length()
+  } @{ $transcript->get_all_Exons() };
+
+  if ( scalar(@self_exons) != scalar(@transcript_exons) ) {
+    return 0;
+  }
+
+  while (@self_exons) {
+    my $self_exon       = shift(@self_exons);
+    my $transcript_exon = shift(@transcript_exons);
+
+    if ( !$self_exon->equals($transcript_exon) ) {
+      return 0;
+    }
+  }
+
+  return 1;
+} ## end sub equals
 
 =head2 transform
 
