@@ -64,6 +64,7 @@ use Bio::Seq; # exons have to have sequences...
 
 use Bio::EnsEMBL::Utils::Exception qw( warning throw deprecate );
 use Bio::EnsEMBL::Utils::Argument qw( rearrange );
+use Bio::EnsEMBL::Utils::Scalar qw( assert_ref );
 use Bio::EnsEMBL::DBSQL::SupportingFeatureAdaptor;
 
 use vars qw(@ISA);
@@ -792,6 +793,56 @@ sub slice {
   return $self->SUPER::slice(@_);
 }
 
+=head2 equals
+
+  Arg [1]       : Bio::EnsEMBL::Exon exon
+  Example       : if ($exonA->equals($exonB)) { ... }
+  Description   : Compares two exons for equality.
+                  The test for eqality goes through the following list
+                  and terminates at the first true match:
+
+                  1. If Bio::EnsEMBL::Feature::equals() returns false,
+                     then the exons are *not* equal.
+                  2. If both exons have stable IDs: if these are the
+                     same, the exons are equal, otherwise not.
+                  3. If the exons have the same start, end, strand, and
+                     phase, then they are equal, otherwise not.
+
+  Return type   : Boolean (0, 1)
+
+  Exceptions    : Thrown if a non-transcript is passed as the argument.
+
+=cut
+
+sub equals {
+  my ($self, $exon) = @_;
+
+  assert_ref($exon, 'Bio::EnsEMBL::Exon');
+
+  my $feature_equals = $self->SUPER::equals($exon);
+  if (defined($feature_equals) && $feature_equals == 0) {
+    return 0;
+  }
+
+  if ( defined( $self->stable_id() ) && defined( $exon->stable_id() ) )
+  {
+    if ( $self->stable_id() eq $exon->stable_id() ) {
+      return 1;
+    } else {
+      return 0;
+    }
+  }
+
+  if (    $self->start() == $exon->start()
+       && $self->end() == $exon->end()
+       && $self->strand() == $exon->strand()
+       && $self->phase() == $exon->phase() )
+  {
+    return 1;
+  }
+
+  return 0;
+}
 
 =head2 move
 
