@@ -69,7 +69,7 @@ use warnings;
 use Bio::EnsEMBL::Storable;
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 use Bio::EnsEMBL::Utils::Exception qw(throw deprecate warning);
-use Bio::EnsEMBL::Utils::Scalar qw(check_ref);
+use Bio::EnsEMBL::Utils::Scalar qw(check_ref assert_ref);
 use Bio::EnsEMBL::Slice;
 use Bio::EnsEMBL::StrainSlice;
 use vars qw(@ISA);
@@ -385,6 +385,89 @@ sub slice {
 
   return $self->{'slice'};
 }
+
+=head2 equals
+
+  Arg [1]       : Bio::EnsEMBL::Feature object
+  Example       : if ($featureA->equals($featureB)) { ... }
+  Description   : Compares two features using various criteria.  The
+                  test for eqality goes through the following list and
+                  terminates at the first true match:
+
+                  1. If the two features are the same object, they are
+                     equal.
+                  2. If they are of different types (e.g., transcript
+                     and gene), they are *not* equal.
+                  3. If they both have dbIDs: if these are the same,
+                     then they are equal, otherwise not.
+                  4. If they both have slices and analysis objects:
+                     if the analysis dbIDs are the same and the
+                     seq_region_id are the same, along with
+                     seq_region_start and seq_region_end, then they are
+                     equal, otherwise not.
+
+                  If none of the above is able to determine equality,
+                  undef is returned.
+
+    Return type : tri-Boolean (0, 1, undef = "unknown")
+
+    Exceptions  : Thrown if a non-feature is passed as the argument.
+
+=cut
+
+sub equals {
+  my ( $self, $feature ) = @_;
+
+  assert_ref( $feature, 'Bio::EnsEMBL::Feature' );
+
+  # If the features are the same object, they are equal.
+  if ( $self eq $feature ) {
+    return 1;
+  }
+
+  # If the features have different types, they are *not* equal.
+  if ( ref($self) ne ref($feature) ) {
+    return 0;
+  }
+
+  # If the features has the same dbID, they are equal.
+  if ( defined( $self->dbID() ) && defined( $feature->dbID() ) ) {
+    if ( $self->dbID() == $feature->dbID() ) {
+      return 1;
+    } else {
+      return 0;
+    }
+  }
+  # We now know that one of the features do not have a dbID.
+
+  # If the features have the same start, end, strand and seq_region_id,
+  # and analysis_id, they are equal.
+  if (
+     ( defined( $self->analysis() ) && defined( $feature->analysis() ) )
+     && ( defined( $self->slice() ) && defined( $feature->slice() ) ) )
+  {
+    if (   ( $self->start() == $feature->start() )
+        && ( $self->end() == $feature->end() )
+        && ( $self->strand() == $feature->strand() )
+        && ( $self->slice()->get_seq_region_id() ==
+             $feature->slice()->get_seq_region_id() )
+        && ( $self->analysis()->dbID() == $feature->analysis()->dbID() )
+      )
+    {
+      return 1;
+    } else {
+      return 0;
+    }
+  }
+  # We now know that one of the features does not have either analysis
+  # or slice.
+
+  # We don't know if the features are equal.  This happens if they are
+  # not the same object but are of the same type, and one of them lacks
+  # dbID, and if there aren't slice and analysis objects attached to
+  # them both.
+  return undef;
+} ## end sub equals
 
 
 =head2 transform
