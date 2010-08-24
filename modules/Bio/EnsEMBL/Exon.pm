@@ -815,12 +815,14 @@ sub slice {
 =cut
 
 sub equals {
-  my ($self, $exon) = @_;
+  my ( $self, $exon ) = @_;
 
-  assert_ref($exon, 'Bio::EnsEMBL::Exon');
+  if ( $self eq $exon ) { return 1 }
+
+  assert_ref( $exon, 'Bio::EnsEMBL::Exon' );
 
   my $feature_equals = $self->SUPER::equals($exon);
-  if (defined($feature_equals) && $feature_equals == 0) {
+  if ( defined($feature_equals) && $feature_equals == 0 ) {
     return 0;
   }
 
@@ -842,7 +844,7 @@ sub equals {
   }
 
   return 0;
-}
+} ## end sub equals
 
 =head2 move
 

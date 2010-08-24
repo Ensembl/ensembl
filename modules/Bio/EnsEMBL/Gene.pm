@@ -380,6 +380,8 @@ sub description {
 sub equals {
   my ( $self, $gene ) = @_;
 
+  if ( $self eq $gene ) { return 1 }
+
   assert_ref( $gene, 'Bio::EnsEMBL::Gene' );
 
   my $feature_equals = $self->SUPER::equals($gene);

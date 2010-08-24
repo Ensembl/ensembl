@@ -1956,6 +1956,8 @@ sub swap_exons {
 sub equals {
   my ( $self, $transcript ) = @_;
 
+  if ( $self eq $transcript ) { return 1 }
+
   assert_ref( $transcript, 'Bio::EnsEMBL::Transcript' );
 
   my $feature_equals = $self->SUPER::equals($transcript);
