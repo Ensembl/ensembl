@@ -418,12 +418,12 @@ sub slice {
 sub equals {
   my ( $self, $feature ) = @_;
 
-  assert_ref( $feature, 'Bio::EnsEMBL::Feature' );
-
   # If the features are the same object, they are equal.
   if ( $self eq $feature ) {
     return 1;
   }
+
+  assert_ref( $feature, 'Bio::EnsEMBL::Feature' );
 
   # If the features have different types, they are *not* equal.
   if ( ref($self) ne ref($feature) ) {
