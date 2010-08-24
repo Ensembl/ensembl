@@ -1,20 +1,46 @@
 =pod
 
-SYNOPSIS
+=head1 SYNOPSIS
 
   Script to set canonical transcripts for each gene
 
-DESCRIPTION
+=head1 DESCRIPTION
 
   The rule is if the cluster contains translated transcripts take the
   one with the longest cds otherwise take the one with the longest
   cdna
 
-EXAMPLE
+=head1 OPTIONS
+
+=head2 Required arguments
+
+  -dbname       Databsse name
+
+  -dbhost       Database host
+
+  -dbport       Database port
+
+  -dbuser       Database user
+
+  -dbpass       Database password
+
+=head2  Optional arguments
+
+  -coord_system_name    Coordinate system to use
+
+  -include_non_ref      Specify if the non_reference regions should be _excluded_. (default: include) 
+
+  -seq_region_name      Chromosome name if running a single seq_region
+
+  -write                Specify if results should be written to the database
+
+  -verbose              Increase verbosity of output messages
+
+=head1 EXAMPLE
 
   perl set_canonical_transcripts.pl -dbhost host -dbuser user -dbpass *** -dbname dbname -dbport 3306 -coord_system toplevel -write
 
-EXTRA
+=head1 EXTRA
 
   To check the script has run correctly you can run the
   CoreForeignKeys healthcheck:
@@ -26,7 +52,9 @@ EXTRA
 #!/usr/local/ensembl/bin/perl
 
 use strict;
+use warnings;
 use Carp;
+use Data::Dumper;
 use DBI qw(:sql_types);
 use Getopt::Long;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
@@ -89,7 +117,7 @@ SLICE: foreach my $slice (@$slices) {
   my %canonical;
 
 GENE: foreach my $gene (@$genes) {
-    print "Looking at gene: ", $gene->dbID, "\n";
+    print "Looking at gene: (" . $gene->dbID . ") :: " . $gene->stable_id . "\n";
     my $transcripts = $gene->get_all_Transcripts;
     if ( @$transcripts == 1 ) {
       $canonical{ $gene->dbID } = $transcripts->[0]->dbID;
@@ -107,12 +135,31 @@ GENE: foreach my $gene (@$genes) {
     foreach my $key ( keys(%trans) ) {
       if ( ( $key eq 'protein_coding' ) && ( @{ $trans{$key} } == 1 ) ) {
         my $trans_id = $trans{$key}->[0]->dbID;
-        unless ( $trans{$key}->[0]->translation->seq =~ /\*/ ) {
+        if ( $trans{$key}->[0]->translation->seq !~ /\*/ ) {
           $canonical{ $gene->dbID } = $trans_id;
           next GENE;
         } else {
           carp(   "Transcript $trans_id has internal stop(s) "
-                . "and it shouldn't if it is protein coding\n" );
+                . "and shouldn't if it is protein coding\n" );
+        }
+      }
+      elsif (    !exists( $trans{'protein_coding'} )
+              && $key eq 'nonsense_mediated_decay'
+              && ( @{ $trans{$key} } == 1 ) )
+      {
+        my $trans_id = $trans{$key}->[0]->dbID;
+        if (    ( $trans{$key}->[0]->translation )
+             && ( $trans{$key}->[0]->translation->seq !~ /\*/ ) )
+        {
+          print "The NMD transcript $trans_id will become "
+              . "the canonical transcript because there are no "
+              . "protein coding transcripts.\n";
+
+          $canonical{ $gene->dbID } = $trans_id;
+          next GENE;
+        } else {
+          carp(   "Transcript $trans_id is an NMD with either "
+                . " no translation or internal stop(s), skipping it...\n" );
         }
       }
     }
@@ -124,9 +171,9 @@ GENE: foreach my $gene (@$genes) {
 
     foreach my $transcript ( @{$transcripts} ) {
 
-      if (    ( $gene->biotype ne 'pseudogene' )
+      if (    ( $gene->biotype       ne 'pseudogene' )
            && ( $gene->biotype       ne 'processed_transcript' )
-           && ( $transcript->biotype ne 'nonsense_mediated_decay' )
+           && ( $transcript->biotype ne 'polymorphic_pseudogene' )
            && ( $transcript->biotype ne 'processed_transcript' )
            && $transcript->translation
            && ( $transcript->translation->seq !~ /\*/ ) )
@@ -140,15 +187,39 @@ GENE: foreach my $gene (@$genes) {
 
     my @sorted;
     if (@with_translation) {
-      my @len_and_trans;
+      my ( @prot_coding_len_and_trans, @len_and_trans );
       foreach my $trans (@with_translation) {
-        my $h = { trans => $trans, len => $trans->translate->length };
-        push @len_and_trans, $h;
+
+        if ($verbose) {
+          print $trans->dbID . " :: " . $trans->biotype . " :: " .  $trans->translate->length . "\n";
+        }
+
+        if ( $trans->biotype eq 'protein_coding') {
+          my $h = { trans => $trans, len => $trans->translate->length };
+          push @prot_coding_len_and_trans, $h;
+          next;
+        } else {
+          my $h = { trans => $trans, len => $trans->translate->length };
+          push @len_and_trans, $h;
+        }
       }
-      my @tmp_sorted = sort { $b->{len} <=> $a->{len} } @len_and_trans;
+
+      my @tmp_sorted;
+      if (@prot_coding_len_and_trans) {
+        @tmp_sorted = sort { $b->{len} <=> $a->{len} } @prot_coding_len_and_trans;
+      } else {
+        if ($verbose) {
+          print "There are no 'protein_coding' labelled transcripts, "
+              . "will take the longest of the other coding transcripts\n";
+        }
+        @tmp_sorted = sort { $b->{len} <=> $a->{len} } @len_and_trans;
+      }
 
       foreach my $h (@tmp_sorted) {
-        #print "Adding to sorted " . $h->{trans}->dbID . "\n";
+
+        if ($verbose) {
+          print "Adding to sorted " . $h->{trans}->dbID . " :: " . $h->{trans}->biotype . "\n";
+        }
         push @sorted, $h->{trans};
       }
     } else {
@@ -159,7 +230,8 @@ GENE: foreach my $gene (@$genes) {
 
   foreach my $gene_id ( keys(%canonical) ) {
     my $transcript_id = $canonical{$gene_id};
-    print "Updating gene $gene_id\n";
+    print "Updating gene $gene_id "
+        . "with canonical transcript: $transcript_id.\n";
     $gene_sth->execute( $transcript_id, $gene_id ) if ($write);
   }
 } ## end foreach my $slice (@$slices)
