@@ -33,6 +33,10 @@ sub run {
     chomp;
     my ($acc, $label, $desc, $stable_id) = split /\t/;
 
+    if($label eq "unnamed"){
+      $label = $acc;
+    }
+
     XrefParser::BaseParser->add_to_direct_xrefs($stable_id,'gene', $acc, '', $label, $desc, "", $source_id, $species_id);
     $count++;
   }
