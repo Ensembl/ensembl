@@ -47,7 +47,7 @@ use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 
 use Bio::EnsEMBL::DBEntry;
 use Bio::EnsEMBL::IdentityXref;
-use Bio::EnsEMBL::GoXref;
+use Bio::EnsEMBL::OntologyXref;
 
 use Bio::EnsEMBL::Utils::Exception qw(deprecate throw warning);
 
@@ -530,7 +530,7 @@ INSERT IGNORE INTO object_xref
 
     #
     # If this is an IdentityXref need to store in that table too
-    # If its GoXref add the linkage type to go_xref table
+    # If its OntologyXref add the linkage type to ontology_xref table
     #
     if ($exObj->isa('Bio::EnsEMBL::IdentityXref')) {
       $sth = $self->prepare( "
@@ -556,9 +556,9 @@ INSERT IGNORE INTO object_xref
       $sth->bind_param(9,$exObj->score,SQL_DOUBLE);
       $sth->bind_param(10,$exObj->evalue,SQL_DOUBLE);
       $sth->execute();
-    } elsif( $exObj->isa( 'Bio::EnsEMBL::GoXref' )) {
+    } elsif( $exObj->isa( 'Bio::EnsEMBL::OntologyXref' )) {
       $sth = $self->prepare( "
-             INSERT ignore INTO go_xref
+             INSERT ignore INTO ontology_xref
                 SET object_xref_id = ?,
                     source_xref_id = ?,
                     linkage_type = ? " );
@@ -634,7 +634,7 @@ sub exists {
                all of the gene, transcript, and translation xrefs associated
                with this gene.
   Returntype : listref of Bio::EnsEMBL::DBEntries; may be of type IdentityXref if
-               there is mapping data, or GoXref if there is linkage data.
+               there is mapping data, or OntologyXref if there is linkage data.
   Exceptions : thows if gene object not passed
   Caller     : Bio::EnsEMBL::Gene
   Status     : Stable
@@ -664,7 +664,7 @@ sub fetch_all_by_Gene {
                to contain all of the gene, transcript, and translation xrefs
                associated with this gene.
   Returntype : listref of Bio::EnsEMBL::DBEntries; may be of type IdentityXref if
-               there is mapping data, or GoXref if there is linkage data.
+               there is mapping data, or OntologyXref if there is linkage data.
   Exceptions : throes if transcript argument not passed
   Caller     : Bio::EnsEMBL::Gene
   Status     : Stable
@@ -691,7 +691,7 @@ sub fetch_all_by_Transcript {
   Example    : @db_entries = @{$db_entry_adptr->fetch_all_by_Translation($trans)};
   Description: Retrieves external database entries for an EnsEMBL translation
   Returntype : listref of Bio::EnsEMBL::DBEntries; may be of type IdentityXref if
-               there is mapping data, or GoXref if there is linkage data.
+               there is mapping data, or OntologyXref if there is linkage data.
   Exceptions : throws if translation object not passed
   Caller     : general
   Status     : Stable
@@ -795,7 +795,7 @@ sub remove_from_object {
 
   # delete from the tables which contain additional linkage information
 
-  $sth = $self->prepare("DELETE FROM go_xref WHERE object_xref_id = ?");
+  $sth = $self->prepare("DELETE FROM ontology_xref WHERE object_xref_id = ?");
   $sth->bind_param(1,$ox_id,SQL_INTEGER);
   $sth->execute();
   $sth->finish();
@@ -828,7 +828,7 @@ sub remove_from_object {
                return all the entries matching the search criteria, not
                just the ones associated with the current species.
   Returntype : arrayref of DBEntry objects; may be of type IdentityXref if
-               there is mapping data, or GoXref if there is linkage data.
+               there is mapping data, or OntologyXref if there is linkage data.
   Exceptions : none
   Caller     : fetch_all_by_Gene
                fetch_all_by_Translation
@@ -868,7 +868,7 @@ sub _fetch_by_object_type {
     FROM   (xref xref, external_db exDB, object_xref oxr)
     LEFT JOIN external_synonym es on es.xref_id = xref.xref_id 
     LEFT JOIN identity_xref idt on idt.object_xref_id = oxr.object_xref_id
-    LEFT JOIN go_xref gx on gx.object_xref_id = oxr.object_xref_id
+    LEFT JOIN ontology_xref gx on gx.object_xref_id = oxr.object_xref_id
     WHERE  xref.xref_id = oxr.xref_id
       AND  xref.external_db_id = exDB.external_db_id 
       AND  oxr.ensembl_id = ?
@@ -955,7 +955,7 @@ SSQL
           $exDB->evalue($evalue);
 
         } elsif ( defined $linkage_type && $linkage_type ne "" ) {
-          $exDB = Bio::EnsEMBL::GoXref->new_fast( \%obj_hash );
+          $exDB = Bio::EnsEMBL::OntologyXref->new_fast( \%obj_hash );
           $source_xref = ( defined($source_xref_id)
                               ? $self->fetch_by_dbID($source_xref_id)
                               : undef );
