@@ -20,15 +20,17 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::GoXref
+Bio::EnsEMBL::OntologyXref
 
 =head1 DESCRIPTION
 
 This class extends the DBEntry in order to associate Evidence Tags
-to the relationship between EnsEMBL objects and GO identifiers.  The
-relationship to GO that is stored in the database is actually derived
-through the relationship of EnsEMBL peptides to SwissProt peptides, i.e.
-the relationship is derived like this:
+to the relationship between EnsEMBL objects and ontology accessions
+(primarily GO accessions).
+
+The relationship to GO that is stored in the database is actually
+derived through the relationship of EnsEMBL peptides to SwissProt
+peptides, i.e. the relationship is derived like this:
 
   ENSP -> SWISSPROT -> GO
 
@@ -44,14 +46,14 @@ and the evidence tag hangs off of the relationship between the ENSP and
 the GO identifier.  Some ENSPs are associated with multiple closely
 related Swissprot entries which may both be associated with the same GO
 identifier but with different evidence tags.  For this reason a single
-'GoXref' can have multiple evidence tags.
+'OntologyXref' can have multiple evidence tags.
 
 =head1 SYNOPSIS
 
-  my $goxref = Bio::EnsEMBL::GoXref->new();
-  $goxref->add_linkage_type('IEA');
+  my $ontology_xref = Bio::EnsEMBL::OntologyXref->new();
+  $ontology_xref->add_linkage_type('IEA');
 
-  foreach my $evtag ( @{ $goxref->get_all_linkage_types() } ) {
+  foreach my $evtag ( @{ $ontology_xref->get_all_linkage_types() } ) {
     print "$evtag\n";
   }
 
@@ -59,7 +61,7 @@ identifier but with different evidence tags.  For this reason a single
 
 =cut
 
-package Bio::EnsEMBL::GoXref;
+package Bio::EnsEMBL::OntologyXref;
 
 use vars qw(@ISA);
 use strict;
@@ -73,8 +75,9 @@ use strict;
                'IC', 'IDA', 'IEA', 'IEP', 'IGI', 'IMP', 'IPI',
                'ISS', NAS', 'ND', 'TAS', 'NR', 'RCA'
   Arg [2]    : (optional) Bio::EnsEMBL::DBEntry $source
-  Example    : $go_xref->add_linkage_type('IGI');
-  Description: Associates a linkage type and source DBEntry with this go_xref
+  Example    : $ontology_xref->add_linkage_type('IGI');
+  Description: Associates a linkage type and source DBEntry with
+               this ontology_xref
   Returntype : integer; number of linkages
   Exceptions : thrown if $linkage_type argument not supplied or
                the optional DBEntry is not a DBEntry object.
@@ -106,10 +109,14 @@ sub add_linkage_type {
 =head2 get_all_linkage_info
 
   Arg [1]    : none
-  Example    : foreach (@{$gox->get_all_linkage_info})
-                { print "evidence: $_->[0] via $_->[1]->display_id" }
+  Example    :
+
+    foreach ( @{ $ontology_xref->get_all_linkage_info() } ) {
+      print "evidence: $_->[0] via $_->[1]->display_id";
+    }
+
   Description: Retrieves a list of evidence-tag/source-DBEntry pairs
-               associated with this go_xref
+               associated with this ontology_xref
   Returntype : listref of listrefs
   Exceptions : none
   Caller     : geneview? general.
@@ -127,11 +134,13 @@ sub get_all_linkage_info {
 =head2 get_all_linkage_types
 
   Arg [1]    : none
-  Example    : print( join( ' ',
-                            @{ $goxr->get_all_linkage_types() } ),
-                      "\n" );
-  Description: Retrieves a unique list of evidence tags associated with 
-               this go_xref
+  Example    :
+
+    print( join( ' ', @{ $ontology_xref->get_all_linkage_types() } ),
+           "\n" );
+
+  Description: Retrieves a unique list of evidence tags associated with
+               this ontology_xref
   Returntype : none
   Exceptions : none
   Caller     : geneview? general
@@ -153,7 +162,7 @@ sub get_all_linkage_types {
 =head2 flush_linkage_types
 
   Arg [1]    : none
-  Example    : $goxr->flush_linkage_types
+  Example    : $ontology_xref->flush_linkage_types();
   Description: Removes any associated evidence tags
   Returntype : none
   Exceptions : none
