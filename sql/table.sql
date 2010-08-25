@@ -664,16 +664,16 @@ CREATE TABLE identity_xref (
 
 ################################################################################
 #
-# Table structure for table 'go_xref'
+# Table structure for table 'ontology_xref'
 #
 
-CREATE TABLE go_xref (
+CREATE TABLE ontology_xref (
 
   object_xref_id          INT(10) UNSIGNED DEFAULT '0' NOT NULL,
+  source_xref_id          INT(10) UNSIGNED DEFAULT NULL,
   linkage_type            ENUM('IC',  'IDA', 'IEA', 'IEP', 'IGI', 'IMP',
                                'IPI', 'ISS', 'NAS', 'ND' , 'TAS', 'NR' ,
                                'RCA', 'EXP', 'ISO', 'ISA', 'ISM', 'IGC'),
-  source_xref_id          INT(10) UNSIGNED DEFAULT NULL,
 
   KEY source_idx (source_xref_id),
   UNIQUE KEY object_source_type_idx (object_xref_id, source_xref_id, linkage_type)
@@ -843,7 +843,8 @@ INSERT INTO meta (species_id, meta_key, meta_value) VALUES
 # NOTE: At start of release cycle, remove patch entries from last release.
 # NOTE: Avoid line-breaks in values.
 INSERT INTO meta (species_id, meta_key, meta_value) VALUES
-  (NULL, 'patch', 'patch_59_60_a.sql|schema_version');
+  (NULL, 'patch', 'patch_59_60_a.sql|schema_version'),
+  (NULL, 'patch', 'patch_59_60_b.sql|rename_go_xref_table');
 
 ################################################################################
 #
