@@ -837,17 +837,13 @@ CREATE TABLE meta (
 # Add schema type and schema version to the meta table.
 INSERT INTO meta (species_id, meta_key, meta_value) VALUES
   (NULL, 'schema_type',     'core'),
-  (NULL, 'schema_version',  '59');
+  (NULL, 'schema_version',  '60');
 
 # Patches included in this schema file:
 # NOTE: At start of release cycle, remove patch entries from last release.
 # NOTE: Avoid line-breaks in values.
 INSERT INTO meta (species_id, meta_key, meta_value) VALUES
-  (NULL, 'patch', 'patch_58_59_a.sql|schema_version'),
-  (NULL, 'patch', 'patch_58_59_b.sql|assembly_exception_exc_type_enum'),
-  (NULL, 'patch', 'patch_58_59_c.sql|splicing_event_attrib_type_id'),
-  (NULL, 'patch', 'patch_58_59_d.sql|object_xref_extend_index'),
-  (NULL, 'patch', 'patch_58_59_e.sql|meta_schema_type');
+  (NULL, 'patch', 'patch_59_60_a.sql|schema_version');
 
 ################################################################################
 #
