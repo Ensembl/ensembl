@@ -92,7 +92,7 @@ my $reg = "Bio::EnsEMBL::Registry";
                 -driver => 'mysql'
               );
 
-  Exmaple2   : $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(
+  Example2   : $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(
                 -species => 'Homo_sapiens',
                 -group   => 'core',
                 -user    => 'root',
@@ -101,7 +101,7 @@ my $reg = "Bio::EnsEMBL::Registry";
                 -driver  => 'mysql'
               );
 
-  Exmaple3   : $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(
+  Example3   : $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(
                 -species         => 'staphylococcus_aureus',
                 -group           => 'core',
                 -user            => 'root',
@@ -160,7 +160,7 @@ sub new {
 
   Arg[1]    : (optional) Bio::EnsEMBL::DBSQL::DBConnection
 
-  Exmaple    : $dbc = $dba->dbc();
+  Example    : $dbc = $dba->dbc();
   Description: Getter/Setter for DBConnection.
   Returntype : Bio::EnsEMBL::DBSQL::DBConnection
   Exceptions : throws if argument not a Bio::EnsEMBL::DBSQL::DBConnection
@@ -897,15 +897,13 @@ sub AUTOLOAD {
     return $ret;
 
   } else {
-    throw(
-      sprintf(
-        "Could not get adaptor %s for %s %s\n",
-        $type, $self->species(), $self->group() ) );
-
     warning(
-      sprintf(
-        "Could not find %s adaptor in the registry for %s %s\n",
-        $type, $self->species(), $self->group() ) );
+         sprintf(
+                "Could not find %s adaptor in the registry for %s %s\n",
+                $type, $self->species(), $self->group() ) );
+
+    throw( sprintf( "Could not get adaptor %s for %s %s\n",
+                    $type, $self->species(), $self->group() ) );
 
     return $ret;
   }
