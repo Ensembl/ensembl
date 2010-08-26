@@ -217,7 +217,7 @@ sub fetch_all_by_Slice {
   #interpolate the features into new features of a different size
   my @out;
   #sort the features on start position
-  @features = sort({$a->start() <=> $b->end()} @features);
+  @features = sort( { $a->start() <=> $b->start() } @features );
 
   #resize the features that were returned
   my $start = 1;
