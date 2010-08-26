@@ -54,45 +54,46 @@ use Bio::EnsEMBL::Utils::Argument qw( rearrange );
 =cut
 
 sub new {
-  my ($class,$e1,$e2) = @_;
+  my ( $proto, $e1, $e2 ) = @_;
 
-  $class = ref $class || $class;
+  $class = ref $class || $proto;
 
   my $self = $class->SUPER::new();
 
-  if($e1->strand == -1){
-    $self->{'end'} = ($e1->start)-1;
-    $self->{'start'} = ($e2->end)+1;
-  }
-  else{
-    $self->{'start'}= ($e1->end)+1;
-    $self->{'end'} = ($e2->start)-1;
-  }
-
-  if($e1->strand != $e2->strand){
-  #  throw("Exons on different strand. Not allowed");
-  }
-  else{
-    $self->{'strand'} = $e1->strand;
+  if ( $e1->strand() == -1 ) {
+    $self->{'end'}   = $e1->start() - 1;
+    $self->{'start'} = $e2->end() + 1;
+  } else {
+    $self->{'start'} = $e1->end() + 1;
+    $self->{'end'}   = $e2->start() - 1;
   }
 
-  if($e1->slice ne $e2->slice){
-    if($e1->slice->seq_region_name ne $e2->slice->seq_region_name){
+  if ( $e1->strand() != $e2->strand() ) {
+    #  throw("Exons on different strand. Not allowed");
+  } else {
+    $self->{'strand'} = $e1->strand();
+  }
+
+  if ( $e1->slice() ne $e2->slice() ) {
+    if ( ( $e1->slice()->seq_region_name() ne
+           $e2->slice()->seq_region_name() )
+         && ( $e1->slice()->coord_system_name() ne
+              $e2->slice()->coord_system_name() ) )
+    {
       throw("Exons on different slices. Not allowed");
+    } else {
+      warn(   "Exons have different slice references "
+            . "to the same seq_region\n" );
     }
-    else{
-      warn("Exons have different slice references to the same seq_region\n");
-    }
-  }
-  else{ 
-    $self->{'slice'} = $e1->slice;
+  } else {
+    $self->{'slice'} = $e1->slice();
   }
 
   $self->{'prev'} = $e1;
   $self->{'next'} = $e2;
 
   return $self;
-}
+} ## end sub new
 
 
 =head2 prev_Exon
