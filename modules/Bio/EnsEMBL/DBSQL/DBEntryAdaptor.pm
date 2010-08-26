@@ -447,7 +447,7 @@ sub store {
     $sth->finish();
     #
     # store the synonyms for the new xref
-    # 
+    #
     my $synonym_check_sth = $self->prepare(
               "SELECT xref_id, synonym
                FROM external_synonym
@@ -463,7 +463,7 @@ sub store {
 	$synonym_check_sth->bind_param(1,$dbX,SQL_INTEGER);
 	$synonym_check_sth->bind_param(2,$syn,SQL_VARCHAR);
 	$synonym_check_sth->execute();
-      my ($dbSyn) = $synonym_check_sth->fetchrow_array(); 
+      my ($dbSyn) = $synonym_check_sth->fetchrow_array();
 	$synonym_store_sth->bind_param(1,$dbX,SQL_INTEGER);
 	$synonym_store_sth->bind_param(2,$syn,SQL_VARCHAR);
 	$synonym_store_sth->execute() if(!$dbSyn);
@@ -521,7 +521,7 @@ INSERT IGNORE INTO object_xref
     $sth->bind_param( 3, $ensembl_id,                  SQL_INTEGER );
     $sth->bind_param( 4, $exObj->linkage_annotation(), SQL_VARCHAR );
     $sth->bind_param( 5, $analysis_id,                 SQL_INTEGER);
- 
+
    #print "stored xref id $dbX in obejct_xref\n";
     $sth->execute();
     $exObj->dbID($dbX);
@@ -565,7 +565,7 @@ INSERT IGNORE INTO object_xref
       foreach my $info (@{$exObj->get_all_linkage_info()}) {
 	  my( $lt, $sourceXref ) = @{$info};
 	  my $sourceXid = undef;
-	  if( $sourceXref ){ 
+	  if( $sourceXref ){
 	      $sourceXref->is_stored($self->dbc) || $sourceXref->store;
 	      $sourceXid = $sourceXref->dbID;
 	  }
@@ -575,7 +575,7 @@ INSERT IGNORE INTO object_xref
 	  $sth->execute();
       }
     }
-  } 
+  }
   return $dbX;
 }
 
@@ -585,7 +585,7 @@ INSERT IGNORE INTO object_xref
   Arg [1]    : Bio::EnsEMBL::DBEntry $dbe
   Example    : if($dbID = $db_entry_adaptor->exists($dbe)) { do stuff; }
   Description: Returns the db id of this DBEntry if it exists in this database
-               otherwise returns undef.  Exists is defined as an entry with 
+               otherwise returns undef.  Exists is defined as an entry with
                the same external_db and display_id
   Returntype : int
   Exceptions : thrown on incorrect args
@@ -601,7 +601,7 @@ sub exists {
     throw("arg must be a Bio::EnsEMBL::DBEntry not [$dbe]");
   }
 
-  my $sth = $self->prepare('SELECT x.xref_id 
+  my $sth = $self->prepare('SELECT x.xref_id
                             FROM   xref x, external_db xdb
                             WHERE  x.external_db_id = xdb.external_db_id
                             AND    x.display_label = ?
@@ -623,10 +623,10 @@ sub exists {
 
 =head2 fetch_all_by_Gene
 
-  Arg [1]    : Bio::EnsEMBL::Gene $gene 
+  Arg [1]    : Bio::EnsEMBL::Gene $gene
                (The gene to retrieve DBEntries for)
   Arg [2]    : optional external database name
-  Arg [3]    : optional external_db type 
+  Arg [3]    : optional external_db type
   Example    : @db_entries = @{$db_entry_adaptor->fetch_by_Gene($gene)};
   Description: This returns a list of DBEntries associated with this gene.
                Note that this method was changed in release 15.  Previously
@@ -656,9 +656,9 @@ sub fetch_all_by_Gene {
 
   Arg [1]    : Bio::EnsEMBL::Transcript
   Arg [2]    : optional external database name
-  Arg [3]    : optional external_db type 
+  Arg [3]    : optional external_db type
   Example    : @db_entries = @{$db_entry_adaptor->fetch_by_Gene($trans)};
-  Description: This returns a list of DBEntries associated with this 
+  Description: This returns a list of DBEntries associated with this
                transcript. Note that this method was changed in release 15.
                Previously it set the DBLinks attribute of the gene passed in
                to contain all of the gene, transcript, and translation xrefs
@@ -687,7 +687,7 @@ sub fetch_all_by_Transcript {
   Arg [1]    : Bio::EnsEMBL::Translation $trans
                (The translation to fetch database entries for)
   Arg [2]    : optional external database name
-  Arg [3]    : optional externaldb type 
+  Arg [3]    : optional externaldb type
   Example    : @db_entries = @{$db_entry_adptr->fetch_all_by_Translation($trans)};
   Description: Retrieves external database entries for an EnsEMBL translation
   Returntype : listref of Bio::EnsEMBL::DBEntries; may be of type IdentityXref if
@@ -704,7 +704,7 @@ sub fetch_all_by_Translation {
   if(!ref($trans) || !$trans->isa('Bio::EnsEMBL::Translation')) {
     throw('Bio::EnsEMBL::Translation argument expected.');
   }
-  if( ! $trans->dbID ){ 
+  if( ! $trans->dbID ){
     warning( "Cannot fetch_all_by_Translation without a dbID" );
     return [];
   }
@@ -818,15 +818,20 @@ sub remove_from_object {
 =head2 _fetch_by_object_type
 
   Arg [1]    : string $ensID
-  Arg [2]    : string $ensType
-  			   (object type to be returned) 
+  Arg [2]    : string $ensType (object type to be returned)
   Arg [3]    : optional $exdbname (external database name)
-  Arf [4]    : optional $exdb_type (external database type)
+               (may be an SQL pattern containing '%' which matches any
+               number of characters)
+  Arg [4]    : optional $exdb_type (external database type)
+               (may be an SQL pattern containing '%' which matches any
+               number of characters)
   Example    : $self->_fetch_by_object_type( $translation_id, 'Translation' )
   Description: Fetches DBEntry by Object type
                NOTE:  In a multi-species database, this method will
                return all the entries matching the search criteria, not
                just the ones associated with the current species.
+
+
   Returntype : arrayref of DBEntry objects; may be of type IdentityXref if
                there is mapping data, or OntologyXref if there is linkage data.
   Exceptions : none
@@ -866,16 +871,35 @@ sub _fetch_by_object_type {
            xref.info_type, xref.info_text, exDB.type, gx.source_xref_id,
            oxr.linkage_annotation, xref.description
     FROM   (xref xref, external_db exDB, object_xref oxr)
-    LEFT JOIN external_synonym es on es.xref_id = xref.xref_id 
+    LEFT JOIN external_synonym es on es.xref_id = xref.xref_id
     LEFT JOIN identity_xref idt on idt.object_xref_id = oxr.object_xref_id
     LEFT JOIN ontology_xref gx on gx.object_xref_id = oxr.object_xref_id
     WHERE  xref.xref_id = oxr.xref_id
-      AND  xref.external_db_id = exDB.external_db_id 
+      AND  xref.external_db_id = exDB.external_db_id
       AND  oxr.ensembl_id = ?
       AND  oxr.ensembl_object_type = ?
 SSQL
-  $sql .= " AND exDB.db_name like '" . $exdbname . "' " if ($exdbname);
-  $sql .= " AND exDB.type like '" . $exdb_type . "' "   if ($exdb_type);
+
+  if ( defined($exdbname) ) {
+    if ( index( $exdbname, '%' ) != -1 ) {
+      $sql .= " AND exDB.db_name = "
+        . $self->dbc()->db_handle()->quote( $exdbname, SQL_VARCHAR );
+    } else {
+      $sql .= " AND exDB.db_name LIKE "
+        . $self->dbc()->db_handle()->quote( $exdbname, SQL_VARCHAR );
+    }
+  }
+
+  if ( defined($exdb_type) ) {
+    if ( index( $exdb_type, '%' ) != -1 ) {
+      $sql .= " AND exDB.type = "
+        . $self->dbc()->db_handle()->quote( $exdb_type, SQL_VARCHAR );
+    } else {
+      $sql .= " AND exDB.type LIKE "
+        . $self->dbc()->db_handle()->quote( $exdb_type, SQL_VARCHAR );
+    }
+  }
+
   my $sth = $self->prepare($sql);
 
   $sth->bind_param( 1, $ensID,   SQL_INTEGER );
@@ -1040,9 +1064,9 @@ sub list_gene_ids_by_external_db_id{
   Arg [1]    : string $external_name
   Arg [2]    : (optional) string $external_db_name
   Example    : @gene_ids = $dbea->list_gene_ids_by_extids('CDPX');
-  Description: Retrieve a list of geneid by an external identifier that is 
-               linked to  any of the genes transcripts, translations or the 
-               gene itself 
+  Description: Retrieve a list of geneid by an external identifier that is
+               linked to  any of the genes transcripts, translations or the
+               gene itself
   Returntype : list of ints
   Exceptions : none
   Caller     : unknown
@@ -1070,9 +1094,9 @@ sub list_gene_ids_by_extids {
   Arg [1]    : string $external_name
   Arg [2]    : (optional) string $external_db_name
   Example    : @tr_ids = $dbea->list_transcript_ids_by_extids('BCRA2');
-  Description: Retrieve a list transcript ids by an external identifier that 
-               is linked to any of the genes transcripts, translations or the 
-               gene itself 
+  Description: Retrieve a list transcript ids by an external identifier that
+               is linked to any of the genes transcripts, translations or the
+               gene itself
   Returntype : list of ints
   Exceptions : none
   Caller     : unknown
@@ -1276,7 +1300,7 @@ sub _type_by_external_id {
 
 =head2 _type_by_external_db_id
 
-  Arg [1]    : string $type - external_db type
+  Arg [1]    : integer $type - external_db_id
   Arg [2]    : string $ensType - ensembl_object_type
   Arg [3]    : (optional) string $extraType
   	       other object type to be returned
@@ -1337,7 +1361,7 @@ sub _type_by_external_db_id{
     );
   }
 
-  my $query = 
+  my $query =
     "SELECT $ID_sql
        FROM $from_sql xref x, object_xref oxr
       WHERE $where_sql x.external_db_id = ? AND
@@ -1460,7 +1484,7 @@ sub fetch_all_by_description {
                if you want to use SQL patterns
 
   Example    : @unigene_refs = @{$db_entry_adaptor->fetch_all_by_source("%unigene%")};
-  Description: Retrieves DBEntrys that match the source name.               
+  Description: Retrieves DBEntrys that match the source name.
   Returntype : ref to array of Bio::EnsEMBL::DBSQL::DBEntry
   Exceptions : None.
   Caller     : General
