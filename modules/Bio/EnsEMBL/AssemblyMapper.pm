@@ -647,8 +647,8 @@ sub have_registered_assembled {
 
 =head2 register_component
 
-  Arg [1]    : string $cmp_seq_region
-               The name of the component sequence region to
+  Arg [1]    : integer $cmp_seq_region
+               The dbID of the component sequence region to
                register.
   Example    : $asm_mapper->register_component('AL312341.1');
   Description: Flags a given component sequence region as registered
@@ -673,8 +673,8 @@ sub register_component {
 
 =head2 register_assembled
 
-  Arg [1]    : string $asm_seq_region
-               The name of the sequence region to register.
+  Arg [1]    : integer $asm_seq_region
+               The dbID of the sequence region to register.
   Arg [2]    : int $chunk_id
                The chunk number of the provided seq_region to register.
   Example    : $asm_mapper->register_assembled( 'X', 4 );
