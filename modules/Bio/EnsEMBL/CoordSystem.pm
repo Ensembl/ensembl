@@ -122,60 +122,66 @@ sub new {
 
   my $self = $class->SUPER::new(@_);
 
-  my ($name,$version, $top_level, $sequence_level, $default, $rank) =
-    rearrange(['NAME','VERSION','TOP_LEVEL', 'SEQUENCE_LEVEL',
-               'DEFAULT', 'RANK'], @_);
+  my ( $name, $version, $top_level, $sequence_level, $default, $rank ) =
+    rearrange( [ 'NAME',      'VERSION',
+                 'TOP_LEVEL', 'SEQUENCE_LEVEL',
+                 'DEFAULT',   'RANK' ],
+               @_ );
 
-  throw('The NAME argument is required') if(!$name);
+  $version = '' if ( !defined($version) );
 
-  $version = '' if(!defined($version));
-
-  $top_level       = ($top_level)      ? 1 : 0;
-  $sequence_level  = ($sequence_level) ? 1 : 0;
-  $default         = ($default)        ? 1 : 0;
+  $top_level      = ($top_level)      ? 1 : 0;
+  $sequence_level = ($sequence_level) ? 1 : 0;
+  $default        = ($default)        ? 1 : 0;
   $rank ||= 0;
 
-  if($top_level) {
-    if($rank) {
+  if ( $top_level == 1 ) {
+    if ( $rank == 1 ) {
       throw('RANK argument must be 0 if TOP_LEVEL is 1');
     }
 
-    if($name) {
-      if($name ne 'toplevel') {
-        throw('The NAME argument must be "toplevel" if TOP_LEVEL is 1')
+    if ( defined($name) ) {
+      if ( $name ne 'toplevel' ) {
+        throw('The NAME argument must be "toplevel" if TOP_LEVEL is 1');
       }
     } else {
       $name = 'toplevel';
     }
 
-    if($sequence_level) {
+    if ( $sequence_level == 1 ) {
       throw("SEQUENCE_LEVEL argument must be 0 if TOP_LEVEL is 1");
     }
 
     $default = 0;
 
   } else {
-    if(!$rank) {
-      throw("RANK argument must be non-zero if not toplevel CoordSystem");
+
+    if ( $rank == 0 ) {
+      throw("RANK argument must be non-zero unless TOP_LEVEL is 1");
     }
-    if($name eq 'toplevel') {
-      throw("Cannot name coord system 'toplevel' unless TOP_LEVEL is 1");
+
+    if ( !defined($name) ) {
+      throw('The NAME argument is required');
+    } elsif ( $name eq 'toplevel' ) {
+      throw(   "Cannot name coord system 'toplevel' "
+             . "unless TOP_LEVEL is 1" );
     }
+
   }
 
-  if($rank !~ /^\d+$/) {
+  if ( $rank !~ /^\d+$/ ) {
     throw('The RANK argument must be a positive integer');
   }
 
-  $self->{'version'} = $version;
-  $self->{'name'} = $name;
-  $self->{'top_level'} = $top_level;
+  $self->{'version'}        = $version;
+  $self->{'name'}           = $name;
+  $self->{'top_level'}      = $top_level;
   $self->{'sequence_level'} = $sequence_level;
-  $self->{'default'} = $default;
-  $self->{'rank'}    = $rank;
+  $self->{'default'}        = $default;
+  $self->{'rank'}           = $rank;
 
   return $self;
-}
+} ## end sub new
 
 
 =head2 name
