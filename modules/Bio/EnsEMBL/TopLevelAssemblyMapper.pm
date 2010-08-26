@@ -20,7 +20,7 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::TopLevelMapper -
+Bio::EnsEMBL::TopLevelAssemblyMapper -
 Handles mapping between a given coordinate system and the toplevel
 pseudo coordinate system.
 
