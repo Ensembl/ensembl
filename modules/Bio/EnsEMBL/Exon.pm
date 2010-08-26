@@ -787,11 +787,32 @@ sub coding_region_end {
 =cut
 
 sub slice {
-  my $self = shift;
-  # if an arg was provided, flush the internal sequence cache
-  delete $self->{'_seq_cache'} if(@_);
-  return $self->SUPER::slice(@_);
-}
+  my ( $self, $slice ) = @_;
+
+  if ( defined($slice) ) {
+    # If a new slice was provided, flush the internal sequence cache and
+    # transcer all supporting evidence to the new slice.
+
+    delete $self->{'_seq_cache'};
+
+    if ( exists( $self->{'_supporting_evidence'} ) ) {
+      my @new_features;
+
+      for my $old_feature ( @{ $self->{'_supporting_evidence'} } ) {
+        my $new_feature = $old_feature->transfer($slice);
+        push( @new_features, $new_feature );
+      }
+
+      $self->{'_supporting_evidence'} = \@new_features;
+    }
+
+    return $self->SUPER::slice($slice);
+  } elsif ( @_ > 1 ) {
+    return $self->SUPER::slice(undef);
+  } else {
+    return $self->SUPER::slice();
+  }
+} ## end sub slice
 
 =head2 equals
 
