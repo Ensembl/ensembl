@@ -124,13 +124,13 @@ sub new {
 =head2  cache_seq_ids_with_mult_assemblys
 
   Example    : $self->adaptor->cache_seq_ids_with_mult_assemblys();
-  Description: Creates a hash of the component seq region ids that 
+  Description: Creates a hash of the component seq region ids that
                map to more than one assembly from the assembly table.
   Retruntype : none
   Exceptions : none
   Caller     : AssemblyMapper, ChainedAssemblyMapper
   Status     : At Risk
- 
+
 =cut
 
 sub cache_seq_ids_with_mult_assemblys{
@@ -285,9 +285,9 @@ sub fetch_by_CoordSystems {
 =head2 register_assembled
 
   Arg [1]    : Bio::EnsEMBL::AssemblyMapper $asm_mapper
-	       A valid AssemblyMapper object
-  Arg [2]    : string $asm_seq_region
-               The name of the seq_region to be registered
+               A valid AssemblyMapper object
+  Arg [2]    : integer $asm_seq_region
+               The dbID of the seq_region to be registered
   Arg [3]    : int $asm_start
                The start of the region to be registered
   Arg [4]    : int $asm_end
@@ -379,9 +379,9 @@ sub register_assembled {
   # keep the Mapper to a reasonable size
   if( $asm_mapper->size() > $asm_mapper->max_pair_count() ) {
     $asm_mapper->flush();
-    #we now have to go and register the entire requested region since we 
+    #we now have to go and register the entire requested region since we
     #just flushed everything
-    
+
     @chunk_regions = ( [ ( $start_chunk << $CHUNKFACTOR)
                          , (($end_chunk+1) << $CHUNKFACTOR)-1 ] );
 
@@ -390,7 +390,7 @@ sub register_assembled {
     }
   }
 
-#  my $asm_seq_region_id = 
+#  my $asm_seq_region_id =
 #    $self->_seq_region_name_to_id($asm_seq_region,$asm_cs_id);
 
   # Retrieve the description of how the assembled region is made from
@@ -403,7 +403,7 @@ sub register_assembled {
          asm.cmp_end,
          asm.cmp_seq_region_id,
          sr.name,
-         sr.length, 
+         sr.length,
          asm.ori,
          asm.asm_start,
          asm.asm_end
@@ -432,14 +432,14 @@ sub register_assembled {
       $asm_start, $asm_end, $cmp_seq_region_length);
 
     $sth->bind_columns(\$cmp_start, \$cmp_end, \$cmp_seq_region_id,
-                       \$cmp_seq_region, \$cmp_seq_region_length, \$ori, 
+                       \$cmp_seq_region, \$cmp_seq_region_length, \$ori,
                        \$asm_start, \$asm_end);
 
     #
     # Load the unregistered regions of the mapper
     #
     while($sth->fetch()) {
-      next if($asm_mapper->have_registered_component($cmp_seq_region_id) 
+      next if($asm_mapper->have_registered_component($cmp_seq_region_id)
                and !defined($self->{'multi_seq_ids'}->{$cmp_seq_region_id}));
       $asm_mapper->register_component($cmp_seq_region_id);
       $asm_mapper->mapper->add_map_coordinates(
@@ -447,7 +447,7 @@ sub register_assembled {
                  $ori,
                  $cmp_seq_region_id, $cmp_start, $cmp_end);
 
-      my $arr = [ $cmp_seq_region_id, $cmp_seq_region, 
+      my $arr = [ $cmp_seq_region_id, $cmp_seq_region,
                   $cmp_cs_id, $cmp_seq_region_length ];
 
       $self->{'sr_name_cache'}->{"$cmp_seq_region:$cmp_cs_id"} = $arr;
@@ -543,8 +543,8 @@ sub _seq_region_id_to_name {
 
   Arg [1]    : Bio::EnsEMBL::AssemblyMapper $asm_mapper
                A valid AssemblyMapper object
-  Arg [2]    : string $cmp_seq_region
-               The name of the seq_region to be registered
+  Arg [2]    : integer $cmp_seq_region
+               The dbID of the seq_region to be registered
   Description: Declares a component region to the AssemblyMapper.
                This extracts the relevant data from the assembly
                table and stores it in Mapper internal to the $asm_mapper.
@@ -578,7 +578,7 @@ sub register_component {
   my $asm_cs_id = $asm_mapper->assembled_CoordSystem()->dbID();
 
   #do nothing if this region is already registered or special case
-  return if($asm_mapper->have_registered_component($cmp_seq_region) 
+  return if($asm_mapper->have_registered_component($cmp_seq_region)
   and !defined($self->{'multi_seq_ids'}->{$cmp_seq_region}));
 
 #  my $cmp_seq_region_id =
@@ -612,10 +612,10 @@ sub register_component {
     return;
   }
 
-  #we do not currently support components mapping to multiple assembled 
-  # make sure that you've got the correct mapping in the meta-table : 
-  #   chromosome:EquCab2#contig ( use'#' for multiple mappings ) 
-  #   chromosome:EquCab2|contig ( use '|' delimiter for 1-1 mappings )  
+  #we do not currently support components mapping to multiple assembled
+  # make sure that you've got the correct mapping in the meta-table :
+  #   chromosome:EquCab2#contig ( use'#' for multiple mappings )
+  #   chromosome:EquCab2|contig ( use '|' delimiter for 1-1 mappings )
   #
   if($sth->rows() != 1) {
     throw("Multiple assembled regions for single " .
@@ -646,7 +646,7 @@ sub register_component {
 
 
 
-=head register_chained
+=head2 register_chained
 
   Arg [1]    : Bio::EnsEMBL::ChainedAssemblyMapper $casm_mapper
                The chained assembly mapper to register regions on
@@ -701,7 +701,7 @@ sub register_chained {
     }
     $to_seq_region_id = $to_slice->get_seq_region_id();
     if(!defined($to_seq_region_id)){
-      die "Could not get seq_region_id for to_slice".$to_slice->seq_region_name."\n"; 
+      die "Could not get seq_region_id for to_slice".$to_slice->seq_region_name."\n";
     }
   }
 
@@ -731,9 +731,9 @@ sub register_chained {
   }
 
   my $combined_mapper = $casm_mapper->first_last_mapper();
-  my $mid_cs     = $casm_mapper->middle_CoordSystem();
-  my $mid_name   = 'middle';
-  my $csa = $self->db->get_CoordSystemAdaptor();
+  my $mid_cs          = $casm_mapper->middle_CoordSystem();
+  my $mid_name        = 'middle';
+  my $csa             = $self->db->get_CoordSystemAdaptor();
 
   # Check for the simple case where the ChainedMapper is short
   if( ! defined $mid_cs ) {
@@ -835,7 +835,7 @@ CMPASM
     $asm2cmp_sth = $self->prepare($asm2cmp);
     $cmp2asm_sth = $self->prepare($cmp2asm);
   }
-  
+
 
 
   $sth = ($asm_cs->equals($start_cs)) ? $asm2cmp_sth : $cmp2asm_sth;
@@ -908,7 +908,7 @@ CMPASM
 
       #the region that we actually register may actually be larger or smaller
       #than the region that we wanted to register.
-      #register the intersection of the region so we do not end up doing 
+      #register the intersection of the region so we do not end up doing
       #extra work later
 
       if($start_start < $start || $start_end > $end) {
@@ -1023,7 +1023,7 @@ CMPASM
 }
 
 
-=head _register_chanied_special{
+=head2 _register_chained_special
 
   Arg [1]    : Bio::EnsEMBL::ChainedAssemblyMapper $casm_mapper
                The chained assembly mapper to register regions on
@@ -1160,8 +1160,11 @@ sub _register_chained_special {
   my $mid_cs_id;
 
   # Check for the simple case where the ChainedMapper is short
-  if( ! defined $mid_cs ) {
-      $start_mid_mapper = $combined_mapper;
+  if ( !defined $mid_cs ) {
+    $mid_cs_id        = $last_cs->dbID();
+    $start_mid_mapper = $combined_mapper;
+  } else {
+    $mid_cs_id = $mid_cs->dbID();
   }
 
   my @mid_ranges;
@@ -1179,7 +1182,7 @@ sub _register_chained_special {
       $id2 = $seq_region_id;
       $id1 = $to_slice->get_seq_region_id();
     }
-    
+
     foreach my $range (@$ranges) {
       my ($start, $end) = @$range;
       $sth->bind_param(1,$id1,SQL_INTEGER);
@@ -1191,14 +1194,14 @@ sub _register_chained_special {
 
       my ($mid_start, $mid_end, $mid_seq_region_id, $mid_seq_region, $mid_length,
 	  $ori, $start_start, $start_end);
-      
+
       $sth->bind_columns(\$mid_start, \$mid_end, \$mid_seq_region_id,
 			 \$mid_seq_region, \$mid_length, \$ori, \$start_start,
 			 \$start_end);
-      
+
       while($sth->fetch()) {
 	$found = 1;
-      
+
 	if( defined $mid_cs ) {
 	  $start_mid_mapper->add_map_coordinates
 	    (
@@ -1252,7 +1255,7 @@ sub _register_chained_special {
 	
 	#the region that we actually register may actually be larger or smaller
 	#than the region that we wanted to register.
-	#register the intersection of the region so we do not end up doing 
+	#register the intersection of the region so we do not end up doing
 	#extra work later
 	
 	if($start_start < $start || $start_end > $end) {
@@ -1453,28 +1456,31 @@ sub register_all_chained {
 
   my @path;
 
-  if( ! defined $mid_cs ) {
-    @path = @{$csa->get_mapping_path($first_cs, $last_cs)};
-    if(!defined($path[1]) ) {
-      $path[1] = $path[2];
-      $#path = 1;
+  if ( !defined $mid_cs ) {
+    @path = @{ $csa->get_mapping_path( $first_cs, $last_cs ) };
+    if ( !defined( $path[1] ) ) {
+      splice( @path, 1, 1 );
     }
   } else {
-    @path = @{$csa->get_mapping_path($first_cs, $mid_cs)};
+    @path = @{ $csa->get_mapping_path( $first_cs, $mid_cs ) };
     # fix for when we have something like supercontig#contig#chromosome
-    if(!defined($path[1])){
-      splice(@path,1,1);
+    if ( !defined( $path[1] ) ) {
+      splice( @path, 1, 1 );
     }
   }
 
-  if(@path != 2) {
-    my $path = join(',', map({$_->name .' '. $_->version} @path));
-    my $len  = scalar(@path) - 1;
-    throw("Unexpected mapping path between start and intermediate " .
-	  "coord systems (". $first_cs->name . " " . $first_cs->version .
-	  " and " . $mid_cs->name . " " . $mid_cs->version . ")." .
-	  "\nExpected path length 1, got $len. " .
-	  "(path=$path)");
+  if ( @path != 2 ) {
+    my $path =
+      join( ',', map( { $_->name . ' ' . $_->version } @path ) );
+    my $len = scalar(@path) - 1;
+    throw(   "Unexpected mapping path between start and intermediate "
+           . "coord systems ("
+           . $first_cs->name . " "
+           . $first_cs->version . " and "
+           . $mid_cs->name . " "
+           . $mid_cs->version . ")."
+           . "\nExpected path length 1, got $len. "
+           . "(path=$path)" );
   }
 
   my ($asm_cs,$cmp_cs) = @path;
@@ -1504,7 +1510,7 @@ sub register_all_chained {
 
   my ( $mid_cs_id, $start_cs_id, $reg, $mapper );
   if( ! defined $mid_cs ) {
-    
+
     $mid_cs_id = $last_cs->dbID();
     $start_cs_id = $first_cs->dbID();
     $mapper = $combined_mapper;
@@ -1542,27 +1548,32 @@ sub register_all_chained {
     $self->{'sr_name_cache'}->{"$start_seq_region:$start_cs_id"} = $arr;
     $self->{'sr_id_cache'}->{"$start_seq_region_id"} = $arr;
   }
-  
+
   if( ! defined $mid_cs ) {
     # thats it for the simple case
     return;
   }
 
 
-  @path = @{$csa->get_mapping_path($last_cs, $mid_cs)};
-  if(defined($mid_cs)){
-    if(!defined($path[1])){
-      splice(@path,1,1);
+  @path = @{ $csa->get_mapping_path( $last_cs, $mid_cs ) };
+  if ( defined($mid_cs) ) {
+    if ( !defined( $path[1] ) ) {
+      splice( @path, 1, 1 );
     }
   }
-  if(@path != 2) {
-    my $path = join(',', map({$_->name .' '. $_->version} @path));
-    my $len  = scalar(@path) - 1;
-    throw("Unexpected mapping path between start and intermediate " .
-	  "coord systems (". $last_cs->name . " " . $last_cs->version .
-	  " and " . $mid_cs->name . " " . $mid_cs->version . ")." .
-	  "\nExpected path length 1, got $len. " .
-	  "(path=$path)");
+
+  if ( @path != 2 ) {
+    my $path =
+      join( ',', map( { $_->name . ' ' . $_->version } @path ) );
+    my $len = scalar(@path) - 1;
+    throw(   "Unexpected mapping path between intermediate and last "
+           . "coord systems ("
+           . $last_cs->name . " "
+           . $last_cs->version . " and "
+           . $mid_cs->name . " "
+           . $mid_cs->version . ")."
+           . "\nExpected path length 1, got $len. "
+           . "(path=$path)" );
   }
 
   ($asm_cs,$cmp_cs) = @path;
@@ -1605,7 +1616,7 @@ sub register_all_chained {
     $self->{'sr_id_cache'}->{"$end_seq_region_id"} = $arr;
   }
 
-  _build_combined_mapper( \@ranges, $start_mid_mapper, $end_mid_mapper, 
+  _build_combined_mapper( \@ranges, $start_mid_mapper, $end_mid_mapper,
                           $combined_mapper, "first" );
 
   return;
@@ -1614,7 +1625,7 @@ sub register_all_chained {
 
 
 # after both halves of a chained mapper are loaded
-# this function maps all ranges in $ranges and loads the 
+# this function maps all ranges in $ranges and loads the
 # results into the combined mapper
 sub _build_combined_mapper {
   my $ranges = shift;
@@ -1640,7 +1651,7 @@ sub _build_combined_mapper {
         $sum += $icoord->length();
         next;
       }
-      
+
 
       #feed the results of the first mapping into the second mapper
       my @final_coords =
@@ -1649,10 +1660,9 @@ sub _build_combined_mapper {
                                          $icoord->strand, $mid_name);
 
 
-      my $istrand = $icoord->strand();
       foreach my $fcoord (@final_coords) {
         #load up the final mapper
-      
+
         if($fcoord->isa('Bio::EnsEMBL::Mapper::Coordinate')) {
           my $total_start = $start + $sum;
           my $total_end   = $total_start + $fcoord->length - 1;
@@ -1684,7 +1694,7 @@ sub _build_combined_mapper {
   Example    : my @ids = @{$asma->seq_regions_to_ids($coord_sys, \@seq_regs)};
   Description: Converts a list of seq_region names to internal identifiers
                using the internal cache that has accumulated while registering
-               regions for AssemblyMappers. If any requested regions are 
+               regions for AssemblyMappers. If any requested regions are
                not  found in the cache an attempt is made to retrieve them
                from the database.
   Returntype : listref of ints
@@ -1722,7 +1732,7 @@ sub seq_regions_to_ids {
   Example    : my @ids = @{$asma->ids_to_seq_regions(\@seq_ids)};
   Description: Converts a list of seq_region ids to seq region names
                using the internal cache that has accumulated while registering
-               regions for AssemblyMappers. If any requested regions are 
+               regions for AssemblyMappers. If any requested regions are
                not  found in the cache an attempt is made to retrieve them
                from the database.
   Returntype : listref of strings
@@ -1759,7 +1769,7 @@ sub seq_ids_to_regions {
  Status     : At risk
 
 =cut
- 
+
 sub delete_cache{
   my ($self) = @_;
 
