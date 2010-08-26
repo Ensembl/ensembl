@@ -102,6 +102,14 @@ use vars qw(@ISA);
         string - the genes source, e.g. "ensembl"
   Arg [-IS_CURRENT]:
         Boolean - specifies if this is the current version of the gene
+  Arg [-CANONICAL_TRANSCRIPT]:
+        Bio::EnsEMBL::Transcript - the canonical transcript of this gene
+  Arg [-CANONICAL_TRANSCRIPT_ID]:
+        integer - the canonical transcript dbID of this gene, if the
+        transcript object itself is not available.
+  Arg [-CANONICAL_ANNOTATION]:
+        string - canonical annotation
+
   Example    : $gene = Bio::EnsEMBL::Gene->new(...);
   Description: Creates a new gene object
   Returntype : Bio::EnsEMBL::Gene
@@ -626,6 +634,8 @@ sub add_DBEntry {
 
 =head2 get_all_DBEntries
 
+  Arg [1]    : (optional) string external database name
+  Arg [2]    : (optional) string external_db type
   Example    : @dbentries = @{ $gene->get_all_DBEntries };
   Description: Retrieves DBEntries (xrefs) for this gene. This does _not_ 
                include DBEntries that are associated with the transcripts and
@@ -642,25 +652,30 @@ sub add_DBEntry {
 =cut
 
 sub get_all_DBEntries {
-  my ($self, $db_name_exp, $ex_db_type) = @_;
+  my ( $self, $db_name_exp, $ex_db_type ) = @_;
+
   my $cache_name = "dbentries";
 
-  if(defined($db_name_exp)){
+  if ( defined($db_name_exp) ) {
     $cache_name .= $db_name_exp;
   }
-  if(defined($ex_db_type)){
+
+  if ( defined($ex_db_type) ) {
     $cache_name .= $ex_db_type;
   }
+
   # if not cached, retrieve all of the xrefs for this gene
-  if(!defined $self->{$cache_name} && $self->adaptor()) {
-    $self->{$cache_name} = 
-      $self->adaptor->db->get_DBEntryAdaptor->fetch_all_by_Gene($self,$db_name_exp, $ex_db_type);
+  if ( !defined( $self->{$cache_name} ) && defined( $self->adaptor() ) )
+  {
+    $self->{$cache_name} =
+      $self->adaptor->db->get_DBEntryAdaptor->fetch_all_by_Gene( $self,
+                                            $db_name_exp, $ex_db_type );
   }
 
   $self->{$cache_name} ||= [];
 
   return $self->{$cache_name};
-}
+} ## end sub get_all_DBEntries
 
 
 =head2 get_all_DBLinks
