@@ -20,7 +20,7 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::ChainedAssemblyMapper - 
+Bio::EnsEMBL::ChainedAssemblyMapper -
 Handles mapping between two coordinate systems using the information
 stored in the assembly table
 
@@ -86,7 +86,7 @@ use Bio::EnsEMBL::Mapper::RangeRegistry;
 use Bio::EnsEMBL::Utils::Exception qw(throw deprecate);
 
 #2^20 = approx 10^6
-my $CHUNKFACTOR = 20; 
+my $CHUNKFACTOR = 20;
 
 # max size of the pair cache in the mappers
 my $DEFAULT_MAX_PAIR_COUNT = 6000;
@@ -185,7 +185,7 @@ sub max_pair_count {
                so that all of the information can be stored.  This method
                is useful when *a lot* of mapping will be done in regions
                which are distributed around the genome.   After registration
-               the mapper will consume a lot of memory but will not have to 
+               the mapper will consume a lot of memory but will not have to
                perform any SQL and will be faster.
   Returntype : none
   Exceptions : none
@@ -223,7 +223,7 @@ sub flush {
   Caller     : general
   Status     : Stable
 
-=cut 
+=cut
 
 sub size {
   my $self = shift;
@@ -374,7 +374,7 @@ sub fastmap {
   Example    : foreach $id ($asm_mapper->list_ids('X',1,1000,$chr_cs)) {...}
   Description: Retrieves a list of overlapping seq_region internal identifiers
                of another coordinate system.  This is the same as the
-               list_seq_regions method but uses internal identfiers rather 
+               list_seq_regions method but uses internal identfiers rather
                than seq_region strings
   Returntype : List of ints
   Exceptions : none
@@ -470,7 +470,7 @@ sub list_ids {
                The coordinate system to obtain overlapping ids of
   Example    : foreach $id ($asm_mapper->list_ids('X',1,1000,$ctg_cs)) {...}
   Description: Retrieves a list of overlapping seq_region internal identifiers
-               of another coordinate system.  This is the same as the 
+               of another coordinate system.  This is the same as the
                list_ids method but uses seq_region names rather internal ids
   Returntype : List of strings
   Exceptions : none
@@ -515,7 +515,7 @@ sub list_seq_regions {
   Caller     : internal
   Status     : Stable
 
-=cut 
+=cut
 
 sub first_last_mapper {
   my $self = shift;
@@ -532,9 +532,9 @@ sub first_last_mapper {
   Caller     : internal
   Status     : Stable
 
-=cut 
+=cut
 
- 
+
 sub first_middle_mapper {
   my $self = shift;
   return $self->{'first_mid_mapper'};
@@ -550,7 +550,7 @@ sub first_middle_mapper {
   Caller     : internal
   Status     : Stable
 
-=cut 
+=cut
 
 sub last_middle_mapper {
   my $self = shift;
@@ -568,7 +568,7 @@ sub last_middle_mapper {
   Caller     : internal
   Status     : Stable
 
-=cut 
+=cut
 
 sub first_CoordSystem {
   my $self = shift;
@@ -586,7 +586,7 @@ sub first_CoordSystem {
   Caller     : internal
   Status     : Stable
 
-=cut 
+=cut
 
 sub middle_CoordSystem {
   my $self = shift;
@@ -603,7 +603,7 @@ sub middle_CoordSystem {
   Caller     : internal
   Status     : Stable
 
-=cut 
+=cut
 
 sub last_CoordSystem {
   my $self = shift;
@@ -613,31 +613,31 @@ sub last_CoordSystem {
 =head2 first_registry
 
   Args       : none
-  Example    : $coordsys = $cam->first_registry();
+  Example    : $rr = $cam->first_registry();
   Description: return the Registry.
   Returntype : Bio::EnsEMBL::Mapper::RangeRegistry
   Exceptions : none
   Caller     : internal
   Status     : Stable
 
-=cut 
- 
+=cut
+
 sub first_registry {
   my $self = shift;
   return $self->{'first_registry'};
 }
 
-=head2 lsst_registry
+=head2 last_registry
 
   Args       : none
-  Example    : $coordsys = $cam->lsst_registry();
+  Example    : $rr = $cam->last_registry();
   Description: return the Registry.
   Returntype : Bio::EnsEMBL::Mapper::RangeRegistry
   Exceptions : none
   Caller     : internal
   Status     : Stable
 
-=cut 
+=cut
 
 sub last_registry {
   my $self = shift;
@@ -645,14 +645,11 @@ sub last_registry {
 }
 
 
-
-
-
 #
-# Methods supplied to maintain polymorphism with AssemblyMapper
-# there is no real assembled or component in the chained mapper, since the
-# ordering is arbitrary and both ends might actually be assembled, but these
-# methods provide convenient synonyms
+# Methods supplied to maintain polymorphism with AssemblyMapper there
+# is no real assembled or component in the chained mapper, since the
+# ordering is arbitrary and both ends might actually be assembled, but
+# these methods provide convenient synonyms
 #
 
 =head2 mapper
@@ -665,7 +662,7 @@ sub last_registry {
   Caller     : internal
   Status     : Stable
 
-=cut 
+=cut
 
 sub mapper {
   my $self = shift;
@@ -682,7 +679,7 @@ sub mapper {
   Caller     : internal
   Status     : Stable
 
-=cut 
+=cut
 
 
 sub assembled_CoordSystem {
@@ -700,7 +697,7 @@ sub assembled_CoordSystem {
   Caller     : internal
   Status     : Stable
 
-=cut 
+=cut
 
 sub component_CoordSystem {
   my $self = shift;
@@ -813,7 +810,7 @@ sub list_contig_ids {
 
   deprecate('Use list_ids() instead.');
 
-  return $self->list_ids($chr_name, $start, $end, 
+  return $self->list_ids($chr_name, $start, $end,
                          $self->assembled_CoordSystem());
 }
 
