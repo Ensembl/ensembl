@@ -56,6 +56,7 @@ use Scalar::Util qw(weaken);
 
 use Bio::EnsEMBL::Utils::Exception qw( deprecate throw warning );
 use Bio::EnsEMBL::Utils::Argument qw( rearrange );
+use Bio::EnsEMBL::Utils::Scalar qw( assert_ref );
 
 use Bio::EnsEMBL::Storable;
 
@@ -153,16 +154,15 @@ sub transcript {
   my ( $self, $transcript ) = @_;
 
   if ( defined($transcript) ) {
-    if (    !ref($transcript)
-         || !$transcript->isa('Bio::EnsEMBL::Transcript') )
-    {
-      throw("Argument is not a transcript");
-    }
+    assert_ref( $transcript, 'Bio::EnsEMBL::Transcript' );
 
     $self->{'transcript'} = $transcript;
 
     weaken( $self->{'transcript'} );    # Avoid circular references.
 
+  } elsif ( @_ > 1 ) {
+    # Break connection to transcript.
+    delete( $self->{'transcript'} );
   } elsif ( !defined( $self->{'transcript'} ) ) {
     my $adaptor = $self->{'adaptor'};
     if ( !defined($adaptor) ) {
@@ -180,10 +180,10 @@ sub transcript {
       $adaptor->db()->get_TranscriptAdaptor()
       ->fetch_by_translation_id($dbID);
 
-    # Do not weaken the reference if we had to get the transcript from the
-    # database.  The user is probably working on translations directly,
-    # not going through transcripts.
-    #weaken( $self->{'transcript'} );    # Avoid circular references.
+  # Do not weaken the reference if we had to get the transcript from the
+  # database.  The user is probably working on translations directly,
+  # not going through transcripts.
+  #weaken( $self->{'transcript'} );    # Avoid circular references.
   }
 
   return $self->{'transcript'};
