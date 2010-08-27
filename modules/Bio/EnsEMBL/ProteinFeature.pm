@@ -55,12 +55,17 @@ use vars qw(@ISA);
 
 =head2 new
 
-  Arg [IDESC]       : (optional) string An interpro description
-  Arg [INTERPRO_AC] : (optional) string An interpro accession
-  Arg [...]         : named arguments to FeaturePair superclass
-  Example    : $pf = Bio::EnsEMBL::ProteinFeature->new(-IDESC => $idesc,
-                                                       -INTERPRO_AC => $iac,
-                                                       @fp_args);
+  Arg [IDESC]           : (optional) string An interpro description
+  Arg [INTERPRO_AC]     : (optional) string An interpro accession
+  Arg [TRANSLATION_ID]  : (optional) integer A translation dbID
+  Arg [...]             : named arguments to FeaturePair superclass
+  Example    :
+
+    $pf =
+      Bio::EnsEMBL::ProteinFeature->new( -IDESC       => $idesc,
+                                         -INTERPRO_AC => $iac,
+                                         @fp_args );
+
   Description: Instantiates a Bio::EnsEMBL::ProteinFeature
   Returntype : Bio::EnsEMBL::FeaturePair
   Exceptions : none
@@ -70,18 +75,19 @@ use vars qw(@ISA);
 =cut
 
 sub new {
-  my $caller = shift;
+  my $proto = shift;
 
-  my $class = ref($caller) || $caller;
+  my $class = ref($proto) || $proto;
 
-  my ($idesc, $interpro_ac, $translation_id) = rearrange(['IDESC', 'INTERPRO_AC', 'TRANSLATION_ID'], @_);
+  my ( $idesc, $interpro_ac, $translation_id ) =
+    rearrange( [ 'IDESC', 'INTERPRO_AC', 'TRANSLATION_ID' ], @_ );
 
   my $self = $class->SUPER::new(@_);
 
-  #the strand of protein features is always 0
-  $self->{'strand'}      = 0;
-  $self->{'idesc'}       = $idesc || '';
-  $self->{'interpro_ac'} = $interpro_ac || '';
+  # the strand of protein features is always 0
+  $self->{'strand'}         = 0;
+  $self->{'idesc'}          = $idesc || '';
+  $self->{'interpro_ac'}    = $interpro_ac || '';
   $self->{'translation_id'} = $translation_id || '';
 
   return $self;
@@ -110,7 +116,7 @@ sub strand {
 
   Arg [1]    : (optional) string The interpro description
   Example    : print $protein_feature->idesc();
-  Description: Getter/Setter for the interpro description of this protein 
+  Description: Getter/Setter for the interpro description of this protein
                feature.
   Returntype : string
   Exceptions : none
@@ -131,7 +137,7 @@ sub idesc{
 
   Arg [1]    : (optional) string The interpro accession
   Example    : print $protein_feature->interpro_ac();
-  Description: Getter/Setter for the interpro accession of this protein 
+  Description: Getter/Setter for the interpro accession of this protein
                feature.
   Returntype : string
   Exceptions : none
@@ -147,11 +153,11 @@ sub interpro_ac{
 }
 
 
-=head2 idesc
+=head2 translation_id
 
-  Arg [1]    : (optional) string The interpro description
-  Example    : print $protein_feature->idesc();
-  Description: Getter/Setter for the interpro description of this protein 
+  Arg [1]    : (optional) integer The dbID of the translation
+  Example    : print $protein_feature->translation_id();
+  Description: Getter/Setter for the translation dbID of this protein
                feature.
   Returntype : string
   Exceptions : none
@@ -160,9 +166,9 @@ sub interpro_ac{
 
 =cut
 
-sub translation_id{
+sub translation_id {
   my $self = shift;
-  $self->{'translation_id'} = shift if(@_);
+  $self->{'translation_id'} = shift if (@_);
   return $self->{'translation_id'};
 }
 
