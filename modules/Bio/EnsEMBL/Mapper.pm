@@ -675,7 +675,6 @@ sub map_indel {
   unless ( defined $hash ) {
     throw("Type $type is neither to or from coordinate systems");
   }
-  my $last_used_pair;
   my @indel_coordinates;
 
   my ( $start_idx, $end_idx, $mid_idx, $pair, $self_coord );
@@ -711,7 +710,6 @@ sub map_indel {
       push @indel_coordinates, $to;
       last;
     }
-    $last_used_pair = $pair;
   }
 
   return @indel_coordinates;
