@@ -528,54 +528,56 @@ sub fastmap {
     Arg  4      int $strand
                 relative orientation of source and target (+/- 1)
     Arg  5      int $id
-                id of 'targe' sequence
+                id of 'target' sequence
     Arg  6      int $start
-                start coordinate of 'targe' sequence
+                start coordinate of 'target' sequence
     Arg  7      int $end
-                end coordinate of 'targe' sequence
-    Function    stores details of mapping between two regions:
-                'source' and 'target'. Returns 1 if the pair was added, 0 if it
-                was already in.
-    Returntype  int 0,1
+                end coordinate of 'target' sequence
+    Function    Stores details of mapping between
+                'source' and 'target' regions.
+    Returntype  none
     Exceptions  none
     Caller      Bio::EnsEMBL::Mapper
 
 =cut
 
-sub add_map_coordinates{
-  my ($self, $contig_id, $contig_start, $contig_end, 
-      $contig_ori, $chr_name, $chr_start, $chr_end) = @_;
+sub add_map_coordinates {
+  my ( $self, $contig_id, $contig_start, $contig_end, $contig_ori,
+       $chr_name, $chr_start, $chr_end )
+    = @_;
 
-  unless(defined($contig_id) && defined($contig_start) && defined($contig_end)
-	 && defined($contig_ori) && defined($chr_name) && defined($chr_start)
-	 && defined($chr_end)) {
+  unless (    defined($contig_id)
+           && defined($contig_start)
+           && defined($contig_end)
+           && defined($contig_ori)
+           && defined($chr_name)
+           && defined($chr_start)
+           && defined($chr_end) )
+  {
     throw("7 arguments expected");
   }
 
-  if( ($contig_end - $contig_start)  != ($chr_end - $chr_start) ) {
+  if ( ( $contig_end - $contig_start ) != ( $chr_end - $chr_start ) ) {
     throw("Cannot deal with mis-lengthed mappings so far");
   }
 
+  my $from = Bio::EnsEMBL::Mapper::Unit->new( $contig_id, $contig_start,
+                                              $contig_end );
+  my $to =
+    Bio::EnsEMBL::Mapper::Unit->new( $chr_name, $chr_start, $chr_end );
 
-  my $from =
-    Bio::EnsEMBL::Mapper::Unit->new($contig_id, $contig_start, $contig_end);
-  my $to   =
-    Bio::EnsEMBL::Mapper::Unit->new($chr_name, $chr_start, $chr_end);
-
-  my $pair = Bio::EnsEMBL::Mapper::Pair->new($from, $to, $contig_ori);
+  my $pair = Bio::EnsEMBL::Mapper::Pair->new( $from, $to, $contig_ori );
 
   # place into hash on both ids
-  my $map_to = $self->{'to'};
+  my $map_to   = $self->{'to'};
   my $map_from = $self->{'from'};
 
-  push( @{$self->{"_pair_$map_to"}->{uc($chr_name)}}, $pair );
-  push( @{$self->{"_pair_$map_from"}->{uc($contig_id)}}, $pair );
+  push( @{ $self->{"_pair_$map_to"}->{ uc($chr_name) } },    $pair );
+  push( @{ $self->{"_pair_$map_from"}->{ uc($contig_id) } }, $pair );
 
   $self->{'pair_count'}++;
-
   $self->{'_is_sorted'} = 0;
-
-}
+} ## end sub add_map_coordinates
 
 
 =head2 add_indel_coordinates
