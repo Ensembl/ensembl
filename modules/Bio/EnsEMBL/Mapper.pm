@@ -199,7 +199,7 @@ sub map_coordinates {
   my $lr = $hash->{ uc($id) };
 
   $start_idx = 0;
-  $end_idx   = $#$lr;
+  $end_idx   = $#{$lr};
 
   # binary search the relevant pairs
   # helps if the list is big
@@ -217,7 +217,7 @@ sub map_coordinates {
   my $rank              = 0;
   my $orig_start        = $start;
   my $last_target_coord = undef;
-  for ( my $i = $start_idx; $i <= $#$lr; $i++ ) {
+  for ( my $i = $start_idx; $i <= $#{$lr}; $i++ ) {
     $pair = $lr->[$i];
     my $self_coord   = $pair->{$from};
     my $target_coord = $pair->{$to};
@@ -681,7 +681,7 @@ sub map_indel {
   my $lr = $hash->{ uc($id) };
 
   $start_idx = 0;
-  $end_idx   = $#$lr;
+  $end_idx   = $#{$lr};
 
   # binary search the relevant pairs
   # helps if the list is big
@@ -696,7 +696,7 @@ sub map_indel {
     }
   }
 
-  for ( my $i = $start_idx; $i <= $#$lr; $i++ ) {
+  for ( my $i = $start_idx; $i <= $#{$lr}; $i++ ) {
     $pair = $lr->[$i];
     my $self_coord   = $pair->{$from};
     my $target_coord = $pair->{$to};
@@ -947,7 +947,7 @@ sub _merge_pairs {
     
     my $i = 0;
     my $next = 1;
-    my $length = $#$lr;
+    my $length = $#{$lr};
     while( $next <= $length ) {
       $current_pair = $lr->[$i];
       $next_pair = $lr->[$next];
@@ -989,7 +989,7 @@ sub _merge_pairs {
 	  if( defined $del_pair ) {
 	      splice( @$lr, $next, 1 );
 	      $lr_from = $self->{"_pair_$map_from"}->{uc($del_pair->{'from'}->{'id'})};
-	      for( my $j=0; $j <= $#$lr_from; $j++ ) {
+	      for( my $j=0; $j <= $#{$lr}_from; $j++ ) {
 		  if( $lr_from->[$j] == $del_pair ) {
 		      splice( @$lr_from, $j, 1 );
 		      last;
