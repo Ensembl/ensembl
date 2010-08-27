@@ -989,7 +989,7 @@ sub _merge_pairs {
 	  if( defined $del_pair ) {
 	      splice( @$lr, $next, 1 );
 	      $lr_from = $self->{"_pair_$map_from"}->{uc($del_pair->{'from'}->{'id'})};
-	      for( my $j=0; $j <= $#{$lr}_from; $j++ ) {
+	      for( my $j=0; $j <= $#{$lr_from}; $j++ ) {
 		  if( $lr_from->[$j] == $del_pair ) {
 		      splice( @$lr_from, $j, 1 );
 		      last;
