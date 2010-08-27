@@ -154,14 +154,17 @@ sub check_and_register {
     throw("ID, start, end arguments are required");
   }
 
+  # The following was commented out due to Ensembl Genomes requirements
+  # for bacterial genomes.
+  #
   ## if ( $start > $end ) {
-  ##   throw("start argument [$start] must be less than end argument [$end]");
+  ##   throw(   "start argument [$start] must be less than "
+  ##          . "(or equal to) end argument [$end]" );
   ## }
-
+  ##
   ## if ( $rstart > $rend ) {
-  ##   throw(
-  ##     "rend [$rstart] argument must be less than rend [$rend]  argument"
-  ##   );
+  ##   throw(   "rstart argument [$rstart] must be less than "
+  ##          . "(or equal to) rend argument [$rend]  argument" );
   ## }
 
   if ( $rstart > $start ) {
@@ -284,7 +287,7 @@ sub check_and_register {
 
   Arg [1]    : string $id
   Arg [2]    : int $start
-  Arg [1]    : int $end
+  Arg [3]    : int $end
   Example    : my $overlap_size = $rr->( "chr1", 1, 100_000_000 )
   Description: finds out how many bases of the given range are registered
   Returntype : int
