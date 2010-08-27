@@ -772,7 +772,7 @@ sub add_Mapper{
                 start coordinate of 'source' sequence
     Arg  3      int $end
                 end coordinate of 'source' sequence
-    Arg  4      int $type
+    Arg  4      string $type
                 nature of transform - gives the type of
                 coordinates to be transformed *from*
     Function    list all pairs of mappings in a region
@@ -782,62 +782,62 @@ sub add_Mapper{
 
 =cut
 
-sub list_pairs{
-   my ($self, $id, $start, $end, $type) = @_;
+sub list_pairs {
+  my ( $self, $id, $start, $end, $type ) = @_;
 
+  if ( !$self->{'_is_sorted'} ) { $self->_sort() }
 
-   if( ! $self->{'_is_sorted'} ) { $self->_sort() }
+  if ( !defined $type ) {
+    throw("Expected 4 arguments");
+  }
 
-   if( !defined $type ) {
-       throw("Must start,end,id,type as coordinates");
-   }
+  if ( $start > $end ) {
+    throw(   "Start is greater than end "
+           . "for id $id, start $start, end $end\n" );
+  }
 
-   if( $start > $end ) {
-     throw("Start is greater than end for id $id, start $start, end $end\n");
-   }
+  my $hash = $self->{"_pair_$type"};
 
-   my $hash = $self->{"_pair_$type"};
+  my ( $from, $to );
 
-   my ($from, $to);
+  if ( $type eq $self->{'to'} ) {
+    $from = 'to';
+    $to   = 'from';
+  } else {
+    $from = 'from';
+    $to   = 'to';
+  }
 
-   if($type eq $self->{'to'}) {
-     $from = 'to';
-     $to = 'from';
-   } else {
-     $from = 'from';
-     $to = 'to';
-   }
-     
-   unless(defined $hash) {
-     throw("Type $type is neither to or from coordinate systems");
-   }
+  unless ( defined $hash ) {
+    throw("Type $type is neither to or from coordinate systems");
+  }
 
-   my @list;
+  my @list;
 
-   unless(exists $hash->{uc($id)}) {
-     return ();
-   }
+  unless ( exists $hash->{ uc($id) } ) {
+    return ();
+  }
 
-   @list = @{$hash->{uc($id)}}; 
+  @list = @{ $hash->{ uc($id) } };
 
-   my @output;
-   if( $start == -1 && $end == -1 ) {
-     return @list;
-   } else {
-     
-     foreach my $p ( @list ) {
-       
-       if( $p->{$from}->{'end'} < $start ) {
-	 next;
-       }
-       if( $p->{$from}->{'start'} > $end ) {
-	 last;
-       }
-       push(@output,$p);
-     }
-     return @output;
-   }
-}
+  my @output;
+  if ( $start == -1 && $end == -1 ) {
+    return @list;
+  } else {
+
+    foreach my $p (@list) {
+
+      if ( $p->{$from}->{'end'} < $start ) {
+        next;
+      }
+      if ( $p->{$from}->{'start'} > $end ) {
+        last;
+      }
+      push( @output, $p );
+    }
+    return @output;
+  }
+} ## end sub list_pairs
 
 
 =head2 from, to
