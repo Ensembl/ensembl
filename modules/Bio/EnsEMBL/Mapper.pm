@@ -138,7 +138,7 @@ sub flush {
                 end coordinate of 'source' sequence
     Arg  4      int $strand
                 raw contig orientation (+/- 1)
-    Arg  5      int $type
+    Arg  5      string $type
                 nature of transform - gives the type of
                 coordinates to be transformed *from*
     Function    generic map method
@@ -149,209 +149,202 @@ sub flush {
 
 =cut
 
-sub map_coordinates{
-   my ($self, $id, $start, $end, $strand, $type) = @_;
+sub map_coordinates {
+  my ( $self, $id, $start, $end, $strand, $type ) = @_;
 
-   unless(defined($id) && defined($start) && defined($end) && 
-	  defined($strand) && defined($type) ) {
-       throw("Must start,end,strand,id,type as coordinates");
-   }
-   
+  unless (    defined($id)
+           && defined($start)
+           && defined($end)
+           && defined($strand)
+           && defined($type) )
+  {
+    throw("Expecting 5 arguments");
+  }
 
-   
+  # special case for handling inserts:
+  if ( $start == $end + 1 ) {
+    return $self->map_insert( $id, $start, $end, $strand, $type );
+  }
 
+  if ( !$self->{'_is_sorted'} ) { $self->_sort() }
 
-   # special case for handling inserts:
-   if($start == $end + 1) {
-     return $self->map_insert($id, $start, $end, $strand, $type);
-   }
+  my $hash = $self->{"_pair_$type"};
 
-   if( ! $self->{'_is_sorted'} ) { $self->_sort() }
+  my ( $from, $to, $cs );
 
-   my $hash = $self->{"_pair_$type"};
+  if ( $type eq $self->{'to'} ) {
+    $from = 'to';
+    $to   = 'from';
+    $cs   = $self->{'from_cs'};
+  } else {
+    $from = 'from';
+    $to   = 'to';
+    $cs   = $self->{'to_cs'};
+  }
 
-   my ($from, $to, $cs);
+  unless ( defined $hash ) {
+    throw("Type $type is neither to or from coordinate systems");
+  }
 
-   if($type eq $self->{'to'}) {
-     $from = 'to';
-     $to = 'from';
-     $cs = $self->{'from_cs'};
-   } else {
-     $from = 'from';
-     $to = 'to';
-     $cs = $self->{'to_cs'};
-   }
+  if ( !defined $hash->{ uc($id) } ) {
+    # one big gap!
+    my $gap = Bio::EnsEMBL::Mapper::Gap->new( $start, $end );
+    return $gap;
+  }
 
-   unless(defined $hash) {
-       throw("Type $type is neither to or from coordinate systems");
-   }
+  my $last_used_pair;
+  my @result;
 
-   if( !defined $hash->{uc($id)} ) {
-       # one big gap!
-       my $gap = Bio::EnsEMBL::Mapper::Gap->new($start, $end);
-       return $gap;
-   }
+  my ( $start_idx, $end_idx, $mid_idx, $pair, $self_coord );
+  my $lr = $hash->{ uc($id) };
 
-   my $last_used_pair;
-   my @result;
+  $start_idx = 0;
+  $end_idx   = $#$lr;
 
-   my ( $start_idx, $end_idx, $mid_idx, $pair, $self_coord );
-   my $lr = $hash->{uc($id)};
-   
-   $start_idx = 0;
-   $end_idx = $#$lr;
-   
-   # binary search the relevant pairs
-   # helps if the list is big
-   while(( $end_idx - $start_idx ) > 1 ) {
-     $mid_idx = ($start_idx+$end_idx)>>1;
-     $pair = $lr->[$mid_idx];
-     $self_coord   = $pair->{$from};
-     if( $self_coord->{'end'} < $start ) {
-       $start_idx = $mid_idx;
-     } else {
-       $end_idx = $mid_idx;
-     }
-   }
+  # binary search the relevant pairs
+  # helps if the list is big
+  while ( ( $end_idx - $start_idx ) > 1 ) {
+    $mid_idx    = ( $start_idx + $end_idx ) >> 1;
+    $pair       = $lr->[$mid_idx];
+    $self_coord = $pair->{$from};
+    if ( $self_coord->{'end'} < $start ) {
+      $start_idx = $mid_idx;
+    } else {
+      $end_idx = $mid_idx;
+    }
+  }
 
- 
-   my $rank = 0;
-   my $orig_start = $start;
-   my $last_target_coord = undef;
-   for( my $i = $start_idx; $i<=$#$lr; $i++ ) {
-     $pair = $lr->[$i];
-     my $self_coord   = $pair->{$from};
-     my $target_coord = $pair->{$to};
+  my $rank              = 0;
+  my $orig_start        = $start;
+  my $last_target_coord = undef;
+  for ( my $i = $start_idx; $i <= $#$lr; $i++ ) {
+    $pair = $lr->[$i];
+    my $self_coord   = $pair->{$from};
+    my $target_coord = $pair->{$to};
 
+    #
+    # But not the case for haplotypes!! need to test for this case???
+    # so removing this till a better solution is found
+    #
+    #
+    #     if($self_coord->{'start'} < $start){
+    #       $start = $orig_start;
+    #       $rank++;
+    #     }
 
+    if ( defined($last_target_coord)
+         and $target_coord->{'id'} ne $last_target_coord )
+    {
+      if ( $self_coord->{'start'} < $start )
+      {    # i.e. the same bit is being mapped to another assembled bit
+        $start = $orig_start;
+      }
+    } else {
+      $last_target_coord = $target_coord->{'id'};
+    }
 
-#
-# But not the case for haplotypes!! need to test for this case???
-# so removing this till a better solution is found
-#
-#
-#     if($self_coord->{'start'} < $start){
-#       $start = $orig_start;
-#       $rank++;
-#     }
+    # if we haven't even reached the start, move on
+    if ( $self_coord->{'end'} < $orig_start ) {
+      next;
+    }
 
+    # if we have over run, break
+    if ( $self_coord->{'start'} > $end ) {
+      last;
+    }
 
-     if(defined($last_target_coord) and $target_coord->{'id'} ne $last_target_coord){
-       if($self_coord->{'start'} < $start){ # i.e. the same bit is being mapped to another assembled bit
-	 $start = $orig_start;
-       }
-     } 
-     else{
-       $last_target_coord = $target_coord->{'id'};
-     }
+    if ( $start < $self_coord->{'start'} ) {
+      # gap detected
+      my $gap = Bio::EnsEMBL::Mapper::Gap->new( $start,
+                                    $self_coord->{'start'} - 1, $rank );
 
+      push( @result, $gap );
+      $start = $gap->{'end'} + 1;
+    }
+    my ( $target_start, $target_end, $target_ori );
+    my $res;
+    if ( exists $pair->{'indel'} ) {
+      # When next pair is an IndelPair and not a Coordinate, create the
+      # new mapping Coordinate, the IndelCoordinate.
+      $target_start = $target_coord->{'start'};
+      $target_end   = $target_coord->{'end'};
 
+      #create a Gap object
+      my $gap = Bio::EnsEMBL::Mapper::Gap->new( $start,
+        ( $self_coord->{'end'} < $end ? $self_coord->{'end'} : $end ) );
+      #create the Coordinate object
+      my $coord =
+        Bio::EnsEMBL::Mapper::Coordinate->new( $target_coord->{'id'},
+              $target_start, $target_end, $pair->{'ori'}*$strand, $cs );
+      #and finally, the IndelCoordinate object with
+      $res = Bio::EnsEMBL::Mapper::IndelCoordinate->new( $gap, $coord );
+    } else {
+      # start is somewhere inside the region
+      if ( $pair->{'ori'} == 1 ) {
+        $target_start =
+          $target_coord->{'start'} +
+          ( $start - $self_coord->{'start'} );
+      } else {
+        $target_end =
+          $target_coord->{'end'} - ( $start - $self_coord->{'start'} );
+      }
 
+      # Either we are enveloping this map or not.  If yes, then end
+      # point (self perspective) is determined solely by target.  If
+      # not we need to adjust.
 
+      if ( $end > $self_coord->{'end'} ) {
+        # enveloped
+        if ( $pair->{'ori'} == 1 ) {
+          $target_end = $target_coord->{'end'};
+        } else {
+          $target_start = $target_coord->{'start'};
+        }
+      } else {
+        # need to adjust end
+        if ( $pair->{'ori'} == 1 ) {
+          $target_end =
+            $target_coord->{'start'} +
+            ( $end - $self_coord->{'start'} );
+        } else {
+          $target_start =
+            $target_coord->{'end'} - ( $end - $self_coord->{'start'} );
+        }
+      }
 
+      $res =
+        Bio::EnsEMBL::Mapper::Coordinate->new( $target_coord->{'id'},
+                     $target_start, $target_end, $pair->{'ori'}*$strand,
+                     $cs, $rank );
 
-     # if we haven't even reached the start, move on
-     if( $self_coord->{'end'} < $orig_start ) {
-       next;
-     }
-     
-     # if we have over run, break
-     if( $self_coord->{'start'} > $end ) {
-       last;
-     }
-     
-     if( $start < $self_coord->{'start'} ) {
-       # gap detected
-       my $gap = Bio::EnsEMBL::Mapper::Gap->new($start,
-                                                $self_coord->{'start'}-1, $rank);
+    } ## end else [ if ( exists $pair->{'indel'...})]
 
-       push(@result,$gap);
-       $start = $gap->{'end'}+1;
-     }
-     my ($target_start,$target_end,$target_ori);
-     my $res;
-     if  (exists $pair->{'indel'}){
-	 #when next pair is an IndelPair and not a Coordinate, create the new mapping Coordinate, the IndelCoordinate
-	 $target_start = $target_coord->{'start'};
-	 $target_end = $target_coord->{'end'};
-	 
-	 #create a Gap object
-	 my $gap = Bio::EnsEMBL::Mapper::Gap->new($start, ($self_coord->{'end'} < $end ? $self_coord->{'end'} : $end));       
-	 #create the Coordinate object
-	 my $coord = Bio::EnsEMBL::Mapper::Coordinate->new($target_coord->{'id'},
-						      $target_start,
-						      $target_end,
-						      $pair->{'ori'} * $strand,
-						      $cs);
-	 #and finally, the IndelCoordinate object with 
-	 $res = Bio::EnsEMBL::Mapper::IndelCoordinate->new($gap,$coord);     	 
-     }
-     else{
-	 # start is somewhere inside the region
-	 if( $pair->{'ori'} == 1 ) {
-	     $target_start = 
-		 $target_coord->{'start'} + ($start - $self_coord->{'start'});
-	 } else {
-	     $target_end = 
-		 $target_coord->{'end'} - ($start - $self_coord->{'start'});
-	 }
-	 
-	 # either we are enveloping this map or not. If yes, then end
-	 # point (self perspective) is determined solely by target. If not
-	 # we need to adjust
-	 
-	 if( $end > $self_coord->{'end'} ) {
-	     # enveloped
-	     if( $pair->{'ori'} == 1 ) {
-		 $target_end = $target_coord->{'end'};
-	     } else {
-		 $target_start = $target_coord->{'start'};
-	     }
-	 } else {
-	     # need to adjust end
-	     if( $pair->{'ori'} == 1 ) {
-		 $target_end = 
-		     $target_coord->{'start'} + ($end - $self_coord->{'start'});
-	     } else {
-		 $target_start = 
-		     $target_coord->{'end'} - ($end - $self_coord->{'start'});
-	     }
-	 }
+    push( @result, $res );
 
-	 $res = Bio::EnsEMBL::Mapper::Coordinate->new($target_coord->{'id'},
-						      $target_start,
-						      $target_end,
-						      $pair->{'ori'} * $strand,
-						      $cs, $rank);
+    $last_used_pair = $pair;
+    $start          = $self_coord->{'end'} + 1;
 
-     }
+  } ## end for ( my $i = $start_idx...)
 
-     push(@result,$res);
-     
-     $last_used_pair = $pair;
-     $start = $self_coord->{'end'}+1;
+  if ( !defined $last_used_pair ) {
+    my $gap = Bio::EnsEMBL::Mapper::Gap->new( $start, $end );
+    push( @result, $gap );
 
- }
+  } elsif ( $last_used_pair->{$from}->{'end'} < $end ) {
+    # gap at the end
+    my $gap =
+      Bio::EnsEMBL::Mapper::Gap->new(
+                                  $last_used_pair->{$from}->{'end'} + 1,
+                                  $end, $rank );
+    push( @result, $gap );
+  }
 
-   if( !defined $last_used_pair ) {
-       my $gap = Bio::EnsEMBL::Mapper::Gap->new($start, $end);
-       push(@result,$gap);
+  if ( $strand == -1 ) {
+    @result = reverse(@result);
+  }
 
-   } elsif( $last_used_pair->{$from}->{'end'} < $end ) {
-       # gap at the end
-       my $gap = Bio::EnsEMBL::Mapper::Gap->new(
-			   $last_used_pair->{$from}->{'end'} + 1,
-			   $end, $rank);
-       push(@result,$gap);
-   }
-
-   if ( $strand == -1 ) {
-       @result = reverse ( @result);
-   }
-
-
-   return @result;
-}
+  return @result;
+} ## end sub map_coordinates
 
 
 
