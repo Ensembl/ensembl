@@ -380,7 +380,7 @@ sub slice {
 
     $self->{'slice'} = $slice;
   } elsif ( @_ > 1 ) {
-    undef $self->{'slice'};
+    delete($self->{'slice'});
   }
 
   return $self->{'slice'};
