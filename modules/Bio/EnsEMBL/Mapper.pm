@@ -641,83 +641,81 @@ sub add_indel_coordinates{
   Arg [5]    : string $type - the coordinate system name the coords are from.
   Example    : @coords = $mapper->map_indel();
   Description: This is in internal function which handles the special mapping
-               case for indels (start = end +1). It will be used to map from 
+               case for indels (start = end +1). It will be used to map from
                a coordinate system with a gap to another that contains an
                insertion. It will be mainly used by the Variation API.
-  Returntype : Bio::EnsEMBL::Mapper::IndelCoordinate objects
+  Returntype : Bio::EnsEMBL::Mapper::Unit objects
   Exceptions : none
   Caller     : general
 
 =cut
 
 sub map_indel {
-  my ($self, $id, $start, $end, $strand, $type) = @_;
+  my ( $self, $id, $start, $end, $strand, $type ) = @_;
 
-# swap start/end and map the resultant 2bp coordinate
-  ($start, $end) =($end,$start);
+  # swap start/end and map the resultant 2bp coordinate
+  ( $start, $end ) = ( $end, $start );
 
-   if( ! $self->{'_is_sorted'} ) { $self->_sort() }
+  if ( !$self->{'_is_sorted'} ) { $self->_sort() }
 
-   my $hash = $self->{"_pair_$type"};
+  my $hash = $self->{"_pair_$type"};
 
-   my ($from, $to, $cs);
+  my ( $from, $to, $cs );
 
-   if($type eq $self->{'to'}) {
-     $from = 'to';
-     $to = 'from';
-     $cs = $self->{'from_cs'};
-   } else {
-     $from = 'from';
-     $to = 'to';
-     $cs = $self->{'to_cs'};
-   }
+  if ( $type eq $self->{'to'} ) {
+    $from = 'to';
+    $to   = 'from';
+    $cs   = $self->{'from_cs'};
+  } else {
+    $from = 'from';
+    $to   = 'to';
+    $cs   = $self->{'to_cs'};
+  }
 
-   unless(defined $hash) {
-       throw("Type $type is neither to or from coordinate systems");
-   }
-   my $last_used_pair;
-   my @indel_coordinates;
+  unless ( defined $hash ) {
+    throw("Type $type is neither to or from coordinate systems");
+  }
+  my $last_used_pair;
+  my @indel_coordinates;
 
-   my ( $start_idx, $end_idx, $mid_idx, $pair, $self_coord );
-   my $lr = $hash->{uc($id)};
-   
-   $start_idx = 0;
-   $end_idx = $#$lr;
-   
-   # binary search the relevant pairs
-   # helps if the list is big
-   while(( $end_idx - $start_idx ) > 1 ) {
-     $mid_idx = ($start_idx+$end_idx)>>1;
-     $pair = $lr->[$mid_idx];
-     $self_coord   = $pair->{$from};
-     if( $self_coord->{'end'} <= $start ) {
-       $start_idx = $mid_idx;
-     } else {
-       $end_idx = $mid_idx;
-     }
-   }
+  my ( $start_idx, $end_idx, $mid_idx, $pair, $self_coord );
+  my $lr = $hash->{ uc($id) };
 
-   for( my $i = $start_idx; $i<=$#$lr; $i++ ) {
-     $pair = $lr->[$i];
-     my $self_coord   = $pair->{$from};
-     my $target_coord = $pair->{$to};
+  $start_idx = 0;
+  $end_idx   = $#$lr;
 
-     if  (exists $pair->{'indel'}){
-	 #need to return unit coordinate
-	 my $to   =
-	     Bio::EnsEMBL::Mapper::Unit->new($target_coord->{'id'},
-						      $target_coord->{'start'},
-						      $target_coord->{'end'},
-					     );
-	 push @indel_coordinates, $to;
-	 last;
-     }
-     $last_used_pair = $pair;
- }
+  # binary search the relevant pairs
+  # helps if the list is big
+  while ( ( $end_idx - $start_idx ) > 1 ) {
+    $mid_idx    = ( $start_idx + $end_idx ) >> 1;
+    $pair       = $lr->[$mid_idx];
+    $self_coord = $pair->{$from};
+    if ( $self_coord->{'end'} <= $start ) {
+      $start_idx = $mid_idx;
+    } else {
+      $end_idx = $mid_idx;
+    }
+  }
 
+  for ( my $i = $start_idx; $i <= $#$lr; $i++ ) {
+    $pair = $lr->[$i];
+    my $self_coord   = $pair->{$from};
+    my $target_coord = $pair->{$to};
 
-  return @indel_coordinates;  
-}
+    if ( exists $pair->{'indel'} ) {
+      #need to return unit coordinate
+      my $to =
+        Bio::EnsEMBL::Mapper::Unit->new( $target_coord->{'id'},
+                                         $target_coord->{'start'},
+                                         $target_coord->{'end'}, );
+      push @indel_coordinates, $to;
+      last;
+    }
+    $last_used_pair = $pair;
+  }
+
+  return @indel_coordinates;
+} ## end sub map_indel
 
 
 =head2 add_Mapper
