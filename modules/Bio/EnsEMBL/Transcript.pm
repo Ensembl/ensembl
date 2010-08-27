@@ -612,11 +612,7 @@ sub translation {
   my ( $self, $translation ) = @_;
 
   if ( defined($translation) ) {
-    if (    !ref($translation)
-         || !$translation->isa('Bio::EnsEMBL::Translation') )
-    {
-      throw("Bio::EnsEMBL::Translation argument expected.");
-    }
+    assert_ref( $translation, 'Bio::EnsEMBL::Translation' );
 
     $self->{'translation'} = $translation;
     $translation->transcript($self);
@@ -629,15 +625,29 @@ sub translation {
 
     $self->{'transcript_mapper'} = undef;
 
-  } elsif (   !exists( $self->{'translation'} )
+  } elsif ( @_ > 1 && defined( $self->{'translation'} ) ) {
+    # Removing existing translation
+
+    $self->{'translation'}->transcript(undef);
+    delete( $self->{'translation'} );
+
+    $self->{'cdna_coding_start'} = undef;
+    $self->{'cdna_coding_end'}   = undef;
+
+    $self->{'coding_region_start'} = undef;
+    $self->{'coding_region_end'}   = undef;
+
+    $self->{'transcript_mapper'} = undef;
+
+  } elsif (   !exists( $self->{' translation '} )
             && defined( $self->adaptor() ) )
   {
-    $self->{'translation'} =
+    $self->{' translation '} =
       $self->adaptor()->db()->get_TranslationAdaptor()
       ->fetch_by_Transcript($self);
   }
 
-  return $self->{'translation'};
+  return $self->{' translation '};
 } ## end sub translation
 
 =head2 get_all_alternative_translations
