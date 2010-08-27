@@ -142,6 +142,10 @@ my %key_to_index;
 my %name_to_seq_id;
 my %seq_id_to_start;
 my %name_to_type;
+my %seq_id_to_alt_scaf_start;
+my %seq_id_to_alt_scaf_stop;
+my %seq_id_to_stop;
+my %seq_id_to_strand;
 
 while (<TYPE>) {
   chomp;
@@ -200,6 +204,18 @@ while(<TXT>){
     $name_to_seq_id{$alt_name} = $max_seq_region_id;
     $name_to_seq_id{$alt_acc}  = $max_seq_region_id;
     $seq_id_to_start{$max_seq_region_id} = $arr[$key_to_index{'parent_start'}];
+    $seq_id_to_alt_scaf_start{$max_seq_region_id} = $arr[$key_to_index{'alt_scaf_start'}];
+    $seq_id_to_alt_scaf_stop{$max_seq_region_id} = $arr[$key_to_index{'alt_scaf_stop'}];
+    $seq_id_to_stop{$max_seq_region_id} = $arr[$key_to_index{'parent_stop'}];
+    if ($arr[$key_to_index{'ori'}] eq "+"){
+      $seq_id_to_strand{$max_seq_region_id} = 1;
+    }
+    elsif($arr[$key_to_index{'ori'}] eq "-"){
+      $seq_id_to_strand{$max_seq_region_id} = -1;
+    }
+    else{
+      print "Problem with strand.\n";
+    }
 
     my $exc_len    = $arr[$key_to_index{'parent_stop'}]-$arr[$key_to_index{'parent_start'}];
     my $new_length = $arr[$key_to_index{'alt_scaf_stop'}]-$arr[$key_to_index{'alt_scaf_start'}];
@@ -230,8 +246,8 @@ while(<TXT>){
 
     print SQL "insert into assembly_exception (assembly_exception_id, seq_region_id, seq_region_start, seq_region_end, exc_type, exc_seq_region_id, exc_seq_region_start, exc_seq_region_end, ori)\n";
     print SQL "\tvalues($max_assembly_exception_id, $max_seq_region_id, ",
-      ($arr[$key_to_index{'alt_scaf_start'}]+$arr[$key_to_index{'parent_start'}])-1, ",",
-	($arr[$key_to_index{'alt_scaf_stop'}]+$arr[$key_to_index{'parent_start'}])-1, ",",
+     $arr[$key_to_index{'parent_start'}], ",", #($arr[$key_to_index{'alt_scaf_start'}]+$arr[$key_to_index{'parent_start'}])-1, ",",
+	($arr[$key_to_index{'alt_scaf_stop'}]+$arr[$key_to_index{'parent_start'}])-$arr[$key_to_index{'alt_scaf_start'}], ",",
 #  ($new_length+$arr[$key_to_index{'parent_start'}], ",",
 	  "$hap_type, ",
 	    $seq_region_id,", ",
@@ -272,7 +288,8 @@ while(<MAPPER>){
       $get_seq_id_sth->fetch;
       if(!defined($cmp_seq_id)){
 	print "Could not get seq_region_id for $contig trying pfetch\n";
-	my $out = system("mfetch -d embl -v fasta $contig  > ./$contig.fa");
+  #prev mfetch -d embl -v fasta $contig > ./$contig.fa
+	my $out = system("pfetch $contig  > ./$contig.fa");
 	my $contig_seq ="";
 	open(FA,"<./$contig.fa") || die "Could not open file ./$contig.fa\n";
 	while (<FA>){
@@ -299,8 +316,84 @@ while(<MAPPER>){
       die "Could not get seq id for $contig\n\n";
     }
     my $seq_id = $name_to_seq_id{$acc};
-    print SQL "insert into assembly (asm_seq_region_id, cmp_seq_region_id, asm_start, asm_end, cmp_start , cmp_end, ori) \n";
-    print SQL "               values(".$seq_id.", ".$cmp_seq_id.", ".(($seq_id_to_start{$seq_id}+$p_start)-1).", ".(($seq_id_to_start{$seq_id}+$p_end)-1).", $c_start, $c_end, $strand);\n\n";
+
+    my $asm_start;
+    my $asm_end;
+    my $cmp_start;
+    my $cmp_end;
+
+    $asm_start = ($p_start-($seq_id_to_alt_scaf_start{$seq_id}-1))+($seq_id_to_start{$seq_id}-1);
+    $cmp_start = $c_start;
+    $asm_end = ($seq_id_to_start{$seq_id} - $seq_id_to_alt_scaf_start{$seq_id})+$p_end;
+    $cmp_end = $c_end;
+
+    #for each combination of strand orientations
+      #alter the chromosome level starts and ends if needed
+      #then deal with the cases where a contig extends beyond the part of the scaffold included 
+      #in the chromosome/toplevel
+      #Do leftmost, relative to chrom and then rightmost.
+    #Cases where the contig is completely off the toplevel are caught at the end
+
+    #if the contig is negative
+    if($strand == -1 and $seq_id_to_strand{$seq_id} == 1){
+      if($seq_id_to_alt_scaf_start{$seq_id}>$p_start){
+        $asm_start = $seq_id_to_start{$seq_id};
+        $cmp_end = $c_start + ($p_end-$seq_id_to_alt_scaf_start{$seq_id});
+      }
+      if($seq_id_to_alt_scaf_stop{$seq_id}<$p_end){
+        $asm_end = $seq_id_to_start{$seq_id} + ($seq_id_to_alt_scaf_stop{$seq_id}-$seq_id_to_alt_scaf_start{$seq_id});
+        $cmp_start = $c_end - ($seq_id_to_alt_scaf_stop{$seq_id} - $p_start);
+      }
+    }#if the scaffold is negative
+    elsif($strand == 1 and $seq_id_to_strand{$seq_id} == -1){
+       
+      $asm_start = ($seq_id_to_alt_scaf_stop{$seq_id} - $p_end) + $seq_id_to_start{$seq_id};
+      $asm_end = ($seq_id_to_alt_scaf_stop{$seq_id} - $p_start) + $seq_id_to_start{$seq_id};
+
+      if($seq_id_to_alt_scaf_stop{$seq_id}<$p_end){
+        $asm_start = $seq_id_to_start{$seq_id};
+        $cmp_end = $c_start + ($p_start - $seq_id_to_alt_scaf_start{$seq_id});
+      }
+      if($seq_id_to_alt_scaf_start{$seq_id}>$p_start){
+        $asm_end = $seq_id_to_start{$seq_id} + ($seq_id_to_alt_scaf_stop{$seq_id}-$seq_id_to_alt_scaf_start{$seq_id});
+        $cmp_start = $c_end - ($p_end-$seq_id_to_alt_scaf_start{$seq_id});
+      }
+      $strand = -1;
+    }#if they're both negative
+    elsif($strand == -1 and $seq_id_to_strand{$seq_id} == -1){
+
+      $asm_start = ($seq_id_to_alt_scaf_stop{$seq_id} - $p_end) + $seq_id_to_start{$seq_id};
+      $asm_end = ($seq_id_to_alt_scaf_stop{$seq_id} - $p_start) + $seq_id_to_start{$seq_id};
+
+      if($seq_id_to_alt_scaf_stop{$seq_id}<$p_end){
+        $asm_start = $seq_id_to_start{$seq_id};
+        $cmp_start = $c_end - ($seq_id_to_alt_scaf_stop{$seq_id} - $p_start);
+      }
+      if($seq_id_to_alt_scaf_start{$seq_id}>$p_start){
+        $asm_end = $seq_id_to_start{$seq_id} + ($seq_id_to_alt_scaf_stop{$seq_id}-$seq_id_to_alt_scaf_start{$seq_id});
+        $cmp_end = $c_start + ($p_end - $seq_id_to_alt_scaf_start{$seq_id});
+      }
+      $strand = 1;
+    }#otherwise they should both be positive
+    else{
+      if($seq_id_to_alt_scaf_start{$seq_id}>$p_start){
+        $asm_start = $seq_id_to_start{$seq_id};
+        $cmp_start = $c_end - ($p_end-$seq_id_to_alt_scaf_start{$seq_id});
+      }
+      if($seq_id_to_alt_scaf_stop{$seq_id}<$p_end){
+        $cmp_end = ($seq_id_to_alt_scaf_stop{$seq_id}-$p_start) + $c_start;
+        $asm_end = $seq_id_to_start{$seq_id} + ($seq_id_to_alt_scaf_stop{$seq_id}-$seq_id_to_alt_scaf_start{$seq_id});
+      }
+    }
+
+    #if the contig isn't part of the toplevel/chromosome
+    if(($p_start>$seq_id_to_alt_scaf_stop{$seq_id}) or ($p_end<$seq_id_to_alt_scaf_start{$seq_id})){
+      print "WARNING: Contig $contig is not part of chromosome level sequence from $acc.\n";
+    }
+    else{
+      print SQL "insert into assembly (asm_seq_region_id, cmp_seq_region_id, asm_start, asm_end, cmp_start , cmp_end, ori) \n";
+      print SQL "               values(".$seq_id.", ".$cmp_seq_id.", ".$asm_start.", ".$asm_end.", $cmp_start, $cmp_end, $strand);\n\n";
+    }
   }
   else{
     print "GAP of $contig length\n";
