@@ -56,7 +56,7 @@ use Bio::EnsEMBL::Utils::Argument qw( rearrange );
 sub new {
   my ( $proto, $e1, $e2 ) = @_;
 
-  $class = ref $class || $proto;
+  my $class = ref $proto || $proto;
 
   my $self = $class->SUPER::new();
 
