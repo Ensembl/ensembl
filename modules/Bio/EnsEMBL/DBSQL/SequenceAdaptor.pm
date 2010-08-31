@@ -466,7 +466,7 @@ sub _fetch_seq {
 
     # return only the requested portion of the entire sequence
     my $min = ( $chunk_min << $SEQ_CHUNK_PWR ) + 1;
-    my $max = ( $chunk_max + 1 ) << $SEQ_CHUNK_PWR;
+    # my $max = ( $chunk_max + 1 ) << $SEQ_CHUNK_PWR;
     my $seq = substr( $entire_seq, $start - $min, $length );
 
     return \$seq;
