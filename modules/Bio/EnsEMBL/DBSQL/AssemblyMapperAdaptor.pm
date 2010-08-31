@@ -1161,7 +1161,6 @@ sub _register_chained_special {
 
   # Check for the simple case where the ChainedMapper is short
   if ( !defined $mid_cs ) {
-    $mid_cs_id        = $last_cs->dbID();
     $start_mid_mapper = $combined_mapper;
   } else {
     $mid_cs_id = $mid_cs->dbID();
@@ -1509,15 +1508,14 @@ sub register_all_chained {
   }
 
   my ( $mid_cs_id, $start_cs_id, $reg, $mapper );
-  if( ! defined $mid_cs ) {
-
-    $mid_cs_id = $last_cs->dbID();
+  if ( !defined $mid_cs ) {
+    $mid_cs_id   = $last_cs->dbID();
     $start_cs_id = $first_cs->dbID();
-    $mapper = $combined_mapper;
+    $mapper      = $combined_mapper;
   } else {
-    $mid_cs_id = $mid_cs->dbID();
+    $mid_cs_id   = $mid_cs->dbID();
     $start_cs_id = $first_cs->dbID();
-    $mapper = $start_mid_mapper;
+    $mapper      = $start_mid_mapper;
   }
 
   $reg =  $casm_mapper->first_registry();
