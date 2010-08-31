@@ -837,7 +837,7 @@ sub project {
     }
 
 
-    my $last_rank = 0;
+    # my $last_rank = 0;
     #construct a projection from the mapping results and return it
     foreach my $coord (@coords) {
       my $coord_start  = $coord->start();
