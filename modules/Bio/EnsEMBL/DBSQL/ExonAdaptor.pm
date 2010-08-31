@@ -64,10 +64,12 @@ use vars qw( @ISA );
 sub _tables {
   my $self = shift;
 
-  ##allow the table definition to be overridden by certain methods
-  return ($self->{'tables'}) ? 
-           @{$self->{'tables'}} :
-           ([ 'exon', 'e' ], [ 'exon_stable_id', 'esi' ] );
+  # Allow the table definition to be overridden by certain methods.
+  if ( defined( $self->{'tables'} ) ) {
+    return @{ $self->{'tables'} };
+  }
+
+  return ( [ 'exon', 'e' ], [ 'exon_stable_id', 'esi' ] );
 }
 
 
@@ -209,23 +211,37 @@ sub fetch_all_by_Transcript {
     $slice = $tslice;
   }
 
-  # override the tables definition to provide an additional join to
-  # the exon_transcript table.  For efficiency we cannot afford to have
-  # this in as a left join every time.
+  # Override the tables definition to provide an additional join to the
+  # exon_transcript table.  For efficiency we cannot afford to have this
+  # in as a left join every time.
   my @tables = $self->_tables();
-  push @tables, ['exon_transcript', 'et'];
-  $self->{'tables'} = \@tables;
+
+  # Be extra cautious so that we do not add 'exon_transcript' twice.
+  my $found = 0;
+  foreach my $table (@tables) {
+    if ( $table->[0] eq 'exon_transcript' ) {
+      $found = 1;
+      last;
+    }
+  }
+  if ( !$found ) {
+    push @tables, [ 'exon_transcript', 'et' ];
+  }
+
+  $self->{'tables'}       = \@tables;
   $self->{'final_clause'} = "ORDER BY et.transcript_id, et.rank";
 
-  my $constraint = "et.transcript_id = ".$transcript->dbID() .
-                   " AND e.exon_id = et.exon_id";
+  my $constraint =
+      "et.transcript_id = "
+    . $transcript->dbID()
+    . " AND e.exon_id = et.exon_id";
 
   # fetch all of the exons
   my $exons = $self->fetch_all_by_Slice_constraint($slice, $constraint);
 
   # un-override the table definition
-  $self->{'tables'} = undef;
-  $self->{'final_clause'} = undef;
+  delete( $self->{'tables'} );
+  delete( $self->{'final_clause'} );
 
   # remap exon coordinates if necessary
   if($slice->name() ne $tslice->name()) {
