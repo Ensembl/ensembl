@@ -207,8 +207,20 @@ sub fetch_all_by_Transcript {
   # the exon_transcript table.  For efficiency we cannot afford to have
   # this in as a left join every time.
   my @tables = $self->_tables();
-  push @tables, ['exon_transcript', 'et'];
-  $self->{'tables'} = \@tables;
+
+  # Be extra cautious so that we do not add 'exon_transcript' twice.
+  my $found = 0;
+  foreach my $table (@tables) {
+    if ( $table->[0] eq 'exon_transcript' ) {
+      $found = 1;
+      last;
+    }
+  }
+  if ( !$found ) {
+    push @tables, [ 'exon_transcript', 'et' ];
+  }
+
+  $self->{'tables'}       = \@tables;
   $self->{'final_clause'} = "ORDER BY et.transcript_id, et.rank";
 
   my $constraint = "et.transcript_id = ".$transcript->dbID() .
