@@ -1176,7 +1176,7 @@ sub add_Attributes {
  Args [1]: Bio::EnsEMBL::Exon object to add
  Args [2]: rank
  Exceptions: throws if not a valid Bio::EnsEMBL::Exon
-           : or exon clasjes with another one
+           : or exon clashes with another one
  Status  : Stable
 
 =cut
