@@ -4,8 +4,10 @@
 #   A patch to fix a couple of inconsistencies in the schema.
 #
 # Description:
-#   A couple of fixes to the schema to do with inconsistencies found
-#   during QC.
+#   QC turned up issues with the signedness of a number of fields in
+#   the Ensembl Core schema.  This patch fixes these.  The fields
+#   are: karyotype.seq_region_start, karyotype.seq_region_end and
+#   seq_region.length (should all be UNSIGNED).
 
 # Make the the 'seq_region_start' and 'seq_region_end' fields of the
 # 'karyotype' table UNSIGNED (like they are everywhere else).
@@ -19,4 +21,4 @@ ALTER TABLE seq_region
 
 # Insert patch identifier.
 INSERT INTO meta (species_id, meta_key, meta_value)
-  VALUES (NULL, 'patch', 'patch_59_60_c.sql|fix_inconsistencies');
+  VALUES (NULL, 'patch', 'patch_59_60_c.sql|QC_fixes');
