@@ -600,8 +600,8 @@ CREATE TABLE interpro (
 CREATE TABLE karyotype (
   karyotype_id                INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
   seq_region_id               INT(10) UNSIGNED NOT NULL,
-  seq_region_start            INT(10)     NOT NULL,
-  seq_region_end              INT(10)     NOT NULL,
+  seq_region_start            INT(10) UNSIGNED NOT NULL,
+  seq_region_end              INT(10) UNSIGNED NOT NULL,
   band                        VARCHAR(40) NOT NULL,
   stain                       VARCHAR(40) NOT NULL,
 
@@ -844,7 +844,8 @@ INSERT INTO meta (species_id, meta_key, meta_value) VALUES
 # NOTE: Avoid line-breaks in values.
 INSERT INTO meta (species_id, meta_key, meta_value) VALUES
   (NULL, 'patch', 'patch_59_60_a.sql|schema_version'),
-  (NULL, 'patch', 'patch_59_60_b.sql|rename_go_xref_table');
+  (NULL, 'patch', 'patch_59_60_b.sql|rename_go_xref_table'),
+  (NULL, 'patch', 'patch_59_60_c.sql|fix_inconsistencies');
 
 ################################################################################
 #
@@ -1254,7 +1255,7 @@ CREATE TABLE seq_region (
   seq_region_id               INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
   name                        VARCHAR(40) NOT NULL,
   coord_system_id             INT(10) UNSIGNED NOT NULL,
-  length                      INT(10) NOT NULL,
+  length                      INT(10) UNSIGNED NOT NULL,
 
   PRIMARY KEY (seq_region_id),
   UNIQUE KEY name_cs_idx (name, coord_system_id),
