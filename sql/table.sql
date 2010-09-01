@@ -10,6 +10,39 @@
 
 ################################################################################
 #
+# Table structure for table 'meta'
+#
+
+CREATE TABLE meta (
+
+  meta_id                     INT NOT NULL AUTO_INCREMENT,
+  species_id                  INT UNSIGNED DEFAULT 1,
+  meta_key                    VARCHAR(40) NOT NULL,
+  meta_value                  VARCHAR(255) BINARY,
+
+  PRIMARY   KEY (meta_id),
+  UNIQUE    KEY species_key_value_idx (species_id, meta_key, meta_value),
+            KEY species_value_idx (species_id, meta_value)
+
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+
+
+# Add schema type and schema version to the meta table.
+INSERT INTO meta (species_id, meta_key, meta_value) VALUES
+  (NULL, 'schema_type',     'core'),
+  (NULL, 'schema_version',  '60');
+
+# Patches included in this schema file:
+# NOTE: At start of release cycle, remove patch entries from last release.
+# NOTE: Avoid line-breaks in values.
+INSERT INTO meta (species_id, meta_key, meta_value) VALUES
+  (NULL, 'patch', 'patch_59_60_a.sql|schema_version'),
+  (NULL, 'patch', 'patch_59_60_b.sql|rename_go_xref_table'),
+  (NULL, 'patch', 'patch_59_60_c.sql|fix_inconsistencies');
+
+
+################################################################################
+#
 # Table structure for table 'alt_allele'
 #
 
@@ -814,38 +847,6 @@ CREATE TABLE prediction_transcript (
 
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
-
-################################################################################
-#
-# Table structure for table 'meta'
-#
-
-CREATE TABLE meta (
-
-  meta_id                     INT NOT NULL AUTO_INCREMENT,
-  species_id                  INT UNSIGNED DEFAULT 1,
-  meta_key                    VARCHAR(40) NOT NULL,
-  meta_value                  VARCHAR(255) BINARY,
-
-  PRIMARY   KEY (meta_id),
-  UNIQUE    KEY species_key_value_idx (species_id, meta_key, meta_value),
-            KEY species_value_idx (species_id, meta_value)
-
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
-
-
-# Add schema type and schema version to the meta table.
-INSERT INTO meta (species_id, meta_key, meta_value) VALUES
-  (NULL, 'schema_type',     'core'),
-  (NULL, 'schema_version',  '60');
-
-# Patches included in this schema file:
-# NOTE: At start of release cycle, remove patch entries from last release.
-# NOTE: Avoid line-breaks in values.
-INSERT INTO meta (species_id, meta_key, meta_value) VALUES
-  (NULL, 'patch', 'patch_59_60_a.sql|schema_version'),
-  (NULL, 'patch', 'patch_59_60_b.sql|rename_go_xref_table'),
-  (NULL, 'patch', 'patch_59_60_c.sql|fix_inconsistencies');
 
 ################################################################################
 #
