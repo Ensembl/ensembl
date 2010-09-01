@@ -38,7 +38,7 @@ INSERT INTO meta (species_id, meta_key, meta_value) VALUES
 INSERT INTO meta (species_id, meta_key, meta_value) VALUES
   (NULL, 'patch', 'patch_59_60_a.sql|schema_version'),
   (NULL, 'patch', 'patch_59_60_b.sql|rename_go_xref_table'),
-  (NULL, 'patch', 'patch_59_60_c.sql|fix_inconsistencies');
+  (NULL, 'patch', 'patch_59_60_c.sql|QC_fixes');
 
 
 ################################################################################
