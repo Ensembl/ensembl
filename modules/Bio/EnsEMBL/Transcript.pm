@@ -1137,39 +1137,34 @@ sub get_all_Attributes {
 =cut
 
 sub add_Attributes {
-  my $self    = shift;
-  my @attribs = @_;
+  my ( $self, @attribs ) = @_;
 
-  if ( !exists $self->{'attributes'} ) {
+  if ( !exists( $self->{'attributes'} ) ) {
     $self->{'attributes'} = [];
   }
 
   my $seq_change = 0;
-  for my $attrib (@attribs) {
-    if ( !$attrib->isa("Bio::EnsEMBL::Attribute") ) {
-      throw("Argument to add_Attribute "
-          . "has to be an Bio::EnsEMBL::Attribute" );
-    }
+  foreach my $attrib (@attribs) {
+    assert_ref( $attrib, 'Bio::EnsEMBL::Attribute' );
+
     push( @{ $self->{'attributes'} }, $attrib );
-    if ( $attrib->code eq "_rna_edit" ) {
+
+    if ( $attrib->code() eq "_rna_edit" ) {
       $seq_change = 1;
     }
   }
+
   if ($seq_change) {
-    foreach my $ex ( @{ $self->get_all_Exons() } ) {
-      $ex->{'_trans_exon_array'} = undef;
-      $ex->{'_seq_cache'}        = undef;
-    }
-    my $translation = $self->translation;
+    my $translation = $self->translation();
     if ( defined($translation) ) {
-      $translation->{seq} = undef;
+      delete( $translation->{'seq'} );
     }
   }
 
   # flush cdna coord cache b/c we may have added a SeqEdit
-  $self->{'cdna_coding_start'} = undef;
-  $self->{'cdna_coding_end'}   = undef;
-  $self->{'transcript_mapper'} = undef;
+  delete( $self->{'cdna_coding_start'} );
+  delete( $self->{'cdna_coding_end'} );
+  delete( $self->{'transcript_mapper'} );
 } ## end sub add_Attributes
 
 
