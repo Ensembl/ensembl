@@ -181,7 +181,9 @@ sub new {
 
 =head2 get_all_DBLinks
 
-  Example    : my @dblinks = @{ $transcript->get_all_DBLinks };
+  Arg [1]    : (optional) String, external database name
+  Arg [2]    : (optional) String, external database type
+  Example    : my @dblinks = @{ $transcript->get_all_DBLinks() };
   Description: Retrieves _all_ related DBEntries for this transcript.  
                This includes all DBEntries that are associated with the
                corresponding translation.
@@ -198,18 +200,21 @@ sub new {
 =cut
 
 sub get_all_DBLinks {
-  my $self = shift;
-  my $ex_db_exp = shift;
-  my $ex_db_type = shift;
+  my ( $self, $ex_db_exp, $ex_db_type ) = @_;
 
   my @links;
 
-  push @links, @{$self->get_all_DBEntries($ex_db_exp, $ex_db_type)};
+  push( @links,
+        @{ $self->get_all_DBEntries( $ex_db_exp, $ex_db_type ) } );
 
-  my $transl = $self->translation();
-  push @links, @{$transl->get_all_DBEntries($ex_db_exp, $ex_db_type)} if($transl);
+  my $translation = $self->translation();
+  if ( defined($translation) ) {
+    push( @links,
+          @{$translation->get_all_DBEntries( $ex_db_exp, $ex_db_type ) }
+    );
+  }
 
-  @links = sort {_compare_xrefs()} @links;
+  @links = sort { _compare_xrefs() } @links;
 
   return \@links;
 }
@@ -217,7 +222,9 @@ sub get_all_DBLinks {
 
 =head2 get_all_DBEntries
 
-  Example    : my @dbentries = @{ $gene->get_all_DBEntries };
+  Arg [1]    : (optional) String, external database name
+  Arg [2]    : (optional) String, external database type
+  Example    : my @dbentries = @{ $gene->get_all_DBEntries() };
   Description: Retrieves DBEntries (xrefs) for this transcript.  
                This does _not_ include the corresponding translations 
                DBEntries (see get_all_DBLinks).
@@ -234,22 +241,22 @@ sub get_all_DBLinks {
 =cut
 
 sub get_all_DBEntries {
-  my $self = shift;
-  my $ex_db_exp = shift;
-  my $ex_db_type = shift;
+  my ( $self, $ex_db_exp, $ex_db_type ) = @_;
 
   my $cache_name = "dbentries";
 
-  if(defined($ex_db_exp)){
+  if ( defined($ex_db_exp) ) {
     $cache_name .= $ex_db_exp;
   }
-  if(defined($ex_db_type)){
+  if ( defined($ex_db_type) ) {
     $cache_name .= $ex_db_type;
   }
+
   # if not cached, retrieve all of the xrefs for this gene
-  if(!defined $self->{$cache_name} && $self->adaptor()) {
-    $self->{$cache_name} = 
-      $self->adaptor->db->get_DBEntryAdaptor->fetch_all_by_Transcript($self, $ex_db_exp, $ex_db_type);
+  if ( !defined $self->{$cache_name} && $self->adaptor() ) {
+    $self->{$cache_name} =
+      $self->adaptor->db->get_DBEntryAdaptor->fetch_all_by_Transcript(
+                                       $self, $ex_db_exp, $ex_db_type );
   }
 
   $self->{$cache_name} ||= [];
