@@ -131,6 +131,7 @@
 5810	Ens_Dr_transcript	1	XREF	1	0	5	Ensembl Zebrafish Transcript	MISC	\N	\N
 5820	Ens_Dr_translation	1	XREF	1	0	5	Ensembl Zebrafish Translation	MISC	\N	\N
 5900	Ens_Md_gene	1	XREF	1	0	5	Ensembl Monodelphis Gene	MISC	\N	\N
+5900	Ens_Md_transcript	1	XREF	1	0	5	Ensembl Monodelphis Transcript	MISC	\N	\N
 6100	Havana_gene	1	XREF	1	0	100	Havana gene ID	MISC	\N	\N
 6200	Ens_Rn_gene	1	XREF	1	0	5	Ensembl Rat Gene	MISC	\N	\N
 6300	Ens_Ol_gene	1	XREF	1	0	5	Ensembl Medaka Gene	MISC	\N	\N
