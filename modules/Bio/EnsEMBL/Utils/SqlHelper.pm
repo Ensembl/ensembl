@@ -94,7 +94,8 @@ use Scalar::Util qw(weaken); #Used to not hold a strong ref to DBConnection
 
   Arg [DB_CONNECTION] : DBConnection instance to use
   Returntype          : Instance of helper
-  Exceptions          : If the object given as a DBConnection is not one
+  Exceptions          : If the object given as a DBConnection is not one or it
+                        was undefined
   Status              : Stable
 
 Creates a new instance of this object.
@@ -111,12 +112,16 @@ sub new {
 	my ($db_connection) = rearrange([qw(db_connection)], @args);
 	 
 	my $self = bless( {}, ref($class) || $class );
+	throw('-DB_CONNECTION construction parameter was undefined.') 
+	 unless defined $db_connection;
 	$self->db_connection($db_connection);
 	
 	return $self;
 }
 
 =pod
+
+=head2 db_connection()
 
   Arg [1]     : DBConnection instance to use
   Description : Sets and retrieves the DBConnection 
