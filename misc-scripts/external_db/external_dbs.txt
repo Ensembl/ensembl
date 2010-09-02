@@ -335,7 +335,11 @@
 50542	ENS_LRG_gene	1	KNOWN	1	0	10	LRG display in Ensembl	MISC	\N	\N	\N
 50543	ENS_LRG_transcript	1	KNOWN	1	0	10	LRG display in Ensembl	MISC	\N	\N	\N
 
-50600	IKMCs_KOs	1	XREF	1	0	10	International Knockout Mouse Consortium Knockouts	MISC	\N	\N	Mouse lines produced as part of a high throughput strategy by the International Knockout Mouse Consortium to knock out every protein coding gene in mouse
+50600	IKMCs_KOs	1	XREF	1	0	10	International Knockout Mouse Consortium Knockouts	MISC	\N	\N	Mouse lines produced as part of a high throughput strategy by the International
+50601	IKMCs_ES_cells_available	1	XREF	1	0	10	International Knockout Mouse Consortium Knockouts (ES cells available)	MISC	\N	\N	Mouse lines produced as part of a high throughput strategy by the International  (ES cells available)
+50602	IKMCs_Mice_available	1	XREF	1	0	10	International Knockout Mouse Consortium Knockouts (Mice available)	MISC	\N	\N	Mouse lines produced as part of a high throughput strategy by the International (Mice available)
+50603	IKMCs_No_products_available_yet	1	XREF	1	0	10	International Knockout Mouse Consortium Knockouts (No products available yet)	MISC	\N	\N	Mouse lines produced as part of a high throughput strategy by the International (No products available yet)
+50604	IKMCs_Vector_available	1	XREF	1	0	10	International Knockout Mouse Consortium Knockouts (Vector available)	MISC	\N	\N	Mouse lines produced as part of a high throughput strategy by the International Knockout Mouse Consortium to knock out every protein coding gene in mouse (Vector available)
 #
 #
 # Please separate fields in this file with TABS not spaces!
