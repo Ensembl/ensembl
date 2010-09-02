@@ -90,13 +90,6 @@ my $get_seq_region_id_sth = $dba->dbc->prepare("select seq_region_id, length fro
 
 my $get_seq_id_sth = $dba->dbc->prepare("select sr.seq_region_id from seq_region sr , coord_system cs where sr.name like ? and cs.coord_system_id = sr.coord_system_id and cs.attrib like '%sequence%'");
 
-#my $insert_seq_region_sth = $dba->dbc->prepare("insert into seq_region (seq_region_id, name, coord_system_id, length) values(?, ?, ?, ?)") || die "Could not prepare seq_region insert sql";
-
-#my $insert_dna_sth =  $dba->dbc->prepare("insert into dna (seq_region_id, sequence) values (?, ?)")
-#  || die "Could not prepare insert dna sql";
-
-#my $insert_attrib_sth = $dba->dbc->prepare("insert into seq_region_attrib (seq_region_id, attrib_type_id, value) values (?, ?, 1);";
-
 my $coord_sth = $dba->dbc->prepare("select coord_system_id from coord_system where name like ? order by rank limit 1");
 
 if(!defined($chr_coord_id) or !defined($contig_coord_id)){
@@ -129,7 +122,6 @@ print "toplevel $toplevel, non_ref $non_ref, patch_novel $patch_novel, patch_fix
 
 #      Store contigs as seq_region + dna.
 
-#open(FASTA, "<".$fasta_file)    || die "Could not open file $fasta_file";
 open(MAPPER,"<".$mapping_file)  || die "Could not open file $mapping_file";
 open(TXT,"<".$txt_file)         || die "Could not open file $txt_file";
 open(TYPE,"<".$patchtype_file)         || die "Could not open file $patchtype_file";
@@ -147,6 +139,8 @@ my %seq_id_to_alt_scaf_stop;
 my %seq_id_to_stop;
 my %seq_id_to_strand;
 
+my $time = time();
+
 while (<TYPE>) {
   chomp;
   next if (/^#/);
@@ -158,6 +152,13 @@ while (<TYPE>) {
 }
 
 
+#alt_asm_name	prim_asm_name	alt_scaf_name	alt_scaf_acc	parent_type	parent_name	parent_acc	region_name	ori	alt_scaf_start	alt_scaf_stop	parent_start	parent_stop	alt_start_tail	alt_stop_tail
+#PATCHES	Primary Assembly	HG104_HG975_PATCH	GL383535.1	CHROMOSOME	8	CM000670.1	EPPK1_SPATC1	+	1	429806	144743526	145146062	0	0
+#PATCHES	Primary Assembly	HG991_PATCH	GL383525.1	CHROMOSOME	3	CM000665.1	SLC25A26	+	27267	65063	66270271	66308065	27266	0
+#PATCHES	Primary Assembly	HG987_PATCH	GL383561.1	CHROMOSOME	17	CM000679.1	REGION27	+	1	314281	21250948	21566608	0	92682
+#PATCHES	Primary Assembly	HSCHR12_1_CTG2	GL383549.1	CHROMOSOME	12	CM000674.1	REGION21	-	1	120804	28148967	28263711	0	0
+
+
 while(<TXT>){
   if(/^#/){
     chomp;
@@ -167,14 +168,14 @@ while(<TXT>){
       $key_to_index{$name} = $i;
       $i++;
     }
-    foreach my $name (qw(alt_scaf_name alt_scaf_acc parent_type parent_name ori alt_scaf_start alt_scaf_stop parent_start parent_stop)){
+    foreach my $name (qw(alt_scaf_name alt_scaf_acc parent_type parent_name ori alt_scaf_start alt_scaf_stop parent_start parent_stop alt_start_tail alt_stop_tail)){
       if(!defined($key_to_index{$name})){
-	print STDERR "PROBLEM could not find index for $name\n";
+        print STDERR "PROBLEM could not find index for $name\n";
       }
       else{
-	print $name."\t".$key_to_index{$name}."\n";
+        print $name."\t".$key_to_index{$name}."\n";
       }
-    }	
+    }
   }
   else{
     my @arr = split;
@@ -188,7 +189,7 @@ while(<TXT>){
     $coord_sth->fetch();
 
     if(!defined($coord_sys)){
-      die "COuld not get coord_system_id for ".$arr[$key_to_index{'parent_type'}];
+      die "Could not get coord_system_id for ".$arr[$key_to_index{'parent_type'}];
     }
 
     my ($seq_region_id, $seq_length);
@@ -196,17 +197,14 @@ while(<TXT>){
     $get_seq_region_id_sth->bind_columns(\$seq_region_id,\$seq_length);
     $get_seq_region_id_sth->fetch();
     if(!defined($seq_region_id)){
-      die "COuld not get seq_region_id for ".$arr[$key_to_index{'parent_name'}]. " on coord system $coord_sys";
+      die "Could not get seq_region_id for ".$arr[$key_to_index{'parent_name'}]. " on coord system $coord_sys";
     }
 
-#    my $length = ($arr[$key_to_index{'alt_scaf_stop'}] - $arr[$key_to_index{'alt_scaf_start'}]) +1;
 
     $name_to_seq_id{$alt_name} = $max_seq_region_id;
     $name_to_seq_id{$alt_acc}  = $max_seq_region_id;
     $seq_id_to_start{$max_seq_region_id} = $arr[$key_to_index{'parent_start'}];
-    $seq_id_to_alt_scaf_start{$max_seq_region_id} = $arr[$key_to_index{'alt_scaf_start'}];
-    $seq_id_to_alt_scaf_stop{$max_seq_region_id} = $arr[$key_to_index{'alt_scaf_stop'}];
-    $seq_id_to_stop{$max_seq_region_id} = $arr[$key_to_index{'parent_stop'}];
+
     if ($arr[$key_to_index{'ori'}] eq "+"){
       $seq_id_to_strand{$max_seq_region_id} = 1;
     }
@@ -217,10 +215,12 @@ while(<TXT>){
       print "Problem with strand.\n";
     }
 
-    my $exc_len    = $arr[$key_to_index{'parent_stop'}]-$arr[$key_to_index{'parent_start'}];
-    my $new_length = $arr[$key_to_index{'alt_scaf_stop'}]-$arr[$key_to_index{'alt_scaf_start'}];
+    my $exc_len    = $arr[$key_to_index{'parent_stop'}] - $arr[$key_to_index{'parent_start'}] + 1;
+    my $new_length = $arr[$key_to_index{'alt_scaf_stop'}] - $arr[$key_to_index{'alt_scaf_start'}] + 1 +
+                     $arr[$key_to_index{alt_start_tail}] + $arr[$key_to_index{alt_stop_tail}];
 
     my $length = $seq_length + ($new_length-$exc_len);
+    $seq_id_to_stop{$max_seq_region_id} = $arr[$key_to_index{'parent_start'}] + $new_length -1;
 
     print SQL "insert into seq_region (seq_region_id, name, coord_system_id, length)\n";
     print SQL "\tvalues ($max_seq_region_id, '$alt_name', $coord_sys, $length);\n\n";
@@ -232,11 +232,11 @@ while(<TXT>){
     my $hap_type;
     if (exists $name_to_type{$alt_name} && defined $name_to_type{$alt_name}) {
       if ($name_to_type{$alt_name} =~ /fix/i) {
-        print SQL "insert into seq_region_attrib (seq_region_id, attrib_type_id, value) values ($max_seq_region_id, $patch_fix, now());\n";
-	$hap_type = "'PATCH_FIX'";
+        print SQL "insert into seq_region_attrib (seq_region_id, attrib_type_id, value) values ($max_seq_region_id, $patch_fix, $time);\n";
+        $hap_type = "'PATCH_FIX'";
       } elsif ($name_to_type{$alt_name} =~ /novel/i) {
-        print SQL "insert into seq_region_attrib (seq_region_id, attrib_type_id, value) values ($max_seq_region_id, $patch_novel, now());\n";
-	$hap_type = "'PATCH_NOVEL'";
+        print SQL "insert into seq_region_attrib (seq_region_id, attrib_type_id, value) values ($max_seq_region_id, $patch_novel, $time);\n";
+        $hap_type = "'PATCH_NOVEL'";
       } else {
         throw("Patch type ".$name_to_type{$alt_name}." for $alt_name not recognised");
       }
@@ -246,14 +246,13 @@ while(<TXT>){
 
     print SQL "insert into assembly_exception (assembly_exception_id, seq_region_id, seq_region_start, seq_region_end, exc_type, exc_seq_region_id, exc_seq_region_start, exc_seq_region_end, ori)\n";
     print SQL "\tvalues($max_assembly_exception_id, $max_seq_region_id, ",
-     $arr[$key_to_index{'parent_start'}], ",", #($arr[$key_to_index{'alt_scaf_start'}]+$arr[$key_to_index{'parent_start'}])-1, ",",
-	($arr[$key_to_index{'alt_scaf_stop'}]+$arr[$key_to_index{'parent_start'}])-$arr[$key_to_index{'alt_scaf_start'}], ",",
-#  ($new_length+$arr[$key_to_index{'parent_start'}], ",",
-	  "$hap_type, ",
-	    $seq_region_id,", ",
-	      $arr[$key_to_index{'parent_start'}], ", ",
-		$arr[$key_to_index{'parent_stop'}], ",",
-		  " 1);\n\n";
+     $arr[$key_to_index{'parent_start'}], ",", 
+     ($new_length+$arr[$key_to_index{'parent_start'}]-1), ",",
+     "$hap_type, ",
+     $seq_region_id,", ",
+     $arr[$key_to_index{'parent_start'}], ", ",
+     $arr[$key_to_index{'parent_stop'}], ",",
+     " 1);\n\n";
 
     $max_seq_region_id++;
     $max_assembly_exception_id++;
@@ -287,28 +286,27 @@ while(<MAPPER>){
       $get_seq_id_sth->bind_columns(\$cmp_seq_id);
       $get_seq_id_sth->fetch;
       if(!defined($cmp_seq_id)){
-	print "Could not get seq_region_id for $contig trying pfetch\n";
-  #prev mfetch -d embl -v fasta $contig > ./$contig.fa
-	my $out = system("pfetch $contig  > ./$contig.fa");
-	my $contig_seq ="";
-	open(FA,"<./$contig.fa") || die "Could not open file ./$contig.fa\n";
-	while (<FA>){
-	  if(/^>/){
-#	    $contig_name =~ /^>(S+)/;
-#	    print $contig_name."\n"
-	  }
-	  else{
-	    chomp;
-	    $contig_seq .= $_;
-	  }
-	}
-	close FA;
-	system("rm ./$contig.fa");
-	load_seq_region($contig, \$contig_seq);
-	$cmp_seq_id = $name_to_seq_id{$contig};
+        print "Could not get seq_region_id for $contig trying pfetch\n";
+        my $out = system("pfetch $contig  > ./$contig.fa");
+        my $contig_seq ="";
+        open(FA,"<./$contig.fa") || die "Could not open file ./$contig.fa\n";
+        while (<FA>){
+          if(/^>/){
+#            $contig_name =~ /^>(S+)/;
+#            print $contig_name."\n"
+          }
+          else{
+            chomp;
+            $contig_seq .= $_;
+          }
+        }
+        close FA;
+        system("rm ./$contig.fa");
+        load_seq_region($contig, \$contig_seq);
+        $cmp_seq_id = $name_to_seq_id{$contig};
       }
       else{
-	print "$contig already stored :-)\n";
+        print "$contig already stored :-)\n";
       }
     }
 
@@ -322,88 +320,39 @@ while(<MAPPER>){
     my $cmp_start;
     my $cmp_end;
 
-    $asm_start = ($p_start-($seq_id_to_alt_scaf_start{$seq_id}-1))+($seq_id_to_start{$seq_id}-1);
+    $asm_start = $p_start + $seq_id_to_start{$seq_id} - 1;
     $cmp_start = $c_start;
-    $asm_end = ($seq_id_to_start{$seq_id} - $seq_id_to_alt_scaf_start{$seq_id})+$p_end;
+    $asm_end = $seq_id_to_start{$seq_id} + $p_end - 1;
     $cmp_end = $c_end;
 
-    #for each combination of strand orientations
+    #for negative chromosome strand orientations
       #alter the chromosome level starts and ends if needed
-      #then deal with the cases where a contig extends beyond the part of the scaffold included 
-      #in the chromosome/toplevel
-      #Do leftmost, relative to chrom and then rightmost.
-    #Cases where the contig is completely off the toplevel are caught at the end
 
-    #if the contig is negative
-    if($strand == -1 and $seq_id_to_strand{$seq_id} == 1){
-      if($seq_id_to_alt_scaf_start{$seq_id}>$p_start){
-        $asm_start = $seq_id_to_start{$seq_id};
-        $cmp_end = $c_start + ($p_end-$seq_id_to_alt_scaf_start{$seq_id});
-      }
-      if($seq_id_to_alt_scaf_stop{$seq_id}<$p_end){
-        $asm_end = $seq_id_to_start{$seq_id} + ($seq_id_to_alt_scaf_stop{$seq_id}-$seq_id_to_alt_scaf_start{$seq_id});
-        $cmp_start = $c_end - ($seq_id_to_alt_scaf_stop{$seq_id} - $p_start);
-      }
-    }#if the scaffold is negative
-    elsif($strand == 1 and $seq_id_to_strand{$seq_id} == -1){
-       
-      $asm_start = ($seq_id_to_alt_scaf_stop{$seq_id} - $p_end) + $seq_id_to_start{$seq_id};
-      $asm_end = ($seq_id_to_alt_scaf_stop{$seq_id} - $p_start) + $seq_id_to_start{$seq_id};
+    if ($strand == 1 and $seq_id_to_strand{$seq_id} == -1){
 
-      if($seq_id_to_alt_scaf_stop{$seq_id}<$p_end){
-        $asm_start = $seq_id_to_start{$seq_id};
-        $cmp_end = $c_start + ($p_start - $seq_id_to_alt_scaf_start{$seq_id});
-      }
-      if($seq_id_to_alt_scaf_start{$seq_id}>$p_start){
-        $asm_end = $seq_id_to_start{$seq_id} + ($seq_id_to_alt_scaf_stop{$seq_id}-$seq_id_to_alt_scaf_start{$seq_id});
-        $cmp_start = $c_end - ($p_end-$seq_id_to_alt_scaf_start{$seq_id});
-      }
-      $strand = -1;
-    }#if they're both negative
-    elsif($strand == -1 and $seq_id_to_strand{$seq_id} == -1){
+      $asm_start = $seq_id_to_stop{$seq_id} - ($p_end -1);
+      $asm_end   = $seq_id_to_stop{$seq_id} - ($p_start -1);
+      $strand    = -1;
+    } elsif ($strand == -1 and $seq_id_to_strand{$seq_id} == -1){
 
-      $asm_start = ($seq_id_to_alt_scaf_stop{$seq_id} - $p_end) + $seq_id_to_start{$seq_id};
-      $asm_end = ($seq_id_to_alt_scaf_stop{$seq_id} - $p_start) + $seq_id_to_start{$seq_id};
-
-      if($seq_id_to_alt_scaf_stop{$seq_id}<$p_end){
-        $asm_start = $seq_id_to_start{$seq_id};
-        $cmp_start = $c_end - ($seq_id_to_alt_scaf_stop{$seq_id} - $p_start);
-      }
-      if($seq_id_to_alt_scaf_start{$seq_id}>$p_start){
-        $asm_end = $seq_id_to_start{$seq_id} + ($seq_id_to_alt_scaf_stop{$seq_id}-$seq_id_to_alt_scaf_start{$seq_id});
-        $cmp_end = $c_start + ($p_end - $seq_id_to_alt_scaf_start{$seq_id});
-      }
-      $strand = 1;
-    }#otherwise they should both be positive
-    else{
-      if($seq_id_to_alt_scaf_start{$seq_id}>$p_start){
-        $asm_start = $seq_id_to_start{$seq_id};
-        $cmp_start = $c_end - ($p_end-$seq_id_to_alt_scaf_start{$seq_id});
-      }
-      if($seq_id_to_alt_scaf_stop{$seq_id}<$p_end){
-        $cmp_end = ($seq_id_to_alt_scaf_stop{$seq_id}-$p_start) + $c_start;
-        $asm_end = $seq_id_to_start{$seq_id} + ($seq_id_to_alt_scaf_stop{$seq_id}-$seq_id_to_alt_scaf_start{$seq_id});
-      }
+      $asm_start = $seq_id_to_stop{$seq_id} - ($p_end -1);
+      $asm_end   = $seq_id_to_stop{$seq_id} - ($p_start -1);
+      $strand    = 1;
+    } else {
+      # Positive seq_id_to_strand - DO NOTHING
     }
 
-    #if the contig isn't part of the toplevel/chromosome
-    if(($p_start>$seq_id_to_alt_scaf_stop{$seq_id}) or ($p_end<$seq_id_to_alt_scaf_start{$seq_id})){
-      print "WARNING: Contig $contig is not part of chromosome level sequence from $acc.\n";
-    }
-    else{
-      print SQL "insert into assembly (asm_seq_region_id, cmp_seq_region_id, asm_start, asm_end, cmp_start , cmp_end, ori) \n";
-      print SQL "               values(".$seq_id.", ".$cmp_seq_id.", ".$asm_start.", ".$asm_end.", $cmp_start, $cmp_end, $strand);\n\n";
-    }
+    print SQL "insert into assembly (asm_seq_region_id, cmp_seq_region_id, asm_start, asm_end, cmp_start , cmp_end, ori) \n";
+    print SQL "               values(".$seq_id.", ".$cmp_seq_id.", ".$asm_start.", ".$asm_end.", $cmp_start, $cmp_end, $strand);\n\n";
   }
   else{
     print "GAP of $contig length\n";
   }
-
-}	
+}
 close SQL;
 
 
-sub load_seq_region{
+sub load_seq_region {
   my $name = shift;
   my $seq =  shift;
 
@@ -426,11 +375,7 @@ sub load_seq_region{
   print "adding new seq region $name length of sequence = ".length($$seq)."\n";
 
   print SQL "insert into seq_region (seq_region_id, name, coord_system_id, length) values ($max_seq_region_id, '$name', $contig_coord_id, ".length($$seq).");\n";
-#  $insert_seq_region_sth->execute($max_seq_region_id, $name, $contig_coord_id, length($$seq))
-#    || die "Could not insert seq region for $name";
   print SQL "insert into dna (seq_region_id, sequence) values ($max_seq_region_id,'".$$seq."');\n\n";
-#  $insert_dna_sth->execute($max_seq_region_id, $seq)
-#    || die "Could not add seq for $name";
 
   $name_to_seq_id{$name} = $max_seq_region_id;
   $max_seq_region_id++;
