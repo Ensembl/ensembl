@@ -2492,10 +2492,12 @@ sub load {
   if ( defined($translation) ) {
     $translation->load($load_xrefs);
 
-    foreach my $alt_translation (
-                        @{ $self->get_all_alternative_translations() } )
-    {
-      $alt_translation->load($load_xrefs);
+    my $alt_translations = $self->get_all_alternative_translations();
+
+    if ( defined($alt_translations) ) {
+      foreach my $alt_translation ( @{$alt_translations} ) {
+        $alt_translation->load($load_xrefs);
+      }
     }
   }
 
