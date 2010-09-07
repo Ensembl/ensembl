@@ -646,15 +646,15 @@ sub translation {
 
     $self->{'transcript_mapper'} = undef;
 
-  } elsif (   !exists( $self->{' translation '} )
+  } elsif (   !exists( $self->{'translation'} )
             && defined( $self->adaptor() ) )
   {
-    $self->{' translation '} =
+    $self->{'translation'} =
       $self->adaptor()->db()->get_TranslationAdaptor()
       ->fetch_by_Transcript($self);
   }
 
-  return $self->{' translation '};
+  return $self->{'translation'};
 } ## end sub translation
 
 =head2 get_all_alternative_translations
