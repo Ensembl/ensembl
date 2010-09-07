@@ -376,3 +376,7 @@
 
 # attribute to indicate that human evidence for a low-coverage genomes' projected transcript has been removed
 315	NoEvidence	Evidence for projected transcript removed	Supporting evidence for this projected transcript has been removed from the human database
+
+# attribute to indicate if a seq_region is circular
+316	circular_seq	Circular sequence	Circular chromosome or plasmid molecule
+317	external_db	External database	External database to which seq_region name can be linked
