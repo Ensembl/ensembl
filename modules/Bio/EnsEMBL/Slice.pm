@@ -529,10 +529,7 @@ sub is_toplevel {
 sub is_circular {
   my ($self) = @_;
 
-  if ( !defined( $self->adaptor() ) ) {
-    warning("Slice has no adaptor, assuming it's not circular.");
-    return 0;
-  }
+  if ( !defined( $self->adaptor() ) ) { return 0 }
 
   if ( !defined( $self->{'circular'} ) ) {
     my $attrs = $self->get_all_Attributes('circular_seq');
