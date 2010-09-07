@@ -379,4 +379,6 @@
 
 # attribute to indicate if a seq_region is circular
 316	circular_seq	Circular sequence	Circular chromosome or plasmid molecule
+
+# attribute to indicate to which external_db a seq_region can be linked
 317	external_db	External database	External database to which seq_region name can be linked
