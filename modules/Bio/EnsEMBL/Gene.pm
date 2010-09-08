@@ -483,7 +483,8 @@ sub canonical_transcript {
     $transcript->is_canonical(1);              # objects...
 
   } elsif (   !defined( $self->{'canonical_transcript'} )
-            && defined( $self->{'canonical_transcript_id'} ) )
+            && defined( $self->{'canonical_transcript_id'} )
+            && $self->{'canonical_transcript_id'} != 0 )
   {
     # We have not attached a canoncical transcript, but we have the dbID
     # of one.
