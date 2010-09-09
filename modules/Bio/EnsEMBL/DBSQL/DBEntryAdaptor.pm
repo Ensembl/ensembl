@@ -364,10 +364,10 @@ sub store {
 
     $sth->bind_param( 1, $exObj->dbname(),  SQL_VARCHAR );
     $sth->bind_param( 2, $exObj->release(), SQL_VARCHAR ) if defined $exObj->release();
-
     $sth->execute();
 
     ($dbRef) = $sth->fetchrow_array();
+	$sth->finish();
 
     if ( !$dbRef ) {
       throw(
