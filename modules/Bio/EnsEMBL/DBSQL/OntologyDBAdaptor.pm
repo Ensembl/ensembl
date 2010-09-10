@@ -36,7 +36,7 @@ package Bio::EnsEMBL::DBSQL::OntologyDBAdaptor;
 use strict;
 use warnings;
 
-use parent qw ( Bio::EnsEMBL::DBSQL::DBAdaptor );
+use base qw ( Bio::EnsEMBL::DBSQL::DBAdaptor );
 
 sub get_available_adaptors {
   return {

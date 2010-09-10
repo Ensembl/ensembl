@@ -59,7 +59,7 @@ use Bio::EnsEMBL::Utils::Exception qw( throw );
 
 use Bio::EnsEMBL::OntologyTerm;
 
-use parent qw( Bio::EnsEMBL::DBSQL::BaseAdaptor );
+use base qw( Bio::EnsEMBL::DBSQL::BaseAdaptor );
 
 =head2 new
 

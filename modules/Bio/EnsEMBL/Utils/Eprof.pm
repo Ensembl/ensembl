@@ -52,7 +52,8 @@ use warnings;
 use Bio::EnsEMBL::Utils::Exception ('throw');
 use Bio::EnsEMBL::Utils::EprofStack;
 
-use parent qw( Exporter );
+use base qw( Exporter );
+
 our @EXPORT_OK =
   ( 'eprof_start', 'eprof_end', 'eprof_dump', 'eprof_reset' );
 

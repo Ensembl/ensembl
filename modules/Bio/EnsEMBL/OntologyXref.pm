@@ -65,7 +65,7 @@ package Bio::EnsEMBL::OntologyXref;
 
 use strict;
 
-use parent qw( Bio::EnsEMBL::DBEntry );
+use base qw( Bio::EnsEMBL::DBEntry );
 
 =head2 add_linkage_type
 

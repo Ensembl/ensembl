@@ -40,7 +40,7 @@ use warnings;
 
 use Bio::EnsEMBL::Utils::Argument qw( rearrange );
 
-use parent qw( Bio::EnsEMBL::Storable );
+use base qw( Bio::EnsEMBL::Storable );
 
 =head2 new
 
