@@ -61,7 +61,7 @@ $Revision$
 use strict;
 use warnings;
 
-use base qw(Exporter);
+use parent qw(Exporter);
 our @EXPORT_OK = qw(check_ref assert_ref);
 
 use Bio::EnsEMBL::Utils::Exception qw(throw);

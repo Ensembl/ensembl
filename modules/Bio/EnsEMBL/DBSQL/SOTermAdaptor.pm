@@ -38,7 +38,7 @@ package Bio::EnsEMBL::DBSQL::SOTermAdaptor;
 use strict;
 use warnings;
 
-use base qw( Bio::EnsEMBL::DBSQL::OntologyTermAdaptor );
+use parent qw( Bio::EnsEMBL::DBSQL::OntologyTermAdaptor );
 
 =head2 new
 

@@ -30,7 +30,7 @@ package Bio::EnsEMBL::IdMapping::StableIdGenerator::AedesAegypti;
 use strict;
 use warnings;
 
-use base qw(Bio::EnsEMBL::IdMapping::StableIdGenerator::EnsemblGeneric);
+use parent qw(Bio::EnsEMBL::IdMapping::StableIdGenerator::EnsemblGeneric);
 
 sub increment_stable_id {
 

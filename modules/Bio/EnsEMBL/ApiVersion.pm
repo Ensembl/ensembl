@@ -42,7 +42,7 @@ use warnings;
 
 use Exporter;
 
-use base qw( Exporter );
+use parent qw( Exporter );
 
 our @EXPORT = qw( software_version );
 
