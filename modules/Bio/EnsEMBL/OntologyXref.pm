@@ -63,10 +63,9 @@ identifier but with different evidence tags.  For this reason a single
 
 package Bio::EnsEMBL::OntologyXref;
 
-use vars qw(@ISA);
 use strict;
 
-@ISA = qw( Bio::EnsEMBL::DBEntry );
+use parent qw( Bio::EnsEMBL::DBEntry );
 
 =head2 add_linkage_type
 
