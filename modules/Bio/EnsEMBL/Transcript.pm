@@ -632,20 +632,21 @@ sub translation {
 
     $self->{'transcript_mapper'} = undef;
 
-  } elsif ( @_ > 1 && defined( $self->{'translation'} ) ) {
-    # Removing existing translation
+  } elsif ( @_ > 1 ) {
+    if ( defined( $self->{'translation'} ) ) {
+      # Removing existing translation
 
-    $self->{'translation'}->transcript(undef);
-    delete( $self->{'translation'} );
+      $self->{'translation'}->transcript(undef);
+      delete( $self->{'translation'} );
 
-    $self->{'cdna_coding_start'} = undef;
-    $self->{'cdna_coding_end'}   = undef;
+      $self->{'cdna_coding_start'} = undef;
+      $self->{'cdna_coding_end'}   = undef;
 
-    $self->{'coding_region_start'} = undef;
-    $self->{'coding_region_end'}   = undef;
+      $self->{'coding_region_start'} = undef;
+      $self->{'coding_region_end'}   = undef;
 
-    $self->{'transcript_mapper'} = undef;
-
+      $self->{'transcript_mapper'} = undef;
+    }
   } elsif (   !exists( $self->{'translation'} )
             && defined( $self->adaptor() ) )
   {
