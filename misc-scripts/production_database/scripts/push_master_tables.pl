@@ -24,7 +24,6 @@ or
 or
   $0 --about
 
-
 where
 
   --release/-r  The current release (required).
@@ -33,7 +32,7 @@ where
   --server/-s   A database server (optional, may occur several times,
                 default is 'ens-staging1' and 'ens-staging2').
   --dbport/-P   The port to connect to (optional, default is '3306').
-  --dbuser/-u   The use to connect as (optional, default is 'ensro').
+  --dbuser/-u   The user to connect as (optional, default is 'ensro').
   --dbpass/-p   The password to connect with (optional, no default).
 
   --help/-h     Displays this help text.
