@@ -468,6 +468,15 @@ previous setting. If your DBI/DBD driver does not support manual commits
 then this code will break. The code will turn off the 
 C<disconnect_when_idle()> method to allow transactions to work as expected.
 
+If the connection given already had AutoCommit off we will issue a rollback
+before handing the connection into the closure. This ensures the connection
+contains as fresh information from the database as possible. An effect of
+using REPEATABLE READ transaction isolation (InnoDB's default) is that
+your data is as fresh as when you started your current transaction. To
+ensure the freshest data use C<SELECT ... from ... LOCK IN SHARE MODE>
+or C<SELECT ... from ... LOCK FOR UPDATE> if you are going to issue
+updates.
+
 Creating a transaction within a transaction results in the commit rollback 
 statements occuring in the top level transaction. That way any block of 
 code which is meant to to be transaction can be wrapped in this block (
@@ -494,6 +503,8 @@ sub transaction {
     $original_dwi = $dbc->disconnect_when_inactive();
     $ac = $dbc->db_handle()->{'AutoCommit'};
     $dbc->db_handle()->{'AutoCommit'} = 0;
+    #Issue a rollback as a signal for a fresh transaction if AutoCommit was off
+    $dbc->db_handle()->rollback() if(! $ac);
     $self->_enable_transaction();
   }
   
