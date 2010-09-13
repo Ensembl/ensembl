@@ -16,7 +16,7 @@ sub usage {
 Usage:
   $0 --release NN --master master_server \\
   $padding --server server1 --server server2 [...] \\
-  $padding --dbport --dbuser user --dbpass passwd
+  $padding --dbport 3306 --dbuser user --dbpass passwd
 
 or
   $0 --help
