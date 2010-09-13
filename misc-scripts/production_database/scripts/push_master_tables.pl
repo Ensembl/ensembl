@@ -125,7 +125,7 @@ sub display_banner {
 
 my $release;
 my @servers = ( 'ens-staging1', 'ens-staging2' );
-my $master  = $servers[0];
+my $master = 'ens-staging1';
 
 my $dbport = '3306';
 my $dbuser = 'ensro';
