@@ -3,25 +3,25 @@
 use strict;
 use warnings;
 
-use DBI qw(:sql_types);
+use DBI qw( :sql_types );
 
-my @staging_servers = ( { 'dbhost' => 'ens-staging1',
-                          'dbport' => '3306' }, {
-                          'dbhost' => 'ens-staging2',
-                          'dbport' => '3306' } );
+my $release;
+my @servers = ('ens-staging1', 'ens-staging2');
+my $master = 'ens-staging1';
 
-my $master_server      = $staging_servers[0];
-my $production_db_name = 'ensembl_production_60';
 
-my $dbuser   = 'ensadmin';
-my $dbpass   = 'ensembl';
+my $dbport = '3306';
+my $dbuser = 'ensadmin';
+my $dbpass;
 my $dbrouser = 'ensro';
-my $dbropass = undef;
+my $dbropass;
+
+my $opt_help  = 0;
+my $opt_about = 0;
 
 my %databases;
-foreach my $server (@staging_servers) {
-  my $dsn = sprintf( 'DBI:mysql:host=%s;port=%s',
-                     $server->{'dbhost'}, $server->{'dbport'} );
+foreach my $server (@servers) {
+  my $dsn = sprintf( 'DBI:mysql:host=%s;port=%d', $server, $dbport );
   my $dbh = DBI->connect( $dsn, $dbrouser, $dbropass,
                           { 'PrintError' => 1, 'RaiseError' => 0 } );
 
@@ -71,7 +71,7 @@ foreach my $server (@staging_servers) {
       $databases{$1}{$2} = { 'db_release'  => $3,
                              'db_assembly' => $4,
                              'db_suffix'   => $5,
-                             'db_host'     => $server->{'dbhost'},
+                             'db_host'     => $server,
                              'common_name' => $common_name };
 
     } ## end while ( $sth->fetch() )
@@ -79,12 +79,14 @@ foreach my $server (@staging_servers) {
 
   $dbh->disconnect();
 
-} ## end foreach my $server (@staging_servers)
+} ## end foreach my $server (@servers)
+
+die;
 
 my $dsn = sprintf( 'DBI:mysql:host=%s;port=%s;database=%s',
-                   $master_server->{'dbhost'},
-                   $master_server->{'dbport'},
-                   $production_db_name );
+                   $master, $dbport,
+                   sprintf( 'ensembl_production_%d', $release ) );
+
 my $dbh = DBI->connect( $dsn, $dbuser, $dbpass,
                         { 'PrintError' => 0, 'RaiseError' => 0 } );
 
