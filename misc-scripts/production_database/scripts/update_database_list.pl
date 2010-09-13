@@ -6,6 +6,49 @@ use warnings;
 use Getopt::Long qw( :config no_ignore_case );
 use DBI qw( :sql_types );
 
+sub usage {
+  my $padding = ' ' x length($0);
+
+  print <<USAGE_END;
+Usage:
+  $0 --release NN --master master-server \\
+  $padding --server server1 --server server2 [...] \\
+  $padding --dbport 3306 --dbuser user --dbpass passwd \\
+  $padding --dbwuser write_user --dbwpass write_passwd
+
+or
+  $0 --help
+
+or
+  $0 --about
+
+where
+
+  --release/-r  The current release (required).
+
+  --master/-m   The master server where the production database lives
+                (optional, default is 'ens-staging1').
+  --server/-s   A database server (optional, may occur several times,
+                default is 'ens-staging1', and 'ens-staging2').
+
+  --dbport/-P   The port to connect to (optional, default is '3306').
+
+  --dbuser/-u   The (read only) user to connect as (optional,
+                default is 'ensro').
+  --dbpass/-p   The password to connect with as the above user
+                (optional, no default).
+
+  --dbwuser/-wu The user (with write permissions) to connect as
+                (optional, default is 'ensadmin').
+  --dbwpass/-wp The password to connect with as the above user
+                (optional, no default).
+
+  --help/-h     Displays this help text.
+
+  --about/-a    Displays a text about this program (what it does etc.).
+USAGE_END
+} ## end sub usage
+
 my $release;
 my @servers = ('ens-staging1', 'ens-staging2');
 my $master = 'ens-staging1';
@@ -19,16 +62,16 @@ my $dbropass;
 my $opt_help  = 0;
 my $opt_about = 0;
 
-if ( !GetOptions( 'release|r=i'  => \$release,
-                  'master|m=s'   => \$master,
-                  'server|s=s@'  => \@servers,
-                  'dbuser|u=s'   => \$dbuser,
-                  'dbpass|p=s'   => \$dbpass,
-                  'dbport|P=s'   => \$dbport,
-                  'dbrouser|rou' => \$dbrouser,
-                  'dbropass|rop' => \$dbropass,
-                  'help|h!'      => \$opt_help,
-                  'about!'       => \$opt_about )
+if ( !GetOptions( 'release|r=i' => \$release,
+                  'master|m=s'  => \$master,
+                  'server|s=s@' => \@servers,
+                  'dbuser|u=s'  => \$dbuser,
+                  'dbpass|p=s'  => \$dbpass,
+                  'dbport|P=s'  => \$dbport,
+                  'dbrouser|wu' => \$dbwuser,
+                  'dbropass|wp' => \$dbwpass,
+                  'help|h!'     => \$opt_help,
+                  'about!'      => \$opt_about )
      || $opt_help )
 {
   usage();
@@ -42,11 +85,10 @@ if ( !GetOptions( 'release|r=i'  => \$release,
   exit();
 }
 
-
 my %databases;
 foreach my $server (@servers) {
   my $dsn = sprintf( 'DBI:mysql:host=%s;port=%d', $server, $dbport );
-  my $dbh = DBI->connect( $dsn, $dbrouser, $dbropass,
+  my $dbh = DBI->connect( $dsn, $dbuser, $dbpass,
                           { 'PrintError' => 1, 'RaiseError' => 0 } );
 
   foreach my $dbtype ( 'cdna',                'core',
@@ -111,7 +153,7 @@ my $dsn = sprintf( 'DBI:mysql:host=%s;port=%s;database=%s',
                    $master, $dbport,
                    sprintf( 'ensembl_production_%d', $release ) );
 
-my $dbh = DBI->connect( $dsn, $dbuser, $dbpass,
+my $dbh = DBI->connect( $dsn, $dbwuser, $dbwpass,
                         { 'PrintError' => 0, 'RaiseError' => 0 } );
 
 my $sp_sel_sth = $dbh->prepare(
