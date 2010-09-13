@@ -3,12 +3,12 @@
 use strict;
 use warnings;
 
+use Getopt::Long qw( :config no_ignore_case );
 use DBI qw( :sql_types );
 
 my $release;
 my @servers = ('ens-staging1', 'ens-staging2');
 my $master = 'ens-staging1';
-
 
 my $dbport = '3306';
 my $dbuser = 'ensadmin';
@@ -18,6 +18,30 @@ my $dbropass;
 
 my $opt_help  = 0;
 my $opt_about = 0;
+
+if ( !GetOptions( 'release|r=i'  => \$release,
+                  'master|m=s'   => \$master,
+                  'server|s=s@'  => \@servers,
+                  'dbuser|u=s'   => \$dbuser,
+                  'dbpass|p=s'   => \$dbpass,
+                  'dbport|P=s'   => \$dbport,
+                  'dbrouser|rou' => \$dbrouser,
+                  'dbropass|rop' => \$dbropass,
+                  'help|h!'      => \$opt_help,
+                  'about!'       => \$opt_about )
+     || $opt_help )
+{
+  usage();
+  exit();
+} elsif ($opt_about) {
+  about();
+  exit();
+} elsif ( !defined($release) ) {
+  print("ERROR: Release was not specified! (use -r or --release)\n");
+  usage();
+  exit();
+}
+
 
 my %databases;
 foreach my $server (@servers) {
