@@ -791,7 +791,7 @@ sub slice {
 
   if ( defined($slice) ) {
     # If a new slice was provided, flush the internal sequence cache and
-    # transcer all supporting evidence to the new slice.
+    # transfer all supporting evidence to the new slice.
 
     delete $self->{'_seq_cache'};
 
@@ -799,7 +799,17 @@ sub slice {
       my @new_features;
 
       for my $old_feature ( @{ $self->{'_supporting_evidence'} } ) {
-        my $new_feature = $old_feature->transfer($slice);
+
+        my $new_feature;
+
+        if ( defined( $old_feature->slice() ) ) {
+          $new_feature = $old_feature->transfer($slice);
+        } else {
+          # If the old feature does not have a slice, assume transfer is
+          # not necessary.
+          $new_feature = $old_feature;
+        }
+
         push( @new_features, $new_feature );
       }
 
