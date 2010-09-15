@@ -805,11 +805,12 @@ GSQL
 
   my %no_source_name_in_desc;
   if( $self->mapper->can("no_source_label_list") ){
-    foreach my $ext (@{$self->no_source_label_list()}){
-      $no_source_name_in_desc{$ext} = 1;
+    foreach my $name (@{$self->mapper->no_source_label_list()}){
+      my $id = $external_name_to_id{$name};
+      print "$name will have no [Source:..] info\n";
+      $no_source_name_in_desc{$id} = 1;
     }
   }
-
 
   foreach my $gene_id (keys %genes_to_transcripts) {
     
@@ -1005,7 +1006,7 @@ GSQL
 	print STDERR "Could not find display name for gene $best_gene_xref for external db ".$ex_db{$best_gene_xref}."\n";
       }
       my $desc = $description;
-      if(!defined($no_source_name_in_desc{$ex_db_id_to_display_name{$ex_db{$best_gene_xref}}})){
+      if(!defined($no_source_name_in_desc{$ex_db{$best_gene_xref}})){
 	$desc .= " [Source:".$ex_db_id_to_display_name{$ex_db{$best_gene_xref}}.";Acc:$acc]";
       }
 
@@ -1362,6 +1363,7 @@ sub set_gene_descriptions{
   $sth->finish;
 
   my %source_id_to_external_name;
+  my %name_to_source_id;
  
   $sql = 'select s.source_id, s.name from source s, xref x where x.source_id = s.source_id group by s.source_id'; # only get those of interest
   $sth = $self->xref->dbc->prepare($sql);
@@ -1370,6 +1372,7 @@ sub set_gene_descriptions{
   while($sth->fetch()){
      if(defined($name_to_external_name{$name})){
       $source_id_to_external_name{$id} = $name_to_external_name{$name};
+      $name_to_source_id{$name} = $id;
     }
     else{
       die "ERROR: Could not find $name in external_db table please add this too continue\n";
@@ -1489,6 +1492,15 @@ DXS
 
   my $last_gene = 0;
 
+  my %no_source_name_in_desc;
+  if( $self->mapper->can("no_source_label_list") ){
+    foreach my $name (@{$self->mapper->no_source_label_list()}){
+      my $id = $name_to_source_id{$name};
+      print "$name will not have [Source:...] info in desc\n";
+      $no_source_name_in_desc{$id} = 1;
+    }
+  }
+
   my $gene_desc_sth = $self->xref->dbc->prepare($gene_desc_sql);
 
   $gene_desc_sth->execute();
@@ -1502,7 +1514,9 @@ DXS
     if($gene_id != $last_gene and defined($desc) ){
       my $filtered_description = $self->filter_by_regexp($desc, \@regexps);
       if ($filtered_description ne "") {
-        $desc .= " [Source:".$source_id_to_external_name{$source_id}.";Acc:".$label."]";
+	if(!defined($no_source_name_in_desc{$source_id})){
+	  $desc .= " [Source:".$source_id_to_external_name{$source_id}.";Acc:".$label."]";
+	}
         $update_gene_desc_sth->execute($desc,$gene_id);
         $gene_count++;
 	$last_gene = $gene_id;
