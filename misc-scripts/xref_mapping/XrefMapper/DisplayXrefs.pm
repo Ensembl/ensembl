@@ -802,6 +802,7 @@ GSQL
   my $checked = 0;
   my $added   = 0;
   my $removed = 0; 
+  my %no_source_name_in_desc = %{$self->no_source_label_list()};
 
   foreach my $gene_id (keys %genes_to_transcripts) {
     
@@ -996,8 +997,11 @@ GSQL
       if(!defined($ex_db_id_to_display_name{$ex_db{$best_gene_xref}})){
 	print STDERR "Could not find display name for gene $best_gene_xref for external db ".$ex_db{$best_gene_xref}."\n";
       }
-      my $desc = $description . " [Source:".$ex_db_id_to_display_name{$ex_db{$best_gene_xref}}.";Acc:$acc]";
- 
+      my $desc = $description;
+      if(!defined($no_source_name_in_desc{$ex_db_id_to_display_name{$ex_db{$best_gene_xref}}})){
+	$desc .= " [Source:".$ex_db_id_to_display_name{$ex_db{$best_gene_xref}}.";Acc:$acc]";
+      }
+
       $update_gene_desc_sth->execute($desc, $gene_id) if($description);
       
     }
@@ -1536,4 +1540,14 @@ sub check_desc{
   }
 }
 
+
+sub no_source_label_list{
+  my $self = shift;
+  my %list;
+
+#  foreach my $ex (qw(Uniprot/SWISSPROT Refseq_dna)){
+#    $list{$ex} = 1;
+#  }	
+  return \%list;
+}
 1;
