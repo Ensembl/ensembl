@@ -802,7 +802,14 @@ GSQL
   my $checked = 0;
   my $added   = 0;
   my $removed = 0; 
-  my %no_source_name_in_desc = %{$self->no_source_label_list()};
+
+  my %no_source_name_in_desc;
+  if( $self->mapper->can("no_source_label_list") ){
+    foreach my $ext (@{$self->no_source_label_list()}){
+      $no_source_name_in_desc{$ext} = 1;
+    }
+  }
+
 
   foreach my $gene_id (keys %genes_to_transcripts) {
     
@@ -1541,13 +1548,14 @@ sub check_desc{
 }
 
 
-sub no_source_label_list{
-  my $self = shift;
-  my %list;
+#sub no_source_label_list{
+#  my $self = shift;
+#  my @list;
 
-#  foreach my $ex (qw(Uniprot/SWISSPROT Refseq_dna)){
-#    $list{$ex} = 1;
-#  }	
-  return \%list;
-}
+## this needs to be added to the species .pm file 
+##  @list = qw(Uniprot/SWISSPROT Refseq_dna);
+##	
+#  return \@list;
+#}
+
 1;
