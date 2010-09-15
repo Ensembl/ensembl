@@ -908,9 +908,16 @@ FSQL
       }
 
 
+      # -ps added as MGI have added -ps to the pseudo genes but vega has not caught
+      # up with this yet so check for this.
+
       foreach my $name (keys %name_count){
 	my $id   = $display_label_to_id{$name};
 	my $desc = $display_label_to_desc{$name};
+	if(!defined($id) and defined($display_label_to_id{$name."-ps"})){
+	  $id   = $display_label_to_id{$name."-ps"};
+	  $desc = $display_label_to_desc{$name."-ps"};
+	}
 	if(!defined($id)){
 	  $id = $name;
 	  print STDERR "Warning Could not find id for $name\n";
