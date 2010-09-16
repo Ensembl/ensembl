@@ -760,9 +760,7 @@ sub fetch_all {
   my $csa       = $self->db->get_CoordSystemAdaptor();
   my $orig_cs   = $csa->fetch_by_name($cs_name, $cs_version);
 
-  return [] if(!$orig_cs);
-
-  my $sth;
+  return [] if ( !$orig_cs );
 
   my %bad_vals=();
 
@@ -770,7 +768,7 @@ sub fetch_all {
   # Get a hash of non reference seq regions
   #
   if ( !$include_non_reference ) {
-    my $sth2 =
+    my $sth =
       $self->prepare(   'SELECT sr.seq_region_id '
                       . 'FROM seq_region sr, seq_region_attrib sra, '
                       . 'attrib_type at, coord_system cs '
@@ -780,24 +778,22 @@ sub fetch_all {
                       . 'AND sr.coord_system_id = cs.coord_system_id '
                       . 'AND cs.species_id = ?' );
 
-    $sth2->bind_param( 1, $self->species_id(), SQL_INTEGER );
-    $sth2->execute();
+    $sth->bind_param( 1, $self->species_id(), SQL_INTEGER );
+    $sth->execute();
 
     my ($seq_region_id);
-    $sth2->bind_columns( \$seq_region_id );
+    $sth->bind_columns( \$seq_region_id );
 
-    while ( $sth2->fetch() ) {
+    while ( $sth->fetch() ) {
       $bad_vals{$seq_region_id} = 1;
     }
-
-    $sth2->finish();
   }
 
   #
   # if we do not want lrg's then add them to the bad list;
   #
-  if (!$include_lrg) {
-    my $sth2 =
+  if ( !$include_lrg ) {
+    my $sth =
       $self->prepare(   'SELECT sr.seq_region_id '
                       . 'FROM seq_region sr, seq_region_attrib sra, '
                       . 'attrib_type at, coord_system cs '
@@ -807,22 +803,22 @@ sub fetch_all {
                       . 'AND sr.coord_system_id = cs.coord_system_id '
                       . 'AND cs.species_id = ?' );
 
-    $sth2->bind_param( 1, $self->species_id(), SQL_INTEGER );
-    $sth2->execute();
+    $sth->bind_param( 1, $self->species_id(), SQL_INTEGER );
+    $sth->execute();
 
     my ($seq_region_id);
-    $sth2->bind_columns( \$seq_region_id );
+    $sth->bind_columns( \$seq_region_id );
 
-    while ( $sth2->fetch() ) {
+    while ( $sth->fetch() ) {
       $bad_vals{$seq_region_id} = 1;
     }
-
-    $sth2->finish();
   }
 
   #
   # Retrieve the seq_regions from the database
   #
+
+  my $sth;
   if ( $orig_cs->is_top_level() ) {
     $sth =
       $self->prepare(   'SELECT sr.seq_region_id, sr.name, '
@@ -906,7 +902,6 @@ sub fetch_all {
       }
     }
   }
-  $sth->finish();
 
   return \@out;
 }
