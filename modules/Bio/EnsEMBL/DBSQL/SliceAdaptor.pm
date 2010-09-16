@@ -481,25 +481,34 @@ sub fetch_by_region {
 
 sub fetch_by_region_unique {
   my $self = shift;
-  my @out=();
 
+  my @out   = ();
   my $slice = $self->fetch_by_region(@_);
- 
-  $self->_build_exception_cache() if(!exists $self->{'asm_exc_cache'});
-  if(exists $self->{asm_exc_cache}->{$slice->dbID}) {
-    
-    # Dereference symlinked assembly regions.  Take out
-    # any regions which are symlinked because these are duplicates
-    my @projection = @{$self->fetch_normalized_slice_projection($slice)};
-    foreach my $segment ( @projection) {
-      if($segment->[2]->seq_region_name() eq $slice->seq_region_name() &&
-	 $segment->[2]->coord_system->equals($slice->coord_system)) {
-	push @out, $segment->[2];
+
+  if ( !exists( $self->{'asm_exc_cache'} ) ) {
+    $self->_build_exception_cache();
+  }
+
+  if ( exists(
+          $self->{'asm_exc_cache'}->{ $self->get_seq_region_id($slice) }
+       ) )
+  {
+    # Dereference symlinked assembly regions.  Take out any regions
+    # which are symlinked because these are duplicates.
+    my @projection =
+      @{ $self->fetch_normalized_slice_projection($slice) };
+
+    foreach my $segment (@projection) {
+      if ( $segment->[2]->seq_region_name() eq $slice->seq_region_name()
+        && $segment->[2]->coord_system->equals( $slice->coord_system ) )
+      {
+        push( @out, $segment->[2] );
       }
     }
   }
+
   return \@out;
-}
+} ## end sub fetch_by_region_unique
 
 =head2 fetch_by_name
 
