@@ -126,7 +126,7 @@ sub resubmit_exonerate {
   my $usage = '-R "select[linux] rusage[tmp='.$disk_space_needed.']" -J "'.$unique_name.'" -q '.$queue;
 
 
-  my $com = "bsub $usage -o $outfile -e $errfile ".$exe_file;
+  my $com = "bsub $usage -o $root_dir/$outfile -e $root_dir/$errfile ".$exe_file;
 
   if($mapper->nofarm){
     print "Running job locally for job number $job_id [$array_number]\n" if($mapper->verbose);

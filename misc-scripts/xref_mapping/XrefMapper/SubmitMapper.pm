@@ -739,9 +739,9 @@ sub fix_mappings {
       $reset_object_xref_limits_sth->execute($job_id, $array_number);
     }
 
-    unlink($map_file);
-    unlink($out_file);
-    unlink($err_file);
+    unlink($root_dir."/".$map_file);
+    unlink($root_dir."/".$out_file);
+    unlink($root_dir."/".$err_file);
 
     # Run the Mapping.
     my $obj_name = "XrefMapper::Methods::$method";
