@@ -131,8 +131,7 @@ my @servers = ( 'ens-staging1', 'ens-staging2' );
 my $master = 'ens-staging1';
 
 my $dbport = '3306';
-my $dbuser = 'ensro';
-my $dbpass;
+my ( $dbuser, $dbpass ) = ( 'ensro', undef );
 
 my $opt_help  = 0;
 my $opt_about = 0;

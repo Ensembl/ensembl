@@ -50,14 +50,12 @@ USAGE_END
 } ## end sub usage
 
 my $release;
-my @servers = ('ens-staging1', 'ens-staging2');
+my @servers = ( 'ens-staging1', 'ens-staging2' );
 my $master = 'ens-staging1';
 
 my $dbport = '3306';
-my $dbwuser = 'ensadmin';
-my $dbwpass;
-my $dbuser = 'ensro';
-my $dbpass;
+my ( $dbwuser, $dbwpass ) = ( 'ensadmin', undef );
+my ( $duser,   $dbass )   = ( 'ensro',    undef );
 
 my $opt_help  = 0;
 my $opt_about = 0;
