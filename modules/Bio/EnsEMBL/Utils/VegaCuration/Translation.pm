@@ -147,7 +147,7 @@ sub check_CDS_start_end_remarks_loutre {
 	   && ( grep {$_ eq $stop_codon} @stops) ) {
 #      warn $trans->stable_id.": $coding_end--$trans_end--$stop_codon";
 #      warn $trans->translation->end_Exon->end_phase;
-      $results->{'END_EXTRA'} = $stop_codon1;
+      $results->{'END_EXTRA'} = $stop_codon;
     }
   }
   #missing CDS end not found remark
