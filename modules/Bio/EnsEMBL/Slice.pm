@@ -1000,12 +1000,19 @@ sub expand {
     return undef;
   }
 
-  my $new_start;
-  my $new_end;
   my $sshift = $five_prime_shift;
   my $eshift = $three_prime_shift;
 
+  if ( $self->{'strand'} != 1 ) {
+    $eshift = $five_prime_shift;
+    $sshift = $three_prime_shift;
+  }
+
+  my $new_start = $self->{'start'} - $sshift;
+  my $new_end   = $self->{'end'} + $eshift;
+
   if ( $self->is_circular() ) {
+
     if ( $new_start <= 0 ) {
       $new_start = $self->seq_region_length() + $new_start;
     }
@@ -1020,15 +1027,8 @@ sub expand {
       $new_end -= $self->seq_region_length();
     }
 
+
   } else {
-
-    if ( $self->{'strand'} != 1 ) {
-      $eshift = $five_prime_shift;
-      $sshift = $three_prime_shift;
-    }
-
-    $new_start = $self->{'start'} - $sshift;
-    $new_end   = $self->{'end'} + $eshift;
 
     if ( $new_start > $new_end ) {
       if ($force_expand) {
