@@ -321,23 +321,27 @@ sub store {
   #
   my $ensembl_id;
 
-  if ($ensID =~ /^\d+$/) {
-    $ensembl_id = $ensID;
 
-  } elsif ( ref($ensID) eq 'Bio::EnsEMBL::Gene' or
-            ref($ensID) eq 'Bio::EnsEMBL::Transcript' or
-            ref($ensID) eq 'Bio::EnsEMBL::Translation') {
+  if ( defined($ensID) ) {
+    if ( $ensID =~ /^\d+$/ ) {
+      $ensembl_id = $ensID;
+    } elsif (    ref($ensID) eq 'Bio::EnsEMBL::Gene'
+              or ref($ensID) eq 'Bio::EnsEMBL::Transcript'
+              or ref($ensID) eq 'Bio::EnsEMBL::Translation' )
+    {
+      warning(   "You should pass DBEntryAdaptor->store() "
+               . "a dbID rather than an ensembl object "
+               . "to store the xref on" );
 
-    warning("You should pass DBEntryAdaptor->store() a dbID rather than an ensembl object to store the xref on");
-
-    if ($ensID->dbID) {
-      $ensembl_id = $ensID->dbID;
+      if ( !defined( $ensID->dbID() ) ) {
+        $ensembl_id = $ensID->dbID();
+      } else {
+        throw( sprintf( "%s %s doesn't have a dbID, can't store xref",
+                        $ensType, $ensID->display_id() ) );
+      }
     } else {
-      throw("$ensType ".$ensID->display_id." doesn't have a dbID, can't store xref");
+      throw("Invalid dbID passed to DBEntryAdaptor->store()");
     }
-
-  } else {
-    throw("Invalid dbID passed to DBEntryAdaptor->store()");
   }
 
   #
@@ -470,45 +474,49 @@ sub store {
     }
     $synonym_check_sth->finish();
     $synonym_store_sth->finish();
+  } elsif ( defined( $exObj->dbID() ) ) {
+    $exObj->dbID($dbX);
   }
-  #
-  # check if the object mapping was already stored
-  #
-  $sth = $self->prepare(
-    qq(
+
+  if ( defined($ensembl_id) ) {
+    #
+    # check if the object mapping was already stored
+    #
+    $sth = $self->prepare(
+      qq(
 SELECT  xref_id
 FROM    object_xref
 WHERE   xref_id = ?
   AND   ensembl_object_type = ?
   AND   ensembl_id = ?
   AND   (   linkage_annotation = ?
-    OR      linkage_annotation IS NULL  )) );
+  OR        linkage_annotation IS NULL  )) );
 
-  $sth->bind_param( 1, $dbX,                         SQL_INTEGER );
-  $sth->bind_param( 2, $ensType,                     SQL_VARCHAR );
-  $sth->bind_param( 3, $ensembl_id,                  SQL_INTEGER );
-  $sth->bind_param( 4, $exObj->linkage_annotation(), SQL_VARCHAR );
+    $sth->bind_param( 1, $dbX,                         SQL_INTEGER );
+    $sth->bind_param( 2, $ensType,                     SQL_VARCHAR );
+    $sth->bind_param( 3, $ensembl_id,                  SQL_INTEGER );
+    $sth->bind_param( 4, $exObj->linkage_annotation(), SQL_VARCHAR );
 
-  $sth->execute();
+    $sth->execute();
 
-  my ($tst) = $sth->fetchrow_array();
+    my ($tst) = $sth->fetchrow_array();
 
-  $sth->finish();
+    $sth->finish();
 
-  if(!$tst) {
-    #
-    # Store the reference to the internal ensembl object
-    #
-    my $analysis_id;
-    if($exObj->analysis()) {
-      $analysis_id =
-	$self->db()->get_AnalysisAdaptor->store($exObj->analysis());
-    } else {
-      $analysis_id = undef;
-    }
+    if ( !$tst ) {
+      #
+      # Store the reference to the internal ensembl object
+      #
+      my $analysis_id;
+      if ( $exObj->analysis() ) {
+        $analysis_id =
+          $self->db()->get_AnalysisAdaptor->store( $exObj->analysis() );
+      } else {
+        $analysis_id = undef;
+      }
 
-    $sth = $self->prepare(
-      qq(
+      $sth = $self->prepare(
+        qq(
 INSERT IGNORE INTO object_xref
   SET   xref_id = ?,
         ensembl_object_type = ?,
@@ -516,24 +524,24 @@ INSERT IGNORE INTO object_xref
         linkage_annotation = ?,
         analysis_id = ? ) );
 
-    $sth->bind_param( 1, $dbX,                         SQL_INTEGER );
-    $sth->bind_param( 2, $ensType,                     SQL_VARCHAR );
-    $sth->bind_param( 3, $ensembl_id,                  SQL_INTEGER );
-    $sth->bind_param( 4, $exObj->linkage_annotation(), SQL_VARCHAR );
-    $sth->bind_param( 5, $analysis_id,                 SQL_INTEGER);
+      $sth->bind_param( 1, $dbX,                         SQL_INTEGER );
+      $sth->bind_param( 2, $ensType,                     SQL_VARCHAR );
+      $sth->bind_param( 3, $ensembl_id,                  SQL_INTEGER );
+      $sth->bind_param( 4, $exObj->linkage_annotation(), SQL_VARCHAR );
+      $sth->bind_param( 5, $analysis_id,                 SQL_INTEGER );
 
-   #print "stored xref id $dbX in obejct_xref\n";
-    $sth->execute();
-    $exObj->dbID($dbX);
-    $exObj->adaptor($self);
-    my $Xidt = $sth->{'mysql_insertid'};
+      #print "stored xref id $dbX in obejct_xref\n";
+      $sth->execute();
+      $exObj->dbID($dbX);
+      $exObj->adaptor($self);
+      my $Xidt = $sth->{'mysql_insertid'};
 
-    #
-    # If this is an IdentityXref need to store in that table too
-    # If its OntologyXref add the linkage type to ontology_xref table
-    #
-    if ($exObj->isa('Bio::EnsEMBL::IdentityXref')) {
-      $sth = $self->prepare( "
+      #
+      # If this is an IdentityXref need to store in that table too
+      # If its OntologyXref add the linkage type to ontology_xref table
+      #
+      if ( $exObj->isa('Bio::EnsEMBL::IdentityXref') ) {
+        $sth = $self->prepare( "
              INSERT ignore INTO identity_xref
              SET object_xref_id = ?,
              xref_identity = ?,
@@ -545,37 +553,40 @@ INSERT IGNORE INTO object_xref
              cigar_line = ?,
              score = ?,
              evalue = ?" );
-      $sth->bind_param(1,$Xidt,SQL_INTEGER);
-      $sth->bind_param(2,$exObj->xref_identity,SQL_INTEGER);
-      $sth->bind_param(3,$exObj->ensembl_identity,SQL_INTEGER);
-      $sth->bind_param(4,$exObj->xref_start,SQL_INTEGER);
-      $sth->bind_param(5,$exObj->xref_end,SQL_INTEGER);
-      $sth->bind_param(6,$exObj->ensembl_start,SQL_INTEGER);
-      $sth->bind_param(7,$exObj->ensembl_end,SQL_INTEGER);
-      $sth->bind_param(8,$exObj->cigar_line,SQL_LONGVARCHAR);
-      $sth->bind_param(9,$exObj->score,SQL_DOUBLE);
-      $sth->bind_param(10,$exObj->evalue,SQL_DOUBLE);
-      $sth->execute();
-    } elsif( $exObj->isa( 'Bio::EnsEMBL::OntologyXref' )) {
-      $sth = $self->prepare( "
+        $sth->bind_param( 1, $Xidt,                    SQL_INTEGER );
+        $sth->bind_param( 2, $exObj->xref_identity,    SQL_INTEGER );
+        $sth->bind_param( 3, $exObj->ensembl_identity, SQL_INTEGER );
+        $sth->bind_param( 4, $exObj->xref_start,       SQL_INTEGER );
+        $sth->bind_param( 5, $exObj->xref_end,         SQL_INTEGER );
+        $sth->bind_param( 6, $exObj->ensembl_start,    SQL_INTEGER );
+        $sth->bind_param( 7, $exObj->ensembl_end,      SQL_INTEGER );
+        $sth->bind_param( 8,  $exObj->cigar_line, SQL_LONGVARCHAR );
+        $sth->bind_param( 9,  $exObj->score,      SQL_DOUBLE );
+        $sth->bind_param( 10, $exObj->evalue,     SQL_DOUBLE );
+        $sth->execute();
+      } elsif ( $exObj->isa('Bio::EnsEMBL::OntologyXref') ) {
+        $sth = $self->prepare( "
              INSERT ignore INTO ontology_xref
                 SET object_xref_id = ?,
                     source_xref_id = ?,
                     linkage_type = ? " );
-      foreach my $info (@{$exObj->get_all_linkage_info()}) {
-	  my( $lt, $sourceXref ) = @{$info};
-	  my $sourceXid = undef;
-	  if( $sourceXref ){
-	      $sourceXref->is_stored($self->dbc) || $sourceXref->store;
-	      $sourceXid = $sourceXref->dbID;
-	  }
-	  $sth->bind_param(1,$Xidt,SQL_INTEGER);
-	  $sth->bind_param(2,$sourceXid,SQL_INTEGER);
-	  $sth->bind_param(3,$lt,SQL_VARCHAR);
-	  $sth->execute();
+        foreach my $info ( @{ $exObj->get_all_linkage_info() } ) {
+          my ( $lt, $sourceXref ) = @{$info};
+          my $sourceXid = undef;
+          if ($sourceXref) {
+            $sourceXref->is_stored( $self->dbc )
+              || $self->store($sourceXref);
+            $sourceXid = $sourceXref->dbID;
+          }
+          $sth->bind_param( 1, $Xidt,      SQL_INTEGER );
+          $sth->bind_param( 2, $sourceXid, SQL_INTEGER );
+          $sth->bind_param( 3, $lt,        SQL_VARCHAR );
+          $sth->execute();
+        }
       }
-    }
-  }
+    } ## end if ( !$tst )
+  } ## end if ( defined($ensembl_id...))
+
   return $dbX;
 }
 
