@@ -468,11 +468,6 @@ previous setting. If your DBI/DBD driver does not support manual commits
 then this code will break. The code will turn off the 
 C<disconnect_when_idle()> method to allow transactions to work as expected.
 
-All connections are issued a C<begin_work()> call on the DBI handle which
-informs the target engine we are starting a transaction. Giving this method
-a connection already in a transaction will cause an error to be raised and
-the abortion of the running transaction.
-
 An effect of using REPEATABLE READ transaction isolation (InnoDB's default) 
 is that your data is as fresh as when you started your current transaction. To
 ensure the freshest data use C<SELECT ... from ... LOCK IN SHARE MODE>
@@ -508,9 +503,7 @@ sub transaction {
     $original_dwi = $dbc->disconnect_when_inactive();
     $ac = $dbc->db_handle()->{'AutoCommit'};
     $dbc->db_handle()->{'AutoCommit'} = 0;
-    eval { $dbc->db_handle()->begin_work() };
-    $error = $@ if $@;
-    $self->_enable_transaction() unless $error;
+    $self->_enable_transaction();
   }
   
   if(!$error) {
