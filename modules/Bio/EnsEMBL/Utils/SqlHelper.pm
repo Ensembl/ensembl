@@ -558,7 +558,7 @@ issued i.e.
 	$helper->execute_update(
 	 -SQL => 'insert into tab (name) values(?)', 
 	 -CALLBACK => sub {
-	   my ($sth, $dbc) = @_;
+	   my ($sth, $dbh) = @_;
 	   $obj->{id} = $dbh->{mysql_insertid);
    }, 
    -PARAMS => [$obj->name()]
@@ -578,7 +578,7 @@ sub execute_update {
     $sth = $self->db_connection()->prepare($sql);
     $self->_bind_params($sth, $params);
     $rv = $sth->execute();
-    $callback->($sth, $self->db_connection()) if $callback;
+    $callback->($sth, $self->db_connection()->db_handle()) if $callback;
   };
   my $error = $@;
   $self->_finish_sth($sth);
