@@ -503,17 +503,17 @@ sub generic_fetch {
 
 
   # FOR DEBUG:
-  # printf(STDERR "SQL:\n%s\n", $sql);
-
-
+  #printf(STDERR "SQL:\n%s\n", $sql);
+  
+  
   my $sth = $db->dbc->prepare($sql);
   my $bind_parameters = $self->bind_param_generic_fetch();
   if (defined $bind_parameters){
       #if we have bind the parameters, call the DBI to bind them
       my $i = 1;
       foreach my $param (@{$bind_parameters}){
-	  $sth->bind_param($i,$param->[0],$param->[1]);
-	  $i++;
+		$sth->bind_param($i,$param->[0],$param->[1]);
+		$i++;
       }
       #after binding parameters, undef for future queries
       $self->{'_bind_param_generic_fetch'} = ();
@@ -575,6 +575,7 @@ sub fetch_by_dbID{
   Arg [1]    : listref of integers $id_list
                The unique database identifiers for the features to
                be obtained.
+  Arg [2]    : optional - Bio::EnsEMBL::Slice to map features onto.
   Example    : @feats = @{$adaptor->fetch_all_by_dbID_list([1234, 2131, 982]))};
   Description: Returns the features created from the database
                defined by the the IDs in contained in the provided
@@ -595,7 +596,7 @@ sub fetch_by_dbID{
 =cut
 
 sub fetch_all_by_dbID_list {
-  my ( $self, $id_list_ref ) = @_;
+  my ( $self, $id_list_ref, $slice ) = @_;
 
   if ( !defined($id_list_ref) || ref($id_list_ref) ne 'ARRAY' ) {
     throw("id_list list reference argument is required");
@@ -636,7 +637,7 @@ sub fetch_all_by_dbID_list {
 
     my $constraint = "${syn}.${name}_id $id_str";
 
-    push @out, @{ $self->generic_fetch($constraint) };
+    push @out, @{ $self->generic_fetch($constraint, undef, $slice) };
   }
 
   return \@out;
