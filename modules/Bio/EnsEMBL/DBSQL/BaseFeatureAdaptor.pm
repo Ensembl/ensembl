@@ -483,7 +483,7 @@ sub _slice_fetch {
         }
       }
 
-      if($max_len) {
+      if($max_len && ! $slice->is_circular) {
         my $min_start = $slice_start - $max_len;
         $constraint .=
           " AND ${tab_syn}.seq_region_start >= $min_start";

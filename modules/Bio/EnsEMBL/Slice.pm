@@ -877,10 +877,9 @@ sub project {
 
 	my $current_end = $current_start + $length - 1;
 
-        ## EG BUG: FIXME
-        # if ( $current_end > $slice->seq_region_length() ) {
-        #   $current_end -= $slice->seq_region_length();
-        # }
+	if ($slice->is_circular && $current_end > $slice->seq_region_length() ) {
+	    $current_end -= $slice->seq_region_length();
+        }
 
         push @projection, bless([$current_start, $current_end, $slice],
                                 "Bio::EnsEMBL::ProjectionSegment");
