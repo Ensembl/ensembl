@@ -80,8 +80,8 @@ print $line unless $quiet;
 #SKIP:
 
 #if it does snot exist then so be it just ignore error code
-my $com = "mysql $mysql_options -e'drop database ".$new_database."'";
-$line = `$com`;
+#my $com = "mysql $mysql_options -e'drop database ".$new_database."'";
+#$line = `$com`;
 # no need to check here as if the databae does not exist it should get an error
 # just done to delete if it exists already
 
@@ -91,7 +91,7 @@ $line = `$com`;
 ##
 #$mysql_options =~ s/-uensadmin/-uensro/g;
 
-$com = "mysql $mysql_options -e'create database $new_database'";
+my $com = "mysql $mysql_options -e'create database $new_database'";
 $line = `$com`;
 if($? or $line =~ /Error/ or $line =~ /ERROR/){
   print $line;
