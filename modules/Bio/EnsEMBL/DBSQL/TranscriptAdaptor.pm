@@ -1558,12 +1558,6 @@ sub _objs_from_sth {
       }
 
       $slice = $dest_slice;
-    } else {
-      ## EG BUG: FIXME
-      # $slice =
-      #   $sa->fetch_by_seq_region_id( $seq_region_id,  $seq_region_start,
-      #                                $seq_region_end, $seq_region_strand
-      #   );
     }
 
     my $display_xref;
