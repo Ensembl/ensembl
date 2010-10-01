@@ -468,10 +468,13 @@ sub _slice_fetch {
         if ( $slice_start > $slice_end ) {
           $constraint .=
               "${tab_syn}.seq_region_id = $sr_id "
-            . "AND ((${tab_syn}.seq_region_start >= $slice_start "
-            . "OR ${tab_syn}.seq_region_start <= $slice_end) "
-            . "OR (${tab_syn}.seq_region_end >= $slice_start "
-            . "OR ${tab_syn}.seq_region_end <= $slice_end))";
+            . "AND ( ${tab_syn}.seq_region_start >= $slice_start "
+            . "OR ${tab_syn}.seq_region_start <= $slice_end "
+            . "OR ${tab_syn}.seq_region_end >= $slice_start "
+            . "OR ${tab_syn}.seq_region_end <= $slice_end "
+            . "OR ${tab_syn}.seq_region_start > ${tab_syn}.seq_region_end)";
+
+
         } else {
           $constraint .=
               "${tab_syn}.seq_region_id = $sr_id "
