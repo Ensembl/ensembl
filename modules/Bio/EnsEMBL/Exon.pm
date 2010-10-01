@@ -1441,27 +1441,28 @@ sub seq {
       return undef;
     }
 
-    if (    $self->slice->start() > $self->slice->end()
-         && $self->slice->is_circular() )
-    {
-      my $mid_point =
-        $self->slice()->seq_region_length() -
-        $self->slice()->start() + 1;
+    if ($self->slice->is_circular() ) {
+	if (    $self->slice->start > $self->slice->end) {
+# Normally exons overlapping chromosome origin will have negative feature start, but slice will be from 1 .. length 
+# But in case you got an exon attached to  a sub slice try this
+	    my $mid_point = $self->slice()->seq_region_length() - $self->slice()->start() + 1;
+	    my $seq1 =	$self->slice()->subseq( $self->start(), $mid_point, $self->strand() );
 
-      my $seq1 =
-        $self->slice()
-        ->subseq( $self->start(), $mid_point, $self->strand() );
+	    my $seq2 = $self->slice()->subseq( $mid_point + 1, $self->end(), $self->strand() );
 
-      my $seq2 =
-        $self->slice()
-        ->subseq( $mid_point + 1, $self->end(), $self->strand() );
-
-      $seq = $self->strand() > 0 ? "$seq1$seq2" : "$seq2$seq1";
-
+	    $seq = $self->strand() > 0 ? "$seq1$seq2" : "$seq2$seq1";
+	} elsif ( $self->start < 0) {
+# Normally exons overlapping chromosome origin will have negative start
+	    my $start_point = $self->slice->seq_region_length + $self->slice->start;
+	    my $mid_point = $self->slice->seq_region_length;
+	    my $seq1 =	$self->slice->subseq( $self->start, $mid_point, $self->strand);
+	    my $seq2 = $self->slice->subseq(1, $self->end, $self->strand );
+	    $seq = $self->strand > 0 ? "$seq1$seq2" : "$seq2$seq1";
+	} else {
+	    $seq = $self->slice()->subseq( $self->start(), $self->end(), $self->strand() );
+	}
     } else {
-      $seq =
-        $self->slice()
-        ->subseq( $self->start(), $self->end(), $self->strand() );
+	$seq = $self->slice()->subseq( $self->start(), $self->end(), $self->strand() );
     }
 
     $self->{'_seq_cache'} = $seq;
