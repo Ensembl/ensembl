@@ -156,7 +156,7 @@ ok(length($seq) == $translation->length());
 
 $multi->save('core', 'translation', 'translation_stable_id',
              'protein_feature', 'object_xref', 'identity_xref',
-             'go_xref');
+             'ontology_xref');
 
 my $tl_count = count_rows($db, 'translation');
 my $tlstable_count = count_rows($db, 'translation_stable_id');

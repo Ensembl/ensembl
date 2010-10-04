@@ -56,7 +56,7 @@ for my $gene_id ( @$all_gene_ids ) {
     my $tl = $tr->translation();
     my $dbentries = $dbEntryAdaptor->fetch_all_by_Translation( $tl );
     $db_entry_count += scalar( @{$dbentries});
-    $goxref_count += grep { $_->isa( "Bio::EnsEMBL::GoXref" )} @$dbentries;
+    $goxref_count += grep { $_->isa( "Bio::EnsEMBL::OntologyXref" )} @$dbentries;
     $ident_count += grep {$_->isa( "Bio::EnsEMBL::IdentityXref" )} @$dbentries;
   }
 }
@@ -110,7 +110,7 @@ my $ident_xref = Bio::EnsEMBL::IdentityXref->new
 $ident_xref->xref_identity( 100 );
 $ident_xref->ensembl_identity( 95 );
 
-my $goref = Bio::EnsEMBL::GoXref->new
+my $goref = Bio::EnsEMBL::OntologyXref->new
   (
    -primary_id => "1",
    -dbname => "GO",
@@ -121,7 +121,7 @@ $goref->add_linkage_type( "IC" ); # Linkage type on own
 $goref->add_linkage_type( "ISS", $goref ); # Linkage type with source xref
 
 
-$multi->hide( "core", "object_xref", "xref", "identity_xref", "go_xref" );
+$multi->hide( "core", "object_xref", "xref", "identity_xref", "ontology_xref" );
 
 
 my $gene = $ga->fetch_by_dbID( $all_gene_ids->[0] );
@@ -157,7 +157,7 @@ ok( $xref_count == 3 );
 #
 # 8 number of go entries right
 #
-$go_count = count_rows($db, 'go_xref');
+$go_count = count_rows($db, 'ontology_xref');
 debug( "Number of go_xrefs = $go_count" );
 ok( $go_count == 2 );
 
@@ -189,7 +189,7 @@ my @syns = grep {$_ eq 'syn1' || $_ eq 'syn2'} @{$xref->get_all_synonyms};
 ok(@syns == 2);
 
 #and also 2 evidence tags, and one source_xref
-if($xref && $xref->isa('Bio::EnsEMBL::GoXref')) {
+if($xref && $xref->isa('Bio::EnsEMBL::OntologyXref')) {
   my @evtags = 
     grep {$_ eq 'IEA' || $_ eq 'IC'} @{$xref->get_all_linkage_types()};
   ok(@evtags == 2);
@@ -207,7 +207,7 @@ $translation = $ta->fetch_by_dbID(21723)->translation;
 $xrefs = $dbEntryAdaptor->fetch_all_by_Translation($translation);
 ($xref) = grep {$_->dbID == 257} @$xrefs;
 
-if($xref && $xref->isa('Bio::EnsEMBL::GoXref')) {
+if($xref && $xref->isa('Bio::EnsEMBL::OntologyXref')) {
   my ($evtag) = @{$xref->get_all_linkage_types()};
   ok($evtag eq 'IC');
 } else {
@@ -309,7 +309,7 @@ ok($xref->primary_id() eq 'IPR000010');
 
 $multi->restore('core', 'xref');
 
-$multi->save('core', 'object_xref', 'identity_xref', 'go_xref');
+$multi->save('core', 'object_xref', 'identity_xref', 'ontology_xref');
 
 #
 # test the removal of dbentry associations
@@ -320,11 +320,11 @@ $translation = $ta->fetch_by_dbID(21723)->translation;
 my $dbes = $translation->get_all_DBEntries();
 
 my $all_count = @$dbes;
-$go_count  = grep {$_->isa('Bio::EnsEMBL::GoXref')} @$dbes;
+$go_count  = grep {$_->isa('Bio::EnsEMBL::OntologyXref')} @$dbes;
 my $id_count  = grep {$_->isa('Bio::EnsEMBL::IdentityXref')} @$dbes;
 
 my $all_total = count_rows($db, 'object_xref');
-my $go_total  = count_rows($db, 'go_xref');
+my $go_total  = count_rows($db, 'ontology_xref');
 my $id_total  = count_rows($db, 'identity_xref');
 
 print_dbEntries($dbes);
@@ -337,10 +337,10 @@ foreach my $dbe (@$dbes) {
 # make sure the appropriate rows were deleted
 
 ok($all_total - $all_count == count_rows($db, 'object_xref'));
-ok($go_total - $go_count   == count_rows($db, 'go_xref'));
+ok($go_total - $go_count   == count_rows($db, 'ontology_xref'));
 ok($id_total - $id_count   == count_rows($db, 'identity_xref'));
 
-$multi->restore('core', 'object_xref', 'identity_xref', 'go_xref');
+$multi->restore('core', 'object_xref', 'identity_xref', 'ontology_xref');
 
 
 # new type checks
@@ -422,7 +422,7 @@ sub print_dbEntries {
   foreach my $dbe (@$dbes) {
     if($dbe->isa('Bio::EnsEMBL::IdentityXref')) {
       debug("IDXref");
-    } elsif($dbe->isa('Bio::EnsEMBL::GoXref')) {
+    } elsif($dbe->isa('Bio::EnsEMBL::OntologyXref')) {
       debug("GOXref");
     } elsif($dbe->isa('Bio::EnsEMBL::DBEntry')) {
       debug("DBEntry");
