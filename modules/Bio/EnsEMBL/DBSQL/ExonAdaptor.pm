@@ -122,7 +122,7 @@ sub _final_clause {
 sub fetch_all {
   my ($self) = @_;
 
-  my $constraint = 'e.biotype != "LRG_gene" and e.is_current = 1';
+  my $constraint = 'e.is_current = 1';
   my @exons  = @{ $self->generic_fetch($constraint) };
   return \@exons ;
 }
