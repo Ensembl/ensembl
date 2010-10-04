@@ -147,7 +147,10 @@ sub fetch_by_Slice_start_end_strand {
    $start = 1 if(!defined($start));
 
   if ( !defined($end) ) {
-    $end = $slice->end() - $slice->start() + 1;
+      if ($slice->is_circular) {
+      } else {
+	  $end = $slice->end() - $slice->start() + 1;
+      }
   }
 
   if ( $start > $end ) {
@@ -261,31 +264,35 @@ sub _fetch_by_Slice_start_end_strand_circular {
   my ( $self, $slice, $start, $end, $strand ) = @_;
 
   assert_ref( $slice, 'Bio::EnsEMBL::Slice' );
-
+  
   $strand ||= 1;
   if ( !defined($start) ) {
     $start ||= 1;
   }
 
   if ( !defined($end) ) {
-    $end = $slice->end() - $slice->start() + 1;
+      if ($slice->is_circular) {
+	  my $seq1 = ${ $self->_fetch_by_Slice_start_end_strand_circular( $slice, $slice->start,  $slice->seq_region_length -1, 1 )};
+      my $seq2 = ${ $self->_fetch_by_Slice_start_end_strand_circular( $slice, 1, $slice->end, 1 )};
+my  $seq = $slice->strand > 0 ? "$seq1$seq2" : "$seq2$seq1";
+
+    reverse_comp( \$seq ) if ( $strand == -1 );
+
+    return \$seq;
+  
+      } else {
+	  $end = $slice->end() - $slice->start() + 1;
+      }
   }
 
   if ( $start > $end && $slice->is_circular() ) {
-    my $midpoint = $slice->seq_region_length - $slice->start + 1;
+    my ($seq, $seq1, $seq2);
 
-    my $seq1 = ${
-      $self->_fetch_by_Slice_start_end_strand_circular( $slice, 1,
-                                                        $midpoint, 1 )
-      };
+my $midpoint = $slice->seq_region_length - $slice->start + 1;
+$seq1 = ${ $self->_fetch_by_Slice_start_end_strand_circular( $slice, 1,  $midpoint, 1 )};
+        $seq2 = ${ $self->_fetch_by_Slice_start_end_strand_circular( $slice, $midpoint + 1, $slice->length(), 1 )};
 
-    my $seq2 = ${
-      $self->_fetch_by_Slice_start_end_strand_circular( $slice,
-                                                   $midpoint + 1,
-                                                   $slice->length(), 1 )
-      };
-
-    my $seq = $slice->strand > 0 ? "$seq1$seq2" : "$seq2$seq1";
+    $seq = $slice->strand > 0 ? "$seq1$seq2" : "$seq2$seq1";
 
     reverse_comp( \$seq ) if ( $strand == -1 );
 
