@@ -1,4 +1,4 @@
-CREATE TABLE `go_xref` (
+CREATE TABLE `ontology_xref` (
   `object_xref_id` int(10) unsigned NOT NULL default '0',
   `linkage_type` enum('IC','IDA','IEA','IEP','IGI','IMP','IPI','ISS','NAS','ND','TAS','NR','RCA') NOT NULL,
   `source_xref_id` int(10) unsigned default NULL,
