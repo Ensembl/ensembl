@@ -316,6 +316,17 @@ sub move {
 
 sub length {
   my $self = shift;
+
+  if ( $self->{'end'} < $self->{'start'} ) {
+      # if circular, we can work out the length of an origin-spanning gene using the size of the underlying region
+      if($self->slice() && $self->slice()->is_circular()) {
+	  my $len = $self->slice()->seq_region_length() - ($self->{'start'} - $self->{'end'}) + 1;
+	  return $len;
+      } else {
+	  throw "Cannot determine length of non-circular feature where start>end";
+      }
+  }
+
   return $self->{'end'} - $self->{'start'} + 1;
 }
 
@@ -1046,7 +1057,11 @@ sub seq_region_start {
 
     if ( $slice->strand() == 1 ) {
       if ( defined( $self->start() ) ) {
+	  if ($self->start < 0 && $slice->is_circular) {
+	      $start = $slice->seq_region_length + $self->start;
+	  } else {
         $start = $slice->start() + $self->start() - 1;
+    }
       }
     } else {
       if ( defined( $self->end() ) ) {
