@@ -7,27 +7,28 @@ use vars '@ISA';
 @ISA = qw{ XrefMapper::BasicMapper };
 
 sub get_set_lists {
-
-  #return [ ["ExonerateGappedBest1", ["aedes_aegypti","*"]] , ["ExonerateGappedBest1_aedesGnBk", ["aedes_aegypti","AedesGenBank"]] ];  #Initial + new AedesGenBank - doesn't work
-  #return [ ["ExonerateGappedBest1", ["aedes_aegypti","Uniprot/SWISSPROT"]] ,
-  #	   ["ExonerateGappedBest1", ["aedes_aegypti","Uniprot/SPTREMBL"]] ,
-  #	   ["ExonerateGappedBest1", ["aedes_aegypti","UniGene"]] ,
-  #	   ["ExonerateGappedBest1", ["aedes_aegypti","EMBL"]] ,
-  #	   ["ExonerateGappedBest1", ["aedes_aegypti","PDB"]] ,
-  #	   ["ExonerateGappedBest1", ["aedes_aegypti","protein_id"]] ,
-  #	   ["ExonerateGappedBest1", ["aedes_aegypti","GO"]] ,
-  #	   ["ExonerateGappedBest1", ["aedes_aegypti","Interpro"]] ,
-  #	   ["ExonerateGappedBest1_aedesGnBk", ["aedes_aegypti","AedesGenBank"]] ];  #Initial + new AedesGenBank - doesn't work
-  return [["ExonerateGappedBest1", ["aedes_aegypti","*"]]];                        #Initial - OK
-  #return [["ExonerateGappedBest1_aedesGnBk", ["aedes_aegypti","AedesGenBank"]]];    #New AedesGnBk - OK
+  return [["ExonerateGappedBest1", ["aedes_aegypti","*"]]];
 }
 
-
+#Reverse order: last one has higher priority!
 sub gene_description_sources {
-  return ("Uniprot/SWISSPROT",
-	  "RefSeq_peptide",
-	  "RefSeq_dna",
-	  "Uniprot/SPTREMBL");
+  return ("VB_External_Description",
+	  "Uniprot/SWISSPROT",
+          "VB_Community_Annotation"
+	  );
+}
+
+sub transcript_display_xref_sources {
+  my @list = qw(
+		Uniprot/SWISSPROT
+		VB_Community_Annotation
+                );
+
+  my %ignore;
+  #$ignore{"EntrezGene"}= 'FROM:RefSeq_[pd][en][pa].*_predicted';
+
+  return [\@list,\%ignore];
+
 }
 
 # regexps to match any descriptons we want to filter out

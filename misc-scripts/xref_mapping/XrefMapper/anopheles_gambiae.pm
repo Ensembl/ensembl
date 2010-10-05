@@ -1,5 +1,6 @@
 
 
+
 package XrefMapper::anopheles_gambiae;
 
 use  XrefMapper::BasicMapper;
@@ -25,14 +26,9 @@ sub get_set_lists {
 
 sub gene_description_sources {
 
-  return ("VB_Community_Symbol",
+  return ("VB_Community_Annotation",
 	  "Uniprot/SWISSPROT",
-	  #"RefSeq_peptide",
-	  #"RefSeq_dna",
-	  #"Uniprot/SPTREMBL",
-	  #"RefSeq_peptide_predicted",
-	  #"RefSeq_dna_predicted",
-	  #"EntrezGene");
+	  "VB_RNA_Description",
           );
 }
 
@@ -40,11 +36,10 @@ sub transcript_display_xref_sources {
 
   my @list = qw(RFAM
 		miRBase
-		VB_Community_Symbol
+		VB_Community_Annotation
 		Uniprot/SWISSPROT
-		#Uniprot/Varsplic
-		#Uniprot/SPTREMBL);
-   );
+		VB_RNA_Description
+	       );
 
   my %ignore;
   return [\@list,\%ignore];
