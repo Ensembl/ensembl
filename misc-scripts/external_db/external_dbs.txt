@@ -1,5 +1,9 @@
 210	Anopheles_symbol	1	KNOWN	1	0	50	Anopheles symbol	MISC	\N	\N
 211	VB_Community_Symbol	1	KNOWN	1	0	50	VB Community Symbol	MISC	\N	\N
+212	VB_External_Description	1	NOVEL	1	0	50	VB External Description	MISC	\N	\N
+213	VB_RNA_Description	1	NOVEL	1	0	50	VB RNA Description	MISC	\N	\N
+214	VB_Community_Annotation	1	KNOWN	1	0	50	VB Community Annotation	MISC	\N	\N
+250	ImmunoDB	1	KNOWN	1	0	50	ImmunoDB	MISC	\N	\N
 300	BRIGGSAE_HYBRID	1	KNOWNXREF	1	0	5	Briggsae Hybrid	MISC	\N	\N
 400	Celera_Gene	1	PRED	1	0	5	Celera gene	MISC	\N	\N
 410	Celera_Pep	1	PRED	1	0	5	Celera peptide	MISC	\N	\N
