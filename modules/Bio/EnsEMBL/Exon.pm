@@ -1451,15 +1451,14 @@ sub seq {
 	    my $seq2 = $self->slice()->subseq( $mid_point + 1, $self->end(), $self->strand() );
 
 	    $seq = $self->strand() > 0 ? "$seq1$seq2" : "$seq2$seq1";
-	} elsif ( $self->start < 0) {
-# Normally exons overlapping chromosome origin will have negative start
+	} elsif ( $self->start < 0 ||  $self->start > $self->end) {
+# Normally exons overlapping chromosome origin will be 0 based, and can have negative start
+# But if you go via sub_Slice it gives you chromosome based coordinates, i.e it will have start greater then end
 	    my $start_point = $self->slice->seq_region_length + $self->slice->start;
 	    my $mid_point = $self->slice->seq_region_length;
 	    my $seq1 =	$self->slice->subseq( $self->start, $mid_point, $self->strand);
 	    my $seq2 = $self->slice->subseq(1, $self->end, $self->strand );
 	    $seq = $self->strand > 0 ? "$seq1$seq2" : "$seq2$seq1";
-	} else {
-	    $seq = $self->slice()->subseq( $self->start(), $self->end(), $self->strand() );
 	}
     } else {
 	$seq = $self->slice()->subseq( $self->start(), $self->end(), $self->strand() );

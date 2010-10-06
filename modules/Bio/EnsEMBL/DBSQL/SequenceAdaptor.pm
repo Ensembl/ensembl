@@ -160,6 +160,11 @@ sub fetch_by_Slice_start_end_strand {
 
        if ( !defined($end) ) {
        }
+
+       if($slice->start> $slice->end) {
+	   return $self->_fetch_by_Slice_start_end_strand_circular( $slice, $slice->start, $slice->end, $strand );
+       }
+
    } else {
        if ( !defined($end) ) {
 	   $end = $slice->end() - $slice->start() + 1;
@@ -284,8 +289,6 @@ sub _fetch_by_Slice_start_end_strand_circular {
   if ( $start > $end && $slice->is_circular() ) {
     my ($seq, $seq1, $seq2);
 
-
-
     my $midpoint = $slice->seq_region_length - $slice->start + 1;
     $seq1 = ${ $self->_fetch_by_Slice_start_end_strand_circular( $slice, 1,  $midpoint, 1 )};
     $seq2 = ${ $self->_fetch_by_Slice_start_end_strand_circular( $slice, $midpoint + 1, $slice->length(), 1 )};
@@ -296,6 +299,8 @@ sub _fetch_by_Slice_start_end_strand_circular {
 
     return \$seq;
   }
+
+
 
   # Get a new slice that spans the exact region to retrieve dna from
   my $right_expand = $end - $slice->length();    #negative is fine
