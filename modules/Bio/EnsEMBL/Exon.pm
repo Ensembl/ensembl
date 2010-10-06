@@ -1459,6 +1459,9 @@ sub seq {
 	    my $seq1 =	$self->slice->subseq( $self->start, $mid_point, $self->strand);
 	    my $seq2 = $self->slice->subseq(1, $self->end, $self->strand );
 	    $seq = $self->strand > 0 ? "$seq1$seq2" : "$seq2$seq1";
+	} else {
+# End this is the case for genes not overlapping the origin
+	    $seq = $self->slice()->subseq( $self->start(), $self->end(), $self->strand() );
 	}
     } else {
 	$seq = $self->slice()->subseq( $self->start(), $self->end(), $self->strand() );
