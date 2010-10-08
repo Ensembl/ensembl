@@ -849,7 +849,9 @@ sub seq {
 
     my $canonical_translation = $transcript->translation();
     my $is_alternative;
-
+    if(!$canonical_translation) {
+	throw "Transcript does not have a canonical translation";
+    }
     if (    defined( $canonical_translation->stable_id() )
          && defined( $self->stable_id() ) )
     {
