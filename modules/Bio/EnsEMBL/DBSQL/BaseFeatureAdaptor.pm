@@ -603,15 +603,15 @@ sub _pre_store {
   if(!ref($feature) || !$feature->isa('Bio::EnsEMBL::Feature')) {
     throw('Expected Feature argument.');
   }
+  my $slice = $feature->slice();
 
   $self->_check_start_end_strand($feature->start(),$feature->end(),
-                                 $feature->strand());
+                                 $feature->strand(), $slice);
 
 
   my $db = $self->db();
 
   my $slice_adaptor = $db->get_SliceAdaptor();
-  my $slice = $feature->slice();
 
   if(!ref($slice) || !($slice->isa('Bio::EnsEMBL::Slice') or $slice->isa('Bio::EnsEMBL::LRGSlice'))  ) {
     throw('Feature must be attached to Slice to be stored.');
@@ -667,12 +667,12 @@ sub _pre_store_userdata {
     throw('Expected Feature argument.');
   }
 
-  $self->_check_start_end_strand($feature->start(),$feature->end(),
-                                 $feature->strand());
-
-
   my $slice = $feature->slice();
   my $slice_adaptor = $slice->adaptor;
+  
+  $self->_check_start_end_strand($feature->start(),$feature->end(),
+                                 $feature->strand(), $slice);
+
 
   if(!ref($slice) || !($slice->isa('Bio::EnsEMBL::Slice') or $slice->isa('Bio::EnsEMBL::LRGSlice')) ) {
     throw('Feature must be attached to Slice to be stored.');
@@ -727,6 +727,7 @@ sub _check_start_end_strand {
   my $start = shift;
   my $end   = shift;
   my $strand = shift;
+  my $slice = shift;
 
   #
   # Make sure that the start, end, strand are valid
@@ -740,7 +741,7 @@ sub _check_start_end_strand {
   if(int($strand) != $strand || $strand < -1 || $strand > 1) {
     throw("Invalid Feature strand [$strand]. Must be -1, 0 or 1.");
   }
-  if($end < $start) {
+  if($end < $start && !$slice->is_circular()) {
     throw("Invalid Feature start/end [$start/$end]. Start must be less " .
           "than or equal to end.");
   }
