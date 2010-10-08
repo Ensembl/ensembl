@@ -474,7 +474,7 @@ sub store {
     }
     $synonym_check_sth->finish();
     $synonym_store_sth->finish();
-  } elsif ( defined( $exObj->dbID() ) ) {
+  } elsif (! defined( $exObj->dbID() ) ) {
     $exObj->dbID($dbX);
   }
 
