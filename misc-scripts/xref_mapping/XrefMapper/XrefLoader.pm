@@ -289,7 +289,7 @@ GSQL
 	   $last_xref = $xref_id;
 	 }
 	 if(defined($master_xref_id)){  # need to sort this out as all should habe one really. (interpro generates go without these!!)
-	   $add_dependent_xref_sth->execute(($object_xref_id+$object_xref_offset), ($xref_id+$xref_offset), ($master_xref_id+$xref_offset) );
+	   $add_dependent_xref_sth->execute(($object_xref_id+$object_xref_offset), ($master_xref_id+$xref_offset), ($xref_id+$xref_offset) );
 	 }
 	 $add_object_xref_sth->execute(   ($object_xref_id+$object_xref_offset), $ensembl_id, $ensembl_type, ($xref_id+$xref_offset), $analysis_ids{$ensembl_type} );
 	 $add_go_xref_sth->execute(       ($object_xref_id+$object_xref_offset), $linkage_type);
