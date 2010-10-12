@@ -157,7 +157,8 @@ if ( !GetOptions( 'release|r=i' => \$release,
   exit();
 }
 
-my @tables = ( 'attrib_type', 'external_db', 'misc_set' );
+my @tables =
+  ( 'attrib_type', 'external_db', 'misc_set', 'unmapped_reason' );
 my @dbtypes = ( 'core', 'otherfeatures', 'cdna', 'vega' );
 
 my @db_handles;
@@ -218,11 +219,11 @@ foreach my $dbh (@db_handles) {
               sprintf( "-- insert %s_id=%d in %s\n",
                        $table, $pk, $table ),
               sprintf(
-                "INSERT INTO %s (%s) VALUES (%s);\n",
+                "INSERT INTO %s (\n\t%s\n) VALUES (\n\t%s\n);\n",
                 $dbh->quote_identifier( undef, $dbname, $table ),
-                join( ',', map { $dbh->quote_identifier($_) } @fields ),
+                join( ",\n\t", map { $dbh->quote_identifier($_) } @fields ),
                 join(
-                  ',',
+                  ",\n\t",
                   map {
                     $dbh->quote( $row->{$_},
                                  $colinfo->{$_}{'DATA_TYPE'} )
@@ -257,15 +258,15 @@ foreach my $dbh (@db_handles) {
                 sprintf( "-- MASTER: insert from %s.%s\n",
                          $dbname, $table ),
                 sprintf(
-                  "INSERT INTO %s (%s) VALUES (%s);\n",
+                  "INSERT INTO %s (\n\t%s\n) VALUES (\n\t%s\n);\n",
                   $dbh->quote_identifier(
                            undef,
                            sprintf( 'ensembl_production_%d', $release ),
                            sprintf( 'master_%s',             $table ) ),
-                  join( ',',
+                  join( ",\n\t",
                         map { $dbh->quote_identifier($_) } @fields ),
                   join(
-                    ',',
+                    ",\n\t",
                     map {
                       $dbh->quote( $row->{$_},
                                    $colinfo->{$_}{'DATA_TYPE'} )
@@ -308,7 +309,7 @@ foreach my $dbh (@db_handles) {
                   sprintf( "-- update %s in %s\n",
                            join( ', ', keys(%diff_fields) ), $table ),
                   sprintf(
-                    "UPDATE %s SET %s WHERE %s_id = %d;\n",
+                    "UPDATE %s\nSET %s\nWHERE %s_id = %d;\n",
                     $dbh->quote_identifier( undef, $dbname, $table ),
                     join(
                       ', ',
