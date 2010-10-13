@@ -278,7 +278,7 @@ foreach my $dbh (@db_handles) {
                         $pk, $master_pk, Dumper($master_row) );
 
                   push( @{ $sql{$dbname} },
-                        sprintf( "-- Entries in %s with pk %d "
+                        sprintf( "-- Entries with %s_id=%d "
                                    . "should change to %d\n",
                                  $table, $pk, $master_pk ) );
 
@@ -365,7 +365,7 @@ foreach my $dbh (@db_handles) {
                         $pk, $master_pk, Dumper($master_row) );
 
                     push( @{ $sql{$dbname} },
-                          sprintf( "-- Entries in %s with pk %d "
+                          sprintf( "-- Entries with %s_id=%d "
                                      . "should change to %d\n",
                                    $table, $pk, $master_pk ) );
 
@@ -373,7 +373,7 @@ foreach my $dbh (@db_handles) {
                   }
                 } ## end foreach my $master_pk ( keys...)
 
-                if ( $is_missing ) {
+                if ($is_missing) {
                   printf( "==> The following row differs in %s.\n",
                           join( ', ', keys(%diff_fields) ) );
                   print( "==> MASTER row:\n",   Dumper($master_row),
@@ -399,7 +399,7 @@ foreach my $dbh (@db_handles) {
                       $pk ) );
 
                   print("\n");
-                } ## end if ( !$is_missing )
+                } ## end if ($is_missing)
 
               } ## end if ( scalar( keys(%diff_fields...)))
             } ## end else [ if ( !defined($master_row...))]
