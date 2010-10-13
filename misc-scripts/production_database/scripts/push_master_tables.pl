@@ -221,7 +221,8 @@ foreach my $dbh (@db_handles) {
               sprintf(
                 "INSERT INTO %s (\n\t%s\n) VALUES (\n\t%s\n);\n",
                 $dbh->quote_identifier( undef, $dbname, $table ),
-                join( ",\n\t", map { $dbh->quote_identifier($_) } @fields ),
+                join( ",\n\t",
+                      map { $dbh->quote_identifier($_) } @fields ),
                 join(
                   ",\n\t",
                   map {
@@ -230,7 +231,7 @@ foreach my $dbh (@db_handles) {
                     } @fields ) ) );
 
           }
-        }
+        } ## end foreach my $pk ( sort { $a ...})
 
         foreach my $pk ( sort { $a <=> $b } keys(%table) ) {
           my $master_row = $master{$table}{$pk};
@@ -250,29 +251,66 @@ foreach my $dbh (@db_handles) {
               display_banner( '=',
                               sprintf( "%s.%s", $dbname, $table ) );
 
-              print( "==> The following row is MISSING IN MASTER:\n",
-                     Dumper($row) );
+              # Find other row in master table that is the same as
+              # database table row, but with different primary key.
 
-              push(
-                @{ $sql{$dbname} },
-                sprintf( "-- MASTER: insert from %s.%s\n",
-                         $dbname, $table ),
-                sprintf(
-                  "INSERT INTO %s (\n\t%s\n) VALUES (\n\t%s\n);\n",
-                  $dbh->quote_identifier(
+              my $is_missing = 1;
+
+              foreach my $master_pk ( keys( %{ $master{$table} } ) ) {
+                my $master_row = $master{$table}{$master_pk};
+                my $is_same    = 1;
+
+                foreach my $field ( sort( keys( %{$master_row} ) ) ) {
+                  if ( $field eq sprintf( '%s_id', $table ) ) {
+                    # Skip the primary key.
+                    next;
+                  }
+
+                  if ( $master_row->{$field} ne $row->{$field} ) {
+                    $is_same = 0;
+                    last;
+                  }
+                }
+
+                if ($is_same) {
+                  printf( "==> Entry with primary key %d "
+                          . "is same as entry with primary key %d:\n%s",
+                        $pk, $master_pk, Dumper($master_row) );
+
+                  push( @{ $sql{$dbname} },
+                        sprintf( "-- Entries in %s with pk %d "
+                                   . "should change to %d\n",
+                                 $table, $pk, $master_pk ) );
+
+                  $is_missing = 0;
+                }
+              } ## end foreach my $master_pk ( keys...)
+
+              if ($is_missing) {
+                print( "==> The following row is MISSING IN MASTER:\n",
+                       Dumper($row) );
+
+                push(
+                  @{ $sql{$dbname} },
+                  sprintf( "-- MASTER: insert from %s.%s\n",
+                           $dbname, $table ),
+                  sprintf(
+                    "INSERT INTO %s (\n\t%s\n) VALUES (\n\t%s\n);\n",
+                    $dbh->quote_identifier(
                            undef,
                            sprintf( 'ensembl_production_%d', $release ),
                            sprintf( 'master_%s',             $table ) ),
-                  join( ",\n\t",
-                        map { $dbh->quote_identifier($_) } @fields ),
-                  join(
-                    ",\n\t",
-                    map {
-                      $dbh->quote( $row->{$_},
-                                   $colinfo->{$_}{'DATA_TYPE'} )
-                      } @fields ) ) );
+                    join( ",\n\t",
+                          map { $dbh->quote_identifier($_) } @fields ),
+                    join(
+                      ",\n\t",
+                      map {
+                        $dbh->quote( $row->{$_},
+                                     $colinfo->{$_}{'DATA_TYPE'} )
+                        } @fields ) ) );
 
-              print("\n");
+                print("\n");
+              } ## end if ($is_missing)
             } else {
               my %diff_fields;
 
