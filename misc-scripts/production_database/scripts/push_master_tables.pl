@@ -292,18 +292,19 @@ foreach my $dbh (@db_handles) {
 
                 push(
                   @{ $sql{$dbname} },
-                  sprintf( "-- MASTER: insert from %s.%s\n",
+                  sprintf( "#HEADS_UP!# -- MASTER: insert from %s.%s\n",
                            $dbname, $table ),
                   sprintf(
-                    "INSERT INTO %s (\n\t%s\n) VALUES (\n\t%s\n);\n",
+                    "#HEADS_UP!# INSERT INTO %s (\n\t%s\n) "
+                      . "VALUES (\n\t%s\n);\n",
                     $dbh->quote_identifier(
                            undef,
                            sprintf( 'ensembl_production_%d', $release ),
                            sprintf( 'master_%s',             $table ) ),
-                    join( ",\n\t",
+                    join( ",\n#HEADS_UP!# \t",
                           map { $dbh->quote_identifier($_) } @fields ),
                     join(
-                      ",\n\t",
+                      ",\n#HEADS_UP!# \t",
                       map {
                         $dbh->quote( $row->{$_},
                                      $colinfo->{$_}{'DATA_TYPE'} )
