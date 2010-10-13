@@ -601,7 +601,7 @@ sub add_synonym {
 
 =head2 get_all_synonyms
 
-  Args       : none
+  Args      : none
   Example    : my @synonyms = @{ $db_entry->get_all_synonyms };
   Description: Get a list of synonyms known for this object.
                Synonyms are lazy-loaded if required.
@@ -622,6 +622,49 @@ sub get_all_synonyms {
   }
 
   return $self->{synonyms};
+}
+
+
+=head2 get_all_dependents
+
+  Args[1]    : (optional) Bio::EnsEMBL::Gene, Transcript or Translation object
+  Example    : my @dependents = @{ $db_entry->get_all_dependents };
+  Description: Get a list of DBEntrys that are depenednet on the DBEntry.
+               if an ensembl gene transcript or translation is given then only
+               the ones on that object will be given
+  Returntype : listref of DBEntrys. May be empty.
+  Exceptions : none
+  Caller     : general
+  Status     : UnStable
+
+=cut
+
+sub get_all_dependents {
+  my $self = shift;
+  my $ensembl_object = shift;
+
+  return  $self->{adaptor}->get_all_dependents($self->dbID(), $ensembl_object);
+}
+
+=head2 get_all_masters
+
+  Args[1]    : (optional) Bio::EnsEMBL::Gene, Transcript or Translation object
+  Example    : my @masters = @{ $db_entry->get_all_masters };
+  Description: Get a list of DBEntrys that are the masters of the DBEntry.
+               if an ensembl gene transcript or translation is given then only
+               the ones on that object will be given.
+  Returntype : listref of DBEntrys. May be empty.
+  Exceptions : none
+  Caller     : general
+  Status     : UnStable
+
+=cut
+
+sub get_all_masters {
+  my $self = shift;
+  my $ensembl_object = shift;
+
+  return  $self->{adaptor}->get_all_masters($self->dbID(), $ensembl_object);
 }
 
 

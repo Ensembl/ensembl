@@ -154,6 +154,229 @@ sub fetch_by_dbID {
 } ## end sub fetch_by_dbID
 
 
+sub _get_all_dm_loc_sth {
+  my ($self, $constraint ,$ensembl_object ) = @_;
+  my $object_type;
+  if($ensembl_object->isa("Bio::EnsEMBL::Gene")){
+    $object_type = "Gene";
+  }
+  elsif($ensembl_object->isa("Bio::EnsEMBL::Transcript")){
+    $object_type = "Transcript";
+  }
+  elsif($ensembl_object->isa("Bio::EnsEMBL::Translation")){
+    $object_type = "Translation";
+  }
+  else{
+    warn(ref($ensembl_object)." is not a Gene Transcript or Translation object??\n");
+    return undef;
+  }
+  my $sql = "SELECT xref.xref_id,
+               xref.dbprimary_acc,
+            xref.display_label,
+            xref.version,
+            exDB.dbprimary_acc_linkable,
+            exDB.display_label_linkable,
+            exDB.priority,
+            exDB.db_name,
+            exDB.db_display_name,
+            exDB.db_release,
+            es.synonym,
+            xref.info_type,
+            xref.info_text,
+            exDB.type,
+            exDB.secondary_db_name,
+            exDB.secondary_db_table,
+            xref.description
+    FROM    (xref, external_db exDB, dependent_xref dx, object_xref ox)
+    LEFT JOIN external_synonym es ON
+            es.xref_id = xref.xref_id
+    WHERE   xref.external_db_id = exDB.external_db_id AND
+            ox.xref_id = xref.xref_id AND
+            ox.ensembl_object_type = \'$object_type\' AND
+            ox.ensembl_id = ".$ensembl_object->dbID();
+
+  if($constraint){
+    $sql .= " AND $constraint";
+  }
+  else{
+    die "NO constraint???\n";
+  }
+#  print "\n\n".$sql."\n";
+  my $sth = $self->prepare($sql) || die "Could not prepare $sql";
+#  print "sth is $sth\n";  
+  return $self->_get_all_dm($sth);
+}
+
+sub _get_all_dm_sth {
+  my ( $self, $constraint) = @_;
+
+ my $sql = "SELECT xref.xref_id,
+               xref.dbprimary_acc,
+            xref.display_label,
+            xref.version,
+            exDB.dbprimary_acc_linkable,
+            exDB.display_label_linkable,
+            exDB.priority,
+            exDB.db_name,
+            exDB.db_display_name,
+            exDB.db_release,
+            es.synonym,
+            xref.info_type,
+            xref.info_text,
+            exDB.type,
+            exDB.secondary_db_name,
+            exDB.secondary_db_table,
+            xref.description
+    FROM    (xref, external_db exDB, dependent_xref dx)
+    LEFT JOIN external_synonym es ON
+            es.xref_id = xref.xref_id
+    WHERE   xref.external_db_id = exDB.external_db_id ";
+
+  if($constraint){
+    $sql .= "AND $constraint";
+  }
+  else{
+    die "NO constraint???\n";
+  }
+
+  my $sth = $self->prepare($sql) || die "Could not prepare $sql";
+
+#  print "sth is $sth\n";
+  return $self->_get_all_dm($sth);
+}
+
+
+sub _get_all_dm{
+
+  my ($self, $sth) = @_;
+
+#  $sth->bind_param( 1, $dm_dbid, SQL_INTEGER );
+
+#  print $sth."\n";
+  $sth->execute() || die "Not able to execute statement handle";
+
+  my @list =();
+  my %seen;
+
+  my $max_rows = 1000;
+  while ( my $rowcache = $sth->fetchall_arrayref(undef, $max_rows) ) {
+    while ( my $arrayref = shift( @{$rowcache} ) ) {
+      my ( $dbID,                $dbprimaryId,
+           $displayid,           $version,
+           $primary_id_linkable,
+           $display_id_linkable, $priority,
+           $dbname,              $db_display_name,
+           $release,             $synonym,
+           $info_type,           $info_text,
+           $type,                $secondary_db_name,
+           $secondary_db_table,  $description
+      ) = @$arrayref;
+
+      if ( !defined($seen{$dbID}) ) {
+       my $exDB =
+          Bio::EnsEMBL::DBEntry->new(
+                           -adaptor             => $self,
+                           -dbID                => $dbID,
+                           -primary_id          => $dbprimaryId,
+                           -display_id          => $displayid,
+                           -version             => $version,
+                           -release             => $release,
+                           -dbname              => $dbname,
+                           -primary_id_linkable => $primary_id_linkable,
+                           -display_id_linkable => $display_id_linkable,
+                           -priority            => $priority,
+                           -db_display_name     => $db_display_name,
+                           -info_type           => $info_type,
+                           -info_text           => $info_text,
+                           -type                => $type,
+                           -secondary_db_name   => $secondary_db_name,
+                           -secondary_db_table  => $secondary_db_table,
+			   -description         => $description
+          );
+
+	if ($synonym) { $exDB->add_synonym($synonym) };
+	$seen{$dbID} = 1;
+	push @list, $exDB;
+      }
+
+
+
+    } ## end while ( my $arrayref = shift...
+  } ## end while ( my $rowcache = $sth...
+
+  $sth->finish();
+
+  return \@list;
+
+}
+
+
+=head2 get_all_dependents
+
+  Args[1]    : dbID of the DBentry to get the dependents of.
+  Args[2]    : (optional) Bio::EnsEMBL::Gene, Transcript or Translation object
+  Example    : my @dependents = @{ $dbe_adaptor->get_all_dependents(1234) };
+  Description: Get a list of DBEntrys that are depenednet on the DBEntry.
+               if an ensembl gene transcript or translation is given then only
+               the ones on that object will be given
+  Returntype : listref of DBEntrys. May be empty.
+  Exceptions : none
+  Caller     : DBEntry->get_all_dependnets
+  Status     : UnStable
+
+=cut
+
+sub get_all_dependents {
+  my ( $self, $dbid, $ensembl_object) = @_;
+  
+  if(defined($ensembl_object) and !($ensembl_object->isa("Bio::EnsEMBL::Feature") or $ensembl_object->isa("Bio::EnsEMBL::Translation"))){
+    die ref($ensembl_object)." is not an Gene Transcript or Translation";
+  }
+  
+  my $constraint = " dx.master_xref_id = $dbid AND  dx.dependent_xref_id = xref.xref_id";
+  if(defined($ensembl_object)){
+    return $self->_get_all_dm_loc_sth($constraint, $ensembl_object);
+  }
+  else{
+    return $self->_get_all_dm_sth($constraint, $ensembl_object);
+  }
+
+}
+
+=head2 get_all_masters
+
+  Args[1]    : dbID of the DBentry to get the masters of.
+  Args[2]    : (optional) Bio::EnsEMBL::Gene, Transcript or Translation object
+  Example    : my @masters = @{ $dbe_adaptor->get_all_masters(1234) };
+  Description: Get a list of DBEntrys that are the masters of the DBEntry.
+               if an ensembl gene transcript or translation is given then only
+               the ones on that object will be given.
+  Returntype : listref of DBEntrys. May be empty.
+  Exceptions : none
+  Caller     : DBEntry->get_all_masters
+  Status     : UnStable
+
+=cut
+
+sub get_all_masters {
+  my ( $self, $dbid, $ensembl_object ) = @_;
+  
+  if(defined($ensembl_object) and !($ensembl_object->isa("Bio::EnsEMBL::Feature") or $ensembl_object->isa("Bio::EnsEMBL::Translation"))){
+    die ref($ensembl_object)." is not an Gene Transcript or Translation";
+  }
+  
+  my $constraint = "dx.dependent_xref_id = $dbid AND  dx.master_xref_id = xref.xref_id";
+
+  if(defined($ensembl_object)){
+    return $self->_get_all_dm_loc_sth($constraint, $ensembl_object);
+  }
+  else{
+    return $self->_get_all_dm_sth($constraint, $ensembl_object);
+  }
+#  return $self->_get_all_dm($constraint, $ensembl_object);
+}
+
+
 =head2 fetch_by_db_accession
 
   Arg [1]    : string $dbname - The name of the database which the provided
