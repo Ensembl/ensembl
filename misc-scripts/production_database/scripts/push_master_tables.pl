@@ -337,31 +337,68 @@ foreach my $dbh (@db_handles) {
                 display_banner( '=',
                                 sprintf( "%s.%s", $dbname, $table ) );
 
-                printf( "==> The following row differs in %s.\n",
-                        join( ', ', keys(%diff_fields) ) );
-                print( "==> MASTER row:\n",   Dumper($master_row),
-                       "==> DATABASE row:\n", Dumper($row) );
+                # Find other row in master table that is the same as
+                # database table row, but with different primary key.
 
-                push(
-                  @{ $sql{$dbname} },
-                  sprintf( "-- update %s in %s\n",
-                           join( ', ', keys(%diff_fields) ), $table ),
-                  sprintf(
-                    "UPDATE %s\nSET %s\nWHERE %s_id = %d;\n",
-                    $dbh->quote_identifier( undef, $dbname, $table ),
-                    join(
-                      ', ',
-                      map {
-                        sprintf( "%s = %s",
-                                 $_,
-                                 $dbh->quote( $diff_fields{$_} ),
-                                 $colinfo->{$_}{'DATA_TYPE'} )
-                        }
-                        keys(%diff_fields) ),
-                    $table,
-                    $pk ) );
+                my $is_missing = 1;
 
-                print("\n");
+                foreach my $master_pk ( keys( %{ $master{$table} } ) ) {
+                  my $master_row = $master{$table}{$master_pk};
+                  my $is_same    = 1;
+
+                  foreach my $field ( sort( keys( %{$master_row} ) ) ) {
+                    if ( $field eq sprintf( '%s_id', $table ) ) {
+                      # Skip the primary key.
+                      next;
+                    }
+
+                    if ( $master_row->{$field} ne $row->{$field} ) {
+                      $is_same = 0;
+                      last;
+                    }
+                  }
+
+                  if ($is_same) {
+                    printf( "==> Entry with primary key %d "
+                          . "is same as entry with primary key %d:\n%s",
+                        $pk, $master_pk, Dumper($master_row) );
+
+                    push( @{ $sql{$dbname} },
+                          sprintf( "-- Entries in %s with pk %d "
+                                     . "should change to %d\n",
+                                   $table, $pk, $master_pk ) );
+
+                    $is_missing = 0;
+                  }
+                } ## end foreach my $master_pk ( keys...)
+
+                if ( $is_missing ) {
+                  printf( "==> The following row differs in %s.\n",
+                          join( ', ', keys(%diff_fields) ) );
+                  print( "==> MASTER row:\n",   Dumper($master_row),
+                         "==> DATABASE row:\n", Dumper($row) );
+
+                  push(
+                    @{ $sql{$dbname} },
+                    sprintf( "-- update %s in %s\n",
+                             join( ', ', keys(%diff_fields) ), $table ),
+                    sprintf(
+                      "UPDATE %s\nSET %s\nWHERE %s_id = %d;\n",
+                      $dbh->quote_identifier( undef, $dbname, $table ),
+                      join(
+                        ', ',
+                        map {
+                          sprintf( "%s = %s",
+                                   $_,
+                                   $dbh->quote( $diff_fields{$_} ),
+                                   $colinfo->{$_}{'DATA_TYPE'} )
+                          }
+                          keys(%diff_fields) ),
+                      $table,
+                      $pk ) );
+
+                  print("\n");
+                } ## end if ( !$is_missing )
 
               } ## end if ( scalar( keys(%diff_fields...)))
             } ## end else [ if ( !defined($master_row...))]
