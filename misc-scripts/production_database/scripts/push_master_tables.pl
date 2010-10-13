@@ -278,9 +278,14 @@ foreach my $dbh (@db_handles) {
                         $pk, $master_pk, Dumper($master_row) );
 
                   push( @{ $sql{$dbname} },
-                        sprintf( "-- Entries with %s_id=%d "
-                                   . "should change to %d\n",
-                                 $table, $pk, $master_pk ) );
+                        sprintf(
+                               "-- Entries with %s_id = %d "
+                                 . "should change this to %d\n"
+                                 . "-- Useful SQL:\n"
+                                 . "-- UPDATE <table> "
+                                 . "SET %s_id = %d WHERE %s_id = %s;\n",
+                               $table,     $pk,    $master_pk, $table,
+                               $master_pk, $table, $pk ) );
 
                   $is_missing = 0;
                 }
@@ -365,9 +370,14 @@ foreach my $dbh (@db_handles) {
                         $pk, $master_pk, Dumper($master_row) );
 
                     push( @{ $sql{$dbname} },
-                          sprintf( "-- Entries with %s_id=%d "
-                                     . "should change to %d\n",
-                                   $table, $pk, $master_pk ) );
+                          sprintf(
+                               "-- Entries with %s_id = %d "
+                                 . "should change this to %d\n"
+                                 . "-- Useful SQL:\n"
+                                 . "-- UPDATE <table> "
+                                 . "SET %s_id = %d WHERE %s_id = %s;\n",
+                               $table,     $pk,    $master_pk, $table,
+                               $master_pk, $table, $pk ) );
 
                     $is_missing = 0;
                   }
