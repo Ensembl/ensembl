@@ -270,8 +270,25 @@ sub type_variation {
     return [];
   }
   
+  
+  # check the cache
+  my $tran_features = $tr->{_variation_effect_feature_cache};
+  
+  # populate it if not found
+  unless ($tran_features) {
+	if ($tran_features->{translation} = $tr->translate) {
+	  $tran_features->{translateable_seq} = $tr->translateable_seq;
+	  $tran_features->{peptide} = $tran_features->{translation}->seq;
+	}
+	
+	$tran_features->{mapper} = $tr->get_TranscriptMapper;
+	$tran_features->{introns} = $tr->get_all_Introns,
+	
+	$tr->{_variation_effect_feature_cache} = $tran_features;
+  }
+  
 
-  if ( !defined( $tr->translation() ) )
+  if ( !defined( $tran_features->{translation} ) )
   {    # for other biotype rather than coding/IG genes
         # check if the variation is completely outside the transcript:
 
@@ -318,7 +335,7 @@ sub type_variation {
   } ## end if ( !defined( $tr->translation...))
 
   # get a transcript mapper object
-  my $tm = $tr->get_TranscriptMapper();
+  my $tm = $tran_features->{mapper};
   
   # map to CDNA coords
   my @cdna_coords = $tm->genomic2cdna($var->start,$var->end,$var->strand);
@@ -341,7 +358,7 @@ sub type_variation {
   ) {
 	
 	# get the CDS sequence
-	my $cds = $tr->translateable_seq();
+	my $cds = $tran_features->{translateable_seq};
 	
 	my $start = $pep_coords[0]->start();
 	my $codon_cds_start = ($start * 3) - 2;
@@ -428,7 +445,7 @@ sub type_variation {
     # transcript, note that ESSENTIAL_SPLICE_SITE only consider first (AG) and last (GT) 2 bases inside the intron.
     # if variation is in intron, we need to check the lenth of intron, if it's shoter than 6, we call it SYNONYMOUS_CODING rather then INTRONIC
 
-    foreach my $intron (@{$tr->get_all_Introns()}) {
+    foreach my $intron (@{$tran_features->{introns}}) {
       if ($intron->length <=5) {#the length of frameshift intron could be 1,2,4,5 bases
 		if ($var->start>=$intron->start and $var->end<=$intron->end) {
 		  #this is a type of SYNONYMOUS_CODING since changes happen in frameshift intron, which don't change exon structure
@@ -547,10 +564,28 @@ sub type_variation {
 sub apply_aa_change {
   my $tr = shift;
   my $var = shift;
+  
+  # check the cache
+  my $tran_features = $tr->{_variation_effect_feature_cache};
+  
+  # populate it if not found
+  unless ($tran_features) {
+	$tran_features = {
+	  mapper  => $tr->get_TranscriptMapper,
+	};
+	
+	if ($tran_features->{translation} = $tr->translate) {
+	  $tran_features->{translateable_seq} = $tr->translateable_seq;
+	  $tran_features->{peptide} = $tran_features->{translation}->seq;
+	}
+	
+	$tr->{_variation_effect_feature_cache} = $tran_features;
+  }
+  
 
   #my $peptide = $tr->translate->seq();
   #to consider stop codon as well
-  my $mrna = $tr->translateable_seq();
+  my $mrna = $tran_features->{translateable_seq}; # get from cache
   my $mrna_seqobj = Bio::Seq->new( -seq        => $mrna,
 				   -moltype    => "dna",
 				   -alphabet   => "dna");
@@ -561,7 +596,7 @@ sub apply_aa_change {
   $codon_table = $attrib->value() if($attrib);
   $codon_table ||= 1; # default vertebrate codon table 
 
-  my $peptide = $mrna_seqobj->translate(undef,undef,undef,$codon_table)->seq;
+  my $peptide = $tran_features->{peptide}; # get from cache
   my $len = $var->aa_end - $var->aa_start + 1;
   my $old_aa = substr($peptide, $var->aa_start -1 , $len);
 
@@ -582,7 +617,7 @@ sub apply_aa_change {
   #here could generate multi type if have multi-allele change: "ACTAGT/-/T"
   foreach my $a (@alleles) {
     $a =~ s/\-//;
-    my $cds = $tr->translateable_seq();
+    my $cds = $mrna;
 	
     if($var_len != length($a)) {
       if(abs(length($a) - $var_len) % 3) {
