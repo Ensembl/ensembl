@@ -8,7 +8,7 @@
 # The template database needs to live on the same server as the
 # production database.
 #
-# The otuput of this script is SQL written to standard output.  The SQL
+# The output of this script is SQL written to standard output.  The SQL
 # needs to be run against the MySQL server manually.
 #
 
