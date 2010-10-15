@@ -96,6 +96,7 @@ my $db =
 
 
 my $sa = $db->get_SliceAdaptor;
+my $dea = $db->get_DBEntryAdaptor;
 my $slices;
 
 # Only update the canonical transcripts in this region.
@@ -187,7 +188,7 @@ GENE: foreach my $gene (@$genes) {
 
     my @sorted;
     if (@with_translation) {
-      my ( @prot_coding_len_and_trans, @len_and_trans );
+      my ( @ccds_prot_coding_len_and_trans, @merge_prot_coding_len_and_trans, @prot_coding_len_and_trans, @merge_len_and_trans, @len_and_trans );
       foreach my $trans (@with_translation) {
 
         if ($verbose) {
@@ -196,17 +197,33 @@ GENE: foreach my $gene (@$genes) {
 
         if ( $trans->biotype eq 'protein_coding') {
           my $h = { trans => $trans, len => $trans->translate->length };
-          push @prot_coding_len_and_trans, $h;
+          if (scalar(@{$dea->fetch_all_by_Transcript($trans, 'CCDS')})) {
+            push @ccds_prot_coding_len_and_trans, $h;
+          } elsif ($trans->analysis->logic_name eq 'ensembl_havana_transcript') {
+            push @merge_prot_coding_len_and_trans, $h;
+          } else {
+            push @prot_coding_len_and_trans, $h;
+          }
           next;
         } else {
           my $h = { trans => $trans, len => $trans->translate->length };
-          push @len_and_trans, $h;
+          if ($trans->analysis->logic_name eq 'ensembl_havana_transcript') {
+            push @merge_len_and_trans, $h;
+          } else {
+            push @len_and_trans, $h;
+          }
         }
       }
 
       my @tmp_sorted;
-      if (@prot_coding_len_and_trans) {
+      if (@ccds_prot_coding_len_and_trans) {
+        @tmp_sorted = sort { $b->{len} <=> $a->{len} } @ccds_prot_coding_len_and_trans;
+      } elsif (@merge_prot_coding_len_and_trans) {
+        @tmp_sorted = sort { $b->{len} <=> $a->{len} } @merge_prot_coding_len_and_trans;
+      } elsif (@prot_coding_len_and_trans) {
         @tmp_sorted = sort { $b->{len} <=> $a->{len} } @prot_coding_len_and_trans;
+      } elsif (@merge_len_and_trans) {
+        @tmp_sorted = sort { $b->{len} <=> $a->{len} } @merge_len_and_trans;
       } else {
         if ($verbose) {
           print "There are no 'protein_coding' labelled transcripts, "
@@ -223,9 +240,27 @@ GENE: foreach my $gene (@$genes) {
         push @sorted, $h->{trans};
       }
     } else {
-      @sorted = sort { $b->length <=> $a->length } @no_translation;
-    }
+      # we merge genes without a translation too
+      my ( @merge_len_and_trans, @len_and_trans );
+      foreach my $trans (@no_translation) {
+        if ($trans->analysis->logic_name eq 'ensembl_havana_transcript') {
+          push @merge_len_and_trans, $trans;
+        } else {
+          push @len_and_trans, $trans;
+        }
+      }
+      if (@merge_len_and_trans) {
+        @sorted = sort { $b->length <=> $a->length } @merge_len_and_trans;
+      } else {
+        @sorted = sort { $b->length <=> $a->length } @len_and_trans;
+      }
+    } # end of loop for no translation
+
+    # # #
+    # set canonical transcirpt
+    # # #
     $canonical{ $gene->dbID } = $sorted[0]->dbID;
+
   } ## end foreach my $gene (@$genes)
 
   foreach my $gene_id ( keys(%canonical) ) {
