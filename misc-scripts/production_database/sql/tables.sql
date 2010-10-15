@@ -1,7 +1,7 @@
 -- Schema of tables not added by the bootstrap_master.pl script.
 
 -- NB: Additional tables are added by the web team to support storing
--- declarations of intentions etc.  Thos tables are not even mentioned
+-- declarations of intentions etc.  Those tables are not even mentioned
 -- here.
 
 -- The 'species' table.
@@ -22,7 +22,7 @@ CREATE TABLE species (
 -- This table contains all species-specific databases for this release.
 CREATE TABLE db (
   db_id         INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
-  species_id    INTEGER UNSIGNED NOT NULL,  -- FK into 'species_list'.
+  species_id    INTEGER UNSIGNED NOT NULL,  -- FK into 'species'.
   db_type       ENUM('cdna', 'core', 'coreexpressionatlas',
                      'coreexpressionest', 'coreexpressiongnf',
                      'funcgen', 'otherfeatures', 'variation', 'vega')
