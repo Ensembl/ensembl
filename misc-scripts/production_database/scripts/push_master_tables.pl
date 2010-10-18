@@ -201,6 +201,8 @@ foreach my $dbh (@db_handles) {
     $sth->bind_col( 1, \$dbname );
 
     while ( $sth->fetch() ) {
+      printf( "##> Processing '%s'\n", $dbname );
+
       foreach my $table (@tables) {
         my $csth = $dbh->column_info( undef, $dbname, $table, '%' );
         my $colinfo = $csth->fetchall_hashref( ['COLUMN_NAME'] );
