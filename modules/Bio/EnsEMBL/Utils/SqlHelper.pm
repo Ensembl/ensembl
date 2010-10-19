@@ -257,6 +257,7 @@ sub execute {
 
   Arg [SQL]           : SQL to execute
   Arg [PARAMS]        : The binding parameters to the SQL statement
+  Arg [CALLBACK]      : Allows you to give a callback to do the mapping with
   Returntype : 1D array of data points
   Exceptions : If errors occur in the execution of the SQL
   Status     : Stable
@@ -274,10 +275,10 @@ by the given SQL statement.
 
 sub execute_simple {
   my ( $self, @args ) = @_;
-	my ($sql, $params) = rearrange([qw(sql params)], @args);
+	my ($sql, $params, $callback) = rearrange([qw(sql params callback)], @args);
 	my $has_return = 1;
 	my $use_hashrefs = 0;
-	my $callback = $self->_mappers()->{first_element};
+	$callback ||= $self->_mappers()->{first_element};
 	return $self->_execute($sql, $callback, $has_return, $use_hashrefs, $params);
 }
 
