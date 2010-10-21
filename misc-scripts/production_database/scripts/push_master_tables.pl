@@ -161,10 +161,7 @@ my @tables =
   ( 'attrib_type', 'external_db', 'misc_set', 'unmapped_reason' );
 my @dbtypes = ( 'core', 'otherfeatures', 'cdna', 'vega' );
 
-my @db_handles;
-
 my %master;
-
 {
   my $dsn = sprintf( "DBI:mysql:host=%s;port=%d", $master, $dbport );
   my $dbh =
@@ -179,6 +176,7 @@ my %master;
   }
 }
 
+my @db_handles;
 foreach my $server (@servers) {
   my $dsn = sprintf( "DBI:mysql:host=%s;port=%d", $server, $dbport );
   my $dbh =
