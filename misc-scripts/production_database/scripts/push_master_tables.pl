@@ -164,6 +164,7 @@ my @dbtypes = ( 'core', 'otherfeatures', 'cdna', 'vega' );
 my @db_handles;
 
 my %master;
+
 {
   my $dsn = sprintf( "DBI:mysql:host=%s;port=%d", $master, $dbport );
   my $dbh =
