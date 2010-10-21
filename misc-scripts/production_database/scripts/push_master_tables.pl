@@ -163,7 +163,7 @@ my @dbtypes = ( 'core', 'otherfeatures', 'cdna', 'vega' );
 
 my %master;
 {
-  my $dsn = sprintf( "DBI:mysql:host=%s;port=%d", $master, $dbport );
+  my $dsn = sprintf( 'DBI:mysql:host=%s;port=%d', $master, $dbport );
   my $dbh =
     DBI->connect( $dsn, $dbuser, $dbpass, { 'PrintError' => 1 } );
 
@@ -178,7 +178,7 @@ my %master;
 
 my @db_handles;
 foreach my $server (@servers) {
-  my $dsn = sprintf( "DBI:mysql:host=%s;port=%d", $server, $dbport );
+  my $dsn = sprintf( 'DBI:mysql:host=%s;port=%d', $server, $dbport );
   my $dbh =
     DBI->connect( $dsn, $dbuser, $dbpass, { 'PrintError' => 1 } );
 
@@ -239,7 +239,7 @@ foreach my $dbh (@db_handles) {
           my $row        = $table{$pk};
 
           if ( $pk == 0 ) {
-            display_banner( '-', sprintf( "%s.%s", $dbname, $table ) );
+            display_banner( '-', sprintf( '%s.%s', $dbname, $table ) );
 
             print( "==> Primary key is ZERO "
                      . "for the following row in DATABASE:\n",
@@ -250,7 +250,7 @@ foreach my $dbh (@db_handles) {
 
             if ( !defined($master_row) ) {
               display_banner( '=',
-                              sprintf( "%s.%s", $dbname, $table ) );
+                              sprintf( '%s.%s', $dbname, $table ) );
 
               # Find other row in master table that is the same as
               # database table row, but with different primary key.
@@ -342,7 +342,7 @@ foreach my $dbh (@db_handles) {
 
               if ( scalar( keys(%diff_fields) ) > 0 ) {
                 display_banner( '=',
-                                sprintf( "%s.%s", $dbname, $table ) );
+                                sprintf( '%s.%s', $dbname, $table ) );
 
                 # Find other row in master table that is the same as
                 # database table row, but with different primary key.
@@ -400,7 +400,7 @@ foreach my $dbh (@db_handles) {
                       join(
                         ', ',
                         map {
-                          sprintf( "%s = %s",
+                          sprintf( '%s = %s',
                                    $_,
                                    $dbh->quote( $diff_fields{$_} ),
                                    $colinfo->{$_}{'DATA_TYPE'} )
@@ -427,7 +427,7 @@ foreach my $dbh (@db_handles) {
 
 if ( scalar( keys(%sql) ) > 0 ) {
   foreach my $db_name ( keys(%sql) ) {
-    my $filename = sprintf( "fix-%s.sql", $db_name );
+    my $filename = sprintf( 'fix-%s.sql', $db_name );
     printf( "==> Writing SQL to '%s'\n", $filename );
     my $out = IO::File->new( $filename, 'w' );
     $out->print( @{ $sql{$db_name} } );
