@@ -260,9 +260,7 @@ sub dumpGene {
 	
 	my $orth_species = {'homo_sapiens' => 'ensembl_ortholog',
     		'mus_musculus' => 'ensembl_ortholog',
-    		'rattus_norvegicus' => 'ensembl_ortholog',
-    		'danio_rerio'  => 'ensembl_ortholog',
-    		'drosophila_melanogaster'  => 'ensemblgenomes_ortholog',
+    		 'drosophila_melanogaster'  => 'ensemblgenomes_ortholog',
     		'caenorhabditis_elegans'  => 'ensemblgenomes_ortholog',
 		'saccharomyces_cerevisiae' => 'ensemblgenomes_ortholog'};
     my $compara_sth;
@@ -305,7 +303,7 @@ WHERE
  AND m2.source_name = "ENSEMBLGENE"
  AND gdb2.name IN ("$orth_species_string")
  AND h.description in ("ortholog_one2one", "apparent_ortholog_one2one",
-   "ortholog_one2_many", "ortholog_many2many")});
+   "ortholog_one2many", "ortholog_many2many")});
 
 	$orthologs_sth->execute;
 	   my $rows = []; # cache for batches of rows
@@ -326,7 +324,7 @@ print  "Done Fetching Orthogs\n-------------------------\n";
     foreach my $DB ( 'core', 'vega' ) {
         my $counter = make_counter(0);
         my $SNPDB =  eval {$conf->{variation}->{$release}};
-        my $DBNAME = $conf->{$DB}->{$release}
+my $DBNAME = $conf->{$DB}->{$release}
           or warn "$dbspecies $DB $release: no database not found";
         next unless $DBNAME;
         print "START... $DB";
@@ -356,6 +354,12 @@ print  "Done Fetching Orthogs\n-------------------------\n";
 	# SNP query
 	my $snp_sth = eval {$dbh->prepare("select distinct(vf.variation_name) from $SNPDB.transcript_variation as tv, $SNPDB.variation_feature as vf where vf.variation_feature_id = tv.variation_feature_id and tv.transcript_stable_id in(?)");};
 
+
+
+my $haplotypes = $dbh->selectall_hashref("select gene_id from gene g, assembly_exception ae where
+g.seq_region_id=ae.seq_region_id and ae.exc_type='HAP'", [qw(gene_id)])  or die $dbh->errstr;;
+
+my $taxon_id = $dbh->selectrow_arrayref("select meta_value from meta where meta_key='species.taxonomy_id'");
 
         my %xrefs      = ();
         my %xrefs_desc = ();
@@ -457,8 +461,10 @@ print  "Done Fetching Orthogs\n-------------------------\n";
                 }
                 %old = (
                     'gene_id'                => $gene_id,
-                    'gene_stable_id'         => $gene_stable_id,
+	        'haplotype' => $haplotypes->{$gene_id} ? 'haplotype' : 'reference',          
+		  'gene_stable_id'         => $gene_stable_id,
                     'description'            => $gene_description,
+                    'taxon_id'            => $taxon_id->[0],
                     'translation_stable_ids' => {
                         $translation_stable_id ? ( $translation_stable_id => 1 )
                         : ()
@@ -476,7 +482,8 @@ print  "Done Fetching Orthogs\n-------------------------\n";
                     'alt'                  => $xref_display_label
                     ? "($extdb_db_display_name: $xref_display_label)"
                     : "(novel gene)",
-                    'ana_desc_label' => $analysis_description_display_label,
+                    'gene_name' => $xref_display_label ? $xref_display_label : $gene_stable_id, 
+	            'ana_desc_label' => $analysis_description_display_label,
                     'ad'             => $analysis_description,
                     'source'         => ucfirst($gene_source),
                     'st'             => $gene_status,
@@ -579,15 +586,22 @@ sub geneLineXML {
     my $external_identifiers = $xml_data->{'external_identifiers'}
       or die "external_identifiers not set";
     my $description = $xml_data->{'description'};
+    my $gene_name = $xml_data->{'gene_name'};	
     my $type        = $xml_data->{'source'} . ' ' . $xml_data->{'biotype'}
       or die "problem setting type";
-
+my $haplotype = $xml_data->{'haplotype'};
+my $taxon_id = $xml_data->{'taxon_id'};
     my $exon_count       = scalar keys %$exons;
     my $transcript_count = scalar keys %$transcripts;
     $description =~ s/</&lt;/g;
     $description =~ s/>/&gt;/g;
     $description =~ s/'/&apos;/g;
     $description =~ s/&/&amp;/g;
+   
+    $gene_name =~ s/</&lt;/g;
+    $gene_name=~ s/>/&gt;/g;
+    $gene_name=~ s/'/&apos;/g;
+    $gene_name=~ s/&/&amp;/g;
 
     $gene_id  =~ s/</&lt;/g;
     $gene_id  =~ s/>/&gt;/g;
@@ -601,10 +615,11 @@ sub geneLineXML {
     <description>$description</description>};
 
     my $synonyms = "";
-
+my $unique_synonyms;
     my $cross_references = qq{
        <cross_references>};
-
+$cross_references .= qq{
+         <ref dbname="ncbi_taxonomy_id" dbkey="$taxon_id"/>};
     # for some types of xref, merge the subtypes into the larger type
     # e.g. Uniprot/SWISSPROT and Uniprot/TREMBL become just Uniprot
     # synonyms are stored as additional fields rather than cross references
@@ -616,8 +631,14 @@ sub geneLineXML {
 	# synonyms
 	if ($ext_db_name =~ /_synonym/) {
 
-	  map { $synonyms .=  qq{
-         <field name="${matched_db_name}_synonym">$_</field>}; } keys %{ $external_identifiers->{$ext_db_name} }
+	 foreach my $ed_key( keys %{ $external_identifiers->{$ext_db_name} }){
+		$unique_synonyms->{$ed_key} = 1;
+		$synonyms .=  qq{ 
+             <field name="${matched_db_name}_synonym">$ed_key</field>}; 
+	}
+ 
+
+
 
 	} else { # non-synonyms
 
@@ -636,7 +657,7 @@ sub geneLineXML {
 	   $ext_db_name =~s/^Ens.*/ENSEMBL/;
 
 	   if ($ext_db_name =~ /_synonym/) {
-
+		$unique_synonyms->{$key} = 1;
 	     $synonyms .= qq{
         <field name="$ext_db_name">$key</field>};
 
@@ -677,14 +698,19 @@ sub geneLineXML {
     $cross_references .= qq{
 </cross_references>};
 
+
+map {        $synonyms .= qq{     
+      <field name="gene_synonym">$_</field> }   } keys %$unique_synonyms;
+
+
     my $additional_fields .= qq{
     <additional_fields>
       <field name="species">$species</field>
       <field name="featuretype">Gene</field>
       <field name="source">$type</field>
-      <field name="transcript_count">$transcript_count</field> }
-
-
+      <field name="transcript_count">$transcript_count</field>
+      <field name="gene_name">$gene_name</field>
+      <field name="haplotype">$haplotype</field>}
       . (
 	 join "",
 	 (
