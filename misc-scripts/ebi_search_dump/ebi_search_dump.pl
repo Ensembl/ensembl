@@ -60,30 +60,28 @@ my @indexes = split ',', $ind;
 
 my $dbHash = get_databases();
 
-
 #warn Dumper $dbcHash;
 
 foreach my $species ( sort keys %$dbHash ) {
 
     my $conf = $dbHash->{$species};
     foreach my $index (@indexes) {
-	# we don't dump compara anymore
-	next if $index =~/Family/;
+
+        # we don't dump compara anymore
+        next if $index =~ /Family/;
         my $function = "dump$index";
         no strict "refs";
 
-	$species =~ s/_/ /g;
-	if ($index eq 'Gene'){
-	    &$function( ucfirst($species), $conf );
-	    print $function,"\n";
-	} #elsif ($index eq 'Family' && !$FAMILY_DUMPED) {
-	   # &dumpFamily($conf);
+        $species =~ s/_/ /g;
+        if ( $index eq 'Gene' ) {
+            &$function( ucfirst($species), $conf );
+            print $function, "\n";
+        }    #elsif ($index eq 'Family' && !$FAMILY_DUMPED) {
+             # &dumpFamily($conf);
 
-	#}
+        #}
 
     }
-
-
 
 }
 
@@ -160,11 +158,9 @@ sub get_databases {
     my $compara_hash;
     for my $dbname (@dbnames) {
 
-
         if ( ( $db_species, $db_type, $db_release ) =
             $dbname =~ /^([a-z]+_[a-z]+)_([a-z]+)_(\d+)_\w+$/ )
         {
-
 
             next if ( $species ne 'ALL' ) && ( $db_species ne $species );
 
@@ -180,8 +176,6 @@ sub get_databases {
         }
 
     }
-
-
 
     map { $dbHash->{$_}->{'compara'} = $compara_hash } keys %$dbHash;
     $release = $latest_release if ( $release eq 'LATEST' );
@@ -252,44 +246,53 @@ sub format_datetime {
     return sprintf "$d-$ms-$y %02d:%02d:%02d", $hh, $mm, $ss;
 }
 
-
 sub dumpGene {
 
     my ( $dbspecies, $conf ) = @_;
 
-	
-	my $orth_species = {'homo_sapiens' => 'ensembl_ortholog',
-    		'mus_musculus' => 'ensembl_ortholog',
-    		 'drosophila_melanogaster'  => 'ensemblgenomes_ortholog',
-    		'caenorhabditis_elegans'  => 'ensemblgenomes_ortholog',
-		'saccharomyces_cerevisiae' => 'ensemblgenomes_ortholog'};
+    my $orth_species = {
+        'homo_sapiens'             => 'ensembl_ortholog',
+        'mus_musculus'             => 'ensembl_ortholog',
+        'drosophila_melanogaster'  => 'ensemblgenomes_ortholog',
+        'caenorhabditis_elegans'   => 'ensemblgenomes_ortholog',
+        'saccharomyces_cerevisiae' => 'ensemblgenomes_ortholog'
+    };
     my $compara_sth;
     my $want_species_orthologs;
 
-    my $COMPARA_DB_NAME = $conf->{compara}->{$release} || die "can't get compara dbname";
-	my $ortholog_lookup;        
-my $orth_target_species;
-        ($orth_target_species = lcfirst($dbspecies)) =~ s/\s/_/;
-        if ($want_species_orthologs = delete( $orth_species->{$orth_target_species}) ) {
+    my $COMPARA_DB_NAME = $conf->{compara}->{$release}
+      || die "can't get compara dbname";
+    my $ortholog_lookup;
+    my $orth_target_species;
+    ( $orth_target_species = lcfirst($dbspecies) ) =~ s/\s/_/;
+    if ( $want_species_orthologs =
+        delete( $orth_species->{$orth_target_species} ) )
+    {
 
-print  "Fetching Orthogs [$orth_target_species]\n-------------------------\n";
-            #die Dumper($conf);
-            my $compara_dsn = "DBI:mysql:host=$host";
-            $compara_dsn .= ";port=$port" if ($port);
-            my $compara_db_name = $conf->{compara}->{$release} || die "can't get compara dbname";
+        print
+"Fetching Orthogs [$orth_target_species]\n-------------------------\n";
 
-            my $compara_dbh = DBI->connect( "$compara_dsn:$compara_db_name", $user, $pass )
-              or die "DBI::error";
+        #die Dumper($conf);
+        my $compara_dsn = "DBI:mysql:host=$host";
+        $compara_dsn .= ";port=$port" if ($port);
+        my $compara_db_name = $conf->{compara}->{$release}
+          || die "can't get compara dbname";
 
-#                  $compara_dbh->{TraceLevel} = "1|SQL|test";
+        my $compara_dbh =
+          DBI->connect( "$compara_dsn:$compara_db_name", $user, $pass )
+          or die "DBI::error";
 
-            my @wanted_ortholog_species = keys %$orth_species;
-	#  change perl array value interpolation
-            local $" = qq{","};
-            my $orth_species_string = qq/@wanted_ortholog_species/;
-# Get orthologs
-my $orthologs_sth = $compara_dbh->prepare(
-qq{SELECT
+        #                  $compara_dbh->{TraceLevel} = "1|SQL|test";
+
+        my @wanted_ortholog_species = keys %$orth_species;
+
+        #  change perl array value interpolation
+        local $" = qq{","};
+        my $orth_species_string = qq/@wanted_ortholog_species/;
+
+        # Get orthologs
+        my $orthologs_sth = $compara_dbh->prepare(
+            qq{SELECT
  m1.stable_id , m2.stable_id, gdb2.name
 FROM 
  genome_db gdb1  JOIN member m1 USING (genome_db_id)
@@ -303,28 +306,37 @@ WHERE
  AND m2.source_name = "ENSEMBLGENE"
  AND gdb2.name IN ("$orth_species_string")
  AND h.description in ("ortholog_one2one", "apparent_ortholog_one2one",
-   "ortholog_one2many", "ortholog_many2many")});
+   "ortholog_one2many", "ortholog_many2many")}
+        );
 
-	$orthologs_sth->execute;
-	   my $rows = []; # cache for batches of rows
-         while( my $row = ( shift(@$rows) || # get row from cache, or reload cache:
-                            shift(@{$rows=$orthologs_sth->fetchall_arrayref(undef,10_000)||[]}) )
-         ) {
-  
-		push @{ $ortholog_lookup->{ $row->[0] } },[$row->[1] , $orth_species->{ $row->[2] }  ] ;
+        $orthologs_sth->execute;
+        my $rows = [];    # cache for batches of rows
+        while (
+            my $row = (
+                shift(@$rows) ||    # get row from cache, or reload cache:
+                  shift(
+                    @{
+                        $rows =
+                          $orthologs_sth->fetchall_arrayref( undef, 10_000 )
+                          || []
+                      }
+                  )
+            )
+          )
+        {
 
+            push @{ $ortholog_lookup->{ $row->[0] } },
+              [ $row->[1], $orth_species->{ $row->[2] } ];
 
-         }
-print  "Done Fetching Orthogs\n-------------------------\n";
-       	}
-	
+        }
+        print "Done Fetching Orthogs\n-------------------------\n";
+    }
 
-
-#     foreach my $DB ( 'core', 'otherfeatures', 'vega' ) {
+    #     foreach my $DB ( 'core', 'otherfeatures', 'vega' ) {
     foreach my $DB ( 'core', 'vega' ) {
         my $counter = make_counter(0);
-        my $SNPDB =  eval {$conf->{variation}->{$release}};
-my $DBNAME = $conf->{$DB}->{$release}
+        my $SNPDB   = eval { $conf->{variation}->{$release} };
+        my $DBNAME  = $conf->{$DB}->{$release}
           or warn "$dbspecies $DB $release: no database not found";
         next unless $DBNAME;
         print "START... $DB";
@@ -351,15 +363,20 @@ my $DBNAME = $conf->{$DB}->{$release}
         my $dbh = DBI->connect( "$dsn:$DBNAME", $user, $pass )
           or die "DBI::error";
 
-	# SNP query
-	my $snp_sth = eval {$dbh->prepare("select distinct(vf.variation_name) from $SNPDB.transcript_variation as tv, $SNPDB.variation_feature as vf where vf.variation_feature_id = tv.variation_feature_id and tv.transcript_stable_id in(?)");};
+        # SNP query
+        my $snp_sth = eval {
+            $dbh->prepare(
+"select distinct(vf.variation_name) from $SNPDB.transcript_variation as tv, $SNPDB.variation_feature as vf where vf.variation_feature_id = tv.variation_feature_id and tv.transcript_stable_id in(?)"
+            );
+        };
 
+        my $haplotypes = $dbh->selectall_hashref(
+            "select gene_id from gene g, assembly_exception ae where
+g.seq_region_id=ae.seq_region_id and ae.exc_type='HAP'", [qw(gene_id)]
+        ) or die $dbh->errstr;
 
-
-my $haplotypes = $dbh->selectall_hashref("select gene_id from gene g, assembly_exception ae where
-g.seq_region_id=ae.seq_region_id and ae.exc_type='HAP'", [qw(gene_id)])  or die $dbh->errstr;;
-
-my $taxon_id = $dbh->selectrow_arrayref("select meta_value from meta where meta_key='species.taxonomy_id'");
+        my $taxon_id = $dbh->selectrow_arrayref(
+            "select meta_value from meta where meta_key='species.taxonomy_id'");
 
         my %xrefs      = ();
         my %xrefs_desc = ();
@@ -371,17 +388,18 @@ my $taxon_id = $dbh->selectrow_arrayref("select meta_value from meta where meta_
            from ($DBNAME.object_xref as ox, $DBNAME.xref as x, $DBNAME.external_db as ed) left join $DBNAME.external_synonym as es on es.xref_id = x.xref_id
           where ox.ensembl_object_type = '$type' and ox.xref_id = x.xref_id and x.external_db_id = ed.external_db_id"
             );
-            print  "XREF $type query...\n---------------------\n";
+            print "XREF $type query...\n---------------------\n";
             foreach (@$T) {
 
                 $xrefs{$type}{ $_->[0] }{ $_->[3] }{ $_->[1] } = 1 if $_->[1];
                 $xrefs{$type}{ $_->[0] }{ $_->[3] }{ $_->[2] } = 1 if $_->[2];
-		$xrefs{$type}{ $_->[0] }{ $_->[3] . "_synonym" }{ $_->[4] } = 1 if $_->[4];
-                $xrefs_desc{$type}{ $_->[0] }{ $_->[5] }       = 1 if $_->[5];
+                $xrefs{$type}{ $_->[0] }{ $_->[3] . "_synonym" }{ $_->[4] } = 1
+                  if $_->[4];
+                $xrefs_desc{$type}{ $_->[0] }{ $_->[5] } = 1 if $_->[5];
 
             }
 
-            print  "Done XREF $type query...\n---------------------\n";
+            print "Done XREF $type query...\n---------------------\n";
         }
 
         my %exons = ();
@@ -446,25 +464,28 @@ my $taxon_id = $dbh->selectrow_arrayref("select meta_value from meta where meta_
             if ( $old{'gene_id'} != $gene_id ) {
                 if ( $old{'gene_id'} ) {
 
-		    if ($SNPDB && $DB eq 'core') {
-			my @transcript_stable_ids = keys %{$old{transcript_stable_ids}};
-			$snp_sth->execute("@transcript_stable_ids");
-			$old{snps} = $snp_sth->fetchall_arrayref;
-		    }
+                    if ( $SNPDB && $DB eq 'core' ) {
+                        my @transcript_stable_ids =
+                          keys %{ $old{transcript_stable_ids} };
+                        $snp_sth->execute("@transcript_stable_ids");
+                        $old{snps} = $snp_sth->fetchall_arrayref;
+                    }
 
                     if ($want_species_orthologs) {
-                        $old{orthologs} =  $ortholog_lookup->{$old{'gene_stable_id'}};
+                        $old{orthologs} =
+                          $ortholog_lookup->{ $old{'gene_stable_id'} };
                     }
 
                     p geneLineXML( $dbspecies, \%old, $counter );
 
                 }
                 %old = (
-                    'gene_id'                => $gene_id,
-	        'haplotype' => $haplotypes->{$gene_id} ? 'haplotype' : 'reference',          
-		  'gene_stable_id'         => $gene_stable_id,
+                    'gene_id'   => $gene_id,
+                    'haplotype' => $haplotypes->{$gene_id} ? 'haplotype'
+                    : 'reference',
+                    'gene_stable_id'         => $gene_stable_id,
                     'description'            => $gene_description,
-                    'taxon_id'            => $taxon_id->[0],
+                    'taxon_id'               => $taxon_id->[0],
                     'translation_stable_ids' => {
                         $translation_stable_id ? ( $translation_stable_id => 1 )
                         : ()
@@ -482,8 +503,9 @@ my $taxon_id = $dbh->selectrow_arrayref("select meta_value from meta where meta_
                     'alt'                  => $xref_display_label
                     ? "($extdb_db_display_name: $xref_display_label)"
                     : "(novel gene)",
-                    'gene_name' => $xref_display_label ? $xref_display_label : $gene_stable_id, 
-	            'ana_desc_label' => $analysis_description_display_label,
+                    'gene_name' => $xref_display_label ? $xref_display_label
+                    : $gene_stable_id,
+                    'ana_desc_label' => $analysis_description_display_label,
                     'ad'             => $analysis_description,
                     'source'         => ucfirst($gene_source),
                     'st'             => $gene_status,
@@ -523,7 +545,7 @@ my $taxon_id = $dbh->selectrow_arrayref("select meta_value from meta where meta_
             }
             else {
                 $old{'transcript_stable_ids'}{$transcript_stable_id}   = 1;
-                $old{'transcript_ids'}{$transcript_id} = 1;
+                $old{'transcript_ids'}{$transcript_id}                 = 1;
                 $old{'translation_stable_ids'}{$translation_stable_id} = 1;
 
                 foreach my $db (
@@ -548,17 +570,17 @@ my $taxon_id = $dbh->selectrow_arrayref("select meta_value from meta where meta_
             }
         }
 
-	if ($SNPDB && $DB eq 'core') {
-	    my @transcript_stable_ids = keys %{$old{transcript_stable_ids}};
-	    $snp_sth->execute("@transcript_stable_ids");
-	    $old{snps} = $snp_sth->fetchall_arrayref;
-	}
+        if ( $SNPDB && $DB eq 'core' ) {
+            my @transcript_stable_ids = keys %{ $old{transcript_stable_ids} };
+            $snp_sth->execute("@transcript_stable_ids");
+            $old{snps} = $snp_sth->fetchall_arrayref;
+        }
         if ($want_species_orthologs) {
-	                        $old{orthologs} =  $ortholog_lookup->{$old{'gene_stable_id'}};        
+            $old{orthologs} = $ortholog_lookup->{ $old{'gene_stable_id'} };
 
         }
 
-	p geneLineXML( $dbspecies, \%old, $counter );
+        p geneLineXML( $dbspecies, \%old, $counter );
 
         footer( $counter->() );
         warn "FINISHED...... genes $DB ...";
@@ -577,7 +599,7 @@ sub geneLineXML {
     my $transcripts = $xml_data->{'transcript_stable_ids'}
       or die "transcripts not set";
 
-    my $snps = $xml_data->{'snps'};
+    my $snps      = $xml_data->{'snps'};
     my $orthologs = $xml_data->{'orthologs'};
 
     my $peptides = $xml_data->{'translation_stable_ids'}
@@ -586,28 +608,28 @@ sub geneLineXML {
     my $external_identifiers = $xml_data->{'external_identifiers'}
       or die "external_identifiers not set";
     my $description = $xml_data->{'description'};
-    my $gene_name = $xml_data->{'gene_name'};	
+    my $gene_name   = $xml_data->{'gene_name'};
     my $type        = $xml_data->{'source'} . ' ' . $xml_data->{'biotype'}
       or die "problem setting type";
-my $haplotype = $xml_data->{'haplotype'};
-my $taxon_id = $xml_data->{'taxon_id'};
+    my $haplotype        = $xml_data->{'haplotype'};
+    my $taxon_id         = $xml_data->{'taxon_id'};
     my $exon_count       = scalar keys %$exons;
     my $transcript_count = scalar keys %$transcripts;
     $description =~ s/</&lt;/g;
     $description =~ s/>/&gt;/g;
     $description =~ s/'/&apos;/g;
     $description =~ s/&/&amp;/g;
-   
+
     $gene_name =~ s/</&lt;/g;
-    $gene_name=~ s/>/&gt;/g;
-    $gene_name=~ s/'/&apos;/g;
-    $gene_name=~ s/&/&amp;/g;
+    $gene_name =~ s/>/&gt;/g;
+    $gene_name =~ s/'/&apos;/g;
+    $gene_name =~ s/&/&amp;/g;
 
-    $gene_id  =~ s/</&lt;/g;
-    $gene_id  =~ s/>/&gt;/g;
+    $gene_id =~ s/</&lt;/g;
+    $gene_id =~ s/>/&gt;/g;
 
-    $altid  =~ s/</&lt;/g;
-    $altid   =~ s/>/&gt;/g;
+    $altid =~ s/</&lt;/g;
+    $altid =~ s/>/&gt;/g;
 
     my $xml = qq{
  <entry id="$gene_id">
@@ -615,61 +637,70 @@ my $taxon_id = $xml_data->{'taxon_id'};
     <description>$description</description>};
 
     my $synonyms = "";
-my $unique_synonyms;
+    my $unique_synonyms;
     my $cross_references = qq{
        <cross_references>};
-$cross_references .= qq{
+    $cross_references .= qq{
          <ref dbname="ncbi_taxonomy_id" dbkey="$taxon_id"/>};
+
     # for some types of xref, merge the subtypes into the larger type
     # e.g. Uniprot/SWISSPROT and Uniprot/TREMBL become just Uniprot
     # synonyms are stored as additional fields rather than cross references
     foreach my $ext_db_name ( keys %$external_identifiers ) {
 
-      if ($ext_db_name =~ /(Uniprot|GO|Interpro|Medline|Sequence_Publications|EMBL)/) {
+        if ( $ext_db_name =~
+            /(Uniprot|GO|Interpro|Medline|Sequence_Publications|EMBL)/ )
+        {
 
-	my $matched_db_name = $1;
-	# synonyms
-	if ($ext_db_name =~ /_synonym/) {
+            my $matched_db_name = $1;
 
-	 foreach my $ed_key( keys %{ $external_identifiers->{$ext_db_name} }){
-		$unique_synonyms->{$ed_key} = 1;
-		$synonyms .=  qq{ 
-             <field name="${matched_db_name}_synonym">$ed_key</field>}; 
-	}
- 
+            # synonyms
+            if ( $ext_db_name =~ /_synonym/ ) {
 
+                foreach
+                  my $ed_key ( keys %{ $external_identifiers->{$ext_db_name} } )
+                {
+                    $unique_synonyms->{$ed_key} = 1;
+                    $synonyms .= qq{ 
+             <field name="${matched_db_name}_synonym">$ed_key</field>};
+                }
 
+            }
+            else {    # non-synonyms
 
-	} else { # non-synonyms
+                map {
+                    $cross_references .= qq{
+         <ref dbname="$matched_db_name" dbkey="$_"/>};
+                  } keys %{ $external_identifiers->{$ext_db_name} }
 
-	  map { $cross_references .=  qq{
-         <ref dbname="$matched_db_name" dbkey="$_"/>}; } keys %{ $external_identifiers->{$ext_db_name} }
+            }
 
-	}
+        }
+        else {
 
-       } else {
+            foreach my $key ( keys %{ $external_identifiers->{$ext_db_name} } )
+            {
 
-	 foreach my $key  (keys %{ $external_identifiers->{$ext_db_name} }) {
+                $key         =~ s/</&lt;/g;
+                $key         =~ s/>/&gt;/g;
+                $key         =~ s/&/&amp;/g;
+                $ext_db_name =~ s/^Ens.*/ENSEMBL/;
 
-	   $key  =~ s/</&lt;/g;
-	   $key   =~ s/>/&gt;/g;
-	   $key   =~ s/&/&amp;/g;
-	   $ext_db_name =~s/^Ens.*/ENSEMBL/;
-
-	   if ($ext_db_name =~ /_synonym/) {
-		$unique_synonyms->{$key} = 1;
-	     $synonyms .= qq{
+                if ( $ext_db_name =~ /_synonym/ ) {
+                    $unique_synonyms->{$key} = 1;
+                    $synonyms .= qq{
         <field name="$ext_db_name">$key</field>};
 
-	   } else {
+                }
+                else {
 
-	     $cross_references .= qq{
+                    $cross_references .= qq{
         <ref dbname="$ext_db_name" dbkey="$key"/>};
 
-	   }
-	 }
+                }
+            }
 
-       }
+        }
     }
 
     $cross_references .= (
@@ -680,28 +711,26 @@ $cross_references .= qq{
       <ref dbname="ensemblvariation" dbkey="$_->[0]"/>}
               } @$snps
         )
-      );
+    );
 
-
-      $cross_references .= (
-	 join "",
-	 (
-	  map {
-	    qq{
+    $cross_references .= (
+        join "",
+        (
+            map {
+                qq{
       <ref dbname="$_->[1]" dbkey="$_->[0]"/>}
-	  }  @$orthologs
-	 )
-	);
-
-
+              } @$orthologs
+        )
+    );
 
     $cross_references .= qq{
 </cross_references>};
 
-
-map {        $synonyms .= qq{     
-      <field name="gene_synonym">$_</field> }   } keys %$unique_synonyms;
-
+    map {
+        $synonyms .=
+          qq{     
+      <field name="gene_synonym">$_</field> }
+    } keys %$unique_synonyms;
 
     my $additional_fields .= qq{
     <additional_fields>
@@ -712,54 +741,48 @@ map {        $synonyms .= qq{
       <field name="gene_name">$gene_name</field>
       <field name="haplotype">$haplotype</field>}
       . (
-	 join "",
-	 (
-	  map {
-	    qq{
+        join "",
+        (
+            map {
+                qq{
       <field name="transcript">$_</field>}
-	  } keys %$transcripts
-	 )
-	)
+              } keys %$transcripts
+        )
+      )
 
-	. qq{  <field name="exon_count">$exon_count</field> }
+      . qq{  <field name="exon_count">$exon_count</field> }
 
-	  . (
-	     join "",
-	     (
-	      map {
+      . (
+        join "",
+        (
+            map {
                 qq{
       <field name="exon">$_</field>}
               } keys %$exons
-	     )
-	    )
-	    . (
-	       join "",
-	       (
-		map {
-		  qq{
+        )
+      )
+      . (
+        join "",
+        (
+            map {
+                qq{
       <field name="peptide">$_</field>}
-		} keys %$peptides
-	       )
-	      )
-	      . $synonyms
+              } keys %$peptides
+        )
+      )
+      . $synonyms
 
       . qq{
    </additional_fields>
 };
-
 
     $counter->();
     return $xml . $cross_references . $additional_fields . '</entry>';
 
 }
 
-
-
-
-
-
 sub dumpGenomicAlignment {
-warn "in dump Genomic";
+    warn "in dump Genomic";
     my ( $dbspecies, $conf ) = @_;
 
     #    warn Dumper $conf;
@@ -772,7 +795,7 @@ warn "in dump Genomic";
     );
     my $ecount;
 
-    foreach my $db (  'core', 'cdna', 'otherfeatures' ) {
+    foreach my $db ( 'core', 'cdna', 'otherfeatures' ) {
 
         my $ecount  = 0;
         my $DB_NAME = $conf->{$db}->{$release} or next;
@@ -802,8 +825,6 @@ warn "in dump Genomic";
 
             #	    $source .= ";db=$db" unless $db eq 'core';\
 
-
-
             # Due to the sheer number of features - generating this
             # dump causes temp table to be written on the mysqld
             # filesys. /tmp space can be easily filled.
@@ -813,7 +834,7 @@ warn "in dump Genomic";
             # features in one query at once.
 
             # make a lookup for the analysis display labels.
-            my $type = $tables{$table}[1];
+            my $type              = $tables{$table}[1];
             my $logic_name_lookup = $dbh->selectall_hashref(
                 "select a.analysis_id, a.logic_name
                                                     from $DB_NAME.analysis as a
@@ -833,7 +854,10 @@ warn "in dump Genomic";
             ) or die $DBI::Err;
 
             foreach my $ana_id (
-                @{$dbh->selectall_arrayref("select distinct distinct(analysis_id) from $DB_NAME.$table")
+                @{
+                    $dbh->selectall_arrayref(
+"select distinct distinct(analysis_id) from $DB_NAME.$table"
+                    )
                 }
               )
             {
@@ -886,7 +910,6 @@ warn "in dump Genomic";
         footer($ecount);
     }
 }
-
 
 sub dumpMarker {
     warn "in dump MArker";
@@ -954,7 +977,6 @@ sub markerXML {
       . ( scalar @keys > 1 ? 's ' : ' ' ) . '('
       . join( " ", @keys ) . ')';
 
-
     $desc =~ s/</&lt;/g;
     $desc =~ s/>/&gt;/g;
 
@@ -963,8 +985,8 @@ sub markerXML {
    <additional_fields>};
 
     foreach (@keys) {
-     s/</&lt;/g;
-     s/>/&gt;/g;
+        s/</&lt;/g;
+        s/>/&gt;/g;
 
         $xml .= qq{
       <field name="synonym">$_</field>}
@@ -979,8 +1001,6 @@ sub markerXML {
     return $xml;
 
 }
-
-
 
 sub dumpOligoProbe {
     warn "in dump Oligo";
@@ -1015,14 +1035,13 @@ sub dumpOligoProbe {
     );
     $sth->execute();
 
-
     while ( my $rowcache = $sth->fetchall_arrayref( undef, '10_000' ) ) {
-	my $xml;
+        my $xml;
         while ( my $data = shift( @{$rowcache} ) ) {
-            $xml .=  OligoProbeXML( $data, $dbspecies );
+            $xml .= OligoProbeXML( $data, $dbspecies );
 
         }
-            p $xml;
+        p $xml;
     }
 
     footer( $sth->rows );
@@ -1045,7 +1064,6 @@ sub OligoProbeXML {
 </entry>};
 
 }
-
 
 sub dumpQTL {
     warn "in dumpQTL";
@@ -1194,9 +1212,8 @@ sub QTLXML {
 
 }
 
-
 sub dumpSequence {
-warn "in dump Sequence";
+    warn "in dump Sequence";
     my ( $dbspecies, $conf ) = @_;
 
     #    my $sanger = sanger_project_names( $conf );
@@ -1366,29 +1383,30 @@ sub seqLineXML {
     my ( $species, $type, $name, $chr, $val, $len, $sanger ) = @_;
 
     pop @$val;
-#     my $description = "$type $name is mapped to Chromosome $chr" .
 
-#       (
-#         @$val > 0
-#         ? ' and has '
-#           . @$val
-#           . " EMBL accession"
-#           . (
-#             @$val > 1
-#             ? 's'
-#             : ''
-#           )
-#           . "/synonym"
-#           . (
-#             @$val > 1
-#             ? 's '
-#             : ' '
-#           )
-#           . "@$val"
-#         : ''
-#       )
+    #     my $description = "$type $name is mapped to Chromosome $chr" .
 
-#       . " and length $len bps\n";
+    #       (
+    #         @$val > 0
+    #         ? ' and has '
+    #           . @$val
+    #           . " EMBL accession"
+    #           . (
+    #             @$val > 1
+    #             ? 's'
+    #             : ''
+    #           )
+    #           . "/synonym"
+    #           . (
+    #             @$val > 1
+    #             ? 's '
+    #             : ' '
+    #           )
+    #           . "@$val"
+    #         : ''
+    #       )
+
+    #       . " and length $len bps\n";
 
     my $xml = qq{
  <entry id="$name">
@@ -1418,10 +1436,6 @@ sub seqLineXML {
 
 }
 
-
-
-
-
 sub dumpSNP {
     my ( $dbspecies, $conf ) = @_;
 
@@ -1429,22 +1443,20 @@ sub dumpSNP {
 
     warn "\n", '*' x 20, "\n";
 
-    my $COREDB =     my $dbname = $conf->{'core'}->{$release};
-
+    my $COREDB = my $dbname = $conf->{'core'}->{$release};
 
     my $dbname = $conf->{variation}->{$release} or next;
     my $file = "$dir/SNP_$dbname.xml";
     $file .= ".gz" unless $nogzip;
     my $start_time = time;
-    warn "Dumping $dbname to $file ... ", format_datetime($start_time),
-      "\n";
+    warn "Dumping $dbname to $file ... ", format_datetime($start_time), "\n";
     unless ($nogzip) {
-	$fh = new IO::Zlib;
-	$fh->open( "$file", "wb9" )
-	  || die "Can't open compressed stream to $file: $!";
+        $fh = new IO::Zlib;
+        $fh->open( "$file", "wb9" )
+          || die "Can't open compressed stream to $file: $!";
     }
     else {
-	open( FILE, ">$file" ) || die "Can't open $file: $!";
+        open( FILE, ">$file" ) || die "Can't open $file: $!";
     }
 
     header( $dbname, $dbspecies, $dbname );
@@ -1453,32 +1465,34 @@ sub dumpSNP {
     my $ecount;
     my $dbh = DBI->connect( "$dsn:$dbname", $user, $pass )
       or die "DBI::error";
-    my $source_hash = $dbh->selectall_hashref(qq{SELECT source_id, name FROM source} ,[qw(source_id)]);
+    my $source_hash =
+      $dbh->selectall_hashref( qq{SELECT source_id, name FROM source},
+        [qw(source_id)] );
 
 #     my $tid_to_gene = $dbh->selectall_hashref(qq{select  t.transcript_id, gsi.stable_id from $COREDB.gene as g, $COREDB.gene_stable_id as gsi, $COREDB.transcript as t where gsi.gene_id = g.gene_id and t.gene_id = g.gene_id limit 10;},[qw(transcript_id)]);
-
 
 #     my $sth = $dbh->prepare("select vf.variation_name, vf.source_id, group_concat(vs.source_id, ' ',vs.name), vf.variation_feature_id,vf.variation_id from variation_feature vf , transcript_variation tv
 # left join variation_synonym vs on vf.variation_id = vs.variation_id where tv.transcript_variation_id = vf.variation_feature_id group by vf.variation_id");
 
-    my $sth = $dbh->prepare("select vf.variation_name, vf.source_id, group_concat(vs.source_id, ' ',vs.name), vf.consequence_type from variation_feature vf left join variation_synonym vs on vf.variation_id = vs.variation_id group by vf.variation_id");
+    my $sth = $dbh->prepare(
+"select vf.variation_name, vf.source_id, group_concat(vs.source_id, ' ',vs.name), vf.consequence_type from variation_feature vf left join variation_synonym vs on vf.variation_id = vs.variation_id group by vf.variation_id"
+    );
 
-
- #     my $vfi2gene_sth = $dbh->prepare(qq{select distinct(gsi.stable_id) from $COREDB.gene as g, $COREDB.gene_stable_id as gsi, $COREDB.transcript as t where gsi.gene_id = g.gene_id and t.gene_id = g.gene_id and transcript_id in
+#     my $vfi2gene_sth = $dbh->prepare(qq{select distinct(gsi.stable_id) from $COREDB.gene as g, $COREDB.gene_stable_id as gsi, $COREDB.transcript as t where gsi.gene_id = g.gene_id and t.gene_id = g.gene_id and transcript_id in
 # (select tv.transcript_id from transcript_variation tv , variation_feature vf where vf.variation_feature_id =tv.variation_feature_id and vf.variation_feature_id = ?)});
 
     $sth->execute() or die "Error:", $DBI::errstr;
 
-    while (my $rowcache = $sth->fetchall_arrayref(undef, 10_000)) {
+    while ( my $rowcache = $sth->fetchall_arrayref( undef, 10_000 ) ) {
 
+        my $xml;
+        while ( my $row = shift( @{$rowcache} ) ) {
 
-	my $xml;
-	while (my $row = shift(@{$rowcache})) {
-#	    $vfi2gene_sth->execute($row->[3]);
-#	      my $gsi = $vfi2gene_sth->fetchall_arrayref;
-	    my $name = $row->[0];
-	    my @synonyms = split /,/, @$row->[2];
-	    my $snp_source = $source_hash->{$row->[1]}->{name};
+            #	    $vfi2gene_sth->execute($row->[3]);
+            #	      my $gsi = $vfi2gene_sth->fetchall_arrayref;
+            my $name       = $row->[0];
+            my @synonyms   = split /,/, @$row->[2];
+            my $snp_source = $source_hash->{ $row->[1] }->{name};
 
 #	    my $description =
 #	      "A $snp_source SNP with "
@@ -1487,40 +1501,34 @@ sub dumpSNP {
 #		    . (  @synonyms > 1 | @synonyms < 1 ? 's '   : ' ' )
 #		      . ( @synonyms > 0 ? "( " . (join "",  map{  map{  $source_hash->{$_->[0]}->{name} , ':', $_->[1] , ' ' } [split]  } @synonyms ) . ")" : '' );
 
-	    $xml .=   qq{<entry id="$name">
+            $xml .= qq{<entry id="$name">
   <additional_fields>
     <field name="species">$dbspecies</field>
     <field name="featuretype">SNP</field>
     <field name="consequence">$row->[3]</field>};
 
-	    foreach my $syn(@synonyms) {
-		my @syn_bits = split / /, $syn;
-		$syn_bits[1] =~ s/:/ /;
+            foreach my $syn (@synonyms) {
+                my @syn_bits = split / /, $syn;
+                $syn_bits[1] =~ s/:/ /;
 
-		my $source = $source_hash->{$syn_bits[0]}->{name};
-		$xml .= qq{
+                my $source = $source_hash->{ $syn_bits[0] }->{name};
+                $xml .= qq{
      <field name="synonym">$syn_bits[1] [source; $source]</field>};
-	    }
-$xml .= qq{
+            }
+            $xml .= qq{
   </additional_fields>
 </entry>
 };
 
-	}
+        }
 
-	p($xml);
+        p($xml);
     }
 
-    footer($sth->rows);
+    footer( $sth->rows );
     print_time($start_time);
 
 }
-
-
-
-
-
-
 
 sub dumpUnmappedFeatures {
     my ( $dbspecies, $conf ) = @_;
