@@ -660,7 +660,8 @@ sub geneLineXML {
                 foreach
                   my $ed_key ( keys %{ $external_identifiers->{$ext_db_name} } )
                 {
-                    $unique_synonyms->{$ed_key} = 1;
+
+                    #		$unique_synonyms->{$ed_key} = 1;
                     $synonyms .= qq{ 
              <field name="${matched_db_name}_synonym">$ed_key</field>};
                 }
