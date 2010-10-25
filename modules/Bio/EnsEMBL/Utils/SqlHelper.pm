@@ -502,6 +502,7 @@ sub transaction {
   my $perform_transaction = $self->_perform_transaction_code();
   if($perform_transaction) {
     $original_dwi = $dbc->disconnect_when_inactive();
+    $dbc->disconnect_when_inactive(0);
     $ac = $dbc->db_handle()->{'AutoCommit'};
     $dbc->db_handle()->{'AutoCommit'} = 0;
     $self->_enable_transaction();
