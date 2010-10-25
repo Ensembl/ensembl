@@ -176,17 +176,20 @@ my %master;
   }
 }
 
-my @db_handles;
+my %db_handles;
 foreach my $server (@servers) {
   my $dsn = sprintf( 'DBI:mysql:host=%s;port=%d', $server, $dbport );
   my $dbh =
     DBI->connect( $dsn, $dbuser, $dbpass, { 'PrintError' => 1 } );
 
-  push( @db_handles, $dbh );
+  $db_handles{$server} = $dbh;
 }
 
 my %sql;
-foreach my $dbh (@db_handles) {
+foreach my $server (@servers) {
+  printf( "###> Looking at '%s'\n", $server );
+  my $dbh = $db_handles{$server};
+
   my $sth = $dbh->prepare('SHOW DATABASES LIKE ?');
 
   foreach my $dbtype (@dbtypes) {
@@ -438,7 +441,7 @@ if ( scalar( keys(%sql) ) > 0 ) {
 }
 
 END {
-  foreach my $dbh (@db_handles) {
+  foreach my $dbh ( values(%db_handles) ) {
     $dbh->disconnect();
   }
 }
