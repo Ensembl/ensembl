@@ -426,7 +426,7 @@ foreach my $server (@servers) {
     } ## end while ( $sth->fetch() )
   } ## end foreach my $dbtype (@dbtypes)
 
-} ## end foreach my $dbh (@db_handles)
+} ## end foreach my $server (@servers)
 
 if ( scalar( keys(%sql) ) > 0 ) {
   foreach my $db_name ( keys(%sql) ) {
