@@ -5,6 +5,7 @@ use warnings;
 
 use Data::Dumper;
 use DBI qw( :sql_types );
+use File::Spec::Functions;
 use Getopt::Long qw( :config no_ignore_case );
 use IO::File;
 use POSIX qw( floor ceil );
@@ -54,13 +55,13 @@ This program takes the master tables from the production database
 and compares it to the corresponding tables on the given servers (by
 default, the staging servers).
 
-The program will display any discrepancies on the display
-while writing SQL to files in the current directory that will
-correct the discrepancies.
+The program will display any discrepancies on the display while
+writing SQL to files in a subdirectory of the current directory called
+"master_sync_fixes" that will correct the discrepancies.
 
 Each SQL patch file will have the generic name "fix-DBNAME.sql"
 where "DBNAME" is the name of the database, e.g.,
-"fix-oryctolagus_cuniculus_otherfeatures_60_3.sql".
+"master_sync_fixes/fix-oryctolagus_cuniculus_otherfeatures_60_3.sql".
 
 A discrepancy is patched by
 
@@ -428,9 +429,16 @@ foreach my $server (@servers) {
 
 } ## end foreach my $server (@servers)
 
+my $outdir = 'master_sync_fixes';
+
 if ( scalar( keys(%sql) ) > 0 ) {
+  if ( !-d $outdir ) {
+    mkdir($outdir);
+  }
+
   foreach my $db_name ( keys(%sql) ) {
-    my $filename = sprintf( 'fix-%s.sql', $db_name );
+    my $filename =
+      catfile( $outdir, sprintf( 'fix-%s.sql', $db_name ) );
     printf( "==> Writing SQL to '%s'\n", $filename );
     my $out = IO::File->new( $filename, 'w' );
     $out->print( @{ $sql{$db_name} } );
