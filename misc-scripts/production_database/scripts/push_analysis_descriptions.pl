@@ -4,7 +4,9 @@ use strict;
 use warnings;
 
 use DBI qw( :sql_types );
+use File::Spec::Functions;
 use Getopt::Long qw( :config no_ignore_case );
+use IO::File;
 
 sub usage {
   print <<USAGE_END;
@@ -51,7 +53,7 @@ if ( !GetOptions( 'release|r=i' => \$release,
 
 my @dbtypes = ( 'core', 'otherfeatures', 'cdna', 'vega' );
 
-my @db_handles;
+my %db_handles;
 
 my %master;
 
@@ -84,10 +86,14 @@ foreach my $server (@servers) {
   my $dbh =
     DBI->connect( $dsn, $dbuser, $dbpass, { 'PrintError' => 1 } );
 
-  push( @db_handles, $dbh );
+  $db_handles{$server} = $dbh;
 }
 
-foreach my $dbh (@db_handles) {
+my %sql;
+foreach my $server (@servers) {
+  printf( "###> Looking at '%s'\n", $server );
+  my $dbh = $db_handles{$server};
+
   my $sth = $dbh->prepare('SHOW DATABASES LIKE ?');
 
   foreach my $dbtype (@dbtypes) {
@@ -127,26 +133,47 @@ foreach my $dbh (@db_handles) {
         {
           # Wrong capitalization in analysis.logic_name.
 
-          printf( "%s <=> %s\n",
-                  $logic_name,
-                  $master{ lc($logic_name) }{'logic_name'} );
+          printf(
+               "==> The logic name '%s' should be all in lower case.\n",
+               $logic_name );
+
+          push( @{ $sql{$dbname} },
+                sprintf( "UPDATE TABLE %s\n\t"
+                           . "SET logic_name = %s\n\t"
+                           . "WHERE logic_name = %s;\n",
+                         $dbh->quote_identifier(
+                                              undef, $dbname, 'analysis'
+                         ),
+                         $dbh->quote( lc($logic_name), SQL_VARCHAR ),
+                         $dbh->quote( $logic_name,     SQL_VARCHAR ) )
+          );
 
         } elsif ( !exists( $master{ lc($logic_name) } ) ) {
           # Missing in master.
 
-          printf( "INSERT INTO %s (\n"
-                    . "\tlogic_name, description, display_label\n) "
-                    . "VALUES (\n\t%s,\n\t%s,\n\t%s\n);\n",
-                  $dbh->quote_identifier(
-                    undef, sprintf( 'ensembl_production_%d', $release ),
-                    'analysis_description' ),
-                  $dbh->quote( $logic_name,    SQL_VARCHAR ),
-                  $dbh->quote( $description,   SQL_VARCHAR ),
-                  $dbh->quote( $display_label, SQL_VARCHAR ) );
+          print("==> Description MISSING IN MASTER:\n");
+
+          printf( "==> logic_name = '%s'\n"
+                    . "==> description = '%s'\n"
+                    . "==> display_label = '%s'\n",
+                  $logic_name, $description, $display_label );
+
+          push( @{ $sql{$dbname} },
+                sprintf(
+                      "INSERT INTO %s (\n"
+                        . "\tlogic_name, description, display_label\n) "
+                        . "VALUES (\n\t%s,\n\t%s,\n\t%s\n);\n",
+                      $dbh->quote_identifier(
+                           undef,
+                           sprintf( 'ensembl_production_%d', $release ),
+                           'analysis_description' ),
+                      $dbh->quote( lc($logic_name), SQL_VARCHAR ),
+                      $dbh->quote( $description,    SQL_VARCHAR ),
+                      $dbh->quote( $display_label,  SQL_VARCHAR ) ) );
 
           $master{ lc($logic_name) } = {
-                                       'logic_name'    => $logic_name,
-                                       'description'   => $description,
+                                       'logic_name'  => lc($logic_name),
+                                       'description' => $description,
                                        'display_label' => $display_label
           };
         }
@@ -156,10 +183,29 @@ foreach my $dbh (@db_handles) {
     } ## end while ( $sth->fetch() )
 
   } ## end foreach my $dbtype (@dbtypes)
-} ## end foreach my $dbh (@db_handles)
+} ## end foreach my $server (@servers)
+
+my $outdir = 'analysis_desc_fixes';
+if ( scalar( keys(%sql) ) > 0 ) {
+  if ( !-d $outdir ) {
+    mkdir($outdir);
+  }
+
+  foreach my $db_name ( keys(%sql) ) {
+    my $filename =
+      catfile( $outdir, sprintf( 'fix-%s.sql', $db_name ) );
+
+    printf( "==> Writing SQL to '%s'\n", $filename );
+    my $out = IO::File->new( $filename, 'w' );
+    $out->print( @{ $sql{$db_name} } );
+    $out->close();
+  }
+} else {
+  print("Nothing to do, all seems ok\n");
+}
 
 END {
-  foreach my $dbh (@db_handles) {
+  foreach my $dbh ( values(%db_handles) ) {
     $dbh->disconnect();
   }
 }
