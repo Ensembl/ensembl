@@ -2588,7 +2588,7 @@ SECONDLOOP:
       my $object = $adaptor->fetch_by_stable_id($stable_id);
 
       if ( defined($object) ) {
-        @match = ( $species, $type, 'Core' );
+        @match = ( $species, $known_type, 'Core' );
         last SECONDLOOP;
       }
     } else {
