@@ -20,6 +20,14 @@ TODO: About info.
 ABOUT_END
 }
 
+sub display_banner {
+  my ( $char, $text ) = @_;
+
+  printf( "%s %s %s\n",
+          $char x ( 39 - floor( length($text)/2 ) ),
+          $text, $char x ( 39 - ceil( length($text)/2 ) ) );
+}
+
 my $release;
 my @servers = ( 'ens-staging1', 'ens-staging2' );
 my $master = 'ens-staging1';
@@ -148,7 +156,9 @@ foreach my $server (@servers) {
                          $dbh->quote( $logic_name,     SQL_VARCHAR ) )
           );
 
-        } elsif ( !exists( $master{ lc($logic_name) } ) ) {
+        }
+
+        if ( !exists( $master{ lc($logic_name) } ) ) {
           # Missing in master.
 
           print("==> Description MISSING IN MASTER:\n");
@@ -176,7 +186,7 @@ foreach my $server (@servers) {
                                        'description' => $description,
                                        'display_label' => $display_label
           };
-        }
+        } ## end if ( !exists( $master{...}))
 
       } ## end while ( $sth2->fetch() )
 
