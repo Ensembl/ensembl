@@ -155,7 +155,6 @@ foreach my $server (@servers) {
                          $dbh->quote( lc($logic_name), SQL_VARCHAR ),
                          $dbh->quote( $logic_name,     SQL_VARCHAR ) )
           );
-
         }
 
         if ( !exists( $master{ lc($logic_name) } ) ) {
@@ -186,10 +185,62 @@ foreach my $server (@servers) {
                                        'description' => $description,
                                        'display_label' => $display_label
           };
-        } ## end if ( !exists( $master{...}))
+        } else {
+          # Compare all fields.
+
+          if (
+             $description ne $master{ lc($logic_name) }{'description'} )
+          {
+            # Description differs.
+            printf( "==> Description differs for logic_name '%s':\n",
+                    $logic_name );
+            printf( "==> In table:\t%s\n", $description );
+            printf( "==> In master:\t%s\n",
+                    $master{ lc($logic_name) }{'description'} );
+
+            push( @{ $sql{$dbname} },
+                  sprintf( "UPDATE TABLE %s ad, %s a\n\t"
+                             . "SET ad.description = %s\n\t"
+                             . "WHERE a.logic_name = %s\n\t"
+                             . "AND ad.analysis_id = a.analysis_id",
+                           $dbh->quote_identifier(
+                                  undef, $dbname, 'analysis_description'
+                           ),
+                           $dbh->quote_identifier(
+                                              undef, $dbname, 'analysis'
+                           ),
+                           $dbh->quote( $description, SQL_VARCHAR ),
+                           $dbh->quote( $logic_name,  SQL_VARCHAR ) ) );
+          }
+
+          if ( $display_label ne
+               $master{ lc($logic_name) }{'display_label'} )
+          {
+            # Display label differs.
+            printf( "==> display_label differs for logic_name '%s':\n",
+                    $logic_name );
+            printf( "==> In table:\t%s\n", $display_label );
+            printf( "==> In master:\t%s\n",
+                    $master{ lc($logic_name) }{'display_label'} );
+
+            push( @{ $sql{$dbname} },
+                  sprintf( "UPDATE TABLE %s ad, %s a\n\t"
+                             . "SET ad.display_label = %s\n\t"
+                             . "WHERE a.logic_name = %s\n\t"
+                             . "AND ad.analysis_id = a.analysis_id",
+                           $dbh->quote_identifier(
+                                  undef, $dbname, 'analysis_description'
+                           ),
+                           $dbh->quote_identifier(
+                                              undef, $dbname, 'analysis'
+                           ),
+                           $dbh->quote( $display_label, SQL_VARCHAR ),
+                           $dbh->quote( $logic_name,    SQL_VARCHAR ) )
+            );
+          } ## end if ( $display_label ne...)
+        } ## end else [ if ( !exists( $master{...}))]
 
       } ## end while ( $sth2->fetch() )
-
     } ## end while ( $sth->fetch() )
 
   } ## end foreach my $dbtype (@dbtypes)
