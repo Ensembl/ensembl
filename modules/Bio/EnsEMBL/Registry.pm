@@ -981,7 +981,7 @@ sub get_adaptor {
 
   my $adap = "$module"->new($dba);
   Bio::EnsEMBL::Registry->add_adaptor( $species, $group, $type, $adap,
-    'reset' );
+                                       'reset' );
   $ret = $adap;
 
   return $ret;
@@ -2407,8 +2407,11 @@ sub version_check {
                 NOTE: No validation is done to see if the stable ID
                       actually exists.
 
-  Arg[1]     :  String
+  Arg [1]    :  String stable_id
                 The stable ID to find species and object type for.
+
+  Arg [2]    :  String known_type (optional)
+                The type of the stable ID, if it is known.
 
   Example    :  my ( $species, $object_type, $db_type ) =
                   $registry->get_species_and_object_type('ENST00000326632');
@@ -2422,40 +2425,34 @@ sub version_check {
 
 =cut
 
-our %stable_id_prefix;
-our @nonstandard_prefix_species;
+my %stable_id_prefix;
+my @nonstandard_prefix_species;
 
-our %prefix_patterns = (
+my %prefix_patterns = (
   'core' => {
     '^%sG\d' => 'Gene',         # '%s' will be replaced by the stable ID
     '^%sT\d' => 'Transcript',   # prefix from the meta table.
     '^%sP\d' => 'Translation',
-    '^%sE\d' => 'Exon',
+    '^%sE\d' => 'Exon', },
+  'compara' => { '^ENSGT\d' => 'Proteintree',    # "gene-tree"
+                 '^ENSFM\d' => 'Family',
+                 '^ENSRT\d' => 'NCTree',         # "ncRNA-tree"
   },
-  'compara' => {
-    '^ENSGT\d' => 'Proteintree',    # "gene-tree"
-    '^ENSFM\d' => 'Family',
-    '^ENSRT\d' => 'NCTree',         # "ncRNA-tree"
-  },
-  'variation' => {
-    '^ENSSNP\d' => 'SNP',
-    '^rs\d'     => 'SNP',
-  },
-  'funcgen' => { '^%sR\d' => 'RegulatoryFeature', },
-);
+  'variation' => { '^ENSSNP\d' => 'SNP',
+                   '^rs\d'     => 'SNP', },
+  'funcgen' => { '^%sR\d' => 'RegulatoryFeature', }, );
 
 our @allowed_prefixes = (
-  'ENS',    # Standard Ensembl prefix.
-            # The rest are Ensembl Genomes prefixes.
-  'EB',
-  'EPr',
-  'EF',
-  'EPl',
-  'EM',
-);
+                      'ENS',    # Standard Ensembl prefix.
+                                # The rest are Ensembl Genomes prefixes.
+                      'EB',
+                      'EPr',
+                      'EF',
+                      'EPl',
+                      'EM', );
 
 sub get_species_and_object_type {
-  my ( $self, $stable_id ) = @_;
+  my ( $self, $stable_id, $known_type ) = @_;
 
   if ( !%stable_id_prefix ) {
     # Fetch stable ID prefixes from all connected databases.
@@ -2494,9 +2491,8 @@ sub get_species_and_object_type {
         my $standard_prefix = 0;
 
         foreach my $allowed_prefix (@allowed_prefixes) {
-          if (
-            substr( $prefix, 0, length($allowed_prefix) ) eq
-            $allowed_prefix )
+          if ( substr( $prefix, 0, length($allowed_prefix) ) eq
+               $allowed_prefix )
           {
             $standard_prefix = 1;
             last;
@@ -2514,7 +2510,7 @@ sub get_species_and_object_type {
           }
         }
 
-      }
+      } ## end while ( $sth->fetch() )
 
       if ( !$fetched_something ) {
         # This database didn't have a matching
@@ -2572,7 +2568,7 @@ FIRSTLOOP:
 
             }
           }
-        }
+        } ## end foreach my $prefix ( keys %stable_id_prefix)
 
       } ## end else [ if ( index( $prefix_pattern...))]
 
@@ -2587,14 +2583,23 @@ FIRSTLOOP:
 
 SECONDLOOP:
   foreach my $species (@nonstandard_prefix_species) {
-    foreach my $type ( 'Gene', 'Transcript', 'Translation', 'Exon' ) {
-
-      my $adaptor = $self->get_adaptor( $species, 'Core', $type );
+    if ( defined($known_type) ) {
+      my $adaptor = $self->get_adaptor( $species, 'Core', $known_type );
       my $object = $adaptor->fetch_by_stable_id($stable_id);
 
       if ( defined($object) ) {
         @match = ( $species, $type, 'Core' );
         last SECONDLOOP;
+      }
+    } else {
+      foreach my $type ( 'Gene', 'Transcript', 'Translation', 'Exon' ) {
+        my $adaptor = $self->get_adaptor( $species, 'Core', $type );
+        my $object = $adaptor->fetch_by_stable_id($stable_id);
+
+        if ( defined($object) ) {
+          @match = ( $species, $type, 'Core' );
+          last SECONDLOOP;
+        }
       }
 
     }
