@@ -9,6 +9,8 @@ use Getopt::Long qw( :config no_ignore_case );
 use IO::File;
 use POSIX qw( floor ceil );
 
+my $outdir = 'fix-analysis_description'
+
 sub usage {
   print <<USAGE_END;
 TODO: Usage info.
@@ -267,7 +269,6 @@ foreach my $server (@servers) {
   } ## end foreach my $dbtype (@dbtypes)
 } ## end foreach my $server (@servers)
 
-my $outdir = 'analysis_desc_fixes';
 if ( scalar( keys(%sql) ) > 0 ) {
   if ( !-d $outdir ) {
     mkdir($outdir);

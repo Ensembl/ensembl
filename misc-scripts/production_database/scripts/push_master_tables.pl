@@ -10,6 +10,8 @@ use Getopt::Long qw( :config no_ignore_case );
 use IO::File;
 use POSIX qw( floor ceil );
 
+my $outdir = 'fix-master_tables';
+
 sub usage {
   my $padding = ' ' x length($0);
 
@@ -57,11 +59,11 @@ default, the staging servers).
 
 The program will display any discrepancies on the display while
 writing SQL to files in a subdirectory of the current directory called
-"master_sync_fixes" that will correct the discrepancies.
+"$outdir" that will correct the discrepancies.
 
 Each SQL patch file will have the generic name "fix-DBNAME.sql"
 where "DBNAME" is the name of the database, e.g.,
-"master_sync_fixes/fix-oryctolagus_cuniculus_otherfeatures_60_3.sql".
+"$outdir/fix-oryctolagus_cuniculus_otherfeatures_60_3.sql".
 
 A discrepancy is patched by
 
@@ -428,8 +430,6 @@ foreach my $server (@servers) {
   } ## end foreach my $dbtype (@dbtypes)
 
 } ## end foreach my $server (@servers)
-
-my $outdir = 'master_sync_fixes';
 
 if ( scalar( keys(%sql) ) > 0 ) {
   if ( !-d $outdir ) {
