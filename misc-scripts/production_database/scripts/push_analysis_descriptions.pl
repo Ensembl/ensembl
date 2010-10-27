@@ -9,7 +9,7 @@ use Getopt::Long qw( :config no_ignore_case );
 use IO::File;
 use POSIX qw( floor ceil );
 
-my $outdir = 'fix-analysis_description'
+my $outdir = 'fix-analysis_description';
 
 sub usage {
   print <<USAGE_END;
