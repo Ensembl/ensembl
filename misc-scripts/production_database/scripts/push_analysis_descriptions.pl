@@ -7,6 +7,7 @@ use DBI qw( :sql_types );
 use File::Spec::Functions;
 use Getopt::Long qw( :config no_ignore_case );
 use IO::File;
+use POSIX qw( floor ceil );
 
 sub usage {
   print <<USAGE_END;
@@ -141,14 +142,18 @@ foreach my $server (@servers) {
         {
           # Wrong capitalization in analysis.logic_name.
 
+          display_banner( '-', $dbname );
+
           printf(
                "==> The logic name '%s' should be all in lower case.\n",
                $logic_name );
 
           push( @{ $sql{$dbname} },
-                sprintf( "UPDATE TABLE %s\n\t"
+                sprintf( "-- Updating logic_name '%s'\n"
+                           . "UPDATE %s\n\t"
                            . "SET logic_name = %s\n\t"
-                           . "WHERE logic_name = %s;\n",
+                           . "WHERE logic_name = %s;\n\n",
+                         lc($logic_name),
                          $dbh->quote_identifier(
                                               undef, $dbname, 'analysis'
                          ),
@@ -160,6 +165,8 @@ foreach my $server (@servers) {
         if ( !exists( $master{ lc($logic_name) } ) ) {
           # Missing in master.
 
+          display_banner( '-', $dbname );
+
           print("==> Description MISSING IN MASTER:\n");
 
           printf( "==> logic_name = '%s'\n"
@@ -169,9 +176,11 @@ foreach my $server (@servers) {
 
           push( @{ $sql{$dbname} },
                 sprintf(
-                      "INSERT INTO %s (\n"
+                      "-- Inserting logic_name '%s' in master\n"
+                        . "INSERT INTO %s (\n"
                         . "\tlogic_name, description, display_label\n) "
-                        . "VALUES (\n\t%s,\n\t%s,\n\t%s\n);\n",
+                        . "VALUES (\n\t%s,\n\t%s,\n\t%s\n);\n\n",
+                      lc($logic_name),
                       $dbh->quote_identifier(
                            undef,
                            sprintf( 'ensembl_production_%d', $release ),
@@ -192,6 +201,8 @@ foreach my $server (@servers) {
              $description ne $master{ lc($logic_name) }{'description'} )
           {
             # Description differs.
+            display_banner( '-', $dbname );
+
             printf( "==> Description differs for logic_name '%s':\n",
                     $logic_name );
             printf( "==> In table:\t%s\n", $description );
@@ -199,24 +210,31 @@ foreach my $server (@servers) {
                     $master{ lc($logic_name) }{'description'} );
 
             push( @{ $sql{$dbname} },
-                  sprintf( "UPDATE TABLE %s ad, %s a\n\t"
-                             . "SET ad.description = %s\n\t"
-                             . "WHERE a.logic_name = %s\n\t"
-                             . "AND ad.analysis_id = a.analysis_id",
-                           $dbh->quote_identifier(
+                  sprintf(
+                        "-- Updating description for logic_name '%s'\n"
+                          . "UPDATE %s ad, %s a\n\t"
+                          . "SET ad.description = %s\n\t"
+                          . "WHERE a.logic_name = %s\n\t"
+                          . "AND ad.analysis_id = a.analysis_id;\n\n",
+                        lc($logic_name),
+                        $dbh->quote_identifier(
                                   undef, $dbname, 'analysis_description'
-                           ),
-                           $dbh->quote_identifier(
+                        ),
+                        $dbh->quote_identifier(
                                               undef, $dbname, 'analysis'
-                           ),
-                           $dbh->quote( $description, SQL_VARCHAR ),
-                           $dbh->quote( $logic_name,  SQL_VARCHAR ) ) );
-          }
+                        ),
+                        $dbh->quote(
+                              $master{ lc($logic_name) }{'description'},
+                              SQL_VARCHAR ),
+                        $dbh->quote( lc($logic_name), SQL_VARCHAR ) ) );
+          } ## end if ( $description ne $master...)
 
           if ( $display_label ne
                $master{ lc($logic_name) }{'display_label'} )
           {
             # Display label differs.
+            display_banner( '-', $dbname );
+
             printf( "==> display_label differs for logic_name '%s':\n",
                     $logic_name );
             printf( "==> In table:\t%s\n", $display_label );
@@ -224,19 +242,22 @@ foreach my $server (@servers) {
                     $master{ lc($logic_name) }{'display_label'} );
 
             push( @{ $sql{$dbname} },
-                  sprintf( "UPDATE TABLE %s ad, %s a\n\t"
-                             . "SET ad.display_label = %s\n\t"
-                             . "WHERE a.logic_name = %s\n\t"
-                             . "AND ad.analysis_id = a.analysis_id",
-                           $dbh->quote_identifier(
+                  sprintf(
+                      "-- Updating display_label for logic_name '%s'\n"
+                        . "UPDATE %s ad, %s a\n\t"
+                        . "SET ad.display_label = %s\n\t"
+                        . "WHERE a.logic_name = %s\n\t"
+                        . "AND ad.analysis_id = a.analysis_id;\n\n",
+                      lc($logic_name),
+                      $dbh->quote_identifier(
                                   undef, $dbname, 'analysis_description'
-                           ),
-                           $dbh->quote_identifier(
-                                              undef, $dbname, 'analysis'
-                           ),
-                           $dbh->quote( $display_label, SQL_VARCHAR ),
-                           $dbh->quote( $logic_name,    SQL_VARCHAR ) )
-            );
+                      ),
+                      $dbh->quote_identifier( undef, $dbname, 'analysis'
+                      ),
+                      $dbh->quote(
+                            $master{ lc($logic_name) }{'display_label'},
+                            SQL_VARCHAR ),
+                      $dbh->quote( lc($logic_name), SQL_VARCHAR ) ) );
           } ## end if ( $display_label ne...)
         } ## end else [ if ( !exists( $master{...}))]
 
