@@ -470,7 +470,7 @@ sub _fetch_seq {
 
         # always give back uppercased sequence so it can be properly softmasked
         $entire_seq .= uc($tmp_seq);
-        $cache->{"$seq_region_id:$i"} = $tmp_seq;
+        $cache->{"$seq_region_id:$i"} = uc($tmp_seq);
       }
     }
 
