@@ -126,7 +126,7 @@ use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 use Bio::EnsEMBL::Utils::ConfigRegistry;
 use Bio::EnsEMBL::ApiVersion;
 
-use DBI;
+use DBI qw(:sql_types);
 
 use vars qw(%registry_register);
 
@@ -2580,27 +2580,39 @@ FIRSTLOOP:
 
 SECONDLOOP:
   foreach my $species (@nonstandard_prefix_species) {
-    if ( defined($known_type) ) {
-      my $adaptor = $self->get_adaptor( $species, 'Core', $known_type );
-      my $object = $adaptor->fetch_by_stable_id($stable_id);
+    foreach my $dba ( @{$self->get_all_DBAdaptors('-group'   => 'core',
+                                                  '-species' => $species
+                        ) } )
+    {
+      my $dbh    = $dba->dbc()->db_handle();
+      my $dbhost = $dba->dbc()->host();
 
-      if ( defined($object) ) {
-        @match = ( $species, $known_type, 'Core' );
-        last SECONDLOOP;
-      }
-    } else {
       foreach my $type ( 'Gene', 'Transcript', 'Translation', 'Exon' ) {
-        my $adaptor = $self->get_adaptor( $species, 'Core', $type );
-        my $object = $adaptor->fetch_by_stable_id($stable_id);
+        my $statement =
+          sprintf( "SELECT COUNT(1) "
+                     . "FROM %s "
+                     . "WHERE stable_id = ?",
+                   $dbh->quote_identifier(
+                     undef, $dbhost,
+                     sprintf( "%s_stable_id", lc($type) ) ) );
 
-        if ( defined($object) ) {
+        my $sth = $dbh->prepare($statement);
+
+        $sth->bind_param( 1, $stable_id, SQL_VARCHAR );
+        $sth->execute();
+
+        my $count = $sth->fetchall_arrayref()->[0][0];
+
+        $sth->finish();
+
+        if ( defined($count) && $count > 0 ) {
           @match = ( $species, $type, 'Core' );
           last SECONDLOOP;
         }
       }
 
-    }
-  }
+    } ## end foreach my $dba ( @{ $self->get_all_DBAdaptors...})
+  } ## end foreach my $species (@nonstandard_prefix_species)
 
   return @match;
 } ## end sub get_species_and_object_type
