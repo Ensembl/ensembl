@@ -2454,6 +2454,8 @@ sub get_species_and_object_type {
   if ( !%stable_id_prefix ) {
     # Fetch stable ID prefixes from all connected databases.
 
+    my $dbc;
+
     foreach
       my $dba ( @{ $self->get_all_DBAdaptors( '-group' => 'core' ) } )
     {
@@ -2461,7 +2463,11 @@ sub get_species_and_object_type {
 
       if ( lc($species) eq 'multi' ) { next }
 
-      my $dbh = $dba->dbc()->db_handle();
+      if ( !defined($dbc) || $dbc->host() ne $dba->dbc()->host() ) {
+        $dbc = $dba->dbc();
+      }
+
+      my $dbh = $dbc->db_handle();
 
       my $statement =
           "SELECT meta_value "
@@ -2580,12 +2586,19 @@ FIRSTLOOP:
 
 SECONDLOOP:
   foreach my $species (@nonstandard_prefix_species) {
+
+    my $dbc;
+
     foreach my $dba ( @{$self->get_all_DBAdaptors('-group'   => 'core',
                                                   '-species' => $species
                         ) } )
     {
-      my $dbh    = $dba->dbc()->db_handle();
-      my $dbhost = $dba->dbc()->host();
+      if ( !defined($dbc) || $dbc->host() ne $dba->dbc()->host() ) {
+        $dbc = $dba->dbc();
+      }
+
+      my $dbh = $dbc->db_handle();
+      my $dbhost = $dbc->host();
 
       foreach my $type ( 'Gene', 'Transcript', 'Translation', 'Exon' ) {
         my $statement =
