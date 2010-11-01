@@ -172,10 +172,8 @@ my %master;
 
   foreach my $table (@tables) {
     my $master_table = sprintf( 'master_%s', $table );
-    $master{$table} = fetch_table( $dbh,
-                                   sprintf( 'ensembl_production_%d',
-                                            $release ),
-                                   $master_table );
+    $master{$table} =
+      fetch_table( $dbh, 'ensembl_production', $master_table );
   }
 }
 
@@ -310,9 +308,10 @@ foreach my $server (@servers) {
                     "#HEADS_UP!# INSERT INTO %s (\n\t%s\n) "
                       . "VALUES (\n\t%s\n);\n",
                     $dbh->quote_identifier(
-                           undef,
-                           sprintf( 'ensembl_production_%d', $release ),
-                           sprintf( 'master_%s',             $table ) ),
+                                          undef,
+                                          'ensembl_production',
+                                          sprintf( 'master_%s', $table )
+                    ),
                     join( ",\n#HEADS_UP!# \t",
                           map { $dbh->quote_identifier($_) } @fields ),
                     join(

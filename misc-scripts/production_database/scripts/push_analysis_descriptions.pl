@@ -70,8 +70,7 @@ my %master;
 
 {
   my $dsn = sprintf( 'DBI:mysql:host=%s;port=%d;database=%s',
-                     $master, $dbport,
-                     sprintf( 'ensembl_production_%d', $release ) );
+                     $master, $dbport, 'ensembl_production' );
   my $dbh =
     DBI->connect( $dsn, $dbuser, $dbpass, { 'PrintError' => 1 } );
 
@@ -187,9 +186,8 @@ foreach my $server (@servers) {
                         . "VALUES (\n\t%s,\n\t%s,\n\t%s\n);\n\n",
                       $logic_name_lc,
                       $dbh->quote_identifier(
-                           undef,
-                           sprintf( 'ensembl_production_%d', $release ),
-                           'analysis_description' ),
+                                            undef, 'ensembl_production',
+                                            'analysis_description' ),
                       $dbh->quote( $logic_name_lc, SQL_VARCHAR ),
                       $dbh->quote( $description,   SQL_VARCHAR ),
                       $dbh->quote( $display_label, SQL_VARCHAR ) ) );
