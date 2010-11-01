@@ -2463,17 +2463,24 @@ sub get_species_and_object_type {
 
       if ( lc($species) eq 'multi' ) { next }
 
-      if ( !defined($dbc) || $dbc->host() ne $dba->dbc()->host() ) {
+      if (    !defined($dbc)
+           || $dbc->host()   ne $dba->dbc()->host()
+           || $dbc->dbname() ne $dba->dbc()->dbname() )
+      {
         $dbc = $dba->dbc();
       }
 
       my $dbh = $dbc->db_handle();
+      my $dbname = $dbc->dbname();
 
-      my $statement =
-          "SELECT meta_value "
-        . "FROM meta "
-        . "WHERE meta_key = 'species.stable_id_prefix' "
-        . "AND species_id = ?";
+      my $statement = sprintf(
+                      "SELECT meta_value "
+                        . "FROM %s "
+                        . "WHERE meta_key = 'species.stable_id_prefix' "
+                        . "AND species_id = ?",
+                      $dbh->quote_identifier( undef, $dbname, 'meta' )
+      );
+
 
       my $sth = $dbh->prepare($statement);
 
@@ -2593,7 +2600,10 @@ SECONDLOOP:
                                                   '-species' => $species
                         ) } )
     {
-      if ( !defined($dbc) || $dbc->host() ne $dba->dbc()->host() ) {
+      if (    !defined($dbc)
+           || $dbc->host()   ne $dba->dbc()->host()
+           || $dbc->dbname() ne $dba->dbc()->dbname() )
+      {
         $dbc = $dba->dbc();
       }
 
