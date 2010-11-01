@@ -370,6 +370,8 @@ sub run {
   } ## end while ( defined( my $line...
   $data_io->close();
 
+  alarm(0);
+
   print("FlybaseParser Summary:\n") if($verbose);
   foreach my $label ( sort( keys(%xref_ids) ) ) {
     my $accessions = $xref_ids{$label};
