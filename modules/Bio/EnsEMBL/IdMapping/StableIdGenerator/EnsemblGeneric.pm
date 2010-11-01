@@ -132,7 +132,12 @@ sub initial_stable_id {
   my $s_dbh = $s_dba->dbc->db_handle;
 
   # look in the ${type}_stable_id table first
-  my $sql = qq(SELECT MAX(stable_id) FROM ${type}_stable_id);
+  my $sql = qq(
+    SELECT MAX(stable_id)
+    FROM ${type}_stable_id
+    WHERE stable_id LIKE "ENS%"
+    );
+
   $init_stable_id = $self->fetch_value_from_db($s_dbh, $sql);
 
   # also look in gene_archive to make sure there are no larger Ids there
@@ -178,16 +183,23 @@ sub initial_stable_id {
 =cut
 
 sub increment_stable_id {
-  my $self = shift;
+  my $self      = shift;
   my $stable_id = shift;
 
-  unless ($self->is_valid($stable_id)) {
-    throw("Unknown or missing stable ID: $stable_id.");
+  if ( !$self->is_valid($stable_id) ) {
+    throw( sprintf( "Unknown or missing stable ID '%s'", $stable_id ) );
   }
-  
-  $stable_id =~ /ENS([A-Z]{1,4})(\d{11})/;
-  my $number = $2;
-  my $new_stable_id = 'ENS'.$1.(++$number);
+
+  if ( $stable_id =~ /^LRG/ ) {
+    throw( sprintf( "We do not increment LRG genes... (got '%s'). "
+                      . "Something's wrong.",
+                    $stable_id ) );
+  }
+
+  $stable_id =~ /(ENS|ASMPATCH)([A-Z]{1,4})(\d{11})/;
+
+  my $number = $3;
+  my $new_stable_id = $1 . $2 . ( ++$number );
 
   return $new_stable_id;
 }
@@ -210,8 +222,17 @@ sub increment_stable_id {
 =cut
 
 sub is_valid {
-  my ($self, $stable_id) = @_;
-  return ($stable_id and ($stable_id =~ /ENS([A-Z]{1,4})(\d{11})/));
+  my ( $self, $stable_id ) = @_;
+
+  if ( defined($stable_id) ) {
+    if (    $stable_id =~ /^(ENS|ASMPATCH)([A-Z]{1,4})(\d{11})/
+         || $stable_id =~ /^LRG/ )
+    {
+      return 1;
+    }
+  }
+
+  return 0;
 }
 
 
