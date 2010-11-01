@@ -2598,7 +2598,7 @@ SECONDLOOP:
       }
 
       my $dbh = $dbc->db_handle();
-      my $dbhost = $dbc->host();
+      my $dbname = $dbc->dbname();
 
       foreach my $type ( 'Gene', 'Transcript', 'Translation', 'Exon' ) {
         my $statement =
@@ -2606,7 +2606,7 @@ SECONDLOOP:
                      . "FROM %s "
                      . "WHERE stable_id = ?",
                    $dbh->quote_identifier(
-                     undef, $dbhost,
+                     undef, $dbname,
                      sprintf( "%s_stable_id", lc($type) ) ) );
 
         my $sth = $dbh->prepare($statement);
