@@ -2470,7 +2470,7 @@ sub get_species_and_object_type {
         $dbc = $dba->dbc();
       }
 
-      my $dbh = $dbc->db_handle();
+      my $dbh    = $dbc->db_handle();
       my $dbname = $dbc->dbname();
 
       my $statement = sprintf(
@@ -2480,7 +2480,6 @@ sub get_species_and_object_type {
                         . "AND species_id = ?",
                       $dbh->quote_identifier( undef, $dbname, 'meta' )
       );
-
 
       my $sth = $dbh->prepare($statement);
 
@@ -2607,21 +2606,34 @@ SECONDLOOP:
         $dbc = $dba->dbc();
       }
 
-      my $dbh = $dbc->db_handle();
+      my $dbh    = $dbc->db_handle();
       my $dbname = $dbc->dbname();
 
-      foreach my $type ( 'Gene', 'Transcript', 'Translation', 'Exon' ) {
+      foreach my $type ( defined($known_type) ? $known_type : 'Gene',
+                         'Transcript', 'Translation', 'Exon' )
+      {
+        my $type_lc = lc($type);
+
         my $statement =
           sprintf( "SELECT COUNT(1) "
-                     . "FROM %s "
-                     . "WHERE stable_id = ?",
+                     . "FROM %s si "
+                     . "JOIN %s USING (%s) "
+                     . "JOIN seq_region USING (seq_region_id) "
+                     . "JOIN coord_system cs USING (coord_system_id) "
+                     . "WHERE si.stable_id = ? "
+                     . "AND cs.species_id = ?",
                    $dbh->quote_identifier(
                      undef, $dbname,
-                     sprintf( "%s_stable_id", lc($type) ) ) );
+                     sprintf( "%s_stable_id", $type_lc ) ),
+                   $dbh->quote_identifier( undef, $dbname, $type_lc ),
+                   $dbh->quote_identifier(
+                            undef, $dbname, sprintf( "%s_id", $type_lc )
+                   ) );
 
         my $sth = $dbh->prepare($statement);
 
-        $sth->bind_param( 1, $stable_id, SQL_VARCHAR );
+        $sth->bind_param( 1, $stable_id,         SQL_VARCHAR );
+        $sth->bind_param( 1, $dba->species_id(), SQL_INTEGER );
         $sth->execute();
 
         my $count = $sth->fetchall_arrayref()->[0][0];
@@ -2632,7 +2644,7 @@ SECONDLOOP:
           @match = ( $species, $type, 'Core' );
           last SECONDLOOP;
         }
-      }
+      } ## end foreach my $type ( defined(...))
 
     } ## end foreach my $dba ( @{ $self->get_all_DBAdaptors...})
   } ## end foreach my $species (@nonstandard_prefix_species)
