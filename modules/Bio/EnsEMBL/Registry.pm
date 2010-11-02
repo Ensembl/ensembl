@@ -2422,232 +2422,89 @@ sub version_check {
 
 =cut
 
-my %stable_id_prefix;
-my @nonstandard_prefix_species;
-
-my %prefix_patterns = (
-  'core' => {
-    '^%sG\d' => 'Gene',         # '%s' will be replaced by the stable ID
-    '^%sT\d' => 'Transcript',   # prefix from the meta table.
-    '^%sP\d' => 'Translation',
-    '^%sE\d' => 'Exon', },
-  'compara' => { '^ENSGT\d' => 'Proteintree',    # "gene-tree"
-                 '^ENSFM\d' => 'Family',
-                 '^ENSRT\d' => 'NCTree',         # "ncRNA-tree"
-  },
-  'variation' => { '^ENSSNP\d' => 'SNP',
-                   '^rs\d'     => 'SNP', },
-  'funcgen' => { '^%sR\d' => 'RegulatoryFeature', }, );
-
-our @allowed_prefixes = (
-                      'ENS',    # Standard Ensembl prefix.
-                                # The rest are Ensembl Genomes prefixes.
-                      'EB',
-                      'EPr',
-                      'EF',
-                      'EPl',
-                      'EM', );
+my %stable_id_stmts = (
+                    'gene' => "SELECT meta.meta_value "
+                      . "FROM gene_stable_id si "
+                      . "JOIN gene USING (gene_id) "
+                      . "JOIN seq_region USING (seq_region_id) "
+                      . "JOIN coord_system USING (coord_system_id) "
+                      . "JOIN meta USING (species_id) "
+                      . "WHERE si.stable_id = ? "
+                      . "AND meta.meta_key = 'species.production_name'",
+                    'transcript' => "SELECT meta.meta_value "
+                      . "FROM transcript_stable_id si "
+                      . "JOIN transcript USING (transcript_id) "
+                      . "JOIN seq_region USING (seq_region_id) "
+                      . "JOIN coord_system USING (coord_system_id) "
+                      . "JOIN meta USING (species_id) "
+                      . "WHERE si.stable_id = ? "
+                      . "AND meta.meta_key = 'species.production_name'",
+                    'exon' => "SELECT meta.meta_value "
+                      . "FROM exon_stable_id si "
+                      . "JOIN exon USING (exon_id) "
+                      . "JOIN seq_region USING (seq_region_id) "
+                      . "JOIN coord_system USING (coord_system_id) "
+                      . "JOIN meta USING (species_id) "
+                      . "WHERE si.stable_id = ? "
+                      . "AND meta.meta_key = 'species.production_name'",
+                    'translation' => "SELECT meta.meta_value "
+                      . "FROM translation_stable_id si "
+                      . "JOIN translation USING (translation_id) "
+                      . "JOIN transcript USING (transcript_id) "
+                      . "JOIN seq_region USING (seq_region_id) "
+                      . "JOIN coord_system USING (coord_system_id) "
+                      . "JOIN meta USING (species_id) "
+                      . "WHERE si.stable_id = ? "
+                      . "AND meta.meta_key = 'species.production_name'",
+);
 
 sub get_species_and_object_type {
-  my ( $self, $stable_id, $known_type ) = @_;
+  my ( $self, $stable_id, $known_type );
 
-  if ( !%stable_id_prefix ) {
-    # Fetch stable ID prefixes from all connected databases.
+  if ( defined($known_type)
+       && !exists( $stable_id_stmts{ lc($known_type) } ) )
+  {
+    throw( sprintf( "Got invalid known_type '%s'", $known_type ) );
+  }
 
-    my $dbc;
-
-    foreach
-      my $dba ( @{ $self->get_all_DBAdaptors( '-group' => 'core' ) } )
-    {
-      my $species = $dba->species();
-
-      if ( lc($species) eq 'multi' ) { next }
-
-      if (    !defined($dbc)
-           || $dbc->host()   ne $dba->dbc()->host()
-           || $dbc->dbname() ne $dba->dbc()->dbname() )
-      {
-        $dbc = $dba->dbc();
-      }
-
-      my $dbh    = $dbc->db_handle();
-      my $dbname = $dbc->dbname();
-
-      my $statement = sprintf(
-                      "SELECT meta_value "
-                        . "FROM %s "
-                        . "WHERE meta_key = 'species.stable_id_prefix' "
-                        . "AND species_id = ?",
-                      $dbh->quote_identifier( undef, $dbname, 'meta' )
-      );
-
-      my $sth = $dbh->prepare($statement);
-
-      $sth->{'PrintError'} = 0;
-      $sth->{'RaiseError'} = 0;
-      if ( !$sth->execute( $dba->species_id() ) ) { next }
-      $sth->{'PrintError'} = $dbh->{'PrintError'};
-      $sth->{'RaiseError'} = $dbh->{'RaiseError'};
-
-      my $prefix;
-      $sth->bind_columns( \($prefix) );
-
-      my $fetched_something = 0;
-
-      while ( $sth->fetch() ) {
-        $fetched_something = 1;
-
-        my $standard_prefix = 0;
-
-        foreach my $allowed_prefix (@allowed_prefixes) {
-          if ( substr( $prefix, 0, length($allowed_prefix) ) eq
-               $allowed_prefix )
-          {
-            $standard_prefix = 1;
-            last;
-          }
-        }
-
-        if ( !$standard_prefix ) {
-          # These will be further queried if we find no match.
-          push( @nonstandard_prefix_species, $species );
-        } else {
-          if ( !exists( $stable_id_prefix{$prefix} ) ) {
-            $stable_id_prefix{$prefix} = [$species];
-          } else {
-            push( @{ $stable_id_prefix{$prefix} }, $species );
-          }
-        }
-
-      } ## end while ( $sth->fetch() )
-
-      if ( !$fetched_something ) {
-        # This database didn't have a matching
-        # 'species.stable_id_prefix' key in its meta table.
-        push( @nonstandard_prefix_species, $species );
-      }
-
-    } ## end foreach my $dba ( @{ $self->get_all_DBAdaptors...})
-  } ## end if ( !%stable_id_prefix)
+  my @types = ( defined($known_type)
+                ? ($known_type)
+                : ( 'Gene', 'Transcript', 'Translation', 'Exon' ) );
 
   my @match;
 
-FIRSTLOOP:
-  foreach my $group ( keys(%prefix_patterns) ) {
-    foreach my $prefix_pattern ( keys( %{ $prefix_patterns{$group} } ) )
+  my $dbc;
+
+OUTER:
+  foreach
+    my $dba ( @{ $self->get_all_DBAdaptors( '-group' => 'Core' ) } )
+  {
+    if ( !defined($dbc)
+         || !(    $dbc->host()   eq $dba->dbc()->host()
+               && $dbc->dbname() eq $dba->dbc()->dbname() ) )
     {
-      my $type = $prefix_patterns{$group}{$prefix_pattern};
+      $dbc = $dba->dbc();
+    }
 
-      if ( index( $prefix_pattern, '%s' ) == -1 ) {
-        # The prefix pattern does not contain '%s', so we need not
-        # insert the stable ID prefixes read from the meta tables.
+    my $dbh = $dbc->db_handle();
 
-        my $complete_pattern = $prefix_pattern;
+    foreach my $type (@types) {
+      my $sth = $dbh->prepare( $stable_id_stmts{ lc($type) } );
 
-        if ( $stable_id =~ /$complete_pattern/ ) {
-          @match = ( 'multi', $type, $group );
-          last FIRSTLOOP;
-        }
-      } else {
-        # The prefix pattern contain '%s' which needs to be replaced
-        # with the stable ID prefix read from the meta table of each
-        # core database.
+      $sth->bind_param( 1, $stable_id, SQL_VARCHAR );
+      $sth->execute();
 
-        foreach my $prefix ( keys %stable_id_prefix ) {
-          my $species_array = $stable_id_prefix{$prefix};
-          my $complete_pattern = sprintf( $prefix_pattern, $prefix );
+      my $species = $sth->fetchall_arrayref()->[0][0];
 
-          if ( $stable_id =~ /$complete_pattern/ ) {
-            if ( scalar( @{$species_array} ) == 1 ) {
-              # Only one species possible for this prefix pattern.
-              @match = ( $species_array->[0], $type, $group );
-              last FIRSTLOOP;
-            } else {
+      $sth->finish();
 
-              # More than one possible species for this prefix pattern.
-              foreach my $species ( @{$species_array} ) {
-                my $adaptor =
-                  $self->get_adaptor( $species, $group, $type );
-                my $object = $adaptor->fetch_by_stable_id($stable_id);
-                if ( defined($object) ) {
-                  @match = ( $species, $type, $group );
-                  last FIRSTLOOP;
-                }
-              }
-
-            }
-          }
-        } ## end foreach my $prefix ( keys %stable_id_prefix)
-
-      } ## end else [ if ( index( $prefix_pattern...))]
-
-    } ## end foreach my $prefix_pattern ...
-  } ## end foreach my $group ( keys(%prefix_patterns...))
-
-  if (@match) { return @match }
-
-  # Go through the species in @nonstandard_prefix_species and query them
-  # for genes, transcripts, etc. (only core objects) until we have found
-  # a match for our stable ID or until we have exhausted the list.
-
-SECONDLOOP:
-  foreach my $species (@nonstandard_prefix_species) {
-
-    my $dbc;
-
-    foreach my $dba ( @{$self->get_all_DBAdaptors('-group'   => 'core',
-                                                  '-species' => $species
-                        ) } )
-    {
-      if (    !defined($dbc)
-           || $dbc->host()   ne $dba->dbc()->host()
-           || $dbc->dbname() ne $dba->dbc()->dbname() )
-      {
-        $dbc = $dba->dbc();
+      if ( defined($species) ) {
+        @match = ( $species, $type, 'Core' );
+        last OUTER;
       }
+    }
 
-      my $dbh    = $dbc->db_handle();
-      my $dbname = $dbc->dbname();
-
-      foreach my $type ( defined($known_type) ? $known_type : 'Gene',
-                         'Transcript', 'Translation', 'Exon' )
-      {
-        my $type_lc = lc($type);
-
-        my $statement =
-          sprintf( "SELECT COUNT(1) "
-                     . "FROM %s si "
-                     . "JOIN %s USING (%s) "
-                     . "JOIN seq_region USING (seq_region_id) "
-                     . "JOIN coord_system cs USING (coord_system_id) "
-                     . "WHERE si.stable_id = ? "
-                     . "AND cs.species_id = ?",
-                   $dbh->quote_identifier(
-                     undef, $dbname,
-                     sprintf( "%s_stable_id", $type_lc ) ),
-                   $dbh->quote_identifier( undef, $dbname, $type_lc ),
-                   $dbh->quote_identifier(
-                            undef, $dbname, sprintf( "%s_id", $type_lc )
-                   ) );
-
-        my $sth = $dbh->prepare($statement);
-
-        $sth->bind_param( 1, $stable_id,         SQL_VARCHAR );
-        $sth->bind_param( 1, $dba->species_id(), SQL_INTEGER );
-        $sth->execute();
-
-        my $count = $sth->fetchall_arrayref()->[0][0];
-
-        $sth->finish();
-
-        if ( defined($count) && $count > 0 ) {
-          @match = ( $species, $type, 'Core' );
-          last SECONDLOOP;
-        }
-      } ## end foreach my $type ( defined(...))
-
-    } ## end foreach my $dba ( @{ $self->get_all_DBAdaptors...})
-  } ## end foreach my $species (@nonstandard_prefix_species)
+  } ## end foreach my $dba ( @{ $self->get_all_DBAdaptors...})
 
   return @match;
 } ## end sub get_species_and_object_type
