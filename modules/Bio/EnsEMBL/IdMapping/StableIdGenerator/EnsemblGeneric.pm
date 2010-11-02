@@ -135,7 +135,7 @@ sub initial_stable_id {
   my $sql = qq(
     SELECT MAX(stable_id)
     FROM ${type}_stable_id
-    WHERE stable_id LIKE "ENS%"
+    WHERE (stable_id LIKE "ENS%" OR stable_id LIKE "ASMPATCH%")
     );
 
   $init_stable_id = $self->fetch_value_from_db($s_dbh, $sql);
@@ -196,7 +196,7 @@ sub increment_stable_id {
                     $stable_id ) );
   }
 
-  $stable_id =~ /(ENS|ASMPATCH)([A-Z]{1,4})(\d{11})/;
+  $stable_id =~ /^(ENS|ASMPATCH)([A-Z]+)(\d+)$/;
 
   my $number = $3;
   my $new_stable_id = $1 . $2 . ( ++$number );
@@ -225,7 +225,7 @@ sub is_valid {
   my ( $self, $stable_id ) = @_;
 
   if ( defined($stable_id) ) {
-    if (    $stable_id =~ /^(ENS|ASMPATCH)([A-Z]{1,4})(\d{11})/
+    if (    $stable_id =~ /^(ENS|ASMPATCH)([A-Z]+)(\d+)$/
          || $stable_id =~ /^LRG/ )
     {
       return 1;
