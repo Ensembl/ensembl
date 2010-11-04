@@ -2423,39 +2423,39 @@ sub version_check {
 =cut
 
 my %stable_id_stmts = (
-                    'gene' => "SELECT meta.meta_value "
-                      . "FROM gene_stable_id si "
-                      . "JOIN gene USING (gene_id) "
-                      . "JOIN seq_region USING (seq_region_id) "
-                      . "JOIN coord_system USING (coord_system_id) "
-                      . "JOIN meta USING (species_id) "
-                      . "WHERE si.stable_id = ? "
-                      . "AND meta.meta_key = 'species.production_name'",
-                    'transcript' => "SELECT meta.meta_value "
-                      . "FROM transcript_stable_id si "
-                      . "JOIN transcript USING (transcript_id) "
-                      . "JOIN seq_region USING (seq_region_id) "
-                      . "JOIN coord_system USING (coord_system_id) "
-                      . "JOIN meta USING (species_id) "
-                      . "WHERE si.stable_id = ? "
-                      . "AND meta.meta_key = 'species.production_name'",
-                    'exon' => "SELECT meta.meta_value "
-                      . "FROM exon_stable_id si "
-                      . "JOIN exon USING (exon_id) "
-                      . "JOIN seq_region USING (seq_region_id) "
-                      . "JOIN coord_system USING (coord_system_id) "
-                      . "JOIN meta USING (species_id) "
-                      . "WHERE si.stable_id = ? "
-                      . "AND meta.meta_key = 'species.production_name'",
-                    'translation' => "SELECT meta.meta_value "
-                      . "FROM translation_stable_id si "
-                      . "JOIN translation USING (translation_id) "
-                      . "JOIN transcript USING (transcript_id) "
-                      . "JOIN seq_region USING (seq_region_id) "
-                      . "JOIN coord_system USING (coord_system_id) "
-                      . "JOIN meta USING (species_id) "
-                      . "WHERE si.stable_id = ? "
-                      . "AND meta.meta_key = 'species.production_name'",
+                    "gene" => 'SELECT m.meta_value '
+                      . 'FROM %1$s.gene_stable_id si '
+                      . 'JOIN %1$s.gene USING (gene_id) '
+                      . 'JOIN %1$s.seq_region USING (seq_region_id) '
+                      . 'JOIN %1$s.coord_system USING (coord_system_id) '
+                      . 'JOIN %1$s.meta m USING (species_id) '
+                      . 'WHERE si.stable_id = ? '
+                      . 'AND m.meta_key = "species.production_name"',
+                    "transcript" => 'SELECT m.meta_value '
+                      . 'FROM %1$s.transcript_stable_id si '
+                      . 'JOIN %1$s.transcript USING (transcript_id) '
+                      . 'JOIN %1$s.seq_region USING (seq_region_id) '
+                      . 'JOIN %1$s.coord_system USING (coord_system_id) '
+                      . 'JOIN %1$s.meta m USING (species_id) '
+                      . 'WHERE si.stable_id = ? '
+                      . 'AND m.meta_key = "species.production_name"',
+                    "exon" => 'SELECT m.meta_value '
+                      . 'FROM %1$s.exon_stable_id si '
+                      . 'JOIN %1$s.exon USING (exon_id) '
+                      . 'JOIN %1$s.seq_region USING (seq_region_id) '
+                      . 'JOIN %1$s.coord_system USING (coord_system_id) '
+                      . 'JOIN %1$s.meta m USING (species_id) '
+                      . 'WHERE si.stable_id = ? '
+                      . 'AND m.meta_key = "species.production_name"',
+                    "translation" => 'SELECT m.meta_value '
+                      . 'FROM %1$s.translation_stable_id si '
+                      . 'JOIN %1$s.translation USING (translation_id) '
+                      . 'JOIN %1$s.transcript USING (transcript_id) '
+                      . 'JOIN %1$s.seq_region USING (seq_region_id) '
+                      . 'JOIN %1$s.coord_system USING (coord_system_id) '
+                      . 'JOIN %1$s.meta m USING (species_id) '
+                      . 'WHERE si.stable_id = ? '
+                      . 'AND m.meta_key = "species.production_name"',
 );
 
 sub get_species_and_object_type {
@@ -2474,22 +2474,24 @@ sub get_species_and_object_type {
   my @match;
 
   my $dbc;
+  my $dbh;
 
 OUTER:
-  foreach
-    my $dba ( @{ $self->get_all_DBAdaptors( '-group' => 'Core' ) } )
+  foreach my $dba ( sort { $a->dbc()->host() cmp $b->dbc()->host() }
+                  @{ $self->get_all_DBAdaptors( '-group' => 'Core' ) } )
   {
     if ( !defined($dbc)
-         || !(    $dbc->host()   eq $dba->dbc()->host()
-               && $dbc->dbname() eq $dba->dbc()->dbname() ) )
+         || $dbc->host() ne $dba->dbc()->host() )
     {
       $dbc = $dba->dbc();
+      $dbh = $dbc->db_handle();
     }
 
-    my $dbh = $dbc->db_handle();
-
     foreach my $type (@types) {
-      my $sth = $dbh->prepare( $stable_id_stmts{ lc($type) } );
+      my $statement =
+        sprintf( $stable_id_stmts{ lc($type) }, $dba->dbc()->dbname() );
+
+      my $sth = $dbh->prepare($statement);
 
       $sth->bind_param( 1, $stable_id, SQL_VARCHAR );
       $sth->execute();
@@ -2504,7 +2506,7 @@ OUTER:
       }
     }
 
-  } ## end foreach my $dba ( @{ $self->get_all_DBAdaptors...})
+  } ## end foreach my $dba ( sort { $a...})
 
   return @match;
 } ## end sub get_species_and_object_type
