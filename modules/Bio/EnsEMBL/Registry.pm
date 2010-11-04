@@ -2459,7 +2459,7 @@ my %stable_id_stmts = (
 );
 
 sub get_species_and_object_type {
-  my ( $self, $stable_id, $known_type );
+  my ( $self, $stable_id, $known_type ) = @_;
 
   if ( defined($known_type)
        && !exists( $stable_id_stmts{ lc($known_type) } ) )
