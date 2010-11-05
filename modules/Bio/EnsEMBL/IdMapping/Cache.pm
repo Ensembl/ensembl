@@ -878,17 +878,17 @@ sub check_meta_entries {
   }
   
   unless ($assembly_default) {
-    $self->logger->warning("No meta.assembly_default value found in $dbtype db.\n");
+    $self->logger->warning("No meta.assembly.default value found in $dbtype db.\n");
     $err++;
   } else {
-    $self->logger->debug("meta.assembly_default value found ($assembly_default).\n");
+    $self->logger->debug("meta.assembly.default value found ($assembly_default).\n");
   }
 
   unless ($schema_version) {
-    $self->logger->warning("No meta.schema.version value found in $dbtype db.\n");
+    $self->logger->warning("No meta.schema_version value found in $dbtype db.\n");
     $err++;
   } else {
-    $self->logger->debug("meta.schema.version value found ($schema_version).\n");
+    $self->logger->debug("meta.schema_version value found ($schema_version).\n");
   }
 
   return $err;
