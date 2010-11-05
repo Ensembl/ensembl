@@ -45,7 +45,7 @@ CREATE TABLE term (
                   'goslim_generic', 'goslim_goa', 'goslim_pir',    -- GO
                   'goslim_plant', 'goslim_pombe', 'goslim_yeast'   -- GO
                 ),
-  accession     CHAR(10) NOT NULL,
+  accession     VARCHAR(32) NOT NULL,
   name          VARCHAR(255) NOT NULL,
   definition    TEXT,
 
