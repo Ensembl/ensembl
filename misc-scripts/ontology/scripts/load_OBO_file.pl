@@ -403,7 +403,7 @@ EOT
         $default_namespace = $data;
       } elsif ( $type eq 'subsetdef' ) {
         my ( $subset_name, $subset_def ) =
-          ( $data =~ /^(\w+)\s+"([^"]+)"/ );
+          ( $data =~ /^(.+)\s"([^"]+)"/ );
         $subsets{$subset_name}{'name'}       = $subset_name;
         $subsets{$subset_name}{'definition'} = $subset_def;
       }
