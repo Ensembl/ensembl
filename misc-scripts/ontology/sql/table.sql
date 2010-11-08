@@ -39,12 +39,7 @@ DROP TABLE IF EXISTS term;
 CREATE TABLE term (
   term_id       INT UNSIGNED NOT NULL AUTO_INCREMENT,
   ontology_id   INT UNSIGNED NOT NULL,
-  subsets       SET(
-                  'SOFA', 'biosapiens', -- SO
-                  'gosubset_prok', 'goslim_candida',               -- GO
-                  'goslim_generic', 'goslim_goa', 'goslim_pir',    -- GO
-                  'goslim_plant', 'goslim_pombe', 'goslim_yeast'   -- GO
-                ),
+  subsets       TEXT,
   accession     VARCHAR(32) NOT NULL,
   name          VARCHAR(255) NOT NULL,
   definition    TEXT,
