@@ -324,7 +324,6 @@ WHERE
             )
           )
         {
-
             push @{ $ortholog_lookup->{ $row->[0] } },
               [ $row->[1], $orth_species->{ $row->[2] } ];
 
@@ -402,17 +401,49 @@ g.seq_region_id=ae.seq_region_id and ae.exc_type='HAP'", [qw(gene_id)]
             print "Done XREF $type query...\n---------------------\n";
         }
 
+        # my %exons = ();
+        # my $T     = $dbh->selectall_arrayref(
+        #     "select distinct t.gene_id, esi.stable_id
+        #  from transcript as t, exon_transcript as et, exon_stable_id as esi
+        # where t.transcript_id = et.transcript_id and et.exon_id = esi.exon_id"
+        # );
+        # foreach (@$T) {
+        #     $exons{ $_->[0] }{ $_->[1] } = 1;
+        # }
+
+        print "Get Genes query...\n---------------------\n";
+
         my %exons = ();
-        my $T     = $dbh->selectall_arrayref(
+        my $get_genes_sth    = $dbh->prepare(
             "select distinct t.gene_id, esi.stable_id
          from transcript as t, exon_transcript as et, exon_stable_id as esi
         where t.transcript_id = et.transcript_id and et.exon_id = esi.exon_id"
         );
-        foreach (@$T) {
-            $exons{ $_->[0] }{ $_->[1] } = 1;
-        }
 
-        print "Get Genes query...\n---------------------\n";
+
+	$get_genes_sth->execute;
+        my $gene_rows = [];    # cache for batches of rows
+
+	while (
+            my $row = (
+                shift(@$gene_rows) ||    # get row from cache, or reload cache:
+                  shift(
+                    @{
+                        $gene_rows =
+                          $get_genes_sth->fetchall_arrayref( undef, 10_000 )
+                          || []
+                      }
+                  )
+            )
+          )
+        {
+            push @{ $ortholog_lookup->{ $row->[0] } },
+              [ $row->[1], $orth_species->{ $row->[2] } ];
+
+            $exons{ $row->[0] }{ $row->[1] } = 1;
+
+        }
+    
 
         my $gene_info = $dbh->selectall_arrayref( "
         select gsi.gene_id, tsi.transcript_id, trsi.translation_id,
