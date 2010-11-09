@@ -95,6 +95,27 @@ sub new {
   return $self;
 } ## end sub new
 
+=head2 length
+
+  Args       : none
+  Example    : $length = $intron->length();
+  Description: Returns the length of this intron
+  Returntype : Integer
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub length {
+  my ($self) = @_;
+
+  # TODO: Introns on circular slices, see Feature.pm but allow for
+  # zero-length introns.
+
+  return $self->{'end'} - $self->{'start'} + 1;
+}
+
 
 =head2 prev_Exon
 
