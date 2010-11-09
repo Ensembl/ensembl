@@ -327,6 +327,9 @@ sub check_for_stops {
       if ($annot_stops){
 	my $i = 0;
 	foreach my $offset (split(/\s+/, $annot_stops)) {
+    if(not defined($offset)){
+      $offset='';
+    }
 	  # not a number - ignore
 	  if ($offset!~/^\d+$/){
 	  }
@@ -357,7 +360,8 @@ sub check_for_stops {
       foreach my $stop ( @found_stops ) {
 	my $pos = $stop->[1];
 	my $seq = $stop->[0];
-	unless ( grep { $pos == $_} @annotated_stops) {
+  if(!(defined($pos) && defined($_) && ( grep { $pos == $_} @annotated_stops))){
+	#unless ( grep { $pos == $_} @annotated_stops) {
 	  if ($seen_transcripts->{$tsi}) {
 	    #$support->log_verbose("Transcript $tsi ($tname) has potential selenocysteines but has been discounted by annotators:\n".$seen_transcripts->{$tsi}.") [$mod_date]\n");
       $log_object->_save_log('log_verbose', '', $gsi, '', $tsi, 'VQCT_pot_selC', "Transcript $tsi ($tname) has potential selenocysteines but has been discounted by annotators:\n".$seen_transcripts->{$tsi}.") [$mod_date]");
