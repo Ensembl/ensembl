@@ -49,7 +49,6 @@ GetOptions(
     "inifile=s",     \$inifile,     "site_type=s", \$site_type,
 );
 
-#$site_type = $site_type ? lc($site_type) : 'ensembl';
 $ind     ||= 'ALL';
 $dir     ||= ".";
 $release ||= 'LATEST';
@@ -285,7 +284,7 @@ sub dumpGene {
     my $want_species_orthologs;
     my $ortholog_lookup;
     
-    if ($site_type =~ /^Ensembl$/i) {    
+    if ($site_type =~ /^ensembl$/i) {    
       my $orth_target_species;
       ( $orth_target_species = lcfirst($dbspecies) ) =~ s/\s/_/;
       if ( $want_species_orthologs =
@@ -386,10 +385,13 @@ WHERE
         my $dbh = DBI->connect( "$dsn:$DBNAME", $user, $pass )
           or die "DBI::error";
 
-        # determine genomic unit
-        my $division = $dbh->selectrow_array("SELECT meta_value FROM meta WHERE meta_key = 'species.division'");
-        (my $genomic_unit = lc($division)) =~ s/^ensembl//; # eg EnsemblProtists -> protists
-        warn "Genomic unit: " . ($genomic_unit || 'n/a');
+        # determine genomic unit (EG only)
+        my $genomic_unit;
+        if ($site_type =~ /^ensemblgenomes$/i) {
+          my $division = $dbh->selectrow_array("SELECT meta_value FROM meta WHERE meta_key = 'species.division'");
+          ($genomic_unit = lc($division)) =~ s/^ensembl//; # eg EnsemblProtists -> protists
+          warn "Genomic unit: " . $genomic_unit . "\n";
+        }
 
         # SNP query
         my $snp_sth = eval {
