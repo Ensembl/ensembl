@@ -307,31 +307,33 @@ sub move {
   Arg [1]    : none
   Example    : $length = $feat->length();
   Description: Returns the length of this feature
-  Returntype : int
-  Exceptions : none
+  Returntype : Integer
+  Exceptions : Throws if end < start and the feature is not on a
+               circular slice
   Caller     : general
   Status     : Stable
 
 =cut
 
 sub length {
-  my $self = shift;
+  my ($self) = @_;
 
   if ( $self->{'end'} < $self->{'start'} ) {
-      # if circular, we can work out the length of an origin-spanning gene using the size of the underlying region
-      if($self->slice() && $self->slice()->is_circular()) {
-	  my $len = $self->slice()->seq_region_length() - ($self->{'start'} - $self->{'end'}) + 1;
-	  return $len;
-      } else {
-	  throw "Cannot determine length of non-circular feature where start>end";
-      }
+    # if circular, we can work out the length of an origin-spanning
+    # feature using the size of the underlying region.
+    if ( $self->slice() && $self->slice()->is_circular() ) {
+      my $len =
+        $self->slice()->seq_region_length() -
+        ( $self->{'start'} - $self->{'end'} ) + 1;
+      return $len;
+    } else {
+      throw(   "Cannot determine length of non-circular feature "
+             . "where start > end" );
+    }
   }
 
   return $self->{'end'} - $self->{'start'} + 1;
 }
-
-
-
 
 =head2 analysis
 
