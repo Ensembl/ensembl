@@ -18,10 +18,18 @@ use Getopt::Long;
 use IO::Zlib;
 use Data::Dumper;
 
+                            
+BEGIN{                                                                                                                                                                         
+  unshift @INC, "$Bin/../../../conf";                                                                                                                                            
+  unshift @INC, "$Bin/../../..";                                                                                                                                                 
+  eval{ require utils::Tool };                                                                                                                                                    
+  if ($@){ warn "Can't use utils::Tool (required for ensemblgenomes)\n"; }                                                                                                                               
+} 
+
 my (
     $host,    $user,        $pass,   $port,     $species, $ind,
     $release, $max_entries, $nogzip, $parallel, $dir,     $inifile,
-    $skip_compara
+    $site_type
 );
 
 my %rHash = map { $_ } @ARGV;
@@ -38,109 +46,44 @@ GetOptions(
     "index=s",       \$ind,         "nogzip!",   \$nogzip,
     "max_entries=i", \$max_entries, "parallel",  \$parallel,
     "dir=s",         \$dir,         "help",      \&usage,
-    "inifile=s",     \$inifile
+    "inifile=s",     \$inifile,     "site_type=s", \$site_type,
 );
 
+#$site_type = $site_type ? lc($site_type) : 'ensembl';
 $ind     ||= 'ALL';
 $dir     ||= ".";
 $release ||= 'LATEST';
-$port    ||= 3306;
-usage() and exit unless ( $host && $port && $user );
 
-BEGIN{
-  unshift @INC, "$Bin/../../../conf";
-  unshift @INC, "$Bin/../../..";
-  eval{ require SiteDefs };
-  if ($@){ die "Can't use SiteDefs.pm - $@\n"; }
-  map{ unshift @INC, $_ } @SiteDefs::ENSEMBL_LIB_DIRS;
+usage() and exit unless ( $host && $port && $user && $site_type);
+
+print "Site type: $site_type\n";
+
+## HACK 1 - if the INDEX is set to all grab all dumper methods...
+my @indexes = split ',', $ind;
+@indexes = map { /dump(\w+)/ ? $1 : () } keys %ebi_search_dump::
+  if $ind eq 'ALL';
+#warn Dumper \@indexes;
+
+my $dbHash = get_databases();
+#warn Dumper $dbHash;
+print "*** No databases found ***\n" unless %{$dbHash};
+
+my @species_list = split ',', $species;
+if ($site_type eq 'ensemblgenomes') {
+  # restrict species to only those defined in the current eg site
+  @species_list = @species_list ? @{ utils::Tool::check_species(\@species_list) } : @{ utils::Tool::all_species() };                                                                                                                                   
+} else {
+  @species_list = @species_list ? @species_list : keys %{$dbHash};
 }
-
-use utils::Tool;
-use EnsEMBL::Web::SpeciesDefs;
-
-my $SPECIES_DEFS = EnsEMBL::Web::SpeciesDefs->new();
-
-#---- load plugins ---
-my ($i, @plugins, @plugin_dirs);
-my @lib_dirs = @{$SPECIES_DEFS->ENSEMBL_LIB_DIRS};
-
-for (reverse @{$SPECIES_DEFS->ENSEMBL_PLUGINS||[]}) {
-  if (++$i % 2) {
-    push @plugin_dirs, "$_/modules" if -e "$_/modules";
-  } else {
-    unshift @plugins, $_;
-  }
-}
-
-unshift @INC, reverse @plugin_dirs; # Add plugin directories to INC so that EnsEMBL::PLUGIN modules can be used
-
-find(\&load_plugins, @plugin_dirs);
-
-# Loop through the plugin directories, requiring .pm files
-# The effect of this is that any plugin with an EnsEMBL::Web:: namespace is used to extend that module in the core directory
-# Functions that exist in both the core and the plugin will be overwritten, functions that exist only in the plugin will be added
-sub load_plugins {
-  if (/\.pm$/ && !/MetaDataBlast\.pm/) {
-    my $dir  = $File::Find::topdir;
-    my $file = $File::Find::name;
-    
-    (my $relative_file = $file) =~ s/^$dir\///;    
-    (my $package = $relative_file) =~ s/\//::/g;
-    $package =~ s/\.pm$//g;
-    
-    # Regex matches all namespaces which are EnsEMBL:: but not EnsEMBL::Web
-    # Therefore the if statement is true for EnsEMBL::Web:: and Bio:: packages, which are the ones we need to overload
-    if ($package !~ /^EnsEMBL::(?!Web)/) {      
-      no strict 'refs';
-      
-      # Require the base module first, unless it already exists
-      if (!exists ${"$package\::"}{'ISA'}) {
-        foreach (@lib_dirs) {
-          eval "require '$_/$relative_file'";
-          warn $@ if $@ && $@ !~ /^Can't locate/;
-          last if exists ${"$package\::"}{'ISA'};
-        }
-      }
-      
-      eval "require '$file'"; # Require the plugin module
-      warn $@ if $@;
-    }
-  }
-}
-#--- finished loading plugins ---
-
-# what type of site is this? 
-my $sitetype = $SiteDefs::ENSEMBL_SITETYPE;
-print "\nSite type: $sitetype\n";
-
-# determine which species we are indexing
-my @SPECIES = split ',', $species;
-if( @SPECIES ) {                                                                                                                                                               
-    @SPECIES = @{ utils::Tool::check_species(\@SPECIES) };                                                                                                                       
-} else {                                                                                                                                                                       
-    @SPECIES = @{ utils::Tool::all_species() };                                                                                                                                   
-} 
-print "Species to process: \n  " . join("\n  ", @SPECIES) . "\n";
+print "Species to process: \n  " . join("\n  ", @species_list) . "\n";
 
 my $entry_count;
 my $global_start_time = time;
 my $total             = 0;
 my $FAMILY_DUMPED;
-
 my $fh;
-## HACK 1 - if the INDEX is set to all grab all dumper methods...
-my @indexes = split ',', $ind;
-@indexes = map { /dump(\w+)/ ? $1 : () } keys %ebi_search_dump::
-  if $ind eq 'ALL';
 
-#warn Dumper \@indexes;
-
-my $dbHash = get_databases();
-#warn Dumper $dbHash;
-
-print "*** No matching databases found ***\n" unless %{$dbHash};
-
-foreach my $species ( @SPECIES ) {
+foreach my $species ( @species_list ) {
     
     my $conf = $dbHash->{lc($species)};
     foreach my $index (@indexes) {
@@ -200,13 +143,14 @@ sub usage {
     print <<EOF; exit(0);
 
 Usage: perl $0 <options>
-
-  -host         Database host to connect to. Defaults to ens-staging.
-  -port         Database port to connect to. Defaults to 3306.
+  
+  -site_type    REQUIRED. ensembl or ensemblgenomes. 
+  -host         REQUIRED. Database host to connect to. 
+  -port         REQUIRED. Database port to connect to. 
+  -user         Database username. Defaults to ensro.
   -species      Species name. Defaults to ALL.
   -index        Index to create. Defaults to ALL.
   -release      Release of the database to dump. Defaults to 'latest'.
-  -user         Database username. Defaults to ensro.
   -pass         Password for user.
   -dir          Directory to write output to. Defaults to /lustre/scratch1/ensembl/gp1/xml.
   -nogzip       Don't compress output as it's written.
@@ -281,13 +225,13 @@ sub footer {
 sub header {
     my ( $dbname, $dbspecies, $dbtype ) = @_;
 
-    my $sitetype_display_name = $sitetype =~/^ensembl[a-z]+$/i ? 'Ensembl Genomes' : $sitetype;
+    my $site_name = $site_type eq 'ensembl' ? 'Ensembl' : 'Ensembl Genomes';
     
     p("<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>");
     p("<!DOCTYPE database [ <!ENTITY auml \"&#228;\">]>");
     p("<database>");
     p("<name>$dbname</name>");
-    p("<description>$sitetype_display_name $dbspecies $dbtype database</description>");
+    p("<description>$site_name $dbspecies $dbtype database</description>");
     p("<release>$release</release>");
     p("");
     p("<entries>");
@@ -341,7 +285,7 @@ sub dumpGene {
     my $want_species_orthologs;
     my $ortholog_lookup;
     
-    if ($sitetype =~ /^Ensembl$/i) {    
+    if ($site_type =~ /^Ensembl$/i) {    
       my $orth_target_species;
       ( $orth_target_species = lcfirst($dbspecies) ) =~ s/\s/_/;
       if ( $want_species_orthologs =
