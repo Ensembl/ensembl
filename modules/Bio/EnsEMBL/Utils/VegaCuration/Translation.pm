@@ -322,39 +322,38 @@ sub check_for_stops {
 	}
       }
 
-      #check the location of the annotated edits matches actual stops in the sequence
-      my @annotated_stops;
-      if ($annot_stops){
-	my $i = 0;
-	foreach my $offset (split(/\s+/, $annot_stops)) {
-    if(not defined($offset)){
-      $offset='';
+    #check the location of the annotated edits matches actual stops in the sequence
+    my @annotated_stops;
+    if ($annot_stops){
+	  my $i = 0;
+	  my $defined_offset=0;
+	  my $defined_found_stop=0;
+	  foreach my $offset (split(/\s+/, $annot_stops)) {
+        $defined_offset= (defined($offset)) && ($offset=~/^\d+$/);
+	    $defined_found_stop = ( defined(@found_stops) && defined($found_stops[$i]) && defined($found_stops[$i]->[1]));
+	    # not a number - ignore
+	    #OK if it matches a known stop
+	    if ($defined_offset && $defined_found_stop && ($found_stops[$i]->[1] == $offset)) {
+  	      push  @annotated_stops, $offset;
+	    }
+	    # catch old annotations where number was in DNA not peptide coordinates
+	    elsif ($defined_offset && $defined_found_stop && (($found_stops[$i]->[1] * 3) == $offset)) {
+  	      #$support->log_warning("DNA: Annotated stop for transcript tsi ($tname) is in DNA not peptide coordinates) [$mod_date]\n");
+          $log_object->_save_log('log_warning', '', $gsi, 'DNA', $tsi, 'VQCT_wrong_selC_coord', "DNA: Annotated stop for transcript tsi ($tname) is in DNA not peptide coordinates) [$mod_date]");  
+        }
+	    # catch old annotations where number off by one
+	    elsif ($defined_offset && $defined_found_stop && (($found_stops[$i]->[1]) == $offset+1)) {
+	      #$support->log_warning("PEPTIDE: Annotated stop for transcript $tsi ($tname) is out by one) [$mod_date]\n");
+          $log_object->_save_log('log_warning', '', $gsi, 'PEPTIDE', $tsi, 'VQCT_wrong_selC_coord', "PEPTIDE: Annotated stop for transcript $tsi ($tname) is out by one) [$mod_date]");  
+	    }
+	    elsif($defined_offset) {
+	      #$support->log_warning("Annotated stop for transcript $tsi ($tname) does not match a TGA codon) [$mod_date]\n");
+          $log_object->_save_log('log_warning', '', $gsi, 'TRANSCRIPT', $tsi, 'VQCT_wrong_selC_coord', "Annotated stop for transcript $tsi ($tname) does not match a TGA codon) [$mod_date]");
+	      push  @annotated_stops, $offset;
+	    }						
+	    $i++;
+	  }
     }
-	  # not a number - ignore
-	  if ($offset!~/^\d+$/){
-	  }
-	  #OK if it matches a known stop
-	  elsif ($found_stops[$i]->[1] == $offset) {
-	    push  @annotated_stops, $offset;
-	  }
-	  # catch old annotations where number was in DNA not peptide coordinates
-	  elsif (($found_stops[$i]->[1] * 3) == $offset) {
-	    #$support->log_warning("DNA: Annotated stop for transcript tsi ($tname) is in DNA not peptide coordinates) [$mod_date]\n");
-      $log_object->_save_log('log_warning', '', $gsi, 'DNA', $tsi, 'VQCT_wrong_selC_coord', "DNA: Annotated stop for transcript tsi ($tname) is in DNA not peptide coordinates) [$mod_date]");  
-	  }
-	  # catch old annotations where number off by one
-	  elsif (($found_stops[$i]->[1]) == $offset+1) {
-	    #$support->log_warning("PEPTIDE: Annotated stop for transcript $tsi ($tname) is out by one) [$mod_date]\n");
-      $log_object->_save_log('log_warning', '', $gsi, 'PEPTIDE', $tsi, 'VQCT_wrong_selC_coord', "PEPTIDE: Annotated stop for transcript $tsi ($tname) is out by one) [$mod_date]");  
-	  }
-	  else {
-	    #$support->log_warning("Annotated stop for transcript $tsi ($tname) does not match a TGA codon) [$mod_date]\n");
-      $log_object->_save_log('log_warning', '', $gsi, 'TRANSCRIPT', $tsi, 'VQCT_wrong_selC_coord', "Annotated stop for transcript $tsi ($tname) does not match a TGA codon) [$mod_date]");
-	    push  @annotated_stops, $offset;
-	  }						
-	  $i++;
-	}
-      }
 
       #check location of found stops matches annotated ones - any new ones are reported
       foreach my $stop ( @found_stops ) {
