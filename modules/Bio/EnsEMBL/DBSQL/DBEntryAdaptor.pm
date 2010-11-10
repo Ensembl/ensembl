@@ -624,22 +624,41 @@ sub store {
   #
   # Check for the existance of the external reference, add it if not present
   #
-  my $sth = $self->prepare( "
-       SELECT xref_id
-         FROM xref
-        WHERE external_db_id = ?
-          AND dbprimary_acc  = ?
-          AND version        = ?
-          AND info_type      = ?
-          AND info_text      = ?" );
+
+  my $sql =  "SELECT xref_id FROM xref
+                WHERE external_db_id = ?
+                  AND dbprimary_acc  = ?
+                  AND version        = ?";
+
+  if(defined $exObj->info_type){
+    $sql .= " AND  info_type      = ?";
+  }
+  else{
+    $sql .= " AND info_type is null";
+  }
+
+  if(defined $exObj->info_text){
+    $sql .= " AND  info_text      = ?";
+  }
+  else{
+    $sql .= " AND info_text is null";
+  }
+
+  my $sth = $self->prepare($sql);
 
   $sth->bind_param(1,$dbRef,SQL_INTEGER);
   $sth->bind_param(2,$exObj->primary_id,SQL_VARCHAR);
   $sth->bind_param(3,$exObj->version,SQL_VARCHAR);
-  $sth->bind_param(4,$exObj->info_type,SQL_VARCHAR);
-  $sth->bind_param(5,$exObj->info_text,SQL_VARCHAR);
 
+  my $i = 4;
+  if(defined $exObj->info_type){
+    $sth->bind_param($i++,$exObj->info_type,SQL_VARCHAR);
+  }
+  if(defined $exObj->info_text){
+    $sth->bind_param($i++,$exObj->info_text,SQL_VARCHAR);
+  }
   $sth->execute();
+
   my ($dbX) = $sth->fetchrow_array();
 
   $sth->finish();
