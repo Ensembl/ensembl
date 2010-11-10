@@ -92,6 +92,9 @@ Command line switches:
                     NOTE: This switch will not ever force overwriting of
                     a server database directory.
 
+                    NOTE: Using --force will bypass the table
+                    optimization step.
+
   --only_tables=XXX,YYY
                     (Optional)
                     Only copy the tables specified in the
@@ -177,6 +180,11 @@ if ( defined($opt_help) ) {
 
 if ( defined($opt_skip_tables) && defined($opt_only_tables) ) {
   die("Can't use both --only_tables and --skip_tables\n");
+}
+
+if ( $opt_force && $opt_optimize ) {
+  print("Note: Using --force will bypass optimization.\n");
+  $opt_optimize = 0;
 }
 
 my %only_tables;
