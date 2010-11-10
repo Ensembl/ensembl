@@ -543,15 +543,29 @@ foreach my $spec (@todo) {
 
   if ( defined($opt_only_tables) ) {
     push( @copy_cmd, '--include=db.opt' );
+
     push( @copy_cmd,
           map { sprintf( '--include=%s.*', $_ ) }
             keys(%only_tables) );
+
+    # Partitioned tables:
+    push( @copy_cmd,
+          map { sprintf( '--include=%s#P#*.*', $_ ) }
+            keys(%only_tables) );
+
     push( @copy_cmd, "--exclude=*" );
   } elsif ( defined($opt_skip_tables) ) {
     push( @copy_cmd, '--include=db.opt' );
+
     push( @copy_cmd,
           map { sprintf( '--exclude=%s.*', $_ ) }
             keys(%skip_tables) );
+
+    # Partitioned tables:
+    push( @copy_cmd,
+          map { sprintf( '--exclude=%s#P#*.*', $_ ) }
+            keys(%skip_tables) );
+
     push( @copy_cmd, "--include=*" );
   }
 
