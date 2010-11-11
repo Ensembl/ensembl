@@ -134,7 +134,7 @@ foreach my $server (@servers) {
 
     while ( $sth->fetch() ) {
       my ( $db_type, $db_assembly, $db_suffix ) = ( $database =~
-                   /^[a-z]+_[a-z]+_([a-z]+)_([0-9]+)_([0-9]+[a-z]?)$/ );
+                   /^[a-z]+_[a-z]+_([a-z]+)_[0-9]+_([0-9]+)([a-z]?)$/ );
 
       if (    !defined($db_type)
            || !defined($db_assembly)
