@@ -156,6 +156,11 @@ foreach my $server (@servers) {
   $dbh->disconnect();
 } ## end foreach my $server (@servers)
 
+if ( scalar( keys(%databases) ) == 0 ) {
+  die(sprintf( "Did not find any databases for release %d\n", $release )
+  );
+}
+
 {
   my $dsn = sprintf( 'DBI:mysql:host=%s;port=%d;database=%s',
                      $master, $dbport, 'ensembl_production' );
