@@ -124,7 +124,8 @@ CREATE TABLE analysis_web_data (
 -- VIEWS
 
 CREATE VIEW db_list AS
-SELECT  CONCAT(
+SELECT  db_id AS db_id,
+        CONCAT(
           CONCAT_WS('_', db_name, db_type, db_release, db_assembly),
         db_suffix) AS full_db_name
 FROM    species
