@@ -84,6 +84,8 @@ if ( !GetOptions( 'release|r=i'  => \$release,
 }
 
 my %species;
+my %databases;
+my %existing_databases;
 
 {
   my $dsn = sprintf( 'DBI:mysql:host=%s;port=%d;database=%s',
@@ -91,27 +93,41 @@ my %species;
   my $dbh = DBI->connect( $dsn, $dbuser, $dbpass,
                           { 'PrintError' => 1, 'RaiseError' => 1 } );
 
-  my $statement =
-      'SELECT species_id, web_name, db_name '
-    . 'FROM species '
-    . 'WHERE is_current = 1';
+  {
+    my $statement =
+        'SELECT species_id, web_name, db_name '
+      . 'FROM species '
+      . 'WHERE is_current = 1';
 
-  my $sth = $dbh->prepare($statement);
-  $sth->execute();
+    my $sth = $dbh->prepare($statement);
+    $sth->execute();
 
-  my ( $species_id, $web_name, $db_name );
-  $sth->bind_columns( \( $species_id, $web_name, $db_name ) );
+    my ( $species_id, $web_name, $db_name );
+    $sth->bind_columns( \( $species_id, $web_name, $db_name ) );
 
-  while ( $sth->fetch() ) {
-    $species{$db_name} = { 'species_id' => $species_id,
-                           'db_name'    => $db_name,
-                           'web_name'   => $web_name };
+    while ( $sth->fetch() ) {
+      $species{$db_name} = { 'species_id' => $species_id,
+                             'db_name'    => $db_name,
+                             'web_name'   => $web_name };
+    }
+  }
+
+  {
+    my $statement = 'SELECT full_db_name FROM db_list';
+
+    my $sth = $dbh->prepare($statement);
+    $sth->execute();
+
+    my $database;
+    $sth->bind_col( 1, \$database );
+
+    while ( $sth->fetch() ) {
+      $existing_databases{$database} = 1;
+    }
   }
 
   $dbh->disconnect();
 }
-
-my %databases;
 
 foreach my $server (@servers) {
   my $dsn = sprintf( 'DBI:mysql:host=%s;port=%d', $server, $dbport );
@@ -125,14 +141,17 @@ foreach my $server (@servers) {
   foreach my $species ( keys(%species) ) {
     $sth->bind_param( 1, sprintf( '%s%%\_%d\_%%', $species, $release ),
                       SQL_VARCHAR );
-
     $sth->execute();
 
     my $database;
-
     $sth->bind_col( 1, \$database );
 
     while ( $sth->fetch() ) {
+      if ( exists( $existing_databases{$database} ) ) {
+        printf( "Skipping '%s'\n", $database );
+        next;
+      }
+
       my ( $db_type, $db_assembly, $db_suffix ) = ( $database =~
                    /^[a-z]+_[a-z]+_([a-z]+)_[0-9]+_([0-9]+)([a-z]?)$/ );
 
@@ -157,60 +176,35 @@ foreach my $server (@servers) {
 } ## end foreach my $server (@servers)
 
 if ( scalar( keys(%databases) ) == 0 ) {
-  die(sprintf( "Did not find any databases for release %d\n", $release )
-  );
-}
-
-{
+  printf( "Did not find any new databases for release %d\n", $release );
+} else {
   my $dsn = sprintf( 'DBI:mysql:host=%s;port=%d;database=%s',
                      $master, $dbport, 'ensembl_production' );
   my $dbh = DBI->connect( $dsn, $dbwuser, $dbwpass,
                           { 'PrintError' => 1, 'RaiseError' => 1 } );
 
-  my $select_stmt = 'SELECT db_id FROM db_list WHERE full_db_name = ?';
-  my $select_sth  = $dbh->prepare($select_stmt);
-
-  my $insert_stmt =
+  my $statement =
       'INSERT INTO db '
     . '(species_id, db_type, db_release, db_assembly, db_suffix, db_host) '
     . 'VALUES (?, ?, ?, ?, ?, ?)';
-  my $insert_sth = $dbh->prepare($insert_stmt);
+  my $sth = $dbh->prepare($statement);
 
   foreach my $database ( keys(%databases) ) {
-    $select_sth->bind_param( 1, $database, SQL_VARCHAR );
-    $select_sth->execute();
+    my $db_hash = $databases{$database};
 
-    my $db_id;
-    $select_sth->bind_col( 1, \$db_id );
+    printf( "Inserting database '%s' into "
+              . "the production database\n",
+            $database );
 
-    my $is_found = 0;
-    while ( $select_sth->fetch() ) {
-      $is_found = 1;
-      last;
-    }
-    $select_sth->finish();
+    $sth->bind_param( 1, $db_hash->{'species_id'},  SQL_INTEGER );
+    $sth->bind_param( 2, $db_hash->{'db_type'},     SQL_VARCHAR );
+    $sth->bind_param( 3, $release,                  SQL_INTEGER );
+    $sth->bind_param( 4, $db_hash->{'db_assembly'}, SQL_INTEGER );
+    $sth->bind_param( 5, $db_hash->{'db_suffix'},   SQL_VARCHAR );
+    $sth->bind_param( 6, $db_hash->{'db_host'},     SQL_VARCHAR );
 
-    if ($is_found) {
-      # printf( "The database '%s' is already in "
-      #           . "the production database (id %d)\n",
-      #         $database, $db_id );
-    } else {
-      my $db = $databases{$database};
-
-      printf( "Inserting database '%s' into "
-                . "the production database\n",
-              $database );
-
-      $insert_sth->bind_param( 1, $db->{'species_id'},  SQL_INTEGER );
-      $insert_sth->bind_param( 2, $db->{'db_type'},     SQL_VARCHAR );
-      $insert_sth->bind_param( 3, $release,             SQL_INTEGER );
-      $insert_sth->bind_param( 4, $db->{'db_assembly'}, SQL_INTEGER );
-      $insert_sth->bind_param( 5, $db->{'db_suffix'},   SQL_VARCHAR );
-      $insert_sth->bind_param( 6, $db->{'db_host'},     SQL_VARCHAR );
-
-      $insert_sth->execute();
-    }
-  } ## end foreach my $database ( keys...)
+    $sth->execute();
+  }
 
   $dbh->disconnect();
-}
+} ## end else [ if ( scalar( keys(%databases...)))]
