@@ -4,7 +4,7 @@ use warnings;
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 54;
+	plan tests => 60;
 }
 
 use Bio::EnsEMBL::Test::TestUtils;
@@ -367,3 +367,73 @@ ok($sr_slice->start() == 1 &&
    $sr_slice->strand() == 1);
 
 
+
+
+
+
+
+
+# synonym tests
+debug("START syn test");
+my $multi = $multi_db;
+$multi->save("core", "seq_region_synonym");
+
+debug("get slice");
+$slice = $slice_adaptor->fetch_by_region('chromosome', 20, 1, 10);
+
+my @alt_names = @{$slice->get_all_synonyms()};
+foreach my $syn (@alt_names){
+  debug("syn\t".$syn->name."\n");
+}
+debug("altnames ".scalar(@alt_names)."\n");
+ok(@alt_names == 2);
+
+
+$slice->add_synonym("20ish");
+@alt_names = @{$slice->get_all_synonyms()};
+
+ok(@alt_names == 3);
+
+
+#slcie aleady stored so need to store syns
+my $syn_adap =  $db->get_SeqRegionSynonymAdaptor; 
+foreach my $syn (@alt_names){
+ $syn_adap->store($syn);	
+}
+
+$slice = $slice_adaptor->fetch_by_region('chromosome', 20, 1, 10);
+
+@alt_names = @{$slice->get_all_synonyms()};
+
+ok(@alt_names == 3);
+
+$multi->restore();
+
+
+
+$multi->save("core", 'seq_region_synonym');
+
+$slice = $slice_adaptor->fetch_by_region('chromosome', 1, 1, 10);
+
+@alt_names = @{$slice->get_all_synonyms()};
+
+ok(@alt_names == 0);
+
+$slice->add_synonym("1ish");
+
+@alt_names = @{$slice->get_all_synonyms()};
+
+ok(@alt_names == 1);
+
+foreach my $syn (@alt_names){
+ $syn_adap->store($syn);	
+}
+
+
+$slice = $slice_adaptor->fetch_by_region('chromosome', 1, 1, 10);
+
+@alt_names = @{$slice->get_all_synonyms()};
+
+ok(@alt_names == 1);
+
+$multi->restore();
