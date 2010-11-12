@@ -305,7 +305,7 @@ sub get_available_adaptors {
         Gene                     KaryotypeBand        MiscSet
         MiscFeature              PredictionTranscript PredictionExon
         ProteinFeature           ProteinAlignFeature  RepeatConsensus
-        RepeatFeature            Sequence             SimpleFeature
+        RepeatFeature            Sequence             SeqRegionSynonym  SimpleFeature
         Slice                    SupportingFeature    Transcript
         TranscriptSupportingFeature Translation       UnmappedObject
         UnconventionalTranscriptAssociation           AssemblySlice
