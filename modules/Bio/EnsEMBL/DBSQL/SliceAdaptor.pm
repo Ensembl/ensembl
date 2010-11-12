@@ -290,6 +290,20 @@ sub fetch_by_region {
     if ( $sth->rows() == 0 ) {
       $sth->finish();
 
+
+      # try synonyms
+      my $syn_sql_sth = $self->prepare("select s.name from seq_region s, seq_region_synonym ss where s.seq_region_id = ss.seq_region_id and ss.synonym = ?");
+      $syn_sql_sth->bind_param(1, $seq_region_name, SQL_VARCHAR);
+      $syn_sql_sth->execute();
+      my $new_name;
+      $syn_sql_sth->bind_columns( \$new_name);
+      if($syn_sql_sth->fetch){
+	$syn_sql_sth->finish;
+	return $self->fetch_by_region($coord_system_name, $new_name, $start, $end, $strand, $version, $no_fuzz);
+      }
+      $syn_sql_sth->finish;
+
+
       if ($no_fuzz) { return undef }
 
       # Do fuzzy matching, assuming that we are just missing a version
@@ -1374,33 +1388,54 @@ sub fetch_normalized_slice_projection {
   }
 
   my @syms;
-  if( @haps > 1 ) {
+  if( @haps >= 1 ) {
     my @sort_haps = sort { $a->[1] <=> $b->[1] } @haps;
-    throw( "More than one HAP region not supported yet" );
-  } elsif( @haps == 1 ) {
-    my $hap = $haps[0];
+
+    my $count =0;
+    my $chr_start = 1;
+    my $hap_start = 1;
+    my $last = 0;
 
     my $seq_reg_slice = $self->fetch_by_seq_region_id($slice_seq_region_id);
-    my $exc_slice = $self->fetch_by_seq_region_id( $hap->[2] );
-
-    #
-    # lengths of haplotype and reference in db may be different
-    # we want to use the maximum possible length for the mapping
-    # between the two systems
-    #
+    my $exc_slice = $self->fetch_by_seq_region_id( $sort_haps[0][2] );
     my $len1 = $seq_reg_slice->length();
     my $len2 = $exc_slice->length();
     my $max_len = ($len1 > $len2) ? $len1 : $len2;
 
-    #the inserted region can differ in length, but mapped sections
-    #need to be same lengths
-    my $diff = $hap->[4] - $hap->[1];
+    while($count <= scalar(@sort_haps)  and !$last){
+      my $chr_end;
+      my $hap_end;
+      if(defined($sort_haps[$count]) and defined($sort_haps[$count][0]) ){
+	$hap_end = $sort_haps[$count][0]-1;
+	$chr_end = $sort_haps[$count][3]-1
+      }
+      else{
+	$last = 1;
+	$hap_end = $len1;
+	$chr_end = $len2;
+	my $diff = ($hap_end-$hap_start)-($chr_end-$chr_start);
+	if($diff > 0){
+	  push( @syms, [ $hap_start, $hap_end, $sort_haps[0][2], $chr_start, $chr_end+$diff] );  
+	}
+	elsif($diff < 0){
+	  push( @syms, [ $hap_start, $hap_end+$diff, $sort_haps[0][2], $chr_start, $chr_end] );  
+	}
+	else{
+	  push( @syms, [ $hap_start, $hap_end, $sort_haps[0][2], $chr_start, $chr_end] );  
+	}	
+	next;
+      }
+      if($hap_end and $hap_start < $len1){ # if hap at start or end of chromosome
+	push( @syms, [ $hap_start, $hap_end, $sort_haps[0][2], $chr_start, $chr_end] );  
+      }
+      $chr_start = $chr_end + ($sort_haps[$count][4]-$sort_haps[$count][3]) + 2;
+      $hap_start = $hap_end + ($sort_haps[$count][1]-$sort_haps[$count][0]) + 2;
+      $count++;
+    }
 
-    # we want the region of the haplotype INVERTED
-    push( @syms, [ 1, $hap->[0]-1, $hap->[2], 1, $hap->[3] - 1 ] );
-    push( @syms, [ $hap->[1]+1, $max_len - $diff, 
-                   $hap->[2], $hap->[4] + 1, $max_len ] );   
+
   }
+
 
   # for now haps and pars should not be both there, but in theory we 
   # could handle it here by cleverly merging the pars into the existing syms,
@@ -1408,6 +1443,7 @@ sub fetch_normalized_slice_projection {
   push( @syms, @pars );
 
   my $mapper = Bio::EnsEMBL::Mapper->new( "sym", "org" );
+  my $count = 0;
   for my $sym ( @syms ) {
     $mapper->add_map_coordinates( $slice_seq_region_id, $sym->[0], $sym->[1],
                                   1, $sym->[2], $sym->[3], $sym->[4] );
@@ -1581,6 +1617,15 @@ sub store {
     $seq_adaptor->store($seq_region_id, $$seqref);
   }
 
+  #synonyms
+  if(defined($slice->{'synonym'})){
+    foreach my $syn (@{$slice->{'synonym'}} ){
+      $syn->seq_region_id($seq_region_id); # set the seq_region_id
+      $syn->adaptor->store($syn);
+    }
+  }
+  
+  
   $slice->adaptor($self);
 
   return $seq_region_id;
@@ -1817,7 +1862,6 @@ LSQL
   }
 
 } ## end sub cache_toplevel_seq_mappings
-
 
 
 #####################################
