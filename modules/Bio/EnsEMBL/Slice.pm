@@ -74,6 +74,7 @@ use Bio::EnsEMBL::StrainSlice;
 #use Bio::EnsEMBL::IndividualSlice;
 #use Bio::EnsEMBL::IndividualSliceFactory;
 use Bio::EnsEMBL::Mapper::RangeRegistry;
+use Bio::EnsEMBL::SeqRegionSynonym;
 
 # use Data::Dumper;
 
@@ -3300,6 +3301,62 @@ sub project_to_slice {
 }
 
 
+=head2 get_all_synonyms
+
+  Args       : none.
+  Example    : my @alternative_names = @{$slice->get_all_synonyms()};
+  Description: get a list of alternative names for this slice
+  Returntype : reference to list of SeqRegionSynonym objects.
+  Exception  : none
+  Caller     : general
+  Status     : At Risk
+
+=cut
+
+sub get_all_synonyms{
+  my $self = shift;
+  my $external_db_id =shift;
+
+  if ( !defined( $self->{'synonym'} ) ) {
+    my $adap = $self->adaptor->db->get_SeqRegionSynonymAdaptor();
+    $self->{'synonym'} =  $adap->get_synonyms($self->get_seq_region_id($self), $external_db_id);
+  }
+
+  return $self->{'synonym'};
+}
+
+=head2 add_synonym
+
+  Args[0]    : synonym.
+  Example    : $slice->add_synonym("alt_name");
+  Description: add an alternative name for this slice
+  Returntype : none
+  Exception  : none
+  Caller     : general
+  Status     : At Risk
+
+=cut
+
+sub add_synonym{
+  my $self = shift;
+  my $syn = shift;
+  my $external_db_id = shift;
+  
+  my $adap = $self->adaptor->db->get_SeqRegionSynonymAdaptor();
+  if ( !defined( $self->{'synonym'} ) ) {
+    $self->{'synonym'} = $self->get_all_synonyms();
+  }
+  my $new_syn = Bio::EnsEMBL::SeqRegionSynonym->new( #-adaptor => $adap,
+                                                     -synonym => $syn,
+                                                     -external_db_id => $external_db_id, 
+                                                     -seq_region_id => $self->get_seq_region_id($self));
+
+  print "ADDED new syn $syn to ".$new_syn->seq_region_id."\n";
+
+  push (@{$self->{'synonym'}}, $new_syn);
+
+  return;
+}
 
 #
 # Bioperl Bio::PrimarySeqI methods:
