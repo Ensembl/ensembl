@@ -254,27 +254,29 @@ sub fetch_by_translation_stable_id {
 =cut
 
 sub fetch_by_translation_id {
-  my $self = shift;
-  my $id   = shift;
+  my ( $self, $p_dbID ) = @_;
 
-  throw("id argument is required.") unless ($id);
+  if ( !defined($p_dbID) ) {
+    throw("dbID argument is required");
+  }
 
-  my $sth = $self->prepare( "SELECT t.transcript_id " .
-                            "FROM   translation t ".
-                            "WHERE  t.translation_id = ?");
+  my $sth =
+    $self->prepare(   "SELECT transcript_id "
+                    . "FROM   translation "
+                    . "WHERE  translation_id = ?" );
 
-  $sth->bind_param(1, $id, SQL_INTEGER);
+  $sth->bind_param( 1, $p_dbID, SQL_INTEGER );
   $sth->execute();
 
-  my ($dbID) = $sth->fetchrow_array;
-  $sth->finish;
-  if ($dbID){
-    return $self->fetch_by_dbID($dbID);
-  } else {
-    return undef;
-  }
-}
+  my ($dbID) = $sth->fetchrow_array();
+  $sth->finish();
 
+  if ($dbID) {
+    return $self->fetch_by_dbID($dbID);
+  }
+
+  return undef;
+}
 
 =head2 fetch_all_by_Gene
 
