@@ -663,23 +663,26 @@ sub list_stable_ids {
 =cut
 
 sub fetch_by_dbID {
-   my ($self,$dbID, $transcript) = @_;
+  my ( $self, $dbID, $transcript ) = @_;
 
-   if($transcript) {
-     deprecate("Use of fetch_by_dbID with a Transcript argument is deprecated."
+  if ($transcript) {
+    deprecate(   "Use of fetch_by_dbID "
+               . "with a Transcript argument is deprecated."
                . "Use fetch_by_Transcript instead." );
-   }
+  }
 
-   if(!$dbID) {
-     throw("dbID argument is required");
-   }
+  if ( !defined($dbID) ) {
+    throw("dbID argument is required");
+  }
 
-   my $transcript_adaptor = $self->db()->get_TranscriptAdaptor();
-   $transcript = $transcript_adaptor->fetch_by_translation_id($dbID);
+  my $transcript_adaptor = $self->db()->get_TranscriptAdaptor();
+  $transcript = $transcript_adaptor->fetch_by_translation_id($dbID);
 
-   return undef if(!$transcript);
+  if ( defined($transcript) ) {
+    return $self->fetch_by_Transcript($transcript);
+  }
 
-   return $self->fetch_by_Transcript($transcript);
+  return undef;
 }
 
 
