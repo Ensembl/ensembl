@@ -349,64 +349,13 @@ sub create_xrefs {
     # extract ^DE lines only & build cumulative description string
     my $description = " ";
     my $name        = "";
-    my $flags       = " ";
-
-    my $mode = "";
+    my $sub_description = "";
 
     foreach my $line (@all_lines) {
 
       next if(!($line =~ /^DE/));
 
-
-      # Set up the mode first
-      if($line =~ /^DE   RecName:/){
-	if($mode eq "RecName"){
-	  $description .= ";";
-	}	
-        $mode = "RecName";
-      }
-      elsif($line =~ /^DE   SubName:/){
-	if($mode eq "RecName"){
-	  $description .= ";";
-	}	
-        $mode = "RecName";
-      }
-      elsif($line =~ /^DE   AltName:/){
-        $mode = "AltName";
-      }
-      elsif($line =~ /^DE   Contains:/){
-	if($mode eq "Contains"){
-	  $description .= ";";
-	}
-        elsif($mode eq "Includes"){
-          $description .= "][Contains ";
-        }
-	else{
-          $description .= " [Contains ";
-        }	
-        $mode = "Contains";
-        next;
-      }
-      elsif($line =~ /^DE   Includes:/){
-	if($mode eq "Includes"){
-	  $description .= ";";
-	}	
-        elsif($mode eq "Contains"){
-          $description .= "][Includess";
-        }
-	else{
-          $description .= " [Includes ";
-        }	
-        $mode = "Includes";
-        next;
-      }
-      elsif($line =~ /^DE   Flags: (.*);/){
-        $flags .= "$1 ";
-        next;
-      }
-
-
-      # now get the data
+      # get the data
       if($line =~ /^DE   RecName: Full=(.*);/){
         $name .= $1;
       }
@@ -416,40 +365,19 @@ sub create_xrefs {
       elsif($line =~ /SubName: Full=(.*);/){
         $name .= $1;
       }
-      elsif($line =~ /AltName: Full=(.*);/){
-        $description .= "(".$1.")";        
-      }
-      elsif($line =~ /Short=(.*);/){
-        $description .= "(".$1.")";        
-      }
-      elsif($line =~ /EC=(.*);/){
-        $description .= "(EC ".$1.")";        
-      }
-      elsif($line =~ /Allergen=(.*);/){
-        $description .= "(Allergen ".$1.")";        
-      }
-      elsif($line =~ /INN=(.*);/){
-        $description .= "(".$1.")";        
-      }
-      elsif($line =~ /Biotech=(.*);/){
-        $description .= "(".$1.")";        
-      }
-      elsif($line =~ /CD_antigen=(.*);/){
-        $description .= "(".$1." antigen)";        
-      }
-      else{
-         print STDERR "unable to process *$line* for $acc\n";
-      }
 
+
+      $description =~ s/^\s*//g;
+      $description =~ s/\s*$//g;
+
+      
+      my $desc = $name.$description;
+      if(!length($desc)){
+	$desc = $sub_description;
+      }
+      $desc =~ s/\(\s*EC\s*\S*\)//g;
+      $xref->{DESCRIPTION} = $desc;
     }
-    if($mode eq "Contains" or $mode eq "Includes"){
-      $description .= "]";
-    }
-
-    $description =~ s/^\s*//g;
-    $description =~ s/\s*$//g;
-
-    $xref->{DESCRIPTION} = $name.$flags.$description;
 
     # extract sequence
     my ($seq) = $_ =~ /SQ\s+(.+)/s; # /s allows . to match newline
