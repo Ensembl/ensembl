@@ -203,13 +203,7 @@ sub fetch_all_alternative_by_Transcript {
 sub fetch_by_Transcript {
   my ( $self, $transcript ) = @_;
 
-  if (
-    !(
-      ref($transcript) && $transcript->isa('Bio::EnsEMBL::Transcript') )
-    )
-  {
-    throw('Bio::EnsEMBL::Transcript argument is required.');
-  }
+  assert_ref( $transcript, 'Bio::EnsEMBL::Transcript' );
 
   my $lsi_created_date =
     $self->db()->dbc()->from_date_to_seconds('tlsi.created_date');
