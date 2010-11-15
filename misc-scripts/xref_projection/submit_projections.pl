@@ -93,10 +93,11 @@ my @names_1_1 = (["human", "chimp"            ],
 		 ["human", "tarsier"          ],
 		 ["human", "alpaca"           ],
 		 ["human", "gorilla"          ],
-		 ["human", "anolis"          ],
+		 ["human", "anolis"           ],
 		 ["human", "sloth"            ],
 		 ["human", "zebrafinch"       ],
                  ["human", "panda"            ],
+                 ["human", "turkey"           ],
 		 ["mouse", "kangaroo_rat"     ],
 		 ["mouse", "rat"              ]);
 
@@ -145,6 +146,7 @@ my @go_terms = (["human",      "mouse"          ],
 		["human",      "zebrafinch"     ],
 		["human",      "anolis"         ],
 		["human",      "panda"          ],
+		["human",      "turkey"         ],
                 ["mouse",      "human"          ],
 		["mouse",      "rat"            ],
 		["mouse",      "dog"            ],
@@ -192,6 +194,7 @@ my @go_terms = (["human",      "mouse"          ],
 		["danio",      "stickleback"    ],
 		["human",      "stickleback"    ],
 		["mouse",      "stickleback"    ],
+		["mouse",      "turkey"         ],
 		["xenopus",    "danio"          ]);
 
 my ($from, $to, $o, $e, $n);
