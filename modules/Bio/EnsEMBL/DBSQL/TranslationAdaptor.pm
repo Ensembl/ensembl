@@ -673,11 +673,24 @@ sub fetch_by_dbID {
   $transcript = $transcript_adaptor->fetch_by_translation_id($dbID);
 
   if ( defined($transcript) ) {
-    return $self->fetch_by_Transcript($transcript);
+    my $translation = $self->fetch_by_Transcript($transcript);
+
+    if ( defined($translation) ) {
+      return $translation;
+    }
+
+    my @alt_translations =
+      @{ $self->fetch_all_by_Transcript($transcript) };
+
+    foreach my $alt_translation (@alt_translations) {
+      if ( $alt_translation->dbID() == $dbID ) {
+        return $alt_translation;
+      }
+    }
   }
 
   return undef;
-}
+} ## end sub fetch_by_dbID
 
 
 =head2 fetch_by_stable_id
