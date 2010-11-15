@@ -379,10 +379,10 @@
 390	zfish_female_head_intron	Spliced RNASeq read support for intron from  female head	Female head intron	1	{'colour_key' => 'intron_support','type' => 'support','zmenu' => 'Supporting_alignment'}
 391	zfish_1dpf_intron	Spliced RNASeq read support for intron from  1 day post fertilization embryos	1dpf intron	1	{'colour_key' => 'intron_support','type' => 'support','zmenu' => 'Supporting_alignment'}
 392	dog_ensembl_proteins	Selected Ensembl-predicted dog peptide sequences aligned to the genome using <a rel="external" href="http://www.biomedcentral.com/1471-2105/6/31">Exonerate</a>.	Dog Ensembl prot.	1	 {'label_key' => '[text_label] [display_label]','default' => {'contigviewbottom' => 'transcript_label','contigviewtop' => 'gene_label','cytoview' => 'gene_label','MultiTop' => 'gene_label','MultiBottom' => 'collapsed_label','alignsliceviewbottom' => 'as_collapsed_label'}}
-8045	IKMC_No_products_available_yet	IKMC No products available yet	1	{ 'ext_url' => 'KNOCKOUTMOUSE' }
-8046	IKMC_Vector_available	IKMC Vector available	1	{ 'ext_url' => 'KNOCKOUTMOUSE' }
-8047	IKMC_ES_cells_available	IKMC ES cells available	1	{ 'ext_url' => 'KNOCKOUTMOUSE' }
-8048	IKMC_Mice_available	IKMC Mice available	1	{ 'ext_url' => 'KNOCKOUTMOUSE' }
+8045	IKMC_No_products_available_yet	IKMC No products available yet	IKMC No products available yet	1	{ 'ext_url' => 'KNOCKOUTMOUSE' }
+8046	IKMC_Vector_available	IKMC Vector available	IKMC Vector available	1	{ 'ext_url' => 'KNOCKOUTMOUSE' }
+8047	IKMC_ES_cells_available	IKMC ES cells available	IKMC ES cells available	1	{ 'ext_url' => 'KNOCKOUTMOUSE' }
+8048	IKMC_Mice_available	IKMC Mice available	IKMC Mice available	1	{ 'ext_url' => 'KNOCKOUTMOUSE' }
 
 
 
