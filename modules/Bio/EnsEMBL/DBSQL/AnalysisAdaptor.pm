@@ -383,19 +383,19 @@ sub store {
           gff_feature = ?
       }
     );
-    $sth->bind_param( 1,  $analysis->created,         SQL_DATETIME );
-    $sth->bind_param( 2,  $analysis->logic_name,      SQL_VARCHAR );
-    $sth->bind_param( 3,  $analysis->db,              SQL_VARCHAR );
-    $sth->bind_param( 4,  $analysis->db_version,      SQL_VARCHAR );
-    $sth->bind_param( 5,  $analysis->db_file,         SQL_VARCHAR );
-    $sth->bind_param( 6,  $analysis->program,         SQL_VARCHAR );
-    $sth->bind_param( 7,  $analysis->program_version, SQL_VARCHAR );
-    $sth->bind_param( 8,  $analysis->program_file,    SQL_VARCHAR );
-    $sth->bind_param( 9,  $analysis->parameters,      SQL_VARCHAR );
-    $sth->bind_param( 10, $analysis->module,          SQL_VARCHAR );
-    $sth->bind_param( 11, $analysis->module_version,  SQL_VARCHAR );
-    $sth->bind_param( 12, $analysis->gff_source,      SQL_VARCHAR );
-    $sth->bind_param( 13, $analysis->gff_feature,     SQL_VARCHAR );
+    $sth->bind_param( 1,  $analysis->created(),          SQL_DATETIME );
+    $sth->bind_param( 2,  lc( $analysis->logic_name() ), SQL_VARCHAR );
+    $sth->bind_param( 3,  $analysis->db(),               SQL_VARCHAR );
+    $sth->bind_param( 4,  $analysis->db_version(),       SQL_VARCHAR );
+    $sth->bind_param( 5,  $analysis->db_file(),          SQL_VARCHAR );
+    $sth->bind_param( 6,  $analysis->program(),          SQL_VARCHAR );
+    $sth->bind_param( 7,  $analysis->program_version(),  SQL_VARCHAR );
+    $sth->bind_param( 8,  $analysis->program_file(),     SQL_VARCHAR );
+    $sth->bind_param( 9,  $analysis->parameters(),       SQL_VARCHAR );
+    $sth->bind_param( 10, $analysis->module(),           SQL_VARCHAR );
+    $sth->bind_param( 11, $analysis->module_version(),   SQL_VARCHAR );
+    $sth->bind_param( 12, $analysis->gff_source(),       SQL_VARCHAR );
+    $sth->bind_param( 13, $analysis->gff_feature(),      SQL_VARCHAR );
 
     $rows_inserted = $sth->execute();
 
