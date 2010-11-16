@@ -28,7 +28,7 @@ CREATE TABLE db (
                      'funcgen', 'otherfeatures', 'variation', 'vega')
                      NOT NULL DEFAULT 'core',
   db_release    INTEGER NOT NULL,
-  db_assembly   INTEGER NOT NULL,
+  db_assembly   VARCHAR(8) NOT NULL,
   db_suffix     CHAR(1) DEFAULT '',
   db_host       VARCHAR(32) DEFAULT NULL,
 
