@@ -364,7 +364,12 @@ foreach my $server (@servers) {
                       next;
                     }
 
-                    if ( $master_row->{$field} ne $row->{$field} ) {
+                    if ( ( defined( $master_row->{$field} )
+                           && !defined( $row->{$field} ) )
+                         || (   !defined( $master_row->{$field} )
+                              && defined( $row->{$field} ) )
+                         || $master_row->{$field} ne $row->{$field} )
+                    {
                       $is_same = 0;
                       last;
                     }
