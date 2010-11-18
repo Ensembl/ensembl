@@ -178,19 +178,20 @@ foreach my $server (@servers) {
                     . "==> display_label = '%s'\n",
                   $logic_name, $description, $display_label );
 
-          push( @{ $sql{$dbname} },
-                sprintf(
-                      "-- Inserting logic_name '%s' in master\n"
-                        . "INSERT INTO %s (\n"
-                        . "\tlogic_name, description, display_label\n) "
-                        . "VALUES (\n\t%s,\n\t%s,\n\t%s\n);\n\n",
-                      $logic_name_lc,
-                      $dbh->quote_identifier(
-                                            undef, 'ensembl_production',
-                                            'analysis_description' ),
-                      $dbh->quote( $logic_name_lc, SQL_VARCHAR ),
-                      $dbh->quote( $description,   SQL_VARCHAR ),
-                      $dbh->quote( $display_label, SQL_VARCHAR ) ) );
+          push(
+            @{ $sql{$dbname} },
+            sprintf(
+              "#HEADS_UP!# -- Inserting logic_name '%s' in master\n"
+                . "#HEADS_UP!# INSERT INTO %s (\n"
+                . "#HEADS_UP!# \tlogic_name, description, display_label\n) "
+                . "#HEADS_UP!# VALUES (\n\t%s,\n\t%s,\n\t%s\n);\n\n",
+              $logic_name_lc,
+              $dbh->quote_identifier(
+                     undef, 'ensembl_production', 'analysis_description'
+              ),
+              $dbh->quote( $logic_name_lc, SQL_VARCHAR ),
+              $dbh->quote( $description,   SQL_VARCHAR ),
+              $dbh->quote( $display_label, SQL_VARCHAR ) ) );
 
           $master{$logic_name_lc} = { 'logic_name'    => $logic_name_lc,
                                       'description'   => $description,
