@@ -153,7 +153,7 @@ foreach my $server (@servers) {
       }
 
       my ( $db_type, $db_assembly, $db_suffix ) = ( $database =~
-                   /^[a-z]+_[a-z]+_([a-z]+)_[0-9]+_([0-9]+)([a-z]?)$/ );
+                /^[a-z]+_[a-z]+_([a-z]+)_[0-9]+_([0-9a-z]+?)([a-z]?)$/ );
 
       if (    !defined($db_type)
            || !defined($db_assembly)
@@ -161,6 +161,10 @@ foreach my $server (@servers) {
       {
         die(
            sprintf( "Failed to parse database name '%s'", $database ) );
+      } else {
+        printf( "Found '%s' (%s, %s, %s, %s)\n",
+                $database,    $species, $db_type,
+                $db_assembly, $db_suffix );
       }
 
       $databases{$database} = {
@@ -199,7 +203,7 @@ if ( scalar( keys(%databases) ) == 0 ) {
     $sth->bind_param( 1, $db_hash->{'species_id'},  SQL_INTEGER );
     $sth->bind_param( 2, $db_hash->{'db_type'},     SQL_VARCHAR );
     $sth->bind_param( 3, $release,                  SQL_INTEGER );
-    $sth->bind_param( 4, $db_hash->{'db_assembly'}, SQL_INTEGER );
+    $sth->bind_param( 4, $db_hash->{'db_assembly'}, SQL_VARCHAR );
     $sth->bind_param( 5, $db_hash->{'db_suffix'},   SQL_VARCHAR );
     $sth->bind_param( 6, $db_hash->{'db_host'},     SQL_VARCHAR );
 
