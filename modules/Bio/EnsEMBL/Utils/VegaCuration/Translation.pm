@@ -294,6 +294,8 @@ sub check_for_stops {
       my @annotated_stops;
       if ($annot_stops){
 	my $i = 0;
+  my $defined_offset;
+	my $defined_found_stop;
 	foreach my $offset (split(/\s+/, $annot_stops)) {
     $defined_offset= (defined($offset)) && ($offset=~/^\d+$/);
 	  $defined_found_stop = ( defined(@found_stops) && defined($found_stops[$i]) && defined($found_stops[$i]->[1]));  
