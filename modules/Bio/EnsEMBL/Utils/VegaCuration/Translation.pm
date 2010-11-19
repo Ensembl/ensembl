@@ -298,7 +298,7 @@ sub check_for_stops {
 	my $defined_found_stop;
 	foreach my $offset (split(/\s+/, $annot_stops)) {
     $defined_offset= (defined($offset)) && ($offset=~/^\d+$/);
-	  $defined_found_stop = ( defined(@found_stops) && defined($found_stops[$i]) && defined($found_stops[$i]->[1]));  
+	  $defined_found_stop = ( @found_stops && defined($found_stops[$i]) && defined($found_stops[$i]->[1]));  
     if(not defined($offset)){
       $offset='';
     }
