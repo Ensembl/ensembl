@@ -41,14 +41,14 @@ Bio::EnsEMBL::IdMapping::ResultAnalyser - analyse stable Id mapping results
   # create click lists
   $analyser->create_clicklist;
 
-  # summary email
-  $analyser->create_summary_email;
+  # mapping_summary
+  $analyser->create_mapping_summary;
 
 =head1 DESCRIPTION
 
 This is a utility module which analyses the stable Id mapping results
 by providing various sorts of mapping statistics. It also creates
-clicklists and a summary email.
+clicklists and a mapping summary.
 
 =head1 METHODS
 
@@ -65,9 +65,9 @@ clicklists and a summary email.
   get_count_by_class
   get_all_classes
   class_key
-  write_results_to_file 
+  write_results_to_file
   create_clicklist
-  create_summary_email
+  create_mapping_summary
   read_from_file
 
 =cut
@@ -625,13 +625,13 @@ sub create_clicklist {
 }
 
 
-=head2 create_summary_email
+=head2 create_mapping_summary
 
-  Example     : $analyser->create_summary_email;
+  Example     : $analyser->create_mapping_summary();
   Description : Writes a text file containing a summary of the mapping stats.
                 This will be emailed to the genebuilder for evaluation (you will
                 have to manually send the email, using the text in
-                summary_email.txt as the template).
+                "mapping_summary.txt" as the template).
   Return type : none
   Exceptions  : none
   Caller      : general
@@ -640,10 +640,10 @@ sub create_clicklist {
 
 =cut
 
-sub create_summary_email {
+sub create_mapping_summary {
   my $self = shift;
   
-  my $fh = $self->get_filehandle('summary_email.txt');
+  my $fh = $self->get_filehandle('mapping_summary.txt');
 
   #
   # title
