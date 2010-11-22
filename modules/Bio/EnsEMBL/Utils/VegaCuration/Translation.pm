@@ -1,4 +1,5 @@
 =head1 LICENSE
+
   Copyright (c) 1999-2010 The European Bioinformatics Institute and
   Genome Research Limited.  All rights reserved.
   This software is distributed under a modified Apache license.
@@ -9,12 +10,14 @@
   developers list at <dev@ensembl.org>.
   Questions may also be sent to the Ensembl help desk at
   <helpdesk@ensembl.org>.
+
 =cut
 =head1 NAME
 =head1 SYNOPSIS
 =head1 DESCRIPTION
 =head1 METHODS
 =cut
+
 package Bio::EnsEMBL::Utils::VegaCuration::Translation;
 use strict;
 use warnings;
@@ -22,15 +25,19 @@ use vars qw(@ISA);
 use Data::Dumper;
 use Bio::EnsEMBL::Utils::VegaCuration::Transcript;
 @ISA = qw(Bio::EnsEMBL::Utils::VegaCuration::Transcript);
+
 =head2 check_CDS_end_remarks
+
    Args       : B::E::Transcript
    Example    : my $results = $support->check_CDS_end_remarks($transcript)
    Description: identifies incorrect 'CDS end...' transcript remarks in a
                 otter-derived Vega database
    Returntype : hashref
+
 =cut
+
 sub check_CDS_start_end_remarks {
-  my $self = shift;
+  my $self = shift; 
   my $trans = shift;
   # info for checking
   my @remarks = @{$trans->get_all_Attributes('remark')};
@@ -80,21 +87,26 @@ sub check_CDS_start_end_remarks {
   }
   return $results;
 }
+
 =head2 check_CDS_end_remarks_loutre
+
    Args       : B::E::Transcript
    Example    : my $results = $support->check_CDS_end_remarks($transcript)
    Description: identifies incorrect 'CDS end...' transcript attribs in a loutre
                 of a loutre-derived Vega database.
    Returntype : hashref
+
 =cut
+
 sub check_CDS_start_end_remarks_loutre {
   my $self = shift;
   my $trans = shift;
+
   # info for checking
   my @stops = qw(TGA TAA TAG);
   my %attributes;
   foreach my $attribute (@{$trans->get_all_Attributes()}) {
-    $attributes{$attribute->code} = $attribute;
+    push @{$attributes{$attribute->code}}, $attribute;
   }
 #  warn $trans->stable_id;
 #  warn Data::Dumper::Dumper(\%attributes);
@@ -103,13 +115,30 @@ sub check_CDS_start_end_remarks_loutre {
   my $trans_end    = $trans->length;
   my $trans_seq    = $trans->seq->seq;
   my $stop_codon_offset = 3 + $trans->translation->end_Exon->end_phase;
+  my $initial_exon_phase = $trans->translation->start_Exon->phase;
   my $stop_codon   = substr($trans_seq, $coding_end-3, 3);
   my $start_codon  = substr($trans_seq, $coding_start-1, 3);
+
+  my $start_codon_incorrect = 1;
+  if ($start_codon eq 'ATG' ) {
+    $start_codon_incorrect = 0;
+  }
+  elsif ($start_codon eq 'CTG') {
+    foreach my $attrib (@{$attributes{'remark'}}) {
+      if ($attrib->value =~ /non[- ]ATG start/) {
+	$start_codon_incorrect = 0;
+      }
+    }
+  }
+
+#  warn "$start_codon -- $initial_exon_phase -- $coding_start -- $start_codon_incorrect";
+
   #hashref to return results
   my $results;
+
   #extra CDS end not found remarks
   if ($attributes{'cds_end_NF'}) {
-    if ( ($attributes{'cds_end_NF'}->value == 1)
+    if ( ($attributes{'cds_end_NF'}->[0]->value == 1)
 	   && ($coding_end != $trans_end) 
 	   && ( grep {$_ eq $stop_codon} @stops) ) {
 #      warn $trans->stable_id.": $coding_end--$trans_end--$stop_codon";
@@ -120,7 +149,7 @@ sub check_CDS_start_end_remarks_loutre {
   #missing CDS end not found remark
   if ( $coding_end == $trans_end ) {
     if ($attributes{'cds_end_NF'}) {
-      if ($attributes{'cds_end_NF'}->value == 0 ) {
+      if ($attributes{'cds_end_NF'}->[0]->value == 0 ) {
 	if (! grep {$_ eq $stop_codon} @stops) {
 #	  warn $trans->stable_id.": $coding_end--$trans_end--$stop_codon";
 #	  warn $trans->translation->end_Exon->end_phase;
@@ -134,32 +163,42 @@ sub check_CDS_start_end_remarks_loutre {
   }
   #extra CDS start not found remark 
   if ( $attributes{'cds_start_NF'}) {
-    if ( ($attributes{'cds_start_NF'}->value == 1 )
-	   && ($start_codon eq 'ATG') ) {
-      $results->{'START_EXTRA'} = $start_codon;
+    if (   ($attributes{'cds_start_NF'}->[0]->value == 1 )
+        && (! $start_codon_incorrect)) {
+      unless ( ($coding_start == 1) && ( $initial_exon_phase > 0)) {
+	$results->{'START_EXTRA'} = $start_codon;
+      }
     }
   }
   #missing CDS start not found remark
   if ( $coding_start == 1) {
     if ( $attributes{'cds_start_NF'} ) {
-      if ( $attributes{'cds_start_NF'}->value == 0 ) {
-	if ($start_codon ne 'ATG') {
-	  $results->{'START_MISSING'}{'WRONG'} = $start_codon;
+      if ( $attributes{'cds_start_NF'}->[0]->value == 0 ) {
+	if ($start_codon_incorrect) {
+	  $results->{'START_MISSING'}{'ABSENT'} = $start_codon;
+	}
+	elsif ($initial_exon_phase > 0) {
+	  $results->{'START_MISSING'}{'INITIAL_PHASE'} = $initial_exon_phase;
 	}
       }
     }
     elsif ($start_codon ne 'ATG') {
       $results->{'START_MISSING'}{'ABSENT'} = $start_codon;
     }
+
   }
   return $results;
 }
+
 =head2 get_havana_seleno_comments
+
    Args       : none
    Example    : my $results = $support->get_havana_seleno_comments
    Description: parses the HEREDOC containing Havana comments in this module
    Returntype : hashref
+
 =cut
+
 sub get_havana_seleno_comments {
   my $seen_translations;
   while (<DATA>) {
