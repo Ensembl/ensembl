@@ -189,7 +189,7 @@ sub check_for_stops {
   my $mod_date = $support->date_format( $gene->modified_date,'%d/%m/%y' );
   my $hidden_remak_ttributes;
  TRANS:
-  foreach my $trans (@$transcripts) {
+  foreach my $trans ($transcripts) {
     my $tsi = $trans->stable_id;
     my $tID = $trans->dbID;
     my $tname = $trans->get_all_Attributes('name')->[0]->value;
