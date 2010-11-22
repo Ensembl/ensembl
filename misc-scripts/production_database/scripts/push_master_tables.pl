@@ -224,7 +224,7 @@ foreach my $server (@servers) {
               sprintf( "-- insert %s_id=%d in %s\n",
                        $table, $pk, $table ),
               sprintf(
-                "INSERT INTO %s (\n\t%s\n) VALUES (\n\t%s\n);\n",
+                "INSERT INTO %s (\n\t%s\n) VALUES (\n\t%s\n);\n\n",
                 $dbh->quote_identifier( undef, $dbname, $table ),
                 join( ",\n\t",
                       map { $dbh->quote_identifier($_) } @fields ),
@@ -284,13 +284,13 @@ foreach my $server (@servers) {
 
                   push( @{ $sql{$dbname} },
                         sprintf(
-                               "-- Entries with %s_id = %d "
-                                 . "should change this to %d\n"
-                                 . "-- Useful SQL:\n"
-                                 . "-- UPDATE <table> "
-                                 . "SET %s_id = %d WHERE %s_id = %s;\n",
-                               $table,     $pk,    $master_pk, $table,
-                               $master_pk, $table, $pk ) );
+                             "-- Entries with %s_id = %d "
+                               . "should change this to %d\n"
+                               . "-- Useful SQL:\n"
+                               . "-- UPDATE <table> "
+                               . "SET %s_id = %d WHERE %s_id = %s;\n\n",
+                             $table,     $pk,    $master_pk, $table,
+                             $master_pk, $table, $pk ) );
 
                   $is_missing = 0;
                 }
@@ -306,7 +306,7 @@ foreach my $server (@servers) {
                            $dbname, $table ),
                   sprintf(
                     "#HEADS_UP!# INSERT INTO %s (\n\t%s\n) "
-                      . "VALUES (\n\t%s\n);\n",
+                      . "VALUES (\n\t%s\n);\n\n",
                     $dbh->quote_identifier(
                                           undef,
                                           'ensembl_production',
@@ -368,7 +368,10 @@ foreach my $server (@servers) {
                            && !defined( $row->{$field} ) )
                          || (   !defined( $master_row->{$field} )
                               && defined( $row->{$field} ) )
-                         || $master_row->{$field} ne $row->{$field} )
+                         || (  defined( $master_row->{$field} )
+                            && defined( $row->{$field} )
+                            && $master_row->{$field} ne $row->{$field} )
+                      )
                     {
                       $is_same = 0;
                       last;
@@ -382,13 +385,13 @@ foreach my $server (@servers) {
 
                     push( @{ $sql{$dbname} },
                           sprintf(
-                               "-- Entries with %s_id = %d "
-                                 . "should change this to %d\n"
-                                 . "-- Useful SQL:\n"
-                                 . "-- UPDATE <table> "
-                                 . "SET %s_id = %d WHERE %s_id = %s;\n",
-                               $table,     $pk,    $master_pk, $table,
-                               $master_pk, $table, $pk ) );
+                             "-- Entries with %s_id = %d "
+                               . "should change this to %d\n"
+                               . "-- Useful SQL:\n"
+                               . "-- UPDATE <table> "
+                               . "SET %s_id = %d WHERE %s_id = %s;\n\n",
+                             $table,     $pk,    $master_pk, $table,
+                             $master_pk, $table, $pk ) );
 
                     $is_missing = 0;
                   }
@@ -405,7 +408,7 @@ foreach my $server (@servers) {
                     sprintf( "-- update %s in %s\n",
                              join( ', ', keys(%diff_fields) ), $table ),
                     sprintf(
-                      "UPDATE %s\nSET %s\nWHERE %s_id = %d;\n",
+                      "UPDATE %s\nSET %s\nWHERE %s_id = %d;\n\n",
                       $dbh->quote_identifier( undef, $dbname, $table ),
                       join(
                         ', ',
