@@ -136,7 +136,7 @@ sub new {
   $rank ||= 0;
 
   if ( $top_level == 1 ) {
-    if ( $rank == 1 ) {
+    if ( $rank != 0 ) {
       throw('RANK argument must be 0 if TOP_LEVEL is 1');
     }
 
