@@ -51,22 +51,23 @@ use Bio::EnsEMBL::Utils::ConversionSupport;
 =cut
 
 sub find_gaps {
-	my $self = shift;
-	my ($all_transcripts) = @_;
-	my $gaps = 0;
-	my @sorted_transcripts = sort {$a->start <=> $b->start || $b->end <=> $a->end} @{$all_transcripts};
-	my $first_transcript = shift @sorted_transcripts;
-	my $pos = $first_transcript->end;
-	foreach my $transcript (@sorted_transcripts) {
-		next if ($transcript->end < $pos );
-		if ($transcript->start < $pos && $transcript->end > $pos ) {
-			$pos = $transcript->end;			
-			next;
-		}
-		elsif ($transcript->end > $pos) {
-			$gaps++;
-			$pos = $transcript->end;
-		}
-	}
-	return $gaps;		
+  my $self = shift;
+  my ($all_transcripts) = @_;
+  my $gaps = 0;
+  my @sorted_transcripts = sort {$a->start <=> $b->start || $b->end <=> $a->end} @{$all_transcripts};
+  if ( my $first_transcript = shift @sorted_transcripts ) {
+    my $pos = $first_transcript->end;
+    foreach my $transcript (@sorted_transcripts) {
+      next if ($transcript->end < $pos );
+      if ($transcript->start < $pos && $transcript->end > $pos ) {
+	$pos = $transcript->end;			
+	next;
+      }
+      elsif ($transcript->end > $pos) {
+	$gaps++;
+	$pos = $transcript->end;
+      }
+    }
+  }
+  return $gaps;		
 }
