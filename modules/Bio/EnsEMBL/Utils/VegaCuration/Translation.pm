@@ -177,7 +177,7 @@ sub check_for_stops {
   my $transcripts;
   my $has_log_object=defined($log_object);
   if($has_log_object){
-    $transcripts=$log_object->species_params->get_transcripts->{$gene->stable_id};  
+    $transcripts=$log_object->species_params->get_trans($gene->stable_id);
   }else{
     $log_object=$support;
     $transcripts=$gene->get_all_Transcripts;    
