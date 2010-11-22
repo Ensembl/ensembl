@@ -177,7 +177,11 @@ sub check_for_stops {
   my $transcripts;
   my $has_log_object=defined($log_object);
   if($has_log_object){
-    $transcripts=$log_object->species_params->get_trans($gene->stable_id);
+    #my @help=();
+    #push(@help,$log_object->species_params->get_trans($gene->stable_id));
+    #$transcripts=\@help;
+    my @help = $log_object->species_params->get_trans($gene->stable_id);
+    $transcripts=\@help;
   }else{
     $log_object=$support;
     $transcripts=$gene->get_all_Transcripts;    
@@ -189,7 +193,7 @@ sub check_for_stops {
   my $mod_date = $support->date_format( $gene->modified_date,'%d/%m/%y' );
   my $hidden_remak_ttributes;
  TRANS:
-  foreach my $trans ($transcripts) {
+  foreach my $trans (@$transcripts) {
     my $tsi = $trans->stable_id;
     my $tID = $trans->dbID;
     my $tname = $trans->get_all_Attributes('name')->[0]->value;
