@@ -162,7 +162,11 @@ foreach my $server (@servers) {
         die(
            sprintf( "Failed to parse database name '%s'", $database ) );
       } else {
-        printf( "Found '%s' (%s, %s, %s, %s)\n",
+        printf( "--> Found '%s'\n"
+                  . "\tspecies  = '%s'\n"
+                  . "\ttype     = '%s'\n"
+                  . "\tassembly = '%s'\n"
+                  . "\tsuffix   = '%s'\n",
                 $database,    $species, $db_type,
                 $db_assembly, $db_suffix );
       }
