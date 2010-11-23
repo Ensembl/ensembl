@@ -50,38 +50,48 @@ USAGE_END
 
 sub about {
   print <<ABOUT_END;
-Run the program with --help to get information about available command
-line switches.
+About:
 
-This program takes the master tables from the production database
-and compares it to the corresponding tables on the given servers (by
-default, the staging servers).
+  Run the program with --help to get information about available command
+  line switches.
 
-The program will display any discrepancies on the display while
-writing SQL to files in a subdirectory of the current directory called
-"$outdir" that will correct the discrepancies.
+  This program takes the master tables from the production database
+  and compares it to the corresponding tables on the given servers (by
+  default, the staging servers).
 
-Each SQL patch file will have the generic name "fix-DBNAME.sql"
-where "DBNAME" is the name of the database, e.g.,
-"$outdir/fix-oryctolagus_cuniculus_otherfeatures_60_3.sql".
+  The program will display any discrepancies on the display while
+  writing SQL to files in a subdirectory of the current directory called
+  "$outdir" that will correct the discrepancies.
 
-A discrepancy is patched by
+  Each SQL patch file will have the generic name "fix-DBNAME.sql"
+  where "DBNAME" is the name of the database, e.g.,
+  "$outdir/fix-oryctolagus_cuniculus_otherfeatures_60_3.sql".
 
-1)  Insertion into the master table in the production database in the
-    case where a new entry has been added to a database without being
-    added to the master table.
+  A discrepancy is patched by
 
-2)  Insertion into the database table in the case where a new master
-    entry is missing in the database.
+  1)  Insertion into the master table in the production database in the
+      case where a new entry has been added to a database without being
+      added to the master table.  Note that each line of this SQL will
+      by default be prefixed with "#!!" to avoid accidental modification
+      of the production database.
 
-3)  Updating the database entry in the case where an entry (identified by
-    its primary key only) differs in any of its fields.
+  2)  Insertion into the database table in the case where a new master
+      entry is missing in the database.
 
-The SQL patch files may then be used to patch the databases:
+  3)  Updating the database entry in the case where an entry (identified
+      by its primary key only) differs in any of its fields.
 
-  \$ mysql -h server -u user -ppass < fix-DBNAME.sql
+  4)  The script will also detect entries that have the wrong primary
+      key but that are otherwise the same.  In these cases, helpful SQL
+      will be suggested in the output file.
 
+  The SQL patch files may then be used to patch the databases:
 
+    \$ mysql -h server -u user -ppass < fix-DBNAME.sql
+
+  All tables are qualified with their corresponding database name in the
+  SQL file, so there's no need to specify more than the database server
+  itself on the command line when applying a patch.
 
 
                     BE SURE TO REVIEW THESE SQL PATCH FILES
