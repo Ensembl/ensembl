@@ -16,7 +16,9 @@ sub usage {
   my $padding = ' ' x length($0);
 
   print <<USAGE_END;
+
 Usage:
+
   $0 --release NN --master master_server \\
   $padding --server server1 --server server2 [...] \\
   $padding --dbport 3306 --dbuser user --dbpass passwd
@@ -45,11 +47,13 @@ where
   --help/-h     Displays this help text.
 
   --about/-a    Display a text about this program (what it does etc.).
+
 USAGE_END
 } ## end sub usage
 
 sub about {
   print <<ABOUT_END;
+
 About:
 
   Run the program with --help to get information about available command
