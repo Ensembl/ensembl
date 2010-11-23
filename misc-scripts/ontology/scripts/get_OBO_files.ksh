@@ -6,6 +6,9 @@ wget -O GO.obo "http://www.geneontology.org/ontology/obo_format_1_2/gene_ontolog
 # SO    - Sequence Ontology
 wget -O SO.obo "http://song.cvs.sourceforge.net/viewvc/*checkout*/song/ontology/so.obo"
 
+# EFO   - Experimental Factor Ontology
+wget -O EFO.obo "http://efo.svn.sourceforge.net/viewvc/efo/trunk/src/efoinobo/efo.obo"
+
 exit
 
 # ----------------------------------------------------------------------
