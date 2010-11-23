@@ -49,6 +49,30 @@ where
 USAGE_END
 } ## end sub usage
 
+sub about {
+  print <<ABOUT_END;
+About:
+
+  Run the program with --help to get information about available command
+  line switches.
+
+  Given at least a release number, this program will discover new
+  databases on the staging servers and add them to the list of databases
+  in the production database on the master server.
+
+  The default options are set to minimize hassle for the Ensembl release
+  coordinator who needs to run this script during the Ensembl production
+  cycle.  The minimal invocation that will actually write things into
+  the production database is
+
+    $0 -r NN --dbwpass=password
+
+  where NN is the current release and "password" is the password for the
+  standard user with write permission.
+
+ABOUT_END
+}
+
 my $release;
 my @servers = ( 'ens-staging1', 'ens-staging2' );
 my $master = 'ens-staging1';
