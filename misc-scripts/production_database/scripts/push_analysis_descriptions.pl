@@ -12,10 +12,43 @@ use POSIX qw( floor ceil );
 my $outdir = 'fix-analysis_description';
 
 sub usage {
+  my $padding = ' ' x length($0);
+
   print <<USAGE_END;
-TODO: Usage info.
+
+Usage:
+
+  $0 --release NN --master master_server \\
+  $padding --server server1 --server server2 [...] \\
+  $padding --dbport 3306 --dbuser user --dbpass passwd
+
+or
+  $0 --help
+
+or
+  $0 --about
+
+where
+
+  --release/-r  The current release (required).
+
+  --master/-m   The master server where the production database lives
+                (optional, default is 'ens-staging1').
+  --server/-s   A database server (optional, may occur several times,
+                default is 'ens-staging1' and 'ens-staging2').
+
+  --dbport/-P   The port to connect to (optional, default is '3306').
+
+  --dbuser/-u   The (read-only) user to connect as (optional,
+                default is 'ensro').
+  --dbpass/-p   The password to connect with (optional, no default).
+
+  --help/-h     Displays this help text.
+
+  --about/-a    Display a text about this program (what it does etc.).
+
 USAGE_END
-}
+} ## end sub usage
 
 sub about {
   print <<ABOUT_END;
