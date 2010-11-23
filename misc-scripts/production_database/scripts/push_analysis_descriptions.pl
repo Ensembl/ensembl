@@ -154,11 +154,11 @@ foreach my $server (@servers) {
                $logic_name );
 
           push( @{ $sql{$dbname} },
-                sprintf( "-- Updating logic_name '%s'\n"
+                sprintf( "-- Updating (lower-casing) logic_name '%s'\n"
                            . "UPDATE %s\n\t"
                            . "SET logic_name = %s\n\t"
                            . "WHERE logic_name = %s;\n\n",
-                         $logic_name_lc,
+                         $logic_name,
                          $dbh->quote_identifier(
                                               undef, $dbname, 'analysis'
                          ),
@@ -178,20 +178,22 @@ foreach my $server (@servers) {
                     . "==> display_label = '%s'\n",
                   $logic_name, $description, $display_label );
 
-          push(
-            @{ $sql{$dbname} },
-            sprintf(
-              "#HEADS_UP!# -- Inserting logic_name '%s' in master\n"
-                . "#HEADS_UP!# INSERT INTO %s (\n"
-                . "#HEADS_UP!# \tlogic_name, description, display_label\n) "
-                . "#HEADS_UP!# VALUES (\n\t%s,\n\t%s,\n\t%s\n);\n\n",
-              $logic_name_lc,
-              $dbh->quote_identifier(
-                     undef, 'ensembl_production', 'analysis_description'
-              ),
-              $dbh->quote( $logic_name_lc, SQL_VARCHAR ),
-              $dbh->quote( $description,   SQL_VARCHAR ),
-              $dbh->quote( $display_label, SQL_VARCHAR ) ) );
+          push( @{ $sql{$dbname} },
+                sprintf(
+                    "#!! -- MASTER: Inserting logic_name '%s'\n"
+                      . "#!! INSERT INTO %s (\n"
+                      . "#!! \tlogic_name, description, display_label\n"
+                      . "#!! ) VALUES (\n"
+                      . "#!! \t%s,\n"
+                      . "#!! \t%s,\n"
+                      . "#!! \t%s\n"
+                      . "#!! );\n\n",
+                    $logic_name_lc,
+                    $dbh->quote_identifier( undef, 'ensembl_production',
+                                            'analysis_description' ),
+                    $dbh->quote( $logic_name_lc, SQL_VARCHAR ),
+                    $dbh->quote( $description,   SQL_VARCHAR ),
+                    $dbh->quote( $display_label, SQL_VARCHAR ) ) );
 
           $master{$logic_name_lc} = { 'logic_name'    => $logic_name_lc,
                                       'description'   => $description,
@@ -217,7 +219,7 @@ foreach my $server (@servers) {
                            . "UPDATE %s ad, %s a\n\t"
                            . "SET ad.description = %s\n\t"
                            . "WHERE a.logic_name = %s\n\t"
-                           . "AND ad.analysis_id = a.analysis_id;\n\n",
+                           . "AND ad.analysis_id = a.analysis_id;\n",
                          $logic_name_lc,
                          $dbh->quote_identifier(
                                   undef, $dbname, 'analysis_description'
@@ -228,7 +230,11 @@ foreach my $server (@servers) {
                          $dbh->quote(
                                  $master{$logic_name_lc}{'description'},
                                  SQL_VARCHAR ),
-                         $dbh->quote( $logic_name_lc, SQL_VARCHAR ) ) );
+                         $dbh->quote( $logic_name_lc, SQL_VARCHAR ) ),
+                  sprintf( "-- previous value was '%s'\n",
+                           $description ),
+                  "\n" );
+
           } ## end if ( $description ne $master...)
 
           if (
@@ -249,7 +255,7 @@ foreach my $server (@servers) {
                          . "UPDATE %s ad, %s a\n\t"
                          . "SET ad.display_label = %s\n\t"
                          . "WHERE a.logic_name = %s\n\t"
-                         . "AND ad.analysis_id = a.analysis_id;\n\n",
+                         . "AND ad.analysis_id = a.analysis_id;\n",
                        $logic_name_lc,
                        $dbh->quote_identifier(
                                   undef, $dbname, 'analysis_description'
@@ -259,7 +265,11 @@ foreach my $server (@servers) {
                        $dbh->quote(
                                $master{$logic_name_lc}{'display_label'},
                                SQL_VARCHAR ),
-                       $dbh->quote( $logic_name_lc, SQL_VARCHAR ) ) );
+                       $dbh->quote( $logic_name_lc, SQL_VARCHAR ) ),
+                  sprintf( "-- previous value was '%s'\n",
+                           $display_label ),
+                  "\n" );
+
           } ## end if ( $display_label ne...)
         } ## end else [ if ( !exists( $master{...}))]
 

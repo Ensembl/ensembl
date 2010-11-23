@@ -302,20 +302,23 @@ foreach my $server (@servers) {
 
                 push(
                   @{ $sql{$dbname} },
-                  sprintf( "#HEADS_UP!# -- MASTER: insert from %s.%s\n",
+                  sprintf( "#!! -- MASTER: insert from %s.%s\n",
                            $dbname, $table ),
                   sprintf(
-                    "#HEADS_UP!# INSERT INTO %s (\n\t%s\n) "
-                      . "VALUES (\n\t%s\n);\n\n",
+                    "#!! INSERT INTO %s (\n"
+                      . "#!! \t%s\n"
+                      . "#!! ) VALUES (\n"
+                      . "#!! \t%s\n"
+                      . "#!! );\n\n",
                     $dbh->quote_identifier(
                                           undef,
                                           'ensembl_production',
                                           sprintf( 'master_%s', $table )
                     ),
-                    join( ",\n#HEADS_UP!# \t",
+                    join( ",\n#!! \t",
                           map { $dbh->quote_identifier($_) } @fields ),
                     join(
-                      ",\n#HEADS_UP!# \t",
+                      ",\n#!! \t",
                       map {
                         $dbh->quote( $row->{$_},
                                      $colinfo->{$_}{'DATA_TYPE'} )
@@ -408,19 +411,28 @@ foreach my $server (@servers) {
                     sprintf( "-- update %s in %s\n",
                              join( ', ', keys(%diff_fields) ), $table ),
                     sprintf(
-                      "UPDATE %s\nSET %s\nWHERE %s_id = %d;\n\n",
+                      "UPDATE %s\nSET %s\nWHERE %s_id = %d;\n",
                       $dbh->quote_identifier( undef, $dbname, $table ),
                       join(
-                        ', ',
+                        "\n",
                         map {
-                          sprintf( '%s = %s',
+                          sprintf( "\t%s = %s",
                                    $_,
                                    $dbh->quote( $diff_fields{$_} ),
                                    $colinfo->{$_}{'DATA_TYPE'} )
                           }
                           keys(%diff_fields) ),
                       $table,
-                      $pk ) );
+                      $pk ),
+                    sprintf(
+                      "-- previous values were:\n%s",
+                      join(
+                        "\n",
+                        map {
+                          sprintf( "-- %s = %s",
+                                   $_, $dbh->quote( $row->{$_} ) )
+                          } keys(%diff_fields) ) ),
+                    "\n\n" );
 
                   print("\n");
                 } ## end if ($is_missing)
