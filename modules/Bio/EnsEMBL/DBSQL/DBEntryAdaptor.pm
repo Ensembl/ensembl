@@ -1541,8 +1541,9 @@ sub _type_by_external_id {
 
   $sth = $self->prepare($query2);
 
-  $sth->bind_param( 1, $name,    SQL_VARCHAR );
-  $sth->bind_param( 2, $ensType, SQL_VARCHAR );
+  $sth->bind_param( 1, $self->species_id(), SQL_INTEGER );
+  $sth->bind_param( 2, $name,               SQL_VARCHAR );
+  $sth->bind_param( 3, $ensType,            SQL_VARCHAR );
   $sth->execute();
 
   while ( $r = $sth->fetchrow_array() ) { $result{$r} = 1 }
