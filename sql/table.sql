@@ -30,14 +30,14 @@ CREATE TABLE meta (
 # Add schema type and schema version to the meta table.
 INSERT INTO meta (species_id, meta_key, meta_value) VALUES
   (NULL, 'schema_type',     'core'),
-  (NULL, 'schema_version',  '60');
+  (NULL, 'schema_version',  '61');
 
 # Patches included in this schema file:
 # NOTE: At start of release cycle, remove patch entries from last release.
 # NOTE: Avoid line-breaks in values.
 INSERT INTO meta (species_id, meta_key, meta_value) VALUES
+  (NULL, 'patch', 'patch_60_61_a.sql|schema_version'),
   (NULL, 'patch', 'patch_60_61_c.sql|rejig_object_xref_indexes');
-
 
 ################################################################################
 #
