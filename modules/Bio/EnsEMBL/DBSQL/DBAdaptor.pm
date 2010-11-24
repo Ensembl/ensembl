@@ -321,12 +321,6 @@ sub get_available_adaptors {
     'MetaCoordContainer' => 'Bio::EnsEMBL::DBSQL::MetaCoordContainer',
     'MetaContainer'      => 'Bio::EnsEMBL::DBSQL::MetaContainer',
     'SNP'                => 'Bio::EnsEMBL::DBSQL::ProxySNPAdaptor',
-    # Feature Collections:
-    'GeneCollection'       => 'Bio::EnsEMBL::Collection::Gene',
-    'TranscriptCollection' => 'Bio::EnsEMBL::Collection::Transcript',
-    'ExonCollection'       => 'Bio::EnsEMBL::Collection::Exon',
-    'RepeatFeatureCollection' =>
-      'Bio::EnsEMBL::Collection::RepeatFeature'
   );
 
   return ( \%pairs );
