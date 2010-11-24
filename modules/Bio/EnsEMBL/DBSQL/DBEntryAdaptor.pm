@@ -201,9 +201,9 @@ sub _get_all_dm_loc_sth {
   else{
     die "NO constraint???\n";
   }
-#  print "\n\n".$sql."\n";
+
   my $sth = $self->prepare($sql) || die "Could not prepare $sql";
-#  print "sth is $sth\n";  
+
   return $self->_get_all_dm($sth);
 }
 
@@ -241,7 +241,6 @@ sub _get_all_dm_sth {
 
   my $sth = $self->prepare($sql) || die "Could not prepare $sql";
 
-#  print "sth is $sth\n";
   return $self->_get_all_dm($sth);
 }
 
@@ -772,7 +771,6 @@ INSERT IGNORE INTO object_xref
       $sth->bind_param( 4, $exObj->linkage_annotation(), SQL_VARCHAR );
       $sth->bind_param( 5, $analysis_id,                 SQL_INTEGER );
 
-      #print "stored xref id $dbX in obejct_xref\n";
       $sth->execute();
       $exObj->dbID($dbX);
       $exObj->adaptor($self);
