@@ -37,6 +37,7 @@ INSERT INTO meta (species_id, meta_key, meta_value) VALUES
 # NOTE: Avoid line-breaks in values.
 INSERT INTO meta (species_id, meta_key, meta_value) VALUES
   (NULL, 'patch', 'patch_60_61_a.sql|schema_version'),
+  (NULL, 'patch', 'patch_60_61_b.sql|create_seq_region_synonym_table'),
   (NULL, 'patch', 'patch_60_61_c.sql|rejig_object_xref_indexes');
 
 ################################################################################
