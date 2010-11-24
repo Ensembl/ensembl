@@ -36,9 +36,7 @@ INSERT INTO meta (species_id, meta_key, meta_value) VALUES
 # NOTE: At start of release cycle, remove patch entries from last release.
 # NOTE: Avoid line-breaks in values.
 INSERT INTO meta (species_id, meta_key, meta_value) VALUES
-  (NULL, 'patch', 'patch_59_60_a.sql|schema_version'),
-  (NULL, 'patch', 'patch_59_60_b.sql|rename_go_xref_table'),
-  (NULL, 'patch', 'patch_59_60_c.sql|QC_fixes');
+  (NULL, 'patch', 'patch_60_61_c.sql|rejig_object_xref_indexes');
 
 
 ################################################################################
@@ -660,11 +658,12 @@ CREATE TABLE object_xref (
   linkage_annotation          VARCHAR(255) DEFAULT NULL,
   analysis_id                 SMALLINT UNSIGNED DEFAULT NULL,
 
-  UNIQUE KEY object_type_idx
-    (ensembl_object_type, ensembl_id, xref_id, analysis_id),
+  PRIMARY KEY (object_xref_id),
 
-  KEY oxref_idx (object_xref_id, xref_id, ensembl_object_type, ensembl_id),
-  KEY xref_idx (xref_id, ensembl_object_type),
+  UNIQUE KEY xref_idx
+    (xref_id, ensembl_object_type, ensembl_id, analysis_id),
+
+  KEY ensembl_idx (ensembl_object_type, ensembl_id),
   KEY analysis_idx (analysis_id)
 
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
