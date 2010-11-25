@@ -428,7 +428,7 @@ foreach my $server (@servers) {
                       "UPDATE %s\nSET %s\nWHERE %s_id = %d;\n",
                       $dbh->quote_identifier( undef, $dbname, $table ),
                       join(
-                        "\n",
+                        ",\n",
                         map {
                           sprintf( "\t%s = %s",
                                    $_,
