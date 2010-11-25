@@ -207,7 +207,7 @@ if ( !defined($input_file) ) {
   exit 1;
 }
 
-my %executables = ( 'myisamchk' => '/software/farm/mysql/bin/myisamchk',
+my %executables = ( 'myisamchk' => '/usr/local/ensembl/mysql/bin/myisamchk',
                     'rsync'     => '/usr/bin/rsync' );
 
 my $run_hostname = ( gethostbyname( hostname() ) )[0];
