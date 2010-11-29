@@ -16,17 +16,8 @@ use Bio::EnsEMBL::Registry;
 
 my $registry = 'Bio::EnsEMBL::Registry';
 
-<<<<<<< demo1.pl
-$registry->load_registry_from_db(
-  '-host'       => 'ens-staging',
-  '-user'       => 'ensro',
-  '-db_version' => 56,
-  '-verbose'    => 1,
-);
-=======
 $registry->load_registry_from_db( '-host' => 'ensembldb.ensembl.org',
                                   '-user' => 'anonymous' );
->>>>>>> 1.4
 
 my $accession = 'GO:0050825';
 
