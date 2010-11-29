@@ -16,16 +16,25 @@ use Bio::EnsEMBL::Registry;
 
 my $registry = 'Bio::EnsEMBL::Registry';
 
+<<<<<<< demo1.pl
+$registry->load_registry_from_db(
+  '-host'       => 'ens-staging',
+  '-user'       => 'ensro',
+  '-db_version' => 56,
+  '-verbose'    => 1,
+);
+=======
 $registry->load_registry_from_db( '-host' => 'ensembldb.ensembl.org',
                                   '-user' => 'anonymous' );
+>>>>>>> 1.4
 
-my $accession = 'GO:0030326';
+my $accession = 'GO:0050825';
 
 # Get a GO term adaptor and a gene adaptor (for human).
 my $go_adaptor =
   $registry->get_adaptor( 'Multi', 'Ontology', 'GOTerm' );
 
-my $gene_adaptor = $registry->get_adaptor( 'Human', 'Core', 'Gene' );
+my $gene_adaptor = $registry->get_adaptor( 'Mouse', 'Core', 'Gene' );
 
 # Fetch a GO term by its accession.
 my $term = $go_adaptor->fetch_by_accession($accession);

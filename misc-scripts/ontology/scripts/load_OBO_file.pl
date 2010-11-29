@@ -431,12 +431,11 @@ EOT
       my $type = $1;
       my $data = $2;
 
-      if    ( $type eq 'id' )        { $term{'accession'} = $data }
-      elsif ( $type eq 'name' )      { $term{'name'}      = $data }
-      elsif ( $type eq 'namespace' ) { $term{'namespace'} = $data }
-      elsif ( $type eq 'def' ) {
-        ( $term{'definition'} ) = $data =~ /"([^"]+)"/;
-      } elsif ( $type eq 'is_a' ) {
+      if    ( $type eq 'id' )        { $term{'accession'}  = $data }
+      elsif ( $type eq 'name' )      { $term{'name'}       = $data }
+      elsif ( $type eq 'namespace' ) { $term{'namespace'}  = $data }
+      elsif ( $type eq 'def' )       { $term{'definition'} = $data }
+      elsif ( $type eq 'is_a' ) {
         my ($parent_acc) = $data =~ /(\S+)/;
         push( @{ $term{'parents'}{'is_a'} }, $parent_acc );
       } elsif ( $type eq 'relationship' ) {
