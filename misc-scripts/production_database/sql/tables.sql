@@ -73,21 +73,16 @@ CREATE TABLE meta_key (
 );
 
 -- The 'analysis_description' table.
--- TODO: ANY DATA FOUND IN THIS TABLE IS NOT YET "REAL".
---       DEVELOPMENT IS STILL UNDERWAY.
 -- Contains the analysis logic name along with the data that should
 -- be available in the 'analysis_description' table, except for the
--- 'web_data' column.
+-- 'web_data' and 'displayable' columns.
 CREATE TABLE analysis_description (
   analysis_description_id   INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
-  analysis_id               INTEGER UNSIGNED NOT NULL,
   logic_name                VARCHAR(128) NOT NULL,
   description               TEXT,
   display_label             VARCHAR(256) NOT NULL,
-  displayable               BOOLEAN,
 
   PRIMARY KEY (analysis_description_id),
-  UNIQUE INDEX analysis_id_idx (analysis_id),
   UNIQUE INDEX logic_name_idx (logic_name)
 );
 
