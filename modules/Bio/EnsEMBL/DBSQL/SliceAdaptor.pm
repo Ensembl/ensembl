@@ -1418,7 +1418,7 @@ sub fetch_normalized_slice_projection {
 	  push( @syms, [ $hap_start, $hap_end, $sort_haps[0][2], $chr_start, $chr_end+$diff] );  
 	}
 	elsif($diff < 0){
-	  push( @syms, [ $hap_start, $hap_end+$diff, $sort_haps[0][2], $chr_start, $chr_end] );  
+	  push( @syms, [ $hap_start, $hap_end - $diff, $sort_haps[0][2], $chr_start, $chr_end] );  
 	}
 	else{
 	  push( @syms, [ $hap_start, $hap_end, $sort_haps[0][2], $chr_start, $chr_end] );  
