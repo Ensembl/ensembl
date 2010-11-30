@@ -65,6 +65,9 @@ my $port;
 my $dbname;
 my $user;
 my $pass;
+my $dnahost;
+my $dnadbname;
+my $dnauser;
 my $coord_system;
 my $seq_region_name;
 my $write = 0;
@@ -76,6 +79,9 @@ GetOptions( 'dbhost:s'            => \$host,
             'dbname:s'            => \$dbname,
             'dbuser:s'            => \$user,
             'dbpass:s'            => \$pass,
+            'dnahost:s'         => \$dnahost,
+            'dnadbname:s'         => \$dnadbname,
+            'dnauser:s'           => \$dnauser,
             'coord_system_name:s' => \$coord_system,
             'seq_region_name:s'   => \$seq_region_name,
             'write!'              => \$write,
@@ -94,6 +100,21 @@ my $db =
                                       -dbname => $dbname,
                                       -pass   => $pass );
 
+
+my $geneDB_has_DNA = check_if_DB_contains_DNA($db);
+my $dnadb;
+
+if ($geneDB_has_DNA == 0 && !$dnadbname) {
+  throw ("Your gene DB contains no DNA. You must provide a DNA_DB to connect to");
+} elsif ($geneDB_has_DNA == 0 && $dnadbname) {
+  $dnadb = new Bio::EnsEMBL::DBSQL::DBAdaptor(
+                                                 '-host'   => $dnahost,
+                                                 '-user'   => $dnauser,
+                                                 '-dbname' => $dnadbname,
+                                                 '-port'   => $port,
+                                             );
+  $db->dnadb($dnadb);
+}
 
 my $sa = $db->get_SliceAdaptor;
 my $dea = $db->get_DBEntryAdaptor;
@@ -118,7 +139,11 @@ SLICE: foreach my $slice (@$slices) {
   my %canonical;
 
 GENE: foreach my $gene (@$genes) {
-    print "Looking at gene: (" . $gene->dbID . ") :: " . $gene->stable_id . "\n";
+    print "Looking at gene: (dbID " . $gene->dbID . ")";
+    if ($gene->stable_id) {
+      print " :: " . $gene->stable_id ;
+    }
+    print "\n";
     my $transcripts = $gene->get_all_Transcripts;
     if ( @$transcripts == 1 ) {
       $canonical{ $gene->dbID } = $transcripts->[0]->dbID;
@@ -270,4 +295,22 @@ GENE: foreach my $gene (@$genes) {
     $gene_sth->execute( $transcript_id, $gene_id ) if ($write);
   }
 } ## end foreach my $slice (@$slices)
+
+
+sub check_if_DB_contains_DNA {
+  my ($db) = @_;
+  my $sql_command = "select count(*) from dna";
+  my $sth = $db->dbc->prepare($sql_command);
+  $sth->execute();
+  my @dna_array = $sth->fetchrow_array;
+  if ($dna_array[0] > 0) {
+    print "Your DB ". $db->dbc->dbname ." contains DNA sequences. No need to attach a ".
+          "DNA_DB to it.\n" if ($verbose);
+    return 1;
+  } else {
+    print "Your DB ". $db->dbc->dbname ." does not contain DNA sequences.\n"
+          if ($verbose);
+    return 0;
+  }
+}
 
