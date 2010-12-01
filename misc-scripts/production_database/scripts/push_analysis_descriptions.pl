@@ -256,9 +256,10 @@ foreach my $server (@servers) {
             push( @{ $sql{$dbname} },
                   sprintf(
                          "-- Updating description for logic_name '%s'\n"
-                           . "UPDATE %s ad, %s a\n\t"
-                           . "SET ad.description = %s\n\t"
-                           . "WHERE a.logic_name = %s\n\t"
+                           . "UPDATE %s ad,\n"
+                           . "       %s a\n"
+                           . "SET ad.description = %s\n"
+                           . "WHERE a.logic_name = %s\n"
                            . "AND ad.analysis_id = a.analysis_id;\n",
                          $logic_name_lc,
                          $dbh->quote_identifier(
@@ -302,9 +303,10 @@ foreach my $server (@servers) {
             push( @{ $sql{$dbname} },
                   sprintf(
                        "-- Updating display_label for logic_name '%s'\n"
-                         . "UPDATE %s ad, %s a\n\t"
-                         . "SET ad.display_label = %s\n\t"
-                         . "WHERE a.logic_name = %s\n\t"
+                         . "UPDATE %s ad,\n"
+                         . "       %s a\n"
+                         . "SET ad.display_label = %s\n"
+                         . "WHERE a.logic_name = %s\n"
                          . "AND ad.analysis_id = a.analysis_id;\n",
                        $logic_name_lc,
                        $dbh->quote_identifier(
