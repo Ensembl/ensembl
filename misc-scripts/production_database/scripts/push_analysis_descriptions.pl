@@ -235,14 +235,21 @@ foreach my $server (@servers) {
         } else {
           # Compare all fields.
 
-          if ( $description ne $master{$logic_name_lc}{'description'} )
+          if ( (   !defined($description)
+                 && defined( $master{$logic_name_lc}{'description'} ) )
+               || ( defined($description)
+                 && !defined( $master{$logic_name_lc}{'description'} ) )
+               || (    defined($description)
+                    && defined( $master{$logic_name_lc}{'description'} )
+                    && $description ne
+                    $master{$logic_name_lc}{'description'} ) )
           {
             # Description differs.
             display_banner( '-', $dbname );
 
             printf( "==> Description differs for logic_name '%s':\n",
                     $logic_name );
-            printf( "==> In table:\t%s\n", $description );
+            printf( "==> In table:\t%s\n", $description || 'NULL' );
             printf( "==> In master:\t%s\n",
                     $master{$logic_name_lc}{'description'} );
 
@@ -262,23 +269,33 @@ foreach my $server (@servers) {
                          ),
                          $dbh->quote(
                                  $master{$logic_name_lc}{'description'},
-                                 SQL_VARCHAR ),
-                         $dbh->quote( $logic_name_lc, SQL_VARCHAR ) ),
+                                 SQL_VARCHAR
+                         ),
+                         $dbh->quote( $logic_name_lc, SQL_VARCHAR )
+                  ),
                   sprintf( "-- previous value was '%s'\n",
-                           $description ),
-                  "\n" );
+                           $description || 'NULL' ),
+                  "\n"
+            );
 
-          } ## end if ( $description ne $master...)
+          } ## end if ( ( !defined($description...)))
 
-          if (
-            $display_label ne $master{$logic_name_lc}{'display_label'} )
+          if ( (
+                 !defined($display_label)
+               && defined( $master{$logic_name_lc}{'display_label'} ) )
+             || ( defined($display_label)
+               && !defined( $master{$logic_name_lc}{'display_label'} ) )
+             || (    defined($display_label)
+                  && defined( $master{$logic_name_lc}{'display_label'} )
+                  && $display_label ne
+                  $master{$logic_name_lc}{'display_label'} ) )
           {
             # Display label differs.
             display_banner( '-', $dbname );
 
             printf( "==> display_label differs for logic_name '%s':\n",
                     $logic_name );
-            printf( "==> In table:\t%s\n", $display_label );
+            printf( "==> In table:\t%s\n", $display_label || 'NULL' );
             printf( "==> In master:\t%s\n",
                     $master{$logic_name_lc}{'display_label'} );
 
@@ -297,13 +314,16 @@ foreach my $server (@servers) {
                        ),
                        $dbh->quote(
                                $master{$logic_name_lc}{'display_label'},
-                               SQL_VARCHAR ),
-                       $dbh->quote( $logic_name_lc, SQL_VARCHAR ) ),
+                               SQL_VARCHAR
+                       ),
+                       $dbh->quote( $logic_name_lc, SQL_VARCHAR )
+                  ),
                   sprintf( "-- previous value was '%s'\n",
                            $display_label ),
-                  "\n" );
+                  "\n"
+            );
 
-          } ## end if ( $display_label ne...)
+          } ## end if ( ( !defined($display_label...)))
         } ## end else [ if ( !exists( $master{...}))]
 
       } ## end while ( $sth2->fetch() )
