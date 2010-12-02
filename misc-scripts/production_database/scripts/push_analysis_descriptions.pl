@@ -156,10 +156,12 @@ foreach my $server (@servers) {
 
       my $sth2 = $dbh->prepare(
                  sprintf(
-                   'SELECT a.logic_name, '
+                   'SELECT ad.analysis_id, '
+                     . 'a.analysis_id, '
+                     . 'a.logic_name, '
                      . 'ad.description, '
                      . 'ad.display_label '
-                     . 'FROM %s a JOIN %s ad USING (analysis_id)',
+                     . 'FROM %s a LEFT JOIN %s ad USING (analysis_id)',
                    $dbh->quote_identifier( undef, $dbname, 'analysis' ),
                    $dbh->quote_identifier(
                                   undef, $dbname, 'analysis_description'
@@ -167,13 +169,69 @@ foreach my $server (@servers) {
 
       $sth2->execute();
 
-      my ( $logic_name, $description, $display_label );
+      my ( $exists,      $analysis_id, $logic_name,
+           $description, $display_label );
 
-      $sth2->bind_columns(
-                       \( $logic_name, $description, $display_label ) );
+      $sth2->bind_columns( \( $exists,      $analysis_id, $logic_name,
+                              $description, $display_label
+                           ) );
 
       while ( $sth2->fetch() ) {
         my $logic_name_lc = lc($logic_name);
+
+        if ( !defined($exists) ) {
+          # An analysis exists that does not have a corresponding
+          # analysis_description.
+
+          display_banner( '-', $dbname );
+
+          printf( "==> Analysis '%s' "
+                    . "is missing analysis_description entry.\n",
+                  $logic_name
+          );
+
+          if ( !exists( $master{$logic_name_lc} ) ) {
+            print(   "==> And additionally, "
+                   . "it's not in the production database.\n" );
+
+            push( @{ $sql{$dbname} },
+                  sprintf( "-- WARNING: missing analysis_desciption "
+                             . "for logic_name '%s'\n\n",
+                           $logic_name_lc
+                  ) );
+          } else {
+
+            push(
+              @{ $sql{$dbname} },
+              sprintf(
+                "-- WARNING: Inserting minimal missing "
+                  . "analysis_description for '%s'\n"
+                  . "-- web_data and displayable fields will be wrong!\n"
+                  . "INSERT INTO %s (\n"
+                  . "\tanalysis_id,\n"
+                  . "\tdescription,\n"
+                  . "\tdisplay_label\n"
+                  . ") VALUES (\n"
+                  . "\t%s,\n"
+                  . "\t%s,\n"
+                  . "\t%s\n"
+                  . ");\n\n",
+                $logic_name_lc,
+                $dbh->quote_identifier(
+                                  undef, $dbname, 'analysis_description'
+                ),
+                $dbh->quote( $analysis_id, SQL_INTEGER ),
+                $dbh->quote( $master{$logic_name_lc}{'description'},
+                             SQL_VARCHAR
+                ),
+                $dbh->quote( $master{$logic_name_lc}{'display_label'},
+                             SQL_VARCHAR
+                ),
+              ) );
+          } ## end else [ if ( !exists( $master{...}))]
+
+          next;
+        } ## end if ( !defined($exists))
 
         if ( exists( $master{$logic_name_lc} )
              && $logic_name ne $master{$logic_name_lc}{'logic_name'} )
@@ -188,8 +246,8 @@ foreach my $server (@servers) {
 
           push( @{ $sql{$dbname} },
                 sprintf( "-- Updating (lower-casing) logic_name '%s'\n"
-                           . "UPDATE %s\n\t"
-                           . "SET logic_name = %s\n\t"
+                           . "UPDATE %s\n"
+                           . "SET logic_name = %s\n"
                            . "WHERE logic_name = %s;\n\n",
                          $logic_name,
                          $dbh->quote_identifier(
