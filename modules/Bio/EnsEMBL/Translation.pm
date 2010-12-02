@@ -556,50 +556,56 @@ sub transform {
 
 =head2 get_all_DBEntries
 
-  Arg [1]    : (optional) $ex_db_exp - external db name
-  Example    : @dbentries = @{$translation->get_all_DBEntries()};
-  Description: Retrieves DBEntries (xrefs) for this translation.  
+  Arg [1]    : (optional) String, external database name
 
-               This method will attempt to lazy-load DBEntries from a
-               database if an adaptor is available and no DBEntries are present
-               on the translation (i.e. they have not already been added or 
-               loaded).
-  Returntype : list reference to Bio::EnsEMBL::DBEntry objects
+  Arg [2]    : (optional) String, external_db type
+
+  Example    : @dbentries = @{ $translation->get_all_DBEntries() };
+
+  Description: Retrieves DBEntries (xrefs) for this translation.
+
+               This method will attempt to lazy-load DBEntries
+               from a database if an adaptor is available and no
+               DBEntries are present on the translation (i.e. they
+               have not already been added or loaded).
+
+  Returntype : Listref to Bio::EnsEMBL::DBEntry objects
   Exceptions : none
-  Caller     : get_all_DBLinks, TranslationAdaptor::store
+  Caller     : TranslationAdaptor::store
   Status     : Stable
 
 =cut
 
 sub get_all_DBEntries {
-  my $self = shift;
-  my $ex_db_exp = shift;
-  my $ex_db_type = shift;
+  my ( $self, $ex_db_exp, $ex_db_type ) = @_;
 
-  my $cache_name = "dbentries";
+  my $cache_name = 'dbentries';
 
-  if(defined($ex_db_exp)){
+  if ( defined($ex_db_exp) ) {
     $cache_name .= $ex_db_exp;
   }
-  if(defined($ex_db_type)){
+
+  if ( defined($ex_db_type) ) {
     $cache_name .= $ex_db_type;
   }
 
-  # if not cached, retrieve all of the xrefs for this gene
-  if(!defined $self->{$cache_name}) {
-    my $adaptor = $self->adaptor();
-    my $dbID    = $self->dbID();
-
-    return [] if(!$adaptor || !$dbID);
+  # if not cached, retrieve all of the xrefs for this translation
+  if ( !defined( $self->{$cache_name} ) && defined( $self->adaptor() ) )
+  {
     $self->{$cache_name} =
-      $self->adaptor->db->get_DBEntryAdaptor->fetch_all_by_Translation($self, $ex_db_exp, $ex_db_type);
+      $self->adaptor()->db()->get_DBEntryAdaptor()
+      ->fetch_all_by_Translation( $self, $ex_db_exp, $ex_db_type );
   }
 
   $self->{$cache_name} ||= [];
 
   return $self->{$cache_name};
-}
+} ## end sub get_all_DBEntries
 
+sub get_all_object_xrefs {
+      my $self = shift;
+            return $self->get_all_DBEntries(@_);
+}
 
 =head2 add_DBEntry
 
@@ -631,11 +637,18 @@ sub add_DBEntry {
 
 =head2 get_all_DBLinks
 
-  Arg [1]    : see get_all_DBEntries
-  Example    : see get_all_DBEntries
-  Description: This is here for consistancy with the Transcript and Gene 
-               classes. It is a synonym for the get_all_DBEntries method.
-  Returntype : see get_all_DBEntries
+  Arg [1]    : String database name (optional)
+               SQL wildcard characters (_ and %) can be used to
+               specify patterns.
+
+  Example    :  my @dblinks = @{ $translation->get_all_DBLinks() };
+                my @dblinks = @{ $translation->get_all_DBLinks('Uniprot%') };
+
+  Description: This is here for consistancy with the Transcript
+               and Gene classes.  It is a synonym for the
+               get_all_DBEntries() method.
+
+  Return type: Listref to Bio::EnsEMBL::DBEntry objects
   Exceptions : none
   Caller     : general
   Status     : Stable
@@ -647,6 +660,10 @@ sub get_all_DBLinks {
   return $self->get_all_DBEntries(@_);
 }
 
+sub get_all_xrefs {
+  my $self = shift;
+  return $self->get_all_DBLinks(@_);
+}
 
 =head2 get_all_ProteinFeatures
 

@@ -635,17 +635,23 @@ sub add_DBEntry {
 
 =head2 get_all_DBEntries
 
-  Arg [1]    : (optional) string external database name
-  Arg [2]    : (optional) string external_db type
-  Example    : @dbentries = @{ $gene->get_all_DBEntries };
-  Description: Retrieves DBEntries (xrefs) for this gene. This does _not_ 
-               include DBEntries that are associated with the transcripts and
-               corresponding translations of this gene (see get_all_DBLinks).
+  Arg [1]    : (optional) String, external database name
 
-               This method will attempt to lazy-load DBEntries from a
-               database if an adaptor is available and no DBEntries are present
-               on the gene (i.e. they have not already been added or loaded).
-  Returntype : Listref of Bio::EnsEMBL::DBEntry objects
+  Arg [2]    : (optional) String, external_db type
+
+  Example    : @dbentries = @{ $gene->get_all_DBEntries() };
+
+  Description: Retrieves DBEntries (xrefs) for this gene.  This does
+               *not* include DBEntries that are associated with the
+               transcripts and corresponding translations of this
+               gene (see get_all_DBLinks()).
+
+               This method will attempt to lazy-load DBEntries
+               from a database if an adaptor is available and no
+               DBEntries are present on the gene (i.e. they have not
+               already been added or loaded).
+
+  Return type: Listref of Bio::EnsEMBL::DBEntry objects
   Exceptions : none
   Caller     : get_all_DBLinks, GeneAdaptor::store
   Status     : Stable
@@ -655,7 +661,7 @@ sub add_DBEntry {
 sub get_all_DBEntries {
   my ( $self, $db_name_exp, $ex_db_type ) = @_;
 
-  my $cache_name = "dbentries";
+  my $cache_name = 'dbentries';
 
   if ( defined($db_name_exp) ) {
     $cache_name .= $db_name_exp;
@@ -669,8 +675,8 @@ sub get_all_DBEntries {
   if ( !defined( $self->{$cache_name} ) && defined( $self->adaptor() ) )
   {
     $self->{$cache_name} =
-      $self->adaptor->db->get_DBEntryAdaptor->fetch_all_by_Gene( $self,
-                                            $db_name_exp, $ex_db_type );
+      $self->adaptor()->db()->get_DBEntryAdaptor()
+      ->fetch_all_by_Gene( $self, $db_name_exp, $ex_db_type );
   }
 
   $self->{$cache_name} ||= [];
@@ -678,26 +684,37 @@ sub get_all_DBEntries {
   return $self->{$cache_name};
 } ## end sub get_all_DBEntries
 
+sub get_all_object_xrefs {
+  my $self = shift;
+  return $self->get_all_DBEntries(@_);
+}
 
 =head2 get_all_DBLinks
 
-  Example    : @dblinks = @{ $gene->get_all_DBLinks };
-             : @dblinks = @{ $gene->get_all_DBLinks("Uniprot%") };
-  Arg [1]    : <optional> database name. SQL wildcard characters (_ and %) can be used to
+  Arg [1]    : String database name (optional)
+               SQL wildcard characters (_ and %) can be used to
                specify patterns.
-  Description: Retrieves _all_ related DBEntries for this gene. This includes
-               all DBEntries that are associated with the transcripts and
-               corresponding translations of this gene.
 
-               If you only want to retrieve the DBEntries associated with the
-               gene (and not the transcript and translations) then you should
-               use the get_all_DBEntries call instead.
-         
-               Note: Each entry may be listed more than once. No uniqueness checks are done.
-                     Also if you put in an incorrect external database name no checks are done
-                     to see if this exists, you will just get an empty list.
+  Example    : @dblinks = @{ $gene->get_all_DBLinks() };
+               @dblinks = @{ $gene->get_all_DBLinks('Uniprot%') };
 
-  Returntype : Listref of Bio::EnsEMBL::DBEntry objects
+  Description: Retrieves *all* related DBEntries for this gene. This
+               includes all DBEntries that are associated with the
+               transcripts and corresponding translations of this
+               gene.
+
+               If you only want to retrieve the DBEntries
+               associated with the gene (and not the transcript
+               and translations) then you should use the
+               get_all_DBEntries() call instead.
+
+               Note: Each entry may be listed more than once.  No
+               uniqueness checks are done.  Also if you put in an
+               incorrect external database name no checks are done
+               to see if this exists, you will just get an empty
+               list.
+
+  Return type: Listref of Bio::EnsEMBL::DBEntry objects
   Exceptions : none
   Caller     : general
   Status     : Stable
@@ -705,23 +722,25 @@ sub get_all_DBEntries {
 =cut
 
 sub get_all_DBLinks {
-   my $self = shift;
-   my $db_name_exp = shift;
-   my $ex_db_type = shift;
+  my ( $self, $db_name_exp, $ex_db_type ) = @_;
 
-   my @links = @{$self->get_all_DBEntries($db_name_exp, $ex_db_type)};
+  my @links =
+    @{ $self->get_all_DBEntries( $db_name_exp, $ex_db_type ) };
 
-   # add all of the transcript and translation xrefs to the return list
-   foreach my $transc (@{$self->get_all_Transcripts}) {
-     push @links, @{$transc->get_all_DBEntries($db_name_exp, $ex_db_type)};
+  # Add all of the transcript and translation xrefs to the return list.
+  foreach my $transcript ( @{ $self->get_all_Transcripts() } ) {
+    push( @links,
+          @{$transcript->get_all_DBLinks( $db_name_exp, $ex_db_type ) }
+    );
+  }
 
-     my $transl = $transc->translation();
-     push @links, @{$transl->get_all_DBEntries($db_name_exp, $ex_db_type)} if($transl);
-   }
-
-   return \@links;
+  return \@links;
 }
 
+sub get_all_xrefs {
+  my $self = shift;
+  return $self->get_all_DBLinks(@_);
+}
 
 =head2 get_all_Exons
 

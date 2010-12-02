@@ -181,18 +181,28 @@ sub new {
 
 =head2 get_all_DBLinks
 
-  Arg [1]    : (optional) String, external database name
-  Arg [2]    : (optional) String, external database type
-  Example    : my @dblinks = @{ $transcript->get_all_DBLinks() };
-  Description: Retrieves _all_ related DBEntries for this transcript.  
-               This includes all DBEntries that are associated with the
-               corresponding translation.
+  Arg [1]    : String database name (optional)
+               SQL wildcard characters (_ and %) can be used to
+               specify patterns.
 
-               If you only want to retrieve the DBEntries associated with the
-               transcript then you should use the get_all_DBEntries call 
-               instead.
-  Returntype : Listref of Bio::EnsEMBL::DBEntry objects, sorted by
-               priority (desc), external db name (asc), display_id (asc)
+  Example    : my @dblinks = @{ $transcript->get_all_DBLinks() };
+               my @dblinks = @{ $transcript->get_all_DBLinks('Uniprot%') };
+
+  Description: Retrieves *all* related DBEntries for this
+               transcript.  This includes all DBEntries that are
+               associated with the corresponding translation.
+
+               If you only want to retrieve the DBEntries associated
+               with the transcript (and not the translation) then
+               you should use the get_all_DBEntries() call instead.
+
+               Note: Each entry may be listed more than once.  No
+               uniqueness checks are done.  Also if you put in an
+               incorrect external database name no checks are done
+               to see if this exists, you will just get an empty
+               list.
+
+  Return type: Listref of Bio::EnsEMBL::DBEntry objects
   Exceptions : none
   Caller     : general
   Status     : Stable
@@ -200,17 +210,16 @@ sub new {
 =cut
 
 sub get_all_DBLinks {
-  my ( $self, $ex_db_exp, $ex_db_type ) = @_;
+  my ( $self, $db_name_exp, $ex_db_type ) = @_;
 
-  my @links;
+  my @links =
+    @{ $self->get_all_DBEntries( $db_name_exp, $ex_db_type ) };
 
-  push( @links,
-        @{ $self->get_all_DBEntries( $ex_db_exp, $ex_db_type ) } );
-
+  # Add all of the transcript and translation xrefs to the return list.
   my $translation = $self->translation();
   if ( defined($translation) ) {
     push( @links,
-          @{$translation->get_all_DBEntries( $ex_db_exp, $ex_db_type ) }
+          @{$translation->get_all_DBEntries( $db_name_exp, $ex_db_type ) }
     );
   }
 
@@ -219,20 +228,28 @@ sub get_all_DBLinks {
   return \@links;
 }
 
+sub get_all_xrefs {
+  my $self = shift;
+  return $self->get_all_DBLinks(@_);
+}
 
 =head2 get_all_DBEntries
 
   Arg [1]    : (optional) String, external database name
-  Arg [2]    : (optional) String, external database type
-  Example    : my @dbentries = @{ $gene->get_all_DBEntries() };
-  Description: Retrieves DBEntries (xrefs) for this transcript.  
-               This does _not_ include the corresponding translations 
-               DBEntries (see get_all_DBLinks).
 
-               This method will attempt to lazy-load DBEntries from a
-               database if an adaptor is available and no DBEntries are present
-               on the transcript (i.e. they have not already been added or 
-               loaded).
+  Arg [2]    : (optional) String, external database type
+
+  Example    : my @dbentries = @{ $gene->get_all_DBEntries() };
+
+  Description: Retrieves DBEntries (xrefs) for this transcript.
+               This does *not* include the corresponding
+               translations DBEntries (see get_all_DBLinks()).
+
+               This method will attempt to lazy-load DBEntries
+               from a database if an adaptor is available and no
+               DBEntries are present on the transcript (i.e. they
+               have not already been added or loaded).
+
   Returntype : Listref of Bio::EnsEMBL::DBEntry objects
   Exceptions : none
   Caller     : get_all_DBLinks, TranscriptAdaptor::store
@@ -243,27 +260,33 @@ sub get_all_DBLinks {
 sub get_all_DBEntries {
   my ( $self, $ex_db_exp, $ex_db_type ) = @_;
 
-  my $cache_name = "dbentries";
+  my $cache_name = 'dbentries';
 
   if ( defined($ex_db_exp) ) {
     $cache_name .= $ex_db_exp;
   }
+
   if ( defined($ex_db_type) ) {
     $cache_name .= $ex_db_type;
   }
 
-  # if not cached, retrieve all of the xrefs for this gene
-  if ( !defined $self->{$cache_name} && $self->adaptor() ) {
+  # if not cached, retrieve all of the xrefs for this transcript
+  if ( !defined( $self->{$cache_name} ) && defined( $self->adaptor() ) )
+  {
     $self->{$cache_name} =
-      $self->adaptor->db->get_DBEntryAdaptor->fetch_all_by_Transcript(
-                                       $self, $ex_db_exp, $ex_db_type );
+      $self->adaptor()->db()->get_DBEntryAdaptor()
+      ->fetch_all_by_Transcript( $self, $ex_db_exp, $ex_db_type );
   }
 
   $self->{$cache_name} ||= [];
 
   return $self->{$cache_name};
-}
+} ## end sub get_all_DBEntries
 
+sub get_all_object_xrefs {
+  my $self = shift;
+  return $self->get_all_DBEntries(@_);
+}
 
 =head2 add_DBEntry
 
@@ -2448,19 +2471,21 @@ sub get_all_DAS_Features {
 
 =head2 _compare_xrefs
 
-  Description: compare xrefs based on priority (descending), then name (ascending),
-               then display_label (ascending)
+  Description: compare xrefs based on priority (descending), then
+               name (ascending), then display_label (ascending)
 
 =cut
 
 sub _compare_xrefs {
   # compare on priority first (descending)
-  if ($a->priority() != $b->priority()) {
+  if ( $a->priority() != $b->priority() ) {
     return $b->priority() <=> $a->priority();
-  } else { # equal priorities, compare on external_db name
-    if ($a->dbname() ne $b->dbname()) {
+  } else {
+    # equal priorities, compare on external_db name
+    if ( $a->dbname() ne $b->dbname() ) {
       return $a->dbname() cmp $b->dbname();
-    } else { # equal priorities and names, compare on display_label
+    } else {
+      # equal priorities and names, compare on display_label
       return $a->display_id() cmp $b->display_id();
     }
   }
