@@ -638,7 +638,7 @@ sub execute_with_sth {
 
 =pod
 
-=head1 batch()
+=head2 batch()
 
   Arg [SQL]           : SQL to execute
   Arg [CALLBACK]      : The callback to use for working with the statement
