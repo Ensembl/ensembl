@@ -23,9 +23,11 @@ CREATE TABLE species (
 CREATE TABLE db (
   db_id         INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
   species_id    INTEGER UNSIGNED NOT NULL,  -- FK into 'species'.
+  is_current    BOOLEAN NOT NULL DEFAULT false,
   db_type       ENUM('cdna', 'core', 'coreexpressionatlas',
                      'coreexpressionest', 'coreexpressiongnf',
-                     'funcgen', 'otherfeatures', 'variation', 'vega')
+                     'funcgen', 'otherfeatures', 'rnaseq',
+                     'variation', 'vega')
                      NOT NULL DEFAULT 'core',
   db_release    INTEGER NOT NULL,
   db_assembly   VARCHAR(8) NOT NULL,
@@ -47,7 +49,7 @@ CREATE TABLE biotype (
   object_type   ENUM('gene', 'transcript') NOT NULL DEFAULT 'gene',
   db_type       SET('cdna', 'core', 'coreexpressionatlas',
                     'coreexpressionest', 'coreexpressiongnf', 'funcgen',
-                    'otherfeatures', 'variation', 'vega')
+                    'otherfeatures', 'rnaseq', 'variation', 'vega')
                     NOT NULL DEFAULT 'core',
   description   TEXT,
 
@@ -64,7 +66,8 @@ CREATE TABLE meta_key (
   is_optional       BOOLEAN NOT NULL DEFAULT false,
   is_current        BOOLEAN NOT NULL DEFAULT true,
   db_type           SET('cdna', 'core', 'funcgen', 'otherfeatures',
-                      'variation', 'vega') NOT NULL DEFAULT 'core',
+                        'rnaseq', 'variation', 'vega')
+                    NOT NULL DEFAULT 'core',
   only_for_species  TEXT,
   description       TEXT,
 
@@ -87,34 +90,25 @@ CREATE TABLE analysis_description (
 );
 
 -- The 'web_data' table.
--- TODO: ANY DATA FOUND IN THIS TABLE IS NOT YET "REAL".
---       DEVELOPMENT IS STILL UNDERWAY.
--- Contains the data for the 'web_data' column in the
--- 'analysis_description' table.
--- The 'web_data' is a hash and we store this as key-value pairs
--- ('hash_key' and 'hash_value').  The 'hash_key' might contain double
--- colons ('::') to distinguish sub-hash keys, e.g. 'default::MultiTop'.
+-- Contains the data for the 'web_data' and 'displayable' columns in
+-- the 'analysis_description' table.  Ties together species, and
+-- analysis_description.
 CREATE TABLE web_data (
-  web_data_id   INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
-  hash_key      VARCHAR(32) NOT NULL,
-  hash_value    VARCHAR(128),
-
-  PRIMARY KEY (web_data_id)
-);
-
--- The 'analysis_web_data' table.
--- TODO: ANY DATA FOUND IN THIS TABLE IS NOT YET "REAL".
---       DEVELOPMENT IS STILL UNDERWAY.
--- This table connects the 'analysis_description' table with the
--- 'web_data' and 'db' tables.
-CREATE TABLE analysis_web_data (
+  web_data_id               INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
   analysis_description_id   INTEGER UNSIGNED NOT NULL,
-  web_data_id               INTEGER UNSIGNED NOT NULL,
-  db_id                     INTEGER UNSIGNED NOT NULL,
+  species_id                INTEGER UNSIGNED NOT NULL,
 
-  UNIQUE KEY analysis_web_data_db_idx
-    (analysis_description_id, web_data_id, db_id)
+  db_type                   SET('cdna', 'core', 'funcgen',
+                                'otherfeatures', 'rnaseq', 'vega')
+                            NOT NULL DEFAULT 'core',
+
+  data          TEXT,
+  displayable   BOOLEAN,
+
+  PRIMARY KEY (web_data_id),
+  UNIQUE INDEX uniq_idx (analysis_description_id, species_id, db_type)
 );
+
 
 -- VIEWS
 
@@ -124,7 +118,16 @@ SELECT  db_id AS db_id,
           CONCAT_WS('_', db_name, db_type, db_release, db_assembly),
         db_suffix) AS full_db_name
 FROM    species
-  JOIN  db USING (species_id);
+  JOIN  db USING (species_id)
+WHERE species.is_current = 1;
+
+CREATE VIEW db_uniq AS
+SELECT DISTINCT
+  species_id AS species_id,
+  db_type AS db_type
+FROM db
+  JOIN species USING (species_id)
+WHERE species.is_current = 1;
 
 -- CREATE VIEW readable_web_data AS
 -- SELECT  CONCAT('{',
