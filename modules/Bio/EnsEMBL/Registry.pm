@@ -1404,6 +1404,7 @@ sub load_registry_from_db {
   }
 
   my $go_version       = 0;
+  my $ontology_db_name = '';
   my $ontology_version = 0;
 
   $user ||= "ensro";
@@ -1455,8 +1456,9 @@ sub load_registry_from_db {
       if ( $1 eq $software_version ) {
         $go_version = $1;
       }
-    } elsif ( $db =~ /^(ensembl_ontology)_(\d+)/ ) {
+    } elsif ( $db =~ /^(ensembl\w*_ontology)_(\d+)/ ) {
       if ( $2 eq $software_version ) {
+        $ontology_db_name = $db;
         $ontology_version = $2;
       }
     } elsif ( $db =~ /^([a-z]+_[a-z0-9]+_[a-z]+(?:_\d+)?)_(\d+)_(\w+)/ )
@@ -1919,9 +1921,6 @@ sub load_registry_from_db {
   if ( $ontology_version != 0 ) {
     require Bio::EnsEMBL::DBSQL::OntologyDBAdaptor;
 
-    my $ontology_db =
-      sprintf( "ensembl_ontology_%d", $ontology_version );
-
     my $dba = Bio::EnsEMBL::DBSQL::OntologyDBAdaptor->new(
       '-species' => 'multi'.$species_suffix,
       '-group'   => 'ontology',
@@ -1929,11 +1928,11 @@ sub load_registry_from_db {
       '-port'    => $port,
       '-user'    => $user,
       '-pass'    => $pass,
-      '-dbname'  => $ontology_db,
+      '-dbname'  => $ontology_db_name
     );
 
     if ($verbose) {
-      printf( "%s loaded\n", $ontology_db );
+      printf( "%s loaded\n", $ontology_db_name );
     }
   } elsif ($verbose) {
     print("No ontology database found\n");
@@ -2363,7 +2362,7 @@ sub version_check {
       $database_version = $1;
     } elsif ( $dba->dbc()->dbname() =~ /ensembl_help_(\d+)/ ) {
       $database_version = $1;
-    } elsif ( $dba->dbc()->dbname() =~ /ensembl_ontology_(\d+)/ ) {
+    } elsif ( $dba->dbc()->dbname() =~ /ensembl\w*_ontology_(\d+)/ ) {
       $database_version = $1;
     } else {
       warn(
