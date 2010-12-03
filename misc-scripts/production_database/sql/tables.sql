@@ -123,14 +123,13 @@ WHERE species.is_current = 1;
 
 CREATE VIEW db_current AS
 SELECT
-  d.db_id AS db_id,
   species.species_id AS species_id,
-  d.db_type AS db_type
+  db.db_id AS db_id,
+  db.db_type AS db_type
 FROM db
   JOIN species USING (species_id)
-  JOIN db d USING (db_id)
 WHERE species.is_current = 1
-  AND d.is_current = 1;
+  AND db.is_current = 1;
 
 -- CREATE VIEW readable_web_data AS
 -- SELECT  CONCAT('{',
