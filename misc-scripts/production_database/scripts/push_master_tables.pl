@@ -176,7 +176,7 @@ if ( !GetOptions( 'release|r=i' => \$release,
 
 my @tables =
   ( 'attrib_type', 'external_db', 'misc_set', 'unmapped_reason' );
-my @dbtypes = ( 'core', 'otherfeatures', 'cdna', 'vega' );
+my @dbtypes = ( 'core', 'otherfeatures', 'cdna', 'vega', 'rnaseq' );
 
 my %master;
 {

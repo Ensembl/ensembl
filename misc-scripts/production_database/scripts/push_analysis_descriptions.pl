@@ -95,7 +95,7 @@ if ( !GetOptions( 'release|r=i' => \$release,
   exit();
 }
 
-my @dbtypes = ( 'core', 'otherfeatures', 'cdna', 'vega' );
+my @dbtypes = ( 'core', 'otherfeatures', 'cdna', 'vega', 'rnaseq' );
 
 my %db_handles;
 
