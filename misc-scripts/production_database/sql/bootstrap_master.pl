@@ -15,9 +15,6 @@
 use strict;
 use warnings;
 
-use Carp;
-use DBI (':sql_types');
-
 my $template_db = $ARGV[0];
 
 if ( !defined($template_db) ) {
@@ -29,11 +26,6 @@ Usage:
 END_USAGE
   exit;
 }
-
-my $dbport = '3306';
-
-my $dbuser = 'ensro';
-my $dbpass = '';
 
 #-----------------------------------------------------------------------
 # The "simple" tables.
