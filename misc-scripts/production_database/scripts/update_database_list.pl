@@ -109,7 +109,9 @@ if ( !GetOptions( 'release|r=i'  => \$release,
 
 my %species;
 my %databases;
+
 my %existing_databases;
+my %found_databases;
 
 {
   my $dsn = sprintf( 'DBI:mysql:host=%s;port=%d;database=%s',
@@ -137,7 +139,7 @@ my %existing_databases;
   }
 
   {
-    my $statement = 'SELECT full_db_name FROM db_list';
+    my $statement = 'SELECT full_db_name FROM db_list JOIN db USING (db_id) WHERE db.is_current = 1';
 
     my $sth = $dbh->prepare($statement);
     $sth->execute();
@@ -173,6 +175,7 @@ foreach my $server (@servers) {
     while ( $sth->fetch() ) {
       if ( exists( $existing_databases{$database} ) ) {
         printf( "Skipping '%s'\n", $database );
+        $found_databases{$database} = 1;
         next;
       }
 
@@ -245,3 +248,14 @@ if ( scalar( keys(%databases) ) == 0 ) {
 
   $dbh->disconnect();
 } ## end else [ if ( scalar( keys(%databases...)))]
+
+if ( scalar( keys(%existing_databases) ) !=
+     scalar( keys(%found_databases) ) )
+{
+  print("The following databases seems to have disappeared:\n");
+  foreach my $db_name ( keys(%existing_databases) ) {
+    if ( !exists( $found_databases{$db_name} ) ) {
+      printf( "\t%s\n", $db_name );
+    }
+  }
+}
