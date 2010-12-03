@@ -217,8 +217,9 @@ if ( scalar( keys(%databases) ) == 0 ) {
 
   my $statement =
       'INSERT INTO db '
-    . '(species_id, db_type, db_release, db_assembly, db_suffix, db_host) '
-    . 'VALUES (?, ?, ?, ?, ?, ?)';
+    . '(species_id, is_current, db_type, '
+    . 'db_release, db_assembly, db_suffix, db_host) '
+    . 'VALUES (?, 1, ?, ?, ?, ?, ?)';
   my $sth = $dbh->prepare($statement);
 
   foreach my $database ( keys(%databases) ) {
@@ -237,6 +238,10 @@ if ( scalar( keys(%databases) ) == 0 ) {
 
     $sth->execute();
   }
+
+  $dbh->do(
+         sprintf( 'UPDATE db SET is_current = 0 WHERE db_release != %s',
+                  $dbh->quote( $release, SQL_INTEGER ) ) );
 
   $dbh->disconnect();
 } ## end else [ if ( scalar( keys(%databases...)))]
