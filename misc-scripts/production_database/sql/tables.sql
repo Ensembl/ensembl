@@ -89,26 +89,33 @@ CREATE TABLE analysis_description (
   UNIQUE INDEX logic_name_idx (logic_name)
 );
 
--- The 'web_data' table.
--- Contains the data for the 'web_data' and 'displayable' columns in
--- the 'analysis_description' table.  Ties together species, and
--- analysis_description.
-CREATE TABLE web_data (
-  web_data_id               INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
+-- The 'analysis_web_data' table.
+-- Many-to-many connection table.
+-- Contains the data for the 'displayable' columns in the
+-- 'analysis_description' table.  Ties together species,
+-- analysis_description, and the web_data.
+CREATE TABLE analysis_web_data (
   analysis_description_id   INTEGER UNSIGNED NOT NULL,
+  web_data_id               INTEGER UNSIGNED DEFAULT NULL,
   species_id                INTEGER UNSIGNED NOT NULL,
 
   db_type                   SET('cdna', 'core', 'funcgen',
                                 'otherfeatures', 'rnaseq', 'vega')
                             NOT NULL DEFAULT 'core',
 
-  data          TEXT,
   displayable   BOOLEAN,
 
-  PRIMARY KEY (web_data_id),
-  UNIQUE INDEX uniq_idx (analysis_description_id, species_id, db_type)
+  UNIQUE INDEX uniq_idx (analysis_description_id, web_data_id, species_id, db_type)
 );
 
+-- The 'web_data' table.
+-- Contains the unique web_data.
+CREATE TABLE web_data (
+  web_data_id               INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
+  data                      TEXT,
+
+  PRIMARY KEY (web_data_id)
+);
 
 -- VIEWS
 
