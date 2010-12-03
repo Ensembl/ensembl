@@ -105,7 +105,7 @@ CREATE TABLE analysis_web_data (
 
   displayable   BOOLEAN,
 
-  UNIQUE INDEX uniq_idx (analysis_description_id, web_data_id, species_id, db_type)
+  UNIQUE INDEX uniq_idx (species_id, db_type, analysis_description_id)
 );
 
 -- The 'web_data' table.
@@ -128,10 +128,19 @@ FROM    species
   JOIN  db USING (species_id)
 WHERE species.is_current = 1;
 
--- CREATE VIEW readable_web_data AS
--- SELECT  CONCAT('{',
---           GROUP_CONCAT(data SEPARATOR ','),
---         '}') AS web_data
--- FROM    analysis_web_data awd
---   JOIN  web_data wd USING (web_data_id)
--- GROUP BY    
+CREATE VIEW full_analysis_description AS
+SELECT  list.full_db_name AS full_db_name,
+        ad.logic_name AS logic_name,
+        ad.description AS description,
+        ad.display_label AS display_label,
+        awd.displayable AS displayable,
+        wd.data AS web_data
+FROM    db_list list
+  JOIN  db USING (db_id)
+  JOIN  analysis_web_data awd
+    ON (db.species_id = awd.species_id
+      AND db.db_type = awd.db_type)
+  JOIN  analysis_description ad USING (analysis_description_id)
+  LEFT JOIN  web_data wd USING (web_data_id)
+WHERE db.is_current = 1;
+
