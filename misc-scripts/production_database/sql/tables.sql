@@ -121,16 +121,6 @@ FROM    species
   JOIN  db USING (species_id)
 WHERE species.is_current = 1;
 
-CREATE VIEW db_current AS
-SELECT
-  species.species_id AS species_id,
-  db.db_id AS db_id,
-  db.db_type AS db_type
-FROM db
-  JOIN species USING (species_id)
-WHERE species.is_current = 1
-  AND db.is_current = 1;
-
 -- CREATE VIEW readable_web_data AS
 -- SELECT  CONCAT('{',
 --           GROUP_CONCAT(data SEPARATOR ','),
