@@ -88,8 +88,10 @@ if ( !GetOptions( 'release|r=i' => \$release,
                   'dbpass|p=s'  => \$dbpass,
                   'dbport|P=s'  => \$dbport,
                   'help|h!'     => \$opt_help,
-                  'about!'      => \$opt_about )
-     || $opt_help )
+                  'about!'      => \$opt_about
+     )
+     || $opt_help
+  )
 {
   usage();
   exit();
@@ -385,85 +387,103 @@ foreach my $server (@servers) {
                      qw(description display_label displayable web_data))
           {
 
-            if ( (  !defined( $row{$field} )
+            if ( $field eq 'web_data' ) {
+              if ( (
+                     !defined( $row{$field} )
+                   && defined( $master->{$logic_name_lc}{$field} ) )
+                 || ( defined( $row{$field} )
+                      && !defined( $master->{$logic_name_lc}{$field} ) )
+                 || ( defined( $row{$field} )
+                   && defined( $master->{$logic_name_lc}{$field} )
+                   && Dumper( eval( $row{$field} ) ) ne
+                   Dumper( eval( $master->{$logic_name_lc}{$field} ) ) )
+                )
+              {
+                # Some field differs.
+                push( @differs, $field );
+              }
+            } else {
+              if ( (
+                    !defined( $row{$field} )
                   && defined( $master->{$logic_name_lc}{$field} ) )
                 || ( defined( $row{$field} )
                      && !defined( $master->{$logic_name_lc}{$field} ) )
                 || ( defined( $row{$field} )
                   && defined( $master->{$logic_name_lc}{$field} )
                   && $row{$field} ne $master->{$logic_name_lc}{$field} )
-              )
-            {
-              # Some field differs.
-              push( @differs, $field );
+                )
+              {
+                # Some field differs.
+                push( @differs, $field );
+              }
             }
-
-            if ( scalar(@differs) > 0 ) {
-              my $csth = $dbh->column_info( undef, $dbname,
-                                          'analysis_description', '%' );
-              my $colinfo = $csth->fetchall_hashref( ['COLUMN_NAME'] );
-
-              display_banner( '-', $dbname );
-
-
-              $Data::Dumper::Terse  = 0;
-              $Data::Dumper::Indent = 1;
-              $Data::Dumper::Useqq  = 1;
-              printf( "==> Analysis description differs "
-                        . "for logic_name '%s'\n",
-                      $row{'logic_name'} );
-              printf( "==> in the following fields: %s\n",
-                      join( ', ', @differs ) );
-              printf( "==> In table:\n%s\n", Dumper( \%row ) );
-              printf( "==> In master:\n%s\n",
-                      Dumper( $master->{$logic_name_lc} ) );
-              $Data::Dumper::Terse  = 1;
-              $Data::Dumper::Indent = 0;
-              $Data::Dumper::Useqq  = 0;
-
-              push(
-                @{ $sql{$dbname} },
-                sprintf(
-                  "-- Updating %s for logic_name '%s'\n"
-                    . "UPDATE %s ad,\n"
-                    . "       %s a\n" . "%s\n"
-                    . "WHERE a.logic_name = %s\n"
-                    . "AND ad.analysis_id = a.analysis_id;\n",
-                  join( ', ', @differs ),
-                  $logic_name_lc,
-                  $dbh->quote_identifier(
-                                  undef, $dbname, 'analysis_description'
-                  ),
-                  $dbh->quote_identifier( undef, $dbname, 'analysis' ),
-                  join(
-                    ",\n",
-                    map {
-                      sprintf(
-                            "SET %s = %s",
-                            $_,
-                            $dbh->quote(
-                              $master->{$_}, $colinfo->{$_}{'DATA_TYPE'}
-                            ) )
-                      } @differs
-                  ),
-                  $dbh->quote( $logic_name_lc, SQL_VARCHAR )
-                ),
-                sprintf(
-                  "-- previous values were:\n%s\n",
-                  join(
-                    "\n",
-                    map {
-                      sprintf( "-- %s = %s", $_, $row{$_} )
-                      } @differs
-                  )
-                ),
-                "\n"
-              );
-
-            } ## end if ( scalar(@differs) ...)
           } ## end foreach my $field (...)
 
+          if ( scalar(@differs) > 0 ) {
+            my $csth =
+              $dbh->column_info( undef, $dbname, 'analysis_description',
+                                 '%' );
+            my $colinfo = $csth->fetchall_hashref( ['COLUMN_NAME'] );
+
+            display_banner( '-', $dbname );
+
+            $Data::Dumper::Terse  = 0;
+            $Data::Dumper::Indent = 1;
+            $Data::Dumper::Useqq  = 1;
+            printf( "==> Analysis description differs "
+                      . "for logic_name '%s'\n",
+                    $row{'logic_name'} );
+            printf( "==> in the following fields: %s\n",
+                    join( ', ', @differs ) );
+            printf( "==> In table:\n%s\n", Dumper( \%row ) );
+            printf( "==> In master:\n%s\n",
+                    Dumper( $master->{$logic_name_lc} ) );
+            $Data::Dumper::Terse  = 1;
+            $Data::Dumper::Indent = 0;
+            $Data::Dumper::Useqq  = 0;
+
+            push(
+              @{ $sql{$dbname} },
+              sprintf(
+                "-- Updating %s for logic_name '%s'\n"
+                  . "UPDATE %s ad,\n"
+                  . "       %s a\n"
+                  . "SET %s\n"
+                  . "WHERE a.logic_name = %s\n"
+                  . "AND ad.analysis_id = a.analysis_id;\n",
+                join( ', ', @differs ),
+                $logic_name_lc,
+                $dbh->quote_identifier(
+                                  undef, $dbname, 'analysis_description'
+                ),
+                $dbh->quote_identifier( undef, $dbname, 'analysis' ),
+                join(
+                  ",\n",
+                  map {
+                    sprintf( "ad.%s = %s",
+                             $_,
+                             $dbh->quote( $master->{$logic_name_lc}{$_},
+                                          $colinfo->{$_}{'DATA_TYPE'} )
+                      )
+                    } @differs
+                ),
+                $dbh->quote( $logic_name_lc, SQL_VARCHAR )
+              ),
+              sprintf(
+                "-- previous value(s) were:\n%s\n",
+                join(
+                  "\n",
+                  map {
+                    sprintf( "-- %s = '%s'", $_, $row{$_} )
+                    } @differs
+                )
+              ),
+              "\n"
+            );
+
+          } ## end if ( scalar(@differs) ...)
         } ## end else [ if ( !exists( $master->...))]
+
       } ## end while ( $sth2->fetch() )
 
     } ## end while ( $sth->fetch() )
