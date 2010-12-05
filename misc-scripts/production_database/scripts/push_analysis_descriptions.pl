@@ -3,11 +3,18 @@
 use strict;
 use warnings;
 
+use Data::Dumper;
 use DBI qw( :sql_types );
 use File::Spec::Functions;
 use Getopt::Long qw( :config no_ignore_case );
 use IO::File;
 use POSIX qw( floor ceil );
+
+$Data::Dumper::Terse    = 1;
+$Data::Dumper::Useqq    = 0;
+$Data::Dumper::Indent   = 0;
+$Data::Dumper::Deparse  = 0;
+$Data::Dumper::Sortkeys = 1;
 
 my $outdir = 'fix-analysis_description';
 
@@ -107,23 +114,39 @@ my %master;
   my $dbh =
     DBI->connect( $dsn, $dbuser, $dbpass, { 'PrintError' => 1 } );
 
-  my $sth =
-    $dbh->prepare(   'SELECT logic_name, description, display_label '
-                   . 'FROM analysis_description' );
+  my $sth = $dbh->prepare(
+    q(
+SELECT  full_db_name,
+        logic_name,
+        description,
+        display_label,
+        displayable,
+        web_data
+FROM full_analysis_description
+) );
 
   $sth->execute();
 
-  my ( $logic_name, $description, $display_label );
+  my ( $full_db_name,  $logic_name,  $description,
+       $display_label, $displayable, $web_data );
 
-  $sth->bind_columns( \( $logic_name, $description, $display_label ) );
+  $sth->bind_columns( \( $full_db_name,  $logic_name,  $description,
+                         $display_label, $displayable, $web_data
+                      ) );
 
   while ( $sth->fetch() ) {
     my $logic_name_lc = lc($logic_name);
 
-    $master{$logic_name_lc} = { 'logic_name'    => $logic_name_lc,
-                                'description'   => $description,
-                                'display_label' => $display_label };
+    $master{$full_db_name}{$logic_name_lc} = {
+                                      'full_db_name'  => $full_db_name,
+                                      'logic_name'    => $logic_name_lc,
+                                      'description'   => $description,
+                                      'display_label' => $display_label,
+                                      'displayable'   => $displayable,
+                                      'web_data'      => $web_data
+    };
   }
+
 }
 
 foreach my $server (@servers) {
@@ -152,15 +175,24 @@ foreach my $server (@servers) {
     $sth->bind_col( 1, \$dbname );
 
     while ( $sth->fetch() ) {
+      if ( !exists( $master{$dbname} ) ) {
+        printf( "!!> Unknown database '%s'\n", $dbname );
+        next;
+      }
+
+      my $master = $master{$dbname};
+
       printf( "##> Processing '%s'\n", $dbname );
 
       my $sth2 = $dbh->prepare(
                  sprintf(
                    'SELECT ad.analysis_id, '
                      . 'a.analysis_id, '
-                     . 'a.logic_name, '
-                     . 'ad.description, '
-                     . 'ad.display_label '
+                     . 'a.logic_name,'
+                     . 'ad.description,'
+                     . 'ad.display_label,'
+                     . 'ad.displayable,'
+                     . 'ad.web_data '
                      . 'FROM %s a LEFT JOIN %s ad USING (analysis_id)',
                    $dbh->quote_identifier( undef, $dbname, 'analysis' ),
                    $dbh->quote_identifier(
@@ -169,17 +201,24 @@ foreach my $server (@servers) {
 
       $sth2->execute();
 
-      my ( $exists,      $analysis_id, $logic_name,
-           $description, $display_label );
+      my %row = ( 'exists'        => undef,
+                  'analysis_id'   => undef,
+                  'logic_name'    => undef,
+                  'description'   => undef,
+                  'display_label' => undef,
+                  'displayable'   => undef,
+                  'web_data'      => undef
+      );
 
-      $sth2->bind_columns( \( $exists,      $analysis_id, $logic_name,
-                              $description, $display_label
-                           ) );
+      $sth2->bind_columns(\( $row{'exists'},        $row{'analysis_id'},
+                             $row{'logic_name'},    $row{'description'},
+                             $row{'display_label'}, $row{'displayable'},
+                             $row{'web_data'} ) );
 
       while ( $sth2->fetch() ) {
-        my $logic_name_lc = lc($logic_name);
+        my $logic_name_lc = lc( $row{'logic_name'} );
 
-        if ( !defined($exists) ) {
+        if ( !defined( $row{'exists'} ) ) {
           # An analysis exists that does not have a corresponding
           # analysis_description.
 
@@ -187,10 +226,9 @@ foreach my $server (@servers) {
 
           printf( "==> Analysis '%s' "
                     . "is missing analysis_description entry.\n",
-                  $logic_name
-          );
+                  $row{'logic_name'} );
 
-          if ( !exists( $master{$logic_name_lc} ) ) {
+          if ( !exists( $master->{$logic_name_lc} ) ) {
             print(   "==> And additionally, "
                    . "it's not in the production database.\n" );
 
@@ -206,12 +244,16 @@ foreach my $server (@servers) {
               sprintf(
                 "-- WARNING: Inserting minimal missing "
                   . "analysis_description for '%s'\n"
-                  . "-- web_data and displayable fields will be wrong!\n"
+                  . "-- web_data and displayable fields may be wrong!\n"
                   . "INSERT INTO %s (\n"
                   . "\tanalysis_id,\n"
                   . "\tdescription,\n"
                   . "\tdisplay_label\n"
+                  . "\tdisplayable\n"
+                  . "\tweb_data\n"
                   . ") VALUES (\n"
+                  . "\t%s,\n"
+                  . "\t%s,\n"
                   . "\t%s,\n"
                   . "\t%s,\n"
                   . "\t%s\n"
@@ -220,21 +262,28 @@ foreach my $server (@servers) {
                 $dbh->quote_identifier(
                                   undef, $dbname, 'analysis_description'
                 ),
-                $dbh->quote( $analysis_id, SQL_INTEGER ),
-                $dbh->quote( $master{$logic_name_lc}{'description'},
+                $dbh->quote( $row{'analysis_id'}, SQL_INTEGER ),
+                $dbh->quote( $master->{$logic_name_lc}{'description'},
                              SQL_VARCHAR
                 ),
-                $dbh->quote( $master{$logic_name_lc}{'display_label'},
+                $dbh->quote( $master->{$logic_name_lc}{'display_label'},
                              SQL_VARCHAR
                 ),
-              ) );
-          } ## end else [ if ( !exists( $master{...}))]
+                $dbh->quote( $master->{$logic_name_lc}{'displayable'},
+                             SQL_INTEGER
+                ),
+                $dbh->quote( $master->{$logic_name_lc}{'web_data'},
+                             SQL_VARCHAR
+                ) ) );
+
+          } ## end else [ if ( !exists( $master->...))]
 
           next;
-        } ## end if ( !defined($exists))
+        } ## end if ( !defined( $row{'exists'...}))
 
-        if ( exists( $master{$logic_name_lc} )
-             && $logic_name ne $master{$logic_name_lc}{'logic_name'} )
+        if ( exists( $master->{$logic_name_lc} )
+             && $row{'logic_name'} ne
+             $master->{$logic_name_lc}{'logic_name'} )
         {
           # Wrong capitalization in analysis.logic_name.
 
@@ -242,153 +291,182 @@ foreach my $server (@servers) {
 
           printf(
                "==> The logic name '%s' should be all in lower case.\n",
-               $logic_name );
+               $row{'logic_name'} );
 
           push( @{ $sql{$dbname} },
                 sprintf( "-- Updating (lower-casing) logic_name '%s'\n"
                            . "UPDATE %s\n"
                            . "SET logic_name = %s\n"
                            . "WHERE logic_name = %s;\n\n",
-                         $logic_name,
+                         $row{'logic_name'},
                          $dbh->quote_identifier(
                                               undef, $dbname, 'analysis'
                          ),
-                         $dbh->quote( $logic_name_lc, SQL_VARCHAR ),
-                         $dbh->quote( $logic_name,    SQL_VARCHAR ) ) );
-        }
+                         $dbh->quote( $logic_name_lc,     SQL_VARCHAR ),
+                         $dbh->quote( $row{'logic_name'}, SQL_VARCHAR )
+                ) );
+        } ## end if ( exists( $master->...))
 
-        if ( !exists( $master{$logic_name_lc} ) ) {
+        if ( !exists( $master->{$logic_name_lc} ) ) {
           # Missing in master.
 
           display_banner( '-', $dbname );
 
-          print("==> Description MISSING IN MASTER:\n");
+          print("==> Analysis description MISSING IN MASTER:\n");
 
           printf( "==> logic_name = '%s'\n"
                     . "==> description = '%s'\n"
-                    . "==> display_label = '%s'\n",
-                  $logic_name, $description, $display_label );
+                    . "==> display_label = '%s'\n"
+                    . "==> displayable = '%s'\n"
+                    . "==> web_data = '%s'\n",
+                  $row{'logic_name'}    || 'NULL',
+                  $row{'description'}   || 'NULL',
+                  $row{'display_label'} || 'NULL',
+                  $row{'displayable'}   || 'NULL',
+                  $row{'web_data'}      || 'NULL'
+          );
 
           push( @{ $sql{$dbname} },
                 sprintf(
-                    "#!! -- MASTER: Inserting logic_name '%s'\n"
+                    "#!! WARNING: THE FOLLOWING IS ONLY A GUIDELINE\n"),
+                sprintf(
+                    "#!! -- MASTER: Inserting logic_name '%s' "
+                      . "into analysis_description\n"
                       . "#!! INSERT INTO %s (\n"
                       . "#!! \tlogic_name, description, display_label\n"
                       . "#!! ) VALUES (\n"
                       . "#!! \t%s,\n"
                       . "#!! \t%s,\n"
                       . "#!! \t%s\n"
-                      . "#!! );\n\n",
+                      . "#!! );\n",
                     $logic_name_lc,
                     $dbh->quote_identifier( undef, 'ensembl_production',
-                                            'analysis_description' ),
-                    $dbh->quote( $logic_name_lc, SQL_VARCHAR ),
-                    $dbh->quote( $description,   SQL_VARCHAR ),
-                    $dbh->quote( $display_label, SQL_VARCHAR ) ) );
+                                            'analysis_description'
+                    ),
+                    $dbh->quote( $logic_name_lc,        SQL_VARCHAR ),
+                    $dbh->quote( $row{'description'},   SQL_VARCHAR ),
+                    $dbh->quote( $row{'display_label'}, SQL_VARCHAR )
+                ),
+                sprintf( "#!! -- MASTER: Inserting above logic_name "
+                           . "into web_data\n"
+                           . "#!! INSERT INTO %s (\n"
+                           . "#!!\tdata\n"
+                           . "#!! ) VALUES (\n"
+                           . "#!!\t%s\n"
+                           . "#!! );\n",
+                         $dbh->quote_identifier(
+                                 undef, 'ensembl_production', 'web_data'
+                         ),
+                         $dbh->quote( (
+                                    defined( $row{'web_data'} )
+                                    ? Dumper( eval( $row{'web_data'} ) )
+                                    : undef
+                                  ),
+                                  SQL_VARCHAR
+                         )
+                ),
+                sprintf(
+                  "#!! NOW CONNECT THESE IN analysis_web_data! :-)\n\n")
+          );
 
-          $master{$logic_name_lc} = { 'logic_name'    => $logic_name_lc,
-                                      'description'   => $description,
-                                      'display_label' => $display_label
-          };
+          $master->{$logic_name_lc} = {
+                               'logic_name'    => $logic_name_lc,
+                               'description'   => $row{'description'},
+                               'display_label' => $row{'display_label'},
+                               'displayable'   => $row{'displayable'},
+                               'web_data'      => $row{'web_data'} };
+
         } else {
           # Compare all fields.
 
-          if ( (   !defined($description)
-                 && defined( $master{$logic_name_lc}{'description'} ) )
-               || ( defined($description)
-                 && !defined( $master{$logic_name_lc}{'description'} ) )
-               || (    defined($description)
-                    && defined( $master{$logic_name_lc}{'description'} )
-                    && $description ne
-                    $master{$logic_name_lc}{'description'} ) )
+          my @differs;
+
+          foreach my $field (
+                     qw(description display_label displayable web_data))
           {
-            # Description differs.
-            display_banner( '-', $dbname );
 
-            printf( "==> Description differs for logic_name '%s':\n",
-                    $logic_name );
-            printf( "==> In table:\t%s\n", $description || 'NULL' );
-            printf( "==> In master:\t%s\n",
-                    $master{$logic_name_lc}{'description'} );
+            if ( (  !defined( $row{$field} )
+                  && defined( $master->{$logic_name_lc}{$field} ) )
+                || ( defined( $row{$field} )
+                     && !defined( $master->{$logic_name_lc}{$field} ) )
+                || ( defined( $row{$field} )
+                  && defined( $master->{$logic_name_lc}{$field} )
+                  && $row{$field} ne $master->{$logic_name_lc}{$field} )
+              )
+            {
+              # Some field differs.
+              push( @differs, $field );
+            }
 
-            push( @{ $sql{$dbname} },
-                  sprintf(
-                         "-- Updating description for logic_name '%s'\n"
-                           . "UPDATE %s ad,\n"
-                           . "       %s a\n"
-                           . "SET ad.description = %s\n"
-                           . "WHERE a.logic_name = %s\n"
-                           . "AND ad.analysis_id = a.analysis_id;\n",
-                         $logic_name_lc,
-                         $dbh->quote_identifier(
+            if ( scalar(@differs) > 0 ) {
+              my $csth = $dbh->column_info( undef, $dbname,
+                                          'analysis_description', '%' );
+              my $colinfo = $csth->fetchall_hashref( ['COLUMN_NAME'] );
+
+              display_banner( '-', $dbname );
+
+
+              $Data::Dumper::Terse  = 0;
+              $Data::Dumper::Indent = 1;
+              $Data::Dumper::Useqq  = 1;
+              printf( "==> Analysis description differs "
+                        . "for logic_name '%s'\n",
+                      $row{'logic_name'} );
+              printf( "==> in the following fields: %s\n",
+                      join( ', ', @differs ) );
+              printf( "==> In table:\n%s\n", Dumper( \%row ) );
+              printf( "==> In master:\n%s\n",
+                      Dumper( $master->{$logic_name_lc} ) );
+              $Data::Dumper::Terse  = 1;
+              $Data::Dumper::Indent = 0;
+              $Data::Dumper::Useqq  = 0;
+
+              push(
+                @{ $sql{$dbname} },
+                sprintf(
+                  "-- Updating %s for logic_name '%s'\n"
+                    . "UPDATE %s ad,\n"
+                    . "       %s a\n" . "%s\n"
+                    . "WHERE a.logic_name = %s\n"
+                    . "AND ad.analysis_id = a.analysis_id;\n",
+                  join( ', ', @differs ),
+                  $logic_name_lc,
+                  $dbh->quote_identifier(
                                   undef, $dbname, 'analysis_description'
-                         ),
-                         $dbh->quote_identifier(
-                                              undef, $dbname, 'analysis'
-                         ),
-                         $dbh->quote(
-                                 $master{$logic_name_lc}{'description'},
-                                 SQL_VARCHAR
-                         ),
-                         $dbh->quote( $logic_name_lc, SQL_VARCHAR )
                   ),
-                  sprintf( "-- previous value was '%s'\n",
-                           $description || 'NULL' ),
-                  "\n"
-            );
-
-          } ## end if ( ( !defined($description...)))
-
-          if ( (
-                 !defined($display_label)
-               && defined( $master{$logic_name_lc}{'display_label'} ) )
-             || ( defined($display_label)
-               && !defined( $master{$logic_name_lc}{'display_label'} ) )
-             || (    defined($display_label)
-                  && defined( $master{$logic_name_lc}{'display_label'} )
-                  && $display_label ne
-                  $master{$logic_name_lc}{'display_label'} ) )
-          {
-            # Display label differs.
-            display_banner( '-', $dbname );
-
-            printf( "==> display_label differs for logic_name '%s':\n",
-                    $logic_name );
-            printf( "==> In table:\t%s\n", $display_label || 'NULL' );
-            printf( "==> In master:\t%s\n",
-                    $master{$logic_name_lc}{'display_label'} );
-
-            push( @{ $sql{$dbname} },
-                  sprintf(
-                       "-- Updating display_label for logic_name '%s'\n"
-                         . "UPDATE %s ad,\n"
-                         . "       %s a\n"
-                         . "SET ad.display_label = %s\n"
-                         . "WHERE a.logic_name = %s\n"
-                         . "AND ad.analysis_id = a.analysis_id;\n",
-                       $logic_name_lc,
-                       $dbh->quote_identifier(
-                                  undef, $dbname, 'analysis_description'
-                       ),
-                       $dbh->quote_identifier(undef, $dbname, 'analysis'
-                       ),
-                       $dbh->quote(
-                               $master{$logic_name_lc}{'display_label'},
-                               SQL_VARCHAR
-                       ),
-                       $dbh->quote( $logic_name_lc, SQL_VARCHAR )
+                  $dbh->quote_identifier( undef, $dbname, 'analysis' ),
+                  join(
+                    ",\n",
+                    map {
+                      sprintf(
+                            "SET %s = %s",
+                            $_,
+                            $dbh->quote(
+                              $master->{$_}, $colinfo->{$_}{'DATA_TYPE'}
+                            ) )
+                      } @differs
                   ),
-                  sprintf( "-- previous value was '%s'\n",
-                           $display_label ),
-                  "\n"
-            );
+                  $dbh->quote( $logic_name_lc, SQL_VARCHAR )
+                ),
+                sprintf(
+                  "-- previous values were:\n%s\n",
+                  join(
+                    "\n",
+                    map {
+                      sprintf( "-- %s = %s", $_, $row{$_} )
+                      } @differs
+                  )
+                ),
+                "\n"
+              );
 
-          } ## end if ( ( !defined($display_label...)))
-        } ## end else [ if ( !exists( $master{...}))]
+            } ## end if ( scalar(@differs) ...)
+          } ## end foreach my $field (...)
 
+        } ## end else [ if ( !exists( $master->...))]
       } ## end while ( $sth2->fetch() )
-    } ## end while ( $sth->fetch() )
 
+    } ## end while ( $sth->fetch() )
   } ## end foreach my $dbtype (@dbtypes)
 } ## end foreach my $server (@servers)
 
