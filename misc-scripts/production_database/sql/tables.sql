@@ -103,7 +103,7 @@ CREATE TABLE analysis_web_data (
                                 'otherfeatures', 'rnaseq', 'vega')
                             NOT NULL DEFAULT 'core',
 
-  displayable   BOOLEAN,
+  displayable   BOOLEAN NOT NULL DEFAULT true,
 
   UNIQUE INDEX uniq_idx (species_id, db_type, analysis_description_id)
 );
