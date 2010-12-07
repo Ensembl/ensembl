@@ -15,10 +15,10 @@ use IO::File;
 sub usage {
   print("Usage:\n");
   printf( "\t%s\t-h dbhost [-P dbport] \\\n"
-      . "\t%s\t-u dbuser [-p dbpass] \\\n"
-      . "\t%2\$s\t-d dbname [-t] \\\n"
-      . "\t%2\$s\t-f file\n",
-    $0, ' ' x length($0) );
+            . "\t%s\t-u dbuser [-p dbpass] \\\n"
+            . "\t%2\$s\t-d dbname [-t] \\\n"
+            . "\t%2\$s\t-f file\n",
+          $0, ' ' x length($0) );
   print("\n");
   printf( "\t%s\t-?\n", $0 );
   print("\n");
@@ -52,7 +52,7 @@ sub write_ontology {
 
   local $SIG{ALRM} = sub {
     printf( "\t%d entries, %d to go...\n",
-      $count, scalar( keys( %{$namespaces} ) ) - $count );
+            $count, scalar( keys( %{$namespaces} ) ) - $count );
     alarm(10);
   };
   alarm(10);
@@ -104,7 +104,7 @@ sub write_subset {
 
   local $SIG{ALRM} = sub {
     printf( "\t%d entries, %d to go...\n",
-      $count, scalar( keys( %{$subsets} ) ) - $count );
+            $count, scalar( keys( %{$subsets} ) ) - $count );
     alarm(10);
   };
   alarm(10);
@@ -157,7 +157,7 @@ sub write_term {
 
   local $SIG{ALRM} = sub {
     printf( "\t%d entries, %d to go...\n",
-      $count, scalar( keys( %{$terms} ) ) - $count );
+            $count, scalar( keys( %{$terms} ) ) - $count );
     alarm(10);
   };
   alarm(10);
@@ -169,13 +169,14 @@ sub write_term {
 
     if ( exists( $term->{'subsets'} ) ) {
       $term_subsets = join( ',',
-        map { $subsets->{$_}{'name'} } @{ $term->{'subsets'} } );
+                            map { $subsets->{$_}{'name'} }
+                              @{ $term->{'subsets'} } );
     }
 
     $sth->bind_param( 1, $namespaces->{ $term->{'namespace'} }{'id'},
-      SQL_INTEGER );
+                      SQL_INTEGER );
     $sth->bind_param( 2, $term_subsets,         SQL_VARCHAR );
-    $sth->bind_param( 3, $accession,            SQL_VARCHAR );
+    $sth->bind_param( 3, $term->{'accession'},  SQL_VARCHAR );
     $sth->bind_param( 4, $term->{'name'},       SQL_VARCHAR );
     $sth->bind_param( 5, $term->{'definition'}, SQL_VARCHAR );
 
@@ -189,7 +190,7 @@ sub write_term {
     $term->{'id'} = $id;
 
     ++$count;
-  }
+  } ## end foreach my $accession ( sort...)
   alarm(0);
 
   $dbh->do("OPTIMIZE TABLE term");
@@ -218,7 +219,7 @@ sub write_relation_type {
 
   local $SIG{ALRM} = sub {
     printf( "\t%d entries, %d to go...\n",
-      $count, scalar( keys( %{$relation_types} ) ) - $count );
+            $count, scalar( keys( %{$relation_types} ) ) - $count );
     alarm(10);
   };
   alarm(10);
@@ -241,12 +242,13 @@ sub write_relation_type {
       $insert_sth->bind_param( 1, $relation_type, SQL_VARCHAR );
       $insert_sth->execute();
       $relation_types->{$relation_type} = {
-        'id' => $dbh->last_insert_id(
-          undef, undef, 'relation_type', 'relation_type_id'
-        ) };
+             'id' =>
+               $dbh->last_insert_id( undef,           undef,
+                                     'relation_type', 'relation_type_id'
+               ) };
       ++$count;
     }
-  }
+  } ## end foreach my $relation_type (...)
   alarm(0);
 
   $dbh->do("OPTIMIZE TABLE relation_type");
@@ -276,27 +278,32 @@ sub write_relation {
 
   local $SIG{ALRM} = sub {
     printf( "\t%d entries, %d to go...\n",
-      $count, scalar( keys( %{$terms} ) ) - $count );
+            $count, scalar( keys( %{$terms} ) ) - $count );
     alarm(10);
   };
   alarm(10);
 
   foreach my $child_term ( sort { $a->{'id'} <=> $b->{'id'} }
-    values( %{$terms} ) )
+                           values( %{$terms} ) )
   {
     foreach my $relation_type (
-      sort( keys( %{ $child_term->{'parents'} } ) ) )
+                         sort( keys( %{ $child_term->{'parents'} } ) ) )
     {
       foreach my $parent_acc (
-        sort( @{ $child_term->{'parents'}{$relation_type} } ) )
+                 sort( @{ $child_term->{'parents'}{$relation_type} } ) )
       {
-        $sth->bind_param( 1, $child_term->{'id'},         SQL_INTEGER );
-        $sth->bind_param( 2, $terms->{$parent_acc}{'id'}, SQL_INTEGER );
-        $sth->bind_param( 3, $relation_types->{$relation_type}{'id'},
-          SQL_INTEGER );
+        if ( !defined( $terms->{$parent_acc} ) ) {
+          printf( "WARNING: Parent accession '%s' does not exist!\n",
+                  $parent_acc );
+        } else {
+          $sth->bind_param( 1, $child_term->{'id'}, SQL_INTEGER );
+          $sth->bind_param( 2, $terms->{$parent_acc}{'id'},
+                            SQL_INTEGER );
+          $sth->bind_param( 3, $relation_types->{$relation_type}{'id'},
+                            SQL_INTEGER );
 
-        $sth->execute();
-
+          $sth->execute();
+        }
       }
     }
 
@@ -319,31 +326,28 @@ my ( $dbname, $truncate, $obo_file_name );
 $dbport   = '3306';
 $truncate = 0;
 
-if (
-  !GetOptions(
-    'dbhost|host|h=s' => \$dbhost,
-    'dbport|port|P=i' => \$dbport,
-    'dbuser|user|u=s' => \$dbuser,
-    'dbpass|pass|p=s' => \$dbpass,
-    'dbname|name|d=s' => \$dbname,
-    'truncate|t'      => \$truncate,
-    'file|f=s'        => \$obo_file_name,
-    'help|?'          => sub { usage(); exit } )
-  || !defined($dbhost)
-  || !defined($dbuser)
-  || !defined($dbname)
-  || !defined($obo_file_name) )
+if ( !GetOptions( 'dbhost|host|h=s' => \$dbhost,
+                  'dbport|port|P=i' => \$dbport,
+                  'dbuser|user|u=s' => \$dbuser,
+                  'dbpass|pass|p=s' => \$dbpass,
+                  'dbname|name|d=s' => \$dbname,
+                  'truncate|t'      => \$truncate,
+                  'file|f=s'        => \$obo_file_name,
+                  'help|?'          => sub { usage(); exit } )
+     || !defined($dbhost)
+     || !defined($dbuser)
+     || !defined($dbname)
+     || !defined($obo_file_name) )
 {
   usage();
   exit;
 }
 
 my $dsn = sprintf( 'dbi:mysql:database=%s;host=%s;port=%s',
-  $dbname, $dbhost, $dbport );
+                   $dbname, $dbhost, $dbport );
 
-my $dbh =
-  DBI->connect( $dsn, $dbuser, $dbpass,
-  { 'RaiseError' => 1, 'PrintError' => 2 } );
+my $dbh = DBI->connect( $dsn, $dbuser, $dbpass,
+                        { 'RaiseError' => 1, 'PrintError' => 2 } );
 
 my $statement =
   "SELECT meta_value FROM meta WHERE meta_key = 'OBO_file_date'";
@@ -364,6 +368,7 @@ my $default_namespace;
 
 while ( defined( my $line = $obo->getline() ) ) {
   chomp($line);
+  $line =~ s/\s+$//;
 
   if ( !defined($state) ) {    # IN OBO FILE HEADER
     if ( $line =~ /^\[(\w+)\]$/ ) { $state = $1; next }
@@ -376,15 +381,13 @@ while ( defined( my $line = $obo->getline() ) ) {
         $obo_file_date = sprintf( "%s/%s", $obo_file_name, $data );
 
         if ( defined($stored_obo_file_date) ) {
-          if ( $stored_obo_file_date eq $obo_file_date
-            && !$truncate )
-          {
+          if ( $stored_obo_file_date eq $obo_file_date && !$truncate ) {
             print("This OBO file has already been processed.\n");
             $obo->close();
             $dbh->disconnect();
             exit;
           } elsif ( index( $stored_obo_file_date, $obo_file_name ) != -1
-            && !$truncate )
+                    && !$truncate )
           {
             print <<EOT;
 ==> Trying to load a newer (?) OBO file that has already been loaded.
@@ -412,11 +415,19 @@ EOT
     next;
   } ## end if ( !defined($state) )
 
+  if ( $state eq 'Typedef' ) {
+    # Ignore this state.
+    if ( $line eq '' ) {
+      $state = 'clear';
+    }
+  }
+
   if ( $state eq 'Term' ) {    # IN OBO FILE BODY
     if ( $line eq '' ) {       # END OF PREVIOUS TERM
-      $term{'namespace'} ||= $default_namespace;
-      ( $namespaces{ $term{'namespace'} } ) =
-        $term{'accession'} =~ /^([^:]+):/;
+      if ( !defined( $term{'namespace'} ) ) {
+        $term{'namespace'} = $default_namespace;
+      }
+      $namespaces{ $term{'namespace'} } = $term{'namespace'};
 
       $terms{ $term{'accession'} } = {%term};
 
@@ -431,11 +442,15 @@ EOT
       my $type = $1;
       my $data = $2;
 
-      if    ( $type eq 'id' )        { $term{'accession'}  = $data }
-      elsif ( $type eq 'name' )      { $term{'name'}       = $data }
-      elsif ( $type eq 'namespace' ) { $term{'namespace'}  = $data }
-      elsif ( $type eq 'def' )       { $term{'definition'} = $data }
-      elsif ( $type eq 'is_a' ) {
+      if ( $type eq 'id' ) {
+        ( $term{'accession'} ) = $data =~ /^([^ ]+)/;
+      } elsif ( $type eq 'name' ) {
+        $term{'name'} = $data;
+      } elsif ( $type eq 'namespace' ) {
+        $term{'namespace'} = $data;
+      } elsif ( $type eq 'def' ) {
+        $term{'definition'} = $data;
+      } elsif ( $type eq 'is_a' ) {
         my ($parent_acc) = $data =~ /(\S+)/;
         push( @{ $term{'parents'}{'is_a'} }, $parent_acc );
       } elsif ( $type eq 'relationship' ) {
@@ -447,7 +462,7 @@ EOT
         push( @{ $term{'subsets'} }, $data );
       }
 
-    }
+    } ## end elsif ( $line =~ /^(\w+): (.+)$/)
   } ## end if ( $state eq 'Term' )
 
   if ( $state eq 'clear' ) {
@@ -472,15 +487,15 @@ print("Updating meta table...\n");
 if ($truncate) { $dbh->do("TRUNCATE TABLE meta") }
 
 my $sth =
-  $dbh->prepare( "DELETE FROM meta "
-    . "WHERE meta_key = 'OBO_file_date' "
-    . "AND meta_value LIKE ?" );
+  $dbh->prepare(   "DELETE FROM meta "
+                 . "WHERE meta_key = 'OBO_file_date' "
+                 . "AND meta_value LIKE ?" );
 $sth->bind_param( 1, sprintf( "%s/%%", $obo_file_name ), SQL_VARCHAR );
 $sth->execute();
 $sth->finish();
 
-$sth = $dbh->prepare( "INSERT INTO meta (meta_key, meta_value)"
-    . "VALUES ('OBO_file_date', ?)" );
+$sth = $dbh->prepare(   "INSERT INTO meta (meta_key, meta_value)"
+                      . "VALUES ('OBO_file_date', ?)" );
 $sth->bind_param( 1, $obo_file_date, SQL_VARCHAR );
 $sth->execute();
 $sth->finish();
@@ -489,15 +504,15 @@ my $obo_load_date =
   sprintf( "%s/%s", $obo_file_name, scalar( localtime() ) );
 
 $sth =
-  $dbh->prepare( "DELETE FROM meta "
-    . "WHERE meta_key = 'OBO_load_date' "
-    . "AND meta_value LIKE ?" );
+  $dbh->prepare(   "DELETE FROM meta "
+                 . "WHERE meta_key = 'OBO_load_date' "
+                 . "AND meta_value LIKE ?" );
 $sth->bind_param( 1, sprintf( "%s/%%", $obo_file_name ), SQL_VARCHAR );
 $sth->execute();
 $sth->finish();
 
-$sth = $dbh->prepare( "INSERT INTO meta (meta_key, meta_value)"
-    . "VALUES ('OBO_load_date', ?)" );
+$sth = $dbh->prepare(   "INSERT INTO meta (meta_key, meta_value)"
+                      . "VALUES ('OBO_load_date', ?)" );
 $sth->bind_param( 1, $obo_load_date, SQL_VARCHAR );
 $sth->execute();
 $sth->finish();
