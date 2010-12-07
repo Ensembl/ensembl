@@ -121,11 +121,9 @@ if (defined($registryconf)) {
 	}
 }
 
-
-
 Bio::EnsEMBL::Registry->load_registry_from_multiple_dbs(@{$args});
 
-Bio::EnsEMBL::Registry->load_all($conf, 1, 1); # options mean "not verbose" and "don't clear registry"
+Bio::EnsEMBL::Registry->load_all($conf, 0, 1); # options mean "not verbose" and "don't clear registry"
 
 # only delete names/GO terms if -delete_only has been specified
 if ($delete_only) {
@@ -324,12 +322,12 @@ sub project_display_names {
 
       my $type = $db_to_type{$dbname};
 
-      if ($type eq "Gene" || $dbname =~ /HGNC_.*gene/) {
+      if ($type eq "Gene" || $dbname eq 'HGNC') {
 
 	$to_gene->add_DBEntry($dbEntry);
 	$to_dbea->store($dbEntry, $to_gene->dbID(), 'Gene', 1) if (!$print);
 
-      } elsif ($type eq "Transcript" || $dbname =~ /HGNC_.*transcript/ || !$type) {
+      } elsif ($type eq "Transcript" || $dbname eq 'HGNC_transcript_name' || !$type) {
 	
 	$to_transcript->add_DBEntry($dbEntry);
 	$to_dbea->store($dbEntry, $to_transcript->dbID(), 'Transcript', 1) if (!$print);
