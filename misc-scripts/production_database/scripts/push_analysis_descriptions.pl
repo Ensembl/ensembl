@@ -250,8 +250,8 @@ foreach my $server (@servers) {
                   . "INSERT INTO %s (\n"
                   . "\tanalysis_id,\n"
                   . "\tdescription,\n"
-                  . "\tdisplay_label\n"
-                  . "\tdisplayable\n"
+                  . "\tdisplay_label,\n"
+                  . "\tdisplayable,\n"
                   . "\tweb_data\n"
                   . ") VALUES (\n"
                   . "\t%s,\n"
@@ -266,17 +266,13 @@ foreach my $server (@servers) {
                 ),
                 $dbh->quote( $row{'analysis_id'}, SQL_INTEGER ),
                 $dbh->quote( $master->{$logic_name_lc}{'description'},
-                             SQL_VARCHAR
-                ),
+                             SQL_VARCHAR ),
                 $dbh->quote( $master->{$logic_name_lc}{'display_label'},
-                             SQL_VARCHAR
-                ),
+                             SQL_VARCHAR ),
                 $dbh->quote( $master->{$logic_name_lc}{'displayable'},
-                             SQL_INTEGER
-                ),
+                             SQL_INTEGER ),
                 $dbh->quote( $master->{$logic_name_lc}{'web_data'},
-                             SQL_VARCHAR
-                ) ) );
+                             SQL_VARCHAR ) ) );
 
           } ## end else [ if ( !exists( $master->...))]
 
