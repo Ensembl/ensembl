@@ -605,7 +605,7 @@ sub delete_go_terms {
 
   print "Deleting projected GO terms\n";
 
-  my $sth = $to_ga->dbc()->prepare("DELETE x, ox, gx FROM xref x, external_db e, object_xref ox, go_xref gx WHERE x.xref_id=ox.xref_id AND x.external_db_id=e.external_db_id AND ox.object_xref_id=gx.object_xref_id AND e.db_name='GO' AND x.info_type='PROJECTION'");
+  my $sth = $to_ga->dbc()->prepare("DELETE x, ox, gx FROM xref x, external_db e, object_xref ox, ontology_xref gx WHERE x.xref_id=ox.xref_id AND x.external_db_id=e.external_db_id AND ox.object_xref_id=gx.object_xref_id AND e.db_name='GO' AND x.info_type='PROJECTION'");
   $sth->execute();
 
   # note don't need to delete synonyms as GO terms don't have any
@@ -710,7 +710,7 @@ sub fetch_homologies {
   print "Fetching Compara homologies\n";
 
   my $from_species_alias = lc(Bio::EnsEMBL::Registry->get_alias($from_species));
-  $from_species_alias =~ tr/_/ /;
+ 
 
   my %homology_cache;
 
@@ -725,6 +725,7 @@ sub fetch_homologies {
     # order of member-attributes is arbitrary, so need to find which one corresponds to the "from" species
     my @to_stable_ids;
     my $from_stable_id;
+
     foreach my $ma (@mas) {
 
       my ($member, $attribute) = @{$ma};
@@ -732,6 +733,7 @@ sub fetch_homologies {
       if (lc($member->genome_db()->name()) eq $from_species_alias) {
 	$from_stable_id = $member->stable_id();
       } else {
+	  push @arse, $member->genome_db()->name();
 	push @to_stable_ids, $member->stable_id();
       }
     }
@@ -805,9 +807,9 @@ sub clean_up {
 
   $to_dbc->do("DROP TABLE IF EXISTS tmp_gx");
 
-  $to_dbc->do("CREATE TEMPORARY TABLE tmp_gx SELECT gx.object_xref_id FROM go_xref gx LEFT JOIN object_xref ox ON ox.object_xref_id=gx.object_xref_id WHERE ox.object_xref_id IS NULL");
+  $to_dbc->do("CREATE TEMPORARY TABLE tmp_gx SELECT gx.object_xref_id FROM ontology_xref gx LEFT JOIN object_xref ox ON ox.object_xref_id=gx.object_xref_id WHERE ox.object_xref_id IS NULL");
 
-  $to_dbc->do("DELETE FROM go_xref WHERE object_xref_id IN (SELECT object_xref_id FROM tmp_gx)");
+  $to_dbc->do("DELETE FROM ontology_xref WHERE object_xref_id IN (SELECT object_xref_id FROM tmp_gx)");
 
   $to_dbc->do("DROP TABLE tmp_gx");
 
