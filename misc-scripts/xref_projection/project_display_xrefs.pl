@@ -387,7 +387,7 @@ sub project_go_terms {
 
  DBENTRY: foreach my $dbEntry (@{$from_translation->get_all_DBEntries("GO")}) { 
 
-    next if (!$dbEntry || $dbEntry->dbname() ne "GO" || ref($dbEntry) ne "Bio::EnsEMBL::GoXref");
+    next if (!$dbEntry || $dbEntry->dbname() ne "GO" || ref($dbEntry) ne "Bio::EnsEMBL::OntologyXref");
 
     # Skip the whole dbEntry if one or more if its evidence codes isn't in the whitelist
     foreach my $et (@{$dbEntry->get_all_linkage_types}){
@@ -428,7 +428,7 @@ sub go_xref_exists {
 
   foreach my $xref (@{$to_go_xrefs}) {
 
-    next if (ref($dbEntry) ne "Bio::EnsEMBL::GoXref" || ref($xref) ne "Bio::EnsEMBL::GoXref");
+    next if (ref($dbEntry) ne "Bio::EnsEMBL::OntologyXref" || ref($xref) ne "Bio::EnsEMBL::OntologyXref");
 
     if ($xref->dbname() eq $dbEntry->dbname() &&
 	$xref->primary_id() eq $dbEntry->primary_id() &&
@@ -733,7 +733,7 @@ sub fetch_homologies {
       if (lc($member->genome_db()->name()) eq $from_species_alias) {
 	$from_stable_id = $member->stable_id();
       } else {
-	  push @arse, $member->genome_db()->name();
+	  
 	push @to_stable_ids, $member->stable_id();
       }
     }
