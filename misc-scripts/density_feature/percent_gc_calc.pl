@@ -60,7 +60,7 @@ FROM density_feature df, density_type dt, analysis a, analysis_description ad
 WHERE a.analysis_id=dt.analysis_id
 AND ad.analysis_id = a.analysis_id
 AND dt.density_type_id=df.density_type_id
-AND a.logic_name='PercentGC') );
+AND a.logic_name='percentgc') );
 $sth->execute();
 
 # $sth = $db->dbc()->prepare(
@@ -95,7 +95,7 @@ my $analysis =
              -database    => "ensembl",
              -gff_source  => "percent_gc_calc.pl",
              -gff_feature => "density",
-             -logic_name  => "PercentGC",
+             -logic_name  => "percentgc",
              -description => 'Percentage of G/C bases in the sequence.',
              -display_label => 'GC content',
              -displayable   => 1 );
