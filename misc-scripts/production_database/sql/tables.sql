@@ -135,12 +135,26 @@ SELECT  list.full_db_name AS full_db_name,
         ad.display_label AS display_label,
         awd.displayable AS displayable,
         wd.data AS web_data
-FROM    db_list list
-  JOIN  db USING (db_id)
-  JOIN  analysis_web_data awd
-    ON (db.species_id = awd.species_id
-      AND db.db_type = awd.db_type)
-  JOIN  analysis_description ad USING (analysis_description_id)
-  LEFT JOIN  web_data wd USING (web_data_id)
-WHERE db.is_current = 1;
+FROM db_list list
+  JOIN db USING (db_id)
+  JOIN analysis_web_data awd
+    ON ( db.species_id = awd.species_id
+    AND  db.db_type = awd.db_type )
+  JOIN analysis_description ad USING (analysis_description_id)
+  LEFT JOIN web_data wd USING (web_data_id)
+WHERE   db.is_current = 1;
 
+CREATE VIEW logic_name_overview AS
+SELECT
+  ad.logic_name AS logic_name,
+  ad.analysis_description_id AS analysis_description_id,
+  s.db_name AS species,
+  s.species_id AS species_id,
+  awd.db_type AS db_type,
+  wd.web_data_id AS web_data_id,
+  awd.displayable AS displayable
+FROM   analysis_description ad
+  JOIN analysis_web_data awd USING (analysis_description_id)
+  JOIN species s USING (species_id)
+  LEFT JOIN web_data wd USING (web_data_id)
+WHERE   s.is_current = 1;
