@@ -51,7 +51,7 @@ my $analysis = new Bio::EnsEMBL::Analysis(-program       => "variation_density.p
 					  -database      => "ensembl",
 					  -gff_source    => "variation_density.pl",
 					  -gff_feature   => "density",
-					  -logic_name    => "snpDensity",
+					  -logic_name    => "snpdensity",
 					  -description   => 'Density of SNP features on the sequence',
 					  -display_label => 'SNP Density',
 					  -displayable   => 1 );
