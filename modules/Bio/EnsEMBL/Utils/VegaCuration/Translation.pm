@@ -209,15 +209,13 @@ sub get_havana_seleno_comments {
   }
   return $seen_translations;
 }
+
 sub check_for_stops {
   my $support = shift;
   my ($gene,$seen_transcripts,$log_object) = @_;
   my $transcripts;
   my $has_log_object=defined($log_object);
   if($has_log_object){
-    #my @help=();
-    #push(@help,$log_object->species_params->get_trans($gene->stable_id));
-    #$transcripts=\@help;
     my @help = $log_object->species_params->get_trans($gene->stable_id);
     $transcripts=\@help;
   }else{
@@ -244,7 +242,7 @@ sub check_for_stops {
       if ($rem->value =~ /not_for_Vega/) {
 	      #$support->log_verbose("Skipping transcript $tname ($tsi) since 'not_for_Vega'\n",1);
         $log_object->_save_log('log_verbose', '', $gsi, '', $tsi, '', "Skipping transcript $tname ($tsi) since 'not_for_Vega'");
-	next TRANS;
+	      next TRANS;
       }
     }
     #$support->log_verbose("Studying transcript $tsi ($tname, $tID)\n",1);
@@ -321,66 +319,58 @@ sub check_for_stops {
       }
       #parse remarks to check syntax for location of edits
       while (my ($attrib,$remarks)= each %$remarks) {
-	foreach my $text (@{$remarks}) {					
-	  if ( ($attrib eq 'remark') && ($text=~/^$alabel(.*)/) ){
-	    #$support->log_warning("seleno remark for $tsi stored as Annotation_remark not hidden remark) [$mod_date]\n");
-      $log_object->_save_log('log_warning', '', $gsi, '', $tsi, 'VQCT_wrong_selC_coord', "seleno remark for $tsi stored as Annotation_remark not hidden remark) [$mod_date]");        
-	    $annot_stops=$1;
-	  }
-	  elsif ($text =~ /^$alabel2(.*)/) {
-	    $annot_stops=$1;
-	  }
-	}
+	      foreach my $text (@{$remarks}) {					
+	        if ( ($attrib eq 'remark') && ($text=~/^$alabel(.*)/) ){
+	          #$support->log_warning("seleno remark for $tsi stored as Annotation_remark not hidden remark) [$mod_date]\n");
+            $log_object->_save_log('log_warning', '', $gsi, '', $tsi, 'VQCT_wrong_selC_coord', "seleno remark for $tsi stored as Annotation_remark not hidden remark) [$mod_date]");        
+	          $annot_stops=$1;
+	        }
+	        elsif ($text =~ /^$alabel2(.*)/) {
+	          $annot_stops=$1;
+	        }
+	      }
       }
+
       #check the location of the annotated edits matches actual stops in the sequence
       my @annotated_stops;
       if ($annot_stops){
-	my $i = 0;
-  my $defined_offset;
-	my $defined_found_stop;
-	foreach my $offset (split(/\s+/, $annot_stops)) {
-    $defined_offset= (defined($offset)) && ($offset=~/^\d+$/);
-	  $defined_found_stop = ( @found_stops && defined($found_stops[$i]) && defined($found_stops[$i]->[1]));  
-    if(not defined($offset)){
-      $offset='';
-    }
-	  #OK if it matches a known stop
-    if ($defined_offset && $defined_found_stop && ($found_stops[$i]->[1] == $offset)) {    
-	    push  @annotated_stops, $offset;
-	  }
-	  # catch old annotations where number was in DNA not peptide coordinates
-    elsif ($defined_offset && $defined_found_stop && (($found_stops[$i]->[1] * 3) == $offset)) {
-	    #$support->log_warning("DNA: Annotated stop for transcript tsi ($tname) is in DNA not peptide coordinates) [$mod_date]\n");
-      $log_object->_save_log('log_warning', '', $gsi, 'DNA', $tsi, 'VQCT_wrong_selC_coord', "DNA: Annotated stop for transcript tsi ($tname) is in DNA not peptide coordinates) [$mod_date]");  
-	  }
-	  # catch old annotations where number off by one
-    elsif ($defined_offset && $defined_found_stop && (($found_stops[$i]->[1]) == $offset+1)) {
-	    #$support->log_warning("PEPTIDE: Annotated stop for transcript $tsi ($tname) is out by one) [$mod_date]\n");
-      $log_object->_save_log('log_warning', '', $gsi, 'PEPTIDE', $tsi, 'VQCT_wrong_selC_coord', "PEPTIDE: Annotated stop for transcript $tsi ($tname) is out by one) [$mod_date]");  
-	  }
-    elsif($defined_offset) {
-	    #$support->log_warning("Annotated stop for transcript $tsi ($tname) does not match a TGA codon) [$mod_date]\n");
-      $log_object->_save_log('log_warning', '', $gsi, 'TRANSCRIPT', $tsi, 'VQCT_wrong_selC_coord', "Annotated stop for transcript $tsi ($tname) does not match a TGA codon) [$mod_date]");
-	    push  @annotated_stops, $offset;
-	  }						
-	  $i++;
-	}
+	      my $i = 0;
+	      foreach my $offset (split(/\s+/, $annot_stops)) {
+	        #OK if it matches a known stop
+	        if (
+          defined($found_stops[$i]) && defined($found_stops[$i]->[1]) && ($found_stops[$i]->[1] == $offset)) {
+	          push  @annotated_stops, $offset;
+	        }
+	        # catch old annotations where number was in DNA not peptide coordinates
+	        elsif (defined($found_stops[$i]) && defined($found_stops[$i]->[1]) && (($found_stops[$i]->[1] * 3) == $offset)) {
+            $log_object->_save_log('log_warning', '', $gene->stable_id, 'DNA', $tsi, 'VQCT_wrong_selC_coord', "DNA: Annotated stop for transcript tsi ($tname) is in DNA not peptide coordinates) [$mod_date]");  
+	        }
+	        # catch old annotations where number off by one
+	        elsif (defined($found_stops[$i]) && defined($found_stops[$i]->[1]) && (($found_stops[$i]->[1]) == $offset+1)) {
+            $log_object->_save_log('log_warning', '', $gene->stable_id, 'PEPTIDE', $tsi, 'VQCT_wrong_selC_coord', "PEPTIDE: Annotated stop for transcript $tsi ($tname) is out by one) [$mod_date]");  
+	        }
+          elsif (defined($offset)  && ($offset=~/^\d+$/)){
+            $log_object->_save_log('log_warning', '', $gene->stable_id, 'TRANSCRIPT', $tsi, 'VQCT_wrong_selC_coord', "Annotated stop for transcript $tsi ($tname) does not match a TGA codon) [$mod_date]");
+	          push  @annotated_stops, $offset;
+	        }						
+	        $i++;
+	      }
       }
+
       #check location of found stops matches annotated ones - any new ones are reported
       foreach my $stop ( @found_stops ) {
-	my $pos = $stop->[1];
-	my $seq = $stop->[0];
-  if(!(defined($pos) && defined($_) && ( grep { $pos == $_} @annotated_stops))){
-	#unless ( grep { $pos == $_} @annotated_stops) {
-	  if ($seen_transcripts->{$tsi}) {
-	    #$support->log_verbose("Transcript $tsi ($tname) has potential selenocysteines but has been discounted by annotators:\n".$seen_transcripts->{$tsi}.") [$mod_date]\n");
-      $log_object->_save_log('log_verbose', '', $gsi, '', $tsi, 'VQCT_pot_selC', "Transcript $tsi ($tname) has potential selenocysteines but has been discounted by annotators: ".$seen_transcripts->{$tsi}.") [$mod_date]");
-	  }
-	  else {
-	    #$support->log("POTENTIAL SELENO ($seq) in $tsi ($tname, gene $gname) found at $pos [$mod_date]\n");
-      $log_object->_save_log('log', '', $gsi, '', $tsi, 'VQCT_pot_selC', "POTENTIAL SELENO ($seq) in $tsi ($tname, gene $gname) found at $pos [$mod_date]");
-	  }
-	}
+	      my $pos = $stop->[1];
+	      my $seq = $stop->[0];
+	      unless ( grep { $pos == $_} @annotated_stops) {
+	        if ($seen_transcripts->{$tsi}) {
+	          #$support->log_verbose("Transcript $tsi ($tname) has potential selenocysteines but has been discounted by annotators:\n\t".$seen_transcripts->{$tsi}.") [$mod_date]\n");
+            $log_object->_save_log('log_verbose', '', $gene->stable_id, '', $tsi, 'VQCT_pot_selC', "Transcript $tsi ($tname) has potential selenocysteines but has been discounted by annotators: ".$seen_transcripts->{$tsi}.") [$mod_date]");
+	        }
+	        else {
+	          #$support->log("POTENTIAL SELENO ($seq) in $tsi ($tname, gene $gname) found at $pos [$mod_date]\n");
+            $log_object->_save_log('log', '', $gene->stable_id, '', $tsi, 'VQCT_pot_selC', "POTENTIAL SELENO ($seq) in $tsi ($tname, gene $gname) found at $pos [$mod_date]");
+	        }
+	      }
       }
     }
   }
@@ -396,6 +386,7 @@ sub _save_log{
   my $txt=shift || '';
   $self->$log_type($txt."\n");
 }
+
 #details of annotators comments
 __DATA__
 OTTHUMT00000144659 = FIXED- changed to transcript
