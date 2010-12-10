@@ -151,7 +151,6 @@ sub check_CDS_start_end_remarks_loutre {
     if ($attributes{'cds_end_NF'}) {
       if ($attributes{'cds_end_NF'}->[0]->value == 0 ) {
 	if (! grep {$_ eq $stop_codon} @stops) {
-#	  warn $trans->stable_id.": $coding_end--$trans_end--$stop_codon";
 #	  warn $trans->translation->end_Exon->end_phase;
 	  $results->{'END_MISSING'}{'WRONG'} = $stop_codon;
 	}
@@ -311,7 +310,7 @@ sub check_for_stops {
       my $att;
       #get both hidden_remarks and remarks
       foreach my $remark_type ('remark','hidden_remark') {
-        if(!$has_log_object){
+        if($has_log_object){
           $att=$log_object->species_params->get_attributes->{$trans->stable_id}->{$remark_type};
         }else{
           $att=$trans->get_all_Attributes($remark_type)
@@ -395,7 +394,7 @@ sub _save_log{
   my $tsi=shift || '';  
   my $tag=shift || '';
   my $txt=shift || '';
-  $self->$log_type($txt);
+  $self->$log_type($txt."\n");
 }
 #details of annotators comments
 __DATA__
