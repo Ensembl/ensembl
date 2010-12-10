@@ -117,7 +117,9 @@ sub can_use_key {
   $sth->execute();
   my $toplevel = ( $sth->fetchrow_array() )[0];
 
-  return $total == $toplevel;
+  if ( $toplevel > 0 ) {
+    return $total == $toplevel;
+  }
 }
 
 #------------------------------------------------------------------------------
