@@ -145,13 +145,11 @@ SELECT  term.term_id,
         ontology.namespace
 FROM    ontology,
         term
-WHERE   ontology.name = ?
-  AND   ontology.ontology_id = term.ontology_id
+WHERE   ontology.ontology_id = term.ontology_id
   AND   term.accession = ?);
 
   my $sth = $this->prepare($statement);
-  $sth->bind_param( 1, $this->{'ontology'}, SQL_VARCHAR );
-  $sth->bind_param( 2, $accession,          SQL_VARCHAR );
+  $sth->bind_param( 1, $accession,          SQL_VARCHAR );
 
   $sth->execute();
 
