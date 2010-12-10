@@ -591,7 +591,8 @@ sub delete_names {
   print "Deleting projected xrefs, object_xrefs and synonyms\n";
   $sth = $to_ga->dbc()->prepare("DELETE es FROM xref x, external_synonym es WHERE x.xref_id=es.xref_id AND x.info_type='PROJECTION'");
   $sth->execute();
-  $sth = $to_ga->dbc()->prepare("DELETE x, ox FROM xref x, object_xref ox WHERE x.xref_id=ox.xref_id AND x.info_type='PROJECTION'");
+  # avoid deleting projected GO terms - only want to delete the names here
+  $sth = $to_ga->dbc()->prepare("DELETE x, ox FROM xref x, object_xref ox, external_db e WHERE x.xref_id=ox.xref_id AND x.external_db_id=e.external_db_id AND x.info_type='PROJECTION' AND e.db_name!='GO'");
   $sth->execute();
 
 }
