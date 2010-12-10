@@ -127,72 +127,73 @@ throw("--pass argument required") if (!defined($pass));
 my $dbas;
 #load registry with all databses when no database defined
 if (!defined ($dbname) && !defined ($pattern)){
-    Bio::EnsEMBL::Registry->load_registry_from_db(-host => $host,
-						  -user => $user,
-						  -pass => $pass,
-						  -port => $port
-						  );
-      $dbas = Bio::EnsEMBL::Registry->get_all_DBAdaptors(-group=>'core'); #get all core adaptors for all species
-  }
-elsif(defined ($pattern)){
-    #will only load core databases matching the pattern
-    my $database = 'information_schema';
-    my $dbh = DBI->connect("DBI:mysql:database=$database;host=$host;port=$port",$user,$pass);
-    #fetch all databases matching the pattern
-    my $sth = $dbh->prepare("SHOW DATABASES WHERE `database` REGEXP \'$pattern\'");
-    $sth->execute();
-    my $dbs = $sth->fetchall_arrayref();
-    foreach my $db_name (@{$dbs}){
-	#this is a core database
-	my ($species) = ( $db_name->[0] =~ /(^[a-z]+_[a-z]+)_(core|vega|otherfeatures)_\d+/ );
-	my $dba = Bio::EnsEMBL::DBSQL::DBAdaptor->new(-host => $host,
-						      -user => $user,
-						      -pass => $pass,
-						      -port => $port,
-						      -group => 'core',
-						      -species => $species,
-						      -dbname => $db_name->[0]
-						   );
-	if ($db_name->[0] =~ /(vega|otherfeatures)/){
-	    my $other_dbname = $db_name->[0];
-	    $other_dbname =~ s/$1/core/;
-	    #for vega databases, add the core as the dna database
-	    my $core_db  = Bio::EnsEMBL::DBSQL::DBAdaptor->new(-host => $host,
-							       -user => $user,
-							       -pass => $pass,
-							       -port => $port,
-							       -species => $species,
-							       -dbname => $other_dbname
-							       );
-	    $dba->dnadb($core_db);
-	}
-	push @{$dbas},$dba;
-    }
+  Bio::EnsEMBL::Registry->load_registry_from_db(-host => $host,
+						-user => $user,
+						-pass => $pass,
+						-port => $port
+					      );
+  $dbas = Bio::EnsEMBL::Registry->get_all_DBAdaptors(-group=>'core'); #get all core adaptors for all species
 }
-elsif(defined ($dbname)){
-#only get a single DBAdaptor, the one for the database specified
+elsif(defined ($pattern)){
+  #will only load core databases matching the pattern
+  my $database = 'information_schema';
+  my $dbh = DBI->connect("DBI:mysql:database=$database;host=$host;port=$port",$user,$pass);
+  #fetch all databases matching the pattern
+  my $sth = $dbh->prepare("SHOW DATABASES WHERE `database` REGEXP \'$pattern\'");
+  $sth->execute();
+  my $dbs = $sth->fetchall_arrayref();
+  foreach my $db_name (@{$dbs}){
+    #this is a core database
+    my ($species) = ( $db_name->[0] =~ /(^[a-z]+_[a-z]+)_(core|vega|otherfeatures)_\d+/ );
+    next unless $species;
     my $dba = Bio::EnsEMBL::DBSQL::DBAdaptor->new(-host => $host,
 						  -user => $user,
 						  -pass => $pass,
 						  -port => $port,
-						  -dbname => $dbname
-						  );
-    if ($dbname =~ /(vega|otherfeatures)/){
-	my $other_dbname = $dbname;
-	$other_dbname =~ s/$1/core/;
-	#for vega databases, add the core as the dna database
-	my $core_db  = Bio::EnsEMBL::DBSQL::DBAdaptor->new(-host => $host,
-							   -user => $user,
-							   -pass => $pass,
-							   -port => $port,
-							   -dbname => $other_dbname
-							   );
-	$dba->dnadb($core_db);
+						  -group => 'core',
+						  -species => $species,
+						  -dbname => $db_name->[0]
+						);
+    if ($db_name->[0] =~ /(vega|otherfeatures)/){
+      my $other_dbname = $db_name->[0];
+      $other_dbname =~ s/$1/core/;
+      #for vega databases, add the core as the dna database
+      my $core_db  = Bio::EnsEMBL::DBSQL::DBAdaptor->new(-host => $host,
+							 -user => $user,
+							 -pass => $pass,
+							 -port => $port,
+							 -species => $species,
+							 -dbname => $other_dbname
+						       );
+      $dba->dnadb($core_db);
     }
     push @{$dbas},$dba;
+  }
+}
+elsif(defined ($dbname)){
+#only get a single DBAdaptor, the one for the database specified
+  my $dba = Bio::EnsEMBL::DBSQL::DBAdaptor->new(-host => $host,
+						-user => $user,
+						-pass => $pass,
+						-port => $port,
+						-dbname => $dbname
+					      );
+  if ($dbname =~ /(vega|otherfeatures)/){
+    my $other_dbname = $dbname;
+    $other_dbname =~ s/$1/core/;
+    #for vega databases, add the core as the dna database
+    my $core_db  = Bio::EnsEMBL::DBSQL::DBAdaptor->new(-host => $host,
+						       -user => $user,
+						       -pass => $pass,
+						       -port => $port,
+						       -dbname => $other_dbname
+						     );
+    $dba->dnadb($core_db);
+  }
+  push @{$dbas},$dba;
 }
 else{
-    thrown("Not entered properly database connection param. Read docs\n");
+  thrown("Not entered properly database connection param. Read docs\n");
 }
 
 my %attributes_to_delete; #hash containing attributes to be removed from the database
@@ -205,112 +206,111 @@ my $translation;
 my $dbID;
 #foreach of the species, calculate the pepstats
 foreach my $dba (@{$dbas}){
-    next if (defined $dbname and $dba->dbc->dbname ne $dbname);
-    print "Removing attributes from database ", $dba->dbc->dbname,"\n";
-    remove_old_attributes($dba,\%attributes_to_delete);
+  next if (defined $dbname and $dba->dbc->dbname ne $dbname);
+  print "Removing attributes from database ", $dba->dbc->dbname,"\n";
+  remove_old_attributes($dba,\%attributes_to_delete);
 
-    my $translationAdaptor = $dba->get_TranslationAdaptor();
-    my $transcriptAdaptor = $dba->get_TranscriptAdaptor();
-    my $attributeAdaptor = $dba->get_AttributeAdaptor();
-    print "Going to update translation_attribs for ", $dba->dbc->dbname,"\n";
-    #for all the translations in the database, run pepstats and update the translation_attrib table
-    my $sth = $dba->dbc->prepare("SELECT translation_id from translation"); 
-    $sth->execute();
-    $sth->bind_columns(\$dbID);
-    while($sth->fetch()){
-	#foreach translation, retrieve object
-	$translation = $translationAdaptor->fetch_by_dbID($dbID);
-	#calculate pepstats
-	get_pepstats($translation,$binpath,$tmpdir,$translation_attribs);
-	#and store results in database
-	store_translation_attribs($attributeAdaptor,$translation_attribs,$translation,\%PEPSTATS_CODES);    	
-	$translation_attribs = {};
-    }        
+  my $translationAdaptor = $dba->get_TranslationAdaptor();
+  my $transcriptAdaptor = $dba->get_TranscriptAdaptor();
+  my $attributeAdaptor = $dba->get_AttributeAdaptor();
+  print "Going to update translation_attribs for ", $dba->dbc->dbname,"\n";
+  #for all the translations in the database, run pepstats and update the translation_attrib table
+  my $sth = $dba->dbc->prepare("SELECT translation_id from translation"); 
+  $sth->execute();
+  $sth->bind_columns(\$dbID);
+  while($sth->fetch()){
+    #foreach translation, retrieve object
+    $translation = $translationAdaptor->fetch_by_dbID($dbID);
+    #calculate pepstats
+    get_pepstats($translation,$binpath,$tmpdir,$translation_attribs);
+    #and store results in database
+    store_translation_attribs($attributeAdaptor,$translation_attribs,$translation,\%PEPSTATS_CODES);    	
+    $translation_attribs = {};
+  }
 }
 
 #will remove any entries in the translation_attrib table for the attributes, if any
 #this method will try to remove the old starts_met and has_stop_codon attributes, if present
 #this is to allow to be run on old databases, but removing the not used attributes
 sub remove_old_attributes{
-    my $dba = shift;
-    my $attributes = shift;
+  my $dba = shift;
+  my $attributes = shift;
 
-    my $sth = $dba->dbc()->prepare("DELETE ta FROM translation_attrib ta, attrib_type at WHERE at.attrib_type_id = ta.attrib_type_id AND at.code = ?");
-    #remove all possible entries in the translation_attrib table for the attributes
-    foreach my $value (values %{$attributes}){
-	$sth->execute($value);
-    }
-    $sth->finish;
+  my $sth = $dba->dbc()->prepare("DELETE ta FROM translation_attrib ta, attrib_type at WHERE at.attrib_type_id = ta.attrib_type_id AND at.code = ?");
+  #remove all possible entries in the translation_attrib table for the attributes
+  foreach my $value (values %{$attributes}){
+    $sth->execute($value);
+  }
+  $sth->finish;
 }
 
 #method that retrieves the pepstatistics for a translation
 
 sub get_pepstats {
-    my $translation = shift;
-    my $binpath = shift;
-    my $tmpdir = shift;
-    my $translation_attribs = shift;
+  my $translation = shift;
+  my $binpath = shift;
+  my $tmpdir = shift;
+  my $translation_attribs = shift;
 
-    
-    my $peptide_seq ;
-    eval { $peptide_seq = $translation->seq};
+  my $peptide_seq ;
+  eval { $peptide_seq = $translation->seq};
 
-    if ($@) {
-      warn("PEPSTAT: eval() failed: $!");
-      return {};
-    } elsif ( $peptide_seq =~ m/[BZX]/ig ) {
-      return {};
+  if ($@) {
+    warn("PEPSTAT: eval() failed: $!");
+    return {};
+  } elsif ( $peptide_seq =~ m/[BZX]/ig ) {
+    return {};
+  }
+
+  return {} if ($@ || $peptide_seq =~ m/[BZX]/ig);
+  if( $peptide_seq !~ /\n$/ ){ $peptide_seq .= "\n" }
+  $peptide_seq =~ s/\*$//;
+
+  my $tmpfile = $tmpdir."/$$.pep";
+  open( TMP, "> $tmpfile" ) || warn "PEPSTAT: $!";
+  print TMP "$peptide_seq";
+  close(TMP);
+  my $PEPSTATS = $binpath.'/bin/pepstats';
+  open (OUT, "$PEPSTATS -filter < $tmpfile 2>&1 |") || warn "PEPSTAT: $!";
+  my @lines = <OUT>;
+  close(OUT);
+  unlink($tmpfile);
+  foreach my $line (@lines){
+    if($line =~ /^Molecular weight = (\S+)(\s+)Residues = (\d+).*/){
+      $translation_attribs->{'Number of residues'} = $3 ;
+      $translation_attribs->{'Molecular weight'} = $1;
     }
-
-    return {} if ($@ || $peptide_seq =~ m/[BZX]/ig);
-    if( $peptide_seq !~ /\n$/ ){ $peptide_seq .= "\n" }
-    $peptide_seq =~ s/\*$//;
-    
-    my $tmpfile = $tmpdir."/$$.pep";
-    open( TMP, "> $tmpfile" ) || warn "PEPSTAT: $!";
-    print TMP "$peptide_seq";
-    close(TMP);
-    my $PEPSTATS = $binpath.'/bin/pepstats';
-    open (OUT, "$PEPSTATS -filter < $tmpfile 2>&1 |") || warn "PEPSTAT: $!";
-    my @lines = <OUT>;
-    close(OUT);
-    unlink($tmpfile);
-    foreach my $line (@lines){
-	if($line =~ /^Molecular weight = (\S+)(\s+)Residues = (\d+).*/){
-	    $translation_attribs->{'Number of residues'} = $3 ;
-	    $translation_attribs->{'Molecular weight'} = $1;
-	}
-	if($line =~ /^Average(\s+)(\S+)(\s+)(\S+)(\s+)=(\s+)(\S+)(\s+)(\S+)(\s+)=(\s+)(\S+)/){
-	    $translation_attribs->{'Ave. residue weight'} = $7;
-	    $translation_attribs->{'Charge'} = $12;
-	}
-	if($line =~ /^Isoelectric(\s+)(\S+)(\s+)=(\s+)(\S+)/){
-	    $translation_attribs->{'Isoelectric point'} = $5;
-	}
-	if ($line =~ /FATAL/){            
-	    print STDERR "pepstats: $line\n";
-	    $translation_attribs = {};
-	}
+    if($line =~ /^Average(\s+)(\S+)(\s+)(\S+)(\s+)=(\s+)(\S+)(\s+)(\S+)(\s+)=(\s+)(\S+)/){
+      $translation_attribs->{'Ave. residue weight'} = $7;
+      $translation_attribs->{'Charge'} = $12;
     }
+    if($line =~ /^Isoelectric(\s+)(\S+)(\s+)=(\s+)(\S+)/){
+      $translation_attribs->{'Isoelectric point'} = $5;
+    }
+    if ($line =~ /FATAL/){
+      print STDERR "pepstats: $line\n";
+      $translation_attribs = {};
+    }
+  }
 }
 
 sub store_translation_attribs{
-    my $attributeAdaptor = shift;
-    my $translation_attribs = shift;
-    my $translation = shift;
-    my $attributes = shift;
+  my $attributeAdaptor = shift;
+  my $translation_attribs = shift;
+  my $translation = shift;
+  my $attributes = shift;
 
-    my $attribute;
-    my @attributes;
-    #each of the keys in the pepstats is an attribute for the translation
-    foreach my $key (keys %{$translation_attribs}){
+  my $attribute;
+  my @attributes;
+  #each of the keys in the pepstats is an attribute for the translation
+  foreach my $key (keys %{$translation_attribs}){
 
-	$attribute = Bio::EnsEMBL::Attribute->new('-code' => $attributes->{$key},
-						  '-name' => $key,
-						  '-value' => $translation_attribs->{$key}
-						  );
-	push @attributes, $attribute;
+    $attribute = Bio::EnsEMBL::Attribute->new('-code' => $attributes->{$key},
+					      '-name' => $key,
+					      '-value' => $translation_attribs->{$key}
+					    );
+    push @attributes, $attribute;
 
-    }
-    $attributeAdaptor->store_on_Translation($translation,\@attributes);
+  }
+  $attributeAdaptor->store_on_Translation($translation,\@attributes);
 }
