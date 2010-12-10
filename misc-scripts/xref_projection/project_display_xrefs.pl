@@ -312,8 +312,7 @@ sub project_display_names {
       # other xrefs from this dbname as assigned to (see build_db_to_type)
       # Note that if type is not found, it means that we're dealing with a db that has no
       # xrefs in the target database, e.g. MarkerSymbol in mouse -> rat
-      # In this case just assign to transcripts, except for special cases (e.g. 
-      # HGNC_curated_gene should always go to genes
+      # In this case just assign to genes
 
       my @to_transcripts = @{$to_gene->get_all_Transcripts};
       my $to_transcript = $to_transcripts[0];
@@ -322,12 +321,12 @@ sub project_display_names {
 
       my $type = $db_to_type{$dbname};
 
-      if ($type eq "Gene" || $dbname eq 'HGNC') {
+      if ($type eq "Gene" || $dbname eq 'HGNC' || !$type) {
 
 	$to_gene->add_DBEntry($dbEntry);
 	$to_dbea->store($dbEntry, $to_gene->dbID(), 'Gene', 1) if (!$print);
 
-      } elsif ($type eq "Transcript" || $dbname eq 'HGNC_transcript_name' || !$type) {
+      } elsif ($type eq "Transcript" || $dbname eq 'HGNC_transcript_name') {
 	
 	$to_transcript->add_DBEntry($dbEntry);
 	$to_dbea->store($dbEntry, $to_transcript->dbID(), 'Transcript', 1) if (!$print);
