@@ -2,7 +2,6 @@
 -- The schema for the ensembl_ontology_NN database.
 -- ---------------------------------------------------------------------
 
-DROP TABLE IF EXISTS meta;
 CREATE TABLE meta (
   meta_id       INT UNSIGNED NOT NULL AUTO_INCREMENT,
   meta_key      VARCHAR(64) NOT NULL,
@@ -15,7 +14,6 @@ CREATE TABLE meta (
 INSERT INTO meta (meta_key, meta_value)
   VALUES ('schema_type', 'ontology');
 
-DROP TABLE IF EXISTS ontology;
 CREATE TABLE ontology (
   ontology_id   INT UNSIGNED NOT NULL AUTO_INCREMENT,
   name          VARCHAR(64) NOT NULL,
@@ -25,7 +23,6 @@ CREATE TABLE ontology (
   UNIQUE INDEX name_namespace_idx (name, namespace)
 );
 
-DROP TABLE IF EXISTS subset;
 CREATE TABLE subset (
   subset_id     INT UNSIGNED NOT NULL AUTO_INCREMENT,
   name          VARCHAR(64) NOT NULL,
@@ -35,7 +32,6 @@ CREATE TABLE subset (
   UNIQUE INDEX name_idx (name)
 );
 
-DROP TABLE IF EXISTS term;
 CREATE TABLE term (
   term_id       INT UNSIGNED NOT NULL AUTO_INCREMENT,
   ontology_id   INT UNSIGNED NOT NULL,
@@ -49,7 +45,6 @@ CREATE TABLE term (
   UNIQUE INDEX acc_ontology_idx (accession, ontology_id)
 );
 
-DROP TABLE IF EXISTS relation_type;
 CREATE TABLE relation_type (
   relation_type_id  INT UNSIGNED NOT NULL AUTO_INCREMENT,
   name              VARCHAR(64) NOT NULL,
@@ -58,7 +53,6 @@ CREATE TABLE relation_type (
   UNIQUE INDEX name_idx (name)
 );
 
-DROP TABLE IF EXISTS relation;
 CREATE TABLE relation (
   relation_id       INT UNSIGNED NOT NULL AUTO_INCREMENT,
   child_term_id     INT UNSIGNED NOT NULL,
@@ -71,7 +65,6 @@ CREATE TABLE relation (
   INDEX parent_idx (parent_term_id)
 );
 
-DROP TABLE IF EXISTS closure;
 CREATE TABLE closure (
   closure_id        INT UNSIGNED NOT NULL AUTO_INCREMENT,
   child_term_id     INT UNSIGNED NOT NULL,
