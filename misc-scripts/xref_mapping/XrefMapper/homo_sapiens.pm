@@ -7,20 +7,24 @@ use vars '@ISA';
 
 @ISA = qw{ XrefMapper::BasicMapper };
 
-sub get_set_lists {
 
+# now uses the default settings.
+#sub get_set_lists {
+#
 #  return [["ExonerateGappedBest1", ["homo_sapiens","*"]]];
-
-  return [["ExonerateGappedBest_100_perc_id", ["homo_sapiens","Uniprot/SWISSPROT"]],
-          ["ExonerateGappedBest1", ["homo_sapiens","*"                ]] ];
-
-}
+#
+#  return [["ExonerateGappedBest_100_perc_id", ["homo_sapiens","Uniprot/SWISSPROT"]],
+#	  ["ExonerateGappedBest_100_perc_id", ["homo_sapiens","Uniprot/SPTREMBL"]],
+#          ["ExonerateGappedBest1", ["homo_sapiens","*"                ]] ];
+#
+#}
 
 sub gene_description_filter_regexps {
 
   return ('^BA\S+\s+\(NOVEL PROTEIN\)\.?',
 	  '^DJ\S+\s+\(NOVEL PROTEIN\)\.?',
 	  '^LOC\d+\s*(PROTEIN)?\.?',
+	  '^Putative uncharacterized protein.*',
 	  '^ORF.*',
 	  '^PROTEIN C\d+ORF\d+\.*',
 	  '\(CLONE \S+\)\s+',
@@ -93,6 +97,28 @@ JSQL
 
 }
 
+#
+#for human display_xrefs and  gene descriptions have already been set in official_naming
+#so we only beed to do the status's
+#
+#sub genes_and_transcripts_attributes_set{
+#  my $self = shift;
+#  print "NEED TO SET STATUS ONLY  FOR HUMAN!!!\n";
+#  $self->build_gene_transcript_status(); 
+#}
+
+sub set_display_xrefs{
+  my $self = shift;
+  my $display = XrefMapper::DisplayXrefs->new($self);
+  $display->set_display_xrefs_from_stable_table();
+ 
+}
+
+sub set_gene_descriptions(){
+  my $self = shift;
+  my $display = XrefMapper::DisplayXrefs->new($self);
+  $display->set_gene_descriptions_from_display_xref()
+}
 
 # For human we want to make a copy of the HGNC references on the genes and put them on 
 # the "canonical" transcripts

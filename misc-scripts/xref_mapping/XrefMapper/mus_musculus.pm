@@ -7,10 +7,23 @@ use vars '@ISA';
 @ISA = qw{ XrefMapper::BasicMapper };
 use strict;
 
-sub get_set_lists {
+#sub get_set_lists {
+#
+#  return [["ExonerateGappedBest1", ["mus_musculus","*"]]];
+#
+#}
 
-  return [["ExonerateGappedBest1", ["mus_musculus","*"]]];
+sub set_display_xrefs{
+  my $self = shift;
+  my $display = XrefMapper::DisplayXrefs->new($self);
+  $display->set_display_xrefs_from_stable_table();
+ 
+}
 
+sub set_gene_descriptions(){
+  my $self = shift;
+  my $display = XrefMapper::DisplayXrefs->new($self);
+  $display->set_gene_descriptions_from_display_xref()
 }
 
 sub get_official_name{
