@@ -48,8 +48,12 @@ sub run_script {
     $source_prefix = "MGI";
     $host = "ens-staging2";
   }
+  elsif($species_name eq "danio_rerio" ){
+    $source_prefix = "ZFIN_ID";
+    $host = "ens-staging1";
+  }
   else{
-    die "Species is $species_name and is not homo_sapines or mus_musculus the only two valid species\n";
+    die "Species is $species_name and is not homo_sapines, mus_musculus or danio_rerio the only three valid species\n";
   }
 
   if($my_args =~ /host[=][>](\S+?)[,]/){
@@ -139,7 +143,7 @@ sub run_script {
   my $clone_source_id =
     $self->get_source_id_for_source_name('Clone_based_vega_transcript');
   my $curated_source_id =
-    $self->get_source_id_for_source_name($source_prefix."_curated_transcript");
+    $self->get_source_id_for_source_name($source_prefix."_curated_transcript_notransfer");
  
  print "source id is $source_id, curated_source_id is $curated_source_id\n";
 
