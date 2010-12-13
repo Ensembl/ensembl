@@ -593,7 +593,11 @@ sub fetch_and_dump_seq_via_genes{
 sub get_set_lists{
   my ($self) = @_;
 
-  return [["ExonerateGappedBest1", ["*","*"]]];
+  return [["ExonerateGappedBest_100_perc_id", ["*","Uniprot/SWISSPROT"]],
+	  ["ExonerateGappedBest_100_perc_id", ["*","Uniprot/SPTREMBL"]],
+          ["ExonerateGappedBest1", ["*","*"]] ];
+
+#  return [["ExonerateGappedBest1", ["*","*"]]];
 
 }
 
