@@ -13,17 +13,15 @@ sub run_script {
 
   my $self = shift if (defined(caller(1)));
   my $file = shift;
-  my $source_id  = shift;
+  my $source_id = shift;
   my $species_id = shift;
   my $verbose    = shift;
 
   my $user = "ensro";
-  my $host;
+  my $host = "ens-staging1";
   my $port = 3306;
   my $dbname;
   my $pass;
-  my $tran_name;
-
 
   if($file =~ /host[=][>](\S+?)[,]/){
     $host = $1;
@@ -37,9 +35,7 @@ sub run_script {
   if($file =~ /pass[=][>](\S+?)[,]/){
     $pass = $1;
   }
-  if($file =~ /tran_name[=][>](\S+?)[,]/){
-    $tran_name = $1;
-  }
+
 
   my $dbi2;
   if(!defined($dbname)){
@@ -58,6 +54,7 @@ sub run_script {
 
 
   if(!defined($dbi2)){
+    print STDERR "Could not connect to ontology database\n";
     return 1;
   }
 
