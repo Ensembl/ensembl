@@ -41,8 +41,8 @@ CREATE TABLE term (
   definition    TEXT,
 
   PRIMARY KEY (term_id),
-  INDEX ontology_idx (ontology_id),
-  UNIQUE INDEX acc_ontology_idx (accession, ontology_id)
+  UNIQUE INDEX accession_idx (accession),
+  UNIQUE INDEX ontology_acc_idx (ontology_id, accession)
 );
 
 CREATE TABLE relation_type (
