@@ -295,6 +295,8 @@ CREATE TABLE gene_stable_id (
 
   internal_id                 INT UNSIGNED NOT NULL,
   stable_id                   VARCHAR(128) NOT NULL,
+  display_xref_id             INT UNSIGNED DEFAULT NULL,
+  desc_set                    INT UNSIGNED DEFAULT 0,               
 
   PRIMARY KEY (stable_id),
   INDEX internal_idx (internal_id)
@@ -305,6 +307,7 @@ CREATE TABLE transcript_stable_id (
 
   internal_id                 INT UNSIGNED NOT NULL,
   stable_id                   VARCHAR(128) NOT NULL,
+  display_xref_id             INT UNSIGNED DEFAULT NULL,
 
   PRIMARY KEY (stable_id),
   INDEX internal_idx (internal_id)
@@ -337,7 +340,7 @@ CREATE TABLE object_xref (
                                     'DIRECT', 'SEQUENCE_MATCH',
                                     'INFERRED_PAIR', 'PROBE',
                                     'UNMAPPED', 'COORDINATE_OVERLAP' ),
-  ox_status                   ENUM( 'DUMP_OUT','FAILED_PRIORITY', 'FAILED_CUTOFF', 'NO_DISPLAY')  NOT NULL DEFAULT 'DUMP_OUT',
+  ox_status                   ENUM( 'DUMP_OUT','FAILED_PRIORITY', 'FAILED_CUTOFF', 'NO_DISPLAY', 'MULTI_DELETE')  NOT NULL DEFAULT 'DUMP_OUT',
 -- set ox_status to 0 if non used priority_xref or failed cutoff
   unused_priority             INT UNSIGNED,
   master_xref_id              INT UNSIGNED DEFAULT NULL,
