@@ -2007,7 +2007,7 @@ sub add_to_syn{
       or croak( $dbi->errstr() . "\n $xref_id\n $syn\n" );
   }
   else {
-      croak(  "Could not find acc $acc in "
+      warn (  "Could not find acc $acc in "
             . "xref table source = $source_id of species $species_id\n" );
   }
 }
