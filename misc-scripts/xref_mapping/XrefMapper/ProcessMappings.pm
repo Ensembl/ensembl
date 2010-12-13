@@ -70,6 +70,7 @@ sub process_mappings {
   my $already_processed_count = 0;
   my $processed_count = 0;
   my $error_count = 0;
+  my $empty_count = 0;
 
   my $stat_sth = $self->xref->dbc->prepare("update mapping_jobs set status = ? where job_id = ? and array_number = ?");
 
@@ -98,13 +99,20 @@ sub process_mappings {
       }
       else{ #err file checks out so process the mapping file.
 	if(-e $map_file){
-	  if($self->process_map_file($map_file, $query_cutoff{$job_id}, $target_cutoff{$job_id}, $job_id, $array_number ) >= 0){
+	  my $count = $self->process_map_file($map_file, $query_cutoff{$job_id}, $target_cutoff{$job_id}, $job_id, $array_number);
+	  if( $count > 0){
 	    $processed_count++;
 	    $stat_sth->execute('SUCCESS',$job_id, $array_number);
 	  }
+	  elsif($count ==0){
+	    print STDERR "WARNING $map_file was empty could be okay but if there are alot of these it is probably a problem\n";
+	    $processed_count++;
+	    $empty_count++;
+ 	    $stat_sth->execute('SUCCESS',$job_id, $array_number);
+	  }	
 	  else{
 	    $error_count++;
-	    $stat_sth->execute('FAILED',$job_id, $array_number);	    
+	    $stat_sth->execute('FAILED',$job_id, $array_number);
 	  }	
 	}
 	else{
@@ -118,7 +126,7 @@ sub process_mappings {
   $map_sth->finish;
   $stat_sth->finish;
 
-  print "already processed = $already_processed_count, processed = $processed_count, errors = $error_count\n" if($self->verbose); 
+  print "already processed = $already_processed_count, processed = $processed_count, errors = $error_count, empty = $empty_count\n" if($self->verbose); 
 
   if(!$error_count){
     my $sth = $self->xref->dbc->prepare("insert into process_status (status, date) values('mapping_processed',now())");
