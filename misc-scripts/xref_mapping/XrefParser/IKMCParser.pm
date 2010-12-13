@@ -28,7 +28,7 @@ sub run_script {
   my %type2id;
 
   foreach my $t ("No products available yet", "Vector available", "ES cells available", "Mice available"){
-      my $ikmc = "IKMC_".$t;
+      my $ikmc = "IKMCs_".$t;
       $ikmc =~ s/ /_/g;
       $type2id{$t}  = XrefParser::BaseParser->get_source_id_for_source_name($ikmc);
 #      print $ikmc."\t".$type2id{$t}."\n";
