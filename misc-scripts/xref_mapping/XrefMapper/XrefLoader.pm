@@ -77,11 +77,13 @@ sub update{
   $sth->execute();
   $sth->bind_columns(\$id, \$name);
   while($sth->fetch()){
-     if(defined($name_to_external_db_id{$name})){
+    if(defined($name_to_external_db_id{$name})){
       $source_id_to_external_db_id{$id} = $name_to_external_db_id{$name};
     }
+    elsif( $name =~ /notransfer$/){
+    }	
     else{
-      die "ERROR: Could not find $name in external_db table please add this too continue\n";
+      die "ERROR: Could not find $name in external_db table please add this too continue";
     }
   }
   $sth->finish;
@@ -128,6 +130,10 @@ sub update{
 #  if(!$test){
   $transaction_start_sth->execute();
   while($sth->fetch()){
+    if(!defined($name_to_external_db_id{$name})){
+      next;  #must end in notransfer
+    }
+
     my $ex_id = $name_to_external_db_id{$name};
 
     print "Deleting data for $name from core before updating from new xref database\n" if ($verbose);
@@ -237,6 +243,9 @@ GSQL
   $transaction_start_sth->execute();
 
   while($sth->fetch()){
+
+    next if(!defined($name_to_external_db_id{$name}));
+
     if(defined($where_from) and $where_from ne ""){
       $where_from = "Generated via $where_from";
     }	
@@ -526,9 +535,11 @@ DIR
   $analysis_id = $analysis_ids{'Transcript'};   # No real analysis here but in table it is set to not NULL
   while($direct_unmapped_sth->fetch()){
     my $ex_id = $name_to_external_db_id{$dbname};
-    $add_xref_sth->execute(($xref_id+$xref_offset), $ex_id, $acc, $label, $version, $desc, $type, $info);   
-    $set_unmapped_sth->execute($analysis_id, $ex_id, $acc, $reason_id{"NO_STABLE_ID"});
-    push @xref_list, $xref_id;
+    if(defined($name_to_external_db_id{$dbname})){
+      $add_xref_sth->execute(($xref_id+$xref_offset), $ex_id, $acc, $label, $version, $desc, $type, $info);   
+      $set_unmapped_sth->execute($analysis_id, $ex_id, $acc, $reason_id{"NO_STABLE_ID"});
+      push @xref_list, $xref_id;
+    }
   }
   $direct_unmapped_sth->finish;
   $set_unmapped_sth->finish;
@@ -560,9 +571,11 @@ MIS
   $analysis_id = $analysis_ids{'Transcript'};   # No real analysis here but in table it is set to not NULL
   while($misc_unmapped_sth->fetch()){
     my $ex_id = $name_to_external_db_id{$dbname};
-    $add_xref_sth->execute(($xref_id+$xref_offset), $ex_id, $acc, $label, $version, $desc, $type, $info);   
-    $set_unmapped_sth->execute($analysis_id, $ex_id, $acc, $reason_id{"NO_MAPPING"});
-    push @xref_list, $xref_id;
+    if(defined($name_to_external_db_id{$dbname})){
+      $add_xref_sth->execute(($xref_id+$xref_offset), $ex_id, $acc, $label, $version, $desc, $type, $info);   
+      $set_unmapped_sth->execute($analysis_id, $ex_id, $acc, $reason_id{"NO_MAPPING"});
+      push @xref_list, $xref_id;
+    }	
   }
   $misc_unmapped_sth->finish;
   $set_unmapped_sth->finish;
@@ -602,6 +615,9 @@ DEP
   my $last_acc= 0;
   while($dep_unmapped_sth->fetch()){
     my $ex_id = $name_to_external_db_id{$dbname};
+    if(!defined($ex_id)){
+      next;
+    }
     if($last_acc ne $acc){
       $add_xref_sth->execute(($xref_id+$xref_offset), $ex_id, $acc, $label||$acc, $version, $desc, $type, $info);   
     }
@@ -653,6 +669,9 @@ SEQ
   my $last_xref = 0;
   while($seq_unmapped_sth->fetch()){
     my $ex_id = $name_to_external_db_id{$dbname};
+    if(!defined($ex_id)){
+      next;
+    }
     if($last_xref != $xref_id){
       $add_xref_sth->execute(($xref_id+$xref_offset), $ex_id, $acc, $label, $version, $desc, $type, $info);   
     }
@@ -711,6 +730,9 @@ WEL
   @xref_list = ();
   while($wel_unmapped_sth->fetch()){
     my $ex_id = $name_to_external_db_id{$dbname};
+    if(!defined($ex_id)){
+      next;
+    }
     $add_xref_sth->execute(($xref_id+$xref_offset), $ex_id, $acc, $label, $version, $desc, $type, $info);   
     $set_unmapped_sth->execute($analysis_id, $ex_id, $acc);
     push @xref_list, $xref_id;
