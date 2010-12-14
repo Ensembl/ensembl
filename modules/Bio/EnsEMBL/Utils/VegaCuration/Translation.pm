@@ -2,41 +2,28 @@
 
   Copyright (c) 1999-2010 The European Bioinformatics Institute and
   Genome Research Limited.  All rights reserved.
-
   This software is distributed under a modified Apache license.
   For license details, please see
-
     http://www.ensembl.org/info/about/code_licence.html
-
 =head1 CONTACT
-
   Please email comments or questions to the public Ensembl
   developers list at <dev@ensembl.org>.
-
   Questions may also be sent to the Ensembl help desk at
   <helpdesk@ensembl.org>.
 
 =cut
-
 =head1 NAME
-
 =head1 SYNOPSIS
-
 =head1 DESCRIPTION
-
 =head1 METHODS
-
 =cut
 
 package Bio::EnsEMBL::Utils::VegaCuration::Translation;
-
 use strict;
 use warnings;
 use vars qw(@ISA);
 use Data::Dumper;
-
 use Bio::EnsEMBL::Utils::VegaCuration::Transcript;
-
 @ISA = qw(Bio::EnsEMBL::Utils::VegaCuration::Transcript);
 
 =head2 check_CDS_end_remarks
@@ -50,9 +37,8 @@ use Bio::EnsEMBL::Utils::VegaCuration::Transcript;
 =cut
 
 sub check_CDS_start_end_remarks {
-  my $self = shift;
+  my $self = shift; 
   my $trans = shift;
-
   # info for checking
   my @remarks = @{$trans->get_all_Attributes('remark')};
   my $coding_end   = $trans->cdna_coding_end;
@@ -61,7 +47,6 @@ sub check_CDS_start_end_remarks {
   my $trans_seq    = $trans->seq->seq;
   my $stop_codon   = substr($trans_seq, $coding_end-3, 3);
   my $start_codon  = substr($trans_seq, $coding_start-1, 3);
-
   #hashref to return results
   my $results;
   
@@ -72,7 +57,6 @@ sub check_CDS_start_end_remarks {
       $results->{'END_EXTRA'} = 1;
     }
   }
-
   #missing CDS end not found remark
   if ( $coding_end == $trans_end ) {
     if (! grep {$_->value eq 'CDS end not found'} @remarks) {
@@ -84,7 +68,6 @@ sub check_CDS_start_end_remarks {
       }
     }
   }
-
   #extra CDS start not found remark
   if (grep {$_->value eq 'CDS start not found'} @remarks) {
     if (   ($coding_start != 1) 
@@ -92,7 +75,6 @@ sub check_CDS_start_end_remarks {
       $results->{'START_EXTRA'} = 1;
     }
   }
-
   #missing CDS start not found remark
   if ( $coding_start == 1) {
     if ( ! grep {$_->value eq 'CDS start not found'} @remarks) {
@@ -103,7 +85,6 @@ sub check_CDS_start_end_remarks {
       }
     }
   }
-
   return $results;
 }
 
@@ -125,7 +106,7 @@ sub check_CDS_start_end_remarks_loutre {
   my @stops = qw(TGA TAA TAG);
   my %attributes;
   foreach my $attribute (@{$trans->get_all_Attributes()}) {
-    $attributes{$attribute->code} = $attribute;
+    push @{$attributes{$attribute->code}}, $attribute;
   }
 #  warn $trans->stable_id;
 #  warn Data::Dumper::Dumper(\%attributes);
@@ -134,15 +115,30 @@ sub check_CDS_start_end_remarks_loutre {
   my $trans_end    = $trans->length;
   my $trans_seq    = $trans->seq->seq;
   my $stop_codon_offset = 3 + $trans->translation->end_Exon->end_phase;
+  my $initial_exon_phase = $trans->translation->start_Exon->phase;
   my $stop_codon   = substr($trans_seq, $coding_end-3, 3);
   my $start_codon  = substr($trans_seq, $coding_start-1, 3);
+
+  my $start_codon_incorrect = 1;
+  if ($start_codon eq 'ATG' ) {
+    $start_codon_incorrect = 0;
+  }
+  elsif ($start_codon eq 'CTG') {
+    foreach my $attrib (@{$attributes{'remark'}}) {
+      if ($attrib->value =~ /non[- ]ATG start/) {
+	$start_codon_incorrect = 0;
+      }
+    }
+  }
+
+#  warn "$start_codon -- $initial_exon_phase -- $coding_start -- $start_codon_incorrect";
 
   #hashref to return results
   my $results;
 
   #extra CDS end not found remarks
   if ($attributes{'cds_end_NF'}) {
-    if ( ($attributes{'cds_end_NF'}->value == 1)
+    if ( ($attributes{'cds_end_NF'}->[0]->value == 1)
 	   && ($coding_end != $trans_end) 
 	   && ( grep {$_ eq $stop_codon} @stops) ) {
 #      warn $trans->stable_id.": $coding_end--$trans_end--$stop_codon";
@@ -153,9 +149,8 @@ sub check_CDS_start_end_remarks_loutre {
   #missing CDS end not found remark
   if ( $coding_end == $trans_end ) {
     if ($attributes{'cds_end_NF'}) {
-      if ($attributes{'cds_end_NF'}->value == 0 ) {
+      if ($attributes{'cds_end_NF'}->[0]->value == 0 ) {
 	if (! grep {$_ eq $stop_codon} @stops) {
-#	  warn $trans->stable_id.": $coding_end--$trans_end--$stop_codon";
 #	  warn $trans->translation->end_Exon->end_phase;
 	  $results->{'END_MISSING'}{'WRONG'} = $stop_codon;
 	}
@@ -167,23 +162,29 @@ sub check_CDS_start_end_remarks_loutre {
   }
   #extra CDS start not found remark 
   if ( $attributes{'cds_start_NF'}) {
-    if ( ($attributes{'cds_start_NF'}->value == 1 )
-	   && ($start_codon eq 'ATG') ) {
-      $results->{'START_EXTRA'} = $start_codon;
+    if (   ($attributes{'cds_start_NF'}->[0]->value == 1 )
+        && (! $start_codon_incorrect)) {
+      unless ( ($coding_start == 1) && ( $initial_exon_phase > 0)) {
+	$results->{'START_EXTRA'} = $start_codon;
+      }
     }
   }
   #missing CDS start not found remark
   if ( $coding_start == 1) {
     if ( $attributes{'cds_start_NF'} ) {
-      if ( $attributes{'cds_start_NF'}->value == 0 ) {
-	if ($start_codon ne 'ATG') {
-	  $results->{'START_MISSING'}{'WRONG'} = $start_codon;
+      if ( $attributes{'cds_start_NF'}->[0]->value == 0 ) {
+	if ($start_codon_incorrect) {
+	  $results->{'START_MISSING'}{'ABSENT'} = $start_codon;
+	}
+	elsif ($initial_exon_phase > 0) {
+	  $results->{'START_MISSING'}{'INITIAL_PHASE'} = $initial_exon_phase;
 	}
       }
     }
     elsif ($start_codon ne 'ATG') {
       $results->{'START_MISSING'}{'ABSENT'} = $start_codon;
     }
+
   }
   return $results;
 }
@@ -212,44 +213,50 @@ sub get_havana_seleno_comments {
 sub check_for_stops {
   my $support = shift;
   my ($gene,$seen_transcripts,$log_object) = @_;
-  if(not defined $log_object){
+  my $transcripts;
+  my $has_log_object=defined($log_object);
+  if($has_log_object){
+    my @help = $log_object->species_params->get_trans($gene->stable_id);
+    $transcripts=\@help;
+  }else{
     $log_object=$support;
+    $transcripts=$gene->get_all_Transcripts;    
   }
   
   my $gname = $gene->get_all_Attributes('name')->[0]->value;
   my $gsi = $gene->stable_id;
   my $scodon = 'TGA';
   my $mod_date = $support->date_format( $gene->modified_date,'%d/%m/%y' );
-
+  my $hidden_remak_ttributes;
  TRANS:
-  foreach my $trans (@{$gene->get_all_Transcripts}) {
+  foreach my $trans (@$transcripts) {
     my $tsi = $trans->stable_id;
     my $tID = $trans->dbID;
     my $tname = $trans->get_all_Attributes('name')->[0]->value;
-
-    foreach my $rem (@{$trans->get_all_Attributes('hidden_remark')}) {
+    if($has_log_object){
+      $hidden_remak_ttributes=$log_object->species_params->get_attributes->{$tsi}->{'hidden_remark'};
+    }else{
+      $hidden_remak_ttributes=$trans->get_all_Attributes('hidden_remark');
+    }
+    foreach my $rem (@$hidden_remak_ttributes) {
       if ($rem->value =~ /not_for_Vega/) {
 	      #$support->log_verbose("Skipping transcript $tname ($tsi) since 'not_for_Vega'\n",1);
-        $log_object->_save_log('log_verbose', '', $gsi, '', $tsi, '', "Skipping transcript $tname ($tsi) since 'not_for_Vega'\n");
-	next TRANS;
+        $log_object->_save_log('log_verbose', '', $gsi, '', $tsi, '', "Skipping transcript $tname ($tsi) since 'not_for_Vega'");
+	      next TRANS;
       }
     }
-
     #$support->log_verbose("Studying transcript $tsi ($tname, $tID)\n",1);
-    $log_object->_save_log('log_verbose', '', $gsi, '', $tsi, '', "Studying transcript $tsi ($tname, $tID)\n");
-
+    $log_object->_save_log('log_verbose', '', $gsi, '', $tsi, '', "Studying transcript $tsi ($tname, $tID)");
     my $peptide;
 		
     # go no further if the transcript doesn't translate or if there are no stops
     next TRANS unless ($peptide = $trans->translate);
-
     my $pseq = $peptide->seq;
     my $orig_seq = $pseq;
-
     # (translate method trims stops from sequence end)
     next TRANS unless ($pseq =~ /\*/);
     #$support->log_verbose("Stops found in $tsi ($tname)\n",1);
-    $log_object->_save_log('log_verbose', '', $gsi, '', $tsi, '', "Stops found in $tsi ($tname)\n");
+    $log_object->_save_log('log_verbose', '', $gsi, '', $tsi, '', "Stops found in $tsi ($tname)");
 		
     # find out where and how many stops there are
     my @found_stops;
@@ -278,7 +285,6 @@ sub check_for_stops {
 	$num_tga++;
       }
     }
-
     my $source = $gene->source;
     #...no - an internal stop codon error in the database...
     if ($num_tga < $num_stops) {
@@ -290,7 +296,6 @@ sub check_for_stops {
         #$support->log_warning("INTERNAL STOPS EXTERNAL: Transcript $tsi ($tname) from gene $gname has non \'$scodon\' stop codons[$mod_date]:\nSequence = $orig_seq\nStops at $positions)\n\n");
         $log_object->_save_log('log_warning', '', $gsi, 'TRANSCRIPT', $tsi, 'VQCT_internal_stop', "INTERNAL STOPS EXTERNAL: Transcript $tsi ($tname) from gene $gname has non \'$scodon\' stop codons[$mod_date]: Sequence = $orig_seq Stops at $positions)");  
       }
-
     }
     #...yes - check remarks
     else {
@@ -300,81 +305,76 @@ sub check_for_stops {
       my $alabel2      = 'selenocysteine ';
       my $annot_stops;
       my $remarks;
-
+      my $att;
       #get both hidden_remarks and remarks
       foreach my $remark_type ('remark','hidden_remark') {
-	foreach my $attrib ( @{$trans->get_all_Attributes($remark_type)}) {
-	  push @{$remarks->{$remark_type}}, $attrib->value;
-	}
+        if($has_log_object){
+          $att=$log_object->species_params->get_attributes->{$trans->stable_id}->{$remark_type};
+        }else{
+          $att=$trans->get_all_Attributes($remark_type)
+        }
+	      foreach my $attrib ( @$att) {
+	        push @{$remarks->{$remark_type}}, $attrib->value;
+	      }
       }
-
       #parse remarks to check syntax for location of edits
       while (my ($attrib,$remarks)= each %$remarks) {
-	foreach my $text (@{$remarks}) {					
-	  if ( ($attrib eq 'remark') && ($text=~/^$alabel(.*)/) ){
-	    #$support->log_warning("seleno remark for $tsi stored as Annotation_remark not hidden remark) [$mod_date]\n");
-      $log_object->_save_log('log_warning', '', $gsi, '', $tsi, 'VQCT_wrong_selC_coord', "seleno remark for $tsi stored as Annotation_remark not hidden remark) [$mod_date]");        
-	    $annot_stops=$1;
-	  }
-	  elsif ($text =~ /^$alabel2(.*)/) {
-	    $annot_stops=$1;
-	  }
-	}
+	      foreach my $text (@{$remarks}) {					
+	        if ( ($attrib eq 'remark') && ($text=~/^$alabel(.*)/) ){
+	          #$support->log_warning("seleno remark for $tsi stored as Annotation_remark not hidden remark) [$mod_date]\n");
+            $log_object->_save_log('log_warning', '', $gsi, '', $tsi, 'VQCT_wrong_selC_coord', "seleno remark for $tsi stored as Annotation_remark not hidden remark) [$mod_date]");        
+	          $annot_stops=$1;
+	        }
+	        elsif ($text =~ /^$alabel2(.*)/) {
+	          $annot_stops=$1;
+	        }
+	      }
       }
 
-    #check the location of the annotated edits matches actual stops in the sequence
-    my @annotated_stops;
-    if ($annot_stops){
-	  my $i = 0;
-	  my $defined_offset=0;
-	  my $defined_found_stop=0;
-	  foreach my $offset (split(/\s+/, $annot_stops)) {
-        $defined_offset= (defined($offset)) && ($offset=~/^\d+$/);
-	    $defined_found_stop = ( defined(@found_stops) && defined($found_stops[$i]) && defined($found_stops[$i]->[1]));
-	    # not a number - ignore
-	    #OK if it matches a known stop
-	    if ($defined_offset && $defined_found_stop && ($found_stops[$i]->[1] == $offset)) {
-  	      push  @annotated_stops, $offset;
-	    }
-	    # catch old annotations where number was in DNA not peptide coordinates
-	    elsif ($defined_offset && $defined_found_stop && (($found_stops[$i]->[1] * 3) == $offset)) {
-  	      #$support->log_warning("DNA: Annotated stop for transcript tsi ($tname) is in DNA not peptide coordinates) [$mod_date]\n");
-          $log_object->_save_log('log_warning', '', $gsi, 'DNA', $tsi, 'VQCT_wrong_selC_coord', "DNA: Annotated stop for transcript tsi ($tname) is in DNA not peptide coordinates) [$mod_date]");  
-        }
-	    # catch old annotations where number off by one
-	    elsif ($defined_offset && $defined_found_stop && (($found_stops[$i]->[1]) == $offset+1)) {
-	      #$support->log_warning("PEPTIDE: Annotated stop for transcript $tsi ($tname) is out by one) [$mod_date]\n");
-          $log_object->_save_log('log_warning', '', $gsi, 'PEPTIDE', $tsi, 'VQCT_wrong_selC_coord', "PEPTIDE: Annotated stop for transcript $tsi ($tname) is out by one) [$mod_date]");  
-	    }
-	    elsif($defined_offset) {
-	      #$support->log_warning("Annotated stop for transcript $tsi ($tname) does not match a TGA codon) [$mod_date]\n");
-          $log_object->_save_log('log_warning', '', $gsi, 'TRANSCRIPT', $tsi, 'VQCT_wrong_selC_coord', "Annotated stop for transcript $tsi ($tname) does not match a TGA codon) [$mod_date]");
-	      push  @annotated_stops, $offset;
-	    }						
-	    $i++;
-	  }
-    }
+      #check the location of the annotated edits matches actual stops in the sequence
+      my @annotated_stops;
+      if ($annot_stops){
+	      my $i = 0;
+	      foreach my $offset (split(/\s+/, $annot_stops)) {
+	        #OK if it matches a known stop
+	        if (
+          defined($found_stops[$i]) && defined($found_stops[$i]->[1]) && ($found_stops[$i]->[1] == $offset)) {
+	          push  @annotated_stops, $offset;
+	        }
+	        # catch old annotations where number was in DNA not peptide coordinates
+	        elsif (defined($found_stops[$i]) && defined($found_stops[$i]->[1]) && (($found_stops[$i]->[1] * 3) == $offset)) {
+            $log_object->_save_log('log_warning', '', $gene->stable_id, 'DNA', $tsi, 'VQCT_wrong_selC_coord', "DNA: Annotated stop for transcript tsi ($tname) is in DNA not peptide coordinates) [$mod_date]");  
+	        }
+	        # catch old annotations where number off by one
+	        elsif (defined($found_stops[$i]) && defined($found_stops[$i]->[1]) && (($found_stops[$i]->[1]) == $offset+1)) {
+            $log_object->_save_log('log_warning', '', $gene->stable_id, 'PEPTIDE', $tsi, 'VQCT_wrong_selC_coord', "PEPTIDE: Annotated stop for transcript $tsi ($tname) is out by one) [$mod_date]");  
+	        }
+          elsif (defined($offset)  && ($offset=~/^\d+$/)){
+            $log_object->_save_log('log_warning', '', $gene->stable_id, 'TRANSCRIPT', $tsi, 'VQCT_wrong_selC_coord', "Annotated stop for transcript $tsi ($tname) does not match a TGA codon) [$mod_date]");
+	          push  @annotated_stops, $offset;
+	        }						
+	        $i++;
+	      }
+      }
 
       #check location of found stops matches annotated ones - any new ones are reported
       foreach my $stop ( @found_stops ) {
-	my $pos = $stop->[1];
-	my $seq = $stop->[0];
-  if(!(defined($pos) && defined($_) && ( grep { $pos == $_} @annotated_stops))){
-	#unless ( grep { $pos == $_} @annotated_stops) {
-	  if ($seen_transcripts->{$tsi}) {
-	    #$support->log_verbose("Transcript $tsi ($tname) has potential selenocysteines but has been discounted by annotators:\n".$seen_transcripts->{$tsi}.") [$mod_date]\n");
-      $log_object->_save_log('log_verbose', '', $gsi, '', $tsi, 'VQCT_pot_selC', "Transcript $tsi ($tname) has potential selenocysteines but has been discounted by annotators:\n".$seen_transcripts->{$tsi}.") [$mod_date]");
-	  }
-	  else {
-	    #$support->log("POTENTIAL SELENO ($seq) in $tsi ($tname, gene $gname) found at $pos [$mod_date]\n");
-      $log_object->_save_log('log', '', $gsi, '', $tsi, 'VQCT_pot_selC', "POTENTIAL SELENO ($seq) in $tsi ($tname, gene $gname) found at $pos [$mod_date]");
-	  }
-	}
+	      my $pos = $stop->[1];
+	      my $seq = $stop->[0];
+	      unless ( grep { $pos == $_} @annotated_stops) {
+	        if ($seen_transcripts->{$tsi}) {
+	          #$support->log_verbose("Transcript $tsi ($tname) has potential selenocysteines but has been discounted by annotators:\n\t".$seen_transcripts->{$tsi}.") [$mod_date]\n");
+            $log_object->_save_log('log_verbose', '', $gene->stable_id, '', $tsi, 'VQCT_pot_selC', "Transcript $tsi ($tname) has potential selenocysteines but has been discounted by annotators: ".$seen_transcripts->{$tsi}.") [$mod_date]");
+	        }
+	        else {
+	          #$support->log("POTENTIAL SELENO ($seq) in $tsi ($tname, gene $gname) found at $pos [$mod_date]\n");
+            $log_object->_save_log('log', '', $gene->stable_id, '', $tsi, 'VQCT_pot_selC', "POTENTIAL SELENO ($seq) in $tsi ($tname, gene $gname) found at $pos [$mod_date]");
+	        }
+	      }
       }
     }
   }
 }
-
 sub _save_log{
   my $self=shift;
   my $log_type = shift;
@@ -384,11 +384,11 @@ sub _save_log{
   my $tsi=shift || '';  
   my $tag=shift || '';
   my $txt=shift || '';
-  $self->$log_type($txt);
+  $self->$log_type($txt."\n");
 }
+
 #details of annotators comments
 __DATA__
-
 OTTHUMT00000144659 = FIXED- changed to transcript
 OTTHUMT00000276377 = FIXED- changed to transcript
 OTTHUMT00000257741 = FIXED- changed to nmd
