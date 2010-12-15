@@ -71,15 +71,15 @@ sub run {
     chomp;
     my ($master, $label, $acc) = split (/\s+/,$_);
     if(defined($embl{$master})){
-      XrefParser::BaseParser->add_to_xrefs($embl{$master},$acc,'',$label,'','',$source_id,$species_id);
+      XrefParser::BaseParser->add_to_xrefs($embl{$master},$label,'',$label,'','',$source_id,$species_id);
       $ecount++;
     }
     elsif(defined($ddbj{$master})){
-      XrefParser::BaseParser->add_to_xrefs($ddbj{$master},$acc,'',$label,'','',$source_id,$species_id);
+      XrefParser::BaseParser->add_to_xrefs($ddbj{$master},$label,'',$label,'','',$source_id,$species_id);
       $dcount++;
     }
     elsif(defined($genbank{$master})){
-      XrefParser::BaseParser->add_to_xrefs($genbank{$master},$acc,'',$label,'','',$source_id,$species_id);
+      XrefParser::BaseParser->add_to_xrefs($genbank{$master},$label,'',$label,'','',$source_id,$species_id);
       $gcount++;
     }
     else{
