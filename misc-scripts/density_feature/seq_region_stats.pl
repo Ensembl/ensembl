@@ -8,22 +8,17 @@ use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::EnsEMBL::Variation::DBSQL::DBAdaptor;
 use Getopt::Long;
 
-my ( $host, $user, $pass, $port, $dbname, $genestats, $snpstats  );
+my ( $host, $user, $pass, $port, $dbname, $pattern, $genestats, $snpstats  );
 
 GetOptions( "host=s", \$host,
 	    "user=s", \$user,
 	    "pass=s", \$pass,
 	    "port=i", \$port,
 	    "dbname=s", \$dbname,
+	    "pattern=s", \$pattern,
 	    "genestats", \$genestats,
 	    "snpstats", \$snpstats
 	  );
-
-my $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(-host => $host,
-					    -user => $user,
-					    -port => $port,
-					    -pass => $pass,
-					    -dbname => $dbname);
 
 
 my %attrib_codes = ( 'miRNA'                => 'miRNA',
@@ -66,114 +61,138 @@ my %attrib_codes = ( 'miRNA'                => 'miRNA',
 		     'processed_transcript' => 'proc_tr',
 		     'lincRNA'              => 'lincRNA',);
 
-
-# do both genestats and snpstats by default
-$genestats = $snpstats = 1 if(!$genestats && !$snpstats);
-
-# delete old attributes before starting
-foreach my $code (values %attrib_codes) {
-  if ($genestats) {
-    my $sth = $db->dbc()->prepare( "DELETE sa FROM seq_region_attrib sa, attrib_type at WHERE at.attrib_type_id=sa.attrib_type_id AND at.code=?" );
-    $sth->execute("GeneNo_$code");
-  }
-  if ($snpstats) {
-    my $sth = $db->dbc()->prepare( "DELETE sa FROM seq_region_attrib sa, attrib_type at WHERE at.attrib_type_id=sa.attrib_type_id AND at.code=?" );
-    $sth->execute("SNPCount");
-  }
+my @dbnames;
+if (! $dbname) {
+  my $dsn = sprintf( 'dbi:mysql:host=%s;port=%d', $host, $port );
+  my $dbh = DBI->connect( $dsn, $user, $pass );
+  @dbnames =
+    map { $_->[0] } @{ $dbh->selectall_arrayref('SHOW DATABASES') };
 }
+else {
+  @dbnames = ( $dbname )
+}
+
+foreach my $name (@dbnames) {
+  if ( $pattern && ($name !~ /$pattern/) ) { next }
+
+  printf( "\nConnecting to '%s'\n", $name );
+
+  my $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(-host => $host,
+					      -user => $user,
+					      -port => $port,
+					      -pass => $pass,
+					      -dbname => $name);
+
+  
+  # do both genestats and snpstats by default
+  $genestats = $snpstats = 1 if(!$genestats && !$snpstats);
+
+ # $snpstats = 0 if ($name =~ /homo|mus/);
+
+
+  # delete old attributes before starting
+  foreach my $code (values %attrib_codes) {
+    if ($genestats) {
+      my $sth = $db->dbc()->prepare( "DELETE sa FROM seq_region_attrib sa, attrib_type at WHERE at.attrib_type_id=sa.attrib_type_id AND at.code=?" );
+      $sth->execute("GeneNo_$code");
+    }
+    if ($snpstats) {
+      my $sth = $db->dbc()->prepare( "DELETE sa FROM seq_region_attrib sa, attrib_type at WHERE at.attrib_type_id=sa.attrib_type_id AND at.code=?" );
+      $sth->execute("SNPCount");
+    }
+  }
 
 #
 # Only run on database with genes
 #
 
-my $genes_present;
+  my $genes_present;
 
-if($genestats) {
-  my $sth = $db->dbc()->prepare( "select count(*) from gene" );
-  $sth->execute();
-
-  my ( $gene_count )  = $sth->fetchrow_array();
-
-  $genes_present = ($gene_count) ? 1 : 0;
-} else {
-  $genes_present = 0;
-}
-
+  if($genestats) {
+    my $sth = $db->dbc()->prepare( "select count(*) from gene" );
+    $sth->execute();
+    
+    my ( $gene_count )  = $sth->fetchrow_array();
+    
+    $genes_present = ($gene_count) ? 1 : 0;
+  } else {
+    $genes_present = 0;
+  }
+  
 #
 # and seq_regions
 #
-my $sth = $db->dbc()->prepare( "select count(*) from seq_region" );
-$sth->execute();
-my ( $seq_region_count ) = $sth->fetchrow_array();
-if( ! $seq_region_count ) {
-  print STDERR "No seq_regions for $dbname.\n";
-  exit();
-}
+  my $sth = $db->dbc()->prepare( "select count(*) from seq_region" );
+  $sth->execute();
+  my ( $seq_region_count ) = $sth->fetchrow_array();
+  if( ! $seq_region_count ) {
+    print STDERR "No seq_regions for $dbname.\n";
+    exit();
+  }
 
-my $snps_present = $snpstats && variation_attach( $db );
+  my $snps_present = $snpstats && variation_attach( $db );
 
-
-my $slice_adaptor = $db->get_SliceAdaptor();
-my $attrib_adaptor = $db->get_AttributeAdaptor();
+  my $slice_adaptor = $db->get_SliceAdaptor();
+  my $attrib_adaptor = $db->get_AttributeAdaptor();
 
 # Do not include non-reference sequences ie. haplotypes for human
 #my $top_slices = $slice_adaptor->fetch_all( "toplevel" , undef, 1);
-my $top_slices = $slice_adaptor->fetch_all( "toplevel" );
+  my $top_slices = $slice_adaptor->fetch_all( "toplevel" );
 
-
-while (my $slice = shift(@{$top_slices})) {
-  print STDERR "Processing seq_region ", $slice->seq_region_name(), "\n";
-
-  my @attribs;
-
-  if($genes_present) {
-    my %counts;
-    my $biotype;
-
-    my $genes = $slice->get_all_Genes();
+  while (my $slice = shift(@{$top_slices})) {
+#    print STDERR "Processing seq_region ", $slice->seq_region_name(), "\n";
     
-    while (my $gene = shift(@{$genes})) {
-      $biotype = $gene->biotype();
-      if( $biotype =~ /coding/i ) {
-        if($gene->is_known()) {
-	  $biotype = "known ".$biotype;
-	} else {
-	  $biotype = "novel ".$biotype;
+    my @attribs;
+
+    if($genes_present) {
+      my %counts;
+      my $biotype;
+      
+      my $genes = $slice->get_all_Genes();
+    
+      while (my $gene = shift(@{$genes})) {
+	$biotype = $gene->biotype();
+	if( $biotype =~ /coding/i ) {
+	  if($gene->is_known()) {
+	    $biotype = "known ".$biotype;
+	  } else {
+	    $biotype = "novel ".$biotype;
+	  }
 	}
+
+	$counts{$biotype}++;
       }
 
-      $counts{$biotype}++;
+      for my $biotype ( keys %counts ) {
+	my $attrib_code = $attrib_codes{$biotype};
+	if( !$attrib_code ) {
+	  print STDERR "Unspecified biotype \"$biotype\" in database $name.\n";
+	  next;
+	}
+	# not used:
+	# my $no_space = $biotype;
+	# $no_space =~ s/ /_/g;
+	
+	push @attribs, Bio::EnsEMBL::Attribute->new
+	  (-NAME => $biotype.' Gene Count',
+	   -CODE => 'GeneNo_'.$attrib_code,
+	   -VALUE => $counts{$biotype},
+	   -DESCRIPTION => 'Number of '.$biotype.' Genes');
+      }
     }
 
-    for my $biotype ( keys %counts ) {
-      my $attrib_code = $attrib_codes{$biotype};
-      if( !$attrib_code ) {
-	print STDERR "Unspecified biotype \"$biotype\".\n";
-	next;
-      }
-      # not used:
-      # my $no_space = $biotype;
-      # $no_space =~ s/ /_/g;
-
+    if( $snps_present ) {
+      my $snps = $slice->get_all_VariationFeatures();
       push @attribs, Bio::EnsEMBL::Attribute->new
-	(-NAME => $biotype.' Gene Count',
-	 -CODE => 'GeneNo_'.$attrib_code,
-	 -VALUE => $counts{$biotype},
-	 -DESCRIPTION => 'Number of '.$biotype.' Genes');
+	(-NAME => 'SNP Count',
+	 -CODE => 'SNPCount',
+	 -VALUE => scalar( @$snps ),
+	 -DESCRIPTION => 'Total Number of SNPs');
     }
-  }
 
-  if( $snps_present ) {
-    my $snps = $slice->get_all_VariationFeatures();
-    push @attribs, Bio::EnsEMBL::Attribute->new
-      (-NAME => 'SNP Count',
-       -CODE => 'SNPCount',
-       -VALUE => scalar( @$snps ),
-       -DESCRIPTION => 'Total Number of SNPs');
-  }
-
-  $attrib_adaptor->store_on_Slice($slice, \@attribs);
+    $attrib_adaptor->store_on_Slice($slice, \@attribs);
 #  print_chromo_stats([$slice]);
+  }
 }
 
 
