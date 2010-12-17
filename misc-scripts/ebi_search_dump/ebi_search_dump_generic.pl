@@ -423,8 +423,14 @@ g.seq_region_id=ae.seq_region_id and ae.exc_type='HAP'", [qw(gene_id)]
 
                 $xrefs{$type}{ $_->[0] }{ $_->[3] }{ $_->[1] } = 1 if $_->[1];
                 $xrefs{$type}{ $_->[0] }{ $_->[3] }{ $_->[2] } = 1 if $_->[2];
-                $xrefs{$type}{ $_->[0] }{ $_->[3] . "_synonym" }{ $_->[4] } = 1
-                  if $_->[4];
+## remove the duplicates + Temp fix for metazoa data 
+		if (my $syn = $_->[4]) {
+		    $syn =~ s/^\'|\'$//g;
+		    next if ($syn =~ /^(FBtr|FBpp)\d+/);
+		    next if ($syn =~ /^CG\d+\-/);
+		    $xrefs{$type}{ $_->[0] }{ $_->[3] . "_synonym" }{ $syn } = 1;
+		}
+##
                 $xrefs_desc{$type}{ $_->[0] }{ $_->[5] } = 1 if $_->[5];
 
             }
@@ -461,7 +467,7 @@ g.seq_region_id=ae.seq_region_id and ae.exc_type='HAP'", [qw(gene_id)]
         my $gene_info = $dbh->selectall_arrayref( "
         select gsi.gene_id, tsi.transcript_id, trsi.translation_id,
              gsi.stable_id as gsid, tsi.stable_id as tsid, trsi.stable_id as trsid,
-             g.description, ed.db_name, x.dbprimary_acc,x.display_label, ad.display_label, ad.description, g.source, g.status, g.biotype
+             g.description, ed.db_display_name, x.dbprimary_acc,x.display_label, ad.display_label, ad.description, g.source, g.status, g.biotype
         from (((( $DBNAME.gene_stable_id as gsi, $DBNAME.gene as g,
              $DBNAME.transcript_stable_id as tsi,
              $DBNAME.analysis_description as ad,
