@@ -1116,20 +1116,20 @@ SSQL
 
   if ( defined($exdbname) ) {
     if ( index( $exdbname, '%' ) != -1 ) {
-      $sql .= " AND exDB.db_name = "
+      $sql .= " AND exDB.db_name LIKE "
         . $self->dbc()->db_handle()->quote( $exdbname, SQL_VARCHAR );
     } else {
-      $sql .= " AND exDB.db_name LIKE "
+      $sql .= " AND exDB.db_name = "
         . $self->dbc()->db_handle()->quote( $exdbname, SQL_VARCHAR );
     }
   }
 
   if ( defined($exdb_type) ) {
     if ( index( $exdb_type, '%' ) != -1 ) {
-      $sql .= " AND exDB.type = "
+      $sql .= " AND exDB.type LIKE "
         . $self->dbc()->db_handle()->quote( $exdb_type, SQL_VARCHAR );
     } else {
-      $sql .= " AND exDB.type LIKE "
+      $sql .= " AND exDB.type = "
         . $self->dbc()->db_handle()->quote( $exdb_type, SQL_VARCHAR );
     }
   }
