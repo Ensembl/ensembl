@@ -261,7 +261,7 @@ sub type_variation {
   #empty type first in the case of recursive call
   $var->empty_type if defined $var->type;
   
-  if (!$var->isa('Bio::EnsEMBL::Variation::ConsequenceType')){
+  if (!$var->isa('Bio::EnsEMBL::Variation::ConsequenceType')) {
       throw("Not possible to calculate the consequence type for ",ref($var)," : Bio::EnsEMBL::Variation::ConsequenceType object expected");
   }
 
@@ -274,19 +274,34 @@ sub type_variation {
   # check the cache
   my $tran_features = $tr->{_variation_effect_feature_cache};
   
-  # populate it if not found
+  # populate it if not found 
   unless ($tran_features) {
-	if ($tran_features->{translation} = $tr->translate) {
+	$tran_features = {
+	  mapper  => $tr->get_TranscriptMapper,
+	};
+
+    my ($attrib) = @{$tr->slice()->get_all_Attributes('codon_table')}; #for mithocondrial dna it is necessary to change the table
+
+    my $codon_table;
+    $codon_table = $attrib->value() if($attrib);
+    $codon_table ||= 1; # default vertebrate codon table 
+
+    if ($tran_features->{translation} = $tr->translate(undef, undef, undef, $codon_table)) {
 	  $tran_features->{translateable_seq} = $tr->translateable_seq;
-	  $tran_features->{peptide} = $tran_features->{translation}->seq;
+      
+      # to include the stop codon we need to translate the Bio::Seq sequence, not just
+      # $tr->translation, this is the source of the missing STOP_LOSTs
+      my $mrna_seqobj = Bio::Seq->new(
+          -seq      =>  $tran_features->{translateable_seq},
+          -moltype  => 'dna',
+          -alphabet => 'dna'
+      );
+
+	  $tran_features->{peptide} = $mrna_seqobj->translate(undef, undef, undef, $codon_table)->seq;
 	}
-	
-	$tran_features->{mapper} = $tr->get_TranscriptMapper;
-	$tran_features->{introns} = $tr->get_all_Introns,
 	
 	$tr->{_variation_effect_feature_cache} = $tran_features;
   }
-  
 
   if ( !defined( $tran_features->{translation} ) )
   {    # for other biotype rather than coding/IG genes
@@ -565,6 +580,12 @@ sub apply_aa_change {
   my $tr = shift;
   my $var = shift;
   
+  my ($attrib) = @{$tr->slice()->get_all_Attributes('codon_table')}; #for mithocondrial dna it is necessary to change the table
+
+  my $codon_table;
+  $codon_table = $attrib->value() if($attrib);
+  $codon_table ||= 1; # default vertebrate codon table 
+
   # check the cache
   my $tran_features = $tr->{_variation_effect_feature_cache};
   
@@ -573,30 +594,28 @@ sub apply_aa_change {
 	$tran_features = {
 	  mapper  => $tr->get_TranscriptMapper,
 	};
-	
-	if ($tran_features->{translation} = $tr->translate) {
+
+    if ($tran_features->{translation} = $tr->translate(undef, undef, undef, $codon_table)) {
 	  $tran_features->{translateable_seq} = $tr->translateable_seq;
-	  $tran_features->{peptide} = $tran_features->{translation}->seq;
+      
+      # to include the stop codon we need to translate the Bio::Seq sequence, not just
+      # $tr->translation, this is the source of the missing STOP_LOSTs
+      my $mrna_seqobj = Bio::Seq->new(
+          -seq      =>  $tran_features->{translateable_seq},
+          -moltype  => 'dna',
+          -alphabet => 'dna'
+      );
+
+	  $tran_features->{peptide} = $mrna_seqobj->translate(undef, undef, undef, $codon_table)->seq;
 	}
 	
 	$tr->{_variation_effect_feature_cache} = $tran_features;
   }
-  
 
-  #my $peptide = $tr->translate->seq();
-  #to consider stop codon as well
   my $mrna = $tran_features->{translateable_seq}; # get from cache
-  my $mrna_seqobj = Bio::Seq->new( -seq        => $mrna,
-				   -moltype    => "dna",
-				   -alphabet   => "dna");
-
-  my ($attrib) = @{$tr->slice()->get_all_Attributes('codon_table')}; #for mithocondrial dna it is necessary to change the table
-
-  my $codon_table;
-  $codon_table = $attrib->value() if($attrib);
-  $codon_table ||= 1; # default vertebrate codon table 
 
   my $peptide = $tran_features->{peptide}; # get from cache
+  
   my $len = $var->aa_end - $var->aa_start + 1;
   my $old_aa = substr($peptide, $var->aa_start -1 , $len);
 
