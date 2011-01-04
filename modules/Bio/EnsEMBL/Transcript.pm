@@ -1212,33 +1212,31 @@ sub add_Attributes {
 
 =cut
 
-sub add_Exon{
-  my ($self,$exon, $rank) = @_;
+sub add_Exon {
+  my ( $self, $exon, $rank ) = @_;
 
-  #yup - we are going to be picky here...
-  unless(defined $exon && ref $exon && $exon->isa("Bio::EnsEMBL::Exon") ) {
-    throw("[$exon] is not a Bio::EnsEMBL::Exon!");
-  }
+  assert_ref( $exon, 'Bio::EnsEMBL::Exon' );
 
   $self->{'_trans_exon_array'} ||= [];
 
-  if(defined($rank)) {
-    $self->{'_trans_exon_array'}->[$rank-1] = $exon;
+  if ( defined($rank) ) {
+    $self->{'_trans_exon_array'}->[ $rank - 1 ] = $exon;
     return;
   }
 
   my $was_added = 0;
 
   my $ea = $self->{'_trans_exon_array'};
-  if( @$ea ) {
-    if( $exon->strand() == 1 ) {
-      if( $exon->start() > $ea->[$#$ea]->end() ) {
-        push(@{$self->{'_trans_exon_array'}},$exon);
+
+  if ( @{$ea} ) {
+    if ( $exon->strand() == 1 ) {
+      if ( $exon->start() > $ea->[$#$ea]->end() ) {
+        push( @{ $self->{'_trans_exon_array'} }, $exon );
         $was_added = 1;
       } else {
         # insert it at correct place
-        for( my $i=0; $i <= $#$ea; $i++ ) {
-          if( $exon->end() < $ea->[$i]->start() ) {
+        for ( my $i = 0; $i <= $#$ea; $i++ ) {
+          if ( $exon->end() < $ea->[$i]->start() ) {
             splice( @$ea, $i, 0, $exon );
             $was_added = 1;
             last;
@@ -1246,13 +1244,13 @@ sub add_Exon{
         }
       }
     } else {
-      if( $exon->end() < $ea->[$#$ea]->start() ) {
-        push(@{$self->{'_trans_exon_array'}},$exon);
+      if ( $exon->end() < $ea->[$#$ea]->start() ) {
+        push( @{ $self->{'_trans_exon_array'} }, $exon );
         $was_added = 1;
       } else {
         # insert it at correct place
-        for( my $i=0; $i <= $#$ea; $i++ ) {
-          if( $exon->start() > $ea->[$i]->end() ) {
+        for ( my $i = 0; $i <= $#$ea; $i++ ) {
+          if ( $exon->start() > $ea->[$i]->end() ) {
             splice( @$ea, $i, 0, $exon );
             $was_added = 1;
             last;
@@ -1266,24 +1264,30 @@ sub add_Exon{
   }
 
   # sanity check:
-  if(!$was_added) {
+  if ( !$was_added ) {
     # exon was not added because it has same end coord as start
     # of another exon
     my $all_str = '';
     foreach my $e (@$ea) {
-      $all_str .= '  '.$e->start .'-'.$e->end.' ('.$e->strand.') ' .
-        ($e->stable_id || '') . "\n";
+      $all_str .= '  '
+        . $e->start() . '-'
+        . $e->end() . ' ('
+        . $e->strand() . ') '
+        . ( $e->stable_id() || '' ) . "\n";
     }
-    my $cur_str = '  '.$exon->start.'-'.$exon->end. ' ('.$exon->strand.') '.
-      ($exon->stable_id || '')."\n";
-    throw("Exon overlaps with other exon in same transcript.\n" .
-          "Transcript Exons:\n$all_str\n" .
-          "This Exon:\n$cur_str");
+    my $cur_str = '  '
+      . $exon->start() . '-'
+      . $exon->end() . ' ('
+      . $exon->strand() . ') '
+      . ( $exon->stable_id() || '' ) . "\n";
+    throw(   "Exon overlaps with other exon in same transcript.\n"
+           . "Transcript Exons:\n$all_str\n"
+           . "This Exon:\n$cur_str" );
   }
 
   # recalculate start, end, slice, strand
   $self->recalculate_coordinates();
-}
+} ## end sub add_Exon
 
 
 =head2 get_all_Exons
