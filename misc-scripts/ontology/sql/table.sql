@@ -36,7 +36,7 @@ CREATE TABLE term (
   term_id       INT UNSIGNED NOT NULL AUTO_INCREMENT,
   ontology_id   INT UNSIGNED NOT NULL,
   subsets       TEXT,
-  accession     VARCHAR(32) NOT NULL,
+  accession     VARCHAR(64) NOT NULL,
   name          VARCHAR(255) NOT NULL,
   definition    TEXT,
 
