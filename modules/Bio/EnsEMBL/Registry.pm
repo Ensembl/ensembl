@@ -2415,8 +2415,16 @@ sub version_check {
   Arg [2]    :  String known_type (optional)
                 The type of the stable ID, if it is known.
 
-  Example    :  my ( $species, $object_type, $db_type ) =
-                  $registry->get_species_and_object_type('ENST00000326632');
+  Example    :  my $stable_id = 'ENST00000326632';
+
+                my ( $species, $object_type, $db_type ) =
+                  $registry->get_species_and_object_type($stable_id);
+
+                my $adaptor =
+                  $registry->get_adaptor( $species, $db_type,
+                                          $object_type );
+
+                my $object = $adaptor->fetch_by_stable_id($stable_id);
 
   Return type:  Array consisting of the species name, object type,
                 and database type.  The array may be empty if no
