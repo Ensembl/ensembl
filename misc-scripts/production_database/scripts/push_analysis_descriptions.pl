@@ -25,9 +25,9 @@ sub usage {
 
 Usage:
 
-  $0 --release NN --master master_server \\
-  $padding --server server1 --server server2 [...] \\
-  $padding --dbport 3306 --dbuser user --dbpass passwd
+  $0 --release NN --master master_server[:port] \\
+  $padding --server server1[:port1] --server server2[:port2] [...] \\
+  $padding --dbuser user --dbpass passwd
 
 or
   $0 --help
@@ -40,14 +40,17 @@ where
   --release/-r  The current release (required).
 
   --master/-m   The master server where the production database lives
-                (optional, default is 'ens-staging1').
+                (optional, default is 'ens-staging1').  Specifying the
+                port is optional, the default port is 3306.
+
   --server/-s   A database server (optional, may occur several times,
                 default is 'ens-staging1' and 'ens-staging2').
-
-  --dbport/-P   The port to connect to (optional, default is '3306').
+                Specifying the port is optional, the default port is
+                3306.
 
   --dbuser/-u   The (read-only) user to connect as (optional,
                 default is 'ensro').
+
   --dbpass/-p   The password to connect with (optional, no default).
 
   --help/-h     Displays this help text.
@@ -72,10 +75,9 @@ sub display_banner {
 }
 
 my $release;
-my @servers = ( 'ens-staging1', 'ens-staging2' );
+my @servers;
 my $master = 'ens-staging1';
 
-my $dbport = '3306';
 my ( $dbuser, $dbpass ) = ( 'ensro', undef );
 
 my $opt_help  = 0;
@@ -86,7 +88,6 @@ if ( !GetOptions( 'release|r=i' => \$release,
                   'server|s=s@' => \@servers,
                   'dbuser|u=s'  => \$dbuser,
                   'dbpass|p=s'  => \$dbpass,
-                  'dbport|P=s'  => \$dbport,
                   'help|h!'     => \$opt_help,
                   'about!'      => \$opt_about
      )
@@ -104,15 +105,26 @@ if ( !GetOptions( 'release|r=i' => \$release,
   exit();
 }
 
+if ( !@servers ) {
+  @servers = ( 'ens-staging1', 'ens-staging2' );
+}
+
 my @dbtypes = ( 'core', 'otherfeatures', 'cdna', 'vega', 'rnaseq' );
 
 my %db_handles;
 
 my %master;
+my %master_r;
 
 {
+  my ( $host, $port ) = ( $master =~ /^([^:]+):?(\d+)?/ );
+
+  if ( !defined($port) ) {
+    $port = 3306;
+  }
+
   my $dsn = sprintf( 'DBI:mysql:host=%s;port=%d;database=%s',
-                     $master, $dbport, 'ensembl_production' );
+                     $host, $port, 'ensembl_production' );
   my $dbh =
     DBI->connect( $dsn, $dbuser, $dbpass, { 'PrintError' => 1 } );
 
@@ -145,14 +157,22 @@ FROM full_analysis_description
                                       'description'   => $description,
                                       'display_label' => $display_label,
                                       'displayable'   => $displayable,
-                                      'web_data'      => $web_data
-    };
+                                      'web_data'      => $web_data };
+
+    $master_r{$logic_name_lc}{$full_db_name} =
+      $master{$full_db_name}{$logic_name_lc};
   }
 
 }
 
 foreach my $server (@servers) {
-  my $dsn = sprintf( 'DBI:mysql:host=%s;port=%d', $server, $dbport );
+  my ( $host, $port ) = ( $server =~ /^([^:]+):?(\d+)?/ );
+
+  if ( !defined($port) ) {
+    $port = 3306;
+  }
+
+  my $dsn = sprintf( 'DBI:mysql:host=%s;port=%d', $host, $port );
   my $dbh =
     DBI->connect( $dsn, $dbuser, $dbpass, { 'PrintError' => 1 } );
 
@@ -231,14 +251,17 @@ foreach my $server (@servers) {
                   $row{'logic_name'} );
 
           if ( !exists( $master->{$logic_name_lc} ) ) {
-            print(   "==> And additionally, "
-                   . "it's not in the production database.\n" );
-
-            push( @{ $sql{$dbname} },
-                  sprintf( "-- WARNING: missing analysis_desciption "
-                             . "for logic_name '%s'\n\n",
-                           $logic_name_lc
-                  ) );
+            if ( exists( $master_r{$logic_name_lc} ) ) {
+              push( @{ $sql{$dbname} },
+                    sprintf( "-- WARNING: missing analysis_desciption "
+                               . "for logic_name '%s'\n\n",
+                             $logic_name_lc ) );
+            } else {
+              push( @{ $sql{$dbname} },
+                    sprintf( "-- WARNING: unknown analysis_desciption "
+                               . "for logic_name '%s'\n\n",
+                             $logic_name_lc ) );
+            }
           } else {
 
             push(
@@ -321,8 +344,7 @@ foreach my $server (@servers) {
                   $row{'description'}   || 'NULL',
                   $row{'display_label'} || 'NULL',
                   $row{'displayable'}   || 'NULL',
-                  $row{'web_data'}      || 'NULL'
-          );
+                  $row{'web_data'}      || 'NULL' );
 
           push( @{ $sql{$dbname} },
                 sprintf(
@@ -339,12 +361,10 @@ foreach my $server (@servers) {
                       . "#!! );\n",
                     $logic_name_lc,
                     $dbh->quote_identifier( undef, 'ensembl_production',
-                                            'analysis_description'
-                    ),
+                                            'analysis_description' ),
                     $dbh->quote( $logic_name_lc,        SQL_VARCHAR ),
                     $dbh->quote( $row{'description'},   SQL_VARCHAR ),
-                    $dbh->quote( $row{'display_label'}, SQL_VARCHAR )
-                ),
+                    $dbh->quote( $row{'display_label'}, SQL_VARCHAR ) ),
                 sprintf( "#!! -- MASTER: Inserting above logic_name "
                            . "into web_data\n"
                            . "#!! INSERT INTO %s (\n"
@@ -358,11 +378,8 @@ foreach my $server (@servers) {
                          $dbh->quote( (
                                     defined( $row{'web_data'} )
                                     ? Dumper( eval( $row{'web_data'} ) )
-                                    : undef
-                                  ),
-                                  SQL_VARCHAR
-                         )
-                ),
+                                    : undef ),
+                                  SQL_VARCHAR ) ),
                 sprintf(
                   "#!! NOW CONNECT THESE IN analysis_web_data! :-)\n\n")
           );
@@ -461,21 +478,16 @@ foreach my $server (@servers) {
                              $dbh->quote( $master->{$logic_name_lc}{$_},
                                           $colinfo->{$_}{'DATA_TYPE'} )
                       )
-                    } @differs
-                ),
-                $dbh->quote( $logic_name_lc, SQL_VARCHAR )
-              ),
+                    } @differs ),
+                $dbh->quote( $logic_name_lc, SQL_VARCHAR ) ),
               sprintf(
                 "-- previous value(s) were:\n%s\n",
                 join(
                   "\n",
                   map {
                     sprintf( "-- %s = '%s'", $_, $row{$_} )
-                    } @differs
-                )
-              ),
-              "\n"
-            );
+                    } @differs ) ),
+              "\n" );
 
           } ## end if ( scalar(@differs) ...)
         } ## end else [ if ( !exists( $master->...))]

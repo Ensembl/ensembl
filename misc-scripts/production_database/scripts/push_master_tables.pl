@@ -19,9 +19,9 @@ sub usage {
 
 Usage:
 
-  $0 --release NN --master master_server \\
-  $padding --server server1 --server server2 [...] \\
-  $padding --dbport 3306 --dbuser user --dbpass passwd
+  $0 --release NN --master master_server[:port] \\
+  $padding --server server1[:port1] --server server2[:port2] [...] \\
+  $padding --dbuser user --dbpass passwd
 
 or
   $0 --help
@@ -34,14 +34,17 @@ where
   --release/-r  The current release (required).
 
   --master/-m   The master server where the production database lives
-                (optional, default is 'ens-staging1').
+                (optional, default is 'ens-staging1').  Specifying the
+                port is optional, the default port is 3306.
+
   --server/-s   A database server (optional, may occur several times,
                 default is 'ens-staging1' and 'ens-staging2').
-
-  --dbport/-P   The port to connect to (optional, default is '3306').
+                Specifying the port is optional, the default port is
+                3306.
 
   --dbuser/-u   The (read-only) user to connect as (optional,
                 default is 'ensro').
+
   --dbpass/-p   The password to connect with (optional, no default).
 
   --help/-h     Displays this help text.
@@ -144,10 +147,9 @@ sub display_banner {
 }
 
 my $release;
-my @servers = ( 'ens-staging1', 'ens-staging2' );
+my @servers;
 my $master = 'ens-staging1';
 
-my $dbport = '3306';
 my ( $dbuser, $dbpass ) = ( 'ensro', undef );
 
 my $opt_help  = 0;
@@ -158,7 +160,6 @@ if ( !GetOptions( 'release|r=i' => \$release,
                   'server|s=s@' => \@servers,
                   'dbuser|u=s'  => \$dbuser,
                   'dbpass|p=s'  => \$dbpass,
-                  'dbport|P=s'  => \$dbport,
                   'help|h!'     => \$opt_help,
                   'about!'      => \$opt_about )
      || $opt_help )
@@ -174,13 +175,23 @@ if ( !GetOptions( 'release|r=i' => \$release,
   exit();
 }
 
+if ( !@servers ) {
+  @servers = ( 'ens-staging1', 'ens-staging2' );
+}
+
 my @tables =
   ( 'attrib_type', 'external_db', 'misc_set', 'unmapped_reason' );
 my @dbtypes = ( 'core', 'otherfeatures', 'cdna', 'vega', 'rnaseq' );
 
 my %master;
 {
-  my $dsn = sprintf( 'DBI:mysql:host=%s;port=%d', $master, $dbport );
+  my ( $host, $port ) = ( $master =~ /^([^:]+):?(\d+)?/ );
+
+  if ( !defined($port) ) {
+    $port = 3306;
+  }
+
+  my $dsn = sprintf( 'DBI:mysql:host=%s;port=%d', $host, $port );
   my $dbh =
     DBI->connect( $dsn, $dbuser, $dbpass, { 'PrintError' => 1 } );
 
@@ -193,7 +204,13 @@ my %master;
 
 my %db_handles;
 foreach my $server (@servers) {
-  my $dsn = sprintf( 'DBI:mysql:host=%s;port=%d', $server, $dbport );
+  my ( $host, $port ) = ( $server =~ /^([^:]+):?(\d+)?/ );
+
+  if ( !defined($port) ) {
+    $port = 3306;
+  }
+
+  my $dsn = sprintf( 'DBI:mysql:host=%s;port=%d', $host, $port );
   my $dbh =
     DBI->connect( $dsn, $dbuser, $dbpass, { 'PrintError' => 1 } );
 
