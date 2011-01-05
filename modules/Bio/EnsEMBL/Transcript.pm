@@ -1230,56 +1230,71 @@ sub add_Exon {
 
   if ( @{$ea} ) {
     if ( $exon->strand() == 1 ) {
-      if ( $exon->start() > $ea->[$#$ea]->end() ) {
-        push( @{ $self->{'_trans_exon_array'} }, $exon );
+
+      if (    ( $exon->start() > $ea->[$#$ea]->end() )
+           && ( $exon->end() > $ea->[$#$ea]->end() ) )
+      {
+        push( @{$ea}, $exon );
         $was_added = 1;
       } else {
         # insert it at correct place
         for ( my $i = 0; $i <= $#$ea; $i++ ) {
-          if ( $exon->end() < $ea->[$i]->start() ) {
-            splice( @$ea, $i, 0, $exon );
+          if (    ( $exon->start() < $ea->[$i]->start() )
+               && ( $exon->end() < $ea->[$i]->start() ) )
+          {
+            splice( @{$ea}, $i, 0, $exon );
             $was_added = 1;
             last;
           }
         }
       }
+
     } else {
-      if ( $exon->end() < $ea->[$#$ea]->start() ) {
-        push( @{ $self->{'_trans_exon_array'} }, $exon );
+
+      if (    ( $exon->start() < $ea->[$#$ea]->start() )
+           && ( $exon->end() < $ea->[$#$ea]->start() ) )
+      {
+        push( @{$ea}, $exon );
         $was_added = 1;
       } else {
         # insert it at correct place
         for ( my $i = 0; $i <= $#$ea; $i++ ) {
-          if ( $exon->start() > $ea->[$i]->end() ) {
-            splice( @$ea, $i, 0, $exon );
+          if (    ( $exon->start() > $ea->[$i]->end() )
+               && ( $exon->end() > $ea->[$i]->end() ) )
+          {
+            splice( @{$ea}, $i, 0, $exon );
             $was_added = 1;
             last;
           }
         }
       }
+
     }
   } else {
-    push( @$ea, $exon );
+    push( @{$ea}, $exon );
     $was_added = 1;
   }
 
   # sanity check:
   if ( !$was_added ) {
-    # exon was not added because it has same end coord as start
-    # of another exon
+    # The exon was not added because it was overloapping with an
+    # existing exon.
     my $all_str = '';
-    foreach my $e (@$ea) {
+
+    foreach my $e ( @{$ea} ) {
       $all_str .= '  '
         . $e->start() . '-'
         . $e->end() . ' ('
         . $e->strand() . ') '
         . ( $e->stable_id() || '' ) . "\n";
     }
+
     my $cur_str = '  '
       . $exon->start() . '-'
       . $exon->end() . ' ('
       . $exon->strand() . ') '
       . ( $exon->stable_id() || '' ) . "\n";
+
     throw(   "Exon overlaps with other exon in same transcript.\n"
            . "Transcript Exons:\n$all_str\n"
            . "This Exon:\n$cur_str" );
@@ -2292,30 +2307,33 @@ sub recalculate_coordinates {
 
   my $exons = $self->get_all_Exons();
 
-  if ( !$exons || !@$exons ) { return }
+  if ( !$exons || !@{$exons} ) { return }
 
   my ( $slice, $start, $end, $strand );
 
   my $e_index;
-  for ( $e_index = 0; $e_index < @$exons; $e_index++ ) {
+  for ( $e_index = 0; $e_index < @{$exons}; $e_index++ ) {
     my $e = $exons->[$e_index];
+
     # Skip missing or unmapped exons!
-    next if ( !defined($e) or !defined( $e->start ) );
-    $slice  = $e->slice();
-    $strand = $e->strand();
-    $start  = $e->start();
-    $end    = $e->end();
-    last;
+    if ( defined($e) && defined( $e->start() ) ) {
+      $slice  = $e->slice();
+      $strand = $e->strand();
+      $start  = $e->start();
+      $end    = $e->end();
+
+      last;
+    }
   }
 
   my $transsplicing = 0;
 
   # Start loop after first exon with coordinates
-  for ( ; $e_index < @$exons; $e_index++ ) {
+  for ( ; $e_index < @{$exons}; $e_index++ ) {
     my $e = $exons->[$e_index];
 
     # Skip missing or unmapped exons!
-    if ( !defined($e) or !defined( $e->start ) ) { next }
+    if ( !defined($e) || !defined( $e->start() ) ) { next }
 
     if ( $e->start() < $start ) {
       $start = $e->start();
@@ -2325,18 +2343,18 @@ sub recalculate_coordinates {
       $end = $e->end();
     }
 
-    if ( $slice
-      && $e->slice()
-      && $e->slice()->name() ne $slice->name() )
+    if (    defined($slice)
+         && $e->slice()
+         && $e->slice()->name() ne $slice->name() )
     {
-      throw("Exons with different slices "
-          . "are not allowed on one Transcript" );
+      throw(   "Exons with different slices "
+             . "are not allowed on one Transcript" );
     }
 
     if ( $e->strand() != $strand ) {
       $transsplicing = 1;
     }
-  }
+  } ## end for ( ; $e_index < @{$exons...})
   if ($transsplicing) {
     warning("Transcript contained trans splicing event");
   }
