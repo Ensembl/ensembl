@@ -1231,17 +1231,17 @@ sub add_Exon {
   if ( @{$ea} ) {
     if ( $exon->strand() == 1 ) {
 
-      if (    ( $exon->start() > $ea->[$#$ea]->end() )
-           && ( $exon->end() > $ea->[$#$ea]->end() ) )
-      {
+      if ( $exon->start() > $ea->[$#$ea]->end() ) {
         push( @{$ea}, $exon );
         $was_added = 1;
       } else {
         # insert it at correct place
         for ( my $i = 0; $i <= $#$ea; $i++ ) {
-          if (    ( $exon->start() < $ea->[$i]->start() )
-               && ( $exon->end() < $ea->[$i]->start() ) )
-          {
+          if ( $exon->start() < $ea->[$i]->start() ) {
+            if ( $exon->end() >= $ea->[$i]->start() ) {
+              # Overlap
+              last;
+            }
             splice( @{$ea}, $i, 0, $exon );
             $was_added = 1;
             last;
@@ -1251,17 +1251,17 @@ sub add_Exon {
 
     } else {
 
-      if (    ( $exon->start() < $ea->[$#$ea]->start() )
-           && ( $exon->end() < $ea->[$#$ea]->start() ) )
-      {
+      if ( $exon->end() < $ea->[$#$ea]->start() ) {
         push( @{$ea}, $exon );
         $was_added = 1;
       } else {
         # insert it at correct place
         for ( my $i = 0; $i <= $#$ea; $i++ ) {
-          if (    ( $exon->start() > $ea->[$i]->end() )
-               && ( $exon->end() > $ea->[$i]->end() ) )
-          {
+          if ( $exon->end() > $ea->[$i]->end() ) {
+            if ( $exon->start() <= $ea->[$i]->end() ) {
+              # Overlap
+              last;
+            }
             splice( @{$ea}, $i, 0, $exon );
             $was_added = 1;
             last;
