@@ -1231,14 +1231,18 @@ sub add_Exon {
   if ( @{$ea} ) {
     if ( $exon->strand() == 1 ) {
 
-      if ( $exon->start() > $ea->[$#$ea]->end() ) {
+      my $exon_start = $exon->start();
+
+      if ( $exon_start > $ea->[-1]->end() ) {
         push( @{$ea}, $exon );
         $was_added = 1;
       } else {
-        # insert it at correct place
-        for ( my $i = 0; $i <= $#$ea; $i++ ) {
-          if ( $exon->start() < $ea->[$i]->start() ) {
-            if ( $exon->end() >= $ea->[$i]->start() ) {
+        # Insert it at correct place
+
+        my $i = 0;
+        foreach my $e ( @{$ea} ) {
+          if ( $exon_start < $e->start() ) {
+            if ( $exon->end() >= $e->start() ) {
               # Overlap
               last;
             }
@@ -1246,19 +1250,25 @@ sub add_Exon {
             $was_added = 1;
             last;
           }
+          ++$i;
         }
+
       }
 
     } else {
 
-      if ( $exon->end() < $ea->[$#$ea]->start() ) {
+      my $exon_end = $exon->end();
+
+      if ( $exon_end < $ea->[-1]->start() ) {
         push( @{$ea}, $exon );
         $was_added = 1;
       } else {
-        # insert it at correct place
-        for ( my $i = 0; $i <= $#$ea; $i++ ) {
-          if ( $exon->end() > $ea->[$i]->end() ) {
-            if ( $exon->start() <= $ea->[$i]->end() ) {
+        # Insert it at correct place
+
+        my $i = 0;
+        foreach my $e ( @{$ea} ) {
+          if ( $exon_end > $e->end() ) {
+            if ( $exon->start() <= $e->end() ) {
               # Overlap
               last;
             }
@@ -1266,10 +1276,12 @@ sub add_Exon {
             $was_added = 1;
             last;
           }
+          ++$i;
         }
+
       }
 
-    }
+    } ## end else [ if ( $exon->strand() ==...)]
   } else {
     push( @{$ea}, $exon );
     $was_added = 1;
