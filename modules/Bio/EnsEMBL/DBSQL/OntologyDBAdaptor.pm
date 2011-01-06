@@ -40,9 +40,9 @@ use base qw ( Bio::EnsEMBL::DBSQL::DBAdaptor );
 
 sub get_available_adaptors {
   return {
-    'GOTerm' => 'Bio::EnsEMBL::DBSQL::GOTermAdaptor',
-    'SOTerm' => 'Bio::EnsEMBL::DBSQL::SOTermAdaptor'
-  };
+    'GOTerm' => 'Bio::EnsEMBL::DBSQL::OntologyTermAdaptor',  #deprecated
+    'SOTerm' => 'Bio::EnsEMBL::DBSQL::OntologyTermAdaptor',  #deprecated
+    'OntologyTerm' => 'Bio::EnsEMBL::DBSQL::OntologyTermAdaptor' };
 }
 
 1;

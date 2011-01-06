@@ -345,10 +345,8 @@ sub fetch_all_by_external_name {
 sub fetch_all_by_GOTerm {
   my ( $self, $term ) = @_;
 
-  if ( !ref($term)
-    || !$term->isa('Bio::EnsEMBL::OntologyTerm')
-    || $term->ontology() ne 'GO' )
-  {
+  assert_ref( $term, 'Bio::EnsEMBL::OntologyTerm' );
+  if ( $term->ontology() ne 'GO' ) {
     throw('Argument is not a GO term');
   }
 
@@ -356,7 +354,7 @@ sub fetch_all_by_GOTerm {
 
   my %unique_dbIDs;
   foreach my $accession ( map { $_->accession() }
-    ( $term, @{ $term->descendants() } ) )
+                          ( $term, @{ $term->descendants() } ) )
   {
     my @ids =
       $entryAdaptor->list_translation_ids_by_extids( $accession, 'GO' );
@@ -388,8 +386,7 @@ sub fetch_all_by_GOTerm {
   Example   :
 
     @genes =
-      @{ $gene_adaptor->fetch_all_by_GOTerm_accession(
-        'GO:0030326') };
+      @{ $gene_adaptor->fetch_all_by_GOTerm_accession('GO:0030326') };
 
   Description   : Retrieves a list of genes that are associated with
                   the given GO term, or with any of its descendent
@@ -416,7 +413,7 @@ sub fetch_all_by_GOTerm_accession {
 
   my $goAdaptor =
     Bio::EnsEMBL::Registry->get_adaptor( 'Multi', 'Ontology',
-    'GOTerm' );
+                                         'OntologyTerm' );
 
   my $term = $goAdaptor->fetch_by_accession($accession);
 

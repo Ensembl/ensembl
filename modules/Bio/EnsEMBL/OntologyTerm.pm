@@ -47,6 +47,9 @@ use base qw( Bio::EnsEMBL::Storable );
   Arg [-ACCESSION]  : String
                       The accession of the ontology term.
 
+  Arg [-ONTOLOGY]   : String
+                      The ontology that the term belongs to.
+
   Arg [-NAMESPACE]  : String
                       The namespace of the ontology term.
 
@@ -69,6 +72,7 @@ use base qw( Bio::EnsEMBL::Storable );
 
     my $term = Bio::EnsEMBL::OntologyTerm->new(
       '-accession'  => 'GO:0030326',
+      '-ontology'   => 'GO',
       '-namespace'  => 'biological_process',
       '-name'       => 'embryonic limb morphogenesis',
       '-definition' => 'The process, occurring in the embryo, '
@@ -89,11 +93,13 @@ sub new {
 
   my $this = $proto->SUPER::new(@_);
 
-  my ( $accession, $namespace, $name, $definition, $subsets ) =
-    rearrange(
-    [ 'ACCESSION', 'NAMESPACE', 'NAME', 'DEFINITION', 'SUBSETS' ], @_ );
+  my ( $accession, $ontology, $namespace, $name, $definition, $subsets )
+    = rearrange( [ 'ACCESSION',  'ONTOLOGY', 'NAMESPACE', 'NAME',
+                   'DEFINITION', 'SUBSETS' ],
+                 @_ );
 
   $this->{'accession'}  = $accession;
+  $this->{'ontology'}   = $ontology;
   $this->{'namespace'}  = $namespace;
   $this->{'name'}       = $name;
   $this->{'definition'} = $definition;
@@ -136,7 +142,7 @@ sub accession {
 
 sub ontology {
   my ($this) = @_;
-  return $this->adaptor()->ontology();
+  return $this->{'ontology'};
 }
 
 =head2 namespace
