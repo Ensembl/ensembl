@@ -19,15 +19,15 @@ my $registry = 'Bio::EnsEMBL::Registry';
 $registry->load_registry_from_db( '-host' => 'ensembldb.ensembl.org',
                                   '-user' => 'anonymous' );
 
-my $accession = 'GO:0050825';
+my $accession = 'GO:0044430';    # cytoskeletal part
 
-# Get a GO term adaptor and a gene adaptor (for human).
+# Get an ontology term adaptor and a gene adaptor (for human).
 my $go_adaptor =
-  $registry->get_adaptor( 'Multi', 'Ontology', 'GOTerm' );
+  $registry->get_adaptor( 'Multi', 'Ontology', 'OntologyTerm' );
 
-my $gene_adaptor = $registry->get_adaptor( 'Mouse', 'Core', 'Gene' );
+my $gene_adaptor = $registry->get_adaptor( 'Human', 'Core', 'Gene' );
 
-# Fetch a GO term by its accession.
+# Fetch the GO term by its accession.
 my $term = $go_adaptor->fetch_by_accession($accession);
 
 # Use the GO term to get a bunch of genes cross-referenced to this GO
@@ -38,9 +38,8 @@ printf( "Genes associated with the term '%s' (%s):\n",
         $term->accession(), $term->name() );
 
 foreach my $gene (@genes) {
-  printf( "stable ID = %s, external DB = %s, external name = %s\n",
-          $gene->stable_id(), $gene->external_db(),
-          $gene->external_name() );
+  printf( "stable ID = %s, external name = %s\n",
+          $gene->stable_id(), $gene->external_name() );
 }
 
 # $Id$
