@@ -1206,7 +1206,9 @@ SSQL
                        'dbname'             => $dbname,
                        'description'        => $description,
                        'linkage_annotation' => $link_annotation,
-                       'analysis'           => $analysis);
+                       'analysis'           => $analysis,
+		       'ensembl_object_type' => $ensType,
+		       'ensembl_id'          => $ensID );
 
       # Using an outer join on the synonyms as well as on identity_xref,
       # we now have to filter out the duplicates (see v.1.18 for
