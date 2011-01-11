@@ -1,27 +1,6 @@
-=head1 NAME
-
-  Bio::EnsEMBL::Utils::Iterator
-
-=head1 SYNOPSIS
-
-  my $variation_iterator = $variation_adaptor->fetch_iterator_by_VariationSet($1kg_set);
-
-  while (my $variation = $variation_iterator->next) {
-    # operate on variation object
-    print $variation->name, "\n";
-  }
-
-
-=head1 DESCRIPTION
-
-  Some adaptor methods may return more objects than can fit in memory at once, in these cases 
-  you can fetch an iterator object instead of the usual list reference. The iterator object 
-  allows you to iterate over the set of objects (using the next() method) without loading the
-  entire set into memory at once.
-
 =head1 LICENSE
 
- Copyright (c) 1999-2010 The European Bioinformatics Institute and
+ Copyright (c) 1999-2011 The European Bioinformatics Institute and
  Genome Research Limited.  All rights reserved.
 
  This software is distributed under a modified Apache license.
@@ -36,6 +15,33 @@
 
  Questions may also be sent to the Ensembl help desk at
  <helpdesk@ensembl.org>.
+
+=cut
+
+=head1 NAME
+
+  Bio::EnsEMBL::Utils::Iterator
+
+=head1 SYNOPSIS
+
+  my $variation_iterator =
+    $variation_adaptor->fetch_iterator_by_VariationSet($1kg_set);
+
+  while ( my $variation = $variation_iterator->next ) {
+    # operate on variation object
+    print $variation->name, "\n";
+  }
+
+
+=head1 DESCRIPTION
+
+Some adaptor methods may return more objects than can fit in memory at
+once, in these cases you can fetch an iterator object instead of the
+usual list reference. The iterator object allows you to iterate over the
+set of objects (using the next() method) without loading the entire set
+into memory at once.
+
+=head1 METHODS
 
 =cut
 
@@ -127,4 +133,3 @@ sub has_next {
 }
 
 1;
-
