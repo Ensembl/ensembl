@@ -57,11 +57,13 @@ use warnings;
 
 =head2 new
 
-  Arg 1 : a coderef representing the iterator, this anonymous subroutine
+  Argument : a coderef representing the iterator, this anonymous subroutine
           is assumed to return the next object in the set when called,
-          and to return undef when the set is exhausted
+          and to return undef when the set is exhausted. If the argument
+          is not defined then we return an 'empty' iterator that immediately
+          returns undef
 
-  Example    :
+  Example :
 
     my $iterator = Bio::EnsEMBL::Utils::Iterator->new(
         sub { return $self->fetch_by_dbID(shift @dbIDs) }
@@ -84,9 +86,16 @@ sub new {
     my $class = shift;
 
     my $coderef = shift;
-
-    die "The supplied argument does not look like an coderef"
-        unless ref $coderef eq 'CODE';
+    
+    # if the user doesn't supply a coderef, we create a
+    # simple 'empty' iterator that immediately returns undef
+    if (not defined $coderef) {
+        $coderef = sub { return undef };
+    }
+    else {
+        die "The supplied argument does not look like an coderef"
+            unless ref $coderef eq 'CODE';
+    }
 
     my $self = {sub => $coderef};
 
