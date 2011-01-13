@@ -20,7 +20,8 @@ sub usage {
 Usage:
 
   $0 --release NN --master master_server[:port] \\
-  $padding --server server1[:port1] --server server2[:port2] [...] \\
+  $padding --server server1[:port1] \\
+  $padding [ --server server2[:port2] ] [...] \\
   $padding --dbuser user --dbpass passwd
 
 or
@@ -179,8 +180,20 @@ if ( !@servers ) {
   @servers = ( 'ens-staging1', 'ens-staging2' );
 }
 
-my @tables =
-  ( 'attrib_type', 'external_db', 'misc_set', 'unmapped_reason' );
+# The %tables hash contains the tables to sync as keys, and has any
+# dependent tables as values.  If a primary key needs changing in, e.g.,
+# the unmapped_reason table, the unmapped_object tables need updateing
+# too.
+my %tables = (
+        'attrib_type' => [ 'misc_attrib',       'translation_attrib',
+                           'transcript_attrib', 'seq_region_attrib',
+                           'splicing_event' ],
+        'external_db' => [ 'protein_align_feature', 'dna_align_feature',
+                           'xref', 'seq_region_synonym',
+                           'unmapped_object' ],
+        'misc_set'        => ['misc_feature_misc_set'],
+        'unmapped_reason' => ['unmapped_object'] );
+
 my @dbtypes = ( 'core', 'otherfeatures', 'cdna', 'vega', 'rnaseq' );
 
 my %master;
@@ -195,7 +208,7 @@ my %master;
   my $dbh =
     DBI->connect( $dsn, $dbuser, $dbpass, { 'PrintError' => 1 } );
 
-  foreach my $table (@tables) {
+  foreach my $table ( keys(%tables) ) {
     my $master_table = sprintf( 'master_%s', $table );
     $master{$table} =
       fetch_table( $dbh, 'ensembl_production', $master_table );
@@ -237,7 +250,7 @@ foreach my $server (@servers) {
     while ( $sth->fetch() ) {
       printf( "##> Processing '%s'\n", $dbname );
 
-      foreach my $table (@tables) {
+      foreach my $table ( keys(%tables) ) {
         my $csth = $dbh->column_info( undef, $dbname, $table, '%' );
         my $colinfo = $csth->fetchall_hashref( ['COLUMN_NAME'] );
 
@@ -451,8 +464,7 @@ foreach my $server (@servers) {
                                    $_,
                                    $dbh->quote( $diff_fields{$_} ),
                                    $colinfo->{$_}{'DATA_TYPE'} )
-                          }
-                          keys(%diff_fields) ),
+                          } keys(%diff_fields) ),
                       $table,
                       $pk ),
                     sprintf(
@@ -474,7 +486,7 @@ foreach my $server (@servers) {
           } ## end else [ if ( $pk == 0 ) ]
 
         } ## end foreach my $pk ( sort { $a ...})
-      } ## end foreach my $table (@tables)
+      } ## end foreach my $table ( keys(%tables...))
 
     } ## end while ( $sth->fetch() )
   } ## end foreach my $dbtype (@dbtypes)
