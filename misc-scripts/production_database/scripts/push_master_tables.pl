@@ -67,7 +67,7 @@ About:
   and compares it to the corresponding tables on the given servers (by
   default, the staging servers).
 
-  The program will display any discrepancies on the display while
+  The program will display any discrepancies on the console while
   writing SQL to files in a subdirectory of the current directory called
   "$outdir" that will correct the discrepancies.
 
@@ -443,13 +443,13 @@ foreach my $server (@servers) {
                                  $t, $t ),
                         sprintf(
                           "-- INSERT INTO %s_dup\n"
-                            . "-- SELECT * FROM %s WHERE %s_id = %s;\n",
+                            . "-- SELECT * FROM %s WHERE %s_id = %d;\n",
                           $t, $t, $table, $master_pk ),
                         sprintf(     "-- %s_dup now contains "
                                    . "unresolved collisions\n" ),
                         sprintf( "-- UPDATE %s SET "
                                    . "%s_id = %d "
-                                   . "WHERE %s_id = %s;\n\n",
+                                   . "WHERE %s_id = %d;\n\n",
                                  $t,     $table, $master_pk,
                                  $table, $pk ) );
                     }
