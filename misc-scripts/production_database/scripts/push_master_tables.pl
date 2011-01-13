@@ -3,8 +3,8 @@
 use strict;
 use warnings;
 
-use Data::Dumper;
 use DBI qw( :sql_types );
+use Data::Dumper;
 use File::Spec::Functions;
 use Getopt::Long qw( :config no_ignore_case );
 use IO::File;

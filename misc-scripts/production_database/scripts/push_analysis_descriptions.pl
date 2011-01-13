@@ -3,18 +3,18 @@
 use strict;
 use warnings;
 
-use Data::Dumper;
 use DBI qw( :sql_types );
+use Data::Dumper;
 use File::Spec::Functions;
 use Getopt::Long qw( :config no_ignore_case );
 use IO::File;
 use POSIX qw( floor ceil );
 
+$Data::Dumper::Deparse  = 0;
+$Data::Dumper::Indent   = 0;
+$Data::Dumper::Sortkeys = 1;
 $Data::Dumper::Terse    = 1;
 $Data::Dumper::Useqq    = 0;
-$Data::Dumper::Indent   = 0;
-$Data::Dumper::Deparse  = 0;
-$Data::Dumper::Sortkeys = 1;
 
 my $outdir = 'fix-analysis_description';
 
