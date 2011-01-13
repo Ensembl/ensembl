@@ -431,19 +431,27 @@ foreach my $server (@servers) {
                         $pk, $master_pk, Dumper($master_row) );
 
                     push( @{ $sql{$dbname} },
-                          sprintf(
-                             "-- Entries with %s_id = %d "
-                               . "should change this to %d\n"
-                               . "-- Useful SQL:\n",
-                             $table,     $pk,    $master_pk));
+                          sprintf( "-- Entries with %s_id = %d "
+                                     . "should change this to %d\n"
+                                     . "-- Useful SQL:\n",
+                                   $table, $pk, $master_pk ) );
 
                     foreach $t ( @{ $tables{$table} } ) {
-                      push( @{ $sql{$dbname} },
-                            sprintf( "-- UPDATE %s SET "
-                                       . "%s_id = %d "
-                                       . "WHERE %s_id = %s;\n\n",
-                                     $t, $table, $master_pk, $table, $pk
-                            ) );
+                      push(
+                        @{ $sql{$dbname} },
+                        sprintf( "-- CREATE TABLE %s_dup LIKE %s\n",
+                                 $t, $t ),
+                        sprintf(
+                          "-- INSERT INTO %s_dup\n"
+                            . "-- SELECT * FROM %s WHERE %s_id = %s;\n",
+                          $t, $t, $table, $master_pk ),
+                        sprintf(     "-- %s_dup now contains "
+                                   . "unresolved collisions\n" ),
+                        sprintf( "-- UPDATE %s SET "
+                                   . "%s_id = %d "
+                                   . "WHERE %s_id = %s;\n\n",
+                                 $t,     $table, $master_pk,
+                                 $table, $pk ) );
                     }
 
                     $is_missing = 0;
