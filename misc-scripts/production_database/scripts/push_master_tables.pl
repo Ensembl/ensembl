@@ -434,11 +434,17 @@ foreach my $server (@servers) {
                           sprintf(
                              "-- Entries with %s_id = %d "
                                . "should change this to %d\n"
-                               . "-- Useful SQL:\n"
-                               . "-- UPDATE <table> "
-                               . "SET %s_id = %d WHERE %s_id = %s;\n\n",
-                             $table,     $pk,    $master_pk, $table,
-                             $master_pk, $table, $pk ) );
+                               . "-- Useful SQL:\n",
+                             $table,     $pk,    $master_pk));
+
+                    foreach $t ( @{ $tables{$table} } ) {
+                      push( @{ $sql{$dbname} },
+                            sprintf( "-- UPDATE %s SET "
+                                       . "%s_id = %d "
+                                       . "WHERE %s_id = %s;\n\n",
+                                     $t, $table, $master_pk, $table, $pk
+                            ) );
+                    }
 
                     $is_missing = 0;
                   }
