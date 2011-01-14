@@ -71,11 +71,10 @@ sub run {
 	$added++;
       }	
     }
-
-    $file_io->close();
-
-    print "Added $count xrefs and $added Direct xrefs to genes for VBribosomal\n" if($verbose);
-    return 0;
   }
+  $file_io->close();
+
+  print "Added $count xrefs and $added Direct xrefs to genes for VBribosomal\n" if($verbose);
+  return 0;
 }
-1; 
+1;

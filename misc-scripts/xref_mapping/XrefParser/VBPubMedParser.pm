@@ -61,8 +61,7 @@ sub run {
       chomp $line;
       my ($PubMed_id, $gene_id, $rien, $name, $origin) = split("\t",$line);  #and use the gene_id as accession
       my $descr_full = "PubMed ID $PubMed_id - $origin\n" ;
-
-      print "PMID: $PubMed_id, GID: $gene_id, NONE: $rien, NOM: $name, ORI: $origin\n" ;
+      #print STDERR "PMID: $PubMed_id, GID: $gene_id, NONE: $rien, NOM: $name, ORI: $origin\n" ;
 
       my $xref_id = $self->get_xref($gene_id,$source_id, $species_id);
       if(!defined($xref_id)){
@@ -74,12 +73,11 @@ sub run {
 	$added++;
       }	
     }
-
-    $file_io->close();
-
-    print "Added $count xrefs and $added Direct xrefs to genes for VBPubMed\n" if($verbose);
-    return 0;
   }
+  $file_io->close();
+
+  print "Added $count xrefs and $added Direct xrefs to genes for VBPubMed\n" if($verbose);
+  return 0;
 }
 
 1;
