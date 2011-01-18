@@ -436,7 +436,7 @@ foreach my $server (@servers) {
                                      . "-- Useful SQL:\n",
                                    $table, $pk, $master_pk ) );
 
-                    foreach $t ( @{ $tables{$table} } ) {
+                    foreach my $t ( @{ $tables{$table} } ) {
                       push(
                         @{ $sql{$dbname} },
                         sprintf( "-- CREATE TABLE %s_dup LIKE %s\n",
@@ -455,7 +455,7 @@ foreach my $server (@servers) {
                     }
 
                     $is_missing = 0;
-                  }
+                  } ## end if ($is_same)
                 } ## end foreach my $master_pk ( keys...)
 
                 if ($is_missing) {
