@@ -89,10 +89,8 @@ if ( !GetOptions( 'release|r=i' => \$release,
                   'dbuser|u=s'  => \$dbuser,
                   'dbpass|p=s'  => \$dbpass,
                   'help|h!'     => \$opt_help,
-                  'about!'      => \$opt_about
-     )
-     || $opt_help
-  )
+                  'about!'      => \$opt_about )
+     || $opt_help )
 {
   usage();
   exit();
@@ -145,8 +143,7 @@ FROM full_analysis_description
        $display_label, $displayable, $web_data );
 
   $sth->bind_columns( \( $full_db_name,  $logic_name,  $description,
-                         $display_label, $displayable, $web_data
-                      ) );
+                         $display_label, $displayable, $web_data ) );
 
   while ( $sth->fetch() ) {
     my $logic_name_lc = lc($logic_name);
@@ -229,8 +226,7 @@ foreach my $server (@servers) {
                   'description'   => undef,
                   'display_label' => undef,
                   'displayable'   => undef,
-                  'web_data'      => undef
-      );
+                  'web_data'      => undef );
 
       $sth2->bind_columns(\( $row{'exists'},        $row{'analysis_id'},
                              $row{'logic_name'},    $row{'description'},
