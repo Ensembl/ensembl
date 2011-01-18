@@ -370,6 +370,18 @@ foreach my $server (@servers) {
 
                 print("\n");
               } ## end if ($is_missing)
+            } elsif ($master_row->{'is_current'} == 0) {
+              display_banner( '=',
+                              sprintf( '%s.%s', $dbname, $table ) );
+
+              print("==> Entry has been deprecated:\n");
+              print( Dumper($row) );
+
+              push( @{ $sql{$dbname} },
+                    sprintf( "-- Entry with %s_id = %d is deprecated\n",
+                             $table, $pk ),
+                    sprintf( "DELETE FROM %s WHERE %s_id = %d;\n\n",
+                             $table, $table, $pk ) );
             } else {
               my %diff_fields;
 
