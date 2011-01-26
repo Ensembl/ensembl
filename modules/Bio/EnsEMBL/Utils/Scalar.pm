@@ -38,7 +38,12 @@ Bio::EnsEMBL::Utils::Scalar
 	
 	assert_ref([], 'ARRAY'); #Returns true
 	assert_ref({}, 'ARRAY'); #throws an exception
-	assert_ref($dba, 'Bio::EnsEMBL::Gene'); #throws an exception if $dba is not a Gene  
+	assert_ref($dba, 'Bio::EnsEMBL::Gene'); #throws an exception if $dba is not a Gene 
+	
+	wrap_array([]); #Returns the same reference
+	wrap_array($a); #Returns [$a] if $a was not an array
+	wrap_array(undef); #Returns [] since incoming was undefined
+	wrap_array(); #Returns [] since incoming was empty (therefore undefined)
 	
 =head1 DESCRIPTION
 
@@ -63,7 +68,7 @@ use warnings;
 
 use base qw(Exporter);
 
-our @EXPORT_OK = qw(check_ref assert_ref);
+our @EXPORT_OK = qw(check_ref assert_ref wrap_array);
 
 use Bio::EnsEMBL::Utils::Exception qw(throw);
 use Scalar::Util qw(blessed);
@@ -133,6 +138,32 @@ sub assert_ref {
     throw("'${expected}' expected class was not equal to actual class '${class}'") if $expected ne $class;
   }
   return 1;
+}
+
+=head2 wrap_array()
+
+  Arg         : The reference we want to wrap in an array
+  Description : Takes in a reference and returns either the reference if it
+                was already an array, the reference wrapped in an array or
+                an empty array (if the given value was undefined).
+  Returntype  : Array Reference
+  Example     : my $a = wrap_array($input);
+  Exceptions  : None
+  Status      : Stable
+
+=cut
+
+sub wrap_array {
+  my ($incoming_reference) = @_;
+  if(defined $incoming_reference) {
+    if(check_ref($incoming_reference, 'ARRAY')) {
+      return $incoming_reference;
+    }
+    else {
+      return [$incoming_reference];
+    }
+  }
+  return [];
 }
 
 1;

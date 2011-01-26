@@ -4,7 +4,7 @@ use warnings;
 use Test::More;
 use Test::Exception;
 
-use Bio::EnsEMBL::Utils::Scalar qw(check_ref assert_ref);
+use Bio::EnsEMBL::Utils::Scalar qw(check_ref assert_ref wrap_array);
 use Bio::EnsEMBL::IdMapping::TinyGene;
 
 my $gene = Bio::EnsEMBL::IdMapping::TinyGene->new_fast([]);
@@ -39,5 +39,18 @@ ok ( check_ref([], 'ARRAY'), 'Ref of an array should be a ARRAY');
 ok ( check_ref({}, 'HASH'), 'Ref of a hash should be a HASH');
 ok ( check_ref($gene, 'Bio::EnsEMBL::IdMapping::TinyFeature'), 'Ref of a gene should be a TinyFeature');
 ok ( check_ref($gene, 'Bio::EnsEMBL::IdMapping::TinyGene'), 'Ref of a gene should be a TinyGene');
+
+#Array Wrapping
+
+my $undef_ref = undef;
+my $value = 'hello';
+my $array = [$value];
+is_deeply( [], wrap_array(), 'Checking empty value means empty array');
+is_deeply( [], wrap_array(undef), 'Checking undef means empty array');
+is_deeply( [], wrap_array($undef_ref), 'Checking undef ref means empty array');
+is_deeply( [$value], wrap_array($value), 'Checking Scalar ref means wrapped array');
+is_deeply( $array, wrap_array($array), 'Checking arrays are the same if given array ref');
+is( $array, wrap_array($array), 'Checking arrays are the same reference');
+is_deeply( [{a => $value}], wrap_array({ a => $value}), 'Checking code behaves when working with hashes');
 
 done_testing();
