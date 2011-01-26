@@ -151,12 +151,14 @@ sub db_connection {
 
 =head2 execute() - Execute a SQL statement with a custom row handler
 
-  Arg [SQL]           : SQL to execute
-  Arg [CALLBACK]      : The callback to use for mapping a row to a data point; 
-                        leave blank for a default mapping to a 2D array
-  Arg [USE_HASHREFS]  : If set to true will cause HashRefs to be returned 
-                        to the callback & not ArrayRefs
-  Arg [PARAMS]        : The binding parameters to the SQL statement
+  Arg [SQL]             : SQL to execute
+  Arg [CALLBACK]        : The callback to use for mapping a row to a data point; 
+                          leave blank for a default mapping to a 2D array
+  Arg [USE_HASHREFS]    : If set to true will cause HashRefs to be returned 
+                          to the callback & not ArrayRefs
+  Arg [PARAMS]          : The binding parameters to the SQL statement
+  Arg [PREPARE_PARAMS]  : Parameters to be passed onto the Statement Handle 
+                          prepare call
   Returntype : 2D array containing the return of the callback
   Exceptions : If errors occur in the execution of the SQL
   Status     : Stable
@@ -239,7 +241,7 @@ is the package tracks the bind position for you.
 
 sub execute {
 	my ( $self, @args ) = @_;
-	my ($sql, $callback, $use_hashrefs, $params) = rearrange([qw(sql callback use_hashrefs params)], @args);
+	my ($sql, $callback, $use_hashrefs, $params, $prepare_params) = rearrange([qw(sql callback use_hashrefs params prepare_params)], @args);
 	my $has_return = 1;
 	
 	#If no callback then we execute using a default one which returns a 2D array
@@ -248,7 +250,7 @@ sub execute {
     $callback = $self->_mappers()->{array_ref};
 	}
 	
-	return $self->_execute( $sql, $callback, $has_return, $use_hashrefs, $params );
+	return $self->_execute( $sql, $callback, $has_return, $use_hashrefs, $params, $prepare_params );
 }
 
 =pod
@@ -333,11 +335,16 @@ sub execute_no_return {
 
 A variant of the execute methods but rather than returning a list of mapped
 results this will assume the first column of a returning map & the calling
-subroutine will map the remainder of your return as the hash's key. For example:
+subroutine will map the remainder of your return as the hash's key.
+
+B<This code can handle simple queries to hashes, complex value mappings and
+repeated mappings for the same key>. 
+
+For example:
 
 	my $sql = 'select key, one, two from table where something =?';
 	my $mapper = sub {
-		my ($row) = @_;
+		my ($row, $value) = @_;
 		#Ignore field 0 as that is being used for the key
 		my $obj = Some::Obj->new(one=>$row->[1], two=>$row->[2]);
 		return $obj;
@@ -351,9 +358,49 @@ subroutine will map the remainder of your return as the hash's key. For example:
 	print $biotype_hash->{protein_coding} || 0, "\n";
 
 The basic pattern assumes a scenario where you are mapping in a one key to
-one value. For more advanced mapping techniques you need to start using the
-non-consuming executes which allow you to process a result set without assuming
-that you want to map the rows into single objects.
+one value. For more advanced mapping techniques you can use the second 
+value passed to the subroutine paramater set. This is shown as C<$value> in
+the above examples. This value is what is found in the HASH being populated
+in the background. So on the first time you encounter it for the given
+key it will be undefined. For future invocations it will be set to the 
+value you gave it. This allows us to setup code like the following
+
+  my %args = (
+    -SQL => 'select meta_key, meta_value from meta where meta_key =? order by meta_id',
+    -PARAMS => ['species.classification']
+  );
+  
+  my $hash = $helper->execute_into_hash(
+    %args,
+    -CALLBACK => sub {
+      my ($row, $value) = @_;
+      $value = [] if ! defined $value ;
+      push(@{$value}, $row->[1]);
+      return $value;
+    }
+  );
+  
+  #OR
+  
+  $hash = $helper->execute_into_hash(
+    %args,
+    -CALLBACK => sub {
+      my ($row, $value) = @_;
+      if(defined $value) {
+        push(@{$value}, $row->[1]);
+        return;
+      }
+      my $new_value = [$row->[1]];
+      return $new_value;
+    }
+  );
+  
+The code understands that returning a defined value means to push
+this value into the background hash. In example one we keep on re-inserting
+the Array of classifications into the hash. Example two shows an early return
+from the callback which indicates to the code we do not have any value
+to re-insert into the hash. Of the two methods example one is clearer but
+is possibliy slower.
 
 B<Remember that the row you are given is the full row & not a view of the
 reminaing fields.> Therefore indexing for the data you are concerned with
@@ -373,9 +420,13 @@ sub execute_into_hash {
 	
 	#Default mapper uses the 1st key + something else from the mapper
 	my $mapper = sub {
-		my $row   = shift @_;
-		my $value = $callback->($row);
-		$hash->{ $row->[0] } = $value;
+		my $row = shift @_;
+		my $key = $row->[0];
+		my $value = $hash->{$key};
+		my $new_value = $callback->($row, $value);
+		if($new_value) {
+		 $hash->{ $key } = $new_value;
+		}
 		return;
 	};
 	
@@ -539,6 +590,7 @@ sub transaction {
                         DBI statement handle or DBConnection object after an 
                         update command
   Arg [PARAMS]        : The binding parameters to the SQL statement
+  Arg [PREPARE_PARAMS] : Parameters to bind to the prepare() StatementHandle call
   Returntype : Number of rows affected
   Exceptions : If errors occur in the execution of the SQL
   Status     : Stable
@@ -573,11 +625,13 @@ properties such as the last identifier inserted.
 
 sub execute_update {
   my ($self, @args) = @_;
-  my ($sql, $callback, $params) = rearrange([qw(sql callback params)], @args);
+  my ($sql, $callback, $params, $prepare_params) = rearrange([qw(sql callback params prepare_params)], @args);
   my $rv = 0;
   my $sth;
   eval {
-    $sth = $self->db_connection()->prepare($sql);
+    my @prepare_params;
+    @prepare_params = @{$prepare_params} if check_ref($prepare_params, 'ARRAY');
+    $sth = $self->db_connection()->prepare($sql, @prepare_params);
     $self->_bind_params($sth, $params);
     $rv = $sth->execute();
     $callback->($sth, $self->db_connection()->db_handle()) if $callback;
@@ -593,10 +647,12 @@ sub execute_update {
 
 =head2 execute_with_sth()
 
-  Arg [SQL]           : SQL to execute
-  Arg [CALLBACK]      : The callback to use for working with the statement
-                        handle once returned. This is B<not> a mapper.
-  Arg [PARAMS]        : The binding parameters to the SQL statement
+  Arg [SQL]             : SQL to execute
+  Arg [CALLBACK]        : The callback to use for working with the statement
+                          handle once returned. This is B<not> a mapper.
+  Arg [PARAMS]          : The binding parameters to the SQL statement
+  Arg [PREPARE_PARAMS]  : Used to pass parameters to the statement handle 
+                          prepare method
   Description : A subrotuine which abstracts resource handling and statement
                 preparing leaving the developer to define how to handle
                 and process the statement.
@@ -632,8 +688,8 @@ working with very large numbers of rows.
 
 sub execute_with_sth {
   my ($self, @args) = @_;
-  my ($sql, $callback, $params) = rearrange([qw(sql callback params)], @args);
-  return $self->_base_execute( $sql, 1, $params, $callback );
+  my ($sql, $callback, $params, $prepare_params) = rearrange([qw(sql callback params prepare_params)], @args);
+  return $self->_base_execute( $sql, 1, $params, $callback, $prepare_params );
 }
 
 =pod
@@ -650,6 +706,8 @@ sub execute_with_sth {
                         (larger gaps inbetween commits means more to rollback).
                         
                         Ignored if using the callback version.
+  Arg [PREPARE_PARAMS]  : Used to pass parameters to the statement handle 
+                          prepare method
   Returntype : Numbers of rows updated
   Exceptions : If errors occur in the execution of the SQL
   Status     : Stable
@@ -694,7 +752,8 @@ number affected rows by the query.
 
 sub batch {
   my ($self, @args) = @_;
-  my ($sql, $callback, $data, $commit_every) = rearrange([qw(sql callback data commit_every)], @args);
+  my ($sql, $callback, $data, $commit_every, $prepare_params) = 
+    rearrange([qw(sql callback data commit_every prepare_params)], @args);
   
   if(! defined $callback && ! defined $data) {
     throw('You need to define a callback for insertion work or the 2D data array');
@@ -702,10 +761,10 @@ sub batch {
   
   my $result;
   if(defined $callback) {
-    $result = $self->_callback_batch($sql, $callback);
+    $result = $self->_callback_batch($sql, $callback, $prepare_params);
   }
   else {
-    $result = $self->_data_batch($sql, $data, $commit_every);
+    $result = $self->_data_batch($sql, $data, $commit_every, $prepare_params);
   }
   return $result if defined $result;
   return;
@@ -774,7 +833,7 @@ sub _bind_params {
 }
 
 sub _execute {
-	my ( $self, $sql, $callback, $has_return, $use_hashrefs, $params ) = @_;
+	my ( $self, $sql, $callback, $has_return, $use_hashrefs, $params, $prepare_params ) = @_;
 
 	throw('Not given a mapper. _execute() must always been given a CodeRef') unless check_ref($callback, 'CODE');
 	
@@ -800,14 +859,14 @@ sub _execute {
     };
   }
   
-  $self->_base_execute($sql, $has_return, $params, $sth_processor);
+  $self->_base_execute($sql, $has_return, $params, $sth_processor, $prepare_params);
   
   return \@results if $has_return;
 	return;
 }
 
 sub _base_execute {
-  my ( $self, $sql, $has_return, $params, $sth_processor ) = @_;
+  my ( $self, $sql, $has_return, $params, $sth_processor, $prepare_params ) = @_;
   
   throw('Not given a sth_processor. _base_execute() must always been given a CodeRef') unless check_ref($sth_processor, 'CODE');
 	
@@ -821,8 +880,11 @@ sub _base_execute {
 	my $sth;
 
 	eval {
-		$sth = $conn->prepare($sql);
-		throw("Cannot continue as prepare() did not return a handle") unless $sth;
+	  my @prepare_params;
+	  @prepare_params = @{$prepare_params} if check_ref($prepare_params, 'ARRAY');
+		$sth = $conn->prepare($sql, @prepare_params);
+		throw("Cannot continue as prepare() did not return a handle with prepare params '@prepare_params'") 
+		  unless $sth;
 		$self->_bind_params( $sth, $params );
 		$sth->execute();
     	$sth_processor->($sth);
@@ -845,12 +907,14 @@ sub _finish_sth {
 }
 
 sub _callback_batch {
-  my ($self, $sql, $callback) = @_;
+  my ($self, $sql, $callback, $prepare_params) = @_;
   my $error;
   my $sth;
   my $closure_return;
   eval {
-    $sth = $self->db_connection()->prepare($sql); 
+    my @prepare_params;
+    @prepare_params = @{$prepare_params} if check_ref($prepare_params, 'ARRAY');
+    $sth = $self->db_connection()->prepare($sql, @prepare_params); 
     $closure_return = $callback->($sth, $self->db_connection());
   };
   $error = $@;
@@ -862,7 +926,7 @@ sub _callback_batch {
 }
 
 sub _data_batch {
-  my ($self, $sql, $data, $commit_every) = @_;
+  my ($self, $sql, $data, $commit_every, $prepare_params) = @_;
   
   #Input checks
   assert_ref($data, 'ARRAY');
@@ -902,7 +966,7 @@ sub _data_batch {
     return $total_affected || 0;
   };
   
-  return $self->_callback_batch($sql, $callback)
+  return $self->_callback_batch($sql, $callback, $prepare_params)
 }
 
 1;

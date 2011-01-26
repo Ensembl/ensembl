@@ -16,14 +16,14 @@ my $dba = $multi->get_DBAdaptor( 'core' );
 ok( $dba, 'Test database instatiated' );
 
 #Now start testing the Helper
-dies_ok { Bio::EnsEMBL::DBSQL::SqlHelper->new(-DB_CONNECTION => $dba) } 
+dies_ok { Bio::EnsEMBL::Utils::SqlHelper->new(-DB_CONNECTION => $dba) } 
   'Expect to die when we do not give SqlHelper a DBConncetion'; #was given a DBAdaptor
 ok ( 
-  isweak(Bio::EnsEMBL::DBSQL::SqlHelper->new(-DB_CONNECTION => $dba->dbc())->{db_connection}),
+  isweak(Bio::EnsEMBL::Utils::SqlHelper->new(-DB_CONNECTION => $dba->dbc())->{db_connection}),
   'Checking DBConnection reference is weak when we ask for it' 
 );
 
-my $helper = Bio::EnsEMBL::DBSQL::SqlHelper->new(-DB_CONNECTION => $dba->dbc());
+my $helper = Bio::EnsEMBL::Utils::SqlHelper->new(-DB_CONNECTION => $dba->dbc());
 ok ( $helper, 'SqlHelper instance was created' );
 
 
@@ -48,12 +48,62 @@ is_deeply(
   'Checking 2D mapping of meta key count works'
 );
 
+#EXECUTE_INTO_HASH() CHECKS
+
 my $meta_count_hash = $helper->execute_into_hash(
   -SQL => 'select meta_key, count(*) from meta group by meta_key'
 );
 
 is($meta_count_hash->{$meta_key}, 1, 'Checking hash comes back correctly');
 
+{
+  my $count = 0;
+  my %args = (
+    -SQL => 'select meta_key, meta_value from meta where meta_key =? order by meta_id',
+    -PARAMS => ['species.classification']
+  );
+  my $expected_hash = {
+    'species.classification' => [
+      qw(sapiens Homo Hominidae Catarrhini Primates Eutheria Mammalia Vertebrata Chordata Metazoa Eukaryota)
+    ]
+  };
+  
+  #Checking explicit returning of the hash
+  my $explicit_hash = $helper->execute_into_hash(
+    %args,
+    -CALLBACK => sub {
+      my ($row, $value) = @_;
+      if(!$count) {
+        ok(! defined $value, 'Checking value is undefined for the first call');
+      }
+      $value = [] if ! defined $value ;
+      push(@{$value}, $row->[1]);
+      $count++;
+      return $value;
+    }
+  );
+  
+  is_deeply($explicit_hash, $expected_hash, 'Checking HASH building allows for callbacks with same data structure');
+  
+  #Checking when we do an empty return undef
+  my $undef_hash = $helper->execute_into_hash(
+    %args,
+    -CALLBACK => sub {
+      my ($row, $value) = @_;
+      if(defined $value) {
+        push(@{$value}, $row->[1]);
+        return;
+      }
+      my $new_value = [$row->[1]];
+      return $new_value;
+    }
+  );
+  
+  is_deeply($explicit_hash, $expected_hash, 'Checking HASH building allows for callbacks with same data structure with undef returns');
+}
+
+
+#TRANSACTION() CHECKS
 my $meta_table_count = $helper->execute_single_result(-SQL => 'select count(*) from meta');
 my $meta_memoize = $helper->execute(-SQL => 'select * from meta');
 
