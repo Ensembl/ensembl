@@ -30,6 +30,9 @@ This is a list of dependent Xrefs that might be added:
     protein_id
 
 
+Note: For human, mouse and rat we also take the direct mappings from uniprot for the SWISSPROT entries.
+Those not mapped by uniprot are then processed in the normal way.
+
 Refseq_peptide
 --------------
 
@@ -108,38 +111,6 @@ Exonerate).  No longer loaded via UniProt.
 Has no dependent Xrefs.
 
 
-AgilentProbe
-------------
-
-This is a local and is not down loaded automatically via FTP so an
-AgilentProbe the file must be copied by hand.  This will be some thing
-like
-
-    file:AgilentProbe/HumanExpression.fasta
-
-These are primary Xrefs in that they contain sequence and hence can be
-mapped to the Ensembl entities via normal alignment methods (we use
-Exonerate).
-
-Has no dependent Xrefs.
-
-
-AgilentCGH
-----------
-
-This is a local and is not down loaded automatically via FTP so an
-AgilentProbe the file must be copied by hand.  This will be some thing
-like
-
-    file:AgilentCGH/HumanCGH.fasta
-
-These are primary Xrefs in that they contain sequence and hence can be
-mapped to the Ensembl entities via normal alignment methods (we use
-Exonerate).
-
-Has no dependent Xrefs.
-
-
 EMBL
 ----
 
@@ -205,19 +176,6 @@ and identifiers are stored.  The identifiers stored are of the type
     PROSITE, PFAM, PRINTS, PREFILE, PROFILE, TIGRFAMs
 
 
-UniProt/Varsplic
-----------------
-
-Alternative splice forms are obtained from the following file
-
-    ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot_varsplic.fasta.gz
-
-These are primary Xrefs in that they contain sequence and hence can be
-mapped to the Ensembl entities via normal alignment methods (we use
-Exonerate).
-
-Has no dependent Xrefs.
-
 
 ncRNA, RFAM, miRNA_Registry
 ---------------------------
@@ -267,51 +225,31 @@ will also be matched.
 HGNC
 ----
 
-The Human Genome Organisation Xrefs are obtained from three files
+The HUman Genome Organisation Xrefs are obtained from various sources:-
 
-These are 
-1) HUGO_TO_ENSG
-   a local file which has a list of HGNC, ensembl gene pairs. (Direct xrefs)
+
+1) HGNC (ensembl_mapped)
+HGNC has direct mapping to ensembl which have been manually curated. 
+So information is obtianed from the script http://www.genenames.org/cgi-bin/hgnc_downloads.cgi
+
+2) CCDS 
+The HGNC's are connected to the same ensembl object that the CCDS are linked 
+to. We connec to the ccds database to get this information.
+
+3) Vega
 This is made from the Havana manually curated database.
 
-2) CCDS_TO_HUGO
-  a local file which has a list of CCDS, HGNC pairs. (Direct xrefs)
-The HGNC's are connected to the same ensembl object that the CCDS are linked 
-to.
+4) HGNC
+HGNC has links to other databases like uniprot,refseq etc and these can be used to link to ensembl
 
-3) Downloaded via the url:-
-http://www.genenames.org/cgi-bin/hgnc_downloads.cgi?title=Genew+output+data
-&col=gd_hgnc_id&col=gd_app_sym&col=gd_app_name&col=gd_prev_sym&col=gd_aliases
-&col=md_prot_id&col=gd_pub_refseq_ids&col=md_eg_id&status=Approved
-&status=Approved+Non-Human&status_opt=3&=on&where=&order_by=gd_hgnc_id
-&limit=&format=text&submit=submit&.cgifields=&.cgifields=status&.cgifields=chr
-
-Which is a script that produces a list of HGNC identifiers with the
-UniProt and RefSeq entries they are linked to.
-
-The files have references to UniProt and RefSeq entries and so the HGNC
-entries are set to be dependent Xref on these.
 
 
 
 Which of these is chosen at the mapping stage is based on the prioritys of 
-the sources. Here they are listed in order so if a HGNC can be assigned via 
-HUGO_TO_ENSG (1) then the other two sources will be ignored.
-
+the sources. Here they are listed in order above.
 This is known as a priority xref as the mapping with the best priority is 
 chosen.  
 
-
-
-
-OTTT
-----
-
-These are the direct mapping between the Vega genes and Ensembl
-ones.  Not all of these are mapped but a fair proportion are.  These
-create direct Xrefs.  The file used should be
-
-    file:OTTT/OTTT.txt
 
 
 CCDS
