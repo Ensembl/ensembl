@@ -3,7 +3,7 @@ primarily details the inner workings of the xref_mapper.pl program explaining ho
 to run it, how to track what it is doing and how to recover if something goes 
 wrong.
 This is quite technical so if you are having problems and just want it to work, 
-it might be best to skip to the FAQ at the end.
+it might be best to skip to the FAQ.tx document.
 
 So i am going to start by presuming the parsing of the external databases data 
 has been successful. 
