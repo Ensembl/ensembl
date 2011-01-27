@@ -259,9 +259,12 @@ foreach my $server (@servers) {
         foreach
           my $pk ( sort { $a <=> $b } keys( %{ $master{$table} } ) )
         {
-          if ( !exists( $table{$pk} ) ) {
-            my $row    = $master{$table}{$pk};
-            my @fields = sort( keys( %{$row} ) );
+          if ( !exists( $table{$pk} )
+               && $master{$table}{$pk}{'is_current'} )
+          {
+            my $row = $master{$table}{$pk};
+            my @fields =
+              grep( !/^is_current$/, sort( keys( %{$row} ) ) );
 
             push(
               @{ $sql{$dbname} },
@@ -381,7 +384,10 @@ foreach my $server (@servers) {
                     sprintf( "-- Entry with %s_id = %d is deprecated\n",
                              $table, $pk ),
                     sprintf( "DELETE FROM %s WHERE %s_id = %d;\n\n",
-                             $table, $table, $pk ) );
+                             $dbh->quote_identifier(
+                                                  undef, $dbname, $table
+                             ),
+                             $table, $pk ) );
             } else {
               my %diff_fields;
 
