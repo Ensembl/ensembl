@@ -2,7 +2,7 @@
  *    altSpliceFinder main program.
  *    Author: Gautier Koscielny <koscieln@ebi.ac.uk>
  *
- *    Copyright (c) 1999-2010 The European Bioinformatics Institute and 
+ *    Copyright (c) 1999-2011 The European Bioinformatics Institute and 
  *    Genome Research Limited, and others.  All rights reserved. 
  *
  *    Redistribution and use in source and binary forms, with or without 

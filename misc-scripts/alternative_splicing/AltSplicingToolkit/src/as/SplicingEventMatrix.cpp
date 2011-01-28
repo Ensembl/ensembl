@@ -2,7 +2,7 @@
  *    AltSplicingToolkit
  *    Author: Gautier Koscielny <koscieln@ebi.ac.uk>
  *
- *    Copyright (c) 1999-2010 The European Bioinformatics Institute and 
+ *    Copyright (c) 1999-2011 The European Bioinformatics Institute and 
  *    Genome Research Limited, and others.  All rights reserved. 
  *
  *    Redistribution and use in source and binary forms, with or without 
@@ -359,9 +359,9 @@ namespace as {
     list< int > sites2;
 
     /**
-     * Conditions:
+     * Pre-conditions:
      *  - there must be one exon before and one exon after
-     *  - the exons must overlap
+     *  - Exons must overlap
      */
     if ( ( t1Index - 1 ) >= 0 &&
         ( t1Index + 1 ) < xSize &&
@@ -689,7 +689,7 @@ namespace as {
 
     /**
      * Exon Isoform event
-     * Conditions:
+     * Pre-conditions:
      *  - same end : one intron before
      *  - same start: one intron after
      *  - intron overlaps
@@ -709,10 +709,10 @@ namespace as {
 			 ) ||
 			(
 			 f1->getStrand() == -1 &&
-			 f1->getStart() == f2->getStart() && f1->getEnd() != f2->getEnd() &&
-			 ( t1Index - 1 ) >= 0 && ( t2Index - 1 ) >= 0 && 
-			 (t1Features[t1Index - 1]->getEnd() == t2Features[t2Index - 1]->getEnd() ||
-				(bRELAX == 1 && (overlapMatrix[t1Index - 1][t2Index - 1] & OVERLAP) == OVERLAP))
+			 f1->getEnd() == f2->getEnd() && f1->getStart() != f2->getStart() &&
+			 ( t1Index + 1 ) < xSize && ( t2Index + 1 ) < ySize && 
+			 (t1Features[t1Index + 1]->getStart() == t2Features[t2Index + 1]->getStart() ||
+			 (bRELAX == 1 && (overlapMatrix[t1Index + 1][t2Index + 1] & OVERLAP) == OVERLAP))
 			 );
 
 			bool a5ss = 
@@ -720,14 +720,14 @@ namespace as {
 			 f1->getStrand() == 1 &&
 			 f1->getStart() == f2->getStart() && f1->getEnd() != f2->getEnd() &&
 			 ( t1Index + 1 ) < xSize && ( t2Index + 1 ) < ySize && 
-			 (t1Features[t1Index + 1]->getStart() == t2Features[t2Index + 1]->getStart() ||
-			 (bRELAX && (overlapMatrix[t1Index + 1][t2Index + 1] & OVERLAP) == OVERLAP))
+			 (t1Features[t1Index + 1]->getEnd() == t2Features[t2Index + 1]->getEnd() ||
+			 (bRELAX == 1 && (overlapMatrix[t1Index + 1][t2Index + 1] & OVERLAP) == OVERLAP))
 			 ) ||
 			(f1->getStrand() == -1 &&
-			 f1->getEnd() == f2->getEnd() && f1->getStart() != f2->getStart() &&
-			 ( t1Index + 1 ) < xSize && ( t2Index + 1 ) < ySize && 
-			 (t1Features[t1Index + 1]->getStart() == t2Features[t2Index + 1]->getStart() ||
-				(bRELAX == 1 && (overlapMatrix[t1Index + 1][t2Index + 1] & OVERLAP) == OVERLAP))
+			 f1->getStart() == f2->getStart() && f1->getEnd() != f2->getEnd() &&
+			 ( t1Index - 1 ) >= 0 && ( t2Index - 1 ) >= 0 && 
+			 (t1Features[t1Index - 1]->getEnd() == t2Features[t2Index - 1]->getEnd() ||
+				(bRELAX == 1 && (overlapMatrix[t1Index - 1][t2Index - 1] & OVERLAP) == OVERLAP))
 			 );
 
     bool exonIsoform =
