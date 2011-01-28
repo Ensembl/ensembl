@@ -184,7 +184,7 @@ my %group2adaptor = (
                users, specially if you need to store and retrieve
                features.  It might reduce performance when querying
                the database if not used properly.  If in doubt, do
-               not use it or ask in ensembl-dev.
+               not use it or ask in the developer mailing list.
 
   Example    : Bio::EnsEMBL::Registry->load_all();
   Returntype : none
@@ -1248,13 +1248,13 @@ my $self = shift;
   Arg [2] : (optional) integer
             If not 0, will print out all information.
   Arg [3] : (optional) integer
-          This option will turn off caching for slice features,
-          so, every time a set of features is retrieved, they
-          will come from the database instead of the cache. This
-          option is only recommended for advanced users, specially
-          if you need to store and retrieve features. It might
-          reduce performance when querying the database if not used
-          properly. If in doubt, do not use it or ask in ensembl-dev
+          This option will turn off caching for slice features, so,
+          every time a set of features is retrieved, they will come
+          from the database instead of the cache. This option is only
+          recommended for advanced users, specially if you need to
+          store and retrieve features. It might reduce performance when
+          querying the database if not used properly. If in doubt, do
+          not use it or ask in the developer mailing list.
 
   Example : load_registry_from_url(
             'mysql://anonymous@ensembldb.ensembl.org:3306');
@@ -1356,14 +1356,14 @@ sub load_registry_from_url {
                 problems and know what you are doing.
 
    Arg [-NO_CACHE]: (optional) boolean
-                This option will turn off caching for slice
-                features, so, every time a set of features is
-                retrieved, they will come from the database instead
-                of the cache.  This option is only recommended for
-                advanced users, specially if you need to store and
-                retrieve features.  It might reduce performance when
-                querying the database if not used properly.  If in
-                doubt, do not use it or ask in ensembl-dev.
+                This option will turn off caching for slice features,
+                so, every time a set of features is retrieved, they
+                will come from the database instead of the cache.  This
+                option is only recommended for advanced users, specially
+                if you need to store and retrieve features.  It might
+                reduce performance when querying the database if not
+                used properly.  If in doubt, do not use it or ask in the
+                developer mailing list.
 
    Arg [SPECIES_SUFFIX]: (optional) string
                 This option will append the string to the species name
