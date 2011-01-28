@@ -223,10 +223,6 @@ libAltSplicing_a_SOURCES = \
 
 libAltSplicing_a_CPPFLAGS = $(AM_CPPFLAGS)
 
-#noinst_HEADERS = intloops.h list.h
-
-#EXTRA_DIST = circfold.inc alicircfold.inc
-
 # -------------------------------
 # AltSplicingToolkit package distribution
 # -------------------------------

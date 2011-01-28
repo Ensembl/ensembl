@@ -1,7 +1,7 @@
 #                                                       -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
-# Copyright (c) 1999-2010 The European Bioinformatics Institute and 
+# Copyright (c) 1999-2011 The European Bioinformatics Institute and 
 # Genome Research Limited, and others.  All rights reserved. 
 
 # This program is distributed in the hope that it will be useful,
@@ -125,14 +125,14 @@ AC_ARG_WITH([boost-lib],
             [ql_boost_lib_path=$withval],
             [ql_boost_lib_path=""])
 if test [ -n "$ql_boost_lib_path" ] ; then
-   AC_SUBST([LDFLAGS],["${LDFLAGS} -L${ql_boost_lib_path} -lboost_program_options-gcc41-mt-1_37 -lboost_regex-gcc41-mt-1_37"])
+   AC_SUBST([LDFLAGS],["${LDFLAGS} -L${ql_boost_lib_path} -lboost_program_options -lboost_regex"])
 fi
 
 
 
-# libboost_regex-gcc41-mt-1_37.a
+# libboost_regex-gcc41-mt-1_45.a
 
-#PKG_CHECK_MODULES(DEPS, libboost_regex-gcc41-mt-1_37  >= 1.37.0 )
+#PKG_CHECK_MODULES(DEPS, libboost_regex-gcc41-mt-1_45  >= 1.45.0 )
 #AC_SUBST(DEPS_CFLAGS)
 #AC_SUBST(DEPS_LIBS)
 

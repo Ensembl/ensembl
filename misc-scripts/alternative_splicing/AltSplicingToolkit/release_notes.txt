@@ -1,5 +1,10 @@
 altSpliceFinder Release Notes - User visible changes.
 
+Release 0.5.3 (28 January 2011)
+-------------------------------
+
+* Use boost library release 1.45.0 to parse options
+ 
 Release 0.5.2 (03 February 2010)
 --------------------------------
 
@@ -101,7 +106,7 @@ release 0.1 (December 2008)
 
 -----
 
-Copyright (c) 1999-2010 The European Bioinformatics Institute and 
+Copyright (c) 1999-2011 The European Bioinformatics Institute and 
 Genome Research Limited, and others.  All rights reserved. 
 
 This program is distributed in the hope that it will be useful,
