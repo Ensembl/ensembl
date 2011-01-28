@@ -80,7 +80,7 @@ my $reg = "Bio::EnsEMBL::Registry";
                users, specially if you need to store and retrieve
                features.  It might reduce performance when querying
                the database if not used properly.  If in doubt, do
-               not use it or ask in ensembl-dev.
+               not use it or ask in the developer mailing list.
 
   Arg [..]   : Other args are passed to superclass
                Bio::EnsEMBL::DBSQL::DBConnection
