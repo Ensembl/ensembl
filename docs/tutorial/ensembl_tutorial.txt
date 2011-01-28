@@ -1,8 +1,10 @@
 Ensembl Perl API Tutorial
 
-By Michele Clamp.  Updated, revised, and rewritten by Michele Clamp, Ewan Birney, Graham McVicker and Dan Andrews.
+By Michele Clamp.  Updated, revised, and rewritten by Michele Clamp,
+Ewan Birney, Graham McVicker and Dan Andrews.
 
-Revisions: EB Oct 01, MC Jan 02, MC Mar 02, DA Jul 02, DA Oct 02, GM Oct 02, DA Feb 03, GM Feb 04, GM Aug 04
+Revisions: EB Oct 01, MC Jan 02, MC Mar 02, DA Jul 02, DA Oct 02, GM Oct
+02, DA Feb 03, GM Feb 04, GM Aug 04
 
 
 Introduction
@@ -22,7 +24,8 @@ If you have your PERL5LIB environment variable set correctly (see the section on
 
 perldoc Bio::EnsEMBL::Slice
 
-For additional information you can contact ensembl-dev, the Ensembl development mailing list  (see www.ensembl.org/Docs/Lists/).
+For additional information you can contact the Ensembl development
+mailing list (see www.ensembl.org/Docs/Lists/).
 
 
 Perl

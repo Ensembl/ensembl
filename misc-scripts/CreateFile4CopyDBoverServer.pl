@@ -7,7 +7,7 @@
 # Benoit Ballester <benoit@ebi.ac.uk>
 #
 # Please post comments/questions to the Ensembl development list
-# <ensembl-dev@ebi.ac.uk>
+# <dev@ensembl.org>
 #
 #########################################
 use strict;

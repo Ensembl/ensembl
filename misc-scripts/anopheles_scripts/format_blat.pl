@@ -12,7 +12,7 @@
 
 =head1 CONTACT
 
-  ensembl-dev@ebi.ac.uk
+  dev@ensembl.org
   mongin@ebi.ac.uk
 
 =cut

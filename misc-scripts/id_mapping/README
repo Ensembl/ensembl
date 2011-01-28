@@ -2,15 +2,31 @@
 Ensembl stable ID mapping
 -------------------------------------------------------------------------------
 
-Author: Patrick Meidl <meidl@ebi.ac.uk>
-
-Please post questions to the Ensembl developers mailinglist
-<ensembl-dev@ebi.ac.uk>
+Please post questions to the Ensembl developers mailing list
+<dev@ensembl.org>
 
 
-The scripts in this directory are used in Ensembl production to map stable IDs
-between one release and another.
+The scripts in this directory are used in Ensembl production to map
+stable IDs between one release and another.
 
-Please refer to the documents in ensembl-docs/id_mapping/ for both user and
-developer level documentation.
+Please refer to the documents in ensembl-doc/id_mapping/ for both user
+and developer level documentation.
 
+The following is a quick start with a bare bones description of the
+steps we go through when we run the stable ID mapping for an Ensembl
+release:
+
+
+QUICK START
+
+1.  Empty stable IDs from target database, or back them up using the
+    utils/myManager.ksh script.
+
+2.  As a sanity check, compare the gene biotypes in source and target
+    databases.
+
+3.  Create a configuration file.
+
+4.  Run the mapping using the myRun.ksh script.
+
+5.  Study the result.
