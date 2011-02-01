@@ -126,7 +126,7 @@ SELECT  db_id AS db_id,
         db_suffix) AS full_db_name
 FROM    species
   JOIN  db USING (species_id)
-WHERE species.is_current = 1;
+WHERE species.is_current = true;
 
 CREATE VIEW full_analysis_description AS
 SELECT  list.full_db_name AS full_db_name,
@@ -142,7 +142,7 @@ FROM db_list list
     AND  db.db_type = awd.db_type )
   JOIN analysis_description ad USING (analysis_description_id)
   LEFT JOIN web_data wd USING (web_data_id)
-WHERE   db.is_current = 1;
+WHERE   db.is_current = true;
 
 CREATE VIEW logic_name_overview AS
 SELECT
@@ -157,7 +157,7 @@ FROM   analysis_description ad
   JOIN analysis_web_data awd USING (analysis_description_id)
   JOIN species s USING (species_id)
   LEFT JOIN web_data wd USING (web_data_id)
-WHERE   s.is_current = 1;
+WHERE   s.is_current = true;
 
 -- Views for the master tables.  These are simply selecting the entries
 -- from the corresponding master table that have is_current = 1.
@@ -169,7 +169,7 @@ SELECT
   name AS name,
   description AS description
 FROM    master_attrib_type
-WHERE   is_current = 1;
+WHERE   is_current = true;
 
 CREATE VIEW external_db AS
 SELECT
@@ -186,7 +186,7 @@ SELECT
   secondary_db_table AS secondary_db_table,
   description AS description
 FROM    master_external_db
-WHERE   is_current = 1;
+WHERE   is_current = true;
 
 CREATE VIEW misc_set AS
 SELECT
@@ -196,7 +196,7 @@ SELECT
   description AS description,
   max_length AS max_length
 FROM    master_misc_set
-WHERE   is_current = 1;
+WHERE   is_current = true;
 
 CREATE VIEW unmapped_reason AS
 SELECT
@@ -204,4 +204,4 @@ SELECT
   summary_description AS summary_description,
   full_description AS full_description
 FROM    master_unmapped_reason
-WHERE   is_current = 1;
+WHERE   is_current = true;
