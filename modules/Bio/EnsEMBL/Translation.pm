@@ -617,7 +617,8 @@ sub get_all_DBEntries {
                are present on the translation (i.e. they have not
                already been added or loaded).
 
-                NB: This method is an alias for get_all_DBentries()
+                NB: This method is an alias for the
+                    get_all_DBentries() method.
 
   Return type: Listref of Bio::EnsEMBL::DBEntry objects
 
@@ -682,6 +683,26 @@ sub get_all_DBLinks {
   my $self = shift;
   return $self->get_all_DBEntries(@_);
 }
+
+=head2 get_all_xrefs
+
+  Arg [1]    : String database name (optional)
+               SQL wildcard characters (_ and %) can be used to
+               specify patterns.
+
+  Example    : @xrefs = @{ $translation->get_all_xrefs() };
+               @xrefs = @{ $translation->get_all_xrefs('Uniprot%') };
+
+  Description: This method is here for consistancy with the Gene
+               and Transcript classes.  It is an alias for the
+               get_all_DBLinks() method, which in turn directly
+               calls get_all_DBEntries().
+
+  Return type: Listref of Bio::EnsEMBL::DBEntry objects
+
+  Status     : Stable
+
+=cut
 
 sub get_all_xrefs {
   my $self = shift;

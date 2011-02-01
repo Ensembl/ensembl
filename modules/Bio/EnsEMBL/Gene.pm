@@ -702,7 +702,8 @@ sub get_all_DBEntries {
                present on the gene (i.e. they have not already been
                added or loaded).
 
-                NB: This method is an alias for get_all_DBentries()
+                NB: This method is an alias for the
+                    get_all_DBentries() method.
 
   Return type: Listref of Bio::EnsEMBL::DBEntry objects
 
@@ -762,6 +763,40 @@ sub get_all_DBLinks {
 
   return \@links;
 }
+
+=head2 get_all_xrefs
+
+  Arg [1]    : String database name (optional)
+               SQL wildcard characters (_ and %) can be used to
+               specify patterns.
+
+  Example    : @xrefs = @{ $gene->get_all_xrefs() };
+               @xrefs = @{ $gene->get_all_xrefs('Uniprot%') };
+
+  Description: Retrieves *all* related xrefs for this gene.  This
+               includes all xrefs that are associated with the
+               transcripts and corresponding translations of this
+               gene.
+
+               If you want to retrieve the xrefs associated
+               with only the gene (and not the transcript
+               or translations) then you should use the
+               get_all_object_xrefs() method instead.
+
+               Note: Each entry may be listed more than once.  No
+               uniqueness checks are done.  Also if you put in an
+               incorrect external database name no checks are done
+               to see if this exists, you will just get an empty
+               list.
+
+                NB: This method is an alias for the
+                    get_all_DBLinks() method.
+
+  Return type: Listref of Bio::EnsEMBL::DBEntry objects
+
+  Status     : Stable
+
+=cut
 
 sub get_all_xrefs {
   my $self = shift;
