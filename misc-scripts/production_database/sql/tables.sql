@@ -158,3 +158,50 @@ FROM   analysis_description ad
   JOIN species s USING (species_id)
   LEFT JOIN web_data wd USING (web_data_id)
 WHERE   s.is_current = 1;
+
+-- Views for the master tables.  These are simply selecting the entries
+-- from the corresponding master table that have is_current = 1.
+
+CREATE VIEW attrib_type AS
+SELECT
+  attrib_type_id AS attrib_type_id,
+  code AS code,
+  name AS name,
+  description AS description
+FROM    master_attrib_type
+WHERE   is_current = 1;
+
+CREATE VIEW external_db AS
+SELECT
+  external_db_id AS external_db_id,
+  db_name AS db_name,
+  db_release AS db_release,
+  status AS status,
+  dbprimary_acc_linkable AS dbprimary_acc_linkable,
+  display_label_linkable AS display_label_linkable,
+  priority AS priority,
+  db_display_name AS db_display_name,
+  type AS type,
+  secondary_db_name AS secondary_db_name,
+  secondary_db_table AS secondary_db_table,
+  description AS description
+FROM    master_external_db
+WHERE   is_current = 1;
+
+CREATE VIEW misc_set AS
+SELECT
+  misc_set_id AS misc_set_id,
+  code AS code,
+  name AS name,
+  description AS description,
+  max_length AS max_length
+FROM    master_misc_set
+WHERE   is_current = 1;
+
+CREATE VIEW unmapped_reason AS
+SELECT
+  unmapped_reason_id AS unmapped_reason_id,
+  summary_description AS summary_description,
+  full_description AS full_description
+FROM    master_unmapped_reason
+WHERE   is_current = 1;
