@@ -602,6 +602,29 @@ sub get_all_DBEntries {
   return $self->{$cache_name};
 } ## end sub get_all_DBEntries
 
+=head2 get_all_object_xrefs
+
+  Arg [1]    : (optional) String, external database name
+
+  Arg [2]    : (optional) String, external_db type
+
+  Example    : @oxrefs = @{ $translation->get_all_object_xrefs() };
+
+  Description: Retrieves xrefs for this translation.
+
+               This method will attempt to lazy-load xrefs from a
+               database if an adaptor is available and no xrefs
+               are present on the translation (i.e. they have not
+               already been added or loaded).
+
+                NB: This method is an alias for get_all_DBentries()
+
+  Return type: Listref of Bio::EnsEMBL::DBEntry objects
+
+  Status     : Stable
+
+=cut
+
 sub get_all_object_xrefs {
       my $self = shift;
             return $self->get_all_DBEntries(@_);
