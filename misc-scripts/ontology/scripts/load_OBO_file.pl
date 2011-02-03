@@ -308,7 +308,7 @@ sub write_relation {
     }
 
     ++$count;
-  }
+  } ## end foreach my $child_term ( sort...)
   alarm(0);
 
   $dbh->do("OPTIMIZE TABLE relation");
@@ -423,7 +423,7 @@ EOT
   }
 
   if ( $state eq 'Term' ) {    # IN OBO FILE BODY
-    if ( $line eq '' ) {       # END OF PREVIOUS TERM
+    if ( $line eq '' || $obo->eof() ) {    # END OF PREVIOUS TERM
       if ( !defined( $term{'namespace'} ) ) {
         $term{'namespace'} = $default_namespace;
       }
