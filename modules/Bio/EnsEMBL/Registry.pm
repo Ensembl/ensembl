@@ -2443,7 +2443,8 @@ my %stable_id_stmts = (
                       . 'JOIN %1$s.coord_system USING (coord_system_id) '
                       . 'JOIN %1$s.meta m USING (species_id) '
                       . 'WHERE si.stable_id = ? '
-                      . 'AND m.meta_key = "species.production_name"',
+                      . 'AND m.meta_key = "species.production_name"'
+                      ,
                     "transcript" => 'SELECT m.meta_value '
                       . 'FROM %1$s.transcript_stable_id si '
                       . 'JOIN %1$s.transcript USING (transcript_id) '
@@ -2472,56 +2473,44 @@ my %stable_id_stmts = (
 );
 
 sub get_species_and_object_type {
-  my ( $self, $stable_id, $known_type ) = @_;
+  my ($self, $stable_id, $known_type) = @_;
 
-  if ( defined($known_type)
-       && !exists( $stable_id_stmts{ lc($known_type) } ) )
-  {
-    throw( sprintf( "Got invalid known_type '%s'", $known_type ) );
+  if (defined $known_type && !exists $stable_id_stmts{lc $known_type}) {
+    warn "Got invalid known_type '$known_type'";
+    return;
   }
 
-  my @types = ( defined($known_type)
-                ? ($known_type)
-                : ( 'Gene', 'Transcript', 'Translation', 'Exon' ) );
-
-  my @match;
-
+  my @types = defined $known_type ? ($known_type) : ('Gene', 'Transcript', 'Translation', 'Exon');
   my $dbc;
   my $dbh;
 
-OUTER:
-  foreach my $dba ( sort { $a->dbc()->host() cmp $b->dbc()->host() }
-                  @{ $self->get_all_DBAdaptors( '-group' => 'Core' ) } )
-  {
-    if ( !defined($dbc)
-         || $dbc->host() ne $dba->dbc()->host() )
-    {
-      $dbc = $dba->dbc();
-      $dbh = $dbc->db_handle();
+  foreach my $dba (
+    sort { $a->dbc->host cmp $b->dbc->host || $a->dbc->port <=> $b->dbc->port } 
+    @{$self->get_all_DBAdaptors( '-group' => 'Core' )}
+  ) {
+    unless (defined $dbc && $dbc->host eq $dba->dbc->host && $dbc->port eq $dba->dbc->port) {
+      $dbc = $dba->dbc;
+      $dbh = $dbc->db_handle;
     }
 
     foreach my $type (@types) {
-      my $statement =
-        sprintf( $stable_id_stmts{ lc($type) }, $dba->dbc()->dbname() );
+      my $statement = sprintf $stable_id_stmts{lc $type}, $dba->dbc->dbname;
 
       my $sth = $dbh->prepare($statement);
 
-      $sth->bind_param( 1, $stable_id, SQL_VARCHAR );
-      $sth->execute();
+      $sth->bind_param(1, $stable_id, SQL_VARCHAR);
+      $sth->execute;
 
-      my $species = $sth->fetchall_arrayref()->[0][0];
+      my $species = $sth->fetchall_arrayref->[0][0];
 
-      $sth->finish();
+      $sth->finish;
 
-      if ( defined($species) ) {
-        @match = ( $species, $type, 'Core' );
-        last OUTER;
-      }
+      return ($species, $type, 'Core') if defined $species;
     }
 
   } ## end foreach my $dba ( sort { $a...})
 
-  return @match;
+  return;
 } ## end sub get_species_and_object_type
 
 1;
