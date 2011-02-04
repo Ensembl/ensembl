@@ -280,25 +280,25 @@ sub to_arrayref {
 =cut
 
 sub append {
-    my ($self, @rest) = @_;
+    my ($self, @queue) = @_;
 
-    for my $iterator (@rest) {
+    for my $iterator (@queue) {
         throw("Argument to append doesn't look like an iterator")
-            unless UNIVERSAL::can($iterator, 'has_next');
+            unless UNIVERSAL::can($iterator, 'has_next') && UNIVERSAL::can($iterator, 'next');
     }
 
     # push ourselves onto the front of the queue
-    unshift @rest, $self;
+    unshift @queue, $self;
 
     return Bio::EnsEMBL::Utils::Iterator->new(sub {
         # shift off any exhausted iterators
-        while (@rest && not $rest[0]->has_next) {
-            shift @rest;
+        while (@queue && not $queue[0]->has_next) {
+            shift @queue;
         }
 
         # and return the next object from the iterator at the 
         # head of the queue, or undef if the queue is empty
-        return @rest ? $rest[0]->next : undef;
+        return @queue ? $queue[0]->next : undef;
     });
 }
 
