@@ -1,7 +1,3 @@
-package Bio::EnsEMBL::Utils::SqlHelper;
-
-=pod
-
 =head1 LICENSE
 
   Copyright (c) 1999-2011 The European Bioinformatics Institute and
@@ -19,10 +15,8 @@ package Bio::EnsEMBL::Utils::SqlHelper;
 
   Questions may also be sent to the Ensembl help desk at
   <helpdesk@ensembl.org>.
-  
-=cut
 
-=pod
+=cut
 
 =head1 NAME
 
@@ -34,50 +28,52 @@ $Revision$
 
 =head1 SYNOPSIS
 
-	use Bio::EnsEMBL::Utils::SqlHelper;
+  use Bio::EnsEMBL::Utils::SqlHelper;
 
-	my $helper = Bio::EnsEMBL::Utils::SqlHelper->new(-DB_CONNECTION => $dbc);
-	my $arr_ref = $helper->execute(
-		-SQL => 'select name, age from tab where col =?',
-		-CALLBACK => sub {
-			my @row = @{shift @_};
-			return {name=>$row[0], age=>$row[1]};
-		},
-		-PARAMS => ['A']
-	);
+  my $helper =
+    Bio::EnsEMBL::Utils::SqlHelper->new( -DB_CONNECTION => $dbc );
 
-	use Data::Dumper;
-	print Dumper($arr_ref), "\n";
-	#Prints out [name=>'name', age=>1] maybe ....
-	
-	#For transactional work; only works if your MySQL table 
-	#engine/database supports transactional work (such as InnoDB)
-	$helper->transaction( -CALLBACK => sub {
-	  if($helper->execute_single_result(-SQL => 'select count(*) from tab')) {
-	    return $helper->execute_update('delete from tab);
-	  }
-	  else {
-	    return $helper->batch(-SQL => 'insert into tab (?,?)', -DATA => [
-	     [1,2],
-	     [1,3],
-	     [1,4]
-	    ]);
-	  }
-	});
+  my $arr_ref = $helper->execute(
+    -SQL      => 'select name, age from tab where col =?',
+    -CALLBACK => sub {
+      my @row = @{ shift @_ };
+      return { name => $row[0], age => $row[1] };
+    },
+    -PARAMS => ['A'] );
+
+  use Data::Dumper;
+  print Dumper($arr_ref), "\n";
+  # Prints out [name=>'name', age=>1] maybe ....
+
+
+  # For transactional work; only works if your MySQL table
+  # engine/database supports transactional work (such as InnoDB)
+
+  $helper->transaction(
+    -CALLBACK => sub {
+      if ( $helper->execute_single_result(
+                                      -SQL => 'select count(*) from tab'
+           ) )
+      {
+        return $helper->execute_update('delete from tab');
+      } else {
+        return
+          $helper->batch( -SQL  => 'insert into tab (?,?)',
+                          -DATA => [ [ 1, 2 ], [ 1, 3 ], [ 1, 4 ] ] );
+      }
+    } );
 
 =head1 DESCRIPTION
 
 Easier database interaction
-
-=head1 COMMITTER
-
-$Author$
 
 =head1 METHODS
 
 See subrotuines.
 
 =cut
+
+package Bio::EnsEMBL::Utils::SqlHelper;
 
 use warnings;
 use strict;
@@ -100,9 +96,12 @@ use Scalar::Util qw(weaken); #Used to not hold a strong ref to DBConnection
 
 Creates a new instance of this object.
 
-	my $dba = get_dba('mydb'); # New DBAdaptor from somewhere
-	my $helper = Bio::EnsEMBL::Utils::SqlHelper->new(-DB_CONNECTION => $dba->dbc());
-	$helper->execute_update(-SQL => 'update tab set flag=?', -PARAMS => [1]);
+  my $dba = get_dba('mydb');    # New DBAdaptor from somewhere
+  my $helper = Bio::EnsEMBL::Utils::SqlHelper->new(
+                                        -DB_CONNECTION => $dba->dbc() );
+
+  $helper->execute_update( -SQL    => 'update tab set flag=?',
+                           -PARAMS => [1] );
 
 =cut
 
@@ -163,79 +162,79 @@ sub db_connection {
   Exceptions : If errors occur in the execution of the SQL
   Status     : Stable
 
-	my $arr_ref = $helper->execute(
-		-SQL 		=> 'select a,b,c from tab where col =?',
-		-CALLBACK 	=> sub {
-			my @row = @{shift @_};
-			return {A=>$row[0], B=>$row[1], C=>$row[2]};
-		},
-		-PARAMS 	=> ['A']
-	);
-	
-	#Or with hashrefs
-	my $arr_ref = $helper->execute(
-		-SQL 			=> 'select a,b,c from tab where col =?',
-		-USE_HASHREFS 	=> 1,
-		-CALLBACK 		=> sub {
-			my $row = shift @_;
-			return {A=>$row->{a}, B=>$row->{b}, C=>$row->{c}};
-		},
-		-PARAMS 		=> ['A']
-	);
+  my $arr_ref = $helper->execute(
+    -SQL      => 'select a,b,c from tab where col =?',
+    -CALLBACK => sub {
+      my @row = @{ shift @_ };
+      return { A => $row[0], B => $row[1], C => $row[2] };
+    },
+    -PARAMS => ['A'] );
 
-Uses a callback defined by the C<sub> decalaration. Here we specify how the 
-calling code will deal with each row of a database's result set. The sub 
-can return any type of Object/hash/data structure you require.
+  #Or with hashrefs
+  my $arr_ref = $helper->execute(
+    -SQL          => 'select a,b,c from tab where col =?',
+    -USE_HASHREFS => 1,
+    -CALLBACK     => sub {
+      my $row = shift @_;
+      return { A => $row->{a}, B => $row->{b}, C => $row->{c} };
+    },
+    -PARAMS => ['A'] );
 
-Should you not specify a callback then a basic one will be assigned to you
-which will return a 2D array structure e.g.
+Uses a callback defined by the C<sub> decalaration. Here we specify how
+the calling code will deal with each row of a database's result set. The
+sub can return any type of Object/hash/data structure you require.
+
+Should you not specify a callback then a basic one will be assigned to
+you which will return a 2D array structure e.g.
 
   my $arr_ref = $helper->execute(
-		-SQL 	=> 'select a,b,c from tab where col =?',
-		-PARAMS => ['A']
-	);
-	
+                           -SQL => 'select a,b,c from tab where col =?',
+                           -PARAMS => ['A'] );
+
 This is equivalent to DBI's c<selectall_arrayref()> subroutine.
 
 As an extension to this method you can write a closure subroutine which
-takes in two parameters. The first is the array/hash reference & the second is
-the statement handle used to execute. 99% of the time you will not need
-it but there are occasions where you do need it. An example of usage would be:
+takes in two parameters. The first is the array/hash reference & the
+second is the statement handle used to execute. 99% of the time you will
+not need it but there are occasions where you do need it. An example of
+usage would be:
 
-	my $conn = get_conn(); #From somwewhere
-	my $arr_ref = $conn->execute(
-		-SQL 			=> 'select a,b,c from tab where col =?',
-		-USE_HASHREFS 	=> 1,
-		-CALLBACK 		=> sub {
-			my ($row, $sth) = @_;
-			#Then do something with sth
-			return {A=>$row->[0], B=>$row->[1], C=>$row->[2]};
-		},
-		-PARAMS 		=> ['A']
-	);
+  my $conn = get_conn();    #From somwewhere
+  my $arr_ref = $conn->execute(
+    -SQL          => 'select a,b,c from tab where col =?',
+    -USE_HASHREFS => 1,
+    -CALLBACK     => sub {
+      my ( $row, $sth ) = @_;
+      #Then do something with sth
+      return { A => $row->[0], B => $row->[1], C => $row->[2] };
+    },
+    -PARAMS => ['A'] );
 
 Any arguments to bind to the incoming statement. This can be a set of scalars
 or a 2D array if you need to specify any kind of types of sql objects i.e.
 
-	use DBI qw(:sql_types);
+  use DBI qw(:sql_types);
 
-	my $conn = get_conn();
-	my $arr_ref = $conn->execute(
-		-SQL => 'select a,b,c from tab where col =? and num_col=? and other=?',
-		-USE_HASHREFS => 1,
-		-CALLBACK => sub {
-			my @row = @{shift @_};
-			return {A=>$row[0], B=>$row[1], C=>$row[2]};
-		},
-		-PARAMS => ['1', SQL_VARCHAR], [2, SQL_INTEGER], 'hello'
-	);
+  my $conn = get_conn();
+  my $arr_ref = $conn->execute(
+    -SQL =>
+      'select a,b,c from tab where col =? and num_col=? and other=?',
+    -USE_HASHREFS => 1,
+    -CALLBACK     => sub {
+      my @row = @{ shift @_ };
+      return { A => $row[0], B => $row[1], C => $row[2] };
+    },
+    -PARAMS => [ '1', SQL_VARCHAR ],
+    [ 2, SQL_INTEGER ],
+    'hello' );
 
-Here we import DBI's sql types into our package and then pass in multiple
-anonymous array references as parameters. Each param is tested in the input
-and if it is detected to be an ARRAY reference we dereference the array and
-run DBI's bind_param method. In fact you can see each part of the incoming
-paramaters array as the contents to call C<bind_param> with. The only difference
-is the package tracks the bind position for you.
+Here we import DBI's sql types into our package and then pass in
+multiple anonymous array references as parameters. Each param is
+tested in the input and if it is detected to be an ARRAY reference we
+dereference the array and run DBI's bind_param method. In fact you can
+see each part of the incoming paramaters array as the contents to call
+C<bind_param> with. The only difference is the package tracks the bind
+position for you.
 
 =cut
 
@@ -264,10 +263,11 @@ sub execute {
   Exceptions : If errors occur in the execution of the SQL
   Status     : Stable
 
-  my $classification = $helper->execute_simple(
-    -SQL 	=> 'select meta_val from meta where meta_key =? order by meta_id', 
-    -PARAMS => ['species.classification']
-  );
+  my $classification =
+    $helper->execute_simple(
+       -SQL =>
+         'select meta_val from meta where meta_key =? order by meta_id',
+       -PARAMS => ['species.classification'] );
 
 Identical to C<execute> except you do not specify a sub-routine reference. 
 Using this code assumes you want an array of single scalar values as returned 
@@ -333,78 +333,80 @@ sub execute_no_return {
   Exceptions : If errors occur in the execution of the SQL
   Status     : Stable
 
-A variant of the execute methods but rather than returning a list of mapped
-results this will assume the first column of a returning map & the calling
-subroutine will map the remainder of your return as the hash's key.
+A variant of the execute methods but rather than returning a list of
+mapped results this will assume the first column of a returning map &
+the calling subroutine will map the remainder of your return as the
+hash's key.
 
-B<This code can handle simple queries to hashes, complex value mappings and
-repeated mappings for the same key>. 
+B<This code can handle simple queries to hashes, complex value mappings
+and repeated mappings for the same key>.
 
 For example:
 
-	my $sql = 'select key, one, two from table where something =?';
-	my $mapper = sub {
-		my ($row, $value) = @_;
-		#Ignore field 0 as that is being used for the key
-		my $obj = Some::Obj->new(one=>$row->[1], two=>$row->[2]);
-		return $obj;
-	};
+  my $sql    = 'select key, one, two from table where something =?';
+  my $mapper = sub {
+    my ( $row, $value ) = @_;
+    #Ignore field 0 as that is being used for the key
+    my $obj = Some::Obj->new( one => $row->[1], two => $row->[2] );
+    return $obj;
+  };
 
-	my $hash = $helper->execute_into_hash(-SQL => $sql, -CALLBACK => $mapper, -PARAMS => ['val']);
-	
-	#Or for a more simple usage
-	my $sql = 'select biotype, count(gene_id) from gene group by biotype';
-	my $biotype_hash = $conn->execute_into_hash(-SQL => $sql);
-	print $biotype_hash->{protein_coding} || 0, "\n";
+  my $hash =
+    $helper->execute_into_hash( -SQL      => $sql,
+                                -CALLBACK => $mapper,
+                                -PARAMS   => ['val'] );
 
-The basic pattern assumes a scenario where you are mapping in a one key to
-one value. For more advanced mapping techniques you can use the second 
-value passed to the subroutine paramater set. This is shown as C<$value> in
-the above examples. This value is what is found in the HASH being populated
-in the background. So on the first time you encounter it for the given
-key it will be undefined. For future invocations it will be set to the 
-value you gave it. This allows us to setup code like the following
+  #Or for a more simple usage
+  my $sql = 'select biotype, count(gene_id) from gene group by biotype';
+  my $biotype_hash = $conn->execute_into_hash( -SQL => $sql );
+  print $biotype_hash->{protein_coding} || 0, "\n";
 
-  my %args = (
-    -SQL => 'select meta_key, meta_value from meta where meta_key =? order by meta_id',
-    -PARAMS => ['species.classification']
-  );
-  
+The basic pattern assumes a scenario where you are mapping in a one
+key to one value. For more advanced mapping techniques you can use the
+second value passed to the subroutine paramater set. This is shown as
+C<$value> in the above examples. This value is what is found in the HASH
+being populated in the background. So on the first time you encounter it
+for the given key it will be undefined. For future invocations it will
+be set to the value you gave it. This allows us to setup code like the
+following
+
+  my %args = ( -SQL => 'select meta_key, meta_value from meta '
+                 . 'where meta_key =? order by meta_id',
+               -PARAMS => ['species.classification'] );
+
   my $hash = $helper->execute_into_hash(
     %args,
     -CALLBACK => sub {
-      my ($row, $value) = @_;
-      $value = [] if ! defined $value ;
-      push(@{$value}, $row->[1]);
+      my ( $row, $value ) = @_;
+      $value = [] if !defined $value;
+      push( @{$value}, $row->[1] );
       return $value;
-    }
-  );
-  
+    } );
+
   #OR
-  
+
   $hash = $helper->execute_into_hash(
     %args,
     -CALLBACK => sub {
-      my ($row, $value) = @_;
-      if(defined $value) {
-        push(@{$value}, $row->[1]);
+      my ( $row, $value ) = @_;
+      if ( defined $value ) {
+        push( @{$value}, $row->[1] );
         return;
       }
-      my $new_value = [$row->[1]];
+      my $new_value = [ $row->[1] ];
       return $new_value;
-    }
-  );
-  
-The code understands that returning a defined value means to push
-this value into the background hash. In example one we keep on re-inserting
-the Array of classifications into the hash. Example two shows an early return
-from the callback which indicates to the code we do not have any value
-to re-insert into the hash. Of the two methods example one is clearer but
-is possibliy slower.
+    } );
 
-B<Remember that the row you are given is the full row & not a view of the
-reminaing fields.> Therefore indexing for the data you are concerned with
-begins at position 1.
+The code understands that returning a defined value means to push this
+value into the background hash. In example one we keep on re-inserting
+the Array of classifications into the hash. Example two shows an early
+return from the callback which indicates to the code we do not have any
+value to re-insert into the hash. Of the two methods example one is
+clearer but is possibliy slower.
+
+B<Remember that the row you are given is the full row & not a view of
+the reminaing fields.> Therefore indexing for the data you are concerned
+with begins at position 1.
 
 =cut
 
@@ -453,10 +455,10 @@ sub execute_into_hash {
   Exceptions : If errors occur in the execution of the SQL
   Status     : Stable
 
-  my $meta_count = $helper->execute_single_result(
-    -SQL => 'select count(*) from meta where species_id =?', 
-    -PARAMS => [1]
-  );
+  my $meta_count =
+    $helper->execute_single_result(
+                -SQL => 'select count(*) from meta where species_id =?',
+                -PARAMS => [1] );
 
 Very similar to C<execute()> except it will raise an exception if we have more 
 or less than one row returned
@@ -498,38 +500,42 @@ sub execute_single_result {
   Exceptions : If errors occur in the execution of the SQL
   Status     : Stable
 
-  my $val = $helper->transaction(-CALLBACK => sub {
-    my ($dbc) = @_;
-    #Do something
-    return 1;
-  });
-  
+  my $val = $helper->transaction(
+    -CALLBACK => sub {
+      my ($dbc) = @_;
+      #Do something
+      return 1;
+    } );
+
   #Or because of the arguments method we use
-  my $val = $helper->transaction(sub {
-    my ($dbc) = @_;
-    #Do something
-    return 1;
-  });
+  my $val = $helper->transaction(
+    sub {
+      my ($dbc) = @_;
+      #Do something
+      return 1;
+    } );
 
-Creates a transactional block which will ensure that the connection is committed
-when your submmited subroutine has finished or will rollback in the event of
-an error occuring in your block.
+Creates a transactional block which will ensure that the connection is
+committed when your submmited subroutine has finished or will rollback
+in the event of an error occuring in your block.
 
-The code will always force AutoCommit off but will restore it to its 
-previous setting. If your DBI/DBD driver does not support manual commits
-then this code will break. The code will turn off the 
-C<disconnect_when_idle()> method to allow transactions to work as expected.
+The code will always force AutoCommit off but will restore it to its
+previous setting. If your DBI/DBD driver does not support manual
+commits then this code will break. The code will turn off the
+C<disconnect_when_idle()> method to allow transactions to work as
+expected.
 
-An effect of using REPEATABLE READ transaction isolation (InnoDB's default) 
-is that your data is as fresh as when you started your current transaction. To
-ensure the freshest data use C<SELECT ... from ... LOCK IN SHARE MODE>
-or C<SELECT ... from ... LOCK FOR UPDATE> if you are going to issue
-updates.
+An effect of using REPEATABLE READ transaction isolation (InnoDB's
+default) is that your data is as fresh as when you started your current
+transaction. To ensure the freshest data use C<SELECT ... from ... LOCK
+IN SHARE MODE> or C<SELECT ... from ... LOCK FOR UPDATE> if you are
+going to issue updates.
 
-Creating a transaction within a transaction results in the commit rollback 
-statements occuring in the top level transaction. That way any block of 
-code which is meant to to be transaction can be wrapped in this block (
-assuming the same instance of SQLHelper is passed around & used).
+Creating a transaction within a transaction results in the commit
+rollback statements occuring in the top level transaction. That way any
+block of code which is meant to to be transaction can be wrapped in
+this block ( assuming the same instance of SQLHelper is passed around &
+used).
 
 =cut
 
@@ -598,25 +604,22 @@ sub transaction {
 Used for performing updates but conforms to the normal execute statement
 subroutines.
 
-	use DBI qw(:sql_types);
-	$helper->execute_update(
-	 -SQL => 'update tab set name = ? where id =?', 
-	 -PARAMS => ['andy', [1, SQL_INTEGER]]
-	);
+  use DBI qw(:sql_types);
+  $helper->execute_update(-SQL => 'update tab set name = ? where id =?',
+                          -PARAMS => [ 'andy', [ 1, SQL_INTEGER ] ] );
 
 If you need to do something a bit more advanced with your DML then you can
 give the method a closure and this will be called after the execute has been
 issued i.e.
 
-	my $obj;
-	$helper->execute_update(
-	 -SQL => 'insert into tab (name) values(?)', 
-	 -CALLBACK => sub {
-	   my ($sth, $dbh) = @_;
-	   $obj->{id} = $dbh->{mysql_insertid);
-   }, 
-   -PARAMS => [$obj->name()]
-  );
+  my $obj;
+  $helper->execute_update(
+    -SQL      => 'insert into tab (name) values(?)',
+    -CALLBACK => sub {
+      my ( $sth, $dbh ) = @_;
+      $obj->{id} = $dbh->{mysql_insertid};
+    },
+    -PARAMS => [ $obj->name() ] );
 
 This lets us access the statement handle & database handle to access other
 properties such as the last identifier inserted.
@@ -661,18 +664,17 @@ sub execute_update {
   Status      : Stable
 
   my $meta_count = $helper->execute_with_sth(
-    -SQL => 'select count(*) from meta where species_id =?', 
-    -PARAMS => [1],
+    -SQL      => 'select count(*) from meta where species_id =?',
+    -PARAMS   => [1],
     -CALLBACK => sub {
       my ($sth) = @_;
       my $count;
-      $sth->bind_columns(\($count));
-      while ($sth->fetch) {
+      $sth->bind_columns( \($count) );
+      while ( $sth->fetch ) {
         print $count, "\n";
       }
       return $count;
-    }
-  );
+    } );
 
 Very similar to C<execute()> except this gives you full control over the
 lifecycle of the statement handle & how you wish to proceed with working
@@ -713,15 +715,18 @@ sub execute_with_sth {
   Status     : Stable
 
   my $alotofdata = getitfromsomewhere();
-  $helper->batch(-SQL => 'insert into table (one,two) values(?,?)', -CALLBACk => sub {
-    my ($sth, $dbc) = @_;
-    foreach my $data (@alotofdata) {
-      $sth->execute(@{$data});
-    }
-  });
-  
+  $helper->batch(
+    -SQL      => 'insert into table (one,two) values(?,?)',
+    -CALLBACk => sub {
+      my ( $sth, $dbc ) = @_;
+      foreach my $data (@alotofdata) {
+        $sth->execute( @{$data} );
+      }
+    } );
+
   #Or for a 2D array data driven approach
-  $helper->batch(-SQL => 'insert into table (one,two) values(?,?)', -DATA => $alotofdata);
+  $helper->batch( -SQL  => 'insert into table (one,two) values(?,?)',
+                  -DATA => $alotofdata );
 
 Takes in a sql statement & a code reference. Your SQL is converted into a 
 prepared statement & then given as the first parameter to the closure. The
@@ -736,12 +741,14 @@ We can also use data based batch insertions i.e.
 
   #Needs to be like:
   #   [ [1,2], [3,4] ]
-  #Or if using the DBI types: 
-  #   [ [ [1, SQL_INTEGER], [2, SQL_INTEGER] ], [ [3, SQL_INTEGER], [4, SQL_INTEGER] ] ]
-  my $alotofdata = getitfromsomewhere(); 
-  $helper->batch(-SQL => 'insert into table (one,two) values(?,?)', 
-    -DATA => $alotofdata);
-  
+  #Or if using the DBI types:
+  #  [ [ [ 1, SQL_INTEGER ], [ 2, SQL_INTEGER ] ],
+  #    [ [ 3, SQL_INTEGER ], [ 4, SQL_INTEGER ] ] ];
+
+  my $alotofdata = getitfromsomewhere();
+  $helper->batch( -SQL  => 'insert into table (one,two) values(?,?)',
+                  -DATA => $alotofdata );
+
 This does exactly what the previous example.
 
 All batch statements will return the value the callback computes. If you are 
