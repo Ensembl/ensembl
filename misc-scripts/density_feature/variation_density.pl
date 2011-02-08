@@ -38,7 +38,7 @@ my $variation_feature_adaptor = Bio::EnsEMBL::Registry->get_adaptor($species, "v
 # TODO - variation from registry
 
 # Clean up old features first. Also remove analysis and density type entry as these are recreated
-my $sth = $slice_adaptor->dbc->prepare("DELETE df, dt, a, ad FROM analysis_description ad, density_feature df, density_type dt, analysis a WHERE ad.analysis_id = a.analysis_id AND a.analysis_id=dt.analysis_id AND dt.density_type_id=df.density_type_id AND a.logic_name='snpDensity'");
+my $sth = $slice_adaptor->dbc->prepare("DELETE df, dt, a, ad FROM analysis_description ad, density_feature df, density_type dt, analysis a WHERE ad.analysis_id = a.analysis_id AND a.analysis_id=dt.analysis_id AND dt.density_type_id=df.density_type_id AND a.logic_name='snpdensity'");
 $sth->execute();
 
 # Sort slices by coordinate system rank, then by length
