@@ -30,15 +30,15 @@ CREATE TABLE meta (
 # Add schema type and schema version to the meta table.
 INSERT INTO meta (species_id, meta_key, meta_value) VALUES
   (NULL, 'schema_type',     'core'),
-  (NULL, 'schema_version',  '61');
+  (NULL, 'schema_version',  '62');
 
 # Patches included in this schema file:
 # NOTE: At start of release cycle, remove patch entries from last release.
 # NOTE: Avoid line-breaks in values.
 INSERT INTO meta (species_id, meta_key, meta_value) VALUES
-  (NULL, 'patch', 'patch_60_61_a.sql|schema_version'),
-  (NULL, 'patch', 'patch_60_61_b.sql|create_seq_region_synonym_table'),
-  (NULL, 'patch', 'patch_60_61_c.sql|rejig_object_xref_indexes');
+  (NULL, 'patch', 'patch_61_62_a.sql|schema_version'),
+  (NULL, 'patch', 'patch_61_62_b.sql|synonym_field_extension'),
+  (NULL, 'patch', 'patch_61_62_c.sql|db_name_idx');
 
 ################################################################################
 #
@@ -766,7 +766,7 @@ CREATE TABLE dependent_xref(
 CREATE TABLE external_synonym (
 
   xref_id                     INT(10) UNSIGNED NOT NULL,
-  synonym                     VARCHAR(40) NOT NULL,
+  synonym                     VARCHAR(100) NOT NULL,
 
   PRIMARY KEY (xref_id, synonym),
   KEY name_index (synonym)
@@ -796,8 +796,8 @@ CREATE TABLE external_db (
   secondary_db_table          VARCHAR(255) DEFAULT NULL,
   description                 TEXT,
 
-  PRIMARY KEY (external_db_id)
-
+  PRIMARY KEY (external_db_id),
+  UNIQUE INDEX db_name_idx (db_name)
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
 
