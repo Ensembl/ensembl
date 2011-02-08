@@ -114,10 +114,10 @@ foreach my $dbname (@dbnames) {
 
 
   print "Deleting old knownGeneDensity and geneDensity features\n";
-  $sth = $db->dbc->prepare("DELETE df, dt, a, ad FROM density_feature df, density_type dt, analysis a, analysis_description ad WHERE ad.analysis_id = a.analysis_id AND a.analysis_id=dt.analysis_id AND dt.density_type_id=df.density_type_id AND a.logic_name IN ('knownGeneDensity', 'geneDensity')");
+  $sth = $db->dbc->prepare("DELETE df, dt, a, ad FROM density_feature df, density_type dt, analysis a, analysis_description ad WHERE ad.analysis_id = a.analysis_id AND a.analysis_id=dt.analysis_id AND dt.density_type_id=df.density_type_id AND a.logic_name IN ('knowngenedensity', 'genedensity')");
   $sth->execute();
   
-  $sth = $db->dbc->prepare("DELETE df, dt, a FROM density_feature df, density_type dt, analysis a WHERE a.analysis_id=dt.analysis_id AND dt.density_type_id=df.density_type_id AND a.logic_name IN ('knownGeneDensity', 'geneDensity')");
+  $sth = $db->dbc->prepare("DELETE df, dt, a FROM density_feature df, density_type dt, analysis a WHERE a.analysis_id=dt.analysis_id AND dt.density_type_id=df.density_type_id AND a.logic_name IN ('knowngenedensity', 'genedensity')");
   $sth->execute();
   
 
@@ -178,9 +178,9 @@ foreach my $dbname (@dbnames) {
   #
 
     if($known) {
-      $analysis = $aa->fetch_by_logic_name('knownGeneDensity');
+      $analysis = $aa->fetch_by_logic_name('knowngenedensity');
     } else {
-      $analysis = $aa->fetch_by_logic_name('geneDensity');
+      $analysis = $aa->fetch_by_logic_name('genedensity');
     }
 
   #

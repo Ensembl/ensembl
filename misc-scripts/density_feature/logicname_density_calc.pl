@@ -107,7 +107,7 @@ $analysis = new Bio::EnsEMBL::Analysis
      -database    => "ensembl",
      -gff_source  => "logic_name_calc.pl",
      -gff_feature => "density",
-     -logic_name  => "Density_$logic_name");
+     -logic_name  => "density_$logic_name");
 $analysis_adaptor->store( $analysis );
 
 #
@@ -115,7 +115,7 @@ $analysis_adaptor->store( $analysis );
 #
 # Create new density type.
 #
-$analysis = $analysis_adaptor->fetch_by_logic_name("Density_$logic_name");
+$analysis = $analysis_adaptor->fetch_by_logic_name("density_$logic_name");
 my $dt = Bio::EnsEMBL::DensityType->new(-analysis   => $analysis,
                                         -block_size => $block_size,
                                         -value_type => 'sum');
