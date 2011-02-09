@@ -60,6 +60,164 @@ use Bio::EnsEMBL::OntologyTerm;
 
 use base qw( Bio::EnsEMBL::DBSQL::BaseAdaptor );
 
+=head2 new
+
+  Arg [1]       : Bio::EnsEMBL::DBSQL::DBAdaptor
+                  Argument required for parent class
+                  Bio::EnsEMBL::DBSQL::BaseAdaptor.
+
+  Arg [2]       : String
+                  The particular ontology that this ontology adaptor
+                  deals with.
+
+  Caller        : Bio::EnsEMBL::DBSQL::GOTermAdaptor
+                  Bio::EnsEMBL::DBSQL::SOTermAdaptor
+
+  Description   : Creates an ontology term adaptor.
+
+  Example       :
+
+    my $ot_adaptor =
+      Bio::EnsEMBL::DBSQL::OntologyTermAdaptor->new( $dba, 'GO' );
+
+  Return type   : Bio::EnsEMBL::DBSQL::OntologyTermAdaptor
+
+=cut
+
+sub new {
+  my ( $proto, $dba, $ontology ) = @_;
+
+  if ( !ref($dba) || !$dba->isa('Bio::EnsEMBL::DBSQL::DBAdaptor') ) {
+    throw('First argument needs to be a '
+        . 'Bio::EnsEMBL::DBSQL::DBAdaptor object' );
+  }
+
+  my $this = $proto->SUPER::new($dba);
+
+  $this->{'ontology'} = $ontology;
+
+  return $this;
+}
+
+=head2 ontology
+
+  Arg           : None
+
+  Description   : Returns the name of the ontology which this
+                  adaptor is used to retrieve terms for.
+
+  Example       :
+
+    my $ontology = $ot_adaptor->ontology();
+
+  Return type   : String
+
+=cut
+
+sub ontology {
+  my ($this) = @_;
+  return $this->{'ontology'};
+}
+
+=head2 fetch_all_by_name
+
+  Arg [1]       : String  - Name of term
+
+  Arg [2]       : int     - Fuzzy match flag:
+                                      1 = Try with spaces and underscores or none
+                                      2 = Pre/Append wildcards
+                                      3 = Both of the above
+
+  Description   : Fetches an ontology term(s) given a name.
+
+  Example       :
+
+    my ($term) = @{$ot_adaptor->fetch_by_name('DNA_binding_site')};
+
+  Return type   : ARRAYREF of Bio::EnsEMBL::OntologyTerm Objects
+
+=cut
+
+sub fetch_all_by_name {
+  my ( $this, $name, $fuzzy) = @_;
+
+  #fetch_all because term-ontolgy does not have unique key
+  #And fuzzy may bring back >1 term
+  #Case insensitivity is implicit due to table character collection
+  my ($name_clause, $name_string);
+
+  if(! $fuzzy){
+	$name_clause = 'term.name = ?';
+	$name_string = $name;
+  }
+  elsif($fuzzy == 2){
+	$name_clause = ' term.name like ?';
+	$name_string = "\%${name}\%";
+  }
+  elsif($fuzzy < 4){
+
+	#$fuzzy == 3
+	$name_clause           =  ' term.name rlike ?';
+
+	($name_string = $name) =~ s/[\s_]+/\[ _\]*/g;
+	#no need for .* at flanks as this is the default rlike behaviour
+
+	if($fuzzy == 1){
+	  $name_string           = "^${name_string}\$";
+	}
+  }
+  else{
+	throw("Fuzzy match level can only be set to 1, 2 or 3 not $fuzzy");
+  }
+
+
+  my $statement = q(
+SELECT  term.term_id,
+        term.accession,
+        term.name,
+        term.definition,
+        term.subsets,
+        ontology.namespace
+FROM    ontology,
+        term
+WHERE   ontology.name = ?
+  AND   ontology.ontology_id = term.ontology_id
+  AND   ).$name_clause;
+
+  my $sth = $this->prepare($statement);
+  $sth->bind_param( 1, $this->{'ontology'}, SQL_VARCHAR );
+  $sth->bind_param( 2, $name_string,        SQL_VARCHAR );
+
+  $sth->execute();
+
+  my ( $dbid, $accession, $term_name, $definition, $subsets, $namespace );
+  $sth->bind_columns(
+    \( $dbid, $accession, $term_name, $definition, $subsets, $namespace ) );
+
+  my @terms;
+
+
+  while($sth->fetch){
+	
+	$subsets ||= '';
+	push @terms, Bio::EnsEMBL::OntologyTerm->new
+	  (
+	   '-dbid'       => $dbid,
+	   '-adaptor'    => $this,
+	   '-accession'  => $accession,
+	   '-namespace'  => $namespace,
+	   '-subsets'    => [ split( /,/, $subsets ) ],
+	   '-name'       => $term_name,
+	   '-definition' => $definition
+	  );
+  }
+
+  $sth->finish();
+
+  return \@terms;
+} ## end sub fetch_by_name
+
+
 =head2 fetch_by_accession
 
   Arg [1]       : String
