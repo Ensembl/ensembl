@@ -120,6 +120,223 @@ CREATE TABLE analysis_description (
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
 
+
+################################################################################
+#
+# Table structure for table 'assembly'
+#
+# This is a denormalised golden path.
+#
+# The data in this table defines the "static golden path", i.e. the best effort
+# draft full genome sequence as determined by the UCSC or NCBI (depending which
+# assembly you are using).
+#
+# Each row represents a component, e.g. a contig,  (comp_seq_region_id, FK from
+# seq_region table) at least part of which is present in the golden path.
+#
+# The part of the component that is in the path is delimited by fields
+# cmp_start and cmp_end (start < end), and the absolute position within the
+# golden path chromosome (or other appropriate assembled structure)
+# (asm_seq_region_id) is given by asm_start and asm_end.
+
+CREATE TABLE assembly (
+
+  asm_seq_region_id           INT(10) UNSIGNED NOT NULL,
+  cmp_seq_region_id           INT(10) UNSIGNED NOT NULL,
+  asm_start                   INT(10) NOT NULL,
+  asm_end                     INT(10) NOT NULL,
+  cmp_start                   INT(10) NOT NULL,
+  cmp_end                     INT(10) NOT NULL,
+  ori                         TINYINT  NOT NULL,
+
+  KEY cmp_seq_region_idx (cmp_seq_region_id),
+  KEY asm_seq_region_idx (asm_seq_region_id, asm_start),
+  UNIQUE KEY all_idx (asm_seq_region_id, cmp_seq_region_id, asm_start, asm_end, cmp_start, cmp_end, ori)
+
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+
+
+
+################################################################################
+#
+# Table structure for table 'assembly_exception'
+#
+
+CREATE TABLE assembly_exception (
+
+  assembly_exception_id       INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  seq_region_id               INT(10) UNSIGNED NOT NULL,
+  seq_region_start            INT(10) UNSIGNED NOT NULL,
+  seq_region_end              INT(10) UNSIGNED NOT NULL,
+  exc_type                    ENUM('HAP', 'PAR',
+                                'PATCH_FIX', 'PATCH_NOVEL') NOT NULL,
+  exc_seq_region_id           INT(10) UNSIGNED NOT NULL,
+  exc_seq_region_start        INT(10) UNSIGNED NOT NULL,
+  exc_seq_region_end          INT(10) UNSIGNED NOT NULL,
+  ori                         INT NOT NULL,
+
+  PRIMARY KEY (assembly_exception_id),
+  KEY sr_idx (seq_region_id, seq_region_start),
+  KEY ex_idx (exc_seq_region_id, exc_seq_region_start)
+
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+
+
+
+
+
+################################################################################
+#
+# Table structure for table 'attrib_type'
+#
+
+CREATE TABLE attrib_type (
+
+  attrib_type_id              SMALLINT(5) UNSIGNED NOT NULL AUTO_INCREMENT,
+  code                        VARCHAR(15) NOT NULL DEFAULT '',
+  name                        VARCHAR(255) NOT NULL DEFAULT '',
+  description                 TEXT,
+
+  PRIMARY KEY (attrib_type_id),
+  UNIQUE KEY code_idx (code)
+
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+
+
+
+################################################################################
+#
+# Table structure for table 'coord_system'
+#
+
+CREATE TABLE coord_system (
+
+  coord_system_id             INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  species_id                  INT(10) UNSIGNED NOT NULL DEFAULT 1,
+  name                        VARCHAR(40) NOT NULL,
+  version                     VARCHAR(255) DEFAULT NULL,
+  rank                        INT NOT NULL,
+  attrib                      SET('default_version', 'sequence_level'),
+
+  PRIMARY   KEY (coord_system_id),
+  UNIQUE    KEY rank_idx (rank, species_id),
+  UNIQUE    KEY name_idx (name, version, species_id),
+            KEY species_idx (species_id)
+
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+
+
+
+################################################################################
+#
+# Table structure for table 'density_feature'
+#
+
+CREATE TABLE density_feature (
+
+  density_feature_id    INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  density_type_id       INT(10) UNSIGNED NOT NULL,
+  seq_region_id         INT(10) UNSIGNED NOT NULL,
+  seq_region_start      INT(10) UNSIGNED NOT NULL,
+  seq_region_end        INT(10) UNSIGNED NOT NULL,
+  density_value         FLOAT NOT NULL,
+
+  PRIMARY KEY (density_feature_id),
+  KEY seq_region_idx (density_type_id, seq_region_id, seq_region_start),
+  KEY seq_region_id_idx (seq_region_id)
+
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+
+
+################################################################################
+#
+# Table structure for table 'density_type'
+#
+
+CREATE TABLE density_type (
+
+  density_type_id       INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  analysis_id           SMALLINT UNSIGNED NOT NULL,
+  block_size            INT NOT NULL,
+  region_features       INT NOT NULL,
+  value_type            ENUM('sum','ratio') NOT NULL,
+
+  PRIMARY KEY (density_type_id),
+  UNIQUE KEY analysis_idx (analysis_id, block_size, region_features)
+
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+
+
+
+
+################################################################################
+#
+# Table structure for table 'dependent_xref'
+#
+
+CREATE TABLE dependent_xref(
+
+  object_xref_id         INT NOT NULL,
+  master_xref_id         INT NOT NULL,
+  dependent_xref_id      INT NOT NULL,
+
+  PRIMARY KEY( object_xref_id ),
+  KEY dependent ( dependent_xref_id ),
+  KEY master_idx (master_xref_id)
+
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+
+
+################################################################################
+#
+# Table structure for table 'ditag'
+#
+# Describes ditags
+
+CREATE TABLE ditag (
+
+       ditag_id          INT(10) UNSIGNED NOT NULL auto_increment,
+       name              VARCHAR(30) NOT NULL,
+       type              VARCHAR(30) NOT NULL,
+       tag_count         smallint(6) UNSIGNED NOT NULL default 1,
+       sequence          TINYTEXT NOT NULL,
+
+       PRIMARY KEY (ditag_id)
+
+) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+
+################################################################################
+#
+# Table structure for table 'ditag_feature'
+#
+# Describes where ditags hit on the genome
+
+CREATE TABLE ditag_feature (
+
+       ditag_feature_id   INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+       ditag_id           INT(10) UNSIGNED NOT NULL default '0',
+       ditag_pair_id      INT(10) UNSIGNED NOT NULL default '0',
+       seq_region_id      INT(10) UNSIGNED NOT NULL default '0',
+       seq_region_start   INT(10) UNSIGNED NOT NULL default '0',
+       seq_region_end     INT(10) UNSIGNED NOT NULL default '0',
+       seq_region_strand  TINYINT(1) NOT NULL default '0',
+       analysis_id        SMALLINT UNSIGNED NOT NULL default '0',
+       hit_start          INT(10) UNSIGNED NOT NULL default '0',
+       hit_end            INT(10) UNSIGNED NOT NULL default '0',
+       hit_strand         TINYINT(1) NOT NULL default '0',
+       cigar_line         TINYTEXT NOT NULL,
+       ditag_side         ENUM('F', 'L', 'R') NOT NULL,
+
+       PRIMARY KEY  (ditag_feature_id),
+       KEY ditag_idx (ditag_id),
+       KEY ditag_pair_idx (ditag_pair_id),
+       KEY seq_region_idx (seq_region_id, seq_region_start, seq_region_end)
+
+) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+
+
+
+
 ################################################################################
 #
 # Table structure for table 'dna'
@@ -158,6 +375,44 @@ CREATE TABLE dnac (
   PRIMARY KEY (seq_region_id)
 
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM MAX_ROWS=750000 AVG_ROW_LENGTH=19000;
+
+
+################################################################################
+#
+# Table structure for table 'dna_align_feature'
+#
+
+CREATE TABLE dna_align_feature (
+
+  dna_align_feature_id        INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  seq_region_id               INT(10) UNSIGNED NOT NULL,
+  seq_region_start            INT(10) UNSIGNED NOT NULL,
+  seq_region_end              INT(10) UNSIGNED NOT NULL,
+  seq_region_strand           TINYINT(1) NOT NULL,
+  hit_start                   INT NOT NULL,
+  hit_end                     INT NOT NULL,
+  hit_strand                  TINYINT(1) NOT NULL,
+  hit_name                    VARCHAR(40) NOT NULL,
+  analysis_id                 SMALLINT UNSIGNED NOT NULL,
+  score                       DOUBLE,
+  evalue                      DOUBLE,
+  perc_ident                  FLOAT,
+  cigar_line                  TEXT,
+  external_db_id              SMALLINT UNSIGNED,
+  hcoverage                   DOUBLE,
+  external_data               TEXT,
+  pair_dna_align_feature_id   INT(10) UNSIGNED,
+
+  PRIMARY KEY (dna_align_feature_id),
+  KEY seq_region_idx (seq_region_id, analysis_id, seq_region_start, score),
+  KEY seq_region_idx_2 (seq_region_id, seq_region_start),
+  KEY hit_idx (hit_name),
+  KEY analysis_idx (analysis_id),
+  KEY external_db_idx (external_db_id),
+  KEY pair_idx (pair_dna_align_feature_id)
+
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM MAX_ROWS=100000000 AVG_ROW_LENGTH=80;
+
 
 
 ################################################################################
@@ -228,32 +483,567 @@ CREATE TABLE exon_transcript (
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
 
+
 ################################################################################
 #
-# Table structure for table 'simple_feature'
+# Table structure for table 'external_db'
+# 
+
+CREATE TABLE external_db (
+
+  external_db_id              SMALLINT UNSIGNED NOT NULL,
+  db_name                     VARCHAR(100) NOT NULL,
+  db_release                  VARCHAR(255),
+  status                      ENUM('KNOWNXREF','KNOWN','XREF','PRED','ORTH',
+                                   'PSEUDO')
+                              NOT NULL,
+  dbprimary_acc_linkable      BOOLEAN DEFAULT 1 NOT NULL,
+  display_label_linkable      BOOLEAN DEFAULT 0 NOT NULL,
+  priority                    INT NOT NULL,
+  db_display_name             VARCHAR(255),
+  type                        ENUM('ARRAY', 'ALT_TRANS', 'ALT_GENE', 'MISC', 'LIT', 'PRIMARY_DB_SYNONYM', 'ENSEMBL'),
+  secondary_db_name           VARCHAR(255) DEFAULT NULL,
+  secondary_db_table          VARCHAR(255) DEFAULT NULL,
+  description                 TEXT,
+
+  PRIMARY KEY (external_db_id),
+  UNIQUE INDEX db_name_idx (db_name)
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+
+
+################################################################################
+#
+# Table structure for table 'external_synonym'
 #
 
-CREATE TABLE simple_feature (
+CREATE TABLE external_synonym (
 
-  simple_feature_id           INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  xref_id                     INT(10) UNSIGNED NOT NULL,
+  synonym                     VARCHAR(100) NOT NULL,
+
+  PRIMARY KEY (xref_id, synonym),
+  KEY name_index (synonym)    
+
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+
+
+
+
+################################################################################
+#
+# Table structure for table 'gene'
+#
+
+CREATE TABLE gene (
+
+  gene_id                     INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  biotype                     VARCHAR(40) NOT NULL,
+  analysis_id                 SMALLINT UNSIGNED NOT NULL,
   seq_region_id               INT(10) UNSIGNED NOT NULL,
   seq_region_start            INT(10) UNSIGNED NOT NULL,
   seq_region_end              INT(10) UNSIGNED NOT NULL,
-  seq_region_strand           TINYINT(1) NOT NULL,
-  display_label               VARCHAR(255) NOT NULL,
-  analysis_id                 SMALLINT UNSIGNED NOT NULL,
-  score                       DOUBLE,
+  seq_region_strand           TINYINT(2) NOT NULL,
+  display_xref_id             INT(10) UNSIGNED,
+  source                      VARCHAR(20) NOT NULL,
+  status                      ENUM('KNOWN', 'NOVEL', 'PUTATIVE', 'PREDICTED', 'KNOWN_BY_PROJECTION', 'UNKNOWN'),
+  description                 TEXT,
+  is_current                  BOOLEAN NOT NULL DEFAULT 1,
+  canonical_transcript_id     INT(10) UNSIGNED NOT NULL,
+  canonical_annotation        VARCHAR(255) DEFAULT NULL,
 
-  PRIMARY KEY (simple_feature_id),
+  PRIMARY KEY (gene_id),
   KEY seq_region_idx (seq_region_id, seq_region_start),
-  KEY analysis_idx (analysis_id),
-  KEY hit_idx (display_label)
+  KEY xref_id_index (display_xref_id),
+  KEY analysis_idx (analysis_id)
 
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM MAX_ROWS=100000000 AVG_ROW_LENGTH=80;
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+
+
 
 
 ################################################################################
 #
+# Table structure for table 'gene_archive'
+#
+
+CREATE TABLE gene_archive (
+
+  gene_stable_id              VARCHAR(128) NOT NULL,
+  gene_version                SMALLINT NOT NULL,
+  transcript_stable_id        VARCHAR(128) NOT NULL,
+  transcript_version          SMALLINT NOT NULL,
+  translation_stable_id       VARCHAR(128),
+  translation_version         SMALLINT,
+  peptide_archive_id          INT(10) UNSIGNED,
+  mapping_session_id          INT(10) UNSIGNED NOT NULL,
+
+  KEY gene_idx (gene_stable_id, gene_version),
+  KEY transcript_idx (transcript_stable_id, transcript_version),
+  KEY translation_idx (translation_stable_id, translation_version),
+  KEY peptide_archive_id_idx (peptide_archive_id)
+
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+
+
+
+
+
+################################################################################
+#
+# Table structure for table 'gene_attrib'
+#
+
+CREATE TABLE gene_attrib (
+
+  gene_id                     INT(10) UNSIGNED NOT NULL DEFAULT '0',
+  attrib_type_id              SMALLINT(5) UNSIGNED NOT NULL DEFAULT '0',
+  value                       TEXT NOT NULL,
+
+  KEY type_val_idx (attrib_type_id, value(40)),
+  KEY val_only_idx (value(40)),
+  KEY gene_idx (gene_id)
+
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+
+
+
+
+################################################################################
+#
+# Table structure for table 'gene_stable_id'
+#
+
+CREATE TABLE gene_stable_id (
+
+  gene_id                     INT UNSIGNED NOT NULL,
+  stable_id                   VARCHAR(128) NOT NULL,
+  version                     INT(10),
+  created_date                DATETIME NOT NULL,
+  modified_date               DATETIME NOT NULL,
+
+  PRIMARY KEY (gene_id),
+  KEY stable_id_idx (stable_id, version)
+
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+
+
+
+################################################################################
+#
+# Table structure for table 'identity_xref'
+#
+
+CREATE TABLE identity_xref (
+
+  object_xref_id          INT(10) UNSIGNED NOT NULL,
+  xref_identity           INT(5),
+  ensembl_identity        INT(5),
+
+  xref_start              INT,
+  xref_end                INT,
+  ensembl_start           INT,
+  ensembl_end             INT,
+  cigar_line              TEXT,
+
+  score                   DOUBLE,
+  evalue                  DOUBLE,
+
+  PRIMARY KEY (object_xref_id)
+
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+
+
+
+
+
+################################################################################
+#
+# Table structure for table 'interpro'
+#
+
+CREATE TABLE interpro (
+
+  interpro_ac                 VARCHAR(40) NOT NULL,
+  id                          VARCHAR(40) NOT NULL,
+
+  UNIQUE KEY accession_idx (interpro_ac, id),
+  KEY id_idx (id)
+
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+
+
+################################################################################
+#
+# Table structure for table 'karyotype'
+#
+
+CREATE TABLE karyotype (
+  karyotype_id                INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  seq_region_id               INT(10) UNSIGNED NOT NULL,
+  seq_region_start            INT(10) UNSIGNED NOT NULL,
+  seq_region_end              INT(10) UNSIGNED NOT NULL,
+  band                        VARCHAR(40) NOT NULL,
+  stain                       VARCHAR(40) NOT NULL,
+
+  PRIMARY KEY (karyotype_id),
+  KEY region_band_idx (seq_region_id,band)
+
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+
+
+
+################################################################################
+#
+# Table structure for table 'map'
+
+CREATE TABLE map (
+
+  map_id                      INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  map_name                    VARCHAR(30) NOT NULL,
+
+  PRIMARY KEY (map_id)
+
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+
+
+
+################################################################################
+#
+# Table structure for table 'mapping_session'
+#
+
+CREATE TABLE mapping_session (
+
+  mapping_session_id          INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  old_db_name                 VARCHAR(80) NOT NULL DEFAULT '',
+  new_db_name                 VARCHAR(80) NOT NULL DEFAULT '',
+  old_release                 VARCHAR(5) NOT NULL DEFAULT '',
+  new_release                 VARCHAR(5) NOT NULL DEFAULT '',
+  old_assembly                VARCHAR(20) NOT NULL DEFAULT '',
+  new_assembly                VARCHAR(20) NOT NULL DEFAULT '',
+  created                     DATETIME NOT NULL,
+
+  PRIMARY KEY (mapping_session_id)
+
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+
+
+
+################################################################################
+#
+# Table structure for seq_region mapping between releases
+#
+# Stores how which mapping group the seq_region are for a particular schema
+
+CREATE TABLE mapping_set (
+
+        mapping_set_id  INT(10) UNSIGNED NOT NULL,
+        schema_build    VARCHAR(20) NOT NULL,
+
+        PRIMARY KEY(schema_build)
+
+) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+
+
+
+
+
+################################################################################
+#
+# Table structure for table 'marker'
+
+CREATE TABLE marker (
+
+  marker_id                   INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  display_marker_synonym_id   INT(10) UNSIGNED,
+  left_primer                 VARCHAR(100) NOT NULL,
+  right_primer                VARCHAR(100) NOT NULL,
+  min_primer_dist             INT(10) UNSIGNED NOT NULL,
+  max_primer_dist             INT(10) UNSIGNED NOT NULL,
+  priority                    INT,
+  type                        ENUM('est', 'microsatellite'),
+
+  PRIMARY KEY (marker_id),
+  KEY marker_idx (marker_id, priority),
+  KEY display_idx (display_marker_synonym_id)
+
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+
+
+################################################################################
+#
+# Table structure for table 'marker_feature'
+
+CREATE TABLE marker_feature (
+
+  marker_feature_id           INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  marker_id                   INT(10) UNSIGNED NOT NULL,
+  seq_region_id               INT(10) UNSIGNED NOT NULL,
+  seq_region_start            INT(10) UNSIGNED NOT NULL,
+  seq_region_end              INT(10) UNSIGNED NOT NULL,
+  analysis_id                 SMALLINT UNSIGNED NOT NULL,
+  map_weight                  INT(10) UNSIGNED,
+
+  PRIMARY KEY (marker_feature_id),
+  KEY seq_region_idx (seq_region_id, seq_region_start),
+  KEY analysis_idx (analysis_id)
+
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+
+
+
+################################################################################
+#
+# Table structure for table 'marker_map_location'
+
+CREATE TABLE marker_map_location (
+
+  marker_id                   INT(10) UNSIGNED NOT NULL,
+  map_id                      INT(10) UNSIGNED NOT NULL,
+  chromosome_name             VARCHAR(15)  NOT NULL,
+  marker_synonym_id           INT(10) UNSIGNED NOT NULL,
+  position                    VARCHAR(15) NOT NULL,
+  lod_score                   DOUBLE,
+
+  PRIMARY KEY (marker_id, map_id),
+  KEY map_idx (map_id, chromosome_name, position)
+
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+
+
+################################################################################
+#
+# Table structure for table 'marker_synonym'
+
+CREATE TABLE marker_synonym (
+
+  marker_synonym_id           INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  marker_id                   INT(10) UNSIGNED NOT NULL,
+  source                      VARCHAR(20),
+  name                        VARCHAR(50),
+
+  PRIMARY KEY (marker_synonym_id),
+  KEY marker_synonym_idx (marker_synonym_id, name),
+  KEY marker_idx (marker_id)
+
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+
+
+################################################################################
+#
+# Table structure for table 'misc_attrib'
+#
+
+CREATE TABLE misc_attrib (
+
+  misc_feature_id             INT(10) UNSIGNED NOT NULL DEFAULT '0',
+  attrib_type_id              SMALLINT(5) UNSIGNED NOT NULL DEFAULT '0',
+  value                       TEXT NOT NULL,
+
+  KEY type_val_idx (attrib_type_id, value(40)),
+  KEY val_only_idx (value(40)),
+  KEY misc_feature_idx (misc_feature_id)
+
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+
+
+################################################################################
+#
+# Table structure for table 'misc_feature'
+#
+
+CREATE TABLE misc_feature (
+
+  misc_feature_id             INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  seq_region_id               INT(10) UNSIGNED NOT NULL DEFAULT '0',
+  seq_region_start            INT(10) UNSIGNED NOT NULL DEFAULT '0',
+  seq_region_end              INT(10) UNSIGNED NOT NULL DEFAULT '0',
+  seq_region_strand           TINYINT(4) NOT NULL DEFAULT '0',
+
+  PRIMARY KEY (misc_feature_id),
+  KEY seq_region_idx (seq_region_id, seq_region_start)
+
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+
+
+
+################################################################################
+#
+# Table structure for table 'misc_feature_misc_set'
+#
+
+CREATE TABLE misc_feature_misc_set (
+
+  misc_feature_id             INT(10) UNSIGNED NOT NULL DEFAULT '0',
+  misc_set_id                 SMALLINT(5) UNSIGNED NOT NULL DEFAULT '0',
+
+  PRIMARY KEY (misc_feature_id, misc_set_id),
+  KEY reverse_idx (misc_set_id, misc_feature_id)
+
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+
+
+
+
+
+################################################################################
+#
+# Table structure for table 'misc_set'
+#
+
+CREATE TABLE misc_set (
+
+  misc_set_id                 SMALLINT(5) UNSIGNED NOT NULL AUTO_INCREMENT,
+  code                        VARCHAR(25) NOT NULL DEFAULT '',
+  name                        VARCHAR(255) NOT NULL DEFAULT '',
+  description                 TEXT NOT NULL,
+  max_length                  INT UNSIGNED NOT NULL,
+
+  PRIMARY KEY (misc_set_id),
+  UNIQUE KEY code_idx (code)
+
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+
+
+
+################################################################################
+#
+# Table structure for table 'meta_coord'
+#
+
+CREATE TABLE meta_coord (
+
+  table_name                  VARCHAR(40) NOT NULL,
+  coord_system_id             INT(10) UNSIGNED NOT NULL,
+  max_length                  INT,
+
+  UNIQUE KEY cs_table_name_idx (coord_system_id, table_name)
+
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+
+
+
+
+
+################################################################################
+#
+# Table structure for table 'object_xref'
+#
+
+CREATE TABLE object_xref (
+
+  object_xref_id              INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  ensembl_id                  INT(10) UNSIGNED NOT NULL,
+  ensembl_object_type         ENUM('RawContig', 'Transcript', 'Gene',
+                                   'Translation')
+                              NOT NULL,
+  xref_id                     INT UNSIGNED NOT NULL,
+  linkage_annotation          VARCHAR(255) DEFAULT NULL,
+  analysis_id                 SMALLINT UNSIGNED DEFAULT NULL,
+
+  PRIMARY KEY (object_xref_id),
+
+  UNIQUE KEY xref_idx
+    (xref_id, ensembl_object_type, ensembl_id, analysis_id),
+
+  KEY ensembl_idx (ensembl_object_type, ensembl_id),
+  KEY analysis_idx (analysis_id)
+
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+
+
+################################################################################
+#
+# Table structure for table 'ontology_xref'
+#
+
+CREATE TABLE ontology_xref (
+
+  object_xref_id          INT(10) UNSIGNED DEFAULT '0' NOT NULL,
+  source_xref_id          INT(10) UNSIGNED DEFAULT NULL,
+  linkage_type            ENUM('IC',  'IDA', 'IEA', 'IEP', 'IGI', 'IMP',
+                               'IPI', 'ISS', 'NAS', 'ND' , 'TAS', 'NR' ,
+                               'RCA', 'EXP', 'ISO', 'ISA', 'ISM', 'IGC'),
+
+  KEY source_idx (source_xref_id),
+  UNIQUE KEY object_source_type_idx (object_xref_id, source_xref_id, linkage_type)
+
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+
+
+
+
+################################################################################
+#
+# Table structure for table 'peptide_archive'
+#
+
+CREATE TABLE peptide_archive (
+
+  peptide_archive_id         INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  md5_checksum               VARCHAR(32),
+  peptide_seq                MEDIUMTEXT NOT NULL,
+
+  PRIMARY KEY (peptide_archive_id),
+  KEY checksum (md5_checksum)
+
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+
+
+
+
+
+################################################################################
+#
+# Table structure for table 'prediction_exon'
+#
+
+CREATE TABLE prediction_exon (
+
+  prediction_exon_id          INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  prediction_transcript_id    INT(10) UNSIGNED NOT NULL,
+  exon_rank                   SMALLINT UNSIGNED NOT NULL,
+  seq_region_id               INT(10) UNSIGNED NOT NULL,
+  seq_region_start            INT(10) UNSIGNED NOT NULL,
+  seq_region_end              INT(10) UNSIGNED NOT NULL,
+  seq_region_strand           TINYINT NOT NULL,
+  start_phase                 TINYINT NOT NULL,
+  score                       DOUBLE,
+  p_value                     DOUBLE,
+
+  PRIMARY KEY (prediction_exon_id),
+  KEY transcript_idx (prediction_transcript_id),
+  KEY seq_region_idx (seq_region_id, seq_region_start)
+
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+
+
+
+################################################################################
+#
+# Table structure for table 'prediction_transcript'
+#
+
+CREATE TABLE prediction_transcript (
+
+  prediction_transcript_id    INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  seq_region_id               INT(10) UNSIGNED NOT NULL,
+  seq_region_start            INT(10) UNSIGNED NOT NULL,
+  seq_region_end              INT(10) UNSIGNED NOT NULL,
+  seq_region_strand           TINYINT NOT NULL,
+  analysis_id                 SMALLINT UNSIGNED NOT NULL,
+  display_label               VARCHAR(255),
+
+  PRIMARY KEY (prediction_transcript_id),
+  KEY seq_region_idx (seq_region_id, seq_region_start),
+  KEY analysis_idx (analysis_id)
+
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+
+
+
+
+################################################################################
 # Table structure for table 'protein_align_feature'
 #
 
@@ -285,41 +1075,96 @@ CREATE TABLE protein_align_feature (
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM MAX_ROWS=100000000 AVG_ROW_LENGTH=80;
 
 
+
 ################################################################################
 #
-# Table structure for table 'dna_align_feature'
+# Table structure for table 'protein_feature'
 #
 
-CREATE TABLE dna_align_feature (
+CREATE TABLE protein_feature (
 
-  dna_align_feature_id        INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  seq_region_id               INT(10) UNSIGNED NOT NULL,
-  seq_region_start            INT(10) UNSIGNED NOT NULL,
-  seq_region_end              INT(10) UNSIGNED NOT NULL,
-  seq_region_strand           TINYINT(1) NOT NULL,
-  hit_start                   INT NOT NULL,
-  hit_end                     INT NOT NULL,
-  hit_strand                  TINYINT(1) NOT NULL,
+  protein_feature_id          INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  translation_id              INT(10) UNSIGNED NOT NULL,
+  seq_start                   INT(10) NOT NULL,
+  seq_end                     INT(10) NOT NULL,
+  hit_start                   INT(10) NOT NULL,
+  hit_end                     INT(10) NOT NULL,
   hit_name                    VARCHAR(40) NOT NULL,
   analysis_id                 SMALLINT UNSIGNED NOT NULL,
   score                       DOUBLE,
   evalue                      DOUBLE,
   perc_ident                  FLOAT,
-  cigar_line                  TEXT,
-  external_db_id              SMALLINT UNSIGNED,
-  hcoverage                   DOUBLE,
   external_data               TEXT,
-  pair_dna_align_feature_id   INT(10) UNSIGNED,
 
-  PRIMARY KEY (dna_align_feature_id),
-  KEY seq_region_idx (seq_region_id, analysis_id, seq_region_start, score),
-  KEY seq_region_idx_2 (seq_region_id, seq_region_start),
-  KEY hit_idx (hit_name),
-  KEY analysis_idx (analysis_id),
-  KEY external_db_idx (external_db_id),
-  KEY pair_idx (pair_dna_align_feature_id)
+  PRIMARY KEY (protein_feature_id),
+  KEY translation_idx (translation_id),
+  KEY hitname_idx (hit_name),
+  KEY analysis_idx (analysis_id)
 
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM MAX_ROWS=100000000 AVG_ROW_LENGTH=80;
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+
+
+
+
+################################################################################
+#
+# Table structure for table 'qtl'
+#
+
+CREATE TABLE qtl (
+
+  qtl_id                      INT(10) UNSIGNED AUTO_INCREMENT NOT NULL,
+  trait                       VARCHAR(255) NOT NULL,
+  lod_score                   FLOAT,
+  flank_marker_id_1           INT(10) UNSIGNED,
+  flank_marker_id_2           INT(10) UNSIGNED,
+  peak_marker_id              INT(10) UNSIGNED,
+
+  PRIMARY KEY (qtl_id),
+  KEY trait_idx (trait)
+
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+
+
+################################################################################
+#
+# Table structure for table 'qtl_feature'
+#
+
+CREATE TABLE qtl_feature (
+
+  seq_region_id         INT(10) UNSIGNED NOT NULL,
+  seq_region_start      INT(10) UNSIGNED NOT NULL,
+  seq_region_end        INT(10) UNSIGNED NOT NULL,
+  qtl_id                INT(10) UNSIGNED NOT NULL,
+  analysis_id           SMALLINT UNSIGNED NOT NULL,
+
+  KEY qtl_idx (qtl_id),
+  KEY loc_idx (seq_region_id, seq_region_start),
+  KEY analysis_idx (analysis_id)
+
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+
+
+
+################################################################################
+#
+# Table structure for table 'qtl_synonym'
+#
+
+CREATE TABLE qtl_synonym (
+
+  qtl_synonym_id              INT(10) UNSIGNED AUTO_INCREMENT NOT NULL,
+  qtl_id                      INT(10) UNSIGNED NOT NULL,
+  source_database             ENUM("rat genome database", "ratmap") NOT NULL,
+  source_primary_id           VARCHAR(255) NOT NULL,
+
+  PRIMARY KEY (qtl_synonym_id),
+  KEY qtl_idx (qtl_id)
+
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+
+
 
 
 ################################################################################
@@ -371,53 +1216,201 @@ CREATE TABLE repeat_feature (
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM MAX_ROWS=100000000 AVG_ROW_LENGTH=80;
 
 
+
 ################################################################################
 #
-# Table structure for table 'gene'
+# Table structure for table 'seq_region'
 #
 
-CREATE TABLE gene (
+CREATE TABLE seq_region (
 
-  gene_id                     INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  biotype                     VARCHAR(40) NOT NULL,
-  analysis_id                 SMALLINT UNSIGNED NOT NULL,
+  seq_region_id               INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  name                        VARCHAR(40) NOT NULL,
+  coord_system_id             INT(10) UNSIGNED NOT NULL,
+  length                      INT(10) UNSIGNED NOT NULL,
+
+  PRIMARY KEY (seq_region_id),
+  UNIQUE KEY name_cs_idx (name, coord_system_id),
+  KEY cs_idx (coord_system_id)
+
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+
+
+################################################################################
+#
+# Table structure for table 'seq_region_attrib'
+#
+
+CREATE TABLE seq_region_attrib (
+
+  seq_region_id               INT(10) UNSIGNED NOT NULL DEFAULT '0',
+  attrib_type_id              SMALLINT(5) UNSIGNED NOT NULL DEFAULT '0',
+  value                       TEXT NOT NULL,
+
+  KEY type_val_idx (attrib_type_id, value(40)),
+  KEY val_only_idx (value(40)),
+  KEY seq_region_idx (seq_region_id)
+
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+
+
+
+################################################################################
+#
+# Table structure for seq_region mapping between releases
+#
+# Stores how the core seq_region_id have changed from release to release
+
+CREATE TABLE seq_region_mapping (
+
+        external_seq_region_id  INT(10) UNSIGNED NOT NULL,
+        internal_seq_region_id  INT(10) UNSIGNED NOT NULL,
+        mapping_set_id          INT(10) UNSIGNED NOT NULL,
+
+        KEY mapping_set_idx (mapping_set_id)
+
+) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+
+
+
+
+################################################################################
+#
+# Table structure for table 'seq_region_synonym'
+#
+
+CREATE TABLE seq_region_synonym (
+
+  seq_region_synonym_id       INT UNSIGNED NOT NULL  AUTO_INCREMENT,
+  seq_region_id               INT(10) UNSIGNED NOT NULL,
+  synonym                     VARCHAR(40) NOT NULL,
+  external_db_id              SMALLINT UNSIGNED,
+
+  PRIMARY KEY (seq_region_synonym_id),
+  UNIQUE KEY syn_idx (synonym)
+
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+
+
+
+
+################################################################################
+#
+# Table structure for table 'simple_feature'
+#
+
+CREATE TABLE simple_feature (
+
+  simple_feature_id           INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
   seq_region_id               INT(10) UNSIGNED NOT NULL,
   seq_region_start            INT(10) UNSIGNED NOT NULL,
   seq_region_end              INT(10) UNSIGNED NOT NULL,
-  seq_region_strand           TINYINT(2) NOT NULL,
-  display_xref_id             INT(10) UNSIGNED,
-  source                      VARCHAR(20) NOT NULL,
-  status                      ENUM('KNOWN', 'NOVEL', 'PUTATIVE', 'PREDICTED', 'KNOWN_BY_PROJECTION', 'UNKNOWN'),
-  description                 TEXT,
-  is_current                  BOOLEAN NOT NULL DEFAULT 1,
-  canonical_transcript_id     INT(10) UNSIGNED NOT NULL,
-  canonical_annotation        VARCHAR(255) DEFAULT NULL,
+  seq_region_strand           TINYINT(1) NOT NULL,
+  display_label               VARCHAR(255) NOT NULL,
+  analysis_id                 SMALLINT UNSIGNED NOT NULL,
+  score                       DOUBLE,
 
-  PRIMARY KEY (gene_id),
+  PRIMARY KEY (simple_feature_id),
   KEY seq_region_idx (seq_region_id, seq_region_start),
-  KEY xref_id_index (display_xref_id),
-  KEY analysis_idx (analysis_id)
+  KEY analysis_idx (analysis_id),
+  KEY hit_idx (display_label)
 
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
 
 ################################################################################
 #
-# Table structure for table 'gene_stable_id'
+# Table structure for table 'splicing_event'
 #
 
-CREATE TABLE gene_stable_id (
+CREATE TABLE splicing_event (
 
-  gene_id                     INT UNSIGNED NOT NULL,
-  stable_id                   VARCHAR(128) NOT NULL,
-  version                     INT(10),
-  created_date                DATETIME NOT NULL,
-  modified_date               DATETIME NOT NULL,
+  splicing_event_id       INT(10)  UNSIGNED NOT NULL AUTO_INCREMENT,
+  name                    VARCHAR(134),
+  gene_id                 INT(10) UNSIGNED NOT NULL,
+  seq_region_id           INT(10) UNSIGNED NOT NULL,
+  seq_region_start        INT(10) UNSIGNED NOT NULL,
+  seq_region_end          INT(10) UNSIGNED NOT NULL,
+  seq_region_strand       TINYINT(2) NOT NULL,
+  attrib_type_id          SMALLINT(5) UNSIGNED NOT NULL DEFAULT 0,
 
-  PRIMARY KEY (gene_id),
-  KEY stable_id_idx (stable_id, version)
+  PRIMARY KEY (splicing_event_id),
+  KEY gene_idx (gene_id),
+  KEY seq_region_idx (seq_region_id, seq_region_start)
+
+)  COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+
+
+################################################################################
+#
+# Table structure for table 'splicing_event_feature'
+#
+
+CREATE TABLE splicing_event_feature (
+
+  splicing_event_feature_id INT(10)  UNSIGNED NOT NULL,
+  splicing_event_id         INT(10)  UNSIGNED NOT NULL,
+  exon_id                   INT(10)  UNSIGNED NOT NULL,
+  transcript_id             INT(10)  UNSIGNED NOT NULL,
+  feature_order             INT(10)  UNSIGNED NOT NULL,
+  transcript_association    INT(10)  UNSIGNED NOT NULL,
+  type                      ENUM('constitutive_exon','exon','flanking_exon'),
+  start                     INT(10)  UNSIGNED NOT NULL,
+  end                       INT(10)  UNSIGNED NOT NULL,
+
+  PRIMARY KEY (splicing_event_feature_id,exon_id,transcript_id),
+  KEY se_idx (splicing_event_id),
+  KEY transcript_idx (transcript_id)
 
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+
+
+
+################################################################################
+#
+# Table structure for table 'splicing_transcript_pair'
+#
+
+CREATE TABLE splicing_transcript_pair (
+
+
+  splicing_transcript_pair_id INT(10)  UNSIGNED NOT NULL,
+  splicing_event_id           INT(10)  UNSIGNED NOT NULL,
+  transcript_id_1             INT(10)  UNSIGNED NOT NULL,
+  transcript_id_2             INT(10)  UNSIGNED NOT NULL,
+
+  PRIMARY KEY (splicing_transcript_pair_id),
+  KEY se_idx (splicing_event_id)
+
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+
+
+
+
+
+################################################################################
+#
+# Table structure for table 'stable_id_event'
+#
+
+CREATE TABLE stable_id_event (
+
+  old_stable_id             VARCHAR(128),
+  old_version               SMALLINT,
+  new_stable_id             VARCHAR(128),
+  new_version               SMALLINT,
+  mapping_session_id        INT(10) UNSIGNED NOT NULL DEFAULT '0',
+  type                      ENUM('gene', 'transcript', 'translation') NOT NULL,
+  score                     FLOAT NOT NULL DEFAULT 0,
+
+  UNIQUE KEY uni_idx (mapping_session_id, old_stable_id, new_stable_id, type),
+
+  KEY new_idx (new_stable_id),
+  KEY old_idx (old_stable_id)
+
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+
+
+
 
 
 ################################################################################
@@ -437,21 +1430,6 @@ CREATE TABLE supporting_feature (
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM MAX_ROWS=100000000 AVG_ROW_LENGTH=80;
 
 
-################################################################################
-#
-# Table structure for table 'transcript_supporting_feature'
-#
-
-CREATE TABLE transcript_supporting_feature (
-
-  transcript_id               INT(10) UNSIGNED DEFAULT '0' NOT NULL,
-  feature_type                ENUM('dna_align_feature','protein_align_feature'),
-  feature_id                  INT(10) UNSIGNED DEFAULT '0' NOT NULL,
-
-  UNIQUE KEY all_idx (transcript_id,feature_type,feature_id),
-  KEY feature_idx (feature_type,feature_id)
-
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM MAX_ROWS=100000000 AVG_ROW_LENGTH=80;
 
 
 ################################################################################
@@ -485,6 +1463,28 @@ CREATE TABLE transcript (
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
 
+
+################################################################################
+#
+# Table structure for table 'transcript_attrib'
+#
+
+CREATE TABLE transcript_attrib (
+
+  transcript_id               INT(10) UNSIGNED NOT NULL DEFAULT '0',
+  attrib_type_id              SMALLINT(5) UNSIGNED NOT NULL DEFAULT '0',
+  value                       TEXT NOT NULL,
+
+  KEY type_val_idx (attrib_type_id, value(40)),
+  KEY val_only_idx (value(40)),
+  KEY transcript_idx (transcript_id)
+
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+
+
+
+
+
 ################################################################################
 #
 # Table structure for table 'transcript_stable_id'
@@ -502,6 +1502,26 @@ CREATE TABLE transcript_stable_id (
   KEY stable_id_idx (stable_id, version)
 
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+
+
+################################################################################
+#
+# Table structure for table 'transcript_supporting_feature'
+#
+
+CREATE TABLE transcript_supporting_feature (
+
+  transcript_id               INT(10) UNSIGNED DEFAULT '0' NOT NULL,
+  feature_type                ENUM('dna_align_feature','protein_align_feature'),
+  feature_id                  INT(10) UNSIGNED DEFAULT '0' NOT NULL,
+
+  UNIQUE KEY all_idx (transcript_id,feature_type,feature_id),
+  KEY feature_idx (feature_type,feature_id)
+
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM MAX_ROWS=100000000 AVG_ROW_LENGTH=80;
+
+
+
 
 
 ################################################################################
@@ -527,457 +1547,6 @@ CREATE TABLE translation (
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
 
-################################################################################
-#
-# Table structure for table 'translation_stable_id'
-#
-CREATE TABLE translation_stable_id (
-
-  translation_id              INT(10) UNSIGNED NOT NULL,
-  stable_id                   VARCHAR(128) NOT NULL,
-  version                     INT(10),
-  created_date                DATETIME NOT NULL,
-  modified_date               DATETIME NOT NULL,
-
-  PRIMARY KEY (translation_id),
-  KEY stable_id_idx (stable_id, version)
-
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
-
-
-################################################################################
-#
-# Table structure for table 'assembly'
-#
-# This is a denormalised golden path.
-#
-# The data in this table defines the "static golden path", i.e. the best effort
-# draft full genome sequence as determined by the UCSC or NCBI (depending which
-# assembly you are using).
-#
-# Each row represents a component, e.g. a contig,  (comp_seq_region_id, FK from
-# seq_region table) at least part of which is present in the golden path.
-#
-# The part of the component that is in the path is delimited by fields
-# cmp_start and cmp_end (start < end), and the absolute position within the
-# golden path chromosome (or other appropriate assembled structure)
-# (asm_seq_region_id) is given by asm_start and asm_end.
-
-CREATE TABLE assembly (
-
-  asm_seq_region_id           INT(10) UNSIGNED NOT NULL,
-  cmp_seq_region_id           INT(10) UNSIGNED NOT NULL,
-  asm_start                   INT(10) NOT NULL,
-  asm_end                     INT(10) NOT NULL,
-  cmp_start                   INT(10) NOT NULL,
-  cmp_end                     INT(10) NOT NULL,
-  ori                         TINYINT  NOT NULL,
-
-  KEY cmp_seq_region_idx (cmp_seq_region_id),
-  KEY asm_seq_region_idx (asm_seq_region_id, asm_start),
-  UNIQUE KEY all_idx (asm_seq_region_id, cmp_seq_region_id, asm_start, asm_end, cmp_start, cmp_end, ori)
-
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
-
-
-################################################################################
-#
-# Table structure for table 'protein_feature'
-#
-
-CREATE TABLE protein_feature (
-
-  protein_feature_id          INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  translation_id              INT(10) UNSIGNED NOT NULL,
-  seq_start                   INT(10) NOT NULL,
-  seq_end                     INT(10) NOT NULL,
-  hit_start                   INT(10) NOT NULL,
-  hit_end                     INT(10) NOT NULL,
-  hit_name                    VARCHAR(40) NOT NULL,
-  analysis_id                 SMALLINT UNSIGNED NOT NULL,
-  score                       DOUBLE,
-  evalue                      DOUBLE,
-  perc_ident                  FLOAT,
-  external_data               TEXT,
-
-  PRIMARY KEY (protein_feature_id),
-  KEY translation_idx (translation_id),
-  KEY hitname_idx (hit_name),
-  KEY analysis_idx (analysis_id)
-
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
-
-
-################################################################################
-#
-# Table structure for table 'interpro'
-#
-
-CREATE TABLE interpro (
-
-  interpro_ac                 VARCHAR(40) NOT NULL,
-  id                          VARCHAR(40) NOT NULL,
-
-  UNIQUE KEY accession_idx (interpro_ac, id),
-  KEY id_idx (id)
-
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
-
-
-################################################################################
-#
-# Table structure for table 'karyotype'
-#
-
-CREATE TABLE karyotype (
-  karyotype_id                INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  seq_region_id               INT(10) UNSIGNED NOT NULL,
-  seq_region_start            INT(10) UNSIGNED NOT NULL,
-  seq_region_end              INT(10) UNSIGNED NOT NULL,
-  band                        VARCHAR(40) NOT NULL,
-  stain                       VARCHAR(40) NOT NULL,
-
-  PRIMARY KEY (karyotype_id),
-  KEY region_band_idx (seq_region_id,band)
-
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
-
-
-################################################################################
-#
-# Table structure for table 'object_xref'
-#
-
-CREATE TABLE object_xref (
-
-  object_xref_id              INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  ensembl_id                  INT(10) UNSIGNED NOT NULL,
-  ensembl_object_type         ENUM('RawContig', 'Transcript', 'Gene',
-                                   'Translation')
-                              NOT NULL,
-  xref_id                     INT UNSIGNED NOT NULL,
-  linkage_annotation          VARCHAR(255) DEFAULT NULL,
-  analysis_id                 SMALLINT UNSIGNED DEFAULT NULL,
-
-  PRIMARY KEY (object_xref_id),
-
-  UNIQUE KEY xref_idx
-    (xref_id, ensembl_object_type, ensembl_id, analysis_id),
-
-  KEY ensembl_idx (ensembl_object_type, ensembl_id),
-  KEY analysis_idx (analysis_id)
-
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
-
-
-################################################################################
-#
-# Table structure for table 'identity_xref'
-#
-
-CREATE TABLE identity_xref (
-
-  object_xref_id          INT(10) UNSIGNED NOT NULL,
-  xref_identity           INT(5),
-  ensembl_identity        INT(5),
-
-  xref_start              INT,
-  xref_end                INT,
-  ensembl_start           INT,
-  ensembl_end             INT,
-  cigar_line              TEXT,
-
-  score                   DOUBLE,
-  evalue                  DOUBLE,
-
-  PRIMARY KEY (object_xref_id)
-
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
-
-
-################################################################################
-#
-# Table structure for table 'ontology_xref'
-#
-
-CREATE TABLE ontology_xref (
-
-  object_xref_id          INT(10) UNSIGNED DEFAULT '0' NOT NULL,
-  source_xref_id          INT(10) UNSIGNED DEFAULT NULL,
-  linkage_type            ENUM('IC',  'IDA', 'IEA', 'IEP', 'IGI', 'IMP',
-                               'IPI', 'ISS', 'NAS', 'ND' , 'TAS', 'NR' ,
-                               'RCA', 'EXP', 'ISO', 'ISA', 'ISM', 'IGC'),
-
-  KEY source_idx (source_xref_id),
-  UNIQUE KEY object_source_type_idx (object_xref_id, source_xref_id, linkage_type)
-
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
-
-
-################################################################################
-#
-# Table structure for table 'xref'
-#
-
-CREATE TABLE xref (
-
-   xref_id                    INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-   external_db_id             SMALLINT UNSIGNED NOT NULL,
-   dbprimary_acc              VARCHAR(40) NOT NULL,
-   display_label              VARCHAR(128) NOT NULL,
-   version                    VARCHAR(10) DEFAULT '0' NOT NULL,
-   description                TEXT,
-   info_type                  ENUM( 'PROJECTION', 'MISC', 'DEPENDENT',
-                                    'DIRECT', 'SEQUENCE_MATCH',
-                                    'INFERRED_PAIR', 'PROBE',
-                                    'UNMAPPED', 'COORDINATE_OVERLAP' ),
-   info_text                  VARCHAR(255),
-
-   PRIMARY KEY (xref_id),
-   UNIQUE KEY id_index (dbprimary_acc, external_db_id, info_type, info_text),
-   KEY display_index (display_label),
-   KEY info_type_idx (info_type)
-
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
-
-
-################################################################################
-#
-# Table structure for table 'dependent_xref'
-#
-
-CREATE TABLE dependent_xref(
-
-  object_xref_id         INT NOT NULL,
-  master_xref_id         INT NOT NULL,
-  dependent_xref_id      INT NOT NULL,
-
-  PRIMARY KEY( object_xref_id ),
-  KEY dependent ( dependent_xref_id ),
-  KEY master_idx (master_xref_id)
-
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
-
-################################################################################
-#
-# Table structure for table 'external_synonym'
-#
-
-CREATE TABLE external_synonym (
-
-  xref_id                     INT(10) UNSIGNED NOT NULL,
-  synonym                     VARCHAR(100) NOT NULL,
-
-  PRIMARY KEY (xref_id, synonym),
-  KEY name_index (synonym)
-
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
-
-
-################################################################################
-#
-# Table structure for table 'external_db'
-#
-
-CREATE TABLE external_db (
-
-  external_db_id              SMALLINT UNSIGNED NOT NULL,
-  db_name                     VARCHAR(100) NOT NULL,
-  db_release                  VARCHAR(255),
-  status                      ENUM('KNOWNXREF','KNOWN','XREF','PRED','ORTH',
-                                   'PSEUDO')
-                              NOT NULL,
-  dbprimary_acc_linkable      BOOLEAN DEFAULT 1 NOT NULL,
-  display_label_linkable      BOOLEAN DEFAULT 0 NOT NULL,
-  priority                    INT NOT NULL,
-  db_display_name             VARCHAR(255),
-  type                        ENUM('ARRAY', 'ALT_TRANS', 'ALT_GENE', 'MISC', 'LIT', 'PRIMARY_DB_SYNONYM', 'ENSEMBL'),
-  secondary_db_name           VARCHAR(255) DEFAULT NULL,
-  secondary_db_table          VARCHAR(255) DEFAULT NULL,
-  description                 TEXT,
-
-  PRIMARY KEY (external_db_id),
-  UNIQUE INDEX db_name_idx (db_name)
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
-
-
-################################################################################
-#
-# Table structure for table 'prediction_exon'
-#
-
-CREATE TABLE prediction_exon (
-
-  prediction_exon_id          INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  prediction_transcript_id    INT(10) UNSIGNED NOT NULL,
-  exon_rank                   SMALLINT UNSIGNED NOT NULL,
-  seq_region_id               INT(10) UNSIGNED NOT NULL,
-  seq_region_start            INT(10) UNSIGNED NOT NULL,
-  seq_region_end              INT(10) UNSIGNED NOT NULL,
-  seq_region_strand           TINYINT NOT NULL,
-  start_phase                 TINYINT NOT NULL,
-  score                       DOUBLE,
-  p_value                     DOUBLE,
-
-  PRIMARY KEY (prediction_exon_id),
-  KEY transcript_idx (prediction_transcript_id),
-  KEY seq_region_idx (seq_region_id, seq_region_start)
-
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
-
-
-################################################################################
-#
-# Table structure for table 'prediction_transcript'
-#
-
-CREATE TABLE prediction_transcript (
-
-  prediction_transcript_id    INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  seq_region_id               INT(10) UNSIGNED NOT NULL,
-  seq_region_start            INT(10) UNSIGNED NOT NULL,
-  seq_region_end              INT(10) UNSIGNED NOT NULL,
-  seq_region_strand           TINYINT NOT NULL,
-  analysis_id                 SMALLINT UNSIGNED NOT NULL,
-  display_label               VARCHAR(255),
-
-  PRIMARY KEY (prediction_transcript_id),
-  KEY seq_region_idx (seq_region_id, seq_region_start),
-  KEY analysis_idx (analysis_id)
-
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
-
-
-################################################################################
-#
-# Table structure for table 'marker_synonym'
-
-CREATE TABLE marker_synonym (
-
-  marker_synonym_id           INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  marker_id                   INT(10) UNSIGNED NOT NULL,
-  source                      VARCHAR(20),
-  name                        VARCHAR(50),
-
-  PRIMARY KEY (marker_synonym_id),
-  KEY marker_synonym_idx (marker_synonym_id, name),
-  KEY marker_idx (marker_id)
-
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
-
-
-################################################################################
-#
-# Table structure for table 'marker'
-
-CREATE TABLE marker (
-
-  marker_id                   INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  display_marker_synonym_id   INT(10) UNSIGNED,
-  left_primer                 VARCHAR(100) NOT NULL,
-  right_primer                VARCHAR(100) NOT NULL,
-  min_primer_dist             INT(10) UNSIGNED NOT NULL,
-  max_primer_dist             INT(10) UNSIGNED NOT NULL,
-  priority                    INT,
-  type                        ENUM('est', 'microsatellite'),
-
-  PRIMARY KEY (marker_id),
-  KEY marker_idx (marker_id, priority),
-  KEY display_idx (display_marker_synonym_id)
-
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
-
-
-################################################################################
-#
-# Table structure for table 'marker_feature'
-
-CREATE TABLE marker_feature (
-
-  marker_feature_id           INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  marker_id                   INT(10) UNSIGNED NOT NULL,
-  seq_region_id               INT(10) UNSIGNED NOT NULL,
-  seq_region_start            INT(10) UNSIGNED NOT NULL,
-  seq_region_end              INT(10) UNSIGNED NOT NULL,
-  analysis_id                 SMALLINT UNSIGNED NOT NULL,
-  map_weight                  INT(10) UNSIGNED,
-
-  PRIMARY KEY (marker_feature_id),
-  KEY seq_region_idx (seq_region_id, seq_region_start),
-  KEY analysis_idx (analysis_id)
-
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
-
-
-################################################################################
-#
-# Table structure for table 'marker_map_location'
-
-CREATE TABLE marker_map_location (
-
-  marker_id                   INT(10) UNSIGNED NOT NULL,
-  map_id                      INT(10) UNSIGNED NOT NULL,
-  chromosome_name             VARCHAR(15)  NOT NULL,
-  marker_synonym_id           INT(10) UNSIGNED NOT NULL,
-  position                    VARCHAR(15) NOT NULL,
-  lod_score                   DOUBLE,
-
-  PRIMARY KEY (marker_id, map_id),
-  KEY map_idx (map_id, chromosome_name, position)
-
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
-
-
-################################################################################
-#
-# Table structure for table 'map'
-
-CREATE TABLE map (
-
-  map_id                      INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  map_name                    VARCHAR(30) NOT NULL,
-
-  PRIMARY KEY (map_id)
-
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
-
-
-################################################################################
-#
-# Table structure for table 'misc_feature'
-#
-
-CREATE TABLE misc_feature (
-
-  misc_feature_id             INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  seq_region_id               INT(10) UNSIGNED NOT NULL DEFAULT '0',
-  seq_region_start            INT(10) UNSIGNED NOT NULL DEFAULT '0',
-  seq_region_end              INT(10) UNSIGNED NOT NULL DEFAULT '0',
-  seq_region_strand           TINYINT(4) NOT NULL DEFAULT '0',
-
-  PRIMARY KEY (misc_feature_id),
-  KEY seq_region_idx (seq_region_id, seq_region_start)
-
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
-
-
-################################################################################
-#
-# Table structure for table 'misc_attrib'
-#
-
-CREATE TABLE misc_attrib (
-
-  misc_feature_id             INT(10) UNSIGNED NOT NULL DEFAULT '0',
-  attrib_type_id              SMALLINT(5) UNSIGNED NOT NULL DEFAULT '0',
-  value                       TEXT NOT NULL,
-
-  KEY type_val_idx (attrib_type_id, value(40)),
-  KEY val_only_idx (value(40)),
-  KEY misc_feature_idx (misc_feature_id)
-
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
-
 
 ################################################################################
 #
@@ -998,394 +1567,38 @@ CREATE TABLE translation_attrib (
 
 ################################################################################
 #
-# Table structure for table 'transcript_attrib'
+# Table structure for table 'translation_stable_id'
 #
+CREATE TABLE translation_stable_id (
 
-CREATE TABLE transcript_attrib (
+  translation_id              INT(10) UNSIGNED NOT NULL,
+  stable_id                   VARCHAR(128) NOT NULL,
+  version                     INT(10),
+  created_date                DATETIME NOT NULL,
+  modified_date               DATETIME NOT NULL,
 
-  transcript_id               INT(10) UNSIGNED NOT NULL DEFAULT '0',
-  attrib_type_id              SMALLINT(5) UNSIGNED NOT NULL DEFAULT '0',
-  value                       TEXT NOT NULL,
-
-  KEY type_val_idx (attrib_type_id, value(40)),
-  KEY val_only_idx (value(40)),
-  KEY transcript_idx (transcript_id)
+  PRIMARY KEY (translation_id),
+  KEY stable_id_idx (stable_id, version)
 
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
 
 ################################################################################
 #
-# Table structure for table 'gene_attrib'
+# Table structure for table 'unconventional_transcript_association'
 #
+# Describes transcripts that do not link to a single gene in the normal way.
 
-CREATE TABLE gene_attrib (
+CREATE TABLE unconventional_transcript_association (
 
-  gene_id                     INT(10) UNSIGNED NOT NULL DEFAULT '0',
-  attrib_type_id              SMALLINT(5) UNSIGNED NOT NULL DEFAULT '0',
-  value                       TEXT NOT NULL,
+       transcript_id    INT(10) UNSIGNED NOT NULL,
+       gene_id          INT(10) UNSIGNED NOT NULL,
+       interaction_type ENUM("antisense","sense_intronic","sense_overlaping_exonic","chimeric_sense_exonic"),
 
-  KEY type_val_idx (attrib_type_id, value(40)),
-  KEY val_only_idx (value(40)),
-  KEY gene_idx (gene_id)
+       KEY transcript_idx (transcript_id),
+       KEY gene_idx (gene_id)
 
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
-
-
-################################################################################
-#
-# Table structure for table 'seq_region_attrib'
-#
-
-CREATE TABLE seq_region_attrib (
-
-  seq_region_id               INT(10) UNSIGNED NOT NULL DEFAULT '0',
-  attrib_type_id              SMALLINT(5) UNSIGNED NOT NULL DEFAULT '0',
-  value                       TEXT NOT NULL,
-
-  KEY type_val_idx (attrib_type_id, value(40)),
-  KEY val_only_idx (value(40)),
-  KEY seq_region_idx (seq_region_id)
-
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
-
-
-################################################################################
-#
-# Table structure for table 'attrib_type'
-#
-
-CREATE TABLE attrib_type (
-
-  attrib_type_id              SMALLINT(5) UNSIGNED NOT NULL AUTO_INCREMENT,
-  code                        VARCHAR(15) NOT NULL DEFAULT '',
-  name                        VARCHAR(255) NOT NULL DEFAULT '',
-  description                 TEXT,
-
-  PRIMARY KEY (attrib_type_id),
-  UNIQUE KEY code_idx (code)
-
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
-
-
-################################################################################
-#
-# Table structure for table 'misc_set'
-#
-
-CREATE TABLE misc_set (
-
-  misc_set_id                 SMALLINT(5) UNSIGNED NOT NULL AUTO_INCREMENT,
-  code                        VARCHAR(25) NOT NULL DEFAULT '',
-  name                        VARCHAR(255) NOT NULL DEFAULT '',
-  description                 TEXT NOT NULL,
-  max_length                  INT UNSIGNED NOT NULL,
-
-  PRIMARY KEY (misc_set_id),
-  UNIQUE KEY code_idx (code)
-
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
-
-
-################################################################################
-#
-# Table structure for table 'misc_feature_misc_set'
-#
-
-CREATE TABLE misc_feature_misc_set (
-
-  misc_feature_id             INT(10) UNSIGNED NOT NULL DEFAULT '0',
-  misc_set_id                 SMALLINT(5) UNSIGNED NOT NULL DEFAULT '0',
-
-  PRIMARY KEY (misc_feature_id, misc_set_id),
-  KEY reverse_idx (misc_set_id, misc_feature_id)
-
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
-
-
-################################################################################
-#
-# Table structure for table 'qtl'
-#
-
-CREATE TABLE qtl (
-
-  qtl_id                      INT(10) UNSIGNED AUTO_INCREMENT NOT NULL,
-  trait                       VARCHAR(255) NOT NULL,
-  lod_score                   FLOAT,
-  flank_marker_id_1           INT(10) UNSIGNED,
-  flank_marker_id_2           INT(10) UNSIGNED,
-  peak_marker_id              INT(10) UNSIGNED,
-
-  PRIMARY KEY (qtl_id),
-  KEY trait_idx (trait)
-
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
-
-
-################################################################################
-#
-# Table structure for table 'qtl_synonym'
-#
-
-CREATE TABLE qtl_synonym (
-
-  qtl_synonym_id              INT(10) UNSIGNED AUTO_INCREMENT NOT NULL,
-  qtl_id                      INT(10) UNSIGNED NOT NULL,
-  source_database             ENUM("rat genome database", "ratmap") NOT NULL,
-  source_primary_id           VARCHAR(255) NOT NULL,
-
-  PRIMARY KEY (qtl_synonym_id),
-  KEY qtl_idx (qtl_id)
-
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
-
-
-################################################################################
-#
-# Table structure for table 'qtl_feature'
-#
-
-CREATE TABLE qtl_feature (
-
-  seq_region_id         INT(10) UNSIGNED NOT NULL,
-  seq_region_start      INT(10) UNSIGNED NOT NULL,
-  seq_region_end        INT(10) UNSIGNED NOT NULL,
-  qtl_id                INT(10) UNSIGNED NOT NULL,
-  analysis_id           SMALLINT UNSIGNED NOT NULL,
-
-  KEY qtl_idx (qtl_id),
-  KEY loc_idx (seq_region_id, seq_region_start),
-  KEY analysis_idx (analysis_id)
-
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
-
-
-################################################################################
-#
-# Table structure for table 'mapping_session'
-#
-
-CREATE TABLE mapping_session (
-
-  mapping_session_id          INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  old_db_name                 VARCHAR(80) NOT NULL DEFAULT '',
-  new_db_name                 VARCHAR(80) NOT NULL DEFAULT '',
-  old_release                 VARCHAR(5) NOT NULL DEFAULT '',
-  new_release                 VARCHAR(5) NOT NULL DEFAULT '',
-  old_assembly                VARCHAR(20) NOT NULL DEFAULT '',
-  new_assembly                VARCHAR(20) NOT NULL DEFAULT '',
-  created                     DATETIME NOT NULL,
-
-  PRIMARY KEY (mapping_session_id)
-
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
-
-
-################################################################################
-#
-# Table structure for table 'stable_id_event'
-#
-
-CREATE TABLE stable_id_event (
-
-  old_stable_id             VARCHAR(128),
-  old_version               SMALLINT,
-  new_stable_id             VARCHAR(128),
-  new_version               SMALLINT,
-  mapping_session_id        INT(10) UNSIGNED NOT NULL DEFAULT '0',
-  type                      ENUM('gene', 'transcript', 'translation') NOT NULL,
-  score                     FLOAT NOT NULL DEFAULT 0,
-
-  UNIQUE KEY uni_idx (mapping_session_id, old_stable_id, new_stable_id, type),
-
-  KEY new_idx (new_stable_id),
-  KEY old_idx (old_stable_id)
-
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
-
-
-################################################################################
-#
-# Table structure for table 'gene_archive'
-#
-
-CREATE TABLE gene_archive (
-
-  gene_stable_id              VARCHAR(128) NOT NULL,
-  gene_version                SMALLINT NOT NULL,
-  transcript_stable_id        VARCHAR(128) NOT NULL,
-  transcript_version          SMALLINT NOT NULL,
-  translation_stable_id       VARCHAR(128),
-  translation_version         SMALLINT,
-  peptide_archive_id          INT(10) UNSIGNED,
-  mapping_session_id          INT(10) UNSIGNED NOT NULL,
-
-  KEY gene_idx (gene_stable_id, gene_version),
-  KEY transcript_idx (transcript_stable_id, transcript_version),
-  KEY translation_idx (translation_stable_id, translation_version),
-  KEY peptide_archive_id_idx (peptide_archive_id)
-
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
-
-
-################################################################################
-#
-# Table structure for table 'peptide_archive'
-#
-
-CREATE TABLE peptide_archive (
-
-  peptide_archive_id         INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  md5_checksum               VARCHAR(32),
-  peptide_seq                MEDIUMTEXT NOT NULL,
-
-  PRIMARY KEY (peptide_archive_id),
-  KEY checksum (md5_checksum)
-
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
-
-
-################################################################################
-#
-# Table structure for table 'seq_region'
-#
-
-CREATE TABLE seq_region (
-
-  seq_region_id               INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  name                        VARCHAR(40) NOT NULL,
-  coord_system_id             INT(10) UNSIGNED NOT NULL,
-  length                      INT(10) UNSIGNED NOT NULL,
-
-  PRIMARY KEY (seq_region_id),
-  UNIQUE KEY name_cs_idx (name, coord_system_id),
-  KEY cs_idx (coord_system_id)
-
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
-
-
-################################################################################
-#
-# Table structure for table 'seq_region_synonym'
-#
-
-CREATE TABLE seq_region_synonym (
-
-  seq_region_synonym_id       INT UNSIGNED NOT NULL  AUTO_INCREMENT,
-  seq_region_id               INT(10) UNSIGNED NOT NULL,
-  synonym                     VARCHAR(40) NOT NULL,
-  external_db_id              SMALLINT UNSIGNED,
-
-  PRIMARY KEY (seq_region_synonym_id),
-  UNIQUE KEY syn_idx (synonym)
-
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
-
-
-
-
-################################################################################
-#
-# Table structure for table 'assembly_exception'
-#
-
-CREATE TABLE assembly_exception (
-
-  assembly_exception_id       INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  seq_region_id               INT(10) UNSIGNED NOT NULL,
-  seq_region_start            INT(10) UNSIGNED NOT NULL,
-  seq_region_end              INT(10) UNSIGNED NOT NULL,
-  exc_type                    ENUM('HAP', 'PAR',
-                                'PATCH_FIX', 'PATCH_NOVEL') NOT NULL,
-  exc_seq_region_id           INT(10) UNSIGNED NOT NULL,
-  exc_seq_region_start        INT(10) UNSIGNED NOT NULL,
-  exc_seq_region_end          INT(10) UNSIGNED NOT NULL,
-  ori                         INT NOT NULL,
-
-  PRIMARY KEY (assembly_exception_id),
-  KEY sr_idx (seq_region_id, seq_region_start),
-  KEY ex_idx (exc_seq_region_id, exc_seq_region_start)
-
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
-
-
-################################################################################
-#
-# Table structure for table 'coord_system'
-#
-
-CREATE TABLE coord_system (
-
-  coord_system_id             INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  species_id                  INT(10) UNSIGNED NOT NULL DEFAULT 1,
-  name                        VARCHAR(40) NOT NULL,
-  version                     VARCHAR(255) DEFAULT NULL,
-  rank                        INT NOT NULL,
-  attrib                      SET('default_version', 'sequence_level'),
-
-  PRIMARY   KEY (coord_system_id),
-  UNIQUE    KEY rank_idx (rank, species_id),
-  UNIQUE    KEY name_idx (name, version, species_id),
-            KEY species_idx (species_id)
-
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
-
-
-################################################################################
-#
-# Table structure for table 'meta_coord'
-#
-
-CREATE TABLE meta_coord (
-
-  table_name                  VARCHAR(40) NOT NULL,
-  coord_system_id             INT(10) UNSIGNED NOT NULL,
-  max_length                  INT,
-
-  UNIQUE KEY cs_table_name_idx (coord_system_id, table_name)
-
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
-
-
-################################################################################
-#
-# Table structure for table 'density_feature'
-#
-
-CREATE TABLE density_feature (
-
-  density_feature_id    INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  density_type_id       INT(10) UNSIGNED NOT NULL,
-  seq_region_id         INT(10) UNSIGNED NOT NULL,
-  seq_region_start      INT(10) UNSIGNED NOT NULL,
-  seq_region_end        INT(10) UNSIGNED NOT NULL,
-  density_value         FLOAT NOT NULL,
-
-  PRIMARY KEY (density_feature_id),
-  KEY seq_region_idx (density_type_id, seq_region_id, seq_region_start),
-  KEY seq_region_id_idx (seq_region_id)
-
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
-
-
-################################################################################
-#
-# Table structure for table 'density_type'
-#
-
-CREATE TABLE density_type (
-
-  density_type_id       INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  analysis_id           SMALLINT UNSIGNED NOT NULL,
-  block_size            INT NOT NULL,
-  region_features       INT NOT NULL,
-  value_type            ENUM('sum','ratio') NOT NULL,
-
-  PRIMARY KEY (density_type_id),
-  UNIQUE KEY analysis_idx (analysis_id, block_size, region_features)
-
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 
 
 
@@ -1434,150 +1647,35 @@ CREATE TABLE unmapped_reason (
 
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
-################################################################################
-#
-# Table structure for table 'ditag'
-#
-# Describes ditags
 
-CREATE TABLE ditag (
 
-       ditag_id          INT(10) UNSIGNED NOT NULL auto_increment,
-       name              VARCHAR(30) NOT NULL,
-       type              VARCHAR(30) NOT NULL,
-       tag_count         smallint(6) UNSIGNED NOT NULL default 1,
-       sequence          TINYTEXT NOT NULL,
-
-       PRIMARY KEY (ditag_id)
-
-) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 
 ################################################################################
 #
-# Table structure for table 'ditag_feature'
+# Table structure for table 'xref'
 #
-# Describes where ditags hit on the genome
 
-CREATE TABLE ditag_feature (
+CREATE TABLE xref (
 
-       ditag_feature_id   INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-       ditag_id           INT(10) UNSIGNED NOT NULL default '0',
-       ditag_pair_id      INT(10) UNSIGNED NOT NULL default '0',
-       seq_region_id      INT(10) UNSIGNED NOT NULL default '0',
-       seq_region_start   INT(10) UNSIGNED NOT NULL default '0',
-       seq_region_end     INT(10) UNSIGNED NOT NULL default '0',
-       seq_region_strand  TINYINT(1) NOT NULL default '0',
-       analysis_id        SMALLINT UNSIGNED NOT NULL default '0',
-       hit_start          INT(10) UNSIGNED NOT NULL default '0',
-       hit_end            INT(10) UNSIGNED NOT NULL default '0',
-       hit_strand         TINYINT(1) NOT NULL default '0',
-       cigar_line         TINYTEXT NOT NULL,
-       ditag_side         ENUM('F', 'L', 'R') NOT NULL,
+   xref_id                    INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+   external_db_id             SMALLINT UNSIGNED NOT NULL,
+   dbprimary_acc              VARCHAR(40) NOT NULL,
+   display_label              VARCHAR(128) NOT NULL,
+   version                    VARCHAR(10) DEFAULT '0' NOT NULL,
+   description                TEXT,
+   info_type                  ENUM( 'PROJECTION', 'MISC', 'DEPENDENT',
+                                    'DIRECT', 'SEQUENCE_MATCH',
+                                    'INFERRED_PAIR', 'PROBE',
+                                    'UNMAPPED', 'COORDINATE_OVERLAP' ),
+   info_text                  VARCHAR(255),
 
-       PRIMARY KEY  (ditag_feature_id),
-       KEY ditag_idx (ditag_id),
-       KEY ditag_pair_idx (ditag_pair_id),
-       KEY seq_region_idx (seq_region_id, seq_region_start, seq_region_end)
-
-) ENGINE=MyISAM DEFAULT CHARSET=latin1;
-
-################################################################################
-#
-# Table structure for table 'unconventional_transcript_association'
-#
-# Describes transcripts that do not link to a single gene in the normal way.
-
-CREATE TABLE unconventional_transcript_association (
-
-       transcript_id    INT(10) UNSIGNED NOT NULL,
-       gene_id          INT(10) UNSIGNED NOT NULL,
-       interaction_type ENUM("antisense","sense_intronic","sense_overlaping_exonic","chimeric_sense_exonic"),
-
-       KEY transcript_idx (transcript_id),
-       KEY gene_idx (gene_id)
-
-) ENGINE=MyISAM DEFAULT CHARSET=latin1;
-
-################################################################################
-#
-# Table structure for seq_region mapping between releases
-#
-# Stores how the core seq_region_id have changed from release to release
-
-CREATE TABLE seq_region_mapping (
-
-        external_seq_region_id  INT(10) UNSIGNED NOT NULL,
-        internal_seq_region_id  INT(10) UNSIGNED NOT NULL,
-        mapping_set_id          INT(10) UNSIGNED NOT NULL,
-
-        KEY mapping_set_idx (mapping_set_id)
-
-) ENGINE=MyISAM DEFAULT CHARSET=latin1;
-
-################################################################################
-#
-# Table structure for seq_region mapping between releases
-#
-# Stores how which mapping group the seq_region are for a particular schema
-
-CREATE TABLE mapping_set (
-
-        mapping_set_id  INT(10) UNSIGNED NOT NULL,
-        schema_build    VARCHAR(20) NOT NULL,
-
-        PRIMARY KEY(schema_build)
-
-) ENGINE=MyISAM DEFAULT CHARSET=latin1;
-
-
-CREATE TABLE splicing_event (
-
-  splicing_event_id       INT(10)  UNSIGNED NOT NULL AUTO_INCREMENT,
-  name                    VARCHAR(134),
-  gene_id                 INT(10) UNSIGNED NOT NULL,
-  seq_region_id           INT(10) UNSIGNED NOT NULL,
-  seq_region_start        INT(10) UNSIGNED NOT NULL,
-  seq_region_end          INT(10) UNSIGNED NOT NULL,
-  seq_region_strand       TINYINT(2) NOT NULL,
-  attrib_type_id          SMALLINT(5) UNSIGNED NOT NULL DEFAULT 0,
-
-  PRIMARY KEY (splicing_event_id),
-  KEY gene_idx (gene_id),
-  KEY seq_region_idx (seq_region_id, seq_region_start)
-
-)  COLLATE=latin1_swedish_ci ENGINE=MyISAM;
-
-
-CREATE TABLE splicing_event_feature (
-
-  splicing_event_feature_id INT(10)  UNSIGNED NOT NULL,
-  splicing_event_id         INT(10)  UNSIGNED NOT NULL,
-  exon_id                   INT(10)  UNSIGNED NOT NULL,
-  transcript_id             INT(10)  UNSIGNED NOT NULL,
-  feature_order             INT(10)  UNSIGNED NOT NULL,
-  transcript_association    INT(10)  UNSIGNED NOT NULL,
-  type                      ENUM('constitutive_exon','exon','flanking_exon'),
-  start                     INT(10)  UNSIGNED NOT NULL,
-  end                       INT(10)  UNSIGNED NOT NULL,
-
-  PRIMARY KEY (splicing_event_feature_id,exon_id,transcript_id),
-  KEY se_idx (splicing_event_id),
-  KEY transcript_idx (transcript_id)
+   PRIMARY KEY (xref_id),
+   UNIQUE KEY id_index (dbprimary_acc, external_db_id, info_type, info_text),
+   KEY display_index (display_label),
+   KEY info_type_idx (info_type)
 
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
 
 
-CREATE TABLE splicing_transcript_pair (
-
-
-  splicing_transcript_pair_id INT(10)  UNSIGNED NOT NULL,
-  splicing_event_id           INT(10)  UNSIGNED NOT NULL,
-  transcript_id_1             INT(10)  UNSIGNED NOT NULL,
-  transcript_id_2             INT(10)  UNSIGNED NOT NULL,
-
-  PRIMARY KEY (splicing_transcript_pair_id),
-  KEY se_idx (splicing_event_id)
-
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
