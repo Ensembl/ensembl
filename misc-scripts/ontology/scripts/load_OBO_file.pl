@@ -135,14 +135,17 @@ sub write_term {
 
   print("Writing to 'term' table...\n");
 
-  $dbh->do("LOCK TABLE term WRITE");
+  $dbh->do("LOCK TABLE term, synonym WRITE");
 
   my $statement =
       "INSERT INTO term "
     . "(ontology_id, subsets, accession, name, definition) "
     . "VALUES (?,?,?,?,?)";
 
-  my $sth = $dbh->prepare($statement);
+  my $syn_stmt = "INSERT INTO synonym (term_id, name) VALUES (?,?)";
+
+  my $sth     = $dbh->prepare($statement);
+  my $syn_sth = $dbh->prepare($syn_stmt);
 
   my $id;
   my $count = 0;
@@ -180,6 +183,13 @@ sub write_term {
       ++$id;
     }
     $term->{'id'} = $id;
+
+    foreach my $syn ( @{ $term->{'synonyms'} } ) {
+      $syn_sth->bind_param( 1, $id,  SQL_INTEGER );
+      $syn_sth->bind_param( 2, $syn, SQL_VARCHAR );
+
+      $syn_sth->execute();
+    }
 
     ++$count;
   } ## end foreach my $accession ( sort...)
@@ -432,7 +442,7 @@ EOT
       } elsif ( $type eq 'namespace' ) {
         $term{'namespace'} = $data;
       } elsif ( $type eq 'def' ) {
-        $term{'definition'} = $data;
+        ( $term{'definition'} ) = ( $data =~ /^"(.*)"/ );
       } elsif ( $type eq 'is_a' ) {
         my ($parent_acc) = $data =~ /(\S+)/;
         push( @{ $term{'parents'}{'is_a'} }, $parent_acc );
@@ -443,6 +453,9 @@ EOT
         if ( $data eq 'true' ) { $state = 'clear' }
       } elsif ( $type eq 'subset' ) {
         push( @{ $term{'subsets'} }, $data );
+      } elsif ( $type eq 'synonym' ) {
+        my ($synonym) = ( $data =~ /^"(.*)"/ );
+        push( @{ $term{'synonyms'} }, $synonym );
       }
 
     } ## end elsif ( $line =~ /^(\w+): (.+)$/)
