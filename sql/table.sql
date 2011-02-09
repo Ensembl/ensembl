@@ -38,7 +38,8 @@ INSERT INTO meta (species_id, meta_key, meta_value) VALUES
 INSERT INTO meta (species_id, meta_key, meta_value) VALUES
   (NULL, 'patch', 'patch_61_62_a.sql|schema_version'),
   (NULL, 'patch', 'patch_61_62_b.sql|synonym_field_extension'),
-  (NULL, 'patch', 'patch_61_62_c.sql|db_name_idx');
+  (NULL, 'patch', 'patch_61_62_c.sql|db_name_idx'),
+  (NULL, 'patch', 'patch_61_62_d.sql|remove_display_label_linkable');
 
 ################################################################################
 #
@@ -498,7 +499,6 @@ CREATE TABLE external_db (
                                    'PSEUDO')
                               NOT NULL,
   dbprimary_acc_linkable      BOOLEAN DEFAULT 1 NOT NULL,
-  display_label_linkable      BOOLEAN DEFAULT 0 NOT NULL,
   priority                    INT NOT NULL,
   db_display_name             VARCHAR(255),
   type                        ENUM('ARRAY', 'ALT_TRANS', 'ALT_GENE', 'MISC', 'LIT', 'PRIMARY_DB_SYNONYM', 'ENSEMBL'),
