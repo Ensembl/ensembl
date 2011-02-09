@@ -45,6 +45,15 @@ CREATE TABLE term (
   UNIQUE INDEX ontology_acc_idx (ontology_id, accession)
 );
 
+CREATE TABLE synonym (
+  synonym_id    INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  term_id       INT UNSIGNED NOT NULL
+  name          VARCHAR(255) NOT NULL,
+
+  PRIMARY KEY (synonym_id),
+  UNIQUE INDEX term_synonym_idx (term_id, synonym_id)
+);
+
 CREATE TABLE relation_type (
   relation_type_id  INT UNSIGNED NOT NULL AUTO_INCREMENT,
   name              VARCHAR(64) NOT NULL,
