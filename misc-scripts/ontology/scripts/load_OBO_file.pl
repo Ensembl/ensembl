@@ -28,8 +28,6 @@ sub usage {
   print("\t-u/--user dbuser\tDatabase user name\n");
   print("\t-p/--pass dbpass\tUser password (optional)\n");
   print("\t-d/--name dbname\tDatabase name\n");
-  print("\t-t/--truncate\t\tTruncate (empty) each table\n");
-  print("\t\t\t\tbefore writing (optional)\n");
   print("\t-f/--file file\t\tThe OBO file to parse\n");
   print("\t-?/--help\t\tDisplays this information\n");
 }
@@ -37,11 +35,9 @@ sub usage {
 #-----------------------------------------------------------------------
 
 sub write_ontology {
-  my ( $dbh, $truncate, $namespaces ) = @_;
+  my ( $dbh, $namespaces ) = @_;
 
   print("Writing to 'ontology' table...\n");
-
-  if ($truncate) { $dbh->do("TRUNCATE TABLE ontology") }
 
   my $statement = "INSERT INTO ontology (name, namespace) VALUES (?,?)";
 
@@ -86,11 +82,9 @@ sub write_ontology {
 #-----------------------------------------------------------------------
 
 sub write_subset {
-  my ( $dbh, $truncate, $subsets ) = @_;
+  my ( $dbh, $subsets ) = @_;
 
   print("Writing to 'subset' table...\n");
-
-  if ($truncate) { $dbh->do("TRUNCATE TABLE subset") }
 
   $dbh->do("LOCK TABLE subset WRITE");
 
@@ -137,11 +131,9 @@ sub write_subset {
 #-----------------------------------------------------------------------
 
 sub write_term {
-  my ( $dbh, $truncate, $terms, $subsets, $namespaces ) = @_;
+  my ( $dbh, $terms, $subsets, $namespaces ) = @_;
 
   print("Writing to 'term' table...\n");
-
-  if ($truncate) { $dbh->do("TRUNCATE TABLE term") }
 
   $dbh->do("LOCK TABLE term WRITE");
 
@@ -202,11 +194,9 @@ sub write_term {
 #-----------------------------------------------------------------------
 
 sub write_relation_type {
-  my ( $dbh, $truncate, $relation_types ) = @_;
+  my ( $dbh, $relation_types ) = @_;
 
   print("Writing to 'relation_type' table...\n");
-
-  if ($truncate) { $dbh->do("TRUNCATE TABLE relation_type") }
 
   my $select_stmt =
     "SELECT relation_type_id FROM relation_type WHERE name = ?";
@@ -259,11 +249,9 @@ sub write_relation_type {
 #-----------------------------------------------------------------------
 
 sub write_relation {
-  my ( $dbh, $truncate, $terms, $relation_types ) = @_;
+  my ( $dbh, $terms, $relation_types ) = @_;
 
   print("Writing to 'relation' table...\n");
-
-  if ($truncate) { $dbh->do("TRUNCATE TABLE relation") }
 
   $dbh->do("LOCK TABLE relation WRITE");
 
@@ -321,17 +309,15 @@ sub write_relation {
 
 my ( $dbhost, $dbport );
 my ( $dbuser, $dbpass );
-my ( $dbname, $truncate, $obo_file_name );
+my ( $dbname, $obo_file_name );
 
 $dbport   = '3306';
-$truncate = 0;
 
 if ( !GetOptions( 'dbhost|host|h=s' => \$dbhost,
                   'dbport|port|P=i' => \$dbport,
                   'dbuser|user|u=s' => \$dbuser,
                   'dbpass|pass|p=s' => \$dbpass,
                   'dbname|name|d=s' => \$dbname,
-                  'truncate|t'      => \$truncate,
                   'file|f=s'        => \$obo_file_name,
                   'help|?'          => sub { usage(); exit } )
      || !defined($dbhost)
@@ -381,20 +367,17 @@ while ( defined( my $line = $obo->getline() ) ) {
         $obo_file_date = sprintf( "%s/%s", $obo_file_name, $data );
 
         if ( defined($stored_obo_file_date) ) {
-          if ( $stored_obo_file_date eq $obo_file_date && !$truncate ) {
+          if ( $stored_obo_file_date eq $obo_file_date ){
             print("This OBO file has already been processed.\n");
             $obo->close();
             $dbh->disconnect();
             exit;
-          } elsif ( index( $stored_obo_file_date, $obo_file_name ) != -1
-                    && !$truncate )
+          } elsif ( index( $stored_obo_file_date, $obo_file_name ) != -1)
           {
             print <<EOT;
-==> Trying to load a newer (?) OBO file that has already been loaded.
-==> Please clean the database manually of data associated with this
-==> file and try again... or use the -t (truncate) switch to empty the
-==> tables completely (unless you want to preserve some of the data,
-==> obviously).
+==> Trying to load a newer (?) OBO file that has already
+==> been loaded.  Please clean the database manually of
+==> data associated with this file and try again...
 EOT
             $obo->close();
             $dbh->disconnect();
@@ -476,15 +459,13 @@ $obo->close();
 
 print("Finished reading OBO file, now writing to database...\n");
 
-write_ontology( $dbh, $truncate, \%namespaces );
-write_subset( $dbh, $truncate, \%subsets );
-write_term( $dbh, $truncate, \%terms, \%subsets, \%namespaces );
-write_relation_type( $dbh, $truncate, \%relation_types );
-write_relation( $dbh, $truncate, \%terms, \%relation_types );
+write_ontology( $dbh, \%namespaces );
+write_subset( $dbh, \%subsets );
+write_term( $dbh, \%terms, \%subsets, \%namespaces );
+write_relation_type( $dbh, \%relation_types );
+write_relation( $dbh, \%terms, \%relation_types );
 
 print("Updating meta table...\n");
-
-if ($truncate) { $dbh->do("TRUNCATE TABLE meta") }
 
 my $sth =
   $dbh->prepare(   "DELETE FROM meta "
