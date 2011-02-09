@@ -148,11 +148,11 @@ FROM    ontology,
         term
 WHERE   ontology.name = ?
   AND   ontology.ontology_id = term.ontology_id
-  AND   term.name like ?');
+  AND   term.name like ?);
 
   my $sth = $this->prepare($statement);
   $sth->bind_param( 1, $this->{'ontology'}, SQL_VARCHAR );
-  $sth->bind_param( 2, $name_string,        SQL_VARCHAR );
+  $sth->bind_param( 2, $name,               SQL_VARCHAR );
 
   $sth->execute();
 
