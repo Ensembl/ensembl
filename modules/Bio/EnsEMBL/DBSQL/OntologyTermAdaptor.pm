@@ -123,12 +123,8 @@ sub ontology {
 
   Arg [1]       : String  - Name of term
 
-  Arg [2]       : int     - Fuzzy match flag:
-                                      1 = Try with spaces and underscores or none
-                                      2 = Pre/Append wildcards
-                                      3 = Both of the above
-
-  Description   : Fetches an ontology term(s) given a name.
+  Description   : Fetches an ontology term(s) given a name, which may 
+                  contain MySQL wildcards i.e. _ or %
 
   Example       :
 
@@ -139,37 +135,7 @@ sub ontology {
 =cut
 
 sub fetch_all_by_name {
-  my ( $this, $name, $fuzzy) = @_;
-
-  #fetch_all because term-ontolgy does not have unique key
-  #And fuzzy may bring back >1 term
-  #Case insensitivity is implicit due to table character collection
-  my ($name_clause, $name_string);
-
-  if(! $fuzzy){
-	$name_clause = 'term.name = ?';
-	$name_string = $name;
-  }
-  elsif($fuzzy == 2){
-	$name_clause = ' term.name like ?';
-	$name_string = "\%${name}\%";
-  }
-  elsif($fuzzy < 4){
-
-	#$fuzzy == 3
-	$name_clause           =  ' term.name rlike ?';
-
-	($name_string = $name) =~ s/[\s_]+/\[ _\]*/g;
-	#no need for .* at flanks as this is the default rlike behaviour
-
-	if($fuzzy == 1){
-	  $name_string           = "^${name_string}\$";
-	}
-  }
-  else{
-	throw("Fuzzy match level can only be set to 1, 2 or 3 not $fuzzy");
-  }
-
+  my ( $this, $name) = @_;
 
   my $statement = q(
 SELECT  term.term_id,
@@ -182,7 +148,7 @@ FROM    ontology,
         term
 WHERE   ontology.name = ?
   AND   ontology.ontology_id = term.ontology_id
-  AND   ).$name_clause;
+  AND   term.name like ?');
 
   my $sth = $this->prepare($statement);
   $sth->bind_param( 1, $this->{'ontology'}, SQL_VARCHAR );
