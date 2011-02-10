@@ -4,7 +4,7 @@
 wget -O GO.obo "http://www.geneontology.org/ontology/obo_format_1_2/gene_ontology.1_2.obo"
 
 # SO    - Sequence Ontology
-wget -O SO.obo "http://song.cvs.sourceforge.net/viewvc/*checkout*/song/ontology/so.obo"
+wget -O SO.obo "http://berkeleybop.org/ontologies/obo-all/sequence/sequence.obo"
 
 # EFO   - Experimental Factor Ontology
 wget -O EFO.obo "http://efo.svn.sourceforge.net/viewvc/efo/trunk/src/efoinobo/efo.obo"
