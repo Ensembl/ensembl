@@ -104,7 +104,7 @@ WHERE   ontology.ontology_id = term.ontology_id
   $sth->bind_param( 2, $pattern, SQL_VARCHAR );
 
   if ( defined($ontology) ) {
-    $sth->bind_param( 3, $this->{'ontology'}, SQL_VARCHAR );
+    $sth->bind_param( 3, $ontology, SQL_VARCHAR );
   }
 
   $sth->execute();
