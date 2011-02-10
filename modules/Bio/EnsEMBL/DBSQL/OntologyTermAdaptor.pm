@@ -420,7 +420,7 @@ WHERE   relation.child_term_id = ?
                   should be restricted.  The subset may be specified as
                   a SQL pattern, e.g., "%goslim%" (but "goslim%" might
                   not do what you expect), or as a specific subset name,
-                  e.g., "goslim_goa".
+                  e.g., "goslim_generic".
 
   Arg [3]       : (optional) Boolean
                   If true (non-zero), only return the closest
