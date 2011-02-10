@@ -66,12 +66,15 @@ use base qw( Bio::EnsEMBL::DBSQL::BaseAdaptor );
   Arg [2]       : (optional) String, name of ontology
 
   Description   : Fetches ontology term(s) given a name, a synonym, or a
-                  SQL pattern like "%splice_site"
+                  SQL pattern like "%splice_site%"
 
   Example       :
 
     my ($term) =
       @{ $ot_adaptor->fetch_by_name( 'DNA_binding_site', 'SO' ) };
+
+    # Will find terms in both SO and GO:
+    my @terms = @{ $ot_adaptor->fetch_by_name('%splice_site%') };
 
   Return type   : listref of Bio::EnsEMBL::OntologyTerm
 
