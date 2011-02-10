@@ -11,7 +11,7 @@
 =head1 CONTACT
 
   Please email comments or questions to the public Ensembl
-  developers list at <dev@ensembl.org>.
+  developers list at <ensembl-dev@ebi.ac.uk>.
 
   Questions may also be sent to the Ensembl help desk at
   <helpdesk@ensembl.org>.
@@ -157,6 +157,18 @@ sub parse_common_options {
 
   # override configured parameter with commandline options
   map { $self->param($_, $h{$_}) } keys %h;
+  if (not (defined($self->param('logpath')))){
+    $self->param('logpath', "/ensemblweb/vega_dev/shared/logs/conversion/".$self->param('dbname')."/" );
+  }
+  if (not (defined($self->param('logfile')))){
+    my $log = $Script;
+    $log =~ s/.pl//g;
+    my $counter;
+    for ($counter=1 ; (-e $self->param('logpath')."/".$log."_".sprintf("%03d", $counter).".log"); $counter++){ warn  $self->param('logpath')."/".$log."_".$counter.".log";}
+
+    $self->param('logfile', $log."_".sprintf("%03d", $counter).".log");
+  }
+  
   return(1);
 }
 
