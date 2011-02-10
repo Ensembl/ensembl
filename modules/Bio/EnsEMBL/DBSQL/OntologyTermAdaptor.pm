@@ -60,82 +60,25 @@ use Bio::EnsEMBL::OntologyTerm;
 
 use base qw( Bio::EnsEMBL::DBSQL::BaseAdaptor );
 
-=head2 new
-
-  Arg [1]       : Bio::EnsEMBL::DBSQL::DBAdaptor
-                  Argument required for parent class
-                  Bio::EnsEMBL::DBSQL::BaseAdaptor.
-
-  Arg [2]       : String
-                  The particular ontology that this ontology adaptor
-                  deals with.
-
-  Caller        : Bio::EnsEMBL::DBSQL::GOTermAdaptor
-                  Bio::EnsEMBL::DBSQL::SOTermAdaptor
-
-  Description   : Creates an ontology term adaptor.
-
-  Example       :
-
-    my $ot_adaptor =
-      Bio::EnsEMBL::DBSQL::OntologyTermAdaptor->new( $dba, 'GO' );
-
-  Return type   : Bio::EnsEMBL::DBSQL::OntologyTermAdaptor
-
-=cut
-
-sub new {
-  my ( $proto, $dba, $ontology ) = @_;
-
-  if ( !ref($dba) || !$dba->isa('Bio::EnsEMBL::DBSQL::DBAdaptor') ) {
-    throw('First argument needs to be a '
-        . 'Bio::EnsEMBL::DBSQL::DBAdaptor object' );
-  }
-
-  my $this = $proto->SUPER::new($dba);
-
-  $this->{'ontology'} = $ontology;
-
-  return $this;
-}
-
-=head2 ontology
-
-  Arg           : None
-
-  Description   : Returns the name of the ontology which this
-                  adaptor is used to retrieve terms for.
-
-  Example       :
-
-    my $ontology = $ot_adaptor->ontology();
-
-  Return type   : String
-
-=cut
-
-sub ontology {
-  my ($this) = @_;
-  return $this->{'ontology'};
-}
-
 =head2 fetch_all_by_name
 
-  Arg [1]       : String  - Name of term
+  Arg [1]       : String, name of term, or SQL pattern
+  Arg [2]       : (optional) String, name of ontology
 
-  Description   : Fetches an ontology term(s) given a name, which may 
-                  contain MySQL wildcards i.e. _ or %
+  Description   : Fetches ontology term(s) given a name, a synonym, or a
+                  SQL pattern like "%splice_site"
 
   Example       :
 
-    my ($term) = @{$ot_adaptor->fetch_by_name('DNA_binding_site')};
+    my ($term) =
+      @{ $ot_adaptor->fetch_by_name( 'DNA_binding_site', 'SO' ) };
 
-  Return type   : ARRAYREF of Bio::EnsEMBL::OntologyTerm Objects
+  Return type   : listref of Bio::EnsEMBL::OntologyTerm
 
 =cut
 
 sub fetch_all_by_name {
-  my ( $this, $name) = @_;
+  my ( $this, $pattern, $ontology ) = @_;
 
   my $statement = q(
 SELECT  term.term_id,
@@ -145,43 +88,49 @@ SELECT  term.term_id,
         term.subsets,
         ontology.namespace
 FROM    ontology,
-        term
-WHERE   ontology.name = ?
-  AND   ontology.ontology_id = term.ontology_id
-  AND   term.name like ?);
+        term,
+        synonym
+WHERE   ontology.ontology_id = term.ontology_id
+  AND   synonym.term_id = term.term_id
+  AND   ( term.name LIKE ? OR synonym.name LIKE ? )
+  );
+
+  if ( defined($ontology) ) {
+    $statement .= "AND ontology.name = ?";
+  }
 
   my $sth = $this->prepare($statement);
-  $sth->bind_param( 1, $this->{'ontology'}, SQL_VARCHAR );
-  $sth->bind_param( 2, $name,               SQL_VARCHAR );
+  $sth->bind_param( 1, $pattern, SQL_VARCHAR );
+  $sth->bind_param( 2, $pattern, SQL_VARCHAR );
+
+  if ( defined($ontology) ) {
+    $sth->bind_param( 3, $this->{'ontology'}, SQL_VARCHAR );
+  }
 
   $sth->execute();
 
-  my ( $dbid, $accession, $term_name, $definition, $subsets, $namespace );
+  my ( $dbid, $accession, $name, $definition, $subsets, $namespace );
   $sth->bind_columns(
-    \( $dbid, $accession, $term_name, $definition, $subsets, $namespace ) );
+     \( $dbid, $accession, $name, $definition, $subsets, $namespace ) );
 
   my @terms;
 
+  while ( $sth->fetch ) {
+    $subsets ||= '';
 
-  while($sth->fetch){
-	
-	$subsets ||= '';
-	push @terms, Bio::EnsEMBL::OntologyTerm->new
-	  (
-	   '-dbid'       => $dbid,
-	   '-adaptor'    => $this,
-	   '-accession'  => $accession,
-	   '-namespace'  => $namespace,
-	   '-subsets'    => [ split( /,/, $subsets ) ],
-	   '-name'       => $term_name,
-	   '-definition' => $definition
-	  );
+    push @terms,
+      Bio::EnsEMBL::OntologyTerm->new(
+                               '-dbid'      => $dbid,
+                               '-adaptor'   => $this,
+                               '-accession' => $accession,
+                               '-namespace' => $namespace,
+                               '-subsets' => [ split( /,/, $subsets ) ],
+                               '-name'    => $name,
+                               '-definition' => $definition );
   }
 
-  $sth->finish();
-
   return \@terms;
-} ## end sub fetch_by_name
+} ## end sub fetch_all_by_name
 
 
 =head2 fetch_by_accession
