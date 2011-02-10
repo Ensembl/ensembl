@@ -133,9 +133,9 @@ sub write_subset {
 sub write_term {
   my ( $dbh, $terms, $subsets, $namespaces ) = @_;
 
-  print("Writing to 'term' table...\n");
+  print("Writing to 'term' and 'synonym' tables...\n");
 
-  $dbh->do("LOCK TABLE term, synonym WRITE");
+  $dbh->do("LOCK TABLES term WRITE, synonym WRITE");
 
   my $statement =
       "INSERT INTO term "
@@ -148,7 +148,8 @@ sub write_term {
   my $syn_sth = $dbh->prepare($syn_stmt);
 
   my $id;
-  my $count = 0;
+  my $count     = 0;
+  my $syn_count = 0;
 
   local $SIG{ALRM} = sub {
     printf( "\t%d entries, %d to go...\n",
@@ -189,6 +190,8 @@ sub write_term {
       $syn_sth->bind_param( 2, $syn, SQL_VARCHAR );
 
       $syn_sth->execute();
+
+      ++$syn_count;
     }
 
     ++$count;
@@ -196,9 +199,12 @@ sub write_term {
   alarm(0);
 
   $dbh->do("OPTIMIZE TABLE term");
+  $dbh->do("OPTIMIZE TABLE synonym");
   $dbh->do("UNLOCK TABLES");
 
-  printf( "\tWrote %d entries\n", $count );
+  printf(
+       "\tWrote %d entries into 'term' and %d entries into 'synonym'\n",
+       $count, $syn_count );
 } ## end sub write_term
 
 #-----------------------------------------------------------------------
