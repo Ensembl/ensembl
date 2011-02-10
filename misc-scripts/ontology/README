@@ -24,7 +24,7 @@
     THE DATABASE SCHEMA
     --------------------------------------------------------------------
 
-    The ensembl_ontology_NN database consist of seven tables and a
+    The ensembl_ontology_NN database consist of eight tables and a
     number of auxiliary tables.
 
     - ontology
