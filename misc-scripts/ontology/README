@@ -50,6 +50,9 @@
       'ontology' table and the set of subsets that it belongs to within
       that ontology (if any).
 
+    - synonym
+      This table contains all synonyms that a term has.
+
     - relation_type
       The 'relation_type' table simply contains the different types
       of relationships that are defined between the ontology terms.
@@ -153,21 +156,27 @@
       1.b   by internal ID
             $adaptor->fetch_by_dbID($dbID)
 
+      1.c   by name or synonym
+            $adaptor->fetch_all_by_name($synonym, $ontology)
+
     2.  Fetching a set of terms from the database
 
-      2.a   by a collection of internal IDs
+      2.a   by name or synonym pattern (e.g. "%splice_site%")
+            $adaptor->fetch_all_by_name($pattern)
+
+      2.b   by a collection of internal IDs
             $adaptor->fetch_all_by_dbID_list(\@dbIDs)
 
-      2.b   by their (immediate) parent term
+      2.c   by their (immediate) parent term
             $adaptor->fetch_all_by_parent_term($term)
 
-      2.c   by their (immediate) child term
+      2.d   by their (immediate) child term
             $adaptor->fetch_all_by_child_term($term)
 
-      2.d   by an ancestor term
+      2.e   by an ancestor term
             $adaptor->fetch_all_by_ancestor_term($term)
 
-      2.e   by a descendant term
+      2.f   by a descendant term
             $adaptor->fetch_all_by_descendant_term($term)
 
     3.  Fetching a structure that encodes the ancestor relationships of
@@ -226,11 +235,14 @@
     1.  Create the empty database by doing "CREATE DATABASE
         ensembl_ontology_NN" (where 'NN' is the current release).
 
-    2.  Load the schema from 'table.sql' located in
+    2.  Load the schema from 'tables.sql' located in
         ensembl/misc-scripts/ontology/sql/
 
     3.  Download the latest file GO OBO file from
         http://www.geneontology.org/ontology/obo_format_1_2/gene_ontology.1_2.obo
+
+        (There is a helper script called 'get_OBO_files.ksh' that will
+        download all the currently handled ontologies.)
 
     4.  Load the data into the database using the script
         'load_OBO_file.pl' (run the script without arguments
