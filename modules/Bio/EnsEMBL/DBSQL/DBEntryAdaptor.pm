@@ -79,7 +79,6 @@ sub fetch_by_dbID {
             xref.display_label,
             xref.version,
             exDB.dbprimary_acc_linkable,
-            exDB.display_label_linkable,
             exDB.priority,
             exDB.db_name,
             exDB.db_display_name,
@@ -110,7 +109,7 @@ sub fetch_by_dbID {
       my ( $refID,               $dbprimaryId,
            $displayid,           $version,
 	   $primary_id_linkable,
-           $display_id_linkable, $priority,
+           $priority,
            $dbname,              $db_display_name,
            $release,             $synonym,
            $info_type,           $info_text,
@@ -129,7 +128,6 @@ sub fetch_by_dbID {
                            -release             => $release,
                            -dbname              => $dbname,
                            -primary_id_linkable => $primary_id_linkable,
-                           -display_id_linkable => $display_id_linkable,
                            -priority            => $priority,
                            -db_display_name     => $db_display_name,
                            -info_type           => $info_type,
@@ -175,7 +173,6 @@ sub _get_all_dm_loc_sth {
             xref.display_label,
             xref.version,
             exDB.dbprimary_acc_linkable,
-            exDB.display_label_linkable,
             exDB.priority,
             exDB.db_name,
             exDB.db_display_name,
@@ -215,7 +212,6 @@ sub _get_all_dm_sth {
             xref.display_label,
             xref.version,
             exDB.dbprimary_acc_linkable,
-            exDB.display_label_linkable,
             exDB.priority,
             exDB.db_name,
             exDB.db_display_name,
@@ -263,7 +259,7 @@ sub _get_all_dm{
       my ( $dbID,                $dbprimaryId,
            $displayid,           $version,
            $primary_id_linkable,
-           $display_id_linkable, $priority,
+           $priority,
            $dbname,              $db_display_name,
            $release,             $synonym,
            $info_type,           $info_text,
@@ -282,7 +278,6 @@ sub _get_all_dm{
                            -release             => $release,
                            -dbname              => $dbname,
                            -primary_id_linkable => $primary_id_linkable,
-                           -display_id_linkable => $display_id_linkable,
                            -priority            => $priority,
                            -db_display_name     => $db_display_name,
                            -info_type           => $info_type,
@@ -407,7 +402,6 @@ sub fetch_by_db_accession {
             xref.display_label,
             xref.version,
             exDB.dbprimary_acc_linkable,
-            exDB.display_label_linkable,
             exDB.priority,
             exDB.db_name,
             exDB.db_display_name,
@@ -462,7 +456,7 @@ sub fetch_by_db_accession {
       my ( $dbID,                $dbprimaryId,
            $displayid,           $version,
            $primary_id_linkable,
-           $display_id_linkable, $priority,
+           $priority,
            $dbname,              $db_display_name,
            $release,             $synonym,
            $info_type,           $info_text,
@@ -481,7 +475,6 @@ sub fetch_by_db_accession {
                            -release             => $release,
                            -dbname              => $dbname,
                            -primary_id_linkable => $primary_id_linkable,
-                           -display_id_linkable => $display_id_linkable,
                            -priority            => $priority,
                            -db_display_name     => $db_display_name,
                            -info_type           => $info_type,
@@ -1109,7 +1102,7 @@ sub _fetch_by_object_type {
   #  my $sth = $self->prepare("
   my $sql = (<<SSQL);
     SELECT xref.xref_id, xref.dbprimary_acc, xref.display_label, xref.version,
-           exDB.dbprimary_acc_linkable, exDB.display_label_linkable,
+           exDB.dbprimary_acc_linkable, 
            exDB.priority,
            exDB.db_name, exDB.db_release, exDB.status, exDB.db_display_name,
            exDB.secondary_db_name, exDB.secondary_db_table,
@@ -1166,7 +1159,7 @@ SSQL
       my ( $refID,                  $dbprimaryId,
            $displayid,              $version,
            $primary_id_linkable,
-           $display_id_linkable,    $priority,
+           $priority,
            $dbname,                 $release,
            $exDB_status,            $exDB_db_display_name,
            $exDB_secondary_db_name, $exDB_secondary_db_table,
@@ -1246,7 +1239,6 @@ SSQL
         if ( defined($exDB_status) ) { $exDB->status($exDB_status) }
 
         $exDB->primary_id_linkable($primary_id_linkable);
-        $exDB->display_id_linkable($display_id_linkable);
         $exDB->priority($priority);
         $exDB->db_display_name($exDB_db_display_name);
 
@@ -1662,7 +1654,7 @@ sub fetch_all_by_description {
   my $sql =
     "SELECT xref.xref_id, xref.dbprimary_acc, xref.display_label,
            xref.version,
-           exDB.dbprimary_acc_linkable, exDB.display_label_linkable, exDB.priority,
+           exDB.dbprimary_acc_linkable, exDB.priority,
            exDB.db_name, exDB.db_display_name, exDB.db_release, es.synonym,
            xref.info_type, xref.info_text, exDB.type, exDB.secondary_db_name,
            exDB.secondary_db_table, xref.description
@@ -1690,7 +1682,7 @@ sub fetch_all_by_description {
       my ( $dbID,                $dbprimaryId,
            $displayid,           $version,
            $primary_id_linkable,
-           $display_id_linkable, $priority,
+           $priority,
            $ex_dbname,           $db_display_name,
            $release,             $synonym,
            $info_type,           $info_text,
@@ -1708,7 +1700,6 @@ sub fetch_all_by_description {
                            -release             => $release,
                            -dbname              => $ex_dbname,
                            -primary_id_linkable => $primary_id_linkable,
-                           -display_id_linkable => $display_id_linkable,
                            -priority            => $priority,
                            -db_display_name     => $db_display_name,
                            -info_type           => $info_type,
@@ -1754,7 +1745,7 @@ sub fetch_all_by_source {
   my $sql =
     "SELECT xref.xref_id, xref.dbprimary_acc, xref.display_label,
            xref.version,
-           exDB.dbprimary_acc_linkable, exDB.display_label_linkable, exDB.priority,
+           exDB.dbprimary_acc_linkable, exDB.priority,
            exDB.db_name, exDB.db_display_name, exDB.db_release, es.synonym,
            xref.info_type, xref.info_text, exDB.type, exDB.secondary_db_name,
            exDB.secondary_db_table, xref.description
@@ -1777,7 +1768,7 @@ sub fetch_all_by_source {
       my ( $dbID,                $dbprimaryId,
            $displayid,           $version,
            $primary_id_linkable,
-           $display_id_linkable, $priority,
+           $priority,
            $dbname,              $db_display_name,
            $release,             $synonym,
            $info_type,           $info_text,
@@ -1795,7 +1786,6 @@ sub fetch_all_by_source {
                            -release             => $release,
                            -dbname              => $dbname,
                            -primary_id_linkable => $primary_id_linkable,
-                           -display_id_linkable => $display_id_linkable,
                            -priority            => $priority,
                            -db_display_name     => $db_display_name,
                            -info_type           => $info_type,
