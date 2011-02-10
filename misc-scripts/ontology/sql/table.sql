@@ -42,7 +42,8 @@ CREATE TABLE term (
 
   PRIMARY KEY (term_id),
   UNIQUE INDEX accession_idx (accession),
-  UNIQUE INDEX ontology_acc_idx (ontology_id, accession)
+  UNIQUE INDEX ontology_acc_idx (ontology_id, accession),
+  INDEX name_idx (name)
 );
 
 CREATE TABLE synonym (
@@ -51,7 +52,8 @@ CREATE TABLE synonym (
   name          VARCHAR(255) NOT NULL,
 
   PRIMARY KEY (synonym_id),
-  UNIQUE INDEX term_synonym_idx (term_id, synonym_id)
+  UNIQUE INDEX term_synonym_idx (term_id, synonym_id),
+  INDEX name_idx (name)
 );
 
 CREATE TABLE relation_type (
