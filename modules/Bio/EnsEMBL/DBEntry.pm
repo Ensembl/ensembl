@@ -84,7 +84,6 @@ sub new_fast {
                     -display_id => $did,
                     -description => $description,
                     -primary_id_linkable =>$primary_id_linkable,
-                    -display_id_linkable =>$display_id_linkable,
                     -priority => $priority,
                     -db_display_name => $db_display_name,
                     -info_type => $info_type,
@@ -98,7 +97,7 @@ sub new_fast {
   Exceptions : none
   Caller     : Bio::EnsEMBL::DBEntryAdaptor
   Status     : At Risk
-               Due to 'PRIMARY_ID_LINKABLE','DISPLAY_ID_LINKABLE','PRIORITY',
+               Due to 'PRIMARY_ID_LINKABLE','PRIORITY',
               'INFO_TYPE', 'INFO_TEXT', ''DB_DISPLAY_NAME', 'TYPE',
               'SECONDARY_DB_NAME', 'SECONDARY_DB_TABLE'
                being under development - if you don't use any of these the
@@ -113,12 +112,12 @@ sub new {
 
   my ( $adaptor, $dbID, $primary_id, $version,
        $dbname, $release, $display_id, $description,
-       $primary_id_linkable, $display_id_linkable, $priority,
+       $primary_id_linkable, $priority,
        $db_display_name, $info_type, $info_text, $type,
        $secondary_db_name, $secondary_db_table, $link_annotation, $analysis) =
     rearrange ( ['ADAPTOR','DBID','PRIMARY_ID','VERSION',
                  'DBNAME','RELEASE','DISPLAY_ID','DESCRIPTION',
-		 'PRIMARY_ID_LINKABLE','DISPLAY_ID_LINKABLE','PRIORITY',
+		 'PRIMARY_ID_LINKABLE', 'PRIORITY',
 		 'DB_DISPLAY_NAME', 'INFO_TYPE', 'INFO_TEXT', 'TYPE',
                  'SECONDARY_DB_NAME', 'SECONDARY_DB_TABLE', 'LINKAGE_ANNOTATION', 'ANALYSIS'], @args );
 
@@ -133,7 +132,6 @@ sub new {
   if( defined $display_id) { $self->display_id( $display_id ) }
   if( defined $description) { $self->description($description) }
   if( defined $primary_id_linkable) { $self->primary_id_linkable($primary_id_linkable) }
-  if( defined $display_id_linkable) { $self->display_id_linkable($display_id_linkable) }
   if( defined $priority) { $self->priority($priority) }
   if( defined $db_display_name) { $self->db_display_name($db_display_name) }
   if( defined $info_type) { $self->info_type($info_type) }
@@ -383,29 +381,6 @@ sub primary_id_linkable {
   } 
   return $self->{primary_id_linkable};
 }
-
-
-=head2 display_id_linkable
-
-  Arg [1]    : (optional) Boolean $arg - value to set
-  Example    : none
-  Description: Getter/setter for attribute 'display_id_linkable'.
-  Returntype : String
-  Exceptions : none
-  Caller     : general
-  Status     : At Risk
-             : due to it being under development
-
-=cut
-
-sub display_id_linkable {
-  my ( $self, $arg ) = @_;
-  if( defined $arg ) {
-    $self->{display_id_linkable} = $arg;
-  } 
-  return $self->{display_id_linkable};
-}
-
 
 =head2 priority
 
