@@ -48,7 +48,7 @@ CREATE TABLE term (
 
 CREATE TABLE synonym (
   synonym_id    INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  term_id       INT UNSIGNED NOT NULL
+  term_id       INT UNSIGNED NOT NULL,
   name          VARCHAR(255) NOT NULL,
 
   PRIMARY KEY (synonym_id),
