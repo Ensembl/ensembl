@@ -157,6 +157,20 @@ sub parse_common_options {
 
   # override configured parameter with commandline options
   map { $self->param($_, $h{$_}) } keys %h;
+
+  # if logpath & logfile are not se, set them here to /ensemblweb/vega_dev/shared/logs/conversion/DBNAME/SCRIPNAME_NN.log
+  if (not (defined($self->param('logpath')))){
+    $self->param('logpath', "/ensemblweb/vega_dev/shared/logs/conversion/".$self->param('dbname')."/" );
+  }
+  if (not (defined($self->param('logfile')))){
+    my $log = $Script;
+    $log =~ s/.pl//g;
+    my $counter;
+    for ($counter=1 ; (-e $self->param('logpath')."/".$log."_".sprintf("%03d", $counter).".log"); $counter++){ warn  $self->param('logpath')."/".$log."_".$counter.".log";}
+
+    $self->param('logfile', $log."_".sprintf("%03d", $counter).".log");
+  }
+  
   return(1);
 }
 
