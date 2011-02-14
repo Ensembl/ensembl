@@ -118,7 +118,7 @@ WHERE   ontology.ontology_id = term.ontology_id
 
   my @terms;
 
-  while ( $sth->fetch ) {
+  while ( $sth->fetch() ) {
     $subsets ||= '';
 
     push @terms,
