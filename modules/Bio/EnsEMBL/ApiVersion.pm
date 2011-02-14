@@ -46,7 +46,7 @@ use base qw( Exporter );
 
 our @EXPORT = qw( software_version );
 
-my $API_VERSION = 61;
+my $API_VERSION = 62;
 
 sub software_version { return $API_VERSION }
 
