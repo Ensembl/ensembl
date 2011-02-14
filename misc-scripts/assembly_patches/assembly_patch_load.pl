@@ -14,6 +14,7 @@ my $dbname;
 my $host;
 my $user;
 my $port = 3306;
+my $central_coord_system = 'supercontig';
 
 &GetOptions(
             'pass=s'         => \$pass,
@@ -46,9 +47,6 @@ $sth->bind_columns(\$max_seq_region_id) || die "problem binding";
 $sth->fetch() || die "problem fetching";
 $sth->finish;
 
-
-
-
 $sth = $dba->dbc->prepare("select max(assembly_exception_id) from assembly_exception")
   || die "Could not get max assembly_exception_id";
 
@@ -58,13 +56,13 @@ $sth->bind_columns(\$max_assembly_exception_id) || die "problem binding";
 $sth->fetch() || die "problem fetching";
 $sth->finish;
 
-
-
 print "starting new seq_region at seq_region_id of $max_seq_region_id\n";
 print "\nTo reset\ndelete from dna where seq_region_id > $max_seq_region_id\ndelete from seq_region where seq_region_id > $max_seq_region_id\ndelete from assembly_exception where assembly_exception_id > $max_assembly_exception_id\n\n";
 
 $max_seq_region_id++;
 $max_assembly_exception_id++;
+
+
 
 my ($chr_coord_id, $contig_coord_id);
 
@@ -132,12 +130,14 @@ my %acc_to_name;
 my %txt_data; 
 my %key_to_index;
 my %name_to_seq_id;
+my %name_to_sc_seq_id;
 my %seq_id_to_start;
 my %name_to_type;
 my %seq_id_to_alt_scaf_start;
 my %seq_id_to_alt_scaf_stop;
 my %seq_id_to_stop;
 my %seq_id_to_strand;
+my %old_patch_names;
 
 my $time = time();
 
@@ -159,11 +159,11 @@ while (<TYPE>) {
 #PATCHES	Primary Assembly	HSCHR12_1_CTG2	GL383549.1	CHROMOSOME	12	CM000674.1	REGION21	-	1	120804	28148967	28263711	0	0
 
 
-while(<TXT>){
+SCAF: while(<TXT>){
   if(/^#/){
     chomp;
     my @arr = split;
-    my $i = 0;
+    my $i = 1;#work around primary and assembly being two words - first three cols never used
     foreach my $name (@arr){
       $key_to_index{$name} = $i;
       $i++;
@@ -182,6 +182,23 @@ while(<TXT>){
     my $alt_acc = $arr[$key_to_index{'alt_scaf_acc'}];
     my $alt_name = $arr[$key_to_index{'alt_scaf_name'}];
 
+    my ($tmp_id,$tmp_len);
+    $get_seq_region_sth->execute($alt_name)
+      || die "Could not execute get seq_region for $alt_name";
+    $get_seq_region_sth->bind_columns(\$tmp_id,\$tmp_len)
+      || die "Could not bind get_seq_region";
+    $get_seq_region_sth->fetch();
+#     || die "Could not fetch seq_region id for name $name";;
+
+    if(defined($tmp_id)){
+      #go to next
+      print $alt_name." already in db\n";
+      $old_patch_names{$alt_name} = 1;
+      next SCAF;
+    }
+    else{
+      print $alt_name." is new\n";
+    }
 
     my $coord_sys;
     $coord_sth->execute($arr[$key_to_index{'parent_type'}]);
@@ -189,7 +206,7 @@ while(<TXT>){
     $coord_sth->fetch();
 
     if(!defined($coord_sys)){
-      die "Could not get coord_system_id for ".$arr[$key_to_index{'parent_type'}];
+      die "Could not get coord_system_id for ".$arr[$key_to_index{'parent_type'}]." col index ".$key_to_index{'parent_type'}."\n";
     }
 
     my ($seq_region_id, $seq_length);
@@ -200,7 +217,7 @@ while(<TXT>){
       die "Could not get seq_region_id for ".$arr[$key_to_index{'parent_name'}]. " on coord system $coord_sys";
     }
 
-
+    $acc_to_name{$alt_acc} = $alt_name;
     $name_to_seq_id{$alt_name} = $max_seq_region_id;
     $name_to_seq_id{$alt_acc}  = $max_seq_region_id;
     $seq_id_to_start{$max_seq_region_id} = $arr[$key_to_index{'parent_start'}];
@@ -210,6 +227,10 @@ while(<TXT>){
     }
     elsif($arr[$key_to_index{'ori'}] eq "-"){
       $seq_id_to_strand{$max_seq_region_id} = -1;
+    }
+    elsif($arr[$key_to_index{'ori'}] eq "b"){
+      $seq_id_to_strand{$max_seq_region_id} = 1;
+      print "WARNING: Encountered ori = b for $alt_name - defaulting to ori = 1\n";
     }
     else{
       print "Problem with strand.\n";
@@ -254,6 +275,29 @@ while(<TXT>){
      $arr[$key_to_index{'parent_stop'}], ",",
      " 1);\n\n";
 
+    #add supercontig seq_region and chrom-supercontig mapping
+    $max_seq_region_id++;
+
+    my $central_coord_sys;
+    $coord_sth->execute($central_coord_system);
+    $coord_sth->bind_columns(\$central_coord_sys);
+    $coord_sth->fetch();
+
+    print SQL "insert into seq_region (seq_region_id, name, coord_system_id, length)\n";
+    print SQL "\tvalues ($max_seq_region_id, '$alt_name', $central_coord_sys, $new_length);\n\n";
+
+    $name_to_sc_seq_id{$alt_name} = $max_seq_region_id;
+    $name_to_sc_seq_id{$alt_acc}  = $max_seq_region_id;
+
+    my $asm_start = $arr[$key_to_index{'parent_start'}];
+    my $asm_end = ($arr[$key_to_index{'parent_start'}]-1) + $new_length;
+    my $cmp_start = $arr[$key_to_index{'alt_scaf_start'}] - $arr[$key_to_index{alt_start_tail}];
+    my $cmp_end = $arr[$key_to_index{'alt_scaf_stop'}] + $arr[$key_to_index{alt_stop_tail}];
+    my $strand = $seq_id_to_strand{$name_to_seq_id{$alt_name}};
+    print SQL "insert into assembly (asm_seq_region_id, cmp_seq_region_id, asm_start, asm_end, cmp_start , cmp_end, ori) \n";
+    print SQL "               values(".$name_to_seq_id{$alt_name}.", ".$name_to_sc_seq_id{$alt_name}.", ".$asm_start.", ".$asm_end.", $cmp_start, $cmp_end, $strand);\n\n";
+
+
     $max_seq_region_id++;
     $max_assembly_exception_id++;
   }
@@ -261,11 +305,18 @@ while(<TXT>){
 
 
 
-#      Create haplotype seq_region (calulate length from mapping data)
-while(<MAPPER>){
+#      Create haplotype seq_region (calculate length from mapping data)
+MAP: while(<MAPPER>){
   next if(/^#/); #ignore comemnts
   chomp;
   my ($acc, $p_start, $p_end, $part, $type, $contig, $c_start, $c_end, $strand) = split;
+  #check if this is one of the new patches
+  if(!$name_to_seq_id{$acc}){
+    next MAP;
+  }
+  else{
+    print "About to process an agp line for ".$acc_to_name{$acc}."\n";
+  }
   if($type eq "F"){
     if($strand eq "+"){
       $strand = 1;
@@ -313,8 +364,13 @@ while(<MAPPER>){
     if(!defined($cmp_seq_id)){
       die "Could not get seq id for $contig\n\n";
     }
-    my $seq_id = $name_to_seq_id{$acc};
+    #add supercontig-contig mapping
+    my $sc_seq_id = $name_to_sc_seq_id{$acc};
+    print SQL "insert into assembly (asm_seq_region_id, cmp_seq_region_id, asm_start, asm_end, cmp_start , cmp_end, ori) \n";
+    print SQL "               values(".$sc_seq_id.", ".$cmp_seq_id.", ".$p_start.", ".$p_end.", $c_start, $c_end, $strand);\n\n";
 
+    #add chrom-contig mapping
+    my $seq_id = $name_to_seq_id{$acc};
     my $asm_start;
     my $asm_end;
     my $cmp_start;
