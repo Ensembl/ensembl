@@ -84,7 +84,7 @@ my ( $dbuser,  $dbpass )  = ( 'ensro',    undef );
 my $opt_help  = 0;
 my $opt_about = 0;
 
-if ( !GetOptions( 'release|r=i'  => \$release,
+if ( !GetOptions( 'release|r=s'  => \$release,
                   'master|m=s'   => \$master,
                   'server|s=s@'  => \@servers,
                   'dbuser|u=s'   => \$dbuser,
