@@ -139,7 +139,10 @@ my %found_databases;
   }
 
   {
-    my $statement = 'SELECT full_db_name FROM db_list JOIN db USING (db_id) WHERE db.is_current = 1';
+    my $statement =
+        'SELECT full_db_name '
+      . 'FROM db_list JOIN db USING (db_id) '
+      . 'WHERE db.is_current = 1';
 
     my $sth = $dbh->prepare($statement);
     $sth->execute();
@@ -165,7 +168,7 @@ foreach my $server (@servers) {
   my $sth = $dbh->prepare($statement);
 
   foreach my $species ( keys(%species) ) {
-    $sth->bind_param( 1, sprintf( '%s%%\_%d\_%%', $species, $release ),
+    $sth->bind_param( 1, sprintf( '%s%%\_%s\_%%', $species, $release ),
                       SQL_VARCHAR );
     $sth->execute();
 
@@ -180,7 +183,7 @@ foreach my $server (@servers) {
       }
 
       my ( $db_type, $db_assembly, $db_suffix ) = ( $database =~
-                /^[a-z]+_[a-z]+_([a-z]+)_[0-9]+_([0-9a-z]+?)([a-z]?)$/ );
+                /^[a-z]+_[a-z]+_([a-z]+)_(?:[0-9]+_)?[0-9]+_([0-9a-z]+?)([a-z]?)$/ );
 
       if (    !defined($db_type)
            || !defined($db_assembly)
