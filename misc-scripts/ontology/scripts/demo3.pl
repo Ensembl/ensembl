@@ -27,8 +27,12 @@ my $adaptor =
 my @terms = @{ $adaptor->fetch_all_by_name($pattern) };
 
 foreach my $term (@terms) {
-  printf( "Accession = %s\tName = %s\n",
+  printf( "Accession = %s\n\tName\t= '%s'\n",
           $term->accession(), $term->name() );
+  foreach my $synonym ( @{ $term->synonyms() } ) {
+    printf( "\tSynonym\t= '%s'\n", $synonym );
+  }
+  print("\n");
 }
 
 # $Id$
