@@ -127,7 +127,7 @@ WHERE   ( term.name LIKE ? OR synonym.name LIKE ? ));
                                '-namespace' => $namespace,
                                '-subsets' => [ split( /,/, $subsets ) ],
                                '-name'    => $name,
-                               '-definition' => $definition );
+                               '-definition' => $definition, );
   }
 
   return \@terms;
@@ -176,14 +176,16 @@ WHERE   term.accession = ?);
 
   my $term =
     Bio::EnsEMBL::OntologyTerm->new(
-                               '-dbid'      => $dbid,
-                               '-adaptor'   => $this,
-                               '-accession' => $accession,
-                               '-ontology'  => $ontology,
-                               '-namespace' => $namespace,
-                               '-subsets' => [ split( /,/, $subsets ) ],
-                               '-name'    => $name,
-                               '-definition' => $definition );
+                    '-dbid'       => $dbid,
+                    '-adaptor'    => $this,
+                    '-accession'  => $accession,
+                    '-ontology'   => $ontology,
+                    '-namespace'  => $namespace,
+                    '-subsets'    => [ split( /,/, $subsets ) ],
+                    '-name'       => $name,
+                    '-definition' => $definition,
+                    '-synonyms' => $this->_fetch_synonyms_by_dbID($dbid)
+    );
   $sth->finish();
 
   return $term;
@@ -510,6 +512,31 @@ ORDER BY closure.distance, parent_term.accession);
   return \@terms;
 } ## end sub fetch_all_by_descendant_term
 
+sub _fetch_synonyms_by_dbID {
+  my ( $this, $dbID ) = @_;
+
+  my $statement = q(
+SELECT  synonym.name
+FROM    synonym
+WHERE   synonym.term_id = ?);
+
+  my $sth = $this->prepare($statement);
+  $sth->bind_param( 1, $dbID, SQL_INTEGER );
+
+  $sth->execute();
+
+  my $synonym;
+  $sth->bind_col( 1, \$synonym );
+
+  while ( $sth->fetch() ) {
+    push( @synonyms, $synonym );
+  }
+
+  return \@synonyms;
+}
+
+
+
 =head2 _fetch_ancestor_chart
 
   Arg [1]       : Bio::EnsEMBL::OntologyTerm
@@ -636,14 +663,16 @@ WHERE   term.term_id = ?);
 
   my $term =
     Bio::EnsEMBL::OntologyTerm->new(
-                               '-dbid'      => $dbid,
-                               '-adaptor'   => $this,
-                               '-accession' => $accession,
-                               '-ontology' => $ontology,
-                               '-namespace' => $namespace,
-                               '-subsets' => [ split( /,/, $subsets ) ],
-                               '-name'    => $name,
-                               '-definition' => $definition );
+                    '-dbid'       => $dbid,
+                    '-adaptor'    => $this,
+                    '-accession'  => $accession,
+                    '-ontology'   => $ontology,
+                    '-namespace'  => $namespace,
+                    '-subsets'    => [ split( /,/, $subsets ) ],
+                    '-name'       => $name,
+                    '-definition' => $definition,
+                    '-synonyms' => $this->_fetch_synonyms_by_dbID($dbid)
+    );
   $sth->finish();
 
   return $term;
@@ -697,7 +726,7 @@ WHERE   term.term_id IN (%s));
                                '-namespace' => $namespace,
                                '-subsets' => [ split( /,/, $subsets ) ],
                                '-name'    => $name,
-                               '-definition' => $definition ) );
+                               '-definition' => $definition, ) );
   }
 
   return \@terms;
