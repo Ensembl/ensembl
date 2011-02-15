@@ -548,7 +548,7 @@ sub store {
                . "a dbID rather than an ensembl object "
                . "to store the xref on" );
 
-      if ( !defined( $ensID->dbID() ) ) {
+      if ( defined( $ensID->dbID() ) ) {
         $ensembl_id = $ensID->dbID();
       } else {
         throw( sprintf( "%s %s doesn't have a dbID, can't store xref",
