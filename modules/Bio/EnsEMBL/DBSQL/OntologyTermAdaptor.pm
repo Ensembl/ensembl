@@ -528,6 +528,7 @@ WHERE   synonym.term_id = ?);
   my $synonym;
   $sth->bind_col( 1, \$synonym );
 
+  my @synonyms;
   while ( $sth->fetch() ) {
     push( @synonyms, $synonym );
   }
