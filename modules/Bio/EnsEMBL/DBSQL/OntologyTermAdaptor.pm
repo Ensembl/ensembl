@@ -84,7 +84,8 @@ sub fetch_all_by_name {
   my ( $this, $pattern, $ontology ) = @_;
 
   my $statement = q(
-SELECT  term.term_id,
+SELECT DISTINCT
+        term.term_id,
         term.accession,
         term.name,
         term.definition,
