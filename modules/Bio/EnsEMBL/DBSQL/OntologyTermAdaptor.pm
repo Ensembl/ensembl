@@ -91,16 +91,13 @@ SELECT DISTINCT
         term.definition,
         term.subsets,
         ontology.namespace
-FROM    ontology,
-        term,
-        synonym
-WHERE   ontology.ontology_id = term.ontology_id
-  AND   synonym.term_id = term.term_id
-  AND   ( term.name LIKE ? OR synonym.name LIKE ? )
-  );
+FROM    ontology
+  JOIN  term USING (ontology_id)
+  JOIN  synonym USING (term_id)
+WHERE   ( term.name LIKE ? OR synonym.name LIKE ? ));
 
   if ( defined($ontology) ) {
-    $statement .= "AND ontology.name = ?";
+    $statement .= " AND ontology.name = ?";
   }
 
   my $sth = $this->prepare($statement);
@@ -161,10 +158,9 @@ SELECT  term.term_id,
         term.subsets,
         ontology.name,
         ontology.namespace
-FROM    ontology,
-        term
-WHERE   ontology.ontology_id = term.ontology_id
-  AND   term.accession = ?);
+FROM    ontology
+  JOIN  term USING (ontology_id)
+WHERE   term.accession = ?);
 
   my $sth = $this->prepare($statement);
   $sth->bind_param( 1, $accession, SQL_VARCHAR );
@@ -225,12 +221,10 @@ SELECT  child_term.term_id,
         child_term.definition,
         child_term.subsets,
         rt.name
-FROM    term child_term,
-        relation,
-        relation_type rt
-WHERE   relation.child_term_id = child_term.term_id
-  AND   relation.parent_term_id = ?
-  AND   relation.relation_type_id = rt.relation_type_id);
+FROM    term child_term
+  JOIN  relation ON (relation.child_term_id = child_term.term_id)
+  JOIN  relation_type rt USING (relation_type_id)
+WHERE   relation.parent_term_id = ?);
 
     my $sth = $this->prepare($statement);
     $sth->bind_param( 1, $term->dbID(), SQL_INTEGER );
@@ -300,10 +294,9 @@ SELECT DISTINCT
         child_term.name,
         child_term.definition,
         child_term.subsets
-FROM    term child_term,
-        closure
-WHERE   closure.child_term_id = child_term.term_id
-  AND   closure.parent_term_id = ?
+FROM    term child_term
+  JOIN  closure ON (closure.child_term_id = child_term.term_id)
+WHERE   closure.parent_term_id = ?
   AND   closure.distance > 0
 ORDER BY closure.distance, child_term.accession);
 
@@ -367,12 +360,10 @@ SELECT  parent_term.term_id,
         parent_term.definition,
         parent_term.subsets,
         rt.name
-FROM    term parent_term,
-        relation,
-        relation_type rt
-WHERE   relation.child_term_id = ?
-  AND   relation.parent_term_id = parent_term.term_id
-  AND   relation.relation_type_id = rt.relation_type_id);
+FROM    term parent_term
+  JOIN  relation ON (relation.parent_term_id = parent_term.term_id)
+  JOIN  relation_type rt USING (relation_type_id)
+WHERE   relation.child_term_id = ?);
 
     my $sth = $this->prepare($statement);
     $sth->bind_param( 1, $term->dbID(), SQL_INTEGER );
@@ -461,10 +452,9 @@ SELECT DISTINCT
         parent_term.definition,
         parent_term.subsets,
         closure.distance
-FROM    term parent_term,
-        closure
+FROM    term parent_term
+  JOIN  closure ON (closure.parent_term_id = parent_term.term_id)
 WHERE   closure.child_term_id = ?
-  AND   closure.parent_term_id = parent_term.term_id
   AND   closure.distance > 0);
 
   if ( defined($subset) ) {
@@ -559,17 +549,15 @@ sub _fetch_ancestor_chart {
 SELECT  subparent_term.term_id,
         parent_term.term_id,
         relation_type.name
-FROM    closure,
-        relation,
-        relation_type,
-        term subparent_term,
-        term parent_term
+FROM    closure
+  JOIN  relation
+    ON (relation.parent_term_id = closure.parent_term_id
+      AND relation.child_term_id = closure.subparent_term_id)
+  JOIN  relation_type USING (relation_type_id)
+  JOIN  term subparent_term
+    ON (subparent_term.term_id = closure.subparent_term_id)
+  JOIN  term parent_term ON (parent_term.term_id = closure.parent_term_id)
 WHERE   closure.child_term_id = ?
-  AND   relation.parent_term_id = closure.parent_term_id
-  AND   relation.child_term_id = closure.subparent_term_id
-  AND   relation.relation_type_id = relation_type.relation_type_id
-  AND   subparent_term.term_id = closure.subparent_term_id
-  AND   parent_term.term_id = closure.parent_term_id
 ORDER BY closure.distance);
 
   my $sth = $this->prepare($statement);
@@ -628,10 +616,9 @@ SELECT  term.accession,
         term.subsets,
         ontology.name,
         ontology.namespace
-FROM    ontology,
-        term
-WHERE   ontology.ontology_id = term.ontology_id
-  AND   term.term_id = ?);
+FROM    ontology
+  JOIN  term USING (ontology_id)
+WHERE   term.term_id = ?);
 
   my $sth = $this->prepare($statement);
   $sth->bind_param( 1, $dbid, SQL_INTEGER );
@@ -675,10 +662,9 @@ SELECT  term.term_id,
         term.subsets,
         ontology.name,
         ontology.namespace
-FROM    ontology,
-        term
-WHERE   ontology.ontology_id = term.ontology_id
-  AND   term.term_id IN (%s));
+FROM    ontology
+  JOIN  term USING (ontology_id)
+WHERE   term.term_id IN (%s));
 
   my $statement = sprintf(
     $stmt,
@@ -728,9 +714,8 @@ SELECT  term.term_id,
         term.subsets,
         ontology.name,
         ontology.namespace
-FROM    ontology,
-        term
-WHERE   ontology.ontology_id = term.ontology_id );
+FROM    ontology
+  JOIN  term USING (ontology_id));
 
   my $sth = $this->prepare($statement);
   $sth->execute();
