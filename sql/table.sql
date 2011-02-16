@@ -1315,7 +1315,7 @@ CREATE TABLE simple_feature (
   KEY analysis_idx (analysis_id),
   KEY hit_idx (display_label)
 
-
+) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 
 ################################################################################
 #
