@@ -403,8 +403,9 @@ sub create_xrefs {
       my %depe;
       
       if($gn =~ /Name=(\S+);/){
-	$depe{ACCESSION} = uc($1);
-	$gene_name = $depe{ACCESSION};
+	$gene_name = uc($1);
+	$depe{ACCESSION} = $xref->{ACCESSION};
+	$depe{LABEL} = $gene_name;
 	$depe{SOURCE_NAME} = "Uniprot_genename";
 	$depe{SOURCE_ID} = $dependent_sources{"Uniprot_genename"};
 	$depe{LINKAGE_SOURCE_ID} = $xref->{SOURCE_ID};
