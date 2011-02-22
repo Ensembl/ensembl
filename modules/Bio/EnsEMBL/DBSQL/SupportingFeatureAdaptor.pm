@@ -113,14 +113,14 @@ sub fetch_all_by_Exon {
 
 =head2 store
 
-  Arg [2]    : Int $transID
-               The dbID of an EnsEMBL transcript to associate with
+  Arg [1]    : Int $exonsID
+               The dbID of an EnsEMBL exon to associate with
                supporting features.
-  Arg [1]    : Ref to array of Bio::EnsEMBL::BaseAlignFeature
+  Arg [2]    : Ref to array of Bio::EnsEMBL::BaseAlignFeature
                (the support)
   Example    : $sfa->store($exon_id, \@features);
   Description: Stores a set of alignment features and associates an
-               EnsEMBL transcript with them
+               EnsEMBL exon with them
   Returntype : none
   Exceptions : thrown when invalid dbID is passed to this method
   Caller     : TranscriptAdaptor
