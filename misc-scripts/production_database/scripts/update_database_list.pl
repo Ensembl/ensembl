@@ -74,7 +74,7 @@ ABOUT_END
 }
 
 my $release;
-my @servers = ( 'ens-staging1', 'ens-staging2' );
+my @servers;
 my $master = 'ens-staging1';
 
 my $dbport = '3306';
@@ -105,6 +105,10 @@ if ( !GetOptions( 'release|r=s'  => \$release,
   print("ERROR: Release was not specified! (use -r or --release)\n");
   usage();
   exit();
+}
+
+if ( !@servers ) {
+  @servers = ( 'ens-staging1', 'ens-staging2' );
 }
 
 my %species;
