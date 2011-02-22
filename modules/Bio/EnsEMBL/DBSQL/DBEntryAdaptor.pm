@@ -682,6 +682,7 @@ sub store {
     $sth->execute();
 
     $dbX = $sth->{'mysql_insertid'};
+    $exObj->dbID($dbX);
     $sth->finish();
     #
     # store the synonyms for the new xref
@@ -751,7 +752,7 @@ WHERE   xref_id = ?
 
       $sth = $self->prepare(
         qq(
-INSERT IGNORE INTO object_xref
+INSERT INTO object_xref
   SET   xref_id = ?,
         ensembl_object_type = ?,
         ensembl_id = ?,
@@ -765,7 +766,6 @@ INSERT IGNORE INTO object_xref
       $sth->bind_param( 5, $analysis_id,                 SQL_INTEGER );
 
       $sth->execute();
-      $exObj->dbID($dbX);
       $exObj->adaptor($self);
       my $Xidt = $sth->{'mysql_insertid'};
 
