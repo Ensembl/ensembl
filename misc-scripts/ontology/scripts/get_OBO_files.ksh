@@ -7,7 +7,7 @@ wget -O GO.obo "http://www.geneontology.org/ontology/obo_format_1_2/gene_ontolog
 wget -O SO.obo "http://berkeleybop.org/ontologies/obo-all/sequence/sequence.obo"
 
 # EFO   - Experimental Factor Ontology
-wget -O EFO.obo "http://efo.svn.sourceforge.net/viewvc/efo/trunk/src/efoinobo/efo.obo"
+wget -O EFO.obo "http://efo.svn.sourceforge.net/svnroot/efo/trunk/src/efoinobo/efo.obo"
 
 exit
 
