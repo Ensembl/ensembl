@@ -84,6 +84,7 @@ CREATE TABLE analysis_description (
   logic_name                VARCHAR(128) NOT NULL,
   description               TEXT,
   display_label             VARCHAR(256) NOT NULL,
+  is_current                BOOLEAN NOT NULL DEFAULT true,
 
   PRIMARY KEY (analysis_description_id),
   UNIQUE INDEX logic_name_idx (logic_name)
@@ -103,7 +104,7 @@ CREATE TABLE analysis_web_data (
                                 'otherfeatures', 'rnaseq', 'vega')
                             NOT NULL DEFAULT 'core',
 
-  displayable   BOOLEAN NOT NULL DEFAULT true,
+  displayable               BOOLEAN NOT NULL DEFAULT true,
 
   UNIQUE INDEX uniq_idx (species_id, db_type, analysis_description_id)
 );
@@ -142,7 +143,8 @@ FROM db_list list
     AND  db.db_type = awd.db_type )
   JOIN analysis_description ad USING (analysis_description_id)
   LEFT JOIN web_data wd USING (web_data_id)
-WHERE   db.is_current = true;
+WHERE   db.is_current = true
+  AND   ad.is_current = true;
 
 CREATE VIEW logic_name_overview AS
 SELECT
@@ -157,7 +159,17 @@ FROM   analysis_description ad
   JOIN analysis_web_data awd USING (analysis_description_id)
   JOIN species s USING (species_id)
   LEFT JOIN web_data wd USING (web_data_id)
-WHERE   s.is_current = true;
+WHERE   s.is_current = true
+  AND   ad.is_current = true;
+
+CREATE VIEW unconnected_analyses AS
+SELECT  ad.analysis_description_id AS analysis_description_id,
+        ad.logic_name AS logic_name
+FROM    analysis_description ad
+  LEFT JOIN analysis_web_data awd USING (analysis_description_id)
+WHERE   awd.species_id IS NULL
+  AND   ad.is_current = true;
+
 
 -- Views for the master tables.  These are simply selecting the entries
 -- from the corresponding master table that have is_current = 1.
