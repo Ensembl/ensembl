@@ -1,14 +1,21 @@
 #!/usr/local/ensembl/bin/perl -w
 
-# A simple OBO file reader/loader
-# for parsing/loading OBO files from (at least) GO and SO
-
 use strict;
 use warnings;
+
+
+use lib "/nfs/users/nfs_m/mk8/ONTO-PERL-1.31/lib"; 
 
 use DBI qw( :sql_types );
 use Getopt::Long qw( :config no_ignore_case );
 use IO::File;
+use OBO::Core::Ontology;
+use OBO::Core::Term;
+use OBO::Core::Relationship;
+use OBO::Core::RelationshipType;
+use OBO::Core::SynonymTypeDef;
+use OBO::Parser::OBOParser;
+use OBO::Util::TermSet;
 
 #-----------------------------------------------------------------------
 
@@ -17,8 +24,9 @@ sub usage {
   printf( "\t%s\t-h dbhost [-P dbport] \\\n"
             . "\t%s\t-u dbuser [-p dbpass] \\\n"
             . "\t%2\$s\t-d dbname [-t] \\\n"
-            . "\t%2\$s\t-f file\n",
-          $0, ' ' x length($0) );
+            . "\t%2\$s\t-f file\\\n"
+            . "\t%2\$s\t-o ontology\n",
+           $0, ' ' x length($0) );
   print("\n");
   printf( "\t%s\t-?\n", $0 );
   print("\n");
@@ -29,6 +37,7 @@ sub usage {
   print("\t-p/--pass dbpass\tUser password (optional)\n");
   print("\t-d/--name dbname\tDatabase name\n");
   print("\t-f/--file file\t\tThe OBO file to parse\n");
+  print("\t-o/--ontology \t\tOntology name\n");
   print("\t-?/--help\t\tDisplays this information\n");
 }
 
@@ -326,6 +335,7 @@ sub write_relation {
 my ( $dbhost, $dbport );
 my ( $dbuser, $dbpass );
 my ( $dbname, $obo_file_name );
+my $ontology_name;
 
 $dbport   = '3306';
 
@@ -335,15 +345,53 @@ if ( !GetOptions( 'dbhost|host|h=s' => \$dbhost,
                   'dbpass|pass|p=s' => \$dbpass,
                   'dbname|name|d=s' => \$dbname,
                   'file|f=s'        => \$obo_file_name,
-                  'help|?'          => sub { usage(); exit } )
+                  'ontology|o=s'      => \$ontology_name,
+		  'help|?'          => sub { usage(); exit } )
      || !defined($dbhost)
      || !defined($dbuser)
      || !defined($dbname)
-     || !defined($obo_file_name) )
+     || !defined($obo_file_name)
+     || !defined($ontology_name) )
 {
   usage();
   exit;
 }
+
+#if parsing an EFO obo file delete xref lines - not compatible with OBO:Parser
+
+my @returncode = `grep "default-namespace: efo" $obo_file_name`;
+my $returncode = @returncode;
+if ($returncode > 0) {
+	open (OBO_FILE, "$obo_file_name") or die;
+	my $terminator = $/;
+	undef $/;
+        my $buf = <OBO_FILE>;
+	$buf =~ s/\cM\cJ/\n/g;
+        $/ = $terminator;
+        my @file_lines = split(/\n/, $buf);
+	my $no_of_lines = @file_lines;
+        my $new_obo_file_name = "new" . $obo_file_name;
+        open (NEW_OBO_FILE, ">$new_obo_file_name");
+	for (my $i = 0; $i < $no_of_lines; $i++) {
+	   my $line = shift(@file_lines);
+	   if ($line !~ /^xref/) {
+		print NEW_OBO_FILE $line, "\n";
+	   }
+	}
+	close OBO_FILE;
+	close NEW_OBO_FILE;
+       #delete old file and rename new file to old name
+       `rm $obo_file_name`;
+       `mv $new_obo_file_name $obo_file_name`;	
+}
+
+
+
+my $my_parser = OBO::Parser::OBOParser->new;
+
+printf( "Reading OBO file '%s'...\n", $obo_file_name );
+
+my $ontology = $my_parser->work($obo_file_name) or die;
 
 my $dsn = sprintf( 'dbi:mysql:database=%s;host=%s;port=%s',
                    $dbname, $dbhost, $dbport );
@@ -351,130 +399,105 @@ my $dsn = sprintf( 'dbi:mysql:database=%s;host=%s;port=%s',
 my $dbh = DBI->connect( $dsn, $dbuser, $dbpass,
                         { 'RaiseError' => 1, 'PrintError' => 2 } );
 
-my $statement =
+my $statement = "SELECT name from ontology where name = ? group by name";
+
+my $select_sth = $dbh->prepare($statement);
+
+$select_sth->bind_param(1,$ontology_name,SQL_VARCHAR);
+$select_sth->execute();
+
+if ( $select_sth->fetch() ) {
+     print("This ontology name already exists in the database.\nPlease run the program again with a new name.\n");
+     $select_sth->finish();
+     $dbh->disconnect();
+     exit;
+}
+
+$statement =
   "SELECT meta_value FROM meta WHERE meta_key = 'OBO_file_date'";
 
 my $stored_obo_file_date = $dbh->selectall_arrayref($statement)->[0][0];
-my $obo_file_date;
 
-my $obo = IO::File->new( $obo_file_name, 'r' ) or die;
+my $obo_file_date = $ontology->date();
 
-my $state;
-my %term;
+$obo_file_date = sprintf( "%s/%s", $obo_file_name, $obo_file_date );
 
-my ( %terms, %namespaces, %relation_types, %subsets );
-
-printf( "Reading OBO file '%s'...\n", $obo_file_name );
-
-my $default_namespace;
-
-while ( defined( my $line = $obo->getline() ) ) {
-  chomp($line);
-  $line =~ s/\s+$//;
-
-  if ( !defined($state) ) {    # IN OBO FILE HEADER
-    if ( $line =~ /^\[(\w+)\]$/ ) { $state = $1; next }
-
-    if ( $line =~ /^([\w-]+): (.+)$/ ) {
-      my $type = $1;
-      my $data = $2;
-
-      if ( $type eq 'date' ) {
-        $obo_file_date = sprintf( "%s/%s", $obo_file_name, $data );
-
-        if ( defined($stored_obo_file_date) ) {
-          if ( $stored_obo_file_date eq $obo_file_date ){
-            print("This OBO file has already been processed.\n");
-            $obo->close();
-            $dbh->disconnect();
-            exit;
-          } elsif ( index( $stored_obo_file_date, $obo_file_name ) != -1)
-          {
-            print <<EOT;
+if ( defined($stored_obo_file_date) ) {
+    if ( $stored_obo_file_date eq $obo_file_date ){
+         print("This OBO file has already been processed.\n");
+         $dbh->disconnect();
+         exit;
+    } elsif ( index( $stored_obo_file_date, $obo_file_name ) != -1)
+    {
+      print <<EOT;
 ==> Trying to load a newer (?) OBO file that has already
 ==> been loaded.  Please clean the database manually of
 ==> data associated with this file and try again...
 EOT
-            $obo->close();
-            $dbh->disconnect();
-            exit;
-          }
-        }
-
-      } elsif ( $type eq 'default-namespace' ) {
-        $default_namespace = $data;
-      } elsif ( $type eq 'subsetdef' ) {
-        my ( $subset_name, $subset_def ) =
-          ( $data =~ /^(.+)\s"([^"]+)"/ );
-        $subsets{$subset_name}{'name'}       = $subset_name;
-        $subsets{$subset_name}{'definition'} = $subset_def;
-      }
-    } ## end if ( $line =~ /^([\w-]+): (.+)$/)
-
-    next;
-  } ## end if ( !defined($state) )
-
-  if ( $state eq 'Typedef' ) {
-    # Ignore this state.
-    if ( $line eq '' ) {
-      $state = 'clear';
+      $dbh->disconnect();
+      exit;
     }
-  }
+}
 
-  if ( $state eq 'Term' ) {    # IN OBO FILE BODY
-    if ( $line eq '' || $obo->eof() ) {    # END OF PREVIOUS TERM
-      if ( !defined( $term{'namespace'} ) ) {
-        $term{'namespace'} = $default_namespace;
-      }
-      $namespaces{ $term{'namespace'} } = $term{'namespace'};
+my ( %terms, %namespaces, %relation_types, %subsets );
 
-      $terms{ $term{'accession'} } = {%term};
+my $default_namespace = $ontology->default_namespace();
+my $set = $ontology->subset_def_set();
+my @subsets = $set->get_set();
+foreach my $subs (@subsets) {
+        $subsets{$subs->name()}{'name'}  = $subs->name();
+        $subsets{$subs->name()}{'definition'} = $subs->description();
+}
 
-      foreach my $relation_type ( keys( %{ $term{'parents'} } ) ) {
-        if ( !exists( $relation_types{$relation_type} ) ) {
-          $relation_types{$relation_type} = 1;
+
+# get all non obsolete terms
+foreach my $t (@{$ontology->get_terms()}) {
+     if (!($t->is_obsolete())) {
+        
+	my %term;
+
+	my @t_namespace = $t->namespace();
+        my $t_namespace_elm = @t_namespace;
+	if ($t_namespace_elm > 0){
+	  $term{'namespace'} = $t_namespace[0];
+	}else {
+	  $term{'namespace'} = $default_namespace;
         }
-      }
+	$namespaces{ $term{'namespace'} } = $ontology_name;	
+        
+	$term{'accession'} = $t->id();
+        $term{'name'} = $t->name();
+        $term{'definition'}  = $t->def_as_string();
 
-      $state = 'clear';
-    } elsif ( $line =~ /^(\w+): (.+)$/ ) {    # INSIDE TERM
-      my $type = $1;
-      my $data = $2;
+	my $rels = $ontology->get_relationships_by_source_term($t);
+        foreach my $r (@{$rels}) {
+		#get parent term
+		my $pterm = $r->head();
+		push( @{ $term{'parents'}{$r->type()} }, $pterm->id() );        
+	}
+	
+	my @term_subsets = $t->subset();
+	foreach my $term_subset (@term_subsets) {
+		push( @{ $term{'subsets'} }, $term_subset );
+	}      
+	my @t_synonyms = $t->synonym_set();
+	foreach my $t_synonym (@t_synonyms) {
+		push( @{ $term{'synonyms'} }, $t_synonym->def_as_string() );
+	}
 
-      if ( $type eq 'id' ) {
-        ( $term{'accession'} ) = $data =~ /^([^ ]+)/;
-      } elsif ( $type eq 'name' ) {
-        $term{'name'} = $data;
-      } elsif ( $type eq 'namespace' ) {
-        $term{'namespace'} = $data;
-      } elsif ( $type eq 'def' ) {
-        ( $term{'definition'} ) = ( $data =~ /^"(.*)"/ );
-      } elsif ( $type eq 'is_a' ) {
-        my ($parent_acc) = $data =~ /(\S+)/;
-        push( @{ $term{'parents'}{'is_a'} }, $parent_acc );
-      } elsif ( $type eq 'relationship' ) {
-        my ( $relation_type, $parent_acc ) = $data =~ /^(\w+) (\S+)/;
-        push( @{ $term{'parents'}{$relation_type} }, $parent_acc );
-      } elsif ( $type eq 'is_obsolete' ) {
-        if ( $data eq 'true' ) { $state = 'clear' }
-      } elsif ( $type eq 'subset' ) {
-        push( @{ $term{'subsets'} }, $data );
-      } elsif ( $type eq 'synonym' ) {
-        my ($synonym) = ( $data =~ /^"(.*)"/ );
-        push( @{ $term{'synonyms'} }, $synonym );
-      }
 
-    } ## end elsif ( $line =~ /^(\w+): (.+)$/)
-  } ## end if ( $state eq 'Term' )
+	$terms{ $term{'accession'} } = {%term};
 
-  if ( $state eq 'clear' ) {
-    %term = ();
-    undef($state);
-  }
+     }
+}
 
-} ## end while ( defined( my $line...))
-
-$obo->close();
+#get all relationship types
+foreach my $rel_type (@{$ontology->get_relationship_types()}) {
+        my $rel_type_name = $rel_type->name();
+	if ( !exists( $relation_types{$rel_type_name} ) ) {
+          $relation_types{$rel_type_name} = 1;
+        }
+}
 
 print("Finished reading OBO file, now writing to database...\n");
 
@@ -520,5 +543,6 @@ $sth->finish();
 $dbh->disconnect();
 
 print("Done.\n");
+
 
 # $Id$
