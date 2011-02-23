@@ -238,20 +238,27 @@
     2.  Load the schema from 'tables.sql' located in
         ensembl/misc-scripts/ontology/sql/
 
-    3.  Download the latest file GO OBO file from
-        http://www.geneontology.org/ontology/obo_format_1_2/gene_ontology.1_2.obo
+    3.  Run script 'get_OBO_files.ksh' to download all the currently
+	handled ontologies.
 
-        (There is a helper script called 'get_OBO_files.ksh' that will
-        download all the currently handled ontologies.)
+    4.  As a prerequisite to the next step, you'll need to download
+	ONTO-PERL modules from: 
+        http://search.cpan.org/CPAN/authors/id/E/EA/EASR/ONTO-PERL/ONTO-PERL-1.31.tar.gz  
+	Save the modules in your local directory:
+	e.g. gunzip < ONTO-PERL-1.31.tar.gz | tar xvf - 
+        Go to the ONTO-PERL-1.31 directory and test if you have all required modules
+	by running the following commands:
+	perl Makefile.PL
+	make
+	make test
+	Update the library in load_OBO_file.pl script to the location of ONTO-PERL modules in
+ 	your home directory:
+	e.g. use lib "/nfs/users/nfs_m/mk8/ONTO-PERL-1.31/lib";
 
-    4.  Load the data into the database using the script
-        'load_OBO_file.pl' (run the script without arguments
+    5.  Load the data from each downloaded ontology file into the database
+	using the script 'load_OBO_file.pl' (run the script without arguments
         for help on usage, it is simple).  The script lives in
         ensembl/misc-scripts/ontology/scripts/
-
-    5.  Repeat steps 3 and 4 for the SO ontology.  The latest version of
-        the ontology may be found at
-        http://song.cvs.sourceforge.net/viewvc/*checkout*/song/ontology/so.obo
 
     6.  Compute the transitive closure (the 'closure' table in the
         database) by running the 'compute_closure.pl' in almost the same
