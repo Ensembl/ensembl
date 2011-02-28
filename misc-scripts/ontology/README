@@ -251,9 +251,6 @@
 	perl Makefile.PL
 	make
 	make test
-	Update the library in load_OBO_file.pl script to the location of ONTO-PERL modules in
- 	your home directory:
-	e.g. use lib "/nfs/users/nfs_m/mk8/ONTO-PERL-1.31/lib";
 
     5.  Load the data from each downloaded ontology file into the database
 	using the script 'load_OBO_file.pl' (run the script without arguments
