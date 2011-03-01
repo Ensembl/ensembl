@@ -173,7 +173,7 @@ SLICE: foreach my $slice (@$slices) {
     my $transcripts = $gene->get_all_Transcripts;
     if ( @$transcripts == 1 ) {
       if ($ccds_db) {
-        check_Ens_trans_against_CCDS($transcripts->[0], $ccds_db);
+        check_Ens_trans_against_CCDS($transcripts->[0], $ccds_db, $verbose);
       }
       $canonical{ $gene->dbID } = $transcripts->[0]->dbID;
       print "Transcript ". $transcripts->[0]->display_id . " of biotype " . $transcripts->[0]->biotype .
@@ -195,7 +195,7 @@ SLICE: foreach my $slice (@$slices) {
         my $trans_id = $trans{$key}->[0]->dbID;
         if ( $trans{$key}->[0]->translation->seq !~ /\*/ ) {
           if ($ccds_db) {
-            check_Ens_trans_against_CCDS($trans{$key}->[0], $ccds_db);
+            check_Ens_trans_against_CCDS($trans{$key}->[0], $ccds_db, $verbose);
           }
           $canonical{ $gene->dbID } = $trans_id;
           print "Transcript ". $trans{$key}->[0]->display_id . " of biotype " . $trans{$key}->[0]->biotype .
@@ -206,20 +206,17 @@ SLICE: foreach my $slice (@$slices) {
           carp(   "Transcript $trans_id has internal stop(s) "
                 . "and shouldn't if it is protein coding\n" );
         }
-      }
-      elsif (    !exists( $trans{'protein_coding'} )
+      } elsif (    !exists( $trans{'protein_coding'} )
               && $key eq 'nonsense_mediated_decay'
-              && ( @{ $trans{$key} } == 1 ) )
-      {
+              && ( @{ $trans{$key} } == 1 ) ) {
         my $trans_id = $trans{$key}->[0]->dbID;
         if (    ( $trans{$key}->[0]->translation )
-             && ( $trans{$key}->[0]->translation->seq !~ /\*/ ) )
-        {
+             && ( $trans{$key}->[0]->translation->seq !~ /\*/ ) ) {
           print "The NMD transcript $trans_id will become "
               . "the canonical transcript because there are no "
               . "protein coding transcripts.\n";
           if ($ccds_db) {
-            check_Ens_trans_against_CCDS($trans{$key}->[0], $ccds_db);
+            check_Ens_trans_against_CCDS($trans{$key}->[0], $ccds_db, $verbose);
           }
           $canonical{ $gene->dbID } = $trans_id;
           print "Transcript ". $trans{$key}->[0]->display_id . " of biotype nonsense_mediated_decay" .
@@ -272,7 +269,7 @@ SLICE: foreach my $slice (@$slices) {
 
         if ( $trans->biotype eq 'protein_coding') {
           if ($ccds_db) {
-            $ensembl_trans_found_in_CCDS = check_Ens_trans_against_CCDS($trans, $ccds_db);
+            $ensembl_trans_found_in_CCDS = check_Ens_trans_against_CCDS($trans, $ccds_db, $verbose);
           }
           if ($ensembl_trans_found_in_CCDS) {
             push @ccds_prot_coding_len_and_trans, $h;
@@ -367,7 +364,18 @@ sub check_if_DB_contains_DNA {
 }
 
 sub check_Ens_trans_against_CCDS {
-  my ($ensembl_trans, $ccds_db) = @_;
+  my ($ensembl_trans, $ccds_db, $verbose) = @_;
+ 
+  # check if the ensembl transcript is on 
+  # a reference or non-reference slice
+  # CCDS is only on reference slices
+  if (!$ensembl_trans->slice->is_reference) {
+    print "Transcript dbID ".$ensembl_trans->dbID." is on non-reference slice ".$ensembl_trans->slice->name.", therefore no CCDS\n" if ($verbose);
+    return 0;
+  } else {
+    print "Transcript dbID ".$ensembl_trans->dbID." is on reference slice ".$ensembl_trans->slice->name."\n" if ($verbose);
+  }
+
   my @ensembl_translateable_exons = @{ $ensembl_trans->get_all_translateable_Exons };
 
   my $ext_slice = $ccds_db->get_SliceAdaptor->fetch_by_region( 'toplevel',
