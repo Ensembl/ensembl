@@ -80,7 +80,7 @@ use strict;
 
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 use Bio::EnsEMBL::Utils::Scalar qw(assert_ref check_ref);
-use Bio::EnsEMBL::Utils::Exception qw(throw warning);
+use Bio::EnsEMBL::Utils::Exception qw(throw);
 use English qw( -no_match_vars ); #Used for $PROCESS_ID
 use Scalar::Util qw(weaken); #Used to not hold a strong ref to DBConnection
 
@@ -495,7 +495,15 @@ sub execute_single_result {
 
   Arg [CALLBACK]      : The callback used for transaction isolation; once 
                         the subroutine exists the code will decide on rollback
-                        or commit
+                        or commit. Required
+  Arg [RETRY]         : Int; the number of retries to attempt with this 
+                        transactional block. Defaults to 0. 
+  Arg [PAUSE]         : Int; the time in seconds to pause in-between retries.
+                        Defaults to 1.
+  Arg [CONDITION]     : Code ref; allows you to inspect the exception raised
+                        and should your callback return true then the 
+                        retry will be attempted. If not given then all 
+                        exceptions mean attempt a retry (if specified)
   Returntype : Return of the callback
   Exceptions : If errors occur in the execution of the SQL
   Status     : Stable
@@ -537,15 +545,60 @@ block of code which is meant to to be transaction can be wrapped in
 this block ( assuming the same instance of SQLHelper is passed around &
 used).
 
+You can also request the retry of a transactional block of code which is
+causing problems. This is not a perfect solution as it indicates your
+programming model is broken. This mode can be specified as such:
+
+  my $val = $helper->transaction(
+    -RETRY => 3, -PAUSE => 2,
+    -CALLBACK => sub {
+      my ($dbc) = @_;
+      #Do something
+      return 1;
+    } );
+    
+The C<-RETRY> argument indicates the number of times we attempt the transaction 
+and C<-PAUSE> indicates the time in-between attempts. These retries will
+only occur in the root transaction block i.e. you cannot influence the 
+retry system in a sub transaction. You can influence if the retry is done with
+the C<-CONDITION> argument which accepts a Code reference (same as the
+C<-CALLBACK> parameter). This allows you to inspect the error thrown to
+retry only in some situations e.g.
+
+  my $val = $helper->transaction(
+    -RETRY => 3, -PAUSE => 2,
+    -CALLBACK => sub {
+      my ($dbc) = @_;
+      #Do something
+      return 1;
+    },
+    -CONDITION => sub {
+      my ($error) = @_;
+      return ( $error =~ /deadlock/ ) ? 1 : 0;
+    }
+  );
+
+Here we attempt a transaction and will B<only> retry when we have an error
+with the phrase deadlock.
+
 =cut
 
 sub transaction {
   my ($self, @args) = @_;
-  
-  my ($callback) = rearrange([qw(callback)], @args);
+   
+  my ($callback, $retry, $pause, $condition) = rearrange([qw(callback retry pause condition)], @args);
   
   throw('Callback was not a CodeRef. Got a reference of type ['.ref($callback).']') 
     unless check_ref($callback, 'CODE');
+  
+  #Setup defaults
+  $retry = 0 unless defined $retry;
+  $pause = 1 unless defined $pause;
+  $condition = sub {
+    return 1;
+  } unless defined $condition;
+  
+  assert_ref($condition, 'CODE');
  
   my $dbc = $self->db_connection();
   my $original_dwi;
@@ -558,31 +611,40 @@ sub transaction {
   #session & wait for the parent transaction(s) to finish
   my $perform_transaction = $self->_perform_transaction_code();
   if($perform_transaction) {
-    $original_dwi = $dbc->disconnect_when_inactive();
-    $dbc->disconnect_when_inactive(0);
-    $ac = $dbc->db_handle()->{'AutoCommit'};
-    $dbc->db_handle()->{'AutoCommit'} = 0;
-    $self->_enable_transaction();
+    ($original_dwi, $ac) = $self->_enable_transaction();
   }
-  
-  if(!$error) {
+  else {
+    $retry = 0;
+  }
+    
+  for(my $iteration = 0; $iteration <= $retry; $iteration++) {
     eval {
       $result = $callback->($dbc);
       $dbc->db_handle()->commit() if $perform_transaction;
     };
     $error = $@;
+    #If we were allowed to deal with the error then we apply rollbacks & then
+    #retry or leave to the remainder of the code to throw
+    if($perform_transaction && $error) {
+      eval { $dbc->db_handle()->rollback(); };
+      #If we were not on our last iteration then warn & allow the retry
+      if($iteration != $retry) {
+        if($condition->($error)) {
+          warn("Encountered error on attempt ${iteration} of ${retry} and have issued a rollback. Will retry after sleeping for $pause second(s): $error");
+          sleep $pause;
+        }
+        else {
+          last; #break early if condition of error was not matched
+        }
+      }
+    }
   }
   
   if($perform_transaction) {
-    if($error) {
-      eval { $dbc->db_handle()->rollback(); };
-    }
-    $dbc->db_handle()->{'AutoCommit'} = $ac;
-    $dbc->disconnect_when_inactive($original_dwi);
-    $self->_disable_transaction();
+    $self->_disable_transaction($original_dwi, $ac);
   }
   
-  throw("Transaction aborted because of error: ${error}") if $error;
+  throw("ABORT: Transaction aborted because of error: ${error}") if $error;
   
   return $result;
 }
@@ -807,12 +869,20 @@ sub _perform_transaction_code {
 
 sub _enable_transaction {
   my ($self) = @_;
+  my $dbc = $self->db_connection();
+  my $original_dwi = $dbc->disconnect_when_inactive();
+  $dbc->disconnect_when_inactive(0);
+  my $ac = $dbc->db_handle()->{'AutoCommit'};
+  $dbc->db_handle()->{'AutoCommit'} = 0;
   $self->{_transaction_active}->{$PROCESS_ID} = 1;
-  return;
+  return ($original_dwi, $ac);
 }
 
 sub _disable_transaction {
-  my ($self) = @_;
+  my ($self, $original_dwi, $ac) = @_;
+  my $dbc = $self->db_connection();
+  $dbc->db_handle()->{'AutoCommit'} = $ac;
+  $dbc->disconnect_when_inactive($original_dwi);
   delete $self->{_transaction_active}->{$PROCESS_ID};
   return;
 }
@@ -909,7 +979,7 @@ sub _base_execute {
 sub _finish_sth {
   my ($self, $sth) = @_;
   eval { $sth->finish() if defined $sth; };
-  warning('Cannot finish() the statement handle: $@') if $@;
+  warn('Cannot finish() the statement handle: $@') if $@;
   return;
 }
 

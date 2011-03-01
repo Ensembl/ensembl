@@ -11,6 +11,12 @@ use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::Test::TestUtils;
 use Bio::EnsEMBL::Utils::SqlHelper;
 
+#Redefine the WARN sig to note the errors (most are just from transaction retry)
+$SIG{__WARN__} = sub {
+  note @_;
+  return 1; 
+};
+
 my $multi = Bio::EnsEMBL::Test::MultiTestDB->new();
 my $dba = $multi->get_DBAdaptor( 'core' );
 ok( $dba, 'Test database instatiated' );
@@ -28,7 +34,7 @@ ok ( $helper, 'SqlHelper instance was created' );
 
 
 my $meta_key = 'species.common_name';
-diag("Meta key queries working with ${meta_key}. If the tests fail then check for it in the DB dumps");
+note("Meta key queries working with ${meta_key}. If the tests fail then check for it in the DB dumps");
 
 is( 
   $helper->execute_single_result(-SQL => qq{select count(*) from meta where meta_key = '$meta_key'}),
@@ -171,6 +177,106 @@ my $get_value = sub {
     -SQL => 'select meta_key, count(*) from meta group by meta_key'
   );
   is_deeply($new_count_hash, $meta_count_hash, 'Counts of meta keys should be the same');
+}
+
+
+#Testing transactional retry
+{
+  my $new_meta_value = 'test';
+  
+  # First try retries until the very last attempt
+  {
+    my $counter = 0;
+    $helper->transaction( -RETRY => 3, -SLEEP => 1, -CALLBACK => sub {
+      #Die for the first 3 times (so we will succeed on the final attempt)
+      $counter++;
+      if($counter != 4) {
+        die 'Throwing an error to be ignored';
+      }
+      
+      $helper->execute_update(-SQL => 'update meta set meta_value =? where meta_key =?', -PARAMS => [$new_meta_value, $meta_key]);
+    });
+    is($counter, 4, 'Counter should be set to 4 as we tried 4 attempts at writing (one go & 3 retries)');
+    is($get_value->(), $new_meta_value, 'Commit should have gone through after retries');
+  }
+  
+  #Second try will fail as we exhaust our retries
+  {
+    my $counter = 0;
+    throws_ok {
+      $helper->transaction( -RETRY => 2, -CALLBACK => sub {
+        $counter++;
+        die 'Throwing an error 2';
+      })
+    } qr /Throwing an error 2/, 'Correct error thrown';
+    
+    is($counter, 3, 'Counter should be set to 3 as we had 3 attempts at writing (one go & 2 retries)');
+    is($get_value->(), $new_meta_value, 'Commit should have done nothing');
+  }
+  
+  #Third one says we cannot influence the retry count from a sub-transaction
+  {
+    my $counter = 0;
+    throws_ok {
+      $helper->transaction( -RETRY => 1, -CALLBACK => sub {
+        $helper->transaction( -RETRY => 10, -CALLBACK => sub {
+          $counter++;
+          die 'Throwing an error 3';
+        });
+      })
+    } qr /Throwing an error 3/, 'Correct error thrown';
+    is($counter, 2, 'Counter should be set to 2 as we had 2 attempts at writing (one go & 1 retry)');
+    is($get_value->(), $new_meta_value, 'Commit should have done nothing');
+  }
+
+  #Fourth says we only retry when we find a specific issue
+  {
+    my $counter = 0;
+    throws_ok {
+      $helper->transaction( 
+        -RETRY => 4, 
+        -CALLBACK => sub {
+          $counter++;
+          die 'fake deadlock' if $counter <= 2;
+          die 'Throwing an error 4';
+        },
+        -CONDITION => sub {
+          my ($error) = @_;
+          return ( $error =~ /deadlock/ ) ? 1 : 0;
+        }
+      )
+    } qr /Throwing an error 4/, 'Correct error thrown';
+    is($counter, 3, 'Counter should be set to 3 as we had 2 fake deadlocks & 1 real error even though we allowed more retries');
+  }
+  
+  #Fith says we sleep for at least the amount we say
+  {
+    my $counter = 0;
+    my $time = time();
+    $helper->transaction( -RETRY => 1, -PAUSE => 2, -CALLBACK => sub {
+      $counter++;
+      if($counter != 2) {
+        die 'Throwing an error 5';
+      }
+      
+      $helper->execute_update(-SQL => 'delete from meta where meta_value =? and meta_key =?', -PARAMS => [$new_meta_value, $meta_key]);
+    });
+    my $elapsed = time() - $time;
+    cmp_ok($elapsed, '>=', 2, 'Checking more than 2 seconds elapsed between retries');
+    is(
+      $helper->execute_single_result(
+        -SQL => 'select count(*) from meta where meta_key =? and meta_value=?', 
+        -PARAMS => [$meta_key, $new_meta_value]
+      ), 0, 
+    'Commit will have deleted the meta_key row '.$meta_key);
+  }
+  
+  
+  #Reset
+  $helper->transaction( -CALLBACK => sub {
+    $helper->execute_update(-SQL => 'delete from meta');
+    $helper->batch(-SQL => 'insert into meta values (?,?,?,?)', -DATA => $meta_memoize);
+  });
 }
 
 #Doing hashref checks
