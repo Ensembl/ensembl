@@ -244,7 +244,7 @@
     4.  As a prerequisite to the next step, you'll need to download
 	ONTO-PERL modules from: 
         http://search.cpan.org/CPAN/authors/id/E/EA/EASR/ONTO-PERL/ONTO-PERL-1.31.tar.gz  
-	Save the modules in your local directory:
+	Save the modules in the same directory where your checked out ensembl/ directory resides:
 	e.g. gunzip < ONTO-PERL-1.31.tar.gz | tar xvf - 
         Go to the ONTO-PERL-1.31 directory and test if you have all required modules
 	by running the following commands:
