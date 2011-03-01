@@ -118,9 +118,9 @@ sub parse_common_options {
 	       'pass|dbpass|db_pass=s',
 	       'conffile|conf=s',
 	       'logfile|log=s',
-	       'nolog|nolog=s',
+         'nolog|nolog=s',
 	       'logpath=s',
-	       'log_base_path=s',
+         'log_base_path=s',
 	       'logappend|log_append=s',
 	       'verbose|v=s',
 	       'interactive|i=s',
@@ -161,9 +161,10 @@ sub parse_common_options {
   map { $self->param($_, $h{$_}) } keys %h;
 
   # if logpath & logfile are not se, set them here to /ensemblweb/vega_dev/shared/logs/conversion/DBNAME/SCRIPNAME_NN.log
+
   if (defined($self->param('log_base_path')))  {
     if (not (defined($self->param('logpath')))){
-      $self->param('logpath', "/ensemblweb/vega_dev/shared/logs/conversion/".$self->param('dbname')."/" );
+      $self->param('logpath', $self->param('log_base_path')."/".$self->param('dbname')."/" );
     }
     if (  (not defined $self->param('logfile') ) && (not defined $self->param('nolog') )  ){
       my $log = $Script;
@@ -173,7 +174,7 @@ sub parse_common_options {
       $self->param('logfile', $log."_".sprintf("%03d", $counter).".log");
     }
   }
-
+  
   return(1);
 }
 
@@ -251,8 +252,9 @@ sub get_common_params {
 	    port
 	    user
 	    pass
-	    nolog
+      nolog
 	    logpath
+      log_base_path
 	    logfile
 	    logappend
 	    verbose
