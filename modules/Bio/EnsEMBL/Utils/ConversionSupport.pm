@@ -120,7 +120,7 @@ sub parse_common_options {
 	       'logfile|log=s',
 	       'nolog|nolog=s',
 	       'logpath=s',
-	       'log_base_path=s'
+	       'log_base_path=s',
 	       'logappend|log_append=s',
 	       'verbose|v=s',
 	       'interactive|i=s',
