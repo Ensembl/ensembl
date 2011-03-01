@@ -160,6 +160,19 @@ my $gene_update_sql = "update gene set canonical_transcript_id = ? where gene_id
 my $gene_sth = $db->dbc->prepare($gene_update_sql);
 
 SLICE: foreach my $slice (@$slices) {
+  # check whether the slice is reference or not
+  # this check is important for species that have a ccds database
+  # and that have non-reference sequence ie. human
+  my $slice_is_reference;
+  if (!$slice->is_reference) {
+    print "Doing non-reference slice ".$slice->name."\n";
+    $slice_is_reference = 0;
+  } else {
+    print "Doing reference slice ".$slice->name."\n";
+    $slice_is_reference = 1;
+  }
+
+  # Now fetch the genes
   print "\nGetting genes for " . $slice->name . "\n" if ($verbose);
   my $genes = $slice->get_all_Genes( undef, undef, 1 );
   my %canonical;
@@ -172,7 +185,7 @@ SLICE: foreach my $slice (@$slices) {
     print "\n";
     my $transcripts = $gene->get_all_Transcripts;
     if ( @$transcripts == 1 ) {
-      if ($ccds_db) {
+      if ($ccds_db && $slice_is_reference) {
         check_Ens_trans_against_CCDS($transcripts->[0], $ccds_db, $verbose);
       }
       $canonical{ $gene->dbID } = $transcripts->[0]->dbID;
@@ -194,7 +207,7 @@ SLICE: foreach my $slice (@$slices) {
       if ( ( $key eq 'protein_coding' ) && ( @{ $trans{$key} } == 1 ) ) {
         my $trans_id = $trans{$key}->[0]->dbID;
         if ( $trans{$key}->[0]->translation->seq !~ /\*/ ) {
-          if ($ccds_db) {
+          if ($ccds_db && $slice_is_reference) {
             check_Ens_trans_against_CCDS($trans{$key}->[0], $ccds_db, $verbose);
           }
           $canonical{ $gene->dbID } = $trans_id;
@@ -215,7 +228,7 @@ SLICE: foreach my $slice (@$slices) {
           print "The NMD transcript $trans_id will become "
               . "the canonical transcript because there are no "
               . "protein coding transcripts.\n";
-          if ($ccds_db) {
+          if ($ccds_db && $slice_is_reference) {
             check_Ens_trans_against_CCDS($trans{$key}->[0], $ccds_db, $verbose);
           }
           $canonical{ $gene->dbID } = $trans_id;
@@ -268,7 +281,7 @@ SLICE: foreach my $slice (@$slices) {
         my $ensembl_trans_found_in_CCDS = 0;
 
         if ( $trans->biotype eq 'protein_coding') {
-          if ($ccds_db) {
+          if ($ccds_db && $slice_is_reference) {
             $ensembl_trans_found_in_CCDS = check_Ens_trans_against_CCDS($trans, $ccds_db, $verbose);
           }
           if ($ensembl_trans_found_in_CCDS) {
@@ -366,16 +379,6 @@ sub check_if_DB_contains_DNA {
 sub check_Ens_trans_against_CCDS {
   my ($ensembl_trans, $ccds_db, $verbose) = @_;
  
-  # check if the ensembl transcript is on 
-  # a reference or non-reference slice
-  # CCDS is only on reference slices
-  if (!$ensembl_trans->slice->is_reference) {
-    print "Transcript dbID ".$ensembl_trans->dbID." is on non-reference slice ".$ensembl_trans->slice->name.", therefore no CCDS\n" if ($verbose);
-    return 0;
-  } else {
-    print "Transcript dbID ".$ensembl_trans->dbID." is on reference slice ".$ensembl_trans->slice->name."\n" if ($verbose);
-  }
-
   my @ensembl_translateable_exons = @{ $ensembl_trans->get_all_translateable_Exons };
 
   my $ext_slice = $ccds_db->get_SliceAdaptor->fetch_by_region( 'toplevel',
