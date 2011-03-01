@@ -1,10 +1,5 @@
 package XrefMapper::CoordinateMapper;
 
-#use vars '@ISA';
-#@ISA = qw{ XrefMapper::BasicMapper };
-
-#use XrefMapper::BasicMapper;
-
 # $Id$
 
 # This is a set of subroutines used for creating Xrefs based on
@@ -16,6 +11,8 @@ use warnings;
 
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::EnsEMBL::Mapper::RangeRegistry;
+
+use DBI qw( :sql_types );
 
 use Carp;
 use IO::File;
@@ -216,7 +213,6 @@ sub run_coordinatemapping {
       $XrefMapper::BasicMapper::source_to_external_db{ $xref->{
         'source_id'} };
     $external_db_id ||= 11000;    # FIXME (11000 is 'UCSC')
-    
 
     $unmapped{ $xref->{'coord_xref_id'} } = {
                    'external_db_id' => $external_db_id,
@@ -588,7 +584,7 @@ sub run_coordinatemapping {
   dump_xref( $xref_filename, $xref_id, \%mapped, \%unmapped );
   dump_object_xref( $object_xref_filename, $object_xref_id, \%mapped );
   dump_unmapped_reason( $unmapped_reason_filename, $unmapped_reason_id,
-                        \%unmapped );
+                        \%unmapped, $core_dbh );
   dump_unmapped_object( $unmapped_object_filename, $unmapped_object_id,
                         $analysis_id, \%unmapped );
 
@@ -688,7 +684,7 @@ sub dump_object_xref {
 #-----------------------------------------------------------------------
 
 sub dump_unmapped_reason {
-  my ( $filename, $unmapped_reason_id, $unmapped ) = @_;
+  my ( $filename, $unmapped_reason_id, $unmapped, $core_dbh ) = @_;
 
   ######################################################################
   # Dump for 'unmapped_reason'.                                        #
@@ -711,11 +707,30 @@ sub dump_unmapped_reason {
 
   log_progress( "Dumping for 'unmapped_reason' to '%s'\n", $filename );
 
+  my $sth =
+    $core_dbh->prepare(   'SELECT unmapped_reason_id '
+                        . 'FROM unmapped_reason '
+                        . 'WHERE full_description = ?' );
+
   foreach my $reason (
             sort( { $a->{'full'} cmp $b->{'full'} } values(%reasons) ) )
   {
-    # Assign 'unmapped_reason_id' to this reason.
-    $reason->{'unmapped_reason_id'} = ++$unmapped_reason_id;
+    # Figure out 'unmapped_reason_id' from the core database.
+    $sth->bind_param( 1, $reason->{'full'}, SQL_VARCHAR );
+
+    $sth->execute();
+
+    my $id;
+    $sth->bind_col( 1, \$id );
+    $sth->fetch();
+
+    if ( defined($id) ) {
+      $reason->{'unmapped_reason_id'} = $id;
+    } else {
+      $reason->{'unmapped_reason_id'} = ++$unmapped_reason_id;
+    }
+
+    $sth->finish();
 
     $fh->printf( "%d\t%s\t%s\n", $reason->{'unmapped_reason_id'},
                  $reason->{'summary'}, $reason->{'full'} );
