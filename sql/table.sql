@@ -7,7 +7,7 @@
 #  - same name is given in foreign key relations
 
 /**
-@header Fundamental Tables
+@set Fundamental Tables
 */
 
 /**
@@ -794,7 +794,7 @@ CREATE TABLE unconventional_transcript_association (
 
 
 /**
-@header Features and Analyses
+@set Features and Analyses
 */
 
 
@@ -1892,7 +1892,7 @@ CREATE TABLE transcript_supporting_feature (
 
 
 /**
-@header ID Mapping
+@set ID Mapping
 */
 
 /**
@@ -2074,7 +2074,7 @@ CREATE TABLE seq_region_mapping (
 
 
 /**
-@header External References
+@set External References
 */
 
 
@@ -2436,7 +2436,7 @@ CREATE TABLE xref (
 
 
 /**
-@header Miscellaneous
+@set Miscellaneous
 */
 
 
