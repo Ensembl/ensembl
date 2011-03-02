@@ -24,8 +24,10 @@ The default species_id, and the only species_id value allowed in single-species 
 @column meta_key                   Name of the meta entry, e.g. "schema_version".
 @column meta_value                 Corresponding value of the key, e.g. "61".
 
-@see assembly - The default value for assembly.type is stored in the meta table.
-@see coord_system - The species_id in the meta table is linked to the species_id in the coord_system table.
+@see assembly
+The default value for assembly.type is stored in the meta table.
+@see coord_system
+The species_id in the meta table is linked to the species_id in the coord_system table.
 
 */
 
