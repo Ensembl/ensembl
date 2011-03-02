@@ -62,8 +62,8 @@ INSERT INTO meta (species_id, meta_key, meta_value) VALUES
 @table alt_allele
 @desc Stores information about genes on haplotypes that may be orthologous.
 
-@alt_allele_id          Primary key, internal identifier.
-@gene_id                Foreign key references to the @link gene table.
+@column alt_allele_id          Primary key, internal identifier.
+@column gene_id                Foreign key references to the @link gene table.
 
 */
 
@@ -583,6 +583,10 @@ Note seq_region_start is always less that seq_region_end, i.e. when the exon is 
 @column seq_region_start            Sequence start position.
 @column seq_region_end              Sequence end position.          
 @column seq_region_strand           Sequence region strand: 1 - forward; -1 - reverse.
+@column phase                       The place where the intron lands inside the codon - 0 between codons, 1 between the 1st and second base, 2 between the second and 3rd base. Exons therefore have a start phase anda end phase, but introns have just one phase.
+@column end_phase                   Usually, end_phase = (phase + exon_length)%3 but end_phase could be -1 if the exon is half-coding and its 3 prime end is UTR.
+@column is_current                  Default 1.
+@column is_constitutive             Default 0.
 
 @see exon_transcript - Used to associate exons with transcripts
 
@@ -1510,7 +1514,6 @@ CREATE TABLE prediction_transcript (
 @column seq_region_strand           Sequence region strand: 1 - forward; -1 - reverse.
 @column hit_start                   Alignment hit start position.
 @column hit_end                     Alignment hit end position.
-@column hit_strand                  Alignment hit strand: 1 - forward; -1 - reverse.
 @column hit_name                    Alignment hit name.
 @column analysis_id                 Foreign key references to the @link analysis table.
 @column score                       Alignment score.
