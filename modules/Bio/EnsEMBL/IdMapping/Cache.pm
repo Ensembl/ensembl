@@ -41,6 +41,7 @@ no warnings 'uninitialized';
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 use Bio::EnsEMBL::Utils::ScriptUtils qw(parse_bytes path_append);
+use Bio::EnsEMBL::Utils::Scalar qw(assert_ref);
 use Bio::EnsEMBL::IdMapping::TinyGene;
 use Bio::EnsEMBL::IdMapping::TinyTranscript;
 use Bio::EnsEMBL::IdMapping::TinyTranslation;
@@ -822,34 +823,39 @@ sub check_empty_tables {
 
 
 sub check_sequence {
-  my $self = shift;
-  my $dbtype = shift;
-  
+  my ( $self, $dbtype ) = @_;
+
   # skip this check if db connection failed (this prevents re-throwing
   # exceptions).
-  return 1 unless ($self->{'_db_conn_ok'}->{$dbtype});
-  
+  return 1 unless ( $self->{'_db_conn_ok'}->{$dbtype} );
+
   my $err = 0;
-  my $c = 0;
-  
+  my $c   = 0;
+
   eval {
     my $dba = $self->get_DBAdaptor($dbtype);
-    unless ($c = $self->fetch_value_from_db($dba, "SELECT COUNT(*) FROM dna")) {
+    unless ( $c =
+             $self->fetch_value_from_db(
+                               $dba->dnadb(), "SELECT COUNT(*) FROM dna"
+             ) )
+    {
       $err++;
     }
   };
-  
+
   if ($@) {
-    $self->logger->warning("Error retrieving dna table row count from $dbtype db: $@\n");
+    $self->logger->warning(   "Error retrieving dna table row count "
+                            . "from $dbtype database: $@\n" );
     $err++;
   } elsif ($err) {
-    $self->logger->warning("No sequence found in $dbtype db.\n");
+    $self->logger->warning("No sequence found in $dbtype database.\n");
   } else {
-    $self->logger->debug(ucfirst($dbtype)." db has sequence ($c entries).\n");
+    $self->logger->debug(
+                ucfirst($dbtype) . " db has sequence ($c entries).\n" );
   }
 
   return $err;
-}
+} ## end sub check_sequence
 
 
 sub check_meta_entries {
@@ -896,48 +902,58 @@ sub check_meta_entries {
 
 
 sub fetch_value_from_db {
-  my $self = shift;
-  my $dba = shift;
-  my $sql = shift;
+  my ( $self, $dba, $sql ) = @_;
 
-  unless ($dba and ref($dba) and $dba->isa('Bio::EnsEMBL::DBSQL::DBAdaptor')) {
-    throw("Need a Bio::EnsEMBL::DBSQL::DBAdaptor.");
-  }
-  unless ($sql) {
+  assert_ref( $dba, 'Bio::EnsEMBL::DBSQL::DBAdaptor' );
+
+  if ( !defined($sql) ) {
     throw("Need an SQL statement to execute.\n");
   }
 
+  print "$sql $dba\n";
+
   my $sth = $dba->dbc->prepare($sql);
-  $sth->execute;
+  $sth->execute();
+
   my ($c) = $sth->fetchrow_array;
   return $c;
 }
 
-  
 sub get_DBAdaptor {
-  my $self = shift;
-  my $prefix = shift;
+  my ( $self, $prefix ) = @_;
 
-  unless ($self->{'_dba'}->{$prefix}) {
+  unless ( $self->{'_dba'}->{$prefix} ) {
     # connect to database
-    my $dba = new Bio::EnsEMBL::DBSQL::DBAdaptor(
-            -host   => $self->conf->param("${prefix}host"),
-            -port   => $self->conf->param("${prefix}port"),
-            -user   => $self->conf->param("${prefix}user"),
-            -pass   => $self->conf->param("${prefix}pass"),
-            -dbname => $self->conf->param("${prefix}dbname"),
-            -group  => $prefix,
-    );
-    
-    # explicitely set the dnadb to itself - by default the Registry assumes
-    # a group 'core' for this now
-    $dba->dnadb($dba);
+    my $dba =
+      new Bio::EnsEMBL::DBSQL::DBAdaptor(
+                       -host   => $self->conf->param("${prefix}host"),
+                       -port   => $self->conf->param("${prefix}port"),
+                       -user   => $self->conf->param("${prefix}user"),
+                       -pass   => $self->conf->param("${prefix}pass"),
+                       -dbname => $self->conf->param("${prefix}dbname"),
+                       -group  => $prefix, );
+
+    if ( !defined( $self->conf->param("${prefix}host_dna") ) ) {
+      # explicitely set the dnadb to itself - by default the Registry
+      # assumes a group 'core' for this now
+      $dba->dnadb($dba);
+    } else {
+      my $dna_dba =
+        new Bio::EnsEMBL::DBSQL::DBAdaptor(
+                   -host   => $self->conf->param("${prefix}host_dna"),
+                   -port   => $self->conf->param("${prefix}port_dna"),
+                   -user   => $self->conf->param("${prefix}user_dna"),
+                   -pass   => $self->conf->param("${prefix}pass_dna"),
+                   -dbname => $self->conf->param("${prefix}dbname_dna"),
+                   -group  => $prefix, );
+      $dba->dnadb($dna_dba);
+    }
 
     $self->{'_dba'}->{$prefix} = $dba;
-  }
+  } ## end unless ( $self->{'_dba'}->...)
 
   return $self->{'_dba'}->{$prefix};
-}
+} ## end sub get_DBAdaptor
 
 
 sub cache_file_exists {
