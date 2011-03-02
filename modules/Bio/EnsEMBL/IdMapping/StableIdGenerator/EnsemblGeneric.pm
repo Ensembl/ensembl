@@ -136,6 +136,7 @@ sub initial_stable_id {
     SELECT MAX(stable_id)
     FROM ${type}_stable_id
     WHERE stable_id LIKE "ENS%"
+      OR stable_id LIKE "ASMPATCH%"
     );
 
   $init_stable_id = $self->fetch_value_from_db($s_dbh, $sql);
