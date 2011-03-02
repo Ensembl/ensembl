@@ -235,7 +235,6 @@ sub mapping_status{
     my $previous_dbname = &get_previous_dbname($old_dbh,$dbname,$release);
     if ($previous_dbname) {
 
-      print $previous_dbname."\n";
       my $old_sth_max_mapping = $old_dbh->prepare("select max(mapping_set_id) from $previous_dbname.mapping_set");
       $old_sth_max_mapping->execute();
       ( $$mapping_set_id_ref ) = $old_sth_max_mapping->fetchrow_array();
