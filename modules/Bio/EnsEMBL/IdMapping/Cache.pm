@@ -910,8 +910,6 @@ sub fetch_value_from_db {
     throw("Need an SQL statement to execute.\n");
   }
 
-  print "$sql $dba\n";
-
   my $sth = $dba->dbc->prepare($sql);
   $sth->execute();
 
