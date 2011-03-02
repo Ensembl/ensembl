@@ -234,9 +234,11 @@ sub mapping_status{
     #the table is empty, first mapping
     my $previous_dbname = &get_previous_dbname($old_dbh,$dbname,$release);
     if ($previous_dbname) {
+
+      print $previous_dbname."\n";
       my $old_sth_max_mapping = $old_dbh->prepare("select max(mapping_set_id) from $previous_dbname.mapping_set");
       $old_sth_max_mapping->execute();
-      ( $$mapping_set_id_ref ) = $sth_max_mapping->fetchrow_array();
+      ( $$mapping_set_id_ref ) = $old_sth_max_mapping->fetchrow_array();
       if ($$mapping_set_id_ref) {
 	print (" There are mappings in the previous version of the database, need to do something with them ?\n");
       }
