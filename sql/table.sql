@@ -8,7 +8,8 @@
 
 
 
-/**@table meta
+/**
+@table meta
 @desc Stores data about the data in the current schema. Taxonomy information, version information and the default value for the type column in the assembly table are stored here.
 Unlike other tables, data in the meta table is stored as key-value pairs. Also stores (via assembly.mapping keys) the relationships between co-ordinate systems in the assembly table.
 
@@ -57,7 +58,8 @@ INSERT INTO meta (species_id, meta_key, meta_value) VALUES
   (NULL, 'patch', 'patch_61_62_c.sql|db_name_db_release_idx'),
   (NULL, 'patch', 'patch_61_62_d.sql|remove_display_label_linkable');
 
-/**@table alt_allele
+/**
+@table alt_allele
 @desc Stores information about genes on haplotypes that may be orthologous.
 
 @alt_allele_id          Primary key, internal identifier.
@@ -75,7 +77,8 @@ CREATE TABLE alt_allele (
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
 
-/**@table analysis
+/**
+@table analysis
 @desc Usually describes a program and some database that together are used to create a feature on a piece of sequence.
 Each feature is marked with an analysis_id. The most important column is logic_name, which is used by the webteam to render a feature correctly on contigview (or even retrieve the right feature).
 Logic_name is also used in the pipeline to identify the analysis which has to run in a given status of the pipeline.
@@ -123,7 +126,8 @@ CREATE TABLE analysis (
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
 
-/**@table analysis_description
+/**
+@table analysis_description
 @desc Allows the storage of a textual description of the analysis, as well as a "display label", primarily for the EnsEMBL web site.
 
 @column analysis_id            Primary key, internal identifier. Foreign key references to the @link analysis table.
@@ -148,7 +152,8 @@ CREATE TABLE analysis_description (
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
 
-/**@table assembly
+/**
+@table assembly
 @desc The assembly table states, which parts of seq_regions are exactly equal. It enables to transform coordinates between seq_regions.
 Typically this contains how chromosomes are made of contigs, clones out of contigs, and chromosomes out of supercontigs.
 It allows you to artificially chunk chromosome sequence into smaller parts.
@@ -191,7 +196,8 @@ CREATE TABLE assembly (
 
 
 
-/**@table assembly_exception
+/**
+@table assembly_exception
 @desc Allows multiple sequence regions to point to the same sequence, analogous to a symbolic link in a filesystem pointing to the actual file.
 This mechanism has been implemented specifically to support haplotypes and PARs, but may be useful for other similar structures in the future.
 
@@ -232,7 +238,8 @@ CREATE TABLE assembly_exception (
 
 
 
-/**@table attrib_type 
+/**
+@table attrib_type 
 @desc Provides codes, names and desctriptions of attribute types.
 
 @column attrib_type_id       Primary key, internal identifier.
@@ -258,7 +265,8 @@ CREATE TABLE attrib_type (
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
 
-/**@table coord_system
+/**
+@table coord_system
 @desc Stores information about the available co-ordinate systems for the species identified through the species_id field.
 Note that for each species, there must be one co-ordinate system that has the attribute "top_level" and one that has the attribute "sequence_level".
 
@@ -293,7 +301,8 @@ CREATE TABLE coord_system (
 
 
 
-/**@table density_feature
+/**
+@table density_feature
 @desc Describes features representing a density, or precentage coverage etc. in a given region.
 
 @column density_feature_id        Primary key, internal identifier.
@@ -324,7 +333,8 @@ CREATE TABLE density_feature (
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
 
-/**@table density_type
+/**
+@table density_type
 @desc Describes type representing a density, or percentage
 coverage etc. in a given region.
 
@@ -354,7 +364,8 @@ CREATE TABLE density_type (
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
 
-/**@table dependent_xref
+/**
+@table dependent_xref
 @desc Describes dependent external references which can't be directly mapped to Ensembl entities.
 They are linked to primary external references instead.
 
@@ -382,7 +393,8 @@ CREATE TABLE dependent_xref(
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
 
-/**@table ditag
+/**
+@table ditag
 @desc Represents a ditag object in the EnsEMBL database.
 Corresponds to original tag containing the full sequence. This can be a single piece of sequence like CAGE tags or a ditag with concatenated sequence from 5' and 3' end like GIS or GSC tags.
 This data is available as a DAS track in ContigView on the EnsEMBL web site.
@@ -410,7 +422,8 @@ CREATE TABLE ditag (
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 
 
-/**@table ditag_feature
+/**
+@table ditag_feature
 @desc Describes where ditags hit on the genome. Represents a mapped ditag object in the EnsEMBL database. These are the original tags separated into start ("L") and end ("R") parts if applicable, successfully aligned to the genome.
 Two DitagFeatures usually relate to one parent Ditag. Alternatively there are CAGE tags e.g. which only have a 5\'tag ("F"). 
 
@@ -457,7 +470,8 @@ CREATE TABLE ditag_feature (
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 
 
-/**@table dna
+/**
+@table dna
 @desc Contains DNA sequence. This table has a 1:1 relationship with the contig table.
 
 @column seq_region_id           Primary key, internal identifier. Foreign key references to the @link seq_region table.
@@ -478,7 +492,8 @@ CREATE TABLE dna (
 
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM MAX_ROWS=750000 AVG_ROW_LENGTH=19000;
 
-/**@table dnac
+/**
+@table dnac
 @desc Contains equivalent data to dna table, but 4 letters of DNA code are represented by a single binary character, based on 2 bit encoding.
 
 @column seq_region_id           Primary key, internal identifier. Foreign key references to the @link seq_region table.
@@ -499,7 +514,8 @@ CREATE TABLE dnac (
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM MAX_ROWS=750000 AVG_ROW_LENGTH=19000;
 
 
-/**@table dna_align_feature
+/**
+@table dna_align_feature
 @desc Stores DNA sequence alignments generated from Blast (or Blast-like) comparisons.
 
 @column dna_align_feature_id        Primary key, internal identifier.
@@ -557,7 +573,8 @@ CREATE TABLE dna_align_feature (
 
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM MAX_ROWS=100000000 AVG_ROW_LENGTH=80;
 
-/**@table exon
+/**
+@table exon
 @desc Stores data about exons. Associated with transcripts via exon_transcript. Allows access to contigs seq_regions.
 Note seq_region_start is always less that seq_region_end, i.e. when the exon is on the other strand the seq_region_start is specifying the 3prime end of the exon.
 
@@ -591,7 +608,8 @@ CREATE TABLE exon (
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
 
-/**@table exon_stable_id
+/**
+@table exon_stable_id
 @desc Relates exon IDs in this release to release-independent stable identifiers.
 
 @column exon_id              Primary key, internal identifier.
@@ -620,7 +638,8 @@ CREATE TABLE exon_stable_id (
 
 
 
-/**@table exon_transcript
+/**
+@table exon_transcript
 @desc Relationship table linking exons with transcripts. The rank column indicates the 5' to 3' position of the exon within the transcript, i.e. a rank of 1 means the exon is the 5' most within this transcript.
 
 @column exon_id                Composite key. Foreign key references to the @link exon table. 
@@ -646,7 +665,8 @@ CREATE TABLE exon_transcript (
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
 
-/**@table external_db
+/**
+@table external_db
 @desc Stores data about the external databases in which the objects described in the xref table are stored.
 
 @column external_db_id              Primary key, internal identifier.
@@ -688,7 +708,8 @@ CREATE TABLE external_db (
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
 
-/**@table external_synonym
+/**
+@table external_synonym
 @desc Some xref objects can be referred to by more than one name. This table relates names to xref IDs.
 
 @column xref_id           Primary key, internal identifier.
@@ -711,7 +732,8 @@ CREATE TABLE external_synonym (
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
 
-/**@table gene
+/**
+@table gene
 @desc Allows transcripts to be related to genes.
 
 @column gene_id                     Primary key, internal identifier.
@@ -759,7 +781,8 @@ CREATE TABLE gene (
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
 
-/**@table gene_archive
+/**
+@table gene_archive
 @desc Contains a snapshot of the stable IDs associated with genes deleted or changed between releases. Includes gene, transcript and translation stable IDs. 
 
 @column gene_stable_id              Foreign key references to the @link gene_stable_id table. 
@@ -796,7 +819,8 @@ CREATE TABLE gene_archive (
 
 
 
-/**@table gene_attrib
+/**
+@table gene_attrib
 @desc Enables storage of attributes that relate to genes.
 
 @column gene_id             Foreign key references to the @link gene table.
@@ -821,7 +845,8 @@ CREATE TABLE gene_attrib (
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
 
-/**@table gene_stable_id
+/**
+@table gene_stable_id
 @desc Relates gene IDs in this release to release-independent stable identifiers.
 
 @column gene_id             Primary key, internal identifier. Foreign key references to the @link gene table.
@@ -849,7 +874,8 @@ CREATE TABLE gene_stable_id (
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
 
-/**@table identity_xref
+/**
+@table identity_xref
 @desc Describes how well a particular xref object matches the EnsEMBL object.
 
 @column object_xref_id        Primary key, internal identifier. Foreign key references to the @link object_xref table.
@@ -888,7 +914,8 @@ CREATE TABLE identity_xref (
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
 
-/**@table interpro
+/**
+@table interpro
 @desc Allows storage of links to the InterPro database. InterPro is a database of protein families, domains and functional sites in which identifiable features found in known proteins can be applied to unknown protein sequences. 
 
 @column interpro_ac               InterPro protein accession number.
@@ -911,7 +938,8 @@ CREATE TABLE interpro (
 
 
 
-/**@table karyotype
+/**
+@table karyotype
 @desc Describes bands that can be stained on the chromosome.
 
 @column karyotype_id            Primary key, internal identifier.
@@ -941,7 +969,8 @@ CREATE TABLE karyotype (
 
 
 
-/**@table map
+/**
+@table map
 @desc Stores the names of different genetic or radiation hybrid maps, for which there is marker map information.
 
 @column map_id               Primary key, internal identifier.
@@ -963,7 +992,8 @@ CREATE TABLE map (
 
 
 
-/**@table mapping_session
+/**
+@table mapping_session
 @desc Stores details of ID mapping sessions - a mapping session represents the session when stable IDs where mapped from one database to another. Details of the "old" and "new" databases are stored. 
 
 @column mapping_session_id          Primary key, internal identifier.
@@ -996,7 +1026,8 @@ CREATE TABLE mapping_session (
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
 
-/**@table mapping_set
+/**
+@table mapping_set
 @desc Table structure for seq_region mapping between releases.
 
 @column mapping_set_id            Primary key, internal identifier.
@@ -1016,7 +1047,8 @@ CREATE TABLE mapping_set (
 
 
 
-/**@table marker
+/**
+@table marker
 @desc Stores data about the marker itself. A marker in Ensembl consists of a pair of primer sequences, an expected product size and a set of associated identifiers known as synonyms.
 
 @column marker_id                       Primary key, internal identifier.
@@ -1053,7 +1085,8 @@ CREATE TABLE marker (
 
 
 
-/**@table marker_feature
+/**
+@table marker_feature
 @desc Used to describe positions of markers on the assembly. Markers are placed on the genome electronically using an analysis program.
 
 @column marker_feature_id       Primary key, internal identifier.
@@ -1089,7 +1122,8 @@ CREATE TABLE marker_feature (
 
 
 
-/**@table marker_map_location
+/**
+@table marker_map_location
 @desc Stores map locations (genetic, radiation hybrid and in situ hybridization) for markers obtained from experimental evidence. 
 
 @column marker_id                Primary key, internal identifier.
@@ -1120,7 +1154,8 @@ CREATE TABLE marker_map_location (
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
 
-/**@table marker_synonym
+/**
+@table marker_synonym
 @desc Stores alternative names for markers, as well as their sources.
 
 @column marker_synonym_id          Primary key, internal identifier.
@@ -1148,7 +1183,8 @@ CREATE TABLE marker_synonym (
 
 
 
-/**@table misc_attrib
+/**
+@table misc_attrib
 @desc Stores arbitrary attributes about the features in the misc_feature table.
 
 @column misc_feature_id     Foreign key references to the @link misc_feature table.       
@@ -1173,7 +1209,8 @@ CREATE TABLE misc_attrib (
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
 
-/**@table misc_feature
+/**
+@table misc_feature
 @desc Allows for storage of arbitrary features.
 
 @column misc_feature_id             Primary key, internal identifier.
@@ -1202,7 +1239,8 @@ CREATE TABLE misc_feature (
 
 
 
-/**@table misc_feature_misc_set
+/**
+@table misc_feature_misc_set
 @desc This table classifies features into distinct sets.
 
 @column misc_feature_id        Primary key, internal identifier. Foreign key references to the @link misc_feature table.
@@ -1226,7 +1264,8 @@ CREATE TABLE misc_feature_misc_set (
 
 
 
-/**@table misc_set
+/**
+@table misc_set
 @desc Defines "sets" that the features held in the misc_feature table can be grouped into.
 
 @column misc_set_id           Primary key, internal identifier.
@@ -1255,7 +1294,8 @@ CREATE TABLE misc_set (
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
 
-/**@table meta_coord
+/**
+@table meta_coord
 @desc Describes which co-ordinate systems the different feature tables use.
 
 @column table_name              Ensembl database table name.
@@ -1279,7 +1319,8 @@ CREATE TABLE meta_coord (
 
 
 
-/**@table object_xref
+/**
+@table object_xref
 @desc Describes links between EnsEMBL objects and objects held in external databases.
 The EnsEMBL object can be one of several types; the type is held in the ensembl_object_type column.
 The ID of the particular EnsEMBL gene, translation or whatever is given in the ensembl_id column.
@@ -1321,7 +1362,8 @@ CREATE TABLE object_xref (
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
 
-/**@table ontology_xref
+/**
+@table ontology_xref
 @desc This table associates Evidence Tags to the relationship between EnsEMBL objects and ontology accessions (primarily GO accessions).
 The relationship to GO that is stored in the database is actually derived through the relationship of EnsEMBL peptides to SwissProt peptides, i.e. the relationship is derived like this:
 
@@ -1360,7 +1402,8 @@ CREATE TABLE ontology_xref (
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
 
-/**@table peptide_archive
+/**
+@table peptide_archive
 @desc Contains the peptides for deleted or changed translations.
 
 @column peptide_archive_id         Primary key, internal identifier.
@@ -1383,7 +1426,8 @@ CREATE TABLE peptide_archive (
 
 
 
-/**@table prediction_exon
+/**
+@table prediction_exon
 @desc Stores exons that are predicted by ab initio gene finder programs. Unlike EnsEMBL exons they are not supported by any evidence.
 
 @column prediction_exon_id              Primary key, internal identifier.
@@ -1422,7 +1466,8 @@ CREATE TABLE prediction_exon (
 
 
 
-/**@table prediction_transcript
+/**
+@table prediction_transcript
 @desc Stores transcripts that are predicted by ab initio gene finder programs (e.g. genscan, SNAP). Unlike EnsEMBL transcripts they are not supported by any evidence. 
 
 @column prediction_transcript_id        Primary key, internal identifier.
@@ -1454,7 +1499,8 @@ CREATE TABLE prediction_transcript (
 
 
 
-/**@table protein_align_feature
+/**
+@table protein_align_feature
 @desc Stores translation alignments generated from Blast (or Blast-like) comparisons.
 
 @column protein_align_feature_id    Primary key, internal identifier.
@@ -1509,7 +1555,8 @@ CREATE TABLE protein_align_feature (
 
 
 
-/**@table protein_feature
+/**
+@table protein_feature
 @desc Describes features on the translations (as opposed to the DNA sequence itself), i.e. parts of the peptide. In peptide co-ordinates rather than contig co-ordinates. 
 
 @column protein_feature_id          Primary key, internal identifier.
@@ -1553,7 +1600,8 @@ CREATE TABLE protein_feature (
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
 
-/**@table qtl
+/**
+@table qtl
 @desc Describes the markers (of which there may be up to three) which define Quantitative Trait Loci.
 Note that QTL is a statistical technique used to find links between certain expressed traits and regions in a genetic map.
 A QTL is defined by three markers, two flanking and one peak (optional) marker. Its a region (or more often a group of regions) which is likely to affect the phenotype (trait) described in this Qtl. 
@@ -1587,7 +1635,8 @@ CREATE TABLE qtl (
 
 
 
-/**@table qtl_feature
+/**
+@table qtl_feature
 @desc Describes Quantitative Trail Loci (QTL) positions as obtained from inbreeding experiments. Note the values in this table are in chromosomal co-ordinates. Also, this table is not populated for all schemas. 
 
 
@@ -1621,7 +1670,8 @@ CREATE TABLE qtl_feature (
 
 
 
-/**@table qtl_synonym 
+/**
+@table qtl_synonym 
 @desc Describes alternative names for Quantitative Trait Loci (QTLs).
 
 @column qtl_synonym_id          Primary key, internal identifier.
@@ -1646,7 +1696,8 @@ CREATE TABLE qtl_synonym (
 
 
 
-/**@table repeat_consensus
+/**
+@table repeat_consensus
 @desc Stores consensus sequences obtained from analysing repeat features.
 
 @column repeat_consensus_id              Primary key, internal identifier.
@@ -1676,7 +1727,8 @@ CREATE TABLE repeat_consensus (
 
 
 
-/**@table repeat_feature
+/**
+@table repeat_feature
 @desc Describes sequence repeat regions.
 
 @column repeat_feature_id           Primary key, internal identifier.
@@ -1715,7 +1767,8 @@ CREATE TABLE repeat_feature (
 
 
 
-/**@table seq_region
+/**
+@table seq_region
 @desc Stores information about sequence regions. The primary key is used as a pointer into the dna table so that actual sequence can be obtained, and the coord_system_id allows sequence regions of multiple types to be stored.
 Clones, contigs and chromosomes are all now stored in the seq_region table. Contigs are stored with the co-ordinate system 'contig'.
 The relationship between contigs and clones is stored in the assembly table. The relationships between contigs and chromosomes, and between contigs and supercontigs, are stored in the assembly table. 
@@ -1747,7 +1800,8 @@ CREATE TABLE seq_region (
 
 
 
-/**@table seq_region_attrib
+/**
+@table seq_region_attrib
 @desc Allows "attributes" to be defined for certain seq_regions. Provides a way of storing extra information about particular seq_regions without adding extra columns to the seq_region table. e.g.
 
 @column seq_region_id       Foreign key references to the @link seq_region table.
@@ -1775,7 +1829,8 @@ CREATE TABLE seq_region_attrib (
 
 
 
-/**@table seq_region_mapping
+/**
+@table seq_region_mapping
 @desc Describes how the core seq_region_id have changed from release to release.
 
 @column external_seq_region_id            Foreign key references to the @link seq_region table.
@@ -1797,7 +1852,8 @@ CREATE TABLE seq_region_mapping (
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 
 
-/**@table seq_region_synonym
+/**
+@table seq_region_synonym
 @desc Allows for storing multiple names for sequence regions.
 
 @column seq_region_synonym_id           Primary key, internal identifier.
@@ -1821,7 +1877,8 @@ CREATE TABLE seq_region_synonym (
 
 
 
-/**@table simple_feature
+/**
+@table simple_feature
 @desc Describes general genomic features that don't fit into any of the more specific feature tables.
 
 @column simple_feature_id       Primary key, internal identifier.  
@@ -1855,7 +1912,8 @@ CREATE TABLE simple_feature (
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 
 
-/**@table splicing_event
+/**
+@table splicing_event
 @desc Represents alternative splicing events. 
 
 @column splicing_event_id       Primary key, internal identifier.
@@ -1888,7 +1946,8 @@ CREATE TABLE splicing_event (
 )  COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
 
-/**@table splicing_event_feature
+/**
+@table splicing_event_feature
 @desc Represents alternative splicing event features. 
 
 @column splicing_event_feature_id           Primary key, internal identifier.
@@ -1925,7 +1984,8 @@ CREATE TABLE splicing_event_feature (
 
 
 
-/**@table splicing_transcript_pair
+/**
+@table splicing_transcript_pair
 @desc Describes a pair of spliced transcripts in a splicing event. 
 
 @column splicing_transcript_pair_id             Primary key, internal identifier.
@@ -1951,7 +2011,8 @@ CREATE TABLE splicing_transcript_pair (
 
 
 
-/**@table stable_id_event
+/**
+@table stable_id_event
 @desc Represents what happened to all gene, transcript and translation stable IDs during a mapping session.
 This includes which IDs where deleted, created and related to each other. Each event is represented by one or more rows in the table. 
 
@@ -1987,7 +2048,8 @@ CREATE TABLE stable_id_event (
 
 
 
-/**@table supporting_feature
+/**
+@table supporting_feature
 @desc Describes the exon prediction process by linking exons to DNA or protein alignment features.
 As in several other tables, the feature_id column is a foreign key; the feature_type column specifies which table feature_id refers to. 
 
@@ -2011,7 +2073,8 @@ CREATE TABLE supporting_feature (
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM MAX_ROWS=100000000 AVG_ROW_LENGTH=80;
 
 
-/**@table transcript
+/**
+@table transcript
 @desc Stores information about transcripts. Has seq_region_start, seq_region_end and seq_region_strand for faster retrieval and to allow storage independently of genes and exons.
 Note that a transcript is usually associated with a translation, but may not be, e.g. in the case of pseudogenes and RNA genes (those that code for RNA molecules). 
 
@@ -2060,7 +2123,8 @@ CREATE TABLE transcript (
 
 
 
-/**@table transcript_attrib
+/**
+@table transcript_attrib
 @desc Enables storage of attributes that relate to transcripts.
 
 @column transcript_id       Foreign key references to the @link transcript table.
@@ -2086,7 +2150,8 @@ CREATE TABLE transcript_attrib (
 
 
 
-/**@table transcript_stable_id
+/**
+@table transcript_stable_id
 @desc Relates transcript IDs in this release to release-independent stable identifiers.
 
 @column transcript_id       Primary key, internal identifier. Foreign key references to the @link transcript table.
@@ -2115,7 +2180,8 @@ CREATE TABLE transcript_stable_id (
 
 
 
-/**@table transcript_supporting_feature
+/**
+@table transcript_supporting_feature
 @desc Describes the exon prediction process by linking transcripts to DNA or protein alignment features.
 As in several other tables, the feature_id column is a foreign key; the feature_type column specifies which table feature_id refers to. 
 
@@ -2138,7 +2204,8 @@ CREATE TABLE transcript_supporting_feature (
 
 
 
-/**@table translation
+/**
+@table translation
 @desc Describes which parts of which exons are used in translation. The seq_start and seq_end columns are 1-based offsets into the relative coordinate system of start_exon_id and end_exon_id. i.e, if the translation starts at the first base of the exon, seq_start would be 1. Transcripts are related to translations by the transcript_id key in this table. 
 
 @column translation_id              Primary key, internal identifier.
@@ -2167,7 +2234,8 @@ CREATE TABLE translation (
 
 
 
-/**@table translation_attrib
+/**
+@table translation_attrib
 @desc Enables storage of attributes that relate to translations.
 
 @column translation_id      Foreign key references to the @link transcript table.
@@ -2192,7 +2260,8 @@ CREATE TABLE translation_attrib (
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
 
-/**@table translation_stable_id
+/**
+@table translation_stable_id
 @desc Relates translation IDs in this release to release-independent stable identifiers.
 
 @column translation_id      Primary key, internal identifier. Foreign key references to the @link translation table.
@@ -2222,7 +2291,8 @@ CREATE TABLE translation_stable_id (
 
 
 
-/**@table unconventional_transcript_association
+/**
+@table unconventional_transcript_association
 @desc Describes transcripts that do not link to a single gene in the normal way.
 
 @column transcript_id            Foreign key references to the @link transcript table.
@@ -2244,7 +2314,8 @@ CREATE TABLE unconventional_transcript_association (
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 
 
-/**@table unmapped_object
+/**
+@table unmapped_object
 @desc Describes why a particular external entity was not mapped to an ensembl one.
 
 @column unmapped_object_id         Primary key, internal identifier.
@@ -2287,7 +2358,8 @@ CREATE TABLE unmapped_object (
 
 
 
-/**@table unmapped_reason
+/**
+@table unmapped_reason
 @desc Describes the reason why a mapping failed.
 
 @column unmapped_reason_id           Primary key, internal identifier.
@@ -2309,7 +2381,8 @@ CREATE TABLE unmapped_reason (
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
 
-/**@table xref
+/**
+@table xref
 @desc Holds data about objects which are external to EnsEMBL, but need to be associated with EnsEMBL objects.
 Information about the database that the external object is stored in is held in the external_db table entry referred to by the external_db column. 
 
