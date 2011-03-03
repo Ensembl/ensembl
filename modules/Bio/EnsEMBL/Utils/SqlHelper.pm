@@ -588,7 +588,7 @@ sub transaction {
    
   my ($callback, $retry, $pause, $condition) = rearrange([qw(callback retry pause condition)], @args);
   
-  throw('Callback was not a CodeRef. Got a reference of type ['.ref($callback).']') 
+  throw('-CALLBACK was not a CodeRef. Got a reference of type ['.ref($callback).']. Check your parameters') 
     unless check_ref($callback, 'CODE');
   
   #Setup defaults
