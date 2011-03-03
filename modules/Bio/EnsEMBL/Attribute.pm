@@ -49,10 +49,10 @@ B<Bio::EnsEMBL::DBSQL::AttributeAdaptor>.
 
 =cut
 
+package Bio::EnsEMBL::Attribute;
+
 use strict;
 use warnings;
-
-package Bio::EnsEMBL::Attribute;
 
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 
