@@ -49,13 +49,20 @@ sub add_xref {
     }
   }
 
-  $add_xref_sth->execute( $source_id,           $species_id,
-                          $xref->{'accession'}, $xref->{'chromosome'},
-                          $xref->{'strand'},    $xref->{'txStart'},
-                          $xref->{'txEnd'},     $xref->{'cdsStart'},
-                          $xref->{'cdsEnd'},    $xref->{'exonStarts'},
-                          $xref->{'exonEnds'}
-  ) or croak( $add_xref_sth->errstr() );
-}
+  $add_xref_sth->bind_param( 1,  $source_id,            SQL_INTEGER );
+  $add_xref_sth->bind_param( 2,  $species_id,           SQL_INTEGER );
+  $add_xref_sth->bind_param( 3,  $xref->{'accession'},  SQL_VARCHAR );
+  $add_xref_sth->bind_param( 4,  $xref->{'chromosome'}, SQL_VARCHAR );
+  $add_xref_sth->bind_param( 5,  $xref->{'strand'},     SQL_INTEGER );
+  $add_xref_sth->bind_param( 6,  $xref->{'txStart'},    SQL_INTEGER );
+  $add_xref_sth->bind_param( 7,  $xref->{'txEnd'},      SQL_INTEGER );
+  $add_xref_sth->bind_param( 8,  $xref->{'cdsStart'},   SQL_INTEGER );
+  $add_xref_sth->bind_param( 9,  $xref->{'cdsEnd'},     SQL_INTEGER );
+  $add_xref_sth->bind_param( 10, $xref->{'exonStarts'}, SQL_VARCHAR );
+  $add_xref_sth->bind_param( 11, $xref->{'exonEnds'},   SQL_VARCHAR );
+
+  $add_xref_sth->execute();
+    or croak( $add_xref_sth->errstr() );
+} ## end sub add_xref
 
 1;
