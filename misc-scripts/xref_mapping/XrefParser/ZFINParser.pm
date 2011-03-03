@@ -61,6 +61,46 @@ sub run {
 #ZDB-GENE-000112-34      couptf4 O42534
 
 
+  my %description;
+
+  my $dbi = $self->dbi();
+
+
+  my $sql = "insert into synonym (xref_id, synonym) values (?, ?)";
+  my $add_syn_sth = $dbi->prepare($sql);    
+  
+#  my $syn_hash = $self->get_zfin_synonyms();
+  
+
+
+  #get the source ids for HGNC refseq, entrezgene and unitprot
+  $sql = 'select source_id, priority_description from source where name like "ZFIN_ID"';
+  my $sth = $dbi->prepare($sql);
+  
+  $sth->execute();
+
+
+  my ($hgnc_source_id, $desc);
+  $sth->bind_columns(\$hgnc_source_id, \$desc);
+  my @arr;
+  while($sth->fetch()){
+    push @arr, $hgnc_source_id;
+  }
+  $sth->finish;
+  
+  $sql = "select accession, label, version,  description from xref where source_id in (".join(", ",@arr).")";
+#  print "$sql\n";;
+  $sth = $dbi->prepare($sql);
+  $sth->execute();
+  my ($acc, $lab, $ver);
+  my $hgnc_loaded_count = 0;
+  $sth->bind_columns(\$acc, \$lab, \$ver, \$desc);
+  while (my @row = $sth->fetchrow_array()) {
+    $description{$acc} = $desc if(defined($desc));
+    $hgnc_loaded_count++;
+  }
+  $sth->finish;
+
   my $spcount =0;
   my $rscount =0;
   my $mismatch=0;
@@ -69,7 +109,7 @@ sub run {
     chomp;
     my ($zfin, $label, $acc) = split (/\s+/,$_);
     if(defined($swiss{$acc})){
-      XrefParser::BaseParser->add_to_xrefs($swiss{$acc},$zfin,'',$label,'','',$source_id,$species_id);
+      XrefParser::BaseParser->add_to_xrefs($swiss{$acc},$zfin,'',$label,$description{$zfin},'',$source_id,$species_id);
       $spcount++;
     }
     else{
@@ -94,7 +134,7 @@ sub run {
     chomp;
     my ($zfin, $label, $acc) = split (/\s+/,$_);
     if(defined($refseq{$acc})){
-      XrefParser::BaseParser->add_to_xrefs($refseq{$acc},$zfin,'',$label,'','',$source_id,$species_id);
+      XrefParser::BaseParser->add_to_xrefs($refseq{$acc},$zfin,'',$label,$description{$zfin},'',$source_id,$species_id);
       $rscount++;
     }
     else{
@@ -118,11 +158,24 @@ sub run {
 
   my $syncount = 0;
 
+#  my $dbi = $self-> dbi();
+#  my $sth =  
+  $sth = $dbi->prepare('SELECT source_id from source where name like "ZFIN_ID"');
+
+  $sth->execute;
+  my $s1;
+  $sth->bind_columns(\$s1);
+  my $sources;
+  while($sth->fetch()){
+    push @$sources, $s1;
+  }
+  $sth->finish;
+
   while ( $_ = $zfin_io->getline() ) {
     chomp;
     my ($acc, undef, undef, $syn) = split (/\t/,$_);
     if(defined($zfin{$acc})){
-      XrefParser::BaseParser->add_to_syn($acc, $source_id, $syn, $species_id);
+      XrefParser::BaseParser->add_to_syn_for_mult_sources($acc, $sources, $syn, $species_id);
       $syncount++;
     }
   }
