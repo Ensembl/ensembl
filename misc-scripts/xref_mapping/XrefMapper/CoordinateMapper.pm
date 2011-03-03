@@ -55,9 +55,11 @@ sub run_coordinatemapping {
   my ( $self, $do_upload) = @_;
 
 
-  my $sth_stat = $self->xref->dbc->prepare("insert into process_status (status, date) values('coordinate_xrefs_started',now())");
+  my $sth_stat = $self->xref->dbc->prepare(
+                           "INSERT INTO process_status (status, date) "
+                         . "VALUES('coordinate_xrefs_started',now())" );
   $sth_stat->execute();
-  $sth_stat->finish;
+  $sth_stat->finish();
 
   my $xref_db = $self->xref();
   my $core_db = $self->core();
@@ -69,10 +71,12 @@ sub run_coordinatemapping {
 
   # We only do coordinate mapping for mouse and human for now.
   if ( !( $species eq 'mus_musculus' || $species eq 'homo_sapiens' ) ) {
-#  if ( !( $species eq 'mus_musculus') ) {
-    my $sth_stat = $self->xref->dbc->prepare("insert into process_status (status, date) values('coordinate_xref_finished',now())");
+    #  if ( !( $species eq 'mus_musculus') ) {
+    my $sth_stat = $self->xref->dbc->prepare(
+                          "INSERT INTO process_status (status, date) "
+                        . "VALUES ('coordinate_xref_finished',now())" );
     $sth_stat->execute();
-    $sth_stat->finish;
+    $sth_stat->finish();
     return;
   }
   print "species = $species ($species_id))\n";
@@ -133,7 +137,9 @@ sub run_coordinatemapping {
   );
 
   my $analysis_sth = $core_dbh->prepare($analysis_sql);
-  $analysis_sth->execute($analysis_params);
+  $analysis_sth->bind_param( 1, $analysis_params, SQL_VARCHAR );
+
+  $analysis_sth->execute();
 
   my $analysis_id = $analysis_sth->fetchall_arrayref()->[0][0];
   if ( !defined($analysis_id) ) {
@@ -174,13 +180,19 @@ sub run_coordinatemapping {
                        'SELECT MAX(analysis_id) FROM analysis')->[0][0];
         log_progress( "Last used analysis_id is %d\n", $analysis_id );
 
-        my $sql = 'INSERT INTO analysis '
-          . 'VALUES(?, now(), ?, \N, \N, \N, ?, \N, \N, ?, ?, \N, \N, \N)';
+        my $sql =
+            'INSERT INTO analysis '
+          . 'VALUES(?, now(), ?, \N, \N, \N, ?, '
+          . '\N, \N, ?, ?, \N, \N, \N)';
         my $sth = $core_dbh->prepare($sql);
 
-        $sth->execute( ++$analysis_id,   'XrefCoordinateMapping',
-                       'xref_mapper.pl', $analysis_params,
-                       'CoordinateMapper.pm' );
+        $sth->bind_param( 1, ++$analysis_id,          SQL_INTEGER );
+        $sth->bind_param( 2, 'XrefCoordinateMapping', SQL_VARCHAR );
+        $sth->bind_param( 3, 'xref_mapper.pl',        SQL_VARCHAR );
+        $sth->bind_param( 4, $analysis_params,        SQL_VARCHAR );
+        $sth->bind_param( 5, 'CoordinateMapper.pm',   SQL_VARCHAR );
+
+        $sth->execute();
       }
     } ## end else [ if ( defined($analysis_id...
   } ## end if ( !defined($analysis_id...
@@ -204,7 +216,9 @@ sub run_coordinatemapping {
   );
 
   my $xref_sth = $xref_dbh->prepare($xref_sql);
-  $xref_sth->execute($species_id);
+  $xref_sth->bind_param( 1, $species_id, SQL_INTEGER );
+
+  $xref_sth->execute();
 
   my $external_db_id;
 
@@ -252,9 +266,9 @@ sub run_coordinatemapping {
     FROM      coordinate_xref
     WHERE     species_id = ?
     AND       chromosome = ? AND strand   = ?
-    AND       ((txStart >= ? AND txStart <= ?)    -- txStart in region
-    OR         (txEnd   >= ? AND txEnd   <= ?)    -- txEnd in region
-    OR         (txStart <= ? AND txEnd   >= ?))   -- region is contained
+    AND       ((txStart BETWEEN ? AND ?)        -- txStart in region
+    OR         (txEnd   BETWEEN ? AND ?)        -- txEnd in region
+    OR         (txStart <= ? AND txEnd >= ?))   -- region is fully contained
     ORDER BY  accession
   );
 
@@ -605,9 +619,11 @@ sub run_coordinatemapping {
     upload_data( 'xref', $xref_filename, $external_db_id, $core_dbh );
   }
 
-  $sth_stat = $self->xref->dbc->prepare("insert into process_status (status, date) values('coordinate_xref_finished',now())");
+  $sth_stat = $self->xref->dbc->prepare(
+                          "INSERT INTO process_status (status, date) "
+                        . "VALUES ('coordinate_xref_finished',now())" );
   $sth_stat->execute();
-  $sth_stat->finish;
+  $sth_stat->finish();
 
   $self->biomart_fix("UCSC","Translation","Gene");
   $self->biomart_fix("UCSC","Transcript","Gene");
