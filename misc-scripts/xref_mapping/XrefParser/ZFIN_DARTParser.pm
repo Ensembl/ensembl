@@ -82,6 +82,10 @@ sub run_script {
   }
   my $vega_dbc;
   my $core_dbc;
+
+
+
+
   if(defined($vdbname)){
     print "Using $host $vdbname for Vega and $cdbname for Core\n";
     $vega_dbc = $self->dbi2($vhost, $vport, $vuser, $vdbname, $vpass);
@@ -131,7 +135,8 @@ sub run_script {
 
   my $sth = $core_dbc->prepare($sql) || die "Could not prepare for core $sql\n";
 
-  foreach my $external_db (qw(OTTT shares_CDS_and_UTR_with_OTTT shares_CDS_with_OTTT)){
+
+  foreach my $external_db (qw(Vega_transcript OTTT shares_CDS_and_UTR_with_OTTT shares_CDS_with_OTTT)){
     $sth->execute($external_db) or croak( $core_dbc->errstr());
     while ( my @row = $sth->fetchrow_array() ) {
       $ott_to_enst{$row[1]} = $row[0];
@@ -194,10 +199,10 @@ sub run_script {
   my ($acc, $lab, $ver);
   my $hgnc_loaded_count = 0;
   $sth->bind_columns(\$acc, \$lab, \$ver, \$desc);
-  while (my @row = $sth->fetchrow_array()) {
+  while ($sth->fetch()) {
     $label{$acc} = $lab;
     $version{$acc} = $ver;
-    $description{$acc} = $desc;
+    $description{$acc} = $desc if(defined($desc));
     $hgnc_loaded_count++;
   }
   $sth->finish;
@@ -218,30 +223,32 @@ sub run_script {
       my $stable_id = $ott_to_enst{$key};
 
       if(!defined($label{$hgnc})){
+#	print "ignoring ".$hgnc."\n";
 	$ignore_count++;
 	if($ignore_count < 10){
 	  $ignore_examples .= " ".$hgnc;
 	}
 	next;
       }
+
+      
+      my $version ="";
+      $line_count++;
       if(!defined($acc{$hgnc})){
-	$acc{$hgnc} = 1;
-	my $version ="";
-	$line_count++;
-	
 	my $xref_id = $self->add_xref($hgnc, $version{$hgnc} , $label{$hgnc}||$hgnc , $description{$hgnc}, $source_id, $species_id, "DIRECT");
+	$acc{$hgnc} = $xref_id;
 	$xref_count++;
-	
-	
-	$self->add_direct_xref($xref_id, $stable_id, "transcript", "");
-
-	if(defined($syn_hash->{$hgnc})){
-	  foreach my $syn (@{$syn_hash->{$hgnc}}){
-	    $add_syn_sth->execute($xref_id, $syn);
-	  }
-	}
-
       }
+	
+	
+      $self->add_direct_xref($acc{$hgnc}, $stable_id, "transcript", "");
+
+      if(defined($syn_hash->{$hgnc})){
+	foreach my $syn (@{$syn_hash->{$hgnc}}){
+	  $add_syn_sth->execute($acc{$hgnc}, $syn);
+	}
+      }
+      
     }
   }
   $add_syn_sth->finish;
