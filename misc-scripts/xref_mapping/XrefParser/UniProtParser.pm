@@ -403,9 +403,10 @@ sub create_xrefs {
       my %depe;
       
       if($gn =~ /Name=(\S+);/){
-	$gene_name = uc($1);
+	$depe{LABEL} = uc($1);
 	$depe{ACCESSION} = $xref->{ACCESSION};
-	$depe{LABEL} = $gene_name;
+	$gene_name = $depe{ACCESSION};
+
 	$depe{SOURCE_NAME} = "Uniprot_genename";
 	$depe{SOURCE_ID} = $dependent_sources{"Uniprot_genename"};
 	$depe{LINKAGE_SOURCE_ID} = $xref->{SOURCE_ID};
@@ -414,7 +415,7 @@ sub create_xrefs {
 	my @syn;
 	if($gn =~ /Synonyms=([^;]+);/){
 	  my $syn = $1;
-	  $syn =~ s/\s+//g;
+ 	  $syn =~ s/\s+//g;
 	  @syn= split(/,/,$syn);
 	  foreach my $ent (@syn){
 	    $GeneNameSynonym{$gene_name}{uc($ent)} = 1;
