@@ -125,13 +125,12 @@ sub run_script {
 
   my $hgnc_sql = 'select tsi.stable_id, x.dbprimary_acc from xref x, object_xref ox , transcript_stable_id tsi, gene g, external_db e, transcript t  where t.gene_id = g.gene_id and g.gene_id = ox.ensembl_id and tsi.transcript_id = t.transcript_id and e.external_db_id = x.external_db_id and x.xref_id = ox.xref_id and ox.ensembl_object_type = "Gene" and e.db_name like "HGNC"';
 
-
   my %ott_to_hgnc;
   my %ott_to_enst;
 
   my $sth = $core_dbc->prepare($sql) || die "Could not prepare for core $sql\n";
 
-  foreach my $external_db (qw(OTTT shares_CDS_and_UTR_with_OTTT shares_CDS_with_OTTT)){
+  foreach my $external_db (qw(OTTT shares_CDS_and_UTR_with_OTTT shares_CDS_with_OTTT Vega_transcript)){
     $sth->execute($external_db) or croak( $core_dbc->errstr());
     while ( my @row = $sth->fetchrow_array() ) {
       $ott_to_enst{$row[1]} = $row[0];
@@ -225,22 +224,20 @@ sub run_script {
 	next;
       }
       if(!defined($acc{$hgnc})){
-	$acc{$hgnc} = 1;
 	my $version ="";
 	$line_count++;
 	
 	my $xref_id = $self->add_xref($hgnc, $version{$hgnc} , $label{$hgnc}||$hgnc , $description{$hgnc}, $source_id, $species_id, "DIRECT");
+	$acc{$hgnc} = $xref_id;
 	$xref_count++;
+      }
 	
-	
-	$self->add_direct_xref($xref_id, $stable_id, "transcript", "");
+      $self->add_direct_xref($acc{$hgnc}, $stable_id, "transcript", "");
 
-	if(defined($syn_hash->{$hgnc})){
-	  foreach my $syn (@{$syn_hash->{$hgnc}}){
-	    $add_syn_sth->execute($xref_id, $syn);
-	  }
+      if(defined($syn_hash->{$hgnc})){
+	foreach my $syn (@{$syn_hash->{$hgnc}}){
+	  $add_syn_sth->execute($acc{$hgnc}, $syn);
 	}
-
       }
     }
   }
