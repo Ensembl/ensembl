@@ -19,6 +19,7 @@ sub run_script {
 
   my $user = "ensro";
   my $host = "ens-staging1";
+#  my $host = "ens-livemirror";
   my $port = 3306;
   my $dbname;
   my $pass;
@@ -63,7 +64,7 @@ sub run_script {
 
   my $count = 0;
 
-  my $xref_sth = $dbi2->prepare("SELECT t.accession, s.name, s.accession FROM term t, term s, aux_GO_goslim_goa_map ts WHERE ts.term_id = t.term_id and ts.subset_term_id = s.term_id");
+  my $xref_sth = $dbi2->prepare("SELECT t.accession, s.name, s.accession FROM term t, term s, aux_GO_goslim_generic_map ts WHERE ts.term_id = t.term_id and ts.subset_term_id = s.term_id");
 
   $xref_sth->execute() or croak( $dbi2->errstr() );
   while ( my @row = $xref_sth->fetchrow_array() ) {
@@ -79,7 +80,7 @@ sub run_script {
 
   }
   $xref_sth->finish;
-  print "Parsed GOSlim GOA identifiers from $file, added $count dependent_xrefs\n" if($verbose);
+  print "Parsed GOSlim Generic identifiers from $file, added $count dependent_xrefs\n" if($verbose);
 
   return 0;
 }
