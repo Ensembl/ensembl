@@ -46,19 +46,28 @@ sub run {
   
 
 #e.g.
-#ZDB-GENE-000112-30      couptf2 long_desc
+#ZDB-GENE-050102-6       WITHDRAWN:zgc:92147     WITHDRAWN:zgc:92147     0
+#ZDB-GENE-060824-3       apobec1 complementation factor  a1cf    0
+#ZDB-GENE-090212-1       alpha-2-macroglobulin-like      a2ml    15      ZDB-PUB-030703-1
+
 
   my $count =0;
+  my $withdrawn = 0;
   while ( <FH> ) {
     chomp;
-    my ($zfin, $label, $desc) = split (/\t/,$_);
+    my ($zfin, $desc, $label) = split (/\t/,$_);
 
-    $self->add_xref($zfin,"",$label,$desc,$source_id,$species_id,"MISC");
-    $count++;
+    if($label =~ /^WITHDRAWN/){
+      $withdrawn++;
+    }
+    else{
+      $self->add_xref($zfin,"",$label,$desc,$source_id,$species_id,"MISC");
+      $count++;
+    }
   }
 
   if($verbose){
-    print "\t$count xrefs added\n";
+    print "\t$count xrefs added, $withdrawn withdrawn entries ignored\n";
   }
   return 0;
 }
