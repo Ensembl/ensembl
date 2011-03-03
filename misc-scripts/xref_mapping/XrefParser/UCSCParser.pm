@@ -87,6 +87,8 @@ sub run {
   } ## end while ( defined( my $line...
   $data_io->close();
 
+  $self->dbi()->do("OPTIMIZE TABLE coordinate_xref");
+
   return 0;
 } ## end sub run
 
