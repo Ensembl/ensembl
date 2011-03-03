@@ -341,11 +341,17 @@ sub run_coordinatemapping {
         #---------------------------------------------------------------
 
         my $sth = $xref_dbh->prepare_cached($sql);
-        $sth->execute( $species_id,        $chr_name,
-                       $gene->strand(),    $transcript->start(),
-                       $transcript->end(), $transcript->start(),
-                       $transcript->end(), $transcript->start(),
-                       $transcript->end() );
+        $sth->bind_param( 1, $species_id,          SQL_INTEGER );
+        $sth->bind_param( 2, $chr_name,            SQL_VARCHAR );
+        $sth->bind_param( 3, $gene->strand(),      SQL_INTEGER );
+        $sth->bind_param( 4, $transcript->start(), SQL_INTEGER );
+        $sth->bind_param( 5, $transcript->end(),   SQL_INTEGER );
+        $sth->bind_param( 6, $transcript->start(), SQL_INTEGER );
+        $sth->bind_param( 7, $transcript->end(),   SQL_INTEGER );
+        $sth->bind_param( 8, $transcript->start(), SQL_INTEGER );
+        $sth->bind_param( 9, $transcript->end(),   SQL_INTEGER );
+
+        $sth->execute();
 
         my ( $coord_xref_id, $accession, $txStart, $txEnd, $cdsStart,
              $cdsEnd, $exonStarts, $exonEnds );
