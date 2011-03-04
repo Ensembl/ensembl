@@ -928,17 +928,20 @@ sub official_naming{
 	}	
       }
     }
-    if(!defined($gene_symbol) and !defined($other_symbol) ){   # No HGNC or other so look for vega clone names
 
-      foreach my $tran_id  (@{$gene_to_transcripts{$gene_id}}){
-	$dbentrie_sth->execute("Clone_based_vega_transcript", $tran_id, "Transcript");
-	$dbentrie_sth->bind_columns(\$display, \$xref_id, \$object_xref_id, \$level);
-	while($dbentrie_sth->fetch){
-	  my($acc_bit, $num) = split(/-\d\d\d$/,$display);
-#	  $tran_to_vega_ext{$tran_id} = $num;   ## already done.
-	  $vega_clone_name = $acc_bit;
-	}
+    foreach my $tran_id  (@{$gene_to_transcripts{$gene_id}}){
+      $dbentrie_sth->execute("Clone_based_vega_transcript", $tran_id, "Transcript");
+      $dbentrie_sth->bind_columns(\$display, \$xref_id, \$object_xref_id, \$level);
+      while($dbentrie_sth->fetch){
+	$display =~ /(.+)-(\d\d\d)$/;
+	my $acc_bit =$1;
+	my $num = $2;
+	$tran_to_vega_ext{$tran_id} = $num;
+	$xref_added{$display.":".$clone_based_vega_tran_id} = $xref_id;
+	$vega_clone_name = $acc_bit;
       }
+    }
+    if(!defined($gene_symbol) and !defined($other_symbol) ){   # No HGNC or other so look for vega clone names
 
       if(!defined($vega_clone_name)){ #if no vega clone name use the ensembl clone name
 
@@ -986,16 +989,6 @@ sub official_naming{
 
 	}
 
-#        my $slice = $gene->slice->sub_Slice($gene->start,$gene->end,$gene->strand);
-#        my @segments = @{$slice->project('clone')};
-#        my $len=0;
-#        foreach my $seg (@segments){
-#          my $clone = $seg->to_Slice();
-#          if($clone->length() > $len){
-#            $clone_name = $clone->seq_region_name;
-#            $len = $clone->length();
-#          }
-#	}
 	if(defined($clone_name)){
 	  $clone_name =~ s/[.]\d+//;    #remove .number	
 	}
@@ -1112,34 +1105,42 @@ sub official_naming{
       
       # then add transcript names.
       my $ext = 201;
-      my $no_vega_ext=$ext;
       foreach my $tran_id ( sort @{$gene_to_transcripts{$gene_id}}){
+	my $id =  $name."-".$ext;
 	if(defined($tran_to_vega_ext{$tran_id})){
-	  $ext = $tran_to_vega_ext{$tran_id};
+	  $id = $name."-".$tran_to_vega_ext{$tran_id};
+	  if(!defined($xref_added{$id.":".$t_source_id})){
+	    $max_xref_id++;
+	    $ins_xref_sth->execute($max_xref_id, $t_source_id, $id, $id, $desc, undef);
+	    $xref_added{$id.":".$t_source_id} = $max_xref_id;
+
+	    $max_object_xref_id++;
+	    $ins_object_xref_sth->execute($max_object_xref_id, $tran_id, 'Transcript', $xref_added{$id.":".$t_source_id}, undef);	
+	    $ins_dep_ix_sth->execute($max_object_xref_id, 100, 100);
+	    $set_tran_display_xref_sth->execute($max_xref_id, $tran_id);
+	  }
 	}
 	else{
-	  $ext = $no_vega_ext;
-	  $no_vega_ext++;
-	}
-	my $id = $name."-".$ext;
-#	print $id."\ts=".$t_source_id."\n";
-	while(defined($xref_added{$id.":".$t_source_id})){
+	  while(defined($xref_added{$id.":".$t_source_id})){
+	    $ext++;
+	    $id = $name."-".$ext;
+	  }	
 	  $ext++;
-	  $id = $name."-".$ext;
+	  $max_xref_id++;
+	  $ins_xref_sth->execute($max_xref_id, $t_source_id, $id, $id, $desc, undef);
+	  $xref_added{$id.":".$t_source_id} = $max_xref_id;
+
+	  $max_object_xref_id++;
+	  $ins_object_xref_sth->execute($max_object_xref_id, $tran_id, 'Transcript', $xref_added{$id.":".$t_source_id}, undef);	
+	  $ins_dep_ix_sth->execute($max_object_xref_id, 100, 100);
+	  $set_tran_display_xref_sth->execute($max_xref_id, $tran_id);
 	}
-	
-	$max_xref_id++;
-	$ins_xref_sth->execute($max_xref_id, $t_source_id, $id, $id, $desc, undef);
-	$xref_added{$id.":".$t_source_id} = $max_xref_id;
-	
-	$max_object_xref_id++;
-	$ins_object_xref_sth->execute($max_object_xref_id, $tran_id, 'Transcript', $xref_added{$id.":".$t_source_id}, undef);	
-	$ins_dep_ix_sth->execute($max_object_xref_id, 100, 100);
-	$set_tran_display_xref_sth->execute($max_xref_id, $tran_id);
 
-	$ext++;
+#	print $id."\ts=".$t_source_id."\n";
+
+	
       }
-
+      
     }
   } # for each gene
 
