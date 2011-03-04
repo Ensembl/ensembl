@@ -96,6 +96,7 @@ CREATE TABLE analysis_description (
 -- 'analysis_description' table.  Ties together species,
 -- analysis_description, and the web_data.
 CREATE TABLE analysis_web_data (
+  analysis_web_data_id      INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
   analysis_description_id   INTEGER UNSIGNED NOT NULL,
   web_data_id               INTEGER UNSIGNED DEFAULT NULL,
   species_id                INTEGER UNSIGNED NOT NULL,
@@ -106,6 +107,7 @@ CREATE TABLE analysis_web_data (
 
   displayable               BOOLEAN NOT NULL DEFAULT true,
 
+  PRIMARY KEY (analysis_web_data_id),
   UNIQUE INDEX uniq_idx (species_id, db_type, analysis_description_id)
 );
 
@@ -148,6 +150,7 @@ WHERE   db.is_current = true
 
 CREATE VIEW logic_name_overview AS
 SELECT
+  awd.analysis_web_data_id AS analysis_web_data_id,
   ad.logic_name AS logic_name,
   ad.analysis_description_id AS analysis_description_id,
   s.db_name AS species,
@@ -169,6 +172,12 @@ FROM    analysis_description ad
   LEFT JOIN analysis_web_data awd USING (analysis_description_id)
 WHERE   awd.species_id IS NULL
   AND   ad.is_current = true;
+
+CREATE VIEW unused_web_data AS
+SELECT  wd.web_data_id
+FROM    web_data wd
+  LEFT JOIN analysis_web_data awd USING (web_data_id)
+WHERE   awd.analysis_web_data_id IS NULL;
 
 
 -- Views for the master tables.  These are simply selecting the entries
