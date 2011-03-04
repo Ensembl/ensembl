@@ -613,12 +613,15 @@ $multi->hide( "core", "gene", "transcript", "exon", 'xref', 'object_xref',
               "exon_transcript", "translation" );
 
 $gene->analysis($analysis);
+my $analysis_adap = $db->get_AnalysisAdaptor();
+my $analysis = $analysis_adap->fetch_by_logic_name("ensembl");
 
 my $dbe = Bio::EnsEMBL::DBEntry->new(-primary_id => 'test_id',
                                      -version    => 1,
                                      -dbname     => 'EMBL',
                                      -release    => 1,
-                                     -display_id => 'test_id');
+                                     -display_id => 'test_id',
+	                             -analysis   => $analysis);
 
 
 $gene->add_DBEntry($dbe);

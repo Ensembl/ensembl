@@ -77,6 +77,8 @@ debug( "GoXrefs and IdentityXrefs: ".$goxref_count . " " . $ident_count);
 ok( $goxref_count == 48 );
 ok( $ident_count == 32 );
 
+my $analysis_adap = $db->get_AnalysisAdaptor();
+my $analysis = $analysis_adap->fetch_by_logic_name("RepeatMask");
 
 # try storing and retrieval
 
@@ -92,7 +94,8 @@ my $xref = Bio::EnsEMBL::DBEntry->new
    -db_display_name => "Nice friendly name",
    -info_type => "PROJECTION",
    -info_text => "from human gene ENSG0000011111",
-   -type => "ARRAY"
+   -type => "ARRAY",
+    -analysis => $analysis
    );
 
 
@@ -104,8 +107,8 @@ my $ident_xref = Bio::EnsEMBL::IdentityXref->new
    -primary_id => "1",
    -dbname => "Uniprot/SPTREMBL",
    -release => "1",
-   -display_id => "Ens related Ident"
-   );
+   -display_id => "Ens related Ident",
+   -analysis => $analysis   );
 
 $ident_xref->xref_identity( 100 );
 $ident_xref->ensembl_identity( 95 );
@@ -115,7 +118,8 @@ my $goref = Bio::EnsEMBL::OntologyXref->new
    -primary_id => "1",
    -dbname => "GO",
    -release => "1",
-   -display_id => "Ens related GO"
+   -display_id => "Ens related GO",
+   -analysis => $analysis
    );
 $goref->add_linkage_type( "IC" ); # Linkage type on own
 $goref->add_linkage_type( "ISS", $goref ); # Linkage type with source xref
