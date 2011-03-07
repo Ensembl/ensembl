@@ -13,7 +13,7 @@ use Bio::EnsEMBL::Utils::Eprof qw(eprof_start eprof_end eprof_dump);
 
 my $method_link_type = "ENSEMBL_ORTHOLOGUES";
 
-my ($conf, $registryconf, $version, $compara, $from_species, @to_multi, $print, $names, $go_terms, $delete_names, $delete_go_terms, $no_backup, $full_stats, $descriptions, $release, $no_database, $quiet, $max_genes, $one_to_many, $go_check, $all_sources, $delete_only);
+my ($conf, $registryconf, $version, $compara, $from_species, @to_multi, $print, $names, $go_terms, $delete_names, $delete_go_terms, $no_backup, $full_stats, $descriptions, $release, $no_database, $quiet, $max_genes, $one_to_many, $go_check, $all_sources, $delete_only,  $to_species, $from_gene);
 
 GetOptions('conf=s'          => \$conf,
 	   'registryconf=s'  => \$registryconf,
@@ -174,8 +174,9 @@ my $from_ga = Bio::EnsEMBL::Registry->get_adaptor($from_species, 'core', 'Gene')
 my %projections_by_evidence_type;
 my %projections_by_source;
 
-foreach my $to_species (@to_multi) {
+foreach my $local_to_species (@to_multi) {
 
+  $to_species = $local_to_species;
   my $to_ga   = Bio::EnsEMBL::Registry->get_adaptor($to_species, 'core', 'Gene');
   die("Can't get gene adaptor for $to_species - check database connection details; make sure meta table contains the correct species alias\n") if (!$to_ga);
   my $to_dbea = Bio::EnsEMBL::Registry->get_adaptor($to_species, 'core', 'DBEntry');
@@ -228,7 +229,7 @@ foreach my $to_species (@to_multi) {
 
     $i++;
 
-    my $from_gene = $from_ga->fetch_by_stable_id($from_stable_id);
+    $from_gene = $from_ga->fetch_by_stable_id($from_stable_id);
 
     next if (!$from_gene);
 
@@ -632,17 +633,57 @@ sub check_overwrite_display_xref {
 
     if (($from_species eq "human" && $from_dbname =~ /HGNC/) ||
 	($from_species eq "mouse" && $from_dbname =~ /MarkerSymbol/)) {
-
+	if($to_species eq "zebrafish" and is_in_blacklist($from_gene->display_xref)){
+	    return 0;
+	}
       return 1;
 
     }
 
   }
+  elsif ($to_species eq "zebrafish"){
+      
+      my $to_dbEntry = $to_gene->display_xref();
+      my $from_dbEntry = $from_gene->display_xref();
+      my $return = 0;
 
+      if ($from_dbEntry->display_id =~ /C(\d+)orf(\d+)/){
+	  $from_dbEntry->display_id("hsC".$1."orf".$2."-like");
+	  return 1;
+      }
+      if (!defined ($to_dbEntry) || (($to_dbEntry->display_id =~ /:/) and $to_dbname eq "ZFIN_ID") ){
+          if (is_in_blacklist($from_dbEntry)){
+	      return 0;
+	  }
+	  else{
+	      return 1;
+	  }
+      }
+      
+  }
   return 0;
 
 }
 
+
+sub is_in_blacklist{
+    my ($dbentry) = shift;
+
+    if (($dbentry->display_id =~ /KIAA/) || ( $dbentry->display_id =~ /LOC/)){
+	return 1; # return yes that have found gene names that match the regular expression
+    }
+    elsif ($dbentry->display_id =~ /\-/){
+	return 1;
+    }
+    elsif ($dbentry->display_id =~ /\D{2}\d{6}\.\d+/){
+	#print "black listed item found ".$dbentry->display_id."\n";
+	return 1;
+    }
+    else{
+	return 0;
+    }
+    
+}
 # ----------------------------------------------------------------------
 
 sub backup {

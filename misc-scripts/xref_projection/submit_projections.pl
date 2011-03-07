@@ -10,11 +10,11 @@ $Data::Dumper::Indent = 0;
 # Remember to check/set the various config optons
 
 # ------------------------------ config -------------------------------
-my $release = 59;
+my $release = 62;
 
-my $base_dir = "/lustre/scratch103/ensembl/jz1/projections";
+my $base_dir = "/lustre/scratch103/ensembl/gp1/projections/";
 
-my $conf = "release_59.ini"; # registry config file, specifies Compara location
+my $conf = "release_62.ini"; # registry config file, specifies Compara location
 
 # location of other databases
 
@@ -87,6 +87,7 @@ my @names_1_1 = (["human", "chimp"            ],
 		 ["human", "wallaby"          ],
 		 ["human", "horse"            ],
 		 ["human", "orang_utan"       ],
+		 ["human", "gibbon"           ],
 		 ["human", "dolphin"          ],
 		 ["human", "hyrax"            ],
 		 ["human", "megabat"          ],
@@ -135,6 +136,7 @@ my @go_terms = (["human",      "mouse"          ],
 		["human",      "wallaby"        ],
 		["human",      "horse"          ],
 		["human",      "orang_utan"     ],
+		["human",      "gibbon"         ],
 		["human",      "dolphin"        ],
 		["human",      "hyrax"          ],
 		["human",      "megabat"        ],
@@ -188,10 +190,10 @@ my @go_terms = (["human",      "mouse"          ],
 		["mouse",      "panda"          ], 
                 ["rat",        "human"          ],
 		["rat",        "mouse"          ],
-		["danio",      "xenopus"        ],
-		["danio",      "fugu"           ],
-		["danio",      "tetraodon"      ],
-		["danio",      "stickleback"    ],
+		["zebrafish",      "xenopus"    ],
+		["zebrafish",      "fugu"       ],
+		["zebrafish",      "tetraodon"  ],
+		["zebrafish",      "stickleback"],
 		["human",      "stickleback"    ],
 		["mouse",      "stickleback"    ],
 		["mouse",      "turkey"         ],
