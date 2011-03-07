@@ -6,9 +6,131 @@
 #  - internal ids are integers named tablename_id
 #  - same name is given in foreign key relations
 
+
 /**
-@set Fundamental Tables
+Insert this HTML in the 'Introduction' section:
+
+
+<p>
+This document gives a high-level description of the tables that
+make up the EnsEMBL core schema. Tables are grouped into logical
+groups, and the purpose of each table is explained. It is intended to
+allow people to familiarise themselves with the schema when
+encountering it for the first time, or when they need to use some
+tables that they've not used before. Note that while some of the more
+important columns in some of the tables are discussed, this document
+makes no attempt to enumerate all of the names, types and contents of
+every single table. Some concepts which are referred to in the table
+descriptions are given at the end of this document; these are linked
+to from the table description where appropriate.
+</p>
+
+<p>
+Different tables are populated throughout the gene build process:
+</p>
+
+<table border="1" cellpadding="10">
+<tr>
+<th>Step</th>
+<th>Process</th>
+</tr>
+<tr>
+<td>0</td>
+
+<td>Create empty schema, populate meta table</td>
+</tr>
+<tr>
+<td>1</td>
+<td>Load DNA - populates dna, clone, contig, chromosome, assembly tables</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Analyze DNA (raw computes) - populates genomic feature/analysis tables</td>
+</tr>
+<tr>
+<td>3</td>
+
+<td>Build genes - populates exon, transcript,etc. gene-related tables</td>
+</tr>
+<tr>
+<td>4a</td>
+<td>Analyze genes - populate protein_feature, xref tables, interpro</td>
+</tr>
+<tr>
+<td>4b</td>
+<td>ID mapping</td>
+</tr>
+</table>
+
+<p>
+This document refers to version <strong>61</strong> of the EnsEMBL
+core schema.
+</p>
+
+
 */
+
+
+/**
+Append this HTMl to the generated page before the </body> </html> tags:
+
+<hr />
+<h2>Concepts</h2>
+
+<dl>
+<dt><strong><a name="co-ordinates">co-ordinates</a></strong></dt>
+<dd>
+<p>There are several different co-ordinate systems used in the EnsEMBL database and API. For every co-ordinate system, the fundamental
+unit is one base. The differences between co-ordinate systems lie in where a particular numbered base lies, and the start
+position it is relative to. CONTIG co-ordinates, also called 'raw contig' co-ordinates or 'clone fragments' are relative to
+the first base of the first contig of a clone. Note that the numbering is from 1, i.e. the very first base of the first contig
+of a clone is numbered 1, not 0. In CHROMOSOMAL co-ordinates, the co-ordinates are relative to the first base of the chromosome.
+Again, numbering is from 1. The seq_region table can store sequence regions in any of the co-ordinate systems defined in the
+coord_system table.
+</p>
+</dd>
+<dt><strong><a name="supercontigs">supercontigs</a></strong></dt>
+<dd>
+<p>A supercontig is made up of a group of adjacent or overlapping contigs.</p>
+</dd>
+<dt><strong><a name="sticky_rank">sticky_rank</a></strong></dt>
+<dd>
+<p>The sticky_rank differentiates between fragments of the same exon; i.e for exons that span multiple contigs, all the fragments
+would have the same ID, but different sticky_rank values
+
+</p>
+</dd>
+<dt><strong><a name="stable_id">stable_id</a></strong></dt>
+<dd>
+<p>Gene predictions have changed over the various releases of the EnsEMBL databases. To allow the user to track particular gene
+predictions over changing co-ordinates, each gene-related prediction is given a 'stable identifier'. If a prediction looks
+similar between two releases, we try to give it the same name, even though it may have changed position and/or had some sequence
+changes.
+</p>
+</dd>
+<dt><strong><a name="cigar_line">cigar_line</a></strong></dt>
+<dd>
+<p>This allows the compact storage of gapped alignments by storing the maximum extent of the matches and then a text string which
+encodes the placement of gaps inside the alignment. Colloquially inside EnsEMBL this is called a and its adoption has shrunk
+the number of rows in the feature table around 4-fold.
+</p>
+</dd>
+</dl>
+<hr />
+
+
+*/
+
+
+
+
+
+/**
+@header Fundamental Tables
+@desc A PDF document of the schema is available <a href="fundamental_tables_core.pdf">here</a>.
+
+*/
+
 
 /**
 @table assembly
@@ -136,8 +258,8 @@ Note that for each species, there must be one co-ordinate system that has the at
 @column rank                 Co-oridinate system rank.   
 @column attrib               Co-oridinate system attrib (e.g. "top_level", "sequence_level").     
 
-@see seq_region - Has coord_system_id foreign key to allow joins with the coord_system table. 
-@see meta - Holds meta information about each of the species in a database, no matter if it's a multi-species or single-species database.
+@see seq_region
+@see meta
 
 */
 
@@ -417,8 +539,6 @@ CREATE TABLE gene_stable_id (
 @column band                    Band.
 @column stain                   Stain.
 
-@see 
-
 */
 
 
@@ -510,9 +630,6 @@ CREATE TABLE meta_coord (
   UNIQUE KEY cs_table_name_idx (coord_system_id, table_name)
 
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
-
-
-
 
 
 /**
@@ -794,7 +911,8 @@ CREATE TABLE unconventional_transcript_association (
 
 
 /**
-@set Features and Analyses
+@header Features and Analyses
+@desc A PDF document of the schema is available <a href="features_analyses_core.pdf">here</a>.
 */
 
 
@@ -1892,7 +2010,8 @@ CREATE TABLE transcript_supporting_feature (
 
 
 /**
-@set ID Mapping
+@header ID Mapping
+@desc A PDF document of the schema is available <a href="id_mapping_core.pdf">here</a>.
 */
 
 /**
@@ -1946,8 +2065,8 @@ CREATE TABLE gene_archive (
 @column new_assembly                New assembly.
 @column created                     Date created.
 
-@see stable_id_event - (table) Stores details of what happened during the mapping session.
-@see stable_id - (concept) Describes the need for ID mapping.
+@see stable_id_event
+@see stable_id
 
 */
 
@@ -2074,7 +2193,8 @@ CREATE TABLE seq_region_mapping (
 
 
 /**
-@set External References
+@header External References
+@desc A PDF document of the schema is available <a href="external_refs_core.pdf">here</a>.
 */
 
 
@@ -2280,7 +2400,7 @@ For this reason a single Ensembl - external db object relationship in the object
 
 @column object_xref_id          Composite key. Foreign key references to the @link object_xref table.        
 @column source_xref_id          Composite key.
-@column linkage_type            Composity key. <a href="http://www.geneontology.org/GO.evidence.shtml">Evidence tags</a> 
+@column linkage_type            Composite key. <a href="http://www.geneontology.org/GO.evidence.shtml">Evidence tags</a> 
 
 @see object_xref
 
@@ -2436,7 +2556,8 @@ CREATE TABLE xref (
 
 
 /**
-@set Miscellaneous
+@header Miscellaneous
+@desc
 */
 
 
@@ -2447,7 +2568,8 @@ CREATE TABLE xref (
 @column interpro_ac               InterPro protein accession number.
 @column id                        InterPro protein id.
 
-@see InterPro - The InterPro website 
+@info
+@desc <a href="http://www.ebi.ac.uk/interpro/">InterPro</a> - The InterPro website
 
 */
 
