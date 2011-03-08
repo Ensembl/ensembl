@@ -1408,7 +1408,6 @@ sub load_registry_from_db {
     $species_suffix = "";
   }
 
-  my $go_version       = 0;
   my $ontology_version = 0;
 
   $user ||= "ensro";
@@ -1455,10 +1454,6 @@ sub load_registry_from_db {
     } elsif ( $db =~ /^(ensembl_ancestral(?:_\w+?)*?)_(\d+)$/ ) {
       if ( $2 eq $software_version ) {
         $temp{$1} = $2;
-      }
-    } elsif ( $db =~ /^ensembl_go_(\d+)/ ) {
-      if ( $1 eq $software_version ) {
-        $go_version = $1;
       }
     } elsif ( $db =~ /^(ensembl_ontology)_(\d+)/ ) {
       if ( $2 eq $software_version ) {
@@ -1886,39 +1881,6 @@ sub load_registry_from_db {
     print("No ancestral database found\n");
   }
 
-  # GO
-
-  if ($go_version) {
-    eval "require Bio::EnsEMBL::ExternalData::GO::GOAdaptor";
-    if ($@) {
-      #ignore go as code required not there for this
-      #      print $@;
-      if ($verbose) {
-        print "GO software not installed "
-          . "so GO database ensembl_go_$go_version will be ignored\n";
-      }
-    } else {
-      my $go_db = "ensembl_go_" . $go_version;
-      my $dba =
-        Bio::EnsEMBL::ExternalData::GO::GOAdaptor->new(
-                                                  -group    => "go",
-                                                  -species  => "multi".$species_suffix,
-                                                  -host     => $host,
-                                                  -user     => $user,
-                                                  -pass     => $pass,
-                                                  -port     => $port,
-                                                  -dbname   => $go_db,
-                                                  -no_cache => $no_cache
-        );
-
-      if ($verbose) {
-        printf( "%s loaded\n", $go_db );
-      }
-    }
-  } elsif ($verbose) {
-    print("No GO database found\n");
-  }
-
   # Ontology
 
   if ( $ontology_version != 0 ) {
@@ -1947,10 +1909,6 @@ sub load_registry_from_db {
   Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
     -species => 'multi'.$species_suffix,
     -alias   => ['compara'.$species_suffix] );
-
-  Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
-    -species => 'multi'.$species_suffix,
-    -alias   => ['go'.$species_suffix] );
 
   Bio::EnsEMBL::Utils::ConfigRegistry->add_alias(
     -species => 'multi'.$species_suffix,
@@ -2363,8 +2321,6 @@ sub version_check {
     if ( $dba->dbc()->dbname() =~ /(\d+)_\S+$/ ) {
       $database_version = $1;
     } elsif ( $dba->dbc()->dbname() =~ /ensembl_compara_(\d+)/ ) {
-      $database_version = $1;
-    } elsif ( $dba->dbc()->dbname() =~ /ensembl_go_(\d+)/ ) {
       $database_version = $1;
     } elsif ( $dba->dbc()->dbname() =~ /ensembl_help_(\d+)/ ) {
       $database_version = $1;
