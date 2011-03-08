@@ -647,9 +647,7 @@ sub check_overwrite_display_xref {
     my $from_dbEntry = $from_gene->display_xref();
     my $return = 0;
 
-    if ($to_dbname eq "Ensembl_clone_name") {
-      return 1;
-    }
+    return 1 if ($to_dbname eq "Clone_based_ensembl_gene" or $to_dbname eq "Clone_based_vega_gene");
 
     if ($from_dbEntry->display_id =~ /C(\d+)orf(\d+)/){
       $from_dbEntry->display_id("hsC".$1."orf".$2."-like");
