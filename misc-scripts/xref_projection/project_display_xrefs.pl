@@ -642,25 +642,30 @@ sub check_overwrite_display_xref {
 
   }
   elsif ($to_species eq "zebrafish"){
-      
-      my $to_dbEntry = $to_gene->display_xref();
-      my $from_dbEntry = $from_gene->display_xref();
-      my $return = 0;
 
-      if ($from_dbEntry->display_id =~ /C(\d+)orf(\d+)/){
-	  $from_dbEntry->display_id("hsC".$1."orf".$2."-like");
-	  return 1;
+    my $to_dbEntry = $to_gene->display_xref();
+    my $from_dbEntry = $from_gene->display_xref();
+    my $return = 0;
+
+    if ($to_dbname eq "Ensembl_clone_name") {
+      return 1;
+    }
+
+    if ($from_dbEntry->display_id =~ /C(\d+)orf(\d+)/){
+      $from_dbEntry->display_id("hsC".$1."orf".$2."-like");
+      return 1;
+    }
+
+    if (!defined ($to_dbEntry) || (($to_dbEntry->display_id =~ /:/) and $to_dbname eq "ZFIN_ID") ){
+      if (is_in_blacklist($from_dbEntry)){
+	return 0;
       }
-      if (!defined ($to_dbEntry) || (($to_dbEntry->display_id =~ /:/) and $to_dbname eq "ZFIN_ID") ){
-          if (is_in_blacklist($from_dbEntry)){
-	      return 0;
-	  }
-	  else{
-	      return 1;
-	  }
+      else{
+	return 1;
       }
-      
+    }
   }
+
   return 0;
 
 }
