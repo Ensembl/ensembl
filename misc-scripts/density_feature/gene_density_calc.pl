@@ -142,29 +142,32 @@ foreach my $dbname (@dbnames) {
   
   my $analysis =
     new Bio::EnsEMBL::Analysis(
-      -program     => "gene_density_calc.pl",
-      -database    => "ensembl",
-      -gff_source  => "gene_density_calc.pl",
-      -gff_feature => "density",
-      -logic_name  => "knowngenedensity",
-      -description => 'Known gene density features in a database ' . 'as calculated by gene_density_calc.pl',
-      -display_label => 'Genes (density)',
-      -displayable   => 1 );
-  
+    -program     => "gene_density_calc.pl",
+    -database    => "ensembl",
+    -gff_source  => "gene_density_calc.pl",
+    -gff_feature => "density",
+    -logic_name  => "knowngenedensity",
+    -description =>
+'Known gene density as calculated by <a rel="external" href="http://cvs.sanger.ac.uk/cgi-bin/viewvc.cgi/ensembl/misc-scripts/density_feature/gene_density_calc.pl?root=ensembl&view=markup">gene_density_calc.pl</a>.',
+    -display_label => 'Genes (density)',
+    -displayable   => 1 );
+
   $aa->store($analysis);
   $aa->update($analysis);
 
-  $analysis = new Bio::EnsEMBL::Analysis (
+  $analysis =
+    new Bio::EnsEMBL::Analysis(
     -program     => "gene_density_calc.pl",
     -database    => "ensembl",
     -gff_source  => "gene_density_calc.pl",
     -gff_feature => "density",
     -logic_name  => "genedensity",
-    -description => 'Gene density features in a database ' . 'as calculated by gene_density_calc.pl',
+    -description =>
+'Gene density as calculated by <a rel="external" href="http://cvs.sanger.ac.uk/cgi-bin/viewvc.cgi/ensembl/misc-scripts/density_feature/gene_density_calc.pl?root=ensembl&view=markup">gene_density_calc.pl</a>.',
     -display_label => 'Genes (density)',
     -displayable   => 1 );
-  
-  $aa->store( $analysis );
+
+  $aa->store($analysis);
   $aa->update($analysis);
 
 #
