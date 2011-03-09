@@ -265,4 +265,8 @@ if ( scalar( keys(%existing_databases) ) !=
       printf( "\t%s\n", $db_name );
     }
   }
+  print("\n");
+  print(  "If these are really properly gone, "
+        . "please remove the corresponding\n"
+        . "entries from the 'db' table of the production database.\n" );
 }
