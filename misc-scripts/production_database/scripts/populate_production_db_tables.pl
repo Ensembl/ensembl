@@ -1,4 +1,4 @@
-#!/usr/local/ensembl/bin/perl -w
+#!/usr/bin/env perl
 
 use strict;
 use warnings;
@@ -16,8 +16,8 @@ my %master_tables = ( 'attrib_type'     => 1,
 my @tables;
 
 # Master database location:
-my ( $mhost, $mport ) = ( undef, '3306' );
-my ( $muser, $mpass );
+my ( $mhost, $mport ) = ( 'ens-staging1', '3306' );
+my ( $muser, $mpass ) = ( 'ensro',        undef );
 my $mdbname = 'ensembl_production';
 
 # User database location (default values):
@@ -67,8 +67,8 @@ Usage:
   $0 -h host [-P port] \\
   $indent -u user [-p password]
   $indent -d database | --pattern pattern \\
-  $indent -mh host [-mP port] \\
-  $indent -mu user [-mp password] [-md database] \\
+  $indent [-mh host] [-mP port] \\
+  $indent [-mu user] [-mp password] [-md database] \\
   $indent [-t table] [-t table] [-t ...] \\
   $indent [-D] [-v]
 
@@ -92,10 +92,12 @@ Usage:
                     --pattern="(cdna|core|otherfeatures|rnaseq|vega)_62"
 
   -mh / --mhost     Production database server host
+                    (optional, default is 'ens-staging1')
   -mP / --mport     Production database server port
                     (optional, default is 3306)
 
   -mu / --muser     Production database username (no write-access required)
+                    (optional, default is 'ensro')
   -mp / --mpass     Production database password
                     (optional, default is undefined)
 
@@ -116,7 +118,8 @@ Usage:
 
 USAGE_END
 
-  die("Need the following options: -h -u -p -d -mh -mu\n");
+  die(   "Need the following options: "
+       . "-h -u -p and -d (or --pattern)\n" );
 
 } ## end if ( !GetOptions( 'mhost|mh=s'...))
 
