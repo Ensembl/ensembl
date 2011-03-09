@@ -87,15 +87,15 @@ my $aa  = $db->get_AnalysisAdaptor();
 
 my $analysis =
   new Bio::EnsEMBL::Analysis(
-       -program     => "repeat_coverage_calc.pl",
-       -database    => "ensembl",
-       -gff_source  => "repeat_coverage_calc.pl",
-       -gff_feature => "density",
-       -logic_name  => "percentagerepeat",
-       -description =>
-         'Percentage of repetetive elements for top level seq_regions.',
-       -display_label => 'Repeats (percent)',
-       -displayable   => 1 );
+  -program     => "repeat_coverage_calc.pl",
+  -database    => "ensembl",
+  -gff_source  => "repeat_coverage_calc.pl",
+  -gff_feature => "density",
+  -logic_name  => "percentagerepeat",
+  -description =>
+'Percentage of repetitive elements for top level sequences (such as chromosomes, scaffolds, etc.)',
+  -display_label => 'Repeats (percent)',
+  -displayable   => 1 );
 
 $aa->store($analysis);
 $aa->update($analysis);
