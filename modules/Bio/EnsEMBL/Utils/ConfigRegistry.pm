@@ -154,7 +154,7 @@ sub gen_load {
   # return if the connection and species, group are the same
 
   if ( defined( $dba->species ) ) {
-    my $db_reg = $reg->get_DBAdaptor( $dba->species, $dba->group );
+    my $db_reg = $reg->get_DBAdaptor( $dba->species, $dba->group, 1 );
     if ( defined($db_reg) ) {
       if ( $dba->dbc->equals( $db_reg->dbc ) ) { return $db_reg }
       else {
@@ -169,6 +169,7 @@ sub gen_load {
       }
     }
   } else {    # no species
+    
     my @db_reg =
       @{ $reg->get_all_DBAdaptors_by_connection( $dba->dbc ) };
 
