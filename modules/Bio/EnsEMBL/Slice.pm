@@ -1742,7 +1742,7 @@ sub get_all_somatic_VariationFeatures_with_annotation{
     Arg [1]     : Bio::EnsEMBL:Variation::VariationSet $set
     Description :returns all variation features on this slice associated with a given set.
                  This function will only work correctly if the variation database has been
-                 attached to the core database.
+                 attached to the core database. 
     ReturnType : listref of Bio::EnsEMBL::Variation::VariationFeature
     Exceptions : none
     Caller     : contigview, snpview
@@ -1766,14 +1766,15 @@ sub get_all_VariationFeatures_by_VariationSet {
 =head2 get_all_StructuralVariations
 
     Arg[1]       : $source [optional]
-    Arg[2]       : $class [optional]
+    Arg[2]       : $study [optional]
     Description :returns all structural variations on this slice. This function will only work
                 correctly if the variation database has been attached to the core database.
                 If $source is set, only structural variations with that source name will be returned.
-                If $class is set, only structural variations of that class will be returned.
+                If $study is set, only structural variations of that study will be returned.
+                By default, it only returns structural variants with the class 'SV'.
     ReturnType : listref of Bio::EnsEMBL::Variation::StructuralVariation
     Exceptions : none
-    Caller     : contigview, snpview
+    Caller     : contigview, snpview, structural_variation
     Status     : At Risk
 
 =cut
@@ -1781,7 +1782,10 @@ sub get_all_VariationFeatures_by_VariationSet {
 sub get_all_StructuralVariations{
   my $self = shift;
   my $source = shift;
-  my $sv_class = shift;
+	my $study = shift;
+	my $sv_class = shift;
+	
+  if (!defined($sv_class)) { $sv_class = 'SV'; }
 
   if(!$self->adaptor()) {
     warning('Cannot get structural variations without attached adaptor');
@@ -1791,17 +1795,17 @@ sub get_all_StructuralVariations{
   my $sv_adaptor = Bio::EnsEMBL::DBSQL::MergedAdaptor->new(-species => $self->adaptor()->db()->species, -type => "StructuralVariation");
   if( $sv_adaptor ) {
 
-    if(defined $source && defined $sv_class) {
-      return $sv_adaptor->fetch_all_by_Slice_constraint($self, qq{ s.name = '$source' AND sv.class = '$sv_class'});
+		if(defined $source && defined $study) {
+      return $sv_adaptor->fetch_all_by_Slice_constraint($self, qq{ s.name = '$source' AND sv.class = '$sv_class' AND st.name = '$study'});
     }
     elsif(defined $source) {
-      return $sv_adaptor->fetch_all_by_Slice_constraint($self, qq{ s.name = '$source' });
+      return $sv_adaptor->fetch_all_by_Slice_constraint($self, qq{ s.name = '$source' AND sv.class = '$sv_class'});
     }
-    elsif(defined $sv_class) {
-      return $sv_adaptor->fetch_all_by_Slice_constraint($self, qq{ sv.class = '$sv_class' });
+		elsif(defined $study) {
+      return $sv_adaptor->fetch_all_by_Slice_constraint($self, qq{ st.name = '$study' AND sv.class = '$sv_class'});
     }
     else {
-      return $sv_adaptor->fetch_all_by_Slice($self);
+			return $sv_adaptor->fetch_all_by_Slice_constraint($self, qq{ sv.class = '$sv_class'});
     }
   }
   else {
@@ -1809,6 +1813,30 @@ sub get_all_StructuralVariations{
  		"retrieve variation information" );
     return [];
   }
+}
+
+
+=head2 get_all_CopyNumberVariantProbes
+
+    Arg[1]       : $source [optional]
+    Arg[2]       : $study [optional]
+    Description :returns all copy number variant probes on this slice. This function will only work
+                correctly if the variation database has been attached to the core database.
+                If $source is set, only CNV probes with that source name will be returned.
+                If $study is set, only CNV probes of that study will be returned.
+    ReturnType : listref of Bio::EnsEMBL::Variation::StructuralVariation
+    Exceptions : none
+    Caller     : contigview, snpview, structural_variation
+    Status     : At Risk
+
+=cut
+
+sub get_all_CopyNumberVariantProbes {
+	my $self = shift;
+  my $source = shift;
+	my $study = shift;
+	
+	return $self->get_all_StructuralVariations($source,$study,'CNV_PROBE');
 }
 
 
