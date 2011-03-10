@@ -141,7 +141,12 @@ sub new {
   if ( defined($species) ) { $self->species($species) }
   if ( defined($group) )   { $self->group($group) }
 
+ 
   $self = Bio::EnsEMBL::Utils::ConfigRegistry::gen_load($self);
+
+  if(!defined($species) ){
+    $reg->find_and_add_aliases($self);
+  }
 
   $self->species_id( $species_id || 1 );
 
