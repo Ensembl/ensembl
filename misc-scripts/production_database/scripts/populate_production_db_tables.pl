@@ -133,7 +133,7 @@ if (@tables) {
   @tables = keys(%master_tables);
 }
 
-if ( defined($core) ) {
+if ($core) {
   $dbpattern =
     sprintf( '(cdna|core|otherfeatures|rnaseq|vega)_%d', $core );
 }
