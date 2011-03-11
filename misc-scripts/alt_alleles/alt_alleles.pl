@@ -53,11 +53,17 @@ my ($alt_id, $vega_stable_id, $core_stable_id);
 my %alt_to_stable;
 $sth->bind_columns(\$alt_id, \$vega_stable_id, \$core_stable_id);
 
+my $max_alt_id = 0;
+
 while($sth->fetch()){
   push @{$alt_to_stable{$alt_id}}, $core_stable_id;
+  if($alt_id > $max_alt_id){
+    $max_alt_id = $alt_id;
+  }
 }
 $sth->finish;
 
+$max_alt_id += 1000;
 
 #
 # Test case for invalid stable id. (Delete after testing
@@ -93,7 +99,7 @@ my $core_dba = Bio::EnsEMBL::DBSQL::DBAdaptor->new(-host => $chost||'ens-researc
                                           -user => $cuser||'ensadmin',
 					  -pass => $cpass,
                                           -species => "test",
-                                          -dbname => $cdbname||"ianl_homo_sapiens_core_61_37f");
+                                          -dbname => $cdbname||"ianl_homo_sapiens_core_62_37g");
 
 
 
@@ -153,15 +159,23 @@ foreach my $key (keys %alt_to_stable){
 #
 
 $sql = "insert into alt_allele (alt_allele_id, gene_id) values(?, ?)";
-$sth = $core_dba->dbc->prepare($sql);
+my $insert_sth = $core_dba->dbc->prepare($sql);
 
 my $count=0;
 my $alt_id_count = 0;
+
+
+#
+# gene_id_to_alt_id needed for LRG stuff
+#
+my %gene_id_to_alt_id;
+
 foreach my $key (keys %alt_to_stable){
   my @arr = @{$alt_to_stable{$key}};
   if(scalar(@arr) > 1){
     foreach my $stable_id (@arr){
-      $sth->execute($key, $stable_id_to_gene_id{$stable_id});
+      $insert_sth->execute($key, $stable_id_to_gene_id{$stable_id});
+      $gene_id_to_alt_id{$stable_id_to_gene_id{$stable_id}}= $key;
       $count++;
     }
     $alt_id_count++;
@@ -174,5 +188,59 @@ foreach my $key (keys %alt_to_stable){
 print "Added $alt_id_count alt_allele ids for $count genes\n";
 
 
+# LRG SQL. How to fit this in?
+#select ox.ensembl_id, gsi.gene_id from xref x, object_xref ox, external_db e, gene_stable_id gsi where x.xref_id = ox.xref_id and e.external_db_id = x.external_db_id and e.db_name like "Ens_Hs_gene" and ox.ensembl_object_type = "Gene" and x.display_label = gsi.stable_id ;
 
 
+
+#
+# Use $max_alt_id for new ones.
+#
+
+$sql =(<<LRG);
+SELECT  ox.ensembl_id, gsi.gene_id 
+  FROM xref x, object_xref ox, external_db e, gene_stable_id gsi 
+    WHERE x.xref_id = ox.xref_id AND
+          e.external_db_id = x.external_db_id AND
+          e.db_name like "Ens_Hs_gene" AND
+          ox.ensembl_object_type = "Gene" AND
+           x.display_label = gsi.stable_id
+LRG
+
+$sth = $core_dba->dbc->prepare($sql);
+my ($core_gene_id, $lrg_gene_id);
+$sth->execute();
+$sth->bind_columns(\$lrg_gene_id, \$core_gene_id);
+
+$count =0;
+
+my $old_count = 0;
+my $new_count = 0;
+my $lrg_count = 0;
+#
+# If the core gene is already in an alt_allele set then use that alt_id for the LRG gene only.
+# Else use a new one and add both core and LRG.
+#
+
+
+while ($sth->fetch()){
+  if(defined($gene_id_to_alt_id{$core_gene_id})){
+    $insert_sth->execute($gene_id_to_alt_id{$core_gene_id}, $lrg_gene_id);
+    $old_count++;
+  }
+  elsif(defined($gene_id_to_alt_id{$lrg_gene_id})){
+    $insert_sth->execute($gene_id_to_alt_id{$lrg_gene_id}, $core_gene_id);
+    print "LRG perculiarity\t$core_gene_id\t$lrg_gene_id\n";
+    $lrg_count++;
+  }
+  else{ # new one.
+    $max_alt_id++;
+    $insert_sth->execute($max_alt_id, $lrg_gene_id);
+    $insert_sth->execute($max_alt_id, $core_gene_id);
+    $new_count++;
+  }
+  $count++;
+}
+
+print "Added $count alt_allels for the lrgs. $old_count added to previous alt_alleles and $new_count new ones\n";
+print "LRG count = $lrg_count\n";
