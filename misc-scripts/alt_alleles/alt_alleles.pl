@@ -188,59 +188,59 @@ foreach my $key (keys %alt_to_stable){
 print "Added $alt_id_count alt_allele ids for $count genes\n";
 
 
-# LRG SQL. How to fit this in?
-#select ox.ensembl_id, gsi.gene_id from xref x, object_xref ox, external_db e, gene_stable_id gsi where x.xref_id = ox.xref_id and e.external_db_id = x.external_db_id and e.db_name like "Ens_Hs_gene" and ox.ensembl_object_type = "Gene" and x.display_label = gsi.stable_id ;
+## LRG SQL. How to fit this in?
+##select ox.ensembl_id, gsi.gene_id from xref x, object_xref ox, external_db e, gene_stable_id gsi where x.xref_id = ox.xref_id and e.external_db_id = x.external_db_id and e.db_name like "Ens_Hs_gene" and ox.ensembl_object_type = "Gene" and x.display_label = gsi.stable_id ;
 
 
 
-#
-# Use $max_alt_id for new ones.
-#
+##
+## Use $max_alt_id for new ones.
+##
 
-$sql =(<<LRG);
-SELECT  ox.ensembl_id, gsi.gene_id 
-  FROM xref x, object_xref ox, external_db e, gene_stable_id gsi 
-    WHERE x.xref_id = ox.xref_id AND
-          e.external_db_id = x.external_db_id AND
-          e.db_name like "Ens_Hs_gene" AND
-          ox.ensembl_object_type = "Gene" AND
-           x.display_label = gsi.stable_id
-LRG
+#$sql =(<<LRG);
+#SELECT  ox.ensembl_id, gsi.gene_id 
+#  FROM xref x, object_xref ox, external_db e, gene_stable_id gsi 
+#    WHERE x.xref_id = ox.xref_id AND
+#          e.external_db_id = x.external_db_id AND
+#          e.db_name like "Ens_Hs_gene" AND
+#          ox.ensembl_object_type = "Gene" AND
+#           x.display_label = gsi.stable_id
+#LRG
 
-$sth = $core_dba->dbc->prepare($sql);
-my ($core_gene_id, $lrg_gene_id);
-$sth->execute();
-$sth->bind_columns(\$lrg_gene_id, \$core_gene_id);
+#$sth = $core_dba->dbc->prepare($sql);
+#my ($core_gene_id, $lrg_gene_id);
+#$sth->execute();
+#$sth->bind_columns(\$lrg_gene_id, \$core_gene_id);
 
-$count =0;
+#$count =0;
 
-my $old_count = 0;
-my $new_count = 0;
-my $lrg_count = 0;
-#
-# If the core gene is already in an alt_allele set then use that alt_id for the LRG gene only.
-# Else use a new one and add both core and LRG.
-#
+#my $old_count = 0;
+#my $new_count = 0;
+#my $lrg_count = 0;
+##
+## If the core gene is already in an alt_allele set then use that alt_id for the LRG gene only.
+## Else use a new one and add both core and LRG.
+##
 
 
-while ($sth->fetch()){
-  if(defined($gene_id_to_alt_id{$core_gene_id})){
-    $insert_sth->execute($gene_id_to_alt_id{$core_gene_id}, $lrg_gene_id);
-    $old_count++;
-  }
-  elsif(defined($gene_id_to_alt_id{$lrg_gene_id})){
-    $insert_sth->execute($gene_id_to_alt_id{$lrg_gene_id}, $core_gene_id);
-    print "LRG perculiarity\t$core_gene_id\t$lrg_gene_id\n";
-    $lrg_count++;
-  }
-  else{ # new one.
-    $max_alt_id++;
-    $insert_sth->execute($max_alt_id, $lrg_gene_id);
-    $insert_sth->execute($max_alt_id, $core_gene_id);
-    $new_count++;
-  }
-  $count++;
-}
+#while ($sth->fetch()){
+#  if(defined($gene_id_to_alt_id{$core_gene_id})){
+#    $insert_sth->execute($gene_id_to_alt_id{$core_gene_id}, $lrg_gene_id);
+#    $old_count++;
+#  }
+#  elsif(defined($gene_id_to_alt_id{$lrg_gene_id})){
+#    $insert_sth->execute($gene_id_to_alt_id{$lrg_gene_id}, $core_gene_id);
+#    print "LRG perculiarity\t$core_gene_id\t$lrg_gene_id\n";
+#    $lrg_count++;
+#  }
+#  else{ # new one.
+#    $max_alt_id++;
+#    $insert_sth->execute($max_alt_id, $lrg_gene_id);
+#    $insert_sth->execute($max_alt_id, $core_gene_id);
+#    $new_count++;
+#  }
+#  $count++;
+#}
 
-print "Added $count alt_allels for the lrgs. $old_count added to previous alt_alleles and $new_count new ones\n";
-print "LRG count = $lrg_count\n";
+#print "Added $count alt_allels for the lrgs. $old_count added to previous alt_alleles and $new_count new ones\n";
+#print "LRG problem count = $lrg_count\n";
