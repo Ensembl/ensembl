@@ -564,7 +564,7 @@ sub add_DBAdaptor {
 
 sub get_DBAdaptor {
   my ( $class, $species, $group , $no_alias_check) = @_;
-throw 'arrggh for '.$species if ! defined $species;
+throw 'Species not defined.' if ! defined $species;
   if(!defined($no_alias_check) or !$no_alias_check){
     $species = $class->get_alias($species);
   }
