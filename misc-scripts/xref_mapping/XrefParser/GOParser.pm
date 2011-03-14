@@ -34,14 +34,17 @@ sub run {
 
   my $file = @{$files}[0];
   my $file_desc = @{$files}[1];
+  
+  print STDERR "GO file to parse, $file\n";
 
   #
   # Get the descriptions from the desc file.
   #
+  print STDERR "getting filehandle for description file, $file_desc\n";
   my $go_io = $self->get_filehandle($file_desc);
     
   if ( !defined $go_io ) {
-    print STDERR "ERROR: Could not open $file_desc\n";
+    print STDERR "ERROR: Could not open description file, $file_desc\n";
     return 1;    # 1 error
   }
   
@@ -95,6 +98,12 @@ sub run {
   my $wormset;
   my %fish;
   my $fishset;
+
+  # Add mapping between GO and SGD identifiers
+
+  my %cerevisiae;
+  my $cerevisiae_set;
+  my $cerevisiae_miss = 0;
 
   my $count  = 0;
 
@@ -207,6 +216,28 @@ sub run {
 	    $count++;
 	    #print join (" ", "MGI" ,$mgi_to_uniprot{$array[1]}, $array[4], "\n");
 	  }
+	}
+	# SGD GO code
+	elsif ($array[0] =~ /SGD/) {
+	   
+	    if(!defined($cerevisiae_set)){
+		$cerevisiae_set = 1;
+		# Todo: Make sure we get this hash populated
+		%cerevisiae = %{$self->get_valid_codes("sgd",$species_id)};
+		
+		print STDERR "Got " . keys (%cerevisiae) . " cerevisiae ids\n";
+		
+	    }
+	    
+	    if($cerevisiae{$array[1]}){
+		$self->add_to_xrefs($cerevisiae{$array[1]},$array[4],'',$array[4],$go_to_desc{$array[4]} || '',$array[6],$source_id,$species_id);
+		$count++;
+		#print join (" ", "UniProt" ,$swiss{$array[1]}, $array[4], "\n");
+	    }
+	    else{
+		$cerevisiae_miss++;
+	    }
+	    
 	}
 	
 	elsif(!defined($wrongtype{$array[0]})){
