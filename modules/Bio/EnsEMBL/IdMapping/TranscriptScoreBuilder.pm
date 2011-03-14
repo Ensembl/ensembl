@@ -355,82 +355,102 @@ sub score_matrix_from_flag_matrix {
 
 
 sub different_translation_rescore {
-  my $self = shift;
+  my $self   = shift;
   my $matrix = shift;
 
-  unless ($matrix and
-          $matrix->isa('Bio::EnsEMBL::IdMapping::ScoredMappingMatrix')) {
+  unless ($matrix
+      and $matrix->isa('Bio::EnsEMBL::IdMapping::ScoredMappingMatrix') )
+  {
     throw('Need a Bio::EnsEMBL::IdMapping::ScoredMappingMatrix.');
   }
 
   my $i = 0;
 
-  foreach my $entry (sort { $b->score <=> $a->score }
-                      @{ $matrix->get_all_Entries }) {
+  foreach my $entry ( sort { $b->score <=> $a->score }
+                      @{ $matrix->get_all_Entries } )
+  {
 
     # we only do this for perfect matches, i.e. transcript score == 1
-    last if ($entry->score < 1);
+    last if ( $entry->score < 1 );
 
-    my $source_tl = $self->cache->get_by_key('transcripts_by_id',
-      'source', $entry->source)->translation;
-    my $target_tl = $self->cache->get_by_key('transcripts_by_id',
-      'target', $entry->target)->translation;
+    my $source_tl =
+      $self->cache->get_by_key( 'transcripts_by_id', 'source',
+                                $entry->source )->translation;
+    my $target_tl =
+      $self->cache->get_by_key( 'transcripts_by_id', 'target',
+                                $entry->target )->translation;
 
     # no penalty if both transcripts have no translation
-    next if (!$source_tl and !$target_tl);
+    next if ( !$source_tl and !$target_tl );
 
-    if (!$source_tl or !$target_tl or
-        ($source_tl->seq ne $target_tl->seq)) {
-      # set score to a value less than 1
-      $matrix->set_score($entry->source, $entry->target, 0.98);
+    if (    !$source_tl
+         or !$target_tl
+         or ( $source_tl->seq ne $target_tl->seq ) )
+    {
+      # PENALTY: The transcript stable ID is now on a transcript with a
+      # different translation.
+      $matrix->set_score( $entry->source(), $entry->target(),
+                          0.98*$entry->score() );
       $i++;
     }
-    
-  }
 
-  $self->logger->debug("Non-perfect translations on perfect transcripts: $i\n", 1);
-}
+  } ## end foreach my $entry ( sort { ...})
+
+  $self->logger->debug(
+                "Non-perfect translations on perfect transcripts: $i\n",
+                1 );
+} ## end sub different_translation_rescore
 
 
 sub non_mapped_gene_rescore {
-  my $self = shift;
-  my $matrix = shift;
+  my $self          = shift;
+  my $matrix        = shift;
   my $gene_mappings = shift;
 
   # argument checks
-  unless ($matrix and
-      $matrix->isa('Bio::EnsEMBL::IdMapping::ScoredMappingMatrix')) {
-    throw('Need a transcript Bio::EnsEMBL::IdMapping::ScoredMappingMatrix.');
+  unless ($matrix
+      and $matrix->isa('Bio::EnsEMBL::IdMapping::ScoredMappingMatrix') )
+  {
+    throw(
+       'Need a transcript Bio::EnsEMBL::IdMapping::ScoredMappingMatrix.'
+    );
   }
 
-  unless ($gene_mappings and
-          $gene_mappings->isa('Bio::EnsEMBL::IdMapping::MappingList')) {
+  unless ( $gene_mappings
+       and $gene_mappings->isa('Bio::EnsEMBL::IdMapping::MappingList') )
+  {
     throw('Need a gene Bio::EnsEMBL::IdMapping::MappingList.');
   }
 
   # create of lookup hash of mapped source genes to target genes
-  my %gene_lookup = map { $_->source => $_->target }
+  my %gene_lookup =
+    map { $_->source => $_->target }
     @{ $gene_mappings->get_all_Entries };
 
   my $i = 0;
 
-  foreach my $entry (@{ $matrix->get_all_Entries }) {
+  foreach my $entry ( @{ $matrix->get_all_Entries } ) {
 
-    my $source_gene = $self->cache->get_by_key('genes_by_transcript_id',
-      'source', $entry->source);
-    my $target_gene = $self->cache->get_by_key('genes_by_transcript_id',
-      'target', $entry->target);
+    my $source_gene =
+      $self->cache->get_by_key( 'genes_by_transcript_id', 'source',
+                                $entry->source );
+    my $target_gene =
+      $self->cache->get_by_key( 'genes_by_transcript_id', 'target',
+                                $entry->target );
 
-    my $mapped_target = $gene_lookup{$source_gene->id};
+    my $mapped_target = $gene_lookup{ $source_gene->id };
 
-    if (!$mapped_target or ($mapped_target != $target_gene->id)) {
-      $matrix->set_score($entry->source, $entry->target, ($entry->score * 0.8));
+    if ( !$mapped_target or ( $mapped_target != $target_gene->id ) ) {
+      # PENALTY: The transcript stable ID is now on a different gene.
+      $matrix->set_score( $entry->source(), $entry->target(),
+                          0.8*$entry->score() );
       $i++;
     }
   }
 
-  $self->logger->debug("Scored transcripts in non-mapped genes: $i\n", 1);
-}
+  $self->logger->debug( "Scored transcripts in non-mapped genes: $i\n",
+                        1 );
+} ## end sub non_mapped_gene_rescore
 
   
 1;

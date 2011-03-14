@@ -164,50 +164,54 @@ sub create_shrinked_matrix {
 =cut
 
 sub internal_id_rescore {
-  my $self = shift;
+  my $self   = shift;
   my $matrix = shift;
 
-  unless ($matrix and
-          $matrix->isa('Bio::EnsEMBL::IdMapping::ScoredMappingMatrix')) {
+  unless ($matrix
+      and $matrix->isa('Bio::EnsEMBL::IdMapping::ScoredMappingMatrix') )
+  {
     throw('Need a Bio::EnsEMBL::IdMapping::ScoredMappingMatrix.');
   }
 
   my $i = 0;
 
-  foreach my $source (@{ $matrix->get_all_sources }) {
-
-    my @entries = sort { $b <=> $a }
-      @{ $matrix->get_Entries_for_source($source) };
+  foreach my $source ( @{ $matrix->get_all_sources } ) {
+    my @entries =
+      sort { $b <=> $a } @{ $matrix->get_Entries_for_source($source) };
 
     # nothing to do if we only have one mapping
-    next unless (scalar(@entries) > 1);
+    next unless ( scalar(@entries) > 1 );
 
     # only penalise if mappings are ambiguous
-    next unless ($entries[0]->score == $entries[1]->score);
+    next unless ( $entries[0]->score == $entries[1]->score );
 
-    # only penalise if one source id == target id where score == best score
+    # only penalise if one source id == target id where score == best
+    # score
     my $ambiguous = 0;
-    
+
     foreach my $e (@entries) {
-      if ($e->target == $source and $e->score == $entries[0]) {
+      if ( $e->target == $source and $e->score == $entries[0] ) {
         $ambiguous = 1;
       }
     }
 
     next unless ($ambiguous);
 
-    # now penalise those where source id != target id and score == best score
+    # now penalise those where source id != target id and score == best
+    # score
     foreach my $e (@entries) {
-      if ($e->target != $source and $e->score == $entries[0]) {
-        $matrix->set_score($source, $e->target, ($e->score * 0.8));
+      if ( $e->target != $source and $e->score == $entries[0] ) {
+        # PENALTY: This stable ID is not any longer on the same object.
+        $matrix->set_score( $source, $e->target(), 0.8*$e->score() );
         $i++;
       }
     }
 
-  }
-  
-  $self->logger->debug("Scored entries with internal ID mismatch: $i\n", 1);
-}
+  } ## end foreach my $source ( @{ $matrix...})
+
+  $self->logger->debug("Scored entries with internal ID mismatch: $i\n",
+                       1 );
+} ## end sub internal_id_rescore
 
 
 =head2 log_matrix_stats

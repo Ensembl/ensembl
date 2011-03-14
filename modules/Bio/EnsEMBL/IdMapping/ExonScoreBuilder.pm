@@ -645,57 +645,67 @@ sub parse_exonerate_results {
 
 
 sub non_mapped_transcript_rescore {
-  my $self = shift;
-  my $matrix = shift;
+  my $self                = shift;
+  my $matrix              = shift;
   my $transcript_mappings = shift;
 
   # argument checks
-  unless ($matrix and
-      $matrix->isa('Bio::EnsEMBL::IdMapping::ScoredMappingMatrix')) {
-    throw('Need a Bio::EnsEMBL::IdMapping::ScoredMappingMatrix of exons.');
+  unless ($matrix
+      and $matrix->isa('Bio::EnsEMBL::IdMapping::ScoredMappingMatrix') )
+  {
+    throw(
+       'Need a Bio::EnsEMBL::IdMapping::ScoredMappingMatrix of exons.');
   }
 
-  unless ($transcript_mappings and
-          $transcript_mappings->isa('Bio::EnsEMBL::IdMapping::MappingList')) {
-    throw('Need a Bio::EnsEMBL::IdMapping::MappingList of transcripts.');
+  unless ( $transcript_mappings
+     and
+     $transcript_mappings->isa('Bio::EnsEMBL::IdMapping::MappingList') )
+  {
+    throw(
+         'Need a Bio::EnsEMBL::IdMapping::MappingList of transcripts.');
   }
 
-  # create of lookup hash of mapped source transcripts to target transcripts
-  my %transcript_lookup = map { $_->source => $_->target }
+  # create of lookup hash of mapped source transcripts to target
+  # transcripts
+  my %transcript_lookup =
+    map { $_->source => $_->target }
     @{ $transcript_mappings->get_all_Entries };
 
   my $i = 0;
 
-  foreach my $entry (@{ $matrix->get_all_Entries }) {
+  foreach my $entry ( @{ $matrix->get_all_Entries } ) {
 
-    my @source_transcripts = @{ $self->cache->get_by_key(
-      'transcripts_by_exon_id', 'source', $entry->source) };
-    my @target_transcripts = @{ $self->cache->get_by_key(
-      'transcripts_by_exon_id', 'target', $entry->target) };
+    my @source_transcripts = @{
+      $self->cache->get_by_key( 'transcripts_by_exon_id', 'source',
+                                $entry->source ) };
+    my @target_transcripts = @{
+      $self->cache->get_by_key( 'transcripts_by_exon_id', 'target',
+                                $entry->target ) };
 
     my $found_mapped = 0;
 
-    TR:
+  TR:
     foreach my $source_tr (@source_transcripts) {
       foreach my $target_tr (@target_transcripts) {
-        my $mapped_target = $transcript_lookup{$source_tr->id};
+        my $mapped_target = $transcript_lookup{ $source_tr->id };
 
-        if ($mapped_target and ($mapped_target == $target_tr->id)) {
+        if ( $mapped_target and ( $mapped_target == $target_tr->id ) ) {
           $found_mapped = 1;
           last TR;
         }
       }
     }
-    
+
     unless ($found_mapped) {
-      $matrix->set_score($entry->source, $entry->target, ($entry->score * 0.8));
+      # PENALTY: The exon stable ID is on a new transcript.
+      $matrix->set_score( $entry->source(), $entry->target(),
+                          0.8*$entry->score() );
       $i++;
     }
-  }
+  } ## end foreach my $entry ( @{ $matrix...})
 
-  $self->logger->debug("Scored exons in non-mapped transcripts: $i\n", 1);
-}
-
+  $self->logger->debug( "Scored exons in non-mapped transcripts: $i\n",
+                        1 );
+} ## end sub non_mapped_transcript_rescore
 
 1;
-
