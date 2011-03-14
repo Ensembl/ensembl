@@ -121,6 +121,27 @@ while ($sth->fetch){
 $sth->finish;
 
 
+
+my %non_reference; # $non_reference{$gene_id} = 1;
+
+
+$sql = (<<SEQ);
+SELECT g.gene_id 
+  FROM gene g, seq_region_attrib sra, attrib_type at
+    WHERE g.seq_region_id = sra.seq_region_id AND
+          at.attrib_type_id = sra.attrib_type_id AND
+          at.code = 'non_ref'
+SEQ
+
+$sth = $core_dba->dbc->prepare($sql);
+$sth->execute;
+$sth->bind_columns(\$gene_id);
+while($sth->fetch()){
+  $non_reference{$gene_id} = 1;
+}
+
+
+
 #
 # Delete the old data
 #
@@ -158,7 +179,7 @@ foreach my $key (keys %alt_to_stable){
 # Then store the alt_allele and gene_id in the alt_allele table.
 #
 
-$sql = "insert into alt_allele (alt_allele_id, gene_id) values(?, ?)";
+$sql = "insert into alt_allele (alt_allele_id, gene_id, reference) values(?, ?, ?)";
 my $insert_sth = $core_dba->dbc->prepare($sql);
 
 my $count=0;
@@ -168,15 +189,26 @@ my $alt_id_count = 0;
 #
 # gene_id_to_alt_id needed for LRG stuff
 #
-my %gene_id_to_alt_id;
+#my %gene_id_to_alt_id;
 
 foreach my $key (keys %alt_to_stable){
   my @arr = @{$alt_to_stable{$key}};
   if(scalar(@arr) > 1){
+    my $sanity_check =0; # should be 1 refernce gene only if 0 or more than 1 we may have a problem
     foreach my $stable_id (@arr){
-      $insert_sth->execute($key, $stable_id_to_gene_id{$stable_id});
-      $gene_id_to_alt_id{$stable_id_to_gene_id{$stable_id}}= $key;
+      my $ref = 1;
+      if(defined( $non_reference{$stable_id_to_gene_id{$stable_id}})){
+	$ref = 0;
+      }      
+      else{
+	$sanity_check++;
+      }
+      $insert_sth->execute($key, $stable_id_to_gene_id{$stable_id}, $ref);
+#      $gene_id_to_alt_id{$stable_id_to_gene_id{$stable_id}}= $key;
       $count++;
+    }
+    if($sanity_check !=1){
+      print STDERR "Problem we have $sanity_check genes on the reference sequence for alt_id $key\n";
     }
     $alt_id_count++;
   }
@@ -186,6 +218,22 @@ foreach my $key (keys %alt_to_stable){
 
 
 print "Added $alt_id_count alt_allele ids for $count genes\n";
+
+#
+# useful sql to look at sanity check problems
+#
+#select gsi.stable_id,g.seq_region_start, g.seq_region_end, s.name, x.display_label from gene g, seq_region s, gene_stable_id gsi, alt_allele aa, xref x where g.display_xref_id = x.xref_id and gsi.gene_id = g.gene_id and g.gene_id = aa.gene_id and g.seq_region_id = s.seq_region_id and aa.alt_allele_id =37;
+
+
+
+exit;
+
+
+
+
+
+
+
 
 
 ## LRG SQL. How to fit this in?
