@@ -10,6 +10,7 @@ use strict;
 use warnings;
 
 use Carp;
+use DBI qw( :sql_types );
 
 use base qw( XrefParser::BaseParser );
 
@@ -61,8 +62,7 @@ sub add_xref {
   $add_xref_sth->bind_param( 10, $xref->{'exonStarts'}, SQL_VARCHAR );
   $add_xref_sth->bind_param( 11, $xref->{'exonEnds'},   SQL_VARCHAR );
 
-  $add_xref_sth->execute();
-    or croak( $add_xref_sth->errstr() );
+  $add_xref_sth->execute() or croak( $add_xref_sth->errstr() );
 } ## end sub add_xref
 
 1;
