@@ -1,0 +1,90 @@
+========================================================================
+== About the scripts here                                             ==
+========================================================================
+
+update_database_list.pl
+
+  - Purpose
+
+    Updates the 'db' table in the production database on ens-staging1
+    with new databases found on the staging servers.  It will discover
+    new databases and will set the 'is_current' flag for all found
+    databases to 1 (true).  It will also notice when databases goes away
+    from one reason or another.
+
+  - Who runs this and when?
+
+    The release coordinator runs this script whenever a new database or
+    a set of new databases has been copied onto the staging servers.
+    This means that this script may be run many times during the release
+    process.
+
+  - How to run it?
+
+    In the simplest case, this is how it's done (release NN):
+
+      ./update_database_list.pl -r NN -wp PASSWORD
+
+    Run the script with no options to see a short usage info text.  Run
+    with -a to get a description of the script.
+
+  - What to look out for?
+
+    Running this script with the wrong release will mark all databases
+    of the current release as "not current".  Just running it again,
+    specifying the correct release, will sort this out.
+
+    Running it twice will have no adverse effects.
+
+
+populate_production_db_tables.pl
+
+  - Purpose
+
+    Takes the data from the four views 'attrib_type', 'external_db',
+    'misc_set', and 'unmapped_reason' in the production database and
+    copies them to one or several other databases.
+
+  - Who runs this and when?
+
+    This script may be used by the genebuilders to populate a new
+    database with the data of these four tables, but the release
+    coordinator may also use it during the release process, before the
+    handover to the web-team, to synchronise them over all Core-like
+    databases on the staging servers.
+
+  - How to run it?
+
+    To insert the four tables into one single database:
+
+      populate_production_db_tables.pl -h HOST \
+        -u USER -p PASSWORD -d DATABASE
+
+    To only pick the 'external_db' table:
+
+      populate_production_db_tables.pl -h HOST \
+        -u USER -p PASSWORD -d DATABASE -t external_db
+
+    To update all database on a server with all four tables (release
+    NN):
+
+      populate_production_db_tables.pl -h HOST \
+        -u USER -p PASSWORD --core=NN
+
+  - What to look out for?
+
+    The script creates a backup of the tables that it replaces.  These
+    backups should be deleted.  This is done simply like this (for all
+    Core-like databases on a server):
+
+      populate_production_db_tables.pl -h HOST \
+        -u USER -p PASSWORD --core=NN --cleanup
+
+    Running the script twice will make it complain about already
+    existing backup tables.  These may be automatically dropped by using
+    the -D flag, but you need to be sure you actually want to drop all
+    backups.
+
+    The script will notify you of any new or deleted entries (compared
+    to the entries in the backed up tables) and will give you an SQL
+    statement that may be use to study these.
