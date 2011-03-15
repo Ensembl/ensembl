@@ -2,7 +2,7 @@
 == About the scripts here                                             ==
 ========================================================================
 
-update_database_list.pl
+==> update_database_list.pl
 
   - Purpose
 
@@ -37,13 +37,14 @@ update_database_list.pl
     Running it twice will have no adverse effects.
 
 
-populate_production_db_tables.pl
+==> populate_production_db_tables.pl
 
   - Purpose
 
     Takes the data from the four views 'attrib_type', 'external_db',
-    'misc_set', and 'unmapped_reason' in the production database and
-    copies them to one or several other databases.
+    'misc_set', and 'unmapped_reason' views in the production database
+    and copies them to one or several other Core-like databases.  These
+    views are supported by the 'master_%' tables.
 
   - Who runs this and when?
 
@@ -54,6 +55,8 @@ populate_production_db_tables.pl
     databases on the staging servers.
 
   - How to run it?
+
+    Running the script without any options will display usage info.
 
     To insert the four tables into one single database:
 
@@ -88,3 +91,45 @@ populate_production_db_tables.pl
     The script will notify you of any new or deleted entries (compared
     to the entries in the backed up tables) and will give you an SQL
     statement that may be use to study these.
+
+
+==> populate_analysis_description.pl
+
+  - Purpose
+
+    Populates the 'analysis_description' table in all
+    Core-like databases on the staging servers from the
+    'full_analysis_description' view in the production database.
+    This view is supported by various other views and tables in the
+    production database.
+
+  - Who runs this and when?
+
+    This script will be run by the release coordinator before handover
+    to the web-team.  Since the script relies on the database names
+    stored in the production database, one can only run it on databases
+    detected by the update_database_list.pl script (see above).
+
+  - How to run it?
+
+    Running the script without any options will display usage info.
+
+    The options are very similar to those of the
+    populate_production_db_tables.pl script (see above), and the mode of
+    operation is likewise similar to that script.
+
+  - What to look out for?
+
+    As for the populate_production_db_tables.pl script, this script also
+    creates a backup of the analysis_description table which needs to be
+    removed.
+
+    The script will also warn about analyses that it expected to find
+    in the database but didn't (they are expected since they are linked
+    to the database in the production database, but might have gone out
+    of use since the last update, so this is not a big deal), and will
+    flag as errors any analysis that is found but that does not have a
+    corresponding analysis description in the production database.  If
+    this happens, the release coordinator must either add a new analysis
+    description to the production database, or connect an existing
+    analysis description to the target database.
