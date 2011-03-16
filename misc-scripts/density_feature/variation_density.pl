@@ -42,19 +42,21 @@ my $sth = $slice_adaptor->dbc->prepare("DELETE df, dt, a, ad FROM analysis_descr
 $sth->execute();
 
 # Sort slices by coordinate system rank, then by length
-my @sorted_slices =
-  sort( {      $a->coord_system()->rank() <=> $b->coord_system()->rank()
-	       || $b->seq_region_length() <=> $a->seq_region_length()
-	} @{ $slice_adaptor->fetch_all('toplevel') } );
+my @sorted_slices = sort( {
+               $a->coord_system()->rank() <=> $b->coord_system()->rank()
+                 || $b->seq_region_length() <=> $a->seq_region_length()
+} @{ $slice_adaptor->fetch_all('toplevel') } );
 
-my $analysis = new Bio::EnsEMBL::Analysis(-program       => "variation_density.pl",
-					  -database      => "ensembl",
-					  -gff_source    => "variation_density.pl",
-					  -gff_feature   => "density",
-					  -logic_name    => "snpdensity",
-					  -description   => 'Density of SNP features on the sequence',
-					  -display_label => 'SNP Density',
-					  -displayable   => 1 );
+my $analysis =
+  new Bio::EnsEMBL::Analysis(
+              -program     => "variation_density.pl",
+              -database    => "ensembl",
+              -gff_source  => "variation_density.pl",
+              -gff_feature => "density",
+              -logic_name  => "snpdensity",
+              -description => 'Density of Single Nucleotide Polymorphisms (SNPs) calculated by variation_density.pl (see scripts at the <a rel="external" href="http://cvs.sanger.ac.uk/cgi-bin/viewvc.cgi/?root=ensembl">Sanger Institute CVS</a> repository).',
+              -display_label => 'SNP Density',
+              -displayable   => 1 );
 
 $analysis_adaptor->store($analysis);
 $analysis_adaptor->update($analysis);
