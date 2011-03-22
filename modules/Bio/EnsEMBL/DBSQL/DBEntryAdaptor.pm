@@ -1395,6 +1395,8 @@ sub list_translation_ids_by_extids {
                NOTE:  In a multi-species database, this method will
                return all the entries matching the search criteria, not
                just the ones associated with the current species.
+               SQL wildcards can be used in the external id, 
+               but overly generic queries (two characters) will be prevented.
   Description: Gets
   Returntype : list of dbIDs (gene_id, transcript_id, etc.)
   Exceptions : none
@@ -1407,6 +1409,21 @@ sub list_translation_ids_by_extids {
 
 sub _type_by_external_id {
   my ( $self, $name, $ensType, $extraType, $external_db_name ) = @_;
+
+  # $name has SQL wildcard support
+  # = or LIKE put into SQL statement, and open queries like % or A% are rejected.
+  my $comparison_operator;
+  if ($name =~ /[_%\[]/) {
+    $comparison_operator = "LIKE";
+    if ($name =~ /^.?%/) {
+      warn "External $ensType name $name is too vague and will monopolise database resources. Please use a more specific $ensType name.\n";
+      return;
+    }
+  }
+  else {
+    $comparison_operator = "=";
+  }
+
 
   my $from_sql  = '';
   my $where_sql = '';
@@ -1480,7 +1497,7 @@ sub _type_by_external_id {
                 xref x,
                 object_xref oxr
       WHERE     $where_sql
-                ( x.dbprimary_acc = ? OR x.display_label = ? )
+                ( x.dbprimary_acc $comparison_operator ? OR x.display_label $comparison_operator ? )
       AND         x.xref_id = oxr.xref_id
       AND         oxr.ensembl_object_type = ?
   );
@@ -1498,7 +1515,7 @@ sub _type_by_external_id {
                 object_xref oxr,
                 xref x
       WHERE     $where_sql
-                syn.synonym = ?
+                syn.synonym $comparison_operator ?
       AND       syn.xref_id = oxr.xref_id
       AND       oxr.ensembl_object_type = ?
       AND       x.xref_id = oxr.xref_id);
@@ -1513,7 +1530,7 @@ sub _type_by_external_id {
                 external_synonym syn,
                 object_xref oxr
       WHERE     $where_sql
-                syn.synonym = ?
+                syn.synonym $comparison_operator ?
       AND       syn.xref_id = oxr.xref_id
       AND       oxr.ensembl_object_type = ?);
 

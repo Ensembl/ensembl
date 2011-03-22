@@ -284,12 +284,15 @@ sub fetch_by_Transcript {
                identifier originates.
   Example    : my @translations =
                   @{ $trl_adaptor->fetch_all_by_external_name('BRCA2') };
+               my @many_translations = 
+                  @{ $trl_adaptor->fetch_all_by_external_name('BRCA%') };
   Description: Retrieves a list of translations fetched via an
                external identifier.  Note that this may not be a
                particularly useful method, because translations
                do not make much sense out of the context of
                their transcript.  It may be better to use the
                TranscriptAdaptor::fetch_all_by_external_name instead.
+               SQL wildcards % and _ are supported in the $external_name
   Returntype : reference to a list of Translations
   Exceptions : none
   Caller     : general

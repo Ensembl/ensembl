@@ -3,7 +3,7 @@ use warnings;
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 88;
+	plan tests => 92;
 }
 
 use Bio::EnsEMBL::Test::MultiTestDB;
@@ -445,6 +445,23 @@ ok(($genes[0]->stable_id() eq 'ENSG00000174873') ||
 debug($gene->stable_id);
 ok($gene->stable_id() eq 'ENSG00000101367');
 
+# 
+# test fetch_all_by_external_name with wildcard matching
+#
+@genes = @{$ga->fetch_all_by_external_name('MAE__HUMAN')};
+debug("Wildcard test:".$genes[0]->stable_id);
+ok($genes[0]->stable_id() eq 'ENSG00000101367');
+
+@genes = @{$ga->fetch_all_by_external_name('M_%')};
+debug("Wildcard test:". $genes[0]->stable_id() );
+debug(scalar @genes." genes found");
+ok(scalar @genes == 2);
+
+# Test performance protection (very vague queries return no hits)
+debug("Testing vague query protection");
+ok(ok(scalar (@{$ga->fetch_all_by_external_name('M%')}) == 0);
+ok(scalar (@{$ga->fetch_all_by_external_name('%')}) == 0);
+
 #
 # test GeneAdaptor::get_Interpro_by_geneid
 #
@@ -614,7 +631,7 @@ $multi->hide( "core", "gene", "transcript", "exon", 'xref', 'object_xref',
 
 $gene->analysis($analysis);
 my $analysis_adap = $db->get_AnalysisAdaptor();
-my $analysis = $analysis_adap->fetch_by_logic_name("ensembl");
+$analysis = $analysis_adap->fetch_by_logic_name("ensembl");
 
 my $dbe = Bio::EnsEMBL::DBEntry->new(-primary_id => 'test_id',
                                      -version    => 1,

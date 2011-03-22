@@ -754,12 +754,14 @@ sub fetch_by_translation_stable_id {
                The name of the external database from which the
                identifier originates.
   Example    : @genes = @{$gene_adaptor->fetch_all_by_external_name('BRCA2')}
+               @many_genes = @{$gene_adaptor->fetch_all_by_external_name('BRCA%')}
   Description: Retrieves a list of genes with an external database
                identifier $external_name. The genes returned are in
                their native coordinate system, i.e. in the coordinate
                system they are stored in the database in.  If another
                coordinate system is required then the Gene::transfer or
                Gene::transform method can be used.
+               SQL wildcards % and _ are supported in the $external_name
   Returntype : listref of Bio::EnsEMBL::Gene
   Exceptions : none
   Caller     : goview, general

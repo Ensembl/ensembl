@@ -477,6 +477,8 @@ sub fetch_all_by_Slice {
                identifier originates.
   Example    : my @transcripts =
                   @{ $tr_adaptor->fetch_all_by_external_name( 'NP_065811.1') };
+               my @more_transcripts = 
+                  @{$tr_adaptor->fetch_all_by_external_name( 'NP_0658__._')};
   Description: Retrieves all transcripts which are associated with
                an external identifier such as a GO term, Swissprot
                identifer, etc.  Usually there will only be a single
@@ -488,6 +490,7 @@ sub fetch_all_by_Slice {
                Transcript::transform method can be used to convert them.
                If no transcripts with the external identifier are found,
                a reference to an empty list is returned.
+               SQL wildcards % and _ are supported in the $external_name
   Returntype : listref of Bio::EnsEMBL::Transcript
   Exceptions : none
   Caller     : general
