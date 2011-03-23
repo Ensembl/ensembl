@@ -144,6 +144,10 @@ sub new {
  
   $self = Bio::EnsEMBL::Utils::ConfigRegistry::gen_load($self);
 
+  if(!defined($species) ){
+     $reg->find_and_add_aliases($self);
+  }
+
   $self->species_id( $species_id || 1 );
 
   $self->is_multispecies( defined($is_multispecies)
