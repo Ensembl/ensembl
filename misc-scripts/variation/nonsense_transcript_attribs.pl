@@ -176,20 +176,70 @@ my @null_transcripts;
 # If no input file has been specified, get the data from the variation database
 if (!defined($file)) {
   
+    #ÊGet the source_id for dbSNP
+    my $stmt = qq{
+        SELECT
+            source_id
+        FROM
+            source
+        WHERE
+            name = 'dbSNP'
+        LIMIT 1
+    };
+    my $source_id = $vdb->dbc->db_handle->selectall_arrayref($stmt)->[0][0];
+    
+    #ÊGet the sample_ids for HapMap populations
+    $stmt = qq{
+        SELECT
+            p.sample_id,
+            s.name
+        FROM
+            sample s JOIN
+            population p ON (
+                p.sample_id = s.sample_id
+            )
+        WHERE
+            s.name LIKE 'CSHL-HAPMAP:%'
+    };
+    my %samples;
+    map {$samples{$_->[0]} = $_->[1]} @{$vdb->dbc->db_handle->selectall_arrayref($stmt)};
+    my $sample_ids = join(",",keys(%samples));
+  
+    #ÊA prepared statement for getting the populations where the stop_* causing allele has enough frequency
+    $stmt = qq{
+      SELECT
+        a.sample_id
+      FROM
+        allele a JOIN
+        variation v ON (
+            v.variation_id = a.variation_id
+        )
+      WHERE
+        a.variation_id = ? AND
+        a.allele = ? AND
+        a.frequency >= $FREQUENCY_CUTOFF AND
+        a.sample_id IN ($sample_ids) AND
+        v.source_id = $source_id
+    };
+    my $pop_sth = $vdb->dbc->prepare($stmt);
+    
   # Query the MySQL database directly for transcripts with consequence types STOP_*
-  my $stmt = qq{
+  $stmt = qq{
     SELECT
-      tv.transcript_stable_id,
+      tv.feature_stable_id,
       vf.variation_id,
       vf.variation_name,
-      vf.allele_string,
-      tv.consequence_type,
-      tv.transcript_variation_id
+      tv.allele_string,
+      tv.consequence_types
     FROM
       transcript_variation tv JOIN
       variation_feature vf USING (variation_feature_id)
     WHERE
-      tv.consequence_type LIKE '%STOP_%'
+        (
+            FIND_IN_SET('stop_lost',tv.consequence_types) OR
+            FIND_IN_SET('stop_gained',tv.consequence_types)
+        ) AND
+        tv.somatic = 0
   };
   my $sth = $vdb->dbc->prepare($stmt) or die("Error preparing statement $stmt");
   $sth->execute();
@@ -199,82 +249,21 @@ if (!defined($file)) {
   my $stop_codons = qq{TGA/TAA/TAG};
   
   # For each variation_feature, check that the source, population and minor allele frequencies are 'dbSNP', 'CSHL-HapMap-*' and '>= $FREQUENCY_CUTOFF'
-  while (my ($transcript_stable_id,$variation_id,$variation_name,$allele_string,$consequence_string,$transcript_variation_id) = $sth->fetchrow_array()) {
+  while (my ($transcript_stable_id,$variation_id,$variation_name,$allele_string,$consequence_string) = $sth->fetchrow_array()) {
     
-    my %allele_is_stop;
+    # Get the allele and the consequence
+    my ($allele) = $allele_string =~ m/\/(.*)$/;
+    my ($consequence) = $consequence_string =~ m/(stop_[^,]+)/;
     
-    # Temp fix for getting stable_id from pre-58 variation database
-    #$stmt = qq{SELECT stable_id FROM transcript_stable_id WHERE transcript_id = $transcript_stable_id LIMIT 1};
-    #$transcript_stable_id = $cdb->dbc->db_handle->selectall_arrayref($stmt)->[0][0];
-    
-    # If there are more than two alleles, we need to check the codon to make sure we get the causative allele
-    my $n_alleles = ($allele_string =~ tr/\//\//) + 1;
-    if ($n_alleles > 2) {
-      
-      # Get a TranscriptVariation object from the API. Will need this to check the codon.
-      my $transcript_variation = $tv_adaptor->fetch_by_dbID($transcript_variation_id) or throw("Could not get TranscriptVariation object for $variation_name");
-      # Get the possible codons for the TranscriptVariation
-      my @codons = split(/\//,$transcript_variation->codons());
-      
-      # Get the allele within the codon, it will be capital letters while the rest of the codon is lowercase
-      for (my $i=0; $i<$n_alleles; $i++) {
-        my ($allele) = $codons[$i] =~ m/([A-Z]+)/;
-        # If the transcript is on the reverse strand, the allele needs to be flipped in order to match the variation alleles
-        reverse_comp(\$allele) if ($transcript_variation->transcript->strand() < 0);
-        # For each allele, store whether the codon with the allele encodes a stop using a hash with the allele as key 
-        $allele_is_stop{$allele} = $stop_codons =~ m/$codons[$i]/i;
-      }
-    }
-    
-    # Get the reference allele
-    my ($ref_allele) = $allele_string =~ m/^([^\/]+)\//;
-    
-    # Parse the consequence type we're interested in from the set of consequences
-    my ($cons_type) = $consequence_string =~ m/(STOP\_[^\,]+)/;
-    
-    # Get the HapMap population and non-reference allele that has an allele frequency above the $FREQUENCY_CUTOFF
-    $stmt = qq{
-      SELECT DISTINCT
-        s.name,
-        a.allele
-      FROM
-        variation v,
-        source src,
-        allele a,
-        population p,
-        sample s
-      WHERE
-        v.variation_id = ? AND
-        a.allele != ? AND
-        src.name = ? AND
-        a.frequency >= ? AND
-        s.name LIKE ? AND
-        v.source_id = src.source_id AND
-        a.variation_id = v.variation_id AND
-        a.sample_id = p.sample_id AND
-        s.sample_id = p.sample_id
-    };
-    my $sub_sth = $vdb->dbc->prepare($stmt) or die("Error preparing statement $stmt");
-    $sub_sth->bind_param(1,$variation_id,SQL_INTEGER);
-    $sub_sth->bind_param(2,$ref_allele,SQL_VARCHAR);
-    $sub_sth->bind_param(3,'dbSNP',SQL_VARCHAR);
-    $sub_sth->bind_param(4,$FREQUENCY_CUTOFF,SQL_FLOAT);
-    $sub_sth->bind_param(5,'CSHL-HAPMAP:%',SQL_VARCHAR);
-    $sub_sth->execute();
+    # Get the HapMap population and stop_* event causing allele that has an allele frequency above the $FREQUENCY_CUTOFF
+    $pop_sth->execute($variation_id,$allele);
     
     #ÊFor each result, push a tab-separated result string into the null_transcripts-array
-    while (my ($population,$allele) = $sub_sth->fetchrow_array()) {
-      my $str = join("\t",($transcript_stable_id,$population,$variation_name,$cons_type));
-      #print $str . "\n";
-      
-      # Skip this allele if it does not cause the STOP_* event
-      next if ($n_alleles > 2 && $cons_type =~ m/GAINED/ && !$allele_is_stop{$allele});
-      next if ($n_alleles > 2 && $cons_type =~ m/LOST/ && $allele_is_stop{$allele});
-      
+    while (my ($sample_id) = $pop_sth->fetchrow_array()) {
+      my $str = join("\t",($transcript_stable_id,$samples{$sample_id},$variation_name,$consequence));
       push(@null_transcripts,$str);
     }
     
-    $sub_sth->finish();
   }
   
   $sth->finish();
@@ -313,7 +302,7 @@ while (my $line = shift(@null_transcripts)) {
       $rsid = $field;
     } elsif ($field =~ /^CSHL-HAPMAP/) {
       $population = $field;
-    } elsif ($field =~ /^STOP/) {
+    } elsif ($field =~ /^STOP/i) {
       $consequence = $field;
     }  
   }
