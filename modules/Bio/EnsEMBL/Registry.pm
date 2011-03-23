@@ -1091,6 +1091,26 @@ sub add_alias{
   $registry_register{'_ALIAS'}{lc($key)} = lc($species);
 }
 
+=head2 remove_alias
+
+  Arg [1]    : name of the species to remove alias for
+  Arg [2]    : name of the alias
+  Example    : Bio::EnsEMBL::Registry->remove_alias("Homo Sapiens","Human");
+  Description: remove alternative name for the species.
+  Returntype : none
+  Exceptions : none
+  Status     : Stable
+
+=cut
+
+sub remove_alias{
+  my ($class, $species,$key) = @_;
+
+  delete $registry_register{'_ALIAS'}{lc($key)};
+}
+
+
+
 =head2 get_alias
 
   Arg [1]    : name of the possible alias to get species for
@@ -2056,12 +2076,7 @@ sub find_and_add_aliases {
       } elsif (
              $lc_species ne $class->get_alias( $alias_suffix ) )
       {
-        throw(sprintf(
-                "Trying to add alias '%s' to species '%s', "
-                  . " but it is already registrered for species '%s'\n",
-                $alias_suffix,
-                $species, $class->get_alias( $alias_suffix )
-              ) );
+	$class->remove_alias( $species, $alias_suffix );
       }
     }
 
