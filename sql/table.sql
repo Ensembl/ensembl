@@ -142,6 +142,7 @@ Note that for each species, there must be one co-ordinate system that has the at
 
 @see seq_region
 @see meta_coord
+@see meta
 
 */
 
