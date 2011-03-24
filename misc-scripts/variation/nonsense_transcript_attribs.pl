@@ -249,7 +249,7 @@ if (!defined($file)) {
     
     # Get the allele and the consequence
     my ($allele) = $allele_string =~ m/\/(.*)$/;
-    my ($consequence) = $consequence_string =~ m/(stop_[^,]+)/;
+    my ($consequence) = $consequence_string =~ m/(stop_[^,]+)/i;
     
     # Get the HapMap population and stop_* event causing allele that has an allele frequency above the $FREQUENCY_CUTOFF
     $pop_sth->execute($variation_id,$allele);
