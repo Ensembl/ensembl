@@ -2129,6 +2129,9 @@ CREATE TABLE dependent_xref(
 
 
 @see xref
+@see unmapped_object
+@see protein_align_feature
+@see dna_align_feature
 
 */
 
