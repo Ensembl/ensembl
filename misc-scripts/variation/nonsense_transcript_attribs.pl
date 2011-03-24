@@ -33,8 +33,8 @@ use Getopt::Long;
 
 # A hard-coded hash for consequence type => attrib_type.code mapping
 my %ATTRIBUTE_CODE = (
-  'STOP_LOST' => 'StopLost',
-  'STOP_GAINED' => 'StopGained'
+  'stop_lost' => 'StopLost',
+  'stop_gained' => 'StopGained'
 );
 
 # The minimum frequency of a STOP_*-causing allele in a population to be included
@@ -243,10 +243,6 @@ if (!defined($file)) {
   };
   my $sth = $vdb->dbc->prepare($stmt) or die("Error preparing statement $stmt");
   $sth->execute();
-  
-  # Get a TranscriptVariationAdaptor
-  my $tv_adaptor = $vdb->get_TranscriptVariationAdaptor() or throw("Could not get a TranscriptVariationAdaptor from " . $vdb->dbc->dbname());
-  my $stop_codons = qq{TGA/TAA/TAG};
   
   # For each variation_feature, check that the source, population and minor allele frequencies are 'dbSNP', 'CSHL-HapMap-*' and '>= $FREQUENCY_CUTOFF'
   while (my ($transcript_stable_id,$variation_id,$variation_name,$allele_string,$consequence_string) = $sth->fetchrow_array()) {
