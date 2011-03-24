@@ -141,7 +141,7 @@ Note that for each species, there must be one co-ordinate system that has the at
 @column attrib               Co-oridinate system attrib (e.g. "top_level", "sequence_level").     
 
 @see seq_region
-@see meta
+@see meta_coord
 
 */
 
