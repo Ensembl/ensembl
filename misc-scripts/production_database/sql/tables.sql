@@ -8,9 +8,9 @@
 -- Lists the species for which there is a Core database.
 CREATE TABLE species (
   species_id    INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
-  db_name       VARCHAR(32) NOT NULL,   -- Name used in database names.
-  common_name   VARCHAR(32) NOT NULL,   -- What we often refer to it as.
-  web_name      VARCHAR(32) NOT NULL,   -- Name that the web site is using.
+  db_name       VARCHAR(64) NOT NULL,   -- Name used in database names.
+  common_name   VARCHAR(64) NOT NULL,   -- What we often refer to it as.
+  web_name      VARCHAR(64) NOT NULL,   -- Name that the web site is using.
   is_current    BOOLEAN NOT NULL DEFAULT true,
 
   PRIMARY KEY (species_id),
