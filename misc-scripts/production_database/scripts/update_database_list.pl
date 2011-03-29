@@ -180,7 +180,8 @@ foreach my $server (@servers) {
   my $sth = $dbh->prepare($statement);
 
   foreach my $species ( keys(%species) ) {
-    $sth->bind_param( 1, sprintf( '%s%%\_%s\_%%', $species, $release ),
+    $sth->bind_param( 1,
+                      sprintf( '%s\_%%\_%s\_%%', $species, $release ),
                       SQL_VARCHAR );
     $sth->execute();
 
@@ -194,8 +195,9 @@ foreach my $server (@servers) {
         next;
       }
 
-      my ( $db_type, $db_assembly, $db_suffix ) = ( $database =~
-                /^[a-z]+_[a-z]+_([a-z]+)_(?:[0-9]+_)?[0-9]+_([0-9a-z]+?)([a-z]?)$/ );
+      my ( $db_type, $db_assembly, $db_suffix ) =
+        ( $database =~
+/^[a-z]+_[a-z]+_([0-9a-z]+)_(?:[0-9]+_)?[0-9]+_([0-9a-z]+?)([a-z]?)$/ );
 
       if (    !defined($db_type)
            || !defined($db_assembly)
@@ -226,10 +228,10 @@ foreach my $server (@servers) {
 } ## end foreach my $server (@servers)
 
 if ( scalar( keys(%databases) ) == 0 ) {
-  printf( "Did not find any new databases for release %d\n", $release );
+  printf( "Did not find any new databases for release %s\n", $release );
 } else {
   my $dsn = sprintf( 'DBI:mysql:host=%s;port=%d;database=%s',
-                     $master, $dbport, 'ensembl_production' );
+                     $master, $mport, 'ensembl_production' );
   my $dbh = DBI->connect( $dsn, $dbwuser, $dbwpass,
                           { 'PrintError' => 1, 'RaiseError' => 1 } );
 
