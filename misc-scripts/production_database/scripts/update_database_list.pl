@@ -11,7 +11,7 @@ sub usage {
 
   print <<USAGE_END;
 Usage:
-  $0 --release NN --master master-server \\
+  $0 --release NN --master master-server --mport master-port \\
   $padding --server server1 --server server2 [...] \\
   $padding --dbport 3306 --dbuser user --dbpass passwd \\
   $padding --dbwuser write_user --dbwpass write_passwd
@@ -28,6 +28,10 @@ where
 
   --master/-m   The master server where the production database lives
                 (optional, default is 'ens-staging1').
+
+  --mport/-mP   The port ont he master serve to connect to
+                (optional, default is '3306').
+
   --server/-s   A database server (optional, may occur several times,
                 default is 'ens-staging1', and 'ens-staging2').
 
@@ -35,11 +39,13 @@ where
 
   --dbuser/-u   The (read only) user to connect as (optional,
                 default is 'ensro').
+
   --dbpass/-p   The password to connect with as the above user
                 (optional, no default).
 
   --dbwuser/-wu The user (with write permissions) to connect as
                 (optional, default is 'ensadmin').
+
   --dbwpass/-wp The password to connect with as the above user
                 (optional, no default).
 
@@ -76,6 +82,7 @@ ABOUT_END
 my $release;
 my @servers;
 my $master = 'ens-staging1';
+my $mport  = '3306';
 
 my $dbport = '3306';
 my ( $dbwuser, $dbwpass ) = ( 'ensadmin', undef );
@@ -86,6 +93,7 @@ my $opt_about = 0;
 
 if ( !GetOptions( 'release|r=s'  => \$release,
                   'master|m=s'   => \$master,
+                  'mport|mP=i'   => \$mport,
                   'server|s=s@'  => \@servers,
                   'dbuser|u=s'   => \$dbuser,
                   'dbpass|p=s'   => \$dbpass,
@@ -119,7 +127,7 @@ my %found_databases;
 
 {
   my $dsn = sprintf( 'DBI:mysql:host=%s;port=%d;database=%s',
-                     $master, $dbport, 'ensembl_production' );
+                     $master, $mport, 'ensembl_production' );
   my $dbh = DBI->connect( $dsn, $dbuser, $dbpass,
                           { 'PrintError' => 1, 'RaiseError' => 1 } );
 
