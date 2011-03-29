@@ -190,7 +190,8 @@ SELECT
   name AS name,
   description AS description
 FROM    master_attrib_type
-WHERE   is_current = true;
+WHERE   is_current = true
+ORDER BY attrib_type_id;
 
 CREATE VIEW external_db AS
 SELECT
@@ -206,7 +207,8 @@ SELECT
   secondary_db_table AS secondary_db_table,
   description AS description
 FROM    master_external_db
-WHERE   is_current = true;
+WHERE   is_current = true
+ORDER BY external_db_id;
 
 CREATE VIEW misc_set AS
 SELECT
@@ -216,7 +218,8 @@ SELECT
   description AS description,
   max_length AS max_length
 FROM    master_misc_set
-WHERE   is_current = true;
+WHERE   is_current = true
+ORDER BY misc_set_id;
 
 CREATE VIEW unmapped_reason AS
 SELECT
@@ -224,4 +227,5 @@ SELECT
   summary_description AS summary_description,
   full_description AS full_description
 FROM    master_unmapped_reason
-WHERE   is_current = true;
+WHERE   is_current = true
+ORDER BY unmapped_reason_id;
