@@ -397,6 +397,20 @@ INSERT INTO `analysis_description` VALUES (358,'uniprot_tr_havana','Proteins fro
 INSERT INTO `analysis_description` VALUES (359,'est2genome_fish_havana','Alignment of zebrafish ESTs (expressed sequence tags) to the genome using the program <a rel=\"external\" href=\"http://emboss.sourceforge.net/apps/cvs/emboss/apps/est2genome.html\">Est2genome</a>. ESTs are from <a rel=\"external\" href=\"http://www.ncbi.nlm.nih.gov/dbEST/\">dbEST</a>','Zebrafish EST (EST2genome)',NULL,NULL,NULL,NULL,1);
 INSERT INTO `analysis_description` VALUES (360,'refseq_zebrafish_havana','Zebrafish cDNAs from <a rel=\"external\" href=\"http://www.ncbi.nlm.nih.gov/RefSeq/\">NCBI RefSeq</a> are aligned to the genome using <a rel=\"external\" href=\"http://genome.cshlp.org/cgi/content/abstract/14/5/988?maxtoshow=&amp;HITS=10&amp;hits=10&amp;RESULTFORMAT=&amp;andorexactfulltext=and&amp;searchid=1&amp;FIRSTINDEX=0&amp;sortspec=relevance&amp;volume=14&amp;firstpage=988&amp;resourcetype=HWCIT\">GeneWise</a>.','Zebrafish RefSeq cDNA',NULL,NULL,NULL,NULL,1);
 INSERT INTO `analysis_description` VALUES (361,'est2genome_mouse_havana','Alignment of mouse ESTs (expressed sequence tags) to the genome using the program <a rel=\"external\" href=\"http://emboss.sourceforge.net/apps/cvs/emboss/apps/est2genome.html\">Est2genome</a>. ESTs are from <a rel=\"external\" href=\"http://www.ncbi.nlm.nih.gov/dbEST/\">dbEST</a>','Mouse EST (EST2genome)',NULL,NULL,NULL,NULL,1);
+INSERT INTO `analysis_description` VALUES (362,'bac_cloned_genomic_insert','BAC_cloned_genomic_insert','BAC_cloned_genomic_insert',NULL,NULL,NULL,NULL,1);
+INSERT INTO `analysis_description` VALUES (363,'chromosome_band','chromosome_band','chromosome_band',NULL,NULL,NULL,NULL,1);
+INSERT INTO `analysis_description` VALUES (364,'match','match','match',NULL,NULL,NULL,NULL,1);
+INSERT INTO `analysis_description` VALUES (365,'match_part','match_part','match_part',NULL,NULL,NULL,NULL,1);
+INSERT INTO `analysis_description` VALUES (366,'oligonucleotide','oligonucleotide','oligonucleotide',NULL,NULL,NULL,NULL,1);
+INSERT INTO `analysis_description` VALUES (367,'orthologous_region','orthologous_region','orthologous_region',NULL,NULL,NULL,NULL,1);
+INSERT INTO `analysis_description` VALUES (368,'orthologous_to','orthologous_to','orthologous_to',NULL,NULL,NULL,NULL,1);
+INSERT INTO `analysis_description` VALUES (369,'pcr_product','pcr_product','pcr_product',NULL,NULL,NULL,NULL,1);
+INSERT INTO `analysis_description` VALUES (370,'point_mutation','point_mutation','point_mutation',NULL,NULL,NULL,NULL,1);
+INSERT INTO `analysis_description` VALUES (371,'repeat_region','repeat_region','repeat_region',NULL,NULL,NULL,NULL,1);
+INSERT INTO `analysis_description` VALUES (372,'syntenic_region','syntenic_region','syntenic_region',NULL,NULL,NULL,NULL,1);
+INSERT INTO `analysis_description` VALUES (373,'tandem_repeat','tandem_repeat','tandem_repeat',NULL,NULL,NULL,NULL,1);
+INSERT INTO `analysis_description` VALUES (374,'transposable_element_insertion_site','transposable_element_insertion_site','transposable_element_insertion_site',NULL,NULL,NULL,NULL,1);
+INSERT INTO `analysis_description` VALUES (375,'dna_motif','DNA_motif','DNA_motif',NULL,NULL,NULL,NULL,1);
 
 --
 -- Table structure for table `analysis_web_data`
@@ -2781,6 +2795,20 @@ INSERT INTO `analysis_web_data` VALUES (2352,128,NULL,53,'core',1,NULL,NULL,NULL
 INSERT INTO `analysis_web_data` VALUES (2353,87,NULL,53,'core',1,NULL,NULL,NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (2354,351,9,53,'otherfeatures',1,NULL,NULL,NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (2355,110,9,53,'otherfeatures',1,NULL,NULL,NULL,NULL);
+INSERT INTO `analysis_web_data` VALUES (2356,362,NULL,13,'core',0,NULL,NULL,NULL,NULL);
+INSERT INTO `analysis_web_data` VALUES (2357,363,NULL,13,'core',0,NULL,NULL,NULL,NULL);
+INSERT INTO `analysis_web_data` VALUES (2358,364,NULL,13,'core',0,NULL,NULL,NULL,NULL);
+INSERT INTO `analysis_web_data` VALUES (2359,365,NULL,13,'core',0,NULL,NULL,NULL,NULL);
+INSERT INTO `analysis_web_data` VALUES (2360,366,NULL,13,'core',0,NULL,NULL,NULL,NULL);
+INSERT INTO `analysis_web_data` VALUES (2361,367,NULL,13,'core',0,NULL,NULL,NULL,NULL);
+INSERT INTO `analysis_web_data` VALUES (2362,368,NULL,13,'core',0,NULL,NULL,NULL,NULL);
+INSERT INTO `analysis_web_data` VALUES (2363,369,NULL,13,'core',0,NULL,NULL,NULL,NULL);
+INSERT INTO `analysis_web_data` VALUES (2364,370,NULL,13,'core',0,NULL,NULL,NULL,NULL);
+INSERT INTO `analysis_web_data` VALUES (2365,371,NULL,13,'core',0,NULL,NULL,NULL,NULL);
+INSERT INTO `analysis_web_data` VALUES (2366,372,NULL,13,'core',0,NULL,NULL,NULL,NULL);
+INSERT INTO `analysis_web_data` VALUES (2367,373,NULL,13,'core',0,NULL,NULL,NULL,NULL);
+INSERT INTO `analysis_web_data` VALUES (2368,374,NULL,13,'core',0,NULL,NULL,NULL,NULL);
+INSERT INTO `analysis_web_data` VALUES (2369,375,NULL,13,'core',0,NULL,NULL,NULL,NULL);
 
 --
 -- Table structure for table `biotype`
@@ -4943,4 +4971,4 @@ INSERT INTO `web_data` VALUES (62,'{\'colour_key\' => \'human_rnaseq\',\'label_k
 /*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2011-03-29  9:16:21
+-- Dump completed on 2011-03-29  9:43:19
