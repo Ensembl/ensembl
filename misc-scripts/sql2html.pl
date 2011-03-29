@@ -170,15 +170,17 @@ open SQLFILE, "< $sql_file" or die "Can't open $sql_file : $!";
 while (<SQLFILE>) {
 	chomp $_;
 	next if ($_ eq '');
+	next if ($_ =~ /^\s*DROP/i);
 	
 	# Verifications
 	if ($_ =~ /^\/\*\*/)  { $in_doc=1; next; }  # start of a table documentation
-	if ($_ =~ /^\s*create\s+table\s+(if\s+not\s+exists\s+)?(\w+)/i) { # start to parse the content of the table
-		if ($2 eq $table) { 
+	if ($_ =~ /^\s*create\s+table\s+(if\s+not\s+exists\s+)?(\S+)/i) { # start to parse the content of the table
+		my $sql_t_name = remove_char($2);
+		if ($sql_t_name eq $table) { 
 			$in_table=1; 
 		}
 		else { 
-			print STDERR "The documentation of the table $2 has not be found!\n";
+			print STDERR "The documentation of the table $sql_t_name has not be found!\n";
 		}
 		next;
 	}	
@@ -236,11 +238,18 @@ while (<SQLFILE>) {
 	
 		## INDEXES ##
 		if ($doc =~ /^\s*(primary\skey)\s*\((.+)\)/i or $doc =~ /^\s*(unique)\s*\((.+)\)/i){ # Primary or unique
-			add_column_index($1,$2);
+			my $icol = remove_char($2);
+			add_column_index($1,$icol);
 			next;
 		}
-		elsif ($doc =~ /^\s*(unique\s)?(key)\s(\w+)\s*\((.+)\)/i) { # Keys and indexes
-			add_column_index("$1$2",$4,$3);
+		elsif ($doc =~ /^\s*(unique\s)?(key)\s+(\S+)\s*\((.+)\)/i) { # Keys and indexes
+			my $icol = remove_char($4);
+			add_column_index("$1$2",$icol,$3);
+			next;
+		}
+		elsif ($doc =~ /^\s*(key)\s+\((.+)\)/i) { # Keys
+			my $icol = remove_char($2);
+			add_column_index("$1",$icol,'');
 			next;
 		}
 		
@@ -249,17 +258,27 @@ while (<SQLFILE>) {
 		my $col_type = '';
 		my $col_def  = '';
 		
+		
+		if ($doc =~ /\).*;/) { # End of the sql table definition
+			if (scalar @{$documentation->{$header}{'tables'}{$table}{column}} > $count_sql_col) {
+				print STDERR "Description of a non existant column in the table $table!\n";
+			}
+			$in_table=0;
+			$count_sql_col = 0;
+			$table='';
+		}
+		
 		# All the type is contained in the same line (type followed by parenthesis)
-		if ($doc =~ /^\s*(\w+)\s+(\w+\s?\(.*\))/ ){
-			$col_name = $1;
+		elsif ($doc =~ /^\W*(\w+)\W+(\w+\s?\(.*\))/ ){
+			$col_name = remove_char($1);
 			$col_type = $2;
 			if ($doc =~ /default\s*([^,\s]+)\s*.*(,|#).*/i) { $col_def = $1; } # Default value
 			add_column_type_and_default_value($col_name,$col_type,$col_def);
 		}
 		
 		# The type is written in several lines
-		elsif ($doc =~ /^\s*(\w+)\s+(enum|set)(\s?\(.*)/i){ # The content is split in several lines
-			$col_name=$1;
+		elsif ($doc =~ /^\W*(\w+)\W+(enum|set)(\s?\(.*)/i){ # The content is split in several lines
+			$col_name= remove_char($1);
 			$col_type="$2$3<br />";
 			my $end_type = 0;
 			while ($end_type != 1){
@@ -281,20 +300,11 @@ while (<SQLFILE>) {
 		}
 		
 		# All the type is contained in the same line (type without parenthesis)
-		elsif ($doc =~ /^\s*(\w+)\s+(\w+)/ ){
-			$col_name = $1;
+		elsif ($doc =~ /^\s*\W*(\w+)\W+(\w+)/ ){
+			$col_name = remove_char($1);
 			$col_type = $2;
 			if ($doc =~ /default\s*([^,\s]+)\s*.*(,|#).*/i) { $col_def = $1;} # Default value
 			add_column_type_and_default_value($col_name,$col_type,$col_def);
-		}
-		
-		elsif ($doc =~ /\).*;/) { # End of the sql table definition
-			if (scalar @{$documentation->{$header}{'tables'}{$table}{column}} > $count_sql_col) {
-				print STDERR "Description of a non existant column in the table $table!\n";
-			}
-			$in_table=0;
-			$count_sql_col = 0;
-			$table='';
 		}
 	}
 }
@@ -610,6 +620,13 @@ sub add_column_type_and_default_value {
 	if ($is_found==0) {
 		print STDERR "COLUMN: The description of the column '$c_name' is missing in the table $table!\n";
 	}
+}
+
+
+sub remove_char {
+	my $text = shift;
+	$text =~ s/`//g;
+	return $text;
 }
 
 
