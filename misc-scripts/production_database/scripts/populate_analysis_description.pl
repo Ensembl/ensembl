@@ -315,6 +315,12 @@ my %data;
         print( '-' x 40, "\n" );
         print("\n");
       }
+
+      print("To undo:\n");
+      printf( "  DROP TABLE %s;\n", $full_table_name );
+      printf( "  RENAME TABLE %s TO %s;\n",
+              $full_table_name_bak, $full_table_name );
+
     }
   } continue {
     print("\n");
