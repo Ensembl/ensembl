@@ -98,7 +98,7 @@ my $html_header = qq{
 <html>
 <head>
 <meta http-equiv="CONTENT-TYPE" content="text/html; charset=utf-8" />
-<title>e! $db_team schema </title>
+<title>$db_team Schema Documentation</title>
 
 <script language="Javascript" type="text/javascript">
 	// Function to show/hide the columns table
@@ -170,7 +170,7 @@ open SQLFILE, "< $sql_file" or die "Can't open $sql_file : $!";
 while (<SQLFILE>) {
 	chomp $_;
 	next if ($_ eq '');
-	next if ($_ =~ /^\s*DROP/i);
+	next if ($_ =~ /^\s*(DROP|PARTITION)/i);
 	
 	# Verifications
 	if ($_ =~ /^\/\*\*/)  { $in_doc=1; next; }  # start of a table documentation
@@ -566,6 +566,7 @@ sub add_column_index {
 	my $idx_name = shift;
 	
 	my $index = $idx_type;
+	$idx_name = remove_char($idx_name);
 	if (defined($idx_name)) {
 		$index .= ": $idx_name";
 	}
@@ -574,8 +575,8 @@ sub add_column_index {
 	
 	my %is_found = ();
 	foreach my $i_col (@idx_cols) {
-		$i_col =~ s/^\s+//; # Remove white spaces
-		$i_col =~ s/\s+$//;
+		$i_col =~ s/\s//g; # Remove white spaces
+		$i_col = remove_char($i_col); # Remove the ` character
 		# In case of index using a number characters for a column
 		if ($i_col =~ /(.+)\(\d+\)/) {
 			$i_col = $1;
