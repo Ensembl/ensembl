@@ -6,6 +6,7 @@ use Getopt::Long;
 
 use strict;
 
+my $assembly_name;
 my $pass;
 my $mapping_file = "./data/alt.scaf.agp";
 my $txt_file     = "./data/alt_scaffold_placement.txt";
@@ -25,7 +26,13 @@ my $central_coord_system = 'supercontig';
             'dbname=s'       => \$dbname,
             'user=s'         => \$user,
             'port=n'         => \$port,
+            'assembly_name=s' => \$assembly_name,
            );
+
+#needed to update the meta table
+if (!defined $assembly_name)  {
+    throw("Please enter -assembly_name eg. GRCh37.p4");
+} 
 
 #connect to the database
 
@@ -405,6 +412,7 @@ MAP: while(<MAPPER>){
     print "GAP of $contig length\n";
   }
 }
+print SQL "\nUPDATE meta SET meta_value = '$assembly_name' WHERE meta_key = 'assembly.name'\n";
 close SQL;
 
 
