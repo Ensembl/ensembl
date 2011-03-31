@@ -229,6 +229,9 @@
     CREATING THE ONTOLOGY DATABASE
     --------------------------------------------------------------------
 
+    Create the database on ens-staging1 and copy to ens-staging2 using
+    ensembl/misc-srcipts/CopyDBOverServer.pl script.
+
     To create the ensembl_ontology_NN database for a release, the
     following steps needs to be followed:
 
