@@ -247,6 +247,9 @@ while (<SQLFILE>) {
 	  $parenth_count +=()= $doc =~ /\(/gi;
 	  $parenth_count -=()= $doc =~ /\)/gi;
 
+
+	 # warn "parenth count is $parenth_count";
+
 	  if ($parenth_count == 0) { # End of the sql table definition
 		if (scalar @{$documentation->{$header}{'tables'}{$table}{column}} > $count_sql_col) {
 		  
@@ -263,6 +266,8 @@ while (<SQLFILE>) {
 		$parenth_count = 0;
 	  }
 	  else{
+
+	#	warn "Processing table";
 
 		## INDEXES ##
 		if ($doc =~ /^\s*(primary\skey)\s*\((.+)\)/i or $doc =~ /^\s*(unique)\s*\((.+)\)/i){ # Primary or unique
@@ -303,6 +308,10 @@ while (<SQLFILE>) {
 			while ($end_type != 1){
 				my $line = <SQLFILE>;
 				chomp $line;
+
+				#Regex counting VOODOO again
+				$parenth_count +=()= $line =~ /\(/gi;
+				$parenth_count -=()= $line =~ /\)/gi;
 				
 				if ($line =~ /\)/) { # Close parenthesis
 					$end_type=1; 
