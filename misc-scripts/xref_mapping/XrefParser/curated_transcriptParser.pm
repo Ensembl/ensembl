@@ -147,7 +147,7 @@ sub run_script {
  
  print "source id is $source_id, curated_source_id is $curated_source_id\n";
 
-  my $sql = 'select tsi.stable_id, x.display_label, t.status from xref x, object_xref ox , transcript_stable_id tsi, external_db e, transcript t where e.external_db_id = x.external_db_id and x.xref_id = ox.xref_id and tsi.transcript_id = ox.ensembl_id and t.transcript_id = tsi.transcript_id and e.db_name like ?';
+  my $sql = 'select tsi.stable_id, x.display_label, t.status from analysis a, xref x, object_xref ox , transcript_stable_id tsi, external_db e, transcript t where t.analysis_id = a.analysis_id and a.logic_name like "%havana%" and e.external_db_id = x.external_db_id and x.xref_id = ox.xref_id and tsi.transcript_id = ox.ensembl_id and t.transcript_id = tsi.transcript_id and e.db_name like ?';
 
 
   my %ott_to_vega_name;
@@ -156,7 +156,7 @@ sub run_script {
 
   my $sth = $core_dbc->prepare($sql) || die "Could not prepare for core $sql\n";
 
-  foreach my $external_db (qw(Vega_transcript OTTT shares_CDS_and_UTR_with_OTTT shares_CDS_with_OTTT)){
+  foreach my $external_db (qw(Vega_transcript shares_CDS_with_OTTT shares_CDS_and_UTR_with_OTTT OTTT)){
     $sth->execute($external_db) or croak( $core_dbc->errstr());
     while ( my @row = $sth->fetchrow_array() ) {
       $ott_to_enst{$row[1]} = $row[0];
