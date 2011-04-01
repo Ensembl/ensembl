@@ -16,18 +16,38 @@ sub run_script {
   if($my_args =~ /host[=][>](\S+?)[,]/){
     $host = $1;
   }
-  else {
-    print STDERR "\nHost not defined.\n\n";
-    exit(1);
-  } 
+#  else {
+#    print STDERR "\nHost not defined.\n\n";
+#    exit(1);
+#  } 
+  my %id2name = $self->species_id2name;
+  my $species_name = $id2name{$species_id}[0];
+
   my $source_name;
   if($my_args =~ /source[=][>](\S+?)[,]/){
     $source_name = $1;
   }
-  else {
-    print STDERR "\nSource name not defined.\n\n";
-    exit(1);
+  else{
+    if($species_name eq "homo_sapiens" ){
+      $source_name = "HGNC";
+      $host = "ens-staging1";
+    }
+    elsif($species_name eq "mus_musculus" ){
+      $source_name = "MGI";
+      $host = "ens-staging2";
+    }
+    elsif($species_name eq "danio_rerio" ){
+      $source_name = "ZFIN_ID";
+      $host = "ens-staging1";
+    }
+    else{
+      die "Species is $species_name and is not homo_sapines, mus_musculus or danio_rerio the only three valid species\n";
+    }
   }
+#  else {
+#    print STDERR "\nSource name not defined.\n\n";
+#    exit(1);
+#  }
 
   my $user = 'ensro';
   if($my_args =~ /user[=][>](\S+?)[,]/){
@@ -126,10 +146,29 @@ sub run_script {
   $source_id = XrefParser::BaseParser->get_source_id_for_source_name($source_name,"vega");
 
 
-  my $sql = 'select tsi.stable_id, x.display_label from xref x, object_xref ox , transcript_stable_id tsi, external_db e where e.external_db_id = x.external_db_id and x.xref_id = ox.xref_id and tsi.transcript_id = ox.ensembl_id and e.db_name like ?';
+  my $sql =(<<SQL);
+SELECT tsi.stable_id, x.display_label 
+  FROM analysis a, xref x, object_xref ox , transcript_stable_id tsi, external_db e , transcript t
+   WHERE a.analysis_id = t.analysis_id and 
+         t.transcript_id = tsi.transcript_id and
+         e.external_db_id = x.external_db_id and 
+         x.xref_id = ox.xref_id and 
+         tsi.transcript_id = ox.ensembl_id and
+         a.logic_name like "%havana%" and 
+         e.db_name like ?
+SQL
 
-
-  my $ext_sql = 'select tsi.stable_id, x.dbprimary_acc from xref x, object_xref ox , transcript_stable_id tsi, gene g, external_db e, transcript t  where t.gene_id = g.gene_id and g.gene_id = ox.ensembl_id and tsi.transcript_id = t.transcript_id and e.external_db_id = x.external_db_id and x.xref_id = ox.xref_id and ox.ensembl_object_type = "Gene" and e.db_name like "' . $source_name . '"';
+  my $ext_sql =(<<EXT);
+SELECT tsi.stable_id, x.dbprimary_acc 
+  FROM xref x, object_xref ox , transcript_stable_id tsi, gene g, external_db e, transcript t  
+    WHERE t.gene_id = g.gene_id and 
+          g.gene_id = ox.ensembl_id and 
+          tsi.transcript_id = t.transcript_id and 
+          e.external_db_id = x.external_db_id and 
+          x.xref_id = ox.xref_id and 
+          ox.ensembl_object_type = "Gene" and 
+          e.db_name like '$source_name'
+EXT
 
   my %vega_to_ext;
   my %ext_to_core;
@@ -137,7 +176,7 @@ sub run_script {
   my $sth = $core_dbc->prepare($sql) || die "Could not prepare for core $sql\n";
 
 
-  foreach my $external_db (qw(Vega_transcript OTTT shares_CDS_and_UTR_with_OTTT shares_CDS_with_OTTT)){
+  foreach my $external_db (qw(Vega_transcript shares_CDS_with_OTTT shares_CDS_and_UTR_with_OTTT OTTT)){
     $sth->execute($external_db) or croak( $core_dbc->errstr());
     while ( my @row = $sth->fetchrow_array() ) {
       $ext_to_core{$row[1]} = $row[0];
