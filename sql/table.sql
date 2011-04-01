@@ -2326,7 +2326,8 @@ CREATE TABLE seq_region_synonym (
   external_db_id              SMALLINT UNSIGNED,
 
   PRIMARY KEY (seq_region_synonym_id),
-  UNIQUE KEY syn_idx (synonym)
+  UNIQUE KEY syn_idx (synonym),
+  KEY seq_region_idx (seq_region_id)
 
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
