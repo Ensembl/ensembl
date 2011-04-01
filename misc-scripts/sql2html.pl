@@ -160,7 +160,7 @@ my $count_sql_col = 0;
 my $tag_content = '';
 my $tag = '';
 my $display = 'Show';
-
+my $parenth_count = 0;
 
 #############
 ## Parser  ##
@@ -177,7 +177,8 @@ while (<SQLFILE>) {
 	if ($_ =~ /^\s*create\s+table\s+(if\s+not\s+exists\s+)?(\S+)/i) { # start to parse the content of the table
 		my $sql_t_name = remove_char($2);
 		if ($sql_t_name eq $table) { 
-			$in_table=1; 
+			$in_table=1;
+			$parenth_count++;
 		}
 		else { 
 			print STDERR "The documentation of the table $sql_t_name has not be found!\n";
@@ -236,6 +237,33 @@ while (<SQLFILE>) {
 	## Parsing of the SQL table to fetch the columns types ##
 	elsif ($in_table==1) {
 	
+	  #END OF TABLE DEFINITION
+	  #Can't do this easily with a simply regex as there are varying valid formats
+	  #The end of the table definition is actually defined by 2nd enclosing bracket
+	  
+	  #Regex counting VOODOO!
+	  #This basically puts the regex in a list context
+	  #before inc/dec'ing with it in a scalar context.
+	  $parenth_count +=()= $doc =~ /\(/gi;
+	  $parenth_count -=()= $doc =~ /\)/gi;
+
+	  if ($parenth_count == 0) { # End of the sql table definition
+		if (scalar @{$documentation->{$header}{'tables'}{$table}{column}} > $count_sql_col) {
+		  
+		  #use Data::Dumper;
+		  #warn "col count $count_sql_col";
+		  #warn Data::Dumper::Dumper(\$documentation);
+
+		  print STDERR "Description of a non existant column in the table $table!\n";
+		}
+
+		$in_table=0;
+		$count_sql_col = 0;
+		$table='';
+		$parenth_count = 0;
+	  }
+	  else{
+
 		## INDEXES ##
 		if ($doc =~ /^\s*(primary\skey)\s*\((.+)\)/i or $doc =~ /^\s*(unique)\s*\((.+)\)/i){ # Primary or unique
 			my $icol = remove_char($2);
@@ -259,17 +287,8 @@ while (<SQLFILE>) {
 		my $col_def  = '';
 		
 		
-		if ($doc =~ /\).*;/) { # End of the sql table definition
-			if (scalar @{$documentation->{$header}{'tables'}{$table}{column}} > $count_sql_col) {
-				print STDERR "Description of a non existant column in the table $table!\n";
-			}
-			$in_table=0;
-			$count_sql_col = 0;
-			$table='';
-		}
-		
 		# All the type is contained in the same line (type followed by parenthesis)
-		elsif ($doc =~ /^\W*(\w+)\W+(\w+\s?\(.*\))/ ){
+		if ($doc =~ /^\W*(\w+)\W+(\w+\s?\(.*\))/ ){
 			$col_name = remove_char($1);
 			$col_type = $2;
 			if ($doc =~ /default\s*([^,\s]+)\s*.*(,|#).*/i) { $col_def = $1; } # Default value
@@ -306,6 +325,7 @@ while (<SQLFILE>) {
 			if ($doc =~ /default\s*([^,\s]+)\s*.*(,|#).*/i) { $col_def = $1;} # Default value
 			add_column_type_and_default_value($col_name,$col_type,$col_def);
 		}
+	  }
 	}
 }
 close(SQLFILE);
