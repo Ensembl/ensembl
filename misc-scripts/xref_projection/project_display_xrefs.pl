@@ -59,7 +59,8 @@ if (!$conf && !$registryconf && !$delete_only) {
 } elsif (!@to_multi) {
 
   print STDERR "At least one target species must be supplied via the -to argument\n";
-  usage();
+  usage();es
+
   exit(1);
 
 } elsif (!$release && !$no_database) {
@@ -85,7 +86,7 @@ if ($one_to_many) {
 }
 
 # only these evidence codes will be considered for GO term projection
-my @evidence_codes = ( "IDA", "IEP", "IGI", "IMP", "IPI" );
+my @evidence_codes = ( "IDA", "IEP", "IGI", "IMP", "IPI", "EXP" );
 
 #  IC Inferred by curator
 #  IDA Inferred from direct assay
