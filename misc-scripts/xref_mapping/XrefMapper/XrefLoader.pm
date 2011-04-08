@@ -230,7 +230,7 @@ GSQL
      my $add_xref_sth           = $self->core->dbc->prepare('insert into xref (xref_id, external_db_id, dbprimary_acc, display_label, version, description, info_type, info_text) values (?, ?, ?, ?, ?, ?, ?, ?)');
      my $add_object_xref_sth    = $self->core->dbc->prepare('insert into object_xref (object_xref_id, ensembl_id, ensembl_object_type, xref_id, analysis_id) values (?, ?, ?, ?, ?)');
      my $add_identity_xref_sth  = $self->core->dbc->prepare('insert into identity_xref (object_xref_id, xref_identity, ensembl_identity, xref_start, xref_end, ensembl_start, ensembl_end, cigar_line, score, evalue) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
-     my $add_go_xref_sth        = $self->core->dbc->prepare('insert into ontology_xref (object_xref_id, linkage_type) values (?, ?)');
+     my $add_go_xref_sth        = $self->core->dbc->prepare('insert into ontology_xref (object_xref_id, source_xref_id, linkage_type) values (?, ?, ?)');
      my $add_dependent_xref_sth = $self->core->dbc->prepare('insert ignore into dependent_xref (object_xref_id, master_xref_id, dependent_xref_id) values (?, ?, ?)');
      my $add_syn_sth            = $self->core->dbc->prepare('insert ignore into external_synonym (xref_id, synonym) values (?, ?)');
      my $add_release_info_sth   = $self->core->dbc->prepare('update external_db set db_release = ? where external_db_id = ?');
@@ -299,9 +299,12 @@ GSQL
 	 }
 	 if(defined($master_xref_id)){  # need to sort this out as all should habe one really. (interpro generates go without these!!)
 	   $add_dependent_xref_sth->execute(($object_xref_id+$object_xref_offset), ($master_xref_id+$xref_offset), ($xref_id+$xref_offset) );
+	   $add_go_xref_sth->execute( ($object_xref_id+$object_xref_offset), ($master_xref_id+$xref_offset), $linkage_type);
+	 }
+	 else {
+	     $add_go_xref_sth->execute( ($object_xref_id+$object_xref_offset), 0, $linkage_type);
 	 }
 	 $add_object_xref_sth->execute(   ($object_xref_id+$object_xref_offset), $ensembl_id, $ensembl_type, ($xref_id+$xref_offset), $analysis_ids{$ensembl_type} );
-	 $add_go_xref_sth->execute(       ($object_xref_id+$object_xref_offset), $linkage_type);
        }       
        print "GO $count\n" if ($verbose);     
      }
