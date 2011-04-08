@@ -297,7 +297,7 @@ sub project_display_names {
       if ($total_gene_number > 1) {
 	$tuple_txt = " ($gene_number of $total_gene_number)";
 	my $existing = $dbEntry->display_id();
-	$existing =~ s/\(\d+ of \d+\)//;
+	$existing =~ s/ \(\d+ of \d+\)//;
 	$dbEntry->display_id($existing . $tuple_txt);
 	$info_txt .= $tuple_txt;
       }
