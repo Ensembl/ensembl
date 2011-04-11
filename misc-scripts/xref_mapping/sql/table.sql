@@ -19,7 +19,9 @@ CREATE TABLE xref (
                                     'INFERRED_PAIR', 'PROBE',
                                     'UNMAPPED', 'COORDINATE_OVERLAP' ),
   info_text	              VARCHAR(255),
-  dumped                      INT UNSIGNED,
+  dumped                      ENUM( 'MAPPED', 'NO_DUMP_ANOTHER_PRIORITY', 'UNMAPPED_NO_MAPPING',
+                                    'UNMAPPED_NO_MASTER', 'UNMAPPED_MASTER_FAILED', 
+                                    'UNMAPPED_NO_STABLE_ID', 'UNMAPPED_INTERPRO') DEFAULT null,
 
   PRIMARY KEY (xref_id),
   UNIQUE acession_idx(accession,source_id,species_id)
@@ -271,7 +273,8 @@ CREATE TABLE havana_status (
 
 CREATE TABLE process_status (
   id            INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  status	enum('xref_created','parsing_started','parsing_finished','xref_fasta_dumped','core_fasta_dumped',
+  status	enum('xref_created','parsing_started','parsing_finished','alt_alleles_added',
+                     'xref_fasta_dumped','core_fasta_dumped',
                      'mapping_submitted','mapping_finished','mapping_processed',
                      'core_data_loaded','direct_xrefs_parsed',
                      'prioritys_flagged','processed_pairs','official_naming_done',
@@ -290,6 +293,18 @@ CREATE TABLE process_status (
 ################################################################################
 
 -- Incorporated but modified core tables
+
+CREATE TABLE alt_allele (
+  alt_allele_id         INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  gene_id               INT(10) UNSIGNED NOT NULL,
+  is_reference          INT UNSIGNED DEFAULT 0,
+
+  UNIQUE KEY gene_idx (gene_id),
+  UNIQUE KEY allele_idx (alt_allele_id, gene_id)
+
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+
+
 
 CREATE TABLE gene_stable_id (
 
