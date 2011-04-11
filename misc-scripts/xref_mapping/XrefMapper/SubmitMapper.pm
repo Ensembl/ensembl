@@ -308,19 +308,40 @@ sub dump_ensembl{
   $sth->finish;
 
 
+  #  my $ignore_genes = $self->fetch_alt_allele_list();
+  # comment out until we know what we want to do with alt alleles.
+  my %temp_hash;
+  my $ignore_genes = \%temp_hash;
+  
+
   if ($num_genes < $num_seqs) {
-    $self->fetch_and_dump_seq_via_genes();
+    $self->fetch_and_dump_seq_via_genes($ignore_genes);
   }
   else { 
-    $self->fetch_and_dump_seq_via_toplevel();
+    $self->fetch_and_dump_seq_via_toplevel($ignore_genes);
   }
 
 }
 
 
+sub fetch_alt_allele_list {
+  my ($self) = @_;
+
+  my %allele;
+
+  my $sth = $self->xref->dbc->prepare(" select gene_id from alt_allele where is_reference = 0");
+  $sth->execute();
+  my $gene_id;
+  $sth->bind_columns(\$gene_id);
+  while ($sth->fetch()){
+    $allele{$gene_id} = 1;
+  }
+  return \%allele;
+
+}
 
 sub fetch_and_dump_seq_via_toplevel{
-  my ($self) = @_;
+  my ($self, $ignore_genes) = @_;
 
   my $inc_dupes  = 0;   # do not include duplicate regions like PARs?
   my $inc_nonref = 1;   # include non-reference regions like haplotypes?
@@ -378,6 +399,8 @@ sub fetch_and_dump_seq_via_toplevel{
     while(my $gene = shift @genes){
       next if $gene->biotype eq 'J_segment';
       next if $gene->biotype eq 'D_segment';
+      next if $ignore_genes->{$gene->dbID};
+
       foreach my $transcript (@{$gene->get_all_Transcripts()}) {
 	my $seq = $transcript->spliced_seq();
 	$seq =~ s/(.{60})/$1\n/g;
@@ -454,7 +477,7 @@ sub fetch_and_dump_seq_via_toplevel{
 =cut
 
 sub fetch_and_dump_seq_via_genes{
-  my ($self) = @_;
+  my ($self,$ignore_genes) = @_;
 
   my $ensembl = $self->core;
   my $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(-dbconn => $ensembl->dbc);
@@ -516,6 +539,7 @@ sub fetch_and_dump_seq_via_genes{
   foreach my $gene (@genes){
     next if $gene->biotype eq 'J_segment';
     next if $gene->biotype eq 'D_segment';
+    next if $ignore_genes->{$gene->dbID};
 
     foreach my $transcript (@{$gene->get_all_Transcripts()}) {
       my $seq = $transcript->spliced_seq();
