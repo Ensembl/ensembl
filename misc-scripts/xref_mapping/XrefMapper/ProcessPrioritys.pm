@@ -72,7 +72,7 @@ sub process {
   }
 
   my $update_ox_sth = $self->xref->dbc->prepare('update object_xref set ox_status = "FAILED_PRIORITY" where object_xref_id = ?');
-  my $update_x_sth = $self->xref->dbc->prepare('update xref set dumped = 100 where xref_id = ?');
+  my $update_x_sth = $self->xref->dbc->prepare("update xref set dumped = 'NO_DUMP_ANOTHER_PRIORITY' where xref_id = ?");
 
   #
   # Change of tact here to make the sql easier...
@@ -106,12 +106,11 @@ FSQL
   # So we can do a straight join and treat all info_types the same way.
   # 
   my $new_sql =(<<NEWS);
-   SELECT ox.object_xref_id, x.accession, x.xref_id, (ix.query_identity + ix.target_identity) as identity
+   SELECT ox.object_xref_id, x.accession, x.xref_id, (ix.query_identity + ix.target_identity) as identity, ox.ox_status
       FROM object_xref ox, xref x, source s, identity_xref ix
         WHERE ox.object_xref_id = ix.object_xref_id 
           AND ox.xref_id = x.xref_id
           AND s.source_id = x.source_id
-          AND ox.ox_status = "DUMP_OUT"
           AND s.name = ?
          ORDER BY x.accession DESC, s.priority ASC , identity DESC, x.xref_id DESC
 NEWS
@@ -119,27 +118,63 @@ NEWS
   my $sth = $self->xref->dbc->prepare($new_sql);
   foreach my $name (@names){
     $sth->execute($name);
-    my ($object_xref_id, $acc, $xref_id, $identity);
-    $sth->bind_columns(\$object_xref_id, \$acc, \$xref_id, \$identity);
+    my ($object_xref_id, $acc, $xref_id, $identity, $status);
+    $sth->bind_columns(\$object_xref_id, \$acc, \$xref_id, \$identity, \$status);
     my $last_acc = "";
+    my $last_name = "";
     my $best_xref_id = undef;
+    my @gone;
     while($sth->fetch){
       if($last_acc eq $acc){
-         if($xref_id != $best_xref_id){
-            $update_x_sth->execute($xref_id);
-            $update_ox_sth->execute($object_xref_id);            
-         }
+	if($xref_id != $best_xref_id){
+	  if($status eq "DUMP_OUT"){
+	    $update_x_sth->execute($xref_id);
+	    $update_ox_sth->execute($object_xref_id);            
+	  }
+	  else{
+	    $update_x_sth->execute($xref_id);
+	  }
+	}
+	if(@gone){ #best priority failed so anothre one now found so set dumped;
+	  if($last_name eq $acc){
+	    foreach my $d (@gone){
+	      $update_x_sth->execute($d);
+	    }
+	  }
+	}
       }
       else{ # NEW
-        $last_acc = $acc;
-        $best_xref_id = $xref_id;
-      } 
+	if($status eq "DUMP_OUT"){
+	  $last_acc = $acc;
+	  $best_xref_id = $xref_id;       
+	  if(@gone and $last_name eq $acc){
+	    foreach my $d (@gone){
+	      $update_x_sth->execute($d);
+	    }
+	    @gone=();
+	  }
+	}
+	else{
+	  if($last_name eq $acc){
+	    push @gone, $xref_id;	  }
+	  else{
+	    @gone = ();
+	    push @gone, $xref_id;
+	  }	
+	  $last_name = $acc;
+	}
+      }
     }
   }
   $sth->finish;
 
   $update_ox_sth->finish;
   $update_x_sth->finish;
+
+
+# We want to make sure that if a priority xref is NOT MAPPEd then we only
+
+
 
   $sth = $self->xref->dbc->prepare("insert into process_status (status, date) values('prioritys_flagged',now())");
   $sth->execute();
