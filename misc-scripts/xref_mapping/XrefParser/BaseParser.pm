@@ -2333,21 +2333,16 @@ sub get_dependent_mappings {
 
 }
 
-sub get_hgnc_synonyms{
+sub get_ext_synonyms{
   my $self = shift;
-  my %hgnc_syns;
-  my %seen;          # can be in more than once fro each type of hgnc.
+  my $source_name = shift;
+  my %ext_syns;
+  my %seen;          # can be in more than once fro each type of external source.
 
-  my $sql = (<<SYN);
-SELECT  x.accession, x.label, sy.synonym 
-  FROM xref x, source so, synonym sy
-    WHERE x.xref_id = sy.xref_id
-      AND so.source_id = x.source_id
-      AND so.name like "HGNC"
-SYN
+  my $sql = 'SELECT  x.accession, x.label, sy.synonym FROM xref x, source so, synonym sy WHERE x.xref_id = sy.xref_id AND so.source_id = x.source_id AND so.name like "' . $source_name . '"';
 
   my $dbi = $self->dbi();
-  my $sth = $dbi->prepare($sql);    
+  my $sth = $dbi->prepare($sql);
 
   $sth->execute;
   my ($acc, $label, $syn);
@@ -2356,17 +2351,18 @@ SYN
   my $count = 0;
   while($sth->fetch){
     if(!defined($seen{$acc.":".$syn})){
-      push @{$hgnc_syns{$acc}}, $syn;
-      push @{$hgnc_syns{$label}}, $syn;
+      push @{$ext_syns{$acc}}, $syn;
+      push @{$ext_syns{$label}}, $syn;
       $count++;
     }
     $seen{$acc.":".$syn} = 1;
   }
   $sth->finish;
 
-  return \%hgnc_syns;
+  return \%ext_syns;
 
 }
+
 
 #
 # Store data needed to beable to revert to same stage as after parsing
