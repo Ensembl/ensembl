@@ -132,7 +132,12 @@ if(defined($resubmit_failed_jobs)){
   $submitter->fix_mappings();
 }
 
-if( $status eq "parsing_finished" or $status eq "xref_fasta_dumped"){ 
+if( $status eq "parsing_finished"){
+  $mapper->get_alt_alleles();
+}
+
+$status = $mapper->xref_latest_status();
+if( $status eq "alt_alleles_added" or $status eq "xref_fasta_dumped"){ 
   print "\nDumping xref & Ensembl sequences\n"  if ($mapper->verbose);
   $submitter->dump_seqs();
 }
@@ -150,6 +155,7 @@ if($status eq "core_fasta_dumped"){
 else{
 
 }
+
 
 $status = $mapper->xref_latest_status();
 if($status eq "mapping_started"){
@@ -217,14 +223,12 @@ if($status eq "official_naming_done" || $status eq "tests_started" || $status eq
 # load into core database
 $status = $mapper->xref_latest_status();
 if($status eq "tests_finished" and $upload){
-
   my $coord = XrefMapper::CoordinateMapper->new($mapper);
   $coord->run_coordinatemapping($upload);
 }
 
 $status = $mapper->xref_latest_status();
 if($status eq "coordinate_xref_finished" and $upload){
-
   my $loader = XrefMapper::XrefLoader->new($mapper);
   $loader->update();
   
