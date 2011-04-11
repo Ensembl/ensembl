@@ -89,8 +89,7 @@ sub update{
   $sth->finish;
 
 
-  # 100 is the dumped status for the dumpoed status for the "FAILED_PRIORIY"'s do not clear these.
-  $sth = $self->xref->dbc->prepare("update xref set dumped = null where dumped != 100"); # just incase this is being ran again
+  $sth = $self->xref->dbc->prepare("update xref set dumped = null where dumped != 'NO_DUMP_ANOTHER_PRIORITY'"); # just incase this is being ran again
   $sth->execute;
   $sth->finish;
 
@@ -206,7 +205,18 @@ sub update{
  
 #     $dependent_sth = $self->xref->dbc->prepare('select  x.xref_id, x.accession, x.label, x.version, x.description, x.info_text, ox.object_xref_id, ox.ensembl_id, ox.ensembl_object_type, d.master_xref_id from xref x, object_xref ox,  dependent_xref d where ox.ox_status = "DUMP_OUT" and ox.xref_id = x.xref_id and d.object_xref_id = ox.object_xref_id and x.source_id = ? and x.info_type = ? order by x.xref_id, ox.ensembl_id');
  
-    $dependent_sth = $self->xref->dbc->prepare('select  x.xref_id, x.accession, x.label, x.version, x.description, x.info_text, ox.object_xref_id, ox.ensembl_id, ox.ensembl_object_type, ox.master_xref_id from xref x, object_xref ox where ox.ox_status = "DUMP_OUT" and ox.xref_id = x.xref_id and x.source_id = ? and x.info_type = ? order by x.xref_id, ox.ensembl_id');
+  my $dep_sql =(<<DSQL);
+SELECT  x.xref_id, x.accession, x.label, x.version, x.description, x.info_text,
+        ox.object_xref_id, ox.ensembl_id, ox.ensembl_object_type, ox.master_xref_id 
+   FROM xref x, object_xref ox 
+     WHERE ox.ox_status = "DUMP_OUT" and 
+           ox.xref_id = x.xref_id and 
+           x.source_id = ? and 
+           x.info_type = ? 
+     ORDER BY x.xref_id, ox.ensembl_id
+DSQL
+
+ $dependent_sth = $self->xref->dbc->prepare($dep_sql);
 
 
   my $go_sql =(<<GSQL);
@@ -374,7 +384,7 @@ GSQL
       }
       $syn_sth->finish;
 
-      my $xref_dumped_sth = $self->xref->dbc->prepare("update xref set dumped = 2 where xref_id in (".join(", ",@xref_list).")");
+      my $xref_dumped_sth = $self->xref->dbc->prepare("update xref set dumped = 'MAPPED' where xref_id in (".join(", ",@xref_list).")");
       $xref_dumped_sth->execute() || die "Could not set dumped status"; 
       $xref_dumped_sth->finish;
     }	
@@ -489,7 +499,7 @@ GSQL
   $set_unmapped_sth->finish;
 
   if(@xref_list){
-    my $xref_dumped_sth = $self->xref->dbc->prepare("update xref set dumped = 3 where xref_id in (".join(", ",@xref_list).")");
+    my $xref_dumped_sth = $self->xref->dbc->prepare("update xref set dumped = 'UNMAPPED_INTERPRO' where xref_id in (".join(", ",@xref_list).")");
     $xref_dumped_sth->execute(); 
     $xref_dumped_sth->finish;
   }
@@ -549,7 +559,7 @@ DIR
 
 
   if(@xref_list){
-    my $xref_dumped_sth = $self->xref->dbc->prepare("update xref set dumped = 4 where xref_id in (".join(", ",@xref_list).")");
+    my $xref_dumped_sth = $self->xref->dbc->prepare("update xref set dumped = 'UNMAPPED_NO_STABLE_ID' where xref_id in (".join(", ",@xref_list).")");
     $xref_dumped_sth->execute(); 
     $xref_dumped_sth->finish;
   }
@@ -585,7 +595,7 @@ MIS
 
 
   if(@xref_list){
-    my $xref_dumped_sth = $self->xref->dbc->prepare("update xref set dumped = 5 where xref_id in (".join(", ",@xref_list).")");
+    my $xref_dumped_sth = $self->xref->dbc->prepare("update xref set dumped = 'UNMAPPED_NO_MAPPING' where xref_id in (".join(", ",@xref_list).")");
     $xref_dumped_sth->execute(); 
     $xref_dumped_sth->finish;
   }
@@ -631,8 +641,9 @@ DEP
   $dep_unmapped_sth->finish;
   $set_unmapped_sth->finish;
 
+
   if(@xref_list){
-    my $xref_dumped_sth = $self->xref->dbc->prepare("update xref set dumped = 6 where xref_id in (".join(", ",@xref_list).")");
+    my $xref_dumped_sth = $self->xref->dbc->prepare("update xref set dumped = 'UNMAPPED_MASTER_FAILED' where xref_id in (".join(", ",@xref_list).")");
     $xref_dumped_sth->execute(); 
     $xref_dumped_sth->finish;
   }
@@ -645,7 +656,7 @@ DEP
     SELECT  x.xref_id, x.accession, x.version, x.label, x.description, x.info_type, x.info_text, 
             s.name, px.sequence_type, 
             ox.ensembl_object_type, ox.ensembl_id,
-            ix.query_identity, ix.target_identity
+            ix.query_identity, ix.target_identity, ox.ox_status
       FROM source s, primary_xref px, xref x
         LEFT JOIN object_xref ox ON ox.xref_id = x.xref_id
         LEFT JOIN identity_xref ix ON ix.object_xref_id = ox.object_xref_id
@@ -653,16 +664,15 @@ DEP
 	  AND px.xref_id = x.xref_id
           AND x.dumped is null 
           AND x.info_type = 'SEQUENCE_MATCH'
-          AND ox.ox_status != 'FAILED_PRIORITY'
           ORDER  BY x.xref_id
           
 SEQ
-
+# removed          AND ox.ox_status != 'FAILED_PRIORITY'
 
   my $seq_unmapped_sth = $self->xref->dbc->prepare($sql);
   $seq_unmapped_sth->execute();
-  my ($ensembl_object_type, $ensembl_id, $q_id, $t_id, $seq_type) ;
-  $seq_unmapped_sth->bind_columns(\$xref_id, \$acc, \$version, \$label, \$desc, \$type, \$info, \$dbname, \$seq_type, \$ensembl_object_type, \$ensembl_id, \$q_id, \$t_id);
+  my ($ensembl_object_type, $ensembl_id, $q_id, $t_id, $seq_type, $status) ;
+  $seq_unmapped_sth->bind_columns(\$xref_id, \$acc, \$version, \$label, \$desc, \$type, \$info, \$dbname, \$seq_type, \$ensembl_object_type, \$ensembl_id, \$q_id, \$t_id,\$status);
 
   my $set_unmapped_no_sth     = $self->core->dbc->prepare("insert into unmapped_object (type, analysis_id, external_db_id, identifier, unmapped_reason_id, ensembl_object_type ) values ('xref', ?, ?, ?, '".$reason_id{"FAILED_MAP"}."', ?)");
   my $set_unmapped_failed_sth = $self->core->dbc->prepare("insert into unmapped_object (type, analysis_id, external_db_id, identifier, unmapped_reason_id, query_score, target_score, ensembl_id, ensembl_object_type ) values ('xref', ?, ?, ?, '".$reason_id{"FAILED_THRESHOLD"}."',?,?,?,?)");
@@ -672,7 +682,7 @@ SEQ
   my $last_xref = 0;
   while($seq_unmapped_sth->fetch()){
     my $ex_id = $name_to_external_db_id{$dbname};
-    if(!defined($ex_id)){
+    if(!defined($ex_id) or (defined($status) and $status eq "FAILED_PRIORITY") ){
       next;
     }
     if($last_xref != $xref_id){
@@ -701,7 +711,7 @@ SEQ
 
 
   if(@xref_list){
-    my $xref_dumped_sth = $self->xref->dbc->prepare("update xref set dumped = 7 where xref_id in (".join(", ",@xref_list).")");
+    my $xref_dumped_sth = $self->xref->dbc->prepare("update xref set dumped = 'UNMAPPED_NO_MAPPING' where xref_id in (".join(", ",@xref_list).")");
     $xref_dumped_sth->execute(); 
     $xref_dumped_sth->finish;
   }
@@ -744,7 +754,7 @@ WEL
   $set_unmapped_sth->finish;
 
   if(@xref_list){
-    my $xref_dumped_sth = $self->xref->dbc->prepare("update xref set dumped = 8 where xref_id in (".join(", ",@xref_list).")");
+    my $xref_dumped_sth = $self->xref->dbc->prepare("update xref set dumped = 'UNMAPPED_NO_MASTER' where xref_id in (".join(", ",@xref_list).")");
     $xref_dumped_sth->execute(); 
     $xref_dumped_sth->finish;
   }
