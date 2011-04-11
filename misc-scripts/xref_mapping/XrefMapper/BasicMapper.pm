@@ -395,6 +395,155 @@ sub get_id_from_species_name {
 
 }
 
+#
+# Alt alleles
+#
+
+sub get_alt_alleles {
+  my $self =  shift;
+
+  my $gene_id;
+  my $alt_id;
+  my $sth = $self->core->dbc->prepare("select alt_allele_id, gene_id from alt_allele");
+  $sth->execute;
+  $sth->bind_columns(\$alt_id,\$gene_id);
+  my $count = 0 ;
+  my %alt_id_to_gene_id;
+  my %gene_id_to_alt_id;
+  my $max_alt_id = 0;
+  while($sth->fetch){
+    $count++;
+    push @{$alt_id_to_gene_id{$alt_id}}, $gene_id;
+    $gene_id_to_alt_id{$gene_id} = $alt_id;
+      if($alt_id > $max_alt_id){
+	$max_alt_id = $alt_id;
+      }
+  }
+
+  my $insert_sth = $self->xref->dbc->prepare("insert into alt_allele (alt_allele_id, gene_id, is_reference) values (?, ?,?)");
+
+
+
+  if($count){
+    my %non_reference;
+
+    my $sql = (<<SEQ);
+SELECT g.gene_id
+  FROM gene g, seq_region_attrib sra, attrib_type at
+    WHERE g.seq_region_id = sra.seq_region_id AND
+          at.attrib_type_id = sra.attrib_type_id AND
+          at.code = 'non_ref'
+SEQ
+
+    $sth = $self->core->dbc->prepare($sql);
+    $sth->execute;
+    $sth->bind_columns(\$gene_id);
+    while($sth->fetch()){
+      $non_reference{$gene_id} = 1;
+    }
+    
+    $sth = $self->xref->dbc->prepare("delete from alt_allele");
+    $sth->execute;
+
+
+    my $alt_added = 0;
+    my $num_of_genes = 0;
+    my $alt_failed = 0;
+    foreach my $alt_id (keys %alt_id_to_gene_id){
+
+      # make sure one and only one is on the reference
+      my $ref_count = 0;
+      foreach my $gene (@{$alt_id_to_gene_id{$alt_id}}){
+	if(!defined($non_reference{$gene})){
+	  $ref_count++;
+	}
+      }
+      if($ref_count == 1){
+	$alt_added++;
+	foreach my $gene (@{$alt_id_to_gene_id{$alt_id}}){
+	  $num_of_genes++;
+	  my $ref =0 ;
+	  if(!defined($non_reference{$gene})){
+	    $ref = 1;
+	  }
+	  $insert_sth->execute($alt_id, $gene, $ref);
+	}		
+      }
+      else{
+	$alt_failed++;
+      }
+    }
+    print "$alt_added alleles found containing $num_of_genes genes\n";
+  }
+  else{
+    print "No alt_alleles found for this species.\n" ;
+  }
+
+
+  ### LRGs added as alt_alleles in the XREF system but never added to core.
+
+  #
+  # Use $max_alt_id for new ones.
+  #
+  
+  my $sql =(<<LRG);
+SELECT  ox.ensembl_id, gsi.gene_id
+  FROM xref x, object_xref ox, external_db e, gene_stable_id gsi
+    WHERE x.xref_id = ox.xref_id AND
+          e.external_db_id = x.external_db_id AND
+          e.db_name like "Ens_Hs_gene" AND
+          ox.ensembl_object_type = "Gene" AND
+           x.display_label = gsi.stable_id
+LRG
+  
+  $sth = $self->core->dbc->prepare($sql);
+  my ($core_gene_id, $lrg_gene_id);
+  $sth->execute();
+  $sth->bind_columns(\$lrg_gene_id, \$core_gene_id);
+  
+  $count =0;
+  
+  my $old_count = 0;
+  my $new_count = 0;
+  my $lrg_count = 0;
+  #
+  # If the core gene is already in an alt_allele set then use that alt_id for the LRG gene only.
+  # Else use a new one and add both core and LRG.
+  #
+  
+
+  while ($sth->fetch()){
+    if(defined($gene_id_to_alt_id{$core_gene_id})){
+      $insert_sth->execute($gene_id_to_alt_id{$core_gene_id}, $lrg_gene_id, 0);
+      $old_count++;
+    }
+    elsif(defined($gene_id_to_alt_id{$lrg_gene_id})){
+      $insert_sth->execute($gene_id_to_alt_id{$lrg_gene_id}, $core_gene_id, 1);
+      print "LRG perculiarity\t$core_gene_id\t$lrg_gene_id\n";
+      $lrg_count++;
+    }
+    else{ # new one.
+      $max_alt_id++;
+      $insert_sth->execute($max_alt_id, $lrg_gene_id, 0);
+      $insert_sth->execute($max_alt_id, $core_gene_id, 1);
+      $new_count++;
+    }
+    $count++;
+  }
+
+  if($count){
+    print "Added $count alt_allels for the lrgs. $old_count added to previous alt_alleles and $new_count new ones\n";
+    print "LRG problem count = $lrg_count\n";
+  }
+
+
+
+  my $sth_stat = $self->xref->dbc->prepare("insert into process_status (status, date) values('alt_alleles_added',now())");
+  $sth_stat->execute();
+  $sth_stat->finish;
+  return;
+  
+}
 
 
 #
@@ -1117,8 +1266,8 @@ sub official_naming{
 	    $max_object_xref_id++;
 	    $ins_object_xref_sth->execute($max_object_xref_id, $tran_id, 'Transcript', $xref_added{$id.":".$t_source_id}, undef);	
 	    $ins_dep_ix_sth->execute($max_object_xref_id, 100, 100);
-	    $set_tran_display_xref_sth->execute($max_xref_id, $tran_id);
 	  }
+	  $set_tran_display_xref_sth->execute($xref_added{$id.":".$t_source_id}, $tran_id);
 	}
 	else{
 	  while(defined($xref_added{$id.":".$t_source_id})){
@@ -1535,5 +1684,42 @@ sub revert_to_mapping_finished{
   $sth_stat->finish;    
 
 }
+
+#
+# In case we have alt alleles with xefs, these will be direct ones
+# we need to move all xrefs on to the reference
+#
+
+
+sub move_xrefs_from_alt_allele_to_reference {
+  my $self = shift;
+
+  #
+  # Start with Translation
+
+
+# select aa.is_reference, count(1) from gene_direct_xref gdx, gene_stable_id gsi, alt_allele aa where gdx.ensembl_stable_id = gsi.stable_id and gsi.internal_id = aa.gene_id group by aa.is_reference;
+
+
+# select aa.is_reference, count(1) from transcript_direct_xref tdx, transcript_stable_id tsi, alt_allele aa, gene_transcript_translation gtt where tdx.ensembl_stable_id = tsi.stable_id and tsi.internal_id = gtt.transcript_id and gtt.gene_id = aa.gene_id group by aa.is_reference;
+
+
+
+#select aa.alt_allele_id, aa.is_reference, gsi.stable_id, gsi.internal_id, x.label, s.name from gene_stable_id gsi, xref x, source s, translation_direct_xref tdx, translation_stable_id tsi, alt_allele aa, gene_transcript_translation gtt where tdx.general_xref_id = x.xref_id and x.source_id = s.source_id and tdx.ensembl_stable_id = tsi.stable_id and tsi.internal_id = gtt.translation_id and gtt.gene_id = aa.gene_id and gsi.internal_id = gtt.gene_id order by aa.alt_allele_id, s.name, not aa.is_reference limit 20;
+
+}
+
+
+#
+# Copy the xrfs from the reference genes on to the alt alleles.
+#
+
+sub process_alt_alleles {
+  my $self = shift;
+
+
+ 
+}
+
 
 1;
