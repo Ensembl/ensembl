@@ -114,7 +114,7 @@ sub run_script {
   my $sql = "insert into synonym (xref_id, synonym) values (?, ?)";
   my $add_syn_sth = $dbi->prepare($sql);    
   
-  my $syn_hash = $self->get_hgnc_synonyms();
+  my $syn_hash = $self->get_ext_synonyms("HGNC");
 
   $sql = 'select source_id, priority_description from source where name like "HGNC"';
   my $sth = $dbi->prepare($sql);
