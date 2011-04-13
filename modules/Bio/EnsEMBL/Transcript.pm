@@ -2213,6 +2213,11 @@ sub transform {
 	    $order_broken = 1;
 	  }
 
+    #additional check that if exons were on same strand previously, they should be again
+    if(($last_old_strand == $old_exon->strand()) and !($last_new_strand == $new_exon->strand())){
+      return undef;
+    }
+
 	  if( $new_exon->start() < $low_start ) {
 	    $low_start = $new_exon->start();
 	  }
