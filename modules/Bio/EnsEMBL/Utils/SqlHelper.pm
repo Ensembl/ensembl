@@ -614,6 +614,7 @@ sub transaction {
     ($original_dwi, $ac) = $self->_enable_transaction();
   }
   else {
+    #If we were in a transaction then ignore any attempts at retry here
     $retry = 0;
   }
     
@@ -638,6 +639,9 @@ sub transaction {
         }
       }
     }
+    
+    #Always break the loop if we had a successful attempt
+    last if ! $error;
   }
   
   if($perform_transaction) {
