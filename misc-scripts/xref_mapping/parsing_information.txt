@@ -203,7 +203,7 @@ MIM - Online Mendelian Inheritance in Man
 
 Descriptions and types are obtained from the file
 
-    ftp://ftp.ncbi.nih.gov/repository/OMIM/omim.txt.Z
+ ftp://grcf.jhmi.edu/OMIM/omim.txt.Z
 
 This creates two set of Xrefs:
 
