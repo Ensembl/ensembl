@@ -59,7 +59,7 @@ if (!$conf && !$registryconf && !$delete_only) {
 } elsif (!@to_multi) {
 
   print STDERR "At least one target species must be supplied via the -to argument\n";
-  usage();es
+  usage();
 
   exit(1);
 
@@ -278,7 +278,7 @@ sub project_display_names {
   my $from_latin_species = ucfirst(Bio::EnsEMBL::Registry->get_alias($from_species));
 
   # if no display name set, do the projection
-  if (check_overwrite_display_xref($to_gene, $from_source, $to_source)) {
+  if (check_overwrite_display_xref($to_gene, $from_source, $to_source, $dbEntry)) {
 
     if ($dbEntry) {
 
@@ -292,6 +292,8 @@ sub project_display_names {
       # Modify the dbEntry to indicate it's not from this species - set info_type & info_text
       my $info_txt = "from $from_latin_species gene " . $from_gene->stable_id();
 
+
+ 
       # modify the display_id to have " (1 of 3)" etc if this is a one-to-many ortholog
       my $tuple_txt = "";
       if ($total_gene_number > 1) {
@@ -626,16 +628,20 @@ sub delete_go_terms {
 
 sub check_overwrite_display_xref {
 
-  my ($to_gene, $from_dbname, $to_dbname) = @_;
+  my ($to_gene, $from_dbname, $to_dbname, $ref_dbEntry) = @_;
+  my $ret = 0;
 
-  return 1 if (!$to_gene->external_name());
+  if(!$to_gene->external_name()){
+      $ret = 1;
+  }
 
   if ($to_dbname eq "RefSeq_dna_predicted" || $to_dbname eq "RefSeq_peptide_predicted") {
 
     if (($from_species eq "human" && $from_dbname =~ /HGNC/) ||
 	($from_species eq "mouse" && $from_dbname =~ /MarkerSymbol/)) {
+
 	if($to_species eq "zebrafish" and is_in_blacklist($from_gene->display_xref)){
-	    return 0;
+	    return $ret;
 	}
       return 1;
 
@@ -650,8 +656,8 @@ sub check_overwrite_display_xref {
 
     return 1 if ($to_dbname eq "Clone_based_ensembl_gene" or $to_dbname eq "Clone_based_vega_gene");
 
-    if ($from_dbEntry->display_id =~ /C(\d+)orf(\d+)/){
-      $from_dbEntry->display_id("hsC".$1."orf".$2."-like");
+    if ($ref_dbEntry->display_id =~ /C(\d+)orf(\d+)/){
+      $ref_dbEntry->display_id("hsC".$1."orf".$2."-like");
       return 1;
     }
 
@@ -664,7 +670,6 @@ sub check_overwrite_display_xref {
       }
     }
   }
-
   return 0;
 
 }
