@@ -33,7 +33,7 @@ my $reset_to_mapping_finished;
 my $reset_to_parsing_finished;
 my $resubmit_failed_jobs;
 my $recalc_display_xrefs;
-
+my $no_coord_mapping = 0;
 
 my $options = join(" ",@ARGV);
 print "Options: ".join(" ",@ARGV)."\n";
@@ -48,6 +48,7 @@ my $ret = Getopt::Long::GetOptions ('file=s'          => \$file,
             'reset_to_parsing_finished' => \$reset_to_parsing_finished,
             'resubmit_failed_jobs'      => \$resubmit_failed_jobs,
             'recalc_display_xrefs=s'    => \$recalc_display_xrefs,
+            'no_coord_mapping'          => \$no_coord_mapping,
             'help'                      => sub { usage(); exit(0); } );
 
 
@@ -197,11 +198,24 @@ if($status eq "processed_pairs"){
   $mapper->biomart_testing();
 }
 
+
+$status = $mapper->xref_latest_status();
+if($status eq "biomart_test_finished"){ 
+  $mapper->source_defined_move();
+}
+
+$status = $mapper->xref_latest_status();
+if($status eq "source_level_move_finished"){ 
+  $mapper->process_alt_alleles()
+}
+
+
+
 # species specific processing
 # i.e. for mouse and human add MGI_curated_gene and HGNC_curated_gene
 
 $status = $mapper->xref_latest_status();
-if($status eq "processed_pairs"){ 
+if($status eq "alt_alleles_processed"){ 
   $mapper->official_naming();
 }
 
@@ -210,7 +224,7 @@ if($status eq "processed_pairs"){
 
 # tests
 $status = $mapper->xref_latest_status();
-if($status eq "official_naming_done" || $status eq "tests_started" || $status eq "tests_failed" ){  # process the priority xrefs.
+if($status eq "official_naming_done" || $status eq "tests_started" || $status eq "tests_failed" ){
   my $tester = XrefMapper::TestMappings->new($mapper);
   if($tester->unlinked_entries){
     die "Problems found so will not load core database\n";
@@ -222,13 +236,13 @@ if($status eq "official_naming_done" || $status eq "tests_started" || $status eq
 
 # load into core database
 $status = $mapper->xref_latest_status();
-if($status eq "tests_finished" and $upload){
+if($status eq "tests_finished" and $upload and !$no_coord_mapping){
   my $coord = XrefMapper::CoordinateMapper->new($mapper);
   $coord->run_coordinatemapping($upload);
 }
 
 $status = $mapper->xref_latest_status();
-if($status eq "coordinate_xref_finished" and $upload){
+if(($status eq "coordinate_xref_finished" and $upload) or ($no_coord_mapping and $status eq "tests_finished" and $upload) ){
   my $loader = XrefMapper::XrefLoader->new($mapper);
   $loader->update();
   
