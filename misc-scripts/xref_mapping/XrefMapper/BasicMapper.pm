@@ -1470,6 +1470,10 @@ sub biomart_testing{
     }
     $sth->finish;  
   }
+
+  my $sth_stat = $self->xref->dbc->prepare("insert into process_status (status, date) values('biomart_test_finished',now())");
+  $sth_stat->execute();
+  $sth_stat->finish;
 }
   
 
@@ -1691,35 +1695,263 @@ sub revert_to_mapping_finished{
 #
 
 
-sub move_xrefs_from_alt_allele_to_reference {
+sub get_alt_allele_hashes{
+  my $self= shift;
+
+  my %alt_to_ref;
+  my %ref_to_alts;
+
+  my $sql = "select gene_id, is_reference from alt_allele order by alt_allele_id, is_reference DESC";
+
+  my $sth = $self->xref->dbc->prepare($sql);
+  $sth->execute();
+  my ($gene_id, $is_ref);
+  $sth->bind_columns(\$gene_id, \$is_ref);
+  my $ref_gene;
+  while($sth->fetch()){
+    if($is_ref){
+      $ref_gene = $gene_id;
+    }
+    else{
+      $alt_to_ref{$gene_id} = $ref_gene;
+      push @{$ref_to_alts{$ref_gene}}, $gene_id;
+    }
+  }
+  $sth->finish;
+
+  return \%alt_to_ref, \%ref_to_alts;
+}
+
+
+#sub move_xrefs_from_alt_allele_to_reference {
+sub process_alt_alleles{
+  my $self = shift;
+
+  # ALL are on the Gene level now. This may change but for now it is okay.
+  my ($alt_to_ref, $ref_to_alts) = $self->get_alt_allele_hashes();
+
+  my $tester = XrefMapper::TestMappings->new($self);
+  if($tester->unlinked_entries){
+    die "Problems found before process_alt_alleles\n";
+  }
+  #
+  # Move the xrefs on to the reference Gene.
+  # NOTE: Igonore used as the xref might already be on this Gene already and we do not want it to crash
+  #
+  my $move_sql =(<<MOVE);
+UPDATE IGNORE object_xref ox, xref x, source s 
+  SET ox.ensembl_id = ? 
+    WHERE x.source_id = s.source_id AND 
+          ox.xref_id = x.xref_id AND
+          ox.ensembl_id = ? AND
+          ox.ensembl_object_type = 'Gene' AND
+          ox.ox_status = 'DUMP_OUT' AND 
+          s.name in (
+MOVE
+$move_sql .= "'".join("', '",$self->get_gene_specific_list()) . "')";
+
+print "MOVE SQL\n$move_sql\n";
+
+  #
+  # Now where it was already on the Gene the ignore will have stopped the move
+  # so we now want to just remove those ones as they already exist.
+  #
+  my $del_ix_sql =(<<DIX);
+DELETE ix 
+  FROM identity_xref ix, object_xref ox, xref x, source s 
+    WHERE x.source_id = s.source_id AND
+          ox.object_xref_id = ix.object_xref_id AND
+          ox.xref_id = x.xref_id AND 
+          ox.ensembl_id = ? AND 
+          ox.ensembl_object_type = 'Gene' AND 
+          ox.ox_status = 'DUMP_OUT' AND
+           s.name in (
+DIX
+$del_ix_sql .= "'".join("', '",$self->get_gene_specific_list()) . "')";
+
+  my $del_sql =(<<DEL);
+DELETE ox 
+  FROM object_xref ox, xref x, source s 
+    WHERE x.source_id = s.source_id AND
+          ox.xref_id = x.xref_id AND 
+          ox.ensembl_id = ? AND 
+          ox.ensembl_object_type = 'Gene' AND 
+          ox.ox_status = 'DUMP_OUT' AND
+           s.name in (
+DEL
+$del_sql .= "'".join("', '",$self->get_gene_specific_list()) . "')";
+
+  my $move_sth = $self->xref->dbc->prepare($move_sql)  || die "$move_sql cannot be prepared";
+  my $del_ix_sth = $self->xref->dbc->prepare($del_ix_sql)    || die "$del_ix_sql cannot be prepared";
+  my $del_sth = $self->xref->dbc->prepare($del_sql)    || die "$del_sql cannot be prepared";
+
+  my $move_count = 0;
+  my $del_ix_count = 0;
+  my $del_ox_count = 0;
+  foreach my $key (keys %$alt_to_ref){
+    $move_sth->execute($alt_to_ref->{$key}, $key);
+    $move_count += $move_sth->rows;
+
+    $del_ix_sth->execute($key);
+    $del_ix_count += $del_ix_sth->rows;
+
+    $del_sth->execute($key);
+    $del_ox_count += $del_sth->rows;
+  }
+  $move_sth->finish;
+  $del_sth->finish;
+  $del_ix_sth->finish;
+
+  print "Number of rows:- moved = $move_count, identitys deleted = $del_ix_count, object_xrefs deleted = $del_ox_count\n";
+  if($tester->unlinked_entries){
+    die "Problems found mid process_alt_alleles\n";
+  }
+  #
+  # Now we have all the data on the reference Gene we want to copy all the data
+  # onto the alt alleles.
+  #
+
+
+  my $get_data_sql=(<<GET);
+SELECT ox.object_xref_id, ox.ensembl_object_type, ox.xref_id, ox.linkage_annotation, 
+       ox.linkage_type, ox.ox_status, ox.unused_priority, ox.master_xref_id,
+       ix.query_identity, ix.target_identity, ix.hit_start, ix.hit_end,
+       ix.translation_start, ix.translation_end, ix.cigar_line, ix.score, ix.evalue
+  FROM xref x, source s, object_xref ox 
+    LEFT JOIN identity_xref ix ON ox.object_xref_id =ix.object_xref_id 
+      WHERE  x.source_id = s.source_id AND
+             ox.xref_id = x.xref_id AND
+             ox.ensembl_id = ? AND
+             ox.ox_status = 'DUMP_OUT' AND
+             ox.ensembl_object_type = 'Gene' AND
+              s.name in (
+GET
+
+  $get_data_sql .= "'".join("', '",$self->get_gene_specific_list()) . "')";
+
+  my $get_data_sth = $self->xref->dbc->prepare($get_data_sql) || die "Could not prepare $get_data_sql";
+
+
+
+  my $insert_object_xref_sql =(<<INO);
+INSERT INTO object_xref (object_xref_id, ensembl_id, ensembl_object_type, xref_id, linkage_annotation, 
+            linkage_type, ox_status, unused_priority, master_xref_id) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+INO
+
+  my $insert_ox_sth = $self->xref->dbc->prepare($insert_object_xref_sql) || die "Could not prepare $insert_object_xref_sql";
+
+
+  my $insert_identity_xref_sql = (<<INI);
+INSERT INTO identity_xref (object_xref_id, query_identity, target_identity, hit_start, hit_end,
+            translation_start, translation_end, cigar_line, score, evalue ) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+INI
+
+  my $insert_ix_sth = $self->xref->dbc->prepare($insert_identity_xref_sql) || die "Could not prepare $insert_identity_xref_sql";
+
+
+
+  my $max_object_xref_id;
+
+  my $sth = $self->xref->dbc->prepare("SELECT MAX(object_xref_id) FROM object_xref");
+  $sth->execute();
+  $sth->bind_columns(\$max_object_xref_id);
+  $sth->fetch;
+  if(!defined($max_object_xref_id) or !$max_object_xref_id){
+    die "Problem getting max object_xref_id";
+  }
+  $max_object_xref_id++;
+
+  my $added_count = 0;
+  my $ignored = 0;
+  foreach my $key (keys %$ref_to_alts){
+    $get_data_sth->execute($key);
+    my ($object_xref_id, $ensembl_object_type, $xref_id, $linkage_annotation,
+	$linkage_type, $ox_status, $unused_priority, $master_xref_id,
+	$query_identity, $target_identity, $hit_start, $hit_end,
+	$translation_start, $translation_end, $cigar_line, $score, $evalue);
+
+    $get_data_sth->bind_columns(\$object_xref_id, \$ensembl_object_type, \$xref_id, \$linkage_annotation,
+				\$linkage_type, \$ox_status, \$unused_priority, \$master_xref_id,
+				\$query_identity, \$target_identity, \$hit_start, \$hit_end,
+				\$translation_start, \$translation_end, \$cigar_line, \$score, \$evalue);
+
+    while( $get_data_sth->fetch()){
+      foreach my $alt (@{$ref_to_alts->{$key}}){
+	$max_object_xref_id++;
+        $insert_ox_sth->execute($max_object_xref_id, $alt, $ensembl_object_type, $xref_id, $linkage_annotation,
+				$linkage_type, $ox_status, $unused_priority, $master_xref_id) || die "Could not insert object_xref data";
+
+#ONLY add identity xref if object_xref was added successfully.
+	if( $insert_ox_sth->rows){
+	  $added_count++;
+	  $insert_ix_sth->execute($max_object_xref_id, $query_identity, $target_identity, $hit_start, $hit_end,
+				$translation_start, $translation_end, $cigar_line, $score, $evalue) ||  die "Could not insert identity_xref data";
+	}
+	else{
+	  $ignored++;
+	}
+      }
+    }	
+  }
+  print "Added $added_count new mapping but ignored $ignored\n";
+  
+  if($tester->unlinked_entries){
+    die "Problems found after process_alt_alleles\n";
+  }
+  my $sth_stat = $self->xref->dbc->prepare("insert into process_status (status, date) values('alt_alleles_processed',now())");
+  $sth_stat->execute();
+  $sth_stat->finish;
+
+}
+
+
+
+sub get_gene_specific_list {
   my $self = shift;
 
   #
-  # Start with Translation
+  # HGNC MGI and ZFIN_ID will already be done.
+  #
 
+  my @list = qw(DBASS3 DBASS5 EntrezGene miRBase RFAM UniGene Uniprot_genename WikiGene MIM_GENE MIM_MORBID);
 
-# select aa.is_reference, count(1) from gene_direct_xref gdx, gene_stable_id gsi, alt_allele aa where gdx.ensembl_stable_id = gsi.stable_id and gsi.internal_id = aa.gene_id group by aa.is_reference;
-
-
-# select aa.is_reference, count(1) from transcript_direct_xref tdx, transcript_stable_id tsi, alt_allele aa, gene_transcript_translation gtt where tdx.ensembl_stable_id = tsi.stable_id and tsi.internal_id = gtt.transcript_id and gtt.gene_id = aa.gene_id group by aa.is_reference;
-
-
-
-#select aa.alt_allele_id, aa.is_reference, gsi.stable_id, gsi.internal_id, x.label, s.name from gene_stable_id gsi, xref x, source s, translation_direct_xref tdx, translation_stable_id tsi, alt_allele aa, gene_transcript_translation gtt where tdx.general_xref_id = x.xref_id and x.source_id = s.source_id and tdx.ensembl_stable_id = tsi.stable_id and tsi.internal_id = gtt.translation_id and gtt.gene_id = aa.gene_id and gsi.internal_id = gtt.gene_id order by aa.alt_allele_id, s.name, not aa.is_reference limit 20;
-
+  return @list;
 }
 
-
-#
-# Copy the xrfs from the reference genes on to the alt alleles.
-#
-
-sub process_alt_alleles {
+sub source_defined_move{
   my $self = shift;
 
-
- 
+  my $tester = XrefMapper::TestMappings->new($self);
+  if($tester->unlinked_entries){
+    die "Problems found before source_defined_move\n";
+  }
+  foreach my $source ($self->get_gene_specific_list()){
+    $self->biomart_fix($source,"Translation","Gene");
+    $self->biomart_fix($source,"Transcript","Gene");
+  }
+  if($tester->unlinked_entries){
+    die "Problems found after source_defined_move\n";
+  }
+  my $sth_stat = $self->xref->dbc->prepare("insert into process_status (status, date) values('source_level_move_finished',now())");
+  $sth_stat->execute();
+  $sth_stat->finish;
 }
+
+
+
+#sub process_alt_alleles {
+#  my $self = shift;
+#
+#
+#
+#
+#
+#  my $sth_stat = $self->xref->dbc->prepare("insert into process_status (status, date) values('alt_alleles_processed',now())");
+#  $sth_stat->execute();
+#  $sth_stat->finish;
+#}
 
 
 1;
