@@ -139,8 +139,10 @@ foreach my $name (@dbnames) {
     print STDERR "No seq_regions for $dbname.\n";
     exit();
   }
+  
+  my $snp_db = variation_attach( $db );
 
-  my $snps_present = $snpstats && variation_attach( $db );
+  my $snps_present = $snpstats && $snp_db;
 
   my $slice_adaptor = $db->get_SliceAdaptor();
   my $attrib_adaptor = $db->get_AttributeAdaptor();
@@ -192,12 +194,19 @@ foreach my $name (@dbnames) {
     }
 
     if( $snps_present ) {
-      my $snps = $slice->get_all_VariationFeatures();
+	  my $sth = $snp_db->dbc->prepare("SELECT COUNT(*) FROM variation_feature WHERE seq_region_id = ?");
+	  $sth->execute($slice->get_seq_region_id);
+	  my $count;
+	  $sth->bind_columns($count);
+	  $sth->fetch;
+	  
       push @attribs, Bio::EnsEMBL::Attribute->new
 	(-NAME => 'SNP Count',
 	 -CODE => 'SNPCount',
-	 -VALUE => scalar( @$snps ),
+	 -VALUE => $count,
 	 -DESCRIPTION => 'Total Number of SNPs');
+	
+	  $sth->finish;
     }
 
     $attrib_adaptor->store_on_Slice($slice, \@attribs);
@@ -258,5 +267,5 @@ if( ! exists $all_db_names{ $snp_db_name } ) {
      -species => "DEFAULT"
    );
 
-  return 1;
+  return $snp_db;
 }
