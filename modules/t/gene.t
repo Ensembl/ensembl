@@ -459,7 +459,7 @@ ok(scalar @genes == 2);
 
 # Test performance protection (very vague queries return no hits)
 debug("Testing vague query protection");
-ok(ok(scalar (@{$ga->fetch_all_by_external_name('M%')}) == 0);
+ok(scalar (@{$ga->fetch_all_by_external_name('M%')}) == 0);
 ok(scalar (@{$ga->fetch_all_by_external_name('%')}) == 0);
 
 #

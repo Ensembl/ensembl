@@ -271,6 +271,15 @@ my $get_value = sub {
     'Commit will have deleted the meta_key row '.$meta_key);
   }
   
+  #Sixth says you cannot repeat the transaction if it worked
+  {
+    my $counter = 0;
+    $helper->transaction( -RETRY => 5, -CALLBACK => sub {
+      $helper->execute_single_result('select 1');
+      $counter++;
+    });
+    is($counter, 1, 'Counter should be set to 1 as our transaction was good');
+  }
   
   #Reset
   $helper->transaction( -CALLBACK => sub {
