@@ -533,12 +533,18 @@ sub is_circular {
   if ( !defined( $self->adaptor() ) ) { return 0 }
 
   if ( !defined( $self->{'circular'} ) ) {
-    my $attrs = $self->get_all_Attributes('circular_seq');
-    if ( defined($attrs) ) {
-      $self->{'circular'} = ( scalar( @{$attrs} ) > 0 );
+    $self->{'circular'} = 0;  
+
+    if ( !defined($self->adaptor()->{'is_circular'}) ){   
+        $self->adaptor()->_build_circular_slice_cache();
+    } 
+
+    if ($self->adaptor()->{'is_circular'}) {
+	if ( exists($self->adaptor()->{'circular_sr_id_cache'}->{ $self->adaptor()->get_seq_region_id($self) } ) ) {
+		$self->{'circular'} = 1;
+	}
     }
   }
-
   return $self->{'circular'};
 }
 
