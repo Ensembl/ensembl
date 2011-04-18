@@ -120,7 +120,6 @@ sub new {
   $self->{'sr_name_cache'} = $seq_region_cache->{'name_cache'};
   $self->{'sr_id_cache'}   = $seq_region_cache->{'id_cache'};
 
-
   $self->{'lrg_region_test'} = undef;
   my $meta_container = $self->db->get_MetaContainer();
   my @values = $meta_container->list_value_by_key("LRG");
@@ -499,6 +498,7 @@ sub fetch_by_region_unique {
   my @out   = ();
   my $slice = $self->fetch_by_region(@_);
 
+
   if ( !exists( $self->{'asm_exc_cache'} ) ) {
     $self->_build_exception_cache();
   }
@@ -601,6 +601,7 @@ sub fetch_by_seq_region_id {
 
   my $arr = $self->{'sr_id_cache'}->{$seq_region_id};
   my ( $name, $length, $cs, $cs_id );
+
 
   if ( $arr && defined( $arr->[2] ) ) {
     ( $name, $cs_id, $length ) = ( $arr->[1], $arr->[2], $arr->[3] );
@@ -777,6 +778,7 @@ sub fetch_all {
   return [] if ( !$orig_cs );
 
   my %bad_vals=();
+
 
   #
   # Get a hash of non reference seq regions
@@ -1240,6 +1242,7 @@ sub fetch_by_Feature{
   if(!$slice || !($slice->isa('Bio::EnsEMBL::Slice') or $slice->isa('Bio::EnsEMBL::LRGSlice') )) {
     throw('Feature must be attached to a valid slice.');
   }
+
 
   my $fstart = $feature->start();
   my $fend   = $feature->end();
@@ -1864,6 +1867,36 @@ LSQL
 } ## end sub cache_toplevel_seq_mappings
 
 
+sub _build_circular_slice_cache {
+  my $self = shift;
+
+  # build up a cache of circular sequence region ids
+  my $sth =
+    	$self->prepare( "SELECT sra.seq_region_id FROM seq_region_attrib sra "
+		  	. "INNER JOIN attrib_type at ON sra.attrib_type_id = at.attrib_type_id "
+			. "INNER JOIN seq_region sr ON sra.seq_region_id = sr.seq_region_id "
+			. "INNER JOIN coord_system cs ON sr.coord_system_id = cs.coord_system_id "
+			. "WHERE code = 'circular_seq' and cs.species_id = ?");
+
+  $sth->bind_param( 1, $self->species_id(), SQL_INTEGER );
+  $sth->execute();
+
+  my $id;
+  my %hash;
+  if ( ($id) = $sth->fetchrow_array() ) {
+  	$self->{'circular_sr_id_cache'} = \%hash;
+        $self->{'is_circular'} = 1;
+	$hash{ $id } = $id;
+ 	while ( ($id) = $sth->fetchrow_array() ) {
+    		$hash{ $id } = $id;
+  	}
+  } else {
+	$self->{'is_circular'} = 0;
+  }
+  $sth->finish();
+} ## end _build_circular_slice_cache
+
+
 #####################################
 # sub DEPRECATED METHODs
 #####################################
@@ -2075,6 +2108,10 @@ sub fetch_by_chr_name{
    return $self->fetch_by_region($top_cs->name(),$chr_name,
                                  undef,undef,undef,$top_cs->version);
 }
+
+
+
+
 
 
 1;
