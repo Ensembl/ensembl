@@ -12,7 +12,7 @@ use DBI;
 
 use Getopt::Long;
 
-my ( $host, $user, $pass, $port, $expression, $dbpattern, $file, $result_only  );
+my ( $host, $user, $pass, $port, $expression, $dbpattern, $file, $procedure_file, $result_only  );
 
 GetOptions( "host=s", \$host,
 	    "user=s", \$user,
@@ -20,6 +20,7 @@ GetOptions( "host=s", \$host,
 	    "port=i", \$port,
 	    "expr=s", \$expression,
 	    "file=s", \$file,
+            "procedure_file=s", \$procedure_file,
 	    "dbpattern|pattern=s", \$dbpattern,
             "result_only!", \$result_only,
 	  );
@@ -34,8 +35,24 @@ if( $port ) {
 }
 
 my @expressions;
+my $procedure_name;
+my $create_procedure;
 
-if( $file ) {
+if( $procedure_file ) {
+  local *FH;
+  if( ! -r $procedure_file ) {
+    die ( "File $procedure_file not readable" );
+  }
+  open( FH, "<$procedure_file" );
+
+  while( my $line = <FH> ) {
+    if( $line =~ /create procedure ([^\s|^\(]+)/i ) {
+      $procedure_name = $1;
+    }
+    $create_procedure .= " ".$line;
+  }
+
+} elsif( $file ) {
   local *FH;
   if( ! -r $file ) {
     die ( "File $file not readable" );
@@ -77,12 +94,19 @@ for my $dbname ( @dbnames ) {
    unless ($result_only) { 
     print "$dbname\n";
    }
-  if(( ! $expression ) && ( !$file )) {
+  if(( ! $expression ) && ( !$file ) && (!$procedure_file)) {
     next;
   }
 
   $db->do( "use $dbname" );
-  if( $file ) {
+  if( $procedure_file ) {
+    $db->do("drop procedure if exists $procedure_name") or print $DBI::errstr;
+    $db->do("$create_procedure") or print $DBI::errstr;
+    my $sth=$db->prepare("call $procedure_name()") || die $DBI::err.": ".$DBI::errstr;
+    $sth->execute || die DBI::err.": ".$DBI::errstr;
+    $db->do("drop procedure if exists $procedure_name") or print $DBI::errstr;
+    print "stored procedure $procedure_name executed without errors\n";
+  }elsif( $file ) {
     for my $sql ( @expressions ) {
       print "Do $sql\n";
       $db->do( $sql );
@@ -122,8 +146,8 @@ sub usage {
                     -expr sql statement you want to execute. 
                           if omitted, just print database names matching
                           if select, show or describe prints results
-                    -file Apply sql in file to all databases. Doesnt print results.
-
+                    -file Apply sql in file to all databases. Doesn't print results.
+		    -procedure_file Call a stored procedure in a given file. Doesn't print results. The file should contain a 'create procedure' statement only. The procedure can't take any parameters.
 EOF
 ;
   exit;
