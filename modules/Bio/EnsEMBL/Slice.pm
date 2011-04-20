@@ -467,9 +467,9 @@ sub length {
   my ($self) = @_;
 
   my $length = $self->{'end'} - $self->{'start'} + 1;
-
-  if ( $self->is_circular() && $self->{'start'} > $self->{'end'} ) {
-    $length += $self->{'seq_region_length'};
+ 
+  if ( $self->{'start'} > $self->{'end'} && $self->is_circular() ) {    
+     $length += $self->{'seq_region_length'};
   }
 
   return $length;
@@ -884,7 +884,7 @@ sub project {
 
 	my $current_end = $current_start + $length - 1;
 
-	if ($slice->is_circular && $current_end > $slice->seq_region_length() ) {
+	if ($current_end > $slice->seq_region_length() && $slice->is_circular ) {
 	    $current_end -= $slice->seq_region_length();
         }
 
