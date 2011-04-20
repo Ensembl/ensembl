@@ -1017,26 +1017,26 @@ sub expand {
   my $new_start = $self->{'start'} - $sshift;
   my $new_end   = $self->{'end'} + $eshift;
 
-  if ( $self->is_circular() ) {
+  if (( $new_start <= 0 || $new_start > $self->seq_region_length() || $new_end <= 0 || $new_end > $self->seq_region_length() ) && ( $self->is_circular() ) ) {
+      
+      if ( $new_start <= 0 ) {
+        $new_start = $self->seq_region_length() + $new_start;
+      }
+      if ( $new_start > $self->seq_region_length() ) {
+        $new_start -= $self->seq_region_length();
+      }
+  
+      if ( $new_end <= 0 ) {
+        $new_end = $self->seq_region_length() + $new_end;
+      }
+      if ( $new_end > $self->seq_region_length() ) {
+        $new_end -= $self->seq_region_length();
+      }      
+      
+  }
 
-    if ( $new_start <= 0 ) {
-      $new_start = $self->seq_region_length() + $new_start;
-    }
-    if ( $new_start > $self->seq_region_length() ) {
-      $new_start -= $self->seq_region_length();
-    }
-
-    if ( $new_end <= 0 ) {
-      $new_end = $self->seq_region_length() + $new_end;
-    }
-    if ( $new_end > $self->seq_region_length() ) {
-      $new_end -= $self->seq_region_length();
-    }
-
-
-  } else {
-
-    if ( $new_start > $new_end ) {
+  if ( $new_start > $new_end  && (not $self->is_circular() ) ) {
+   
       if ($force_expand) {
         # Apply max possible shift, if force_expand is set
         if ( $sshift < 0 ) {
@@ -1061,8 +1061,7 @@ sub expand {
       if ( $new_start > $new_end ) {
         throw('Slice start cannot be greater than slice end');
       }
-    } ## end if ( $new_start > $new_end)
-  } ## end else [ if ( $self->is_circular...)]
+  }
 
   #fastest way to copy a slice is to do a shallow hash copy
   my %new_slice = %$self;
