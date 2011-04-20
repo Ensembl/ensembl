@@ -1,0 +1,2 @@
+ens-staging1 ensro
+ens-staging2 ensro
