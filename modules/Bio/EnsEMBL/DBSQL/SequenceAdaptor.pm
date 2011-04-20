@@ -145,31 +145,27 @@ sub fetch_by_Slice_start_end_strand {
    }
 
    $start = 1 if(!defined($start));
-
-   if ($slice->is_circular) {
+ 
+   if ( ( $start > $end || $start < 0 || $end < 0 || $slice->start> $slice->end ) && $slice->is_circular ) {
        if ($start > $end ) {
-	   return $self->_fetch_by_Slice_start_end_strand_circular( $slice, $start, $end, $strand );
+           return $self->_fetch_by_Slice_start_end_strand_circular( $slice, $start, $end, $strand );
        }
 
        if ($start < 0) {
-	   $start += $slice->seq_region_length;
+           $start += $slice->seq_region_length;
        }
        if ($end < 0) {
-	   $end += $slice->seq_region_length;
-       }
-
-       if ( !defined($end) ) {
+           $end += $slice->seq_region_length;
        }
 
        if($slice->start> $slice->end) {
-	   return $self->_fetch_by_Slice_start_end_strand_circular( $slice, $slice->start, $slice->end, $strand );
+           return $self->_fetch_by_Slice_start_end_strand_circular( $slice, $slice->start, $slice->end, $strand );
        }
-
-   } else {
-       if ( !defined($end) ) {
-	   $end = $slice->end() - $slice->start() + 1;
-       }
-   }
+  }
+        
+  if ( ( !defined($end) ) && (not $slice->is_circular) ) {
+           $end = $slice->end() - $slice->start() + 1;
+  }
 
   if ( $start > $end ) {
       throw("Start must be less than or equal to end.");
