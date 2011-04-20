@@ -656,7 +656,8 @@ FEATURE: while ( $sth->fetch() ) {
         $seq_region_start = $seq_region_start - $dest_slice_start + 1;
         $seq_region_end   = $seq_region_end - $dest_slice_start + 1;
 
-        if ( $dest_slice->is_circular() ) {
+	if ( ( $seq_region_end > $dest_slice_start || $seq_region_end < 0 || ( $dest_slice_start > $dest_slice_end
+                 && $seq_region_end < 0 ) )  && $dest_slice->is_circular() ) {
           # Handle circular chromosomes.
 
           if ( $seq_region_start > $seq_region_end ) {
@@ -683,13 +684,12 @@ FEATURE: while ( $sth->fetch() ) {
               $seq_region_end   += $dest_slice->seq_region_length();
             }
           }
-        } ## end if ( $dest_slice->is_circular...)
+      	} 
 
       } else {
         # On the negative strand.
 
-        if (    $dest_slice->is_circular()
-             && $seq_region_start > $seq_region_end )
+        if ( $seq_region_start > $seq_region_end && $dest_slice->is_circular() )
         {
           # Handle circular chromosomes.
 
