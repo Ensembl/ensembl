@@ -324,7 +324,7 @@ MAP: while(<MAPPER>){
   else{
     print "About to process an agp line for ".$acc_to_name{$acc}."\n";
   }
-  if($type eq "F"){
+  if($type eq "F" or $type eq "O"){
     if($strand eq "+"){
       $strand = 1;
     }
