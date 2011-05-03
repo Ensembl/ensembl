@@ -4074,7 +4074,6 @@ CREATE TABLE `master_external_db` (
   `db_name` varchar(100) NOT NULL,
   `db_release` varchar(255) DEFAULT NULL,
   `status` enum('KNOWNXREF','KNOWN','XREF','PRED','ORTH','PSEUDO') NOT NULL,
-  `dbprimary_acc_linkable` tinyint(1) NOT NULL DEFAULT '1',
   `priority` int(11) NOT NULL,
   `db_display_name` varchar(255) DEFAULT NULL,
   `type` enum('ARRAY','ALT_TRANS','ALT_GENE','MISC','LIT','PRIMARY_DB_SYNONYM','ENSEMBL') DEFAULT NULL,

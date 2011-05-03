@@ -199,7 +199,6 @@ SELECT
   db_name AS db_name,
   db_release AS db_release,
   status AS status,
-  dbprimary_acc_linkable AS dbprimary_acc_linkable,
   priority AS priority,
   db_display_name AS db_display_name,
   type AS type,
