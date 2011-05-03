@@ -194,6 +194,7 @@ sub process_file {
   
 
   my $value = $species_hash{'species'};
+  my $taxon = $species_hash{'taxon'};
 
   if ($value !~ /_/) {
     print STDERR "\'$value\' is not a recognised species - please use full species name (e.g. homo_sapiens) in $file\n";
@@ -208,13 +209,23 @@ sub process_file {
   };
   if($@) {
     if ($@ =~ /Can\'t locate $class/) {
-      warn("Did not find a specific mapping module XrefMapper::$value - using XrefMapper::BasicMapper instead\n") if(defined($verbose) and $verbose);
-      require XrefMapper::BasicMapper;
-	$module = "BasicMapper";
+      $class = "XrefMapper/$taxon.pm";
+      eval {
+         require $class;
+      };
+      if($@) {
+         if ($@ =~ /Can\'t locate $class/) {
+             warn("Did not find a specific mapping module XrefMapper::$value or XrefMapper::$taxon - using XrefMapper::BasicMapper instead\n") if(defined($verbose) and $verbose);
+             require XrefMapper::BasicMapper;
+	     $module = "BasicMapper";
+	 } else { die "$@"; }
+       } else {
+         $module = $taxon; 
+       }
     } else {
       die "$@";
     }
-    
+      
   } else{
     $module = $value;
   }
@@ -1438,9 +1449,14 @@ EOF3
   $result = $xref_dbc->do($sql);
   }
 #  print "\n$sql\n";
+
+  #delete dependent_xref 
+  $sql =(<<EOF4);
+  DELETE FROM dependent_xref WHERE object_xref_id NOT IN 
+   (SELECT object_xref_id FROM object_xref);
+EOF4
+      
 }
-
-
 
 sub biomart_testing{
   my ($self) = @_;
