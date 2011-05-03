@@ -479,7 +479,7 @@ CREATE TABLE meta (
 # Add schema type and schema version to the meta table.
 INSERT INTO meta (species_id, meta_key, meta_value) VALUES
   (NULL, 'schema_type',     'core'),
-  (NULL, 'schema_version',  '62');
+  (NULL, 'schema_version',  '63');
 
 # Patches included in this schema file:
 # NOTE: At start of release cycle, remove patch entries from last release.
@@ -1106,7 +1106,7 @@ CREATE TABLE dna_align_feature (
 @column map_name             Map name.
 
 
-@see marker - Stores the original marker.  
+@see marker  
 
 */
 
@@ -1746,7 +1746,9 @@ CREATE TABLE simple_feature (
 
 /**
 @table splicing_event
-@desc Represents alternative splicing events. 
+@desc The splicing event table contains alternative splicing events and constitutive splicing events as reported by the AltSpliceFinder program.
+Multiple alternative splicing events can be observed on a gene. The location of the splicing event on the seq_region is reported.
+The type of event is stored in the @link attrib_type table. 
 
 @column splicing_event_id       Primary key, internal identifier.
 @column name                    Splicing event name.
@@ -1780,14 +1782,14 @@ CREATE TABLE splicing_event (
 
 /**
 @table splicing_event_feature
-@desc Represents alternative splicing event features. 
+@desc Represents alternative splicing event features. If the event is a constitutive exon, the constitutive exon and the transcript it belongs to is reported in this table. If the event is a cassette exon, the cassette exon and the transcript it belongs to is represented in this table. The transcript association field associates a sequence number with a transcript id. Thus, several exons skipped in an event can be attached to the same transcript. The features are ordered according to their genomic location and this is reflected in the feature order field value.
 
 @column splicing_event_feature_id           Primary key, internal identifier.
 @column splicing_event_id                   Foreign key references to the @link splicing_event table.
 @column exon_id                             Foreign key references to the @link exon table.
 @column transcript_id                       Foreign key references to the @link transcript table.
-@column feature_order             
-@column transcript_association    
+@column feature_order             	    Feature order number according to genomic location.
+@column transcript_association    	    Transcript sequence.
 @column type                                E.g. 'constitutive_exon','exon','flanking_exon'.
 @column start                               Sequence start.
 @column end                                 Sequence end.
@@ -1819,6 +1821,8 @@ CREATE TABLE splicing_event_feature (
 /**
 @table splicing_transcript_pair
 @desc Describes a pair of spliced transcripts in a splicing event. 
+A splicing event is an observation of a change of splice sites between two isoforms. To avoid redundancy, some events, like a skipped exon observed between different pairs of transcripts are reported only once. The splicing transcript pair table contains a list of all the combinations of 2 isoforms relating to the same event.
+
 
 @column splicing_transcript_pair_id             Primary key, internal identifier.
 @column splicing_event_id                       Foreign key references to the @link splicing_event table.
