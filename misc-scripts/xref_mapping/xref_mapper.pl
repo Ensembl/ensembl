@@ -86,7 +86,9 @@ my $mapper = XrefMapper::BasicMapper->process_file($file, !$notverbose, $no_xref
 
 
 if(defined($recalc_display_xrefs)){
+  $mapper->official_naming();
   my $display = XrefMapper::DisplayXrefs->new($mapper);
+#  $display->set_display_xrefs_from_stable_table();
   $display->genes_and_transcripts_attributes_set($fullmode_recalc, $no_xref);
   exit();
 }
