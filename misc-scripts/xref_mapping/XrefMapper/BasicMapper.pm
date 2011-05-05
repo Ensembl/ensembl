@@ -982,6 +982,7 @@ SQ5
   # we get the BEST name for the gene (i.e. the one that appears the most)
   #
   my $ins_object_xref_sth =  $self->xref->dbc->prepare("insert into object_xref (object_xref_id, ensembl_id, ensembl_object_type, xref_id, linkage_type, ox_status, unused_priority) values (?, ?, ?, ?, 'MISC', 'DUMP_OUT', ?)");
+  my %seen_gene;
   foreach my $gene_id (@sorted_gene_ids){
     
     my @ODN=();
@@ -1269,6 +1270,9 @@ SQ5
 
 
       my $no_vega_ext = 201;
+      if(defined($seen_gene{$gene_symbol})){
+	$no_vega_ext = $seen_gene{$gene_symbol};
+      }
       foreach my $tran_id ( @{$gene_to_transcripts{$gene_id}} ){
 	my $ext;
 	my $source_id = $dbname_tran_source{$tran_source};
@@ -1290,6 +1294,7 @@ SQ5
 	$ins_object_xref_sth->execute($max_object_xref_id, $tran_id, 'Transcript', $xref_added{$id.":".$source_id},undef);
 	$ins_dep_ix_sth->execute($max_object_xref_id, 100, 100);
       }
+      $seen_gene{$gene_symbol} = $no_vega_ext;
     }
     else{ # use clone name
       my $t_source_id;
