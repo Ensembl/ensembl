@@ -244,16 +244,9 @@
     3.  Run script 'get_OBO_files.ksh' to download all the currently
 	handled ontologies.
 
-    4.  As a prerequisite to the next step, you'll need to download
+    4.  As a prerequisite to the next step, you'll need to install
 	ONTO-PERL modules from: 
         http://search.cpan.org/CPAN/authors/id/E/EA/EASR/ONTO-PERL/ONTO-PERL-1.31.tar.gz  
-	Save the modules in the same directory where your checked out ensembl/ directory resides:
-	e.g. gunzip < ONTO-PERL-1.31.tar.gz | tar xvf - 
-        Go to the ONTO-PERL-1.31 directory and test if you have all required modules
-	by running the following commands:
-	perl Makefile.PL
-	make
-	make test
 
     5.  Load the data from each downloaded ontology file into the database
 	using the script 'load_OBO_file.pl' (run the script without arguments
