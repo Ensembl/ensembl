@@ -2376,7 +2376,7 @@ CREATE TABLE unmapped_object (
   UNIQUE KEY unique_unmapped_obj_idx (identifier, ensembl_id, parent, unmapped_reason_id, ensembl_object_type, external_db_id),
   KEY id_idx (identifier(50)),
   KEY anal_exdb_idx (analysis_id, external_db_id),
-  KEY ext_db_identifier_idx ON unmapped_object(external_db_id, identifier)
+  KEY ext_db_identifier_idx (external_db_id, identifier)
 
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
