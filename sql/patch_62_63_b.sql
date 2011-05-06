@@ -30,19 +30,19 @@ DROP INDEX stable_id_idx ON translation_stable_id;
 
 CREATE UNIQUE INDEX stable_id_idx ON translation_stable_id(stable_id, version);
 
-ALTER TABLE gene_archive MODIFY gene_version DEFAULT 1, MODIFY transcript_version DEFAULT 1, MODIFY translation_version DEFAULT 1;
+ALTER TABLE gene_archive MODIFY gene_version DEFAULT 1, MODIFY transcript_version DEFAULT 1, MODIFY translation_version NOT NULL DEFAULT 1;
 
 DROP INDEX  gene_idx ON gene_archive;
 
-CREATE UNIQUE INDEX  gene_idx ON gene_archive(gene_stable_id, gene_version);
+CREATE INDEX  gene_idx ON gene_archive(gene_stable_id, gene_version);
 
 DROP INDEX  transcript_idx ON gene_archive;
 
-CREATE UNIQUE INDEX  transcript_idx ON gene_archive(transcript_stable_id, transcript_version);
+CREATE INDEX  transcript_idx ON gene_archive(transcript_stable_id, transcript_version);
 
 DROP INDEX  translation_idx ON gene_archive;
  
-CREATE UNIQUE INDEX  translation_idx ON gene_archive(translation_stable_id, translation_version);
+CREATE INDEX  translation_idx ON gene_archive(translation_stable_id, translation_version);
 
 
 #umapped_object new unique index

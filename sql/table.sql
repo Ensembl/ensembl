@@ -2124,7 +2124,6 @@ CREATE TABLE dependent_xref(
 @column db_name                     Database name.     
 @column db_release                  Database release.      
 @column status                      Status, e.g. 'KNOWNXREF','KNOWN','XREF','PRED','ORTH','PSEUDO'. 
-@column dbprimary_acc_linkable      Indicates if primary a accession can be linked to from the EnsEMBL web site.
 @column priority                    Determines which one of the xrefs will be used as the gene name.
 @column db_display_name             Database display name.
 @column type                        Type, e.g. 'ARRAY', 'ALT_TRANS', 'ALT_GENE', 'MISC', 'LIT', 'PRIMARY_DB_SYNONYM', 'ENSEMBL'.
@@ -2149,7 +2148,6 @@ CREATE TABLE external_db (
   status                      ENUM('KNOWNXREF','KNOWN','XREF','PRED','ORTH',
                                    'PSEUDO')
                               NOT NULL,
-  dbprimary_acc_linkable      BOOLEAN DEFAULT 1 NOT NULL,
   priority                    INT NOT NULL,
   db_display_name             VARCHAR(255),
   type                        ENUM('ARRAY', 'ALT_TRANS', 'ALT_GENE', 'MISC', 'LIT', 'PRIMARY_DB_SYNONYM', 'ENSEMBL'),
