@@ -268,12 +268,12 @@ CREATE TABLE exon_stable_id (
 
   exon_id                     INT(10) UNSIGNED NOT NULL,
   stable_id                   VARCHAR(128) NOT NULL,
-  version                     INT(10),
+  version                     INT(10) NOT NULL DEFAULT 1,
   created_date                DATETIME NOT NULL,
   modified_date               DATETIME NOT NULL,
 
   PRIMARY KEY (exon_id),
-  KEY stable_id_idx (stable_id, version)
+  UNIQUE KEY stable_id_idx (stable_id, version)
 
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
@@ -401,12 +401,12 @@ CREATE TABLE gene_stable_id (
 
   gene_id                     INT UNSIGNED NOT NULL,
   stable_id                   VARCHAR(128) NOT NULL,
-  version                     INT(10),
+  version                     INT(10) NOT NULL DEFAULT 1,
   created_date                DATETIME NOT NULL,
   modified_date               DATETIME NOT NULL,
 
   PRIMARY KEY (gene_id),
-  KEY stable_id_idx (stable_id, version)
+  UNIQUE KEY stable_id_idx (stable_id, version)
 
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
@@ -674,12 +674,12 @@ CREATE TABLE transcript_stable_id (
 
   transcript_id               INT(10) UNSIGNED NOT NULL,
   stable_id                   VARCHAR(128) NOT NULL,
-  version                     INT(10),
+  version                     INT(10) NOT NULL DEFAULT 1,
   created_date                DATETIME NOT NULL,
   modified_date               DATETIME NOT NULL,
 
   PRIMARY KEY (transcript_id),
-  KEY stable_id_idx (stable_id, version)
+  UNIQUE KEY stable_id_idx (stable_id, version)
 
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
@@ -761,12 +761,12 @@ CREATE TABLE translation_stable_id (
 
   translation_id              INT(10) UNSIGNED NOT NULL,
   stable_id                   VARCHAR(128) NOT NULL,
-  version                     INT(10),
+  version                     INT(10) NOT NULL DEFAULT 1,
   created_date                DATETIME NOT NULL,
   modified_date               DATETIME NOT NULL,
 
   PRIMARY KEY (translation_id),
-  KEY stable_id_idx (stable_id, version)
+  UNIQUE KEY stable_id_idx (stable_id, version)
 
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
@@ -1923,11 +1923,11 @@ CREATE TABLE transcript_supporting_feature (
 CREATE TABLE gene_archive (
 
   gene_stable_id              VARCHAR(128) NOT NULL,
-  gene_version                SMALLINT NOT NULL,
+  gene_version                SMALLINT NOT NULL DEFAULT 1,
   transcript_stable_id        VARCHAR(128) NOT NULL,
-  transcript_version          SMALLINT NOT NULL,
+  transcript_version          SMALLINT NOT NULL DEFAULT 1,
   translation_stable_id       VARCHAR(128),
-  translation_version         SMALLINT,
+  translation_version         SMALLINT NOT NULL DEFAULT 1,
   peptide_archive_id          INT(10) UNSIGNED,
   mapping_session_id          INT(10) UNSIGNED NOT NULL,
 
@@ -2375,9 +2375,10 @@ CREATE TABLE unmapped_object (
   parent                VARCHAR(255) DEFAULT NULL,
 
   PRIMARY KEY (unmapped_object_id),
-  KEY id_idx (identifier),
-  KEY anal_idx (analysis_id),
-  KEY anal_exdb_idx (analysis_id, external_db_id)
+  UNIQUE KEY unique_unmapped_obj_idx (identifier, ensembl_id, parent, unmapped_reason_id, ensembl_object_type, external_db_id),
+  KEY id_idx (identifier(50)),
+  KEY anal_exdb_idx (analysis_id, external_db_id),
+  KEY ext_db_identifier_idx ON unmapped_object(external_db_id, identifier)
 
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
