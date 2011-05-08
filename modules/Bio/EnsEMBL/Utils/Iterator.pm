@@ -71,11 +71,12 @@ use Bio::EnsEMBL::Utils::Exception qw(throw);
 
 =head2 new
 
-  Argument : a coderef representing the iterator, this anonymous subroutine
-             is assumed to return the next object in the set when called,
-             and to return undef when the set is exhausted. If the argument
-             is not defined then we return an 'empty' iterator that immediately
-             returns undef
+  Argument : either a coderef representing the iterator, in which case this 
+             anonymous subroutine is assumed to return the next object in the 
+             set when called and to return undef when the set is exhausted, 
+             or an arrayref, in which case we return an iterator over this 
+             array. If the argument is not defined then we return an 'empty' 
+             iterator that immediately returns undef
 
   Example :
 
@@ -92,7 +93,7 @@ use Bio::EnsEMBL::Utils::Exception qw(throw);
 
   Description: Constructor, creates a new iterator object
   Returntype : Bio::EnsEMBL::Utils::Iterator instance
-  Exceptions : thrown if the supplied argument is not a coderef
+  Exceptions : thrown if the supplied argument is not the expected 
   Caller     : general
   Status     : Experimental
 
@@ -101,15 +102,27 @@ use Bio::EnsEMBL::Utils::Exception qw(throw);
 sub new {
     my $class = shift;
 
-    my $coderef = shift;
+    my $arg = shift;
     
-    # if the user doesn't supply a coderef, we create a
-    # simple 'empty' iterator that immediately returns undef
-    if (not defined $coderef) {
+    my $coderef;
+
+    if (not defined $arg) {
+        # if the user doesn't supply an argument, we create a
+        # simple 'empty' iterator that immediately returns undef
+ 
         $coderef = sub { return undef };
     }
-    elsif (ref $coderef ne 'CODE'){
-        throw("The supplied argument does not look like an coderef")
+    elsif (ref $arg eq 'ARRAY') {
+        # if the user supplies an arrayref as an argument, we 
+        # create an iterator over this array
+ 
+        $coderef = sub { return shift @$arg };
+    }
+    elsif (ref $arg eq 'CODE'){
+        $coderef = $arg;
+    }
+    else {
+        throw("The supplied argument does not look like an arrayref or a coderef ".(ref $arg))
     }
 
     my $self = {sub => $coderef};
@@ -119,9 +132,9 @@ sub new {
 
 =head2 next
 
-  Example    : $obj = $iterator->next()
+  Example    : $obj = $iterator->next
   Description: returns the next object from this iterator, or undef if the iterator is exhausted
-  Returntype : object reference (the type will depend on what this iterator is iterating over)
+  Returntype : the return type will depend on what this iterator is iterating over
   Exceptions : none
   Caller     : general
   Status     : Experimental
@@ -131,8 +144,7 @@ sub new {
 sub next {
     my $self = shift;
 
-    # if someone has called has_next or peek, there might be a cached value we can return
-    $self->{next} ||= $self->{sub}->();
+    $self->{next} = $self->{sub}->() unless defined $self->{next};
     
     return delete $self->{next};
 }
@@ -140,7 +152,8 @@ sub next {
 =head2 has_next
 
   Example    : if ($iterator->has_next) { my $obj = $iterator->next }
-  Description: returns true if this iterator has more objects to fetch, false when it is exhausted
+  Description: returns true if this iterator has more elements to fetch, false when
+               it is exhausted
   Returntype : boolean
   Exceptions : none
   Caller     : general
@@ -151,18 +164,18 @@ sub next {
 sub has_next {
     my $self = shift;
 
-    $self->{next} ||= $self->{sub}->();
+    $self->{next} = $self->{sub}->() unless defined $self->{next};
 
     return defined $self->{next}; 
 }
 
 =head2 peek
 
-  Example    : $obj = $iterator->peek()
+  Example    : $obj = $iterator->peek
   Description: returns the next object from this iterator, or undef if the iterator is exhausted,
-               much like next() but does not advance the iterator (so the same object will be 
-               returned on the following call to next() or peek())
-  Returntype : object reference (the type will depend on what this iterator is iterating over)
+               much like next but does not advance the iterator (so the same object will be 
+               returned on the following call to next or peek)
+  Returntype : the return type will depend on what this iterator is iterating over
   Exceptions : none
   Caller     : general
   Status     : Experimental
@@ -172,7 +185,7 @@ sub has_next {
 sub peek {
     my $self = shift;
 
-    $self->{next} ||= $self->{sub}->();
+    $self->{next} = $self->{sub}->() unless defined $self->{next};
 
     return $self->{next};
 }
@@ -185,8 +198,8 @@ sub peek {
                filtered set, or false if the element should be filtered out. $_ will be 
                set locally to each element in turn so you should be able to write a block 
                in a similar way as for the perl grep function (although it will need to be 
-               preceded with the sub keyword). Otherwise you can pass in a reference to an 
-               existing subroutine with the same behaviour.
+               preceded with the sub keyword). Otherwise you can pass in a reference to a 
+               subroutine which expects a single argument with the same behaviour.
   Returntype : Bio::EnsEMBL::Utils::Iterator
   Exceptions : thrown if the argument is not a coderef
   Caller     : general
@@ -202,7 +215,7 @@ sub grep {
     return Bio::EnsEMBL::Utils::Iterator->new(sub {
         while ($self->has_next) {
             local $_ = $self->next;
-            return $_ if $coderef->();
+            return $_ if $coderef->($_);
         }
         return undef;
     });
@@ -216,8 +229,8 @@ sub grep {
                $_ will be set locally set to each original element in turn so you 
                should be able to write a block in a similar way as for the perl map 
                function (although it will need to be preceded with the sub keyword). 
-               Otherwise you can pass in a reference to an existing subroutine with 
-               the same behaviour.
+               Otherwise you can pass in a reference to a subroutine which expects a
+               single argument with the same behaviour.
   Returntype : Bio::EnsEMBL::Utils::Iterator
   Exceptions : thrown if the argument is not a coderef
   Caller     : general
@@ -232,7 +245,7 @@ sub map {
 
     return Bio::EnsEMBL::Utils::Iterator->new(sub {
         local $_ = $self->next;
-        return defined $_ ? $coderef->() : undef;
+        return defined $_ ? $coderef->($_) : undef;
     });
 }
 
@@ -256,8 +269,8 @@ sub to_arrayref {
     
     my @array;
 
-    while (my $obj = $self->next) {
-        push @array, $obj;
+    while ($self->has_next) {
+        push @array, $self->next;
     }
 
     return \@array;
@@ -302,4 +315,86 @@ sub append {
     });
 }
 
+=head2 take
+
+  Example    : my $limited_iterator = $iterator->take(5);
+  Description: return a new iterator that only iterates over the
+               first n elements of this iterator
+  Argument   : a positive integer
+  Returntype : Bio::EnsEMBL::Utils::Iterator
+  Exceptions : thrown if the argument is negative
+  Caller     : general
+  Status     : Experimental
+
+=cut
+
+sub take {
+    my ($self, $n) = @_;
+    
+    throw("Argument cannot be negative") if $n < 0;
+
+    my $cnt = 0;
+
+    return Bio::EnsEMBL::Utils::Iterator->new(sub {
+        return $cnt++ >= $n ? undef : $self->next;
+    });
+}
+
+=head2 skip
+
+  Example    : my $limited_iterator = $iterator->skip(5);
+  Description: skip over the first n elements of this iterator (and then return
+               the same iterator for your method chaining convenience)
+  Argument   : a positive integer
+  Returntype : Bio::EnsEMBL::Utils::Iterator
+  Exceptions : thrown if the argument is negative
+  Caller     : general
+  Status     : Experimental
+
+=cut
+
+sub skip {
+    my ($self, $n) = @_;
+    
+    throw("Argument cannot be negative") if $n < 0;
+
+    $self->next for (0 .. $n-1);
+
+    return $self;
+}
+
+=head2 reduce
+
+  Example    : my $tot_length = $iterator->reduce(sub { $_[0] + $_[1]->length }, 0);
+  Description: reduce this iterator with the provided coderef, using the (optional)
+               second argument as the initial value of the accumulator
+  Argument[1]: a coderef that expects 2 arguments, the current accumulator
+               value and the next element in the set, and returns the next
+               accumulator value. Unless the optional second argument is
+               provided the first accumulator value passed in will be the 
+               first element in the set
+  Argument[2]: (optional) an initial value to use for the accumulator instead 
+               of the first value of the set
+  Returntype : the same as the return type of the coderef 
+  Exceptions : thrown if the argument is not a coderef
+  Caller     : general
+  Status     : Experimental
+
+=cut
+
+sub reduce {
+    my ($self, $coderef, $init_val) = @_;
+
+    throw('Argument should be a coderef') unless ref $coderef eq 'CODE';
+
+    my $result = defined $init_val ? $init_val : $self->next;
+
+    while ($self->has_next) { 
+        $result = $coderef->($result, $self->next);
+    }
+
+    return $result;
+}
+
 1;
+
