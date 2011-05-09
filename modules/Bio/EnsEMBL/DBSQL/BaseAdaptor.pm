@@ -450,8 +450,10 @@ sub generic_fetch {
   if(@left_join_list) {
     my %left_join_hash = map { $_->[0] => $_->[1] } @left_join_list;
     while(my $t = shift @tabs) {
-      if( exists $left_join_hash{ $t->[0] } ) {
+        my $t_alias = $t->[0] . " " . $t->[1];
+      if( exists $left_join_hash{ $t->[0] } || exists $left_join_hash{$t_alias}) {
         my $condition = $left_join_hash{ $t->[0] };
+        $condition ||= $left_join_hash{$t_alias};
         my $syn = $t->[1];
         $left_join .=
           "\n  LEFT JOIN " . $t->[0] . " $syn ON $condition ) ";
