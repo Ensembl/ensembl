@@ -6,31 +6,31 @@
 
 #change stable Id version to not null, default 1
 
-ALTER TABLE exon_stable_id MODIFY version NOT NULL DEFAULT 1; 
+ALTER TABLE exon_stable_id MODIFY version INT(10) NOT NULL DEFAULT 1; 
 
 DROP INDEX stable_id_idx ON exon_stable_id;
 
 CREATE UNIQUE INDEX stable_id_idx ON exon_stable_id(stable_id, version);
 
-ALTER TABLE gene_stable_id MODIFY version NOT NULL DEFAULT 1; 
+ALTER TABLE gene_stable_id MODIFY version INT(10) NOT NULL DEFAULT 1; 
 
 DROP INDEX stable_id_idx ON gene_stable_id;
 
 CREATE UNIQUE INDEX stable_id_idx ON gene_stable_id(stable_id, version);
 
-ALTER TABLE transcript_stable_id MODIFY version NOT NULL DEFAULT 1;  
+ALTER TABLE transcript_stable_id MODIFY version INT(10) NOT NULL DEFAULT 1;  
 
 DROP INDEX stable_id_idx ON transcript_stable_id;
 
 CREATE UNIQUE INDEX stable_id_idx ON transcript_stable_id(stable_id, version);
 
-ALTER TABLE translation_stable_id MODIFY version NOT NULL DEFAULT 1;  
+ALTER TABLE translation_stable_id MODIFY version INT(10) NOT NULL DEFAULT 1;  
 
 DROP INDEX stable_id_idx ON translation_stable_id;
 
 CREATE UNIQUE INDEX stable_id_idx ON translation_stable_id(stable_id, version);
 
-ALTER TABLE gene_archive MODIFY gene_version DEFAULT 1, MODIFY transcript_version DEFAULT 1, MODIFY translation_version NOT NULL DEFAULT 1;
+ALTER TABLE gene_archive MODIFY gene_version SMALLINT(6) DEFAULT 1, MODIFY transcript_version SMALLINT(6) DEFAULT 1, MODIFY translation_version SMALLINT(6) NOT NULL DEFAULT 1;
 
 DROP INDEX  gene_idx ON gene_archive;
 
@@ -47,7 +47,7 @@ CREATE INDEX  translation_idx ON gene_archive(translation_stable_id, translation
 
 #umapped_object new unique index
 
-DROP INDEX anal_idx ON unmapped_object(analysis_id);
+DROP INDEX anal_idx ON unmapped_object;
 
 CREATE UNIQUE INDEX unique_unmapped_obj_idx ON unmapped_object(identifier, ensembl_id, parent, unmapped_reason_id, ensembl_object_type, external_db_id);
 
