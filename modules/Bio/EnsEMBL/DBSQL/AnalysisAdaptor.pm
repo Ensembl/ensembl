@@ -355,6 +355,7 @@ sub store {
     throw("Analysis cannot be stored without a valid logic_name");
   }
     
+  my $insertion_method = (lc($self->dbc->driver) eq 'sqlite') ? 'INSERT OR IGNORE' : 'INSERT IGNORE';
 
   my $rows_inserted = 0;
   my $sth;
@@ -366,21 +367,10 @@ sub store {
     # this record then there will not be a problem.
 
     $sth = $self->prepare(
-      q{
-      INSERT IGNORE INTO analysis
-      SET created = ?,
-          logic_name = ?,
-          db = ?,
-          db_version = ?,
-          db_file = ?,
-          program = ?,
-          program_version = ?,
-          program_file = ?,
-          parameters = ?,
-          module = ?,
-          module_version = ?,
-          gff_source = ?,
-          gff_feature = ?
+      qq{
+          $insertion_method INTO analysis
+              (created, logic_name, db, db_version, db_file, program, program_version, program_file, parameters, module, module_version, gff_source, gff_feature)
+          VALUES  (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       }
     );
     $sth->bind_param( 1,  $analysis->created(),          SQL_DATETIME );
@@ -401,22 +391,11 @@ sub store {
 
   } else {
     $sth = $self->prepare(
-      q{
-      INSERT IGNORE INTO analysis
-      SET created = now(),
-          logic_name = ?,
-          db = ?,
-          db_version = ?,
-          db_file = ?,
-          program = ?,
-          program_version = ?,
-          program_file = ?,
-          parameters = ?,
-          module = ?,
-          module_version = ?,
-          gff_source = ?,
-          gff_feature = ?
-       }
+      qq{
+          $insertion_method INTO analysis
+              (created, logic_name, db, db_version, db_file, program, program_version, program_file, parameters, module, module_version, gff_source, gff_feature)
+          VALUES  (CURRENT_TIMESTAMP, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      }
     );
 
     $sth->bind_param( 1,  $analysis->logic_name,      SQL_VARCHAR );

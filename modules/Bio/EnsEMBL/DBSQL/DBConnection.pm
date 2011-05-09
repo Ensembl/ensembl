@@ -149,42 +149,43 @@ sub new {
       throw("Cannot specify other arguments when -DBCONN argument used.");
     }
 
-    $self->dbname($dbconn->dbname());
-    $self->username($dbconn->username());
-    $self->host($dbconn->host());
-    $self->password($dbconn->password());
-    $self->port($dbconn->port());
     $self->driver($dbconn->driver());
+    $self->host($dbconn->host());
+    $self->port($dbconn->port());
+    $self->username($dbconn->username());
+    $self->password($dbconn->password());
+    $self->dbname($dbconn->dbname());
 
     if($dbconn->disconnect_when_inactive()) {
       $self->disconnect_when_inactive(1);
     }
   } else {
-    $db   || throw("-DBNAME argument is required.");
-    $user || throw("-USER argument is required.");
-
+    $db     || throw("-DBNAME argument is required.");
     $driver ||= 'mysql';
-    $host   ||= 'mysql';
     
-    if(!defined($port)){
-      $port   = 3306;
-      if($host eq "ensembldb.ensembl.org"){
-	if( $db =~ /\w+_\w+_\w+_(\d+)/){
-	  if($1 >= 48){
-	    $port = 5306;
-	  }
-	}
-      }
+    if($driver eq 'mysql') {
+        $user || throw("-USER argument is required.");
+        $host ||= 'mysql';
+        if(!defined($port)){
+            $port   = 3306;
+            if($host eq "ensembldb.ensembl.org"){
+                if( $db =~ /\w+_\w+_\w+_(\d+)/){
+                    if($1 >= 48){
+                        $port = 5306;
+                    }
+                }
+            }
+        }
     }
 
     $wait_timeout   ||= 0;
 
-    $self->username( $user );
-    $self->host( $host );
-    $self->dbname( $db );
-    $self->password( $password );
-    $self->port($port);
     $self->driver($driver);
+    $self->host( $host );
+    $self->port($port);
+    $self->username( $user );
+    $self->password( $password );
+    $self->dbname( $db );
     $self->timeout($wait_timeout);
 
     if($inactive_disconnect) {
@@ -269,6 +270,20 @@ sub connect {
           'LongTruncOk' => 1,
           'RaiseError'  => 1,
           'PrintError'  => 0
+        } );
+    };
+
+  } elsif ( lc($self->driver()) eq 'sqlite' ) {
+
+    $dsn = sprintf( "DBI:SQLite:%s", $self->dbname() );
+
+    eval {
+      $dbh = DBI->connect(
+        $dsn,
+        '',
+        '',
+        {
+          'RaiseError'      => 1,
         } );
     };
 
@@ -642,7 +657,7 @@ sub prepare {
      throw("Attempting to prepare an empty SQL query.");
    }
 
-#   print STDERR  "SQL(".$self->dbname."):" . join(' ', @args) . "\n";
+   #warn "SQL(".$self->dbname."):" . join(' ', @args) . "\n";
 
    my $sth = $self->db_handle->prepare(@args);
 
@@ -678,7 +693,7 @@ sub do {
      throw("Attempting to do an empty SQL query.");
    }
 
-   #info("SQL(".$self->dbname."):$string");
+   # warn "SQL(".$self->dbname."): $string";
 
    my $result = $self->db_handle->do($string);
 
@@ -771,16 +786,16 @@ sub add_limit_clause{
 
     my $new_sql = '';
     if ($self->driver eq 'mysql'){
-	$new_sql = $sql . ' LIMIT ' . $max_number;
+        $new_sql = $sql . ' LIMIT ' . $max_number;
     }
     elsif ($self->driver eq 'odbc'){
-	#need to get anything after the SELECT statement
-	$sql =~ /select(.*)/i;
-	$new_sql = 'SELECT TOP ' . $max_number . $1;
+        #need to get anything after the SELECT statement
+        $sql =~ /select(.*)/i;
+        $new_sql = 'SELECT TOP ' . $max_number . $1;
     }
     else{
-	warning("Not possible to convert $sql to an unknow database driver: ", $self->driver, " no limit applied");
-	$new_sql = $sql;
+        warning("Not possible to convert $sql to an unknow database driver: ", $self->driver, " no limit applied");
+        $new_sql = $sql;
     }
     return $new_sql;
 }
@@ -805,14 +820,14 @@ sub from_date_to_seconds{
 
     my $string;
     if ($self->driver eq 'mysql'){
-	$string = "UNIX_TIMESTAMP($column)";
+        $string = "UNIX_TIMESTAMP($column)";
     }
     elsif ($self->driver eq 'odbc'){
-	$string = "DATEDIFF(second,'JAN 1 1970',$column)";
+        $string = "DATEDIFF(second,'JAN 1 1970',$column)";
     }
     else{
-	warning("Not possible to convert $column due to an unknown database driver: ", $self->driver);
-	return '';
+        warning("Not possible to convert $column due to an unknown database driver: ", $self->driver);
+        return '';
     }    
     return $string;
 }
@@ -837,24 +852,24 @@ sub from_seconds_to_date{
 
     my $string;
     if ($self->driver eq 'mysql'){
-	if ($seconds){
-	    $string = "from_unixtime( ".$seconds.")";
-	}
-	else{
-	    $string = "\"0000-00-00 00:00:00\"";
-	}
+        if ($seconds){
+            $string = "from_unixtime( ".$seconds.")";
+        }
+        else{
+            $string = "\"0000-00-00 00:00:00\"";
+        }
     }
     elsif ($self->driver eq 'odbc'){
-	if ($seconds){
-	    $string = "DATEDIFF(date,'JAN 1 1970',$seconds)";
-	}
-	else{
-	    $string = "\"0000-00-00 00:00:00\"";
-	}
+        if ($seconds){
+            $string = "DATEDIFF(date,'JAN 1 1970',$seconds)";
+        }
+        else{
+            $string = "\"0000-00-00 00:00:00\"";
+        }
     }
     else{
-	warning("Not possible to convert $seconds due to an unknown database driver: ", $self->driver);
-	return '';
+        warning("Not possible to convert $seconds due to an unknown database driver: ", $self->driver);
+        return '';
 
     }    
     return $string;
