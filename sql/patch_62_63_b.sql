@@ -62,6 +62,9 @@ CREATE INDEX id_idx ON unmapped_object(identifier(50));
 CREATE INDEX ext_db_identifier_idx ON unmapped_object(external_db_id, identifier);
 
 
+# Patch identifier
+INSERT INTO meta (species_id, meta_key, meta_value)
+  VALUES (NULL, 'patch', 'patch_62_63_b.sql|indexing_changes');
 
 
 
