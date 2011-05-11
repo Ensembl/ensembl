@@ -3,7 +3,6 @@ CREATE TABLE `external_db` (
   `db_name` varchar(27) collate latin1_bin NOT NULL default '',
   `db_release` varchar(40) collate latin1_bin NOT NULL default '',
   `status` enum('KNOWNXREF','KNOWN','XREF','PRED','ORTH','PSEUDO') collate latin1_bin NOT NULL default 'KNOWNXREF',
-  `dbprimary_acc_linkable` tinyint(1) NOT NULL default '1',
   `priority` int(11) NOT NULL default '0',
   `db_display_name` varchar(255) collate latin1_bin default NULL,
   `type` enum('ARRAY','ALT_TRANS','ALT_GENE', 'MISC','LIT', 'PRIMARY_DB_SYNONYM', 'ENSEMBL'),
