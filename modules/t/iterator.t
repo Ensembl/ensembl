@@ -123,5 +123,9 @@ $num = Bio::EnsEMBL::Utils::Iterator->new([1,2,3,4])->reduce(sub {$_[0] + $_[1]}
 
 is($num, 20, "reduce with initial value calculated sum correctly");
 
+$num = 0;
+Bio::EnsEMBL::Utils::Iterator->new([1..12])->each(sub { $num++; });
+is($num, 12, 'each iterates over all elements');
+
 done_testing;
 

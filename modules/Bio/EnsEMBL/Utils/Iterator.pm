@@ -249,6 +249,30 @@ sub map {
     });
 }
 
+=head2 each
+
+  Example    : $iterator->each(sub { print $_->name, "\n"; });
+  Description: Performs a full iteration of the current iterator instance.
+  Argument   : a coderef which returns the desired transformation of each element.
+               $_ will be set locally set to each element.
+  Returntype : None
+  Exceptions : thrown if the argument is not a coderef
+  Caller     : general
+  Status     : Experimental
+
+=cut
+
+
+sub each {
+    my ($self, $coderef) = @_;
+    throw('Argument should be a coderef') unless ref $coderef eq 'CODE';
+    while($self->has_next()) {
+        local $_ = $self->next();
+        $coderef->($_);
+    }
+    return;
+}
+
 =head2 to_arrayref
 
   Example    : my $arrayref = $iterator->to_arrayref;
