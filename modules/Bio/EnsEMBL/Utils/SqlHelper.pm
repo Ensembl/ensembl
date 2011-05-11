@@ -81,6 +81,7 @@ use strict;
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 use Bio::EnsEMBL::Utils::Scalar qw(assert_ref check_ref);
 use Bio::EnsEMBL::Utils::Exception qw(throw);
+use Bio::EnsEMBL::Utils::Iterator;
 use English qw( -no_match_vars ); #Used for $PROCESS_ID
 use Scalar::Util qw(weaken); #Used to not hold a strong ref to DBConnection
 
@@ -158,9 +159,12 @@ sub db_connection {
   Arg [PARAMS]          : The binding parameters to the SQL statement
   Arg [PREPARE_PARAMS]  : Parameters to be passed onto the Statement Handle 
                           prepare call
-  Returntype : 2D array containing the return of the callback
-  Exceptions : If errors occur in the execution of the SQL
-  Status     : Stable
+  Arg [ITERATOR]        : Request a L<Bio::EnsEMBL::Utils::Iterator> rather than
+                          a 2D array
+  Returntype :  2D array containing the return of the callback or an instance 
+                of L<Bio::EnsEMBL::Utils::Iterator>
+  Exceptions :  If errors occur in the execution of the SQL
+  Status     :  Stable
 
   my $arr_ref = $helper->execute(
     -SQL      => 'select a,b,c from tab where col =?',
@@ -236,11 +240,27 @@ see each part of the incoming paramaters array as the contents to call
 C<bind_param> with. The only difference is the package tracks the bind
 position for you.
 
+We can get back a L<Bio::EnsEMBL::Utils::Iterator> object which can be used
+to iterate over the results set without first materializing the data into 
+memory. An example would be:
+
+   my $iterator = $helper->execute(
+                           -SQL => 'select a,b,c from tab where col =?',
+                           -PARAMS => ['A'] 
+                           -ITERATOR => 1);
+   while($iterator->has_next()) {
+     my $row = $iterator->next();
+     #Do something
+   }
+
+This is very useful for very large datasets.
+
 =cut
 
 sub execute {
 	my ( $self, @args ) = @_;
-	my ($sql, $callback, $use_hashrefs, $params, $prepare_params) = rearrange([qw(sql callback use_hashrefs params prepare_params)], @args);
+	my ($sql, $callback, $use_hashrefs, $params, $prepare_params, $iterator) = 
+	 rearrange([qw(sql callback use_hashrefs params prepare_params iterator)], @args);
 	my $has_return = 1;
 	
 	#If no callback then we execute using a default one which returns a 2D array
@@ -249,7 +269,7 @@ sub execute {
     $callback = $self->_mappers()->{array_ref};
 	}
 	
-	return $self->_execute( $sql, $callback, $has_return, $use_hashrefs, $params, $prepare_params );
+	return $self->_execute( $sql, $callback, $has_return, $use_hashrefs, $params, $prepare_params, $iterator );
 }
 
 =pod
@@ -315,7 +335,8 @@ sub execute_no_return {
 	my ($sql, $callback, $use_hashrefs, $params) = rearrange([qw(sql callback use_hashrefs params)], @args);
 	throw('No callback defined but this is a required parameter for execute_no_return()') if ! $callback;
 	my $has_return = 0;
-	$self->_execute( $sql, $callback, $has_return, $use_hashrefs, $params );
+	my $prepare_params = [];
+	$self->_execute( $sql, $callback, $has_return, $use_hashrefs, $params);
 	return;
 }
 
@@ -914,51 +935,36 @@ sub _bind_params {
 }
 
 sub _execute {
-	my ( $self, $sql, $callback, $has_return, $use_hashrefs, $params, $prepare_params ) = @_;
+	my ( $self, $sql, $callback, $has_return, $use_hashrefs, $params, $prepare_params, $iterator ) = @_;
 
 	throw('Not given a mapper. _execute() must always been given a CodeRef') unless check_ref($callback, 'CODE');
-	
-  my @results;
+	  
+  my $iter = $self->_base_execute($sql, $has_return, $params, $callback, $prepare_params, $use_hashrefs);
   
-  my $sth_processor;
-  if($use_hashrefs) {
-    
-    $sth_processor = sub {
-      my ($sth) = @_;
-      while( my $row = $sth->fetchrow_hashref() ) {
-		    push(@results, $callback->($row, $sth));
-		  }
-    };
+  if($has_return) {
+    return $iter if $iterator;
+    return $iter->to_arrayref();
   }
   else {
-    
-    $sth_processor = sub {
-      my ($sth) = @_;
-      while ( my $row = $sth->fetchrow_arrayref() ) {
-  			push(@results, $callback->($row, $sth));
-  		}
-    };
+    #Force iteration if we had no return since the caller is expecting this
+    $iter->each(sub {});
   }
-  
-  $self->_base_execute($sql, $has_return, $params, $sth_processor, $prepare_params);
-  
-  return \@results if $has_return;
-	return;
+  return;
 }
 
 sub _base_execute {
-  my ( $self, $sql, $has_return, $params, $sth_processor, $prepare_params ) = @_;
+  my ( $self, $sql, $has_return, $params, $callback, $prepare_params, $use_hashrefs ) = @_;
   
-  throw('Not given a sth_processor. _base_execute() must always been given a CodeRef') unless check_ref($sth_processor, 'CODE');
+  throw('Not given a callback. _base_execute() must always been given a CodeRef') unless check_ref($callback, 'CODE');
 	
 	$params = [] unless $params;
 	
 	my $conn = $self->db_connection;
-	my @results;
 
 	my $error;
 	my $sth_close_error;
 	my $sth;
+	my $iterator;
 
 	eval {
 	  my @prepare_params;
@@ -968,16 +974,35 @@ sub _base_execute {
 		  unless $sth;
 		$self->_bind_params( $sth, $params );
 		$sth->execute();
-    	$sth_processor->($sth);
+    my $sth_processor;
+    if($use_hashrefs) {
+      $sth_processor = sub {
+        while( my $row = $sth->fetchrow_hashref() ) {
+  		    my $v = $callback->($row, $sth);
+  		    return $v if $has_return;
+  		  }
+  		  $self->_finish_sth($sth);
+        return undef;
+      };
+    }
+    else {
+      $sth_processor = sub {
+        while( my $row = $sth->fetchrow_arrayref() ) {
+    			my $v = $callback->($row, $sth);
+  		    return $v if $has_return;
+    		}
+    		$self->_finish_sth($sth);
+        return undef;
+      };
+    }
+		$iterator = Bio::EnsEMBL::Utils::Iterator->new($sth_processor);
 	};
 	
 	$error = $@;
-	$self->_finish_sth($sth);
 	if($error) {
   	throw("Cannot run '${sql}' with params '@{$params}' due to error: $error") if $error;
 	}
-	return \@results if $has_return;
-	return;
+	return $iterator;
 }
 
 sub _finish_sth {
