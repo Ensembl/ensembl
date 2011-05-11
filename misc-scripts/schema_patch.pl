@@ -131,7 +131,7 @@ $support->init_log;
 $support->check_required_params(
   'pattern',
   'schema',
-								'schema_type'
+  'schema_type'
 );
 
 my $schema_type = $support->param('schema_type');
@@ -177,6 +177,7 @@ $sth->execute;
 while (my ($dbname) = $sth->fetchrow_array) {
   $support->log_stamped("$dbname\n");
   
+  my $failure = 0;
   if ($support->user_proceed("\nPatch $dbname?")) {
 
     # check which patches have already been applied
@@ -193,30 +194,34 @@ while (my ($dbname) = $sth->fetchrow_array) {
 
     # apply the missing ones
     foreach my $patch (sort @patches) {
-      $support->log("$patch... ", 1);
+      # if a patch has failed do not continue with other patches as there may be dependencies.
+      if(!$failure){
+	$support->log("$patch... ", 1);
       
-      if ($applied{$patch}) {
-        $support->log("already applied.\n")
-
-      } elsif ($support->param('dry_run')) {
-        $support->log("needs applying.\n")
-      
-      } else {
-        $support->log("applying... ");
-
-        my $cmd = $support->param('bindir')."/mysql".
-          " -h ".$support->param('host').
-          " -P ".$support->param('port').
-          " -u ".$support->param('user').
-          " -p".$support->param('pass').
-          " $dbname < $patchdir/$patch";
-
-        if (system($cmd) == 0) {
-          $support->log("done.\n");
-        } else {
-          $support->log_warning("Error applying patch. Please check patch file.\n", 1);
-        }
-        
+	if ($applied{$patch}) {
+	  $support->log("already applied.\n")
+	    
+	} elsif ($support->param('dry_run')) {
+	  $support->log("needs applying.\n")
+	    
+	} else {
+	  $support->log("applying... ");
+	  
+	  my $cmd = $support->param('bindir')."/mysql".
+	    " -h ".$support->param('host').
+	      " -P ".$support->param('port').
+		" -u ".$support->param('user').
+		  " -p".$support->param('pass').
+		    " $dbname < $patchdir/$patch";
+	  
+	  if (system($cmd) == 0) {
+	    $support->log("done.\n");
+	  } else {
+	    $support->log_warning("Error applying patch. Please check patch file.\n", 1);
+	    $failure = 1;
+	  }
+	  
+	}
       }
     }
     
