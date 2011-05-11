@@ -52,7 +52,7 @@ CREATE TABLE blast_ticket (
   UNIQUE KEY ticket (ticket),
   KEY create_time (create_time),
   KEY update_time (update_time)
-) TYPE=MyISAM";
+) ENGINE=MyISAM";
 
 our $SQL_CREATE_TABLE_LOG = "
 CREATE TABLE blast_table_log (
@@ -69,7 +69,7 @@ CREATE TABLE blast_table_log (
   KEY table_type (table_type),
   KEY use_date (use_date),
   KEY table_status (table_status)
-) TYPE=MyISAM";
+) ENGINE=MyISAM";
 
 
 our $SQL_CREATE_DAILY_RESULT = "
@@ -79,7 +79,7 @@ CREATE TABLE %s (
   object longblob,
   PRIMARY KEY  (result_id),
   KEY ticket (ticket)
-) TYPE=MyISAM";
+) ENGINE=MyISAM";
 
 our $SQL_CREATE_DAILY_HIT = "
 CREATE TABLE %s (
@@ -88,7 +88,7 @@ CREATE TABLE %s (
   object longblob,
   PRIMARY KEY  (hit_id),
   KEY ticket (ticket)
-) TYPE=MyISAM";
+) ENGINE=MyISAM";
 
 our $SQL_CREATE_DAILY_HSP = "
 CREATE TABLE %s (
@@ -100,7 +100,7 @@ CREATE TABLE %s (
   chr_end int(10) unsigned default NULL,
   PRIMARY KEY  (hsp_id),
   KEY ticket (ticket)
-) TYPE=MyISAM MAX_ROWS=705032704 AVG_ROW_LENGTH=4000";
+) ENGINE=MyISAM MAX_ROWS=705032704 AVG_ROW_LENGTH=4000";
 
 #--- TABLE LOG ---
 our $SQL_SELECT_TABLE_LOG_CURRENT = "
