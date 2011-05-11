@@ -207,29 +207,45 @@ sub process_file {
   eval {
     require $class;
   };
+
+  my $use_basic = 0;
+
   if($@) {
     if ($@ =~ /Can\'t locate $class/) {
-      $class = "XrefMapper/$taxon.pm";
-      eval {
-         require $class;
-      };
-      if($@) {
-         if ($@ =~ /Can\'t locate $class/) {
-             warn("Did not find a specific mapping module XrefMapper::$value or XrefMapper::$taxon - using XrefMapper::BasicMapper instead\n") if(defined($verbose) and $verbose);
-             require XrefMapper::BasicMapper;
-	     $module = "BasicMapper";
-	 } else { die "$@"; }
-       } else {
-         $module = $taxon; 
-       }
-    } else {
-      die "$@";
-    }
+      if (defined $taxon) {
+      	$class = "XrefMapper/$taxon.pm";
+      	eval {
+         	require $class;
+      	};
+      	if($@) {
+         	if ($@ =~ /Can\'t locate $class/)  {
+	 		$use_basic = 1;
+		} else { die "$@"; }
+       	} else {
+         	$module = $taxon; 
+       	}
+      }
+      else {
+	$use_basic = 1;
+      }
+    } else { die "$@";}
       
   } else{
     $module = $value;
   }
   
+  if ($use_basic) {
+	if(defined($verbose) and $verbose) {
+		my $warning_msg = "Did not find a specific mapping module XrefMapper::$value ";
+		if (defined $taxon) {
+			$warning_msg .= "or XrefMapper::$taxon "; 
+		}
+		$warning_msg .= "- using XrefMapper::BasicMapper instead\n";
+ 		warn($warning_msg);
+	}
+        require XrefMapper::BasicMapper;
+        $module = "BasicMapper";
+  }
   
   $mapper = "XrefMapper::$module"->new();
 
