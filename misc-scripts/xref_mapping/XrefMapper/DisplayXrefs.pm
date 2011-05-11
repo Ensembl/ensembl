@@ -162,6 +162,16 @@ sub genes_and_transcripts_attributes_set{
 
   $self->build_meta_timestamp;
 
+  # Special removal of LRG transcript display xref, xref and object_xrefs;
+
+  my $sth_lrg =  $self->core->dbc->prepare('DELETE ox, x  FROM object_xref ox, xref x, transcript t, transcript_stable_id tsi WHERE ox.xref_id = x.xref_id and tsi.transcript_id = t.transcript_id and t.display_xref_id = x.xref_id and tsi.stable_id like "LRG%"');
+  $sth_lrg->execute;
+
+  $sth_lrg = $self->core->dbc->prepare('UPDATE transcript t, transcript_stable_id tsi SET t.display_xref_id = null WHERE  tsi.stable_id like "LRG%" and tsi.transcript_id = t.transcript_id');
+  $sth_lrg->execute;
+
+  #End of Special
+
   if(!defined($noxref_database)){
     my $sth_stat = $self->xref->dbc->prepare("insert into process_status (status, date) values('gene_description_done',now())");
     $sth_stat->execute();
