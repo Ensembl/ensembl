@@ -78,7 +78,6 @@ sub fetch_by_dbID {
             xref.dbprimary_acc,
             xref.display_label,
             xref.version,
-            exDB.dbprimary_acc_linkable,
             exDB.priority,
             exDB.db_name,
             exDB.db_display_name,
@@ -108,7 +107,6 @@ sub fetch_by_dbID {
     while ( my $arrayref = shift( @{$rowcache} ) ) {
       my ( $refID,               $dbprimaryId,
            $displayid,           $version,
-	   $primary_id_linkable,
            $priority,
            $dbname,              $db_display_name,
            $release,             $synonym,
@@ -127,7 +125,6 @@ sub fetch_by_dbID {
                            -version             => $version,
                            -release             => $release,
                            -dbname              => $dbname,
-                           -primary_id_linkable => $primary_id_linkable,
                            -priority            => $priority,
                            -db_display_name     => $db_display_name,
                            -info_type           => $info_type,
@@ -172,7 +169,6 @@ sub _get_all_dm_loc_sth {
                xref.dbprimary_acc,
             xref.display_label,
             xref.version,
-            exDB.dbprimary_acc_linkable,
             exDB.priority,
             exDB.db_name,
             exDB.db_display_name,
@@ -211,7 +207,6 @@ sub _get_all_dm_sth {
                xref.dbprimary_acc,
             xref.display_label,
             xref.version,
-            exDB.dbprimary_acc_linkable,
             exDB.priority,
             exDB.db_name,
             exDB.db_display_name,
@@ -258,7 +253,6 @@ sub _get_all_dm{
     while ( my $arrayref = shift( @{$rowcache} ) ) {
       my ( $dbID,                $dbprimaryId,
            $displayid,           $version,
-           $primary_id_linkable,
            $priority,
            $dbname,              $db_display_name,
            $release,             $synonym,
@@ -277,7 +271,6 @@ sub _get_all_dm{
                            -version             => $version,
                            -release             => $release,
                            -dbname              => $dbname,
-                           -primary_id_linkable => $primary_id_linkable,
                            -priority            => $priority,
                            -db_display_name     => $db_display_name,
                            -info_type           => $info_type,
@@ -401,7 +394,6 @@ sub fetch_by_db_accession {
             xref.dbprimary_acc,
             xref.display_label,
             xref.version,
-            exDB.dbprimary_acc_linkable,
             exDB.priority,
             exDB.db_name,
             exDB.db_display_name,
@@ -455,7 +447,6 @@ sub fetch_by_db_accession {
     while ( my $arrayref = shift( @{$rowcache} ) ) {
       my ( $dbID,                $dbprimaryId,
            $displayid,           $version,
-           $primary_id_linkable,
            $priority,
            $dbname,              $db_display_name,
            $release,             $synonym,
@@ -474,7 +465,6 @@ sub fetch_by_db_accession {
                            -version             => $version,
                            -release             => $release,
                            -dbname              => $dbname,
-                           -primary_id_linkable => $primary_id_linkable,
                            -priority            => $priority,
                            -db_display_name     => $db_display_name,
                            -info_type           => $info_type,
@@ -1102,7 +1092,6 @@ sub _fetch_by_object_type {
   #  my $sth = $self->prepare("
   my $sql = (<<SSQL);
     SELECT xref.xref_id, xref.dbprimary_acc, xref.display_label, xref.version,
-           exDB.dbprimary_acc_linkable, 
            exDB.priority,
            exDB.db_name, exDB.db_release, exDB.status, exDB.db_display_name,
            exDB.secondary_db_name, exDB.secondary_db_table,
@@ -1158,7 +1147,6 @@ SSQL
     while ( my $arrRef = shift( @{$rowcache} ) ) {
       my ( $refID,                  $dbprimaryId,
            $displayid,              $version,
-           $primary_id_linkable,
            $priority,
            $dbname,                 $release,
            $exDB_status,            $exDB_db_display_name,
@@ -1238,7 +1226,6 @@ SSQL
 
         if ( defined($exDB_status) ) { $exDB->status($exDB_status) }
 
-        $exDB->primary_id_linkable($primary_id_linkable);
         $exDB->priority($priority);
         $exDB->db_display_name($exDB_db_display_name);
 
@@ -1671,7 +1658,7 @@ sub fetch_all_by_description {
   my $sql =
     "SELECT xref.xref_id, xref.dbprimary_acc, xref.display_label,
            xref.version,
-           exDB.dbprimary_acc_linkable, exDB.priority,
+           exDB.priority,
            exDB.db_name, exDB.db_display_name, exDB.db_release, es.synonym,
            xref.info_type, xref.info_text, exDB.type, exDB.secondary_db_name,
            exDB.secondary_db_table, xref.description
@@ -1698,7 +1685,6 @@ sub fetch_all_by_description {
     while ( my $arrayref = shift( @{$rowcache} ) ) {
       my ( $dbID,                $dbprimaryId,
            $displayid,           $version,
-           $primary_id_linkable,
            $priority,
            $ex_dbname,           $db_display_name,
            $release,             $synonym,
@@ -1716,7 +1702,6 @@ sub fetch_all_by_description {
                            -version             => $version,
                            -release             => $release,
                            -dbname              => $ex_dbname,
-                           -primary_id_linkable => $primary_id_linkable,
                            -priority            => $priority,
                            -db_display_name     => $db_display_name,
                            -info_type           => $info_type,
@@ -1762,7 +1747,7 @@ sub fetch_all_by_source {
   my $sql =
     "SELECT xref.xref_id, xref.dbprimary_acc, xref.display_label,
            xref.version,
-           exDB.dbprimary_acc_linkable, exDB.priority,
+           exDB.priority,
            exDB.db_name, exDB.db_display_name, exDB.db_release, es.synonym,
            xref.info_type, xref.info_text, exDB.type, exDB.secondary_db_name,
            exDB.secondary_db_table, xref.description
@@ -1784,7 +1769,6 @@ sub fetch_all_by_source {
     while ( my $arrayref = shift( @{$rowcache} ) ) {
       my ( $dbID,                $dbprimaryId,
            $displayid,           $version,
-           $primary_id_linkable,
            $priority,
            $dbname,              $db_display_name,
            $release,             $synonym,
@@ -1802,7 +1786,6 @@ sub fetch_all_by_source {
                            -version             => $version,
                            -release             => $release,
                            -dbname              => $dbname,
-                           -primary_id_linkable => $primary_id_linkable,
                            -priority            => $priority,
                            -db_display_name     => $db_display_name,
                            -info_type           => $info_type,
