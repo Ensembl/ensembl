@@ -53,8 +53,13 @@ sub run {
     print "ERROR: Could not open $file\n";
     return 1;
   }
-
-  my $line = $rgd_io->getline();
+  my $line;
+  my $found =0;
+  while(!$found and $line = $rgd_io->getline()){ # ignore comments
+    if(!($line =~ /^#/)){
+      $found = 1;
+    }
+  };
   chomp $line;
   my @linearr = split(/\t/,$line);
 
@@ -63,24 +68,24 @@ sub run {
   #
 
   if($linearr[0] =~ /GENE_RDB_ID/){
-   die ($linearr[0]."!= GENE_RDB_ID is not the first element in the header\n");
+   die ($linearr[0]."!= GENE_RDB_ID is not the first element in the header\n$line\n");
   }
   if($linearr[1] ne "SYMBOL"){
-    die ("SYMBOL is not the second element in the header\n");
+    die ("SYMBOL is not the second element in the header\n$line\n");
   }
   if($linearr[2] ne "NAME"){
-    die ("NAME is not the third element in the header\n");
+    die ("NAME is not the third element in the header\n$line\n");
   }
-  if($linearr[25] ne "GENBANK_NUCLEOTIDE"){
-    die ("GENBANK_NUCLEOTIDE is not the twentysixth element in the header but ".$linearr[25]." is.\\n");
+  if($linearr[23] ne "GENBANK_NUCLEOTIDE"){
+    die ("GENBANK_NUCLEOTIDE is not the twentysixth element in the header but ".$linearr[23]." is.\\n");
   }
   
   my $count= 0;
   my $mismatch = 0;
   while ( $line = $rgd_io->getline() ) {
     chomp $line;
-    my ($rgd, $symbol, $name, $refseq) = (split (/\t/,$line))[0,1,2,25];
-    my @nucs = split(/\,/,$refseq);
+    my ($rgd, $symbol, $name, $refseq) = (split (/\t/,$line))[0,1,2,23];
+    my @nucs = split(/\;/,$refseq);
     my $done = 0;
     my $failed_list ="";
     foreach my $nuc (reverse @nucs){
