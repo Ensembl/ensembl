@@ -64,6 +64,7 @@ sub run {
     if($_ =~ /^ MGI:/){
       my ($junk, $acc, $chr, $pos, $label, $status, @part_desc) = split(/\s+/,$_);
     
+      my $type = pop @part_desc; # last array element is the type.
       my $desc= join(" ",@part_desc);
       $acc_to_xref{$acc} = $self->add_xref($acc,"",$label,$desc,$source_id,$species_id,"MISC");
       if($verbose and $desc eq ""){
