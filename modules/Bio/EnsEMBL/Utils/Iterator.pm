@@ -71,25 +71,14 @@ use Bio::EnsEMBL::Utils::Exception qw(throw);
 
 =head2 new
 
-  Args [1]:  Either:
-                a) A CODE reference representing the Iterator, or a Slice
-                   fetch method to be iterated over using sub Slices.
-                b) An ARRAY reference to be iterated over
-             If the argument is not defined then we return an 'empty' 
+  Argument : either a coderef representing the iterator, in which case this 
+             anonymous subroutine is assumed to return the next object in the 
+             set when called and to return undef when the set is exhausted, 
+             or an arrayref, in which case we return an iterator over this 
+             array. If the argument is not defined then we return an 'empty' 
              iterator that immediately returns undef
 
-  Args [2]: Optional: Feature Adaptor which was the source of the Slice 
-            fetch CODE ref
-
-  Args [3]: Optional: Slice fetch method params ARRAY ref
-  
-  Args [4]: Optional: Slice parameter index in param arrays. Default=0
-
-  Args [5]: Optional: sub Slice chunk size. Default=500000
-
   Example :
-
-    dbID Iterator:
 
     my @dbIDs = fetch_relevant_dbIDs();
 
@@ -102,134 +91,45 @@ use Bio::EnsEMBL::Utils::Exception qw(throw);
     probably be smarter about batching up queries to minimise trips to
     the database. See examples in the Variation API.
 
-    Slice Iterator:
-
-    my $iter = Bio::EnsEMBL::Utils::Iterator->new
-	                             ($feat_adaptor->can('fetch_all_by_Slice'),
-	                              $feat_adaptor,
-	                              $fetch_all_by_Slice_params_ref,
-	                              0,#Slice idx
- 	                              #500 #chunk length
-	                             );
-
   Description: Constructor, creates a new iterator object
   Returntype : Bio::EnsEMBL::Utils::Iterator instance
   Exceptions : thrown if the supplied argument is not the expected 
   Caller     : general
-  Status     : at risk
+  Status     : Experimental
 
 =cut
 
-sub new{
-    my ($class, $ref,  $adaptor, $params_ref, $slice_param_idx, $chunk_size) = @_;
+sub new {
+    my $class = shift;
 
+    my $arg = shift;
+    
     my $coderef;
 
-    if (! defined $ref) {
-	  # if the user doesn't supply an argument, we create a
-	  # simple 'empty' iterator that immediately returns undef
-   	  $coderef = sub { return undef };
-    } 
-	elsif (ref($ref) eq 'ARRAY') {
-	  # if the user supplies an arrayref as an argument, we 
-	  # create an iterator over this array
- 	  $coderef = sub { return shift @$ref };
-    } 
-	elsif (ref($ref) eq 'CODE') {
-	  
-	  if (! defined $adaptor) {	   # Standard Iterator
-		$coderef = $ref;
-	  } 
-	  else {					   # Slice chunk Iterator
-	  
-		if (! (ref($adaptor) &&
-			   $adaptor->isa('Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor'))
-		   ) {
-		  throw('You must pass a valid Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor');
-		}
-		
-		if (! ($params_ref && 
-			   ref($params_ref) eq 'ARRAY')) {
-		  #Don't need to check size here so long as we have valid Slice
-		  throw('You must pass a method params ARRAYREF');
-		}
-	  
-		$slice_param_idx = 0 if(! defined $slice_param_idx);
-		my $slice = $params_ref->[$slice_param_idx];
-		
-		if (! (defined $slice &&
-			   ref($slice) eq 'Bio::EnsEMBL::Slice')
-		   ) {
-		  throw('You must pass a valid Bio::EnsEMBL::Slice '.
-				'in your method params and a valid slice param idx arg');
-		}
-		
-		$chunk_size ||= 1000000;
-		
-		my @feat_cache;
-		my $finished     = 0;
-		my $start        = 1;	#local coord for sub slice
-		my $end          = $slice->length;
-		my $num_overlaps = 0;
-		
-		$coderef = 
-		  sub {
-			
-			while (scalar(@feat_cache) == 0 &&
-				   ! $finished) {
-			  
-			  my $new_end = $start + $chunk_size;
-			
-			  if ($new_end >= $end) {
-				# this is our last chunk
-				$new_end = $end;
-				$finished = 1;  
-			  }
-			 
-			  #Chunk by sub slicing
-			  my $sub_slice                   = $slice->sub_Slice($start, $new_end);
-			  $params_ref->[$slice_param_idx] = $sub_slice;
-			  @feat_cache = @{ $ref->($adaptor, @$params_ref)};
-		
-			  
-			  #Remove & count overlapping features
-			  splice(@feat_cache, 0, $num_overlaps) if($num_overlaps);
-			  my $i;
-		
-			  if (scalar(@feat_cache) > 0) {
+    if (not defined $arg) {
+        # if the user doesn't supply an argument, we create a
+        # simple 'empty' iterator that immediately returns undef
+ 
+        $coderef = sub { return undef };
+    }
+    elsif (ref $arg eq 'ARRAY') {
+        # if the user supplies an arrayref as an argument, we 
+        # create an iterator over this array
+ 
+        $coderef = sub { return shift @$arg };
+    }
+    elsif (ref $arg eq 'CODE'){
+        $coderef = $arg;
+    }
+    else {
+        throw("The supplied argument does not look like an arrayref or a coderef ".(ref $arg))
+    }
 
-				my $feat_end  = $feat_cache[$#feat_cache]->end;
-				my $slice_end = $sub_slice->end;
-				$num_overlaps = 0;
-			   
-				for ($i = $#feat_cache; $i >=0; $i--) {
+    my $self = {sub => $coderef};
 
-				  if ($feat_end > $slice_end) {
-					$feat_end  = $feat_cache[$i]->end;
-					$num_overlaps ++;
-				  } else {
-					last;
-				  }
-
-				}
-			  }
-
-			  # update the start coordinate
-			  $start = $new_end + 1;
-			}
-	  
-			#this maybe returning from an undef cache
-			#Need to sub this out even more?
-
-			return shift @feat_cache;
-		  };
-	  }
-	} else {
-	  throw("The supplied argument does not look like an arrayref or a coderef ".ref($ref));
-	}
-	
-	return bless {sub => $coderef}, $class;
+    return bless $self, $class;
 }
+
 
 =head2 next
 
