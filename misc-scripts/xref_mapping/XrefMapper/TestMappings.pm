@@ -327,12 +327,12 @@ sub entry_number_check{
     my $change = 0;
     $old_object_xref_count{$name} = $count;
     if(defined($new_object_xref_count{$name})){
-      $change = (($new_object_xref_count{$name} - $count)/$new_object_xref_count{$name}) * 100;
+      $change = (($new_object_xref_count{$name} - $count)/$count) * 100;
       if($change > 5){ # increase of 5%
-	print "WARNING: $name has increased by $change\% was $count now ". $new_object_xref_count{$name}. "\n" if($self->mapper->verbose); 
+	print "WARNING: $name has increased by " . floor($change) . "\% was $count now ". $new_object_xref_count{$name} . "\n" if($self->mapper->verbose); 
       }
       elsif($change < -5){ # decrease by 5%
-	print "WARNING: $name has decreased by $change\% was $count now ". $new_object_xref_count{$name}. "\n" if($self->mapper->verbose); 
+	print "WARNING: $name has decreased by " . floor($change) . " \% was $count now ". $new_object_xref_count{$name} . "\n" if($self->mapper->verbose); 
       }
     }
     else{
@@ -343,7 +343,7 @@ sub entry_number_check{
   
   foreach my $key (keys %new_object_xref_count){
     if(!defined($old_object_xref_count{$key})){
-      print "WARNING: $key has ".$new_object_xref_count{$key}." xrefs in the new database but NONE in the old\n" if($self->mapper->verbose);
+      print "WARNING: $key has ".$new_object_xref_count{$key} ." xrefs in the new database but NONE in the old\n" if($self->mapper->verbose);
     }
   }
   
