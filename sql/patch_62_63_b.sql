@@ -8,27 +8,11 @@
 
 ALTER TABLE exon_stable_id MODIFY version INT(10) NOT NULL DEFAULT 1; 
 
-DROP INDEX stable_id_idx ON exon_stable_id;
-
-CREATE UNIQUE INDEX stable_id_idx ON exon_stable_id(stable_id, version);
-
 ALTER TABLE gene_stable_id MODIFY version INT(10) NOT NULL DEFAULT 1; 
-
-DROP INDEX stable_id_idx ON gene_stable_id;
-
-CREATE UNIQUE INDEX stable_id_idx ON gene_stable_id(stable_id, version);
 
 ALTER TABLE transcript_stable_id MODIFY version INT(10) NOT NULL DEFAULT 1;  
 
-DROP INDEX stable_id_idx ON transcript_stable_id;
-
-CREATE UNIQUE INDEX stable_id_idx ON transcript_stable_id(stable_id, version);
-
 ALTER TABLE translation_stable_id MODIFY version INT(10) NOT NULL DEFAULT 1;  
-
-DROP INDEX stable_id_idx ON translation_stable_id;
-
-CREATE UNIQUE INDEX stable_id_idx ON translation_stable_id(stable_id, version);
 
 ALTER TABLE gene_archive MODIFY gene_version SMALLINT NOT NULL DEFAULT 1, MODIFY transcript_version SMALLINT NOT NULL DEFAULT 1, MODIFY translation_version SMALLINT NOT NULL DEFAULT 1;
 
