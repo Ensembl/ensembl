@@ -1156,7 +1156,7 @@ SQ5
     }
     else{# look for LRG
       # look for LRG_HGNC_notransfer, if found then find HGNC equiv and set to this
-      print "LRG FOUND with no HGNC, should have gotten this via the alt allele table?? gene_id = $gene_id\n";
+#      print "LRG FOUND with no HGNC, should have gotten this via the alt allele table?? gene_id = $gene_id\n";
       $lrg_find_sth->execute("LRG_HGNC_notransfer", $gene_id, "Gene");
       $lrg_find_sth->bind_columns(\$display, \$xref_id, \$object_xref_id, \$level);
       while($lrg_find_sth->fetch){
