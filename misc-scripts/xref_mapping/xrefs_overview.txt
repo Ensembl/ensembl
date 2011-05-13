@@ -126,8 +126,8 @@ Once all the mapping have been stored the display Xrefs and the
 descriptions are generated for the transcripts and genes.
 
 If you want to change any of the default settings you can create a new
-'<species>.pm' for your particular species and override the script
-'BasicMapper.pm' (see 'rattus_norvegicus.pm' as an example).
+'<species>.pm' for your particular species, or '<taxon>.pm' and override
+the script 'BasicMapper.pm' (see 'rattus_norvegicus.pm' as an example).
 
 The 'xref_mapper.pl' script needs a configuration file which has
 information on the Xref database and the core database and also the
@@ -148,6 +148,7 @@ password=xxxx
 dir=./xref
 
 species=homo_sapiens
+taxon=mammalia (this is optional - use taxon if you need more than one species to use the same '<taxon>.pm' module) 
 host=ensembl-machine
 port=3306
 dbname=homo_sapiens_core_42_36d
