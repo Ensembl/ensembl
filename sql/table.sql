@@ -273,7 +273,7 @@ CREATE TABLE exon_stable_id (
   modified_date               DATETIME NOT NULL,
 
   PRIMARY KEY (exon_id),
-  UNIQUE KEY stable_id_idx (stable_id, version)
+  KEY stable_id_idx (stable_id, version)
 
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
@@ -406,7 +406,7 @@ CREATE TABLE gene_stable_id (
   modified_date               DATETIME NOT NULL,
 
   PRIMARY KEY (gene_id),
-  UNIQUE KEY stable_id_idx (stable_id, version)
+  KEY stable_id_idx (stable_id, version)
 
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
@@ -679,7 +679,7 @@ CREATE TABLE transcript_stable_id (
   modified_date               DATETIME NOT NULL,
 
   PRIMARY KEY (transcript_id),
-  UNIQUE KEY stable_id_idx (stable_id, version)
+  KEY stable_id_idx (stable_id, version)
 
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
@@ -766,7 +766,7 @@ CREATE TABLE translation_stable_id (
   modified_date               DATETIME NOT NULL,
 
   PRIMARY KEY (translation_id),
-  UNIQUE KEY stable_id_idx (stable_id, version)
+  KEY stable_id_idx (stable_id, version)
 
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
