@@ -2,6 +2,15 @@ use strict;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Getopt::Long qw(:config pass_through);
 
+# (make sure api version is correct
+# Usage:
+# perl alt_alleles.pl -cpass XXXX > & human_release_63_alt_alleles
+#
+#
+# long way
+# perl alt_alleles.pl -vhost ens-staging1 -vport 3306 -vdbname homo_sapiens_vega_63_37 -cdbname homo_sapiens_core_63_37 -chost ens-staging1 -cpass XXXX > & human_release_63_alt_alleles
+#
+
 my ($vhost, $vpass, $vport, $vdbname, $vuser, $chost, $cpass, $cport, $cdbname, $cuser);
 
 GetOptions(
@@ -18,10 +27,21 @@ GetOptions(
 #
 # Connect to the vgea databse to get the alt allele data.
 #
-my $vega_dba = Bio::EnsEMBL::DBSQL::DBAdaptor->new(-host => $vhost||'ensdb-1-11',
+
+my $api_version = Bio::EnsEMBL::ApiVersion->software_version();
+
+if(!defined($vdbname)){
+  $vdbname = "homo_sapiens_vega_".$api_version."_37";
+}
+
+if(!defined($cdbname)){
+  $cdbname = "homo_sapiens_core_".$api_version."_37";
+}
+
+my $vega_dba = Bio::EnsEMBL::DBSQL::DBAdaptor->new(-host => $vhost||'ens-staging1',
                                           -user => $vuser||'ensro',
-                                          -port => $vport||5317,
-                                          -dbname => $vdbname||"vega_homo_sapiens_20100903_v61_GRCh37");
+                                          -port => $vport||3306,
+                                          -dbname => $vdbname||"homo_sapiens_vega_63_37");
 
 
 
@@ -95,11 +115,11 @@ push @{$alt_to_stable{9999}}, "INVALID1";
 # Connect to the core database to store the data in.
 #
 
-my $core_dba = Bio::EnsEMBL::DBSQL::DBAdaptor->new(-host => $chost||'ens-research',
+my $core_dba = Bio::EnsEMBL::DBSQL::DBAdaptor->new(-host => $chost||'ens-staging1',
                                           -user => $cuser||'ensadmin',
 					  -pass => $cpass,
                                           -species => "test",
-                                          -dbname => $cdbname||"ianl_homo_sapiens_core_62_37g");
+                                          -dbname => $cdbname||"homo_sapiens_core_63_37");
 
 
 
