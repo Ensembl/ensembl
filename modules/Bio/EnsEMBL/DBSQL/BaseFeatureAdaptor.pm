@@ -151,6 +151,114 @@ sub fetch_all_by_Slice {
 }
 
 
+
+=head2 fetch_Iterator_by_Slice_method
+
+  Arg [1]    : CODE ref of Slice fetch method
+  Arg [2]    : ARRAY ref of parameters for Slice fetch method
+  Arg [3]    : Optional int: Slice index in parameters array
+  Arg [4]    : Optional int: Slice chunk size. Default=500000
+  Example    : my $slice_iter = $feature_adaptor->fetch_Iterator_by_Slice_method
+                               	      ($feature_adaptor->can('fetch_all_by_Slice_Arrays'),
+	                                   \@fetch_method_params,
+	                                   0,#Slice idx
+	                                   #500 #chunk length
+	                                  );
+
+               while(my $feature = $slice_iter->next && defined $feature){
+                 #Do something here
+               }
+
+  Description: Creates an Iterator which chunks the query Slice to facilitate
+               large Slice queries which would have previously run out of memory
+  Returntype : Bio::EnsEMBL::Utils::Iterator
+  Exceptions : Throws if mandatory params not valid
+  Caller     : general
+  Status     : at risk
+
+=cut
+
+sub fetch_Iterator_by_Slice_method{
+  my ($self, $slice_method_ref, $params_ref, $slice_idx, $chunk_size) = @_;
+
+  if(! ( defined $slice_method_ref &&
+		 ref($slice_method_ref) eq 'CODE')
+	){
+	throw('Must pass a valid Slice fetch method CODE ref');
+  }
+
+  if (! ($params_ref && 
+		 ref($params_ref) eq 'ARRAY')) {
+	#Don't need to check size here so long as we have valid Slice
+	throw('You must pass a method params ARRAYREF');
+  }
+  
+  $slice_idx    = 0 if(! defined $slice_idx);
+  my $slice     = $params_ref->[$slice_idx];
+  $chunk_size ||= 1000000;
+		
+  my @feat_cache;
+  my $finished     = 0;
+  my $start        = 1;	#local coord for sub slice
+  my $end          = $slice->length;
+  my $num_overlaps = 0;
+  
+  my $coderef = 
+	sub {
+	  
+	  while (scalar(@feat_cache) == 0 &&
+			 ! $finished) {
+		
+		my $new_end = $start + $chunk_size;
+		
+		if ($new_end >= $end) {
+		  # this is our last chunk
+		  $new_end = $end;
+		  $finished = 1;  
+		}
+		
+		#Chunk by sub slicing
+		my $sub_slice             = $slice->sub_Slice($start, $new_end);
+		$params_ref->[$slice_idx] = $sub_slice;
+		@feat_cache = @{ $slice_method_ref->($self, @$params_ref)};
+		
+		
+		#Remove & count overlapping features
+		splice(@feat_cache, 0, $num_overlaps) if($num_overlaps);
+		my $i;
+		
+		if (scalar(@feat_cache) > 0) {
+		  
+		  my $feat_end  = $feat_cache[$#feat_cache]->end;
+		  my $slice_end = $sub_slice->end;
+		  $num_overlaps = 0;
+		  
+		  for ($i = $#feat_cache; $i >=0; $i--) {
+			
+			if ($feat_end > $slice_end) {
+			  $feat_end  = $feat_cache[$i]->end;
+			  $num_overlaps ++;
+			} else {
+			  last;
+			}
+			
+		  }
+		}
+		
+		# update the start coordinate
+		$start = $new_end + 1;
+			}
+	  
+	  #this maybe returning from an undef cache
+	  #Need to sub this out even more?
+	  
+	  return shift @feat_cache;
+	};
+
+  return Bio::EnsEMBL::Utils::Iterator->new($coderef);
+}
+
+
 =head2 fetch_all_by_Slice_and_score
 
   Arg [1]    : Bio::EnsEMBL::Slice $slice
@@ -216,6 +324,7 @@ sub fetch_all_by_Slice_and_score {
 sub fetch_all_by_Slice_constraint {
   my ( $self, $slice, $constraint, $logic_name ) = @_;
 
+
   my @result = ();
 
   if ( !ref($slice)
@@ -275,6 +384,8 @@ sub fetch_all_by_Slice_constraint {
   # Hap/PAR support: retrieve normalized 'non-symlinked' slices.
   my @proj = @{ $sa->fetch_normalized_slice_projection($slice) };
 
+
+ 
   if ( !@proj ) {
     throw( 'Could not retrieve normalized Slices. '
          . 'Database contains incorrect assembly_exception information.'
@@ -309,12 +420,15 @@ sub fetch_all_by_Slice_constraint {
 
   @bounds = map { $_->from_start() - $slice->start() + 1 } @ent_proj;
 
+
   # fetch features for the primary slice AND all symlinked slices
   foreach my $seg (@proj) {
+
+
     my $offset    = $seg->from_start();
     my $seg_slice = $seg->to_Slice();
     my $features =
-      $self->_slice_fetch( $seg_slice, $constraint );    ## NO RESULTS
+      $self->_slice_fetch( $seg_slice, $constraint );
 
     # If this was a symlinked slice offset the feature coordinates as
     # needed.
@@ -492,6 +606,7 @@ sub _slice_fetch {
           " AND ${tab_syn}.seq_region_start >= $min_start";
       }
 
+	  
       my $fs = $self->generic_fetch($constraint,undef,$slice);
 
       # features may still have to have coordinates made relative to slice
