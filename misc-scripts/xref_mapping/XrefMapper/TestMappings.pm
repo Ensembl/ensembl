@@ -11,6 +11,7 @@ use Cwd;
 use DBI;
 use File::Basename;
 use IPC::Open3;
+use POSIX;
 
 ##########################################
 # Testing  (may be moved to healthchecks)
@@ -329,10 +330,10 @@ sub entry_number_check{
     if(defined($new_object_xref_count{$name})){
       $change = (($new_object_xref_count{$name} - $count)/$count) * 100;
       if($change > 5){ # increase of 5%
-	print "WARNING: $name has increased by " . floor($change) . "\% was $count now ". $new_object_xref_count{$name} . "\n" if($self->mapper->verbose); 
+	print "WARNING: $name has increased by ".floor($change)."\% was $count now ". $new_object_xref_count{$name} . "\n" if($self->mapper->verbose); 
       }
       elsif($change < -5){ # decrease by 5%
-	print "WARNING: $name has decreased by " . floor($change) . " \% was $count now ". $new_object_xref_count{$name} . "\n" if($self->mapper->verbose); 
+	print "WARNING: $name has decreased by ".floor($change)." \% was $count now ". $new_object_xref_count{$name} . "\n" if($self->mapper->verbose); 
       }
     }
     else{
