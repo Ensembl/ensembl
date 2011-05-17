@@ -363,6 +363,38 @@ sub window_sizes {
 }
 
 
+
+
+=head2 has_window_size
+
+  Args       : int - window size to validate
+  Example    : if( $collector->has_window_size('30') ){
+                   #Do something wrt to 30bp window size
+               }
+
+  Description: Simple utility method to validate whether this Collector
+               has a given window_size
+  Returntype : Boolean
+  Exceptions : Throws if window size not specified
+  Caller     : general
+  Status     : At Risk
+
+=cut
+
+
+sub has_window_size{
+  my ( $self, $size ) = @_;
+
+  if(! defined $size){
+	throw('You must pass a window size to validate');
+  }
+
+  return grep(/$size/, @$window_sizes); 
+}
+
+
+
+
 ### Getter/Setters for BLOB collection config
 # NOTE: Overriding the defaults here may cause a mismatch when the data
 # is retrieved.
