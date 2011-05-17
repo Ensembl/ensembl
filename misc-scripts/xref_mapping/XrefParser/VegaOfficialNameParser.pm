@@ -24,6 +24,7 @@ sub run_script {
   my $species_name = $id2name{$species_id}[0];
 
   my $source_name;
+  my $prepend = 1;
   if($my_args =~ /source[=][>](\S+?)[,]/){
     $source_name = $1;
   }
@@ -34,6 +35,7 @@ sub run_script {
     }
     elsif($species_name eq "mus_musculus" ){
       $source_name = "MGI";
+      $prepend = 0;
       $host = "ens-staging2";
     }
     elsif($species_name eq "danio_rerio" ){
@@ -256,8 +258,10 @@ EXT
     if(defined($ext_to_core{$key} )){
       
       my $ext = $vega_to_ext{$key};
-      my $regex = $source_name . ':';
-      $ext =~ s/$regex//;
+      if($prepend){
+	my $regex = $source_name . ':';
+	$ext =~ s/$regex//;
+      }
       my $stable_id = $ext_to_core{$key};
 
       if(!defined($label{$ext})){
