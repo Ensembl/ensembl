@@ -178,6 +178,8 @@ sub fetch_all_by_Slice {
 
 =cut
 
+#Does not support Collections. See Funcgen ResultFeatureAdaptor::fetch_collection_Iterator_by_Slice_method
+
 sub fetch_Iterator_by_Slice_method{
   my ($self, $slice_method_ref, $params_ref, $slice_idx, $chunk_size) = @_;
 
@@ -209,7 +211,7 @@ sub fetch_Iterator_by_Slice_method{
 	  while (scalar(@feat_cache) == 0 &&
 			 ! $finished) {
 		
-		my $new_end = $start + $chunk_size;
+		my $new_end = ($start + $chunk_size - 1);
 		
 		if ($new_end >= $end) {
 		  # this is our last chunk
@@ -247,7 +249,7 @@ sub fetch_Iterator_by_Slice_method{
 		
 		# update the start coordinate
 		$start = $new_end + 1;
-			}
+	  }
 	  
 	  #this maybe returning from an undef cache
 	  #Need to sub this out even more?
