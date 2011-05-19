@@ -205,16 +205,23 @@ my %data;
 
 
       if ($dumpout) {
-          my $file_path = $dumpout . "/" . $dbname . $table .'_bak.sql';
-          open(BKUPFILE, ">$file_path") or die("Can't write to file $file_path\n");   
-	  my $cmd = "mysqldump -h $host -u $user -p$pass $dbname $table";
-          my $result = `$cmd`;
-	  print BKUPFILE $result;
-	  close BKUPFILE;
-          if ($result !~ /Dump completed/) { 
-		print("back up failed, check file $file_path for details\n");
-	  } else {
-		print("$full_table_name_bak dumped out to file $file_path\n");
+	  # check if file exists
+	  my $test_sql = "select count(1) from information_schema.tables where table_schema = ? and table_name = ?";
+          my $test_sth = $dbh->prepare($test_sql);
+          $test_sth->execute($dbname, $table.'_bak');
+          my ($table_exists) = $test_sth->fetchrow_array();
+	  if ($table_exists) {
+	  	my $file_path = $dumpout . "/" . $dbname . $table .'_bak.sql';
+          	open(BKUPFILE, ">$file_path") or die("Can't write to file $file_path\n");   
+	  	my $cmd = "mysqldump -h $host -u $user -p$pass $dbname $table". "_bak";
+          	my $result = `$cmd`;
+	  	print BKUPFILE $result;
+	  	close BKUPFILE;
+          	if ($result !~ /Dump completed/) { 
+			print("back up failed, check file $file_path for details\n");
+	  	} else {
+			print("$full_table_name_bak dumped out to file $file_path\n");
+	  	}
 	  } 
 	  next;
       }
