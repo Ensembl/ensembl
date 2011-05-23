@@ -2082,7 +2082,7 @@ CREATE TABLE seq_region_mapping (
 
 /**
 @header External References
-@desc A PDF document of the schema is available <a href="external_refs_core.pdf">here</a>.
+@desc A PDF document of the schema is available <a href="xrefs_core.pdf">here</a>.
 */
 
 
