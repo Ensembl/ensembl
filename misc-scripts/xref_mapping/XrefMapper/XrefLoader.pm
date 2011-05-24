@@ -622,7 +622,7 @@ DEP
   my $parent;
   $dep_unmapped_sth->bind_columns(\$xref_id, \$acc, \$version, \$label, \$desc, \$type, \$info, \$dbname, \$parent);
 
-  $set_unmapped_sth  =  $self->core->dbc->prepare("insert into unmapped_object (type, analysis_id, external_db_id, identifier, unmapped_reason_id, parent ) values ('xref', ?, ?, ?, '".$reason_id{"MASTER_FAILED"}."', ?)");
+  $set_unmapped_sth  =  $self->core->dbc->prepare("insert ignore into unmapped_object (type, analysis_id, external_db_id, identifier, unmapped_reason_id, parent ) values ('xref', ?, ?, ?, '".$reason_id{"MASTER_FAILED"}."', ?)");
 
   @xref_list = ();
   my $last_acc= 0;
