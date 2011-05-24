@@ -43,6 +43,7 @@ sub run {
     $species_id = XrefParser::BaseParser->get_species_id_for_filename($file);
   }
 
+  my $dbi = $self->dbi();
 
   my (%refseq) = %{XrefParser::BaseParser->get_valid_codes("refseq",$species_id)};
   
@@ -79,12 +80,19 @@ sub run {
   if($linearr[23] ne "GENBANK_NUCLEOTIDE"){
     die ("GENBANK_NUCLEOTIDE is not the twentysixth element in the header but ".$linearr[23]." is.\\n");
   }
+  if($linearr[29] ne "OLD_SYMBOL"){
+    die ("NAME is not the third element in the header\n$line\n");
+  }  
+
+  my $sql = "insert into synonym (xref_id, synonym) values (?, ?)";
+  my $add_syn_sth = $dbi->prepare($sql);    
   
   my $count= 0;
   my $mismatch = 0;
+  my $syn_count = 0;
   while ( $line = $rgd_io->getline() ) {
     chomp $line;
-    my ($rgd, $symbol, $name, $refseq) = (split (/\t/,$line))[0,1,2,23];
+    my ($rgd, $symbol, $name, $refseq,$old_name) = (split (/\t/,$line))[0,1,2,23,29];
     my @nucs = split(/\;/,$refseq);
     my $done = 0;
     my $failed_list ="";
@@ -94,8 +102,13 @@ sub run {
 	$xref=$refseq{$nuc} if defined($refseq{$nuc});
 	if(defined($xref)){
 	  $done = 1;
-	  XrefParser::BaseParser->add_to_xrefs($xref,$rgd,"",$symbol,$name,"",$source_id,$species_id);
+	  my $xref_id = XrefParser::BaseParser->add_to_xrefs($xref,$rgd,"",$symbol,$name,"",$source_id,$species_id);
 	  $count++;
+	  my @syns  = split(/\;/,$old_name);
+	  foreach my $syn(@syns){
+	    $add_syn_sth->execute($xref_id, $syn);
+	    $syn_count++;
+	  }
 	}
 	else{
 	  $failed_list .= " $nuc";
@@ -115,6 +128,7 @@ sub run {
 
   print "\t$count xrefs succesfully loaded and dependent on refseq\n" if($verbose);
   print "\t$mismatch xrefs added but with NO dependencies\n" if($verbose);
+  print "added $syn_count synonyms\n" if($verbose);
   return 0;
 }
 
