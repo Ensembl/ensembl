@@ -373,6 +373,7 @@ GSQL
 
     # Transfer data for synonym and set xref database xrefs to dumped.
     if(@xref_list){
+      my $syn_count = 0;
       my $syn_sql = "select xref_id, synonym from synonym where xref_id in(".join(", ",@xref_list).")";
       my $syn_sth    = $self->xref->dbc->prepare($syn_sql);
       $syn_sth->execute();
@@ -380,10 +381,12 @@ GSQL
       my ($xref_id, $syn);
       $syn_sth->bind_columns(\$xref_id, \$syn);
       while($syn_sth->fetch()){
-	$add_syn_sth->execute(($xref_id+$xref_offset), $syn)
+	$add_syn_sth->execute(($xref_id+$xref_offset), $syn);
+	$syn_count++;
       }
       $syn_sth->finish;
 
+      print "\tadded $syn_count synonyms\n" if($syn_count);
       my $xref_dumped_sth = $self->xref->dbc->prepare("update xref set dumped = 'MAPPED' where xref_id in (".join(", ",@xref_list).")");
       $xref_dumped_sth->execute() || die "Could not set dumped status"; 
       $xref_dumped_sth->finish;
