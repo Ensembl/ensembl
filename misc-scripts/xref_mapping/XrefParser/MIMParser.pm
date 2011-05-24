@@ -83,19 +83,20 @@ sub run {
 	$description =$2;
 	$type = $1;
 	$description =~ s/\;\s[A-Z0-9]+$//; # strip gene name at end
+	$description = substr($description,0,35)." [".$type."]";
 	if($type eq "*"){ # gene only
 	  $gene++;
-	  $self->add_xref($number,"",$type.$number,$description,$gene_source_id,$species_id,"DEPENDENT");
+	  $self->add_xref($number,"",$description,undef,$gene_source_id,$species_id,"DEPENDENT");
 	}
 	elsif(!defined($type) or $type eq "" or $type eq "#" or $type eq "%"){ #phenotype only
 	  $phenotype++;
-	  $self->add_xref($number,"",$type.$number,$description,$morbid_source_id,$species_id,"DEPENDENT");
+	  $self->add_xref($number,"",$description,undef,$morbid_source_id,$species_id,"DEPENDENT");
 	}
 	elsif($type eq "+"){ # both
 	  $gene++;
-	  $phenotype++;
-	  $self->add_xref($number,"",$type.$number,$description,$gene_source_id,$species_id,"DEPENDENT");
-	  $self->add_xref($number,"",$type.$number,$description,$morbid_source_id,$species_id,"DEPENDENT");
+ 	  $phenotype++;
+	  $self->add_xref($number,"",$description,undef,$gene_source_id,$species_id,"DEPENDENT");
+	  $self->add_xref($number,"",$description,undef,$morbid_source_id,$species_id,"DEPENDENT");
 	}
 	elsif($type eq "^"){
 	  if(/\*FIELD\*\sTI\n[\^]\d+ MOVED TO (\d+)/){
