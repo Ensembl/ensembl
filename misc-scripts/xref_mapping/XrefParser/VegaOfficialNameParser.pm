@@ -16,36 +16,31 @@ sub run_script {
   if($my_args =~ /host[=][>](\S+?)[,]/){
     $host = $1;
   }
-#  else {
-#    print STDERR "\nHost not defined.\n\n";
-#    exit(1);
-#  } 
+
   my %id2name = $self->species_id2name;
   my $species_name = $id2name{$species_id}[0];
 
   my $source_name;
   my $prepend = 1;
-  if($my_args =~ /source[=][>](\S+?)[,]/){
-    $source_name = $1;
+
+
+  if($species_name eq "homo_sapiens" ){
+    $source_name = "HGNC";
+    $host = "ens-staging1";
+  }
+  elsif($species_name eq "mus_musculus" ){
+    $source_name = "MGI";
+    $prepend = 0;
+    $host = "ens-staging2";
+  }
+  elsif($species_name eq "danio_rerio" ){
+    $source_name = "ZFIN_ID";
+    $host = "ens-staging1";
   }
   else{
-    if($species_name eq "homo_sapiens" ){
-      $source_name = "HGNC";
-      $host = "ens-staging1";
-    }
-    elsif($species_name eq "mus_musculus" ){
-      $source_name = "MGI";
-      $prepend = 0;
-      $host = "ens-staging2";
-    }
-    elsif($species_name eq "danio_rerio" ){
-      $source_name = "ZFIN_ID";
-      $host = "ens-staging1";
-    }
-    else{
-      die "Species is $species_name and is not homo_sapines, mus_musculus or danio_rerio the only three valid species\n";
-    }
+    die "Species is $species_name and is not homo_sapines, mus_musculus or danio_rerio the only three valid species\n";
   }
+
 #  else {
 #    print STDERR "\nSource name not defined.\n\n";
 #    exit(1);
@@ -247,7 +242,6 @@ EXT
     die "No point continuing no external references there\n";
   }
 
-
   my $ignore_count = 0;
   my $ignore_examples ="";
   my %acc;
@@ -265,10 +259,9 @@ EXT
       my $stable_id = $ext_to_core{$key};
 
       if(!defined($label{$ext})){
-#	print "ignoring ".$ext."\n";
 	$ignore_count++;
 	if($ignore_count < 10){
-	  $ignore_examples .= " ".$ext;
+	  $ignore_examples .= " ".$ext." (". $vega_to_ext{$key} ." )";
 	}
 	next;
       }
