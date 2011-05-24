@@ -1974,6 +1974,7 @@ VALUES
       or croak("$master_xref\t$dependent_id\t$linkage\t$source_id");
     $xref_dependent_mapped{$master_xref."|".$dependent_id} = 1;
   }
+  return $dependent_id;
 }
 
 sub add_to_syn_for_mult_sources{
