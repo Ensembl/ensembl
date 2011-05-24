@@ -206,17 +206,30 @@ my %data;
       my ($table_exists) = $test_sth->fetchrow_array();
       if ($table_exists) {
       	my $file_path = $dumppath . "/" . $dbname . $table .'.sql';
-      	open(BKUPFILE, ">$file_path") or die("Failed to open file $file_path for writing\n");   
-      	my $cmd = "mysqldump -h $host -u $user -p$pass $dbname $table";
-      	my $result = `$cmd`;
-      	print BKUPFILE $result;
-      	close BKUPFILE;
-      	if ($result !~ /Dump completed/) { 
-	  print("back up failed, check file $file_path for details\n");
-	  next;
-      	} else {
-	  print("$full_table_name_bak dumped out to file $file_path\n");
-      	}
+      	my $file_exists = 0;
+	my $response;
+	if (-e $file_path) {
+        	print("file $file_path already exists, overwrite? (y/n)\n");
+		$file_exists = 1;
+		$response = <>;
+		chomp $response;
+	}
+	if ( !$file_exists or $response eq 'y') {
+		open(BKUPFILE, ">$file_path") or die("Failed to open file $file_path for writing\n");   
+      		my $cmd = "mysqldump -h $host -u $user -p$pass $dbname $table";
+      		my $result = `$cmd`;
+      		print BKUPFILE $result;
+      		close BKUPFILE;
+      		if ($result !~ /Dump completed/) { 
+	  		print("back up failed, check file $file_path for details\n");
+	  		next;
+      		} else {
+	  		print("$full_table_name dumped out to file $file_path\n");
+      		}
+	} else {
+          print("skipping update for table $table\n");
+	  next; 
+	}
       } else {
 	  print("table $table does not exist in database $dbname\n");
           next;
