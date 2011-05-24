@@ -999,6 +999,7 @@ SQ5
   #
   my $ins_object_xref_sth =  $self->xref->dbc->prepare("insert into object_xref (object_xref_id, ensembl_id, ensembl_object_type, xref_id, linkage_type, ox_status, unused_priority) values (?, ?, ?, ?, 'MISC', 'DUMP_OUT', ?)");
   my %seen_gene;
+  my %rfam_name_num;
   foreach my $gene_id (@sorted_gene_ids){
     
     my @ODN=();
@@ -1041,7 +1042,6 @@ SQ5
 
     my $gene_symbol = undef;
     my $gene_symbol_xref_id;
-    my $other_symbol = undef;
     my $other_xref_id = undef;
     my $other_source = undef;
     my $clone_name = undef;
@@ -1071,6 +1071,16 @@ SQ5
 
     my %name_count;
     my %tran_to_vega_ext;
+    foreach my $tran_id ( @{$gene_to_transcripts{$gene_id}} ){
+      $dbentrie_sth->execute("Clone_based_vega_transcript", $tran_id, "Transcript");
+      $dbentrie_sth->bind_columns(\$display, \$xref_id, \$object_xref_id, \$level);
+      while($dbentrie_sth->fetch){
+	if($display =~ /(.+)-(\d+)$/){
+	  $tran_to_vega_ext{$tran_id} = $2;
+	}
+      }
+    }
+
     foreach my $tran_id ( @{$gene_to_transcripts{$gene_id}} ){
       $dbentrie_sth->execute($dbname."_curated_transcript_notransfer", $tran_id, "Transcript");
       $dbentrie_sth->bind_columns(\$display, \$xref_id, \$object_xref_id, \$level);
@@ -1173,9 +1183,6 @@ SQ5
       }
     }
     if(!defined($gene_symbol)){ # try ther database source (should be RFAm and mirbase only)
-      #set $other_symbol if RfAM or miRBase found
-      $other_symbol = undef;
-      $other_xref_id = undef;
       foreach my $ext_db_name (qw(miRBase RFAM)){
 	$dbentrie_sth->execute($ext_db_name, $gene_id, "Gene");
 	$dbentrie_sth->bind_columns(\$display, \$xref_id, \$object_xref_id, \$level);
@@ -1183,6 +1190,13 @@ SQ5
 	  $gene_symbol = $display;
 	  $gene_symbol_xref_id = $xref_id;
 	  $tran_source = $ext_db_name;
+	  if(defined($rfam_name_num{$gene_symbol})){
+	    $rfam_name_num{$gene_symbol}++;
+	  }
+	  else{
+	    $rfam_name_num{$gene_symbol} = 1;
+	  }
+	  $gene_symbol .= ".".$rfam_name_num{$gene_symbol};
 	  next;
 	}
       }	
@@ -1200,7 +1214,7 @@ SQ5
 	$vega_clone_name = $acc_bit;
       }
     }
-    if(!defined($gene_symbol) and !defined($other_symbol) ){   # No HGNC or other so look for vega clone names
+    if(!defined($gene_symbol) ){   # No HGNC or other so look for vega clone names
 
       if(!defined($vega_clone_name)){ #if no vega clone name use the ensembl clone name
 
@@ -1258,7 +1272,7 @@ SQ5
     #
     # Set the names now that we know which to use.
     #
-    if( !(defined($clone_name) or defined($vega_clone_name)) and !defined($gene_symbol) and !defined($other_symbol)){
+    if( !(defined($clone_name) or defined($vega_clone_name)) and !defined($gene_symbol) ){
       print STDERR "Problem gene ".$gene_id_to_stable_id{$gene_id}." could not get a clone name or ".$dbname." symbol\n";
       next;
     }
@@ -1328,18 +1342,6 @@ SQ5
 	  $t_source_id = $clone_based_ensembl_tran_id;
 	  $g_source_id = $clone_based_ensembl_gene_id;
 	  $desc = "via ensembl clone name";
-	}
-	elsif(defined($other_symbol)){
-	  die "SHOULD NOT GET HERE NOW??\n";
-	  $name = $other_symbol;
-	  if($other_source =~ /RFAM/){
-	    $t_source_id = $rfam_tran_id;
-	    $g_source_id = $rfam_gene_id;
-	  }
-	  else{
-	    $t_source_id = $mirbase_tran_id;
-	    $g_source_id = $mirbase_gene_id;
-	  }
 	}
 	else{
 	  die "No name";
@@ -1455,8 +1457,10 @@ FSQL
   $sth->bind_columns(\$xref_id, \$gene_id, \$linkage_type, \$ox_status, \$q_id, \$t_id, \$master_id);
 
 
+  my $canonical_count = 0;
   while ($sth->fetch){
     if(defined($gene_to_tran_canonical{$gene_id})){
+      $canonical_count++;
       $max_object_xref_id++;
       $sth_add_ox->execute($max_object_xref_id, $xref_id, $gene_to_tran_canonical{$gene_id}, $linkage_type, $ox_status, $master_id) || print STDERR "(Gene id - $gene_id) Could not add  $max_object_xref_id, .".$gene_to_tran_canonical{$gene_id}.", $xref_id, $linkage_type, $ox_status to object_xref, master_xref_id to $master_id\n";
       $ins_dep_ix_sth->execute($max_object_xref_id, $q_id, $t_id);
@@ -1467,7 +1471,7 @@ FSQL
   }
   $sth->finish;
 
-  print "Copied all $dbname from gene to canonical transcripts\n" if($self->verbose);
+  print "Copied $canonical_count $dbname from gene to canonical transcripts\n" if($self->verbose);
   
   my $sth_stat = $self->xref->dbc->prepare("insert into process_status (status, date) values('official_naming_done',now())");
   $sth_stat->execute();
@@ -1478,10 +1482,11 @@ FSQL
 
 
 sub biomart_fix{
-  my ($self, $db_name, $type1, $type2) = @_;
+  my ($self, $db_name, $type1, $type2, $verbose) = @_;
   my $xref_dbc = $self->xref->dbc;
 
-  print "$db_name is associated with both $type1 and $type2 object types\n" if($self->verbose);
+  print "$db_name is associated with both $type1 and $type2 object types\n" if(defined($verbose));
+  print "$db_name moved to Gene level.\n" if(!defined($verbose));
   
   my $to;
   my $from;
@@ -1506,7 +1511,7 @@ sub biomart_fix{
     $from_id = "translation_id";
   }
   
-  print "Therefore moving all associations from $from to ".$to."\n" if($self->verbose);
+  print "Therefore moving all associations from $from to ".$to."\n" if(defined($verbose));
   
 
   my $sql =(<<EOF);
@@ -1581,8 +1586,7 @@ sub biomart_testing{
     while (!$again and $sth->fetch){
       if($last_name eq $name){
 	$again  = 1;
-	$self->biomart_fix($name,$last_type, $type);
-#	$again = 0; # remove this line after testing
+	$self->biomart_fix($name,$last_type, $type, 1);
       }
       $last_name = $name;
       $last_type= $type;
