@@ -172,6 +172,10 @@ sub genes_and_transcripts_attributes_set{
 
   #End of Special
 
+  $sth_lrg = $self->core->dbc->prepare("UPDATE xref SET info_text=null WHERE info_text=''");
+  $sth_lrg->execute;
+
+
   if(!defined($noxref_database)){
     my $sth_stat = $self->xref->dbc->prepare("insert into process_status (status, date) values('gene_description_done',now())");
     $sth_stat->execute();
