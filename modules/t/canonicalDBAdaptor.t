@@ -73,13 +73,11 @@ ok($test_adaptor->isa("Bio::EnsEMBL::Map::DBSQL::MarkerFeatureAdaptor"));
 $test_adaptor = $db->get_MarkerAdaptor();
 ok($test_adaptor->isa("Bio::EnsEMBL::Map::DBSQL::MarkerAdaptor"));
 
-# Note get_BlastAdaptor() and get_SNPAdaptor() require DBs of type
-# 'blast' and 'lite' respectively - these are not available via Bio::EnsEMBL::Test::MultiTestDB
-#my $blast_db = $multi->get_DBAdaptor("lite");
+# Note get_BlastAdaptor() requirei DB of type 'blast' 
+# - these are not available via Bio::EnsEMBL::Test::MultiTestDB
 #ok($blast_db);
 #$test_adaptor = $blast_db->get_BlastAdaptor();
 #ok($test_adaptor->isa("Bio::EnsEMBL::External::BlastAdaptor"));
-#$test_adaptor = $db->get_SNPAdaptor();
 #ok($test_adaptor->isa("Bio::EnsEMBL::DBSQL::ProxySNPAdaptor"));
 
 # Should get an error if we ask for something non-existent
