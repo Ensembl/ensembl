@@ -81,7 +81,7 @@ sub run {
   }
 
   my $swiss_miss=0;
-  my (%swiss) = %{$self->get_valid_codes("uniprot",$species_id)};
+  my (%swiss) = %{$self->get_valid_codes("uniprot/",$species_id)};
 
   my $refseq_miss=0;
   my (%refseq) = %{$self->get_valid_codes("refseq",$species_id)};
