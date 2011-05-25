@@ -154,7 +154,7 @@ sub new {
 #   Description: create an Exon object
 #   Returntype : Bio::EnsEMBL::Exon
 #   Exceptions : throws if end < start
-#   Caller     : general, creation in Bio::EnsEMBL::Lite::GeneAdaptor
+#   Caller     : general
 #   Status     : Stable
 
 # =cut

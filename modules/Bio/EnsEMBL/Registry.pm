@@ -141,7 +141,6 @@ my %group2adaptor = (
       'regulation' => 'Bio::EnsEMBL::Funcgen::DBSQL::DBAdaptor',
       'haplotype' => 'Bio::EnsEMBL::ExternalData::Haplotype::DBAdaptor',
       'hive'      => 'Bio::EnsEMBL::Hive::DBSQL::DBAdaptor',
-      'lite'      => 'Bio::EnsEMBL::Lite::DBAdaptor',
       'ontology'  => 'Bio::EnsEMBL::DBSQL::OntologyDBAdaptor',
       'otherfeatures' => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
       'pipeline'      => 'Bio::EnsEMBL::Pipeline::DBSQL::DBAdaptor',
