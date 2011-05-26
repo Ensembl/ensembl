@@ -73,7 +73,7 @@ sub run_script {
   my %ensembl_type;
   my %old_xref;
   while (my @row = $sth->fetchrow_array()) {
-      $ensembl_stable_id{$access} = $stable_id;
+      push @{$ensembl_stable_id{$access}}, $stable_id;
       $ensembl_type{$access} = $type;
       $old_xref{$access} = $old_xref_id; 
   }
@@ -83,9 +83,13 @@ sub run_script {
 
   my $line_count = 0;
   my $xref_count = 0;
+  my $direct_count = 0;
   my %seen;
   my %old_to_new;
 
+#
+# dbi2 is the ccds database
+#
   my $dbi2 = $self->dbi2($host, $port, $user, $dbname, $pass);
   if(!defined($dbi2)){
     return 1;
@@ -97,8 +101,9 @@ sub run_script {
   # get ccds -> xref transcript_id                 ensembl_stable_id{CCDS1} = ENST00001
   # get ccds -> internal transcript_id             ccds_to_internal_id(CCDS1} = 12345
 
-  $sql = 'select x.dbprimary_acc, ox.ensembl_id from xref x, object_xref ox, external_db e where x.xref_id = ox.xref_id and x.external_db_id = e.external_db_id and e.db_name like ?';
+  $sql = 'select x.dbprimary_acc, ox.ensembl_id from xref x, object_xref ox, external_db e where x.xref_id = ox.xref_id and x.external_db_id = e.external_db_id and e.db_name like ? order by x.version';
 
+# order by version added so that the hash gets overwritten with the latest version.
 
 
   # calculate internal_id -> xref transcript_id
@@ -141,7 +146,11 @@ sub run_script {
       my $xref_id = $self->add_xref($refseq, $version{$refseq} , $label{$refseq}||$refseq , 
 				    $description{$refseq}, $new_source_id, $species_id, "DIRECT");
 
-      $self->add_direct_xref($xref_id, $internal_to_stable_id{$internal_id}, "Transcript", "");
+
+      foreach my $stable_id (@{$internal_to_stable_id{$internal_id}}){
+	$self->add_direct_xref($xref_id, $stable_id, "Transcript", "");
+	$direct_count++;
+      }
 
       $old_to_new{$old_xref{$refseq}} = $xref_id;
       $xref_count++;
@@ -166,7 +175,7 @@ sub run_script {
   }
 
 
-  print "Parsed $line_count RefSeq_dna identifiers from $file, added $xref_count xrefs and $xref_count direct_xrefs  from $line_count lines.\n" if ($verbose);
+  print "Parsed $line_count RefSeq_dna identifiers from $file, added $xref_count xrefs and $direct_count direct_xrefs  from $line_count lines.\n" if ($verbose);
 
 
   return 0;

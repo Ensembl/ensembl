@@ -90,7 +90,7 @@ sub run_script {
   $sth->execute() or croak( $dbi2->errstr() );
   while ( my @row = $sth->fetchrow_array() ) {
     if(defined($trans_id_to_stable_id{$row[0]})){
-      $ccds_to_stable_id{$row[1]} = $trans_id_to_stable_id{$row[0]};
+      push @{$ccds_to_stable_id{$row[1]}}, $trans_id_to_stable_id{$row[0]};
     }
     else{
       print "NO transcript_stable_id for  for ".$row[0]."\n";
@@ -145,13 +145,19 @@ sub run_script {
  
   my $xref_count = 0;
   my $no_ccds_to_hgnc = 0;
+  my $direct_count = 0;
   foreach my $ccds (keys %ccds_to_stable_id){
     if(defined($ccds_to_hgnc{$ccds})){
       my $hgnc = $ccds_to_hgnc{$ccds};
       $hgnc =~ s/HGNC://;
       my $xref_id = $self->add_xref($hgnc, $version{$hgnc} , $label{$hgnc}||$hgnc , 
 				      $description{$hgnc}, $source_id, $species_id, "DIRECT");
-      $self->add_direct_xref($xref_id, $ccds_to_stable_id{$ccds}, "Transcript", "");
+
+      foreach my $stable_id (@{$ccds_to_stable_id{$ccds}}){
+	$self->add_direct_xref($xref_id, $stable_id, "Transcript", "");
+	$direct_count++;
+      }	
+
       $xref_count++;
 
       if(defined($syn_hash->{$hgnc})){
@@ -168,7 +174,7 @@ sub run_script {
     }
   }
   $add_syn_sth->finish;
-  print "$no_ccds_to_hgnc missed as no hgnc for the ccds. Added $xref_count HGNC xrefs via CCDS\n" if($verbose);
+  print "$no_ccds_to_hgnc missed as no hgnc for the ccds. Added $xref_count HGNC xrefs via CCDS and $direct_count direct xrefs\n" if($verbose);
   return 0;
 }
 
