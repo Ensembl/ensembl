@@ -10,7 +10,7 @@ DECLARE v_xref_id INT;
 DECLARE v_gene_id INT DEFAULT 0;
 DECLARE done INT DEFAULT 0;
 
-DECLARE cur1 CURSOR FOR SELECT object_xref_id, ensembl_id, ensembl_object_type, o.xref_id FROM object_xref o INNER JOIN xref x on o.xref_id = x.xref_id INNER JOIN external_db e on e.external_db_id =x.external_db_id WHERE db_name in ('HGNC', 'EntrezGene', 'WikiGene', 'RFAM', 'MIM', 'MIM_GENE', 'miRBase') AND ensembl_object_type <> 'Gene';
+DECLARE cur1 CURSOR FOR SELECT object_xref_id, ensembl_id, ensembl_object_type, o.xref_id FROM object_xref o INNER JOIN xref x on o.xref_id = x.xref_id INNER JOIN external_db e on e.external_db_id =x.external_db_id WHERE db_name in ('UniGene', 'Uniprot_genename','DBASS3', 'DBASS5') AND ensembl_object_type <> 'Gene';
 DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = TRUE;
 
 OPEN cur1;
