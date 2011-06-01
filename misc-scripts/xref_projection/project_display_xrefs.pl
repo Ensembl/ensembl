@@ -292,8 +292,6 @@ sub project_display_names {
       # Modify the dbEntry to indicate it's not from this species - set info_type & info_text
       my $info_txt = "from $from_latin_species gene " . $from_gene->stable_id();
 
-
- 
       # modify the display_id to have " (1 of 3)" etc if this is a one-to-many ortholog
       my $tuple_txt = "";
       if ($total_gene_number > 1) {
@@ -629,19 +627,16 @@ sub delete_go_terms {
 sub check_overwrite_display_xref {
 
   my ($to_gene, $from_dbname, $to_dbname, $ref_dbEntry) = @_;
-  my $ret = 0;
 
-  if(!$to_gene->external_name()){
-      $ret = 1;
-  }
+  return 1 if (!$to_gene->external_name() && $to_species ne "zebrafish");
 
   if ($to_dbname eq "RefSeq_dna_predicted" || $to_dbname eq "RefSeq_peptide_predicted") {
 
     if (($from_species eq "human" && $from_dbname =~ /HGNC/) ||
 	($from_species eq "mouse" && $from_dbname =~ /MarkerSymbol/)) {
 
-	if($to_species eq "zebrafish" and is_in_blacklist($from_gene->display_xref)){
-	    return $ret;
+	if ($to_species eq "zebrafish" and is_in_blacklist($from_gene->display_xref)){
+	    return 0;
 	}
       return 1;
 
@@ -653,7 +648,6 @@ sub check_overwrite_display_xref {
     my $to_dbEntry = $to_gene->display_xref();
     my $from_dbEntry = $from_gene->display_xref();
     my $to_seq_region_name = $to_gene->seq_region_name();
-    my $return = 0;
 
     return 1 if ($to_dbname eq "Clone_based_ensembl_gene" or $to_dbname eq "Clone_based_vega_gene");
 
@@ -761,9 +755,10 @@ sub fetch_homologies {
   print "Fetching Compara homologies\n";
 
   my $from_species_alias = lc(Bio::EnsEMBL::Registry->get_alias($from_species));
- 
 
   my %homology_cache;
+
+  my $count = 0;
 
   my $homologies = $ha->fetch_all_by_MethodLinkSpeciesSet($mlss);
 
@@ -793,9 +788,11 @@ sub fetch_homologies {
 
     push @{$homology_cache{$from_stable_id}}, @to_stable_ids;
 
+    $count++;
+
   }
 
-  print "Done fetching homologies\n";
+  print "Fetched " . $count . " homologies\n";
 
   return \%homology_cache;
 
