@@ -651,7 +651,7 @@ sub check_overwrite_display_xref {
 
     return 1 if ($to_dbname eq "Clone_based_ensembl_gene" or $to_dbname eq "Clone_based_vega_gene");
 
-    if ($ref_dbEntry->display_id =~ /C(\d+)orf(\d+)/){
+    if ($ref_dbEntry->display_id =~ /C(\w+)orf(\w+)/){
       $ref_dbEntry->display_id("C".$to_seq_region_name."H".$1."orf".$2);
       return 1;
     }
