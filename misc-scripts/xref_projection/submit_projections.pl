@@ -10,11 +10,12 @@ $Data::Dumper::Indent = 0;
 # Remember to check/set the various config optons
 
 # ------------------------------ config -------------------------------
-my $release = 62;
+my $release = 63;
 
-my $base_dir = "/lustre/scratch103/ensembl/gp1/projections/";
 
-my $conf = "release_62.ini"; # registry config file, specifies Compara location
+my $base_dir = "/lustre/scratch103/ensembl/rjk/projections/";
+
+my $conf = "release_63.ini"; # registry config file, specifies Compara location
 
 # location of other databases
 
