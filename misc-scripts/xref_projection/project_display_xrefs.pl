@@ -13,6 +13,8 @@ use Bio::EnsEMBL::Utils::Eprof qw(eprof_start eprof_end eprof_dump);
 
 my $method_link_type = "ENSEMBL_ORTHOLOGUES";
 
+my %seen;
+
 my ($conf, $registryconf, $version, $compara, $from_species, @to_multi, $print, $names, $go_terms, $delete_names, $delete_go_terms, $no_backup, $full_stats, $descriptions, $release, $no_database, $quiet, $max_genes, $one_to_many, $go_check, $all_sources, $delete_only,  $to_species, $from_gene);
 
 GetOptions('conf=s'          => \$conf,
@@ -278,7 +280,7 @@ sub project_display_names {
   my $from_latin_species = ucfirst(Bio::EnsEMBL::Registry->get_alias($from_species));
 
   # if no display name set, do the projection
-  if (check_overwrite_display_xref($to_gene, $from_source, $to_source, $dbEntry)) {
+  if (check_overwrite_display_xref($to_gene, $from_source, $to_source, $dbEntry, $gene_number)) {
 
     if ($dbEntry) {
 
@@ -626,7 +628,7 @@ sub delete_go_terms {
 
 sub check_overwrite_display_xref {
 
-  my ($to_gene, $from_dbname, $to_dbname, $ref_dbEntry) = @_;
+  my ($to_gene, $from_dbname, $to_dbname, $ref_dbEntry, $gene_number) = @_;
 
   return 1 if (!$to_gene->external_name() && $to_species ne "zebrafish");
 
@@ -651,9 +653,14 @@ sub check_overwrite_display_xref {
 
     return 1 if ($to_dbname eq "Clone_based_ensembl_gene" or $to_dbname eq "Clone_based_vega_gene");
 
-    if ($ref_dbEntry->display_id =~ /C(\w+)orf(\w+)/){
-      $ref_dbEntry->display_id("C".$to_seq_region_name."H".$1."orf".$2);
-      return 1;
+    my $name = $ref_dbEntry->display_id;
+    if($seen{$ref_dbEntry->dbID}){
+	$name = $seen{$ref_dbEntry->dbID};
+    }
+    if ( $name =~ /C(\w+)orf(\w+)/){
+	$seen{$ref_dbEntry->dbID} = $name;
+	$ref_dbEntry->display_id("C".$to_seq_region_name."H".$1."orf".$2);
+	return 1;
     }
 
     if (!defined ($to_dbEntry) || (($to_dbEntry->display_id =~ /:/) and $to_dbname eq "ZFIN_ID") ){
