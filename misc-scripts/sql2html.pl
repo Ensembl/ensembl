@@ -174,7 +174,7 @@ while (<SQLFILE>) {
 	
 	# Verifications
 	if ($_ =~ /^\/\*\*/)  { $in_doc=1; next; }  # start of a table documentation
-	if ($_ =~ /^\s*create\s+table\s+(if\s+not\s+exists\s+)?(\S+)/i) { # start to parse the content of the table
+	if ($_ =~ /^\s*create\s+table\s+(if\s+not\s+exists\s+)?(\w+)/i) { # start to parse the content of the table
 		my $sql_t_name = remove_char($2);
 		if ($sql_t_name eq $table) { 
 			$in_table=1;
