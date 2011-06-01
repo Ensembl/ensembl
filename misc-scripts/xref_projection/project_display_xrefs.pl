@@ -652,12 +652,13 @@ sub check_overwrite_display_xref {
 
     my $to_dbEntry = $to_gene->display_xref();
     my $from_dbEntry = $from_gene->display_xref();
+    my $to_seq_region_name = $to_gene->seq_region_name();
     my $return = 0;
 
     return 1 if ($to_dbname eq "Clone_based_ensembl_gene" or $to_dbname eq "Clone_based_vega_gene");
 
     if ($ref_dbEntry->display_id =~ /C(\d+)orf(\d+)/){
-      $ref_dbEntry->display_id("hsC".$1."orf".$2."-like");
+      $ref_dbEntry->display_id("C".$to_seq_region_name."H".$1."orf".$2);
       return 1;
     }
 
