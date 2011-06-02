@@ -35,6 +35,7 @@ my %attrib_codes = ( 'miRNA'                => 'miRNA',
 		     'Mt_tRNA'              => 'MTtRNA',
 		     'Mt_rRNA'              => 'MTrRNA',
                      'ncRNA'                => 'ncRNA',
+		     '3prime_overlapping_ncrna' => 'ncRNA', # (v63)
 		     'polymorphic_pseudogene' => 'pseudo',
                      'havana_pseudogene'    => 'pseudo', 
                      'processed_pseudogene' => 'pseudo', 
@@ -158,12 +159,12 @@ foreach my $name (@dbnames) {
 
     if($genes_present) {
       my %counts;
-      my $biotype;
       
       my $genes = $slice->get_all_Genes();
     
       while (my $gene = shift(@{$genes})) {
-	$biotype = $gene->biotype();
+
+	my $biotype = $gene->biotype();
 	if( $biotype =~ /coding/i ) {
 	  if($gene->is_known()) {
 	    $biotype = "known ".$biotype;
@@ -173,6 +174,7 @@ foreach my $name (@dbnames) {
 	}
 
 	$counts{$biotype}++;
+
       }
 
       for my $biotype ( keys %counts ) {
@@ -181,6 +183,7 @@ foreach my $name (@dbnames) {
 	  print STDERR "Unspecified biotype \"$biotype\" in database $name.\n";
 	  next;
 	}
+
 	# not used:
 	# my $no_space = $biotype;
 	# $no_space =~ s/ /_/g;
