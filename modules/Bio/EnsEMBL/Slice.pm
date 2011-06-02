@@ -1790,32 +1790,51 @@ sub get_all_StructuralVariations{
 	my $study = shift;
 	my $sv_class = shift;
 	
-  if (!defined($sv_class)) { $sv_class = 'SV'; }
+  if (!defined($sv_class)) { $sv_class = 'SO:0001537'; }
 
   if(!$self->adaptor()) {
     warning('Cannot get structural variations without attached adaptor');
     return [];
   }
+	
+	my $variation_db = $self->adaptor->db->get_db_adaptor('variation');
 
-  my $sv_adaptor = Bio::EnsEMBL::DBSQL::MergedAdaptor->new(-species => $self->adaptor()->db()->species, -type => "StructuralVariation");
+  unless($variation_db) {
+		warning("Variation database must be attached to core database to " .
+						"retrieve variation information" );
+		return [];
+  }
+	
+	# Get the attrib_id
+	my $at_adaptor = $variation_db->get_AttributeAdaptor;
+	my $SO_term   = $at_adaptor->SO_term_for_SO_accession($sv_class);
+	my $attrib_id = $at_adaptor->attrib_id_for_type_value('SO_term',$SO_term);
+		
+	if (!$attrib_id) {
+		warning("The Sequence Ontology accession number is not found in the database");
+  	return [];
+	}
+	
+	# Get the structural variations
+  my $sv_adaptor = $variation_db->get_StructuralVariationAdaptor;
   if( $sv_adaptor ) {
 
 		if(defined $source && defined $study) {
-      return $sv_adaptor->fetch_all_by_Slice_constraint($self, qq{ s.name = '$source' AND sv.class = '$sv_class' AND st.name = '$study'});
+      return $sv_adaptor->fetch_all_by_Slice_constraint($self, qq{ s.name = '$source' AND sv.class_attrib_id = '$attrib_id' AND st.name = '$study'});
     }
     elsif(defined $source) {
-      return $sv_adaptor->fetch_all_by_Slice_constraint($self, qq{ s.name = '$source' AND sv.class = '$sv_class'});
+      return $sv_adaptor->fetch_all_by_Slice_constraint($self, qq{ s.name = '$source' AND sv.class_attrib_id = '$attrib_id'});
     }
 		elsif(defined $study) {
-      return $sv_adaptor->fetch_all_by_Slice_constraint($self, qq{ st.name = '$study' AND sv.class = '$sv_class'});
+      return $sv_adaptor->fetch_all_by_Slice_constraint($self, qq{ st.name = '$study' AND sv.class_attrib_id = '$attrib_id'});
     }
     else {
-			return $sv_adaptor->fetch_all_by_Slice_constraint($self, qq{ sv.class = '$sv_class'});
+			return $sv_adaptor->fetch_all_by_Slice_constraint($self, qq{ sv.class_attrib_id = '$attrib_id'});
     }
   }
   else {
-       warning("Variation database must be attached to core database to " .
- 		"retrieve variation information" );
+		warning("Variation database must be attached to core database to " .
+ 						"retrieve variation information" );
     return [];
   }
 }
@@ -1841,7 +1860,7 @@ sub get_all_CopyNumberVariantProbes {
   my $source = shift;
 	my $study = shift;
 	
-	return $self->get_all_StructuralVariations($source,$study,'CNV_PROBE');
+	return $self->get_all_StructuralVariations($source,$study,'SO:0000051');
 }
 
 
