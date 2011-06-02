@@ -654,13 +654,17 @@ sub check_overwrite_display_xref {
     return 1 if ($to_dbname eq "Clone_based_ensembl_gene" or $to_dbname eq "Clone_based_vega_gene");
 
     my $name = $ref_dbEntry->display_id;
-    if($seen{$ref_dbEntry->dbID}){
-	$name = $seen{$ref_dbEntry->dbID};
+    $name =~ /(\w+)/; # remove (x of y) in name.
+    $name = $1;
+
+    if(defined($seen{$name})){
+	$name = $seen{$name};
     }
     if ( $name =~ /C(\w+)orf(\w+)/){
-	$seen{$ref_dbEntry->dbID} = $name;
-	$ref_dbEntry->display_id("C".$to_seq_region_name."H".$1."orf".$2);
-	return 1;
+      my $new_name = "C".$to_seq_region_name."H".$1."orf".$2;
+      $seen{$new_name} = $name;
+      $ref_dbEntry->display_id($new_name);
+      return 1;
     }
 
     if (!defined ($to_dbEntry) || (($to_dbEntry->display_id =~ /:/) and $to_dbname eq "ZFIN_ID") ){
