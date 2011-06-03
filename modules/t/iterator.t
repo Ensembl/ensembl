@@ -3,8 +3,9 @@ use warnings;
 
 use Test::More;
 use Data::Dumper;
+$|=1;
 
-BEGIN {
+BEGIN {	
     use_ok('Bio::EnsEMBL::Utils::Iterator');
 }
 
@@ -127,5 +128,60 @@ $num = 0;
 Bio::EnsEMBL::Utils::Iterator->new([1..12])->each(sub { $num++; });
 is($num, 12, 'each iterates over all elements');
 
-done_testing;
+
+
+# test BaseFeatureAdaptor Iterator methods
+
+use Bio::EnsEMBL::Test::MultiTestDB;
+
+my $multi = Bio::EnsEMBL::Test::MultiTestDB->new();
+
+my $db = $multi->get_DBAdaptor( "core" );
+#debug( "Test database instatiated" );
+ok( $db , 'Test database instantiated');
+
+my $sa        = $db->get_SliceAdaptor;
+my $ga        = $db->get_GeneAdaptor;
+my $slice     = $sa->fetch_by_region('chromosome', '1', 0, 10000000 );
+my @genes     = @{$ga->fetch_all_by_Slice($slice)};
+my $num_genes = scalar(@genes);
+ok($num_genes, 'Failed to find genes on test Slice, please Slice redefine in test');
+
+
+SKIP:{
+  #test fetch_Iterator_by_Slice and implicitly fetch_Iterator_by_Slice_method
+  my $gi;
+
+  if(! $num_genes){
+	skip 'Skipping fetch_Iterator_by_Slice test due to lack of genes on slice, '.
+	  'please redefined slice in test', 1;
+  }
+  else{
+	#define chunk size such that the first chunk has no genes 
+	#and the first gene crosses the 2nd and 3rd chunk;
+	my $chunk_size = ($genes[0]->seq_region_start + 10)/2;
+	$gi = $ga->fetch_Iterator_by_Slice($slice, undef, $chunk_size);
+  }  
+
+  my $got_gi = isa_ok($gi, 'Bio::EnsEMBL::Utils::Iterator', 'Gene Iterator');
+	
+ SKIP:{
+	my $gene_cnt = 0;
+
+	if(! $got_gi){
+	  skip 'Skipping fetch_Iterator_by_Slice test as failed to fetch Gene Iterator', 1;
+	}
+	else{
+	  my $gene;
+	  
+	  while($gene = $gi->next){
+		$gene_cnt++;		
+	  }			
+	}
+
+	ok(($gene_cnt == $num_genes), 'fetch_Iterator_by_Slice returned correct number of features');	
+  }
+}
+
+done_testing();
 
