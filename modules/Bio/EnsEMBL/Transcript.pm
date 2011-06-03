@@ -1306,6 +1306,10 @@ sub add_Exon {
               # Overlap
               last;
             }
+            if ( $i and $exon_start <= $ea->[$i-1]->end() ) {
+              # Overlap
+              last;
+            }
             splice( @{$ea}, $i, 0, $exon );
             $was_added = 1;
             last;
@@ -1329,6 +1333,10 @@ sub add_Exon {
         foreach my $e ( @{$ea} ) {
           if ( $exon_end > $e->end() ) {
             if ( $exon->start() <= $e->end() ) {
+              # Overlap
+              last;
+            }
+            if ( $i and $exon_end >= $ea->[$i-1]->start() ) {
               # Overlap
               last;
             }
