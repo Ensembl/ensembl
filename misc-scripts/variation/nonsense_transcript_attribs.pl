@@ -239,7 +239,8 @@ if (!defined($file)) {
             FIND_IN_SET('stop_lost',tv.consequence_types) OR
             FIND_IN_SET('stop_gained',tv.consequence_types)
         ) AND
-        tv.somatic = 0
+        tv.somatic = 0 AND
+        tv.feature_stable_id LIKE 'ENST0%'
   };
   my $sth = $vdb->dbc->prepare($stmt) or die("Error preparing statement $stmt");
   $sth->execute();
