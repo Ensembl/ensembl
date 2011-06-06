@@ -144,17 +144,12 @@ my $sa        = $db->get_SliceAdaptor;
 my $ga        = $db->get_GeneAdaptor;
 
 
-#Need to find Slice which genes are on
-#Do this via direct mysql or hardcode?
-#sql is unlikely to change
 
+#Do this via direct SQL as unlikely to change
 my $sql = 'SELECT sr.name, g.seq_region_start from gene g, seq_region sr where g.seq_region_id = sr.seq_region_id order by g.seq_region_start limit 1';
 my ($sr_name, $sr_start) = @{$db->dbc->db_handle->selectrow_arrayref($sql)};
 my $slice     = $sa->fetch_by_region('chromosome', $sr_name, 1, ($sr_start + 1000000));
 my @genes     = @{$ga->fetch_all_by_Slice($slice)};
-
-#Are there any genes in this test DB?
-
 my $num_genes = scalar(@genes);
 ok($num_genes, "Found $num_genes Gene(s) on test Slice");
 
