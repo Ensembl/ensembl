@@ -224,14 +224,13 @@ sub fetch_Iterator_by_Slice_method{
 		$params_ref->[$slice_idx] = $sub_slice;
 		@feat_cache = @{ $slice_method_ref->($self, @$params_ref)};
 		
-		
 		#Remove & count overlapping features
 		splice(@feat_cache, 0, $num_overlaps) if($num_overlaps);
 		my $i;
 		
 		if (scalar(@feat_cache) > 0) {
 		  
-		  my $feat_end  = $feat_cache[$#feat_cache]->end;
+		  my $feat_end  = $feat_cache[$#feat_cache]->seq_region_end;
 		  my $slice_end = $sub_slice->end;
 		  $num_overlaps = 0;
 		  
@@ -253,11 +252,19 @@ sub fetch_Iterator_by_Slice_method{
 	  
 	  #this maybe returning from an undef cache
 	  #Need to sub this out even more?
-	  
 	  return shift @feat_cache;
 	};
 
   return Bio::EnsEMBL::Utils::Iterator->new($coderef);
+}
+
+
+sub fetch_Iterator_by_Slice{
+  my ($self, $slice, $logic_name, $chunk_size) = @_;
+
+  my $method_ref = $self->can('fetch_all_by_Slice');
+
+  return $self->fetch_Iterator_by_Slice_method($method_ref, [$slice, $logic_name], 0, $chunk_size);
 }
 
 
