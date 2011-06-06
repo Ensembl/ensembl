@@ -158,17 +158,36 @@ sub store_on_ {
 			    "SET ".$type."_id = ?, attrib_type_id = ?, ".
 			    "value = ? " );
 
+  my $undef_circular_cache = 0;
   for my $attrib ( @$attributes ) {
     if(!ref($attrib) && $attrib->isa('Bio::EnsEMBL::Attribute')) {
       throw("Reference to list of Bio::EnsEMBL::Attribute objects " .
             "argument expected.");
     }
     my $atid = $self->_store_type( $attrib );
+    if ((defined $attrib->code) and ($attrib->code eq 'circular_seq')) {
+	$undef_circular_cache = 1;
+    }
     $sth->bind_param(1,$object_id,SQL_INTEGER);
     $sth->bind_param(2,$atid,SQL_INTEGER);
     $sth->bind_param(3,$attrib->value,SQL_VARCHAR);
     $sth->execute();
   }
+
+  if($table eq "seq_region") {        
+    #undefine slice_adaptor->is_circular attribute and the cirular slice cache
+    if ($undef_circular_cache) {
+	#the slice is circular
+	$object->{'circular'} = 1;
+	my $slice_adaptor = $object->adaptor();
+        #undefine slice_adaptor->is_circular attribute and the cirular slice cache
+	if (defined $slice_adaptor) {
+	    $slice_adaptor->{'is_circular'} = undef;
+	    $slice_adaptor->{'circular_sr_id_cache'} = {};
+	}
+    }
+  }
+
 
   return;
 }
@@ -190,6 +209,15 @@ sub remove_from_{
     $object_id = $object->get_seq_region_id();
     $table = "seq_region"; 
     $type = "seq_region";
+    if ((defined $code) and ($code eq 'circular_seq')) {
+	#undefine slice->is_circular, slice adaptor->is_circular and the circular slice cache
+	$object->{'circular'} = undef;
+	my $slice_adaptor = $object->adaptor();
+	if (defined $slice_adaptor) {
+	    $slice_adaptor->{'is_circular'} = undef;
+	    $slice_adaptor->{'circular_sr_id_cache'} = {};
+	}
+    }
   }
   else{
     if($type eq "MiscFeature"){
