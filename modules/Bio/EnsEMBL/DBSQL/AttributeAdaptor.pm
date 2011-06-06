@@ -175,19 +175,17 @@ sub store_on_ {
   }
 
   if($table eq "seq_region") {        
-    #undefine slice_adaptor->is_circular attribute and the cirular slice cache
     if ($undef_circular_cache) {
 	#the slice is circular
 	$object->{'circular'} = 1;
 	my $slice_adaptor = $object->adaptor();
-        #undefine slice_adaptor->is_circular attribute and the cirular slice cache
+        #undefine slice adaptor->is_circular and the circular slice cache
 	if (defined $slice_adaptor) {
 	    $slice_adaptor->{'is_circular'} = undef;
 	    $slice_adaptor->{'circular_sr_id_cache'} = {};
 	}
     }
   }
-
 
   return;
 }
