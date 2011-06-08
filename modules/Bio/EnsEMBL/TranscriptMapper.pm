@@ -295,11 +295,11 @@ sub genomic2cdna {
 =head2 pep2genomic
 
   Arg [1]    : int $start
-               start position in peptide coords
+               start position in peptide coords (cds)
   Arg [2]    : int $end
-               end position in peptide coords
+               end position in peptide coords (cds)
   Example    : @genomic_coords = $transcript_mapper->pep2genomic(23, 102);
-  Description: Converts peptide coordinates into genomic coordinates.  The
+  Description: Converts peptide (cds) coordinates into genomic coordinates.  The
                coordinates returned are relative to the same slice that the
                transcript used to construct this TranscriptMapper was on.
   Returntype : list of Bio::EnsEMBL::Mapper::Gap and
