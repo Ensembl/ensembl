@@ -290,7 +290,37 @@ sub genomic2cdna {
 }
 
 
+=head2 cds2genomic
 
+  Arg [1]    : int $start
+               start position in cds coords
+  Arg [2]    : int $end
+               end position in cds coords
+  Example    : @genomic_coords = $transcript_mapper->cds2genomic(69, 306);
+  Description: Converts cds coordinates into genomic coordinates.  The
+               coordinates returned are relative to the same slice that the
+               transcript used to construct this TranscriptMapper was on.
+  Returntype : list of Bio::EnsEMBL::Mapper::Gap and
+               Bio::EnsEMBL::Mapper::Coordinate objects
+  Exceptions : throws if no end
+  Caller     : general
+  Status     : at risk
+
+=cut
+
+sub cds2genomic {
+  my ( $self, $start, $end ) = @_;
+
+  if ( !( defined($start) && defined($end) ) ) {
+    throw("Must call with start and end");
+  }
+
+  # Move start end into translate cDNA coordinates now.
+  $start = $start +( $self->{'cdna_coding_start'} - 1 ) ;
+  $end = $end + ( $self->{'cdna_coding_start'} - 1 );
+
+  return $self->cdna2genomic( $start, $end );
+}
 
 =head2 pep2genomic
 
@@ -327,6 +357,7 @@ sub pep2genomic {
 
   return $self->cdna2genomic( $start, $end );
 }
+
 
 =head2 genomic2cds
 
