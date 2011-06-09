@@ -879,7 +879,7 @@ sub from_seconds_to_date{
 #deprecated functions
 ####
 
-=head2
+=head2 group
 
    group is no longer available in DBConnection and should be accessed if needed
    from an adaptor.

@@ -63,7 +63,7 @@ our $SEQ_CACHE_MAX   = (2 ** $SEQ_CHUNK_PWR) * $SEQ_CACHE_SZ;
   Example    : my $sa = $db_adaptor->get_SequenceAdaptor();
   Description: Constructor.  Calls superclass constructor and initialises
                internal cache structure.
-  Returntype : Bio::EnsEMBL:DBSQL::SequenceAdaptor
+  Returntype : Bio::EnsEMBL::DBSQL::SequenceAdaptor
   Exceptions : none
   Caller     : DBAdaptor::get_SequenceAdaptor
   Status     : Stable
