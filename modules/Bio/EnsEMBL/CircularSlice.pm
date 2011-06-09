@@ -849,7 +849,7 @@ sub expand {
   return bless \%new_slice, ref($self);
 } ## end sub expand
 
-=head2 sub_Slice
+=head2 sub_Slice_same
 
   Arg   1    : int $start
   Arg   2    : int $end
@@ -913,7 +913,7 @@ sub sub_Slice_same {
   return bless \%new_slice, ref($self);
 } ## end sub sub_Slice_same
 
-=head2 seq_region_Slice
+=head2 seq_region_Slice_same
 
   Arg [1]    : none
   Example    : $slice = $slice->seq_region_Slice();
@@ -3199,21 +3199,6 @@ sub get_all_DASFactories {
   return [ $self->adaptor()->db()->_each_DASFeatureFactory ];
 }
 
-=head2 get_all_DASFeatures
-
-  Arg [1]    : none
-  Example    : $features = $slice->get_all_DASFeatures;
-  Description: Retreives a hash reference to a hash of DAS feature
-               sets, keyed by the DNS, NOTE the values of this hash
-               are an anonymous array containing:
-                (1) a pointer to an array of features;
-                (2) a pointer to the DAS stylesheet
-  Returntype : hashref of Bio::SeqFeatures
-  Exceptions : ?
-  Caller     : webcode
-  Status     : Stable
-
-=cut
 
 sub get_all_DASFeatures_dsn {
   my ( $self, $source_type, $dsn ) = @_;
@@ -3274,6 +3259,21 @@ sub get_all_DAS_Features {
   return ( \%das_features, \%das_styles, \%das_segments );
 } ## end sub get_all_DAS_Features
 
+=head2 get_all_DASFeatures
+
+  Arg [1]    : none
+  Example    : $features = $slice->get_all_DASFeatures;
+  Description: Retreives a hash reference to a hash of DAS feature
+               sets, keyed by the DNS, NOTE the values of this hash
+               are an anonymous array containing:
+                (1) a pointer to an array of features;
+                (2) a pointer to the DAS stylesheet
+  Returntype : hashref of Bio::SeqFeatures
+  Exceptions : ?
+  Caller     : webcode
+  Status     : Stable
+
+=cut
 sub get_all_DASFeatures {
   my ( $self, $source_type ) = @_;
 
