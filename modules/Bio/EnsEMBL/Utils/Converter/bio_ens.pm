@@ -353,7 +353,7 @@ sub contig_name {
     return $self->{_contig_name};
 }
 
-=head2 slice
+=head2 slice_dbID
   Title   : slice
   Usage   : $self->slice
   Function: get and set for slice

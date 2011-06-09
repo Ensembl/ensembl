@@ -963,7 +963,7 @@ sub set_config {
   return;
 } ## end sub set_config
 
-=head2 store_window_bin_by_Slice
+=head2 store_window_bins_by_Slice
 
   Arg[0]     : Bio::EnsEMBL:Slice
   Example    : $collector->store_window_bins_by_Slice($slice);
@@ -1241,7 +1241,7 @@ sub store_window_bins_by_Slice {
   return;
 } ## end sub store_window_bins_by_Slice
 
-=head2 _bin_features_by_window_sizes
+=head2 _bin_features_by_Slice_window_sizes
 
   Args[0]    : Bio::EnsEMBL::Slice
   Args[1]    : ARRAYREF of window sizes

@@ -284,7 +284,7 @@ sub get_all_MarkerSynonyms {
 
 
 
-=head2 add_MarkerSynonym
+=head2 add_MarkerSynonyms
 
   Arg [1]    : Bio::EnsEMBL::MarkerSynonym $ms
   Example    : $marker->add_MarkerSynonym($ms);

@@ -62,7 +62,7 @@ Due to the lack of standards of float encoding(wrt to endianess) perl packs usin
 implicit endianess of the underlying architecture. This means that accessing float
 collection files located on a big endian architecture will produce unexpected results.
 
-#endian issues will disappear with knetfile xsubs
+# endian issues will disappear with knetfile xsubs
 
 =head1 SEE ALSO
 

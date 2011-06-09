@@ -120,7 +120,7 @@ my $reg = "Bio::EnsEMBL::Registry";
   Returntype : Bio::EnsEMBL::DBSQL::DBConnection
   Exceptions : thrown if USER or DBNAME are not specified, or if the database
                cannot be connected to.
-  Caller     : Bio::EnsEMBL::::Utils::ConfigRegistry ( for newer code using the registry)
+  Caller     : Bio::EnsEMBL::Utils::ConfigRegistry ( for newer code using the registry)
                Bio::EnsEMBL::DBSQL::DBAdaptor        ( for old style code)
   Status     : Stable
 

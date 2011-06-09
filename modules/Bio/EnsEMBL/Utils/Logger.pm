@@ -381,7 +381,7 @@ sub log_filehandle {
 }
 
 
-=head2 
+=head2 extract_log_identifier 
 
   Arg[1]      : 
   Example     : 
@@ -569,12 +569,12 @@ sub warning_count {
 }
 
 
-=head2 
+=head2 logfile
 
   Arg[1]      : 
   Example     : 
-  Description : 
-  Return type : 
+  Description : Getter and setter for the logfile
+  Return type :
   Exceptions  : 
   Caller      : 
   Status      :
@@ -588,7 +588,7 @@ sub logfile {
 }
 
 
-=head2 
+=head2 log_auto_id
 
   Arg[1]      : 
   Example     : 
@@ -614,7 +614,7 @@ sub logauto {
 }
 
 
-=head2 
+=head2 create_auto_logfile
 
   Arg[1]      : 
   Example     : 
@@ -647,7 +647,7 @@ sub create_auto_logfile {
 }
 
 
-=head2 
+=head2 logpath
 
   Arg[1]      : 
   Example     : 
@@ -666,7 +666,7 @@ sub logpath {
 }
 
 
-=head2 
+=head2 logappend
 
   Arg[1]      : 
   Example     : 
@@ -685,7 +685,7 @@ sub logappend {
 }
 
 
-=head2 
+=head2 is_component
 
   Arg[1]      : 
   Example     : 

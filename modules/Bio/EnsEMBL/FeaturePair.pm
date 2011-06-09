@@ -554,7 +554,7 @@ sub external_db_id {
 }
 
 
-=head2 dbname
+=head2 db_name
 
   Arg [1]    : string  $external_db_name (optional)
   Example    : $ex_db_name = $fp->dbname();

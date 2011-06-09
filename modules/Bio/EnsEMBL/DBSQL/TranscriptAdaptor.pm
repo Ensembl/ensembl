@@ -382,7 +382,7 @@ sub fetch_all_by_Slice {
   # faster than 1 query per transcript
 
   # first check if the exons are already preloaded
-  # FIXME: Should test all exons.
+  # @todo FIXME: Should test all exons.
   if ( exists( $transcripts->[0]->{'_trans_exon_array'} ) ) {
     return $transcripts;
   }
@@ -1838,7 +1838,7 @@ sub get_stable_entry_info {
 }
 
 
-=head2 fetch_all_b_DBEntry
+=head2 fetch_all_by_DBEntry
 
   Description: DEPRECATED. Use fetch_all_by_external_name() instead.
 

@@ -66,7 +66,7 @@ sub find_non_overlaps {
   return $non_overlaps;
 }
 
-=head2 check_remarks_and_update names
+=head2 check_remarks_and_update_names
 
    Arg[1]     : B::E::Gene (with potentially duplicated transcript names)
    Arg[2]     : counter 1 (no. of patched genes)

@@ -1427,7 +1427,7 @@ sub date {
   return strftime "%Y-%m-%d %T", localtime;
 }
 
-=head2 format_time
+=head2 date_format
 
   Example     : print $support->format_time($gene->modifed_date) . "\n";
   Description : Prints timestamps from the database

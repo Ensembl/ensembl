@@ -26,7 +26,7 @@ use Data::Dumper;
 use Bio::EnsEMBL::Utils::VegaCuration::Transcript;
 @ISA = qw(Bio::EnsEMBL::Utils::VegaCuration::Transcript);
 
-=head2 check_CDS_end_remarks
+=head2 check_CDS_start_end_remarks
 
    Args       : B::E::Transcript
    Example    : my $results = $support->check_CDS_end_remarks($transcript)
@@ -88,7 +88,7 @@ sub check_CDS_start_end_remarks {
   return $results;
 }
 
-=head2 check_CDS_end_remarks_loutre
+=head2 check_CDS_start_end_remarks_loutre
 
    Args       : B::E::Transcript
    Example    : my $results = $support->check_CDS_end_remarks($transcript)

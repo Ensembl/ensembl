@@ -169,25 +169,6 @@ sub _convert_single{
     shift->throw("Not implemented. Please check the instance subclass");
 }
 
-=head2 in
-
-  Title     : in
-  Useage    : $self->in
-  Function  : get and set for in
-  Return    : 
-  Args      : 
-
-=head2 out
-
-  Title     : out
-  Useage    : $self->out
-  Function  : get and set for out
-  Return    : 
-  Args      : 
-
-=cut 
-
-
 foreach my $field (qw(in out)){
     my $slot=__PACKAGE__ ."::$field";
     no strict 'refs';

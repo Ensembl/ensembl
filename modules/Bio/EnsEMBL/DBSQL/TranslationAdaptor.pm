@@ -617,7 +617,7 @@ sub list_dbIDs {
 }
 
 
-=head2 list_stable_dbIDs
+=head2 list_stable_ids
 
   Arg [1]    : none
   Example    : @transl_stable_ids = @{$transl_adaptor->list_stable_dbIDs()};
