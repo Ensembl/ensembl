@@ -122,7 +122,7 @@ sub store{
 }
 
 
-=head2 _tablename
+=head2 _tables
 
   Arg [1]    : none
   Example    : none
