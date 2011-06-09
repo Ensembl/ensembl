@@ -952,7 +952,7 @@ sub seq_region_Slice_same {
   return $slice;
 }
 
-=head2 get_seq_region_id
+=head2 get_seq_region_id_same
 
   Arg [1]    : none
   Example    : my $seq_region_id = $slice->get_seq_region_id();
