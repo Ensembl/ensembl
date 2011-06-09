@@ -840,7 +840,7 @@ sub list_pairs {
 } ## end sub list_pairs
 
 
-=head2 from, to
+=head2 to
 
     Arg  1      Bio::EnsEMBL::Mapper::Unit $id
                 id of 'source' sequence
@@ -862,6 +862,17 @@ sub to {
   return $self->{'to'};
 }
 
+=head2 from
+
+    Arg  1      Bio::EnsEMBL::Mapper::Unit $id
+                id of 'source' sequence
+    Function    accessor method form the 'source'
+                and 'target' in a Mapper::Pair
+    Returntype  Bio::EnsEMBL::Mapper::Unit
+    Exceptions  none
+    Caller      Bio::EnsEMBL::Mapper
+
+=cut
 sub from {
   my ( $self, $value ) = @_;
 
