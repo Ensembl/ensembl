@@ -3006,7 +3006,7 @@ sub get_all_DASFeatures_dsn {
   return [ $X[0]->fetch_all_Features( $self, $source_type ) ];
 }
 
-=head2 get_all_DASFeatures
+=head2 get_all_DAS_Features
 
   Arg [1]    : none
   Example    : $features = $slice->get_all_DASFeatures;
