@@ -167,6 +167,21 @@ sub fetch_all_by_chr_name {
 }
 
 
+
+sub fetch_all_by_chr_band {
+  my ($self, $chr_name, $band) = @_;
+
+  throw('Chromosome name argument expected') if(!$chr_name);
+  throw('Band argument expected') if(!$band);
+
+  my $slice = $self->db->get_SliceAdaptor->fetch_by_region(undef,
+                                                           $chr_name);
+
+  my $constraint = "k.band like '$band%'";
+  return $self->fetch_all_by_Slice_constraint($slice,$constraint);
+}
+
+
 =head2 fetch_by_chr_band
 
   Arg  [1]   : string $chr_name
@@ -185,21 +200,6 @@ sub fetch_all_by_chr_name {
   Status     : Stable
 
 =cut
-
-sub fetch_all_by_chr_band {
-  my ($self, $chr_name, $band) = @_;
-
-  throw('Chromosome name argument expected') if(!$chr_name);
-  throw('Band argument expected') if(!$band);
-
-  my $slice = $self->db->get_SliceAdaptor->fetch_by_region(undef,
-                                                           $chr_name);
-
-  my $constraint = "k.band like '$band%'";
-  return $self->fetch_all_by_Slice_constraint($slice,$constraint);
-}
-
-
 
 sub fetch_by_chr_band {
   my $self = shift;
