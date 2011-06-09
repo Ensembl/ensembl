@@ -47,7 +47,7 @@ sub new {
     bless( { 'from' => $from, 'to' => $to, 'ori' => $ori }, $class );
 }
 
-=head2 from, to
+=head2 to
 
   Arg  1      Bio::EnsEMBL::Mapper::Unit $seqobj
 	      from and to represent the two regions
@@ -70,6 +70,18 @@ sub to {
   return $self->{'to'};
 }
 
+=head2 from
+
+  Arg  1      Bio::EnsEMBL::Mapper::Unit $seqobj
+	      from and to represent the two regions
+	      which are mapped to each other
+  Function    accessor method
+  Returntype  Bio::EnsEMBL::Mapper::Unit
+  Exceptions  none
+  Caller      Bio::EnsEMBL::Mapper::Pair
+  Status     : Stable
+
+=cut
 sub from {
   my ( $self, $value ) = @_;
 
