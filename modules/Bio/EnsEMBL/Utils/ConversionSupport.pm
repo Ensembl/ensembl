@@ -118,9 +118,9 @@ sub parse_common_options {
 	       'pass|dbpass|db_pass=s',
 	       'conffile|conf=s',
 	       'logfile|log=s',
-         'nolog|nolog=s',
+               'nolog|nolog=s',
 	       'logpath=s',
-         'log_base_path=s',
+               'log_base_path=s',
 	       'logappend|log_append=s',
 	       'verbose|v=s',
 	       'interactive|i=s',
@@ -153,24 +153,29 @@ sub parse_common_options {
       $self->param($name, $val);
     }
     $self->param('conffile', $conffile);
-  } elsif ($conffile) {
+  }
+  elsif ($conffile) {
     warning("Unable to open configuration file $conffile for reading: $!");
   }
 
 # override configured parameter with commandline options
   map { $self->param($_, $h{$_}) } keys %h;
 
-  # if logpath & logfile are not se, set them here to /ensemblweb/vega_dev/shared/logs/conversion/DBNAME/SCRIPNAME_NN.log
+  # if logpath & logfile are not set, set them here to /ensemblweb/vega_dev/shared/logs/conversion/DBNAME/SCRIPNAME_NN.log
 
   if (defined($self->param('log_base_path')))  {
+    my $dbname = $self->param('dbname');
+    $dbname =~ s/^vega_//;
     if (not (defined($self->param('logpath')))){
-      $self->param('logpath', $self->param('log_base_path')."/".$self->param('dbname')."/" );
+      $self->param('logpath', $self->param('log_base_path')."/".$dbname."/" );
     }
     if (  (not defined $self->param('logfile') ) && (not defined $self->param('nolog') )  ){
       my $log = $Script;
-      $log =~ s/.pl//g;
+      $log =~ s/.pl$//g;
       my $counter;
-      for ($counter=1 ; (-e $self->param('logpath')."/".$log."_".sprintf("%03d", $counter).".log"); $counter++){ warn  $self->param('logpath')."/".$log."_".$counter.".log";}
+      for ($counter=1 ; (-e $self->param('logpath')."/".$log."_".sprintf("%03d", $counter).".log"); $counter++){
+#        warn  $self->param('logpath')."/".$log."_".$counter.".log";
+      }
       $self->param('logfile', $log."_".sprintf("%03d", $counter).".log");
     }
   }
@@ -252,9 +257,9 @@ sub get_common_params {
 	    port
 	    user
 	    pass
-      nolog
+            nolog
 	    logpath
-      log_base_path
+            log_base_path
 	    logfile
 	    logappend
 	    verbose
