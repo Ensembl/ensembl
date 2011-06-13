@@ -78,6 +78,7 @@ sub fetch_by_dbID {
             xref.dbprimary_acc,
             xref.display_label,
             xref.version,
+            exDB.dbprimary_acc_linkable,
             exDB.priority,
             exDB.db_name,
             exDB.db_display_name,
@@ -171,6 +172,7 @@ sub _get_all_dm_loc_sth {
                xref.dbprimary_acc,
             xref.display_label,
             xref.version,
+            exDB.dbprimary_acc_linkable,
             exDB.priority,
             exDB.db_name,
             exDB.db_display_name,
@@ -209,6 +211,7 @@ sub _get_all_dm_sth {
                xref.dbprimary_acc,
             xref.display_label,
             xref.version,
+            exDB.dbprimary_acc_linkable,
             exDB.priority,
             exDB.db_name,
             exDB.db_display_name,
@@ -398,6 +401,7 @@ sub fetch_by_db_accession {
             xref.dbprimary_acc,
             xref.display_label,
             xref.version,
+            exDB.dbprimary_acc_linkable,
             exDB.priority,
             exDB.db_name,
             exDB.db_display_name,
@@ -1098,6 +1102,7 @@ sub _fetch_by_object_type {
   #  my $sth = $self->prepare("
   my $sql = (<<SSQL);
     SELECT xref.xref_id, xref.dbprimary_acc, xref.display_label, xref.version,
+           exDB.dbprimary_acc_linkable, 
            exDB.priority,
            exDB.db_name, exDB.db_release, exDB.status, exDB.db_display_name,
            exDB.secondary_db_name, exDB.secondary_db_table,
@@ -1666,7 +1671,7 @@ sub fetch_all_by_description {
   my $sql =
     "SELECT xref.xref_id, xref.dbprimary_acc, xref.display_label,
            xref.version,
-           exDB.priority,
+           exDB.dbprimary_acc_linkable, exDB.priority,
            exDB.db_name, exDB.db_display_name, exDB.db_release, es.synonym,
            xref.info_type, xref.info_text, exDB.type, exDB.secondary_db_name,
            exDB.secondary_db_table, xref.description
@@ -1757,7 +1762,7 @@ sub fetch_all_by_source {
   my $sql =
     "SELECT xref.xref_id, xref.dbprimary_acc, xref.display_label,
            xref.version,
-           exDB.priority,
+           exDB.dbprimary_acc_linkable, exDB.priority,
            exDB.db_name, exDB.db_display_name, exDB.db_release, es.synonym,
            xref.info_type, xref.info_text, exDB.type, exDB.secondary_db_name,
            exDB.secondary_db_table, xref.description
