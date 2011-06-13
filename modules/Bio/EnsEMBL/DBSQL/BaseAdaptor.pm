@@ -616,7 +616,10 @@ sub fetch_all_by_dbID_list {
   # length of 16, this means 2048 dbIDs in each query.
   my $max_size = 2048;
 
-  my @id_list = @{$id_list_ref};
+
+  my %id_list;
+  $id_list{$_}++ for @{$id_list_ref};
+  my @id_list = keys %id_list;
 
   my @out;
 
