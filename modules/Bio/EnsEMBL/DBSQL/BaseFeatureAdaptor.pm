@@ -46,6 +46,7 @@ use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Bio::EnsEMBL::Utils::Cache;
 use Bio::EnsEMBL::Utils::Exception qw(warning throw deprecate stack_trace_dump);
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
+use Bio::EnsEMBL::Utils::Iterator;
 
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
 
@@ -162,7 +163,6 @@ sub fetch_all_by_Slice {
                                	      ($feature_adaptor->can('fetch_all_by_Slice_Arrays'),
 	                                   \@fetch_method_params,
 	                                   0,#Slice idx
-	                                   #500 #chunk length
 	                                  );
 
                while(my $feature = $slice_iter->next && defined $feature){
