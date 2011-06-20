@@ -78,7 +78,7 @@ sub run {
     }
 
     if (!defined $uniprot_acc) {
-	print STDERR "phi id, $pid, no uniprot mapping found in xml file!\n";
+	# print STDERR "phi id, $pid, no uniprot mapping found in xml file!\n";
     }
     else {
 	if (!defined $phi_mapping{$uniprot_acc}) {
@@ -155,10 +155,19 @@ sub run {
    
   print STDERR "species_id, source_id: $species_id, $source_id\n";
 
+  # Don't check only the species_id, but all taxIds specified in xref_config.ini
+
+  my %species2tax = $self->species_id2taxonomy();
+  my @tax_ids = @{$species2tax{$species_id}};
+
+  print STDERR "tax_ids from xref_config.ini file: " . join (', ', @tax_ids) . "\n";
+
+  my $added = 0;
+
   foreach my $uniprot_acc (keys (%phi_mapping)) {
       my $phis_href = $phi_mapping{$uniprot_acc};
       my $taxId = $phis_href->{-tax_id};
-      if ($taxId eq $species_id) {
+      if (grep {$_ eq $taxId} @tax_ids) {
 
 	  print STDERR "Adding xrefs for UniProt, $uniprot_acc\n";
 
@@ -180,11 +189,14 @@ sub run {
 	      foreach my $phibase_id (@$phis_aref) {
 		  print STDERR "Adding xrefs for phibase id, $phibase_id\n";
 		  $self->add_to_xrefs($master_xref_id,$phibase_id,'',$phibase_id,'',$linkage,$source_id,$species_id);
+		  $added++;
 	      }
 	  }
 
       }
   }
+
+  print STDERR "Added $added PHIbase xrefs\n";
 
   return 0;
 
