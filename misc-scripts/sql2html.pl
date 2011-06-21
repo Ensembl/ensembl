@@ -9,6 +9,8 @@
 
 #@desc This is the schema's generic representation of a variation.
 
+#@colour #FF0000
+
 #@column variation_id				Primary key, internal identifier.
 #@column source_id					Foreign key references to the @link source table.
 #@column name								Name of the variation. e.g. "rs1333049".
@@ -47,6 +49,7 @@
 # @header    : tag to create a group of tables
 # @table     : name of the sql table
 # @desc      : description of the role/content of the table, set or info tags
+# @colour    : tag to colour the header of the table (e.g. if the tables are coloured in the graphic SQL schema and you want to reproduce it in the HTML version)
 # @column    : column_name [tab(s)] Column description. Note: 1 ligne = 1 column
 # @see       : tables names linked to the described table
 # @link      : Internal link to an other table description. The format is ... @link table_name ...
@@ -60,7 +63,7 @@ use Getopt::Long;
 ###############
 ### Options ###
 ###############
-my ($sql_file,$html_file,$db_team,$header_flag,$sort_headers,$sort_tables,$help);
+my ($sql_file,$html_file,$db_team,$show_colour,$header_flag,$sort_headers,$sort_tables,$help);
 
 usage() if (!scalar(@ARGV));
  
@@ -68,6 +71,7 @@ GetOptions(
     'i=s' => \$sql_file,
     'o=s' => \$html_file,
 		'd=s' => \$db_team,
+		'c=i' => \$show_colour,
     'show_header=i' => \$header_flag,
 		'sort_headers=i' => \$sort_headers,
     'sort_tables=i' => \$sort_tables,
@@ -85,7 +89,7 @@ if (!$html_file) {
 	usage();
 }
 
-#$header_flag ||= 1;
+$show_colour  = 1 if (!defined($show_colour));
 $header_flag  = 1 if (!defined($header_flag));
 $sort_headers = 1 if (!defined($sort_headers));
 $sort_tables  = 1 if (!defined($sort_tables));
@@ -144,11 +148,13 @@ my $html_footer = qq{
 ################
 ### Settings  ##
 ################
+my $default_colour = '#000000'; # Black
+
 my %display_col = ('Show' => 'none', 'Hide' => 'inline');
 my $documentation = {};
 my $tables_names = {'default' => []};
 my @header_names = ('default');
-
+my @colours = ($default_colour);
 
 my $in_doc = 0;
 my $in_table = 0;
@@ -202,11 +208,15 @@ while (<SQLFILE>) {
 		elsif ($doc =~ /^\@table\s*(\w+)/i) {
 			$table = $1;
 			push(@{$tables_names->{$header}},$table);
-			$documentation->{$header}{'tables'}{$table} = { 'desc' => '', 'column' => [], 'see' => [], 'info' => [] };
+			$documentation->{$header}{'tables'}{$table} = { 'desc' => '', 'colour' => '', 'column' => [], 'see' => [], 'info' => [] };
 			$tag = $tag_content = '';		
 		}
 		# Description (used for both set, table and info tags)
 		elsif ($doc =~ /^\@(desc)\s*(.+)$/i) {
+			fill_documentation ($1,$2);
+		}
+		# Colour of the table header (optional)
+		elsif ($doc =~ /^\@(colour)\s*(.+)$/i and $show_colour) {
 			fill_documentation ($1,$2);
 		}
 		# Column
@@ -381,13 +391,14 @@ foreach my $header_name (@header_names) {
 	
 	# Tables display
 	foreach my $t_name (@{$tables}) {
-		$html_content .= add_table_name($t_name);
+		$html_content .= add_table_name($t_name,$documentation->{$header_name}{'tables'}{$t_name}{colour});
 		$html_content .= add_description($documentation->{$header_name}{'tables'}{$t_name}{desc});
 		$html_content .= add_info($documentation->{$header_name}{'tables'}{$t_name}{info});	
 		$html_content .= add_columns($t_name,@{$documentation->{$header_name}{'tables'}{$t_name}{column}});
 		$html_content .= add_see(@{$documentation->{$header_name}{'tables'}{$t_name}{see}});
 	}
-}	
+}
+$html_content .= add_legend();
 
 
 ## HTML/output file ##
@@ -479,6 +490,12 @@ sub fill_documentation {
 				$documentation->{$header}{'desc'} = $tag_content;
 			}
 		}
+		elsif ($tag eq 'colour') {
+			$documentation->{$header}{'tables'}{$table}{$tag} = $tag_content;
+			if (! grep {$tag_content eq $_} @colours) {
+				push (@colours,$tag_content);
+			}
+		}
 		elsif ($tag eq 'column') {
 			$tag_content =~ /(\w+)[\s\t]+(.+)/;
 			
@@ -514,11 +531,22 @@ sub add_table_name_to_list {
 
 sub add_table_name {
 	my $t_name = shift;
+	my $colour = shift || '#000000';
 	
-	my $html = qq{\n<br />\n<table style="border: 2px groove #CCCCCC;height:10px;background-color:#FAFAFF"><tr style="vertical-align:middle;height:10px">
-<td style="width:500px;text-align:left;height:10px"><span id="$t_name" style="font-size:11pt;font-weight:bold">$t_name</span></td>
-<td style="width:100px;text-align:right"><a id="a_$t_name" style="cursor:pointer;text-decoration:underline" onclick="show_hide('$t_name')">Show</a> columns</td>
-</tr></table>\n};
+	my $c_box = '';
+	if ($show_colour) {
+		$c_box = qq{
+			<td style="padding:0px;width:10px;background-color:$colour"></td>
+			<td style="width:2px"></td>};
+	}
+	
+	my $html = qq{\n<br />
+	<table style="border: 2px groove #CCCCCC;background-color:#FAFAFF">
+		<tr style="vertical-align:middle">$c_box
+			<td style="width:500px;text-align:left;height:10px"><span id="$t_name" style="font-size:11pt;font-weight:bold">$t_name</span></td>
+			<td style="width:100px;text-align:right"><a id="a_$t_name" style="cursor:pointer;text-decoration:underline" onclick="show_hide('$t_name')">Show</a> columns</td>
+		</tr>
+	</table>\n};
 	
 	return $html;
 }
@@ -653,6 +681,27 @@ sub add_column_type_and_default_value {
 }
 
 
+sub add_legend {
+	my $html = '';
+	my $default = 'Other tables';
+	
+	return $html if (scalar @colours == 1);
+	
+	$html .= qq{<br />\n<hr />\n<h3>Colour legend</h3>\n<table>};
+	
+	foreach my $c (@colours) {
+		my $desc = '';
+		if ($c eq $default_colour) {
+			$desc = $default;
+		}
+		$html .= qq{<tr><td style="width:25px;height:15px;background-color:$c"></td><td>$desc</td></tr>\n};
+	}
+	$html .= '</table>';
+	
+	return $html;
+}
+
+
 sub remove_char {
 	my $text = shift;
 	$text =~ s/`//g;
@@ -678,6 +727,8 @@ sub usage {
     -i              A SQL file name (Required)
     -o              An HTML output file name (Required)
     -d              The name of the database (e.g Core, Variation, Functional Genomics, ...)
+    -c              A flag to display the colours associated with the tables (1) or not (0).
+                    By default, the value is set to 1.
     -show_header    A flag to display headers for a group of tables (1) or not (0). 
                     By default, the value is set to 1.
     -sort_headers   A flag to sort (1) or not (0) the headers by alphabetic order.
