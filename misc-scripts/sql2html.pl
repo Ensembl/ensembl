@@ -354,6 +354,8 @@ close(SQLFILE);
 ### Core  ##
 ############
 
+my $html_content;
+
 # Sort the headers names by alphabetic order
 if ($sort_headers == 1) {
 	@header_names = sort(@header_names);
@@ -365,8 +367,13 @@ if ($sort_tables == 1) {
 	}
 }
 
+# Legend link
+if ($show_colour and scalar @colours > 1) {
+	$html_content .= qq{A colour legend is available at the <a href="#legend">bottom of the page</a>.};
+}
+
 # List of tables by header
-my $html_content = display_tables_list();
+$html_content .= display_tables_list();
 my $table_count = 1;
 my $col_count = 1;
 
@@ -687,7 +694,7 @@ sub add_legend {
 	
 	return $html if (scalar @colours == 1);
 	
-	$html .= qq{<br />\n<hr />\n<h3>Colour legend</h3>\n<table>};
+	$html .= qq{<br />\n<hr />\n<h3 id="legend">Colour legend</h3>\n<table>};
 	
 	foreach my $c (@colours) {
 		my $desc = '';
