@@ -76,8 +76,6 @@ use Bio::EnsEMBL::StrainSlice;
 use Bio::EnsEMBL::Mapper::RangeRegistry;
 use Bio::EnsEMBL::SeqRegionSynonym;
 
-use Bio::EnsEMBL::Variation::Utils::Constants qw(%VARIATION_CLASSES);
-
 # use Data::Dumper;
 
 my $reg = "Bio::EnsEMBL::Registry";
@@ -1809,17 +1807,7 @@ sub get_all_StructuralVariations{
 	
 	# Get the attrib_id
 	my $at_adaptor = $variation_db->get_AttributeAdaptor;
-	
-	# Find the SO term associated with the SO accession number ($sv_class)
-	my $SO_term = '';
-	foreach my $term (%VARIATION_CLASSES) {
-		if ($VARIATION_CLASSES{$term}->{'SO_accession'} eq $sv_class) {
-			$SO_term = $term;
-			last;
-		}
-	}
-	
-	# Attrib ID of the SO term
+	my $SO_term   = $at_adaptor->SO_term_for_SO_accession($sv_class);
 	my $attrib_id = $at_adaptor->attrib_id_for_type_value('SO_term',$SO_term);
 
 	if (!$attrib_id) {
