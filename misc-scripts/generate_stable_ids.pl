@@ -16,7 +16,7 @@ GetOptions('dbuser|user=s'       => \$user,
 	   'start=s'      => \$start,   # USE ENS000001 or ENS for human, ENSMUS00001 or ENSMUS for mouse etc 
                                         # don't add G/T/E/P for specific types !!!
 	   'help'         => sub { usage(); exit(0); },
-           'verbose!'    => $verbose 
+           'verbose!'    => \$verbose 
             );
 
 @types = ('gene','transcript','translation','exon') if (!@types);
