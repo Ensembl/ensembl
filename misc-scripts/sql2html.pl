@@ -543,17 +543,17 @@ sub add_table_name {
 	my $c_box = '';
 	if ($show_colour) {
 		$c_box = qq{
-			<td style="padding:0px;width:10px;background-color:$colour"></td>
-			<td style="width:2px"></td>};
+      <td style="padding:0px;width:10px;background-color:$colour"></td>
+      <td style="width:2px"></td>};
 	}
 	
 	my $html = qq{\n<br />
-	<table style="border: 2px groove #CCCCCC;background-color:#FAFAFF">
-		<tr style="vertical-align:middle">$c_box
-			<td style="width:500px;text-align:left;height:10px"><span id="$t_name" style="font-size:11pt;font-weight:bold">$t_name</span></td>
-			<td style="width:100px;text-align:right"><a id="a_$t_name" style="cursor:pointer;text-decoration:underline" onclick="show_hide('$t_name')">Show</a> columns</td>
-		</tr>
-	</table>\n};
+  <table style="border: 2px groove #CCCCCC;background-color:#FAFAFF">
+    <tr style="vertical-align:middle">$c_box
+      <td style="width:500px;text-align:left;height:10px"><span id="$t_name" style="font-size:11pt;font-weight:bold">$t_name</span></td>
+      <td style="width:100px;text-align:right"><a id="a_$t_name" style="cursor:pointer;text-decoration:underline" onclick="show_hide('$t_name')">Show</a> columns</td>
+    </tr>
+  </table>\n};
 	
 	return $html;
 }
@@ -561,7 +561,7 @@ sub add_table_name {
 
 sub add_description {
 	my $desc = shift;
-	return qq{<p>$desc<\p>\n};
+	return qq{<p>$desc</p>\n};
 }
 
 sub add_info {
@@ -570,10 +570,11 @@ sub add_info {
 	
 	foreach my $inf (@{$infos}) {
 		my ($title,$content) = split('@info@', $inf);
-		$html .= qq{	<table>
-		<tr class="bg3"><th>$title</th></tr>
-    <tr class="bg1"><td>$content</td></tr>
-	</table>\n};
+		$html .= qq{
+    <table>
+      <tr class="bg3"><th>$title</th></tr>
+      <tr class="bg1"><td>$content</td></tr>
+    </table>\n};
 	}
 	
 	return $html;
