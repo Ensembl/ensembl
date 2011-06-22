@@ -7,8 +7,8 @@ SYNOPSIS
 DESCRIPTION
 
   This script will add transcript attributes to transcripts in a Core database, indicating that the transcript
-  contains a variation that causes either the loss or gain of a stop codon. The variation will have to have a
-  population frequency, in a HapMap population, above a cutoff value that can be specified on the command line (default 0.1).
+  contains a variation allele that causes either the loss or gain of a stop codon. The allele will have to have a
+  minimum frequency and a mimimum number of observations (chromosomes) in a given population.
   
   Data can either be supplied through a tab-separated input file, or it will be fetched from a Variation database
   
@@ -17,6 +17,7 @@ EXAMPLE
   Command line example:
     perl nonsense_transcript_attribs.pl -help
     perl nonsense_transcript_attribs.pl -chost ens-genomics1 -cport 3306 -cuser ******** -cpass ********** -cdbname homo_sapiens_core_58_37c -vdbname homo_sapiens_variation_58_37c
+    perl nonsense_transcript_attribs.pl -chost ens-genomics1 -cport 3306 -cuser ******** -cpass ********** -cdbname homo_sapiens_core_58_37c -vdbname homo_sapiens_variation_58_37c -min_count 20 -pop_group 1000Genomes
     
 =cut
 
@@ -39,6 +40,38 @@ my %ATTRIBUTE_CODE = (
 
 # The minimum frequency of a STOP_*-causing allele in a population to be included
 my $FREQUENCY_CUTOFF = 0.1;
+# The mimimum number of observations that the allele frequency is based on
+my $OBSERVATION_COUNT_CUTOFF = 20;
+
+# The names of the populations we will be looking at
+my %POPULATIONS = (
+  'HapMap'  => [
+    'CSHL-HAPMAP:HAPMAP-ASW',
+    'CSHL-HAPMAP:HapMap-CEU',
+    'CSHL-HAPMAP:HAPMAP-CHB',
+    'CSHL-HAPMAP:HAPMAP-CHD',
+    'CSHL-HAPMAP:HAPMAP-GIH',
+    'CSHL-HAPMAP:HapMap-HCB',
+    'CSHL-HAPMAP:HapMap-JPT',
+    'CSHL-HAPMAP:HAPMAP-LWK',
+    'CSHL-HAPMAP:HAPMAP-MEX',
+    'CSHL-HAPMAP:HAPMAP-MKK',
+    'CSHL-HAPMAP:HAPMAP-TSI',
+    'CSHL-HAPMAP:HapMap-YRI'
+  ],
+  '1000Genomes' => [
+    '1000GENOMES:pilot_3_CEU_exon_capture_panel',
+    '1000GENOMES:pilot_3_CHB_exon_capture_panel',
+    '1000GENOMES:pilot_3_CHD_exon_capture_panel',
+    '1000GENOMES:pilot_3_JPT_exon_capture_panel',
+    '1000GENOMES:pilot_3_LWK_exon_capture_panel',
+    '1000GENOMES:pilot_3_TSI_exon_capture_panel',
+    '1000GENOMES:pilot_3_YRI_exon_capture_panel',
+    '1000GENOMES:pilot_1_CEU_low_coverage_panel',
+    '1000GENOMES:pilot_1_CHB+JPT_low_coverage_panel',
+    '1000GENOMES:pilot_1_YRI_low_coverage_panel'
+  ]
+); 
 
 # initialize variables
 my $chost;
@@ -51,6 +84,7 @@ my $vuser;
 my $vpass;
 my $vport;
 my $vdbname;
+my @population_groups;
 
 my $path = 'GRCh37';
 my $file;
@@ -58,6 +92,7 @@ my $file;
 $| = 1; # buffer
 my $store;
 my $clean;
+my $list;
 my $help;
 
 usage() if (!scalar(@ARGV));
@@ -79,14 +114,32 @@ usage() if (!scalar(@ARGV));
   'store'       => \$store,
   'clean!'      => \$clean,
   'min_freq=f'  => \$FREQUENCY_CUTOFF,
+  'min_count=i'   => \$OBSERVATION_COUNT_CUTOFF,
+  'pop_group=s@'  => \@population_groups,
+  'list!'       => \$list,
   'help!'       => \$help
 );
 
 usage() if (defined($help));
 
+# If a listing of population groups are desired, do that
+if ($list) {
+  map { printf("\%s\n",$_); map { printf("\t\%s\n",$_) } @{$POPULATIONS{$_}}; } keys(%POPULATIONS);
+  exit;
+}
+
 # some checks, if not explicitly specified otherwise, will use the same connection credentials for variation as for core but the database name must be specified
 if (!defined $chost || !defined $cuser || !defined $cdbname || !defined $cpass || !defined $cport || (!defined($file) && !defined $vdbname)) {
   throw("Please enter -chost -cuser -cdbname -cpass -cport -vdbname");
+}
+# If population group has been specified but does not match the available ones, throw exception
+if (@population_groups && grep {!exists($POPULATIONS{$_})} @population_groups) {
+  throw("The entered population group was not recognized. Possible choices are: " . join(",",keys(%POPULATIONS)));
+}
+
+# If no population groups were specified, use all available
+unless (@population_groups) {
+  @population_groups = keys(%POPULATIONS);
 }
 
 # Use the same db credentials for variation as for core if not specified otherwise
@@ -106,7 +159,7 @@ my $cdb = new Bio::EnsEMBL::DBSQL::DBAdaptor(
 ) or die("Could not get a database adaptor to $cdbname on $chost");
 print "Connected to " . $cdb->dbc->dbname() . " on " . $cdb->dbc->host() . ":" . $cdb->dbc->port() . "\n";
 
-#Êconnect to the variation db if no input file has been specified
+# connect to the variation db if no input file has been specified
 my $vdb;
 if (!defined($file)) {
   $vdb = new Bio::EnsEMBL::Variation::DBSQL::DBAdaptor(
@@ -148,7 +201,7 @@ if (!$clean && $store) {
   throw("You have not specified old transcript attributes to be cleared but such attributes exist for $transcripts transcripts in the database. Please re-run the script with the -clean option in order to first delete those attributes") if ($transcripts > 0);
 }
 
-#ÊIf -clean has been specified, remove all transcript_attrib entries with attrib_type_id corresponding to STOP_* events
+# If -clean has been specified, remove all transcript_attrib entries with attrib_type_id corresponding to STOP_* events
 if ($clean) {
   
   # Get a condition string for the attribute codes
@@ -176,7 +229,7 @@ my @null_transcripts;
 # If no input file has been specified, get the data from the variation database
 if (!defined($file)) {
   
-    #ÊGet the source_id for dbSNP
+    # Get the source_id for dbSNP
     my $stmt = qq{
         SELECT
             source_id
@@ -188,7 +241,8 @@ if (!defined($file)) {
     };
     my $source_id = $vdb->dbc->db_handle->selectall_arrayref($stmt)->[0][0];
     
-    #ÊGet the sample_ids for HapMap populations
+    # Get the sample_ids for the populations
+    my %samples;
     $stmt = qq{
         SELECT
             p.sample_id,
@@ -199,13 +253,15 @@ if (!defined($file)) {
                 p.sample_id = s.sample_id
             )
         WHERE
-            s.name LIKE 'CSHL-HAPMAP:%'
+            s.name IN 
     };
-    my %samples;
-    map {$samples{$_->[0]} = $_->[1]} @{$vdb->dbc->db_handle->selectall_arrayref($stmt)};
+    foreach my $pop_group (@population_groups) {
+      my $pop_stmt = $stmt . " ('" . join("','",@{$POPULATIONS{$pop_group}}) . "')";
+      map {$samples{$_->[0]} = $_->[1]} @{$vdb->dbc->db_handle->selectall_arrayref($pop_stmt)};
+    }
     my $sample_ids = join(",",keys(%samples));
   
-    #ÊA prepared statement for getting the populations where the stop_* causing allele has enough frequency
+    # A prepared statement for getting the populations where the stop_* causing allele has enough frequency
     $stmt = qq{
       SELECT
         a.sample_id
@@ -218,6 +274,7 @@ if (!defined($file)) {
         a.variation_id = ? AND
         a.allele = ? AND
         a.frequency >= $FREQUENCY_CUTOFF AND
+        a.count >= $OBSERVATION_COUNT_CUTOFF AND
         a.sample_id IN ($sample_ids) AND
         v.source_id = $source_id
     };
@@ -239,8 +296,7 @@ if (!defined($file)) {
             FIND_IN_SET('stop_lost',tv.consequence_types) OR
             FIND_IN_SET('stop_gained',tv.consequence_types)
         ) AND
-        tv.somatic = 0 AND
-        tv.feature_stable_id LIKE 'ENST0%'
+        tv.somatic = 0
   };
   my $sth = $vdb->dbc->prepare($stmt) or die("Error preparing statement $stmt");
   $sth->execute();
@@ -255,7 +311,7 @@ if (!defined($file)) {
     # Get the HapMap population and stop_* event causing allele that has an allele frequency above the $FREQUENCY_CUTOFF
     $pop_sth->execute($variation_id,$allele);
     
-    #ÊFor each result, push a tab-separated result string into the null_transcripts-array
+    # For each result, push a tab-separated result string into the null_transcripts-array
     while (my ($sample_id) = $pop_sth->fetchrow_array()) {
       my $str = join("\t",($transcript_stable_id,$samples{$sample_id},$variation_name,$consequence));
       push(@null_transcripts,$str);
@@ -290,21 +346,9 @@ while (my $line = shift(@null_transcripts)) {
   my $population;
   my $consequence;
 
-  my @fields = split (/\s+/, $line);
-  foreach my $field (@fields) {
-    print "$field\t";
-    if ($field =~ /^ENST\d{11}/) {
-      $transc_stable_id = $field;
-    } elsif ($field =~ /^rs\d+/) {
-      $rsid = $field;
-    } elsif ($field =~ /^CSHL-HAPMAP/) {
-      $population = $field;
-    } elsif ($field =~ /^STOP/i) {
-      $consequence = $field;
-    }  
-  }
-  print "\n";
-
+  ($transc_stable_id,$population,$rsid,$consequence) = $line =~ m/^(\S+)\s+(\S+)\s+(\S+)\s+(\S+)$/;
+  print join("\t",($transc_stable_id,$population,$rsid,$consequence)) . "\n";
+  
   if (!$transc_stable_id || !$rsid || !$population || !$consequence) {
     throw("Have not found all variables: $line");
   }
@@ -367,28 +411,35 @@ sub fetch_attrib_type_by_code {
   return ($code,$name,$description);
 }
 
-sub usage() {
+sub usage {
 	
   print qq{
-  Usage: perl nonsense_transcript_attribs.pl [OPTION]
+  Usage: perl $0 [OPTION]
   
   Add transcript attributes to transcripts in a Core database, indicating that the transcript
-  contains a variation that causes either the loss or gain of a stop codon. The variation will
-  have to have bene assayed in a HapMap population and have a minimum population frequency that
-  can be specified on the command line (default 0.1).
+  contains a variation allele that causes either the loss or gain of a stop codon. The allele will
+  have to have a minimum frequency and observation count in a particular "population group" 
+  (1000Genomes or HapMap).
   	
   Options:
   
-      -clean    If specified, transcript attributes for stop codon losses
-                or gains already present in the Core database will be
-                deleted. This is required before storing new attributes (Optional)
+      -clean      If specified, transcript attributes for stop codon losses
+                  or gains already present in the Core database will be
+                  deleted. This is required before storing new attributes (Optional)
                 
-      -store    If specified, new transcript attributes will be stored in
-                the core database. This requires all old attributes to have
-                been deleted (use -clean option) (Optional)
+      -store      If specified, new transcript attributes will be stored in
+                  the core database. This requires all old attributes to have
+                  been deleted (use -clean option) (Optional)
                 
-      -min_freq The minimum frequency cutoff for an allele causing a stop loss or
-                gain event to be included. Default = 0.1 (Optional)
+      -min_freq   The minimum frequency cutoff for an allele causing a stop loss or
+                  gain event to be included. Default = 0.1 (Optional)
+                
+      -min_count  The minimum number of observations on which the frequency calculation 
+                  is based. Default = 20 (Optional)
+                
+      -pop_group  The analysis can be limited to particular groups of populations, e.g.
+                  'HapMap' or '1000Genomes'. By default all available population groups
+                  will be analyzed (Optional).
                 
     Database connection parameters are specified on the command line
     
@@ -414,6 +465,8 @@ sub usage() {
       -vport    Variation database port     (Optional)
       -vuser    Variation database user     (Optional)
       -vpass    Variation database password (Optional)
+      
+      -list     Lists the available population groups and what populations are included
       
       -help     Print this message
   };
