@@ -15,18 +15,20 @@ my $dbname;
 my $host;
 my $user;
 my $port = 3306;
+my $scaf_syn_ext_id = 700;
 my $central_coord_system = 'supercontig';
 
 &GetOptions(
-            'pass=s'         => \$pass,
-            'mapping_file=s' => \$mapping_file,
-            'txt_file=s'     => \$txt_file,
-            'patchtype_file=s' => \$patchtype_file,
-            'host=s'         => \$host,
-            'dbname=s'       => \$dbname,
-            'user=s'         => \$user,
-            'port=n'         => \$port,
-            'assembly_name=s' => \$assembly_name,
+            'pass=s'            => \$pass,
+            'mapping_file=s'    => \$mapping_file,
+            'txt_file=s'        => \$txt_file,
+            'patchtype_file=s'  => \$patchtype_file,
+            'host=s'            => \$host,
+            'dbname=s'          => \$dbname,
+            'user=s'            => \$user,
+            'port=n'            => \$port,
+            'scaf_syn_ext_id=n' => \$scaf_syn_ext_id,
+            'assembly_name=s'   => \$assembly_name,
            );
 
 #needed to update the meta table
@@ -197,8 +199,9 @@ SCAF: while(<TXT>){
     $get_seq_region_sth->fetch();
 #     || die "Could not fetch seq_region id for name $name";;
 
+    #go to next
     if(defined($tmp_id)){
-      #go to next
+
       print $alt_name." already in db\n";
       $old_patch_names{$alt_name} = 1;
       next SCAF;
@@ -292,6 +295,10 @@ SCAF: while(<TXT>){
 
     print SQL "insert into seq_region (seq_region_id, name, coord_system_id, length)\n";
     print SQL "\tvalues ($max_seq_region_id, '$alt_name', $central_coord_sys, $new_length);\n\n";
+
+    #add GL accession as synonym for supercontig
+    print SQL "insert into seq_region_synonym (seq_region_id, synonym, external_db_id)\n";
+    print SQL "\tvalues ($max_seq_region_id, '$alt_acc', $scaf_syn_ext_id);\n\n";
 
     $name_to_sc_seq_id{$alt_name} = $max_seq_region_id;
     $name_to_sc_seq_id{$alt_acc}  = $max_seq_region_id;
@@ -446,3 +453,5 @@ sub load_seq_region {
 
   return;
 }
+
+
