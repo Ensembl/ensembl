@@ -341,7 +341,7 @@ sub store {
 
     my $sth = $self->prepare( $statement );
 
-    $sth->bind_param(1,$exon->version,SQL_INTEGER);
+    $sth->bind_param(1,( $exon->version || 1 ),SQL_INTEGER);
     $sth->bind_param(2,$exon->stable_id,SQL_VARCHAR);
     $sth->bind_param(3,$exonId,SQL_INTEGER);
 
