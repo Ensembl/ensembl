@@ -1165,7 +1165,7 @@ sub store {
     $sth = $self->prepare($statement);
     $sth->bind_param( 1, $gene_dbID,         SQL_INTEGER );
     $sth->bind_param( 2, $gene->stable_id(), SQL_VARCHAR );
-    $sth->bind_param( 3, $gene->version(),   SQL_INTEGER );
+    $sth->bind_param( 3, ($gene->version() || 1),   SQL_INTEGER );
     $sth->execute();
     $sth->finish();
   }

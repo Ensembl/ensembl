@@ -510,7 +510,7 @@ sub store {
 
     $sth->bind_param(1,$transl_dbID,SQL_INTEGER);
     $sth->bind_param(2,$translation->stable_id,SQL_VARCHAR);
-    $sth->bind_param(3,$translation->version,SQL_VARCHAR);
+    $sth->bind_param(3, ($translation->version || 1),SQL_VARCHAR);
     $sth->execute();
 
     $sth->finish();
