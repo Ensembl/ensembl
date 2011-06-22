@@ -104,11 +104,13 @@ my $sql = qq(
   GROUP BY asm_name, asm_version, cmp_name, cmp_version
 );
 
+
+my $fmt1 = "%6s %6s %10s %10s %10s %10s %3s %3s %3s\n";
+
+
+foreach  my $type ( qw(asm cmp)){
 my $sth = $dbh->prepare($sql);
 $sth->execute;
-
-my $fmt1 = "%6s %6s %10s %10s %10s %10s %3s\n";
-
 while (my ($asm_name, $asm_version, $cmp_name, $cmp_version) =
   $sth->fetchrow_array) {
 
@@ -138,7 +140,8 @@ while (my ($asm_name, $asm_version, $cmp_name, $cmp_version) =
     $cmp_version = 'NULL';
   }
   
-  $sql1 .= ' ORDER BY a.asm_seq_region_id, a.asm_start, a.asm_end';
+
+  $sql1 .= " ORDER BY a.".$type."_seq_region_id, a.".$type."_start ASC, a.".$type."_end";
 
   $support->log_stamped("$asm_name.$asm_version $cmp_name.$cmp_version\n");
 
@@ -147,14 +150,22 @@ while (my ($asm_name, $asm_version, $cmp_name, $cmp_version) =
 
   # do an initial fetch
   my $last = $sth1->fetchrow_hashref;
-  
+#  foreach my $key (qw(asm_seq_region_id asm_sr_name cmp_seq_region_id cmp_sr_name asm_start asm_end cmp_start cmp_end ori)){
+#    print $key." = ".$last->{$key}."\t";
+#  }
+#  print "\n";  
   my $i = 0;
   
   while ($last and (my $r = $sth1->fetchrow_hashref)) {
 
+#    foreach my $key (qw(asm_seq_region_id asm_sr_name cmp_seq_region_id cmp_sr_name asm_start asm_end cmp_start cmp_end ori)){
+#      print $key." = ".$r->{$key}."\t";
+#    }
+#    print "\n";
+        
     # look for overlaps with last segment
-    if ($last->{'asm_seq_region_id'} == $r->{'asm_seq_region_id'} and
-        $last->{'asm_end'} >= $r->{'asm_start'}) {
+    if ($last->{$type.'_seq_region_id'} == $r->{$type.'_seq_region_id'} and
+        $last->{$type.'_end'} >= $r->{$type.'_start'}) {
 
       $i++;
       
@@ -175,9 +186,8 @@ while (my ($asm_name, $asm_version, $cmp_name, $cmp_version) =
 
   $support->log("\nFound $i overlaps.\n\n", 1);
 }
-
 $sth->finish;
-
+}
 
 # finish logfile
 $support->finish_log;
