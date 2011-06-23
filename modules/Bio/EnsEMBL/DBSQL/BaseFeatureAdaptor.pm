@@ -259,6 +259,26 @@ sub fetch_Iterator_by_Slice_method{
 }
 
 
+=head2 fetch_Iterator_by_Slice
+
+  Arg [1]    : Bio::EnsEMBL::Slice
+  Arg [2]    : Optional string: logic name of analysis
+  Arg [3]    : Optional int: Chunk size to iterate over. Default is 500000
+  Example    : my $slice_iter = $feature_adaptor->fetch_Iterator_by_Slice($slice);
+
+               while(my $feature = $slice_iter->next && defined $feature){
+                 #Do something here
+               }
+
+  Description: Creates an Iterator which chunks the query Slice to facilitate
+               large Slice queries which would have previously run out of memory
+  Returntype : Bio::EnsEMBL::Utils::Iterator
+  Exceptions : None
+  Caller     : general
+  Status     : at risk
+
+=cut
+
 sub fetch_Iterator_by_Slice{
   my ($self, $slice, $logic_name, $chunk_size) = @_;
 
