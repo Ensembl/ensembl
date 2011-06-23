@@ -26,9 +26,9 @@ my $dbname;
 my $dbpattern;
 
 my $core     = 0;
-my $drop_bak = 0;
 my $verbose  = 0;
 my $cleanup  = 0;
+my $dumppath; 
 
 # Do command line parsing.
 if ( !GetOptions( 'mhost|mh=s'     => \$mhost,
@@ -43,21 +43,21 @@ if ( !GetOptions( 'mhost|mh=s'     => \$mhost,
                   'database|d=s'   => \$dbname,
                   'pattern=s'      => \$dbpattern,
                   'table|t=s'      => \@tables,
-                  'drop|D!'        => \$drop_bak,
                   'verbose|v!'     => \$verbose,
                   'core=i'         => \$core,
-                  'cleanup!'       => \$cleanup )
+		  'dumppath|dp=s'   => \$dumppath)
      || !(
            defined($host)
         && defined($user)
         && defined($pass)
         && ( defined($dbname) || defined($dbpattern) || defined($core) )
         && defined($mhost)
-        && defined($muser) ) )
+        && defined($muser) 
+        && defined($dumppath)) )
 {
   my $indent = ' ' x length($0);
   print <<USAGE_END;
-This script copies the tables 'attrib_type', 'external_db', 'misc_set'
+This script copies tables 'attrib_type', 'external_db', 'misc_set'
 and 'unmapped_reason' from the production database into a user-defined
 database.
 
@@ -66,10 +66,11 @@ Usage:
   $0 -h host [-P port] \\
   $indent -u user [-p password]
   $indent -d database | --pattern pattern \\
+  $indent -dp dumppath
   $indent [-mh host] [-mP port] \\
   $indent [-mu user] [-mp password] [-md database] \\
   $indent [-t table] [-t table] [-t ...] \\
-  $indent [-D] [-v]
+  $indent [-v]
 
   -h / --host       User database server host
   -P / --port       User database server port (optional, default is 3306)
@@ -80,6 +81,8 @@ Usage:
   -d / --database   User database name or SQL pattern
                     e.g. --database="homo_sapiens_rnaseq_62_37g"
                     or   --database="%core_62%"
+
+  -dp / --dumppath  Dumpout path. Dump out tables into the specified directory path
 
   --pattern         User database by Perl regular expression
                     e.g. --pattern="^homo.*(rnaseq|vega)_62"
@@ -107,13 +110,9 @@ Usage:
                     must be one of the tables attrib_type, external_db,
                     misc_set, or unmapped_reason
 
-  -D / --drop       Drop backup tables if they already exists in the
-                    database from a previous run
-
-  --cleanup         Just clean up backup tables, do nothing else
-
   -v / --verbose    Be verbose, display every SQL statement as they
                     are executed (on standard error)
+
 
 USAGE_END
 
@@ -199,21 +198,51 @@ my %data;
         $dbh->quote_identifier( undef, $dbname, $table . '_bak' );
       my $key_name = $table . '_id';
 
-      # Drop backup table if it exists and if asked to do so.
-      if ( $cleanup || $drop_bak ) {
-        $dbh->do(
+
+      # check if table exists
+      my $test_sql = "select count(1) from information_schema.tables where table_schema = ? and table_name = ?";
+      my $test_sth = $dbh->prepare($test_sql);
+      $test_sth->execute($dbname, $table);
+      my ($table_exists) = $test_sth->fetchrow_array();
+      if ($table_exists) {
+      	my $file_path = $dumppath . "/" . $dbname . $table .'.sql';
+      	my $file_exists = 0;
+	my $response;
+	if (-e $file_path) {
+        	print("file $file_path already exists, overwrite? (y/n)\n");
+		$file_exists = 1;
+		$response = <>;
+		chomp $response;
+	}
+	if ( !$file_exists or $response eq 'y') {
+		open(BKUPFILE, ">$file_path") or die("Failed to open file $file_path for writing\n");   
+      		my $cmd = "mysqldump -h $host -u $user -p$pass $dbname $table";
+      		my $result = `$cmd`;
+      		print BKUPFILE $result;
+      		close BKUPFILE;
+      		if ($result !~ /Dump completed/) { 
+	  		print("back up failed, check file $file_path for details\n");
+	  		next;
+      		} else {
+	  		print("$full_table_name dumped out to file $file_path\n");
+      		}
+	} else {
+          print("skipping update for table $table\n");
+	  next; 
+	}
+      } else {
+	  print("table $table does not exist in database $dbname\n");
+          next;
+      }
+      $dbh->do(
            sprintf( 'DROP TABLE IF EXISTS %s', $full_table_name_bak ) );
 
-        print("<dropped old backup> ");
-        if ($cleanup) { next }
-      }
 
       # Make a backup of any existing data.
       $dbh->do( sprintf( 'CREATE TABLE %s LIKE %s',
                          $full_table_name_bak, $full_table_name ) );
       $dbh->do( sprintf( 'INSERT INTO %s SELECT * FROM %s',
                          $full_table_name_bak, $full_table_name ) );
-      print("<created new backup> ");
 
       # Truncate (empty) the table before inserting new data into it.
       $dbh->do( sprintf( 'TRUNCATE TABLE %s', $full_table_name ) );
@@ -324,14 +353,17 @@ my %data;
           print("\n");
         }
       }
+      # delete the backup table  
+      $dbh->do(
+           sprintf( 'DROP TABLE IF EXISTS %s', $full_table_name_bak ) );
+  
+
     } continue {
       print("\n");
     }
 
     print("\n");
-    if ( !$cleanup ) {
-      print("Remember to drop the backup tables!\n\n");
-    }
+
   } ## end while ( $sth->fetch() )
 
   $dbh->disconnect();
