@@ -5,8 +5,11 @@
 use strict;
 
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
+use Bio::EnsEMBL::DBSQL::DensityFeatureAdaptor;
+use Bio::EnsEMBL::DBSQL::DensityFeatureAdaptor;
 use Bio::EnsEMBL::DensityType;
 use Bio::EnsEMBL::DensityFeature;
+use Bio::EnsEMBL::Registry;
 use Bio::EnsEMBL::Variation::DBSQL::DBAdaptor;
 use Getopt::Long;
 
@@ -20,20 +23,23 @@ my ($host, $user, $pass, $port, $species);
 
 my ($block_count, $genome_size, $block_size );
 
-GetOptions( "host=s",     \$host,
-	    "user=s",     \$user,
-	    "pass=s",     \$pass,
-	    "port=i",     \$port,
-	    "species=s",  \$species );
+GetOptions( "host|h=s",     \$host,
+	    "user|u=s",     \$user,
+	    "pass|p=s",     \$pass,
+	    "port=i",       \$port,
+	    "species|s=s",  \$species );
 
-Bio::EnsEMBL::Registry->load_registry_from_db(-host => $host, -user => $user, -pass => $pass, -port => $port);
 
-my $density_feature_adaptor   = Bio::EnsEMBL::Registry->get_adaptor($species, "core", "DensityFeature")        || die "Can't create density feature adaptor";
-my $density_type_adaptor      = Bio::EnsEMBL::Registry->get_adaptor($species, "core", "DensityType")           || die "Can't create density type adaptor";
-my $analysis_adaptor          = Bio::EnsEMBL::Registry->get_adaptor($species, "core", "analysis")              || die "Can't create analysis adaptor";
-my $slice_adaptor             = Bio::EnsEMBL::Registry->get_adaptor($species, "core", "slice")                 || die "Can't create slice adaptor";
+usage() if (!$host || !$user || !$pass || !$species );
 
-my $variation_feature_adaptor = Bio::EnsEMBL::Registry->get_adaptor($species, "variation", "VariationFeature") || die "Can't create variation feature adaptor";
+my $reg = Bio::EnsEMBL::Registry->load_registry_from_db(-host => $host, -user => $user, -pass => $pass, -port => $port, -species => $species);
+
+my $density_feature_adaptor   = $reg->get_adaptor($species, "core", "DensityFeature")        || die "Can't create density feature adaptor";
+my $density_type_adaptor      = $reg->get_adaptor($species, "core", "DensityType")           || die "Can't create density type adaptor";
+my $analysis_adaptor          = $reg->get_adaptor($species, "core", "analysis")              || die "Can't create analysis adaptor";
+my $slice_adaptor             = $reg->get_adaptor($species, "core", "slice")                 || die "Can't create slice adaptor";
+
+my $variation_feature_adaptor = $reg->get_adaptor($species, "variation", "VariationFeature") || die "Can't create variation feature adaptor";
 
 # TODO - variation from registry
 
@@ -79,11 +85,13 @@ my ($current, $current_start, $current_end);
 # prepare statement outside of loop
 $sth = $variation_feature_adaptor->prepare("SELECT COUNT(*) FROM variation_feature WHERE seq_region_id = ? AND seq_region_start < ? AND seq_region_end > ?");
 
-foreach my $slice (@sorted_slices){
+my $total_count = 0;
+
+while ( my $slice = shift @sorted_slices){
 
   $block_size = $slice->length() / $bin_count;
 
-  print "Calculating SNP densities for ". $slice->seq_region_name() . " with block size $block_size\n";
+  print STDOUT "Calculating SNP densities for ". $slice->seq_region_name() . " with block size $block_size\n";
 
   $current_end = 0;
   $current = 0;
@@ -113,9 +121,76 @@ foreach my $slice (@sorted_slices){
         				       -density_value => $count);
     $density_feature_adaptor->store($df);
 
+    $total_count ++;
   }
 
   last if ( $slice_count++ > $max_slices );
 
 }
 
+print STDOUT "Written $total_count density features for species $species on server $host\n";
+
+
+sub usage {
+  my $indent = ' ' x length($0);
+  print <<EOF; exit(0);
+
+What does it do?
+
+Calculates the density of SNP features on top level sequences.
+Deletes out all density_feature and density_type entries having
+analysis logic_name 'snpDensity'. Deletes analysis_description
+where display_label = 'snpDensity'. All toplevel slices are fetched
+and sorted from longest to shortest. Each slice is divided into 150
+bins. For each sub_slice, we count and store the number of
+variation_features (SNPs) on that sub_slice.
+
+
+Deletes out all seq_region_attrib that have attrib_type code of 'SNPCount'. 
+Attach variation db if exists. All toplevel slices are fetched. 
+For each slice, count the number of SNPs.
+
+Input data: top level seq regions, variation db
+Output tables: analysis, analysis_description, density_feature, density_type
+
+The script requires ensembl-variation in perl5lib.
+
+When to run it in the release cycle?
+
+When variation dbs have been handed over
+
+
+Which databases to run it on?
+
+The script updates a core database using data from the corresponding variation database. 
+Run it for new species or where the core assembly has changed, or if there are any changes to variation positions in the variation database.
+
+
+How long does it take?
+
+It takes about 25 mins to run for a database in normal queue.
+
+
+
+Usage: 
+
+  $0 -h host [-port port] -u user -p password \\
+  $indent -s species \\
+  $indent [-help]  \\
+
+  -h|host             Database host to connect to
+
+  -port               Database port to connect to (default 3306)
+
+  -u|user             Database username
+
+  -p|pass             Password for user
+
+  -s|species          Species name
+
+  -help               This message
+
+
+EOF
+ 
+}

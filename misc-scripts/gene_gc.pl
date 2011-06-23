@@ -11,17 +11,17 @@ my ( $host, $user, $pass, $port, $dbpattern, $print);
 
 $port = 3306;
 
-GetOptions( "dbhost|host=s",       \$host,
-	    "dbuser|user=s",       \$user,
-	    "dbpass|pass=s",       \$pass,
-	    "dbport|port=i",       \$port,
-	    "dbpattern|pattern=s", \$dbpattern,
-	    "print",               \$print,
-	    "help" ,               \&usage
+GetOptions( "host|h=s",       \$host,
+	    "user|u=s",       \$user,
+	    "pass|p=s",       \$pass,
+	    "port=i",         \$port,
+	    "pattern=s",      \$dbpattern,
+	    "print",          \$print,
+	    "help" ,          \&usage
 	  );
 
 
-usage() if (!$host || !$dbpattern);
+usage() if (!$host || !$dbpattern || !$user || !$pass);
 
 # loop over databases
 my $dsn = "DBI:mysql:host=$host";
@@ -42,28 +42,33 @@ for my $dbname (@dbnames) {
 					       '-dbname' => $dbname,
 					       '-species' => $dbname);
 
-  print STDERR "$dbname\n";
+  print STDOUT "$dbname\n";
 
   delete_existing($dba) if !($print);
 
-  print STDERR "Calculating Gene GC attributes\n";
+  print STDOUT "Calculating Gene GC attributes\n";
 
   my $attribute_adaptor = $dba->get_AttributeAdaptor();
 
   my $genes = $dba->get_GeneAdaptor()->fetch_all();
+
+  my $total_count = 0;
 
   while (my $gene = shift(@$genes)) {
 
     my $gc = $gene->feature_Slice()->get_base_count->{'%gc'};
 
     if (!$print) {
-
+      # attribute types need to be propagated from production database to all dbs
+      # if the type exists it won't be overwritten
       my $attribute = Bio::EnsEMBL::Attribute->new(-CODE        => 'GeneGC',
 						   -NAME        => 'Gene GC',
 						   -DESCRIPTION => 'Percentage GC content for this gene',
 						   -VALUE       => $gc);
       my @attributes = ($attribute);
       $attribute_adaptor->store_on_Gene($gene->dbID, \@attributes);
+ 
+      $total_count++; 
 
     } else {
 
@@ -72,6 +77,10 @@ for my $dbname (@dbnames) {
     }
 
   }
+  if (!$print) {
+      print STDOUT "Written $total_count 'GeneGC' gene attributes to database $dbname on server $host.\n";
+  }
+
 }
 
 # ----------------------------------------------------------------------
@@ -80,7 +89,7 @@ sub delete_existing {
 
   my $dba = shift;
 
-  print STDERR "Deleting existing 'GeneGC' gene attributes\n";
+  print STDOUT "Deleting existing 'GeneGC' gene attributes\n";
   my $dsth = $dba->dbc()->prepare("DELETE ga FROM gene_attrib ga, attrib_type at WHERE at.attrib_type_id=ga.attrib_type_id AND at.code='GeneGC'");
   $dsth->execute();
 
@@ -88,25 +97,54 @@ sub delete_existing {
 
 
 sub usage {
+  my $indent = ' ' x length($0);
   print <<EOF; exit(0);
 
-Calculate per-gene GC content and store as gene attributes.
+What does it do?
 
-Usage: perl $0 <options>
+This script calculates per-gene GC content and stores it as gene attributes.
+It deletes existing Gene GC attributes. Then fetches all genes in the
+core db and calculates the %gc for each gene.
 
-  -host|dbhost       Database host to connect to
+Input data: dna sequence 
+Output tables: gene_attrib 
 
-  -port|dbport       Database port to connect to (default 3306)
 
-  -dbpattern         Database name regexp
+When to run it in the release cycle?
 
-  -user|dbuser       Database username
+It can be run whenever the genes and sequence are stable, i.e. any time after 
+the genebuild handover, but before the handover to Mart.
 
-  -pass|dbpass       Password for user
 
-  -print             Just print, don't insert or delete attributes
+Which databases to run it on?
 
-  -help              This message
+It needs to be run across all core databases for every release.
+
+
+How long does it take?
+
+It takes a total of about 10 hours to run for all core databases in normal queue,
+
+
+Usage:
+
+  $0 -h host [-port port] -u user -p password \\
+  $indent -pattern pattern [-print] \\
+  $indent [-help]  \\
+
+  -h|host              Database host to connect to
+
+  -port                Database port to connect to (default 3306)
+
+  -u|user              Database username
+
+  -p|pass              Password for user
+
+  -pattern             Database name regexp
+
+  -print               Just print, don't insert or delete attributes
+
+  -help                This message
 
 
 EOF

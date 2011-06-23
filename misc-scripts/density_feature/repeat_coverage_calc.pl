@@ -24,13 +24,15 @@ use Getopt::Long;
 
 my ( $host, $user, $pass, $port, $dbname  );
 
-GetOptions( "host=s", \$host,
-	    "user=s", \$user,
-	    "pass=s", \$pass,
-	    "port=i", \$port,
-	    "dbname=s", \$dbname
+GetOptions( "host|h=s", \$host,
+	    "user|u=s", \$user,
+	    "pass|p=s", \$pass,
+	    "port=i",   \$port,
+	    "dbname|d=s", \$dbname,
+	    "help" ,               \&usage
 	  );
 
+usage() if (!$host || !$user || !$pass || !$dbname);
 
 my $chunksize = 1_000_000;
 my $small_blocksize = 1_000;
@@ -63,22 +65,15 @@ if( ! $repeat_count ) {
 # Clean up old features first. Also remove analysis and density type entry as these are recreated.
 #
 
-print "Deleting old PercentageRepeat features\n";
+print STDOUT "Deleting old PercentageRepeat features\n";
 $sth = $db->dbc->prepare("DELETE df, dt, a, ad FROM analysis_description ad, density_feature df, density_type dt, analysis a WHERE ad.analysis_id = a.analysis_id AND a.analysis_id=dt.analysis_id AND dt.density_type_id=df.density_type_id AND a.logic_name='rercentagerepeat'");
 $sth->execute();
 
-# $sth = $db->dbc()->prepare(
-#   qq(
-#   DELETE ad
-#   FROM analysis_description ad
-#   WHERE ad.display_label = 'percentagerepeat') );
-# $sth->execute();
 
 my $slice_adaptor = $db->get_SliceAdaptor();
 my $dfa = $db->get_DensityFeatureAdaptor();
 my $dta = $db->get_DensityTypeAdaptor();
 my $aa  = $db->get_AnalysisAdaptor();
-
 
 
 #
@@ -120,13 +115,12 @@ $dta->store($variable_density_type);
 my $slice_count = 0;
 
 
-
-foreach my $slice ( @sorted_slices ) {
+while ( my $slice = shift @sorted_slices ) {
   
   #
   # do it for small and large blocks
   #
-  print STDERR ("Working on seq_region ".$slice->seq_region_name()." length ".$slice->seq_region_length());
+  print STDOUT ("Working on seq_region ".$slice->seq_region_name()." length ".$slice->seq_region_length());
 
   my $rr = Bio::EnsEMBL::Mapper::RangeRegistry->new();
   my $chunk_end = 0;
@@ -226,7 +220,7 @@ foreach my $slice ( @sorted_slices ) {
 		  -density_value => $percentage_repeat));
   }
 
-  print STDERR " DONE.\n";
+  print STDOUT " DONE.\n";
 }
 
 
@@ -239,9 +233,6 @@ sub register {
     $rr->check_and_register( "1", $repeat->seq_region_start(), $repeat->seq_region_end() );
   }
 }
-
-
-
 
 
 
@@ -280,6 +271,78 @@ sub print_features {
 }
 
 
+sub usage {
+  my $indent = ' ' x length($0);
+  print <<EOF; exit(0);
+
+What does it do?
+
+Calculates the percentage of repetetive elements for top level seq_regions.
+
+First it needs repeat_feature table to be populated. It then
+deletes all PercentageRepeat entries from the analysis, density_type
+and density_feature tables. All toplevel slices are fetched and sorted
+from longest to shortest. For each toplevel slice, both the small and
+the variable density repeats are calculated.
+
+Small repeats are done like this: Move along the toplevel slice 1 KB
+at a time. Find the %repeat for each of these 1 KB blocks.
+
+Variable repeats are done like this: Divide each slice into 150
+sub_slices.  Move along the toplevel slice 1 MB at a time. Foreach
+sub_slice within the 1 MB, calculate the %repeat for that sub_slice.
+Variable repeats are only found for the 100 longest toplevel slices.
+
+Input data: repeat features, top level seq regions 
+Output tables: analysis (logic_name: percentagerepeat), analysis description, 
+               density_type (two entries, one for small_density type of 
+               length 1 KB and one for variable_density_type of length 1MB), 
+	       density_feature
+
+
+When to run it in the release cycle?
+
+It can be run after genebuilders have finished their Xrefs 
+(script not affected by projected Xrefs).
+
+
+Which databases to run it on?
+
+Run on core databases for new species or if one of the following changed:
+  - dna sequence
+  - assembly
+  - repeats
+
+
+How long does it take?
+
+It takes about 1 hour to run for a database in the long queue. The script is 
+slowed down considerably for very fragmented genomes with thousands of toplevel
+seqs. 
+
+
+Usage:
+  $0 -h host [-port port] -u user -p password \\
+  $indent -d database  \\
+  $indent [-help]  \\
+
+
+  -h|host            Database host to connect to
+
+  -port              Database port to connect to (default 3306)
+
+  -u|user            Database username
+
+  -p|pass            Password for user
+
+  -d|dbname          Database name
+
+  -help              This message
+
+
+EOF
+
+}
 
 
   

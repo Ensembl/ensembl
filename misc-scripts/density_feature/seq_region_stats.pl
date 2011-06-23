@@ -8,17 +8,19 @@ use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::EnsEMBL::Variation::DBSQL::DBAdaptor;
 use Getopt::Long;
 
-my ( $host, $user, $pass, $port, $dbname, $pattern, $genestats, $snpstats  );
+my ( $host, $user, $pass, $port, $dbname, $pattern, $stats );
 
-GetOptions( "host=s", \$host,
-	    "user=s", \$user,
-	    "pass=s", \$pass,
+GetOptions( "host|h=s", \$host,
+	    "user|u=s", \$user,
+	    "pass|p=s", \$pass,
 	    "port=i", \$port,
-	    "dbname=s", \$dbname,
+	    "dbname|d=s", \$dbname,
 	    "pattern=s", \$pattern,
-	    "genestats", \$genestats,
-	    "snpstats", \$snpstats
+	    "stats|s=s", \$stats,
+	    "help" ,               \&usage
 	  );
+
+usage() if (!$host || !$user || !$pass || (!$dbname && !$pattern) || !$stats || $stats !~ /^(gene|snp)$/ );
 
 
 my %attrib_codes = ( 'miRNA'                => 'miRNA',
@@ -70,7 +72,26 @@ my %attrib_codes = ( 'miRNA'                => 'miRNA',
 		     'IG_J_pseudogene'      => 'pseudo',
 		     'retrotransposed'      => 'rettran',
 		     'processed_transcript' => 'proc_tr',
-		     'lincRNA'              => 'lincRNA',);
+		     'lincRNA'              => 'lincRNA');
+
+
+
+#get biotypes from the production database when new field attr_code is added to the biotype table
+
+# Master database location:
+# my ( $mhost, $mport ) = ( 'ens-staging1', '3306' );
+# my ( $muser, $mpass ) = ( 'ensro',        undef );
+# my $mdbname = 'ensembl_production';
+
+
+# my $prod_dsn = sprintf( 'DBI:mysql:host=%s;port=%d;database=%s',
+  #                   $mhost, $mport, $mdbname );
+# my $prod_dbh = DBI->connect( $prod_dsn, $muser, $mpass,
+  #                        { 'PrintError' => 1, 'RaiseError' => 1 } );
+
+#my @attrib_codes  = map { @_[0]->@_[1] }  @{ $prod_dbh->selectall_arrayref('select distinct name, attr_code from biotype where is_current = 1 order by name') };
+
+#my %attrib_codes = map { $_=>$_} @attrib_codes;
 
 my @dbnames;
 if (! $dbname) {
@@ -83,6 +104,9 @@ else {
   @dbnames = ( $dbname )
 }
 
+my $genestats = 1 if($stats eq 'gene');
+my $snpstats = 1 if($stats eq 'snp');
+
 foreach my $name (@dbnames) {
   if ( $pattern && ($name !~ /$pattern/) ) { next }
 
@@ -94,23 +118,18 @@ foreach my $name (@dbnames) {
 					      -pass => $pass,
 					      -dbname => $name);
 
-  
-  # do both genestats and snpstats by default
-  $genestats = $snpstats = 1 if(!$genestats && !$snpstats);
-
- # $snpstats = 0 if ($name =~ /homo|mus/);
-
-
+  my $total_count = 0;
   # delete old attributes before starting
-  foreach my $code (values %attrib_codes) {
-    if ($genestats) {
+  if ($genestats) {
+      foreach my $code (values %attrib_codes) {
+	  my $sth = $db->dbc()->prepare( "DELETE sa FROM seq_region_attrib sa, attrib_type at WHERE at.attrib_type_id=sa.attrib_type_id AND at.code=?" );
+	  $sth->execute("GeneNo_$code");
+      }
+  }
+  
+  if ($snpstats) {
       my $sth = $db->dbc()->prepare( "DELETE sa FROM seq_region_attrib sa, attrib_type at WHERE at.attrib_type_id=sa.attrib_type_id AND at.code=?" );
-      $sth->execute("GeneNo_$code");
-    }
-    if ($snpstats) {
-      my $sth = $db->dbc()->prepare( "DELETE sa FROM seq_region_attrib sa, attrib_type at WHERE at.attrib_type_id=sa.attrib_type_id AND at.code=?" );
-      $sth->execute("SNPCount");
-    }
+      $sth->execute("SNPCount");    
   }
 
 #
@@ -141,9 +160,13 @@ foreach my $name (@dbnames) {
     exit();
   }
   
-  my $snp_db = variation_attach( $db );
+  my $snps_present;
+  my $snp_db;
 
-  my $snps_present = $snpstats && $snp_db;
+  if ($snpstats) {
+      $snp_db = variation_attach( $db );
+      if (defined $snp_db) {$snps_present = 1;}
+  }
 
   my $slice_adaptor = $db->get_SliceAdaptor();
   my $attrib_adaptor = $db->get_AttributeAdaptor();
@@ -154,10 +177,12 @@ foreach my $name (@dbnames) {
 
   while (my $slice = shift(@{$top_slices})) {
 #    print STDERR "Processing seq_region ", $slice->seq_region_name(), "\n";
-    
+      
     my @attribs;
-
+   
     if($genes_present) {
+      
+      my %attrib_counts;
       my %counts;
       
       my $genes = $slice->get_all_Genes();
@@ -184,23 +209,26 @@ foreach my $name (@dbnames) {
 	  next;
 	}
 
-	# not used:
-	# my $no_space = $biotype;
-	# $no_space =~ s/ /_/g;
+	$attrib_counts{$attrib_code} += $counts{$biotype};
 	
-	push @attribs, Bio::EnsEMBL::Attribute->new
-	  (-NAME => $biotype.' Gene Count',
-	   -CODE => 'GeneNo_'.$attrib_code,
-	   -VALUE => $counts{$biotype},
-	   -DESCRIPTION => 'Number of '.$biotype.' Genes');
       }
+
+      foreach my $attrib_code (keys %attrib_counts) {
+	push @attribs, Bio::EnsEMBL::Attribute->new
+	  (-NAME => $attrib_code.' Gene Count',
+	   -CODE => 'GeneNo_'.$attrib_code,
+	   -VALUE => $attrib_counts{$attrib_code},
+	   -DESCRIPTION => 'Number of '.$attrib_code.' Genes');
+
+      }
+
     }
 
     if( $snps_present ) {
 	  my $sth = $snp_db->dbc->prepare("SELECT COUNT(*) FROM variation_feature WHERE seq_region_id = ?");
 	  $sth->execute($slice->get_seq_region_id);
 	  my $count;
-	  $sth->bind_columns($count);
+	  $sth->bind_columns(undef,\$count);
 	  $sth->fetch;
 	  
       push @attribs, Bio::EnsEMBL::Attribute->new
@@ -213,8 +241,13 @@ foreach my $name (@dbnames) {
     }
 
     $attrib_adaptor->store_on_Slice($slice, \@attribs);
+    my $slice_attrib_count = @attribs;
+    $total_count += $slice_attrib_count;
 #  print_chromo_stats([$slice]);
   }
+
+  print STDOUT "Written $total_count seq reqion attributes to database $name on server $host.\n";
+
 }
 
 
@@ -271,4 +304,97 @@ if( ! exists $all_db_names{ $snp_db_name } ) {
    );
 
   return $snp_db;
+}
+
+
+sub usage {
+  my $indent = ' ' x length($0);
+  print <<EOF; exit(0);
+
+
+For each toplevel slice, count the number of genes for each biotype
+(gene stats) or count the number of SNPs (snp stats).
+
+gene stats
+What does it do?
+
+Deletes all seq_region_attrib that have attrib_type code 
+with a prefix 'GeneNo_'. All toplevel slices are fetched.
+
+Input data: dna seqence, genes, xrefs, xref projections 
+Output tables: seq_region_attrib (attrib_type code with prefix 'GeneNo')
+
+
+When to run it in the release cycle?
+
+After core have finished xref projections
+
+
+Which databases to run it on?
+
+Run on all core databases (including otherfeatures, cdna etc) for each release.
+
+
+How long does it take?
+
+It takes about 10 mins to run for a database in normal queue,
+
+
+snp stats
+
+What does it do?
+
+Deletes out all seq_region_attrib that have attrib_type code of 'SNPCount'. 
+Attach variation db if exists. All toplevel slices are fetched. 
+For each slice, count the number of SNPs.
+
+This option requires ensembl-variation in perl5lib.
+
+Input data: top level seq regions, variation db
+Output tables: seq_region_attrib (attrib_type code with prefix 'SNPCount')
+
+
+When to run it in the release cycle?
+
+When variation dbs have been handed over
+
+
+Which databases to run it on?
+
+Run on core databases only for new species or if the assembly changed, 
+or if the variation positions have changed in the corresponding variation db.
+
+
+How long does it take?
+
+It takes about 20 mins to run for a database in normal queue.
+
+
+
+Usage: 
+
+  $0 -h host [-port port] -u user -p password \\
+  $indent -d database | -pattern pattern \\
+  $indent -s gene | snp  \\
+  $indent [-help]  \\
+
+  -h|host             Database host to connect to
+
+  -port               Database port to connect to (default 3306)
+
+  -u|user             Database username
+
+  -p|pass             Password for user
+
+  -d|dbname           Database name
+
+  -pattern            Database name regexp
+
+  -s|stats            'gene' or 'snp'
+
+  -help               This message
+
+
+EOF
+ 
 }

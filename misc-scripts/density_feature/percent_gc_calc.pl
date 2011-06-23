@@ -20,14 +20,15 @@ use Getopt::Long;
 
 my ( $host, $user, $pass, $port, $dbname  );
 
-GetOptions( "host=s", \$host,
-	    "user=s", \$user,
-	    "pass=s", \$pass,
-	    "port=i", \$port,
-	    "dbname=s", \$dbname
+GetOptions( "host|h=s", \$host,
+	    "user|u=s", \$user,
+	    "pass|p=s", \$pass,
+	    "port=i",   \$port,
+	    "dbname|d=s", \$dbname,
+	    "help" ,     \&usage
 	  );
 
-
+usage() if (!$host || !$user || !$pass || !$dbname);
 
 my $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(-host => $host,
 					    -user => $user,
@@ -52,7 +53,7 @@ if( ! $dna_count ) {
 
 
 
-print "Deleting old PercentGC features\n";
+print STDOUT "Deleting old PercentGC features\n";
 $sth = $db->dbc->prepare(
   qq(
 DELETE df, dt, a, ad
@@ -62,13 +63,6 @@ AND ad.analysis_id = a.analysis_id
 AND dt.density_type_id=df.density_type_id
 AND a.logic_name='percentgc') );
 $sth->execute();
-
-# $sth = $db->dbc()->prepare(
-#   qq(
-#   DELETE ad
-#   FROM analysis_description ad
-#   WHERE ad.display_label = 'PercentGC') );
-# $sth->execute();
 
 #
 # Get the adaptors needed;
@@ -120,13 +114,13 @@ my ( $current_start, $current_end, $current );
 my $slice_count = 0;
 my $block_size;
 
-foreach my $slice (@sorted_slices){
+while ( my $slice = shift @sorted_slices ){
 
   $block_size = $slice->length() / $bin_count;
 
   my @density_features=();
 
-  print "GC percentage for ".$slice->seq_region_name().
+  print STDOUT "GC percentage for ".$slice->seq_region_name().
     " with block size $block_size\n";
 
   $current_end = 0;
@@ -166,11 +160,6 @@ foreach my $slice (@sorted_slices){
 
 
 
-
-
-
-
-
 #
 # helper to draw an ascii representation of the density features
 #
@@ -206,7 +195,65 @@ sub print_features {
 }
 
 
+sub usage {
+  my $indent = ' ' x length($0);
+  print <<EOF; exit(0);
 
+
+What does it do?
+
+First, it needs the dna table to be populated. It then deletes
+all PercentGC entries from the analysis, density_type and 
+density_feature tables. All toplevel slices are fetched and sorted
+from longest to shortest. Each slice is divided into 150 bins
+(blocks). For each of the blocks or sub-slices, the %gc is
+calculated.
+
+Input data: dna sequence, top level seq regions 
+Output tables: analysis (logic_name: percentgc), analysis description, 
+               density_type, density_feature
+
+
+When to run it in the release cycle?
+
+It can be run after genebuilders have finished their Xrefs 
+(script not affected by projected Xrefs).
+
+
+Which databases to run it on?
+
+Run on core databases for new species or if one of the following changed:
+  - dna sequence
+  - assembly
+
+
+How long does it take?
+
+It takes about 15 mins to run for a database in normal queue,
+
+
+Usage:
+
+  $0 -h host [-port port] -u user -p password \\
+  $indent -d database \\
+  $indent [-help]  \\
+
+  -h|host              Database host to connect to
+
+  -port                Database port to connect to (default 3306)
+
+  -u|user              Database username
+
+  -p|pass              Password for user
+
+  -d|dbname            Database name
+
+  -help                This message
+
+
+EOF
+
+}
 
   
 

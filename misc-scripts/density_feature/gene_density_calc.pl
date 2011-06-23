@@ -31,18 +31,17 @@ $port = 3306 ;
 my ( $block_count, $genome_size, $block_size );
 
 GetOptions(
-  "host=s", \$host,
-  "user=s", \$user,
-  "pass=s", \$pass,
-  "port=i", \$port,
-  "dbname=s", \$dbname,
+  "host|h=s", \$host,
+  "user|u=s", \$user,
+  "pass|p=s", \$pass,
+  "port=i",   \$port,
+  "dbname|d=s", \$dbname,
   "pattern=s", \$pattern,
+  "help" ,               \&usage
 );
 
-unless ($host || $user || $pass || $dbname || $pattern) {
-  print "\n\nusage : perl gene_density.pl -host <HOST> -user <USER> -pass <PASS> -port <3306> -dbname <DATABASENAME>|-pattern <PATTERN> \n\n" ;
-  exit(0) ;
-}
+usage() if (!$host || !$user || !$pass || (!$dbname && !$pattern));
+
 my @dbnames;
 if (! $dbname) {
   my $dsn = sprintf( 'dbi:mysql:host=%s;port=%d', $host, $port );
@@ -57,7 +56,7 @@ else {
 foreach my $dbname (@dbnames) {
   if ( $pattern && ($dbname !~ /$pattern/) ) { next }
 
-  printf( "Connecting to '%s'\n", $dbname );
+  print STDOUT "Connecting to $dbname\n";
   
   my $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(
     -host => $host,
@@ -100,7 +99,7 @@ foreach my $dbname (@dbnames) {
 	 -port => $port,
 	 -pass => $pass,
 	 -dbname => $dna_db_name );
-      print STDERR "Attaching $dna_db_name to $dbname.\n";
+      print STDOUT "Attaching $dna_db_name to $dbname.\n";
       $db->dnadb( $dna_db );
     } else {
       print STDERR "No gene density for $dbname, no seq_regions.\n";
@@ -113,7 +112,7 @@ foreach my $dbname (@dbnames) {
 #
 
 
-  print "Deleting old knownGeneDensity and geneDensity features\n";
+  print STDOUT "Deleting old knownGeneDensity and geneDensity features\n";
   $sth = $db->dbc->prepare("DELETE df, dt, a, ad FROM density_feature df, density_type dt, analysis a, analysis_description ad WHERE ad.analysis_id = a.analysis_id AND a.analysis_id=dt.analysis_id AND dt.density_type_id=df.density_type_id AND a.logic_name IN ('knowngenedensity', 'genedensity')");
   $sth->execute();
   
@@ -121,12 +120,6 @@ foreach my $dbname (@dbnames) {
   $sth->execute();
   
 
-# $sth = $db->dbc()->prepare(
-#   qq(
-#   DELETE ad
-#   FROM analysis_description ad
-#   WHERE ad.display_label IN ('knownGeneDensity', 'geneDensity')) );
-# $sth->execute();
 
   my $dfa = $db->get_DensityFeatureAdaptor();
   my $dta = $db->get_DensityTypeAdaptor();
@@ -173,7 +166,7 @@ foreach my $dbname (@dbnames) {
 #
 # Now the actual feature calculation loop
 #
-
+  my $total_count = 0;
 
   foreach my $known (1, 0) {
   #
@@ -199,13 +192,13 @@ foreach my $dbname (@dbnames) {
     my $slice_count = 0;
     my ( $current, $current_start, $current_end  );
   
-    foreach my $slice (@sorted_slices){
+    while ( my $slice = shift @sorted_slices){
 
       $block_size = $slice->length() / $bin_count;
 
       my @density_features;#sf7
 
-      print "Gene densities for ".$slice->seq_region_name().
+      print STDOUT "Gene densities for ".$slice->seq_region_name().
 	" with block size $block_size\n";
       $current_end = 0;
       $current = 0;
@@ -244,15 +237,18 @@ foreach my $dbname (@dbnames) {
 	   -end           => $current_end,
 	   -density_type  => $dt,
 	   -density_value => $count);
+
+	$total_count++;
       }
       
       $dfa->store(@density_features);
-      print "Created ", scalar @density_features, " gene density features.\n";
 
       last if ( $slice_count++ > $max_slices );
     }
+
   }
-  print "Finished with $dbname";
+  print STDOUT "Created $total_count gene density features.\n";
+  print STDOUT "Finished with $dbname";
 }
 
 
@@ -289,7 +285,71 @@ sub print_features {
   }
 }
 
+sub usage {
+  my $indent = ' ' x length($0);
+  print <<EOF; exit(0);
 
+
+What does it do?
+
+Populates known gene density features in a database as well as gene density
+features from genes of any status.
+
+First it needs gene and seq_region tables to be populated. It then
+deletes all knownGeneDensity and geneDensity entries from the
+analysis, density_type and density_feature tables. All toplevel
+slices are fetched and sorted from longest to shortest. Each slice
+is divided into 150 bins (blocks). For each of the blocks or
+sub-slices, the number of genes is counted to give geneDensity and
+the number of genes with status KNOWN status is counted to give
+knownGeneDensity. All biotypes except pseudogene are counted.
+
+Input data: genes, top level seq regions, xrefs 
+Output tables: analysis (logic_name: knownGeneDensity and geneDensity), 
+               analysis description, density_type, density_feature
+
+
+When to run it in the release cycle?
+
+It can be run after compara have handed over homologies and core have 
+done xref projections.
+
+
+Which databases to run it on?
+
+It needs to be run across all core databases for every release.
+
+
+How long does it take?
+
+It takes about 10 mins to run for a database in normal queue,
+
+
+Usage:
+
+  $0 -h host [-port port] -u user -p password \\
+  $indent -d database | -pattern pattern \\
+  $indent [-help]  \\
+
+
+  -h|host              Database host to connect to
+
+  -port                Database port to connect to (default 3306)
+
+  -u|user              Database username
+
+  -p|pass              Password for user
+
+  -d|dbname            Database name
+
+  -pattern             Database name regexp
+
+  -help                This message
+
+
+EOF
+
+}
 
 
   
