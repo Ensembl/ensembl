@@ -65,6 +65,11 @@ if (!$outdir) {
 } else {
   #strip the final /
   $outdir =~ s/\/$//;  
+  #test if the directory exists
+  if (!-d $outdir) {
+      die("Directory $outdir does not exist."); 
+  }
+
 }
 
 
