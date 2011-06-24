@@ -1319,6 +1319,11 @@ sub upload_xref_object_graphs {
             $dep{LINKAGE_ANNOTATION},
             $dep{LINKAGE_SOURCE_ID} )
           or croak( $dbi->errstr() );
+	# if there are synonyms, add entries in the synonym table
+	foreach my $syn ( @{ $dep{SYNONYMS} } ) {
+	  $syn_sth->execute( $dep_xref_id, $syn )
+            or croak( $dbi->errstr() . "\n $xref_id\n $syn\n" );
+	} # foreach syn
       }	 # foreach dep
        
        if(defined($xref_id) and defined($xref->{PAIR})){
