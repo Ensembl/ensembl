@@ -417,10 +417,7 @@ sub create_xrefs {
 	  my $syn = $1;
  	  $syn =~ s/\s+//g;
 	  @syn= split(/,/,$syn);
-	  foreach my $ent (@syn){
-	    $GeneNameSynonym{$gene_name}{uc($ent)} = 1;
-#	    print "$gene_name\t$ent\n";
-	  }
+          push @{$depe{SYNONYMS}}, @syn;
 	}
       }
     }	
