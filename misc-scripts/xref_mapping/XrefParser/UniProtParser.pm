@@ -417,9 +417,7 @@ sub create_xrefs {
 	  my $syn = $1;
  	  $syn =~ s/\s+//g;
 	  @syn= split(/,/,$syn);
-	  print "SYN:".join("\t",@syn)."\n";
           push (@{$depe{"SYNONYMS"}}, @syn);
-#        push  (@{$xref->{"SYNONYMS"} }, $accessions[$a]);
 	}
       }
     }	
