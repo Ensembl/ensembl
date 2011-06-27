@@ -101,14 +101,20 @@ my $reg = "Bio::EnsEMBL::Registry";
                  useful when running a lot of jobs on a compute farm
                  which would otherwise keep open a lot of connections to the
                  database.  Database connections are automatically reopened
-                 when required.
+                 when required.Do not use this option together with RECONNECT_WHEN_CONNECTION_LOST.
   Arg [WAIT_TIMEOUT]: (optional) integer
                  Time in seconds for the wait timeout to happen. Time after which
                  the connection is deleted if not used. By default this is 28800 (8 hours)
                  on most systems. 
                  So set this to greater than this if your connection are getting deleted.
                  Only set this if you are having problems and know what you are doing.
-
+  Arg [RECONNECT_WHEN_CONNECTION_LOST]: (optional) boolean
+                 In case you're reusing the same database connection, i.e. DISCONNECT_WHEN_INACTIVE is 
+                 set to false and running a job which takes a long time to process (over 8hrs), 
+                 which means that the db connection may be lost, set this option to true. 
+                 On each prepare or do statement the db handle will be pinged and the database 
+                 connection will be reconnected if it's lost.
+                
   Example    : $dbc = Bio::EnsEMBL::DBSQL::DBConnection->new
                   (-user   => 'anonymous',
                    -dbname => 'homo_sapiens_core_20_34c',
@@ -132,11 +138,11 @@ sub new {
   my (
     $db,                  $host,     $driver,
     $user,                $password, $port,
-    $inactive_disconnect, $dbconn,   $wait_timeout
+    $inactive_disconnect, $dbconn,   $wait_timeout, $reconnect
     )
     = rearrange( [
       'DBNAME', 'HOST', 'DRIVER', 'USER', 'PASS', 'PORT',
-      'DISCONNECT_WHEN_INACTIVE', 'DBCONN', 'WAIT_TIMEOUT'
+      'DISCONNECT_WHEN_INACTIVE', 'DBCONN', 'WAIT_TIMEOUT', 'RECONNECT_WHEN_CONNECTION_LOST'
     ],
     @_
     );
@@ -145,7 +151,7 @@ sub new {
   bless $self, $class;
 
   if($dbconn) {
-    if($db || $host || $driver || $password || $port || $inactive_disconnect) {
+    if($db || $host || $driver || $password || $port || $inactive_disconnect || $reconnect) {
       throw("Cannot specify other arguments when -DBCONN argument used.");
     }
 
@@ -191,6 +197,10 @@ sub new {
     if($inactive_disconnect) {
       $self->disconnect_when_inactive($inactive_disconnect);
     }
+    if($reconnect) {
+	$self->reconnect_when_lost($reconnect);
+    }
+
   }
 
 #  if(defined $dnadb) {
@@ -582,6 +592,33 @@ sub disconnect_when_inactive {
 }
 
 
+=head2 reconnect_when_lost
+
+  Arg [1]    : (optional) boolean $newval
+  Example    : $db->reconnect_when_lost(1);
+  Description: Getter/Setter for the reconnect_when_lost flag.  If set
+               to true the db handle will be pinged on each prepare or do statement 
+               and the connection will be reestablished in case it's lost.
+               Useful for long running jobs (over 8hrs), which means that the db 
+               connection may be lost.
+  Returntype : boolean
+  Exceptions : none
+  Caller     : Pipeline
+  Status     : Stable
+
+=cut
+
+sub reconnect_when_lost {
+  my ( $self, $value ) = @_;
+
+  if ( defined($value) ) {
+    $self->{'reconnect_when_lost'} = $value;
+  }
+
+  return $self->{'reconnect_when_lost'};
+}
+
+
 
 =head2 locator
 
@@ -658,7 +695,9 @@ sub prepare {
    }
 
    #warn "SQL(".$self->dbname."):" . join(' ', @args) . "\n";
-
+   if ( ($self->reconnect_when_lost()) and (!$self->db_handle()->ping()) ) { 
+       $self->reconnect();
+   }
    my $sth = $self->db_handle->prepare(@args);
 
    # return an overridden statement handle that provides us with
@@ -669,6 +708,27 @@ sub prepare {
 
    $self->query_count($self->query_count()+1);
    return $sth;
+}
+
+=head2 reconnect
+
+  Example    : $dbcon->reconnect()
+  Description: Reconnects to the database using the connection attribute 
+               information if db_handle no longer pingable.
+  Returntype : none
+  Exceptions : none
+  Caller     : new, db_handle
+  Status     : Stable
+
+=cut
+
+sub reconnect {
+ 
+  my ($self) = @_;
+  $self->connected(undef);
+  $self->db_handle(undef);
+  $self->connect();
+  
 }
 
 
@@ -694,6 +754,9 @@ sub do {
    }
 
    # warn "SQL(".$self->dbname."): $string";
+   if ( ($self->reconnect_when_lost()) and (!$self->db_handle()->ping()) ) { 
+       $self->reconnect();
+   }
 
    my $result = $self->db_handle->do($string);
 
