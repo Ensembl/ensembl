@@ -1205,6 +1205,23 @@ sub set_disconnect_when_inactive{
   }
 }
 
+=head2 set_reconnect_when_lost
+
+  Example    : Bio::EnsEMBL::Registry->set_reconnect_when_lost();
+  Description: Set the flag to make sure that the database connection is not lost before it's used.
+               This is useful for long running jobs (over 8hrs).
+  Returntype : none
+  Exceptions : none
+  Status     : Stable
+
+=cut
+
+sub set_reconnect_when_lost{
+  foreach my $dba ( @{get_all_DBAdaptors()}){
+    my $dbc = $dba->dbc;
+    $dbc->reconnect_when_lost(1);
+  }
+}
 
 =head2 disconnect_all
 
