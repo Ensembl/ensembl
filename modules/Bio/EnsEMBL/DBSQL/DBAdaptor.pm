@@ -828,6 +828,7 @@ sub get_SeqRegionCache {
 }
 
 
+
 #convenient method to retrieve the schema_build version for the database being used
 
 sub _get_schema_build{
@@ -993,6 +994,14 @@ sub disconnect_when_inactive{
  deprecate("disconnect_when_inactive Should no longer be called from the DBAdaptor. DBConnection should now be used OR preferably the object adaptor itself\n");
   $self->dbc->disconnect_when_inactive(@args);
 }
+
+sub reconnect_when_lost{
+  my ($self, @args) = @_;
+
+ deprecate("reconnect_when_lost Should no longer be called from the DBAdaptor. DBConnection should now be used OR preferably the object adaptor itself\n");
+  $self->dbc->reconnect_when_lost(@args);
+}
+
 
 sub host{
   my ($self, @args) = @_;
