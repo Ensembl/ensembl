@@ -553,7 +553,7 @@ sub add_DBAdaptor {
 
   Arg [1]    : name of the species to get the adaptor for in the registry.
   Arg [2]    : name of the group to get the adaptor for in the registry.
-  Arg [3]    : if set will not look for alias.
+  Arg [3]    : if set will not give warnings when looking for alias.
   Example    : $dba = Bio::EnsEMBL::Registry->get_DBAdaptor("Human", "core");
   Returntype : DBAdaptor
   Exceptions : none
@@ -564,9 +564,10 @@ sub add_DBAdaptor {
 sub get_DBAdaptor {
   my ( $class, $species, $group , $no_alias_check) = @_;
 throw 'Species not defined.' if ! defined $species;
-  if(!defined($no_alias_check) or !$no_alias_check){
-    $species = $class->get_alias($species);
-  }
+
+#  if(!defined($no_alias_check) or !$no_alias_check){
+    $species = $class->get_alias($species, $no_alias_check) || $species;
+#  }
   return $registry_register{_SPECIES}{$species}{ lc($group) }{'_DB'};
 }
 
@@ -1122,11 +1123,11 @@ sub remove_alias{
 =cut
 
 sub get_alias{
-  my ($class, $key) = @_;
+  my ($class, $key, $no_warn) = @_;
 
   if(!defined($registry_register{'_ALIAS'}{lc($key)})){
     if(!defined( $registry_register{_SPECIES}{ lc($key) }) and !defined ($registry_register{_ALIAS}{ lc($key) })){
-      warn "$key is not a valid species name for this instance\n";
+      warn "$key is not a valid species name for this instance\n" if(!defined($no_warn) or !$no_warn);
       return undef;
     }
     else{
