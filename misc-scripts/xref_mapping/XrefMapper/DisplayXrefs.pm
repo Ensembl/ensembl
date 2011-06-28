@@ -26,6 +26,8 @@ my %transcript_length;
 sub gene_description_sources {
 
   return ("RFAM",
+          "RNAMMER",
+          "TRNASCAN_SE",
 	  "miRBase",
           "HGNC",
           "IMGT/GENE_DB",
@@ -1467,6 +1469,36 @@ sub check_label{
 
 
 
+sub set_source_id_to_external_name {
+    
+    my $self = shift;
+    my $name_to_external_name_href = shift;
+
+    my $source_id_to_external_name_href = {};
+    my $name_to_source_id_href = {};
+    
+    my $sql = 'select s.source_id, s.name from source s, xref x where x.source_id = s.source_id group by s.source_id'; # only get those of interest
+    
+    my $sth = $self->xref->dbc->prepare($sql);
+    $sth->execute();
+    my ($id, $name);
+    $sth->bind_columns(\$id, \$name);
+    while($sth->fetch()){
+	if(defined($name_to_external_name_href->{$name})){
+	    $source_id_to_external_name_href->{$id} = $name_to_external_name_href->{$name};
+	    $name_to_source_id_href->{$name} = $id;
+	}
+	elsif($name =~ /notransfer$/){
+	}
+	else{
+	    die "ERROR: Could not find $name in external_db table please add this too continue";
+	}
+    }
+    
+    $sth->finish;
+    
+    return ($source_id_to_external_name_href, $name_to_source_id_href);
+}
 
 
 
@@ -1510,30 +1542,18 @@ sub set_gene_descriptions{
     $name_to_external_name{$name} = $display_name;
    }
   $sth->finish;
-
-  my %source_id_to_external_name;
-  my %name_to_source_id;
- 
-  $sql = 'select s.source_id, s.name from source s, xref x where x.source_id = s.source_id group by s.source_id'; # only get those of interest
-  $sth = $self->xref->dbc->prepare($sql);
-  $sth->execute();
-  $sth->bind_columns(\$id, \$name);
-  while($sth->fetch()){
-    if(defined($name_to_external_name{$name})){
-      $source_id_to_external_name{$id} = $name_to_external_name{$name};
-      $name_to_source_id{$name} = $id;
-    }
-    elsif($name =~ /notransfer$/){
-    }
-    else{
-      die "ERROR: Could not find $name in external_db table please add this too continue";
-    }
-  }
   
-  $sth->finish;
+  my ($source_id_to_external_name_href, $name_to_source_id_href);
+  if( $self->mapper->can("set_source_id_to_external_name") ){
+      ($source_id_to_external_name_href, $name_to_source_id_href) = $self->mapper->set_source_id_to_external_name (\%name_to_external_name);
+  }
+  else{
+      ($source_id_to_external_name_href, $name_to_source_id_href) = $self->set_source_id_to_external_name (\%name_to_external_name);
+  }
 
-
-
+  my %source_id_to_external_name = %$source_id_to_external_name_href;
+  my %name_to_source_id = %$name_to_source_id_href;
+  
   $sql =(<<SQL); 
   CREATE TABLE gene_desc_prioritys(
     source_id INT NOT NULL,
