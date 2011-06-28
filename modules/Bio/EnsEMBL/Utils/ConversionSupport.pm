@@ -65,6 +65,8 @@ use Cwd qw(abs_path);
 use DBI;
 use Data::Dumper;
 
+my $species_c = 1; #counter to be used for each database connection made
+
 =head2 new
 
   Arg[1]      : String $serverroot - root directory of your ensembl sandbox
@@ -722,13 +724,15 @@ sub get_database {
   throw("Unknown database: $database") unless $adaptors{$database};
 
   $self->dynamic_use($adaptors{$database});
+  my $species = 'species' . $species_c;
   my $dba = $adaptors{$database}->new(
-    -host   => $self->param("${prefix}host"),
-    -port   => $self->param("${prefix}port"),
-    -user   => $self->param("${prefix}user"),
-    -pass   => $self->param("${prefix}pass") || '',
-    -dbname => $self->param("${prefix}dbname"),
-    -group  => $database,
+    -host    => $self->param("${prefix}host"),
+    -port    => $self->param("${prefix}port"),
+    -user    => $self->param("${prefix}user"),
+    -pass    => $self->param("${prefix}pass") || '',
+    -dbname  => $self->param("${prefix}dbname"),
+    -group   => $database,
+    -species => $species,
   );
   #can use this approach to get dna from another db
 #  my $dna_db = $adaptors{$database}->new(
@@ -743,6 +747,8 @@ sub get_database {
   # otherwise explicitely set the dnadb to itself - by default the Registry assumes
   # a group 'core' for this now
   $dba->dnadb($dba);
+
+  $species_c++;
 
   $self->{'_dba'}->{$database} = $dba;
   $self->{'_dba'}->{'default'} = $dba unless $self->{'_dba'}->{'default'};
