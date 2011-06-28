@@ -2035,7 +2035,7 @@ INI
 sub get_gene_specific_list {
   my $self = shift;
 
-  my @list = qw(DBASS3 DBASS5 EntrezGene miRBase RFAM UniGene Uniprot_genename WikiGene MIM_GENE MIM_MORBID HGNC);
+  my @list = qw(DBASS3 DBASS5 EntrezGene miRBase RFAM TRNASCAN_SE RNAMMER UniGene Uniprot_genename WikiGene MIM_GENE MIM_MORBID HGNC);
 
   return @list;
 }
