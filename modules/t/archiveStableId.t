@@ -152,7 +152,7 @@ ok( $x == 0 and $y == 1 );
 ok( ! $asi->is_latest );
 
 $asi = $asi->get_latest_incarnation;
-ok( $asi->is_latest and $asi->version == 4 );
+ok( $asi->is_latest and $asi->version == 3 );
 
 
 #
