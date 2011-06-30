@@ -1,0 +1,42 @@
+For each release regenerate resource files by running script generate_LinkOut.pl  
+
+
+Upload new resource files to NCBI:
+
+It's best to do it on the day of the release, it takes up to 2 days for the new links to appear on the NCBI website.
+
+Host:  ftp-private.ncbi.nlm.nih.gov
+Username: ensem
+Password: fQsX9mcY
+
+Instructions:
+http://www.ncbi.nlm.nih.gov/books/NBK3807/#files.Transferring_Files_via_FTP
+
+From a standard ftp client:
+
+1.
+At a command prompt type: ftp-private.ncbi.nlm.nih.gov and press enter.
+
+2.
+Type your login name at the login prompt and press enter. (See how to obtain ftp account from NCBI.)
+
+3.
+Type your password at the password prompt and press enter.
+
+4.
+You should now be logged into the ftp server. If you receive an error message, check your login information, type 'bye' followed by enter, and retry steps 1-3.
+
+5.
+Type 'bin' and press enter. This changes your ftp server to BINARY mode.
+
+6.
+Type ‘cd holdings’ and press enter. This changes your current directory.
+
+7.
+Type the 'put' command, followed by your pathname or drive and filename and press enter.  (For example, 'put C:\filename' or 'put /home/testfiles/journalv6n3'.)
+
+8.
+Type 'dir' and press enter to display the files in the current directory.
+
+9.
+Type 'bye' to disconnect from the server and close the ftp session.
