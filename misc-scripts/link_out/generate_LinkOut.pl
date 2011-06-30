@@ -2,9 +2,6 @@
 # Author: Monika Komorowska
 # Date : 06.04.2011
 
-# Upload generated files:
-# http://www.ncbi.nlm.nih.gov/books/NBK3807/#files.Transferring_Files_via_FTP
- 
 
 use strict;
 use DBI;
@@ -33,6 +30,9 @@ while (my $line = <CFH>) {
     push( @hosts, $line); 
 }  
 close CFH;
+
+#delete the old resource files
+exec("rm -r resources*");
 
 if( !$out_file ) {
   $out_file = "resources";
