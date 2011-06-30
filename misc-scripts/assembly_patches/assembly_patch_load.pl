@@ -6,6 +6,7 @@ use Getopt::Long;
 
 use strict;
 
+my $assembly_acc;
 my $assembly_name;
 my $pass;
 my $mapping_file = "./data/alt.scaf.agp";
@@ -29,12 +30,17 @@ my $central_coord_system = 'supercontig';
             'port=n'            => \$port,
             'scaf_syn_ext_id=n' => \$scaf_syn_ext_id,
             'assembly_name=s'   => \$assembly_name,
+            'assembly_acc=s'    => \$assembly_acc,
            );
 
 #needed to update the meta table
 if (!defined $assembly_name)  {
     throw("Please enter -assembly_name eg. GRCh37.p4");
 } 
+
+if (!defined $assembly_acc)  {
+    throw("Please enter -assembly_acc eg. GCA_000001405.4");
+}
 
 #connect to the database
 
@@ -420,6 +426,7 @@ MAP: while(<MAPPER>){
   }
 }
 print SQL "\nUPDATE meta SET meta_value = '$assembly_name' WHERE meta_key = 'assembly.name'\n";
+print SQL "\nUPDATE meta SET meta_value = '$assembly_acc' WHERE meta_key = 'assembly.accession'\n";
 close SQL;
 
 
