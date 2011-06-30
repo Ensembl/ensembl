@@ -151,6 +151,7 @@ sub new {
     @_
     );
 
+
   if ($transcripts) {
     $self->{'_transcript_array'} = $transcripts;
     $self->recalculate_coordinates();
@@ -1133,7 +1134,14 @@ sub transform {
     if ( !@segments ) {
       return undef;
     }
-    $self->get_all_Transcripts();
+  }
+
+  #
+  # If you are transforming the gene then make sure the transcripts and exons are loaded
+  #
+
+  foreach my $tran (@{$self->get_all_Transcripts}){
+    $tran->get_all_Exons();
   }
 
   if( exists $self->{'_transcript_array'} ) {
