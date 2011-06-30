@@ -45,7 +45,6 @@ use strict;
 
 use Bio::EnsEMBL::Utils::Exception qw(warning throw);
 
-use DBD::mysql;
 use DBI;
 
 #use Time::HiRes qw(time);
