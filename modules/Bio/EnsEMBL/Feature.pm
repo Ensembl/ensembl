@@ -565,16 +565,23 @@ sub transform {
     bless $new_feature, ref $self;
     return $new_feature;
   }
+  my $projection;
+  if(defined($to_slice)){
+    $projection = $self->project_to_slice( $to_slice );  }
+  else{
+    $projection = $self->project( $cs_name, $cs_version );
+  }
 
-  my $projection = $self->project( $cs_name, $cs_version );
-
+  if(@$projection == 0){
+    return undef;
+  }
   if( @$projection != 1 and !defined($to_slice)) {
- #    warn "MORE than one projection and NO slice specified ";
- #    warn "from ".$self->slice->name." to $cs_name, $cs_version\n";
+#    warn "MORE than one projection and NO slice specified ";
+#    warn "from ".$self->slice->name." to $cs_name, $cs_version\n";
     return undef;
   }
   my $index = 0;
-  if(defined($to_slice) and @$projection != 1 ){
+  if(defined($to_slice)){
     my $found = 0;
     my $i = 0;
     foreach my $proj (@{$projection}) {
@@ -586,7 +593,27 @@ sub transform {
       $i++;
     }
     if(!$found){
-      warn "MORE than one projection and none to slice specified\n";
+      if(@$projection != 1){
+	if(@$projection == 0){
+	  warn "number of mappings is ".@$projection."\n";
+	  warn "could not project feature ".ref($self)." from ".$self->slice->seq_region_name." to ".$to_slice->seq_region_name."\n";
+	  warn "In the region of ".$self->slice->start." <-> ".$self->slice->end."\n";
+	  warn "feat start=".($self->slice->start+$self->start)."\tend=".($self->slice->start+$self->end)."\n";
+	}
+	else{
+	  foreach my $proj (@{$projection}) {
+	    my $slice = $proj->[2];
+	    warn "available slice ".$slice->seq_regon_name."\n";
+	  }
+	  warn "MORE than one projection and none to slice specified (".$to_slice->seq_region_name.")\n";
+	}
+      }	
+      else {
+	foreach my $proj (@{$projection}) {
+	  warn "Mapping is to ".$proj->[2]->seq_region_name."\n";
+	}
+	warn "One projection but none to slice specified\n";
+      }
       return undef;
     }
   }
