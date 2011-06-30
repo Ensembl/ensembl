@@ -3,7 +3,7 @@ For each release regenerate resource files by running script generate_LinkOut.pl
 
 Upload new resource files to NCBI:
 
-It's best to do it on the day of the release, it takes up to 2 days for the new links to appear on the NCBI website.
+It's best to do it one day before the release, in the afternoon. NCBI links are regenerated every day based on the resource files in each provider’s directory. 
 
 Host:  ftp-private.ncbi.nlm.nih.gov
 Username: ensem
