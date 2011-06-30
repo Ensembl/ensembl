@@ -1025,7 +1025,7 @@ sub write {
   my ($self, $FH, $FORMAT, @values) = @_;
   
   #while the last value still contains something
-  while($values[-1] ne '') {
+  while(defined($values[-1]) and $values[-1] ne '') {
     formline($FORMAT, @values);
     $self->print( $FH, $^A );
     $^A = '';
