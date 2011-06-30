@@ -209,10 +209,10 @@ sub register_all {
 =cut
 
 sub map {
-  throw('Incorrect number of arguments.') if ( @_ != 6 );
+  throw('Incorrect number of arguments.') if (!( @_ >= 6));
 
   my ( $self, $frm_seq_region_name, $frm_start, $frm_end, $frm_strand,
-       $frm_cs )
+       $frm_cs, $to_slice )
     = @_;
 
   my $mapper  = $self->{'mapper'};
@@ -220,6 +220,7 @@ sub map {
   my $cmp_cs  = $self->{'cmp_cs'};
   my $adaptor = $self->{'adaptor'};
   my $frm;
+
 
   my $seq_region_id =
     $self->adaptor()
