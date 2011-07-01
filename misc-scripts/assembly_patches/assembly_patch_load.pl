@@ -425,8 +425,8 @@ MAP: while(<MAPPER>){
     print "GAP of $contig length\n";
   }
 }
-print SQL "\nUPDATE meta SET meta_value = '$assembly_name' WHERE meta_key = 'assembly.name'\n";
-print SQL "\nUPDATE meta SET meta_value = '$assembly_acc' WHERE meta_key = 'assembly.accession'\n";
+print SQL "\nUPDATE meta SET meta_value = '$assembly_name' WHERE meta_key = 'assembly.name';\n";
+print SQL "\nUPDATE meta SET meta_value = '$assembly_acc' WHERE meta_key = 'assembly.accession';\n";
 close SQL;
 
 
