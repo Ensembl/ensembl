@@ -283,6 +283,7 @@ sub create_xrefs {
     # AC line may have primary accession and possibly several ; separated synonyms
     # May also be more than one AC line
     my ($acc) = $_ =~ /(AC\s+.+)/s; # will match first AC line and everything else
+
     my @all_lines = split /\n/, $acc;
 
     # extract ^AC lines only & build list of accessions
@@ -294,7 +295,10 @@ sub create_xrefs {
     }
 
 
-
+    if(lc($accessions[0]) eq "unreviewed"){
+      print "WARNING: entries with accession of $acc not allowed will be skipped\n";
+      next;
+    }
     $xref->{INFO_TYPE} = "SEQUENCE_MATCH";
     $xref->{ACCESSION} = $accessions[0];
     for (my $a=1; $a <= $#accessions; $a++) {
