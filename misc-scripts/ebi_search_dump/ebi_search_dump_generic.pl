@@ -465,20 +465,22 @@ g.seq_region_id=ae.seq_region_id and ae.exc_type='HAP'", [qw(gene_id)]
         print "Get Genes query...\n---------------------\n";
 
         my $gene_info = $dbh->selectall_arrayref( "
-        select gsi.gene_id, tsi.transcript_id, trsi.translation_id,
-             gsi.stable_id as gsid, tsi.stable_id as tsid, trsi.stable_id as trsid,
-             g.description, ed.db_display_name, x.dbprimary_acc,x.display_label, ad.display_label, ad.description, g.source, g.status, g.biotype
-        from (((( $DBNAME.gene_stable_id as gsi, $DBNAME.gene as g,
-             $DBNAME.transcript_stable_id as tsi,
-             $DBNAME.analysis_description as ad,
-             $DBNAME.transcript as t) left join
-             $DBNAME.translation as tr on t.transcript_id = tr.transcript_id) left join
-             $DBNAME.translation_stable_id as trsi on tr.translation_id = trsi.translation_id) left join
-             $DBNAME.xref as x on g.display_xref_id = x.xref_id) left join
-             $DBNAME.external_db as ed on ed.external_db_id = x.external_db_id
-       where t.gene_id = gsi.gene_id and t.transcript_id = tsi.transcript_id and t.gene_id = g.gene_id
-             and g.analysis_id = ad.analysis_id
-       order by gsi.stable_id, tsi.stable_id;
+        SELECT gsi.gene_id, tsi.transcript_id, trsi.translation_id,
+             gsi.stable_id AS gsid, tsi.stable_id AS tsid, trsi.stable_id AS trsid,
+             g.description, ed.db_display_name, x.dbprimary_acc,x.display_label AS xdlgene, ad.display_label, ad.description, g.source, g.status, g.biotype,
+             sr.name AS seq_region_name, g.seq_region_start, g.seq_region_end
+        FROM (((( gene_stable_id AS gsi, gene AS g,
+             transcript_stable_id AS tsi,
+             analysis_description AS ad,
+             transcript AS t) LEFT JOIN
+             translation AS tr ON t.transcript_id = tr.transcript_id) LEFT JOIN
+             translation_stable_id AS trsi ON tr.translation_id = trsi.translation_id) LEFT JOIN
+             xref AS `x` ON g.display_xref_id = x.xref_id) LEFT JOIN
+             external_db AS ed ON ed.external_db_id = x.external_db_id LEFT JOIN
+             seq_region AS sr ON sr.seq_region_id = g.seq_region_id
+       WHERE t.gene_id = gsi.gene_id AND t.transcript_id = tsi.transcript_id AND t.gene_id = g.gene_id
+             AND g.analysis_id = ad.analysis_id
+       ORDER BY gsi.stable_id, tsi.stable_id;
     " );
 
         print "Done Get Genes query...\n---------------------\n";
@@ -509,7 +511,8 @@ g.seq_region_id=ae.seq_region_id and ae.exc_type='HAP'", [qw(gene_id)]
                 $xref_primary_acc,                   $xref_display_label,
                 $analysis_description_display_label, $analysis_description,
                 $gene_source,                        $gene_status,
-                $gene_biotype
+                $gene_biotype,                       $seq_region_name,
+                $seq_region_start,                   $seq_region_end
             ) = @$row;
             if ( $old{'gene_id'} != $gene_id ) {
                 if ( $old{'gene_id'} ) {
@@ -550,9 +553,10 @@ g.seq_region_id=ae.seq_region_id and ae.exc_type='HAP'", [qw(gene_id)]
                     },
                     'exons'                => {},
                     'external_identifiers' => {},
-                    'alt'                  => $xref_display_label
-                    ? "($extdb_db_display_name: $xref_display_label)"
-                    : "(novel gene)",
+                    #'alt'                  => $xref_display_label
+                    #? "($extdb_db_display_name: $xref_display_label)"
+                    #: "(novel gene)",
+                                                           
                     'gene_name' => $xref_display_label ? $xref_display_label
                     : $gene_stable_id,
                     'ana_desc_label' => $analysis_description_display_label,
@@ -560,10 +564,26 @@ g.seq_region_id=ae.seq_region_id and ae.exc_type='HAP'", [qw(gene_id)]
                     'source'         => ucfirst($gene_source),
                     'st'             => $gene_status,
                     'biotype'        => $gene_biotype,
-                    'genomic_unit'   => $genomic_unit
+                    'genomic_unit'   => $genomic_unit,
+                    'location'       => sprintf( '%s:%s-%s', $seq_region_name, $seq_region_start, $seq_region_end ),
                 );
                 $old{'source'} =~ s/base/Base/;
                 $old{'exons'} = $exons{$gene_id};
+                
+                # display name
+                if ($xref_display_label) {
+                  $old{'display_name'} = $xref_display_label;
+                  if ($extdb_db_display_name and $gene_stable_id) {
+                    $old{'display_name'} .= " [$extdb_db_display_name: $gene_stable_id]";
+                  } else {
+                    $old{'display_name'} .= " [$extdb_db_display_name]" if $extdb_db_display_name;
+                    $old{'display_name'} .= " [$gene_stable_id]" if $gene_stable_id;
+                  }
+                } else {
+                  $old{'display_name'} = $gene_stable_id;
+                  $old{'display_name'} .= " [$extdb_db_display_name]" if $extdb_db_display_name;
+                }
+                
                 foreach my $K ( keys %{ $exons{$gene_id} } ) {
                     $old{'i'}{$K} = 1;
                 }
@@ -649,7 +669,8 @@ sub geneLineXML {
 
     my $gene_id      = $xml_data->{'gene_stable_id'};
     my $genomic_unit = $xml_data->{'genomic_unit'};
-    my $altid        = $xml_data->{'alt'} or die "altid not set";
+    my $location     = $xml_data->{'location'};
+    #my $altid        = $xml_data->{'alt'} or die "altid not set";
     my $transcripts  = $xml_data->{'transcript_stable_ids'}
       or die "transcripts not set";
     
@@ -671,6 +692,11 @@ sub geneLineXML {
     my $exon_count       = scalar keys %$exons;
     my $domain_count     = scalar keys %$domains;
     my $transcript_count = scalar keys %$transcripts;
+    
+    my $display_name = $xml_data->{'display_name'};
+    $display_name =~ s/</&lt;/g;
+    $display_name =~ s/>/&gt;/g;
+    
     $description =~ s/</&lt;/g;
     $description =~ s/>/&gt;/g;
     $description =~ s/'/&apos;/g;
@@ -684,12 +710,14 @@ sub geneLineXML {
     $gene_id =~ s/</&lt;/g;
     $gene_id =~ s/>/&gt;/g;
 
-    $altid =~ s/</&lt;/g;
-    $altid =~ s/>/&gt;/g;
+    #$altid =~ s/</&lt;/g;
+    #$altid =~ s/>/&gt;/g;
+    
+    
 
     my $xml = qq{
  <entry id="$gene_id">
-   <name>$gene_id $altid</name>
+   <name>$display_name</name>
     <description>$description</description>};
 
     my $synonyms = "";
@@ -793,10 +821,10 @@ sub geneLineXML {
     <additional_fields>
       <field name="species">$species</field>
       <field name="featuretype">Gene</field>
-      <field name="source">$type</field>}
+      <field name="source">$type</field>
+      <field name="location">$location</field>}
       . ($genomic_unit ? qq{
-      <field name="genomic_unit">$genomic_unit</field>
-                            } : '') . qq{
+      <field name="genomic_unit">$genomic_unit</field>} : '') . qq{
       <field name="transcript_count">$transcript_count</field>
       <field name="gene_name">$gene_name</field>
       <field name="haplotype">$haplotype</field>}
