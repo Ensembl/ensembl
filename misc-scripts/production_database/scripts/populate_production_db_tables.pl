@@ -27,7 +27,6 @@ my $dbpattern;
 
 my $core     = 0;
 my $verbose  = 0;
-my $cleanup  = 0;
 my $dumppath; 
 
 # Do command line parsing.
