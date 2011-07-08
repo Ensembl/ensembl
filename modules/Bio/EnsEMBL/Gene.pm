@@ -1445,7 +1445,7 @@ sub remove_unconventional_transcript_associations {
                   loads the parts of the object that are usually
                   lazy-loaded.  It will also call the equivalent
                   method on all the transcripts of the gene.
-  Returns       : Nothing.
+  Returns       : 
 
 =cut
 
@@ -1468,13 +1468,33 @@ sub load {
   }
 }
 
+=head2 summary_as_hash
+
+  Example       : $gene_summary = $gene->summary_as_hash();
+  Description   : Retrieves a textual summary of this Gene object.
+                  
+  Returns       : hashref of descriptive strings
+
+=cut
+
+sub summary_as_hash {
+  my $self = shift;
+  
+  my %summary;
+  $summary{'stable_id'} = $self->stable_id;
+  $summary{'description'} = $self->description;
+  $summary{'biotype'} = $self->biotype;
+  return \%summary;  
+}
+
+
 ###########################
 # DEPRECATED METHODS FOLLOW
 ###########################
 
 =head2 DEPRECATED add_DBLink
 
-  Description: DEPRECATED This method has been deprecated in favor of the
+  Description: DEPRECATED This method has been deprecated in favour of the
                add_DBEntry method.  Objects are responible for holding only
                xrefs directly associated with themselves now.
 
