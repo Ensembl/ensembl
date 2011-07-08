@@ -61,32 +61,24 @@
     To insert the four tables into one single database:
 
       populate_production_db_tables.pl -h HOST \
-        -u USER -p PASSWORD -d DATABASE
+        -u USER -p PASSWORD -d DATABASE -dp PATH
 
     To only pick the 'external_db' table:
 
       populate_production_db_tables.pl -h HOST \
-        -u USER -p PASSWORD -d DATABASE -t external_db
+        -u USER -p PASSWORD -d DATABASE -dp PATH -t external_db
 
     To update all database on a server with all four tables (release
     NN):
 
       populate_production_db_tables.pl -h HOST \
-        -u USER -p PASSWORD --core=NN
+        -u USER -p PASSWORD -dp PATH --core=NN  
 
   - What to look out for?
 
-    The script creates a backup of the tables that it replaces.  These
-    backups should be deleted.  This is done simply like this (for all
-    Core-like databases on a server):
-
-      populate_production_db_tables.pl -h HOST \
-        -u USER -p PASSWORD --core=NN --cleanup
-
-    Running the script twice will make it complain about already
-    existing backup tables.  These may be automatically dropped by using
-    the -D flag, but you need to be sure you actually want to drop all
-    backups.
+    The script dumps the tables out to a file in the specified path. 
+    If the file already exists the script will require a confirmation 
+    before overwriting them. 
 
     The script will notify you of any new or deleted entries (compared
     to the entries in the backed up tables) and will give you an SQL
@@ -117,14 +109,14 @@
     The options are very similar to those of the
     populate_production_db_tables.pl script (see above), and the mode of
     operation is likewise similar to that script.
-
+    There's an extra option for overriding database names (-dbf). Specify
+    a file name containing the following tab delimited data:
+    - db name stored in 'full_db_name' column 'db_list' 
+      table in the production database
+    - new db name to use
   - What to look out for?
 
-    As for the populate_production_db_tables.pl script, this script also
-    creates a backup of the analysis_description table which needs to be
-    removed.
-
-    The script will also warn about analyses that it expected to find
+    The script will warn about analyses that it expected to find
     in the database but didn't (they are expected since they are linked
     to the database in the production database, but might have gone out
     of use since the last update, so this is not a big deal), and will
