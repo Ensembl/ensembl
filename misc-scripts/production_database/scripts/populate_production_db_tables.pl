@@ -116,7 +116,7 @@ Usage:
 USAGE_END
 
   die(   "Need the following options: "
-       . "-h -u -p and -d (or --pattern)\n" );
+       . "-h -u -p -d (or --pattern) and -dp\n" );
 
 } ## end if ( !GetOptions( 'mhost|mh=s'...))
 
@@ -367,3 +367,5 @@ my %data;
 
   $dbh->disconnect();
 }
+
+print "To restore a table from dump login to the database and use command: source {dump file name};\n";
