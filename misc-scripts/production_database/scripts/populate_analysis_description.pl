@@ -21,9 +21,9 @@ my $dbname;
 my $dbpattern;
 
 my $core     = 0;
-my $drop_bak = 0;
 my $verbose  = 0;
-my $cleanup  = 0;
+my $dumppath;
+my $dbname_file;
 
 # Do command line parsing.
 if ( !GetOptions( 'mhost|mh=s'     => \$mhost,
@@ -37,17 +37,18 @@ if ( !GetOptions( 'mhost|mh=s'     => \$mhost,
                   'pass|p=s'       => \$pass,
                   'database|d=s'   => \$dbname,
                   'pattern=s'      => \$dbpattern,
-                  'drop|D!'        => \$drop_bak,
                   'verbose|v!'     => \$verbose,
                   'core=i'         => \$core,
-                  'cleanup!'       => \$cleanup )
+                  'dumppath|dp=s'       => \$dumppath, 
+                  'dbname_file|dbf=s' => \$dbname_file)
      || !(
            defined($host)
         && defined($user)
         && defined($pass)
         && ( defined($dbname) || defined($dbpattern) || defined($core) )
         && defined($mhost)
-        && defined($muser) ) )
+        && defined($muser) 
+        && defined($dumppath) ) )
 {
   my $indent = ' ' x length($0);
   print <<USAGE_END;
@@ -59,54 +60,60 @@ Usage:
   $0 -h host [-P port] \\
   $indent -u user [-p password]
   $indent -d database | --pattern pattern \\
+  $indent -dp dumppath
+  $indent [-dbf dbname override file]
   $indent [-mh host] [-mP port] \\
   $indent [-mu user] [-mp password] [-md database] \\
-  $indent [-D] [-v]
+  $indent [-v]
 
-  -h / --host       User database server host
-  -P / --port       User database server port (optional, default is 3306)
+  -h / --host         User database server host
+  -P / --port         User database server port (optional, default is 3306)
 
-  -u / --user       User username (must have write-access)
-  -p / --pass       User password
+  -u / --user         User username (must have write-access)
+  -p / --pass         User password
 
-  -d / --database   User database name or SQL pattern
-                    e.g. --database="homo_sapiens_rnaseq_62_37g"
-                    or   --database="%core_62%"
+  -d / --database     User database name or SQL pattern
+                      e.g. --database="homo_sapiens_rnaseq_62_37g"
+                      or   --database="%core_62%"
 
-  --pattern         User database by Perl regular expression
-                    e.g. --pattern="^homo.*(rnaseq|vega)_62"
+  -dp / --dumppath    Dumpout path. Dump out table into the specified directory path
 
-                    (-d/--database and --pattern are mutually exclusive)
+  --pattern           User database by Perl regular expression
+                      e.g. --pattern="^homo.*(rnaseq|vega)_62"
 
-  --core=NN         Preset pattern for Core-like databases in relase NN
-                    Specifying --core=62 is equivalent to using
-                    --pattern="(cdna|core|otherfeatures|rnaseq|vega)_62"
+                      (-d/--database and --pattern are mutually exclusive)
 
-  -mh / --mhost     Production database server host
-                    (optional, default is 'ens-staging1')
-  -mP / --mport     Production database server port
-                    (optional, default is 3306)
+  --core=NN           Preset pattern for Core-like databases in relase NN
+                      Specifying --core=62 is equivalent to using
+                      --pattern="(cdna|core|otherfeatures|rnaseq|vega)_62"
 
-  -mu / --muser     Production database username (no write-access required)
-                    (optional, default is 'ensro')
-  -mp / --mpass     Production database password
-                    (optional, default is undefined)
+  -dbf /              Override dbnames stored in the production database with
+  --dbname_file       dbnames in the specified file. The file should have the following 
+                      tab delimited data on each line:
+                      - db name stored in 'full_db_name' column 'db_list' 
+                        table in the production database
+		      - new db name to use
+  
+  -mh / --mhost       Production database server host
+                      (optional, default is 'ens-staging1')
+  -mP / --mport       Production database server port
+                      (optional, default is 3306)
 
-  -md / --mdatabase Production database name
-                    (optional, default is 'ensembl_production')
+  -mu / --muser       Production database username (no write-access required)
+                      (optional, default is 'ensro')
+  -mp / --mpass       Production database password
+                      (optional, default is undefined)
 
-  -D / --drop       Drop backup tables if they already exists in the
-                    database from a previous run
+  -md / --mdatabase   Production database name
+                      (optional, default is 'ensembl_production')
 
-  --cleanup         Just clean up backup tables, do nothing else
-
-  -v / --verbose    Be verbose, display every SQL statement as they
-                    are executed (on standard error)
+  -v / --verbose      Be verbose, display every SQL statement as they
+                      are executed (on standard error)
 
 USAGE_END
 
   die(   "Need the following options: "
-       . "-h -u -p and -d (or --pattern)\n" );
+       . "-h -u -p -d (or --pattern) and -dp\n" );
 
 } ## end if ( !GetOptions( 'mhost|mh=s'...))
 
@@ -118,6 +125,23 @@ if ($core) {
 if ( defined($dbname) && defined($dbpattern) ) {
   die("-d/--database and --pattern/--core are mutually exclusive\n");
 }
+
+my %dbname_override;
+
+if ($dbname_file) {
+  if( ! -r $dbname_file ) {
+    die ( "File $dbname_file not readable" );
+  }
+  open( DBNAMEF, "<$dbname_file" );
+  my @temp_array;
+  while( my $line = <DBNAMEF> ) {
+      chomp $line;
+      @temp_array = split(/\t/,$line);
+      $dbname_override{$temp_array[0]} = $temp_array[1];
+  }
+
+}
+
 
 # Fetch all data from the master database.
 my %data;
@@ -140,6 +164,9 @@ my %data;
                          $hash{'displayable'}, $hash{'web_data'} ) );
 
   while ( $sth->fetch() ) {
+    if ($dbname_override{$full_db_name}) {
+	$full_db_name = $dbname_override{$full_db_name};
+    }
     $data{$full_db_name}{$logic_name} = { %{ \%hash } };
   }
 
@@ -184,21 +211,52 @@ my %data;
     my $full_table_name_bak = $dbh->quote_identifier( undef, $dbname,
                                            'analysis_description_bak' );
 
-    # Drop backup table if it exists and if asked to do so.
-    if ( $cleanup || $drop_bak ) {
-      $dbh->do(
-           sprintf( 'DROP TABLE IF EXISTS %s', $full_table_name_bak ) );
+    
+    # check if table exists
+    my $test_sql = "select count(1) from information_schema.tables where table_schema = ? and table_name = 'analysis_description'";
+    my $test_sth = $dbh->prepare($test_sql);
+    $test_sth->execute($dbname);
+    my ($table_exists) = $test_sth->fetchrow_array();
+    if ($table_exists) {
+      	my $file_path = $dumppath . "/" . $dbname . 'analysis_description.sql';
+      	my $file_exists = 0;
+	my $response;
+	if (-e $file_path) {
+        	print("file $file_path already exists, overwrite? (y/n)\n");
+		$file_exists = 1;
+		$response = <>;
+		chomp $response;
+	}
+	if ( !$file_exists or $response eq 'y') {
+		open(BKUPFILE, ">$file_path") or die("Failed to open file $file_path for writing\n");   
+      		my $cmd = "mysqldump -h $host -u $user -p$pass $dbname analysis_description";
+      		my $result = `$cmd`;
+      		print BKUPFILE $result;
+      		close BKUPFILE;
+      		if ($result !~ /Dump completed/) { 
+	  		print("back up failed, check file $file_path for details\n");
+	  		next;
+      		} else {
+	  		print("$full_table_name dumped out to file $file_path\n");
+      		}
+	} else {
+          print("skipping update for table analysis_description\n");
+	  next; 
+	}
+      } else {
+	  print("table analysis_description does not exist in database $dbname\n");
+          next;
+      }
 
-      print("Dropped old backup table\n");
-      if ($cleanup) { next }
-    }
+
+    $dbh->do(
+           sprintf( 'DROP TABLE IF EXISTS %s', $full_table_name_bak ) );
 
     # Make a backup of any existing data.
     $dbh->do( sprintf( 'CREATE TABLE %s LIKE %s',
                        $full_table_name_bak, $full_table_name ) );
     $dbh->do( sprintf( 'INSERT INTO %s SELECT * FROM %s',
                        $full_table_name_bak, $full_table_name ) );
-    print("Created new backup table\n");
 
     # Truncate (empty) the table before inserting new data into it.
     $dbh->do( sprintf( 'TRUNCATE TABLE %s', $full_table_name ) );
@@ -316,19 +374,16 @@ my %data;
         print("\n");
       }
 
-      print("To undo:\n");
-      printf( "  DROP TABLE %s;\n", $full_table_name );
-      printf( "  RENAME TABLE %s TO %s;\n",
-              $full_table_name_bak, $full_table_name );
-
     }
+    #delete the backup table
+    $dbh->do(
+           sprintf( 'DROP TABLE IF EXISTS %s', $full_table_name_bak ) );
+
   } continue {
     print("\n");
   }
 
-  if ( !$cleanup ) {
-    print("Remember to drop the backup tables!\n\n");
-  }
-
   $dbh->disconnect();
 }
+
+print "To restore a table from dump login to the database and use command: source {dump file name};\n";
