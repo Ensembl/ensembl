@@ -126,16 +126,18 @@ my @chg_seq;
 #dbs with changed repeats
 my @chg_repeats;
 
+#dbs with new variation positions
+my @chg_variation;
 
 if ($response >= 1) {
     #get new dbs, or changed assembly  
     @new_sp_assem =  map { $_->[0] }  @{ $prod_dbh->selectall_arrayref("select distinct concat(full_db_name,'|',db_host) from db_list dl join db d using (db_id) where is_current = 1 and db_type = 'core' and species_id not in (select distinct species_id from db where is_current <> 1 and db_type = 'core') union
-select distinct concat(full_db_name,'|',db_host) from db_list dl join db d using (db_id) where db_type = 'core' and is_current = 1 and species_id in (select distinct species_id from changelog_species cs join changelog c using (changelog_id) where is_current = 1 and status not in ('cancelled','postponed') and assembly = 'Y')") };
+select distinct concat(full_db_name,'|',db_host) from db_list dl join db d using (db_id) where db_type = 'core' and is_current = 1 and species_id in (select distinct species_id from changelog_species cs join changelog c using (changelog_id) where release_id = $current_release and status not in ('cancelled','postponed') and assembly = 'Y')") };
     #get dbs with changed sequence
-    @chg_seq = map { $_->[0] }  @{ $prod_dbh->selectall_arrayref("select distinct concat(full_db_name,'|',db_host) from db_list dl join db d using (db_id) where db_type = 'core' and is_current = 1 and species_id in (select distinct species_id from changelog_species cs join changelog c using (changelog_id) where is_current = 1 and status not in ('cancelled','postponed') and gene_set = 'Y')") };
+    @chg_seq = map { $_->[0] }  @{ $prod_dbh->selectall_arrayref("select distinct concat(full_db_name,'|',db_host) from db_list dl join db d using (db_id) where db_type = 'core' and is_current = 1 and species_id in (select distinct species_id from changelog_species cs join changelog c using (changelog_id) where release_id = $current_release and status not in ('cancelled','postponed') and gene_set = 'Y')") };
 
     #get dbs with changed repeats
-    @chg_repeats =  map { $_->[0] }  @{ $prod_dbh->selectall_arrayref("select distinct concat(full_db_name,'|',db_host) from db_list dl join db d using (db_id) where db_type = 'core' and is_current = 1 and species_id in (select distinct species_id from changelog_species cs join changelog c using (changelog_id) where is_current = 1  and status not in ('cancelled','postponed') and repeat_masking = 'Y')") };
+    @chg_repeats =  map { $_->[0] }  @{ $prod_dbh->selectall_arrayref("select distinct concat(full_db_name,'|',db_host) from db_list dl join db d using (db_id) where db_type = 'core' and is_current = 1 and species_id in (select distinct species_id from changelog_species cs join changelog c using (changelog_id) where release_id = $current_release and status not in ('cancelled','postponed') and repeat_masking = 'Y')") };
 
 
     print "1. Density features scripts which can be run when qenebuild and genebuild xrefs (excluding projected xrefs) are complete and all gene healthchecks are cleared: \n\n";
@@ -199,20 +201,46 @@ if ($response >= 2) {
 
 
 if ($response == 3) {
-#get core dbs for which variation db has changed
-# new field in changelog from release 64
+
     print "\n\n3. Density features scripts which can be run when Variation dbs are handed over:\n";
-    print "\nvariation_density.pl - run for new species or where the core assembly has changed, or if there are any changes to variation positions in the variation database\n";
-    print "\nUse this command for each species which needs variation densities recalculated (replace variables in {} ) or store tab delimited {species} {host} in file ./variation_density_data.txt and submit using submit_density_features.pl -submit variation_density :\n";
-    print "(the species will be listed from release 64)\n";
-  
-    print "\nbsub -q normal -J var_density -oo ".$outdir."/{species}_var.out -eo ".$outdir."/{species}_var.err perl ./variation_density.pl -h {host} -port {port} -u {user} -p {password} -s {species} \n";
-  
-    print "\n\nseq_region_stats.pl (snp stats option only) - run on core databases for new species or if the assembly changed, or if the variation positions have changed in the corresponding variation db\n";
-    print "\nUse this command for each database (replace variables in {}) or store tab delimited {db_name} {host} in file ./seq_region_stats_data.txt and submit using submit_density_features.pl -submit seq_region_stats_snp\n";
+
+    print "\nvariation_density.pl - run for new species or where the core assembly has changed, or if there are any changes to variation positions in the variation database (species will be stored in file ./variation_density_data.txt, to submit run submit_density_features.pl -submit variation_density):\n";
+
+    #get species for new dbs or changed assembly or where variation positions have changed
+    @chg_variation =  map { $_->[0] }  @{ $prod_dbh->selectall_arrayref("select distinct concat(full_db_name,'|',db_host) from db_list dl join db d using (db_id) where db_type = 'core' and is_current = 1 and species_id in (select distinct species_id from changelog_species cs join changelog c using (changelog_id) where release_id = $current_release and status not in ('cancelled','postponed') and variation_pos_changed = 'Y')") };
+
+
+    my %array_union = ();
+    foreach my $element (@new_sp_assem, @chg_variation) { $array_union{$element}++ }
+    my @dbnames_hosts = sort(keys %array_union); 
  
-    print "\nbsub -q normal -J seqreg_stats_snp -oo ".$outdir."/{db_name}_seqreg_snp.out -eo ".$outdir. "/{db_name}_seqreg_snp.err perl ./seq_region_stats.pl -h {host} -port {port} -u {user} -p {password} -d {db_name} -s snp\n";
-       
+    my $file_path = "./variation_density_data.txt";
+ 
+    open(DATAFILE, ">$file_path") or die("Failed to open file $file_path for writing\n"); 
+    foreach my $dbname_host (@dbnames_hosts) {
+	my ($db_name, $host) = split(/\|/,$dbname_host);
+	if ( ($db_name =~ /([^\s]+)_core/) && ( $host_string =~ /$host/) ) {
+	    $db_name =~ /([^\s]+)_core/;	    
+	    print DATAFILE $1 ."\t".$host."\n";
+	    print $1 ."\t".$host."\n";
+	}	
+    }
+    close DATAFILE;
+ 
+    print "\n\nseq_region_stats.pl (snp stats option only) - run on core databases for new species or if the assembly changed, or if the variation positions have changed in the corresponding variation db (db names will be stored in file ./seq_region_stats_snp_data.txt, to submit run submit_density_features.pl -submit seq_region_stats_snp):\n";
+
+    my $file_path = "./seq_region_stats_snp_data.txt";
+
+    open(DATAFILE, ">$file_path") or die("Failed to open file $file_path for writing\n"); 
+    foreach my $dbname_host (@dbnames_hosts) {
+	my ($db_name, $host) = split(/\|/,$dbname_host);
+	if ( ($db_name =~ /core_/) && ( $host_string =~ /$host/) ) {	    
+	    print DATAFILE $db_name."\t".$host."\n";
+	    print $db_name."\t".$host."\n";
+	}	
+    }
+    close DATAFILE;
+
 }
 
 } else {
@@ -277,7 +305,7 @@ if ($response == 3) {
 	    $option = " -s ";
 	}
 	case 'seq_region_stats_snp' {
-	    $data_file = "seq_region_stats_data.txt";
+	    $data_file = "seq_region_stats_snp_data.txt";
 	    $queue = "normal";
 	    $job_name = "seqreg_stats_snp";
 	    $file_name_end = "_seqreg_snp";
@@ -366,7 +394,7 @@ Usage:
 
 		       variation_density - the script will run for species listed in ./variation_density_data.txt
 
-                       seq_region_stats_snp - the script will run on dbs listed in ./repeat_coverage_data.txt
+                       seq_region_stats_snp - the script will run on dbs listed in ./seq_region_stats_snp_data.txt
 
   -o|outdir            Output path for farm job commands (current path if not specified)
 
