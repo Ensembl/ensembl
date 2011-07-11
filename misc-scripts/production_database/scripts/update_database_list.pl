@@ -136,7 +136,7 @@ my %found_databases;
 
   {
       my $previous_release = $release - 1;
-      print "Delete entries from db and db_list for releases older than ". $previous_release ."? (y/n)\n";
+      print "Delete entries from db for releases older than ". $previous_release ."? (y/n)\n";
       my $response = <>;
       chomp $response;
       if ($response eq 'y'){
