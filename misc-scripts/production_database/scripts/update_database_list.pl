@@ -136,13 +136,15 @@ my %found_databases;
 
   {
       my $previous_release = $release - 1;
-      print "Delete entries from db for releases older than ". $previous_release ."? (y/n)\n";
-      my $response = <>;
-      chomp $response;
-      if ($response eq 'y'){
-	  $dbh->do("DELETE FROM db WHERE db_release < $previous_release");
+      my ($old_db_count) = $dbh->selectrow_array("SELECT COUNT(db_id) FROM db WHERE db_release < $previous_release");
+      if ($old_db_count > 0) {
+	  print "Delete entries from db for releases older than ". $previous_release ."? (y/n)\n";
+	  my $response = <>;
+	  chomp $response;
+	  if ($response eq 'y'){
+	      $dbh->do("DELETE FROM db WHERE db_release < $previous_release");
+	  }
       }
-
   }
 
 
