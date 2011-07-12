@@ -145,20 +145,20 @@ sub fetch_by_Slice_start_end_strand {
    }
 
    $start = 1 if(!defined($start));
+
  
    if ( ( !defined($end) || $start > $end || $start < 0 || $end < 0 || $slice->start> $slice->end ) && $slice->is_circular ) {
-       if ($start > $end ) {
-           return $self->_fetch_by_Slice_start_end_strand_circular( $slice, $start, $end, $strand );
+         
+       if ( !defined($end) || ($start > $end ) ) {
+	   return $self->_fetch_by_Slice_start_end_strand_circular( $slice, $start, $end, $strand );
        }
 
+       if ( defined($end) && ($end < 0) ) {
+	   $end += $slice->seq_region_length;
+       }
+       
        if ($start < 0) {
            $start += $slice->seq_region_length;
-       }
-       if ($end < 0) {
-           $end += $slice->seq_region_length;
-       }
-
-       if ( !defined($end) ) {	 
        }
 
        if($slice->start> $slice->end) {
