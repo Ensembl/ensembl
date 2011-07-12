@@ -47,8 +47,6 @@ A representation of a transcript within the Ensembl system.  A transcript
 consists of a set of Exons and (possibly) a Translation which defines the
 coding and non-coding regions of the exons.
 
-=head1 METHODS
-
 =cut
 
 package Bio::EnsEMBL::Transcript;
@@ -752,7 +750,7 @@ sub translation {
   Description:  Fetches all alternative translations defined for this
                 transcript.  The canonical translation is not returned.
 
-  Returntype : Array reference to Bio::EnsEMBL::Translation
+  Returntype : Arrayref to Bio::EnsEMBL::Translation
   Exceptions : None
   Caller     : General
   Status     : Stable
@@ -813,7 +811,7 @@ sub add_alternative_translation {
   Example    : none
   Description: Retrieves all Exon sequences and concats them together.
                No phase padding magic is done, even if phases do not align.
-  Returntype : txt
+  Returntype : Text
   Exceptions : none
   Caller     : general
   Status     : Stable
@@ -867,7 +865,7 @@ sub spliced_seq {
 
                An empty string is returned if this transcript is a pseudogene
                (i.e. is non-translateable).
-  Returntype : txt
+  Returntype : Text
   Exceptions : none
   Caller     : general
   Status     : Stable
@@ -1263,7 +1261,7 @@ sub add_Attributes {
 
  Title   : add_Exon
  Usage   : $trans->add_Exon($exon)
- Returns : Nothing
+ Returns : None
  Args [1]: Bio::EnsEMBL::Exon object to add
  Args [2]: rank
  Exceptions: throws if not a valid Bio::EnsEMBL::Exon
@@ -1401,7 +1399,7 @@ sub add_Exon {
                constitutive exons if the CONSTITUTIVE argument is
                true.
 
-  Returntype : a list reference to Bio::EnsEMBL::Exon objects
+  Returntype : listref to Bio::EnsEMBL::Exon objects
   Exceptions : none
   Caller     : general
   Status     : Stable
@@ -1448,7 +1446,7 @@ sub get_all_Exons {
                 transcript in order, i.e. the first exon in the
                 listref is the 5prime most exon in the transcript.
 
-  Returntype : a list reference to Bio::EnsEMBL::Exon objects
+  Returntype : listref to Bio::EnsEMBL::Exon objects
   Exceptions : none
   Caller     : general
   Status     : Stable
@@ -1467,7 +1465,7 @@ sub get_all_constitutive_Exons {
   Description: Returns an listref of the introns in this transcript in order.
                i.e. the first intron in the listref is the 5prime most exon in 
                the transcript.
-  Returntype : a list reference to Bio::EnsEMBL::Intron objects
+  Returntype : listref to Bio::EnsEMBL::Intron objects
   Exceptions : none
   Caller     : general
   Status     : Stable
@@ -1883,11 +1881,12 @@ sub get_TranscriptMapper {
 
 =head2 start_Exon
 
- Title   : start_Exon
- Usage   : $start_exon = $transcript->start_Exon;
- Returns : The first exon in the transcript.
- Args    : NONE
- Status  : Stable
+ Title       : start_Exon
+ Usage       : $start_exon = $transcript->start_Exon;
+ Returntype  : Bio::EnsEMBL::Exon
+ Description : The first exon in the transcript.
+ Args        : NONE
+ Status      : Stable
 
 =cut
 
@@ -1899,11 +1898,12 @@ sub start_Exon {
 
 =head2 end_Exon
 
- Title   : end_exon
- Usage   : $end_exon = $transcript->end_Exon;
- Returns : The last exon in the transcript.
- Args    : NONE
- Status  : Stable
+ Title       : end_exon
+ Usage       : $end_exon = $transcript->end_Exon;
+ Description : The last exon in the transcript.
+ Returntype  : Bio::EnsEMBL::Exon
+ Args        : NONE
+ Status      : Stable
 
 =cut
 
@@ -1918,7 +1918,7 @@ sub end_Exon {
  Title   : description
  Usage   : $obj->description($newval)
  Function: 
- Returns : value of description
+ Returns : String
  Args    : newvalue (optional)
  Status  : Stable
 
@@ -1936,7 +1936,7 @@ sub description {
  Title   : version
  Usage   : $obj->version()
  Function: 
- Returns : value of version
+ Returns : String
  Args    : 
  Status  : Stable
 
@@ -1954,7 +1954,7 @@ sub version {
  Title   : stable_id
  Usage   : $obj->stable_id
  Function: 
- Returns : value of stable_id
+ Returns : String
  Args    : 
  Status  : Stable
 
@@ -2612,7 +2612,7 @@ sub _compare_xrefs {
                   lazy-loaded.  It will also call the equivalent
                   method on any translation and on all exons of the
                   transcript.
-  Returns       : Nothing.
+  Returntype    : None
 
 =cut
 
@@ -2648,6 +2648,27 @@ sub load {
   }
 
 } ## end sub load
+
+=head2 summary_as_hash
+
+  Example       : $transcript_summary = $transcript->summary_as_hash();
+  Description   : Retrieves a textual summary of this Transcript object.
+  Returns       : hashref of descriptive strings
+
+=cut
+
+sub summary_as_hash {
+  my $self = shift;
+  my %summary;
+  $summary{'stable_id'} = $self->stable_id;
+  $summary{'description'} = $self->description;
+  $summary{'biotype'} = $self->biotype;
+  $summary{'start'} = $self->start;
+  $summary{'end'} = $self->end;
+  $summary{'strand'} = $self->strand;
+  $summary{'display_id'} = $self->display_id;
+  return \%summary;
+}
 
 
 ###########################

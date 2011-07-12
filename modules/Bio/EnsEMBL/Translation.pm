@@ -526,7 +526,7 @@ sub modified_date {
                a hash that maps old to new exons for a whole gene
   Description: maps start end end exon according to mapping table.
               If an exon is not mapped, just keep the old one.
-  Returntype: none
+  Returntype : none
   Exceptions : none
   Caller     : Transcript->transform() 
   Status     : Stable
@@ -1122,7 +1122,7 @@ sub modify_translation {
                   an object needs to be fully loaded.  This method
                   loads the parts of the object that are usually
                   lazy-loaded.
-  Returns       : Nothing.
+  Returns       : none
 
 =cut
 
@@ -1161,7 +1161,7 @@ sub temporary_id {
 =head2 get_all_DASFactories
 
   Function  : Retrieves a listref of registered DAS objects
-  Returntype: DAS objects
+  Returntype: Listref of DAS Objects
   Exceptions: none
   Caller    : webcode
   Example   : $dasref = $prot->get_all_DASFactories;
@@ -1201,5 +1201,22 @@ sub get_all_DAS_Features{
   return $self->SUPER::get_all_DAS_Features($slice);
 }
 
+=head2 summary_as_hash
+
+  Example       : $gene_summary = $gene->summary_as_hash();
+  Description   : Retrieves a textual summary of this Gene object.
+  Returns       : hashref of descriptive strings
+
+=cut
+
+sub summary_as_hash {
+  my $self = shift;
+  my %summary;
+  $summary{'stable_id'} = $self->stable_id;
+  $summary{'display_id'} = $self->display_id;
+  $summary{'genomic_start'} = $self->genomic_start;
+  $summary{'genomic_end'} = $self->genomic_end;
+  return \%summary;
+}
 
 1;

@@ -1484,6 +1484,7 @@ sub summary_as_hash {
   $summary{'stable_id'} = $self->stable_id;
   $summary{'description'} = $self->description;
   $summary{'biotype'} = $self->biotype;
+  $summary{'strand'} = $self->strand;
   return \%summary;  
 }
 
