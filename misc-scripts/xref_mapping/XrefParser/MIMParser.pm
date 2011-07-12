@@ -73,30 +73,32 @@ sub run {
   while ( $_ = $mim_io->getline() ) {
     #get the MIM number
     my $number = 0;
-    my $description = undef;
+    my $label = undef;
+    my $long_desc;
     my $is_morbid = 0;
     my $type =undef;
     if(/\*FIELD\*\s+NO\n(\d+)/){
       $number = $1;
       $source_id = $gene_source_id;
       if(/\*FIELD\*\sTI\n([\^\#\%\+\*]*)\d+(.*)\n/){
-	$description =$2;
+	$label =$2; # taken from description as acc is meaning less
+	$long_desc = $2;
 	$type = $1;
-	$description =~ s/\;\s[A-Z0-9]+$//; # strip gene name at end
-	$description = substr($description,0,35)." [".$type."]";
+	$label =~ s/\;\s[A-Z0-9]+$//; # strip gene name at end
+	$label = substr($label,0,35)." [".$type."]";
 	if($type eq "*"){ # gene only
 	  $gene++;
-	  $self->add_xref($number,"",$description,undef,$gene_source_id,$species_id,"DEPENDENT");
+	  $self->add_xref($number,"",$label,$long_desc,$gene_source_id,$species_id,"DEPENDENT");
 	}
 	elsif(!defined($type) or $type eq "" or $type eq "#" or $type eq "%"){ #phenotype only
 	  $phenotype++;
-	  $self->add_xref($number,"",$description,undef,$morbid_source_id,$species_id,"DEPENDENT");
+	  $self->add_xref($number,"",$label,$long_desc,$morbid_source_id,$species_id,"DEPENDENT");
 	}
 	elsif($type eq "+"){ # both
 	  $gene++;
  	  $phenotype++;
-	  $self->add_xref($number,"",$description,undef,$gene_source_id,$species_id,"DEPENDENT");
-	  $self->add_xref($number,"",$description,undef,$morbid_source_id,$species_id,"DEPENDENT");
+	  $self->add_xref($number,"",$label,$long_desc,$gene_source_id,$species_id,"DEPENDENT");
+	  $self->add_xref($number,"",$label,$long_desc,$morbid_source_id,$species_id,"DEPENDENT");
 	}
 	elsif($type eq "^"){
 	  if(/\*FIELD\*\sTI\n[\^]\d+ MOVED TO (\d+)/){
