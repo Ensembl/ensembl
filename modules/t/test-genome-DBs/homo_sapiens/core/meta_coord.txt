@@ -20,3 +20,5 @@ prediction_exon	1	101
 affy_feature	1	25
 regulatory_feature	1	121
 regulatory_search_region	1	121
+operon	1	106713
+operon_transcript	1	106713
