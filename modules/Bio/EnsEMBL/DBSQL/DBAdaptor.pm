@@ -315,6 +315,7 @@ sub get_available_adaptors {
         TranscriptSupportingFeature Translation       UnmappedObject
         UnconventionalTranscriptAssociation           AssemblySlice
         SplicingEvent            SplicingEventFeature SplicingTranscriptPair
+        Operon 					OperonTranscript
         ) ),
     # Those whose adaptors are in Map::DBSQL
     map( { $_ => "Bio::EnsEMBL::Map::DBSQL::${_}Adaptor" } qw(
@@ -888,7 +889,6 @@ sub AUTOLOAD {
   } else {
     throw( sprintf( "Could not work out type for %s\n", $AUTOLOAD ) );
   }
-
   my $ret =
     $reg->get_adaptor( $self->species(), $self->group(), $type );
 
