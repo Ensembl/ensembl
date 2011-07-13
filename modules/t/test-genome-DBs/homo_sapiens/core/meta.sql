@@ -9,4 +9,4 @@ CREATE TABLE meta (
   UNIQUE    KEY species_key_value_idx (species_id, meta_key, meta_value),
             KEY species_value_idx (species_id, meta_value)
 
-) COLLATE=latin1_swedish_ci TYPE=MyISAM;
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
