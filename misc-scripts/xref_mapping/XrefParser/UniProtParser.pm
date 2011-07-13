@@ -408,7 +408,7 @@ sub create_xrefs {
       
       if($gn =~ /Name=(\S+);/){
 	$depe{LABEL} = uc($1);
-	$depe{ACCESSION} = $xref->{ACCESSION};
+	$depe{ACCESSION} = $self->get_name($xref->{ACCESSION},$depe{LABEL});
 	$gene_name = $depe{ACCESSION};
 
 	$depe{SOURCE_NAME} = "Uniprot_genename";
@@ -573,20 +573,6 @@ sub create_xrefs {
   print "Found $num_sp_pred predicted SwissProt xrefs and $num_sptr_pred predicted SPTrEMBL xrefs\n" if (($num_sp_pred > 0 || $num_sptr_pred > 0) and $verbose);
 
 
-#  my $kount=0;
-  my $genename_source_id =  $dependent_sources{"Uniprot_genename"};
-  foreach my $namekey (keys %GeneNameSynonym){
-    #add xref
-    my $xref_id = $self->add_xref($namekey,"",$namekey, "", $genename_source_id, $species_id,"DEPENDENT");
-#    $kount++;
-#    print $namekey."\t";
-    foreach my $synkey (keys %{$GeneNameSynonym{$namekey}}){
-      #add synonyms for xref
-      $self->add_synonym($xref_id, $synkey);
-#      print "$synkey, ";
-    }
-#    print "\n";
-  }
 
 
 #  print "$kount gene anmes added\n";
@@ -602,4 +588,11 @@ sub create_xrefs {
   #TODO - currently include records from other species - filter on OX line??
 }
 
+sub get_name {
+  my $self = shift;
+  my $acc  = shift;
+  my $label = shift;
+
+  return $acc;
+}
 1;
