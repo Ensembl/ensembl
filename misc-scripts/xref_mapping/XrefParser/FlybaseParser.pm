@@ -122,8 +122,7 @@ sub get_source_id_for_source_name {
 }
 
 sub run {
-  my $self = shift if (defined(caller(1)));
-
+  my $self = shift;
   my $source_id = shift;
   my $species_id = shift;
   my $files       = shift;
@@ -131,9 +130,6 @@ sub run {
   $verbose       = shift;
 
   my $data_file = @{$files}[0];
-
-#  my $self = shift;
-#  my ( $source_id, $species_id, $data_file, $release_file ) = @_;
 
   # Fetch hashes of already stored Uniprot and Interpro accessions.
   my %pre_xref_ids = (
@@ -255,11 +251,11 @@ sub run {
               if ( $dbxref_name eq 'bdgpinsituexpr' ) {
                 $xref_id =
                   $self->add_xref( $id, undef, $accession, '',
-                                   $source_id, $species_id );
+                                   $source_id, $species_id, 'DIRECT' );
               } else {
                 $xref_id =
                   $self->add_xref( $accession, undef, $accession, '',
-                                   $source_id, $species_id );
+                                   $source_id, $species_id, 'DIRECT' );
               }
               $xref_ids{$source_name}{$accession} = $xref_id;
             }
@@ -286,7 +282,7 @@ sub run {
         } else {
           $xref_id =
             $self->add_xref( $accession, undef, $accession, '',
-                             $source_id, $species_id );
+                             $source_id, $species_id ,'DIRECT');
           $xref_ids{$source_name}{$accession} = $xref_id;
         }
 
@@ -311,7 +307,7 @@ sub run {
         } else {
           $xref_id =
             $self->add_xref( $accession, undef, $accession, '',
-                             $source_id, $species_id );
+                             $source_id, $species_id, 'DIRECT' );
           $xref_ids{$source_name}{$accession} = $xref_id;
         }
 
@@ -337,7 +333,7 @@ sub run {
       } else {
         $xref_id =
           $self->add_xref( $id, undef, $accession, '', $source_id,
-                           $species_id );
+                           $species_id, 'DIRECT' );
         $xref_ids{$source_name}{$accession} = $xref_id;
       }
 
@@ -360,7 +356,7 @@ sub run {
       } else {
         $xref_id =
           $self->add_xref( $accession, undef, $accession, '',
-                           $source_id, $species_id );
+                           $source_id, $species_id, 'DIRECT' );
         $xref_ids{$source_name}{$accession} = $xref_id;
       }
 
