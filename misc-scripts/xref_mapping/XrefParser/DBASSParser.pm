@@ -20,8 +20,7 @@ my $source_id;
 
 
 sub run {
-  my $self = shift if (defined(caller(1)));
-
+  my $self = shift;
   my $source_id = shift;
   my $species_id = shift;
   my $files       = shift;
@@ -30,7 +29,6 @@ sub run {
 
   my $filename = @{$files}[0];
 
-#    my ( $source_id, $species_id, $filename, $rel_url,$verbose ) = @_;
 
     my $file_io = $self->get_filehandle($filename);
     if ( !defined($file_io) ) {

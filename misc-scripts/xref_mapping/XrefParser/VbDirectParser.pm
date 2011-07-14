@@ -19,14 +19,14 @@ sub run {
 
 	my ($self, $file, $source_id, $species_id) = @_;
 
-	open (INFILE, "<$file");
+	open my $FH, "<", $file || return;
 	my $i=0;
 	print STDERR "source: ".$source_id."\tspecies: ".$species_id."\n";
 	
 
 	my $type = "transcript";
 
-	while (my $ln = <INFILE>) {
+	while (my $ln = <$FH>) {
 		chomp($ln);
 		my ($probe,$id, $version, $description, $ensembl_id) = split("\t",$ln);      
 		$i++;
@@ -40,7 +40,7 @@ sub run {
 
 	print $i." VB direct xrefs succesfully parsed\n" if($verbose);
 
-	close(INFILE);
+	close($FH);
 
 	return 0;
 

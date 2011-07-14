@@ -10,26 +10,9 @@ use base qw( XrefParser::BaseParser );
 
 my $verbose;
 
-# --------------------------------------------------------------------------------
-# Parse command line and run if being run directly
-
-if (!defined(caller())) {
-
-  if (scalar(@ARGV) != 1) {
-    print "\nUsage: UniGeneParser.pm file.SPC <source_id> <species_id>\n\n";
-    exit(1);
-  }
-
-  run($ARGV[0], -1);
-
-}
-
-# --------------------------------------------------------------------------------
-
 sub run {
 
-  my $self = shift if (defined(caller(1)));
-
+  my $self = shift;
   my $source_id = shift;
   my $species_id = shift;
   my $files       = shift;
@@ -112,7 +95,7 @@ sub get_desc{
 
   if ( !defined $desc_io ) {
     print STDERR "ERROR: Can't open $data_file\n";
-    return undef;
+    return;
   }
 
   while ( $_ = $desc_io->getline() ) {
@@ -147,14 +130,14 @@ sub create_xrefs {
   # my %name2species_id     = map{ $_=>$species_id } @names;
 
   if ( !defined( $self->get_desc($data_file) ) ) {
-    return undef;
+    return;
   }
 
   my $unigene_io = $self->get_filehandle($uniq_file);
 
   if ( !defined $unigene_io ) {
     print STDERR "Can't open RefSeq file $uniq_file\n";
-    return undef;
+    return;
   }
 
 #>gnl|UG|Hs#S19185843 Homo sapiens N-acetyltransferase 2 (arylamine N-acetyltransferase)

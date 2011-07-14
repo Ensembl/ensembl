@@ -9,21 +9,8 @@ use Bio::EnsEMBL::Registry;
 my $reg = "Bio::EnsEMBL::Registry";
 
 
-#my $dbi2;
-
-if (!defined(caller())) {
-
-  if (scalar(@ARGV) != 1) {
-    print STDERR "\nUsage: curated_transcriptParser.pm file <source_id> <species_id>\n\n";
-    exit(1);
-  }
-
-  run(@ARGV);
-}
-
 sub run_script {
-  my $self = shift if (defined(caller(1)));
-
+  my $self = shift;
   my $file = shift;
   my $source_id = shift;
   my $species_id = shift;

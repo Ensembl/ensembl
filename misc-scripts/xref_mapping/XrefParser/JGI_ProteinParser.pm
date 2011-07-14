@@ -7,7 +7,7 @@ use base qw( XrefParser::JGI_Parser );
 
 # See JGI_Parser for details
 
-sub get_sequence_type() {
+sub get_sequence_type {
   return 'peptide';
 }
 

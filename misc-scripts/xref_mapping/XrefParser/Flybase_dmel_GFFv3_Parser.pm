@@ -46,23 +46,6 @@ my %cache_source =();
 
 my $verbose;
 
-# --------------------------------------------------------------------------------
-# Parse command line and run if being run directly
-
-if (!defined(caller())) {
-
-  if (scalar(@ARGV) != 1) {
-    print "\nUsage: Flybase_dmel_GFFv3_Parser.pm file.gff\n";
-    print scalar(@ARGV);
-    exit(1);
-  }
-
-  run($ARGV[0], -1);
-
-}
-
-# --------------------------------------------------------------------------------
-
 sub new {
   my $proto = shift;
   my $self = $proto->SUPER::new(@_);
@@ -177,8 +160,7 @@ sub get_source{
 
 sub run {
 
-  my $self = shift if (defined(caller(1)));
-
+  my $self = shift;
   my $source_id = shift;
   my $species_id = shift;
   my $files       = shift;
@@ -186,10 +168,6 @@ sub run {
   $verbose       = shift;
 
   my $file = @{$files}[0];
-#   my $self = shift if (defined(caller(1)));
-#  my $source_id = shift;
-#  my $species_id = shift;
-#  my $file = shift;
 
   my $species_name;
 
@@ -530,7 +508,7 @@ sub set_flybase_synonyms {
     $self->add_synonym($unique_id,\@syns);
     return \@syns;
   }
-  return undef;
+  return;
 }
 
 sub make_id_xref{
@@ -619,7 +597,7 @@ sub get_fields {
 
     # if the item does not hold information of specific field
   }else{
-    return undef;
+    return;
   }
 }
 

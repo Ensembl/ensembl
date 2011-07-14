@@ -8,28 +8,11 @@ use File::Basename;
 
 use base qw( XrefParser::BaseParser );
 
-# --------------------------------------------------------------------------------
-# Parse command line and run if being run directly
-
-if (!defined(caller())) {
-
-  if (scalar(@ARGV) != 1) {
-    print "\nUsage: RefSeqGPFFParser.pm file.SPC <source_id>\n\n";
-    exit(1);
-  }
-
-  run($ARGV[0], -1);
-
-}
-
-# --------------------------------------------------------------------------------
-
 my $verbose;
 
 sub run {
 
-  my $self = shift if (defined(caller(1)));
-
+  my $self = shift;
   my $source_id = shift;
   my $species_id = shift;
   my $files_ref  = shift;
@@ -135,7 +118,7 @@ sub create_xrefs {
 
   if ( !defined $refseq_io ) {
     print STDERR "ERROR: Can't open RefSeqGPFF file $file\n";
-    return undef;
+    return;
   }
 
   my @xrefs;
@@ -161,7 +144,7 @@ sub create_xrefs {
 
   }else{
     print STDERR "Could not work out sequence type for $file\n";
-    return undef;
+    return;
   }
 
 

@@ -13,21 +13,9 @@ use base qw( XrefParser::BaseParser );
 # AAEL010223      phosphatidylserine decarboxylase
 # ...
 
-if (!defined(caller())) {
-
-  if (scalar(@ARGV) != 1) {
-    print STDERR "\nUsage: VBExternalDescription.pm file <source_id> <species_id>\n\n";
-    exit(1);
-  }
-
-  run($ARGV[0]);
-
-}
-
 sub run {
 
-  my $self = shift if (defined(caller(1)));
-
+  my $self = shift;
   my $source_id = shift;
   my $species_id = shift;
   my $files       = shift;

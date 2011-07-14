@@ -3,31 +3,14 @@ package XrefParser::InterproParser;
 use strict;
 use POSIX qw(strftime);
 use File::Basename;
-  
+
 use base qw( XrefParser::BaseParser );
-  
+
 my $xref_sth ;
 my $dep_sth;
-  
- 
-  
-# --------------------------------------------------------------------------------
-# Parse command line and run if being run directly
-  
-if (!defined(caller())) {
-  
-  if (scalar(@ARGV) != 1) {
-    print "\nUsage: InterproParser.pm file <source_id> <species_id>\n\n";
-    exit(1);
-  }
-  
-  run(@ARGV);
-}
-  
- 
-sub run {
-  my $self = shift if (defined(caller(1)));
 
+sub run {
+  my $self = shift;
   my $source_id = shift;
   my $species_id = shift;
   my $files_ref = shift;

@@ -18,8 +18,7 @@ use base qw( XrefParser::BaseParser );
 
 sub run {
 
-  my $self = shift if (defined(caller(1)));
-
+  my $self = shift;
   my $source_id = shift;
   my $species_id = shift;
   my $files       = shift;

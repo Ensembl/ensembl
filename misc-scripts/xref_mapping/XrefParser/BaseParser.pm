@@ -1,6 +1,8 @@
 package XrefParser::BaseParser;
 
 use strict;
+use warnings;
+use Bio::EnsEMBL::Utils::Exception;
 
 use Carp;
 use DBI;
@@ -17,7 +19,6 @@ use URI::file;
 use Text::Glob qw( match_glob );
 use LWP::UserAgent;
 
-use Bio::EnsEMBL::Utils::Exception;
 
 my $base_dir = File::Spec->curdir();
 
@@ -45,9 +46,7 @@ my ( $host,             $port,    $dbname,        $user,
 # Get info about files to be parsed from the database
 
 sub run {
-    my $self = shift;
-
-    (  $host,             $port,          $dbname,
+    (  my $self, $host,             $port,          $dbname,
        $user,             $pass,          my $speciesr,
        my $sourcesr,      $checkdownload, $create,
        $release,          $cleanup,       $drop_db,
@@ -352,7 +351,7 @@ sub run {
 	  # second the number of primary xrefs
 	  $group_sql = "SELECT count(*), s.name from source s, primary_xref px, xref x where s.source_id = x.source_id and px.xref_id = x.xref_id group by s.name";
 	  
-	  my $sum_sth = $dbi->prepare($group_sql);
+	  $sum_sth = $dbi->prepare($group_sql);
 	  $sum_sth->execute();
 	  
 	  $sum_sth->bind_columns(\$sum_count, \$sum_name);
@@ -371,7 +370,7 @@ sub run {
 	  # third the number of dependent xrefs
 	  $group_sql = "SELECT count(*), s.name from source s, dependent_xref dx, xref x where s.source_id = x.source_id and dx.dependent_xref_id = x.xref_id group by s.name";
 	  
-	  my $sum_sth = $dbi->prepare($group_sql);
+	  $sum_sth = $dbi->prepare($group_sql);
 	  $sum_sth->execute();
 	  
 	  $sum_sth->bind_columns(\$sum_count, \$sum_name);
@@ -395,7 +394,7 @@ sub run {
 
 	    $group_sql = "SELECT count(*), s.name from source s, ".$type."_direct_xref dx, xref x where s.source_id = x.source_id and dx.general_xref_id = x.xref_id group by s.name";
 	  
-	    my $sum_sth = $dbi->prepare($group_sql);
+	    $sum_sth = $dbi->prepare($group_sql);
 	    $sum_sth->execute();
 	    
 	    $sum_sth->bind_columns(\$sum_count, \$sum_name);
@@ -415,7 +414,7 @@ sub run {
 	  # seventh the number of coordinate xrefs
 	  $group_sql = "SELECT count(*), s.name from source s, coordinate_xref cx  where s.source_id = cx.source_id group by s.name";
 	  
-	  my $sum_sth = $dbi->prepare($group_sql);
+	  $sum_sth = $dbi->prepare($group_sql);
 	  $sum_sth->execute();
 	  
 	  $sum_sth->bind_columns(\$sum_count, \$sum_name);
@@ -433,7 +432,7 @@ sub run {
 	  # eigth the number of synonyms
 	  $group_sql = "select count(*), s.name from source s, xref x, synonym o where s.source_id = x.source_id and x.xref_id = o.xref_id group by s.name";
 	  
-	  my $sum_sth = $dbi->prepare($group_sql);
+	  $sum_sth = $dbi->prepare($group_sql);
 	  $sum_sth->execute();
 	  
 	  $sum_sth->bind_columns(\$sum_count, \$sum_name);
@@ -500,7 +499,7 @@ sub run {
       # second the number of primary xrefs
       $group_sql = "SELECT count(*), s.name from source s, primary_xref px, xref x where s.source_id = x.source_id and px.xref_id = x.xref_id group by s.name";
       
-      my $sum_sth = $dbi->prepare($group_sql);
+      $sum_sth = $dbi->prepare($group_sql);
       $sum_sth->execute();
       
       $sum_sth->bind_columns(\$sum_count, \$sum_name);
@@ -515,7 +514,7 @@ sub run {
       # third the number of dependent xrefs
       $group_sql = "SELECT count(*), s.name from source s, dependent_xref dx, xref x where s.source_id = x.source_id and dx.dependent_xref_id = x.xref_id group by s.name";
       
-      my $sum_sth = $dbi->prepare($group_sql);
+      $sum_sth = $dbi->prepare($group_sql);
       $sum_sth->execute();
       
       $sum_sth->bind_columns(\$sum_count, \$sum_name);
@@ -533,7 +532,7 @@ sub run {
 	
 	$group_sql = "SELECT count(*), s.name from source s, ".$type."_direct_xref dx, xref x where s.source_id = x.source_id and dx.general_xref_id = x.xref_id group by s.name";
 	
-	my $sum_sth = $dbi->prepare($group_sql);
+	$sum_sth = $dbi->prepare($group_sql);
 	$sum_sth->execute();
 	
 	$sum_sth->bind_columns(\$sum_count, \$sum_name);
@@ -548,7 +547,7 @@ sub run {
       # seventh the number of coordinate xrefs
       $group_sql = "SELECT count(*), s.name from source s, coordinate_xref cx  where s.source_id = cx.source_id group by s.name";
       
-      my $sum_sth = $dbi->prepare($group_sql);
+      $sum_sth = $dbi->prepare($group_sql);
       $sum_sth->execute();
       
       $sum_sth->bind_columns(\$sum_count, \$sum_name);
@@ -562,7 +561,7 @@ sub run {
       # eigth the number of synonyms
       $group_sql = "select count(*), s.name from source s, xref x, synonym o where s.source_id = x.source_id and x.xref_id = o.xref_id group by s.name";
       
-      my $sum_sth = $dbi->prepare($group_sql);
+      $sum_sth = $dbi->prepare($group_sql);
       $sum_sth->execute();
       
       $sum_sth->bind_columns(\$sum_count, \$sum_name);
@@ -586,7 +585,7 @@ sub run {
     # remove last working directory
     # TODO reinstate after debugging
     #rmtree $dir;
-
+    return 1;
 } ## end sub run
 
 # ------------------------------------------------------------------------------
@@ -599,9 +598,7 @@ sub run {
 # if there was an error.
 
 sub fetch_files {
-    my $self = shift;
-
-    my ( $dest_dir, @user_uris ) = @_;
+    my ($self, $dest_dir, @user_uris ) = @_;
 
     my @processed_files;
 
@@ -838,7 +835,7 @@ sub get_filehandle
           or carp("Can not open file '$file_name'");
     }
 
-    if ( !defined $io ) { return undef }
+    if ( !defined $io ) { return }
 
     print "Reading from '$file_name'...\n" if($verbose);
 
@@ -885,7 +882,7 @@ sub get_source_id_for_filename {
 }
 
 sub rename_url_file{
-  return undef;
+  return;
 }
 
 # Get species ID for a particular file; matches url field
@@ -1246,7 +1243,7 @@ sub upload_xref_object_graphs {
        my $xref_id=undef;
        if(!defined($xref->{ACCESSION})){
 	 print "your xref does not have an accession-number,so it can't be stored in the database\n";
-	 return undef;
+	 return;
        }
       # Create entry in xref table and note ID
        if(! $xref_sth->execute($xref->{ACCESSION},
@@ -1258,7 +1255,7 @@ sub upload_xref_object_graphs {
 			 $xref->{INFO_TYPE} || "MISC")){
 	 if(!defined($xref->{SOURCE_ID})){
 	   print "your xref: $xref->{ACCESSION} does not have a source-id\n";
-	   return undef;
+	   return;
 	 }
 	 $xref_id = $self->insert_or_select($xref_sth, $dbi->err, $xref->{ACCESSION}, $xref->{SOURCE_ID}, $xref->{SPECIES_ID});
 	 $xref_update_label_sth->execute($xref->{LABEL},$xref_id) if (defined($xref->{LABEL}));
@@ -1351,6 +1348,7 @@ sub upload_direct_xrefs{
       $self->add_direct_xref($general_xref_id, $dr->{ENSEMBL_STABLE_ID},$dr->{ENSEMBL_TYPE},$dr->{LINKAGE_XREF});
     }
   }
+  return;
 }
 
 sub add_meta_pair {
@@ -1361,7 +1359,7 @@ sub add_meta_pair {
   my $sth = $dbi->prepare('insert into meta (meta_key, meta_value, date) values("'.$key.'", "'.$value.'", now())');
   $sth->execute;
   $sth->finish;
-
+  return;
 }
 
 
@@ -1410,7 +1408,7 @@ sub taxonomy2species_id {
       my $species_id = $row[0];
       my $taxonomy_id = $row[1];
       if( my $ori =$taxonomy2species_id{$taxonomy_id} ){
-        die( "Taxon $taxonomy_id already used for species $ori. ".
+        croak ( "Taxon $taxonomy_id already used for species $ori. ".
                "Cannot assign to species $species_id as well. ".
                "Consider using the species_id2taxonomy call instead. ".
                "Called by ". join( ', ', (caller(0))[1..2] ) );
@@ -1476,7 +1474,7 @@ sub name2species_id {
             my $species_id = $row[0];
             foreach my $name ( split /,\s*/, $row[1] ) {
                 if ( my $ori = $name2species_id{$name} ) {
-                  die( "Name $name already used for species $ori. ".
+                  croak ( "Name $name already used for species $ori. ".
                        "Cannot assign to species $species_id as well. ".
                        "Consider using the species_id2name call instead. ".
                        "Called by ". join( ', ', (caller(0))[1..2] ) );
@@ -1546,14 +1544,14 @@ sub update_source
     # inherited set_release() method.
 
     $dbi->prepare($sql)->execute() || croak( $dbi->errstr() );
+    return;
 }
 
 
 # --------------------------------------------------------------------------------
 sub dbi2{
 
-    my $self = shift;
-    my ($host, $port, $user, $dbname, $pass) = @_;
+    my ($self, $host, $port, $user, $dbname, $pass) = @_;
     my $dbi2 = undef;
 
     if ( !defined $dbi2 || !$dbi2->ping() ) {
@@ -1565,7 +1563,7 @@ sub dbi2{
           DBI->connect( $connect_string, $user, $pass,
 #            { 'RaiseError' => 1 } )
 			)
-          or warn( "Can't connect to database: " . $DBI::errstr ) and return undef;
+          or warn( "Can't connect to database: " . $DBI::errstr ) and return;
         $dbi2->{'mysql_auto_reconnect'} = 1; # Reconnect on timeout
     }
     
@@ -1603,14 +1601,14 @@ sub md5sum
 {
     my $file = shift;
 
-    if ( !open( FILE, $file ) ) { return undef }
-    binmode(FILE);
+    open my $FH, "<", $file or return;
+    binmode($FH);
 
     my $checksum = sprintf( "%s/%d",
-        substr( Digest::MD5->new()->addfile(*FILE)->hexdigest(), 0, 6 ),
-        [ stat FILE ]->[7] );
+        substr( Digest::MD5->new()->addfile(*$FH)->hexdigest(), 0, 6 ),
+        [ stat $FH ]->[7] );
 
-    close(FILE);
+    close($FH);
 
     return $checksum;
 }
@@ -1737,7 +1735,7 @@ sub delete_by_source {
   $dep_sth->finish() if defined $dep_sth;
   $xref_sth->finish() if defined $xref_sth;
 #  $p_xref_sth->finish() if defined $p_xref_sth;
-
+  return;
 }
 
 # --------------------------------------------------------------------------------
@@ -1769,7 +1767,7 @@ sub validate_sources {
 
 # --------------------------------------------------------------------------------
 
-sub show_valid_sources() {
+sub show_valid_sources {
   my $species = shift;
 
   my $dbi = dbi();
@@ -1779,7 +1777,7 @@ sub show_valid_sources() {
   while (my @row = $sth->fetchrow_array()) {
     print $row[0] . "\n";
   }
-
+  return;
 }
 
 # --------------------------------------------------------------------------------
@@ -1811,7 +1809,7 @@ sub validate_species {
 
 # --------------------------------------------------------------------------------
 
-sub show_valid_species() {
+sub show_valid_species {
 
   my $dbi = dbi();
   my $sth = $dbi->prepare("SELECT name, aliases FROM species");
@@ -1820,7 +1818,7 @@ sub show_valid_species() {
   while (my @row = $sth->fetchrow_array()) {
     print STDERR $row[0] . " (aliases: " . $row[1] . ")\n";
   }
-
+  return;
 }
 
 sub get_taxonomy_from_species_id{
@@ -1849,7 +1847,7 @@ sub get_direct_xref{
  if(my @row = $direct_sth->fetchrow_array()) {
    return $row[0];
  }
- return undef;
+ return;
 }
 
 
@@ -1865,7 +1863,7 @@ sub get_xref{
   if(my @row = $get_xref_sth->fetchrow_array()) {
     return $row[0];
   }   
-  return undef;
+  return;
 }
 
 sub add_xref {
@@ -1904,14 +1902,14 @@ sub add_xref {
 sub add_to_direct_xrefs{
   my ($self,$direct_xref,$type, $acc,$version,$label,$description,$linkage,$source_id,$species_id) = @_;
 
-  $direct_xref || die( "Need a direct_xref on which this xref linked too" );
-  $acc         || die( "Need an accession of this dependent xref" );
+  $direct_xref || croak( "Need a direct_xref on which this xref linked too" );
+  $acc         || croak( "Need an accession of this dependent xref" );
   $version     ||= 0;
   $label       ||= $acc;
   $description ||= undef;
   $linkage     ||= undef;
-  $source_id   || die( "Need a source_id for this dependent xref" );
-  $species_id  || die( "Need a species_id for this dependent xref" );
+  $source_id   || croak( "Need a source_id for this dependent xref" );
+  $species_id  || croak( "Need a species_id for this dependent xref" );
 
   if(!defined($add_xref_sth)){
     $add_xref_sth = dbi->prepare("
@@ -1932,19 +1930,20 @@ VALUES
   $direct_id = $self->get_xref($acc, $source_id, $species_id);
 
   $self->add_direct_xref($direct_id, $direct_xref, $type, "");
+  return;
 }
 
 sub add_to_xrefs{
   my ($self,$master_xref,$acc,$version,$label,$description,$linkage,$source_id,$species_id) = @_;
 
-  $master_xref || die( "Need a master_xref_id on which this xref depends" );
-  $acc         || die( "Need an accession of this dependent xref" );
+  $master_xref || croak( "Need a master_xref_id on which this xref depends" );
+  $acc         || croak( "Need an accession of this dependent xref" );
   $version     ||= 0;
   $label       ||= $acc;
   $description ||= undef;
   $linkage     ||= undef;
-  $source_id   || die( "Need a source_id for this dependent xref" );
-  $species_id  || die( "Need a species_id for this dependent xref" );
+  $source_id   || croak( "Need a source_id for this dependent xref" );
+  $species_id  || croak( "Need a species_id for this dependent xref" );
 
   if(!defined($add_xref_sth)){
     $add_xref_sth = dbi->prepare("
@@ -1997,7 +1996,7 @@ sub add_to_syn_for_mult_sources{
       $found = 1;
     }
   }
-
+  return;
 }
 
 
@@ -2016,6 +2015,7 @@ sub add_to_syn{
       warn (  "Could not find acc $acc in "
             . "xref table source = $source_id of species $species_id\n" );
   }
+  return;
 }
 
 
@@ -2031,6 +2031,7 @@ sub add_synonym{
     $add_synonym_sth->execute( $xref_id, $syn )
       or croak( $dbi->errstr() . "\n $xref_id\n $syn\n" );
 
+  return;
 }
 
 
@@ -2061,6 +2062,7 @@ sub add_direct_xref {
   else{
     $add_direct_xref_sth{$ensembl_type}->execute($general_xref_id, $ensembl_stable_id, $linkage_type);
   }
+  return;
 }
 
 # ------------------------------------------------------------------------------
@@ -2089,7 +2091,7 @@ sub create {
     catfile( $sql_dir, 'sql', 'populate_metadata.sql' );
   my $ini_file = catfile( $sql_dir, 'xref_config.ini' );
 
-  $| = 1;    # flush stdout
+  local $| = 1;    # flush stdout
 
   # Figure out whether to run 'xref_config2sql.pl' or not by comparing
   # the timestamps on 'xref_config.ini' and 'sql/populate_metadata.sql'.
@@ -2101,7 +2103,7 @@ sub create {
             catfile( 'sql', 'populate_metadata.sql' ) );
     print("==> Should I re-run 'xref_config2sql.pl' for you? [y/N]: ");
 
-    my $reply = <STDIN>;
+    my $reply = <ARGV>;
     chomp $reply;
 
     if ( lc( substr( $reply, 0, 1 ) ) eq 'y' ) {
@@ -2140,7 +2142,7 @@ sub create {
   
     if ( $create && !$drop_db ) {
       print "WARNING: about to drop database $dbname on $host:$port; yes to confirm, otherwise exit: ";
-      my $p = <STDIN>;
+      my $p = <ARGV>;
       chomp $p;
       if ($p eq "yes") {
 	$dbh->do( "DROP DATABASE $dbname" );
@@ -2179,6 +2181,7 @@ sub create {
     . "$dbname < $metadata_file";
   system($cmd) == 0
     or croak("Cannot execute the following command (exit $?):\n$cmd\n");
+  return;
 }
 
 sub get_label_to_acc{
@@ -2212,7 +2215,7 @@ sub get_label_to_acc{
   if(defined($species_id)){
     $sql .= " and xref.species_id  = $species_id";
   }
-  my $sub_sth = dbi->prepare($sql);    
+  $sub_sth = dbi->prepare($sql);    
 
   $sub_sth->execute();
   while(my @row = $sub_sth->fetchrow_array()) {
@@ -2254,7 +2257,7 @@ sub get_label_to_desc{
   if(defined($species_id)){
     $sql .= " and xref.species_id  = $species_id";
   }
-  my $sub_sth = dbi->prepare($sql);    
+  $sub_sth = dbi->prepare($sql);    
 
   $sub_sth->execute();
   while(my @row = $sub_sth->fetchrow_array()) {
@@ -2280,7 +2283,7 @@ sub get_accession_from_label{
   while(my @row = $sub_sth->fetchrow_array()) {
     return $row[0];
   }   	  
-  return undef;
+  return;
   
 }
 
@@ -2305,8 +2308,7 @@ sub get_sub_list{
 
 sub set_release
 {
-    my $self = shift;
-    my ( $source_id, $release ) = @_;
+    my ($self, $source_id, $release ) = @_;
 
     my $dbi = dbi();
 
@@ -2317,6 +2319,7 @@ sub set_release
     print "Setting release to '$release' for source ID '$source_id'\n" if($verbose);
 
     $sth->execute( $release, $source_id );
+    return;
 }
 
 sub get_dependent_mappings {
@@ -2336,7 +2339,7 @@ sub get_dependent_mappings {
     $xref_dependent_mapped{$master_xref."|".$dependent_xref}=1;
   }
   $sth->finish;
-
+  return;
 }
 
 sub get_ext_synonyms{
@@ -2402,7 +2405,7 @@ sub parsing_finished_store_data{
     $self->add_meta_pair("PARSED_".$table_and_key{$table}, $max_val);
     $sth->finish;
   }
-  
+  return;
 }
 
 
@@ -2420,7 +2423,7 @@ sub reset_to_just_parsed{
 
  # set process_status to "parsing_finished"
 
-
+return;
 }
 
 
@@ -2428,6 +2431,7 @@ sub reset_to_mapping_finished{
   my $self= shift;
  $self->reset_to_parsed();
 #set process_status to "mapping_finished"
+  return;
 }
 
 # --------------------------------------------------------------------------------

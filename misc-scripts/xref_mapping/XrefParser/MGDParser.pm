@@ -1,34 +1,17 @@
 package XrefParser::MGDParser;
- 
+
 use strict;
+use warnings;
 use POSIX qw(strftime);
 use File::Basename;
- 
+
 use base qw( XrefParser::BaseParser );
- 
+
 my $xref_sth ;
 my $dep_sth;
- 
-
- 
-# --------------------------------------------------------------------------------
-# Parse command line and run if being run directly
- 
-if (!defined(caller())) {
- 
-  if (scalar(@ARGV) != 1) {
-    print "\nUsage: MGDParser.pm file <source_id> <species_id>\n\n";
-    exit(1);
-  }
- 
-  run($ARGV[0]);
- 
-}
- 
 
 sub run {
-  my $self = shift if (defined(caller(1)));
-
+  my $self = shift;
   my $source_id = shift;
   my $species_id = shift;
   my $files       = shift;
@@ -38,14 +21,18 @@ sub run {
   my $file = @{$files}[0];
 
   die "No longer used. MGI is taken form the uniprot file\n";
+}
+1;
+
+__END__
 
   if(!defined($source_id)){
     $source_id = XrefParser::BaseParser->get_source_id_for_filename($file);
   }
   if(!defined($species_id)){
     $species_id = XrefParser::BaseParser->get_species_id_for_filename($file);
-  }                                                                                                                      
-                                                                                                                      
+  }
+
   my (%swiss) = %{XrefParser::BaseParser->get_valid_codes("uniprot",$species_id)};
   my (%refseq) = %{XrefParser::BaseParser->get_valid_codes("refseq",$species_id)};
 

@@ -10,26 +10,12 @@ use base qw( XrefParser::BaseParser );
 # All assumed to be linked to translation
 
 my $verbose;
-# --------------------------------------------------------------------------------
-# Parse command line and run if being run directly
-
-if (!defined(caller())) {
-
-  if (scalar(@ARGV) != 1) {
-    print "\nUsage: RefSeqParser.pm file.SPC <source_id> <species_id>\n\n";
-    exit(1);
-  }
-
-  run($ARGV[0], -1);
-
-}
 
 # --------------------------------------------------------------------------------
 
 sub run {
 
-  my $self = shift if (defined(caller(1)));
-
+  my $self = shift;
   my $source_id  = shift;
   my $species_id = shift;
   my $files  = shift;

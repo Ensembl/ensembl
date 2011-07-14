@@ -7,25 +7,10 @@ use File::Spec::Functions;
 
 use base qw( XrefParser::BaseParser );
 
-# --------------------------------------------------------------------------------
-# Parse command line and run if being run directly
-
-if (!defined(caller())) {
-
-  if (scalar(@ARGV) != 1) {
-    print STDERR "\nUsage: ZFINDescParser.pm file <source_id> <species_id>\n\n";
-    exit(1);
-  }
-
-  run($ARGV[0]);
-
-}
-
 
 sub run {
 
-  my $self = shift if (defined(caller(1)));
-
+  my $self = shift;
   my $source_id = shift;
   my $species_id = shift;
   my $files       = shift;
@@ -42,7 +27,7 @@ sub run {
   }
 
 
-  open(FH,"<$file") || die "could not open file $file";
+  open( my $FH, "<", $file) || die "could not open file $file";
   
 
 #e.g.
@@ -53,7 +38,7 @@ sub run {
 
   my $count =0;
   my $withdrawn = 0;
-  while ( <FH> ) {
+  while ( <$FH> ) {
     chomp;
     my ($zfin, $desc, $label) = split (/\t/,$_);
 
@@ -65,6 +50,7 @@ sub run {
       $count++;
     }
   }
+  close($FH);
 
   if($verbose){
     print "\t$count xrefs added, $withdrawn withdrawn entries ignored\n";

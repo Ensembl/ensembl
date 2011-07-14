@@ -8,29 +8,11 @@ use XML::LibXML;
 
 use base qw( XrefParser::BaseParser );
 
-# --------------------------------------------------------------------------------
-# Parse command line and run if being run directly
-
-if (!defined(caller())) {
-
-  if (scalar(@ARGV) != 1) {
-    print "\nUsage: PhibaseParser.pm file <source_id> <species_id>\n\n";
-    exit(1);
-  }
-
-  print STDERR "ARGV[0]: $ARGV[0]\n";
-
-  run($ARGV[0]);
-
-}
-
 sub run {
 
-  my $self = shift if (defined(caller(1)));
-
+  my $self = shift;
   my $source_id    = shift;
   my $species_id   = shift;
-  #my $phi_xml_file = shift;
   my $files        = shift;
   my $verbose      = shift;
 

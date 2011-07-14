@@ -15,29 +15,13 @@ use File::Basename;
 
 use base qw( XrefParser::BaseParser );
 
-# --------------------------------------------------------------------------------
-# Parse command line and run if being run directly
-
-if (!defined(caller())) {
-
-  if (scalar(@ARGV) != 3) {
-    print STDERR "\nUsage: UniProtParser.pm file.SPC <source_id> <species_id>\n\n";
-    print STDERR scalar(@ARGV);
-    exit(1);
-  }
-
-  run($ARGV[0], -1);
-
-}
-
 my $verbose;
 
 # --------------------------------------------------------------------------------
 
 sub run {
 
-  my $self = shift if (defined(caller(1)));
-
+  my $self = shift;
   my $source_id    = shift;
   my $species_id   = shift;
   my $files         = shift;
@@ -177,7 +161,7 @@ sub create_xrefs {
   print "Predicted SpTREMBL source id for $file: $sptr_pred_source_id\n" if($verbose);
 
     my $uniprot_io = $self->get_filehandle($file);
-    if ( !defined $uniprot_io ) { return undef }
+    if ( !defined $uniprot_io ) { return }
 
   my @xrefs;
 

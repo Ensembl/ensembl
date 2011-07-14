@@ -12,22 +12,9 @@ use base qw( XrefParser::BaseParser );
 #1961751	AAEL006563	gene	AAEL006563	Inferred from UniProt entry VCP_AEDAE (P42660)
 #2052024	AAEL006424	gene	AAEL006424	Inferred from UniProt entry ALL2_AEDAE (P18153)
 
-
-if (!defined(caller())) {
-
-  if (scalar(@ARGV) != 1) {
-    print STDERR "\nUsage: VBPubMed.pm file <source_id> <species_id>\n\n";
-    exit(1);
-  }
-
-  run($ARGV[0]);
-
-}
-
 sub run {
 
-  my $self = shift if (defined(caller(1)));
-
+  my $self = shift;
   my $source_id = shift;
   my $species_id = shift;
   my $files       = shift;
