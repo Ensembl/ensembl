@@ -71,7 +71,7 @@ CREATE TABLE operon_transcript_stable_id (
 
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
-alter table object_xref modify column ensembl_object_type ENUM('RawContig', 'Transcript', 'Gene', 'Translation', 'Operon', 'OperonTranscript');
+alter table object_xref modify column ensembl_object_type ENUM('RawContig', 'Transcript', 'Gene', 'Translation', 'Operon', 'OperonTranscript') NOT NULL;
 
 # Patch identifier
 INSERT INTO meta (species_id, meta_key, meta_value)
