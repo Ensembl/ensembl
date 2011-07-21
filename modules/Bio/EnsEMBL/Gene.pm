@@ -1468,6 +1468,27 @@ sub load {
   }
 }
 
+=head2 is_ref
+
+  Description: getter setter for the gene attribute is_ref
+  Arg [1]    : (optional) 1 or 0
+  return     : boolean
+
+=cut
+
+sub is_reference{
+  my ( $self, $is_ref) = @_;
+
+  if(defined($is_ref)){
+    $self->{'is_ref'} = $is_ref;
+  }
+  else{
+    $self->{'is_ref'} = $self->adaptor->is_ref($self->dbID);
+  }	
+  return $self->{'is_ref'};
+}
+
+
 =head2 summary_as_hash
 
   Example       : $gene_summary = $gene->summary_as_hash();

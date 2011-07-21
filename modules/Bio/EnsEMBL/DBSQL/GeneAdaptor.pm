@@ -942,6 +942,23 @@ sub fetch_all_alt_alleles {
   return [];
 }
 
+sub is_ref{
+  my ( $self, $gene_id) = @_;
+  my $is_not_ref;
+
+  # easier to find if it is not an alt_Allele do this and then negate it.
+  my $sth = $self->prepare("select count(1) from alt_allele where gene_id = $gene_id and is_ref = 0");
+  $sth->execute();
+  $sth->bind_columns(\$is_not_ref);
+  $sth->fetch;
+
+  if(defined($is_not_ref) and $is_not_ref){
+    return 0;
+  }
+ 
+  return 1;
+}
+
 
 =head2 store_alt_alleles
 
