@@ -488,7 +488,7 @@ ok(@genes == 20);
 $gene = $ga->fetch_by_dbID( 18256 );
 my $alt_genes = $gene->get_all_alt_alleles();
 
-ok( $gene->is_ref == 1);
+ok( $gene->is_reference == 1);
 
 ok( scalar( @$alt_genes ) == 3 );
 
@@ -497,7 +497,7 @@ my %gene_ids = ( 18257 => 1, 18258 => 1, 18259 => 1);
 my $ok = 1;
 for my $gene ( @$alt_genes ) {
   $ok = $ok && $gene_ids{$gene->dbID()};
-  $ok = $ok && !($gene->is_ref);
+  $ok = $ok && !($gene->is_reference);
 }
 ok( $ok );
 
