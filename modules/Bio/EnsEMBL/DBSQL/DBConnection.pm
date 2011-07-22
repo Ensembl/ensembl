@@ -225,6 +225,7 @@ sub new {
 sub connect {
   my ($self) = @_;
 
+
   if ( $self->connected() ) { return }
 
   $self->connected(1);
@@ -304,10 +305,18 @@ sub connect {
       $self->driver(), $self->dbname(),
       $self->host(),   $self->port() );
 
+    if( $self->{'disconnect_when_inactive'}){
+      $self->{'count'}++;
+      if($self->{'count'} > 1000){
+	sleep 1;
+	print "sleep\n";
+	$self->{'count'} = 0;
+      }
+    }
     eval {
       $dbh =
-        DBI->connect( $dsn, $self->username(), $self->password(),
-        { 'RaiseError' => 1 } );
+	DBI->connect( $dsn, $self->username(), $self->password(),
+		      { 'RaiseError' => 1 } );
     };
   }
 
