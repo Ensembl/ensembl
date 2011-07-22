@@ -309,7 +309,6 @@ sub connect {
       $self->{'count'}++;
       if($self->{'count'} > 1000){
 	sleep 1;
-	print "sleep\n";
 	$self->{'count'} = 0;
       }
     }
