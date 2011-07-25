@@ -35,7 +35,15 @@ sub run_script {
     $pass = $1;
   }
 
-  my $dna_pred = XrefParser::BaseParser->get_source_id_for_source_name("RefSeq_dna_predicted");
+#  my $dna_pred = XrefParser::BaseParser->get_source_id_for_source_name("RefSeq_dna_predicted");
+  my $mrna_source_id =
+    $self->get_source_id_for_source_name('RefSeq_mRNA');
+  my $ncrna_source_id =
+    $self->get_source_id_for_source_name('RefSeq_ncRNA');
+  my $pred_mrna_source_id =
+    $self->get_source_id_for_source_name('RefSeq_mRNA_predicted');
+  my $pred_ncrna_source_id =
+    $self->get_source_id_for_source_name('RefSeq_ncRNA_predicted');
 
   # becouse the direct mapping have no descriptions etc
   # we have to steal these from the previous Refseq parser.
@@ -45,7 +53,7 @@ sub run_script {
   my %description;
 
   my $dbi = $self->dbi();  
-  my $sql = "select xref.accession, xref.label, xref.version,  xref.description from xref, source where xref.source_id = source.source_id and source.name = 'RefSeq_dna'";
+  my $sql = "select xref.accession, xref.label, xref.version,  xref.description from xref, source where xref.source_id = source.source_id and source.name like 'RefSeq_%RNA'";
   my $sth = $dbi->prepare($sql);
   $sth->execute();
   my ($acc, $lab, $ver, $desc);
@@ -140,9 +148,18 @@ sub run_script {
     if(!defined($seen{$refseq})){
       $seen{$refseq} = 1;
       my $new_source_id = $source_id;
-      if($refseq =~ /^XM/){
-	$new_source_id = $dna_pred;
+      if ($refseq =~ /^XM_/ ){
+	$new_source_id = $pred_mrna_source_id;
+      } elsif( $refseq =~ /^XR/) {
+	$new_source_id = $pred_ncrna_source_id;
+      } elsif( $refseq =~ /^NM/) {
+	$new_source_id = $mrna_source_id;
+      } elsif( $refseq =~ /^NR/) {
+	$new_source_id = $ncrna_source_id;
       }
+#      if($refseq =~ /^XM/){
+#	$new_source_id = $dna_pred;
+#      }
       my $xref_id = $self->add_xref($refseq, $version{$refseq} , $label{$refseq}||$refseq , 
 				    $description{$refseq}, $new_source_id, $species_id, "DIRECT");
 
