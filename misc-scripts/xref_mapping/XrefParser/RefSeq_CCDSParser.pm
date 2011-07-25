@@ -53,15 +53,18 @@ sub run_script {
   my %description;
 
   my $dbi = $self->dbi();  
-  my $sql = "select xref.accession, xref.label, xref.version,  xref.description from xref, source where xref.source_id = source.source_id and source.name like 'RefSeq_%RNA'";
+
+  my $sql = "select xref.accession, xref.label, xref.version,  xref.description from xref, source where xref.source_id = source.source_id and source.name = ?";
   my $sth = $dbi->prepare($sql);
-  $sth->execute();
-  my ($acc, $lab, $ver, $desc);
-  $sth->bind_columns(\$acc, \$lab, \$ver, \$desc);
-  while (my @row = $sth->fetchrow_array()) {
-    $label{$acc} = $lab;
-    $version{$acc} = $ver;
-    $description{$acc} = $desc;
+  foreach my $refseq (qw(RefSeq_mRNA RefSeq_ncRNA)){
+    $sth->execute($refseq);
+    my ($acc, $lab, $ver, $desc);
+    $sth->bind_columns(\$acc, \$lab, \$ver, \$desc);
+    while (my @row = $sth->fetchrow_array()) {
+      $label{$acc} = $lab;
+      $version{$acc} = $ver;
+      $description{$acc} = $desc;
+    }
   }
   $sth->finish;
  
