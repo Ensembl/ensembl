@@ -131,7 +131,7 @@ my @chg_variation;
 
 if ($response >= 1) {
     #get new dbs, or changed assembly  
-    @new_sp_assem =  map { $_->[0] }  @{ $prod_dbh->selectall_arrayref("select distinct concat(full_db_name,'|',db_host) from db_list dl join db d using (db_id) where is_current = 1 and db_type = 'core' and species_id not in (select distinct species_id from db where is_current <> 1 and db_type = 'core') union
+    @new_sp_assem =  map { $_->[0] }  @{ $prod_dbh->selectall_arrayref("select distinct concat(full_db_name,'|',db_host) from db_list dl join db d using (db_id) where db_release = $current_release and db_type = 'core' and species_id not in (select distinct species_id from db where db_release <> $current_release and db_type = 'core') union
 select distinct concat(full_db_name,'|',db_host) from db_list dl join db d using (db_id) where db_type = 'core' and is_current = 1 and species_id in (select distinct species_id from changelog_species cs join changelog c using (changelog_id) where release_id = $current_release and status not in ('cancelled','postponed') and assembly = 'Y')") };
     #get dbs with changed sequence
     @chg_seq = map { $_->[0] }  @{ $prod_dbh->selectall_arrayref("select distinct concat(full_db_name,'|',db_host) from db_list dl join db d using (db_id) where db_type = 'core' and is_current = 1 and species_id in (select distinct species_id from changelog_species cs join changelog c using (changelog_id) where release_id = $current_release and status not in ('cancelled','postponed') and gene_set = 'Y')") };
