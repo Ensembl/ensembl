@@ -2,6 +2,7 @@ package XrefParser::BaseParser;
 
 use strict;
 use warnings;
+
 use Bio::EnsEMBL::Utils::Exception;
 
 use Carp;
@@ -357,7 +358,7 @@ sub run {
 	  $sum_sth->bind_columns(\$sum_count, \$sum_name);
 	  
 	  while($sum_sth->fetch){
-	    if($sum_count != $sum_prim{$sum_name}){
+	    if ( defined($sum_prim{$sum_name}) && ($sum_count != $sum_prim{$sum_name}) ){
 	      my $diff = ($sum_count - $sum_prim{$sum_name});
 	      $sum_line{$sum_name}[1] = $diff;	    
 	    }
@@ -376,7 +377,7 @@ sub run {
 	  $sum_sth->bind_columns(\$sum_count, \$sum_name);
 	  
 	  while($sum_sth->fetch){
-	    if($sum_count != $sum_dep{$sum_name}){
+	    if ( defined($sum_dep{$sum_name}) && ($sum_count != $sum_dep{$sum_name}) ){
 	      my $diff = ($sum_count - $sum_dep{$sum_name});
 	      $sum_line{$sum_name}[2] = $diff;	    
 	    }
@@ -401,7 +402,7 @@ sub run {
 	    
 	    while($sum_sth->fetch){
 	      $sum_name .= "_$type";
-	      if($sum_count != $sum_dir{$sum_name}){
+	      if ( defined($sum_dir{$sum_name}) && ($sum_count != $sum_dir{$sum_name}) ){
 		my $diff = ($sum_count - $sum_dir{$sum_name});
 		$sum_line{$sum_name}[3+$type_count] = $diff;	    
 	      }
@@ -420,7 +421,7 @@ sub run {
 	  $sum_sth->bind_columns(\$sum_count, \$sum_name);
 	  
 	  while($sum_sth->fetch){
-	    if($sum_count != $sum_coord{$sum_name}){
+	    if ( defined($sum_coord{$sum_name}) && ($sum_count != $sum_coord{$sum_name}) ){
 	      my $diff = ($sum_count - $sum_coord{$sum_name});
 	      $sum_line{$sum_name}[6] = $diff;	    
 	    }
@@ -438,7 +439,7 @@ sub run {
 	  $sum_sth->bind_columns(\$sum_count, \$sum_name);
 	  
 	  while($sum_sth->fetch){
-	    if($sum_count != $sum_syn{$sum_name}){
+	    if (defined($sum_syn{$sum_name}) && ($sum_count != $sum_syn{$sum_name}) ){
 	      my $diff = ($sum_count - $sum_syn{$sum_name});
 	      $sum_line{$sum_name}[7] = $diff;	    
 	    }
@@ -449,6 +450,7 @@ sub run {
 
 	  print "source                      xrefs\tprim\tdep\tgdir\ttdir\ttdir\tcoord\tsynonyms\n";
 	  foreach my $sum_name (keys %sum_line){
+	    $sum_name ||= 0;  
 	    printf ("%-28s",$sum_name);
 	    print join("\t",@{$sum_line{$sum_name}})."\n";
 	  }
