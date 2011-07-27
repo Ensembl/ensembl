@@ -1887,7 +1887,7 @@ sub add_xref {
   # If the description is more than 255 characters, chop it off and add
   # an indication that it has been truncated to the end of it.
 
-  if ( length($description) > 255 ) {
+  if (defined($description) && (length($description) > 255 ) ) {
     my $truncmsg = ' /.../';
     substr( $description, 255 - length($truncmsg),
             length($truncmsg), $truncmsg );
