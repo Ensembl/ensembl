@@ -161,6 +161,12 @@ sub _get_all_dm_loc_sth {
   elsif($ensembl_object->isa("Bio::EnsEMBL::Translation")){
     $object_type = "Translation";
   }
+  elsif($ensembl_object->isa("Bio::EnsEMBL::Operon")){
+    $object_type = "Operon";
+  }
+  elsif($ensembl_object->isa("Bio::EnsEMBL::OperonTranscript")){
+    $object_type = "OperonTranscript";
+  }
   else{
     warn(ref($ensembl_object)." is not a Gene Transcript or Translation object??\n");
     return undef;
@@ -532,7 +538,10 @@ sub store {
       $ensembl_id = $ensID;
     } elsif (    ref($ensID) eq 'Bio::EnsEMBL::Gene'
               or ref($ensID) eq 'Bio::EnsEMBL::Transcript'
-              or ref($ensID) eq 'Bio::EnsEMBL::Translation' )
+              or ref($ensID) eq 'Bio::EnsEMBL::Translation' 
+              or ref($ensID) eq 'Bio::EnsEMBL::OperonTranscript'
+              or ref($ensID) eq 'Bio::EnsEMBL::Operon' 
+              )
     {
       warning(   "You should pass DBEntryAdaptor->store() "
                . "a dbID rather than an ensembl object "
@@ -883,6 +892,16 @@ sub fetch_all_by_Gene {
   }
 
   return $self->_fetch_by_object_type($gene->dbID(), 'Gene', $ex_db_reg, $exdb_type);
+}
+
+sub fetch_all_by_Operon {
+  my ( $self, $gene, $ex_db_reg, $exdb_type ) = @_;
+
+  if(!ref($gene) || !$gene->isa('Bio::EnsEMBL::Operon')) {
+    throw("Bio::EnsEMBL::Operon argument expected.");
+  }
+
+  return $self->_fetch_by_object_type($gene->dbID(), 'Operon', $ex_db_reg, $exdb_type);
 }
 
 
