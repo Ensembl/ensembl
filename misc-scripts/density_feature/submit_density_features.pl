@@ -349,7 +349,7 @@ if ($response == 3) {
 	   print $print_message[$cmd_count];
 	   #for testing
 	   #print "\n\n". $cmd . "\n\n";
-	   exec($cmd);
+	   system($cmd);
 	   $cmd_count++;
         }
     }
