@@ -102,6 +102,25 @@ sub core{
   return $self->{_core};
 }
 
+=head2 previous_core
+
+  Arg [1]    : (optional)
+  Example    : $mapper->previous_core($old_core);
+  Description: Getter / Setter for the previous release of the core db.
+  Returntype : XrefMapper::db
+  Exceptions : none
+
+=cut
+
+sub previous_core{
+  my ($self, $arg) = @_;
+
+  (defined $arg) &&
+    ($self->{_previous_core} = $arg );
+  return $self->{_previous_core};
+}
+
+
 
 sub add_meta_pair {
 
@@ -344,6 +363,32 @@ sub process_file {
       }	
     }
     $core->species($value);
+
+    #connect to previous release of core db if connection details specified in xref_input (pr_host, pr_port, pr_dbname, pr_user) 
+    if (defined( $species_hash{'pr_host'}) && defined( $species_hash{'pr_user'}) && defined( $species_hash{'pr_dbname'}) ) {
+	my ($pr_host, $pr_port, $pr_user, $pr_dbname);
+	$pr_host = $species_hash{'pr_host'};
+	$pr_user = $species_hash{'pr_user'};
+	$pr_dbname = $species_hash{'pr_dbname'};
+	if(defined($species_hash{'pr_port'})){
+	    $pr_port = $species_hash{'port'};
+	}
+	else{
+	    $pr_port = '';
+	}
+
+	my $previous_core = new XrefMapper::db(-host => $pr_host,
+				  -port => $pr_port,
+				  -user => $pr_user,
+				  -pass => '',
+				  -group   => 'core',
+				  -dbname => $pr_dbname);
+    
+	$mapper->previous_core($previous_core);
+
+	$mapper->add_meta_pair("species", $pr_host.":".$pr_dbname);    
+
+    }
   }
 
   return $mapper;
