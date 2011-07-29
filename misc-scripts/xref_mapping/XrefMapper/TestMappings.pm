@@ -51,7 +51,11 @@ sub new {
 
   my $self ={};
   bless $self,$class;
-  $self->core($mapper->core);
+  if (defined($mapper->previous_core)) {
+      $self->core($mapper->previous_core);
+  } else {
+      $self->core($mapper->core);
+  }
   $self->xref($mapper->xref);
   $self->mapper($mapper);
   return $self;
