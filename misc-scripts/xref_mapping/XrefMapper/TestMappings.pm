@@ -324,7 +324,7 @@ sub entry_number_check{
   $sth->finish;
 
   
- $sth = $self->core->dbc->prepare('select e.db_name, count(*) from xref x, object_xref ox, external_db e where ox.xref_id = x.xref_id and x.external_db_id = e.external_db_id and e.db_name not like "AFFY%" and x.info_type != "PROJECTION" group by e.db_name');
+ $sth = $self->core->dbc->prepare('select e.db_name, count(*) from xref x, object_xref ox, external_db e where ox.xref_id = x.xref_id and x.external_db_id = e.external_db_id and e.db_name not like "AFFY%" and (x.info_type is NULL or x.info_type != "PROJECTION") group by e.db_name');
 
   $sth->execute();
   $sth->bind_columns(\$name,\$count);
