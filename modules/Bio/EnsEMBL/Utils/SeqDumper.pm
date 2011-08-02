@@ -24,7 +24,7 @@ Bio::EnsEMBL::Utils::SeqDumper
 
 =head1 SYNOPSIS
 
-  $seq_dumper = Bio::EnsEMBL::Utils::SeqDumper;
+  $seq_dumper = Bio::EnsEMBL::Utils::SeqDumper->new();
 
   # don't dump snps or repeats
   $seq_dumper->disable_feature_type('repeat');
