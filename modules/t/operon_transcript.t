@@ -4,7 +4,7 @@ use warnings;
 BEGIN {
 	$| = 1;
 	use Test;
-	plan tests => 40;
+	plan tests => 46;
 }
 use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::Test::TestUtils;
@@ -34,11 +34,13 @@ my $start         = 3403162;
 my $end           = 3405288;
 my $strand        = 1;
 my $display_label = "accBC";
+my $analysis = $dba->get_AnalysisAdaptor->fetch_by_logic_name("Genscan");
 my $operon = Bio::EnsEMBL::Operon->new( -START         => $start,
 										-END           => $end,
 										-STRAND        => $strand,
 										-SLICE         => $slice,
-										-DISPLAY_LABEL => $display_label, -STABLE_ID=>"op1" );
+										-DISPLAY_LABEL => $display_label, -STABLE_ID=>"op1", -ANALYSIS=>$analysis );
+	ok( $analysis,        $operon->analysis(), "Analysis" );
 
 my $gene_name    = "accB";
 my $gene_start   = 31225346;
@@ -54,7 +56,6 @@ my $gene        = Bio::EnsEMBL::Gene->new();
 my $transcript  = Bio::EnsEMBL::Transcript->new();
 my $exon        = Bio::EnsEMBL::Exon->new();
 my $translation = Bio::EnsEMBL::Translation->new();
-my $analysis    = $dba->get_AnalysisAdaptor->fetch_by_logic_name("Genscan");
 ok( defined $analysis );
 for my $feature ( $gene, $transcript, $exon ) {
 	$feature->start($gene_start);
@@ -117,18 +118,20 @@ my $operon_transcript =
   Bio::EnsEMBL::OperonTranscript->new( -START  => $start,
 									   -END    => $end,
 									   -STRAND => $strand,
-									   -SLICE  => $slice, -STABLE_ID=>"opt1" );
+									   -SLICE  => $slice, -STABLE_ID=>"opt1", -ANALYSIS=>$analysis  );
 $operon_transcript->add_gene($gene);
 $operon_transcript->add_gene($gene2);
 $operon->add_OperonTranscript($operon_transcript);
+	ok( $analysis,        $operon_transcript->analysis(), "Analysis" );
 
 my $operon_transcript2 =
   Bio::EnsEMBL::OperonTranscript->new( -START  => $start,
 									   -END    => $gene_start2,
 									   -STRAND => $strand,
-									   -SLICE  => $slice, -STABLE_ID=>"opt2" );
+									   -SLICE  => $slice, -STABLE_ID=>"opt2", -ANALYSIS=>$analysis  );
 $operon_transcript2->add_gene($gene);
 $operon->add_OperonTranscript($operon_transcript2);
+	ok( $analysis,        $operon_transcript->analysis(), "Analysis" );
 
 # store the lot
 # store operon
@@ -144,6 +147,7 @@ ok( $operon2->seq_region_end(),   $operon->seq_region_end(),   "Operon end" );
 ok( $operon2->seq_region_strand(),
 	$operon->seq_region_strand(),
 	"Operon strand" );
+	ok( $operon2->analysis(),             $operon->analysis(),             "Analysis" );
 my @operon_transcripts = @{ $operon2->get_all_OperonTranscripts() };
 # check operon transcript
 ok( scalar @operon_transcripts, 2, "Expected number of transcripts" );
@@ -160,6 +164,7 @@ ok( $operon_transcript_r->seq_region_end(),
 ok( $operon_transcript_r->seq_region_strand(),
 	$operon_transcript->seq_region_strand(),
 	"Operon transcript strand" );
+	ok( $operon_transcript->analysis(),             $operon_transcript_r->analysis(),             "Analysis" );
 
 # check genes
 my @ogenes = @{ $operon_transcript_r->get_all_Genes() };
@@ -188,6 +193,7 @@ ok( $operon_transcript_r2->seq_region_end(),
 ok( $operon_transcript_r2->seq_region_strand(),
 	$operon_transcript2->seq_region_strand(),
 	"Operon transcript strand" );
+	ok( $operon_transcript2->analysis(),             $operon_transcript_r2->analysis(),             "Analysis" );
 
 # check genes
 @ogenes = @{ $operon_transcript_r2->get_all_Genes() };

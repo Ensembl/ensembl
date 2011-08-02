@@ -2,7 +2,7 @@ use strict;
 use warnings;
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 12;
+	plan tests => 17;
 }
 
 use Bio::EnsEMBL::Test::MultiTestDB;
@@ -25,11 +25,13 @@ my $operon_adaptor =  Bio::EnsEMBL::DBSQL::OperonAdaptor->new($dba);
 my $operon = $operon_adaptor->fetch_by_name("16152-16153-4840");
 ok(defined $operon);
 	debug("O ".$operon->dbID());
+		ok(defined $operon->analysis());
 # iterate over its transcripts
 my $transcripts = $operon->get_all_OperonTranscripts();
 ok(defined $transcripts);
 ok(scalar(@$transcripts)>0);
 for my $ot (@$transcripts) {
+	ok(defined $ot->analysis());
 	debug("OT ".$ot->dbID());
 	for my $gene (@{$ot->get_all_Genes()}) {
 	debug("G ".$gene->dbID());
@@ -43,6 +45,7 @@ my $operons = $operon_adaptor->fetch_all_by_Slice($slice);
 ok(defined $operons);
 ok(scalar(@$operons)>0);
 for my $o (@$operons) {
+		ok(defined $o->analysis());
 	debug("O ".$o->dbID());
 	for my $ot (@{$o->get_all_OperonTranscripts()}) {
 	debug("OT ".$ot->dbID());

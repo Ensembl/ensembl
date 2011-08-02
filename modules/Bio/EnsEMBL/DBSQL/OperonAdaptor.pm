@@ -63,8 +63,7 @@ use vars '@ISA';
 #  Status     : Stable
 
 sub _tables {
-	return ( [ 'operon', 'o' ],
-			 [ 'operon_stable_id', 'osi' ]);
+	return ( [ 'operon', 'o' ], [ 'operon_stable_id', 'osi' ] );
 }
 
 # _columns
@@ -87,8 +86,8 @@ sub _columns {
 
 	return ( 'o.operon_id',      'o.seq_region_id',     'o.seq_region_start',
 			 'o.seq_region_end', 'o.seq_region_strand', 'o.display_label',
-			 'osi.stable_id',    'osi.version',         $created_date,
-			 $modified_date );
+			 'o.analysis_id',    'osi.stable_id',       'osi.version',
+			 $created_date,      $modified_date );
 }
 
 sub _left_join {
@@ -199,11 +198,12 @@ sub fetch_by_stable_id {
   Status      : At Risk
 
 =cut
+
 sub fetch_all {
 	my ($self) = @_;
 
 	my $constraint = '';
-	my @operons      = @{ $self->generic_fetch($constraint) };
+	my @operons    = @{ $self->generic_fetch($constraint) };
 	return \@operons;
 }
 
@@ -342,8 +342,9 @@ sub fetch_all_by_Slice {
 		if ( $slice != $ext_slice ) {
 			$new_tr = $tr->transfer($slice);
 			if ( !defined($new_tr) ) {
-				throw(  "Unexpected. "
-					  . "Transcript could not be transfered onto operon slice." );
+				throw(   "Unexpected. "
+					   . "Transcript could not be transfered onto operon slice."
+				);
 			}
 		} else {
 			$new_tr = $tr;
@@ -438,9 +439,9 @@ sub fetch_by_operon_transcript_stable_id {
 }
 
 sub fetch_by_operon_transcript {
-		my ( $self, $trans ) = @_;
-		assert_ref($trans,'Bio::EnsEMBL::OperonTranscript');
-		$self->fetch_by_operon_transcript_id($trans->dbID());
+	my ( $self, $trans ) = @_;
+	assert_ref( $trans, 'Bio::EnsEMBL::OperonTranscript' );
+	$self->fetch_by_operon_transcript_id( $trans->dbID() );
 }
 
 =head2 store
@@ -471,7 +472,14 @@ sub store {
 	if ( $operon->is_stored($db) ) {
 		return $operon->dbID();
 	}
-
+		    my $analysis = $operon->analysis();
+  throw("Operons must have an analysis object.") if(!defined($analysis));
+	my $analysis_id;
+	if ( $analysis->is_stored($db) ) {
+		$analysis_id = $analysis->dbID();
+	} else {
+		$analysis_id = $db->get_AnalysisAdaptor->store( $analysis );
+	}
 	# ensure coords are correct before storing
 	#$operon->recalculate_coordinates();
 
@@ -485,17 +493,19 @@ sub store {
                seq_region_start = ?,
                seq_region_end = ?,
                seq_region_strand = ?,
-               display_label = ?
+               display_label = ?,
+               analysis_id = ?
   );
 	# column status is used from schema version 34 onwards (before it was
 	# confidence)
 
 	my $sth = $self->prepare($store_operon_sql);
-	    $sth->bind_param(1,$seq_region_id,SQL_INTEGER);
-	$sth->bind_param( 2, $operon->start(),  SQL_INTEGER );
-	$sth->bind_param( 3, $operon->end(),    SQL_INTEGER );
-	$sth->bind_param( 4, $operon->strand(), SQL_TINYINT );
-	$sth->bind_param( 5, $operon->display_label(),   SQL_VARCHAR );
+	$sth->bind_param( 1, $seq_region_id,           SQL_INTEGER );
+	$sth->bind_param( 2, $operon->start(),         SQL_INTEGER );
+	$sth->bind_param( 3, $operon->end(),           SQL_INTEGER );
+	$sth->bind_param( 4, $operon->strand(),        SQL_TINYINT );
+	$sth->bind_param( 5, $operon->display_label(), SQL_VARCHAR );
+	$sth->bind_param( 6, $analysis_id,             SQL_INTEGER );
 
 	$sth->execute();
 	$sth->finish();
@@ -595,9 +605,9 @@ sub remove {
 		$dbe_adaptor->remove_from_object( $dbe, $operon, 'Operon' );
 	}
 
-#	# remove the attributes associated with this transcript
-#	my $attrib_adaptor = $self->db->get_AttributeAdaptor;
-#	$attrib_adaptor->remove_from_Operon($operon);
+	#	# remove the attributes associated with this transcript
+	#	my $attrib_adaptor = $self->db->get_AttributeAdaptor;
+	#	$attrib_adaptor->remove_from_Operon($operon);
 
 	# remove all of the transcripts associated with this operon
 	my $transcriptAdaptor = $self->db->get_OperonTranscriptAdaptor();
@@ -650,23 +660,24 @@ sub _objs_from_sth {
 	#
 
 	my $sa = $self->db()->get_SliceAdaptor();
-	#my $aa = $self->db->get_AnalysisAdaptor();
+	my $aa = $self->db->get_AnalysisAdaptor();
 
 	my @operons;
 	my %analysis_hash;
 	my %slice_hash;
 	my %sr_name_hash;
 	my %sr_cs_hash;
-	my ( $stable_id, $version, $created_date, $modified_date );
+	my ( $stable_id, $version, $created_date, $modified_date, $analysis_id );
 
-	my ( $operon_id, $seq_region_id, $seq_region_start, $seq_region_end,
-		 $seq_region_strand, $display_label );
+	my ( $operon_id,      $seq_region_id,     $seq_region_start,
+		 $seq_region_end, $seq_region_strand, $display_label );
 
 	$sth->bind_columns( \$operon_id,         \$seq_region_id,
 						\$seq_region_start,  \$seq_region_end,
 						\$seq_region_strand, \$display_label,
-						\$stable_id,         \$version,
-						\$created_date,      \$modified_date );
+						\$analysis_id,       \$stable_id,
+						\$version,           \$created_date,
+						\$modified_date );
 
 	my $asm_cs;
 	my $cmp_cs;
@@ -701,9 +712,10 @@ sub _objs_from_sth {
 	my $count = 0;
   OPERON: while ( $sth->fetch() ) {
 		$count++;
-		#    #get the analysis object
-		#    my $analysis = $analysis_hash{$analysis_id} ||=
-		#      $aa->fetch_by_dbID($analysis_id);
+		#get the analysis object
+		my $analysis = $analysis_hash{$analysis_id} ||=
+		  $aa->fetch_by_dbID($analysis_id);
+		$analysis_hash{$analysis_id} = $analysis;
 		#need to get the internal_seq_region, if present
 		$seq_region_id = $self->get_seq_region_id_internal($seq_region_id);
 		#get the slice object
@@ -774,21 +786,20 @@ sub _objs_from_sth {
 			$slice = $dest_slice;
 		} ## end if ($dest_slice)
 
-		push(
-			@operons,
-			Bio::EnsEMBL::Operon->new(
-				  -START          => $seq_region_start,
-				  -END            => $seq_region_end,
-				  -STRAND         => $seq_region_strand,
-				  -SLICE          => $slice,
-				  -DISPLAY_LABEL           => $display_label,
-				  -ADAPTOR       => $self,
-				-DBID        => $operon_id,
-				  -STABLE_ID     => $stable_id,
-				 -VERSION      => $version,
-				 -CREATED_DATE => $created_date || undef,
-				  -MODIFIED_DATE => $modified_date || undef
-				));
+		push( @operons,
+			  Bio::EnsEMBL::Operon->new(
+									  -START         => $seq_region_start,
+									  -END           => $seq_region_end,
+									  -STRAND        => $seq_region_strand,
+									  -SLICE         => $slice,
+									  -DISPLAY_LABEL => $display_label,
+									  -ADAPTOR       => $self,
+									  -DBID          => $operon_id,
+									  -STABLE_ID     => $stable_id,
+									  -VERSION       => $version,
+									  -CREATED_DATE  => $created_date || undef,
+									  -MODIFIED_DATE => $modified_date || undef,
+									  -ANALYSIS      => $analysis ) );
 
 	} ## end while ( $sth->fetch() )
 

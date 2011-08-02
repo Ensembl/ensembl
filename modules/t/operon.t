@@ -4,7 +4,7 @@ use warnings;
 BEGIN {
 	$| = 1;
 	use Test;
-	plan tests => 12;
+	plan tests => 15;
 }
 use Bio::EnsEMBL::DBEntry;
 use Bio::EnsEMBL::Operon;
@@ -31,6 +31,7 @@ my $end           = 31225946;
 my $strand        = 1;
 my $display_label = "accBC";
 my $analysis = $dba->get_AnalysisAdaptor->fetch_by_logic_name("Genscan");
+ok(defined $analysis);
 my $operon = Bio::EnsEMBL::Operon->new(
 	-START         => $start,
 	-END           => $end,
@@ -49,6 +50,7 @@ ok( $display_label, $operon->display_label(),     "Operon name" );
 ok( $start,         $operon->seq_region_start(),  "Operon start" );
 ok( $end,           $operon->seq_region_end(),    "Operon end" );
 ok( $strand,        $operon->seq_region_strand(), "Operon strand" );
+ok( $analysis,        $operon->analysis(), "Analysis" );
 
 my $operon_adaptor = Bio::EnsEMBL::DBSQL::OperonAdaptor->new($dba);
 
@@ -64,4 +66,7 @@ ok( $operon2->seq_region_end(),   $operon->seq_region_end(),   "Operon end" );
 ok( $operon2->seq_region_strand(),
 	$operon->seq_region_strand(),
 	"Operon strand" );
+ok( $operon2->analysis(),
+	$operon->analysis(),
+	"Analysis" );
 
