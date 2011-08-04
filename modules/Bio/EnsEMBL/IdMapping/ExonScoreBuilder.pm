@@ -404,28 +404,33 @@ sub run_exonerate {
   closedir(DUMPDIR);
 
   # determine number of jobs to split task into
-  my $bytes_per_job = $self->conf->param('exonerate_bytes_per_job') || 250000;
+  my $bytes_per_job = $self->conf->param('exonerate_bytes_per_job')
+    || 250000;
   my $num_jobs = $self->conf->param('exonerate_jobs');
-  $num_jobs ||= int($source_size/$bytes_per_job + 1);
-  
-  my $percent = ($self->conf->param('exonerate_threshold') || 0.5) * 100;
-  my $lsf_name = 'idmapping_exonerate_'.time;
+  $num_jobs ||= int( $source_size/$bytes_per_job + 1 );
+
+  my $percent =
+    int( ( $self->conf->param('exonerate_threshold') || 0.5 )*100 );
+  my $lsf_name       = 'idmapping_exonerate_' . time;
   my $exonerate_path = $self->conf->param('exonerate_path');
-  my $exonerate_extra_params = $self->conf->param('exonerate_extra_params');
+  my $exonerate_extra_params =
+    $self->conf->param('exonerate_extra_params');
 
   #
   # run exonerate jobs using lsf
   #
-  my $exonerate_job = qq{$exonerate_path } .
-    qq{--query $source_file --target $target_file } .
-    q{--querychunkid $LSB_JOBINDEX } .
-    qq{--querychunktotal $num_jobs } .
-    q{--model affine:local -M 900 --showalignment FALSE --subopt no } .
-    qq{--percent $percent } .
-    $self->conf->param('exonerate_extra_params') . " " .
-    q{--ryo 'myinfo: %qi %ti %et %ql %tl\n' } .
-    qq{| grep '^myinfo:' > $dump_path/exonerate_map.\$LSB_JOBINDEX} . "\n";
-  
+  my $exonerate_job =
+      qq{$exonerate_path }
+    . qq{--query $source_file --target $target_file }
+    . q{--querychunkid $LSB_JOBINDEX }
+    . qq{--querychunktotal $num_jobs }
+    . q{--model affine:local -M 900 --showalignment FALSE --subopt no }
+    . qq{--percent $percent }
+    . $self->conf->param('exonerate_extra_params') . " "
+    . q{--ryo 'myinfo: %qi %ti %et %ql %tl\n' }
+    . qq{| grep '^myinfo:' > $dump_path/exonerate_map.\$LSB_JOBINDEX}
+    . "\n";
+
   $self->logger->info("Submitting $num_jobs exonerate jobs to lsf.\n");
   $self->logger->debug("$exonerate_job\n\n");
 
