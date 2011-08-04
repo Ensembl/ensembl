@@ -2414,36 +2414,36 @@ sub get_ext_synonyms{
 # Store data needed to beable to revert to same stage as after parsing
 #
 
-sub parsing_finished_store_data{
+sub parsing_finished_store_data {
   my $self = shift;
 
-# Store max id for 
+  # Store max id for
 
-# gene/transcript/translation_direct_xref     general_xref_id  #Does this change??
+  # gene/transcript/translation_direct_xref     general_xref_id  #Does this change??
 
-# xref                                        xref_id
+  # xref                                        xref_id
+  # dependent_xref                              object_xref_id is all null
+  # go_xref                                     object_xref_id
+  # object_xref                                 object_xref_id
+  # identity_xref                               object_xref_id
 
-# dependent_xref                              object_xref_id is all null
-
-# go_xref                                     object_xref_id
-# object_xref                                 object_xref_id
-# identity_xref                               object_xref_id
-
-  my %table_and_key = ('xref' => "xref_id", 'object_xref' => "object_xref_id");
+  my %table_and_key =
+    ( 'xref' => "xref_id", 'object_xref' => "object_xref_id" );
 
   my $dbi = $self->dbi();
-  foreach my  $table (keys %table_and_key){
-#    print "select MAX(".$table_and_key{$table}.") from $table\n";
-    my $sth = $dbi->prepare("select MAX(".$table_and_key{$table}.") from $table");
+  foreach my $table ( keys %table_and_key ) {
+    my $sth = $dbi->prepare(
+             "select MAX(" . $table_and_key{$table} . ") from $table" );
     $sth->execute;
     my $max_val;
-    $sth->bind_columns(\$max_val);
+    $sth->bind_columns( \$max_val );
     $sth->fetch;
-    $self->add_meta_pair("PARSED_".$table_and_key{$table}, $max_val);
     $sth->finish;
+    $self->add_meta_pair( "PARSED_" . $table_and_key{$table},
+                          $max_val || 1 );
   }
   return;
-}
+} ## end sub parsing_finished_store_data
 
 
 
