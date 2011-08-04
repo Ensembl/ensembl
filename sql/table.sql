@@ -479,15 +479,15 @@ CREATE TABLE meta (
 # Add schema type and schema version to the meta table.
 INSERT INTO meta (species_id, meta_key, meta_value) VALUES
   (NULL, 'schema_type',     'core'),
-  (NULL, 'schema_version',  '63');
+  (NULL, 'schema_version',  '64');
 
 # Patches included in this schema file:
 # NOTE: At start of release cycle, remove patch entries from last release.
 # NOTE: Avoid line-breaks in values.
 INSERT INTO meta (species_id, meta_key, meta_value) VALUES
-  (NULL, 'patch', 'patch_62_63_a.sql|schema_version'),
-  (NULL, 'patch', 'patch_62_63_b.sql|indexing_changes'),
-  (NULL, 'patch', 'patch_62_63_c.sql|remove_dbprimary_acc_linkable');
+  (NULL, 'patch', 'patch_63_64_a.sql|schema_version'),
+  (NULL, 'patch', 'patch_63_64_b.sql|add_operons'),
+  (NULL, 'patch', 'patch_63_64_c.sql|is_ref_added_to_alt_allele');
 
 
 /**
@@ -2465,77 +2465,67 @@ CREATE TABLE xref (
 
 
 CREATE TABLE interpro (
-
-  interpro_ac                 VARCHAR(40) NOT NULL,
-  id                          VARCHAR(40) NOT NULL,
+  interpro_ac               VARCHAR(40) NOT NULL,
+  id                        VARCHAR(40) NOT NULL,
 
   UNIQUE KEY accession_idx (interpro_ac, id),
   KEY id_idx (id)
-
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
 CREATE TABLE operon (
+  operon_id                 INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  seq_region_id             INT(10) UNSIGNED NOT NULL,
+  seq_region_start          INT(10) UNSIGNED NOT NULL,
+  seq_region_end            INT(10) UNSIGNED NOT NULL,
+  seq_region_strand         TINYINT(2) NOT NULL,
+  display_label             VARCHAR(255) DEFAULT NULL,
+  analysis_id               SMALLINT UNSIGNED NOT NULL,
 
-  operon_id                     INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  seq_region_id               INT(10) UNSIGNED NOT NULL,
-  seq_region_start            INT(10) UNSIGNED NOT NULL,
-  seq_region_end              INT(10) UNSIGNED NOT NULL,
-  seq_region_strand           TINYINT(2) NOT NULL,
-  display_label        		      VARCHAR(255) DEFAULT NULL,
-  analysis_id                 SMALLINT UNSIGNED NOT NULL,
   PRIMARY KEY (operon_id),
   KEY seq_region_idx (seq_region_id, seq_region_start),
   KEY name_idx (display_label)
-
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
 CREATE TABLE operon_transcript (
+  operon_transcript_id      INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  seq_region_id             INT(10) UNSIGNED NOT NULL,
+  seq_region_start          INT(10) UNSIGNED NOT NULL,
+  seq_region_end            INT(10) UNSIGNED NOT NULL,
+  seq_region_strand         TINYINT(2) NOT NULL,
+  operon_id                 INT(10) UNSIGNED NOT NULL,
+  display_label             VARCHAR(255) DEFAULT NULL,
+  analysis_id               SMALLINT UNSIGNED NOT NULL,
 
-  operon_transcript_id        INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  seq_region_id               INT(10) UNSIGNED NOT NULL,
-  seq_region_start            INT(10) UNSIGNED NOT NULL,
-  seq_region_end              INT(10) UNSIGNED NOT NULL,
-  seq_region_strand           TINYINT(2) NOT NULL,
-  operon_id                     INT(10) UNSIGNED NOT NULL,
-  display_label        		      VARCHAR(255) DEFAULT NULL,
-  analysis_id                 SMALLINT UNSIGNED NOT NULL,
   PRIMARY KEY (operon_transcript_id),
   KEY operon_idx (operon_id),
   KEY seq_region_idx (seq_region_id, seq_region_start)
-
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
 CREATE TABLE operon_transcript_gene (
-
-  operon_transcript_id        INT(10) UNSIGNED,
-  gene_id                     INT(10) UNSIGNED,
+  operon_transcript_id      INT(10) UNSIGNED,
+  gene_id                   INT(10) UNSIGNED,
 
   KEY operon_transcript_gene_idx (operon_transcript_id,gene_id)
-
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
 CREATE TABLE operon_stable_id (
-
-  operon_id                     INT UNSIGNED NOT NULL,
-  stable_id                   VARCHAR(128) NOT NULL,
-  version                     INT(10),
-  created_date                DATETIME NOT NULL,
-  modified_date               DATETIME NOT NULL,
+  operon_id                 INT UNSIGNED NOT NULL,
+  stable_id                 VARCHAR(128) NOT NULL,
+  version                   INT(10),
+  created_date              DATETIME NOT NULL,
+  modified_date             DATETIME NOT NULL,
 
   PRIMARY KEY (operon_id),
   KEY stable_id_idx (stable_id, version)
-
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
 CREATE TABLE operon_transcript_stable_id (
-
-  operon_transcript_id                     INT UNSIGNED NOT NULL,
-  stable_id                   VARCHAR(128) NOT NULL,
-  version                     INT(10),
-  created_date                DATETIME NOT NULL,
-  modified_date               DATETIME NOT NULL,
+  operon_transcript_id      INT UNSIGNED NOT NULL,
+  stable_id                 VARCHAR(128) NOT NULL,
+  version                   INT(10),
+  created_date              DATETIME NOT NULL,
+  modified_date             DATETIME NOT NULL,
 
   PRIMARY KEY (operon_transcript_id),
   KEY stable_id_idx (stable_id, version)
-
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
