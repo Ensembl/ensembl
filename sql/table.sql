@@ -2447,7 +2447,7 @@ CREATE TABLE xref (
 
 /**
 @header Miscellaneous
-@desc
+@desc Other tables
 */
 
 
@@ -2458,7 +2458,6 @@ CREATE TABLE xref (
 @column interpro_ac               InterPro protein accession number.
 @column id                        InterPro protein id.
 
-@info
 @desc <a href="http://www.ebi.ac.uk/interpro/">InterPro</a> - The InterPro website
 
 */
