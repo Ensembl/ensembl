@@ -423,7 +423,7 @@ close(HTML);
 ###############
 
 sub display_tables_list {
-	my $html = qq{<h3>List of the tables:</h3>\n};
+	my $html = qq{<h3 id="top">List of the tables:</h3>\n};
 	foreach my $header_name (@header_names) {
 		
 		my $tables = $tables_names->{$header_name};
@@ -550,8 +550,9 @@ sub add_table_name {
 	my $html = qq{\n<br />
   <table style="border: 2px groove #CCCCCC;background-color:#FAFAFF">
     <tr style="vertical-align:middle">$c_box
-      <td style="width:500px;text-align:left;height:10px"><span id="$t_name" style="font-size:11pt;font-weight:bold">$t_name</span></td>
-      <td style="width:100px;text-align:right"><a id="a_$t_name" style="cursor:pointer;text-decoration:underline" onclick="show_hide('$t_name')">Show</a> columns</td>
+      <td style="width:420px;text-align:left;height:10px"><span id="$t_name" style="font-size:11pt;font-weight:bold">$t_name</span></td>
+      <td style="width:180px;text-align:right"><a id="a_$t_name" style="cursor:pointer;text-decoration:underline" onclick="show_hide('$t_name')">Show</a> columns
+				&nbsp;<b>|</b>&nbsp;<a href="#top">[Back to top]</a></td>
     </tr>
   </table>\n};
 	
