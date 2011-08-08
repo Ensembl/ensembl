@@ -583,9 +583,6 @@ sub write_filtered_exons {
         if ( $matrix->get_score( $eid, $target ) > 0.9999 ) {
           next EXON;
         }
-
-        # TODO: Get target exon from cache and skip or penalise if on
-        # different seq_region from $exon.
       }
     } else {
       foreach my $source ( @{ $matrix->get_sources_for_target($eid) } )
@@ -593,9 +590,6 @@ sub write_filtered_exons {
         if ( $matrix->get_score( $source, $eid ) > 0.9999 ) {
           next EXON;
         }
-
-        # TODO: Get source exon from cache and skip or penalise if on
-        # different seq_region from $exon.
       }
     }
 
