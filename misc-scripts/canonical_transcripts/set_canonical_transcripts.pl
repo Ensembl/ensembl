@@ -81,6 +81,7 @@ my ($ccds_host, $ccds_dbname, $ccds_user);
 
 my $coord_system;
 my $seq_region_name;
+my $logic_name; # keep as undefined unless you only want to run on a specific analysis
 my $write = 0;
 my $include_non_ref = 1;
 my $verbose = 0;
@@ -98,6 +99,7 @@ GetOptions( 'dbhost:s'            => \$host,
             'ccds_user:s'         => \$ccds_user,
             'coord_system_name:s' => \$coord_system,
             'seq_region_name:s'   => \$seq_region_name,
+            'logic_name:s'        => \$logic_name,
             'write!'              => \$write,
             'include_non_ref!'    => \$include_non_ref,
             'verbose!'            => \$verbose, );
@@ -174,7 +176,7 @@ SLICE: foreach my $slice (@$slices) {
 
   # Now fetch the genes
   print "\nGetting genes for " . $slice->name . "\n" if ($verbose);
-  my $genes = $slice->get_all_Genes( undef, undef, 1 );
+  my $genes = $slice->get_all_Genes( $logic_name, undef, 1 );
   my %canonical;
 
   GENE: foreach my $gene (@$genes) {
