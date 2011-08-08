@@ -577,13 +577,25 @@ sub write_filtered_exons {
     next EXON if ($exon->length < $min_exon_length);
 
     # skip if overlap score with any other exon is 1
-    if ($type eq 'source') {
-      foreach my $target (@{ $matrix->get_targets_for_source($eid) }) {
-        next EXON if ($matrix->get_score($eid, $target) > 0.9999);
+    if ( $type eq 'source' ) {
+      foreach my $target ( @{ $matrix->get_targets_for_source($eid) } )
+      {
+        if ( $matrix->get_score( $eid, $target ) > 0.9999 ) {
+          next EXON;
+        }
+
+        # TODO: Get target exon from cache and skip or penalise if on
+        # different seq_region from $exon.
       }
     } else {
-      foreach my $source (@{ $matrix->get_sources_for_target($eid) }) {
-        next EXON if ($matrix->get_score($source, $eid) > 0.9999);
+      foreach my $source ( @{ $matrix->get_sources_for_target($eid) } )
+      {
+        if ( $matrix->get_score( $source, $eid ) > 0.9999 ) {
+          next EXON;
+        }
+
+        # TODO: Get source exon from cache and skip or penalise if on
+        # different seq_region from $exon.
       }
     }
 
