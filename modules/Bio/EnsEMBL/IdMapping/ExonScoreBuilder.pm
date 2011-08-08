@@ -189,31 +189,35 @@ sub exonerate_score {
 
 #
 # Algorithm:
-# Get a lists of exon containers for source and target. Walk along both lists,
-# set a flag when you first encounter an exon (i.e. it starts). Record all
-# alternative exons until you encounter the exon again (exon ends), then score
-# against all alternative exons you've recorded.
+# Get a lists of exon containers for source and target.  Walk along both
+# lists, set a flag when you first encounter an exon (i.e. it starts).
+# Record all alternative exons until you encounter the exon again (exon
+# ends), then score against all alternative exons you've recorded.
 #
 sub build_overlap_scores {
-  my $self = shift;
-  my $matrix = shift;
+  my ( $self, $matrix ) = @_;
 
-  unless ($matrix and
-          $matrix->isa('Bio::EnsEMBL::IdMapping::ScoredMappingMatrix')) {
+  unless ($matrix
+      and $matrix->isa('Bio::EnsEMBL::IdMapping::ScoredMappingMatrix') )
+  {
     throw('Need a Bio::EnsEMBL::IdMapping::ScoredMappingMatrix.');
   }
 
   # get sorted list of exon containers
-  $self->logger->info("Reading sorted exons from cache...\n", 1, 'stamped');
+  $self->logger->info( "Reading sorted exons from cache...\n",
+                       1, 'stamped' );
 
-  my @source_exons = $self->sort_exons(
-    [values %{ $self->cache->get_by_name('exons_by_id', 'source') }]
-  );
-  my @target_exons = $self->sort_exons(
-    [values %{ $self->cache->get_by_name('exons_by_id', 'target') }]
-  );
+  my @source_exons =
+    $self->sort_exons( [
+        values %{ $self->cache->get_by_name( 'exons_by_id', 'source' ) }
+      ] );
 
-  $self->logger->info("Done.\n", 1, 'stamped');
+  my @target_exons =
+    $self->sort_exons( [
+        values %{ $self->cache->get_by_name( 'exons_by_id', 'target' ) }
+      ] );
+
+  $self->logger->info( "Done.\n", 1, 'stamped' );
 
   # get first source and target exon container
   my $source_ec = shift(@source_exons);
@@ -221,11 +225,10 @@ sub build_overlap_scores {
 
   my %source_overlap = ();
   my %target_overlap = ();
-  
-  $self->logger->info("Scoring...\n", 1, 'stamped');
 
-  while ($source_ec or $target_ec) {
+  $self->logger->info( "Scoring...\n", 1, 'stamped' );
 
+  while ( $source_ec or $target_ec ) {
     my $add_source = 0;
     my $add_target = 0;
 
@@ -242,55 +245,68 @@ sub build_overlap_scores {
     }
 
     if ($add_source) {
-      if ($source_overlap{$source_ec->[0]}) {
-        # remove exon from list of overlapping source exons to score target
-        # against
-        delete $source_overlap{$source_ec->[0]};
+      if ( $source_overlap{ $source_ec->[0] } ) {
+        # remove exon from list of overlapping source exons to score
+        # target against
+        delete $source_overlap{ $source_ec->[0] };
       } else {
-        # add exon to list of overlapping source exons to score target against
-        $source_overlap{$source_ec->[0]} = $source_ec->[0];
+        # add exon to list of overlapping source exons to score target
+        # against
+        $source_overlap{ $source_ec->[0] } = $source_ec->[0];
 
-        # score source exon against all target exons in current overlap list
-        foreach my $target_exon (values %target_overlap) {
-          next if (defined($matrix->get_score(
-            $source_ec->[0]->id, $target_exon->id)));
+        # score source exon against all target exons in current overlap
+        # list
+        foreach my $target_exon ( values %target_overlap ) {
+          if ( defined( $matrix->get_score(
+                                   $source_ec->[0]->id, $target_exon->id
+                        ) ) )
+          {
+            next;
+          }
 
-          $self->calc_overlap_score($source_ec->[0], $target_exon,
-            $matrix);
+          $self->calc_overlap_score( $source_ec->[0], $target_exon,
+                                     $matrix );
         }
       }
 
       # get next source exon container
       $source_ec = shift(@source_exons);
-    }
+    } ## end if ($add_source)
 
     if ($add_target) {
-      if ($target_overlap{$target_ec->[0]}) {
-        # remove exon from list of overlapping target exons to score source
-        # against
-        delete $target_overlap{$target_ec->[0]};
+      if ( $target_overlap{ $target_ec->[0] } ) {
+        # remove exon from list of overlapping target exons to score
+        # source against
+        delete $target_overlap{ $target_ec->[0] };
       } else {
-        # add exon to list of overlapping target exons to score source against
-        $target_overlap{$target_ec->[0]} = $target_ec->[0];
+        # add exon to list of overlapping target exons to score source
+        # against
+        $target_overlap{ $target_ec->[0] } = $target_ec->[0];
 
-        # score target exon against all source exons in current overlap list
-        foreach my $source_exon (values %source_overlap) {
-          next if (defined($matrix->get_score(
-            $source_exon->id, $target_ec->[0]->id)));
+        # score target exon against all source exons in current overlap
+        # list
+        foreach my $source_exon ( values %source_overlap ) {
+          if ( defined( $matrix->get_score(
+                                   $source_exon->id, $target_ec->[0]->id
+                        ) ) )
+          {
+            next;
+          }
 
-          $self->calc_overlap_score($source_exon, $target_ec->[0], $matrix);
+          $self->calc_overlap_score( $source_exon, $target_ec->[0],
+                                     $matrix );
         }
       }
 
       # get next target exon container
       $target_ec = shift(@target_exons);
-    }
-  }
+    } ## end if ($add_target)
+  } ## end while ( $source_ec or $target_ec)
 
-  $self->logger->info("Done.\n", 1, 'stamped');
+  $self->logger->info( "Done.\n", 1, 'stamped' );
 
   return $matrix;
-}
+} ## end sub build_overlap_scores
 
 
 #
