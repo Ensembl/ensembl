@@ -233,7 +233,7 @@ sub build_overlap_scores {
     my $add_target = 0;
 
     # compare exon containers
-    if ( $source_ec and $target_ec ) {
+    if ( $source_ec && $target_ec ) {
       my $cmp =
         $self->compare_exon_containers( $source_ec, $target_ec );
       if ( $cmp <= 0 ) { $add_source = 1 }
@@ -242,6 +242,8 @@ sub build_overlap_scores {
       $add_source = 1;
     } elsif ($target_ec) {
       $add_target = 1;
+    } else {
+      die('The world is a strange place');
     }
 
     if ($add_source) {
