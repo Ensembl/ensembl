@@ -374,6 +374,7 @@ sub run {
     printf( "\t%-32s %6d\n", $label, scalar( keys( %{$accessions} ) ) ) if($verbose);
   }
 
+  return 0;
 } ## end sub run
 
 1;
