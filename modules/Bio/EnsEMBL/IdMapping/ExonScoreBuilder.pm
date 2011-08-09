@@ -237,7 +237,7 @@ sub build_overlap_scores {
       my $cmp =
         $self->compare_exon_containers( $source_ec, $target_ec );
       if ( $cmp <= 0 ) { $add_source = 1 }
-      if ( $cmp => 0 ) { $add_target = 1 }
+      if ( $cmp >= 0 ) { $add_target = 1 }
     } elsif ($source_ec) {
       $add_source = 1;
     } elsif ($target_ec) {
