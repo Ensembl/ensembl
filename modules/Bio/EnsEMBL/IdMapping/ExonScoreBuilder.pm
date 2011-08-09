@@ -615,30 +615,32 @@ sub write_filtered_exons {
 
 
 sub parse_exonerate_results {
-  my $self = shift;
-  my $exonerate_matrix = shift;
+  my ( $self, $exonerate_matrix ) = @_;
 
-  unless ($exonerate_matrix and
-      $exonerate_matrix->isa('Bio::EnsEMBL::IdMapping::ScoredMappingMatrix')) {
+  unless ( $exonerate_matrix
+           and $exonerate_matrix->isa(
+                         'Bio::EnsEMBL::IdMapping::ScoredMappingMatrix')
+    )
+  {
     throw('You must provide a ScoredMappingMatrix.');
   }
 
-  $self->logger->info("Parsing exonerate results...\n", 0, 'stamped');
+  $self->logger->info( "Parsing exonerate results...\n", 0, 'stamped' );
 
   # loop over all result files
   my $dump_path = $self->cache->dump_path;
   my $num_files = 0;
   my $num_lines = 0;
 
-  opendir(DUMPDIR, $dump_path) or
-    $self->logger->error("Can't open $dump_path for reading: $!");
+  opendir( DUMPDIR, $dump_path )
+    or $self->logger->error("Can't open $dump_path for reading: $!");
 
-  while (defined(my $file = readdir(DUMPDIR))) {
-    next unless $file =~ /exonerate_map\.\d+/;
+  while ( defined( my $file = readdir(DUMPDIR) ) ) {
+    unless ( $file =~ /exonerate_map\.\d+/ ) { next }
 
     $num_files++;
 
-    open(F, '<', "$dump_path/$file");
+    open( F, '<', "$dump_path/$file" );
 
     while (<F>) {
       $num_lines++;
@@ -646,30 +648,49 @@ sub parse_exonerate_results {
 
       # line format:
       # myinfo: source_id target_id match_length source_length target_length
-      my (undef, $source_id, $target_id, $match_length, $source_length,
-          $target_length) = split;
+      my ( undef, $source_id, $target_id, $match_length, $source_length,
+           $target_length )
+        = split;
 
       my $score = 0;
 
-      if ($source_length == 0 or $target_length == 0) {
-        $self->logger->warning("Alignment length is 0 for $source_id/$target_id.\n");
+      if ( $source_length == 0 or $target_length == 0 ) {
+        $self->logger->warning(
+               "Alignment length is 0 for $source_id or $target_id.\n");
       } else {
-        $score = 2 * $match_length / ($source_length + $target_length);
+        $score = 2*$match_length/( $source_length + $target_length );
+
+        my $source_sr =
+          $self->cache()
+          ->get_by_key( 'exons_by_id', 'source', $source_id )
+          ->seq_region_name();
+        my $target_sr =
+          $self->cache()
+          ->get_by_key( 'exons_by_id', 'target', $target_id )
+          ->seq_region_name();
+
+        if ( $source_sr ne $target_sr ) {
+          # PENALTY: The target and source are not on the same
+          # seq_region.
+          $score *= 0.5;
+        }
       }
 
-      $exonerate_matrix->add_score($source_id, $target_id, $score);
+      $exonerate_matrix->add_score( $source_id, $target_id, $score );
 
     }
 
     close(F);
-  }
-  
+  } ## end while ( defined( my $file...))
+
   closedir(DUMPDIR);
 
-  $self->logger->info("Done parsing $num_lines lines from $num_files result files.\n", 0, 'stamped');
+  $self->logger->info(
+        "Done parsing $num_lines lines from $num_files result files.\n",
+        0, 'stamped' );
 
   return $exonerate_matrix;
-}
+} ## end sub parse_exonerate_results
 
 
 sub non_mapped_transcript_rescore {
