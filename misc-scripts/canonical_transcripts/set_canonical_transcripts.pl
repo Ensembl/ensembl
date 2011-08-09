@@ -45,6 +45,8 @@
 
   -include_non_ref      Specify if the non_reference regions should be _excluded_. (default: include) 
 
+  -include_duplicates    Specify if the duplicate regions should be _included_. eg. Human PAR on Y (default: exclude) 
+
   -seq_region_name      Chromosome name if running a single seq_region
 
   -write                Specify if results should be written to the database
@@ -84,6 +86,7 @@ my $seq_region_name;
 my $logic_name; # keep as undefined unless you only want to run on a specific analysis
 my $write = 0;
 my $include_non_ref = 1;
+my $include_duplicates;
 my $verbose = 0;
 
 GetOptions( 'dbhost:s'            => \$host,
@@ -102,6 +105,7 @@ GetOptions( 'dbhost:s'            => \$host,
             'logic_name:s'        => \$logic_name,
             'write!'              => \$write,
             'include_non_ref!'    => \$include_non_ref,
+            'include_duplicates'  => \$include_duplicates,
             'verbose!'            => \$verbose, );
 
 unless ($write) {
@@ -152,10 +156,10 @@ my $slices;
 if ($seq_region_name) {
   print "Only updating genes on chromosome $seq_region_name\n";
   my $slice =
-    $sa->fetch_by_region( $coord_system, $seq_region_name, $include_non_ref );
+    $sa->fetch_by_region( $coord_system, $seq_region_name, $include_non_ref ,$include_duplicates );
   push( @$slices, $slice );
 } else {
-  $slices = $sa->fetch_all( $coord_system, '', $include_non_ref );
+  $slices = $sa->fetch_all( $coord_system, '', $include_non_ref , $include_duplicates );
 }
 
 my $gene_update_sql = "update gene set canonical_transcript_id = ? where gene_id = ?";
@@ -243,7 +247,7 @@ SLICE: foreach my $slice (@$slices) {
                 . " no translation or internal stop(s), skipping it...\n" );
         }
       }
-    }
+    } # foreach biotype 
 
     my $has_translation = 0;
     my $count           = 0;
@@ -350,6 +354,9 @@ SLICE: foreach my $slice (@$slices) {
           " of biotype ". $gene->biotype. "\n";
     $canonical{ $gene->dbID } = $sorted[0]->dbID;
 
+    if (!exists $canonical{ $gene->dbID }) {
+      throw("No canonical transcript has been set for gene ".$gene->dbID );
+    }
   } ## end foreach my $gene (@$genes)
 
   foreach my $gene_id ( keys(%canonical) ) {
