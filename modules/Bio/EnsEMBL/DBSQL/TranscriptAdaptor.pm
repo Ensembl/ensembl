@@ -996,9 +996,10 @@ sub store {
       ->from_seconds_to_date( $transcript->modified_date() );
 
     my $sth = $self->prepare($statement);
+    my $version = ($transcript->version()) ? $transcript->version() : 1;
     $sth->bind_param( 1, $transc_dbID,             SQL_INTEGER );
     $sth->bind_param( 2, $transcript->stable_id(), SQL_VARCHAR );
-    $sth->bind_param( 3, ( $transcript->version() || 1 ),   SQL_INTEGER );
+    $sth->bind_param( 3, $version,                 SQL_INTEGER );
     $sth->execute();
     $sth->finish();
   } ## end if ( defined( $transcript...))
