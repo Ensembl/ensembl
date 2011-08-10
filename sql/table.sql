@@ -462,7 +462,7 @@ The default species_id, and the only species_id value allowed in single-species 
 */
 
 
-CREATE TABLE meta (
+CREATE TABLE IF NOT EXISTS meta (
 
   meta_id                     INT NOT NULL AUTO_INCREMENT,
   species_id                  INT UNSIGNED DEFAULT 1,
@@ -844,7 +844,7 @@ The module column tells the pipeline which Perl module does the whole analysis, 
 
 */
 
-CREATE TABLE analysis (
+CREATE TABLE IF NOT EXISTS analysis (
 
   analysis_id                 SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
   created                     datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
@@ -880,7 +880,7 @@ CREATE TABLE analysis (
 @see analysis
 
 */
-CREATE TABLE analysis_description (
+CREATE TABLE IF NOT EXISTS analysis_description (
 
   analysis_id                  SMALLINT UNSIGNED NOT NULL,
   description                  TEXT,
