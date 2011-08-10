@@ -46,11 +46,12 @@ sub run_script {
   my %source;
 
   # Todo: get the whole list of sources for All EG set
-
-  $source{"BROAD_U_maydis"}     = $self->get_source_id_for_source_name('BROAD_U_maydis')    || die "Could not get source_id for BROAD_U_maydis\n";
+  
+  my $sources_aref = ['BROAD_U_maydis','CADRE','CADRE_Afum_A1163','AspGD','ENA_GENE','BROAD_F_oxysporum','BROAD_G_moniliformis','BROAD_G_zeae','GeneDB','BROAD_P_infestans','phyra_jgi_v1.1','physo1_jgi_v1.1','PGD_GENE','phatr_jgi_v2_bd','phatr_jgi_v2','thaps_jgi_v2','thaps_jgi_v2_bd'];
+  foreach my $source_name (@$sources_aref) {
+      $source{$source_name}     = $self->get_source_id_for_source_name($source_name)    || die "Could not get source_id for $source_name\n";
+  }
  
-  print STDERR "source_id for Broad Umaydis: " . $source{"BROAD_U_maydis"} . "\n";
-
   my $dbi2 = $self->dbi2($host, $port, $user, $dbname, $pass);
   if(!defined($dbi2)){
       print STDERR "failed to connect to EG_Xrefs database!\n";
