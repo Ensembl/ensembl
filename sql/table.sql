@@ -487,7 +487,8 @@ INSERT INTO meta (species_id, meta_key, meta_value) VALUES
 INSERT INTO meta (species_id, meta_key, meta_value) VALUES
   (NULL, 'patch', 'patch_63_64_a.sql|schema_version'),
   (NULL, 'patch', 'patch_63_64_b.sql|add_operons'),
-  (NULL, 'patch', 'patch_63_64_c.sql|is_ref_added_to_alt_allele');
+  (NULL, 'patch', 'patch_63_64_c.sql|is_ref_added_to_alt_allele'),
+  (NULL, 'patch', 'patch_63_64_d.sql|linkage_type change in ontology_xref');
 
 
 /**
@@ -2299,9 +2300,7 @@ CREATE TABLE ontology_xref (
 
   object_xref_id          INT(10) UNSIGNED DEFAULT '0' NOT NULL,
   source_xref_id          INT(10) UNSIGNED DEFAULT NULL,
-  linkage_type            ENUM('IC',  'IDA', 'IEA', 'IEP', 'IGI', 'IMP',
-                               'IPI', 'ISS', 'NAS', 'ND' , 'TAS', 'NR' ,
-                               'RCA', 'EXP', 'ISO', 'ISA', 'ISM', 'IGC'),
+  linkage_type            VARCHAR(3),
 
   KEY source_idx (source_xref_id),
   UNIQUE KEY object_source_type_idx (object_xref_id, source_xref_id, linkage_type)
