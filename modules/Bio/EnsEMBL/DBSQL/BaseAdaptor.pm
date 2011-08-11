@@ -277,6 +277,19 @@ sub _list_dbIDs {
        && $self->isa('Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor')
        && !$self->isa('Bio::EnsEMBL::DBSQL::UnmappedObjectAdaptor') )
   {
+    if ( $table =~ /^(\w+)_stable_id$/ ) {
+      # Need to join to the proper base feature table as the stable_id
+      # table do not have seq_region_ids. NOTE: This needs to be removed
+      # if we ever move the stable IDs into the feature tables.
+
+      my $base_table = $1;
+      my $base_pk    = $base_table . "_id";
+
+      $sql .= qq(
+JOIN $base_table USING ($base_pk)
+);
+    }
+
     $sql .= q(
 JOIN seq_region USING (seq_region_id)
 JOIN coord_system cs USING (coord_system_id)
