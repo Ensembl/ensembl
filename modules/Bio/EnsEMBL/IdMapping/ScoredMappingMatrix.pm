@@ -683,52 +683,64 @@ sub get_average_score {
 =cut
 
 sub merge {
-  my $self = shift;
+  my $self   = shift;
   my $matrix = shift;
 
-  unless ($matrix and
-          $matrix->isa('Bio::EnsEMBL::IdMapping::ScoredMappingMatrix')) {
-    throw('You must provide a Bio::EnsEMBL::IdMapping::ScoredMappingMatrix');
+  unless ($matrix
+      and $matrix->isa('Bio::EnsEMBL::IdMapping::ScoredMappingMatrix') )
+  {
+    throw(
+       'You must provide a Bio::EnsEMBL::IdMapping::ScoredMappingMatrix'
+    );
   }
 
   my $c = 0;
 
   # merge the matrices
-  foreach my $key (keys %{ $matrix->{'cache'}->{'matrix'} }) {
-    if (!defined($self->{'cache'}->{'matrix'}->{$key}) or
-        $self->{'cache'}->{'matrix'}->{$key} < $matrix->{'cache'}->{'matrix'}->{$key}) {
-      $self->{'cache'}->{'matrix'}->{$key} = $matrix->{'cache'}->{'matrix'}->{$key};
+  foreach my $key ( keys %{ $matrix->{'cache'}->{'matrix'} } ) {
+    if ( !defined( $self->{'cache'}->{'matrix'}->{$key} )
+         or ( $self->{'cache'}->{'matrix'}->{$key} <
+              $matrix->{'cache'}->{'matrix'}->{$key} ) )
+    {
+      $self->{'cache'}->{'matrix'}->{$key} =
+        $matrix->{'cache'}->{'matrix'}->{$key};
       $c++;
     }
   }
 
   # merge sources and target lists
-  foreach my $key (keys %{ $matrix->{'cache'}->{'source_list'} }) {
-    if (defined($self->{'cache'}->{'source_list'}->{$key})) {
+  foreach my $key ( keys %{ $matrix->{'cache'}->{'source_list'} } ) {
+    if ( defined( $self->{'cache'}->{'source_list'}->{$key} ) ) {
       # need to merge lists
-      my %unique = map { $_ => 1 } @{ $self->get_targets_for_source($key) };
-      map { $unique{$_} = 1 } @{ $matrix->get_targets_for_source($key) };
-      $self->{'cache'}->{'source_list'}->{$key} = [keys %unique];
+      my %unique =
+        map { $_ => 1 } @{ $self->get_targets_for_source($key) };
+      map { $unique{$_} = 1 }
+        @{ $matrix->get_targets_for_source($key) };
+      $self->{'cache'}->{'source_list'}->{$key} = [ keys %unique ];
     } else {
       # no merging needed
-      $self->{'cache'}->{'source_list'}->{$key} = $matrix->{'cache'}->{'source_list'}->{$key};
+      $self->{'cache'}->{'source_list'}->{$key} =
+        $matrix->{'cache'}->{'source_list'}->{$key};
     }
   }
 
-  foreach my $key (keys %{ $matrix->{'cache'}->{'target_list'} }) {
-    if (defined($self->{'cache'}->{'target_list'}->{$key})) {
+  foreach my $key ( keys %{ $matrix->{'cache'}->{'target_list'} } ) {
+    if ( defined( $self->{'cache'}->{'target_list'}->{$key} ) ) {
       # need to merge lists
-      my %unique = map { $_ => 1 } @{ $self->get_sources_for_target($key) };
-      map { $unique{$_} = 1 } @{ $matrix->get_sources_for_target($key) };
-      $self->{'cache'}->{'target_list'}->{$key} = [keys %unique];
+      my %unique =
+        map { $_ => 1 } @{ $self->get_sources_for_target($key) };
+      map { $unique{$_} = 1 }
+        @{ $matrix->get_sources_for_target($key) };
+      $self->{'cache'}->{'target_list'}->{$key} = [ keys %unique ];
     } else {
       # no merging needed
-      $self->{'cache'}->{'target_list'}->{$key} = $matrix->{'cache'}->{'target_list'}->{$key};
+      $self->{'cache'}->{'target_list'}->{$key} =
+        $matrix->{'cache'}->{'target_list'}->{$key};
     }
   }
 
   return $c;
-}
+} ## end sub merge
 
 
 =head2 log
