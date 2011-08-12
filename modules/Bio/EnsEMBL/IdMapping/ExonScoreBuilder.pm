@@ -339,9 +339,9 @@ sub compare_exon_containers {
 }
 
 #
-# Calculates overlap score between two exons. Its done by dividing overlap
-# region by exons sizes. 1.0 is full overlap on both exons. Score of at least
-# 0,5 are added to the exon scoring matrix.
+# Calculates overlap score between two exons. Its done by dividing
+# overlap region by exons sizes. 1.0 is full overlap on both exons.
+# Score of at least 0.5 are added to the exon scoring matrix.
 #
 sub calc_overlap_score {
   my $self = shift;
@@ -644,6 +644,8 @@ sub parse_exonerate_results {
 
     open( F, '<', "$dump_path/$file" );
 
+    my $threshold = $self->conf->param('exonerate_threshold') || 0.5;
+
     while (<F>) {
       $num_lines++;
       chomp;
@@ -674,11 +676,13 @@ sub parse_exonerate_results {
         if ( $source_sr ne $target_sr ) {
           # PENALTY: The target and source are not on the same
           # seq_region.
-          $score *= 0.5;
+          $score *= 0.75;
         }
       }
 
-      $exonerate_matrix->add_score( $source_id, $target_id, $score );
+      if ( $score > $threshold ) {
+        $exonerate_matrix->add_score( $source_id, $target_id, $score );
+      }
 
     }
 
