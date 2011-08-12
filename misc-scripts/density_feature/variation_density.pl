@@ -3,14 +3,8 @@
 # Calculates the variation density from given core database
 
 use strict;
-
-use Bio::EnsEMBL::DBSQL::DBAdaptor;
-use Bio::EnsEMBL::DBSQL::DensityFeatureAdaptor;
-use Bio::EnsEMBL::DBSQL::DensityFeatureAdaptor;
-use Bio::EnsEMBL::DensityType;
-use Bio::EnsEMBL::DensityFeature;
 use Bio::EnsEMBL::Registry;
-use Bio::EnsEMBL::Variation::DBSQL::DBAdaptor;
+
 use Getopt::Long;
 
 use Data::Dumper;
@@ -32,7 +26,8 @@ GetOptions( "host|h=s",     \$host,
 
 usage() if (!$host || !$user || !$pass || !$species );
 
-my $reg = Bio::EnsEMBL::Registry->load_registry_from_db(-host => $host, -user => $user, -pass => $pass, -port => $port, -species => $species);
+my $reg = 'Bio::EnsEMBL::Registry';
+$reg->load_registry_from_db(-host => $host, -user => $user, -pass => $pass, -port => $port, -species => $species);
 
 my $density_feature_adaptor   = $reg->get_adaptor($species, "core", "DensityFeature")        || die "Can't create density feature adaptor";
 my $density_type_adaptor      = $reg->get_adaptor($species, "core", "DensityType")           || die "Can't create density type adaptor";
