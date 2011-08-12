@@ -416,7 +416,7 @@ sub biotype_gene_rescore {
       # PENALTY: The gene stable ID is now on a gene with a different
       # biotype.
       $matrix->set_score( $entry->source(), $entry->target(),
-                          0.25*$entry->score() );
+                          0.75*$entry->score() );
       $i++;
     }
   }
