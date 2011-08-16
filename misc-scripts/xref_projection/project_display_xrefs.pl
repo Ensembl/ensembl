@@ -320,6 +320,9 @@ sub project_display_names {
 
       my @to_transcripts = @{$to_gene->get_all_Transcripts};
       my $to_transcript = $to_transcripts[0];
+      
+      # Force loading of external synonyms for the xref
+      $dbEntry->get_all_synonyms();
 
       $dbname = $dbEntry->dbname();
 
@@ -399,6 +402,9 @@ sub project_go_terms {
 
     # check that each from GO term isn't already projected
     next if ($go_check && go_xref_exists($dbEntry, $to_go_xrefs));
+    
+    # Force loading of external synonyms for the xref
+    $dbEntry->get_all_synonyms();
 
     # record statistics by evidence type
     foreach my $et (@{$dbEntry->get_all_linkage_types}){
