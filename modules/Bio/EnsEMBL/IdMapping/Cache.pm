@@ -50,6 +50,7 @@ use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Storable qw(nstore retrieve);
 use Digest::MD5 qw(md5_hex);
 
+my $use_projection_code = 1;
 
 # define available cache names here
 my @cache_names = qw(
@@ -153,15 +154,22 @@ sub build_cache_by_slice {
   # if so, you don't need to project.
   # also don't project if no common coord_system present
   my $need_project = 1;
-  my $csid = join(':', $slice->coord_system_name,
-                       $slice->coord_system->version);
-  if ($self->is_common_cs($csid) or !$self->highest_common_cs) {
+
+  if ($use_projection_code) {
+    my $csid = join( ':',
+                     $slice->coord_system_name,
+                     $slice->coord_system->version );
+    if ( $self->is_common_cs($csid) or !$self->highest_common_cs ) {
+      $need_project = 0;
+    }
+  } else {
     $need_project = 0;
   }
-  
+
   # build cache
   my $type = "$dbtype.$slice_name";
-  my $num_genes = $self->build_cache_from_genes($type, $genes, $need_project);
+  my $num_genes =
+    $self->build_cache_from_genes( $type, $genes, $need_project );
   undef $genes;
 
   # write cache to file, then flush cache to reclaim memory
@@ -208,7 +216,10 @@ sub build_cache_all {
   # Build cache. Setting $need_project to 'CHECK' will cause
   # build_cache_from_genes() to check the coordinate system for each gene.
   my $type = "$dbtype.ALL";
-  my $num_genes = $self->build_cache_from_genes($type, $genes, 'CHECK');
+  my $need_project = ( $use_projection_code ? 0 : 'CHECK' );
+  my $num_genes =
+    $self->build_cache_from_genes( $type, $genes, $need_project );
+
   undef $genes;
 
   # write cache to file, then flush cache to reclaim memory
@@ -381,7 +392,7 @@ sub build_cache_from_genes {
             $lexon->common_sr_name($sl->seq_region_name);
           }
         }
-        
+
         $ltr->add_Exon($lexon);
 
         $self->add('exons_by_id', $type, $exon->dbID, $lexon);
