@@ -1797,6 +1797,8 @@ sub get_all_CopyNumberVariantProbes {
   my $source = shift;
 	my $study = shift;
 	
+	deprecate('Use get_all_CopyNumberVariantProbeFeatures() instead.');
+	
 	return $self->get_all_CopyNumberVariantProbeFeatures($source);
 }
 
