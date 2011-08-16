@@ -61,6 +61,7 @@ my %attrib_codes = ( 'miRNA'                => 'miRNA',
 		     'TR_C_gene'            => 'Ig', #Actually it is TR but was put with Igs (v62)
 		     'TR_J_gene'            => 'Ig', #Actually it is TR but was put with Igs (v62)
 		     'TR_V_gene'            => 'Ig', #Actually it is TR but was put with Igs (v62)
+                     'TR_D_gene'            => 'Ig', #Actually it is TR but was put with Igs (v62)
 		     'C_segment'            => 'Ig',
 		     'D_segment'            => 'Ig',
 		     'J_segment'            => 'Ig',
@@ -69,6 +70,7 @@ my %attrib_codes = ( 'miRNA'                => 'miRNA',
 		     'IG_V_pseudogene'      => 'pseudo',
 		     'IG_C_pseudogene'      => 'pseudo',
 		     'TR_V_pseudogene'      => 'pseudo',
+                     'TR_J_pseudogene'      => 'pseudo',
 		     'IG_J_pseudogene'      => 'pseudo',
 		     'retrotransposed'      => 'rettran',
 		     'processed_transcript' => 'proc_tr',
