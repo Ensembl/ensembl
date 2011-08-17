@@ -456,21 +456,6 @@ sub canonical_transcript {
 
     assert_ref( $transcript, 'Bio::EnsEMBL::Transcript' );
 
-    # Make sure that it is actually one of the transcripts of this gene.
-    my $transcripts = $self->get_all_Transcripts();
-
-    my $canonical_transcript;
-    foreach my $t ( @{$transcripts} ) {
-      if ( $transcript->equals($t) ) {
-        $canonical_transcript = $t;
-        last;
-      }
-    }
-
-    if ( !defined($canonical_transcript) ) {
-      throw("The canonical transcript is not part of this gene");
-    }
-
     # If there's already a canonical transcript, make sure it doesn't
     # think it's still canonical.
     if ( defined( $self->{'canonical_transcript'} ) ) {
