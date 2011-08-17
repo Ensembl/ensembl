@@ -462,11 +462,10 @@ sub canonical_transcript {
       $self->{'canonical_transcript'}->is_canonical(0);
     }
 
-    $self->{'canonical_transcript'}    = $canonical_transcript;
-    $self->{'canonical_transcript_id'} = $canonical_transcript->dbID();
+    $self->{'canonical_transcript'}    = $transcript;
+    $self->{'canonical_transcript_id'} = $transcript->dbID();
 
-    $canonical_transcript->is_canonical(1);    # These may be different
-    $transcript->is_canonical(1);              # objects...
+    $transcript->is_canonical(1);
 
   } elsif (   !defined( $self->{'canonical_transcript'} )
             && defined( $self->{'canonical_transcript_id'} )
