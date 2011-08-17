@@ -294,25 +294,26 @@ sub fetch_by_translation_id {
 =cut
 
 sub fetch_all_by_Gene {
-  my $self = shift;
-  my $gene = shift;
+  my ( $self, $gene ) = @_;
 
-  my $constraint = "t.gene_id = ".$gene->dbID();
+  my $constraint = "t.gene_id = " . $gene->dbID();
 
-  # Use the fetch_all_by_Slice_constraint method because it
-  # handles the difficult Haps/PARs and coordinate remapping
+  # Use the fetch_all_by_Slice_constraint method because it handles the
+  # difficult Haps/PARs and coordinate remapping.
 
   # Get a slice that entirely overlaps the gene.  This is because we
   # want all transcripts to be retrieved, not just ones overlapping
-  # the slice the gene is on (the gene may only partially overlap the slice)
-  # For speed reasons, only use a different slice if necessary though.
+  # the slice the gene is on (the gene may only partially overlap the
+  # slice).  For speed reasons, only use a different slice if necessary
+  # though.
 
   my $gslice = $gene->slice();
-  my $slice;
 
-  if (!$gslice) {
+  if ( !defined($gslice) ) {
     throw("Gene must have attached slice to retrieve transcripts.");
   }
+
+  my $slice;
 
   if ( $gene->start() < 1 || $gene->end() > $gslice->length() ) {
     if ( $gslice->is_circular() ) {
@@ -324,18 +325,28 @@ sub fetch_all_by_Gene {
     $slice = $gslice;
   }
 
-  my $transcripts = $self->fetch_all_by_Slice_constraint($slice, $constraint);
+  my $transcripts =
+    $self->fetch_all_by_Slice_constraint( $slice, $constraint );
 
-  if ($slice != $gslice) {
+  if ( $slice != $gslice ) {
     my @out;
-    foreach my $tr (@$transcripts) {
-      push @out, $tr->transfer($gslice);
+    foreach my $tr ( @{$transcripts} ) {
+      push( @out, $tr->transfer($gslice) );
     }
     $transcripts = \@out;
   }
 
+  my $canonical_t = $gene->canonical_transcript();
+
+  foreach my $t ( @{$transcripts} ) {
+    if ( $t->equals($canonical_t) ) {
+      $t->is_canonical(1);
+      last;
+    }
+  }
+
   return $transcripts;
-}
+} ## end sub fetch_all_by_Gene
 
 
 =head2 fetch_all_by_Slice
