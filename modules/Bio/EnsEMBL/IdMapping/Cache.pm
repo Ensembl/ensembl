@@ -50,7 +50,7 @@ use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Storable qw(nstore retrieve);
 use Digest::MD5 qw(md5_hex);
 
-my $use_projection_code = 1;
+my $use_projection_code = 0;
 
 # define available cache names here
 my @cache_names = qw(
@@ -216,7 +216,7 @@ sub build_cache_all {
   # Build cache. Setting $need_project to 'CHECK' will cause
   # build_cache_from_genes() to check the coordinate system for each gene.
   my $type = "$dbtype.ALL";
-  my $need_project = ( $use_projection_code ? 0 : 'CHECK' );
+  my $need_project = ( $use_projection_code ? 'CHECK' : 0 );
   my $num_genes =
     $self->build_cache_from_genes( $type, $genes, $need_project );
 
