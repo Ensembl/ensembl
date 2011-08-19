@@ -1,4 +1,4 @@
--- Schema of tables not added by the bootstrap_master.pl script.
+-- Schema of tables *not* added by the bootstrap_master.pl script.
 
 -- NB: Additional tables are added by the web team to support storing
 -- declarations of intentions etc.  Those tables are not even mentioned
@@ -8,10 +8,10 @@
 -- Lists the species for which there is a Core database.
 CREATE TABLE species (
   species_id     INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
-  db_name        VARCHAR(64) NOT NULL,   -- Name used in database names.
-  common_name    VARCHAR(64) NOT NULL,   -- What we often refer to it as.
-  web_name       VARCHAR(64) NOT NULL,   -- Name that the web site is using.
-  taxon		 VARCHAR(20),
+  db_name        VARCHAR(255) NOT NULL, -- Name used in database names.
+  common_name    VARCHAR(255) NOT NULL, -- What we often refer to it as.
+  web_name       VARCHAR(255) NOT NULL, -- Name that the web site is using.
+  taxon          VARCHAR(20),
   species_prefix VARCHAR(20),
   is_current     BOOLEAN NOT NULL DEFAULT true,
 
