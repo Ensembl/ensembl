@@ -390,6 +390,7 @@ sub equals {
   my ( $self, $gene ) = @_;
 
   if ( $self eq $gene ) { return 1 }
+  if ( ! defined $gene ) { return 0 }
 
   assert_ref( $gene, 'Bio::EnsEMBL::Gene' );
 

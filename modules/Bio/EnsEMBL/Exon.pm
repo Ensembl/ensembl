@@ -849,6 +849,7 @@ sub equals {
   my ( $self, $exon ) = @_;
 
   if ( $self eq $exon ) { return 1 }
+  if ( ! defined $exon ) { return 0 }
 
   assert_ref( $exon, 'Bio::EnsEMBL::Exon' );
 
