@@ -754,10 +754,11 @@ sub _dump_feature_table {
           $value = 
             $self->features2location($transcript->get_all_translateable_Exons);
           $self->write(@ff,'CDS', $value);
+          my $codon_start = $self->transcript_to_codon_start($transcript);
+          $self->write(@ff,''   , qq{/codon_start="${codon_start}"}) if $codon_start > 1; 
           $self->write(@ff,''   , '/gene="'.$gene->stable_id().'"'); 
-          $self->write(@ff,'', '/protein_id="'.$translation->stable_id().'"');
-          $self->write(@ff,''
-                       ,'/note="transcript_id='.$transcript->stable_id().'"');
+          $self->write(@ff,''   , '/protein_id="'.$translation->stable_id().'"');
+          $self->write(@ff,''   ,'/note="transcript_id='.$transcript->stable_id().'"');
 
           foreach my $dbl (@{$transcript->get_all_DBLinks}) {
             $value = '/db_xref="'.$dbl->dbname().':'.$dbl->display_id().'"';
@@ -902,6 +903,28 @@ sub _dump_feature_table {
 
 }
 
+# /codon_start= is the first base to start translating from. This maps 
+# Ensembl start exon phase to this concept. Here we present the usage
+# of phase in this concept where each row shows the sequence the 
+# spliced_seq() method will return 
+
+#               123456789
+#               ATTATGACG
+# Phase == 0    ...+++###   codon_start=0   // start from 1st A
+# Phase == 1     ..+++###   codon_start=3   // start from 2nd A (base 3 in the given spliced sequence)
+# Phase == 2      .+++###   codon_start=2   // start from 2nd A (base 2 in the spliced sequence)
+#
+# In the case of the final 2 phases we will generate a X codon
+#
+
+sub transcript_to_codon_start {
+  my ($self, $transcript) = @_;
+  my $start_phase = $transcript->start_Exon()->phase();
+  return  ( $start_phase == 1 ) ? 3 : 
+          ( $start_phase == 2 ) ? 2 :
+          ( $start_phase == 0 ) ? 1 :
+          -1;
+}
 
 
 =head2 dump_fasta
