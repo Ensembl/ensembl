@@ -2092,6 +2092,7 @@ sub equals {
   my ( $self, $transcript ) = @_;
 
   if ( $self eq $transcript ) { return 1 }
+  if ( ! defined $transcript ) { return 0 }
 
   assert_ref( $transcript, 'Bio::EnsEMBL::Transcript' );
 

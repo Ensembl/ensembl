@@ -435,6 +435,9 @@ sub equals {
   if ( $self eq $feature ) {
     return 1;
   }
+  if ( ! defined $feature ) {
+    return 0;
+  }
 
   assert_ref( $feature, 'Bio::EnsEMBL::Feature' );
 
