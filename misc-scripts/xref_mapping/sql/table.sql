@@ -393,7 +393,7 @@ CREATE TABLE identity_xref (
 CREATE TABLE go_xref (
 
   object_xref_id          INT(10) UNSIGNED DEFAULT '0' NOT NULL,
-  linkage_type            NOT NULL,
+  linkage_type            CHAR(3) NOT NULL,
   source_xref_id          INT(10) UNSIGNED DEFAULT NULL,
   KEY (object_xref_id),
   KEY (source_xref_id),
