@@ -280,12 +280,12 @@ while (<SQLFILE>) {
 	#	warn "Processing table";
 
 		## INDEXES ##
-		if ($doc =~ /^\s*(primary\skey)\s*\((.+)\)/i or $doc =~ /^\s*(unique)\s*\((.+)\)/i){ # Primary or unique
+		if ($doc =~ /^\s*(primary\s+key)\s*\((.+)\)/i or $doc =~ /^\s*(unique)\s*\((.+)\)/i){ # Primary or unique
 			my $icol = remove_char($2);
 			add_column_index($1,$icol);
 			next;
 		}
-		elsif ($doc =~ /^\s*(unique\s)?(key)\s+(\S+)\s*\((.+)\)/i) { # Keys and indexes
+		elsif ($doc =~ /^\s*(unique\s+)?(key|index)\s+(\S+)\s*\((.+)\)/i) { # Keys and indexes
 			my $icol = remove_char($4);
 			add_column_index("$1$2",$icol,$3);
 			next;
