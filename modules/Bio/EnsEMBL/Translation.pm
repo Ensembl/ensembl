@@ -1201,22 +1201,5 @@ sub get_all_DAS_Features{
   return $self->SUPER::get_all_DAS_Features($slice);
 }
 
-=head2 summary_as_hash
-
-  Example       : $gene_summary = $gene->summary_as_hash();
-  Description   : Retrieves a textual summary of this Gene object.
-  Returns       : hashref of descriptive strings
-
-=cut
-
-sub summary_as_hash {
-  my $self = shift;
-  my %summary;
-  $summary{'stable_id'} = $self->stable_id;
-  $summary{'display_id'} = $self->display_id;
-  $summary{'genomic_start'} = $self->genomic_start;
-  $summary{'genomic_end'} = $self->genomic_end;
-  return \%summary;
-}
 
 1;

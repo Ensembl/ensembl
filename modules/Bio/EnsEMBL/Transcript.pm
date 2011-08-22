@@ -2650,28 +2650,6 @@ sub load {
 
 } ## end sub load
 
-=head2 summary_as_hash
-
-  Example       : $transcript_summary = $transcript->summary_as_hash();
-  Description   : Retrieves a textual summary of this Transcript object.
-  Returns       : hashref of descriptive strings
-
-=cut
-
-sub summary_as_hash {
-  my $self = shift;
-  my %summary;
-  $summary{'stable_id'} = $self->stable_id;
-  $summary{'description'} = $self->description;
-  $summary{'biotype'} = $self->biotype;
-  $summary{'start'} = $self->start;
-  $summary{'end'} = $self->end;
-  $summary{'strand'} = $self->strand;
-  $summary{'display_id'} = $self->display_id;
-  return \%summary;
-}
-
-
 ###########################
 # DEPRECATED METHODS FOLLOW
 ###########################
