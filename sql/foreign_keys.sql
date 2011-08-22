@@ -96,6 +96,20 @@ ALTER table misc_feature_misc_set ADD FOREIGN KEY (misc_set_id) REFERENCES misc_
 ALTER table object_xref ADD FOREIGN KEY (xref_id) REFERENCES xref(xref_id);
 ALTER table object_xref ADD FOREIGN KEY (analysis_id) REFERENCES analysis(analysis_id);
 
+ALTER TABLE operon ADD FOREIGN KEY (analysis_id) REFERENCES analysis(analysis_id);
+ALTER TABLE operon ADD FOREIGN KEY (seq_region_id) REFERENCES seq_region(seq_region_id);
+
+ALTER TABLE operon_stable_id ADD FOREIGN KEY (operon_id) REFERENCES operon(operon_id);
+
+ALTER TABLE operon_transcript ADD FOREIGN KEY (analysis_id) REFERENCES analysis(analysis_id);
+ALTER TABLE operon_transcript ADD FOREIGN KEY (seq_region_id) REFERENCES seq_region(seq_region_id); 
+ALTER TABLE operon_transcript ADD FOREIGN KEY (operon_id) REFERENCES operon(operon_id);
+
+ALTER TABLE operon_transcript_stable_id ADD FOREIGN KEY (operon_transcript_id) REFERENCES operon_transcript(operon_transcript_id);
+
+ALTER TABLE operon_transcript_gene ADD FOREIGN KEY (operon_transcript_id) REFERENCES operon_transcript(operon_transcript_id);
+ALTER TABLE operon_transcript_gene ADD FOREIGN KEY (gene_id) REFERENCES gene(gene_id);
+
 ALTER table prediction_exon ADD FOREIGN KEY (prediction_transcript_id) REFERENCES prediction_transcript(prediction_transcript_id);
 ALTER table prediction_exon ADD FOREIGN KEY (seq_region_id) REFERENCES seq_region(seq_region_id);
 
