@@ -516,6 +516,137 @@ CREATE TABLE meta_coord (
 
 
 /**
+@table operon
+@desc allows one or more polycistronic transcripts to be grouped together
+
+@column operon_id                   Primary key, internal identifier.
+@column analysis_id                 Foreign key references to the @link analysis table. 
+@column seq_region_id               Foreign key references to the @link seq_region table. 
+@column seq_region_start            Sequence start position.
+@column seq_region_end              Sequence end position.          
+@column seq_region_strand           Sequence region strand: 1 - forward; -1 - reverse.
+@column display_label		    Short name for operon
+
+@see operon_transcript
+@see operon_stable_id
+*/
+CREATE TABLE operon (
+  operon_id                 INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  seq_region_id             INT(10) UNSIGNED NOT NULL,
+  seq_region_start          INT(10) UNSIGNED NOT NULL,
+  seq_region_end            INT(10) UNSIGNED NOT NULL,
+  seq_region_strand         TINYINT(2) NOT NULL,
+  display_label             VARCHAR(255) DEFAULT NULL,
+  analysis_id               SMALLINT UNSIGNED NOT NULL,
+
+  PRIMARY KEY (operon_id),
+  KEY seq_region_idx (seq_region_id, seq_region_start),
+  KEY name_idx (display_label)
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+
+/**
+@table operon_stable_id
+@desc Relates operon IDs in this release to release-independent stable identifiers.
+
+@column operon_id    	    Primary key, internal identifier. Foreign key references to the @link operon table.
+@column stable_id           Stable identifier.       
+@column version             Version number.       
+@column created_date        Date created.       
+@column modified_date       Date modified.    
+
+@see operon
+
+*/
+CREATE TABLE operon_stable_id (
+  operon_id                 INT UNSIGNED NOT NULL,
+  stable_id                 VARCHAR(128) NOT NULL,
+  version                   INT(10),
+  created_date              DATETIME NOT NULL,
+  modified_date             DATETIME NOT NULL,
+
+  PRIMARY KEY (operon_id),
+  KEY stable_id_idx (stable_id, version)
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+
+
+
+/**
+@table operon_transcript
+@desc represents polycistronic transcripts which belong to operons and encode more than one gene
+
+@column operon_transcript_id        Primary key, internal identifier.
+@column analysis_id                 Foreign key references to the @link analysis table. 
+@column seq_region_id               Foreign key references to the @link seq_region table. 
+@column seq_region_start            Sequence start position.
+@column seq_region_end              Sequence end position.          
+@column seq_region_strand           Sequence region strand: 1 - forward; -1 - reverse.
+@column operon_id                   Foreign key references to the @link operon table. 
+@column display_label		    Short name for operon transcript
+
+@see operon
+@see operon_transcript_stable_id
+@see operon_transcript_gene
+*/
+CREATE TABLE operon_transcript (
+  operon_transcript_id      INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  seq_region_id             INT(10) UNSIGNED NOT NULL,
+  seq_region_start          INT(10) UNSIGNED NOT NULL,
+  seq_region_end            INT(10) UNSIGNED NOT NULL,
+  seq_region_strand         TINYINT(2) NOT NULL,
+  operon_id                 INT(10) UNSIGNED NOT NULL,
+  display_label             VARCHAR(255) DEFAULT NULL,
+  analysis_id               SMALLINT UNSIGNED NOT NULL,
+
+  PRIMARY KEY (operon_transcript_id),
+  KEY operon_idx (operon_id),
+  KEY seq_region_idx (seq_region_id, seq_region_start)
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+
+
+/**
+@table operon_transcript_stable_id
+@desc Relates operon polycistronic transcripts IDs in this release to release-independent stable identifiers.
+
+@column operon_transcript_id	   Primary key, internal identifier. Foreign key references to the @link operon_transcript table.
+@column stable_id           	   Stable identifier.       
+@column version             	   Version number.       
+@column created_date        	   Date created.       
+@column modified_date       	   Date modified.    
+
+@see operon_transcript
+
+*/
+CREATE TABLE operon_transcript_stable_id (
+  operon_transcript_id      INT UNSIGNED NOT NULL,
+  stable_id                 VARCHAR(128) NOT NULL,
+  version                   INT(10),
+  created_date              DATETIME NOT NULL,
+  modified_date             DATETIME NOT NULL,
+
+  PRIMARY KEY (operon_transcript_id),
+  KEY stable_id_idx (stable_id, version)
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+
+
+/**
+@table operon_transcript_gene
+@desc allows association of genes with polycistronic transcripts
+
+@column operon_transcript_id	  Foreign key references to the @link operon_transcript table. 
+@column gene_id			  Foreign key references to the @link gene table. 
+
+@see operon_transcript
+@see gene
+*/
+CREATE TABLE operon_transcript_gene (
+  operon_transcript_id      INT(10) UNSIGNED,
+  gene_id                   INT(10) UNSIGNED,
+
+  KEY operon_transcript_gene_idx (operon_transcript_id,gene_id)
+) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
+
+
+/**
 @table seq_region
 @desc Stores information about sequence regions. The primary key is used as a pointer into the dna table so that actual sequence can be obtained, and the coord_system_id allows sequence regions of multiple types to be stored.
 Clones, contigs and chromosomes are all now stored in the seq_region table. Contigs are stored with the co-ordinate system 'contig'.
@@ -2470,128 +2601,3 @@ CREATE TABLE interpro (
   KEY id_idx (id)
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
-/**
-@table operon
-@desc allows one or more polycistronic transcripts to be grouped together
-
-@column operon_id                   Primary key, internal identifier.
-@column analysis_id                 Foreign key references to the @link analysis table. 
-@column seq_region_id               Foreign key references to the @link seq_region table. 
-@column seq_region_start            Sequence start position.
-@column seq_region_end              Sequence end position.          
-@column seq_region_strand           Sequence region strand: 1 - forward; -1 - reverse.
-@column display_label		    Short name for operon
-
-@see operon_transcript
-@see operon_stable_id
-*/
-CREATE TABLE operon (
-  operon_id                 INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  seq_region_id             INT(10) UNSIGNED NOT NULL,
-  seq_region_start          INT(10) UNSIGNED NOT NULL,
-  seq_region_end            INT(10) UNSIGNED NOT NULL,
-  seq_region_strand         TINYINT(2) NOT NULL,
-  display_label             VARCHAR(255) DEFAULT NULL,
-  analysis_id               SMALLINT UNSIGNED NOT NULL,
-
-  PRIMARY KEY (operon_id),
-  KEY seq_region_idx (seq_region_id, seq_region_start),
-  KEY name_idx (display_label)
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
-
-/**
-@table operon_transcript
-@desc represents polycistronic transcripts which belong to operons and encode more than one gene
-
-@column operon_transcript_id        Primary key, internal identifier.
-@column analysis_id                 Foreign key references to the @link analysis table. 
-@column seq_region_id               Foreign key references to the @link seq_region table. 
-@column seq_region_start            Sequence start position.
-@column seq_region_end              Sequence end position.          
-@column seq_region_strand           Sequence region strand: 1 - forward; -1 - reverse.
-@column operon_id                   Foreign key references to the @link operon table. 
-@column display_label		    Short name for operon transcript
-
-@see operon
-@see operon_transcript_stable_id
-@see operon_transcript_gene
-*/
-CREATE TABLE operon_transcript (
-  operon_transcript_id      INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  seq_region_id             INT(10) UNSIGNED NOT NULL,
-  seq_region_start          INT(10) UNSIGNED NOT NULL,
-  seq_region_end            INT(10) UNSIGNED NOT NULL,
-  seq_region_strand         TINYINT(2) NOT NULL,
-  operon_id                 INT(10) UNSIGNED NOT NULL,
-  display_label             VARCHAR(255) DEFAULT NULL,
-  analysis_id               SMALLINT UNSIGNED NOT NULL,
-
-  PRIMARY KEY (operon_transcript_id),
-  KEY operon_idx (operon_id),
-  KEY seq_region_idx (seq_region_id, seq_region_start)
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
-
-/**
-@table operon_transcript_gene
-@desc allows association of genes with polycistronic transcripts
-
-@column operon_transcript_id	  Foreign key references to the @link operon_transcript table. 
-@column gene_id			  Foreign key references to the @link gene table. 
-
-@see operon_transcript
-@see gene
-*/
-CREATE TABLE operon_transcript_gene (
-  operon_transcript_id      INT(10) UNSIGNED,
-  gene_id                   INT(10) UNSIGNED,
-
-  KEY operon_transcript_gene_idx (operon_transcript_id,gene_id)
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
-
-/**
-@table operon_stable_id
-@desc Relates operon IDs in this release to release-independent stable identifiers.
-
-@column operon_id    	    Primary key, internal identifier. Foreign key references to the @link operon table.
-@column stable_id           Stable identifier.       
-@column version             Version number.       
-@column created_date        Date created.       
-@column modified_date       Date modified.    
-
-@see operon
-
-*/
-CREATE TABLE operon_stable_id (
-  operon_id                 INT UNSIGNED NOT NULL,
-  stable_id                 VARCHAR(128) NOT NULL,
-  version                   INT(10),
-  created_date              DATETIME NOT NULL,
-  modified_date             DATETIME NOT NULL,
-
-  PRIMARY KEY (operon_id),
-  KEY stable_id_idx (stable_id, version)
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
-
-/**
-@table operon_transcript_stable_id
-@desc Relates operon polycistronic transcripts IDs in this release to release-independent stable identifiers.
-
-@column operon_transcript_id	   Primary key, internal identifier. Foreign key references to the @link operon_transcript table.
-@column stable_id           	   Stable identifier.       
-@column version             	   Version number.       
-@column created_date        	   Date created.       
-@column modified_date       	   Date modified.    
-
-@see operon_transcript
-
-*/
-CREATE TABLE operon_transcript_stable_id (
-  operon_transcript_id      INT UNSIGNED NOT NULL,
-  stable_id                 VARCHAR(128) NOT NULL,
-  version                   INT(10),
-  created_date              DATETIME NOT NULL,
-  modified_date             DATETIME NOT NULL,
-
-  PRIMARY KEY (operon_transcript_id),
-  KEY stable_id_idx (stable_id, version)
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
