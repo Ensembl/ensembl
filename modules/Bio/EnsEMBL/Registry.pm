@@ -116,9 +116,11 @@ These are accessed by the get_adaptor subroutine i.e.
 
 =cut
 
-package Bio::EnsEMBL::Registry;
 
+
+package Bio::EnsEMBL::Registry;
 use strict;
+use warnings;
 
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::EnsEMBL::Utils::Exception qw( deprecate throw warning );
@@ -193,8 +195,7 @@ my %group2adaptor = (
 =cut
 
 sub load_all {
-    my $class = shift;
-    my ( $config_file, $verbose, $no_clear, $no_cache ) = @_;
+    my ($class, $config_file, $verbose, $no_clear, $no_cache ) = @_;
 
     $config_file ||= $ENV{ENSEMBL_REGISTRY}
       || $ENV{HOME} . "/.ensembl_init";
@@ -234,8 +235,9 @@ sub load_all {
 
         my $cfg;
 
-        eval { require Config::IniFiles };
-        if ($@) {
+        my $test_eval = eval { require Config::IniFiles };
+
+        if ($@ or (!$test_eval)) {
           # The user does not have the 'Config::IniFiles' module.
           if ($verbose) {
             print( STDERR "No Config::IniFiles module found, "
@@ -339,8 +341,8 @@ sub load_all {
                             $adaptor, $section );
                 }
 
-                eval "require $adaptor";
-                if ($@) { die($@) }
+                my $test_eval = eval "require $adaptor";
+                if ($@ or (!$test_eval)) { die($@) }
 
                 $adaptor->new(%adaptor_args);
 
@@ -350,13 +352,14 @@ sub load_all {
             # of configuration written in Perl.  We need to try to
             # require() it.
 
-            eval { require($config_file) };
-            if ($@) { die($@) }
+            my $test_eval = eval { require($config_file) };
+            if ($@ or (!$test_eval)) { die($@) }
 
             # To make the web code avoid doing this again:
             delete $INC{$config_file};
         }
     } ## end else [ if ( !defined($config_file...
+    return;
 } ## end sub load_all
 
 =head2 clear
@@ -379,6 +382,7 @@ sub clear{
     }
   }
   %registry_register = ();
+  return;
 }
 
 #
@@ -408,6 +412,7 @@ sub add_db {
     $registry_register{_SPECIES}{ lc( $db->species() ) }
       { lc( $db->group() ) }{'_special'}{ lc($name) } = $adap;
   }
+  return;
 }
 
 =head2 remove_db
@@ -544,7 +549,7 @@ sub add_DBAdaptor {
   } else {
     push( @{ $registry_register{'_DBA'} }, $adap );
   }
-
+  return;
 }
 
 
@@ -706,6 +711,7 @@ sub remove_DBAdaptor {
     splice( @{ $registry_register{'_DBA'} }, $index, 1 );
   }
 
+  return;
 } ## end sub remove_DBAdaptor
 
 
@@ -819,6 +825,7 @@ sub add_DNAAdaptor {
     $registry_register{_SPECIES}{$species}{ lc($group) }{'_DNA2'} =
       $dnadb_species;
   }
+  return;
 }
 
 =head2 get_DNAAdaptor
@@ -845,7 +852,7 @@ sub get_DNAAdaptor {
     return $class->get_DBAdaptor( $new_species, $new_group );
   }
 
-  return undef;
+  return;
 }
 
 #
@@ -911,7 +918,7 @@ sub add_adaptor {
     push( @{ $registry_register{_TYPE}{ lc($type) }{$species} },
       $adap );
   }
-
+  return;
 } ## end sub add_adaptor
 
 
@@ -963,7 +970,7 @@ sub get_adaptor {
   my $ret =
     $registry_register{_SPECIES}{$species}{ lc($group) }{ lc($type) };
 
-  if ( !defined($ret) ) { return undef }
+  if ( !defined($ret) ) { return }
   if ( ref($ret) )      { return $ret }
 
   # Not instantiated yet
@@ -971,10 +978,10 @@ sub get_adaptor {
   my $dba = $registry_register{_SPECIES}{$species}{ lc($group) }{'_DB'};
   my $module = $ret;
 
-  eval "require $module";
-  if ($@) {
+  my $test_eval = eval "require $module";
+  if ($@ or (!$test_eval)) {
     warning("'$module' cannot be found.\nException $@\n");
-    return undef;
+    return;
   }
 
   if (
@@ -1089,6 +1096,7 @@ sub add_alias{
   my ($class, $species,$key) = @_;
 
   $registry_register{'_ALIAS'}{lc($key)} = lc($species);
+  return;
 }
 
 =head2 remove_alias
@@ -1107,6 +1115,7 @@ sub remove_alias{
   my ($class, $species,$key) = @_;
 
   delete $registry_register{'_ALIAS'}{lc($key)};
+  return;
 }
 
 
@@ -1126,9 +1135,9 @@ sub get_alias{
   my ($class, $key, $no_warn) = @_;
 
   if(!defined($registry_register{'_ALIAS'}{lc($key)})){
-    if(!defined( $registry_register{_SPECIES}{ lc($key) }) and !defined ($registry_register{_ALIAS}{ lc($key) })){
-      warn "$key is not a valid species name for this instance\n" if(!defined($no_warn) or !$no_warn);
-      return undef;
+    if((!defined( $registry_register{_SPECIES}{ lc($key) })) and (!defined ($registry_register{_ALIAS}{ lc($key) }))){
+      warn "$key is not a valid species name for this instance\n" if((!defined($no_warn)) or (!$no_warn));
+      return;
     }
     else{
       return $key;
@@ -1204,6 +1213,7 @@ sub set_disconnect_when_inactive{
     $dbc->disconnect_if_idle() if $dbc->connected();
     $dbc->disconnect_when_inactive(1);
   }
+  return;
 }
 
 =head2 set_reconnect_when_lost
@@ -1222,6 +1232,7 @@ sub set_reconnect_when_lost{
     my $dbc = $dba->dbc;
     $dbc->reconnect_when_lost(1);
   }
+  return;
 }
 
 =head2 disconnect_all
@@ -1241,6 +1252,7 @@ sub disconnect_all {
     # Disconnect if connected
     $dbc->disconnect_if_idle() if $dbc->connected();
   }
+  return;
 }
 
 =head2 change_access
@@ -1266,23 +1278,23 @@ sub disconnect_all {
 =cut
 
 sub change_access{
-my $self = shift;
-    my ($host,$port,$user,$dbname,$new_user,$new_pass) = @_;
-    foreach my $dba ( @{$registry_register{'_DBA'}}){
-	my $dbc = $dba->dbc;
-	if((!defined($host) or $host eq $dbc->host) and
-	   (!defined($port) or $port eq $dbc->port) and
-	   (!defined($user) or $user eq $dbc->username) and
-	   (!defined($dbname) or $dbname eq $dbc->dbname)){
-	    if($dbc->connected()){
-		$dbc->db_handle->disconnect();
-		$dbc->connected(undef);
-	    }
-	    # over write the username and password
-	    $dbc->username($new_user);
-	    $dbc->password($new_pass);
-	}
+  my ($self, $host,$port,$user,$dbname,$new_user,$new_pass) = @_;
+  foreach my $dba ( @{$registry_register{'_DBA'}}){
+    my $dbc = $dba->dbc;
+    if((((!defined($host)) or ($host eq $dbc->host))) and
+       (((!defined($port)) or ($port eq $dbc->port))) and
+       (((!defined($user)) or ($user eq $dbc->username))) and
+       ((!defined($dbname)) or ($dbname eq $dbc->dbname))){
+      if($dbc->connected()){
+	$dbc->db_handle->disconnect();
+	$dbc->connected(undef);
+      }
+      # over write the username and password
+      $dbc->username($new_user);
+      $dbc->password($new_pass);
     }
+  }
+  return;
 }
 
 
@@ -1322,17 +1334,17 @@ my $self = shift;
 sub load_registry_from_url {
   my ( $self, $url, $verbose, $no_cache ) = @_;
 
-  if ( $url =~ /mysql\:\/\/([^\@]+\@)?([^\:\/]+)(\:\d+)?(\/\d+)?/ ) {
+  if ( $url =~ /mysql\:\/\/([^\@]+\@)?([^\:\/]+)(\:\d+)?(\/\d+)?/x ) {
     my $user_pass = $1;
     my $host      = $2;
     my $port      = $3;
     my $version   = $4;
 
     $user_pass =~ s/\@$//;
-    my ( $user, $pass ) = $user_pass =~ m/([^\:]+)(\:.+)?/;
-    $pass    =~ s/^\:// if ($pass);
-    $port    =~ s/^\:// if ($port);
-    $version =~ s/^\/// if ($version);
+    my ( $user, $pass ) = $user_pass =~ m/([^\:]+)(\:.+)?/x;
+    $pass    =~ s/^\://x if ($pass);
+    $port    =~ s/^\://x if ($port);
+    $version =~ s/^\///x if ($version);
 
     $self->load_registry_from_db(
       -host       => $host,
@@ -1346,6 +1358,7 @@ sub load_registry_from_url {
   } else {
     throw("Only MySQL URLs are accepted at the moment");
   }
+  return;
 } ## end sub load_registry_from_url
 
 
@@ -1459,7 +1472,7 @@ sub load_registry_from_db {
   if ( !defined($port) ) {
     $port = 3306;
     if ( $host eq "ensembldb.ensembl.org" ) {
-      if ( !defined($db_version) or $db_version >= 48 ) {
+      if ( (!defined($db_version)) or ($db_version >= 48) ) {
         $port = 5306;
       }
     }
@@ -1484,35 +1497,50 @@ sub load_registry_from_db {
     printf( "Will only load v%d databases\n", $software_version );
   }
 
+  # From the list of all the databses create a tempory hash of those we
+  # are interested in
+
   for my $db (@dbnames) {
     if ( $db =~ /^(\w+_collection_\w+(?:_\d+)?)_((\d+)_\w+)/ )
     {    # NEEDS TO BE FIRST TO PICK UP COLLECTION DBS
       if ( $3 eq $software_version ) {
         $temp{$1} = $2;
       }
-    } elsif ( $db =~ /^(.+)_(userdata)$/ ) {
+    } elsif ( $db =~ /^(.+)_(userdata)$/x ) {
       $temp{$1} = $2;
-    } elsif ( $db =~ /^(ensembl_compara(?:_\w+)*?)_(\d+)$/ ) {
+    } elsif ( $db =~ /^(ensembl_compara # compara database
+                        (?:_\w+)*?)     # optional ensembl genomes bit
+                        _
+                        (\d+)$/x ) {    # db version
       if ( $2 eq $software_version ) {
         $temp{$1} = $2;
       }
-    } elsif ( $db =~ /^(ensembl_ancestral(?:_\w+?)*?)_(\d+)$/ ) {
+    } elsif ( $db =~ /^(ensembl_ancestral(?:_\w+?)*?)_(\d+)$/x ) {
       if ( $2 eq $software_version ) {
         $temp{$1} = $2;
       }
-    } elsif ( $db =~ /^(ensembl_ontology)_(\d+)/ ) {
+    } elsif ( $db =~ /^(ensembl_ontology)_(\d+)/x ) {
       if ( $2 eq $software_version ) {
         $ontology_version = $2;
       }
-    } elsif ( $db =~ /^([a-z]+_[a-z0-9]+_[a-z]+(?:_\d+)?)_(\d+)_(\w+)/ )
-    {
+    } elsif ( $db =~ /^([a-z]+_[a-z0-9]+ # species name e.g. homo_sapiens
+		       _
+                       [a-z]+            # db type
+                       (?:_\d+)?)        # optional end bit for ensembl genomes databases
+                       _
+                       (\d+)             # database release
+                       _
+                       (\w+)             # assembly number can have letters too e.g 37c
+                       /x
+	    ) {
+
       # Species specific databases (core, cdna, vega etc.)
 
-      my ( $one, $two, $three ) = ( $1, $2, $3 );
+      my ( $sp_name, $db_rel, $assem ) = ( $1, $2, $3 );
 
-      if ( !defined($species) || $one =~ /^$species/ ) {
-        if ( $two eq $software_version ) {
-          $temp{$one} = $two . "_" . $three;
+      if ( !defined($species) || $sp_name =~ /^$species/ ) {
+        if ( $db_rel eq $software_version ) {
+          $temp{$sp_name} = $db_rel . "_" . $assem;
         }
       }
 
@@ -1527,34 +1555,55 @@ sub load_registry_from_db {
     push @dbnames, $key . "_" . $temp{$key};
   }
 
-  # Register Core databases
+  # Register Core like databases
+  foreach my $type qw (core cdna vega otherfeatures rnaseq){
 
-  my @core_dbs = grep { /^[a-z]+_[a-z0-9]+_core_(?:\d+_)?\d+_/ } @dbnames;
+    my @dbs = grep { /^[a-z]+_[a-z0-9]+  # species name
+                       _
+                       $type            # the database type
+		       _
+                       (?:\d+_)?         # optional end bit for ensembl genomes
+                       \d+               # database release
+                       _
+                       /x } @dbnames;
 
-  foreach my $coredb (@core_dbs) {
-    if ( index( $coredb, 'collection' ) != -1 ) {
-      # Skip multi-species databases.
-      next;
-    }
+    foreach my $database (@dbs) {
+      if ( index( $database, 'collection' ) != -1 ) {
+	# Skip multi-species databases.
+	next;
+      }
+    
 
-    my ( $species, $num ) =
-      ( $coredb =~ /(^[a-z]+_[a-z0-9]+)_core_(?:\d+_)?(\d+)/ );
+      my ( $species, $num ) =
+	( $database =~ /(^[a-z]+_[a-z0-9]+)  # species name
+                     _
+                     $type                   # type
+                     _
+                     (?:\d+_)?               # optional endbit for ensembl genomes
+                     (\d+)                   # databases release
+                     _
+                      /x );
 
-    my $dba =
-      Bio::EnsEMBL::DBSQL::DBAdaptor->new(
-                                         -group        => "core",
+      if(!defined($species)){
+        warn "for $database cannot get species??\n";
+      }
+
+      my $dba =
+	Bio::EnsEMBL::DBSQL::DBAdaptor->new(
+                                         -group        => $type,
                                          -species      => $species.$species_suffix,
                                          -host         => $host,
                                          -user         => $user,
                                          -pass         => $pass,
                                          -port         => $port,
-                                         -dbname       => $coredb,
+                                         -dbname       => $database,
                                          -wait_timeout => $wait_timeout,
                                          -no_cache     => $no_cache );
 
-    if ($verbose) {
-      printf( "Species '%s' loaded from database '%s'\n",
-              $species, $coredb );
+      if ($verbose) {
+	printf( "Species '%s' loaded from database '%s'\n",
+		$species, $database );
+      }
     }
   }
 
@@ -1596,75 +1645,6 @@ sub load_registry_from_db {
     }
   } ## end foreach my $multidb (@multi_dbs)
 
-  # register cdna databases
-
-  my @cdna_dbs = grep { /^[a-z]+_[a-z0-9]+_cdna_(?:\d+_)?\d+_/ } @dbnames;
-
-  for my $cdnadb (@cdna_dbs) {
-    my ( $species, $num ) =
-      ( $cdnadb =~ /(^[a-z]+_[a-z0-9]+)_cdna_(?:\d+_)?(\d+)_/ );
-    my $dba =
-      Bio::EnsEMBL::DBSQL::DBAdaptor->new(
-                                         -group        => "cdna",
-                                         -species      => $species.$species_suffix,
-                                         -host         => $host,
-                                         -user         => $user,
-                                         -pass         => $pass,
-                                         -port         => $port,
-                                         -dbname       => $cdnadb,
-                                         -wait_timeout => $wait_timeout,
-                                         -no_cache     => $no_cache );
-
-    if ($verbose) {
-      printf( "%s loaded\n", $cdnadb );
-    }
-  }
-
-  my @vega_dbs = grep { /^[a-z]+_[a-z]+_vega_\d+_/ } @dbnames;
-
-  for my $vegadb (@vega_dbs) {
-    my ( $species, $num ) =
-      ( $vegadb =~ /(^[a-z]+_[a-z]+)_vega_(\d+)/ );
-    my $dba =
-      Bio::EnsEMBL::DBSQL::DBAdaptor->new(
-                                         -group        => "vega",
-                                         -species      => $species.$species_suffix,
-                                         -host         => $host,
-                                         -user         => $user,
-                                         -pass         => $pass,
-                                         -port         => $port,
-                                         -wait_timeout => $wait_timeout,
-                                         -dbname       => $vegadb,
-                                         -no_cache     => $no_cache );
-
-    if ($verbose) {
-      printf( "%s loaded\n", $vegadb );
-    }
-  }
-
-  # Otherfeatures
-
-  my @other_dbs = grep { /^[a-z]+_[a-z0-9]+_otherfeatures_(?:\d+_)?\d+_/ } @dbnames;
-
-  for my $other_db (@other_dbs) {
-    my ( $species, $num ) =
-      ( $other_db =~ /(^[a-z]+_[a-z0-9]+)_otherfeatures_(?:\d+_)?(\d+)_/ );
-    my $dba =
-      Bio::EnsEMBL::DBSQL::DBAdaptor->new(
-                                         -group   => "otherfeatures",
-                                         -species => $species.$species_suffix,
-                                         -host    => $host,
-                                         -user    => $user,
-                                         -pass    => $pass,
-                                         -port    => $port,
-                                         -wait_timeout => $wait_timeout,
-                                         -dbname       => $other_db,
-                                         -no_cache     => $no_cache );
-
-    if ($verbose) {
-      printf( "%s loaded\n", $other_db );
-    }
-  }
 
   # User upload DBs
 
@@ -1732,8 +1712,8 @@ sub load_registry_from_db {
 
   # Variation
 
-  eval "require Bio::EnsEMBL::Variation::DBSQL::DBAdaptor";
-  if ($@) {
+  my $test_eval = eval "require Bio::EnsEMBL::Variation::DBSQL::DBAdaptor";
+  if ($@or (!$test_eval)) {
     # Ignore variations as code required not there for this
     if ($verbose) {
       print(
@@ -1765,8 +1745,8 @@ sub load_registry_from_db {
     }
   }
 
-  eval "require Bio::EnsEMBL::Funcgen::DBSQL::DBAdaptor";
-  if ($@) {
+  my $func_eval = eval "require Bio::EnsEMBL::Funcgen::DBSQL::DBAdaptor";
+  if ($@ or (!$func_eval)) {
     if ($verbose) {
       # Ignore funcgen DBs as code required not there for this
       print("Bio::EnsEMBL::Funcgen::DBSQL::DBAdaptor module not found "
@@ -1846,8 +1826,8 @@ sub load_registry_from_db {
   my @compara_dbs = grep { /^ensembl_compara/ } @dbnames;
 
   if (@compara_dbs) {
-    eval "require Bio::EnsEMBL::Compara::DBSQL::DBAdaptor";
-    if ($@) {
+    my $comp_eval = eval "require Bio::EnsEMBL::Compara::DBSQL::DBAdaptor";
+    if ($@ or (!$comp_eval)) {
       # Ignore Compara as code required not there for this
       if ($verbose) {
         printf(
@@ -1969,6 +1949,7 @@ sub load_registry_from_db {
                                '-species_suffix' => $species_suffix );
 
   $dbh->disconnect();
+  return;
 
 } ## end sub load_registry_from_db
 
@@ -2010,9 +1991,9 @@ sub load_registry_from_db {
 =cut
 
 sub find_and_add_aliases {
-  my $class = shift @_;
+  my $class = shift ;
 
-  my ( $adaptor, $group, $dbh, $species_suffix ) =
+  my ($adaptor, $group, $dbh, $species_suffix ) =
     rearrange( [ 'ADAPTOR', 'GROUP', 'HANDLE', 'SPECIES_SUFFIX' ], @_ );
   
   #Can be undef; needs to be something to avoid warnings
@@ -2098,7 +2079,7 @@ sub find_and_add_aliases {
     }
 
   } ## end foreach my $dba (@dbas)
-
+  return;
 } ## end sub find_and_add_aliases
 
 
@@ -2138,7 +2119,7 @@ sub load_registry_from_multiple_dbs {
   my %merged_register = %registry_register;
 
   foreach my $arg (@args) {
-    local %registry_register;
+    local %registry_register={};
 
     my $verbose;
 
@@ -2180,7 +2161,7 @@ sub load_registry_from_multiple_dbs {
   }
 
   %registry_register = %merged_register;
-
+  return;
 } ## end sub load_registry_from_multiple_dbs
 
 #
@@ -2197,12 +2178,12 @@ sub load_registry_with_web_adaptors{
   my $class = shift;
 
   deprecate('Use the load_registry_from_db instead'); 
-  eval{ require SiteDefs };
-  if ($@){ die "Can't use SiteDefs.pm - $@\n"; }
+  my $site_eval = eval{ require SiteDefs };
+  if ($@ or (!defined($site_eval))){ die "Can't use SiteDefs.pm - $@\n"; }
     SiteDefs->import(qw(:ALL));
 
-  eval{ require SpeciesDefs };
-  if ($@){ die "Can't use SpeciesDefs.pm - $@\n"; }
+  my $species_eval = eval{ require SpeciesDefs };
+  if ($@ or (!defined($species_eval))){ die "Can't use SpeciesDefs.pm - $@\n"; }
   my $conf = new SpeciesDefs();
   
   my %species_alias = %{$SiteDefs::ENSEMBL_SPECIES_ALIASES};
@@ -2210,7 +2191,7 @@ sub load_registry_with_web_adaptors{
   foreach my $spec (keys %species_alias){
     Bio::EnsEMBL::Registry->add_alias($species_alias{$spec},$spec);
   }
-
+  return;
 }
 
 =head2 set_default_track
@@ -2232,6 +2213,7 @@ sub set_default_track {
 
   $species = get_alias($species);
   $registry_register{'def_track'}{$species}{ lc($group) } = 1;
+  return;
 }
 
 =head2 default_track
@@ -2355,16 +2337,16 @@ sub version_check {
 
   if ( $database_version == 0 ) {
     # Try to work out the version
-    if ( $dba->dbc()->dbname() =~ /^_test_db_/ ) {
+    if ( $dba->dbc()->dbname() =~ /^_test_db_/x ) {
       return 1;
     }
-    if ( $dba->dbc()->dbname() =~ /(\d+)_\S+$/ ) {
+    if ( $dba->dbc()->dbname() =~ /(\d+)_\S+$/x ) {
       $database_version = $1;
-    } elsif ( $dba->dbc()->dbname() =~ /ensembl_compara_(\d+)/ ) {
+    } elsif ( $dba->dbc()->dbname() =~ /ensembl_compara_(\d+)/x ) {
       $database_version = $1;
-    } elsif ( $dba->dbc()->dbname() =~ /ensembl_help_(\d+)/ ) {
+    } elsif ( $dba->dbc()->dbname() =~ /ensembl_help_(\d+)/x ) {
       $database_version = $1;
-    } elsif ( $dba->dbc()->dbname() =~ /ensembl_ontology_(\d+)/ ) {
+    } elsif ( $dba->dbc()->dbname() =~ /ensembl_ontology_(\d+)/x ) {
       $database_version = $1;
     } else {
       warn(
