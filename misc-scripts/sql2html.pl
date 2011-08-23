@@ -398,11 +398,12 @@ foreach my $header_name (@header_names) {
 	
 	# Tables display
 	foreach my $t_name (@{$tables}) {
-		$html_content .= add_table_name($t_name,$documentation->{$header_name}{'tables'}{$t_name}{colour});
-		$html_content .= add_description($documentation->{$header_name}{'tables'}{$t_name}{desc});
-		$html_content .= add_info($documentation->{$header_name}{'tables'}{$t_name}{info});	
-		$html_content .= add_columns($t_name,@{$documentation->{$header_name}{'tables'}{$t_name}{column}});
-		$html_content .= add_see(@{$documentation->{$header_name}{'tables'}{$t_name}{see}});
+		my $data = $documentation->{$header_name}{'tables'}{$t_name};
+		$html_content .= add_table_name($t_name,$data->{colour});
+		$html_content .= add_description($data->{desc});
+		$html_content .= add_info($data->{info});	
+		$html_content .= add_columns($t_name,$data);
+		$html_content .= add_see($data->{see});
 	}
 }
 $html_content .= add_legend();
@@ -582,22 +583,29 @@ sub add_info {
 }
 
 sub add_columns {
-	my @cols = @_;
-	my $table = shift @cols;
+	my $table = shift;
+	my $data  = shift;
+	my $cols  = $data->{column};
 	my $display_style = $display_col{$display};
 	
 	my $html = qq{\n	<div id="div_$table" style="display:$display_style">\n
 	<table style="border:1px outset #222222">
 		<tr class="bg3 center"><th style="width:180px">Column</th><th style="width:150px">Type</th><th style="width:100px">Default value</th><th style="width:400px">Description</th><th style="width:150px">Index</th></tr>\n};
 	my $bg = 1;
-	foreach my $col (@cols) {
+	foreach my $col (@$cols) {
 		my $name    = $col->{name};
 		my $type    = $col->{type};
 		my $default = $col->{default};
 		my $desc    = $col->{desc};
 		my $index   = $col->{index};
+		
+		# links
 		$desc =~ /\@link\s?(\w+)/;
-		my $table_to_link = qq{<a href="#$1">$1</a>};
+		my $link = $1;
+		if (!grep {$link eq $_} @{$data->{see}} and defined($link)) {
+			push @{$data->{see}}, $link;
+		}
+		my $table_to_link = qq{<a href="#$link">$link</a>};
 		$desc =~ s/\@link\s?\w+/$table_to_link/;
 		
 		#$col =~ /^\s*(\w+)[\s\t]+(.+)\t+(.+)\t(.*)/;
@@ -611,12 +619,12 @@ sub add_columns {
 }
 
 sub add_see {
-	my @sees = @_;
+	my $sees = shift;
 	my $html = '';
 	
-	if (scalar @sees) {
+	if (scalar @$sees) {
 		$html .= qq{<p><b>See also:</b></p>\n<ul>\n};
-		foreach my $see (@sees) {
+		foreach my $see (@$sees) {
 			$html .= qq{	<li><a href="#$see">$see</a></li>\n};
 		}
 		$html .= qq{</ul>\n};
