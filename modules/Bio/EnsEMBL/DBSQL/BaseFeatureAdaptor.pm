@@ -600,51 +600,41 @@ sub _slice_fetch {
       $sr_id = $self->get_seq_region_id_external($sr_id);
       $constraint .= " AND " if($constraint);
 
-      $constraint .=
-	  "${tab_syn}.seq_region_id = $sr_id";
+      if ( !$slice->is_circular() ) {
+        # Deal with the default case of a non-circular chromosome.
+        $constraint .=
+            "${tab_syn}.seq_region_id = $sr_id AND "
+          . "${tab_syn}.seq_region_start <= $slice_end AND "
+          . "${tab_syn}.seq_region_end >= $slice_start";
+      } else {
+        # Deal with the case of a circular chromosome.
+        if ( $slice_start > $slice_end ) {
+          $constraint .=
+              "${tab_syn}.seq_region_id = $sr_id "
+            . "AND ( ${tab_syn}.seq_region_start >= $slice_start "
+            . "OR ${tab_syn}.seq_region_start <= $slice_end "
+            . "OR ${tab_syn}.seq_region_end >= $slice_start "
+            . "OR ${tab_syn}.seq_region_end <= $slice_end "
+            . "OR ${tab_syn}.seq_region_start > ${tab_syn}.seq_region_end)";
 
-      #check if we're dealing with a SNP
-      if ($slice_start == $slice_end)
-      {
-	  $constraint .=
-	      " AND ${tab_syn}.seq_region_start = $slice_end" .
-	      " AND ${tab_syn}.seq_region_end = $slice_start";
+
+        } else {
+          $constraint .=
+              "${tab_syn}.seq_region_id = $sr_id "
+            . "AND ((${tab_syn}.seq_region_start <= $slice_end "
+            . "AND ${tab_syn}.seq_region_end >= $slice_start) "
+            . "OR (${tab_syn}.seq_region_start > ${tab_syn}.seq_region_end "
+            . "AND (${tab_syn}.seq_region_start <= $slice_end "
+            . "OR ${tab_syn}.seq_region_end >= $slice_start)))";
+        }
       }
-      else {
 
-	  if ( !$slice->is_circular() ) {
-	      # Deal with the default case of a non-circular chromosome.
-	      $constraint .=		  
-		  " AND ${tab_syn}.seq_region_start <= $slice_end"
-		  . " AND ${tab_syn}.seq_region_end >= $slice_start";
-
-	      if($max_len) {
-		  my $min_start = $slice_start - $max_len;
-		  $constraint .=
-		      " AND ${tab_syn}.seq_region_start >= $min_start";
-	      }
-
-	  } else {
-	      # Deal with the case of a circular chromosome.
-	      if ( $slice_start > $slice_end ) {
-		  $constraint .=
-		        " AND ( ${tab_syn}.seq_region_start >= $slice_start "
-		      . "OR ${tab_syn}.seq_region_start <= $slice_end "
-		      . "OR ${tab_syn}.seq_region_end >= $slice_start "
-		      . "OR ${tab_syn}.seq_region_end <= $slice_end "
-		      . "OR ${tab_syn}.seq_region_start > ${tab_syn}.seq_region_end)";
-
-	      } else {
-		  $constraint .=		 
-		       " AND ((${tab_syn}.seq_region_start <= $slice_end "
-		      . "AND ${tab_syn}.seq_region_end >= $slice_start) "
-		      . "OR (${tab_syn}.seq_region_start > ${tab_syn}.seq_region_end "
-		      . "AND (${tab_syn}.seq_region_start <= $slice_end "
-		      . "OR ${tab_syn}.seq_region_end >= $slice_start)))";
-	      }
-	  }
-
+      if($max_len && ! $slice->is_circular) {
+        my $min_start = $slice_start - $max_len;
+        $constraint .=
+          " AND ${tab_syn}.seq_region_start >= $min_start";
       }
+
 	  
       my $fs = $self->generic_fetch($constraint,undef,$slice);
 
@@ -1278,5 +1268,3 @@ sub remove_by_feature_id {
 
 
 1;
-
-
