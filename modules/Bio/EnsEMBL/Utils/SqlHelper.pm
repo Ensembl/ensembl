@@ -138,7 +138,7 @@ sub db_connection {
     if(exists $self->{db_connection}) {
       throw('Cannot reset the DBConnection object; already defined ');
     }
-    assert_ref($db_connection, 'Bio::EnsEMBL::DBSQL::DBConnection');
+    assert_ref($db_connection, 'Bio::EnsEMBL::DBSQL::DBConnection', 'db_connection');
     $self->{db_connection} = $db_connection;
     weaken $self->{db_connection};
   }
@@ -619,7 +619,7 @@ sub transaction {
     return 1;
   } unless defined $condition;
   
-  assert_ref($condition, 'CODE');
+  assert_ref($condition, 'CODE', '-CONDITION');
  
   my $dbc = $self->db_connection();
   my $original_dwi;
@@ -1035,7 +1035,7 @@ sub _data_batch {
   my ($self, $sql, $data, $commit_every, $prepare_params) = @_;
   
   #Input checks
-  assert_ref($data, 'ARRAY');
+  assert_ref($data, 'ARRAY', '-DATA');
   my $data_length = scalar(@{$data});
   return 0 unless $data_length > 0;
   my $first_row = $data->[0];
