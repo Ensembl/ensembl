@@ -4,7 +4,7 @@ use warnings;
 use Test::More;
 use Test::Exception;
 
-use Bio::EnsEMBL::Utils::Scalar qw(check_ref assert_ref wrap_array);
+use Bio::EnsEMBL::Utils::Scalar qw(:all);
 use Bio::EnsEMBL::IdMapping::TinyGene;
 
 my $gene = Bio::EnsEMBL::IdMapping::TinyGene->new_fast([]);
@@ -52,5 +52,31 @@ is_deeply( [$value], wrap_array($value), 'Checking Scalar ref means wrapped arra
 is_deeply( $array, wrap_array($array), 'Checking arrays are the same if given array ref');
 is( $array, wrap_array($array), 'Checking arrays are the same reference');
 is_deeply( [{a => $value}], wrap_array({ a => $value}), 'Checking code behaves when working with hashes');
+
+#Ref Can
+my $blessed_array = bless([], 'Bio::EnsEMBL::BrianBlessedArray');
+throws_ok { check_ref_can('string', undef) } qr/method/, 'Passing in no method means death';
+ok(! check_ref_can(undef, 'met'), 'Passing in an undefined value means false');
+ok(! check_ref_can('string', 'met'), 'Passing in an unblessed value means false');
+ok(check_ref_can($gene, 'start'), 'TinyGene implements start()');
+ok(!check_ref_can($gene, 'wibble'), 'TinyGene does not implement wibble()');
+ok(!check_ref_can($blessed_array, 'wibble'), 'The blessed array does not implement any methods let alone wibble()');
+
+#Ref assert can
+throws_ok { assert_ref_can('string', undef) } qr/method/, 'Passing in no method means death';
+dies_ok { assert_ref_can(undef, 'met')} 'Passing in an undefined value means death';
+dies_ok { assert_ref_can('string', 'met')} 'Passing in an unblessed value means death';
+lives_ok { assert_ref_can($gene, 'start')} 'TinyGene implements start()';
+dies_ok { assert_ref_can($gene, 'wibble')} 'TinyGene does not implement wibble() so death';
+dies_ok { assert_ref_can($blessed_array, 'wibble')} 'The blessed array does not implement any methods let alone wibble() so death';
+
+#Numerics
+throws_ok { assert_numeric(undef) } qr/undefined/, 'Passing in undefined scalar means death';
+dies_ok { assert_numeric(bless(1, 'Brian'), 'met')} 'Passing in a blessed scalar means death';
+dies_ok { assert_numeric('hello')} 'Passing in a String scalar means death';
+dies_ok { assert_numeric({})} 'Passing in a HashRef means death'; 
+lives_ok { assert_numeric(1E-10) } 'Passing in scientific notation numeric means lives';
+lives_ok { assert_numeric(1.2) } 'Passing in floating point means lives';
+lives_ok { assert_numeric(1) } 'Passing in integer means lives';
 
 done_testing();

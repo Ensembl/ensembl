@@ -30,7 +30,7 @@ Bio::EnsEMBL::Utils::Scalar
 
 =head1 SYNOPSIS
 
-	use Bio::EnsEMBL::Utils::Scalar qw(check_ref assert_ref);
+	use Bio::EnsEMBL::Utils::Scalar qw(check_ref assert_ref wrap_array check_ref_can assert_ref_can assert_numeric assert_integer);
 	
 	check_ref([], 'ARRAY'); # Will return true
 	check_ref({}, 'ARRAY'); # Will return false
@@ -44,6 +44,25 @@ Bio::EnsEMBL::Utils::Scalar
 	wrap_array($a); #Returns [$a] if $a was not an array
 	wrap_array(undef); #Returns [] since incoming was undefined
 	wrap_array(); #Returns [] since incoming was empty (therefore undefined)
+	
+	check_ref_can([], 'dbID'); #returns false as ArrayRef is not blessed
+	check_ref_can($gene, 'dbID'); #returns true as Gene should implement dbID()
+	check_ref_can(undef); #Throws an exception as we gave no method to test
+	
+	assert_ref_can([], 'dbID'); #throws an exception since ArrayRef is not blessed
+	assert_ref_can($gene, 'dbID'); #returns true if gene implements dbID()
+	assert_ref_can(undef); #Throws an exception as we gave no method to test
+	
+	asssert_integer(1, 'dbID'); #Passes
+	asssert_integer(1.1, 'dbID'); #Fails
+	asssert_numeric(1E-11, 'dbID'); #Passes
+	asssert_numeric({}, 'dbID'); #Fails
+	
+	#Tags are also available for exporting
+	use Bio::EnsEMBL::Utils::Scalar qw(:assert); # brings in all assert methods
+	use Bio::EnsEMBL::Utils::Scalar qw(:check); #brings in all check methods
+	use Bio::EnsEMBL::Utils::Scalar qw(:array); #brings in wrap_array
+	use Bio::EnsEMBL::Utils::Scalar qw(:all); #import all methods
 	
 =head1 DESCRIPTION
 
@@ -68,10 +87,19 @@ use warnings;
 
 use base qw(Exporter);
 
-our @EXPORT_OK = qw(check_ref assert_ref wrap_array);
+our %EXPORT_TAGS;
+our @EXPORT_OK;
+ 
+@EXPORT_OK = qw(check_ref assert_ref wrap_array check_ref_can assert_ref_can assert_numeric assert_integer);
+%EXPORT_TAGS = (
+  assert  => [qw(assert_ref assert_ref_can assert_integer assert_numeric)], 
+  check   => [qw(check_ref check_ref_can)],
+  array   => [qw/wrap_array/],
+  all     => [@EXPORT_OK]
+);
 
 use Bio::EnsEMBL::Utils::Exception qw(throw);
-use Scalar::Util qw(blessed);
+use Scalar::Util qw(blessed looks_like_number);
 
 =head2 check_ref()
 
@@ -110,6 +138,9 @@ sub check_ref {
 
   Arg [1]     : The reference to check
   Arg [2]     : The type we expect
+  Arg [3]     : The attribute name you are asserting; not required but allows
+                for more useful error messages to be generated. Defaults to
+                C<-Unknown->.
   Description : A subroutine which checks to see if the given object/ref is 
                 what you expect. This behaves in an identical manner as
                 C<check_ref()> does except this will raise exceptions when
@@ -117,7 +148,7 @@ sub check_ref {
                 indicating the situation.
                 
                 Undefs cause exception circumstances.
-  Returntype  : None
+  Returntype  : Boolean; true if we managed to get to the return
   Example     : assert_ref([], 'ARRAY');
   Exceptions  : If the expected type was not set and if the given reference
                 was not assignable to the expected value
@@ -126,16 +157,17 @@ sub check_ref {
 =cut
 
 sub assert_ref {
-  my ($ref, $expected) = @_;
+  my ($ref, $expected, $attribute_name) = @_;
+  $attribute_name ||= '-Unknown-';
   throw('No expected type given') if ! defined $expected;
   my $class = ref($ref);
-  throw('Given reference was undef') unless defined $ref;
-  throw('Asking for the type of the reference produced no type; check your input is a reference') unless $class;
+  throw("The given reference for attribute $attribute_name was undef") unless defined $ref;
+  throw('Asking for the type of the attribute $attribute_name produced no type; check it is a reference') unless $class;
   if(blessed($ref)) {
-    throw("Reference '${class}' is not an ISA of '${expected}'") if ! $ref->isa($expected);
+    throw("${attribute_name}'s type '${class}' is not an ISA of '${expected}'") if ! $ref->isa($expected);
   }
   else {    
-    throw("'${expected}' expected class was not equal to actual class '${class}'") if $expected ne $class;
+    throw("$attribute_name was expected to be '${expected}' but was '${class}'") if $expected ne $class;
   }
   return 1;
 }
@@ -164,6 +196,116 @@ sub wrap_array {
     }
   }
   return [];
+}
+
+=head2 check_ref_can
+
+  Arg [1]     : The reference to check
+  Arg [2]     : The method we expect to run
+  Description : A subroutine which checks to see if the given object/ref is 
+                implements the given method. This is very similar to the
+                functionality given by C<UNIVERSAL::can()> but works
+                by executing C<can()> on the object meaning we consult the 
+                object's potentially overriden version rather than Perl's
+                default mechanism.
+  Returntype  : CodeRef
+  Example     : check_ref_can($gene, 'dbID');
+  Exceptions  : If the expected type was not set.
+  Status      : Stable
+
+=cut
+
+sub check_ref_can {
+  my ($ref, $method) = @_;
+  throw('No method given') if ! defined $method;
+  return unless defined $ref && blessed($ref);
+  return $ref->can($method);
+}
+
+=head2 assert_ref_can
+
+  Arg [1]     : The reference to check
+  Arg [2]     : The method we expect to run
+  Arg [3]     : The attribute name you are asserting; not required but allows
+                for more useful error messages to be generated. Defaults to
+                C<-Unknown->.
+  Description : A subroutine which checks to see if the given object/ref is 
+                implements the given method. Will throw exceptions.
+  Returntype  : Boolean; true if we managed to get to the return
+  Example     : assert_ref_can($gene, 'dbID');
+  Exceptions  : If the reference is not defined, if the object does not
+                implement the given method and if no method was given to check
+  Status      : Stable
+
+=cut
+
+sub assert_ref_can {
+  my ($ref, $method, $attribute_name) = @_;
+  $attribute_name ||= '-Unknown-';
+  throw('No method given') if ! defined $method;
+  throw "The given reference $attribute_name is not defined" unless defined $ref;
+  throw "The given reference $attribute_name is not blessed" unless blessed($ref);
+  if(! $ref->can($method)) {
+    my $str_ref = ref($ref);
+    throw sprintf(q{The given blessed reference '%s' for attribute '%s' does not implement the method '%s'}, $str_ref, $attribute_name, $method);
+  }
+  return 1;
+}
+
+=head2 assert_numeric
+
+  Arg [1]     : The Scalar to check
+  Arg [2]     : The attribute name you are asserting; not required but allows
+                for more useful error messages to be generated. Defaults to
+                C<-Unknown->.
+  Description : A subroutine which checks to see if the given scalar is
+                number or not. If not then we raise exceptions detailing why
+  Returntype  : Boolean; true if we had a numeric otherwise we signal failure
+                via exceptions
+  Example     : assert_numeric(1, 'dbID');
+  Exceptions  : If the Scalar is not defined, if the Scalar was blessed and
+                if the value was not a number
+  Status      : Stable
+
+=cut
+
+sub assert_numeric {
+  my ($integer, $attribute_name) = @_;
+  $attribute_name ||= '-Unknown-';
+  throw "$attribute_name attribute is undefined" if ! defined $integer;
+  throw "The given attribute $attribute_name is blessed; cannot work with blessed values" if blessed($integer);
+  if(! looks_like_number($integer)) {
+    throw "Attribute $attribute_name was not a number";
+  }
+  return 1;
+}
+
+=head2 assert_integer
+
+  Arg [1]     : The Scalar to check
+  Arg [2]     : The attribute name you are asserting; not required but allows
+                for more useful error messages to be generated. Defaults to
+                C<-Unknown->.
+  Description : A subroutine which checks to see if the given scalar is
+                a whole integer; we delegate to L<assert_numeric> for number
+                checking.
+  Returntype  : Boolean; true if we had a numeric otherwise we signal failure
+                via exceptions
+  Example     : assert_integer(1, 'dbID');
+  Exceptions  : See L<assert_numeric> and we raise exceptions if the value
+                was not a whole integer
+  Status      : Stable
+
+=cut
+
+sub assert_integer {
+  my ($integer, $attribute_name) = @_;
+  $attribute_name ||= '-Unknown-';
+  assert_numeric($integer, $attribute_name);
+  if($integer != int($integer)) {
+    throw "Attribute $attribute_name was a number but not an Integer";
+  }
+  return 1;
 }
 
 1;
