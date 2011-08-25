@@ -114,6 +114,12 @@ sub write_subset {
   foreach my $subset_name ( sort( keys( %{$subsets} ) ) ) {
     my $subset = $subsets->{$subset_name};
 
+    if (!( defined($subset->{'name'}) && defined($subset->{'definition'}) ))
+    {
+	print "Null value encountered: subset name " . $subset->{'name'}." subset definition ". $subset->{'definition'} . "\n";
+	exit;
+    }
+
     $sth->bind_param( 1, $subset->{'name'},       SQL_VARCHAR );
     $sth->bind_param( 2, $subset->{'definition'}, SQL_VARCHAR );
 
@@ -175,6 +181,12 @@ sub write_term {
       $term_subsets = join( ',',
                             map { $subsets->{$_}{'name'} }
                               @{ $term->{'subsets'} } );
+    }
+
+    if ( !( defined($term->{'accession'}) && defined($term->{'name'}) ) )
+    {
+	print "Null value encountered: term accession " . $term->{'accession'}." term name ". $term->{'name'} . "\n";
+	exit;
     }
 
     $sth->bind_param( 1, $namespaces->{ $term->{'namespace'} }{'id'},
@@ -308,12 +320,18 @@ sub write_relation {
           printf( "WARNING: Parent accession '%s' does not exist!\n",
                   $parent_acc );
         } else {
+
+	  if ( !( defined($child_term->{'id'}) && defined($terms->{$parent_acc}{'id'}) && defined($relation_types->{$relation_type}{'id'}) ) )
+	  {
+	      print "Null value encountered: child term id " . $child_term->{'id'} ." parent term id ". $terms->{$parent_acc}{'id'} . " relationship type " . $relation_types->{$relation_type}{'id'} . "\n";
+	      exit;
+	  }
+
           $sth->bind_param( 1, $child_term->{'id'}, SQL_INTEGER );
           $sth->bind_param( 2, $terms->{$parent_acc}{'id'},
                             SQL_INTEGER );
           $sth->bind_param( 3, $relation_types->{$relation_type}{'id'},
                             SQL_INTEGER );
-
           $sth->execute();
         }
       }
@@ -379,9 +397,8 @@ if ($returncode > 0) {
 	}
 	close OBO_FILE;
 	close NEW_OBO_FILE;
-       #delete old file and rename new file to old name
-       `rm $obo_file_name`;
-       `mv $new_obo_file_name $obo_file_name`;	
+	$obo_file_name = $new_obo_file_name;
+ 	
 }
 
 
@@ -492,7 +509,7 @@ foreach my $t (@{$ontology->get_terms()}) {
 
 #get all relationship types
 foreach my $rel_type (@{$ontology->get_relationship_types()}) {
-        my $rel_type_name = $rel_type->name();
+        my $rel_type_name = $rel_type->id();
 	if ( !exists( $relation_types{$rel_type_name} ) ) {
           $relation_types{$rel_type_name} = 1;
         }
