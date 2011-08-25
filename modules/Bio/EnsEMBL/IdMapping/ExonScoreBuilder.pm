@@ -377,6 +377,7 @@ sub calc_overlap_score {
   
   my $score = ($overlap/$source_length + $overlap/$target_length)/2;
 
+  # PENALTY:
   # penalise by 10% if phase if different
   $score *= 0.9 if ($source_exon->phase != $target_exon->phase);
 
@@ -637,6 +638,8 @@ sub parse_exonerate_results {
   opendir( DUMPDIR, $dump_path )
     or $self->logger->error("Can't open $dump_path for reading: $!");
 
+  my $penalised = 0;
+
   while ( defined( my $file = readdir(DUMPDIR) ) ) {
     unless ( $file =~ /exonerate_map\.\d+/ ) { next }
 
@@ -664,6 +667,9 @@ sub parse_exonerate_results {
       } else {
         $score = 2*$match_length/( $source_length + $target_length );
 
+      }
+
+      if ( $score > $threshold ) {
         my $source_sr =
           $self->cache()
           ->get_by_key( 'exons_by_id', 'source', $source_id )
@@ -677,14 +683,17 @@ sub parse_exonerate_results {
           # PENALTY: The target and source are not on the same
           # seq_region.
           $score *= 0.75;
+
+          ++$penalised;
+        }
+
+        if ( $score > $threshold ) {
+          $exonerate_matrix->add_score( $source_id, $target_id,
+                                        $score );
         }
       }
 
-      if ( $score > $threshold ) {
-        $exonerate_matrix->add_score( $source_id, $target_id, $score );
-      }
-
-    }
+    } ## end while (<F>)
 
     close(F);
   } ## end while ( defined( my $file...))
@@ -694,6 +703,10 @@ sub parse_exonerate_results {
   $self->logger->info(
         "Done parsing $num_lines lines from $num_files result files.\n",
         0, 'stamped' );
+  $self->logger->info( "Penalised $penalised exon alignments "
+                         . "for not being on the same seq_region.\n",
+                       0,
+                       'stamped' );
 
   return $exonerate_matrix;
 } ## end sub parse_exonerate_results
