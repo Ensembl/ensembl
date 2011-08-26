@@ -25,11 +25,11 @@ Bio::EnsEMBL::ProteinFeature
 =head1 SYNOPSIS
 
   my $feature = Bio::EnsEMBL::ProteinFeature->new(
-    -start  => $start,
-    -end    => $end,
-    -hstart => $hit_start,
-    -hend   => $hit_end,
-    -hname  => $hit_name
+    -start    => $start,
+    -end      => $end,
+    -hstart   => $hit_start,
+    -hend     => $hit_end,
+    -hseqname => $hit_name
   );
 
 =head1 DESCRIPTION
