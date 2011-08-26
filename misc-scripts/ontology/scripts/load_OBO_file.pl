@@ -458,8 +458,14 @@ EOT
 my ( %terms, %namespaces, %relation_types, %subsets );
 
 my $default_namespace = $ontology->default_namespace();
-my $set = $ontology->subset_def_set();
-my @subsets = $set->get_set();
+my @subsets;
+if ($OBO::Core::Ontology::VERSION <= 1.31) {
+    my $set = $ontology->subset_def_set();
+    @subsets = $set->get_set();
+} else {
+    @subsets = $ontology->subset_def_map()->values();
+}
+
 foreach my $subs (@subsets) {
         $subsets{$subs->name()}{'name'}  = $subs->name();
         $subsets{$subs->name()}{'definition'} = $subs->description();
