@@ -378,18 +378,20 @@ sub rescore_gene_matrix_lsf {
 
   my $cmd = qq{$Bin/synteny_rescore.pl $options --index \$LSB_JOBINDEX};
 
-  my $pipe = qq{|bsub -J$lsf_name\[1-$num_jobs\] } .
-    qq{-o $logpath/synteny_rescore.\%I.out } .
-    qq{-e $logpath/synteny_rescore.\%I.err } .
-    $self->conf->param('lsf_opt_synteny_rescore');
+  my $bsub_cmd =
+    sprintf( "|bsub -J%s[1-%d] "
+                            . "-o %s/synteny_rescore.%%I.out "
+                            . "-e %s/synteny_rescore.%%I.err %s",
+             $lsf_name, $num_jobs, $logpath, $logpath,
+             $self->conf()->param('lsf_opt_synteny_rescore') );
 
   # run lsf job array
   $self->logger->info("Submitting $num_jobs jobs to lsf.\n");
   $self->logger->debug("$cmd\n\n");
 
   local *BSUB;
-  open BSUB, $pipe or
-    $self->logger->error("Could not open open pipe to bsub: $!\n");
+  open( BSUB, $bsub_cmd )
+    or $self->logger->error("Could not open open pipe to bsub: $!\n");
 
   print BSUB $cmd;
   $self->logger->error("Error submitting synteny rescoring jobs: $!\n")
