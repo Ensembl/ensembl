@@ -197,8 +197,13 @@ my %group2adaptor = (
 sub load_all {
     my ($class, $config_file, $verbose, $no_clear, $no_cache ) = @_;
 
-    $config_file ||= $ENV{ENSEMBL_REGISTRY}
-      || $ENV{HOME} . "/.ensembl_init";
+    if ( !defined($config_file) ) {
+      if ( defined( $ENV{ENSEMBL_REGISTRY} ) ) {
+        $config_file = $ENV{ENSEMBL_REGISTRY};
+      } elsif ( defined( $ENV{HOME} ) ) {
+        $config_file = $ENV{HOME} . "/.ensembl_init";
+      }
+    }
 
     $verbose  ||= 0;
     $no_clear ||= 0;
