@@ -454,8 +454,12 @@ sub run_exonerate {
   $self->logger->info("Submitting $num_jobs exonerate jobs to lsf.\n");
   $self->logger->debug("$exonerate_job\n\n");
 
+  my $bsub_cmd = sprintf( "|bsub -J%s[1-%d] -o %s/exonerate.%%I.out %s",
+                          $lsf_name, $num_jobs, $logpath,
+                          $self->conf()->param('lsf_opt_exonerate') );
+
   local *BSUB;
-  open BSUB, "|bsub -J$lsf_name\[1-$num_jobs\] -o $logpath/exonerate.\%I.out"
+  open( BSUB, $bsub_cmd )
     or $self->logger->error("Could not open open pipe to bsub: $!\n");
 
   print BSUB $exonerate_job;
