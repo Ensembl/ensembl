@@ -334,7 +334,7 @@ sub assert_boolean {
   $attribute_name ||= '-Unknown-';
   assert_numeric($boolean, $attribute_name);
   if($boolean != 0 && $boolean != 1) {
-    throw "Attribute $attribute_name was a number but not a valid boolean. Value was $boolean";
+    throw "Attribute $attribute_name was an invalid boolean. Expected: 1 or 0. Got: $boolean";
   }
   return 1;
 }
@@ -361,7 +361,7 @@ sub assert_strand {
   $attribute_name ||= '-Unknown-';
   assert_numeric($strand, $attribute_name);
   if($strand != -1 && $strand != 0 && $strand ne 1) {
-    throw "Attribute $attribute_name was a number but not a valid strand value. Value was $strand";
+    throw "Attribute $attribute_name was an invalid strand. Expected: 1, 0 or -1. Got: $strand";
   }
   return 1;
 }
