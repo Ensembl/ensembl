@@ -31,39 +31,39 @@ Bio::EnsEMBL::Utils::Scalar
 =head1 SYNOPSIS
 
 	use Bio::EnsEMBL::Utils::Scalar qw(check_ref assert_ref wrap_array check_ref_can assert_ref_can assert_numeric assert_integer);
-	
+
 	check_ref([], 'ARRAY'); # Will return true
 	check_ref({}, 'ARRAY'); # Will return false
 	check_ref($dba, 'Bio::EnsEMBL::DBSQL::DBAdaptor'); #Returns true if $dba is a DBAdaptor
-	
+
 	assert_ref([], 'ARRAY'); #Returns true
 	assert_ref({}, 'ARRAY'); #throws an exception
-	assert_ref($dba, 'Bio::EnsEMBL::Gene'); #throws an exception if $dba is not a Gene 
-	
+	assert_ref($dba, 'Bio::EnsEMBL::Gene'); #throws an exception if $dba is not a Gene
+
 	wrap_array([]); #Returns the same reference
 	wrap_array($a); #Returns [$a] if $a was not an array
 	wrap_array(undef); #Returns [] since incoming was undefined
 	wrap_array(); #Returns [] since incoming was empty (therefore undefined)
-	
+
 	check_ref_can([], 'dbID'); #returns false as ArrayRef is not blessed
 	check_ref_can($gene, 'dbID'); #returns true as Gene should implement dbID()
 	check_ref_can(undef); #Throws an exception as we gave no method to test
-	
+
 	assert_ref_can([], 'dbID'); #throws an exception since ArrayRef is not blessed
 	assert_ref_can($gene, 'dbID'); #returns true if gene implements dbID()
 	assert_ref_can(undef); #Throws an exception as we gave no method to test
-	
+
 	asssert_integer(1, 'dbID'); #Passes
 	asssert_integer(1.1, 'dbID'); #Fails
 	asssert_numeric(1E-11, 'dbID'); #Passes
 	asssert_numeric({}, 'dbID'); #Fails
-	
+
 	#Tags are also available for exporting
 	use Bio::EnsEMBL::Utils::Scalar qw(:assert); # brings in all assert methods
 	use Bio::EnsEMBL::Utils::Scalar qw(:check); #brings in all check methods
 	use Bio::EnsEMBL::Utils::Scalar qw(:array); #brings in wrap_array
 	use Bio::EnsEMBL::Utils::Scalar qw(:all); #import all methods
-	
+
 =head1 DESCRIPTION
 
 A collection of subroutines aimed to helping Scalar based operations
@@ -89,10 +89,14 @@ use base qw(Exporter);
 
 our %EXPORT_TAGS;
 our @EXPORT_OK;
- 
-@EXPORT_OK = qw(check_ref assert_ref wrap_array check_ref_can assert_ref_can assert_numeric assert_integer);
+
+@EXPORT_OK = qw(
+  check_ref check_ref_can
+  assert_ref assert_ref_can assert_numeric assert_integer assert_boolean assert_strand
+  wrap_array
+);
 %EXPORT_TAGS = (
-  assert  => [qw(assert_ref assert_ref_can assert_integer assert_numeric)], 
+  assert  => [qw(assert_ref assert_ref_can assert_integer assert_numeric assert_boolean assert_strand)],
   check   => [qw(check_ref check_ref_can)],
   array   => [qw/wrap_array/],
   all     => [@EXPORT_OK]
@@ -105,13 +109,13 @@ use Scalar::Util qw(blessed looks_like_number);
 
   Arg [1]     : The reference to check
   Arg [2]     : The type we expect
-  Description : A subroutine which checks to see if the given object/ref is 
-                what you expect. If you give it a blessed reference then it 
-                will perform an isa() call on the object after the defined 
+  Description : A subroutine which checks to see if the given object/ref is
+                what you expect. If you give it a blessed reference then it
+                will perform an isa() call on the object after the defined
                 tests. If it is a plain reference then it will use ref().
-                
+
                 An undefined value will return a false.
-  Returntype  : Boolean indicating if the reference was the type we 
+  Returntype  : Boolean indicating if the reference was the type we
                 expect
   Example     : my $ok = check_ref([], 'ARRAY');
   Exceptions  : If the expected type was not set
@@ -128,7 +132,7 @@ sub check_ref {
 		}
 		else {
 			my $ref_ref_type = ref($ref);
-			return 1 if defined $ref_ref_type && $ref_ref_type eq $expected; 
+			return 1 if defined $ref_ref_type && $ref_ref_type eq $expected;
 		}
 	}
 	return 0;
@@ -141,12 +145,12 @@ sub check_ref {
   Arg [3]     : The attribute name you are asserting; not required but allows
                 for more useful error messages to be generated. Defaults to
                 C<-Unknown->.
-  Description : A subroutine which checks to see if the given object/ref is 
+  Description : A subroutine which checks to see if the given object/ref is
                 what you expect. This behaves in an identical manner as
                 C<check_ref()> does except this will raise exceptions when
                 the values do not match rather than returning a boolean
                 indicating the situation.
-                
+
                 Undefs cause exception circumstances.
   Returntype  : Boolean; true if we managed to get to the return
   Example     : assert_ref([], 'ARRAY');
@@ -166,7 +170,7 @@ sub assert_ref {
   if(blessed($ref)) {
     throw("${attribute_name}'s type '${class}' is not an ISA of '${expected}'") if ! $ref->isa($expected);
   }
-  else {    
+  else {
     throw("$attribute_name was expected to be '${expected}' but was '${class}'") if $expected ne $class;
   }
   return 1;
@@ -202,10 +206,10 @@ sub wrap_array {
 
   Arg [1]     : The reference to check
   Arg [2]     : The method we expect to run
-  Description : A subroutine which checks to see if the given object/ref is 
+  Description : A subroutine which checks to see if the given object/ref is
                 implements the given method. This is very similar to the
                 functionality given by C<UNIVERSAL::can()> but works
-                by executing C<can()> on the object meaning we consult the 
+                by executing C<can()> on the object meaning we consult the
                 object's potentially overriden version rather than Perl's
                 default mechanism.
   Returntype  : CodeRef
@@ -229,7 +233,7 @@ sub check_ref_can {
   Arg [3]     : The attribute name you are asserting; not required but allows
                 for more useful error messages to be generated. Defaults to
                 C<-Unknown->.
-  Description : A subroutine which checks to see if the given object/ref is 
+  Description : A subroutine which checks to see if the given object/ref is
                 implements the given method. Will throw exceptions.
   Returntype  : Boolean; true if we managed to get to the return
   Example     : assert_ref_can($gene, 'dbID');
@@ -307,5 +311,60 @@ sub assert_integer {
   }
   return 1;
 }
+
+=head2 assert_boolean
+
+  Arg [1]     : The Scalar to check
+  Arg [2]     : The attribute name you are asserting; not required but allows
+                for more useful error messages to be generated. Defaults to
+                C<-Unknown->.
+  Description : A subroutine which checks to see if the given scalar is
+                a boolean i.e. value is set to C<1> or C<0>
+  Returntype  : Boolean; true if we were given a boolean otherwise we signal
+                failure via exceptions
+  Example     : assert_boolean(1, 'is_circular');
+  Exceptions  : See L<assert_integer> and we raise exceptions if the value
+                was not equal to the 2 valid states
+  Status      : Stable
+
+=cut
+
+sub assert_boolean {
+  my ($boolean, $attribute_name) = @_;
+  $attribute_name ||= '-Unknown-';
+  assert_numeric($boolean, $attribute_name);
+  if($boolean != 0 && $boolean != 1) {
+    throw "Attribute $attribute_name was a number but not a valid boolean. Value was $boolean";
+  }
+  return 1;
+}
+
+=head2 assert_strand
+
+  Arg [1]     : The Scalar to check
+  Arg [2]     : The attribute name you are asserting; not required but allows
+                for more useful error messages to be generated. Defaults to
+                C<-Unknown->.
+  Description : A subroutine which checks to see if the given scalar is
+                a whole integer and if the value is set to C<1>, C<0> or C<-1>
+  Returntype  : Boolean; true if we had a strand integer otherwise we signal
+                failure via exceptions
+  Example     : assert_strand(1, 'strand');
+  Exceptions  : See L<assert_integer> and we raise exceptions if the value
+                was not equal to the 3 valid states
+  Status      : Stable
+
+=cut
+
+sub assert_strand {
+  my ($strand, $attribute_name) = @_;
+  $attribute_name ||= '-Unknown-';
+  assert_numeric($strand, $attribute_name);
+  if($strand != -1 && $strand != 0 && $strand ne 1) {
+    throw "Attribute $attribute_name was a number but not a valid strand value. Value was $strand";
+  }
+  return 1;
+}
+
 
 1;

@@ -74,9 +74,41 @@ dies_ok { assert_ref_can($blessed_array, 'wibble')} 'The blessed array does not 
 throws_ok { assert_numeric(undef) } qr/undefined/, 'Passing in undefined scalar means death';
 dies_ok { assert_numeric(bless(1, 'Brian'), 'met')} 'Passing in a blessed scalar means death';
 dies_ok { assert_numeric('hello')} 'Passing in a String scalar means death';
-dies_ok { assert_numeric({})} 'Passing in a HashRef means death'; 
+dies_ok { assert_numeric({})} 'Passing in a HashRef means death';
 lives_ok { assert_numeric(1E-10) } 'Passing in scientific notation numeric means lives';
 lives_ok { assert_numeric(1.2) } 'Passing in floating point means lives';
 lives_ok { assert_numeric(1) } 'Passing in integer means lives';
+
+#Integers
+throws_ok { assert_integer(undef) } qr/undefined/, 'Passing in undefined scalar means death';
+dies_ok { assert_integer(bless(1, 'Brian'), 'met')} 'Passing in a blessed scalar means death';
+dies_ok { assert_integer('hello')} 'Passing in a String scalar means death';
+dies_ok { assert_integer({})} 'Passing in a HashRef means death';
+dies_ok { assert_integer(1E-10) } 'Passing in scientific notation numeric means death';
+dies_ok { assert_integer(1.2) } 'Passing in floating point means death';
+lives_ok { assert_integer(1) } 'Passing in integer means lives';
+
+#Strand
+throws_ok { assert_strand(undef) } qr/undefined/, 'Passing in undefined scalar means death';
+dies_ok { assert_strand(bless(1, 'Brian'), 'met')} 'Passing in a blessed scalar means death';
+dies_ok { assert_strand('hello')} 'Passing in a String scalar means death';
+dies_ok { assert_strand({})} 'Passing in a HashRef means death';
+dies_ok { assert_strand(1E-10) } 'Passing in scientific notation numeric means death';
+dies_ok { assert_strand(1.2) } 'Passing in floating point means death';
+dies_ok { assert_strand(2) } 'Passing in floating point means death';
+lives_ok { assert_strand(1) } 'Passing in integer 1 means lives';
+lives_ok { assert_strand(0) } 'Passing in integer 0 means lives';
+lives_ok { assert_strand(-1) } 'Passing in integer -1 means lives';
+
+#Boolean
+throws_ok { assert_boolean(undef) } qr/undefined/, 'Passing in undefined scalar means death';
+dies_ok { assert_boolean(bless(1, 'Brian'), 'met')} 'Passing in a blessed scalar means death';
+dies_ok { assert_boolean('hello')} 'Passing in a String scalar means death';
+dies_ok { assert_boolean({})} 'Passing in a HashRef means death';
+dies_ok { assert_boolean(1E-10) } 'Passing in scientific notation numeric means death';
+dies_ok { assert_boolean(1.2) } 'Passing in floating point means death';
+dies_ok { assert_boolean(-1) } 'Passing in integer -1 means death';
+lives_ok { assert_strand(1) } 'Passing in integer 1 means lives';
+lives_ok { assert_strand(0) } 'Passing in integer 0 means lives';
 
 done_testing();
