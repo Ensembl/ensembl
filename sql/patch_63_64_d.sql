@@ -1,4 +1,4 @@
-# patch_63_64_c.sql
+# patch_63_64_d.sql
 #
 # Title:
 #   change to linkage_type column in ontology_xref 
