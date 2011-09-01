@@ -24,8 +24,8 @@ The data in this table defines the "static golden path", i.e. the best effort dr
 Each row represents a component, e.g. a contig,  (comp_seq_region_id, FK from seq_region table) at least part of which is present in the golden path.
 The part of the component that is in the path is delimited by fields cmp_start and cmp_end (start < end), and the absolute position within the golden path chromosome (or other appropriate assembled structure) (asm_seq_region_id) is given by asm_start and asm_end.
 
-@column asm_seq_region_id            Assembly sequence region id. Primary key, internal identifier. Foreign key references to the @link seq_region table.  
-@column cmp_seq_region_id            Component sequence region id. Foreign key references to the @link seq_region table. 
+@column asm_seq_region_id            Assembly sequence region id. Primary key, internal identifier. Foreign key references to the @link seq_region table.
+@column cmp_seq_region_id            Component sequence region id. Foreign key references to the @link seq_region table.
 @column asm_start                    Start absolute position within the golden path chromosome.
 @column asm_end                      End absolute position within the golden path chromosome.
 @column cmp_start                    Component start position within the golden path chromosome.
@@ -34,7 +34,7 @@ The part of the component that is in the path is delimited by fields cmp_start a
 
 
 @see seq_region
-@see supercontigs 
+@see supercontigs
 
 */
 
@@ -61,14 +61,14 @@ CREATE TABLE assembly (
 @desc Allows multiple sequence regions to point to the same sequence, analogous to a symbolic link in a filesystem pointing to the actual file.
 This mechanism has been implemented specifically to support haplotypes and PARs, but may be useful for other similar structures in the future.
 
-@column assembly_exception_id       Assembly exception sequence region id. Primary key, internal identifier. 
+@column assembly_exception_id       Assembly exception sequence region id. Primary key, internal identifier.
 @column seq_region_id               Sequence region id. Foreign key references to the @link seq_region table.
 @column seq_region_start            Sequence start position.
 @column seq_region_end              Sequence end position.
 @column exc_type                    Exception type, e.g. PAR, HAP - haplotype.
 @column exc_seq_region_id           Exception sequence region id. Foreign key references to the @link seq_region table.
-@column exc_seq_region_start        Exception sequence start position.  
-@column exc_seq_region_end          Exception sequence end position.  
+@column exc_seq_region_start        Exception sequence start position.
+@column exc_seq_region_end          Exception sequence end position.
 @column ori                         Orientation: 1 - sense; -1 - antisense.
 
 
@@ -100,12 +100,12 @@ CREATE TABLE assembly_exception (
 
 
 /**
-@table attrib_type 
+@table attrib_type
 @desc Provides codes, names and desctriptions of attribute types.
 
 @column attrib_type_id       Primary key, internal identifier.
-@column code                 Attribute code, e.g. 'GapExons'.    
-@column name                 Attribute name, e.g. 'gap exons'.        
+@column code                 Attribute code, e.g. 'GapExons'.
+@column name                 Attribute name, e.g. 'gap exons'.
 @column description          Attribute description, e.g. 'number of gap exons'.
 
 @see seq_region_attrib
@@ -134,11 +134,11 @@ CREATE TABLE attrib_type (
 Note that for each species, there must be one co-ordinate system that has the attribute "top_level" and one that has the attribute "sequence_level".
 
 @column coord_system_id      Primary key, internal identifier.
-@column species_id           Indentifies the species for multi-species databases.       
-@column name                 Co-oridinate system name, e.g. 'chromosome', 'contig', 'scaffold' etc.     
-@column version              Assembly.    
-@column rank                 Co-oridinate system rank.   
-@column attrib               Co-oridinate system attrib (e.g. "top_level", "sequence_level").     
+@column species_id           Indentifies the species for multi-species databases.
+@column name                 Co-oridinate system name, e.g. 'chromosome', 'contig', 'scaffold' etc.
+@column version              Assembly.
+@column rank                 Co-oridinate system rank.
+@column attrib               Co-oridinate system attrib (e.g. "top_level", "sequence_level").
 
 @see seq_region
 @see meta_coord
@@ -216,14 +216,14 @@ CREATE TABLE dnac (
 Note seq_region_start is always less that seq_region_end, i.e. when the exon is on the other strand the seq_region_start is specifying the 3prime end of the exon.
 
 @column exon_id                     Primary key, internal identifier.
-@column seq_region_id               Foreign key references to the @link seq_region table. 
+@column seq_region_id               Foreign key references to the @link seq_region table.
 @column seq_region_start            Sequence start position.
-@column seq_region_end              Sequence end position.          
+@column seq_region_end              Sequence end position.
 @column seq_region_strand           Sequence region strand: 1 - forward; -1 - reverse.
 @column phase                       The place where the intron lands inside the codon - 0 between codons, 1 between the 1st and second base, 2 between the second and 3rd base. Exons therefore have a start phase anda end phase, but introns have just one phase.
 @column end_phase                   Usually, end_phase = (phase + exon_length)%3 but end_phase could be -1 if the exon is half-coding and its 3 prime end is UTR.
-@column is_current                  
-@column is_constitutive             
+@column is_current
+@column is_constitutive
 
 @see exon_transcript
 
@@ -254,10 +254,10 @@ CREATE TABLE exon (
 @desc Relates exon IDs in this release to release-independent stable identifiers.
 
 @column exon_id              Primary key, internal identifier.
-@column stable_id            Stable identifier.     
-@column version              Version number.       
-@column created_date         Date created.       
-@column modified_date        Date modified.       
+@column stable_id            Stable identifier.
+@column version              Version number.
+@column created_date         Date created.
+@column modified_date        Date modified.
 
 
 @see stable_id
@@ -283,9 +283,9 @@ CREATE TABLE exon_stable_id (
 @table exon_transcript
 @desc Relationship table linking exons with transcripts. The rank column indicates the 5' to 3' position of the exon within the transcript, i.e. a rank of 1 means the exon is the 5' most within this transcript.
 
-@column exon_id                Composite key. Foreign key references to the @link exon table. 
-@column transcript_id          Composite key. Foreign key references to the @link transcript table. 
-@column rank                   Composite key.  
+@column exon_id                Composite key. Foreign key references to the @link exon table.
+@column transcript_id          Composite key. Foreign key references to the @link transcript table.
+@column rank                   Composite key.
 
 @see exon
 @see transcript
@@ -312,18 +312,18 @@ CREATE TABLE exon_transcript (
 @desc Allows transcripts to be related to genes.
 
 @column gene_id                     Primary key, internal identifier.
-@column biotype                     Biotype, e.g. protein_coding. 
-@column analysis_id                 Foreign key references to the @link analysis table. 
-@column seq_region_id               Foreign key references to the @link seq_region table. 
+@column biotype                     Biotype, e.g. protein_coding.
+@column analysis_id                 Foreign key references to the @link analysis table.
+@column seq_region_id               Foreign key references to the @link seq_region table.
 @column seq_region_start            Sequence start position.
-@column seq_region_end              Sequence end position.          
+@column seq_region_end              Sequence end position.
 @column seq_region_strand           Sequence region strand: 1 - forward; -1 - reverse.
 @column display_xref_id             External reference for EnsEMBL web site. Foreign key references to the @link xref table.
 @column source                      e.g ensembl, havana etc.
 @column status                      Status, e.g.'KNOWN', 'NOVEL', 'PUTATIVE', 'PREDICTED', 'KNOWN_BY_PROJECTION', 'UNKNOWN'.
 @column description                 Gene description
-@column is_current                  
-@column canonical_transcript_id     Foreign key references to the @link transcript table. 
+@column is_current
+@column canonical_transcript_id     Foreign key references to the @link transcript table.
 @column canonical_annotation        Canonical annotation.
 
 @see transcript
@@ -362,7 +362,7 @@ CREATE TABLE gene (
 
 @column gene_id             Foreign key references to the @link gene table.
 @column attrib_type_id      Foreign key references to the @link attribute_type table.
-@column value               Attribute value.  
+@column value               Attribute value.
 
 
 @see gene
@@ -387,10 +387,10 @@ CREATE TABLE gene_attrib (
 @desc Relates gene IDs in this release to release-independent stable identifiers.
 
 @column gene_id             Primary key, internal identifier. Foreign key references to the @link gene table.
-@column stable_id           Stable identifier.       
-@column version             Version number.       
-@column created_date        Date created.       
-@column modified_date       Date modified.    
+@column stable_id           Stable identifier.
+@column version             Version number.
+@column created_date        Date created.
+@column modified_date       Date modified.
 
 @see gene
 @see stable_id
@@ -416,9 +416,9 @@ CREATE TABLE gene_stable_id (
 @desc Describes bands that can be stained on the chromosome.
 
 @column karyotype_id            Primary key, internal identifier.
-@column seq_region_id           Foreign key references to the @link seq_region table. 
+@column seq_region_id           Foreign key references to the @link seq_region table.
 @column seq_region_start        Sequence start position.
-@column seq_region_end          Sequence end position.          
+@column seq_region_end          Sequence end position.
 @column band                    Band.
 @column stain                   Stain.
 
@@ -496,8 +496,8 @@ INSERT INTO meta (species_id, meta_key, meta_value) VALUES
 @desc Describes which co-ordinate systems the different feature tables use.
 
 @column table_name              Ensembl database table name.
-@column coord_system_id         Foreign key references to the @link coord_system table.    
-@column max_length              Longest sequence length.    
+@column coord_system_id         Foreign key references to the @link coord_system table.
+@column max_length              Longest sequence length.
 
 @see coord_system
 
@@ -520,10 +520,10 @@ CREATE TABLE meta_coord (
 @desc allows one or more polycistronic transcripts to be grouped together
 
 @column operon_id                   Primary key, internal identifier.
-@column analysis_id                 Foreign key references to the @link analysis table. 
-@column seq_region_id               Foreign key references to the @link seq_region table. 
+@column analysis_id                 Foreign key references to the @link analysis table.
+@column seq_region_id               Foreign key references to the @link seq_region table.
 @column seq_region_start            Sequence start position.
-@column seq_region_end              Sequence end position.          
+@column seq_region_end              Sequence end position.
 @column seq_region_strand           Sequence region strand: 1 - forward; -1 - reverse.
 @column display_label		    Short name for operon
 
@@ -549,10 +549,10 @@ CREATE TABLE operon (
 @desc Relates operon IDs in this release to release-independent stable identifiers.
 
 @column operon_id    	    Primary key, internal identifier. Foreign key references to the @link operon table.
-@column stable_id           Stable identifier.       
-@column version             Version number.       
-@column created_date        Date created.       
-@column modified_date       Date modified.    
+@column stable_id           Stable identifier.
+@column version             Version number.
+@column created_date        Date created.
+@column modified_date       Date modified.
 
 @see operon
 
@@ -575,12 +575,12 @@ CREATE TABLE operon_stable_id (
 @desc represents polycistronic transcripts which belong to operons and encode more than one gene
 
 @column operon_transcript_id        Primary key, internal identifier.
-@column analysis_id                 Foreign key references to the @link analysis table. 
-@column seq_region_id               Foreign key references to the @link seq_region table. 
+@column analysis_id                 Foreign key references to the @link analysis table.
+@column seq_region_id               Foreign key references to the @link seq_region table.
 @column seq_region_start            Sequence start position.
-@column seq_region_end              Sequence end position.          
+@column seq_region_end              Sequence end position.
 @column seq_region_strand           Sequence region strand: 1 - forward; -1 - reverse.
-@column operon_id                   Foreign key references to the @link operon table. 
+@column operon_id                   Foreign key references to the @link operon table.
 @column display_label		    Short name for operon transcript
 
 @see operon
@@ -608,10 +608,10 @@ CREATE TABLE operon_transcript (
 @desc Relates operon polycistronic transcripts IDs in this release to release-independent stable identifiers.
 
 @column operon_transcript_id	   Primary key, internal identifier. Foreign key references to the @link operon_transcript table.
-@column stable_id           	   Stable identifier.       
-@column version             	   Version number.       
-@column created_date        	   Date created.       
-@column modified_date       	   Date modified.    
+@column stable_id           	   Stable identifier.
+@column version             	   Version number.
+@column created_date        	   Date created.
+@column modified_date       	   Date modified.
 
 @see operon_transcript
 
@@ -632,8 +632,8 @@ CREATE TABLE operon_transcript_stable_id (
 @table operon_transcript_gene
 @desc allows association of genes with polycistronic transcripts
 
-@column operon_transcript_id	  Foreign key references to the @link operon_transcript table. 
-@column gene_id			  Foreign key references to the @link gene table. 
+@column operon_transcript_id	  Foreign key references to the @link operon_transcript table.
+@column gene_id			  Foreign key references to the @link gene table.
 
 @see operon_transcript
 @see gene
@@ -650,12 +650,12 @@ CREATE TABLE operon_transcript_gene (
 @table seq_region
 @desc Stores information about sequence regions. The primary key is used as a pointer into the dna table so that actual sequence can be obtained, and the coord_system_id allows sequence regions of multiple types to be stored.
 Clones, contigs and chromosomes are all now stored in the seq_region table. Contigs are stored with the co-ordinate system 'contig'.
-The relationship between contigs and clones is stored in the assembly table. The relationships between contigs and chromosomes, and between contigs and supercontigs, are stored in the assembly table. 
+The relationship between contigs and clones is stored in the assembly table. The relationships between contigs and chromosomes, and between contigs and supercontigs, are stored in the assembly table.
 
 @column seq_region_id             Primary key, internal identifier.
-@column name                      Sequence region name.  
-@column coord_system_id           Foreign key references to the @link coord_system table.   
-@column length                    Sequence length. 
+@column name                      Sequence region name.
+@column coord_system_id           Foreign key references to the @link coord_system table.
+@column length                    Sequence length.
 
 
 @see dna
@@ -685,7 +685,7 @@ CREATE TABLE seq_region (
 
 @column seq_region_id       Foreign key references to the @link seq_region table.
 @column attrib_type_id      Foreign key references to the @link attribute_type table.
-@column value               Attribute value.  
+@column value               Attribute value.
 
 @see seq_region
 @see attrib_type
@@ -711,22 +711,22 @@ CREATE TABLE seq_region_attrib (
 /**
 @table transcript
 @desc Stores information about transcripts. Has seq_region_start, seq_region_end and seq_region_strand for faster retrieval and to allow storage independently of genes and exons.
-Note that a transcript is usually associated with a translation, but may not be, e.g. in the case of pseudogenes and RNA genes (those that code for RNA molecules). 
+Note that a transcript is usually associated with a translation, but may not be, e.g. in the case of pseudogenes and RNA genes (those that code for RNA molecules).
 
 @column transcript_id               Primary key, internal identifier.
 @column gene_id                     Foreign key references to the @link gene table.
-@column analysis_id                 Foreign key references to the @link analysis table. 
-@column seq_region_id               Foreign key references to the @link seq_region table. 
+@column analysis_id                 Foreign key references to the @link analysis table.
+@column seq_region_id               Foreign key references to the @link seq_region table.
 @column seq_region_start            Sequence start position.
-@column seq_region_end              Sequence end position.          
+@column seq_region_end              Sequence end position.
 @column seq_region_strand           Sequence region strand: 1 - forward; -1 - reverse.
 @column display_xref_id             External reference for EnsEMBL web site. Foreign key references to the @link xref table.
-@column biotype                     Biotype, e.g. protein_coding.   
+@column biotype                     Biotype, e.g. protein_coding.
 @column status                      Status, e.g.'KNOWN', 'NOVEL', 'PUTATIVE', 'PREDICTED', 'KNOWN_BY_PROJECTION', 'UNKNOWN'.
-@column description                 Transcript description. 
-@column is_current                  
-@column canonical_translation_id    Foreign key references to the @link canonical_translation table.   
- 
+@column description                 Transcript description.
+@column is_current
+@column canonical_translation_id    Foreign key references to the @link canonical_translation table.
+
 
 */
 
@@ -764,7 +764,7 @@ CREATE TABLE transcript (
 
 @column transcript_id       Foreign key references to the @link transcript table.
 @column attrib_type_id      Foreign key references to the @link attribute_type table.
-@column value               Attribute value. 
+@column value               Attribute value.
 
 
 @see transcript
@@ -790,13 +790,13 @@ CREATE TABLE transcript_attrib (
 @desc Relates transcript IDs in this release to release-independent stable identifiers.
 
 @column transcript_id       Primary key, internal identifier. Foreign key references to the @link transcript table.
-@column stable_id           Stable identifier.       
-@column version             Version number.       
-@column created_date        Date created.       
-@column modified_date       Date modified.    
+@column stable_id           Stable identifier.
+@column version             Version number.
+@column created_date        Date created.
+@column modified_date       Date modified.
 
 @see transcript
-@see stable_id 
+@see stable_id
 
 */
 
@@ -817,13 +817,13 @@ CREATE TABLE transcript_stable_id (
 
 /**
 @table translation
-@desc Describes which parts of which exons are used in translation. The seq_start and seq_end columns are 1-based offsets into the relative coordinate system of start_exon_id and end_exon_id. i.e, if the translation starts at the first base of the exon, seq_start would be 1. Transcripts are related to translations by the transcript_id key in this table. 
+@desc Describes which parts of which exons are used in translation. The seq_start and seq_end columns are 1-based offsets into the relative coordinate system of start_exon_id and end_exon_id. i.e, if the translation starts at the first base of the exon, seq_start would be 1. Transcripts are related to translations by the transcript_id key in this table.
 
 @column translation_id              Primary key, internal identifier.
 @column transcript_id               Foreign key references to the @link transcript table.
-@column seq_start                   1-based offset into the relative coordinate system of start_exon_id. 
+@column seq_start                   1-based offset into the relative coordinate system of start_exon_id.
 @column start_exon_id               Foreign key references to the @link exon table.
-@column seq_end                     1-based offset into the relative coordinate system of end_exon_id. 
+@column seq_end                     1-based offset into the relative coordinate system of end_exon_id.
 @column end_exon_id                 Foreign key references to the @link exon table.
 
 */
@@ -851,7 +851,7 @@ CREATE TABLE translation (
 
 @column translation_id      Foreign key references to the @link transcript table.
 @column attrib_type_id      Foreign key references to the @link attribute_type table.
-@column value               Attribute value. 
+@column value               Attribute value.
 
 @see translation
 
@@ -876,10 +876,10 @@ CREATE TABLE translation_attrib (
 @desc Relates translation IDs in this release to release-independent stable identifiers.
 
 @column translation_id      Primary key, internal identifier. Foreign key references to the @link translation table.
-@column stable_id           Stable identifier.       
-@column version             Version number.       
-@column created_date        Date created.       
-@column modified_date       Date modified.    
+@column stable_id           Stable identifier.
+@column version             Version number.
+@column created_date        Date created.
+@column modified_date       Date modified.
 
 @see translation
 @see stable_id
@@ -964,7 +964,7 @@ The module column tells the pipeline which Perl module does the whole analysis, 
 @column db                          Database name.
 @column db_version                  Database version.
 @column db_file                     File system location of the database.
-@column program                     The binary used to create a feature. 
+@column program                     The binary used to create a feature.
 @column program_version             The binary version.
 @column program_file                File system location of the binary.
 @column parameters                  A parameter string which is processed by the perl module.
@@ -1065,7 +1065,7 @@ CREATE TABLE density_feature (
 coverage etc. in a given region.
 
 @column density_type_id         Primary key, internal identifier.
-@column analysis_id             Foreign key references to the @link analysis table.       
+@column analysis_id             Foreign key references to the @link analysis table.
 @column block_size              Block size.
 @column region_features         The number of features per sequence region inside this density type.
 @column value_type              Value type, e.g. 'sum', 'ratio'.
@@ -1096,7 +1096,7 @@ CREATE TABLE density_type (
 Corresponds to original tag containing the full sequence. This can be a single piece of sequence like CAGE tags or a ditag with concatenated sequence from 5' and 3' end like GIS or GSC tags.
 This data is available as a DAS track in ContigView on the EnsEMBL web site.
 
-@column ditag_id          Primary key, internal identifier. 
+@column ditag_id          Primary key, internal identifier.
 @column name              Ditag name.
 @column type              Ditag type.
 @column tag_count         Tag count.
@@ -1122,7 +1122,7 @@ CREATE TABLE ditag (
 /**
 @table ditag_feature
 @desc Describes where ditags hit on the genome. Represents a mapped ditag object in the EnsEMBL database. These are the original tags separated into start ("L") and end ("R") parts if applicable, successfully aligned to the genome.
-Two DitagFeatures usually relate to one parent Ditag. Alternatively there are CAGE tags e.g. which only have a 5\'tag ("F"). 
+Two DitagFeatures usually relate to one parent Ditag. Alternatively there are CAGE tags e.g. which only have a 5\'tag ("F").
 
 @column ditag_feature_id          Primary key, internal identifier.
 @column ditag_id                  Foreign key references to the @link ditag table.
@@ -1135,7 +1135,7 @@ Two DitagFeatures usually relate to one parent Ditag. Alternatively there are CA
 @column hit_start                 Alignment hit start position.
 @column hit_end                   Alignment hit end position.
 @column hit_strand                Alignment hit strand: 1 - forward; -1 - reverse.
-@column cigar_line                Used to encode gapped alignments. 
+@column cigar_line                Used to encode gapped alignments.
 @column ditag_side                Ditag side: L - start, R - end, F - 5\'tag only
 
 @see ditag
@@ -1173,7 +1173,7 @@ CREATE TABLE ditag_feature (
 @desc Stores DNA sequence alignments generated from Blast (or Blast-like) comparisons.
 
 @column dna_align_feature_id        Primary key, internal identifier.
-@column seq_region_id               Foreign key references to the @link seq_region table. 
+@column seq_region_id               Foreign key references to the @link seq_region table.
 @column seq_region_start            Sequence start position.
 @column seq_region_end              Sequence end position.
 @column seq_region_strand           Sequence region strand: 1 - forward; -1 - reverse.
@@ -1185,7 +1185,7 @@ CREATE TABLE ditag_feature (
 @column score                       Alignment score.
 @column evalue                      Alignment e-value.
 @column perc_ident                  Alignment percentage identity.
-@column cigar_line                  Used to encode gapped alignments. 
+@column cigar_line                  Used to encode gapped alignments.
 @column external_db_id              Foreign key references to the @link external_db table.
 @column hcoverage                   Hit coverage.
 @column external_data               External data.
@@ -1238,7 +1238,7 @@ CREATE TABLE dna_align_feature (
 @column map_name             Map name.
 
 
-@see marker  
+@see marker
 
 */
 
@@ -1268,7 +1268,7 @@ CREATE TABLE map (
 
 
 @see marker_synonym
-@see marker_map_location 
+@see marker_map_location
 
 */
 
@@ -1296,12 +1296,12 @@ CREATE TABLE marker (
 @desc Used to describe positions of markers on the assembly. Markers are placed on the genome electronically using an analysis program.
 
 @column marker_feature_id       Primary key, internal identifier.
-@column marker_id               Foreign key references to the @link marker table.    
-@column seq_region_id           Foreign key references to the @link seq_region table. 
+@column marker_id               Foreign key references to the @link marker table.
+@column seq_region_id           Foreign key references to the @link seq_region table.
 @column seq_region_start        Sequence start position.
-@column seq_region_end          Sequence end position.               
-@column analysis_id             Foreign key references to the @link analysis table. 
-@column map_weight              The number of times that this marker has been mapped to the genome, e.g. a marker with map weight 3 has been mapped to 3 locations in the genome.  
+@column seq_region_end          Sequence end position.
+@column analysis_id             Foreign key references to the @link analysis table.
+@column map_weight              The number of times that this marker has been mapped to the genome, e.g. a marker with map weight 3 has been mapped to 3 locations in the genome.
 
 
 @see marker
@@ -1330,14 +1330,14 @@ CREATE TABLE marker_feature (
 
 /**
 @table marker_map_location
-@desc Stores map locations (genetic, radiation hybrid and in situ hybridization) for markers obtained from experimental evidence. 
+@desc Stores map locations (genetic, radiation hybrid and in situ hybridization) for markers obtained from experimental evidence.
 
 @column marker_id                Primary key, internal identifier.
-@column map_id                   Foreign key references to the @link map table.   
-@column chromosome_name          Chromosome name   
-@column marker_synonym_id        Foreign key references to the @link marker_synonym table.   
-@column position                 Position of the map location.    
-@column lod_score                LOD score for map location.   
+@column map_id                   Foreign key references to the @link map table.
+@column chromosome_name          Chromosome name
+@column marker_synonym_id        Foreign key references to the @link marker_synonym table.
+@column position                 Position of the map location.
+@column lod_score                LOD score for map location.
 
 @see marker
 @see marker_feature
@@ -1365,7 +1365,7 @@ CREATE TABLE marker_map_location (
 @desc Stores alternative names for markers, as well as their sources.
 
 @column marker_synonym_id          Primary key, internal identifier.
-@column marker_id                  Foreign key references to the @link marker table.  
+@column marker_id                  Foreign key references to the @link marker table.
 @column source                     Marker source.
 @column name                       Alternative name for marker.
 
@@ -1393,9 +1393,9 @@ CREATE TABLE marker_synonym (
 @table misc_attrib
 @desc Stores arbitrary attributes about the features in the misc_feature table.
 
-@column misc_feature_id     Foreign key references to the @link misc_feature table.       
+@column misc_feature_id     Foreign key references to the @link misc_feature table.
 @column attrib_type_id      Foreign key references to the @link attribute_type table.
-@column value               Attribute value.                 
+@column value               Attribute value.
 
 @see misc_feature
 
@@ -1420,12 +1420,12 @@ CREATE TABLE misc_attrib (
 @desc Allows for storage of arbitrary features.
 
 @column misc_feature_id             Primary key, internal identifier.
-@column seq_region_id               Foreign key references to the @link seq_region table. 
+@column seq_region_id               Foreign key references to the @link seq_region table.
 @column seq_region_start            Sequence start position.
-@column seq_region_end              Sequence end position.          
+@column seq_region_end              Sequence end position.
 @column seq_region_strand           Sequence region strand: 1 - forward; -1 - reverse.
 
-@see misc_attrib 
+@see misc_attrib
 
 */
 
@@ -1476,9 +1476,9 @@ CREATE TABLE misc_feature_misc_set (
 
 @column misc_set_id           Primary key, internal identifier.
 @column code                  Set code, e.g. bac_map
-@column name                  Code name, e.g. BAC map     
-@column description           Code description, e.g. Full list of mapped BAC clones      
-@column max_length            Longest feature, e.g. 500000 
+@column name                  Code name, e.g. BAC map
+@column description           Code description, e.g. Full list of mapped BAC clones
+@column max_length            Longest feature, e.g. 500000
 
 
 @see misc_feature_misc_set
@@ -1507,10 +1507,10 @@ CREATE TABLE misc_set (
 @column prediction_exon_id              Primary key, internal identifier.
 @column prediction_transcript_id        Foreign key references to the @link prediction_transcript table.
 @column exon_rank                       Exon rank
-@column seq_region_id                   Foreign key references to the @link seq_region table. 
+@column seq_region_id                   Foreign key references to the @link seq_region table.
 @column seq_region_start                Sequence start position.
-@column seq_region_end                  Sequence end position.          
-@column seq_region_strand               Sequence region strand: 1 - forward; -1 - reverse.   
+@column seq_region_end                  Sequence end position.
+@column seq_region_strand               Sequence region strand: 1 - forward; -1 - reverse.
 @column start_phase                     Exon start phase.
 @column score                           Prediction score.
 @column p_value                         Prediction p-value.
@@ -1542,13 +1542,13 @@ CREATE TABLE prediction_exon (
 
 /**
 @table prediction_transcript
-@desc Stores transcripts that are predicted by ab initio gene finder programs (e.g. genscan, SNAP). Unlike EnsEMBL transcripts they are not supported by any evidence. 
+@desc Stores transcripts that are predicted by ab initio gene finder programs (e.g. genscan, SNAP). Unlike EnsEMBL transcripts they are not supported by any evidence.
 
 @column prediction_transcript_id        Primary key, internal identifier.
-@column seq_region_id                   Foreign key references to the @link seq_region table. 
+@column seq_region_id                   Foreign key references to the @link seq_region table.
 @column seq_region_start                Sequence start position.
-@column seq_region_end                  Sequence end position.          
-@column seq_region_strand               Sequence region strand: 1 - forward; -1 - reverse.  
+@column seq_region_end                  Sequence end position.
+@column seq_region_strand               Sequence region strand: 1 - forward; -1 - reverse.
 @column analysis_id                     Foreign key references to the @link analysis table.
 @column display_label                   Display label for the EnsEMBL web site.
 
@@ -1578,7 +1578,7 @@ CREATE TABLE prediction_transcript (
 @desc Stores translation alignments generated from Blast (or Blast-like) comparisons.
 
 @column protein_align_feature_id    Primary key, internal identifier.
-@column seq_region_id               Foreign key references to the @link seq_region table. 
+@column seq_region_id               Foreign key references to the @link seq_region table.
 @column seq_region_start            Sequence start position.
 @column seq_region_end              Sequence end position.
 @column seq_region_strand           Sequence region strand: 1 - forward; -1 - reverse.
@@ -1589,9 +1589,9 @@ CREATE TABLE prediction_transcript (
 @column score                       Alignment score.
 @column evalue                      Alignment e-value.
 @column perc_ident                  Alignment percentage identity.
-@column cigar_line                  Used to encode gapped alignments. 
+@column cigar_line                  Used to encode gapped alignments.
 @column external_db_id              Foreign key references to the @link external_db table.
-@column hcoverage                   
+@column hcoverage
 
 @see cigar_line
 
@@ -1630,7 +1630,7 @@ CREATE TABLE protein_align_feature (
 
 /**
 @table protein_feature
-@desc Describes features on the translations (as opposed to the DNA sequence itself), i.e. parts of the peptide. In peptide co-ordinates rather than contig co-ordinates. 
+@desc Describes features on the translations (as opposed to the DNA sequence itself), i.e. parts of the peptide. In peptide co-ordinates rather than contig co-ordinates.
 
 @column protein_feature_id          Primary key, internal identifier.
 @column translation_id              Foreign key references to the @link translation table.
@@ -1645,7 +1645,7 @@ CREATE TABLE protein_align_feature (
 @column perc_ident                  Alignment percentage identity.
 @column external_data               External data for protein feature.
 
-@see analysis  
+@see analysis
 
 */
 
@@ -1677,19 +1677,19 @@ CREATE TABLE protein_feature (
 @table qtl
 @desc Describes the markers (of which there may be up to three) which define Quantitative Trait Loci.
 Note that QTL is a statistical technique used to find links between certain expressed traits and regions in a genetic map.
-A QTL is defined by three markers, two flanking and one peak (optional) marker. Its a region (or more often a group of regions) which is likely to affect the phenotype (trait) described in this Qtl. 
+A QTL is defined by three markers, two flanking and one peak (optional) marker. Its a region (or more often a group of regions) which is likely to affect the phenotype (trait) described in this Qtl.
 
 @column qtl_id                Primary key, internal identifier.
-@column trait                 Expressed trait.    
+@column trait                 Expressed trait.
 @column lod_score             LOD score for QTL.
-@column flank_marker_id_1     Flanking marker 1.  
-@column flank_marker_id_2     Flanking marker 2.  
-@column peak_marker_id        Peak marker.  
+@column flank_marker_id_1     Flanking marker 1.
+@column flank_marker_id_2     Flanking marker 2.
+@column peak_marker_id        Peak marker.
 
 @see qtl_synonym
 
 */
-   
+
 
 
 CREATE TABLE qtl (
@@ -1710,14 +1710,14 @@ CREATE TABLE qtl (
 
 /**
 @table qtl_feature
-@desc Describes Quantitative Trail Loci (QTL) positions as obtained from inbreeding experiments. Note the values in this table are in chromosomal co-ordinates. Also, this table is not populated for all schemas. 
+@desc Describes Quantitative Trail Loci (QTL) positions as obtained from inbreeding experiments. Note the values in this table are in chromosomal co-ordinates. Also, this table is not populated for all schemas.
 
 
-@column seq_region_id               Foreign key references to the @link seq_region table. 
+@column seq_region_id               Foreign key references to the @link seq_region table.
 @column seq_region_start            Sequence start position.
 @column seq_region_end              Sequence end position.
-@column qtl_id                      
-@column analysis_id                 Foreign key references to the @link analysis table. 
+@column qtl_id
+@column analysis_id                 Foreign key references to the @link analysis table.
 
 
 @see qtl
@@ -1744,11 +1744,11 @@ CREATE TABLE qtl_feature (
 
 
 /**
-@table qtl_synonym 
+@table qtl_synonym
 @desc Describes alternative names for Quantitative Trait Loci (QTLs).
 
 @column qtl_synonym_id          Primary key, internal identifier.
-@column qtl_id                  Foreign key references to the @link qtl table.  
+@column qtl_id                  Foreign key references to the @link qtl table.
 @column source_database         Synonym source database.
 @column source_primary_id       Source database primary ID.
 
@@ -1805,14 +1805,14 @@ CREATE TABLE repeat_consensus (
 @desc Describes sequence repeat regions.
 
 @column repeat_feature_id           Primary key, internal identifier.
-@column seq_region_id               Foreign key references to the @link seq_region table. 
+@column seq_region_id               Foreign key references to the @link seq_region table.
 @column seq_region_start            Sequence start position.
 @column seq_region_end              Sequence end position.
-@column seq_region_strand           Sequence region strand: 1 - forward; -1 - reverse.        
+@column seq_region_strand           Sequence region strand: 1 - forward; -1 - reverse.
 @column repeat_start                Repeat sequence start.
 @column repeat_end                  Repeat sequence end
-@column repeat_consensus_id         Foreign key references to the @link repeat_consensus table. 
-@column analysis_id                 Foreign key references to the @link analysis table. 
+@column repeat_consensus_id         Foreign key references to the @link repeat_consensus table.
+@column analysis_id                 Foreign key references to the @link analysis table.
 @column score                       Analysis score.
 
 
@@ -1845,13 +1845,13 @@ CREATE TABLE repeat_feature (
 @table simple_feature
 @desc Describes general genomic features that don't fit into any of the more specific feature tables.
 
-@column simple_feature_id       Primary key, internal identifier.  
-@column seq_region_id           Foreign key references to the @link seq_region table. 
+@column simple_feature_id       Primary key, internal identifier.
+@column seq_region_id           Foreign key references to the @link seq_region table.
 @column seq_region_start        Sequence start position.
 @column seq_region_end          Sequence end position.
 @column seq_region_strand       Sequence region strand: 1 - forward; -1 - reverse.
 @column display_label           Display label for the EnsEMBL web site.
-@column analysis_id             Foreign key references to the @link analysis table. 
+@column analysis_id             Foreign key references to the @link analysis table.
 @column score                   Analysis score.
 
 
@@ -1880,16 +1880,16 @@ CREATE TABLE simple_feature (
 @table splicing_event
 @desc The splicing event table contains alternative splicing events and constitutive splicing events as reported by the AltSpliceFinder program.
 Multiple alternative splicing events can be observed on a gene. The location of the splicing event on the seq_region is reported.
-The type of event is stored in the @link attrib_type table. 
+The type of event is stored in the @link attrib_type table.
 
 @column splicing_event_id       Primary key, internal identifier.
 @column name                    Splicing event name.
-@column gene_id                 Foreign key references to the @link gene table. 
-@column seq_region_id           Foreign key references to the @link seq_region table. 
+@column gene_id                 Foreign key references to the @link gene table.
+@column seq_region_id           Foreign key references to the @link seq_region table.
 @column seq_region_start        Sequence start position.
 @column seq_region_end          Sequence end position.
 @column seq_region_strand       Sequence region strand: 1 - forward; -1 - reverse.
-@column attrib_type_id          Foreign key references to the @link attrib_type table. 
+@column attrib_type_id          Foreign key references to the @link attrib_type table.
 
 */
 
@@ -1952,7 +1952,7 @@ CREATE TABLE splicing_event_feature (
 
 /**
 @table splicing_transcript_pair
-@desc Describes a pair of spliced transcripts in a splicing event. 
+@desc Describes a pair of spliced transcripts in a splicing event.
 A splicing event is an observation of a change of splice sites between two isoforms. To avoid redundancy, some events, like a skipped exon observed between different pairs of transcripts are reported only once. The splicing transcript pair table contains a list of all the combinations of 2 isoforms relating to the same event.
 
 
@@ -1983,11 +1983,11 @@ CREATE TABLE splicing_transcript_pair (
 /**
 @table supporting_feature
 @desc Describes the exon prediction process by linking exons to DNA or protein alignment features.
-As in several other tables, the feature_id column is a foreign key; the feature_type column specifies which table feature_id refers to. 
+As in several other tables, the feature_id column is a foreign key; the feature_type column specifies which table feature_id refers to.
 
 @column exon_id                    Foreign key references to the @link exon table.
 @column feature_type               Feature type: 'dna_align_feature' or 'protein_align_feature'
-@column feature_id                 Foreign key references to the @link dna_align_feature or @link protein_align_feature table depending on the feature type. 
+@column feature_id                 Foreign key references to the @link dna_align_feature or @link protein_align_feature table depending on the feature type.
 
 
 */
@@ -2009,11 +2009,11 @@ CREATE TABLE supporting_feature (
 /**
 @table transcript_supporting_feature
 @desc Describes the exon prediction process by linking transcripts to DNA or protein alignment features.
-As in several other tables, the feature_id column is a foreign key; the feature_type column specifies which table feature_id refers to. 
+As in several other tables, the feature_id column is a foreign key; the feature_type column specifies which table feature_id refers to.
 
 @column transcript_id              Foreign key references to the @link transcript table.
 @column feature_type               Feature type: 'dna_align_feature' or 'protein_align_feature'
-@column feature_id                 Foreign key references to the @link dna_align_feature or @link protein_align_feature table depending on the feature type. 
+@column feature_id                 Foreign key references to the @link dna_align_feature or @link protein_align_feature table depending on the feature type.
 
 */
 
@@ -2036,15 +2036,15 @@ CREATE TABLE transcript_supporting_feature (
 
 /**
 @table gene_archive
-@desc Contains a snapshot of the stable IDs associated with genes deleted or changed between releases. Includes gene, transcript and translation stable IDs. 
+@desc Contains a snapshot of the stable IDs associated with genes deleted or changed between releases. Includes gene, transcript and translation stable IDs.
 
-@column gene_stable_id              Foreign key references to the @link gene_stable_id table. 
+@column gene_stable_id              Foreign key references to the @link gene_stable_id table.
 @column gene_version                Gene version.
-@column transcript_stable_id        Foreign key references to the @link transcript_stable_id table. 
+@column transcript_stable_id        Foreign key references to the @link transcript_stable_id table.
 @column transcript_version          Transcript version.
-@column translation_stable_id       Foreign key references to the @link transcript_stable_id table. 
+@column translation_stable_id       Foreign key references to the @link transcript_stable_id table.
 @column translation_version         Translation version.
-@column peptide_archive_id          Foreign key references to the @link peptide archive table. 
+@column peptide_archive_id          Foreign key references to the @link peptide archive table.
 @column mapping_session_id          Foreign key references to the @link mapping_session table.
 
 @see gene
@@ -2074,14 +2074,14 @@ CREATE TABLE gene_archive (
 
 /**
 @table mapping_session
-@desc Stores details of ID mapping sessions - a mapping session represents the session when stable IDs where mapped from one database to another. Details of the "old" and "new" databases are stored. 
+@desc Stores details of ID mapping sessions - a mapping session represents the session when stable IDs where mapped from one database to another. Details of the "old" and "new" databases are stored.
 
 @column mapping_session_id          Primary key, internal identifier.
 @column old_db_name                 Old Ensembl database name.
 @column new_db_name                 New Ensembl database name.
 @column old_release                 Old Ensembl database release.
 @column new_release                 New Ensembl database release.
-@column old_assembly                Old assembly.   
+@column old_assembly                Old assembly.
 @column new_assembly                New assembly.
 @column created                     Date created.
 
@@ -2130,9 +2130,9 @@ CREATE TABLE mapping_set (
 /**
 @table stable_id_event
 @desc Represents what happened to all gene, transcript and translation stable IDs during a mapping session.
-This includes which IDs where deleted, created and related to each other. Each event is represented by one or more rows in the table. 
+This includes which IDs where deleted, created and related to each other. Each event is represented by one or more rows in the table.
 
-@column old_stable_id             Gene/transcript/translation stable id for the previous release.  
+@column old_stable_id             Gene/transcript/translation stable id for the previous release.
 @column old_version               Stable id version.
 @column new_stable_id             Gene/transcript/translation stable id for the current release.
 @column new_version               Stable id version.
@@ -2170,7 +2170,7 @@ CREATE TABLE stable_id_event (
 
 @column peptide_archive_id         Primary key, internal identifier.
 @column md5_checksum               MD5 checksum hexadecimal digest of the sequence.
-@column peptide_seq                Peptide sequence.             
+@column peptide_seq                Peptide sequence.
 
 
 */
@@ -2253,9 +2253,9 @@ CREATE TABLE dependent_xref(
 @desc Stores data about the external databases in which the objects described in the xref table are stored.
 
 @column external_db_id              Primary key, internal identifier.
-@column db_name                     Database name.     
-@column db_release                  Database release.      
-@column status                      Status, e.g. 'KNOWNXREF','KNOWN','XREF','PRED','ORTH','PSEUDO'. 
+@column db_name                     Database name.
+@column db_release                  Database release.
+@column status                      Status, e.g. 'KNOWNXREF','KNOWN','XREF','PRED','ORTH','PSEUDO'.
 @column priority                    Determines which one of the xrefs will be used as the gene name.
 @column db_display_name             Database display name.
 @column type                        Type, e.g. 'ARRAY', 'ALT_TRANS', 'ALT_GENE', 'MISC', 'LIT', 'PRIMARY_DB_SYNONYM', 'ENSEMBL'.
@@ -2311,7 +2311,7 @@ CREATE TABLE external_synonym (
   synonym                     VARCHAR(100) NOT NULL,
 
   PRIMARY KEY (xref_id, synonym),
-  KEY name_index (synonym)    
+  KEY name_index (synonym)
 
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
@@ -2323,15 +2323,15 @@ CREATE TABLE external_synonym (
 @desc Describes how well a particular xref object matches the EnsEMBL object.
 
 @column object_xref_id        Primary key, internal identifier. Foreign key references to the @link object_xref table.
-@column xref_identity         Percentage identity. 
-@column ensembl_identity      Percentage identity.   
-@column xref_start            Xref sequence start. 
-@column xref_end              Xref sequence end.  
-@column ensembl_start         Ensembl sequence start.  
-@column ensembl_end           Ensembl sequence end.  
-@column cigar_line            Used to encode gapped alignments.   
-@column score                 Match score.  
-@column evalue                Match evalue.  
+@column xref_identity         Percentage identity.
+@column ensembl_identity      Percentage identity.
+@column xref_start            Xref sequence start.
+@column xref_end              Xref sequence end.
+@column ensembl_start         Ensembl sequence start.
+@column ensembl_end           Ensembl sequence end.
+@column cigar_line            Used to encode gapped alignments.
+@column score                 Match score.
+@column evalue                Match evalue.
 
 @see object_xref
 
@@ -2365,14 +2365,14 @@ CREATE TABLE identity_xref (
 The EnsEMBL object can be one of several types; the type is held in the ensembl_object_type column.
 The ID of the particular EnsEMBL gene, translation or whatever is given in the ensembl_id column.
 The xref_id points to the entry in the xref table that holds data about the external object.
-Each EnsEMBL object can be associated with zero or more xrefs. An xref object can be associated with one or more EnsEMBL objects. 
+Each EnsEMBL object can be associated with zero or more xrefs. An xref object can be associated with one or more EnsEMBL objects.
 
-@column object_xref_id            Primary key, internal identifier.             
-@column ensembl_id                Foreign key references to the @link seq_region, @link transcript, @link gene, @translation tables depending on ensembl_object_type.     
-@column ensembl_object_type       Ensembl object type: 'RawContig', 'Transcript', 'Gene','Translation'.                     
-@column xref_id                   Foreign key references to the @link xref table.    
-@column linkage_annotation        Additional annotation on the linkage.  
-@column analysis_id               Foreign key references to the @link analysis table.    
+@column object_xref_id            Primary key, internal identifier.
+@column ensembl_id                Foreign key references to the @link seq_region, @link transcript, @link gene, @translation tables depending on ensembl_object_type.
+@column ensembl_object_type       Ensembl object type: 'RawContig', 'Transcript', 'Gene','Translation'.
+@column xref_id                   Foreign key references to the @link xref table.
+@column linkage_annotation        Additional annotation on the linkage.
+@column analysis_id               Foreign key references to the @link analysis table.
 
 @see xref
 @see identity_xref
@@ -2417,11 +2417,11 @@ In reality, however, we store this in the database like this:
 
 and the evidence tag hangs off of the relationship between the ENSP and the GO identifier.
 Some ENSPs are associated with multiple closely related Swissprot entries which may both be associated with the same GO identifier but with different evidence tags.
-For this reason a single Ensembl - external db object relationship in the object_xref table can be associated with multiple evidence tags in the ontology_xref table. 
+For this reason a single Ensembl - external db object relationship in the object_xref table can be associated with multiple evidence tags in the ontology_xref table.
 
-@column object_xref_id          Composite key. Foreign key references to the @link object_xref table.        
+@column object_xref_id          Composite key. Foreign key references to the @link object_xref table.
 @column source_xref_id          Composite key. Foreign key references to the @link xref table.
-@column linkage_type            Composite key. <a href="http://www.geneontology.org/GO.evidence.shtml">Evidence tags</a> 
+@column linkage_type            Composite key. <a href="http://www.geneontology.org/GO.evidence.shtml">Evidence tags</a>
 
 @see object_xref
 
@@ -2432,7 +2432,7 @@ CREATE TABLE ontology_xref (
 
   object_xref_id          INT(10) UNSIGNED DEFAULT '0' NOT NULL,
   source_xref_id          INT(10) UNSIGNED DEFAULT NULL,
-  linkage_type            VARCHAR(3),
+  linkage_type            VARCHAR(3) DEFAULT NULL,
 
   KEY source_idx (source_xref_id),
   UNIQUE KEY object_source_type_idx (object_xref_id, source_xref_id, linkage_type)
@@ -2479,10 +2479,10 @@ CREATE TABLE seq_region_synonym (
 @column unmapped_reason_id         Foreign key references to the @link unmapped_reason table.
 @column query_score                Actual mapping query score.
 @column target_score               Target mapping query score.
-@column ensembl_id                 Foreign key references to the @link seq_region, @link transcript, @link gene, @translation tables depending on ensembl_object_type.     
-@column ensembl_object_type        Ensembl object type: 'RawContig', 'Transcript', 'Gene','Translation'.   
-@column parent                     Foreign key references to the @link dependent_xref table, in case the unmapped object is dependent on a primary external reference which wasn't mapped to an ensembl one. 
-                
+@column ensembl_id                 Foreign key references to the @link seq_region, @link transcript, @link gene, @translation tables depending on ensembl_object_type.
+@column ensembl_object_type        Ensembl object type: 'RawContig', 'Transcript', 'Gene','Translation'.
+@column parent                     Foreign key references to the @link dependent_xref table, in case the unmapped object is dependent on a primary external reference which wasn't mapped to an ensembl one.
+
 
 */
 
@@ -2519,7 +2519,7 @@ CREATE TABLE unmapped_object (
 @column unmapped_reason_id           Primary key, internal identifier.
 @column summary_description          Summarised description.
 @column full_description             Full description.
-    
+
 */
 
 CREATE TABLE unmapped_reason (
@@ -2537,10 +2537,10 @@ CREATE TABLE unmapped_reason (
 /**
 @table xref
 @desc Holds data about objects which are external to EnsEMBL, but need to be associated with EnsEMBL objects.
-Information about the database that the external object is stored in is held in the external_db table entry referred to by the external_db column. 
+Information about the database that the external object is stored in is held in the external_db table entry referred to by the external_db column.
 
 @column xref_id                 Primary key, internal identifier.
-@column external_db_id          Foreign key references to the @link external_db table.   
+@column external_db_id          Foreign key references to the @link external_db table.
 @column dbprimary_acc           Primary accession number.
 @column display_label           Display label for the EnsEMBL web site.
 @column version                 Object version.
@@ -2584,7 +2584,7 @@ CREATE TABLE xref (
 
 /**
 @table interpro
-@desc Allows storage of links to the InterPro database. InterPro is a database of protein families, domains and functional sites in which identifiable features found in known proteins can be applied to unknown protein sequences. 
+@desc Allows storage of links to the InterPro database. InterPro is a database of protein families, domains and functional sites in which identifiable features found in known proteins can be applied to unknown protein sequences.
 
 @column interpro_ac               InterPro protein accession number.
 @column id                        InterPro protein id.
