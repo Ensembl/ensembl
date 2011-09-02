@@ -597,7 +597,8 @@ sub _slice_fetch {
 
       # If there is mapping information, use the external_seq_region_id
       # to get features.
-      $sr_id = $self->get_seq_region_id_external($sr_id);
+      ##FIXME## $sr_id = $self->get_seq_region_id_external($sr_id);
+
       $constraint .= " AND " if($constraint);
 
       if ( !$slice->is_circular() ) {
