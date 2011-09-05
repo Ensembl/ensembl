@@ -18,6 +18,8 @@ use XrefMapper::XrefLoader;
 use XrefMapper::Interpro;
 use XrefMapper::DisplayXrefs;
 use XrefMapper::CoordinateMapper;
+use XrefMapper::OfficialNaming;
+use XrefMapper::DirectXrefs;
 
 use vars qw(@INC);
 
@@ -170,11 +172,16 @@ elsif($status eq "mapping_finished"){
 }
 
 $status = $mapper->xref_latest_status();
-if($status eq "mapping_processed"){  # load core data needed and add direct xrefs to the object_xref etc tables
+if($status eq "mapping_processed"){  # load core data needed
   my $core_info = XrefMapper::CoreInfo->new($mapper);
   $core_info->get_core_data();
 }
 
+$status = $mapper->xref_latest_status();
+if($status eq "core_data_loaded"){  # add direct xrefs to the object_xref etctables
+  my $direct_mappings = XrefMapper::DirectXrefs->new($mapper);
+  $direct_mappings->process();
+}
 
 $status = $mapper->xref_latest_status();
 if($status eq "direct_xrefs_parsed"){  # process the priority xrefs.
@@ -218,7 +225,8 @@ if($status eq "source_level_move_finished"){
 
 $status = $mapper->xref_latest_status();
 if($status eq "alt_alleles_processed"){ 
-  $mapper->official_naming();
+  my $official_naming = XrefMapper::OfficialNaming->new($mapper);
+  $official_naming->run();
 }
 
 
