@@ -2,7 +2,7 @@ package XrefMapper::BasicMapper;
 
 use strict;
 use warnings;
-
+use Carp;
 use Cwd;
 use DBI;
 use File::Basename;
@@ -121,6 +121,16 @@ sub previous_core{
 }
 
 
+=head2 add_meta_pair
+
+  Arg [1]    : key
+  Arg [2]    : value
+  Example    : $mapper->add_meta_pair("head_directory","/lustre/src/");
+  Description: Adds key value pairs to the database
+  Returntype : none
+  Exceptions : none
+
+=cut
 
 sub add_meta_pair {
 
@@ -129,9 +139,17 @@ sub add_meta_pair {
   my $sth = $self->xref->dbc->prepare('insert into meta (meta_key, meta_value, date) values("'.$key.'", "'.$value.'", now())');
   $sth->execute;
   $sth->finish;
-
+  return;
 }
 
+sub update_process_status{
+  my ($self, $value) = @_;
+
+  my $sth_stat = $self->xref->dbc->prepare("insert into process_status (status, date) values('".$value."',now())");
+  $sth_stat->execute();
+  $sth_stat->finish;
+  return;
+}
 
 sub xref_latest_status { 
   my $self = shift;
@@ -140,7 +158,7 @@ sub xref_latest_status {
   my $sth = $self->xref->dbc->prepare("select id, status, date from process_status order by id");
   
   $sth->execute();
-  my ($xref_id, $acc);
+#  my ($xref_id, $acc);
   my ($id, $status, $date);
   $sth->bind_columns(\$id, \$status,\$date);
   while($sth->fetch){
@@ -162,7 +180,7 @@ sub get_meta_value {
   }
   $sth->finish;
 
-  return $value;  
+  return $value;
 }
 
 sub process_file {
@@ -171,7 +189,6 @@ sub process_file {
   my $verbose = shift;
   my $no_xref = shift;
 
-  open(FILE, $file) or die ("\nCannot open input file '$file':\n $!\n");
   
 
   my $xref=undef;
@@ -182,7 +199,8 @@ sub process_file {
   my %species_hash=();
   my %farm_hash=();
   
-  while( my $line = <FILE> ) {
+  open my $fh, "<", $file or croak ("\nCannot open input file '$file':\n $!\n");
+  while( my $line = <$fh> ) {
     
     chomp($line);
     next if $line =~ /^#/;
@@ -209,8 +227,8 @@ sub process_file {
     elsif($type eq "farm"){
       $farm_hash{lc($key)} = $value;
     }
-  }
-  
+  }  
+  close $fh or croak "Can't close file";
 
   my $value = $species_hash{'species'};
   my $taxon = $species_hash{'taxon'};
@@ -220,16 +238,14 @@ sub process_file {
     exit(1);
   }
     
+  my $use_basic = 0;
   my $mapper;
   my $module;
   my $class = "XrefMapper/$value.pm";
-  eval {
+  my $eval_test = eval {
     require $class;
   };
-
-  my $use_basic = 0;
-
-  if($@) {
+  if($@ and $eval_test) {
     if ($@ =~ /Can\'t locate $class/) {
       if (defined $taxon) {
       	$class = "XrefMapper/$taxon.pm";
@@ -239,7 +255,7 @@ sub process_file {
       	if($@) {
          	if ($@ =~ /Can\'t locate $class/)  {
 	 		$use_basic = 1;
-		} else { die "$@"; }
+		} else { croak "$@"; }
        	} else {
          	$module = $taxon; 
        	}
@@ -247,7 +263,7 @@ sub process_file {
       else {
 	$use_basic = 1;
       }
-    } else { die "$@";}
+    } else { croak "$@";}
       
   } else{
     $module = $value;
@@ -260,7 +276,7 @@ sub process_file {
 			$warning_msg .= "or XrefMapper::$taxon "; 
 		}
 		$warning_msg .= "- using XrefMapper::BasicMapper instead\n";
- 		warn($warning_msg);
+ 		carp($warning_msg);
 	}
         require XrefMapper::BasicMapper;
         $module = "BasicMapper";
@@ -276,7 +292,7 @@ sub process_file {
   }
   
 
-  if(defined($xref_hash{host}) and !defined($no_xref)){
+  if(defined($xref_hash{host}) and (!defined($no_xref))){
     my ($host, $user, $dbname, $pass, $port);
     $host = $xref_hash{'host'};
     $user = $xref_hash{'user'};
@@ -306,16 +322,16 @@ sub process_file {
     if(defined($xref_hash{'dir'})){
       $xref->dir($xref_hash{'dir'});
       if(!-d $xref_hash{'dir'}){
-	die "directory ".$xref_hash{'dir'}." does not exist please create this\n";
+	croak "directory ".$xref_hash{'dir'}." does not exist please create this\n";
       }
     }
     else{
-      die "No directory specified for the xref fasta files\n";
-    }	
-    
+      croak "No directory specified for the xref fasta files\n";
+    }
+
   }
   elsif(!defined($no_xref)){
-    die "No host name given for xref database\n";
+    croak "No host name given for xref database\n";
   }
   else{
     print "No xref database is too be used\n" if ($verbose)
@@ -355,12 +371,12 @@ sub process_file {
       if(defined($species_hash{'dir'})){
 	$core->dir($species_hash{'dir'});
 	if(!-d $species_hash{'dir'}){
-	  die "directory ".$species_hash{'dir'}." does not exist please create this\n";
+	  croak "directory ".$species_hash{'dir'}." does not exist please create this\n";
 	}
       }    
       else{
-	die "No directory specified for the ensembl fasta files\n";
-      }	
+	croak "No directory specified for the ensembl fasta files\n";
+      }
     }
     $core->species($value);
 
@@ -455,10 +471,10 @@ sub get_id_from_species_name {
    $sql = "select name from species";
    $sth = $self->dbc->prepare($sql);
    $sth->execute();
-   while(my @row = $sth->fetchrow_array()){
-     print STDERR $row[0]."\n";
+   while(my @row2 = $sth->fetchrow_array()){
+     print STDERR $row2[0]."\n";
    }
-   die("Please try again :-)\n");
+   croak("Please try again :-)\n");
  }
  $sth->finish();
  
@@ -499,7 +515,7 @@ sub get_alt_alleles {
   if($count){
     my %non_reference;
 
-    my $sql = (<<SEQ);
+    my $sql = (<<"SEQ");
 SELECT g.gene_id
   FROM gene g, seq_region_attrib sra, attrib_type at
     WHERE g.seq_region_id = sra.seq_region_id AND
@@ -539,7 +555,7 @@ SEQ
 	    $ref = 1;
 	  }
 	  $insert_sth->execute($alt_id, $gene, $ref);
-	}		
+	}
       }
       else{
 	$alt_failed++;
@@ -558,7 +574,7 @@ SEQ
   # Use $max_alt_id for new ones.
   #
   
-  my $sql =(<<LRG);
+  my $sql =(<<'LRG');
 SELECT  ox.ensembl_id, gsi.gene_id
   FROM xref x, object_xref ox, external_db e, gene_stable_id gsi
     WHERE x.xref_id = ox.xref_id AND
@@ -609,10 +625,10 @@ LRG
   }
 
 
-
-  my $sth_stat = $self->xref->dbc->prepare("insert into process_status (status, date) values('alt_alleles_added',now())");
-  $sth_stat->execute();
-  $sth_stat->finish;
+  $self->update_process_status("alt_alleles_added");
+#  my $sth_stat = $self->xref->dbc->prepare("insert into process_status (status, date) values('alt_alleles_added',now())");
+#  $sth_stat->execute();
+#  $sth_stat->finish;
   return;
   
 }
@@ -623,906 +639,10 @@ LRG
 #
 
 sub get_official_name {
-  return undef;
-}
-
-
-
-#
-# NOW need to set display_xrefs and gene descriptions too to make it easier.
-# But set them in the xxx_stable_id table for now otherwise it is too complicated
-# to dump the xrefs etc
-#
-
-sub official_naming{
-  my $self = shift;
-  my $dbname = $self->get_official_name();
-  
-  if(!defined($dbname)){
-    my $sth_stat = $self->xref->dbc->prepare("insert into process_status (status, date) values('official_naming_done',now())");
-    $sth_stat->execute();
-    $sth_stat->finish;    
-    return;
-  }
-  if($dbname eq "MGI"){ # first Copy MGI to Genes
-    $self->biomart_fix("MGI","Translation","Gene");
-    $self->biomart_fix("MGI","Transcript","Gene");
-  }   
-  if($dbname eq "ZFIN_ID"){ # first Copy MGI to Genes
-    $self->biomart_fix("ZFIN_ID","Translation","Gene");
-    $self->biomart_fix("ZFIN_ID","Transcript","Gene");
-  } 
-  #  print "Official naming started. Copy $dbname from gene to canonical transcript\n" if($self->verbose);
-  my ($max_object_xref_id, $max_xref_id,$max_object_xref_id2);
-
-
-  $self->species_id($self->get_id_from_species_name($self->core->species));
-			 
-  my $sth = $self->xref->dbc->prepare("SELECT MAX(object_xref_id) FROM object_xref");
-  $sth->execute();
-  $sth->bind_columns(\$max_object_xref_id);
-  $sth->fetch;
-
-  $sth = $self->xref->dbc->prepare("SELECT MAX(object_xref_id) FROM identity_xref");
-  $sth->execute();
-  $sth->bind_columns(\$max_object_xref_id2);
-  $sth->fetch;
-
-  
-  
-  $sth = $self->xref->dbc->prepare("SELECT MAX(xref_id) FROM xref");
-  $sth->execute();
-  $sth->bind_columns(\$max_xref_id);
-  $sth->fetch;
-
-
-  print "MAX xref_id = $max_xref_id MAX object_xref_id = $max_object_xref_id, max_object_xref from identity_xref = $max_object_xref_id2\n";
-
-  #get the xref synonyms store as a hash of arrays.
-
-#  my $syn_hash = $self->get_official_synonyms();
-  my $sql = "insert into synonym (xref_id, synonym) values (?, ?)";
-  my $add_syn_sth = $self->xref->dbc->prepare($sql);    
-   
-
-  #
-  # get the OFDN (HGNC/MGI) xrefs in the xrefs and add the synonyms, plus create hash to get id from the display name and desc
-  # This is becouse not all MGI.HGNC's are loaded as these are priority xrefs.
-  #
-
-  my %display_label_to_id;
-  my %display_label_to_desc;
-  
-
-  $sql = 'select x.accession, sy.synonym, x.description from synonym sy, xref x, source so where x.xref_id = sy.xref_id and so.source_id = x.source_id and so.name like "'.$dbname.'"';
-
-  
-  $sth = $self->xref->dbc->prepare($sql);
-  
-  $sth->execute();
-  my ($display_label, $acc, $syn, $desc);
-  $sth->bind_columns(\$acc,\$display_label, \$desc);
-  while($sth->fetch){
-    $display_label_to_id{$display_label} = $acc;
-    $display_label_to_desc{$display_label} = $desc;
-  }
-  $sth->finish;
-
-  # get label to id from xref database to start with.
-  $sql = 'select x.accession, x.label, x.description from xref x, source s where s.source_id = x.source_id and s.name like "'.$dbname.'"';
-
-  
-  $sth = $self->xref->dbc->prepare($sql);
-  
-  $sth->execute();
-  $sth->bind_columns(\$acc,\$display_label, \$desc);
-  while($sth->fetch){
-    $display_label_to_id{$display_label} = $acc;
-    if(!defined($desc)){
-      print "undef desc for $display_label\n";
-    }
-    else{
-      $display_label_to_desc{$display_label} = $desc;
-    }
-  }	
-  $sth->finish;
-
-
-
-  my %synonym;
-  $sth = $self->xref->dbc->prepare('select es.synonym, x.label from synonym es, xref x, source s where x.xref_id = es.xref_id and x.source_id = s.source_id and
- s.name = "'.$dbname.'"' );
-  $sth->execute();
-  my ($name);
-  $sth->bind_columns(\$syn,\$name);
-  while($sth->fetch){
-    $synonym{$syn} = $name;
-  }
-  $sth->finish;
-
-#  $sth = $self->xref->dbc->prepare('select es.synonym, x.label from synonym es, xref x, source s where x.xref_id = es.xref_id and x.source_id = s.source_id and
-# s.name = "EntrezGene"' );
-#  $sth->execute();
-#  $sth->bind_columns(\$syn,\$name);
-#  while($sth->fetch){
-#    $synonym{$syn} = $name;
-#  }
-#  $sth->finish;
-
-
-
-
-
-#######################
-#Do the naming bit now.
-#######################
-
-# get the vega external_sources
-
-
-  my (              $clone_based_vega_gene_id, $clone_based_ensembl_gene_id);
-  my ($odn_tran_id, $clone_based_vega_tran_id, $clone_based_ensembl_tran_id);
-  my ($mirbase_gene_id, $rfam_gene_id);
-  my ($mirbase_tran_id, $rfam_tran_id);
-
-  $sth = $self->xref->dbc->prepare("select source_id from source where name like ?");
-
-  $sth->execute("Clone_based_vega_gene");
-  $sth->bind_columns(\$clone_based_vega_gene_id);
-  $sth->fetch;
-  
-  $sth->execute("Clone_based_ensembl_gene");
-  $sth->bind_columns(\$clone_based_ensembl_gene_id);
-  $sth->fetch;
-  
-  $sth->execute("RFAM_gene_name");
-  $sth->bind_columns(\$rfam_gene_id);
-  $sth->fetch;
-
-  $sth->execute("miRBase_gene_name");
-  $sth->bind_columns(\$mirbase_gene_id);
-  $sth->fetch;
-
-  if(!defined($clone_based_vega_gene_id)){
-    die "Could not find external database name Clone_based_vega_gene\n";
-  }
-  if(!defined($clone_based_ensembl_gene_id)){
-    die "Could not find external database name Clone_based_ensembl_gene\n";
-  }
-  if(!defined($rfam_gene_id)){
-    die "Could not find external database name RFAM_gene_name\n";
-  }
-  if(!defined($mirbase_gene_id)){
-    die "Could not find external database name miRBase_gene_name\n";
-  }
-
-
-  $sth->execute($dbname."_transcript_name");
-  $sth->bind_columns(\$odn_tran_id);
-  $sth->fetch;
-  
-  $sth->execute("Clone_based_vega_transcript");
-  $sth->bind_columns(\$clone_based_vega_tran_id);
-  $sth->fetch;
-  
-  $sth->execute("Clone_based_ensembl_transcript");
-  $sth->bind_columns(\$clone_based_ensembl_tran_id);
-  $sth->fetch;
-  
-  $sth->execute("RFAM_transcript_name");
-  $sth->bind_columns(\$rfam_tran_id);
-  $sth->fetch;
-
-  $sth->execute("miRBase_transcript_name");
-  $sth->bind_columns(\$mirbase_tran_id);
-  $sth->fetch;
-
-  if(!defined($odn_tran_id)){
-    die "Could not find external database name ".$dbname."_transcript_name\n";
-  }
-  if(!defined($clone_based_vega_tran_id)){
-    die "Could not find external database name Clone_based_vega_transcript\n";
-  }
-  if(!defined($clone_based_ensembl_tran_id)){
-    die "Could not find external database name Clone_based_ensembl_transcript\n";
-  }
-  if(!defined($rfam_tran_id)){
-    die "Could not find external database name RFAM_transcript_name\n";
-  }
-  if(!defined($mirbase_tran_id)){
-    die "Could not find external database name miRBase_transcript_name\n";
-  }
-
-
-  #
-  # Set up quick hashes for getting source id from database_name
-  #
-  my %dbname_tran_source;
-  $dbname_tran_source{$dbname}   = $odn_tran_id;
-  $dbname_tran_source{"miRBase"} = $mirbase_tran_id;
-  $dbname_tran_source{"RFAM"}    = $rfam_tran_id;
-
-
-  ###########################
-  # Delete the old ones.
-  ###########################
-
-  # delete the synonyms first
-
-
-### AHHH gene ones are not new!!!! or may not be!! need a way to differentiate them
-
-  my $list =  "$odn_tran_id, $clone_based_vega_gene_id, $clone_based_ensembl_gene_id, $clone_based_ensembl_tran_id, $rfam_tran_id, $rfam_gene_id, $mirbase_tran_id, $mirbase_gene_id";
-
-  $sql =(<<DE1);
-DELETE s
-  FROM synonym s, xref x 
-    WHERE s.xref_id = x.xref_id AND 
-          x.source_id in ( $list );
-DE1
-
-  $sth = $self->xref->dbc->prepare($sql);
-  $sth->execute();
-
- 
-  my $del_identity_sql =(<<DE2);
-DELETE i 
-  FROM object_xref o, xref x, identity_xref i
-    WHERE i.object_xref_id = o.object_xref_id AND
-           x.xref_id = o.xref_id AND
-            x.source_id in ( $list )
-DE2
-  $sth = $self->xref->dbc->prepare($del_identity_sql);
-  $sth->execute();
- 
-  my $del_ox_sql = (<<DE3);
-DELETE o 
-  FROM object_xref o, xref x 
-    WHERE x.xref_id = o.xref_id AND
-           x.source_id in ( $list )
-DE3
-  $sth = $self->xref->dbc->prepare($del_ox_sql);
-  $sth->execute();
- 
-  my $del_x_sql = "delete x from xref x where x.source_id in ( $list )";
-
-  $sth = $self->xref->dbc->prepare($del_x_sql);
-  $sth->execute();
-
-
-  my $del_synonym_sql = "delete s from xref x, synonym s where s.xref_id = x.xref_id and x.source_id = $clone_based_vega_tran_id and x.info_type = 'MISC'"; # original ones added have info type of "DIRECT"
-
-  $sth = $self->xref->dbc->prepare($del_synonym_sql);
-  $sth->execute();
-
-  $del_x_sql = "delete x from xref x where x.source_id = $clone_based_vega_tran_id and x.info_type = 'MISC'"; # original ones added have info type of "DIRECT"
-  $sth = $self->xref->dbc->prepare($del_x_sql);
-  $sth->execute();
-
-
-  $sth =  $self->xref->dbc->prepare("update transcript_stable_id set display_xref_id = null");
-  $sth->execute;
-
-  $sth =  $self->xref->dbc->prepare("update gene_stable_id set display_xref_id = null");
-  $sth->execute;
-
-
-  ######################################################
-  # Get the current max values for xref and object_xref
-  ######################################################
-
-
-  my $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(-dbconn => $self->core->dbc);
-  my $ga = $db->get_GeneAdaptor();
-
-
-  ###########################
-  # Process each Gene
-  ###########################
-
-  
-
-  my %gene_to_transcripts;
-  my %gene_id_to_stable_id;
-  my %tran_id_to_stable_id;
-
-
-  $sql = "UPDATE gene_stable_id SET display_xref_id = null, desc_set =0";
-  $sth = $self->xref->dbc->prepare($sql);
-  $sth->execute;
-
-  $sql = "UPDATE transcript_stable_id SET display_xref_id = null";
-  $sth = $self->xref->dbc->prepare($sql);
-  $sth->execute;
-
-  
-
-  $sql =(<<SQ0);
-SELECT gtt.gene_id, gtt.transcript_id, gsi.stable_id, tsi.stable_id 
-  FROM gene_transcript_translation gtt, gene_stable_id gsi, transcript_stable_id tsi 
-    WHERE gtt.gene_id = gsi.internal_id AND
-          gtt.transcript_id = tsi.internal_id
-    ORDER BY gsi.stable_id, tsi.stable_id
-SQ0
-
-  $sth = $self->xref->dbc->prepare($sql);
-
-  $sth->execute;
-  my $gene_id;
-  my $tran_id;
-  my $gsi;
-  my $tsi;
-  $sth->bind_columns(\$gene_id, \$tran_id, \$gsi, \$tsi);
-  my @sorted_gene_ids;
-  while ($sth->fetch){
-    if(!defined($gene_to_transcripts{$gene_id})){
-      push @sorted_gene_ids, $gene_id;
-    }
-    push @{$gene_to_transcripts{$gene_id}}, $tran_id;
-    $gene_id_to_stable_id{$gene_id} = $gsi; 
-    $tran_id_to_stable_id{$tran_id} = $tsi; 
-  }
-  
-
-
-  $sql =(<<SQ1);
-SELECT x.label, x.xref_id, ox.object_xref_id, s.priority 
-  FROM xref x, object_xref ox, source s
-    WHERE x.xref_id = ox.xref_id AND
-          x.source_id = s.source_id AND
-          s.name = ? AND
-          ox.ox_status = 'DUMP_OUT' AND
-          ox.ensembl_id = ? AND
-          ox.ensembl_object_type = ?
-SQ1
-  my $dbentrie_sth = $self->xref->dbc->prepare($sql);
-
-
-  $sql=(<<SQ2);
-SELECT x.label, x.xref_id, ox.object_xref_id, s.priority 
-  FROM xref x, object_xref ox, source s 
-    WHERE x.xref_id = ox.xref_id AND
-          x.source_id = s.source_id AND 
-          s.name = ? AND
-          ox.ensembl_id = ? AND
-          ox.ensembl_object_type = ?
-SQ2
-  my $lrg_find_sth = $self->xref->dbc->prepare($sql);
-
-  my $lrg_set_status_sth = $self->xref->dbc->prepare("update object_xref set ox_status = 'NO_DISPLAY' where object_xref_id = ?");
-
-  $sql=(<<SQ4);
-SELECT x.xref_id, s.priority 
-  FROM xref x,source s, object_xref ox
-    WHERE x.xref_id = ox.xref_id AND
-          x.source_id = s.source_id AND
-          x.label = ? AND
-          s.name = ? AND
-          ox.ox_status = 'DUMP_OUT'
-    ORDER BY s.priority
-SQ4
-  my $lrg_to_hgnc_sth  = $self->xref->dbc->prepare($sql);
-
-
-
-  $sql = "insert into xref (xref_id, source_id, accession, label, version, species_id, info_type, info_text, description) values (?, ?, ?, ?,  0, ".$self->species_id.", 'MISC', ?, ? )";
-  my $ins_xref_sth = $self->xref->dbc->prepare($sql); 
-
-  $sql = "insert into xref (xref_id, source_id, accession, label, version, species_id, info_type, info_text, description) values (?, ?, ?, ?,  ?, ".$self->species_id.", 'MISC', ?, ? )";
-  my $ins_xref_ver_sth = $self->xref->dbc->prepare($sql);
-
-  my $ins_dep_ix_sth = $self->xref->dbc->prepare("insert into identity_xref (object_xref_id, query_identity, target_identity) values(?, ?, ?)");
-
-  my $delete_odn_sth = $self->xref->dbc->prepare('UPDATE object_xref SET ox_status = "MULTI_DELETE" where object_xref_id = ?');
-
-  $sql=(<<SQ5);
-SELECT x.xref_id 
-  FROM xref x, source s, object_xref ox 
-    WHERE ox.xref_id = x.xref_id AND
-           x.source_id = s.source_id AND
-           x.label = ? AND 
-           s.name like '$dbname' AND
-           s.priority_description like "vega" AND
-           ox.ox_status ="DUMP_OUT"
-SQ5
-
-
-  my $find_hgnc_sth = $self->xref->dbc->prepare($sql);
-
-  my $set_gene_display_xref_sth =  $self->xref->dbc->prepare('UPDATE gene_stable_id SET display_xref_id =? where internal_id = ?');
-
-  my $set_tran_display_xref_sth =  $self->xref->dbc->prepare('UPDATE transcript_stable_id SET display_xref_id =? where internal_id = ?');
-
-  # important or will crash and burn!!!
-  my %xref_added; # store those added already $xref_added{$accession:$source_id} = $xref_id;
-
-  my $get_xref_info_sth =  $self->xref->dbc->prepare("select x.label, x.accession, s.priority_description, x.description  from xref x, source s where xref_id = ? and s.source_id = x.source_id");
-
-  #
-  # Okay we assign unused_priority to be the number of time a vega transcript is attached to make sure
-  # we get the BEST name for the gene (i.e. the one that appears the most)
-  #
-  my $ins_object_xref_sth =  $self->xref->dbc->prepare("insert into object_xref (object_xref_id, ensembl_id, ensembl_object_type, xref_id, linkage_type, ox_status, unused_priority) values (?, ?, ?, ?, 'MISC', 'DUMP_OUT', ?)");
-  my %seen_gene;
-  my %rfam_name_num;
-  foreach my $gene_id (@sorted_gene_ids){
-    
-    my @ODN=();
-    my $xref_id;
-    my $object_xref_id;
-    my $display;
-    my $level;
-    my $tran_source = $dbname;
-
-    my $best_info = undef;
-
-    $dbentrie_sth->execute($dbname, $gene_id, "Gene");
-    $dbentrie_sth->bind_columns(\$display, \$xref_id, \$object_xref_id, \$level);
-    my $best_level=999;
-
-    my $count = 0;
-    my @list=();
-    my @list_ox=();
-    my %xref_id_to_display;
-    my %best_list;
-    while($dbentrie_sth->fetch){
-
-      push @list, $xref_id;
-      push @list_ox, $object_xref_id;
-      $count++;
-      $xref_id_to_display{$xref_id} = $display;
-      if($level < $best_level){
-	@ODN = ();
-	push @ODN, $xref_id;
-	$best_level = $level;
-      }
-      elsif($level == $best_level){
-	push @ODN, $xref_id;
-      }
-    }
-
-    foreach my $x (@ODN){
-      $best_list{  $xref_id_to_display{$x} } = 1;
-    }
-
-    my $gene_symbol = undef;
-    my $gene_symbol_xref_id;
-    my $other_xref_id = undef;
-    my $other_source = undef;
-    my $clone_name = undef;
-    my $vega_clone_name = undef;
-
-    if($count > 1){
-      print "For gene ".$gene_id_to_stable_id{$gene_id}." we have mutiple ".$dbname."'s\n";
-      if(scalar(@ODN) == 1){ # found one that is "best"
-#	foreach my $x (@list){
-	my $i=0;
-	while ($i < scalar(@list)){
-	  my $x = $list[$i];
-	  if($x != $ODN[0]){
-	    print "\tremoving ".$xref_id_to_display{$x}." from gene\n";
-	    #remove object xref....
-	    $delete_odn_sth->execute($list_ox[$i])|| die "Could not set staus to MULTI_DELETE for object_xref ".$list_ox[$i]."\n";
-	  }
-	  else{
-	    print "\tKeeping the best one ".$xref_id_to_display{$x}."\n";
-	    $gene_symbol = $xref_id_to_display{$x};
-	    $gene_symbol_xref_id = $x;
-	  }
-	  $i++;
-	}
-      }
-    }
-
-    my %name_count;
-    my %tran_to_vega_ext;
-    foreach my $tran_id ( @{$gene_to_transcripts{$gene_id}} ){
-      $dbentrie_sth->execute("Clone_based_vega_transcript", $tran_id, "Transcript");
-      $dbentrie_sth->bind_columns(\$display, \$xref_id, \$object_xref_id, \$level);
-      while($dbentrie_sth->fetch){
-	if($display =~ /(.+)-(\d+)$/){
-	  $tran_to_vega_ext{$tran_id} = $2;
-	}
-      }
-    }
-
-    foreach my $tran_id ( @{$gene_to_transcripts{$gene_id}} ){
-      $dbentrie_sth->execute($dbname."_curated_transcript_notransfer", $tran_id, "Transcript");
-      $dbentrie_sth->bind_columns(\$display, \$xref_id, \$object_xref_id, \$level);
-      while($dbentrie_sth->fetch){
-	my $symbol_bit;
-	my $num;
-	if($display =~ /(.+)-(\d+)$/){
-	  $symbol_bit = $1;
-	  $num = $2;
-	}
-	else{
-	  print STDERR "$display does not have the usual expected regex\n";
-	  next;
-	}	
-	if(!defined($num) or !$num or $num eq ""){
-	  print "Problem finding number for $display\n";
-	}
-
-	$tran_to_vega_ext{$tran_id} = $num;
-
-	if(defined($display_label_to_desc{$symbol_bit})){
-	}
-	elsif(defined($synonym{$symbol_bit})){
-	  $symbol_bit = $synonym{$symbol_bit};
-	}
-	else{
-	  # -ps added as MGI have added -ps to the pseudo genes but vega has not caught
-	  # up with this yet so check for this.
-	
-	  if(!defined($display_label_to_desc{$symbol_bit."-ps"})){
-	    print STDERR "Warning Could not find id for $symbol_bit came from $display for $dbname\n";
-	    next;
-	  }
-	}
-	if($best_list{$symbol_bit}){
-	  $name_count{$symbol_bit}++;
-	}
-      }
-    }
-
-    if(scalar(@ODN) == 1){  # one hgnc to this gene - perfect case :-)
-      # $ODN[0] is an xref_id i need the display name
-      $gene_symbol = $xref_id_to_display{$ODN[0]};
-      $gene_symbol_xref_id = $ODN[0];
-    }
-    elsif(scalar(@ODN) > 1){ # try to use vega to find the most common one
-      print "Multiple best ".$dbname."'s using vega to find the most common for ".$gene_id_to_stable_id{$gene_id}."\n";
-
-
-      #############################################################################################
-      # need some way to get the xref_id for the hgnc from the curated??
-      if(scalar(%name_count)){
-
-	my $top =0;
-	foreach my $vn ( keys %name_count){
-	  if($name_count{$vn} > $top){
-	    $top = $name_count{$vn};
-	    $gene_symbol = $vn;
-	    foreach my $y (@ODN){
-	      if($vn eq $xref_id_to_display{$y}){
-		$gene_symbol_xref_id = $y;
-	      }
-	    }
-	  }
-	}
-	print "\t$gene_symbol chosen from vega\n";
-      }
-      else{  # take the first one ??
-	my $i = 0;
-	foreach my $x (@ODN){
-	  print "\t".$xref_id_to_display{$x};
-	  if(!$i){
-	    print "  (chosen as first)\n";
-	    $gene_symbol =  $xref_id_to_display{$x};
-	    $gene_symbol_xref_id =  $x;
-	  }
-	  else{
-	    print "  (left as $dbname reference but not gene symbol)\n";
-	  }
-	  $i++;
-	}
-      }
-    }
-    else{# look for LRG
-      # look for LRG_HGNC_notransfer, if found then find HGNC equiv and set to this
-#      print "LRG FOUND with no HGNC, should have gotten this via the alt allele table?? gene_id = $gene_id\n";
-      $lrg_find_sth->execute("LRG_HGNC_notransfer", $gene_id, "Gene");
-      $lrg_find_sth->bind_columns(\$display, \$xref_id, \$object_xref_id, \$level);
-      while($lrg_find_sth->fetch){
-	$lrg_set_status_sth->execute($object_xref_id); # set oc_status to no _display as we do not want this transferred, just the equivalent hgnc
-	my $new_xref_id  = undef;
-	my $pp;
-	$lrg_to_hgnc_sth->execute($display,"HGNC");
-	$lrg_to_hgnc_sth->bind_columns(\$new_xref_id,\$pp);
-	$lrg_to_hgnc_sth->fetch;
-	if(defined($new_xref_id)){
-	  $gene_symbol = $display;
-	  $gene_symbol_xref_id = $new_xref_id;
-	}
-      }
-    }
-    if(!defined($gene_symbol)){ # try ther database source (should be RFAm and mirbase only)
-      foreach my $ext_db_name (qw(miRBase RFAM)){
-	$dbentrie_sth->execute($ext_db_name, $gene_id, "Gene");
-	$dbentrie_sth->bind_columns(\$display, \$xref_id, \$object_xref_id, \$level);
-	while($dbentrie_sth->fetch){
-	  $gene_symbol = $display;
-	  $gene_symbol_xref_id = $xref_id;
-	  $tran_source = $ext_db_name;
-	  if(defined($rfam_name_num{$gene_symbol})){
-	    $rfam_name_num{$gene_symbol}++;
-	  }
-	  else{
-	    $rfam_name_num{$gene_symbol} = 1;
-	  }
-	  $gene_symbol .= ".".$rfam_name_num{$gene_symbol};
-	  next;
-	}
-      }	
-    }
-
-    foreach my $tran_id  (@{$gene_to_transcripts{$gene_id}}){
-      $dbentrie_sth->execute("Clone_based_vega_transcript", $tran_id, "Transcript");
-      $dbentrie_sth->bind_columns(\$display, \$xref_id, \$object_xref_id, \$level);
-      while($dbentrie_sth->fetch){
-	$display =~ /(.+)-(\d\d\d)$/;
-	my $acc_bit =$1;
-	my $num = $2;
-	$tran_to_vega_ext{$tran_id} = $num;
-	$xref_added{$display.":".$clone_based_vega_tran_id} = $xref_id;
-	$vega_clone_name = $acc_bit;
-      }
-    }
-    if(!defined($gene_symbol) ){   # No HGNC or other so look for vega clone names
-
-      if(!defined($vega_clone_name)){ #if no vega clone name use the ensembl clone name
-
-
-        my $gene= $ga->fetch_by_dbID($gene_id);
-	my $slice = $gene->slice->sub_Slice($gene->start,$gene->end,$gene->strand);
-	my $len = 0;
-	if($dbname ne "ZFIN_ID"){
-	  my $clone_projection = $slice->project('clone'); 
-	  foreach my $seg (@$clone_projection) {
-	    my $clone = $seg->to_Slice();
-	    if($clone->length() > $len){
-	      $clone_name = $clone->seq_region_name;
-	      $len = $clone->length;
-	    }
-	   }
-	}
-	if(!defined($clone_name)){
-	  # try going via contig
-	  my $super_projection = $slice->project('contig');
-	  my $super;
-	  $len = 0;
-	  foreach my $seg (@$super_projection) {
-	    $super = $seg->to_Slice();
-	    if($super->length() > $len){
-	      $clone_name = $super->seq_region_name;
-	      $len = $super->length;
-	    }
-	  }
-	  $len = 0;
-	  if($dbname ne "ZFIN_ID"){
-	    my $clone_projection = $super->project('clone');
-	    foreach my $seg (@$clone_projection) {
-	      my $clone = $seg->to_Slice();
-	      if($clone->length() > $len){
-		$clone_name = $clone->seq_region_name;
-		$len = $clone->length;
-	      }
-	    }
-	  }	
-	  if(!defined($clone_name)){
-	    print STDERR "PROJECT failed for ".$gene->stable_id."\n";
-	    next;
-	  }
-
-	}
-
-	if(defined($clone_name)){
-	  $clone_name =~ s/[.]\d+//;    #remove .number	
-	}
-      } 
-    }
-
-
-    #
-    # Set the names now that we know which to use.
-    #
-    if( !(defined($clone_name) or defined($vega_clone_name)) and !defined($gene_symbol) ){
-      print STDERR "Problem gene ".$gene_id_to_stable_id{$gene_id}." could not get a clone name or ".$dbname." symbol\n";
-      next;
-    }
-    if(defined($gene_symbol)){
-      #gene symbol already set as it is HGNC or MGI so do not need add a new xref anything for the gene;
-
-      my $desc = $display_label_to_desc{$name};
-
-
-      if(!defined($gene_symbol_xref_id)){
-	$find_hgnc_sth->execute($gene_symbol);
-	$find_hgnc_sth->bind_columns(\$gene_symbol_xref_id);
-	$find_hgnc_sth->fetch();
-	if(!defined($gene_symbol_xref_id)){  # remember mouse has -ps newly added and vega may not be uptodate
-	  $find_hgnc_sth->execute($gene_symbol."-ps");
-	  $find_hgnc_sth->bind_columns(\$gene_symbol_xref_id);
-	  $find_hgnc_sth->fetch();
-	}	
-	if(!defined($gene_symbol_xref_id)){
-	  print "BLOOMING NORA could not find $gene_symbol in $dbname\n";
-	  next;
-	}
-      }
-      $set_gene_display_xref_sth->execute($gene_symbol_xref_id,$gene_id);
-
-
-      my $no_vega_ext = 201;
-      if(defined($seen_gene{$gene_symbol})){
-	$no_vega_ext = $seen_gene{$gene_symbol};
-      }
-      foreach my $tran_id ( @{$gene_to_transcripts{$gene_id}} ){
-	my $ext;
-	my $source_id = $dbname_tran_source{$tran_source};
-	if(defined($tran_to_vega_ext{$tran_id})){
-	  $ext = $tran_to_vega_ext{$tran_id};
-	}
-	else{
-	  $ext = $no_vega_ext;
-	  $no_vega_ext++;
-	}
-	my $id = $gene_symbol."-".$ext;
-	if(!defined($xref_added{$id.":".$source_id})){
-	  $max_xref_id++;
-	  $ins_xref_sth->execute($max_xref_id, $source_id, $id, $id, "", $desc);
-	  $xref_added{$id.":".$source_id} = $max_xref_id;
-	}
-	$set_tran_display_xref_sth->execute($xref_added{$id.":".$source_id}, $tran_id);
-	$max_object_xref_id++;
-	$ins_object_xref_sth->execute($max_object_xref_id, $tran_id, 'Transcript', $xref_added{$id.":".$source_id},undef);
-	$ins_dep_ix_sth->execute($max_object_xref_id, 100, 100);
-      }
-      $seen_gene{$gene_symbol} = $no_vega_ext;
-    }
-    else{ # use clone name
-      my $t_source_id;
-      my $g_source_id;
-      my $desc;
-      if(defined($vega_clone_name)){
-	$name = $vega_clone_name;
-	$t_source_id = $clone_based_vega_tran_id;
-	$g_source_id = $clone_based_vega_gene_id;
-	$desc = "via havana clone name";
-      }
-      else{
-	if(defined($clone_name)){
-	  $name = $clone_name;
-	  $t_source_id = $clone_based_ensembl_tran_id;
-	  $g_source_id = $clone_based_ensembl_gene_id;
-	  $desc = "via ensembl clone name";
-	}
-	else{
-	  die "No name";
-	}
-	my $num = 1;
-	my $unique_name = $name.".".$num;
-	while(defined($xref_added{$unique_name.":".$g_source_id})){
-	  $num++;
-	  $unique_name = $name.".".$num;
-	}
-	$name = $unique_name;
-      }
-      
-      # first add the gene xref and set display_xref_id
-      # store the data
-      if(!defined($xref_added{$name.":".$g_source_id})){
-	$max_xref_id++;
-	$ins_xref_sth->execute($max_xref_id, $g_source_id, $name, $name, $desc, undef);
-	$xref_added{$name.":".$g_source_id} = $max_xref_id;
-      }	
-      $set_gene_display_xref_sth->execute($xref_added{$name.":".$g_source_id},$gene_id);
-	
-      $max_object_xref_id++;
-      $ins_object_xref_sth->execute($max_object_xref_id, $gene_id, 'Gene', $xref_added{$name.":".$g_source_id}, undef);	
-      $ins_dep_ix_sth->execute($max_object_xref_id, 100, 100);
-      
-      # then add transcript names.
-      my $ext = 201;
-      foreach my $tran_id ( sort @{$gene_to_transcripts{$gene_id}}){
-	my $id =  $name."-".$ext;
-	if(defined($tran_to_vega_ext{$tran_id})){
-	  $id = $name."-".$tran_to_vega_ext{$tran_id};
-	  if(!defined($xref_added{$id.":".$t_source_id})){
-	    $max_xref_id++;
-	    $ins_xref_sth->execute($max_xref_id, $t_source_id, $id, $id, $desc, undef);
-	    $xref_added{$id.":".$t_source_id} = $max_xref_id;
-
-	    $max_object_xref_id++;
-	    $ins_object_xref_sth->execute($max_object_xref_id, $tran_id, 'Transcript', $xref_added{$id.":".$t_source_id}, undef);	
-	    $ins_dep_ix_sth->execute($max_object_xref_id, 100, 100);
-	  }
-	  $set_tran_display_xref_sth->execute($xref_added{$id.":".$t_source_id}, $tran_id);
-	}
-	else{
-	  while(defined($xref_added{$id.":".$t_source_id})){
-	    $ext++;
-	    $id = $name."-".$ext;
-	  }	
-	  $ext++;
-	  $max_xref_id++;
-	  $ins_xref_sth->execute($max_xref_id, $t_source_id, $id, $id, $desc, undef);
-	  $xref_added{$id.":".$t_source_id} = $max_xref_id;
-
-	  $max_object_xref_id++;
-#	  print "$id\t$t_source_id\t".$xref_added{$id.":".$t_source_id}."\n";
-	  $ins_object_xref_sth->execute($max_object_xref_id, $tran_id, 'Transcript', $xref_added{$id.":".$t_source_id}, undef);	
-	  $ins_dep_ix_sth->execute($max_object_xref_id, 100, 100);
-	  $set_tran_display_xref_sth->execute($max_xref_id, $tran_id);
-	}
-
-#	print $id."\ts=".$t_source_id."\n";
-
-	
-      }
-      
-    }
-  } # for each gene
-
-
-
-  ########################################################
-  # Copy $dbname from gene to the canonical transcripts. #
-  ########################################################
-
-  # remove the ignore later on after testing
-  my $sth_add_ox = $self->xref->dbc->prepare("insert ignore into object_xref (object_xref_id, xref_id, ensembl_id, ensembl_object_type, linkage_type, ox_status, master_xref_id) values(?, ?, ?, 'Transcript', ?, ?, ?)");
-  
-  #  my $object_xref_id = $max_object_xref_id + 1;
-  
-  $max_object_xref_id++;
-  
-  if($max_object_xref_id == 1){
-    die "max_object_xref_id should not be 1\n";
-  }
-  
-  my $object_sql = (<<FSQL);
-select x.xref_id, o.ensembl_id, o.linkage_type, o.ox_status, o.master_xref_id, ix.query_identity, ix.target_identity
-  from xref x, source s, object_xref o, identity_xref ix
-    where x.source_id = s.source_id and 
-      ix.object_xref_id  = o.object_xref_id and
-      o.ox_status = "DUMP_OUT" and
-      s.name like "$dbname" and 
-      o.xref_id = x.xref_id  and
-      o.ensembl_object_type = "Gene";
-FSQL
-  
-  $sql = "select gene_id, canonical_transcript_id from gene";
-  $sth = $self->core->dbc->prepare($sql);
-  
-  $sth->execute();
-
-  $sth->bind_columns(\$gene_id,\$tran_id);
-  my %gene_to_tran_canonical;
-  while ($sth->fetch){
-    $gene_to_tran_canonical{$gene_id} = $tran_id;
-  }
-  $sth->finish;
-
-  $sth = $self->xref->dbc->prepare($object_sql);
-
-  $sth->execute();
-  my ($xref_id, $linkage_type, $ox_status, $q_id, $t_id, $master_id);
-  $sth->bind_columns(\$xref_id, \$gene_id, \$linkage_type, \$ox_status, \$q_id, \$t_id, \$master_id);
-
-
-  my $canonical_count = 0;
-  while ($sth->fetch){
-    if(defined($gene_to_tran_canonical{$gene_id})){
-      $canonical_count++;
-      $max_object_xref_id++;
-      $sth_add_ox->execute($max_object_xref_id, $xref_id, $gene_to_tran_canonical{$gene_id}, $linkage_type, $ox_status, $master_id) || print STDERR "(Gene id - $gene_id) Could not add  $max_object_xref_id, .".$gene_to_tran_canonical{$gene_id}.", $xref_id, $linkage_type, $ox_status to object_xref, master_xref_id to $master_id\n";
-      $ins_dep_ix_sth->execute($max_object_xref_id, $q_id, $t_id);
-    }
-    else{
-      print STDERR "Could not find canonical for gene $gene_id\n";
-    }
-  }
-  $sth->finish;
-
-  print "Copied $canonical_count $dbname from gene to canonical transcripts\n" if($self->verbose);
-  
-  my $sth_stat = $self->xref->dbc->prepare("insert into process_status (status, date) values('official_naming_done',now())");
-  $sth_stat->execute();
-  $sth_stat->finish;
   return;
 }
+
+
 
 
 
@@ -1559,7 +679,7 @@ sub biomart_fix{
   print "Therefore moving all associations from $from to ".$to."\n" if(defined($verbose));
   
 
-  my $sql =(<<EOF);
+  my $sql =(<<"EOF");
   UPDATE IGNORE object_xref, gene_transcript_translation, xref, source
     SET object_xref.ensembl_object_type = "$to",
       object_xref.ensembl_id = gene_transcript_translation.$to_id 
@@ -1574,7 +694,7 @@ EOF
 #  print "\n$sql\n";
 
   if($db_name eq "GO"){
-    $sql =(<<EOF2);
+    $sql =(<<"EOF2");
   DELETE object_xref, identity_xref, go_xref
     FROM object_xref, xref, source, identity_xref, go_xref
       WHERE object_xref.ensembl_object_type = "$from" AND
@@ -1589,7 +709,7 @@ EOF2
   $result = $xref_dbc->do($sql);  
   }
   else{
-    $sql =(<<EOF3);
+    $sql =(<<"EOF3");
   DELETE object_xref, identity_xref
     FROM object_xref, xref, source, identity_xref
       WHERE object_xref.ensembl_object_type = "$from" AND
@@ -1605,11 +725,11 @@ EOF3
 #  print "\n$sql\n";
 
   #delete dependent_xref 
-  $sql =(<<EOF4);
+  $sql =(<<'EOF4');
   DELETE FROM dependent_xref WHERE object_xref_id NOT IN 
    (SELECT object_xref_id FROM object_xref);
 EOF4
-      
+  return;      
 }
 
 sub biomart_testing{
@@ -1628,7 +748,7 @@ sub biomart_testing{
     my ($last_type, $last_count, $last_name);
     $sth->bind_columns(\$type,\$count,\$name);
     $last_name = "DEFAULT";
-    while (!$again and $sth->fetch){
+    while ((!$again) and $sth->fetch){
       if($last_name eq $name){
 	$again  = 1;
 	$self->biomart_fix($name,$last_type, $type, 1);
@@ -1640,9 +760,11 @@ sub biomart_testing{
     $sth->finish;  
   }
 
-  my $sth_stat = $self->xref->dbc->prepare("insert into process_status (status, date) values('biomart_test_finished',now())");
-  $sth_stat->execute();
-  $sth_stat->finish;
+  $self->update_process_status('biomart_test_finished');
+#  my $sth_stat = $self->xref->dbc->prepare("insert into process_status (status, date) values('biomart_test_finished',now())");
+#  $sth_stat->execute();
+#  $sth_stat->finish;
+  return;
 }
   
 
@@ -1675,7 +797,7 @@ sub biomart_test{
     $last_count = $count;
   }
   $sth->finish;
-
+  return;
 }
 
 # remove a list of patterns from a string
@@ -1692,42 +814,45 @@ sub filter_by_regexp {
 }
 
 
+#
+# Cannot find any calls to this so commented it out.
+#
+#sub get_official_synonyms{
+#  my $self = shift;
+#  my %hgnc_syns;
+#  my %seen;          # can be in more than one for each type of hgnc.
 
-sub get_official_synonyms{
-  my $self = shift;
-  my %hgnc_syns;
-  my %seen;          # can be in more than one for each type of hgnc.
+#  my $dbname = $self->get_official_name();
 
-  my $dbname = $self->get_official_name();
+#  my $sql = (<<"SYN");
+#SELECT  x.accession, x.label, sy.synonym 
+#  FROM xref x, source so, synonym sy
+#    WHERE x.xref_id = sy.xref_id
+#      AND so.source_id = x.source_id
+#      AND so.name like "$dbname"
+#SYN
 
-  my $sql = (<<SYN);
-SELECT  x.accession, x.label, sy.synonym 
-  FROM xref x, source so, synonym sy
-    WHERE x.xref_id = sy.xref_id
-      AND so.source_id = x.source_id
-      AND so.name like "$dbname"
-SYN
+#  my $sth = $self->xref->dbc->prepare($sql);    
 
-  my $sth = $self->xref->dbc->prepare($sql);    
+#  $sth->execute;
+#  my ($acc, $label, $syn);
+#  $sth->bind_columns(\$acc, \$label, \$syn);
 
-  $sth->execute;
-  my ($acc, $label, $syn);
-  $sth->bind_columns(\$acc, \$label, \$syn);
+#  my $count = 0;
 
-  my $count = 0;
-  while($sth->fetch){
-    if(!defined($seen{$acc.":".$syn})){
-      push @{$hgnc_syns{$acc}}, $syn;
-      push @{$hgnc_syns{$label}}, $syn;
-      $count++;
-    }
-    $seen{$acc.":".$syn} = 1;
-  }
-  $sth->finish;
+#  while($sth->fetch){
+#    if(!defined($seen{$acc.":".$syn})){
+#      push @{$hgnc_syns{$acc}}, $syn;
+#      push @{$hgnc_syns{$label}}, $syn;
+#      $count++;
+#    }
+#    $seen{$acc.":".$syn} = 1;
+#  }
+#  $sth->finish;
 
-  return \%hgnc_syns;
+#  return \%hgnc_syns;
 
-}
+#}
 
 sub get_species_id_from_species_name{
   my ($self,$species) = @_;
@@ -1746,10 +871,10 @@ sub get_species_id_from_species_name{
     $sql = "select name from species";
     $sth = $self->dbc->prepare($sql);
     $sth->execute();
-    while(my @row = $sth->fetchrow_array()){
-      print STDERR $row[0]."\n";
+    while(my @row2 = $sth->fetchrow_array()){
+      print STDERR $row2[0]."\n";
     }
-    die("Please try again :-)\n");
+    croak("Please try again :-)\n");
   }
   $sth->finish();
 
@@ -1813,7 +938,7 @@ sub clean_up{
   $sth = $self->xref->dbc->prepare($sql);
   $sth->execute(); 
  
-
+  return;
 }
 
 sub remove_mapping_data{
@@ -1826,7 +951,7 @@ sub remove_mapping_data{
   $sql = "DELETE from mapping";
   $sth = $self->xref->dbc->prepare($sql);
   $sth->execute(); 
-
+  return;
 }
 
 
@@ -1836,9 +961,13 @@ sub revert_to_parsing_finished{
 
   $self->clean_up();
   $self->remove_mapping_data();
-  my $sth_stat = $self->xref->dbc->prepare("insert into process_status (status, date) values('parsing_finished',now())");
-  $sth_stat->execute();
-  $sth_stat->finish;    
+
+  $self->update_process_status('parsing_finished');
+
+#  my $sth_stat = $self->xref->dbc->prepare("insert into process_status (status, date) values('parsing_finished',now())");
+#  $sth_stat->execute();
+#  $sth_stat->finish;    
+  return;
 }
 
 
@@ -1852,10 +981,11 @@ sub revert_to_mapping_finished{
   my $sth = $self->xref->dbc->prepare($sql);
   $sth->execute(); 
 
-  my $sth_stat = $self->xref->dbc->prepare("insert into process_status (status, date) values('mapping_finished',now())");
-  $sth_stat->execute();
-  $sth_stat->finish;    
-
+  $self->update_process_status('mapping_finished');
+#  my $sth_stat = $self->xref->dbc->prepare("insert into process_status (status, date) values('mapping_finished',now())");
+#  $sth_stat->execute();
+#  $sth_stat->finish;    
+  return;
 }
 
 #
@@ -1901,13 +1031,13 @@ sub process_alt_alleles{
 
   my $tester = XrefMapper::TestMappings->new($self);
   if($tester->unlinked_entries){
-    die "Problems found before process_alt_alleles\n";
+    croak "Problems found before process_alt_alleles\n";
   }
   #
   # Move the xrefs on to the reference Gene.
   # NOTE: Igonore used as the xref might already be on this Gene already and we do not want it to crash
   #
-  my $move_sql =(<<MOVE);
+  my $move_sql =(<<'MOVE');
 UPDATE IGNORE object_xref ox, xref x, source s 
   SET ox.ensembl_id = ? 
     WHERE x.source_id = s.source_id AND 
@@ -1925,7 +1055,7 @@ print "MOVE SQL\n$move_sql\n";
   # Now where it was already on the Gene the ignore will have stopped the move
   # so we now want to just remove those ones as they already exist.
   #
-  my $del_ix_sql =(<<DIX);
+  my $del_ix_sql =(<<'DIX');
 DELETE ix 
   FROM identity_xref ix, object_xref ox, xref x, source s 
     WHERE x.source_id = s.source_id AND
@@ -1938,7 +1068,7 @@ DELETE ix
 DIX
 $del_ix_sql .= "'".join("', '",$self->get_gene_specific_list()) . "')";
 
-  my $del_sql =(<<DEL);
+  my $del_sql =(<<'DEL');
 DELETE ox 
   FROM object_xref ox, xref x, source s 
     WHERE x.source_id = s.source_id AND
@@ -1950,9 +1080,9 @@ DELETE ox
 DEL
 $del_sql .= "'".join("', '",$self->get_gene_specific_list()) . "')";
 
-  my $move_sth = $self->xref->dbc->prepare($move_sql)  || die "$move_sql cannot be prepared";
-  my $del_ix_sth = $self->xref->dbc->prepare($del_ix_sql)    || die "$del_ix_sql cannot be prepared";
-  my $del_sth = $self->xref->dbc->prepare($del_sql)    || die "$del_sql cannot be prepared";
+  my $move_sth = $self->xref->dbc->prepare($move_sql)  || croak "$move_sql cannot be prepared";
+  my $del_ix_sth = $self->xref->dbc->prepare($del_ix_sql)    || croak "$del_ix_sql cannot be prepared";
+  my $del_sth = $self->xref->dbc->prepare($del_sql)    || croak "$del_sql cannot be prepared";
 
   my $move_count = 0;
   my $del_ix_count = 0;
@@ -1973,7 +1103,7 @@ $del_sql .= "'".join("', '",$self->get_gene_specific_list()) . "')";
 
   print "Number of rows:- moved = $move_count, identitys deleted = $del_ix_count, object_xrefs deleted = $del_ox_count\n";
   if($tester->unlinked_entries){
-    die "Problems found mid process_alt_alleles\n";
+    croak "Problems found mid process_alt_alleles\n";
   }
   #
   # Now we have all the data on the reference Gene we want to copy all the data
@@ -1981,7 +1111,7 @@ $del_sql .= "'".join("', '",$self->get_gene_specific_list()) . "')";
   #
 
 
-  my $get_data_sql=(<<GET);
+  my $get_data_sql=(<<'GET');
 SELECT ox.object_xref_id, ox.ensembl_object_type, ox.xref_id, ox.linkage_annotation, 
        ox.linkage_type, ox.ox_status, ox.unused_priority, ox.master_xref_id,
        ix.query_identity, ix.target_identity, ix.hit_start, ix.hit_end,
@@ -1998,26 +1128,26 @@ GET
 
   $get_data_sql .= "'".join("', '",$self->get_gene_specific_list()) . "')";
 
-  my $get_data_sth = $self->xref->dbc->prepare($get_data_sql) || die "Could not prepare $get_data_sql";
+  my $get_data_sth = $self->xref->dbc->prepare($get_data_sql) || croak "Could not prepare $get_data_sql";
 
 
 
-  my $insert_object_xref_sql =(<<INO);
+  my $insert_object_xref_sql =(<<'INO');
 INSERT INTO object_xref (object_xref_id, ensembl_id, ensembl_object_type, xref_id, linkage_annotation, 
             linkage_type, ox_status, unused_priority, master_xref_id) 
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 INO
 
-  my $insert_ox_sth = $self->xref->dbc->prepare($insert_object_xref_sql) || die "Could not prepare $insert_object_xref_sql";
+  my $insert_ox_sth = $self->xref->dbc->prepare($insert_object_xref_sql) || croak "Could not prepare $insert_object_xref_sql";
 
 
-  my $insert_identity_xref_sql = (<<INI);
+  my $insert_identity_xref_sql = (<<'INI');
 INSERT INTO identity_xref (object_xref_id, query_identity, target_identity, hit_start, hit_end,
             translation_start, translation_end, cigar_line, score, evalue ) 
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 INI
 
-  my $insert_ix_sth = $self->xref->dbc->prepare($insert_identity_xref_sql) || die "Could not prepare $insert_identity_xref_sql";
+  my $insert_ix_sth = $self->xref->dbc->prepare($insert_identity_xref_sql) || croak "Could not prepare $insert_identity_xref_sql";
 
 
 
@@ -2027,8 +1157,8 @@ INI
   $sth->execute();
   $sth->bind_columns(\$max_object_xref_id);
   $sth->fetch;
-  if(!defined($max_object_xref_id) or !$max_object_xref_id){
-    die "Problem getting max object_xref_id";
+  if((!defined($max_object_xref_id)) or (!$max_object_xref_id)){
+    croak "Problem getting max object_xref_id";
   }
   $max_object_xref_id++;
 
@@ -2050,33 +1180,38 @@ INI
       foreach my $alt (@{$ref_to_alts->{$key}}){
 	$max_object_xref_id++;
         $insert_ox_sth->execute($max_object_xref_id, $alt, $ensembl_object_type, $xref_id, $linkage_annotation,
-				$linkage_type, $ox_status, $unused_priority, $master_xref_id) || die "Could not insert object_xref data";
+				$linkage_type, $ox_status, $unused_priority, $master_xref_id) || croak "Could not insert object_xref data";
 
 #ONLY add identity xref if object_xref was added successfully.
 	if( $insert_ox_sth->rows){
 	  $added_count++;
 	  $insert_ix_sth->execute($max_object_xref_id, $query_identity, $target_identity, $hit_start, $hit_end,
-				$translation_start, $translation_end, $cigar_line, $score, $evalue) ||  die "Could not insert identity_xref data";
+				$translation_start, $translation_end, $cigar_line, $score, $evalue) ||  croak "Could not insert identity_xref data";
 	}
 	else{
 	  $ignored++;
 	}
       }
-    }	
+    }
   }
   print "Added $added_count new mapping but ignored $ignored\n";
   
   if($tester->unlinked_entries){
-    die "Problems found after process_alt_alleles\n";
+    croak "Problems found after process_alt_alleles\n";
   }
-  my $sth_stat = $self->xref->dbc->prepare("insert into process_status (status, date) values('alt_alleles_processed',now())");
-  $sth_stat->execute();
-  $sth_stat->finish;
 
+  $self->update_process_status('alt_alleles_processed');
+#  my $sth_stat = $self->xref->dbc->prepare("insert into process_status (status, date) values('alt_alleles_processed',now())");
+#  $sth_stat->execute();
+#  $sth_stat->finish;
+  return;
 }
 
 
-
+#
+# These sources should be on the gene, even if they are mapped transcript or translation.
+# We define which ones are to be moved here
+#
 sub get_gene_specific_list {
   my $self = shift;
 
@@ -2085,38 +1220,29 @@ sub get_gene_specific_list {
   return @list;
 }
 
+
+#
+# Here we do the moving.
+#
 sub source_defined_move{
   my $self = shift;
 
   my $tester = XrefMapper::TestMappings->new($self);
   if($tester->unlinked_entries){
-    die "Problems found before source_defined_move\n";
+    croak "Problems found before source_defined_move\n";
   }
   foreach my $source ($self->get_gene_specific_list()){
     $self->biomart_fix($source,"Translation","Gene");
     $self->biomart_fix($source,"Transcript","Gene");
   }
   if($tester->unlinked_entries){
-    die "Problems found after source_defined_move\n";
+    croak "Problems found after source_defined_move\n";
   }
-  my $sth_stat = $self->xref->dbc->prepare("insert into process_status (status, date) values('source_level_move_finished',now())");
-  $sth_stat->execute();
-  $sth_stat->finish;
-}
-
-
-
-#sub process_alt_alleles {
-#  my $self = shift;
-#
-#
-#
-#
-#
-#  my $sth_stat = $self->xref->dbc->prepare("insert into process_status (status, date) values('alt_alleles_processed',now())");
+  $self->update_process_status('source_level_move_finished');
+#  my $sth_stat = $self->xref->dbc->prepare("insert into process_status (status, date) values('source_level_move_finished',now())");
 #  $sth_stat->execute();
 #  $sth_stat->finish;
-#}
-
+  return;
+}
 
 1;
