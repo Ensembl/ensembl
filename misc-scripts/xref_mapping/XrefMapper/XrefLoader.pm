@@ -1,9 +1,9 @@
 package XrefMapper::XrefLoader;
+use strict;
 
 use vars '@ISA';
 @ISA = qw{ XrefMapper::BasicMapper };
 
-use strict;
 use warnings;
 use XrefMapper::BasicMapper;
 
