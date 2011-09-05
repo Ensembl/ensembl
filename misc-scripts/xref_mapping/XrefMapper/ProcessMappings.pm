@@ -1,9 +1,9 @@
 package XrefMapper::ProcessMappings;
+use strict;
 
 use vars '@ISA';
 @ISA = qw{ XrefMapper::BasicMapper };
 
-use strict;
 use warnings;
 use XrefMapper::BasicMapper;
 
@@ -85,10 +85,11 @@ sub process_mappings {
       if(-s $err_file){
 	$error_count++;
 	print STDERR "Problem $err_file is non zero\n";
-	if(open(ERR,"<$err_file")){
-	  while(<ERR>){
+	if(open my $eh ,"<", $err_file){
+	  while(<$eh>){
 	    print STDERR "#".$_;
 	  }
+	  close $eh;
 	}
 	else{
 	  print STDERR "No file exists $err_file???\n Resubmit this job\n";
@@ -149,7 +150,8 @@ sub process_map_file{
     $ensembl_type = "Transcript";
   }
 
-  if(!open(MAP ,"<$map_file")){
+  my $mh;
+  if(!(open $mh ,"<",$map_file) ){
     print STDERR "Could not open file $map_file\n Resubmit this job??\n";
     return -1;
   }
@@ -187,7 +189,7 @@ sub process_map_file{
   my $ins_dep_ix_sth = $self->xref->dbc->prepare("insert into identity_xref (object_xref_id, query_identity, target_identity) values(?, ?, ?)");
 
   my $first = 1;
-  while(<MAP>){
+  while(<$mh>){
     $total_lines++;
     chomp();
     my ($label, $query_id, $target_id, $identity, $query_length, $target_length, $query_start, $query_end, $target_start, $target_end, $cigar_line, $score) = split(/:/, $_);
@@ -274,7 +276,7 @@ sub process_map_file{
      }
 
   }	
-  close MAP;
+  close $mh;
   $end_sth->execute($object_xref_id,$job_id, $array_number);
   $start_sth->finish;
   $end_sth->finish;

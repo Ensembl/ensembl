@@ -1,9 +1,9 @@
 package XrefMapper::SubmitMapper;
+use strict;
 
 use vars '@ISA';
 @ISA = qw{ XrefMapper::BasicMapper };
 
-use strict;
 use warnings;
 use XrefMapper::BasicMapper;
 
@@ -247,7 +247,7 @@ sub dump_xref{
     for my $sequence_type ('dna', 'peptide') {
 
       my $filename = $xref->dir() . "/xref_".$i."_" . $sequence_type . ".fasta";
-      open(XREF_DUMP,">$filename") || die "Could not open $filename";
+      open( my $DH,">", $filename) || die "Could not open $filename";
 
       my $sql = "SELECT p.xref_id, p.sequence, x.species_id , x.source_id ";
       $sql   .= "  FROM primary_xref p, xref x ";
@@ -260,14 +260,14 @@ sub dump_xref{
       while(my @row = $sth->fetchrow_array()){
 	
 	$row[1] =~ s/(.{60})/$1\n/g;
-	print XREF_DUMP ">".$row[0]."\n".$row[1]."\n";
+	print $DH ">".$row[0]."\n".$row[1]."\n";
 	
       }
 
-      close(XREF_DUMP);
+      close $DH;
       $sth->finish();
 
-    }
+     }
     $i++;
   }
   my $sth = $xref->dbc->prepare("insert into process_status (status, date) values('xref_fasta_dumped',now())");
@@ -372,10 +372,10 @@ sub fetch_and_dump_seq_via_toplevel{
 
   print "Dumping Ensembl Fasta files\n" if($self->verbose());
 
-  open(DNA,">".$ensembl->dna_file())
+  open(my $dnah,">", $ensembl->dna_file())
     || die("Could not open dna file for writing: ".$ensembl->dna_file."\n");
 
-  open(PEP,">".$ensembl->protein_file())
+  open(my $peph, ">", $ensembl->protein_file())
     || die("Could not open protein file for writing: ".$ensembl->protein_file."\n");
 
   my $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(-dbconn => $ensembl->dbc);
@@ -404,7 +404,7 @@ sub fetch_and_dump_seq_via_toplevel{
       foreach my $transcript (@{$gene->get_all_Transcripts()}) {
 	my $seq = $transcript->spliced_seq();
 	$seq =~ s/(.{60})/$1\n/g;
-	print DNA ">" . $transcript->dbID() . "\n" .$seq."\n" || die "Error writing for transcript ".$transcript->dbID."\n$!\n";
+	print $dnah ">" . $transcript->dbID() . "\n" .$seq."\n" || die "Error writing for transcript ".$transcript->dbID."\n$!\n";
 	$script_count++;
 	my $trans = $transcript->translation();
 	my $translation = $transcript->translate();
@@ -412,7 +412,7 @@ sub fetch_and_dump_seq_via_toplevel{
 	if(defined($translation)){
 	  my $pep_seq = $translation->seq();
 	  $pep_seq =~ s/(.{60})/$1\n/g;
-	  print PEP ">".$trans->dbID()."\n".$pep_seq."\n" || die "Error writing for translation ".$trans->dbID."\n$!\n";
+	  print $peph ">".$trans->dbID()."\n".$pep_seq."\n" || die "Error writing for translation ".$trans->dbID."\n$!\n";
 	  $lation_count++;
 	}
       }
@@ -427,8 +427,8 @@ sub fetch_and_dump_seq_via_toplevel{
     %{ $seqa->{'seq_cache'} } = ();
   }
 
-  close DNA || die "unable to close dna file\n$!\n";
-  close PEP || die "unable to close peptide file\n$!\n"; 
+  close $dnah || die "unable to close dna file\n$!\n";
+  close $peph || die "unable to close peptide file\n$!\n"; 
 
 
 
@@ -512,10 +512,10 @@ sub fetch_and_dump_seq_via_genes{
 
   print "Dumping Ensembl Fasta files\n" if($self->verbose());
 
-  open(DNA,">".$ensembl->dna_file())
+  open(my $dnah, ">", $ensembl->dna_file())
     || die("Could not open dna file for writing: ".$ensembl->dna_file."\n");
 
-  open(PEP,">".$ensembl->protein_file())
+  open(my $peph, ">", $ensembl->protein_file())
     || die("Could not open protein file for writing: ".$ensembl->protein_file."\n");
 
 
@@ -544,7 +544,7 @@ sub fetch_and_dump_seq_via_genes{
     foreach my $transcript (@{$gene->get_all_Transcripts()}) {
       my $seq = $transcript->spliced_seq();
       $seq =~ s/(.{60})/$1\n/g;
-      print DNA ">" . $transcript->dbID() . "\n" .$seq."\n" || die "Error writing for transcript ".$transcript->dbID."\n$!\n";
+      print $dnah ">" . $transcript->dbID() . "\n" .$seq."\n" || die "Error writing for transcript ".$transcript->dbID."\n$!\n";
       $script_count++;
       my $trans = $transcript->translation();
       my $translation = $transcript->translate();
@@ -552,7 +552,7 @@ sub fetch_and_dump_seq_via_genes{
       if(defined($translation)){
         my $pep_seq = $translation->seq();
         $pep_seq =~ s/(.{60})/$1\n/g;
-        print PEP ">".$trans->dbID()."\n".$pep_seq."\n" || die "Error writing for translation ".$trans->dbID."\n$!\n";
+        print $peph ">".$trans->dbID()."\n".$pep_seq."\n" || die "Error writing for translation ".$trans->dbID."\n$!\n";
 	$lation_count++;
       }
     }
@@ -565,8 +565,8 @@ sub fetch_and_dump_seq_via_genes{
 
     %{ $seqa->{'seq_cache'} } = ();
   }
-  close DNA || die "unable to close dna file\n$!\n";
-  close PEP || die "unable to close peptide file\n$!\n"; 
+  close $dnah || die "unable to close dna file\n$!\n";
+  close $peph || die "unable to close peptide file\n$!\n"; 
 
 
 
@@ -839,7 +839,9 @@ sub run_mapping {
 
   my $dir = $self->core->dir();
   print "Deleting out, err and map files from output dir: $dir\n" if($self->verbose());
-  unlink (<$dir/*.map $dir/*.out $dir/*.err>);
+  unlink (glob("$dir/*.map"));
+  unlink (glob("$dir/*.out"));
+  unlink (glob("$dir/*.err"));
 
   $self->remove_all_old_output_files();
   #disconnect so that we can then reconnect after the long mapping bit.
@@ -996,7 +998,7 @@ sub remove_all_old_output_files{
   my $dir = $self->core->dir();
 
   print "Deleting txt and sql files from output dir: $dir\n" if($self->verbose);
-  unlink(<$dir/*.txt $dir/*.sql>);
+  unlink(glob("$dir/*.txt $dir/*.sql"));
 #  $self->cleanup_projections_file();  # now to be done when we load core.
 }
 

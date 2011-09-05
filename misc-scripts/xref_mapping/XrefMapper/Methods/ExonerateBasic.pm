@@ -64,7 +64,7 @@ sub jobcount {
 
 =cut
 
-sub run() {
+sub run {
 
   my ($self, $query, $target, $mapper) = @_;
 
@@ -85,7 +85,7 @@ sub run() {
 
 =cut
 
-sub options() {
+sub options {
 
   return ();
 
@@ -112,12 +112,12 @@ sub resubmit_exonerate {
   my $unique_name = $self->get_class_name() . "_" . time();
   
   my $exe_file = $root_dir."/resub_".$job_id."_".$array_number;
-  open(RUN,">$exe_file") || die "Could not open file $exe_file";
+  open(my $rh, ">", $exe_file) || die "Could not open file $exe_file";
   
-  print RUN ". /usr/local/lsf/conf/profile.lsf\n";
-  print RUN $command."\n";
+  print $rh ". /usr/local/lsf/conf/profile.lsf\n";
+  print $rh $command."\n";
 
-  close(RUN);
+  close $rh;
 
   chmod 0755, $exe_file;
 
@@ -272,12 +272,12 @@ EON
   $command .= " | grep '^xref' > $root_dir/$output";
 
   my $exe_file = $root_dir."/".$unique_name.".submit";
-  open(RUN,">$exe_file") || die "Could not open file $exe_file";
+  open(my $rh,">", $exe_file) || die "Could not open file $exe_file";
   
-  print RUN ". /usr/local/lsf/conf/profile.lsf\n";
-  print RUN $command."\n";
+  print $rh ". /usr/local/lsf/conf/profile.lsf\n";
+  print $rh $command."\n";
 
-  close(RUN);
+  close $rh;
 
   chmod 0755, $exe_file;
 
@@ -358,7 +358,7 @@ sub calculate_num_jobs {
 # Get class name from fully-qualified object name
 # e.g. return ExonerateBasic from XrefMapper::Methods::ExonerateBasic=HASH(Ox12113c0)
 
-sub get_class_name() {
+sub get_class_name {
 
   my $self = shift;
 
