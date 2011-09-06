@@ -1401,7 +1401,7 @@ sub get_all_unconventional_transcript_associations {
 =head2 remove_unconventional_transcript_associations
 
   Args       : None
-  Example    : $gene->remove__unconventional_transcript_associations();
+  Example    : $gene->remove_unconventional_transcript_associations();
   Description: Returns the unconventional transcripts associated with this gene.
   Returntype : Listref of Bio::EnsEMBL::UnconventionalTranscriptAssociation objects
   Exceptions : none
