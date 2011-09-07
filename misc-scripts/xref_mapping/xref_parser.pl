@@ -8,7 +8,7 @@ my ( $host,             $port,          $dbname,
      $sources,          $checkdownload, $create,
      $release,          $cleanup,       $drop_existing_db,
      $deletedownloaded, $dl_path,       $notsource,
-     $unzip, $stats, $notverbose );
+     $unzip, $stats, $notverbose, $force );
 
 my $options = join(" ",@ARGV);
 
@@ -34,11 +34,11 @@ GetOptions(
     'stats'          => \$stats,
     'notverbose'     => \$notverbose,
     'notsource=s'    => \$notsource,
-    'drop_db|dropdb!' =>
-      \$drop_existing_db,    # Drop xref db without user interaction
+    'drop_db|dropdb!' => \$drop_existing_db,    # Drop xref db without user interaction
     'delete_downloaded' => \$deletedownloaded,
-    'download_path=s'   => \$dl_path,
-    'unzip' => \$unzip,                   # Force decompression of files
+    'download_path=s' => \$dl_path,
+    'unzip'           => \$unzip,                   # Force decompression of files
+    'force'           => \$force,
     'help'  => sub { usage(); exit(0); } );
 
 if($ARGV[0]){
@@ -82,7 +82,8 @@ $base_parser->run(
                $create,           $release,
                $cleanup,          $drop_existing_db,
                $deletedownloaded, $dl_path,
-               \@notsource,       $unzip, $stats, !($notverbose) );
+               \@notsource,       $unzip, $stats, 
+	       !($notverbose), $force);
 
 $base_parser->add_meta_pair("options",$options);
 
@@ -163,6 +164,8 @@ sub usage {
   -notverbose       Do not output messages about the parsing. (NOT recomended)
 
   -stats            Generate the stats for the number of types of xrefs added.
+
+  -force            No confirmation of actions just do it.
 
 EOF
 
