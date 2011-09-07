@@ -15,7 +15,7 @@ my %transcript_length;
 
 sub gene_description_filter_regexps {
 
-  return ();
+		return ();
 
 }
 
@@ -25,16 +25,47 @@ sub gene_description_filter_regexps {
 #
 # transcript: flybase_name if present, else gadfly_transcript_cgid
 sub xref_offset{
-  my ($self, $val) = @_;
+		my ($self, $val) = @_;
 
-  if(defined($val)){
-    $self->{'_xref_offset'} = $val;
-  }
-  return $self->{'_xref_offset'};
+		if(defined($val)){
+				$self->{'_xref_offset'} = $val;
+		}
+		return $self->{'_xref_offset'};
 }
 
+sub gene_description_sources {
+  return (
+          "FlyBaseName_gene",
+          "FlyBaseCGID_gene",
+         );
+}
+
+sub transcript_display_xref_sources {
+	  my $self     = shift;
+		my $fullmode = shift;
+	
+		my @list = qw(FlyBaseName_transcript 
+                  FlyBaseCGID_transcript);
+
+ # gadfly_transcript_cgid flybase_annotation_id
+
+		print "Get FlyBase Transcript display_xrefs_sources with fullmode=$fullmode\n" if ($self->verbose);
+
+	my %ignore;
+  if(!$fullmode){
+			$ignore{"EntrezGene"}= 'FROM:RefSeq_[pd][en][pa].*_predicted';
+  }
+  else{
+			$ignore{"EntrezGene"} = 'select ox.object_xref_id from object_xref ox, dependent_xref dx, source s1, xref x1, source s2, xref x2 where ox.object_xref_id = dx.object_xref_id and dx.dependent_xref_id = x1.xref_id and x1.source_id = s1.source_id and s1.name = "EntrezGene" and x2.xref_id = dx.master_xref_id and x2.source_id = s2.source_id and (s2.name like "Refseq_dna_predicted" or s2.name like "RefSeq_peptide_predicted") and ox.ox_status = "DUMP_OUT"';
+  }
+
+  return [\@list,\%ignore];
+
+}
 
 sub gene_display_xref_sources {
+		my $self     = shift;
+		my $fullmode = shift;
 
   my @list = qw(
 								FlyBaseName_gene
@@ -43,343 +74,317 @@ sub gene_display_xref_sources {
                 );
 
   my %ignore;
-  $ignore{"EntrezGene"}= 'FROM:RefSeq_[pd][en][pa].*_predicted';
+  
+		print "Get FlyBase Gene display_xrefs_sources with fullmode=$fullmode\n" if ($self->verbose);
+
+  # Both methods
+
+  if(!$fullmode){
+    $ignore{"EntrezGene"}= 'FROM:RefSeq_[pd][en][pa].*_predicted';
+  }
+  else{
+    $ignore{"EntrezGene"} = 'select ox.object_xref_id from object_xref ox, dependent_xref dx, source s1, xref x1, source s2, xref x2 where ox.object_xref_id = dx.object_xref_id and dx.dependent_xref_id = x1.xref_id and x1.source_id = s1.source_id and s1.name = "EntrezGene" and x2.xref_id = dx.master_xref_id and x2.source_id = s2.source_id and (s2.name like "Refseq_dna_predicted" or s2.name like "RefSeq_peptide_predicted") and ox.ox_status = "DUMP_OUT"';
+
+  }
+
 
   return [\@list,\%ignore];
 
 }
 
 
-sub build_transcript_and_gene_display_xrefs {
-  my ($self) = @_;
-  my $dir = $self->core->dir();
+sub set_display_xrefs{
+  my $self = shift;
 
-  my %external_name_to_id;
-  my %ex_db_id_to_status;
-  my $sql1 = "SELECT external_db_id, db_name, status from external_db";
-  
-  my $sth1 = $self->core->dbc->prepare($sql1) || die "prepare failed for $sql1\n";
-  $sth1->execute() || die "execute failed";
-  my ($db_id, $name, $status);
-  $sth1->bind_columns(\$db_id, \$name, \$status);
-  while($sth1->fetch()){
-    $external_name_to_id{$name}  = $db_id;
-    $ex_db_id_to_status{$db_id} = $status;
-  }
-  $sth1->finish;
+  print "Building FlyBase Transcript and Gene display_xrefs using xref database\n" if ($self->verbose);
 
+  my $xref_offset = $self->get_meta_value("xref_offset");
 
-  #############################
-  #create the tempory table
-  #############################
+  print "Using xref_off set of $xref_offset\n" if($self->verbose);
 
-  my $sth = $self->core->dbc->prepare("create table identity_xref_temp like identity_xref");
-  print "creating table identity_xref_temp\n";
-  $sth->execute() || die "Could not \ncreate table identity_xref_temp like identity_xref\n";
+  my $reset_sth = $self->core->dbc->prepare("UPDATE gene SET display_xref_id = null");
+  $reset_sth->execute();
+  $reset_sth->finish;
+ 
+  $reset_sth = $self->core->dbc->prepare("UPDATE transcript SET display_xref_id = null");
+  $reset_sth->execute();
+  $reset_sth->finish;
 
+  my $update_gene_sth = $self->core->dbc->prepare("UPDATE gene g SET g.display_xref_id= ? WHERE g.gene_id=?");
+  my $update_tran_sth = $self->core->dbc->prepare("UPDATE transcript t SET t.display_xref_id= ? WHERE t.transcript_id=?");
 
-  #############################
-  #populate the tempory table
-  #############################
-  my $file = $dir."/identity_xref_temp.txt";
-  
-  if(-s $file){
-    my $sth = $self->core->dbc->prepare("LOAD DATA LOCAL INFILE \'$file\' IGNORE INTO TABLE identity_xref_temp");
-    print "Uploading data in $file to identity_xref_temp\n";
-    $sth->execute();
-  }
-  else{
-    print "NO file or zero size file, so not able to load file $file to identity_xref_temp\n";
-  }
+	##############################################
+	# Careful: The table might have been created #
+	# already if the pipeline was run previously #
+	# delete the table first (if not here)       #
+	##############################################
 
-  #
-  # get a list of sources to use
-  # and also a list of those xrefs to ignore 
-  # where the source name is the key and the value is the string to test for 
-  # 
-  my ($genepresedence, $geneignore) = @{$self->gene_display_xref_sources()};
-  my ($presedence, $ignore) = @{$self->transcript_display_xref_sources()};
+	my $sth = $self->xref->dbc->prepare("DROP TABLE IF EXISTS display_xref_prioritys");
+  $sth->execute;
+  $sth->finish;
+
+my $sql =(<<SQL); 
+  CREATE TABLE display_xref_prioritys(
+    source_id INT NOT NULL,
+    priority       INT NOT NULL,
+    PRIMARY KEY (source_id)
+  ) COLLATE=latin1_swedish_ci TYPE=InnoDB
+SQL
+
+  $sth = $self->xref->dbc->prepare($sql);
+  $sth->execute;
+  $sth->finish;
+
+	############################################
+	# We also create an extra table for the    #
+	# gene priority                            #
+	############################################
+
+	my $sth = $self->xref->dbc->prepare("DROP TABLE IF EXISTS gene_display_xref_prioritys");
+  $sth->execute;
+  $sth->finish;
+
+my $g_sql =(<<GSQL); 
+  CREATE TABLE gene_display_xref_prioritys(
+    source_id INT NOT NULL,
+    priority       INT NOT NULL,
+    PRIMARY KEY (source_id)
+  ) COLLATE=latin1_swedish_ci TYPE=InnoDB
+GSQL
+
+  $sth = $self->xref->dbc->prepare($g_sql);
+  $sth->execute;
+  $sth->finish;
+
+  ############################################
+	# OK comes the specific code for FlyBase:  #
+	# Separate Transcript display xrefs from   #
+	# gene display xrefs.                      #
+	# get a list of sources to use.            #
+	# Gene and Trans. have different levels:   #
+  # transcript presedence should never be    #
+	# mixed with gene presedence               #
+	# for this reason, we have to create a     #
+	# distinct gene_level / transcript_level   #
+	############################################
+
+  # in we are here, it means that fullmode = 1;
+	my $fullmode = 1;
+  my ($gene_presedence, $gene_ignore) = @{$self->gene_display_xref_sources($fullmode)};
+  my ($transcript_presedence, $transcript_ignore) = @{$self->transcript_display_xref_sources($fullmode)};
 
   my $i=0;
-  my %level;
+  my $j=0;
 
-  foreach my $ord (reverse (@$presedence)){
-    $i++;
-    if(!defined($external_name_to_id{$ord})){
-      print STDERR "unknown external database name *$ord* being used\n";
-    }
-    $level{$external_name_to_id{$ord}} = $i;
+  my $ins_p_sth = $self->xref->dbc->prepare("INSERT into display_xref_prioritys (source_id, priority) values(?, ?)");
+	my $ins_g_p_sth = $self->xref->dbc->prepare("INSERT into gene_display_xref_prioritys (source_id, priority) values(?, ?)");
+  my $get_source_id_sth = $self->xref->dbc->prepare("select source_id from source where name like ? order by priority desc");
+
+  ############################################
+  # So the higher the number the better then #
+	# Do it for transcripts and then for genes #
+  ############################################
+
+  my $last_name = "";
+  print "Transcript presedence for the display xrefs\n" if($self->verbose);
+  foreach my $name (reverse (@$transcript_presedence)){
+			$i++;
+			$get_source_id_sth->execute($name);
+			my $source_id;
+			$get_source_id_sth->bind_columns(\$source_id);
+			while($get_source_id_sth->fetch){
+      $ins_p_sth->execute($source_id, $i);
+      if($name ne $last_name){
+					print "\t$name\t$i\n" if ($self->verbose);
+      }	
+      $last_name = $name;
+			}
   }
+  $ins_p_sth->finish;
 
-  foreach my $ord (reverse (@$genepresedence)){
-    $i++;
-    if(!defined($external_name_to_id{$ord})){
-      print STDERR "unknown external database name *$ord* being used\n";
-    }
-    $level{$external_name_to_id{$ord}} = $i;
+	$last_name = "";
+  print "Gene presedence for the display xrefs\n" if($self->verbose);
+  foreach my $name (reverse (@$gene_presedence)){
+			$j++;
+			$get_source_id_sth->execute($name);
+			my $source_id;
+			$get_source_id_sth->bind_columns(\$source_id);
+			while($get_source_id_sth->fetch){
+					$ins_g_p_sth->execute($source_id, $j);
+					if($name ne $last_name){
+							print "\t$name\t$j\n" if ($self->verbose);
+					}	
+					$last_name = $name;
+			}
   }
+  $ins_p_sth->finish;
 
-  if(!scalar(keys %genes_to_transcripts)){
-    $self->build_genes_to_transcripts();
-  }
+  $get_source_id_sth->finish;
 
-  if(!scalar(keys %translation_to_transcript)){
-    $self->load_translation_to_transcript();
-  }
+  ############################################
+  # Set status to 'NO_DISPLAY' for those that#
+  # match the ignore REGEXP in object_xref   #
+  # Xrefs have already been dump to core etc #
+	# so no damage done.                       #
+  ############################################
 
+  my $update_ignore_sth = $self->xref->dbc->prepare('UPDATE object_xref SET ox_status = "NO_DISPLAY" where object_xref_id = ?');
 
-
-  my $sql = (<<ESQL);
-  SELECT ox.xref_id, ix.query_identity, ix.target_identity,  x.external_db_id, x.display_label, e.db_name, ox.linkage_annotation
-    FROM (object_xref ox, xref x, external_db e) 
-      LEFT JOIN identity_xref ix ON (ox.object_xref_id = ix.object_xref_id) 
-	WHERE x.xref_id = ox.xref_id AND ox.ensembl_object_type = ? 
-              AND ox.ensembl_id = ? AND x.info_type = 'SEQUENCE_MATCH'
-              AND e.external_db_id = x.external_db_id
-ESQL
-
-  my $primary_sth = $self->core->dbc->prepare($sql) || die "prepare failed for $sql\n";
-
-
-
-  $sql = (<<ZSQL);
-  SELECT ox.xref_id, ix.query_identity, ix.target_identity, x.external_db_id, x.display_label, e.db_name, ox.linkage_annotation
-    FROM (object_xref ox, xref x, external_db e) 
-      LEFT JOIN identity_xref_temp ix ON (ox.object_xref_id = ix.object_xref_id) 
-	WHERE x.xref_id = ox.xref_id and ox.ensembl_object_type = ? 
-              and ox.ensembl_id = ? and x.info_type = 'DEPENDENT'
-              AND e.external_db_id = x.external_db_id
-ZSQL
- 
-  my $dependent_sth = $self->core->dbc->prepare($sql) || die "prepare failed for $sql\n";
-
-
-
-  $sql = (<<QSQL);
-  SELECT  x.xref_id, x.external_db_id, x.display_label, e.db_name, o.linkage_annotation
-   FROM object_xref o, xref x, external_db e 
-    WHERE x.xref_id = o.xref_id 
-        and o.ensembl_object_type = ? and o.ensembl_id = ? and x.info_type = 'DIRECT'
-              AND e.external_db_id = x.external_db_id
-QSQL
-                             
-  my $direct_sth = $self->core->dbc->prepare($sql) || die "prepare failed for $sql\n";
-
-
-
-# get xrefs connect directly to the gene.
-
-  $sql = (<<GSQL);
-  SELECT x.xref_id, x.external_db_id, e.db_name, o.linkage_annotation
-   FROM object_xref o, xref x, external_db e   
-    WHERE x.xref_id = o.xref_id 
-        and o.ensembl_object_type = 'Gene' and o.ensembl_id = ?
-              AND e.external_db_id = x.external_db_id
-GSQL
-                             
-  my $gene_sth = $self->core->dbc->prepare($sql) || die "prepare failed for $sql\n";
-
-  my $count =0;
-  
-  my ($xref_id, $qid, $tid, $ex_db_id, $display_label, $external_db_name, $linkage_annotation);
-  
-  
-
-  # Open file handles to recieve SQL and text data used to set 
-  # display_xrefs 
-  my $gene_dx_file       = "$dir/gene_display_xref.sql"; 
-  my $tran_dx_file       = "$dir/transcript_display_xref.sql";
-  my $unset_gene_dx_file = "$dir/gene_unset_display_xref.sql";
-  my $unset_tran_dx_file = "$dir/transcript_unset_display_xref.sql";
-
-  open (my $GENE_DX, ">", $gene_dx_file)
-      or die( "Could not open $gene_dx_file: $!" );
-  open (my $TRANSCRIPT_DX, ">", $tran_dx_file) 
-      or die( "Could not open $tran_dx_file: $!" );
-  open (my $GENE_DX_UNSET, ">", $unset_gene_dx_file)
-      or die( "Could not open $unset_gene_dx_file: $!" );
-  open (my $TRAN_DX_UNSET, ">", $unset_tran_dx_file) 
-      or die( "Could not open $unset_tran_dx_file: $!" );
-  open (my $GENE_DX_TXT, ">", "$dir/gene_display_xref.txt");
-  open (my $TRANSCRIPT_DX_TXT, ">", "$dir/transcript_display_xref.txt");
-
-  # These are the files that this method will return
-  my @files = ($unset_gene_dx_file,$gene_dx_file, 
-               $unset_tran_dx_file,$tran_dx_file);
-
-  # Write the 'unset' sql to the files, and cose them
-  print $GENE_DX_UNSET qq(UPDATE gene       SET display_xref_id=NULL;\n);
-  print $TRAN_DX_UNSET qq(UPDATE transcript SET display_xref_id=NULL;\n);
-  close( $GENE_DX_UNSET );
-  close( $TRAN_DX_UNSET );
-  
-  foreach my $gene_id (keys %genes_to_transcripts) {
-    my %percent_id;
-    my %level_db;
-    my %parent;
-    my %percent_id_via_acc;
-    my @gene_xrefs = ();
-    
-    $gene_sth->execute($gene_id) || die "execute failed";
-    $gene_sth->bind_columns(\$xref_id, \$ex_db_id, \$external_db_name, \$linkage_annotation);
-    
-    
-    my $best_gene_xref  = 0;    # store xref
-    my $best_gene_level = 0;    # store level
-    my $best_gene_percent = 0;  # additoon of precentage ids
-
-    while($gene_sth->fetch()){
-      if(defined($$ignore{$external_db_name})){
-	if($linkage_annotation =~ /$$ignore{$external_db_name}/){
-#	  print "Ignoring $xref_id as linkage_annotation has ".$$ignore{$external_db_name}." in it. DELETE THIS MESSAGE AFTER TESTING\n";
-	  next;
-	}
-      }
-      if($level{$ex_db_id} > $best_gene_level){
-	$best_gene_xref = $xref_id;
-	$best_gene_level = $level{$ex_db_id};
-      }
-      if($best_gene_xref){
-        print $GENE_DX "UPDATE gene g SET g.display_xref_id=" . $best_gene_xref .
-          " WHERE g.gene_id=" . $gene_id . ";\n";
-        print $GENE_DX_TXT $best_gene_xref . "\t" . $gene_id ."\n";
-      }
-    }
-    
-
-    my @transcripts = @{$genes_to_transcripts{$gene_id}};
-    foreach my $transcript_id (@transcripts) {
-
-      my @transcript_xrefs = ();
-      
-      foreach my $type ("Transcript", "Translation"){
-	my $ens_id;
-	if($type eq "Transcript"){
-	  $ens_id = $transcript_id;
-	}
-	else{
-	  if(defined($transcript_to_translation{$transcript_id})){
-	    $ens_id=$transcript_to_translation{$transcript_id};
-	  }
-	  else{
-	    next;
-	  }
-	}
-	$primary_sth->execute($type, $ens_id ) || die "execute failed";
-	$primary_sth->bind_columns(\$xref_id, \$qid, \$tid, \$ex_db_id, 
-				   \$display_label, \$external_db_name, 
-				   \$linkage_annotation);
-	while($primary_sth->fetch()){
-	  if($level{$ex_db_id}  and $display_label =~ /\D+/ ){ #correct level and label is not just a number 	
-	    if(defined($$ignore{$external_db_name})){
-	      if($linkage_annotation =~ /$$ignore{$external_db_name}/){
-#		print "Ignoring $xref_id as linkage_annotation has ".$$ignore{$external_db_name}." in it. DELETE THIS MESSAGE AFTER TESTING\n";
-		next;
-	      }
-	    }
-
-	    push @transcript_xrefs, $xref_id;
-	    if(!defined($qid) || !defined($tid)){
-	      print "PRIMARY $xref_id\n";
-	      $percent_id{$xref_id} = 0;
-	    }
-	    else{
-	      $percent_id{$xref_id}  = $qid + $tid;
-	    }
-	  
-	    $level_db{$xref_id}  = $level{$ex_db_id};
-	  }  
-	}
+  ############################################
+  # Gene and transcript ignore are the same  #
+  ############################################
 	
-	$dependent_sth->execute($type, $ens_id ) || die "execute failed";
-	$dependent_sth->bind_columns(\$xref_id, \$qid, \$tid, \$ex_db_id, 
-				     \$display_label, \$external_db_name, 
-				     \$linkage_annotation);
-	while($dependent_sth->fetch()){
-	  if($level{$ex_db_id}  and $display_label =~ /\D+/){
-	    if(defined($$ignore{$external_db_name})){
-	      if($linkage_annotation =~ /$$ignore{$external_db_name}/){
-#		print "Ignoring $xref_id as linkage_annotation has ".$$ignore{$external_db_name}." in it. DELETE THIS MESSAGE AFTER TESTING\n";
-		next;
-	      }
-	    }
-	    push @transcript_xrefs, $xref_id;
-	    if(!defined($qid) || !defined($tid)){
-	      print "DEPENDENT $xref_id\n" if($ex_db_id != 1100); #HGNC has added one with no %ids.
-	      $percent_id{$xref_id} = 0;
-	    }
-	    else{
-	      $percent_id{$xref_id}  = $qid + $tid;
-	    }
-	    $level_db{$xref_id}  = $level{$ex_db_id};	    
-	  }  
+	foreach my $ignore_sql (values %$transcript_ignore){
+			print "IGNORE SQL: $ignore_sql\n" if($self->verbose);
+			my $ignore_sth = $self->xref->dbc->prepare($ignore_sql);
+			
+			my $gene_count = 0;
+			$ignore_sth->execute();
+			my ($object_xref_id); 
+			$ignore_sth->bind_columns(\$object_xref_id);
+			while($ignore_sth->fetch()){    
+					$update_ignore_sth->execute($object_xref_id);
+			}
+			$ignore_sth->finish;
 	}
-	
-	$direct_sth->execute($type, $ens_id ) || die "execute failed";
-	$direct_sth->bind_columns(\$xref_id, \$ex_db_id, \$display_label,
-				  \$external_db_name, \$linkage_annotation);
-	while($direct_sth->fetch()){
-	  if($level{$ex_db_id}  and $display_label =~ /\D+/){ 	
-	    if(defined($$ignore{$external_db_name})){
-	      if($linkage_annotation =~ /$$ignore{$external_db_name}/){
-#		print "Ignoring $xref_id as linkage_annotation has ".$$ignore{$external_db_name}." in it. DELETE THIS MESSAGE AFTER TESTING\n";
-		next;
-	      }
-	    }
-	    push @transcript_xrefs, $xref_id;
-	    $percent_id{$xref_id} = 0;
-	    $level_db{$xref_id}  = $level{$ex_db_id};
-	  }  
-	}
-      
-      }      
-      
-      my $best_tran_xref  = 0; # store xref
-      my $best_tran_level = 0; # store level
-      my $best_tran_percent = 0; # store best %id total
+	$update_ignore_sth->finish;
 
-      foreach my $xref_id (@transcript_xrefs) {
-	if(defined($level_db{$xref_id}) and $level_db{$xref_id}){
-	  if($level_db{$xref_id} < $best_tran_level){
-	    next;
-	  }
+  #
+  # Do a similar thing for those with a display_label that is just numeric;
+  #
 
-	  if($level_db{$xref_id} == $best_tran_level){
-	    if($percent_id{$xref_id} < $best_tran_percent){
-	      next;
-	    }
-	  }
-	  $best_tran_percent = $percent_id{$xref_id};
-	  $best_tran_level = $level_db{$xref_id};
-	  $best_tran_xref  = $xref_id;
-	}
-      }       
-      
-      if($best_tran_xref){
-        print $TRANSCRIPT_DX "UPDATE transcript SET display_xref_id=" .$best_tran_xref. 
-            " WHERE transcript_id=" . $transcript_id . ";\n";
-        print $TRANSCRIPT_DX_TXT  $best_tran_xref. "\t" . $transcript_id . "\n";
-      }
+  $update_ignore_sth = $self->xref->dbc->prepare('UPDATE object_xref ox, source s, xref x SET ox_status = "NO_DISPLAY" where ox_status like "DUMP_OUT" and s.source_id = x.source_id and x.label REGEXP "^[0-9]+$" and ox.xref_id = x.xref_id');
 
-      if($best_tran_level < $best_gene_level){
-         next;
-      }
-      if($best_tran_level == $best_gene_level){
-        if($best_tran_percent < $best_gene_percent){
-          next;
-        }
-      }
+  $update_ignore_sth->execute();
+  $update_ignore_sth->finish;
 
-    }
+
+#######################################################################
+
+my $display_xref_sql =(<<DXS);
+select  IF (ox.ensembl_object_type = 'Gene',        gtt_gene.gene_id,
+        IF (ox.ensembl_object_type = 'Transcript',  gtt_transcript.gene_id,
+          gtt_translation.gene_id)) AS gene_id,
+        IF (ox.ensembl_object_type = 'Gene',        gtt_gene.transcript_id,
+        IF (ox.ensembl_object_type = 'Transcript',  gtt_transcript.transcript_id,
+          gtt_translation.transcript_id)) AS transcript_id,
+        p.priority as priority,
+        x.xref_id, 
+        ox.ensembl_object_type as object_type,
+        x.label  as label
+from    (   display_xref_prioritys p
+    join  (   source s
+      join    (   xref x
+        join      (   object_xref ox
+          join        (   identity_xref ix
+                      ) using (object_xref_id)
+                  ) using (xref_id)
+              ) using (source_id)
+          ) using (source_id)
+        )
+  left join gene_transcript_translation gtt_gene
+    on (gtt_gene.gene_id = ox.ensembl_id)
+  left join gene_transcript_translation gtt_transcript
+    on (gtt_transcript.transcript_id = ox.ensembl_id)
+  left join gene_transcript_translation gtt_translation
+    on (gtt_translation.translation_id = ox.ensembl_id)
+where   ox.ox_status = 'DUMP_OUT'
+order by    gene_id DESC, p.priority DESC, (ix.target_identity+ix.query_identity) DESC, ox.unused_priority DESC
+
+DXS
+
+my $gene_display_xref_sql =(<<G_DXS);
+select  gtt_gene.gene_id AS gene_id,
+        p.priority as priority,
+        x.xref_id, 
+        ox.ensembl_object_type as object_type,
+        x.label  as label
+from    (   gene_display_xref_prioritys p
+    join  (   source s
+      join    (   xref x
+        join      (   object_xref ox
+          join        (   identity_xref ix
+                      ) using (object_xref_id)
+                  ) using (xref_id)
+              ) using (source_id)
+          ) using (source_id)
+        )
+  left join gene_transcript_translation gtt_gene
+    on (gtt_gene.gene_id = ox.ensembl_id)
+where   ox.ox_status = 'DUMP_OUT' 
+and     ox.ensembl_object_type = 'Gene' 
+order by    gene_id DESC, p.priority DESC, (ix.target_identity+ix.query_identity) DESC, ox.unused_priority DESC
+
+G_DXS
   
+
+  my $gene_display_xref_sth = $self->xref->dbc->prepare($gene_display_xref_sql);
+
+	my $gene_count = 0;
+	my $last_gene = 0;
+	my $transcript_count = 0;
+
+	$gene_display_xref_sth->execute();
+
+	my ($gene_id, $transcript_id, $p, $xref_id, $type, $label);  # remove labvel after testig it is not needed
+  $gene_display_xref_sth->bind_columns(\$gene_id, \$p, \$xref_id, \$type, \$label);
+  while($gene_display_xref_sth->fetch()){
+			if($gene_id != $last_gene){
+					$update_gene_sth->execute($xref_id+$xref_offset, $gene_id);
+					$last_gene = $gene_id;
+					$gene_count++;
+			} 
   }
-  close $TRANSCRIPT_DX;
-  close $TRANSCRIPT_DX_TXT;
-  close $GENE_DX;
-  close $GENE_DX_TXT;
-  
 
-  return @files;
+  $gene_display_xref_sth->finish;
+
+  print "Updated $gene_count display_xrefs for FlyBase genes\n" if($self->verbose);
+
+  my %seen_transcript; # first time we see it is the best due to ordering :-)
+                         # so either write data to database or store
+
+  $last_gene = 0;
+
+  my $display_xref_sth = $self->xref->dbc->prepare($display_xref_sql);
+
+
+  $display_xref_sth->execute();
+  $display_xref_sth->bind_columns(\$gene_id, \$transcript_id, \$p, \$xref_id, \$type, \$label);
+  while($display_xref_sth->fetch()){
+			if($gene_id != $last_gene){
+					$last_gene = $gene_id;
+			} 
+			if($type ne "Gene"){
+					if(!defined($seen_transcript{$transcript_id})){ # not seen yet so its the best
+							$update_tran_sth->execute($xref_id+$xref_offset, $transcript_id);
+					}
+					$seen_transcript{$transcript_id} = $xref_id+$xref_offset;
+					$transcript_count++;
+			}
+  }
+	
+  $display_xref_sth->finish;
+  $update_gene_sth->finish;
+  $update_tran_sth->finish;
+	
+  #
+  # reset the status to DUMP_OUT fro thise that where ignored for the display_xref;
+  #
+	
+  my $reset_status_sth = $self->xref->dbc->prepare('UPDATE object_xref SET ox_status = "DUMP_OUT" where ox_status = "NO_DISPLAY"');
+  $reset_status_sth->execute();
+  $reset_status_sth->finish;
+	
+  $sth = $self->xref->dbc->prepare("drop table display_xref_prioritys");
+  $sth->execute || die "Could not drop temp table display_xref_prioritys\n";
+  $sth->finish;  
+	
+	# also drop the gene_display_xref_prioritys
+	$sth = $self->xref->dbc->prepare("drop table gene_display_xref_prioritys");
+  $sth->execute || die "Could not drop temp table display_xref_prioritys\n";
+  $sth->finish;  
+
+	print "Updated $transcript_count display_xrefs for FlyBase transcripts\n" if($self->verbose);
 }
 
 sub build_genes_to_transcripts {
@@ -400,6 +405,7 @@ sub build_genes_to_transcripts {
   }
 
 }
+
 sub load_translation_to_transcript{
   my ($self) = @_;
 
@@ -413,27 +419,6 @@ sub load_translation_to_transcript{
     $translation_to_transcript{$translation_id} = $transcript_id;
     $transcript_to_translation{$transcript_id} = $translation_id if ($translation_id);
   }
-}
-
-sub gene_description_sources {
-  return (
-          "FlyBaseName_gene",
-#          "gadfly_gene_cgid",
-          "FlyBaseCGID_gene",
-         );
-}
-
-sub transcript_display_xref_sources {
-
-  my @list = qw(FlyBaseName_transcript FlyBaseCGID_transcript);
-
- # gadfly_transcript_cgid flybase_annotation_id
-
-  my %ignore;
-  $ignore{"EntrezGene"}= 'FROM:RefSeq_[pd][en][pa].*_predicted';
-
-  return [\@list,\%ignore];
-
 }
 
 1;
