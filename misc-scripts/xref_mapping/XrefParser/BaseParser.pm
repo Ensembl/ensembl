@@ -653,11 +653,11 @@ sub fetch_files {
       if ( -e $file_path ) { unlink($file_path) }
 
       if ($verbose) {
-        printf( "Connecting to FTP host '%s' for file '%s' \n",
-                $uri->host(), $file_path );
+        printf( "Connecting to FTP host '%s' for file '%s' (from path %s)\n",
+                $uri->host(), $file_path, $uri->path() );
       }
 
-      my $ftp = Net::FTP->new( $uri->host(), 'Debug' => 0 );
+      my $ftp = Net::FTP->new( $uri->host(), 'Debug' => 0,  Passive => 1 );
       if ( !defined($ftp) ) {
         printf( "==> Can not open FTP connection: %s\n", $@ );
         return ();
@@ -2065,8 +2065,8 @@ sub add_synonym{
     $add_synonym_sth =  $dbi->prepare("INSERT INTO synonym VALUES(?,?)");
   }
 
-    $add_synonym_sth->execute( $xref_id, $syn )
-      or croak( $dbi->errstr() . "\n $xref_id\n $syn\n" );
+    $add_synonym_sth->execute( $xref_id, $dbi->quote($syn) )
+      or croak( $dbi->errstr() . "\n $xref_id\n " . $dbi->quote($syn) . "\n" );
 
   return;
 }
