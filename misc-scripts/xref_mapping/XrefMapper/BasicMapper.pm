@@ -156,9 +156,8 @@ sub xref_latest_status {
   my $verbose = shift || 0;
 
   my $sth = $self->xref->dbc->prepare("select id, status, date from process_status order by id");
-  
+
   $sth->execute();
-#  my ($xref_id, $acc);
   my ($id, $status, $date);
   $sth->bind_columns(\$id, \$status,\$date);
   while($sth->fetch){
@@ -172,7 +171,7 @@ sub get_meta_value {
   my ($self, $key) = @_;
 
   my $sth = $self->xref->dbc->prepare('select meta_value from meta where meta_key like "'.$key.'" order by meta_id');
-  
+
   $sth->execute();
   my $value;
   $sth->bind_columns(\$value);
@@ -201,12 +200,11 @@ sub process_file {
   
   open my $fh, "<", $file or croak ("\nCannot open input file '$file':\n $!\n");
   while( my $line = <$fh> ) {
-    
+
     chomp($line);
     next if $line =~ /^#/;
     next if !$line;
-    
-    #  print $line."\n";
+
     my ($key, $value) = split("=",$line);
     if($key eq "species"){
       $type = "species";
@@ -227,7 +225,7 @@ sub process_file {
     elsif($type eq "farm"){
       $farm_hash{lc($key)} = $value;
     }
-  }  
+  }
   close $fh or croak "Can't close file";
 
   my $value = $species_hash{'species'};
@@ -237,7 +235,7 @@ sub process_file {
     print STDERR "\'$value\' is not a recognised species - please use full species name (e.g. homo_sapiens) in $file\n";
     exit(1);
   }
-    
+
   my $use_basic = 0;
   my $mapper;
   my $module;
@@ -264,11 +262,11 @@ sub process_file {
 	$use_basic = 1;
       }
     } else { croak "$@";}
-      
+
   } else{
     $module = $value;
   }
-  
+
   if ($use_basic) {
 	if(defined($verbose) and $verbose) {
 		my $warning_msg = "Did not find a specific mapping module XrefMapper::$value ";
@@ -281,7 +279,7 @@ sub process_file {
         require XrefMapper::BasicMapper;
         $module = "BasicMapper";
   }
-  
+
   $mapper = "XrefMapper::$module"->new();
 
   if(defined($farm_hash{'queue'})){
@@ -290,7 +288,7 @@ sub process_file {
   if(defined($farm_hash{'exonerate'})){
     $mapper->exonerate($farm_hash{'exonerate'});
   }
-  
+
 
   if(defined($xref_hash{host}) and (!defined($no_xref))){
     my ($host, $user, $dbname, $pass, $port);
@@ -309,14 +307,14 @@ sub process_file {
     else{
       $port = 3306;
     }
-    
+
     $xref = new XrefMapper::db(-host => $host,
 			       -port => $port,
 			       -user => $user,
 			       -pass => $pass,
 			       -group   => 'core',
 			       -dbname => $dbname);
-    
+
     $mapper->xref($xref);
     $mapper->add_meta_pair("xref", $host.":".$dbname);
     if(defined($xref_hash{'dir'})){
@@ -626,33 +624,36 @@ LRG
 
 
   $self->update_process_status("alt_alleles_added");
-#  my $sth_stat = $self->xref->dbc->prepare("insert into process_status (status, date) values('alt_alleles_added',now())");
-#  $sth_stat->execute();
-#  $sth_stat->finish;
   return;
   
 }
 
 
 #
-# official naming
+# Default behaviour is not to do the offical naming
+# Overload this method in the species file returning the
+# official database name to do so. 
+# (ie, human-> HGNC, mouse ->MGI, zebrafisf -> ZFIN_ID)
 #
-
 sub get_official_name {
   return;
 }
 
 
 
-
-
+#
+# Biomart insists that a source is linked to only one ensembl
+# object type (Gene, Transcript, Translation). So biomart_fix
+# will move $dbnmae entry for type1 to type 2
+# i.e. move all HGNC from transcripts to Genes.
+#
 sub biomart_fix{
   my ($self, $db_name, $type1, $type2, $verbose) = @_;
   my $xref_dbc = $self->xref->dbc;
 
   print "$db_name is associated with both $type1 and $type2 object types\n" if(defined($verbose));
   print "$db_name moved to Gene level.\n" if(!defined($verbose));
-  
+
   my $to;
   my $from;
   my $to_id;
@@ -719,7 +720,7 @@ EOF2
             object_xref.ox_status = "DUMP_OUT"  AND
 	      source.name = "$db_name";
 EOF3
-    
+
   $result = $xref_dbc->do($sql);
   }
 #  print "\n$sql\n";
@@ -729,9 +730,14 @@ EOF3
   DELETE FROM dependent_xref WHERE object_xref_id NOT IN 
    (SELECT object_xref_id FROM object_xref);
 EOF4
-  return;      
+  return;
 }
 
+
+#
+# This sub finds which source lie on multiple ensembl obejct types
+# and calls biomart_fix to fix this.
+#
 sub biomart_testing{
   my ($self) = @_;
 
@@ -741,7 +747,7 @@ sub biomart_testing{
   my $again = 1;
   while ($again){
     $again = 0;
-    
+
     my $sth = $self->xref->dbc->prepare($sql);
     $sth->execute();
     my ($type, $count, $name);
@@ -761,13 +767,13 @@ sub biomart_testing{
   }
 
   $self->update_process_status('biomart_test_finished');
-#  my $sth_stat = $self->xref->dbc->prepare("insert into process_status (status, date) values('biomart_test_finished',now())");
-#  $sth_stat->execute();
-#  $sth_stat->finish;
   return;
 }
-  
 
+#
+# Similar to above but just reports the problems.
+# It does not fix them
+#
 
 sub biomart_test{
   my ($self) = @_;
@@ -813,46 +819,6 @@ sub filter_by_regexp {
 
 }
 
-
-#
-# Cannot find any calls to this so commented it out.
-#
-#sub get_official_synonyms{
-#  my $self = shift;
-#  my %hgnc_syns;
-#  my %seen;          # can be in more than one for each type of hgnc.
-
-#  my $dbname = $self->get_official_name();
-
-#  my $sql = (<<"SYN");
-#SELECT  x.accession, x.label, sy.synonym 
-#  FROM xref x, source so, synonym sy
-#    WHERE x.xref_id = sy.xref_id
-#      AND so.source_id = x.source_id
-#      AND so.name like "$dbname"
-#SYN
-
-#  my $sth = $self->xref->dbc->prepare($sql);    
-
-#  $sth->execute;
-#  my ($acc, $label, $syn);
-#  $sth->bind_columns(\$acc, \$label, \$syn);
-
-#  my $count = 0;
-
-#  while($sth->fetch){
-#    if(!defined($seen{$acc.":".$syn})){
-#      push @{$hgnc_syns{$acc}}, $syn;
-#      push @{$hgnc_syns{$label}}, $syn;
-#      $count++;
-#    }
-#    $seen{$acc.":".$syn} = 1;
-#  }
-#  $sth->finish;
-
-#  return \%hgnc_syns;
-
-#}
 
 sub get_species_id_from_species_name{
   my ($self,$species) = @_;
@@ -964,9 +930,6 @@ sub revert_to_parsing_finished{
 
   $self->update_process_status('parsing_finished');
 
-#  my $sth_stat = $self->xref->dbc->prepare("insert into process_status (status, date) values('parsing_finished',now())");
-#  $sth_stat->execute();
-#  $sth_stat->finish;    
   return;
 }
 
@@ -982,9 +945,6 @@ sub revert_to_mapping_finished{
   $sth->execute(); 
 
   $self->update_process_status('mapping_finished');
-#  my $sth_stat = $self->xref->dbc->prepare("insert into process_status (status, date) values('mapping_finished',now())");
-#  $sth_stat->execute();
-#  $sth_stat->finish;    
   return;
 }
 
@@ -992,7 +952,6 @@ sub revert_to_mapping_finished{
 # In case we have alt alleles with xefs, these will be direct ones
 # we need to move all xrefs on to the reference
 #
-
 
 sub get_alt_allele_hashes{
   my $self= shift;
@@ -1022,7 +981,6 @@ sub get_alt_allele_hashes{
 }
 
 
-#sub move_xrefs_from_alt_allele_to_reference {
 sub process_alt_alleles{
   my $self = shift;
 
@@ -1201,9 +1159,6 @@ INI
   }
 
   $self->update_process_status('alt_alleles_processed');
-#  my $sth_stat = $self->xref->dbc->prepare("insert into process_status (status, date) values('alt_alleles_processed',now())");
-#  $sth_stat->execute();
-#  $sth_stat->finish;
   return;
 }
 
@@ -1239,9 +1194,6 @@ sub source_defined_move{
     croak "Problems found after source_defined_move\n";
   }
   $self->update_process_status('source_level_move_finished');
-#  my $sth_stat = $self->xref->dbc->prepare("insert into process_status (status, date) values('source_level_move_finished',now())");
-#  $sth_stat->execute();
-#  $sth_stat->finish;
   return;
 }
 
