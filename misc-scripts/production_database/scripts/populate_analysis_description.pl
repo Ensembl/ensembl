@@ -26,28 +26,28 @@ my $dumppath;
 my $dbname_file;
 
 # Do command line parsing.
-if ( !GetOptions( 'mhost|mh=s'     => \$mhost,
-                  'mport|mP=i'     => \$mport,
-                  'muser|mu=s'     => \$muser,
-                  'mpass|mp=s'     => \$mpass,
-                  'mdatabase|md=s' => \$mdbname,
-                  'host|h=s'       => \$host,
-                  'port|P=i'       => \$port,
-                  'user|u=s'       => \$user,
-                  'pass|p=s'       => \$pass,
-                  'database|d=s'   => \$dbname,
-                  'pattern=s'      => \$dbpattern,
-                  'verbose|v!'     => \$verbose,
-                  'core=i'         => \$core,
-                  'dumppath|dp=s'       => \$dumppath, 
-                  'dbname_file|dbf=s' => \$dbname_file)
+if ( !GetOptions( 'mhost|mh=s'        => \$mhost,
+                  'mport|mP=i'        => \$mport,
+                  'muser|mu=s'        => \$muser,
+                  'mpass|mp=s'        => \$mpass,
+                  'mdatabase|md=s'    => \$mdbname,
+                  'host|h=s'          => \$host,
+                  'port|P=i'          => \$port,
+                  'user|u=s'          => \$user,
+                  'pass|p=s'          => \$pass,
+                  'database|d=s'      => \$dbname,
+                  'pattern=s'         => \$dbpattern,
+                  'verbose|v!'        => \$verbose,
+                  'core=i'            => \$core,
+                  'dumppath|dp=s'     => \$dumppath,
+                  'dbname_file|dbf=s' => \$dbname_file )
      || !(
            defined($host)
         && defined($user)
         && defined($pass)
         && ( defined($dbname) || defined($dbpattern) || defined($core) )
         && defined($mhost)
-        && defined($muser) 
+        && defined($muser)
         && defined($dumppath) ) )
 {
   my $indent = ' ' x length($0);
@@ -76,7 +76,8 @@ Usage:
                       e.g. --database="homo_sapiens_rnaseq_62_37g"
                       or   --database="%core_62%"
 
-  -dp / --dumppath    Dumpout path. Dump out table into the specified directory path
+  -dp / --dumppath    Dump path.
+                      Dump out table into the specified directory path.
 
   --pattern           User database by Perl regular expression
                       e.g. --pattern="^homo.*(rnaseq|vega)_62"
@@ -87,13 +88,16 @@ Usage:
                       Specifying --core=62 is equivalent to using
                       --pattern="(cdna|core|otherfeatures|rnaseq|vega)_62"
 
-  -dbf /              Override dbnames stored in the production database with
-  --dbname_file       dbnames in the specified file. The file should have the following 
-                      tab delimited data on each line:
-                      - db name stored in 'full_db_name' column 'db_list' 
-                        table in the production database
-		      - new db name to use
-  
+  -dbf / --dbname_file  Override database names stored in the production
+                        database with database names in the specified
+                        file.  The file should have the following
+                        tab/space delimited data on each line:
+
+                        - database name stored in 'full_db_name' column
+                          'db_list' table in the production database.
+
+                        - new database name to use.
+
   -mh / --mhost       Production database server host
                       (optional, default is 'ens-staging1')
   -mP / --mport       Production database server port
@@ -128,18 +132,22 @@ if ( defined($dbname) && defined($dbpattern) ) {
 
 my %dbname_override;
 
-if ($dbname_file) {
-  if( ! -r $dbname_file ) {
-    die ( "File $dbname_file not readable" );
-  }
-  open( DBNAMEF, "<$dbname_file" );
-  my @temp_array;
-  while( my $line = <DBNAMEF> ) {
-      chomp $line;
-      @temp_array = split(/\t/,$line);
-      $dbname_override{$temp_array[0]} = $temp_array[1];
+if ( defined($dbname_file) ) {
+  if ( !-r $dbname_file ) {
+    die(
+       sprintf( "File '%s' not found or not readable", $dbname_file ) );
   }
 
+  open( DBNAMEF, "<$dbname_file" );
+
+  my @temp_array;
+  while ( my $line = <DBNAMEF> ) {
+    chomp $line;
+    @temp_array = split( /\s+/, $line );
+    $dbname_override{ $temp_array[0] } = $temp_array[1];
+  }
+
+  close(DBNAMEF);
 }
 
 
@@ -165,7 +173,7 @@ my %data;
 
   while ( $sth->fetch() ) {
     if ($dbname_override{$full_db_name}) {
-	$full_db_name = $dbname_override{$full_db_name};
+        $full_db_name = $dbname_override{$full_db_name};
     }
     $data{$full_db_name}{$logic_name} = { %{ \%hash } };
   }
@@ -218,33 +226,33 @@ my %data;
     $test_sth->execute($dbname);
     my ($table_exists) = $test_sth->fetchrow_array();
     if ($table_exists) {
-      	my $file_path = $dumppath . "/" . $dbname . 'analysis_description.sql';
-      	my $file_exists = 0;
-	my $response;
-	if (-e $file_path) {
-        	print("file $file_path already exists, overwrite? (y/n)\n");
-		$file_exists = 1;
-		$response = <>;
-		chomp $response;
-	}
-	if ( !$file_exists or $response eq 'y') {
-		open(BKUPFILE, ">$file_path") or die("Failed to open file $file_path for writing\n");   
-      		my $cmd = "mysqldump -h $host -u $user -p$pass $dbname analysis_description";
-      		my $result = `$cmd`;
-      		print BKUPFILE $result;
-      		close BKUPFILE;
-      		if ($result !~ /Dump completed/) { 
-	  		print("back up failed, check file $file_path for details\n");
-	  		next;
-      		} else {
-	  		print("$full_table_name dumped out to file $file_path\n");
-      		}
-	} else {
+        my $file_path = $dumppath . "/" . $dbname . 'analysis_description.sql';
+        my $file_exists = 0;
+        my $response;
+        if (-e $file_path) {
+                print("file $file_path already exists, overwrite? (y/n)\n");
+                $file_exists = 1;
+                $response = <>;
+                chomp $response;
+        }
+        if ( !$file_exists or $response eq 'y') {
+                open(BKUPFILE, ">$file_path") or die("Failed to open file $file_path for writing\n");   
+                my $cmd = "mysqldump -h $host -u $user -p$pass $dbname analysis_description";
+                my $result = `$cmd`;
+                print BKUPFILE $result;
+                close BKUPFILE;
+                if ($result !~ /Dump completed/) { 
+                        print("back up failed, check file $file_path for details\n");
+                        next;
+                } else {
+                        print("$full_table_name dumped out to file $file_path\n");
+                }
+        } else {
           print("skipping update for table analysis_description\n");
-	  next; 
-	}
+          next; 
+        }
       } else {
-	  print("table analysis_description does not exist in database $dbname\n");
+          print("table analysis_description does not exist in database $dbname\n");
           next;
       }
 
