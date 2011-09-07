@@ -13,6 +13,7 @@ my $verbose;
 # The object types we'd like to parse.
 our %object_types = ( gene       => 1,
                       mRNA       => 1,
+											pre_miRNA  => 1,
                       miRNA      => 1,
                       ncRNA      => 1,
                       protein    => 1,
@@ -70,11 +71,26 @@ our %source_name_map = ( 'FlyBase'    => 'flybase_annotation_id',
                          'GB'         => 'EMBL',
                          'GB_protein' => 'protein_id',
                          'INTERPRO'   => 'Interpro',
-                         'UniProt/Swiss-Prot' => 'Uniprot/SWISSPROT',
-                         'UniProt/TrEMBL'     => 'Uniprot/SPTREMBL',
-                         'bdgpinsituexpr'     => 'bdgpinsituexpr',
-                         'dedb'               => 'dedb',
-                         'flygrid'            => 'FlyGrid' );
+#                         'UniProt/Swiss-Prot' => 'Uniprot/SWISSPROT',
+#                         'UniProt/TrEMBL'     => 'Uniprot/SPTREMBL',
+                         'bdgpinsituexpr'     => 'BDGP_insitu_expr',
+                         'dedb'               => 'DEDb',
+                         'flygrid'            => 'FlyGrid',
+												 'TF'                 => 'TransFac',
+                         'EPD'                => 'EPD',
+												 'MIR'                => 'miRBase',
+												 'MEROPS'             => 'MEROPS',
+												 'BIOGRID'            => 'BioGRID',
+												 'FlyReactome'        => 'FlyReactome',
+												 'GenomeRNAi_gene'    => 'GenomeRNAi',
+												 'INTERACTIVEFLY'     => 'InteractiveFly',
+												 'MITODROME'          => 'MitoDrome',
+												 'flyexpress'         => 'FlyExpress',
+												 'Rfam'               => 'RFAM',
+												 #'FlyAtlas'           => 'FlyAtlas',
+												 #'GCR'                => 'GPCR',
+												 #'GLEANR'             => 'GLEAN-R',
+												 );
 
 # This is for source_ids that depend on the type of 'ID' of the line.
 our %special_source_name_map = (
@@ -128,6 +144,10 @@ sub run {
   my $files       = shift;
   my $release_file   = shift;
   $verbose       = shift;
+
+	print "-------------------------\n";
+	print "FlybaseParser::run species_id $species_id\n";
+	print "-------------------------\n\n";
 
   my $data_file = @{$files}[0];
 
@@ -211,6 +231,21 @@ sub run {
       }
     }
 
+		# For the 'Alias' attributes, we split them up by commas 
+		# but we can't divide them in to key-value. So, we'll create 
+		# a fake key Alias. 
+		# Aliases will be stored as synonyms and will comprise secondary
+		# IDs from FlyBase to keep tracks of split/merged annotations.
+
+		my $alias_key = 'Alias';
+
+		if ( exists( $attributes{$alias_key} ) ) {
+				my @tmp_array = split( /,/, $attributes{$alias_key} );
+
+				$attributes{$alias_key} =\@tmp_array;
+    }
+		
+
     my $dbxref = $attributes{'Dbxref'};
 
     #-------------------------------------------------------------------
@@ -258,7 +293,7 @@ sub run {
                                    $source_id, $species_id, 'DIRECT' );
               }
               $xref_ids{$source_name}{$accession} = $xref_id;
-            }
+					}
 
             $self->add_direct_xref( $xref_id, $id, $type, '' );
           }
@@ -326,13 +361,15 @@ sub run {
         $self->get_source_id_for_source_name($source_name);
 
       my $accession = $attributes{'Name'};
+			my $description = (defined($attributes{'fullname'})) ? $attributes{'fullname'} : '';
+
       my $xref_id;
 
       if ( exists( $xref_ids{$source_name}{$accession} ) ) {
         $xref_id = $xref_ids{$source_name}{$accession};
       } else {
         $xref_id =
-          $self->add_xref( $id, undef, $accession, '', $source_id,
+          $self->add_xref( $id, undef, $accession, $description, $source_id,
                            $species_id, 'DIRECT' );
         $xref_ids{$source_name}{$accession} = $xref_id;
       }
@@ -361,18 +398,35 @@ sub run {
       }
 
       $self->add_direct_xref( $xref_id, $id, $type, '' );
-    }
+ 
 
+
+			#-------------------------------------------------------------------
+			# Now, if we have aliases for this gene/transcript/translation
+			# Store them in the external_synonym table.
+			#-------------------------------------------------------------------
+			
+			if (defined ($attributes{$alias_key})) {
+					foreach my $alias (@{$attributes{$alias_key}}) {
+							$self->add_synonym($xref_id, $alias);
+					}
+			}
+	  }
+	
   } ## end while ( defined( my $line...
   $data_io->close();
 
   alarm(0);
 
   print("FlybaseParser Summary:\n") if($verbose);
+	print("--------------------------------------------------------------\n") if($verbose);
   foreach my $label ( sort( keys(%xref_ids) ) ) {
     my $accessions = $xref_ids{$label};
     printf( "\t%-32s %6d\n", $label, scalar( keys( %{$accessions} ) ) ) if($verbose);
   }
+	print("--------------------------------------------------------------\n") if($verbose);
+
+
 
   return 0;
 } ## end sub run
