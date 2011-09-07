@@ -19,13 +19,11 @@ sub run {
 
   my $file = @{$files}[0];
   my $file_desc = @{$files}[1];
-  
-  print STDERR "GO file to parse, $file\n";
 
   #
   # Get the descriptions from the desc file.
   #
-  print STDERR "getting filehandle for description file, $file_desc\n";
+
   my $go_io = $self->get_filehandle($file_desc);
     
   if ( !defined $go_io ) {
