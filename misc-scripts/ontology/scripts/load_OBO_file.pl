@@ -185,36 +185,44 @@ sub write_term {
 
     if ( !( defined($term->{'accession'}) && defined($term->{'name'}) ) )
     {
-	print "Null value encountered: term accession " . $term->{'accession'}." term name ". $term->{'name'} . "\n";
-	exit;
-    }
-
-    $sth->bind_param( 1, $namespaces->{ $term->{'namespace'} }{'id'},
-                      SQL_INTEGER );
-    $sth->bind_param( 2, $term_subsets,         SQL_VARCHAR );
-    $sth->bind_param( 3, $term->{'accession'},  SQL_VARCHAR );
-    $sth->bind_param( 4, $term->{'name'},       SQL_VARCHAR );
-    $sth->bind_param( 5, $term->{'definition'}, SQL_VARCHAR );
-
-    $sth->execute();
-
-    if ( !defined($id) ) {
-      $id = $dbh->last_insert_id( undef, undef, 'term', 'term_id' );
+	if (! defined($term->{'accession'}) ) {
+	    $term->{'accession'} = '';
+	}
+	if (! defined($term->{'name'}) ) {
+	    $term->{'name'} = '';
+	}
+	print "Null value encountered, ommitting term: term accession " . $term->{'accession'}." term name ". $term->{'name'} . "\n";
+	#remove term
+	delete $terms->{$accession};
     } else {
-      ++$id;
+
+	$sth->bind_param( 1, $namespaces->{ $term->{'namespace'} }{'id'},
+                      SQL_INTEGER );
+	$sth->bind_param( 2, $term_subsets,         SQL_VARCHAR );
+	$sth->bind_param( 3, $term->{'accession'},  SQL_VARCHAR );
+	$sth->bind_param( 4, $term->{'name'},       SQL_VARCHAR );
+	$sth->bind_param( 5, $term->{'definition'}, SQL_VARCHAR );
+
+	$sth->execute();
+
+	if ( !defined($id) ) {
+	    $id = $dbh->last_insert_id( undef, undef, 'term', 'term_id' );
+	} else {
+	    ++$id;
+	}
+	$term->{'id'} = $id;
+
+	foreach my $syn ( @{ $term->{'synonyms'} } ) {
+	    $syn_sth->bind_param( 1, $id,  SQL_INTEGER );
+	    $syn_sth->bind_param( 2, $syn, SQL_VARCHAR );
+
+	    $syn_sth->execute();
+
+	    ++$syn_count;
+	}
+
+	++$count;
     }
-    $term->{'id'} = $id;
-
-    foreach my $syn ( @{ $term->{'synonyms'} } ) {
-      $syn_sth->bind_param( 1, $id,  SQL_INTEGER );
-      $syn_sth->bind_param( 2, $syn, SQL_VARCHAR );
-
-      $syn_sth->execute();
-
-      ++$syn_count;
-    }
-
-    ++$count;
   } ## end foreach my $accession ( sort...)
   alarm(0);
 
