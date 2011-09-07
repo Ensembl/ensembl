@@ -264,15 +264,6 @@ sub create_xrefs {
 
       # Don't add SGD Xrefs, as they are mapped directly from SGD ftp site
 
-      #foreach my $ll (@SGDGeneIDline) {
-	#my %dep;
-	#$dep{SOURCE_ID} = $dependent_sources{"SGD"} 
-        #  || die( 'No source for SGD!' );
-	#$dep{LINKAGE_SOURCE_ID} = $source_id;
-	#$dep{ACCESSION} = $ll;
-	#push @{$xref->{DEPENDENT_XREFS}}, \%dep;
-      #}
-      
       # Refseq's do not tell whether the mim is for the gene of morbid so ignore for now.
 
       push @xrefs, $xref;
