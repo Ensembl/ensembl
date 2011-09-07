@@ -239,7 +239,8 @@ EXT
   }
   $sth->finish;
   if($ext_loaded_count == 0){
-    die "No point continuing no external references there\n";
+    warn "No point continuing no external references there\n";
+    return 1;
   }
 
   my $ignore_count = 0;
