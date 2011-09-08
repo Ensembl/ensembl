@@ -64,8 +64,7 @@ About:
 
   Given at least a release number, this program will discover new
   databases on the staging servers and add them to the list of databases
-  in the production database on the master server. It will also delete any old
-  databases from the list up to the previous realease.
+  in the production database on the master server.
 
   The default options are set to minimize hassle for the Ensembl release
   coordinator who needs to run this script during the Ensembl production
@@ -126,27 +125,11 @@ my %databases;
 my %existing_databases;
 my %found_databases;
 
-
-
 {
   my $dsn = sprintf( 'DBI:mysql:host=%s;port=%d;database=%s',
                      $master, $mport, 'ensembl_production' );
-  my $dbh = DBI->connect( $dsn, $dbwuser, $dbwpass,
+  my $dbh = DBI->connect( $dsn, $dbuser, $dbpass,
                           { 'PrintError' => 1, 'RaiseError' => 1 } );
-
-  {
-      my $previous_release = $release - 1;
-      my ($old_db_count) = $dbh->selectrow_array("SELECT COUNT(db_id) FROM db WHERE db_release < $previous_release");
-      if ($old_db_count > 0) {
-	  print "Delete entries from db for releases older than ". $previous_release ."? (y/n)\n";
-	  my $response = <>;
-	  chomp $response;
-	  if ($response eq 'y'){
-	      $dbh->do("DELETE FROM db WHERE db_release < $previous_release");
-	  }
-      }
-  }
-
 
   {
     my $statement =
@@ -238,7 +221,7 @@ foreach my $server (@servers) {
                        'db_assembly' => $db_assembly,
                        'db_suffix'   => $db_suffix,
                        'db_host'     => $server };
-    }
+    } ## end while ( $sth->fetch() )
   } ## end foreach my $species ( keys(...))
 
   $dbh->disconnect();
@@ -247,7 +230,6 @@ foreach my $server (@servers) {
 if ( scalar( keys(%databases) ) == 0 ) {
   printf( "Did not find any new databases for release %s\n", $release );
 } else {
-
   my $dsn = sprintf( 'DBI:mysql:host=%s;port=%d;database=%s',
                      $master, $mport, 'ensembl_production' );
   my $dbh = DBI->connect( $dsn, $dbwuser, $dbwpass,
@@ -293,4 +275,8 @@ if ( scalar( keys(%existing_databases) ) !=
       printf( "\t%s\n", $db_name );
     }
   }
+  print("\n");
+  print(  "If these are really properly gone, "
+        . "please remove the corresponding\n"
+        . "entries from the 'db' table of the production database.\n" );
 }
