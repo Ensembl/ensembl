@@ -177,16 +177,12 @@ foreach my $species_section ( sort( $config->GroupMembers('species') ) )
        split( /\,/, $config->val( $source_section, 'dependent', '' ) );
 
     foreach my $dep (@dependents){
-      my $dep_name = "source $dep";
-      print "# adding source dependency that $source_section needs $dep_name loaded first\n";
-      if ( !exists( $source_ids{$dep_name} ) ) {
-	die( sprintf( "Can not find dependent source section '[%s]'\n"
-                      . "while reading species section '[%s]'\n",
-		      $dep, $species_section ) );
-      }
-      print "INSERT INTO dependent_source (master_source_id, dependent_source_id)\n";
-      printf( "VALUES (%d, %d);\n\n", $source_ids{$source_section}, $source_ids{$dep_name});
+      print "# adding source dependency that $source_section needs $dep loaded first\n";
+      print "INSERT IGNORE INTO dependent_source (master_source_id, dependent_name)\n";
+      printf( "VALUES (%d, '%s');\n\n", $source_ids{$source_section}, $dep);
     }
 
   } ## end foreach my $source_name ( sort...)
 } ## end foreach my $species_section...
+
+print "# FINISEHD SUCCESSFULLY\n"

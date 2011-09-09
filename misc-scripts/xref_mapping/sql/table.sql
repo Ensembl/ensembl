@@ -77,9 +77,9 @@ CREATE TABLE synonym (
 
 CREATE TABLE dependent_source (
   master_source_id           int unsigned not null,
-  dependent_source_id        int unsigned not null,
+  dependent_name             varchar(255) not null,
 
-  PRIMARY KEY (master_source_id, dependent_source_id)
+  PRIMARY KEY (master_source_id, dependent_name)
 ) COLLATE=latin1_swedish_ci TYPE=InnoDB;
 
 ################################################################################
