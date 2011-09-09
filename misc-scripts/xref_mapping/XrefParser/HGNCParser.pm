@@ -64,7 +64,11 @@ sub run {
       $self->add_to_direct_xrefs($lrg_stable_id, 'gene', $acc, $empty, $symbol,
 						  $name, $empty, $source_id, $species_id);
 
-      $self->add_synonyms_for_hgnc($source_id, $acc, $species_id, $previous_symbols, $synonyms);
+      $self->add_synonyms_for_hgnc( {source_id  => $source_id,
+				     name       => $acc,
+				     species_id => $species_id,
+				     dead       => $previous_symbols,
+				     alias      => $synonyms});
       $name_count{$type}++;
     }
 
@@ -81,8 +85,11 @@ sub run {
       $self->add_to_direct_xrefs($id,'gene', $acc, $empty,
 						  $symbol, $name, $empty,
 						  $source_id, $species_id);
-
-      $self->add_synonyms_for_hgnc($source_id, $acc, $species_id, $previous_symbols, $synonyms);
+      $self->add_synonyms_for_hgnc( {source_id  => $source_id,
+				     name       => $acc,
+				     species_id => $species_id,
+				     dead       => $previous_symbols,
+				     alias      => $synonyms});
 
     }
 
@@ -100,7 +107,11 @@ sub run {
 	    $self->add_to_xrefs($xref_id, $acc, $empty, $symbol, $name, $empty,
 						 $source_id, $species_id);
 	  }
-	  $self->add_synonyms_for_hgnc($source_id, $acc, $species_id, $previous_symbols, $synonyms);
+	  $self->add_synonyms_for_hgnc( {source_id  => $source_id,
+					 name       => $acc,
+					 species_id => $species_id,
+					 dead       => $previous_symbols,
+					 alias      => $synonyms});
 	}
       }
     }
@@ -119,7 +130,11 @@ sub run {
 	  $self->add_to_xrefs($xref_id, $acc, $empty, $symbol, $name, $empty,
 					       $source_id, $species_id);
 	}
-	$self->add_synonyms_for_hgnc($source_id, $acc, $species_id, $previous_symbols, $synonyms);
+	  $self->add_synonyms_for_hgnc( {source_id  => $source_id,
+					 name       => $acc,
+					 species_id => $species_id,
+					 dead       => $previous_symbols,
+					 alias      => $synonyms});
       }
     }
 
