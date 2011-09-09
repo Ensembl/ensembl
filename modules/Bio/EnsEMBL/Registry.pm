@@ -1467,6 +1467,7 @@ sub load_registry_from_db {
   }
 
   for my $db (@dbnames) {
+
     if ( $db =~ /^(\w+_collection_\w+(?:_\d+)?)_((\d+)_\w+)/ )
     {    # NEEDS TO BE FIRST TO PICK UP COLLECTION DBS
       if ( $3 eq $software_version ) {
@@ -1482,10 +1483,8 @@ sub load_registry_from_db {
       if ( $2 eq $software_version ) {
         $temp{$1} = $2;
       }
-    } elsif ( $db =~ /^(ensembl_ontology)_(\d+)/ ) {
-      if ( $2 eq $software_version ) {
-        $ontology_version = $2;
-      }
+    } elsif ( $db =~ /^(ensembl[genomes]*_ontology)_(\d+)_\d+/ ) {
+	$ontology_version = $2;
     } elsif ( $db =~ /^([a-z]+_[a-z0-9]+_[a-z]+(?:_\d+)?)_(\d+)_(\w+)/ )
     {
       # Species specific databases (core, cdna, vega etc.)
@@ -1914,7 +1913,7 @@ sub load_registry_from_db {
     require Bio::EnsEMBL::DBSQL::OntologyDBAdaptor;
 
     my $ontology_db =
-      sprintf( "ensembl_ontology_%d", $ontology_version );
+      sprintf( "ensemblgenomes_ontology_%d_%d", $ontology_version, $software_version );
 
     my $dba = Bio::EnsEMBL::DBSQL::OntologyDBAdaptor->new(
       '-species' => 'multi'.$species_suffix,
