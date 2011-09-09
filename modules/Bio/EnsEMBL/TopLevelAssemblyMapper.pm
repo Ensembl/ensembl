@@ -67,6 +67,7 @@ package Bio::EnsEMBL::TopLevelAssemblyMapper;
 use Bio::EnsEMBL::Utils::Exception qw(throw);
 use Bio::EnsEMBL::Mapper;
 use Bio::EnsEMBL::CoordSystem;
+use Scalar::Util qw(weaken);
 
 =head2 new
 
@@ -106,16 +107,18 @@ sub new {
   my $cs_adaptor    = $adaptor->db()->get_CoordSystemAdaptor();
   my $coord_systems = $cs_adaptor->fetch_all();
 
-  return bless {'coord_systems' => $coord_systems,
-                'adaptor'       => $adaptor,
+  my $self = bless {'coord_systems' => $coord_systems,
                 'toplevel_cs'   => $toplevel_cs,
                 'other_cs'      => $other_cs}, $class;
+
+  $self->adaptor($adaptor);
+  return $self;
 }
 
 sub adaptor {
   my $self = shift;
 
-  $self->{'adaptor'} = shift if(@_);
+  weaken($self->{'adaptor'} = shift) if(@_);
 
   return $self->{'adaptor'};
 }
@@ -164,7 +167,7 @@ sub map {
   my $mapper      = $self->{'mapper'};
   my $toplevel_cs = $self->{'toplevel_cs'};
   my $other_cs    = $self->{'other_cs'};
-  my $adaptor     = $self->{'adaptor'};
+  my $adaptor     = $self->adaptor;
 
   if($frm_cs != $other_cs && !$frm_cs->equals($other_cs)) {
     throw("Coordinate system " . $frm_cs->name . " " . $frm_cs->version .
@@ -303,7 +306,7 @@ sub _list {
   my $mapper      = $self->{'mapper'};
   my $toplevel_cs = $self->{'toplevel_cs'};
   my $other_cs    = $self->{'other_cs'};
-  my $adaptor     = $self->{'adaptor'};
+  my $adaptor     = $self->adaptor;
 
   if($frm_cs->is_top_level()) {
     throw("The toplevel CoordSystem can only be mapped TO, not FROM.");

@@ -47,7 +47,7 @@ package Bio::EnsEMBL::Storable;
 
 use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
-
+use Scalar::Util qw(weaken);
 
 =head2 new
 
@@ -74,7 +74,9 @@ sub new {
     }
   }
 
-  return bless({'dbID' => $dbID, 'adaptor' => $adaptor}, $class);
+  my $self = bless({'dbID' => $dbID}, $class);
+  $self->adaptor($adaptor);
+  return $self;
 }
 
 
@@ -118,7 +120,7 @@ sub adaptor {
     if($ad && (!ref($ad) || !$ad->isa('Bio::EnsEMBL::DBSQL::BaseAdaptor'))) {
       throw('Adaptor argument must be a Bio::EnsEMBL::DBSQL::BaseAdaptor');
     }
-    $self->{'adaptor'} = $ad;
+    weaken($self->{'adaptor'} = $ad);
   }
 
   return $self->{'adaptor'}
@@ -233,6 +235,5 @@ sub get_all_DAS_Features{
 
   return (\%das_features, \%das_styles, \%das_segments);
 }
-
 
 1;

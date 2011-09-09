@@ -35,6 +35,7 @@ package Bio::EnsEMBL::DnaPepAlignFeature;
 use strict;
 
 use Bio::EnsEMBL::BaseAlignFeature;
+use Scalar::Util qw(weaken isweak);
 
 use vars qw(@ISA);
 
@@ -62,8 +63,9 @@ use vars qw(@ISA);
 
 sub new_fast {
   my ($class, $hashref) = @_;
-
-  return bless $hashref, $class;
+  my $self = bless $hashref, $class;
+  weaken($self->{adaptor})  if ( ! isweak($self->{adaptor}) );
+  return $self;
 }
 
 

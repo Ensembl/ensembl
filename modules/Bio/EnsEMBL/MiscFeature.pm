@@ -109,8 +109,8 @@ use strict;
 use warnings;
 
 use Bio::EnsEMBL::Feature;
-
 use Bio::EnsEMBL::Utils::Exception qw(throw);
+use Scalar::Util qw(weaken isweak);
 
 use vars qw(@ISA);
 
@@ -178,7 +178,9 @@ sub new_fast {
 
   $hashref->{'attributes'} ||= [];
 
-  return bless($hashref, $class);
+  my $self = bless $hashref, $class;
+  weaken($self->{adaptor})  if ( ! isweak($self->{adaptor}) );
+  return $self;
 }
 
 

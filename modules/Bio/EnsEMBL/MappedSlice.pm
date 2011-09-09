@@ -181,7 +181,7 @@ sub new {
   # need to weaken reference to prevent circular reference
   weaken($self->{'container'} = $container);
 
-  $self->{'adaptor'} = $adaptor if (defined($adaptor));
+  $self->adaptor($adaptor) if (defined($adaptor));
   $self->{'name'} = $name if (defined($name));
 
   $self->{'slice_mapper_pairs'} = [];
@@ -275,7 +275,7 @@ sub get_all_Slice_Mapper_pairs {
 
 sub adaptor {
   my $self = shift;
-  $self->{'adaptor'} = shift if (@_);
+  weaken($self->{'adaptor'} = shift) if (@_);
   return $self->{'adaptor'};
 }
 

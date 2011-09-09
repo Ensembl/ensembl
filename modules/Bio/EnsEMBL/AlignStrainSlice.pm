@@ -296,7 +296,7 @@ sub get_all_Slices {
 					  -START   => $self->Slice->{'start'},
 					  -END     => $self->Slice->{'end'},
 					  -STRAND  => $self->Slice->{'strand'},
-					  -ADAPTOR => $self->Slice->{'adaptor'},
+					  -ADAPTOR => $self->Slice->adaptor(),
 					  -SEQ    => $self->Slice->{'seq'},
 					  -SEQ_REGION_NAME => $self->Slice->{'seq_region_name'},
 					  -SEQ_REGION_LENGTH => $self->Slice->{'seq_region_length'},

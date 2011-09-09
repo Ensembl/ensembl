@@ -62,7 +62,6 @@ sub new {
 
   $class = ref( $class ) ||$class;
   my $self = bless( {
-		     'adaptor'  => $adaptor,
 		     'slice'    => $slice,
 		     'start'    => $start,
 		     'end'      => $end,
@@ -71,6 +70,7 @@ sub new {
          'strand'   => 0
 		    }, $class );
 
+  $self->adaptor($adaptor);
   return $self;
 }
 

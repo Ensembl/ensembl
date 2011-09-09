@@ -129,7 +129,7 @@ no warnings qw(uninitialized);
 use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 use Bio::EnsEMBL::Slice;
-
+use Scalar::Util qw(weaken);
 
 =head2 new
 
@@ -181,7 +181,7 @@ sub new {
   bless ($self, $class);
 
   # initialise
-  $self->{'adaptor'} = $adaptor;
+  $self->adaptor($adaptor);
   $self->{'old_assembly'} = $old_assembly;
   $self->{'new_assembly'} = $new_assembly;
   
@@ -407,7 +407,7 @@ sub new_to_old {
 #
 sub adaptor {
   my $self = shift;
-  $self->{'adaptor'} = shift if (@_);
+  weaken($self->{'adaptor'} = shift) if (@_);
   return $self->{'adaptor'};
 }
 

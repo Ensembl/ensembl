@@ -131,7 +131,7 @@ sub new {
     if(defined($ensembl_object_type));
   $self->{'unmapped_reason_id'} = $unmapped_reason_id 
     if(defined($unmapped_reason_id));
-  $self->{'adaptor'} = $adaptor  if(defined($adaptor));
+  $self->adaptor($adaptor)  if(defined($adaptor));
   return $self;
 }
 
@@ -227,29 +227,6 @@ sub type{
   return $self->{'type'};
 }
 
-=head2 adaptor
-
-  Arg [1]     : (optional) UnmappedObjectadaptor to be set to
-  Example     : my $adap =  $unmappedObject->adaptor."\n";
-  Description : Basic getter/setter for adaptor
-  ReturnType  : UnamppedObjectAdaptor
-  Exceptions  : none
-  Caller      : general
-  Status      : At Risk
-
-=cut
-
-sub adaptor{
-  my $self = shift;
-
-  if(@_) {
-    my $arg = shift;
-    $self->{'adaptor'} = $arg;
-  }
-
-  return $self->{'adaptor'};
-}
-
 =head2 ensembl_object_type
 
   Arg [1]     : (optional) ensembl object type to be set to
@@ -333,7 +310,7 @@ sub external_db_id{
 sub external_db_name{
   my $self = shift;
 
-  my $handle = $self->{'adaptor'};
+  my $handle = $self->adaptor;
   if(defined($handle) and defined($self->{'external_db_id'})){
     my $sth = $handle->prepare("select db_name from external_db where external_db_id = ".$self->{'external_db_id'});
     $sth->execute();
@@ -349,7 +326,7 @@ sub external_db_name{
 sub stable_id{
   my ($self) = shift;
   
-  my $handle = $self->{'adaptor'};
+  my $handle = $self->adaptor;
   if(defined($handle)){
     my $sql = "select stable_id from ".lc($self->{'ensembl_object_type'})."_stable_id where ".
       lc($self->{'ensembl_object_type'})."_id = ".

@@ -57,6 +57,7 @@ use strict;
 
 
 use Bio::EnsEMBL::ExternalData::Variation;
+use Scalar::Util qw(weaken isweak);
 
 @ISA = qw( Bio::EnsEMBL::ExternalData::Variation );
 
@@ -64,8 +65,9 @@ use Bio::EnsEMBL::ExternalData::Variation;
 sub new_fast {
   my $class = shift;
   my $hashref = shift;
-
-  return bless $hashref, $class;
+  my $self = bless $hashref, $class;
+  weaken($self->{adaptor})  if ( ! isweak($self->{adaptor}) );
+  return $self;
 }
 
 sub dbID {

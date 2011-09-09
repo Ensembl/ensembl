@@ -75,7 +75,6 @@ sub new {
   $class = ref( $class ) ||$class;
   my $self = bless( {
 		     'dbID'           => $dbID,
-		     'adaptor'        => $adaptor,
 		     'flank_marker_1' => $flank_marker_1,
 		     'flank_marker_2' => $flank_marker_2,
 		     'peak_marker'    => $peak_marker,
@@ -83,7 +82,7 @@ sub new {
 		     'lod_score'      => $lod_score,
 		     'synonyms'       => $synonyms
 		    }, $class );
-
+  $self->adaptor($adaptor);
   return $self;
 }
 

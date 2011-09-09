@@ -827,7 +827,6 @@ sub fetch_all_by_Transcript_list {
 
       my $tl =  Bio::EnsEMBL::Translation->new
         (-dbID => $tl_id,
-         -adaptor => $self,
          -seq_start => $seq_start,
          -seq_end => $seq_end,
          -start_exon => $start_exon,
@@ -836,7 +835,8 @@ sub fetch_all_by_Transcript_list {
          -version => $version,
 	 -created_date => $created_date || undef,
 	 -modified_date => $modified_date || undef);
-
+      
+      $tl->adaptor($self);
       $tr->translation($tl);
 
       push @out, $tl;

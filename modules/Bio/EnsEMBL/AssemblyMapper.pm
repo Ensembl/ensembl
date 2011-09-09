@@ -75,6 +75,7 @@ use warnings;
 
 use Bio::EnsEMBL::Mapper;
 use Bio::EnsEMBL::Utils::Exception qw(throw deprecate);
+use Scalar::Util qw(weaken);
 
 my $ASSEMBLED = 'assembled';
 my $COMPONENT = 'component';
@@ -340,7 +341,7 @@ sub fastmap {
   my $mapper  = $self->{'mapper'};
   my $asm_cs  = $self->{'asm_cs'};
   my $cmp_cs  = $self->{'cmp_cs'};
-  my $adaptor = $self->{'adaptor'};
+  my $adaptor = $self->adaptor();
   my $frm;
 
   my @tmp;
@@ -777,7 +778,7 @@ sub adaptor {
   my ( $self, $value ) = @_;
 
   if ( defined($value) ) {
-    $self->{'adaptor'} = $value;
+    weaken($self->{'adaptor'} = $value);
   }
 
   return $self->{'adaptor'};

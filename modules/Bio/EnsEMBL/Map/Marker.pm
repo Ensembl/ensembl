@@ -78,7 +78,6 @@ sub new {
   my $class = ref($caller) || $caller;
 
   my $self = bless( {'dbID'            => $dbID,
-                     'adaptor'         => $adaptor,
                      'left_primer'     => $left_primer,
                      'right_primer'    => $right_primer,
                      'min_primer_dist' => $min_primer_dist,
@@ -87,6 +86,8 @@ sub new {
                      'type'            => $type,
                      'display_marker_synonym' => $display_synonym
                     }, $class);
+
+  $self->adaptor($adaptor);
 
   #only load the marker synononyms if they were supplied, otherwise they 
   # will be lazy-loaded
@@ -275,7 +276,7 @@ sub get_all_MarkerSynonyms {
   
   #lazy-load the marker synonyms if they haven't been retrieved
   if(!exists $self->{'marker_synonyms'} && 
-     $self->{'adaptor'} && $self->{'dbID'}) {
+     $self->adaptor && $self->{'dbID'}) {
     $self->adaptor->fetch_attributes($self);
   }
   
@@ -404,7 +405,7 @@ sub get_all_MapLocations {
 
   #lazy-load the map locations if they have not been fetched yet
   if(!exists $self->{'map_locations'} && 
-     $self->{'adaptor'} && $self->{'dbID'}) {
+     $self->adaptor && $self->{'dbID'}) {
     $self->adaptor->fetch_attributes($self);
   }
 
@@ -435,7 +436,7 @@ sub get_MapLocation {
 
   #lazy-load the map locations if they have not been fetched yet
   if(!exists $self->{'map_locations'} && 
-     $self->{'adaptor'} && $self->{'dbID'}) {
+     $self->adaptor && $self->{'dbID'}) {
     $self->adaptor->fetch_attributes($self);
   }
 

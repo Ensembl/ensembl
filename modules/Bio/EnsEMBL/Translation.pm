@@ -52,7 +52,7 @@ package Bio::EnsEMBL::Translation;
 use vars qw($AUTOLOAD @ISA);
 use strict;
 
-use Scalar::Util qw(weaken);
+use Scalar::Util qw(weaken isweak);
 
 use Bio::EnsEMBL::Utils::Exception qw( deprecate throw warning );
 use Bio::EnsEMBL::Utils::Argument qw( rearrange );
@@ -108,7 +108,6 @@ sub new {
   my $self = bless {
 		    'start_exon' => $start_exon,
 		    'end_exon'   => $end_exon,
-		    'adaptor'    => $adaptor,
 		    'dbID'       => $dbID,
 		    'start'      => $seq_start,
 		    'end'        => $seq_end,
@@ -116,8 +115,10 @@ sub new {
 		    'version'    => $version,
 		    'created_date' => $created_date,
 		    'modified_date' => $modified_date,
-        'seq'        => $seq
+                    'seq'        => $seq
 		   }, $class;
+
+  $self->adaptor($adaptor);
 
   return $self;
 }
@@ -137,7 +138,9 @@ sub new {
 sub new_fast {
   my $class = shift;
   my $hashref = shift;
-  return bless $hashref, $class;
+  my $self = bless $hashref, $class;
+  weaken($self->{adaptor})  if ( ! isweak($self->{adaptor}) );
+  return $self;
 }
 
 =head2 transcript
@@ -164,7 +167,7 @@ sub transcript {
     # Break connection to transcript.
     delete( $self->{'transcript'} );
   } elsif ( !defined( $self->{'transcript'} ) ) {
-    my $adaptor = $self->{'adaptor'};
+    my $adaptor = $self->adaptor;
     if ( !defined($adaptor) ) {
       throw(   "Adaptor is not set for translation, "
              . "can not fecth its transcript." );

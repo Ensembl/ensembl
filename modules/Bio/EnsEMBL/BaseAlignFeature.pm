@@ -102,6 +102,7 @@ package Bio::EnsEMBL::BaseAlignFeature;
 use Bio::EnsEMBL::FeaturePair;
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 use Bio::EnsEMBL::Utils::Exception qw(throw warning);
+use Scalar::Util qw(weaken isweak);
 
 use vars qw(@ISA);
 use strict;
@@ -174,8 +175,9 @@ sub new {
 
 sub new_fast {
   my ($class, $hashref) = @_;
-
-  return bless $hashref, $class;
+  my $self = bless $hashref, $class;
+  weaken($self->{adaptor})  if ( ! isweak($self->{adaptor}) );
+  return $self;
 }
 
 

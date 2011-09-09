@@ -75,6 +75,7 @@ use Bio::EnsEMBL::StrainSlice;
 #use Bio::EnsEMBL::IndividualSliceFactory;
 use Bio::EnsEMBL::Mapper::RangeRegistry;
 use Bio::EnsEMBL::SeqRegionSynonym;
+use Scalar::Util qw(weaken isweak);
 
 # use Data::Dumper;
 
@@ -136,7 +137,9 @@ sub new {
   if ($empty) {
     deprecate(   "Creation of empty slices is no longer needed"
                . "and is deprecated" );
-    return bless( { 'empty' => 1, 'adaptor' => $adaptor }, $class );
+     my $self = bless( { 'empty' => 1 }, $class );
+    $self->adaptor($adaptor);
+    return $self;
   }
 
   if ( !defined($seq_region_name) ) {
@@ -186,14 +189,18 @@ sub new {
     }
   }
 
-  return bless {'coord_system'      => $coord_system,
+  my $self = bless {'coord_system'      => $coord_system,
                 'seq'               => $seq,
                 'seq_region_name'   => $seq_region_name,
                 'seq_region_length' => $seq_region_length,
                 'start'             => int($start),
                 'end'               => int($end),
-                'strand'            => $strand,
-                'adaptor'           => $adaptor}, $class;
+                'strand'            => $strand}, $class;
+
+  $self->adaptor($adaptor);
+
+  return $self;
+
 }
 
 =head2 new_fast
@@ -211,7 +218,9 @@ sub new {
 sub new_fast {
   my $class = shift;
   my $hashref = shift;
-  return bless $hashref, $class;
+  my $self = bless $hashref, $class;
+  weaken($self->{adaptor})  if ( ! isweak($self->{adaptor}) );
+  return $self;
 }
 
 =head2 adaptor
@@ -237,7 +246,7 @@ sub adaptor{
          throw('Argument must be a Bio::EnsEMBL::DBSQL::SliceAdaptor');
        }
      }
-     $self->{'adaptor'} = $ad;
+     weaken($self->{'adaptor'} = $ad);
    }
 
    return $self->{'adaptor'};
@@ -1943,7 +1952,7 @@ sub get_all_IndividualSlice{
 									   -START   => $self->{'start'},
 									   -END     => $self->{'end'},
 									   -STRAND  => $self->{'strand'},
-									   -ADAPTOR => $self->{'adaptor'},
+									   -ADAPTOR => $self->adaptor(),
 									   -SEQ_REGION_NAME => $self->{'seq_region_name'},
 									   -SEQ_REGION_LENGTH => $self->{'seq_region_length'},
 									   -COORD_SYSTEM    => $self->{'coord_system'},
@@ -1970,7 +1979,7 @@ sub get_by_Individual{
 					  -START   => $self->{'start'},
 					  -END     => $self->{'end'},
 					  -STRAND  => $self->{'strand'},
-					  -ADAPTOR => $self->{'adaptor'},
+					  -ADAPTOR => $self->adaptor(),
 #					  -SEQ     => $self->{'seq'},
 					  -SEQ_REGION_NAME => $self->{'seq_region_name'},
 					  -SEQ_REGION_LENGTH => $self->{'seq_region_length'},
@@ -2000,7 +2009,7 @@ sub get_by_strain{
 					  -START   => $self->{'start'},
 					  -END     => $self->{'end'},
 					  -STRAND  => $self->{'strand'},
-					  -ADAPTOR => $self->{'adaptor'},
+					  -ADAPTOR => $self->adaptor(),
 					  -SEQ     => $self->{'seq'},
 					  -SEQ_REGION_NAME => $self->{'seq_region_name'},
 					  -SEQ_REGION_LENGTH => $self->{'seq_region_length'},
@@ -2581,7 +2590,7 @@ sub get_repeatmasked_seq {
       (-START   => $self->{'start'},
        -END     => $self->{'end'},
        -STRAND  => $self->{'strand'},
-       -ADAPTOR => $self->{'adaptor'},
+       -ADAPTOR => $self->adaptor(),
        -SEQ     => $self->{'seq'},
        -SEQ_REGION_NAME => $self->{'seq_region_name'},
        -SEQ_REGION_LENGTH => $self->{'seq_region_length'},
@@ -3772,7 +3781,5 @@ sub has_MapSet {
   my $mfs = $self->get_all_MiscFeatures($mapset_name);
   return (@$mfs > 0);
 }
-
-
 
 1;

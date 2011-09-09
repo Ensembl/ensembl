@@ -74,6 +74,8 @@ use Bio::EnsEMBL::Slice;
 use Bio::EnsEMBL::StrainSlice;
 use vars qw(@ISA);
 
+use Scalar::Util qw(weaken isweak);
+
 @ISA = qw(Bio::EnsEMBL::Storable);
 
 
@@ -145,14 +147,16 @@ sub new {
       }
   }
 
-  return bless({'start'    => $start,
+  my $self =  bless({'start'    => $start,
                 'end'      => $end,
                 'strand'   => $strand,
                 'slice'    => $slice,
                 'analysis' => $analysis,
-                'adaptor'  => $adaptor,
                 'seqname'  => $seqname,
                 'dbID'     => $dbID}, $class);
+
+  $self->adaptor($adaptor);
+  return $self;
 }
 
 
@@ -171,7 +175,9 @@ sub new {
 sub new_fast {
   my $class = shift;
   my $hashref = shift;
-  return bless $hashref, $class;
+  my $self = bless $hashref, $class;
+  weaken($self->{adaptor})  if ( ! isweak($self->{adaptor}) );
+  return $self;
 }
 
 =head2 start
@@ -1543,6 +1549,5 @@ sub id {
   return $self->{'seqname'}  if($self->{'seqname'});
   return $self->{'dbID'};
 }
-
 
 1;

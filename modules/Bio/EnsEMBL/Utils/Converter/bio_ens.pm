@@ -44,6 +44,7 @@ use vars qw(@ISA);
 use Bio::EnsEMBL::Analysis;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::EnsEMBL::Utils::Converter;
+use Scalar::Util qw(weaken);
 @ISA = qw(Bio::EnsEMBL::Utils::Converter);
 
 =head2 new
@@ -225,7 +226,7 @@ sub dbadaptor {
     my ($self, $arg) = @_;
     if(defined($arg)){
         $self->throws("A Bio::EnsEMBL::DBSQL::DBAdaptor object expected.") unless(defined $arg);
-        $self->{_dbadaptor} = $arg;
+        weaken($self->{_dbadaptor} = $arg);
     }
     return $self->{_dbadaptor};
 }

@@ -100,10 +100,10 @@ sub new {
                      'name'        => $name,
                      'type'        => $type,
 		     'tag_count'   => $tag_count,
-		     'sequence'    => $sequence,
-                     'adaptor'     => $adaptor,
+		     'sequence'    => $sequence
                     }, $class);
 
+  $self->adaptor($adaptor);
   return $self;
 }
 

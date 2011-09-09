@@ -52,6 +52,7 @@ use vars qw(@ISA);
 
 use Bio::EnsEMBL::Feature;
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
+use Scalar::Util qw(weaken isweak);
 
 @ISA = qw(Bio::EnsEMBL::Feature);
 
@@ -105,7 +106,9 @@ sub new {
 sub new_fast {
   my $class = shift;
   my $hashref = shift;
-  return bless $hashref, $class;
+  my $self = bless $hashref, $class;
+  weaken($self->{adaptor})  if ( ! isweak($self->{adaptor}) );
+  return $self;
 }
 
 

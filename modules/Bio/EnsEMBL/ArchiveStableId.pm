@@ -84,7 +84,7 @@ use Bio::EnsEMBL::Root;
 our @ISA = qw(Bio::EnsEMBL::Root);
 
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
-
+use Scalar::Util qw(weaken isweak);
 
 =head2 new
 
@@ -124,7 +124,7 @@ sub new {
   $self->{'release'} = $release;
   $self->{'assembly'} = $assembly;
   $self->{'type'} = $type;
-  $self->{'adaptor'} = $adaptor;
+  $self->adaptor($adaptor);
 
   return $self;
 }
@@ -165,6 +165,8 @@ sub new_fast {
       'adaptor' => $_[6],
       'current_version' => $_[7],
   }, $class;
+
+  weaken($self->{adaptor})  if ( ! isweak($self->{adaptor}) );
 
   return $self;
 }
@@ -395,9 +397,9 @@ sub current_version {
   if (@_) {
     $self->{'current_version'} = shift;
   } elsif (! defined $self->{'current_version'}) {
-    if (defined $self->{'adaptor'}) {
+    if (defined $self->adaptor()) {
       # lazy load
-      $self->{'adaptor'}->lookup_current($self);
+      $self->adaptor()->lookup_current($self);
     }       
   }
 
@@ -522,7 +524,7 @@ sub type {
 
 sub adaptor {
   my $self = shift;
-  $self->{'adaptor'} = shift if (@_);
+  weaken($self->{'adaptor'} = shift) if (@_);
   return $self->{'adaptor'};
 }
 

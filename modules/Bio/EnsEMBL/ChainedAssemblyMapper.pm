@@ -84,6 +84,7 @@ use integer; #use proper arithmetic bitshifts
 use Bio::EnsEMBL::Mapper;
 use Bio::EnsEMBL::Mapper::RangeRegistry;
 use Bio::EnsEMBL::Utils::Exception qw(throw deprecate);
+use Scalar::Util qw(weaken);
 
 #2^20 = approx 10^6
 my $CHUNKFACTOR = 20;
@@ -719,7 +720,7 @@ sub component_CoordSystem {
 
 sub adaptor {
   my $self = shift;
-  $self->{'adaptor'} = shift if(@_);
+  weaken($self->{'adaptor'} = shift) if(@_);
   return $self->{'adaptor'};
 }
 

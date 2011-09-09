@@ -71,7 +71,7 @@ sub new {
   my ( $adaptor, $synonym, $ex_db, $seq_region_id, $dbid) =
     rearrange ( ['ADAPTOR','SYNONYM','EXTERNAL_DB_ID','SEQ_REGION_ID','DBID'], @args );
 
-  $self->{'adaptor'} = $adaptor;
+  $self->adaptor($adaptor);
 
   if( defined $ex_db ) { $self->external_db_id( $ex_db ) }
   if( defined $seq_region_id ) { $self->seq_region_id( $seq_region_id ) }

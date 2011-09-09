@@ -45,6 +45,7 @@ use Bio::Annotation::DBLink;
 
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 use Bio::EnsEMBL::Utils::Exception qw(deprecate);
+use Scalar::Util qw(weaken isweak);
 
 our @ISA = qw(Bio::EnsEMBL::Storable Bio::Annotation::DBLink);
 
@@ -65,10 +66,9 @@ our @ISA = qw(Bio::EnsEMBL::Storable Bio::Annotation::DBLink);
 sub new_fast {
   my $class = shift;
   my $hashref = shift;
-
-  bless $hashref, $class;
-
-  return $hashref;
+  my $self = bless $hashref, $class;
+  weaken($self->{adaptor})  if ( ! isweak($self->{adaptor}) );
+  return $self;
 }
 
 
@@ -120,7 +120,7 @@ sub new {
 		 'DB_DISPLAY_NAME', 'INFO_TYPE', 'INFO_TEXT', 'TYPE',
                  'SECONDARY_DB_NAME', 'SECONDARY_DB_TABLE', 'LINKAGE_ANNOTATION', 'ANALYSIS'], @args );
 
-  $self->{'adaptor'} = $adaptor;
+  $self->adaptor($adaptor);
   $self->{'dbID'}    = $dbID;
 
   if( defined $primary_id ) { $self->primary_id( $primary_id ) }
@@ -569,8 +569,8 @@ sub get_all_synonyms {
   my $self = shift;
 
   # lazy-load synonyms if required
-  if (!$self->{synonyms} && $self->{adaptor}) {
-    $self->{synonyms} = $self->{adaptor}->fetch_all_synonyms($self->dbID());
+  if (!$self->{synonyms} && $self->adaptor()) {
+    $self->{synonyms} = $self->adaptor()->fetch_all_synonyms($self->dbID());
   }
 
   return $self->{synonyms};
@@ -595,7 +595,7 @@ sub get_all_dependents {
   my $self = shift;
   my $ensembl_object = shift;
 
-  return  $self->{adaptor}->get_all_dependents($self->dbID(), $ensembl_object);
+  return  $self->adaptor()->get_all_dependents($self->dbID(), $ensembl_object);
 }
 
 =head2 get_all_masters
@@ -616,7 +616,7 @@ sub get_all_masters {
   my $self = shift;
   my $ensembl_object = shift;
 
-  return  $self->{adaptor}->get_all_masters($self->dbID(), $ensembl_object);
+  return  $self->adaptor()->get_all_masters($self->dbID(), $ensembl_object);
 }
 
 

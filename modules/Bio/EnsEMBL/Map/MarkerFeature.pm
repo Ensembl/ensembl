@@ -73,9 +73,8 @@ sub new {
 
   my $class = ref($caller) || $caller;
 
-  return bless( {
+  my $self = bless( {
 		 'dbID'        => $dbID,
-		 'adaptor'     => $adaptor,
 		 'start'       => $start,
 		 'end'         => $end,
 		 'strand'      => 0,
@@ -84,6 +83,9 @@ sub new {
 		 'marker_id'   => $marker_id,
 		 'marker'      => $marker,
      'map_weight'  => $map_weight }, $class);
+
+  $self->adaptor($adaptor);
+  return $self;
 }
 
 
@@ -132,9 +134,9 @@ sub marker {
 
   if(@_) {
     $self->{'marker'} = shift;
-  } elsif(!$self->{'marker'} && $self->{'adaptor'} && $self->{'marker_id'}) {
+  } elsif(!$self->{'marker'} && $self->adaptor && $self->{'marker_id'}) {
     #lazy load the marker if it is not already loaded
-    my $ma = $self->{'adaptor'}->db->get_MarkerAdaptor;
+    my $ma = $self->adaptor->db->get_MarkerAdaptor;
     $self->{'marker'} = $ma->fetch_by_dbID($self->{'marker_id'});
   }
 

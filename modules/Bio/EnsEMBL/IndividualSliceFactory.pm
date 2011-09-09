@@ -26,6 +26,7 @@ use Bio::EnsEMBL::Utils::Sequence qw(reverse_comp);
 use Bio::EnsEMBL::Slice;
 use Bio::EnsEMBL::Mapper;
 use Bio::EnsEMBL::Utils::Exception qw(throw deprecate warning);
+use Scalar::Util qw(weaken);
 
 =head2 new
 =cut
@@ -38,26 +39,42 @@ sub new{
 
     my ($population_name, $coord_system, $start, $end, $strand, $seq_region_name, $seq_region_length, $adaptor) = rearrange(['POPULATION', 'COORD_SYSTEM','START','END','STRAND','SEQ_REGION_NAME','SEQ_REGION_LENGTH', 'ADAPTOR'],@_);
 
-    return bless {
+    my $self = bless {
 	population_name => $population_name,
 	coord_system => $coord_system,
 	start => $start,
 	end => $end,
 	strand => $strand,
 	seq_region_name => $seq_region_name,
-	seq_region_length => $seq_region_length,
-	adaptor => $adaptor},$class;
+	seq_region_length => $seq_region_length},$class;
+
+    $self->adaptor($adaptor);
+    return $self;
+}
+
+sub adaptor {
+  my $self = shift;
+
+  if(@_) {
+    my $ad = shift;
+    if($ad && (!ref($ad) || !$ad->isa('Bio::EnsEMBL::DBSQL::BaseAdaptor'))) {
+      throw('Adaptor argument must be a Bio::EnsEMBL::DBSQL::BaseAdaptor');
+    }
+    weaken($self->{'adaptor'} = $ad);
+  }
+
+  return $self->{'adaptor'}
 }
 
 sub get_all_IndividualSlice{
     my $self = shift;
 
     my $slice;
-    if(!$self->{'adaptor'}) {
+    if(!$self->adaptor) {
 	warning('Cannot get IndividualSlice features without attached adaptor');
 	return '';
     }
-    my $variation_db = $self->{'adaptor'}->db->get_db_adaptor('variation');
+    my $variation_db = $self->adaptor->db->get_db_adaptor('variation');
 
     unless($variation_db) {
 	warning("Variation database must be attached to core database to " .
@@ -80,7 +97,7 @@ sub get_all_IndividualSlice{
 					      -strand => $self->{'strand'},
 					      -seq_region_name => $self->{'seq_region_name'},
 					      -seq_region_length => $self->{'seq_region_length'},
-					      -adaptor => $self->{'adaptor'}
+					      -adaptor => $self->adaptor
 					      );
 	    my $population = $population_adaptor->fetch_by_name($self->{'population_name'}); 
 	    #check that there is such population in the database

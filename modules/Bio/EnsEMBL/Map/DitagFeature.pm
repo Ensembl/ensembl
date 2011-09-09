@@ -134,7 +134,6 @@ sub new {
 
   my $self = bless( {'dbID'          => $dbID,
                      'analysis'      => $analysis,
-                     'adaptor'       => $adaptor,
                      'slice'         => $slice,
                      'start'         => $start,
                      'end'           => $end,
@@ -150,6 +149,7 @@ sub new {
 		     'ditag'         => $ditag,
                     }, $class);
 
+  $self->adaptor($adaptor);
   return $self;
 }
 
