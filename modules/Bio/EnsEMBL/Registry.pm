@@ -1524,7 +1524,7 @@ sub load_registry_from_db {
       if ( $2 eq $software_version ) {
         $temp{$1} = $2;
       }
-    } elsif ( $db =~ /^(ensembl_ontology)_(\d+)/x ) {
+    } elsif ( $db =~ /^(ensembl(?:genomes)_ontology)_(\d+)/x ) {
       if ( $2 eq $software_version ) {
         $ontology_version = $2;
       }
