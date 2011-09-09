@@ -93,8 +93,10 @@ sub run {
     chomp;
     my ($zfin, $label, $acc) = split (/\s+/,$_);
     if(defined($swiss{$acc})){
-      XrefParser::BaseParser->add_to_xrefs($swiss{$acc},$zfin,'',$label,$description{$zfin},'',$source_id,$species_id);
-      $spcount++;
+      foreach my $xref_id (@{$swiss{$acc}}){
+	XrefParser::BaseParser->add_to_xrefs($xref_id, $zfin,'',$label,$description{$zfin},'',$source_id,$species_id);
+	$spcount++;
+      }
     }
     else{
       $mismatch++;
@@ -118,8 +120,10 @@ sub run {
     chomp;
     my ($zfin, $label, $acc) = split (/\s+/,$_);
     if(defined($refseq{$acc})){
-      XrefParser::BaseParser->add_to_xrefs($refseq{$acc},$zfin,'',$label,$description{$zfin},'',$source_id,$species_id);
-      $rscount++;
+      foreach my $xref_id (@{$refseq{$acc}}){
+	XrefParser::BaseParser->add_to_xrefs($xref_id, $zfin,'',$label,$description{$zfin},'',$source_id,$species_id);
+	$rscount++;
+      }
     }
     else{
       $mismatch++;

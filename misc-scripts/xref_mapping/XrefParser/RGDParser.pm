@@ -83,15 +83,16 @@ sub run {
     foreach my $nuc (reverse @nucs){
       if(!$done){
 	my $xref=undef; 
-	$xref=$refseq{$nuc} if defined($refseq{$nuc});
-	if(defined($xref)){
-	  $done = 1;
-	  my $xref_id = XrefParser::BaseParser->add_to_xrefs($xref,$rgd,"",$symbol,$name,"",$source_id,$species_id);
-	  $count++;
-	  my @syns  = split(/\;/,$old_name);
-	  foreach my $syn(@syns){
-	    $add_syn_sth->execute($xref_id, $syn);
-	    $syn_count++;
+	if(defined($refseq{$nuc})){
+	  foreach my $xref (@{$refseq{$nuc}}){
+	    $done = 1;
+	    my $xref_id = XrefParser::BaseParser->add_to_xrefs($xref,$rgd,"",$symbol,$name,"",$source_id,$species_id);
+	    $count++;
+	    my @syns  = split(/\;/,$old_name);
+	    foreach my $syn(@syns){
+	      $add_syn_sth->execute($xref_id, $syn);
+	      $syn_count++;
+	    }
 	  }
 	}
 	else{

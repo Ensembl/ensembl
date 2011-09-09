@@ -66,22 +66,42 @@ sub run {
 
     if($type eq "gene"){
       if(defined($mim_gene{$omim_id})){
-	$add_dependent_xref_sth->execute($entrez{$entrez_id}, $mim_gene{$omim_id});
+	foreach my $ent_id (@{$entrez{$entrez_id}}){
+	  foreach my $mim_id (@{$mim_gene{$omim_id}}){
+	    $add_dependent_xref_sth->execute($ent_id, $mim_id);
+	  }
+	}
+	# $add_dependent_xref_sth->execute($entrez{$entrez_id}, $mim_gene{$omim_id});
       }
       else{
 	$diff_type++;
-	$add_dependent_xref_sth->execute($entrez{$entrez_id}, $mim_morbid{$omim_id});	
+	foreach my $ent_id (@{$entrez{$entrez_id}}){
+	  foreach my $mim_id (@{$mim_morbid{$omim_id}}){
+	    $add_dependent_xref_sth->execute($ent_id, $mim_id);
+	  }
+	}	
+	# $add_dependent_xref_sth->execute($entrez{$entrez_id}, $mim_morbid{$omim_id});	
       }
     }
     elsif($type eq "phenotype"){
       if(defined($mim_morbid{$omim_id})){
-	$add_dependent_xref_sth->execute($entrez{$entrez_id}, $mim_morbid{$omim_id});
+	foreach my $ent_id (@{$entrez{$entrez_id}}){
+	  foreach my $mim_id (@{$mim_morbid{$omim_id}}){
+	    $add_dependent_xref_sth->execute($ent_id, $mim_id);
+	  }
+	}
+	#	$add_dependent_xref_sth->execute($entrez{$entrez_id}, $mim_morbid{$omim_id});
       }
       else{
 	$diff_type++;
-	$add_dependent_xref_sth->execute($entrez{$entrez_id}, $mim_gene{$omim_id});	
+	foreach my $ent_id (@{$entrez{$entrez_id}}){
+	  foreach my $mim_id (@{$mim_gene{$omim_id}}){
+	    $add_dependent_xref_sth->execute($ent_id, $mim_id);
+	  }
+	}
+	#	$add_dependent_xref_sth->execute($entrez{$entrez_id}, $mim_gene{$omim_id});	
       }
-    }
+    }	
     else{
       print "WARNING unknown type $type\n";
       next;

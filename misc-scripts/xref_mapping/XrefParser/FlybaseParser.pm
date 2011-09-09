@@ -13,7 +13,7 @@ my $verbose;
 # The object types we'd like to parse.
 our %object_types = ( gene       => 1,
                       mRNA       => 1,
-											pre_miRNA  => 1,
+		      pre_miRNA  => 1,
                       miRNA      => 1,
                       ncRNA      => 1,
                       protein    => 1,
@@ -115,8 +115,7 @@ our %special_source_name_map = (
 our %source_id;
 
 sub get_source_id_for_source_name {
-  my $self = shift;
-  my ($source_name) = @_;
+  my ($self, $source_name) = @_;
 
   if ( !defined( $source_id{$source_name} ) ) {
     $source_id{$source_name} =
@@ -264,12 +263,10 @@ sub run {
         if ( defined($pre_source) ) {
           foreach my $accession ( @{ $dbxref->{$dbxref_name} } ) {
             if ( exists( $pre_xref_ids{$pre_source}{$accession} ) ) {
-              $self->add_direct_xref(
-                                 $pre_xref_ids{$pre_source}{$accession},
-                                 $id, $type, '' );
-
-              $xref_ids{$pre_source}{$accession} =
-                $pre_xref_ids{$pre_source}{$accession};
+	      foreach my $xref_id (@{ $pre_xref_ids{$pre_source}{$accession} }){
+		$self->add_direct_xref($xref_id, $id, $type, '' );
+		$xref_ids{$pre_source}{$accession} = $xref_id;
+	      }	
             } else {
               $xref_ids{ $pre_source . ' (missed)' }{$accession} = -1;
             }

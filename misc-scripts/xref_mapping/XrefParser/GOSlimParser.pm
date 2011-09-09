@@ -1,7 +1,7 @@
 package XrefParser::GOSlimParser;
 
 use strict;
-
+use warnings;
 use DBI;
 
 use base qw( XrefParser::BaseParser );
@@ -19,21 +19,20 @@ sub run_script {
 
   my $user = "ensro";
   my $host = "ens-staging1";
-#  my $host = "ens-livemirror";
-  my $port = 3306;
+  my $port = "3306";
   my $dbname;
   my $pass;
 
-  if($file =~ /host[=][>](\S+?)[,]/){
+  if($file =~ /host[=][>](\S+?)[,]/x){
     $host = $1;
   }
-  if($file =~ /port[=][>](\S+?)[,]/){
+  if($file =~ /port[=][>](\S+?)[,]/x){
     $port =  $1;
   }
-  if($file =~ /dbname[=][>](\S+?)[,]/){
+  if($file =~ /dbname[=][>](\S+?)[,]/x){
     $dbname = $1;
   }
-  if($file =~ /pass[=][>](\S+?)[,]/){
+  if($file =~ /pass[=][>](\S+?)[,]/x){
     $pass = $1;
   }
 
@@ -46,7 +45,7 @@ sub run_script {
 			        -group => "ontology");
     my $dbc = $reg->get_adaptor("multi","ontology","GOTerm");
     $dbi2 = $dbc->dbc;
-  }	
+  }
   else{
     $dbi2 = $self->dbi2($host, $port, $user, $dbname, $pass);
   }
@@ -73,9 +72,11 @@ sub run_script {
     my $subterm_acc  = $row[2];
 
     if(defined($go{$term_acc})){
-      my $xref_id = $self->add_xref($subterm_acc, undef, $subterm_acc, $desc, $source_id, $species_id, "DEPENDENT");
-      $add_dependent_xref_sth->execute($go{$term_acc}, $xref_id);
-      $count++;
+      foreach my $go_xref_id (@{$go{$term_acc}}) {
+	my $xref_id = $self->add_xref($subterm_acc, undef, $subterm_acc, $desc, $source_id, $species_id, "DEPENDENT");
+	$add_dependent_xref_sth->execute($go_xref_id, $xref_id);
+	$count++;
+      }
     }
 
   }

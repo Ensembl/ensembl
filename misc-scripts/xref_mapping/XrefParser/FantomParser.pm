@@ -1,6 +1,7 @@
 package XrefParser::FantomParser;
 
 use strict;
+use warnings;
 use POSIX qw(strftime);
 use File::Basename;
 use File::Spec::Functions;
@@ -29,8 +30,6 @@ sub run {
   
 
   my (%embl) = %{XrefParser::BaseParser->get_valid_codes("embl",$species_id)};
-  my (%ddbj) = %{XrefParser::BaseParser->get_valid_codes("ddbj",$species_id)};
-  my (%genbank) = %{XrefParser::BaseParser->get_valid_codes("genbank",$species_id)};
 
   my $fantom_io =
     $self->get_filehandle( $file  );
@@ -40,13 +39,8 @@ sub run {
     return 1;    # 1 error
   }
 
-#e.g.
-
-
   my $ecount =0;
-  my $dcount =0;
-  my $gcount =0;
-  
+
   my $mismatch=0;
 
   $fantom_io->getline(); # remove header
@@ -55,16 +49,10 @@ sub run {
     chomp;
     my ($master, $label, $acc) = split (/\s+/,$_);
     if(defined($embl{$master})){
-      XrefParser::BaseParser->add_to_xrefs($embl{$master},$label,'',$label,'','',$source_id,$species_id);
-      $ecount++;
-    }
-    elsif(defined($ddbj{$master})){
-      XrefParser::BaseParser->add_to_xrefs($ddbj{$master},$label,'',$label,'','',$source_id,$species_id);
-      $dcount++;
-    }
-    elsif(defined($genbank{$master})){
-      XrefParser::BaseParser->add_to_xrefs($genbank{$master},$label,'',$label,'','',$source_id,$species_id);
-      $gcount++;
+      foreach my $xref_id (@{$embl{$master}}){
+	XrefParser::BaseParser->add_to_xrefs($xref_id,$label,'',$label,'','',$source_id,$species_id);
+	$ecount++;
+      }
     }
     else{
       if($mismatch < 10){
@@ -78,8 +66,6 @@ sub run {
 
   if($verbose){
     print "\t$ecount xrefs from EMBL and\n";
-    print "\t$dcount xrefs from DDBJ succesfully loaded\n";
-    print "\t$gcount xrefs from GenBank\n";
     print "\t$mismatch xrefs ignored as no master found\n";
   }
   return 0;

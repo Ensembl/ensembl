@@ -234,7 +234,7 @@ sub create_xrefs {
       # TODO experimental/predicted
 
       my @EntrezGeneIDline = $entry =~ /db_xref=.GeneID:(\d+)/g;
-      my @SGDGeneIDline = $entry =~ /db_xref=.SGD:(S\d+)/g;
+#      my @SGDGeneIDline = $entry =~ /db_xref=.SGD:(S\d+)/g;
       my @protein_id = $entry =~ /\/protein_id=.(\S+_\d+)/g;
       my @coded_by = $entry =~  /\/coded_by=.(\w+_\d+)/g;
 
