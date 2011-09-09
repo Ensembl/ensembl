@@ -72,7 +72,20 @@ sub run {
     $sth_c->execute;
 
 
-    my $dep_sth = $dbi->prepare("select s.name, s.source_id from source s, dependent_source ds, source_url su where su.source_id = ds.dependent_source_id and dependent_source_id = s.source_id and ds.master_source_id = ? and su.species_id = ? and su.checksum is null");
+    # need to use name now and that download = 'Y' as well
+
+    my $sql = (<<"DSS");
+SELECT s.name, s.source_id 
+  FROM source s, dependent_source ds, source_url su
+    WHERE su.source_id = s.source_id AND
+          ds.dependent_name = s.name AND
+          ds.master_source_id = ? AND
+          su.species_id = ? AND
+          s.download = 'Y' AND
+          s.source_id != ? AND
+          su.checksum is null
+DSS
+    my $dep_sth = $dbi->prepare($sql);
 
 
 
@@ -113,8 +126,10 @@ sub run {
         }
         $source_sql .= ") ";
     }
+    my $sth = $dbi->prepare("insert into process_status (status, date) values('parsing_started',now())");
+    $sth->execute;
 
-    my $sql =
+    $sql =
       "SELECT DISTINCT(s.source_id), su.source_url_id, s.name, su.url, "
       . "su.release_url, su.checksum, su.parser, su.species_id "
       . "FROM source s, source_url su, species sp "
@@ -124,9 +139,6 @@ sub run {
       . $species_sql
       . "ORDER BY s.ordered";
     #print $sql . "\n";
-
-    my $sth = $dbi->prepare("insert into process_status (status, date) values('parsing_started',now())");
-    $sth->execute;
 
     $sth = $dbi->prepare($sql);
     $sth->execute();
@@ -380,12 +392,12 @@ sub run {
     }
 
     if($stats){
-      %sum_xrefs = {}; # reset we now want total numbers
-      %sum_prim  = {};
-      %sum_dep   = {};
-      %sum_dir   = {};
-      %sum_coord = {};
-      %sum_syn   = {};
+      %sum_xrefs = (); # reset we now want total numbers
+      %sum_prim  = ();
+      %sum_dep   = ();
+      %sum_dir   = ();
+      %sum_coord = ();
+      %sum_syn   = ();
       $self->print_stats(\%sum_xrefs,\%sum_prim,\%sum_dep, \%sum_dir, \%sum_coord, \%sum_syn)
     }
 
@@ -403,11 +415,12 @@ sub all_dependencies_loaded{
   my ($self, $source_id, $species_id, $s_name, $dep_sth) = @_;
   my $okay = 1;
 
-  $dep_sth->execute($source_id, $species_id);
+  $dep_sth->execute($source_id, $species_id, $source_id);
   my ($id, $name);
   $dep_sth->bind_columns(\$id, \$name);
   while($dep_sth->fetch() ){
     print STDERR "dependent source $name ($id) not loaded so cannot process source $s_name\n";
+    print "dependent source $name ($id) not loaded so cannot process source $s_name\n";
     $okay = 0;
   }
   return $okay;
@@ -713,6 +726,7 @@ sub get_source_id_for_source_name {
   my $sql = "SELECT source_id FROM source WHERE LOWER(name)='" . lc($source_name) . "'";
   if(defined($priority_desc)){
     $sql .= " AND LOWER(priority_description)='".lc($priority_desc)."'";
+    $source_name .= " ($priority_desc)";
   }
   my $sth = dbi()->prepare($sql);
   $sth->execute();
@@ -931,7 +945,14 @@ sub label_to_acc{
 }
 
 
-
+####################################################
+# get_valid_codes
+#
+# hash of accession to array of xrefs.
+# This is an array becouse more than one entry can
+# exist. i.e. for uniprot and refseq we have direct
+# and sequence match sets and we need to give both.
+####################################################
 
 sub get_valid_codes{
 
@@ -966,10 +987,10 @@ sub get_valid_codes{
     $sth = dbi()->prepare($sql);
     $sth->execute();
     while(my @row = $sth->fetchrow_array()){
-      $valid_codes{$row[0]} =$row[1];
+      push @{$valid_codes{$row[0]}}, $row[1];
       # add any synonyms for this xref as well
       foreach my $syn (@{$synonyms{$row[1]}}) {
-	$valid_codes{$syn} = $row[1];
+	push @{$valid_codes{$syn}}, $row[1];
       }
     }
   }
@@ -1017,9 +1038,6 @@ sub upload_xref_object_graphs {
   print "count = ".$#$rxrefs."\n" if($verbose);
 
   if ($#$rxrefs > -1) {
-
-    # remove all existing xrefs with same source ID(s)
-#    $self->delete_by_source($rxrefs);
 
     # upload new ones
     print "Uploading xrefs\n" if($verbose);
@@ -1071,20 +1089,19 @@ sub upload_xref_object_graphs {
 	   $pri_update_sth->execute( $xref->{SEQUENCE}, $xref_id )
 	     or croak( $dbi->errstr() );
 	 } else {
-	   
+
 	   $pri_insert_sth->execute( $xref_id, $xref->{SEQUENCE},
 				     $xref->{SEQUENCE_TYPE},
 				     $xref->{STATUS} )
 	     or croak( $dbi->errstr() );
 	 }
        }
-       
        # if there are synonyms, add entries in the synonym table
        foreach my $syn ( @{ $xref->{SYNONYMS} } ) {
 	 $syn_sth->execute( $xref_id, $syn )
             or croak( $dbi->errstr() . "\n $xref_id\n $syn\n" );
        } # foreach syn
-       
+
       # if there are dependent xrefs, add xrefs and dependent xrefs for them
       foreach my $depref (@{$xref->{DEPENDENT_XREFS}}) {
 
@@ -1668,9 +1685,9 @@ sub add_to_direct_xrefs{
 
   if(!defined($add_xref_sth)){
     my $sql = (<<"AXX");
-INSERT INTO xref 
+INSERT INTO xref
   (accession,version,label,description,source_id,species_id, info_type)
-  VALUES (?,?,?,?,?,?,?)")
+  VALUES (?,?,?,?,?,?,?)
 AXX
     $add_xref_sth = dbi->prepare($sql);
   }
