@@ -1,81 +1,36 @@
 package XrefParser::HGNCParser;
 
 use strict;
+use warnings;
 use File::Basename;
 
 use base qw( XrefParser::BaseParser );
 
-my $xref_sth ;
-my $dep_sth;
-my $syn_sth;
-
 sub run {
 
   my $self = shift;
-  my $source_id = shift;
+  my $source_id_old = shift;
   my $species_id = shift;
   my $files_ref  = shift;
   my $rel_file   = shift;
   my $verbose = shift;
+  my $empty = q{};
 
   my $file = @{$files_ref}[0];
 
-  if(!defined($source_id)){
-    $source_id = XrefParser::BaseParser->get_source_id_for_filename($file);
-  }
-  if(!defined($species_id)){
-    $species_id = XrefParser::BaseParser->get_species_id_for_filename($file);
+  if(!defined $species_id){
+    $species_id = $self->get_species_id_for_filename($file);
   }
 
-
-  my $hgnc_refseq_manual = XrefParser::BaseParser->get_source_id_for_source_name("HGNC","refseq_manual");
-  if(!defined($hgnc_refseq_manual)){
-    die  "Could not get source id for HGNC with priority description of refseq_manual\n";
-  }
-  my $hgnc_refseq_mapped = XrefParser::BaseParser->get_source_id_for_source_name("HGNC","refseq_mapped");
-  if(!defined($hgnc_refseq_mapped)){
-    die  "Could not get source id for HGNC with priority description of refseq_mapped\n";
-  }
-  my $hgnc_swissprot_manual = XrefParser::BaseParser->get_source_id_for_source_name("HGNC","swissprot_manual");
-  if(!defined($hgnc_swissprot_manual)){
-    die  "Could not get source id for HGNC with priority description of swissprot_manual\n";
-  }
-
-  my $hgnc_entrezgene_manual  = XrefParser::BaseParser->get_source_id_for_source_name("HGNC","entrezgene_manual");
-  if(!defined($hgnc_entrezgene_manual)){
-    die  "Could not get source id for HGNC with priority description of entrezgene_manual\n";
-  }
-  my $hgnc_entrezgene_mapped  = XrefParser::BaseParser->get_source_id_for_source_name("HGNC","entrezgene_mapped");
-  if(!defined($hgnc_entrezgene_mapped)){
-    die  "Could not get source id for HGNC with priority description of entrezgene_mapped\n";
-  }
-
-  my $hgnc_ensembl_mapped  = XrefParser::BaseParser->get_source_id_for_source_name("HGNC","ensembl_manual");
-  if(!defined($hgnc_ensembl_mapped)){
-    die  "Could not get source id for HGNC with priority description of ensembl_manual\n";
-  }
-
-  my $hgnc_desc_only  = XrefParser::BaseParser->get_source_id_for_source_name("HGNC","desc_only");
-  if(!defined($hgnc_desc_only)){
-    die  "Could not get source id for HGNC with priority description of desc_only\n";
-  }  
-
-  my $hgnc_lrg  = XrefParser::BaseParser->get_source_id_for_source_name("LRG_HGNC_notransfer");
-  if(!defined($hgnc_lrg)){
-    die  "Could not get source id for LRG_HGNC_notransfer\n";
-  }
-
-  my (%swissprot)  =  %{XrefParser::BaseParser->get_valid_codes("Uniprot/SWISSPROT",$species_id)};
-  my (%refseq) =  %{XrefParser::BaseParser->get_valid_codes("refseq",$species_id)};
+  my (%swissprot)  =  %{$self->get_valid_codes('Uniprot/SWISSPROT',$species_id)};
+  my (%refseq) =  %{$self->get_valid_codes('refseq',$species_id)};
   my @list;
-  push @list, "refseq_peptide";
-  push @list, "refseq_dna";
-  my (%entrezgene) = %{XrefParser::BaseParser->get_valid_xrefs_for_dependencies("EntrezGene",@list)};
+  push @list, 'refseq_peptide';
+  push @list, 'refseq_dna';
+  my (%entrezgene) = %{$self->get_valid_xrefs_for_dependencies('EntrezGene',@list)};
 
-  my $refseq_count = 0;
-  my $swissprot_count = 0;
-  my $entrezgene_count = 0;
-  my $ensembl_count = 0;
+
+  my %name_count;
   my $mismatch = 0;
 
   my $hugo_io = $self->get_filehandle($file);
@@ -85,143 +40,221 @@ sub run {
     return 1;
   }
 
-  $_ = $hugo_io->getline();
+  my ($name_to_source_id, $name_to_array_index)
+    = $self->process_header($hugo_io->getline());
 
   while ( $_ = $hugo_io->getline() ) {
-
     chomp;
-
-    # 0 HGNC ID	           # primary accession
-    # 1 Approved Symbol    # label
-    # 2 Approved Name      # description
-    # 3 Previous Symbols   # synonyms
-    # 4 Aliases            # aliases
-    # 5 entrezgene ID   manually curated
-    # 6 RefSeq ID       manually curated
-    # 7 entrezgene ID   mapped
-    # 8 RefSeq ID       mapped
-    # 9 Ensembl ID     manual
-    #10 Swissprot ID  manual
-    #11 <strong>.....</strong>  look for lrg specification
-
-    my @array = split(/\t/,$_);
-
-    # Use the RefSeq if available as this is manually curated
-    # If no RefSeq, use the Swissprot instead
+    my @array = split /\t/x, $_;
 
     my $seen = 0;
-    
-    if($array[11] and $array[11] =~ /http:\/\/www.lrg-sequence.org\/LRG\/(LRG_\d+)\'/){
-#      print $array[0]." linked to LRG $1\n";
+
+    my $acc    = $array[$name_to_array_index->{'desc_only'}];
+    my $symbol = $array[$name_to_array_index->{'Approved Symbol'}];
+    my $name   = $array[$name_to_array_index->{'Approved Name'}];
+    my $previous_symbols = $array[$name_to_array_index->{'Previous Symbols'}];
+    my $synonyms = $array[$name_to_array_index->{'Synonyms'}];
+
+
+    my $type = 'Locus Specific Databases';
+    my $id = $array[$name_to_array_index->{$type}];
+    my $source_id = $name_to_source_id->{$type};
+    if($id and $id =~ m/http:\/\/www.lrg-sequence.org\/LRG\/(LRG_\d+)\'/x){
       my $lrg_stable_id = $1;
-      XrefParser::BaseParser->add_to_direct_xrefs($lrg_stable_id, 'gene', $array[0], '', $array[1], $array[2], "", $hgnc_lrg, $species_id);
-      
-      $self->add_synonyms_for_hgnc($hgnc_lrg, $array[0], $species_id, $array[3], $array[4]);
+      $self->add_to_direct_xrefs($lrg_stable_id, 'gene', $acc, $empty, $symbol,
+						  $name, $empty, $source_id, $species_id);
+
+      $self->add_synonyms_for_hgnc($source_id, $acc, $species_id, $previous_symbols, $synonyms);
+      $name_count{$type}++;
     }
-    
-    if ($array[9]){              # Ensembl direct xref
+
+
+    #
+    # Direct Ensembl mappings
+    #
+    $type = 'ensembl_manual';
+    $id = $array[$name_to_array_index->{$type}];
+    $source_id = $name_to_source_id->{$type};
+    if ($id){              # Ensembl direct xref
       $seen = 1;
-      $ensembl_count++;
-      XrefParser::BaseParser->add_to_direct_xrefs($array[9],'gene', $array[0], '', $array[1], $array[2], "", $hgnc_ensembl_mapped, $species_id);
-      
-      $self->add_synonyms_for_hgnc($hgnc_ensembl_mapped, $array[0], $species_id, $array[3], $array[4]);
-      
+      $name_count{$type}++;
+      $self->add_to_direct_xrefs($id,'gene', $acc, $empty,
+						  $symbol, $name, $empty,
+						  $source_id, $species_id);
+
+      $self->add_synonyms_for_hgnc($source_id, $acc, $species_id, $previous_symbols, $synonyms);
+
     }
-    if ($array[6]) {             # RefSeq
-      if(defined($refseq{$array[6]})){
-	$seen = 1;
-	$refseq_count++;
-	XrefParser::BaseParser->add_to_xrefs($refseq{$array[6]}, $array[0], '', $array[1], $array[2], "", $hgnc_refseq_manual, $species_id);
-	$self->add_synonyms_for_hgnc($hgnc_refseq_manual, $array[0], $species_id, $array[3], $array[4]);
-      }	
-    }
-    if ($array[10]) {             # Swissprot
-      if(defined($swissprot{$array[10]})){
-	$seen = 1;
-	$swissprot_count++;
-	XrefParser::BaseParser->add_to_xrefs($swissprot{$array[10]}, $array[0], '', $array[1], $array[2], "", $hgnc_swissprot_manual, $species_id);
-	$self->add_synonyms_for_hgnc($hgnc_swissprot_manual, $array[0], $species_id, $array[3], $array[4]);
-	
-      }
-    }	
-    if ($array[8]) {             # RefSeq
-      if(defined($refseq{$array[8]})){
-	$seen = 1;
-	$refseq_count++;
-	XrefParser::BaseParser->add_to_xrefs($refseq{$array[8]}, $array[0], '', $array[1], $array[2], "", $hgnc_refseq_mapped, $species_id);
-	
-	$self->add_synonyms_for_hgnc($hgnc_refseq_mapped, $array[0], $species_id, $array[3], $array[4]);
+
+    #
+    # RefSeq
+    #
+    foreach my $type (qw(refseq_mapped refseq_manual)){
+      $id = $array[$name_to_array_index->{$type}];
+      $source_id = $name_to_source_id->{$type};
+      if ($id) {
+	if(defined $refseq{$id} ){
+	  $seen = 1;
+	  foreach my $xref_id (@{$refseq{$id}}){
+	    $name_count{$type}++;
+	    $self->add_to_xrefs($xref_id, $acc, $empty, $symbol, $name, $empty,
+						 $source_id, $species_id);
+	  }
+	  $self->add_synonyms_for_hgnc($source_id, $acc, $species_id, $previous_symbols, $synonyms);
+	}
       }
     }
-    
-    if(defined($array[5])){
-      if(defined($entrezgene{$array[5]})){
+
+    #
+    # Swissprot
+    #
+    $type = 'swissprot_manual';
+    $id = $array[$name_to_array_index->{$type}];
+    $source_id = $name_to_source_id->{$type};
+    if ($id) {             # Swissprot
+      if(defined $swissprot{$id} ){
 	$seen = 1;
-	XrefParser::BaseParser->add_to_xrefs($entrezgene{$array[5]}, $array[0], '', 
-					     $array[1], $array[2], "", $hgnc_entrezgene_manual, $species_id);
-	$entrezgene_count++;
-	$self->add_synonyms_for_hgnc($hgnc_entrezgene_manual, $array[0], $species_id, $array[3], $array[4]);
-	
+	foreach my $xref_id (@{$swissprot{$id}}){
+	  $name_count{$type}++;
+	  $self->add_to_xrefs($xref_id, $acc, $empty, $symbol, $name, $empty,
+					       $source_id, $species_id);
+	}
+	$self->add_synonyms_for_hgnc($source_id, $acc, $species_id, $previous_symbols, $synonyms);
       }
     }
-    
-    if(defined($array[7])){
-      if(defined($entrezgene{$array[7]})){
-	$seen = 1;
-	XrefParser::BaseParser->add_to_xrefs($entrezgene{$array[7]}, $array[0], '', 
-					     $array[1], $array[2], "", $hgnc_entrezgene_mapped, $species_id);
-	$entrezgene_count++;
-	$self->add_synonyms_for_hgnc($hgnc_entrezgene_mapped, $array[0], $species_id, $array[3], $array[4]);
-      }    
+
+
+    #
+    # EntrezGene
+    #
+    foreach my $type (qw(entrezgene_manual entrezgene_mapped)){
+      $id = $array[$name_to_array_index->{$type}];
+      $source_id = $name_to_source_id->{$type};
+      if(defined $id ){
+	if(defined $entrezgene{$id} ){
+	  $seen = 1;
+	  $self->add_to_xrefs($entrezgene{$id}, $acc, $empty, $symbol, $name, $empty,
+					       $source_id, $species_id);
+	  $name_count{$type}++;
+	  $self->add_synonyms_for_hgnc( {source_id  => $source_id,
+					 name       => $acc,
+					 species_id => $species_id,
+					 dead       => $previous_symbols,
+					 alias      => $synonyms});
+	}
+      }
     }
+
+
     if(!$seen){ # Store to keep descriptions etc
-      $self->add_xref($array[0], "", $array[1], $array[2], $hgnc_desc_only, $species_id, "MISC");      
-      $self->add_synonyms_for_hgnc($hgnc_desc_only, $array[0], $species_id, $array[3], $array[4]);
+      $type = 'desc_only';
+      $source_id = $name_to_source_id->{$type};
+      $self->add_xref($acc, $empty, $symbol, $name, $source_id, $species_id, "MISC");
+      $self->add_synonyms_for_hgnc( {source_id  => $source_id,
+				     name       => $acc,
+				     species_id => $species_id,
+				     dead       => $previous_symbols,
+				     alias      => $synonyms});
       $mismatch++;
     }
   }
 
 
   $hugo_io->close();
-  
-  print "Loaded a total of " . ($refseq_count + $entrezgene_count + $swissprot_count) . " HGNC xrefs, $refseq_count from RefSeq curated mappings and $entrezgene_count from EntrezGene mappings $swissprot_count from Swissprot and $ensembl_count from ensembl_mapping\n" if($verbose);
-  
-  print "$mismatch xrefs could not be associated via RefSeq, EntrezGene or ensembl\n" if($verbose);
-  
+
+  if($verbose){
+    print 'Loaded a total of :-';
+    foreach my $type (keys %name_count){
+      print "\t".$type."\t".$name_count{$type}."\n";
+    }
+    print "$mismatch xrefs could not be associated via RefSeq, EntrezGene or ensembl\n";
+  }
   return 0; # successful
-  
 }
 
 
-sub add_synonyms_for_hgnc{
-  my $self = shift;
-  my $type = shift;
-  my $name = shift;
-  my $species_id = shift;
-  my $dead_name = shift;
-  my $alias = shift;
 
-    
-    if (defined($dead_name)) {     # dead name, add to synonym
-      my @array2 = split(',\s*', $dead_name);
-      foreach my $arr (@array2){
-	XrefParser::BaseParser->add_to_syn($name, $type, $arr, $species_id);
+sub process_header{
+  my $self = shift;
+  my $header = shift;
+  my %name_to_source_id;
+  my %name_to_array_index;
+
+  my %header_to_name = ( 'HGNC ID' => 'desc_only',
+			 'Approved Symbol' => 0,
+			 'Approved Name'   => 0,
+			 'Previous Symbols' => 0,
+			 'Synonyms' => 0,
+			 'Entrez Gene ID' => 'entrezgene_manual',
+			 'RefSeq IDs' => 'refseq_manual',
+			 'Entrez Gene ID ' => 'entrezgene_mapped', #note space needed
+			 'RefSeq ' => 'refseq_mapped',
+			 'Ensembl Gene ID' => 'ensembl_manual',
+			 'UniProt ID ' => 'swissprot_manual',
+			 'Locus Specific Databases' => 0);
+
+
+  foreach my $key (keys %header_to_name){
+    if($header_to_name{$key}){
+      my $source_id =
+	$self->get_source_id_for_source_name('HGNC',$header_to_name{$key});
+      if(!(defined $source_id)){
+	die 'Could not get source id for '.$header_to_name{$key}."\n";
       }
-    }
-  
-  if (defined($alias)) {     # alias, add to synonym
-    my @array2 = split(',\s*', $alias);
-    foreach my $arr (@array2){
-      XrefParser::BaseParser->add_to_syn($name, $type, $arr, $species_id);
+      $name_to_source_id{ $header_to_name{$key} } = $source_id;
     }
   }
+
+  my $source_id = $self->get_source_id_for_source_name('LRG_HGNC_notransfer');
+  if(!(defined $source_id) ){
+    die 'Could not get source id for LRG_HGNC_notransfer\n';
+  }
+  $name_to_source_id{'Locus Specific Databases'} = $source_id;
+
+  chomp $header;
+  my @items = split /\t/x, $header;
+  my $i=0;
+  foreach my $h (@items){
+    $h =~ s/\(.*\)//x;
+    if((defined $header_to_name{$h}) and $header_to_name{$h}){
+      $name_to_array_index{$header_to_name{$h}} = $i++;
+    }
+    elsif(defined $header_to_name{$h}){
+      $name_to_array_index{$h} = $i++;
+    }
+    else{
+      die "Problem with $h not listed\n";
+    }
+  }
+
+  return \%name_to_source_id, \%name_to_array_index;
 }
 
+sub add_synonyms_for_hgnc{
+  my ($self, $ref_arg) = @_;
 
-sub rename_url_file{
-  return "hugo.txt";
+  my $source_id  = $ref_arg->{source_id};
+  my $name       = $ref_arg->{name};
+  my $species_id = $ref_arg->{species_id};
+  my $dead_name  = $ref_arg->{dead};
+  my $alias      = $ref_arg->{alias};
+
+  if (defined $dead_name ) {     # dead name, add to synonym
+    my @array2 = split ',\s*', $dead_name ;
+    foreach my $arr (@array2){
+      $self->add_to_syn($name, $source_id, $arr, $species_id);
+    }
+  }
+
+  if (defined $alias ) {     # alias, add to synonym
+    my @array2 = split ',\s*', $alias;
+    foreach my $arr (@array2){
+      $self->add_to_syn($name, $source_id, $arr, $species_id);
+    }
+  }
+  return;
 }
 
 1;
-    
+
 
