@@ -36,7 +36,7 @@ my $new_ditag = Bio::EnsEMBL::Map::Ditag->new (
                                                -type     => $type,
 					       -count    => $tag_count,
                                                -sequence => $sequence, 
-                                               -adaptor  => $db,
+                                               -adaptor  => $ditag_adaptor,
                                               );
 my @ditags = ( $new_ditag );
 
