@@ -1436,6 +1436,8 @@ sub load_registry_from_db {
   }
 
   my $ontology_version = 0;
+  # either 'ensembl' or 'ensemblgenomes'
+  my $ensembl_group = "ensembl";
 
   $user ||= "ensro";
   if ( !defined($port) ) {
@@ -1483,7 +1485,8 @@ sub load_registry_from_db {
       if ( $2 eq $software_version ) {
         $temp{$1} = $2;
       }
-    } elsif ( $db =~ /^(ensembl[genomes]*_ontology)_(\d+)_\d+/ ) {
+    } elsif ( $db =~ /^(ensembl[genomes]*)_ontology_(\d+)_\d*/ ) {
+        $ensembl_group = $1;
 	$ontology_version = $2;
     } elsif ( $db =~ /^([a-z]+_[a-z0-9]+_[a-z]+(?:_\d+)?)_(\d+)_(\w+)/ )
     {
@@ -1913,7 +1916,11 @@ sub load_registry_from_db {
     require Bio::EnsEMBL::DBSQL::OntologyDBAdaptor;
 
     my $ontology_db =
-      sprintf( "ensemblgenomes_ontology_%d_%d", $ontology_version, $software_version );
+      sprintf( "%s_ontology_%d", $ensembl_group, $software_version );
+    if ($ensembl_group =~ /^ensemblgenomes$/i) {
+        $ontology_db =
+            sprintf( "%s_ontology_%d_%d", $ensembl_group, $ontology_version, $software_version );
+    }
 
     my $dba = Bio::EnsEMBL::DBSQL::OntologyDBAdaptor->new(
       '-species' => 'multi'.$species_suffix,
