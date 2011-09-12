@@ -257,7 +257,7 @@ sub load_all {
         }
 
         if ( defined $cfg ) {
-		  my %default_adaptor_args = ();
+                  my %default_adaptor_args = ();
 
             if ( $cfg->SectionExists('default') ) {
                 # The 'default' section is special.  It contain default
@@ -1291,8 +1291,8 @@ sub change_access{
        (((!defined($user)) or ($user eq $dbc->username))) and
        ((!defined($dbname)) or ($dbname eq $dbc->dbname))){
       if($dbc->connected()){
-	$dbc->db_handle->disconnect();
-	$dbc->connected(undef);
+        $dbc->db_handle->disconnect();
+        $dbc->connected(undef);
       }
       # over write the username and password
       $dbc->username($new_user);
@@ -1471,7 +1471,8 @@ sub load_registry_from_db {
     $species_suffix = "";
   }
 
-  my $ontology_version = 0;
+  my $ontology_db;
+  my $ontology_version;
 
   $user ||= "ensro";
   if ( !defined($port) ) {
@@ -1513,10 +1514,12 @@ sub load_registry_from_db {
       }
     } elsif ( $db =~ /^(.+)_(userdata)$/x ) {
       $temp{$1} = $2;
-    } elsif ( $db =~ /^(ensembl_compara # compara database
+    } elsif (
+      $db =~ /^(ensembl_compara # compara database
                         (?:_\w+)*?)     # optional ensembl genomes bit
                         _
-                        (\d+)$/x ) {    # db version
+                        (\d+)$/x )
+    {    # db version
       if ( $2 eq $software_version ) {
         $temp{$1} = $2;
       }
@@ -1524,20 +1527,23 @@ sub load_registry_from_db {
       if ( $2 eq $software_version ) {
         $temp{$1} = $2;
       }
-    } elsif ( $db =~ /^(ensembl(?:genomes)_ontology)_(\d+)/x ) {
-      if ( $2 eq $software_version ) {
-        $ontology_version = $2;
+    } elsif ( $db =~ /^ensembl(?:genomes)?_ontology_(?:\d+_)?(\d+)/x ) {
+      if ( $1 eq $software_version ) {
+        $ontology_db      = $db;
+        $ontology_version = $1;
       }
-    } elsif ( $db =~ /^([a-z]+_[a-z0-9]+ # species name e.g. homo_sapiens
-		       _
-                       [a-z]+            # db type
-                       (?:_\d+)?)        # optional end bit for ensembl genomes databases
-                       _
-                       (\d+)             # database release
-                       _
-                       (\w+)             # assembly number can have letters too e.g 37c
-                       /x
-	    ) {
+    } elsif (
+      $db =~ /^([a-z]+_[a-z0-9]+ # species name e.g. homo_sapiens
+           _
+           [a-z]+            # db type
+           (?:_\d+)?)        # optional end bit for ensembl genomes databases
+           _
+           (\d+)             # database release
+           _
+           (\w+)             # assembly number can have letters too e.g 37c
+           /x
+      )
+    {
 
       # Species specific databases (core, cdna, vega etc.)
 
@@ -1566,7 +1572,7 @@ sub load_registry_from_db {
     my @dbs = grep { /^[a-z]+_[a-z0-9]+  # species name
                        _
                        $type            # the database type
-		       _
+                       _
                        (?:\d+_)?         # optional end bit for ensembl genomes
                        \d+               # database release
                        _
@@ -1574,13 +1580,13 @@ sub load_registry_from_db {
 
     foreach my $database (@dbs) {
       if ( index( $database, 'collection' ) != -1 ) {
-	# Skip multi-species databases.
-	next;
+        # Skip multi-species databases.
+        next;
       }
     
 
       my ( $species, $num ) =
-	( $database =~ /(^[a-z]+_[a-z0-9]+)  # species name
+        ( $database =~ /(^[a-z]+_[a-z0-9]+)  # species name
                      _
                      $type                   # type
                      _
@@ -1594,7 +1600,7 @@ sub load_registry_from_db {
       }
 
       my $dba =
-	Bio::EnsEMBL::DBSQL::DBAdaptor->new(
+        Bio::EnsEMBL::DBSQL::DBAdaptor->new(
                                          -group        => $type,
                                          -species      => $species.$species_suffix,
                                          -host         => $host,
@@ -1606,8 +1612,8 @@ sub load_registry_from_db {
                                          -no_cache     => $no_cache );
 
       if ($verbose) {
-	printf( "Species '%s' loaded from database '%s'\n",
-		$species, $database );
+        printf( "Species '%s' loaded from database '%s'\n",
+                $species, $database );
       }
     }
   }
@@ -1916,9 +1922,6 @@ sub load_registry_from_db {
   if ( $ontology_version != 0 ) {
     require Bio::EnsEMBL::DBSQL::OntologyDBAdaptor;
 
-    my $ontology_db =
-      sprintf( "ensembl_ontology_%d", $ontology_version );
-
     my $dba = Bio::EnsEMBL::DBSQL::OntologyDBAdaptor->new(
       '-species' => 'multi'.$species_suffix,
       '-group'   => 'ontology',
@@ -2079,7 +2082,7 @@ sub find_and_add_aliases {
       } elsif (
              $lc_species ne $class->get_alias( $alias_suffix ) )
       {
-	$class->remove_alias( $species, $alias_suffix );
+        $class->remove_alias( $species, $alias_suffix );
       }
     }
 
@@ -2272,11 +2275,11 @@ sub add_new_tracks{
   if(defined($species_reg)){
     foreach my $dba (@{$reg->get_all_DBAdaptors()}){
       if(!$reg->default_track($dba->species,$dba->group)){
-	$pars{'available'} = "species ".$reg->get_alias($dba->species());
-	$pars{'db_alias'} = $dba->group();
-#	print STDERR "Adding new track for ".$dba->species."\t".$dba->group."\n";
-	$conf->add_new_track_generictranscript('',$dba->group(), "black",$pos,%pars);
-	$pos++;
+        $pars{'available'} = "species ".$reg->get_alias($dba->species());
+        $pars{'db_alias'} = $dba->group();
+#       print STDERR "Adding new track for ".$dba->species."\t".$dba->group."\n";
+        $conf->add_new_track_generictranscript('',$dba->group(), "black",$pos,%pars);
+        $pos++;
       }
     }
   }
