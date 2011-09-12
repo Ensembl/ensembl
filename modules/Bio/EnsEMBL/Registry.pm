@@ -779,13 +779,7 @@ sub reset_DBAdaptor {
 
   $self->remove_DBAdaptor( $alias, $group );
 
-  #my @adaptors = @{$self->get_all_adaptors};
-  #This is causing a loop as it was constantly trying to reset the db
-  #and never getting there.
-  #I think this was left over from testing
-
   # ConfigRegistry should automatically add this to the Registry
-
   $db = $class->new(
     -user    => $user,
     -host    => $host,
