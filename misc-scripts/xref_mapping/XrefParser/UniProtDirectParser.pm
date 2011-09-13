@@ -1,7 +1,8 @@
 package XrefParser::UniProtDirectParser;
 
 use strict;
-
+use warnings;
+use Carp;
 use DBI;
 
 use base qw( XrefParser::BaseParser );
@@ -9,18 +10,21 @@ use base qw( XrefParser::BaseParser );
 # Parse file of Uniprot records and assign direct xrefs
 # All assumed to be linked to translation
 
-my $verbose;
 
 # --------------------------------------------------------------------------------
 
 sub run {
 
-  my $self = shift;
-  my $source_id  = shift;
-  my $species_id = shift;
-  my $files  = shift;
-  my $rel_file   = shift;
-  $verbose       = shift;
+ my ($self, $ref_arg) = @_;
+  my $source_id    = $ref_arg->{source_id};
+  my $species_id   = $ref_arg->{species_id};
+  my $files        = $ref_arg->{files};
+  my $verbose      = $ref_arg->{verbose};
+
+  if((!defined $source_id) or (!defined $species_id) or (!defined $files) ){
+    croak "Need to pass source_id, species_id and files as pairs";
+  }
+  $verbose |=0;
 
   my %prefix = (9606 => "ENSP0", 10090 => "ENSMUSP0", 10116 => "ENSRNOP0");
 
@@ -70,7 +74,7 @@ sub run {
 
 
 
-  my $err_count;
+  my $err_count=0;
   foreach my $key (keys %prot2ensembl){
 
     #
@@ -115,7 +119,7 @@ sub run {
     $get_aliases_sth->execute($old_xref_id);
     $get_aliases_sth->bind_columns(\$synonym);
     while($get_aliases_sth->fetch()){
-      $add_alias_sth->execute($xref_id, $synonym) || die "Could not add synonym for $xref_id, $synonym";
+      $add_alias_sth->execute($xref_id, $synonym) || croak "Could not add synonym for $xref_id, $synonym";
     }
 
 
@@ -131,7 +135,7 @@ sub run {
       #add the dependents
       #
       foreach my $dep (keys %linkage_anotation){
-	$add_dependent_xref_sth->execute($xref_id, $dep, $linkage_anotation{$dep}, $linkage_source_id{$dep});	
+	$add_dependent_xref_sth->execute($xref_id, $dep, $linkage_anotation{$dep}, $linkage_source_id{$dep});
       }
     }
   }

@@ -1,22 +1,21 @@
 package XrefParser::WilsonAffyParser;
 
 use strict;
-
+use warnings;
+use Carp;
 use base qw( XrefParser::BaseParser );
 
-my $xref_sth ;
-my $dep_sth;
-my $syn_sth;
-
 sub run {
+  my ($self, $ref_arg) = @_;
+  my $source_id    = $ref_arg->{source_id};
+  my $species_id   = $ref_arg->{species_id};
+  my $files        = $ref_arg->{files};
+  my $verbose      = $ref_arg->{verbose};
 
-  my $self = shift;
-  my $source_id = shift;
-  my $species_id = shift;
-  my $files       = shift;
-  my $release_file   = shift;
-  my $verbose       = shift;
-#  my ($self, $source_id, $species_id, $file) = @_;
+  if((!defined $source_id) or (!defined $species_id) or (!defined $files) ){
+    croak "Need to pass source_id, species_id and files as pairs";
+  }
+  $verbose |=0;
 
   my @xrefs = $self->create_xrefs($source_id, $species_id, @{$files}[0], $verbose);
 
@@ -37,7 +36,7 @@ sub create_xrefs {
 
   my ($count, $noseq, $direct) = (0,0,0);
 
-  $| = 1; # don't buffer
+  local $| = 1; # don't buffer
 
   my @xrefs;
 

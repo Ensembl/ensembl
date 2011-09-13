@@ -1,6 +1,8 @@
 package XrefParser::VegaOfficialNameParser;
 
 use strict;
+use warnings;
+use Carp;
 use DBI;
 use Bio::EnsEMBL::Registry;
 use base qw( XrefParser::BaseParser );
@@ -8,10 +10,19 @@ my $reg = "Bio::EnsEMBL::Registry";
 
 sub run_script {
 
-  my ($self, $file, $source_id, $species_id, $verbose) = @_;
+  my ($self, $ref_arg) = @_;
+  my $source_id    = $ref_arg->{source_id};
+  my $species_id   = $ref_arg->{species_id};
+  my $file         = $ref_arg->{file};
+  my $verbose      = $ref_arg->{verbose};
+
+  if((!defined $source_id) or (!defined $species_id) or (!defined $file) ){
+    croak "Need to pass source_id, species_id and file as pairs";
+  }
+  $verbose |=0;
 
   my ($type, $my_args) = split(/:/,$file);
-  
+
   my $host;
   if($my_args =~ /host[=][>](\S+?)[,]/){
     $host = $1;
@@ -40,11 +51,6 @@ sub run_script {
   else{
     die "Species is $species_name and is not homo_sapines, mus_musculus or danio_rerio the only three valid species\n";
   }
-
-#  else {
-#    print STDERR "\nSource name not defined.\n\n";
-#    exit(1);
-#  }
 
   my $user = 'ensro';
   if($my_args =~ /user[=][>](\S+?)[,]/){
@@ -206,8 +212,8 @@ EXT
   my $dbi = $self->dbi();  
 
 
-  my $sql = "insert into synonym (xref_id, synonym) values (?, ?)";
-  my $add_syn_sth = $dbi->prepare($sql);    
+  my $syn_sql = "insert into synonym (xref_id, synonym) values (?, ?)";
+  my $add_syn_sth = $dbi->prepare($syn_sql);    
   
   my $syn_hash = $self->get_ext_synonyms($source_name);
 

@@ -2,6 +2,7 @@ package XrefParser::AnophelesSymbolParser;
 
 use strict;
 use File::Basename;
+use Carp;
 
 use base qw( XrefParser::BaseParser );
 
@@ -13,13 +14,17 @@ use base qw( XrefParser::BaseParser );
 # GELYDALSAIVECVQMAPHFFAKRLHKAMDGVGTDDATLIRIIVSRSEIDLQNIKDEFEQMYNKTLVSAVRSETSGDYKRALCALIGNA
 
 sub run {
+  my ($self, $ref_arg) = @_;
+  my $source_id    = $ref_arg->{source_id};
+  my $species_id   = $ref_arg->{species_id};
+  my $files        = $ref_arg->{files};
+  my $release_file = $ref_arg->{rel_file};
+  my $verbose      = $ref_arg->{verbose};
 
-  my $self = shift;
-  my $source_id = shift;
-  my $species_id = shift;
-  my $files       = shift;
-  my $release_file   = shift;
-  my $verbose       = shift;
+  if((!defined $source_id) or (!defined $species_id) or (!defined $files) or (!defined $release_file)){
+    croak "Need to pass source_id, species_id, files and rel_file as pairs";
+  }
+  $verbose |=0;
 
   my $file = @{$files}[0];
 

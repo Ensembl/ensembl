@@ -249,7 +249,10 @@ DSS
 	      "UPDATE source_url SET checksum=1, upload_date=NOW() WHERE source_url_id=$source_url_id";
 
 	    if (
-		$new->run_script( $file,  $source_id, $species_id, $verbose ) )
+		$new->run_script( {file       => $file,
+				   source_id  => $source_id, 
+				   species_id => $species_id, 
+				   verbose    => $verbose }) )
 	      {
 		++$summary{$name}->{$parser};
 	      }
@@ -329,16 +332,21 @@ DSS
 	if ( defined $release_url ) {
 	  # Run with $release_url.
 	  if (
-	      $new->run( $source_id,      $species_id,
-			 \@files_to_parse, $release_url, $verbose ) )
+	      $new->run( { source_id  => $source_id,
+			   species_id =>$species_id,
+			   files      => \@files_to_parse,
+                           rel_file   => $release_url,
+                           verbose     => $verbose } ) )
 	    {
 	      ++$summary{$name}->{$parser};
 	    }
 	} else {
 	  # Run without $release_url.
 	  if (
-	      $new->run( $source_id, $species_id,
-			 \@files_to_parse, undef, $verbose ) )
+	      $new->run(  { source_id  => $source_id,
+			    species_id =>$species_id,
+			    files      => \@files_to_parse,
+			    verbose     => $verbose } ))
 	    {
 	      ++$summary{$name}->{$parser};
 	    }

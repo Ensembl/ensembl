@@ -1,6 +1,8 @@
 package XrefParser::VBExternalDescriptionParser;
 
 use strict;
+use warnings;
+use Carp;
 use POSIX qw(strftime);
 use File::Basename;
 use base qw( XrefParser::BaseParser );
@@ -14,24 +16,20 @@ use base qw( XrefParser::BaseParser );
 # ...
 
 sub run {
+  my ($self, $ref_arg) = @_;
+  my $source_id    = $ref_arg->{source_id};
+  my $species_id   = $ref_arg->{species_id};
+  my $files        = $ref_arg->{files};
+  my $verbose      = $ref_arg->{verbose};
 
-  my $self = shift;
-  my $source_id = shift;
-  my $species_id = shift;
-  my $files       = shift;
-  my $release_file   = shift;
-  my $verbose       = shift;
+  if((!defined $source_id) or (!defined $species_id) or (!defined $files) ){
+    croak "Need to pass source_id, species_id and files as pairs";
+  }
+  $verbose |=0;
 
   my $file = @{$files}[0];
 
   print "source_id = $source_id, species= $species_id, file = $file\n" if($verbose);
-
-  if(!defined($source_id)){
-    $source_id = XrefParser::BaseParser->get_source_id_for_filename($file);
-  }
-  if(!defined($species_id)){
-    $species_id = XrefParser::BaseParser->get_species_id_for_filename($file);
-  }
 
   my $added = 0;
   my $count = 0;
@@ -55,7 +53,7 @@ sub run {
     if(defined($gene_id) and $gene_id ne "-"){
       $self->add_direct_xref($xref_id, $gene_id, "Gene", "") ;
       $added++;
-    }	
+    }
   }
 
   $file_io->close();

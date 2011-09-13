@@ -4,17 +4,23 @@ use strict;
 use warnings;
 use POSIX qw(strftime);
 use File::Basename;
-
+use Carp;
 use base qw( XrefParser::BaseParser );
 
 sub run {
 
-  my $self = shift;
-  my $source_id = shift;
-  my $species_id = shift;
-  my $files       = shift;
-  my $release_file   = shift;
-  my $verbose       = shift;
+  my ($self, $ref_arg) = @_;
+  my $source_id    = $ref_arg->{source_id};
+  my $species_id   = $ref_arg->{species_id};
+  my $files        = $ref_arg->{files};
+  my $release_file = $ref_arg->{rel_file};
+  my $verbose      = $ref_arg->{verbose};
+
+  if((!defined $source_id) or (!defined $species_id) or (!defined $files) ){
+    croak "Needs to pass source_id, species_id and  files as pairs";
+  }
+  $verbose |=0;
+
 
   my $file = @{$files}[0];
   my $file_desc = @{$files}[1];
@@ -24,12 +30,12 @@ sub run {
   #
 
   my $go_desc_io = $self->get_filehandle($file_desc);
-    
+
   if ( !defined $go_desc_io ) {
     print STDERR "ERROR: Could not open description file, $file_desc\n";
     return 1;    # 1 error
   }
-  
+
   my %go_to_desc;
   print "description file for GO\n" if($verbose);
   my $term = undef;
@@ -98,17 +104,17 @@ sub run {
 
   my %sp2tax     =  $self->species_id2taxonomy();  #some species have multiple
                                                                     #tax_id i.e. strains
-  
+
   my @tax_ids = @{$sp2tax{$species_id}};
   foreach my $tax_id ( @tax_ids){
 
     my $go_io = $self->get_filehandle($file);
-    
+
     if ( !defined $go_io ) {
       print STDERR "ERROR: Could not open $file\n";
       return 1;    # 1 error
     }
-    
+
     print "processing for taxon: $tax_id\n" if($verbose);
     my $taxon_line = "taxon:".$tax_id;
     my $miss =0;
@@ -169,9 +175,9 @@ sub run {
 	
 	if(defined($worm{$worm_acc})){
 	  my ($xref_id, $stable_id, $type, $link) = split(/::/x,$worm{$worm_acc});
-	  
+
 	  my $new_xref_id = $self->get_xref($array[4],$source_id, $species_id);
-	  
+
 	  if(!defined($new_xref_id)){
 	    $new_xref_id = 
 	      $self->add_xref($array[4],undef,$array[4],"", $source_id, $species_id, "DIRECT");
@@ -251,7 +257,7 @@ sub run {
 
     $release =~ tr /\n/ /;
     $release =~
-          s/.*The following table describes.*?of (GOA.*?)<ul>.*/$1/x;
+          s/.*The following table describes.*?of (GOA.*?)<ul>.*/$1/;
     $release =~ s/<[^>]+>//gx;
 
     print "GO release: '$release'\n" if($verbose);

@@ -6,11 +6,21 @@ package XrefParser::WormbaseDatabaseStableIDParser;
 # for the wormbase_gene and wormbase_transcript sources.
 
 use strict;
-
+use warnings;
+use Carp;
 use base qw( XrefParser::DatabaseParser );
 
 sub run {
-  my ($self, $dsn, $source_id, $species_id, $verbose) = @_;
+  my ($self, $ref_arg) = @_;
+  my $source_id    = $ref_arg->{source_id};
+  my $species_id   = $ref_arg->{species_id};
+  my $dsn          = $ref_arg->{dsn};
+  my $verbose      = $ref_arg->{verbose};
+
+  if((!defined $source_id) or (!defined $species_id) or (!defined $dsn) ){
+    croak "Need to pass source_id, species_id and dsn as pairs";
+  }
+  $verbose |=0;
 
   my $db = $self->connect($dsn); # source db (probably core)
   my $xref_db = $self->dbi();

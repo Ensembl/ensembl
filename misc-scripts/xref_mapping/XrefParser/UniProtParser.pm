@@ -10,32 +10,32 @@
 package XrefParser::UniProtParser;
 
 use strict;
+use warnings;
+use Carp;
 use POSIX qw(strftime);
 use File::Basename;
 
 use base qw( XrefParser::BaseParser );
 
 
-my $verbose;
 
 sub run {
 
-  my $self = shift;
-  my $source_id = shift;
-  my $species_id = shift;
-  my $files       = shift;
-  my $release_file   = shift;
-  $verbose       = shift;
+  my ($self, $ref_arg) = @_;
+  my $source_id    = $ref_arg->{source_id};
+  my $species_id   = $ref_arg->{species_id};
+  my $files        = $ref_arg->{files};
+  my $release_file = $ref_arg->{rel_file};
+  my $verbose      = $ref_arg->{verbose};
+
+  if((!defined $source_id) or (!defined $species_id) or (!defined $files) or (!defined $release_file)){
+    croak "Need to pass source_id, species_id, files and rel_file as pairs";
+  }
+  $verbose |=0;
 
   my $file = @{$files}[0];
 
-  my $species_name;
-
   my ( $sp_source_id, $sptr_source_id, $sp_release, $sptr_release );
-
-  if(!defined($species_id)){
-    ($species_id, $species_name) = $self->get_species($file);
-  }
 
   $sp_source_id =
     $self->get_source_id_for_source_name('Uniprot/SWISSPROT',"sequence_mapped");
@@ -48,7 +48,7 @@ sub run {
 
   my @xrefs =
     $self->create_xrefs( $sp_source_id, $sptr_source_id, $species_id,
-      $file );
+      $file, $verbose );
 
   if ( !@xrefs ) {
       return 1;    # 1 error
@@ -101,47 +101,12 @@ sub run {
   return 0; # successfull
 }
 
-# --------------------------------------------------------------------------------
-# Get species (id and name) from file
-# For UniProt files the filename is the taxonomy ID
-
-sub get_species {
-  my $self = shift;
-  my ($file) = @_;
-
-  my ($taxonomy_id, $extension) = split(/\./, basename($file));
-
-  my $sth = $self->dbi()->prepare("SELECT species_id,name FROM species WHERE taxonomy_id=?");
-  $sth->execute($taxonomy_id);
-  my ($species_id, $species_name);
-  while(my @row = $sth->fetchrow_array()) {
-    $species_id = $row[0];
-    $species_name = $row[1];
-  }
-  $sth->finish;
-
-  if (defined $species_name) {
-
-    print "Taxonomy ID " . $taxonomy_id . " corresponds to species ID " . $species_id . " name " . $species_name . "\n" if($verbose);
-
-  } else {
-
-    print STDERR "Cannot find species corresponding to taxonomy ID " . $species_id . " - check species table\n";
-    exit(1);
-
-  }
-
-  return ($species_id, $species_name);
-
-}
 
 # --------------------------------------------------------------------------------
 # Parse file into array of xref objects
 
 sub create_xrefs {
-  my $self = shift;
-
-  my ( $sp_source_id, $sptr_source_id, $species_id, $file ) = @_;
+  my ($self, $sp_source_id, $sptr_source_id, $species_id, $file, $verbose ) = @_;
 
   my $num_sp = 0;
   my $num_sptr = 0;
@@ -149,11 +114,10 @@ sub create_xrefs {
   my $num_sptr_pred = 0;
 
   my %dependent_sources = $self->get_dependent_xref_sources(); # name-id hash
-  my %GeneNameSynonym;
 
   if(defined($dependent_sources{'MGI'})){
     $dependent_sources{'MGI'} = XrefParser::BaseParser->get_source_id_for_source_name("MGI","uniprot");
-  }	
+  }
 
 
   # Get predicted equivalents of various sources used here
@@ -405,11 +369,7 @@ sub create_xrefs {
           push (@{$depe{"SYNONYMS"}}, @syn);
 	}
       }
-    }	
-
-    my ($deps) = $_ =~ /(DR\s+.+)/s; # /s allows . to match newline
-    my @dep_lines = ();
-    if ( defined $deps ) { @dep_lines = split /\n/, $deps }
+    }
 
     # dependent xrefs - only store those that are from sources listed in the source table
     my ($deps) = $_ =~ /(DR\s+.+)/s; # /s allows . to match newline
@@ -430,13 +390,13 @@ sub create_xrefs {
 	if($source =~ "RGD"){  #using RGD file now instead.
 	  next;
 	}
-	if($source =~ "IPI"){  
+	if($source =~ "IPI"){
 	  next;
 	}
-	if($source =~ "UCSC"){  
+	if($source =~ "UCSC"){
 	  next;
 	}
-	if($source =~ "SGD"){  
+	if($source =~ "SGD"){
 	  next;
 	}
 	if($source =~ "HGNC"){
@@ -498,7 +458,7 @@ sub create_xrefs {
 	      $dep2{ACCESSION} = $acc;
 	      $dep2{LINKAGE_SOURCE_ID} = $xref->{SOURCE_ID};
 	      $dep2{SOURCE_NAME} = "MIM_GENE";
-	      $dep2{SOURCE_ID} = $dependent_sources{"MIM_GENE"};	      
+	      $dep2{SOURCE_ID} = $dependent_sources{"MIM_GENE"};
 	      if(defined($genemap{$acc})){
 		$dependent_xrefs{ $dep2{SOURCE_NAME} }++; # get count of depenent xrefs.
 		push @{$xref->{DEPENDENT_XREFS}}, \%dep2; # array of hashrefs
@@ -522,7 +482,7 @@ sub create_xrefs {
 	  }
 	  if($dep =~ /EMBL/){
 	    my ($protein_id) = $extra[0];
-	    if($protein_id ne "-" and !defined($seen{$source.":".$protein_id})){
+	    if(($protein_id ne "-") and (!defined($seen{$source.":".$protein_id}))){
 	      my %dep2;
 	      $dep2{SOURCE_NAME} = $source;
 	      $dep2{SOURCE_ID} = $dependent_sources{"protein_id"};

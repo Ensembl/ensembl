@@ -3,21 +3,25 @@
 package XrefParser::UniGeneParser;
 
 use strict;
-
+use warnings;
+use Carp;
 use File::Basename;
 
 use base qw( XrefParser::BaseParser );
 
-my $verbose;
-
 sub run {
 
-  my $self = shift;
-  my $source_id = shift;
-  my $species_id = shift;
-  my $files       = shift;
-  my $release_file   = shift;
-  $verbose       = shift;
+  my ($self, $ref_arg) = @_;
+  my $source_id    = $ref_arg->{source_id};
+  my $species_id   = $ref_arg->{species_id};
+  my $files        = $ref_arg->{files};
+  my $release_file = $ref_arg->{rel_file};
+  my $verbose      = $ref_arg->{verbose};
+
+  if((!defined $source_id) or (!defined $species_id) or (!defined $files) or (!defined $release_file)){
+    croak "Need to pass source_id, species_id, files and rel_file as pairs";
+  }
+  $verbose |=0;
 
   my $uniq_file = @{$files}[0];
   my $data_file = @{$files}[1];
@@ -39,42 +43,43 @@ sub run {
     return 1; #error
   }
   if(!defined($self->upload_xref_object_graphs($xrefs))){
+    print "Read " . scalar(@$xrefs) ." xrefs from $uniq_file\n" if($verbose);
     return 1; # error
   }
 
-    if ( defined $release_file ) {
-        # Get species name from species ID.
-        my $species_name;
+  if ( defined $release_file ) {
+    # Get species name from species ID.
+    my $species_name;
 
-        my $sth =
-          $self->dbi()
-          ->prepare("SELECT name FROM species WHERE species_id = ?");
+    my $sth =
+      $self->dbi()
+	->prepare("SELECT name FROM species WHERE species_id = ?");
 
-        $sth->execute($species_id);
-        $sth->bind_columns( \$species_name );
-        $sth->fetchrow_array();
+    $sth->execute($species_id);
+    $sth->bind_columns( \$species_name );
+    $sth->fetchrow_array();
 
-        $species_name =~ tr/_/ /;
+    $species_name =~ tr/_/ /;
 
-        # Parse and set release info.
-        my $release;
-        my $release_io = $self->get_filehandle($release_file);
+    # Parse and set release info.
+    my $release;
+    my $release_io = $self->get_filehandle($release_file);
 
-        while ( defined( my $line = $release_io->getline() ) ) {
-            if ( $line =~ /^(.*$species_name)/i ) {
-                $release = $1;
-            }
-        }
-        $release_io->close();
-
-        if ( defined $release ) {
-            $release =~ s/\s{2,}/ /g;
-            $release =~ s/^(.*) UniGene/$1, UniGene/;
-
-            print "UniGene release: '$release'\n" if($verbose);
-            $self->set_release( $unigene_source_id, $release );
-        }
+    while ( defined( my $line = $release_io->getline() ) ) {
+      if ( $line =~ /^(.*$species_name)/i ) {
+	$release = $1;
+      }
     }
+    $release_io->close();
+
+    if ( defined $release ) {
+      $release =~ s/\s{2,}/ /g;
+      $release =~ s/^(.*) UniGene/$1, UniGene/;
+
+      print "UniGene release: '$release'\n" if($verbose);
+      $self->set_release( $unigene_source_id, $release );
+    }
+  }
 
   return 0; # successfull
 
@@ -118,11 +123,7 @@ sub get_desc{
 
 
 sub create_xrefs {
-  my $self = shift;
-
-  my ( $peptide_source_id, $unigene_source_id, $uniq_file, $data_file,
-      $species_id )
-    = @_;
+  my ($self, $peptide_source_id, $unigene_source_id, $uniq_file, $data_file, $species_id ) = @_;
 
   # Create a hash of all valid names for this species. Not used...
   # my %species2name = $self->species_id2name();
@@ -193,7 +194,6 @@ sub create_xrefs {
   $unigene_io->close();
 
   %geneid_2_desc=();
-  print "Read " . scalar(@xrefs) ." xrefs from $uniq_file\n" if($verbose);
 
   return \@xrefs;
 

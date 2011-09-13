@@ -1,6 +1,8 @@
 package XrefParser::Mim2GeneParser;
 
 use strict;
+use warnings;
+use Carp;
 use POSIX qw(strftime);
 use File::Basename;
 
@@ -8,23 +10,19 @@ use base qw( XrefParser::BaseParser );
 
 sub run {
 
-  my $self = shift;
-  my $source_id = shift;
-  my $species_id = shift;
-  my $files       = shift;
-  my $release_file   = shift;
-  my $verbose       = shift;
+ my ($self, $ref_arg) = @_;
+  my $general_source_id    = $ref_arg->{source_id};
+  my $species_id   = $ref_arg->{species_id};
+  my $files        = $ref_arg->{files};
+  my $verbose      = $ref_arg->{verbose};
+
+  if((!defined $general_source_id) or (!defined $species_id) or (!defined $files) ){
+    croak "Need to pass source_id, species_id and files as pairs";
+  }
+  $verbose |=0;
+
 
   my $file = @{$files}[0];
-
-
-
-  if(!defined($source_id)){
-    $source_id = XrefParser::BaseParser->get_source_id_for_filename($file);
-  }
-  if(!defined($species_id)){
-    $species_id = XrefParser::BaseParser->get_species_id_for_filename($file);
-  }
 
   my $eg_io = $self->get_filehandle($file);
   if ( !defined $eg_io ) {
@@ -59,7 +57,7 @@ sub run {
       next;
     }
     
-    if(!defined($mim_gene{$omim_id}) and !defined($mim_morbid{$omim_id}) ){
+    if((!defined $mim_gene{$omim_id} ) and (!defined $mim_morbid{$omim_id} ) ){
       $missed_omim++;
       next;
     }
@@ -79,7 +77,7 @@ sub run {
 	  foreach my $mim_id (@{$mim_morbid{$omim_id}}){
 	    $add_dependent_xref_sth->execute($ent_id, $mim_id);
 	  }
-	}	
+	}
 	# $add_dependent_xref_sth->execute($entrez{$entrez_id}, $mim_morbid{$omim_id});	
       }
     }
@@ -101,7 +99,7 @@ sub run {
 	}
 	#	$add_dependent_xref_sth->execute($entrez{$entrez_id}, $mim_gene{$omim_id});	
       }
-    }	
+    }
     else{
       print "WARNING unknown type $type\n";
       next;

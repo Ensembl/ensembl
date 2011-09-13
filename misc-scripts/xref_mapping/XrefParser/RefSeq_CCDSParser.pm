@@ -1,7 +1,8 @@
 package XrefParser::RefSeq_CCDSParser;
 
 use strict;
-
+use warnings;
+use Carp;
 use DBI;
 
 use base qw( XrefParser::BaseParser );
@@ -9,12 +10,16 @@ use base qw( XrefParser::BaseParser );
 # Parse file of Refseq records and assign direct xrefs
 
 sub run_script {
+  my ($self, $ref_arg) = @_;
+  my $source_id    = $ref_arg->{source_id};
+  my $species_id   = $ref_arg->{species_id};
+  my $file         = $ref_arg->{file};
+  my $verbose      = $ref_arg->{verbose};
 
-  my $self = shift;
-  my $file = shift;
-  my $source_id  = shift;
-  my $species_id = shift;
-  my $verbose    = shift;
+  if((!defined $source_id) or (!defined $species_id) or (!defined $file) ){
+    croak "Need to pass source_id, species_id and file as pairs";
+  }
+  $verbose |=0;
 
   my $user = "ensro";
   my $host;
@@ -121,7 +126,7 @@ sub run_script {
   my %internal_to_stable_id;
   my ($acc, $internal_id);
 
-  my $sth = $dbi2->prepare($sql); 
+  $sth = $dbi2->prepare($sql); 
   $sth->execute("CCDS") or croak( $dbi2->errstr() );
   while ( my @row = $sth->fetchrow_array() ) {
     my $acc = $row[0];
@@ -172,7 +177,9 @@ sub run_script {
 	$direct_count++;
       }
 
-      $old_to_new{$old_xref{$refseq}} = $xref_id;
+      if(defined $old_xref{$refseq}){
+	$old_to_new{$old_xref{$refseq}} = $xref_id;
+      }
       $xref_count++;
     }
   }

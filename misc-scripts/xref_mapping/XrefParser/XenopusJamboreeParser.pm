@@ -3,6 +3,8 @@ package XrefParser::XenopusJamboreeParser;
 # Parse annotated peptides from Xenopus Jamboree
 
 use strict;
+use warnings;
+use Carp;
 use File::Basename;
 
 use base qw( XrefParser::BaseParser );
@@ -10,14 +12,16 @@ use base qw( XrefParser::BaseParser );
 
 
 sub run {
+ my ($self, $ref_arg) = @_;
+  my $source_id    = $ref_arg->{source_id};
+  my $species_id   = $ref_arg->{species_id};
+  my $files        = $ref_arg->{files};
+  my $verbose      = $ref_arg->{verbose};
 
-  my $self = shift;
-  my $source_id = shift;
-  my $species_id = shift;
-  my $files       = shift;
-  my $release_file   = shift;
-  my $verbose       = shift;
-
+  if((!defined $source_id) or (!defined $species_id) or (!defined $files) ){
+    croak "Need to pass source_id, species_id and files as pairs";
+  }
+  $verbose |=0;
   my $file = @{$files}[0];
 
   my $file_io = $self->get_filehandle($file);

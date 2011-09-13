@@ -1,7 +1,7 @@
 package XrefParser::CCDSParser;
 
 use strict;
-
+use Carp;
 use DBI;
 
 use base qw( XrefParser::BaseParser );
@@ -13,11 +13,16 @@ use base qw( XrefParser::BaseParser );
 
 sub run_script {
 
-  my $self = shift;
-  my $file = shift;
-  my $source_id  = shift;
-  my $species_id = shift;
-  my $verbose    = shift;
+  my ($self, $ref_arg) = @_;
+  my $source_id    = $ref_arg->{source_id};
+  my $species_id   = $ref_arg->{species_id};
+  my $file         = $ref_arg->{file};
+  my $verbose      = $ref_arg->{verbose};
+
+  if((!defined $source_id) or (!defined $species_id) or (!defined $file) ){
+    croak "Need to pass source_id, species_id and file  as pairs";
+  }
+  $verbose |=0;
 
   my $user = "ensro";
   my $host;

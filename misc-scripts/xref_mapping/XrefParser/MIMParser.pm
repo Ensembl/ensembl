@@ -1,6 +1,8 @@
 package XrefParser::MIMParser;
 
 use strict;
+use warnings;
+use Carp;
 use POSIX qw(strftime);
 use File::Basename;
 
@@ -8,12 +10,16 @@ use base qw( XrefParser::BaseParser );
 
 sub run {
 
-  my $self = shift;
-  my $general_source_id = shift;
-  my $species_id = shift;
-  my $files       = shift;
-  my $release_file   = shift;
-  my $verbose       = shift;
+  my ($self, $ref_arg) = @_;
+  my $general_source_id    = $ref_arg->{source_id};
+  my $species_id   = $ref_arg->{species_id};
+  my $files        = $ref_arg->{files};
+  my $verbose      = $ref_arg->{verbose};
+
+  if((!defined $general_source_id) or (!defined $species_id) or (!defined $files) ){
+    croak "Need to pass source_id, species_id and files as pairs";
+  }
+  $verbose |=0;
 
   my $file = @{$files}[0];
 
@@ -54,7 +60,6 @@ sub run {
   $mim_io->getline();    # first record is empty with *RECORD* as the
                          # record seperator
 
-  my %check;
   while ( $_ = $mim_io->getline() ) {
     #get the MIM number
     my $number = 0;
@@ -75,7 +80,7 @@ sub run {
 	  $gene++;
 	  $self->add_xref($number,"",$label,$long_desc,$gene_source_id,$species_id,"DEPENDENT");
 	}
-	elsif(!defined($type) or $type eq "" or $type eq "#" or $type eq "%"){ #phenotype only
+	elsif((!defined $type) or ($type eq "") or ($type eq "#") or ($type eq "%")){ #phenotype only
 	  $phenotype++;
 	  $self->add_xref($number,"",$label,$long_desc,$morbid_source_id,$species_id,"DEPENDENT");
 	}

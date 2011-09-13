@@ -1,13 +1,13 @@
 package XrefParser::VbDirectParser;
 
 use strict;
+use warnings;
+use Carp;
 use File::Basename;
 use Bio::SeqIO;
 use XrefParser::BaseParser;
 
-
-use vars qw(@ISA);
-@ISA = qw(XrefParser::BaseParser);
+use base = qw(XrefParser::BaseParser);
 
 # OParser for FASTA-format probe mappings from Agilent
 # >A_23_P253586
@@ -16,35 +16,43 @@ use vars qw(@ISA);
 # AGAAAGACGTTTTCCAACATGTAGAACTGCTTTTTAACTGGAGGAAAAATACTTCAGGAG
 
 sub run {
+  my ($self, $ref_arg) = @_;
+  my $source_id    = $ref_arg->{source_id};
+  my $species_id   = $ref_arg->{species_id};
+  my $files        = $ref_arg->{files};
+  my $verbose      = $ref_arg->{verbose};
 
-	my ($self, $file, $source_id, $species_id) = @_;
+  if((!defined $source_id) or (!defined $species_id) or (!defined $files)){
+    croak "Need to pass source_id, species_id, files and rel_file as pairs";
+  }
+  $verbose |=0;
 
-	open my $FH, "<", $file || return;
-	my $i=0;
-	print STDERR "source: ".$source_id."\tspecies: ".$species_id."\n";
-	
+  my $file = @{$files}[0];
 
-	my $type = "transcript";
+  open my $FH, "<", $file || return;
+  my $i=0;
+  print STDERR "source: ".$source_id."\tspecies: ".$species_id."\n";
+  my $type = "transcript";
 
-	while (my $ln = <$FH>) {
-		chomp($ln);
-		my ($probe,$id, $version, $description, $ensembl_id) = split("\t",$ln);      
-		$i++;
+  while (my $ln = <$FH>) {
+    chomp($ln);
+    my ($probe,$id, $version, $description, $ensembl_id) = split("\t",$ln);      
+    $i++;
 
-		my $xref_id = XrefParser::BaseParser->get_xref($probe, $source_id, $species_id);
-		if (!defined($xref_id) || $xref_id eq "") {
-			$xref_id = XrefParser::BaseParser->add_xref($probe, 1, $probe, $description, $source_id, $species_id, "DIRECT");
-			}
-		XrefParser::BaseParser->add_direct_xref($xref_id, $ensembl_id, $type, $probe);
-		}
+    my $xref_id = XrefParser::BaseParser->get_xref($probe, $source_id, $species_id);
+    if (!defined($xref_id) || $xref_id eq "") {
+      $xref_id = XrefParser::BaseParser->add_xref($probe, 1, $probe, $description, $source_id, $species_id, "DIRECT");
+    }
+    XrefParser::BaseParser->add_direct_xref($xref_id, $ensembl_id, $type, $probe);
+  }
 
-	print $i." VB direct xrefs succesfully parsed\n" if($verbose);
+  print $i." VB direct xrefs succesfully parsed\n" if($verbose);
 
-	close($FH);
+  close($FH);
 
-	return 0;
+  return 0;
 
-	}
+}
 
 
 sub new {

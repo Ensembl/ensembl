@@ -1,22 +1,26 @@
 package XrefParser::RGDParser;
 
 use strict;
+use warnings;
+use Carp;
 use POSIX qw(strftime);
 use File::Basename;
 
 use base qw( XrefParser::BaseParser );
 
-my $xref_sth ;
-my $dep_sth;
-
 sub run {
 
-  my $self = shift;
-  my $source_id = shift;
-  my $species_id = shift;
-  my $files       = shift;
-  my $release_file   = shift;
-  my $verbose       = shift;
+
+  my ($self, $ref_arg) = @_;
+  my $source_id    = $ref_arg->{source_id};
+  my $species_id   = $ref_arg->{species_id};
+  my $files        = $ref_arg->{files};
+  my $verbose      = $ref_arg->{verbose};
+
+  if((!defined $source_id) or (!defined $species_id) or (!defined $files) ){
+    croak "Need to pass source_id, species_id and files as pairs";
+  }
+  $verbose |=0;
 
   my $file = @{$files}[0];
 
@@ -30,7 +34,6 @@ sub run {
   my $dbi = $self->dbi();
 
   my (%refseq) = %{XrefParser::BaseParser->get_valid_codes("refseq",$species_id)};
-  
 
   my $rgd_io = $self->get_filehandle($file);
 
@@ -40,7 +43,7 @@ sub run {
   }
   my $line;
   my $found =0;
-  while(!$found and $line = $rgd_io->getline()){ # ignore comments
+  while((!$found) and ($line = $rgd_io->getline())){ # ignore comments
     if(!($line =~ /^#/)){
       $found = 1;
     }

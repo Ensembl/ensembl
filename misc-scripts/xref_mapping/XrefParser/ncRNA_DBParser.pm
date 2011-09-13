@@ -1,6 +1,8 @@
 package XrefParser::ncRNA_DBParser;
 
 use strict;
+use warnings;
+use Carp;
 use File::Basename;
 
 use base qw( XrefParser::BaseParser );
@@ -10,11 +12,17 @@ use Bio::EnsEMBL::DBSQL::DBAdaptor;
 
 
 sub run_script {
-  my $self = shift;
-  my $file = shift;
-  my $source_id = shift;
-  my $species_id = shift;
-  my $verbose = shift;
+
+  my ($self, $ref_arg) = @_;
+  my $source_id    = $ref_arg->{source_id};
+  my $species_id   = $ref_arg->{species_id};
+  my $file         = $ref_arg->{file};
+  my $verbose      = $ref_arg->{verbose};
+
+  if((!defined $source_id) or (!defined $species_id) or (!defined $file) ){
+    croak "Need to pass source_id, species_id and files as pairs";
+  }
+  $verbose |=0;
 
   my ($type, $my_args) = split(/:/,$file);
 
@@ -41,8 +49,10 @@ sub run_script {
   }
 
   my %source;
-  $source{"RFAM"}     = $self->get_source_id_for_source_name('RFAM')    || die "Could not get source_id for RFAM";
-  $source{"miRBase"}  = $self->get_source_id_for_source_name('miRBase') || die "Could not get source_id for miRBase";
+  $source{"RFAM"}     = $self->get_source_id_for_source_name('RFAM')
+    || die "Could not get source_id for RFAM";
+  $source{"miRBase"}  = $self->get_source_id_for_source_name('miRBase') 
+    || die "Could not get source_id for miRBase";
 
 
   my $dbi2 = $self->dbi2($host, $port, $user, $dbname, $pass);

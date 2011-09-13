@@ -3,24 +3,28 @@
 package XrefParser::RefSeqParser;
 
 use strict;
-
+use warnings;
+use Carp;
 use File::Basename;
 
 use base qw( XrefParser::BaseParser );
 
 
-my $verbose;
-
 sub run {
 
-  my $self = shift;
-  my $source_id  = shift;
-  my $species_id = shift;
-  my $files_ref  = shift;
-  my $rel_file   = shift;
-  $verbose       = shift;
-  
-  my @files = @{$files_ref};
+  my ($self, $ref_arg) = @_;
+  my $source_id    = $ref_arg->{source_id};
+  my $species_id   = $ref_arg->{species_id};
+  my $files        = $ref_arg->{files};
+  my $release_file = $ref_arg->{rel_file};
+  my $verbose      = $ref_arg->{verbose};
+
+  if((!defined $source_id) or (!defined $species_id) or (!defined $files) or (!defined $release_file)){
+    croak "Need to pass source_id, species_id, files and rel_file as pairs";
+  }
+  $verbose |=0;
+
+  my @files = @{$files};
 
 
   my $peptide_source_id =
@@ -31,17 +35,15 @@ sub run {
     $self->get_source_id_for_source_name('RefSeq_mRNA');
   my $ncrna_source_id =
     $self->get_source_id_for_source_name('RefSeq_ncRNA');
-  
 
-
-    my $pred_peptide_source_id =
-      $self->get_source_id_for_source_name('RefSeq_peptide_predicted');
-    my $pred_dna_source_id =
-      $self->get_source_id_for_source_name('RefSeq_dna_predicted');
-    my $pred_mrna_source_id =
-      $self->get_source_id_for_source_name('RefSeq_mRNA_predicted');
-    my $pred_ncrna_source_id =
-      $self->get_source_id_for_source_name('RefSeq_ncRNA_predicted');
+  my $pred_peptide_source_id =
+    $self->get_source_id_for_source_name('RefSeq_peptide_predicted');
+  my $pred_dna_source_id =
+    $self->get_source_id_for_source_name('RefSeq_dna_predicted');
+  my $pred_mrna_source_id =
+    $self->get_source_id_for_source_name('RefSeq_mRNA_predicted');
+  my $pred_ncrna_source_id =
+    $self->get_source_id_for_source_name('RefSeq_ncRNA_predicted');
 
   if($verbose){
     print "RefSeq_peptide source ID = $peptide_source_id\n";
@@ -73,6 +75,7 @@ sub run {
         if ( !defined($xrefs) ) {
             return 1;    #error
         }
+	print "Read " . scalar(@$xrefs) ." xrefs from $file\n" if($verbose);
 
         push @xrefs, @{$xrefs};
     }
@@ -81,9 +84,9 @@ sub run {
         return 1;    # error
     }
 
-    if ( defined $rel_file ) {
+    if ( defined $release_file ) {
         # Parse and set release info.
-        my $release_io = $self->get_filehandle($rel_file);
+        my $release_io = $self->get_filehandle($release_file);
         local $/ = "\n*";
         my $release = $release_io->getline();
         $release_io->close();
@@ -119,9 +122,7 @@ s/.*(NCBI Reference Sequence.*) Distribution Release Notes.*/$1/s;
 # Slightly different formats
 
 sub create_xrefs {
-  my $self = shift;
-
-  my ( $peptide_source_id, $dna_source_id, $pred_peptide_source_id,
+  my ($self, $peptide_source_id, $dna_source_id, $pred_peptide_source_id,
       $pred_dna_source_id, $mrna_source_id, $ncrna_source_id, 
       $pred_mrna_source_id, $pred_ncrna_source_id, $file, $species_id ) = @_;
 
@@ -217,8 +218,6 @@ sub create_xrefs {
   }
 
   $refseq_io->close();
-
-  print "Read " . scalar(@xrefs) ." xrefs from $file\n" if($verbose);
 
   return \@xrefs;
 

@@ -1,6 +1,8 @@
 package XrefParser::IKMCParser;
 
 use strict;
+use warnings;
+use Carp;
 use LWP::UserAgent;
 
 use base qw( XrefParser::BaseParser );
@@ -16,11 +18,17 @@ sub new {
 }
 
 sub run_script {
-  my $self = shift;
-  my $file = shift;
-  my $source_id = shift;
-  my $species_id = shift;
-  my $verbose = shift;
+
+  my ($self, $ref_arg) = @_;
+  my $orig_source_id    = $ref_arg->{source_id};
+  my $species_id   = $ref_arg->{species_id};
+  my $file         = $ref_arg->{file};
+  my $verbose      = $ref_arg->{verbose};
+
+  if((!defined $orig_source_id) or (!defined $species_id) or (!defined $file) ){
+    croak "Need to pass source_id, species_id and file as pairs";
+  }
+  $verbose |=0;
 
   my ($type, $my_args) = split(/:/,$file);
 
@@ -34,9 +42,9 @@ sub run_script {
       if(!defined( $type2id{$t})){
 	die  "Could not get source id for $ikmc\n";
       }
-    }	
+    }
 
-  my $xml = (<<XXML);
+  my $xml = (<<'XXML');
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Query>
 <Query  virtualSchemaName = "default" formatter = "TSV" header = "0" uniqueRows = "1" count = "" datasetConfigVersion = "0.6" >
@@ -62,15 +70,11 @@ XXML
   my $path="http://www.i-dcc.org/biomart/martservice?";
   my $request = HTTP::Request->new("POST",$path,HTTP::Headers->new(),'query='.$xml."\n");
   my $ua = LWP::UserAgent->new;
-    
-  my $response;
-  
 
 #  print "getting data from url\n";
   my $line_count=0;
   my $old_data="";
   my $chunks = 0;
-  my $before;
   $ua->request($request,
 	       sub{
 		 my($data, $response) = @_;
@@ -78,12 +82,12 @@ XXML
 		   chomp $data;
 		   if($data =~ /^MGI:/ and $chunks){
 		     $old_data .= "\n";
-		   }	
+		   }
 		   my $data_line= $old_data.$data;
 		   my @lines = split(/\n/,$data_line);
 		   if(length($lines[-1]) == 0){
 		     pop @lines;
-		   }	
+		   }
 		   $old_data = "";
 		   my $count=0;
 		   $chunks++;
@@ -97,33 +101,40 @@ XXML
 		       next;
 		     }
 		     elsif($count > $max){
-		       die "What the celery is going on here";
+		       croak "What the celery is going on here";
 		     }
 		     else{
 		       $line_count++;
 		       my $mgi_id = $fields[0];
+		       foreach my $index (1..5){
+			 if((!defined $fields[$index]) or ($fields[$index] eq "")){
+			   $fields[$index] = 0;
+			 }
+		       }
+#		       print {*STDERR} join(", ",@fields) ."\n";
 		       if(!($mgi_id =~ /MGI:/)){
 			 print "PROB1:$data_line\n";
 			 print "PROB2:".join(', ',@fields)."\n";
 		       }
 		       $symbols{$mgi_id}=$fields[1];
 		       $ensembl_ids{$mgi_id}=$fields[5];
-		       $status{$mgi_id} = 1 if ($status{$mgi_id} eq '');
-		       
-		       if ($status{$mgi_id} < 4 && $fields[4] == 1){
+		       if ((!defined $status{$mgi_id}) or  ($status{$mgi_id} eq '') ){
+			 $status{$mgi_id} = 1;
+		       }
+		       if ($status{$mgi_id} < 4 && defined $fields[4] && $fields[4] == 1){
 			 $status{$mgi_id} = 4;
 		       }
-		       elsif ($status{$mgi_id} < 3 && $fields[3] == 1){
+		       elsif ($status{$mgi_id} < 3 && defined $fields[3] && $fields[3] == 1){
 			 $status{$mgi_id} = 3;
 		       }
-		       elsif ($status{$mgi_id} < 2 && $fields[2] == 1){
-			 $status{$mgi_id} = 2;#		     print "$data";
+		       elsif ($status{$mgi_id} < 2 && defined $fields[2] && $fields[2] == 1){
+			 $status{$mgi_id} = 2;
 		       }
 		     }
-		   }	
+		   }
 		 }
 		 else {
-		   warn ("Problems with the web server: ".$response->status_line);
+		   carp ("Problems with the web server: ".$response->status_line);
 		   return 1;
 		 }
 	       },1000);
@@ -149,7 +160,7 @@ XXML
       $status{$mgi_id} = 3;
     }
     elsif ($status{$mgi_id} < 2 && $fields[2] == 1){
-      $status{$mgi_id} = 2;#		     print "$data";
+      $status{$mgi_id} = 2;
     }
   }
 #  print "obtained $line_count lines\n";
@@ -166,7 +177,7 @@ XXML
     my $label = $symbols{$acc} || $acc;
     my $ensembl_id = $ensembl_ids{$acc};
     #    print OUT "$acc\t$symbols{$acc}\t$description\t$ensembl_ids{$acc}\n";
-    my $type        = 'gene';
+    my $ensembl_type        = 'gene';
 
     
     ++$parsed_count;
@@ -184,7 +195,7 @@ XXML
     next if(!defined($ensembl_ids{$acc}));
     $direct_count++;
     XrefParser::BaseParser->add_direct_xref( $xref_id, $ensembl_id,
-					     $type, $acc );
+					     $ensembl_type, $acc );
   }
   printf( "%d  xrefs succesfully parsed and %d direct xrefs added\n", $parsed_count, $direct_count );
   

@@ -1,6 +1,8 @@
 package XrefParser::ZFINDescParser;
 
 use strict;
+use warnings;
+use Carp;
 use POSIX qw(strftime);
 use File::Basename;
 use File::Spec::Functions;
@@ -10,12 +12,16 @@ use base qw( XrefParser::BaseParser );
 
 sub run {
 
-  my $self = shift;
-  my $source_id = shift;
-  my $species_id = shift;
-  my $files       = shift;
-  my $release_file   = shift;
-  my $verbose       = shift;
+  my ($self, $ref_arg) = @_;
+  my $source_id    = $ref_arg->{source_id};
+  my $species_id   = $ref_arg->{species_id};
+  my $files        = $ref_arg->{files};
+  my $verbose      = $ref_arg->{verbose};
+
+  if((!defined $source_id) or (!defined $species_id) or (!defined $files) ){
+    croak "Need to pass source_id, species_id and files as pairs";
+  }
+  $verbose |=0;
 
   my $file = @{$files}[0];
 
@@ -26,10 +32,6 @@ sub run {
     $species_id = XrefParser::BaseParser->get_species_id_for_filename($file);
   }
 
-
-  open( my $FH, "<", $file) || die "could not open file $file";
-  
-
 #e.g.
 #ZDB-GENE-050102-6       WITHDRAWN:zgc:92147     WITHDRAWN:zgc:92147     0
 #ZDB-GENE-060824-3       apobec1 complementation factor  a1cf    0
@@ -38,6 +40,7 @@ sub run {
 
   my $count =0;
   my $withdrawn = 0;
+  open( my $FH, "<", $file) || croak "could not open file $file";
   while ( <$FH> ) {
     chomp;
     my ($zfin, $desc, $label) = split (/\t/,$_);

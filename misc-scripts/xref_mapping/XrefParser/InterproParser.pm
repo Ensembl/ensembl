@@ -1,24 +1,26 @@
 package XrefParser::InterproParser;
   
 use strict;
+use warnings;
 use POSIX qw(strftime);
 use File::Basename;
-
+use Carp;
 use base qw( XrefParser::BaseParser );
 
-my $xref_sth ;
-my $dep_sth;
-
 sub run {
-  my $self = shift;
-  my $source_id = shift;
-  my $species_id = shift;
-  my $files_ref = shift;
-  my $release_file = shift;
-  my $verbose = shift;
+  my ($self, $ref_arg) = @_;
+  my $source_id    = $ref_arg->{source_id};
+  my $species_id   = $ref_arg->{species_id};
+  my $files        = $ref_arg->{files};
+  my $release_file = $ref_arg->{rel_file};
+  my $verbose      = $ref_arg->{verbose};
 
+  if((!defined $source_id) or (!defined $species_id) or (!defined $files) or (!defined $release_file)){
+    croak "Need to pass source_id, species_id, files and rel_file as pairs";
+  }
+  $verbose |=0;
 
-  my $file = @{$files_ref}[0];
+  my $file = @{$files}[0];
 
   if(!defined($source_id)){
     $source_id = $self->get_source_id_for_filename($file);
@@ -44,10 +46,6 @@ sub run {
 
   my $dir = dirname($file);
 
-  my %short_name;
-  my %description;
-  my %pfam;
-
   my $xml_io = $self->get_filehandle($file);
 
   if ( !defined $xml_io ) {
@@ -63,7 +61,6 @@ sub run {
   my %count;
   local $/ = "</interpro>";
 
-  my $last = "";
   my $i =0;
 
   while ( $_ = $xml_io->getline() ) {

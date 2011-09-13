@@ -1,19 +1,25 @@
 package XrefParser::EG_DBParser;
 
 use strict;
+use warnings;
+use Carp;
 use File::Basename;
 
 use base qw( XrefParser::BaseParser );
 
-use strict;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 
 sub run_script {
-  my $self = shift;
-  my $file = shift;
-  my $source_id = shift;
-  my $species_id = shift;
-  my $verbose = shift;
+  my ($self, $ref_arg) = @_;
+  my $source_id    = $ref_arg->{source_id};
+  my $species_id   = $ref_arg->{species_id};
+  my $file         = $ref_arg->{file};
+  my $verbose      = $ref_arg->{verbose};
+
+  if((!defined $source_id) or (!defined $species_id) or (!defined $file) ){
+    croak "Need to pass source_id, species_id and file as pairs";
+  }
+  $verbose |=0;
 
   print STDERR "parsing EG_DB_Xrefs...\n";
 
@@ -58,8 +64,9 @@ sub run_script {
     return 1;
   }
 
-  my $sql=(<<SQL);
-  SELECT gene_stable_id, transcript_stable_id, gene_dbid, transcript_dbid, source, xref_name, xref_primary_id, xref_description
+  my $sql=(<<"SQL");
+  SELECT gene_stable_id, transcript_stable_id, gene_dbid, transcript_dbid, 
+         source, xref_name, xref_primary_id, xref_description
     FROM EG_Xref
       WHERE taxonomy_id = $species_id
 SQL

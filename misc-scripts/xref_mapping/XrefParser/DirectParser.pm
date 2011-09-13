@@ -1,6 +1,8 @@
 package XrefParser::DirectParser;
 
 use strict;
+use warnings;
+use Carp;
 
 use base qw( XrefParser::BaseParser );
 
@@ -27,62 +29,69 @@ sub new {
 }
 
 sub run {
-    my $self = shift;
+  my ($self, $ref_arg) = @_;
+  my $source_id    = $ref_arg->{source_id};
+  my $species_id   = $ref_arg->{species_id};
+  my $filename     = $ref_arg->{file};
+  my $verbose      = $ref_arg->{verbose};
 
-    my ( $source_id, $species_id, $filename ) = @_;
+  if((!defined $source_id) or (!defined $species_id) or (!defined $filename) ){
+    croak "Need to pass source_id, species_id and file as pairs";
+  }
+  $verbose |=0;
 
-    my $file_io = $self->get_filehandle($filename);
-    if ( !defined($file_io) ) {
-        return 1;
+
+  my $file_io = $self->get_filehandle($filename);
+  if ( !defined($file_io) ) {
+    return 1;
+  }
+
+  my $parsed_count = 0;
+
+  printf( STDERR "source = %d\t species = %d\n",
+	  $source_id, $species_id );
+
+  while ( defined( my $line = $file_io->getline() ) ) {
+    chomp $line;
+
+    my ( $accession, $ensembl_id, $type, $label, $description, $version )
+      = split( /\t/, $line );
+
+    if ( !defined($accession) || !defined($ensembl_id) ) {
+      print {*STDERR} "Line $parsed_count contains  has less than two columns.\n";
+      print {*STDERR} ("The parsing failed\n");
+      return 1;
     }
 
-    my $parsed_count = 0;
+    $type        ||= 'gene';
+    $label       ||= $accession;
+    $description ||= '';
+    $version     ||= '1';
 
-    printf( STDERR "source = %d\t species = %d\n",
-            $source_id, $species_id );
+    ++$parsed_count;
 
-    while ( defined( my $line = $file_io->getline() ) ) {
-        chomp $line;
+    my $xref_id =
+      XrefParser::BaseParser->get_xref( $accession, $source_id, $species_id );
 
-        my ( $accession, $ensembl_id, $type, $label, $description,
-             $version )
-          = split( /\t/, $line );
+    if ( !defined($xref_id) || $xref_id eq '' ) {
+      $xref_id =
+	XrefParser::BaseParser->add_xref(
+					 $accession,   $version,   $label,
+					 $description, $source_id, $species_id,
+					 "DIRECT"
+					);
+    }
+    XrefParser::BaseParser->add_direct_xref( $xref_id, $ensembl_id,
+					     $type, $accession );
+  } ## end while ( defined( my $line...
 
-        if ( !defined($accession) || !defined($ensembl_id) ) {
-            printf( "Line %d contains  has less than two columns.\n",
-                    1 + $parsed_count );
-            print("The parsing failed\n");
-            return 1;
-        }
+  printf( "%d direct xrefs succesfully parsed\n", $parsed_count ) if($verbose);
 
-        $type        ||= 'gene';
-        $label       ||= $accession;
-        $description ||= '';
-        $version     ||= '1';
+  $file_io->close();
 
-        ++$parsed_count;
+  print "Done\n" if($verbose);;
 
-        my $xref_id =
-          XrefParser::BaseParser->get_xref( $accession, $source_id, $species_id );
-
-        if ( !defined($xref_id) || $xref_id eq '' ) {
-            $xref_id =
-              XrefParser::BaseParser->add_xref(
-                                   $accession,   $version,   $label,
-                                   $description, $source_id, $species_id, "DIRECT"
-              );
-        }
-        XrefParser::BaseParser->add_direct_xref( $xref_id, $ensembl_id,
-                                                 $type, $accession );
-    } ## end while ( defined( my $line...
-
-    printf( "%d direct xrefs succesfully parsed\n", $parsed_count );
-
-    $file_io->close();
-
-    print "Done\n";
-
-    return 0;
+  return 0;
 } ## end sub run
 
 1;

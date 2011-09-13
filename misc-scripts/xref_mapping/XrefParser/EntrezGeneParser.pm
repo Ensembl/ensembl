@@ -3,28 +3,24 @@ package XrefParser::EntrezGeneParser;
 use strict;
 use POSIX qw(strftime);
 use File::Basename;
-
+use Carp;
 use base qw( XrefParser::BaseParser );
 
 sub run {
 
-  my $self = shift;
-  my $source_id = shift;
-  my $species_id = shift;
-  my $files       = shift;
-  my $release_file   = shift;
-  my $verbose       = shift;
+  my ($self, $ref_arg) = @_;
+  my $source_id    = $ref_arg->{source_id};
+  my $species_id   = $ref_arg->{species_id};
+  my $files        = $ref_arg->{files};
+  my $verbose      = $ref_arg->{verbose};
+
+  if((!defined $source_id) or (!defined $species_id) or (!defined $files) ){
+    croak "Need to pass source_id, species_id, files and rel_file as pairs";
+  }
+  $verbose |=0;
 
   my $file = @{$files}[0];
 
-
-
-  if(!defined($source_id)){
-    $source_id = XrefParser::BaseParser->get_source_id_for_filename($file);
-  }
-  if(!defined($species_id)){
-    $species_id = XrefParser::BaseParser->get_species_id_for_filename($file);
-  }
   my $wiki_source_id = $self->get_source_id_for_source_name("WikiGene");
 
   my %species_tax_id = %{$self->get_taxonomy_from_species_id($species_id)};

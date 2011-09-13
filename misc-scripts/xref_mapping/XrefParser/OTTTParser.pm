@@ -1,21 +1,27 @@
 package XrefParser::OTTTParser;
 
 use strict;
+use warnings;
+use Carp;
 use File::Basename;
 
 use base qw( XrefParser::BaseParser );
 
-use strict;
-
-
 sub run_script {
-  my $self = shift;
-  my $file = shift;
-  my $source_id = shift;
-  my $species_id = shift;
+
+  my ($self, $ref_arg) = @_;
+  my $source_id    = $ref_arg->{source_id};
+  my $species_id   = $ref_arg->{species_id};
+  my $file         = $ref_arg->{file};
+  my $verbose      = $ref_arg->{verbose};
+
+  if((!defined $source_id) or (!defined $species_id) or (!defined $file) ){
+    croak "Need to pass source_id, species_id and file as pairs";
+  }
+  $verbose |=0;
 
   my ($type, $my_args) = split(/:/,$file);
-  
+
   my $user = "ensro";
   my $host ="ens-staging";
   my $port = "3306";
@@ -70,31 +76,8 @@ sub run_script {
     $self->add_direct_xref($xref_id, $ott_to_enst{$ott}, "transcript", "");
     
   }
+  return 0;
 }
-
-
-
-
-#sub dbi2{
-
-#  my $self = shift;
-#  my ($host, $port, $user, $dbname, $pass) = @_;
-
-#  if ( !defined $dbi2 || !$dbi2->ping() ) {
-#    my $connect_string =
-#      sprintf( "dbi:mysql:host=%s;port=%s;database=%s",
-#	       $host, $port, $dbname );
-
-#    $dbi2 =
-#      DBI->connect( $connect_string, $user, $pass,
-#		    {
-#		     'RaiseError' => 1 } )
-#	or croak( "Can't connect to database: " . $DBI::errstr );
-#    $dbi2->{'mysql_auto_reconnect'} = 1; # Reconnect on timeout
-#  }
-    
-#  return $dbi2;
-#}
 
 1;
 

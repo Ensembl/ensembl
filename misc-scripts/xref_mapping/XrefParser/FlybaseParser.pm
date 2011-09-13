@@ -76,21 +76,21 @@ our %source_name_map = ( 'FlyBase'    => 'flybase_annotation_id',
                          'bdgpinsituexpr'     => 'BDGP_insitu_expr',
                          'dedb'               => 'DEDb',
                          'flygrid'            => 'FlyGrid',
-												 'TF'                 => 'TransFac',
+			 'TF'                 => 'TransFac',
                          'EPD'                => 'EPD',
-												 'MIR'                => 'miRBase',
-												 'MEROPS'             => 'MEROPS',
-												 'BIOGRID'            => 'BioGRID',
-												 'FlyReactome'        => 'FlyReactome',
-												 'GenomeRNAi_gene'    => 'GenomeRNAi',
-												 'INTERACTIVEFLY'     => 'InteractiveFly',
-												 'MITODROME'          => 'MitoDrome',
-												 'flyexpress'         => 'FlyExpress',
-												 'Rfam'               => 'RFAM',
-												 #'FlyAtlas'           => 'FlyAtlas',
-												 #'GCR'                => 'GPCR',
-												 #'GLEANR'             => 'GLEAN-R',
-												 );
+			 'MIR'                => 'miRBase',
+			 'MEROPS'             => 'MEROPS',
+			 'BIOGRID'            => 'BioGRID',
+			 'FlyReactome'        => 'FlyReactome',
+			 'GenomeRNAi_gene'    => 'GenomeRNAi',
+			 'INTERACTIVEFLY'     => 'InteractiveFly',
+			 'MITODROME'          => 'MitoDrome',
+			 'flyexpress'         => 'FlyExpress',
+			 'Rfam'               => 'RFAM',
+			 #'FlyAtlas'           => 'FlyAtlas',
+			 #'GCR'                => 'GPCR',
+			 #'GLEANR'             => 'GLEAN-R',
+		       );
 
 # This is for source_ids that depend on the type of 'ID' of the line.
 our %special_source_name_map = (
@@ -119,7 +119,7 @@ sub get_source_id_for_source_name {
 
   if ( !defined( $source_id{$source_name} ) ) {
     $source_id{$source_name} =
-      $self->SUPER::get_source_id_for_source_name(@_);
+      $self->SUPER::get_source_id_for_source_name($source_name);
 
     printf( "source_id for source '%s' is %d\n",
             $source_name, $source_id{$source_name} ) if ($verbose);
@@ -137,16 +137,21 @@ sub get_source_id_for_source_name {
 }
 
 sub run {
-  my $self = shift;
-  my $source_id = shift;
-  my $species_id = shift;
-  my $files       = shift;
-  my $release_file   = shift;
-  $verbose       = shift;
 
-	print "-------------------------\n";
-	print "FlybaseParser::run species_id $species_id\n";
-	print "-------------------------\n\n";
+  my ($self, $ref_arg) = @_;
+  my $source_id    = $ref_arg->{source_id};
+  my $species_id   = $ref_arg->{species_id};
+  my $files        = $ref_arg->{files};
+  my $verbose      = $ref_arg->{verbose};
+
+  if((!defined $source_id) or (!defined $species_id) or (!defined $files) ){
+    croak "Need to pass source_id, species_id and files as pairs";
+  }
+  $verbose |=0;
+
+  print "-------------------------\n";
+  print "FlybaseParser::run species_id $species_id\n";
+  print "-------------------------\n\n";
 
   my $data_file = @{$files}[0];
 
@@ -230,18 +235,18 @@ sub run {
       }
     }
 
-		# For the 'Alias' attributes, we split them up by commas 
-		# but we can't divide them in to key-value. So, we'll create 
-		# a fake key Alias. 
-		# Aliases will be stored as synonyms and will comprise secondary
-		# IDs from FlyBase to keep tracks of split/merged annotations.
+    # For the 'Alias' attributes, we split them up by commas 
+    # but we can't divide them in to key-value. So, we'll create 
+    # a fake key Alias. 
+    # Aliases will be stored as synonyms and will comprise secondary
+    # IDs from FlyBase to keep tracks of split/merged annotations.
 
-		my $alias_key = 'Alias';
+    my $alias_key = 'Alias';
 
-		if ( exists( $attributes{$alias_key} ) ) {
-				my @tmp_array = split( /,/, $attributes{$alias_key} );
+    if ( exists( $attributes{$alias_key} ) ) {
+      my @tmp_array = split( /,/, $attributes{$alias_key} );
 
-				$attributes{$alias_key} =\@tmp_array;
+      $attributes{$alias_key} =\@tmp_array;
     }
 		
 

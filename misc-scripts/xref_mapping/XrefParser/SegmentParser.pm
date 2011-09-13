@@ -1,28 +1,26 @@
 package XrefParser::SegmentParser;
- 
+
 use strict;
+use warnings;
+use Carp;
 use POSIX qw(strftime);
 use File::Basename;
- 
+
 use base qw( XrefParser::BaseParser );
 
 sub run {
-  my $self = shift;
-  my $source_id = shift;
-  my $species_id = shift;
-  my $files_ref  = shift;
-  my $rel_file   = shift;
-  my $verbose = shift;
+ my ($self, $ref_arg) = @_;
+  my $source_id    = $ref_arg->{source_id};
+  my $species_id   = $ref_arg->{species_id};
+  my $files        = $ref_arg->{files};
+  my $verbose      = $ref_arg->{verbose};
 
-  my $file = @{$files_ref}[0];
-
-
-  if(!defined($source_id)){
-    $source_id = XrefParser::BaseParser->get_source_id_for_filename($file);
+  if((!defined $source_id) or (!defined $species_id) or (!defined $files) ){
+    croak "Need to pass source_id, species_id and files as pairs";
   }
-  if(!defined($species_id)){
-    $species_id = XrefParser::BaseParser->get_species_id_for_filename($file);
-  }
+  $verbose |=0;
+
+  my $file = @{$files}[0];
 
   my $added=0;
 

@@ -10,33 +10,34 @@
 package XrefParser::UniProtParser_descriptions_only;
 
 use strict;
+use warnings;
+use Carp;
 use POSIX qw(strftime);
 use File::Basename;
 
 use base qw( XrefParser::BaseParser );
 
-my $verbose;
 
 # --------------------------------------------------------------------------------
 
 sub run {
 
-  my $self = shift;
-  my $source_id    = shift;
-  my $species_id   = shift;
-  my $files         = shift;
-  my $release_file = shift;
-  $verbose      = shift;
+
+  my ($self, $ref_arg) = @_;
+  my $source_id    = $ref_arg->{source_id};
+  my $species_id   = $ref_arg->{species_id};
+  my $files        = $ref_arg->{files};
+  my $release_file = $ref_arg->{rel_file};
+  my $verbose      = $ref_arg->{verbose};
+
+  if((!defined $source_id) or (!defined $species_id) or (!defined $files) or (!defined $release_file)){
+    croak "Need to pass source_id, species_id, files and rel_file as pairs";
+  }
+  $verbose |=0;
 
   my $file = @{$files}[0];
 
-  my $species_name;
-
   my ( $sp_source_id, $sptr_source_id, $sp_release, $sptr_release );
-
-  if(!defined($species_id)){
-    ($species_id, $species_name) = $self->get_species($file);
-  }
 
   $sp_source_id =
     $self->get_source_id_for_source_name('Uniprot/SWISSPROT',"sequence_mapped");
@@ -48,8 +49,7 @@ sub run {
  
 
   my @xrefs =
-    $self->create_xrefs( $sp_source_id, $sptr_source_id, $species_id,
-      $file );
+    $self->create_xrefs( $sp_source_id, $sptr_source_id, $species_id, $file, $verbose );
 
   if ( !@xrefs ) {
       return 1;    # 1 error
@@ -101,47 +101,12 @@ sub run {
   return 0; # successfull
 }
 
-# --------------------------------------------------------------------------------
-# Get species (id and name) from file
-# For UniProt files the filename is the taxonomy ID
-
-sub get_species {
-  my $self = shift;
-  my ($file) = @_;
-
-  my ($taxonomy_id, $extension) = split(/\./, basename($file));
-
-  my $sth = $self->dbi()->prepare("SELECT species_id,name FROM species WHERE taxonomy_id=?");
-  $sth->execute($taxonomy_id);
-  my ($species_id, $species_name);
-  while(my @row = $sth->fetchrow_array()) {
-    $species_id = $row[0];
-    $species_name = $row[1];
-  }
-  $sth->finish;
-
-  if (defined $species_name) {
-
-    print "Taxonomy ID " . $taxonomy_id . " corresponds to species ID " . $species_id . " name " . $species_name . "\n" if($verbose);
-
-  } else {
-
-    print STDERR "Cannot find species corresponding to taxonomy ID " . $species_id . " - check species table\n";
-    exit(1);
-
-  }
-
-  return ($species_id, $species_name);
-
-}
 
 # --------------------------------------------------------------------------------
 # Parse file into array of xref objects
 
 sub create_xrefs {
-  my $self = shift;
-
-  my ( $sp_source_id, $sptr_source_id, $species_id, $file ) = @_;
+  my ($self, $sp_source_id, $sptr_source_id, $species_id, $file, $verbose ) = @_;
 
   my $num_sp = 0;
   my $num_sptr = 0;
@@ -150,18 +115,16 @@ sub create_xrefs {
 
 
   # Get predicted equivalents of various sources used here
-    my $sp_pred_source_id =
-      $self->get_source_id_for_source_name(
-        'Uniprot/SWISSPROT_predicted');
-    my $sptr_pred_source_id =
-      $self->get_source_id_for_source_name(
-        'Uniprot/SPTREMBL_predicted');
+  my $sp_pred_source_id =
+    $self->get_source_id_for_source_name('Uniprot/SWISSPROT_predicted');
+  my $sptr_pred_source_id =
+    $self->get_source_id_for_source_name('Uniprot/SPTREMBL_predicted');
 
   print "Predicted SwissProt source id for $file: $sp_pred_source_id\n" if($verbose);
   print "Predicted SpTREMBL source id for $file: $sptr_pred_source_id\n" if($verbose);
 
-    my $uniprot_io = $self->get_filehandle($file);
-    if ( !defined $uniprot_io ) { return }
+  my $uniprot_io = $self->get_filehandle($file);
+  if ( !defined $uniprot_io ) { return }
 
   my @xrefs;
 
@@ -186,15 +149,15 @@ sub create_xrefs {
     my $found = 0;
 
     if ( defined $ox ) {
-        @ox = split /\, /, $ox;
+      @ox = split /\, /, $ox;
 
-        # my %taxonomy2species_id = $self->taxonomy2species_id();
+      # my %taxonomy2species_id = $self->taxonomy2species_id();
 
-        foreach my $taxon_id_from_file (@ox) {
-          if ( exists $taxonomy2species_id{$taxon_id_from_file} ){
-            $found = 1;
-          }
-        }
+      foreach my $taxon_id_from_file (@ox) {
+	if ( exists $taxonomy2species_id{$taxon_id_from_file} ){
+	  $found = 1;
+	}
+      }
     }
 
     next if (!$found); # no taxon_id's match, so skip to next record
@@ -284,26 +247,27 @@ sub create_xrefs {
       }
 
 
-    $description =~ s/^\s*//g;
-    $description =~ s/\s*$//g;
+      $description =~ s/^\s*//g;
+      $description =~ s/\s*$//g;
 
-    my $desc = $name.$description;
-    if(!length($desc)){
-      $desc = $sub_description;
-    }
-    $desc =~ s/\(\s*EC\s*\S*\)//g;
-    $xref->{DESCRIPTION} = $desc;
+      my $desc = $name.$description;
+      if(!length($desc)){
+	$desc = $sub_description;
+      }
+      $desc =~ s/\(\s*EC\s*\S*\)//g;
+      $xref->{DESCRIPTION} = $desc;
 
 
-    push @xrefs, $xref;
+      push @xrefs, $xref;
     
+    }
   }
 
   $uniprot_io->close();
 
   print "Read $num_sp SwissProt xrefs and $num_sptr SPTrEMBL xrefs from $file\n" if($verbose);
   print "Found $num_sp_pred predicted SwissProt xrefs and $num_sptr_pred predicted SPTrEMBL xrefs\n" if (($num_sp_pred > 0 || $num_sptr_pred > 0) and $verbose);
-
+  
   return \@xrefs;
 
   #TODO - currently include records from other species - filter on OX line??

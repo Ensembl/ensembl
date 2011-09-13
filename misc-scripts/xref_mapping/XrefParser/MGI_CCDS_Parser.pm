@@ -1,29 +1,25 @@
 package XrefParser::MGI_CCDS_Parser;
 
 use strict;
-
+use warnings;
+use Carp;
 use DBI;
 
 use base qw( XrefParser::BaseParser );
 
-# Parse file of HGNC records and assign direct xrefs
-# All assumed to be linked to genes
-
-
-if (!defined(caller())) {
-
-  if (scalar(@ARGV) != 1) {
-    print STDERR "\nUsage: MGI_CCDS_Parser.pm file <source_id> <species_id>\n\n";
-    exit(1);
-  }
-
-  run(@ARGV);
-}
-
 
 sub run_script {
 
-  my ($self, $file, $source_id, $species_id, $verbose) = @_;
+  my ($self, $ref_arg) = @_;
+  my $source_id    = $ref_arg->{source_id};
+  my $species_id   = $ref_arg->{species_id};
+  my $file         = $ref_arg->{file};
+  my $verbose      = $ref_arg->{verbose};
+
+  if((!defined $source_id) or (!defined $species_id) or (!defined $file) ){
+    croak "Need to pass source_id, species_id and file as pairs";
+  }
+  $verbose |=0;
 
   my $wget = "";
 
@@ -37,11 +33,11 @@ sub run_script {
   my %description;
   my %accession;
 
-  my $dbi = $self->dbi();  
+  my $dbi = $self->dbi();
 
   my $sql = 'select source_id, priority_description from source where name like "MGI"';
   my $sth = $dbi->prepare($sql);
-  
+
   $sth->execute();
   my ($mgi_source_id, $desc);
   $sth->bind_columns(\$mgi_source_id, \$desc);
@@ -50,12 +46,12 @@ sub run_script {
     push @arr, $mgi_source_id;
   }
   $sth->finish;
-  
+
   $sql = "select accession, label, version,  description from xref where source_id in (".join(", ",@arr).")";
 
   $sth = $dbi->prepare($sql);
   $sth->execute();
-  my ($acc, $lab, $ver, $desc);
+  my ($acc, $lab, $ver);
   $sth->bind_columns(\$acc, \$lab, \$ver, \$desc);
   while (my @row = $sth->fetchrow_array()) {
     if(defined($desc)){

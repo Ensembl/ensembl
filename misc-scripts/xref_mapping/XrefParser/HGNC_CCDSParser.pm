@@ -1,7 +1,8 @@
 package XrefParser::HGNC_CCDSParser;
 
 use strict;
-
+use warnings;
+use Carp;
 use DBI;
 
 use base qw( XrefParser::BaseParser );
@@ -11,7 +12,16 @@ use base qw( XrefParser::BaseParser );
 
 sub run_script {
 
-  my ($self, $file, $source_id, $species_id, $verbose) = @_;
+  my ($self, $ref_arg) = @_;
+  my $source_id    = $ref_arg->{source_id};
+  my $species_id   = $ref_arg->{species_id};
+  my $file         = $ref_arg->{file};
+  my $verbose      = $ref_arg->{verbose};
+
+  if((!defined $source_id) or (!defined $species_id) or (!defined $file) ){
+    croak "Need to pass source_id, species_id and file as pairs";
+  }
+  $verbose |=0;
 
   my $user = "ensro";
   my $host;
@@ -86,7 +96,7 @@ sub run_script {
   $sql = 'select ox.ensembl_id, x.display_label from object_xref ox, xref x, external_db e where x.xref_id = ox.xref_id and x.external_db_id = e.external_db_id and e.db_name like "CCDS"'; 
 
   my %ccds_to_stable_id;
-  my $sth = $dbi2->prepare($sql); 
+  $sth = $dbi2->prepare($sql); 
   $sth->execute() or croak( $dbi2->errstr() );
   while ( my @row = $sth->fetchrow_array() ) {
     if(defined($trans_id_to_stable_id{$row[0]})){
@@ -111,13 +121,13 @@ sub run_script {
 
   my $dbi = $self->dbi();  
 
-  my $sql = "insert into synonym (xref_id, synonym) values (?, ?)";
-  my $add_syn_sth = $dbi->prepare($sql);    
+  my $sql_syn = "insert into synonym (xref_id, synonym) values (?, ?)";
+  my $add_syn_sth = $dbi->prepare($sql_syn);
   
   my $syn_hash = $self->get_ext_synonyms("HGNC");
 
   $sql = 'select source_id, priority_description from source where name like "HGNC"';
-  my $sth = $dbi->prepare($sql);
+  $sth = $dbi->prepare($sql);
   
   $sth->execute();
   my ($hgnc_source_id, $desc);
@@ -132,7 +142,7 @@ sub run_script {
 
   $sth = $dbi->prepare($sql);
   $sth->execute();
-  my ($acc, $lab, $ver, $desc);
+  my ($acc, $lab, $ver);
   $sth->bind_columns(\$acc, \$lab, \$ver, \$desc);
   while (my @row = $sth->fetchrow_array()) {
     if(defined($desc)){

@@ -1,6 +1,8 @@
 package XrefParser::IPIParser;
 
 use strict;
+use warnings;
+use Carp;
 use File::Basename;
 
 use base qw( XrefParser::BaseParser );
@@ -13,12 +15,16 @@ use base qw( XrefParser::BaseParser );
 
 sub run {
 
-  my $self = shift;
-  my $source_id = shift;
-  my $species_id = shift;
-  my $files       = shift;
-  my $release_file   = shift;
-  my $verbose       = shift;
+  my ($self, $ref_arg) = @_;
+  my $source_id    = $ref_arg->{source_id};
+  my $species_id   = $ref_arg->{species_id};
+  my $files        = $ref_arg->{files};
+  my $verbose      = $ref_arg->{verbose};
+
+  if((!defined $source_id) or (!defined $species_id) or (!defined $files) ){
+    croak "Need to pass source_id, species_id, files and rel_file as pairs";
+  }
+  $verbose |=0;
 
   my $file = @{$files}[0];
 
@@ -42,7 +48,7 @@ sub run {
 
     # deconstruct header
     my @header = split /\|/, $header;
-    my ($ipi) = $header[0] =~ /^IPI:(IPI(\d)+(\.\d+)?)/ or warn("Can't deduce IPI identifier from " .  $header[0]);
+    my ($ipi) = $header[0] =~ /^IPI:(IPI(\d)+(\.\d+)?)/ or carp ("Can't deduce IPI identifier from " .  $header[0]);
     my ($ipi_ac, $ipi_ver) = $ipi =~ /(IPI\d+)\.(\d+)/;
 
     my ($tax_id, $description) = $header[-1] =~ /.*Tax_Id=(\d+)\s+(.*)/;

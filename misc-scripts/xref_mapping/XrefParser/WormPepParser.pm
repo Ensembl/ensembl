@@ -1,12 +1,11 @@
 package XrefParser::WormPepParser;
 
 use strict;
+use warnings;
+use Carp;
 use File::Basename;
 
 use base qw( XrefParser::BaseParser );
-
-my $xref_sth ;
-my $dep_sth;
 
 # wormpep.table file format:
 #>B0025.1a	CE24759	vps-34	phosphatidylinositol 3-kinase	Confirmed	SW:Q9TXI7	AAF23184.1
@@ -17,12 +16,16 @@ my $dep_sth;
 
 sub run {
 
-  my $self = shift;
-  my $source_id = shift;
-  my $species_id = shift;
-  my $files       = shift;
-  my $release_file   = shift;
-  my $verbose       = shift;
+  my ($self, $ref_arg) = @_;
+  my $source_id    = $ref_arg->{source_id};
+  my $species_id   = $ref_arg->{species_id};
+  my $files        = $ref_arg->{files};
+  my $verbose      = $ref_arg->{verbose};
+
+  if((!defined $source_id) or (!defined $species_id) or (!defined $files)){
+    croak "Need to pass source_id, species_id and files as pairs";
+  }
+  $verbose |=0;
 
   my $file = @{$files}[0];
 

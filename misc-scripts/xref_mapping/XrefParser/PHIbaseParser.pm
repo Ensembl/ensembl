@@ -1,6 +1,8 @@
 package XrefParser::PHIbaseParser;
 
 use strict;
+use warnings;
+use Carp;
 use POSIX qw(strftime);
 use File::Basename;
 
@@ -10,15 +12,21 @@ use base qw( XrefParser::BaseParser );
 
 sub run {
 
-  my $self = shift;
-  my $source_id    = shift;
-  my $species_id   = shift;
-  my $files        = shift;
-  my $verbose      = shift;
+
+  my ($self, $ref_arg) = @_;
+  my $source_id    = $ref_arg->{source_id};
+  my $species_id   = $ref_arg->{species_id};
+  my $files        = $ref_arg->{files};
+  my $verbose      = $ref_arg->{verbose};
+
+  if((!defined $source_id) or (!defined $species_id) or (!defined $files) ){
+    croak "Need to pass source_id, species_id and file as pairs";
+  }
+  $verbose |=0;
 
   my $phi_xml_file = @{$files}[0];
   
-  print STDERR "PhiBase file to parse, $phi_xml_file\n";
+  print STDERR "PhiBase file to parse, $phi_xml_file\n" if($verbose);
 
   my %phi_mapping;
   my %taxIds;
