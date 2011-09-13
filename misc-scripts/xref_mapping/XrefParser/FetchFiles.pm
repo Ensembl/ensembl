@@ -99,7 +99,7 @@ sub fetch_files {
                 $uri->host(), $file_path );
       }
 
-      my $ftp = Net::FTP->new( $uri->host(), 'Debug' => 0, Passive => 1 );
+      my $ftp = Net::FTP->new( $uri->host(), 'Debug' => 0);
       if ( !defined($ftp) ) {
         printf( "==> Can not open FTP connection: %s\n", $@ );
         return ();
@@ -119,6 +119,9 @@ sub fetch_files {
 
       $ftp->binary();
 
+      if(!$ftp->ls()){
+	$ftp->pasv(1);
+      }
       foreach my $remote_file ( ( @{ $ftp->ls() } ) ) {
         if ( !match_glob( basename( $uri->path() ), $remote_file ) ) {
           next;
