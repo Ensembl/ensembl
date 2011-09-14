@@ -126,13 +126,6 @@ foreach my $dbname (@dbnames) {
   my $aa  = $db->get_AnalysisAdaptor();
   my $slice_adaptor = $db->get_SliceAdaptor();
   
-  
-  # Sort slices by coordinate system rank, then by length.
-  my @sorted_slices =
-    sort( {      $a->coord_system()->rank() <=> $b->coord_system()->rank()
-		   || $b->seq_region_length() <=> $a->seq_region_length()
-		 } @{ $slice_adaptor->fetch_all('toplevel') } );
-  
   my $analysis =
     new Bio::EnsEMBL::Analysis(
     -program     => "gene_density_calc.pl",
@@ -178,6 +171,12 @@ foreach my $dbname (@dbnames) {
     } else {
       $analysis = $aa->fetch_by_logic_name('genedensity');
     }
+    
+    # Sort slices by coordinate system rank, then by length.
+    my @sorted_slices =
+      sort( {      $a->coord_system()->rank() <=> $b->coord_system()->rank()
+         || $b->seq_region_length() <=> $a->seq_region_length()
+       } @{ $slice_adaptor->fetch_all('toplevel') } );
 
   #
   # Create new density type.
