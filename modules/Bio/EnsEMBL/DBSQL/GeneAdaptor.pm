@@ -446,52 +446,69 @@ sub fetch_all_by_domain {
 =cut
 
 sub fetch_all_by_Slice_and_external_dbname_link {
-  my $self  = shift;
-  my $slice = shift;
-  my $logic_name = shift;
-  my $load_transcripts = shift;
-  my $db_name = shift;
-  my @genes_passed;
-  my $external_db_id;
-  #get the external_db_id from the name
-  my $sth = $self->prepare(
-     "SELECT external_db_id from external_db where db_name = ?");
+  my ( $self, $slice, $logic_name, $load_transcripts, $db_name ) = @_;
 
-  $sth->bind_param(1,$db_name,SQL_VARCHAR);
+  # Get the external_db_id(s) from the name.
+  my $sth = $self->prepare(
+            "SELECT external_db_id FROM external_db WHERE db_name = ?");
+
+  $sth->bind_param( 1, $db_name, SQL_VARCHAR );
   $sth->execute();
-  $sth->bind_columns(\$external_db_id);
-  $sth->fetch;
-  if(!defined($external_db_id) || $external_db_id == 0){
-    warn "Could not find external database $db_name in the external_db table\navailable are:-\n";
-    $sth = $self->prepare(
-     "SELECT db_name from external_db");
+
+  my $external_db_id;
+  $sth->bind_columns( \$external_db_id );
+
+  my @external_db_ids;
+  while ( $sth->fetch() ) {
+    push( @external_db_ids, $external_db_id );
+  }
+
+  if ( scalar(@external_db_id) == 0 ) {
+    warn sprintf( "Could not find external database "
+                    . "'%s' in the external_db table\n"
+                    . "Available are:\n",
+                  $db_name );
+
+    $sth = $self->prepare("SELECT DISTINCT db_name FROM external_db");
+
     $sth->execute();
-    $sth->bind_columns(\$external_db_id);
-    while($sth->fetch){
+    $sth->bind_columns( \$external_db_id );
+
+    while ( $sth->fetch() ) {
       warn "\t$external_db_id\n";
     }
-    return @genes_passed;
+    return [];
   }
-  
-  # get the gene_ids for those with links
+
+  # Get the gene_ids for those with links.
   my $dbe_adaptor = $self->db()->get_DBEntryAdaptor();
-  my %linked_genes= $dbe_adaptor->list_gene_ids_by_external_db_id($external_db_id);
 
-  # get all the genes on the slice  
+  my %linked_genes;
+  foreach $external_db_id (@external_db_ids) {
+    my @linked_genes =
+      q
+      $dbe_adaptor->list_gene_ids_by_external_db_id($external_db_id);
 
-  my $genes = $self->SUPER::fetch_all_by_Slice_constraint($slice,
-    'g.is_current = 1', $logic_name);
-
-  # create a list of those that are in the gene_ids list
-  foreach my $gene (@$genes){
-    if($linked_genes{$gene->dbID}){
-      push @genes_passed, $gene;
+    foreach my $gene_id (@linked_genes) {
+      $linked_genes{$gene_id} = 1;
     }
   }
 
-  #return the list of those that passed
+  # Get all the genes on the slice.
+  my $genes = $self->SUPER::fetch_all_by_Slice_constraint( $slice,
+                                      'g.is_current = 1', $logic_name );
+
+  # Create a list of those that are in the gene_ids list.
+  my @genes_passed;
+  foreach my $gene (@$genes) {
+    if ( exists( $linked_genes{ $gene->dbID() } ) ) {
+      push( @genes_passed, $gene );
+    }
+  }
+
+  # Return the list of those that passed.
   return \@genes_passed;
-}
+} ## end sub fetch_all_by_Slice_and_external_dbname_link
 
 =head2 fetch_all_by_Slice
 
