@@ -463,7 +463,7 @@ sub fetch_all_by_Slice_and_external_dbname_link {
     push( @external_db_ids, $external_db_id );
   }
 
-  if ( scalar(@external_db_id) == 0 ) {
+  if ( scalar(@external_db_ids) == 0 ) {
     warn sprintf( "Could not find external database "
                     . "'%s' in the external_db table\n"
                     . "Available are:\n",
@@ -486,7 +486,6 @@ sub fetch_all_by_Slice_and_external_dbname_link {
   my %linked_genes;
   foreach $external_db_id (@external_db_ids) {
     my @linked_genes =
-      q
       $dbe_adaptor->list_gene_ids_by_external_db_id($external_db_id);
 
     foreach my $gene_id (@linked_genes) {
