@@ -113,18 +113,20 @@ sub dbID {
 =cut
 
 sub adaptor {
-  my $self = shift;
-
-  if(@_) {
-    my $ad = shift;
-    if($ad && (!ref($ad) || !$ad->isa('Bio::EnsEMBL::DBSQL::BaseAdaptor'))) {
-      throw('Adaptor argument must be a Bio::EnsEMBL::DBSQL::BaseAdaptor');
+  my ($self, $adaptor) = @_;
+  if(scalar(@_) > 1) {
+    if(defined $adaptor) {
+      assert_ref($adaptor, 'Bio::EnsEMBL::DBSQL::BaseAdaptor', 'adaptor');
+      $self->{adaptor} = $adaptor;
+      weaken($self->{adaptor});
     }
-    weaken($self->{'adaptor'} = $ad);
+    else {
+      $self->{adaptor} = undef;
+    }
   }
-
-  return $self->{'adaptor'}
+  return $self->{adaptor}
 }
+
 
 
 =head2 is_stored
