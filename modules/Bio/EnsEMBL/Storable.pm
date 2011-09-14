@@ -47,6 +47,7 @@ package Bio::EnsEMBL::Storable;
 
 use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
+use Bio::EnsEMBL::Utils::Scalar qw(assert_ref);
 use Scalar::Util qw(weaken);
 
 =head2 new
