@@ -61,8 +61,6 @@ use strict;
 
 use Bio::PrimarySeqI;
 
-my $reg = "Bio::EnsEMBL::Registry";
-
 use Bio::EnsEMBL::Slice;
 
 use vars qw(@ISA);
