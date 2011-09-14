@@ -92,18 +92,18 @@ our @EXPORT_OK;
 
 @EXPORT_OK = qw(
   check_ref check_ref_can
-  assert_ref assert_ref_can assert_numeric assert_integer assert_boolean assert_strand
+  assert_ref assert_ref_can assert_numeric assert_integer assert_boolean assert_strand assert_file_handle
   wrap_array
 );
 %EXPORT_TAGS = (
-  assert  => [qw(assert_ref assert_ref_can assert_integer assert_numeric assert_boolean assert_strand)],
+  assert  => [qw(assert_ref assert_ref_can assert_integer assert_numeric assert_boolean assert_strand assert_file_handle)],
   check   => [qw(check_ref check_ref_can)],
   array   => [qw/wrap_array/],
   all     => [@EXPORT_OK]
 );
 
 use Bio::EnsEMBL::Utils::Exception qw(throw);
-use Scalar::Util qw(blessed looks_like_number);
+use Scalar::Util qw(blessed looks_like_number openhandle);
 
 =head2 check_ref()
 
@@ -366,5 +366,42 @@ sub assert_strand {
   return 1;
 }
 
+
+=head2 assert_file_handle
+
+  Arg [1]     : The Scalar to check
+  Arg [2]     : The attribute name you are asserting; not required but allows
+                for more useful error messages to be generated. Defaults to
+                C<-Unknown->.
+  Description : A subroutine which checks to see if the given scalar is
+                actually a file handle. This will handle those which are Glob
+                references and those which inherit from C<IO::Handle>. It will
+                also cope with a blessed Glob reference.
+  Returntype  : Boolean;
+  Example     : assert_file_handle($fh, '-FILE_HANDLE');
+  Exceptions  : Raised if not defined, not a reference and was not a
+                GLOB or did not inherit from IO::Handle   
+  Status      : Stable
+
+=cut
+
+sub assert_file_handle {
+  my ($file_handle, $attribute_name) = @_;
+  $attribute_name ||= '-Unknown-';
+  throw "Attribute $attribute_name was undefined" if ! defined $file_handle;
+  my $ref = ref($file_handle);
+  throw "Attribute $attribute_name was not a reference. Got: $file_handle" if ! $ref;
+  if(!openhandle($file_handle)) {
+    if(blessed($file_handle)) {
+      if(! $file_handle->isa('IO::Handle')) {
+        throw "Attribute $attribute_name was blessed but did not inherit from IO::Handle. Ref was: $ref";
+      }
+    }
+    else {
+      throw "Attribute $attribute_name was not a file handle. Ref was: $ref";
+    }
+  }
+  return 1;
+}
 
 1;

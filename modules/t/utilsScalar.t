@@ -6,6 +6,7 @@ use Test::Exception;
 
 use Bio::EnsEMBL::Utils::Scalar qw(:all);
 use Bio::EnsEMBL::IdMapping::TinyGene;
+use IO::Handle;
 
 my $gene = Bio::EnsEMBL::IdMapping::TinyGene->new_fast([]);
 
@@ -110,5 +111,25 @@ dies_ok { assert_boolean(1.2) } 'Passing in floating point means death';
 dies_ok { assert_boolean(-1) } 'Passing in integer -1 means death';
 lives_ok { assert_strand(1) } 'Passing in integer 1 means lives';
 lives_ok { assert_strand(0) } 'Passing in integer 0 means lives';
+
+#File handles
+my $scalar;
+my $other_scalar;
+open my $scalar_fh, '>', \$scalar;
+open my $other_scalar_fh, '>', \$other_scalar;
+bless($other_scalar_fh);
+my $io_handle = IO::Handle->new(); # no need to close as it isn't opened yet just created
+throws_ok { assert_file_handle(undef) } qr/undefined/, 'Passing in undefined scalar means death';
+dies_ok { assert_file_handle(bless(1, 'Brian'), 'met')} 'Passing in a blessed scalar means death';
+dies_ok { assert_file_handle('hello')} 'Passing in a String scalar means death';
+dies_ok { assert_file_handle({})} 'Passing in a HashRef means death';
+dies_ok { assert_file_handle(1E-10) } 'Passing in scientific notation numeric means death';
+dies_ok { assert_file_handle(1.2) } 'Passing in floating point means death';
+dies_ok { assert_file_handle(-1) } 'Passing in integer -1 means death';
+dies_ok { assert_file_handle(1) } 'Passing in integer 1 means death';
+lives_ok { assert_file_handle($scalar_fh) } 'Passing in a scalar FH means lives';
+lives_ok { assert_file_handle($other_scalar_fh) } 'Passing in a blessed scalar FH means lives';
+lives_ok { assert_file_handle($io_handle) } 'Passing in an IO::Handle means lives';
+close($_) for ($scalar_fh, $other_scalar_fh);
 
 done_testing();
