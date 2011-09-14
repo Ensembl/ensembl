@@ -69,10 +69,11 @@ CREATE TABLE relation (
   child_term_id     INT UNSIGNED NOT NULL,
   parent_term_id    INT UNSIGNED NOT NULL,
   relation_type_id  INT UNSIGNED NOT NULL,
+  intersection_of   TINYINT UNSIGNED NOT NULL DEFAULT 0,
 
   PRIMARY KEY (relation_id),
   UNIQUE INDEX child_parent_idx
-    (child_term_id, parent_term_id, relation_type_id),
+    (child_term_id, parent_term_id, relation_type_id, intersection_of),
   INDEX parent_idx (parent_term_id)
 );
 
