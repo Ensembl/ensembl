@@ -82,9 +82,22 @@ sub write_ontology {
   }
   alarm(0);
 
+  #if unknown ontology not found, store it
+  my ($unknown_onto_id) = $dbh->selectrow_array("SELECT ontology_id from ontology WHERE name = 'UNKNOWN'");
+  
+  if (!defined($unknown_onto_id)) {
+
+    my $statement = "INSERT INTO ontology (name, namespace) VALUES ('UNKNOWN','unknown ontology')";
+    my $sth = $dbh->prepare($statement);
+    $sth->execute();
+    $unknown_onto_id = $dbh->last_insert_id( undef, undef, 'ontology', 'ontology_id' );
+
+  }
   $dbh->do("OPTIMIZE TABLE ontology");
 
   printf( "\tWrote %d entries\n", $count );
+
+  return $unknown_onto_id;
 } ## end sub write_ontology
 
 #-----------------------------------------------------------------------
@@ -145,7 +158,7 @@ sub write_subset {
 #-----------------------------------------------------------------------
 
 sub write_term {
-  my ( $dbh, $terms, $subsets, $namespaces ) = @_;
+  my ( $dbh, $terms, $subsets, $namespaces, $unknown_onto_id ) = @_;
 
   print("Writing to 'term' and 'synonym' tables...\n");
 
@@ -158,11 +171,18 @@ sub write_term {
 
   my $syn_stmt = "INSERT INTO synonym (term_id, name) VALUES (?,?)";
 
-  my $sth     = $dbh->prepare($statement);
+  my $existing_term_st = "SELECT term_id, ontology_id FROM term WHERE accession = ?";
+
+  my $update_stmt = "UPDATE term SET ontology_id = ?, subsets = ?, name = ?, definition = ? WHERE term_id = ?";
+
+  my $sth = $dbh->prepare($statement);
+  my $update_sth = $dbh->prepare($update_stmt);
   my $syn_sth = $dbh->prepare($syn_stmt);
+  my $existing_term_sth = $dbh->prepare($existing_term_st);
 
   my $id;
   my $count     = 0;
+  my $updated_count = 0;
   my $syn_count = 0;
 
   local $SIG{ALRM} = sub {
@@ -183,34 +203,72 @@ sub write_term {
                               @{ $term->{'subsets'} } );
     }
 
-    if ( !( defined($term->{'accession'}) && defined($term->{'name'}) ) )
+    if (!defined($term->{'name'}))
     {
-	if (! defined($term->{'accession'}) ) {
-	    $term->{'accession'} = '';
+	#check if we have this term in the db already
+	$existing_term_sth->execute($term->{'accession'});
+	my ($existing_term_id, $ontology_id) = $existing_term_sth->fetchrow_array;
+	if (defined($existing_term_id)) {
+	    $term->{'id'} = $existing_term_id;
+	} else {
+	    #if not link it to Unknown ontology
+	    
+	    $sth->bind_param( 1, $unknown_onto_id,  SQL_INTEGER );
+	    $sth->bind_param( 2, $term_subsets,         SQL_VARCHAR );
+	    $sth->bind_param( 3, $term->{'accession'},  SQL_VARCHAR );
+	    $sth->bind_param( 4, 'UNKNOWN NAME',       SQL_VARCHAR );
+	    $sth->bind_param( 5, 'UNKNOWN DEFINITION', SQL_VARCHAR );
+
+	    $sth->execute();
+
+	    if ( !defined($id) ) {
+		$id = $dbh->last_insert_id( undef, undef, 'term', 'term_id' );
+	    } else {
+		++$id;
+	    }
+	    $term->{'id'} = $id;
+	    ++$count;
 	}
-	if (! defined($term->{'name'}) ) {
-	    $term->{'name'} = '';
-	}
-	print "Null value encountered, ommitting term: term accession " . $term->{'accession'}." term name ". $term->{'name'} . "\n";
-	#remove term
-	delete $terms->{$accession};
+
     } else {
 
-	$sth->bind_param( 1, $namespaces->{ $term->{'namespace'} }{'id'},
+	#we have the term name, check if the term is linked to unknown ontology in the ontology db
+	#if so, update it 
+	$existing_term_sth->execute($term->{'accession'});
+	my ($existing_term_id, $ontology_id) = $existing_term_sth->fetchrow_array;
+	if (defined($existing_term_id) && $ontology_id == $unknown_onto_id) {
+	    
+	    $update_sth->bind_param( 1, $namespaces->{ $term->{'namespace'} }{'id'},
                       SQL_INTEGER );
-	$sth->bind_param( 2, $term_subsets,         SQL_VARCHAR );
-	$sth->bind_param( 3, $term->{'accession'},  SQL_VARCHAR );
-	$sth->bind_param( 4, $term->{'name'},       SQL_VARCHAR );
-	$sth->bind_param( 5, $term->{'definition'}, SQL_VARCHAR );
+	    $update_sth->bind_param( 2, $term_subsets,         SQL_VARCHAR );
+	    $update_sth->bind_param( 3, $term->{'name'},       SQL_VARCHAR );
+	    $update_sth->bind_param( 4, $term->{'definition'}, SQL_VARCHAR );
+	    $update_sth->bind_param( 5, $existing_term_id,     SQL_INTEGER );
 
-	$sth->execute();
+	    $update_sth->execute();
 
-	if ( !defined($id) ) {
-	    $id = $dbh->last_insert_id( undef, undef, 'term', 'term_id' );
+	    $term->{'id'} = $existing_term_id;
+	    ++$updated_count;
 	} else {
-	    ++$id;
+
+	    $sth->bind_param( 1, $namespaces->{ $term->{'namespace'} }{'id'},
+                      SQL_INTEGER );
+	    $sth->bind_param( 2, $term_subsets,         SQL_VARCHAR );
+	    $sth->bind_param( 3, $term->{'accession'},  SQL_VARCHAR );
+	    $sth->bind_param( 4, $term->{'name'},       SQL_VARCHAR );
+	    $sth->bind_param( 5, $term->{'definition'}, SQL_VARCHAR );
+
+	    $sth->execute();
+
+	    if ( !defined($id) ) {
+		$id = $dbh->last_insert_id( undef, undef, 'term', 'term_id' );
+	    } else {
+		++$id;
+	    }
+	    $term->{'id'} = $id;
+
+	    ++$count;
 	}
-	$term->{'id'} = $id;
 
 	foreach my $syn ( @{ $term->{'synonyms'} } ) {
 	    $syn_sth->bind_param( 1, $id,  SQL_INTEGER );
@@ -220,8 +278,6 @@ sub write_term {
 
 	    ++$syn_count;
 	}
-
-	++$count;
     }
   } ## end foreach my $accession ( sort...)
   alarm(0);
@@ -231,8 +287,8 @@ sub write_term {
   $dbh->do("UNLOCK TABLES");
 
   printf(
-       "\tWrote %d entries into 'term' and %d entries into 'synonym'\n",
-       $count, $syn_count );
+       "\tWrote %d entries into 'term', updated %d entries in 'term' and wrote %d entries into 'synonym'\n",
+       $count, $updated_count, $syn_count );
 } ## end sub write_term
 
 #-----------------------------------------------------------------------
@@ -301,8 +357,8 @@ sub write_relation {
 
   my $statement =
       "INSERT INTO relation "
-    . "(child_term_id, parent_term_id, relation_type_id) "
-    . "VALUES (?,?,?)";
+    . "(child_term_id, parent_term_id, relation_type_id, intersection_of) "
+    . "VALUES (?,?,?,?)";
 
   my $sth = $dbh->prepare($statement);
 
@@ -340,11 +396,38 @@ sub write_relation {
                             SQL_INTEGER );
           $sth->bind_param( 3, $relation_types->{$relation_type}{'id'},
                             SQL_INTEGER );
+          $sth->bind_param( 4, 0, SQL_INTEGER );
           $sth->execute();
         }
       }
     }
+    foreach my $relation_type (
+                         sort( keys( %{ $child_term->{'intersection_of_parents'} } ) ) )
+    {
+      foreach my $parent_acc (
+                 sort( @{ $child_term->{'intersection_of_parents'}{$relation_type} } ) )
+      {
+        if ( !defined( $terms->{$parent_acc} ) ) {
+          printf( "WARNING: Parent accession '%s' does not exist!\n",
+                  $parent_acc );
+        } else {
 
+	  if ( !( defined($child_term->{'id'}) && defined($terms->{$parent_acc}{'id'}) && defined($relation_types->{$relation_type}{'id'}) ) )
+	  {
+	      print "Null value encountered: child term id " . $child_term->{'id'} ." parent term id ". $terms->{$parent_acc}{'id'} . " relationship type " . $relation_types->{$relation_type}{'id'} . "\n";
+	      exit;
+	  }
+
+          $sth->bind_param( 1, $child_term->{'id'}, SQL_INTEGER );
+          $sth->bind_param( 2, $terms->{$parent_acc}{'id'},
+                            SQL_INTEGER );
+          $sth->bind_param( 3, $relation_types->{$relation_type}{'id'},
+                            SQL_INTEGER );
+          $sth->bind_param( 4, 1, SQL_INTEGER );
+          $sth->execute();
+        }
+      }
+    }
     ++$count;
   } ## end foreach my $child_term ( sort...)
   alarm(0);
@@ -479,7 +562,6 @@ foreach my $subs (@subsets) {
         $subsets{$subs->name()}{'definition'} = $subs->description();
 }
 
-
 # get all non obsolete terms
 foreach my $t (@{$ontology->get_terms()}) {
      if (!($t->is_obsolete())) {
@@ -504,6 +586,24 @@ foreach my $t (@{$ontology->get_terms()}) {
 		#get parent term
 		my $pterm = $r->head();
 		push( @{ $term{'parents'}{$r->type()} }, $pterm->id() );        
+	}
+	
+	my @intersection_of = $t->intersection_of();
+        foreach my $r (@intersection_of) {
+		
+	    if ($r->isa('OBO::Core::Relationship') ){
+                #get parent term for relationship
+		my $pterm = $r->head();
+		my $type = $r->type();
+		if (!defined($type) || $type eq 'nil') {
+		    $type = 'is_a';
+		}
+		push( @{ $term{'intersection_of_parents'}{$type} }, $pterm->id() );      
+	    } else {
+		#this is a term
+		push( @{ $term{'intersection_of_parents'}{'is_a'} }, $r->id() );
+	    } 
+	    
 	}
 	
 	my @term_subsets = $t->subset();
@@ -531,9 +631,9 @@ foreach my $rel_type (@{$ontology->get_relationship_types()}) {
 
 print("Finished reading OBO file, now writing to database...\n");
 
-write_ontology( $dbh, \%namespaces );
+my $unknown_onto_id = write_ontology( $dbh, \%namespaces );
 write_subset( $dbh, \%subsets );
-write_term( $dbh, \%terms, \%subsets, \%namespaces );
+write_term( $dbh, \%terms, \%subsets, \%namespaces, $unknown_onto_id);
 write_relation_type( $dbh, \%relation_types );
 write_relation( $dbh, \%terms, \%relation_types );
 
