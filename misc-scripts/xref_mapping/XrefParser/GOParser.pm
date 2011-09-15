@@ -70,10 +70,6 @@ sub run {
   # stored in the global hash xref_dependent_mapped.
   $self->get_dependent_mappings($source_id);
 
-  if(!defined($species_id)){
-    $species_id = $self->get_species_id_for_filename($file);
-  }
-
   my $swiss_miss=0;
   my (%swiss) = %{$self->get_valid_codes("uniprot/",$species_id)};
 

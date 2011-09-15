@@ -23,10 +23,6 @@ sub run {
 
   my $file = @{$files}[0];
 
-  if(!defined $species_id){
-    $species_id = $self->get_species_id_for_filename($file);
-  }
-
   my (%swissprot)  =  %{$self->get_valid_codes('Uniprot/SWISSPROT',$species_id)};
   my (%refseq) =  %{$self->get_valid_codes('refseq',$species_id)};
   my @list;

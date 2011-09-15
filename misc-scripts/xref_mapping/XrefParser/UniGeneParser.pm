@@ -30,11 +30,6 @@ sub run {
 
   print "UniGene source ID = $unigene_source_id.\n" if($verbose);
 
-  if ( !defined($species_id) ) {
-    $species_id =
-      $self->get_species_id_for_filename($uniq_file);
-  }
-
   my $xrefs =
     $self->create_xrefs( $unigene_source_id, $unigene_source_id,
       $uniq_file, $data_file, $species_id );

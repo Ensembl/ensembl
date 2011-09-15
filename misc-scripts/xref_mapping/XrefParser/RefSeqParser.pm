@@ -58,9 +58,6 @@ sub run {
 
     my @xrefs;
     foreach my $file (@files) {
-        if ( !defined($species_id) ) {
-            $species_id = $self->get_species_id_for_filename($file);
-        }
 
         my $xrefs =
           $self->create_xrefs( $peptide_source_id,
