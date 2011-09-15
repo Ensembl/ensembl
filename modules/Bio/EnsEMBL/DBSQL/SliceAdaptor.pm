@@ -436,6 +436,30 @@ sub fetch_by_region {
   }
 } ## end sub fetch_by_region
 
+=head2 fetch_by_toplevel_location
+
+  Arg [1]     : string $location
+  Example     : my $slice = $sa->fetch_by_toplevel_location('X:1-10000')
+  Description : Converts an Ensembl location/region into the sequence region
+                name, start and end and passes them onto C<fetch_by_region()>. 
+                The code assumes that the required slice is on the top level
+                coordinate system.
+  Returntype  : Bio::EnsEMBL::Slice
+  Exceptions  : If $location is false otherwise see C<fetch_by_region()>
+  Caller      : General
+  Status      : Beta
+
+=cut
+
+sub fetch_by_toplevel_location {
+  my ($self, $location) = @_;
+  throw 'You must specify a location' if ! $location;
+  my $regex = qr/^(\w+) :? (\d+)? (?:-|[.]{2})? (\d+)?/xms;
+  my ($seq_region_name, $start, $end) = $location =~ $regex;
+  my $coord_system_name = 'toplevel';
+  return $self->fetch_by_region($coord_system_name, $seq_region_name, $start, $end, undef, undef, 0);
+}
+
 =head2 fetch_by_region_unique
 
   Arg [1]    : string $coord_system_name (optional)

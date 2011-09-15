@@ -1,16 +1,13 @@
 use strict;
 use warnings;
 
-
-BEGIN { $| = 1;  
-	use Test;
-	plan tests => 66;
-}
+use Test::More tests => 129;
 
 use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::DBSQL::SliceAdaptor;
 use Bio::EnsEMBL::Slice;
 use Bio::EnsEMBL::Test::TestUtils;
+use Test::Exception;
 
 our $verbose = 0;
 
@@ -363,13 +360,13 @@ ok($slice->strand == -1);
 #default no duplicates and reference only
 my $slices = $slice_adaptor->fetch_all('chromosome',undef);
 print_slices($slices);
-ok(@$slices == 64);
+is(@$slices, 63, 'References slices for coord system chromosome');
 
 # include duplicates
 $slices = $slice_adaptor->fetch_all('chromosome', undef,0, 1);
 
 print_slices($slices);
-ok(@$slices == 63);
+is(@$slices, 62, 'References slices for coord system chromosome when including duplicates (Y should become 1 region not 2)');
 
 
 $slices = $slice_adaptor->fetch_all('contig', undef);
@@ -447,7 +444,37 @@ ok($slice->coord_system()->name() eq 'chromosome');
 
 $multi->restore('core', 'seq_region');
 
+###### FETCH BY LOCATION
+test_toplevel_location('1:1-1000', 'chromosome', '1', 1, 1000);
+test_toplevel_location('1:1-', 'chromosome', '1', 1, 246874334);
+test_toplevel_location('1:-10', 'chromosome', '1', 1, 10);
+test_toplevel_location('1:100', 'chromosome', '1', 100, 246874334);
+test_toplevel_location('1:', 'chromosome', '1', 1, 246874334);
+test_toplevel_location('1', 'chromosome', '1', 1, 246874334);
 
+test_toplevel_location('1:1..1000', 'chromosome', '1', 1, 1000);
+test_toplevel_location('1:1..', 'chromosome', '1', 1, 246874334);
+test_toplevel_location('1:..10', 'chromosome', '1', 1, 10);
+test_toplevel_location('1:100', 'chromosome', '1', 100, 246874334);
+test_toplevel_location('1:', 'chromosome', '1', 1, 246874334);
+test_toplevel_location('1', 'chromosome', '1', 1, 246874334);
+dies_ok { $slice_adaptor->fetch_by_toplevel_location(); } 'Checking calling without a location fails';
+dies_ok { $slice_adaptor->fetch_by_toplevel_location(''); } 'Checking calling with a blank location fails';
+ok(!defined $slice_adaptor->fetch_by_toplevel_location('wibble'), 'Checking with a bogus region returns undef');
+
+sub test_toplevel_location {
+  my ($location, $cs_name, $seq_region_name, $start, $end) = @_;
+  my $incoming_slice = $slice_adaptor->fetch_by_toplevel_location($location);
+  my $def = ok(defined $incoming_slice, "Slice is defined for $location");
+  SKIP : {
+    skip 'Incoming slice is undefined', 5 if ! $def;
+    is($incoming_slice->coord_system_name(), $cs_name, "Checking coord system name for $location");
+    is($incoming_slice->seq_region_name(), $seq_region_name, 'Checking seq region name for $location');
+    is($incoming_slice->start(), $start, "Checking start for $location");
+    is($incoming_slice->end(), $end, "Checking end for $location");
+  }
+  return;
+}
 
 sub print_slices {
   my $slices = shift;
