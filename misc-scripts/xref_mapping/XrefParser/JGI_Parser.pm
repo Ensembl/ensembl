@@ -145,13 +145,4 @@ sub run {
   return 0; # successful
 }
 
-
-sub new
-{
-    my $proto = shift;
-    my $self  = $proto->SUPER::new(@_);
-
-    return $self;
-}
-
 1;

@@ -19,15 +19,6 @@ use base qw( XrefParser::BaseParser );
 #
 # Columns 1 and 2 are obligatory.
 
-sub new {
-    my $proto = shift;
-
-    my $class = ref $proto || $proto;
-    my $self = bless {}, $class;
-
-    return $self;
-}
-
 sub run {
   my ($self, $ref_arg) = @_;
   my $source_id    = $ref_arg->{source_id};

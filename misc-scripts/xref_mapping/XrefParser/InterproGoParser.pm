@@ -113,8 +113,3 @@ sub get_valid_codes{
   return \%valid_codes;
 }
 
-sub new{
-  my $self = {};
-  bless $self, __PACKAGE__;
-  return $self;
-}

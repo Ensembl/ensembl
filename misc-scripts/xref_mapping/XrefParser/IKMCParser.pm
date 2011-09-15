@@ -7,16 +7,6 @@ use LWP::UserAgent;
 
 use base qw( XrefParser::BaseParser );
 
-
-sub new {
-    my $proto = shift;
-
-    my $class = ref $proto || $proto;
-    my $self = bless {}, $class;
-
-    return $self;
-}
-
 sub run_script {
 
   my ($self, $ref_arg) = @_;
