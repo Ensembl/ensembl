@@ -3447,6 +3447,25 @@ sub add_synonym{
   return;
 }
 
+=head2 summary_as_hash
+
+  Example       : $slice_summary = $slice->summary_as_hash();
+  Description   : Retrieves a textual summary of this slice.
+  Returns       : hashref of descriptive strings
+=cut
+
+sub summary_as_hash {
+  my $self = shift;
+  my %summary;
+  $summary{'display_id'} = $self->display_id;
+  $summary{'start'} = $self->start;
+  $summary{'end'} = $self->end;
+  $summary{'strand'} = $self->strand;
+  $summary{'Is_circular'} = $self->is_circular ? "true" : "false";
+  $summary{'region_name'} = $self->seq_region_name();
+  return \%summary;
+}
+
 #
 # Bioperl Bio::PrimarySeqI methods:
 #

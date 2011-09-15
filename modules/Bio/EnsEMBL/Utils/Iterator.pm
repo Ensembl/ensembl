@@ -135,7 +135,7 @@ sub new {
 
   Example    : $obj = $iterator->next
   Description: returns the next object from this iterator, or undef if the iterator is exhausted
-  Returntype : the return type will depend on what this iterator is iterating over
+  Returntype : Object type will depend on what this iterator is iterating over
   Exceptions : none
   Caller     : general
   Status     : Experimental
@@ -153,7 +153,7 @@ sub next {
 =head2 has_next
 
   Example    : if ($iterator->has_next) { my $obj = $iterator->next }
-  Description: returns true if this iterator has more elements to fetch, false when
+  Description: Boolean - true if this iterator has more elements to fetch, false when
                it is exhausted
   Returntype : boolean
   Exceptions : none
@@ -176,7 +176,7 @@ sub has_next {
   Description: returns the next object from this iterator, or undef if the iterator is exhausted,
                much like next but does not advance the iterator (so the same object will be 
                returned on the following call to next or peek)
-  Returntype : the return type will depend on what this iterator is iterating over
+  Returntype : Object type will depend on what this iterator is iterating over
   Exceptions : none
   Caller     : general
   Status     : Experimental
@@ -403,7 +403,7 @@ sub skip {
                first element in the set
   Argument[2]: (optional) an initial value to use for the accumulator instead 
                of the first value of the set
-  Returntype : the same as the return type of the coderef 
+  Returntype : returntype of the coderef 
   Exceptions : thrown if the argument is not a coderef
   Caller     : general
   Status     : Experimental

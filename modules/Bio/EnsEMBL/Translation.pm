@@ -150,7 +150,7 @@ sub new_fast {
                   with this translation object.
   Exceptions    : Throws if there is no adaptor or no dbID defined for
                   the translation object.
-
+  Returntype    : Bio::EnsEMBL::Transcript
 =cut
 
 sub transcript {
@@ -170,7 +170,7 @@ sub transcript {
     my $adaptor = $self->adaptor;
     if ( !defined($adaptor) ) {
       throw(   "Adaptor is not set for translation, "
-             . "can not fecth its transcript." );
+             . "can not fetch its transcript." );
     }
 
     my $dbID = $self->{'dbID'};
@@ -1204,5 +1204,24 @@ sub get_all_DAS_Features{
   return $self->SUPER::get_all_DAS_Features($slice);
 }
 
+=head2 summary_as_hash
+
+  Example       : $translation_summary = $translation->summary_as_hash();
+  Description   : Retrieves a textual summary of this Translation.
+                  Not inherited from Feature.
+  Returns       : hashref of arrays of descriptive strings
+  Status        : Intended for internal use
+=cut
+
+sub summary_as_hash {
+  my $self = shift;
+  my %summary;
+  $summary{'display_id'} = $self->display_id;
+  $summary{'genomic_start'} = $self->genomic_start;
+  $summary{'genomic_end'} = $self->genomic_end;
+  my $transcript = $self->transcript;
+  $summary{'Parent'} = $transcript->display_id;
+  return \%summary;
+}
 
 1;

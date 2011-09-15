@@ -1429,7 +1429,24 @@ sub get_nearest_Gene {
 
 }
 
+=head2 summary_as_hash
 
+  Example       : $feature_summary = $feature->summary_as_hash();
+  Description   : Retrieves a textual summary of this Feature.
+	              Should be overidden by subclasses for specific tweaking
+  Returns       : hashref of arrays of descriptive strings
+  Status        : Intended for internal use
+=cut
+
+sub summary_as_hash {
+  my $self = shift;
+  my %summary;
+  $summary{'ID'} = $self->display_id;
+  $summary{'start'} = $self->start;
+  $summary{'end'} = $self->end;
+  $summary{'strand'} = $self->strand;
+  return \%summary;
+}
 
 
 

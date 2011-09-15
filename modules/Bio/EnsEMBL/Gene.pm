@@ -1473,6 +1473,25 @@ sub is_reference{
   return $self->{'is_ref'};
 }
 
+=head2 summary_as_hash
+
+  Example       : $gene_summary = $gene->summary_as_hash();
+  Description   : Extends Feature::summary_as_hash
+                  Retrieves a summary of this Gene object.
+	                  
+  Returns       : hashref of arrays of descriptive strings
+  Status        : Intended for internal use
+=cut
+
+sub summary_as_hash {
+  my $self = shift;
+  my $summary_ref = $self->SUPER::summary_as_hash;
+  $summary_ref->{'description'} = $self->description;
+  $summary_ref->{'biotype'} = $self->biotype;
+  return $summary_ref;
+}
+
+
 ###########################
 # DEPRECATED METHODS FOLLOW
 ###########################

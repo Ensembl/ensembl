@@ -2650,6 +2650,25 @@ sub load {
 
 } ## end sub load
 
+=head2 summary_as_hash
+
+  Example       : $transcript_summary = $transcript->summary_as_hash();
+  Description   : Extends Feature::summary_as_hash
+                  Retrieves a summary of this Transcript.
+  Returns       : hashref of descriptive strings
+  Status        : Intended for internal use
+=cut
+
+sub summary_as_hash {
+  my $self = shift;
+  my $summary_ref = $self->SUPER::summary_as_hash;
+  $summary_ref->{'description'} = $self->description;
+  $summary_ref->{'biotype'} = $self->biotype;
+  my $parent_gene = $self->get_nearest_Gene;
+  $summary_ref->{'Parent'} = $parent_gene->display_id;
+  return $summary_ref;
+}
+
 ###########################
 # DEPRECATED METHODS FOLLOW
 ###########################
