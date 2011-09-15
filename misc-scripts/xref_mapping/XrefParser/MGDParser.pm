@@ -16,7 +16,7 @@ sub run {
   my $species_id = shift;
   my $files       = shift;
   my $release_file   = shift;
-  $verbose       = shift;
+  my $verbose       = shift;
 
   my $file = @{$files}[0];
 
