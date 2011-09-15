@@ -7,7 +7,7 @@ use File::Basename;
 use Bio::SeqIO;
 use XrefParser::BaseParser;
 
-use base = qw(XrefParser::BaseParser);
+use base qw(XrefParser::BaseParser);
 
 # OParser for FASTA-format probe mappings from Agilent
 # >A_23_P253586
