@@ -49,7 +49,11 @@ $sth->execute();
 my @sorted_slices = sort( {
                $a->coord_system()->rank() <=> $b->coord_system()->rank()
                  || $b->seq_region_length() <=> $a->seq_region_length()
-} @{ $slice_adaptor->fetch_all('toplevel', '', undef, 1) } );
+} @{ $slice_adaptor->fetch_all('toplevel')} );
+# Cannot use this due to PAR regions & basefeatureadaptor's fetch method 
+#understanding par region translation
+#} @{ $slice_adaptor->fetch_all('toplevel', '', undef, 1) } );
+
 
 my $analysis = $analysis_adaptor->fetch_by_logic_name('snpdensity');
 #  new Bio::EnsEMBL::Analysis(
