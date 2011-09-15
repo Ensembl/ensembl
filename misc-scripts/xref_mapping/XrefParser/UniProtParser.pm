@@ -164,9 +164,10 @@ sub create_xrefs {
   my %mgi_label_to_desc;
   my %mgi_label_to_acc;
 
-  my $sth = $self->dbi()->prepare("SELECT x.accession, x.label, x.description from xref x, source s where x.source_id = s.source_id and s.name like 'MGI' and s.priority_description like 'descriptions'");
+  my $dbi = $self->dbi();
+  my $sth = $dbi->prepare("SELECT x.accession, x.label, x.description from xref x, source s where x.source_id = s.source_id and s.name like 'MGI' and s.priority_description like 'descriptions'");
   
-  $sth->execute() or croak( $self->dbi()->errstr() );
+  $sth->execute() or croak( $dbi->errstr() );
   while ( my @row = $sth->fetchrow_array() ) {
     $mgi_acc_to_desc{$row[0]}   = $row[2];
     $mgi_acc_to_label{$row[0]}  = $row[1];
@@ -180,9 +181,9 @@ sub create_xrefs {
   # Get the MGI synonyms
   #
 
-  $sth = $self->dbi()->prepare("SELECT sy.synonym, x.accession, x.description from xref x, source s, synonym sy where sy.xref_id = x.xref_id and x.source_id = s.source_id and s.name like 'MGI' and s.priority_description like 'descriptions'");
+  $sth = $dbi->prepare("SELECT sy.synonym, x.accession, x.description from xref x, source s, synonym sy where sy.xref_id = x.xref_id and x.source_id = s.source_id and s.name like 'MGI' and s.priority_description like 'descriptions'");
   
-  $sth->execute() or croak( $self->dbi()->errstr() );
+  $sth->execute() or croak( $dbi->errstr() );
   while ( my @row = $sth->fetchrow_array() ) {
     $mgi_label_to_desc{$row[0]} = $row[2];
     $mgi_label_to_acc{$row[0]}  = $row[1];

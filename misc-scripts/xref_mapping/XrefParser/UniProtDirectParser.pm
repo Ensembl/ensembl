@@ -52,7 +52,7 @@ sub run {
       push @{$prot2ensembl{$prot}}, $ens;
    }
   }
-  my $dbi = XrefParser::BaseParser->dbi();
+  my $dbi = $self->dbi();
 
   my $sw_source_id =  XrefParser::BaseParser->get_source_id_for_source_name("uniprot/swissprot","sequence_mapped");
   if($sw_source_id < 1){
