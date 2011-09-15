@@ -357,7 +357,7 @@ sub get_official_domain_name{
 
   my $dbentrie_sth = $self->get_dbentrie_sth();
 
-  my @ODN=();
+  my %ODN=();
   my %xref_id_to_display;
 
   $dbentrie_sth->execute($dbname, $gene_id, "Gene");
@@ -376,32 +376,55 @@ sub get_official_domain_name{
     $count++;
     $xref_id_to_display{$xref_id} = $display;
     if($level < $best_level){
-      @ODN = ();
-      push @ODN, $xref_id;
+      %ODN = ();
+      $ODN{$xref_id} = 1;
       $best_level = $level;
     }
     elsif($level == $best_level){
-      push @ODN, $xref_id;
+      $ODN{$xref_id} = 1;
     }
   }
 
-
-
-  if(($count > 1) and (scalar(@ODN) == 1)){ # found one that is "best" so set it and remove others
+  if(($count > 1) and (scalar(keys %ODN) == 1)){ # found one that is "best" so set it and remove others
     print "For gene ".$gene_id_to_stable_id->{$gene_id}." we have mutiple ".$dbname."'s\n";
-    ($gene_symbol, $gene_symbol_xref_id) = $self->set_the_best_odn($ODN[0], \@list, \@list_ox, \%xref_id_to_display);
+    ($gene_symbol, $gene_symbol_xref_id) = $self->set_the_best_odns(\%ODN, \@list, \@list_ox, \%xref_id_to_display);
     if(defined($gene_symbol)){
       return $gene_symbol, $gene_symbol_xref_id;
     }
   }
 
-  if(scalar(@ODN) == 1){  # one hgnc to this gene - perfect case :-)
-    return $xref_id_to_display{$ODN[0]}, $ODN[0];
+  if(scalar(keys %ODN) == 1){  # one hgnc to this gene - perfect case :-)
+      return $xref_id_to_display{(keys %ODN)[0]}, (keys %ODN)[0];
   }
-  if(scalar(@ODN) > 1){ # try to use vega to find the most common one
+  if(scalar(keys %ODN) > 1){ 
+    
+    #if we have  more than 1 xref, fail xrefs with worse % identity if we can (query or target identity whichever is greater)
+    my $identity_sth = $self->get_best_identity_sth();     
+    $identity_sth->execute($dbname, $gene_id, "Gene");
+    my ($xref_id, $best_identity); 
+    $identity_sth->bind_columns(\$xref_id, \$best_identity);
+    my $temp_best_identity = 0;
+    my %best_ids = ();
+
+    while($identity_sth->fetch){
+	 
+	if($best_identity > $temp_best_identity){
+	     %best_ids = ();
+	     $best_ids{$xref_id} = 1;
+	     $temp_best_identity = $best_identity;
+	}
+	elsif($best_identity == $temp_best_identity){
+	     $best_ids{$xref_id} = 1;
+	} 
+	else {
+	     last;
+	}
+    }
+
+    # try to use vega to find the most common one
 
     my %best_list;
-    foreach my $xref_id (@ODN){
+    foreach my $xref_id (keys %ODN){
       $best_list{$xref_id_to_display{$xref_id}} = 1;
     }
 
@@ -422,16 +445,29 @@ sub get_official_domain_name{
 	  $gene_symbol = $name;
 	}
       }
-      foreach my $xref_id (@ODN){
+      foreach my $xref_id (keys %ODN){
 	if($gene_symbol eq $xref_id_to_display{$xref_id}){
 	  $gene_symbol_xref_id = $xref_id;
 	}
       }
       print "\t$gene_symbol chosen from vega\n";
     }
-    else{  # take the first one ??
+    else{ 
+
+      # check if we were able to reduce the number of xrefs based on % identity 
+      if ( scalar(keys %best_ids) > 0 && scalar(keys %best_ids) < scalar(keys %ODN) ) {
+	  %ODN = %best_ids;
+	  print "For gene ".$gene_id_to_stable_id->{$gene_id}." we have mutiple ".$dbname."'s\n";
+	  #set statuses for xrefs with worse % identity to MULTI_DELETE
+	  ($gene_symbol, $gene_symbol_xref_id) = $self->set_the_best_odns(\%ODN, \@list, \@list_ox, \%xref_id_to_display);
+	  if( defined($gene_symbol) && scalar(keys %ODN == 1) ){
+	      return $gene_symbol, $gene_symbol_xref_id;
+	  } 
+      }
+      
+      # take the first one ??
       my $i = 0;
-      foreach my $x (@ODN){
+      foreach my $x (keys %ODN){
 	print "\t".$xref_id_to_display{$x};
 	if(!$i){
 	  print "  (chosen as first)\n";
@@ -648,7 +684,7 @@ sub get_dbentrie_with_desc_sth{
 
   if(!defined($self->{'_dbentrie_desc_sth'})){
     my $sql =(<<"SQD");
-SELECT x.label, x.xref_id, ox.object_xref_id, s.prioriy, x.description 
+SELECT x.label, x.xref_id, ox.object_xref_id, s.priority, x.description 
   FROM xref x, object_xref ox, source s
     WHERE x.xref_id = ox.xref_id AND
           x.source_id = s.source_id AND
@@ -661,6 +697,29 @@ SQD
   }
   return  $self->{'_dbentrie_desc_sth'};
 }
+
+#################################################
+# Get statement handle to retrieve average of query
+# and target identity for xrefs
+#################################################
+sub get_best_identity_sth{
+  my $self = shift;
+
+  if(!defined($self->{'_best_identity_sth'})){
+    my $sql =(<<"SQD");
+SELECT x.xref_id, CASE WHEN ix.query_identity >= ix.target_identity 
+THEN ix.query_identity ELSE ix.target_identity END as best_identity 
+FROM xref x, object_xref ox, identity_xref ix, source s 
+WHERE x.xref_id = ox.xref_id AND x.source_id = s.source_id 
+ AND ox.object_xref_id = ix.object_xref_id AND s.name = ? 
+ AND ox.ox_status = 'DUMP_OUT' AND ox.ensembl_id = ? 
+ AND ox.ensembl_object_type = ? order by best_identity DESC
+SQD
+    $self->{'_best_identity_sth'}  = $self->xref->dbc->prepare($sql);
+  }
+  return  $self->{'_best_identity_sth'};
+}
+
 
 #################################################
 # Get statement handle to set the display xref
@@ -978,18 +1037,18 @@ sub get_delete_odn_sth{
   return $self->{_delete_odn_sth};
 }
 
-sub set_the_best_odn{
+sub set_the_best_odns{
   my ($self, $odn, $ref_list, $ref_list_ox, $ref_xref_id_to_display) = @_;
 
   my $delete_odn_sth = $self->get_delete_odn_sth();
-
+  my %ODN = %$odn;
 
   my $gene_symbol = undef;
   my $gene_symbol_xref_id = undef;
   my $i=0;
   while ($i < scalar(@{$ref_list})){
     my $x = $ref_list->[$i];
-    if($x != $odn){
+    if(!exists($ODN{$x})){
       print "\tremoving ".$ref_xref_id_to_display->{$x}." from gene\n";
       #remove object xref....
       $delete_odn_sth->execute($ref_list_ox->[$i])|| 
