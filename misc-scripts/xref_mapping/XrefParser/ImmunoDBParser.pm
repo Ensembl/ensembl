@@ -23,13 +23,6 @@ sub run {
 
   print "source_id = $source_id, species = $species_id, file = $file\n" if($verbose);
 
-  if(!defined($source_id)){
-    $source_id = XrefParser::BaseParser->get_source_id_for_filename($file);
-  }
-  if(!defined($species_id)){
-    $species_id = XrefParser::BaseParser->get_species_id_for_filename($file);
-  }
-
   my $added = 0;
   my $count = 0;
 

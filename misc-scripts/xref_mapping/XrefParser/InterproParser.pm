@@ -22,13 +22,6 @@ sub run {
 
   my $file = @{$files}[0];
 
-  if(!defined($source_id)){
-    $source_id = $self->get_source_id_for_filename($file);
-  }
-  if(!defined($species_id)){
-    $species_id = $self->get_species_id_for_filename($file);
-  }
-
   my $add_interpro_sth =
     $self->dbi()
     ->prepare("INSERT INTO interpro (interpro, pfam, dbtype ) VALUES(?,?,?)");

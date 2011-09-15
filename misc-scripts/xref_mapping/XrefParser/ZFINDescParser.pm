@@ -25,13 +25,6 @@ sub run {
 
   my $file = @{$files}[0];
 
-  if(!defined($source_id)){
-    $source_id = XrefParser::BaseParser->get_source_id_for_filename($file);
-  }
-  if(!defined($species_id)){
-    $species_id = XrefParser::BaseParser->get_species_id_for_filename($file);
-  }
-
 #e.g.
 #ZDB-GENE-050102-6       WITHDRAWN:zgc:92147     WITHDRAWN:zgc:92147     0
 #ZDB-GENE-060824-3       apobec1 complementation factor  a1cf    0

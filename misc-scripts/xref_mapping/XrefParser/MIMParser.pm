@@ -28,14 +28,8 @@ sub run {
   my %removed;
   my $source_id;
   my @sources;
-  if(!defined($general_source_id)){
-    $general_source_id = XrefParser::BaseParser->get_source_id_for_filename($file);
-  }
-  if(!defined($species_id)){
-    $species_id = XrefParser::BaseParser->get_species_id_for_filename($file);
-  }
+
   push @sources, $general_source_id;
- 
 
   my $gene_source_id = XrefParser::BaseParser->get_source_id_for_source_name("MIM_GENE");
   push @sources, $gene_source_id;
@@ -43,7 +37,7 @@ sub run {
   push @sources, $morbid_source_id;
 
   print "sources are:- ".join(", ",@sources)."\n" if($verbose);
-    
+
   local $/ = "*RECORD*";
 
   my $mim_io = $self->get_filehandle($file);

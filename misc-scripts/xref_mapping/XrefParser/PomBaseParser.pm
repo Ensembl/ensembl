@@ -26,13 +26,6 @@ sub run {
 
   my $file = @{$files}[0];
 
-  if(!defined($source_id)){
-    $source_id = XrefParser::BaseParser->get_source_id_for_filename($file);
-  }
-  if(!defined($species_id)){
-    $species_id = XrefParser::BaseParser->get_species_id_for_filename($file);
-  }
-  
   my $gene_source_id = XrefParser::BaseParser->get_source_id_for_source_name("PomBase_GENE");
   my $transcript_source_id = XrefParser::BaseParser->get_source_id_for_source_name("PomBase_TRANSCRIPT");
 
