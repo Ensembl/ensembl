@@ -5,13 +5,13 @@ use warnings;
 
 use Bio::EnsEMBL::Utils::Exception;
 use XrefParser::FetchFiles;
+use XrefParser::Database;
 use Carp;
 use DBI;
-use Digest::MD5 qw(md5_hex);
 use Getopt::Long;
 use POSIX qw(strftime);
 
-use File::Basename;
+
 use File::Spec::Functions;
 use IO::File;
 use Net::FTP;
@@ -37,582 +37,36 @@ my %name2species_id;
 my %species_id2name;
 my %xref_dependent_mapped;
 
-my ( $host,             $port,    $dbname,        $user,
-     $pass,             $create,  $release,       $cleanup,
-     $deletedownloaded, $drop_db, $checkdownload, $dl_path,
-     $unzip,            $stats,   $verbose , $force);
+
+my $verbose;
 
 
-# --------------------------------------------------------------------------------
-# Get info about files to be parsed from the database
+sub new
+{
+  my ($proto, $database, $is_verbose) = @_;
 
-sub run {
-    (  my $self, $host,             $port,          $dbname,
-       $user,             $pass,          my $speciesr,
-       my $sourcesr,      $checkdownload, $create,
-       $release,          $cleanup,       $drop_db,
-       $deletedownloaded, $dl_path,       my $notsourcesr,
-       $unzip, $stats, $verbose, $force
-    ) = @_;
+  if((!defined $database)){# or (!$database->isa(XrefPArserDatabase)))
+    croak "No database specfied";
+  }
+  $verbose = $is_verbose;
+  $dbi = $database->dbi;
 
-    $base_dir = $dl_path if $dl_path;
-
-    my @species    = @$speciesr;
-    my @sources    = @$sourcesr;
-    my @notsources = @$notsourcesr;
-
-    my $sql_dir = dirname($0);
-
-    if ($create) {
-      $self->create($sql_dir);# $host, $port, $user, $pass, $dbname, $sql_dir, $drop_db );
-    }
-
-    $dbi = dbi();
-    my $sth_c = $dbi->prepare("insert into process_status (status, date) values('xref_created',now())");
-    $sth_c->execute;
+  my $class = ref $proto || $proto;
+  my $self =  bless {}, $class;
+  $self->dbi($dbi);
+  return $self;
+}
 
 
-    # need to use name now and that download = 'Y' as well
+sub dbi {
+  my ($self, $arg) = @_;
 
-    my $sql = (<<"DSS");
-SELECT s.name, s.source_id 
-  FROM source s, dependent_source ds, source_url su
-    WHERE su.source_id = s.source_id AND
-          ds.dependent_name = s.name AND
-          ds.master_source_id = ? AND
-          su.species_id = ? AND
-          s.download = 'Y' AND
-          s.source_id != ? AND
-          su.checksum is null
-DSS
-    my $dep_sth = $dbi->prepare($sql);
-
-
-
-
-    # validate species names
-    my @species_ids = validate_species(@species);
-
-    # validate source names
-    exit(1) if ( !validate_sources(\@species_ids,@sources) );
-    exit(1) if ( !validate_sources(\@species_ids,@notsources) );
-
-    # build SQL
-    my $species_sql = "";
-    if (@species_ids) {
-        $species_sql .= " AND su.species_id IN (";
-        for ( my $i = 0 ; $i < @species_ids ; $i++ ) {
-            $species_sql .= "," if ( $i != 0 );
-            $species_sql .= $species_ids[$i];
-        }
-        $species_sql .= ") ";
-    }
-
-    my $source_sql = "";
-    if (@sources) {
-        $source_sql .= " AND LOWER(s.name) IN (";
-        for ( my $i = 0 ; $i < @sources ; $i++ ) {
-            $source_sql .= "," if ( $i != 0 );
-            $source_sql .= "\'" . lc( $sources[$i] ) . "\'";
-        }
-        $source_sql .= ") ";
-    }
-
-    if (@notsources) {
-        $source_sql .= " AND LOWER(s.name) NOT IN (";
-        for ( my $i = 0 ; $i < @notsources ; $i++ ) {
-            $source_sql .= "," if ( $i != 0 );
-            $source_sql .= "\'" . lc( $notsources[$i] ) . "\'";
-        }
-        $source_sql .= ") ";
-    }
-    my $sth = $dbi->prepare("insert into process_status (status, date) values('parsing_started',now())");
-    $sth->execute;
-
-    $sql =
-      "SELECT DISTINCT(s.source_id), su.source_url_id, s.name, su.url, "
-      . "su.release_url, su.checksum, su.parser, su.species_id "
-      . "FROM source s, source_url su, species sp "
-      . "WHERE s.download='Y' AND su.source_id=s.source_id "
-      . "AND su.species_id=sp.species_id "
-      . $source_sql
-      . $species_sql
-      . "ORDER BY s.ordered";
-    #print $sql . "\n";
-
-    $sth = $dbi->prepare($sql);
-    $sth->execute();
-
-    my ( $source_id, $source_url_id, $name, $url, $release_url,
-         $checksum, $parser, $species_id );
-
-    $sth->bind_columns( \$source_id,   \$source_url_id,
-                        \$name,        \$url,
-                        \$release_url, \$checksum,
-                        \$parser,      \$species_id );
-
-    my $dir;
-    my %summary = ();
-
-    my %sum_xrefs;
-    my %sum_prim;
-    my %sum_dep;
-    my %sum_dir;
-    my %sum_coord;
-    my %sum_syn;
-
-
-    my $start_transaction_sth = $dbi->prepare("start transaction");
-
-    my $end_transaction_sth = $dbi->prepare("commit");
-
-
-    while ( my @row = $sth->fetchrow_array() ) {
-      print '-' x 4, "{ $name }", '-' x ( 72 - length($name) ), "\n" if ($verbose);
-
-      my $cs;
-      my $file_cs = "";
-      my $parse   = 0;
-      my $empty   = 0;
-      my $type    = $name;
-      my $dsn;
-      
-      my @files = split( /\s+/x, $url );
-      my @files_to_parse = ();
-
-      $dir = catdir( $base_dir, sanitise($type) );
-
-      # For summary purposes: If 0 is returned (in
-      # $summary{$name}->{$parser}) then it is successful.  If 1 is
-      # returned then it failed.  If undef/nothing is returned the we
-      # do not know.
-      $summary{$name}->{$parser} = 0;
-
-      my $ff=  XrefParser::FetchFiles->new();
-      @files = $ff->fetch_files( {dest_dir  =>  $dir,
-				  user_uris => \@files,
-			          del_down  => $deletedownloaded,
-			          chk_down  => $checkdownload,
-                                  verbose   => $verbose
-				 });
-      if ( !@files ) {
-	# Fetching failed.
-	++$summary{$name}->{$parser};
-	next;
-      }
-      if ( defined($release_url) ) {
-	my @rel=();
-	push @rel , $release_url;
-	@rel = $ff->fetch_files( {dest_dir  =>  $dir,
-				  user_uris => \@rel,
-				  del_down  => $deletedownloaded,
-				  chk_down  => $checkdownload,
-				  verbose   => $verbose}
-				  );
-	$release_url = $rel[-1];
-      }
-      $start_transaction_sth->execute();
-      
-      foreach my $file (@files) {
-	
-	# check dependencies are loaded all ready
-	if(!($self->all_dependencies_loaded($source_id, $species_id, $name, $dep_sth))){
-	  ++$summary{$name}->{$parser};
-	  next;
-	}
-	   # Database parsing
-	if ( $file =~ /^mysql:/ix ) {
-	  $dsn = $file;
-	  print "Parsing $dsn with $parser\n" if ($verbose);
-	  my $eval_test = eval "require XrefParser::$parser";
-	  if($@ or $eval_test != 1) {
-	    croak "Could not require XrefParser::$parser\ndollar=at=$@\neval_test = $eval_test\n";
-	  }
-	  my $new = "XrefParser::$parser"->new();
-	  if (
-	      $new->run( $dsn,  $source_id, $species_id,
-			 $name, undef, $verbose ) )
-	    {
-	      ++$summary{$name}->{$parser};
-	    }
-	  next;
-	}
-	if ( $file =~ /^script:/ix ) {
-	  if(!defined($checksum) || $checksum == 0){
-	    print "Parsing $file with $parser\n" if ($verbose);
-	    my $eval_test = eval "require XrefParser::$parser";
-	    if($@ or $eval_test != 1) {
-	      croak "Could not require XrefParser::$parser\ndollar=at=$@\neval_test = $eval_test\n";
-	    }
-	    my $new = "XrefParser::$parser"->new();
-	    my $sqlu =
-	      "UPDATE source_url SET checksum=1, upload_date=NOW() WHERE source_url_id=$source_url_id";
-
-	    if (
-		$new->run_script( {file       => $file,
-				   source_id  => $source_id, 
-				   species_id => $species_id, 
-				   verbose    => $verbose }) )
-	      {
-		++$summary{$name}->{$parser};
-	      }
-	    else{
-	      # set the checksum to 1 so that we know the script has been ran successfully
-	      $dbi->prepare($sqlu)->execute() || croak( $dbi->errstr() );
-	    }
-	  }
-	  else{
-	    print "$file has already been ran with $parser and so will not be ran again\n" if($verbose);
-	  }
-	  next;
-	}
-	
-	
-	if ( $unzip && ( $file =~ /\.    # anything
-                                  (gz|Z) # followed by gz or Z
-                                  $      # at the end
-                                  /x ) ) {
-	  printf( "Uncompressing '%s' using 'gunzip'\n", $file ) if ($verbose);
-	  system( "gunzip", "-f", $file );
-	}
-	# remove the gz or Z at the end of the file name
-	if ($unzip) { $file =~ s/\.(gz|Z)$//x }
-	
-	# Compare checksums and parse/upload if necessary need to
-	# check file size as some .SPC files can be of zero length
-	
-	if ( !defined( $cs = md5sum($file) ) ) {
-	  printf( "Download '%s'\n", $file ) if($verbose);
-	  ++$summary{$name}->{$parser};
-	} else {
-	  $file_cs .= ':' . $cs;
-	  if ( !defined $checksum
-	       || index( $checksum, $file_cs ) == -1 )
-	    {
-	      if ( -s $file ) {
-		$parse = 1;
-		print "Checksum for '$file' does not match, "
-		  . "will parse...\n" if ($verbose);
-		
-		# Files from sources "Uniprot/SWISSPROT" and
-		# "Uniprot/SPTREMBL" are all parsed with the
-		# same parser
-		if (    $parser eq "Uniprot/SWISSPROT"
-			|| $parser eq "Uniprot/SPTREMBL" )
-		  {
-
-		    print STDERR "No idea why this is being done here??\n";
-		    print STDERR "parser was $parser now being set to UniProtParser\n";
-		    $parser = 'UniProtParser';
-		  }
-	      } else {
-		$empty = 1;
-		printf(
-		       "The file '%s' has zero length, skipping\n",
-		       $file ) if ($verbose);
-	      }
-	    }
-	} ## end else [ if ( !defined( $cs = md5sum...
-	
-	# Push this file to the list of files to parsed.  The files
-	# are *actually* parsed only if $parse == 1.
-	push @files_to_parse, $file;
-	
-      } ## end foreach my $file (@files)
-
-      if ( $parse and @files_to_parse and defined $file_cs ) {
-	print "Parsing '"
-	  . join( "', '", @files_to_parse )
-	    . "' with $parser\n" if ($verbose);
-	
-	eval "require XrefParser::$parser";
-	$@ && carp( "[ERROR] Cannot require $parser: $@" );
-	my $new = "XrefParser::$parser"->new();
-	
-	if ( defined $release_url ) {
-	  # Run with $release_url.
-	  if (
-	      $new->run( { source_id  => $source_id,
-			   species_id =>$species_id,
-			   files      => \@files_to_parse,
-                           rel_file   => $release_url,
-                           verbose     => $verbose } ) )
-	    {
-	      ++$summary{$name}->{$parser};
-	    }
-	} else {
-	  # Run without $release_url.
-	  if (
-	      $new->run(  { source_id  => $source_id,
-			    species_id =>$species_id,
-			    files      => \@files_to_parse,
-			    verbose     => $verbose } ))
-	    {
-	      ++$summary{$name}->{$parser};
-	    }
-	}
-	
-	# update AFTER processing in case of crash.
-	update_source( $source_url_id,
-		       $file_cs, $files_to_parse[0] );
-	
-	# Set release if specified
-	if ( defined $release ) {
-	  $self->set_release( $source_id, $release );
-	}
-	
-      } elsif ( !$dsn && !$empty && @files_to_parse ) {
-	print(   "Ignoring '"
-		 . join( "', '", @files_to_parse )
-		 . "' as checksums match\n" ) if ($verbose);
-      }
-
-      if ($cleanup) {
-	foreach my $file (@files_to_parse) {
-	  printf( "Deleting '%s'\n", $file ) if($verbose);
-	  unlink($file);
-	}
-      }
-
-      $end_transaction_sth->execute();
-      if($stats){
-	$self->print_stats(\%sum_xrefs,\%sum_prim,\%sum_dep, \%sum_dir, \%sum_coord, \%sum_syn)
-      }
-
-    } ## end while ( my @row = $sth->fetchrow_array...
-
-    print "\n", '=' x 80, "\n";
-    print "Summary of status\n";
-    print '=' x 80, "\n";
-    
-    
-    foreach my $source_name ( sort keys %summary ) {
-      foreach my $parser_name ( keys %{ $summary{$source_name} } ) {
-	printf( "%30s %-20s\t%s\n",
-		$source_name,
-		$parser_name, (
-			       defined $summary{$source_name}->{$parser_name}
-			       && $summary{$source_name}->{$parser_name}
-			       ? 'FAILED'
-			       : 'OKAY'
-			      ) );
-      }
-    }
-
-    if($stats){
-      %sum_xrefs = (); # reset we now want total numbers
-      %sum_prim  = ();
-      %sum_dep   = ();
-      %sum_dir   = ();
-      %sum_coord = ();
-      %sum_syn   = ();
-      $self->print_stats(\%sum_xrefs,\%sum_prim,\%sum_dep, \%sum_dir, \%sum_coord, \%sum_syn)
-    }
-
-    $sth = $dbi->prepare("insert into process_status (status, date) values('parsing_finished',now())");
-    $sth->execute;
-
-    # remove last working directory
-    # TODO reinstate after debugging
-    #rmtree $dir;
-    return 1;
-} ## end sub run
+  (defined $arg) &&
+    ($self->{_dbi} = $arg );
+  return $self->{_dbi};
+}
 
 # ------------------------------------------------------------------------------
-sub all_dependencies_loaded{
-  my ($self, $source_id, $species_id, $s_name, $dep_sth) = @_;
-  my $okay = 1;
-
-  $dep_sth->execute($source_id, $species_id, $source_id);
-  my ($id, $name);
-  $dep_sth->bind_columns(\$id, \$name);
-  while($dep_sth->fetch() ){
-    print STDERR "dependent source $name ($id) not loaded so cannot process source $s_name\n";
-    print "dependent source $name ($id) not loaded so cannot process source $s_name\n";
-    $okay = 0;
-  }
-  return $okay;
-}
-
-
-
-sub print_stats {
-  my ($self, $sum_xrefs, $sum_prim, $sum_dep, $sum_dir, $sum_coord, $sum_syn)= @_;
- 
-  # produce summary of what has been added
-  my %sum_line;
-	  
-  # first the number of xrefs;
-  my $group_sql = "SELECT count(1), s.name from source s, xref x where s.source_id = x.source_id group by s.name";
-  
-  my $sum_sth = $dbi->prepare($group_sql);
-  $sum_sth->execute();
-
-  my ($sum_count, $sum_name);
-  $sum_sth->bind_columns(\$sum_count, \$sum_name);
-
-  while($sum_sth->fetch){
-    if(defined($sum_xrefs->{$sum_name})){
-      if($sum_count != $sum_xrefs->{$sum_name}){
-	my $diff = ($sum_count - $sum_xrefs->{$sum_name});
-	$sum_line{$sum_name} = [$diff, 0, 0, 0, 0, 0, 0, 0];
-      }
-    }
-    else{
-      $sum_line{$sum_name}  = [$sum_count, 0, 0, 0, 0, 0, ,0 ,0];
-    }
-    $sum_xrefs->{$sum_name} = $sum_count;
-  }
-  $sum_sth->finish;
-
-
-  # second the number of primary xrefs
-  $group_sql = "SELECT count(1), s.name from source s, primary_xref px, xref x where s.source_id = x.source_id and px.xref_id = x.xref_id group by s.name";
-
-  $sum_sth = $dbi->prepare($group_sql);
-  $sum_sth->execute();
-
-  $sum_sth->bind_columns(\$sum_count, \$sum_name);
- 
-  while($sum_sth->fetch){
-    if ( defined($sum_prim->{$sum_name}) && ($sum_count != $sum_prim->{$sum_name}) ){
-      my $diff = ($sum_count - $sum_prim->{$sum_name});
-      $sum_line{$sum_name}[1] = $diff; 
-    }
-    elsif(!defined($sum_prim->{$sum_name})){
-      $sum_line{$sum_name}[1] = $sum_count;
-    }
-    $sum_prim->{$sum_name} = $sum_count;
-  }
-  $sum_sth->finish;
-
-
-  # third the number of dependent xrefs
-  $group_sql = "SELECT count(1), s.name from source s, dependent_xref dx, xref x where s.source_id = x.source_id and dx.dependent_xref_id = x.xref_id group by s.name";
-
-  $sum_sth = $dbi->prepare($group_sql);
-  $sum_sth->execute();
-
-  $sum_sth->bind_columns(\$sum_count, \$sum_name);
-
-  while($sum_sth->fetch){
-    if ( defined($sum_dep->{$sum_name}) && ($sum_count != $sum_dep->{$sum_name}) ){
-      my $diff = ($sum_count - $sum_dep->{$sum_name});
-      $sum_line{$sum_name}[2] = $diff;
-    }
-    elsif(!defined($sum_dep->{$sum_name})){
-      $sum_line{$sum_name}[2] = $sum_count;
-    }
-    $sum_dep->{$sum_name} = $sum_count;
-  }
-  $sum_sth->finish;
-
-
-
-  # fourth,fifth and sixth the number of direct xrefs
-
-  my $type_count =0;
-  foreach my $type (qw (gene transcript translation)){
-
-    $group_sql = "SELECT count(1), s.name from source s, ".$type."_direct_xref dx, xref x where s.source_id = x.source_id and dx.general_xref_id = x.xref_id group by s.name";
-
-    $sum_sth = $dbi->prepare($group_sql);
-    $sum_sth->execute();
-
-    $sum_sth->bind_columns(\$sum_count, \$sum_name);
-
-    while($sum_sth->fetch){
-      $sum_name .= "_$type";
-      if ( defined($sum_dir->{$sum_name}) && ($sum_count != $sum_dir->{$sum_name}) ){
-	my $diff = ($sum_count - $sum_dir->{$sum_name});
-	$sum_line{$sum_name}[3+$type_count] = $diff;
-      }
-      elsif(!defined($sum_dir->{$sum_name})){
-	$sum_line{$sum_name}[3+$type_count] = $sum_count;
-      }
-      $sum_dir->{$sum_name} = $sum_count;
-    }
-    $sum_sth->finish;
-    $type_count++;
-  }
-
-  # seventh the number of coordinate xrefs
-  $group_sql = "SELECT count(1), s.name from source s, coordinate_xref cx  where s.source_id = cx.source_id group by s.name";
-
-  $sum_sth = $dbi->prepare($group_sql);
-  $sum_sth->execute();
-
-  $sum_sth->bind_columns(\$sum_count, \$sum_name);
-
-  while($sum_sth->fetch){
-    if ( defined($sum_coord->{$sum_name}) && ($sum_count != $sum_coord->{$sum_name}) ){
-      my $diff = ($sum_count - $sum_coord->{$sum_name});
-      $sum_line{$sum_name}[6] = $diff;
-    }
-    elsif(!defined($sum_coord->{$sum_name})){
-      $sum_line{$sum_name}[6] = $sum_count;
-    }
-    $sum_coord->{$sum_name} = $sum_count;
-  }
-
-  $sum_sth->finish;
-
-
-  # eigth the number of synonyms
-  $group_sql = "select count(1), s.name from source s, xref x, synonym o where s.source_id = x.source_id and x.xref_id = o.xref_id group by s.name";
-
-  $sum_sth = $dbi->prepare($group_sql);
-  $sum_sth->execute();
-
-  $sum_sth->bind_columns(\$sum_count, \$sum_name);
-
-  while($sum_sth->fetch){
-    if (defined($sum_syn->{$sum_name}) && ($sum_count != $sum_syn->{$sum_name}) ){
-      my $diff = ($sum_count - $sum_syn->{$sum_name});
-      $sum_line{$sum_name}[7] = $diff;
-    }
-    elsif(!defined($sum_syn->{$sum_name})) {
-      $sum_line{$sum_name}[7] = $sum_count;
-    }
-    $sum_syn->{$sum_name} = $sum_count;
-  }
-  $sum_sth->finish;
-
-
-  ###################
-  # Print the header
-  ###################
-  my $max_name_length = 6; # (source)
-  foreach my $sum_name (keys %sum_line){
-    if(length($sum_name) > $max_name_length){
-      $max_name_length = length($sum_name);
-    }
-  }
-
-  my $width = 8;
-  print "\nsource". " " x ($max_name_length - 3); #( 3 = length(source) - 3 spaces)
-  foreach my $val (qw(xrefs prim dep gdir tdir tdir coord synonyms)){
-    print $val." " x ($width - length($val) );
-  }
-  print "\n";
-
-
-  ###################
-  # Print the numbers
-  ###################
-  $max_name_length += 3; # lets have 3 spaces after
-  foreach my $sum_name (keys %sum_line){
-    $sum_name ||= 0;
-    print $sum_name. " " x ( $max_name_length - length($sum_name));
-    foreach my $val (@{$sum_line{$sum_name}}){
-      $val ||= 0;
-      print $val." " x ($width - length($val));
-    }
-    print "\n";
-  }
-  print "\n";
-  return;
-}
 
 
 # Given a file name, returns a IO::Handle object.  If the file is
@@ -662,13 +116,6 @@ sub get_filehandle
 
 # ------------------------------------------------------------------------------
 
-sub new
-{
-    my ($proto) = @_;
-
-    my $class = ref $proto || $proto;
-    return bless {}, $class;
-}
 
 # --------------------------------------------------------------------------------
 # Get source ID for a particular file; matches url field
@@ -678,7 +125,7 @@ sub get_source_id_for_filename {
   my ($self, $file) = @_;
   print "FILE $file\n" if($verbose) ; 
   my $sql = "SELECT s.source_id FROM source s, source_url su WHERE su.source_id=s.source_id AND su.url LIKE  '%/" . $file . "%'";
-  my $sth = dbi()->prepare($sql);
+  my $sth = $dbi->prepare($sql);
   $sth->execute();
   my @row = $sth->fetchrow_array();
   my $source_id;
@@ -710,7 +157,7 @@ sub get_species_id_for_filename {
   my ($self, $file) = @_;
 
   my $sql = "SELECT su.species_id FROM source_url su WHERE su.url LIKE  '%/" . $file . "%'";
-  my $sth = dbi()->prepare($sql);
+  my $sth = $dbi->prepare($sql);
   $sth->execute();
   my @row = $sth->fetchrow_array();
   my $source_id;
@@ -736,7 +183,7 @@ sub get_source_id_for_source_name {
     $sql .= " AND LOWER(priority_description)='".lc($priority_desc)."'";
     $source_name .= " ($priority_desc)";
   }
-  my $sth = dbi()->prepare($sql);
+  my $sth = $dbi->prepare($sql);
   $sth->execute();
   my @row = $sth->fetchrow_array();
   my $source_id;
@@ -763,7 +210,7 @@ sub get_source_ids_for_source_name_pattern {
 
   my $sql = "SELECT source_id FROM source WHERE upper(name) LIKE '%".uc($source_name)."%'";
 
-  my $sth = dbi()->prepare($sql);
+  my $sth = $dbi->prepare($sql);
   my @sources;
   $sth->execute();
   while(my @row = $sth->fetchrow_array()){
@@ -780,7 +227,7 @@ sub get_source_name_for_source_id {
   my $source_name;
 
   my $sql = "SELECT name FROM source WHERE source_id= '" . $source_id. "'";
-  my $sth = dbi()->prepare($sql);
+  my $sth = $dbi->prepare($sql);
   $sth->execute();
   my @row = $sth->fetchrow_array();
   if (@row) {
@@ -810,7 +257,7 @@ sub get_valid_xrefs_for_dependencies{
 
 
   my $sql = "select source_id from source where LOWER(name) =?";
-  my $sth = dbi()->prepare($sql);
+  my $sth = $dbi->prepare($sql);
   my @dependent_sources;
   $sth->execute(lc($dependent_name));
   while(my @row = $sth->fetchrow_array()){
@@ -833,7 +280,7 @@ sub get_valid_xrefs_for_dependencies{
   $sql .= "          x2.xref_id = d.dependent_xref_id and";
   $sql .= "          x2.source_id=? ";
   
-  $sth = dbi()->prepare($sql);
+  $sth = $dbi->prepare($sql);
   foreach my $d (@dependent_sources){
     foreach my $s (@sources){
        $sth->execute($s,$d);
@@ -852,7 +299,7 @@ sub get_valid_xrefs_for_direct_xrefs{
 
 
   my $sql = "select source_id from source where name like ?";
-  my $sth = dbi()->prepare($sql);
+  my $sth = $dbi->prepare($sql);
   my @direct_sources;
   $sth->execute($direct_name."%");
   while(my @row = $sth->fetchrow_array()){
@@ -873,7 +320,7 @@ sub get_valid_xrefs_for_direct_xrefs{
   $sql .= "    where x1.xref_id = d.general_xref_id and";
   $sql .= "          x1.source_id=?";
    
-  my $sth1 = dbi()->prepare($sql);
+  my $sth1 = $dbi->prepare($sql);
 
 
   $sql  = "select d.general_xref_id, d.ensembl_stable_id, 'Transcript', d.linkage_xref, x1.accession ";
@@ -881,7 +328,7 @@ sub get_valid_xrefs_for_direct_xrefs{
   $sql .= "    where x1.xref_id = d.general_xref_id and";
   $sql .= "          x1.source_id=?";
    
-  my $sth2 = dbi()->prepare($sql);
+  my $sth2 = $dbi->prepare($sql);
 
 
   $sql  = "select d.general_xref_id, d.ensembl_stable_id, 'Translation', d.linkage_xref, x1.accession ";
@@ -889,7 +336,7 @@ sub get_valid_xrefs_for_direct_xrefs{
   $sql .= "    where x1.xref_id = d.general_xref_id and";
   $sql .= "          x1.source_id=?";
    
-  my $sth3 = dbi()->prepare($sql);
+  my $sth3 = $dbi->prepare($sql);
 
   foreach my $d (@direct_sources){
     $sth1->execute($d);
@@ -915,7 +362,7 @@ sub label_to_acc{
 
   # First cache synonyms so we can quickly add them later
   my %synonyms;
-  my $syn_sth = dbi()->prepare("SELECT xref_id, synonym FROM synonym");
+  my $syn_sth = $dbi->prepare("SELECT xref_id, synonym FROM synonym");
   $syn_sth->execute();
 
   my ($xref_id, $synonym);
@@ -930,7 +377,7 @@ sub label_to_acc{
   my @sources;
 
   my $sql = "select source_id from source where upper(name) like '%".uc($source_name)."%'";
-  my $sth = dbi()->prepare($sql);
+  my $sth = $dbi->prepare($sql);
   $sth->execute();
   while(my @row = $sth->fetchrow_array()){
     push @sources,$row[0];
@@ -939,7 +386,7 @@ sub label_to_acc{
 
   foreach my $source (@sources){
     $sql = "select label, xref_id from xref where species_id = $species_id and source_id = $source";
-    $sth = dbi()->prepare($sql);
+    $sth = $dbi->prepare($sql);
     $sth->execute();
     while(my @row = $sth->fetchrow_array()){
       $valid_codes{$row[0]} =$row[1];
@@ -968,7 +415,7 @@ sub get_valid_codes{
 
   # First cache synonyms so we can quickly add them later
   my %synonyms;
-  my $syn_sth = dbi()->prepare("SELECT xref_id, synonym FROM synonym");
+  my $syn_sth = $dbi->prepare("SELECT xref_id, synonym FROM synonym");
   $syn_sth->execute();
 
   my ($xref_id, $synonym);
@@ -983,7 +430,7 @@ sub get_valid_codes{
   my @sources;
 
   my $sql = "select source_id from source where upper(name) like '%".uc($source_name)."%'";
-  my $sth = dbi()->prepare($sql);
+  my $sth = $dbi->prepare($sql);
   $sth->execute();
   while(my @row = $sth->fetchrow_array()){
     push @sources,$row[0];
@@ -992,7 +439,7 @@ sub get_valid_codes{
 
   foreach my $source (@sources){
     $sql = "select accession, xref_id from xref where species_id = $species_id and source_id = $source";
-    $sth = dbi()->prepare($sql);
+    $sth = $dbi->prepare($sql);
     $sth->execute();
     while(my @row = $sth->fetchrow_array()){
       push @{$valid_codes{$row[0]}}, $row[1];
@@ -1024,7 +471,7 @@ sub get_existing_mappings {
 
   my $sql = "SELECT dx.dependent_xref_id, x1.accession as dependent, dx.master_xref_id, x2.accession as master FROM dependent_xref dx, xref x1, xref x2 WHERE x1.xref_id=dx.dependent_xref_id AND x2.xref_id=dx.master_xref_id AND x2.source_id=? AND x1.source_id=? AND x1.species_id=? AND x2.species_id=?";
 
-  my $sth = dbi()->prepare($sql);
+  my $sth = $dbi->prepare($sql);
   $sth->execute($to_source, $from_source, $species_id, $species_id);
   while(my @row = $sth->fetchrow_array()){
     $mappings{$row[1]} = $row[2];
@@ -1125,9 +572,6 @@ sub upload_xref_object_graphs {
 
 	my $dep_xref_id = $self->insert_or_select($xref_sth, $dbi->err, $dep{ACCESSION}, $dep{SOURCE_ID}, $xref->{SPECIES_ID});
 
-	if($dbi->err){
-	  print STDERR "dbi\t$dbi->err \n$dep{ACCESSION} \n $dep{SOURCE_ID} \n";
-	}
 	if(!defined($dep_xref_id) || $dep_xref_id ==0 ){
 	  print STDERR "acc = $dep{ACCESSION} \nlink = $dep{LINKAGE_SOURCE_ID} \n".$dbi->err."\n";
 	  print STDERR "source = $dep{SOURCE_ID}\n";
@@ -1335,33 +779,6 @@ sub species_id2name {
 # --------------------------------------------------------------------------------
 # Update a row in the source table
 
-sub update_source
-{
-    my ($source_url_id, $checksum, $file_name ) = @_;
-
-    my $file = IO::File->new($file_name)
-      or croak("Failed to open file '$file_name'");
-
-    my $file_date =
-      POSIX::strftime( '%Y%m%d%H%M%S',
-        localtime( [ $file->stat() ]->[9] ) );
-
-    $file->close();
-
-    my $sql =
-        "UPDATE source_url SET checksum='$checksum', "
-      . "file_modified_date='$file_date', "
-      . "upload_date=NOW() "
-      . "WHERE source_url_id=$source_url_id";
-
-    # The release is set by the individual parser by calling the
-    # inherited set_release() method.
-
-    $dbi->prepare($sql)->execute() || croak( $dbi->errstr() );
-    return;
-}
-
-
 # --------------------------------------------------------------------------------
 sub dbi2{
 
@@ -1384,45 +801,8 @@ sub dbi2{
 
 # --------------------------------------------------------------------------------
 
-sub dbi
-{
-    my $self = shift;
-
-    if ( !defined $dbi || !$dbi->ping() ) {
-        my $connect_string =
-          sprintf( "dbi:mysql:host=%s;port=%s;database=%s",
-            $host, $port, $dbname );
-
-        $dbi =
-          DBI->connect( $connect_string, $user, $pass,
-            { 'RaiseError' => 1 } )
-          or croak( "Can't connect to database: " . $DBI::errstr );
-        $dbi->{'mysql_auto_reconnect'} = 1; # Reconnect on timeout
-    }
-    return $dbi;
-}
 
 # --------------------------------------------------------------------------------
-
-# Compute a checksum of a file.  This checksum is not a straight MD5
-# hex digest, but instead the file size combined with the first six
-# characters of the MD5 hex digest.  This is to save space.
-
-sub md5sum
-{
-    my $file = shift;
-
-    open my $FH, "<", $file or return;
-    binmode($FH);
-
-    my $checksum = sprintf( "%s/%d",
-        substr( Digest::MD5->new()->addfile(*$FH)->hexdigest(), 0, 6 ),
-        [ stat $FH ]->[7] );
-
-    close($FH);
-
-    return $checksum;
-}
 
 # --------------------------------------------------------------------------------
 # If there was an error, an xref with the same acc & source already exists.
@@ -1434,12 +814,15 @@ sub insert_or_select {
 
   my $id;
 
-  # TODO - check for specific error code rather than for just any error
-  if ($error) {
+  if ($error and ($error == 1062)) {  # duplicate (okay so get the original) 
 
     $id = $self->get_xref($acc, $source, $species);
 	
-  } else {
+  } 
+  elsif ($error){
+    die "Error $error";
+  }
+  else {
 	
     $id = $sth->{'mysql_insertid'};
 	
@@ -1524,84 +907,6 @@ sub delete_by_source {
   return;
 }
 
-# --------------------------------------------------------------------------------
-
-sub validate_sources {
-  my ($speciesref, @sources) = @_;
-
-  my $sth = $dbi->prepare("SELECT * FROM source WHERE LOWER(name)=?");
-
-  foreach my $source (@sources) {
-
-    my $rv = $sth->execute(lc($source));
-    if ( $rv > 0 ) {
-      print "Source $source is valid\n" if($verbose);
-    } else {
-      print "\nSource $source is not valid; valid sources are:\n";
-      foreach my $sp (@{$speciesref}){
-	show_valid_sources($sp);
-      }
-      return 0;
-    }
-
-  }
-
-  return 1;
-
-}
-
-# --------------------------------------------------------------------------------
-
-sub show_valid_sources {
-  my $species = shift;
-
-  my $sth = $dbi->prepare("SELECT distinct(name) FROM source s, source_url su WHERE s.download='Y' and s.source_id = su.source_id and su.species_id = $species");
-
-  $sth->execute();
-  while (my @row = $sth->fetchrow_array()) {
-    print $row[0] . "\n";
-  }
-  return;
-}
-
-# --------------------------------------------------------------------------------
-
-sub validate_species {
-  my @species = @_;
-  my @species_ids;
-
-  my $sth = $dbi->prepare("SELECT species_id, name FROM species WHERE LOWER(name)=? OR LOWER(aliases) REGEXP ?");
-  my ($species_id, $species_name);
-
-  foreach my $sp (@species) {
-
-    $sth->execute(lc($sp),  "^".lc($sp).",|[ ]".lc($sp)."[,]|^".lc($sp)."\$|[,] ".lc($sp)."\$" );
-    $sth->bind_columns(\$species_id, \$species_name);
-    if (my @row = $sth->fetchrow_array()) {
-      print "Species $sp is valid (name = " . $species_name . ", ID = " . $species_id . ")\n" if($verbose);
-      push @species_ids, $species_id;
-    } else {
-      print STDERR "Species $sp is not valid; valid species are:\n";
-      show_valid_species();
-      exit(1);
-    }
-  }
-  return @species_ids;
-}
-
-# --------------------------------------------------------------------------------
-
-sub show_valid_species {
-
-  my $sth = $dbi->prepare("SELECT name, aliases FROM species");
-
-  $sth->execute();
-  while (my @row = $sth->fetchrow_array()) {
-    print STDERR $row[0] . " (aliases: " . $row[1] . ")\n";
-  }
-  return;
-}
-
 sub get_taxonomy_from_species_id{
   my ($self,$species_id) = @_;
   my %hash;
@@ -1614,6 +919,8 @@ sub get_taxonomy_from_species_id{
   $sth->finish;
   return \%hash;
 }
+# --------------------------------------------------------------------------------
+
 
 sub get_direct_xref{
  my ($self,$stable_id,$type,$link) = @_;
@@ -1657,7 +964,7 @@ sub add_xref {
   }
   if ( !defined($add_xref_sth) ) {
     $add_xref_sth =
-      dbi->prepare( "INSERT INTO xref "
+      $dbi->prepare( "INSERT INTO xref "
          . "(accession,version,label,description,source_id,species_id, info_type) "
          . "VALUES(?,?,?,?,?,?,?)" );
   }
@@ -1697,7 +1004,7 @@ INSERT INTO xref
   (accession,version,label,description,source_id,species_id, info_type)
   VALUES (?,?,?,?,?,?,?)
 AXX
-    $add_xref_sth = dbi->prepare($sql);
+    $add_xref_sth = $dbi->prepare($sql);
   }
 
 
@@ -1732,7 +1039,7 @@ INSERT INTO xref
   (accession,version,label,description,source_id,species_id, info_type)
   VALUES (?,?,?,?,?,?,?)
 IXR
-    $add_xref_sth = dbi->prepare($sql);
+    $add_xref_sth = $dbi->prepare($sql);
   }
   if(!defined($add_dependent_xref_sth)){
     my $sql = (<<"ADX");
@@ -1740,7 +1047,7 @@ INSERT INTO dependent_xref
   (master_xref_id,dependent_xref_id,linkage_annotation,linkage_source_id)
   VALUES (?,?,?,?)
 ADX
-    $add_dependent_xref_sth = dbi->prepare($sql);
+    $add_dependent_xref_sth = $dbi->prepare($sql);
   }
 
   my $dependent_id = $self->get_xref($acc, $source_id, $species_id);
@@ -1826,9 +1133,9 @@ sub add_direct_xref {
   my ($self, $general_xref_id, $ensembl_stable_id, $ensembl_type, $linkage_type) = @_;
 
   if (!defined($add_direct_xref_sth{$ensembl_type})){
-    my $add_gene_direct_xref_sth = dbi->prepare("INSERT INTO gene_direct_xref VALUES(?,?,?)");
-    my $add_tr_direct_xref_sth = dbi->prepare("INSERT INTO transcript_direct_xref VALUES(?,?,?)");
-    my $add_tl_direct_xref_sth = dbi->prepare("INSERT INTO translation_direct_xref VALUES(?,?,?)");
+    my $add_gene_direct_xref_sth = $dbi->prepare("INSERT INTO gene_direct_xref VALUES(?,?,?)");
+    my $add_tr_direct_xref_sth = $dbi->prepare("INSERT INTO transcript_direct_xref VALUES(?,?,?)");
+    my $add_tl_direct_xref_sth = $dbi->prepare("INSERT INTO translation_direct_xref VALUES(?,?,?)");
     $add_direct_xref_sth{"gene"} = $add_gene_direct_xref_sth;
     $add_direct_xref_sth{"transcript"} = $add_tr_direct_xref_sth;
     $add_direct_xref_sth{"translation"} = $add_tl_direct_xref_sth;
@@ -1848,133 +1155,8 @@ sub add_direct_xref {
 
 # ------------------------------------------------------------------------------
 
-# Remove potentially problematic characters from string used as file or
-# directory names.
-
-sub sanitise {
-    my $str = shift;
-    $str =~ tr[/:][]d;
-    return $str;
-}
 
 # ------------------------------------------------------------------------------
-
-# Create database if required. Assumes sql/table.sql and sql/populate_metadata.sql
-# are present.
-
-sub create {
-  my ($self, $sql_dir) = @_;
-
-  my $dbh = DBI->connect( "DBI:mysql:host=$host:port=$port", $user, $pass,
-                          {'RaiseError' => 1});
-
-  my $metadata_file =
-    catfile( $sql_dir, 'sql', 'populate_metadata.sql' );
-  my $ini_file = catfile( $sql_dir, 'xref_config.ini' );
-
-  local $| = 1;    # flush stdout
-
-  # Figure out whether to run 'xref_config2sql.pl' or not by comparing
-  # the timestamps on 'xref_config.ini' and 'sql/populate_metadata.sql'.
-  my $ini_tm  = ( stat $ini_file )[9];
-  my $meta_tm = ( stat $metadata_file )[9];
-
-  if ( !defined($meta_tm) || $ini_tm > $meta_tm ) {
-    my $reply;
-    if($force){
-      $reply = 'y';
-    }
-    else{
-      printf( "==> Your copy of 'xref_config.ini' is newer than '%s'\n",
-	      catfile( 'sql', 'populate_metadata.sql' ) );
-      print("==> Should I re-run 'xref_config2sql.pl' for you? [y/N]: ");
-
-      $reply = <ARGV>;
-      chomp $reply;
-    }
-    if ( lc( substr( $reply, 0, 1 ) ) eq 'y' ) {
-      my $cmd = sprintf( "perl %s %s >%s",
-                         catfile( $sql_dir, 'xref_config2sql.pl' ),
-                         $ini_file, $metadata_file );
-
-      if ( system($cmd) == 0 ) {
-        print("==> Done.\n") if($verbose);
-      } else {
-        if ( $? == -1 ) {
-          croak("Failed to execute: $!\n");
-        } elsif ( $? & 127 ) {
-          croak(
-                 sprintf( "Command died with signal %d, %s coredump\n",
-                          ( $? & 127 ),
-                          ( $? & 128 ) ? 'with' : 'without'
-                 ) );
-        } else {
-          croak( sprintf( "Command exited with value %d\n", $? >> 8 ) );
-        }
-      }
-
-    }
-  } ## end if ( !defined($meta_tm...
-
-  # check to see if the database already exists
-  my %dbs = map {$_->[0] => 1} @{$dbh->selectall_arrayref('SHOW DATABASES')};
-
-  if ($dbs{$dbname}) {
-
-    if ( $drop_db ) {
-	$dbh->do( "DROP DATABASE $dbname" );
-	print "Database $dbname dropped\n" if($verbose) ; 
-    }
-
-    if ( $create && !$drop_db ) {
-      my $p;
-      if($force){
-	$p = "yes";
-      }
-      else{
-	print "WARNING: about to drop database $dbname on $host:$port; yes to confirm, otherwise exit: ";
-	$p = <ARGV>;
-      }
-      chomp $p;
-      if ($p eq "yes") {
-	$dbh->do( "DROP DATABASE $dbname" );
-	print "Removed existing database $dbname\n" if($verbose);
-      } else {
-	print "$dbname NOT removed\n";
-	exit(1);
-      }
-    } elsif ( !$create) {
-      croak(  "Database $dbname already exists. "
-            . "Use -create option to overwrite it." );
-    }
-  }
-
-  $dbh->do( "CREATE DATABASE " . $dbname );
-
-  my $table_file = catfile( $sql_dir, 'sql', 'table.sql' );
-
-  printf( "Creating %s from %s\n", $dbname, $table_file ) if($verbose);
-  if ( !-e $table_file ) {
-    croak( "Cannot open  " . $table_file );
-  }
-
-  my $cmd =
-    "mysql -u $user -p'$pass' -P $port -h $host $dbname < $table_file";
-  system($cmd) == 0
-    or croak("Cannot execute the following command (exit $?):\n$cmd\n");
-
-  printf( "Populating metadata in %s from %s\n",
-          $dbname, $metadata_file ) if($verbose);
-  if ( !-e $metadata_file ) {
-    croak( "Cannot open " . $metadata_file );
-  }
-
-  $cmd = "mysql -u $user -p'$pass' -P $port -h $host "
-    . "$dbname < $metadata_file";
-  system($cmd) == 0
-    or croak("Cannot execute the following command (exit $?):\n$cmd\n");
-  return;
-}
 
 sub get_label_to_acc{
   my ($self, $name, $species_id, $prio_desc) = @_;
@@ -1987,7 +1169,7 @@ sub get_label_to_acc{
   if(defined($species_id)){
     $sql .= " and xref.species_id  = $species_id";
   }
-  my $sub_sth = dbi->prepare($sql);
+  my $sub_sth = $dbi->prepare($sql);
 
   $sub_sth->execute();
   while(my @row = $sub_sth->fetchrow_array()) {
@@ -2006,7 +1188,7 @@ sub get_label_to_acc{
   if(defined($species_id)){
     $sql .= " and xref.species_id  = $species_id";
   }
-  $sub_sth = dbi->prepare($sql);    
+  $sub_sth = $dbi->prepare($sql);    
 
   $sub_sth->execute();
   while(my @row = $sub_sth->fetchrow_array()) {
@@ -2028,7 +1210,7 @@ sub get_label_to_desc{
   if(defined($species_id)){
     $sql .= " and xref.species_id  = $species_id";
   }
-  my $sub_sth = dbi->prepare($sql);
+  my $sub_sth = $dbi->prepare($sql);
 
   $sub_sth->execute();
   while(my @row = $sub_sth->fetchrow_array()) {
@@ -2046,7 +1228,7 @@ sub get_label_to_desc{
   if(defined($species_id)){
     $sql .= " and xref.species_id  = $species_id";
   }
-  $sub_sth = dbi->prepare($sql);
+  $sub_sth = $dbi->prepare($sql);
 
   $sub_sth->execute();
   while(my @row = $sub_sth->fetchrow_array()) {
@@ -2062,7 +1244,7 @@ sub get_accession_from_label{
   my ($self, $name) = @_;
 
   my $sql = "select xref.accession from xref where xref.label like '$name'";
-  my $sub_sth = dbi->prepare($sql);
+  my $sub_sth = $dbi->prepare($sql);
 
   $sub_sth->execute();
   while(my @row = $sub_sth->fetchrow_array()) {
@@ -2076,7 +1258,7 @@ sub get_sub_list{
   my @list=();
 
   my $sql = "select xref.accession from xref where xref.accession like '$name%'";
-  my $sub_sth = dbi->prepare($sql);
+  my $sub_sth = $dbi->prepare($sql);
 
   $sub_sth->execute();
   while(my @row = $sub_sth->fetchrow_array()) {
