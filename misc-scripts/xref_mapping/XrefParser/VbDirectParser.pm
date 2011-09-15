@@ -54,12 +54,4 @@ sub run {
 
 }
 
-
-sub new {
-  my $self = {};
-  bless $self, "XrefParser::VbDirectParser";
-  return $self;
-
-}
-
 1;
