@@ -20,42 +20,105 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::Utils::URIParser::URI
+Bio::EnsEMBL::Utils::URI
 
 =head1 SYNOPSIS
 
-  use Bio::EnsEMBL::Utils::URIParser::URI;
+  use Bio::EnsEMBL::Utils::URI qw/parse_uri/;
+  my $up = Bio::EnsEMBL::Utils::URIParser->new();
 
-  #If it was a normal http URI
-  my $uri = Bio::EnsEMBL::Utils::URIParser::URI->new();
-  $uri->scheme('http');
-  $uri->host('www.google.co.uk');
-  $uri->port(80);
-  $uri->path('/search');
-  $uri->add_param('q', 'testing');
-  my $google_uri = $uri->generate_uri(); # produces 'http://www.google.co.uk:80/search?q=testing'
-  
-  #Or if we had parsed a database URI
-  my $db_uri = get_my_db_uri();
-  my $dbc = Bio::EnsEMBL::DBSQL::DBConnection->new($db_uri->generate_dbsql_params());
+  my $db_uri = parse_uri('mysql://user@host:3157/db');
+  my $http_uri = parse_uri('http://www.google.co.uk:80/search?q=t');
 
 =head1 DESCRIPTION
 
-This is a module used for the storage of a parsed URI and the generation of
-various formats of the data used by the Ensembl core infrastructure. The code
-works in 2 modes;
+This object is a generic URI parser which is primarily used in the
+parsing of database URIs into a more managable data structure. We also provide
+the resulting URI object
 
 =head1 METHODS
 
 =cut
 
-package Bio::EnsEMBL::Utils::URIParser::URI;
+package Bio::EnsEMBL::Utils::URI;
 
 use strict;
 use warnings;
 
 use Scalar::Util qw/looks_like_number/;
 use Bio::EnsEMBL::Utils::Exception qw(throw);
+
+use base qw/Exporter/;
+our @EXPORT_OK;
+@EXPORT_OK = qw/parse_uri/;
+
+####URI Parsing
+
+=head2 parse_uri
+
+  Arg[1]      : Scalar; URI to parse
+  Example     : my $uri = parse_uri('mysql://user:pass@host:415/db');
+  Description : A URL parser which attempts to convert many different types
+                of URL into a common data structure.
+  Returntype  : Bio::EnsEMBL::Utils::URI
+  Caller      : General
+  Status      : Beta
+
+=cut
+
+sub parse_uri {
+  my ($url) = @_;
+
+  my $SCHEME = qr{ ([^:]+) :// }xms;
+  my $USER = qr{ ([^/:\@]+)? :? ([^/\@]+)? \@ }xms;
+  my $HOST = qr{ ([^/:]+)? :? ([^/]+)? }xms;
+  my $DB = qr{ / ([^/?]+)? /? ([^/?]+)? }xms;
+  my $PARAMS = qr{ \? (.+)}xms;
+
+  my $p;
+
+  if($url =~ qr{ $SCHEME ([^?]+) (?:$PARAMS)? }xms) {
+    my $scheme = $1;
+    $p = Bio::EnsEMBL::Utils::URI->new($scheme);
+    my ($locator, $params) = ($2, $3);
+
+    if($scheme eq 'file') {
+      $p->path($locator);
+    }
+    else {
+      if($locator =~ s/^$USER//) {
+        $p->user($1);
+        $p->pass($2);
+      }
+      if($locator =~ s/^$HOST//) {
+        $p->host($1);
+        $p->port($2);
+      }
+
+      if($p->is_db_scheme()) {
+        if($locator =~ $DB) {
+          $p->db_params()->{dbname} = $1;
+          $p->db_params()->{table} = $2;
+        }
+      }
+      else {
+        $p->path($locator);
+      }
+    }
+
+    if(defined $params) {
+      my @kv_pairs = split(/;|&/, $params);
+      foreach my $kv_string (@kv_pairs) {
+        my ($key, $value) = split(/=/, $kv_string);
+        $p->add_param($key, $value);
+      }
+    }
+  }
+
+  return $p;
+}
+
+####URI Object
 
 =pod
 
@@ -73,14 +136,14 @@ sub new {
   my ($class, $scheme) = @_;
   $class = ref($class) || $class;
   throw "No scheme given" unless $scheme;
-  
+
   my $self = bless ({
     params => {},
     param_keys => [],
     db_params => {},
     scheme => $scheme,
   }, $class);
-  
+
   return $self;
 }
 
@@ -268,7 +331,7 @@ sub add_param {
 =head2 get_params()
 
   Arg[1]      : String; key
-  Description : Returns the values which were found to be linked to the given 
+  Description : Returns the values which were found to be linked to the given
                 key. Arrays are returned because one key can have many
                 values in a URI
   Returntype  : ArrayRef[Scalar]
@@ -287,7 +350,7 @@ sub get_params {
 
   Description : Storage of parameters used only for database URIs since
                 they require
-  Returntype  : HashRef; Database name is keyed under C<dbname> and the 
+  Returntype  : HashRef; Database name is keyed under C<dbname> and the
                 table is keyed under C<table>
   Exceptions  : None
   Status      : Stable
@@ -307,13 +370,13 @@ sub db_params {
                 which are deemed to be part of the C<db_params()> method
                 under C<-DBNAME> and C<-TABLE>. We also search for a number
                 of optional parameters which are lowercased equivalents
-                of the construction parameters available from a 
-                L<Bio::EnsEMBL::DBSQL::DBAdaptor>,  
-                L<Bio::EnsEMBL::DBSQL::DBConnection> as well as C<verbose> 
+                of the construction parameters available from a
+                L<Bio::EnsEMBL::DBSQL::DBAdaptor>,
+                L<Bio::EnsEMBL::DBSQL::DBConnection> as well as C<verbose>
                 being supported.
-                
+
                 We also convert the scheme type into the driver attribute
-                
+
   Returntype  : Hash (not a reference). Output can be put into a C<DBConnection>
                 constructor.
   Exceptions  : None
@@ -324,7 +387,7 @@ sub db_params {
 sub generate_dbsql_params {
   my ($self, $no_table) = @_;
   my %db_params;
-  
+
   $db_params{-DRIVER} = $self->scheme();
   $db_params{-HOST}   = $self->host() if $self->host();
   $db_params{-PORT}   = $self->port() if $self->port();
@@ -332,7 +395,7 @@ sub generate_dbsql_params {
   $db_params{-PASS}   = $self->pass() if $self->pass();
   $db_params{-DBNAME} = $self->db_params()->{dbname} if $self->db_params()->{dbname};
   $db_params{-TABLE}  = $self->db_params()->{table} if ! $no_table && $self->db_params()->{table};
-  
+
   foreach my $boolean_param (qw/disconnect_when_inactive reconnect_when_connection_lost is_multispecies no_cache verbose/) {
     if($self->param_exists_ci($boolean_param)) {
       $db_params{q{-}.uc($boolean_param)} = 1;
@@ -342,14 +405,14 @@ sub generate_dbsql_params {
     if($self->param_exists_ci($value_param)) {
       $db_params{q{-}.uc($value_param)} = $self->get_params($value_param)->[0];
     }
-  } 
+  }
 
   return %db_params;
 }
 
 =head2 generate_uri()
 
-  Description : Generates a URI string from the paramaters in this object 
+  Description : Generates a URI string from the paramaters in this object
   Returntype  : String
   Exceptions  : None
   Status      : Stable
@@ -362,21 +425,21 @@ sub generate_uri {
   my $user_credentials = q{};
   my $host_credentials = q{};
   my $location = q{};
-  
+
   if($self->user() || $self->pass()) {
     $user_credentials = sprintf('%s%s@',
       ( $self->user() ? $self->user() : q{} ),
       ( $self->pass() ? q{:}.$self->pass() : q{} )
     );
   }
-  
+
   if($self->host() || $self->port()){
     $host_credentials = sprintf('%s%s',
       ($self->host() ? $self->host() : q{}),
       ($self->port() ? q{:}.$self->port() : q{})
     );
   }
-  
+
   if($self->is_db_scheme()) {
     if($self->db_params()->{dbname} || $self->db_params()->{table}) {
       $location = sprintf('/%s%s',
@@ -388,7 +451,7 @@ sub generate_uri {
   else {
     $location = $self->path() if $self->path();
   }
-  
+
   my $param_string = q{};
   if(@{$self->param_keys()}) {
     $param_string = q{?};
@@ -401,7 +464,7 @@ sub generate_uri {
     }
     $param_string .= join(q{;}, @params);
   }
-  
+
   return join(q{}, $scheme, $user_credentials, $host_credentials, $location, $param_string);
 }
 
