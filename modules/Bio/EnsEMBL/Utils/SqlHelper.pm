@@ -615,9 +615,11 @@ sub transaction {
   #Setup defaults
   $retry = 0 unless defined $retry;
   $pause = 1 unless defined $pause;
-  $condition = sub {
-    return 1;
-  } unless defined $condition;
+  if(! defined $condition) {
+    $condition = sub {
+      return 1;
+    };
+  }
   
   assert_ref($condition, 'CODE', '-CONDITION');
  
