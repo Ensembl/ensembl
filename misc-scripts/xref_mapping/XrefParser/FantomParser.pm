@@ -54,7 +54,7 @@ sub run {
     }
     else{
       if($mismatch < 10){
-	print STDERR "Could not find master $master\n";
+	print "Could not find master $master\n";
       }
       $mismatch++;
     }
