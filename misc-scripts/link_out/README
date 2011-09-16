@@ -15,7 +15,7 @@ http://www.ncbi.nlm.nih.gov/books/NBK3807/#files.Transferring_Files_via_FTP
 From a standard ftp client:
 
 1.
-At a command prompt type: ftp-private.ncbi.nlm.nih.gov and press enter.
+At a command prompt type: ftp ftp-private.ncbi.nlm.nih.gov and press enter.
 
 2.
 Type your login name at the login prompt and press enter. (See how to obtain ftp account from NCBI.)
