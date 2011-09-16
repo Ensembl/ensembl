@@ -32,7 +32,9 @@ while (my $line = <CFH>) {
 close CFH;
 
 #delete the old resource files
-exec("rm -r resources*");
+if (-e "resources*") {
+    exec("rm -r resources*");
+}
 
 if( !$out_file ) {
   $out_file = "resources";
@@ -97,7 +99,7 @@ foreach my $host_line (@hosts) {
     my $current_file_no = $number_of_files;
     $entrez_db = "Nucleotide";
     
-    my $sth  = $db->prepare("SELECT dbprimary_acc,  stable_id FROM object_xref o INNER JOIN xref x on o.xref_id = x.xref_id INNER JOIN external_db e on e.external_db_id =x.external_db_id INNER JOIN transcript_stable_id on ensembl_id = transcript_id WHERE db_name in ('RefSeq_dna', 'RefSeq_dna_predicted') GROUP BY dbprimary_acc,  stable_id");
+    my $sth  = $db->prepare("SELECT dbprimary_acc,  stable_id FROM object_xref o INNER JOIN xref x on o.xref_id = x.xref_id INNER JOIN external_db e on e.external_db_id =x.external_db_id INNER JOIN transcript_stable_id on ensembl_id = transcript_id WHERE db_name in ('RefSeq_dna', 'RefSeq_dna_predicted', 'RefSeq_mRNA', 'RefSeq_mRNA_predicted', 'RefSeq_ncRNA', 'RefSeq_ncRNA_predicted') GROUP BY dbprimary_acc,  stable_id");
     $sth->execute();
     print STDOUT "Writing out nucleotide links for database $dbname\n";
     my $nucleotide_links = 0;
@@ -187,7 +189,7 @@ my $link = " <Link>
     if ($protein_links > 0) {
       $message .= " in file(s):\n";
       for (my $i = $current_file_no; $i <= $number_of_files; $i++) {
-	    $message .= $out_file . "_" . "$i\n";
+	    $message .= $out_file . "$i\n";
       }
     } else {
       $message .= "\n";
