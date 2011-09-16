@@ -3,7 +3,8 @@ use warnings;
 
 use Test::More;
 use Test::Exception;
-
+use File::Spec;
+use Bio::EnsEMBL::Utils::IO qw/work_with_file/;
 use Bio::EnsEMBL::Utils::URI qw/parse_uri/;
 
 sub assert_parsing {
@@ -99,6 +100,32 @@ assert_db_parsing('URL table with paramaters','mysql:////table?insert_scheme=INS
 }, {
   insert_scheme => ['INSERT_IGNORE']
 });
+
+assert_db_parsing('SQLite simple', 'sqlite://db', {
+  -DRIVER => 'sqlite',
+  -DBNAME => 'db'
+});
+
+assert_db_parsing('SQLite simple', 'sqlite:///db', {
+  -DRIVER => 'sqlite',
+  -DBNAME => '/db'
+});
+
+{
+  my $path = File::Spec->catfile(File::Spec->tmpdir(), 'ensembl_utilsuri.sqlite.tmp');
+  my $db = $path.q{/tab};
+  assert_db_parsing('SQLite with file and table but no file on disk', 'sqlite://'.$db, {
+    -DRIVER => 'sqlite',
+    -DBNAME => $db
+  });
+  work_with_file($path, 'w', sub { my $fh = shift @_; print $fh '1'; });
+  assert_db_parsing('SQLite with file and with table', 'sqlite://'.$db, {
+    -DRIVER => 'sqlite',
+    -DBNAME => $path,
+    -TABLE  => 'tab'
+  });
+  unlink $path;
+}
 
 assert_db_parsing('URL params','mysql://host/db?param1=val1;param2',{
   -DRIVER => 'mysql',

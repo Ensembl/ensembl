@@ -47,6 +47,7 @@ use warnings;
 
 use Scalar::Util qw/looks_like_number/;
 use Bio::EnsEMBL::Utils::Exception qw(throw);
+use File::Spec;
 
 use base qw/Exporter/;
 our @EXPORT_OK;
@@ -83,6 +84,9 @@ sub parse_uri {
     my ($locator, $params) = ($2, $3);
 
     if($scheme eq 'file') {
+      $p->path($locator);
+    }
+    elsif($scheme eq 'sqlite') {
       $p->path($locator);
     }
     else {
@@ -364,7 +368,8 @@ sub db_params {
 
 =head2 generate_dbsql_params()
 
-  Arg[1]      : Setter argument
+  Arg[1]      : boolean $no_table alows you to avoid pushing -TABLE as an 
+                output value
   Description : Generates a Hash of Ensembl compatible parameters to be used
                 to construct a DB object. We combine those parameters
                 which are deemed to be part of the C<db_params()> method
@@ -393,8 +398,19 @@ sub generate_dbsql_params {
   $db_params{-PORT}   = $self->port() if $self->port();
   $db_params{-USER}   = $self->user() if $self->user();
   $db_params{-PASS}   = $self->pass() if $self->pass();
-  $db_params{-DBNAME} = $self->db_params()->{dbname} if $self->db_params()->{dbname};
-  $db_params{-TABLE}  = $self->db_params()->{table} if ! $no_table && $self->db_params()->{table};
+  
+  my $dbname;
+  my $table;
+  if($self->scheme() eq 'sqlite') {
+    ($dbname, $table) = $self->_decode_sqlite();
+  }
+  else {
+    $dbname = $self->db_params()->{dbname};
+    $table = $self->db_params()->{table};
+  }
+  
+  $db_params{-DBNAME} = $dbname if $dbname;
+  $db_params{-TABLE}  = $table if ! $no_table && $table;
 
   foreach my $boolean_param (qw/disconnect_when_inactive reconnect_when_connection_lost is_multispecies no_cache verbose/) {
     if($self->param_exists_ci($boolean_param)) {
@@ -408,6 +424,61 @@ sub generate_dbsql_params {
   }
 
   return %db_params;
+}
+
+=head2 _decode_sqlite
+
+  Description : Performs path gymnastics to decode into a number of possible
+                options. The issue with SQLite is that the normal URI scheme
+                looks like sqlite:///my/path.sqlite/table but how do we know
+                that the DB name is C</my/path.sqlite> and the table is 
+                C<table>?
+                
+                The code takes a path, looks for the full path & if it cannot
+                be found looks for the file a directory back. In the above
+                example it would have looked for C</my/path.sqlite/table>,
+                found it to be non-existant, looked for C</my/path.sqlite>
+                and found it. 
+                
+                If the path splitting procdure resulted in just 1 file after
+                the first existence check e.g. C<sqlite://db.sqlite> it assumes
+                that should be the name. If no file can be found we default to
+                the full length path.
+  Caller      : internal
+
+=cut
+
+sub _decode_sqlite {
+  my ($self) = @_;
+  my $dbname;
+  my $table;
+  my $path = $self->path();
+  if(-f $path) {
+    $dbname = $path;
+  }
+  else {
+    my ($volume, $directories, $file) = File::Spec->splitpath($path);
+    my @splitdirs = File::Spec->splitdir($directories);
+    if(@splitdirs == 1) {
+      $dbname = $path;
+    }
+    else {
+      my $new_file = pop(@splitdirs);
+      my $new_path = File::Spec->catpath($volume, File::Spec->catdir(@splitdirs), $new_file);
+      if($new_path ne File::Spec->rootdir() && -f $new_path) {
+        $dbname = $new_path;
+        $table = $file;
+      }
+      else {
+        $dbname = $path;
+      }
+    }
+  }
+  
+  $self->db_params()->{dbname} = $dbname if $dbname;
+  $self->db_params()->{table} = $table if $table;
+  
+  return ($dbname, $table);
 }
 
 =head2 generate_uri()
@@ -441,11 +512,22 @@ sub generate_uri {
   }
 
   if($self->is_db_scheme()) {
-    if($self->db_params()->{dbname} || $self->db_params()->{table}) {
-      $location = sprintf('/%s%s',
-        ($self->db_params()->{dbname} ? $self->db_params()->{dbname} : q{}),
-        ($self->db_params()->{table} ? q{/}.$self->db_params()->{table} : q{})
-      );
+    if($self->scheme() eq 'sqlite') {
+      if(! $self->path()) {
+        my $tmp_loc = $self->db_params()->{dbname};
+        throw "There is no dbname available" unless $tmp_loc;
+        $tmp_loc .= q{/}.$self->db_params()->{table} if $self->db_params()->{table};
+        $self->path($tmp_loc);
+      }
+      $location = $self->path();
+    }
+    else {
+      if($self->db_params()->{dbname} || $self->db_params()->{table}) {
+        $location = sprintf('/%s%s',
+          ($self->db_params()->{dbname} ? $self->db_params()->{dbname} : q{}),
+          ($self->db_params()->{table} ? q{/}.$self->db_params()->{table} : q{})
+        );
+      }
     }
   }
   else {
