@@ -89,7 +89,7 @@ use Scalar::Util qw(weaken); #Used to not hold a strong ref to DBConnection
 
 =head2 new()
 
-  Arg [DB_CONNECTION] : DBConnection instance to use
+  Arg [DB_CONNECTION] : Bio::EnsEMBL::DBSQL::DBConnection $db_connection
   Returntype          : Instance of helper
   Exceptions          : If the object given as a DBConnection is not one or it
                         was undefined
@@ -123,9 +123,9 @@ sub new {
 
 =head2 db_connection()
 
-  Arg [1]     : DBConnection instance to use
+  Arg [1]     : Bio::EnsEMBL::DBSQL::DBConnection $db_connection
   Description : Sets and retrieves the DBConnection 
-  Returntype  : DBConnection if set; otherwise undef
+  Returntype  : Bio::EnsEMBL::DBSQL::DBConnection
   Exceptions  : If the object given as a DBConnection is not one or if an 
                 attempt is made to set the value more than once
   Status      : Stable
@@ -151,18 +151,17 @@ sub db_connection {
 
 =head2 execute() - Execute a SQL statement with a custom row handler
 
-  Arg [SQL]             : SQL to execute
-  Arg [CALLBACK]        : The callback to use for mapping a row to a data point; 
-                          leave blank for a default mapping to a 2D array
-  Arg [USE_HASHREFS]    : If set to true will cause HashRefs to be returned 
+  Arg [SQL]             : string SQL to execute
+  Arg [CALLBACK]        : CodeRef; The callback to use for mapping a row to a data  
+                          point; leave blank for a default mapping to a 2D array
+  Arg [USE_HASHREFS]    : boolean If set to true will cause HashRefs to be returned 
                           to the callback & not ArrayRefs
-  Arg [PARAMS]          : The binding parameters to the SQL statement
-  Arg [PREPARE_PARAMS]  : Parameters to be passed onto the Statement Handle 
+  Arg [PARAMS]          : ArrayRef The binding parameters to the SQL statement
+  Arg [PREPARE_PARAMS]  : boolean Parameters to be passed onto the Statement Handle 
                           prepare call
-  Arg [ITERATOR]        : Request a L<Bio::EnsEMBL::Utils::Iterator> rather than
-                          a 2D array
-  Returntype :  2D array containing the return of the callback or an instance 
-                of L<Bio::EnsEMBL::Utils::Iterator>
+  Arg [ITERATOR]        : boolean Request a L<Bio::EnsEMBL::Utils::Iterator> 
+                          rather than a 2D array
+  Returntype :  ArrayRef/L<Bio::EnsEMBL::Utils::Iterator>
   Exceptions :  If errors occur in the execution of the SQL
   Status     :  Stable
 
@@ -276,10 +275,10 @@ sub execute {
 
 =head2 execute_simple()
 
-  Arg [SQL]           : SQL to execute
-  Arg [PARAMS]        : The binding parameters to the SQL statement
-  Arg [CALLBACK]      : Allows you to give a callback to do the mapping with
-  Returntype : 1D array of data points
+  Arg [SQL]           : string $sql
+  Arg [PARAMS]        : ArrayRef $params
+  Arg [CALLBACK]      : CodeRef $callback
+  Returntype : ArrayRef of 1D elements
   Exceptions : If errors occur in the execution of the SQL
   Status     : Stable
 
@@ -308,14 +307,14 @@ sub execute_simple {
 
 =head2 execute_no_return()
 
-  Arg [SQL]           : SQL to execute
-  Arg [CALLBACK]      : The callback to use for mapping a row to a data point;
+  Arg [SQL]           : string sql
+  Arg [CALLBACK]      : CodeRef The callback to use for mapping a row to a data point;
                         we assume you are assigning into a data structure which
                         has requirements other than simple translation into an
                         array
-  Arg [USE_HASHREFS]  : If set to true will cause HashRefs to be returned 
+  Arg [USE_HASHREFS]  : boolean If set to true will cause HashRefs to be returned 
                         to the callback & not ArrayRefs
-  Arg [PARAMS]        : The binding parameters to the SQL statement
+  Arg [PARAMS]        : ArrayRef The binding parameters to the SQL statement
   Returntype : None
   Exceptions : If errors occur in the execution of the SQL
   Status     : Stable
@@ -344,13 +343,13 @@ sub execute_no_return {
 
 =head2 execute_into_hash()
 
-  Arg [SQL]           : SQL to execute
-  Arg [CALLBACK]      : The callback to use for mapping to a value in a hash
+  Arg [SQL]           : string $sql
+  Arg [CALLBACK]      : CodeRef The callback to use for mapping to a value in a hash
                         keyed by the first element in your result set; 
                         leave blank for a default mapping to a scalar value
                         of the second element
   Arg [PARAMS]        : The binding parameters to the SQL statement
-  Returntype : A HashRef keyed by column 1 & value is the return of callback
+  Returntype : HashRef keyed by column 1 & value is the return of callback
   Exceptions : If errors occur in the execution of the SQL
   Status     : Stable
 
@@ -466,14 +465,15 @@ sub execute_into_hash {
 
 =head2 execute_single_result()
 
-  Arg [SQL]           : SQL to execute
-  Arg [CALLBACK]      : The callback to use for mapping a row to a data point; 
+  Arg [SQL]           : string $sql
+  Arg [CALLBACK]      : CodeRef The callback to use for mapping a row to a data point; 
                         leave blank for a default scalar mapping
-  Arg [USE_HASHREFS]  : If set to true will cause HashRefs to be returned 
+  Arg [USE_HASHREFS]  : boolean If set to true will cause HashRefs to be returned 
                         to the callback & not ArrayRefs
-  Arg [PARAMS]        : The binding parameters to the SQL statement
-  Returntype : One data point
-  Exceptions : If errors occur in the execution of the SQL
+  Arg [PARAMS]        : ArrayRef The binding parameters to the SQL statement
+  Returntype : Scalar
+  Exceptions : If errors occur in the execution of the SQL, if the query 
+               returned more than 1 row and if we found no rows.
   Status     : Stable
 
   my $meta_count =
@@ -514,14 +514,14 @@ sub execute_single_result {
 
 =head2 transaction()
 
-  Arg [CALLBACK]      : The callback used for transaction isolation; once 
+  Arg [CALLBACK]      : CodeRef The callback used for transaction isolation; once 
                         the subroutine exists the code will decide on rollback
                         or commit. Required
-  Arg [RETRY]         : Int; the number of retries to attempt with this 
+  Arg [RETRY]         : integer the number of retries to attempt with this 
                         transactional block. Defaults to 0. 
-  Arg [PAUSE]         : Int; the time in seconds to pause in-between retries.
+  Arg [PAUSE]         : integer the time in seconds to pause in-between retries.
                         Defaults to 1.
-  Arg [CONDITION]     : Code ref; allows you to inspect the exception raised
+  Arg [CONDITION]     : CodeRef allows you to inspect the exception raised
                         and should your callback return true then the 
                         retry will be attempted. If not given then all 
                         exceptions mean attempt a retry (if specified)
@@ -678,12 +678,12 @@ sub transaction {
 
 =head2 execute_update()
 
-  Arg [SQL]           : SQL to execute
-  Arg [CALLBACK]      : The callback to use for calling methods on the 
+  Arg [SQL]           : string $sql
+  Arg [CALLBACK]      : CodeRef The callback to use for calling methods on the 
                         DBI statement handle or DBConnection object after an 
                         update command
-  Arg [PARAMS]        : The binding parameters to the SQL statement
-  Arg [PREPARE_PARAMS] : Parameters to bind to the prepare() StatementHandle call
+  Arg [PARAMS]        : ArrayRef The binding parameters to the SQL statement
+  Arg [PREPARE_PARAMS] : ArrayRef Parameters to bind to the prepare() StatementHandle call
   Returntype : Number of rows affected
   Exceptions : If errors occur in the execution of the SQL
   Status     : Stable
@@ -737,11 +737,11 @@ sub execute_update {
 
 =head2 execute_with_sth()
 
-  Arg [SQL]             : SQL to execute
-  Arg [CALLBACK]        : The callback to use for working with the statement
+  Arg [SQL]             : string $sql
+  Arg [CALLBACK]        : CodeRef The callback to use for working with the statement
                           handle once returned. This is B<not> a mapper.
-  Arg [PARAMS]          : The binding parameters to the SQL statement
-  Arg [PREPARE_PARAMS]  : Used to pass parameters to the statement handle 
+  Arg [PARAMS]          : ArrayRef The binding parameters to the SQL statement
+  Arg [PREPARE_PARAMS]  : ArrayRef Used to pass parameters to the statement handle 
                           prepare method
   Description : A subrotuine which abstracts resource handling and statement
                 preparing leaving the developer to define how to handle
@@ -756,7 +756,7 @@ sub execute_update {
     -CALLBACK => sub {
       my ($sth) = @_;
       my $count;
-      $sth->bind_columns( \($count) );
+      $sth->bind_columns( \$count );
       while ( $sth->fetch ) {
         print $count, "\n";
       }
@@ -785,19 +785,19 @@ sub execute_with_sth {
 
 =head2 batch()
 
-  Arg [SQL]           : SQL to execute
-  Arg [CALLBACK]      : The callback to use for working with the statement
+  Arg [SQL]           : string $sql
+  Arg [CALLBACK]      : CodeRef The callback to use for working with the statement
                         handle once returned; specify this or -DATA
-  Arg [DATA]          : The data to insert; specify this or -CALLBACK
-  Arg [COMMIT_EVERY]  : Integer; defines the rate at which to issue commits to
+  Arg [DATA]          : ArrayRef The data to insert; specify this or -CALLBACK
+  Arg [COMMIT_EVERY]  : Integer defines the rate at which to issue commits to
                         the DB handle. This is important when working with 
                         InnoDB databases since it affects the speed of rollback
                         (larger gaps inbetween commits means more to rollback).
                         
                         Ignored if using the callback version.
-  Arg [PREPARE_PARAMS]  : Used to pass parameters to the statement handle 
+  Arg [PREPARE_PARAMS]  : ArrayRef Used to pass parameters to the statement handle 
                           prepare method
-  Returntype : Numbers of rows updated
+  Returntype : integer rows updated
   Exceptions : If errors occur in the execution of the SQL
   Status     : Stable
 
