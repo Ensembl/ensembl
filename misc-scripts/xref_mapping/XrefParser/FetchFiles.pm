@@ -99,28 +99,10 @@ sub fetch_files {
                 $uri->host(), $file_path );
       }
 
-      my $ftp = Net::FTP->new( $uri->host(), 'Debug' => 0);
-      if ( !defined($ftp) ) {
-        printf( "==> Can not open FTP connection: %s\n", $@ );
-        return ();
-      }
-
-      if ( !$ftp->login( 'anonymous', '-anonymous@' ) ) {
-        printf( "==> Can not log in on FTP host: %s\n",
-                $ftp->message() );
-        return ();
-      }
-
-      if ( !$ftp->cwd( dirname( $uri->path() ) ) ) {
-        printf( "== Can not change directory to '%s': %s\n",
-                dirname( $uri->path() ), $ftp->message() );
-        return ();
-      }
-
-      $ftp->binary();
+      my $ftp = $self->get_ftp($uri, 0);
 
       if(!$ftp->ls()){
-	$ftp->pasv(1);
+	$ftp =  $self->get_ftp($uri, 1);
       }
       foreach my $remote_file ( ( @{ $ftp->ls() } ) ) {
         if ( !match_glob( basename( $uri->path() ), $remote_file ) ) {
@@ -278,5 +260,38 @@ sub fetch_files {
 
   return @processed_files;
 } ## end sub fetch_files
+
+
+sub get_ftp{
+  my ($self, $uri, $pass) = @_;
+  my $ftp;
+
+  if($pass){
+    $ftp = Net::FTP->new( $uri->host(), 'Debug' => 0, Passive => 1);
+  }
+  else{
+    $ftp = Net::FTP->new( $uri->host(), 'Debug' => 0);
+  }
+
+  if ( !defined($ftp) ) {
+    printf( "==> Can not open FTP connection: %s\n", $@ );
+    return ();
+  }
+
+  if ( !$ftp->login( 'anonymous', '-anonymous@' ) ) {
+    printf( "==> Can not log in on FTP host: %s\n",
+	    $ftp->message() );
+    return ();
+	}
+
+  if ( !$ftp->cwd( dirname( $uri->path() ) ) ) {
+    printf( "== Can not change directory to '%s': %s\n",
+		  dirname( $uri->path() ), $ftp->message() );
+    return ();
+  }
+
+  $ftp->binary();
+  return $ftp;
+}
 
 1;
