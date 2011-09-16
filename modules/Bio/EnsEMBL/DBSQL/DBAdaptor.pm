@@ -125,16 +125,19 @@ sub new {
   my $self = bless {}, $class;
 
   my ( $is_multispecies, $species, $species_id, $group, $con, $dnadb,
-    $no_cache )
+    $no_cache, $dbname )
     = rearrange( [
       'MULTISPECIES_DB', 'SPECIES', 'SPECIES_ID', 'GROUP',
-      'DBCONN',          'DNADB',   'NO_CACHE'
+      'DBCONN',          'DNADB',   'NO_CACHE',   'DBNAME'
     ],
     @args
     );
 
   if ( defined($con) ) { $self->dbc($con) }
   else {
+    if(! defined $dbname) {
+      throw "-DBNAME is a required parameter when creating a DBAdaptor";
+    }
     $self->dbc( new Bio::EnsEMBL::DBSQL::DBConnection(@args) );
   }
 
