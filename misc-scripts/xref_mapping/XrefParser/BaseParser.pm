@@ -9,16 +9,16 @@ use XrefParser::Database;
 use Carp;
 use DBI;
 use Getopt::Long;
-use POSIX qw(strftime);
+#use POSIX qw(strftime);
 
 
-use File::Spec::Functions;
-use IO::File;
-use Net::FTP;
-use URI;
-use URI::file;
-use Text::Glob qw( match_glob );
-use LWP::UserAgent;
+#use File::Spec::Functions;
+#use IO::File;
+#use Net::FTP;
+#use URI;
+#use URI::file;
+#use Text::Glob qw( match_glob );
+#use LWP::UserAgent;
 
 
 my $base_dir = File::Spec->curdir();
@@ -41,6 +41,12 @@ my %xref_dependent_mapped;
 my $verbose;
 
 
+
+###################################################
+# Create new object.
+#   set global $verbose
+#   Store the dbi form the database for easy access
+###################################################
 sub new
 {
   my ($proto, $database, $is_verbose) = @_;
@@ -58,6 +64,9 @@ sub new
 }
 
 
+##################################
+# Getter/Setter for the dbi object
+##################################
 sub dbi {
   my ($self, $arg) = @_;
 
@@ -66,16 +75,15 @@ sub dbi {
   return $self->{_dbi};
 }
 
-# ------------------------------------------------------------------------------
 
-
+#######################################################################
 # Given a file name, returns a IO::Handle object.  If the file is
 # gzipped, the handle will be to an unseekable stream coming out of a
 # zcat pipe.  If the given file name doesn't correspond to an existing
 # file, the routine will try to add '.gz' to the file name or to remove
 # any .'Z' or '.gz' and try again.  Returns undef on failure and will
 # write a warning to stderr.
-
+#######################################################################
 sub get_filehandle
 {
     my ($self, $file_name) = @_;
@@ -114,70 +122,18 @@ sub get_filehandle
     return $io;
 }
 
-# ------------------------------------------------------------------------------
 
-
-# --------------------------------------------------------------------------------
-# Get source ID for a particular file; matches url field
-
-sub get_source_id_for_filename {
-
-  my ($self, $file) = @_;
-  print "FILE $file\n" if($verbose) ; 
-  my $sql = "SELECT s.source_id FROM source s, source_url su WHERE su.source_id=s.source_id AND su.url LIKE  '%/" . $file . "%'";
-  my $sth = $dbi->prepare($sql);
-  $sth->execute();
-  my @row = $sth->fetchrow_array();
-  my $source_id;
-  if (@row) {
-    $source_id = $row[0];
-  } 
-  else {
-    if($file =~ /rna.fna/x or $file =~ /gpff/x){
-      $source_id = 3;
-    }else{ 
-      carp("Couldn't get source ID for file $file\n");
-      $source_id = -1;
-    }
-  }
-  
-
-  return $source_id;
-
-}
-
-sub rename_url_file{
-  return;
-}
-
-# Get species ID for a particular file; matches url field
-
-sub get_species_id_for_filename {
-
-  my ($self, $file) = @_;
-
-  my $sql = "SELECT su.species_id FROM source_url su WHERE su.url LIKE  '%/" . $file . "%'";
-  my $sth = $dbi->prepare($sql);
-  $sth->execute();
-  my @row = $sth->fetchrow_array();
-  my $source_id;
-  if (@row) {
-    $source_id = $row[0];
-  } else {
-    carp("Couldn't get species ID for file $file\n");
-    $source_id = -1;
-  }
-
-  return $source_id;
-
-}
-
-# --------------------------------------------------------------------------------
+#############################################
 # Get source ID for a particular source name
-
+#
+# Arg[1] source name
+# Arg[2] priority description
+#
+# Returns source_id or -1 if not found
+#############################################
 sub get_source_id_for_source_name {
-  
   my ($self, $source_name,$priority_desc) = @_;
+
   my $sql = "SELECT source_id FROM source WHERE LOWER(name)='" . lc($source_name) . "'";
   if(defined($priority_desc)){
     $sql .= " AND LOWER(priority_description)='".lc($priority_desc)."'";
@@ -190,9 +146,9 @@ sub get_source_id_for_source_name {
   if (@row) {
     $source_id = $row[0]; 
   } else {
-    print STDERR "WARNING: There is no entity $source_name in the source-table of the xref database.\n" .
-      "WARNING:. The external db name ($source_name) is hardcoded in the parser\n";
-    carp("WARNING: Couldn't get source ID for source name $source_name\n");
+    carp "WARNING: There is no entity $source_name in the source-table of the xref database.\n";
+    carp "WARNING:. The external db name ($source_name) is hardcoded in the parser\n";
+    carp "WARNING: Couldn't get source ID for source name $source_name\n";
 
     $source_id = -1;
   }
@@ -201,9 +157,14 @@ sub get_source_id_for_source_name {
 
 
 
-# --------------------------------------------------------------------------------
+############################################################
 # Get a set of source IDs matching a source name pattern
-
+#
+# Adds % to each end of the source name and doe a like query
+# to find all the matching source names source_ids.
+#
+# Returns an empty list if none found.
+############################################################
 sub get_source_ids_for_source_name_pattern {
 
   my ($self, $source_name) = @_;
@@ -222,6 +183,10 @@ sub get_source_ids_for_source_name_pattern {
 
 }
 
+
+###############################
+# From a source_id get the name
+###############################
 sub get_source_name_for_source_id {
   my ($self, $source_id) = @_;
   my $source_name;
@@ -233,10 +198,10 @@ sub get_source_name_for_source_id {
   if (@row) {
     $source_name = $row[0]; 
   } else {
-    print STDERR "WARNING: There is no entity with source-id  $source_id  in the source-table of the \n" .
-      "WARNING: xref-database. The source-id and the name of the source-id is hard-coded in populate_metadata.sql\n" .
-	"WARNING: and in the parser\n";
-    carp("WARNING: Couldn't get source name for source ID $source_id\n");
+    carp "There is no entity with source-id  $source_id  in the source-table of the \n";
+    carp "xref-database. The source-id and the name of the source-id is hard-coded in populate_metadata.sql\n" ;
+    carp "and in the parser\n";
+    carp "Couldn't get source name for source ID $source_id\n";
     $source_name = -1;
   }
   return $source_name;
@@ -244,12 +209,10 @@ sub get_source_name_for_source_id {
 
 
 
-
-
-
-
-
-
+####################################################
+# Get a hash to go from accession of a dependent xref
+# to master_xref_id for all of source names given
+#####################################################
 sub get_valid_xrefs_for_dependencies{
   my ($self, $dependent_name, @reverse_ordered_source_list) = @_;
 
@@ -273,14 +236,16 @@ sub get_valid_xrefs_for_dependencies{
   }
   $sth->finish;
 
-  $sql  = "select d.master_xref_id, x2.accession ";
-  $sql .= "  from dependent_xref d, xref x1, xref x2 ";
-  $sql .= "    where x1.xref_id = d.master_xref_id and";
-  $sql .= "          x1.source_id=? and ";
-  $sql .= "          x2.xref_id = d.dependent_xref_id and";
-  $sql .= "          x2.source_id=? ";
-  
-  $sth = $dbi->prepare($sql);
+  my $dep_sql = (<<"DSS");
+SELECT d.master_xref_id, x2.accession
+  FROM dependent_xref d, xref x1, xref x2
+    WHERE x1.xref_id = d.master_xref_id AND
+          x1.source_id = ? AND
+          x2.xref_id = d.dependent_xref_id AND
+          x2.source_id = ?
+DSS
+
+  $sth = $dbi->prepare($dep_sql);
   foreach my $d (@dependent_sources){
     foreach my $s (@sources){
        $sth->execute($s,$d);
@@ -292,6 +257,12 @@ sub get_valid_xrefs_for_dependencies{
   return \%dependent_2_xref;
 }
 
+
+
+####################################################
+# Get a hash to go from accession of a direct xref
+# to master_xref_id for all of source names given
+#####################################################
 sub get_valid_xrefs_for_direct_xrefs{
   my ($self, $direct_name, @list) = @_;
 
@@ -315,47 +286,41 @@ sub get_valid_xrefs_for_direct_xrefs{
   }
   $sth->finish;
 
-  $sql  = "select d.general_xref_id, d.ensembl_stable_id, 'Gene', d.linkage_xref, x1.accession ";
-  $sql .= "  from gene_direct_xref d, xref x1 ";
-  $sql .= "    where x1.xref_id = d.general_xref_id and";
-  $sql .= "          x1.source_id=?";
-   
-  my $sth1 = $dbi->prepare($sql);
+  my $gen_sql =(<<"GDS");
+SELECT d.general_xref_id, d.ensembl_stable_id, 'TYPE', d.linkage_xref, x1.accession
+  FROM TABLE_direct_xref d, xref x1
+    WHERE x1.xref_id = d.general_xref_id AND
+          x1.source_id=?
+GDS
 
+  my @sth;
+  my $i=0;
+  foreach my $type (qw(Gene Transcript Translation)){
+    my $t_sql = $gen_sql;
+    my $table = lc($type);
+    $t_sql =~ s/TABLE/$table/x;
+    $t_sql =~ s/TYPE/$type/x;
 
-  $sql  = "select d.general_xref_id, d.ensembl_stable_id, 'Transcript', d.linkage_xref, x1.accession ";
-  $sql .= "  from transcript_direct_xref d, xref x1 ";
-  $sql .= "    where x1.xref_id = d.general_xref_id and";
-  $sql .= "          x1.source_id=?";
-   
-  my $sth2 = $dbi->prepare($sql);
-
-
-  $sql  = "select d.general_xref_id, d.ensembl_stable_id, 'Translation', d.linkage_xref, x1.accession ";
-  $sql .= "  from translation_direct_xref d, xref x1 ";
-  $sql .= "    where x1.xref_id = d.general_xref_id and";
-  $sql .= "          x1.source_id=?";
-   
-  my $sth3 = $dbi->prepare($sql);
+    $sth[$i++] = $dbi->prepare($t_sql);
+  }
 
   foreach my $d (@direct_sources){
-    $sth1->execute($d);
-    while(my @row = $sth1->fetchrow_array()){
-      $direct_2_xref{$row[4]} = $row[0]."::".$row[1]."::".$row[2]."::".$row[3];
-    }    
-    $sth2->execute($d);
-    while(my @row = $sth2->fetchrow_array()){
-      $direct_2_xref{$row[4]} = $row[0]."::".$row[1]."::".$row[2]."::".$row[3];
-    }    
-    $sth3->execute($d);
-    while(my @row = $sth3->fetchrow_array()){
-      $direct_2_xref{$row[4]} = $row[0]."::".$row[1]."::".$row[2]."::".$row[3];
+    for (my $ii =0; $i<3; $i++){
+      $sth[$ii]->execute($d);
+      while(my @row = $sth[$ii]->fetchrow_array()){
+	$direct_2_xref{$row[4]} = $row[0]."::".$row[1]."::".$row[2]."::".$row[3];
+      }
     }
   }
 
   return \%direct_2_xref;
 }
 
+
+#############################################
+# Get a hash of label to acc for a particular
+# source name and species_id
+#############################################
 sub label_to_acc{
 
   my ($self,$source_name,$species_id) =@_;
@@ -408,7 +373,6 @@ sub label_to_acc{
 # exist. i.e. for uniprot and refseq we have direct
 # and sequence match sets and we need to give both.
 ####################################################
-
 sub get_valid_codes{
 
   my ($self,$source_name,$species_id) =@_;
@@ -452,41 +416,9 @@ sub get_valid_codes{
   return \%valid_codes;
 }
 
-# --------------------------------------------------------------------------------
-
-
-
-# --------------------------------------------------------------------------------
-
-
-
-sub get_existing_mappings {
-
-  my ($self, $from_source_name, $to_source_name, $species_id) =@_;
-
-  my %mappings;
-
-  my $from_source = $self->get_source_id_for_source_name($from_source_name);
-  my $to_source = $self->get_source_id_for_source_name($to_source_name);
-
-  my $sql = "SELECT dx.dependent_xref_id, x1.accession as dependent, dx.master_xref_id, x2.accession as master FROM dependent_xref dx, xref x1, xref x2 WHERE x1.xref_id=dx.dependent_xref_id AND x2.xref_id=dx.master_xref_id AND x2.source_id=? AND x1.source_id=? AND x1.species_id=? AND x2.species_id=?";
-
-  my $sth = $dbi->prepare($sql);
-  $sth->execute($to_source, $from_source, $species_id, $species_id);
-  while(my @row = $sth->fetchrow_array()){
-    $mappings{$row[1]} = $row[2];
-    #print "mgi_to_uniprot{" . $row[1] . "} = " . $row[2] . "\n";
-  }
-
-  print "Got " . scalar(keys(%mappings)) . " $from_source_name -> $to_source_name mappings\n" if($verbose);
-
-  return \%mappings;
-
-}
-
-# --------------------------------------------------------------------------------
+##############################
 # Upload xrefs to the database
-
+##############################
 sub upload_xref_object_graphs {
   my ($self, $rxrefs) = @_;
 
@@ -505,8 +437,8 @@ sub upload_xref_object_graphs {
     my $xref_update_descr_sth = $dbi->prepare("UPDATE xref SET description=? WHERE xref_id=?");
     my $pair_sth = $dbi->prepare("INSERT INTO pairs VALUES(?,?,?)");
 
-    local $xref_sth->{RaiseError}; # disable error handling here as we'll do it ourselves
-    local $xref_sth->{PrintError};
+    local $xref_sth->{RaiseError} = 0; # disable error handling here as we'll do it ourselves
+    local $xref_sth->{PrintError} = 0;
 
     foreach my $xref (@{$rxrefs}) {
        my $xref_id=undef;
@@ -605,10 +537,9 @@ sub upload_xref_object_graphs {
 sub upload_direct_xrefs{
   my ($self, $direct_xref)  = @_;
   for my $dr(@$direct_xref) {
-#    print "having now direct-XREF : ".$dr->{ENSEMBL_STABLE_ID}."\t".$dr->{SPECIES_ID}." \n" ;
+
     my $general_xref_id = get_xref($dr->{ACCESSION},$dr->{SOURCE_ID},$dr->{SPECIES_ID});
     if ($general_xref_id){
-      # print "direct_xref:\n$general_xref_id\n$dr->{ENSEMBL_STABLE_ID}\n$dr->{ENSEMBL_TYPE}\t$dr->{LINKAGE_XREF}\n\n";
       $self->add_direct_xref($general_xref_id, $dr->{ENSEMBL_STABLE_ID},$dr->{ENSEMBL_TYPE},$dr->{LINKAGE_XREF});
     }
   }
