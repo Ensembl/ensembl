@@ -70,7 +70,7 @@ our @EXPORT_OK;
 sub parse_uri {
   my ($url) = @_;
 
-  my $SCHEME = qr{ ([^:]+) :// }xms;
+  my $SCHEME = qr{ ([^:]*) :// }xms;
   my $USER = qr{ ([^/:\@]+)? :? ([^/\@]+)? \@ }xms;
   my $HOST = qr{ ([^/:]+)? :? ([^/]+)? }xms;
   my $DB = qr{ / ([^/?]+)? /? ([^/?]+)? }xms;
@@ -99,7 +99,7 @@ sub parse_uri {
         $p->port($2);
       }
 
-      if($p->is_db_scheme()) {
+      if($p->is_db_scheme() || $scheme eq q{}) {
         if($locator =~ $DB) {
           $p->db_params()->{dbname} = $1;
           $p->db_params()->{table} = $2;
@@ -131,7 +131,7 @@ sub parse_uri {
   Arg[1]      : String; scheme the URI will confrom to
   Description : New object call
   Returntype  : Bio::EnsEMBL::Utils::URIParser::URI
-  Exceptions  : None
+  Exceptions  : Thrown if scheme is undefined.
   Status      : Stable
 
 =cut
@@ -139,7 +139,7 @@ sub parse_uri {
 sub new {
   my ($class, $scheme) = @_;
   $class = ref($class) || $class;
-  throw "No scheme given" unless $scheme;
+  throw "Scheme cannot be undefined. Empty string is allowed" if ! defined $scheme;
 
   my $self = bless ({
     params => {},
@@ -511,7 +511,7 @@ sub generate_uri {
     );
   }
 
-  if($self->is_db_scheme()) {
+  if($self->is_db_scheme() || $self->scheme() eq '') {
     if($self->scheme() eq 'sqlite') {
       if(! $self->path()) {
         my $tmp_loc = $self->db_params()->{dbname};

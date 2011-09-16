@@ -69,6 +69,12 @@ assert_db_parsing('URL with no user but a password','mysql://:pass@host:51/dbnam
   -DBNAME => 'dbname'
 });
 
+assert_db_parsing('URL with no user but a password','mysql://:pass@host:51',{
+  -DRIVER => 'mysql',
+  -PASS => 'pass',
+  -HOST => 'host',
+  -PORT => 51
+});
 
 assert_db_parsing('URL no user credentials with table','mysql://host:51/dbname/table',{
   -DRIVER => 'mysql',
@@ -134,6 +140,14 @@ assert_db_parsing('URL params','mysql://host/db?param1=val1;param2',{
 }, {
   param1 => ['val1'],
   param2 => [undef]
+});
+
+#URI without a scheme
+assert_parsing('URL no scheme',':////table',{
+  scheme => '',
+  db_params => { table => 'table', dbname => undef},
+  params => {},
+  param_keys => []
 });
 
 assert_parsing('http with params','http://host/path?param1=val1',{
