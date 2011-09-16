@@ -67,16 +67,16 @@ use DBI;
 
 use Bio::EnsEMBL::DBSQL::StatementHandle;
 
-use Bio::EnsEMBL::Utils::Exception qw(deprecate throw info warning);
-use Bio::EnsEMBL::Utils::Argument qw(rearrange);
+use Bio::EnsEMBL::Utils::Exception qw/deprecate throw info warning/;
+use Bio::EnsEMBL::Utils::Argument qw/rearrange/;
+use Bio::EnsEMBL::Utils::Scalar qw/assert_ref wrap_array/;
+use Bio::EnsEMBL::Utils::SqlHelper;
 
 @ISA = qw(Bio::EnsEMBL::Root); # for backwards compatibility
 
-my $reg = "Bio::EnsEMBL::Registry";
-
 =head2 new
 
-  Arg [DBNAME] : string
+  Arg [DBNAME] : (optional) string
                  The name of the database to connect to.
   Arg [HOST] : (optional) string
                The domain name of the database host to connect to.  
@@ -85,9 +85,9 @@ my $reg = "Bio::EnsEMBL::Registry";
                The name of the database user to connect with 
   Arg [PASS] : (optional) string
                The password to be used to connect to the database
-  Arg [PORT] : int
+  Arg [PORT] : (optional) int
                The port to use when connecting to the database
-               3306 by default.
+               3306 by default if the driver is mysql.
   Arg [DRIVER] : (optional) string
                  The type of database driver to use to connect to the DB
                  mysql by default.
@@ -121,7 +121,7 @@ my $reg = "Bio::EnsEMBL::Registry";
                    -host   => 'ensembldb.ensembl.org',
                    -driver => 'mysql');
 
-  Description: Constructor for a DatabaseConenction. Any adaptors that require
+  Description: Constructor for a Database Connection. Any adaptors that require
                database connectivity should inherit from this class.
   Returntype : Bio::EnsEMBL::DBSQL::DBConnection
   Exceptions : thrown if USER or DBNAME are not specified, or if the database
@@ -166,7 +166,6 @@ sub new {
       $self->disconnect_when_inactive(1);
     }
   } else {
-    $db     || throw("-DBNAME argument is required.");
     $driver ||= 'mysql';
     
     if($driver eq 'mysql') {
@@ -198,9 +197,8 @@ sub new {
       $self->disconnect_when_inactive($inactive_disconnect);
     }
     if($reconnect) {
-	$self->reconnect_when_lost($reconnect);
+      $self->reconnect_when_lost($reconnect);
     }
-
   }
 
 #  if(defined $dnadb) {
@@ -236,6 +234,7 @@ sub connect {
   }
 
   my ( $dsn, $dbh );
+  my $dbname = $self->dbname();
 
   if ( $self->driver() eq "Oracle" ) {
 
@@ -244,7 +243,7 @@ sub connect {
     eval {
       $dbh =
         DBI->connect( $dsn,
-        sprintf( "%s@%s", $self->username(), $self->dbname() ),
+        sprintf( "%s@%s", $self->username(), $dbname ),
         $self->password(), { 'RaiseError' => 1, 'PrintError' => 0 } );
     };
 
@@ -267,10 +266,10 @@ sub connect {
     };
 
   } elsif ( $self->driver() eq "Sybase" ) {
-
+    my $dbparam = ($dbname) ? "database=${dbname};" : q{};
     $dsn =
-      sprintf( "DBI:Sybase:server=%s;database=%s;tdsLevel=CS_TDS_495",
-      $self->host(), $self->dbname() );
+      sprintf( "DBI:Sybase:server=%s%s;tdsLevel=CS_TDS_495",
+      $self->host(), $dbparam );
 
     eval {
       $dbh = DBI->connect(
@@ -285,8 +284,8 @@ sub connect {
     };
 
   } elsif ( lc($self->driver()) eq 'sqlite' ) {
-
-    $dsn = sprintf( "DBI:SQLite:%s", $self->dbname() );
+    throw "We require a dbname to connect to a SQLite database" if ! $dbname;
+    $dsn = sprintf( "DBI:SQLite:%s", $dbname );
 
     eval {
       $dbh = DBI->connect(
@@ -299,22 +298,21 @@ sub connect {
     };
 
   } else {
-
+    my $dbparam = ($dbname) ? "database=${dbname};" : q{};
     $dsn = sprintf(
-      "DBI:%s:database=%s;host=%s;port=%s",
-      $self->driver(), $self->dbname(),
+      "DBI:%s:%shost=%s;port=%s",
+      $self->driver(), $dbparam,
       $self->host(),   $self->port() );
 
     if( $self->{'disconnect_when_inactive'}){
       $self->{'count'}++;
       if($self->{'count'} > 1000){
-	sleep 1;
-	$self->{'count'} = 0;
+        sleep 1;
+        $self->{'count'} = 0;
       }
     }
     eval {
-      $dbh =
-	DBI->connect( $dsn, $self->username(), $self->password(),
+      $dbh = DBI->connect( $dsn, $self->username(), $self->password(),
 		      { 'RaiseError' => 1 } );
     };
   }
@@ -394,24 +392,32 @@ sub query_count {
 
 =head2 equals
 
-  
+  Example    : warn 'Same!' if($dbc->equals($other_dbc));
+  Description: Equality checker for DBConnection objects
+  Returntype : boolean
+  Exceptions : none
+  Caller     : new
+  Status     : Stable
 
 =cut
 
   
 sub equals {
   my ( $self, $dbc ) = @_;
+  return 0 if ! defined $dbc;
+  my $return = 0;
+  my $undef_str = q{!-undef-!};
+  my $undef_num = -1;
 
-  if ( $dbc->host() eq $self->host()
-    && $dbc->dbname()   eq $self->dbname()
-    && $dbc->driver()   eq $self->driver()
-    && $dbc->port()     eq $self->port()
-    && $dbc->username() eq $self->username() )
-  {
-    return 1;
-  }
-
-  return 0;
+  $return = 1 if  ( 
+    (($self->host() || $undef_str)      eq ($dbc->host() || $undef_str)) &&
+    (($self->dbname() || $undef_str)    eq ($dbc->dbname() || $undef_str)) &&
+    (($self->port() || $undef_num)      == ($dbc->port() || $undef_num)) &&
+    (($self->username() || $undef_str)  eq ($dbc->username() || $undef_str)) &&
+    ($self->driver() eq $dbc->driver())
+  );
+  
+  return $return;
 }
 
 =head2 driver
@@ -731,12 +737,11 @@ sub prepare {
 =cut
 
 sub reconnect {
- 
   my ($self) = @_;
   $self->connected(undef);
   $self->db_handle(undef);
   $self->connect();
-  
+  return;
 }
 
 
@@ -762,25 +767,141 @@ sub do {
    }
 
    # warn "SQL(".$self->dbname."): $string";
-   if ( ($self->reconnect_when_lost()) and (!$self->db_handle()->ping()) ) { 
-       $self->reconnect();
-   }
-
-   my $result = $self->db_handle->do($string);
-
-   # disconnect if the disconnect when inactive flag is set and
-   # there are no active statement handles
-
-   if($self->disconnect_when_inactive()) {
-     $self->disconnect_if_idle();
-   }
-  
-   $self->query_count($self->query_count()+1);
+   my $error;
+   
+   my $do_result = $self->work_with_db_handle(sub {
+     my ($dbh) = @_;
+     my $result = eval { $dbh->do($string) };
+     $error = $@ if $@;
+     return $result;
+   });
+   
+   throw "Detected an error whilst executing statement '$string': $error" if $error;
  
-   return $result;
+   return $do_result;
 }
 
+=head2 work_with_db_handle
 
+  Arg [1]    : CodeRef $callback
+  Example    : my $q_t = $dbc->work_with_db_handle(sub { my ($dbh) = @_; return $dbh->quote_identifier('table'); });
+  Description: Gives access to the DBI handle to execute methods not normally
+               provided by the DBConnection interface
+  Returntype : Any from callback
+  Exceptions : If the callback paramater is not a CodeRef; all other 
+               errors are re-thrown after cleanup.
+  Caller     : Adaptor modules
+  Status     : Stable
+
+=cut
+
+sub work_with_db_handle {
+  my ($self, $callback) = @_;
+  my $wantarray = wantarray;
+  assert_ref($callback, 'CODE', 'callback');
+  if( $self->reconnect_when_lost() && !$self->db_handle()->ping()) { 
+    $self->reconnect();
+  }
+  my @results;
+  eval {
+    if($wantarray) { 
+      @results = $callback->($self->db_handle())
+    }
+    elsif(defined $wantarray) {
+      $results[0] = $callback->($self->db_handle());
+    }
+    else {
+      $callback->($self->db_handle());
+    }
+  };
+  my $original_error = $@;
+  
+  $self->query_count($self->query_count()+1);
+  eval {
+    if($self->disconnect_when_inactive()) {
+      $self->disconnect_if_idle();
+    }
+  };
+  if($@) {
+    warning "Detected an error whilst attempting to disconnect the DBI handle: $@";
+  }
+  if($original_error) {
+    throw "Detected an error when running DBI wrapper callback:\n$original_error";
+  }
+  
+  if(defined $wantarray) {
+    return ($wantarray) ? @results : $results[0];
+  }
+  return;
+}
+
+=head2
+
+  Arg[1]      : CodeRef $callback
+  Example     : $dbc->prevent_disconnect(sub { $dbc->do('do something'); $dbc->do('something else')});
+  Description : A wrapper method which prevents database disconnection for the
+                duration of the callback. This is very useful if you need
+                to make multiple database calls avoiding excessive database
+                connection creation/destruction but still want the API
+                to disconnect after the body of work. 
+                
+                The value of C<disconnect_when_inactive()> is set to 0 no
+                matter what the original value was & after $callback has
+                been executed. If C<disconnect_when_inactive()> was 
+                already set to 0 then this method will be an effective no-op.
+  Returntype  : None
+  Exceptions  : Raised if there are issues with reverting the connection to its
+                default state.
+  Caller      : DBConnection methods
+  Status      : Beta
+
+=cut
+
+sub prevent_disconnect {
+  my ($self, $callback) = @_;
+  assert_ref($callback, 'CODE', 'callback');
+  my $original_dwi = $self->disconnect_when_inactive();
+  $self->disconnect_when_inactive(0);
+  eval { $callback->(); };
+  my $original_error = $@;
+  eval {
+    $self->disconnect_when_inactive($original_dwi);    
+  };
+  if($@) {
+    warning "Detected an error whilst attempting to reset disconnect_when_idle: $@";
+  }
+  if($original_error) {
+    throw "Detected an error when running DBI wrapper callback:\n$original_error";
+  }
+  return;
+}
+
+=head2 quote_identifier
+
+  Arg [n]    : scalar/ArrayRef
+  Example    : $q = $dbc->quote_identifier('table', 'other');
+               $q = $dbc->quote_identifier([undef, 'my_db', 'table'], [undef, 'my_db', 'other']);
+  Description: Executes the DBI C<quote_identifier> method which will quote
+               any given string using the database driver's quote character.
+  Returntype : ArrayRef
+  Exceptions : None
+  Caller     : General
+  Status     : Stable
+
+=cut
+
+sub quote_identifier {
+  my ($self, @identifiers) = @_;
+  return $self->work_with_db_handle(sub {
+    my ($dbh) = @_;
+    my @output;
+    foreach my $identifier_array (@identifiers) {
+      $identifier_array = wrap_array($identifier_array);
+      push(@output, $dbh->quote_identifier(@{$identifier_array}));
+    }
+    return \@output;
+  });
+}
 
 =head2 disconnect_if_idle
 
@@ -944,6 +1065,28 @@ sub from_seconds_to_date{
 
     }    
     return $string;
+}
+
+=head2 sql_helper
+
+  Example    : my $h = $dbc->sql_helper();
+  Description: Lazy generated instance of L<Bio::EnsEMBL::Utils::SqlHelper>
+               which provides useful wrapper methods for interacting with a
+               DBConnection instance.
+  Returntype : Bio::EnsEMBL::Utils::SqlHelper
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub sql_helper {
+  my ($self) = @_;
+  if(! exists $self->{_sql_helper}) {
+    my $helper = Bio::EnsEMBL::Utils::SqlHelper->new(-DB_CONNECTION => $self);
+    $self->{_sql_helper} = $helper;
+  }
+  return $self->{_sql_helper};
 }
 
 ####

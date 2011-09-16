@@ -2,11 +2,7 @@ use lib 't';
 use strict;
 use warnings;
 
-
-BEGIN { $| = 1;
-	use Test;
-	plan tests => 24;
-}
+use Test::More tests => 38;
 
 use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::DBSQL::SliceAdaptor;
@@ -181,14 +177,46 @@ ok($dbc->db_handle->ping());
 
 #should not have disconnected this time
 ok($dbc->db_handle->ping());
+$dbc->disconnect_when_inactive(1);
 
 # construct a second database handle using a first one:
 my $dbc2 = Bio::EnsEMBL::DBSQL::DBConnection->new(-DBCONN => $dbc);
 
+#equality checks
+ok($dbc->equals($dbc2));
+ok(! $dbc->equals());
 ok($dbc2->dbname eq $dbc->dbname());
 ok($dbc2->host   eq $dbc->host());
 ok($dbc2->username()   eq $dbc->username());
 ok($dbc2->password eq $dbc->password());
 ok($dbc2->port  == $dbc->port());
 ok($dbc2->driver eq $dbc->driver());
+
+ok(! $dbc->equals(Bio::EnsEMBL::DBSQL::DBConnection->new(-DRIVER => 'sqlite', -DBNAME => 'bill')));
+
+#Test spanning db_handle() methods
+my $db_handle_ref;
+is($dbc->disconnect_when_inactive(), 1, 'Ensuring disconnect_when_inactive() is on');
+$dbc->prevent_disconnect(sub {
+  is($dbc->disconnect_when_inactive(), 0, 'Ensuring disconnect_when_inactive() has been turned off');
+  my $sql = 'select 1';
+  $db_handle_ref = $dbc->db_handle();
+  is($dbc->do($sql), 1, 'Asserting do returns 1');
+  is($dbc->db_handle(), $db_handle_ref, 'Checking DBH is the same as it was at the beginning');
+  is($dbc->do($sql), 1, 'Asserting do returns 1');
+  is($dbc->db_handle(), $db_handle_ref, 'Checking DBH is the same as it was at the beginning');
+  my $sth1 = $dbc->prepare($sql);
+  $sth1->execute();
+  my $expected = $sth1->fetchall_arrayref()->[0]->[0];
+  $sth1->finish();
+  is($expected, 1, 'Asserting prepare returns 1');
+  is($dbc->db_handle(), $db_handle_ref, 'Checking DBH is the same as it was at the beginning');
+});
+is($dbc->disconnect_when_inactive(), 1, 'Ensuring disconnect_when_inactive() is on');
+isnt($dbc->db_handle(), $db_handle_ref, 'Checking if a new DBH has been handed out');
+$dbc->disconnect_when_inactive();
+
+#Testing quote identifiers
+my $quote_result = $dbc->quote_identifier(qw/a b c/, [undef, qw/db table/], [1]);
+is_deeply($quote_result, [qw/`a` `b` `c`/, '`db`.`table`', '`1`'], 'Checking quote identifier will quote everything') or diag explain $quote_result;
 
