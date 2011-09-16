@@ -76,23 +76,17 @@ sub run {
   my $refseq_miss=0;
   my (%refseq) = %{$self->get_valid_codes("refseq",$species_id)};
 
-  # complication with GO xrefs from JAX - linked to MGI symbols, which are themselves
-  # dependent, so we need to get the MGI->Uniprot mapping and store the *Uniprot*
-  # as the master xref
-  my %mgi_to_uniprot = %{
-    $self->get_existing_mappings( "MGI", "Uniprot/Swissprot",
-                                  $species_id ) };
+  my %mouse;
+  my $mouse_set;
 
   my %worm;
   my $wormset;
+
   my %fish;
   my $fishset;
 
-  # Add mapping between GO and SGD identifiers
-
   my %cerevisiae;
   my $cerevisiae_set;
-  my $cerevisiae_miss = 0;
 
   my $count  = 0;
 
@@ -202,11 +196,21 @@ sub run {
       }
       
       elsif($array[0] =~ /MGI/x){
-	# MGI	MGI:1923501	0610007P08Rik		GO:0004386	MGI:MGI:1354194	IEA		F	RIKEN cDNA 0610007P08 gene		gene	taxon:10090	20060213	UniProt
-	#  0         1                2         3             4                  5        6             7         8
-	if($mgi_to_uniprot{$array[1]}){
-	  $self->add_to_xrefs($mgi_to_uniprot{$array[1]}, $array[4], '', $array[4], $go_to_desc{$array[4]} || '', $array[6], $source_id, $species_id);
-	  $count++;
+	# MGI	MGI:1923501	0610007P08Rik		GO:0004386	MGI:MGI:1354194	IEA
+	#  0         1                2         3             4                  5        6
+	if(!defined($mouse_set)){
+	  $mouse_set = 1;
+	  # Todo: Make sure we get this hash populated
+	  %mouse = %{$self->get_valid_codes("MGI",$species_id)};
+	  
+	  print "Got " . keys (%mouse) . " MGI ids\n";
+	  
+	}
+	if ( $mouse{$array[1]} ){
+	  foreach my $xref_id ( @{$mouse{$array[1]}} ) {
+	    $self->add_to_xrefs($xref_id, $array[4], '', $array[4], $go_to_desc{$array[4]} || '', $array[6], $source_id, $species_id);
+	    $count++;
+	  }
 	}
       }
       # SGD GO code
@@ -217,7 +221,7 @@ sub run {
 	  # Todo: Make sure we get this hash populated
 	  %cerevisiae = %{$self->get_valid_codes("sgd",$species_id)};
 	  
-	  print STDERR "Got " . keys (%cerevisiae) . " cerevisiae ids\n";
+	  print "Got " . keys (%cerevisiae) . " cerevisiae ids\n";
 	  
 	}
 	
@@ -226,9 +230,6 @@ sub run {
 	    $self->add_to_xrefs($xref_id,$array[4],'',$array[4],$go_to_desc{$array[4]} || '',$array[6],$source_id,$species_id);
 	    $count++;
 	  }
-	}
-	else{
-	  $cerevisiae_miss++;
 	}
       }
 	
