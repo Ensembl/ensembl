@@ -2,6 +2,7 @@ use strict;
 
 use Getopt::Long qw(:config pass_through);
 use XrefParser::BaseParser;
+use XrefParser::ProcessData;
 
 my ( $host,             $port,          $dbname,
      $user,             $pass,          $species,
@@ -65,7 +66,31 @@ if ( !$user || !$host || !$dbname ) {
 
 print "host os $host\n";
 
-my $base_parser = XrefParser::BaseParser->new();
+my $process  = XrefParser::ProcessData->new();
+
+$process->run({ host             => $host,
+		port             =>  ( defined $port ? $port : '3306' ),
+		dbname           => $dbname,
+		user             => $user,
+		pass             => $pass,
+		speciesr         => \@species,
+		sourcesr         => \@sources,
+		checkdownload    => $checkdownload,
+		create           => $create,
+		release          => $release,
+		cleanup          => $cleanup,
+		drop_db          => $drop_existing_db,
+		deletedownloaded => $deletedownloaded,
+		dl_path          => (defined $dl_path ? $dl_path : "./"),
+		notsourcesr      => \@notsource,
+		unzip            => $unzip,
+		stats            => $stats,
+		verbose          => !($notverbose),
+		force            => $force });
+
+my $base_parser = XrefParser::BaseParser->new($process->database);
+
+$base_parser->add_meta_pair("options",$options);
 
 
 #
@@ -73,26 +98,13 @@ my $base_parser = XrefParser::BaseParser->new();
 # As the xref database will not have all the data. Using the core is much slower!!
 #
 
-
-$base_parser->run(
-               $host, ( defined $port ? $port : '3306' ),
-               $dbname,           $user,
-               $pass,             \@species,
-               \@sources,         $checkdownload,
-               $create,           $release,
-               $cleanup,          $drop_existing_db,
-               $deletedownloaded, $dl_path,
-               \@notsource,       $unzip, $stats, 
-	       !($notverbose), $force);
-
-$base_parser->add_meta_pair("options",$options);
-
 if($options =~ /source/ ){
   $base_parser->add_meta_pair("fullmode","no");
 }
 else{
   $base_parser->add_meta_pair("fullmode","yes");
 }
+
 
 $base_parser->parsing_finished_store_data();
 
