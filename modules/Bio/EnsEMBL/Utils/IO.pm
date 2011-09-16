@@ -33,6 +33,7 @@ Bio::EnsEMBL::Utils::IO
 	use Bio::EnsEMBL::Utils::IO qw/slurp work_with_file slurp_to_array fh_to_array/;
 	#or
 	# use Bio::EnsEMBL::Utils::IO qw/:slurp/; #brings in any method starting with slurp
+	# use Bio::EnsEMBL::Utils::IO qw/:array/; #brings in any method which ends with _array
 	# use Bio::EnsEMBL::Utils::IO qw/:all/;   #brings all methods in
 	
 	#As a scalar
@@ -45,6 +46,14 @@ Bio::EnsEMBL::Utils::IO
   
   #Sending it to an array
   my $array = slurp_to_array('/my/location');
+  work_with_file('/my/location', 'r', sub {
+    $array = process_to_array($_[0], sub {
+      #Gives us input line by line
+      return "INPUT: $_";
+    });
+  });
+  
+  #Simplified vesion but without the post processing
   $array = fh_to_array($fh);
   
   #Sending this back out to another file
@@ -77,24 +86,27 @@ use warnings;
 
 use base qw(Exporter);
 
-our @EXPORT_OK = qw/slurp slurp_to_array fh_to_array work_with_file/;
+our @EXPORT_OK = qw/slurp slurp_to_array fh_to_array process_to_array work_with_file/;
 our %EXPORT_TAGS = (
   all => [@EXPORT_OK],
-  slurp => [qw/slurp slurp_to_array/]
+  slurp => [qw/slurp slurp_to_array/],
+  array => [qw/fh_to_array process_to_array slurp_to_array/]
 );
 use Bio::EnsEMBL::Utils::Exception qw(throw);
-use Bio::EnsEMBL::Utils::Scalar qw(assert_ref);
+use Bio::EnsEMBL::Utils::Scalar qw(:assert);
 use IO::File;
 
 =head2 slurp()
 
   Arg [1]     : string $file
   Arg [2]     : boolean; $want_ref
+  Arg [3]     : boolean; $binary
                 Indicates if we want to return a scalar reference
   Description : Forces the contents of a file into a scalar. This is the 
                 fastest way to get a file into memory in Perl. You can also
                 get a scalar reference back to avoid copying the file contents
-                in Scalar references
+                in Scalar references. If the input file is binary then specify
+                with the binary flag
   Returntype  : Scalar or reference of the file contents depending on arg 2
   Example     : my $contents = slurp('/tmp/file.txt');
   Exceptions  : If the file did not exist or was not readable
@@ -103,11 +115,12 @@ use IO::File;
 =cut
 
 sub slurp {
-	my ($file, $want_ref) = @_;
-	local $/ = undef;
+	my ($file, $want_ref, $binary) = @_;
 	my $contents;
 	work_with_file($file, 'r', sub {
 	  my ($fh) = @_;
+	  local $/ = undef;
+	  binmode($fh) if $binary;
 	  $contents = <$fh>;
 	  return;
 	});
@@ -142,7 +155,9 @@ sub slurp_to_array {
   Arg [1]     : Glob/IO::Handle $fh
   Arg [2]     : boolean $chomp
   Description : Sends the contents of the given filehandle into an ArrayRef. 
-                Will perform chomp on each line if specified.
+                Will perform chomp on each line if specified. If you require
+                any more advanced line based processing then see 
+                L<process_to_array>.
   Returntype  : ArrayRef
   Example     : my $contents_array = fh_to_array($fh);
   Exceptions  : None
@@ -152,15 +167,37 @@ sub slurp_to_array {
 
 sub fh_to_array {
   my ($fh, $chomp) = @_;
-  my @contents;
   if($chomp) {
-    while(my $line = <$fh>) {
+    return process_to_array($fh, sub {
+      my ($line) = @_;
       chomp($line);
-      push(@contents, $line);
-    }
+      return $line;
+    });
   }
-  else {
-    @contents = <$fh>;
+  my @contents = <$fh>;
+  return \@contents;
+}
+
+=head process_to_array
+
+  Arg [1]     : Glob/IO::Handle $fh
+  Arg [2]     : CodeRef $callback
+  Description : Sends the contents of the given file handle into an ArrayRef
+                via the processing callback. Assumes line based input.
+  Returntype  : ArrayRef
+  Example     : my $array = process_to_array($fh, sub { return "INPUT: $_"; });
+  Exceptions  : If the fh did not exist or if a callback was not given.
+  Status      : Stable
+
+=cut
+
+sub process_to_array {
+  my ($fh, $callback) = @_;
+  assert_file_handle($fh, 'FileHandle');
+  assert_ref($callback, 'CODE', 'callback');
+  my @contents;
+  while( my $line = <$fh> ) {
+    push(@contents, $callback->($line));
   }
   return \@contents;
 }
