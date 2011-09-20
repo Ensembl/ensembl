@@ -9,6 +9,8 @@ use POSIX;
 
 local $| = 1;
 
+my $timestamp = strftime( "%Y%m%d-%H%M%S", localtime() );
+
 my %master_tables = ( 'attrib_type'     => 1,
                       'external_db'     => 1,
                       'misc_set'        => 1,
@@ -202,13 +204,11 @@ my %data;
 
       if ( defined($dumppath) ) {
         # Backup the table on file.
-        my $filename = sprintf( "%s/%s_%s-%s.sql",
-                                $dumppath,
-                                $dbname, $table,
-                                strftime( "%Y%m%d-%H%M%S", localtime() )
-        );
+        my $filename = sprintf( "%s/%s.%s.%s.sql",
+                                $dumppath, $dbname,
+                                $table,    $timestamp );
 
-        if ( -e $file_path ) {
+        if ( -e $filename ) {
           die( sprintf( "File '%s' already exists.", $filename ) );
         }
 
