@@ -2664,9 +2664,24 @@ sub summary_as_hash {
   my $summary_ref = $self->SUPER::summary_as_hash;
   $summary_ref->{'description'} = $self->description;
   $summary_ref->{'biotype'} = $self->biotype;
-  my $parent_gene = $self->get_nearest_Gene;
+  my $parent_gene = $self->get_parent_Gene();
   $summary_ref->{'Parent'} = $parent_gene->display_id;
   return $summary_ref;
+}
+
+=head2 get_parent_Gene
+  
+  Example     : $gene = $transcript->get_parent_Gene;
+  Description : Locates the parent Gene using a transcript dbID via two adaptors
+  Returns     : Bio::EnsEMBL::Gene
+
+=cut
+
+sub get_parent_Gene {
+  my $self = shift;
+  my $gene_adaptor = $self->adaptor->db->get_GeneAdaptor();
+  my $parent_gene = $gene_adaptor->fetch_by_transcript_id($self->dbID);
+  return $parent_gene;
 }
 
 ###########################
