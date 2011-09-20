@@ -26,7 +26,7 @@ sub run {
 
   my $dbi = $self->dbi();
 
-  my (%refseq) = %{XrefParser::BaseParser->get_valid_codes("refseq",$species_id)};
+  my (%refseq) = %{$self->get_valid_codes("refseq",$species_id)};
 
   my $rgd_io = $self->get_filehandle($file);
 
@@ -82,7 +82,12 @@ sub run {
 	if(defined($refseq{$nuc})){
 	  foreach my $xref (@{$refseq{$nuc}}){
 	    $done = 1;
-	    my $xref_id = XrefParser::BaseParser->add_to_xrefs($xref,$rgd,"",$symbol,$name,"",$source_id,$species_id);
+	    my $xref_id = $self->add_dependent_xref({ master_xref_id => $xref,
+						      acc            => $rgd,
+						      label          => $symbol,
+						      desc           => $name,
+						      source_id      => $source_id,
+						      species_id     => $species_id} );
 	    $count++;
 	    my @syns  = split(/\;/,$old_name);
 	    foreach my $syn(@syns){

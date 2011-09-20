@@ -110,7 +110,14 @@ sub run_script {
 	if(defined($accession{$gene_name}) and
 	   defined($label{$accession{$gene_name}})){
 	  my $acc = $accession{$gene_name};
-	  $self->add_to_xrefs($ccds_label_to_xref_id{$ccds}, $acc, $version{$acc}, $label{$acc}, $description{$acc}, "", $source_id, $species_id);
+	  $self->add_dependent_xref({ master_xref_id => $ccds_label_to_xref_id{$ccds},
+				      acc            => $acc,
+				      version        => $version{$acc},
+				      label          => $label{$acc},
+				      desc           => $description{$acc},
+				      source_id      => $source_id,
+				      species_id     => $species_id });
+
 	  $count++;
 	}
 	else{

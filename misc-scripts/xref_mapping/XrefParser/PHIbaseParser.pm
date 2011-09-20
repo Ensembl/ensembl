@@ -154,7 +154,11 @@ sub run {
 	  my $phis_aref = $phis_href->{-phi_ids};
 	  foreach my $phibase_id (@$phis_aref) {
 	    #		  print STDERR "Adding xrefs for phibase id, $phibase_id\n";
-	    $self->add_to_xrefs($master_xref_id,$phibase_id,'',$phibase_id,'',$linkage,$source_id,$species_id);
+	    $self->add_dependent_xref({ master_xref_id => $master_xref_id,
+					acc            => $phibase_id,
+					label          => $phibase_id,
+					source_id      => $source_id,
+					species_id     => $species_id });
 	    $added++;
 	  }
 	}

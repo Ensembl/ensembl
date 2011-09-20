@@ -27,7 +27,7 @@ sub run {
   my $dir = dirname($file);
 
 
-  my (%embl) = %{XrefParser::BaseParser->get_valid_codes("embl",$species_id)};
+  my (%embl) = %{$self->get_valid_codes("embl",$species_id)};
 
   my $fantom_io =
     $self->get_filehandle( $file  );
@@ -48,7 +48,11 @@ sub run {
     my ($master, $label, $acc) = split (/\s+/,$_);
     if(defined($embl{$master})){
       foreach my $xref_id (@{$embl{$master}}){
-	XrefParser::BaseParser->add_to_xrefs($xref_id,$label,'',$label,'','',$source_id,$species_id);
+	$self->add_dependent_xref({ master_xref_id => $xref_id,
+				    acc            => $label,
+				    label          => $label,
+				    source_id      => $source_id,
+				    species_id     => $species_id} );
 	$ecount++;
       }
     }

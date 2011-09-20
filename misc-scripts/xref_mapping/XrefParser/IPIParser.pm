@@ -80,7 +80,7 @@ sub run {
   $ipi_io->close();
 
 
-  XrefParser::BaseParser->upload_xref_object_graphs(\@xrefs);
+  $self->upload_xref_object_graphs(\@xrefs);
 
   print scalar(@xrefs) . " IPI xrefs succesfully parsed\n" if($verbose);
 

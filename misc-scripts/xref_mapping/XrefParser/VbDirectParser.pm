@@ -39,11 +39,11 @@ sub run {
     my ($probe,$id, $version, $description, $ensembl_id) = split("\t",$ln);      
     $i++;
 
-    my $xref_id = XrefParser::BaseParser->get_xref($probe, $source_id, $species_id);
+    my $xref_id = $self->get_xref($probe, $source_id, $species_id);
     if (!defined($xref_id) || $xref_id eq "") {
-      $xref_id = XrefParser::BaseParser->add_xref($probe, 1, $probe, $description, $source_id, $species_id, "DIRECT");
+      $xref_id = $self->add_xref($probe, 1, $probe, $description, $source_id, $species_id, "DIRECT");
     }
-    XrefParser::BaseParser->add_direct_xref($xref_id, $ensembl_id, $type, $probe);
+    $self->add_direct_xref($xref_id, $ensembl_id, $type, $probe);
   }
 
   print $i." VB direct xrefs succesfully parsed\n" if($verbose);

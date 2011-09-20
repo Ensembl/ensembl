@@ -24,8 +24,8 @@ sub run {
   my $file = @{$files}[0];
   my $dir = dirname($file);
 
-  my (%swiss) = %{XrefParser::BaseParser->get_valid_codes("uniprot/",$species_id)};
-  my (%refseq) = %{XrefParser::BaseParser->get_valid_codes("refseq",$species_id)};
+  my (%swiss) = %{$self->get_valid_codes("uniprot/",$species_id)};
+  my (%refseq) = %{$self->get_valid_codes("refseq",$species_id)};
 
   my $swissprot_io =
     $self->get_filehandle( catfile( $dir, 'uniprot.txt' ) );
@@ -85,7 +85,12 @@ sub run {
     my ($zfin, $label, $acc) = split (/\s+/,$_);
     if(defined($swiss{$acc})){
       foreach my $xref_id (@{$swiss{$acc}}){
-	XrefParser::BaseParser->add_to_xrefs($xref_id, $zfin,'',$label,$description{$zfin},'',$source_id,$species_id);
+	$self->add_dependent_xref({ master_xref_id => $xref_id,
+			      acc            => $zfin,
+			      label          => $label,
+			      desc           => $description{$zfin},
+			      source_id      => $source_id,
+			      species_id     => $species_id} );
 	$spcount++;
       }
     }
@@ -112,7 +117,12 @@ sub run {
     my ($zfin, $label, $acc) = split (/\s+/,$_);
     if(defined($refseq{$acc})){
       foreach my $xref_id (@{$refseq{$acc}}){
-	XrefParser::BaseParser->add_to_xrefs($xref_id, $zfin,'',$label,$description{$zfin},'',$source_id,$species_id);
+	$self->add_dependent_xref({ master_xref_id => $xref_id,
+				    acc            => $zfin,
+				    label          => $label,
+				    desc           => $description{$zfin},
+				    source_id      => $source_id,
+				    species_id     => $species_id} );
 	$rscount++;
       }
     }
@@ -123,7 +133,7 @@ sub run {
 
   $refseq_io->close();
 
-  my (%zfin) = %{XrefParser::BaseParser->get_valid_codes("zfin",$species_id)};
+  my (%zfin) = %{$self->get_valid_codes("zfin",$species_id)};
 
   my $zfin_io = $self->get_filehandle( catfile( $dir, 'aliases.txt' ) );
 
@@ -152,7 +162,7 @@ sub run {
     chomp;
     my ($acc, undef, undef, $syn) = split (/\t/,$_);
     if(defined($zfin{$acc})){
-      XrefParser::BaseParser->add_to_syn_for_mult_sources($acc, $sources, $syn, $species_id);
+      $self->add_to_syn_for_mult_sources($acc, $sources, $syn, $species_id);
       $syncount++;
     }
   }

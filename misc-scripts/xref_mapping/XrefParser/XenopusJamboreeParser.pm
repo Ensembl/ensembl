@@ -40,7 +40,13 @@ sub run {
       $label = $acc;
     }
 
-    XrefParser::BaseParser->add_to_direct_xrefs($stable_id,'gene', $acc, '', $label, $desc, "", $source_id, $species_id);
+    $self->add_to_direct_xrefs({ stable_id  => $stable_id,
+				 type       => 'gene',
+				 acc        => $acc,
+				 label      => $label,
+				 desc       => $desc,
+				 source_id  => $source_id,
+				 species_id => $species_id });
     $count++;
   }
 

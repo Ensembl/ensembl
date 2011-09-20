@@ -6,6 +6,7 @@ use Carp;
 use DBI;
 
 use base qw( XrefParser::BaseParser );
+use XrefParser::Database;
 
 # Parse file of Refseq records and assign direct xrefs
 
@@ -40,7 +41,6 @@ sub run_script {
     $pass = $1;
   }
 
-#  my $dna_pred = XrefParser::BaseParser->get_source_id_for_source_name("RefSeq_dna_predicted");
   my $mrna_source_id =
     $self->get_source_id_for_source_name('RefSeq_mRNA');
   my $ncrna_source_id =
@@ -57,9 +57,15 @@ sub run_script {
   my %version;
   my %description;
 
-  my $dbi = $self->dbi();  
+  my $dbi = $self->dbi();
 
-  my $sql = "select xref.accession, xref.label, xref.version,  xref.description from xref, source where xref.source_id = source.source_id and source.name = ?";
+  my $sql =(<<'RSS');
+SELECT xref.accession, xref.label, xref.version,  xref.description 
+  FROM xref, source 
+    WHERE xref.source_id = source.source_id AND
+          source.name = ?
+RSS
+
   my $sth = $dbi->prepare($sql);
   foreach my $refseq (qw(RefSeq_mRNA RefSeq_ncRNA)){
     $sth->execute($refseq);
@@ -76,12 +82,15 @@ sub run_script {
 
 
 
-  $sql = 'select x.accession, x.xref_id, d.ensembl_stable_id, "Transcript"
-            from xref x, transcript_direct_xref d, source s 
-             where s.source_id = x.source_id and 
-                   x.xref_id = d.general_xref_id and s.name like "CCDS"'; 
- 
-  $sth = $dbi->prepare($sql);
+  my $x_sql =(<<'XSL');
+SELECT x.accession, x.xref_id, d.ensembl_stable_id, "Transcript"
+  FROM xref x, transcript_direct_xref d, source s
+    WHERE s.source_id = x.source_id AND
+          x.xref_id = d.general_xref_id AND 
+          s.name like "CCDS"
+XSL
+
+  $sth = $dbi->prepare($x_sql);
   $sth->execute();
   my ($access, $old_xref_id, $stable_id, $type);
   $sth->bind_columns(\$access, \$old_xref_id, \$stable_id, \$type);
@@ -94,8 +103,7 @@ sub run_script {
       $old_xref{$access} = $old_xref_id; 
   }
   $sth->finish;
-  
- 
+
 
   my $line_count = 0;
   my $xref_count = 0;
@@ -103,10 +111,17 @@ sub run_script {
   my %seen;
   my %old_to_new;
 
-#
-# dbi2 is the ccds database
-#
-  my $dbi2 = $self->dbi2($host, $port, $user, $dbname, $pass);
+  #
+  # dbi2 is the ccds database
+  #
+  my $ccds_db =  XrefParser::Database->new({ host   => $host,
+					port   => $port,
+					user   => $user,
+					dbname => $dbname,
+					pass   => $pass});
+
+  my $dbi2 = $ccds_db->dbi();
+
   if(!defined($dbi2)){
     return 1;
   }
@@ -117,7 +132,14 @@ sub run_script {
   # get ccds -> xref transcript_id                 ensembl_stable_id{CCDS1} = ENST00001
   # get ccds -> internal transcript_id             ccds_to_internal_id(CCDS1} = 12345
 
-  $sql = 'select x.dbprimary_acc, ox.ensembl_id from xref x, object_xref ox, external_db e where x.xref_id = ox.xref_id and x.external_db_id = e.external_db_id and e.db_name like ? order by x.version';
+  my $ccds_sql =(<<CCDS);
+SELECT x.dbprimary_acc, ox.ensembl_id
+  FROM xref x, object_xref ox, external_db e
+    WHERE x.xref_id = ox.xref_id AND
+          x.external_db_id = e.external_db_id AND
+          e.db_name like ?
+      ORDER BY x.version
+CCDS
 
 # order by version added so that the hash gets overwritten with the latest version.
 
@@ -126,7 +148,7 @@ sub run_script {
   my %internal_to_stable_id;
   my ($acc, $internal_id);
 
-  $sth = $dbi2->prepare($sql); 
+  $sth = $dbi2->prepare($ccds_sql);
   $sth->execute("CCDS") or croak( $dbi2->errstr() );
   while ( my @row = $sth->fetchrow_array() ) {
     my $acc = $row[0];

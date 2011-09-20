@@ -5,7 +5,7 @@ use Carp;
 use DBI;
 
 use base qw( XrefParser::BaseParser );
-
+use XrefParser::Database;
 # Parse file of CCDS records and assign direct xrefs
 # All assumed to be linked to transcripts
 # The same CCDS may be linked to more than one transcript, but need to only
@@ -29,8 +29,6 @@ sub run_script {
   my $port = 3306;
   my $dbname;
   my $pass;
-  my $tran_name;
-
 
   if($file =~ /host[=][>](\S+?)[,]/){
     $host = $1;
@@ -44,11 +42,14 @@ sub run_script {
   if($file =~ /pass[=][>](\S+?)[,]/){
     $pass = $1;
   }
-  if($file =~ /tran_name[=][>](\S+?)[,]/){
-    $tran_name = $1;
-  }
 
-  my $dbi2 = $self->dbi2($host, $port, $user, $dbname, $pass);
+  my $ccds_db =  XrefParser::Database->new({ host   => $host,
+					     port   => $port,
+					     user   => $user,
+					     dbname => $dbname,
+					     pass   => $pass});
+
+  my $dbi2 = $ccds_db->dbi();
 
   if(!defined($dbi2)){
     return 1;
@@ -58,8 +59,15 @@ sub run_script {
   my $line_count = 0;
   my $xref_count = 0;
 
-  my $sql = 'select tsi.stable_id, x.dbprimary_acc from xref x, object_xref ox, transcript_stable_id tsi, external_db e where x.xref_id=ox.xref_id and  ox.ensembl_object_type = "Transcript" and ox.ensembl_id = tsi.transcript_id and e.external_db_id = x.external_db_id and e.db_name like "Ens_%_transcript"';
-
+  my $sql =(<<'SCD');
+SELECT tsi.stable_id, x.dbprimary_acc 
+  FROM xref x, object_xref ox, transcript_stable_id tsi, external_db e
+    WHERE x.xref_id=ox.xref_id AND
+          ox.ensembl_object_type = "Transcript" AND
+          ox.ensembl_id = tsi.transcript_id AND
+          e.external_db_id = x.external_db_id AND
+          e.db_name like "Ens_%_transcript"
+SCD
 
   my %seen;
 

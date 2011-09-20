@@ -7,7 +7,7 @@ use Carp;
 use base qw( XrefParser::BaseParser );
 use Bio::EnsEMBL::Registry;
 my $reg = "Bio::EnsEMBL::Registry";
-
+use XrefParser::Database;
 
 sub run_script {
 
@@ -52,7 +52,12 @@ sub run_script {
     $dbi2 = $dbc->dbc;
   }
   else{
-    $dbi2 = $self->dbi2($host, $port, $user, $dbname, $pass);
+    my $db =  XrefParser::Database->new({ host   => $host,
+					  port   => $port,
+					  user   => $user,
+					  dbname => $dbname,
+					  pass   => $pass});
+    $dbi2 = $db->dbi();
   }
 
   my $add_dependent_xref_sth = $self->dbi->prepare("INSERT INTO dependent_xref  (master_xref_id,dependent_xref_id, linkage_source_id) VALUES (?,?, $source_id)");
@@ -63,7 +68,7 @@ sub run_script {
     return 1;
   }
 
-  my (%go)   = %{XrefParser::BaseParser->get_valid_codes("GO",$species_id)};
+  my (%go)   = %{$self->get_valid_codes("GO",$species_id)};
 
 
   my $count = 0;

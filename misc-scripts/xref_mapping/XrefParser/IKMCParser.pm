@@ -27,7 +27,7 @@ sub run_script {
   foreach my $t ("No products available yet", "Vector available", "ES cells available", "Mice available"){
       my $ikmc = "IKMCs_".$t;
       $ikmc =~ s/ /_/g;
-      $type2id{$t}  = XrefParser::BaseParser->get_source_id_for_source_name($ikmc);
+      $type2id{$t}  = $self->get_source_id_for_source_name($ikmc);
 #      print $ikmc."\t".$type2id{$t}."\n";
       if(!defined( $type2id{$t})){
 	die  "Could not get source id for $ikmc\n";
@@ -163,29 +163,25 @@ XXML
     $source_id = $type2id{'Vector available'} if $status{$acc} == 2;
     $source_id = $type2id{'ES cells available'} if $status{$acc} == 3;
     $source_id = $type2id{'Mice available'} if $status{$acc} == 4;
-    
+
     my $label = $symbols{$acc} || $acc;
     my $ensembl_id = $ensembl_ids{$acc};
     #    print OUT "$acc\t$symbols{$acc}\t$description\t$ensembl_ids{$acc}\n";
     my $ensembl_type        = 'gene';
 
-    
     ++$parsed_count;
-    
+
     my $xref_id =
-      XrefParser::BaseParser->get_xref( $acc, $source_id, $species_id );
-      
+      $self->get_xref( $acc, $source_id, $species_id );
+
     if ( !defined($xref_id) || $xref_id eq '' ) {
       $xref_id =
-	XrefParser::BaseParser->add_xref(
-					 $acc,   undef,   $label,
-					 '', $source_id, $species_id, "DIRECT"
-					);
+	$self->add_xref( $acc,   undef,   $label,
+			 '', $source_id, $species_id, "DIRECT");
     }
     next if(!defined($ensembl_ids{$acc}));
     $direct_count++;
-    XrefParser::BaseParser->add_direct_xref( $xref_id, $ensembl_id,
-					     $ensembl_type, $acc );
+    $self->add_direct_xref( $xref_id, $ensembl_id, $ensembl_type, $acc );
   }
   printf( "%d  xrefs succesfully parsed and %d direct xrefs added\n", $parsed_count, $direct_count );
   

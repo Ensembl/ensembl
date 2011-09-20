@@ -54,7 +54,7 @@ sub run {
   }
   my $dbi = $self->dbi();
 
-  my $sw_source_id =  XrefParser::BaseParser->get_source_id_for_source_name("uniprot/swissprot","sequence_mapped");
+  my $sw_source_id =  $self->get_source_id_for_source_name("uniprot/swissprot","sequence_mapped");
   if($sw_source_id < 1){
     die "Could not find source id for uniprot/swissprot ???\n";
   }
@@ -109,7 +109,7 @@ sub run {
     # Add the new xref
     #
 
-    my $xref_id = XrefParser::BaseParser->add_xref($key, $version, $label, $description, $source_id, $species_id, "DIRECT");
+    my $xref_id = $self->add_xref($key, $version, $label, $description, $source_id, $species_id, "DIRECT");
 
 
     #
@@ -128,7 +128,7 @@ sub run {
       #add the direct xref entry
       #
 
-      XrefParser::BaseParser->add_direct_xref( $xref_id, $trans, "Translation", '');
+      $self->add_direct_xref( $xref_id, $trans, "Translation", '');
 #      print ":".$trans;
 
       #

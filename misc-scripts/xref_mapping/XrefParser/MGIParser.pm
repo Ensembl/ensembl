@@ -77,8 +77,8 @@ sub run {
     if($line =~ /(MGI:\d+).*(ENSMUSG\d+)/){
       my $acc = $1;
       my $ensid = $2;
-      my $xref_id = XrefParser::BaseParser->add_xref($acc, $version{$acc}, $label{$acc}, $description{$acc}, $source_id, $species_id, "DIRECT");
-      XrefParser::BaseParser->add_direct_xref( $xref_id, $ensid, "Gene", '');
+      my $xref_id = $self->add_xref($acc, $version{$acc}, $label{$acc}, $description{$acc}, $source_id, $species_id, "DIRECT");
+      $self->add_direct_xref( $xref_id, $ensid, "Gene", '');
       if(defined($syn_hash->{$acc})){
 	foreach my $syn (@{$syn_hash->{$acc}}){
 	  $add_syn_sth->execute($xref_id, $syn);

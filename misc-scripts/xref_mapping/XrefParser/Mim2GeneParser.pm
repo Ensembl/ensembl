@@ -34,9 +34,9 @@ sub run {
       $self->get_source_id_for_source_name(
         'EntrezGene');
 
-  my (%mim_gene)   = %{XrefParser::BaseParser->get_valid_codes("MIM_GENE",$species_id)};
-  my (%mim_morbid) = %{XrefParser::BaseParser->get_valid_codes("MIM_MORBID",$species_id)};
-  my (%entrez)     = %{XrefParser::BaseParser->get_valid_codes("EntrezGene",$species_id)};
+  my (%mim_gene)   = %{$self->get_valid_codes("MIM_GENE",$species_id)};
+  my (%mim_morbid) = %{$self->get_valid_codes("MIM_MORBID",$species_id)};
+  my (%entrez)     = %{$self->get_valid_codes("EntrezGene",$species_id)};
  
   my $dbi = $self->dbi();
   my $add_dependent_xref_sth = $self->dbi->prepare("INSERT INTO dependent_xref  (master_xref_id,dependent_xref_id, linkage_source_id) VALUES (?,?, $entrez_source_id)");

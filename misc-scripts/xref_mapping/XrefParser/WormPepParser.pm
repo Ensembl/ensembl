@@ -30,8 +30,8 @@ sub run {
   my $file = @{$files}[0];
 
 
-  my $worm_source_id = XrefParser::BaseParser->get_source_id_for_source_name('wormpep_id');
-  my $worm_locus_id = XrefParser::BaseParser->get_source_id_for_source_name('wormbase_locus');
+  my $worm_source_id = $self->get_source_id_for_source_name('wormpep_id');
+  my $worm_locus_id = $self->get_source_id_for_source_name('wormbase_locus');
 
 
   my $xref_sth = $self->dbi()->prepare("SELECT xref_id FROM xref WHERE accession=? AND source_id=$worm_source_id AND species_id=$species_id");

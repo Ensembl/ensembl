@@ -23,7 +23,7 @@ sub run {
     return 1; #  1 error
   }
   # upload
-  if(!defined(XrefParser::BaseParser->upload_xref_object_graphs(@xrefs))){
+  if(!defined($self->upload_xref_object_graphs(@xrefs))){
     return 1;
   }
   return 0;

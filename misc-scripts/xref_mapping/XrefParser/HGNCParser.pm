@@ -62,8 +62,13 @@ sub run {
     my $source_id = $name_to_source_id->{$type};
     if($id and $id =~ m/http:\/\/www.lrg-sequence.org\/LRG\/(LRG_\d+)\'/x){
       my $lrg_stable_id = $1;
-      $self->add_to_direct_xrefs($lrg_stable_id, 'gene', $acc, $empty, $symbol,
-						  $name, $empty, $source_id, $species_id);
+      $self->add_to_direct_xrefs({ stable_id   => $lrg_stable_id,
+				   type        => 'gene',
+                                   acc         => $acc,
+				   label       => $symbol,
+				   desc        => $name,
+				   source_id   => $source_id,
+				   species_id  => $species_id});
 
       $self->add_synonyms_for_hgnc( {source_id  => $source_id,
 				     name       => $acc,
@@ -105,8 +110,12 @@ sub run {
 	  $seen = 1;
 	  foreach my $xref_id (@{$refseq{$id}}){
 	    $name_count{$type}++;
-	    $self->add_to_xrefs($xref_id, $acc, $empty, $symbol, $name, $empty,
-						 $source_id, $species_id);
+	    $self->add_dependent_xref({ master_xref_id => $xref_id,
+					acc            => $acc,
+					label          => $symbol,
+					desc           => $name || '',
+					source_id      => $source_id,
+					species_id     => $species_id} );
 	  }
 	  $self->add_synonyms_for_hgnc( {source_id  => $source_id,
 					 name       => $acc,
@@ -128,8 +137,12 @@ sub run {
 	$seen = 1;
 	foreach my $xref_id (@{$swissprot{$id}}){
 	  $name_count{$type}++;
-	  $self->add_to_xrefs($xref_id, $acc, $empty, $symbol, $name, $empty,
-					       $source_id, $species_id);
+	    $self->add_dependent_xref({ master_xref_id => $xref_id,
+					acc            => $acc,
+					label          => $symbol,
+					desc           => $name || '',
+					source_id      => $source_id,
+					species_id     => $species_id} );
 	}
 	  $self->add_synonyms_for_hgnc( {source_id  => $source_id,
 					 name       => $acc,
@@ -149,8 +162,12 @@ sub run {
       if(defined $id ){
 	if(defined $entrezgene{$id} ){
 	  $seen = 1;
-	  $self->add_to_xrefs($entrezgene{$id}, $acc, $empty, $symbol, $name, $empty,
-					       $source_id, $species_id);
+	  $self->add_dependent_xref({ master_xref_id => $entrezgene{$id},
+				      acc            => $acc,
+				      label          => $symbol,
+				      desc           => $name || '',
+				      source_id      => $source_id,
+				      species_id     => $species_id} );
 	  $name_count{$type}++;
 	  $self->add_synonyms_for_hgnc( {source_id  => $source_id,
 					 name       => $acc,

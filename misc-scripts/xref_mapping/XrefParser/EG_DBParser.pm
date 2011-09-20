@@ -6,8 +6,7 @@ use Carp;
 use File::Basename;
 
 use base qw( XrefParser::BaseParser );
-
-use Bio::EnsEMBL::DBSQL::DBAdaptor;
+use XrefParser::Database;
 
 sub run_script {
   my ($self, $ref_arg) = @_;
@@ -58,7 +57,13 @@ sub run_script {
       $source{$source_name}     = $self->get_source_id_for_source_name($source_name)    || die "Could not get source_id for $source_name\n";
   }
  
-  my $dbi2 = $self->dbi2($host, $port, $user, $dbname, $pass);
+  my $db =  XrefParser::Database->new({ host   => $host,
+					port   => $port,
+					user   => $user,
+					dbname => $dbname,
+					pass   => $pass});
+
+  my $dbi2 = $db->dbi();
   if(!defined($dbi2)){
       print STDERR "failed to connect to EG_Xrefs database!\n";
     return 1;

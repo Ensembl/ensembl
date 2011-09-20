@@ -140,7 +140,7 @@ sub run {
 
   print scalar(@xrefs) . " JGI_ xrefs succesfully parsed\n" if($verbose);
 
-  XrefParser::BaseParser->upload_xref_object_graphs(\@xrefs);
+  $self->upload_xref_object_graphs(\@xrefs);
 
   return 0; # successful
 }

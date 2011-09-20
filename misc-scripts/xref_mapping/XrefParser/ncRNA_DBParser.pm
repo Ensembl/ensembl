@@ -9,7 +9,7 @@ use base qw( XrefParser::BaseParser );
 
 use strict;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
-
+use XrefParser::Database;
 
 sub run_script {
 
@@ -55,7 +55,14 @@ sub run_script {
     || die "Could not get source_id for miRBase";
 
 
-  my $dbi2 = $self->dbi2($host, $port, $user, $dbname, $pass);
+
+  my $ccds_db =  XrefParser::Database->new({ host   => $host,
+					     port   => $port,
+					     user   => $user,
+					     dbname => $dbname,
+					     pass   => $pass});
+  my $dbi2 = $ccds_db->dbi();
+
   if(!defined($dbi2)){
     return 1;
   }

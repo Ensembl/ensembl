@@ -128,7 +128,13 @@ sub run {
       elsif($array[0] =~ /RefSeq/){
 	if($refseq{$array[1]}) {
 	  foreach my $xref_id (@{$refseq{$array[1]}}){
-	    $self->add_to_xrefs($xref_id, $array[4],'',$array[4],$go_to_desc{$array[4]} || '',$array[6],$source_id,$species_id);
+	    $self->add_dependent_xref({ master_xref_id => $xref_id,
+					acc            => $array[4],
+					label          => $array[4],
+					desc           => $go_to_desc{$array[4]} || '',
+					linkage        => $array[6],
+					source_id      => $source_id,
+					species_id     => $species_id} );
 	    $count++;
 	  }
 	}
@@ -139,7 +145,13 @@ sub run {
       elsif($array[0] =~ /UniProt/){
 	if($swiss{$array[1]}){
 	  foreach my $xref_id (@{$swiss{$array[1]}}){
-	    $self->add_to_xrefs($xref_id,$array[4],'',$array[4],$go_to_desc{$array[4]} || '',$array[6],$source_id,$species_id);
+	    $self->add_dependent_xref({ master_xref_id => $xref_id,
+					acc            => $array[4],
+					label          => $array[4],
+					desc           => $go_to_desc{$array[4]} || '',
+					linkage        => $array[6],
+					source_id      => $source_id,
+					species_id     => $species_id} );
 	    $count++;
 	  }
 	}
@@ -190,11 +202,17 @@ sub run {
 		       'Uniprot/SWISSPROT')};
 	}
 	if(defined($fish{$array[1]})){
-	  $self->add_to_xrefs($fish{$array[1]},$array[4],'',$array[4],'',$array[6],$source_id,$species_id);
+	    $self->add_dependent_xref({ master_xref_id => $fish{$array[1]},
+					acc            => $array[4],
+					label          => $array[4],
+					desc           => $go_to_desc{$array[4]} || '',
+					linkage        => $array[6],
+					source_id      => $source_id,
+					species_id     => $species_id} );
 	  $count++;
 	}
       }
-      
+
       elsif($array[0] =~ /MGI/x){
 	# MGI	MGI:1923501	0610007P08Rik		GO:0004386	MGI:MGI:1354194	IEA
 	#  0         1                2         3             4                  5        6
@@ -208,7 +226,13 @@ sub run {
 	}
 	if ( $mouse{$array[1]} ){
 	  foreach my $xref_id ( @{$mouse{$array[1]}} ) {
-	    $self->add_to_xrefs($xref_id, $array[4], '', $array[4], $go_to_desc{$array[4]} || '', $array[6], $source_id, $species_id);
+	    $self->add_dependent_xref({ master_xref_id => $xref_id,
+					acc            => $array[4],
+					label          => $array[4],
+					desc           => $go_to_desc{$array[4]} || '',
+					linkage        => $array[6],
+					source_id      => $source_id,
+					species_id     => $species_id} );
 	    $count++;
 	  }
 	}
@@ -227,7 +251,13 @@ sub run {
 	
 	if($cerevisiae{$array[1]}){
 	  foreach my $xref_id (@{$cerevisiae{$array[1]}}){
-	    $self->add_to_xrefs($xref_id,$array[4],'',$array[4],$go_to_desc{$array[4]} || '',$array[6],$source_id,$species_id);
+	    $self->add_dependent_xref({ master_xref_id => $xref_id,
+					acc            => $array[4],
+					label          => $array[4],
+					desc           => $go_to_desc{$array[4]} || '',
+					linkage        => $array[6],
+					source_id      => $source_id,
+					species_id     => $species_id} );
 	    $count++;
 	  }
 	}

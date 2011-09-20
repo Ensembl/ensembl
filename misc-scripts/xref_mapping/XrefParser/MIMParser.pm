@@ -31,9 +31,9 @@ sub run {
 
   push @sources, $general_source_id;
 
-  my $gene_source_id = XrefParser::BaseParser->get_source_id_for_source_name("MIM_GENE");
+  my $gene_source_id = $self->get_source_id_for_source_name("MIM_GENE");
   push @sources, $gene_source_id;
-  my $morbid_source_id =  XrefParser::BaseParser->get_source_id_for_source_name("MIM_MORBID");
+  my $morbid_source_id =  $self->get_source_id_for_source_name("MIM_MORBID");
   push @sources, $morbid_source_id;
 
   print "sources are:- ".join(", ",@sources)."\n" if($verbose);

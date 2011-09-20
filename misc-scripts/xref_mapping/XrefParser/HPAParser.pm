@@ -59,14 +59,14 @@ sub run {
 
     ++$parsed_count;
 
-    my $xref_id = XrefParser::BaseParser->get_xref( $antibody_id, $source_id, $species_id );
+    my $xref_id = $self->get_xref( $antibody_id, $source_id, $species_id );
 
     if ( !defined($xref_id) || $xref_id eq '' ) {
-      $xref_id = XrefParser::BaseParser->add_xref($antibody_id, $version, $label, $description, $source_id, $species_id, "DIRECT");
+      $xref_id = $self->add_xref($antibody_id, $version, $label, $description, $source_id, $species_id, "DIRECT");
     }
 	
 	
-    XrefParser::BaseParser->add_direct_xref( $xref_id, $ensembl_peptide_id, $type, '');
+    $self->add_direct_xref( $xref_id, $ensembl_peptide_id, $type, '');
 	
   } ## end while ( defined( my $line...
 

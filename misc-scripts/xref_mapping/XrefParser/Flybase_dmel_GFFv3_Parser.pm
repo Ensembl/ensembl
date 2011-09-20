@@ -153,7 +153,7 @@ sub get_source{
   my ($self, $name) =@_;
 
   if(!defined($cache_source{$name})){
-    $cache_source{$name} = XrefParser::BaseParser->get_source_id_for_source_name($name)
+    $cache_source{$name} = $self->get_source_id_for_source_name($name)
   }
 
   return $cache_source{$name};
@@ -195,17 +195,17 @@ sub run {
 
   my @direct_xrefs = @{ $self->direct_xrefs } ;
 
-  # delete previous if running directly rather than via BaseParser
-  if (!defined(caller(1))) {
-    print "Deleting previous xrefs for these sources\n" if($verbose);
-    XrefParser::BaseParser->delete_by_source(\@xrefs);
-  }
+# # delete previous if running directly rather than via BaseParser
+#  if (!defined(caller(1))) {
+#    print "Deleting previous xrefs for these sources\n" if($verbose);
+#    $self->delete_by_source(\@xrefs);
+#  }
   print "... parsed.\n" if($verbose);
   print STDERR "uploading ".scalar(@xrefs)." xrefs's\n" if($verbose);
-  XrefParser::BaseParser->upload_xref_object_graphs(\@xrefs);
+  $self->upload_xref_object_graphs(\@xrefs);
 
   print STDERR "uploading ".scalar(@direct_xrefs)." direct-xrefs's\n" if($verbose);
-  XrefParser::BaseParser->upload_direct_xrefs(\@direct_xrefs);
+  $self->upload_direct_xrefs(\@direct_xrefs);
 
   return 0;
 }
@@ -213,7 +213,7 @@ sub run {
 sub relink_synonyms_to_xrefs{
   my $self = shift;
   foreach my $x (@{$self->xrefs} ){
-    my $src_name = XrefParser::BaseParser->get_source_name_for_source_id($x->{SOURCE_ID});
+    my $src_name = $self->get_source_name_for_source_id($x->{SOURCE_ID});
     if ($src_name =~ m/^FlyBaseName_/ || $src_name =~ m/^flybase_.*_id$/) {
       $x->{SYNONYMS} = $self->get_synonyms($x->{ENSEMBL_STABLE_ID});
     }
@@ -1064,7 +1064,7 @@ sub external_source_db_name{
 sub get_species {
   my ($file) = @_;
   my ($taxonomy_id, $extension) = split(/\./, basename($file));
-  my $sth = XrefParser::BaseParser->dbi()->prepare("SELECT species_id,name FROM species WHERE taxonomy_id=?");
+  my $sth = $self->dbi()->prepare("SELECT species_id,name FROM species WHERE taxonomy_id=?");
   $sth->execute($taxonomy_id);
   my ($species_id, $species_name);
   while(my @row = $sth->fetchrow_array()) {

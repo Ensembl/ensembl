@@ -113,12 +113,24 @@ sub run_script {
 
   if(defined($vdbname)){
     print "Using $host $vdbname for Vega and $cdbname for Core\n";
-    $vega_dbc = $self->dbi2($vhost, $vport, $vuser, $vdbname, $vpass);
+    my $vega_db =  XrefParser::Database->new({ host   => $vhost,
+					       port   => $vport,
+					       user   => $vuser,
+					       dbname => $vdbname,
+					       pass   => $vpass});
+
+    $vega_dbc = $vega_db->dbi();
     if(!defined($vega_dbc)){
       print "Problem could not open connectipn to $vhost, $vport, $vuser, $vdbname, $vpass\n";
       return 1;
     }
-    $core_dbc = $self->dbi2($chost, $cport, $cuser, $cdbname, $cpass);
+    my $core_db =  XrefParser::Database->new({ host   => $chost,
+					       port   => $cport,
+					       user   => $cuser,
+					       dbname => $cdbname,
+					       pass   => $cpass});
+
+    my $core_dbc = $core_db->dbi();
     if(!defined($core_dbc)){
       print "Problem could not open connectipn to $chost, $cport, $cuser, $cdbname, $cpass\n";
       return 1;
@@ -146,7 +158,7 @@ sub run_script {
 
 
 
-  $source_id = XrefParser::BaseParser->get_source_id_for_source_name($source_name,"vega");
+  $source_id = $self->get_source_id_for_source_name($source_name,"vega");
 
 
   my $sql =(<<SQL);

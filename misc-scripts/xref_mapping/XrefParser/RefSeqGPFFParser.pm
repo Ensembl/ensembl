@@ -106,7 +106,7 @@ sub create_xrefs {
   my %name2species_id     = map{ $_=>$species_id } @names;
   my %taxonomy2species_id = map{ $_=>$species_id } @tax_ids;
 
-  my %dependent_sources =  $self->get_dependent_xref_sources();
+  my %dependent_sources =  $self->get_xref_sources();
 
   my $refseq_io = $self->get_filehandle($file);
 

@@ -26,8 +26,8 @@ sub run {
 
   my $file = @{$files}[0];
 
-  my $gene_source_id = XrefParser::BaseParser->get_source_id_for_source_name("PomBase_GENE");
-  my $transcript_source_id = XrefParser::BaseParser->get_source_id_for_source_name("PomBase_TRANSCRIPT");
+  my $gene_source_id = $self->get_source_id_for_source_name("PomBase_GENE");
+  my $transcript_source_id = $self->get_source_id_for_source_name("PomBase_TRANSCRIPT");
 
   my $pombase_io = $self->get_filehandle($file);
 

@@ -6,6 +6,7 @@ use Carp;
 use DBI;
 
 use base qw( XrefParser::BaseParser );
+use XrefParser::Database;
 
 # Parse file of HGNC records and assign direct xrefs
 # All assumed to be linked to genes
@@ -50,12 +51,11 @@ sub run_script {
   my $ua = LWP::UserAgent->new();
   $ua->timeout(10);
   $ua->env_proxy();
-  
 
   my %ccds_to_hgnc;
 
   my $response = $ua->get($wget);
-  
+
   if ( !$response->is_success() ) {
     die $response->status_line;
   }
@@ -63,25 +63,35 @@ sub run_script {
     my @lines = split(/\n/,$response->content);
     foreach my $line (@lines){
       my($hgnc, $junk, $ccds) = split(/\t/,$line);
-#      print "ccds:$ccds\n";
       my @ccds_list = split(/, /,$ccds);
       foreach my $c (@ccds_list){
-#	print $c."\t".$hgnc."\n";
 	$ccds_to_hgnc{$c} = $hgnc;
       }
     }
-    
+
   }
-  
-  my $dbi2 = $self->dbi2($host, $port, $user, $dbname, $pass);
+
+  my $ccds_db =  XrefParser::Database->new({ host   => $host,
+					     port   => $port,
+					     user   => $user,
+					     dbname => $dbname,
+					     pass   => $pass});
+  my $dbi2 = $ccds_db->dbi();
+
   if(!defined($dbi2)){
     return 1;
   }
 
 
 
-  my $sql = 'select ox.ensembl_id, x.dbprimary_acc from object_xref ox, xref x, external_db e where x.xref_id = ox.xref_id and x.external_db_id = e.external_db_id and e.db_name like "Ens_%_transcript" and x.dbprimary_acc like "ENST%"'; 
-
+  my $sql =(<<'SQL');
+SELECT ox.ensembl_id, x.dbprimary_acc
+  FROM object_xref ox, xref x, external_db e
+    WHERE x.xref_id = ox.xref_id and
+          x.external_db_id = e.external_db_id AND
+          e.db_name like "Ens_%_transcript" AND
+          x.dbprimary_acc like "ENST%"
+SQL
 
   my %trans_id_to_stable_id;
   my $sth = $dbi2->prepare($sql); 

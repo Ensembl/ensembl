@@ -591,19 +591,20 @@ sub get_stats {
     # Print the header
     ###################
     my $max_name_length = 6; # (source)
-    foreach my $sum_name (keys %sum_line){
-      if(length($sum_name) > $max_name_length){
-	$max_name_length = length($sum_name);
-      }
-    }
-    
     my $width = 8;
-    print "\nsource". " " x ($max_name_length - 3); #( 3 = length(source) - 3 spaces)
-    foreach my $val (qw(xrefs prim dep gdir tdir tdir coord synonyms)){
-      print $val." " x ($width - length($val) );
-    }
-    print "\n";
+    if(scalar(keys %sum_line)){
+      foreach my $sum_name (keys %sum_line){
+	if(length($sum_name) > $max_name_length){
+	  $max_name_length = length($sum_name);
+	}
+      }
 
+      print "\nsource". " " x ($max_name_length - 3); #( 3 = length(source) - 3 spaces)
+      foreach my $val (qw(xrefs prim dep gdir tdir tdir coord synonyms)){
+	print $val." " x ($width - length($val) );
+      }
+      print "\n";
+    }
 
     ###################
     # Print the numbers

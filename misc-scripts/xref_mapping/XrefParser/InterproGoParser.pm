@@ -50,10 +50,16 @@ sub run {
       my $go_desc = $2;
       my $go_term = $3;
       my $go_id   = $4;
-      
+
       if(defined($interpros{$ipro_id})){
-	$self->add_to_xrefs($interpros{$ipro_id},$go_id,1,$go_id,$go_term,'IEA',
-			    $source_id,$species_id);
+	$self->add_dependent_xref({ master_xref_id => $interpros{$ipro_id},
+				    acc            => $go_id,
+				    version        => 1,
+				    label          => $go_id,
+				    desc           => $go_term,
+				    linkage        => 'IEA',
+				    source_id      => $source_id,
+				    species_id     => $species_id} );
 	$dependent_xref_count++;
       }
       else{

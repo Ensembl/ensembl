@@ -54,11 +54,11 @@ sub run {
       return 1;    # 1 error
   }
 
-  # delete previous if running directly rather than via BaseParser
-  if (!defined(caller(1))) {
-    print "Deleting previous xrefs for these sources\n" if($verbose);
-    $self->delete_by_source(\@xrefs);
-  }
+#  # delete previous if running directly rather than via BaseParser
+#  if (!defined(caller(1))) {
+#    print "Deleting previous xrefs for these sources\n" if($verbose);
+#    $self->delete_by_source(\@xrefs);
+#  }
 
   # upload
   if(!defined($self->upload_xref_object_graphs(@xrefs))){
@@ -113,10 +113,10 @@ sub create_xrefs {
   my $num_sp_pred = 0;
   my $num_sptr_pred = 0;
 
-  my %dependent_sources = $self->get_dependent_xref_sources(); # name-id hash
+  my %dependent_sources = $self->get_xref_sources();
 
   if(defined($dependent_sources{'MGI'})){
-    $dependent_sources{'MGI'} = XrefParser::BaseParser->get_source_id_for_source_name("MGI","uniprot");
+    $dependent_sources{'MGI'} = $self->get_source_id_for_source_name("MGI","uniprot");
   }
 
 

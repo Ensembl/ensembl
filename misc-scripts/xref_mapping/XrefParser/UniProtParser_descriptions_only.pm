@@ -55,11 +55,11 @@ sub run {
       return 1;    # 1 error
   }
 
-  # delete previous if running directly rather than via BaseParser
-  if (!defined(caller(1))) {
-    print "Deleting previous xrefs for these sources\n" if($verbose);
-    $self->delete_by_source(\@xrefs);
-  }
+#  # delete previous if running directly rather than via BaseParser
+#  if (!defined(caller(1))) {
+#    print "Deleting previous xrefs for these sources\n" if($verbose);
+#    $self->delete_by_source(\@xrefs);
+#  }
 
   # upload
   if(!defined($self->upload_xref_object_graphs(@xrefs))){

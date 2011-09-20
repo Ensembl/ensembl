@@ -18,8 +18,8 @@ sub new
   $self->host($arg_ref->{host});
   $self->dbname($arg_ref->{dbname});
   $self->user($arg_ref->{user});
-  $self->pass($arg_ref->{pass});
-  $self->port($arg_ref->{port});
+  $self->pass($arg_ref->{pass} || '');
+  $self->port($arg_ref->{port} || 3306);
   $self->verbose($arg_ref->{verbose});
 
   return $self;
