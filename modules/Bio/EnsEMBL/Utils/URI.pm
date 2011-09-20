@@ -36,6 +36,13 @@ This object is a generic URI parser which is primarily used in the
 parsing of database URIs into a more managable data structure. We also provide
 the resulting URI object
 
+=head1 DEPENDENCIES
+
+L<URI::Escape> is an optional dependency but if available the code will attempt
+to perform URI encoding/decoding on parameters. If you do not want this 
+functionality then modify the global C<$Bio::EnsEMBL::Utils::URI::URI_ESCAPE>
+to false;
+
 =head1 METHODS
 
 =cut
@@ -48,6 +55,14 @@ use warnings;
 use Scalar::Util qw/looks_like_number/;
 use Bio::EnsEMBL::Utils::Exception qw(throw);
 use File::Spec;
+
+our $URI_ESCAPE;
+$URI_ESCAPE = 0;
+eval {
+  require URI::Escape;
+  URI::Escape->import();
+  $URI_ESCAPE = 1;
+};
 
 use base qw/Exporter/;
 our @EXPORT_OK;
@@ -80,6 +95,7 @@ sub parse_uri {
 
   if($url =~ qr{ $SCHEME ([^?]+) (?:$PARAMS)? }xms) {
     my $scheme = $1;
+    $scheme = ($URI_ESCAPE) ? uri_unescape($scheme) : $scheme;
     $p = Bio::EnsEMBL::Utils::URI->new($scheme);
     my ($locator, $params) = ($2, $3);
 
@@ -95,14 +111,14 @@ sub parse_uri {
         $p->pass($2);
       }
       if($locator =~ s/^$HOST//) {
-        $p->host($1);
-        $p->port($2);
+        $p->host(($URI_ESCAPE) ? uri_unescape($1) : $1);
+        $p->port(($URI_ESCAPE) ? uri_unescape($2) : $2);
       }
 
       if($p->is_db_scheme() || $scheme eq q{}) {
         if($locator =~ $DB) {
-          $p->db_params()->{dbname} = $1;
-          $p->db_params()->{table} = $2;
+          $p->db_params()->{dbname} = ($URI_ESCAPE) ? uri_unescape($1) : $1;
+          $p->db_params()->{table}  = ($URI_ESCAPE) ? uri_unescape($2) : $2;
         }
       }
       else {
@@ -113,7 +129,7 @@ sub parse_uri {
     if(defined $params) {
       my @kv_pairs = split(/;|&/, $params);
       foreach my $kv_string (@kv_pairs) {
-        my ($key, $value) = split(/=/, $kv_string);
+        my ($key, $value) = map { ($URI_ESCAPE) ? uri_unescape($_) : $_ } split(/=/, $kv_string);
         $p->add_param($key, $value);
       }
     }
@@ -493,22 +509,34 @@ sub _decode_sqlite {
 
 sub generate_uri {
   my ($self) = @_;
-  my $scheme = sprintf('%s://', $self->scheme());
+  my $scheme = sprintf('%s://', ($URI_ESCAPE) ? uri_escape($self->scheme()) : $self->scheme());
   my $user_credentials = q{};
   my $host_credentials = q{};
   my $location = q{};
 
   if($self->user() || $self->pass()) {
+    my $user = $self->user();
+    my $pass = $self->pass();
+    if($URI_ESCAPE) {
+      $user = uri_escape($user) if $user;
+      $pass = uri_escape($pass) if $pass;
+    }
     $user_credentials = sprintf('%s%s@',
-      ( $self->user() ? $self->user() : q{} ),
-      ( $self->pass() ? q{:}.$self->pass() : q{} )
+      ( $user ? $user : q{} ),
+      ( $pass ? q{:}.$pass : q{} )
     );
   }
 
-  if($self->host() || $self->port()){
+  if($self->host() || $self->port()) {
+    my $host = $self->host();
+    my $port = $self->port();
+    if($URI_ESCAPE) {
+      $host = uri_escape($host) if $host;
+      $port = uri_escape($port) if $port;
+    }
     $host_credentials = sprintf('%s%s',
-      ($self->host() ? $self->host() : q{}),
-      ($self->port() ? q{:}.$self->port() : q{})
+      ( $host ? $host : q{} ),
+      ( $port ? q{:}.$port : q{} )
     );
   }
 
@@ -523,10 +551,16 @@ sub generate_uri {
       $location = $self->path();
     }
     else {
-      if($self->db_params()->{dbname} || $self->db_params()->{table}) {
+      my $dbname = $self->db_params()->{dbname};
+      my $table = $self->db_params()->{table};
+      if($dbname || $table) {
+        if($URI_ESCAPE) {
+          $dbname = uri_escape($dbname) if $dbname;
+          $table = uri_escape($table) if $table;
+        }
         $location = sprintf('/%s%s',
-          ($self->db_params()->{dbname} ? $self->db_params()->{dbname} : q{}),
-          ($self->db_params()->{table} ? q{/}.$self->db_params()->{table} : q{})
+          ($dbname ? $dbname : q{}),
+          ($table ? q{/}.$table : q{})
         );
       }
     }
@@ -542,7 +576,9 @@ sub generate_uri {
     foreach my $key (@{$self->param_keys}) {
       my $values_array = $self->get_params($key);
       foreach my $value (@{$values_array}) {
-        push(@params, (defined $value) ? "$key=$value" : $key);
+        my $encoded_key = ($URI_ESCAPE) ? uri_escape($key) : $key;
+        my $encoded_value = ($URI_ESCAPE) ? uri_escape($value) : $value;
+        push(@params, ($encoded_value) ? "$encoded_key=$encoded_value" : $encoded_key);
       }
     }
     $param_string .= join(q{;}, @params);

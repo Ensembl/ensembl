@@ -159,19 +159,22 @@ assert_parsing('http with params','http://host/path?param1=val1',{
   db_params => {}
 });
 
-assert_parsing('http real life params','http://www.google.co.uk:80/search?hl=en&source=hp&q=testing+%3D&hl=en',{
-  scheme => 'http',
-  param_keys => [qw/hl source q/],
-  params => {
-    hl => [qw/en en/],
-    source => ['hp'],
-    q => [qw/testing+%3D/]
-  },
-  path => '/search',
-  host => 'www.google.co.uk',
-  port => 80,
-  db_params => {}
-});
+SKIP : {
+  skip 'Skipping real-life tests as we expect URI encoding/decoding', 2 if ! $Bio::EnsEMBL::Utils::URI::URI_ESCAPE;
+  assert_parsing('http real life params','http://www.google.co.uk:80/search?hl=en&source=hp&q=testing+%3D&hl=en',{
+    scheme => 'http',
+    param_keys => [qw/hl source q/],
+    params => {
+      hl => [qw/en en/],
+      source => ['hp'],
+      q => [qw/testing+=/]
+    },
+    path => '/search',
+    host => 'www.google.co.uk',
+    port => 80,
+    db_params => {}
+  });
+}
 
 assert_parsing('File path','file:///my/path',{
   scheme => 'file',
