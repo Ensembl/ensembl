@@ -5,6 +5,7 @@ use warnings;
 
 use DBI qw( :sql_types );
 use Getopt::Long qw( :config no_ignore_case );
+use POSIX;
 
 local $| = 1;
 
@@ -27,7 +28,7 @@ my $dbpattern;
 
 my $core     = 0;
 my $verbose  = 0;
-my $dumppath; 
+my $dumppath;
 
 # Do command line parsing.
 if ( !GetOptions( 'mhost|mh=s'     => \$mhost,
@@ -44,15 +45,15 @@ if ( !GetOptions( 'mhost|mh=s'     => \$mhost,
                   'table|t=s'      => \@tables,
                   'verbose|v!'     => \$verbose,
                   'core=i'         => \$core,
-		  'dumppath|dp=s'   => \$dumppath)
+                  'dumppath|dp=s'  => \$dumppath )
      || !(
            defined($host)
         && defined($user)
         && defined($pass)
         && ( defined($dbname) || defined($dbpattern) || defined($core) )
         && defined($mhost)
-        && defined($muser) 
-        && defined($dumppath)) )
+        && defined($muser)
+        && defined($dumppath) ) )
 {
   my $indent = ' ' x length($0);
   print <<USAGE_END;
@@ -81,7 +82,8 @@ Usage:
                     e.g. --database="homo_sapiens_rnaseq_62_37g"
                     or   --database="%core_62%"
 
-  -dp / --dumppath  Dumpout path. Dump out tables into the specified directory path
+  -dp / --dumppath  Dumpout path. Dump out tables into the specified
+                    directory path.
 
   --pattern         User database by Perl regular expression
                     e.g. --pattern="^homo.*(rnaseq|vega)_62"
@@ -198,44 +200,33 @@ my %data;
       my $key_name = $table . '_id';
 
 
-      # check if table exists
-      my $test_sql = "select count(1) from information_schema.tables where table_schema = ? and table_name = ?";
-      my $test_sth = $dbh->prepare($test_sql);
-      $test_sth->execute($dbname, $table);
-      my ($table_exists) = $test_sth->fetchrow_array();
-      if ($table_exists) {
-      	my $file_path = $dumppath . "/" . $dbname . $table .'.sql';
-      	my $file_exists = 0;
-	my $response;
-	if (-e $file_path) {
-        	print("file $file_path already exists, overwrite? (y/n)\n");
-		$file_exists = 1;
-		$response = <>;
-		chomp $response;
-	}
-	if ( !$file_exists or $response eq 'y') {
-		open(BKUPFILE, ">$file_path") or die("Failed to open file $file_path for writing\n");   
-      		my $cmd = "mysqldump -h $host -u $user -p$pass $dbname $table";
-      		my $result = `$cmd`;
-      		print BKUPFILE $result;
-      		close BKUPFILE;
-      		if ($result !~ /Dump completed/) { 
-	  		print("back up failed, check file $file_path for details\n");
-	  		next;
-      		} else {
-	  		print("$full_table_name dumped out to file $file_path\n");
-      		}
-	} else {
-          print("skipping update for table $table\n");
-	  next; 
-	}
-      } else {
-	  print("table $table does not exist in database $dbname\n");
-          next;
+      if ( defined($dumppath) ) {
+        # Backup the table on file.
+        my $filename = sprintf( "%s/%s_%s-%s.sql",
+                                $dumppath,
+                                $dbname, $table,
+                                strftime( "%Y%m%d-%H%M%S", localtime() )
+        );
+
+        if ( -e $file_path ) {
+          die( sprintf( "File '%s' already exists.", $filename ) );
+        }
+
+        printf( "Backing up table %s on file.\n", $table );
+        printf( "--> %s\n",                       $filename );
+
+        system( "mysqldump",
+                "--host=$host",
+                "--port=$port",
+                "--user=$user",
+                ( defined($pass) ? "--password=$pass" : "--opt" ),
+                "--result-file=$filename",
+                "$dbname",
+                "$table" );
       }
+
       $dbh->do(
            sprintf( 'DROP TABLE IF EXISTS %s', $full_table_name_bak ) );
-
 
       # Make a backup of any existing data.
       $dbh->do( sprintf( 'CREATE TABLE %s LIKE %s',
