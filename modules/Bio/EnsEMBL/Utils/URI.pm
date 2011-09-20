@@ -464,6 +464,7 @@ sub _decode_sqlite {
     }
     else {
       my $new_file = pop(@splitdirs);
+      $new_file ||= q{};
       my $new_path = File::Spec->catpath($volume, File::Spec->catdir(@splitdirs), $new_file);
       if($new_path ne File::Spec->rootdir() && -f $new_path) {
         $dbname = $new_path;
