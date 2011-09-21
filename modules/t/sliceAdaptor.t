@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 129;
+use Test::More tests => 159;
 
 use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::DBSQL::SliceAdaptor;
@@ -458,6 +458,14 @@ test_toplevel_location('1:..10', 'chromosome', '1', 1, 10);
 test_toplevel_location('1:100', 'chromosome', '1', 100, 246874334);
 test_toplevel_location('1:', 'chromosome', '1', 1, 246874334);
 test_toplevel_location('1', 'chromosome', '1', 1, 246874334);
+
+test_toplevel_location('1: 1-1,000', 'chromosome', '1', 1, 1000);
+test_toplevel_location('1: 1-1,000,000', 'chromosome', '1', 1, 1000000);
+test_toplevel_location('1: 1-1 000 000', 'chromosome', '1', 1, 1000000);
+test_toplevel_location('1: 1', 'chromosome', '1', 1, 246874334);
+test_toplevel_location('1: -10', 'chromosome', '1', 1, 10);
+test_toplevel_location('1: 100', 'chromosome', '1', 100, 246874334);
+
 dies_ok { $slice_adaptor->fetch_by_toplevel_location(); } 'Checking calling without a location fails';
 dies_ok { $slice_adaptor->fetch_by_toplevel_location(''); } 'Checking calling with a blank location fails';
 ok(!defined $slice_adaptor->fetch_by_toplevel_location('wibble'), 'Checking with a bogus region returns undef');
