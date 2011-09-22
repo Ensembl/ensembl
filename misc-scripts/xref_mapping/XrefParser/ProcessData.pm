@@ -232,8 +232,11 @@ DSS
 	}
 	my $new = "XrefParser::$parser"->new($self->database, $verbose);
 	if (
-	    $new->run( $dsn,  $source_id, $species_id,
-		       $name, undef, $verbose ) )
+	    $new->run( { dsn        => $dsn,
+			 source_id  => $source_id,
+			 species_id => $species_id,
+			 name       => $name,
+			 verbose    => $verbose }) )
 	  {
 	    ++$summary{$name}->{$parser};
 	  }
@@ -328,7 +331,7 @@ DSS
 	
       eval "require XrefParser::$parser";
       $@ && carp( "[ERROR] Cannot require $parser: $@" );
-      my $new = "XrefParser::$parser"->new($self->database, $verbose);
+      my $new = "XrefParser::$parser"->new($self->database, $verbose);###########
 
       if ( defined $release_url ) {
 	# Run with $release_url.
