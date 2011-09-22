@@ -287,12 +287,18 @@ sub run {
               # for this source.
               if ( $dbxref_name eq 'bdgpinsituexpr' ) {
                 $xref_id =
-                  $self->add_xref( $id, undef, $accession, '',
-                                   $source_id, $species_id, 'DIRECT' );
+                  $self->add_xref({ acc        => $id,
+				    label      => $accession,
+				    source_id  => $source_id,
+				    species_id => $species_id,
+				    info_type  =>'DIRECT'} );
               } else {
                 $xref_id =
-                  $self->add_xref( $accession, undef, $accession, '',
-                                   $source_id, $species_id, 'DIRECT' );
+                  $self->add_xref({ acc        => $accession,
+				    label      => $accession,
+				    source_id  => $source_id,
+				    species_id => $species_id,
+				    info_type  => 'DIRECT'} );
               }
               $xref_ids{$source_name}{$accession} = $xref_id;
 					}
@@ -318,8 +324,11 @@ sub run {
           $xref_id = $xref_ids{$source_name}{$accession};
         } else {
           $xref_id =
-            $self->add_xref( $accession, undef, $accession, '',
-                             $source_id, $species_id ,'DIRECT');
+            $self->add_xref({ acc        => $accession,
+			      label      => $accession,
+			      source_id  => $source_id,
+			      species_id => $species_id,
+			      info_type  => 'DIRECT'} );
           $xref_ids{$source_name}{$accession} = $xref_id;
         }
 
@@ -343,8 +352,11 @@ sub run {
           $xref_id = $xref_ids{$source_name}{$accession};
         } else {
           $xref_id =
-            $self->add_xref( $accession, undef, $accession, '',
-                             $source_id, $species_id, 'DIRECT' );
+            $self->add_xref({ acc        => $accession,
+			      label      => $accession,
+			      source_id  => $source_id,
+			      species_id => $species_id,
+			      info_type  => 'DIRECT'} );
           $xref_ids{$source_name}{$accession} = $xref_id;
         }
 
@@ -371,8 +383,13 @@ sub run {
         $xref_id = $xref_ids{$source_name}{$accession};
       } else {
         $xref_id =
-          $self->add_xref( $id, undef, $accession, $description, $source_id,
-                           $species_id, 'DIRECT' );
+          $self->add_xref({ acc =>  $id,
+			    label => $accession,
+			    desc => $description,
+			    source_id => $source_id,
+			    species_id => $species_id,
+			    info_type => 'DIRECT'} );
+
         $xref_ids{$source_name}{$accession} = $xref_id;
       }
 
@@ -394,8 +411,11 @@ sub run {
         $xref_id = $xref_ids{$source_name}{$accession};
       } else {
         $xref_id =
-          $self->add_xref( $accession, undef, $accession, '',
-                           $source_id, $species_id, 'DIRECT' );
+          $self->add_xref({ acc        => $accession,
+			    label      => $accession,
+			    source_id  => $source_id,
+			    species_id => $species_id,
+			    onfo_type  => 'DIRECT'} );
         $xref_ids{$source_name}{$accession} = $xref_id;
       }
 

@@ -77,7 +77,14 @@ sub run {
     if($line =~ /(MGI:\d+).*(ENSMUSG\d+)/){
       my $acc = $1;
       my $ensid = $2;
-      my $xref_id = $self->add_xref($acc, $version{$acc}, $label{$acc}, $description{$acc}, $source_id, $species_id, "DIRECT");
+      my $xref_id = $self->add_xref({ acc        => $acc,
+				      version    => $version{$acc},
+				      label      => $label{$acc},
+				      desc       => $description{$acc},
+				      source_id  => $source_id,
+				      species_id => $species_id,
+				      info_type  => "DIRECT"} );
+
       $self->add_direct_xref( $xref_id, $ensid, "Gene", '');
       if(defined($syn_hash->{$acc})){
 	foreach my $syn (@{$syn_hash->{$acc}}){

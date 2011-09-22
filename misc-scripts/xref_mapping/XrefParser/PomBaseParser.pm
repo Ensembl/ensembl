@@ -44,10 +44,10 @@ sub run {
     chomp;
 
     if ($_ =~ /^([^\t]+)\t([^\t]+)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)$/) {
-	    
+
 	    my @line = split(m/\t/ms, $_);
 	    my ($pombase_id, $name, $info_type, $biotype, $external_db_source, $desc, $ensembl_object_type, $synonyms) = undef;
-	    
+
 	    $pombase_id          = $line[0];
 	    $name                = $line[1];
 	    $info_type           = $line[2];
@@ -55,22 +55,34 @@ sub run {
             $external_db_source  = $line[4];
 	    $desc                = $line[5];
 	    $ensembl_object_type = $line[6];
-	    
+
 	    if (scalar @line == 8) {
 	        $synonyms = $line[7];
 	    }
 	    # parse the lines corresponding to the gene entries
 	    # and filter out lines corresponding to the CDS for example
-	   
+
             #print "$ensembl_object_type\n"; 
 	    if ($ensembl_object_type eq 'Gene') {
-	        my $ensembl_xref_id = $self->add_xref($pombase_id,"",$name,$desc,$gene_source_id,$species_id,$info_type);
+	        my $ensembl_xref_id = $self->add_xref({ acc        => $pombase_id,
+							label      => $name,
+							desc       => $desc,
+							source_id  => $gene_source_id,
+							species_id => $species_id,
+							info_type  => $info_type} );
+
 	        $self->add_direct_xref($ensembl_xref_id, $pombase_id, $ensembl_object_type, $info_type);
 	    } elsif ($ensembl_object_type eq 'Transcript') {
-	        my $ensembl_xref_id = $self->add_xref($pombase_id,"",$name,$desc,$transcript_source_id,$species_id,$info_type);
+	        my $ensembl_xref_id = $self->add_xref({ acc        => $pombase_id,
+							label      => $name,
+							desc       => $desc,
+							source_id  => $transcript_source_id,
+							species_id => $species_id,
+							info_type  => $info_type} );
+
 	        $self->add_direct_xref($ensembl_xref_id, $pombase_id, $ensembl_object_type, $info_type);
 	    }
-	    
+
 	    $xref_count++;
 	    if ($synonyms) {
 	   	 my (@syn) = split(/,/,$synonyms);

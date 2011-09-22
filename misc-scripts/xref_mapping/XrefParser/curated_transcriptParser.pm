@@ -7,6 +7,7 @@ use File::Basename;
 
 use base qw( XrefParser::BaseParser );
 
+use XrefParser::Database;
 use Bio::EnsEMBL::Registry;
 my $reg = "Bio::EnsEMBL::Registry";
 
@@ -101,12 +102,25 @@ sub run_script {
   my $core_dbc;
   if(defined($vdbname)){
     print "Using $host $vdbname for Vega and cdbname for Core\n";
-    $vega_dbc = $self->dbi2($vhost, $vport, $vuser, $vdbname, $vpass);
+
+    my $vega_db =  XrefParser::Database->new({ host   => $vhost,
+					       port   => $vport,
+					       user   => $vuser,
+					       dbname => $vdbname,
+					       pass   => $vpass});
+
+    $vega_dbc = $vega_db->dbi;
     if(!defined($vega_dbc)){
       print "Problem could not open connectipn to $vhost, $vport, $vuser, $vdbname, $vpass\n";
       return 1;
     }
-    $core_dbc = $self->dbi2($chost, $cport, $cuser, $cdbname, $cpass);
+
+    my $core_db =  XrefParser::Database->new({ host   => $chost,
+					       port   => $cport,
+					       user   => $cuser,
+					       dbname => $cdbname,
+					       pass   => $cpass});
+    $core_dbc = $core_db->dbi;
     if(!defined($core_dbc)){
       print "Problem could not open connectipn to $chost, $cport, $cuser, $cdbname, $cpass\n";
       return 1;
@@ -189,7 +203,11 @@ sub run_script {
 # number is no longer the clone version but the gene number so we need to keep it now.
 #        $name =~ s/[.]\d+//;    #remove .number  #
       }
-      my $xref_id = $self->add_xref($name, "" , $name , "", $id, $species_id, "DIRECT");
+      my $xref_id = $self->add_xref({ acc        => $name,
+				      label      => $name,
+				      source_id  => $id,
+				      species_id => $species_id,
+				      info_type  => "DIRECT"} );
       $xref_count++;
       
       $self->add_direct_xref($xref_id, $ott_to_enst{$ott}, "transcript", "");

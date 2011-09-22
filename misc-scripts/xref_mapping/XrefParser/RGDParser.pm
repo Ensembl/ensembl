@@ -103,8 +103,12 @@ sub run {
     }
 
     if(!$done){
-#      print STDERR "$rgd FAILED for $failed_list\n";
-      $self->add_xref($rgd,"",$symbol,$name,$source_id,$species_id,"MISC");
+      $self->add_xref({ acc        => $rgd,
+			label      => $symbol,
+			desc       => $name,
+			source_id  => $source_id,
+			species_id => $species_id,
+			info_type  => "MISC"} );
       $mismatch++;
     }
 
@@ -112,9 +116,11 @@ sub run {
 
   $rgd_io->close();
 
-  print "\t$count xrefs succesfully loaded and dependent on refseq\n" if($verbose);
-  print "\t$mismatch xrefs added but with NO dependencies\n" if($verbose);
-  print "added $syn_count synonyms\n" if($verbose);
+  if($verbose){
+    print "\t$count xrefs succesfully loaded and dependent on refseq\n";
+    print "\t$mismatch xrefs added but with NO dependencies\n";
+    print "added $syn_count synonyms\n";
+  }
   return 0;
 }
 

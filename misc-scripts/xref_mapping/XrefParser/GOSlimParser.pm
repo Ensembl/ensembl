@@ -83,7 +83,12 @@ sub run_script {
 
     if(defined($go{$term_acc})){
       foreach my $go_xref_id (@{$go{$term_acc}}) {
-	my $xref_id = $self->add_xref($subterm_acc, undef, $subterm_acc, $desc, $source_id, $species_id, "DEPENDENT");
+	my $xref_id = $self->add_xref({ acc        => $subterm_acc,
+					label      => $subterm_acc,
+					desc       => $desc,
+					source_id  => $source_id,
+					species_id => $species_id,
+					info_type  => "DEPENDENT"} );
 	$add_dependent_xref_sth->execute($go_xref_id, $xref_id);
 	$count++;
       }

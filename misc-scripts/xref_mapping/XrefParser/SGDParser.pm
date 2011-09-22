@@ -72,10 +72,22 @@ sub run {
 	    
 	    my (@syn) = split(/\|/,$alias_name);
 
-	    my $gene_xref_id = $self->add_xref($sgd_id,"",$locus_name,$desc,$gene_source_id,$species_id,"DIRECT");
+	    my $gene_xref_id = $self->add_xref({ acc        => $sgd_id,
+						 label      => $locus_name,
+						 desc       => $desc,
+						 source_id  => $gene_source_id,
+						 species_id => $species_id,
+						 info_type  => "DIRECT"} );
+
 	    $self->add_direct_xref($gene_xref_id, $orf_name, "Gene", "DIRECT");
 
-	    my $transcript_xref_id = $self->add_xref($sgd_id,"",$locus_name,$desc,$transcript_source_id,$species_id,"DIRECT");
+	    my $transcript_xref_id = $self->add_xref({ acc        => $sgd_id,
+						       label      => $locus_name,
+						       desc       => $desc,
+						       source_id  => $transcript_source_id,
+						       species_id => $species_id,
+						       info_type  => "DIRECT"} );
+
 	    $self->add_direct_xref($transcript_xref_id, $orf_name, "Transcript", "DIRECT");
 
 	    $xref_count++;

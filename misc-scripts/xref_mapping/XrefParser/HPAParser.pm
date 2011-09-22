@@ -62,7 +62,13 @@ sub run {
     my $xref_id = $self->get_xref( $antibody_id, $source_id, $species_id );
 
     if ( !defined($xref_id) || $xref_id eq '' ) {
-      $xref_id = $self->add_xref($antibody_id, $version, $label, $description, $source_id, $species_id, "DIRECT");
+      $xref_id = $self->add_xref({ acc        => $antibody_id,
+				   version    => $version,
+				   label      => $label,
+				   desc       => $description,
+				   source_id  => $source_id,
+				   species_id => $species_id,
+				   info_type  => "DIRECT"} );
     }
 	
 	

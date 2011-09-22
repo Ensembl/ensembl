@@ -42,7 +42,12 @@ sub run {
       $withdrawn++;
     }
     else{
-      $self->add_xref($zfin,"",$label,$desc,$source_id,$species_id,"MISC");
+      $self->add_xref({ acc        => $zfin,
+			label      => $label,
+			desc       => $desc,
+			source_id  => $source_id,
+			species_id => $species_id,
+			info_type  => "MISC"} );
       $count++;
     }
   }

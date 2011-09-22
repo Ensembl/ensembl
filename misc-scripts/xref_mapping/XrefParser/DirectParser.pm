@@ -66,11 +66,13 @@ sub run {
 
     if ( !defined($xref_id) || $xref_id eq '' ) {
       $xref_id =
-	$self->add_xref(
-			$accession,   $version,   $label,
-			$description, $source_id, $species_id,
-			"DIRECT"
-		       );
+	$self->add_xref({ acc        => $accession,
+			  version    => $version,
+			  label      => $label,
+			  desc	     => $description,
+			  source_id  => $source_id,
+			  species_id => $species_id,
+			  info_type  => "DIRECT"} );
     }
     $self->add_direct_xref( $xref_id, $ensembl_id,
 					     $type, $accession );

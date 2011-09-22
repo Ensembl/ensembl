@@ -94,8 +94,20 @@ sub run {
     }
     my $symbol = $arr[$gene_symbol_index];
     my $desc   = $arr[$gene_desc_index];
-    $self->add_xref($acc,"",$symbol,$desc,$source_id,$species_id, "DEPENDENT");
-    $self->add_xref($acc,"",$symbol,$desc,$wiki_source_id,$species_id, "DEPENDENT","From EntrezGene $acc");
+
+    $self->add_xref({ acc        => $acc,
+		      label      => $symbol,
+		      desc       => $desc,
+		      source_id  => $source_id,
+		      species_id => $species_id,
+		      info_type  =>"DEPENDENT"} );
+
+    $self->add_xref({ acc        => $acc,
+		      label      => $symbol,
+		      desc       => $desc,
+		      source_id  => $wiki_source_id,
+		      species_id => $species_id,
+		      info_type  => "DEPENDENT" } ); #,"From EntrezGene $acc");
     $xref_count++;
 
     my (@syn) = split(/\|/ ,$arr[$gene_synonyms_index]);

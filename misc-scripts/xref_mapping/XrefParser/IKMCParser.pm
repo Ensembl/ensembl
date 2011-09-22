@@ -176,8 +176,11 @@ XXML
 
     if ( !defined($xref_id) || $xref_id eq '' ) {
       $xref_id =
-	$self->add_xref( $acc,   undef,   $label,
-			 '', $source_id, $species_id, "DIRECT");
+	$self->add_xref({ acc        => $acc,
+			  label      => $label,
+			  source_id  => $source_id,
+			  species_id => $species_id,
+			  info_type  => "DIRECT"} );
     }
     next if(!defined($ensembl_ids{$acc}));
     $direct_count++;

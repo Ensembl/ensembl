@@ -83,7 +83,12 @@ SCD
 
     my $xref_id;
     if (!defined($seen{$display_label})) {
-      $xref_id = $self->add_xref($acc, $version, $display_label, "", $source_id, $species_id, "DIRECT");
+      $xref_id = $self->add_xref({ acc        => $acc,
+				   version    => $version,
+				   label      => $display_label,
+				   source_id  => $source_id,
+				   species_id => $species_id,
+				   info_type  => "DIRECT"} );
       $xref_count++;
       $seen{$display_label} = $xref_id;
     }

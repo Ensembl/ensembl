@@ -68,13 +68,13 @@ sub run {
 				   label       => $symbol,
 				   desc        => $name,
 				   source_id   => $source_id,
-				   species_id  => $species_id});
+				   species_id  => $species_id} );
 
       $self->add_synonyms_for_hgnc( {source_id  => $source_id,
 				     name       => $acc,
 				     species_id => $species_id,
 				     dead       => $previous_symbols,
-				     alias      => $synonyms});
+				     alias      => $synonyms} );
       $name_count{$type}++;
     }
 
@@ -88,9 +88,14 @@ sub run {
     if ($id){              # Ensembl direct xref
       $seen = 1;
       $name_count{$type}++;
-      $self->add_to_direct_xrefs($id,'gene', $acc, $empty,
-						  $symbol, $name, $empty,
-						  $source_id, $species_id);
+      $self->add_to_direct_xrefs({ stable_id  => $id,
+				   type       => 'gene',
+				   acc        => $acc,
+				   label      => $symbol,
+				   desc       => $name,,
+				   source_id  => $source_id,
+				   species_id => $species_id} );
+
       $self->add_synonyms_for_hgnc( {source_id  => $source_id,
 				     name       => $acc,
 				     species_id => $species_id,
@@ -182,7 +187,13 @@ sub run {
     if(!$seen){ # Store to keep descriptions etc
       $type = 'desc_only';
       $source_id = $name_to_source_id->{$type};
-      $self->add_xref($acc, $empty, $symbol, $name, $source_id, $species_id, "MISC");
+      $self->add_xref({ acc        => $acc,
+			label      => $symbol,
+			desc       => $name,
+			source_id  => $source_id,
+			species_id => $species_id,
+			info_type  => "MISC"} );
+
       $self->add_synonyms_for_hgnc( {source_id  => $source_id,
 				     name       => $acc,
 				     species_id => $species_id,

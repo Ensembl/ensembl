@@ -84,7 +84,13 @@ sub run {
         my $xref_id = $self->get_xref( $dbass_gene_id, $source_id, $species_id );
 
         if ( !defined($xref_id) || $xref_id eq '' ) {
-            $xref_id = $self->add_xref($dbass_gene_id, $version, $label, $description, $source_id, $species_id, "DIRECT");
+            $xref_id = $self->add_xref({ acc        => $dbass_gene_id,
+					 version    => $version,
+					 label      => $label,
+					 desc       => $description,
+					 source_id  => $source_id,
+					 species_id => $species_id,
+					 info_type => "DIRECT"} );
         }
 	
 	$self->add_direct_xref( $xref_id, $ensembl_id, $type, '');

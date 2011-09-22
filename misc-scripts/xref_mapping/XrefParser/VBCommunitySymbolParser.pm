@@ -43,7 +43,12 @@ sub run {
 
     my $xref_id = $self->get_xref($acc,$source_id, $species_id);
     if(!defined($xref_id)){
-      $xref_id = $self->add_xref($acc,"", $acc, $full_description, $source_id, $species_id, "DIRECT");
+      $xref_id = $self->add_xref({ acc        => $acc,
+				   label      => $acc,
+				   desc       => $full_description,
+				   source_id  => $source_id,
+				   species_id => $species_id,
+				   info_type  =>  "DIRECT"} );
       $count++;
     }
     if(defined($gene_id) and $gene_id ne "-"){

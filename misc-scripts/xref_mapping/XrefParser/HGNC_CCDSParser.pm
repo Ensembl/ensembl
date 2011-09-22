@@ -162,7 +162,7 @@ SQL
     }
   }
   $sth->finish;
- 
+
   my $xref_count = 0;
   my $no_ccds_to_hgnc = 0;
   my $direct_count = 0;
@@ -170,8 +170,13 @@ SQL
     if(defined($ccds_to_hgnc{$ccds})){
       my $hgnc = $ccds_to_hgnc{$ccds};
       $hgnc =~ s/HGNC://;
-      my $xref_id = $self->add_xref($hgnc, $version{$hgnc} , $label{$hgnc}||$hgnc , 
-				      $description{$hgnc}, $source_id, $species_id, "DIRECT");
+      my $xref_id = $self->add_xref({ acc        => $hgnc,
+				      version    => $version{$hgnc} ,
+				      label      => $label{$hgnc}||$hgnc ,
+				      desc       => $description{$hgnc},
+				      source_id  => $source_id,
+				      species_id => $species_id,
+				      info_type  => "DIRECT"} );
 
       foreach my $stable_id (@{$ccds_to_stable_id{$ccds}}){
 	$self->add_direct_xref($xref_id, $stable_id, "Transcript", "");

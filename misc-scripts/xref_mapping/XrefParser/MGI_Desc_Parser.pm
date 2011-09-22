@@ -48,7 +48,12 @@ sub run {
     
       my $type = pop @part_desc; # last array element is the type.
       my $desc= join(" ",@part_desc);
-      $acc_to_xref{$acc} = $self->add_xref($acc,"",$label,$desc,$source_id,$species_id,"MISC");
+      $acc_to_xref{$acc} = $self->add_xref({ acc        => $acc,
+					     label      => $label,
+					     desc       => $desc,
+					     source_id  => $source_id,
+					     species_id => $species_id,
+					     info_type  => "MISC"} );
       if($verbose and $desc eq ""){
 	print "$acc has no description\n";
       }

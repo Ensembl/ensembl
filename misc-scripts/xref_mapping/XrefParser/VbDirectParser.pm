@@ -41,7 +41,13 @@ sub run {
 
     my $xref_id = $self->get_xref($probe, $source_id, $species_id);
     if (!defined($xref_id) || $xref_id eq "") {
-      $xref_id = $self->add_xref($probe, 1, $probe, $description, $source_id, $species_id, "DIRECT");
+      $xref_id = $self->add_xref({ acc        => $probe,
+				   version    => 1,
+				   label      => $probe,
+				   desc       => $description,
+				   source_id  => $source_id,
+				   species_id => $species_id,
+				   info_type  =>"DIRECT"} );
     }
     $self->add_direct_xref($xref_id, $ensembl_id, $type, $probe);
   }

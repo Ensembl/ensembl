@@ -85,7 +85,7 @@ sub run {
     $get_desc_sth->bind_columns(\$old_xref_id, \$version, \$label, \$description);
     $get_desc_sth->fetch;
     if(!defined($old_xref_id)){
-      print STDERR "Could not find $key in the database\n" if ($err_count <10);
+      print "Could not find $key in the database\n" if ($err_count <10);
       $err_count++;
       next;
     }
@@ -109,7 +109,13 @@ sub run {
     # Add the new xref
     #
 
-    my $xref_id = $self->add_xref($key, $version, $label, $description, $source_id, $species_id, "DIRECT");
+    my $xref_id = $self->add_xref({ acc        => $key,
+				    version    => $version,
+				    label      => $label,
+				    desc       => $description,
+				    source_id  => $source_id,
+				    species_id => $species_id,
+				    info_type  => "DIRECT"} );
 
 
     #

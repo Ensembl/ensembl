@@ -82,7 +82,11 @@ SQL
 
   my $xref_count = 0;
   foreach my $ott (keys %ott_to_enst){
-    my $xref_id = $self->add_xref($ott, "" , $ott , "", $source_id, $species_id, "DIRECT");
+    my $xref_id = $self->add_xref({ acc        => $ott,
+				    label      => $ott,
+				    source_id  => $source_id,
+				    species_id => $species_id,
+				    info_type  => "DIRECT"} );
     $xref_count++;
     $self->add_direct_xref($xref_id, $ott_to_enst{$ott}, "transcript", "");
   }

@@ -12,7 +12,8 @@ use base qw( XrefParser::DatabaseParser );
 
 sub run {
   my ($self, $ref_arg) = @_;
-  my $source_id    = $ref_arg->{source_id};
+
+  my $source_id    = $ref_arg->{source_id} || confess "Need a source_id";
   my $species_id   = $ref_arg->{species_id};
   my $dsn          = $ref_arg->{dsn};
   my $verbose      = $ref_arg->{verbose};
@@ -26,12 +27,15 @@ sub run {
   my $xref_db = $self->dbi();
 
   my $xref_sth = $xref_db->prepare( "INSERT INTO xref (accession,label,source_id,species_id) VALUES (?,?,?,?)" );
-  my $direct_xref_sth = $xref_db->prepare( "INSERT INTO direct_xref (general_xref_id,ensembl_stable_id,type,linkage_xref) VALUES (?,?,?,?)" );
+
 
   # read stable IDs
   foreach my $type ('gene', 'transcript') {
 
-    print "Building xrefs from $type stable IDs\n" if($verbose);
+    my $direct_xref_sth = $xref_db->prepare( "INSERT INTO ${type}_direct_xref (general_xref_id,ensembl_stable_id,linkage_xref) VALUES (?,?,?)" );
+    if($verbose) { 
+      print "Building xrefs from $type stable IDs\n";
+    }
 
     my $wb_source_id = $self->get_source_id_for_source_name("wormbase_$type");
 
@@ -44,7 +48,7 @@ sub run {
       # add an xref & a direct xref
       $xref_sth->execute($id, $id, $wb_source_id, $species_id);
       my $xref_id = $xref_sth->{'mysql_insertid'};
-      $direct_xref_sth->execute($xref_id, $id, $type, "Stable ID direct xref");
+      $direct_xref_sth->execute($xref_id, $id, 'Stable ID direct xref');
 
     } # while fetch stable ID
 

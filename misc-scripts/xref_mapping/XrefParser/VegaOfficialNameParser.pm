@@ -289,7 +289,14 @@ EXT
       my $version ="";
       $line_count++;
       if(!defined($acc{$ext})){
-	my $xref_id = $self->add_xref($ext, $version{$ext} , $label{$ext}||$ext , $description{$ext}, $source_id, $species_id, "DIRECT");
+	my $xref_id = $self->add_xref({ acc        => $ext,
+					version    => $version{$ext} ,
+					label      => $label{$ext}||$ext ,
+					desc       => $description{$ext},
+					source_id  => $source_id,
+					species_id => $species_id,
+					info_type  => "DIRECT"} );
+
 	$acc{$ext} = $xref_id;
 	$xref_count++;
 	if ((defined($xref_id)) and ($at_least_1_xref_loaded == 0)){

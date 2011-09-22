@@ -54,7 +54,11 @@ sub run {
     $xref_sth->execute($wb);
     my $xref_id = ($xref_sth->fetchrow_array())[0];
     if (!$xref_id) {
-      $xref_id = $self->add_xref($wb, undef, $wb, "", $worm_source_id, $species_id);
+      $xref_id = $self->add_xref({ acc        => $wb,
+				   label      => $wb,
+				   source_id  => $worm_source_id,
+				   species_id => $species_id,
+				   info_type  => "DIRECT"} );
       $x_count++;
     }
     # and direct xref
@@ -65,7 +69,11 @@ sub run {
       $xref_sth2->execute($display);
       my $xref_id2 = ($xref_sth2->fetchrow_array())[0];
       if (!$xref_id2) {
-	$xref_id2 = $self->add_xref($display, undef, $display, "", $worm_locus_id, $species_id);
+	$xref_id2 = $self->add_xref({ acc        => $display,
+				      label      => $display,
+				      source_id  => $worm_locus_id,
+				      species_id => $species_id,
+				      info_type  => "DIRECT" });
 	$x_count++;
       }
       # and direct xref

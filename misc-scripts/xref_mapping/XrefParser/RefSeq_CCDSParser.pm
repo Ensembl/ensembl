@@ -190,8 +190,13 @@ CCDS
 #      if($refseq =~ /^XM/){
 #	$new_source_id = $dna_pred;
 #      }
-      my $xref_id = $self->add_xref($refseq, $version{$refseq} , $label{$refseq}||$refseq , 
-				    $description{$refseq}, $new_source_id, $species_id, "DIRECT");
+      my $xref_id = $self->add_xref({ acc        => $refseq,
+				      version    => $version{$refseq} ,
+				      label      => $label{$refseq}||$refseq ,
+				      desc       => $description{$refseq},
+				      source_id  => $new_source_id,
+				      species_id => $species_id,
+				      info_type  => "DIRECT"} );
 
 
       foreach my $stable_id (@{$internal_to_stable_id{$internal_id}}){

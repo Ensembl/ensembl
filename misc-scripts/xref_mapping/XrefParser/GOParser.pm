@@ -29,36 +29,38 @@ sub run {
   # Get the descriptions from the desc file.
   #
 
-  my $go_desc_io = $self->get_filehandle($file_desc);
-
-  if ( !defined $go_desc_io ) {
-    print STDERR "ERROR: Could not open description file, $file_desc\n";
-    return 1;    # 1 error
-  }
-
   my %go_to_desc;
-  print "description file for GO\n" if($verbose);
-  my $term = undef;
-  my $desc = undef;
-  while ( $_ = $go_desc_io->getline() ) {
-    if(/\<id\>   # start of id tag
-       (GO:\d+)  # GO: followed by the id
-       \<\/id\>  # end of id tag
-       /x){
-      $term = $1;
-    }
-    elsif(/\<name\>   # start of name tag
-	   (.*)       # the name we want
-	   \<\/name\> # end of name tag
-	   /x){
-      if(defined($term)){
-        $go_to_desc{$term} = $1;
-      } 
-      $term = undef;
-    }
-  }
-  $go_desc_io->close();
+  if($file_desc){
+    my $go_desc_io = $self->get_filehandle($file_desc);
 
+    if ( !defined $go_desc_io ) {
+      print STDERR "ERROR: Could not open description file, $file_desc\n";
+      return 1;    # 1 error
+    }
+
+
+    print "description file for GO\n" if($verbose);
+    my $term = undef;
+    my $desc = undef;
+    while ( $_ = $go_desc_io->getline() ) {
+      if(/\<id\>   # start of id tag
+	  (GO:\d+)  # GO: followed by the id
+	  \<\/id\>  # end of id tag
+	  /x){
+	$term = $1;
+      }
+      elsif(/\<name\>   # start of name tag
+	     (.*)       # the name we want
+	     \<\/name\> # end of name tag
+	     /x){
+	if(defined($term)){
+	  $go_to_desc{$term} = $1;
+	} 
+	$term = undef;
+      }
+    }
+    $go_desc_io->close();
+  }
 
   my %wrongtype;
 
@@ -81,6 +83,7 @@ sub run {
 
   my %worm;
   my $wormset;
+  my $worm_separator;
 
   my %fish;
   my $fishset;
@@ -163,7 +166,8 @@ sub run {
 	#WB      CE20707 ZYG-9           GO:0008017      WB:WBPaper00003099|PMID:9606208 ISS             F                       protein  taxon:6239      20030829        WB
 	if(!defined($wormset)){
 	  $wormset = 1;
-	  %worm = %{$self->get_valid_xrefs_for_direct_xrefs('worm')};
+	  $worm_separator = qw{::};
+	  %worm = %{$self->get_valid_xrefs_for_direct_xrefs('worm', $worm_separator)};
 	}
 	my $worm_acc=$array[1];
 	if(!defined($worm{$worm_acc})){ 
@@ -176,13 +180,17 @@ sub run {
 	}
 	
 	if(defined($worm{$worm_acc})){
-	  my ($xref_id, $stable_id, $type, $link) = split(/::/x,$worm{$worm_acc});
+	  my ($xref_id, $stable_id, $type, $link) = split(/$worm_separator/x,$worm{$worm_acc});
 
 	  my $new_xref_id = $self->get_xref($array[4],$source_id, $species_id);
 
 	  if(!defined($new_xref_id)){
 	    $new_xref_id = 
-	      $self->add_xref($array[4],undef,$array[4],"", $source_id, $species_id, "DIRECT");
+	      $self->add_xref({ acc        => $array[4],
+				label      => $array[4],
+				source_id  => $source_id,
+				species_id => $species_id,
+				info_type  => "DIRECT"} );
 	    $count++;
 	  }
 	  if(!defined($self->get_direct_xref($stable_id,$type, $array[6]))){

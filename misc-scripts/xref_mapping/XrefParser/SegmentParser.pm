@@ -37,10 +37,14 @@ sub run {
 
     my $xref_id = $self->get_xref($acc,$source_id, $species_id);
     if(!defined($xref_id)){
-      $xref_id = $self->add_xref($acc,"",$acc,$description,$source_id, $species_id, "DIRECT");
+      $xref_id = $self->add_xref({ acc        => $acc,
+				   label      => $acc,
+				   desc       => $description,
+				   source_id  => $source_id, 
+				   species_id => $species_id, 
+				   info_type  => "DIRECT"} );
       $added++;
     }
-#    print "$acc, $xref_id, $gene_id\n";
     $self->add_direct_xref($xref_id, $gene_id, "Gene", "");
 
   }

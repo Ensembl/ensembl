@@ -72,17 +72,38 @@ sub run {
 	$label = substr($label,0,35)." [".$type."]";
 	if($type eq "*"){ # gene only
 	  $gene++;
-	  $self->add_xref($number,"",$label,$long_desc,$gene_source_id,$species_id,"DEPENDENT");
+	  $self->add_xref({ acc        => $number,
+			    label      => $label,
+			    desc       => $long_desc,
+			    source_id  => $gene_source_id,
+			    species_id => $species_id,
+			    info_type  => "DEPENDENT"} );
 	}
 	elsif((!defined $type) or ($type eq "") or ($type eq "#") or ($type eq "%")){ #phenotype only
 	  $phenotype++;
-	  $self->add_xref($number,"",$label,$long_desc,$morbid_source_id,$species_id,"DEPENDENT");
+	  $self->add_xref({ acc        => $number,
+			    label      => $label,
+			    desc       => $long_desc,
+			    source_id  => $morbid_source_id,
+			    species_id => $species_id,
+			    info_type  => "DEPENDENT"} );
 	}
 	elsif($type eq "+"){ # both
 	  $gene++;
  	  $phenotype++;
-	  $self->add_xref($number,"",$label,$long_desc,$gene_source_id,$species_id,"DEPENDENT");
-	  $self->add_xref($number,"",$label,$long_desc,$morbid_source_id,$species_id,"DEPENDENT");
+	  $self->add_xref({ acc        => $number,
+			    label      => $label,
+			    desc       => $long_desc,
+			    source_id  => $gene_source_id,
+			    species_id => $species_id,
+			    info_type  => "DEPENDENT"} );
+
+	  $self->add_xref({ acc        => $number,
+			    label      => $label,
+			    desc       => $long_desc,
+			    source_id  => $morbid_source_id,
+			    species_id => $species_id,
+			    info_type  => "DEPENDENT"} );
 	}
 	elsif($type eq "^"){
 	  if(/\*FIELD\*\sTI\n[\^]\d+ MOVED TO (\d+)/){

@@ -91,7 +91,12 @@ SQL
     }
     my $xref_id = $self->get_xref($acc,$source{$source_name}, $species_id);
     if(!defined($xref_id)){
-      $xref_id = $self->add_xref($acc,"",$label,$description,$source{$source_name}, $species_id,"DIRECT");
+      $xref_id = $self->add_xref({ acc        => $acc,
+				   label      => $label,
+				   desc       => $description,
+				   source_id  => $source{$source_name},
+				   species_id => $species_id,
+				   info_type  => "DIRECT"} );
       $added++;
     }
     my $transcript_id = $transcript_dbid;
