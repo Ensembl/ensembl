@@ -1,11 +1,7 @@
 use strict;
 use warnings;
 
-
-BEGIN { $| = 1;
-	use Test;
-	plan tests => 60;
-}
+use Test::More tests => 63;
 
 use Bio::EnsEMBL::Test::TestUtils;
 
@@ -153,6 +149,8 @@ ok($name eq "chromosome:NCBI33:$CHR:$START:$END:$STRAND");
 #
 ok($slice->length == ($END-$START + 1));
 
+# Test exception name
+is($slice->assembly_exception_type(), 'REF', 'Type of region is REF');
 
 #
 # Test get_attributes
@@ -437,3 +435,11 @@ $slice = $slice_adaptor->fetch_by_region('chromosome', 1, 1, 10);
 ok(@alt_names == 1);
 
 $multi->restore();
+
+
+#Test assembly exception type on HAP
+my $hap_slice = $slice_adaptor->fetch_by_region(undef, '20_HAP1');
+is($hap_slice->assembly_exception_type(), 'HAP', 'Ensuring haplotype regions are HAP');
+my $chr_one_slice = $slice_adaptor->fetch_by_region('chromosome', '1', 1, 10);
+is($chr_one_slice->assembly_exception_type(), 'REF', 'Ensuring reference regions are REF');
+

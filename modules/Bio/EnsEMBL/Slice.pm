@@ -673,6 +673,34 @@ sub subseq {
   return $subseq;
 }
 
+=head2 assembly_exception_type
+
+  Example     : $self->assembly_exception_type(); 
+  Description : Returns the type of slice this is. If it is reference then you
+                will get 'REF' back. Otherwise you will get the first
+                element from C<get_all_AssemblyExceptionFeatures()>. If no
+                assembly exception exists you will get an empty string back.
+  Returntype  : String
+  Exceptions  : None
+  Caller      : Public
+  Status      : Beta
+
+=cut
+
+sub assembly_exception_type {
+  my ($self) = @_;
+  my $type = q{};
+  if($self->is_reference()) {
+    $type = 'REF';
+  }
+  else {
+    my $assembly_exceptions = $self->get_all_AssemblyExceptionFeatures();
+    if(@{$assembly_exceptions}) {
+      $type = $assembly_exceptions->[0]->type();
+    }
+  }
+  return $type;
+}
 
 
 =head2 get_base_count

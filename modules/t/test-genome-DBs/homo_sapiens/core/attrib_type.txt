@@ -15,3 +15,4 @@
 15	_rna_edit	RNA editing	\N
 16	_selenocysteine	Selenocysteine	\N
 17	codon_table	Codon Table	Alternate codon table
+18	non_ref	Non Reference	Non Reference Sequence Region
