@@ -19,7 +19,7 @@ sub new
   $self->dbname($arg_ref->{dbname});
   $self->user($arg_ref->{user});
   $self->pass($arg_ref->{pass} || '');
-  $self->port($arg_ref->{port} || 3306);
+  $self->port($arg_ref->{port} || '3306');
   $self->verbose($arg_ref->{verbose});
 
   return $self;
@@ -169,14 +169,14 @@ sub create {
     if (!$drop_db ) {
       my $p;
       if($force){
-	$p = "yes";
+	$p = 'yes';
       }
       else{
 	print "WARNING: about to drop database $dbname on $host:$port; yes to confirm, otherwise exit: ";
 	$p = <ARGV>;
       }
       chomp $p;
-      if ($p eq "yes") {
+      if ($p eq 'yes') {
 	$dbh->do( "DROP DATABASE $dbname" );
 	print "Removed existing database $dbname\n" if($self->verbose);
       } else {
@@ -185,11 +185,11 @@ sub create {
       }
     } else {
       croak(  "Database $dbname already exists. "
-            . "Use -create option to overwrite it." );
+            . 'Use -create option to overwrite it.' );
     }
   }
 
-  $dbh->do( "CREATE DATABASE " . $dbname );
+  $dbh->do( 'CREATE DATABASE ' . $dbname );
 
   my $table_file = catfile( $sql_dir, 'sql', 'table.sql' );
 
