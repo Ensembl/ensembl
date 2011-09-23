@@ -74,47 +74,47 @@ Usage:
   $indent [-t table] [-t table] [-t ...] \\
   $indent [-v]
 
-  -h / --host       User database server host
-  -P / --port       User database server port (optional, default is 3306)
+  -h / --host       User database server host.
+  -P / --port       User database server port (optional, default is 3306).
 
-  -u / --user       User username (must have write-access)
-  -p / --pass       User password
+  -u / --user       User username (must have write-access).
+  -p / --pass       User password.
 
-  -d / --database   User database name or SQL pattern
+  -d / --database   User database name or SQL pattern,
                     e.g. --database="homo_sapiens_rnaseq_62_37g"
-                    or   --database="%core_62%"
+                    or   --database="%core_62%".
 
-  -dp / --dumppath  Dumpout path. Dump out tables into the specified
-                    directory path.
+  -dp / --dumppath  Dump path.
+                    Back-up tables into the specified directory path.
 
-  --pattern         User database by Perl regular expression
-                    e.g. --pattern="^homo.*(rnaseq|vega)_62"
+  --pattern         User database by Perl regular expression,
+                    e.g. --pattern="^homo.*(rnaseq|vega)_62".
 
                     (-d/--database and --pattern are mutually exclusive)
 
-  --core=NN         Preset pattern for Core-like databases in relase NN
+  --core=NN         Preset pattern for Core-like databases in relase NN.
                     Specifying --core=62 is equivalent to using
-                    --pattern="(cdna|core|otherfeatures|rnaseq|vega)_62"
+                    --pattern="(cdna|core|otherfeatures|rnaseq|vega)_62".
 
   -mh / --mhost     Production database server host
-                    (optional, default is 'ens-staging1')
+                    (optional, default is 'ens-staging1').
   -mP / --mport     Production database server port
-                    (optional, default is 3306)
+                    (optional, default is 3306).
 
   -mu / --muser     Production database username (no write-access required)
-                    (optional, default is 'ensro')
+                    (optional, default is 'ensro').
   -mp / --mpass     Production database password
-                    (optional, default is undefined)
+                    (optional, default is undefined).
 
   -md / --mdatabase Production database name
-                    (optional, default is 'ensembl_production')
+                    (optional, default is 'ensembl_production').
 
   -t / --table      A specific table to update, may occur several times,
                     must be one of the tables attrib_type, external_db,
-                    misc_set, or unmapped_reason
+                    misc_set, or unmapped_reason.
 
   -v / --verbose    Be verbose, display every SQL statement as they
-                    are executed (on standard error)
+                    are executed (on standard error).
 
 
 USAGE_END
