@@ -54,6 +54,7 @@ use Bio::EnsEMBL::Utils::Iterator;
 
 our $SLICE_FEATURE_CACHE_SIZE    = 4;
 our $MAX_SPLIT_QUERY_SEQ_REGIONS = 3;
+our $SILENCE_CACHE_WARNINGS = 0;
 
 =head2 new
 
@@ -76,9 +77,11 @@ sub new {
   my $self = $class->SUPER::new(@_);
 
   if ( defined $self->db->no_cache() && $self->db->no_cache() ) {
-    warning(
+    if(! $SILENCE_CACHE_WARNINGS) {
+      warning(
           "You are using the API without caching most recent features. "
             . "Performance might be affected." );
+    }
   } else {
     # Initialize an LRU cache.
     my %cache;
