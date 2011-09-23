@@ -26,21 +26,20 @@ my $dumppath;
 my $dbname_file;
 
 # Do command line parsing.
-if ( !GetOptions( 'mhost|mh=s'        => \$mhost,
-                  'mport|mP=i'        => \$mport,
-                  'muser|mu=s'        => \$muser,
-                  'mpass|mp=s'        => \$mpass,
-                  'mdatabase|md=s'    => \$mdbname,
-                  'host|h=s'          => \$host,
-                  'port|P=i'          => \$port,
-                  'user|u=s'          => \$user,
-                  'pass|p=s'          => \$pass,
-                  'database|d=s'      => \$dbname,
-                  'pattern=s'         => \$dbpattern,
-                  'verbose|v!'        => \$verbose,
-                  'core=i'            => \$core,
-                  'dumppath|dp=s'     => \$dumppath,
-                  'dbname_file|dbf=s' => \$dbname_file )
+if ( !GetOptions( 'mhost|mh=s'     => \$mhost,
+                  'mport|mP=i'     => \$mport,
+                  'muser|mu=s'     => \$muser,
+                  'mpass|mp=s'     => \$mpass,
+                  'mdatabase|md=s' => \$mdbname,
+                  'host|h=s'       => \$host,
+                  'port|P=i'       => \$port,
+                  'user|u=s'       => \$user,
+                  'pass|p=s'       => \$pass,
+                  'database|d=s'   => \$dbname,
+                  'pattern=s'      => \$dbpattern,
+                  'verbose|v!'     => \$verbose,
+                  'core=i'         => \$core,
+                  'dumppath|dp=s'  => \$dumppath )
      || !(
            defined($host)
         && defined($user)
@@ -60,59 +59,59 @@ Usage:
   $0 -h host [-P port] \\
   $indent -u user [-p password]
   $indent -d database | --pattern pattern \\
-  $indent -dp dumppath
-  $indent [-dbf dbname override file]
+  $indent -dp dumppath \\
+  $indent [-s species -t type] \\
   $indent [-mh host] [-mP port] \\
   $indent [-mu user] [-mp password] [-md database] \\
   $indent [-v]
 
-  -h / --host         User database server host
-  -P / --port         User database server port (optional, default is 3306)
+  -h / --host         User database server host.
+  -P / --port         User database server port (optional, default is 3306).
 
-  -u / --user         User username (must have write-access)
-  -p / --pass         User password
+  -u / --user         User username (must have write-access).
+  -p / --pass         User password.
 
-  -d / --database     User database name or SQL pattern
+  -d / --database     User database name or SQL pattern,
                       e.g. --database="homo_sapiens_rnaseq_62_37g"
-                      or   --database="%core_62%"
+                      or   --database="%core_62%".
 
   -dp / --dumppath    Dump path.
-                      Dump out table into the specified directory path.
+                      Back-up table into the specified directory path.
 
-  --pattern           User database by Perl regular expression
-                      e.g. --pattern="^homo.*(rnaseq|vega)_62"
+  --pattern           User database by Perl regular expressionm
+                      e.g. --pattern="^homo.*(rnaseq|vega)_62".
 
                       (-d/--database and --pattern are mutually exclusive)
 
-  --core=NN           Preset pattern for Core-like databases in relase NN
+  --core=NN           Preset pattern for Core-like databases in relase NN.
                       Specifying --core=62 is equivalent to using
-                      --pattern="(cdna|core|otherfeatures|rnaseq|vega)_62"
+                      --pattern="(cdna|core|otherfeatures|rnaseq|vega)_62".
 
-  -dbf / --dbname_file  Override database names stored in the production
-                        database with database names in the specified
-                        file.  The file should have the following
-                        tab/space delimited data on each line:
+  -s / --species      If the name of the database specified by -d (or
+                      --database) is not in the standard format, this
+                      flag is used to specify what species it is (e.g.,
+                      'homo_sapiens', 'gallus_gallus' etc.).
 
-                        - database name stored in 'full_db_name' column
-                          'db_list' table in the production database.
-
-                        - new database name to use.
+  -t / --type         If the name of the database specified by -d (or
+                      --database) is not in the standard format, this
+                      flag may be used to specify what type it is (e.g.,
+                      'core', 'vega' etc.).
 
   -mh / --mhost       Production database server host
-                      (optional, default is 'ens-staging1')
+                      (optional, default is 'ens-staging1').
   -mP / --mport       Production database server port
-                      (optional, default is 3306)
+                      (optional, default is 3306).
 
   -mu / --muser       Production database username (no write-access required)
-                      (optional, default is 'ensro')
+                      (optional, default is 'ensro').
   -mp / --mpass       Production database password
-                      (optional, default is undefined)
+                      (optional, default is undefined).
 
   -md / --mdatabase   Production database name
-                      (optional, default is 'ensembl_production')
+                      (optional, default is 'ensembl_production').
 
   -v / --verbose      Be verbose, display every SQL statement as they
-                      are executed (on standard error)
+                      are executed (on standard error).
 
 USAGE_END
 
