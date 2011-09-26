@@ -98,7 +98,7 @@ my $analysis = new Bio::EnsEMBL::Analysis(
 );
 
 # read your input data
-open(FILE, "<$file") or die("Can't open $file for reading: $!");
+open(FILE, "<$infile") or die("Can't open $infile for reading: $!");
 
 while (<FILE>) {
 
@@ -111,7 +111,7 @@ while (<FILE>) {
   my $slice_oldasm = $sa->fetch_by_region('chromosome', $chr, undef, undef,
     undef, $old_assembly);
 
-  if (!$slice) {
+  if (!$slice_oldasm) {
     warn "Can't get $old_assembly slice for $chr:$start:$end\n";
     next;
   }
