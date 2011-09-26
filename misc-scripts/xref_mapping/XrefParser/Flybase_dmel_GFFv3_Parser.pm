@@ -178,7 +178,7 @@ sub run {
   my $species_name;
 
   if(!defined($species_id)){
-    ($species_id, $species_name) = get_species($file);
+    ($species_id, $species_name) = $self->get_species($file);
   }
   $self->species_id($species_id) ;
 
@@ -1062,7 +1062,7 @@ sub external_source_db_name{
 # For UniProt files the filename is the taxonomy ID
 
 sub get_species {
-  my ($file) = @_;
+  my ($self, $file) = @_;
   my ($taxonomy_id, $extension) = split(/\./, basename($file));
   my $sth = $self->dbi()->prepare("SELECT species_id,name FROM species WHERE taxonomy_id=?");
   $sth->execute($taxonomy_id);
