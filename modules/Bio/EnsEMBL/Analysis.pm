@@ -62,6 +62,7 @@ use Bio::EnsEMBL::Storable;
 
 use Bio::EnsEMBL::Utils::Exception qw(throw);
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
+use Scalar::Util qw/isweak weaken/;
 
 @ISA = qw(Bio::EnsEMBL::Storable);
 
@@ -147,6 +148,23 @@ sub new {
   return $self; # success - we hope!
 }
 
+=head2 new_fast
+
+  Arg [1]    : HashRef $hashref
+               Value to bless
+  Description: Bless a hash into this object type
+  Exceptions : none
+  Returntype : Bio::EnsEMBL::Analysis
+  Caller     : general, subclass constructors
+
+=cut
+
+sub new_fast {
+  my ($class, $hashref) = @_;
+  my $self = bless $hashref, ref($class) || $class;
+  weaken($self->{adaptor})  if ( ! isweak($self->{adaptor}) );
+  return $self;
+}
 
 =head2 db
 

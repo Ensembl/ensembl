@@ -673,32 +673,31 @@ sub exists {
 
 sub _objFromHashref {
   my $self = shift;
-  my $rowHash = shift;
+  my $h = shift;
 
-  my $web_data = $rowHash->{web_data} ? $self->get_dumped_data($rowHash->{web_data}) : '';
-  my $analysis = Bio::EnsEMBL::Analysis->new(
-      -id              => $rowHash->{analysis_id},
-      -adaptor         => $self,
-      -db              => $rowHash->{db},
-      -db_file         => $rowHash->{db_file},
-      -db_version      => $rowHash->{db_version},
-      -program         => $rowHash->{program},
-      -program_version => $rowHash->{program_version},
-      -program_file    => $rowHash->{program_file},
-      -gff_source      => $rowHash->{gff_source},
-      -gff_feature     => $rowHash->{gff_feature},
-      -module          => $rowHash->{module},
-      -module_version  => $rowHash->{module_version},
-      -parameters      => $rowHash->{parameters},
-      -created         => $rowHash->{created},
-      -logic_name      => $rowHash->{logic_name},
-      -description     => $rowHash->{description},
-      -display_label   => $rowHash->{display_label},
-      -displayable     => $rowHash->{displayable},
-					     -web_data        => $web_data,
-    );
+  my $web_data = $h->{web_data} ? $self->get_dumped_data($h->{web_data}) : '';
 
-  return $analysis;
+  return Bio::EnsEMBL::Analysis->new_fast({
+    dbID             => $h->{analysis_id},
+    adaptor          => $self,
+    _db               => $h->{db},
+    _db_file          => $h->{db_file},
+    _db_version       => $h->{db_version},
+    _program          => $h->{program},
+    _program_version  => $h->{program_version},
+    _program_file     => $h->{program_file},
+    _gff_source       => $h->{gff_source},
+    _gff_feature      => $h->{gff_feature},
+    _module           => $h->{module},
+    _module_version   => $h->{module_version},
+    _parameters       => $h->{parameters},
+    _created          => $h->{created},
+    _logic_name       => $h->{logic_name},
+    _description      => $h->{description},
+    _display_label    => $h->{display_label},
+    _displayable      => $h->{displayable},
+    _web_data         => $web_data,
+  });
 }
 
 
