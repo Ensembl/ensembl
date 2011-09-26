@@ -140,19 +140,20 @@ sub rearrange {
   unless ( @_ && $_[0] && substr( $_[0], 0, 1 ) eq '-' ) {
     return @_;
   }
-
-  # Convert all of the parameter names to uppercase, and create a
-  # hash with parameter names as keys, and parameter values as values
-  my $i = 0;
-  my (%param) = map {
-    if   ($i) { $i--; $_; }
-    else      { $i++; uc($_); }
-  } @_;
-
+  
+  # Push undef onto the end if % 2 != 0 to stop warnings
+  push @_,undef unless $#_ %2;
+  my %param;
+  while( @_ ) {
+    #deletes all dashes & uppercases at the same time
+    (my $key = shift) =~ tr/a-z\055/A-Z/d;
+    $param{$key} = shift;
+  }
+  
   # What we intend to do is loop through the @{$order} variable,
   # and for each value, we use that as a key into our associative
   # array, pushing the value at that key onto our return array.
-  return map { $param{ uc("-$_") } } @$order;
+  return map { $param{uc($_)} } @$order;
 }
 
 1;
