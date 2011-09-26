@@ -733,21 +733,19 @@ COORD_SYSTEM: foreach my $feat_cs (@feat_css) {
 #for a given seq_region_id, gets the one used in an external database, if present, otherwise, returns the internal one
 sub get_seq_region_id_external {
   my ( $self, $sr_id ) = @_;
-
-  return ( exists( $self->db->get_CoordSystemAdaptor->{
-                     '_internal_seq_region_mapping'}->{$sr_id} )
-           ? $self->db->get_CoordSystemAdaptor->{
-             '_internal_seq_region_mapping'}->{$sr_id}
+  my $cs_a = $self->db()->get_CoordSystemAdaptor();
+  return ( exists( $cs_a->{'_internal_seq_region_mapping'}->{$sr_id} )
+           ? $cs_a->{'_internal_seq_region_mapping'}->{$sr_id}
            : $sr_id );
 }
 
 #for a given seq_region_id and coord_system, gets the one used in the internal (core) database
 sub get_seq_region_id_internal{
-    my $self = shift;
-    my $sr_id = shift;
-
-    return (exists $self->db->get_CoordSystemAdaptor->{'_external_seq_region_mapping'}->{$sr_id} ? $self->db->get_CoordSystemAdaptor->{'_external_seq_region_mapping'}->{$sr_id} : $sr_id);
-
+  my ( $self, $sr_id ) = @_;
+  my $cs_a = $self->db()->get_CoordSystemAdaptor();
+  return (  exists $cs_a->{'_external_seq_region_mapping'}->{$sr_id} 
+            ? $cs_a->{'_external_seq_region_mapping'}->{$sr_id} 
+            : $sr_id);
 }
 
 #
