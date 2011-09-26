@@ -56,43 +56,6 @@ our $SLICE_FEATURE_CACHE_SIZE    = 4;
 our $MAX_SPLIT_QUERY_SEQ_REGIONS = 3;
 our $SILENCE_CACHE_WARNINGS = 0;
 
-=head2 new
-
-  Arg [1]    : list of args @args
-               Superclass constructor arguments
-  Example    : none
-  Description: Constructor which just initializes internal cache structures
-  Returntype : Bio::EnsEMBL::BaseFeatureAdaptor
-  Exceptions : none
-  Caller     : implementing subclass constructors
-  Status     : Stable
-
-=cut
-
-sub new {
-  my $caller = shift;
-
-  my $class = ref($caller) || $caller;
-
-  my $self = $class->SUPER::new(@_);
-
-  if ( defined $self->db->no_cache() && $self->db->no_cache() ) {
-    if(! $SILENCE_CACHE_WARNINGS) {
-      warning(
-          "You are using the API without caching most recent features. "
-            . "Performance might be affected." );
-    }
-  } else {
-    # Initialize an LRU cache.
-    my %cache;
-    tie( %cache, 'Bio::EnsEMBL::Utils::Cache',
-         $SLICE_FEATURE_CACHE_SIZE );
-    $self->{'_slice_feature_cache'} = \%cache;
-  }
-
-  return $self;
-}
-
 =head2 clear_cache
 
   Args      : None
@@ -122,7 +85,39 @@ sub new {
 
 sub clear_cache {
   my ($self) = @_;
-  $self->{'_slice_feature_cache'} = ();
+  %{$self->{'_slice_feature_cache'}} = ();
+  return;
+}
+
+=head2 _slice_feature_cache
+ 
+  Description	: Returns the feature cache if we are allowed to cache and
+                will build it if we need to
+  Returntype 	: Bio::EnsEMBL::Utils::Cache
+  Exceptions 	: None
+  Caller     	: Internal
+
+=cut
+
+sub _slice_feature_cache {
+  my ($self) = @_;
+  if(! exists $self->{_slice_feature_cache}) {
+    if ( $self->db->no_cache() ) {
+      if(! $self->{_already_warned_cache} && ! $SILENCE_CACHE_WARNINGS) {
+        warning(
+            "You are using the API without caching most recent features. "
+              . "Performance might be affected." );
+      }
+      $self->{_already_warned_cache} = 1;
+    } 
+    else {
+      my %cache;
+      tie( %cache, 'Bio::EnsEMBL::Utils::Cache',
+           $SLICE_FEATURE_CACHE_SIZE );
+      $self->{_slice_feature_cache} = \%cache;
+    }
+  }
+  return $self->{_slice_feature_cache};
 }
 
 =head2 fetch_all_by_Slice
@@ -374,6 +369,7 @@ sub fetch_all_by_Slice_constraint {
   if ( !defined($constraint) ) { return [] }
 
   my $key;
+  my $cache;
 
   # Will only use feature_cache if hasn't been no_cache attribute set
   if (
@@ -404,10 +400,11 @@ sub fetch_all_by_Slice_constraint {
         . join( ':', map { $_->[0] . '/' . $_->[1] } @{$bind_params} );
     }
 
-    if ( exists( $self->{'_slice_feature_cache'}->{$key} ) ) {
+    $cache = $self->_slice_feature_cache();
+    if ( exists( $cache->{$key} ) ) {
       # Clear the bound parameters and return the cached data.
       $self->{'_bind_param_generic_fetch'} = ();
-      return $self->{'_slice_feature_cache'}->{$key};
+      return $cache->{$key};
     }
   } ## end if ( !( defined( $self...)))
 
@@ -490,7 +487,7 @@ sub fetch_all_by_Slice_constraint {
 
   # Will only use feature_cache when set attribute no_cache in DBAdaptor
   if ( defined($key) ) {
-    $self->{'_slice_feature_cache'}->{$key} = \@result;
+    $cache->{$key} = \@result;
   }
 
   return \@result;
