@@ -2038,12 +2038,12 @@ CREATE TABLE transcript_supporting_feature (
 @table gene_archive
 @desc Contains a snapshot of the stable IDs associated with genes deleted or changed between releases. Includes gene, transcript and translation stable IDs.
 
-@column gene_stable_id              Foreign key references to the @link gene_stable_id table.
-@column gene_version                Gene version.
-@column transcript_stable_id        Foreign key references to the @link transcript_stable_id table.
-@column transcript_version          Transcript version.
-@column translation_stable_id       Foreign key references to the @link transcript_stable_id table.
-@column translation_version         Translation version.
+@column gene_stable_id              Stable ID of retired gene.
+@column gene_version                Last live gene stable ID version.
+@column transcript_stable_id        Stable ID of associated transcript.
+@column transcript_version          Last live transcript stable ID version.
+@column translation_stable_id       Stable ID of associated translation.
+@column translation_version         Last live translation stable ID.
 @column peptide_archive_id          Foreign key references to the @link peptide archive table.
 @column mapping_session_id          Foreign key references to the @link mapping_session table.
 
@@ -2169,8 +2169,8 @@ CREATE TABLE stable_id_event (
 @desc Contains the peptides for deleted or changed translations.
 
 @column peptide_archive_id         Primary key, internal identifier.
-@column md5_checksum               MD5 checksum hexadecimal digest of the sequence.
-@column peptide_seq                Peptide sequence.
+@column md5_checksum               MD5 checksum hexadecimal digest of the peptide sequence.
+@column peptide_seq                Peptide sequence of retired translation.
 
 
 */
