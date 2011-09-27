@@ -261,39 +261,39 @@ sub usage {
   If the -types argument is ommitted, stable IDs are generated for all
   types (gene,transcript,translation,exon).
 
-  Assigns stable IDs to objects that currently have none.  Starting
-  stable ID is found by incrementing the highest current stable ID
-  for that type *or* by using -start argument.  The stable_ids are
-  written to STDOUT.  If no -start option is used the script tries to
-  find the latest given stable_id for each object by looking up the
-  <OBJ>_stable_id tables in the database and the gene_archive table
-  (only for gene, translation and transcript, not for exon stable IDs!)
+  Assigns stable IDs to objects that currently have none.  The starting
+  stable ID is found by incrementing the highest current stable ID for
+  that type *or* by using -start argument.  If no -start option is used
+  the script tries to find the latest given stable_id for each object
+  by looking up the <OBJ>_stable_id tables in the database and the
+  gene_archive table (only for gene, translation and transcript, not for
+  exon stable IDs!)
 
   Note:
 
-  The -start option requires to not submit an initial stable_id without
-  any Gene/Transcript/Exon/Translation ending, like
+  The -start option requires to not submit an initial stable ID without
+  any gene, transcript, translation or exon specifier, as in
 
-   ENSMUS000001 (not ENSMUSG0001, then you end up with stable-ids like
-                ENSMUSGG001 ENSMUSGT0001.)
+   ENSMUS000001 (not ENSMUSG0001, then you end up with stable IDs like
+                ENSMUSGG001, ENSMUSGT0001.)
 
-  Again, the parameter to -start should be the stable ID you wish to
-  start from without the Gene/Transcript/Translation/Exon specifier.
+  Again, the parameter to -start should be the stable ID you wish
+  to start from without the gene, transcript, translation or exon
+  specifier.
 
   Examples:
 
-    - to generate only Exon-stable-ids starting with 223 for Mouse, use
+    - to generate only exon stable IDs starting with 223 for mouse, use
 
                     -start ENSMUS222 -types exon
 
-
-    - to generate Exon-and Gene-stable-ids starting with 223 for Mouse,
+    - to generate exon and gene stable IDs, starting with 223 for mouse,
       use
 
                     -start ENSMUS222 -types exon,gene
 
-    - to generate exon,transcript,translation and gene-stable-ids for
-      Human starting, which all start with ID 666 use
+    - to generate all types of stable IDs for human, which all start
+      with ID 666 use
 
                     -start ENS665
 
@@ -305,7 +305,7 @@ sub usage {
                     -start ENSNEW0          <or>
                     -start ENSNEW00000000
 
-  Produces SQL which can be run against the target database.
+  The script produces SQL which can be run against the target database.
 
 USAGE_END
 } ## end sub usage
