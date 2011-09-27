@@ -4,10 +4,9 @@
 
 use strict;
 use Bio::EnsEMBL::Registry;
-
 use Getopt::Long;
-
 use Data::Dumper;
+use Bio::EnsEMBL::Utils::ConversionSupport;
 $Data::Dumper::Maxdepth = 2;
 
 my $max_slices = 100;
@@ -38,8 +37,6 @@ my $variation_feature_adaptor = $reg->get_adaptor($species, "variation", "Variat
 
 # TODO - variation from registry
 
-# Clean up old features first. Also remove analysis and density type entry as these are recreated
-#my $sth = $slice_adaptor->dbc->prepare("DELETE df, dt, a, ad FROM analysis_description ad, density_feature df, density_type dt, analysis a WHERE ad.analysis_id = a.analysis_id AND a.analysis_id=dt.analysis_id AND dt.density_type_id=df.density_type_id AND a.logic_name='snpdensity'");
 
 # release 63: do not delete analysis, as this is synchronized with production!
 my $sth = $slice_adaptor->dbc->prepare("DELETE df, dt FROM analysis_description ad, density_feature df, density_type dt, analysis a WHERE ad.analysis_id = a.analysis_id AND a.analysis_id=dt.analysis_id AND dt.density_type_id=df.density_type_id AND a.logic_name='snpdensity'");
@@ -56,17 +53,9 @@ my @sorted_slices = sort( {
 
 
 my $analysis = $analysis_adaptor->fetch_by_logic_name('snpdensity');
-#  new Bio::EnsEMBL::Analysis(
-#              -program     => "variation_density.pl",
-#              -database    => "ensembl",
-#              -gff_source  => "variation_density.pl",
-#              -gff_feature => "density",
-#              -logic_name  => "snpdensity",
-#              -description => 'Density of Single Nucleotide Polymorphisms (SNPs) calculated by variation_density.pl (see scripts at the <a rel="external" href="http://cvs.sanger.ac.uk/cgi-bin/viewvc.cgi/?root=ensembl">Sanger Institute CVS</a> repository).',
-#              -display_label => 'SNP Density',
-#              -displayable   => 1 );
-#$analysis_adaptor->store($analysis);
-#$analysis_adaptor->update($analysis);
+my $support = 'Bio::EnsEMBL::Utils::ConversionSupport';
+$analysis->created($support->date());
+$analysis_adaptor->update($analysis);
 
 # Create and store new density type
 
@@ -150,7 +139,7 @@ Attach variation db if exists. All toplevel slices are fetched.
 For each slice, count the number of SNPs.
 
 Input data: top level seq regions, variation db
-Output tables: analysis, analysis_description, density_feature, density_type
+Output tables: updates analysis creation date, density_feature, density_type
 
 The script requires ensembl-variation in perl5lib.
 

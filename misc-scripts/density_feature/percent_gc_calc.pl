@@ -17,6 +17,7 @@ use Bio::EnsEMBL::Analysis;
 use Bio::EnsEMBL::DensityType;
 use Bio::EnsEMBL::DensityFeature;
 use Getopt::Long;
+use Bio::EnsEMBL::Utils::ConversionSupport;
 
 my ( $host, $user, $pass, $port, $dbname  );
 
@@ -52,14 +53,12 @@ if( ! $dna_count ) {
 }
 
 
-
 print STDOUT "Deleting old PercentGC features\n";
 $sth = $db->dbc->prepare(
   qq(
-DELETE df, dt, a, ad
-FROM density_feature df, density_type dt, analysis a, analysis_description ad
+DELETE df, dt
+FROM density_feature df, density_type dt, analysis a
 WHERE a.analysis_id=dt.analysis_id
-AND ad.analysis_id = a.analysis_id
 AND dt.density_type_id=df.density_type_id
 AND a.logic_name='percentgc') );
 $sth->execute();
@@ -79,28 +78,19 @@ my @sorted_slices =
             || $b->seq_region_length() <=> $a->seq_region_length()
   } @{ $slice_adaptor->fetch_all('toplevel') } );
 
-#
-# Create new analysis object for density calculation.
-#
 
-my $analysis =
-  new Bio::EnsEMBL::Analysis(
-             -program     => "percent_gc_calc.pl",
-             -database    => "ensembl",
-             -gff_source  => "percent_gc_calc.pl",
-             -gff_feature => "density",
-             -logic_name  => "percentgc",
-             -description => 'Percentage of G/C bases in the sequence.',
-             -display_label => 'GC content',
-             -displayable   => 1 );
-
-$aa->store($analysis);
+#
+# Update creation date of analysis.
+#
+my $support = 'Bio::EnsEMBL::Utils::ConversionSupport';
+my $analysis = $aa->fetch_by_logic_name('percentgc');
+$analysis->created($support->date());
 $aa->update($analysis);
+
 
 #
 # Create new density type.
 #
-
 
 my $density_type = Bio::EnsEMBL::DensityType->new
   (-analysis   => $analysis,
@@ -210,7 +200,7 @@ from longest to shortest. Each slice is divided into 150 bins
 calculated.
 
 Input data: dna sequence, top level seq regions 
-Output tables: analysis (logic_name: percentgc), analysis description, 
+Output tables: updates analysis creation date, 
                density_type, density_feature
 
 

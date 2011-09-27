@@ -16,6 +16,7 @@ use Bio::EnsEMBL::DensityType;
 use Bio::EnsEMBL::DensityFeature;
 use Bio::EnsEMBL::Mapper::RangeRegistry;
 use Bio::EnsEMBL::Utils::Exception qw(warning throw);
+use Bio::EnsEMBL::Utils::ConversionSupport;
 
 use POSIX;
 
@@ -66,7 +67,7 @@ if( ! $repeat_count ) {
 #
 
 print STDOUT "Deleting old PercentageRepeat features\n";
-$sth = $db->dbc->prepare("DELETE df, dt, a, ad FROM analysis_description ad, density_feature df, density_type dt, analysis a WHERE ad.analysis_id = a.analysis_id AND a.analysis_id=dt.analysis_id AND dt.density_type_id=df.density_type_id AND a.logic_name='rercentagerepeat'");
+$sth = $db->dbc->prepare("DELETE df, dt FROM density_feature df, density_type dt, analysis a WHERE a.analysis_id=dt.analysis_id AND dt.density_type_id=df.density_type_id AND a.logic_name='percentagerepeat'");
 $sth->execute();
 
 
@@ -77,22 +78,11 @@ my $aa  = $db->get_AnalysisAdaptor();
 
 
 #
-# Create new analysis object for density calculation.
+# Update creation date of analysis.
 #
-
-my $analysis =
-  new Bio::EnsEMBL::Analysis(
-  -program     => "repeat_coverage_calc.pl",
-  -database    => "ensembl",
-  -gff_source  => "repeat_coverage_calc.pl",
-  -gff_feature => "density",
-  -logic_name  => "percentagerepeat",
-  -description =>
-'Percentage of repetitive elements for top level sequences (such as chromosomes, scaffolds, etc.)',
-  -display_label => 'Repeats (percent)',
-  -displayable   => 1 );
-
-$aa->store($analysis);
+my $support = 'Bio::EnsEMBL::Utils::ConversionSupport';
+my $analysis = $aa->fetch_by_logic_name('percentagerepeat');
+$analysis->created($support->date());
 $aa->update($analysis);
 
 my $slices = $slice_adaptor->fetch_all( "toplevel" );
@@ -294,7 +284,7 @@ sub_slice within the 1 MB, calculate the %repeat for that sub_slice.
 Variable repeats are only found for the 100 longest toplevel slices.
 
 Input data: repeat features, top level seq regions 
-Output tables: analysis (logic_name: percentagerepeat), analysis description, 
+Output tables: updates analysis creation date,
                density_type (two entries, one for small_density type of 
                length 1 KB and one for variable_density_type of length 1MB), 
 	       density_feature
