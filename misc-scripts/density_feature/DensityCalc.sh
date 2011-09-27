@@ -16,7 +16,7 @@ species=            # -s
 outdir=             # -o
 
 
-while getopts 'h:P:d:u:p:o:' opt; do
+while getopts 'h:P:d:s:u:p:o:' opt; do
   case ${opt} in
     h)  host=${OPTARG} ;;
     P)  port=${OPTARG} ;;
