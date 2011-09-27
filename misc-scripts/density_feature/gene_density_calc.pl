@@ -20,6 +20,7 @@ use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::EnsEMBL::DensityType;
 use Bio::EnsEMBL::DensityFeature;
 use Getopt::Long;
+use Bio::EnsEMBL::Utils::ConversionSupport;
 
 my $bin_count  = 150;
 my $max_slices = 100;
@@ -113,10 +114,8 @@ foreach my $dbname (@dbnames) {
 
 
   print STDOUT "Deleting old knownGeneDensity and geneDensity features\n";
-  $sth = $db->dbc->prepare("DELETE df, dt, a, ad FROM density_feature df, density_type dt, analysis a, analysis_description ad WHERE ad.analysis_id = a.analysis_id AND a.analysis_id=dt.analysis_id AND dt.density_type_id=df.density_type_id AND a.logic_name IN ('knowngenedensity', 'genedensity')");
-  $sth->execute();
   
-  $sth = $db->dbc->prepare("DELETE df, dt, a FROM density_feature df, density_type dt, analysis a WHERE a.analysis_id=dt.analysis_id AND dt.density_type_id=df.density_type_id AND a.logic_name IN ('knowngenedensity', 'genedensity')");
+  $sth = $db->dbc->prepare("DELETE df, dt FROM density_feature df, density_type dt, analysis a WHERE a.analysis_id=dt.analysis_id AND dt.density_type_id=df.density_type_id AND a.logic_name IN ('knowngenedensity', 'genedensity')");
   $sth->execute();
   
 
@@ -126,34 +125,13 @@ foreach my $dbname (@dbnames) {
   my $aa  = $db->get_AnalysisAdaptor();
   my $slice_adaptor = $db->get_SliceAdaptor();
   
-  my $analysis =
-    new Bio::EnsEMBL::Analysis(
-    -program     => "gene_density_calc.pl",
-    -database    => "ensembl",
-    -gff_source  => "gene_density_calc.pl",
-    -gff_feature => "density",
-    -logic_name  => "knowngenedensity",
-    -description =>
-'Known gene density as calculated by <a rel="external" href="http://cvs.sanger.ac.uk/cgi-bin/viewvc.cgi/ensembl/misc-scripts/density_feature/gene_density_calc.pl?root=ensembl&view=markup">gene_density_calc.pl</a>.',
-    -display_label => 'Genes (density)',
-    -displayable   => 1 );
-
-  $aa->store($analysis);
+  my $support = 'Bio::EnsEMBL::Utils::ConversionSupport';
+  my $analysis = $aa->fetch_by_logic_name('knowngenedensity');
+  $analysis->created($support->date());
   $aa->update($analysis);
-
-  $analysis =
-    new Bio::EnsEMBL::Analysis(
-    -program     => "gene_density_calc.pl",
-    -database    => "ensembl",
-    -gff_source  => "gene_density_calc.pl",
-    -gff_feature => "density",
-    -logic_name  => "genedensity",
-    -description =>
-'Gene density as calculated by <a rel="external" href="http://cvs.sanger.ac.uk/cgi-bin/viewvc.cgi/ensembl/misc-scripts/density_feature/gene_density_calc.pl?root=ensembl&view=markup">gene_density_calc.pl</a>.',
-    -display_label => 'Genes (density)',
-    -displayable   => 1 );
-
-  $aa->store($analysis);
+ 
+  $analysis = $aa->fetch_by_logic_name('genedensity');
+  $analysis->created($support->date());
   $aa->update($analysis);
 
 #
@@ -172,11 +150,12 @@ foreach my $dbname (@dbnames) {
       $analysis = $aa->fetch_by_logic_name('genedensity');
     }
     
-    # Sort slices by coordinate system rank, then by length.
+  # Sort slices by coordinate system rank, then by length.
     my @sorted_slices =
-      sort( {      $a->coord_system()->rank() <=> $b->coord_system()->rank()
-         || $b->seq_region_length() <=> $a->seq_region_length()
-       } @{ $slice_adaptor->fetch_all('toplevel') } );
+	sort( {      $a->coord_system()->rank() <=> $b->coord_system()->rank()
+		   || $b->seq_region_length() <=> $a->seq_region_length()
+		 } @{ $slice_adaptor->fetch_all('toplevel') } );
+
 
   #
   # Create new density type.
