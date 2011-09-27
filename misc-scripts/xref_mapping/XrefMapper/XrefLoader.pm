@@ -188,7 +188,8 @@ sub update{
   # Get analysis id's 
   ####################
 
-  my %analysis_ids = $self->get_analysis(); # 
+  my %analysis_ids = $self->get_analysis();
+  my $checksum_analysis_id = $self->get_single_analysis('XrefChecksum');
 
 
   print "xref offset is $xref_offset, object_xref offset is $object_xref_offset\n" if ($verbose);
@@ -289,6 +290,25 @@ GSQL
         $add_object_xref_sth->execute(($object_xref_id+$object_xref_offset), $ensembl_id, $ensembl_type, ($xref_id+$xref_offset), $analysis_ids{$ensembl_type});
       }  
       print "DIRECT $count\n" if ($verbose);
+    }
+    
+    ### IF CHECKSUM,        xref, object_xref
+    # 1:m mapping between object & xref
+    elsif($type eq 'CHECKSUM') {
+      my $count = 0;
+      $direct_sth->execute($source_id, $type);
+      my $last_xref = 0;
+      while(my $row = $direct_sth->fetchrow_arrayref()) {
+        my ($xref_id, $acc, $label, $version, $desc, $info, $object_xref_id, $ensembl_id, $ensembl_type) = @{$row};
+        if($last_xref != $xref_id) {
+          push @xref_list, $xref_id;
+          $count++;
+          $add_xref_sth->execute(($xref_id+$xref_offset), $ex_id, $acc, $label, $version, $desc, $type, $info || $where_from);
+          $last_xref = $xref_id;
+        }
+        $add_object_xref_sth->execute(($object_xref_id+$object_xref_offset), $ensembl_id, $ensembl_type, ($xref_id+$xref_offset), $checksum_analysis_id);
+      }
+      print "CHECKSUM $count\n" if ($verbose);
     }
  
     ### If DEPENDENT,       xref, object_xref , dependent_xref  (order by xref_id)  # maybe linked to more than one?
@@ -779,42 +799,46 @@ WEL
 
 sub get_analysis{
   my $self = shift;
-  
-
   my %typeToLogicName = ( 'Gene'        => 'XrefExonerateDNA',
                           'Transcript'  => 'XrefExonerateDNA',
-                          'Translation' => 'XrefExonerateProtein' );
-
+                          'Translation' => 'XrefExonerateProtein');
   my %analysis_id;
-
   foreach my $key (qw(Gene Transcript Translation)){
-    
     my $logic_name = $typeToLogicName{$key};
-    
-    my $sth = $self->core->dbc->prepare("SELECT analysis_id FROM analysis WHERE logic_name='" . $logic_name ."'");
-    
-    $sth->execute();
-    
-    my $analysis_id;
-    
-    if (my @row = $sth->fetchrow_array()) {
-      
-      $analysis_id{$key} = $row[0];
-      
-    } else {
-      
-      print "No analysis with logic_name $logic_name found, creating ...\n" if ($self->verbose);
-      $sth = $self->core->dbc->prepare("INSERT INTO analysis (logic_name, created) VALUES ('" . $logic_name. "',NOW())");
-      # TODO - other fields in analysis table
-      $sth->execute();
-      $analysis_id{$key} = $sth->{'mysql_insertid'};
-    }
-    $sth->finish();
-    
+    $analysis_id{$key} = $self->get_single_analysis($logic_name);    
   }
   return %analysis_id;
-  
 }
+
+sub get_single_analysis {
+  my ($self, $logic_name) = @_;
+  my $h = $self->core->dbc()->sql_helper();
+  my $analysis_ids = $h->execute_simple(
+    -SQL => 'SELECT analysis_id FROM analysis WHERE logic_name=?', 
+    -PARAMS => [$logic_name] 
+  );
+  my $analysis_id;
+  
+  if(@{$analysis_ids}) {
+    $analysis_id = $analysis_ids->[0];
+  }
+  else {
+    print "No analysis with logic_name $logic_name found, creating ...\n" if ($self->verbose);
+    # TODO - other fields in analysis table
+    $self->core()->dbc()->sql_helper()->execute_update(
+      -SQL => 'INSERT INTO analysis (logic_name, created) VALUES (?,NOW())',
+      -PARAMS => [$logic_name],
+      -CALLBACK => sub {
+        my ($sth) = @_;
+        $analysis_id = $sth->{'mysql_insertid'};
+        return;
+      }
+    );
+  }
+  
+  return $analysis_id;
+}
+
 
 
 

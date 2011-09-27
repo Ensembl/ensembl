@@ -18,6 +18,7 @@ use XrefMapper::XrefLoader;
 use XrefMapper::Interpro;
 use XrefMapper::DisplayXrefs;
 use XrefMapper::CoordinateMapper;
+use XrefMapper::UniParcMapper;
 use XrefMapper::OfficialNaming;
 use XrefMapper::DirectXrefs;
 
@@ -230,11 +231,20 @@ if($status eq "alt_alleles_processed"){
 }
 
 
+#UniParc checksum mapping
+#Allow for reruns if required but needs a uniparc object available in the mapper
+#as that means we can do it
+$status = $mapper->xref_latest_status();
+if($status eq 'official_naming_done' && defined $mapper->uniparc()) {
+  my $checksum_mapper = XrefMapper::UniParcMapper->new($mapper);
+  $checksum_mapper->process($upload);
+}
+
 # Coordinate xrefs
 
 # tests
 $status = $mapper->xref_latest_status();
-if($status eq "official_naming_done" || $status eq "tests_started" || $status eq "tests_failed" ){
+if($status eq "official_naming_done"  || $status eq "checksum_xrefs_finished" || $status eq "tests_started" || $status eq "tests_failed" ){
   my $tester = XrefMapper::TestMappings->new($mapper);
   if($tester->unlinked_entries){
     die "Problems found so will not load core database\n";
