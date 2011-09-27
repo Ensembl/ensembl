@@ -17,7 +17,7 @@ use FindBin qw($Bin);
 use Getopt::Long;
 use IO::Zlib;
 use Data::Dumper;
-
+use HTML::Entities;
                             
 BEGIN{                                                                                                                                                                         
   unshift @INC, "$Bin/../../../conf";                                                                                                                                            
@@ -747,8 +747,9 @@ sub geneLineXML {
                 {
 
                     #		$unique_synonyms->{$ed_key} = 1;
+                    my $encoded = encode_entities($ed_key);
                     $synonyms .= qq{ 
-             <field name="${matched_db_name}_synonym">$ed_key</field>};
+             <field name="${matched_db_name}_synonym">$encoded</field>};
                 }
 
             }
@@ -815,7 +816,7 @@ sub geneLineXML {
     map {
         $synonyms .=
           qq{     
-      <field name="gene_synonym">$_</field> }
+      <field name="gene_synonym">} . encode_entities($_) . {</field> }
     } keys %$unique_synonyms;
 
     my $additional_fields .= qq{
