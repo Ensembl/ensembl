@@ -3,7 +3,7 @@
 #
 use strict;
 use Getopt::Long;
-use MultiTestDB;
+use Bio::EnsEMBL::Test::MultiTestDB;
 
 if( ! @ARGV ) {
   print <<HELP
@@ -40,7 +40,7 @@ GetOptions
 
 my $sth;
 
-my $multi = MultiTestDB->new();
+my $multi = Bio::EnsEMBL::Test::MultiTestDB->new();
 
 my $db = $multi->get_DBAdaptor( "core" );
 
