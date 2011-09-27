@@ -50,8 +50,6 @@ use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Storable qw(nstore retrieve);
 use Digest::MD5 qw(md5_hex);
 
-my $use_projection_code = 0;
-
 # define available cache names here
 my @cache_names = qw(
     exons_by_id
@@ -155,7 +153,7 @@ sub build_cache_by_slice {
   # also don't project if no common coord_system present
   my $need_project = 1;
 
-  if ($use_projection_code) {
+  if ( $self->conf()->param('do_project_to_common_cs') ) {
     my $csid = join( ':',
                      $slice->coord_system_name,
                      $slice->coord_system->version );
@@ -214,9 +212,11 @@ sub build_cache_all {
   my $common_cs_found = $self->find_common_coord_systems;
 
   # Build cache. Setting $need_project to 'CHECK' will cause
-  # build_cache_from_genes() to check the coordinate system for each gene.
+  # build_cache_from_genes() to check the coordinate system for each
+  # gene.
   my $type = "$dbtype.ALL";
-  my $need_project = ( $use_projection_code ? 'CHECK' : 0 );
+  my $need_project =
+    ( $self->conf()->param('do_project_to_common_cs') ? 'CHECK' : 0 );
   my $num_genes =
     $self->build_cache_from_genes( $type, $genes, $need_project );
 
