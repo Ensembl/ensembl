@@ -447,7 +447,7 @@ Unlike other tables, data in the meta table is stored as key-value pairs. Also s
 
 The species_id field of the meta table is used in multi-species databases and makes it possible to have species-specific meta key-value pairs.
 The species-specific meta key-value pairs needs to be repeated for each species_id.
-Entries in the meta table that are not specific to any one species, such as the schema.version key and any other schema-related information must have their species_id field set to NULL.
+Entries in the meta table that are not specific to any one species, such as the schema_version key and any other schema-related information must have their species_id field set to NULL.
 The default species_id, and the only species_id value allowed in single-species databases, is 1.
 
 
@@ -2545,7 +2545,7 @@ Information about the database that the external object is stored in is held in 
 @column display_label           Display label for the EnsEMBL web site.
 @column version                 Object version.
 @column description             Object description.
-@column info_type               'PROJECTION', 'MISC', 'DEPENDENT','DIRECT', 'SEQUENCE_MATCH','INFERRED_PAIR', 'PROBE','UNMAPPED', 'COORDINATE_OVERLAP'.
+@column info_type               'PROJECTION', 'MISC', 'DEPENDENT','DIRECT', 'SEQUENCE_MATCH','INFERRED_PAIR', 'PROBE','UNMAPPED', 'COORDINATE_OVERLAP', 'CHECKSUM'.
 @column info_text               Text
 
 @see external_db
@@ -2565,7 +2565,8 @@ CREATE TABLE xref (
    info_type                  ENUM( 'PROJECTION', 'MISC', 'DEPENDENT',
                                     'DIRECT', 'SEQUENCE_MATCH',
                                     'INFERRED_PAIR', 'PROBE',
-                                    'UNMAPPED', 'COORDINATE_OVERLAP' ),
+                                    'UNMAPPED', 'COORDINATE_OVERLAP', 
+                                    'CHECKSUM' ),
    info_text                  VARCHAR(255),
 
    PRIMARY KEY (xref_id),
