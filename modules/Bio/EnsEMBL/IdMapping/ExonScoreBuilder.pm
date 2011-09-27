@@ -58,17 +58,25 @@ sub score_exons {
 
   # score using overlaps, then exonerate
   my $matrix = $self->overlap_score;
-  my $exonerate_matrix = $self->exonerate_score($matrix);
 
-  # log stats before matrix merging
-  $self->logger->info("\nOverlap scoring matrix:\n");
-  $self->log_matrix_stats($matrix);
-  $self->logger->info("\nExonerate scoring matrix:\n");
-  $self->log_matrix_stats($exonerate_matrix);
-  
-  # merge matrices
-  $self->logger->info("\nMerging scoring matrices...\n", 0, 'stamped');
-  $matrix->merge($exonerate_matrix);
+  if ( $self->conf()->param('do_similarity_scoring') ) {
+    my $exonerate_matrix = $self->exonerate_score($matrix);
+
+    # log stats before matrix merging
+    $self->logger->info("\nOverlap scoring matrix:\n");
+    $self->log_matrix_stats($matrix);
+    $self->logger->info("\nExonerate scoring matrix:\n");
+    $self->log_matrix_stats($exonerate_matrix);
+
+    # merge matrices
+    $self->logger->info( "\nMerging scoring matrices...\n",
+                         0, 'stamped' );
+    $matrix->merge($exonerate_matrix);
+  } else {
+    $self->logger->info("\nOverlap scoring matrix:\n");
+    $self->log_matrix_stats($matrix);
+  }
+
   $self->logger->info("Done.\n\n", 0, 'stamped');
 
   # debug logging
@@ -79,7 +87,7 @@ sub score_exons {
   # log stats of combined matrix
   $self->logger->info("Combined scoring matrix:\n");
   $self->log_matrix_stats($matrix);
-  
+
   $self->logger->info("\nDone with exon scoring.\n\n", 0, 'stamped');
 
   return $matrix;
