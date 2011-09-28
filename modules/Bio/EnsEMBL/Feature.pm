@@ -1442,9 +1442,10 @@ sub summary_as_hash {
   my $self = shift;
   my %summary;
   $summary{'ID'} = $self->display_id;
-  $summary{'start'} = $self->start;
-  $summary{'end'} = $self->end;
+  $summary{'start'} = $self->seq_region_start;
+  $summary{'end'} = $self->seq_region_end;
   $summary{'strand'} = $self->strand;
+  $summary{'seq_region_name'} = $self->seq_region_name;
   return \%summary;
 }
 
