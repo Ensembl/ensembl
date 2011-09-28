@@ -224,6 +224,10 @@ Note seq_region_start is always less that seq_region_end, i.e. when the exon is 
 @column end_phase                   Usually, end_phase = (phase + exon_length)%3 but end_phase could be -1 if the exon is half-coding and its 3 prime end is UTR.
 @column is_current
 @column is_constitutive
+@column stable_id		    Release-independent stable identifier.
+@column version              	    Stable identifier version number.
+@column created_date         	    Date created.
+@column modified_date        	    Date modified.
 
 @see exon_transcript
 
@@ -243,36 +247,13 @@ CREATE TABLE exon (
   is_current                  BOOLEAN NOT NULL DEFAULT 1,
   is_constitutive             BOOLEAN NOT NULL DEFAULT 0,
 
-  PRIMARY KEY (exon_id),
-  KEY seq_region_idx (seq_region_id, seq_region_start)
-
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
-
-
-/**
-@table exon_stable_id
-@desc Relates exon IDs in this release to release-independent stable identifiers.
-
-@column exon_id              Primary key, internal identifier.
-@column stable_id            Stable identifier.
-@column version              Version number.
-@column created_date         Date created.
-@column modified_date        Date modified.
-
-
-@see stable_id
-
-*/
-
-CREATE TABLE exon_stable_id (
-
-  exon_id                     INT(10) UNSIGNED NOT NULL,
-  stable_id                   VARCHAR(128) NOT NULL,
-  version                     INT(10) NOT NULL DEFAULT 1,
-  created_date                DATETIME NOT NULL,
-  modified_date               DATETIME NOT NULL,
+  stable_id                   VARCHAR(128) DEFAULT NULL,
+  version                     SMALLINT UNSIGNED NOT NULL DEFAULT 1,
+  created_date                DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00',
+  modified_date               DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00',
 
   PRIMARY KEY (exon_id),
+  KEY seq_region_idx (seq_region_id, seq_region_start),
   KEY stable_id_idx (stable_id, version)
 
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
@@ -325,6 +306,10 @@ CREATE TABLE exon_transcript (
 @column is_current
 @column canonical_transcript_id     Foreign key references to the @link transcript table.
 @column canonical_annotation        Canonical annotation.
+@column stable_id		    Release-independent stable identifier.
+@column version              	    Stable identifier version number.
+@column created_date         	    Date created.
+@column modified_date        	    Date modified.
 
 @see transcript
 
@@ -347,11 +332,16 @@ CREATE TABLE gene (
   is_current                  BOOLEAN NOT NULL DEFAULT 1,
   canonical_transcript_id     INT(10) UNSIGNED NOT NULL,
   canonical_annotation        VARCHAR(255) DEFAULT NULL,
+  stable_id                   VARCHAR(128) DEFAULT NULL,
+  version                     SMALLINT UNSIGNED NOT NULL DEFAULT 1,
+  created_date                DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00',
+  modified_date               DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00',
 
   PRIMARY KEY (gene_id),
   KEY seq_region_idx (seq_region_id, seq_region_start),
   KEY xref_id_index (display_xref_id),
-  KEY analysis_idx (analysis_id)
+  KEY analysis_idx (analysis_id),
+  KEY stable_id_idx (stable_id, version)
 
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
@@ -378,35 +368,6 @@ CREATE TABLE gene_attrib (
   KEY type_val_idx (attrib_type_id, value(40)),
   KEY val_only_idx (value(40)),
   KEY gene_idx (gene_id)
-
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
-
-
-/**
-@table gene_stable_id
-@desc Relates gene IDs in this release to release-independent stable identifiers.
-
-@column gene_id             Primary key, internal identifier. Foreign key references to the @link gene table.
-@column stable_id           Stable identifier.
-@column version             Version number.
-@column created_date        Date created.
-@column modified_date       Date modified.
-
-@see gene
-@see stable_id
-
-*/
-
-CREATE TABLE gene_stable_id (
-
-  gene_id                     INT UNSIGNED NOT NULL,
-  stable_id                   VARCHAR(128) NOT NULL,
-  version                     INT(10) NOT NULL DEFAULT 1,
-  created_date                DATETIME NOT NULL,
-  modified_date               DATETIME NOT NULL,
-
-  PRIMARY KEY (gene_id),
-  KEY stable_id_idx (stable_id, version)
 
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
@@ -479,17 +440,14 @@ CREATE TABLE IF NOT EXISTS meta (
 # Add schema type and schema version to the meta table.
 INSERT INTO meta (species_id, meta_key, meta_value) VALUES
   (NULL, 'schema_type',     'core'),
-  (NULL, 'schema_version',  '64');
+  (NULL, 'schema_version',  '65');
 
 # Patches included in this schema file:
 # NOTE: At start of release cycle, remove patch entries from last release.
 # NOTE: Avoid line-breaks in values.
 INSERT INTO meta (species_id, meta_key, meta_value) VALUES
-  (NULL, 'patch', 'patch_63_64_a.sql|schema_version'),
-  (NULL, 'patch', 'patch_63_64_b.sql|add_operons'),
-  (NULL, 'patch', 'patch_63_64_c.sql|is_ref_added_to_alt_allele'),
-  (NULL, 'patch', 'patch_63_64_d.sql|linkage_type change in ontology_xref');
-
+  (NULL, 'patch', 'patch_64_65_a.sql|schema_version'),
+  (NULL, 'patch', 'patch_64_65_b.sql|merge_stable_id_with_object');
 
 /**
 @table meta_coord
@@ -526,6 +484,10 @@ CREATE TABLE meta_coord (
 @column seq_region_end              Sequence end position.
 @column seq_region_strand           Sequence region strand: 1 - forward; -1 - reverse.
 @column display_label		    Short name for operon
+@column stable_id		    Release-independent stable identifier.
+@column version              	    Stable identifier version number.
+@column created_date         	    Date created.
+@column modified_date        	    Date modified.
 
 @see operon_transcript
 @see operon_stable_id
@@ -538,36 +500,16 @@ CREATE TABLE operon (
   seq_region_strand         TINYINT(2) NOT NULL,
   display_label             VARCHAR(255) DEFAULT NULL,
   analysis_id               SMALLINT UNSIGNED NOT NULL,
+  stable_id                 VARCHAR(128) DEFAULT NULL,
+  version                   SMALLINT UNSIGNED NOT NULL DEFAULT 1,
+  created_date              DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00',
+  modified_date             DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00',
 
   PRIMARY KEY (operon_id),
   KEY seq_region_idx (seq_region_id, seq_region_start),
-  KEY name_idx (display_label)
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
-
-/**
-@table operon_stable_id
-@desc Relates operon IDs in this release to release-independent stable identifiers.
-
-@column operon_id    	    Primary key, internal identifier. Foreign key references to the @link operon table.
-@column stable_id           Stable identifier.
-@column version             Version number.
-@column created_date        Date created.
-@column modified_date       Date modified.
-
-@see operon
-
-*/
-CREATE TABLE operon_stable_id (
-  operon_id                 INT UNSIGNED NOT NULL,
-  stable_id                 VARCHAR(128) NOT NULL,
-  version                   INT(10),
-  created_date              DATETIME NOT NULL,
-  modified_date             DATETIME NOT NULL,
-
-  PRIMARY KEY (operon_id),
+  KEY name_idx (display_label),
   KEY stable_id_idx (stable_id, version)
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
-
 
 
 /**
@@ -582,6 +524,10 @@ CREATE TABLE operon_stable_id (
 @column seq_region_strand           Sequence region strand: 1 - forward; -1 - reverse.
 @column operon_id                   Foreign key references to the @link operon table.
 @column display_label		    Short name for operon transcript
+@column stable_id		    Release-independent stable identifier.
+@column version              	    Stable identifier version number.
+@column created_date         	    Date created.
+@column modified_date        	    Date modified.
 
 @see operon
 @see operon_transcript_stable_id
@@ -596,34 +542,14 @@ CREATE TABLE operon_transcript (
   operon_id                 INT(10) UNSIGNED NOT NULL,
   display_label             VARCHAR(255) DEFAULT NULL,
   analysis_id               SMALLINT UNSIGNED NOT NULL,
+  stable_id                 VARCHAR(128) DEFAULT NULL,
+  version                   SMALLINT UNSIGNED NOT NULL DEFAULT 1,
+  created_date              DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00',
+  modified_date             DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00',
 
   PRIMARY KEY (operon_transcript_id),
   KEY operon_idx (operon_id),
-  KEY seq_region_idx (seq_region_id, seq_region_start)
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
-
-
-/**
-@table operon_transcript_stable_id
-@desc Relates operon polycistronic transcripts IDs in this release to release-independent stable identifiers.
-
-@column operon_transcript_id	   Primary key, internal identifier. Foreign key references to the @link operon_transcript table.
-@column stable_id           	   Stable identifier.
-@column version             	   Version number.
-@column created_date        	   Date created.
-@column modified_date       	   Date modified.
-
-@see operon_transcript
-
-*/
-CREATE TABLE operon_transcript_stable_id (
-  operon_transcript_id      INT UNSIGNED NOT NULL,
-  stable_id                 VARCHAR(128) NOT NULL,
-  version                   INT(10),
-  created_date              DATETIME NOT NULL,
-  modified_date             DATETIME NOT NULL,
-
-  PRIMARY KEY (operon_transcript_id),
+  KEY seq_region_idx (seq_region_id, seq_region_start),
   KEY stable_id_idx (stable_id, version)
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
@@ -726,7 +652,10 @@ Note that a transcript is usually associated with a translation, but may not be,
 @column description                 Transcript description.
 @column is_current
 @column canonical_translation_id    Foreign key references to the @link canonical_translation table.
-
+@column stable_id		    Release-independent stable identifier.
+@column version              	    Stable identifier version number.
+@column created_date         	    Date created.
+@column modified_date        	    Date modified.
 
 */
 
@@ -746,13 +675,18 @@ CREATE TABLE transcript (
   description                 TEXT,
   is_current                  BOOLEAN NOT NULL DEFAULT 1,
   canonical_translation_id    INT(10) UNSIGNED,
+  stable_id                   VARCHAR(128) DEFAULT NULL,
+  version                     SMALLINT UNSIGNED NOT NULL DEFAULT 1,
+  created_date                DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00',
+  modified_date               DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00',
 
   PRIMARY KEY (transcript_id),
   KEY seq_region_idx (seq_region_id, seq_region_start),
   KEY gene_index (gene_id),
   KEY xref_id_index (display_xref_id),
   KEY analysis_idx (analysis_id),
-  UNIQUE INDEX canonical_translation_idx (canonical_translation_id)
+  UNIQUE INDEX canonical_translation_idx (canonical_translation_id),
+  KEY stable_id_idx (stable_id, version)
 
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
@@ -784,37 +718,6 @@ CREATE TABLE transcript_attrib (
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
 
-
-/**
-@table transcript_stable_id
-@desc Relates transcript IDs in this release to release-independent stable identifiers.
-
-@column transcript_id       Primary key, internal identifier. Foreign key references to the @link transcript table.
-@column stable_id           Stable identifier.
-@column version             Version number.
-@column created_date        Date created.
-@column modified_date       Date modified.
-
-@see transcript
-@see stable_id
-
-*/
-
-CREATE TABLE transcript_stable_id (
-
-  transcript_id               INT(10) UNSIGNED NOT NULL,
-  stable_id                   VARCHAR(128) NOT NULL,
-  version                     INT(10) NOT NULL DEFAULT 1,
-  created_date                DATETIME NOT NULL,
-  modified_date               DATETIME NOT NULL,
-
-  PRIMARY KEY (transcript_id),
-  KEY stable_id_idx (stable_id, version)
-
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
-
-
-
 /**
 @table translation
 @desc Describes which parts of which exons are used in translation. The seq_start and seq_end columns are 1-based offsets into the relative coordinate system of start_exon_id and end_exon_id. i.e, if the translation starts at the first base of the exon, seq_start would be 1. Transcripts are related to translations by the transcript_id key in this table.
@@ -825,7 +728,10 @@ CREATE TABLE transcript_stable_id (
 @column start_exon_id               Foreign key references to the @link exon table.
 @column seq_end                     1-based offset into the relative coordinate system of end_exon_id.
 @column end_exon_id                 Foreign key references to the @link exon table.
-
+@column stable_id		    Release-independent stable identifier.
+@column version              	    Stable identifier version number.
+@column created_date         	    Date created.
+@column modified_date        	    Date modified.
 */
 
 
@@ -837,9 +743,14 @@ CREATE TABLE translation (
   start_exon_id               INT(10) UNSIGNED NOT NULL,
   seq_end                     INT(10) NOT NULL,       # relative to exon start
   end_exon_id                 INT(10) UNSIGNED NOT NULL,
+  stable_id                   VARCHAR(128) DEFAULT NULL,
+  version                     SMALLINT UNSIGNED NOT NULL DEFAULT 1,
+  created_date                DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00',
+  modified_date               DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00',
 
   PRIMARY KEY (translation_id),
-  KEY transcript_idx (transcript_id)
+  KEY transcript_idx (transcript_id),
+  KEY stable_id_idx (stable_id, version)
 
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
@@ -867,36 +778,6 @@ CREATE TABLE translation_attrib (
   KEY type_val_idx (attrib_type_id, value(40)),
   KEY val_only_idx (value(40)),
   KEY translation_idx (translation_id)
-
-) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
-
-
-/**
-@table translation_stable_id
-@desc Relates translation IDs in this release to release-independent stable identifiers.
-
-@column translation_id      Primary key, internal identifier. Foreign key references to the @link translation table.
-@column stable_id           Stable identifier.
-@column version             Version number.
-@column created_date        Date created.
-@column modified_date       Date modified.
-
-@see translation
-@see stable_id
-
-
-*/
-
-CREATE TABLE translation_stable_id (
-
-  translation_id              INT(10) UNSIGNED NOT NULL,
-  stable_id                   VARCHAR(128) NOT NULL,
-  version                     INT(10) NOT NULL DEFAULT 1,
-  created_date                DATETIME NOT NULL,
-  modified_date               DATETIME NOT NULL,
-
-  PRIMARY KEY (translation_id),
-  KEY stable_id_idx (stable_id, version)
 
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
@@ -2603,3 +2484,16 @@ CREATE TABLE interpro (
   KEY id_idx (id)
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
+
+
+CREATE VIEW exon_stable_id (exon_id, stable_id, version, created_date, modified_date) AS (SELECT exon_id, stable_id, version, created_date, modified_date FROM exon);
+
+CREATE VIEW gene_stable_id (gene_id, stable_id, version, created_date, modified_date) AS (SELECT gene_id, stable_id, version, created_date, modified_date FROM gene);
+
+CREATE VIEW operon_stable_id (operon_id, stable_id, version, created_date, modified_date) AS (SELECT operon_id, stable_id, version, created_date, modified_date FROM operon);
+
+CREATE VIEW operon_transcript_stable_id (operon_transcript_id, stable_id, version, created_date, modified_date) AS (SELECT operon_transcript_id, stable_id, version, created_date, modified_date FROM operon_transcript);
+
+CREATE VIEW translation_stable_id (translation_id, stable_id, version, created_date, modified_date) AS (SELECT translation_id, stable_id, version, created_date, modified_date FROM translation);
+
+CREATE VIEW transcript_stable_id (transcript_id, stable_id, version, created_date, modified_date) AS (SELECT transcript_id, stable_id, version, created_date, modified_date FROM transcript);
