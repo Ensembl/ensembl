@@ -10,22 +10,22 @@
 # Delete stable_id tables. Create views like the stable_id tables.
 
 
-ALTER TABLE exon ADD COLUMN (stable_id VARCHAR(128) NOT NULL DEFAULT '', version INT(10) NOT NULL DEFAULT 0, created_date DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00', modified_date DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00');
+ALTER TABLE exon ADD COLUMN (stable_id VARCHAR(128) NOT NULL DEFAULT '', version SMALLINT UNSIGNED NOT NULL DEFAULT 1, created_date DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00', modified_date DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00');
 ALTER TABLE exon ADD INDEX stable_id_idx (stable_id, version);
 
-ALTER TABLE gene ADD COLUMN (stable_id VARCHAR(128) NOT NULL DEFAULT '', version INT(10) NOT NULL DEFAULT 0, created_date DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00', modified_date DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00');
+ALTER TABLE gene ADD COLUMN (stable_id VARCHAR(128) NOT NULL DEFAULT '', version SMALLINT UNSIGNED NOT NULL DEFAULT 1, created_date DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00', modified_date DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00');
 ALTER TABLE gene ADD INDEX stable_id_idx (stable_id, version);
 
-ALTER TABLE operon ADD COLUMN (stable_id VARCHAR(128) NOT NULL DEFAULT '', version INT(10) NOT NULL DEFAULT 0, created_date DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00', modified_date DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00');
+ALTER TABLE operon ADD COLUMN (stable_id VARCHAR(128) NOT NULL DEFAULT '', version SMALLINT UNSIGNED NOT NULL DEFAULT 1, created_date DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00', modified_date DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00');
 ALTER TABLE operon ADD INDEX stable_id_idx (stable_id, version);
 
-ALTER TABLE operon_transcript ADD COLUMN (stable_id VARCHAR(128) NOT NULL DEFAULT '', version INT(10) NOT NULL DEFAULT 0, created_date DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00', modified_date DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00');
+ALTER TABLE operon_transcript ADD COLUMN (stable_id VARCHAR(128) NOT NULL DEFAULT '', version SMALLINT UNSIGNED NOT NULL DEFAULT 1, created_date DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00', modified_date DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00');
 ALTER TABLE operon_transcript ADD INDEX stable_id_idx (stable_id, version);
 
-ALTER TABLE transcript ADD COLUMN (stable_id VARCHAR(128) NOT NULL DEFAULT '', version INT(10) NOT NULL DEFAULT 0, created_date DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00', modified_date DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00');
+ALTER TABLE transcript ADD COLUMN (stable_id VARCHAR(128) NOT NULL DEFAULT '', version SMALLINT UNSIGNED NOT NULL DEFAULT 1, created_date DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00', modified_date DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00');
 ALTER TABLE transcript ADD INDEX stable_id_idx (stable_id, version);
   
-ALTER TABLE translation ADD COLUMN (stable_id VARCHAR(128) NOT NULL DEFAULT '', version INT(10) NOT NULL DEFAULT 0, created_date DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00', modified_date DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00');
+ALTER TABLE translation ADD COLUMN (stable_id VARCHAR(128) NOT NULL DEFAULT '', version SMALLINT UNSIGNED NOT NULL DEFAULT 1, created_date DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00', modified_date DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00');
 ALTER TABLE translation ADD INDEX stable_id_idx (stable_id, version);
 
 UPDATE exon o, exon_stable_id s SET o.stable_id = s.stable_id, o.version = s.version, o.created_date = s.created_date, o.modified_date = s.modified_date WHERE o.exon_id = s.exon_id;
