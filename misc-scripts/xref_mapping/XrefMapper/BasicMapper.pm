@@ -267,31 +267,34 @@ sub process_file {
   my $eval_test = eval {
     require $class;
   };
-  if($@ and $eval_test) {
+  if($@ or !$eval_test) {
     if ($@ =~ /Can\'t locate $class/) {
       if (defined $taxon) {
       	$class = "XrefMapper/$taxon.pm";
       	eval {
-         	require $class;
+	  require $class;
       	};
       	if($@) {
-         	if ($@ =~ /Can\'t locate $class/)  {
-	 		$use_basic = 1;
-		} else { croak "$@"; }
+	  if ($@ =~ /Can\'t locate $class/)  {
+	    $use_basic = 1;
+	  } else { croak "$@"; }
        	} else {
-         	$module = $taxon; 
+	  $module = $taxon; 
        	}
       }
       else {
 	$use_basic = 1;
       }
-    } else { croak "$@";}
+    }
+    else {
+      croak "$@";
+    }
 
   } else{
     $module = $value;
   }
 
-  if ($use_basic) {
+  if ($use_basic or !defined $module) {
 	if(defined($verbose) and $verbose) {
 		my $warning_msg = "Did not find a specific mapping module XrefMapper::$value ";
 		if (defined $taxon) {
