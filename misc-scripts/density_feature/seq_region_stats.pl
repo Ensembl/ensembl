@@ -23,77 +23,26 @@ GetOptions( "host|h=s", \$host,
 usage() if (!$host || !$user || !$pass || (!$dbname && !$pattern) || !$stats || $stats !~ /^(gene|snp)$/ );
 
 
-my %attrib_codes = ( 'miRNA'                => 'miRNA',
-		     'snRNA'                => 'snRNA',
-		     'snoRNA'               => 'snoRNA',
-		     'rRNA'                 => 'rRNA',
-		     'tRNA'                 => 'tRNA',
-		     'snlRNA'               => 'snlRNA',
-		     'known protein_coding' => 'knwCod',
-		     'misc_RNA'             => 'mscRNA',
-		     'novel protein_coding' => 'novCod',
-		     'pseudogene'           => 'pseudo',
-		     'scRNA'                => 'scRNA',
-		     'Mt_tRNA'              => 'MTtRNA',
-		     'Mt_rRNA'              => 'MTrRNA',
-                     'ncRNA'                => 'ncRNA',
-		     '3prime_overlapping_ncrna' => 'ncRNA', # (v63)
-		     'polymorphic_pseudogene' => 'pseudo',
-                     'havana_pseudogene'    => 'pseudo', 
-                     'processed_pseudogene' => 'pseudo', 
-                     'unprocessed_pseudogene' => 'pseudo', 
-                     'Pseudogene'           => 'pseudo', 
-                     'transcribed_pseudogene' => 'pseudo', # added for v54, else is flagged as "Unspecified biotype"
-		     'scRNA_pseudogene'     => 'RNA_pseu',
-		     'tRNA_pseudogene'      => 'RNA_pseu',
-		     'rRNA_pseudogene'      => 'RNA_pseu',
-		     'snoRNA_pseudogene'    => 'RNA_pseu',
-		     'snRNA_pseudogene'     => 'RNA_pseu',
-		     'misc_RNA_pseudogene'  => 'RNA_pseu',
-		     'miRNA_pseudogene'     => 'RNA_pseu',
-		     'Mt_tRNA_pseudogene'   => 'RNA_pseu',
-		     'IG_V_gene'            => 'Ig',
-		     'IG_J_gene'            => 'Ig',
-		     'IG_D_gene'            => 'Ig',
-		     'IG_C_gene'            => 'Ig',
-		     'IG_Z_gene'            => 'Ig',
-		     'IG_M_gene'            => 'Ig',
-		     'TR_C_gene'            => 'Ig', #Actually it is TR but was put with Igs (v62)
-		     'TR_J_gene'            => 'Ig', #Actually it is TR but was put with Igs (v62)
-		     'TR_V_gene'            => 'Ig', #Actually it is TR but was put with Igs (v62)
-                     'TR_D_gene'            => 'Ig', #Actually it is TR but was put with Igs (v62)
-		     'C_segment'            => 'Ig',
-		     'D_segment'            => 'Ig',
-		     'J_segment'            => 'Ig',
-		     'V_segment'            => 'Ig',
-                     'IG_pseudogene'        => 'pseudo',
-		     'IG_V_pseudogene'      => 'pseudo',
-		     'IG_C_pseudogene'      => 'pseudo',
-		     'TR_V_pseudogene'      => 'pseudo',
-                     'TR_J_pseudogene'      => 'pseudo',
-		     'IG_J_pseudogene'      => 'pseudo',
-		     'retrotransposed'      => 'rettran',
-		     'processed_transcript' => 'proc_tr',
-		     'lincRNA'              => 'lincRNA');
-
-
-
-#get biotypes from the production database when new field attr_code is added to the biotype table
+#get biotypes and attrib codes from the production database
 
 # Master database location:
-# my ( $mhost, $mport ) = ( 'ens-staging1', '3306' );
-# my ( $muser, $mpass ) = ( 'ensro',        undef );
-# my $mdbname = 'ensembl_production';
+my ( $mhost, $mport ) = ( 'ens-staging1', '3306' );
+my ( $muser, $mpass ) = ( 'ensro',        undef );
+my $mdbname = 'ensembl_production';
 
 
-# my $prod_dsn = sprintf( 'DBI:mysql:host=%s;port=%d;database=%s',
-  #                   $mhost, $mport, $mdbname );
-# my $prod_dbh = DBI->connect( $prod_dsn, $muser, $mpass,
-  #                        { 'PrintError' => 1, 'RaiseError' => 1 } );
+my $prod_dsn = sprintf( 'DBI:mysql:host=%s;port=%d;database=%s',
+                     $mhost, $mport, $mdbname );
+my $prod_dbh = DBI->connect( $prod_dsn, $muser, $mpass,
+                          { 'PrintError' => 1, 'RaiseError' => 1 } );
 
-#my @attrib_codes  = map { @_[0]->@_[1] }  @{ $prod_dbh->selectall_arrayref('select distinct name, attr_code from biotype where is_current = 1 order by name') };
+my $attrib_codes_ref = $prod_dbh->selectcol_arrayref("select distinct b.name, code from biotype b join attrib_type using(attrib_type_id) where is_current = 1 and db_type like '%core%' and object_type = 'gene' order by b.name", { Columns=>[1,2] });
 
-#my %attrib_codes = map { $_=>$_} @attrib_codes;
+my %attrib_codes = @$attrib_codes_ref;
+
+#add known and novel protein coding attrib types
+$attrib_codes{'known protein_coding'} = 'GeneNo_knwCod';
+$attrib_codes{'novel protein_coding'} = 'GeneNo_novCod';
 
 my @dbnames;
 if (! $dbname) {
@@ -125,7 +74,7 @@ foreach my $name (@dbnames) {
   if ($genestats) {
       foreach my $code (values %attrib_codes) {
 	  my $sth = $db->dbc()->prepare( "DELETE sa FROM seq_region_attrib sa, attrib_type at WHERE at.attrib_type_id=sa.attrib_type_id AND at.code=?" );
-	  $sth->execute("GeneNo_$code");
+	  $sth->execute($code);
       }
   }
   
@@ -216,11 +165,13 @@ foreach my $name (@dbnames) {
       }
 
       foreach my $attrib_code (keys %attrib_counts) {
+	  my $attrib_code_desc = $attrib_code;
+	  $attrib_code_desc =~ s/GeneNo_//;  
 	push @attribs, Bio::EnsEMBL::Attribute->new
-	  (-NAME => $attrib_code.' Gene Count',
-	   -CODE => 'GeneNo_'.$attrib_code,
+	  (-NAME => $attrib_code_desc.' Gene Count',
+	   -CODE => $attrib_code,
 	   -VALUE => $attrib_counts{$attrib_code},
-	   -DESCRIPTION => 'Number of '.$attrib_code.' Genes');
+	   -DESCRIPTION => 'Number of '.$attrib_code_desc.' Genes');
 
       }
 
