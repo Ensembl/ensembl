@@ -477,7 +477,7 @@ sub print_stats {
     my $projected = count_rows($to_ga, "SELECT COUNT(*) FROM gene g, xref x WHERE g.display_xref_id=x.xref_id AND x.info_type='PROJECTION'");
     printf(" projected %d (%3.1f\%)" , $projected, (100 * $projected / $total_genes));
 
-    $count = count_rows($to_ga, "SELECT COUNT(*) FROM gene g, xref x, external_db e WHERE g.display_xref_id=x.xref_id AND x.external_db_id=e.external_db_id AND e.db_name IN ('RefSeq_dna_predicted', 'RefSeq_peptide_predicted')");
+    $count = count_rows($to_ga, "SELECT COUNT(*) FROM gene g, xref x, external_db e WHERE g.display_xref_id=x.xref_id AND x.external_db_id=e.external_db_id AND e.db_name IN ('RefSeq_mRNA_predicted', 'RefSeq_ncRNA_predicted', 'RefSeq_peptide_predicted')");
     printf(" predicted %d (%3.1f\%)" , $count, (100 * $count / $total_genes));
 
     $count = count_rows($to_ga, "SELECT COUNT(*) FROM gene g WHERE display_xref_id IS NOT NULL");
@@ -638,7 +638,7 @@ sub check_overwrite_display_xref {
 
   return 1 if (!$to_gene->external_name() && $to_species ne "zebrafish");
 
-  if ($to_dbname eq "RefSeq_dna_predicted" || $to_dbname eq "RefSeq_peptide_predicted") {
+  if ($to_dbname eq "RefSeq_mRNA_predicted" || $to_dbname eq "RefSeq_ncRNA_predicted" || $to_dbname eq "RefSeq_peptide_predicted") {
 
     if (($from_species eq "human" && $from_dbname =~ /HGNC/) ||
 	($from_species eq "mouse" && $from_dbname =~ /MarkerSymbol/)) {
