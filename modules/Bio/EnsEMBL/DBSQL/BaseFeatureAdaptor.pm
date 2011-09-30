@@ -56,6 +56,29 @@ our $SLICE_FEATURE_CACHE_SIZE    = 4;
 our $MAX_SPLIT_QUERY_SEQ_REGIONS = 3;
 our $SILENCE_CACHE_WARNINGS = 0;
 
+=head2 new
+
+  Arg [1]    : list of args @args
+               Superclass constructor arguments
+  Example    : none
+  Description: Constructor which warns if caching has been switched off
+  Returntype : Bio::EnsEMBL::BaseFeatureAdaptor
+  Exceptions : none
+  Caller     : implementing subclass constructors
+  Status     : Stable
+
+=cut
+
+sub new {
+  my ($class, @args) = @_;
+  my $self = $class->SUPER::new(@args);
+  if ( defined $self->db->no_cache() && $self->db->no_cache() && ! $SILENCE_CACHE_WARNINGS) {
+    warning(  "You are using the API without caching most recent features. "
+            . "Performance might be affected." );
+  }
+  return $self;
+}
+
 =head2 clear_cache
 
   Args      : None
@@ -85,14 +108,15 @@ our $SILENCE_CACHE_WARNINGS = 0;
 
 sub clear_cache {
   my ($self) = @_;
-  %{$self->{'_slice_feature_cache'}} = ();
+  %{$self->{_slice_feature_cache}} = ();
   return;
 }
 
 =head2 _slice_feature_cache
  
   Description	: Returns the feature cache if we are allowed to cache and
-                will build it if we need to
+                will build it if we need to. We will never return a reference
+                to the hash to avoid unintentional auto-vivfying caching
   Returntype 	: Bio::EnsEMBL::Utils::Cache
   Exceptions 	: None
   Caller     	: Internal
@@ -101,21 +125,10 @@ sub clear_cache {
 
 sub _slice_feature_cache {
   my ($self) = @_;
+  return if $self->db()->no_cache();
   if(! exists $self->{_slice_feature_cache}) {
-    if ( $self->db->no_cache() ) {
-      if(! $self->{_already_warned_cache} && ! $SILENCE_CACHE_WARNINGS) {
-        warning(
-            "You are using the API without caching most recent features. "
-              . "Performance might be affected." );
-      }
-      $self->{_already_warned_cache} = 1;
-    } 
-    else {
-      my %cache;
-      tie( %cache, 'Bio::EnsEMBL::Utils::Cache',
-           $SLICE_FEATURE_CACHE_SIZE );
-      $self->{_slice_feature_cache} = \%cache;
-    }
+    tie my %cache, 'Bio::EnsEMBL::Utils::Cache', $SLICE_FEATURE_CACHE_SIZE;
+    $self->{_slice_feature_cache} = \%cache;
   }
   return $self->{_slice_feature_cache};
 }
