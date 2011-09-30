@@ -447,7 +447,9 @@ INSERT INTO meta (species_id, meta_key, meta_value) VALUES
 # NOTE: Avoid line-breaks in values.
 INSERT INTO meta (species_id, meta_key, meta_value) VALUES
   (NULL, 'patch', 'patch_64_65_a.sql|schema_version'),
-  (NULL, 'patch', 'patch_64_65_b.sql|merge_stable_id_with_object');
+  (NULL, 'patch', 'patch_64_65_b.sql|merge_stable_id_with_object'),
+  (NULL, 'patch', 'patch_64_65_c.sql|add_data_file'),
+  (NULL, 'patch', 'patch_64_65_d.sql|add_checksum_info_type');
 
 /**
 @table meta_coord
@@ -2485,15 +2487,43 @@ CREATE TABLE interpro (
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
 
 
+/**
+@table data_file
+@desc Allows the storage of flat file locations used to store large quanitities of data currently unsuitable in a traditional database table.
 
-CREATE VIEW exon_stable_id (exon_id, stable_id, version, created_date, modified_date) AS (SELECT exon_id, stable_id, version, created_date, modified_date FROM exon);
+@column data_file_id      Auto-increment surrogate primary key
+@column coord_system_id   Coordinate system this file is linked to. Used to decipher the assembly version it was mapped to
+@column analysis_id       Analysis this file is linked to
+@column name              Name of the file
+@column version_lock      Indicates that this file is only compatible with the current Ensembl release version
+@column absolute          Flags that the URL given is fully resolved and should be used without question
+@column url               Optional path to the file (can be absolute or relative)
+@column file_type         Type of file e.g. BAM, BIGBED, BIGWIG and VCF
+*/
 
-CREATE VIEW gene_stable_id (gene_id, stable_id, version, created_date, modified_date) AS (SELECT gene_id, stable_id, version, created_date, modified_date FROM gene);
+CREATE TABLE data_file (
+  data_file_id int(11) unsigned NOT NULL AUTO_INCREMENT,
+  coord_system_id int(11) NOT NULL,
+  analysis_id int(11) NOT NULL,
+  name varchar(100) NOT NULL,
+  version_lock tinyint(1) DEFAULT 0 NOT NULL,
+  absolute tinyint(1) DEFAULT 0 NOT NULL,
+  url text,
+  file_type enum('BAM','BIGBED','BIGWIG','VCF'),
+  PRIMARY KEY (data_file_id),
+  UNIQUE KEY df_unq_idx(coord_system_id, analysis_id, name, file_type),
+  INDEX df_name_idx(name),
+  INDEX df_analysis_idx(analysis_id)
+);
 
-CREATE VIEW operon_stable_id (operon_id, stable_id, version, created_date, modified_date) AS (SELECT operon_id, stable_id, version, created_date, modified_date FROM operon);
+CREATE DEFINER = CURRENT_USER SQL SECURITY INVOKER VIEW exon_stable_id (exon_id, stable_id, version, created_date, modified_date) AS (SELECT exon_id, stable_id, version, created_date, modified_date FROM exon);
 
-CREATE VIEW operon_transcript_stable_id (operon_transcript_id, stable_id, version, created_date, modified_date) AS (SELECT operon_transcript_id, stable_id, version, created_date, modified_date FROM operon_transcript);
+CREATE DEFINER = CURRENT_USER SQL SECURITY INVOKER VIEW gene_stable_id (gene_id, stable_id, version, created_date, modified_date) AS (SELECT gene_id, stable_id, version, created_date, modified_date FROM gene);
 
-CREATE VIEW translation_stable_id (translation_id, stable_id, version, created_date, modified_date) AS (SELECT translation_id, stable_id, version, created_date, modified_date FROM translation);
+CREATE DEFINER = CURRENT_USER SQL SECURITY INVOKER VIEW operon_stable_id (operon_id, stable_id, version, created_date, modified_date) AS (SELECT operon_id, stable_id, version, created_date, modified_date FROM operon);
 
-CREATE VIEW transcript_stable_id (transcript_id, stable_id, version, created_date, modified_date) AS (SELECT transcript_id, stable_id, version, created_date, modified_date FROM transcript);
+CREATE DEFINER = CURRENT_USER SQL SECURITY INVOKER VIEW operon_transcript_stable_id (operon_transcript_id, stable_id, version, created_date, modified_date) AS (SELECT operon_transcript_id, stable_id, version, created_date, modified_date FROM operon_transcript);
+
+CREATE DEFINER = CURRENT_USER SQL SECURITY INVOKER VIEW translation_stable_id (translation_id, stable_id, version, created_date, modified_date) AS (SELECT translation_id, stable_id, version, created_date, modified_date FROM translation);
+
+CREATE DEFINER = CURRENT_USER SQL SECURITY INVOKER VIEW transcript_stable_id (transcript_id, stable_id, version, created_date, modified_date) AS (SELECT transcript_id, stable_id, version, created_date, modified_date FROM transcript);
