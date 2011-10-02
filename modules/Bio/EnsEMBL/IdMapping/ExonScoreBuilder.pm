@@ -352,48 +352,55 @@ sub compare_exon_containers {
 # Score of at least 0.5 are added to the exon scoring matrix.
 #
 sub calc_overlap_score {
-  my $self = shift;
+  my $self        = shift;
   my $source_exon = shift;
   my $target_exon = shift;
-  my $matrix = shift;
+  my $matrix      = shift;
 
-  my ($start, $end);
+  my ( $start, $end );
 
   # don't score if exons on different strand
-  return unless ($source_exon->strand == $target_exon->strand);
-  
+  return unless ( $source_exon->strand == $target_exon->strand );
+
   # determine overlap start
-  if ($source_exon->start > $target_exon->start) {
+  if ( $source_exon->start > $target_exon->start ) {
     $start = $source_exon->start;
-  } else {
+  }
+  else {
     $start = $target_exon->start;
   }
-  
+
   # determine overlap end
-  if ($source_exon->end < $target_exon->end) {
+  if ( $source_exon->end < $target_exon->end ) {
     $end = $source_exon->end;
-  } else {
+  }
+  else {
     $end = $target_exon->end;
   }
 
   #
-  # calculate score, which is defined as average overlap / exon length ratio
+  # Calculate score, which is defined as average overlap / exon length
+  # ratio.
   #
-  my $overlap = $end - $start + 1;
+
+  my $overlap       = $end - $start + 1;
   my $source_length = $source_exon->end - $source_exon->start + 1;
   my $target_length = $target_exon->end - $target_exon->start + 1;
-  
-  my $score = ($overlap/$source_length + $overlap/$target_length)/2;
+
+  my $score = ( $overlap/$source_length + $overlap/$target_length )/2;
 
   # PENALTY:
   # penalise by 10% if phase if different
-  $score *= 0.9 if ($source_exon->phase != $target_exon->phase);
+  if ( $source_exon->phase != $target_exon->phase ) {
+    $score *= 0.9;
+  }
 
   # add score to scoring matrix if it's at least 0.5
-  if ($score >= 0.5) {
-    $matrix->add_score($source_exon->id, $target_exon->id, $score);
+  if ( $score >= 0.5 ) {
+    $matrix->add_score( $source_exon->id, $target_exon->id, $score );
   }
-}
+
+} ## end sub calc_overlap_score
 
 
 sub run_exonerate {

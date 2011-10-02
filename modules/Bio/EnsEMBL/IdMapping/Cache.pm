@@ -255,13 +255,14 @@ sub build_cache_all {
 =cut
 
 sub build_cache_from_genes {
-  my $self = shift;
-  my $type = shift;
-  my $genes = shift;
+  my $self         = shift;
+  my $type         = shift;
+  my $genes        = shift;
   my $need_project = shift;
-  
+
   throw("You must provide a type.") unless $type;
-  throw("You must provide a listref of genes.") unless (ref($genes) eq 'ARRAY');
+  throw("You must provide a listref of genes.")
+    unless ( ref($genes) eq 'ARRAY' );
 
   # biotype filter
   if ( $self->conf->param('biotypes') ) {
@@ -276,139 +277,130 @@ sub build_cache_from_genes {
   #my $num_genes = scalar(@$genes);
   #my $progress_id = $self->logger->init_progress($num_genes);
 
-  # loop over genes sorted by gene location.
-  # the sort will hopefully improve assembly mapper cache performance and
-  # therefore speed up exon sequence retrieval
-  foreach my $gene (sort { $a->start <=> $b->start } @$genes) {
+ # loop over genes sorted by gene location.
+ # the sort will hopefully improve assembly mapper cache performance and
+ # therefore speed up exon sequence retrieval
+  foreach my $gene ( sort { $a->start <=> $b->start } @$genes ) {
     #$self->logger->log_progressbar($progress_id, ++$i, 2);
     #$self->logger->log_progress($num_genes, ++$i, 20, 3, 1);
 
-    if ($need_project eq 'CHECK') {
+    if ( $need_project eq 'CHECK' ) {
       # find out whether native coord_system is a common coord_system.
       # if so, you don't need to project.
       # also don't project if no common coord_system present
-      if ($self->highest_common_cs) {
-        my $csid = join(':', $gene->slice->coord_system_name,
-                             $gene->slice->coord_system->version);
-        if ($self->is_common_cs($csid)) {
+      if ( $self->highest_common_cs ) {
+        my $csid = join( ':',
+                         $gene->slice->coord_system_name,
+                         $gene->slice->coord_system->version );
+        if ( $self->is_common_cs($csid) ) {
           $need_project = 0;
         }
-      } else {
+      }
+      else {
         $need_project = 0;
       }
     }
 
     # create lightweigt gene
-    my $lgene = Bio::EnsEMBL::IdMapping::TinyGene->new_fast([
-        $gene->dbID,
-        $gene->stable_id,
-        $gene->version,
-        $gene->created_date,
-        $gene->modified_date,
-        $gene->start,
-        $gene->end,
-        $gene->strand,
-        $gene->slice->seq_region_name,
-        $gene->biotype,
-        $gene->status,
-        $gene->analysis->logic_name,
-        ($gene->is_known ? 1 : 0),
-    ]);
+    my $lgene =
+      Bio::EnsEMBL::IdMapping::TinyGene->new_fast( [
+                          $gene->dbID,          $gene->stable_id,
+                          $gene->version,       $gene->created_date,
+                          $gene->modified_date, $gene->start,
+                          $gene->end,           $gene->strand,
+                          $gene->slice->seq_region_name, $gene->biotype,
+                          $gene->status, $gene->analysis->logic_name,
+                          ( $gene->is_known ? 1 : 0 ), ] );
 
     # build gene caches
-    $self->add('genes_by_id', $type, $gene->dbID, $lgene);
-    
+    $self->add( 'genes_by_id', $type, $gene->dbID, $lgene );
+
     # transcripts
-    foreach my $tr (@{ $gene->get_all_Transcripts }) {
-      my $ltr = Bio::EnsEMBL::IdMapping::TinyTranscript->new_fast([
-          $tr->dbID,
-          $tr->stable_id,
-          $tr->version,
-          $tr->created_date,
-          $tr->modified_date,
-          $tr->start,
-          $tr->end,
-          $tr->strand,
-          $tr->length,
-          md5_hex($tr->spliced_seq),
-          ($tr->is_known ? 1 : 0),
-      ]);
+    foreach my $tr ( @{ $gene->get_all_Transcripts } ) {
+      my $ltr =
+        Bio::EnsEMBL::IdMapping::TinyTranscript->new_fast( [
+                               $tr->dbID,          $tr->stable_id,
+                               $tr->version,       $tr->created_date,
+                               $tr->modified_date, $tr->start,
+                               $tr->end,           $tr->strand,
+                               $tr->length, md5_hex( $tr->spliced_seq ),
+                               ( $tr->is_known ? 1 : 0 ), ] );
 
       $lgene->add_Transcript($ltr);
 
       # build transcript caches
-      $self->add('transcripts_by_id', $type, $tr->dbID, $ltr);
-      $self->add('genes_by_transcript_id', $type, $tr->dbID, $lgene);
+      $self->add( 'transcripts_by_id',      $type, $tr->dbID, $ltr );
+      $self->add( 'genes_by_transcript_id', $type, $tr->dbID, $lgene );
 
       # translation (if there is one)
-      if (my $tl = $tr->translation) {
-        my $ltl = Bio::EnsEMBL::IdMapping::TinyTranslation->new_fast([
-            $tl->dbID,
-            $tl->stable_id,
-            $tl->version,
-            $tl->created_date,
-            $tl->modified_date,
-            $tr->dbID,
-            $tr->translate->seq,
-            ($tr->is_known ? 1 : 0),
-        ]);
+      if ( my $tl = $tr->translation ) {
+        my $ltl =
+          Bio::EnsEMBL::IdMapping::TinyTranslation->new_fast( [
+                         $tl->dbID,          $tl->stable_id,
+                         $tl->version,       $tl->created_date,
+                         $tl->modified_date, $tr->dbID,
+                         $tr->translate->seq, ( $tr->is_known ? 1 : 0 ),
+                       ] );
 
         $ltr->add_Translation($ltl);
 
-        $self->add('translations_by_id', $type, $tl->dbID, $ltl);
+        $self->add( 'translations_by_id', $type, $tl->dbID, $ltl );
 
         undef $tl;
       }
 
       # exons
-      foreach my $exon (@{ $tr->get_all_Exons }) {
-        my $lexon = Bio::EnsEMBL::IdMapping::TinyExon->new_fast([
-            $exon->dbID,
-            $exon->stable_id,
-            $exon->version,
-            $exon->created_date,
-            $exon->modified_date,
-            $exon->start,
-            $exon->end,
-            $exon->strand,
-            $exon->slice->seq_region_name,
-            $exon->slice->coord_system_name,
-            $exon->slice->coord_system->version,
-            $exon->slice->subseq($exon->start, $exon->end, $exon->strand),
-            $exon->phase,
-            $need_project,
-        ]);
+      foreach my $exon ( @{ $tr->get_all_Exons } ) {
+        my $lexon =
+          Bio::EnsEMBL::IdMapping::TinyExon->new_fast( [
+                         $exon->dbID,
+                         $exon->stable_id,
+                         $exon->version,
+                         $exon->created_date,
+                         $exon->modified_date,
+                         $exon->start,
+                         $exon->end,
+                         $exon->strand,
+                         $exon->slice->seq_region_name,
+                         $exon->slice->coord_system_name,
+                         $exon->slice->coord_system->version,
+                         $exon->slice->subseq( $exon->start, $exon->end,
+                                               $exon->strand ),
+                         $exon->phase,
+                         $need_project, ] );
 
         # get coordinates in common coordinate system if needed
         if ($need_project) {
-          my @seg = @{ $exon->project($self->highest_common_cs,
-                                      $self->highest_common_cs_version) };
+          my @seg = @{
+            $exon->project( $self->highest_common_cs,
+                            $self->highest_common_cs_version ) };
 
-          if (scalar(@seg) == 1) {
+          if ( scalar(@seg) == 1 ) {
             my $sl = $seg[0]->to_Slice;
-            $lexon->common_start($sl->start);
-            $lexon->common_end($sl->end);
-            $lexon->common_strand($sl->strand);
-            $lexon->common_sr_name($sl->seq_region_name);
+            $lexon->common_start( $sl->start );
+            $lexon->common_end( $sl->end );
+            $lexon->common_strand( $sl->strand );
+            $lexon->common_sr_name( $sl->seq_region_name );
           }
         }
 
         $ltr->add_Exon($lexon);
 
-        $self->add('exons_by_id', $type, $exon->dbID, $lexon);
-        $self->add_list('transcripts_by_exon_id', $type, $exon->dbID, $ltr);
+        $self->add( 'exons_by_id', $type, $exon->dbID, $lexon );
+        $self->add_list( 'transcripts_by_exon_id',
+                         $type, $exon->dbID, $ltr );
 
         undef $exon;
-      }
+      } ## end foreach my $exon ( @{ $tr->get_all_Exons...})
 
       undef $tr;
-    }
+    } ## end foreach my $tr ( @{ $gene->get_all_Transcripts...})
 
     undef $gene;
-  }
+  } ## end foreach my $gene ( sort { $a...})
 
   return $num_genes;
-}
+} ## end sub build_cache_from_genes
 
 
 =head2 filter_biotypes
@@ -565,40 +557,40 @@ sub find_common_coord_systems {
   # get adaptors for source db
   my $s_dba = $self->get_DBAdaptor('source');
   my $s_csa = $s_dba->get_CoordSystemAdaptor;
-  my $s_sa = $s_dba->get_SliceAdaptor;
+  my $s_sa  = $s_dba->get_SliceAdaptor;
 
   # get adaptors for target db
   my $t_dba = $self->get_DBAdaptor('target');
   my $t_csa = $t_dba->get_CoordSystemAdaptor;
-  my $t_sa = $t_dba->get_SliceAdaptor;
+  my $t_sa  = $t_dba->get_SliceAdaptor;
 
   # find common coord_systems
   my @s_coord_systems = @{ $s_csa->fetch_all };
   my @t_coord_systems = @{ $t_csa->fetch_all };
-  my $found_highest = 0;
+  my $found_highest   = 0;
 
-  SOURCE:
+SOURCE:
   foreach my $s_cs (@s_coord_systems) {
     if ( !$s_cs->is_default() ) { next SOURCE }
 
-    TARGET:
+  TARGET:
     foreach my $t_cs (@t_coord_systems) {
       if ( !$t_cs->is_default() ) { next TARGET }
 
-      if ($s_cs->name eq $t_cs->name) {
+      if ( $s_cs->name eq $t_cs->name ) {
 
         # test for identical coord_system version
-        if ($s_cs->version and ($s_cs->version ne $t_cs->version)) {
+        if ( $s_cs->version and ( $s_cs->version ne $t_cs->version ) ) {
           next TARGET;
         }
 
         # test for at least 50% identical seq_regions
-        if ($self->seq_regions_compatible($s_cs, $s_sa, $t_sa)) {
+        if ( $self->seq_regions_compatible( $s_cs, $s_sa, $t_sa ) ) {
           $self->add_common_cs($s_cs);
-          
+
           unless ($found_highest) {
-            $self->highest_common_cs($s_cs->name);
-            $self->highest_common_cs_version($s_cs->version);
+            $self->highest_common_cs( $s_cs->name );
+            $self->highest_common_cs_version( $s_cs->version );
           }
 
           $found_highest = 1;
@@ -606,11 +598,11 @@ sub find_common_coord_systems {
           next SOURCE;
         }
       }
-    }
-  }
-  
+    } ## end foreach my $t_cs (@t_coord_systems)
+  } ## end foreach my $s_cs (@s_coord_systems)
+
   return $found_highest;
-}
+} ## end sub find_common_coord_systems
 
 
 sub seq_regions_compatible {
