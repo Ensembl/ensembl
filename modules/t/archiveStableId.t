@@ -154,7 +154,6 @@ ok( ! $asi->is_latest );
 $asi = $asi->get_latest_incarnation;
 ok( $asi->is_latest and $asi->version == 3 );
 
-
 #
 # 19 associated IDs in archive
 #

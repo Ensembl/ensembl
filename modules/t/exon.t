@@ -181,18 +181,18 @@ ok($first_seq->seq() && $first_seq->seq() eq $second_seq->seq());
 ok($first_seq->display_id()  && $first_seq->display_id() eq $second_seq->display_id());
 
 
-
 #
 # test the remove method works
 #
-$multi->save("core", "exon", "exon_stable_id", "supporting_feature",
+
+$multi->save("core", "exon", "supporting_feature",
   "dna_align_feature", "protein_align_feature");
 
 my $ex_count = count_rows($db, 'exon');
-my $exstable_count = count_rows($db, 'exon_stable_id');
 my $supfeat_count = count_rows($db, 'supporting_feature');
 
 $exon = $exonad->fetch_by_stable_id('ENSE00000859937');
+
 # check the created and modified times
 my @date_time = localtime( $exon->created_date());
 ok( $date_time[3] == 6 && $date_time[4] == 11 && $date_time[5] == 104 );
@@ -206,7 +206,6 @@ my $supfeat_minus = @{$exon->get_all_supporting_features()};
 $exonad->remove($exon);
 
 ok(count_rows($db, 'exon') == $ex_count - 1);
-ok(count_rows($db, 'exon_stable_id') == $exstable_count - 1);
 ok(count_rows($db, 'supporting_feature') == $supfeat_count - $supfeat_minus);
 
 $multi->restore();
@@ -291,3 +290,7 @@ ok( $exon->cdna_coding_end($transcript) == 462 );
 ok( $exon->coding_region_start($transcript) == 30577779 );
 ok( $exon->coding_region_end($transcript) == 30578038 );
 
+#test the get_species_and_object_type method from the Registry
+my $registry = 'Bio::EnsEMBL::Registry';
+my ( $species, $object_type, $db_type ) = $registry->get_species_and_object_type('ENSE00000859937');
+ok( $species eq 'homo_sapiens' && $object_type eq 'Exon');

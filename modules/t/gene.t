@@ -3,7 +3,7 @@ use warnings;
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 93;
+	plan tests => 94;
 }
 
 use Bio::EnsEMBL::Test::MultiTestDB;
@@ -284,7 +284,7 @@ my $stable_id = 'ENSG00000171456';
 $gene->description($desc);
 $gene->stable_id($stable_id);
 
-$multi->hide( "core", "meta_coord", "gene", "transcript", "exon", "exon_transcript", "translation", "gene_stable_id", "transcript_stable_id", "exon_stable_id", "translation_stable_id", "supporting_feature", "dna_align_feature" );
+$multi->hide( "core", "meta_coord", "gene", "transcript", "exon", "exon_transcript", "translation", "supporting_feature", "dna_align_feature" );
 
 my $gene_ad = $db->get_GeneAdaptor();
 debug( "Storing the gene" );
@@ -527,10 +527,9 @@ ok( $ok );
 # Gene remove test
 #
 
-$multi->save( "core", "gene", "gene_stable_id",
-	      "transcript", "transcript_stable_id",
-	      "translation", "translation_stable_id", "protein_feature",
-	      "exon", "exon_stable_id", "exon_transcript", "supporting_feature",
+$multi->save( "core", "gene", "transcript", 
+	      "translation", "protein_feature",
+	      "exon", "exon_transcript", "supporting_feature",
 	      "object_xref", "ontology_xref", "identity_xref",
         "dna_align_feature", "protein_align_feature");
 
@@ -540,7 +539,6 @@ my $gene_count = count_rows( $db, "gene" );
 my $exon_count = count_rows( $db, "exon" );
 my $trans_count = count_rows( $db, "transcript" );
 my $tl_count = count_rows( $db, "translation" );
-my $gstable_count = count_rows($db, "gene_stable_id");
 
 my $tminus = scalar( @{$gene->get_all_Transcripts() } );
 my $eminus = scalar( @{$gene->get_all_Exons() } );
@@ -557,7 +555,6 @@ $ga->remove( $gene );
 ok( count_rows( $db, "gene" ) == ( $gene_count - 1 ));
 ok( count_rows( $db, "transcript" ) == ($trans_count-$tminus));
 ok( count_rows( $db, "exon" ) == ( $exon_count - $eminus ));
-ok( count_rows( $db, "gene_stable_id" ) == ($gstable_count -1));
 
 ok(!defined($gene->dbID()));
 ok(!defined($gene->adaptor()));
@@ -688,6 +685,10 @@ $gene = $ga->fetch_by_translation_stable_id('ENSP00000355555');
 debug("fetch_by_translation_stable_id");
 ok( $gene->dbID == 18275 );
 
+$gene = $ga->fetch_by_exon_stable_id('ENSE00001109603');
+debug("fetch_by_exon_stable_id");
+ok( $gene->dbID == 18275 );
+
 @genes = @{ $ga->fetch_all_by_external_name('PAL2_HUMAN') };
 debug( "fetch_all_by_external_name" );
 ok( scalar(@genes) == 1 && $genes[0]->dbID == 18264 );
@@ -712,7 +713,7 @@ foreach my $t (@{ $gene->get_all_Transcripts }) {
 }
 
 $multi->hide( "core", "gene", "transcript", "exon", 'xref', 'object_xref',
-              "exon_transcript", "translation", "gene_stable_id" );
+              "exon_transcript", "translation" );
 
 $gene->version(3);
 $gene->dbID(undef);
@@ -786,3 +787,8 @@ ok(@{$utaa->fetch_all_by_gene($new_gene)} == 0);
 $new_gene = $ga->fetch_by_dbID(18256);
 ok($new_gene->canonical_transcript->dbID == 21716);  #test 85
 ok($new_gene->canonical_annotation eq 'longest transcript in gene'); #test 86
+
+#test the get_species_and_object_type method from the Registry
+my $registry = 'Bio::EnsEMBL::Registry';
+my ( $species, $object_type, $db_type ) = $registry->get_species_and_object_type('ENSG00000355555');
+ok( $species eq 'homo_sapiens' && $object_type eq 'Gene');

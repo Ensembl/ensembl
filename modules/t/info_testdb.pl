@@ -93,7 +93,7 @@ if( $print_contig ) {
 if( $print_gene ) {
 
   print "Gene ids and names\n";
-  $sth = $db->prepare( "select gene_id, stable_id from gene_stable_id" );
+  $sth = $db->prepare( "select gene_id, stable_id from gene" );
   $sth->execute();
   $sth->bind_columns( \$id, \$name );
   while( $sth->fetch() ) {
@@ -104,7 +104,7 @@ if( $print_gene ) {
 
 if( $print_transcript ) {
   print "Transcript ids and names.\n";
-  $sth = $db->prepare( "select transcript_id, stable_id from transcript_stable_id" );
+  $sth = $db->prepare( "select transcript_id, stable_id from transcript" );
   $sth->execute();
   $sth->bind_columns( \$id, \$name );
   while( $sth->fetch() ) {
@@ -114,7 +114,7 @@ if( $print_transcript ) {
 
 if( $print_translation ) {
   print "Translations ids and names\n";
-  $sth = $db->prepare( "select translation_id, stable_id from translation_stable_id" );
+  $sth = $db->prepare( "select translation_id, stable_id from translation" );
   $sth->execute();
   $sth->bind_columns( \$id, \$name );
   while( $sth->fetch() ) {
@@ -125,11 +125,10 @@ if( $print_translation ) {
 if( $print_exon ) {
   print "Exon information\n";
   $sth = $db->prepare( "
-     select et.transcript_id, e.exon_id, esi.stable_id, 
+     select et.transcript_id, e.exon_id, 
             e.contig_id, e.contig_start, e.contig_end, e.contig_strand 
-       from exon e, exon_stable_id esi, exon_transcript et
-      where e.exon_id = esi.exon_id
-        and e.exon_id = et.exon_id    
+       from exon e, exon_transcript et
+      where e.exon_id = et.exon_id    
       order by et.transcript_id, et.rank, e.sticky_rank
 " );
   $sth->execute();

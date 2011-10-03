@@ -8,7 +8,7 @@ use Bio::EnsEMBL::Exon;
 BEGIN {
     $| = 1;
     use Test;
-    plan tests => 40;
+    plan tests => 41;
 }
 
 my $loaded = 0;
@@ -154,12 +154,11 @@ ok(length($seq) == $translation->length());
 # test remove method
 #
 
-$multi->save('core', 'translation', 'translation_stable_id',
+$multi->save('core', 'translation',
              'protein_feature', 'object_xref', 'identity_xref',
              'ontology_xref');
 
 my $tl_count = count_rows($db, 'translation');
-my $tlstable_count = count_rows($db, 'translation_stable_id');
 my $pfeat_count = count_rows($db, 'protein_feature');
 
 
@@ -171,7 +170,6 @@ ok(!defined($translation->dbID));
 ok(!defined($translation->adaptor()));
 
 ok(count_rows($db, 'translation') == $tl_count - 1);
-ok(count_rows($db, 'translation_stable_id') == $tlstable_count - 1);
 ok(count_rows($db, 'protein_feature') == $pfeat_count - $pfeat_minus);
 
 #
@@ -259,8 +257,7 @@ $tl->adaptor(undef);
 $tl->dbID(undef);
 
 
-$multi->hide('core', 'transcript', 'translation_attrib', 'translation',
-             'translation_stable_id');
+$multi->hide('core', 'transcript', 'translation_attrib', 'translation');
 
 
 # add a couple of attributes to the translation
@@ -295,3 +292,18 @@ ok( $tl->cdna_end() == 1690 );
 
 ok( $tl->genomic_start() == 30572315 );
 ok( $tl->genomic_end() == 30578038 );
+
+#test the get_species_and_object_type method from the Registry
+my $registry = 'Bio::EnsEMBL::Registry';
+my ( $species, $object_type, $db_type ) = $registry->get_species_and_object_type('ENSP00000201961');
+ok( $species eq 'homo_sapiens' && $object_type eq 'Translation');
+
+
+#41
+
+my @alt_tls = @{
+      $ta->fetch_all_alternative_by_Transcript(
+                                                            $tr)
+      };
+
+ok(!scalar(@alt_tls))

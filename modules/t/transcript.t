@@ -315,15 +315,14 @@ ok(!defined($five_prime));
 my $tl_count = count_rows($db, "translation");
 my $ex_tr_count = count_rows($db, "exon_transcript");
 my $tr_count = count_rows($db, "transcript");
-my $trstable_count = count_rows($db, "transcript_stable_id");
 
 my $ex_tr_minus = @{$tr->get_all_Exons()};
 
 
 
-$multi->save("core", "transcript", "transcript_stable_id", "translation",
-             "translation_stable_id", "protein_feature", "exon",
-             "exon_stable_id", "exon_transcript", "object_xref",
+$multi->save("core", "transcript", "translation",
+             "protein_feature", "exon",
+             "exon_transcript", "object_xref",
              "supporting_feature", "dna_align_feature","protein_align_feature",
              "ontology_xref", "identity_xref");
 
@@ -335,7 +334,6 @@ ok(!defined($tr->adaptor()));
 ok( count_rows( $db, "transcript") == ($tr_count - 1));
 ok( count_rows( $db, "translation") == ($tl_count - 1));
 ok( count_rows( $db, "exon_transcript") == ($ex_tr_count - $ex_tr_minus));
-ok( count_rows( $db, "transcript_stable_id") == ($trstable_count - 1));
 
 #
 # test _rna_edit for transcripts
@@ -477,8 +475,7 @@ $tr->adaptor(undef);
 }
 
 $multi->hide('core', 'transcript', 'transcript_attrib', 'translation',
-             'exon_transcript', 'exon', 'exon_stable_id', 
-             'transcript_stable_id', 'translation_stable_id');
+             'exon_transcript', 'exon');
 
 
 my $attrib1 = Bio::EnsEMBL::Attribute->new
@@ -545,7 +542,7 @@ $g = $db->get_GeneAdaptor->fetch_by_transcript_id($tr->dbID);
 $tr->get_all_Exons;
 
 $multi->hide( "core", "gene", "transcript", "exon", 'xref', 'object_xref',
-              "exon_transcript", "translation", "transcript_stable_id" );
+              "exon_transcript", "translation" );
 
 $tr->version(3);
 $tr->dbID(undef);
@@ -716,3 +713,7 @@ sub print_coords {
   }
 }
 
+#test the get_species_and_object_type method from the Registry
+my $registry = 'Bio::EnsEMBL::Registry';
+my ( $species, $object_type, $db_type ) = $registry->get_species_and_object_type('ENST00000355555');
+ok( $species eq 'homo_sapiens' && $object_type eq 'Transcript');

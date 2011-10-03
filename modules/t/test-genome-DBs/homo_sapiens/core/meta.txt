@@ -22,3 +22,4 @@
 64	1	assembly.mapping	chromosome:NCBI33#chunk
 65	1	assembly.mapping	alt_chrom#chromosome:NCBI33
 66	1	assembly.mapping	alt_chrom|chromosome:NCBI33|contig
+67	1	species.production_name	homo_sapiens

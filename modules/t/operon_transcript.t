@@ -4,7 +4,7 @@ use warnings;
 BEGIN {
 	$| = 1;
 	use Test;
-	plan tests => 46;
+	plan tests => 50;
 }
 use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::Test::TestUtils;
@@ -175,7 +175,7 @@ ok( $gene_r->seq_region_start(),  $gene->seq_region_start(),  "Gene start" );
 ok( $gene_r->seq_region_end(),    $gene->seq_region_end(),    "Gene end" );
 ok( $gene_r->seq_region_strand(), $gene->seq_region_strand(), "Gene strand" );
 $gene_r = $ogenes[1];
-ok( $gene_r->dbID(),$gene2->dbID(), "Gene ID" );
+ok( $gene_r->dbID(),		  $gene2->dbID(),	       "Gene ID" );
 ok( $gene_r->seq_region_start(),  $gene2->seq_region_start(),  "Gene start" );
 ok( $gene_r->seq_region_end(),    $gene2->seq_region_end(),    "Gene end" );
 ok( $gene_r->seq_region_strand(), $gene2->seq_region_strand(), "Gene strand" );
@@ -208,3 +208,23 @@ $dba->get_OperonAdaptor()->remove($operon);
 $dba->get_GeneAdaptor()->remove($gene);
 $dba->get_GeneAdaptor()->remove($gene2);
 
+#test the get_species_and_object_type method from the Registry
+my $registry = 'Bio::EnsEMBL::Registry';
+my ( $species, $object_type, $db_type ) = $registry->get_species_and_object_type('T16152-16153-4840');
+ok( $species eq 'homo_sapiens' && $object_type eq 'OperonTranscript');
+
+#48
+my $ota = $dba->get_OperonTranscriptAdaptor();
+$operon_transcript = $ota->fetch_by_stable_id('T16152-16153-4840');
+debug( "OperonTranscript->fetch_by_stable_id()" );
+ok( $operon_transcript );
+
+#49
+@operon_transcripts = @{ $ota->fetch_all_versions_by_stable_id('T16152-16153-4840') };
+debug("fetch_all_versions_by_stable_id");
+ok( scalar(@operon_transcripts) == 1 );
+
+#50
+debug ("OperonTranscript->list_stable_ids");
+my $stable_ids = $ota->list_stable_ids();
+ok (@{$stable_ids});

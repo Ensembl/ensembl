@@ -4,7 +4,7 @@ use warnings;
 BEGIN {
 	$| = 1;
 	use Test;
-	plan tests => 15;
+	plan tests => 24;
 }
 use Bio::EnsEMBL::DBEntry;
 use Bio::EnsEMBL::Operon;
@@ -70,3 +70,60 @@ ok( $operon2->analysis(),
 	$operon->analysis(),
 	"Analysis" );
 
+#test the get_species_and_object_type method from the Registry
+my $registry = 'Bio::EnsEMBL::Registry';
+my ( $species, $object_type, $db_type ) = $registry->get_species_and_object_type('16152-16153-4840');
+ok( $species eq 'homo_sapiens' && $object_type eq 'Operon');
+
+
+debug ("Operon->list_stable_ids");
+my $stable_ids = $operon_adaptor->list_stable_ids();
+ok (@{$stable_ids});
+
+
+$operon = $operon_adaptor->fetch_by_stable_id('16152-16153-4840');
+debug( "Operon->fetch_by_stable_id()" );
+ok( $operon );
+
+#19
+my @operons = @{ $operon_adaptor->fetch_all_versions_by_stable_id('16152-16153-4840') };
+debug("fetch_all_versions_by_stable_id");
+ok( scalar(@operons) == 1 );
+
+
+#20
+
+$operon = $operon_adaptor->fetch_by_operon_transcript_stable_id('T16152-16153-4840');
+debug( "Operon->fetch_by_operon_transcript_stable_id()" );
+ok( $operon );
+
+
+#21-24
+
+#
+# Operon remove test
+#
+
+$multi->save( "core", "operon", "operon_transcript",
+	      "object_xref", "ontology_xref", "identity_xref");
+
+$operon = $operon_adaptor->fetch_by_stable_id( "16152-16153-4840" );
+
+my $operon_count = count_rows( $dba, "operon" );
+my $operon_trans_count = count_rows( $dba, "operon_transcript" );
+
+my $ots = scalar( @{$operon->get_all_OperonTranscripts() } );
+
+debug( "Operons before ".$operon_count );
+debug( "OperonTranscripts before ".$operon_trans_count );
+debug( "Operon has ".$ots." transcripts" );
+
+$operon_adaptor->remove( $operon );
+
+ok( count_rows( $dba, "operon" ) == ( $operon_count - 1 ));
+ok( count_rows( $dba, "operon_transcript" ) == ($operon_trans_count-$ots));
+
+ok(!defined($operon->dbID()));
+ok(!defined($operon->adaptor()));
+
+$multi->restore('core');
