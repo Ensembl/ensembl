@@ -128,22 +128,22 @@ sub new {
 =cut
 
 sub build_cache_by_slice {
-  my $self = shift;
-  my $dbtype = shift;
+  my $self       = shift;
+  my $dbtype     = shift;
   my $slice_name = shift;
-  
+
   # set cache method (required for loading cache later)
   $self->cache_method('BY_SEQ_REGION');
 
   my $dba = $self->get_DBAdaptor($dbtype);
-  my $sa = $dba->get_SliceAdaptor;
-  
+  my $sa  = $dba->get_SliceAdaptor;
+
   my $slice = $sa->fetch_by_name($slice_name);
   unless ($slice) {
     throw("Could not retrieve slice $slice_name.");
   }
-  
-  my $genes = $slice->get_all_Genes(undef, undef, 1);
+
+  my $genes = $slice->get_all_Genes( undef, undef, 1 );
 
   # find common coord_system
   my $common_cs_found = $self->find_common_coord_systems;
@@ -160,7 +160,8 @@ sub build_cache_by_slice {
     if ( $self->is_common_cs($csid) or !$self->highest_common_cs ) {
       $need_project = 0;
     }
-  } else {
+  }
+  else {
     $need_project = 0;
   }
 
@@ -174,7 +175,7 @@ sub build_cache_by_slice {
   my $size = $self->write_all_to_file($type);
 
   return $num_genes, $size;
-}
+} ## end sub build_cache_by_slice
 
 
 =head2 build_cache_all

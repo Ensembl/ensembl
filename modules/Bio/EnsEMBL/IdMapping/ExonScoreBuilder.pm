@@ -246,11 +246,14 @@ sub build_overlap_scores {
         $self->compare_exon_containers( $source_ec, $target_ec );
       if ( $cmp <= 0 ) { $add_source = 1 }
       if ( $cmp >= 0 ) { $add_target = 1 }
-    } elsif ($source_ec) {
+    }
+    elsif ($source_ec) {
       $add_source = 1;
-    } elsif ($target_ec) {
+    }
+    elsif ($target_ec) {
       $add_target = 1;
-    } else {
+    }
+    else {
       die('The world is a strange place');
     }
 
@@ -259,7 +262,8 @@ sub build_overlap_scores {
         # remove exon from list of overlapping source exons to score
         # target against
         delete $source_overlap{ $source_ec->[0] };
-      } else {
+      }
+      else {
         # add exon to list of overlapping source exons to score target
         # against
         $source_overlap{ $source_ec->[0] } = $source_ec->[0];
@@ -288,7 +292,8 @@ sub build_overlap_scores {
         # remove exon from list of overlapping target exons to score
         # source against
         delete $target_overlap{ $target_ec->[0] };
-      } else {
+      }
+      else {
         # add exon to list of overlapping target exons to score source
         # against
         $target_overlap{ $target_ec->[0] } = $target_ec->[0];
@@ -326,24 +331,23 @@ sub build_overlap_scores {
 # implements the ExonSortContainer in the java application.
 #
 sub sort_exons {
-  my $self = shift;
+  my $self  = shift;
   my $exons = shift;
 
-  return
-    sort { ($a->[0]->common_sr_name cmp $b->[0]->common_sr_name)
-           || ($a->[1] <=> $b->[1]) }
-      (map { [$_, $_->common_start - 1] } @$exons),
-      (map { [$_, $_->common_end] } @$exons);
+  return sort {
+    ( $a->[0]->common_sr_name cmp $b->[0]->common_sr_name ) ||
+      ( $a->[1] <=> $b->[1] )
+    } ( map { [ $_, $_->common_start - 1 ] } @$exons ),
+    ( map { [ $_, $_->common_end ] } @$exons );
 }
-
 
 sub compare_exon_containers {
   my $self = shift;
-  my $e1 = shift;
-  my $e2 = shift;
+  my $e1   = shift;
+  my $e2   = shift;
 
-  return ( ($e1->[0]->common_sr_name cmp $e2->[0]->common_sr_name) ||
-           ($e1->[1] <=> $e2->[1]) );
+  return ( ( $e1->[0]->common_sr_name cmp $e2->[0]->common_sr_name ) ||
+           ( $e1->[1] <=> $e2->[1] ) );
 }
 
 #
