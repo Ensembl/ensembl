@@ -66,6 +66,6 @@ CREATE DEFINER = CURRENT_USER SQL SECURITY INVOKER VIEW transcript_stable_id (tr
 
 
 # Patch identifier
-#INSERT INTO meta (species_id, meta_key, meta_value)
-#  VALUES (NULL, 'patch', 'patch_64_65_b.sql|merge_stable_id_with_object');
+INSERT INTO meta (species_id, meta_key, meta_value)
+  VALUES (NULL, 'patch', 'patch_64_65_b.sql|merge_stable_id_with_object');
 
