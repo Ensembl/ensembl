@@ -1022,7 +1022,7 @@ sub add_all_current_to_history {
 
   # get current stable IDs from db
   my $sql = qq(
-    SELECT stable_id, version FROM ${type}_stable_id
+    SELECT stable_id, version FROM ${type}
     WHERE stable_id IN ('$id_string')
   );
   my $sth = $self->prepare($sql);
@@ -1442,7 +1442,7 @@ sub lookup_current {
   }
 
   my $sql = qq(
-    SELECT version FROM ${type}_stable_id
+    SELECT version FROM ${type}
     WHERE stable_id = ?
   );
   my $sth = $self->prepare($sql);

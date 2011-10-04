@@ -359,7 +359,7 @@ sub get_all_DBEntries {
 	if ( !defined( $self->{$cache_name} ) && defined( $self->adaptor() ) ) {
 		$self->{$cache_name} =
 		  $self->adaptor()->db()->get_DBEntryAdaptor()
-		  ->fetch_all_by_Operon( $self, $db_name_exp, $ex_db_type );
+		  ->fetch_all_by_Operon( $self->operon(), $db_name_exp, $ex_db_type );
 	}
 
 	$self->{$cache_name} ||= [];

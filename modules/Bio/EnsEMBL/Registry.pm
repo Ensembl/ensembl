@@ -2417,37 +2417,47 @@ sub version_check {
 
 my %stable_id_stmts = (
                     "gene" => 'SELECT m.meta_value '
-                      . 'FROM %1$s.gene_stable_id si '
-                      . 'JOIN %1$s.gene USING (gene_id) '
+                      . 'FROM %1$s.gene '
                       . 'JOIN %1$s.seq_region USING (seq_region_id) '
                       . 'JOIN %1$s.coord_system USING (coord_system_id) '
                       . 'JOIN %1$s.meta m USING (species_id) '
-                      . 'WHERE si.stable_id = ? '
+                      . 'WHERE stable_id = ? '
                       . 'AND m.meta_key = "species.production_name"',
                     "transcript" => 'SELECT m.meta_value '
-                      . 'FROM %1$s.transcript_stable_id si '
-                      . 'JOIN %1$s.transcript USING (transcript_id) '
+                      . 'FROM %1$s.transcript '
                       . 'JOIN %1$s.seq_region USING (seq_region_id) '
                       . 'JOIN %1$s.coord_system USING (coord_system_id) '
                       . 'JOIN %1$s.meta m USING (species_id) '
-                      . 'WHERE si.stable_id = ? '
+                      . 'WHERE stable_id = ? '
                       . 'AND m.meta_key = "species.production_name"',
                     "exon" => 'SELECT m.meta_value '
-                      . 'FROM %1$s.exon_stable_id si '
-                      . 'JOIN %1$s.exon USING (exon_id) '
+                      . 'FROM %1$s.exon '
                       . 'JOIN %1$s.seq_region USING (seq_region_id) '
                       . 'JOIN %1$s.coord_system USING (coord_system_id) '
                       . 'JOIN %1$s.meta m USING (species_id) '
-                      . 'WHERE si.stable_id = ? '
+                      . 'WHERE stable_id = ? '
                       . 'AND m.meta_key = "species.production_name"',
                     "translation" => 'SELECT m.meta_value '
-                      . 'FROM %1$s.translation_stable_id si '
-                      . 'JOIN %1$s.translation USING (translation_id) '
+                      . 'FROM %1$s.translation tl '
                       . 'JOIN %1$s.transcript USING (transcript_id) '
                       . 'JOIN %1$s.seq_region USING (seq_region_id) '
                       . 'JOIN %1$s.coord_system USING (coord_system_id) '
                       . 'JOIN %1$s.meta m USING (species_id) '
-                      . 'WHERE si.stable_id = ? '
+                      . 'WHERE tl.stable_id = ? '
+                      . 'AND m.meta_key = "species.production_name"',
+                    "operon" => 'SELECT m.meta_value '
+                      . 'FROM %1$s.operon '
+                      . 'JOIN %1$s.seq_region USING (seq_region_id) '
+                      . 'JOIN %1$s.coord_system USING (coord_system_id) '
+                      . 'JOIN %1$s.meta m USING (species_id) '
+                      . 'WHERE stable_id = ? '
+                      . 'AND m.meta_key = "species.production_name"',
+                    "operontranscript" => 'SELECT m.meta_value '
+                      . 'FROM %1$s.operon_transcript '
+                      . 'JOIN %1$s.seq_region USING (seq_region_id) '
+                      . 'JOIN %1$s.coord_system USING (coord_system_id) '
+                      . 'JOIN %1$s.meta m USING (species_id) '
+                      . 'WHERE stable_id = ? '
                       . 'AND m.meta_key = "species.production_name"',
 );
 
@@ -2459,7 +2469,7 @@ sub get_species_and_object_type {
     return;
   }
 
-  my @types = defined $known_type ? ($known_type) : ('Gene', 'Transcript', 'Translation', 'Exon');
+  my @types = defined $known_type ? ($known_type) : ('Gene', 'Transcript', 'Translation', 'Exon', 'Operon', 'OperonTranscript');
   my $dbc;
   my $dbh;
 

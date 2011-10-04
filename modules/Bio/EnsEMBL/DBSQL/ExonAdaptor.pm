@@ -69,7 +69,7 @@ sub _tables {
     return @{ $self->{'tables'} };
   }
 
-  return ( [ 'exon', 'e' ], [ 'exon_stable_id', 'esi' ] );
+  return ( [ 'exon', 'e' ] );
 }
 
 
@@ -95,14 +95,11 @@ sub _columns {
     'e.exon_id',        'e.seq_region_id',     'e.seq_region_start',
     'e.seq_region_end', 'e.seq_region_strand', 'e.phase',
     'e.end_phase',      'e.is_current',        'e.is_constitutive',
-    'esi.stable_id',    'esi.version',         $created_date,
+    'e.stable_id',      'e.version',           $created_date,
     $modified_date
   );
 }
 
-sub _left_join {
-  return ( [ 'exon_stable_id', "esi.exon_id = e.exon_id" ] );
-}
 
 
 # _final_clause
@@ -145,7 +142,7 @@ sub fetch_all {
 sub fetch_by_stable_id {
   my ($self, $stable_id) = @_;
 
-  my $constraint = "esi.stable_id = ? AND e.is_current = 1";
+  my $constraint = "e.stable_id = ? AND e.is_current = 1";
 
   $self->bind_param_generic_fetch($stable_id,SQL_VARCHAR);
   my ($exon) = @{ $self->generic_fetch($constraint) };
@@ -172,7 +169,7 @@ sub fetch_by_stable_id {
 sub fetch_all_versions_by_stable_id {
   my ($self, $stable_id) = @_;
 
-  my $constraint = "esi.stable_id = ?";
+  my $constraint = "e.stable_id = ?";
 
   $self->bind_param_generic_fetch($stable_id,SQL_VARCHAR);
 
@@ -300,9 +297,19 @@ sub store {
   my $exon_sql = q{
     INSERT into exon ( seq_region_id, seq_region_start,
 		       seq_region_end, seq_region_strand, phase,
-		       end_phase, is_current, is_constitutive )
-    VALUES ( ?,?,?,?,?,?,?,? )
+		       end_phase, is_current, is_constitutive                      
   };
+  if ( defined($exon->stable_id) ) {
+      my $created = $self->db->dbc->from_seconds_to_date($exon->created_date());
+      my $modified = $self->db->dbc->from_seconds_to_date($exon->modified_date());
+      $exon_sql .= ", stable_id, version, created_date, modified_date) VALUES ( ?,?,?,?,?,?,?,?,?,?,". $created . ",". $modified ." )";
+     
+  } else {
+      $exon_sql .= q{
+         ) VALUES ( ?,?,?,?,?,?,?,?)
+      };
+  }
+
 
   my $exonst = $self->prepare($exon_sql);
 
@@ -322,31 +329,15 @@ sub store {
   $exonst->bind_param( 7, $is_current,      SQL_TINYINT );
   $exonst->bind_param( 8, $is_constitutive, SQL_TINYINT );
 
+  if ( defined($exon->stable_id) ) {
+
+     $exonst->bind_param( 9, $exon->stable_id, SQL_VARCHAR );
+     my $version = ($exon->version()) ? $exon->version() : 1;
+     $exonst->bind_param( 10, $version, SQL_INTEGER ); 
+  }
+
   $exonst->execute();
   $exonId = $exonst->{'mysql_insertid'};
-
-  #store any stable_id information
-  if ($exon->stable_id && $exon->version()) {
-
-    my $statement = 
-      "INSERT INTO exon_stable_id " .
-	"SET version = ?, " .
-          "stable_id = ?, " .
-	    "exon_id = ?, ";
-  
-    $statement .= "created_date = " .
-      $self->db->dbc->from_seconds_to_date($exon->created_date()) . ",";
-    $statement .= "modified_date = " .
-      $self->db->dbc->from_seconds_to_date($exon->modified_date()) ;
-
-    my $sth = $self->prepare( $statement );
-
-    $sth->bind_param(1,( $exon->version || 1 ),SQL_INTEGER);
-    $sth->bind_param(2,$exon->stable_id,SQL_VARCHAR);
-    $sth->bind_param(3,$exonId,SQL_INTEGER);
-
-    $sth->execute();
-  }
 
   # Now the supporting evidence
   my $esf_adaptor = $db->get_SupportingFeatureAdaptor;
@@ -461,12 +452,6 @@ sub remove {
   $sth->execute();
   $sth->finish();
 
-  # delete the exon stable identifier
-
-  $sth = $self->prepare( "DELETE FROM exon_stable_id WHERE exon_id = ?" );
-  $sth->bind_param(1, $exon->dbID, SQL_INTEGER);
-  $sth->execute();
-  $sth->finish();
 
   # delete the exon
 
@@ -517,7 +502,7 @@ sub list_dbIDs {
 sub list_stable_ids {
    my ($self) = @_;
 
-   return $self->_list_dbIDs("exon_stable_id", "stable_id");
+   return $self->_list_dbIDs("exon", "stable_id");
 }
 
 #_objs_from_sth
@@ -795,11 +780,12 @@ sub get_stable_entry_info {
     #$self->throw("can't fetch stable info with no dbID");
     return;
   }
+
   my $created_date = $self->db->dbc->from_date_to_seconds("created_date");
   my $modified_date = $self->db->dbc->from_date_to_seconds("modified_date");
   my $sth = $self->prepare("SELECT stable_id, " . $created_date . ",
                                    " . $modified_date . ", version 
-                            FROM   exon_stable_id 
+                            FROM   exon
                             WHERE  exon_id = ");
 
   $sth->bind_param(1, $exon->dbID, SQL_INTEGER);
