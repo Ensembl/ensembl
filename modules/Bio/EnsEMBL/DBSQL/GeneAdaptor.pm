@@ -85,6 +85,7 @@ use vars '@ISA';
 sub _tables {
   return (
     [ 'gene',           'g' ],
+    [ 'gene_stable_id', 'gsi' ],
     [ 'xref',           'x' ],
     [ 'external_db',    'exdb' ] );
 }
@@ -104,9 +105,9 @@ sub _columns {
   my ($self) = @_;
 
   my $created_date =
-    $self->db()->dbc()->from_date_to_seconds("g.created_date");
+    $self->db()->dbc()->from_date_to_seconds("gsi.created_date");
   my $modified_date =
-    $self->db()->dbc()->from_date_to_seconds("g.modified_date");
+    $self->db()->dbc()->from_date_to_seconds("gsi.modified_date");
 
   return (
     'g.gene_id',                 'g.seq_region_id',
@@ -116,7 +117,7 @@ sub _columns {
     'g.description',             'g.status',
     'g.source',                  'g.is_current',
     'g.canonical_transcript_id', 'g.canonical_annotation',
-    'g.stable_id',               'g.version',
+    'gsi.stable_id',             'gsi.version',
     $created_date,               $modified_date,
     'x.display_label',           'x.dbprimary_acc',
     'x.description',             'x.version',
@@ -129,6 +130,7 @@ sub _columns {
 
 sub _left_join {
   return (
+    [ 'gene_stable_id', "gsi.gene_id = g.gene_id" ],
     [ 'xref',           "x.xref_id = g.display_xref_id" ],
     [ 'external_db',    "exdb.external_db_id = x.external_db_id" ] );
 }
@@ -167,7 +169,7 @@ sub list_dbIDs {
 sub list_stable_ids {
    my ($self) = @_;
 
-   return $self->_list_dbIDs("gene", "stable_id");
+   return $self->_list_dbIDs("gene_stable_id", "stable_id");
 }
 
 
@@ -225,7 +227,7 @@ sub fetch_by_display_label {
 sub fetch_by_stable_id {
   my ($self, $stable_id) = @_;
 
-  my $constraint = "g.stable_id = ? AND g.is_current = 1";
+  my $constraint = "gsi.stable_id = ? AND g.is_current = 1";
   $self->bind_param_generic_fetch($stable_id,SQL_VARCHAR);
   my ($gene) = @{ $self->generic_fetch($constraint) };
 
@@ -308,7 +310,7 @@ sub fetch_all {
 sub fetch_all_versions_by_stable_id {
   my ($self, $stable_id) = @_;
 
-  my $constraint = "g.stable_id = ?";
+  my $constraint = "gsi.stable_id = ?";
   $self->bind_param_generic_fetch($stable_id,SQL_VARCHAR);
   return $self->generic_fetch($constraint);
 }
@@ -339,10 +341,12 @@ sub fetch_by_exon_stable_id {
       SELECT t.gene_id
         FROM transcript as t,
              exon_transcript as et,
-             exon as e
+             exon as e,
+             exon_stable_id as esi
        WHERE t.transcript_id = et.transcript_id 
+         AND et.exon_id = esi.exon_id 
          AND et.exon_id = e.exon_id
-         AND e.stable_id = ?
+         AND esi.stable_id = ?
          AND e.is_current = 1
   );
 
@@ -696,10 +700,11 @@ sub fetch_by_transcript_stable_id {
     my ($self, $trans_stable_id) = @_;
 
     my $sth = $self->prepare(qq(
-        SELECT  gene_id
-	FROM	transcript
-        WHERE   stable_id = ?
-        AND     is_current = 1
+        SELECT  tr.gene_id
+	FROM	transcript tr, transcript_stable_id tcl
+        WHERE   tcl.stable_id = ?
+        AND     tr.transcript_id = tcl.transcript_id
+        AND     tr.is_current = 1
     ));
 
     $sth->bind_param(1, $trans_stable_id, SQL_VARCHAR);
@@ -735,8 +740,10 @@ sub fetch_by_translation_stable_id {
     my $sth = $self->prepare(qq(
         SELECT  tr.gene_id
 	FROM    transcript tr,
-                translation tl
-	WHERE   tl.stable_id = ?
+                translation tl,
+		translation_stable_id as trs
+	WHERE   trs.stable_id = ?
+	AND     trs.translation_id = tl.translation_id
         AND     tr.transcript_id = tl.transcript_id
         AND     tr.is_current = 1
     ));
@@ -1149,14 +1156,6 @@ sub store {
                canonical_transcript_id = ?,
                canonical_annotation = ?
   );
-
-  if (defined($gene->stable_id)) {
-      my $created = $self->db->dbc->from_seconds_to_date($gene->created_date());
-      my $modified = $self->db->dbc->from_seconds_to_date($gene->modified_date());
-      $store_gene_sql .= ", stable_id = ?, version = ?, created_date = " . $created . " , modified_date = " . $modified;
-
-  }
-
   # column status is used from schema version 34 onwards (before it was
   # confidence)
 
@@ -1178,17 +1177,31 @@ sub store {
 
   $sth->bind_param( 12, $gene->canonical_annotation(), SQL_VARCHAR );
 
-  if ( defined($gene->stable_id) ) {
-
-     $sth->bind_param( 13, $gene->stable_id, SQL_VARCHAR );
-     my $version = ($gene->version()) ? $gene->version() : 1;
-     $sth->bind_param( 14, $version, SQL_INTEGER );
-  }
-
   $sth->execute();
   $sth->finish();
 
   my $gene_dbID = $sth->{'mysql_insertid'};
+
+  # store stable ids if they are available
+  if ( defined( $gene->stable_id() ) ) {
+    my $statement = sprintf(
+      "INSERT INTO gene_stable_id SET "
+        . "gene_id = ?, "
+        . "stable_id = ?, "
+        . "version = ?, "
+        . "created_date = %s, "
+        . "modified_date = %s",
+      $self->db()->dbc()->from_seconds_to_date( $gene->created_date() ),
+      $self->db()->dbc()->from_seconds_to_date( $gene->modified_date() )
+    );
+
+    $sth = $self->prepare($statement);
+    $sth->bind_param( 1, $gene_dbID,         SQL_INTEGER );
+    $sth->bind_param( 2, $gene->stable_id(), SQL_VARCHAR );
+    $sth->bind_param( 3, ($gene->version() || 1),   SQL_INTEGER );
+    $sth->execute();
+    $sth->finish();
+  }
 
   # store the dbentries associated with this gene
   my $dbEntryAdaptor = $db->get_DBEntryAdaptor();
@@ -1256,7 +1269,6 @@ sub store {
     $sth->bind_param( 2, $gene_dbID, SQL_INTEGER );
 
     $sth->execute();
-    $sth->finish();
   }
 
   # update gene to point to display xref if it is set
@@ -1269,7 +1281,7 @@ sub store {
     }
 
     if(defined($dxref_id)) {
-      my $sth = $self->prepare
+      $sth = $self->prepare
         ("UPDATE gene SET display_xref_id = ? WHERE gene_id = ?");
       $sth->bind_param(1, $dxref_id, SQL_INTEGER);
       $sth->bind_param(2, $gene_dbID, SQL_INTEGER);
@@ -1360,6 +1372,14 @@ sub remove {
     $transcriptAdaptor->remove($trans);
   }
 
+  # remove the gene stable identifier
+
+  $sth =
+    $self->prepare("DELETE FROM gene_stable_id WHERE gene_id = ? ");
+  $sth->bind_param( 1, $gene->dbID, SQL_INTEGER );
+  $sth->execute();
+  $sth->finish();
+
   # remove any unconventional transcript associations involving this gene
 
   $sth =
@@ -1412,9 +1432,9 @@ sub get_Interpro_by_geneid {
             protein_feature pf,
             interpro i,
             xref x,
-            gene g
-  WHERE     g.stable_id = ?
-    AND     t.gene_id = g.gene_id
+            gene_stable_id gsi
+  WHERE     gsi.stable_id = ?
+    AND     t.gene_id = gsi.gene_id
     AND     t.is_current = 1
     AND     tl.transcript_id = t.transcript_id
     AND     tl.translation_id = pf.translation_id
@@ -2281,7 +2301,7 @@ sub get_stable_entry_info {
 
   my $sth = $self->prepare("SELECT stable_id, " . $created_date . "," .
                                    $modified_date . ", version 
-                            FROM gene 
+                            FROM gene_stable_id 
                             WHERE gene_id = ?");
 
   $sth->bind_param(1, $gene->dbID, SQL_INTEGER);
@@ -2313,5 +2333,3 @@ sub fetch_all_by_DBEntry {
 
 
 1;
-
-

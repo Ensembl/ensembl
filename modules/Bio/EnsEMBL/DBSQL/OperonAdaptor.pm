@@ -1,4 +1,3 @@
-
 =head1 LICENSE
 
   Copyright (c) 1999-2011 The European Bioinformatics Institute and
@@ -63,7 +62,7 @@ use vars '@ISA';
 #  Status     : Stable
 
 sub _tables {
-	return ( [ 'operon', 'o' ] );
+	return ( [ 'operon', 'o' ], [ 'operon_stable_id', 'osi' ] );
 }
 
 # _columns
@@ -80,14 +79,18 @@ sub _columns {
 	my ($self) = @_;
 
 	my $created_date =
-	  $self->db()->dbc()->from_date_to_seconds("o.created_date");
+	  $self->db()->dbc()->from_date_to_seconds("osi.created_date");
 	my $modified_date =
-	  $self->db()->dbc()->from_date_to_seconds("o.modified_date");
+	  $self->db()->dbc()->from_date_to_seconds("osi.modified_date");
 
 	return ( 'o.operon_id',      'o.seq_region_id',     'o.seq_region_start',
 			 'o.seq_region_end', 'o.seq_region_strand', 'o.display_label',
-			 'o.analysis_id',    'o.stable_id',       'o.version',
+			 'o.analysis_id',    'osi.stable_id',       'osi.version',
 			 $created_date,      $modified_date );
+}
+
+sub _left_join {
+	return ( [ 'operon_stable_id', "osi.operon_id = o.operon_id" ] );
 }
 
 =head2 list_dbIDs 
@@ -122,7 +125,7 @@ sub list_dbIDs {
 sub list_stable_ids {
 	my ($self) = @_;
 
-	return $self->_list_dbIDs( "operon", "stable_id" );
+	return $self->_list_dbIDs( "operon_stable_id", "stable_id" );
 }
 
 sub list_seq_region_ids {
@@ -177,7 +180,7 @@ sub fetch_by_name {
 sub fetch_by_stable_id {
 	my ( $self, $stable_id ) = @_;
 
-	my $constraint = "o.stable_id = ?";
+	my $constraint = "osi.stable_id = ? AND o.is_current = 1";
 	$self->bind_param_generic_fetch( $stable_id, SQL_VARCHAR );
 	my ($operon) = @{ $self->generic_fetch($constraint) };
 
@@ -221,7 +224,7 @@ sub fetch_all {
 sub fetch_all_versions_by_stable_id {
 	my ( $self, $stable_id ) = @_;
 
-	my $constraint = "o.stable_id = ?";
+	my $constraint = "osi.stable_id = ?";
 	$self->bind_param_generic_fetch( $stable_id, SQL_VARCHAR );
 	return $self->generic_fetch($constraint);
 }
@@ -395,11 +398,11 @@ sub fetch_by_operon_transcript_id {
 	return $operon;
 }
 
-=head2 fetch_by_operon_transcript_stable_id
+=head2 fetch_by_transcript_stable_id
 
   Arg [1]    : string $trans_stable_id
                transcript stable ID whose operon should be retrieved
-  Example    : my $operon = $operon_adaptor->fetch_by_operon_transcript_stable_id
+  Example    : my $operon = $operon_adaptor->fetch_by_transcript_stable_id
                  ('ENST0000234');
   Description: Retrieves a operon from the database via the stable ID of one of
                its transcripts
@@ -415,9 +418,11 @@ sub fetch_by_operon_transcript_stable_id {
 
 	my $sth = $self->prepare(
 		qq(
-        SELECT  operon_id
-	FROM	operon_transcript
-        WHERE   stable_id = ?
+        SELECT  tr.operon_id
+	FROM	operon_transcript tr, operon_transcript_stable_id tcl
+        WHERE   tcl.stable_id = ?
+        AND     tr.operon_transcript_stable_id = tcl.operon_transcript_stable_id
+        AND     tr.is_current = 1
     ) );
 
 	$sth->bind_param( 1, $trans_stable_id, SQL_VARCHAR );
@@ -490,14 +495,7 @@ sub store {
                display_label = ?,
                analysis_id = ?
   );
-	
-	if ( defined($operon->stable_id()) ) {
-	    my $created = $self->db->dbc->from_seconds_to_date($operon->created_date());
-	    my $modified = $self->db->dbc->from_seconds_to_date($operon->modified_date());
-	    $store_operon_sql .= ", stable_id = ?, version = ?, created_date = " . $created . ",modified_date = " . $modified;
-	}
-
-        # column status is used from schema version 34 onwards (before it was
+	# column status is used from schema version 34 onwards (before it was
 	# confidence)
 
 	my $sth = $self->prepare($store_operon_sql);
@@ -507,12 +505,6 @@ sub store {
 	$sth->bind_param( 4, $operon->strand(),        SQL_TINYINT );
 	$sth->bind_param( 5, $operon->display_label(), SQL_VARCHAR );
 	$sth->bind_param( 6, $analysis_id,             SQL_INTEGER );
-
-	if ( defined($operon->stable_id()) ) {
-	    $sth->bind_param( 7, $operon->stable_id(), SQL_VARCHAR );
-	    my $version = ($operon->version()) ? $operon->version() : 1;
-	    $sth->bind_param( 8, $version, SQL_INTEGER ); 
-	}
 
 	$sth->execute();
 	$sth->finish();
@@ -526,6 +518,29 @@ sub store {
 		for my $transcript (@$transcripts) {
 			$transcript_adaptor->store( $transcript, $operon_dbID );
 		}
+	}
+
+	# store stable ids if they are available
+	if ( defined( $operon->stable_id() ) ) {
+		my $statement = sprintf( "INSERT INTO operon_stable_id SET "
+								   . "operon_id = ?, "
+								   . "stable_id = ?, "
+								   . "version = ?, "
+								   . "created_date = %s, "
+								   . "modified_date = %s",
+								 $self->db()->dbc()->from_seconds_to_date(
+														 $operon->created_date()
+								 ),
+								 $self->db()->dbc()->from_seconds_to_date(
+														$operon->modified_date()
+								 ) );
+
+		$sth = $self->prepare($statement);
+		$sth->bind_param( 1, $operon_dbID,         SQL_INTEGER );
+		$sth->bind_param( 2, $operon->stable_id(), SQL_VARCHAR );
+		$sth->bind_param( 3, $operon->version(),   SQL_INTEGER );
+		$sth->execute();
+		$sth->finish();
 	}
 
 	# store the dbentries associated with this operon
@@ -589,15 +604,27 @@ sub remove {
 		$dbe_adaptor->remove_from_object( $dbe, $operon, 'Operon' );
 	}
 
+	#	# remove the attributes associated with this transcript
+	#	my $attrib_adaptor = $self->db->get_AttributeAdaptor;
+	#	$attrib_adaptor->remove_from_Operon($operon);
+
 	# remove all of the transcripts associated with this operon
 	my $transcriptAdaptor = $self->db->get_OperonTranscriptAdaptor();
 	foreach my $trans ( @{ $operon->get_all_OperonTranscripts() } ) {
 		$transcriptAdaptor->remove($trans);
 	}
 
+	# remove the operon stable identifier
+
+	my $sth =
+	  $self->prepare("DELETE FROM operon_stable_id WHERE operon_id = ? ");
+	$sth->bind_param( 1, $operon->dbID, SQL_INTEGER );
+	$sth->execute();
+	$sth->finish();
+
 	# remove this operon from the database
 
-	my $sth = $self->prepare("DELETE FROM operon WHERE operon_id = ? ");
+	$sth = $self->prepare("DELETE FROM operon WHERE operon_id = ? ");
 	$sth->bind_param( 1, $operon->dbID, SQL_INTEGER );
 	$sth->execute();
 	$sth->finish();
@@ -779,4 +806,3 @@ sub _objs_from_sth {
 } ## end sub _objs_from_sth
 
 1;
-

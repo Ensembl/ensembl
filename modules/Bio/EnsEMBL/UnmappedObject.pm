@@ -328,7 +328,7 @@ sub stable_id{
   
   my $handle = $self->adaptor;
   if(defined($handle)){
-    my $sql = "select stable_id from ".lc($self->{'ensembl_object_type'})." where ".
+    my $sql = "select stable_id from ".lc($self->{'ensembl_object_type'})."_stable_id where ".
       lc($self->{'ensembl_object_type'})."_id = ".
 	$self->{'ensembl_id'};
     my $sth = $handle->prepare($sql);
