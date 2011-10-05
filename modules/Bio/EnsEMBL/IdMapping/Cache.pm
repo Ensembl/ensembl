@@ -1162,43 +1162,59 @@ sub read_instance_from_file {
 
 
 sub slice_names {
-  my $self = shift;
+  my $self   = shift;
   my $dbtype = shift;
 
   throw("You must provide a db type (source|target).") unless $dbtype;
 
   my $dba = $self->get_DBAdaptor($dbtype);
-  my $sa = $dba->get_SliceAdaptor;
+  my $sa  = $dba->get_SliceAdaptor;
 
   my @slice_names = ();
 
-  if ($self->conf->param('chromosomes')) {
-    # filter by chromosome
-    foreach my $chr ($self->conf->param('chromosomes')) {
-      my $slice = $sa->fetch_by_region('chromosome', $chr);
+  if ( $self->conf->param('chromosomes') ) {
+    # Fetch the specified chromosomes.
+    foreach my $chr ( $self->conf->param('chromosomes') ) {
+      my $slice = $sa->fetch_by_region( 'chromosome', $chr );
       push @slice_names, $slice->name;
     }
-    
-  } elsif ($self->conf->param('region')) {
-    # filter by region (specific slice)
-    # don't use SliceAdaptor->fetch_by_name() since this will fail if assembly
-    # versions are different for source and target db
-    my ($cs, $version, $name, $start, $end, $strand) =
-      split(/:/, $self->conf->param('region'));
-    my $slice = $sa->fetch_by_region($cs, $name, $start, $end);
+
+  }
+  elsif ( $self->conf->param('region') ) {
+    # Fetch the slices on the specified regions.  Don't use
+    # SliceAdaptor->fetch_by_name() since this will fail if assembly
+    # versions are different for source and target db.
+    my ( $cs, $version, $name, $start, $end, $strand ) =
+      split( /:/, $self->conf->param('region') );
+
+    my $slice = $sa->fetch_by_region( $cs, $name, $start, $end );
+
     push @slice_names, $slice->name;
 
-  } else {
-    # fetch all genes, but do in junks to save memory
+  }
+  else {
+    # Fetch all slices that have genes on them.
     my $ga = $dba->get_GeneAdaptor;
-    foreach my $srid (@{ $ga->list_seq_region_ids }) {
+
+    foreach my $srid ( @{ $ga->list_seq_region_ids } ) {
       my $slice = $sa->fetch_by_seq_region_id($srid);
-      push @slice_names, $slice->name;
+
+      if ( !$slice->is_reference() ) {
+        my $slices =
+          $slice->adaptor()
+          ->fetch_by_region_unique( $slice->coord_system_name(),
+                                    $slice->seq_region_name() );
+
+        push( @slice_names, map { $_->name() } @{$slices} );
+      }
+      else {
+        push @slice_names, $slice->name();
+      }
     }
   }
 
   return \@slice_names;
-}
+} ## end sub slice_names
 
 
 =head2 logger
