@@ -32,7 +32,7 @@ sub run {
   my $dna_source_id =
     $self->get_source_id_for_source_name('RefSeq_dna');
   my $mrna_source_id =
-    $self->get_source_id_for_source_name('RefSeq_mRNA');
+    $self->get_source_id_for_source_name('RefSeq_mRNA','refseq');
   my $ncrna_source_id =
     $self->get_source_id_for_source_name('RefSeq_ncRNA');
 
@@ -41,7 +41,7 @@ sub run {
   my $pred_dna_source_id =
     $self->get_source_id_for_source_name('RefSeq_dna_predicted');
   my $pred_mrna_source_id =
-    $self->get_source_id_for_source_name('RefSeq_mRNA_predicted');
+    $self->get_source_id_for_source_name('RefSeq_mRNA_predicted','refseq');
   my $pred_ncrna_source_id =
     $self->get_source_id_for_source_name('RefSeq_ncRNA_predicted');
 

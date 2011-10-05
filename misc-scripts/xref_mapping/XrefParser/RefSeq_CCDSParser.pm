@@ -42,13 +42,14 @@ sub run_script {
   }
 
   my $mrna_source_id =
-    $self->get_source_id_for_source_name('RefSeq_mRNA');
-  my $ncrna_source_id =
-    $self->get_source_id_for_source_name('RefSeq_ncRNA');
+    $self->get_source_id_for_source_name('RefSeq_mRNA','ccds');
   my $pred_mrna_source_id =
-    $self->get_source_id_for_source_name('RefSeq_mRNA_predicted');
-  my $pred_ncrna_source_id =
-    $self->get_source_id_for_source_name('RefSeq_ncRNA_predicted');
+    $self->get_source_id_for_source_name('RefSeq_mRNA_predicted','ccds');
+
+  if($verbose){
+     print "RefSeq_mRNA source ID = $mrna_source_id\n";
+     print "RefSeq_mRNA_predicted source ID = $pred_mrna_source_id\n" ;
+   }
 
   # becouse the direct mapping have no descriptions etc
   # we have to steal these from the previous Refseq parser.
@@ -177,19 +178,16 @@ CCDS
     $line_count++;
     if(!defined($seen{$refseq})){
       $seen{$refseq} = 1;
-      my $new_source_id = $source_id;
+      my $new_source_id;
       if ($refseq =~ /^XM_/ ){
 	$new_source_id = $pred_mrna_source_id;
-      } elsif( $refseq =~ /^XR/) {
-	$new_source_id = $pred_ncrna_source_id;
-      } elsif( $refseq =~ /^NM/) {
+      } 
+      elsif( $refseq =~ /^NM/) {
 	$new_source_id = $mrna_source_id;
-      } elsif( $refseq =~ /^NR/) {
-	$new_source_id = $ncrna_source_id;
+      } else {
+	croak "refseq $refseq does not start with XM_ or NM_";
       }
-#      if($refseq =~ /^XM/){
-#	$new_source_id = $dna_pred;
-#      }
+
       my $xref_id = $self->add_xref({ acc        => $refseq,
 				      version    => $version{$refseq} ,
 				      label      => $label{$refseq}||$refseq ,
