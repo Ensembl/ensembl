@@ -1104,7 +1104,11 @@ sub write_embl_seq {
 
 sub print {
   my( $self, $FH, $string ) = @_;
-  print $FH $string;
+  if(!print $FH $string){
+    print STDERR "Problem writing to disk\n";
+    print STDERR "the string is $string\n";
+    die "Could not write to file handle";
+  }
 }
 
-1;   
+1;
