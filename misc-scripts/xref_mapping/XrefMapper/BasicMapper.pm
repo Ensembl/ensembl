@@ -267,7 +267,7 @@ sub process_file {
   my $eval_test = eval {
     require $class;
   };
-  if($@ or !$eval_test) {
+  if($@ or $eval_test != 1) {
     if ($@ =~ /Can\'t locate $class/) {
       if (defined $taxon) {
       	$class = "XrefMapper/$taxon.pm";
@@ -277,7 +277,7 @@ sub process_file {
       	if($@) {
 	  if ($@ =~ /Can\'t locate $class/)  {
 	    $use_basic = 1;
-	  } else { croak "$@"; }
+	  } else { die "$@"; }
        	} else {
 	  $module = $taxon; 
        	}
@@ -287,7 +287,7 @@ sub process_file {
       }
     }
     else {
-      croak "$@";
+      die "$@";
     }
 
   } else{
