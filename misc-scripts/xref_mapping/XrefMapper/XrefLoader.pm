@@ -341,6 +341,8 @@ GSQL
      else{
        my $count = 0;
        my $ox_count = 0;
+       my @master_problems;
+       my $err_master_count=0;
        $dependent_sth->execute($source_id, $type);
        my ($xref_id, $acc, $label, $version, $desc, $info, $object_xref_id, $ensembl_id, $ensembl_type, $master_xref_id); 
        $dependent_sth->bind_columns(\$xref_id, \$acc, \$label, \$version, \$desc, \$info, \$object_xref_id, \$ensembl_id, \$ensembl_type, \$master_xref_id);
@@ -354,15 +356,25 @@ GSQL
 	 }
 	 if($last_xref != $xref_id or $last_ensembl != $ensembl_id){
 	   $add_object_xref_sth->execute(($object_xref_id+$object_xref_offset), $ensembl_id, $ensembl_type, ($xref_id+$xref_offset), $analysis_ids{$ensembl_type});
-		 if (defined($master_xref_id)){ # need to sort this out for FlyBase since there are EMBL direct entries from the GFF and dependent xrefs from Uniprot
-				 $add_dependent_xref_sth->execute(($object_xref_id+$object_xref_offset), ($master_xref_id+$xref_offset), ($xref_id+$xref_offset) );
-		 }
-
+	   if (defined($master_xref_id)){ # need to sort this out for FlyBase since there are EMBL direct entries from the GFF and dependent xrefs from Uniprot
+	     $add_dependent_xref_sth->execute(($object_xref_id+$object_xref_offset), ($master_xref_id+$xref_offset), ($xref_id+$xref_offset) );
+	   }
+	   else{
+	     if($err_master_count < 10){
+	       push @master_problems, $acc;
+	     }
+	     $err_master_count++;
+	   }
 	   $ox_count++;
 	 }
 	 $last_xref = $xref_id;
 	 $last_ensembl = $ensembl_id;
-       }  
+       }
+       if(@master_problems){
+	 print "WARNING:: for $name $err_master_count problem master xrefs\nExamples are :-\t";
+	 print join ", ",@master_problems;
+	 print "\n";
+       }
        print "DEP $count xrefs, $ox_count object_xrefs\n" if ($verbose);
      }
    }
@@ -517,7 +529,7 @@ GSQL
   $get_xref_interpro_sth->bind_columns(\$xref_id, \$acc, \$version, \$label, \$desc, \$type, \$info);
   
   while($get_xref_interpro_sth->fetch){
-    $add_xref_sth->execute(($xref_id+$xref_offset), $ex_id, $acc, $label, $version, $desc, $type, $info);
+    $add_xref_sth->execute(($xref_id+$xref_offset), $ex_id, $acc, $label, $version, $desc, 'UNMAPPED', $info);
     $set_unmapped_sth->execute($analysis_id, $ex_id, $acc, $reason_id{"NO_MAPPING"} );
     push @xref_list, $xref_id;
   }
@@ -575,7 +587,7 @@ DIR
   while($direct_unmapped_sth->fetch()){
     my $ex_id = $name_to_external_db_id{$dbname};
     if(defined($name_to_external_db_id{$dbname})){
-      $add_xref_sth->execute(($xref_id+$xref_offset), $ex_id, $acc, $label, $version, $desc, $type, $info);   
+      $add_xref_sth->execute(($xref_id+$xref_offset), $ex_id, $acc, $label, $version, $desc, 'UNMAPPED', $info);   
       $set_unmapped_sth->execute($analysis_id, $ex_id, $acc, $reason_id{"NO_STABLE_ID"});
       push @xref_list, $xref_id;
     }
@@ -611,7 +623,7 @@ MIS
   while($misc_unmapped_sth->fetch()){
     my $ex_id = $name_to_external_db_id{$dbname};
     if(defined($name_to_external_db_id{$dbname})){
-      $add_xref_sth->execute(($xref_id+$xref_offset), $ex_id, $acc, $label, $version, $desc, $type, $info);   
+      $add_xref_sth->execute(($xref_id+$xref_offset), $ex_id, $acc, $label, $version, $desc, 'UNMAPPED', $info);   
       $set_unmapped_sth->execute($analysis_id, $ex_id, $acc, $reason_id{"NO_MAPPING"});
       push @xref_list, $xref_id;
     }	
@@ -658,7 +670,7 @@ DEP
       next;
     }
     if($last_acc ne $acc){
-      $add_xref_sth->execute(($xref_id+$xref_offset), $ex_id, $acc, $label||$acc, $version, $desc, $type, $info);   
+      $add_xref_sth->execute(($xref_id+$xref_offset), $ex_id, $acc, $label||$acc, $version, $desc, 'UNMAPPED', $info);
     }
     $last_acc = $acc;
     $set_unmapped_sth->execute($analysis_id, $ex_id, $acc, $parent);
@@ -712,7 +724,7 @@ SEQ
       next;
     }
     if($last_xref != $xref_id){
-      $add_xref_sth->execute(($xref_id+$xref_offset), $ex_id, $acc, $label, $version, $desc, $type, $info);   
+      $add_xref_sth->execute(($xref_id+$xref_offset), $ex_id, $acc, $label, $version, $desc, 'UNMAPPED', $info);
     }
     $last_xref = $xref_id;
     if(defined($ensembl_id)){
@@ -772,7 +784,7 @@ WEL
     if(!defined($ex_id)){
       next;
     }
-    $add_xref_sth->execute(($xref_id+$xref_offset), $ex_id, $acc, $label, $version, $desc, $type, $info);   
+    $add_xref_sth->execute(($xref_id+$xref_offset), $ex_id, $acc, $label, $version, $desc, 'UNMAPPED', $info);
     $set_unmapped_sth->execute($analysis_id, $ex_id, $acc);
     push @xref_list, $xref_id;
   }
