@@ -72,7 +72,8 @@ sub score_exons {
     $self->logger->info( "\nMerging scoring matrices...\n",
                          0, 'stamped' );
     $matrix->merge($exonerate_matrix);
-  } else {
+  }
+  else {
     $self->logger->info("\nOverlap scoring matrix:\n");
     $self->log_matrix_stats($matrix);
   }
@@ -100,32 +101,38 @@ sub score_exons {
 sub overlap_score {
   my $self = shift;
 
-  my $dump_path = path_append($self->conf->param('basedir'), 'matrix');
-  
-  my $matrix = Bio::EnsEMBL::IdMapping::ScoredMappingMatrix->new(
-    -DUMP_PATH   => $dump_path,
-    -CACHE_FILE  => 'exon_overlap_matrix.ser',
-  );
+  my $dump_path =
+    path_append( $self->conf->param('basedir'), 'matrix' );
+
+  my $matrix =
+    Bio::EnsEMBL::IdMapping::ScoredMappingMatrix->new(
+                               -DUMP_PATH  => $dump_path,
+                               -CACHE_FILE => 'exon_overlap_matrix.ser',
+    );
 
   my $overlap_cache = $matrix->cache_file;
 
-  if (-s $overlap_cache) {
-    
-    # read from file
-    $self->logger->info("Reading exon overlap scoring matrix from file...\n", 0, 'stamped');
-    $self->logger->debug("Cache file $overlap_cache.\n", 1);
-    $matrix->read_from_file;
-    $self->logger->info("Done.\n", 0, 'stamped');
-    
-  } else {
-    
-    # build scoring matrix
-    $self->logger->info("No exon overlap scoring matrix found. Will build new one.\n");
+  if ( -s $overlap_cache ) {
 
-    if ($self->cache->highest_common_cs) {
-      $self->logger->info("Overlap scoring...\n", 0, 'stamped');
+    # read from file
+    $self->logger->info(
+                   "Reading exon overlap scoring matrix from file...\n",
+                   0, 'stamped' );
+    $self->logger->debug( "Cache file $overlap_cache.\n", 1 );
+    $matrix->read_from_file;
+    $self->logger->info( "Done.\n", 0, 'stamped' );
+
+  }
+  else {
+
+    # build scoring matrix
+    $self->logger->info(
+         "No exon overlap scoring matrix found. Will build new one.\n");
+
+    if ( $self->cache->highest_common_cs ) {
+      $self->logger->info( "Overlap scoring...\n", 0, 'stamped' );
       $matrix = $self->build_overlap_scores($matrix);
-      $self->logger->info("Done.\n", 0, 'stamped');
+      $self->logger->info( "Done.\n", 0, 'stamped' );
     }
 
     # write scoring matrix to file
@@ -134,42 +141,48 @@ sub overlap_score {
   }
 
   return $matrix;
-}
+} ## end sub overlap_score
 
 
 #
 # map the remaining exons using exonerate
 #
 sub exonerate_score {
-  my $self = shift;
+  my $self   = shift;
   my $matrix = shift;
 
-  unless ($matrix and
-          $matrix->isa('Bio::EnsEMBL::IdMapping::ScoredMappingMatrix')) {
+  unless ( $matrix and
+          $matrix->isa('Bio::EnsEMBL::IdMapping::ScoredMappingMatrix') )
+  {
     throw('Need a Bio::EnsEMBL::IdMapping::ScoredMappingMatrix.');
   }
 
-  my $dump_path = path_append($self->conf->param('basedir'), 'matrix');
+  my $dump_path =
+    path_append( $self->conf->param('basedir'), 'matrix' );
 
-  my $exonerate_matrix = Bio::EnsEMBL::IdMapping::ScoredMappingMatrix->new(
-    -DUMP_PATH   => $dump_path,
-    -CACHE_FILE  => 'exon_exonerate_matrix.ser',
-  );
+  my $exonerate_matrix =
+    Bio::EnsEMBL::IdMapping::ScoredMappingMatrix->new(
+                             -DUMP_PATH  => $dump_path,
+                             -CACHE_FILE => 'exon_exonerate_matrix.ser',
+    );
 
   my $exonerate_cache = $exonerate_matrix->cache_file;
 
-  if (-s $exonerate_cache) {
+  if ( -s $exonerate_cache ) {
 
     # read from file
-    $self->logger->info("Reading exonerate matrix from file...\n", 0, 'stamped');
-    $self->logger->debug("Cache file $exonerate_cache.\n", 1);
+    $self->logger->info( "Reading exonerate matrix from file...\n",
+                         0, 'stamped' );
+    $self->logger->debug( "Cache file $exonerate_cache.\n", 1 );
     $exonerate_matrix->read_from_file;
-    $self->logger->info("Done.\n", 0, 'stamped');
+    $self->logger->info( "Done.\n", 0, 'stamped' );
 
-  } else {
+  }
+  else {
 
     # build scoring matrix
-    $self->logger->info("No exonerate matrix found. Will build new one.\n");
+    $self->logger->info(
+                    "No exonerate matrix found. Will build new one.\n");
 
     # dump exons to fasta files
     my $dump_count = $self->dump_filtered_exons($matrix);
@@ -177,23 +190,25 @@ sub exonerate_score {
     if ($dump_count) {
       # run exonerate
       $self->run_exonerate;
-      
+
       # parse results
       $self->parse_exonerate_results($exonerate_matrix);
 
-    } else {
+    }
+    else {
 
-      $self->logger->info("No source and/or target exons dumped, so don't need to run exonerate.\n");
+      $self->logger->info( "No source and/or target exons dumped, " .
+                           "so don't need to run exonerate.\n" );
 
     }
-    
+
     # write scoring matrix to file
     $exonerate_matrix->write_to_file;
 
-  }
+  } ## end else [ if ( -s $exonerate_cache)]
 
   return $exonerate_matrix;
-}
+} ## end sub exonerate_score
 
 #
 # Algorithm:
@@ -281,7 +296,7 @@ sub build_overlap_scores {
           $self->calc_overlap_score( $source_ec->[0], $target_exon,
                                      $matrix );
         }
-      }
+      } ## end else [ if ( $source_overlap{ ...})]
 
       # get next source exon container
       $source_ec = shift(@source_exons);
@@ -639,12 +654,12 @@ sub write_filtered_exons {
   return $dumped_exons;
 }
 
-
 sub parse_exonerate_results {
   my ( $self, $exonerate_matrix ) = @_;
 
-  unless ( $exonerate_matrix
-           and $exonerate_matrix->isa(
+  unless ( defined($exonerate_matrix)
+           &&
+           $exonerate_matrix->isa(
                          'Bio::EnsEMBL::IdMapping::ScoredMappingMatrix')
     )
   {
@@ -658,10 +673,11 @@ sub parse_exonerate_results {
   my $num_files = 0;
   my $num_lines = 0;
 
-  opendir( DUMPDIR, $dump_path )
-    or $self->logger->error("Can't open $dump_path for reading: $!");
+  opendir( DUMPDIR, $dump_path ) or
+    $self->logger->error("Can't open $dump_path for reading: $!");
 
   my $penalised = 0;
+  my $killed    = 0;
 
   while ( defined( my $file = readdir(DUMPDIR) ) ) {
     unless ( $file =~ /exonerate_map\.\d+/ ) { next }
@@ -676,8 +692,8 @@ sub parse_exonerate_results {
       $num_lines++;
       chomp;
 
-      # line format:
-      # myinfo: source_id target_id match_length source_length target_length
+  # line format:
+  # myinfo: source_id target_id match_length source_length target_length
       my ( undef, $source_id, $target_id, $match_length, $source_length,
            $target_length )
         = split;
@@ -687,7 +703,8 @@ sub parse_exonerate_results {
       if ( $source_length == 0 or $target_length == 0 ) {
         $self->logger->warning(
                "Alignment length is 0 for $source_id or $target_id.\n");
-      } else {
+      }
+      else {
         $score = 2*$match_length/( $source_length + $target_length );
 
       }
@@ -714,7 +731,10 @@ sub parse_exonerate_results {
           $exonerate_matrix->add_score( $source_id, $target_id,
                                         $score );
         }
-      }
+        else {
+          ++$killed;
+        }
+      } ## end if ( $score > $threshold)
 
     } ## end while (<F>)
 
@@ -726,8 +746,9 @@ sub parse_exonerate_results {
   $self->logger->info(
         "Done parsing $num_lines lines from $num_files result files.\n",
         0, 'stamped' );
-  $self->logger->info( "Penalised $penalised exon alignments "
-                         . "for not being on the same seq_region.\n",
+  $self->logger->info( "Penalised $penalised exon alignments " .
+                         "for not being on the same seq_region " .
+                         "($killed killed).\n",
                        0,
                        'stamped' );
 
