@@ -153,15 +153,11 @@ sub build_cache_by_slice {
   # also don't project if no common coord_system present
   my $need_project = 1;
 
-  if ( $self->conf()->param('do_project_to_common_cs') ) {
-    my $csid = join( ':',
-                     $slice->coord_system_name,
-                     $slice->coord_system->version );
-    if ( $self->is_common_cs($csid) or !$self->highest_common_cs ) {
-      $need_project = 0;
-    }
-  }
-  else {
+  my $csid = join( ':',
+                   $slice->coord_system_name,
+                   $slice->coord_system->version );
+
+  if ( $self->is_common_cs($csid) or !$self->highest_common_cs ) {
     $need_project = 0;
   }
 
@@ -215,9 +211,8 @@ sub build_cache_all {
   # Build cache. Setting $need_project to 'CHECK' will cause
   # build_cache_from_genes() to check the coordinate system for each
   # gene.
-  my $type = "$dbtype.ALL";
-  my $need_project =
-    ( $self->conf()->param('do_project_to_common_cs') ? 'CHECK' : 0 );
+  my $type         = "$dbtype.ALL";
+  my $need_project = 'CHECK';
   my $num_genes =
     $self->build_cache_from_genes( $type, $genes, $need_project );
 

@@ -54,45 +54,39 @@ use Bio::EnsEMBL::IdMapping::ScoredMappingMatrix;
 sub score_exons {
   my $self = shift;
 
-  $self->logger->info("-- Scoring exons...\n\n", 0, 'stamped');
+  $self->logger->info( "-- Scoring exons...\n\n", 0, 'stamped' );
 
   # score using overlaps, then exonerate
   my $matrix = $self->overlap_score;
 
-  if ( $self->conf()->param('do_similarity_scoring') ) {
-    my $exonerate_matrix = $self->exonerate_score($matrix);
+  my $exonerate_matrix = $self->exonerate_score($matrix);
 
-    # log stats before matrix merging
-    $self->logger->info("\nOverlap scoring matrix:\n");
-    $self->log_matrix_stats($matrix);
-    $self->logger->info("\nExonerate scoring matrix:\n");
-    $self->log_matrix_stats($exonerate_matrix);
+  # log stats before matrix merging
+  $self->logger->info("\nOverlap scoring matrix:\n");
+  $self->log_matrix_stats($matrix);
+  $self->logger->info("\nExonerate scoring matrix:\n");
+  $self->log_matrix_stats($exonerate_matrix);
 
-    # merge matrices
-    $self->logger->info( "\nMerging scoring matrices...\n",
-                         0, 'stamped' );
-    $matrix->merge($exonerate_matrix);
-  }
-  else {
-    $self->logger->info("\nOverlap scoring matrix:\n");
-    $self->log_matrix_stats($matrix);
-  }
+  # merge matrices
+  $self->logger->info( "\nMerging scoring matrices...\n", 0,
+                       'stamped' );
+  $matrix->merge($exonerate_matrix);
 
-  $self->logger->info("Done.\n\n", 0, 'stamped');
+  $self->logger->info( "Done.\n\n", 0, 'stamped' );
 
   # debug logging
-  if ($self->logger->loglevel eq 'debug') {
-    $matrix->log('exon', $self->conf->param('basedir'));
+  if ( $self->logger->loglevel eq 'debug' ) {
+    $matrix->log( 'exon', $self->conf->param('basedir') );
   }
 
   # log stats of combined matrix
   $self->logger->info("Combined scoring matrix:\n");
   $self->log_matrix_stats($matrix);
 
-  $self->logger->info("\nDone with exon scoring.\n\n", 0, 'stamped');
+  $self->logger->info( "\nDone with exon scoring.\n\n", 0, 'stamped' );
 
   return $matrix;
-}
+} ## end sub score_exons
 
 
 #
