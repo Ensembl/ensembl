@@ -78,10 +78,25 @@ sub transcript_display_xref_sources {
     $ignore{"EntrezGene"}= 'FROM:RefSeq_[pd][en][pa].*_predicted';
   }
   else{
-    $ignore{"EntrezGene"} = 'select ox.object_xref_id from object_xref ox, dependent_xref dx, source s1, xref x1, source s2, xref x2 where ox.object_xref_id = dx.object_xref_id and dx.dependent_xref_id = x1.xref_id and x1.source_id = s1.source_id and s1.name = "EntrezGene" and x2.xref_id = dx.master_xref_id and x2.source_id = s2.source_id and (s2.name like "Refseq_dna_predicted" or s2.name like "RefSeq_peptide_predicted") and ox.ox_status = "DUMP_OUT"';
+    $ignore{"EntrezGene"} =(<<AIGN);
+
+SELECT ox.object_xref_id 
+    FROM object_xref ox, dependent_xref dx, source s1, xref x1, source s2, xref x2 
+     WHERE ox.object_xref_id = dx.object_xref_id AND dx.dependent_xref_id = x1.xref_id 
+     AND x1.source_id = s1.source_id and s1.name = 'EntrezGene' 
+     AND x2.xref_id = dx.master_xref_id and x2.source_id = s2.source_id 
+     AND (s2.name like 'Refseq_dna_predicted' or s2.name like 'RefSeq_peptide_predicted') 
+     AND ox.ox_status = 'DUMP_OUT'
+AIGN
+
+    $ignore{"Uniprot/SPTREMBL"} =(<<BIGN);
+SELECT object_xref_id
+    FROM object_xref JOIN xref USING(xref_id) JOIN source USING(source_id)
+     WHERE ox_status = 'DUMP_OUT' AND name = 'Uniprot/SPTREMBL' 
+      AND priority_description = 'protein_evidence_gt_3'
+BIGN
 
   }
-
 
   return [\@list,\%ignore];
 
@@ -458,8 +473,6 @@ sub build_transcript_and_gene_display_xrefs {
   my ($self) = @_;
 
   print "Building Transcript and Gene display_xrefs Using OLD methods accessing core database alone.\n" if ($self->verbose);
-
-
 
   my %external_name_to_id;
   my $sql1 = "SELECT external_db_id, db_name, status from external_db";
@@ -1266,6 +1279,8 @@ sub set_display_xrefs{
   my $update_gene_sth = $self->core->dbc->prepare("UPDATE gene g SET g.display_xref_id= ? WHERE g.gene_id=?");
   my $update_tran_sth = $self->core->dbc->prepare("UPDATE transcript t SET t.display_xref_id= ? WHERE t.transcript_id=?");
 
+ #get hash for sources in hash
+  #get priority description
 
 my $sql =(<<SQL); 
   CREATE TABLE display_xref_prioritys(
