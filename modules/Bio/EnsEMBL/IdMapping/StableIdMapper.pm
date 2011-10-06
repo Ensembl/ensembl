@@ -235,17 +235,19 @@ sub map_stable_ids {
       }
 
       # create a stable_id_event entry (not for exons)
-      unless ($type eq 'exon') {
-        my $key = join("\t",
-                       $s_obj->stable_id,
-                       $s_obj->version,
-                       $t_obj->stable_id,
-                       $t_obj->version,
-                       $self->mapping_session_id,
-                       $type,
-                       $scores_by_target{$tid}
-        );
-        $self->add_stable_id_event('new', $key);
+      unless ( $type eq 'exon' ) {
+        # Only add events when something changed.
+        if ( !( $s_obj->stable_id eq $t_obj->stable_id &&
+                $s_obj->version == $t_obj->version &&
+                $scores_by_target{$tid} == 1 ) )
+        {
+          my $key = join( "\t",
+                          $s_obj->stable_id,         $s_obj->version,
+                          $t_obj->stable_id,         $t_obj->version,
+                          $self->mapping_session_id, $type,
+                          $scores_by_target{$tid} );
+          $self->add_stable_id_event( 'new', $key );
+        }
       }
 
       # add to debug hash
