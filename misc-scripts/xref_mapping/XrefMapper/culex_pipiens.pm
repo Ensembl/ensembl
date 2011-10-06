@@ -40,6 +40,14 @@ sub transcript_display_xref_sources {
 		Uniprot/SPTREMBL);
 
   my %ignore;
+
+    $ignore{"Uniprot/SPTREMBL"} =(<<BIGN);
+SELECT object_xref_id
+    FROM object_xref JOIN xref USING(xref_id) JOIN source USING(source_id)
+     WHERE ox_status = 'DUMP_OUT' AND name = 'Uniprot/SPTREMBL' 
+      AND priority_description = 'protein_evidence_gt_3'
+BIGN
+
   return [\@list,\%ignore];
 
 }
