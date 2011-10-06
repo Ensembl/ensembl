@@ -3436,7 +3436,8 @@ sub get_all_synonyms{
 
   if ( !defined( $self->{'synonym'} ) ) {
     my $adap = $self->adaptor->db->get_SeqRegionSynonymAdaptor();
-    $self->{'synonym'} =  $adap->get_synonyms($self->get_seq_region_id($self), $external_db_id);
+    $self->{'synonym'} =
+      $adap->get_synonyms( $self->get_seq_region_id($self) );
   }
 
   return $self->{'synonym'};
