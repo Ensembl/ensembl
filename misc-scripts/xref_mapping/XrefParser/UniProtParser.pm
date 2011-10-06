@@ -35,19 +35,23 @@ sub run {
 
   my $file = @{$files}[0];
 
-  my ( $sp_source_id, $sptr_source_id, $sp_release, $sptr_release );
+  my ( $sp_source_id, $sptr_source_id, $sp_release, $sptr_release, $sptr_non_display_source_id );
 
   $sp_source_id =
-    $self->get_source_id_for_source_name('Uniprot/SWISSPROT',"sequence_mapped");
+    $self->get_source_id_for_source_name('Uniprot/SWISSPROT','sequence_mapped');
   $sptr_source_id =
-    $self->get_source_id_for_source_name('Uniprot/SPTREMBL');
+    $self->get_source_id_for_source_name('Uniprot/SPTREMBL', '');
+
+  $sptr_non_display_source_id =
+    $self->get_source_id_for_source_name('Uniprot/SPTREMBL', 'protein_evidence_gt_3');
 
   print "SwissProt source id for $file: $sp_source_id\n" if ($verbose);
   print "SpTREMBL source id for $file: $sptr_source_id\n" if ($verbose);
+  print "SpTREMBL protein_evidence > 3 source id for $file: $sptr_non_display_source_id\n" if ($verbose);
  
 
   my @xrefs =
-    $self->create_xrefs( $sp_source_id, $sptr_source_id, $species_id,
+    $self->create_xrefs( $sp_source_id, $sptr_source_id, $sptr_non_display_source_id, $species_id,
       $file, $verbose );
 
   if ( !@xrefs ) {
@@ -95,6 +99,7 @@ sub run {
         $self->set_release( $sptr_source_id,      $sptr_release );
         $self->set_release( $sp_pred_source_id,   $sp_release );
         $self->set_release( $sptr_pred_source_id, $sptr_release );
+	$self->set_release( $sptr_non_display_source_id, $sptr_release );
     }
 
 
@@ -106,12 +111,13 @@ sub run {
 # Parse file into array of xref objects
 
 sub create_xrefs {
-  my ($self, $sp_source_id, $sptr_source_id, $species_id, $file, $verbose ) = @_;
+  my ($self, $sp_source_id, $sptr_source_id, $sptr_non_display_source_id, $species_id, $file, $verbose ) = @_;
 
   my $num_sp = 0;
   my $num_sptr = 0;
   my $num_sp_pred = 0;
   my $num_sptr_pred = 0;
+  my $num_sptr_non_display = 0;
 
   my %dependent_sources = $self->get_xref_sources();
 
@@ -198,7 +204,7 @@ sub create_xrefs {
   my %dependent_xrefs;
 
   while ( $_ = $uniprot_io->getline() ) {
-
+     
     # if an OX line exists, only store the xref if the taxonomy ID that the OX
     # line refers to is in the species table
     # due to some records having more than one tax_id, we need to check them 
@@ -256,6 +262,7 @@ sub create_xrefs {
     my $is_predicted = /CC.*EMBL\/GenBank\/DDBJ whole genome shotgun \(WGS\) entry/;
 
     my ($label, $sp_type) = $_ =~ /ID\s+(\w+)\s+(\w+)/;
+    my ($protein_evidence_code) = $_ =~ /PE\s+(\d+)/; 
 
     # SwissProt/SPTrEMBL are differentiated by having STANDARD/PRELIMINARY here
     if ($sp_type =~ /^Reviewed/i) {
@@ -273,9 +280,16 @@ sub create_xrefs {
       if ($is_predicted) {
 	$xref->{SOURCE_ID} = $sptr_pred_source_id;
 	$num_sptr_pred++;
-      } else {
-	$xref->{SOURCE_ID} = $sptr_source_id;
-	$num_sptr++;
+      }
+      else { 
+
+	  if (defined($protein_evidence_code) && $protein_evidence_code <= 3) {
+	      $xref->{SOURCE_ID} = $sptr_source_id;
+	      $num_sptr++;
+	  } else {
+	      $xref->{SOURCE_ID} = $sptr_non_display_source_id;
+	      $num_sptr_non_display++;	  
+	  }
       }
 
     } else {
@@ -511,10 +525,8 @@ sub create_xrefs {
 
   $uniprot_io->close();
 
-  print "Read $num_sp SwissProt xrefs and $num_sptr SPTrEMBL xrefs from $file\n" if($verbose);
+  print "Read $num_sp SwissProt xrefs, $num_sptr SPTrEMBL xrefs with protein evidence codes 1-3, and $num_sptr_non_display SPTrEMBL xrefs with protein evidence codes > 3 from $file\n" if($verbose);
   print "Found $num_sp_pred predicted SwissProt xrefs and $num_sptr_pred predicted SPTrEMBL xrefs\n" if (($num_sp_pred > 0 || $num_sptr_pred > 0) and $verbose);
-
-
 
 
 #  print "$kount gene anmes added\n";
