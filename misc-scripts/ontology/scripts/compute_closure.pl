@@ -76,7 +76,7 @@ $dbh->do(
   q(
 INSERT INTO closure
   (child_term_id, parent_term_id, distance, subparent_term_id)
-SELECT  child_term_id, parent_term_id, 1, child_term_id
+SELECT DISTINCT child_term_id, parent_term_id, 1, child_term_id
 FROM    relation r,
         relation_type rt
 WHERE rt.name IN (
