@@ -92,16 +92,24 @@ sub transcript_display_xref_sources {
 
   my %ignore;
 
-    $ignore{"EntrezGene"} =(<<AIGN);
-
-SELECT ox.object_xref_id 
-    FROM object_xref ox, dependent_xref dx, source s1, xref x1, source s2, xref x2 
-     WHERE ox.object_xref_id = dx.object_xref_id AND dx.dependent_xref_id = x1.xref_id 
-     AND x1.source_id = s1.source_id and s1.name = 'EntrezGene' 
-     AND x2.xref_id = dx.master_xref_id and x2.source_id = s2.source_id 
-     AND (s2.name like 'Refseq_dna_predicted' or s2.name like 'RefSeq_peptide_predicted') 
-     AND ox.ox_status = 'DUMP_OUT'
-AIGN
+  if(!$fullmode){
+    $ignore{"EntrezGene"}= 'FROM:RefSeq_[pd][en][pa].*_predicted';
+  }
+  else{
+    $ignore{"EntrezGene"} =(<<'IEG');
+SELECT DISTINCT ox.object_xref_id
+  FROM object_xref ox, dependent_xref dx, 
+       xref xmas, xref xdep, 
+       source smas, source sdep
+    WHERE ox.xref_id = dx.dependent_xref_id AND
+          dx.dependent_xref_id = xdep.xref_id AND
+          dx.master_xref_id = xmas.xref_id AND
+          xmas.source_id = smas.source_id AND
+          xdep.source_id = sdep.source_id AND
+          smas.name like "Refseq%predicted" AND
+          sdep.name like "EntrezGene" AND
+          ox.ox_status = "DUMP_OUT"
+IEG
 
     $ignore{"Uniprot/SPTREMBL"} =(<<BIGN);
 SELECT object_xref_id
@@ -109,6 +117,8 @@ SELECT object_xref_id
      WHERE ox_status = 'DUMP_OUT' AND name = 'Uniprot/SPTREMBL' 
       AND priority_description = 'protein_evidence_gt_3'
 BIGN
+
+  }
   
   return [\@list,\%ignore];
 
