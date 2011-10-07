@@ -104,9 +104,9 @@ sub _columns {
   my ($self) = @_;
 
   my $created_date =
-    $self->db()->dbc()->from_date_to_seconds("created_date");
+    $self->db()->dbc()->from_date_to_seconds("tsi.created_date");
   my $modified_date =
-    $self->db()->dbc()->from_date_to_seconds("modified_date");
+    $self->db()->dbc()->from_date_to_seconds("tsi.modified_date");
 
   return (
     't.transcript_id',     't.seq_region_id',
