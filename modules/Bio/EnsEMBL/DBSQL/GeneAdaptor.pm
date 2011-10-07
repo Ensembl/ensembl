@@ -2299,10 +2299,9 @@ sub get_stable_entry_info {
   my $created_date = $self->db->dbc->from_date_to_seconds("created_date");
   my $modified_date = $self->db->dbc->from_date_to_seconds("modified_date");
 
-  my $sth = $self->prepare("SELECT stable_id, " . $created_date . "," .
-                                   $modified_date . ", version 
-                            FROM gene_stable_id 
-                            WHERE gene_id = ?");
+  my $sth = $self->prepare(
+           "SELECT stable_id, $created_date, $modified_date, version " .
+             "FROM gene_stable_id WHERE gene_id = ?" );
 
   $sth->bind_param(1, $gene->dbID, SQL_INTEGER);
   $sth->execute();
