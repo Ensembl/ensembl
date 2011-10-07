@@ -8,6 +8,14 @@ use Carp;
 use File::Basename;
 
 use base qw( XrefParser::BaseParser );
+my $peptide_source_id;
+my $dna_source_id ;
+my $mrna_source_id ;
+my $ncrna_source_id ;
+my $pred_peptide_source_id ;
+my $pred_dna_source_id ;
+my $pred_mrna_source_id ;
+my $pred_ncrna_source_id ;
 
 sub run {
 
@@ -25,32 +33,41 @@ sub run {
 
   my @files = @{$files};
 
-    my $peptide_source_id =
-      $self->get_source_id_for_source_name('RefSeq_peptide');
-    my $dna_source_id =
-      $self->get_source_id_for_source_name('RefSeq_dna');
 
-    print "RefSeq_peptide source ID = $peptide_source_id\n" if($verbose);
-    print "RefSeq_dna source ID = $dna_source_id\n" if($verbose);
+  $peptide_source_id =
+    $self->get_source_id_for_source_name('RefSeq_peptide');
+  $dna_source_id =
+    $self->get_source_id_for_source_name('RefSeq_dna');
+  $mrna_source_id =
+    $self->get_source_id_for_source_name('RefSeq_mRNA','refseq');
+  $ncrna_source_id =
+    $self->get_source_id_for_source_name('RefSeq_ncRNA');
 
-    my $pred_peptide_source_id =
-      $self->get_source_id_for_source_name('RefSeq_peptide_predicted');
-    my $pred_dna_source_id =
-      $self->get_source_id_for_source_name('RefSeq_dna_predicted');
+  $pred_peptide_source_id =
+    $self->get_source_id_for_source_name('RefSeq_peptide_predicted');
+  $pred_dna_source_id =
+    $self->get_source_id_for_source_name('RefSeq_dna_predicted');
+  $pred_mrna_source_id =
+    $self->get_source_id_for_source_name('RefSeq_mRNA_predicted','refseq');
+  $pred_ncrna_source_id =
+    $self->get_source_id_for_source_name('RefSeq_ncRNA_predicted');
 
-    print "RefSeq_peptide_predicted source ID = "
-      . "$pred_peptide_source_id\n" if($verbose);
-    print "RefSeq_dna_predicted source ID = $pred_dna_source_id\n" if($verbose);
+  if($verbose){
+    print "RefSeq_peptide source ID = $peptide_source_id\n";
+    print "RefSeq_dna source ID = $dna_source_id\n";
+    print "RefSeq_mRNA source ID = $mrna_source_id\n";
+    print "RefSeq_ncRNA source ID = $ncrna_source_id\n";
+    print "RefSeq_peptide_predicted source ID = $pred_peptide_source_id\n";
+    print "RefSeq_dna_predicted source ID = $pred_dna_source_id\n" ;
+    print "RefSeq_mRNA_predicted source ID = $pred_mrna_source_id\n" ;
+    print "RefSeq_ncRNA_predicted source ID = $pred_ncrna_source_id\n" ;
+  }
+
 
     my @xrefs;
     foreach my $file (@files) {
         my $xrefs =
-          $self->create_xrefs( $peptide_source_id,
-                               $dna_source_id,
-                               $pred_peptide_source_id,
-                               $pred_dna_source_id,
-                               $file,
-                               $species_id, $verbose );
+          $self->create_xrefs( $file, $species_id, $verbose );
 
         if ( !defined( $xrefs ) ) {
             return 1;    #error
@@ -95,8 +112,7 @@ sub run {
 # Slightly different formats
 
 sub create_xrefs {
-  my ($self, $peptide_source_id, $dna_source_id, $pred_peptide_source_id,
-      $pred_dna_source_id, $file, $species_id, $verbose ) = @_;
+  my ($self, $file,$species_id, $verbose ) = @_;
 
   # Create a hash of all valid names and taxon_ids for this species
   my %species2name = $self->species_id2name();
@@ -174,12 +190,19 @@ sub create_xrefs {
       # get the right source ID based on $type and whether this is predicted (X*) or not
       my $source_id;
       if ($type =~ /dna/) {
-	if ($acc =~ /^XM_/) {
-	  $source_id = $pred_dna_source_id;
+	if ($acc =~ /^XM_/ ){
+	  $source_id = $pred_mrna_source_id;
+	} elsif( $acc =~ /^XR/) {
+	  $source_id = $pred_ncrna_source_id;
+	} elsif( $acc =~ /^NM/) {
+	  $source_id = $mrna_source_id;
+	} elsif( $acc =~ /^NR/) {
+	  $source_id = $ncrna_source_id;
 	} else {
 	  $source_id = $dna_source_id;
 	}
-      } elsif ($type =~ /peptide/) {
+      } 
+      elsif ($type =~ /peptide/) {
 	if ($acc =~ /^XP_/) {
 	  $source_id = $pred_peptide_source_id;
 	} else {
