@@ -85,6 +85,10 @@ my $fh;
 foreach my $species ( @species_list ) {
     
     my $conf = $dbHash->{lc($species)};
+    
+    warn "****$species\n";
+    warn Dumper($conf);
+    
     foreach my $index (@indexes) {
 
         # we don't dump compara anymore
@@ -394,11 +398,13 @@ WHERE
         }
 
         # SNP query
-#        my $snp_sth = eval {
-#            $dbh->prepare(
-#"select distinct(vf.variation_name) from $SNPDB.transcript_variation as tv, $SNPDB.variation_feature as vf where vf.variation_feature_id = tv.variation_feature_id and tv.transcript_stable_id in(?)"
-#            );
-#        };
+        my $snp_sth;
+        if ($SNPDB && $DB eq 'core') {
+          $snp_sth = $dbh->prepare(
+            "select distinct(vf.variation_name) from $SNPDB.transcript_variation as tv, $SNPDB.variation_feature as vf 
+           where vf.variation_feature_id = tv.variation_feature_id and tv.feature_stable_id in(?)"
+          );
+        };
 
         my $haplotypes = $dbh->selectall_hashref(
             "select gene_id from gene g, assembly_exception ae where
@@ -518,12 +524,12 @@ g.seq_region_id=ae.seq_region_id and ae.exc_type='HAP'", [qw(gene_id)]
                 if ( $old{'gene_id'} ) {
 
 
-#                    if ( $SNPDB && $DB eq 'core' ) {
-#                        my @transcript_stable_ids =
-#                          keys %{ $old{transcript_stable_ids} };
-#                        $snp_sth->execute("@transcript_stable_ids");
-#                        $old{snps} = $snp_sth->fetchall_arrayref;
-#                    }
+                    if ( $SNPDB && $DB eq 'core' ) {
+                        my @transcript_stable_ids =
+                          keys %{ $old{transcript_stable_ids} };
+                        $snp_sth->execute("@transcript_stable_ids");
+                        $old{snps} = $snp_sth->fetchall_arrayref;
+                    }
 
                     if ($want_species_orthologs) {
                         $old{orthologs} =
@@ -644,11 +650,11 @@ g.seq_region_id=ae.seq_region_id and ae.exc_type='HAP'", [qw(gene_id)]
             }
         }
 
-#        if ( $SNPDB && $DB eq 'core' ) {
-#            my @transcript_stable_ids = keys %{ $old{transcript_stable_ids} };
-#            $snp_sth->execute("@transcript_stable_ids");
-#            $old{snps} = $snp_sth->fetchall_arrayref;
-#        }
+        if ( $SNPDB && $DB eq 'core' ) {
+            my @transcript_stable_ids = keys %{ $old{transcript_stable_ids} };
+            $snp_sth->execute("@transcript_stable_ids");
+            $old{snps} = $snp_sth->fetchall_arrayref;
+        }
         if ($want_species_orthologs) {
             $old{orthologs} = $ortholog_lookup->{ $old{'gene_stable_id'} };
 
