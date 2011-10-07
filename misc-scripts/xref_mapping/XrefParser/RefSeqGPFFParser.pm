@@ -96,6 +96,10 @@ sub run {
 
         $self->set_release( $source_id,              $release );
         $self->set_release( $peptide_source_id,      $release );
+        $self->set_release( $mrna_source_id,         $release );
+        $self->set_release( $ncrna_source_id,        $release );
+        $self->set_release( $pred_mrna_source_id,    $release );
+        $self->set_release( $pred_ncrna_source_id,   $release );
         $self->set_release( $dna_source_id,          $release );
         $self->set_release( $pred_peptide_source_id, $release );
         $self->set_release( $pred_dna_source_id,     $release );
