@@ -7,7 +7,7 @@ use Data::Dumper;
 use DBI qw( :sql_types );
 use Getopt::Long qw( :config no_ignore_case );
 
-local $| = 1;
+my $timestamp = strftime( "%Y%m%d-%H%M%S", localtime() );
 
 # Master database location:
 my ( $mhost, $mport ) = ( 'ens-staging1', '3306' );
@@ -20,10 +20,9 @@ my ( $user, $pass );
 my $dbname;
 my $dbpattern;
 
-my $core     = 0;
-my $verbose  = 0;
+my $core    = 0;
+my $verbose = 0;
 my $dumppath;
-my $dbname_file;
 
 # Do command line parsing.
 if ( !GetOptions( 'mhost|mh=s'     => \$mhost,
@@ -40,14 +39,14 @@ if ( !GetOptions( 'mhost|mh=s'     => \$mhost,
                   'verbose|v!'     => \$verbose,
                   'core=i'         => \$core,
                   'dumppath|dp=s'  => \$dumppath )
-     || !(
-           defined($host)
-        && defined($user)
-        && defined($pass)
-        && ( defined($dbname) || defined($dbpattern) || defined($core) )
-        && defined($mhost)
-        && defined($muser)
-        && defined($dumppath) ) )
+     ||
+     !( defined($host) &&
+        defined($user) &&
+        defined($pass) &&
+        ( defined($dbname) || defined($dbpattern) || defined($core) ) &&
+        defined($mhost) &&
+        defined($muser) &&
+        defined($dumppath) ) )
 {
   my $indent = ' ' x length($0);
   print <<USAGE_END;
@@ -90,7 +89,8 @@ Usage:
   -s / --species      If the name of the database specified by -d (or
                       --database) is not in the standard format, this
                       flag is used to specify what species it is (e.g.,
-                      'homo_sapiens', 'gallus_gallus' etc.).
+                      'homo_sapiens', 'gallus_gallus' etc., i.e. the
+                      latin name).
 
   -t / --type         If the name of the database specified by -d (or
                       --database) is not in the standard format, this
@@ -113,10 +113,11 @@ Usage:
   -v / --verbose      Be verbose, display every SQL statement as they
                       are executed (on standard error).
 
+
 USAGE_END
 
-  die(   "Need the following options: "
-       . "-h -u -p -d (or --pattern) and -dp\n" );
+  die( "Need the following options: " .
+       "-h -u -p -d (or --pattern) and -dp\n" );
 
 } ## end if ( !GetOptions( 'mhost|mh=s'...))
 
@@ -129,27 +130,6 @@ if ( defined($dbname) && defined($dbpattern) ) {
   die("-d/--database and --pattern/--core are mutually exclusive\n");
 }
 
-my %dbname_override;
-
-if ( defined($dbname_file) ) {
-  if ( !-r $dbname_file ) {
-    die(
-       sprintf( "File '%s' not found or not readable", $dbname_file ) );
-  }
-
-  open( DBNAMEF, "<$dbname_file" );
-
-  my @temp_array;
-  while ( my $line = <DBNAMEF> ) {
-    chomp $line;
-    @temp_array = split( /\s+/, $line );
-    $dbname_override{ $temp_array[0] } = $temp_array[1];
-  }
-
-  close(DBNAMEF);
-}
-
-
 # Fetch all data from the master database.
 my %data;
 {
@@ -159,9 +139,9 @@ my %data;
                           { 'PrintError' => 1, 'RaiseError' => 1 } );
 
   my $sth =
-    $dbh->prepare(  'SELECT full_db_name, logic_name, '
-                  . 'description, display_label, displayable, web_data '
-                  . 'FROM full_analysis_description' );
+    $dbh->prepare( 'SELECT full_db_name, logic_name, ' .
+                  'description, display_label, displayable, web_data ' .
+                  'FROM full_analysis_description' );
 
   $sth->execute();
 
@@ -171,9 +151,6 @@ my %data;
                          $hash{'displayable'}, $hash{'web_data'} ) );
 
   while ( $sth->fetch() ) {
-    if ($dbname_override{$full_db_name}) {
-        $full_db_name = $dbname_override{$full_db_name};
-    }
     $data{$full_db_name}{$logic_name} = { %{ \%hash } };
   }
 
@@ -190,7 +167,8 @@ my %data;
   if ( defined($dbname) ) {
     $sth = $dbh->prepare('SHOW DATABASES LIKE ?');
     $sth->bind_param( 1, $dbname, SQL_VARCHAR );
-  } else {
+  }
+  else {
     $sth = $dbh->prepare('SHOW DATABASES');
   }
 
@@ -203,8 +181,8 @@ my %data;
 
     my $dbdata = $data{$dbname};
     if ( !defined($dbdata) ) {
-      printf( "ERROR: Can not find data for database '%s' "
-                . "(skipping it)!\n",
+      printf( "ERROR: Can not find data for database '%s' " .
+                "(skipping it)!\n",
               $dbname );
       next;
     }
@@ -218,43 +196,29 @@ my %data;
     my $full_table_name_bak = $dbh->quote_identifier( undef, $dbname,
                                            'analysis_description_bak' );
 
-    
-    # check if table exists
-    my $test_sql = "select count(1) from information_schema.tables where table_schema = ? and table_name = 'analysis_description'";
-    my $test_sth = $dbh->prepare($test_sql);
-    $test_sth->execute($dbname);
-    my ($table_exists) = $test_sth->fetchrow_array();
-    if ($table_exists) {
-        my $file_path = $dumppath . "/" . $dbname . 'analysis_description.sql';
-        my $file_exists = 0;
-        my $response;
-        if (-e $file_path) {
-                print("file $file_path already exists, overwrite? (y/n)\n");
-                $file_exists = 1;
-                $response = <>;
-                chomp $response;
-        }
-        if ( !$file_exists or $response eq 'y') {
-                open(BKUPFILE, ">$file_path") or die("Failed to open file $file_path for writing\n");   
-                my $cmd = "mysqldump -h $host -u $user -p$pass $dbname analysis_description";
-                my $result = `$cmd`;
-                print BKUPFILE $result;
-                close BKUPFILE;
-                if ($result !~ /Dump completed/) { 
-                        print("back up failed, check file $file_path for details\n");
-                        next;
-                } else {
-                        print("$full_table_name dumped out to file $file_path\n");
-                }
-        } else {
-          print("skipping update for table analysis_description\n");
-          next; 
-        }
-      } else {
-          print("table analysis_description does not exist in database $dbname\n");
-          next;
+    if ( defined($dumppath) ) {
+      # Backup the table on file.
+      my $filename = sprintf( "%s/%s.%s.%s.sql",
+                              $dumppath, $dbname,
+                              'analysis_description', $timestamp );
+
+      if ( -e $filename ) {
+        die( sprintf( "File '%s' already exists.", $filename ) );
       }
 
+      printf( "Backing up table %s on file.\n",
+              'analysis_description' );
+      printf( "--> %s\n", $filename );
+
+      system( "mysqldump",
+              "--host=$host",
+              "--port=$port",
+              "--user=$user",
+              ( defined($pass) ? "--password=$pass" : "--opt" ),
+              "--result-file=$filename",
+              "$dbname",
+              'analysis_description' );
+    }
 
     $dbh->do(
            sprintf( 'DROP TABLE IF EXISTS %s', $full_table_name_bak ) );
@@ -285,22 +249,23 @@ my %data;
 
     # Insert into the empty analysis_description table.
     $sth2 = $dbh->prepare(
-               sprintf( 'INSERT INTO %s '
-                          . '(analysis_id, description, display_label, '
-                          . 'displayable, web_data) '
-                          . 'VALUES (?, ?, ?, ?, ?)',
-                        $full_table_name ) );
+        sprintf( 'INSERT INTO %s ' .
+                   '(analysis_id, description, display_label, ' .
+                   'displayable, web_data) ' . 'VALUES (?, ?, ?, ?, ?)',
+                 $full_table_name ) );
 
     foreach my $logic_name ( keys( %{$dbdata} ) ) {
       if ( !exists( $dbdata->{$logic_name}{'description'} ) ) {
-        printf( "ERROR: Missing production database entry "
-                  . "for logic name '%s'\n",
+        printf( "ERROR: Missing production database entry " .
+                  "for logic name '%s'\n",
                 $logic_name );
-      } elsif ( !exists( $dbdata->{$logic_name}{'analysis_id'} ) ) {
-        printf( "WARNING: Expected to find analysis entry "
-                  . "for logic name '%s'\n",
+      }
+      elsif ( !exists( $dbdata->{$logic_name}{'analysis_id'} ) ) {
+        printf( "WARNING: Expected to find analysis entry " .
+                  "for logic name '%s'\n",
                 $logic_name );
-      } else {
+      }
+      else {
         $sth2->bind_param( 1, $dbdata->{$logic_name}{'analysis_id'},
                            SQL_INTEGER );
         $sth2->bind_param( 2, $dbdata->{$logic_name}{'description'},
@@ -314,17 +279,15 @@ my %data;
 
         $sth2->execute();
       }
-    }
+    } ## end foreach my $logic_name ( keys...)
 
     print("Inserted data\n");
 
     my $key_name = 'analysis_id';
     {
-      my $statement = sprintf( 'SELECT %s '
-                                 . 'FROM %s '
-                                 . 'LEFT JOIN %s t USING (%s) '
-                                 . 'WHERE t.%s IS NULL '
-                                 . 'ORDER BY %s',
+      my $statement = sprintf( 'SELECT %s ' . 'FROM %s ' .
+                                 'LEFT JOIN %s t USING (%s) ' .
+                                 'WHERE t.%s IS NULL ' . 'ORDER BY %s',
                                $key_name,            $full_table_name,
                                $full_table_name_bak, $key_name,
                                $key_name,            $key_name );
@@ -350,11 +313,9 @@ my %data;
       }
     }
     {
-      my $statement = sprintf( 'SELECT %s '
-                                 . 'FROM %s '
-                                 . 'LEFT JOIN %s t USING (%s) '
-                                 . 'WHERE t.%s IS NULL '
-                                 . 'ORDER BY %s',
+      my $statement = sprintf( 'SELECT %s ' . 'FROM %s ' .
+                                 'LEFT JOIN %s t USING (%s) ' .
+                                 'WHERE t.%s IS NULL ' . 'ORDER BY %s',
                                $key_name,        $full_table_name_bak,
                                $full_table_name, $key_name,
                                $key_name,        $key_name );
@@ -386,11 +347,15 @@ my %data;
     $dbh->do(
            sprintf( 'DROP TABLE IF EXISTS %s', $full_table_name_bak ) );
 
-  } continue {
+  } ## end while ( $sth->fetch() )
+  continue {
     print("\n");
   }
 
   $dbh->disconnect();
 }
 
-print "To restore a table from dump login to the database and use command: source {dump file name};\n";
+print <<FINAL_END
+To restore a table from dump login to the database and use command:
+"source {dumpfile} or "\. {dumpfile}".
+FINAL_END
