@@ -210,15 +210,18 @@ my %data;
               'analysis_description' );
       printf( "--> %s\n", $filename );
 
-      system( "mysqldump",
-              "--host=$host",
-              "--port=$port",
-              "--user=$user",
-              ( defined($pass) ? "--password=$pass" : "--opt" ),
-              "--result-file=$filename",
-              "$dbname",
-              'analysis_description' );
-    }
+      if ( system( "mysqldump",
+                   "--host=$host",
+                   "--port=$port",
+                   "--user=$user",
+                   ( defined($pass) ? "--password=$pass" : "--opt" ),
+                   "--result-file=$filename",
+                   "$dbname",
+                   'analysis_description' ) )
+      {
+        die("mysqldump failed: $?");
+      }
+    } ## end if ( defined($dumppath...))
 
     $dbh->do(
            sprintf( 'DROP TABLE IF EXISTS %s', $full_table_name_bak ) );

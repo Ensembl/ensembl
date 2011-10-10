@@ -214,15 +214,18 @@ my %data;
         printf( "Backing up table %s on file.\n", $table );
         printf( "--> %s\n",                       $filename );
 
-        system( "mysqldump",
-                "--host=$host",
-                "--port=$port",
-                "--user=$user",
-                ( defined($pass) ? "--password=$pass" : "--opt" ),
-                "--result-file=$filename",
-                "$dbname",
-                "$table" );
-      }
+        if ( system( "mysqldump",
+                     "--host=$host",
+                     "--port=$port",
+                     "--user=$user",
+                     ( defined($pass) ? "--password=$pass" : "--opt" ),
+                     "--result-file=$filename",
+                     "$dbname",
+                     "$table" ) )
+        {
+          die("mysqldump failed: $?");
+        }
+      } ## end if ( defined($dumppath...))
 
       $dbh->do(
            sprintf( 'DROP TABLE IF EXISTS %s', $full_table_name_bak ) );
