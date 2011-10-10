@@ -105,7 +105,7 @@ Once Boost and Log4cpp are installed, simply type:
 --with-log4cpp=<log4cpp installation path>
 
 Example:
-./configure --prefix=/softwares/AltSplicingToolkit-0.5.2 \
+./configure --prefix=/softwares/AltSplicingToolkit-0.5.4 \
 --with-boost-include=/softwares/boost_1_47_0/include \
 --with-boost-lib=/softwares/boost_1_47_0/lib \
 --with-log4cpp=/softwares/log4cpp-1.0
