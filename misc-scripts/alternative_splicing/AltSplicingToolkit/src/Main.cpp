@@ -88,7 +88,7 @@ void outputUsage(const po::options_description& desc)
 {
   std::cout << "altSpliceFinder 0.5.4\n" << endl
   //<< as::version::Version::getApplicationVersion()
-  << "Copyright (c) 2008, 2009, 2011 Gautier Koscielny <koscieln@ebi.ac.uk>" << endl
+  << "Copyright (c) 2008-2011 Gautier Koscielny <koscieln@ebi.ac.uk>" << endl
   << "The European Bioinformatics Institute and" << endl
 	<< "Genome Research Limited, and others." << endl
 	<< "All rights reserved.\n\n";
