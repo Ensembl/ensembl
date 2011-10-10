@@ -22,8 +22,8 @@ sub run {
   my $release_file = $ref_arg->{rel_file};
   my $verbose      = $ref_arg->{verbose};
 
-  if((!defined $source_id) or (!defined $species_id) or (!defined $files) or (!defined $release_file)){
-    croak "Need to pass source_id, species_id, files and rel_file as pairs";
+  if((!defined $source_id) or (!defined $species_id) or (!defined $files) ){
+    croak "Need to pass source_id, species_id and files as pairs";
   }
   $verbose |=0;
 
@@ -102,10 +102,10 @@ sub run {
       $version = "JGI 2.0" ;  
 
     }else { 
-      print STDERR "WARNING : The source-name specified in the populate_metatable.sql file is\n" .
-        "WARNING : not matching the differnt cases specified in JGI_Parser.pm - plese\n" .  
+      print STDERR "WARNING : The source-name specified ($source_name) in the populate_metatable.sql file is\n" .
+        "WARNING : not matching the differnt cases specified in JGI_Parser.pm - plese\n" 
           "WARNING : edit the parser \n" ; 
-      return 1;    
+      return 1;
     } 
     #print "ACCESSION $acession\n" ;  
 
