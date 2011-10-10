@@ -27,7 +27,7 @@ dnl --------------------------------
 
 dnl Require Autoconf 2.60
 AC_PREREQ([2.60])
-AC_INIT([Ensembl AltSplicingToolkit], [0.5.2], [koscieln@ebi.ac.uk])
+AC_INIT([Ensembl AltSplicingToolkit], [0.5.4], [koscieln@ebi.ac.uk])
 
 dnl -----------------------------------------------
 dnl Package name and version number (user defined)
@@ -110,6 +110,7 @@ fi
 ## 
 ##
 ## Help the compiler find external software
+##
 AC_ARG_WITH([boost-include],
             AC_HELP_STRING([--with-boost-include=BOOST_INCLUDE_PATH],
                            [Supply the location of Boost header files]),
@@ -117,6 +118,7 @@ AC_ARG_WITH([boost-include],
             [ql_boost_include_path=""])
 if test [ -n "$ql_boost_include_path/boost" ] ; then
    AC_SUBST([CPPFLAGS],["${CPPFLAGS} -I${ql_boost_include_path}"])
+   AC_SUBST([INCLUDES],["${INCLUDES} -I${ql_boost_include_path}"])
    #AC_SUBST([CXXFLAGS],["${CXXFLAGS} -I${ql_boost_include_path}"])
 fi
 AC_ARG_WITH([boost-lib],
