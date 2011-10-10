@@ -7,8 +7,6 @@ use DBI qw( :sql_types );
 use Getopt::Long qw( :config no_ignore_case );
 use POSIX;
 
-local $| = 1;
-
 my $timestamp = strftime( "%Y%m%d-%H%M%S", localtime() );
 
 my %master_tables = ( 'attrib_type'     => 1,
@@ -28,8 +26,8 @@ my ( $user, $pass );
 my $dbname;
 my $dbpattern;
 
-my $core     = 0;
-my $verbose  = 0;
+my $core    = 0;
+my $verbose = 0;
 my $dumppath;
 
 # Do command line parsing.
@@ -48,14 +46,14 @@ if ( !GetOptions( 'mhost|mh=s'     => \$mhost,
                   'verbose|v!'     => \$verbose,
                   'core=i'         => \$core,
                   'dumppath|dp=s'  => \$dumppath )
-     || !(
-           defined($host)
-        && defined($user)
-        && defined($pass)
-        && ( defined($dbname) || defined($dbpattern) || defined($core) )
-        && defined($mhost)
-        && defined($muser)
-        && defined($dumppath) ) )
+     ||
+     !( defined($host) &&
+        defined($user) &&
+        defined($pass) &&
+        ( defined($dbname) || defined($dbpattern) || defined($core) ) &&
+        defined($mhost) &&
+        defined($muser) &&
+        defined($dumppath) ) )
 {
   my $indent = ' ' x length($0);
   print <<USAGE_END;
@@ -119,8 +117,8 @@ Usage:
 
 USAGE_END
 
-  die(   "Need the following options: "
-       . "-h -u -p -d (or --pattern) and -dp\n" );
+  die( "Need the following options: " .
+       "-h -u -p -d (or --pattern) and -dp\n" );
 
 } ## end if ( !GetOptions( 'mhost|mh=s'...))
 
@@ -130,7 +128,8 @@ if (@tables) {
       die( sprintf( "Invalid table specified: '%s'\n", $table ) );
     }
   }
-} else {
+}
+else {
   @tables = keys(%master_tables);
 }
 
@@ -177,7 +176,8 @@ my %data;
   if ( defined($dbname) ) {
     $sth = $dbh->prepare('SHOW DATABASES LIKE ?');
     $sth->bind_param( 1, $dbname, SQL_VARCHAR );
-  } else {
+  }
+  else {
     $sth = $dbh->prepare('SHOW DATABASES');
   }
 
@@ -200,7 +200,6 @@ my %data;
       my $full_table_name_bak =
         $dbh->quote_identifier( undef, $dbname, $table . '_bak' );
       my $key_name = $table . '_id';
-
 
       if ( defined($dumppath) ) {
         # Backup the table on file.
@@ -269,11 +268,10 @@ my %data;
       print("<inserted data>");
 
       {
-        my $statement = sprintf( 'SELECT %s '
-                                   . 'FROM %s '
-                                   . 'LEFT JOIN %s t USING (%s) '
-                                   . 'WHERE t.%s IS NULL '
-                                   . 'ORDER BY %s',
+        my $statement = sprintf( 'SELECT %s ' . 'FROM %s ' .
+                                   'LEFT JOIN %s t USING (%s) ' .
+                                   'WHERE t.%s IS NULL ' .
+                                   'ORDER BY %s',
                                  $key_name,
                                  $full_table_name,
                                  $full_table_name_bak,
@@ -305,11 +303,10 @@ my %data;
         }
       }
       {
-        my $statement = sprintf( 'SELECT %s '
-                                   . 'FROM %s '
-                                   . 'LEFT JOIN %s t USING (%s) '
-                                   . 'WHERE t.%s IS NULL '
-                                   . 'ORDER BY %s',
+        my $statement = sprintf( 'SELECT %s ' . 'FROM %s ' .
+                                   'LEFT JOIN %s t USING (%s) ' .
+                                   'WHERE t.%s IS NULL ' .
+                                   'ORDER BY %s',
                                  $key_name,
                                  $full_table_name_bak,
                                  $full_table_name,
@@ -343,12 +340,12 @@ my %data;
           print("\n");
         }
       }
-      # delete the backup table  
+      # delete the backup table
       $dbh->do(
            sprintf( 'DROP TABLE IF EXISTS %s', $full_table_name_bak ) );
-  
 
-    } continue {
+    } ## end foreach my $table ( keys(%data...))
+    continue {
       print("\n");
     }
 
@@ -359,4 +356,7 @@ my %data;
   $dbh->disconnect();
 }
 
-print "To restore a table from dump login to the database and use command: source {dump file name};\n";
+print <<FINAL_END
+To restore a table from dump login to the database and use command:
+"source {dumpfile}" or "\. {dumpfile}".
+FINAL_END
