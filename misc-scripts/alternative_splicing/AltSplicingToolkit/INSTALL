@@ -12,7 +12,7 @@ You'll need to install 2 extra libraries that are used by the toolkit:
 * The Boost C++ libraries or boost for short (http://www.boost.org)
   which provides free portable libraries compatible with standard
   libraries.
-  We currently rely on boost version 1.37.0. 
+  We currently rely on boost version 1.47.0. 
   This version can be downloaded at:
   http://sourceforge.net/projects/boost/files/ 
 
@@ -22,15 +22,93 @@ You'll need to install 2 extra libraries that are used by the toolkit:
 	See the page of the project on SourceForge:
 	http://log4cpp.sourceforge.net/
 
+To install Boost:
+----------------
+
+Remember that you will need to have bjam installed.
+
+If you don't, install Boost.Build from an official release or a nightly build, as available on the official web site, 
+following these steps:
+
+1. Get a release from http://www.boost.org/boost-build2/
+   For instance:
+    http://prdownloads.sourceforge.net/boost/boost-build-2.0-m12.tar.bz2
+
+2. Unpack the release. 
+
+3. On the command line, go to the root of the unpacked tree.
+
+4. cd boost-build/jam_src
+
+5. ./build.sh gcc (if you use gcc)
+
+
+Then install Boost:
+
+1. Download the latest version of Boost.
+      
+2. Unpack the release
+
+3. On the command line, go to the root of the unpacked tree like
+	 cd boost_1_47_0
+
+4. Copy the version of bjam you've just build to this root
+   For instance: 
+	 cp boost-build/jam_src/bin.linuxx86_64/bjam boost_1_47_0/
+  
+5. ./bootstrap.sh --prefix=PREFIX
+
+   where PREFIX is a directory where you want Boost libraries to be  
+   installed.
+
+6. ./b2
+
+
+To install Log4cpp:
+------------------
+
+1. Get the latest version:
+
+http://downloads.sourceforge.net/project/log4cpp/log4cpp-1.0.x%20%28current%29/log4cpp-1.0/log4cpp-1.0.tar.gz
+
+2. Extract the sources:
+
+  tar zxvf log4cpp-1.0.tar.gz
+
+3. On the command line, go to the root of the unpacked tree.
+
+  cd log4cpp-1.0
+
+4. Run configure:
+  ./configure --prefix=PREFIX
+
+ where PREFIX is a directory where you want Log4cpp libraries to be  
+   installed.
+
+5. type the following commands
+  make
+  make test
+  make install
+
+It's possible that some of the modules won't compile with g++
+From my experience, it's trivial to edit the code to fix the problems
+(casting, includes directive order).
+
 AltSplicingToolkit:
 ------------------
 
 Once Boost and Log4cpp are installed, simply type:
 
 ./configure --prefix=<altsplicingtoolkit installation path> \
---with-boost-include=<boost installation path>/include/boost-1_37 \
+--with-boost-include=<boost installation path>/include/boost \
 --with-boost-lib=<boost installation path>/lib \
 --with-log4cpp=<log4cpp installation path>
+
+Example:
+./configure --prefix=/softwares/AltSplicingToolkit-0.5.2 \
+--with-boost-include=/softwares/boost_1_47_0/include \
+--with-boost-lib=/softwares/boost_1_47_0/lib \
+--with-log4cpp=/softwares/log4cpp-1.0
 
 make
 
