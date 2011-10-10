@@ -5,7 +5,7 @@ bin_CPPFLAGS = -L@top_srcdir@/src
 LDADD = -lAltSplicing -lm
 
 altSpliceFinder_SOURCES = Main.cpp Constants.h
-altSpliceFinder_CPPFLAGS = -L@top_srcdir@/src
+altSpliceFinder_CPPFLAGS = @CPPFLAGS@ -L@top_srcdir@/src
 
 # general use to compile individuals objects
 AM_CPPFLAGS = -I@top_srcdir@/src -L@top_srcdir@/src
