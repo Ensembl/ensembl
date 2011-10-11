@@ -6,6 +6,7 @@ use warnings;
 use Data::Dumper;
 use DBI qw( :sql_types );
 use Getopt::Long qw( :config no_ignore_case );
+use POSIX;
 
 my $timestamp = strftime( "%Y%m%d-%H%M%S", localtime() );
 
