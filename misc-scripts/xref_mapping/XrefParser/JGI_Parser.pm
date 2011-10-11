@@ -87,7 +87,7 @@ sub run {
       ($acession = $header)  =~s/\w{6}//;  
       $version = "JGI 1.0" ;  
     
-    } elsif ($source_name=~m/cint_aniseed_jgi_v1/) { 
+    } elsif ($source_name=~m/cint_aniseed_.*v1/) { 
       # header format is  >ci0100146277, we want this 
       $version = "JGI 1.0" ;  
 
