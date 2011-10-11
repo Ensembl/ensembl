@@ -105,23 +105,21 @@ sub fetch_all_alternative_by_Transcript {
 
   assert_ref($transcript, 'Bio::EnsEMBL::Transcript');
 
-  my $lsi_created_date =
-    $self->db()->dbc()->from_date_to_seconds('tlsi.created_date');
-  my $lsi_modified_date =
-    $self->db()->dbc()->from_date_to_seconds('tlsi.modified_date');
+  my $tl_created_date =
+    $self->db()->dbc()->from_date_to_seconds('tl.created_date');
+  my $tl_modified_date =
+    $self->db()->dbc()->from_date_to_seconds('tl.modified_date');
 
   my $sql =
     sprintf( "SELECT tl.translation_id, tl.start_exon_id, "
       . "tl.end_exon_id, tl.seq_start, tl.seq_end, "
-      . "tlsi.stable_id, tlsi.version, %s, %s "
+      . "tl.stable_id, tl.version, %s, %s "
       . "FROM translation tl "
-      . "LEFT JOIN translation_stable_id tlsi "
-      . "ON (tlsi.translation_id = tl.translation_id) "
       . "JOIN transcript t "
       . "ON (t.transcript_id = tl.transcript_id) "
       . "WHERE tl.transcript_id = ? "
       . "AND tl.translation_id != t.canonical_translation_id",
-    $lsi_created_date, $lsi_modified_date );
+    $tl_created_date, $tl_modified_date );
 
   my $transcript_id = $transcript->dbID();
   my $sth           = $self->prepare($sql);
@@ -205,22 +203,20 @@ sub fetch_by_Transcript {
 
   assert_ref( $transcript, 'Bio::EnsEMBL::Transcript' );
 
-  my $lsi_created_date =
-    $self->db()->dbc()->from_date_to_seconds('tlsi.created_date');
-  my $lsi_modified_date =
-    $self->db()->dbc()->from_date_to_seconds('tlsi.modified_date');
+  my $tl_created_date =
+    $self->db()->dbc()->from_date_to_seconds('tl.created_date');
+  my $tl_modified_date =
+    $self->db()->dbc()->from_date_to_seconds('tl.modified_date');
 
   my $sql =
     sprintf( "SELECT tl.translation_id, tl.start_exon_id, "
       . "tl.end_exon_id, tl.seq_start, tl.seq_end, "
-      . "tlsi.stable_id, tlsi.version, %s, %s "
+      . "tl.stable_id, tl.version, %s, %s "
       . "FROM translation tl "
       . "JOIN transcript tr "
       . "ON (tl.translation_id = tr.canonical_translation_id) "
-      . "LEFT JOIN translation_stable_id tlsi "
-      . "ON (tlsi.translation_id = tl.translation_id) "
       . "WHERE tr.transcript_id = ?",
-    $lsi_created_date, $lsi_modified_date );
+    $tl_created_date, $tl_modified_date );
 
   my $transcript_id = $transcript->dbID();
   my $sth           = $self->prepare($sql);
@@ -461,16 +457,36 @@ sub store {
     throw("end_Exon must have a dbID for Translation to be stored.");
   }
 
-  my $sth = $self->prepare( "
-         INSERT INTO translation( seq_start, start_exon_id,
-                                  seq_end, end_exon_id, transcript_id) 
-         VALUES ( ?,?,?,?,? )");
+  my $store_translation_sql = qq(
+         INSERT INTO translation 
+             SET seq_start = ?, 
+                 start_exon_id = ?,
+                 seq_end = ?, 
+                 end_exon_id = ?, 
+                 transcript_id = ?
+  );
 
+  if (defined($translation->stable_id)) {
+      my $created = $self->db->dbc->from_seconds_to_date($translation->created_date());
+      my $modified = $self->db->dbc->from_seconds_to_date($translation->modified_date());
+      $store_translation_sql .= ", stable_id = ?, version = ?, created_date = " . $created . " , modified_date = " . $modified;
+
+  }
+
+  my $sth = $self->prepare($store_translation_sql);
   $sth->bind_param(1,$translation->start,SQL_INTEGER);
   $sth->bind_param(2,$translation->start_Exon->dbID,SQL_INTEGER);
   $sth->bind_param(3,$translation->end,SQL_INTEGER);
   $sth->bind_param(4,$translation->end_Exon->dbID,SQL_INTEGER);
   $sth->bind_param(5,$transcript_id,SQL_INTEGER);
+
+
+  if (defined($translation->stable_id)) {
+ 
+    $sth->bind_param(6, $translation->stable_id,SQL_VARCHAR);
+    my $version = ($translation->version()) ? $translation->version() : 1;
+    $sth->bind_param(7, $version,SQL_VARCHAR);
+  }
 
   $sth->execute();
  
@@ -490,30 +506,6 @@ sub store {
   my $pfadaptor = $self->db->get_ProteinFeatureAdaptor();
   foreach my $pf(@{$translation->get_all_ProteinFeatures}){
     $pfadaptor->store($pf, $transl_dbID);
-  }
-
-  if (defined($translation->stable_id)) {
-    if (!defined($translation->version)) {
-     throw("Trying to store incomplete stable id information for translation");
-    }
-
-     my $statement = 
-       "INSERT INTO translation_stable_id ".
-	 "SET translation_id = ?, ".
-	   "  stable_id = ?, ".
-	     "version = ?, ";
-    $statement .= "created_date = " .
-      $self->db->dbc->from_seconds_to_date($translation->created_date()) . ",";
-    $statement .= "modified_date = " .
-      $self->db->dbc->from_seconds_to_date($translation->modified_date()) ;
-    my $sth = $self->prepare($statement);
-
-    $sth->bind_param(1,$transl_dbID,SQL_INTEGER);
-    $sth->bind_param(2,$translation->stable_id,SQL_VARCHAR);
-    $sth->bind_param(3, ($translation->version || 1),SQL_VARCHAR);
-    $sth->execute();
-
-    $sth->finish();
   }
 
   $translation->get_all_Attributes();
@@ -576,14 +568,6 @@ sub remove {
   $sth->execute();
   $sth->finish();
 
-  # remove the translation stable identifier
-
-  $sth = $self->prepare
-    ("DELETE FROM translation_stable_id WHERE translation_id = ?" );
-  $sth->bind_param(1,$translation->dbID,SQL_INTEGER);
-  $sth->execute();
-  $sth->finish();
-
   # remove the translation itself
 
   $sth = $self->prepare("DELETE FROM translation WHERE translation_id = ?" );
@@ -633,7 +617,7 @@ sub list_dbIDs {
 sub list_stable_ids {
    my ($self) = @_;
 
-   return $self->_list_dbIDs("translation_stable_id", "stable_id");
+   return $self->_list_dbIDs("translation", "stable_id");
 }
 
 
@@ -782,18 +766,16 @@ sub fetch_all_by_Transcript_list {
       $id_str = " = " . $ids[0];
     }
 
-    my $created_date = $self->db->dbc->from_date_to_seconds("tlsi.created_date");
-    my $modified_date = $self->db->dbc->from_date_to_seconds("tlsi.modified_date");
+    my $created_date = $self->db->dbc->from_date_to_seconds("tl.created_date");
+    my $modified_date = $self->db->dbc->from_date_to_seconds("tl.modified_date");
 
     my $sth = $self->prepare
       ("SELECT tl.transcript_id, tl.translation_id, tl.start_exon_id,
            tl.end_exon_id, tl.seq_start, tl.seq_end,
-           tlsi.stable_id, tlsi.version, " . $created_date . "," .
+           tl.stable_id, tl.version, " . $created_date . "," .
        $modified_date . 
        " FROM translation tl
- LEFT JOIN translation_stable_id tlsi
-        ON tlsi.translation_id = tl.translation_id
-     WHERE tl.transcript_id $id_str");
+         WHERE tl.transcript_id $id_str");
 
     $sth->execute();
 
@@ -878,7 +860,7 @@ sub get_stable_entry_info {
   }
 
   my $sth = $self->prepare("SELECT stable_id, version 
-                            FROM   translation_stable_id 
+                            FROM   translation
                             WHERE  translation_id = ?");
   $sth->bind_param(1,$translation->dbID,SQL_INTEGER);
   $sth->execute();

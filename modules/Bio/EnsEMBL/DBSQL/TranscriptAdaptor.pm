@@ -85,7 +85,6 @@ use vars qw(@ISA);
 sub _tables {
   return (
     [ 'transcript',           't' ],
-    [ 'transcript_stable_id', 'tsi' ],
     [ 'xref',                 'x' ],
     [ 'external_db',          'exdb' ] );
 }
@@ -104,16 +103,16 @@ sub _columns {
   my ($self) = @_;
 
   my $created_date =
-    $self->db()->dbc()->from_date_to_seconds("tsi.created_date");
+    $self->db()->dbc()->from_date_to_seconds("created_date");
   my $modified_date =
-    $self->db()->dbc()->from_date_to_seconds("tsi.modified_date");
+    $self->db()->dbc()->from_date_to_seconds("modified_date");
 
   return (
     't.transcript_id',     't.seq_region_id',
     't.seq_region_start',  't.seq_region_end',
     't.seq_region_strand', 't.analysis_id',
     't.gene_id',           't.is_current',
-    'tsi.stable_id',       'tsi.version',
+    't.stable_id',         't.version',
     $created_date,         $modified_date,
     't.description',       't.biotype',
     't.status',            'exdb.db_name',
@@ -127,7 +126,6 @@ sub _columns {
 
 sub _left_join {
   return (
-    [ 'transcript_stable_id', "tsi.transcript_id = t.transcript_id" ],
     [ 'xref',                 "x.xref_id = t.display_xref_id" ],
     [ 'external_db',          "exdb.external_db_id = x.external_db_id" ]
   );
@@ -150,7 +148,7 @@ sub _left_join {
 sub fetch_by_stable_id {
   my ($self, $stable_id) = @_;
 
-  my $constraint = "tsi.stable_id = ? AND t.is_current = 1";
+  my $constraint = "t.stable_id = ? AND t.is_current = 1";
 
   $self->bind_param_generic_fetch($stable_id,SQL_VARCHAR);
 
@@ -186,7 +184,7 @@ sub fetch_all {
 sub fetch_all_versions_by_stable_id {
   my ($self, $stable_id) = @_;
 
-  my $constraint = "tsi.stable_id = ?";
+  my $constraint = "t.stable_id = ?";
 
   $self->bind_param_generic_fetch($stable_id,SQL_VARCHAR);
 
@@ -215,11 +213,9 @@ sub fetch_by_translation_stable_id {
 
   my $sth = $self->prepare(qq(
       SELECT t.transcript_id
-      FROM   translation_stable_id tsi,
-             transcript t,
-             translation tl
-      WHERE  tsi.stable_id = ?
-      AND    tl.translation_id = tsi.translation_id
+      FROM   translation tl,
+             transcript t
+      WHERE  tl.stable_id = ?
       AND    tl.transcript_id = t.transcript_id
       AND    t.is_current = 1
   ));
@@ -666,10 +662,10 @@ sub fetch_all_by_exon_stable_id {
 
   my $sth = $self->prepare(qq(
       SELECT t.transcript_id 
-      FROM exon_transcript et, exon_stable_id esi, transcript t
-      WHERE esi.exon_id = et.exon_id
+      FROM exon_transcript et, exon e, transcript t
+      WHERE e.exon_id = et.exon_id
       AND et.transcript_id = t.transcript_id
-      AND esi.stable_id = ?
+      AND e.stable_id = ?
       AND t.is_current = 1
   ));
   
@@ -781,16 +777,30 @@ sub store {
   #
   # Store transcript
   #
-  my $tst = $self->prepare(
-    qq(
-      INSERT INTO transcript (
-        gene_id, analysis_id, seq_region_id, seq_region_start,
-        seq_region_end, seq_region_strand, biotype, status, description,
-        is_current, canonical_translation_id
-      )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  ) );
+  my $store_transcript_sql = qq(
+      INSERT INTO transcript 
+        SET gene_id = ?, 
+            analysis_id = ?, 
+            seq_region_id = ?, 
+            seq_region_start = ?,
+            seq_region_end = ?, 
+            seq_region_strand = ?, 
+            biotype = ?, 
+            status = ?, 
+            description = ?,
+            is_current = ?, 
+            canonical_translation_id = ? 
+  );
 
+  if ( defined( $transcript->stable_id() ) ) {
+
+      my $created = $self->db->dbc->from_seconds_to_date($transcript->created_date());
+      my $modified = $self->db->dbc->from_seconds_to_date($transcript->modified_date());
+      $store_transcript_sql .= ", stable_id = ?, version = ?, created_date = " . $created . " , modified_date = " . $modified;
+
+  }
+
+  my $tst = $self->prepare($store_transcript_sql);
   $tst->bind_param( 1,  $gene_dbID,                 SQL_INTEGER );
   $tst->bind_param( 2,  $new_analysis_id,           SQL_INTEGER );
   $tst->bind_param( 3,  $seq_region_id,             SQL_INTEGER );
@@ -804,6 +814,14 @@ sub store {
 
   # If the transcript has a translation, this is updated later:
   $tst->bind_param( 11, undef, SQL_INTEGER );
+
+  if ( defined( $transcript->stable_id() ) ) {
+
+    $tst->bind_param( 12, $transcript->stable_id(), SQL_VARCHAR );
+    my $version = ($transcript->version()) ? $transcript->version() : 1;
+    $tst->bind_param( 13, $version,                 SQL_INTEGER );
+  }
+
 
   $tst->execute();
   $tst->finish();
@@ -988,33 +1006,6 @@ sub store {
 
   $etst->finish();
 
-  #
-  # Store stable_id
-  #
-  if ( defined( $transcript->stable_id() ) ) {
-
-    my $statement = "INSERT INTO transcript_stable_id "
-      . "SET transcript_id = ?, stable_id = ?, version = ?, ";
-
-    $statement .=
-      "created_date = "
-      . $self->db()->dbc()
-      ->from_seconds_to_date( $transcript->created_date() ) . ",";
-
-    $statement .=
-      "modified_date = "
-      . $self->db()->dbc()
-      ->from_seconds_to_date( $transcript->modified_date() );
-
-    my $sth = $self->prepare($statement);
-    my $version = ($transcript->version()) ? $transcript->version() : 1;
-    $sth->bind_param( 1, $transc_dbID,             SQL_INTEGER );
-    $sth->bind_param( 2, $transcript->stable_id(), SQL_VARCHAR );
-    $sth->bind_param( 3, $version,                 SQL_INTEGER );
-    $sth->execute();
-    $sth->finish();
-  } ## end if ( defined( $transcript...))
-
   # Now the supporting evidence
   my $tsf_adaptor = $db->get_TranscriptSupportingFeatureAdaptor();
   $tsf_adaptor->store( $transc_dbID,
@@ -1055,18 +1046,16 @@ sub get_Interpro_by_transid {
 
    my $sth = $self->prepare(qq(
       SELECT  STRAIGHT_JOIN i.interpro_ac, x.description
-      FROM    transcript_stable_id tsi,
-              transcript t,
+      FROM    transcript t,
               translation tl,
               protein_feature pf,
 	      interpro i,
               xref x
-      WHERE   tsi.stable_id = ?
-      AND     tl.transcript_id = tsi.transcript_id
+      WHERE   t.stable_id = ?
+      AND     tl.transcript_id = t.transcript_id
       AND     tl.translation_id = pf.translation_id
       AND     i.id = pf.hit_name
       AND     i.interpro_ac = x.dbprimary_acc
-      AND     tsi.transcript_id = t.transcript_id
       AND     t.is_current = 1
   ));
 
@@ -1231,10 +1220,6 @@ sub remove {
                              WHERE transcript_id = ?" );
   $sth->bind_param(1, $transcript->dbID, SQL_INTEGER);
   $sth->execute();
-  $sth = $self->prepare( "DELETE FROM transcript_stable_id
-                          WHERE transcript_id = ?" );
-  $sth->bind_param(1, $transcript->dbID, SQL_INTEGER);
-  $sth->execute();
   $sth->finish();
 
 
@@ -1351,7 +1336,7 @@ sub list_dbIDs {
 sub list_stable_ids {
    my ($self) = @_;
 
-   return $self->_list_dbIDs("transcript_stable_id", "stable_id");
+   return $self->_list_dbIDs("transcript", "stable_id");
 }
 
 
@@ -1831,7 +1816,7 @@ sub get_stable_entry_info {
 
   my $sth = $self->prepare(qq(
       SELECT stable_id, version 
-      FROM   transcript_stable_id 
+      FROM   transcript
       WHERE  transcript_id = ?
   ));
                             
