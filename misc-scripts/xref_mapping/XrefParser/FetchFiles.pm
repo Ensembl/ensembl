@@ -100,8 +100,7 @@ sub fetch_files {
       }
 
       my $ftp = $self->get_ftp($uri, 0);
-
-      if(!$ftp->ls()){
+      if(!defined($ftp) or ! $ftp->can('ls')){
 	$ftp =  $self->get_ftp($uri, 1);
       }
       foreach my $remote_file ( ( @{ $ftp->ls() } ) ) {
@@ -263,10 +262,10 @@ sub fetch_files {
 
 
 sub get_ftp{
-  my ($self, $uri, $pass) = @_;
+  my ($self, $uri, $passive) = @_;
   my $ftp;
 
-  if($pass){
+  if($passive){
     $ftp = Net::FTP->new( $uri->host(), 'Debug' => 0, Passive => 1);
   }
   else{
