@@ -90,12 +90,12 @@ Usage:
                       --database) is not in the standard format, this
                       flag is used to specify what species it is (e.g.,
                       'homo_sapiens', 'gallus_gallus' etc., i.e. the
-                      latin name).
+                      latin name). ** NOT YET IMPLEMENTED **
 
   -t / --type         If the name of the database specified by -d (or
                       --database) is not in the standard format, this
                       flag may be used to specify what type it is (e.g.,
-                      'core', 'vega' etc.).
+                      'core', 'vega' etc.). ** NOT YET IMPLEMENTED **
 
   -mh / --mhost       Production database server host
                       (optional, default is 'ens-staging1').
