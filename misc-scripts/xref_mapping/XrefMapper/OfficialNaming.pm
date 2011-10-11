@@ -93,7 +93,6 @@ sub run {
   my $self = shift;
 
   my $dbname = $self->get_official_name();
-  $self->species_id($self->get_id_from_species_name($self->core->species));
 
   ###########################################################
   # If no offical name then we do not want to go any further
@@ -103,6 +102,7 @@ sub run {
     $self->update_process_status("official_naming_done");
     return;
   }
+  $self->species_id($self->get_id_from_species_name($self->core->species));
 
 
   ###########################################################
