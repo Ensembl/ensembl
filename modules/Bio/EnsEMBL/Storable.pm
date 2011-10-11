@@ -175,8 +175,11 @@ sub is_stored {
   }
 
   if($adaptor && !$dbID) {
-    warning("Storable object has an adaptor but not a dbID.\n".
-          "Storable objects must have neither OR both.");
+  	if($message_only_once){
+      warning("Storable object has an adaptor but not a dbID.\n".
+            "Storable objects must have neither OR both.");
+      $message_only_once = 0;
+  	}
     return 0;
   }
 
