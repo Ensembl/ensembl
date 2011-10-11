@@ -30,7 +30,7 @@ sub run {
   my $file = @{$files}[0];
 
   
-  my $source_name = $self->get_source_name_for_source_id ($source_id) ;  
+  my $source_name = $self->get_source_name_for_source_id ($source_id) ;
   # the source name defines how to parse the header 
 
   # different formats for different sources (all have entries in external_db.txt and populate_metadata.sql )
@@ -96,14 +96,14 @@ sub run {
       $acession = $attr[2]  ; 
       $version = "JGI 2.0" ;  
       $label = $attr[3] ; 
-    } elsif ($source_name=~m/cint_aniseed_jgi_v2/) { 
+    } elsif ($source_name=~m/cint_aniseed_.*v2/) { 
       my $aniseed_prefix = "ci0200" ; 
       $acession = $aniseed_prefix . $attr[2]  ; 
       $version = "JGI 2.0" ;  
 
     }else { 
       print STDERR "WARNING : The source-name specified ($source_name) in the populate_metatable.sql file is\n" .
-        "WARNING : not matching the differnt cases specified in JGI_Parser.pm - plese\n" 
+        "WARNING : not matching the differnt cases specified in JGI_Parser.pm - plese\n".
           "WARNING : edit the parser \n" ; 
       return 1;
     } 
