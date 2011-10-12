@@ -76,9 +76,9 @@
 
   - What to look out for?
 
-    The script dumps the tables out to a file in the specified path. It
-    will also back up the tables in the database, giving the backed-up
-    tables the "_bak" suffix.
+    The script dumps the old tables out to a file in the specified
+    path.  It will also back up the tables in the database, giving the
+    backed-up tables the "_bak" suffix.
 
     The script will notify you of any new or deleted entries (compared
     to the entries in the backed up tables) and will give you an SQL
@@ -109,11 +109,15 @@
     The options are very similar to those of the
     populate_production_db_tables.pl script (see above), and the mode of
     operation is likewise similar to that script.
-    There's an extra option for overriding database names (-dbf). Specify
-    a file name containing the following tab delimited data:
-    - db name stored in 'full_db_name' column 'db_list' 
-      table in the production database
-    - new db name to use
+
+    Since the analysis descriptions that goes into a database depend
+    on the species and the type of the database (core, otherfeatures,
+    etc.), the databases that are being synchronised need to have the
+    correct names.  If this is not the case, one may use the --species
+    and the --type command line switches to specify the species and
+    the database type for synchronising the analysis descriptions to a
+    singular database.
+
   - What to look out for?
 
     The script will warn about analyses that it expected to find
