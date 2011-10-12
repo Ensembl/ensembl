@@ -64,7 +64,7 @@ sub compare {
 
   #print "Caching old gene stable ID - $source display_xref mappings from $old_dbname\n";
 
-  my $sql = "SELECT gsi.stable_id, x.dbprimary_acc FROM xref x, gene_stable_id gsi, gene g, external_db e WHERE gsi.gene_id=g.gene_id AND g.display_xref_id=x.xref_id AND e.external_db_id=x.external_db_id AND e.db_name='" . $source . "'";
+  my $sql = "SELECT g.stable_id, x.dbprimary_acc FROM xref x, gene g, external_db e WHERE g.display_xref_id=x.xref_id AND e.external_db_id=x.external_db_id AND e.db_name='" . $source . "'";
 
   #print "\n\n$sql\n\n";
   my $old_sth = $old_dbi->prepare($sql);

@@ -29,7 +29,7 @@ if(!defined($vega_sa)){
 }
 
 
-my $sql = 'select tsi.stable_id, x.display_label from xref x, object_xref ox , transcript_stable_id tsi, external_db e where e.external_db_id = x.external_db_id and x.xref_id = ox.xref_id and tsi.transcript_id = ox.ensembl_id and e.db_name like ?';
+my $sql = 'select t.stable_id, x.display_label from xref x, object_xref ox , transcript t, external_db e where e.external_db_id = x.external_db_id and x.xref_id = ox.xref_id and t.transcript_id = ox.ensembl_id and e.db_name like ?';
 
 
 

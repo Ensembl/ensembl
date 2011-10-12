@@ -60,11 +60,11 @@ sub run_script {
   my $xref_count = 0;
 
   my $sql =(<<'SCD');
-SELECT tsi.stable_id, x.dbprimary_acc 
-  FROM xref x, object_xref ox, transcript_stable_id tsi, external_db e
+SELECT t.stable_id, x.dbprimary_acc 
+  FROM xref x, object_xref ox, transcript t, external_db e
     WHERE x.xref_id=ox.xref_id AND
           ox.ensembl_object_type = "Transcript" AND
-          ox.ensembl_id = tsi.transcript_id AND
+          ox.ensembl_id = t.transcript_id AND
           e.external_db_id = x.external_db_id AND
           e.db_name like "Ens_%_transcript"
 SCD

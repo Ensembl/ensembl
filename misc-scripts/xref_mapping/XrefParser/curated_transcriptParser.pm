@@ -156,9 +156,9 @@ sub run_script {
  
  print "source id is $source_id, curated_source_id is $curated_source_id\n";
 
-  my $sql = 'select tsi.stable_id, x.display_label, t.status from analysis a, xref x, object_xref ox , transcript_stable_id tsi, external_db e, transcript t where t.analysis_id = a.analysis_id and a.logic_name like "%havana%" and e.external_db_id = x.external_db_id and x.xref_id = ox.xref_id and tsi.transcript_id = ox.ensembl_id and t.transcript_id = tsi.transcript_id and e.db_name like ?';
+  my $sql = 'select t.stable_id, x.display_label, t.status from analysis a, xref x, object_xref ox , external_db e, transcript t where t.analysis_id = a.analysis_id and a.logic_name like "%havana%" and e.external_db_id = x.external_db_id and x.xref_id = ox.xref_id and t.transcript_id = ox.ensembl_id and e.db_name like ?';
 
-  my $sql_vega = 'select tsi.stable_id, x.display_label, t.status from xref x, object_xref ox , transcript_stable_id tsi, external_db e, transcript t where e.external_db_id = x.external_db_id and x.xref_id = ox.xref_id and tsi.transcript_id = ox.ensembl_id and t.transcript_id = tsi.transcript_id and tsi.stable_id <> x.display_label and e.db_name like ?';
+  my $sql_vega = 'select t.stable_id, x.display_label, t.status from xref x, object_xref ox , external_db e, transcript t where e.external_db_id = x.external_db_id and x.xref_id = ox.xref_id and t.transcript_id = ox.ensembl_id and t.stable_id <> x.display_label and e.db_name like ?';
 
 
   my %ott_to_vega_name;
@@ -220,7 +220,7 @@ sub run_script {
  
 
   # need to add gene info to havana_status table
-  $sql = 'select gsi.stable_id, x.display_label from xref x, object_xref ox , gene_stable_id gsi, external_db e, gene g where e.external_db_id = x.external_db_id and x.xref_id = ox.xref_id and gsi.gene_id = ox.ensembl_id and g.gene_id = gsi.gene_id and e.db_name like "OTTG"';
+  $sql = 'select g.stable_id, x.display_label from xref x, object_xref ox , external_db e, gene g where e.external_db_id = x.external_db_id and x.xref_id = ox.xref_id and g.gene_id = ox.ensembl_id and e.db_name like "OTTG"';
 
   $sth = $core_dbc->prepare($sql) || die "Could not prepare for core $sql\n";
   $sth->execute() or croak( $core_dbc->errstr());
@@ -229,7 +229,7 @@ sub run_script {
     $ottg_to_ensg{$row[1]} = $row[0];
   }
 
-  $sth = $vega_dbc->prepare("select gsi.stable_id, g.status from gene g, gene_stable_id gsi where g.gene_id = gsi.gene_id");
+  $sth = $vega_dbc->prepare("select stable_id, status from gene");
   $sth->execute() or croak( $core_dbc->errstr());
   while ( my @row = $sth->fetchrow_array() ) {
     if(defined($ottg_to_ensg{$row[0]}) and defined($row[1])){

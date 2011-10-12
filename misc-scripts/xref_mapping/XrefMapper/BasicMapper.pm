@@ -613,13 +613,13 @@ SEQ
   #
   
   my $sql =(<<'LRG');
-SELECT  ox.ensembl_id, gsi.gene_id
-  FROM xref x, object_xref ox, external_db e, gene_stable_id gsi
+SELECT  ox.ensembl_id, g.gene_id
+  FROM xref x, object_xref ox, external_db e, gene g
     WHERE x.xref_id = ox.xref_id AND
           e.external_db_id = x.external_db_id AND
           e.db_name like "Ens_Hs_gene" AND
           ox.ensembl_object_type = "Gene" AND
-           x.display_label = gsi.stable_id
+           x.display_label = g.stable_id
 LRG
   
   $sth = $self->core->dbc->prepare($sql);

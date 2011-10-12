@@ -162,23 +162,21 @@ sub run_script {
 
 
   my $sql =(<<SQL);
-SELECT tsi.stable_id, x.display_label 
-  FROM analysis a, xref x, object_xref ox , transcript_stable_id tsi, external_db e , transcript t
+SELECT t.stable_id, x.display_label 
+  FROM analysis a, xref x, object_xref ox , transcript t, external_db e
    WHERE a.analysis_id = t.analysis_id and 
-         t.transcript_id = tsi.transcript_id and
          e.external_db_id = x.external_db_id and 
          x.xref_id = ox.xref_id and 
-         tsi.transcript_id = ox.ensembl_id and
+         t.transcript_id = ox.ensembl_id and
          a.logic_name like "%havana%" and 
          e.db_name like ?
 SQL
 
   my $ext_sql =(<<EXT);
-SELECT tsi.stable_id, x.dbprimary_acc 
-  FROM xref x, object_xref ox , transcript_stable_id tsi, gene g, external_db e, transcript t  
+SELECT t.stable_id, x.dbprimary_acc 
+  FROM xref x, object_xref ox , transcript t, gene g, external_db e 
     WHERE t.gene_id = g.gene_id and 
           g.gene_id = ox.ensembl_id and 
-          tsi.transcript_id = t.transcript_id and 
           e.external_db_id = x.external_db_id and 
           x.xref_id = ox.xref_id and 
           ox.ensembl_object_type = "Gene" and 

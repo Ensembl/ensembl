@@ -44,11 +44,11 @@ sub run_script {
 
 
   my $sql =(<<'SQL');
-SELECT tsi.stable_id, x.display_label 
-  FROM xref x, object_xref ox , transcript_stable_id tsi, external_db e 
+SELECT t.stable_id, x.display_label 
+  FROM xref x, object_xref ox , transcript t, external_db e 
     WHERE e.external_db_id = x.external_db_id AND
           x.xref_id = ox.xref_id AND
-          tsi.transcript_id = ox.ensembl_id AND
+          t.transcript_id = ox.ensembl_id AND
           e.db_name like ?
 SQL
 

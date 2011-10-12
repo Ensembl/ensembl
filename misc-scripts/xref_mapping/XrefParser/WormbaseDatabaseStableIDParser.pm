@@ -39,7 +39,7 @@ sub run {
 
     my $wb_source_id = $self->get_source_id_for_source_name("wormbase_$type");
 
-    my $sth = $db->prepare( "SELECT stable_id FROM ${type}_stable_id" );
+    my $sth = $db->prepare( "SELECT stable_id FROM ${type}" );
     $sth->execute();
 
     while(my @row = $sth->fetchrow_array()) {

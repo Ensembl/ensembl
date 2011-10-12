@@ -123,7 +123,7 @@ sub load_stable_ids{
 
   my ($id, $stable_id);
   foreach my $table (qw(gene transcript translation)){
-    my $sth = $self->core->dbc->prepare("select ".$table."_id, stable_id from ".$table."_stable_id");
+    my $sth = $self->core->dbc->prepare("select ".$table."_id, stable_id from ".$table);
     my $ins_sth = $self->xref->dbc->prepare("insert into ".$table."_stable_id (internal_id, stable_id) values(?, ?)");
     $sth->execute();
     $sth->bind_columns(\$id, \$stable_id);
