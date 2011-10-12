@@ -30,7 +30,6 @@ my $file;
 my $dumpcheck;
 my $upload = 0;
 my $nofarm;
-my $partupdate;
 my $notverbose ;
 my $reset_to_mapping_finished;
 my $reset_to_parsing_finished;
@@ -46,7 +45,6 @@ my $ret = Getopt::Long::GetOptions ('file=s'          => \$file,
             'upload'                    => \$upload,
 	    'notverbose'                => \$notverbose,  
             'nofarm'                    => \$nofarm, 
-            'partupdate'                => \$partupdate,
             'reset_to_mapping_finished' => \$reset_to_mapping_finished,
             'reset_to_parsing_finished' => \$reset_to_parsing_finished,
             'resubmit_failed_jobs'      => \$resubmit_failed_jobs,
@@ -92,7 +90,7 @@ if(defined($recalc_display_xrefs)){
   $mapper->official_naming();
   my $display = XrefMapper::DisplayXrefs->new($mapper);
 #  $display->set_display_xrefs_from_stable_table();
-  $display->genes_and_transcripts_attributes_set($fullmode_recalc, $no_xref);
+  $display->genes_and_transcripts_attributes_set($no_xref);
   exit();
 }
 
@@ -272,31 +270,35 @@ if(($status eq "coordinate_xref_finished" and $upload) or ($no_coord_mapping and
 
 $status = $mapper->xref_latest_status();
 
-my $fullmode;
-if(defined($partupdate)){
-  print "partupdate is set to $partupdate over ruling the precalulated value\n" if($mapper->verbose);
-  $fullmode = 0;
-}
-else{
-  if($mapper->get_meta_value("fullmode") eq "yes"){
-    $fullmode = 1;
-  }
-  elsif($mapper->get_meta_value("fullmode") eq "no"){
-    $fullmode = 0;
-  }
-  else{
-    print "WARNING: No value for fullmode in meta table using fullmode anyway\n";
-    $fullmode = 1;
-  }
-}
+#my $fullmode;
+#if(defined($partupdate)){
+#  print "partupdate is set to $partupdate over ruling the precalulated value\n" if($mapper->verbose);
+#  $fullmode = 0;
+#}
+#else{
+#  if($mapper->get_meta_value("fullmode") eq "yes"){
+#    $fullmode = 1;
+#  }
+#  elsif($mapper->get_meta_value("fullmode") eq "no"){
+#    $fullmode = 0;
+#  }
+#  else{
+#    print "WARNING: No value for fullmode in meta table using fullmode anyway\n";
+#    $fullmode = 1;
+#  }
+#}
 
 
 if(($status eq "core_loaded" or $status eq "display_xref_done") and $upload){
 
   
   my $display = XrefMapper::DisplayXrefs->new($mapper);
-  $display->genes_and_transcripts_attributes_set($fullmode);
+  $display->genes_and_transcripts_attributes_set();
   
+}
+
+if(!defined($notverbose)){
+  print "xref_mapper.pl FINISHED NORMALLY\n";
 }
 
 sub usage {
@@ -315,13 +317,6 @@ sub usage {
   -notverbose       Do not give information about progress and possible warnings.
 
   -nofarm           Run the exonerate jobs locally and not on the compute farm.
-
-  -partupdate       Not all xrefs have been updated hence to get the gene 
-                    descriptions etc we need to work out these via the core database.
-                    (Note this is much slower, but has to be done if you are only 
-                    updating a few xref sources) 
-                    By default this is calulated from the parsing options used.
-                    ONLY set if you know what the consequences will be!!
 
   -reset_to_mapping_finished
                     Reset the status of the database (cleaning up the tables) to be 
