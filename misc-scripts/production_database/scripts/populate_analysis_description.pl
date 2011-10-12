@@ -20,6 +20,7 @@ my ( $host, $port ) = ( undef, '3306' );
 my ( $user, $pass );
 my $dbname;
 my $dbpattern;
+my ( $species, $dbtype );
 
 my $core    = 0;
 my $verbose = 0;
@@ -37,6 +38,8 @@ if ( !GetOptions( 'mhost|mh=s'     => \$mhost,
                   'pass|p=s'       => \$pass,
                   'database|d=s'   => \$dbname,
                   'pattern=s'      => \$dbpattern,
+                  'species|s=s'    => \$species,
+                  'type|t=s'       => \$dbtype,
                   'verbose|v!'     => \$verbose,
                   'core=i'         => \$core,
                   'dumppath|dp=s'  => \$dumppath )
@@ -44,7 +47,10 @@ if ( !GetOptions( 'mhost|mh=s'     => \$mhost,
      !( defined($host) &&
         defined($user) &&
         defined($pass) &&
-        ( defined($dbname) || defined($dbpattern) || defined($core) ) &&
+        ( defined($dbname) ||
+          defined($dbpattern) ||
+          defined($core) ||
+          ( defined($species) && defined($dbtype) ) ) &&
         defined($mhost) &&
         defined($muser) &&
         defined($dumppath) ) )
@@ -91,12 +97,12 @@ Usage:
                       --database) is not in the standard format, this
                       flag is used to specify what species it is (e.g.,
                       'homo_sapiens', 'gallus_gallus' etc., i.e. the
-                      latin name). ** NOT YET IMPLEMENTED **
+                      latin name).
 
   -t / --type         If the name of the database specified by -d (or
                       --database) is not in the standard format, this
                       flag may be used to specify what type it is (e.g.,
-                      'core', 'vega' etc.). ** NOT YET IMPLEMENTED **
+                      'core', 'vega' etc.).
 
   -mh / --mhost       Production database server host
                       (optional, default is 'ens-staging1').
@@ -117,8 +123,9 @@ Usage:
 
 USAGE_END
 
-  die( "Need the following options: " .
-       "-h -u -p -d (or --pattern) and -dp\n" );
+  die( "Need the following options:\n" .
+       "-h -u -p -d (or --pattern, or --species/-s and --type/-t) " .
+       "and -dp\n" );
 
 } ## end if ( !GetOptions( 'mhost|mh=s'...))
 
@@ -169,6 +176,11 @@ my %data;
     $sth = $dbh->prepare('SHOW DATABASES LIKE ?');
     $sth->bind_param( 1, $dbname, SQL_VARCHAR );
   }
+  elsif ( defined($species) && defined($dbtype) ) {
+    $sth = $dbh->prepare('SHOW DATABASES LIKE ?');
+    $sth->bind_param( 1, sprintf( "%s\\_%s\\_%%", $species, $dbtype ),
+                      SQL_VARCHAR );
+  }
   else {
     $sth = $dbh->prepare('SHOW DATABASES');
   }
@@ -178,7 +190,13 @@ my %data;
   $sth->bind_col( 1, \$dbname );
 
   while ( $sth->fetch() ) {
-    if ( defined($dbpattern) && $dbname !~ /$dbpattern/ ) { next }
+    if ( ( defined($dbpattern) && $dbname !~ /$dbpattern/ ) ||
+         ( defined($species) &&
+           defined($dbtype) &&
+           $dbname !~ /^${species}_${type}_/ ) )
+    {
+      next;
+    }
 
     my $dbdata = $data{$dbname};
     if ( !defined($dbdata) ) {
