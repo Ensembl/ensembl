@@ -176,11 +176,6 @@ my %data;
     $sth = $dbh->prepare('SHOW DATABASES LIKE ?');
     $sth->bind_param( 1, $dbname, SQL_VARCHAR );
   }
-  elsif ( defined($species) && defined($dbtype) ) {
-    $sth = $dbh->prepare('SHOW DATABASES LIKE ?');
-    $sth->bind_param( 1, sprintf( "%s\\_%s\\_%%", $species, $dbtype ),
-                      SQL_VARCHAR );
-  }
   else {
     $sth = $dbh->prepare('SHOW DATABASES');
   }
@@ -190,13 +185,7 @@ my %data;
   $sth->bind_col( 1, \$dbname );
 
   while ( $sth->fetch() ) {
-    if ( ( defined($dbpattern) && $dbname !~ /$dbpattern/ ) ||
-         ( defined($species) &&
-           defined($dbtype) &&
-           $dbname !~ /^${species}_${dbtype}_/ ) )
-    {
-      next;
-    }
+    if ( defined($dbpattern) && $dbname !~ /$dbpattern/ ) { next }
 
     my $dbdata = $data{$dbname};
     if ( !defined($dbdata) ) {
