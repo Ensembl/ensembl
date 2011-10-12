@@ -193,7 +193,7 @@ my %data;
     if ( ( defined($dbpattern) && $dbname !~ /$dbpattern/ ) ||
          ( defined($species) &&
            defined($dbtype) &&
-           $dbname !~ /^${species}_${type}_/ ) )
+           $dbname !~ /^${species}_${dbtype}_/ ) )
     {
       next;
     }
