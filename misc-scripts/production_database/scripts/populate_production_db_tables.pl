@@ -214,14 +214,16 @@ my %data;
         printf( "Backing up table %s on file.\n", $table );
         printf( "--> %s\n",                       $filename );
 
-        if ( system( "mysqldump",
-                     "--host=$host",
-                     "--port=$port",
-                     "--user=$user",
-                     ( defined($pass) ? "--password=$pass" : "--opt" ),
-                     "--result-file=$filename",
-                     "$dbname",
-                     "$table" ) )
+        if (system( "mysqldump",
+                    "--host=$host",
+                    "--port=$port",
+                    "--user=$user", (
+                      defined($pass) ? "--password=$pass" : "--skip-opt"
+                    ),
+                    "--result-file=$filename",
+                    "--skip-opt",
+                    "$dbname",
+                    "$table" ) )
         {
           die("mysqldump failed: $?");
         }
@@ -343,9 +345,6 @@ my %data;
           print("\n");
         }
       }
-      # delete the backup table
-      $dbh->do(
-           sprintf( 'DROP TABLE IF EXISTS %s', $full_table_name_bak ) );
 
     } ## end foreach my $table ( keys(%data...))
     continue {
