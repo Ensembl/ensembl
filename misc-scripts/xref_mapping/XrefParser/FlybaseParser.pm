@@ -375,7 +375,18 @@ sub run {
         $self->get_source_id_for_source_name($source_name);
 
       my $accession = $attributes{'Name'};
+
+			# every fly Names but d. melanogaster ones start with D...\ (like Dper\β3galt6)
+			# we remove the prefix. 
+			if ($accession =~ m/D...\\(.+)/) {
+					$accession = $1;
+			}
+
 			my $description = (defined($attributes{'fullname'})) ? $attributes{'fullname'} : '';
+
+			# because FlyBase use %2C to distinguish from the , separator in the GFF dump
+			# we have to put it back
+			$description =~ s/%2C/,/g; 
 
       my $xref_id;
 
