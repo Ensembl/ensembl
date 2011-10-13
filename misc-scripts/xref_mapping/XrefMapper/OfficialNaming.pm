@@ -1131,7 +1131,8 @@ sub get_lrg_set_status_sth{
   my $self = shift;
   
   if(!defined($self->{'_lrg_set_status_sth'})){
-    $self->xref->dbc->prepare("update object_xref set ox_status = 'NO_DISPLAY' where object_xref_id = ?");
+     $self->{'_lrg_set_status_sth'} =
+       self->xref->dbc->prepare("update object_xref set ox_status = 'NO_DISPLAY' where object_xref_id = ?");
   }
   return $self->{'_lrg_set_status_sth'};
 }
