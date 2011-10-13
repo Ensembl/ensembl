@@ -189,10 +189,23 @@ my %data;
 
     my $dbdata = $data{$dbname};
     if ( !defined($dbdata) ) {
-      printf( "ERROR: Can not find data for database '%s' " .
-                "(skipping it)!\n",
-              $dbname );
-      next;
+      if ( defined($species) && defined($dbtype) ) {
+        my @keys = grep( /^${species}_${dbtype}_/, keys(%data) );
+        if ( @keys > 1 ) {
+          printf( "ERROR: Found more than one possible data entry " .
+                    "for species '%s', database type '%s':\n",
+                  $species, $dbtype );
+          printd( "ERROR: %s\n", join( ', ', @keys ) );
+          next;
+        }
+        $dbdata = $data{ $keys[0] };
+      }
+      else {
+        printf( "ERROR: Can not find data for database '%s' " .
+                  "(skipping it)!\n",
+                $dbname );
+        next;
+      }
     }
 
     print( '=' x 80, "\n" );
@@ -218,14 +231,15 @@ my %data;
               'analysis_description' );
       printf( "--> %s\n", $filename );
 
-      if ( system( "mysqldump",
-                   "--host=$host",
-                   "--port=$port",
-                   "--user=$user",
-                   ( defined($pass) ? "--password=$pass" : "--opt" ),
-                   "--result-file=$filename",
-                   "$dbname",
-                   'analysis_description' ) )
+      if (system("mysqldump",
+                 "--host=$host",
+                 "--port=$port",
+                 "--user=$user",
+                 ( defined($pass) ? "--password=$pass" : "--skip-opt" ),
+                 "--result-file=$filename",
+                 "--skip-opt",
+                 "$dbname",
+                 'analysis_description' ) )
       {
         die("mysqldump failed: $?");
       }
@@ -354,9 +368,6 @@ my %data;
       }
 
     }
-    #delete the backup table
-    $dbh->do(
-           sprintf( 'DROP TABLE IF EXISTS %s', $full_table_name_bak ) );
 
   } ## end while ( $sth->fetch() )
   continue {
