@@ -442,9 +442,9 @@ g.seq_region_id=ae.seq_region_id and ae.exc_type='HAP'", [qw(gene_id)]
         
         my %exons = ();
         my $T     = $dbh->selectall_arrayref(
-            "select distinct t.gene_id, esi.stable_id
-         from transcript as t, exon_transcript as et, exon_stable_id as esi
-        where t.transcript_id = et.transcript_id and et.exon_id = esi.exon_id"
+            "select distinct t.gene_id, e.stable_id
+         from transcript as t, exon_transcript as et, exon as e
+        where t.transcript_id = et.transcript_id and et.exon_id = e.exon_id"
         );
         foreach (@$T) {
             $exons{ $_->[0] }{ $_->[1] } = 1;
@@ -465,22 +465,20 @@ g.seq_region_id=ae.seq_region_id and ae.exc_type='HAP'", [qw(gene_id)]
         print "Get Genes query...\n---------------------\n";
 
         my $gene_info = $dbh->selectall_arrayref( "
-        SELECT gsi.gene_id, tsi.transcript_id, trsi.translation_id,
-             gsi.stable_id AS gsid, tsi.stable_id AS tsid, trsi.stable_id AS trsid,
+        SELECT g.gene_id, t.transcript_id, tr.translation_id,
+             g.stable_id AS gsid, t.stable_id AS tsid, tr.stable_id AS trsid,
              g.description, ed.db_display_name, x.dbprimary_acc,x.display_label AS xdlgene, ad.display_label, ad.description, g.source, g.status, g.biotype,
              sr.name AS seq_region_name, g.seq_region_start, g.seq_region_end
-        FROM (((( gene_stable_id AS gsi, gene AS g,
-             transcript_stable_id AS tsi,
+        FROM ((( gene AS g,
              analysis_description AS ad,
              transcript AS t) LEFT JOIN
              translation AS tr ON t.transcript_id = tr.transcript_id) LEFT JOIN
-             translation_stable_id AS trsi ON tr.translation_id = trsi.translation_id) LEFT JOIN
              xref AS `x` ON g.display_xref_id = x.xref_id) LEFT JOIN
              external_db AS ed ON ed.external_db_id = x.external_db_id LEFT JOIN
              seq_region AS sr ON sr.seq_region_id = g.seq_region_id
-       WHERE t.gene_id = gsi.gene_id AND t.transcript_id = tsi.transcript_id AND t.gene_id = g.gene_id
+       WHERE t.gene_id = g.gene_id
              AND g.analysis_id = ad.analysis_id
-       ORDER BY gsi.stable_id, tsi.stable_id;
+       ORDER BY g.stable_id, t.stable_id;
     " );
 
         print "Done Get Genes query...\n---------------------\n";
@@ -1666,34 +1664,30 @@ sub dumpUnmappedFeatures {
         'Transcript' => qq(
       select a.logic_name, e.db_display_name,
              uo.identifier, ur.summary_description,
-             concat( 'Transcript: ', tsi.stable_id, '; Gene: ',gsi.stable_id )
+             concat( 'Transcript: ', t.stable_id, '; Gene: ',g.stable_id )
         from $COREDB.analysis as a, $COREDB.external_db as e, $COREDB.unmapped_object as uo,
-             $COREDB.unmapped_reason as ur, $COREDB.transcript_stable_id as tsi,
-             $COREDB.transcript as t, $COREDB.gene_stable_id as gsi
+             $COREDB.unmapped_reason as ur,
+             $COREDB.transcript as t, $COREDB.gene as g
        where a.analysis_id = uo.analysis_id and
              uo.external_db_id = e.external_db_id and
              uo.unmapped_reason_id = ur.unmapped_reason_id and
              uo.ensembl_id = t.transcript_id and
              uo.ensembl_object_type = 'Transcript' and
-             t.transcript_id = tsi.transcript_id and
-             t.gene_id       = gsi.gene_id
+             t.gene_id       = g.gene_id
     ),
         'Translation' => qq(
       select a.logic_name, e.db_display_name, uo.identifier, ur.summary_description,
-             concat( 'Translation: ',trsi.stable_id,'; Transcript: ', tsi.stable_id, '; Gene: ',gsi.stable_id )
+             concat( 'Translation: ',tr.stable_id,'; Transcript: ', t.stable_id, '; Gene: ',g.stable_id )
         from $COREDB.analysis as a, $COREDB.external_db as e, $COREDB.unmapped_object as uo,
-             $COREDB.unmapped_reason as ur, $COREDB.transcript_stable_id as tsi,
-             $COREDB.translation as tr, $COREDB.translation_stable_id as trsi,
-             $COREDB.transcript as t, $COREDB.gene_stable_id as gsi
+             $COREDB.unmapped_reason as ur, $COREDB.translation as tr,           
+             $COREDB.transcript as t, $COREDB.gene as g
        where a.analysis_id = uo.analysis_id and
              uo.external_db_id = e.external_db_id and
              uo.unmapped_reason_id = ur.unmapped_reason_id and
              uo.ensembl_id = tr.translation_id and
              tr.transcript_id = t.transcript_id and
-             trsi.translation_id = tr.translation_id and
              uo.ensembl_object_type = 'Translation' and
-             t.transcript_id = tsi.transcript_id and
-             t.gene_id       = gsi.gene_id
+             t.gene_id       = g.gene_id
     )
     );
     my $entry_count = 0;
@@ -1765,8 +1759,7 @@ sub dumpUnmappedGenes {
         $current_stable_ids{$type} = {
             map { @$_ } @{
                 $dbh->selectall_arrayref(
-                    "select stable_id,1 from $COREDB." . $type . "_stable_id"
-                )
+                    "select stable_id,1 from $COREDB." . $type)
               }
         };
     }
