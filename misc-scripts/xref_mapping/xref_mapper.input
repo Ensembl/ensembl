@@ -19,6 +19,12 @@ user=ensadmin
 password=
 dir=/nfs/acari/gp1/work/ensembl/misc-scripts/xref_mapping/mouse
 
+#specify previous release of core db if you'd like to test the new xrefs against this release 
+pr_host=ens-livemirror
+pr_user=ensro
+pr_port=3306 
+pr_dbname=mus_musculus_core_36_34e
+
 #species=gallus_gallus
 #host=ecs4
 #port=3350
