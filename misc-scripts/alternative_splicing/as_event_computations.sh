@@ -141,22 +141,23 @@ echo "Starting pipeline with timestamp '${NOW}'";
 echo "Fetch the gene models from ${db}..."
 if [ -n "$password" ]
 then
-		perl Fetch_gff.pl -dbname ${db} -dbhost ${host} -dbport ${port} -dbuser ${user} -dbpass ${password} -o ${output_dir}/${species}_${NOW}_variants.gff
+		perl Fetch_gff.pl -dbname ${db} -dbhost ${host} -dbport ${port} -dbuser ${user} -dbpass ${password} -o ${output_dir}/${db}_${NOW}_variants.gff;
 else
-		perl Fetch_gff.pl -dbname ${db} -dbhost ${host} -dbport ${port} -dbuser ${user} -o ${output_dir}/${species}_${NOW}_variants.gff
+		perl Fetch_gff.pl -dbname ${db} -dbhost ${host} -dbport ${port} -dbuser ${user} -o ${output_dir}/${db}_${NOW}_variants.gff;
 fi
 
 echo "Compute the Alternative Splicing events";
-altSpliceFinder -i ${output_dir}/${species}_${NOW}_variants.gff -o ${output_dir}/${species}_${NOW}_events.gff --relax --statistics
+altSpliceFinder -i ${output_dir}/${db}_${NOW}_variants.gff -o ${output_dir}/${db}_${NOW}_events.gff --relax --statistics
 
 echo "Populate ${db} with alternative splicing information";
+
 if [ -n "$password" ]
 then
-		perl load_alt_splice_gff.pl -file ${output_dir}/${species}_${NOW}_events.gff -host ${host} -user ${user} -pass ${password} -dbname ${db}
+		perl load_alt_splice_gff.pl -file ${output_dir}/${db}_${NOW}_events.gff -host ${host} -user ${user} -pass ${password} -dbname ${db}
 else 
 		echo "Sorry, you did not provide any password. The script can't populate the database with the Alternative splicing information.";
-		echo "However, the results are available in ${output_dir}/${species}_${NOW}_events.gff";
+		echo "However, the results are available in ${output_dir}/${db}_${NOW}_events.gff";
 fi
 
-echo "All done."
+echo "All done.";
 exit 0;
