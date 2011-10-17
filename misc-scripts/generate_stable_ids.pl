@@ -46,7 +46,6 @@ my $dbi =
   || die "Can't connect to database\n";
 
 foreach my $type (@types) {
-  my $table = $type . "_stable_id";
   my $sth;
 
   # Get starting stable ID, either specified or current max.
@@ -77,18 +76,17 @@ foreach my $type (@types) {
   # get a list of objects that don't currently have stable IDs assigned
   # and assign new ones, incrementing & preserving formatting as we go
   my $sql =
-      "SELECT $type.${type}_id "
+      "SELECT ${type}_id "
     . "FROM $type "
-    . "LEFT JOIN $table sid ON $type.${type}_id=sid.${type}_id "
-    . "WHERE sid.stable_id IS NULL";
+    . "WHERE stable_id IS NULL";
   $sth = $dbi->prepare($sql);
   $sth->execute();
 
   while ( my @row = $sth->fetchrow_array() ) {
     ( $new_stable_id, my $nis ) =
       @{ increment_stable_id( $new_stable_id, $type ) };
-    print(   "INSERT INTO $table "
-           . "VALUES($row[0],\'$nis\',1,\'$ts\',\'$ts\');\n" );
+    print(   "UPDATE $type SET stable_id = \'$nis\', version = 1, created_date = \'$ts\', modified_date = \'$ts\'"
+           . " WHERE ${type}_id = $row[0];\n" );
   }
 } ## end foreach my $type (@types)
 
@@ -154,19 +152,17 @@ sub get_max_stable_id_from_gene_archive {
 sub get_highest_stable_id {
   my ( $dbi, $type ) = @_;
 
-  my $sid = $type . "_stable_id";
-
   my ( $highest_from_current, $highest_from_archive );
 
   # Get highest stable ID from the relevant table.
 
-  my $sth = $dbi->prepare("SELECT MAX(stable_id) FROM $sid");
+  my $sth = $dbi->prepare("SELECT MAX(stable_id) FROM $type");
   $sth->execute();
 
   if ( my @row = $sth->fetchrow_array() ) {
     $highest_from_current = $row[0];
   } else {
-    die("Can't get max $type stable ID from $sid\n");
+    die("Can't get max $type stable ID from $type\n");
   }
 
   if ( length($highest_from_current) == 0 ) {
@@ -181,8 +177,7 @@ sub get_highest_stable_id {
     if ( length($highest_from_current) == 0 ) {
       print( "\n"
         . "WARNING:\n"
-        . "No exon_stable_id for exon found "
-        . "(exon_stable_id_table empty)\n"
+        . "No stable_id for exon found \n"
         . "I got no prefix to generate new stable_ids for type $type!!! "
         . "- I'll try to use gene_archive now\n" );
 
@@ -196,8 +191,8 @@ sub get_highest_stable_id {
         $prefix =~ s/G$//g;
       } else {
         die(  "ERROR: "
-            . "No entries in table exon_stable_id and "
-            . "table gene_archive found\n"
+            . "No entries in table exon and "
+            . "gene_archive tables found\n"
             . "Don't know which species prefix to use for species.\n" );
 
         $highest_from_current = sprintf( "%s%011d", $prefix, 0 );

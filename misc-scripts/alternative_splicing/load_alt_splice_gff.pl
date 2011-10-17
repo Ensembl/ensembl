@@ -66,7 +66,7 @@ my %stable_id_to_dbid; # use for gene,transcripts and exons
 
 
 foreach my $type (qw(gene transcript exon)){
-  my $sth = $dbi->prepare("SELECT ".$type."_id, stable_id  FROM ".$type."_stable_id");
+  my $sth = $dbi->prepare("SELECT ".$type."_id, stable_id  FROM ".$type);
   $sth->execute;
   my ($stable_id, $dbid);
   $sth->bind_columns(\$dbid, \$stable_id);

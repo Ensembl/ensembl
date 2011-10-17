@@ -50,13 +50,12 @@ my $vega_dba = Bio::EnsEMBL::DBSQL::DBAdaptor->new(-host => $vhost||'ens-staging
 #
 
 my $sql =(<<EOS);
-select aa.alt_allele_id, gsi.stable_id, x2.display_label
- from alt_allele aa, gene_stable_id gsi, xref x1, gene g
+select aa.alt_allele_id, g.stable_id, x2.display_label
+ from alt_allele aa, gene g, xref x1
      left join object_xref ox on g.gene_id = ox.ensembl_id
      left join xref x2 on ox.xref_id = x2.xref_id
      left join external_db edb on x2.external_db_id = edb.external_db_id
- where aa.gene_id = gsi.gene_id
-  and gsi.gene_id = g.gene_id
+ where aa.gene_id = g.gene_id
   and g.display_xref_id = x1.xref_id
   and ox.ensembl_object_type = 'Gene'
   and edb.db_name = 'ENSG';
@@ -130,7 +129,7 @@ my $core_dba = Bio::EnsEMBL::DBSQL::DBAdaptor->new(-host => $chost||'ens-staging
 
 my %stable_id_to_gene_id;
 
-$sth =  $core_dba->dbc->prepare("Select stable_id, gene_id from gene_stable_id");
+$sth =  $core_dba->dbc->prepare("Select stable_id, gene_id from gene");
 $sth->execute;
 my ($gene_id);
 $sth->bind_columns(\$core_stable_id, \$gene_id);
@@ -242,7 +241,7 @@ print "Added $alt_id_count alt_allele ids for $count genes\n";
 #
 # useful sql to look at sanity check problems
 #
-#select gsi.stable_id,g.seq_region_start, g.seq_region_end, s.name, x.display_label from gene g, seq_region s, gene_stable_id gsi, alt_allele aa, xref x where g.display_xref_id = x.xref_id and gsi.gene_id = g.gene_id and g.gene_id = aa.gene_id and g.seq_region_id = s.seq_region_id and aa.alt_allele_id =37;
+#select g.stable_id,g.seq_region_start, g.seq_region_end, s.name, x.display_label from gene g, seq_region s, alt_allele aa, xref x where g.display_xref_id = x.xref_id and g.gene_id = aa.gene_id and g.seq_region_id = s.seq_region_id and aa.alt_allele_id =37;
 
 
 
@@ -257,7 +256,7 @@ exit;
 
 
 ## LRG SQL. How to fit this in?
-##select ox.ensembl_id, gsi.gene_id from xref x, object_xref ox, external_db e, gene_stable_id gsi where x.xref_id = ox.xref_id and e.external_db_id = x.external_db_id and e.db_name like "Ens_Hs_gene" and ox.ensembl_object_type = "Gene" and x.display_label = gsi.stable_id ;
+##select ox.ensembl_id, g.gene_id from xref x, object_xref ox, external_db e, gene g where x.xref_id = ox.xref_id and e.external_db_id = x.external_db_id and e.db_name like "Ens_Hs_gene" and ox.ensembl_object_type = "Gene" and x.display_label = g.stable_id ;
 
 
 
@@ -266,13 +265,13 @@ exit;
 ##
 
 #$sql =(<<LRG);
-#SELECT  ox.ensembl_id, gsi.gene_id 
-#  FROM xref x, object_xref ox, external_db e, gene_stable_id gsi 
+#SELECT  ox.ensembl_id, g.gene_id 
+#  FROM xref x, object_xref ox, external_db e, gene g
 #    WHERE x.xref_id = ox.xref_id AND
 #          e.external_db_id = x.external_db_id AND
 #          e.db_name like "Ens_Hs_gene" AND
 #          ox.ensembl_object_type = "Gene" AND
-#           x.display_label = gsi.stable_id
+#           x.display_label = g.stable_id
 #LRG
 
 #$sth = $core_dba->dbc->prepare($sql);
