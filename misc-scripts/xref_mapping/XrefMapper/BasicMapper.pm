@@ -956,7 +956,11 @@ sub remove_mapping_data{
 
   $sql = "DELETE from mapping";
   $sth = $self->xref->dbc->prepare($sql);
-  $sth->execute(); 
+  $sth->execute();
+
+  $sql = "DELETE from alt_allele";
+  $sth = $self->xref->dbc->prepare($sql);
+  $sth->execute();
   return;
 }
 
