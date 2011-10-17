@@ -1004,27 +1004,10 @@ sub transfer_stable_ids {
   my $target = $self->target();
   my $dbh    = $self->dbh();
 
-  $self->debug("Building stable id tables");
-
-  #
-  # Copy the stable id tables
-  # remove the unused created and modified dates from the stable ids
-  #
-  $dbh->do
-    ("INSERT INTO $target.exon_stable_id " .
-     " (exon_id, stable_id, version) " .
-     "SELECT exon_id, stable_id, version " .
-     "FROM $source.exon_stable_id" );
-
-  $dbh->do
-    ("INSERT INTO $target.gene_stable_id " .
-     " (gene_id, stable_id, version) " .
-     "SELECT gene_id, stable_id, version " .
-     "FROM $source.gene_stable_id" );
+  $self->debug("Building stable id event tables");
 
   $self->copy_tables
-    ("stable_id_event","mapping_session","transcript_stable_id",
-     "translation_stable_id","gene_archive","peptide_archive");
+    ("stable_id_event","mapping_session","gene_archive","peptide_archive");
 
   return;
 }
@@ -1036,31 +1019,11 @@ sub transfer_vega_stable_ids {
   my $target = $self->target();
   my $dbh    = $self->dbh();
 
-  $self->debug("Building vega_stable id tables");
+  $self->debug("Building vega_stable id event tables");
 
-# Copy the stable id tables
-
-  # add blank columns for created and modified dates for transcript and translations
-
-  $self->debug("Copying transcript_stable_id");
-  $dbh->do
-    ("INSERT INTO $target.transcript_stable_id " .
-     " (transcript_id, stable_id, version) " .
-     "SELECT * " .
-     "FROM $source.transcript_stable_id" );
-
-  $self->debug("Copying translation_stable_id");
-  $dbh->do
-    ("INSERT INTO $target.translation_stable_id " .
-     " (translation_id, stable_id, version) " .
-     "SELECT * " .
-     "FROM $source.translation_stable_id" );
-
-  # copy all other tables
 
   $self->copy_tables
-    ("gene_stable_id","exon_stable_id","stable_id_event",
-     "mapping_session","gene_archive","peptide_archive");
+    ("stable_id_event","mapping_session","gene_archive","peptide_archive");
 
   return;
 }
