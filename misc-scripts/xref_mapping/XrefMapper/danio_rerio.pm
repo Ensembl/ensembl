@@ -92,11 +92,8 @@ sub transcript_display_xref_sources {
 
   my %ignore;
 
-  if(!$fullmode){
-    $ignore{"EntrezGene"}= 'FROM:RefSeq_[pd][en][pa].*_predicted';
-  }
-  else{
-    $ignore{"EntrezGene"} =(<<'IEG');
+
+  $ignore{"EntrezGene"} =(<<'IEG');
 SELECT DISTINCT ox.object_xref_id
   FROM object_xref ox, dependent_xref dx, 
        xref xmas, xref xdep, 
@@ -118,8 +115,6 @@ SELECT object_xref_id
       AND priority_description = 'protein_evidence_gt_3'
 BIGN
 
-  }
-  
   return [\@list,\%ignore];
 
 }

@@ -36,7 +36,6 @@ sub gene_description_sources {
 
 sub transcript_display_xref_sources {
   my $self     = shift;
-  my $fullmode = shift;
 
   my @list = qw(Xenopus_Jamboree
 		MGI
@@ -52,11 +51,7 @@ sub transcript_display_xref_sources {
 
   my %ignore;
 
-  if(!$fullmode){
-    $ignore{"EntrezGene"}= 'FROM:RefSeq_[pd][en][pa].*_predicted';
-  }
-  else{
-    $ignore{"EntrezGene"} =(<<'IEG');
+  $ignore{"EntrezGene"} =(<<'IEG');
 SELECT DISTINCT ox.object_xref_id
   FROM object_xref ox, dependent_xref dx, 
        xref xmas, xref xdep, 
@@ -71,14 +66,13 @@ SELECT DISTINCT ox.object_xref_id
           ox.ox_status = "DUMP_OUT"
 IEG
 
-    $ignore{"Uniprot/SPTREMBL"} =(<<BIGN);
+  $ignore{"Uniprot/SPTREMBL"} =(<<BIGN);
 SELECT object_xref_id
     FROM object_xref JOIN xref USING(xref_id) JOIN source USING(source_id)
      WHERE ox_status = 'DUMP_OUT' AND name = 'Uniprot/SPTREMBL' 
       AND priority_description = 'protein_evidence_gt_3'
 BIGN
 
-  }
 
   return [\@list,\%ignore];
 }

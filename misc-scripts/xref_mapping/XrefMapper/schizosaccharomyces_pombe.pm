@@ -39,7 +39,6 @@ sub build_display_xrefs {
 
 sub transcript_display_xref_sources {
     my $self     = shift;
-    my $fullmode = shift;
 
     my @list = qw(
                 PomBase_GENE
