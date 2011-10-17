@@ -78,7 +78,7 @@ my %gene2start;
 my %gene2end;
 my %gene2strand;
 
-my $gene_sth = $db->prepare("SELECT  gsi.stable_id, g.seq_region_id, g.seq_region_start, g.seq_region_end, g.seq_region_strand FROM gene g, gene_stable_id gsi WHERE g.gene_id = gsi.gene_id") || die "Could not prepare gene_sth";
+my $gene_sth = $db->prepare("SELECT  stable_id, seq_region_id, seq_region_start, seq_region_end, seq_region_strand FROM gene") || die "Could not prepare gene_sth";
 
 $gene_sth->execute();
 my ($stable_id, $seq, $start, $end, $strand);

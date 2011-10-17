@@ -112,7 +112,7 @@ sub build_stable_id_cache {
 
     my $count = 0;
 
-    my $sth = $db_adaptor->dbc->prepare("SELECT ${type}_id, stable_id FROM ${type}_stable_id");
+    my $sth = $db_adaptor->dbc->prepare("SELECT ${type}_id, stable_id FROM ${type}");
     $sth->execute();
     my ($internal_id, $stable_id);
     $sth->bind_columns(\$internal_id, \$stable_id);
