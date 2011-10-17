@@ -70,7 +70,7 @@ my $pep_copies=0;
 my $gene_copies=0;
 
 # get each protein from stable_id table
-my $sth_prot = $db->prepare("select stable_id, version from translation_stable_id");
+my $sth_prot = $db->prepare("select stable_id, version from translation");
 $sth_prot -> execute();
 $sth_prot -> bind_columns(\$stable_id, \$version);
 while ($sth_prot -> fetch()) {
@@ -92,7 +92,7 @@ while ($sth_prot -> fetch()) {
 print STDERR "Peptides - lines changed $pep_changes, lines copied $pep_copies\n";
 
 # get each transcript
-my $sth_transcript = $db->prepare("select stable_id, version from transcript_stable_id");
+my $sth_transcript = $db->prepare("select stable_id, version from transcript");
 $sth_transcript -> execute();
 $sth_transcript -> bind_columns(\$stable_id, \$version);
 while ($sth_transcript -> fetch()) {
@@ -102,7 +102,7 @@ while ($sth_transcript -> fetch()) {
 print STDERR "Transcripts - lines copied $transcript_copies\n";
 
 # get each gene
-my $sth_gene = $db->prepare("select stable_id, version from gene_stable_id");
+my $sth_gene = $db->prepare("select stable_id, version from gene");
 $sth_gene -> execute();
 $sth_gene -> bind_columns(\$stable_id, \$version);
 while ($sth_gene -> fetch()) {
@@ -160,7 +160,7 @@ close PROTEIN_LIST;
 
 ## section to update gene, transcipt and translation tables plus delete xrefs and protein_features ##
 #  prepare to get internal gene, transcript, translation id's for each protein
-my $sth_ids = $db->prepare ("select g.gene_id, t.transcript_id, tsi.translation_id from gene g, transcript t, translation_stable_id tsi where tsi.stable_id = ? and tsi.translation_id = t.translation_id and t.gene_id = g.gene_id");
+my $sth_ids = $db->prepare ("select g.gene_id, t.transcript_id, tl.translation_id from gene g, transcript t, translation tl where tl.stable_id = ? and tl.translation_id = t.translation_id and t.gene_id = g.gene_id");
 
 open IDLIST, ">/nfs/acari/mh4/mozzy/data/bacterial_list_unkn_ids" or die "Can't open id output file";
 print IDLIST "protein_stable_id\tgene_id\ttranscript_id\ttranslation_id\n";
@@ -170,7 +170,6 @@ my $sth_feature = $db->prepare ("delete from protein_feature where translation_i
 my $sth_object = $db->prepare ("delete from object_xref where ensembl_id = ?");
 my $sth_transcript = $db->prepare("update transcript set translation_id=0 where transcript_id = ?");
 my $sth_translation = $db->prepare("delete from translation where translation_id= ?");
-my $sth_tsi = $db->prepare("delete from translation_stable_id where translation_id= ?");
 my $sth_gene = $db->prepare("update gene set type='bacterial_contaminant' where gene_id = ?");
 
 # get internal id's for each protein
@@ -188,9 +187,8 @@ foreach my $protein_stable_id (@protein_list) {
     $sth_object -> execute($translation_id);
     # set transcript so has no translation
     $sth_transcript -> execute($transcript_id);
-    # delete entries from translation  and tsi tables
+    # delete entries from translation table
     $sth_translation -> execute($translation_id);
-    $sth_tsi -> execute($translation_id);
     # change gene type
     $sth_gene -> execute($gene_id);
   }
@@ -198,7 +196,7 @@ foreach my $protein_stable_id (@protein_list) {
 print STDERR "found $protein_id_count protein ids and made changes in 6 tables\n";
 
 # finally, update the gsi version using the non-redundant list
-my $sth_gsi = $db ->prepare ("update gene_stable_id set version= ? where stable_id= ?");
+my $sth_gsi = $db ->prepare ("update gene set version= ? where stable_id= ?");
 
 my $gene_id_count =0;
 foreach my $gene_stable_id (@gene_list) {
