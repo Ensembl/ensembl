@@ -131,7 +131,7 @@ sub genes_and_transcripts_attributes_set{
   # build_meta_timestamp, and, if "-upload" is set, uses the SQL files
   # produced to update the core database.
 
-  my ($self, $fullmode, $noxref_database) = @_;
+  my ($self, $noxref_database) = @_;
 
   my $status;
   if(defined($noxref_database)){
