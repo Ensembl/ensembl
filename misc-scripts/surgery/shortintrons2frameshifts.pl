@@ -60,7 +60,7 @@ my $upd_tl_sth = $db->dbc->prepare(qq{UPDATE translation
                                       WHERE translation_id = ?});
 
 
-my $sth = $db->dbc->prepare(qq{SELECT max(stable_id) FROM exon_stable_id});
+my $sth = $db->dbc->prepare(qq{SELECT max(stable_id) FROM exon});
 $sth->execute();
 my $ex_stable_id  = $sth->fetchall_arrayref->[0]->[0];
 $ex_stable_id++;

@@ -201,7 +201,7 @@ $dbh->do("
 ALTER TABLE $destDB.gene_list ADD INDEX gene_id_idx( gene_id )
 ") or die "Could not prepare genelist table alteration: " . $dbh->errstr;
 
-# Now copy gene and stable id
+# Now copy gene
 
 $dbh->do("
 INSERT INTO $destDB.gene
@@ -210,14 +210,7 @@ FROM $srcDB.gene g, $destDB.gene_list gl
 WHERE g.gene_id = gl.gene_id
 ") or die "Could not do gene insertion statement: " . $dbh->errstr;
 
-$dbh->do("
-INSERT INTO $destDB.gene_stable_id
-SELECT gsi.*
-FROM $srcDB.gene_stable_id gsi, $destDB.gene_list gl
-WHERE gsi.gene_id = gl.gene_id
-") or die "Could not do gene_stable_id: " . $dbh->errstr;
-
-# now transcript, transcript_stable_id
+# now transcript
 
 $dbh->do("
 INSERT INTO $destDB.transcript
@@ -226,14 +219,8 @@ FROM $srcDB.transcript tr, $destDB.gene_list gl
 WHERE tr.gene_id = gl.gene_id
 ") or die "Could not do transcript insertion: " . $dbh->errstr;
 
-$dbh->do("
-INSERT INTO $destDB.transcript_stable_id
-SELECT tsi.*
-FROM $srcDB.transcript_stable_id tsi, $destDB.transcript tr
-WHERE tsi.transcript_id = tr.transcript_id
-") or die "Could not do transcript_stable_id insertion: " . $dbh->errstr;
 
-# translations, translation_stable_id
+# translations
 
 $dbh->do("
 INSERT INTO $destDB.translation
@@ -242,12 +229,6 @@ FROM $srcDB.translation tl, $destDB.transcript tr
 WHERE tr.translation_id = tl.translation_id
 ") or die "Could not do translation insertion " . $dbh->errstr;
 
-$dbh->do("
-INSERT INTO $destDB.translation_stable_id
-SELECT tsi.*
-FROM $srcDB.translation_stable_id tsi, $destDB.translation tl
-WHERE tsi.translation_id = tl.translation_id
-") or die "Could not do translation_stable_id insertion" . $dbh->errstr;
 
 # exon_transcript
 
@@ -275,12 +256,6 @@ FROM $srcDB.exon e, $destDB.exon_unique eu
 WHERE e.exon_id = eu.exon_id
 ") or die "Could not do exon insertion: " . $dbh->errstr;
 
-$dbh->do("
-INSERT INTO $destDB.exon_stable_id
-SELECT esi.*
-FROM $srcDB.exon_stable_id esi, $destDB.exon_unique eu
-WHERE esi.exon_id = eu.exon_id
-") or die "Could not do exon_stable_id insertion: " . $dbh->errstr;
 
 $dbh->do("drop table $destDB.exon_unique")
   or die "Could not drop exon_unique temp table: $dbh->errstr\n";
