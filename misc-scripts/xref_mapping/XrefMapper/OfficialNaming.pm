@@ -1132,7 +1132,7 @@ sub get_lrg_set_status_sth{
   
   if(!defined($self->{'_lrg_set_status_sth'})){
      $self->{'_lrg_set_status_sth'} =
-       self->xref->dbc->prepare("update object_xref set ox_status = 'NO_DISPLAY' where object_xref_id = ?");
+       $self->xref->dbc->prepare("update object_xref set ox_status = 'NO_DISPLAY' where object_xref_id = ?");
   }
   return $self->{'_lrg_set_status_sth'};
 }
@@ -1151,7 +1151,7 @@ SELECT x.xref_id, s.priority
           ox.ox_status = 'DUMP_OUT'
     ORDER BY s.priority
 SQ4
-   $self->{'_lrg_lrg_to_hgnc_sth'} = $self->xref->dbc->prepare($sql);
+   $self->{'_lrg_to_hgnc_sth'} = $self->xref->dbc->prepare($sql);
   }
   return $self->{'_lrg_to_hgnc_sth'};
 }
