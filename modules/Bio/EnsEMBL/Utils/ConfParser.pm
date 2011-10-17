@@ -533,7 +533,7 @@ sub comma_to_list {
 =head2 list_or_file
 
   Arg[1]      : Name of parameter to parse
-  Example     : $conf->list_or_file('gene_stable_id');
+  Example     : $conf->list_or_file('gene');
   Description : Determines whether a parameter holds a list or it is a filename
                 to read the list entries from.
   Return type : true on success
