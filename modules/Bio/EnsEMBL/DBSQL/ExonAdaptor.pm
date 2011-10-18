@@ -87,9 +87,9 @@ sub _columns {
   my $self = shift;
 
   my $created_date =
-    $self->db->dbc->from_date_to_seconds("created_date");
+    $self->db->dbc->from_date_to_seconds("esi.created_date");
   my $modified_date =
-    $self->db->dbc->from_date_to_seconds("modified_date");
+    $self->db->dbc->from_date_to_seconds("esi.modified_date");
 
   return (
     'e.exon_id',        'e.seq_region_id',     'e.seq_region_start',
