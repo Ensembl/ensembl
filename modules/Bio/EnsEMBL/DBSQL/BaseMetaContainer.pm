@@ -140,6 +140,42 @@ sub list_value_by_key {
   return \@result;
 } ## end sub list_value_by_key
 
+=head2 single_value_by_key
+
+  Arg [1]    : string $key
+               the key to obtain values from the meta table with
+  Arg [2]    : boolean $warn
+               If true will cause the code to warn the non-existence of a value
+  Example    : my $value = $mc->single_value_by_key($key);
+  Description: Gets a value for a key. Can be anything
+  Returntype : Scalar
+  Exceptions : Raised if more than 1 meta item is returned
+
+=cut
+
+sub single_value_by_key {
+  my ($self, $key, $warn) = @_;
+  my $results = $self->list_value_by_key($key);
+  if(defined $results) {
+    my $count = scalar(@{$results});
+    if($count == 1) {
+      return $results->[0];
+    }
+    elsif($count == 0) {
+      if($warn) {
+        my $group = $self->db()->group();
+        my $msg = sprintf(qq{Please insert meta_key '%s' in meta table at %s db\n}, $key, $group);
+        warning($msg);
+      }
+    }
+    else {
+      my $values = join(q{,}, @{$results});
+      throw sprintf(q{Found the values [%s] for the key '%s'}, $values, $key);
+    }
+  }
+  return;
+} ## end sub single_value_by_key
+
 =head2 store_key_value
 
   Arg [1]    : string $key

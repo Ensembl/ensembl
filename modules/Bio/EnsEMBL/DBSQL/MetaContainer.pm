@@ -70,15 +70,7 @@ use Bio::Species;
 
 sub get_production_name {
   my ($self) = @_;
-
-  my $listref = $self->list_value_by_key('species.production_name');
-
-  my $name;
-  if ( defined($listref) && @{$listref} ) {
-    $name = $listref->[0];
-  }
-
-  return $name;
+  return $self->single_value_by_key('species.production_name');
 }
 
 =head2 get_short_name
@@ -95,15 +87,7 @@ sub get_production_name {
 
 sub get_short_name {
   my ($self) = @_;
-
-  my $listref = $self->list_value_by_key('species.short_name');
-
-  my $name;
-  if ( defined($listref) && @{$listref} ) {
-    $name = $listref->[0];
-  }
-
-  return $name;
+  return $self->single_value_by_key('species.short_name');
 }
 
 =head2 get_common_name
@@ -119,18 +103,10 @@ sub get_short_name {
 
 sub get_common_name {
   my ($self) = @_;
-
-  my $listref = $self->list_value_by_key('species.common_name');
-
-  my $name;
-  if ( defined($listref) && @{$listref} ) {
-    $name = $listref->[0];
-  }
-
-  return $name;
+  return $self->single_value_by_key('species.common_name');
 }
 
-=head2 get_short_name
+=head2 get_scientific_name
 
   Args          : none
   Example       : $species = $meta_container->get_scientific_name();
@@ -142,15 +118,7 @@ sub get_common_name {
 =cut
 sub get_scientific_name {
   my ($self) = @_;
-
-  my $listref = $self->list_value_by_key('species.scientific_name');
-
-  my $name;
-  if ( defined($listref) && @{$listref} ) {
-    $name = $listref->[0];
-  }
-
-  return $name;
+  return $self->single_value_by_key('species.scientific_name');
 }
 
 =head2 get_Species
@@ -196,16 +164,8 @@ sub get_Species {
 =cut
 
 sub get_taxonomy_id {
-  my $self = shift;
-
-  my $arrRef = $self->list_value_by_key( 'species.taxonomy_id' );
-  
-  if( @$arrRef ) {
-    return $arrRef->[0];
-  } else {
-    warning("Please insert meta_key 'species.taxonomy_id' " .
-	    "in meta table at core db.\n");
-  }
+  my ($self) = @_;
+  return $self->single_value_by_key('species.taxonomy_id', 1);
 }
 
 
@@ -240,15 +200,8 @@ sub get_default_assembly {
 #
 sub get_max_assembly_contig {
   my $self = shift;
-
   deprecate('This method should either be fixed or removed');
-
-  my $value_list = $self->list_value_by_key( "assembly.maxcontig" );
-  if( @$value_list ) {
-    return $value_list->[0];
-  } else {
-    return undef;
-  }
+  return $self->single_value_by_key('assembly.maxcontig');
 }
 
 =head2 get_genebuild
@@ -264,16 +217,8 @@ sub get_max_assembly_contig {
 =cut
 
 sub get_genebuild {
-  my $self = shift;
-
-  my $arrRef = $self->list_value_by_key( 'genebuild.start_date' );
-
-  if( @$arrRef ) {
-    return $arrRef->[0];
-  } else {
-    warning("Please insert meta_key 'genebuild.start_date' " .
-            "in meta table at core db.\n");
-  }
+  my ($self) = @_;
+  return $self->single_value_by_key('genebuild.start_date', 1);
 }
 
 
