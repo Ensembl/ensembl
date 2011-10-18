@@ -657,6 +657,31 @@ sub fetch_all {
   return $self->generic_fetch();
 }
 
+=head2 last_insert_id
+
+  Arg [1]     : (optional) $field the name of the field the inserted ID was pushed 
+                into
+  Arg [2]     : (optional) HashRef used to pass extra attributes through to the 
+                DBD driver
+  Description : Delegating method which uses DBI to extract the last inserted 
+                identifier. If using MySQL we just call the DBI method 
+                L<DBI::last_insert_id()> since MySQL ignores any extra
+                arguments. See L<DBI> for more information about this 
+                delegated method. 
+  Example     : my $id = $self->last_insert_id('my_id'); my $other_id = $self->last_insert_id();
+  Returntype  : Scalar or undef
+  
+=cut
+
+sub last_insert_id {
+  my ($self, $field, $attributes) = @_;
+  my $dbc = $self->dbc();
+  my $dbh = $dbc->db_handle();
+  $attributes ||= {};
+  my ($table) = $self->_tables();
+  return $dbh->last_insert_id(undef, $dbc->dbname(), $table->[0], $field, $attributes);
+}
+
 
 #_tables
 #
