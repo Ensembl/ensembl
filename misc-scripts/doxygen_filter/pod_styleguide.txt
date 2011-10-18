@@ -1,0 +1,96 @@
+POD Style Guide - for writing helpful POD
+
+Kieron Taylor, Ensembl Core, June 2011
+Queries to ktaylor@ebi.ac.uk
+
+The Doxygen filter must transform Perl into something that Doxygen understands, therefore some of the flexibility in Perl POD must be sacrificed in order to make parsing a tractable task.
+
+The generated documentation is improved in an additive way, so full documentation for every method and class is not mandatory, it merely makes the outcome more useful. The minimum case is an undocumented class with undocumented methods, but all classes should at least have some kind of summary using the =head1 DESCRIPTION block.
+
+POD has many possible ways of formatting, but these will have no influence on the HTML output. Try to ensure that all POD blocks are at least terminated with a =cut before the code starts.
+
+For a clear example of "nice" POD, take a look at Bio::EnsEMBL::Upstream
+Note the clean separation between code comments and POD.
+
+** Template header for a OO Perl package:
+
+=head1 LICENSE
+
+License text
+
+=head1 CONTACT
+
+email details for authors or support
+
+=cut
+
+=head1 NAME
+
+Class name and description. Not used, but summary text may be harvested in future.
+
+=head1 SYNOPSIS
+
+Typically Perl code example of the main function of the module. Avoid too much plain text, as this will be code-highlighted indiscriminantly. Refrain from leaving empty synopsis blocks where possible.
+
+=head1 DESCRIPTION
+
+Textual description of the package.
+
+=cut
+
+
+** Template header for methods:
+
+=head2 function_name
+
+  Args       :
+  Example    : 
+  Description: 
+  Returntype : 
+  Exceptions : 
+  Caller     : 
+  Status     : 
+
+=cut
+
+sub function_name {
+
+}
+
+The function name must be identical in both =head2 and the sub declaration, or errors will be created in the documentation. The pattern shown above is only a template but provides consistency with existing conventions. 
+
+** Returned objects from methods
+
+The Returntype: entry is given special treatment, in that the first word after the : is used for the return value by Doxygen. Therefore, it is best if this word best represents the usual returned value, and not for example the null case.
+
+Someone might usefully write
+
+Returntype : Bio::Ensembl::Gene or Undef
+
+Doxygen will not notice the Undef, but it will remain in the block of comments for that method. I recommend the use of Java-style capitalisation for data types such as String instead of string. If the filter cannot determine the return type, it will leave it blank. 
+
+Accurate references to other classes in the Ensembl codebase will result in a direct link to that object from that page, which can be very useful.
+
+** Deprecated methods
+
+The presence of the word "Deprecated" in the section will flag the method up as special, so try to avoid usage such as "Is not deprecated".
+
+** Preservation of whitespace
+
+Try not to mix tabs and spaces for indenting text in the Synopsis and method header sections. The whitespace will be faithfully reproduced in a new environment where the tab width is not the same and it will look odd.
+
+** Please do not write...
+
+Method arguments denoted in <brackets> are a bad idea, since these are treated as HTML tags in the browser, which then disappear.
+
+Combined POD sections that describe multiple methods. Good for lazy coders, bad for automated documentation extractors.
+
+=head2 blocks which do no relate to a method. Too many head2 blocks makes it hard to decide which block relates to a method.
+
+@ISA declarations in arcane forms. Inheritance can be done in several ways, try to stick to the obvious ones: use base qw( Namespace::Package ); or our @ISA = ( package );
+
+Very long lines in POD sections. This leads to text that must be scrolled in the browser.
+
+** General context and acknowledgments:
+
+We are using Doxygen (www.doxygen.org) with a custom filter to process the Ensembl codebase, and produce an HTML API reference. The custom Ensembl filter is derived from Bart Schueller and Thomas Aeby's Perl filter (http://www.bigsister.ch/doxygenfilter/).
