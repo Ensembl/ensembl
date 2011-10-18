@@ -192,6 +192,7 @@ sub internal_id_rescore {
     foreach my $e (@entries) {
       if ( $e->target == $source and $e->score == $entries[0] ) {
         $ambiguous = 1;
+        last;
       }
     }
 
