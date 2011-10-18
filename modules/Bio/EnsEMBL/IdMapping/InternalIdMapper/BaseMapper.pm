@@ -238,7 +238,9 @@ sub scores_similar {
 sub filter_sources {
   my ( $self, $other_sources, $sources_done ) = @_;
 
-  unless ( scalar(@$other_sources) and scalar( keys %$sources_done ) ) {
+  unless (     scalar( @{$other_sources} )
+           and scalar( keys %{$sources_done} ) )
+  {
     return $other_sources;
   }
 
@@ -255,7 +257,7 @@ sub filter_targets {
   my ( $self, $other_targets, $targets_done ) = @_;
 
   unless (     scalar( @{$other_targets} )
-           and scalar( keys %$targets_done ) )
+           and scalar( keys %{$targets_done} ) )
   {
     return $other_targets;
   }
