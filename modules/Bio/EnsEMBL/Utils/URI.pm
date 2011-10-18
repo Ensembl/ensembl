@@ -24,11 +24,16 @@ Bio::EnsEMBL::Utils::URI
 
 =head1 SYNOPSIS
 
-  use Bio::EnsEMBL::Utils::URI qw/parse_uri/;
+  use Bio::EnsEMBL::Utils::URI qw/parse_uri is_uri/;
+  # or use Bio::EnsEMBL::Utils::URI qw/:all/; # to bring everything in
   my $up = Bio::EnsEMBL::Utils::URIParser->new();
 
   my $db_uri = parse_uri('mysql://user@host:3157/db');
   my $http_uri = parse_uri('http://www.google.co.uk:80/search?q=t');
+  
+  is_uri('mysql://user@host'); # returns 1
+  is_uri('file:///my/path'); # returns 1
+  is_uri('/my/path'); # returns 0
 
 =head1 DESCRIPTION
 
@@ -66,9 +71,32 @@ eval {
 
 use base qw/Exporter/;
 our @EXPORT_OK;
-@EXPORT_OK = qw/parse_uri/;
+our %EXPORT_TAGS;
+@EXPORT_OK = qw/parse_uri is_uri/;
+%EXPORT_TAGS = ( all => [@EXPORT_OK] );
 
 ####URI Parsing
+
+=head2 is_uri
+
+  Arg[1]      : Scalar; URI to parse
+  Example     : is_uri('mysql://user:pass@host:415/db');
+  Description : Looks for the existence of a URI scheme to decide if this
+                is a classical URI. Whilst non-scheme based URIs can still be
+                interprited it is useful to use when you need to know if
+                you are going to work with a URI or not
+  Returntype  : Boolean
+  Caller      : General
+  Status      : Beta
+
+=cut
+
+sub is_uri {
+  my ($uri) = @_;
+  return 0 if ! $uri;
+  my $SCHEME = qr{ ([^:]*) :// }xms;
+  return ($uri =~ $SCHEME) ? 1 : 0;
+}
 
 =head2 parse_uri
 

@@ -5,7 +5,7 @@ use Test::More;
 use Test::Exception;
 use File::Spec;
 use Bio::EnsEMBL::Utils::IO qw/work_with_file/;
-use Bio::EnsEMBL::Utils::URI qw/parse_uri/;
+use Bio::EnsEMBL::Utils::URI qw/parse_uri is_uri/;
 
 sub assert_parsing {
   my ($msg, $url, $expected) = @_;
@@ -201,5 +201,11 @@ assert_parsing('File path','file:///my/path',{
   lives_ok { $u->port('80') } 'Checking we live if port is given a string which decodes to an integer';
   lives_ok { $u->port(80) } 'Checking we live if port is given an integer';
 }
+
+is(is_uri('mysql://user@host'), 1, 'Checking mysql scheme is detected as a URI');
+is(is_uri('file:///path'), 1, 'Checking file scheme is ok detected as a URI');
+is(is_uri('/path'), 0, 'Checking plain path is not detected as a URI');
+is(is_uri(''), 0, 'Checking empty path is not detected as a URI');
+is(is_uri(undef), 0, 'Checking undef is not detected as a URI');
 
 done_testing();
