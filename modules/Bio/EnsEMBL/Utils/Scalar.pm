@@ -166,7 +166,7 @@ sub assert_ref {
   throw('No expected type given') if ! defined $expected;
   my $class = ref($ref);
   throw("The given reference for attribute $attribute_name was undef") unless defined $ref;
-  throw('Asking for the type of the attribute $attribute_name produced no type; check it is a reference') unless $class;
+  throw("Asking for the type of the attribute $attribute_name produced no type; check it is a reference") unless $class;
   if(blessed($ref)) {
     throw("${attribute_name}'s type '${class}' is not an ISA of '${expected}'") if ! $ref->isa($expected);
   }
