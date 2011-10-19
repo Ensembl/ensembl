@@ -199,6 +199,7 @@ sub map_transcripts {
       Bio::EnsEMBL::IdMapping::InternalIdMapper::EnsemblTranscriptGeneric::init_basic
       Bio::EnsEMBL::IdMapping::InternalIdMapper::EnsemblTranscriptGeneric::non_exact_translation
       Bio::EnsEMBL::IdMapping::InternalIdMapper::EnsemblTranscriptGeneric::mapped_gene
+      Bio::EnsEMBL::IdMapping::InternalIdMapper::EnsemblTranscriptGeneric::biotype
       Bio::EnsEMBL::IdMapping::InternalIdMapper::EnsemblTranscriptGeneric::internal_id
       Bio::EnsEMBL::IdMapping::InternalIdMapper::EnsemblTranscriptGeneric::single_gene
     ));
