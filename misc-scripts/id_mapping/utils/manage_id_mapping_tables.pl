@@ -36,16 +36,16 @@ Optional arguments:
 This script will delete stable ID mapping data from a database. The script is
 intended to be run interactively (your configuration will be overridden).
 
-The tables that will be emptied or modified are:
+The tables that will be emptied are:
 
-  gene (modified)
-  transcript (modified)
-  translation (modified)
-  exon (modified)
-  mapping_session (emptied)
-  stable_id_event (emptied)
-  gene_archive (emptied)
-  peptide_archive (emptied)
+  gene_stable_id
+  transcript_stable_id
+  translation_stable_id
+  exon_stable_id
+  mapping_session
+  stable_id_event
+  gene_archive
+  peptide_archive
 
 Optionally (by interactive selection), the current tables can be backed up.
 Backkup tables will get suffices of _bak_0, _bak_1, etc. (where the correct
@@ -86,13 +86,11 @@ use Bio::EnsEMBL::Utils::Logger;
 use Bio::EnsEMBL::Utils::ScriptUtils qw(user_proceed);
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 
-my @modify_tables = qw(
-  gene
-  transcript
-  translation
-  exon
-);
-my @empty_tables = qw(
+my @tables = qw(
+  gene_stable_id
+  transcript_stable_id
+  translation_stable_id
+  exon_stable_id
   mapping_session
   stable_id_event
   gene_archive
@@ -145,7 +143,7 @@ my $dbh = $dba->dbc->db_handle;
 # then look for existing backup tables
 my $sfx = &list_backup_counts;
 
-# ask user if he wants to drop backup tables
+# aks user if he wants to drop backup tables
 if ( %suffnum
      and
      user_proceed(
@@ -177,14 +175,18 @@ $logger->finish_log;
 
 sub list_table_counts {
   $logger->info("Current table counts:\n\n");
-  &list_counts( [ @modify_tables, @empty_tables ] );
+  &list_counts( [@tables] );
 }
 
 sub list_backup_counts {
   my $new_num = -1;
 
-  foreach my $table ( @modify_tables, @empty_tables ) {
-    my $sth = $dbh->prepare(qq(SHOW TABLES LIKE "${table}_bak_%"));
+  foreach my $table (@tables) {
+    my $thetable = $table;
+    if ( $table =~ /^([^_]+)_stable_id/ ) {
+      $thetable = $1;
+    }
+    my $sth = $dbh->prepare(qq(SHOW TABLES LIKE "${thetable}_bak_%"));
     $sth->execute;
 
     while ( my ($bak) = $sth->fetchrow_array ) {
@@ -194,6 +196,8 @@ sub list_backup_counts {
 
       $new_num = $num if ( $num > $new_num );
     }
+
+    $sth->finish;
   }
 
   $logger->info("Backup tables found:\n\n") if (%suffnum);
@@ -201,11 +205,15 @@ sub list_backup_counts {
   foreach my $num ( sort keys %suffnum ) {
     my @t = ();
 
-    foreach my $table ( @modify_tables, @empty_tables ) {
-      push @t, "${table}_bak_$num";
+    foreach my $table (@tables) {
+      my $thetable = $table;
+      if ( $table =~ /^([^_]+)_stable_id/ ) {
+        $thetable = $1;
+      }
+      push @t, "${thetable}_bak_$num";
     }
 
-    &list_counts( \@t );
+    &list_counts( [@t] );
     $logger->info("\n");
   }
 
@@ -226,16 +234,25 @@ sub list_counts {
   my $fmt = "%-30s%8d\n";
 
   foreach my $table (@$tabs) {
-    my $sth = $dbh->prepare(qq(SELECT COUNT(*) FROM $table));
+    my $sth;
+    my $thetable = $table;
+    if ( $table =~ /^([^_]+)_stable_id/ ) {
+      $thetable = $1;
+      $sth = $dbh->prepare(
+        qq(SELECT COUNT(*) FROM $thetable WHERE stable_id IS NOT NULL));
+    }
+    else {
+      $sth = $dbh->prepare(qq(SELECT COUNT(*) FROM $thetable));
+    }
     $sth->execute;
     my $count = $sth->fetchrow_arrayref->[0];
     $sth->finish;
 
-    $logger->info( sprintf( $fmt, $table, $count ), 1 );
+    $logger->info( sprintf( $fmt, $thetable, $count ), 1 );
   }
 
   $logger->info("\n");
-}
+} ## end sub list_counts
 
 sub drop_backup_tables {
 
@@ -244,8 +261,12 @@ sub drop_backup_tables {
     if ( user_proceed( qq(Drop backup tables with suffix ${suffix}?),
                        $conf->param('interactive'), 'n' ) )
     {
-      foreach my $table ( @modify_tables, @empty_tables ) {
-        my $bak_table = "${table}${suffix}";
+      foreach my $table (@tables) {
+        my $thetable = $table;
+        if ( $table =~ /^([^_]+)_stable_id/ ) {
+          $thetable = $1;
+        }
+        my $bak_table = "${thetable}${suffix}";
         $logger->info( "$bak_table\n", 1 );
         unless ( $conf->param('dry_run') ) {
           $dbh->do(qq(DROP TABLE $bak_table));
@@ -276,18 +297,22 @@ sub backup_tables {
   my $fmt1 = "%-30s";
   my $fmt2 = "%8d\n";
 
-  foreach my $table ( @modify_tables, @empty_tables ) {
+  foreach my $table (@tables) {
+    my $thetable = $table;
+    if ( $table =~ /^([^_]+)_stable_id/ ) {
+      $thetable = $1;
+    }
     $logger->info( sprintf( $fmt1, $table ), 1 );
     my $c = 0;
     unless ( $conf->param('dry_run') ) {
-      $c =
-        $dbh->do(qq(CREATE TABLE ${table}${sfx} SELECT * FROM $table));
+      $c = $dbh->do(
+            qq(CREATE TABLE ${thetable}${sfx} SELECT * FROM $thetable));
     }
     $logger->info( sprintf( $fmt2, $c ) );
   }
 
   $logger->info(qq(Done.\n));
-}
+} ## end sub backup_tables
 
 sub delete_from_tables {
   my $fmt1 = "%-30s";
@@ -295,22 +320,21 @@ sub delete_from_tables {
 
   $logger->info(qq(\nDeleting from current tables...\n));
 
-  foreach my $table (@modify_tables) {
+  foreach my $table (@tables) {
     $logger->info( sprintf( $fmt1, $table ), 1 );
     my $c = 0;
     unless ( $conf->param('dry_run') ) {
-      $c = $dbh->do(qq(UPDATE $table SET stable_id=NULL));
-    }
-    $logger->info( sprintf( $fmt2, $c ) );
-  }
-  foreach my $table (@empty_tables) {
-    $logger->info( sprintf( $fmt1, $table ), 1 );
-    my $c = 0;
-    unless ( $conf->param('dry_run') ) {
-      $c = $dbh->do(qq(DELETE FROM $table));
+      my $thetable = $table;
+      if ( $table =~ /^([^_]+)_stable_id/ ) {
+        $thetable = $1;
+        $c = $dbh->do(qq(UPDATE $thetable SET stable_id=NULL));
+      }
+      else {
+        $c = $dbh->do(qq(TRUNCATE $thetable));
+      }
     }
     $logger->info( sprintf( $fmt2, $c ) );
   }
 
   $logger->info(qq(Done.\n));
-} ## end sub delete_from_tables
+}
