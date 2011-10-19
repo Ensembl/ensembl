@@ -394,11 +394,13 @@ WHERE
         }
 
         # SNP query
-#        my $snp_sth = eval {
-#            $dbh->prepare(
-#"select distinct(vf.variation_name) from $SNPDB.transcript_variation as tv, $SNPDB.variation_feature as vf where vf.variation_feature_id = tv.variation_feature_id and tv.transcript_stable_id in(?)"
-#            );
-#        };
+        my $snp_sth;
+        if ($SNPDB && $DB eq 'core') {
+          $snp_sth = $dbh->prepare(
+            "select distinct(vf.variation_name) from $SNPDB.transcript_variation as tv, $SNPDB.variation_feature as vf 
+           where vf.variation_feature_id = tv.variation_feature_id and tv.feature_stable_id in(?)"
+          );
+        };
 
         my $haplotypes = $dbh->selectall_hashref(
             "select gene_id from gene g, assembly_exception ae where
@@ -516,12 +518,12 @@ g.seq_region_id=ae.seq_region_id and ae.exc_type='HAP'", [qw(gene_id)]
                 if ( $old{'gene_id'} ) {
 
 
-#                    if ( $SNPDB && $DB eq 'core' ) {
-#                        my @transcript_stable_ids =
-#                          keys %{ $old{transcript_stable_ids} };
-#                        $snp_sth->execute("@transcript_stable_ids");
-#                        $old{snps} = $snp_sth->fetchall_arrayref;
-#                    }
+                    if ( $SNPDB && $DB eq 'core' ) {
+                        my @transcript_stable_ids =
+                          keys %{ $old{transcript_stable_ids} };
+                        $snp_sth->execute("@transcript_stable_ids");
+                        $old{snps} = $snp_sth->fetchall_arrayref;
+                    }
 
                     if ($want_species_orthologs) {
                         $old{orthologs} =
@@ -642,11 +644,11 @@ g.seq_region_id=ae.seq_region_id and ae.exc_type='HAP'", [qw(gene_id)]
             }
         }
 
-#        if ( $SNPDB && $DB eq 'core' ) {
-#            my @transcript_stable_ids = keys %{ $old{transcript_stable_ids} };
-#            $snp_sth->execute("@transcript_stable_ids");
-#            $old{snps} = $snp_sth->fetchall_arrayref;
-#        }
+        if ( $SNPDB && $DB eq 'core' ) {
+            my @transcript_stable_ids = keys %{ $old{transcript_stable_ids} };
+            $snp_sth->execute("@transcript_stable_ids");
+            $old{snps} = $snp_sth->fetchall_arrayref;
+        }
         if ($want_species_orthologs) {
             $old{orthologs} = $ortholog_lookup->{ $old{'gene_stable_id'} };
 
@@ -745,8 +747,9 @@ sub geneLineXML {
                 {
 
                     #		$unique_synonyms->{$ed_key} = 1;
+                    my $encoded = encode_entities($ed_key);
                     $synonyms .= qq{ 
-             <field name="${matched_db_name}_synonym">$ed_key</field>};
+             <field name="${matched_db_name}_synonym">$encoded</field>};
                 }
 
             }
@@ -813,7 +816,7 @@ sub geneLineXML {
     map {
         $synonyms .=
           qq{     
-      <field name="gene_synonym">$_</field> }
+      <field name="gene_synonym">} . encode_entities($_) . {</field> }
     } keys %$unique_synonyms;
 
     my $additional_fields .= qq{
