@@ -791,7 +791,8 @@ sub check_empty_tables {
   }
 
   eval {
-    my @tables = qw(
+    my @tables =
+      qw(
       gene_stable_id
       transcript_stable_id
       translation_stable_id
@@ -804,18 +805,42 @@ sub check_empty_tables {
 
     my $dba = $self->get_DBAdaptor($dbtype);
     foreach my $table (@tables) {
-      if ($c = $self->fetch_value_from_db($dba, "SELECT COUNT(*) FROM $table")) {
-        $self->logger->warning("$table table in $dbtype db has $c entries.\n");
-        $err++;
+      if ( $table =~ /^([^_]+)_stable_id/ ) {
+        $table = $1;
+        if ( $c =
+             $self->fetch_value_from_db(
+               $dba,
+               "SELECT COUNT(*) FROM $table WHERE stable_id IS NOT NULL"
+             ) )
+        {
+          $self->logger->warning(
+                        "$table table in $dbtype db has $c stable IDs.\n");
+          $err++;
+        }
       }
-    }
+      else {
+        if ( $c =
+             $self->fetch_value_from_db(
+                                     $dba, "SELECT COUNT(*) FROM $table"
+             ) )
+        {
+          $self->logger->warning(
+                        "$table table in $dbtype db has $c entries.\n");
+          $err++;
+        }
+      }
+    } ## end foreach my $table (@tables)
   };
 
   if ($@) {
-    $self->logger->warning("Error retrieving stable ID and archive table row counts from $dbtype db: $@\n");
+    $self->logger->warning(
+"Error retrieving stable ID and archive table row counts from $dbtype db: $@\n"
+    );
     $err++;
-  } elsif (!$err) {
-    $self->logger->debug("All stable ID and archive tables in $dbtype db are empty.\n");
+  }
+  elsif ( !$err ) {
+    $self->logger->debug(
+         "All stable ID and archive tables in $dbtype db are empty.\n");
   }
   return $err;
 }
