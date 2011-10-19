@@ -119,6 +119,33 @@ sub mapped_gene {
   return ($new_scores, $mappings);
 }
 
+#
+# rescore by penalising scores between transcripts with different biotypes
+#
+sub biotype {
+  my $self              = shift;
+  my $num               = shift;
+  my $tsb               = shift;
+  my $mappings          = shift;
+  my $transcript_scores = shift;
+
+  $self->logger->info( "Retry with biotype disambiguation...\n",
+                       0, 'stamped' );
+
+  unless ( $transcript_scores->loaded() ) {
+    $tsb->biotype_transcript_rescore($transcript_scores);
+    $transcript_scores->write_to_file();
+  }
+
+  my $new_mappings = $self->basic_mapping( $transcript_scores,
+                                           "transcript_mappings$num" );
+  $num++;
+  my $new_scores =
+    $tsb->create_shrinked_matrix( $transcript_scores, $new_mappings,
+                                  "transcript_matrix$num" );
+
+  return ( $new_scores, $new_mappings );
+}
 
 #
 # selectively rescore by penalising scores between transcripts with
