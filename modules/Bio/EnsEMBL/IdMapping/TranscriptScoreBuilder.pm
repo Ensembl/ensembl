@@ -354,6 +354,46 @@ sub score_matrix_from_flag_matrix {
 }
 
 
+#
+# penalise scores between genes with different biotypes.
+# entries are modified in place
+#
+sub biotype_transcript_rescore {
+  my ( $self, $matrix ) = @_;
+
+  if ( defined($matrix) &&
+       !$matrix->isa('Bio::EnsEMBL::IdMapping::ScoredMappingMatrix') )
+  {
+    throw('Exprected Bio::EnsEMBL::IdMapping::ScoredMappingMatrix');
+  }
+
+  my $i = 0;
+
+  foreach my $entry ( @{ $matrix->get_all_Entries } ) {
+
+    my $source_transcript =
+      $self->cache->get_by_key( 'transcripts_by_id', 'source',
+                                $entry->source() );
+
+    my $target_transcript =
+      $self->cache->get_by_key( 'transcripts_by_id', 'target',
+                                $entry->target() );
+
+    if ($source_transcript->biotype() ne $target_transcript->biotype() )
+    {
+      # PENALTY: The transcript stable ID is now on a transcript with a
+      # different biotype.
+      $matrix->set_score( $entry->source(), $entry->target(),
+                          0.75*$entry->score() );
+      $i++;
+    }
+  }
+
+  $self->logger->debug("Scored transcripts with biotype mismatch: $i\n",
+                       1 );
+} ## end sub biotype_transcript_rescore
+
+
 sub different_translation_rescore {
   my $self   = shift;
   my $matrix = shift;
