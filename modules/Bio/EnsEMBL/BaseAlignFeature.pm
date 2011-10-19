@@ -715,6 +715,7 @@ sub _parse_features {
       my $query_p_length = sprintf "%.0f", ($length/$query_unit);
       my $hit_p_length = sprintf "%.0f", ($hlength * $hit_unit);
       if( $query_p_length != $hit_p_length) {
+        print "$query_p_length (query_p_length) != $hit_p_length (hit_p_length)\n";
         throw( "Feature lengths not comparable Lengths:" .$length .
                " " . $hlength . " Ratios:" . $query_unit . " " .
                $hit_unit );

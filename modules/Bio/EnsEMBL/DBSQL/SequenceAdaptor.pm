@@ -296,10 +296,10 @@ sub _fetch_seq {
 
         my $min = ($i << $SEQ_CHUNK_PWR) + 1;
 
+        #print STDERR "SELECT SUBSTRING(d.sequence, $min, $SEQ_CHUNK_PWR FROM dna d WHERE d.seq_region_id =  $seq_region_id;\n";
         $sth->bind_param( 1, $min,                SQL_INTEGER );
         $sth->bind_param( 2, 1 << $SEQ_CHUNK_PWR, SQL_INTEGER );
         $sth->bind_param( 3, $seq_region_id,      SQL_INTEGER );
-
         $sth->execute();
         $sth->bind_columns(\$tmp_seq);
         $sth->fetch();
@@ -307,15 +307,18 @@ sub _fetch_seq {
 
         # always give back uppercased sequence so it can be properly softmasked
         $entire_seq .= uc($tmp_seq);
-        $cache->{"$seq_region_id:$i"} = $tmp_seq;
+        $cache->{"$seq_region_id:$i"} = uc($tmp_seq);
       }
     }
 
     # return only the requested portion of the entire sequence
     my $min = ( $chunk_min << $SEQ_CHUNK_PWR ) + 1;
-    my $max = ( $chunk_max + 1 ) << $SEQ_CHUNK_PWR;
+    #my $max = ( $chunk_max + 1 ) << $SEQ_CHUNK_PWR;
+#     print STDERR "start: $start min: $min length: $length\n";
+#    print STDERR "ENTIRE SEQ START \n$entire_seq\nENTIRE_SEQ_END\n";
+#    print STDERR " substr( $start - $min, $length )\n";
     my $seq = substr( $entire_seq, $start - $min, $length );
-
+    #print "$seq\n";
     return \$seq;
   } else {
 
