@@ -92,6 +92,12 @@ sub path {
   if(! $base) {
     throw 'No base given';
   }
+    
+  my $cs_version = $self->coord_system()->version();
+  if(! $cs_version) {
+    my ($highest_cs) = @{$self->adaptor()->db()->get_CoordSystemAdaptor()->fetch_all()};
+    $cs_version = $highest_cs->version();
+  }
   
   my @portions;
   push(@portions, $self->adaptor()->db()->get_MetaContainer()->get_production_name());
