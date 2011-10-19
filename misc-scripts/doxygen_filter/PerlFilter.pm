@@ -207,7 +207,7 @@ sub normal_action {
         #push @big_buffer,"\@par Code:\n\@code\n";
         push @big_buffer,$html_lump;
         push @big_buffer,$line;
-        if ($line =~ /sub.*{.*}/ || $line =~ /1;/) {$brackets = 0;} #one-line subroutines must be catered for, but only after the magic <Div> is created.
+        if ($line =~ /sub.*{.*}/ || $line =~ /^\s*1;/) {$brackets = 0;} #one-line subroutines must be catered for, but only after the magic <Div> is created.
     }
 }
 
@@ -232,7 +232,8 @@ sub inheritance_action {
 		my @parents = $line =~ /Bio::EnsEMBL::[\w:]+/g;
 		push @inheritance,@parents;
     }
-    elsif ($line =~ /use base\s+(qw\()?(\(\s*')?\s*([\w:]+)'?\s*(\))?/) {
+    #elsif ($line =~ /use base\s+(qw[\(\/])?(\(\s*')?\s*([\w:]+)'?\s*(\))?/) { Old way is overly fussy.
+    elsif ($line =~ /use base/) {
 		#$inherit = $2;
 		#push @inheritance,$inherit;
 		my @parents = $line =~ /Bio::EnsEMBL::[\w:]+/g;
@@ -363,7 +364,7 @@ sub pod_method_action {
     else {
         $line =~ s/[BICLFS]<(.+?)>/$1/g; # remove POD formatting commands
         $line =~ s/(\@|&|<|>|\\|\%|#)/\\$1/g; #sanitising the oddities that will bewilder Doxygen 
-		$line =~ s/(description\s*:\s*)?DEPRECATED/\@deprecated/i; #make use of Doxygen's deprecated list features
+		$line =~ s/(?<!isn't\s)DEPRECATED/\@deprecated/i; #make use of Doxygen's deprecated list features
         push @buffer,$line;
     }
 }
@@ -407,7 +408,7 @@ sub code_action {
     
     push @big_buffer,$line; 
     # When we run out of open brackets, or we hit weird unpaired brackets in strings or comments
-    if ($brackets <=0 || $line =~ /^=/ || $line =~ /^\s*sub/ || $line =~ /1;/) {
+    if ($brackets <=0 || $line =~ /^=/ || $line =~ /^\s*sub/ || $line =~ /^\s*1;/) {
         $state = NORMAL;
         push @big_buffer,"\@endcode\n </div>*/\n";
     	#Add fake function for doxygen to find after the comment.
