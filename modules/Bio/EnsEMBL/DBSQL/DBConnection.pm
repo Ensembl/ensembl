@@ -223,14 +223,13 @@ sub new {
 sub connect {
   my ($self) = @_;
 
-
   if ( $self->connected() ) { return }
 
   $self->connected(1);
 
   if ( defined( $self->db_handle() ) and $self->db_handle()->ping() ) {
-    warning( "unconnected db_handle is still pingable, "
-        . "reseting connected boolean\n" );
+    warning(   "unconnected db_handle is still pingable, "
+             . "reseting connected boolean\n" );
   }
 
   my ( $dsn, $dbh );
@@ -241,10 +240,11 @@ sub connect {
     $dsn = "DBI:Oracle:";
 
     eval {
-      $dbh =
-        DBI->connect( $dsn,
-        sprintf( "%s@%s", $self->username(), $dbname ),
-        $self->password(), { 'RaiseError' => 1, 'PrintError' => 0 } );
+      $dbh = DBI->connect( $dsn,
+                           sprintf( "%s@%s",
+                                    $self->username(), $dbname ),
+                           $self->password(),
+                           { 'RaiseError' => 1, 'PrintError' => 0 } );
     };
 
   } elsif ( $self->driver() eq "ODBC" ) {
@@ -252,87 +252,79 @@ sub connect {
     $dsn = sprintf( "DBI:ODBC:%s", $self->dbname() );
 
     eval {
-      $dbh = DBI->connect(
-        $dsn,
-        $self->username(),
-        $self->password(),
-        {
-          'LongTruncOk'     => 1,
-          'LongReadLen'     => 2**16 - 8,
-          'RaiseError'      => 1,
-          'PrintError'      => 0,
-          'odbc_cursortype' => 2
-        } );
+      $dbh = DBI->connect( $dsn,
+                           $self->username(),
+                           $self->password(), {
+                             'LongTruncOk'     => 1,
+                             'LongReadLen'     => 2**16 - 8,
+                             'RaiseError'      => 1,
+                             'PrintError'      => 0,
+                             'odbc_cursortype' => 2 } );
     };
 
   } elsif ( $self->driver() eq "Sybase" ) {
-    my $dbparam = ($dbname) ? "database=${dbname};" : q{};
-    $dsn =
-      sprintf( "DBI:Sybase:server=%s%s;tdsLevel=CS_TDS_495",
-      $self->host(), $dbparam );
+    my $dbparam = ($dbname) ? ";database=${dbname}" : q{};
+
+    $dsn = sprintf( "DBI:Sybase:server=%s%s;tdsLevel=CS_TDS_495",
+                    $self->host(), $dbparam );
 
     eval {
-      $dbh = DBI->connect(
-        $dsn,
-        $self->username(),
-        $self->password(),
-        {
-          'LongTruncOk' => 1,
-          'RaiseError'  => 1,
-          'PrintError'  => 0
-        } );
+      $dbh = DBI->connect( $dsn,
+                           $self->username(),
+                           $self->password(), {
+                             'LongTruncOk' => 1,
+                             'RaiseError'  => 1,
+                             'PrintError'  => 0 } );
     };
 
-  } elsif ( lc($self->driver()) eq 'sqlite' ) {
-    throw "We require a dbname to connect to a SQLite database" if ! $dbname;
+  } elsif ( lc( $self->driver() ) eq 'sqlite' ) {
+
+    throw "We require a dbname to connect to a SQLite database"
+      if !$dbname;
+
     $dsn = sprintf( "DBI:SQLite:%s", $dbname );
 
     eval {
-      $dbh = DBI->connect(
-        $dsn,
-        '',
-        '',
-        {
-          'RaiseError'      => 1,
-        } );
+      $dbh = DBI->connect( $dsn, '', '', { 'RaiseError' => 1, } );
     };
 
   } else {
-    my $dbparam = ($dbname) ? "database=${dbname};" : q{};
-    $dsn = sprintf(
-      "DBI:%s:%shost=%s;port=%s",
-      $self->driver(), $dbparam,
-      $self->host(),   $self->port() );
 
-    if( $self->{'disconnect_when_inactive'}){
+    my $dbparam = ($dbname) ? "database=${dbname};" : q{};
+
+    $dsn = sprintf( "DBI:%s:%shost=%s;port=%s",
+                    $self->driver(), $dbparam,
+                    $self->host(),   $self->port() );
+
+    if ( $self->{'disconnect_when_inactive'} ) {
       $self->{'count'}++;
-      if($self->{'count'} > 1000){
+      if ( $self->{'count'} > 1000 ) {
         sleep 1;
         $self->{'count'} = 0;
       }
     }
     eval {
       $dbh = DBI->connect( $dsn, $self->username(), $self->password(),
-		      { 'RaiseError' => 1 } );
+                           { 'RaiseError' => 1 } );
     };
   }
 
   if ( !$dbh || $@ || !$dbh->ping() ) {
-    warn( "Could not connect to database "
-        . $self->dbname()
-        . " as user "
-        . $self->username()
-        . " using [$dsn] as a locator:\n"
-        . $DBI::errstr );
+    warn(   "Could not connect to database "
+          . $self->dbname()
+          . " as user "
+          . $self->username()
+          . " using [$dsn] as a locator:\n"
+          . $DBI::errstr );
 
     $self->connected(0);
 
-    throw("Could not connect to database "
-        . $self->dbname()
-        . " as user "
-        . $self->username()
-        . " using [$dsn] as a locator:\n"
-        . $DBI::errstr );
+    throw(   "Could not connect to database "
+           . $self->dbname()
+           . " as user "
+           . $self->username()
+           . " using [$dsn] as a locator:\n"
+           . $DBI::errstr );
   }
 
   $self->db_handle($dbh);
