@@ -71,6 +71,7 @@ package Bio::EnsEMBL::IdMapping::TinyTranscript;
 # 10  is_known
 # 11  translation
 # 12  [exons]
+# 13  biotype
 
 
 use strict;
@@ -285,6 +286,12 @@ sub add_Exon {
 
 sub get_all_Exons {
   return $_[0]->[12] || [];
+}
+
+sub biotype {
+  my $self = shift;
+  $self->[13] = shift if (@_);
+  return $self->[13];
 }
 
 

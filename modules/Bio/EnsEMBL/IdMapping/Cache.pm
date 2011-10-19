@@ -320,8 +320,9 @@ sub build_cache_from_genes {
                                $tr->modified_date, $tr->start,
                                $tr->end,           $tr->strand,
                                $tr->length, md5_hex( $tr->spliced_seq ),
-                               ( $tr->is_known ? 1 : 0 ), ] );
+                               ( $tr->is_known ? 1 : 0 ) ] );
 
+      $ltr->biotype( $tr->biotype() );
       $lgene->add_Transcript($ltr);
 
       # build transcript caches
