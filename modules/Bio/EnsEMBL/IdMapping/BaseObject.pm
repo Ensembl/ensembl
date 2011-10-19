@@ -302,63 +302,115 @@ sub dump_table_to_file {
 =cut
 
 sub upload_file_into_table {
-  my $self = shift;
-  my $dbtype = shift;
-  my $table = shift;
-  my $filename = shift;
+  my $self           = shift;
+  my $dbtype         = shift;
+  my $table          = shift;
+  my $filename       = shift;
   my $no_check_empty = shift;
 
   # argument check
-  unless (($dbtype eq 'source') or ($dbtype eq 'target')) {
+  unless ( ( $dbtype eq 'source' ) or ( $dbtype eq 'target' ) ) {
     throw("Missing or unknown db type: $dbtype.");
   }
   throw("Need a table name.") unless ($table);
-  throw("Need a filename.") unless ($filename);
+  throw("Need a filename.")   unless ($filename);
 
   # sanity check for dry run
-  if ($self->conf->param('dry_run')) {
-    $self->logger->warning("dry_run - skipping db upload for $filename.\n");
+  if ( $self->conf->param('dry_run') ) {
+    $self->logger->warning(
+                       "dry_run - skipping db upload for $filename.\n");
     return;
   }
-  
-  my $file = join('/', $self->conf->param('basedir'), 'tables', $filename);
-  my $r = 0;
-  
-  if (-s $file) {
 
-    $self->logger->debug("$file -> $table\n", 1);
-    
+  my $file =
+    join( '/', $self->conf->param('basedir'), 'tables', $filename );
+  my $r = 0;
+
+  if ( -s $file ) {
+
+    $self->logger->debug( "$file -> $table\n", 1 );
+
     my $dba = $self->cache->get_DBAdaptor($dbtype);
     my $dbh = $dba->dbc->db_handle;
 
+    my $idtable = 0;
+    if ( $table =~ /^([^_]+)_stable_id/ ) {
+      # This is a stable_id table we're working with.
+      $idtable = 1;
+      $table   = $1;
+    }
+
     # check table is empty
-    my ($sql, $sth);
+    my ( $sql, $sth );
     unless ($no_check_empty) {
-      $sql = qq(SELECT count(*) FROM $table);
+      if ($idtable) {
+        $sql =
+          qq(SELECT count(*) FROM $table WHERE stable_id IS NOT NULL);
+      }
+      else {
+        $sql = qq(SELECT count(*) FROM $table);
+      }
       $sth = $dbh->prepare($sql);
       $sth->execute;
       my ($c) = $sth->fetchrow_array;
       $sth->finish;
 
-      if ($c) {
-        $self->logger->warning("Table $table not empty: found $c entries.\n", 1);
-        $self->logger->info("Data not uploaded!\n", 1);
+      if ( $c > 0 ) {
+        if ($idtable) {
+          $self->logger->warning(
+                               "Table $table contains $c stable IDs.\n",
+                               1 );
+        }
+        else {
+          $self->logger->warning(
+                          "Table $table not empty: found $c entries.\n",
+                          1 );
+        }
+        $self->logger->info( "Data not uploaded!\n", 1 );
         return $r;
       }
-    }
-    
-    # now upload the data
-    $sql = qq(LOAD DATA LOCAL INFILE '$file' INTO TABLE $table);
-    $sth = $dbh->prepare($sql);
-    $r = $sth->execute;
-    $sth->finish;
+    } ## end unless ($no_check_empty)
 
-  } else {
-    $self->logger->warning("No data found in file $filename.\n", 1);
+    # now upload the data
+    if ($idtable) {
+      # Create a temporary table, upload the data into it, and then
+      # update the main table.
+      $dbh->do(
+        qq( CREATE TABLE stable_id_$$ (  object_id INTEGER UNSIGNED,
+                                             stable_id VARCHAR(255),
+                                             version SMALLINT UNSIGNED,
+                                             created_date DATETIME,
+                                             modified_date DATETIME,
+                                             PRIMARY KEY(object_id) ) )
+      );
+
+      $dbh->do(
+            qq(LOAD DATA LOCAL INFILE '$file' INTO TABLE stable_id_$$));
+
+      $dbh->do(
+        qq(
+      UPDATE TABLE $table, stable_id_$$
+      SET $table.stable_id=stable_id_$$.stable_id,
+          $table.version=stable_id_$$.version,
+          $table.created_date=stable_id_$$.created_date,
+          $table.modified_date=stable_id_$$.modified_date
+      WHERE $table.${table}_id = stable_id_$$.object_id )
+      );
+
+      $dbh->do(qq(DROP TABLE stable_id_$$));
+    } ## end if ($idtable)
+    else {
+      $dbh->do(qq(LOAD DATA LOCAL INFILE '$file' INTO TABLE $table));
+    }
+    $dbh->do(qq(OPTIMIZE TABLE $table));
+
+  } ## end if ( -s $file )
+  else {
+    $self->logger->warning( "No data found in file $filename.\n", 1 );
   }
 
   return $r;
-}
+} ## end sub upload_file_into_table
 
 
 =head2 logger
