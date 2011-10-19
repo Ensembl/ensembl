@@ -85,10 +85,6 @@ my $fh;
 foreach my $species ( @species_list ) {
     
     my $conf = $dbHash->{lc($species)};
-    
-    warn "****$species\n";
-    warn Dumper($conf);
-    
     foreach my $index (@indexes) {
 
         # we don't dump compara anymore
