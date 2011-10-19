@@ -389,7 +389,7 @@ sub upload_file_into_table {
 
       $dbh->do(
         qq(
-      UPDATE TABLE $table, stable_id_$$
+      UPDATE $table, stable_id_$$
       SET $table.stable_id=stable_id_$$.stable_id,
           $table.version=stable_id_$$.version,
           $table.created_date=stable_id_$$.created_date,
