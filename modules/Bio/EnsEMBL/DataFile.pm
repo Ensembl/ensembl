@@ -77,7 +77,8 @@ sub new_fast {
                 path to the file or a URL but it is up to the using code to
                 know how to interprate the different returned forms
   Returntype 	: Scalar the absolute path/url to the given resource
-  Exceptions 	: None
+  Exceptions 	: Thrown if the linked Coordinate System lacks a version and the
+                current database also lacks a default version
   Caller     	: public
 
 =cut
@@ -92,15 +93,20 @@ sub path {
   if(! $base) {
     throw 'No base given';
   }
-    
+
+  my $production_name = $self->adaptor()->db()->get_MetaContainer()->get_production_name();
   my $cs_version = $self->coord_system()->version();
   if(! $cs_version) {
     my ($highest_cs) = @{$self->adaptor()->db()->get_CoordSystemAdaptor()->fetch_all()};
     $cs_version = $highest_cs->version();
   }
+  if(!$cs_version) {
+    my $name = $self->name();
+    throw "The file '${name}' in species '${$production_name} is attached to a CoordinateSystem lacking a version and has no default assembly. Please fix";
+  }
   
   my @portions;
-  push(@portions, $self->adaptor()->db()->get_MetaContainer()->get_production_name());
+  push(@portions, $production_name);
   push(@portions, $self->coord_system()->version());
   push(@portions, software_version()) if $self->version_lock();
   push(@portions, $self->adaptor()->db()->group());
