@@ -36,16 +36,16 @@ Optional arguments:
 This script will delete stable ID mapping data from a database. The script is
 intended to be run interactively (your configuration will be overridden).
 
-The tables that will be emptied are:
+The tables that will be emptied or modified are:
 
-  gene_stable_id
-  transcript_stable_id
-  translation_stable_id
-  exon_stable_id
-  mapping_session
-  stable_id_event
-  gene_archive
-  peptide_archive
+  gene (modified)
+  transcript (modified)
+  translation (modified)
+  exon (modified)
+  mapping_session (emptied)
+  stable_id_event (emptied)
+  gene_archive (emptied)
+  peptide_archive (emptied)
 
 Optionally (by interactive selection), the current tables can be backed up.
 Backkup tables will get suffices of _bak_0, _bak_1, etc. (where the correct
@@ -86,11 +86,13 @@ use Bio::EnsEMBL::Utils::Logger;
 use Bio::EnsEMBL::Utils::ScriptUtils qw(user_proceed);
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 
-my @tables = qw(
-  gene_stable_id
-  transcript_stable_id
-  translation_stable_id
-  exon_stable_id
+my @modify_tables = qw(
+  gene
+  transcript
+  translation
+  exon
+);
+my @empty_tables = qw(
   mapping_session
   stable_id_event
   gene_archive
@@ -100,42 +102,39 @@ my @tables = qw(
 my %suffnum = ();
 
 # parse configuration and commandline arguments
-my $conf = new Bio::EnsEMBL::Utils::ConfParser(
-  -SERVERROOT => "$Bin/../../../..",
-  -DEFAULT_CONF => ""
-);
+my $conf =
+  new Bio::EnsEMBL::Utils::ConfParser(-SERVERROOT => "$Bin/../../../..",
+                                      -DEFAULT_CONF => "" );
 
-$conf->parse_options(
-  'host=s' => 1,
-  'port=n' => 1,
-  'user=s' => 1,
-  'pass=s' => 0,
-  'dbname=s' => 1,
-);
+$conf->parse_options( 'host=s'   => 1,
+                      'port=n'   => 1,
+                      'user=s'   => 1,
+                      'pass=s'   => 0,
+                      'dbname=s' => 1, );
 
 # get log filehandle and print heading and parameters to logfile
-my $logger = new Bio::EnsEMBL::Utils::Logger(
-  -LOGFILE    => $conf->param('logfile'),
-  -LOGPATH    => $conf->param('logpath'),
-  -LOGAPPEND  => $conf->param('logappend'),
-  -VERBOSE    => $conf->param('verbose'),
-);
+my $logger =
+  new Bio::EnsEMBL::Utils::Logger(
+                                -LOGFILE   => $conf->param('logfile'),
+                                -LOGPATH   => $conf->param('logpath'),
+                                -LOGAPPEND => $conf->param('logappend'),
+                                -VERBOSE   => $conf->param('verbose'),
+  );
 
 # always run interactively
-$conf->param('interactive', 1);
+$conf->param( 'interactive', 1 );
 
 # initialise log
-$logger->init_log($conf->list_param_values);
+$logger->init_log( $conf->list_param_values );
 
 # connect to database and get adaptors
-my $dba = new Bio::EnsEMBL::DBSQL::DBAdaptor(
-  -host   => $conf->param('host'),
-  -port   => $conf->param('port'),
-  -user   => $conf->param('user'),
-  -pass   => $conf->param('pass'),
-  -dbname => $conf->param('dbname'),
-  -group  => 'core',
-);
+my $dba =
+  new Bio::EnsEMBL::DBSQL::DBAdaptor( -host   => $conf->param('host'),
+                                      -port   => $conf->param('port'),
+                                      -user   => $conf->param('user'),
+                                      -pass   => $conf->param('pass'),
+                                      -dbname => $conf->param('dbname'),
+                                      -group  => 'core', );
 $dba->dnadb($dba);
 
 my $dbh = $dba->dbc->db_handle;
@@ -146,80 +145,84 @@ my $dbh = $dba->dbc->db_handle;
 # then look for existing backup tables
 my $sfx = &list_backup_counts;
 
-# aks user if he wants to drop backup tables
-if (%suffnum and user_proceed("Drop any backup tables? (you will be able chose which ones)", $conf->param('interactive'), 'n')) {
+# ask user if he wants to drop backup tables
+if ( %suffnum
+     and
+     user_proceed(
+          "Drop any backup tables? (you will be able chose which ones)",
+          $conf->param('interactive'), 'n' ) )
+{
   &drop_backup_tables;
 }
 
 # ask user if current tables should be backed up
-if (user_proceed("Backup current tables?", $conf->param('interactive'), 'y')) {
+if (user_proceed( "Backup current tables?", $conf->param('interactive'),
+                  'y' ) )
+{
   &backup_tables($sfx);
 }
 
 # delete from tables
-if (user_proceed("Delete from current tables?", $conf->param('interactive'), 'n')) {
+if ( user_proceed( "Delete from current tables?",
+                   $conf->param('interactive'),
+                   'n' ) )
+{
   &delete_from_tables;
 }
 
 # finish logfile
 $logger->finish_log;
 
-
 ### END main ###
-
 
 sub list_table_counts {
   $logger->info("Current table counts:\n\n");
-  &list_counts(\@tables);
+  &list_counts( [ @modify_tables, @empty_tables ] );
 }
-
 
 sub list_backup_counts {
   my $new_num = -1;
 
-  foreach my $table (@tables) {
+  foreach my $table ( @modify_tables, @empty_tables ) {
     my $sth = $dbh->prepare(qq(SHOW TABLES LIKE "${table}_bak_%"));
     $sth->execute;
-    
-    while (my ($bak) = $sth->fetchrow_array) {
+
+    while ( my ($bak) = $sth->fetchrow_array ) {
       $bak =~ /_bak_(\d+)$/;
       my $num = $1;
       $suffnum{$num} = 1;
-      
-      $new_num = $num if ($num > $new_num);
+
+      $new_num = $num if ( $num > $new_num );
     }
-    
-    $sth->finish;
   }
 
   $logger->info("Backup tables found:\n\n") if (%suffnum);
 
-  foreach my $num (sort keys %suffnum) {
+  foreach my $num ( sort keys %suffnum ) {
     my @t = ();
 
-    foreach my $table (@tables) {
+    foreach my $table ( @modify_tables, @empty_tables ) {
       push @t, "${table}_bak_$num";
     }
 
-    &list_counts(\@t);
+    &list_counts( \@t );
     $logger->info("\n");
   }
 
   my $sfx = '_bak_' . ++$new_num;
   return $sfx;
-}
-
+} ## end sub list_backup_counts
 
 sub list_counts {
   my $tabs = shift;
-  
-  unless ($tabs and ref($tabs) eq 'ARRAY') {
+
+  unless ( $tabs and ref($tabs) eq 'ARRAY' ) {
     throw("Need an arrayref.");
   }
-    
-  $logger->info(sprintf("%-30s%-8s\n", qw(TABLE COUNT)), 1);
-  $logger->info(('-'x38)."\n", 1);
-  
+
+  $logger->info( sprintf( "%-30s%-8s\n", qw(TABLE COUNT) ), 1 );
+  $logger->info( ( '-' x 38 ) . "\n", 1 );
+
   my $fmt = "%-30s%8d\n";
 
   foreach my $table (@$tabs) {
@@ -228,22 +231,23 @@ sub list_counts {
     my $count = $sth->fetchrow_arrayref->[0];
     $sth->finish;
 
-    $logger->info(sprintf($fmt, $table, $count), 1);
+    $logger->info( sprintf( $fmt, $table, $count ), 1 );
   }
 
   $logger->info("\n");
 }
 
-
 sub drop_backup_tables {
 
-  foreach my $num (sort keys %suffnum) {
+  foreach my $num ( sort keys %suffnum ) {
     my $suffix = "_bak_$num";
-    if (user_proceed(qq(Drop backup tables with suffix ${suffix}?), $conf->param('interactive'), 'n')) {
-      foreach my $table (@tables) {
+    if ( user_proceed( qq(Drop backup tables with suffix ${suffix}?),
+                       $conf->param('interactive'), 'n' ) )
+    {
+      foreach my $table ( @modify_tables, @empty_tables ) {
         my $bak_table = "${table}${suffix}";
-        $logger->info("$bak_table\n", 1);
-        unless ($conf->param('dry_run')) {
+        $logger->info( "$bak_table\n", 1 );
+        unless ( $conf->param('dry_run') ) {
           $dbh->do(qq(DROP TABLE $bak_table));
         }
       }
@@ -258,14 +262,13 @@ sub drop_backup_tables {
   # recalculate the suffix number to use for current backup
   my $max_num = reverse sort keys %suffnum;
   $sfx = '_bak_' . ++$max_num;
-}
-
+} ## end sub drop_backup_tables
 
 sub backup_tables {
   my $sfx = shift;
 
-  throw("Need a backup table suffix.") unless (defined($sfx));
-  
+  throw("Need a backup table suffix.") unless ( defined($sfx) );
+
   $logger->info(qq(\nWill use '$sfx' as suffix for backup tables\n));
 
   $logger->info(qq(\nBacking up tables...\n));
@@ -273,35 +276,41 @@ sub backup_tables {
   my $fmt1 = "%-30s";
   my $fmt2 = "%8d\n";
 
-  foreach my $table (@tables) {
-    $logger->info(sprintf($fmt1, $table), 1);
+  foreach my $table ( @modify_tables, @empty_tables ) {
+    $logger->info( sprintf( $fmt1, $table ), 1 );
     my $c = 0;
-    unless ($conf->param('dry_run')) {
-      $c = $dbh->do(qq(CREATE TABLE ${table}${sfx} SELECT * FROM $table));
+    unless ( $conf->param('dry_run') ) {
+      $c =
+        $dbh->do(qq(CREATE TABLE ${table}${sfx} SELECT * FROM $table));
     }
-    $logger->info(sprintf($fmt2, $c));
+    $logger->info( sprintf( $fmt2, $c ) );
   }
-  
+
   $logger->info(qq(Done.\n));
 }
-
 
 sub delete_from_tables {
   my $fmt1 = "%-30s";
   my $fmt2 = "%8d\n";
 
   $logger->info(qq(\nDeleting from current tables...\n));
-  
-  foreach my $table (@tables) {
-    $logger->info(sprintf($fmt1, $table), 1);
+
+  foreach my $table (@modify_tables) {
+    $logger->info( sprintf( $fmt1, $table ), 1 );
     my $c = 0;
-    unless ($conf->param('dry_run')) {
+    unless ( $conf->param('dry_run') ) {
+      $c = $dbh->do(qq(UPDATE $table SET stable_id=NULL));
+    }
+    $logger->info( sprintf( $fmt2, $c ) );
+  }
+  foreach my $table (@empty_tables) {
+    $logger->info( sprintf( $fmt1, $table ), 1 );
+    my $c = 0;
+    unless ( $conf->param('dry_run') ) {
       $c = $dbh->do(qq(DELETE FROM $table));
     }
-    $logger->info(sprintf($fmt2, $c));
+    $logger->info( sprintf( $fmt2, $c ) );
   }
 
   $logger->info(qq(Done.\n));
-}
-
-
+} ## end sub delete_from_tables
