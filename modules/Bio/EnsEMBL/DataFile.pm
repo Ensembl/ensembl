@@ -107,7 +107,7 @@ sub path {
   
   my @portions;
   push(@portions, $production_name);
-  push(@portions, $self->coord_system()->version());
+  push(@portions, $cs_version);
   push(@portions, software_version()) if $self->version_lock();
   push(@portions, $self->adaptor()->db()->group());
   
