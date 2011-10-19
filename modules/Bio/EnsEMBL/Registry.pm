@@ -2121,7 +2121,7 @@ sub load_registry_from_multiple_dbs {
   my %merged_register = %registry_register;
 
   foreach my $arg (@args) {
-    local %registry_register={};
+    local %registry_register = ();
 
     my $verbose;
 
