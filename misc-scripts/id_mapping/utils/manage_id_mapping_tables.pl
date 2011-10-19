@@ -302,7 +302,7 @@ sub backup_tables {
     if ( $table =~ /^([^_]+)_stable_id/ ) {
       $thetable = $1;
     }
-    $logger->info( sprintf( $fmt1, $table ), 1 );
+    $logger->info( sprintf( $fmt1, $thetable ), 1 );
     my $c = 0;
     unless ( $conf->param('dry_run') ) {
       $c = $dbh->do(
@@ -321,12 +321,14 @@ sub delete_from_tables {
   $logger->info(qq(\nDeleting from current tables...\n));
 
   foreach my $table (@tables) {
-    $logger->info( sprintf( $fmt1, $table ), 1 );
+    my $thetable = $table;
+    if ( $table =~ /^([^_]+)_stable_id/ ) {
+      $thetable = $1;
+    }
+    $logger->info( sprintf( $fmt1, $thetable ), 1 );
     my $c = 0;
     unless ( $conf->param('dry_run') ) {
-      my $thetable = $table;
       if ( $table =~ /^([^_]+)_stable_id/ ) {
-        $thetable = $1;
         $c = $dbh->do(qq(UPDATE $thetable SET stable_id=NULL));
       }
       else {
@@ -337,4 +339,4 @@ sub delete_from_tables {
   }
 
   $logger->info(qq(Done.\n));
-}
+} ## end sub delete_from_tables
