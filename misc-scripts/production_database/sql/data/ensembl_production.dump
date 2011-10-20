@@ -91,7 +91,7 @@ INSERT INTO `analysis_description` VALUES (52,'chicken_ensembl_protein','Chicken
 INSERT INTO `analysis_description` VALUES (53,'ensembl_havana_gene','Annotation for this gene includes both automatic annotation from Ensembl and <a rel=\"external\" href=\"http://vega.sanger.ac.uk/index.html\">Havana</a> manual curation, see <a href=\"http://www.ensembl.org/info/docs/genebuild/genome_annotation.html\" class=\"cp-external\">article</a>.','Ensembl/Havana merge',NULL,NULL,5132,'2011-05-11 14:48:25',1);
 INSERT INTO `analysis_description` VALUES (54,'ensembl_havana_transcript','Transcript where the Ensembl genebuild transcript and the <a rel=\"external\" href=\"http://vega.sanger.ac.uk/index.html\">Vega</a> manual annotation have the same sequence, for every base pair. See <a href=\"http://www.ensembl.org/info/docs/genebuild/genome_annotation.html\" class=\"cp-external\">article</a>.','Ensembl/Havana merge',NULL,NULL,5132,'2011-05-11 14:48:25',1);
 INSERT INTO `analysis_description` VALUES (55,'ensembl_ig_gene','Immunoglobulin (Ig) and T-cell receptor (TcR) annotation was imported from the <a rel=\"external\" href=\"http://nar.oxfordjournals.org/cgi/content/full/33/suppl_1/D593?maxtoshow=&amp;HITS=10&amp;hits=10&amp;RESULTFORMAT=1&amp;author1=Lefranc&amp;andorexacttitle=and&amp;andorexacttitleabs=and&amp;andorexactfulltext=and&amp;searchid=1&amp;FIRSTINDEX=0&amp;sortspec=relevance&amp;resourcetype=HWCIT\">IMGT</a> database using <a rel=\"external\" href=\"http://www.biomedcentral.com/1471-2105/6/31\">Exonerate</a>.','Ensembl Ig/T-cell receptor',NULL,NULL,5132,'2011-05-11 14:48:25',1);
-INSERT INTO `analysis_description` VALUES (56,'ensembl_projection','Models were annotated by projecting human Ensembl transcripts through a BLASTZ DNA alignment to the human genome','Projected human',NULL,NULL,5132,'2011-05-12 13:24:25',1);
+INSERT INTO `analysis_description` VALUES (56,'ensembl_projection','Models were annotated by projecting Ensembl transcripts from a reference genome, through a BLASTZ DNA alignment of this genome to a reference genome','Projected from reference',NULL,NULL,5132,'2011-05-12 13:24:25',1);
 INSERT INTO `analysis_description` VALUES (57,'eponine','Transcription start sites predicted by <a rel=\"external\" href=\"http://www.sanger.ac.uk/Users/td2/eponine/\">Eponine-TSS</a>.','TSS (Eponine)',NULL,NULL,NULL,NULL,1);
 INSERT INTO `analysis_description` VALUES (58,'est2genome_human','Alignment of human ESTs (expressed sequence tags) to the genome using the program <a rel=\"external\" href=\"http://emboss.sourceforge.net/apps/cvs/emboss/apps/est2genome.html\">Est2genome</a>. ESTs are from <a rel=\"external\" href=\"http://www.ncbi.nlm.nih.gov/dbEST/\">dbEST</a>','Human EST (EST2genome)',NULL,NULL,NULL,NULL,1);
 INSERT INTO `analysis_description` VALUES (59,'est2genome_mouse','Alignment of mouse ESTs (expressed sequence tags) to the genome using the program <a rel=\"external\" href=\"http://emboss.sourceforge.net/apps/cvs/emboss/apps/est2genome.html\">Est2genome</a>. ESTs are from <a rel=\"external\" href=\"http://www.ncbi.nlm.nih.gov/dbEST/\">dbEST</a>','Mouse EST (EST2genome)',NULL,NULL,NULL,NULL,1);
@@ -192,7 +192,7 @@ INSERT INTO `analysis_description` VALUES (153,'ncoils','Prediction of coiled-co
 INSERT INTO `analysis_description` VALUES (154,'ncrna','Non-coding RNAs (ncRNAs) predicted using sequences from <a href=\"http://rfam.sanger.ac.uk\">RFAM</a> and <a href=\"http://microrna.sanger.ac.uk/sequences/index.shtml\">miRBase</a>. See <a href=\"http://www.ensembl.org/info/docs/genebuild/ncrna.html\" class=\"cp-external\">article</a>.','ncRNA',NULL,NULL,5132,'2011-05-12 13:24:25',1);
 INSERT INTO `analysis_description` VALUES (155,'ncrna_pseudogene','ncRNA pseudogenes imported from the manual annotation produced by Sean Eddy group.','ncRNA pseudogene',NULL,NULL,NULL,NULL,1);
 INSERT INTO `analysis_description` VALUES (156,'nembase_contig','NemBase EST contigs','nembasecontig',NULL,NULL,NULL,NULL,1);
-INSERT INTO `analysis_description` VALUES (157,'operon','Multi-gene feature imported from <a rel=\"external\" href=\"http://www.wormbase.org\">Wormbase</a> annotation.','Operon',NULL,NULL,NULL,NULL,1);
+INSERT INTO `analysis_description` VALUES (157,'operon','Multi-gene feature imported from <a rel=\"external\" href=\"http://www.wormbase.org\">WormBase</a> annotation.','Operon',NULL,NULL,14179,'2011-10-13 11:29:23',1);
 INSERT INTO `analysis_description` VALUES (158,'opossum_cdna','Opposum cDNAs from <a rel=\"external\" href=\"http://www.ncbi.nlm.nih.gov/RefSeq/\">NCBI RefSeq</a> and <a rel=\"external\" href=\"http://www.ebi.ac.uk/embl/\">ENA</a> are aligned to the genome using <a rel=\"external\" href=\"http://www.biomedcentral.com/1471-2105/6/31\">Exonerate</a>.','Opossum cDNA',NULL,NULL,NULL,NULL,1);
 INSERT INTO `analysis_description` VALUES (159,'opossum_protein','Opposum protein sequences from <a rel=\"external\" href=\"http://uniprot.org\">UniProtKB</a> and <a rel=\"external\" href=\"http://www.ncbi.nlm.nih.gov/RefSeq/\">NCBI RefSeq</a> are aligned to the genome using <a rel=\"external\" href=\"http://genome.cshlp.org/cgi/content/abstract/14/5/988?maxtoshow=&amp;HITS=10&amp;hits=10&amp;RESULTFORMAT=&amp;andorexactfulltext=and&amp;searchid=1&amp;FIRSTINDEX=0&amp;sortspec=relevance&amp;volume=14&amp;firstpage=988&amp;resourcetype=HWCIT\">GeneWise</a> or <a rel=\"external\" href=\"http://www.biomedcentral.com/1471-2105/6/31\">Exonerate</a>.','Opossum UniProtKB protein',NULL,NULL,NULL,NULL,1);
 INSERT INTO `analysis_description` VALUES (160,'orangutan_cdna','Orangutan cDNAs from <a rel=\"external\" href=\"http://www.ncbi.nlm.nih.gov/RefSeq/\">NCBI RefSeq</a> and <a rel=\"external\" href=\"http://www.ebi.ac.uk/embl/\">ENA</a> are aligned to the genome using <a rel=\"external\" href=\"http://www.biomedcentral.com/1471-2105/6/31\">Exonerate</a>.','Orangutan cDNA',NULL,NULL,NULL,NULL,1);
@@ -290,7 +290,7 @@ INSERT INTO `analysis_description` VALUES (251,'vertrna','Positions of vertebrat
 INSERT INTO `analysis_description` VALUES (252,'vertrna_other','Genomic positions of non-coding vertebrate mRNAs, annotated by the Anacode team at the Wellcome Trust Sanger Institute and used in <a rel=\"external\" href=\"http://www.sanger.ac.uk/HGP/havana/havana.shtml\">Havana</a> manual curation as supporting evidence for exons. Each repeat-masked clone (not an entire chromosome) is searched against non-coding RNA molecules of type \"Other RNA\" from the <a rel=\"external\" href=\"http://www.ebi.ac.uk/embl/\">European Nucleotide Archive</a> database using NCBI BLAST. Since each clone is searched, there will be edge effects where clones overlap in the chromosome assembly.','ENA vertebrate non-coding cDNA (Havana)',NULL,NULL,NULL,NULL,1);
 INSERT INTO `analysis_description` VALUES (253,'washu_contig','Washington University Nematode clusters aligned by BLAT','Washu. contig',NULL,NULL,NULL,NULL,1);
 INSERT INTO `analysis_description` VALUES (254,'human_projected_protein','Alignment to a human Ensembl protein inferred by projecting through a BLASTZ DNA alignment to the human genome','Human projected protein',NULL,NULL,NULL,NULL,1);
-INSERT INTO `analysis_description` VALUES (255,'wormbase','This model was annotated and aligned to the genome by <a rel=\"external\" href=\"http://www.wormbase.org\">Wormbase</a> through a process of automatic and manual curation.','Worm',NULL,NULL,5132,'2011-05-12 13:24:25',1);
+INSERT INTO `analysis_description` VALUES (255,'wormbase','This model was annotated and aligned to the genome by <a rel=\"external\" href=\"http://www.wormbase.org\">WormBase</a> through a process of automatic and manual curation.','WormBase Gene',NULL,NULL,896,'2011-10-13 15:20:46',1);
 INSERT INTO `analysis_description` VALUES (256,'wormpepp','C. elegans proteins aligned by WU-BlastP','wormpepP',NULL,NULL,NULL,NULL,1);
 INSERT INTO `analysis_description` VALUES (257,'wormpepx','C. elegans proteins aligned by WU-BlastX','wormpepX',NULL,NULL,NULL,NULL,1);
 INSERT INTO `analysis_description` VALUES (258,'xlaevis_cdna','Xenopus laevis cDNAs from <a rel=\"external\" href=\"http://www.ncbi.nlm.nih.gov/RefSeq/\">NCBI RefSeq</a> and <a rel=\"external\" href=\"http://www.ebi.ac.uk/embl/\">ENA</a> are aligned to the genome using <a rel=\"external\" href=\"http://www.biomedcentral.com/1471-2105/6/31\">Exonerate</a>.','X.laevis cDNA',NULL,NULL,NULL,NULL,0);
@@ -444,9 +444,13 @@ INSERT INTO `analysis_description` VALUES (405,'tilapia_protein','Tilapia protei
 INSERT INTO `analysis_description` VALUES (406,'zebrafish_ensembl_protein','Selected Ensembl-predicted zebrafish peptide sequences aligned to the genome using <a rel=\"external\" href=\"http://www.biomedcentral.com/1471-2105/6/31\">Exonerate</a>.','Zebrafish Ensembl protein',101214,'2011-08-17 16:12:26',NULL,NULL,1);
 INSERT INTO `analysis_description` VALUES (407,'stickleback_ensembl_protein','Selected Ensembl-predicted stickleback peptide sequences aligned to the genome using <a rel=\"external\" href=\"http://www.biomedcentral.com/1471-2105/6/31\">Exonerate</a>.','Stickleback Ensembl protein',101214,'2011-08-17 16:14:12',NULL,NULL,1);
 INSERT INTO `analysis_description` VALUES (408,'repeatmask_cod_consortium','<a rel=\"external\" href=\"http://www.repeatmasker.org\">RepeatMasker</a> is used to find repeats using a cod repeat library provided by the Cod Consortium. This track usually shows repeats alone (not low-complexity sequences).','Repeats (Cod)',5132,'2011-08-18 10:20:41',NULL,NULL,1);
-INSERT INTO `analysis_description` VALUES (409,'stickleback_projected_protein','Models were annotated by projecting stickleback Ensembl transcripts through a BLASTZ DNA alignment to the stickleback genome','Stickleback projected protein',5132,'2011-08-26 15:02:39',NULL,NULL,1);
-INSERT INTO `analysis_description` VALUES (410,'wga2genes_stickleback','Alignment to a stickleback Ensembl protein inferred by projecting through a BLASTZ DNA alignment to the stickleback genome','BLASTZ protein',5132,'2011-08-26 15:04:18',NULL,NULL,1);
+INSERT INTO `analysis_description` VALUES (409,'stickleback_projected_protein','Alignment to a stickleback Ensembl protein inferred by projecting through a BLASTZ DNA alignment to the stickleback genome','Stickleback projected protein',5132,'2011-08-26 15:02:39',NULL,NULL,1);
+INSERT INTO `analysis_description` VALUES (410,'wga2genes_stickleback','Alignment to a stickleback Ensembl protein inferred by projecting through a BLASTZ DNA alignment to the stickleback genome','BLASTZ protein',5132,'2011-08-26 15:04:18',NULL,NULL,0);
 INSERT INTO `analysis_description` VALUES (411,'bushbaby_protein','Bushbaby protein sequences from <a rel=\"external\" href=\"http://uniprot.org\">UniProtKB</a> and <a rel=\"external\" href=\"http://www.ncbi.nlm.nih.gov/RefSeq/\">NCBI RefSeq</a> are aligned to the genome using <a rel=\"external\" href=\"http://genome.cshlp.org/cgi/content/abstract/14/5/988?maxtoshow=&amp;HITS=10&amp;hits=10&amp;RESULTFORMAT=&amp;andorexactfulltext=and&amp;searchid=1&amp;FIRSTINDEX=0&amp;sortspec=relevance&amp;volume=14&amp;firstpage=988&amp;resourcetype=HWCIT\">GeneWise</a> or <a rel=\"external\" href=\"http://www.biomedcentral.com/1471-2105/6/31\">Exonerate</a>.','Bushbaby protein',97245,'2011-09-01 10:06:01',NULL,NULL,1);
+INSERT INTO `analysis_description` VALUES (412,'marker_satmap','\'SATMAP Markers, or sequence tagged sites (STS), from <a rel=\"external\" href=\"http://www.ncbi.nlm.nih.gov/sites/entrez?db=unists\">UniSTS</a> are aligned to the genome using <a rel=\"external\" href=\"http://genome.cshlp.org/cgi/content/full/7/5/541\">Electronic PCR (e-PCR)</a>.\'','SATMAP Marker',29,'2011-10-12 16:17:36',NULL,NULL,1);
+INSERT INTO `analysis_description` VALUES (413,'hamster_cdna','Chinese hamster cDNAs from <a rel=\"external\" href=\"http://www.ncbi.nlm.nih.gov/RefSeq/\">NCBI RefSeq</a> and <a rel=\"external\" href=\"http://www.ebi.ac.uk/embl/\">ENA</a> are aligned to the genome using <a rel=\"external\" href=\"http://www.biomedcentral.com/1471-2105/6/31\">Exonerate</a>.','Hamster cDNA',97245,'2011-10-14 15:07:11',NULL,NULL,1);
+INSERT INTO `analysis_description` VALUES (414,'hamster_protein','Chinese hamster protein sequences from <a rel=\"external\" href=\"http://uniprot.org\">UniProtKB</a> and <a rel=external\" href=\"http://www.ncbi.nlm.nih.gov/RefSeq/\">NCBI RefSeq</a> are aligned to the genome using <a rel=\"external\" href=\"http://genome.cshlp.org/cgi/content/abstract/14/5/988?maxtoshow=&amp;HITS=10&amp;hits=10&amp;RESULTFORMAT=&amp;andorexactfulltext=and&amp;searchid=1&amp;FIRSTINDEX=0&amp;sortspec=relevance&amp;volume=14&amp;firstpage=988&amp;resourcetype=HWCIT\">GeneWise</a> or <a rel=\"external\" href=\"http://www.biomedcentral.com/1471-2105/6/31\">Exonerate</a>.','Hamster protein',97245,'2011-10-14 15:07:44',NULL,NULL,1);
+INSERT INTO `analysis_description` VALUES (415,'mouse_ensembl_protein','Selected Ensembl-predicted mouse peptide sequences aligned to the genome using <a rel=\"external\" href=\"http://www.biomedcentral.com/1471-2105/6/31\">Exonerate</a> or <a rel=\"external\" href=\"http://genome.cshlp.org/cgi/content/abstract/14/5/988?maxtoshow=&amp;HITS=10&amp;hits=10&amp;RESULTFORMAT=&amp;andorexactfulltext=and&amp;searchid=1&amp;FIRSTINDEX=0&amp;sortspec=relevance&amp;volume=14&amp;firstpage=988&amp;resourcetype=HWCIT\">GeneWise</a>.','Mouse Ensembl protein',97245,'2011-10-19 08:27:56',NULL,NULL,1);
 
 --
 -- Table structure for table `analysis_web_data`
@@ -1504,7 +1508,7 @@ INSERT INTO `analysis_web_data` VALUES (1043,87,NULL,6,'core',1,NULL,NULL,NULL,N
 INSERT INTO `analysis_web_data` VALUES (1044,201,NULL,7,'core',1,NULL,NULL,NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (1045,44,NULL,7,'core',1,NULL,NULL,NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (1046,239,NULL,7,'core',1,NULL,NULL,NULL,NULL);
-INSERT INTO `analysis_web_data` VALUES (1047,254,NULL,7,'core',1,NULL,NULL,NULL,NULL);
+INSERT INTO `analysis_web_data` VALUES (1047,254,NULL,7,'core',1,5132,'2011-10-13 15:34:11',NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (1048,128,NULL,7,'core',1,NULL,NULL,NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (1049,210,NULL,7,'core',1,NULL,NULL,NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (1050,215,NULL,7,'core',1,NULL,NULL,NULL,NULL);
@@ -1605,7 +1609,7 @@ INSERT INTO `analysis_web_data` VALUES (1148,153,NULL,10,'vega',1,NULL,NULL,NULL
 INSERT INTO `analysis_web_data` VALUES (1149,201,NULL,11,'core',1,NULL,NULL,NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (1150,44,NULL,11,'core',1,NULL,NULL,NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (1151,239,NULL,11,'core',1,NULL,NULL,NULL,NULL);
-INSERT INTO `analysis_web_data` VALUES (1152,254,NULL,11,'core',1,NULL,NULL,NULL,NULL);
+INSERT INTO `analysis_web_data` VALUES (1152,254,NULL,11,'core',1,5132,'2011-10-13 15:34:11',NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (1153,262,NULL,11,'core',0,NULL,NULL,NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (1154,210,NULL,11,'core',1,NULL,NULL,NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (1155,215,NULL,11,'core',1,NULL,NULL,NULL,NULL);
@@ -1623,7 +1627,7 @@ INSERT INTO `analysis_web_data` VALUES (1166,87,NULL,11,'core',1,NULL,NULL,NULL,
 INSERT INTO `analysis_web_data` VALUES (1167,201,NULL,12,'core',1,NULL,NULL,NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (1168,44,NULL,12,'core',1,NULL,NULL,NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (1169,239,NULL,12,'core',1,NULL,NULL,NULL,NULL);
-INSERT INTO `analysis_web_data` VALUES (1170,254,NULL,12,'core',1,NULL,NULL,NULL,NULL);
+INSERT INTO `analysis_web_data` VALUES (1170,254,NULL,12,'core',1,5132,'2011-10-13 15:34:11',NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (1171,262,NULL,12,'core',0,NULL,NULL,NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (1172,210,NULL,12,'core',1,NULL,NULL,NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (1173,215,NULL,12,'core',1,NULL,NULL,NULL,NULL);
@@ -1678,7 +1682,7 @@ INSERT INTO `analysis_web_data` VALUES (1221,44,NULL,14,'core',1,NULL,NULL,NULL,
 INSERT INTO `analysis_web_data` VALUES (1222,239,NULL,14,'core',1,NULL,NULL,NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (1223,232,NULL,14,'core',1,NULL,NULL,NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (1224,1,NULL,14,'core',1,NULL,NULL,NULL,NULL);
-INSERT INTO `analysis_web_data` VALUES (1225,254,NULL,14,'core',1,NULL,NULL,NULL,NULL);
+INSERT INTO `analysis_web_data` VALUES (1225,254,NULL,14,'core',1,5132,'2011-10-13 15:34:11',NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (1226,170,NULL,14,'core',1,NULL,NULL,NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (1227,87,NULL,14,'core',1,NULL,NULL,NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (1228,210,NULL,14,'core',1,NULL,NULL,NULL,NULL);
@@ -1716,7 +1720,7 @@ INSERT INTO `analysis_web_data` VALUES (1260,169,NULL,15,'core',1,NULL,NULL,NULL
 INSERT INTO `analysis_web_data` VALUES (1261,170,NULL,15,'core',1,NULL,NULL,NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (1262,128,NULL,15,'core',1,NULL,NULL,NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (1263,87,NULL,15,'core',1,NULL,NULL,NULL,NULL);
-INSERT INTO `analysis_web_data` VALUES (1264,254,NULL,16,'core',1,NULL,NULL,NULL,NULL);
+INSERT INTO `analysis_web_data` VALUES (1264,254,NULL,16,'core',1,5132,'2011-10-13 15:34:11',NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (1265,201,NULL,16,'core',1,NULL,NULL,NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (1266,1,NULL,16,'core',1,NULL,NULL,NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (1267,232,NULL,16,'core',1,NULL,NULL,NULL,NULL);
@@ -1745,7 +1749,7 @@ INSERT INTO `analysis_web_data` VALUES (1289,239,NULL,17,'core',1,NULL,NULL,NULL
 INSERT INTO `analysis_web_data` VALUES (1290,241,NULL,17,'core',1,NULL,NULL,NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (1291,89,NULL,17,'core',1,NULL,NULL,NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (1292,244,50,17,'core',1,NULL,NULL,NULL,NULL);
-INSERT INTO `analysis_web_data` VALUES (1293,254,NULL,17,'core',1,NULL,NULL,NULL,NULL);
+INSERT INTO `analysis_web_data` VALUES (1293,254,NULL,17,'core',1,5132,'2011-10-13 15:34:11',NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (1294,210,NULL,17,'core',1,NULL,NULL,NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (1295,215,NULL,17,'core',1,NULL,NULL,NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (1296,153,NULL,17,'core',1,NULL,NULL,NULL,NULL);
@@ -1911,7 +1915,7 @@ INSERT INTO `analysis_web_data` VALUES (1463,135,NULL,23,'otherfeatures',1,NULL,
 INSERT INTO `analysis_web_data` VALUES (1464,201,NULL,24,'core',1,NULL,NULL,NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (1465,44,NULL,24,'core',1,NULL,NULL,NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (1466,239,NULL,24,'core',1,NULL,NULL,NULL,NULL);
-INSERT INTO `analysis_web_data` VALUES (1467,254,NULL,24,'core',1,NULL,NULL,NULL,NULL);
+INSERT INTO `analysis_web_data` VALUES (1467,254,NULL,24,'core',1,5132,'2011-10-13 15:34:11',NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (1468,210,NULL,24,'core',1,NULL,NULL,NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (1469,215,NULL,24,'core',1,NULL,NULL,NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (1470,153,NULL,24,'core',1,NULL,NULL,NULL,NULL);
@@ -1930,7 +1934,7 @@ INSERT INTO `analysis_web_data` VALUES (1482,170,NULL,24,'core',1,NULL,NULL,NULL
 INSERT INTO `analysis_web_data` VALUES (1483,201,NULL,25,'core',1,NULL,NULL,NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (1484,44,NULL,25,'core',1,NULL,NULL,NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (1485,239,NULL,25,'core',1,NULL,NULL,NULL,NULL);
-INSERT INTO `analysis_web_data` VALUES (1486,254,NULL,25,'core',1,NULL,NULL,NULL,NULL);
+INSERT INTO `analysis_web_data` VALUES (1486,254,NULL,25,'core',1,5132,'2011-10-13 15:34:11',NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (1487,35,NULL,25,'core',1,NULL,NULL,NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (1488,57,NULL,25,'core',1,NULL,NULL,NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (1489,241,NULL,25,'core',1,NULL,NULL,NULL,NULL);
@@ -2026,7 +2030,7 @@ INSERT INTO `analysis_web_data` VALUES (1585,239,NULL,29,'core',1,NULL,NULL,NULL
 INSERT INTO `analysis_web_data` VALUES (1586,241,NULL,29,'core',1,NULL,NULL,NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (1587,89,NULL,29,'core',1,NULL,NULL,NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (1588,244,50,29,'core',1,NULL,NULL,NULL,NULL);
-INSERT INTO `analysis_web_data` VALUES (1589,254,NULL,29,'core',1,NULL,NULL,NULL,NULL);
+INSERT INTO `analysis_web_data` VALUES (1589,254,NULL,29,'core',1,5132,'2011-10-13 15:34:11',NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (1590,210,NULL,29,'core',1,NULL,NULL,NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (1591,215,NULL,29,'core',1,NULL,NULL,NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (1592,153,NULL,29,'core',1,NULL,NULL,NULL,NULL);
@@ -2162,7 +2166,7 @@ INSERT INTO `analysis_web_data` VALUES (1724,226,NULL,35,'core',1,NULL,NULL,NULL
 INSERT INTO `analysis_web_data` VALUES (1725,201,NULL,36,'core',1,NULL,NULL,NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (1726,44,NULL,36,'core',1,NULL,NULL,NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (1727,239,NULL,36,'core',1,NULL,NULL,NULL,NULL);
-INSERT INTO `analysis_web_data` VALUES (1728,254,NULL,36,'core',1,NULL,NULL,NULL,NULL);
+INSERT INTO `analysis_web_data` VALUES (1728,254,NULL,36,'core',1,5132,'2011-10-13 15:34:11',NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (1729,262,NULL,36,'core',0,NULL,NULL,NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (1730,210,NULL,36,'core',1,NULL,NULL,NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (1731,215,NULL,36,'core',1,NULL,NULL,NULL,NULL);
@@ -2180,7 +2184,7 @@ INSERT INTO `analysis_web_data` VALUES (1742,169,NULL,36,'core',1,NULL,NULL,NULL
 INSERT INTO `analysis_web_data` VALUES (1743,201,NULL,37,'core',1,NULL,NULL,NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (1744,44,NULL,37,'core',1,NULL,NULL,NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (1745,239,NULL,37,'core',1,NULL,NULL,NULL,NULL);
-INSERT INTO `analysis_web_data` VALUES (1746,254,NULL,37,'core',1,NULL,NULL,NULL,NULL);
+INSERT INTO `analysis_web_data` VALUES (1746,254,NULL,37,'core',1,5132,'2011-10-13 15:34:11',NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (1747,262,NULL,37,'core',0,NULL,NULL,NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (1748,210,NULL,37,'core',1,NULL,NULL,NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (1749,215,NULL,37,'core',1,NULL,NULL,NULL,NULL);
@@ -2244,7 +2248,7 @@ INSERT INTO `analysis_web_data` VALUES (1809,239,NULL,40,'core',1,NULL,NULL,NULL
 INSERT INTO `analysis_web_data` VALUES (1810,241,NULL,40,'core',1,NULL,NULL,NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (1811,89,NULL,40,'core',1,NULL,NULL,NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (1812,244,50,40,'core',1,NULL,NULL,NULL,NULL);
-INSERT INTO `analysis_web_data` VALUES (1813,254,NULL,40,'core',1,NULL,NULL,NULL,NULL);
+INSERT INTO `analysis_web_data` VALUES (1813,254,NULL,40,'core',1,5132,'2011-10-13 15:34:11',NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (1814,210,NULL,40,'core',1,NULL,NULL,NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (1815,215,NULL,40,'core',1,NULL,NULL,NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (1816,153,NULL,40,'core',1,NULL,NULL,NULL,NULL);
@@ -2264,7 +2268,7 @@ INSERT INTO `analysis_web_data` VALUES (1829,239,NULL,41,'core',1,NULL,NULL,NULL
 INSERT INTO `analysis_web_data` VALUES (1830,241,NULL,41,'core',1,NULL,NULL,NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (1831,89,NULL,41,'core',1,NULL,NULL,NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (1832,244,50,41,'core',1,NULL,NULL,NULL,NULL);
-INSERT INTO `analysis_web_data` VALUES (1833,254,NULL,41,'core',1,NULL,NULL,NULL,NULL);
+INSERT INTO `analysis_web_data` VALUES (1833,254,NULL,41,'core',1,5132,'2011-10-13 15:34:11',NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (1834,210,NULL,41,'core',1,NULL,NULL,NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (1835,215,NULL,41,'core',1,NULL,NULL,NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (1836,153,NULL,41,'core',1,NULL,NULL,NULL,NULL);
@@ -2348,7 +2352,7 @@ INSERT INTO `analysis_web_data` VALUES (1913,87,NULL,44,'core',1,NULL,NULL,NULL,
 INSERT INTO `analysis_web_data` VALUES (1914,201,NULL,45,'core',1,NULL,NULL,NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (1915,44,NULL,45,'core',1,NULL,NULL,NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (1916,239,NULL,45,'core',1,NULL,NULL,NULL,NULL);
-INSERT INTO `analysis_web_data` VALUES (1917,254,NULL,45,'core',1,NULL,NULL,NULL,NULL);
+INSERT INTO `analysis_web_data` VALUES (1917,254,NULL,45,'core',1,5132,'2011-10-13 15:34:11',NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (1918,262,NULL,45,'core',0,NULL,NULL,NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (1919,210,NULL,45,'core',1,NULL,NULL,NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (1920,215,NULL,45,'core',1,NULL,NULL,NULL,NULL);
@@ -2389,7 +2393,7 @@ INSERT INTO `analysis_web_data` VALUES (1954,87,NULL,46,'core',1,NULL,NULL,NULL,
 INSERT INTO `analysis_web_data` VALUES (1955,97,NULL,46,'otherfeatures',0,NULL,NULL,NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (1956,90,NULL,46,'otherfeatures',1,NULL,NULL,NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (1957,102,NULL,46,'otherfeatures',1,NULL,NULL,NULL,NULL);
-INSERT INTO `analysis_web_data` VALUES (1958,254,NULL,47,'core',1,NULL,NULL,NULL,NULL);
+INSERT INTO `analysis_web_data` VALUES (1958,254,NULL,47,'core',1,5132,'2011-10-13 15:34:11',NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (1959,201,NULL,47,'core',1,NULL,NULL,NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (1960,1,NULL,47,'core',1,NULL,NULL,NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (1961,232,NULL,47,'core',1,NULL,NULL,NULL,NULL);
@@ -2413,7 +2417,7 @@ INSERT INTO `analysis_web_data` VALUES (1978,261,NULL,47,'core',0,NULL,NULL,NULL
 INSERT INTO `analysis_web_data` VALUES (1979,201,NULL,48,'core',1,NULL,NULL,NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (1980,44,NULL,48,'core',1,NULL,NULL,NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (1981,239,NULL,48,'core',1,NULL,NULL,NULL,NULL);
-INSERT INTO `analysis_web_data` VALUES (1982,254,NULL,48,'core',1,NULL,NULL,NULL,NULL);
+INSERT INTO `analysis_web_data` VALUES (1982,254,NULL,48,'core',1,5132,'2011-10-13 15:34:11',NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (1983,210,NULL,48,'core',1,NULL,NULL,NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (1984,215,NULL,48,'core',1,NULL,NULL,NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (1985,153,NULL,48,'core',1,NULL,NULL,NULL,NULL);
@@ -2431,7 +2435,7 @@ INSERT INTO `analysis_web_data` VALUES (1996,87,NULL,48,'core',1,NULL,NULL,NULL,
 INSERT INTO `analysis_web_data` VALUES (1997,201,NULL,49,'core',1,NULL,NULL,NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (1998,44,NULL,49,'core',1,NULL,NULL,NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (1999,239,NULL,49,'core',1,NULL,NULL,NULL,NULL);
-INSERT INTO `analysis_web_data` VALUES (2000,254,NULL,49,'core',1,NULL,NULL,NULL,NULL);
+INSERT INTO `analysis_web_data` VALUES (2000,254,NULL,49,'core',1,5132,'2011-10-13 15:34:11',NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (2001,128,NULL,49,'core',1,NULL,NULL,NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (2002,210,NULL,49,'core',1,NULL,NULL,NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (2003,215,NULL,49,'core',1,NULL,NULL,NULL,NULL);
@@ -2858,7 +2862,7 @@ INSERT INTO `analysis_web_data` VALUES (2434,382,NULL,55,'core',1,97245,'2011-06
 INSERT INTO `analysis_web_data` VALUES (2435,379,32,55,'otherfeatures',1,97245,'2011-06-28 09:49:31',NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (2436,380,34,55,'otherfeatures',1,97245,'2011-06-28 09:50:08',NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (2437,61,47,55,'otherfeatures',1,97245,'2011-06-28 09:53:10',NULL,NULL);
-INSERT INTO `analysis_web_data` VALUES (2438,383,9,56,'core',1,8,'2011-07-08 14:55:21',NULL,NULL);
+INSERT INTO `analysis_web_data` VALUES (2438,383,9,56,'core',0,8,'2011-07-08 14:55:21',29,'2011-10-17 12:16:11');
 INSERT INTO `analysis_web_data` VALUES (2439,384,NULL,56,'core',1,8,'2011-07-08 14:55:21',NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (2440,7,20,56,'core',1,8,'2011-07-08 14:55:21',NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (2441,35,NULL,56,'core',1,8,'2011-07-08 14:55:21',NULL,NULL);
@@ -2939,15 +2943,15 @@ INSERT INTO `analysis_web_data` VALUES (2516,406,NULL,54,'core',1,101214,'2011-0
 INSERT INTO `analysis_web_data` VALUES (2517,407,NULL,54,'core',1,101214,'2011-08-17 16:20:43',NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (2518,7,20,57,'core',1,5132,'2011-08-18 09:54:49',NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (2519,44,NULL,57,'core',1,5132,'2011-08-18 09:54:49',NULL,NULL);
-INSERT INTO `analysis_web_data` VALUES (2520,51,64,57,'core',1,5132,'2011-08-18 09:54:59',NULL,NULL);
+INSERT INTO `analysis_web_data` VALUES (2520,51,55,57,'core',1,5132,'2011-08-18 09:54:59',5132,'2011-10-14 08:29:46');
 INSERT INTO `analysis_web_data` VALUES (2521,89,NULL,57,'core',1,5132,'2011-08-18 09:54:59',NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (2522,153,NULL,57,'core',1,5132,'2011-08-18 09:54:59',NULL,NULL);
-INSERT INTO `analysis_web_data` VALUES (2523,154,21,57,'core',1,5132,'2011-08-18 09:54:59',NULL,NULL);
+INSERT INTO `analysis_web_data` VALUES (2523,154,75,57,'core',1,5132,'2011-08-18 09:54:59',5132,'2011-10-14 13:32:35');
 INSERT INTO `analysis_web_data` VALUES (2524,171,15,57,'core',1,5132,'2011-08-18 09:54:59',NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (2525,172,15,57,'core',1,5132,'2011-08-18 09:54:59',NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (2526,176,15,57,'core',1,5132,'2011-08-18 09:54:59',NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (2527,186,15,57,'core',1,5132,'2011-08-18 09:54:59',NULL,NULL);
-INSERT INTO `analysis_web_data` VALUES (2528,188,8,57,'core',1,5132,'2011-08-18 09:54:59',NULL,NULL);
+INSERT INTO `analysis_web_data` VALUES (2528,188,74,57,'core',1,5132,'2011-08-18 09:54:59',5132,'2011-10-14 13:25:55');
 INSERT INTO `analysis_web_data` VALUES (2529,201,NULL,57,'core',1,5132,'2011-08-18 09:54:59',NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (2530,203,20,57,'core',1,5132,'2011-08-18 09:54:59',NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (2531,209,15,57,'core',1,5132,'2011-08-18 09:54:59',NULL,NULL);
@@ -2961,14 +2965,13 @@ INSERT INTO `analysis_web_data` VALUES (2538,239,NULL,57,'core',1,5132,'2011-08-
 INSERT INTO `analysis_web_data` VALUES (2539,243,9,57,'core',1,5132,'2011-08-18 09:54:59',NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (2540,244,50,57,'core',1,5132,'2011-08-18 09:54:59',NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (2541,251,9,57,'core',1,5132,'2011-08-18 09:54:59',NULL,NULL);
-INSERT INTO `analysis_web_data` VALUES (2542,410,NULL,57,'core',1,5132,'2011-08-18 09:54:59',5132,'2011-08-26 15:10:01');
 INSERT INTO `analysis_web_data` VALUES (2543,261,NULL,57,'core',1,5132,'2011-08-18 09:54:59',NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (2544,262,NULL,57,'core',1,5132,'2011-08-18 09:54:59',NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (2545,407,NULL,57,'core',1,5132,'2011-08-18 10:27:31',NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (2546,165,NULL,57,'core',0,5132,'2011-08-18 12:35:58',NULL,NULL);
-INSERT INTO `analysis_web_data` VALUES (2547,409,27,57,'core',1,5132,'2011-08-26 15:09:05',NULL,NULL);
+INSERT INTO `analysis_web_data` VALUES (2547,409,NULL,57,'core',1,5132,'2011-08-26 15:09:05',NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (2548,408,NULL,57,'core',1,5132,'2011-08-26 15:28:06',NULL,NULL);
-INSERT INTO `analysis_web_data` VALUES (2549,51,NULL,33,'core',1,97245,'2011-09-01 10:28:59',NULL,NULL);
+INSERT INTO `analysis_web_data` VALUES (2549,51,55,33,'core',1,97245,'2011-09-01 10:28:59',6,'2011-10-13 13:06:11');
 INSERT INTO `analysis_web_data` VALUES (2550,76,NULL,33,'core',1,97245,'2011-09-01 10:29:03',NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (2551,110,9,33,'core',0,97245,'2011-09-01 10:29:06',NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (2552,112,NULL,33,'core',1,97245,'2011-09-01 10:29:09',NULL,NULL);
@@ -2984,6 +2987,36 @@ INSERT INTO `analysis_web_data` VALUES (2561,151,66,51,'core',1,97245,'2011-09-2
 INSERT INTO `analysis_web_data` VALUES (2562,151,66,31,'core',1,97245,'2011-09-27 11:51:55',NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (2563,151,66,22,'core',1,97245,'2011-09-27 14:14:00',NULL,NULL);
 INSERT INTO `analysis_web_data` VALUES (2564,151,66,56,'core',1,NULL,'2011-10-07 15:40:00',NULL,NULL);
+INSERT INTO `analysis_web_data` VALUES (2565,412,0,10,'core',1,29,'2011-10-12 16:18:30',NULL,NULL);
+INSERT INTO `analysis_web_data` VALUES (2566,56,55,57,'core',1,5132,'2011-10-13 15:10:09',5132,'2011-10-17 15:57:59');
+INSERT INTO `analysis_web_data` VALUES (2568,201,NULL,60,'core',1,97245,'2011-10-14 15:13:34',NULL,NULL);
+INSERT INTO `analysis_web_data` VALUES (2569,243,9,60,'core',1,97245,'2011-10-14 15:13:37',NULL,NULL);
+INSERT INTO `analysis_web_data` VALUES (2570,76,NULL,60,'core',1,97245,'2011-10-14 15:13:41',NULL,NULL);
+INSERT INTO `analysis_web_data` VALUES (2571,89,NULL,60,'core',1,97245,'2011-10-14 15:13:44',NULL,NULL);
+INSERT INTO `analysis_web_data` VALUES (2572,239,NULL,60,'core',1,97245,'2011-10-14 15:13:48',NULL,NULL);
+INSERT INTO `analysis_web_data` VALUES (2573,251,9,60,'core',1,97245,'2011-10-14 15:13:52',NULL,NULL);
+INSERT INTO `analysis_web_data` VALUES (2574,44,NULL,60,'core',1,97245,'2011-10-14 15:13:55',NULL,NULL);
+INSERT INTO `analysis_web_data` VALUES (2575,35,NULL,60,'core',1,97245,'2011-10-14 15:13:59',NULL,NULL);
+INSERT INTO `analysis_web_data` VALUES (2576,57,NULL,60,'core',1,97245,'2011-10-14 15:14:03',NULL,NULL);
+INSERT INTO `analysis_web_data` VALUES (2577,241,NULL,60,'core',1,97245,'2011-10-14 15:14:07',NULL,NULL);
+INSERT INTO `analysis_web_data` VALUES (2578,413,46,60,'core',1,97245,'2011-10-19 08:23:24',NULL,NULL);
+INSERT INTO `analysis_web_data` VALUES (2579,414,4,60,'core',1,97245,'2011-10-19 08:24:11',NULL,NULL);
+INSERT INTO `analysis_web_data` VALUES (2580,415,4,60,'core',1,97245,'2011-10-19 08:28:48',NULL,NULL);
+INSERT INTO `analysis_web_data` VALUES (2581,165,4,60,'core',1,97245,'2011-10-19 08:49:24',NULL,NULL);
+INSERT INTO `analysis_web_data` VALUES (2582,245,50,60,'core',1,97245,'2011-10-19 08:50:01',NULL,NULL);
+INSERT INTO `analysis_web_data` VALUES (2583,250,50,60,'core',1,97245,'2011-10-19 08:50:18',NULL,NULL);
+INSERT INTO `analysis_web_data` VALUES (2584,247,50,60,'core',1,97245,'2011-10-19 08:50:41',NULL,NULL);
+
+--
+-- Temporary table structure for view `attrib_type`
+--
+
+/*!50001 CREATE TABLE `attrib_type` (
+  `attrib_type_id` smallint(5) unsigned,
+  `code` varchar(15),
+  `name` varchar(255),
+  `description` text
+) */;
 
 --
 -- Table structure for table `biotype`
@@ -3040,12 +3073,12 @@ INSERT INTO `biotype` VALUES (23,'Mt_tRNA_pseudogene',1,1,'gene','core',75,NULL,
 INSERT INTO `biotype` VALUES (24,'Mt_tRNA_pseudogene',1,1,'transcript','core',NULL,NULL,NULL,NULL,NULL,NULL);
 INSERT INTO `biotype` VALUES (25,'RNA-Seq_gene',1,1,'gene','otherfeatures',NULL,NULL,NULL,NULL,NULL,NULL);
 INSERT INTO `biotype` VALUES (26,'RNA-Seq_gene',1,1,'transcript','otherfeatures',NULL,NULL,NULL,NULL,NULL,NULL);
-INSERT INTO `biotype` VALUES (27,'TEC',1,1,'gene','core,vega',NULL,NULL,NULL,NULL,NULL,NULL);
+INSERT INTO `biotype` VALUES (27,'TEC',1,1,'gene','vega',0,'',NULL,NULL,9335,'2011-10-11 14:27:26');
 INSERT INTO `biotype` VALUES (28,'TEC',1,1,'transcript','core,vega',NULL,'',NULL,NULL,NULL,NULL);
 INSERT INTO `biotype` VALUES (29,'TR_gene',1,1,'gene','vega',NULL,NULL,NULL,NULL,NULL,NULL);
 INSERT INTO `biotype` VALUES (30,'TR_gene',1,1,'transcript','core,vega',NULL,NULL,NULL,NULL,NULL,NULL);
 INSERT INTO `biotype` VALUES (31,'TR_pseudogene',1,1,'gene','vega',NULL,NULL,NULL,NULL,NULL,NULL);
-INSERT INTO `biotype` VALUES (32,'TR_pseudogene',1,1,'transcript','core,vega',NULL,NULL,NULL,NULL,NULL,NULL);
+INSERT INTO `biotype` VALUES (32,'TR_pseudogene',1,1,'transcript','vega',0,NULL,NULL,NULL,9335,'2011-10-13 15:54:46');
 INSERT INTO `biotype` VALUES (33,'ambiguous_orf',1,1,'transcript','core,vega',NULL,NULL,NULL,NULL,NULL,NULL);
 INSERT INTO `biotype` VALUES (34,'antisense',1,1,'transcript','core,vega',NULL,NULL,NULL,NULL,NULL,NULL);
 INSERT INTO `biotype` VALUES (35,'cDNA_update',1,1,'gene','cdna',NULL,NULL,NULL,NULL,NULL,NULL);
@@ -3055,7 +3088,7 @@ INSERT INTO `biotype` VALUES (38,'cdna',1,1,'transcript','otherfeatures',NULL,NU
 INSERT INTO `biotype` VALUES (39,'disrupted_domain',1,1,'transcript','core,vega',NULL,NULL,NULL,NULL,NULL,NULL);
 INSERT INTO `biotype` VALUES (40,'est',1,1,'gene','otherfeatures',NULL,NULL,NULL,NULL,NULL,NULL);
 INSERT INTO `biotype` VALUES (41,'est',1,1,'transcript','otherfeatures',NULL,NULL,NULL,NULL,NULL,NULL);
-INSERT INTO `biotype` VALUES (42,'lincRNA',1,1,'gene','core',190,NULL,NULL,NULL,NULL,NULL);
+INSERT INTO `biotype` VALUES (42,'lincRNA',1,1,'gene','core,vega',190,'',NULL,NULL,9335,'2011-10-11 12:52:33');
 INSERT INTO `biotype` VALUES (43,'lincRNA',1,1,'transcript','core,vega',NULL,NULL,NULL,NULL,NULL,NULL);
 INSERT INTO `biotype` VALUES (44,'miRNA',1,1,'gene','core',70,NULL,NULL,NULL,NULL,NULL);
 INSERT INTO `biotype` VALUES (45,'miRNA',1,1,'transcript','core',NULL,NULL,NULL,NULL,NULL,NULL);
@@ -3067,7 +3100,7 @@ INSERT INTO `biotype` VALUES (50,'misc_RNA_pseudogene',1,1,'gene','core',75,NULL
 INSERT INTO `biotype` VALUES (51,'misc_RNA_pseudogene',1,1,'transcript','core',NULL,NULL,NULL,NULL,NULL,NULL);
 INSERT INTO `biotype` VALUES (52,'ncRNA',1,1,'gene','core',99,NULL,NULL,NULL,NULL,NULL);
 INSERT INTO `biotype` VALUES (53,'ncRNA',1,1,'transcript','core',NULL,NULL,NULL,NULL,NULL,NULL);
-INSERT INTO `biotype` VALUES (54,'non_coding',1,1,'gene','core,otherfeatures',NULL,NULL,NULL,NULL,NULL,NULL);
+INSERT INTO `biotype` VALUES (54,'non_coding',1,1,'gene','core,otherfeatures,vega',353,NULL,NULL,NULL,103537,'2011-10-17 11:29:08');
 INSERT INTO `biotype` VALUES (55,'non_coding',1,1,'transcript','core,otherfeatures,vega',NULL,NULL,NULL,NULL,NULL,NULL);
 INSERT INTO `biotype` VALUES (56,'nonsense_mediated_decay',1,1,'transcript','core,vega',NULL,NULL,NULL,NULL,NULL,NULL);
 INSERT INTO `biotype` VALUES (57,'polymorphic',1,1,'gene','vega',NULL,NULL,NULL,NULL,NULL,NULL);
@@ -3146,19 +3179,19 @@ INSERT INTO `biotype` VALUES (129,'RNase_P_RNA',1,0,'gene','otherfeatures',NULL,
 INSERT INTO `biotype` VALUES (130,'RNase_P_RNA',1,0,'transcript','otherfeatures',NULL,'From RefSeq import',5132,'2011-06-02 07:14:46',NULL,NULL);
 INSERT INTO `biotype` VALUES (131,'telomerase_RNA',1,0,'gene','otherfeatures',NULL,'From RefSeq import',5132,'2011-06-02 07:15:54',NULL,NULL);
 INSERT INTO `biotype` VALUES (132,'telomerase_RNA',1,0,'transcript','otherfeatures',NULL,'From RefSeq import',5132,'2011-06-02 07:16:03',NULL,NULL);
-INSERT INTO `biotype` VALUES (133,'sense_intronic',1,1,'transcript','core',NULL,NULL,97245,'2011-07-18 10:14:50',NULL,NULL);
-INSERT INTO `biotype` VALUES (134,'sense_intronic',1,1,'transcript','vega',NULL,NULL,97245,'2011-07-19 13:29:32',NULL,NULL);
-INSERT INTO `biotype` VALUES (135,'sense_overlapping',1,1,'transcript','vega',NULL,NULL,97245,'2011-07-19 13:29:37',NULL,NULL);
-INSERT INTO `biotype` VALUES (136,'antisense',1,1,'gene','vega',NULL,NULL,97245,'2011-07-19 13:30:11',NULL,NULL);
-INSERT INTO `biotype` VALUES (137,'lincRNA',1,1,'gene','vega',NULL,NULL,97245,'2011-07-19 13:30:14',NULL,NULL);
-INSERT INTO `biotype` VALUES (138,'sense_intronic',1,1,'gene','vega',NULL,NULL,97245,'2011-07-19 13:31:24',NULL,NULL);
-INSERT INTO `biotype` VALUES (139,'ambiguous_orf',1,1,'gene','vega',NULL,NULL,97245,'2011-07-19 13:31:27',NULL,NULL);
-INSERT INTO `biotype` VALUES (140,'retained_intron',1,1,'gene','vega',NULL,NULL,97245,'2011-07-19 13:31:31',NULL,NULL);
-INSERT INTO `biotype` VALUES (141,'non_coding',1,1,'gene','vega',NULL,NULL,97245,'2011-07-19 13:31:35',NULL,NULL);
-INSERT INTO `biotype` VALUES (142,'3prime_overlapping_ncrna',1,1,'gene','vega',NULL,NULL,97245,'2011-07-19 13:31:38',NULL,NULL);
-INSERT INTO `biotype` VALUES (143,'ncrna_host',1,1,'gene','vega',NULL,NULL,97245,'2011-07-19 13:31:42',NULL,NULL);
-INSERT INTO `biotype` VALUES (144,'sense_overlapping',1,1,'gene','vega',NULL,NULL,97245,'2011-07-19 13:31:47',NULL,NULL);
-INSERT INTO `biotype` VALUES (145,'sense_overlapping',1,1,'transcript','core',NULL,NULL,97245,'2011-07-20 10:09:57',NULL,NULL);
+INSERT INTO `biotype` VALUES (133,'sense_intronic',1,1,'transcript','core,vega',0,'',97245,'2011-07-18 10:14:50',9335,'2011-10-11 13:36:05');
+INSERT INTO `biotype` VALUES (134,'sense_intronic',0,1,'transcript','vega',NULL,NULL,97245,'2011-07-19 13:29:32',9335,'2011-10-11 13:36:11');
+INSERT INTO `biotype` VALUES (135,'sense_overlapping',1,1,'transcript','core,vega',0,'',97245,'2011-07-19 13:29:37',9335,'2011-10-11 14:26:29');
+INSERT INTO `biotype` VALUES (136,'antisense',1,1,'gene','core,vega',349,NULL,97245,'2011-07-19 13:30:11',103537,'2011-10-17 11:26:51');
+INSERT INTO `biotype` VALUES (137,'lincRNA',0,1,'gene','vega',NULL,NULL,97245,'2011-07-19 13:30:14',97245,'2011-10-11 13:28:24');
+INSERT INTO `biotype` VALUES (138,'sense_intronic',1,1,'gene','core,vega',350,NULL,97245,'2011-07-19 13:31:24',103537,'2011-10-17 11:27:12');
+INSERT INTO `biotype` VALUES (139,'ambiguous_orf',1,1,'gene','core,vega',351,NULL,97245,'2011-07-19 13:31:27',103537,'2011-10-17 11:27:40');
+INSERT INTO `biotype` VALUES (140,'retained_intron',1,1,'gene','core,vega',352,NULL,97245,'2011-07-19 13:31:31',103537,'2011-10-17 11:28:25');
+INSERT INTO `biotype` VALUES (141,'non_coding',0,1,'gene','vega',NULL,NULL,97245,'2011-07-19 13:31:35',9335,'2011-10-11 13:31:27');
+INSERT INTO `biotype` VALUES (142,'3prime_overlapping_ncrna',1,1,'gene','core,vega',356,NULL,97245,'2011-07-19 13:31:38',103537,'2011-10-17 11:30:25');
+INSERT INTO `biotype` VALUES (143,'ncrna_host',1,1,'gene','core,vega',354,NULL,97245,'2011-07-19 13:31:42',103537,'2011-10-17 11:29:36');
+INSERT INTO `biotype` VALUES (144,'sense_overlapping',1,1,'gene','core,vega',355,NULL,97245,'2011-07-19 13:31:47',103537,'2011-10-17 11:30:01');
+INSERT INTO `biotype` VALUES (145,'sense_overlapping',0,1,'transcript','core',NULL,NULL,97245,'2011-07-20 10:09:57',9335,'2011-10-11 14:26:35');
 INSERT INTO `biotype` VALUES (146,'TR_D_gene',1,1,'transcript','core',NULL,NULL,97245,'2011-07-20 10:10:01',NULL,NULL);
 INSERT INTO `biotype` VALUES (147,'TR_J_pseudogene',1,1,'transcript','core',NULL,NULL,97245,'2011-07-20 10:10:01',NULL,NULL);
 INSERT INTO `biotype` VALUES (148,'TR_D_gene',1,1,'gene','core',100,NULL,97245,'2011-07-20 10:10:01',NULL,NULL);
@@ -3166,6 +3199,8 @@ INSERT INTO `biotype` VALUES (149,'TR_J_pseudogene',1,1,'gene','core',67,NULL,97
 INSERT INTO `biotype` VALUES (150,'ncbi_pseudogene',1,0,'gene','otherfeatures',NULL,'Imported annotation from RefSeq',5132,'2011-08-06 09:03:27',NULL,NULL);
 INSERT INTO `biotype` VALUES (151,'ncbi_pseudogene',1,0,'transcript','otherfeatures',NULL,'Imported annotation from RefSeq',5132,'2011-08-06 09:04:11',NULL,NULL);
 INSERT INTO `biotype` VALUES (152,'ncbigene',1,0,'gene','otherfeatures',NULL,'Imported annotation from RefSeq',5132,'2011-08-06 09:04:25',NULL,NULL);
+INSERT INTO `biotype` VALUES (153,'non_stop_decay',1,1,'transcript','core,vega',0,'A new transcript biotype from Havana.',9335,'2011-10-11 12:28:06',9335,'2011-10-11 12:28:45');
+INSERT INTO `biotype` VALUES (154,'pre_miRNA',1,1,'transcript','core',0,'This is the pre miRNA information extracted from FlyBase annotations distinctive from the miRNA form for the same gene model.',98587,'2011-10-13 13:29:27',NULL,NULL);
 
 --
 -- Table structure for table `changelog`
@@ -3583,8 +3618,8 @@ INSERT INTO `changelog` VALUES (422,64,'New phenotype page','<p>New phenotype pa
 INSERT INTO `changelog` VALUES (423,64,'New LRG alignments','<p>New LRG alignments added - see <a title=\"LRG alignment\" href=\"http://www.ensembl.org/Homo_sapiens/LRG/Differences?lrg=LRG_53\" target=\"_self\">here</a> for an example on LRG_53.</p>','','handed_over','Variation','N','N','N','N','N','N','N','N/A',2,5132,'2011-09-09 10:46:46',102503,'2011-09-13 15:58:21',1);
 INSERT INTO `changelog` VALUES (424,65,'Ensembl 65 mart databases','<p>Full build of all 7 marts for all species</p>','','declared','Mart','N','N','N','N','N','N','N','N/A',2,25629,'2011-09-27 09:51:07',NULL,NULL,1);
 INSERT INTO `changelog` VALUES (425,65,'Xref projections','<p>Gene ontology (GO) identifiers and gene names will be projected for  all species. Modify Modify projection code to replace UniProt IDs with display labels where applicable.</p>','','declared','Core','N','N','N','N','N','N','N','N/A',2,25629,'2011-09-27 09:52:39',25629,'2011-09-30 10:33:21',1);
-INSERT INTO `changelog` VALUES (426,65,'Mouse cDNA update','<p>New cDNA db for mouse.</p>','','declared','Genebuild','N','N','N','N','N','N','N','new',2,102717,'2011-09-27 09:58:22',102717,'2011-10-10 12:25:54',1);
-INSERT INTO `changelog` VALUES (427,65,'New Chimpanzee assembly','<p>The first genebuild on new Chimpanzee assembly CHIMP2.1.4.</p>','','declared','Genebuild','Y','Y','Y','N','N','N','Y','new',2,102717,'2011-09-27 10:58:09',102717,'2011-09-27 10:58:36',1);
+INSERT INTO `changelog` VALUES (426,65,'Mouse cDNA update','<p>The latest set of cDNAs for mouse (as of 14/OCT/2011) from the European Nucleotide Archive and NCBI RefSeq were aligned to the current genome using Exonerate. There are 4.216 new cDNA and a total of 34,664 new alignments for Ensembl 65.</p>',NULL,'handed_over','Genebuild','N','N','N','N','N','N','N','new',2,102717,'2011-09-27 09:58:22',102717,'2011-10-17 13:04:14',1);
+INSERT INTO `changelog` VALUES (427,65,'New Chimpanzee assembly','<p>The first genebuild on new Chimpanzee assembly CHIMP2.1.4.</p>',NULL,'handed_over','Genebuild','Y','Y','Y','N','N','N','Y','new',2,102717,'2011-09-27 10:58:09',102717,'2011-10-13 12:04:48',1);
 INSERT INTO `changelog` VALUES (428,65,'LRG Import','<p>Import of new LRG sequences</p>','','declared','Core','N','N','N','N','N','N','N','N/A',2,97804,'2011-09-27 10:58:44',NULL,NULL,1);
 INSERT INTO `changelog` VALUES (429,65,'Retrieval of a Transcript\'s Gene','<p>Support has been added to retrieve the <tt>Bio::EnsEMBL::Gene</tt> from an instance of&nbsp;<tt>Bio::EnsEMBL::Transcript</tt>.</p>','','declared','Core','N','N','N','N','N','N','N','N/A',1,97804,'2011-09-27 12:43:28',NULL,NULL,1);
 INSERT INTO `changelog` VALUES (430,65,'Support for Slice Retrieval by a Location String','<p><tt>Bio::EnsEMBL::DBSQL::SliceAdaptor</tt> can retrieve a Slice for a toplevel location string</p>','','declared','Core','N','N','N','N','N','N','N','N/A',1,97804,'2011-09-27 12:45:02',NULL,NULL,1);
@@ -3605,15 +3640,15 @@ INSERT INTO `changelog` VALUES (444,65,'Remove 2-micron plasmid from S.cerevisia
 INSERT INTO `changelog` VALUES (445,65,'Updated otherfeatures db to reflect assembly change','','contact: arnaud@ebi.ac.uk','handed_over','EnsemblGenomes','Y','N','N','N','N','N','N','N/A',2,101255,'2011-09-28 15:11:24',101255,'2011-10-10 11:10:32',1);
 INSERT INTO `changelog` VALUES (446,65,'Updated funcgen db to reflect assembly change','','contact: arnaud@ebi.ac.uk','declared','EnsemblGenomes','Y','Y','N','N','N','N','N','N/A',2,101255,'2011-09-28 15:12:24',NULL,NULL,1);
 INSERT INTO `changelog` VALUES (447,65,'Updated variation db to reflect assembly change','','contact: arnaud@ebi.ac.uk','declared','EnsemblGenomes','Y','Y','N','N','N','N','N','N/A',2,101255,'2011-09-28 15:13:21',NULL,NULL,1);
-INSERT INTO `changelog` VALUES (448,65,'Update human otherfeatures db: new CCDS import','<pre>Update to CCDS set for human</pre>','','declared','Genebuild','N','Y','N','N','N','N','N','patched',2,102717,'2011-09-28 15:19:47',102717,'2011-09-29 09:45:20',1);
+INSERT INTO `changelog` VALUES (448,65,'Update human otherfeatures db: new CCDS import','<pre>Update to CCDS set for human</pre>',NULL,'handed_over','Genebuild','N','Y','N','N','N','N','N','patched',2,102717,'2011-09-28 15:19:47',102717,'2011-10-17 14:19:59',1);
 INSERT INTO `changelog` VALUES (449,65,'Updated mouse otherfeatures db: New CCDS import','<pre>Update to CCDS set for mouse</pre>','There is no update to the mouse core database this release therefore we will no update the CCDS models. This is a GENCODE requirement.','postponed','Genebuild','N','Y','N','N','N','N','N','patched',2,102717,'2011-09-28 15:20:32',102717,'2011-10-10 12:26:18',1);
 INSERT INTO `changelog` VALUES (450,65,'Data file support in scheme','<p>A new API and database structure for the storage of large datafile locations and the retrieval of said datafiles.</p>','','declared','Core','N','N','N','N','N','N','N','N/A',2,97804,'2011-09-28 16:12:15',NULL,NULL,1);
 INSERT INTO `changelog` VALUES (451,65,'Projection of annotation to GRC assembly patches','<p>Annotation from the primary assembly is projected to the assembly patches. The projected annotation is then supplemented with annotation based on evidence alignment. This annotation is stored in the human otherfeatures database.</p>','','declared','Genebuild','N','N','N','Y','N','N','N','patched',2,14183,'2011-09-29 09:38:22',NULL,NULL,1);
-INSERT INTO `changelog` VALUES (452,65,'Zebrafish VEGA Merge','<p><span style=\"color: #555555; font-family: \'Luxi Sans\', Helvetica, Arial, Geneva, sans-serif; font-size: 13px;\">Manual annotation of zebrafish from Vega has been updated.&nbsp;</span><span style=\"color: #555555; font-family: \'Luxi Sans\', Helvetica, Arial, Geneva, sans-serif; font-size: 13px;\">&nbsp;This represents the annotation presented in Vega release 45.&nbsp;</span></p>','','declared','Genebuild','N','Y','N','N','N','N','N','new',2,29,'2011-09-29 09:56:41',NULL,NULL,1);
-INSERT INTO `changelog` VALUES (453,65,'Zebrafish Markers','<p>Zebrafish SATMAP markers have been given a separate track so they can be easily distinguished from the other markers.</p>','','declared','Genebuild','N','N','N','N','N','N','N','N/A',2,29,'2011-09-29 09:59:12',NULL,NULL,1);
-INSERT INTO `changelog` VALUES (454,65,'MT annotation for Tasmanian Devil','<p><span style=\"color: #555555; font-family: \'Luxi Sans\', Helvetica, Arial, Geneva, sans-serif; font-size: 13px;\">\r\n<p style=\"font-size: 1em; padding: 0px; margin: 0px;\">MT sequences have been added to the main assembly.</p>\r\n<p style=\"font-size: 1em; padding: 0px; margin: 0px;\">Annotation for those sequences has also been provided</p>\r\n</span></p>','','declared','Genebuild','N','Y','N','N','N','N','N','patched',2,29,'2011-09-29 10:01:50',NULL,NULL,1);
+INSERT INTO `changelog` VALUES (452,65,'Zebrafish VEGA Merge','<p><span style=\"color: #555555; font-family: \'Luxi Sans\', Helvetica, Arial, Geneva, sans-serif; font-size: 13px;\">Manual annotation of zebrafish from Vega has been updated.&nbsp;</span><span style=\"color: #555555; font-family: \'Luxi Sans\', Helvetica, Arial, Geneva, sans-serif; font-size: 13px;\">&nbsp;This represents the annotation presented in Vega release 45.&nbsp;</span></p>','','handed_over','Genebuild','N','Y','N','N','N','N','N','new',2,29,'2011-09-29 09:56:41',29,'2011-10-12 08:34:25',1);
+INSERT INTO `changelog` VALUES (453,65,'Zebrafish Markers','<p>Zebrafish SATMAP markers have been given a separate track so they can be easily distinguished from the other markers.</p>','','handed_over','Genebuild','N','N','N','N','N','N','N','N/A',2,29,'2011-09-29 09:59:12',29,'2011-10-12 08:34:38',1);
+INSERT INTO `changelog` VALUES (454,65,'MT annotation for Tasmanian Devil','<p><span style=\"color: #555555; font-family: \'Luxi Sans\', Helvetica, Arial, Geneva, sans-serif; font-size: 13px;\"> </span></p>\r\n<p style=\"font-size: 1em; padding: 0px; margin: 0px;\">MT sequences have been added to the main assembly.</p>\r\n<p style=\"font-size: 1em; padding: 0px; margin: 0px;\">Annotation for those sequences has also been provided</p>\r\n<p>&nbsp;</p>','','handed_over','Genebuild','N','Y','N','N','N','N','N','patched',2,29,'2011-09-29 10:01:50',29,'2011-10-12 08:34:50',1);
 INSERT INTO `changelog` VALUES (455,65,'Structural variations','<p>Updates data and adds new studies</p>','','declared','Variation','N','N','N','N','N','N','N','N/A',3,102503,'2011-09-29 10:10:54',102503,'2011-09-29 10:20:03',1);
-INSERT INTO `changelog` VALUES (456,65,'Human dbSNP 134 import','<p>Imports of the dbSNP Build 134 for human.</p>\r\n<p>&nbsp;</p>\r\n<p>Import new data types:</p>\r\n<ul>\r\n<li>Global minor allele frequencies</li>\r\n<li>Clinical significance</li>\r\n<li>Suspect variants (will be failed with a new reason code)</li>\r\n</ul>\r\n<div style=\"color: #000000; font-family: Verdana, Arial, Helvetica, sans-serif; font-size: 10px; background-image: initial; background-attachment: initial; background-origin: initial; background-clip: initial; background-color: #ffffff; background-position: initial initial; background-repeat: initial initial; margin: 8px;\">\r\n<p>&nbsp;</p>\r\n</div>\r\n<p>&nbsp;</p>','','declared','Variation','N','N','N','N','N','N','Y','N/A',4,102503,'2011-09-29 10:12:28',102503,'2011-09-30 15:29:25',1);
+INSERT INTO `changelog` VALUES (456,65,'Human dbSNP 134 import','<p>Imports of the dbSNP Build 134 for human.</p>\r\n<p>&nbsp;</p>\r\n<p>Import new data types:</p>\r\n<ul>\r\n<li>Global minor allele frequencies</li>\r\n<li>Clinical significance</li>\r\n<li>Suspect variants (will be failed with a new reason code)</li>\r\n</ul>\r\n<p>Co-locating dbSNP variants will not be merged.</p>\r\n<ul>\r\n</ul>\r\n<div style=\"color: #000000; font-family: Verdana, Arial, Helvetica, sans-serif; font-size: 10px; background-image: initial; background-attachment: initial; background-origin: initial; background-clip: initial; background-color: #ffffff; background-position: initial initial; background-repeat: initial initial; margin: 8px;\">\r\n<p>&nbsp;</p>\r\n</div>\r\n<p>&nbsp;</p>',NULL,'declared','Variation','N','N','N','N','N','N','Y','N/A',4,102503,'2011-09-29 10:12:28',96712,'2011-10-19 14:21:07',1);
 INSERT INTO `changelog` VALUES (457,65,'Phenotype annotations','<p>Updates from the following sources:</p>\r\n<ul>\r\n<li>NHGRI GWAS catalog</li>\r\n<li>EGA</li>\r\n<li>OMIM</li>\r\n<li>UniProt</li>\r\n</ul>','','declared','Variation','N','N','N','N','N','N','N','N/A',2,102503,'2011-09-29 10:15:07',102503,'2011-09-29 10:15:59',0);
 INSERT INTO `changelog` VALUES (458,65,'Phenotype annotations','<p>Updates from the following sources:</p>\r\n<ul>\r\n<li>NHGRI GWAS catalog</li>\r\n<li>EGA</li>\r\n<li>OMIM</li>\r\n<li>UniProt</li>\r\n</ul>','','declared','Variation','N','N','N','N','N','N','N','N/A',2,102503,'2011-09-29 10:17:11',NULL,NULL,1);
 INSERT INTO `changelog` VALUES (459,65,'Remapping Chimpanzee variations','<p>Remaps the chimp variations to the new assembly (CHIMP2.1.4).</p>','','declared','Variation','N','N','N','N','N','N','Y','N/A',3,102503,'2011-09-29 10:19:30',102503,'2011-09-30 15:29:41',1);
@@ -3627,7 +3662,7 @@ INSERT INTO `changelog` VALUES (466,65,'external database references','<p><!--St
 INSERT INTO `changelog` VALUES (467,65,'Ancestral alleles','<p>Added ancestral alleles using Compara alignments</p>','','declared','Variation','N','N','N','N','N','N','N','N/A',2,102503,'2011-09-29 15:09:54',NULL,NULL,1);
 INSERT INTO `changelog` VALUES (468,65,'Import COSMIC release 55','<p>Import COSMIC\'s latest release</p>','','declared','Variation','N','N','N','N','N','N','N','N/A',2,101213,'2011-09-29 15:22:11',NULL,NULL,1);
 INSERT INTO `changelog` VALUES (469,65,'New data from dbSNP','<p>Import new data from dbSNP 134:</p>\r\n<p>- Global minor allele frequencies</p>\r\n<p>- Clinical significance</p>\r\n<p>- Suspect variants (will be failed with a new reason code)</p>\r\n<p>&nbsp;</p>\r\n<p>Schema changes to support this data (currently under design)</p>','','declared','Variation','N','N','N','N','N','N','N','N/A',2,101213,'2011-09-29 15:25:07',101213,'2011-09-29 15:39:19',0);
-INSERT INTO `changelog` VALUES (470,65,'Update to Ensembl-Havana GENCODE gene set (release 10)','<p>Updated Ensembl-Havana gene set (GENCODE release 10) based on updated Ensembl gene set and latest Havana gene annotation.</p>\r\n<p>&nbsp;</p>','','declared','Genebuild','N','Y','N','Y','N','N','N','new',4,9335,'2011-09-29 15:25:17',NULL,NULL,1);
+INSERT INTO `changelog` VALUES (470,65,'Update to Ensembl-Havana GENCODE gene set (release 10)','<p>Updated Ensembl-Havana gene set (GENCODE release 10) based on updated Ensembl gene set and latest Havana gene annotation.</p>\r\n<p>&nbsp;</p>',NULL,'handed_over','Genebuild','N','Y','N','Y','N','N','N','new',4,9335,'2011-09-29 15:25:17',9335,'2011-10-13 15:50:03',1);
 INSERT INTO `changelog` VALUES (471,65,'Protein function predictions for new human genes','<p>We will do an \'update\' run of the protein function prediction pipeline to compute predictions for new and updated human transcripts.</p>\r\n<p>&nbsp;</p>\r\n<p>We will also attempt a complete new run using Compara alignments in place of SIFT and PolyPhen\'s own alignment pipelines, depending on how this goes we may release this set or the update set described above.</p>','','declared','Variation','N','N','N','N','N','N','N','N/A',2,101213,'2011-09-29 15:28:27',101213,'2011-09-29 15:33:41',1);
 INSERT INTO `changelog` VALUES (472,65,'Vega human annotation updated','<p>Manual annotation of human from Havana has been updated. The data represent   the annotation presented in Vega release 45.</p>','','declared','Genebuild','N','Y','N','N','N','N','N','new',2,161,'2011-09-29 16:05:16',161,'2011-09-29 16:07:47',1);
 INSERT INTO `changelog` VALUES (473,65,'Vega zebrafish annotation updated','<p>Manual annotation of zebrafish from Havana has been updated. The data represent the  annotation presented in Vega release 45.</p>','','declared','Genebuild','N','Y','N','N','N','N','N','new',2,161,'2011-09-29 16:06:54',NULL,NULL,1);
@@ -3635,22 +3670,22 @@ INSERT INTO `changelog` VALUES (474,65,'Karyotype bands for patches','<p>Store k
 INSERT INTO `changelog` VALUES (475,65,'Splicing events','<p>Install code to run the alternative splicing events prediction pipeline and update the splicing event data for the species listed below. This is a legacy from the former ASD/ATD and ASTD EC projects hosted at the EBI.<br />ASTD computationally predicted genes in a similar way as Ensembl do every release with a focus on alternative mRNA<br />structures (splicing events, poly(A) sites, TSS) and features (ppt, exon-exon junction types)<br /><br />Since 2010, the storage and display of the alternative information is now an entire part of Ensembl for the following species:<br />&nbsp;&nbsp;&nbsp; - Homo sapiens,<br />&nbsp;&nbsp;&nbsp; - Mus musculus,<br />&nbsp;&nbsp;&nbsp; - Rattus norvegicus,<br />&nbsp;&nbsp;&nbsp; - Danio rerio,<br />&nbsp;&nbsp;&nbsp; - Caenorhabditis elegans,<br />&nbsp;&nbsp;&nbsp; - Drosophila melanogaster</p>','','declared','Core','N','N','N','N','N','N','N','N/A',2,25629,'2011-09-30 10:40:18',NULL,NULL,1);
 INSERT INTO `changelog` VALUES (476,65,'Updated Drosophila melanogaster gene models','<p><span style=\"color: #555555; font-family: \'Luxi Sans\', Helvetica, Arial, Geneva, sans-serif; font-size: 13px;\">FlyBase gene models based on release 5.39 (FB2011_07)</span></p>','','declared','EnsemblGenomes','N','Y','Y','N','Y','N','Y','new',2,98587,'2011-09-30 16:03:18',98587,'2011-10-04 14:24:33',0);
 INSERT INTO `changelog` VALUES (477,65,'Pairwise alignments','<p>&nbsp;</p>\r\n<ul>\r\n<li>[ ] human vs chimpanzee LastZ alignments</li>\r\n<li>[ ] human vs bushbaby LastZ&nbsp;alignments</li>\r\n<li>[ ] cod vs&nbsp; Danio rerio LastZ&nbsp;alignments</li>\r\n<li>[ ] cod vs stickleback LastZ&nbsp;alignments</li>\r\n</ul>\r\n<ul>\r\n<li>[ ] human vs cod Translated Blat&nbsp;alignments</li>\r\n</ul>','','declared','Compara','N','N','N','N','N','N','N','N/A',2,104596,'2011-09-30 16:16:03',98792,'2011-09-30 17:30:10',1);
-INSERT INTO `changelog` VALUES (478,65,'Multiple alignments','<ul>\r\n<li>[ ] 6way-primate epo alignments to incorporate new chimpanzee&nbsp;</li>\r\n<li>[ ] 12way-mammal-epo alignments to incorporate new chimpanzee</li>\r\n<li>[ ] 19way-amniota-pecan alignments to incorporate new chimpanzee</li>\r\n<li>[ ] 35way-mammal low-coverage-epo alignments (new chimpanzee and bushbaby)</li>\r\n<li>[ ] 6way-fish-epo alignments (addition of cod)</li>\r\n</ul>\r\n<h4><a name=\"Intentionsforrelease65-Syntenies\"></a></h4>','','declared','Compara','N','N','N','N','N','N','N','N/A',2,104596,'2011-09-30 16:16:56',NULL,NULL,1);
+INSERT INTO `changelog` VALUES (478,65,'Multiple alignments','<ul>\r\n<li>[ ] 6way-primate epo alignments to incorporate new chimpanzee&nbsp;</li>\r\n<li>[ ] 12way-mammal-epo alignments to incorporate new chimpanzee</li>\r\n<li>[ ] 19way-amniota-pecan alignments to incorporate new chimpanzee</li>\r\n<li>[ ] 35way-mammal low-coverage-epo alignments (new chimpanzee and bushbaby)</li>\r\n<li><span style=\"text-decoration: line-through;\">[ ] 6way-fish-epo alignments (addition of cod)</span> (cancelled)<span style=\"text-decoration: line-through;\"><br /></span></li>\r\n</ul>\r\n<h4><a name=\"Intentionsforrelease65-Syntenies\"></a></h4>',NULL,'declared','Compara','N','N','N','N','N','N','N','N/A',2,104596,'2011-09-30 16:16:56',104596,'2011-10-13 09:52:36',1);
 INSERT INTO `changelog` VALUES (479,65,'update variation predictions','','','declared','Variation','N','N','N','N','N','N','N','N/A',2,3,'2011-09-30 16:17:22',NULL,NULL,1);
 INSERT INTO `changelog` VALUES (480,65,'Syntenies','<p>[ ] human chimpanzee synteny</p>','','declared','Compara','N','N','N','N','N','N','N','N/A',2,104596,'2011-09-30 16:17:27',NULL,NULL,1);
 INSERT INTO `changelog` VALUES (481,65,'ProteinTrees and homologies','<p>GeneTrees (protein-coding) with new/updated genebuilds and assemblies</p>\r\n<ul>\r\n<li>Clustering using hcluster_sg</li>\r\n<li>Multiple sequence alignments using MCoffee or Mafft</li>\r\n<li>Phylogenetic reconstruction using TreeBeST</li>\r\n<li>Homology inference</li>\r\n<li>Pairwise gene-based dN/dS scores for high coverage species pairs only (both on orthologues and paralogues)</li>\r\n<li>GeneTree stable ID mapping</li>\r\n</ul>','','declared','Compara','N','N','N','N','N','N','N','N/A',2,104596,'2011-09-30 16:17:49',NULL,NULL,1);
 INSERT INTO `changelog` VALUES (482,65,'ncRNAtrees and homologies','<ul>\r\n<li>Classification based on Rfam model</li>\r\n<li>Multiple sequence alignments with infernal</li>\r\n<li>Phylogenetic reconstruction using RaxML</li>\r\n<li>Phylogenetic reconstruction using FastTree2 and RaxML-light for very big families</li>\r\n<li>Additional multiple sequence alignments with Prank (w/ genomic flanks)</li>\r\n<li>Additional phylogenetic reconstruction using PhyML and NJ</li>\r\n<li>Phylogenetic tree merging using TreeBeST</li>\r\n<li>Homology inference</li>\r\n</ul>','','declared','Compara','N','N','N','N','N','N','N','N/A',2,104596,'2011-09-30 16:18:17',NULL,NULL,1);
 INSERT INTO `changelog` VALUES (483,65,'Protein Families','<p>Updated MCL families including all Ensembl transcript isoforms  (including human non-reference haplotypes) and newest Uniprot Metazoa.</p>\r\n<ul>\r\n<li>Clustering by MCL</li>\r\n<li>Multiple Sequence Alignments with MAFFT</li>\r\n<li>Family stable ID mapping</li>\r\n</ul>','','declared','Compara','N','N','N','N','N','N','N','N/A',2,104596,'2011-09-30 16:19:46',NULL,NULL,1);
 INSERT INTO `changelog` VALUES (484,65,'Compara dumps','<ul>\r\n<li>[ ] EMF dumps for 19 way PECAN multiple aligments</li>\r\n<li>[ ] BED files for 19 way GERP constrained elements</li>\r\n<li>[ ] EMF dumps for 12 way EPO multiple aligments</li>\r\n<li>[ ] EMF dumps for 6way EPO multiple alignments</li>\r\n<li>[ ] EMF dumps for 35 way low-coverage alignments</li>\r\n<li>[ ] BED files for 35 way low-coverage alignments</li>\r\n<li>[ ] EMF dumps for 6way EPO fish multiple alignments</li>\r\n<li>[ ] BED dumps for 6way EPO fish multiple alignments</li>\r\n<li>[ ] Data dumps for ProteinTrees</li>\r\n<li>[ ] Data dumps for ncRNAtrees</li>\r\n<li>[ ] OrthoXML dumps for ProteinTrees</li>\r\n<li>[ ] OrthoXML dumps for ncRNAtrees</li>\r\n<li>[ ] maybe PhyloXML dumps for ProteinTrees ?</li>\r\n<li>[ ] maybe PhyloXML dumps for ncRNAtrees ?</li>\r\n<li>[ ] Ancestral sequences for primates</li>\r\n</ul>','','declared','Compara','N','N','N','N','N','N','N','N/A',2,104596,'2011-09-30 16:20:22',NULL,NULL,1);
-INSERT INTO `changelog` VALUES (485,65,'API/schema changes','<p>[ ] changes in the schema: adding a new \"header\" table for a tree root,  moving general properties of the tree into that table (including  protein_tree_stable_id)</p>','','declared','Compara','N','N','N','N','N','N','N','N/A',2,104596,'2011-09-30 16:21:39',NULL,NULL,1);
+INSERT INTO `changelog` VALUES (485,65,'API/schema changes','<p>[ ] changes in the schema: adding a new \"header\" table for a tree root,  moving general properties of the tree into that table (including  protein_tree_stable_id)</p>',NULL,'declared','Compara','N','N','N','N','N','N','N','N/A',1,104596,'2011-09-30 16:21:39',96753,'2011-10-14 09:13:07',1);
 INSERT INTO `changelog` VALUES (486,65,'API/schema changes','<p>[ ] changes in the schema: adding tables for tree\'s properties and   node\'s properties to make tag storage and extraction more efficient</p>','','declared','Compara','N','N','N','N','N','N','N','N/A',2,104596,'2011-09-30 16:22:01',NULL,NULL,1);
 INSERT INTO `changelog` VALUES (487,65,'API/schema changes','<p>[ ] changes in the schema: keeping the super-tree structures in  protein_tree_node (thus removing all the super_protein_tree_* tables)</p>','','declared','Compara','N','N','N','N','N','N','N','N/A',2,104596,'2011-09-30 16:22:20',NULL,NULL,1);
 INSERT INTO `changelog` VALUES (488,65,'API/schema changes','<p>[ ] left_index and right_index now start from 1 for every tree. This should avoid the deadlocks on lr_index_offset</p>','','declared','Compara','N','N','N','N','N','N','N','N/A',2,104596,'2011-09-30 16:22:41',NULL,NULL,1);
-INSERT INTO `changelog` VALUES (489,65,'API/schema changes','<p>[ ] clever usage of partitions for the peptide_align_features_* tables</p>','','declared','Compara','N','N','N','N','N','N','N','N/A',2,104596,'2011-09-30 16:22:57',NULL,NULL,1);
+INSERT INTO `changelog` VALUES (489,65,'API/schema changes','<p>[ ] clever usage of partitions for the peptide_align_features_* tables</p>',NULL,'cancelled','Compara','N','N','N','N','N','N','N','N/A',2,104596,'2011-09-30 16:22:57',104596,'2011-10-13 09:48:08',1);
 INSERT INTO `changelog` VALUES (490,65,'API/schema changes','<p>[ ] bugfix: Storing several lost_taxon_id for each node</p>','','declared','Compara','N','N','N','N','N','N','N','N/A',2,104596,'2011-09-30 16:23:13',NULL,NULL,1);
 INSERT INTO `changelog` VALUES (491,65,'API/schema changes','<p>[ ] rationalise the use of tags in protein_tree_tag:</p>','','declared','Compara','N','N','N','N','N','N','N','N/A',2,104596,'2011-09-30 16:23:25',NULL,NULL,1);
 INSERT INTO `changelog` VALUES (492,65,'API/schema changes','<p>[ ] Families and Homologies should consist of AlignedMembers, not of Member-Attribute pairs ??</p>','','declared','Compara','N','N','N','N','N','N','N','N/A',2,104596,'2011-09-30 16:23:42',NULL,NULL,1);
-INSERT INTO `changelog` VALUES (493,65,'API/schema changes','<p>[ ] DnaFragRegion and SyntenyRegion should not be inheriting from NestedSet ??</p>','','declared','Compara','N','N','N','N','N','N','N','N/A',2,104596,'2011-09-30 16:23:55',NULL,NULL,1);
+INSERT INTO `changelog` VALUES (493,65,'API/schema changes','<p>[ ] DnaFragRegion and SyntenyRegion should not be inheriting from NestedSet</p>',NULL,'declared','Compara','N','N','N','N','N','N','N','N/A',2,104596,'2011-09-30 16:23:55',104596,'2011-10-13 09:45:55',1);
 INSERT INTO `changelog` VALUES (494,65,'API/schema changes','<p>[ ] Having a base class \"AlignedMemberSet\" for Family, Homology,  ProteinTree with methods like getAllMembers, getSimpleAlign, etc ??</p>','','declared','Compara','N','N','N','N','N','N','N','N/A',2,104596,'2011-09-30 16:24:07',NULL,NULL,1);
 INSERT INTO `changelog` VALUES (495,65,'Web','<p>[ ] Statistics of protein trees and homologies on the web (either static files, or dynamic page + table)</p>\r\n<h3><a name=\"Intentionsforrelease65-Web\"></a></h3>','','declared','Compara','N','N','N','N','N','N','N','N/A',2,104596,'2011-09-30 16:24:27',NULL,NULL,1);
 INSERT INTO `changelog` VALUES (496,65,'Web','<p>[ ] OrthoXML export function (for any gene tree)</p>','','declared','Compara','N','N','N','N','N','N','N','N/A',2,104596,'2011-09-30 16:24:40',NULL,NULL,1);
@@ -3658,8 +3693,8 @@ INSERT INTO `changelog` VALUES (497,65,'Web','<p>[ ] Tree support information (w
 INSERT INTO `changelog` VALUES (498,65,'Web','<p>[ ] Information about lost taxa</p>','','declared','Compara','N','N','N','N','N','N','N','N/A',2,104596,'2011-09-30 16:25:06',NULL,NULL,1);
 INSERT INTO `changelog` VALUES (499,65,'LRG variation','<p>Submitted variation data for genes DMD (LRG_199) and CYBB (LRG_53)</p>','','declared','Variation','N','N','N','N','N','N','N','N/A',2,104595,'2011-10-03 13:00:33',NULL,NULL,1);
 INSERT INTO `changelog` VALUES (500,65,'Experiment View','<p>An Experiment view has been developed to improve access and visualisation of experimental meta data. &nbsp;This will include archive IDs and source projects&nbsp;used as input for the Human and Mouse Regulatory builds.</p>','','declared','Funcgen','N','N','N','N','N','N','N','N/A',2,1273,'2011-10-04 14:25:37',NULL,NULL,1);
-INSERT INTO `changelog` VALUES (501,65,'Updated Drosophila melanogaster gene models','<p>\r\n<p class=\"p1\">FlyBase gene models based on release 5.39 (FB2011_07)</p>\r\n<p class=\"p1\">Regulation database will be updated</p>\r\n<p class=\"p1\">Variation database will be updated</p>\r\n</p>','','declared','EnsemblGenomes','N','Y','Y','N','Y','N','N','new',2,98587,'2011-10-04 14:26:23',NULL,NULL,1);
-INSERT INTO `changelog` VALUES (502,65,'Updated Drosophila melanogaster Regulation database','<p>Regulation database updated to reflect new gene models.</p>','','declared','EnsemblGenomes','N','Y','Y','N','Y','N','N','new',2,98587,'2011-10-04 14:47:15',NULL,NULL,1);
+INSERT INTO `changelog` VALUES (501,65,'Updated Drosophila melanogaster gene models','<p>&nbsp;</p>\r\n<p class=\"p1\">FlyBase gene models based on release 5.39 (FB2011_07)</p>\r\n<p class=\"p1\">Regulation database will be updated</p>\r\n<p class=\"p1\">Variation database will be updated</p>\r\n<p>&nbsp;</p>',NULL,'handed_over','EnsemblGenomes','N','Y','Y','N','Y','N','N','new',2,98587,'2011-10-04 14:26:23',98587,'2011-10-13 13:45:04',1);
+INSERT INTO `changelog` VALUES (502,65,'Updated Drosophila melanogaster Regulation database','<p>Regulation database updated to reflect new gene models.</p>',NULL,'handed_over','EnsemblGenomes','N','Y','Y','N','Y','N','N','new',2,98587,'2011-10-04 14:47:15',98587,'2011-10-13 13:45:34',1);
 INSERT INTO `changelog` VALUES (503,65,'Updated Drosophila melanogaster Variation database','<p>Variation database updated to reflect transcript model changes.</p>','','declared','EnsemblGenomes','N','Y','Y','N','N','N','N','new',2,98587,'2011-10-04 14:48:29',NULL,NULL,1);
 
 --
@@ -4745,7 +4780,6 @@ INSERT INTO `db` VALUES (726,51,1,'otherfeatures','65',1,'','ens-staging1');
 INSERT INTO `db` VALUES (727,28,1,'otherfeatures','65',2,'','ens-staging2');
 INSERT INTO `db` VALUES (728,6,1,'otherfeatures','65',3,'','ens-staging1');
 INSERT INTO `db` VALUES (729,36,1,'core','65',1,'','ens-staging2');
-INSERT INTO `db` VALUES (730,34,1,'funcgen','65',21,'','ens-staging2');
 INSERT INTO `db` VALUES (731,16,1,'core','65',1,'','ens-staging1');
 INSERT INTO `db` VALUES (732,15,1,'variation','65',2,'','ens-staging1');
 INSERT INTO `db` VALUES (733,12,1,'core','65',1,'','ens-staging1');
@@ -4775,6 +4809,73 @@ INSERT INTO `db` VALUES (760,52,1,'otherfeatures','65',21,'','ens-staging2');
 INSERT INTO `db` VALUES (761,57,1,'core','65',1,'','ens-staging1');
 INSERT INTO `db` VALUES (762,31,1,'otherfeatures','65',3,'','ens-staging2');
 INSERT INTO `db` VALUES (763,31,1,'core','65',3,'','ens-staging2');
+INSERT INTO `db` VALUES (764,39,1,'funcgen','65',4,'','ens-staging2');
+INSERT INTO `db` VALUES (765,21,1,'core','65',37,'','ens-staging1');
+INSERT INTO `db` VALUES (766,10,1,'vega','65',9,'','ens-staging1');
+INSERT INTO `db` VALUES (767,13,1,'variation','65',539,'','ens-staging1');
+INSERT INTO `db` VALUES (768,13,1,'otherfeatures','65',539,'','ens-staging1');
+INSERT INTO `db` VALUES (769,39,1,'variation','65',4,'','ens-staging2');
+INSERT INTO `db` VALUES (770,13,1,'funcgen','65',539,'','ens-staging1');
+INSERT INTO `db` VALUES (771,13,1,'core','65',539,'','ens-staging1');
+INSERT INTO `db` VALUES (772,10,1,'coreexpressionest','65',9,'','ens-staging1');
+INSERT INTO `db` VALUES (773,21,1,'coreexpressionest','65',37,'','ens-staging1');
+INSERT INTO `db` VALUES (774,21,1,'coreexpressionatlas','65',37,'','ens-staging1');
+INSERT INTO `db` VALUES (775,34,1,'funcgen','65',214,'','ens-staging2');
+INSERT INTO `db` VALUES (776,27,1,'cdna','65',37,'','ens-staging2');
+
+--
+-- Temporary table structure for view `db_list`
+--
+
+/*!50001 CREATE TABLE `db_list` (
+  `db_id` int(10) unsigned,
+  `full_db_name` varbinary(297)
+) */;
+
+--
+-- Temporary table structure for view `external_db`
+--
+
+/*!50001 CREATE TABLE `external_db` (
+  `external_db_id` int(10) unsigned,
+  `db_name` varchar(100),
+  `db_release` varchar(255),
+  `status` enum('KNOWNXREF','KNOWN','XREF','PRED','ORTH','PSEUDO'),
+  `priority` int(11),
+  `db_display_name` varchar(255),
+  `type` enum('ARRAY','ALT_TRANS','ALT_GENE','MISC','LIT','PRIMARY_DB_SYNONYM','ENSEMBL'),
+  `secondary_db_name` varchar(255),
+  `secondary_db_table` varchar(255),
+  `description` text
+) */;
+
+--
+-- Temporary table structure for view `full_analysis_description`
+--
+
+/*!50001 CREATE TABLE `full_analysis_description` (
+  `full_db_name` varbinary(297),
+  `logic_name` varchar(128),
+  `description` text,
+  `display_label` varchar(256),
+  `displayable` tinyint(1),
+  `web_data` text
+) */;
+
+--
+-- Temporary table structure for view `logic_name_overview`
+--
+
+/*!50001 CREATE TABLE `logic_name_overview` (
+  `analysis_web_data_id` int(10) unsigned,
+  `logic_name` varchar(128),
+  `analysis_description_id` int(10) unsigned,
+  `species` varchar(255),
+  `species_id` int(10) unsigned,
+  `db_type` set('cdna','core','funcgen','otherfeatures','rnaseq','vega'),
+  `web_data_id` int(10) unsigned,
+  `displayable` tinyint(1)
+) */;
 
 --
 -- Table structure for table `master_attrib_type`
@@ -5013,6 +5114,15 @@ INSERT INTO `master_attrib_type` VALUES (328,'_rib_frameshift','Ribosomal Frames
 INSERT INTO `master_attrib_type` VALUES (345,'vega_ref_chrom','Vega reference chromosome','Haplotypes reference a regular chromosome (indicated in the value of the attribute)',1,NULL,NULL,NULL,NULL);
 INSERT INTO `master_attrib_type` VALUES (346,'PutPCCount','protein_coding_PUTATIVE','Number of Putative Protein Coding',1,NULL,NULL,NULL,NULL);
 INSERT INTO `master_attrib_type` VALUES (347,'proj_alt_seq','Projection altered sequence','Projected sequence differs from original',1,NULL,'2011-06-27 09:33:51',NULL,NULL);
+INSERT INTO `master_attrib_type` VALUES (348,'hav_gene_type','Havana gene biotype','Gene biotype assigned by Havana',1,9335,'2011-10-11 12:40:23',NULL,NULL);
+INSERT INTO `master_attrib_type` VALUES (349,'GeneNo_asense','antisense Gene Count','Number of antisense Genes',1,103537,'2011-10-17 10:44:02',NULL,NULL);
+INSERT INTO `master_attrib_type` VALUES (350,'GeneNo_sense_in','sense_intronic Gene Count','Number of sense_intronic Genes',1,103537,'2011-10-17 10:47:31',NULL,NULL);
+INSERT INTO `master_attrib_type` VALUES (351,'GeneNo_amb_orf','ambiguous_orf Gene Count','Number of ambiguous_orf Genes',1,103537,'2011-10-17 10:49:00',NULL,NULL);
+INSERT INTO `master_attrib_type` VALUES (352,'GeneNo_ret_int','retained_intron Gene Count','Number of retained_intron Genes',1,103537,'2011-10-17 10:49:59',NULL,NULL);
+INSERT INTO `master_attrib_type` VALUES (353,'GeneNo_non_cod','non_coding Gene Count','Number of non_coding Genes',1,103537,'2011-10-17 10:52:17',NULL,NULL);
+INSERT INTO `master_attrib_type` VALUES (354,'GeneNo_ncrna_h','ncrna_host Gene Count','Number of ncrna_host Genes',1,103537,'2011-10-17 10:53:12',NULL,NULL);
+INSERT INTO `master_attrib_type` VALUES (355,'GeneNo_sens_ov','sense_overlapping Gene Count','Number of sense_overlapping Genes',1,103537,'2011-10-17 10:54:08',NULL,NULL);
+INSERT INTO `master_attrib_type` VALUES (356,'GeneNo_3prime','3prime_overlapping Gene Count','Number of 3prime_overlapping Genes',1,103537,'2011-10-17 10:56:43',NULL,NULL);
 
 --
 -- Table structure for table `master_external_db`
@@ -5021,7 +5131,7 @@ INSERT INTO `master_attrib_type` VALUES (347,'proj_alt_seq','Projection altered 
 SET @saved_cs_client     = @@character_set_client;
 SET character_set_client = utf8;
 CREATE TABLE `master_external_db` (
-  `external_db_id` smallint(5) unsigned NOT NULL,
+  `external_db_id` int(10) unsigned NOT NULL,
   `db_name` varchar(100) NOT NULL,
   `db_release` varchar(255) DEFAULT NULL,
   `status` enum('KNOWNXREF','KNOWN','XREF','PRED','ORTH','PSEUDO') NOT NULL,
@@ -5128,11 +5238,11 @@ INSERT INTO `master_external_db` VALUES (2305,'Vega_gene_like',NULL,'XREF',5,'Ve
 INSERT INTO `master_external_db` VALUES (2310,'Vega_transcript',NULL,'KNOWNXREF',160,'Vega transcript','MISC',NULL,NULL,NULL,1,NULL,NULL,NULL,NULL);
 INSERT INTO `master_external_db` VALUES (2315,'Vega_transcript_like',NULL,'XREF',5,'Vega transcript like','MISC',NULL,NULL,NULL,1,NULL,NULL,NULL,NULL);
 INSERT INTO `master_external_db` VALUES (2320,'Vega_translation',NULL,'KNOWNXREF',5,'Vega translation','MISC',NULL,NULL,NULL,1,NULL,NULL,NULL,NULL);
-INSERT INTO `master_external_db` VALUES (2400,'wormbase_gene',NULL,'KNOWN',5,'Wormbase Gene','MISC',NULL,NULL,NULL,1,NULL,NULL,NULL,NULL);
-INSERT INTO `master_external_db` VALUES (2410,'wormbase_transcript',NULL,'KNOWN',5,'Wormbase Transcript','MISC',NULL,NULL,NULL,1,NULL,NULL,NULL,NULL);
+INSERT INTO `master_external_db` VALUES (2400,'wormbase_gene',NULL,'KNOWN',5,'WormBase Gene','MISC',NULL,NULL,NULL,1,NULL,NULL,14179,'2011-10-13 11:24:21');
+INSERT INTO `master_external_db` VALUES (2410,'wormbase_transcript',NULL,'KNOWN',5,'WormBase Transcript','MISC',NULL,NULL,NULL,1,NULL,NULL,14179,'2011-10-13 11:27:25');
 INSERT INTO `master_external_db` VALUES (2420,'wormpep_id',NULL,'KNOWN',5,'Wormpep ID','MISC',NULL,NULL,NULL,1,NULL,NULL,NULL,NULL);
-INSERT INTO `master_external_db` VALUES (2430,'wormbase_pseudogene',NULL,'PSEUDO',5,'Wormbase Pseudogene','MISC',NULL,NULL,NULL,1,NULL,NULL,NULL,NULL);
-INSERT INTO `master_external_db` VALUES (2440,'wormbase_locus',NULL,'KNOWN',5,'Wormbase Locus','MISC',NULL,NULL,NULL,1,NULL,NULL,NULL,NULL);
+INSERT INTO `master_external_db` VALUES (2430,'wormbase_pseudogene',NULL,'PSEUDO',5,'WormBase Pseudogene','MISC',NULL,NULL,NULL,1,NULL,NULL,14179,'2011-10-13 11:27:13');
+INSERT INTO `master_external_db` VALUES (2440,'wormbase_locus',NULL,'KNOWN',5,'WormBase Locus','MISC',NULL,NULL,NULL,1,NULL,NULL,14179,'2011-10-13 11:26:59');
 INSERT INTO `master_external_db` VALUES (2510,'ZFIN_ID',NULL,'KNOWNXREF',260,'ZFIN','PRIMARY_DB_SYNONYM',NULL,NULL,NULL,1,NULL,NULL,NULL,NULL);
 INSERT INTO `master_external_db` VALUES (2530,'ZFIN_xpat',NULL,'KNOWNXREF',4,'ZFIN expression patterns','MISC',NULL,NULL,NULL,1,NULL,NULL,NULL,NULL);
 INSERT INTO `master_external_db` VALUES (2600,'GeneDB',NULL,'KNOWN',5,'GeneDB','MISC',NULL,NULL,NULL,1,NULL,NULL,NULL,NULL);
@@ -5244,7 +5354,7 @@ INSERT INTO `master_external_db` VALUES (9700,'CioSav_est',NULL,'XREF',40,'Ciona
 INSERT INTO `master_external_db` VALUES (9800,'kyotograil_2004',NULL,'PRED',30,'Ciona intestinalis Kyotograil 2004 predictions','MISC',NULL,NULL,NULL,1,NULL,NULL,NULL,NULL);
 INSERT INTO `master_external_db` VALUES (9900,'kyotograil_2005',NULL,'PRED',30,'Ciona intestinalis Kyotograil 2005 predictions','MISC',NULL,NULL,NULL,1,NULL,NULL,NULL,NULL);
 INSERT INTO `master_external_db` VALUES (9950,'Kyoto_University',NULL,'KNOWN',5,'Kyoto University','MISC',NULL,NULL,NULL,1,NULL,'2011-08-25 08:02:58',NULL,NULL);
-INSERT INTO `master_external_db` VALUES (10000,'wormbase_id',NULL,'XREF',30,'Generic exdb for worbase id of any type for feature table','MISC',NULL,NULL,NULL,1,NULL,NULL,NULL,NULL);
+INSERT INTO `master_external_db` VALUES (10000,'wormbase_id',NULL,'XREF',30,'Generic exdb for WormBase id of any type for feature table','MISC',NULL,NULL,NULL,1,NULL,NULL,14179,'2011-10-13 11:26:46');
 INSERT INTO `master_external_db` VALUES (10100,'EPD',NULL,'KNOWNXREF',5,'Eukaryotic Promoter Database (Bucher)','MISC',NULL,NULL,NULL,1,NULL,NULL,NULL,NULL);
 INSERT INTO `master_external_db` VALUES (10200,'GPCR',NULL,'KNOWNXREF',5,'The G protein-coupled receptor database','MISC',NULL,NULL,NULL,1,NULL,NULL,NULL,NULL);
 INSERT INTO `master_external_db` VALUES (10300,'MEROPS',NULL,'KNOWNXREF',5,'MEROPS - the Peptidase Database','MISC',NULL,NULL,NULL,1,NULL,NULL,NULL,NULL);
@@ -5498,6 +5608,7 @@ INSERT INTO `master_external_db` VALUES (50633,'GRC_human_primary_assembly',NULL
 INSERT INTO `master_external_db` VALUES (50634,'Ens_Ga_gene',NULL,'XREF',5,'Ensembl Stickleback Gene','MISC',NULL,NULL,NULL,1,5132,'2011-09-11 10:34:42',NULL,NULL);
 INSERT INTO `master_external_db` VALUES (50635,'Ens_Ga_transcript',NULL,'XREF',170,'Ensembl Stickleback Transcript','MISC',NULL,NULL,NULL,1,5132,'2011-09-11 10:37:49',NULL,NULL);
 INSERT INTO `master_external_db` VALUES (50636,'Ens_Ga_translation',NULL,'XREF',5,'Ensembl Stickleback Translation','MISC',NULL,NULL,NULL,0,5132,'2011-09-11 10:38:53',NULL,NULL);
+INSERT INTO `master_external_db` VALUES (50637,'CSAC',NULL,'KNOWN',5,'Chimpanzee Sequencing and Analysis Consortium','MISC',NULL,NULL,NULL,1,102717,'2011-10-11 12:36:52',102717,'2011-10-12 10:43:09');
 
 --
 -- Table structure for table `master_misc_set`
@@ -5811,6 +5922,18 @@ INSERT INTO `meta_key_species` VALUES (84,49);
 INSERT INTO `meta_key_species` VALUES (86,1);
 
 --
+-- Temporary table structure for view `misc_set`
+--
+
+/*!50001 CREATE TABLE `misc_set` (
+  `misc_set_id` smallint(5) unsigned,
+  `code` varchar(25),
+  `name` varchar(255),
+  `description` text,
+  `max_length` int(10) unsigned
+) */;
+
+--
 -- Table structure for table `species`
 --
 
@@ -5896,7 +6019,7 @@ INSERT INTO `species` VALUES (55,'petromyzon_marinus','sea lamprey','Lamprey',NU
 INSERT INTO `species` VALUES (56,'sarcophilus_harrisii','Tasmanian devil','Tasmanian devil',NULL,NULL,1,97245,'2011-07-05 11:47:00',NULL,NULL);
 INSERT INTO `species` VALUES (57,'gadus_morhua','Atlantic cod','Atlantic cod','8049',NULL,1,5132,'2011-08-15 15:33:07',NULL,NULL);
 INSERT INTO `species` VALUES (58,'mustela_putorius_furo','Domestic ferret','Ferret',NULL,NULL,1,101214,'2011-08-17 14:50:17',NULL,NULL);
-INSERT INTO `species` VALUES (59,'','','',NULL,NULL,1,NULL,NULL,NULL,NULL);
+INSERT INTO `species` VALUES (60,'cricetulus_griseus','Chinese hamster','Chinese hamster',NULL,NULL,0,31,'2011-10-14 15:05:14',NULL,NULL);
 
 --
 -- Table structure for table `species_backup`
@@ -5924,6 +6047,33 @@ SET character_set_client = @saved_cs_client;
 --
 -- ORDER BY:  `species_id`
 
+
+--
+-- Temporary table structure for view `unconnected_analyses`
+--
+
+/*!50001 CREATE TABLE `unconnected_analyses` (
+  `analysis_description_id` int(10) unsigned,
+  `logic_name` varchar(128)
+) */;
+
+--
+-- Temporary table structure for view `unmapped_reason`
+--
+
+/*!50001 CREATE TABLE `unmapped_reason` (
+  `unmapped_reason_id` smallint(5) unsigned,
+  `summary_description` varchar(255),
+  `full_description` varchar(255)
+) */;
+
+--
+-- Temporary table structure for view `unused_web_data`
+--
+
+/*!50001 CREATE TABLE `unused_web_data` (
+  `web_data_id` int(10) unsigned
+) */;
 
 --
 -- Table structure for table `web_data`
@@ -5978,7 +6128,7 @@ INSERT INTO `web_data` VALUES (36,'{\'default\' => {\'contigviewbottom\' => \'st
 INSERT INTO `web_data` VALUES (37,'{\'colour_key\' => \'[logic_name]_[biotype]\',\'label_key\' => \'Vega Havana [biotype]\'}',NULL,NULL,NULL,NULL);
 INSERT INTO `web_data` VALUES (38,'{\'caption\' => \'Ensembl/Havana Ig gene\',\'colour_key\' => \'[biotype]\',\'default\' => {\'MultiBottom\' => \'collapsed_label\',\'MultiTop\' => \'gene_label\',\'alignsliceviewbottom\' => \'as_collapsed_label\',\'contigviewbottom\' => \'transcript_label\',\'contigviewtop\' => \'gene_label\',\'cytoview\' => \'gene_label\'},\'key\' => \'merged_ig_genes\',\'label_key\' => \'[text_label] [display_label]\',\'multi_name\' => \'Ensembl IG genes, or Merged Ensembl and Havana IG genes\',\'name\' => \'Merged Ensembl and Havana Ig/T-cell receptor genes\'}',NULL,NULL,NULL,NULL);
 INSERT INTO `web_data` VALUES (39,'{\'default\' => {\'contigviewbottom\' => \'stack\'},\'gene\' => {\'do_not_display\' => 1},\'key\' => \'species_specific_cdna\',\'label_key\' => \'[text_label] [display_label]\',\'multi_name\' => \'Mouse/Human specific cDNA\',\'name\' => \'Mouse RefSeq/ENA cDNA\',\'type\' => \'cdna\'}',NULL,NULL,NULL,NULL);
-INSERT INTO `web_data` VALUES (41,'{\'caption\' => \'Genes (Worm)\',\'default\' => {\'MultiBottom\' => \'collapsed_label\',\'MultiTop\' => \'gene_label\',\'alignsliceviewbottom\' => \'as_collapsed_label\',\'contigviewbottom\' => \'transcript_label\',\'contigviewtop\' => \'gene_label\',\'cytoview\' => \'gene_label\'},\'key\' => \'wormbase\',\'label_key\' => \'[text_label] [display_label]\',\'name\' => \'Wormbase\'}',NULL,NULL,NULL,NULL);
+INSERT INTO `web_data` VALUES (41,'{\n  \'caption\' => \'Genes (WormBase)\',\n  \'default\' => {\n    \'MultiBottom\' => \'collapsed_label\',\n    \'MultiTop\' => \'gene_label\',\n    \'alignsliceviewbottom\' => \'as_collapsed_label\',\n    \'contigviewbottom\' => \'transcript_label\',\n    \'contigviewtop\' => \'gene_label\',\n    \'cytoview\' => \'gene_label\'\n  },\n  \'key\' => \'wormbase\',\n  \'label_key\' => \'[biotype]\',\n  \'name\' => \'WormBase\'\n}',NULL,NULL,896,'2011-10-13 15:19:15');
 INSERT INTO `web_data` VALUES (42,'{\'gene\' => {\'do_not_display\' => \'1\'},\'type\' => \'est\'}',NULL,NULL,NULL,NULL);
 INSERT INTO `web_data` VALUES (43,'{\'colour_key\' => \'[biotype]\',\'default\' => {\'MultiBottom\' => \'collapsed_label\',\'MultiTop\' => \'gene_label\',\'alignsliceviewbottom\' => \'as_collapsed_label\',\'contigviewbottom\' => \'transcript_label\',\'contigviewtop\' => \'gene_label\',\'cytoview\' => \'gene_label\'},\'label_key\' => \'[biotype]\'}',NULL,NULL,NULL,NULL);
 INSERT INTO `web_data` VALUES (44,'{\'colour_key\' => \'[logic_name]_[biotype]\',\'label_key\' => \'Vega External [biotype]\'}',NULL,NULL,NULL,NULL);
@@ -5994,9 +6144,9 @@ INSERT INTO `web_data` VALUES (57,'{\'caption\' => \'BGI gene predictions\',\'co
 INSERT INTO `web_data` VALUES (59,'{\'colour_key\' => \'[biotype]\',\'label_key\' => \'[biotype] [display_label]\'}',NULL,NULL,NULL,NULL);
 INSERT INTO `web_data` VALUES (60,'{\'caption\' => \'Ensembl/Havana merge lincRNA gene\',\'colour_key\' => \'lincrna\',\'default\' => {\'MultiBottom\' => \'collapsed_label\',\'MultiTop\' => \'gene_label\',\'alignsliceviewbottom\' => \'as_collapsed_label\',\'contigviewbottom\' => \'transcript_label\',\'contigviewtop\' => \'gene_label\',\'cytoview\' => \'gene_label\'},\'key\' => \'lincrna_gene\',\'label_key\' => \'[biotype]\',\'multi_name\' => \'Merged Ensembl and Havana lincRNA genes\',\'name\' => \'Merged Ensembl and Havana lincRNA genes\'}',NULL,NULL,NULL,NULL);
 INSERT INTO `web_data` VALUES (62,'{\'colour_key\' => \'human_rnaseq\',\'label_key\' => \'RNASeq [biotype]\',\'type\' => \'rnaseq\',\'zmenu\' => \'RNASeq\'}',NULL,NULL,NULL,NULL);
-INSERT INTO `web_data` VALUES (64,'{\'colour_key\' => \'[biotype]\',\'default\' => {\'MultiBottom\' => \'collapsed_label\',\'MultiTop\' => \'gene_label\',\'alignsliceviewbottom\' => \'as_collapsed_label\',\'contigviewbottom\' => \'transcript_label\',\'contigviewtop\' => \'gene_label\',\'cytoview\' => \'gene_label\'},\'label_key\' => \'[biotype]\',\'multi_name\' => \'Ensembl genes, or Merged Ensembl and Havana genes\'}',0,NULL,NULL,NULL);
-INSERT INTO `web_data` VALUES (65,'{\'caption\' => \'Ensembl/Havana merge lincRNA gene\',\'colour_key\' => \'lincrna\',\'default\' => {\'MultiBottom\' => \'collapsed_label\',\'MultiTop\' => \'gene_label\',\'alignsliceviewbottom\' => \'as_collapsed_label\',\'contigviewbottom\' => \'transcript_label\',\'contigviewtop\' => \'gene_label\',\'cytoview\' => \'gene_label\'},\'key\' => \'lincrna_gene\',\'label_key\' => \'[biotype]\',\'multi_name\' => \'Merged Ensembl and Havana lincRNA genes\',\'name\' => \'Merged Ensembl and Havana lincRNA genes (GENCODE)\'}',NULL,'2011-04-01 11:02:32',NULL,NULL);
-INSERT INTO `web_data` VALUES (66,'{\'colour_key\' => \'[biotype]\',\'default\' => {\'MultiBottom\' => \'collapsed_label\',\'MultiTop\' => \'gene_label\',\'alignsliceviewbottom\' => \'as_collapsed_label\',\'contigviewbottom\' => \'transcript_label\',\'contigviewtop\' => \'gene_label\',\'cytoview\' => \'gene_label\'},\'key\' => \'ensembl\',\'label_key\' => \'[biotype]\',\'multi_name\' => \'Ensembl genes, or Merged Ensembl and Havana genes\'}',0,NULL,NULL,NULL);
+INSERT INTO `web_data` VALUES (64,'{\'colour_key\' => \'[biotype]\',\'default\' => {\'MultiBottom\' => \'collapsed_label\',\'MultiTop\' => \'gene_label\',\'alignsliceviewbottom\' => \'as_collapsed_label\',\'contigviewbottom\' => \'transcript_label\',\'contigviewtop\' => \'gene_label\',\'cytoview\' => \'gene_label\'},\'label_key\' => \'[biotype]\',\'multi_name\' => \'Ensembl genes, or Merged Ensembl and Havana genes\'}',NULL,NULL,NULL,NULL);
+INSERT INTO `web_data` VALUES (65,'{\'caption\' => \'Ensembl/Havana merge lincRNA gene\',\'colour_key\' => \'lincrna\',\'default\' => {\'MultiBottom\' => \'collapsed_label\',\'MultiTop\' => \'gene_label\',\'alignsliceviewbottom\' => \'as_collapsed_label\',\'contigviewbottom\' => \'transcript_label\',\'contigviewtop\' => \'gene_label\',\'cytoview\' => \'gene_label\'},\'key\' => \'lincrna_gene\',\'label_key\' => \'[biotype]\',\'multi_name\' => \'Merged Ensembl and Havana lincRNA genes\',\'name\' => \'Merged Ensembl and Havana lincRNA genes (GENCODE)\'}',NULL,NULL,NULL,NULL);
+INSERT INTO `web_data` VALUES (66,'{\'colour_key\' => \'[biotype]\',\'default\' => {\'MultiBottom\' => \'collapsed_label\',\'MultiTop\' => \'gene_label\',\'alignsliceviewbottom\' => \'as_collapsed_label\',\'contigviewbottom\' => \'transcript_label\',\'contigviewtop\' => \'gene_label\',\'cytoview\' => \'gene_label\'},\'key\' => \'ensembl\',\'label_key\' => \'[biotype]\',\'multi_name\' => \'Ensembl genes, or Merged Ensembl and Havana genes\'}',NULL,NULL,NULL,NULL);
 INSERT INTO `web_data` VALUES (67,'{\'additional_renderers\' => [\'histogram\',\'Variable height\'], \'hist_max_height\' => 1, \'colour_key\' => \'tss_support\',\'type\' => \'simple\',\'zmenu\' => \'Transcript_sf\'}',5132,'2011-06-09 13:13:40',NULL,NULL);
 INSERT INTO `web_data` VALUES (68,'{\'default\' => {\'contigviewbottom\' => \'stack\'},\'gene\' => {\'do_not_display\' => 1},\'key\' => \'species_specific_cdna\',\'label_key\' => \'[text_label] [display_label]\',\'multi_name\' => \'Mouse/Human specific cDNA\',\'name\' => \'Human RefSeq/ENA cDNA\',\'type\' => \'cdna\'}',5132,'2011-07-07 11:52:35',NULL,NULL);
 INSERT INTO `web_data` VALUES (69,'{\'caption\' => \'Assembly patch lincRNA gene\',\'colour_key\' => \'lincrna\',\'default\' => {\'MultiBottom\' => \'collapsed_label\',\'MultiTop\' => \'gene_label\',\'alignsliceviewbottom\' => \'as_collapsed_label\',\'contigviewbottom\' => \'transcript_label\',\'contigviewtop\' => \'gene_label\',\'cytoview\' => \'gene_label\'},\'key\' => \'lincrna_gene\',\'label_key\' => \'[biotype]\',\'multi_name\' => \'Assembly patch lincRNA genes\',\'name\' => \'Assembly patch lincRNA genes\'}',NULL,'2011-08-08 14:43:08',NULL,NULL);
@@ -6004,6 +6154,90 @@ INSERT INTO `web_data` VALUES (70,'{\'caption\' => \'Assembly patch Ig gene\',\'
 INSERT INTO `web_data` VALUES (71,'{\'caption\' => \'Assembly patch ncRNA gene\',\'colour_key\' => \'rna\',\'default\' => {\'MultiBottom\' => \'collapsed_label\',\'MultiTop\' => \'gene_label\',\'alignsliceviewbottom\' => \'as_collapsed_label\',\'contigviewbottom\' => \'transcript_label\',\'contigviewtop\' => \'gene_label\',\'cytoview\' => \'gene_label\'},\'label_key\' => \'[biotype]\',\'multi_name\' => \'Assembly patch ncRNA genes\',\'name\' => \'Assembly patch ncRNA genes\'}',NULL,'2011-08-08 14:59:18',NULL,NULL);
 INSERT INTO `web_data` VALUES (72,'{\'caption\' => \'Assembly patch ncRNA pseudogene\',\'colour_key\' => \'rna\',\'default\' => {\'MultiBottom\' => \'collapsed_label\',\'MultiTop\' => \'gene_label\',\'alignsliceviewbottom\' => \'as_collapsed_label\',\'contigviewbottom\' => \'transcript_label\',\'contigviewtop\' => \'gene_label\',\'cytoview\' => \'gene_label\'},\'label_key\' => \'[biotype]\',\'multi_name\' => \'Assembly patch ncRNA pseudogenes\',\'name\' => \'Assembly patch ncRNA pseudogenes\'}',NULL,'2011-08-09 10:39:05',NULL,NULL);
 INSERT INTO `web_data` VALUES (73,'{\'default\' => {\'contigviewbottom\' => \'simple\'}, \'colour_key\' => \'reference\', zmenu => \'AltSeqAlignment\'}',NULL,'2011-09-21 17:14:21',NULL,NULL);
+INSERT INTO `web_data` VALUES (74,'{\'caption\' => \'Ensembl gene\',\'colour_key\' => \'[biotype]\',\'default\' => {\'MultiBottom\' => \'collapsed_label\',\'MultiTop\' => \'gene_label\',\'alignsliceviewbottom\' => \'as_collapsed_label\',\'contigviewbottom\' => \'transcript_label\',\'contigviewtop\' => \'gene_label\',\'cytoview\' => \'gene_label\'},\'label_key\' => \'[text_label] [display_label]\',\'key\' => \'ensembl\', \'name\' => \'Ensembl gene\'}',5132,'2011-10-14 13:22:20',5132,'2011-10-14 13:26:37');
+INSERT INTO `web_data` VALUES (75,'{\n  \'colour_key\' => \'rna\',\n  \'default\' => {\n    \'MultiBottom\' => \'collapsed_label\',\n    \'MultiTop\' => \'gene_label\',\n    \'alignsliceviewbottom\' => \'as_collapsed_label\',\n    \'contigviewbottom\' => \'transcript_label\',\n    \'contigviewtop\' => \'gene_label\',\n    \'cytoview\' => \'gene_label\'\n  },\n  \'label_key\' => \'[biotype]\',\n  \'name\' => \'Ensembl gene\'\n}',5132,'2011-10-14 13:31:37',NULL,NULL);
+INSERT INTO `web_data` VALUES (76,'{\n  \'protein_align_feature\' => {\n    \'do_not_display\' => \'1\'\n  }\n}',97245,'2011-10-19 08:20:39',NULL,NULL);
+
+--
+-- Final view structure for view `attrib_type`
+--
+
+/*!50001 DROP TABLE `attrib_type`*/;
+/*!50001 CREATE ALGORITHM=UNDEFINED */
+/*!50013 DEFINER=`ensadmin`@`%` SQL SECURITY DEFINER */
+/*!50001 VIEW `attrib_type` AS select `master_attrib_type`.`attrib_type_id` AS `attrib_type_id`,`master_attrib_type`.`code` AS `code`,`master_attrib_type`.`name` AS `name`,`master_attrib_type`.`description` AS `description` from `master_attrib_type` where (`master_attrib_type`.`is_current` = 1) order by `master_attrib_type`.`attrib_type_id` */;
+
+--
+-- Final view structure for view `db_list`
+--
+
+/*!50001 DROP TABLE `db_list`*/;
+/*!50001 CREATE ALGORITHM=UNDEFINED */
+/*!50013 DEFINER=`ensadmin`@`%` SQL SECURITY DEFINER */
+/*!50001 VIEW `db_list` AS select `db`.`db_id` AS `db_id`,concat(concat_ws('_',`species`.`db_name`,`db`.`db_type`,`db`.`db_release`,`db`.`db_assembly`),`db`.`db_suffix`) AS `full_db_name` from (`species` join `db` on((`species`.`species_id` = `db`.`species_id`))) where (`species`.`is_current` = 1) */;
+
+--
+-- Final view structure for view `external_db`
+--
+
+/*!50001 DROP TABLE `external_db`*/;
+/*!50001 CREATE ALGORITHM=UNDEFINED */
+/*!50013 DEFINER=`ensadmin`@`%` SQL SECURITY DEFINER */
+/*!50001 VIEW `external_db` AS select `master_external_db`.`external_db_id` AS `external_db_id`,`master_external_db`.`db_name` AS `db_name`,`master_external_db`.`db_release` AS `db_release`,`master_external_db`.`status` AS `status`,`master_external_db`.`priority` AS `priority`,`master_external_db`.`db_display_name` AS `db_display_name`,`master_external_db`.`type` AS `type`,`master_external_db`.`secondary_db_name` AS `secondary_db_name`,`master_external_db`.`secondary_db_table` AS `secondary_db_table`,`master_external_db`.`description` AS `description` from `master_external_db` where (`master_external_db`.`is_current` = 1) order by `master_external_db`.`external_db_id` */;
+
+--
+-- Final view structure for view `full_analysis_description`
+--
+
+/*!50001 DROP TABLE `full_analysis_description`*/;
+/*!50001 CREATE ALGORITHM=UNDEFINED */
+/*!50013 DEFINER=`ensadmin`@`%` SQL SECURITY DEFINER */
+/*!50001 VIEW `full_analysis_description` AS select `list`.`full_db_name` AS `full_db_name`,`ad`.`logic_name` AS `logic_name`,`ad`.`description` AS `description`,`ad`.`display_label` AS `display_label`,`awd`.`displayable` AS `displayable`,`wd`.`data` AS `web_data` from ((((`db_list` `list` join `db` on((`list`.`db_id` = `db`.`db_id`))) join `analysis_web_data` `awd` on(((`db`.`species_id` = `awd`.`species_id`) and (`db`.`db_type` = `awd`.`db_type`)))) join `analysis_description` `ad` on((`awd`.`analysis_description_id` = `ad`.`analysis_description_id`))) left join `web_data` `wd` on((`awd`.`web_data_id` = `wd`.`web_data_id`))) where ((`db`.`is_current` = 1) and (`ad`.`is_current` = 1)) */;
+
+--
+-- Final view structure for view `logic_name_overview`
+--
+
+/*!50001 DROP TABLE `logic_name_overview`*/;
+/*!50001 CREATE ALGORITHM=UNDEFINED */
+/*!50013 DEFINER=`ensadmin`@`%` SQL SECURITY DEFINER */
+/*!50001 VIEW `logic_name_overview` AS select `awd`.`analysis_web_data_id` AS `analysis_web_data_id`,`ad`.`logic_name` AS `logic_name`,`ad`.`analysis_description_id` AS `analysis_description_id`,`s`.`db_name` AS `species`,`s`.`species_id` AS `species_id`,`awd`.`db_type` AS `db_type`,`wd`.`web_data_id` AS `web_data_id`,`awd`.`displayable` AS `displayable` from (((`analysis_description` `ad` join `analysis_web_data` `awd` on((`ad`.`analysis_description_id` = `awd`.`analysis_description_id`))) join `species` `s` on((`awd`.`species_id` = `s`.`species_id`))) left join `web_data` `wd` on((`awd`.`web_data_id` = `wd`.`web_data_id`))) where ((`s`.`is_current` = 1) and (`ad`.`is_current` = 1)) */;
+
+--
+-- Final view structure for view `misc_set`
+--
+
+/*!50001 DROP TABLE `misc_set`*/;
+/*!50001 CREATE ALGORITHM=UNDEFINED */
+/*!50013 DEFINER=`ensadmin`@`%` SQL SECURITY DEFINER */
+/*!50001 VIEW `misc_set` AS select `master_misc_set`.`misc_set_id` AS `misc_set_id`,`master_misc_set`.`code` AS `code`,`master_misc_set`.`name` AS `name`,`master_misc_set`.`description` AS `description`,`master_misc_set`.`max_length` AS `max_length` from `master_misc_set` where (`master_misc_set`.`is_current` = 1) order by `master_misc_set`.`misc_set_id` */;
+
+--
+-- Final view structure for view `unconnected_analyses`
+--
+
+/*!50001 DROP TABLE `unconnected_analyses`*/;
+/*!50001 CREATE ALGORITHM=UNDEFINED */
+/*!50013 DEFINER=`ensadmin`@`%` SQL SECURITY DEFINER */
+/*!50001 VIEW `unconnected_analyses` AS select `ad`.`analysis_description_id` AS `analysis_description_id`,`ad`.`logic_name` AS `logic_name` from (`analysis_description` `ad` left join `analysis_web_data` `awd` on((`ad`.`analysis_description_id` = `awd`.`analysis_description_id`))) where (isnull(`awd`.`species_id`) and (`ad`.`is_current` = 1)) */;
+
+--
+-- Final view structure for view `unmapped_reason`
+--
+
+/*!50001 DROP TABLE `unmapped_reason`*/;
+/*!50001 CREATE ALGORITHM=UNDEFINED */
+/*!50013 DEFINER=`ensadmin`@`%` SQL SECURITY DEFINER */
+/*!50001 VIEW `unmapped_reason` AS select `master_unmapped_reason`.`unmapped_reason_id` AS `unmapped_reason_id`,`master_unmapped_reason`.`summary_description` AS `summary_description`,`master_unmapped_reason`.`full_description` AS `full_description` from `master_unmapped_reason` where (`master_unmapped_reason`.`is_current` = 1) order by `master_unmapped_reason`.`unmapped_reason_id` */;
+
+--
+-- Final view structure for view `unused_web_data`
+--
+
+/*!50001 DROP TABLE `unused_web_data`*/;
+/*!50001 CREATE ALGORITHM=UNDEFINED */
+/*!50013 DEFINER=`ensadmin`@`%` SQL SECURITY DEFINER */
+/*!50001 VIEW `unused_web_data` AS select `wd`.`web_data_id` AS `web_data_id` from (`web_data` `wd` left join `analysis_web_data` `awd` on((`wd`.`web_data_id` = `awd`.`web_data_id`))) where isnull(`awd`.`analysis_web_data_id`) */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
@@ -6011,4 +6245,4 @@ INSERT INTO `web_data` VALUES (73,'{\'default\' => {\'contigviewbottom\' => \'si
 /*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2011-10-11  9:11:12
+-- Dump completed on 2011-10-20 15:42:50
