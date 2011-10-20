@@ -36,6 +36,7 @@ sub transcript_display_xref_sources {
 	   	 phatr_jgi_v2
 		 phatr_jgi_v2_bd
                  PGD_GENE
+                 Mycgr3_jgi_v2.0_gene
                );
     
     my %ignore;
