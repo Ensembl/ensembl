@@ -127,13 +127,10 @@ sub _columns {
 	    ur.summary_description ur.full_description);
 }
 
-
-sub _straight_join {
-  return( [ 'unmapped_object', "uo.unmapped_reason_id = ur.unmapped_reason_id" ]);
-}
-
 sub _left_join {
-  return( [ 'unmapped_object', "uo.unmapped_reason_id = ur.unmapped_reason_id" ]);
+  return ( [
+      'unmapped_object', "uo.unmapped_reason_id = ur.unmapped_reason_id"
+    ] );
 }
 
 =head2 list_dbIDs
