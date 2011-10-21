@@ -70,11 +70,19 @@ CREATE TABLE meta_key (
   db_type           SET('cdna', 'core', 'funcgen', 'otherfeatures',
                         'rnaseq', 'variation', 'vega')
                     NOT NULL DEFAULT 'core',
-  only_for_species  TEXT,
   description       TEXT,
 
   PRIMARY KEY (meta_key_id),
   UNIQUE INDEX name_type_idx (name, db_type)
+);
+
+-- The 'meta_key_species' table.
+-- Connects the 'meta_key' and the 'species' tables.
+CREATE TABLE meta_key_species (
+  meta_key_id       INTEGER UNSIGNED NOT NULL,
+  species_id        INTEGER UNSIGNED NOT NULL,
+
+  UNIQUE INDEX uniq_idx (meta_key_id, species_id)
 );
 
 -- The 'analysis_description' table.
