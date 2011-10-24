@@ -111,6 +111,9 @@ SQL
      $object_xref_id++;
      $count++;
      my @master_xref_ids;
+     if($internal_id == 0){
+       die "Problem could not find stable id $stable_id and got past the first check for $dbname\n";
+     }
      $ins_ox_sth->execute($object_xref_id, $internal_id, $xref_id, $table, 'DIRECT');
      if($ins_ox_sth->err){
        $duplicate_direct_count++;
