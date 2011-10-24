@@ -142,7 +142,7 @@ XXML
     }
     $symbols{$mgi_id}=$fields[1];
     $ensembl_ids{$mgi_id}=$fields[5];
-    $status{$mgi_id} = 1 if ($status{$mgi_id} eq '');
+    $status{$mgi_id} = 1 if ((!defined($status{$mgi_id}) or ($status{$mgi_id} eq ''));
     if ($status{$mgi_id} < 4 && $fields[4] == 1){
       $status{$mgi_id} = 4;
     }
@@ -183,8 +183,10 @@ XXML
 			  info_type  => "DIRECT"} );
     }
     next if(!defined($ensembl_ids{$acc}));
-    $direct_count++;
-    $self->add_direct_xref( $xref_id, $ensembl_id, $ensembl_type, $acc );
+    if($ensembl_id){
+      $self->add_direct_xref( $xref_id, $ensembl_id, $ensembl_type, $acc );
+      $direct_count++;
+    }
   }
   printf( "%d  xrefs succesfully parsed and %d direct xrefs added\n", $parsed_count, $direct_count );
   
