@@ -438,12 +438,8 @@ sub equals {
   my ( $self, $feature ) = @_;
 
   # If the features are the same object, they are equal.
-  if ( $self eq $feature ) {
-    return 1;
-  }
-  if ( ! defined $feature ) {
-    return 0;
-  }
+  if ( !defined($feature) ) { return 0 }
+  if ( $self eq $feature ) { return 1 }
 
   assert_ref( $feature, 'Bio::EnsEMBL::Feature' );
 
@@ -454,12 +450,10 @@ sub equals {
 
   # If the features has the same dbID, they are equal.
   if ( defined( $self->dbID() ) && defined( $feature->dbID() ) ) {
-    if ( $self->dbID() == $feature->dbID() ) {
-      return 1;
-    } else {
-      return 0;
-    }
+    if   ( $self->dbID() == $feature->dbID() ) { return 1 }
+    else                                       { return 0 }
   }
+
   # We now know that one of the features do not have a dbID.
 
   # If the features have the same start, end, strand and seq_region_id,
@@ -468,19 +462,18 @@ sub equals {
      ( defined( $self->analysis() ) && defined( $feature->analysis() ) )
      && ( defined( $self->slice() ) && defined( $feature->slice() ) ) )
   {
-    if (   ( $self->start() == $feature->start() )
-        && ( $self->end() == $feature->end() )
-        && ( $self->strand() == $feature->strand() )
-        && ( $self->slice()->get_seq_region_id() ==
-             $feature->slice()->get_seq_region_id() )
-        && ( $self->analysis()->dbID() == $feature->analysis()->dbID() )
-      )
+    if ( ( $self->start() == $feature->start() ) &&
+         ( $self->end() == $feature->end() ) &&
+         ( $self->strand() == $feature->strand() ) &&
+         ( $self->slice()->get_seq_region_id() ==
+           $feature->slice()->get_seq_region_id() ) &&
+         ( $self->analysis()->dbID() == $feature->analysis()->dbID() ) )
     {
       return 1;
-    } else {
-      return 0;
     }
+    else { return 0 }
   }
+
   # We now know that one of the features does not have either analysis
   # or slice.
 

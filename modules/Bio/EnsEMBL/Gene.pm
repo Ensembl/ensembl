@@ -389,8 +389,8 @@ sub description {
 sub equals {
   my ( $self, $gene ) = @_;
 
+  if ( !defined($gene) ) { return 0 }
   if ( $self eq $gene ) { return 1 }
-  if ( ! defined $gene ) { return 0 }
 
   assert_ref( $gene, 'Bio::EnsEMBL::Gene' );
 
@@ -405,20 +405,17 @@ sub equals {
 
   if ( defined( $self->stable_id() ) && defined( $gene->stable_id() ) )
   {
-    if ( $self->stable_id() eq $gene->stable_id() ) {
-      return 1;
-    } else {
-      return 0;
-    }
+    if   ( $self->stable_id() eq $gene->stable_id() ) { return 1 }
+    else                                              { return 0 }
   }
 
   my @self_transcripts = sort {
-         $a->start() <=> $b->start()
-      || $a->length() <=> $b->length()
+    $a->start() <=> $b->start() ||
+      $a->length() <=> $b->length()
   } @{ $self->get_all_Transcripts() };
   my @gene_transcripts = sort {
-         $a->start() <=> $b->start()
-      || $a->length() <=> $b->length()
+    $a->start() <=> $b->start() ||
+      $a->length() <=> $b->length()
   } @{ $gene->get_all_Transcripts() };
 
   if ( scalar(@self_transcripts) != scalar(@gene_transcripts) ) {

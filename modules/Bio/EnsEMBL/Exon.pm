@@ -848,8 +848,8 @@ sub slice {
 sub equals {
   my ( $self, $exon ) = @_;
 
+  if ( !defined($exon) ) { return 0 }
   if ( $self eq $exon ) { return 1 }
-  if ( ! defined $exon ) { return 0 }
 
   assert_ref( $exon, 'Bio::EnsEMBL::Exon' );
 
@@ -862,15 +862,16 @@ sub equals {
   {
     if ( $self->stable_id() eq $exon->stable_id() ) {
       return 1;
-    } else {
+    }
+    else {
       return 0;
     }
   }
 
-  if (    $self->start() == $exon->start()
-       && $self->end() == $exon->end()
-       && $self->strand() == $exon->strand()
-       && $self->phase() == $exon->phase() )
+  if ( $self->start() == $exon->start() &&
+       $self->end() == $exon->end() &&
+       $self->strand() == $exon->strand() &&
+       $self->phase() == $exon->phase() )
   {
     return 1;
   }

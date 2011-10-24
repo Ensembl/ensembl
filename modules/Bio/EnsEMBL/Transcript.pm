@@ -2091,7 +2091,7 @@ sub swap_exons {
 sub equals {
   my ( $self, $transcript ) = @_;
 
-  if ( ! defined $transcript ) { return 0 }
+  if ( !defined($transcript) ) { return 0 }
   if ( $self eq $transcript ) { return 1 }
 
   assert_ref( $transcript, 'Bio::EnsEMBL::Transcript' );
@@ -2105,23 +2105,24 @@ sub equals {
     return 0;
   }
 
-  if (    defined( $self->stable_id() )
-       && defined( $transcript->stable_id() ) )
+  if ( defined( $self->stable_id() ) &&
+       defined( $transcript->stable_id() ) )
   {
     if ( $self->stable_id() eq $transcript->stable_id() ) {
       return 1;
-    } else {
+    }
+    else {
       return 0;
     }
   }
 
   my @self_exons = sort {
-         $a->start() <=> $b->start()
-      || $a->length() <=> $b->length()
+    $a->start() <=> $b->start() ||
+      $a->length() <=> $b->length()
   } @{ $self->get_all_Exons() };
   my @transcript_exons = sort {
-         $a->start() <=> $b->start()
-      || $a->length() <=> $b->length()
+    $a->start() <=> $b->start() ||
+      $a->length() <=> $b->length()
   } @{ $transcript->get_all_Exons() };
 
   if ( scalar(@self_exons) != scalar(@transcript_exons) ) {
