@@ -72,7 +72,8 @@ sub process {
   }
 
   my $update_ox_sth = $self->xref->dbc->prepare('update object_xref set ox_status = "FAILED_PRIORITY" where object_xref_id = ?');
-  my $update_x_sth = $self->xref->dbc->prepare("update xref set dumped = 'NO_DUMP_ANOTHER_PRIORITY' where xref_id = ?");
+  my $update_x_sth  = $self->xref->dbc->prepare("update xref set dumped = 'NO_DUMP_ANOTHER_PRIORITY' where xref_id = ?");
+  my $dep_sth       = $self->xref->dbc->prepare("select dependent_xref_id, object_xref_id from dependent_xref where master_xref_id = ?");
 
   #
   # Change of tact here to make the sql easier...
@@ -129,7 +130,9 @@ NEWS
 	if($xref_id != $best_xref_id){
 	  if($status eq "DUMP_OUT"){
 	    $update_x_sth->execute($xref_id);
-	    $update_ox_sth->execute($object_xref_id);            
+	    $update_ox_sth->execute($object_xref_id);
+#??? what about dependents
+	    $self->process_dependents($xref_id, $update_ox_sth, $dep_sth);
 	  }
 	  else{
 	    $update_x_sth->execute($xref_id);
@@ -146,7 +149,7 @@ NEWS
       else{ # NEW
 	if($status eq "DUMP_OUT"){
 	  $last_acc = $acc;
-	  $best_xref_id = $xref_id;       
+	  $best_xref_id = $xref_id;
 	  if(@gone and $last_name eq $acc){
 	    foreach my $d (@gone){
 	      $update_x_sth->execute($d);
@@ -179,6 +182,25 @@ NEWS
   $sth = $self->xref->dbc->prepare("insert into process_status (status, date) values('prioritys_flagged',now())");
   $sth->execute();
   $sth->finish;
+}
+
+sub process_dependents{
+  my ($self, $master_xref_id, $update_ox_sth, $dep_sth)= @_;
+
+  my @master_xrefs;
+
+  push @master_xrefs, $master_xref_id;
+
+  while(my $xref_id = pop(@master_xrefs)){
+    $dep_sth->execute($xref_id);
+    my ($dep_xref_id, $object_xref_id);
+    $dep_sth->bind_columns(\$dep_xref_id,\$object_xref_id);
+    while($dep_sth->fetch()){
+      $update_ox_sth->execute($object_xref_id);
+      push @master_xrefs, $dep_xref_id; # remember dependents dependents
+    }
+  }
+
 }
 
 1;
