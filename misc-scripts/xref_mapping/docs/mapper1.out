@@ -1,0 +1,225 @@
+Options: -file xref_input
+running in verbose mode
+current status is parsing_finished
+No alt_alleles found for this species.
+
+Dumping xref & Ensembl sequences
+Dumping Xref fasta files
+Dumping Ensembl Fasta files
+53067 Transcripts dumped 41693 Transaltions dumped
+Deleting out, err and map files from output dir: /workdir/release_65/zebrafish/ensembl
+Deleting txt and sql files from output dir: /workdir/release_65/zebrafish/ensembl
+LSF job ID for main mapping job: 887287, name ExonerateGappedBest1_1318933449 with 481 arrays elements)
+LSF job ID for main mapping job: 887288, name ExonerateGappedBest1_1318933451 with 253 arrays elements)
+LSF job ID for Depend job: 887289 (job array with 1 job)
+already processed = 0, processed = 734, errors = 0, empty = 0
+Could not find stable id ENSDART00000126968 in table to get the internal id hence ignoring!!! (for RFAM)
+Could not find stable id ENSDART00000121043 in table to get the internal id hence ignoring!!! (for RFAM)
+The foillowing will be processed as priority xrefs
+	Uniprot/SPTREMBL
+	ZFIN_ID
+Process Pairs
+Starting at object_xref of 837705
+	NEW	2733
+2733 new relationships added
+Writing InterPro
+
+246386 already existed
+
+  Wrote 0 interpro table entries
+    including 51399 object xrefs, 
+    and 51399 go xrefs
+ZFIN_ID is associated with both Transcript and Translation object types
+Therefore moving all associations from Translation to Transcript
+DBASS3 moved to Gene level.
+DBASS3 moved to Gene level.
+DBASS5 moved to Gene level.
+DBASS5 moved to Gene level.
+EntrezGene moved to Gene level.
+EntrezGene moved to Gene level.
+miRBase moved to Gene level.
+miRBase moved to Gene level.
+RFAM moved to Gene level.
+RFAM moved to Gene level.
+TRNASCAN_SE moved to Gene level.
+TRNASCAN_SE moved to Gene level.
+RNAMMER moved to Gene level.
+RNAMMER moved to Gene level.
+UniGene moved to Gene level.
+UniGene moved to Gene level.
+Uniprot_genename moved to Gene level.
+Uniprot_genename moved to Gene level.
+WikiGene moved to Gene level.
+WikiGene moved to Gene level.
+MIM_GENE moved to Gene level.
+MIM_GENE moved to Gene level.
+MIM_MORBID moved to Gene level.
+MIM_MORBID moved to Gene level.
+HGNC moved to Gene level.
+HGNC moved to Gene level.
+MOVE SQL
+UPDATE IGNORE object_xref ox, xref x, source s 
+  SET ox.ensembl_id = ? 
+    WHERE x.source_id = s.source_id AND 
+          ox.xref_id = x.xref_id AND
+          ox.ensembl_id = ? AND
+          ox.ensembl_object_type = 'Gene' AND
+          ox.ox_status = 'DUMP_OUT' AND 
+          s.name in (
+'DBASS3', 'DBASS5', 'EntrezGene', 'miRBase', 'RFAM', 'TRNASCAN_SE', 'RNAMMER', 'UniGene', 'Uniprot_genename', 'WikiGene', 'MIM_GENE', 'MIM_MORBID', 'HGNC')
+Number of rows:- moved = 0, identitys deleted = 0, object_xrefs deleted = 0
+Added 0 new mapping but ignored 0
+ZFIN_ID moved to Gene level.
+ZFIN_ID moved to Gene level.
+MAX xref_id = 620426 MAX object_xref_id = 985210, max_object_xref from identity_xref = 985210
+LIST to delete 23, 21, 135, 278, 22, 136, 279, 253
+_ins_xref sql is:-
+insert into xref (xref_id, source_id, accession, label, version, species_id, info_type, info_text, description) values (?, ?, ?, ?,  0, 7955, 'MISC', ?, ? )
+For gene ENSDARG00000001014 we have mutiple ZFIN_ID's
+	Keeping the best one si:ch211-150d5.2
+	removing myh9b from gene
+For gene ENSDARG00000001470 we have mutiple ZFIN_ID's
+	Keeping the best one si:ch211-287j19.6
+	removing zgc:162351 from gene
+For gene ENSDARG00000001559 we have mutiple ZFIN_ID's
+	Keeping the best one si:ch211-46o5.1
+	removing csmd2 from gene
+For gene ENSDARG00000001733 we have mutiple ZFIN_ID's
+	Keeping the best one si:ch211-198b21.4
+	removing gulp1 from gene
+For gene ENSDARG00000001832 we have mutiple ZFIN_ID's
+	Keeping the best one si:ch1073-403i13.1
+	removing zgc:113912 from gene
+	removing zgc:103599 from gene
+For gene ENSDARG00000001879 we have mutiple ZFIN_ID's
+	Keeping the best one si:ch211-169k21.2
+	removing im:7156396 from gene
+For gene ENSDARG00000001889 we have mutiple ZFIN_ID's
+	Keeping the best one tuba1l2
+	removing zgc:123298 from gene
+For gene ENSDARG00000001890 we have mutiple ZFIN_ID's
+	Keeping the best one si:dkey-239i15.3
+	removing stt3b from gene
+For gene ENSDARG00000002084 we have mutiple ZFIN_ID's
+	Keeping the best one lamb2
+	removing hm:zehs0001 from gene
+Multiple best ZFIN_ID's using vega to find the most common for ENSDARG00000002670
+	zgc:113944  (chosen as first)
+	tbpl2  (left as ZFIN_ID reference but not gene symbol)
+For gene ENSDARG00000002937 we have mutiple ZFIN_ID's
+	Keeping the best one meis4.1a
+	removing meis4.1b from gene
+For gene ENSDARG00000003635 we have mutiple ZFIN_ID's
+	Keeping the best one mogat3b
+	removing atp6v1e1a from gene
+Multiple best ZFIN_ID's using vega to find the most common for ENSDARG00000087402
+	tpm1  (chosen as first)
+	zgc:171719  (left as ZFIN_ID reference but not gene symbol)
+Multiple best ZFIN_ID's using vega to find the most common for ENSDARG00000087472
+For gene ENSDARG00000087472 we have mutiple ZFIN_ID's
+	removing zgc:154164 from gene
+	removing zgc:163040 from gene
+	removing hist1h4l from gene
+	Keeping the best one wu:fe37d09
+	Keeping the best one wu:fe38f03
+	Keeping the best one zgc:165555
+	wu:fe37d09  (chosen as first)
+	zgc:165555  (left as ZFIN_ID reference but not gene symbol)
+	wu:fe38f03  (left as ZFIN_ID reference but not gene symbol)
+Multiple best ZFIN_ID's using vega to find the most common for ENSDARG00000087543
+For gene ENSDARG00000087543 we have mutiple ZFIN_ID's
+	removing zgc:154164 from gene
+	removing zgc:163040 from gene
+	removing hist1h4l from gene
+	Keeping the best one wu:fe37d09
+	Keeping the best one wu:fe38f03
+	removing zgc:165555 from gene
+	wu:fe37d09  (chosen as first)
+	wu:fe38f03  (left as ZFIN_ID reference but not gene symbol)
+For gene ENSDARG00000087583 we have mutiple ZFIN_ID's
+	Keeping the best one si:ch211-226h8.13
+	removing si:ch211-154a22.8 from gene
+Multiple best ZFIN_ID's using vega to find the most common for ENSDARG00000087670
+For gene ENSDARG00000087670 we have mutiple ZFIN_ID's
+	removing zgc:154164 from gene
+	removing zgc:163040 from gene
+	removing hist1h4l from gene
+	Keeping the best one wu:fe37d09
+	Keeping the best one wu:fe38f03
+	Keeping the best one zgc:165555
+	wu:fe37d09  (chosen as first)
+	zgc:165555  (left as ZFIN_ID reference but not gene symbol)
+	wu:fe38f03  (left as ZFIN_ID reference but not gene symbol)
+Multiple best ZFIN_ID's using vega to find the most common for ENSDARG00000087694
+For gene ENSDARG00000087694 we have mutiple ZFIN_ID's
+	Keeping the best one zgc:112234
+	Keeping the best one zgc:171759
+	removing zgc:171937 from gene
+	Keeping the best one wu:fe11b02
+	wu:fe11b02  (chosen as first)
+	zgc:171759  (left as ZFIN_ID reference but not gene symbol)
+	zgc:112234  (left as ZFIN_ID reference but not gene symbol)
+For gene ENSDARG00000096097 we have mutiple ZFIN_ID's
+	Keeping the best one si:dkeyp-98a7.5
+	removing zgc:172150 from gene
+For gene ENSDARG00000096159 we have mutiple ZFIN_ID's
+	Keeping the best one si:dkeyp-98a7.4
+	removing zgc:172150 from gene
+
+For gene.... Lots of these so cut them out to save time and space
+
+WARNING: Clone_based_ensembl_gene has decreased by -5 % was 7652 now 7194
+WARNING: Clone_based_ensembl_transcript has decreased by -8 % was 8260 now 7554
+WARNING: Clone_based_vega_gene has increased by 144% was 276 now 675
+WARNING: GO has increased by 56% was 87289 now 136827
+WARNING: goslim_goa has increased by 54% was 62738 now 96927
+WARNING: xrefs miRBase_gene_name are not in the new database but are in the old???
+WARNING: xrefs OTTG are not in the new database but are in the old???
+WARNING: xrefs OTTT are not in the new database but are in the old???
+WARNING: RefSeq_ncRNA has increased by 5% was 644 now 677
+WARNING: xrefs RFAM_gene_name are not in the new database but are in the old???
+WARNING: xrefs shares_CDS_and_UTR_with_OTTT are not in the new database but are in the old???
+WARNING: xrefs shares_CDS_with_ENST are not in the new database but are in the old???
+WARNING: xrefs shares_CDS_with_OTTT are not in the new database but are in the old???
+WARNING: xrefs Vega_transcript are not in the new database but are in the old???
+WARNING: xrefs Vega_translation are not in the new database but are in the old???
+WARNING: ZFIN_ID_curated_transcript_notransfer has 9748 xrefs in the new database but NONE in the old
+xref_mapper.pl FINISHED NORMALLY
+
+------------------------------------------------------------
+Sender: LSF System <lsfadmin@bc-24-1-04>
+Subject: Job 886769: <perl ~/src/ensembl/misc-scripts/xref_mapping/xref_mapper.pl -file xref_input> Done
+
+Job <perl ~/src/ensembl/misc-scripts/xref_mapping/xref_mapper.pl -file xref_input> was submitted from host <farm2-head4> by user <ianl> in cluster <farm2>.
+Job was executed on host(s) <bc-24-1-04>, in queue <normal>, as user <ianl> in cluster <farm2>.
+<~/> was used as the home directory.
+</workdir/release_65/zebrafish> was used as the working directory.
+Started at Tue Oct 18 11:01:18 2011
+Results reported at Tue Oct 18 12:17:34 2011
+
+Your job looked like:
+
+------------------------------------------------------------
+# LSBATCH: User input
+perl ~/src/ensembl/misc-scripts/xref_mapping/xref_mapper.pl -file xref_input
+------------------------------------------------------------
+
+Successfully completed.
+
+Resource usage summary:
+
+    CPU time   :    734.06 sec.
+    Max Memory :       173 MB
+    Max Swap   :       204 MB
+
+    Max Processes  :         6
+    Max Threads    :         7
+
+The output (if any) is above this job summary.
+
+
+
+PS:
+
+Read file <mapper.err> for stderr output of this job.
+
