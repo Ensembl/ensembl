@@ -572,12 +572,12 @@ sub add_DBAdaptor {
 =cut
 
 sub get_DBAdaptor {
-  my ( $class, $species, $group , $no_alias_check) = @_;
-throw 'Species not defined.' if ! defined $species;
+  my ( $class, $species, $group, $no_alias_check ) = @_;
+  throw 'Species not defined.' if !defined $species;
 
-#  if(!defined($no_alias_check) or !$no_alias_check){
-    $species = $class->get_alias($species, $no_alias_check) || $species;
-#  }
+  #if ( !defined($no_alias_check) or !$no_alias_check ) {
+  $species = $class->get_alias( $species, $no_alias_check ) || $species;
+  #}
   return $registry_register{_SPECIES}{$species}{ lc($group) }{'_DB'};
 }
 
@@ -936,7 +936,12 @@ sub add_adaptor {
 sub get_adaptor {
   my ( $class, $species, $group, $type ) = @_;
 
-  $species = $class->get_alias($species);
+  my $ispecies = $class->get_alias($species);
+
+  if ( !defined($species) ) {
+    throw("Can not find internal name for species '$species'");
+  }
+  else { $species = $ispecies }
 
   my %dnadb_adaptors = (
     'sequence'                 => 1,
@@ -1130,19 +1135,22 @@ sub remove_alias{
 
 =cut
 
-sub get_alias{
-  my ($class, $key, $no_warn) = @_;
+sub get_alias {
+  my ( $class, $key, $no_warn ) = @_;
 
-  if(!defined($registry_register{'_ALIAS'}{lc($key)})){
-    if((!defined( $registry_register{_SPECIES}{ lc($key) })) and (!defined ($registry_register{_ALIAS}{ lc($key) }))){
-      warn "$key is not a valid species name for this instance\n" if((!defined($no_warn)) or (!$no_warn));
+  if ( !defined( $registry_register{'_ALIAS'}{ lc($key) } ) ) {
+    if ( ( !defined( $registry_register{_SPECIES}{ lc($key) } ) ) and
+         ( !defined( $registry_register{_ALIAS}{ lc($key) } ) ) )
+    {
+      if ( ( !defined($no_warn) ) or ( !$no_warn ) ) {
+        warn "$key is not a valid species name for this instance\n";
+      }
       return;
     }
-    else{
-      return $key;
-    }
+    else { return $key }
   }
-  return $registry_register{'_ALIAS'}{lc($key)};
+
+  return $registry_register{'_ALIAS'}{ lc($key) };
 }
 
 =head2 get_all_aliases
