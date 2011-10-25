@@ -1913,7 +1913,7 @@ sub load_registry_from_db {
 
   # Ontology
 
-  if ( $ontology_version != 0 ) {
+  if ( defined($ontology_version) && $ontology_version != 0 ) {
     require Bio::EnsEMBL::DBSQL::OntologyDBAdaptor;
 
     my $dba = Bio::EnsEMBL::DBSQL::OntologyDBAdaptor->new(
