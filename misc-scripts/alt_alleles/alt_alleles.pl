@@ -51,7 +51,7 @@ my $vega_dba = Bio::EnsEMBL::DBSQL::DBAdaptor->new(-host => $vhost||'ens-staging
 
 my $sql =(<<EOS);
 select aa.alt_allele_id, g.stable_id, x2.display_label
- from alt_allele aa, gene g, xref x1
+ from alt_allele aa, xref x1, gene g
      left join object_xref ox on g.gene_id = ox.ensembl_id
      left join xref x2 on ox.xref_id = x2.xref_id
      left join external_db edb on x2.external_db_id = edb.external_db_id
