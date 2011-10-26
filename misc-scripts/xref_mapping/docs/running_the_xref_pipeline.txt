@@ -1,13 +1,13 @@
 What is the purpose of this document
 ------------------------------------
 
-This documant show the steps and best practices for runnings external 
+This document shows the steps and best practices for running external 
 databases references (xrefs) for various species.
 
 Who is this document written for
 --------------------------------
 
-Anyone wanting to run the xref pipeline for information on what xrefs are 
+Anyone wanting to run the xref pipeline. For information on what xrefs are 
 and general details please see  xrefs_overview.txt, xrefs_detailed_docs.txt, 
 FAQ.txt and parsing_information.txt in this directory.
 
@@ -23,17 +23,17 @@ Overview of steps
 6) run the mapping
 
 Please note the stable_id mapping has to be done and the Vega databases 
-available (for human, mouse and zebrafish) before the xref pipeline can be ran.
+available (for human, mouse and zebrafish) before the xref pipeline can be run.
 
 
 Configuring the system
 ----------------------
 
-Edit the file config_xref.ini file see FAQ.txt for more details. If this 
+Edit the config_xref.ini file, see FAQ.txt for more details. If this 
 species is already in the file then this could be just a case of checking the 
 correct versions of the databases are being used. 
 
-It is also inportant to have the correct version of the API at this stage as 
+It is also important to have the correct version of the API at this stage as 
 by default it uses the API version to define which database to connect to. 
 i.e. ensembl_ontology_xx where xx is the version. So for ensembl release 65 
 this would be database ensembl_ontology_65. Where the 65 is obtained from the 
@@ -71,7 +71,7 @@ perl alt_alleles.pl -vhost ens-staging1 -vport 3306
 Update ccds database
 --------------------
 
-Becouse the stable ids may have changed in the core database we need to update
+Because the stable ids may have changed in the core database we need to update
 these in the ccds databases. At present only human and mouse have these.
 The script to run is  store_ccds_xrefs.pl and is in the directory
 ensembl-personal/genebuilders/ccds/scripts.
@@ -149,7 +149,7 @@ ianl_dog_xref_65 -species dog -create -stats -force
            questions
 
 by running on the farm the systems people are happier and by using -o and -e we
-can keep the error and output files seperate.
+can keep the error and output files separate.
 
 In this directory you will find parse.out which shows a sample output for 
 running human xref parsing stage.
@@ -157,7 +157,7 @@ running human xref parsing stage.
 I will add ">" to the start of the output lines to differentiate these from 
 my comments
 
-Explaination of the output:-
+Explanation of the output:-
 
 > Options: -user rw -pass password -host ens-research 
 > -dbname ianl_human_xref_65 -species human -stats -
