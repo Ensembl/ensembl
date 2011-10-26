@@ -10,11 +10,10 @@ Questions
 6)  I have mapping errors how do i fix them?
 7)  How do i  start again from the parsing has finished stage?
 8)  How do i start again from the mapping_finished stage?
-9)  What is fullmode and partupdate?
-10) How do i run my external database references without a compute farm?
-11) I want to use a different list of external database sources for my 
+9)  How do i run my external database references without a compute farm?
+10) I want to use a different list of external database sources for my 
     display_xrefs (names)?
-12) I want to use a different list of external database sources for my gene 
+11) I want to use a different list of external database sources for my gene 
     descriptions?
 
 
@@ -113,9 +112,15 @@ Answers
       loading into the core database.
 
       i) Map the entitys in the xref database and do some checks etc.
-         xref_mapper.pl -file xref_config >& MAPPER1.OUT
 
-         If you have no compute farm then add the -nofarm option.
+         perl ~/src/ensembl/misc-scripts/xref_mapper/xref_mapper.pl  
+              -file xref_config -nofarm >& MAPPER1.OUT
+
+	 or if using the farm
+
+	 bsub -o mapper.out -e mapper.err 
+         perl ~/src/ensembl/misc-scripts/xref_mapper/xref_mapper.pl -file xref_config
+
          Check the output file if warning about xref number increasing do not 
          worry the main thing to be concerned about is a reduction in the number 
          of that none are in the xref database abut are in the core database.
@@ -305,28 +310,7 @@ data_uri        = ftp://fantom.gsc.riken.jp/DDBJ_fantom3_HTC_accession.txt.gz
 
 
 
-9) What is fullmode and partupdate?
-
-   Fullmode means that all the xrefs are being updated and not just a few specific
-   external database sources. This is important as this affects the way the 
-   display_xrefs, descriptions are calculated at the end.The user can override 
-   this by setting -partupdate option in the mapper options or change the entry 
-   in the table (key is "fullmode" in meta table).
-
-   If we are doing all the xref sources then we know that all the data is local 
-   and hence can do some SQL to get  the display_xrefs etc But if this is not the
-   case then the core database will have extra information in it that may be 
-   needed so we have to query the core database. The xref database has extra 
-   information that is not in the xref database and so simple SQL can be used 
-   whereas with the core 
-   database we have to go for each gene and then for each transcript etc using the
-   API which is alot slower.
-
-   In summary only alter the mode here if you know what you are doing and what 
-   consequences there are.
-
-
-10) How do i run my external database references without a compute farm?
+9) How do i run my external database references without a compute farm?
 
   Simply use the -nofarm option with the xref_mapper.pl script.
 
@@ -334,7 +318,7 @@ data_uri        = ftp://fantom.gsc.riken.jp/DDBJ_fantom3_HTC_accession.txt.gz
 
 
 
-11) I want to use a different list of external database sources for my 
+10) I want to use a different list of external database sources for my 
     display_xrefs (names)?
 
    The external databases to be used for the display_xrefs are taken from either 
@@ -401,7 +385,7 @@ data_uri        = ftp://fantom.gsc.riken.jp/DDBJ_fantom3_HTC_accession.txt.gz
 
 
 
-12) I want to use a different list of external database sources for my gene 
+11) I want to use a different list of external database sources for my gene 
     descriptions?
 
    As above but this time we use the sub gene_description_sources.

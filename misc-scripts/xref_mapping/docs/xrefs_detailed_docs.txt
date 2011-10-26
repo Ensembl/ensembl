@@ -413,41 +413,37 @@ calulate display xref for genes and transcripts
 -----------------------------------------------
 
 The external databases to be used for the display_xrefs are taken from either the 
-BasicMapper.pm subroutine transcript_display_sources  i.e.
+DisplayXrefs.pm subroutine transcript_display_sources  i.e.
 
 sub transcript_display_xref_sources {
-  my @list = qw(miRBase
+  my @list = qw(HGNC
+                MGI
+                Clone_based_vega_gene
+                Clone_based_ensembl_gene
+                HGNC_transcript_name
+                MGI_transcript_name
+                Clone_based_vega_transcript
+                Clone_based_ensembl_transcript
+                miRBase
                 RFAM
-                HGNC_curated_gene
-		HGNC_automatic_gene
-                MGI_curated_gene
-		MGI_automatic_gene
-		Clone_based_vega_gene
-		Clone_based_ensembl_gene
-		HGNC_curated_transcript
-		HGNC_automatic_transcript
-		MGI_curated_transcript
-		MGI_automatic_transcript
-		Clone_based_vega_transcript
-		Clone_based_ensembl_transcript
-		IMGT/GENE_DB
-		HGNC
-		SGD
-		MGI
-		flybase_symbol
-		Anopheles_symbol
-		Genoscope_annotated_gene
-		Uniprot/SWISSPROT
-		Uniprot/Varsplic
-		RefSeq_peptide
-		RefSeq_dna
-		Uniprot/SPTREMBL
-		EntrezGene
+                IMGT/GENE_DB
+                SGD
+                flybase_symbol
+                Anopheles_symbol
+                Genoscope_annotated_gene
+                Uniprot/SWISSPROT
+                Uniprot/Varsplic
+                Uniprot/SPTREMBL
+                EntrezGene
 	        IPI);
 
   my %ignore;
-  $ignore{"EntrezGene"}= 'FROM:RefSeq_[pd][en][pa].*_predicted';
-  
+ $ignore{"Uniprot/SPTREMBL"} =(<<BIGN);
+SELECT object_xref_id
+    FROM object_xref JOIN xref USING(xref_id) JOIN source USING(source_id)
+     WHERE ox_status = 'DUMP_OUT' AND name = 'Uniprot/SPTREMBL'
+      AND priority_description = 'protein_evidence_gt_3'
+BIGN
   return [\@list,\%ignore];
 
 }
@@ -456,30 +452,35 @@ sub transcript_display_xref_sources {
 
 
 or if you want to create your own list then you need to create a species.pm file 
-and create a new subroutine there an example here is for drosophila_melanogaster.
-So in the file drosophila_melanogaster.pm  we have :-
+and create a new subroutine there an example here is for tetraodon_nigroviridis.
+So in the file tetraodon_nigroviridis.pm  we have :-
 
 sub transcript_display_xref_sources {
 
-  my @list = qw(FlyBaseName_transcript FlyBaseCGID_transcript 
-                flybase_annotation_id);
-                
+ my @list = qw(HGNC
+		MGI
+		wormbase_transcript
+		flybase_symbol
+		Anopheles_symbol
+		Genoscope_annotated_gene
+		Genoscope_predicted_transcript
+		Uniprot/SWISSPROT
+		RefSeq
+		Uniprot/SPTREMBL
+		LocusLink);
 
   my %ignore;
-  $ignore{"EntrezGene"}= 'FROM:RefSeq_[pd][en][pa].*_predicted';
+
+  $ignore{"Uniprot/SPTREMBL"} =(<<BIGN);
+SELECT object_xref_id
+    FROM object_xref JOIN xref USING(xref_id) JOIN source USING(source_id)
+     WHERE ox_status = 'DUMP_OUT' AND name = 'Uniprot/SPTREMBL' 
+      AND priority_description = 'protein_evidence_gt_3'
+BIGN
+
 
   return [\@list,\%ignore];
-
 }
-
-
-If we are in fullmode then a tempory table is created with these sources in and 
-some sql is used to find the best display_xrefs for the transcripts and genes. 
-
-If we are not in fullmode then we have to use the API to cycle though each gene, 
-transcript and translation fecth all there xrefs and get the best. This is not that quick.
-
-The results are stored directly to the core database.
 
 
 calulate the gene descriptions.
