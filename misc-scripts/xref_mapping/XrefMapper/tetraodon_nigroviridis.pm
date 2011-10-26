@@ -10,7 +10,7 @@ use vars '@ISA';
 
 sub transcript_display_xref_sources {
 
-  my @list = qw(HUGO
+  my @list = qw(HGNC
 		MGI
 		wormbase_transcript
 		flybase_symbol
