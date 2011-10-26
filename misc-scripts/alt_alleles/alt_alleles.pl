@@ -198,7 +198,7 @@ foreach my $key (keys %alt_to_stable){
 # Then store the alt_allele and gene_id in the alt_allele table.
 #
 
-$sql = "insert into alt_allele (alt_allele_id, gene_id, reference) values(?, ?, ?)";
+$sql = "insert into alt_allele (alt_allele_id, gene_id, is_ref) values(?, ?, ?)";
 my $insert_sth = $core_dba->dbc->prepare($sql);
 
 my $count=0;
