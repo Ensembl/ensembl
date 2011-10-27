@@ -91,6 +91,9 @@ Good docs can be found at
 https://www.ebi.ac.uk/seqdb/confluence/display/ENS/Importing+LRGs+into+Ensembl
 
 which comes down to doing the following :-
+Check that the LRG modules are added to perl5lib
+so for my instance I set
+setenv PERL5LIB ${PERL5LIB}:/nfs/users/nfs_i/ianl/LRG/code/modules
 
 perl scripts/import.lrg.pl  -verbose -do_all -host ens-staging -port
 3306 -user rw -pass password  -core homo_sapiens_core_65_37
@@ -116,13 +119,10 @@ perl scripts/import.lrg.pl  -verbose -do_all -host ens-staging -port
 homo_sapiens_cdna_65_37 -vega homo_sapiens_vega_65_37 -rnaseq
 homo_sapiens_rnaseq_65_37 -verify  >& verify.OUT
 
-need to add modules to perl5lib to know where to find the modules
-so for my instance i set
-setenv PERL5LIB ${PERL5LIB}:/nfs/users/nfs_i/ianl/LRG/code/modules
 
-If the cdna databses is not yet ready then remove the "-cdna
+If the cdna databases are not yet ready then remove the "-cdna
 homo_sapiens_cdna_65_37" bit and continue but let who ever is building
-this database that you are doing the LRGs so that they get the same
+this database know that you are doing the LRGs so that they get the same
 data.
 
 
@@ -130,8 +130,7 @@ data.
 Run the parsing
 ---------------
 
-More detailed instructions can be found in the FAQ.txt and 
-
+More detailed instructions can be found in the FAQ.txt, 
 but basically you should cd to where you want the files to be downloaded to 
 and run the following;-
 
@@ -163,7 +162,7 @@ Explanation of the output:-
 > -dbname ianl_human_xref_65 -species human -stats -
 > create -force
 
-Tells us what options were used when the parser script was ran.
+Tells us what options were used when the parser script was run.
 
 
 > ----{ XXXX }-----------------------------------------------------------------
@@ -325,7 +324,7 @@ to do next
 
 >No alt_alleles found for this species.
 
-only for human do we inport the alt_alleles
+only for human do we import the alt_alleles
 
 
 >Dumping xref & Ensembl sequences
@@ -347,7 +346,7 @@ exist they will not be re dumped.
 >already processed = 0, processed = 734, errors = 0, empty = 0 
 
 This is information on the mapping of the fasta files using exonerate. Check that
-the errors are 0 else one of the mapping went wrong.
+the errors are 0 else one of the mappings went wrong.
 
 
 >Could not find stable id ENSDART00000126968 in table to get the internal id hence
@@ -367,7 +366,7 @@ this is not a problem.
 >	ZFIN_ID
 
 Priority xrefs are those xrefs where we get the data from more than one place.
-These will have prioritys which tell us which is better so the best ones are 
+These will have priorities which tell us which is better so the best ones are 
 chosen at this point.
 
 
@@ -403,7 +402,7 @@ highest and Translation the lowest.
 >DBASS3 moved to Gene level.
 >DBASS5 moved to Gene level.
 
-Some sources are considered to belong to genes but maybe mapped to transcripts or 
+Some sources are considered to belong to genes but may be mapped to transcripts or 
 translations so we move these now to the gene.
 
 
@@ -416,8 +415,8 @@ translations so we move these now to the gene.
 >	wu:fj89a05  (left as ZFIN_ID reference but not gene symbol)
 
 For some sources (HGNC in human, MGI in mouse and ZFIN_ID in zebrafish) we only 
-want to have one reference per gene so using things like their prioritys, %id 
-mapping values etc we try to find the best one and remove the others. If we cannot 
+want to have one reference per gene so using things like their priorities, %id 
+mapping values etc. we try to find the best one and remove the others. If we cannot 
 find a best one then all are kept.
 
 
@@ -491,7 +490,7 @@ So we report the number and type of xrefs that are loaded.
 >Setting Transcript and Gene display_xrefs from xref database into core and 
 > setting the desc
 
-In the official naming routine which mouse, human and zebrafish run we set
+In the official naming routine which mouse, human and zebrafish run, we set
 the display_xrefs and descriptions.
 
 
@@ -513,8 +512,8 @@ Used for checking/debuging mainly.
 >	RFAM	9
 >6437 gene descriptions added
 
-For those that the official naming routine could not set we now add display_xrefs
-and decriptions. NOTE: the higher the number ther greater the priority for naming.
+For those that the official naming routine could not set, we now add display_xrefs
+and descriptions. NOTE: the higher the number the greater the priority for naming.
 
 
 >xref_mapper.pl FINISHED NORMALLY
