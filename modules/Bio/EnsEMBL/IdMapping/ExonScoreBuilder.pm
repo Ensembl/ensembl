@@ -803,7 +803,8 @@ sub non_mapped_transcript_rescore {
     }
 
     unless ($found_mapped) {
-      # PENALTY: The exon stable ID is on a new transcript.
+      # PENALTY: The exon appears to belong to a transcript that has not
+      # been mapped.
       $matrix->set_score( $entry->source(), $entry->target(),
                           0.8*$entry->score() );
       $i++;
