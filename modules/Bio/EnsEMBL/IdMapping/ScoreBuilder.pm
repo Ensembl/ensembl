@@ -190,7 +190,8 @@ sub internal_id_rescore {
     my $ambiguous = 0;
 
     foreach my $e (@entries) {
-      if ( $e->target == $source and $e->score == $entries[0] ) {
+      if ( $e->target == $source and $e->score == $entries[0]->score() )
+      {
         $ambiguous = 1;
         last;
       }
@@ -201,7 +202,8 @@ sub internal_id_rescore {
     # now penalise those where source id != target id and score == best
     # score
     foreach my $e (@entries) {
-      if ( $e->target != $source and $e->score == $entries[0] ) {
+      if ( $e->target != $source and $e->score == $entries[0]->score() )
+      {
         # PENALTY: This stable ID is not any longer on the same object.
         $matrix->set_score( $source, $e->target(), 0.8*$e->score() );
         $i++;
