@@ -98,9 +98,9 @@ sub map_genes {
     # determine which plugin methods to run
     my @default_plugins = (qw(
       Bio::EnsEMBL::IdMapping::InternalIdMapper::EnsemblGeneGeneric::init_basic
-      Bio::EnsEMBL::IdMapping::InternalIdMapper::EnsemblGeneGeneric::synteny
       Bio::EnsEMBL::IdMapping::InternalIdMapper::EnsemblGeneGeneric::best_transcript
       Bio::EnsEMBL::IdMapping::InternalIdMapper::EnsemblGeneGeneric::biotype
+      Bio::EnsEMBL::IdMapping::InternalIdMapper::EnsemblGeneGeneric::synteny
       Bio::EnsEMBL::IdMapping::InternalIdMapper::EnsemblGeneGeneric::internal_id
     ));
 
@@ -198,10 +198,10 @@ sub map_transcripts {
     my @default_plugins = (qw(
       Bio::EnsEMBL::IdMapping::InternalIdMapper::EnsemblTranscriptGeneric::init_basic
       Bio::EnsEMBL::IdMapping::InternalIdMapper::EnsemblTranscriptGeneric::non_exact_translation
-      Bio::EnsEMBL::IdMapping::InternalIdMapper::EnsemblTranscriptGeneric::mapped_gene
       Bio::EnsEMBL::IdMapping::InternalIdMapper::EnsemblTranscriptGeneric::biotype
-      Bio::EnsEMBL::IdMapping::InternalIdMapper::EnsemblTranscriptGeneric::internal_id
+      Bio::EnsEMBL::IdMapping::InternalIdMapper::EnsemblTranscriptGeneric::mapped_gene
       Bio::EnsEMBL::IdMapping::InternalIdMapper::EnsemblTranscriptGeneric::single_gene
+      Bio::EnsEMBL::IdMapping::InternalIdMapper::EnsemblTranscriptGeneric::internal_id
     ));
 
     my @plugins = $self->conf->param('plugin_internal_id_mappers_transcript');
@@ -299,6 +299,7 @@ sub map_exons {
     my @default_plugins = (qw(
       Bio::EnsEMBL::IdMapping::InternalIdMapper::EnsemblExonGeneric::init_basic
       Bio::EnsEMBL::IdMapping::InternalIdMapper::EnsemblExonGeneric::mapped_transcript
+      Bio::EnsEMBL::IdMapping::InternalIdMapper::EnsemblExonGeneric::internal_id
     ));
 
     my @plugins = $self->conf->param('plugin_internal_id_mappers_exon');

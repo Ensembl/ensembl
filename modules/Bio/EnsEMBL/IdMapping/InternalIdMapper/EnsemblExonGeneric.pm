@@ -88,5 +88,34 @@ sub mapped_transcript {
 }
   
 
+#
+# selectively rescore by penalising scores between exons with
+# different internalIDs
+#
+sub internal_id {
+  my $self        = shift;
+  my $num         = shift;
+  my $esb         = shift;
+  my $mappings    = shift;
+  my $exon_scores = shift;
+
+  $self->logger->info( "Retry with internalID disambiguation...\n",
+                       0, 'stamped' );
+
+  if ( !$exon_scores->loaded() ) {
+    $esb->internal_id_rescore($exon_scores);
+    $exon_scores->write_to_file();
+  }
+
+  $mappings = $self->basic_mapping( $exon_scores, "exon_mappings$num" );
+  $num++;
+  my $new_scores =
+    $esb->create_shrinked_matrix( $exon_scores, $mappings,
+                                  "exon_matrix$num" );
+
+  return ( $new_scores, $mappings );
+}
+
+
 1;
 
