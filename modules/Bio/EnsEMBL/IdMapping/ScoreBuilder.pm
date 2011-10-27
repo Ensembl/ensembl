@@ -180,10 +180,10 @@ sub internal_id_rescore {
       sort { $b <=> $a } @{ $matrix->get_Entries_for_source($source) };
 
     # nothing to do if we only have one mapping
-    next unless ( scalar(@entries) > 1 );
+    if ( scalar(@entries) == 1 ) { next }
 
     # only penalise if mappings are ambiguous
-    next unless ( $entries[0]->score == $entries[1]->score );
+    if ( $entries[0]->score != $entries[1]->score ) { next }
 
     # only penalise if one source id == target id where score == best
     # score
@@ -197,15 +197,15 @@ sub internal_id_rescore {
       }
     }
 
-    next unless ($ambiguous);
+    if ( !$ambiguous ) { next }
 
     # now penalise those where source id != target id and score == best
     # score
     foreach my $e (@entries) {
       if ( $e->target != $source and $e->score == $entries[0]->score() )
       {
-        # PENALTY: This stable ID is not any longer on the same object.
-        $matrix->set_score( $source, $e->target(), 0.8*$e->score() );
+        # PENALTY: Reduce score for ambiguous mappings.
+        $matrix->set_score( $source, $e->target(), 0.9*$e->score() );
         $i++;
       }
     }
