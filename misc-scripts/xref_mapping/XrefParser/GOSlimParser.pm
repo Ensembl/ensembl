@@ -40,6 +40,9 @@ sub run_script {
   if($file =~ /pass[=][>](\S+?)[,]/x){
     $pass = $1;
   }
+  if($file =~ /user[=][>](\S+?)[,]/x){
+    $user = $1;
+  }
 
 
   my $dbi2;
