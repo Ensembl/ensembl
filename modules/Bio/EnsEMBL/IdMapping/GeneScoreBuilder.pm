@@ -198,65 +198,84 @@ sub flag_matrix_from_transcript_scores {
 
 
 sub score_matrix_from_flag_matrix {
-  my $self = shift;
-  my $flag_matrix = shift;
+  my $self              = shift;
+  my $flag_matrix       = shift;
   my $transcript_matrix = shift;
-  my $simple_scoring = shift;
+  my $simple_scoring    = shift;
 
-  unless ($flag_matrix and
-          $flag_matrix->isa('Bio::EnsEMBL::IdMapping::ScoredMappingMatrix')) {
+  unless ( $flag_matrix and
+     $flag_matrix->isa('Bio::EnsEMBL::IdMapping::ScoredMappingMatrix') )
+  {
     throw('Need a gene Bio::EnsEMBL::IdMapping::ScoredMappingMatrix.');
   }
-  
-  unless ($transcript_matrix and
-          $transcript_matrix->isa('Bio::EnsEMBL::IdMapping::ScoredMappingMatrix')) {
-    throw('Need a transcript Bio::EnsEMBL::IdMapping::ScoredMappingMatrix.');
+
+  unless (     $transcript_matrix
+           and
+           $transcript_matrix->isa(
+                         'Bio::EnsEMBL::IdMapping::ScoredMappingMatrix')
+    )
+  {
+    throw(
+       'Need a transcript Bio::EnsEMBL::IdMapping::ScoredMappingMatrix.'
+    );
   }
 
   # create a new scoring matrix which will replace the flag matrix
-  my $matrix = Bio::EnsEMBL::IdMapping::ScoredMappingMatrix->new(
-    -DUMP_PATH   => $flag_matrix->dump_path,
-    -CACHE_FILE  => $flag_matrix->cache_file_name,
-  );
+  my $matrix =
+    Bio::EnsEMBL::IdMapping::ScoredMappingMatrix->new(
+                           -DUMP_PATH  => $flag_matrix->dump_path,
+                           -CACHE_FILE => $flag_matrix->cache_file_name,
+    );
 
   # initialise progress logger
   my $i;
   my $num_entries = $flag_matrix->get_entry_count;
-  my $progress_id = $self->logger->init_progress($num_entries, 100);
-  
-  $self->logger->info("Creating score matrix from flag matrix...\n", 1);
+  my $progress_id = $self->logger->init_progress( $num_entries, 100 );
+
+  $self->logger->info( "Creating score matrix from flag matrix...\n",
+                       1 );
+
+  my $gene_score_threshold =
+    $self->conf()->param('gene_score_threshold') || 0;
 
   # loop over flag matrix and do proper scoring for each entry
-  foreach my $entry (@{ $flag_matrix->get_all_Entries }) {
-    
-    $self->logger->log_progress($progress_id, ++$i, 1);
+  foreach my $entry ( @{ $flag_matrix->get_all_Entries } ) {
+
+    $self->logger->log_progress( $progress_id, ++$i, 1 );
 
     my $score = 0;
-    my $source_gene = $self->cache->get_by_key('genes_by_id', 'source',
-      $entry->source);
-    my $target_gene = $self->cache->get_by_key('genes_by_id', 'target',
-      $entry->target);
+    my $source_gene =
+      $self->cache->get_by_key( 'genes_by_id', 'source',
+                                $entry->source );
+    my $target_gene =
+      $self->cache->get_by_key( 'genes_by_id', 'target',
+                                $entry->target );
 
     if ($simple_scoring) {
-    
+
       # simple scoring (used for rescoring purposes)
-      $score = $self->simple_gene_gene_score($source_gene, $target_gene,
-        $transcript_matrix);
-    
-    } else {
+      $score =
+        $self->simple_gene_gene_score( $source_gene, $target_gene,
+                                       $transcript_matrix );
+
+    }
+    else {
 
       # full scoring
-      $score = $self->complex_gene_gene_score($source_gene, $target_gene,
-        $transcript_matrix);
+      $score =
+        $self->complex_gene_gene_score( $source_gene, $target_gene,
+                                        $transcript_matrix );
     }
 
-    $matrix->add_score($entry->source, $entry->target, $score);
-  }
+    if ( $score > $gene_score_threshold ) {
+      $matrix->add_score( $entry->source, $entry->target, $score );
+    }
+  } ## end foreach my $entry ( @{ $flag_matrix...})
 
   $self->logger->info("\n");
 
   return $matrix;
-}
+} ## end sub score_matrix_from_flag_matrix
 
 
 sub complex_gene_gene_score {
