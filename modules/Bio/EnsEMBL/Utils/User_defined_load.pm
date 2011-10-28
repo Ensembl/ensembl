@@ -114,3 +114,5 @@ sub load_dupgene {
 } ## end sub load_dupgene
 
 =cut
+
+1;
