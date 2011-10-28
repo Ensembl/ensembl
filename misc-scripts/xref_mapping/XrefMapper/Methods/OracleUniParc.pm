@@ -39,7 +39,7 @@ sub perform_mapping {
   
   my @final_results;
   
-  $self->oracle_dbc()->batch(-SQL => $UNIPARC_SQL, -CALLBACK => sub {
+  $self->oracle_dbc()->sql_helper()->batch(-SQL => $UNIPARC_SQL, -CALLBACK => sub {
     my ($sth) = @_;
     foreach my $sequence (@{$sequences}) {
       my $checksum = $self->checksum($sequence);
