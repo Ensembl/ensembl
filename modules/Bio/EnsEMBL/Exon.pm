@@ -200,11 +200,12 @@ sub new {
 
 sub end_phase {
   my $self = shift;
-  if( @_ ) { 
+  if (@_) {
     $self->{'end_phase'} = shift;
-  } else {
-    if( ! defined ( $self->{'end_phase'} )) {
-      warning( "No end phase set in Exon. You must set it explicitly." );
+  }
+  else {
+    if ( !defined( $self->{'end_phase'} ) ) {
+      warning("No end phase set in Exon. You must set it explicitly.");
     }
   }
   return $self->{'end_phase'};
@@ -871,7 +872,8 @@ sub equals {
   if ( $self->start() == $exon->start() &&
        $self->end() == $exon->end() &&
        $self->strand() == $exon->strand() &&
-       $self->phase() == $exon->phase() )
+       $self->phase() == $exon->phase() &&
+       $self->end_phase() == $exon->end_phase() )
   {
     return 1;
   }
