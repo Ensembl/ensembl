@@ -13,7 +13,7 @@ my $verbose;
 # The object types we'd like to parse.
 our %object_types = ( gene       => 1,
                       mRNA       => 1,
-		      pre_miRNA  => 1,
+											pre_miRNA  => 1,
                       miRNA      => 1,
                       ncRNA      => 1,
                       protein    => 1,
@@ -76,17 +76,17 @@ our %source_name_map = ( 'FlyBase'    => 'flybase_annotation_id',
                          'bdgpinsituexpr'     => 'BDGP_insitu_expr',
                          'dedb'               => 'DEDb',
                          'flygrid'            => 'FlyGrid',
-			 'TF'                 => 'TransFac',
+												 'TF'                 => 'TransFac',
                          'EPD'                => 'EPD',
-			 'MIR'                => 'miRBase',
-			 'MEROPS'             => 'MEROPS',
-			 'BIOGRID'            => 'BioGRID',
-			 'FlyReactome'        => 'FlyReactome',
-			 'GenomeRNAi_gene'    => 'GenomeRNAi',
-			 'INTERACTIVEFLY'     => 'InteractiveFly',
-			 'MITODROME'          => 'MitoDrome',
-			 'flyexpress'         => 'FlyExpress',
-			 'Rfam'               => 'RFAM',
+												 'MIR'                => 'miRBase',
+												 'MEROPS'             => 'MEROPS',
+												 'BIOGRID'            => 'BioGRID',
+												 'FlyReactome'        => 'FlyReactome',
+												 'GenomeRNAi_gene'    => 'GenomeRNAi',
+												 'INTERACTIVEFLY'     => 'InteractiveFly',
+												 'MITODROME'          => 'MitoDrome',
+												 'flyexpress'         => 'FlyExpress',
+												 'Rfam'               => 'RFAM',
 			 #'FlyAtlas'           => 'FlyAtlas',
 			 #'GCR'                => 'GPCR',
 			 #'GLEANR'             => 'GLEAN-R',
@@ -115,11 +115,11 @@ our %special_source_name_map = (
 our %source_id;
 
 sub get_source_id_for_source_name {
-  my ($self, $source_name) = @_;
+  my ($self, $source_name, $priority_desc) = @_;
 
   if ( !defined( $source_id{$source_name} ) ) {
     $source_id{$source_name} =
-      $self->SUPER::get_source_id_for_source_name($source_name);
+      $self->SUPER::get_source_id_for_source_name($source_name, $priority_desc);
 
     printf( "source_id for source '%s' is %d\n",
             $source_name, $source_id{$source_name} ) if ($verbose);
@@ -148,6 +148,13 @@ sub run {
     croak "Need to pass source_id, species_id and files as pairs";
   }
   $verbose |=0;
+
+
+	# Create a go source id for GO terms extracted from the GFF file
+	# The reason being to separate from any other sources for GO terms
+	# like dependent xrefs (GOA UniProt).
+
+	my $go_source_id = $self->SUPER::get_source_id_for_source_name('GO','flybasego');
 
   print "-------------------------\n";
   print "FlybaseParser::run species_id $species_id\n";
@@ -226,8 +233,14 @@ sub run {
         foreach
           my $subattribute ( split( /,/, $attributes{$attribute_key} ) )
         {
-          my ( $key, $value ) = split( /:/, $subattribute, 2 );
-          push( @{ $tmphash{$key} }, $value );
+						# For GO term, we keep the form GO:0004080
+						if ($subattribute =~ /^GO/) {
+								#print "$attribute_key Storing GO term: $subattribute for $id\n";
+								push( @{ $tmphash{'GO'} }, $subattribute );
+						} else {
+								my ( $key, $value ) = split( /:/, $subattribute, 2 );
+								push( @{ $tmphash{$key} }, $value );
+						}
         }
 
         # Replace the attribute entry with the hash.
@@ -312,27 +325,31 @@ sub run {
     #-------------------------------------------------------------------
     # Store Xrefs and Direct Xrefs for the GO 'Ontology_term' entries.
     #-------------------------------------------------------------------
+
     if ( exists( $attributes{'Ontology_term'}{'GO'} ) ) {
       my $source_name = 'GO';
-      my $source_id =
-        $self->get_source_id_for_source_name($source_name);
+      #my $source_id =
+      #  $self->get_source_id_for_source_name($source_name);
+
 
       foreach my $accession ( @{ $attributes{'Ontology_term'}{'GO'} } )
       {
-        my $xref_id;
-        if ( exists( $xref_ids{$source_name}{$accession} ) ) {
-          $xref_id = $xref_ids{$source_name}{$accession};
-        } else {
-          $xref_id =
-            $self->add_xref({ acc        => $accession,
-			      label      => $accession,
-			      source_id  => $source_id,
-			      species_id => $species_id,
-			      info_type  => 'DIRECT'} );
-          $xref_ids{$source_name}{$accession} = $xref_id;
-        }
-
-        $self->add_direct_xref( $xref_id, $id, $type, 'IEA' );
+					my $xref_id;
+					if ( exists( $xref_ids{$source_name}{$accession} ) ) {
+							$xref_id = $xref_ids{$source_name}{$accession};
+					} else {
+							#print "FlyBaseParser\t$source_name\tadd_xref: $accession, $go_source_id\n";  
+							$xref_id =
+									$self->add_xref({ acc        => $accession,
+																		label      => $accession,
+																		source_id  => $go_source_id,
+																		species_id => $species_id,
+																		info_type  => 'DIRECT'} );
+							$xref_ids{$source_name}{$accession} = $xref_id;
+					}
+					
+					#print "Add GO direct xref for $id with $type \n";
+					$self->add_direct_xref( $xref_id, $id, $type, 'IEA' );
       }
     }
 
