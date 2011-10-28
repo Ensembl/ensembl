@@ -237,6 +237,9 @@ sub process_file {
     elsif($key eq "farm"){
       $type = "farm";
     }
+    elsif($key eq 'uniparc'){
+      $type = 'uniparc';
+    }
     elsif($type eq "species"){ # processing species data
       $species_hash{lc($key)} = $value;
     }
