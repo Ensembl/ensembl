@@ -10,12 +10,12 @@ $Data::Dumper::Indent = 0;
 # Remember to check/set the various config optons
 
 # ------------------------------ config -------------------------------
-my $release = 63;
+my $release = 65;
 
 
 my $base_dir = "/lustre/scratch103/ensembl/rjk/projections/";
 
-my $conf = "release_63.ini"; # registry config file, specifies Compara location
+my $conf = "release_65.ini"; # registry config file, specifies Compara location
 
 # location of other databases
 
@@ -100,6 +100,7 @@ my @names_1_1 = (["human", "chimp"            ],
 		 ["human", "zebrafinch"       ],
                  ["human", "panda"            ],
                  ["human", "turkey"           ],
+                 ["human", "tasmanian_devil"  ],
 		 ["mouse", "kangaroo_rat"     ],
 		 ["mouse", "rat"              ]);
 
@@ -107,6 +108,8 @@ my @names_1_many = (["human", "zebrafish"  ],
 		    ["human", "medaka"     ],
 		    ["human", "tetraodon"  ],
 		    ["human", "fugu"       ],
+		    ["human", "lamprey"    ],
+		    ["human", "cod"        ],
 		    ["human", "stickleback"]);
 
 my @go_terms = (["human",      "mouse"          ],
@@ -150,6 +153,7 @@ my @go_terms = (["human",      "mouse"          ],
 		["human",      "anolis"         ],
 		["human",      "panda"          ],
 		["human",      "turkey"         ],
+		["human",      "tasmanian_devil"],
                 ["mouse",      "human"          ],
 		["mouse",      "rat"            ],
 		["mouse",      "dog"            ],
@@ -177,7 +181,7 @@ my @go_terms = (["human",      "mouse"          ],
         	["mouse",      "horse"          ],
 		["mouse",      "orang_utan"     ],
 		["mouse",      "mouse_lemur"    ],
-		["mouse",      "wallaby"    ],
+		["mouse",      "wallaby"        ],
 		["mouse",      "dolphin"        ],
 		["mouse",      "hyrax"          ],
 		["mouse",      "megabat"        ],
@@ -188,13 +192,16 @@ my @go_terms = (["human",      "mouse"          ],
 		["mouse",      "sloth"          ],
 		["mouse",      "zebrafinch"     ],
 		["mouse",      "anolis"         ],
-		["mouse",      "panda"          ], 
+		["mouse",      "panda"          ],
+		["mouse",      "tasmanian_devil"], 
                 ["rat",        "human"          ],
 		["rat",        "mouse"          ],
 		["zebrafish",      "xenopus"    ],
 		["zebrafish",      "fugu"       ],
 		["zebrafish",      "tetraodon"  ],
 		["zebrafish",      "stickleback"],
+		["zebrafish",      "lamprey"    ],
+	        ["zebrafish",      "cod"    ],
 		["human",      "stickleback"    ],
 		["mouse",      "stickleback"    ],
 		["mouse",      "turkey"         ],
