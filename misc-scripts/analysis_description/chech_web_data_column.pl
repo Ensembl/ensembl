@@ -15,7 +15,11 @@
    This column has been giving problems due to the peculiarity of the data 
    (string containing quotes that has to be eval'd into a hash ref). In 
    order to check it, this script should be run after load_analysis_description
-   and apply_rules
+   and apply_rules.
+   
+   If you are using the production admin interface then ALL web data entries
+   are checked for well-formedness. You should only run this script if you
+   are manually inserting C<web_data>.
 
 =head1 OPTIONS
 
