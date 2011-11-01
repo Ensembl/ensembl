@@ -40,6 +40,8 @@ my $attrib_codes_ref = $prod_dbh->selectcol_arrayref("select distinct b.name, co
 
 my %attrib_codes = @$attrib_codes_ref;
 
+$prod_dbh->disconnect;
+
 #add known and novel protein coding attrib types
 $attrib_codes{'known protein_coding'} = 'GeneNo_knwCod';
 $attrib_codes{'novel protein_coding'} = 'GeneNo_novCod';
