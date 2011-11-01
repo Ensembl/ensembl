@@ -63,7 +63,7 @@ ok($feature && $feature->isa('Bio::EnsEMBL::Map::DitagFeature'));
 # dbID, sequence, slice, ditag_pair_id
 
 my $ditagFeatures = $dfa->fetch_all_by_ditagID($ditag_id);
-my $ditagFeature  = $ditagFeatures->[0];
+my ($ditagFeature)  = grep { $_->cigar_line() eq $cigar_line } @{$ditagFeatures};
 
 ok(defined $ditagFeature && $ditagFeature->isa('Bio::EnsEMBL::Map::DitagFeature'));
 
