@@ -129,6 +129,9 @@ my @chg_repeats;
 #dbs with new variation positions
 my @chg_variation;
 
+#core dbs which have a corresponding variation db
+my @core_with_variation;
+
 if ($response >= 1) {
     #get new dbs, or changed assembly  
     @new_sp_assem =  map { $_->[0] }  @{ $prod_dbh->selectall_arrayref("select distinct concat(full_db_name,'|',db_host) from db_list dl join db d using (db_id) where db_release = $current_release and db_type = 'core' and species_id not in (select distinct species_id from db where db_release <> $current_release and db_type = 'core') union
@@ -207,11 +210,24 @@ if ($response == 3) {
     print "\nvariation_density.pl - run for new species or where the core assembly has changed, or if there are any changes to variation positions in the variation database (species will be stored in file ./variation_density_data.txt, to submit run submit_density_features.pl -submit variation_density):\n";
 
     #get species for new dbs or changed assembly or where variation positions have changed
+    @core_with_variation =  map { $_->[0] }  @{ $prod_dbh->selectall_arrayref("select distinct concat(full_db_name,'|',db_host) from db_list dl join db d using (db_id) where db_release = $current_release and db_type = 'core' and species_id in (select distinct species_id from db where db_release = $current_release and db_type = 'variation');") };
+
     @chg_variation =  map { $_->[0] }  @{ $prod_dbh->selectall_arrayref("select distinct concat(full_db_name,'|',db_host) from db_list dl join db d using (db_id) where db_type = 'core' and is_current = 1 and species_id in (select distinct species_id from changelog_species cs join changelog c using (changelog_id) where release_id = $current_release and status not in ('cancelled','postponed') and variation_pos_changed = 'Y')") };
 
+    my %core_with_variation = map { $_ => 1 } @core_with_variation;
+
+
+    my @new_sp_assem_var;
+
+    foreach my $element (@new_sp_assem) {
+
+	if ( exists($core_with_variation{$element}) ) {
+	    push (@new_sp_assem_var, $element);
+	}
+    }
 
     my %array_union = ();
-    foreach my $element (@new_sp_assem, @chg_variation) { $array_union{$element}++ }
+    foreach my $element (@new_sp_assem_var, @chg_variation) { $array_union{$element}++ }
     my @dbnames_hosts = sort(keys %array_union); 
  
     my $file_path = "./variation_density_data.txt";
