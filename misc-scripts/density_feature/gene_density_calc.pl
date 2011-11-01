@@ -118,21 +118,78 @@ foreach my $dbname (@dbnames) {
   $sth = $db->dbc->prepare("DELETE df, dt FROM density_feature df, density_type dt, analysis a WHERE a.analysis_id=dt.analysis_id AND dt.density_type_id=df.density_type_id AND a.logic_name IN ('knowngenedensity', 'genedensity')");
   $sth->execute();
   
-
-
   my $dfa = $db->get_DensityFeatureAdaptor();
   my $dta = $db->get_DensityTypeAdaptor();
   my $aa  = $db->get_AnalysisAdaptor();
   my $slice_adaptor = $db->get_SliceAdaptor();
   
   my $support = 'Bio::EnsEMBL::Utils::ConversionSupport';
-  my $analysis = $aa->fetch_by_logic_name('knowngenedensity');
-  $analysis->created($support->date());
-  $aa->update($analysis);
+  my $analysis1 = $aa->fetch_by_logic_name('knowngenedensity');
+  my $analysis2 = $aa->fetch_by_logic_name('genedensity');
+
+  # Master database location:
+  my ( $mhost, $mport ) = ( 'ens-staging1', '3306' );
+  my ( $muser, $mpass ) = ( 'ensro',        undef );
+  my $mdbname = 'ensembl_production';
+  my $prod_dsn;
+  my $prod_dbh;
+
+  if ( !defined($analysis1) || !defined($analysis2) ) {
+
+    #get analyses descriptions from the master database
+
+     $prod_dsn = sprintf( 'DBI:mysql:host=%s;port=%d;database=%s',
+                     $mhost, $mport, $mdbname );
+     $prod_dbh = DBI->connect( $prod_dsn, $muser, $mpass,
+                          { 'PrintError' => 1, 'RaiseError' => 1 } );
+  } 
+
+  if ( !defined($analysis1) ) {
+
+   my ($display_label,$description) = $prod_dbh->selectrow_array("select distinct display_label, description from analysis_description where is_current = 1 and logic_name = 'knowngenedensity'");
+
+    $analysis1 = new Bio::EnsEMBL::Analysis(
+    -program     => "gene_density_calc.pl",
+    -database    => "ensembl",
+    -gff_source  => "gene_density_calc.pl",
+    -gff_feature => "density",
+    -logic_name  => "knowngenedensity",
+    -description => $description,
+    -display_label => $display_label,
+    -displayable   => 1 );
+
+    $aa->store($analysis1);
+
+  } else {
+      $analysis1->created($support->date());
+      $aa->update($analysis1);
+  }
  
-  $analysis = $aa->fetch_by_logic_name('genedensity');
-  $analysis->created($support->date());
-  $aa->update($analysis);
+
+  if ( !defined($analysis2) ) {
+
+  my ($display_label,$description) = $prod_dbh->selectrow_array("select distinct display_label, description from analysis_description where is_current = 1 and logic_name = 'genedensity'");
+
+      $analysis2 = new Bio::EnsEMBL::Analysis(
+    -program     => "gene_density_calc.pl",
+    -database    => "ensembl",
+    -gff_source  => "gene_density_calc.pl",
+    -gff_feature => "density",
+    -logic_name  => "genedensity",
+    -description => $description,
+    -display_label => $display_label,
+    -displayable   => 1 );
+
+      $aa->store($analysis2);  
+
+  } else {
+      $analysis2->created($support->date());
+      $aa->update($analysis2);
+  }
+
+  if ( defined($prod_dbh) ) {
+      $prod_dbh->disconnect;
+  }
 
 #
 # Now the actual feature calculation loop
@@ -143,6 +200,7 @@ foreach my $dbname (@dbnames) {
   #
   # Create new analysis object for density calculation.
   #
+    my $analysis;
 
     if($known) {
       $analysis = $aa->fetch_by_logic_name('knowngenedensity');

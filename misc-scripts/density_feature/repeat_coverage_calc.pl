@@ -77,13 +77,43 @@ my $dta = $db->get_DensityTypeAdaptor();
 my $aa  = $db->get_AnalysisAdaptor();
 
 
-#
-# Update creation date of analysis.
-#
-my $support = 'Bio::EnsEMBL::Utils::ConversionSupport';
 my $analysis = $aa->fetch_by_logic_name('percentagerepeat');
-$analysis->created($support->date());
-$aa->update($analysis);
+
+
+if ( !defined($analysis) ) {
+
+   # Master database location:
+   my ( $mhost, $mport ) = ( 'ens-staging1', '3306' );
+   my ( $muser, $mpass ) = ( 'ensro',        undef );
+   my $mdbname = 'ensembl_production';
+
+   my $prod_dsn = sprintf( 'DBI:mysql:host=%s;port=%d;database=%s',
+                     $mhost, $mport, $mdbname );
+   my $prod_dbh = DBI->connect( $prod_dsn, $muser, $mpass,
+                          { 'PrintError' => 1, 'RaiseError' => 1 } );
+
+   my ($display_label,$description) = $prod_dbh->selectrow_array("select distinct display_label, description from analysis_description where is_current = 1 and logic_name = 'percentagerepeat'");
+
+   $prod_dbh->disconnect;
+
+   $analysis = new Bio::EnsEMBL::Analysis(
+              -program     => "repeat_coverage_calc.pl",
+              -database    => "ensembl",
+              -gff_source  => "repeat_coverage_calc.pl",
+              -gff_feature => "density",
+              -logic_name  => "percentagerepeat", 
+              -description => $description,
+              -display_label => $display_label,
+              -displayable   => 1 );
+
+    $aa->store($analysis);
+} else {
+
+    my $support = 'Bio::EnsEMBL::Utils::ConversionSupport';
+    $analysis->created($support->date());
+    $aa->update($analysis);
+
+}
 
 my $slices = $slice_adaptor->fetch_all( "toplevel" );
 my @sorted_slices = sort { $b->seq_region_length() <=> $a->seq_region_length() } @$slices;
