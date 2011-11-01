@@ -43,6 +43,20 @@ if ( (!defined @port) || ($port_count < $host_count) ) {
     } 
 }
 
+my @hosts = qw(ens-staging1, ens-staging2);
+
+if (!$outdir) { 
+    $outdir = $ENV{'PWD'}; 
+} else {
+  #strip the final /
+  $outdir =~ s/\/$//;  
+  #test if the directory exists
+  if (!-d $outdir) {
+      die("Directory $outdir does not exist."); 
+  }
+
+}
+
 # production/master database location:
 my ( $mhost, $mport ) = ( 'ens-staging1', '3306' );
 my ( $muser, $mpass ) = ( 'ensro',        undef );
@@ -58,19 +72,6 @@ my $prod_dbh = DBI->connect( $prod_dsn, $muser, $mpass,
 
 my ($current_release ) = $prod_dbh->selectrow_array('select max(db_release) from db where is_current = 1');
  
-my @hosts = qw(ens-staging1, ens-staging2);
-
-if (!$outdir) { 
-    $outdir = $ENV{'PWD'}; 
-} else {
-  #strip the final /
-  $outdir =~ s/\/$//;  
-  #test if the directory exists
-  if (!-d $outdir) {
-      die("Directory $outdir does not exist."); 
-  }
-
-}
 
 
 if ( !defined $submit_script ) {
@@ -112,6 +113,7 @@ CYCLE2
 
 
 if ($response == 0) {
+  $prod_dbh->disconnect;
   exit(0);
 }
 
@@ -259,7 +261,11 @@ if ($response == 3) {
 
 }
 
+$prod_dbh->disconnect;
+
 } else {
+
+    $prod_dbh->disconnect;
 
 #submit selected script
     my @cmd;
@@ -379,8 +385,8 @@ The script lists databases/species which should have density features updated at
 
 Usage:
 
-  $0 -h host [-h host]* -u user [-u user]* -p password [-p password]* 
-  $indent -port port [-port port]*
+  $0 -h host [-h host] -u user [-u user] -p password [-p password] 
+  $indent -port port [-port port]
   $indent [-g] [-s script name]
   $indent [-o output directory path]
   $indent [-help]  
