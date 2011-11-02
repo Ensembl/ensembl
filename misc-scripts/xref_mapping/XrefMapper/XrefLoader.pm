@@ -202,7 +202,17 @@ sub update{
      # SQL to get data from xref
      ###########################
 
-     my $direct_sth = $self->xref->dbc->prepare('select x.xref_id, x.accession, x.label, x.version, x.description, x.info_text, ox.object_xref_id, ox.ensembl_id, ox.ensembl_object_type from xref x, object_xref ox  where ox.ox_status = "DUMP_OUT" and ox.xref_id = x.xref_id and x.source_id = ? and x.info_type = ? order by x.xref_id');
+  my $dir_sql =(<<DIRS);
+SELECT x.xref_id, x.accession, x.label, x.version, x.description, x.info_text,
+       ox.object_xref_id, ox.ensembl_id, ox.ensembl_object_type
+  FROM xref x, object_xref ox
+    WHERE ox.ox_status = "DUMP_OUT" AND
+          ox.xref_id = x.xref_id AND
+          x.source_id = ? AND
+          x.info_type = ? order by x.xref_id
+DIRS
+
+     my $direct_sth = $self->xref->dbc->prepare($dir_sql);
  
 #     $dependent_sth = $self->xref->dbc->prepare('select  x.xref_id, x.accession, x.label, x.version, x.description, x.info_text, ox.object_xref_id, ox.ensembl_id, ox.ensembl_object_type, d.master_xref_id from xref x, object_xref ox,  dependent_xref d where ox.ox_status = "DUMP_OUT" and ox.xref_id = x.xref_id and d.object_xref_id = ox.object_xref_id and x.source_id = ? and x.info_type = ? order by x.xref_id, ox.ensembl_id');
  
@@ -221,12 +231,12 @@ DSQL
 
 
   my $go_sql =(<<GSQL);
-  SELECT  x.xref_id, x.accession, x.label, x.version, x.description, x.info_text, ox.object_xref_id, ox.ensembl_id, ox.ensembl_object_type, ox.master_xref_id, g.linkage_type 
-    FROM (xref x, object_xref ox, go_xref g) 
-      WHERE ox.ox_status = "DUMP_OUT" and  
-            g.object_xref_id = ox.object_xref_id and 
-            x.xref_id = ox.xref_id and 
-            x.source_id = ? and x.info_type = ? 
+  SELECT  x.xref_id, x.accession, x.label, x.version, x.description, x.info_text, ox.object_xref_id, ox.ensembl_id, ox.ensembl_object_type, ox.master_xref_id, g.linkage_type
+    FROM (xref x, object_xref ox, go_xref g)
+      WHERE ox.ox_status = "DUMP_OUT" and
+            g.object_xref_id = ox.object_xref_id and
+            x.xref_id = ox.xref_id and
+            x.source_id = ? and x.info_type = ?
             order by x.xref_id, ox.ensembl_id
 GSQL
 
@@ -275,13 +285,32 @@ GSQL
 
     
     if($type eq "DIRECT" or $type eq "INFERRED_PAIR" or $type eq "MISC"){
-      my $count = 0;
-      $direct_sth->execute($source_id, $type);
-      my ($xref_id, $acc, $label, $version, $desc, $info, $object_xref_id, $ensembl_id, $ensembl_type); 
-      $direct_sth->bind_columns(\$xref_id, \$acc, \$label, \$version, \$desc, \$info, \$object_xref_id, \$ensembl_id, \$ensembl_type);
-      my $last_xref = 0;
-      while($direct_sth->fetch){
-        if($last_xref != $xref_id){
+     if($name eq "GO"){
+       my $count = 0;
+       $go_sth->execute($source_id, $type);
+       my ($xref_id, $acc, $label, $version, $desc, $info,  $object_xref_id, $ensembl_id, $ensembl_type, $master_xref_id, $linkage_type); 
+       $go_sth->bind_columns(\$xref_id, \$acc, \$label, \$version, \$desc, \$info, \$object_xref_id, \$ensembl_id, \$ensembl_type, \$master_xref_id, \$linkage_type);
+       my $last_xref = 0;
+       while($go_sth->fetch){
+	 if($last_xref != $xref_id){
+	   push @xref_list, $xref_id;
+	   $count++;
+	   $add_xref_sth->execute(($xref_id+$xref_offset), $ex_id, $acc, $label, $version, $desc, $type, $info || $where_from);
+	   $last_xref = $xref_id;
+	 }
+	 $add_go_xref_sth->execute( ($object_xref_id+$object_xref_offset), 0, $linkage_type);
+	 $add_object_xref_sth->execute(   ($object_xref_id+$object_xref_offset), $ensembl_id, $ensembl_type, ($xref_id+$xref_offset), $analysis_ids{$ensembl_type} );
+       }
+       print "Direct GO $count\n" if ($verbose);
+     }
+     else{
+       my $count = 0;
+       $direct_sth->execute($source_id, $type);
+       my ($xref_id, $acc, $label, $version, $desc, $info, $object_xref_id, $ensembl_id, $ensembl_type); 
+       $direct_sth->bind_columns(\$xref_id, \$acc, \$label, \$version, \$desc, \$info, \$object_xref_id, \$ensembl_id, \$ensembl_type);
+       my $last_xref = 0;
+       while($direct_sth->fetch){
+         if($last_xref != $xref_id){
 	  push @xref_list, $xref_id;
 	  $count++;
 	  $add_xref_sth->execute(($xref_id+$xref_offset), $ex_id, $acc, $label, $version, $desc, $type, $info || $where_from);
@@ -290,8 +319,8 @@ GSQL
         $add_object_xref_sth->execute(($object_xref_id+$object_xref_offset), $ensembl_id, $ensembl_type, ($xref_id+$xref_offset), $analysis_ids{$ensembl_type});
       }  
       print "DIRECT $count\n" if ($verbose);
+     }
     }
-    
     ### IF CHECKSUM,        xref, object_xref
     # 1:m mapping between object & xref
     elsif($type eq 'CHECKSUM') {
