@@ -1,8 +1,5 @@
 #!/usr/local/ensembl/bin/perl -w
 
-use strict;
-use warnings;
-
 =head1 NAME
 
 schema_patch.pl - automagically apply schema patches to Ensembl dbs

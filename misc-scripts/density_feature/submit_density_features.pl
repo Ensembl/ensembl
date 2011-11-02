@@ -1,3 +1,4 @@
+#!/usr/bin/env perl
 
 # The script lists databases/species which should have density features updated at the specified stage in the release cycle. There's an option for submitting a selected script. 
 
