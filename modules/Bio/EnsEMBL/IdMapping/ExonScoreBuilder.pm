@@ -482,9 +482,13 @@ sub run_exonerate {
   $self->logger->info("Submitting $num_jobs exonerate jobs to lsf.\n");
   $self->logger->debug("$exonerate_job\n\n");
 
-  my $bsub_cmd = sprintf( "|bsub -J%s[1-%d] -o %s/exonerate.%%I.out %s",
-                          $lsf_name, $num_jobs, $logpath,
-                          $self->conf()->param('lsf_opt_exonerate') );
+  my $bsub_cmd = sprintf(
+               "|bsub -J%s[1-%d]%%%d -o %s/exonerate.%%I.out %s",
+               $lsf_name,
+               $num_jobs,
+               $self->conf()->param('exonerate_concurrent_jobs') || 200,
+               $logpath,
+               $self->conf()->param('lsf_opt_exonerate') );
 
   local *BSUB;
   open( BSUB, $bsub_cmd )
