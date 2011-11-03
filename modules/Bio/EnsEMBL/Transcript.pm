@@ -590,7 +590,7 @@ sub external_name {
 
 sub is_known {
   my $self = shift;
-  return ( $self->{'status'} eq "KNOWN" );
+  return ( $self->{'status'} eq "KNOWN" || $self->{'status'} eq "KNOWN_BY_PROJECTION" );
 }
 
 
