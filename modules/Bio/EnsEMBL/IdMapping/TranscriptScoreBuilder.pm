@@ -381,10 +381,10 @@ sub biotype_transcript_rescore {
 
     if ($source_transcript->biotype() ne $target_transcript->biotype() )
     {
-      # PENALTY: The transcript stable ID is now on a transcript with a
+      # PENALTY: Lower the score for mappings to transcripts of
       # different biotype.
       $matrix->set_score( $entry->source(), $entry->target(),
-                          0.75*$entry->score() );
+                          0.9*$entry->score() );
       $i++;
     }
   }
@@ -430,7 +430,7 @@ sub different_translation_rescore {
       # PENALTY: The transcript stable ID is now on a transcript with a
       # different translation.
       $matrix->set_score( $entry->source(), $entry->target(),
-                          0.98*$entry->score() );
+                          0.95*$entry->score() );
       $i++;
     }
 
@@ -481,7 +481,8 @@ sub non_mapped_gene_rescore {
     my $mapped_target = $gene_lookup{ $source_gene->id };
 
     if ( !$mapped_target or ( $mapped_target != $target_gene->id ) ) {
-      # PENALTY: The transcript stable ID is now on a different gene.
+      # PENALTY: The transcript stable ID has been mapped to an
+      # un-mapped gene.
       $matrix->set_score( $entry->source(), $entry->target(),
                           0.8*$entry->score() );
       $i++;

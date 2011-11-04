@@ -432,10 +432,9 @@ sub biotype_gene_rescore {
                                 $entry->target );
 
     if ( $source_gene->biotype() ne $target_gene->biotype() ) {
-      # PENALTY: The gene stable ID is now on a gene with a different
-      # biotype.
+      # PENALTY: Lower the score for mappings that differ in biotype.
       $matrix->set_score( $entry->source(), $entry->target(),
-                          0.75*$entry->score() );
+                          0.9*$entry->score() );
       $i++;
     }
   }
