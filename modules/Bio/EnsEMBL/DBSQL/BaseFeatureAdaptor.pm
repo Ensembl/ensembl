@@ -87,7 +87,7 @@ sub new {
                to true sub _slice_fetch will use a simplified sql to retrieve 1bp slices.
   Returntype : boolean
   Exceptions : none
-  Caller     : Pipeline
+  Caller     : EnsemblGenomes variation DB build
   Status     : Stable
   
 =cut
