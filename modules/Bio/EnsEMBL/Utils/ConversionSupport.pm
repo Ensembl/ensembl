@@ -168,7 +168,7 @@ sub parse_common_options {
 
   # if logpath & logfile are not set, set them here to /ensemblweb/vega_dev/shared/logs/conversion/DBNAME/SCRIPNAME_NN.log
   if (! defined($self->param('log_base_path')))  {
-    $self->param('log_base_path','/ensemblweb/sharedd/logs/conversion/');
+    $self->param('log_base_path','/ensemblweb/shared/logs/conversion/');
   }
   my $dbname = $self->param('dbname');
   $dbname =~ s/^vega_//;
