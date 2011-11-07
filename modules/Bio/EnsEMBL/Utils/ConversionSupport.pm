@@ -120,7 +120,7 @@ sub parse_common_options {
 	       'pass|dbpass|db_pass=s',
 	       'conffile|conf=s',
 	       'logfile|log=s',
-               'nolog|nolog=s',
+               'nolog=s',
 	       'logpath=s',
                'log_base_path=s',
 	       'logappend|log_append=s',
@@ -163,17 +163,19 @@ sub parse_common_options {
 # override configured parameter with commandline options
   map { $self->param($_, $h{$_}) } keys %h;
 
-  # if logpath & logfile are not set, set them here to /ensemblweb/vega_dev/shared/logs/conversion/DBNAME/SCRIPNAME_NN.log
 
+  return (1) if $self->param('nolog');
+
+  # if logpath & logfile are not set, set them here to /ensemblweb/vega_dev/shared/logs/conversion/DBNAME/SCRIPNAME_NN.log
   if (! defined($self->param('log_base_path')))  {
-    $self->param('log_base_path','/ensemblweb/shared/logs/conversion/');
+    $self->param('log_base_path','/ensemblweb/sharedd/logs/conversion/');
   }
   my $dbname = $self->param('dbname');
   $dbname =~ s/^vega_//;
   if (not (defined($self->param('logpath')))){
     $self->param('logpath', $self->param('log_base_path')."/".$dbname."/" );
   }
-  if (  (not defined $self->param('logfile') ) && (not defined $self->param('nolog') )  ){
+  if ( not defined $self->param('logfile') ){
     my $log = $Script;
     $log =~ s/.pl$//g;
     my $counter;
