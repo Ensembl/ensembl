@@ -20,999 +20,399 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::ArchiveStableIdAdaptor
+Bio::EnsEMBL::DBSQL::BaseAdaptor - Base Adaptor for DBSQL adaptors
 
 =head1 SYNOPSIS
 
-  my $registry = "Bio::EnsEMBL::Registry";
+  # base adaptor provides
 
-  my $archiveStableIdAdaptor =
-    $registry->get_adaptor( 'Human', 'Core', 'ArchiveStableId' );
+  # SQL prepare function
+  $adaptor->prepare("sql statement");
 
-  my $stable_id = 'ENSG00000068990';
+  # get of root DBAdaptor object
+  $adaptor->db();
 
-  my $arch_id = $archiveStableIdAdaptor->fetch_by_stable_id($stable_id);
-
-  print("Latest incarnation of this stable ID:\n");
-  printf( "  Stable ID: %s.%d\n",
-    $arch_id->stable_id(), $arch_id->version() );
-  print("  Release: "
-      . $arch_id->release() . " ("
-      . $arch_id->assembly() . ", "
-      . $arch_id->db_name()
-      . ")\n" );
-
-  print "\nStable ID history:\n\n";
-
-  my $history =
-    $archiveStableIdAdaptor->fetch_history_tree_by_stable_id(
-    $stable_id);
-
-  foreach my $a ( @{ $history->get_all_ArchiveStableIds } ) {
-    printf( "  Stable ID: %s.%d\n", $a->stable_id(), $a->version() );
-    print("  Release: "
-        . $a->release() . " ("
-        . $a->assembly() . ", "
-        . $a->db_name()
-        . ")\n\n" );
-  }
+  # constructor, ok for inheritence
+  $adaptor = Bio::EnsEMBL::DBSQL::SubClassOfBaseAdaptor->new($dbobj)
 
 =head1 DESCRIPTION
 
-ArchiveStableIdAdaptor does all SQL to create ArchiveStableIds and works
-of
+This is a true base class for Adaptors in the Ensembl DBSQL
+system. Original idea from Arne
 
-  stable_id_event
-  mapping_session
-  peptite_archive
-  gene_archive
+Adaptors are expected to have the following functions
 
-tables inside the core database.
+  $obj = $adaptor->fetch_by_dbID($internal_id);
 
-This whole module has a status of At Risk as it is under development.
+which builds the object from the primary key of the object. This
+function is crucial because it allows adaptors to collaborate relatively
+independently of each other - in other words, we can change the schema
+under one adaptor without too many knock on changes through the other
+adaptors.
 
-=head1 METHODS
+Most adaptors will also have
 
-  fetch_by_stable_id
-  fetch_by_stable_id_version
-  fetch_by_stable_id_dbname
-  fetch_all_by_archive_id
-  fetch_predecessors_by_archive_id
-  fetch_successors_by_archive_id
-  fetch_history_tree_by_stable_id
-  add_all_current_to_history
-  list_dbnames
-  previous_dbname
-  next_dbname
-  get_peptide
-  get_current_release
-  get_current_assembly
+  $dbid = $adaptor->store($obj);
 
-=head1 RELATED MODULES
+which stores the object. Currently the storing of an object also causes
+the objects to set
 
-  Bio::EnsEMBL::ArchiveStableId
-  Bio::EnsEMBL::StableIdEvent
-  Bio::EnsEMBL::StableIdHistoryTree
+  $obj->dbID();
+
+correctly and attach the adaptor.
+
+Other fetch functions go by the convention of
+
+  @object_array = @{ $adaptor->fetch_all_by_XXXX($arguments_for_XXXX) };
+
+sometimes it returns an array ref denoted by the 'all' in the name of
+the method, sometimes an individual object. For example
+
+  $gene = $gene_adaptor->fetch_by_stable_id($stable_id);
+
+or
+
+  @fp = @{ $simple_feature_adaptor->fetch_all_by_Slice($slice) };
+
+Occassionally adaptors need to provide access to lists of ids. In this
+case the convention is to go list_XXXX, such as
+
+  @gene_ids = @{ $gene_adaptor->list_geneIds() };
+
+(note: this method is poorly named)
 
 =head1 METHODS
 
 =cut
 
-package Bio::EnsEMBL::DBSQL::ArchiveStableIdAdaptor;
-
+package Bio::EnsEMBL::DBSQL::BaseAdaptor;
+require Exporter;
+use vars qw(@ISA @EXPORT);
 use strict;
-use warnings;
-no warnings qw(uninitialized);
 
-use Bio::EnsEMBL::DBSQL::BaseAdaptor;
-our @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
+use Bio::EnsEMBL::Utils::Exception qw(throw);
+use DBI qw(:sql_types);
+use Data::Dumper;
 
-use Bio::EnsEMBL::ArchiveStableId;
-use Bio::EnsEMBL::StableIdEvent;
-use Bio::EnsEMBL::StableIdHistoryTree;
-use Bio::EnsEMBL::Utils::Exception qw(deprecate warning throw);
+@ISA = qw(Exporter);
+@EXPORT = (@{$DBI::EXPORT_TAGS{'sql_types'}});
 
-use constant MAX_ROWS => 30;
-use constant NUM_HIGH_SCORERS => 20;
+=head2 new
 
-
-=head2 fetch_by_stable_id
-
-  Arg [1]     : string $stable_id
-  Arg [2]     : (optional) string $type
-  Example     : none
-  Description : Retrives an ArchiveStableId that is the latest incarnation of
-                given stable_id.
-  Returntype  : Bio::EnsEMBL::ArchiveStableId or undef if not in database
-  Exceptions  : none
-  Caller      : general
-  Status      : At Risk
-              : under development
+  Arg [1]    : Bio::EnsEMBL::DBSQL::DBConnection $dbobj
+  Example    : $adaptor = new AdaptorInheritedFromBaseAdaptor($dbobj);
+  Description: Creates a new BaseAdaptor object.  The intent is that this
+               constructor would be called by an inherited superclass either
+               automatically or through $self->SUPER::new in an overridden 
+               new method.
+  Returntype : Bio::EnsEMBL::DBSQL::BaseAdaptor
+  Exceptions : none
+  Caller     : Bio::EnsEMBL::DBSQL::DBConnection
+  Status     : Stable
 
 =cut
 
-sub fetch_by_stable_id {
-  my $self = shift;
-  my $stable_id = shift;
-  
-  my $arch_id = Bio::EnsEMBL::ArchiveStableId->new( 
-     -stable_id => $stable_id,
-     -adaptor => $self
-  );
+sub new {
+  my ( $class, $dbobj ) = @_;
 
-  @_ ? $arch_id->type(shift) : $self->_resolve_type($arch_id);
+  my $self = bless {}, $class;
 
-  if ($self->lookup_current($arch_id)) {
+  if ( !defined $dbobj || !ref $dbobj ) {
+    throw("Don't have a db [$dbobj] for new adaptor");
+  }
 
-    # stable ID is in current release
-    $arch_id->version($arch_id->current_version);
-    $arch_id->db_name($self->dbc->dbname);
-    $arch_id->release($self->get_current_release);
-    $arch_id->assembly($self->get_current_assembly);
-  
+  if ( $dbobj->isa('Bio::EnsEMBL::DBSQL::DBAdaptor') ) {
+    $self->db($dbobj);
+    $self->dbc( $dbobj->dbc );
+    $self->species_id( $dbobj->species_id() );
+    $self->is_multispecies( $dbobj->is_multispecies() );
+  } elsif ( ref($dbobj) =~ /DBAdaptor$/ ) {
+    $self->db($dbobj);
+    $self->dbc( $dbobj->dbc );
+  } elsif ( ref($dbobj) =~ /DBConnection$/ ) {
+    $self->dbc($dbobj);
   } else {
-
-    # look for latest version of this stable id
-    my $extra_sql = defined($arch_id->{'type'}) ?
-      " AND sie.type = '@{[lc($arch_id->{'type'})]}'" : '';
-
-    my $r = $self->_fetch_archive_id($stable_id, $extra_sql, $extra_sql);
-
-    if ($r->{'new_stable_id'} and $r->{'new_stable_id'} eq $stable_id) {
-      # latest event is a self event, use new_* data
-      $arch_id->version($r->{'new_version'});
-      $arch_id->release($r->{'new_release'});
-      $arch_id->assembly($r->{'new_assembly'});
-      $arch_id->db_name($r->{'new_db_name'});
-    } else {
-      # latest event is a deletion event (or mapping to other ID; this clause
-      # is only used to cope with buggy data where deletion events are
-      # missing), use old_* data
-      $arch_id->version($r->{'old_version'});
-      $arch_id->release($r->{'old_release'});
-      $arch_id->assembly($r->{'old_assembly'});
-      $arch_id->db_name($r->{'old_db_name'});
-    }
-
-    $arch_id->type(ucfirst(lc($r->{'type'})));
-  }
-  
-  if (! defined $arch_id->db_name) {
-    # couldn't find stable ID in archive or current db
-    return undef;
+    throw("Don't have a DBAdaptor [$dbobj] for new adaptor");
   }
 
-  $arch_id->is_latest(1);
-
-  return $arch_id;
+  return $self;
 }
 
 
-=head2 fetch_by_stable_id_version
+=head2 prepare
 
-  Arg [1]     : string $stable_id
-  Arg [2]     : int $version
-  Example     : none
-  Description : Retrieve an ArchiveStableId with given version and stable ID.
-  Returntype  : Bio::EnsEMBL::ArchiveStableId 
-  Exceptions  : none
-  Caller      : general
-  Status      : At Risk
-              : under development
+  Arg [1]    : string $string
+               a SQL query to be prepared by this adaptors database
+  Example    : $sth = $adaptor->prepare("select yadda from blabla")
+  Description: provides a DBI statement handle from the adaptor. A convenience
+               function so you dont have to write $adaptor->db->prepare all the
+               time
+  Returntype : DBI::StatementHandle
+  Exceptions : none
+  Caller     : Adaptors inherited from BaseAdaptor
+  Status     : Stable
 
 =cut
 
-sub fetch_by_stable_id_version {
-  my $self = shift;
-  my $stable_id = shift;
-  my $version = shift;
+sub prepare {
+  my ( $self, $string ) = @_;
 
-  my $arch_id = Bio::EnsEMBL::ArchiveStableId->new( 
-     -stable_id => $stable_id,
-     -version => $version,
-     -adaptor => $self
-  );
-  
-  @_ ? $arch_id->type(shift) : $self->_resolve_type($arch_id);
+  # Uncomment next line to cancel caching on the SQL side.
+  # Needed for timing comparisons etc.
+  #$string =~ s/SELECT/SELECT SQL_NO_CACHE/i;
 
-  if ($self->lookup_current($arch_id) && $arch_id->is_current) {
-
-    # this version is the current one
-    $arch_id->db_name($self->dbc->dbname);
-    $arch_id->release($self->get_current_release);
-    $arch_id->assembly($self->get_current_assembly);
-  
-  } else {
-
-    # find latest release this stable ID version is found in archive
-    my $extra_sql1 = qq(AND sie.old_version = "$version");
-    my $extra_sql2 = qq(AND sie.new_version = "$version");
-    my $r = $self->_fetch_archive_id($stable_id, $extra_sql1, $extra_sql2);
-
-    if ($r->{'new_stable_id'} and $r->{'new_stable_id'} eq $stable_id
-        and $r->{'new_version'} == $version) {
-      # latest event is a self event, use new_* data
-      $arch_id->release($r->{'new_release'});
-      $arch_id->assembly($r->{'new_assembly'});
-      $arch_id->db_name($r->{'new_db_name'});
-    } else {
-      # latest event is a deletion event (or mapping to other ID; this clause
-      # is only used to cope with buggy data where deletion events are
-      # missing), use old_* data
-      $arch_id->release($r->{'old_release'});
-      $arch_id->assembly($r->{'old_assembly'});
-      $arch_id->db_name($r->{'old_db_name'});
-    }
-
-    $arch_id->type(ucfirst(lc($r->{'type'})));
-  }
-  
-  if (! defined $arch_id->db_name) {
-    # couldn't find stable ID version in archive or current release
-    return undef;
-  }
-
-  return $arch_id;
+  return $self->dbc->prepare($string);
 }
 
 
-=head2 fetch_by_stable_id_dbname
+=head2 db
 
-  Arg [1]     : string $stable_id
-  Arg [2]     : string $db_name
-  Example     : none
-  Description : Create an ArchiveStableId from given arguments.
-  Returntype  : Bio::EnsEMBL::ArchiveStableId or undef if not in database
-  Exceptions  : none
-  Caller      : general
-  Status      : At Risk
-              : under development
+  Arg [1]    : (optional) Bio::EnsEMBL::DBSQL::DBAdaptor $obj 
+               the database this adaptor is using.
+  Example    : $db = $adaptor->db();
+  Description: Getter/Setter for the DatabaseConnection that this adaptor is 
+               using.
+  Returntype : Bio::EnsEMBL::DBSQL::DBAdaptor
+  Exceptions : none
+  Caller     : Adaptors inherited from BaseAdaptor
+  Status     : Stable
 
 =cut
 
-sub fetch_by_stable_id_dbname {
-  my $self = shift;
-  my $stable_id = shift;
-  my $db_name = shift;
-  
-  my $arch_id = Bio::EnsEMBL::ArchiveStableId->new( 
-     -stable_id => $stable_id,
-     -db_name => $db_name,
-     -adaptor => $self
-  );
-  
-  @_ ? $arch_id->type(shift) : $self->_resolve_type($arch_id);
+sub db {
+  my ( $self, $value ) = @_;
 
-  if ($self->lookup_current($arch_id) and $db_name eq $self->dbc->dbname) {
-
-    # this version is the current one
-    $arch_id->version($arch_id->current_version);
-    $arch_id->release($self->get_current_release);
-    $arch_id->assembly($self->get_current_assembly);
-  
-  } else {
-
-    # find version for this dbname in the stable ID archive
-    my $extra_sql = defined($arch_id->{'type'}) ?
-      " AND sie.type = '@{[lc($arch_id->{'type'})]}'" : '';
-    my $extra_sql1 = $extra_sql . qq( AND ms.old_db_name = "$db_name");
-    my $extra_sql2 = $extra_sql . qq( AND ms.new_db_name = "$db_name");
-    my $r = $self->_fetch_archive_id($stable_id, $extra_sql1, $extra_sql2);
-
-    if ($r->{'new_stable_id'} and $r->{'new_stable_id'} eq $stable_id
-        and $r->{'new_db_name'} eq $db_name) {
-
-      # latest event is a self event, use new_* data
-      $arch_id->release($r->{'new_release'});
-      $arch_id->assembly($r->{'new_assembly'});
-      $arch_id->version($r->{'new_version'});
-    } else {
-      # latest event is a deletion event (or mapping to other ID; this clause
-      # is only used to cope with buggy data where deletion events are
-      # missing), use old_* data
-      $arch_id->release($r->{'old_release'});
-      $arch_id->assembly($r->{'old_assembly'});
-      $arch_id->version($r->{'old_version'});
-    }
-
-    $arch_id->type(ucfirst(lc($r->{'type'})));
-  }
-  
-  if (! defined $arch_id->version ) {
-    # couldn't find stable ID version in archive or current release
-    return undef;
+  if ( defined($value) ) {
+    $self->{'db'} = $value;
   }
 
-  return $arch_id;
+  return $self->{'db'};
 }
 
-#
-# Helper method to do fetch ArchiveStableId from db.
-# Used by fetch_by_stable_id(), fetch_by_stable_id_version() and
-# fetch_by_stable_id_dbname().
-# Returns hashref as returned by DBI::sth::fetchrow_hashref
-#
-sub _fetch_archive_id {
-  my $self = shift;
-  my $stable_id = shift;
-  my $extra_sql1 = shift;
-  my $extra_sql2 = shift;
+=head2 dbc
 
-  # using a UNION is much faster in this query than somthing like
-  # "... AND (sie.old_stable_id = ? OR sie.new_stable_id = ?)"
-  my $sql = qq(
-    (SELECT * FROM stable_id_event sie, mapping_session ms
-    WHERE sie.mapping_session_id = ms.mapping_session_id
-    AND sie.old_stable_id = ?
-    $extra_sql1)
-    UNION
-    (SELECT * FROM stable_id_event sie, mapping_session ms
-    WHERE sie.mapping_session_id = ms.mapping_session_id
-    AND sie.new_stable_id = ?
-    $extra_sql2)
-    ORDER BY created DESC
-    LIMIT 1
-  );
+  Arg [1]    : (optional) Bio::EnsEMBL::DBSQL::DBConnection $obj 
+               the database this adaptor is using.
+  Example    : $db = $adaptor->db();
+  Description: Getter/Setter for the DatabaseConnection that this adaptor is 
+               using.
+  Returntype : Bio::EnsEMBL::DBSQL::DBConnection
+  Exceptions : none
+  Caller     : Adaptors inherited from BaseAdaptor
+  Status     : Stable
+
+=cut
+
+sub dbc {
+  my ( $self, $value ) = @_;
+
+  if ( defined($value) ) {
+    $self->{'dbc'} = $value;
+  }
+
+  return $self->{'dbc'};
+}
+
+=head2 is_multispecies
+
+  Arg [1]    : (optional) boolean $arg
+  Example    : if ($adaptor->is_multispecies()) { }
+  Description: Getter/Setter for the is_multispecies boolean of
+               to use for this adaptor.
+  Returntype : boolean
+  Exceptions : none
+  Caller     : general
+  Status     : Stable
+
+=cut
+
+sub is_multispecies {
+  my ( $self, $arg ) = @_;
+
+  if ( defined($arg) ) {
+    $self->{_is_multispecies} = $arg;
+  }
+
+  return $self->{_is_multispecies};
+}
+
+=head2 species_id
+
+  Arg [1]    : (optional) int $species_id
+               The internal ID of the species in a multi-species database.
+  Example    : $db = $adaptor->db();
+  Description: Getter/Setter for the internal ID of the species in a
+               multi-species database.  The default species ID is 1.
+  Returntype : Integer
+  Exceptions : none
+  Caller     : Adaptors inherited from BaseAdaptor
+  Status     : Stable
+
+=cut
+
+sub species_id {
+  my ( $self, $value ) = @_;
+
+  if ( defined($value) ) {
+    $self->{'species_id'} = $value;
+  }
+
+  return $self->{'species_id'} || 1;
+}
+
+
+# list primary keys for a particular table
+# args are table name and primary key field
+# if primary key field is not supplied, tablename_id is assumed
+# returns listref of IDs
+sub _list_dbIDs {
+  my ( $self, $table, $pk, $ordered ) = @_;
+
+  if ( !defined($pk) ) { $pk = $table . "_id" }
+
+  my $sql = sprintf( "SELECT %s FROM %s", $pk, $table );
+
+  my $join_with_cs = 0;
+  if (    $self->is_multispecies()
+       && $self->isa('Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor')
+       && !$self->isa('Bio::EnsEMBL::DBSQL::UnmappedObjectAdaptor') )
+  {
+    if ( $table =~ /^(\w+)_stable_id$/ ) {
+      # Need to join to the proper base feature table as the stable_id
+      # table do not have seq_region_ids. NOTE: This needs to be removed
+      # if we ever move the stable IDs into the feature tables.
+
+      my $base_table = $1;
+      my $base_pk    = $base_table . "_id";
+
+      $sql .= qq(
+JOIN $base_table USING ($base_pk)
+);
+    }
+
+    $sql .= q(
+JOIN seq_region USING (seq_region_id)
+JOIN coord_system cs USING (coord_system_id)
+WHERE cs.species_id = ?
+);
+
+    $join_with_cs = 1;
+  }
+
+  if ( defined($ordered) && $ordered ) {
+    $sql .= " ORDER BY seq_region_id, seq_region_start";
+  }
 
   my $sth = $self->prepare($sql);
-  $sth->execute($stable_id,$stable_id);
-  my $r = $sth->fetchrow_hashref;
-  $sth->finish;
 
-  return $r;
-}  
-
-
-=head2 fetch_all_by_archive_id
-
-  Arg [1]     : Bio::EnsEMBL::ArchiveStableId $archive_id
-  Arg [2]     : String $return_type - type of ArchiveStableId to fetch
-  Example     : my $arch_id = $arch_adaptor->fetch_by_stable_id('ENSG0001');
-                my @archived_transcripts =
-                 $arch_adaptor->fetch_all_by_archive_id($arch_id, 'Transcript');
-  Description : Given a ArchiveStableId it retrieves associated ArchiveStableIds
-                of specified type (e.g. retrieve transcripts for genes or vice
-                versa).
-
-                See also fetch_associated_archived() for a different approach to
-                retrieve this data.
-  Returntype  : listref Bio::EnsEMBL::ArchiveStableId
-  Exceptions  : none
-  Caller      : Bio::EnsEMBL::ArchiveStableId->get_all_gene_archive_ids,
-                get_all_transcript_archive_ids, get_all_translation_archive_ids
-  Status      : At Risk
-              : under development
-
-=cut
-
-sub fetch_all_by_archive_id {
-  my $self = shift;
-  my $archive_id = shift;
-  my $return_type = shift;
-
-  my @result = ();
-  my $lc_self_type = lc($archive_id->type);
-  my $lc_return_type = lc($return_type);
-
-  my $sql = qq(
-    SELECT
-          ga.${lc_return_type}_stable_id,
-          ga.${lc_return_type}_version,
-          m.old_db_name,
-          m.old_release,
-          m.old_assembly
-    FROM  gene_archive ga, mapping_session m
-    WHERE ga.${lc_self_type}_stable_id = ?
-    AND   ga.${lc_self_type}_version = ?
-    AND   ga.mapping_session_id = m.mapping_session_id
-  );
-  
-  my $sth = $self->prepare($sql);
-  $sth->bind_param(1, $archive_id->stable_id, SQL_VARCHAR);
-  $sth->bind_param(2, $archive_id->version, SQL_SMALLINT);
-  $sth->execute;
-  
-  my ($stable_id, $version, $db_name, $release, $assembly);
-  $sth->bind_columns(\$stable_id, \$version, \$db_name, \$release, \$assembly);
-
-  while ($sth->fetch) {
-    my $new_arch_id = Bio::EnsEMBL::ArchiveStableId->new(
-       -stable_id => $stable_id,
-       -version => $version,
-       -db_name => $db_name,
-       -release => $release,
-       -assembly => $assembly,
-       -type => $return_type,
-       -adaptor => $self
-    );
-
-    push( @result, $new_arch_id );
+  if ($join_with_cs) {
+    $sth->bind_param( 1, $self->species_id(), SQL_INTEGER );
   }
 
-  $sth->finish();
-  return \@result;
+  eval { $sth->execute() };
+  if ($@) {
+    throw("Detected an error whilst executing SQL '${sql}': $@");
+  }
+
+  my $id;
+  $sth->bind_col( 1, \$id );
+
+  my @out;
+  while ( $sth->fetch() ) {
+    push( @out, $id );
+  }
+
+  return \@out;
+} ## end sub _list_dbIDs
+
+
+# _straight_join
+
+#   Arg [1]    : (optional) boolean $new_val
+#   Example    : $self->_straight_join(1);
+#                $self->generic_fetch($constraint);
+#                $self->_straight_join(0);
+#   Description: PROTECTED Getter/Setter that turns on/off the use of 
+#                a straight join in queries.
+#   Returntype : boolean
+#   Exceptions : none
+#   Caller     : general
+
+sub _straight_join {
+  my $self = shift;
+  if(@_) {
+    $self->{'_straight_join'} = shift;
+  }
+
+  return $self->{'_straight_join'};
 }
 
 
-=head2 fetch_associated_archived 
+=head2 bind_param_generic_fetch
 
-  Arg[1]      : Bio::EnsEMBL::ArchiveStableId $arch_id -
-                the ArchiveStableId to fetch associated archived IDs for
-  Example     : my ($arch_gene, $arch_tr, $arch_tl, $pep_seq) =
-                  @{ $archive_adaptor->fetch_associated_archived($arch_id) };
-  Description : Fetches associated archived stable IDs from the db for a given
-                ArchiveStableId (version is taken into account).
-  Return type : Listref of
-                  ArchiveStableId archived gene
-                  ArchiveStableId archived transcript
-                  (optional) ArchiveStableId archived translation
-                  (optional) peptide sequence
-  Exceptions  : thrown on missing or wrong argument
-                thrown if ArchiveStableID has no type
-  Caller      : Bio::EnsEMBL::ArchiveStableId->get_all_associated_archived()
-  Status      : At Risk
-              : under development
+ Arg [1]   : (optional)  scalar $param
+              This is the parameter to bind
+ Arg [2]   : (optional) int $sql_type
+              Type of the parameter (from DBI (:sql_types))
+ Example   :  $adaptor->bind_param_generic_fetch($stable_id,SQL_VARCHAR);
+              $adaptor->generic_fetch();
+ Description:  When using parameters for the query, will call the bind_param to avoid
+               some security issues. If there are no arguments, will return the bind_parameters
+ ReturnType : listref
+ Exceptions:  if called with one argument
 
 =cut
 
-sub fetch_associated_archived {
-  my $self = shift;
-  my $arch_id = shift;
+sub bind_param_generic_fetch{
+    my $self = shift;
+    my $param = shift;
+    my $sql_type = shift;
 
-  throw("Need a Bio::EnsEMBL::ArchiveStableId") unless ($arch_id
-    and ref($arch_id) and $arch_id->isa('Bio::EnsEMBL::ArchiveStableId'));
-
-  my $type = $arch_id->type();
-
-  if ( !defined($type) ) {
-    throw("Can't deduce ArchiveStableId type.");
-  }
-
-  $type = lc($type);
-
-  my $sql = qq(
-    SELECT  ga.gene_stable_id,
-            ga.gene_version,
-            ga.transcript_stable_id,
-            ga.transcript_version,
-            ga.translation_stable_id,
-            ga.translation_version,
-            pa.peptide_seq,
-            ms.old_release,
-            ms.old_assembly,
-            ms.old_db_name
-    FROM (mapping_session ms, gene_archive ga)
-    LEFT JOIN peptide_archive pa
-      ON ga.peptide_archive_id = pa.peptide_archive_id
-    WHERE ga.mapping_session_id = ms.mapping_session_id
-    AND ga.${type}_stable_id = ?
-    AND ga.${type}_version = ?
-  );
-
-  my $sth = $self->prepare($sql);
-  $sth->bind_param(1, $arch_id->stable_id, SQL_VARCHAR);
-  $sth->bind_param(2, $arch_id->version, SQL_SMALLINT);
-  $sth->execute;
-
-  my @result = ();
-
-  while (my $r = $sth->fetchrow_hashref) {
-
-    my @row = ();
-
-    # create ArchiveStableIds genes, transcripts and translations
-    push @row, Bio::EnsEMBL::ArchiveStableId->new(
-       -stable_id => $r->{'gene_stable_id'},
-       -version => $r->{'gene_version'},
-       -db_name => $r->{'old_db_name'},
-       -release => $r->{'old_release'},
-       -assembly => $r->{'old_assembly'},
-       -type => 'Gene',
-       -adaptor => $self
-    );
-    
-    push @row, Bio::EnsEMBL::ArchiveStableId->new(
-       -stable_id => $r->{'transcript_stable_id'},
-       -version => $r->{'transcript_version'},
-       -db_name => $r->{'old_db_name'},
-       -release => $r->{'old_release'},
-       -assembly => $r->{'old_assembly'},
-       -type => 'Transcript',
-       -adaptor => $self
-    );
-
-    if ($r->{'translation_stable_id'}) {
-      push @row, Bio::EnsEMBL::ArchiveStableId->new(
-         -stable_id => $r->{'translation_stable_id'},
-         -version => $r->{'translation_version'},
-         -db_name => $r->{'old_db_name'},
-         -release => $r->{'old_release'},
-         -assembly => $r->{'old_assembly'},
-         -type => 'Translation',
-         -adaptor => $self
-      );
-
-      # push peptide sequence onto result list
-      push @row, $r->{'peptide_seq'};
+    if (defined $param && !defined $sql_type){
+	throw("Need to specify sql_type for parameter $param\n");
     }
-    
-    push @result, \@row;
-  }
-
-  return \@result;
-}
-
-
-=head2 fetch_predecessors_by_archive_id
-
-  Arg [1]     : Bio::EnsEMBL::ArchiveStableId
-  Example     : none
-  Description : Retrieve a list of ArchiveStableIds that were mapped to the 
-                given one. This method goes back only one level, to retrieve
-                a full predecessor history use fetch_predecessor_history, or 
-                ideally fetch_history_tree_by_stable_id for the complete
-                history network.
-  Returntype  : listref Bio::EnsEMBL::ArchiveStableId
-  Exceptions  : none
-  Caller      : Bio::EnsEMBL::ArchiveStableId->get_all_predecessors
-  Status      : At Risk
-              : under development
-
-=cut
-
-sub fetch_predecessors_by_archive_id {
-  my $self = shift;
-  my $arch_id = shift;
-  
-  my @result;
-  
-  if( ! ( defined $arch_id->stable_id() &&
-	  defined $arch_id->db_name() )) {
-    throw( "Need db_name for predecessor retrieval" );
-  }
-
-  my $sql = qq(
-    SELECT
-          sie.old_stable_id,
-          sie.old_version,
-          sie.type,
-          m.old_db_name,
-          m.old_release,
-          m.old_assembly
-    FROM  mapping_session m, stable_id_event sie
-    WHERE sie.mapping_session_id = m.mapping_session_id
-    AND   sie.new_stable_id = ?
-    AND   m.new_db_name = ?	
-  );
-
-  my $sth = $self->prepare($sql);
-  $sth->bind_param(1, $arch_id->stable_id, SQL_VARCHAR);
-  $sth->bind_param(2, $arch_id->db_name, SQL_VARCHAR);
-  $sth->execute();
-  
-  my ($old_stable_id, $old_version, $type, $old_db_name, $old_release, $old_assembly);
-  $sth->bind_columns(\$old_stable_id, \$old_version, \$type, \$old_db_name, \$old_release, \$old_assembly);
-  
-  while ($sth->fetch) {
-    if (defined $old_stable_id) {
-      my $old_arch_id = Bio::EnsEMBL::ArchiveStableId->new( 
-	 -stable_id => $old_stable_id,
-	 -version => $old_version,
-	 -db_name => $old_db_name,
-         -release => $old_release,
-         -assembly => $old_assembly,
-         -type => $type,
-	 -adaptor => $self
-      );
-      push( @result, $old_arch_id );
+    elsif (defined $param && defined $sql_type){
+	#check when there is a SQL_INTEGER type that the parameter is really a number
+	if ($sql_type eq SQL_INTEGER){
+	    throw "Trying to assign a non numerical parameter to an integer value in the database" if ($param !~ /^\d+$/);
+	}
+	#both paramters have been entered, push it to the bind_param array
+	push @{$self->{'_bind_param_generic_fetch'}},[$param,$sql_type];
     }
-  }
-  $sth->finish();
-
-  # if you didn't find any predecessors, there might be a gap in the
-  # mapping_session history (i.e. databases in mapping_session don't chain). To
-  # bridge the gap, look in the previous mapping_session for identical
-  # stable_id.version
-  unless (@result) {
-
-    $sql = qq(
-      SELECT
-            sie.new_stable_id,
-            sie.new_version,
-            sie.type,
-            m.new_db_name,
-            m.new_release,
-            m.new_assembly
-      FROM  mapping_session m, stable_id_event sie
-      WHERE sie.mapping_session_id = m.mapping_session_id
-      AND   sie.new_stable_id = ?
-      AND   m.new_db_name = ?	
-    );
-
-    $sth = $self->prepare($sql);
-
-    my $curr_dbname = $arch_id->db_name;
-    
-    PREV:
-    while (my $prev_dbname = $self->previous_dbname($curr_dbname)) {
-    
-      $sth->bind_param(1,$arch_id->stable_id, SQL_VARCHAR);
-      $sth->bind_param(2,$prev_dbname, SQL_VARCHAR);
-      $sth->execute();
-      
-      $sth->bind_columns(\$old_stable_id, \$old_version, \$type, \$old_db_name, \$old_release, \$old_assembly);
-      
-      while( $sth->fetch() ) {
-        if (defined $old_stable_id) {
-          my $old_arch_id = Bio::EnsEMBL::ArchiveStableId->new( 
-             -stable_id => $old_stable_id,
-             -version => $old_version,
-             -db_name => $old_db_name,
-             -release => $old_release,
-             -assembly => $old_assembly,
-             -type => $type,
-             -adaptor => $self
-          );
-          push( @result, $old_arch_id );
-
-          last PREV;
-        }
-      }
-
-      $curr_dbname = $prev_dbname;
-
+    elsif (!defined $param && !defined $sql_type){
+	#when there are no arguments, return the array
+	return $self->{'_bind_param_generic_fetch'};
     }
-      
-    $sth->finish();
-  }
-
-  return \@result;
-}
-
-
-=head2 fetch_successors_by_archive_id
-
-  Arg [1]     : Bio::EnsEMBL::ArchiveStableId
-  Example     : none
-  Description : Retrieve a list of ArchiveStableIds that the given one was 
-                mapped to. This method goes forward only one level, to retrieve
-                a full successor history use fetch_successor_history, or 
-                ideally fetch_history_tree_by_stable_id for the complete
-                history network.
-  Returntype  : listref Bio::EnsEMBL::ArchiveStableId
-  Exceptions  : none
-  Caller      : Bio::EnsEMBL::ArchiveStableId->get_all_successors
-  Status      : At Risk
-              : under development
-
-=cut
-
-sub fetch_successors_by_archive_id {
-  my $self = shift;
-  my $arch_id = shift;
-  my @result;
-
-  
-  if( ! ( defined $arch_id->stable_id() &&
-	  defined $arch_id->db_name() )) {
-    throw( "Need db_name for successor retrieval" );
-  }
-
-  my $sql = qq(
-    SELECT
-          sie.new_stable_id,
-          sie.new_version,
-          sie.type,
-          m.new_db_name,
-          m.new_release,
-          m.new_assembly
-    FROM  mapping_session m, stable_id_event sie
-    WHERE sie.mapping_session_id = m.mapping_session_id
-    AND   sie.old_stable_id = ?
-    AND   m.old_db_name = ?	
-  );
-
-  my $sth = $self->prepare( $sql );
-  $sth->bind_param(1,$arch_id->stable_id,SQL_VARCHAR);
-  $sth->bind_param(2,$arch_id->db_name,SQL_VARCHAR);
-  $sth->execute();
-  
-  my ($new_stable_id, $new_version, $type, $new_db_name, $new_release, $new_assembly);
-  $sth->bind_columns(\$new_stable_id, \$new_version, \$type, \$new_db_name, \$new_release, \$new_assembly);
-  
-  while( $sth->fetch() ) {
-    if( defined $new_stable_id ) {
-      my $new_arch_id = Bio::EnsEMBL::ArchiveStableId->new( 
-	 -stable_id => $new_stable_id,
-	 -version => $new_version,
-	 -db_name => $new_db_name,
-         -release => $new_release,
-         -assembly => $new_assembly,
-         -type => $type,
-	 -adaptor => $self
-      );
-        
-      push( @result, $new_arch_id );
-    }
-  }
-  $sth->finish();
-  
-  # if you didn't find any successors, there might be a gap in the
-  # mapping_session history (i.e. databases in mapping_session don't chain). To
-  # bridge the gap, look in the next mapping_session for identical
-  # stable_id.version
-  unless (@result) {
-
-    $sql = qq(
-      SELECT
-            sie.old_stable_id,
-            sie.old_version,
-            sie.type,
-            m.old_db_name,
-            m.old_release,
-            m.old_assembly
-      FROM  mapping_session m, stable_id_event sie
-      WHERE sie.mapping_session_id = m.mapping_session_id
-      AND   sie.old_stable_id = ?
-      AND   m.old_db_name = ?	
-    );
-
-    $sth = $self->prepare($sql);
-
-    my $curr_dbname = $arch_id->db_name;
-    
-    NEXTDB:
-    while (my $next_dbname = $self->next_dbname($curr_dbname)) {
-
-      $sth->bind_param(1, $arch_id->stable_id, SQL_VARCHAR);
-      $sth->bind_param(2, $next_dbname, SQL_VARCHAR);
-      $sth->execute();
-      
-      $sth->bind_columns(\$new_stable_id, \$new_version, \$type, \$new_db_name, \$new_release, \$new_assembly);
-      
-      while( $sth->fetch() ) {
-        if (defined $new_stable_id) {
-          my $new_arch_id = Bio::EnsEMBL::ArchiveStableId->new( 
-             -stable_id => $new_stable_id,
-             -version => $new_version,
-             -db_name => $new_db_name,
-             -release => $new_release,
-             -assembly => $new_assembly,
-             -type => $type,
-             -adaptor => $self
-          );
-            
-          push( @result, $new_arch_id );
-
-          last NEXTDB;
-        }
-      }
-      
-      $curr_dbname = $next_dbname;
-
-    }
-
-    $sth->finish();
-  }
-
-  return \@result;
+	
 }
 
 
 
-=head2 fetch_history_tree_by_stable_id
+=head2 generic_fetch
 
-  Arg[1]      : String $stable_id - the stable ID to fetch the history tree for
-  Arg[2]      : (optional) Int $num_high_scorers
-                number of mappings per stable ID allowed when filtering
-  Arg[3]      : (optional) Int $max_rows
-                maximum number of stable IDs in history tree (used for
-                filtering)
-  Example     : my $history = $archive_adaptor->fetch_history_tree_by_stable_id(
-                  'ENSG00023747897');
-  Description : Returns the history tree for a given stable ID. This will
-                include a network of all stable IDs it is related to. The
-                method will try to return a minimal (sparse) set of nodes
-                (ArchiveStableIds) and links (StableIdEvents) by removing any
-                redundant entries and consolidating mapping events so that only
-                changes are recorded.
-  Return type : Bio::EnsEMBL::StableIdHistoryTree
-  Exceptions  : thrown on missing argument
-  Caller      : Bio::EnsEMBL::ArchiveStableId::get_history_tree, general
-  Status      : At Risk
-              : under development
+  Arg [1]    : (optional) string $constraint
+               An SQL query constraint (i.e. part of the WHERE clause)
+  Arg [2]    : (optional) Bio::EnsEMBL::AssemblyMapper $mapper
+               A mapper object used to remap features
+               as they are retrieved from the database
+  Arg [3]    : (optional) Bio::EnsEMBL::Slice $slice
+               A slice that features should be remapped to
+  Example    : $fts = $a->generic_fetch('contig_id in (1234, 1235)', 'Swall');
+  Description: Performs a database fetch and returns feature objects in
+               contig coordinates.
+  Returntype : listref of Bio::EnsEMBL::SeqFeature in contig coordinates
+  Exceptions : none
+  Caller     : BaseFeatureAdaptor, ProxyDnaAlignFeatureAdaptor::generic_fetch
+  Status     : Stable
 
 =cut
 
-sub fetch_history_tree_by_stable_id {
-  my ($self, $stable_id, $num_high_scorers, $max_rows) = @_;
+sub generic_fetch {
+  my ($self, $constraint, $mapper, $slice) = @_;
 
-  throw("Expecting a stable ID argument.") unless $stable_id;
-
-  $num_high_scorers ||= NUM_HIGH_SCORERS;
-  $max_rows ||= MAX_ROWS;
-
-  # using a UNION is much faster in this query than somthing like
-  # "... AND (sie.old_stable_id = ?) OR (sie.new_stable_id = ?)"
-  my $sql = qq(
-    SELECT sie.old_stable_id, sie.old_version,
-           ms.old_db_name, ms.old_release, ms.old_assembly,
-           sie.new_stable_id, sie.new_version,
-           ms.new_db_name, ms.new_release, ms.new_assembly,
-           sie.type, sie.score
-    FROM stable_id_event sie, mapping_session ms
-    WHERE sie.mapping_session_id = ms.mapping_session_id
-    AND sie.old_stable_id = ?
-    UNION
-    SELECT sie.old_stable_id, sie.old_version,
-           ms.old_db_name, ms.old_release, ms.old_assembly,
-           sie.new_stable_id, sie.new_version,
-           ms.new_db_name, ms.new_release, ms.new_assembly,
-           sie.type, sie.score
-    FROM stable_id_event sie, mapping_session ms
-    WHERE sie.mapping_session_id = ms.mapping_session_id
-    AND sie.new_stable_id = ?
-  );
-  
-  my $sth = $self->prepare($sql);
-
-  my $history = Bio::EnsEMBL::StableIdHistoryTree->new(
-      -CURRENT_DBNAME => $self->dbc->dbname,
-      -CURRENT_RELEASE => $self->get_current_release,
-      -CURRENT_ASSEMBLY => $self->get_current_assembly,
-  );
-
-  # remember stable IDs you need to do and those that are done. Initialise the
-  # former hash with the focus stable ID
-  my %do = ($stable_id => 1);
-  my %done;
-
-  # while we got someting to do
-  while (my ($id) = keys(%do)) {
-
-    # if we already have more than MAX_ROWS stable IDs in this tree, we can't
-    # build the full tree. Return undef.
-    if (scalar(keys(%done)) > $max_rows) {
-      # warning("Too many related stable IDs (".scalar(keys(%done)).") to draw a history tree.");
-      $history->is_incomplete(1);
-      $sth->finish;
-      last;
-    }
-
-    # mark this stable ID as done
-    delete $do{$id};
-    $done{$id} = 1;
-
-    # fetch all stable IDs related to this one from the database
-    $sth->bind_param(1, $id, SQL_VARCHAR);
-    $sth->bind_param(2, $id, SQL_VARCHAR);
-    $sth->execute;
-
-    my @events;
-
-    while (my $r = $sth->fetchrow_hashref) {
-      
-      #
-      # create old and new ArchiveStableIds and a StableIdEvent to link them
-      # add all of these to the history tree
-      #
-      my ($old_id, $new_id);
-
-      if ($r->{'old_stable_id'}) {
-        $old_id = Bio::EnsEMBL::ArchiveStableId->new(
-          -stable_id => $r->{'old_stable_id'},
-          -version => $r->{'old_version'},
-          -db_name => $r->{'old_db_name'},
-          -release => $r->{'old_release'},
-          -assembly => $r->{'old_assembly'},
-          -type => $r->{'type'},
-          -adaptor => $self
-        );
-      }
-       
-      if ($r->{'new_stable_id'}) {
-        $new_id = Bio::EnsEMBL::ArchiveStableId->new(
-          -stable_id => $r->{'new_stable_id'},
-          -version => $r->{'new_version'},
-          -db_name => $r->{'new_db_name'},
-          -release => $r->{'new_release'},
-          -assembly => $r->{'new_assembly'},
-          -type => $r->{'type'},
-          -adaptor => $self
-        );
-      }
-
-      my $event = Bio::EnsEMBL::StableIdEvent->new(
-        -old_id => $old_id,
-        -new_id => $new_id,
-        -score => $r->{'score'}
-      );
-
-      push @events, $event;
-
-    }
-
-    # filter out low-scoring events; the number of highest scoring events
-    # returned is defined by NUM_HIGH_SCORERS
-    my @others;
-
-    foreach my $event (@events) {
-      
-      my $old_id = $event->old_ArchiveStableId;
-      my $new_id = $event->new_ArchiveStableId;
-      
-      # creation, deletion and mapping-to-self events are added to the history
-      # tree directly
-      if (!$old_id || !$new_id || ($old_id->stable_id eq $new_id->stable_id)) {
-        $history->add_StableIdEvents($event);
-      } else {
-        push @others, $event;
-      }
-      
-    }
-
-    #if (scalar(@others) > $num_high_scorers) {
-    #  warn "Filtering ".(scalar(@others) - $num_high_scorers).
-    #    " low-scoring events.\n";
-    #}
-
-    my $k = 0;
-    foreach my $event (sort { $b->score <=> $a->score } @others) {
-      $history->add_StableIdEvents($event);
-      
-      # mark stable IDs as todo if appropriate
-      $do{$event->old_ArchiveStableId->stable_id} = 1
-        unless $done{$event->old_ArchiveStableId->stable_id};
-      $do{$event->new_ArchiveStableId->stable_id} = 1
-        unless $done{$event->new_ArchiveStableId->stable_id};
-      
-      last if (++$k == $num_high_scorers);
-    }
-    
-  }
-
-  $sth->finish;
-  
-  # try to consolidate the tree (remove redundant nodes, bridge gaps)
-  $history->consolidate_tree;
-
-  # now add ArchiveStableIds for current Ids not found in the archive
-  $self->add_all_current_to_history($history);
-  
-  # calculate grid coordinates for the sorted tree; this will also try to
-  # untangle the tree
-  $history->calculate_coords;
-  
-  return $history;
-}
-
-
-=head2 add_all_current_to_history 
-
-  Arg[1]      : Bio::EnsEMBL::StableIdHistoryTree $history -
-                the StableIdHistoryTree object to add the current IDs to
-  Description : This method adds the current versions of all stable IDs found
-                in a StableIdHistoryTree object to the tree, by creating
-                appropriate Events for the stable IDs found in the *_stable_id
-                tables. This is a helper method for
-                fetch_history_tree_by_stable_id(), see there for more
-                documentation.
-  Return type : none (passed-in object is manipulated)
-  Exceptions  : thrown on missing or wrong argument
-  Caller      : internal
-  Status      : At Risk
-              : under development
-
-=cut
-
-sub add_all_current_to_history {
-  my $self = shift;
-  my $history = shift;
-
-  unless ($history and $history->isa('Bio::EnsEMBL::StableIdHistoryTree')) {
-    throw("Need a Bio::EnsEMBL::StableIdHistoryTree.");
-  }
-
+<<<<<<< ArchiveStableIdAdaptor.pm
+  my @tabs = $self->_tables();
+=======
   my @ids = @{ $history->get_unique_stable_ids };
   my $id_string = join("', '", @ids);
   
@@ -1027,420 +427,359 @@ sub add_all_current_to_history {
   );
   my $sth = $self->prepare($sql);
   $sth->execute;
+>>>>>>> 1.40
 
-  while (my ($stable_id, $version) = $sth->fetchrow_array) {
+  my $extra_default_where;
 
-    my $new_id = Bio::EnsEMBL::ArchiveStableId->new(
-      -stable_id => $stable_id,
-      -version => $version,
-      -current_version => $version,
-      -db_name => $self->dbc->dbname,
-      -release => $self->get_current_release,
-      -assembly => $self->get_current_assembly,
-      -type => $type,
-      -adaptor => $self
-    );
+  # Hack for feature types that needs to be restricted to species_id (in
+  # coord_system).
+  if (    $self->is_multispecies()
+       && $self->isa('Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor')
+       && !$self->isa('Bio::EnsEMBL::DBSQL::UnmappedObjectAdaptor') )
+  {
+    # We do a check to see if there is already seq_region
+    # and coord_system defined to ensure we get the right
+    # alias.  We then do the extra query irrespectively of
+    # what has already been specified by the user.
+    my %thash = map { $_->[0] => $_->[1] } @tabs;
 
-    my $event = $history->get_latest_StableIdEvent($new_id);
-    next unless ($event);
+    my $sr_alias =
+      ( exists( $thash{seq_region} ) ? $thash{seq_region} : 'sr' );
+    my $cs_alias =
+      ( exists( $thash{coord_system} ) ? $thash{coord_system} : 'cs' );
 
-    if ($event->old_ArchiveStableId and
-        $event->old_ArchiveStableId->stable_id eq $stable_id) {
-      
-      # latest event was a self event
-      # update it with current stable ID and add to tree
-      $event->new_ArchiveStableId($new_id);
-
-    } else {
-
-      # latest event was a non-self event
-      # create a new event where the old_id is the new_id from latest
-      my $new_event = Bio::EnsEMBL::StableIdEvent->new(
-        -old_id => $event->new_ArchiveStableId,
-        -new_id => $new_id,
-        -score => $event->score,
-      );
-      $history->add_StableIdEvents($new_event);
+    if ( !exists( $thash{seq_region} ) ) {
+      push( @tabs, [ 'seq_region', $sr_alias ] );
     }
-    
-  }
-
-  # refresh node cache
-  $history->flush_ArchiveStableIds;
-  $history->add_ArchiveStableIds_for_events;
-}
-
-
-=head2 fetch_successor_history
-
-  Arg [1]     : Bio::EnsEMBL::ArchiveStableId $arch_id
-  Example     : none
-  Description : Gives back a list of archive stable ids which are successors in
-                the stable_id_event tree of the given stable_id. Might well be
-                empty.
-                
-                This method isn't deprecated, but in most cases you will rather
-                want to use fetch_history_tree_by_stable_id().
-  Returntype  : listref Bio::EnsEMBL::ArchiveStableId
-                Since every ArchiveStableId knows about it's successors, this is
-                a linked tree.
-  Exceptions  : none
-  Caller      : webcode for archive
-  Status      : At Risk
-              : under development
-
-=cut
-
-sub fetch_successor_history {
-  my $self = shift;
-  my $arch_id = shift;
-
-  my $current_db_name = $self->list_dbnames->[0];
-  my $dbname = $arch_id->db_name;
-
-  if ($dbname eq $current_db_name) {
-    return [$arch_id];
-  }
-
-  my $old = [];
-  my @result = ();
-  
-  push @$old, $arch_id;
-
-  while ($dbname ne $current_db_name) {
-    my $new = [];
-    while (my $asi = (shift @$old)) {
-      push @$new, @{ $asi->get_all_successors };
+    if ( !exists( $thash{coord_system} ) ) {
+      push( @tabs, [ 'coord_system', $cs_alias ] );
     }
 
-    if (@$new) {
-      $dbname = $new->[0]->db_name;
-    } else {
-      last;
+    $extra_default_where = sprintf(
+                      '%s.seq_region_id = %s.seq_region_id '
+                        . 'AND %s.coord_system_id = %s.coord_system_id '
+                        . 'AND %s.species_id = ?',
+                      $tabs[0]->[1], $sr_alias, $sr_alias,
+                      $cs_alias,     $cs_alias );
+
+    $self->bind_param_generic_fetch( $self->species_id(), SQL_INTEGER );
+  } ## end if ( $self->is_multispecies...)
+
+  my $columns = join(', ', $self->_columns());
+
+  my $db = $self->db();
+
+  #
+  # Construct a left join statement if one was defined, and remove the
+  # left-joined table from the table list
+  #
+  my @left_join_list = $self->_left_join();
+  my $left_join_prefix = '';
+  my $left_join = '';
+  my @tables;
+  if(@left_join_list) {
+    my %left_join_hash = map { $_->[0] => $_->[1] } @left_join_list;
+    while(my $t = shift @tabs) {
+        my $t_alias = $t->[0] . " " . $t->[1];
+      if( exists $left_join_hash{ $t->[0] } || exists $left_join_hash{$t_alias}) {
+        my $condition = $left_join_hash{ $t->[0] };
+        $condition ||= $left_join_hash{$t_alias};
+        my $syn = $t->[1];
+        $left_join .=
+          "\n  LEFT JOIN " . $t->[0] . " $syn ON $condition ) ";
+        $left_join_prefix .= '(';
+      } else {
+        push @tables, $t;
+      }
     }
-
-    # filter duplicates
-    my %unique = map { join(":", $_->stable_id, $_->version, $_->release) =>
-      $_ } @$new;
-    @$new = values %unique;
-    
-    @$old = @$new;
-    push @result, @$new;
-  }
-
-  return \@result;
-}
-
-
-=head2 fetch_predecessor_history
-
-  Arg [1]     : Bio::EnsEMBL::ArchiveStableId $arch_id
-  Example     : none
-  Description : Gives back a list of archive stable ids which are predecessors
-                in the stable_id_event tree of the given stable_id. Might well
-                be empty.
-                
-                This method isn't deprecated, but in most cases you will rather
-                want to use fetch_history_tree_by_stable_id().
-  Returntype  : listref Bio::EnsEMBL::ArchiveStableId
-                Since every ArchiveStableId knows about it's successors, this is
-                a linked tree.
-  Exceptions  : none
-  Caller      : webcode for archive
-  Status      : At Risk
-              : under development
-
-=cut
-
-sub fetch_predecessor_history {
-  my $self = shift;
-  my $arch_id = shift;
-
-  my $oldest_db_name = $self->list_dbnames->[-1];
-  my $dbname = $arch_id->db_name;
-
-  if ($dbname eq $oldest_db_name) {
-    return [$arch_id];
-  }
-
-  my $old = [];
-  my @result = ();
-
-  push @$old, $arch_id;
-
-  while ($dbname ne $oldest_db_name) {
-    my $new = [];
-    while (my $asi = (shift @$old)) {
-      push @$new, @{ $asi->get_all_predecessors };
-    }
-
-    if( @$new ) {
-      $dbname = $new->[0]->db_name;
-    } else {
-      last;
-    }
-    
-    # filter duplicates
-    my %unique = map { join(":", $_->stable_id, $_->version, $_->release) =>
-      $_ } @$new;
-    @$new = values %unique;
-    
-    @$old = @$new;
-    push @result, @$new;
-  }
-
-  return \@result;
-}
-
-
-=head2 list_dbnames
-
-  Args        : none
-  Example     : none
-  Description : A list of available database names from the latest (current) to
-                the oldest (ordered).
-  Returntype  : listref of strings
-  Exceptions  : none
-  Caller      : general
-  Status      : At Risk
-              : under development
-
-=cut
-
-sub list_dbnames {
-  my $self = shift;
-  
-  if( ! defined $self->{'dbnames'} ) {
-
-    my $sql = qq(
-      SELECT old_db_name, new_db_name
-      FROM mapping_session
-      ORDER BY created DESC
-    );
-    my $sth = $self->prepare( $sql );
-    $sth->execute();
-    my ( $old_db_name, $new_db_name );
-    
-    my @dbnames = ();
-    my %seen;
-
-    $sth->bind_columns( \$old_db_name, \$new_db_name );
-
-    while( $sth->fetch() ) {
-      # this code now can deal with non-chaining mapping sessions
-      push(@{ $self->{'dbnames'} }, $new_db_name) unless ($seen{$new_db_name});
-      $seen{$new_db_name} = 1;
-
-      push(@{ $self->{'dbnames'} }, $old_db_name) unless ($seen{$old_db_name});
-      $seen{$old_db_name} = 1;
-    }
-
-    $sth->finish();
-    
-  }
-
-  return $self->{'dbnames'};
-}
-
-
-=head2 previous_dbname
-
-  Arg[1]      : String $dbname - focus db name
-  Example     : my $prev_db = $self->previous_dbname($curr_db);
-  Description : Returns the name of the next oldest database which has mapping
-                session information.
-  Return type : String (or undef if not available)
-  Exceptions  : none
-  Caller      : general
-  Status      : At Risk
-
-=cut
-
-sub previous_dbname {
-  my $self = shift;
-  my $dbname = shift;
-
-  my $curr_idx = $self->_dbname_index($dbname);
-  my @dbnames = @{ $self->list_dbnames };
-
-  if ($curr_idx == @dbnames) {
-    # this is the oldest dbname, so no previous one available
-    return undef;
   } else {
-    return $dbnames[$curr_idx+1];
+    @tables = @tabs;
   }
-}
 
+  my $straight_join = '';
 
-=head2 next_dbname
-
-  Arg[1]      : String $dbname - focus db name
-  Example     : my $prev_db = $self->next_dbname($curr_db);
-  Description : Returns the name of the next newest database which has mapping
-                session information.
-  Return type : String (or undef if not available)
-  Exceptions  : none
-  Caller      : general
-  Status      : At Risk
-
-=cut
-
-sub next_dbname {
-  my $self = shift;
-  my $dbname = shift;
-
-  my $curr_idx = $self->_dbname_index($dbname);
-  my @dbnames = @{ $self->list_dbnames };
-
-  if ($curr_idx == 0) {
-    # this is the latest dbname, so no next one available
-    return undef;
-  } else {
-    return $dbnames[$curr_idx-1];
+  if($self->_straight_join()) {
+    $straight_join = "STRAIGHT_JOIN";
   }
-}
 
+  #construct a nice table string like 'table1 t1, table2 t2'
+  my $tablenames = join(', ', map({ join(' ', @$_) } @tables));
 
-#
-# helper method to return the array index of a database in the ordered list of
-# available databases (as returned by list_dbnames()
-#
-sub _dbname_index {
-  my $self = shift;
-  my $dbname = shift;
+  my $sql =
+      "SELECT $straight_join $columns\n"
+    . "FROM $left_join_prefix ($tablenames) $left_join";
 
-  my @dbnames = @{ $self->list_dbnames };
+  my $default_where = $self->_default_where_clause();
+  my $final_clause = $self->_final_clause;
 
-  for (my $i = 0; $i < @dbnames; $i++) {
-    if ($dbnames[$i] eq $dbname) {
-      return $i;
+  if ($extra_default_where) {
+    if ($default_where) {
+      $default_where .= "\n AND $extra_default_where";
+    } else {
+      $default_where = $extra_default_where;
     }
   }
-}
 
-
-=head2 get_peptide
-
-  Arg [1]     : Bio::EnsEMBL::ArchiveStableId $arch_id
-  Example     : none
-  Description : Retrieves the peptide string for given ArchiveStableId. If its
-                not a peptide or not in the database returns undef.
-  Returntype  : string or undef
-  Exceptions  : none
-  Caller      : Bio::EnsEMBL::ArchiveStableId->get_peptide, general
-  Status      : At Risk
-              : under development
-
-=cut
-
-sub get_peptide {
-  my $self    = shift;
-  my $arch_id = shift;
-
-  if ( lc( $arch_id->type() ) ne 'translation' ) {
-    return undef;
+  #append a where clause if it was defined
+  if ($constraint) {
+    $sql .= "\n WHERE $constraint ";
+    if ($default_where) {
+      $sql .= " AND\n       $default_where ";
+    }
+  } elsif ($default_where) {
+    $sql .= "\n WHERE $default_where ";
   }
 
-  my $sql = qq(
-    SELECT pa.peptide_seq
-      FROM peptide_archive pa, gene_archive ga
-     WHERE ga.translation_stable_id = ?
-       AND ga.translation_version = ?
-       AND ga.peptide_archive_id = pa.peptide_archive_id
-  );
+  #append additional clauses which may have been defined
+  $sql .= "\n$final_clause";
 
-  my $sth = $self->prepare($sql);
-  $sth->bind_param( 1, $arch_id->stable_id, SQL_VARCHAR );
-  $sth->bind_param( 2, $arch_id->version,   SQL_SMALLINT );
-  $sth->execute();
 
-  my ($peptide_seq) = $sth->fetchrow_array();
+  # FOR DEBUG:
+  #printf(STDERR "SQL:\n%s\n", $sql);
+  
+  
+  my $sth = $db->dbc->prepare($sql);
+  my $bind_parameters = $self->bind_param_generic_fetch();
+  if (defined $bind_parameters){
+      #if we have bind the parameters, call the DBI to bind them
+      my $i = 1;
+      foreach my $param (@{$bind_parameters}){
+		$sth->bind_param($i,$param->[0],$param->[1]);
+		$i++;
+      }
+      #after binding parameters, undef for future queries
+      $self->{'_bind_param_generic_fetch'} = ();
+  }
+  eval { $sth->execute() };
+  if ($@) {
+    throw("Detected an error whilst executing SQL '${sql}': $@");
+  }
+
+  my $res = $self->_objs_from_sth($sth, $mapper, $slice);
   $sth->finish();
-
-  return $peptide_seq;
-} ## end sub get_peptide
-
-
-=head2 get_current_release 
-
-  Example     : my $current_release = $archive_adaptor->get_current_release;
-  Description : Returns the current release number (as found in the meta table).
-  Return type : Int
-  Exceptions  : none
-  Caller      : general
-  Status      : At Risk
-              : under development
-
-=cut
-
-sub get_current_release {
-  my $self = shift;
-
-  unless ($self->{'current_release'}) {
-    my $mca = $self->db->get_MetaContainer;
-    my ($release) = @{ $mca->list_value_by_key('schema_version') };
-    $self->{'current_release'} = $release;
-  }
-
-  return $self->{'current_release'};
+  return $res;
 }
 
 
-=head2 get_current_assembly
+=head2 fetch_by_dbID
 
-  Example     : my $current_assembly = $archive_adaptor->get_current_assembly;
-  Description : Returns the current assembly version (as found in the meta
-                table).
-  Return type : String
-  Exceptions  : none
-  Caller      : general
-  Status      : At Risk
-              : under development
+  Arg [1]    : int $id
+               The unique database identifier for the feature to be obtained
+  Example    : $feat = $adaptor->fetch_by_dbID(1234));
+               $feat = $feat->transform('contig');
+  Description: Returns the feature created from the database defined by the
+               the id $id.  The feature will be returned in its native
+               coordinate system.  That is, the coordinate system in which it
+               is stored in the database.  In order to convert it to a
+               particular coordinate system use the transfer() or transform()
+               method.  If the feature is not found in the database then
+               undef is returned instead
+  Returntype : Bio::EnsEMBL::Feature or undef
+  Exceptions : thrown if $id arg is not provided
+               does not exist
+  Caller     : general
+  Status     : Stable
 
 =cut
 
-sub get_current_assembly {
-  my $self = shift;
+sub fetch_by_dbID{
+  my ($self,$id) = @_;
 
-  unless ($self->{'current_assembly'}) {
-    my $mca = $self->db->get_MetaContainer;
-    my ($assembly) = @{ $mca->list_value_by_key('assembly.default') };
-    $self->{'current_assembly'} = $assembly;
-  }
+  throw("id argument is required") if(!defined $id);
 
-  return $self->{'current_assembly'};
+  #construct a constraint like 't1.table1_id = 123'
+  my @tabs = $self->_tables;
+  my ($name, $syn) = @{$tabs[0]};
+  $self->bind_param_generic_fetch($id,SQL_INTEGER);
+  my $constraint = "${syn}.${name}_id = ?";
+
+  #Should only be one
+  my ($feat) = @{$self->generic_fetch($constraint)};
+
+  return undef if(!$feat);
+
+  return $feat;
 }
 
 
-=head2 lookup_current
+=head2 fetch_all_by_dbID_list
 
-  Arg[1]      : Bio::EnsEMBL::ArchiveStableId $arch_id -
-                the stalbe ID to find the current version for
-  Example     : if ($self->lookup_version($arch_id) {
-                  $arch_id->version($arch_id->current_version);
-                  $arch_id->db_name($self->dbc->dbname);
-  Description : Look in [gene|transcript|translation]_stable_id if you can find
-                a current version for this stable ID. Set
-                ArchiveStableId->current_version if found.
-  Return type : Boolean (TRUE if current version found, else FALSE)
-  Exceptions  : none
-  Caller      : general
-  Status      : At Risk
-              : under development
+  Arg [1]    : listref of integers $id_list
+               The unique database identifiers for the features to
+               be obtained.
+  Arg [2]    : optional - Bio::EnsEMBL::Slice to map features onto.
+  Example    : @feats = @{$adaptor->fetch_all_by_dbID_list([1234, 2131, 982]))};
+  Description: Returns the features created from the database
+               defined by the the IDs in contained in the provided
+               ID list $id_list.  The features will be returned
+               in their native coordinate system.  That is, the
+               coordinate system in which they are stored in the
+               database.  In order to convert the features to a
+               particular coordinate system use the transfer() or
+               transform() method.  If none of the features are
+               found in the database a reference to an empty list is
+               returned.
+  Returntype : listref of Bio::EnsEMBL::Features
+  Exceptions : thrown if $id arg is not provided
+               does not exist
+  Caller     : general
+  Status     : Stable
 
 =cut
 
-sub lookup_current {
-  my $self    = shift;
-  my $arch_id = shift;
+sub fetch_all_by_dbID_list {
+  my ( $self, $id_list_ref, $slice ) = @_;
 
-  my $type = lc( $arch_id->type );
-
-  unless ($type) {
-    warning("Can't lookup current version without a type.");
-    return 0;
+  if ( !defined($id_list_ref) || ref($id_list_ref) ne 'ARRAY' ) {
+    throw("id_list list reference argument is required");
   }
 
+  if ( !@{$id_list_ref} ) { return [] }
+
+  # Construct a constraint like 't1.table1_id = 123'
+  my @tabs = $self->_tables();
+  my ( $name, $syn ) = @{ $tabs[0] };
+
+  # Ensure that we do not exceed MySQL's max_allowed_packet (defaults to
+  # 1 MB) splitting large queries into smaller queries of at most 256 KB
+  # (32768 8-bit characters).  Assuming a (generous) average dbID string
+  # length of 16, this means 2048 dbIDs in each query.
+  my $max_size = 2048;
+
+
+  my %id_list;
+  $id_list{$_}++ for @{$id_list_ref};
+  my @id_list = keys %id_list;
+
+  my @out;
+
+  while (@id_list) {
+    my @ids;
+    my $id_str;
+
+    if ( scalar(@id_list) > $max_size ) {
+      @ids = splice( @id_list, 0, $max_size );
+    } else {
+      @ids     = @id_list;
+      @id_list = ();
+    }
+
+    if ( scalar(@ids) > 1 ) {
+      $id_str = " IN (" . join( ',', @ids ) . ")";
+    } else {
+      $id_str = " = " . $ids[0];
+    }
+
+    my $constraint = "${syn}.${name}_id $id_str";
+
+    push @out, @{ $self->generic_fetch($constraint, undef, $slice) };
+  }
+
+  return \@out;
+} ## end sub fetch_all_by_dbID_list
+
+# might not be a good idea, but for convenience
+# shouldnt be called on the BIG tables though
+
+sub fetch_all {
+  my $self = shift;
+  return $self->generic_fetch();
+}
+
+
+#_tables
+#
+#  Args       : none
+#  Example    : $tablename = $self->_table_name()
+#  Description: ABSTRACT PROTECTED
+#               Subclasses are responsible for implementing this
+#               method.  It should list of [tablename, alias] pairs.
+#               Additionally the primary table (with the dbID,
+#               analysis_id, and score) should be the first table in
+#               the list. e.g:
+#               ( ['repeat_feature',   'rf'],
+#                 ['repeat_consensus', 'rc']);
+#               used to obtain features.  
+#  Returntype : list of [tablename, alias] pairs
+#  Exceptions : thrown if not implemented by subclass
+#  Caller     : BaseFeatureAdaptor::generic_fetch
+#
+
+sub _tables {
+  throw(   "abstract method _tables not defined "
+         . "by implementing subclass of BaseAdaptor" );
+}
+
+
+#_columns
+#
+#  Args       : none
+#  Example    : $tablename = $self->_columns()
+#  Description: ABSTRACT PROTECTED
+#               Subclasses are responsible for implementing this
+#               method.  It should return a list of columns to be
+#               used for feature creation.
+#  Returntype : list of strings
+#  Exceptions : thrown if not implemented by subclass
+#  Caller     : BaseFeatureAdaptor::generic_fetch
+#
+
+sub _columns {
+  throw(   "abstract method _columns not defined "
+         . "by implementing subclass of BaseAdaptor" );
+}
+
+
+# _default_where_clause
+#
+#  Arg [1]    : none
+#  Example    : none
+#  Description: May be overridden to provide an additional where
+#               constraint to the SQL query which is generated to
+#               fetch feature records.  This constraint is always
+#               appended to the end of the generated where clause
+#  Returntype : string
+#  Exceptions : none
+#  Caller     : generic_fetch
+#
+
+sub _default_where_clause { return '' }
+
+
+# _left_join
+
+#  Arg [1]    : none
+#  Example    : none
+#  Description: Can be overridden by a subclass to specify any left
+#               joins which should occur.  The table name specigfied
+#               in the join must still be present in the return
+#               values of.
+#  Returntype : a {'tablename' => 'join condition'} pair
+#  Exceptions : none
+#  Caller     : general
+#
+
+sub _left_join { return () }
+
+
+#_final_clause
+
+#  Arg [1]    : none
+#  Example    : none
+#  Description: May be overriden to provide an additional clause
+#               to the end of the SQL query used to fetch feature
+#               records.  This is useful to add a required ORDER BY
+#               clause to the query for example.
+#  Returntype : string
+#  Exceptions : none
+#  Caller     : generic_fetch
+
+sub _final_clause { return '' }
+
+
+<<<<<<< ArchiveStableIdAdaptor.pm
+#_objs_from_sth
+=======
   my $sql = qq(
     SELECT version FROM ${type}
     WHERE stable_id = ?
@@ -1454,58 +793,44 @@ sub lookup_current {
     $arch_id->current_version($version);
     return 1;
   }
+>>>>>>> 1.40
 
-  # didn't find a current version
-  return 0;
-} ## end sub lookup_current
+#  Arg [1]    : DBI::row_hashref $hashref containing key-value pairs 
+#               for each of the columns specified by the _columns method
+#  Example    : my @feats = $self->_obj_from_hashref
+#  Description: ABSTRACT PROTECTED
+#               The subclass is responsible for implementing this
+#               method.  It should take in a DBI row hash reference
+#               and return a list of created features in contig
+#               coordinates.
+#  Returntype : list of Bio::EnsEMBL::*Features in contig coordinates
+#  Exceptions : thrown if not implemented by subclass
+#  Caller     : BaseFeatureAdaptor::generic_fetch
 
+sub _objs_from_sth {
+  throw(   "abstract method _objs_from_sth not defined "
+         . "by implementing subclass of BaseAdaptor" );
+}
 
-# infer type from stable ID format
-sub _resolve_type {
+sub dump_data {
   my $self = shift;
-  my $arch_id = shift;
-  
-  my $stable_id = $arch_id->stable_id();
-  my $id_type;
+  my $data = shift;
 
-  # first, try to infer type from stable ID format
-  #
-  # Anopheles IDs
-  if ($stable_id =~ /^AGAP.*/) {
-    if ($stable_id =~ /.*-RA/) {
-      $id_type = "Transcript";
-    } elsif ($stable_id =~ /.*-PA/) {
-      $id_type = "Translation";
-    } else {
-      $id_type = "Gene";
-    }
+  my $dumper = Data::Dumper->new([$data]);
+  $dumper->Indent(0);
+  $dumper->Terse(1);
+   my $dump = $dumper->Dump();
+# $dump =~ s/'/\\'/g; 
+ # $dump =~ s/^\$VAR1 = //;
+  return $dump;
+}
 
-  # standard Ensembl IDs
-  } elsif ($stable_id =~ /.*G\d+$/) {
-    $id_type = "Gene";
-  } elsif ($stable_id =~ /.*T\d+$/) { 
-    $id_type = "Transcript";
-  } elsif ($stable_id =~ /.*P\d+$/) { 
-    $id_type = "Translation";
-  } elsif ($stable_id =~ /.*E\d+$/) { 
-    $id_type = "Exon";
+sub get_dumped_data {
+    my $self = shift;
+    my $data = shift;
 
-  # if guessing fails, look in db
-  } else {
-    my $sql = qq(
-      SELECT type from stable_id_event
-      WHERE old_stable_id = ?
-      OR new_stable_id = ?
-    );
-    my $sth = $self->prepare($sql);
-    $sth->execute($stable_id, $stable_id);
-    ($id_type) = $sth->fetchrow_array;
-    $sth->finish;
-  }
-
-  warning("Couldn't resolve stable ID type.") unless ($id_type);
-  
-  $arch_id->type($id_type);
+    $data =~ s/\n|\r|\f|\\//g;
+    return eval ($data);
 }
 
 
