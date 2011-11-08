@@ -120,13 +120,13 @@ sub parse_common_options {
 	       'pass|dbpass|db_pass=s',
 	       'conffile|conf=s',
 	       'logfile|log=s',
-               'nolog=s',
+               'nolog',
 	       'logpath=s',
                'log_base_path=s',
-	       'logappend|log_append=s',
-	       'verbose|v=s',
-	       'interactive|i=s',
-	       'dry_run|dry|n=s',
+	       'logappend|log_append',
+	       'verbose|v',
+	       'interactive|i',
+	       'dry_run|dry|n',
 	       'help|h|?',
 	     );
 
@@ -923,7 +923,7 @@ sub get_chrlength {
   Arg[2]      : (optional) String $version - coord_system version
   Example     : my $ensembl_mapping = $support->get_ensembl_chr_mapping($dba);
   Description : Gets a mapping between Vega chromosome names and their
-                equivalent Ensembl chromosomes.
+                equivalent Ensembl chromosomes. Works with non-reference chromosomes
   Return type : Hashref - Vega name => Ensembl name
   Exceptions  : thrown if not passing a Bio::EnsEMBL::DBSQL::DBAdaptor
   Caller      : general
@@ -937,7 +937,7 @@ sub get_ensembl_chr_mapping {
 
   my $sa = $dba->get_SliceAdaptor;
   my @chromosomes = map { $_->seq_region_name } 
-    @{ $sa->fetch_all('chromosome', $version) };
+    @{ $sa->fetch_all('chromosome', $version, 1) };
 
   my %chrs;
   foreach my $chr (@chromosomes) {
@@ -1114,7 +1114,7 @@ sub _by_chr_num {
                 Mb, an additional smaller block size is used to yield 150 bins
                 for the overall smallest chromosome. This will result in
                 reasonable resolution for small chromosomes and high
-                performance for big ones.
+                performance for big ones. Does not return non-reference seq_regions
   Return type : Hashref (key: block size; value: Arrayref of chromosome
                 Bio::EnsEMBL::Slices)
   Exceptions  : none
@@ -1507,7 +1507,8 @@ sub commify {
   Arg[3]      : string $coord_system_name (optional) - 'chromosome' by default
   Arg[4]      : string $coord_system_version (optional) - 'otter' by default
   Example     : $chroms = $support->fetch_non_hidden_slice($sa,$aa);
-  Description : retrieve all slices from a loutre database that don't have a hidden attribute
+  Description : retrieve all slices from a loutre database that don't have a hidden attribute.
+                Doesn't retrieve non-reference slices
   Return type : arrayref
   Caller      : general
   Status      : stable
@@ -1547,7 +1548,8 @@ sub fetch_non_hidden_slices {
   Arg[3]      : string $coord_system_name (optional) - 'chromosome' by default
   Arg[4]      : string $coord_system_version (optional) - 'otter' by default
   Example     : $chrom_names = $support->get_non_hidden_slice_names($sa,$aa);
-  Description : retrieve names of all slices from a loutre database that don't have a hidden attribute
+  Description : retrieve names of all slices from a loutre database that don't have a hidden attribute.
+                Doesn't retrieve non-reference slices
   Return type : arrayref of names of all non-hidden slices
   Caller      : general
   Status      : stable
