@@ -142,7 +142,7 @@ XXML
     }
     $symbols{$mgi_id}=$fields[1];
     $ensembl_ids{$mgi_id}=$fields[5];
-    $status{$mgi_id} = 1 if ((!defined($status{$mgi_id}) or ($status{$mgi_id} eq ''));
+    $status{$mgi_id} = 1 if ( (!defined($status{$mgi_id}) or ($status{$mgi_id} eq '')) );
     if ($status{$mgi_id} < 4 && $fields[4] == 1){
       $status{$mgi_id} = 4;
     }
