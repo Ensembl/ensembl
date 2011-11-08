@@ -583,7 +583,9 @@ sub get_DBAdaptor {
   my $ispecies = $class->get_alias( $species, $no_alias_check );
 
   if ( !defined($ispecies) ) {
-    throw("Can not find internal name for species '$species'");
+    if(! $no_alias_check) {
+      throw("Can not find internal name for species '$species'");
+    }
   }
   else { $species = $ispecies }
 
