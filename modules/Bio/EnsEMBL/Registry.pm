@@ -938,7 +938,7 @@ sub get_adaptor {
 
   my $ispecies = $class->get_alias($species);
 
-  if ( !defined($species) ) {
+  if ( !defined($ispecies) ) {
     throw("Can not find internal name for species '$species'");
   }
   else { $species = $ispecies }
