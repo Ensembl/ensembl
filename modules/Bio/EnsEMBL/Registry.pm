@@ -454,7 +454,7 @@ sub remove_db {
   Arg [2]    : name to get the adaptor for in the registry.
   Example    : my $db = Bio::EnsEMBL::Registry->get_db("Human", "core", "lite");
   Returntype : adaptor
-  Exceptions : none
+  Exceptions : See get_DBAdaptor()
   Status     : At Risk.
              : This is here for backwards compatibility only and may
              : be removed eventually.  Solution is to make sure the
@@ -566,7 +566,9 @@ sub add_DBAdaptor {
   Arg [3]    : if set will not give warnings when looking for alias.
   Example    : $dba = Bio::EnsEMBL::Registry->get_DBAdaptor("Human", "core");
   Returntype : DBAdaptor
-  Exceptions : none
+  Exceptions : If $species is not defined and if no valid internal name 
+               could be found for $species. If thrown check your API and DB
+               version 
   Status     : Stable
 
 =cut
@@ -935,7 +937,8 @@ sub add_adaptor {
   Arg [3]    : name of the type to add the adaptor to in the registry.
   Example    : $adap = Bio::EnsEMBL::Registry->get_adaptor("Human", "core", "Gene");
   Returntype : adaptor
-  Exceptions : none
+  Exceptions : Thrown if a valid internal name cannot be found for the given 
+               name. If thrown check your API and DB version.
   Status     : Stable
 
 =cut
@@ -1341,7 +1344,8 @@ sub change_access{
                script may crash as the API version won't match the
                DB version.
 
-  Exceptions : None.
+  Exceptions : Thrown if the given URL does not parse according to the above 
+               scheme
   Status     : Stable
  
 =cut
