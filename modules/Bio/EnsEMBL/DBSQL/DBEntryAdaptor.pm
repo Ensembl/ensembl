@@ -370,6 +370,132 @@ sub get_all_masters {
 }
 
 
+=head fetch_all_by_name
+
+  Arg [1]    : string $name - The name of the external reference.
+               found in accession, display_label or synonym
+  Arg [2]    : (optional) string $dbname  - The name of the database which 
+               the provided name is for.
+
+  Example    : my $xref = @{$dbea->fetch_all_by_name('BRAC2','HGNC')}[0];
+               print $xref->description(), "\n" if($xref);
+  Description: Retrieves list of DBEntrys (xrefs) via a name.
+               The accesion is looked for first then the synonym and finally
+               the display_label.
+               NOTE $dbname this is optional but adding this speeds the
+               process up if you know what you are looking for.
+
+               NOTE:  In a multi-species database, this method will
+               return all the entries matching the search criteria, not
+               just the ones associated with the current species.
+  Returntype : Bio::EnsEMBL::DBSQL::DBEntry
+  Exceptions : thrown if arguments are incorrect
+  Caller     : general, domainview
+  Status     : Stable
+
+=cut
+
+sub fetch_all_by_name {
+  my ( $self, $name, $dbname ) = @_;
+
+  my $sql = (<<SQL);
+  SELECT xref.xref_id, xref.dbprimary_acc, xref.display_label, xref.version,
+         exDB.priority, exDB.db_name, exDB.db_display_name, exDB.db_release,
+            es.synonym, xref.info_type, xref.info_text,
+            exDB.type, exDB.secondary_db_name, exDB.secondary_db_table,
+            xref.description
+    FROM    (xref, external_db exDB)
+    LEFT JOIN external_synonym es ON
+            es.xref_id = xref.xref_id
+    WHERE  (xref.dbprimary_acc = ? or xref.display_label = ?)
+    AND    xref.external_db_id = exDB.external_db_id
+SQL
+
+  if(defined $dbname){
+    $sql .= " AND    exDB.db_name = ?";
+  }
+  my $sth = $self->prepare($sql);
+  $sth->bind_param( 1, $name, SQL_VARCHAR );
+  $sth->bind_param( 2, $name, SQL_VARCHAR );
+  if(defined $dbname){
+    $sth->bind_param( 3 , $dbname,    SQL_VARCHAR );
+  }
+  $sth->execute();
+
+
+  if ( !$sth->rows() && lc($dbname) eq 'interpro' ) {
+  # This is a minor hack that means that results still come back even
+  # when a mistake was made and no interpro accessions were loaded into
+  # the xref table.  This has happened in the past and had the result of
+  # breaking domainview
+
+    $sth->finish();
+    $sth = $self->prepare(
+      "SELECT   NULL,
+                i.interpro_ac,
+                i.id,
+                NULL,
+                NULL,
+                'Interpro',
+                NULL,
+                NULL
+        FROM    interpro i
+        WHERE   i.interpro_ac = ?" );
+
+    $sth->bind_param( 1, $name, SQL_VARCHAR );
+    $sth->execute();
+  }
+
+  my %exDB;
+  my @exDBlist;
+  my $max_rows = 1000;
+
+  while ( my $rowcache = $sth->fetchall_arrayref( undef, $max_rows ) ) {
+    while ( my $arrayref = shift( @{$rowcache} ) ) {
+      my ( $dbID,                $dbprimaryId,
+           $displayid,           $version,
+           $priority,
+           $dbname,              $db_display_name,
+           $release,             $synonym,
+           $info_type,           $info_text,
+           $type,                $secondary_db_name,
+           $secondary_db_table,  $description
+      ) = @$arrayref;
+
+      if ( !defined $exDB{$dbID} ) {
+	my $entrie = 
+          Bio::EnsEMBL::DBEntry->new(
+                           -adaptor             => $self,
+                           -dbID                => $dbID,
+                           -primary_id          => $dbprimaryId,
+                           -display_id          => $displayid,
+                           -version             => $version,
+                           -release             => $release,
+                           -dbname              => $dbname,
+                           -priority            => $priority,
+                           -db_display_name     => $db_display_name,
+                           -info_type           => $info_type,
+                           -info_text           => $info_text,
+                           -type                => $type,
+                           -secondary_db_name   => $secondary_db_name,
+                           -secondary_db_table  => $secondary_db_table,
+			   -description         => $description
+          );
+	$exDB{$dbID} = $entrie;
+	push @exDBlist, $entrie;
+      }
+      if ($synonym) { $exDB{$dbID}->add_synonym($synonym) }
+
+    } ## end while ( my $arrayref = shift...
+  } ## end while ( my $rowcache = $sth...
+
+  $sth->finish();
+
+  return \@exDBlist;
+} ## end sub fetch_all_by_name
+
+
+
 =head2 fetch_by_db_accession
 
   Arg [1]    : string $dbname - The name of the database which the provided
