@@ -535,9 +535,11 @@ sub fetch_all_by_Slice_constraint {
   Arg [3]    : string $logic_name
                the logic name of the type of features to obtain
   Example    : $fs = $a->fetch_all_by_logic_name('foobar');
-  Description: Returns a listref of features created from the database. 
-               only features with an analysis of type $logic_name will be 
-               returned. 
+  Description: Returns a listref of features created from the database.
+               only features with an analysis of type $logic_name will
+               be returned.  If the logic name is invalid (not in the
+               analysis table), a reference to an empty list will be
+               returned.
   Returntype : listref of Bio::EnsEMBL::SeqFeatures
   Exceptions : thrown if no $logic_name
   Caller     : General
@@ -553,6 +555,11 @@ sub fetch_all_by_logic_name {
   }
 
   my $constraint = $self->_logic_name_to_constraint( '', $logic_name );
+
+  if ( !defined($constraint) ) {
+    warning("Invalid logic name: $logic_name");
+    return [];
+  }
 
   return $self->generic_fetch($constraint);
 }
@@ -1065,7 +1072,7 @@ sub _logic_name_to_constraint {
   my $aa = $self->db->get_AnalysisAdaptor();
   my $an = $aa->fetch_by_logic_name($logic_name);
 
-  if(!$an) {
+  if ( !defined($an) ) {
     return undef;
   }
 
