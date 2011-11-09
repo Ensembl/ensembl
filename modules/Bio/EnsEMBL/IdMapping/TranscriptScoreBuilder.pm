@@ -430,7 +430,7 @@ sub different_translation_rescore {
       # PENALTY: The transcript stable ID is now on a transcript with a
       # different translation.
       $matrix->set_score( $entry->source(), $entry->target(),
-                          0.95*$entry->score() );
+                          0.9*$entry->score() );
       $i++;
     }
 
@@ -484,7 +484,7 @@ sub non_mapped_gene_rescore {
       # PENALTY: The transcript stable ID has been mapped to an
       # un-mapped gene.
       $matrix->set_score( $entry->source(), $entry->target(),
-                          0.8*$entry->score() );
+                          0.9*$entry->score() );
       $i++;
     }
   }
