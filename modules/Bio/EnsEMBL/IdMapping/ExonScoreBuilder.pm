@@ -468,16 +468,16 @@ sub run_exonerate {
   # run exonerate jobs using lsf
   #
   my $exonerate_job =
-      qq{$exonerate_path }
-    . qq{--query $source_file --target $target_file }
-    . q{--querychunkid $LSB_JOBINDEX }
-    . qq{--querychunktotal $num_jobs }
-    . q{--model affine:local -M 900 --showalignment FALSE --subopt no }
-    . qq{--percent $percent }
-    . $self->conf->param('exonerate_extra_params') . " "
-    . q{--ryo 'myinfo: %qi %ti %et %ql %tl\n' }
-    . qq{| grep '^myinfo:' > $dump_path/exonerate_map.\$LSB_JOBINDEX}
-    . "\n";
+    qq{$exonerate_path } .
+    qq{--query $source_file --target $target_file } .
+    q{--querychunkid $LSB_JOBINDEX } .
+    qq{--querychunktotal $num_jobs } .
+    q{--model ungapped -M 1000 -D 100 } .
+    q{--showalignment FALSE --subopt no } . qq{--percent $percent } .
+    $self->conf->param('exonerate_extra_params') . " " .
+    q{--ryo 'myinfo: %qi %ti %et %ql %tl\n' } .
+    qq{| grep '^myinfo:' > $dump_path/exonerate_map.\$LSB_JOBINDEX} .
+    "\n";
 
   $self->logger->info("Submitting $num_jobs exonerate jobs to lsf.\n");
   $self->logger->debug("$exonerate_job\n\n");
@@ -720,7 +720,10 @@ sub parse_exonerate_results {
         if ( $source_sr ne $target_sr ) {
           # PENALTY: The target and source are not on the same
           # seq_region.
-          $score *= 0.75;
+          $score *= 0.70;
+
+          # With a penalty of 0.7, exonerate scores need to be above
+          # approximately 0.714 to make the 0.5 threshold.
 
           ++$penalised;
         }
@@ -810,7 +813,7 @@ sub non_mapped_transcript_rescore {
       # PENALTY: The exon appears to belong to a transcript that has not
       # been mapped.
       $matrix->set_score( $entry->source(), $entry->target(),
-                          0.8*$entry->score() );
+                          0.9*$entry->score() );
       $i++;
     }
   } ## end foreach my $entry ( @{ $matrix...})
