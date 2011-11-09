@@ -10,6 +10,7 @@ my $user;
 my $dbname;
 my $display_name;
 my $source;
+my $show_links;
 
 my $ret = Getopt::Long::GetOptions ('dbname=s'        => \$dbname,
                                     'species=s'       => \$species,
@@ -18,6 +19,7 @@ my $ret = Getopt::Long::GetOptions ('dbname=s'        => \$dbname,
                                     'version=s'       => \$version,
                                     'name=s'          => \$display_name,
                                     'source=s'        => \$source,
+                                    'show_links'      => \$show_links,
                                     'help'            => sub {usage(); exit(0); } );
 
 
@@ -120,6 +122,7 @@ sub specific_example {
   my ($search_name, $source_name) = @_;
 
   my $db_adap = Bio::EnsEMBL::Registry->get_adaptor($species,"core","dbentry");
+  my $gene_adap = Bio::EnsEMBL::Registry->get_adaptor($species,"core","gene");
 
   my $dbentrys = $db_adap->fetch_all_by_name($search_name, $source_name);
 
@@ -138,6 +141,13 @@ sub specific_example {
     }
     if(defined $dbentry->info_text){
       print "info text: ".$dbentry->info_text."\n";
+    }
+    if($show_links && !($dbentry->info_type =~ /UNMAPPED/ms)){
+      print "Linked to the following genes: ";
+      foreach my $gene (@{$gene_adap->fetch_all_by_external_name($dbentry->primary_id, $dbentry->dbname)}){
+	print $gene->stable_id." ";
+      }	
+      print "\n";
     }
     print "##############################\n";
   }
@@ -174,6 +184,8 @@ sub usage {
 
   -source     the source name for the accession (i.e. HGNC, MGI, RefSeq_mRNA)
 
+  -show_links If name used then show which ensembl objects is is linked to.
+
    A typical run would be to see what xrefs are there for human :-
 
       perl xref_data_analysis.pl -species human
@@ -196,9 +208,9 @@ sub usage {
   To find how a partcular xref was mapped use -name to specify this and -source if more than
   one xref may have the same accession
 
-  e.g. how was accession BRCA2 in HGNC  mapped to ensembl
+  e.g. how was accession BRCA2 in HGNC  mapped to ensembl and to which genes
 
-       perl xref_data_analysis.pl -species human -name BRCA2 -source HGNC
+       perl xref_data_analysis.pl -species human -name BRCA2 -source HGNC -show_links
 
 
 EOF
