@@ -1347,7 +1347,8 @@ sub change_access{
                DB version.
 
   Exceptions : Thrown if the given URL does not parse according to the above 
-               scheme
+               scheme and if the specified database cannot be connected to 
+               (see L<load_registry_from_db> for more information)
   Status     : Stable
  
 =cut
@@ -1377,7 +1378,7 @@ sub load_registry_from_url {
       -no_cache   => $no_cache
     );
   } else {
-    throw("Only MySQL URLs are accepted at the moment");
+    throw("Only MySQL URLs are accepted. Given URL was '${url}'");
   }
   return;
 } ## end sub load_registry_from_url
@@ -1461,7 +1462,8 @@ sub load_registry_from_url {
                database instance into the registry.  Also adds a set
                of standard aliases.
 
-  Exceptions : None.
+  Exceptions : Thrown if the given MySQL database cannot be connected to
+               or there is any error whilst querying the database.
   Status     : Stable
 
 =cut
@@ -1502,9 +1504,13 @@ sub load_registry_from_db {
 
   $wait_timeout ||= 0;
 
-  my $dbh =
-    DBI->connect( "DBI:mysql:host=$host;port=$port", $user, $pass );
+  my $err_pattern = 'Cannot %s to the Ensembl MySQL server at %s:%d; check your settings & DBI error message: %s';
 
+  my $dbh = DBI->connect( "DBI:mysql:host=$host;port=$port", $user, $pass ) or
+            throw(sprintf($err_pattern, 'connect', $host, $port, $DBI::errstr));
+  $dbh->ping() or 
+            throw(sprintf($err_pattern, 'ping', $host, $port, $DBI::errstr));
+  
   my $res = $dbh->selectall_arrayref('SHOW DATABASES');
   my @dbnames = map { $_->[0] } @$res;
 
