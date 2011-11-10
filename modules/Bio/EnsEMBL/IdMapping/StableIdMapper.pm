@@ -357,19 +357,18 @@ sub map_stable_ids {
 
 
 sub generate_similarity_events {
-  my $self = shift;
-  my $mappings = shift;
-  my $scores = shift;
-  my $type = shift;
+  my ( $self, $mappings, $scores, $type ) = @_;
 
   # argument checks
-  unless ($mappings and
-          $mappings->isa('Bio::EnsEMBL::IdMapping::MappingList')) {
+  unless ( $mappings and
+           $mappings->isa('Bio::EnsEMBL::IdMapping::MappingList') )
+  {
     throw('Need a gene Bio::EnsEMBL::IdMapping::MappingList.');
   }
 
-  unless ($scores and
-          $scores->isa('Bio::EnsEMBL::IdMapping::ScoredMappingMatrix')) {
+  unless ( $scores and
+          $scores->isa('Bio::EnsEMBL::IdMapping::ScoredMappingMatrix') )
+  {
     throw('Need a Bio::EnsEMBL::IdMapping::ScoredMappingMatrix.');
   }
 
@@ -380,99 +379,102 @@ sub generate_similarity_events {
   #
   # add similarities for mapped entries
   #
-  foreach my $e (@{ $mappings->get_all_Entries }) {
+  foreach my $e ( @{ $mappings->get_all_Entries } ) {
 
-    # create lookup hash for mapped sources and targets; we'll need this later
-    $mapped->{'source'}->{$e->source} = 1;
-    $mapped->{'target'}->{$e->target} = 1;
-    
+    # create lookup hash for mapped sources and targets; we'll need this
+    # later
+    $mapped->{'source'}->{ $e->source } = 1;
+    $mapped->{'target'}->{ $e->target } = 1;
+
     # loop over all other entries which contain either source or target;
-    # add similarity if score is within 2% of this entry (which is the top
-    # scorer)
-    my @others = @{ $scores->get_Entries_for_target($e->target) };
-    push @others, @{ $scores->get_Entries_for_source($e->source) };
-    
-    while (my $e2 = shift(@others)) {
+    # add similarity if score is within 1.5% of this entry (which is the
+    # top scorer)
+    my @others = @{ $scores->get_Entries_for_target( $e->target ) };
+    push @others, @{ $scores->get_Entries_for_source( $e->source ) };
+
+    while ( my $e2 = shift(@others) ) {
 
       # skip self
-      next if (($e->source eq $e2->source) and ($e->target eq $e2->target));
-
-      if ($e2->score > ($e->score * 0.98)) {
-      
-        my $s_obj = $self->cache->get_by_key("${type}s_by_id", 'source',
-          $e2->source);
-        my $t_obj = $self->cache->get_by_key("${type}s_by_id", 'target',
-          $e2->target);
-        
-        my $key = join("\t",
-                       $s_obj->stable_id,
-                       $s_obj->version,
-                       $t_obj->stable_id,
-                       $t_obj->version,
-                       $self->mapping_session_id,
-                       $type,
-                       $e2->score
-        );
-        $self->add_stable_id_event('similarity', $key);
-      
+      if ( ( $e->source eq $e2->source ) and
+           ( $e->target eq $e2->target ) )
+      {
+        next;
       }
-      
-      # [todo] add overlap hack here? (see Java code)
-      # probably better solution: let synteny rescoring affect this decision
-    }
 
-  }
+      if ( $e2->score > ( $e->score*0.985 ) ) {
+
+        my $s_obj =
+          $self->cache->get_by_key( "${type}s_by_id", 'source',
+                                    $e2->source );
+        my $t_obj =
+          $self->cache->get_by_key( "${type}s_by_id", 'target',
+                                    $e2->target );
+
+        my $key = join( "\t",
+                        $s_obj->stable_id,         $s_obj->version,
+                        $t_obj->stable_id,         $t_obj->version,
+                        $self->mapping_session_id, $type,
+                        $e2->score );
+        $self->add_stable_id_event( 'similarity', $key );
+
+      }
+
+      # [todo] add overlap hack here? (see Java code)
+      # probably better solution: let synteny rescoring affect this
+      # decision
+    } ## end while ( my $e2 = shift(@others...))
+
+  } ## end foreach my $e ( @{ $mappings...})
 
   #
   # similarities for other entries
   #
-  foreach my $dbtype (keys %$mapped) {
+  foreach my $dbtype ( keys %$mapped ) {
 
     # note: $dbtype will be either 'source' or 'target'
     my $m1 = "get_all_${dbtype}s";
     my $m2 = "get_Entries_for_${dbtype}";
-    
-    foreach my $id (@{ $scores->$m1 }) {
-      
+
+    foreach my $id ( @{ $scores->$m1 } ) {
+
       # skip if this is a mapped source/target
-      next if ($mapped->{$dbtype}->{$id});
-      
-      my @entries = sort { $b->score <=> $a->score } @{ $scores->$m2($id) };
+      if ( $mapped->{$dbtype}->{$id} ) { next }
 
-      next unless (@entries);
+      my @entries =
+        sort { $b->score <=> $a->score } @{ $scores->$m2($id) };
 
-      # skip if top score < 0.7
+      unless (@entries) { next }
+
+      # skip if top score < 0.75
       my $top_score = $entries[0]->score;
-      next if ($top_score < 0.7);
+      if ( $top_score < 0.75 ) { next }
 
       # add similarities for all entries within 5% of top scorer
-      while (my $e = shift(@entries)) {
-        
-        if ($e->score > ($top_score * 0.95)) {
-          
-          my $s_obj = $self->cache->get_by_key("${type}s_by_id", 'source',
-            $e->source);
-          my $t_obj = $self->cache->get_by_key("${type}s_by_id", 'target',
-            $e->target);
-          
-          my $key = join("\t",
-                         $s_obj->stable_id,
-                         $s_obj->version,
-                         $t_obj->stable_id,
-                         $t_obj->version,
-                         $self->mapping_session_id,
-                         $type,
-                         $e->score
-          );
-          $self->add_stable_id_event('similarity', $key);
+      while ( my $e = shift(@entries) ) {
+
+        if ( $e->score > ( $top_score*0.95 ) ) {
+
+          my $s_obj =
+            $self->cache->get_by_key( "${type}s_by_id", 'source',
+                                      $e->source );
+          my $t_obj =
+            $self->cache->get_by_key( "${type}s_by_id", 'target',
+                                      $e->target );
+
+          my $key = join( "\t",
+                          $s_obj->stable_id,         $s_obj->version,
+                          $t_obj->stable_id,         $t_obj->version,
+                          $self->mapping_session_id, $type,
+                          $e->score );
+          $self->add_stable_id_event( 'similarity', $key );
 
         }
       }
-      
-    }
-  }
-  
-}
+
+    } ## end foreach my $id ( @{ $scores...})
+  } ## end foreach my $dbtype ( keys %$mapped)
+
+} ## end sub generate_similarity_events
 
 
 sub filter_same_gene_transcript_similarities {
