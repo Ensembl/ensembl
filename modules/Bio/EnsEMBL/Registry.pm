@@ -188,7 +188,8 @@ my %group2adaptor = (
                not use it or ask in the developer mailing list.
 
   Example    : Bio::EnsEMBL::Registry->load_all();
-  Returntype : none
+  Returntype : Int count of the DBAdaptor instances which can be found in the 
+               registry
   Exceptions : none
   Status     : Stable
 
@@ -208,6 +209,8 @@ sub load_all {
     $verbose  ||= 0;
     $no_clear ||= 0;
     $no_cache ||= 0;
+    
+    my $original_count = $class->get_DBAdaptor_count();
 
     if ( !defined($config_file) ) {
         if ($verbose) {
@@ -364,7 +367,8 @@ sub load_all {
             delete $INC{$config_file};
         }
     } ## end else [ if ( !defined($config_file...
-    return;
+    
+    return $class->get_DBAdaptor_count() - $original_count;
 } ## end sub load_all
 
 =head2 clear
@@ -548,9 +552,7 @@ sub add_DBAdaptor {
   $registry_register{_SPECIES}{$species}{ lc($group) }{'_DB'} = $adap;
 
   if ( !defined( $registry_register{'_DBA'} ) ) {
-    my @list = ();
-    push( @list, $adap );
-    $registry_register{'_DBA'} = \@list;
+    $registry_register{'_DBA'} = [$adap];
   } else {
     push( @{ $registry_register{'_DBA'} }, $adap );
   }
@@ -1275,6 +1277,21 @@ sub disconnect_all {
   return;
 }
 
+=head get_DBAdaptor_count
+
+  Example     : Bio::EnsEMBL::Registry->get_DBAdaptor_count();
+  Description : Returns the count of database adaptors currently held by 
+                the registry
+  Returntype  : Int count of database adaptors currently known
+  Exceptions  : None
+ 
+=cut
+
+sub get_DBAdaptor_count {
+  return scalar(@{$registry_register{'_DBA'}}) if(defined $registry_register{'_DBA'});
+  return 0;
+}
+
 =head2 change_access
 
   Will change the username and password for a set of databases.
@@ -1345,6 +1362,9 @@ sub change_access{
                by adding a slash and the version number but your
                script may crash as the API version won't match the
                DB version.
+               
+  Returntype : Int count of the DBAdaptor instances which can be found in the 
+               registry
 
   Exceptions : Thrown if the given URL does not parse according to the above 
                scheme and if the specified database cannot be connected to 
@@ -1355,7 +1375,7 @@ sub change_access{
 
 sub load_registry_from_url {
   my ( $self, $url, $verbose, $no_cache ) = @_;
-
+  
   if ( $url =~ /mysql\:\/\/([^\@]+\@)?([^\:\/]+)(\:\d+)?(\/\d+)?/x ) {
     my $user_pass = $1;
     my $host      = $2;
@@ -1368,7 +1388,7 @@ sub load_registry_from_url {
     $port    =~ s/^\://x if ($port);
     $version =~ s/^\///x if ($version);
 
-    $self->load_registry_from_db(
+    return $self->load_registry_from_db(
       -host       => $host,
       -user       => $user,
       -pass       => $pass,
@@ -1377,10 +1397,8 @@ sub load_registry_from_url {
       -verbose    => $verbose,
       -no_cache   => $no_cache
     );
-  } else {
-    throw("Only MySQL URLs are accepted. Given URL was '${url}'");
   }
-  return;
+  throw("Only MySQL URLs are accepted. Given URL was '${url}'");
 } ## end sub load_registry_from_url
 
 
@@ -1462,6 +1480,9 @@ sub load_registry_from_url {
                database instance into the registry.  Also adds a set
                of standard aliases.
 
+  Returntype : Int count of the DBAdaptor instances which can be found in the 
+               registry
+
   Exceptions : Thrown if the given MySQL database cannot be connected to
                or there is any error whilst querying the database.
   Status     : Stable
@@ -1503,6 +1524,8 @@ sub load_registry_from_db {
   }
 
   $wait_timeout ||= 0;
+  
+  my $original_count = $self->get_DBAdaptor_count();
 
   my $err_pattern = 'Cannot %s to the Ensembl MySQL server at %s:%d; check your settings & DBI error message: %s';
 
@@ -1980,7 +2003,8 @@ sub load_registry_from_db {
                                '-species_suffix' => $species_suffix );
 
   $dbh->disconnect();
-  return;
+  
+  return $self->get_DBAdaptor_count() - $original_count;
 
 } ## end sub load_registry_from_db
 
@@ -2142,10 +2166,15 @@ sub find_and_add_aliases {
                 If a database is found on more than one server, the
                 first found instance of that database will be used.
 
+  Returntype : Int count of the DBAdaptor instances which can be found in the 
+               registry
+
 =cut
 
 sub load_registry_from_multiple_dbs {
   my ( $self, @args ) = @_;
+
+  my $original_count = $self->get_DBAdaptor_count();
 
   my %merged_register = %registry_register;
 
@@ -2192,7 +2221,8 @@ sub load_registry_from_multiple_dbs {
   }
 
   %registry_register = %merged_register;
-  return;
+  
+  return $self->get_DBAdaptor_count() - $original_count;
 } ## end sub load_registry_from_multiple_dbs
 
 #
