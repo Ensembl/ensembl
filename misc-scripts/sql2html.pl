@@ -43,6 +43,11 @@
 #		unique ( name ),
 #		key source_idx (source_id)
 #);
+#
+#/**
+#@legend #FF0000 Table storing variation data
+#*/
+#
 ########################################################################################
 # Tags description:
 # /** and */ : begin and end of the document block
@@ -54,7 +59,7 @@
 # @see       : tables names linked to the described table
 # @link      : Internal link to an other table description. The format is ... @link table_name ...
 # @info      : tag to describe additional information about a table or a set of tables
-
+# @legend    : tag to fill the colour legend table at the end of the HTML page
 
 use strict;
 use POSIX;
@@ -155,6 +160,8 @@ my $documentation = {};
 my $tables_names = {'default' => []};
 my @header_names = ('default');
 my @colours = ($default_colour);
+my %legend;
+
 
 my $in_doc = 0;
 my $in_table = 0;
@@ -167,6 +174,7 @@ my $tag_content = '';
 my $tag = '';
 my $display = 'Show';
 my $parenth_count = 0;
+my $header_colour;
 
 #############
 ## Parser  ##
@@ -215,7 +223,7 @@ while (<SQLFILE>) {
 		elsif ($doc =~ /^\@(desc)\s*(.+)$/i) {
 			fill_documentation ($1,$2);
 		}
-		# Colour of the table header (optional)
+		# Colour of the table header (used for both set, table) (optional)
 		elsif ($doc =~ /^\@(colour)\s*(.+)$/i and $show_colour) {
 			fill_documentation ($1,$2);
 		}
@@ -238,6 +246,10 @@ while (<SQLFILE>) {
 			fill_documentation (); # Add the last tag content to the documentation hash
 			$in_doc=0;
 			next; 
+		}
+		# Add legend colour description
+		elsif ($doc =~ /^\@(legend)\s*(#\S+)\s+(.+)$/i) {
+			$legend{$2} = $3;
 		}
 		elsif ($doc =~ /^\s*(.+)$/) { # If a tag content is split in several lines
 			$tag_content .= " $1";
@@ -377,9 +389,11 @@ $html_content .= display_tables_list();
 my $table_count = 1;
 my $col_count = 1;
 
+# Display the detailled tables by header
 foreach my $header_name (@header_names) {
 	my $tables = $tables_names->{$header_name};
-	
+	my $hcolour = $documentation->{$header_name}{'colour'};
+		
 	# Header display	
 	if ($header_flag == 1 and $header_name ne 'default') {
 		$html_content .= qq{<br />\n<hr />\n<h2>$header_name</h2>\n};
@@ -399,7 +413,15 @@ foreach my $header_name (@header_names) {
 	# Tables display
 	foreach my $t_name (@{$tables}) {
 		my $data = $documentation->{$header_name}{'tables'}{$t_name};
-		$html_content .= add_table_name($t_name,$data->{colour});
+		my $colour;
+		
+		if ($header_flag && $hcolour) {
+			$colour = $hcolour;
+		} else {
+			$colour = $data->{colour};
+		}
+		
+		$html_content .= add_table_name($t_name,$colour);
 		$html_content .= add_description($data->{desc});
 		$html_content .= add_info($data->{info});	
 		$html_content .= add_columns($t_name,$data);
@@ -445,7 +467,7 @@ sub display_tables_list {
 		
 		# Header
 		if ($header_flag == 1 and $header_name ne 'default') {
-			$html .= qq{<h2>$header_name</h2>\n};
+			$html .= display_header($header_name);
 		}
 		$html .= qq{<table><tr><td>\n <ul>\n};
 
@@ -459,6 +481,27 @@ sub display_tables_list {
 			$table_count ++;
 		}
 		$html .= qq{		</ul>\n</td></tr></table>\n};
+	}
+	return $html;
+}
+
+
+sub display_header {
+	my $header_name = shift;
+	my $html;
+	
+	if ($show_colour && $header_colour) {
+		my $hcolour = $documentation->{$header_name}{colour};
+		$hcolour = $default_colour if (!$hcolour);
+		$html .= qq{
+		  <table style="border: 1px solid #CCCCCC;padding:0px;margin:0px;background-color:#FAFAFF"><tr>
+		    <td style="background-color:$hcolour;width:10px"></td>
+        <td><h2 style="margin:5px;">$header_name</h2></td>
+		  </tr></table>\n
+		};
+	}
+	else {
+		$html .= qq{<h2>$header_name</h2>\n};
 	}
 	return $html;
 }
@@ -499,9 +542,15 @@ sub fill_documentation {
 			}
 		}
 		elsif ($tag eq 'colour') {
-			$documentation->{$header}{'tables'}{$table}{$tag} = $tag_content;
-			if (! grep {$tag_content eq $_} @colours) {
-				push (@colours,$tag_content);
+			if ($table ne '') {
+				$documentation->{$header}{'tables'}{$table}{$tag} = $tag_content;
+				if (! grep {$tag_content eq $_} @colours) {
+					push (@colours,$tag_content);
+				}
+			}
+			else {
+				$documentation->{$header}{'colour'} = $tag_content;
+				$header_colour = 1;
 			}
 		}
 		elsif ($tag eq 'column') {
@@ -702,14 +751,17 @@ sub add_legend {
 	my $html = '';
 	my $default = 'Other tables';
 	
-	return $html if (scalar @colours == 1);
+	return $html if (scalar @colours == 1 or $header_colour);
 	
 	$html .= qq{<br />\n<hr />\n<h3 id="legend">Colour legend</h3>\n<table>};
 	
 	foreach my $c (@colours) {
 		my $desc = '';
-		if ($c eq $default_colour) {
+		if ($c eq $default_colour && !$legend{$default_colour}) {
 			$desc = $default;
+		}
+		else {
+			$desc = $legend{$c};
 		}
 		$html .= qq{<tr><td style="width:25px;height:15px;background-color:$c"></td><td>$desc</td></tr>\n};
 	}
