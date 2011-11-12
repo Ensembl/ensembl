@@ -52,6 +52,7 @@ if [[ ${conf#/} == ${conf} ]]; then
   exit
 fi
 
+export PATH=/software/perl-5.8.8/bin:${PATH}
 ./run.pl --lsf --conf=${conf} --logauto --mode=${mode}
 
 # $Id$
