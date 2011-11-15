@@ -29,7 +29,7 @@ available (for human, mouse and zebrafish) before the xref pipeline can be run.
 Configuring the system
 ----------------------
 
-Edit the config_xref.ini file, see FAQ.txt for more details. If this 
+Edit the xref_config.ini file, see FAQ.txt for more details. If this 
 species is already in the file then this could be just a case of checking the 
 correct versions of the databases are being used. 
 
