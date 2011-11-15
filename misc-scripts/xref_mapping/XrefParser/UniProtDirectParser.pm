@@ -6,6 +6,7 @@ use Carp;
 use DBI;
 
 use base qw( XrefParser::BaseParser );
+use XrefParser::Database;
 
 # Parse file of Uniprot records and assign direct xrefs
 # All assumed to be linked to translation
@@ -13,30 +14,67 @@ use base qw( XrefParser::BaseParser );
 
 # --------------------------------------------------------------------------------
 
-sub run {
+sub run_script {
 
  my ($self, $ref_arg) = @_;
   my $source_id    = $ref_arg->{source_id};
   my $species_id   = $ref_arg->{species_id};
-  my $files        = $ref_arg->{files};
+  my $file         = $ref_arg->{file};
   my $verbose      = $ref_arg->{verbose};
 
-  if((!defined $source_id) or (!defined $species_id) or (!defined $files) ){
-    croak "Need to pass source_id, species_id and files as pairs";
+  if((!defined $source_id) or (!defined $species_id) or (!defined $file) ){
+    croak "Need to pass source_id, species_id and file as pairs";
   }
   $verbose |=0;
 
-  my %prefix = (9606 => "ENSP0", 10090 => "ENSMUSP0", 10116 => "ENSRNOP0");
+  my $user = "ensro";
+  my $host;
+  my $port;
+  my $dbname;
+  my $wget = "";
 
-  if(!defined($prefix{$species_id})){
-    print "No prefix known for this species $species_id???\n";
+  if($file =~ /host[=][>](\S+?)[,]/){
+    $host = $1;
+  }
+  if($file =~ /port[=][>](\S+?)[,]/){
+    $port =  $1;
+  }
+  if($file =~ /dbname[=][>](\S+?)[,]/){
+    $dbname = $1;
+  }
+  if($file =~ /wget[=][>](\S+?)[,]/){
+    $wget = $1;
+  }
+
+
+  my $ua = LWP::UserAgent->new();
+  $ua->timeout(10);
+  $ua->env_proxy();
+
+  my $response = $ua->get($wget);
+
+  if ( !$response->is_success() ) {
+    warn($response->status_line);
+    return 1;
+  }
+ 
+  my $production_db =  XrefParser::Database->new({ host   => $host,
+					     port   => $port,
+					     user   => $user,
+					     dbname => $dbname,
+					     pass   => ""});
+  my $prod_dbi = $production_db->dbi();
+
+  if(!defined($prod_dbi)){
     return 1;
   }
 
-  my $filename = @{$files}[0];
+  my ($prefix) = $prod_dbi->selectrow_array("SELECT species_prefix FROM species WHERE taxon = $species_id");
 
-  my $file_io = $self->get_filehandle($filename);
-  if ( !defined($file_io) ) {
+  my %prefix = ($species_id => $prefix);
+
+  if(!defined($prefix{$species_id})){
+    print "No prefix known for this species $species_id???\n";
     return 1;
   }
 
@@ -46,7 +84,9 @@ sub run {
   my %prot2ensembl;
 
   my $count = 0;
-  while ( defined( my $line = $file_io->getline() ) ) {
+
+  my @lines = split(/\n/,$response->content);
+  foreach my $line (@lines){
     my ($prot, $ens) = split /\s+/,$line;
     if($ens =~ /$prefix{$species_id}/){
       push @{$prot2ensembl{$prot}}, $ens;
