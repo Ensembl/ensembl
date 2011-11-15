@@ -269,10 +269,13 @@ if (!defined($file)) {
         allele a JOIN
         variation v ON (
             v.variation_id = a.variation_id
+        ) JOIN
+        allele_code ac ON (
+	    a.allele_code_id = ac.allele_code_id
         )
       WHERE
         a.variation_id = ? AND
-        a.allele = ? AND
+        ac.allele = ? AND
         a.frequency >= $FREQUENCY_CUTOFF AND
         a.count >= $OBSERVATION_COUNT_CUTOFF AND
         a.sample_id IN ($sample_ids) AND
