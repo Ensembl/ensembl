@@ -125,6 +125,32 @@ my $html_header = qq{
 			}
 		}
 	}
+	
+	// Function to show/hide all the tables
+	function show_hide_all () {
+		expand_flag = document.getElementById('expand');
+		divs = document.getElementsByName('sqltable');
+		for(var i=0; i < divs.length; i++){
+			param = divs[i].id.substring(4);
+			div   = document.getElementById('div_'+param);
+		  alink = document.getElementById('a_'+param);
+			
+			if (expand_flag.value=='0') {
+				div.style.display='inline';
+				alink.innerHTML='Hide';
+			}
+			else {
+				div.style.display='none';
+				alink.innerHTML='Show';
+			}
+		}
+		if (expand_flag.value=='0') {
+			expand_flag.value='1';
+		}
+		else {
+			expand_flag.value='0';
+		}
+	}
 </script>
 
 </head>
@@ -446,7 +472,9 @@ close(HTML);
 ###############
 
 sub display_tables_list {
-	my $html = qq{<h3 id="top">List of the tables:</h3>\n};
+	my $html = qq{<h3 id="top">List of the tables:</h3>};
+	
+	
 	foreach my $header_name (@header_names) {
 		
 		my $tables = $tables_names->{$header_name};
@@ -480,7 +508,10 @@ sub display_tables_list {
 			$html .= add_table_name_to_list($t_name);
 			$table_count ++;
 		}
-		$html .= qq{		</ul>\n</td></tr></table>\n};
+		$html .= qq{		</ul>\n</td></tr></table>
+		<input type="button" onclick="show_hide_all()" style="background-color:#933;color:#FFF;cursor:pointer" value="Show/hide all" />
+		<input type="hidden" id="expand" value="0" /> 
+		};
 	}
 	return $html;
 }
@@ -637,7 +668,7 @@ sub add_columns {
 	my $cols  = $data->{column};
 	my $display_style = $display_col{$display};
 	
-	my $html = qq{\n	<div id="div_$table" style="display:$display_style">\n
+	my $html = qq{\n	<div id="div_$table" name="sqltable" style="display:$display_style">\n
 	<table style="border:1px outset #222222">
 		<tr class="bg3 center"><th style="width:180px">Column</th><th style="width:150px">Type</th><th style="width:100px">Default value</th><th style="width:400px">Description</th><th style="width:150px">Index</th></tr>\n};
 	my $bg = 1;
