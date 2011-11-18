@@ -2514,7 +2514,7 @@ CREATE TABLE data_file (
   UNIQUE KEY df_unq_idx(coord_system_id, analysis_id, name, file_type),
   INDEX df_name_idx(name),
   INDEX df_analysis_idx(analysis_id)
-);
+) ENGINE=MyISAM;
 
 CREATE DEFINER = CURRENT_USER SQL SECURITY INVOKER VIEW exon_stable_id (exon_id, stable_id, version, created_date, modified_date) AS (SELECT exon_id, stable_id, version, created_date, modified_date FROM exon);
 

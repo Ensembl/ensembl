@@ -20,7 +20,7 @@ CREATE TABLE data_file (
   UNIQUE KEY df_unq_idx(coord_system_id, analysis_id, name, file_type),
   INDEX df_name_idx(name),
   INDEX df_analysis_idx(analysis_id)
-);
+) ENGINE=MyISAM;
 
 # Patch identifier
 INSERT INTO meta (species_id, meta_key, meta_value)
