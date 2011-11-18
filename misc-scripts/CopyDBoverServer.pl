@@ -10,6 +10,7 @@ use File::Spec::Functions
 use Getopt::Long;
 use IO::File;
 use Sys::Hostname;
+use Tie::File;
 
 my $start_time = time();
 
@@ -20,7 +21,7 @@ sub short_usage {
 Usage:
   $0 --pass=XXX \\
   $indent [--noflush] [--nocheck] \\
-  $indent [--noopt] [--noinndob] [--views] [--force] \\
+  $indent [--noopt] [--noinndob] [--skip_views] [--force] \\
   $indent [--only_tables=XXX,YYY | --skip_tables=XXX,YYY] \\
   $indent [--help] input_file\
 
@@ -36,7 +37,7 @@ sub long_usage {
 Usage:
   $0 --pass=XXX \\
   $indent [--noflush] [--nocheck] \\
-  $indent [--noopt] [--noinndob] [--views] [--force] \\
+  $indent [--noopt] [--noinndob] [--skipviews] [--force] \\
   $indent [--only_tables=XXX,YYY | --skip_tables=XXX,YYY] \\
   $indent [--help] input_file\
 
@@ -80,8 +81,9 @@ Command line switches:
                     Skip the copy of any InnoDB table encountered. Default
                     is to include and fail when InnoDB seen.
 
-  --views           (Optional)
-                    Include 'view' tables in any copy. Default is to skip.
+  --skip_views      (Optional)
+                    Exclude 'view' tables in any copy. Default is to process 
+                    them.
 
   --force           (Optional)
                     Ordinarily, the script refuses to overwrite an
@@ -154,7 +156,7 @@ my $opt_flush    = 1;    # Flush by default.
 my $opt_check    = 1;    # Check tables by default.
 my $opt_optimize = 1;    # Optimize the tables by default.
 my $opt_force = 0; # Do not reuse existing staging directory by default.
-my $opt_views = 0; # Skip views by default
+my $opt_skip_views = 0; # Process views by default
 my $opt_innodb = 1;    # Don't skip InnoDB by default
 
 if ( !GetOptions( 'pass=s'        => \$opt_password,
@@ -165,7 +167,7 @@ if ( !GetOptions( 'pass=s'        => \$opt_password,
                   'only_tables=s' => \$opt_only_tables,
                   'skip_tables=s' => \$opt_skip_tables,
                   'innodb!'       => \$opt_innodb,
-                  'views!'        => \$opt_views,
+                  'skip_views!'   => \$opt_skip_views,
                   'help'          => \$opt_help )
      || ( !defined($opt_password) && !defined($opt_help) ) )
 {
@@ -461,6 +463,7 @@ foreach my $spec (@todo) {
   }
 
   my @tables;
+  my @views;
 
   my $table_sth = $source_dbh->prepare('SHOW TABLE STATUS');
 
@@ -496,9 +499,14 @@ foreach my $spec (@todo) {
                 $source_db, $table ) );
         }
       }
-    } elsif ( !$opt_views ) {
-      warn( sprintf( "SKIPPING view '%s'\n", $table ) );
-      next;
+    } else {
+      if ( $opt_skip_views ) {
+        warn( sprintf( "SKIPPING view '%s'\n", $table ) );
+        next;
+      }
+      else {
+        push(@views, $table);
+      }
     }
 
     push( @tables, $table );
@@ -618,6 +626,45 @@ foreach my $spec (@todo) {
       sprintf( "FAILED: copy failed (cleanup of '%s' may be needed).",
                $staging_dir );
     next;
+  }
+  
+  ##------------------------------------------------------------------##
+  ## VIEW REPAIR                                                      ##
+  ##------------------------------------------------------------------##
+  print( '-' x 36, ' VIEW REPAIR ', '-' x 37, "\n" );
+  
+  if($opt_skip_views) {
+    print 'SKIPPING VIEWS...', "\n";
+  }
+  else {
+    print 'PROCESSING VIEWS...', "\n";
+    if($source_db eq $target_db) {
+      print("Source and target names (${source_db}) are the same; views do not need repairing\n");
+    }
+    else {
+      my $ok = 1;
+      foreach my $current_view (@views) {
+        print "Processing $current_view\n";
+        my $view_frm_loc = catfile($staging_dir, "${current_view}.frm");
+        if(tie my @view_frm, 'Tie::File', $view_frm_loc) {
+          for (@view_frm) {
+            s/`$source_db`/`$target_db`/g;
+          }
+          untie @view_frm;
+        }
+        else {
+          warn(sprintf(q{Cannot tie file '%s' for VIEW repair. Error}, $view_frm_loc));
+          $ok = 0;
+          next;
+        }
+      }
+      
+      if(!$ok) {
+        $spec->{status} = 
+          sprintf(q{FAILED: view cleanup failed (cleanup of view frm files in '%s' may be needed}, 
+                  $staging_dir);
+      }
+    }
   }
 
   ##------------------------------------------------------------------##
