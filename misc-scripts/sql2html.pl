@@ -313,9 +313,9 @@ while (<SQLFILE>) {
 		$table='';
 		$parenth_count = 0;
 	  }
-	  else{
+	  else {
 
-	#	warn "Processing table";
+	  #	warn "Processing table";
 
 		## INDEXES ##
 		if ($doc =~ /^\s*(primary\s+key)\s*\((.+)\)/i or $doc =~ /^\s*(unique)\s*\((.+)\)/i){ # Primary or unique
@@ -508,11 +508,12 @@ sub display_tables_list {
 			$html .= add_table_name_to_list($t_name);
 			$table_count ++;
 		}
-		$html .= qq{		</ul>\n</td></tr></table>
-		<input type="button" onclick="show_hide_all()" style="background-color:#933;color:#FFF;cursor:pointer" value="Show/hide all" />
-		<input type="hidden" id="expand" value="0" /> 
-		};
+		$html .= qq{		</ul>\n</td></tr></table>};
 	}
+	$html .= qq{
+	  <input type="button" onclick="show_hide_all()" style="background-color:#933;color:#FFF;cursor:pointer" value="Show/hide all" />
+		<input type="hidden" id="expand" value="0" />
+	};
 	return $html;
 }
 
@@ -523,7 +524,7 @@ sub display_header {
 	
 	if ($show_colour && $header_colour) {
 		my $hcolour = $documentation->{$header_name}{colour};
-		$hcolour = $default_colour if (!$hcolour);
+		$hcolour = $default_colour if (!defined($hcolour));
 		$html .= qq{
 		  <table style="border: 1px solid #CCCCCC;padding:0px;margin:0px;background-color:#FAFAFF"><tr>
 		    <td style="background-color:$hcolour;width:10px"></td>
@@ -563,25 +564,25 @@ sub fill_documentation {
 				}
 				$info = '';
 			}
-			# Table description
-			elsif ($table ne '') {
-				$documentation->{$header}{'tables'}{$table}{$tag} = $tag_content;
-			}
 			# Header description
-			else {
+			elsif(!$documentation->{$header}{'tables'}) {
 				$documentation->{$header}{'desc'} = $tag_content;
+			}
+			# Table description
+			else {
+				$documentation->{$header}{'tables'}{$table}{$tag} = $tag_content;
 			}
 		}
 		elsif ($tag eq 'colour') {
-			if ($table ne '') {
+			if(!$documentation->{$header}{'tables'}) {
+				$documentation->{$header}{'colour'} = $tag_content;
+				$header_colour = 1;
+			}
+			elsif ($table ne '') {
 				$documentation->{$header}{'tables'}{$table}{$tag} = $tag_content;
 				if (! grep {$tag_content eq $_} @colours) {
 					push (@colours,$tag_content);
 				}
-			}
-			else {
-				$documentation->{$header}{'colour'} = $tag_content;
-				$header_colour = 1;
 			}
 		}
 		elsif ($tag eq 'column') {
