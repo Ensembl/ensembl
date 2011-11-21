@@ -64,7 +64,7 @@ Usage:
 
   --fix             also go through all old patches to find any missing
                     patch (patching starts at release equal to the
-                    oldest patch in the database)
+                    oldest patch in the database) >>USE WITH CAUTION<<
 
   --help        display this text
   --about       display further information
@@ -149,10 +149,12 @@ sub about {
           -s homo_sapiens -r 66 -d 'my_%'
 
       A genebuilder makes sure that all patches up to and including
-      those for release 66 are included in her database:
+      those for release 66 are included in her database, without
+      actually applying any patch (any missing patches needs to be
+      manually checked!):
 
         $0 -h host -u user -p password \\
-          -r 66 -d my_database --fix
+          -r 66 -d my_database --fix --dryrun
 
 ABOUT_END
 } ## end sub about
@@ -422,22 +424,29 @@ while ( $sth->fetch() ) {
         }
       }
       else {
-        if ( !$opt_dryrun ) {
-          printf( "Will apply patch '%s' (%s)\n", $patch,
+        if ( $r < $opt_release && $patch =~ /a\.sql$/ ) {
+          # Skip old patches that sets schema_version.
+          printf( "Skipping 'a' patch (%s) " .
+                    "that would set old schema_version!\n",
                   $schema_type );
-          push( @apply_these, $entry );
         }
         else {
-          printf( "Would apply patch '%s' (%s)\n",
-                  $patch, $schema_type );
+          if ( !$opt_dryrun ) {
+            printf( "Will apply patch '%s' (%s)\n",
+                    $patch, $schema_type );
+            push( @apply_these, $entry );
+          }
+          else {
+            printf( "Would apply patch '%s' (%s)\n",
+                    $patch, $schema_type );
+          }
         }
       }
 
     } ## end foreach my $entry ( sort { ...})
   } ## end for ( my $r = $start_version...)
 
-  if ($opt_dryrun)     { next }
-  if ( !@apply_these ) { next }
+  if ( $opt_dryrun || !@apply_these ) { print("\n"); next }
 
   local $| = 1;
   print("Proceed with applying these patches? (y/N): ");
@@ -477,6 +486,8 @@ while ( $sth->fetch() ) {
       }
     } ## end foreach my $entry (@apply_these)
   } ## end if ( lc($yesno) =~ /^y(?:es)?$/)
+
+  print("\n");
 
 } ## end while ( $sth->fetch() )
 
