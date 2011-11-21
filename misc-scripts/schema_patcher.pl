@@ -203,6 +203,7 @@ if ( defined($opt_type) &&
   die( sprintf( "Unknown schema type: %s\n", $opt_type ) );
 }
 
+my $latest_release;
 my %patches;
 
 # Get available patches.
@@ -230,6 +231,12 @@ foreach my $thing ( [ 'ensembl',               'core' ],
     if ( $file_name =~ /^patch_\d+_(\d+)_?[a-z]?\.sql$/ ) {
       my $patch_release = $1;
 
+      if ( !defined($latest_release) ||
+           $latest_release < $patch_release )
+      {
+        $latest_release = $patch_release;
+      }
+
       if ($opt_verbose) {
         printf( "Found %s patch file '%s' for release %d\n",
                 $schema_type, $file_name, $patch_release );
@@ -243,6 +250,12 @@ foreach my $thing ( [ 'ensembl',               'core' ],
   }
 
 } ## end foreach my $thing ( [ 'ensembl'...])
+
+if ( $opt_release > $latest_release ) {
+  die( sprintf( "Release %d is too new, " .
+                  "last release with patches is release %d\n",
+                $opt_release, $latest_release ) );
+}
 
 my $dsn = sprintf( "DBI:mysql:host=%s;port=%d", $opt_host, $opt_port );
 
