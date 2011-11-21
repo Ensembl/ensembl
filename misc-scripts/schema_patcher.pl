@@ -22,7 +22,7 @@ Usage:
   $0 --host=dbhost [ --port=dbport ] \\
   $indent --user=dbuser [ --pass=dbpass ] \\
   $indent --type=schema-type | --database=dbname \\
-  $indent --release=new-release [ --from=old-release ] \\
+  $indent [ --release=new-release ] [ --from=old-release ] \\
   $indent [ --species=dbspecies ] \\
   $indent [ --cvsdir=/some/path ] \\
   $indent [ --dryrun ] \\
@@ -45,7 +45,8 @@ Usage:
   --database / -d   full name of database, or database name pattern
                     (required if --type is not specified)
 
-  --release / -r    release number (required)
+  --release / -r    release number (optional, default is the latest
+                    release that we can find patches for)
 
   --from / -f       only consider databases from this release
                     (optional, no default)
@@ -78,12 +79,13 @@ sub about {
 
     This script patches one or several Ensembl databases from older
     releases to the release specified by the user on the command line
-    using the --release=NN command line switch.  To only patch databases
-    from a particular Ensembl release, the user may use the --from=NN
-    command line switch.  In this case, the script will use the value
-    from the 'schema_version' meta key or, failing that, from the
-    database name, to determine what databases should be or shouldn't be
-    patched.
+    using the --release=NN command line switch, or to the latest release
+    for which the script is able to find a patch if the --release=NN
+    switch is not used.  To only patch databases from a particular
+    Ensembl release, the user may use the --from=NN command line
+    switch.  In this case, the script will use the value from the
+    'schema_version' meta key or, failing that, from the database name,
+    to determine what databases should be or shouldn't be patched.
 
     The script is able to patch databases that have Ensembl Core
     schemas, Ensembl Regulation schemas, and Ensembl Variation schemas,
@@ -136,17 +138,17 @@ sub about {
           -d my_database_66 -r 66 --dryrun
 
       The release coordinator patches all mouse Core-like databases to
-      release 66.  She has checked out the 'ensembl' CVS modules in her
-      ~/cvs directory:
+      the latest release.  She has checked out the 'ensembl' CVS modules
+      in her ~/cvs directory:
 
         $0 -h host -u user -p password \\
-          -t core -s mouse -r 66 --cvsdir=~/cvs
+          -t core -s mouse --cvsdir=~/cvs
 
       A genebuilder (username 'my') patches all her human databases to
-      release 66:
+      the latest release.
 
         $0 -h host -u user -p password \\
-          -s homo_sapiens -r 66 -d 'my_%'
+          -s homo_sapiens -d 'my_%'
 
       A genebuilder makes sure that all patches up to and including
       those for release 66 are included in her database, without
@@ -190,7 +192,6 @@ if ( !GetOptions( 'host|h=s'     => \$opt_host,
                   'about!'       => sub { about(); exit(0); } ) ||
      !defined($opt_host) ||
      !defined($opt_user) ||
-     !defined($opt_release) ||
      ( !defined($opt_database) && !defined($opt_type) ) )
 {
   usage();
@@ -253,10 +254,18 @@ foreach my $thing ( [ 'ensembl',               'core' ],
 
 } ## end foreach my $thing ( [ 'ensembl'...])
 
-if ( $opt_release > $latest_release ) {
+if ( defined($opt_release) && $opt_release > $latest_release ) {
   die( sprintf( "Release %d is too new, " .
                   "last release with patches is release %d\n",
                 $opt_release, $latest_release ) );
+}
+
+if ( !defined($opt_release) ) {
+  if ($opt_verbose) {
+    printf( "Latest release with patches is release %d\n",
+            $latest_release );
+  }
+  $opt_release = $latest_release;
 }
 
 my $dsn = sprintf( "DBI:mysql:host=%s;port=%d", $opt_host, $opt_port );
@@ -378,7 +387,7 @@ while ( $sth->fetch() ) {
       }
       else { $species_ok = 1 }
     }
-    elsif ( ( $opt_species && !$opt_quiet ) || $opt_verbose ) {
+    elsif ( $opt_species && !$opt_quiet ) {
       warn(
         sprintf( "Can not determine species from '%s'\n", $database ) );
     }
