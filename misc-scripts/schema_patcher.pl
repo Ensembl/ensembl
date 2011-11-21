@@ -25,7 +25,8 @@ Usage:
   $indent --release=new-release [ --from=old-release ] \\
   $indent [ --species=dbspecies ] \\
   $indent [ --cvsdir=/some/path ] \\
-  $indent [ --dryrun ] [ --verbose ]
+  $indent [ --dryrun ] \\
+  $indent [ --verbose ] [ --quiet ]
 
   $0 --help | --about
 
