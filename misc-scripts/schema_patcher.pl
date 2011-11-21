@@ -26,7 +26,8 @@ Usage:
   $indent [ --species=dbspecies ] \\
   $indent [ --cvsdir=/some/path ] \\
   $indent [ --dryrun ] \\
-  $indent [ --verbose ] [ --quiet ]
+  $indent [ --verbose ] [ --quiet ] \\
+  $indent [ --fix ]
 
   $0 --help | --about
 
@@ -60,6 +61,10 @@ Usage:
   --verbose / -v    display extra information
 
   --quiet / -q      do not display warnings
+
+  --fix             also go through all old patches to find any missing
+                    patch (patching starts at release equal to the
+                    oldest patch in the database)
 
   --help        display this text
   --about       display further information
@@ -106,6 +111,15 @@ sub about {
     will be used to match against the various values of the meta key
     'species.alias' or, failing that, against the database name.
 
+    When the --fix command line switch is used, the script will also
+    make it possible to apply older patches that might have been
+    skipped.  For example: A database at schema version 65, with patches
+    since release 40, will not only be patched to the appropriate
+    release (specified with --release=NN), but all patches since release
+    40 (inclusively) will be tested.  If the patch identifier for an old
+    patch is missing from the meta table of the database, that patch
+    will be applied.
+
     Examples
 
       The release coordinator patches all Ensembl Core-like databases
@@ -134,6 +148,12 @@ sub about {
         $0 -h host -u user -p password \\
           -s homo_sapiens -r 66 -d 'my_%'
 
+      A genebuilder makes sure that all patches up to and including
+      those for release 66 are included in her database:
+
+        $0 -h host -u user -p password \\
+          -r 66 -d my_database --fix
+
 ABOUT_END
 } ## end sub about
 
@@ -146,6 +166,7 @@ my $opt_cvsdir = '../../';
 
 my $opt_dryrun;
 my $opt_from;
+my $opt_fix;
 
 my ( $opt_verbose, $opt_quiet );
 
@@ -160,6 +181,7 @@ if ( !GetOptions( 'host|h=s'     => \$opt_host,
                   'database|d=s' => \$opt_database,
                   'cvsdir=s'     => \$opt_cvsdir,
                   'dryrun|n!'    => \$opt_dryrun,
+                  'fix!'         => \$opt_fix,
                   'verbose|v!'   => \$opt_verbose,
                   'quiet|q!'     => \$opt_quiet,
                   'help!'        => sub { usage(); exit(0); },
@@ -293,8 +315,11 @@ while ( $sth->fetch() ) {
       $species = $value;
     }
     elsif ( $key eq 'patch' ) {
-      $value =~ /^([^|]+)\|(.*)$/;
-      $dbpatches{$1} = $2;
+      $value =~ /^(patch_\d+_(\d+)_?[a-z]?\.sql)\|(.*)$/;
+      my $patch_ident   = $1;
+      my $patch_release = $2;
+      my $patch_info    = $3;
+      $dbpatches{$patch_release}{$patch_ident} = $patch_info;
     }
   } ## end while ( $sth2->fetch() )
 
@@ -347,7 +372,8 @@ while ( $sth->fetch() ) {
   if ( $schema_version_ok &&
        $schema_type_ok &&
        $species_ok &&
-       $schema_version < $opt_release )
+       ( ( !$opt_fix && $schema_version < $opt_release ) ||
+         ( $opt_fix && $schema_version <= $opt_release ) ) )
   {
     print( '-' x ( $ENV{COLUMNS} || 80 ), "\n" );
     printf( "Considering '%s' [%s,%s,%d]\n",
@@ -358,16 +384,25 @@ while ( $sth->fetch() ) {
 
   # Now figure out what patches we need to apply to this database.
 
+  my $start_version;
+
+  if ($opt_fix) {
+    $start_version = ( sort { $a <=> $b } keys %dbpatches )[0];
+    printf( "Earliest patch in database '%s' is from release %d\n",
+            $database, $start_version );
+  }
+  else { $start_version = $schema_version + 1 }
+
   my @apply_these;
 
-  for ( my $r = $schema_version + 1; $r <= $opt_release; ++$r ) {
+  for ( my $r = $start_version; $r <= $opt_release; ++$r ) {
     foreach my $entry ( sort { $a->{'patch'} cmp $b->{'patch'} }
                         @{ $patches{$schema_type}{$r} } )
     {
       my $patch = $entry->{'patch'};
       my $path  = $entry->{'path'};
 
-      if ( exists( $dbpatches{$patch} ) ) {
+      if ( exists( $dbpatches{$r}{$patch} ) ) {
         if ($opt_verbose) {
           printf( "Patch '%s' (%s) already applied\n",
                   $patch, $schema_type );
@@ -384,10 +419,12 @@ while ( $sth->fetch() ) {
                   $patch, $schema_type );
         }
       }
-    }
-  } ## end for ( my $r = $schema_version...)
 
-  if ($opt_dryrun) { next }
+    } ## end foreach my $entry ( sort { ...})
+  } ## end for ( my $r = $start_version...)
+
+  if ($opt_dryrun)     { next }
+  if ( !@apply_these ) { next }
 
   local $| = 1;
   print("Proceed with applying these patches? (y/N): ");
