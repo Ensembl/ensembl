@@ -125,10 +125,11 @@ homo_sapiens_cdna_65_37" bit and continue but let who ever is building
 this database know that you are doing the LRGs so that they get the same
 data.
 
-
-
 Run the parsing
 ---------------
+
+*PROXY: Some sources require the downloading of files over HTTP. If you are 
+firewalled then make sure you have set the HTTP_PROXY environment variable*
 
 More detailed instructions can be found in the FAQ.txt, 
 but basically you should cd to where you want the files to be downloaded to 
