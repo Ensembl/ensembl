@@ -129,7 +129,7 @@ my $html_header = qq{
 	// Function to show/hide all the tables
 	function show_hide_all () {
 		expand_flag = document.getElementById('expand');
-		divs = document.getElementsByName('sqltable');
+		divs = document.getElementsByTagName('div');
 		for(var i=0; i < divs.length; i++){
 			param = divs[i].id.substring(4);
 			div   = document.getElementById('div_'+param);
@@ -669,7 +669,7 @@ sub add_columns {
 	my $cols  = $data->{column};
 	my $display_style = $display_col{$display};
 	
-	my $html = qq{\n	<div id="div_$table" name="sqltable" style="display:$display_style">\n
+	my $html = qq{\n	<div id="div_$table" style="display:$display_style">\n
 	<table style="border:1px outset #222222">
 		<tr class="bg3 center"><th style="width:180px">Column</th><th style="width:150px">Type</th><th style="width:100px">Default value</th><th style="width:400px">Description</th><th style="width:150px">Index</th></tr>\n};
 	my $bg = 1;
