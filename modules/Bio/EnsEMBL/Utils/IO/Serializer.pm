@@ -152,8 +152,8 @@ sub print_main_header {
 sub print_sequence {
 	my $self = shift;
 	my $slice = shift;
-	print "##FASTA\n";
-	Bio::EnsEMBL::Utils::SeqDumper->dump( $slice, 'FASTA', $self->{'filehandle'});	
+	my $fh = $self->{'filehandle'};
+	Bio::EnsEMBL::Utils::SeqDumper->dump_fasta( $slice, $fh);	
 }
 
 

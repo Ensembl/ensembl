@@ -208,7 +208,7 @@ sub print_metadata {
 	my $self = shift;
 	my $text = shift;
 	my $fh = $self->{'filehandle'};
-	print $fh "\n# ".$text."\n";
+	print $fh "\n#".$text."\n";
 }
 
 
