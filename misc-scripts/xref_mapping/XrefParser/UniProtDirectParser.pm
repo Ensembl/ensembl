@@ -88,7 +88,7 @@ sub run_script {
   my @lines = split(/\n/,$response->content);
   foreach my $line (@lines){
     my ($prot, $ens) = split /\s+/,$line;
-    if($ens =~ /$prefix{$species_id}/){
+    if($ens =~ /^$prefix{$species_id}P\d+$/){
       push @{$prot2ensembl{$prot}}, $ens;
    }
   }
