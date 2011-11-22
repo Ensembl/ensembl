@@ -54,23 +54,24 @@ my %strand_conversion = ( '1' => '+', '0' => '?', '-1' => '-');
 =head2 new
 
 	Constructor
-	Arg [1]    : BiotypeMapper
+	Arg [1]    : Ontology Adaptor
 	Arg [2]    : Optional File handle
 	
-	Returntype : Bio::EnsEMBL::Utils::IO::Serializer
+	Returntype : Bio::EnsEMBL::Utils::IO::GFFSerializer
 
 =cut
 
 sub new {
 	my $class = shift;
 	my $self = {
-		mapper => shift,
+		ontology_adaptor => shift,
 		filehandle => shift,
 	};
 	bless $self, $class;
-	if ( ref($self->mapper) ne "Bio::EnsEMBL::Utils::BiotypeMapper" ) {
-		throw("GFF format requires an instance of Bio::EnsEMBL::Utils::BiotypeMapper to function");		
+	if ( ref($self->{'ontology_adaptor'}) ne "Bio::EnsEMBL::DBSQL::OntologyTermAdaptor" ) {
+		throw("GFF format requires an instance of Bio::EnsEMBL::DBSQL::OntologyTermAdaptor to function. See also Bio::EnsEMBL::Utils::BiotypeMapper");		
 	}
+	$self->{'mapper'} = new Bio::EnsEMBL::Utils::BiotypeMapper($self->{'ontology_adaptor'});
 	
 	if (!defined ($self->{'filehandle'})) {
 		# no file handle, let the handle point to a copy of STDOUT instead
