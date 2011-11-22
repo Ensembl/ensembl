@@ -135,13 +135,15 @@ my $html_header = qq{
 			div   = document.getElementById('div_'+param);
 		  alink = document.getElementById('a_'+param);
 			
-			if (expand_flag.value=='0') {
-				div.style.display='inline';
-				alink.innerHTML='Hide';
-			}
-			else {
-				div.style.display='none';
-				alink.innerHTML='Show';
+			if (div && alink) {
+				if (expand_flag.value=='0') {
+					div.style.display='inline';
+					alink.innerHTML='Hide';
+				}
+				else {
+					div.style.display='none';
+					alink.innerHTML='Show';
+				}
 			}
 		}
 		if (expand_flag.value=='0') {
