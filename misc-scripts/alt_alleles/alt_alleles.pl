@@ -38,80 +38,9 @@ if(!defined($cdbname)){
   $cdbname = "homo_sapiens_core_".$api_version."_37";
 }
 
-my $vega_dba = Bio::EnsEMBL::DBSQL::DBAdaptor->new(-host => $vhost||'ens-staging1',
-                                          -user => $vuser||'ensro',
-                                          -port => $vport||3306,
-                                          -dbname => $vdbname||"homo_sapiens_vega_63_37");
-
-
 
 #
-# the magic SQL to get the data from vega
-#
-
-my $sql =(<<EOS);
-select aa.alt_allele_id, g.stable_id, x2.display_label
- from alt_allele aa, xref x1, gene g
-     left join object_xref ox on g.gene_id = ox.ensembl_id
-     left join xref x2 on ox.xref_id = x2.xref_id
-     left join external_db edb on x2.external_db_id = edb.external_db_id
- where aa.gene_id = g.gene_id
-  and g.display_xref_id = x1.xref_id
-  and ox.ensembl_object_type = 'Gene'
-  and edb.db_name = 'ENSG';
-EOS
-
-#
-# Store data in a hash where the key is the alt_id and the stable ids 
-# stored in an anonymous array (value of the hash).
-#
-
-my $sth = $vega_dba->dbc->prepare($sql);
-$sth->execute;
-my ($alt_id, $vega_stable_id, $core_stable_id);
-my %alt_to_stable;
-$sth->bind_columns(\$alt_id, \$vega_stable_id, \$core_stable_id);
-
-my $max_alt_id = 0;
-
-while($sth->fetch()){
-  push @{$alt_to_stable{$alt_id}}, $core_stable_id;
-  if($alt_id > $max_alt_id){
-    $max_alt_id = $alt_id;
-  }
-}
-$sth->finish;
-
-$max_alt_id += 1000;
-
-#
-# Test case for invalid stable id. (Delete after testing
-#
-
-push @{$alt_to_stable{9999}}, "INVALID1";
-
-# initial testing to make sure sensible info was obtained.
-#foreach my $key (keys %alt_to_stable){
-#  my @arr = @{$alt_to_stable{$key}};
-#  if(scalar(@arr) > 1){
-#    print $key;
-#    foreach my $stable_id (@arr){
-#      print "\t".$stable_id;
-#    }
-#    print "\n";
-#  }
-#  else{
-#    print "$key has only one ensembl stable id ".$arr[0]." so ignoring\n";
-#  }
-#}
-
-
-#EXAMPLE:
-#54      ENSG00000206285 ENSG00000236802 ENSG00000226936 ENSG00000235155 ENSG00000235863
-
-
-#
-# Connect to the core database to store the data in.
+# Connect to the core database 
 #
 
 my $core_dba = Bio::EnsEMBL::DBSQL::DBAdaptor->new(-host => $chost||'ens-staging1',
@@ -120,25 +49,71 @@ my $core_dba = Bio::EnsEMBL::DBSQL::DBAdaptor->new(-host => $chost||'ens-staging
                                           -species => "test",
                                           -dbname => $cdbname||"homo_sapiens_core_63_37");
 
-
-
-
 #
-# for each stable_id look it up in the gene_stable_id table and get the gene_id
-# store this in a hash. 
+# get ensembl gene ids and vega stable ids from the core database
+# 
 
-my %stable_id_to_gene_id;
+my %vega_to_ens_id;
+my ($vega_stable_id, $gene_id);
 
-$sth =  $core_dba->dbc->prepare("Select stable_id, gene_id from gene");
+my $sth =  $core_dba->dbc->prepare("select ensembl_id, display_label from object_xref join xref using(xref_id) join external_db using(external_db_id) where db_name = 'OTTG' and ensembl_object_type = 'Gene'");
 $sth->execute;
-my ($gene_id);
-$sth->bind_columns(\$core_stable_id, \$gene_id);
+
+$sth->bind_columns(\$gene_id, \$vega_stable_id);
 
 while ($sth->fetch){
-  $stable_id_to_gene_id{$core_stable_id} = $gene_id;
+  $vega_to_ens_id{$vega_stable_id} = $gene_id;
 }
 $sth->finish;
 
+
+
+my $vega_dba = Bio::EnsEMBL::DBSQL::DBAdaptor->new(-host => $vhost||'ens-staging1',
+                                          -user => $vuser||'ensro',
+                                          -port => $vport||3306,
+                                          -dbname => $vdbname||"homo_sapiens_vega_63_37");
+
+#
+# SQL to get alt_allele data from vega
+#
+
+my $sql =(<<EOS);
+select aa.alt_allele_id, g.stable_id
+ from alt_allele aa, gene g 
+ where aa.gene_id = g.gene_id
+EOS
+
+
+#
+# Store data in a hash where the key is the alt_id and the ensembl gene ids 
+# stored in an anonymous array (value of the hash).
+#
+
+my $sth = $vega_dba->dbc->prepare($sql);
+$sth->execute;
+my ($alt_id, $vega_stable_id);
+my %alt_to_gene;
+$sth->bind_columns(\$alt_id, \$vega_stable_id);
+
+my $max_alt_id = 0;
+
+my %no_gene_id;
+
+while($sth->fetch()){
+  my $gene_id = $vega_to_ens_id{$vega_stable_id};
+  if ( defined($gene_id) ) {
+      push @{$alt_to_gene{$alt_id}}, $gene_id ;
+  } else {
+      push @{$no_gene_id{$alt_id}}, $vega_stable_id;
+      print STDERR "no ensembl gene_id found for vega stable id $vega_stable_id in core\n";
+  }
+  if($alt_id > $max_alt_id){
+    $max_alt_id = $alt_id;
+  }
+}
+$sth->finish;
+
+$max_alt_id += 1000;
 
 
 my %non_reference; # $non_reference{$gene_id} = 1;
@@ -160,7 +135,6 @@ while($sth->fetch()){
 }
 
 
-
 #
 # Delete the old data
 #
@@ -170,28 +144,17 @@ $sth->execute;
 
 
 #
-# Check that all stable_ids are valid.
-# NOTE: if one is invalid then if the alt_allele only had two members
-# then with the reduction of one member will invalidate the alt_allele.
+# Check that all alt_alleles are valid.
+# NOTE: if an alt allele has only one gene_id delete it from the hash 
 #
 
-foreach my $key (keys %alt_to_stable){
-  my @arr = @{$alt_to_stable{$key}};
-  my @arr2;
-  if(scalar(@arr) > 1){
-    foreach my $stable_id (@arr){
-      if(defined($stable_id_to_gene_id{$stable_id})){
-	push @arr2, $stable_id;
-      }
-      else{
-	print STDERR "$stable_id in vega database but not in core\n";
-      }
-    }
+foreach my $key (keys %alt_to_gene){
+  my @arr = @{$alt_to_gene{$key}};
+  if(scalar(@arr) <= 1){
+      delete $alt_to_gene{$key};
+      my @unmapped_vega = $no_gene_id{$key};
+      print STDERR "ignoring alt allele $key: unmapped vega stable id(s): ". join(", ",@unmapped_vega) ."\n";    
   }
-  else{
-    print "$key has only one ensembl stable id ".join(", ",@arr)." so ignoring\n";
-  }
-    $alt_to_stable{$key} = \@arr2;
 }
 
 #
@@ -210,20 +173,20 @@ my $alt_id_count = 0;
 #
 #my %gene_id_to_alt_id;
 
-foreach my $key (keys %alt_to_stable){
-  my @arr = @{$alt_to_stable{$key}};
+foreach my $key (keys %alt_to_gene){
+  my @arr = @{$alt_to_gene{$key}};
   if(scalar(@arr) > 1){
     my $sanity_check =0; # should be 1 refernce gene only if 0 or more than 1 we may have a problem
-    foreach my $stable_id (@arr){
+    foreach my $gene_id (@arr){
       my $ref = 1;
-      if(defined( $non_reference{$stable_id_to_gene_id{$stable_id}})){
+      if(defined( $non_reference{$gene_id})){
 	$ref = 0;
       }      
       else{
 	$sanity_check++;
       }
-      $insert_sth->execute($key, $stable_id_to_gene_id{$stable_id}, $ref);
-#      $gene_id_to_alt_id{$stable_id_to_gene_id{$stable_id}}= $key;
+      $insert_sth->execute($key, $gene_id, $ref);
+#      $gene_id_to_alt_id{$gene_id}= $key;
       $count++;
     }
     if($sanity_check !=1){
