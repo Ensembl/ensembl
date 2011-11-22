@@ -395,7 +395,8 @@ while ( $sth->fetch() ) {
 
   if ( $schema_version_ok &&
        $schema_type_ok &&
-       $species_ok &&
+       ( !defined($opt_species) ||
+         ( defined($opt_species) && $species_ok ) ) &&
        ( ( !$opt_fix && $schema_version < $opt_release ) ||
          ( $opt_fix && $schema_version <= $opt_release ) ) )
   {
@@ -412,12 +413,21 @@ while ( $sth->fetch() ) {
 
   if ($opt_fix) {
     $start_version = ( sort { $a <=> $b } keys %dbpatches )[0];
-    printf( "Earliest patch in database '%s' is from release %d\n",
-            $database, $start_version );
+    if ( !defined($start_version) ) {
+      warn( sprintf( "No patches in database, " .
+                       "beginning fix from release %d\n",
+                     $schema_version ) );
+      $start_version = $schema_version;
+    }
+    else {
+      printf( "Earliest patch in database '%s' is from release %d\n",
+              $database, $start_version );
+    }
   }
   else { $start_version = $schema_version + 1 }
 
   my @apply_these;
+  my $schema_version_warning = 0;
 
   for ( my $r = $start_version; $r <= $opt_release; ++$r ) {
     foreach my $entry ( sort { $a->{'patch'} cmp $b->{'patch'} }
@@ -433,26 +443,24 @@ while ( $sth->fetch() ) {
         }
       }
       else {
-        if ( $r < $opt_release && $patch =~ /a\.sql$/ ) {
-          # Skip old patches that sets schema_version.
-          printf( "Skipping 'a' patch (%s) " .
-                    "that would set old schema_version!\n",
+        if ( !$opt_dryrun ) {
+          printf( "Will apply patch '%s' (%s)\n", $patch,
                   $schema_type );
+          push( @apply_these, $entry );
+
+          if ( $r < $opt_release && $patch =~ /a\.sql$/ ) {
+            # Warn about possible setting schema_version with an 'a'
+            # patch.
+            $schema_version_warning = 1;
+          }
         }
         else {
-          if ( !$opt_dryrun ) {
-            printf( "Will apply patch '%s' (%s)\n",
-                    $patch, $schema_type );
-            push( @apply_these, $entry );
-          }
-          else {
-            printf( "Would apply patch '%s' (%s)\n",
-                    $patch, $schema_type );
-          }
+          printf( "Would apply patch '%s' (%s)\n",
+                  $patch, $schema_type );
         }
       }
-
     } ## end foreach my $entry ( sort { ...})
+
   } ## end for ( my $r = $start_version...)
 
   if ( $opt_dryrun || !@apply_these ) { print("\n"); next }
@@ -489,11 +497,17 @@ while ( $sth->fetch() ) {
         my $response = <STDIN>;
         chomp($response);
 
-        if    ( lc($response) =~ /^p(?:atch)$/ )    { next PATCH }
-        elsif ( lc($response) =~ /^d(?:atabase)$/ ) { next DATABASE }
-        else                                        { exit(1) }
+        if    ( lc($response) =~ /^p(?:atch)?$/ )    { next PATCH }
+        elsif ( lc($response) =~ /^d(?:atabase)?$/ ) { next DATABASE }
+        else                                         { exit(1) }
       }
     } ## end foreach my $entry (@apply_these)
+
+    if ( !$opt_quiet && $schema_version_warning ) {
+      warn( "Applied one or several 'a' patches, " .
+            "schema_version might have been updated\n" );
+    }
+
   } ## end if ( lc($yesno) =~ /^y(?:es)?$/)
 
   print("\n");
