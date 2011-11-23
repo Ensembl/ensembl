@@ -510,7 +510,7 @@ sub get_id_from_species_name {
    print STDERR "Couldn't get ID for species ".$species_name."\n";
    print STDERR "It must be one of :-\n";
    $sql = "select name from species";
-   $sth = $self->dbc->prepare($sql);
+   $sth = $self->xref->dbc->prepare($sql);
    $sth->execute();
    while(my @row2 = $sth->fetchrow_array()){
      print STDERR $row2[0]."\n";
