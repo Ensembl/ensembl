@@ -401,12 +401,17 @@ sub key_value_exists {
 # meta key or not.  If the key is either 'patch' or 'schema_version',
 # then it is not species-specific.
 
+# FIXME variation team messed up in release 65 and added the ploidy
+# entry without species_id - this will be corrected for release 66,
+# for now, I've added it to the list of allowed non-species specific
+
 sub _species_specific_key {
   my ( $self, $key ) = @_;
 
   return (    $key ne 'patch'
            && $key ne 'schema_version'
-           && $key ne 'schema_type' );
+           && $key ne 'schema_type'
+           && $key ne 'ploidy');
 }
 
 1;
