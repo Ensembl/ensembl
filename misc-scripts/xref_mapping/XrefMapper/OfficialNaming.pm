@@ -60,12 +60,8 @@ sub new {
   my($class, $mapper) = @_;
 
   my $self ={};
-  bless $self,$class;
-  if (defined($mapper->previous_core)) {
-      $self->core($mapper->previous_core);
-  } else {
-      $self->core($mapper->core);
-  }
+  bless $self,$class; 
+  $self->core($mapper->core);
   $self->xref($mapper->xref);
   $self->get_official_name($mapper->get_official_name);
   return $self;
