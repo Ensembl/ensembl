@@ -481,6 +481,7 @@ while ( $sth->fetch() ) {
                        "--host=$opt_host",
                        "--user=$opt_user",
                        "--password=$opt_pass",
+                       "--port=$opt_port",
                        "--database=$database",
                        "--verbose",
                        "--execute=source $path" );
