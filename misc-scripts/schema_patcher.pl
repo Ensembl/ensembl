@@ -8,8 +8,6 @@ use File::Spec::Functions;
 use Getopt::Long qw( :config no_ignore_case auto_version );
 use IO::Dir;
 
-use Data::Dumper;
-
 my $rcsid = '$Revision$';
 our ($VERSION) = $rcsid =~ /(\d+\.\d+)/;
 
