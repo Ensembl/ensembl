@@ -49,6 +49,7 @@ sub new {
 	my $class = shift;
 	my $self = {
 		'filehandle' => shift,
+		'achieved_something' => 0,
 	};
 	bless $self, $class;
 	if (!defined ($self->{'filehandle'})) {
@@ -88,6 +89,7 @@ sub print_feature_list {
 	my $self = shift;
 	my $feature_list = shift;
 	if (ref($feature_list) eq 'ARRAY') {
+		if (scalar(@$feature_list) > 0) {$self->{'achieved_something'} = 1;} 
 		foreach my $feature (@{$feature_list}) {
 			$self->print_feature($feature);
 		}
@@ -108,7 +110,7 @@ sub print_feature_Iterator {
 	my $self = shift;
 	my $iterator = shift;
 	if ($iterator->can('has_next')) {
-		$iterator->each(sub {$self->print_feature($_)});
+		$iterator->each(sub {$self->print_feature($_); $self->{'achieved_something'} = 1;});
 	}
 	else {
 		throw("Supplied iterator does not look like Bio::EnsEMBL::Utils::Iterator");
@@ -153,8 +155,19 @@ sub print_sequence {
 	my $self = shift;
 	my $slice = shift;
 	my $fh = $self->{'filehandle'};
-	Bio::EnsEMBL::Utils::SeqDumper->dump_fasta( $slice, $fh);	
+	Bio::EnsEMBL::Utils::SeqDumper->dump_fasta( $slice, $fh);
+	$self->{'achieved_something'} = 1;
 }
 
+=head2 printed_something
+    Description: Check if serializer has printed any useful data. Not accurate with FASTA
+                 due to non-reporting dumper.
+=cut
+#TODO: Find a way for SeqDumper to indicate whether it printed anything or just the headers.
+sub printed_something {
+	my $self = shift;
+	if ($self->{'achieved_something'}) { return 1;}
+	else {return 0;}
+}
 
 1;
