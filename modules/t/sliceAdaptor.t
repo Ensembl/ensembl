@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 159;
+use Test::More;
 
 use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::DBSQL::SliceAdaptor;
@@ -465,14 +465,17 @@ test_toplevel_location('1: 1-1 000 000', 'chromosome', '1', 1, 1000000);
 test_toplevel_location('1: 1', 'chromosome', '1', 1, 246874334);
 test_toplevel_location('1: -10', 'chromosome', '1', 1, 10);
 test_toplevel_location('1: 100', 'chromosome', '1', 100, 246874334);
+test_toplevel_location('1:100..2_000_000_000', 'chromosome', '1', 100, 246874334);
 
 dies_ok { $slice_adaptor->fetch_by_toplevel_location(); } 'Checking calling without a location fails';
-dies_ok { $slice_adaptor->fetch_by_toplevel_location(''); } 'Checking calling with a blank location fails';
-ok(!defined $slice_adaptor->fetch_by_toplevel_location('wibble'), 'Checking with a bogus region returns undef');
+dies_ok { $slice_adaptor->fetch_by_toplevel_location('', 1); } 'Checking calling with a blank location fails';
+dies_ok { $slice_adaptor->fetch_by_toplevel_location('1:1_000_000_000..100', 1); } 'Checking calling with an excessive start throws an error';
+ok(!defined $slice_adaptor->fetch_by_toplevel_location('wibble', 1), 'Checking with a bogus region returns undef');
+ok(!defined $slice_adaptor->fetch_by_toplevel_location('1:-100--50', 1), 'Checking with a bogus region with negative coords returns undef');
 
 sub test_toplevel_location {
   my ($location, $cs_name, $seq_region_name, $start, $end) = @_;
-  my $incoming_slice = $slice_adaptor->fetch_by_toplevel_location($location);
+  my $incoming_slice = $slice_adaptor->fetch_by_toplevel_location($location, 1);
   my $def = ok(defined $incoming_slice, "Slice is defined for $location");
   SKIP : {
     skip 'Incoming slice is undefined', 5 if ! $def;
@@ -501,3 +504,5 @@ sub print_features {
     debug("  $start-$end($strand)");
   }
 }
+
+done_testing();

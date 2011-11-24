@@ -442,6 +442,8 @@ sub fetch_by_region {
                 Ensembl formatted location. Can be a format like 
                 C<name:start-end>, C<name:start..end>, C<name:start> and
                 C<name>.
+  Arg[2]      : boolean $no_warnings
+                Suppress warnings from this method
   Example     : my $slice = $sa->fetch_by_toplevel_location('X:1-10000')
   Description : Converts an Ensembl location/region into the sequence region
                 name, start and end and passes them onto C<fetch_by_region()>. 
@@ -456,13 +458,38 @@ sub fetch_by_region {
 =cut
 
 sub fetch_by_toplevel_location {
-  my ($self, $location) = @_;
+  my ($self, $location, $no_warnings) = @_;
   throw 'You must specify a location' if ! $location;
-  my $regex = qr/^(\w+) :? (\d+)? (?:-|[.]{2})? (\d+)?/xms;
-  $location =~ s/\s+|,//g;
-  my ($seq_region_name, $start, $end) = $location =~ $regex;
-  my $coord_system_name = 'toplevel';
-  return $self->fetch_by_region($coord_system_name, $seq_region_name, $start, $end, undef, undef, 0);
+  
+  my $regex = qr/^(\w+) :? (\d+)? (?:-|[.]{2})? (\d+)?$/xms;
+  $location =~ s/\s+|,|_//g; #cleanup any nomenclature like 1_000 or 1 000 or 1,000
+  
+  if(my ($seq_region_name, $start, $end) = $location =~ $regex) {
+    if(defined $start && $start < 1) {
+      warning "Start was less than 1 (${start}) which is not allowed. Resetting to 1"  if ! $no_warnings;
+      $start = 1;
+    }
+    if(defined $end && $end < 1) {
+      throw "Cannot request negative or 0 end indexes through this interface. Given $end but expected something greater than 0";
+    }
+    
+    my $coord_system_name = 'toplevel';
+    my $slice = $self->fetch_by_region($coord_system_name, $seq_region_name, $start, $end, undef, undef, 0);
+    return unless $slice;
+    
+    my $srl = $slice->seq_region_length();
+    my $name = $slice->seq_region_name();
+    if(defined $start && $start > $srl) {
+      throw "Cannot request a slice whose start ($start) is greater than $srl for $name.";
+    }
+    if(defined $end && $end > $srl) {
+      warning "Requested end ($end) is greater than $srl for $name. Resetting to $srl" if ! $no_warnings;
+      $slice->{end} = $srl;
+    }
+    
+    return $slice;
+  }
+  return;
 }
 
 =head2 fetch_by_region_unique
