@@ -120,13 +120,13 @@ sub parse_common_options {
 	       'pass|dbpass|db_pass=s',
 	       'conffile|conf=s',
 	       'logfile|log=s',
-               'nolog|nolog=s',
+               'nolog',
 	       'logpath=s',
                'log_base_path=s',
-	       'logappend|log_append=s',
-	       'verbose|v=s',
+	       'logappend|log_append',
+	       'verbose|v',
 	       'interactive|i=s',
-	       'dry_run|dry|n=s',
+	       'dry_run|dry|n',
 	       'help|h|?',
 	     );
 
@@ -163,8 +163,10 @@ sub parse_common_options {
 # override configured parameter with commandline options
   map { $self->param($_, $h{$_}) } keys %h;
 
-  # if logpath & logfile are not set, set them here to /ensemblweb/vega_dev/shared/logs/conversion/DBNAME/SCRIPNAME_NN.log
 
+  return (1) if $self->param('nolog');
+
+  # if logpath & logfile are not set, set them here to /ensemblweb/vega_dev/shared/logs/conversion/DBNAME/SCRIPNAME_NN.log
   if (! defined($self->param('log_base_path')))  {
     $self->param('log_base_path','/ensemblweb/shared/logs/conversion/');
   }
@@ -173,7 +175,7 @@ sub parse_common_options {
   if (not (defined($self->param('logpath')))){
     $self->param('logpath', $self->param('log_base_path')."/".$dbname."/" );
   }
-  if (  (not defined $self->param('logfile') ) && (not defined $self->param('nolog') )  ){
+  if ( not defined $self->param('logfile') ){
     my $log = $Script;
     $log =~ s/.pl$//g;
     my $counter;
@@ -561,7 +563,7 @@ sub comma_to_list {
 =head2 list_or_file
 
   Arg[1]      : Name of parameter to parse
-  Example     : $support->list_or_file('gene_stable_id');
+  Example     : $support->list_or_file('gene');
   Description : Determines whether a parameter holds a list or it is a filename
                 to read the list entries from.
   Return type : true on success
@@ -872,7 +874,7 @@ sub dynamic_use {
 
 sub get_chrlength {
   my ($self, $dba, $version,$type,$include_non_reference) = @_;
-  $dba ||= $self->dba;
+  $dba  ||= $self->dba;
   $type ||= 'toplevel';
   throw("get_chrlength should be passed a Bio::EnsEMBL::DBSQL::DBAdaptor\n")
     unless ($dba->isa('Bio::EnsEMBL::DBSQL::DBAdaptor'));
@@ -921,7 +923,7 @@ sub get_chrlength {
   Arg[2]      : (optional) String $version - coord_system version
   Example     : my $ensembl_mapping = $support->get_ensembl_chr_mapping($dba);
   Description : Gets a mapping between Vega chromosome names and their
-                equivalent Ensembl chromosomes.
+                equivalent Ensembl chromosomes. Works with non-reference chromosomes
   Return type : Hashref - Vega name => Ensembl name
   Exceptions  : thrown if not passing a Bio::EnsEMBL::DBSQL::DBAdaptor
   Caller      : general
@@ -935,7 +937,7 @@ sub get_ensembl_chr_mapping {
 
   my $sa = $dba->get_SliceAdaptor;
   my @chromosomes = map { $_->seq_region_name } 
-    @{ $sa->fetch_all('chromosome', $version) };
+    @{ $sa->fetch_all('chromosome', $version, 1) };
 
   my %chrs;
   foreach my $chr (@chromosomes) {
@@ -1112,7 +1114,7 @@ sub _by_chr_num {
                 Mb, an additional smaller block size is used to yield 150 bins
                 for the overall smallest chromosome. This will result in
                 reasonable resolution for small chromosomes and high
-                performance for big ones.
+                performance for big ones. Does not return non-reference seq_regions
   Return type : Hashref (key: block size; value: Arrayref of chromosome
                 Bio::EnsEMBL::Slices)
   Exceptions  : none
@@ -1505,7 +1507,8 @@ sub commify {
   Arg[3]      : string $coord_system_name (optional) - 'chromosome' by default
   Arg[4]      : string $coord_system_version (optional) - 'otter' by default
   Example     : $chroms = $support->fetch_non_hidden_slice($sa,$aa);
-  Description : retrieve all slices from a loutre database that don't have a hidden attribute
+  Description : retrieve all slices from a loutre database that don't have a hidden attribute.
+                Doesn't retrieve non-reference slices
   Return type : arrayref
   Caller      : general
   Status      : stable
@@ -1545,7 +1548,8 @@ sub fetch_non_hidden_slices {
   Arg[3]      : string $coord_system_name (optional) - 'chromosome' by default
   Arg[4]      : string $coord_system_version (optional) - 'otter' by default
   Example     : $chrom_names = $support->get_non_hidden_slice_names($sa,$aa);
-  Description : retrieve names of all slices from a loutre database that don't have a hidden attribute
+  Description : retrieve names of all slices from a loutre database that don't have a hidden attribute.
+                Doesn't retrieve non-reference slices
   Return type : arrayref of names of all non-hidden slices
   Caller      : general
   Status      : stable
@@ -1581,11 +1585,10 @@ sub get_non_hidden_slice_names {
 
 =head2 get_wanted_chromosomes
 
-  Arg[1]      : B::E::U::ConversionSupport
-  Arg[2]      : B::E::SliceAdaptor
-  Arg[3]      : B::E::AttributeAdaptor
-  Arg[4]      : string $coord_system_name (optional) - 'chromosome' by default
-  Arg[5]      : string $coord_system_version (optional) - 'otter' by default
+  Arg[1]      : B::E::SliceAdaptor
+  Arg[2]      : B::E::AttributeAdaptor
+  Arg[3]      : string $coord_system_name (optional) - 'chromosome' by default
+  Arg[4]      : string $coord_system_version (optional) - 'otter' by default
   Example     : $chr_names = $support->get_wanted_chromosomes($laa,$lsa);
   Description : retrieve names of slices from a lutra database that are ready for dumping to Vega.
                 Deals with list of names to ignore (ignore_chr = LIST)
@@ -1628,6 +1631,44 @@ sub get_wanted_chromosomes {
   }
   return $names;
 }
+
+=head2 get_unique_genes
+
+  Arg[1]      : B::E::Slice
+  Arg[2]      : B::E::DBAdaptor (optional, if you don't supply one then the *first* one you generated is returned, which may or may not be what you want!)
+  Example     : $genes = $support->get_unique_genes($slice,[$dba]);
+  Description : Retrieve genes that are only on the slice itself - used for human where assembly patches
+                are in the assembly_exception table. Needs the PATCHes to have 'non_ref' seq_region_attributes.
+  Return type : arrayref of genes
+  Caller      : general
+  Status      : stable
+
+=cut
+
+sub get_unique_genes {
+  my $self  = shift;
+  my ($slice,$dba) = @_;
+  $slice or throw("You must supply a slice");
+  $dba ||= $self->dba;
+
+  my $sa    = $dba->get_adaptor('Slice');
+  my $ga    = $dba->get_adaptor('Gene');
+  my $patch = 0;
+  my $genes = [];
+
+  if ( ! $slice->is_reference() ) {
+    $patch = 1;
+    my $slices = $sa->fetch_by_region_unique( $slice->coord_system_name(),$slice->seq_region_name() );
+    foreach my $slice ( @{$slices} ) {
+      push @$genes, @{$ga->fetch_all_by_Slice($slice)};
+    }
+  }
+  else {
+    $genes = $ga->fetch_all_by_Slice($slice);
+  }
+  return ($genes, $patch);
+}
+
 
 
 =head2 get_attrib_values
