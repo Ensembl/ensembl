@@ -145,9 +145,9 @@ sub parse_common_options {
       s/\s+[;].*$//;
 
       # read options into internal parameter datastructure, removing whitespace
-      next unless (/(\w\S*)\s*=\s*(\S*)\s*/);
+      next unless (/(\w\S*)\s*=*\s*(\S*)\s*/);
       my $name = $1;
-      my $val = $2;
+      my $val = $2 || 1;
       if ($val =~ /\$SERVERROOT/) {
 	$val =~ s/\$SERVERROOT/$serverroot/g;
 	$val = abs_path($val);
