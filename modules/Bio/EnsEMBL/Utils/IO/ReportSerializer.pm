@@ -58,6 +58,7 @@ my %feature_conversion = ( 	'Bio::EnsEMBL::Gene' => 'Gene',
 							'Bio::EnsEMBL::Variation::VariationFeature' => 'Variation',
 							'Bio::EnsEMBL::Funcgen::RegulatoryFeature' => 'Regulatory Feature',
 							'Bio::EnsEMBL::Compara::ConstrainedElement' => 'Constrained Element',
+							'Feature' => 'Feature',
 );
 
 # Hash for selecting the correct attributes of unseen features for crude summary. This hash is 
@@ -106,13 +107,16 @@ sub print_feature {
 sub print_feature_list {
     my $self = shift;
 	my $feature_list = shift;
+	if (scalar(@$feature_list) > 0) {$self->{'achieved_something'} = 1;} #from superclass
 	my $fh = $self->{'filehandle'};
 
 	my $example_feature = $feature_list->[0];
 	my $feature_type = ref($example_feature);
 	my $feature_count = 0;
 	unless (defined $feature_type) {$feature_type = "Feature"};
-	print $fh "There are ",scalar(@$feature_list)," ",$feature_conversion{$feature_type},(scalar(@$feature_list) != 1) ? "s":""," in this region\n";
+	if (scalar(@$feature_list) > 0) {
+		print $fh "There are ",scalar(@$feature_list)," ",$feature_conversion{$feature_type},(scalar(@$feature_list) != 1) ? "s":""," in this region\n";
+	}
 	if (scalar(@$feature_list) > 100 ) { print $fh "Too many to display, results truncated to the first 100\n";}
 	print $fh "\n";
 	foreach my $feature (@$feature_list) {
@@ -167,6 +171,7 @@ sub print_feature_iterator {
 		my $feature = $feature_iterator->next;
 		$self->print_feature($feature);
 	}
+	$self->{'achieved_something'} = 1;
 }
 
 =head2 print_main_header

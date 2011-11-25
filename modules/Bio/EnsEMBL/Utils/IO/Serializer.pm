@@ -162,6 +162,7 @@ sub print_sequence {
 =head2 printed_something
     Description: Check if serializer has printed any useful data. Not accurate with FASTA
                  due to non-reporting dumper.
+    Returntype : Boolean
 =cut
 #TODO: Find a way for SeqDumper to indicate whether it printed anything or just the headers.
 sub printed_something {
