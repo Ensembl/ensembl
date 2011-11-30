@@ -40,7 +40,7 @@ sub args {
   GetOptions(
     $opts, qw/
       defaults
-      version
+      version=i
       host=s
       port=i
       username=s
