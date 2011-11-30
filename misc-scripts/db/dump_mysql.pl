@@ -39,8 +39,8 @@ sub args {
   my $opts = {};
   GetOptions(
     $opts, qw/
-      defaults
-      version
+      defaults=s
+      version=i
       host=s
       port=i
       username=s
@@ -135,19 +135,39 @@ sub defaults {
   $self->_cmd_line_to_array('databases') if $o->{databases};
   $self->_cmd_line_to_array('groups')    if $o->{groups};
   $self->_cmd_line_to_array('species')   if $o->{species};
+  
+  my $original_databases_args = $o->{databases}; 
 
   #Tables
   if ($o->{tables} && !$o->{sql}) {
     $self->_cmd_line_to_array('tables');
     $self->v(q{Will work with the tables [%s]}, join(q{,}, @{ $o->{tables} }));
   }
-
+  
+  if(! $o->{username}) {
+    pod2usage(
+      -msg     => 'No -username given on the command line',
+      -exitval => 1,
+      -verbose => 0
+    );
+  }
+  
+  if(! defined $o->{password}) {
+    pod2usage(
+      -msg     => 'No -password given on the command line',
+      -exitval => 1,
+      -verbose => 0
+    );
+  }
+  
   if ($o->{defaults}) {
     $self->_set_opts_from_hostname();
   } else {
     $o->{port} = 3306 if !$o->{port};
     if ($o->{pattern}) {
-      $o->{databases} = $self->_all_dbs($o->{pattern});
+      my $p = $o->{pattern};
+      $p = qr/$p/;
+      $o->{databases} = $self->_all_dbs($p);
     }
     $o->{directory} = File::Spec->rel2abs($o->{directory});
   }
@@ -157,7 +177,15 @@ sub defaults {
 
   #Filter for those on the specified server; sometimes redundant
   my %dbs = map { $_ => 1 } @{ $self->_all_dbs() };
-  my @final_dbs = grep { $dbs{$_} } @{ $o->{databases} };
+  my @final_dbs;
+  foreach my $db (@{$o->{databases}}) {
+    if($dbs{$db}) {
+      push(@final_dbs, $db);
+    }
+    else {
+      $self->v('DB %s is not available from the specified server', $db);
+    }
+  }
   $o->{databases} = \@final_dbs;
 
   #Filtering DBs based on groups & species
@@ -181,11 +209,12 @@ sub defaults {
   #Do we have any DBs left to process?
   my $db_count = scalar(@{ $o->{databases} });
   if ($db_count == 0) {
-    pod2usage(
-              -msg     => 'No databases found on the server ' . $o->{host},
-              -exitval => 1,
-              -verbose => 0
-    );
+    my $msg = 'No databases found on the server ' . $o->{host};
+    if($original_databases_args && $o->{defaults}) {
+      my $version  = $o->{version} || '-NONE';
+      $msg .= qq{. You specified the -database arg and -defaults. Are you on the correct server or did  -version '$version' excluded this DB?};
+    }
+    pod2usage(-msg => $msg, -exitval => 1, -verbose => 0);
   }
   $self->v(q{Working %d database(s)}, $db_count);
 
@@ -240,8 +269,7 @@ sub process {
     $writer->(grep { !$self->is_view($_) } @tables);
     $writer->(grep { $self->is_view($_) } @tables);
     $fh->close();
-    $self->compress($sql_file);
-
+    
     #Checksum the DB's files
     $self->checksum();
 
@@ -312,8 +340,6 @@ sub checksum {
     print $fh $file, "\t", $sum;
   }
   $fh->close();
-
-  $self->compress($checksum);
 
   return;
 }
@@ -445,22 +471,22 @@ sub _setup_dir {
 sub _set_opts_from_hostname {
   my ($self) = @_;
   my $o = $self->opts();
+  my $defaults = $o->{defaults};
   return unless $o->{defaults};
+  confess "The given location '$defaults' does not exist" if ! -f $defaults; 
 
   my $host     = $self->_host();
-  my $settings = $self->_hostname_opts()->{$host};
-  confess
-"Specified -defaults but $host is not known to this script. Please edit the subroutine _hostname_opts() if you think it should be"
+  my $settings = $self->_hostname_opts_from_config()->{$host};
+  confess "Specified -defaults but $host is not known. Check your $defaults ini file"
     if !$settings;
 
   #Setup default connection params
   $o->{host}     = $host;
   $o->{port}     = $settings->{port};
-  $o->{username} = $settings->{username};
-  $o->{password} = $settings->{password} if $settings->{password};
 
   if (!$o->{databases}) {
-    $o->{databases} = $self->_all_dbs_regex($settings->{pattern});
+    warn $settings->{pattern};
+    $o->{databases} = $self->_all_dbs($settings->{pattern});
   }
 
   #Set default dir
@@ -469,68 +495,45 @@ sub _set_opts_from_hostname {
   return;
 }
 
-sub _hostname_opts {
+#Assume normal ini-file format
+sub _hostname_opts_from_config {
   my ($self) = @_;
-
-  my $version = $self->opts()->{version};
-
-  my $target_dir = 'release-' . $version;
-  my $default_dir =
-    File::Spec->catdir(File::Spec->rootdir(), qw/mysql dumps/, $target_dir);
-  my $user = 'ensadmin';
-  my $pass = 'ensembl';
-
-  return {
-    'ensdb-1-01.internal.sanger.ac.uk' => {
-                      port     => 5306,
-                      pattern  => qr/[a-m]\w*_ $version _\d+[a-z]?/xms,
-                      dir      => $default_dir,
-                      username => $user,
-                      password => $pass
-    },
-    'ensdb-1-02.internal.sanger.ac.uk' => {
-                      port     => 5306,
-                      pattern  => qr/[n-z]\w*_ $version _\d+[a-z]?/xms,
-                      dir      => $default_dir,
-                      username => $user,
-                      password => $pass
-    },
-    'ensdb-1-03.internal.sanger.ac.uk' => {
-                      port     => 5303,
-                      pattern  => qr/ensembl_compara_ $version/xms,
-                      dir      => $default_dir,
-                      username => $user,
-                      password => $pass
-    },
-    'ensdb-1-04.internal.sanger.ac.uk' => {
-                      port     => 5303,
-                      pattern  => qr/ensembl_(ancestral|ontology)_ $version/xms,
-                      dir      => $default_dir,
-                      username => $user,
-                      password => $pass
-    },
-    'ensdb-1-05.internal.sanger.ac.uk' => {
-                      port     => 5316,
-                      pattern  => qr/[efvg]\w+_mart_\w* $version/xms,
-                      dir      => $default_dir,
-                      username => $user,
-                      password => $pass
-    },
-    'ensdb-1-06.internal.sanger.ac.uk' => {
-                      port     => 5316,
-                      pattern  => qr/[os]\w+_*mart_\w* $version/xms,
-                      dir      => $default_dir,
-                      username => $user,
-                      password => $pass
-    },
-    'ensdb-1-13.internal.sanger.ac.uk' => {
-       port    => 5307,
-       pattern => qr/ensembl_website_ $version|ensembl_production_ $version/xms,
-       dir     => $default_dir,
-       username => $user,
-       password => $pass
-    },
-  };
+  my $hostname_opts = {};
+  my $target_dir = 'release-' . $self->opts()->{version};
+  
+  my $defaults = $self->opts()->{defaults};
+  open my $fh, '<', $defaults or confess "Cannot open defaults file '$defaults' for reading: $!";
+  
+  my $current_section;
+  my $counter = 0;
+  while(my $line = <$fh>) {
+    $counter++;
+    next if $line =~ /^\s*(?:\#|\;|$)/; #next for comments & empty lines
+    $line =~ s/\s\;\s.+$//xmsg; #remove inline comments
+    #Section [sec]
+    if(my ($section) = $line =~ /^\s*\[\s*(.+?)\s*\]\s*$/xms) {
+      $current_section = $section;
+      $hostname_opts->{$current_section} = {};
+      next;
+    }
+    # key = value
+    if( my ($key, $value) = $line =~ /^\s*([^=]+?)\s*=\s*(.*?)\s*$/) {
+      
+      #Compile into a regex
+      if($key eq 'pattern') {
+        $value = qr/$value/;
+      }
+      #Change into the correct location
+      elsif($key eq 'dir') {
+        $value = File::Spec->catdir($value, $target_dir);
+      }
+      $hostname_opts->{$current_section}->{$key} = $value;
+      next;
+    }
+    confess "Error in ini file '$defaults' at line $counter: '$line'";
+  }
+  close $fh;
+  return $hostname_opts;
 }
 
 sub _host {
@@ -539,20 +542,19 @@ sub _host {
   return $host;
 }
 
-sub _all_dbs_regex {
-  my ($self, $pattern) = @_;
-  confess 'No pattern given' if !$pattern;
-  my $databases = $self->_all_dbs();
-  return [ grep { $_ =~ $pattern } @{$databases} ];
-}
-
+#Always filter by version if it was given
 sub _all_dbs {
   my ($self, $pattern) = @_;
-  $pattern ||= '%';
+  my $like = '%';
+  if($self->opts()->{version}) {
+    $like = '%\\_'.$self->opts()->{version}.'%';
+    $self->v(q{Looking for databases with the pattern '%s' }, $like);
+  }
   my $dbh       = $self->dbh();
   my $databases = $dbh->selectcol_arrayref('show databases like ?',
-                                           { Columns => [1] }, $pattern);
+                                           { Columns => [1] }, $like);
   $self->clear_dbh();
+  return [ grep { $_ =~ $pattern } @{$databases}] if $pattern;
   return $databases;
 }
 
@@ -580,33 +582,36 @@ dump_mysql.pl
 =head1 SYNOPSIS
 
   #Basic
-  ./dump_mysql.pl [--defaults] | [--host HOST [--port PORT] --username USER [--password PASS] [-pattern '%' | -databases DB] [-tables TABLE] -directory DIR] [-help | -man]
+  ./dump_mysql.pl --username USER --password PASS [--defaults] | [--host HOST [--port PORT] [-pattern 'REGEX' | -databases DB] [-tables TABLE] -directory DIR] [-help | -man]
   
-  #Using defaults
-  ./dump_mysql.pl --defaults --version 64
+  #Using defaults ini file
+  ./dump_mysql.pl --defaults my.ini --username root --password p --version 64
   
-  ./dump_mysql.pl --defaults --version 64 --tables dna
+  ./dump_mysql.pl --defaults my.ini --username root --password p --version 64 --tables dna
   
-  ./dump_mysql.pl --defaults --version 64 --tables meta,meta_coord --tables analysis --groups core,otherfeatures --groups vega
+  ./dump_mysql.pl --defaults my.ini --username root --password p --version 64 --tables meta,meta_coord --tables analysis --groups core,otherfeatures --groups vega
   
-  ./dump_mysql.pl --defaults --version 64 --tables meta,meta_coord --tables analysis --groups core,otherfeatures --groups vega --sql 
+  ./dump_mysql.pl --defaults my.ini --username root --password p --version 64 --tables meta,meta_coord --tables analysis --groups core,otherfeatures --groups vega --sql
   
   #Using host
-  ./dump_mysql.pl --host srv --username root --pattern '%_64%' --directory $PWD/dumps
+  ./dump_mysql.pl --host srv --username root --password p --pattern '%_64%' --directory $PWD/dumps
   
-  ./dump_mysql.pl --host srv --username root --databases my_db --databases other_db --directory $PWD/dumps
+  ./dump_mysql.pl --host srv --username root --password p --databases my_db --databases other_db --directory $PWD/dumps
   
-  ./dump_mysql.pl --host srv --username root --databases my_db,toto_db --databases other_db --directory $PWD/dumps
+  ./dump_mysql.pl --host srv --username root --password p --databases my_db,toto_db --databases other_db --directory $PWD/dumps
   
-  ./dump_mysql.pl --host srv --username root --databases my_db --tables dna,dnac --directory $PWD/dumps
+  ./dump_mysql.pl --host srv --username root --password p --databases my_db --tables dna,dnac --directory $PWD/dumps
   
-  ./dump_mysql.pl --host srv --username root --databases my_db --tables dna --tables dnac --directory $PWD/dumps
+  ./dump_mysql.pl --host srv --username root --password p --databases my_db --tables dna --tables dnac --directory $PWD/dumps
 
 =head1 DESCRIPTION
 
 A script which is used to generate MySQL dumps which take into account issues
 surrounding BLOB handling, VIEWS and other oddities of the Ensembl MySQL dump
 process.
+
+You B<MUST> be on the database server the dumps are going to be generated
+from. If not then all file manipulations will fail. 
 
 As a pose to normal scripts this version is aware of webteam database setup
 and therefore can automatically configure itself to a set of useful 
@@ -616,6 +621,15 @@ parameters rather than having to manually configure the setup.
 
 =over 8
 
+=item B<--username>
+
+REQUIRED. Username of the connecting account. Must be able to perform 
+C<SELECT INTO OUTFILE> calls.
+
+=item B<--password>
+
+REQUIRED. Password of the connecting user.
+
 =item B<--defaults>
 
 Uses the default mechanism which involves looking at the host the script
@@ -624,10 +638,14 @@ as well as port settings. C<-defaults> can be used in conjunction with
 C<-groups>, C<-species> and C<-tables> but not with parameters like <--host>
 and C<--pattern>.
 
+The options set are specified by your custom ini-file.
+
 =item B<--version>
 
 If you are using C<--defaults> then you must also specify the version
-of the databases you are dumping.
+of the databases you are dumping. Once specified the program will only
+consider databases with the version number in there (specifically the 
+occurance of C<%\_VERSION%>).
 
 =item B<--host>
 
@@ -638,19 +656,10 @@ Host name of the database to connect to. Cannot be used with <--defaults>.
 Optional integer of the database port. Defaults to 3306. Cannot be used 
 with <--defaults>.
 
-=item B<--username>
-
-Username of the connecting account. Must be able to perform 
-C<SELECT INTO OUTFILE> calls. Cannot be used with <--defaults>.
-
-=item B<--password>
-
-Optional password of the connecting user. Cannot be used with <--defaults>.
-
 =item B<--pattern>
 
-Allows the specification of a LIKE pattern to select databases with. Cannot
-be used in conjunction with the C<--databases> argument. Cannot be used 
+Allows the specification of a regular expression to select databases with. 
+Cannot be used in conjunction with the C<--databases> argument. Cannot be used 
 with <--defaults>.
 
 =item B<--databases>
@@ -697,6 +706,33 @@ Help message
 Man page
 
 =back
+
+=head1 DEFAULTS FILE FORMAT
+
+The defaults file format is an ini file which respects all basic rules about
+comments (preceeded by a ;), section headers and key/value pairs. The basic
+form of an entry is
+
+  ; basic format
+  [server-name]
+  port = 3306               ; port of the DB
+  pattern = ^homo_sap\w+$   ; regular expression to filter DBs by
+  dir = /path/to/dump/dir   ;
+
+
+As an example of one which grabs all core dbs from a-m and puts it in /dumps
+
+  [genome.mysql.server]
+  port = 3306
+  pattern = ^[a-m]\w*_core_\d+_\d+[a-z]?$
+  dir = /dumps
+
+The server name should be the same as what is emitted from
+
+  perl -MSys::Hostname -e 'print hostname(), "\n"'
+
+Also using line bounded regular expressions i.e. C<^> and C<$> will improve
+the accuracy of the databases you are looking for.
 
 =head1 REQUIREMENTS
 
