@@ -135,6 +135,8 @@ sub defaults {
   $self->_cmd_line_to_array('databases') if $o->{databases};
   $self->_cmd_line_to_array('groups')    if $o->{groups};
   $self->_cmd_line_to_array('species')   if $o->{species};
+  
+  my $original_databases_args = $o->{databases}; 
 
   #Tables
   if ($o->{tables} && !$o->{sql}) {
@@ -197,11 +199,11 @@ sub defaults {
   #Do we have any DBs left to process?
   my $db_count = scalar(@{ $o->{databases} });
   if ($db_count == 0) {
-    pod2usage(
-              -msg     => 'No databases found on the server ' . $o->{host},
-              -exitval => 1,
-              -verbose => 0
-    );
+    my $msg = 'No databases found on the server ' . $o->{host};
+    if($original_databases_args && $o->{defaults}) {
+      $msg .= '. You specified the -database arg and -defaults. Are you on the correct server?';
+    }
+    pod2usage(-msg => $msg, -exitval => 1, -verbose => 0);
   }
   $self->v(q{Working %d database(s)}, $db_count);
 
