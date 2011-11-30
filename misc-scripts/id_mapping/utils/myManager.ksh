@@ -2,6 +2,9 @@
 
 scriptname=$0
 
+# THIS IS WHERE PERL WILL BE PICKED UP FROM:
+export PATH=/software/perl-5.8.8/bin:${PATH}
+
 function usage {
   cat <<EOT
 
