@@ -9,6 +9,10 @@ use Bio::EnsEMBL::Variation::DBSQL::DBAdaptor;
 use Getopt::Long;
 
 my ( $host, $user, $pass, $port, $dbname, $pattern, $stats );
+# Master database location:
+my ( $mhost, $mport ) = ( 'ens-staging1', '3306' );
+my ( $muser, $mpass ) = ( 'ensro',        undef );
+my $mdbname = 'ensembl_production';
 
 GetOptions( "host|h=s", \$host,
 	    "user|u=s", \$user,
@@ -17,6 +21,9 @@ GetOptions( "host|h=s", \$host,
 	    "dbname|d=s", \$dbname,
 	    "pattern=s", \$pattern,
 	    "stats|s=s", \$stats,
+	    "mhost=s", \$mhost,
+	    "mport=i", \$mport,
+	    "muser=s", \$muser,
 	    "help" ,               \&usage
 	  );
 
@@ -24,12 +31,6 @@ usage() if (!$host || !$user || !$pass || (!$dbname && !$pattern) || !$stats || 
 
 
 #get biotypes and attrib codes from the production database
-
-# Master database location:
-my ( $mhost, $mport ) = ( 'ens-staging1', '3306' );
-my ( $muser, $mpass ) = ( 'ensro',        undef );
-my $mdbname = 'ensembl_production';
-
 
 my $prod_dsn = sprintf( 'DBI:mysql:host=%s;port=%d;database=%s',
                      $mhost, $mport, $mdbname );
@@ -344,6 +345,12 @@ Usage:
   -d|dbname           Database name
 
   -pattern            Database name regexp
+
+  -mhost              ensembl_production database host to connect to
+
+  -mport              ensembl_production database port to connect to
+
+  -muser              ensembl_production database username
 
   -s|stats            'gene' or 'snp'
 
