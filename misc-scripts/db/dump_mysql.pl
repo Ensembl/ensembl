@@ -269,6 +269,7 @@ sub process {
     $writer->(grep { !$self->is_view($_) } @tables);
     $writer->(grep { $self->is_view($_) } @tables);
     $fh->close();
+    $self->permissions($sql_file);
     
     #Checksum the DB's files
     $self->checksum();
@@ -340,6 +341,7 @@ sub checksum {
     print $fh $file, "\t", $sum;
   }
   $fh->close();
+  $self->permissions($checksum);
 
   return;
 }
@@ -441,7 +443,15 @@ sub compress {
   if (-f $target_file && -f $file) {
     unlink $file or die "Cannot remove the file $file: $!";
   }
+  $self->permissions($target_file);
   return $target_file;
+}
+
+sub permissions {
+  my ($self, $file) = @_;
+  my $mode = 0666;
+  chmod($mode, $file) or die "Cannot perform the chmod to mode $mode for file $file";
+  return;
 }
 
 sub v {
