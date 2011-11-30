@@ -20,12 +20,19 @@ use Getopt::Long;
 use Bio::EnsEMBL::Utils::ConversionSupport;
 
 my ( $host, $user, $pass, $port, $dbname  );
-
+  # Master database location:
+      my ( $mhost, $mport ) = ( 'ens-staging1', '3306' );
+      my ( $muser, $mpass ) = ( 'ensro',        undef );
+     my $mdbname = 'ensembl_production';
+  
 GetOptions( "host|h=s", \$host,
 	    "user|u=s", \$user,
 	    "pass|p=s", \$pass,
 	    "port=i",   \$port,
 	    "dbname|d=s", \$dbname,
+            "mhost=s", \$mhost,
+            "mport=i", \$mport,
+            "muser=s", \$muser,
 	    "help" ,     \&usage
 	  );
 
@@ -83,10 +90,6 @@ my $analysis = $aa->fetch_by_logic_name('percentgc');
 
 if ( !defined($analysis) ) {
 
-   # Master database location:
-   my ( $mhost, $mport ) = ( 'ens-staging1', '3306' );
-   my ( $muser, $mpass ) = ( 'ensro',        undef );
-   my $mdbname = 'ensembl_production';
 
    my $prod_dsn = sprintf( 'DBI:mysql:host=%s;port=%d;database=%s',
                      $mhost, $mport, $mdbname );
@@ -266,6 +269,12 @@ Usage:
   -p|pass              Password for user
 
   -d|dbname            Database name
+
+  -mhost              ensembl_production database host to connect to
+
+  -mport              ensembl_production database port to connect to
+
+  -muser              ensembl_production database username
 
   -help                This message
 
