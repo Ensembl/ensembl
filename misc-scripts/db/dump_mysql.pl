@@ -258,8 +258,7 @@ sub process {
     $writer->(grep { !$self->is_view($_) } @tables);
     $writer->(grep { $self->is_view($_) } @tables);
     $fh->close();
-    $self->compress($sql_file);
-
+    
     #Checksum the DB's files
     $self->checksum();
 
@@ -330,8 +329,6 @@ sub checksum {
     print $fh $file, "\t", $sum;
   }
   $fh->close();
-
-  $self->compress($checksum);
 
   return;
 }
