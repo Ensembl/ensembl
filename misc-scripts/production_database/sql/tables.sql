@@ -15,6 +15,12 @@ CREATE TABLE species (
   species_prefix VARCHAR(20),
   is_current     BOOLEAN NOT NULL DEFAULT true,
 
+  -- Columns for the web interface:
+  created_by    INTEGER,
+  created_at    DATETIME,
+  modified_by   INTEGER,
+  modified_at   DATETIME,
+
   PRIMARY KEY (species_id),
   UNIQUE INDEX db_name_idx (db_name)
 );
@@ -55,6 +61,12 @@ CREATE TABLE biotype (
                     NOT NULL DEFAULT 'core',
   description   TEXT,
 
+  -- Columns for the web interface:
+  created_by    INTEGER,
+  created_at    DATETIME,
+  modified_by   INTEGER,
+  modified_at   DATETIME,
+
   PRIMARY KEY (biotype_id),
   UNIQUE INDEX name_type_idx (name, object_type, db_type)
 );
@@ -71,6 +83,12 @@ CREATE TABLE meta_key (
                         'rnaseq', 'variation', 'vega')
                     NOT NULL DEFAULT 'core',
   description       TEXT,
+
+  -- Columns for the web interface:
+  created_by    INTEGER,
+  created_at    DATETIME,
+  modified_by   INTEGER,
+  modified_at   DATETIME,
 
   PRIMARY KEY (meta_key_id),
   UNIQUE INDEX name_type_idx (name, db_type)
@@ -96,6 +114,12 @@ CREATE TABLE analysis_description (
   display_label             VARCHAR(256) NOT NULL,
   is_current                BOOLEAN NOT NULL DEFAULT true,
 
+  -- Columns for the web interface:
+  created_by    INTEGER,
+  created_at    DATETIME,
+  modified_by   INTEGER,
+  modified_at   DATETIME,
+
   PRIMARY KEY (analysis_description_id),
   UNIQUE INDEX logic_name_idx (logic_name)
 );
@@ -117,6 +141,12 @@ CREATE TABLE analysis_web_data (
 
   displayable               BOOLEAN NOT NULL DEFAULT true,
 
+  -- Columns for the web interface:
+  created_by    INTEGER,
+  created_at    DATETIME,
+  modified_by   INTEGER,
+  modified_at   DATETIME,
+
   PRIMARY KEY (analysis_web_data_id),
   UNIQUE INDEX uniq_idx (species_id, db_type, analysis_description_id)
 );
@@ -127,11 +157,19 @@ CREATE TABLE web_data (
   web_data_id               INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
   data                      TEXT,
 
+  -- Columns for the web interface:
+  created_by    INTEGER,
+  created_at    DATETIME,
+  modified_by   INTEGER,
+  modified_at   DATETIME,
+
   PRIMARY KEY (web_data_id)
 );
 
 -- VIEWS
 
+-- The 'db_list' view provides the full database names for all databases
+-- in the 'db' table that are current.
 CREATE VIEW db_list AS
 SELECT  db_id AS db_id,
         CONCAT(
@@ -141,6 +179,10 @@ FROM    species
   JOIN  db USING (species_id)
 WHERE species.is_current = true;
 
+-- The 'full_analysis_description' view provids, for each database,
+-- /nearly/ exactly what should go into the 'analysis_description'
+-- table, apart from the fact that it uses 'analysis.logic_name' rather
+-- than 'analysis.analysis_id'.
 CREATE VIEW full_analysis_description AS
 SELECT  list.full_db_name AS full_db_name,
         ad.logic_name AS logic_name,
@@ -158,6 +200,9 @@ FROM db_list list
 WHERE   db.is_current = true
   AND   ad.is_current = true;
 
+-- The 'logic_name_overview' is a helper view for people trying to
+-- make sense of the 'analysis_description', 'analysis_web_data', and
+-- 'web_data' tables.
 CREATE VIEW logic_name_overview AS
 SELECT
   awd.analysis_web_data_id AS analysis_web_data_id,
@@ -175,6 +220,8 @@ FROM   analysis_description ad
 WHERE   s.is_current = true
   AND   ad.is_current = true;
 
+-- The 'unconnected_analyses' view gives back the analyses from
+-- 'analysis_description' that are unused in 'analysis_web_data'.
 CREATE VIEW unconnected_analyses AS
 SELECT  ad.analysis_description_id AS analysis_description_id,
         ad.logic_name AS logic_name
@@ -183,6 +230,8 @@ FROM    analysis_description ad
 WHERE   awd.species_id IS NULL
   AND   ad.is_current = true;
 
+-- The 'unused_web_data' view gives back the entries in 'web_data' that
+-- are not connected to any analysis in 'analysis_web_data'.
 CREATE VIEW unused_web_data AS
 SELECT  wd.web_data_id
 FROM    web_data wd
@@ -190,8 +239,9 @@ FROM    web_data wd
 WHERE   awd.analysis_web_data_id IS NULL;
 
 
--- Views for the master tables.  These are simply selecting the entries
--- from the corresponding master table that have is_current = 1.
+-- Views for the master tables.  These four views are simply selecting
+-- the entries from the corresponding master table that have is_current
+-- set to true.
 
 CREATE VIEW attrib_type AS
 SELECT
