@@ -141,7 +141,23 @@ sub defaults {
     $self->_cmd_line_to_array('tables');
     $self->v(q{Will work with the tables [%s]}, join(q{,}, @{ $o->{tables} }));
   }
-
+  
+  if(! $o->{username}) {
+    pod2usage(
+      -msg     => 'No -username given on the command line',
+      -exitval => 1,
+      -verbose => 0
+    );
+  }
+  
+  if(! $o->{password}) {
+    pod2usage(
+      -msg     => 'No -password given on the command line',
+      -exitval => 1,
+      -verbose => 0
+    );
+  }
+  
   if ($o->{defaults}) {
     $self->_set_opts_from_hostname();
   } else {
@@ -456,8 +472,6 @@ sub _set_opts_from_hostname {
   #Setup default connection params
   $o->{host}     = $host;
   $o->{port}     = $settings->{port};
-  $o->{username} = $settings->{username};
-  $o->{password} = $settings->{password} if $settings->{password};
 
   if (!$o->{databases}) {
     $o->{databases} = $self->_all_dbs_regex($settings->{pattern});
@@ -477,58 +491,42 @@ sub _hostname_opts {
   my $target_dir = 'release-' . $version;
   my $default_dir =
     File::Spec->catdir(File::Spec->rootdir(), qw/mysql dumps/, $target_dir);
-  my $user = 'ensadmin';
-  my $pass = 'ensembl';
 
   return {
     'ensdb-1-01' => {
                       port     => 5306,
                       pattern  => qr/[a-m]\w*_ $version _\d+[a-z]?/xms,
-                      dir      => $default_dir,
-                      username => $user,
-                      password => $pass
+                      dir      => $default_dir
     },
     'ensdb-1-02' => {
                       port     => 5306,
                       pattern  => qr/[n-z]\w*_ $version _\d+[a-z]?/xms,
-                      dir      => $default_dir,
-                      username => $user,
-                      password => $pass
+                      dir      => $default_dir
     },
     'ensdb-1-03' => {
                       port     => 5303,
                       pattern  => qr/ensembl_compara_ $version/xms,
-                      dir      => $default_dir,
-                      username => $user,
-                      password => $pass
+                      dir      => $default_dir
     },
     'ensdb-1-04' => {
                       port     => 5303,
                       pattern  => qr/ensembl_(ancestral|ontology)_ $version/xms,
-                      dir      => $default_dir,
-                      username => $user,
-                      password => $pass
+                      dir      => $default_dir
     },
     'ensdb-1-05' => {
                       port     => 5316,
                       pattern  => qr/[efvg]\w+_mart_\w* $version/xms,
-                      dir      => $default_dir,
-                      username => $user,
-                      password => $pass
+                      dir      => $default_dir
     },
     'ensdb-1-06' => {
                       port     => 5316,
                       pattern  => qr/[os]\w+_*mart_\w* $version/xms,
-                      dir      => $default_dir,
-                      username => $user,
-                      password => $pass
+                      dir      => $default_dir
     },
     'ensdb-1-13' => {
-       port    => 5307,
-       pattern => qr/ensembl_website_ $version|ensembl_production_ $version/xms,
-       dir     => $default_dir,
-       username => $user,
-       password => $pass
+                      port    => 5307,
+                      pattern => qr/ensembl_website_ $version|ensembl_production_ $version/xms,
+                      dir     => $default_dir
     },
   };
 }
@@ -580,27 +578,27 @@ dump_mysql.pl
 =head1 SYNOPSIS
 
   #Basic
-  ./dump_mysql.pl [--defaults] | [--host HOST [--port PORT] --username USER [--password PASS] [-pattern '%' | -databases DB] [-tables TABLE] -directory DIR] [-help | -man]
+  ./dump_mysql.pl --username USER --password PASS [--defaults] | [--host HOST [--port PORT] [-pattern '%' | -databases DB] [-tables TABLE] -directory DIR] [-help | -man]
   
   #Using defaults
-  ./dump_mysql.pl --defaults --version 64
+  ./dump_mysql.pl --defaults --username root --password p --version 64
   
-  ./dump_mysql.pl --defaults --version 64 --tables dna
+  ./dump_mysql.pl --defaults --username root --password p --version 64 --tables dna
   
-  ./dump_mysql.pl --defaults --version 64 --tables meta,meta_coord --tables analysis --groups core,otherfeatures --groups vega
+  ./dump_mysql.pl --defaults --username root --password p --version 64 --tables meta,meta_coord --tables analysis --groups core,otherfeatures --groups vega
   
-  ./dump_mysql.pl --defaults --version 64 --tables meta,meta_coord --tables analysis --groups core,otherfeatures --groups vega --sql 
+  ./dump_mysql.pl --defaults --username root --password p --version 64 --tables meta,meta_coord --tables analysis --groups core,otherfeatures --groups vega --sql 
   
   #Using host
-  ./dump_mysql.pl --host srv --username root --pattern '%_64%' --directory $PWD/dumps
+  ./dump_mysql.pl --host srv --username root --password p --pattern '%_64%' --directory $PWD/dumps
   
-  ./dump_mysql.pl --host srv --username root --databases my_db --databases other_db --directory $PWD/dumps
+  ./dump_mysql.pl --host srv --username root --password p --databases my_db --databases other_db --directory $PWD/dumps
   
-  ./dump_mysql.pl --host srv --username root --databases my_db,toto_db --databases other_db --directory $PWD/dumps
+  ./dump_mysql.pl --host srv --username root --password p --databases my_db,toto_db --databases other_db --directory $PWD/dumps
   
-  ./dump_mysql.pl --host srv --username root --databases my_db --tables dna,dnac --directory $PWD/dumps
+  ./dump_mysql.pl --host srv --username root --password p --databases my_db --tables dna,dnac --directory $PWD/dumps
   
-  ./dump_mysql.pl --host srv --username root --databases my_db --tables dna --tables dnac --directory $PWD/dumps
+  ./dump_mysql.pl --host srv --username root --password p --databases my_db --tables dna --tables dnac --directory $PWD/dumps
 
 =head1 DESCRIPTION
 
@@ -615,6 +613,15 @@ parameters rather than having to manually configure the setup.
 =head1 OPTIONS
 
 =over 8
+
+=item B<--username>
+
+REQUIRED. Username of the connecting account. Must be able to perform 
+C<SELECT INTO OUTFILE> calls.
+
+=item B<--password>
+
+REQUIRED. Password of the connecting user.
 
 =item B<--defaults>
 
@@ -637,15 +644,6 @@ Host name of the database to connect to. Cannot be used with <--defaults>.
 
 Optional integer of the database port. Defaults to 3306. Cannot be used 
 with <--defaults>.
-
-=item B<--username>
-
-Username of the connecting account. Must be able to perform 
-C<SELECT INTO OUTFILE> calls. Cannot be used with <--defaults>.
-
-=item B<--password>
-
-Optional password of the connecting user. Cannot be used with <--defaults>.
 
 =item B<--pattern>
 
