@@ -1,4 +1,6 @@
 #!/usr/bin/env perl
+# Don't change the above line.
+# Change the PATH in the myManager.ksh script if you want to use another perl.
 
 =head1 NAME
 
