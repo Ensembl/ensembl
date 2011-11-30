@@ -481,49 +481,49 @@ sub _hostname_opts {
   my $pass = 'ensembl';
 
   return {
-    'ensdb-1-01.internal.sanger.ac.uk' => {
+    'ensdb-1-01' => {
                       port     => 5306,
                       pattern  => qr/[a-m]\w*_ $version _\d+[a-z]?/xms,
                       dir      => $default_dir,
                       username => $user,
                       password => $pass
     },
-    'ensdb-1-02.internal.sanger.ac.uk' => {
+    'ensdb-1-02' => {
                       port     => 5306,
                       pattern  => qr/[n-z]\w*_ $version _\d+[a-z]?/xms,
                       dir      => $default_dir,
                       username => $user,
                       password => $pass
     },
-    'ensdb-1-03.internal.sanger.ac.uk' => {
+    'ensdb-1-03' => {
                       port     => 5303,
                       pattern  => qr/ensembl_compara_ $version/xms,
                       dir      => $default_dir,
                       username => $user,
                       password => $pass
     },
-    'ensdb-1-04.internal.sanger.ac.uk' => {
+    'ensdb-1-04' => {
                       port     => 5303,
                       pattern  => qr/ensembl_(ancestral|ontology)_ $version/xms,
                       dir      => $default_dir,
                       username => $user,
                       password => $pass
     },
-    'ensdb-1-05.internal.sanger.ac.uk' => {
+    'ensdb-1-05' => {
                       port     => 5316,
                       pattern  => qr/[efvg]\w+_mart_\w* $version/xms,
                       dir      => $default_dir,
                       username => $user,
                       password => $pass
     },
-    'ensdb-1-06.internal.sanger.ac.uk' => {
+    'ensdb-1-06' => {
                       port     => 5316,
                       pattern  => qr/[os]\w+_*mart_\w* $version/xms,
                       dir      => $default_dir,
                       username => $user,
                       password => $pass
     },
-    'ensdb-1-13.internal.sanger.ac.uk' => {
+    'ensdb-1-13' => {
        port    => 5307,
        pattern => qr/ensembl_website_ $version|ensembl_production_ $version/xms,
        dir     => $default_dir,
