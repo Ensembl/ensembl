@@ -26,7 +26,8 @@ sub run {
   $self->logging();
   $self->check();
   $self->defaults();
-  $self->process();
+  $self->dry() if $self->opts()->{dry};
+  $self->process() if ! $self->opts()->{dry};
 
   if ($self->{oldfh}) {
     select($self->{oldfh});
@@ -41,6 +42,7 @@ sub args {
     $opts, qw/
       defaults=s
       version=i
+      dry
       host=s
       port=i
       username=s
@@ -219,7 +221,17 @@ sub defaults {
   $self->v(q{Working %d database(s)}, $db_count);
 
   $o->{databases} = [ sort { $a cmp $b } @{ $o->{databases} } ];
+  
+  $o->{verbose} = 1 if $o->{dry};
 
+  return;
+}
+
+sub dry {
+  my ($self) = @_;
+  my $databases = $self->opts()->{databases};
+  my $list = join(q{,}, @{$databases});
+  $self->v(q{The following databases would have been dumped [%s]}, $list);
   return;
 }
 
@@ -495,7 +507,6 @@ sub _set_opts_from_hostname {
   $o->{port}     = $settings->{port};
 
   if (!$o->{databases}) {
-    warn $settings->{pattern};
     $o->{databases} = $self->_all_dbs($settings->{pattern});
   }
 
@@ -596,6 +607,8 @@ dump_mysql.pl
   
   #Using defaults ini file
   ./dump_mysql.pl --defaults my.ini --username root --password p --version 64
+  
+  ./dump_mysql.pl --defaults my.ini --username root --password p --version 64 -dry
   
   ./dump_mysql.pl --defaults my.ini --username root --password p --version 64 --tables dna
   
@@ -706,6 +719,11 @@ If given the script will write all logs to output. Switches on C<--verbose>
 
 Force the use of Perl's GZip libraries rather than using external zipping 
 like pigz.
+
+=item B<--dry>
+
+If specified the script will list all databases which have been found and
+will be dumped but will not run any dumping process.
 
 =item B<--help>
 
