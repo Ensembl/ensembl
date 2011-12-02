@@ -13,7 +13,6 @@ use Getopt::Long;
 use IO::Compress::Gzip qw/gzip $GzipError/;
 use Pod::Usage;
 use Sys::Hostname;
-use IO::File;
 
 my $PIGZ_BINARY = 'pigz';
 my $PIGZ_PROCESSORS = 2; #ensdb-1-* only have 4 cores
@@ -73,8 +72,7 @@ sub logging {
   if ($o->{log}) {
     $o->{verbose} = 1;
     my $file = $o->{log};
-    my $fh = IO::File->new($file, 'w');
-    $fh->autoflush(1);
+    open my $fh, '>', $file or die "Cannot open log file '${file}' for writing: $!";
     my $oldfh = select($fh);
     $self->{oldfh} = $oldfh;
   }
