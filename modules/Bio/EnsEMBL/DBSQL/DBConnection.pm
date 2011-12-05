@@ -61,7 +61,6 @@ package Bio::EnsEMBL::DBSQL::DBConnection;
 use vars qw(@ISA);
 use strict;
 
-use Bio::EnsEMBL::Registry;
 use Bio::EnsEMBL::Root;
 use DBI;
 
