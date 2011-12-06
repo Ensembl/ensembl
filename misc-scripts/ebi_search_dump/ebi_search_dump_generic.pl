@@ -734,7 +734,7 @@ sub geneLineXML {
     foreach my $ext_db_name ( keys %$external_identifiers ) {
 
         if ( $ext_db_name =~
-            /(Uniprot|GO|Interpro|Medline|Sequence_Publications|EMBL)/ )
+            /(Uniprot|GOA|GO|Interpro|Medline|Sequence_Publications|EMBL)/ )
         {
 
             my $matched_db_name = $1;
