@@ -148,6 +148,7 @@ my $A_sa = $A_dba->get_SliceAdaptor;
 my $fmt1 = "%-40s%12s\n";
 my $fmt2 = "%-40s%11.1f%%\n";
 my $fmt3 = "%-44s%8.0f (%2.0f%%)\n";
+my $fmt4 = "%-40s%12s%10s\n";
 
 $support->log("Looping over toplevel seq_regions...\n\n");
 
@@ -232,13 +233,13 @@ foreach my $chr ($support->sort_chromosomes) {
   
   $support->log("\n");
   
-  $support->log(sprintf($fmt1, "Total alignments:", $alignments), 2);
+  $support->log(sprintf($fmt4, "Total alignments:", $alignments, "Mapping %"), 2);
   
   if ($alignments) {
     for (my $i = 0; $i < $oom; $i++) {
       my $from = 10**$i;
       my $to = 10**($i+1);
-      $support->log(sprintf($fmt3, "    ".$support->commify($from)." - ".$support->commify($to)." bp:", $blocks{$to}, $blocklength{$to}/$R_slice->length*100), 2);
+      $support->log(sprintf($fmt3, "    ".$support->commify($from)." - ".$support->commify($to)." bp:", $blocks{$to}, $blocklength{$to}/$A_length*100), 2);
     }
   }
   
