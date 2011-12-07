@@ -816,7 +816,7 @@ sub geneLineXML {
     map {
         $synonyms .=
           qq{     
-      <field name="gene_synonym">} . encode_entities($_) . {</field> }
+      <field name="gene_synonym">} . encode_entities($_) . qq{</field> }
     } keys %$unique_synonyms;
 
     my $additional_fields .= qq{
