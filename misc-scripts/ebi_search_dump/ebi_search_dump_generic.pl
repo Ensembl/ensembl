@@ -17,7 +17,7 @@ use FindBin qw($Bin);
 use Getopt::Long;
 use IO::Zlib;
 use Data::Dumper;
-
+use HTML::Entities;
                             
 BEGIN{                                                                                                                                                                         
   unshift @INC, "$Bin/../../../conf";                                                                                                                                            
