@@ -35,6 +35,7 @@ sub args {
     pass|p=s
     database|d=s
     pattern=s
+    retirealiases!
     verbose|v!
     help
     man
@@ -177,7 +178,7 @@ sub _get_production {
   );
   my $sql = 'select alias from species_alias where species_id =? and is_current = ?';
   $hash->{active_aliases} = $target_dbc->sql_helper()->execute_simple(-SQL => $sql, -PARAMS => [$hash->{species_id}, 1]);
-  $hash->{inactive_aliases} = $target_dbc->sql_helper()->execute_simple(-SQL => $sql, -PARAMS => [$hash->{species_id}, 1]);
+  $hash->{inactive_aliases} = $target_dbc->sql_helper()->execute_simple(-SQL => $sql, -PARAMS => [$hash->{species_id}, 0]);
   return $hash;
 }
 
@@ -244,21 +245,29 @@ sub _update_attributes {
 sub _update_species_aliases {
   my ($self, $source_meta, $production) = @_;
   my $target_dbc = $self->_target_dbc();
+  my $h = $target_dbc->sql_helper();
 
   my $aliases = $self->_decipher_aliases($source_meta, $production);
   my $species_id = $production->{species_id};
   
   foreach my $alias (@{$aliases->{new}}) {
     my $sql = 'insert into species_alias (species_id, alias, is_current, created_by, created_at) values (?,?,?,?,now())';
-    $target_dbc->sql_helper()->execute_update(-SQL => $sql, -PARAMS => [$species_id, $alias, 1, undef]);
+    $h->execute_update(-SQL => $sql, -PARAMS => [$species_id, $alias, 1, undef]);
   }
+  $self->v('Added %d aliases', scalar(@{$aliases->{new}}));
+  
   foreach my $alias (@{$aliases->{reactivated}}) {
-    my $sql = 'update species_alias set is_current =?, updated_by =?, updated_at =now() where species_id =? and alias =?';
-    $target_dbc->sql_helper()->execute_update(-SQL => $sql, -PARAMS => [1, undef, $species_id, $alias]);
+    my $sql = 'update species_alias set is_current =?, modified_by =?, modified_at =now() where species_id =? and alias =?';
+    $h->execute_update(-SQL => $sql, -PARAMS => [1, undef, $species_id, $alias]);
   }
-  foreach my $alias (@{$aliases->{retired}}) {
-    my $sql = 'update species_alias set is_current =?, updated_by =?, updated_at =now() where species_id =? and alias =?';
-    $target_dbc->sql_helper()->execute_update(-SQL => $sql, -PARAMS => [0, undef, $species_id, $alias]);
+  $self->v('Reactivated %d aliases', scalar(@{$aliases->{reactivated}}));
+  
+  if($self->{opts}->{retirealiases}){
+    foreach my $alias (@{$aliases->{retired}}) {
+      my $sql = 'update species_alias set is_current =?, modified_by =?, modified_at =now() where species_id =? and alias =?';
+      $h->execute_update(-SQL => $sql, -PARAMS => [0, undef, $species_id, $alias]);
+    }
+    $self->v('Retired %d aliases', scalar(@{$aliases->{retired}}));
   }
   
   return;  
@@ -374,6 +383,11 @@ Database name to search for. Can be a SQL like statement
 
   --database="homo_sapiens_core_65_37"
   --database="%core_65%"
+
+=item B<--retirealiases>
+
+If specified this will retire aliases if they were not an active name in the
+core database meta aliases.
 
 =item B<--verbose>
 

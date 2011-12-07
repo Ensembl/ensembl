@@ -35,6 +35,7 @@ sub args {
     pass|p=s
     database|d=s
     taxon=i@
+    retirealiases!
     verbose|v!
     help
     man
@@ -228,13 +229,20 @@ sub _update_species_aliases {
     my $sql = 'insert into species_alias (species_id, alias, is_current, created_by, created_at) values (?,?,?,?,now())';
     $h->execute_update(-SQL => $sql, -PARAMS => [$species_id, $alias, 1, undef]);
   }
+  $self->v('Added %d aliases', scalar(@{$aliases->{new}}));
+  
   foreach my $alias (@{$aliases->{reactivated}}) {
     my $sql = 'update species_alias set is_current =?, modified_by =?, modified_at =now() where species_id =? and alias =?';
     $h->execute_update(-SQL => $sql, -PARAMS => [1, undef, $species_id, $alias]);
   }
-  foreach my $alias (@{$aliases->{retired}}) {
-    my $sql = 'update species_alias set is_current =?, modified_by =?, modified_at =now() where species_id =? and alias =?';
-    $h->execute_update(-SQL => $sql, -PARAMS => [0, undef, $species_id, $alias]);
+  $self->v('Reactivated %d aliases', scalar(@{$aliases->{reactivated}}));
+  
+  if($self->{opts}->{retirealiases}){
+    foreach my $alias (@{$aliases->{retired}}) {
+      my $sql = 'update species_alias set is_current =?, modified_by =?, modified_at =now() where species_id =? and alias =?';
+      $h->execute_update(-SQL => $sql, -PARAMS => [0, undef, $species_id, $alias]);
+    }
+    $self->v('Retired %d aliases', scalar(@{$aliases->{retired}}));
   }
   
   return;  
@@ -332,6 +340,11 @@ Pass for the production database
 
 Allows for the update of a single species by specifying its taxonomy id. This
 is useful for new species updates.
+
+=item B<--retirealiases>
+
+If specified this will retire aliases if they were not an active name in the
+taxonomy database. 
 
 =item B<--verbose>
 
