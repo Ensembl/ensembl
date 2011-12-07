@@ -348,7 +348,7 @@ sub checksum {
     my $path = File::Spec->catfile($dir, $file);
     my $sum = `sum $path`;
     $sum =~ s/\s* $path//xms;
-    print $fh $file, "\t", $sum;
+    print $fh "${sum}\t${file}";
   }
   $fh->close();
   $self->permissions($checksum);
@@ -505,7 +505,11 @@ sub _set_opts_from_hostname {
   $o->{port}     = $settings->{port};
 
   if (!$o->{databases}) {
-    $o->{databases} = $self->_all_dbs($settings->{pattern});
+    my $opts_pattern = $o->{pattern};
+    $opts_pattern = qr/$opts_pattern/ if $opts_pattern; 
+    my $settings_pattern = $settings->{pattern};
+    my $pattern = (defined $opts_pattern) ? $opts_pattern : $settings_pattern;
+    $o->{databases} = $self->_all_dbs($pattern);
   }
 
   #Set default dir
@@ -656,8 +660,7 @@ REQUIRED. Password of the connecting user.
 Uses the default mechanism which involves looking at the host the script
 is executing on and setting a number of options for databases to look for
 as well as port settings. C<-defaults> can be used in conjunction with
-C<-groups>, C<-species> and C<-tables> but not with parameters like <--host>
-and C<--pattern>.
+C<-groups>, C<-species> and C<-tables> but not with parameters like <--host>.
 
 The options set are specified by your custom ini-file.
 
@@ -680,8 +683,7 @@ with <--defaults>.
 =item B<--pattern>
 
 Allows the specification of a regular expression to select databases with. 
-Cannot be used in conjunction with the C<--databases> argument. Cannot be used 
-with <--defaults>.
+Cannot be used in conjunction with the C<--databases> argument.
 
 =item B<--databases>
 
