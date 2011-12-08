@@ -12,6 +12,8 @@ use DBI;
 use File::Basename;
 use IPC::Open3;
 
+use Bio::EnsEMBL::DBSQL::DBAdaptor;
+
 ##################################################################
 # JOB 1 Do exonerate jobs and get core info
 ##################################################################
