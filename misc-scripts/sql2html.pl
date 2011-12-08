@@ -190,7 +190,6 @@ my @header_names = ('default');
 my @colours = ($default_colour);
 my %legend;
 
-
 my $in_doc = 0;
 my $in_table = 0;
 my $header = 'default';
@@ -204,6 +203,7 @@ my $display = 'Show';
 my $parenth_count = 0;
 my $header_colour;
 
+
 #############
 ## Parser  ##
 #############
@@ -216,20 +216,19 @@ while (<SQLFILE>) {
 	
 	# Verifications
 	if ($_ =~ /^\/\*\*/)  { $in_doc=1; next; }  # start of a table documentation
-	if ($_ =~ /^\s*create\s+table\s+(if\s+not\s+exists\s+)?(\w+)/i) { # start to parse the content of the table
-		my $sql_t_name = remove_char($2);
-		if ($sql_t_name eq $table) { 
+	if ($_ =~ /^\s*create\s+table\s+(if\s+not\s+exists\s+)?`?(\w+)`?/i) { # start to parse the content of the table
+		if ($table eq $2) { 
 			$in_table=1;
 			$parenth_count++;
 		}
 		else { 
-			print STDERR "The documentation of the table $sql_t_name has not be found!\n";
+			print STDERR "The documentation of the table $2 has not be found!\n";
 		}
 		next;
 	}	
 	next if ($in_doc==0 and $in_table==0);
 	
-	my $doc = $_;
+	my $doc = remove_char($_);
 	
 	## Parsing of the documentation ##
 	if ($in_doc==1) {
@@ -284,30 +283,24 @@ while (<SQLFILE>) {
 		}
 	}
 	
+	
 	## Parsing of the SQL table to fetch the columns types ##
 	elsif ($in_table==1) {
-	
-	  #END OF TABLE DEFINITION
-	  #Can't do this easily with a simply regex as there are varying valid formats
-	  #The end of the table definition is actually defined by 2nd enclosing bracket
+		
+	  # END OF TABLE DEFINITION
+	  # Can't do this easily with a simply regex as there are varying valid formats
+	  # The end of the table definition is actually defined by 2nd enclosing bracket
 	  
-	  #Regex counting VOODOO!
-	  #This basically puts the regex in a list context
-	  #before inc/dec'ing with it in a scalar context.
+	  # Regex counting VOODOO!
+	  # This basically puts the regex in a list context
+	  # before inc/dec'ing with it in a scalar context.
 	  $parenth_count +=()= $doc =~ /\(/gi;
 	  $parenth_count -=()= $doc =~ /\)/gi;
 
 
-	 # warn "parenth count is $parenth_count";
-
 	  if ($parenth_count == 0) { # End of the sql table definition
 		if (scalar @{$documentation->{$header}{'tables'}{$table}{column}} > $count_sql_col) {
-		  
-		  #use Data::Dumper;
-		  #warn "col count $count_sql_col";
-		  #warn Data::Dumper::Dumper(\$documentation);
-
-		  print STDERR "Description of a non existant column in the table $table!\n";
+			print STDERR "Description of a non existant column in the table $table!\n";
 		}
 
 		$in_table=0;
@@ -317,73 +310,69 @@ while (<SQLFILE>) {
 	  }
 	  else {
 
-	  #	warn "Processing table";
-
-		## INDEXES ##
-		if ($doc =~ /^\s*(primary\s+key)\s*\((.+)\)/i or $doc =~ /^\s*(unique)\s*\((.+)\)/i){ # Primary or unique
-			my $icol = remove_char($2);
-			add_column_index($1,$icol);
-			next;
-		}
-		elsif ($doc =~ /^\s*(unique\s+)?(key|index)\s+(\S+)\s*\((.+)\)/i) { # Keys and indexes
-			my $icol = remove_char($4);
-			add_column_index("$1$2",$icol,$3);
-			next;
-		}
-		elsif ($doc =~ /^\s*(key)\s+\((.+)\)/i) { # Keys
-			my $icol = remove_char($2);
-			add_column_index("$1",$icol,'');
-			next;
-		}
-		
-		## TYPES & DEFAULT VALUES ##
-		my $col_name = '';
-		my $col_type = '';
-		my $col_def  = '';
-		
-		
-		# All the type is contained in the same line (type followed by parenthesis)
-		if ($doc =~ /^\W*(\w+)\W+(\w+\s?\(.*\))/ ){
-			$col_name = remove_char($1);
-			$col_type = $2;
-			if ($doc =~ /default\s*([^,\s]+)\s*.*(,|#).*/i) { $col_def = $1; } # Default value
-			add_column_type_and_default_value($col_name,$col_type,$col_def);
-		}
-		
-		# The type is written in several lines
-		elsif ($doc =~ /^\W*(\w+)\W+(enum|set)(\s?\(.*)/i){ # The content is split in several lines
-			$col_name= remove_char($1);
-			$col_type="$2$3<br />";
-			my $end_type = 0;
-			while ($end_type != 1){
-				my $line = <SQLFILE>;
-				chomp $line;
-
-				#Regex counting VOODOO again
-				$parenth_count +=()= $line =~ /\(/gi;
-				$parenth_count -=()= $line =~ /\)/gi;
-				
-				if ($line =~ /\)/) { # Close parenthesis
-					$end_type=1; 
-					$line =~ /^\s*(.+)\)/;
-					$col_type .= "$1)"; 
-				}
-				else { # Add the content of the line
-					$line =~ /^\s*(.+)/;
-					$col_type .= $1.'<br />';
-				}
-				if ($line =~ /default\s*([^,\s]+)\s*.*(,|#).*/i) { $col_def = $1; } # Default value
+			## INDEXES ##
+			if ($doc =~ /^\s*(primary\s+key)\s*\((.+)\)/i or $doc =~ /^\s*(unique)\s*\((.+)\)/i){ # Primary or unique;
+				add_column_index($1,$2);
+				next;
 			}
-			add_column_type_and_default_value($col_name,$col_type,$col_def);
-		}
+			elsif ($doc =~ /^\s*(unique\s+)?(key|index)\s+(\S+)\s*\((.+)\)/i) { # Keys and indexes
+				add_column_index("$1$2",$4,$3);
+				next;
+			}
+			elsif ($doc =~ /^\s*(key)\s+\((.+)\)/i) { # Keys
+				add_column_index("$1",$2,'');
+				next;
+			}
+			
 		
-		# All the type is contained in the same line (type without parenthesis)
-		elsif ($doc =~ /^\s*\W*(\w+)\W+(\w+)/ ){
-			$col_name = remove_char($1);
-			$col_type = $2;
-			if ($doc =~ /default\s*([^,\s]+)\s*.*(,|#).*/i) { $col_def = $1;} # Default value
-			add_column_type_and_default_value($col_name,$col_type,$col_def);
-		}
+			## TYPES & DEFAULT VALUES ##
+			my $col_name = '';
+			my $col_type = '';
+			my $col_def  = '';
+		
+			# All the type is contained in the same line (type followed by parenthesis)
+			if ($doc =~ /^\W*(\w+)\W+(\w+\s?\(.*\))/ ){
+				$col_name = $1;
+				$col_type = $2;
+				if ($doc =~ /default\s*([^,\s]+)\s*.*(,|#).*/i) { $col_def = $1; } # Default value
+				add_column_type_and_default_value($col_name,$col_type,$col_def);
+			}
+		
+			# The type is written in several lines
+			elsif ($doc =~ /^\W*(\w+)\W+(enum|set)(\s?\(.*)/i){ # The content is split in several lines
+				$col_name= $1;
+				$col_type="$2$3<br />";
+				my $end_type = 0;
+				while ($end_type != 1){
+					my $line = <SQLFILE>;
+					chomp $line;
+					$line = remove_char($line);
+
+					# Regex counting VOODOO again
+					$parenth_count +=()= $line =~ /\(/gi;
+					$parenth_count -=()= $line =~ /\)/gi;
+				
+					if ($line =~ /\)/) { # Close parenthesis
+						$end_type=1; 
+						$line =~ /^\s*(.+)\)/;
+						$col_type .= "$1)"; 
+					}
+					else { # Add the content of the line
+						$line =~ /^\s*(.+)/;
+						$col_type .= $1.'<br />';
+					}
+					if ($line =~ /default\s*([^,\s]+)\s*.*(,|#).*/i) { $col_def = $1; } # Default value
+				}
+				add_column_type_and_default_value($col_name,$col_type,$col_def);
+			}
+		
+			# All the type is contained in the same line (type without parenthesis)
+			elsif ($doc =~ /^\s*\W*(\w+)\W+(\w+)/ ){
+				$col_name = $1;
+				$col_type = $2;
+				if ($doc =~ /default\s*([^,\s]+)\s*.*(,|#).*/i) { $col_def = $1;} # Default value
+				add_column_type_and_default_value($col_name,$col_type,$col_def);
+			}
 	  }
 	}
 }
@@ -691,7 +680,6 @@ sub add_columns {
 		my $table_to_link = qq{<a href="#$link">$link</a>};
 		$desc =~ s/\@link\s?\w+/$table_to_link/;
 		
-		#$col =~ /^\s*(\w+)[\s\t]+(.+)\t+(.+)\t(.*)/;
 		$html .= qq{		<tr class="bg$bg"><td><b>$name</b></td><td>$type</td><td>$default</td><td>$desc</td><td>$index</td></tr>\n};
 		if ($bg==1) { $bg=2; }
 		else { $bg=1; }
@@ -723,7 +711,6 @@ sub add_column_index {
 	my $idx_name = shift;
 	
 	my $index = $idx_type;
-	$idx_name = remove_char($idx_name);
 	if (defined($idx_name)) {
 		$index .= ": $idx_name";
 	}
@@ -733,7 +720,6 @@ sub add_column_index {
 	my %is_found = ();
 	foreach my $i_col (@idx_cols) {
 		$i_col =~ s/\s//g; # Remove white spaces
-		$i_col = remove_char($i_col); # Remove the ` character
 		# In case of index using a number characters for a column
 		if ($i_col =~ /(.+)\(\d+\)/) {
 			$i_col = $1;
@@ -805,6 +791,7 @@ sub add_legend {
 }
 
 
+# Removed the character(s) ` from the read line.
 sub remove_char {
 	my $text = shift;
 	$text =~ s/`//g;
