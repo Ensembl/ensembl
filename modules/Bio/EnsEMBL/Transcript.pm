@@ -270,7 +270,7 @@ sub get_all_xrefs {
 
   Arg [2]    : (optional) String, external database type
 
-  Example    : my @dbentries = @{ $gene->get_all_DBEntries() };
+  Example    : my @dbentries = @{ $transcript->get_all_DBEntries() };
 
   Description: Retrieves DBEntries (xrefs) for this transcript.
                This does *not* include the corresponding
