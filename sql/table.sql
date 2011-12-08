@@ -446,10 +446,10 @@ INSERT INTO meta (species_id, meta_key, meta_value) VALUES
 # NOTE: At start of release cycle, remove patch entries from last release.
 # NOTE: Avoid line-breaks in values.
 INSERT INTO meta (species_id, meta_key, meta_value) VALUES
-  (NULL, 'patch', 'patch_64_65_a.sql|schema_version'),
-  (NULL, 'patch', 'patch_64_65_b.sql|merge_stable_id_with_object'),
-  (NULL, 'patch', 'patch_64_65_c.sql|add_data_file'),
-  (NULL, 'patch', 'patch_64_65_d.sql|add_checksum_info_type');
+  (NULL, 'patch', 'patch_65_66_a.sql|schema_version'),
+  (NULL, 'patch', 'patch_65_66_b.sql|fix_external_db_id'),
+  (NULL, 'patch', 'patch_65_66_ak4-2.sql|reorder_unmapped_obj_index'),
+ ;
 
 /**
 @table meta_coord
