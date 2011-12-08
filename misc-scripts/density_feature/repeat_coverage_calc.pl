@@ -348,6 +348,7 @@ seqs.
 Usage:
   $0 -h host [-port port] -u user -p password \\
   $indent -d database  \\
+  $indent [-mhost ensembl_production host] [-mport ensembl_production host] [-muser ensembl_production host] \\
   $indent [-help]  \\
 
 
