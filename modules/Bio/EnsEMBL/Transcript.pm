@@ -2672,7 +2672,7 @@ sub summary_as_hash {
 
 =head2 get_Gene
   
-  Example     : $gene = $transcript->get_parent_Gene;
+  Example     : $gene = $transcript->get_Gene;
   Description : Locates the parent Gene using a transcript dbID
   Returns     : Bio::EnsEMBL::Gene
 
