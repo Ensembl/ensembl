@@ -125,7 +125,7 @@ sub parse_common_options {
                'log_base_path=s',
 	       'logappend|log_append',
 	       'verbose|v',
-	       'interactive|i',
+	       'interactive|i=s',
 	       'dry_run|dry|n',
 	       'help|h|?',
 	     );
@@ -145,9 +145,9 @@ sub parse_common_options {
       s/\s+[;].*$//;
 
       # read options into internal parameter datastructure, removing whitespace
-      next unless (/(\w\S*)\s*=\s*(\S*)\s*/);
+      next unless (/(\w\S*)\s*=*\s*(\S*)\s*/);
       my $name = $1;
-      my $val = $2;
+      my $val  = $2 || 1;
       if ($val =~ /\$SERVERROOT/) {
 	$val =~ s/\$SERVERROOT/$serverroot/g;
 	$val = abs_path($val);
@@ -874,7 +874,7 @@ sub dynamic_use {
 
 sub get_chrlength {
   my ($self, $dba, $version,$type,$include_non_reference) = @_;
-  $dba ||= $self->dba;
+  $dba  ||= $self->dba;
   $type ||= 'toplevel';
   throw("get_chrlength should be passed a Bio::EnsEMBL::DBSQL::DBAdaptor\n")
     unless ($dba->isa('Bio::EnsEMBL::DBSQL::DBAdaptor'));
@@ -1585,11 +1585,10 @@ sub get_non_hidden_slice_names {
 
 =head2 get_wanted_chromosomes
 
-  Arg[1]      : B::E::U::ConversionSupport
-  Arg[2]      : B::E::SliceAdaptor
-  Arg[3]      : B::E::AttributeAdaptor
-  Arg[4]      : string $coord_system_name (optional) - 'chromosome' by default
-  Arg[5]      : string $coord_system_version (optional) - 'otter' by default
+  Arg[1]      : B::E::SliceAdaptor
+  Arg[2]      : B::E::AttributeAdaptor
+  Arg[3]      : string $coord_system_name (optional) - 'chromosome' by default
+  Arg[4]      : string $coord_system_version (optional) - 'otter' by default
   Example     : $chr_names = $support->get_wanted_chromosomes($laa,$lsa);
   Description : retrieve names of slices from a lutra database that are ready for dumping to Vega.
                 Deals with list of names to ignore (ignore_chr = LIST)
@@ -1632,6 +1631,44 @@ sub get_wanted_chromosomes {
   }
   return $names;
 }
+
+=head2 get_unique_genes
+
+  Arg[1]      : B::E::Slice
+  Arg[2]      : B::E::DBAdaptor (optional, if you don't supply one then the *first* one you generated is returned, which may or may not be what you want!)
+  Example     : $genes = $support->get_unique_genes($slice,[$dba]);
+  Description : Retrieve genes that are only on the slice itself - used for human where assembly patches
+                are in the assembly_exception table. Needs the PATCHes to have 'non_ref' seq_region_attributes.
+  Return type : arrayref of genes
+  Caller      : general
+  Status      : stable
+
+=cut
+
+sub get_unique_genes {
+  my $self  = shift;
+  my ($slice,$dba) = @_;
+  $slice or throw("You must supply a slice");
+  $dba ||= $self->dba;
+
+  my $sa    = $dba->get_adaptor('Slice');
+  my $ga    = $dba->get_adaptor('Gene');
+  my $patch = 0;
+  my $genes = [];
+
+  if ( ! $slice->is_reference() ) {
+    $patch = 1;
+    my $slices = $sa->fetch_by_region_unique( $slice->coord_system_name(),$slice->seq_region_name() );
+    foreach my $slice ( @{$slices} ) {
+      push @$genes, @{$ga->fetch_all_by_Slice($slice)};
+    }
+  }
+  else {
+    $genes = $ga->fetch_all_by_Slice($slice);
+  }
+  return ($genes, $patch);
+}
+
 
 
 =head2 get_attrib_values
