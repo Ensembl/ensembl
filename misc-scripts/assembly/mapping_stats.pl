@@ -47,30 +47,6 @@ Optional arguments:
 This script prints some statistics about a whole genome alignment between two
 assemblies, like the alignment coverage and length of alignment blocks.
 
-=head1 RELATED FILES
-
-The whole process of creating a whole genome alignment between two assemblies
-is done by a series of scripts. Please see
-
-  ensembl/misc-scripts/assembly/README
-
-for a high-level description of this process, and POD in the individual scripts
-for the details.
-
-=head1 LICENCE
-
-This code is distributed under an Apache style licence:
-Please see http://www.ensembl.org/code_licence.html for details
-
-=head1 AUTHOR
-
-Patrick Meidl <meidl@ebi.ac.uk>, Ensembl core API team
-
-=head1 CONTACT
-
-Please post comments/questions to the Ensembl development list
-<dev@ensembl.org>
-
 =cut
 
 use strict;
@@ -186,22 +162,60 @@ foreach my $chr ($support->sort_chromosomes) {
   my %blocks;
   my %blocklength;
 
+  my %cont_mapping_blocks;
+  my %cont_mapping_length;
+
   # toplevel seq_region length order of magnitude
   my $oom = length($A_length);
+ 
+  #seq region on the alternative assembly
+  my $R_slice = $R_sa->fetch_by_region($cs_name, $chr,undef, undef, undef,$support->param('altassembly'));
   
-  my $R_slice = $R_sa->fetch_by_region($cs_name, $chr);
-  my @segments = @{ $R_slice->project($cs_name, $support->param('altassembly')) };
+  #seq region on the latest assembly
+  my $R_new_assembly_slice = $R_sa->fetch_by_region($cs_name, $chr);
+
+  #map alternative assembly to latest
+  my @segments = @{ $R_slice->project($cs_name, $support->param('assembly')) };
 
   my $alignments = 0;
 
+  my $previous_sl;
+  my $cont_mapping_length = 0;
   foreach my $seg (@segments) {
     my $sl = $seg->to_Slice;
 
     # ignore PAR region (i.e. we project to the symlinked seq_region)
-    next if ($sl->seq_region_name ne $chr);
-    
+    #next if ($sl->seq_region_name ne $chr);
+  
     my $l = $sl->length;
     $mapping_length += $l;
+
+    if ($previous_sl) {
+	#if current slice is on the same chromosome and within 10bps of the previous slice
+	#add it to the continuous mapping length
+	if ($previous_sl->seq_region_name eq $sl->seq_region_name && abs ($previous_sl->end - $sl->start) <= 10) {
+	    $cont_mapping_length += $l;
+	} else {
+
+	    my $c_oom = $oom;
+    
+	    while ($c_oom) {
+		if ($cont_mapping_length > 10**($c_oom-1) and $cont_mapping_length <= 10**$c_oom) {
+		    $cont_mapping_blocks{10**$c_oom}++;
+		    $cont_mapping_length{10**$c_oom} += $cont_mapping_length;
+		}
+		$c_oom--;
+	    }
+	    if ($cont_mapping_length == 1) {
+		$cont_mapping_blocks{10}++;
+		$cont_mapping_length{10}++
+	    }	    
+
+	    $cont_mapping_length = $l;
+	}
+    } else {
+	$cont_mapping_length = $l;
+    }
     
     my $c_oom = $oom;
     
@@ -212,8 +226,12 @@ foreach my $chr ($support->sort_chromosomes) {
       }
       $c_oom--;
     }
-    $blocks{10}++ if ($l == 1);
+    if ($l == 1) {
+	$blocks{10}++ ;
+	$blocklength{10}++;
+    }
 
+    $previous_sl = $sl;
     $alignments++;
   }  
   
@@ -221,7 +239,7 @@ foreach my $chr ($support->sort_chromosomes) {
   $support->log("\n");
   
   $support->log(sprintf($fmt1, "Reference toplevel seq_region length:",
-      $support->commify($R_slice->length)), 2);
+      $support->commify($R_new_assembly_slice->length)), 2);
   $support->log(sprintf($fmt1, "Alternative toplevel seq_region length:",
       $support->commify($A_chr_length)), 2);
   $support->log(sprintf($fmt1, "Non-N sequence length (alternative):",
@@ -240,6 +258,19 @@ foreach my $chr ($support->sort_chromosomes) {
       my $from = 10**$i;
       my $to = 10**($i+1);
       $support->log(sprintf($fmt3, "    ".$support->commify($from)." - ".$support->commify($to)." bp:", $blocks{$to}, $blocklength{$to}/$A_length*100), 2);
+    }
+  }
+  
+  $support->log("\n");
+
+
+  $support->log(sprintf($fmt4, "Continuous alignment runs (gaps up to 10bp):", $alignments, "Mapping %"), 2);
+  
+  if ($alignments) {
+    for (my $i = 0; $i < $oom; $i++) {
+      my $from = 10**$i;
+      my $to = 10**($i+1);
+      $support->log(sprintf($fmt3, "    ".$support->commify($from)." - ".$support->commify($to)." bp:", $cont_mapping_blocks{$to}, $cont_mapping_length{$to}/$A_length*100), 2);
     }
   }
   
