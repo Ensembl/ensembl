@@ -435,8 +435,9 @@ sub upload_xref_object_graphs {
 
 
     # disable error handling here as we'll do it ourselves
-    $xref_sth->{RaiseError} = 0;
-    $xref_sth->{PrintError} = 0;
+    # reenabled it, as errorcodes are really unhelpful
+    $xref_sth->{RaiseError} = 1;
+    $xref_sth->{PrintError} = 1;
 
     #################################################################################
     # End of sql needed to add xrefs, primary_xrefs, synonym, dependent_xrefs etc..
