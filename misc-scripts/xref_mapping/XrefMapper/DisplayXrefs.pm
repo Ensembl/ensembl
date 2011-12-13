@@ -1286,7 +1286,7 @@ my $sql =(<<SQL);
     source_id INT NOT NULL,
     priority       INT NOT NULL,
     PRIMARY KEY (source_id)
-  ) COLLATE=latin1_swedish_ci TYPE=InnoDB
+  ) COLLATE=latin1_swedish_ci ENGINE=InnoDB
 SQL
 
   my $sth = $self->xref->dbc->prepare($sql);
@@ -1573,7 +1573,7 @@ sub set_gene_descriptions{
     source_id INT NOT NULL,
     priority       INT NOT NULL,
     PRIMARY KEY (source_id)
-  ) COLLATE=latin1_swedish_ci TYPE=InnoDB
+  ) COLLATE=latin1_swedish_ci ENGINE=InnoDB
 SQL
 
   $sth = $self->xref->dbc->prepare($sql);
