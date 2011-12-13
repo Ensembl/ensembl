@@ -34,8 +34,8 @@ sub run {
   my $add_xref_sth =
     $self->dbi()
     ->prepare( "INSERT INTO xref "
-        . "(accession,version,label,description,source_id,species_id, info_type) "
-        . "VALUES(?,?,?,?,?,?,?)" );
+        . "(accession,label,description,source_id,species_id, info_type) "
+        . "VALUES(?,?,?,?,?,?)" );
 
   my $dir = dirname($file);
 
@@ -67,8 +67,8 @@ sub run {
             $count{INTERPRO}++;
             if (
                 !$add_xref_sth->execute(
-                    $interpro, '',         $short_name,
-                    $name,     $source_id, $species_id, 'MISC'
+                    $interpro, $short_name,
+                    $name, $source_id, $species_id, 'MISC'
                 )
               )
             {
