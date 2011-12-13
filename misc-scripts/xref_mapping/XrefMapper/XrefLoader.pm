@@ -558,6 +558,7 @@ GSQL
   $get_xref_interpro_sth->bind_columns(\$xref_id, \$acc, \$version, \$label, \$desc, \$type, \$info);
   
   while($get_xref_interpro_sth->fetch){
+    $version||='0';
     $add_xref_sth->execute(($xref_id+$xref_offset), $ex_id, $acc, $label, $version, $desc, 'UNMAPPED', $info);
     $set_unmapped_sth->execute($analysis_id, $ex_id, $acc, $reason_id{"NO_MAPPING"} );
     push @xref_list, $xref_id;
