@@ -510,7 +510,13 @@ sub _set_opts_from_hostname {
 sub _hostname_opts_from_config {
   my ($self) = @_;
   my $hostname_opts = {};
-  my $target_dir = 'release-' . ($self->opts()->{version} || q{});
+  my $target_dir;
+  if($self->opts()->{version}) {
+    $target_dir = 'release-' . $self->opts()->{version};
+  }
+  else {
+    $target_dir = 'dumps';
+  }
   
   my $defaults = $self->opts()->{defaults};
   open my $fh, '<', $defaults or confess "Cannot open defaults file '$defaults' for reading: $!";
