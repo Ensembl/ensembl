@@ -749,6 +749,13 @@ form of an entry is
   port = 3306               ; port of the DB
   pattern = ^homo_sap\w+$   ; regular expression to filter DBs by
   dir = /path/to/dump/dir   ;
+  
+  ;more complex
+  [other-server-name]
+  port = 3306               ; port of the DB
+  pattern = ^web\w+$        ; regular expression to filter DBs by
+  dir = /path/to/dump/dir   ;
+  sql = 1                   ; dump just the SQL for these databases
 
 
 As an example of one which grabs all core dbs from a-m and puts it in /dumps
