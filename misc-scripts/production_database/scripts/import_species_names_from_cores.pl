@@ -371,6 +371,10 @@ User for the production database
 
 Pass for the production database
 
+=item B<-md|--mdatabase>
+
+Database name for the production database
+
 =item B<--pattern>
 
 Pattern to apply to filter databases by. Should be a regular expression

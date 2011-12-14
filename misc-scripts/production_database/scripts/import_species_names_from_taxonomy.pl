@@ -320,6 +320,10 @@ Username for the taxonomy database
 
 Password for the taxonomy database
 
+=item B<-d|--database>
+
+Database name for the taxonomy database
+
 =item B<-mh|--mhost>
 
 Host for the production database
@@ -335,6 +339,10 @@ User for the production database
 =item B<-mp|--mpass>
 
 Pass for the production database
+
+=item B<-md|--mdatabase>
+
+Database name for the production database
 
 =item B<--taxon>
 
