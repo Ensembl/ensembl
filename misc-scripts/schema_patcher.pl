@@ -337,11 +337,15 @@ while ( $sth->fetch() ) {
       $species = $value;
     }
     elsif ( $key eq 'patch' ) {
-      $value =~ /^(patch_\d+_(\d+)_?[a-z]?\.sql)\|(.*)$/;
-      my $patch_ident   = $1;
-      my $patch_release = $2;
-      my $patch_info    = $3;
-      $dbpatches{$patch_release}{$patch_ident} = $patch_info;
+      if($value =~ /^(patch_\d+_(\d+)_?[a-z]?\.sql)\|(.*)$/) {
+        my $patch_ident   = $1;
+        my $patch_release = $2;
+        my $patch_info    = $3;
+        $dbpatches{$patch_release}{$patch_ident} = $patch_info;
+      }
+      else {
+        warn "The patch value $value from database $database does not conform to the pattern of 'patch_from_to_tag|description'. Please fix";
+      }
     }
   } ## end while ( $sth2->fetch() )
 
