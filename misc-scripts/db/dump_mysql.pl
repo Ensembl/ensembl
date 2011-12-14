@@ -85,14 +85,7 @@ sub check {
 
   my @required_params;
 
-  if ($o->{defaults}) {
-    @required_params = qw/version/;
-    pod2usage(
-              -message => '-pattern is not supported with -defaults mode',
-              -verbose => 1,
-              -exitval => 1
-    ) if $o->{pattern};
-  } else {
+  if (! $o->{defaults}) {
     @required_params = qw/host username/;
     pod2usage(
               -message => '-pattern is not supported with -databases mode',
@@ -147,14 +140,6 @@ sub defaults {
   if(! $o->{username}) {
     pod2usage(
       -msg     => 'No -username given on the command line',
-      -exitval => 1,
-      -verbose => 0
-    );
-  }
-  
-  if(! defined $o->{password}) {
-    pod2usage(
-      -msg     => 'No -password given on the command line',
       -exitval => 1,
       -verbose => 0
     );
@@ -525,7 +510,7 @@ sub _set_opts_from_hostname {
 sub _hostname_opts_from_config {
   my ($self) = @_;
   my $hostname_opts = {};
-  my $target_dir = 'release-' . $self->opts()->{version};
+  my $target_dir = 'release-' . ($self->opts()->{version} || q{});
   
   my $defaults = $self->opts()->{defaults};
   open my $fh, '<', $defaults or confess "Cannot open defaults file '$defaults' for reading: $!";
