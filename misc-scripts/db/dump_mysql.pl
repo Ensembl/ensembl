@@ -503,6 +503,9 @@ sub _set_opts_from_hostname {
   #Setup default connection params
   $o->{host}     = $host;
   $o->{port}     = $settings->{port};
+  
+  #Set just SQL dump mode only if specified in cfg file
+  $o->{sql}      = $settings->{sql} if $settings->{sql};
 
   if (!$o->{databases}) {
     my $opts_pattern = $o->{pattern};
