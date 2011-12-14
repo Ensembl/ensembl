@@ -21,7 +21,7 @@ Required arguments:
  
 Optional arguments:
 
-  -n, --dry, --dry_run=0|1            don't write results to database
+  -n, --dry, --dry_run                don't write results to database
   -h, --help, -?                      print help (this message)
 
 Please note that where an argument expects a value, this is true for all
