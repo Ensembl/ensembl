@@ -1636,7 +1636,7 @@ sub get_wanted_chromosomes {
 
   Arg[1]      : B::E::Slice
   Arg[2]      : B::E::DBAdaptor (optional, if you don't supply one then the *first* one you generated is returned, which may or may not be what you want!)
-  Example     : $genes = $support->get_unique_genes($slice,[$dba]);
+  Example     : $genes = $support->get_unique_genes($slice,$dba);
   Description : Retrieve genes that are only on the slice itself - used for human where assembly patches
                 are in the assembly_exception table. Needs the PATCHes to have 'non_ref' seq_region_attributes.
   Return type : arrayref of genes
@@ -1655,7 +1655,6 @@ sub get_unique_genes {
   my $ga    = $dba->get_adaptor('Gene');
   my $patch = 0;
   my $genes = [];
-
   if ( ! $slice->is_reference() ) {
     $patch = 1;
     my $slices = $sa->fetch_by_region_unique( $slice->coord_system_name(),$slice->seq_region_name() );
