@@ -448,7 +448,7 @@ INSERT INTO meta (species_id, meta_key, meta_value) VALUES
 INSERT INTO meta (species_id, meta_key, meta_value) VALUES
   (NULL, 'patch', 'patch_65_66_a.sql|schema_version'),
   (NULL, 'patch', 'patch_65_66_b.sql|fix_external_db_id'),
-  (NULL, 'patch', 'patch_65_66_ak4-2.sql|reorder_unmapped_obj_index')
+  (NULL, 'patch', 'patch_65_66_c.sql|reorder_unmapped_obj_index')
  ;
 
 /**
