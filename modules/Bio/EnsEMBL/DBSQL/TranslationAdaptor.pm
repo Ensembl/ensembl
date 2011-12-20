@@ -872,4 +872,32 @@ sub get_stable_entry_info {
   return 1;
 }
 
+=head2 fetch_all
+
+  Example     : $translations = $translation_adaptor->fetch_all();
+  Description : Retrieves all canonical and alternative translations 
+                stored in the database.
+  Returntype  : listref of Bio::EnsEMBL::Translation
+  Caller      : general
+  Status      : At Risk
+
+=cut
+
+sub fetch_all {
+  my ($self) = @_;
+  my $transcript_adaptor = $self->db()->get_TranscriptAdaptor();
+
+  my @translations;
+  foreach my $transcript (@{$transcript_adaptor->fetch_all}) {
+     my $translation = $self->fetch_by_Transcript($transcript);
+     if ($translation) {
+	 push @translations, $translation;
+     }
+     foreach my $alt_translation (@{$self->fetch_all_alternative_by_Transcript($transcript)}) {
+	 push @translations, $alt_translation;
+     }
+  }
+  return \@translations;
+}
+
 1;
