@@ -652,8 +652,8 @@ Note that a transcript is usually associated with a translation, but may not be,
 @column biotype                     Biotype, e.g. protein_coding.
 @column status                      Status, e.g.'KNOWN', 'NOVEL', 'PUTATIVE', 'PREDICTED', 'KNOWN_BY_PROJECTION', 'UNKNOWN'.
 @column description                 Transcript description.
-@column is_current
-@column canonical_translation_id    Foreign key references to the @link canonical_translation table.
+@column is_current		    Indicates a current transcript.
+@column canonical_translation_id    Foreign key references to the @link translation table.
 @column stable_id		    Release-independent stable identifier.
 @column version              	    Stable identifier version number.
 @column created_date         	    Date created.
