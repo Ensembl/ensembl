@@ -577,7 +577,7 @@ sub fill_documentation {
 			}
 		}
 		elsif ($tag eq 'column') {
-			$tag_content =~ /(\w+)[\s\t]+(.+)/;
+			$tag_content =~ /(\w+)[\s\t]+(.*)/;
 			
 			my $column = { 'name'    => $1,
 								     'type'    => '',
@@ -585,6 +585,9 @@ sub fill_documentation {
 								     'index'   => '',
 						         'desc'    => $2
 							     };
+			if ($2 eq '') {
+				print STDERR "COLUMN: The description content of the column '$1' is missing in the table $table!\n";
+			}
 			push(@{$documentation->{$header}{'tables'}{$table}{$tag}},$column);
 		}
 		else{
