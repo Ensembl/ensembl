@@ -251,22 +251,33 @@ sub run {
 	if(!defined($cerevisiae_set)){
 	  $cerevisiae_set = 1;
 	  # Todo: Make sure we get this hash populated
-	  %cerevisiae = %{$self->get_valid_codes("sgd",$species_id)};
+	  %cerevisiae = %{$self->get_valid_codes("sgd_transcript",$species_id)};
 	  
-	  print "Got " . keys (%cerevisiae) . " cerevisiae ids\n";
+	  print STDERR "Got " . keys (%cerevisiae) . " cerevisiae ids\n";
 	  
 	}
 	
 	if($cerevisiae{$array[1]}){
 	  foreach my $xref_id (@{$cerevisiae{$array[1]}}){
-	    $self->add_dependent_xref({ master_xref_id => $xref_id,
-					acc            => $array[4],
-					label          => $array[4],
-					desc           => $go_to_desc{$array[4]} || '',
-					linkage        => $array[6],
-					source_id      => $source_id,
-					species_id     => $species_id} );
-	    $count++;
+
+	      my $label = $array[2];
+	      #print STDERR "GO SGD label: $label\n";
+
+	      # Only keep GO annotations for protein_coding genes
+	      # as the other annotations would get attached to transcript objects, instead of translations, 
+	      # GO attached to Transcripts used to break the webcode display and Biomart, although not a problem aymore !?
+
+	      if ((($label !~ /^t\w\(/) && ($label !~ /^\d+/) && ($label !~ /^RDN/)
+		  && ($label !~ /^snR/) && ($label !~ /^LSR/) && ($label !~ /^R|^T|^S|^P|^I|^H/))) {
+		  $self->add_dependent_xref({ master_xref_id => $xref_id,
+					      acc            => $array[4],
+					      label          => $array[4],
+					      desc           => $go_to_desc{$array[4]} || '',
+					      linkage        => $array[6],
+					      source_id      => $source_id,
+					      species_id     => $species_id} );
+		  $count++;
+	      }
 	  }
 	}
       }
