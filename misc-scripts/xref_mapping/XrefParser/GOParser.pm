@@ -267,8 +267,9 @@ sub run {
 	      # as the other annotations would get attached to transcript objects, instead of translations, 
 	      # GO attached to Transcripts used to break the webcode display and Biomart, although not a problem aymore !?
 
-	      if ((($label !~ /^t\w\(/) && ($label !~ /^\d+/) && ($label !~ /^RDN/)
-		  && ($label !~ /^snR/) && ($label !~ /^LSR/) && ($label !~ /^R|^T|^S|^P|^I|^H/))) {
+	      if (($label !~ /^t\w\(/) && ($label !~ /^\d+/) && ($label !~ /^RDN/)
+		  && ($label !~ /^snR/) && ($label !~ /^LSR/) && ($label !~ /^R|^T|^S|^P|^I|^H/)
+		  && ($label !~ /^EMT\d/) && ($label !~ /^FDH\d/) ($label !~ /^NME\d/) && ($label !~ /^CDC\d+/)) {
 		  $self->add_dependent_xref({ master_xref_id => $xref_id,
 					      acc            => $array[4],
 					      label          => $array[4],
