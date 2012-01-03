@@ -122,8 +122,9 @@ homo_sapiens_rnaseq_65_37 -verify  >& verify.OUT
 
 If the cdna databases are not yet ready then remove the "-cdna
 homo_sapiens_cdna_65_37" bit and continue but let who ever is building
-this database know that you are doing the LRGs so that they get the same
-data.
+this database know that you are doing the LRGs. They should wait until 
+LRGs import is complete and can use all of the assembly info from core, 
+including the LRG data to build the cDNA db.
 
 Run the parsing
 ---------------
