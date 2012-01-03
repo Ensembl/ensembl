@@ -316,7 +316,7 @@ So for mapper1.out
 >Options: -file xref_input
 >running in verbose mode
 
-Informs the user how the mapper was ran
+Informs the user how the mapper was run
 
 >current status is parsing_finished
 
@@ -377,8 +377,8 @@ chosen at this point.
 >	NEW	2733
 >2733 new relationships added
 
-For some xrefs thet can be considered as being paied i.e. RefSeq_Peptide and 
-RefSeq_mrna so if we match one of these but not its pair then we add this 
+For some xrefs that can be considered as being paired i.e. RefSeq_Peptide and 
+RefSeq_mrna, if we match one of these but not its pair then we add this 
 relationship in now.
 
 
@@ -440,14 +440,12 @@ only ever in the core database and are left alone, these are sources like OTTG,
 OTTT, Vega_translation as these are set by the merging code (used by the 
 genebuilders to produce the core database). 
 
-NOTE: The xrefs are updated by deleted the sources it is updating and then adding
+NOTE: The xrefs are updated by deleting the sources it is updating and then adding
 the new ones, so if we are not updating a source it will still stay in the core
 database.
 
 
 >xref_mapper.pl FINISHED NORMALLY
-
-The script has finished normally after 
 
 
 
@@ -460,7 +458,7 @@ mapper2.out gives a sample output for this.
 >current status is tests_finished
 
 Report the current status of the xref_database. This is used to work out what 
-to do next. So we can see here that the test are finished and we are ready to 
+to do next. We can see here that the tests are finished and we are ready to 
 load the data.
 
 
