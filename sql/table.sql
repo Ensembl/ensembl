@@ -440,7 +440,7 @@ CREATE TABLE IF NOT EXISTS meta (
 # Add schema type and schema version to the meta table.
 INSERT INTO meta (species_id, meta_key, meta_value) VALUES
   (NULL, 'schema_type',     'core'),
-  (NULL, 'schema_version',  '65');
+  (NULL, 'schema_version',  '66');
 
 # Patches included in this schema file:
 # NOTE: At start of release cycle, remove patch entries from last release.
@@ -1096,7 +1096,7 @@ CREATE TABLE dna_align_feature (
   evalue                      DOUBLE,
   perc_ident                  FLOAT,
   cigar_line                  TEXT,
-  external_db_id              SMALLINT UNSIGNED,
+  external_db_id              INTEGER UNSIGNED,
   hcoverage                   DOUBLE,
   external_data               TEXT,
   pair_dna_align_feature_id   INT(10) UNSIGNED,
@@ -1498,7 +1498,7 @@ CREATE TABLE protein_align_feature (
   evalue                      DOUBLE,
   perc_ident                  FLOAT,
   cigar_line                  TEXT,
-  external_db_id              SMALLINT UNSIGNED,
+  external_db_id              INTEGER UNSIGNED,
   hcoverage                   DOUBLE,
 
   PRIMARY KEY (protein_align_feature_id),
@@ -2158,7 +2158,7 @@ CREATE TABLE dependent_xref(
 
 CREATE TABLE external_db (
 
-  external_db_id              SMALLINT UNSIGNED NOT NULL,
+  external_db_id              INTEGER UNSIGNED NOT NULL,
   db_name                     VARCHAR(100) NOT NULL,
   db_release                  VARCHAR(255),
   status                      ENUM('KNOWNXREF','KNOWN','XREF','PRED','ORTH',
@@ -2319,6 +2319,7 @@ CREATE TABLE ontology_xref (
   linkage_type            VARCHAR(3) DEFAULT NULL,
 
   KEY source_idx (source_xref_id),
+  KEY object_idx (object_xref_id),
   UNIQUE KEY object_source_type_idx (object_xref_id, source_xref_id, linkage_type)
 
 ) COLLATE=latin1_swedish_ci ENGINE=MyISAM;
@@ -2340,7 +2341,7 @@ CREATE TABLE seq_region_synonym (
   seq_region_synonym_id       INT UNSIGNED NOT NULL  AUTO_INCREMENT,
   seq_region_id               INT(10) UNSIGNED NOT NULL,
   synonym                     VARCHAR(40) NOT NULL,
-  external_db_id              SMALLINT UNSIGNED,
+  external_db_id              INTEGER UNSIGNED,
 
   PRIMARY KEY (seq_region_synonym_id),
   UNIQUE KEY syn_idx (synonym),
@@ -2376,7 +2377,7 @@ CREATE TABLE unmapped_object (
   unmapped_object_id    INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
   type                  ENUM('xref', 'cDNA', 'Marker') NOT NULL,
   analysis_id           SMALLINT UNSIGNED NOT NULL,
-  external_db_id        SMALLINT UNSIGNED,
+  external_db_id        INTEGER UNSIGNED,
   identifier            VARCHAR(255) NOT NULL,
   unmapped_reason_id    SMALLINT(5) UNSIGNED NOT NULL,
   query_score           DOUBLE,
@@ -2387,7 +2388,7 @@ CREATE TABLE unmapped_object (
   parent                VARCHAR(255) DEFAULT NULL,
 
   PRIMARY KEY (unmapped_object_id),
-  UNIQUE KEY unique_unmapped_obj_idx (identifier, ensembl_id, parent, unmapped_reason_id, ensembl_object_type, external_db_id),
+  UNIQUE KEY unique_unmapped_obj_idx (ensembl_id, ensembl_object_type, identifier, unmapped_reason_id,parent, external_db_id),
   KEY id_idx (identifier(50)),
   KEY anal_exdb_idx (analysis_id, external_db_id),
   KEY ext_db_identifier_idx (external_db_id, identifier)
@@ -2441,7 +2442,7 @@ Information about the database that the external object is stored in is held in 
 CREATE TABLE xref (
 
    xref_id                    INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-   external_db_id             SMALLINT UNSIGNED NOT NULL,
+   external_db_id             INTEGER UNSIGNED NOT NULL,
    dbprimary_acc              VARCHAR(40) NOT NULL,
    display_label              VARCHAR(128) NOT NULL,
    version                    VARCHAR(10) DEFAULT '0' NOT NULL,
