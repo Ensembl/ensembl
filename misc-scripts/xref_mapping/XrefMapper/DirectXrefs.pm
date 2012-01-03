@@ -126,7 +126,7 @@ SQL
      if(defined($linkage_type) and $linkage_type ne ""){
        $insert_go_sth->execute($object_xref_id, $linkage_type);
      }
-     $self->process_dependents({master_xref        => \@master_xref_ids,
+     $self->process_dependents({master_xrefs        => \@master_xref_ids,
 				max_object_xref_id => \$object_xref_id,
 				dup_count          => \$duplicate_dependent_count,
 				table              => $table,
