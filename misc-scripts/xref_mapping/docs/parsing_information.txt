@@ -230,7 +230,7 @@ The HUman Genome Organisation Xrefs are obtained from various sources:-
 
 1) HGNC (ensembl_mapped)
 HGNC has direct mapping to ensembl which have been manually curated. 
-So information is obtianed from the script http://www.genenames.org/cgi-bin/hgnc_downloads.cgi
+So information is obtained from the script http://www.genenames.org/cgi-bin/hgnc_downloads.cgi
 
 2) CCDS 
 The HGNC's are connected to the same ensembl object that the CCDS are linked 
@@ -289,7 +289,7 @@ Rat
 RGD
 --
 
-Rat Genome Database entries are populate by using the file
+Rat Genome Database entries are populated by using the file
 
     ftp://rgd.mcw.edu/pub/data_release/GENES
 
