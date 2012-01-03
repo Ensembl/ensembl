@@ -75,7 +75,7 @@ use Bio::EnsEMBL::IdMapping::ScoredMappingMatrix;
 
 =cut
 
-#
+# TODO: shrinked = shrunken?
 sub create_shrinked_matrix {
   my $self = shift;
   my $matrix = shift;
