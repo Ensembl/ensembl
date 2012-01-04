@@ -1776,11 +1776,18 @@ sub load_registry_from_db {
            "Bio::EnsEMBL::Variation::DBSQL::DBAdaptor module not found "
              . "so variation databases will be ignored if found\n" );
     }
-  } else {
+  } 
+  else {
     my @variation_dbs =
       grep { /^[a-z]+_[a-z0-9]+_variation_(?:\d+_)?\d+_/ } @dbnames;
 
     for my $variation_db (@variation_dbs) {
+	
+      if ( index( $variation_db, 'collection' ) != -1 ) {
+	  # Skip multi-species databases.
+	  next;
+      }
+
       my ( $species, $num ) =
         ( $variation_db =~ /(^[a-z]+_[a-z0-9]+)_variation_(?:\d+_)?(\d+)_/ );
       my $dba =
@@ -1796,9 +1803,47 @@ sub load_registry_from_db {
                                          -no_cache     => $no_cache );
 
       if ($verbose) {
-        printf( "%s loaded\n", $variation_db );
+	  printf( "%s loaded\n", $variation_db );
       }
     }
+
+    # Register variation multispecies databases
+    my @variation_multidbs =
+      grep { /^\w+_collection_variation_\w+$/ } @dbnames;
+
+    foreach my $multidb (@variation_multidbs) {
+      my $sth = $dbh->prepare(
+        sprintf( 'SELECT species_id, meta_value FROM %s.meta ',
+          $dbh->quote_identifier($multidb) )
+           . "WHERE meta_key = 'species.db_name'"
+      );
+
+      $sth->execute();
+
+      my ( $species_id, $species );
+      $sth->bind_columns( \( $species_id, $species ) );
+
+      while ( $sth->fetch() ) {
+        my $dba = Bio::EnsEMBL::Variation::DBSQL::DBAdaptor->new(
+          -group           => 'variation',
+          -species         => $species.$species_suffix,
+          -species_id      => $species_id,
+          -multispecies_db => 1,
+          -host            => $host,
+          -user            => $user,
+          -pass            => $pass,
+          -port            => $port,
+          -dbname          => $multidb,
+          -wait_timeout    => $wait_timeout,
+          -no_cache        => $no_cache
+        );
+
+        if ($verbose) {
+          printf( "Species '%s' (id:%d) loaded from database '%s'\n",
+            $species, $species_id, $multidb );
+        }
+      }
+    } ## end foreach my $multidb (@variation_multidbs)
   }
 
   my $func_eval = eval "require Bio::EnsEMBL::Funcgen::DBSQL::DBAdaptor";
