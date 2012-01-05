@@ -272,7 +272,7 @@ sub check_for_stops {
     my $mrna   = $trans->translateable_seq;
     my $offset = 0;
     my $tstop;
-    while ($pseq =~ /([^\*]+)\*(.*)/) {
+    while ($pseq =~ /^([^\*]*)\*(.*)/) {
       my $pseq1_f = $1;
       $pseq = $2;
       my $seq_flag = 0;
@@ -362,7 +362,7 @@ sub check_for_stops {
             $log_object->_save_log('log_warning', '', $gene->stable_id, 'PEPTIDE', $tsi, 'VQCT_wrong_selC_coord', "PEPTIDE: Annotated stop for transcript $tsi ($tname) is out by one) [$mod_date]");
           }
           elsif (defined($offset)  && ($offset=~/^\d+$/)){
-            if ($offset == length($pseq)) {
+            if ($offset == length($orig_seq)+1) {
               $log_object->_save_log('log', '', $gene->stable_id, 'TRANSCRIPT', $tsi, '', "Annotated stop for transcript $tsi ($tname) \"$offset\" matches actual stop codon, sounds like an anacode bug to me [$mod_date]");
             }
             else {
