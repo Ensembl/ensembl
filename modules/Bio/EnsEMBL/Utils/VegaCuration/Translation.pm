@@ -272,7 +272,7 @@ sub check_for_stops {
     my $mrna   = $trans->translateable_seq;
     my $offset = 0;
     my $tstop;
-    while ($pseq =~ /([^\*]+)\*(.*)/) {
+    while ($pseq =~ /^([^\*]*)\*(.*)/) {
       my $pseq1_f = $1;
       $pseq = $2;
       my $seq_flag = 0;
