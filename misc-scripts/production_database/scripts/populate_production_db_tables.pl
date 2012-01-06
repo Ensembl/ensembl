@@ -46,7 +46,7 @@ if ( !GetOptions( 'mhost|mh=s'     => \$mhost,
                   'table|t=s'      => \@tables,
                   'verbose|v!'     => \$verbose,
                   'core=i'         => \$core,
-                  'dropbaks|dB=s'  => \$dropbaks,
+                  'dropbaks|dB!'  => \$dropbaks,
                   'dumppath|dp=s'  => \$dumppath )
      ||
      !( defined($host) &&
