@@ -311,7 +311,7 @@ sub create_xrefs {
     @all_lines = split /\n/, $description_and_rest;
 
     # extract ^DE lines only & build cumulative description string
-    my $description = " ";
+    my $description = "";
     my $name        = "";
     my $sub_description = "";
 
@@ -321,12 +321,15 @@ sub create_xrefs {
 
       # get the data
       if($line =~ /^DE   RecName: Full=(.*);/){
+        $name .= '; ' if $name ne q{}; #separate multiple sub-names with a '; '
         $name .= $1;
       }
       elsif($line =~ /RecName: Full=(.*);/){
+        $description .= ' ' if $description ne q{}; #separate the description bit with just a space
         $description .= $1;
       }
       elsif($line =~ /SubName: Full=(.*);/){
+        $name .= '; ' if $name ne q{}; #separate multiple sub-names with a '; '
         $name .= $1;
       }
 
@@ -335,7 +338,7 @@ sub create_xrefs {
       $description =~ s/\s*$//g;
 
       
-      my $desc = $name.$description;
+      my $desc = $name.' '.$description;
       if(!length($desc)){
 	$desc = $sub_description;
       }
