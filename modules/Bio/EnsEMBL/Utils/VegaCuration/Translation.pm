@@ -205,7 +205,9 @@ sub get_havana_seleno_comments {
     my ($obj,$comment) = split /=/;
     $obj =~ s/^\s+|\s+$//g;
     $comment =~ s/^\s+|\s+$//g;
-    $seen_translations->{$obj} = $comment;
+    # We add the origin as now "seen" can come from a number of places, and have
+    # a number of consequences in different cases, not just discounted Secs from this method. -- ds23
+    $seen_translations->{$obj} = [ $comment,"notsec-havana" ];
   }
   return $seen_translations;
 }
@@ -263,7 +265,9 @@ sub check_for_stops {
     my $pseq = $peptide->seq;
     my $orig_seq = $pseq;
     # (translate method trims stops from sequence end)
+
     next TRANS unless ($pseq =~ /\*/);
+    # warn sprintf("Stop codon is '%s'\n",substr($trans->translateable_seq,-3));
     #$support->log_verbose("Stops found in $tsi ($tname)\n",1);
     $log_object->_save_log('log_verbose', '', $gsi, '', $tsi, '', "Stops found in $tsi ($tname)");
 
@@ -363,7 +367,11 @@ sub check_for_stops {
           }
           elsif (defined($offset)  && ($offset=~/^\d+$/)){
             if ($offset == length($orig_seq)+1) {
-              $log_object->_save_log('log', '', $gene->stable_id, 'TRANSCRIPT', $tsi, '', "Annotated stop for transcript $tsi ($tname) \"$offset\" matches actual stop codon, sounds like an anacode bug to me [$mod_date]");
+              if($seen_transcripts->{$tsi}->[1] eq 'known-tga-stop') {
+                $log_object->_save_log('log', '', $gene->stable_id, 'TRANSCRIPT', $tsi, '', "Annotated stop for transcript $tsi ($tname) known to be a stop codon. Ok. [$mod_date]");
+              } else {
+                $log_object->_save_log('log_warning', '', $gene->stable_id, 'TRANSCRIPT', $tsi, '', "Annotated stop for transcript $tsi ($tname) \"$offset\" matches actual stop codon yet has no entry in script config to disambiguate it. Please investigate and add appropriate entry. [$mod_date]");
+              }
             }
             else {
               $log_object->_save_log('log_warning', '', $gene->stable_id, 'TRANSCRIPT', $tsi, 'VQCT_wrong_selC_coord', "Annotated stop for transcript $tsi ($tname) \"$offset\" does not match a TGA codon) [$mod_date]");
@@ -379,9 +387,9 @@ sub check_for_stops {
         my $pos = $stop->[1];
         my $seq = $stop->[0];
         unless ( grep { $pos == $_} @annotated_stops) {
-          if ($seen_transcripts->{$tsi}) {
+          if ($seen_transcripts->{$tsi} && $seen_transcripts->{$tsi}->[1] eq 'notsec-havana') {
             #$support->log_verbose("Transcript $tsi ($tname) has potential selenocysteines but has been discounted by annotators:\n\t".$seen_transcripts->{$tsi}.") [$mod_date]\n");
-            $log_object->_save_log('log_verbose', '', $gene->stable_id, '', $tsi, 'VQCT_pot_selC', "Transcript $tsi ($tname) has potential selenocysteines but has been discounted by annotators: ".$seen_transcripts->{$tsi}.") [$mod_date]");
+            $log_object->_save_log('log_verbose', '', $gene->stable_id, '', $tsi, 'VQCT_pot_selC', "Transcript $tsi ($tname) has potential selenocysteines but has been discounted by annotators: ".$seen_transcripts->{$tsi}->[0].") [$mod_date]");
           }
           else {
             #$support->log("POTENTIAL SELENO ($seq) in $tsi ($tname, gene $gname) found at $pos [$mod_date]\n");
