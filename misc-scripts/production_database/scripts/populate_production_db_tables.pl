@@ -28,6 +28,7 @@ my $dbpattern;
 
 my $core    = 0;
 my $verbose = 0;
+my $dropbaks = 0;
 my $dumppath;
 
 # Do command line parsing.
@@ -45,6 +46,7 @@ if ( !GetOptions( 'mhost|mh=s'     => \$mhost,
                   'table|t=s'      => \@tables,
                   'verbose|v!'     => \$verbose,
                   'core=i'         => \$core,
+                  'dropbaks|dB=s'  => \$dropbaks,
                   'dumppath|dp=s'  => \$dumppath )
      ||
      !( defined($host) &&
@@ -66,7 +68,7 @@ Usage:
   $0 -h host [-P port] \\
   $indent -u user [-p password]
   $indent -d database | --pattern pattern \\
-  $indent -dp dumppath
+  $indent -dp dumppath & -dB \\
   $indent [-mh host] [-mP port] \\
   $indent [-mu user] [-mp password] [-md database] \\
   $indent [-t table] [-t table] [-t ...] \\
@@ -83,7 +85,8 @@ Usage:
                     or   --database="%core_62%".
 
   -dp / --dumppath  Dump path.
-                    Back-up tables into the specified directory path.
+                    Back-up tables into the specified directory path. If you are
+                    using --dropbaks you must specify this option
 
   --pattern         User database by Perl regular expression,
                     e.g. --pattern="^homo.*(rnaseq|vega)_62".
@@ -110,6 +113,12 @@ Usage:
   -t / --table      A specific table to update, may occur several times,
                     must be one of the tables attrib_type, external_db,
                     misc_set, or unmapped_reason.
+  
+  -dB / --dropbaks  Forces the dropping of the _bak tables created as part
+                    of this script's run. Normally we would suggest you keep
+                    this option off unless you know you do not want these. You
+                    must run this option with --dumppath to avoid unintentional
+                    data loss.
 
   -v / --verbose    Be verbose, display every SQL statement as they
                     are executed (on standard error).
@@ -121,6 +130,13 @@ USAGE_END
        "-h -u -p -d (or --pattern) and -dp\n" );
 
 } ## end if ( !GetOptions( 'mhost|mh=s'...))
+
+if($dropbaks && ! defined $dumppath ) {
+  die "If you are specifying --dropbaks you must specify a --dumppath";
+}
+if(defined $dumppath && ! -d $dumppath) {
+  die "--dumppath $dumppath does not exist or is not a directory";
+}
 
 if (@tables) {
   foreach my $table (@tables) {
@@ -191,6 +207,8 @@ my %data;
     print( '=' x 80, "\n" );
     printf( "\t%s\n", $dbname );
     print( '=' x 80, "\n" );
+    
+    my @backup_tables;
 
     foreach my $table ( keys(%data) ) {
       printf( "==> %s: ", $table );
@@ -345,10 +363,18 @@ my %data;
           print("\n");
         }
       }
-
+      
+      push(@backup_tables, $full_table_name_bak);
     } ## end foreach my $table ( keys(%data...))
     continue {
       print("\n");
+    }
+    
+    if($dropbaks) {
+      foreach my $backup_table (@backup_tables) {
+        printf("Dropping the backup table %s\n", $backup_table);
+        $dbh->do("drop table $backup_table");
+      }
     }
 
     print("\n");
