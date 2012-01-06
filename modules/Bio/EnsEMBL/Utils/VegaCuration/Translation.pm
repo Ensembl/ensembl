@@ -367,7 +367,7 @@ sub check_for_stops {
           }
           elsif (defined($offset)  && ($offset=~/^\d+$/)){
             if ($offset == length($orig_seq)+1) {
-              if($seen_transcripts->{$tsi}->[1] eq 'known-tga-stop') {
+              if($seen_transcripts->{$tsi} && $seen_transcripts->{$tsi}->[1] eq 'known-tga-stop') {
                 $log_object->_save_log('log', '', $gene->stable_id, 'TRANSCRIPT', $tsi, '', "Annotated stop for transcript $tsi ($tname) known to be a stop codon. Ok. [$mod_date]");
               } else {
                 $log_object->_save_log('log_warning', '', $gene->stable_id, 'TRANSCRIPT', $tsi, '', "Annotated stop for transcript $tsi ($tname) \"$offset\" matches actual stop codon yet has no entry in script config to disambiguate it. Please investigate and add appropriate entry. [$mod_date]");
