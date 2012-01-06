@@ -127,6 +127,7 @@ use Bio::EnsEMBL::Utils::Exception qw( deprecate throw warning );
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 use Bio::EnsEMBL::Utils::ConfigRegistry;
 use Bio::EnsEMBL::ApiVersion;
+use Bio::EnsEMBL::Utils::URI qw/parse_uri/;
 
 use DBI qw(:sql_types);
 
@@ -1352,6 +1353,15 @@ sub change_access{
 
   Example : load_registry_from_url(
             'mysql://anonymous@ensembldb.ensembl.org:3306');
+            
+            load_registry_from_url(
+            'mysql://anonymous@ensembldb.ensembl.org:3306/homo_sapiens_core_65_37?group=core&species=homo_sapiens'
+            );
+            
+            load_registry_from_url(
+            'mysql://anonymous@ensembldb.ensembl.org:3306/homo_sapiens_core_65_37?group=core'
+            );
+            
 
   Description: Will load the correct versions of the ensembl
                databases for the software release it can find on
@@ -1362,6 +1372,11 @@ sub change_access{
                by adding a slash and the version number but your
                script may crash as the API version won't match the
                DB version.
+               
+               You can also specify a database name which will cause the 
+               loading of a single DBAdaptor instance. Parameters are
+               mapped from a normal URL parameter set to their DBAdaptor
+               equivalent. Group must be defined.
                
   Returntype : Int count of the DBAdaptor instances which can be found in the 
                registry
@@ -1376,7 +1391,7 @@ sub change_access{
 sub load_registry_from_url {
   my ( $self, $url, $verbose, $no_cache ) = @_;
   
-  if ( $url =~ /mysql\:\/\/([^\@]+\@)?([^\:\/]+)(\:\d+)?(\/\d+)?/x ) {
+  if ( $url =~ /^mysql\:\/\/([^\@]+\@)?([^\:\/]+)(\:\d+)?(\/\d+)?$/x ) {
     my $user_pass = $1;
     my $host      = $2;
     my $port      = $3;
@@ -1397,6 +1412,23 @@ sub load_registry_from_url {
       -verbose    => $verbose,
       -no_cache   => $no_cache
     );
+  }
+  my $uri = parse_uri($url);
+  if($uri) {
+    if($uri->scheme() eq 'mysql') {
+      my %params = $uri->generate_dbsql_params();
+      if($params{-DBNAME}) {
+        $params{-SPECIES} = $params{-DBNAME} unless $params{-SPECIES};
+        $params{-NO_CACHE} = 1 if $no_cache;
+        my $group = $params{-GROUP};
+        my $class = $self->_group_to_adaptor_class($group);
+        if($verbose) {
+          printf("Loading database '%s' from group '%s' with DBAdaptor class '%s' from url %s\n", $params{-DBNAME}, $group, $class, $url);
+        }
+        $class->new(%params);
+        return 1;
+      }
+    }
   }
   throw("Only MySQL URLs are accepted. Given URL was '${url}'");
 } ## end sub load_registry_from_url
@@ -1578,14 +1610,14 @@ sub load_registry_from_db {
         $ontology_version = $1;
       }
     } elsif (
-      $db =~ /^([a-z]+_[a-z0-9]+ # species name e.g. homo_sapiens
+      $db =~ /^([a-z]+_[a-z0-9]+(?:_[a-z0-9]+)? # species name e.g. homo_sapiens or canis_lupus_familiaris
            _
            [a-z]+            # db type
            (?:_\d+)?)        # optional end bit for ensembl genomes databases
            _
            (\d+)             # database release
            _
-           (\w+)             # assembly number can have letters too e.g 37c
+           (\w+)$             # assembly number can have letters too e.g 37c
            /x
       )
     {
@@ -1614,7 +1646,7 @@ sub load_registry_from_db {
   # Register Core like databases
   foreach my $type (qw(core cdna vega otherfeatures rnaseq)) {
 
-    my @dbs = grep { /^[a-z]+_[a-z0-9]+  # species name
+    my @dbs = grep { /^[a-z]+_[a-z0-9]+(?:_[a-z0-9]+)?  # species name
                        _
                        $type            # the database type
                        _
@@ -1631,7 +1663,7 @@ sub load_registry_from_db {
     
 
       my ( $species, $num ) =
-        ( $database =~ /(^[a-z]+_[a-z0-9]+)  # species name
+        ( $database =~ /(^[a-z]+_[a-z0-9]+(?:_[a-z0-9]+)?)  # species name
                      _
                      $type                   # type
                      _
@@ -1779,7 +1811,7 @@ sub load_registry_from_db {
   } 
   else {
     my @variation_dbs =
-      grep { /^[a-z]+_[a-z0-9]+_variation_(?:\d+_)?\d+_/ } @dbnames;
+      grep { /^[a-z]+_[a-z0-9]+(?:_[a-z0-9]+)?_variation_(?:\d+_)?\d+_/ } @dbnames;
 
     for my $variation_db (@variation_dbs) {
 	
@@ -1789,7 +1821,7 @@ sub load_registry_from_db {
       }
 
       my ( $species, $num ) =
-        ( $variation_db =~ /(^[a-z]+_[a-z0-9]+)_variation_(?:\d+_)?(\d+)_/ );
+        ( $variation_db =~ /(^[a-z]+_[a-z0-9]+(?:_[a-z0-9]+)?)_variation_(?:\d+_)?(\d+)_/ );
       my $dba =
         Bio::EnsEMBL::Variation::DBSQL::DBAdaptor->new(
                                          -group        => "variation",
@@ -1856,7 +1888,7 @@ sub load_registry_from_db {
     }
   } else {
     my @funcgen_dbs =
-      grep { /^[a-z]+_[a-z0-9]+_funcgen_(?:\d+_)?\d+_/ } @dbnames;
+      grep { /^[a-z]+_[a-z0-9]+(?:_[a-z0-9]+)?_funcgen_(?:\d+_)?\d+_/ } @dbnames;
 
     for my $funcgen_db (@funcgen_dbs) {
       if ( index( $funcgen_db, 'collection' ) != -1 ) {
@@ -1865,7 +1897,7 @@ sub load_registry_from_db {
       }
 
       my ( $species, $num ) =
-        ( $funcgen_db =~ /(^[a-z]+_[a-z0-9]+)_funcgen_(?:\d+_)?(\d+)_/ );
+        ( $funcgen_db =~ /(^[a-z]+_[a-z0-9]+(?:_[a-z0-9]+)?)_funcgen_(?:\d+_)?(\d+)_/ );
       my $dba = Bio::EnsEMBL::Funcgen::DBSQL::DBAdaptor->new(
         -group        => "funcgen",
         -species      => $species.$species_suffix,
@@ -2052,6 +2084,34 @@ sub load_registry_from_db {
   return $self->get_DBAdaptor_count() - $original_count;
 
 } ## end sub load_registry_from_db
+
+=head2 _group_to_adaptor_class
+
+  Arg [1]       : The group you wish to decode to an adaptor class
+  Example       : Bio::EnsEMBL::Registry->_group_to_adaptor_class('core');
+  Description   : Has an internal lookup of groups to their adaptor classes
+  Returntype    : String
+  Exceptions    : Thrown if the group is unknown
+  Status        : Stable
+
+=cut
+
+sub _group_to_adaptor_class {
+  my ($self, $group) = @_;
+  my $class = {
+    core => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
+    cdna => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
+    otherfeatures => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
+    rnaseq => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
+    vega => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
+    variation => 'Bio::EnsEMBL::Variation::DBSQL::DBAdaptor',
+    funcgen => 'Bio::EnsEMBL::Funcgen::DBSQL::DBAdaptor',
+    compara => 'Bio::EnsEMBL::Compara::DBSQL::DBAdaptor',
+  }->{$group};
+  throw "Group '${group}' is unknown";
+  return $class;
+}
+
 
 =head2 find_and_add_aliases
 
