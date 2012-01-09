@@ -656,7 +656,11 @@ sub display_xref {
   Example       : if ($transcript->is_canonical()) { ... }
 
   Description : Returns true (non-zero) if the transcript is the
-                canonical transcript of its gene, false (0) if not.
+                canonical transcript of its gene, false (0) if not. If the code
+                returns an undefined it is because its state is not currently
+                known. Internally the code will consult the database for this
+                value if it is unknown and the transcript has a dbID and an
+                attached adaptor
 
   Return type   : Boolean
 
