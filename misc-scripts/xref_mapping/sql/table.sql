@@ -284,9 +284,9 @@ CREATE TABLE havana_status (
 CREATE TABLE process_status (
   id            INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
   status	enum('xref_created','parsing_started','parsing_finished','alt_alleles_added',
-                     'xref_fasta_dumped','core_fasta_dumped',
+                     'xref_fasta_dumped','core_fasta_dumped','core_data_loaded',
                      'mapping_submitted','mapping_finished','mapping_processed',
-                     'core_data_loaded','direct_xrefs_parsed',
+                     'direct_xrefs_parsed',
                      'prioritys_flagged','processed_pairs','biomart_test_finished',
                      'source_level_move_finished','alt_alleles_processed',	
                      'official_naming_done',
@@ -336,6 +336,7 @@ CREATE TABLE transcript_stable_id (
   internal_id                 INT UNSIGNED NOT NULL,
   stable_id                   VARCHAR(128) NOT NULL,
   display_xref_id             INT UNSIGNED DEFAULT NULL,
+  biotype                     VARCHAR(40) NOT NULL,
 
   PRIMARY KEY (stable_id),
   INDEX internal_idx (internal_id)
