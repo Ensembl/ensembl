@@ -339,7 +339,13 @@ sub check_for_stops {
             $annot_stops=$1;
           }
           elsif ($text =~ /^$alabel2(.*)/) {
-            $annot_stops=$1;
+            my $maybe = $1;
+            if($maybe =~ /^\s*\d+(\s+\d+)*\s*$/) {
+              $annot_stops=$maybe;
+            } else {
+              $log_object->_save_log('log', '', $gene->stable_id, '', $tsi, '', "Maybe annotated stop in incorrect format, maybe just a remark that happens to begin '$alabel2'".
+                                                                                " -- might need to investigate: '$alabel2$maybe' [$mod_date]");
+            }
           }
         }
       }
@@ -349,11 +355,8 @@ sub check_for_stops {
       if ($annot_stops){
         my $i = 0;
         foreach my $offset (split(/\s+/, $annot_stops)) {
-          if ($offset !~ /^\d+$/) {
-            $log_object->_save_log('log', '', $gene->stable_id, '', $tsi, '', "Annotated stop for transcript tsi ($tname) is not an integer \"$offset\" - might need to investigate [$mod_date]");
-          }
           #OK if it matches a known stop
-          elsif (
+          if (
             defined($found_stops[$i]) && defined($found_stops[$i]->[1]) && ($found_stops[$i]->[1] == $offset)) {
             push  @annotated_stops, $offset;
           }
