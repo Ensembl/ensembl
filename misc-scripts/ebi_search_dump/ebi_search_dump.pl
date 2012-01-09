@@ -463,7 +463,7 @@ g.seq_region_id=ae.seq_region_id and ae.exc_type='HAP'", [qw(gene_id)]
         print "Done Get Genes query...\n---------------------\n";
 
         my %hash = map { $_->[0] } @$gene_info;
-        my $ecount = scalar keys %hash, "\n\n";
+        my $ecount = scalar(keys(%hash)). "\n\n";
 
         my %old;
 
