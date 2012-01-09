@@ -184,16 +184,87 @@ sub process_map_file{
   local $object_xref_sth2->{PrintError}; # cut down on error messages
 
   my $identity_xref_sth = $self->xref->dbc->prepare("insert into identity_xref (object_xref_id, query_identity, target_identity, hit_start, hit_end, translation_start, translation_end, cigar_line, score ) values (?, ?, ?, ?, ?, ?, ?, ?, ?)");
- 
 
   my $ins_dep_ix_sth = $self->xref->dbc->prepare("insert into identity_xref (object_xref_id, query_identity, target_identity) values(?, ?, ?)");
 
+  my $source_name_sth = $self->xref->dbc->prepare("select s.name from xref x join source s using(source_id) where x.xref_id = ?");
+  my $biotype_sth = $self->xref->dbc->prepare("select biotype from transcript_stable_id where internal_id = ?");
+
+  my $last_query_id = 0;
+  my $best_match_found = 0;
+  my $best_identity = 0;
+  my $best_score = 0;
+  
+  my %refseq_sources = ('RefSeq_mRNA' => 1, 
+			'RefSeq_mRNA_predicted' => 1, 
+			'RefSeq_ncRNA' => 1, 
+			'RefSeq_ncRNA_predicted' => 1);
+
+  my %mRNA_biotypes = ( 'protein_coding' => 1,
+			'TR_C_gene' => 1,
+			'IG_V_gene' => 1,
+			'nonsense_mediated_decay' => 1,
+			'polymorphic_pseudogene' => 1);
+
   my $first = 1;
   while(<$mh>){
+    my $load_object_xref = 0;
     $total_lines++;
     chomp();
     my ($label, $query_id, $target_id, $identity, $query_length, $target_length, $query_start, $query_end, $target_start, $target_end, $cigar_line, $score) = split(/:/, $_);
 
+    if ($last_query_id != $query_id) {
+	$best_match_found = 0;
+	$best_score = 0;
+	$best_identity = 0;
+    } else {
+
+	#ignore mappings with worse identity or score if we already found a good mapping
+	if ( ($identity < $best_identity || $score < $best_score) && $best_match_found) {
+	    next;
+	}
+
+    }
+
+    if ($ensembl_type eq "Translation"){
+	$load_object_xref = 1;
+	
+    } else {
+
+	#check if source name is RefSeq_ncRNA or RefSeq_mRNA
+	#if yes check biotype, if ok store object xref
+	$source_name_sth->execute($query_id);
+	my ($source_name)  = $source_name_sth->fetchrow_array;
+	if (exists($refseq_sources{$source_name})) {
+
+	    #make sure mRNA xrefs are matched to protein_coding biotype only
+	    $biotype_sth->execute($target_id);
+	    my ($biotype) = $biotype_sth->fetchrow_array; 
+	   
+	    if ($source_name =~ /^RefSeq_mRNA/ && exists($mRNA_biotypes{$biotype})) {
+	       $load_object_xref = 1;
+	    }
+	    if ($source_name =~ /^RefSeq_ncRNA/ && !exists($mRNA_biotypes{$biotype}) ) {
+	       $load_object_xref = 1;	
+	    }	
+	} else {
+	    $load_object_xref = 1;
+	}
+
+    }
+
+    $last_query_id = $query_id;
+
+    if ($score > $best_score || $identity > $best_identity) {
+	$best_score = $score;
+	$best_identity = $identity;
+    }
+
+    if (!$load_object_xref) {
+	next;
+    } else {
+	$best_match_found = 1;
+    }
 
     if(!defined($score)){
       $end_sth->execute(($object_xref_id),$job_id, $array_number);
@@ -208,7 +279,6 @@ sub process_map_file{
     if($query_identity < $query_cutoff and $target_identity < $target_cutoff){
       $status = "FAILED_CUTOFF";
     }		
-
 
     $object_xref_id++;
     $object_xref_sth->execute($object_xref_id, $target_id, $ensembl_type, $query_id, 'SEQUENCE_MATCH', $status) ;
@@ -285,6 +355,8 @@ sub process_map_file{
   $object_xref_sth->finish;
   $identity_xref_sth->finish;
   $ins_dep_ix_sth->finish;
+  $source_name_sth->finish;
+  $biotype_sth->finish;
 
   return $total_lines;
 }
