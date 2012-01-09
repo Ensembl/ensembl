@@ -87,7 +87,8 @@ my $mapper = XrefMapper::BasicMapper->process_file($file, !$notverbose, $no_xref
 
 
 if(defined($recalc_display_xrefs)){
-  $mapper->official_naming();
+  my $official_naming = XrefMapper::OfficialNaming->new($mapper);
+  $official_naming->run();
   my $display = XrefMapper::DisplayXrefs->new($mapper);
 #  $display->set_display_xrefs_from_stable_table();
   $display->genes_and_transcripts_attributes_set($no_xref);
@@ -149,17 +150,17 @@ else{
   $submitter->no_dump_xref()
 }
 
-
+$status = $mapper->xref_latest_status();
+if($status eq "core_fasta_dumped"){# load core data needed
+  my $core_info = XrefMapper::CoreInfo->new($mapper);
+  $core_info->get_core_data();
+}
 
 $status = $mapper->xref_latest_status();
-if($status eq "core_fasta_dumped"){
+if($status eq "core_data_loaded") {
   $submitter->build_list_and_map();
   $status =  $mapper->xref_latest_status();
 }
-else{
-
-}
-
 
 $status = $mapper->xref_latest_status();
 if($status eq "mapping_started"){
@@ -171,13 +172,7 @@ elsif($status eq "mapping_finished"){
 }
 
 $status = $mapper->xref_latest_status();
-if($status eq "mapping_processed"){  # load core data needed
-  my $core_info = XrefMapper::CoreInfo->new($mapper);
-  $core_info->get_core_data();
-}
-
-$status = $mapper->xref_latest_status();
-if($status eq "core_data_loaded"){  # add direct xrefs to the object_xref etctables
+if($status eq "mapping_processed"){ # add direct xrefs to the object_xref etctables
   my $direct_mappings = XrefMapper::DirectXrefs->new($mapper);
   $direct_mappings->process();
 }
