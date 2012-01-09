@@ -119,6 +119,34 @@ perl scripts/import.lrg.pl  -verbose -do_all -host ens-staging -port
 homo_sapiens_cdna_65_37 -vega homo_sapiens_vega_65_37 -rnaseq
 homo_sapiens_rnaseq_65_37 -verify  >& verify.OUT
 
+c shell script to generate the commands:
+
+set db_args = '-host ens-staging -port 3306 -user ensadmin -pass ensembl'
+#delete cdna if it's not ready yet, LRGs will be imported into cdna from core
+set db_types =(core otherfeatures vega rnaseq cdna)
+set species = 'homo_sapiens'
+set dbs = ''
+
+set options = (clean import overlap verify)
+set version = '66_37'
+
+
+foreach type ($db_types)
+	set dbs = "${dbs} -${type} ${species}_${type}_${version}"
+end
+
+foreach option ($options)
+	if ($option == 'import') then
+	   set command_line_args = "$db_args $dbs -$option -xrefs"
+	else 
+	   set command_line_args = "$db_args $dbs -$option "
+	endif
+	echo "perl scripts/import.lrg.pl  -verbose -do_all $command_line_args >& $option.OUT"
+
+end
+
+exit;
+
 
 If the cdna databases are not yet ready then remove the "-cdna
 homo_sapiens_cdna_65_37" bit and continue but let who ever is building
