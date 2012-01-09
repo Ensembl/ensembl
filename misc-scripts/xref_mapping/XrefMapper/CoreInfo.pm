@@ -102,7 +102,7 @@ sub set_status_for_source_from_core{
 
 sub load_gene_transcript_translation{
   my ($self) = shift;
-
+  
   my $ins_sth =  $self->xref->dbc->prepare("insert into gene_transcript_translation (gene_id, transcript_id, translation_id) values (?, ?, ?)"); 
 
   my $sql = "select tn.gene_id, tn.transcript_id, tl.translation_id from transcript tn left join translation tl on tl.transcript_id = tn.transcript_id";
@@ -121,8 +121,9 @@ sub load_gene_transcript_translation{
 sub load_stable_ids{
   my ($self) = shift;
 
-  my ($id, $stable_id);
-  foreach my $table (qw(gene transcript translation)){
+  my ($id, $stable_id, $biotype);
+  foreach my $table (qw(gene translation)){
+ 
     my $sth = $self->core->dbc->prepare("select ".$table."_id, stable_id from ".$table);
     my $ins_sth = $self->xref->dbc->prepare("insert into ".$table."_stable_id (internal_id, stable_id) values(?, ?)");
     $sth->execute();
@@ -133,6 +134,19 @@ sub load_stable_ids{
     $ins_sth->finish;
     $sth->finish;
   }
+
+  #populate transcript_stable_id table incuding the biotype column
+  my $table = "transcript";
+  my $sth = $self->core->dbc->prepare("select ".$table."_id, stable_id, biotype from ".$table);
+  my $ins_sth = $self->xref->dbc->prepare("insert into ".$table."_stable_id (internal_id, stable_id, biotype) values(?, ?, ?)");
+  $sth->execute();
+  $sth->bind_columns(\$id, \$stable_id, \$biotype);
+  while($sth->fetch){
+    $ins_sth->execute($id, $stable_id, $biotype);
+  }
+  $ins_sth->finish;
+  $sth->finish;
+
   return;
 }
 1;
