@@ -533,13 +533,16 @@ sub get_alt_alleles {
 
   my $gene_id;
   my $alt_id;
-  my $sth = $self->core->dbc->prepare("select alt_allele_id, gene_id from alt_allele");
+  my $is_ref;
+  my $sth = $self->core->dbc->prepare("select alt_allele_id, gene_id, is_ref from alt_allele");
   $sth->execute;
-  $sth->bind_columns(\$alt_id,\$gene_id);
+  $sth->bind_columns(\$alt_id,\$gene_id, \$is_ref);
   my $count = 0 ;
   my %alt_id_to_gene_id;
   my %gene_id_to_alt_id;
   my $max_alt_id = 0;
+  my %is_reference;
+
   while($sth->fetch){
     $count++;
     push @{$alt_id_to_gene_id{$alt_id}}, $gene_id;
@@ -547,52 +550,36 @@ sub get_alt_alleles {
       if($alt_id > $max_alt_id){
 	$max_alt_id = $alt_id;
       }
+    if ($is_ref) {
+	$is_reference{$gene_id} = 1;
+    }
   }
 
   my $insert_sth = $self->xref->dbc->prepare("insert into alt_allele (alt_allele_id, gene_id, is_reference) values (?, ?,?)");
 
-
-
   if($count){
-    my %non_reference;
-
-    my $sql = (<<"SEQ");
-SELECT g.gene_id
-  FROM gene g, seq_region_attrib sra, attrib_type at
-    WHERE g.seq_region_id = sra.seq_region_id AND
-          at.attrib_type_id = sra.attrib_type_id AND
-          at.code = 'non_ref'
-SEQ
-
-    $sth = $self->core->dbc->prepare($sql);
-    $sth->execute;
-    $sth->bind_columns(\$gene_id);
-    while($sth->fetch()){
-      $non_reference{$gene_id} = 1;
-    }
-    
+     
     $sth = $self->xref->dbc->prepare("delete from alt_allele");
     $sth->execute;
-
 
     my $alt_added = 0;
     my $num_of_genes = 0;
     my $alt_failed = 0;
     foreach my $alt_id (keys %alt_id_to_gene_id){
 
-      # make sure one and only one is on the reference
+      # make sure only one gene or none are on the reference
       my $ref_count = 0;
       foreach my $gene (@{$alt_id_to_gene_id{$alt_id}}){
-	if(!defined($non_reference{$gene})){
+	if(defined($is_reference{$gene})){
 	  $ref_count++;
 	}
       }
-      if($ref_count == 1){
+      if($ref_count == 1 || $ref_count == 0){
 	$alt_added++;
 	foreach my $gene (@{$alt_id_to_gene_id{$alt_id}}){
 	  $num_of_genes++;
 	  my $ref =0 ;
-	  if(!defined($non_reference{$gene})){
+	  if(defined($is_reference{$gene})){
 	    $ref = 1;
 	  }
 	  $insert_sth->execute($alt_id, $gene, $ref);
@@ -894,7 +881,7 @@ sub get_species_id_from_species_name{
 sub clean_up{
   my $self = shift;
   my $stats = shift;
-  
+  my $keep_core_data = shift;
 
   # remove all object_xref, identity_xref  entries
 
@@ -926,27 +913,27 @@ sub clean_up{
   $sth->execute(); 
 
 
-  
-  # remove all from core_info tables
-  #        gene_transcript_translation
-  #        [gene/transcript/translation]_stable_id
-  #
-  $sql = "DELETE from gene_transcript_translation";
-  $sth = $self->xref->dbc->prepare($sql);
-  $sth->execute(); 
+  if (!$keep_core_data) {
+      # remove all from core_info tables
+      #        gene_transcript_translation
+      #        [gene/transcript/translation]_stable_id
+      #
+      $sql = "DELETE from gene_transcript_translation";
+      $sth = $self->xref->dbc->prepare($sql);
+      $sth->execute(); 
 
-  $sql = "DELETE from gene_stable_id";
-  $sth = $self->xref->dbc->prepare($sql);
-  $sth->execute(); 
+      $sql = "DELETE from gene_stable_id";
+      $sth = $self->xref->dbc->prepare($sql);
+      $sth->execute(); 
  
-  $sql = "DELETE from transcript_stable_id";
-  $sth = $self->xref->dbc->prepare($sql);
-  $sth->execute(); 
+      $sql = "DELETE from transcript_stable_id";
+      $sth = $self->xref->dbc->prepare($sql);
+      $sth->execute(); 
  
-  $sql = "DELETE from translation_stable_id";
-  $sth = $self->xref->dbc->prepare($sql);
-  $sth->execute(); 
- 
+      $sql = "DELETE from translation_stable_id";
+      $sth = $self->xref->dbc->prepare($sql);
+      $sth->execute(); 
+  }
   return;
 }
 
@@ -984,7 +971,8 @@ sub revert_to_parsing_finished{
 sub revert_to_mapping_finished{
   my $self = shift;
 
-  $self->clean_up();
+  
+  $self->clean_up(undef,1);
 
   # set mapping jobs to SUBMITTED
   my $sql = 'UPDATE mapping_jobs set status = "SUBMITTED"';;
@@ -1006,21 +994,23 @@ sub get_alt_allele_hashes{
   my %alt_to_ref;
   my %ref_to_alts;
 
-  my $sql = "select gene_id, is_reference from alt_allele order by alt_allele_id, is_reference DESC";
+  my $sql = "select alt_allele_id, gene_id, is_reference from alt_allele order by alt_allele_id, is_reference DESC";
 
   my $sth = $self->xref->dbc->prepare($sql);
   $sth->execute();
-  my ($gene_id, $is_ref);
-  $sth->bind_columns(\$gene_id, \$is_ref);
+  my ($alt_allele_id,$gene_id, $is_ref);
+  $sth->bind_columns(\$alt_allele_id, \$gene_id, \$is_ref);
+  my $last_alt_allele = 0;
   my $ref_gene;
   while($sth->fetch()){
-    if($is_ref){
-      $ref_gene = $gene_id;
-    }
-    else{
-      $alt_to_ref{$gene_id} = $ref_gene;
-      push @{$ref_to_alts{$ref_gene}}, $gene_id;
-    }
+      if( $alt_allele_id != $last_alt_allele) {
+	  #use the first non-reference gene if there is no reference gene in an alt_allele
+	  $ref_gene = $gene_id;
+      } else{
+	  $alt_to_ref{$gene_id} = $ref_gene;
+	  push @{$ref_to_alts{$ref_gene}}, $gene_id;
+      }
+      $last_alt_allele = $alt_allele_id;
   }
   $sth->finish;
 
