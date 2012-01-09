@@ -190,18 +190,33 @@ sub dump_xref{
 
   my @exception_sql = ();
   if($exception){
-    my $source_sth = $xref->dbc->prepare("select s.source_id from source s, species sp, source_url u where  u.source_id = s.source_id and u.species_id = sp.species_id and sp.name like ? and s.name like ?");    
+    my $source_sth = $xref->dbc->prepare("select s.source_id from source s, species sp, source_url u where  u.source_id = s.source_id and u.species_id = sp.species_id and sp.name like ? and s.name like ?");
+    my $dep_source_sth = $xref->dbc->prepare("select distinct s2.source_id from source_url u, source s1, species sp, dependent_source d, source s2 where u.source_id = s1.source_id and u.species_id = sp.species_id and s1.name = d.dependent_name and s2.source_id = d.master_source_id and sp.name like ? and s2.name like ?");
     $k = 0;
     my @exception_list =();
     while($k <= $number_of_sets){
       my @tmp=();
       if($k != $all){
 	$source_sth->execute($species[$k], $sources[$k]);
+	my $source_found = 0;
 	while(my @row = $source_sth->fetchrow_array()){
 #	  print $row[0]."\t".$species[$k]."\t".$sources[$k]."\n";
 	  push @tmp, $row[0];
-	  push @exception_list, $row[0]
+	  push @exception_list, $row[0];
+	  $source_found = 1;
 	}	
+	if (!$source_found) {
+	    #if we haven't found the source in the source_url table try the dependent_source table
+	    $dep_source_sth->execute($species[$k], $sources[$k]);
+	    while(my @row = $dep_source_sth->fetchrow_array()){
+		push @tmp, $row[0];
+		push @exception_list, $row[0];
+		$source_found = 1;
+	    }		    	    
+	}
+	if (!$source_found) {
+	    die "unable to find source_id for source name ". $sources[$k] ."\n";
+	}
 	$exception_sql[$k] .= " AND x.source_id in (".join(', ',@tmp).") ";
 	
       }
@@ -211,6 +226,8 @@ sub dump_xref{
       $exception_sql[$all] = " AND x.source_id not in (".join(', ', @exception_list).")";
     }
 
+    $source_sth->finish();
+    $dep_source_sth->finish();
   }
   else{
     $exception_sql[0] = "";
@@ -254,7 +271,7 @@ sub dump_xref{
       my $sql = "SELECT p.xref_id, p.sequence, x.species_id , x.source_id ";
       $sql   .= "  FROM primary_xref p, xref x ";
       $sql   .= "  WHERE p.xref_id = x.xref_id AND ";
-      $sql   .= "        p.sequence_type ='$sequence_type' ";
+      $sql   .= "        p.sequence_type ='" . $sequence_type ."' ";
       $sql   .= $exception_sql[$i];
 
       my $sth = $xref->dbc->prepare($sql);
@@ -619,15 +636,24 @@ sub fetch_and_dump_seq_via_genes{
 sub get_set_lists{
   my ($self) = @_;
 
+  # format:  [ method, [species (* - all species),source]] 
   return [["ExonerateGappedBest_100_perc_id", ["*","Uniprot/SWISSPROT"]],
 	  ["ExonerateGappedBest_100_perc_id", ["*","Uniprot/SPTREMBL"]],
+	  ["ExonerateGappedBest5", ["*","RefSeq_mRNA"]],
+	  ["ExonerateGappedBest5", ["*","RefSeq_mRNA_predicted"]],
+	  ["ExonerateGappedBest5", ["*","RefSeq_ncRNA"]],
+	  ["ExonerateGappedBest5", ["*","RefSeq_ncRNA_predicted"]],
           ["ExonerateGappedBest1", ["*","*"]] ];
 
 #  return [["ExonerateGappedBest1", ["*","*"]]];
 
 }
 
+# some external references are downloaded under one source and then split up into several 
+# different sources, 
+sub map_sources{
 
+}
 
 
 ###################################################################################################
