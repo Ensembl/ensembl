@@ -1074,6 +1074,29 @@ sub get_Interpro_by_transid {
   return \@out;
 }
 
+=head2 is_Transcript_canonical()
+
+  Arg [1]     : Bio::EnsEMBL::Transcript $transcript
+                The transcript to query with
+  Example     : $tr_adaptor->is_Transcript_canonical($transcript);
+  Description : Returns a boolean if the given transcript is considered
+                canonical with respect to a gene
+  Returntype  : Boolean
+  Exceptions  : None
+  Caller      : Bio::EnsEMBL::Transcript
+  Status      : Beta
+  
+
+=cut
+
+sub is_Transcript_canonical {
+  my ($self, $transcript) = @_;
+  return $self->dbc()->sql_helper()->execute_single_result(
+    -SQL => 'select count(*) from gene where canonical_transcript_id =?', 
+    -PARAMS => [$transcript->dbID()]
+  );
+}
+
 
 =head2 remove
 

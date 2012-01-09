@@ -666,12 +666,20 @@ sub display_xref {
 
 sub is_canonical {
   my ( $self, $value ) = @_;
-
+  
+  #Shortcut call
+  return $self->{is_canonical} if defined $self->{is_canonical};
+  
   if ( defined($value) ) {
-    $self->{'is_canonical'} = ( $value != 0 );
+    $self->{is_canonical} = ( $value ? 1 : 0 );
+  }
+  else {
+    if(! defined $self->{is_canonical} && $self->dbID() && $self->adaptor()) {
+      $self->{is_canonical} = $self->adaptor()->is_Transcript_canonical($self);
+    }
   }
 
-  return $self->{'is_canonical'};
+  return $self->{is_canonical};
 }
 
 =head2 translation
