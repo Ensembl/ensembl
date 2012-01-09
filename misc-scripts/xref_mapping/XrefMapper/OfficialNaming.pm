@@ -191,7 +191,10 @@ SQ0
   my %xref_added; # store those added  $xref_added{$accession:$source_id} = $xref_id;
   my %seen_gene;
 
-  foreach my $gene_id (@sorted_gene_ids){
+  my %ens_clone_genes;
+  my %official_name_used;
+
+  while ( my $gene_id = shift @sorted_gene_ids){
 
     my $tran_source = $dbname;
 
@@ -213,6 +216,8 @@ SQ0
 				     cbvt          => $dbname_to_source_id->{"Clone_based_vega_transcript"}
 				    });
 
+    if (!defined($ens_clone_genes{$gene_id})) { #we're processing this gene for the first time
+
     ################################
     # Get offical name if it has one
     ################################
@@ -220,7 +225,13 @@ SQ0
       $self->get_official_domain_name({gene_id       => $gene_id, 
 				       gene_to_tran  => \%gene_to_transcripts,
 				       tran_to_vega_name => $tran_to_vega_name,
-				       gene_id_to_stable_id => \%gene_id_to_stable_id});
+				       gene_id_to_stable_id => \%gene_id_to_stable_id,
+                                       official_name_used => \%official_name_used
+				      });
+
+    if (defined($gene_symbol_xref_id)) {
+	$official_name_used{$gene_symbol_xref_id} = 1;
+    }
 
     ############################################
     # If not found see if there is an LRG entry
@@ -252,6 +263,8 @@ SQ0
       }
     }
 
+    } #if (!exists($ens_clone_genes{$gene_id}))
+
     ##############################################
     # Finally if all else fails use the clone name
     ##############################################
@@ -271,7 +284,7 @@ SQ0
       next;
     }
 
-    if(defined($gene_symbol)){
+    if(defined($gene_symbol) && !defined($ens_clone_genes{$gene_id})){
       my $desc = $display_label_to_desc{$gene_symbol};
 
       if(!defined($gene_symbol_xref_id)){
@@ -292,11 +305,14 @@ SQ0
                                             xref_added       => \%xref_added, 
                                             seen_gene        => \%seen_gene, 
                                             gene_to_tran     => \%gene_to_transcripts, 
-                                            tran_to_vega_ext => $tran_to_vega_ext });
+                                            tran_to_vega_ext => $tran_to_vega_ext,
+					    ens_clone_genes  => \%ens_clone_genes,
+					   });
     }
-    else{ # use clone name
 
-      $self->set_transcript_and_gene_display_xref_via_clone_name({vega_clone_name => $vega_clone_name,
+    if (!defined($gene_symbol)) { # use clone name 
+
+      my $keep_gene = $self->set_transcript_and_gene_display_xref_via_clone_name({vega_clone_name => $vega_clone_name,
                                                          clone_name => $clone_name,
 							 dbname_to_source => $dbname_to_source_id,
 							 gene_id          =>  $gene_id,
@@ -304,8 +320,12 @@ SQ0
 							 max_object       => \$max_object_xref_id,
 							 xref_added       => \%xref_added,
 							 gene_to_tran     => \%gene_to_transcripts,
-							 tran_to_vega_ext => $tran_to_vega_ext
+							 tran_to_vega_ext => $tran_to_vega_ext, 
+							 ens_clone_genes  => \%ens_clone_genes,
 							});
+      if ($keep_gene) {
+	  push @sorted_gene_ids, $gene_id;
+      }
 
     }
   } # for each gene
@@ -344,6 +364,7 @@ sub get_official_domain_name{
   my $gene_id_to_stable_id = $arg_ref->{gene_id_to_stable_id};
   my $tran_to_vega_name    = $arg_ref->{tran_to_vega_name};
   my $gene_to_transcripts  = $arg_ref->{gene_to_tran};
+  my $official_name_used   = $arg_ref->{official_name_used};
 
 
   my $dbname = $self->get_official_name();
@@ -424,6 +445,9 @@ sub get_official_domain_name{
       $best_list{$xref_id_to_display{$xref_id}} = 1;
     }
 
+    #print "Multiple best ".$dbname."'s using vega gene description to find the best name for ".$gene_id_to_stable_id->{$gene_id}."\n";
+    #add this section when OTTG xrefs have gene name in description
+
     my %name_count;
     foreach my $tran_id (@{$gene_to_transcripts->{$gene_id}}){
       if(defined($tran_to_vega_name->{$tran_id}) and defined($best_list{$tran_to_vega_name->{$tran_id}})){
@@ -441,9 +465,9 @@ sub get_official_domain_name{
 	  $gene_symbol = $name;
 	}
       }
-      foreach my $xref_id (keys %ODN){
-	if($gene_symbol eq $xref_id_to_display{$xref_id}){
-	  $gene_symbol_xref_id = $xref_id;
+      foreach my $x (keys %ODN){
+	if($gene_symbol eq $xref_id_to_display{$x}){
+	  $gene_symbol_xref_id = $x;
 	}
       }
       print "\t$gene_symbol chosen from vega\n";
@@ -461,19 +485,43 @@ sub get_official_domain_name{
 	  } 
       }
       
-      # take the first one ??
-      my $i = 0;
+      # take the name which hasn't been already assigned to another gene, if possible
+      
+      my $xref_not_used;
       foreach my $x (keys %ODN){
-	print "\t".$xref_id_to_display{$x};
-	if(!$i){
-	  print "  (chosen as first)\n";
-	  $gene_symbol =  $xref_id_to_display{$x};
-	  $gene_symbol_xref_id =  $x;
-	}
-	else{
-	  print "  (left as $dbname reference but not gene symbol)\n";
-	}
-	$i++;
+	  if (!defined($official_name_used->{$x}) ) {
+	      $xref_not_used = $x;
+	  }
+      }
+      if ($xref_not_used) {
+	  foreach my $x (keys %ODN){
+	      print "\t".$xref_id_to_display{$x};
+	      if ($x == $xref_not_used) {
+		  print "    chosen\n";
+		  $gene_symbol =  $xref_id_to_display{$x};
+		  $gene_symbol_xref_id =  $x;		  
+	      } else {
+		  print "  (left as $dbname reference but not gene symbol)\n";
+	      }
+	  }
+
+      } else {
+
+	  my $i=0;
+	  foreach my $x (keys %ODN){
+	      print "\t".$xref_id_to_display{$x};
+	      if(!$i){
+		  print "  (chosen as first)\n";
+		  $gene_symbol =  $xref_id_to_display{$x};
+		  $gene_symbol_xref_id =  $x;
+	      }
+	      else{
+		  print "  (left as $dbname reference but not gene symbol)\n";
+	      }
+	      $i++;
+	  }
+
+
       }
     }
   }
@@ -495,6 +543,7 @@ sub set_transcript_and_gene_display_xref_via_clone_name{
   my $tran_to_vega_ext =    $arg_ref->{tran_to_vega_ext};
   my $vega_clone_name  =    $arg_ref->{vega_clone_name};
   my $clone_name =          $arg_ref->{clone_name};
+  my $ens_clone_names =     $arg_ref->{ens_clone_genes};
 
   my $ins_xref_sth =              $self->get_ins_xref_sth();
   my $ins_dep_ix_sth =            $self->get_ins_dep_ix_sth();
@@ -502,34 +551,49 @@ sub set_transcript_and_gene_display_xref_via_clone_name{
   my $ins_object_xref_sth =       $self->get_ins_object_xref_sth();
   my $set_gene_display_xref_sth = $self->get_set_gene_display_xref_sth();
 
+  my $keep_gene;
 
   my $t_source_id;
   my $g_source_id;
   my $desc;
   my $name;
-  if(defined($vega_clone_name)){
+  if(defined($vega_clone_name) && !defined($ens_clone_names->{$gene_id})){
     $name = $vega_clone_name;
     $t_source_id = $dbname_to_source_id->{"Clone_based_vega_transcript"};
     $g_source_id = $dbname_to_source_id->{"Clone_based_vega_gene"};
+    $name = $vega_clone_name;
     $desc = "via havana clone name";
-  }
-  else{
-    if(defined($clone_name)){
-      $name = $clone_name;
-      $t_source_id = $dbname_to_source_id->{"Clone_based_ensembl_transcript"};
-      $g_source_id = $dbname_to_source_id->{"Clone_based_ensembl_gene"};
-      $desc = "via ensembl clone name";
-    }
-    else{
-      croak "No name";
-    }
     my $num = 1;
     my $unique_name = $name.".".$num;
-    while(defined($xref_added->{$unique_name.":".$g_source_id})){
-      $num++;
-      $unique_name = $name.".".$num;
+    while(defined($xref_added->{$unique_name.":".$g_source_id}) ){
+	 $num++;
+	 $unique_name = $name.".".$num;
     }
     $name = $unique_name;
+  }
+  if (!defined($vega_clone_name) ) {
+      if (defined($ens_clone_names->{$gene_id})) {
+	  if(defined($clone_name)){
+	      $name = $clone_name;
+	      $t_source_id = $dbname_to_source_id->{"Clone_based_ensembl_transcript"};
+	      $g_source_id = $dbname_to_source_id->{"Clone_based_ensembl_gene"};
+	      $desc = "via ensembl clone name";
+	  }
+	  else{
+	      croak "No name";
+	  }
+	  my $num = 1;
+	  my $unique_name = $name.".".$num;
+	  while(defined($xref_added->{$unique_name.":".$g_source_id}) || defined($xref_added->{$unique_name.":".$dbname_to_source_id->{"Clone_based_vega_gene"}})){
+	      $num++;
+	      $unique_name = $name.".".$num;
+	  }
+	  $name = $unique_name;
+      } else {	  
+	  $ens_clone_names->{$gene_id} = 1;
+	  $keep_gene = 1;
+	  return $keep_gene;
+      }
   }
   
   # first add the gene xref and set display_xref_id
@@ -579,7 +643,7 @@ sub set_transcript_and_gene_display_xref_via_clone_name{
       $set_tran_display_xref_sth->execute($$max_xref_id, $tran_id);
     }
   }
-  return;
+  return 0;
 }
 
 ###########################################################
