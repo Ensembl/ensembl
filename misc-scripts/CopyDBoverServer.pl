@@ -123,6 +123,7 @@ Input file format:
     4. Target server
     5. Target server port
     6. Target database name
+    7. Target location (optional)
 
   For example:
 
@@ -132,6 +133,11 @@ Input file format:
 
   Blank lines, lines containing only whitespaces, and lines starting
   with '#', are silently ignored.
+  
+  Column 7 is used only when you need to copy the database to a location which
+  is not the MySQL server's data directory. The same rules apply though that
+  the mysqlens user must have write access to this directory & to the one above
+  to create any temporary directory structures.
 
 
 Script restrictions:
@@ -241,7 +247,7 @@ while ( my $line = $in->getline() ) {
   my $failed = 0;                     # Haven't failed so far...
 
   my ( $source_server, $source_port, $source_db,
-       $target_server, $target_port, $target_db
+       $target_server, $target_port, $target_db, $target_location
   ) = split( /\s+/, $line );
 
   my $source_hostname = ( gethostbyname($source_server) )[0];
@@ -296,7 +302,8 @@ while ( my $line = $in->getline() ) {
             'target_server'   => $target_server,
             'target_hostname' => $target_hostname,
             'target_port'     => $target_port,
-            'target_db'       => $target_db, } );
+            'target_db'       => $target_db,
+            'target_location' => $target_location, } );
   }
 } ## end while ( my $line = $in->getline...)
 
@@ -318,6 +325,7 @@ foreach my $spec (@todo) {
   my $target_hostname = $spec->{'target_hostname'};
   my $target_port     = $spec->{'target_port'};
   my $target_db       = $spec->{'target_db'};
+  my $target_location = $spec->{'target_location'};
 
   my $label = sprintf( "{ %s -> %s }==", $source_db, $target_db );
   print( '=' x ( 80 - length($label) ), $label, "\n" );
@@ -403,6 +411,10 @@ foreach my $spec (@todo) {
 
     $source_dbh->disconnect();
     next;
+  }
+  
+  if(defined $target_location) {
+    $target_dir = $target_location;
   }
 
   printf( "SOURCE 'datadir' = '%s'\n", $source_dir );
