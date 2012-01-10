@@ -125,7 +125,11 @@ my $dba = $support->get_database('ensembl');
 my @tables;
 
 my @patterns = map { '%'.$_.'%' } qw/tmp temp bak backup/;
-push(@patterns, 'MTMP\_%') if $support->param('mart');
+if($support->param('mart')) {
+  if($support->user_proceed('--mart was specified on the command line. Do not run this during a mart build. Do you wish to continue?')) {
+    push(@patterns, 'MTMP\_%');
+  }
+}
 
 foreach my $pattern (@patterns) {
   my $results = $dba->dbc()->sql_helper()->execute_simple(
