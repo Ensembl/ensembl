@@ -1,7 +1,7 @@
 #                                                       -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
-# Copyright (c) 1999-2011 The European Bioinformatics Institute and 
+# Copyright (c) 1999-2012 The European Bioinformatics Institute and 
 # Genome Research Limited, and others.  All rights reserved. 
 
 # This program is distributed in the hope that it will be useful,
