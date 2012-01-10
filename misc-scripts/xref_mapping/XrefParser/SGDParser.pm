@@ -27,7 +27,8 @@ sub run {
   my $file = @{$files}[0];
 
   my $gene_source_id = $self->get_source_id_for_source_name("SGD_GENE");
-  my $transcript_source_id = $self->get_source_id_for_source_name("SGD_TRANSCRIPT");
+  #my $transcript_source_id = $self->get_source_id_for_source_name("SGD_TRANSCRIPT");
+  my $translation_source_id = $self->get_source_id_for_source_name("SGD_TRANSLATION");
 
   my $sgd_io = $self->get_filehandle($file);
 
@@ -52,9 +53,9 @@ sub run {
 	if ($biotype =~ /ORF|.+RNA|transposable_element_gene|pseudogene/) {
 
 	    if ($verbose) {
-		print STDERR "parsing line for biotype, $biotype\n";
-		print STDERR "sgd_id, biotype, status, orf_name, locus_name, alias_name, $sgd_id, $biotype, $status, $orf_name, $locus_name, $alias_name\n";
-		print STDERR "desc: $desc\n";
+		#print STDERR "parsing line for biotype, $biotype\n";
+		#print STDERR "sgd_id, biotype, status, orf_name, locus_name, alias_name, $sgd_id, $biotype, $status, $orf_name, $locus_name, $alias_name\n";
+		#print STDERR "desc: $desc\n";
 	    }
 
 	    if (!defined $locus_name || ($locus_name eq "")) {
@@ -64,7 +65,7 @@ sub run {
 		}
 		else {
 		    if ($verbose) {
-			print STDERR "assigning the orf_name as the locus_name(ie the gene_name)\n";
+			#print STDERR "assigning the orf_name as the locus_name(ie the gene_name)\n";
 		    }
 		    $locus_name = $orf_name;
 		}
@@ -78,23 +79,21 @@ sub run {
 						 source_id  => $gene_source_id,
 						 species_id => $species_id,
 						 info_type  => "DIRECT"} );
-
 	    $self->add_direct_xref($gene_xref_id, $orf_name, "Gene", "DIRECT");
 
-	    my $transcript_xref_id = $self->add_xref({ acc        => $sgd_id,
-						       label      => $locus_name,
-						       desc       => $desc,
-						       source_id  => $transcript_source_id,
-						       species_id => $species_id,
-						       info_type  => "DIRECT"} );
-
-	    $self->add_direct_xref($transcript_xref_id, $orf_name, "Transcript", "DIRECT");
+	    my $translation_xref_id = $self->add_xref({ acc        => $sgd_id,
+			 			        label      => $locus_name,
+						        desc       => $desc,
+						        source_id  => $translation_source_id,
+						        species_id => $species_id,
+						        info_type  => "DIRECT"} );
+	    $self->add_direct_xref($translation_xref_id, $orf_name, "Translation", "DIRECT");
 
 	    $xref_count++;
 
 	    foreach my $synonym (@syn){
 		if ($verbose) {
-		    print STDERR "adding synonym, $synonym\n";
+		    # print STDERR "adding synonym, $synonym\n";
 		}
 		$self->add_to_syn($sgd_id, $gene_source_id, $synonym, $species_id);
 		$syn_count++;
@@ -103,7 +102,7 @@ sub run {
 	}
 	else {
 	    if ($verbose) {
-		print STDERR "filtering biotype, $biotype\n";
+		#print STDERR "filtering biotype, $biotype\n";
 	    }
 	}
     }
