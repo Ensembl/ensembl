@@ -1,4 +1,4 @@
-#!/usr/local/ensembl/bin/perl
+#!/usr/bin/env perl
 
 =head1 NAME
 
@@ -6,7 +6,11 @@ cleanup_tmp_tables.pl - delete temporary and backup tables from a database
 
 =head1 SYNOPSIS
 
-cleanup_tmp_tables.pl [arguments]
+  ./cleanup_tmp_tables.pl [arguments]
+  
+  ./cleanup_tmp_tables.pl --nolog --host localhost --port 3306 --user user --dbname DB --dry_run
+  
+  ./cleanup_tmp_tables.pl --nolog --host localhost --port 3306 --user user --dbname DB --interactive 0
 
 Required arguments:
 
@@ -17,6 +21,10 @@ Required arguments:
   --pass, --dbpass, --db_pass=PASS    database passwort PASS
 
 Optional arguments:
+
+  --mart                              Indicates we wish to search for mart
+                                      temporary tables which are normally
+                                      prefixed with MTMP_
 
   --conffile, --conf=FILE             read parameters from FILE
                                       (default: conf/Conversion.ini)
@@ -32,6 +40,26 @@ Optional arguments:
 
 =head1 DESCRIPTION
 
+A script which looks for any table which we believe could be a temporary
+table. This means any table which contains
+
+=over 8
+
+=item tmp
+
+=item temp
+
+=item bak
+
+=item backup
+
+=item MTMP_ (only used when --mart is specified)
+
+=back
+
+The code is designed to be run over a single database to avoid the 
+unintentional and accidental dropping of temporary tables which are still
+in use.
 
 =head1 LICENCE
 
@@ -72,8 +100,9 @@ my $support = new Bio::EnsEMBL::Utils::ConversionSupport($SERVERROOT);
 
 # parse options
 $support->parse_common_options(@_);
+$support->parse_extra_options(qw/mart!/);
 $support->allowed_params(
-  $support->get_common_params,
+  $support->get_common_params, 'mart'
 );
 
 if ($support->param('help') or $support->error) {
@@ -91,33 +120,34 @@ $support->check_required_params;
 
 # connect to database and get adaptors
 my $dba = $support->get_database('ensembl');
-my $dbh = $dba->dbc->db_handle;
 
 # find all temporary and backup tables
 my @tables;
 
-foreach my $pattern (qw(tmp temp bak backup)) {
-  my $sql = qq(SHOW TABLES LIKE '\%$pattern\%');
-  my $sth = $dbh->prepare($sql);
-  $sth->execute;
-  while (my ($table) = $sth->fetchrow_array) {
-    push @tables, $table;
-  }
+my @patterns = map { '%'.$_.'%' } qw/tmp temp bak backup/;
+push(@patterns, 'MTMP\_%') if $support->param('mart');
+
+foreach my $pattern (@patterns) {
+  my $results = $dba->dbc()->sql_helper()->execute_simple(
+    -SQL => 'SHOW TABLES LIKE ?', -PARAMS => [$pattern]);
+  push(@tables, @{$results});
 }
+
+@tables = sort @tables;
 
 if ($support->param('dry_run')) {
   # for a dry run, only show which databases would be deleted
   $support->log("Temporary and backup tables found:\n");
-  foreach my $table (sort @tables) {
+  foreach my $table (@tables) {
     $support->log("$table\n", 1);
   }
 
 } else {
   # delete tables
-  foreach my $table (sort @tables) {
+  foreach my $table (@tables) {
     if ($support->user_proceed("Drop table $table?")) {
       $support->log("Dropping table $table...\n");
-      $dbh->do("DROP TABLE $table");
+      $dba->dbc()->do("DROP TABLE $table");
       $support->log("Done.\n");
     }
   }
