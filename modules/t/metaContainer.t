@@ -50,14 +50,8 @@ $mc->delete_key('testkey');
 $listref = $mc->list_value_by_key('testkey');
 ok(@$listref == 0);
 
-
-#
-# get_Species
-#
-
-my $species = $mc->get_Species();
-ok($species->common_name eq 'Human');
-my $bin = $species->binomial;
+ok($mc->get_common_name() eq 'Human');
+my $bin = $mc->get_scientific_name();
 ok($bin eq 'Homo sapiens');
 
 #
