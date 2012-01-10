@@ -24,7 +24,9 @@ Optional arguments:
 
   --mart                              Indicates we wish to search for mart
                                       temporary tables which are normally
-                                      prefixed with MTMP_
+                                      prefixed with MTMP_. 
+                                      ONLY RUN IF YOU ARE A MEMBER OF 
+                                      THE PRODUCTION TEAM
 
   --conffile, --conf=FILE             read parameters from FILE
                                       (default: conf/Conversion.ini)
