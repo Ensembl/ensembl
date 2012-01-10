@@ -342,8 +342,36 @@ sub create_xrefs {
       if(!length($desc)){
 	$desc = $sub_description;
       }
+      
       $desc =~ s/\(\s*EC\s*\S*\)//g;
       $xref->{DESCRIPTION} = $desc;
+
+      # Parse the EC_NUMBER line, only for S.cerevisiae for now
+      
+      if (($line =~ /EC=/) && ($species_id == 4932)) {
+
+	  #print STDERR "EC Number line: $line\n";
+	  
+	  $line =~ /^DE\s+EC=([^;]+);/;
+	  
+	  # Get the EC Number and make it an xref for S.cer if any
+	  
+	  my $EC = $1;
+	  
+	  #print STDERR "EC after processing: $EC\n";
+	  
+	  my %depe;
+	  $depe{LABEL} = $EC;
+	  $depe{ACCESSION} = $EC;
+	  
+	  $depe{SOURCE_NAME} = "EC_NUMBER";
+	  
+	  $depe{SOURCE_ID} = $dependent_sources{"EC_NUMBER"};
+	  $depe{LINKAGE_SOURCE_ID} = $xref->{SOURCE_ID};
+	  push @{$xref->{DEPENDENT_XREFS}}, \%depe;
+	  $dependent_xrefs{"EC_NUMBER"}++;
+      }
+
     }
 
     # extract sequence
@@ -538,6 +566,7 @@ sub create_xrefs {
   foreach my $key (keys %dependent_xrefs){
     print $key."\t".$dependent_xrefs{$key}."\n" if($verbose);
   }
+  print "End.\n" if ($verbose);
 
 
   return \@xrefs;
