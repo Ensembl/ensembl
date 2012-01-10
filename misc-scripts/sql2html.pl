@@ -213,6 +213,7 @@ while (<SQLFILE>) {
 	chomp $_;
 	next if ($_ eq '');
 	next if ($_ =~ /^\s*(DROP|PARTITION)/i);
+	next if ($_ =~ /^\s*(#|--)/); # Escape characters
 	
 	# Verifications
 	if ($_ =~ /^\/\*\*/)  { $in_doc=1; next; }  # start of a table documentation
@@ -334,7 +335,7 @@ while (<SQLFILE>) {
 			if ($doc =~ /^\W*(\w+)\W+(\w+\s?\(.*\))/ ){
 				$col_name = $1;
 				$col_type = $2;
-				if ($doc =~ /default\s*([^,\s]+)\s*.*(,|#).*/i) { $col_def = $1; } # Default value
+				if ($doc =~ /default\s+([^,\s]+)\s*.*(,|#).*/i) { $col_def = $1; } # Default value
 				add_column_type_and_default_value($col_name,$col_type,$col_def);
 			}
 		
@@ -361,7 +362,7 @@ while (<SQLFILE>) {
 						$line =~ /^\s*(.+)/;
 						$col_type .= $1.'<br />';
 					}
-					if ($line =~ /default\s*([^,\s]+)\s*.*(,|#).*/i) { $col_def = $1; } # Default value
+					if ($line =~ /default\s+([^,\s]+)\s*.*(,|#).*/i) { $col_def = $1; } # Default value
 				}
 				add_column_type_and_default_value($col_name,$col_type,$col_def);
 			}
