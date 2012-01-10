@@ -164,9 +164,8 @@ sub create {
     if ( $drop_db ) {
 	$dbh->do( "DROP DATABASE $dbname" );
 	print "Database $dbname dropped\n" if($self->verbose) ;
-    }
+    } else {
 
-    if (!$drop_db ) {
       my $p;
       if($force){
 	$p = 'yes';
@@ -183,9 +182,7 @@ sub create {
 	print "$dbname NOT removed\n";
 	exit(1);
       }
-    } else {
-      croak(  "Database $dbname already exists. "
-            . 'Use -create option to overwrite it.' );
+
     }
   }
 
