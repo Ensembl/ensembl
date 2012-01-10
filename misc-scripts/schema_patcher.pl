@@ -289,8 +289,9 @@ $sth->bind_col( 1, \$database );
 
 DATABASE:
 while ( $sth->fetch() ) {
-  if ( $database =~ /^(?:information_schema|mysql)$/ ) { next }
 
+  if ( $database =~ /^(?:information_schema|mysql)$/ ) { next }
+  
   # Figure out schema version, schema type, and species name from the
   # database by querying its meta table.
 
@@ -352,20 +353,28 @@ while ( $sth->fetch() ) {
   # If we haven't yet found out the schema version, schema type, or
   # species, look to the database name to provide clues.
 
-  if ( !defined($schema_version) ) {
+
+  if ( ! $schema_version ) {
+	#remove defined as version maybe empty string
+
     if ( $database =~ /_(\d+)_\w+$/ ) {
+
       $schema_version = $1;
+
       if ( defined($opt_from) ) {
         if   ( $schema_version == $opt_from ) { $schema_version_ok = 1 }
         else                                  { $schema_version_ok = 0 }
       }
-      else { $schema_version_ok = 1 }
+      else {
+		$schema_version_ok = 1 }
     }
-    elsif ( !$opt_quiet ) {
-      warn( sprintf( "Can not determine schema version from '%s'\n",
+    elsif ( ! $opt_quiet ) {
+	  $schema_version_ok = 0;
+	  warn( sprintf( "Can not determine schema version from '%s'\n",
                      $database ) );
     }
   }
+
   if ( !defined($schema_type) ) {
     if ( $database =~ /_(core|funcgen|variation)_/ ) {
       $schema_type = $1;
@@ -395,6 +404,7 @@ while ( $sth->fetch() ) {
     }
   }
 
+  
   if ( $schema_version_ok &&
        $schema_type_ok &&
        ( !defined($opt_species) ||
@@ -430,7 +440,7 @@ while ( $sth->fetch() ) {
 
   my @apply_these;
   my $schema_version_warning = 0;
-
+  
   for ( my $r = $start_version; $r <= $opt_release; ++$r ) {
     foreach my $entry ( sort { $a->{'patch'} cmp $b->{'patch'} }
                         @{ $patches{$schema_type}{$r} } )
