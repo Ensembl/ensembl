@@ -1,7 +1,7 @@
-*** Schema patching using patch_schema.pl ***
+*** Schema patching using schema_patcher.pl ***
 
-This document describes the schema patch procedure for Ensembl core and
-variation databases.
+This document describes the schema patch procedure for Ensembl core, core like,
+variation and regulation/funcgen databases.
 
 
 -------------------------------------------------------------------------------
@@ -22,44 +22,62 @@ track which patches have been applied to which dbs.
 
 This meta information is also used by the new script to determine which patches
 need to be applied to a db (note that you can still apply the patches manually
-if you prefer). The script is ensembl/misc-scripts/schema_patch.pl, run with
---help to see all options it accepts (on the commandline or from an ini-style
-script passed in with --conffile).
+if you prefer). The script is ensembl/misc-scripts/schema_patcher.pl; please
+consult the help and extended help that comes with this script for more
+advanced use cases.
 
 
 Typical use for core databases:
 -------------------------------
 
-1. check which patches need to be applied:
+Please note this will only apply patches to core and core like 
+databases (rnaseq etc.). Please look at the help for other examples:
+
+1. Check which patches need to be applied:
 
 This step is entirely optional, you can proceed to step (2) immediately if you
 like.
 
-    $ ensembl/misc-scripts/schema_patch.pl --host ecs2 --port 3364 \
-        --user xxx --pass xxx --pattern %_core_39_% --schema 39 \
-        --dry_run 1 --interactive 0
+  $ ensembl/misc-scripts/schema_patcher.pl --host HOST --port PORT \
+    --user xxx --pass xxx --type core --from 65 --to 66 --verbose --dryrun 
 
-2. actually patch the databases:
+2. Patch the databases:
 
-    $ ensembl/misc-scripts/schema_patch.pl --host ecs2 --port 3364 \
-        --user xxx --pass xxx --pattern %_core_39_% --schema 39 \
-        --logfile /your/log/patch/schema_patch.39.log
+  $ ensembl/misc-scripts/schema_patcher.pl --host HOST --port PORT \
+    --user xxx --pass xxx --type core --from 65 --to 66 --verbose
 
-The script will run interactively and prompt you for each database matching the
-pattern. --logfile is optional but useful for keeping track of what you've
-done.
+Patching other databases:
+-------------------------
 
+The schema_patcher.pl has been modified to work as well to patch funcgen and
+variation databases. If you want to patch the variation DBs then run as 
+follows
 
-Patching variation databases:
------------------------------
+  $ ensembl/misc-scripts/schema_patcher.pl --host HOST --port PORT \
+    --user xxx --pass xxx --type variation --from 65 --to 66 --verbose
 
-The schema_patch.pl has been modified to work as well to patch variation
-databases. By default, and if you run it as above, it will patch the core
-databases. If you want to patch the variation_databases, the option
---patch_variation_database should be added, so it will read the
-ensembl-variation/sql directory and apply all the patch_*.sql to the database,
-as it does with the core databases.
+Running against a single database:
+----------------------------------
 
+Some circumstances require the running of the code against a single database
+(though the script is intelligent enough to avoid running a patch which has
+already been reported as run in the meta table).
+
+  $ ensembl/misc-scripts/schema_patcher.pl --host HOST --port PORT \
+    --user xxx --pass xxx --database homo_sapiens_core_66_37 --from 65 --to 66 --verbose
+
+Checking if you are up to date:
+-------------------------------
+
+The following will check all core databases on the current server and will
+check that all patches have been applied and reports back when they are not.
+
+  $ ensembl/misc-scripts/schema_patcher.pl --host HOST --port PORT \
+    --user xxx --pass xxx --type core --release 66 --dryrun
+
+It is then left to the user to look at those missing patches & attempt to 
+recreate the patch as best they can (natural schema churn can result in 
+old patches becoming redundant or unsafe to run on a later DBs).
 
 -------------------------------------------------------------------------------
 Writing patches
@@ -87,7 +105,7 @@ Related files
 
 The patch script:
 
-  ensembl/misc_scripts/patch_schema.pl
+  ensembl/misc_scripts/schema_patcher.pl
 
 Schema definition and patch files:
 
@@ -96,4 +114,7 @@ Schema definition and patch files:
 
   ensembl-variation/sql/table.sql
   ensembl-variation/sql/patch*.sql
+  
+  ensembl-functgenomics/sql/table.sql
+  ensembl-functgenomics/sql/patch*.sql
 
