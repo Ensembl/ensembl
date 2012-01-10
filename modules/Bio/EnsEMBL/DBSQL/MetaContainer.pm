@@ -28,10 +28,10 @@ database meta information
   my $meta_container =
     $registry->get_adaptor( 'Human', 'Core', 'MetaContainer' );
 
-  my $species = $meta_container->get_Species();
-
   my @mapping_info =
     @{ $meta_container->list_value_by_key('assembly.mapping') };
+  
+  my $scientific_name = $meta_container->get_scientific_name();
 
 =head1 DESCRIPTION
 
@@ -43,16 +43,14 @@ database meta information
 
 package Bio::EnsEMBL::DBSQL::MetaContainer;
 
-use vars qw(@ISA);
 use strict;
+use warnings;
 
-use Bio::EnsEMBL::DBSQL::BaseMetaContainer;
-use Bio::EnsEMBL::Utils::Exception;
-
+use Bio::EnsEMBL::Utils::Exception qw/deprecate/;
 use Bio::Species;
 
 
-@ISA = qw(Bio::EnsEMBL::DBSQL::BaseMetaContainer);
+use base qw/Bio::EnsEMBL::DBSQL::BaseMetaContainer/;
 
 # add well known meta info get-functions below
 
@@ -125,16 +123,19 @@ sub get_scientific_name {
 
   Arg [1]    : none
   Example    : $species = $meta_container->get_Species();
-  Description: Obtains the species from this databases meta table
+  Description: Obtains the species from this databases meta table. Call is
+               deprecated; please use other subroutines in this package
   Returntype : Bio::Species
   Exceptions : none
   Caller     : ?
-  Status     : Stable
+  Status     : Deprecated
 
 =cut
 
 sub get_Species {
   my ($self) = @_;
+
+  deprecate('Call is deprecated. Use $self->get_common_name() / $self->get_classification() / $self->get_scientific_name() instead');
 
   my $common_name = $self->get_common_name();
   my $classification =
@@ -143,9 +144,9 @@ sub get_Species {
     return undef;
   }
 
-  my $species = new Bio::Species;
+  my $species = Bio::Species->new();
   $species->common_name($common_name);
-  $species->classification(@$classification);
+  $species->classification($classification, 1); #always force it
 
   return $species;
 }
@@ -219,6 +220,27 @@ sub get_max_assembly_contig {
 sub get_genebuild {
   my ($self) = @_;
   return $self->single_value_by_key('genebuild.start_date', 1);
+}
+
+=head2 get_genebuild
+
+  Example    : $classification = $meta_container->get_classification();
+  Description: Retrieves the classification held in the backing database minus
+               any species specific levels. This means that the first element
+               in the array will be subfamily/family level ascending to
+               superkingdom
+  Returntype : ArrayRef[String]
+  Exceptions : none
+  Caller     : ?
+  Status     : Stable
+
+=cut
+
+sub get_classification {
+  my ($self) = @_;
+  my $classification = $self->list_value_by_key('species.classification');
+  splice(@{$classification}, 0, 2); # remove the sapiens, Homo from the backing array
+  return $classification;
 }
 
 
