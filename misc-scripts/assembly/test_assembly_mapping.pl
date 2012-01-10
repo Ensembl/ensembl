@@ -86,11 +86,11 @@ foreach my $chr (@chrs) {
 
 
       #count all features in the old db
-      $sql = "select count(1) from mapping where feature_type = '" . $feature_type . "'";
+      $sql = "select count(1) from mapping where feature_type = '" . $feature_type . "' and old_chr = '". $chr . "'" ;
       my ($total_features_old) = $dbh->selectrow_array($sql);
 
       #count all features both in the old and new db
-      $sql = "select count(1) from mapping where feature_type = '" . $feature_type . "' and feature_found_in_new_db = 1";
+      $sql = "select count(1) from mapping where feature_type = '" . $feature_type . "' and feature_found_in_new_db = 1 and old_chr = '". $chr . "'";
       my ($total_features_old_new) = $dbh->selectrow_array($sql);
 
       my $perc_features = ($total_features_old_new/$total_features_old) * 100;
@@ -99,7 +99,7 @@ foreach my $chr (@chrs) {
       $support->log_stamped("$total_features_old_new $feature_type" . "s found in both old and new assembly dbs ($perc_features\% in old assembly db found in new db)\n\n", 1);
 
       #count features which have the same length in the new db
-      $sql = "select count(1) from mapping where feature_type = '" . $feature_type . "' and  feature_found_in_new_db = 1 and old_length = new_length";
+      $sql = "select count(1) from mapping where feature_type = '" . $feature_type . "' and  feature_found_in_new_db = 1 and old_length = new_length and old_chr = '". $chr . "'";
 
       my ($total_same_length) = $dbh->selectrow_array($sql);
 
@@ -111,7 +111,7 @@ foreach my $chr (@chrs) {
 
 	  $support->log_stamped("$total_same_length $feature_type" . "s where feature length in the old assembly db is the same as in the new assembly db\n\n", 2);
 
-	  $sql = "select count(1) as mapping_count,mapping_quality from mapping where feature_type = '" . $feature_type . "' and  feature_found_in_new_db = 1 and old_length = new_length and new_start = mapping_start and new_end = mapping_end and (new_strand = mapping_strands or mapping_strands = 'both') and (mapping_chrs = new_chr or mapping_chrs like concat(new_chr,',%')) group by mapping_quality";
+	  $sql = "select count(1) as mapping_count,mapping_quality from mapping where feature_type = '" . $feature_type . "' and old_chr = '". $chr . "' and  feature_found_in_new_db = 1 and old_length = new_length and new_start = mapping_start and new_end = mapping_end and (new_strand = mapping_strands or mapping_strands = 'both') and (mapping_chrs = new_chr or mapping_chrs like concat(new_chr,',%')) group by mapping_quality";
 
 	  my %mapping_counts = %{$dbh->selectall_hashref($sql,"mapping_quality")};
 	  
@@ -121,7 +121,7 @@ foreach my $chr (@chrs) {
 		   my $perc = ($mapping_counts{$mapping_q}{'mapping_count'}/$total_same_length) * 100;
 		   $perc = sprintf "%.2f", $perc;
 
-		   $support->log_stamped("$mapping_counts{$mapping_q}{'mapping_count'} $feature_type mappings $mapping_quality{$mapping_q} where feature length in the old assembly db is the same as in the new assembly db and mapping start and end matchfeature location in the new db ($perc\%)\n\n", 3);
+		   $support->log_stamped("$mapping_counts{$mapping_q}{'mapping_count'} $feature_type mappings $mapping_quality{$mapping_q} where feature length in the old assembly db is the same as in the new assembly db and mapping start and end match feature location in the new db ($perc\%)\n\n", 3);
 		  
 		   $ok_mappings += $mapping_counts{$mapping_q}{'mapping_count'};
 		   
@@ -137,7 +137,7 @@ foreach my $chr (@chrs) {
 	  $support->log_stamped("no $feature_type" . "s found for chromosome $chr where feature length in the old assembly db is the same as in the new assembly db\n\n", 2);
       }
    
-      $sql = "select count(1) from mapping where feature_type = '" . $feature_type . "' and  feature_found_in_new_db = 1 and old_length != new_length";
+      $sql = "select count(1) from mapping where feature_type = '" . $feature_type . "' and old_chr = '". $chr . "' and feature_found_in_new_db = 1 and old_length != new_length";
 
       my ($total_diff_length) = $dbh->selectrow_array($sql);
 
@@ -147,7 +147,7 @@ foreach my $chr (@chrs) {
 
 	  #count features with different length in the new db where either mapping start or end match new feature start or end respectively, by mapping quality
 	  
-	  $sql = "select count(1) as mapping_count,mapping_quality from mapping where feature_type = '" . $feature_type . "'  and  feature_found_in_new_db = 1 and old_length != new_length and (new_start = mapping_start or new_end = mapping_end) and (new_strand = mapping_strands or mapping_strands = 'both') and (mapping_chrs = new_chr or mapping_chrs like concat(new_chr,',%')) group by mapping_quality";
+	  $sql = "select count(1) as mapping_count,mapping_quality from mapping where feature_type = '" . $feature_type . "' and old_chr = '". $chr . "'  and  feature_found_in_new_db = 1 and old_length != new_length and (new_start = mapping_start or new_end = mapping_end) and (new_strand = mapping_strands or mapping_strands = 'both') and (mapping_chrs = new_chr or mapping_chrs like concat(new_chr,',%')) group by mapping_quality";
 
 	  my %mapping_counts = %{$dbh->selectall_hashref($sql,"mapping_quality")};
 
@@ -164,7 +164,7 @@ foreach my $chr (@chrs) {
 	  }
 
 	  #count features with different length in the new db where either mapping start or end is within the difference between old and new length from the new feature start or end respectively, by mapping quality
-	  $sql = "select count(1) as mapping_count,mapping_quality from mapping where feature_type = '" . $feature_type . "' and  feature_found_in_new_db = 1 and old_length != new_length and (abs(new_start - mapping_start) <= abs(new_length - old_length) or abs(new_end - mapping_end) <= abs(new_length - old_length)) and new_start != mapping_start and new_end != mapping_end and (new_strand = mapping_strands or mapping_strands = 'both') and (mapping_chrs = new_chr or mapping_chrs like concat(new_chr,',%')) group by mapping_quality";
+	  $sql = "select count(1) as mapping_count,mapping_quality from mapping where feature_type = '" . $feature_type . "' and old_chr = '". $chr . "' and  feature_found_in_new_db = 1 and old_length != new_length and (abs(new_start - mapping_start) <= abs(new_length - old_length) or abs(new_end - mapping_end) <= abs(new_length - old_length)) and new_start != mapping_start and new_end != mapping_end and (new_strand = mapping_strands or mapping_strands = 'both') and (mapping_chrs = new_chr or mapping_chrs like concat(new_chr,',%')) group by mapping_quality";
 
 	  %mapping_counts = %{$dbh->selectall_hashref($sql,"mapping_quality")};
 
