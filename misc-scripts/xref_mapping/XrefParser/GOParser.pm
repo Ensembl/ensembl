@@ -251,7 +251,7 @@ sub run {
 	if(!defined($cerevisiae_set)){
 	  $cerevisiae_set = 1;
 	  # Todo: Make sure we get this hash populated
-	  %cerevisiae = %{$self->get_valid_codes("sgd_transcript",$species_id)};
+	  %cerevisiae = %{$self->get_valid_codes("sgd_translation",$species_id)};
 	  
 	  print STDERR "Got " . keys (%cerevisiae) . " cerevisiae ids\n";
 	  
