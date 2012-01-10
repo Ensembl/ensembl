@@ -1,0 +1,6 @@
+dbname                      = mk8_test_assembly_mappings_chr1_6
+host                        = ens-research
+port                        = 3306
+user                        = ensadmin
+pass                        = ensembl
+logpath			    = /lustre/scratch103/ensembl/mk8/cow_mapping
