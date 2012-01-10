@@ -195,7 +195,7 @@ sub dump_genes {
   my $gene_adaptor = $dba->get_GeneAdaptor();
 
   my $meta_container = $dba->get_MetaContainer();
-  my $species = $meta_container->get_Species()->common_name();
+  my $species = $meta_container->get_common_name();
 
   my $db_variation = variation_attach($dba) unless $no_variation;
 
