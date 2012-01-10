@@ -426,10 +426,10 @@ sub dump_embl {
   $self->write($FH, $EMBL_HEADER, 'DT', $self->_date_string);
   $self->print( $FH, "XX\n" );
 
-  my $species   = $slice->adaptor->db->get_MetaContainer->get_Species();
-
+  my $meta_container = $slice->adaptor()->db()->get_MetaContainer();
+  
   #Description
-  $self->write($FH, $EMBL_HEADER, 'DE', $species->binomial .
+  $self->write($FH, $EMBL_HEADER, 'DE', $meta_container->get_scientific_name() .
                " $name_str $start..$end annotated by Ensembl");
   $self->print( $FH, "XX\n" );
 
@@ -438,17 +438,16 @@ sub dump_embl {
   $self->print( $FH, "XX\n" );
 
   #Species
-  my $species_name = $species->binomial();
-  if(my $cn = $species->common_name()) {
+  my $species_name = $meta_container->get_scientific_name();
+  if(my $cn = $meta_container->get_common_name()) {
     $species_name .= " ($cn)";
   }
 
   $self->write($FH, $EMBL_HEADER, 'OS', $species_name);
 
   #Classification
-  my @cls = $species->classification;
-  shift @cls; #shift off species name
-  $self->write($FH, $EMBL_HEADER, 'OC', join('; ', reverse(@cls)) . '.');
+  my $cls = $meta_container->get_classification();
+  $self->write($FH, $EMBL_HEADER, 'OC', join('; ', reverse(@{$cls})) . '.');
   $self->print( $FH, "XX\n" );
   
   #References (we are not dumping refereneces)
@@ -582,8 +581,7 @@ sub dump_genbank {
 
   my $date = $self->_date_string;
 
-  my $species = $slice->adaptor->db->get_MetaContainer->get_Species;
-
+  my $meta_container = $slice->adaptor()->db()->get_MetaContainer();
 
   #LOCUS
   my $tag   = 'LOCUS';
@@ -592,7 +590,7 @@ sub dump_genbank {
 
   #DEFINITION
   $tag   = "DEFINITION";
-  $value = $species->binomial . 
+  $value = $meta_container->get_scientific_name() . 
     " $name_str $start..$end reannotated via EnsEMBL";
   $self->write($FH, $GENBANK_HEADER, $tag, $value);
 
@@ -606,12 +604,12 @@ sub dump_genbank {
   $self->write($FH, $GENBANK_HEADER, 'KEYWORDS', '.');
 
   # SOURCE
-  $self->write($FH, $GENBANK_HEADER, 'SOURCE', $species->common_name());
+  $self->write($FH, $GENBANK_HEADER, 'SOURCE', $meta_container->get_common_name());
 
   #organism
-  my @cls = $species->classification();
+  my @cls = $meta_container->get_classification();
   shift @cls;
-  $self->write($FH, $GENBANK_SUBHEADER, 'ORGANISM', $species->binomial);
+  $self->write($FH, $GENBANK_SUBHEADER, 'ORGANISM', $meta_container->get_scientific_name());
   $self->write($FH, $GENBANK_SUBHEADER, '', join('; ', reverse @cls) . ".");
 
   #refereneces
@@ -681,16 +679,15 @@ sub _dump_feature_table {
   my $lite = $slice->adaptor->db->remove_db_adaptor('lite');
 
   my $meta = $slice->adaptor->db->get_MetaContainer;
-  my $species = $meta->get_Species;
 
   #lump file handle and format string together for simpler method calls
   my @ff = ($FH, $FORMAT);
   my $value;
 
   #source
-  my $classification = join(', ', $species->classification);
+  my $classification = join(', ', $meta->get_classification());
   $self->write(@ff,'source', "1.." . $slice->length());
-  $self->write(@ff,''      , '/organism="'.$species->binomial . '"');
+  $self->write(@ff,''      , '/organism="'.$meta->get_scientific_name(). '"');
   $self->write(@ff,''      , '/db_xref="taxon:'.$meta->get_taxonomy_id().'"');
 
   #
