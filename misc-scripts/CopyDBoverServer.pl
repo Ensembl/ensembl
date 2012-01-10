@@ -399,6 +399,10 @@ foreach my $spec (@todo) {
     next;
   }
 
+  if(! $target_dir && $target_location) {
+    $target_dir = $target_location;
+  }
+
   if ( !defined($target_dir) ) {
     warn(
       sprintf(
@@ -411,10 +415,6 @@ foreach my $spec (@todo) {
 
     $source_dbh->disconnect();
     next;
-  }
-  
-  if(defined $target_location) {
-    $target_dir = $target_location;
   }
 
   printf( "SOURCE 'datadir' = '%s'\n", $source_dir );
