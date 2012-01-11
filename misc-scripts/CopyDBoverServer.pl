@@ -406,7 +406,7 @@ foreach my $spec (@todo) {
     next;
   }
 
-  if(! $target_dir && $target_location) {
+  if(! defined $target_location) {
     $target_dir = $target_location;
   }
 
@@ -434,7 +434,7 @@ foreach my $spec (@todo) {
 
   printf( "SOURCE 'datadir' = '%s'\n", $source_dir );
   printf( "TARGET 'datadir' = '%s'\n", $target_dir );
-  printf("TMPDIR = %s\n", $tmp_dir);
+  printf( "TMPDIR = %s\n", $tmp_dir);
   
   my $staging_dir = catdir( $tmp_dir, sprintf( "tmp.%s", $target_db ) );
   my $destination_dir = catdir( $target_dir, $target_db );
