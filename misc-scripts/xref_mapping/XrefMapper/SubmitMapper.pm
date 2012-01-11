@@ -215,7 +215,7 @@ sub dump_xref{
 	    }		    	    
 	}
 	if (!$source_found) {
-	    die "unable to find source_id for source name ". $sources[$k] ."\n";
+	    die "SubmitMapper:dump_xref unable to find source_id for source name ". $sources[$k] .".\nMake sure that the get_set_lists method is correct for species (SubmitMapper method which can be overriden in species.pm module)\n";
 	}
 	$exception_sql[$k] .= " AND x.source_id in (".join(', ',@tmp).") ";
 	
