@@ -406,7 +406,7 @@ foreach my $spec (@todo) {
     next;
   }
 
-  if(! defined $target_location) {
+  if(defined $target_location) {
     $target_dir = $target_location;
   }
 
