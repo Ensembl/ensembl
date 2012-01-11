@@ -75,6 +75,9 @@ About:
 
   where NN is the current release and "password" is the password for the
   standard user with write permission.
+  
+  If DBs have dissapeared from a release then manual intervention from 
+  the user is required to confirm deletion.
 
 ABOUT_END
 }
@@ -179,7 +182,7 @@ foreach my $server (@servers) {
 
   my $sth = $dbh->prepare($statement);
 
-  foreach my $species ( keys(%species) ) {
+  foreach my $species ( sort keys(%species) ) {
     $sth->bind_param( 1,
                       sprintf( '%s\_%%\_%s\_%%', $species, $release ),
                       SQL_VARCHAR );
@@ -227,56 +230,89 @@ foreach my $server (@servers) {
   $dbh->disconnect();
 } ## end foreach my $server (@servers)
 
+my $dsn = sprintf( 'DBI:mysql:host=%s;port=%d;database=%s',
+                     $master, $mport, 'ensembl_production' );
+my $dbh = DBI->connect( $dsn, $dbwuser, $dbwpass,
+                        { 'PrintError' => 1, 'RaiseError' => 1 } );
+
 if ( scalar( keys(%databases) ) == 0 ) {
   printf( "Did not find any new databases for release %s\n", $release );
-} else {
-  my $dsn = sprintf( 'DBI:mysql:host=%s;port=%d;database=%s',
-                     $master, $mport, 'ensembl_production' );
-  my $dbh = DBI->connect( $dsn, $dbwuser, $dbwpass,
-                          { 'PrintError' => 1, 'RaiseError' => 1 } );
-
+} 
+else {
   my $statement =
       'INSERT INTO db '
     . '(species_id, is_current, db_type, '
     . 'db_release, db_assembly, db_suffix, db_host) '
     . 'VALUES (?, 1, ?, ?, ?, ?, ?)';
   my $sth = $dbh->prepare($statement);
+  my $update_sth = $dbh->prepare(<<'SQL');
+update db set is_current =?, db_assembly=?, db_suffix =?, db_host =? 
+where species_id =? and db_type =? and db_release =?'
+SQL
 
-  foreach my $database ( keys(%databases) ) {
+  foreach my $database ( sort keys(%databases) ) {
     my $db_hash = $databases{$database};
-
-    printf( "Inserting database '%s' into "
-              . "the production database\n",
-            $database );
-
-    $sth->bind_param( 1, $db_hash->{'species_id'},  SQL_INTEGER );
-    $sth->bind_param( 2, $db_hash->{'db_type'},     SQL_VARCHAR );
-    $sth->bind_param( 3, $release,                  SQL_INTEGER );
-    $sth->bind_param( 4, $db_hash->{'db_assembly'}, SQL_VARCHAR );
-    $sth->bind_param( 5, $db_hash->{'db_suffix'},   SQL_VARCHAR );
-    $sth->bind_param( 6, $db_hash->{'db_host'},     SQL_VARCHAR );
-
-    $sth->execute();
+    
+    my @already_recorded = $dbh->selectrow_array('select count(1) from db where species_id =? and db_type =? and db_release =?', 
+      {}, $db_hash->{species_id}, $db_hash->{db_type}, $release);
+      
+    if($already_recorded[0]) {
+      my @name = $dbh->selectrow_array('select name from species where species_id =?', {}, $db_hash->{species_id});
+      printf("Species '%s' has a database '%s' recorded for this release. Updating\n", $name[0], $database);
+      
+      $update_sth->bind_param( 1, 1,                          SQL_INTEGER );
+      $update_sth->bind_param( 2, $db_hash->{'db_assembly'},  SQL_VARCHAR );
+      $update_sth->bind_param( 3, $db_hash->{'db_suffix'},    SQL_VARCHAR );
+      $update_sth->bind_param( 4, $db_hash->{'db_host'},      SQL_VARCHAR );
+      $update_sth->bind_param( 5, $db_hash->{'species_id'},   SQL_INTEGER );
+      $update_sth->bind_param( 6, $db_hash->{'db_type'},      SQL_VARCHAR );
+      $update_sth->bind_param( 7, $release,                   SQL_INTEGER );
+      $update_sth->execute();
+    }
+    else {
+      printf( "Inserting database '%s' into "
+                . "the production database\n",
+              $database );
+  
+      $sth->bind_param( 1, $db_hash->{'species_id'},  SQL_INTEGER );
+      $sth->bind_param( 2, $db_hash->{'db_type'},     SQL_VARCHAR );
+      $sth->bind_param( 3, $release,                  SQL_INTEGER );
+      $sth->bind_param( 4, $db_hash->{'db_assembly'}, SQL_VARCHAR );
+      $sth->bind_param( 5, $db_hash->{'db_suffix'},   SQL_VARCHAR );
+      $sth->bind_param( 6, $db_hash->{'db_host'},     SQL_VARCHAR );
+  
+      $sth->execute();
+    }
   }
+  $sth->finish();
+  $update_sth->finish();
 
   $dbh->do(
          sprintf( 'UPDATE db SET is_current = 0 WHERE db_release != %s',
                   $dbh->quote( $release, SQL_INTEGER ) ) );
 
-  $dbh->disconnect();
 } ## end else [ if ( scalar( keys(%databases...)))]
 
 if ( scalar( keys(%existing_databases) ) !=
      scalar( keys(%found_databases) ) )
 {
-  print("The following databases seems to have disappeared:\n");
-  foreach my $db_name ( keys(%existing_databases) ) {
+  local $| = 1;
+
+  print("The following databases seem to have disappeared:\n");
+  foreach my $db_name ( sort keys(%existing_databases) ) {
     if ( !exists( $found_databases{$db_name} ) ) {
-      printf( "\t%s\n", $db_name );
+      printf( "\t%s. Remove this database? (y/N): ", $db_name );
+      my $yesno = <STDIN>;
+      chomp($yesno);
+      if ( lc($yesno) =~ /^y(?:es)?$/ ) {
+        my @dbid = $dbh->selectrow_array('select db_id from db_list where full_name =?', {}, $db_name);
+        my $sth = $dbh->prepare('delete from db where db_id =?');
+        $sth->execute($dbid[0]);
+        $sth->finish();
+      }
     }
   }
   print("\n");
-  print(  "If these are really properly gone, "
-        . "please remove the corresponding\n"
-        . "entries from the 'db' table of the production database.\n" );
 }
+
+$dbh->disconnect();
