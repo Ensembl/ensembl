@@ -420,7 +420,7 @@ while ( $sth->fetch() ) {
   else { 
     if($opt_verbose) {
       printf("Skipping database %s (type: %s | version: %d)\n", $database, ($schema_type||'-'), ($schema_version || 0));
-      if(defined $schema_version && $schema_version == $opt_release) {
+      if( $schema_type_ok && $schema_type eq $opt_type && $schema_version_ok && $schema_version == $opt_release) {
         printf("\tDB version was equal to latest release; if you need to patch then rerun with --fix and --dryrun\n");
       }
     }
