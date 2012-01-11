@@ -106,6 +106,11 @@ Command line switches:
                     (Optional)
                     Copy all tables except the ones specified in the
                     comma-delimited list.
+  
+  --tmpdir=TMP      (Optional)
+                    Allows for a non-standard tmp location to be used during
+                    the copy process. Normally it will create a directory
+                    called tmp in the directory above the target data dir.
 
   --help            (Optional)
                     Displays this text.
@@ -164,6 +169,7 @@ my $opt_optimize = 1;    # Optimize the tables by default.
 my $opt_force = 0; # Do not reuse existing staging directory by default.
 my $opt_skip_views = 0; # Process views by default
 my $opt_innodb = 1;    # Don't skip InnoDB by default
+my $opt_tmp_dir;
 
 if ( !GetOptions( 'pass=s'        => \$opt_password,
                   'flush!'        => \$opt_flush,
@@ -174,6 +180,7 @@ if ( !GetOptions( 'pass=s'        => \$opt_password,
                   'skip_tables=s' => \$opt_skip_tables,
                   'innodb!'       => \$opt_innodb,
                   'skip_views!'   => \$opt_skip_views,
+                  'tmp_dir=s'     => \$opt_tmp_dir,
                   'help'          => \$opt_help )
      || ( !defined($opt_password) && !defined($opt_help) ) )
 {
@@ -416,12 +423,19 @@ foreach my $spec (@todo) {
     $source_dbh->disconnect();
     next;
   }
+  
+  my $tmp_dir;
+  if($opt_tmp_dir) {
+    $tmp_dir = $opt_tmp_dir;
+  }
+  else {
+    $tmp_dir = canonpath( catdir( $target_dir, updir(), 'tmp' ) );
+  }
 
   printf( "SOURCE 'datadir' = '%s'\n", $source_dir );
   printf( "TARGET 'datadir' = '%s'\n", $target_dir );
-
-  my $tmp_dir = canonpath( catdir( $target_dir, updir(), 'tmp' ) );
-
+  printf("TMPDIR = %s\n", $tmp_dir);
+  
   my $staging_dir = catdir( $tmp_dir, sprintf( "tmp.%s", $target_db ) );
   my $destination_dir = catdir( $target_dir, $target_db );
 
