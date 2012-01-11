@@ -169,7 +169,7 @@ my $opt_optimize = 1;    # Optimize the tables by default.
 my $opt_force = 0; # Do not reuse existing staging directory by default.
 my $opt_skip_views = 0; # Process views by default
 my $opt_innodb = 1;    # Don't skip InnoDB by default
-my $opt_tmp_dir;
+my $opt_tmpdir;
 
 if ( !GetOptions( 'pass=s'        => \$opt_password,
                   'flush!'        => \$opt_flush,
@@ -180,7 +180,7 @@ if ( !GetOptions( 'pass=s'        => \$opt_password,
                   'skip_tables=s' => \$opt_skip_tables,
                   'innodb!'       => \$opt_innodb,
                   'skip_views!'   => \$opt_skip_views,
-                  'tmp_dir=s'     => \$opt_tmp_dir,
+                  'tmpdir=s'      => \$opt_tmpdir,
                   'help'          => \$opt_help )
      || ( !defined($opt_password) && !defined($opt_help) ) )
 {
@@ -425,8 +425,8 @@ foreach my $spec (@todo) {
   }
   
   my $tmp_dir;
-  if($opt_tmp_dir) {
-    $tmp_dir = $opt_tmp_dir;
+  if($opt_tmpdir) {
+    $tmp_dir = $opt_tmpdir;
   }
   else {
     $tmp_dir = canonpath( catdir( $target_dir, updir(), 'tmp' ) );
