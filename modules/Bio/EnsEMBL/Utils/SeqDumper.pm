@@ -115,6 +115,8 @@ sub new {
 
   foreach my $p (sort keys %{$params || {}}) {
       $self->{$p} = $params->{$p};
+      # TODO: Figure out what this might have been for
+      # Why are we sorting prior to putting it back into a hash?
   }
 
   return $self;
@@ -281,12 +283,15 @@ sub is_enabled {
 
   Arg [1]    : Bio::EnsEMBL::Slice slice
                The slice to dump
-  Arg [1]    : string $format
+  Arg [2]    : string $format
                The name of the format to dump
-  Arg [2]    : (optional) $outfile
+  Arg [3]    : (optional) $outfile
                The name of the file to dump to. If no file is specified STDOUT
                is used
+  Arg [4]    : (optional) Sequence string for EMBL format
+  Arg [5]    : (optional) Additional metadata, e.g. for custom FASTA headers
   Example    : $seq_dumper->dump($slice, 'EMBL');
+               $seq_dumper->dump($slice, 'FASTA', $filehandle, undef, $custom_header);
   Description: Dumps a region of a genome specified by the slice argument into
                an outfile of the format $format
   Returntype : none
@@ -297,7 +302,7 @@ sub is_enabled {
 
 
 sub dump {
-  my ($self, $slice, $format, $outfile, $seq) = @_;
+  my ($self, $slice, $format, $outfile, $seq, $metadata) = @_;
 
   $format || throw("format arg is required");
   $slice  || throw("slice arg is required");
@@ -309,18 +314,22 @@ sub dump {
   }
 
 
-  my $FH = IO::File->new;;
-  if($outfile) {
-    $FH->open(">>$outfile") or throw("Could not open file $outfile");
-  } else {
+  my $FH;
+  if (ref($outfile) eq "IO::File") {$FH=$outfile;} 
+  else {
+  	$FH = IO::File->new;;
+  
+    if($outfile) {
+      $FH->open(">>$outfile") or throw("Could not open file $outfile");
+    } else {
     $FH = \*STDOUT;
     #mod_perl did not like the following
     #$FH->fdopen(fileno(STDOUT), "w") 
     #  or throw("Could not open currently selected output filehandle " .
     #		      "for writing");
+    }
   }
-  
-  &$dump_handler($self, $slice, $FH, $seq);
+  &$dump_handler($self, $slice, $FH, $seq, $metadata);
 
   $FH->close if ($outfile); #close if we were writing to a file
 }
@@ -676,7 +685,6 @@ sub _dump_feature_table {
   my $FORMAT = shift;
 
   #use only the core database to dump features (except for bloody snps)
-  my $lite = $slice->adaptor->db->remove_db_adaptor('lite');
 
   my $meta = $slice->adaptor->db->get_MetaContainer;
 
@@ -896,7 +904,6 @@ sub _dump_feature_table {
     }
   }
 
-  $slice->adaptor->db->add_db_adaptor('lite', $lite) if $lite;
 
 }
 
@@ -928,8 +935,11 @@ sub transcript_to_codon_start {
 
   Arg [1]    : Bio::EnsEMBL::Slice
   Arg [2]    : IO::File $FH
+  Arg [4]    : String, Custom header
   Example    : $seq_dumper->dump_fasta($slice, $FH);
+  Example    : $seq_dumper->dump_fasta($slice, $FH, $metadata);
   Description: Dumps an FASTA flat file to an open file handle
+               Capable of specifying a customised header for rare cases.
   Returntype : none
   Exceptions : none
   Caller     : dump
@@ -940,6 +950,7 @@ sub dump_fasta {
   my $self = shift;
   my $slice = shift;
   my $FH   = shift;
+  my $metadata = shift;
 
   my $id       = $slice->seq_region_name;
   my $seqtype  = 'dna';
@@ -948,7 +959,14 @@ sub dump_fasta {
   my $start = 1;
   my $end = $slice->length();
 
-  my $header = ">$id $seqtype:$idtype $location\n";
+  my $header; 
+  if ($metadata) {
+  	#TODO Finish this method
+  	$header = $metadata;
+  } 
+  else {$header = ">$id $seqtype:$idtype $location\n";}
+  
+  
   $self->print( $FH, $header );
 
   #set the formatting to FASTA
@@ -965,8 +983,6 @@ sub dump_fasta {
     $self->write($FH, $FORMAT, $seq);
   }
 }
-
-
 
 =head2 features2location
 
