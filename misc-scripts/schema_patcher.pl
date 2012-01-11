@@ -423,7 +423,7 @@ while ( $sth->fetch() ) {
       if( $schema_type_ok && $schema_type eq $opt_type && $schema_version_ok && $schema_version == $opt_release) {
         
         my $release_patches = join(q{,}, sort @{$patches{$schema_type}{$schema_version}});
-        my $db_patches = join(q{,}, sort @{$dbpatches{$schema_version}});
+        my $db_patches = join(q{,}, sort keys %{$dbpatches{$schema_version}});
         
         if($release_patches ne $db_patches) {
           printf("\t%s patches [%s] are not the same as release %i patches [%s]; if you need to patch then rerun with --fix and --dryrun\n", 
