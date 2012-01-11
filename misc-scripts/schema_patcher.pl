@@ -417,7 +417,15 @@ while ( $sth->fetch() ) {
             $database, defined($species) ? $species : 'unknown',
             $schema_type, $schema_version );
   }
-  else { next }
+  else { 
+    if($opt_verbose) {
+      printf("Skipping database %s (type: %s | version: %d)\n", $database, ($schema_type||'-'), $schema_version);
+      if($schema_version == $opt_release) {
+        printf("\tDB version was equal to latest release; if you need to patch then rerun with --fix and --dryrun\n");
+      }
+    }
+    next; 
+  }
 
   # Now figure out what patches we need to apply to this database.
 
