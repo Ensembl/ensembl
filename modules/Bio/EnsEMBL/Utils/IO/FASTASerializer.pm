@@ -27,7 +27,7 @@ Bio::EnsEMBL::Utils::IO::FASTASerializer
   my $serializer = Bio::EnsEMBL::Utils::IO::FASTASerializer->new($filehandle);
   $serializer->chunk_factor(1000);
   $serializer->line_width(60);
-  $serializer->print_slice($slice);
+  $serializer->print_Slice($slice);
   
   $serializer = Bio::EnsEMBL::Utils::IO::FASTASerializer->new($filehandle,
     sub {
@@ -44,7 +44,8 @@ Bio::EnsEMBL::Utils::IO::FASTASerializer
   buffer is used by default with a line width of 60 characters.
   
   Custom headers are set by supplying an anonymous subroutine to new(). Custom
-  header code must accept a Slice object as argument and return a string.
+  header code must accept a Slice or Bio::PrimarySeqI compliant object as 
+  argument and return a string.
 
 =cut
 
@@ -121,8 +122,10 @@ sub print_metadata {
 
 =head2 print_slice
 
-    Arg [1]    : Bio::EnsEMBL::Slice
+    Arg [1]    : Bio::EnsEMBL::Slice or other Bio::PrimarySeqI compliant object
     Description: Serialises the slice into FASTA format. Buffering is used
+                 While other Bioperl PrimarySeqI implementations can be used,
+                 a custom header function will be required to accommodate it.
     Returntype : None
     
 =cut
