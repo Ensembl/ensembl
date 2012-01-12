@@ -530,6 +530,7 @@ while ( $sth->fetch() ) {
     $apply_patches = (lc($yesno) =~ /^y(?:es)?$/) ? 1 : 0;
   }
   else {
+    $apply_patches = 1;
     print "Enterning non-interative mode. Will apply patches\n";
   }
 
@@ -539,14 +540,14 @@ while ( $sth->fetch() ) {
       my $patch = $entry->{'patch'};
       my $path  = $entry->{'path'};
 
-      my @cmd_list = ( $opt_mysql,
-                       "--host=$opt_host",
-                       "--user=$opt_user",
-                       "--password=$opt_pass",
-                       "--port=$opt_port",
-                       "--database=$database",
-                       "--verbose",
-                       "--execute=source $path" );
+      my @cmd_list = (  $opt_mysql,
+                        "--host=$opt_host",
+                        "--user=$opt_user");
+      push(@cmd_list,   "--password=$opt_pass") if $opt_pass;
+      push(@cmd_list,   "--port=$opt_port",
+                        "--database=$database",
+                        "--verbose",
+                        "--execute=source $path" );
 
       printf( "Executing the following command:\n%s\n",
               join( ' ', @cmd_list ) );
