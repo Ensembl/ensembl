@@ -745,7 +745,7 @@ sub fetch_all_by_Transcript_list {
   # splitting large queries into smaller queries of 200 ids
   my $max_size = 200;
 
-  my ( $tr_id,$tl_id, $start_exon_id, $end_exon_id,
+  my ( $transcript_id, $translation_id, $start_exon_id, $end_exon_id,
        $seq_start, $seq_end, $stable_id, $version, 
        $created_date, $modified_date );
 
@@ -765,6 +765,10 @@ sub fetch_all_by_Transcript_list {
     } else {
       $id_str = " = " . $ids[0];
     }
+    
+    my $canonical_lookup = $self->dbc()->sql_helper()->execute_into_hash(
+      -SQL => 'SELECT transcript_id, canonical_translation_id FROM transcript WHERE transcript_id '.$id_str
+    );
 
     my $created_date = $self->db->dbc->from_date_to_seconds("tl.created_date");
     my $modified_date = $self->db->dbc->from_date_to_seconds("tl.modified_date");
@@ -779,7 +783,7 @@ sub fetch_all_by_Transcript_list {
 
     $sth->execute();
 
-    $sth->bind_columns( \$tr_id, \$tl_id, \$start_exon_id, \$end_exon_id,
+    $sth->bind_columns( \$transcript_id, \$translation_id, \$start_exon_id, \$end_exon_id,
                         \$seq_start, \$seq_end, \$stable_id, \$version,
 			\$created_date, \$modified_date );
 
@@ -789,7 +793,7 @@ sub fetch_all_by_Transcript_list {
       # this will load all the exons whenever we load the translation
       # but I guess thats ok ....
 
-      my $tr = $trans_hash{$tr_id};
+      my $tr = $trans_hash{$transcript_id};
 
       foreach my $exon (@{$tr->get_all_Exons()}) {
         if(!$start_exon && $exon->dbID() == $start_exon_id ) {
@@ -808,7 +812,7 @@ sub fetch_all_by_Transcript_list {
       }
 
       my $tl =  Bio::EnsEMBL::Translation->new
-        (-dbID => $tl_id,
+        (-dbID => $translation_id,
          -seq_start => $seq_start,
          -seq_end => $seq_end,
          -start_exon => $start_exon,
@@ -819,7 +823,8 @@ sub fetch_all_by_Transcript_list {
 	 -modified_date => $modified_date || undef);
       
       $tl->adaptor($self);
-      $tr->translation($tl);
+      my $canonical_translation_id = $canonical_lookup->{$transcript_id};
+      $tr->translation($tl) if $translation_id == $canonical_translation_id;
 
       push @out, $tl;
     }
