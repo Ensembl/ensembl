@@ -35,6 +35,8 @@ Bio::EnsEMBL::Utils::IO::FASTASerializer
         return ">Custom header";
     }
   );
+  $serializer->print_metadata($slice);
+  $serializer->print_Slice($slice,"no duplicate headers please");
   
 =head1 DESCRIPTION
 
@@ -123,9 +125,13 @@ sub print_metadata {
 =head2 print_slice
 
     Arg [1]    : Bio::EnsEMBL::Slice or other Bio::PrimarySeqI compliant object
-    Description: Serialises the slice into FASTA format. Buffering is used
+    Arg [2]    : Optional Boolean - override the default serialisation of a header
+    Description: Serializes the slice into FASTA format. Buffering is used
                  While other Bioperl PrimarySeqI implementations can be used,
                  a custom header function will be required to accommodate it.
+                 
+                 Add an override as second argument if more control is needed
+                 over when and how custom headers are written.
     Returntype : None
     
 =cut
@@ -133,9 +139,10 @@ sub print_metadata {
 sub print_Slice {
     my $self = shift;
     my $slice = shift;
+    my $override = shift;
     my $fh = $self->{'filehandle'};
-    # Insert header line
-    $self->print_metadata($slice);
+    # Default print header, override
+    $self->print_metadata($slice) unless $override;
     
     # set buffer size
     my $chunk_size = $self->{'chunk_factor'} * $self->{'line_width'};
