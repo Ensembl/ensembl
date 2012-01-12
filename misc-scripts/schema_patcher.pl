@@ -571,7 +571,7 @@ sub _sql_dir {
     my ($volume, $directories, $file) = splitpath(__FILE__);
     $cvs_dir = catdir($directories, updir(), updir());
   }
-  my $sql_dir = rel2abs(canonpath( catdir( $opt_cvsdir, $cvs_module, 'sql' ) ));
+  my $sql_dir = rel2abs(canonpath( catdir( $cvs_dir, $cvs_module, 'sql' ) ));
   my $schema_location = catfile($sql_dir, $schema_file);
   if(! -f $schema_location) {
     warn(sprintf("Could not find the schema file '%s'. Computed SQL dir was '%s'", $schema_location, $sql_dir));
