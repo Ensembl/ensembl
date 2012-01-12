@@ -105,7 +105,12 @@ SQL
   $sth->finish;
 
   print "Added $added Xrefs for ncRNAs\n" if($verbose);
-  return 0;
+
+  if ($added > 0) {
+      return 0;
+  } else {
+      return 1;
+  }
 }
 
 1;
