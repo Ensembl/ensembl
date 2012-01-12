@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 use DBI qw( :sql_types );
-use File::Spec::Functions;
+use File::Spec::Functions qw/:ALL/;
 use Getopt::Long qw( :config no_ignore_case auto_version );
 use IO::Dir;
 
@@ -53,7 +53,7 @@ Usage:
   --species / -s    restrict to species (optional, no default)
 
   --cvsdir          the directory where the relevant Ensembl CVS modules
-                    have been checked out (optional, default='../../')
+                    have been checked out (optional, default=misc-scripts/../..)
 
   --dryrun / -n     do not actually modify databases
                     (optional, default=not set)
@@ -215,16 +215,21 @@ my %patches;
 
 # Get available patches.
 
-foreach my $thing ( [ 'ensembl',               'core' ],
-                    [ 'ensembl-functgenomics', 'funcgen' ],
-                    [ 'ensembl-variation',     'variation' ] )
+foreach my $thing ( [ 'ensembl',               'core', 'table.sql' ],
+                    [ 'ensembl-functgenomics', 'funcgen', 'efg.sql' ],
+                    [ 'ensembl-variation',     'variation', 'table.sql' ] )
 {
-  my $cvs_module  = $thing->[0];
-  my $schema_type = $thing->[1];
+  my ($cvs_module, $schema_type, $schema_file) = @{$thing};
 
   if ( defined($opt_type) && $schema_type ne $opt_type ) { next }
 
-  my $sql_dir = canonpath( catdir( $opt_cvsdir, $cvs_module, 'sql' ) );
+  my $sql_dir = _sql_dir($cvs_module, $schema_file);
+  if(! defined $sql_dir) {
+    if ( !$opt_quiet ) {
+      warn('No SQL directory found for CVS module '.$cvs_module);
+    }
+    next;
+  }
   my $dh = IO::Dir->new($sql_dir);
 
   if ( !defined($dh) ) {
@@ -276,6 +281,12 @@ my $dsn = sprintf( "DBI:mysql:host=%s;port=%d", $opt_host, $opt_port );
 
 my $dbh = DBI->connect( $dsn, $opt_user, $opt_pass,
                         { 'RaiseError' => 0, 'PrintError' => 0 } );
+
+if(! $dbh) {
+  my $pass = ($opt_pass) ? 'with a' : 'with no';
+  warn(sprintf(q{Cannot connect to DSN '%s' with user %s %s password. Check your settings}, $dsn, $opt_user, $pass));
+  exit 1;  
+}
 
 # Loop through the databases on the server, patch the ones we want to
 # patch and filter out the ones that we don't want to patch.
@@ -549,3 +560,25 @@ while ( $sth->fetch() ) {
 } ## end while ( $sth->fetch() )
 
 $dbh->disconnect();
+
+sub _sql_dir {
+  my ($cvs_module, $schema_file) = @_;
+  my $cvs_dir;
+  if($opt_cvsdir) {
+    $cvs_dir = $opt_cvsdir;
+  }
+  else {
+    my ($volume, $directories, $file) = splitpath(__FILE__);
+    $cvs_dir = catdir($directories, updir(), updir());
+  }
+  my $sql_dir = rel2abs(canonpath( catdir( $opt_cvsdir, $cvs_module, 'sql' ) ));
+  my $schema_location = catfile($sql_dir, $schema_file);
+  if(! -f $schema_location) {
+    warn(sprintf("Could not find the schema file '%s'. Computed SQL dir was '%s'", $schema_location, $sql_dir));
+    warn('Check your --cvsdir option is correct') if $opt_cvsdir;
+    warn('Try using --cvsdir if your checkouts are in a non-standard location') if $opt_cvsdir;
+    return;
+  }
+  printf("Using '%s' as our SQL directory\n", $sql_dir);
+  return $sql_dir;
+}
