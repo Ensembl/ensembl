@@ -168,7 +168,7 @@ my ( $opt_user, $opt_pass ) = ( undef, undef );
 my ( $opt_species, $opt_type, $opt_release ) = ( undef, undef, undef );
 my $opt_database;
 
-my $opt_cvsdir = '../../';
+my $opt_cvsdir;
 
 my $opt_dryrun;
 my $opt_from;
