@@ -25,6 +25,7 @@ Usage:
   $indent [ --cvsdir=/some/path ] \\
   $indent [ --dryrun ] \\
   $indent [ --verbose ] [ --quiet ] \\
+  $indent [ --mysql=optional_path ]  \\
   $indent [ --fix ]
 
   $0 --help | --about
@@ -64,6 +65,9 @@ Usage:
   --fix             also go through all old patches to find any missing
                     patch (patching starts at release equal to the
                     oldest patch in the database) >>USE WITH CAUTION<<
+  
+  --mysql           specify the location of the mysql binary if it is not on
+                    \$PATH. Otherwise we default this to mysql
 
   --help        display this text
   --about       display further information
@@ -169,6 +173,7 @@ my $opt_cvsdir = '../../';
 my $opt_dryrun;
 my $opt_from;
 my $opt_fix;
+my $opt_mysql = 'mysql';
 
 my ( $opt_verbose, $opt_quiet );
 
@@ -186,6 +191,7 @@ if ( !GetOptions( 'host|h=s'     => \$opt_host,
                   'fix!'         => \$opt_fix,
                   'verbose|v!'   => \$opt_verbose,
                   'quiet|q!'     => \$opt_quiet,
+                  'mysql=s'      => \$opt_mysql,
                   'help!'        => sub { usage(); exit(0); },
                   'about!'       => sub { about(); exit(0); } ) ||
      !defined($opt_host) ||
@@ -504,7 +510,7 @@ while ( $sth->fetch() ) {
       my $patch = $entry->{'patch'};
       my $path  = $entry->{'path'};
 
-      my @cmd_list = ( 'mysql',
+      my @cmd_list = ( $opt_mysql,
                        "--host=$opt_host",
                        "--user=$opt_user",
                        "--password=$opt_pass",
