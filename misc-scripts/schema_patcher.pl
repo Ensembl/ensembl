@@ -24,6 +24,7 @@ Usage:
   $indent [ --species=dbspecies ] \\
   $indent [ --cvsdir=/some/path ] \\
   $indent [ --dryrun ] \\
+  $indent [ --interactive 0|1 ]\\
   $indent [ --verbose ] [ --quiet ] \\
   $indent [ --mysql=optional_path ]  \\
   $indent [ --fix ]
@@ -68,6 +69,9 @@ Usage:
   
   --mysql           specify the location of the mysql binary if it is not on
                     \$PATH. Otherwise we default this to mysql
+  
+  --nointeractive   specify if you want an non-interactive patching environment
+                    (default false). >>USE WITH CAUTION<<
 
   --help        display this text
   --about       display further information
@@ -131,6 +135,12 @@ sub about {
 
         $0 -h host -u user -p password \\
           -t core -f 65 -r 66
+          
+      A genebuilder wishes to patch the same set as specified above but
+      without being prompted to apply patches
+      
+        $0 -h host -u user -p password \\
+          -t core -f 65 -r 66 --nointeractive
 
       A genebuilder patches one of her databases to release 66, and
       wants to look at what the script proposes to do before actually
@@ -174,6 +184,7 @@ my $opt_dryrun;
 my $opt_from;
 my $opt_fix;
 my $opt_mysql = 'mysql';
+my $opt_interactive = 1;
 
 my ( $opt_verbose, $opt_quiet );
 
@@ -189,9 +200,10 @@ if ( !GetOptions( 'host|h=s'     => \$opt_host,
                   'cvsdir=s'     => \$opt_cvsdir,
                   'dryrun|n!'    => \$opt_dryrun,
                   'fix!'         => \$opt_fix,
+                  'mysql=s'      => \$opt_mysql,
+                  'interactive|i!' => \$opt_interactive,
                   'verbose|v!'   => \$opt_verbose,
                   'quiet|q!'     => \$opt_quiet,
-                  'mysql=s'      => \$opt_mysql,
                   'help!'        => sub { usage(); exit(0); },
                   'about!'       => sub { about(); exit(0); } ) ||
      !defined($opt_host) ||
@@ -509,13 +521,19 @@ while ( $sth->fetch() ) {
 
   if ( $opt_dryrun || !@apply_these ) { print("\n"); next }
 
+  my $apply_patches;
   local $| = 1;
-  print("Proceed with applying these patches? (y/N): ");
+  if($opt_interactive) {
+    print("Proceed with applying these patches? (y/N): ");
+    my $yesno = <STDIN>;
+    chomp($yesno);
+    $apply_patches = (lc($yesno) =~ /^y(?:es)?$/) ? 1 : 0;
+  }
+  else {
+    print "Enterning non-interative mode. Will apply patches\n";
+  }
 
-  my $yesno = <STDIN>;
-  chomp($yesno);
-
-  if ( lc($yesno) =~ /^y(?:es)?$/ ) {
+  if ( $apply_patches ) {
   PATCH:
     foreach my $entry (@apply_these) {
       my $patch = $entry->{'patch'};
@@ -537,6 +555,10 @@ while ( $sth->fetch() ) {
         warn( sprintf( "Failed to apply patch '%s' to database '%s'!\n",
                        $patch, $database ) );
 
+        if(!$opt_interactive) {
+          warn('In non-interative mode; aborting current run');
+          exit(1);
+        }
         print("Next patch, next database, or abort? (p/d/A): ");
 
         my $response = <STDIN>;
