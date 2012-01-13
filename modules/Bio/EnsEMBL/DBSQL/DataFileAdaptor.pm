@@ -55,6 +55,48 @@ use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Bio::EnsEMBL::Utils::Exception qw/throw warning/;
 use Bio::EnsEMBL::Utils::Scalar qw/:assert/;
 
+my $GLOBAL_BASE_PATH;
+
+=head2 global_base_path
+
+  Arg[1]     	: String; base path 
+  Example			: Bio::EnsEMBL::DBSQL::DataFileAdaptor->global_base_path('/base/path');
+  Description	: Stores a global value to be used when building data file paths
+  Returntype 	: String
+  Exceptions 	: None
+
+=cut
+
+sub global_base_path {
+  my ($class, $base_path) = @_;
+  return $GLOBAL_BASE_PATH unless $base_path;
+  $GLOBAL_BASE_PATH = $base_path;
+  return $GLOBAL_BASE_PATH;
+}
+
+=head2 get_base_path
+
+  Arg[1]      : String; (optional) base path 
+  Example     : $dfa->get_base_path();
+  Description : If given the path it will return that path; if not it consults
+                $self->global_base_path() for a value. As a last resort
+                it will look at the meta table for an entry keyed by
+                B<data_file.base_path>
+  Returntype  : String
+  Exceptions  : Thrown if nothing is found after consulting all three locations
+
+=cut
+
+sub get_base_path {
+  my ($self, $path) = @_;
+  return $path if defined $path;
+  my $global_base_path = $self->global_base_path();
+  return $global_base_path if defined $global_base_path;
+  my $meta_base_path = $self->db()->get_MetaContainer()->single_value_by_key('data_file.base_path', 1);
+  return $meta_base_path if defined $meta_base_path;
+  throw "No base path discovered. Either provide a path, set a global using global_base_path() or specify 'data_file.base_path' in meta";
+}
+
 =head2 DataFile_to_extension
 
   Arg[1]      : Bio::EnsEMBL::DataFile
