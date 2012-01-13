@@ -238,7 +238,7 @@ foreach my $thing ( [ 'ensembl',               'core', 'table.sql' ],
   my $sql_dir = _sql_dir($cvs_module, $schema_file);
   if(! defined $sql_dir) {
     if ( !$opt_quiet ) {
-      warn(printf("No SQL directory found for CVS module %s\n", $cvs_module));
+      warn(sprintf("No SQL directory found for CVS module %s\n", $cvs_module));
     }
     next;
   }
@@ -304,6 +304,7 @@ if(! $dbh) {
 # patch and filter out the ones that we don't want to patch.
 
 my $sth;
+my $found_databases = 0;
 
 if ( defined($opt_database) ) {
   $sth = $dbh->prepare("SHOW DATABASES LIKE ?");
@@ -440,6 +441,7 @@ while ( $sth->fetch() ) {
        ( ( !$opt_fix && $schema_version < $opt_release ) ||
          ( $opt_fix && $schema_version <= $opt_release ) ) )
   {
+    $found_databases = 1;
     print( '-' x ( $ENV{COLUMNS} || 80 ), "\n" );
     printf( "Considering '%s' [%s,%s,%d]\n",
             $database, defined($species) ? $species : 'unknown',
@@ -583,6 +585,12 @@ while ( $sth->fetch() ) {
   print("\n");
 
 } ## end while ( $sth->fetch() )
+
+if(!$found_databases) {
+  printf(('-'x80)."\n");
+  printf("No databases considered. Check your --database/--type/--release flags\n");
+  printf(('-'x80)."\n");
+}
 
 $dbh->disconnect();
 
