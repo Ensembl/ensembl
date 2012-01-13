@@ -238,7 +238,7 @@ foreach my $thing ( [ 'ensembl',               'core', 'table.sql' ],
   my $sql_dir = _sql_dir($cvs_module, $schema_file);
   if(! defined $sql_dir) {
     if ( !$opt_quiet ) {
-      warn('No SQL directory found for CVS module '.$cvs_module);
+      warn(printf("No SQL directory found for CVS module %s\n", $cvs_module));
     }
     next;
   }
@@ -432,7 +432,6 @@ while ( $sth->fetch() ) {
         sprintf( "Can not determine species from '%s'\n", $database ) );
     }
   }
-
   
   if ( $schema_version_ok &&
        $schema_type_ok &&
@@ -458,6 +457,9 @@ while ( $sth->fetch() ) {
           printf("\t%s patches [%s] are not the same as release %i patches [%s]; rerun with --fix and --dryrun\n", 
             $database, $db_patches, $opt_release, $release_patches);
         }
+      }
+      if($schema_type_ok && ! exists $patches{$schema_type}) {
+        printf("\t%s patches could not be found. Check your --cvsdir option and try again\n", $schema_type);
       }
     }
     next; 
@@ -592,14 +594,16 @@ sub _sql_dir {
   }
   else {
     my ($volume, $directories, $file) = splitpath(__FILE__);
+    $directories = curdir() unless $directories;
     $cvs_dir = catdir($directories, updir(), updir());
   }
   my $sql_dir = rel2abs(canonpath( catdir( $cvs_dir, $cvs_module, 'sql' ) ));
   my $schema_location = catfile($sql_dir, $schema_file);
   if(! -f $schema_location) {
-    warn(sprintf("Could not find the schema file '%s'. Computed SQL dir was '%s'", $schema_location, $sql_dir));
-    warn('Check your --cvsdir option is correct') if $opt_cvsdir;
-    warn('Try using --cvsdir if your checkouts are in a non-standard location') if $opt_cvsdir;
+    if($opt_verbose) {
+      printf("Could not find the schema file '%s' for E! module %s", $schema_location, $cvs_module);
+      printf("\tTry using --cvsdir if your checkouts are in a non-standard location\n") if $opt_cvsdir;
+    }
     return;
   }
   printf("Using '%s' as our SQL directory\n", $sql_dir);
