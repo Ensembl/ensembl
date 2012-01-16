@@ -1522,8 +1522,10 @@ sub get_all_SimpleFeatures {
   Arg [1]    : (optional) string $logic_name
                The name of the analysis performed on the repeat features
                to obtain.
-  Arg [2]    : (optional) string $repeat_type
-               Limits features returned to those of the specified repeat_type
+  Arg [2]    : (optional) string/array $repeat_type
+               Limits features returned to those of the specified 
+               repeat_type. Can specify a single value or an array reference
+               to limit by more than one
   Arg [3]    : (optional) string $db
                Key for database e.g. core/vega/cdna/....
   Example    : @repeat_feats = @{$slice->get_all_RepeatFeatures(undef,'LTR')};

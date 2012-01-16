@@ -45,12 +45,11 @@ use strict;
 use Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor;
 use Bio::EnsEMBL::RepeatFeature;
 use Bio::EnsEMBL::Utils::Exception qw(throw warning);
+use Bio::EnsEMBL::Utils::Scalar qw/wrap_array/;
 
 use vars qw(@ISA);
 
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor);
-
-
 
 
 =head2 fetch_all_by_Slice
@@ -60,9 +59,11 @@ use vars qw(@ISA);
                Limits RepeatFeatures obtained to those having an Analysis with
                of the specified logic_name.  If no logic name is specified
                Repeats of all analysis types are retrieved.
-  Arg [3]    : (optional) string $repeat_type
-               Limits RepeatFeatures obtained to those of specified repeat_type
+  Arg [3]    : (optional) string/array $repeat_type
+               Limits RepeatFeatures obtained to those of specified 
+               repeat_type
   Example    : @rfeats = @{$rfa->fetch_all_by_Slice($slice, undef, 'LTR')};
+               @rfeats = @{$rfa->fetch_all_by_Slice($slice, undef, ['Type II Transposons' 'RNA repeats'])};
   Description: Retrieves repeat features overlapping the area designated by
                the provided slice argument.  Returned features will be in
                in the same coordinate system as the provided slice and will
@@ -87,7 +88,13 @@ sub fetch_all_by_Slice {
   $self->_straight_join(1);
 
   if($repeat_type) {
-    $constraint .= "rc.repeat_type =\"$repeat_type\"";
+    my $rta = wrap_array($repeat_type);
+    if(scalar(@{$rta}) > 1) {
+      $constraint .= sprintf('rc.repeat_type IN (%s)', join(q{,}, map {"'${_}'"} @{$rta}));
+    }
+    else {
+      $constraint .= "rc.repeat_type = '${repeat_type}'";      
+    }
   }
 
   my $result =

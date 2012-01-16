@@ -1,13 +1,9 @@
 use strict;
+
+use Test::More;
 use Bio::EnsEMBL::Test::TestUtils;
 
 use Bio::EnsEMBL::Test::MultiTestDB;
-
-
-BEGIN { $| = 1;
-	use Test;
-	plan tests => 24;
-}
 
 my $multi_db = Bio::EnsEMBL::Test::MultiTestDB->new;
 my $db = $multi_db->get_DBAdaptor('core');
@@ -59,6 +55,12 @@ ok($rc->length() == 0);
 ok(@{$rca->fetch_all_by_class_seq('LTRs', '')} == 38);
 
 #
+# Test distinct repeat types retrieval
+#
+
+is(@{$rca->fetch_all_repeat_types()}, 3, 'Checking number of repeat types returned');
+
+#
 # Test store
 #
 
@@ -86,3 +88,4 @@ ok($rc->repeat_type() eq "testtype" );
 
 $multi_db->restore('core', 'repeat_consensus');
 
+done_testing();

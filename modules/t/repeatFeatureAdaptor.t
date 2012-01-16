@@ -1,11 +1,7 @@
 use strict;
+use warnings;
 
-
-BEGIN { $| = 1;
-	use Test;
-	plan tests => 9;
-}
-
+use Test::More;
 
 use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::Test::TestUtils;
@@ -104,12 +100,19 @@ $feats = $repeat_f_ad->fetch_all_by_Slice( $slice, undef, "LTR" );
 debug( "fetching by type LTR" );
 debug( "Got ".scalar( @$feats ). " back" );
 
+{
+  my $f = $repeat_f_ad->fetch_all_by_Slice( $slice, undef, ["LTR", 'LTR'] );
+  is(scalar(@{$f}), 126, 'Checking LTRs returned if querying by array');
+}
+
 # print_features( $feats );
 
 $r = $repeat_f_ad->fetch_by_dbID(518841);
 $r = $r->transform('supercontig');
 debug('---fetching by dbID and transform to supercontig coords---');
-print_features([$r]);
+# print_features([$r]);
+
+done_testing();
 
 
 
