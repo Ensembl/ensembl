@@ -178,6 +178,7 @@ foreach my $chr ($support->sort_chromosomes) {
   my @segments = @{ $R_slice->project($cs_name, $support->param('assembly')) };
 
   my $alignments = 0;
+  my $alignment_runs = 0;
 
   my $previous_sl;
   my $cont_mapping_length = 0;
@@ -210,8 +211,10 @@ foreach my $chr ($support->sort_chromosomes) {
 		$cont_mapping_blocks{10}++;
 		$cont_mapping_length{10}++
 	    }	    
-
+	    
 	    $cont_mapping_length = $l;
+
+	    $alignment_runs ++;
 	}
     } else {
 	$cont_mapping_length = $l;
@@ -264,7 +267,7 @@ foreach my $chr ($support->sort_chromosomes) {
   $support->log("\n");
 
 
-  $support->log(sprintf($fmt4, "Continuous alignment runs:", $alignments, "Mapping %"), 2);
+  $support->log(sprintf($fmt4, "Continuous alignment runs:", $alignment_runs, "Mapping %"), 2);
   $support->log("(gaps up to 10bp)\n",2);  
 
   if ($alignments) {
