@@ -264,8 +264,9 @@ foreach my $chr ($support->sort_chromosomes) {
   $support->log("\n");
 
 
-  $support->log(sprintf($fmt4, "Continuous alignment runs (gaps up to 10bp):", $alignments, "Mapping %"), 2);
-  
+  $support->log(sprintf($fmt4, "Continuous alignment runs:", $alignments, "Mapping %"), 2);
+  $support->log("(gaps up to 10bp)\n",2);  
+
   if ($alignments) {
     for (my $i = 0; $i < $oom; $i++) {
       my $from = 10**$i;
