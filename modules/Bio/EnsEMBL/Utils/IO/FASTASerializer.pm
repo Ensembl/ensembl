@@ -27,7 +27,7 @@ Bio::EnsEMBL::Utils::IO::FASTASerializer
   my $serializer = Bio::EnsEMBL::Utils::IO::FASTASerializer->new($filehandle);
   $serializer->chunk_factor(1000);
   $serializer->line_width(60);
-  $serializer->print_Slice($slice);
+  $serializer->print_Seq($slice);
   
   $serializer = Bio::EnsEMBL::Utils::IO::FASTASerializer->new($filehandle,
     sub {
@@ -35,8 +35,6 @@ Bio::EnsEMBL::Utils::IO::FASTASerializer
         return ">Custom header";
     }
   );
-  $serializer->print_metadata($slice);
-  $serializer->print_Slice($slice,"no duplicate headers please");
   
 =head1 DESCRIPTION
 
@@ -56,6 +54,7 @@ package Bio::EnsEMBL::Utils::IO::FASTASerializer;
 use strict;
 use warnings;
 use Bio::EnsEMBL::Utils::Exception;
+use Bio::EnsEMBL::Utils::Scalar qw/assert_ref check_ref/;
 
 use base qw(Bio::EnsEMBL::Utils::IO::Serializer);
 
@@ -93,13 +92,21 @@ sub new {
     else {
         $self->{'header_function'} = sub {
             my $slice = shift;
-            my $id       = $slice->seq_region_name;
-            my $seqtype  = 'dna';
-            my $idtype   = $slice->coord_system->name;
-            my $location = $slice->name;
             
-            return ">$id $seqtype:$idtype $location\n";
-        }
+            if(check_ref($slice, 'Bio::EnsEMBL::Slice')) {
+                my $id       = $slice->seq_region_name;
+                my $seqtype  = 'dna';
+                my $idtype   = $slice->coord_system->name;
+                my $location = $slice->name;
+                
+                return ">$id $seqtype:$idtype $location";
+            }
+            else {
+                # must be a Bio::Seq , or we're doomed
+                
+                return ">".$slice->name;
+            }
+        };
         
     }
     
@@ -118,31 +125,28 @@ sub print_metadata {
     my $self = shift;
     my $slice = shift;
     my $fh = $self->{'filehandle'};
-    my $metadata = &{$self->{'header_function'}}($slice); 
-    print $fh $metadata;
+    my $metadata = $self->{'header_function'}->($slice); 
+    print $fh $metadata."\n";
 }
 
-=head2 print_slice
+=head2 print_Seq
 
     Arg [1]    : Bio::EnsEMBL::Slice or other Bio::PrimarySeqI compliant object
-    Arg [2]    : Optional Boolean - override the default serialisation of a header
+    
     Description: Serializes the slice into FASTA format. Buffering is used
                  While other Bioperl PrimarySeqI implementations can be used,
                  a custom header function will be required to accommodate it.
                  
-                 Add an override as second argument if more control is needed
-                 over when and how custom headers are written.
     Returntype : None
     
 =cut
 
-sub print_Slice {
+sub print_Seq {
     my $self = shift;
     my $slice = shift;
-    my $override = shift;
     my $fh = $self->{'filehandle'};
-    # Default print header, override
-    $self->print_metadata($slice) unless $override;
+    
+    $self->print_metadata($slice);
     
     # set buffer size
     my $chunk_size = $self->{'chunk_factor'} * $self->{'line_width'};
