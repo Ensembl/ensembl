@@ -21,7 +21,7 @@ eval {
   require Bio::Perl;
   Bio::EnsEMBL::Registry->load_registry_from_db(
     -host    => $host,
-    -user    => $user, -db_version => 65
+    -user    => $user
   );
   $db_version = Bio::EnsEMBL::ApiVersion::software_version();
   my $human = Bio::EnsEMBL::Registry->get_DBAdaptor('homo_sapiens', 'core');
