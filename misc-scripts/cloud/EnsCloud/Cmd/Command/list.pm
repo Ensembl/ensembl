@@ -1,0 +1,57 @@
+package EnsCloud::Cmd::Command::list;
+use Moose;
+use MooseX::StrictConstructor;
+
+extends qw(MooseX::App::Cmd::Command);
+use CHI;
+
+# ABSTRACT: list the application's commands
+
+
+has 'region_alias' => (
+    is     => 'rw',
+    isa    => 'Str',
+    traits => ['Getopt'],
+    #     cmd_aliases   => "h",
+    documentation => "asia, useast, uswest or eu",
+    required      => 1,
+    default => 'useast',
+);
+
+has 'refresh' => (
+    is => 'ro',
+    isa => 'Str',
+);
+
+
+with 'EnsCloud::Describer';
+sub execute {
+    my ( $self, $opt, $arg ) = @_;
+    
+#     my $edescriber = EnsCloud::Describer->new( region_alias => $self->region_alias );
+    my $cache = CHI->new(
+        driver   => 'File',
+        root_dir => $ENV{HOME} . '/' . '/ec2cache/' . $self->region_alias,
+    );
+    my $name           = 'useast_instances';
+    my $instance_table = $cache->get($name);
+    $DB::single = 1;
+    if ( !defined $instance_table || $self->refresh ) {
+#}         $instance_table = $edescriber->list_instances;
+         $instance_table = $self->list_instances;
+
+        $cache->set( $name, $instance_table, "10 minutes" );
+    }
+    print $instance_table;
+}
+
+sub abstract {
+
+    return 'list cloud things';
+
+}
+__PACKAGE__->meta->make_immutable;
+
+1;
+__END__
+
