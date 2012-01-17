@@ -1528,7 +1528,7 @@ sub get_all_SimpleFeatures {
                to limit by more than one
   Arg [3]    : (optional) string $db
                Key for database e.g. core/vega/cdna/....
-  Example    : @repeat_feats = @{$slice->get_all_RepeatFeatures(undef,'LTR')};
+  Example    : @repeat_feats = @{$slice->get_all_RepeatFeatures(undef,'Type II Transposons')};
   Description: Retrieves the RepeatFeatures which overlap  with
                logic name $logic_name and with score above $score.  If
                $logic_name is not defined features of all logic names are

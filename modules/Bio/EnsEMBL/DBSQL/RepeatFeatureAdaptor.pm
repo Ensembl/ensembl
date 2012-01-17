@@ -62,8 +62,8 @@ use vars qw(@ISA);
   Arg [3]    : (optional) string/array $repeat_type
                Limits RepeatFeatures obtained to those of specified 
                repeat_type
-  Example    : @rfeats = @{$rfa->fetch_all_by_Slice($slice, undef, 'LTR')};
-               @rfeats = @{$rfa->fetch_all_by_Slice($slice, undef, ['Type II Transposons' 'RNA repeats'])};
+  Example    : @rfeats = @{$rfa->fetch_all_by_Slice($slice, undef, 'Type II Transposons')};
+               @rfeats = @{$rfa->fetch_all_by_Slice($slice, undef, ['Type II Transposons', 'RNA repeats'])};
   Description: Retrieves repeat features overlapping the area designated by
                the provided slice argument.  Returned features will be in
                in the same coordinate system as the provided slice and will
