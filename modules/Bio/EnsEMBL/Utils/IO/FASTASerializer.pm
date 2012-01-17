@@ -46,6 +46,9 @@ Bio::EnsEMBL::Utils::IO::FASTASerializer
   Custom headers are set by supplying an anonymous subroutine to new(). Custom
   header code must accept a Slice or Bio::PrimarySeqI compliant object as 
   argument and return a string.
+  
+  The custom header method can be overridden later through set_custom_header()
+  but this is not normally necessary.
 
 =cut
 
@@ -116,9 +119,10 @@ sub new {
 =head2 print_metadata
 
     Arg [1]    : Bio::EnsEMBL::Slice
-    Description: Printing header lines into FASTA files.  
+    Description: Printing header lines into FASTA files. Usually handled
+                 internally to the serializer.                
     Returntype : None
-    Caller     : print_slice
+    Caller     : print_Seq
 =cut
 
 sub print_metadata {
@@ -202,5 +206,24 @@ sub chunk_factor {
     return $self->{'chunk_factor'}
 }
 
+=head2 set_custom_header
+
+    Arg [1]    : CODE reference
+    Description: Set the custom header function. Normally this is done at
+                 construction time, but can be overridden here.
+    Returntype : 
+    
+=cut
+
+sub set_custom_header {
+    my $self = shift;
+    my $new_header_function = shift;
+    if ($new_header_function and ref($new_header_function) eq "CODE" ) {
+        $self->{'custom_header'} = $new_header_function;
+    }
+    else {
+        throw ("Custom header function required by reference.\n See documentation for FASTASerializer for correct usage.")
+    }
+}
 
 1;
