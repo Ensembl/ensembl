@@ -10,11 +10,13 @@ cleanup_tmp_tables.pl - delete temporary and backup tables from a database
   
   ./cleanup_tmp_tables.pl --nolog --host localhost --port 3306 --user user --dbname DB --dry_run
   
+  ./cleanup_tmp_tables.pl --nolog --host localhost --port 3306 --user user --dbname '%mydbs%' --dry_run
+  
   ./cleanup_tmp_tables.pl --nolog --host localhost --port 3306 --user user --dbname DB --interactive 0
 
 Required arguments:
 
-  --dbname, db_name=NAME              database name NAME
+  --dbname, db_name=NAME              database name NAME (can be a pattern)
   --host, --dbhost, --db_host=HOST    database host HOST
   --port, --dbport, --db_port=PORT    database port PORT
   --user, --dbuser, --db_user=USER    database username USER
@@ -59,9 +61,7 @@ table. This means any table which contains
 
 =back
 
-The code is designed to be run over a single database to avoid the 
-unintentional and accidental dropping of temporary tables which are still
-in use.
+You can run this over multiple DBs but caution is advised
 
 =head1 LICENCE
 
@@ -120,8 +120,18 @@ $support->init_log;
 
 $support->check_required_params;
 
-# connect to database and get adaptors
-my $dba = $support->get_database('ensembl');
+my @databases;
+
+# connect to database
+my $dbh = $support->get_dbconnection('');
+
+if($support->param('dbname') =~ /%/) {
+  my $ref = $dbh->selectall_arrayref('show databases like ?', {}, $support->param('dbname'));
+  push(@databases, map {$_->[0]} @{$ref})
+}
+else {
+  push(@databases, $support->param('dbname'));
+}
 
 # find all temporary and backup tables
 my @tables;
@@ -133,32 +143,34 @@ if($support->param('mart')) {
   }
 }
 
-foreach my $pattern (@patterns) {
-  my $results = $dba->dbc()->sql_helper()->execute_simple(
-    -SQL => 'SHOW TABLES LIKE ?', -PARAMS => [$pattern]);
-  push(@tables, @{$results});
-}
-
-@tables = sort @tables;
-
-if ($support->param('dry_run')) {
-  # for a dry run, only show which databases would be deleted
-  $support->log("Temporary and backup tables found:\n");
-  foreach my $table (@tables) {
-    $support->log("$table\n", 1);
+foreach my $db (@databases) {
+  $support->log('Switching to '.$db);
+  $dbh->do('use '.$db);
+  foreach my $pattern (@patterns) {
+    my $ref = $dbh->selectall_arrayref('show tables like ?', {}, $pattern);
+    push(@tables, map {$_->[0]} @{$ref});
   }
-
-} else {
-  # delete tables
-  foreach my $table (@tables) {
-    if ($support->user_proceed("Drop table $table?")) {
-      $support->log("Dropping table $table...\n");
-      $dba->dbc()->do("DROP TABLE $table");
-      $support->log("Done.\n");
+  
+  @tables = sort @tables;
+  
+  if ($support->param('dry_run')) {
+    # for a dry run, only show which databases would be deleted
+    $support->log("Temporary and backup tables found:\n");
+    foreach my $table (@tables) {
+      $support->log("$table\n", 1);
+    }
+  
+  } else {
+    # delete tables
+    foreach my $table (@tables) {
+      if ($support->user_proceed("Drop table $table?")) {
+        $support->log("Dropping table $table...\n");
+        $dbh->do("DROP TABLE $table");
+        $support->log("Done.\n");
+      }
     }
   }
 }
-
 # finish logfile
 $support->finish_log;
 
