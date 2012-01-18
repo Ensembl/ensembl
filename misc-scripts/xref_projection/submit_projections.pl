@@ -10,27 +10,27 @@ $Data::Dumper::Indent = 0;
 # Remember to check/set the various config optons
 
 # ------------------------------ config -------------------------------
-my $release = 65;
+my $release = X;
 
 
-my $base_dir = "/lustre/scratch103/ensembl/rjk/projections/";
+my $base_dir = "mypath";
 
-my $conf = "release_65.ini"; # registry config file, specifies Compara location
+my $conf = "release_X.ini"; # registry config file, specifies Compara location
 
 # location of other databases
 
 my @config = ( {
-    '-host'       => 'ens-staging1',
-    '-port'       => '3306',
-    '-user'       => 'ensadmin',
-    '-pass'       => 'ensembl',
+    '-host'       => 'HOST',
+    '-port'       => 'PORT',
+    '-user'       => 'USER',
+    '-pass'       => 'PASS',
     '-db_version' => $release
   },
   {
-    '-host'       => 'ens-staging2',
-    '-port'       => '3306',
-    '-user'       => 'ensadmin',
-    '-pass'       => 'ensembl',
+    '-host'       => 'HOST',
+    '-port'       => 'PORT',
+    '-user'       => 'USER',
+    '-pass'       => 'PASS',
     '-db_version' => $release
   } );
 
