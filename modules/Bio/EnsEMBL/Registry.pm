@@ -1391,7 +1391,7 @@ sub change_access{
 sub load_registry_from_url {
   my ( $self, $url, $verbose, $no_cache ) = @_;
   
-  if ( $url =~ /^mysql\:\/\/([^\@]+\@)?([^\:\/]+)(\:\d+)?(\/\d+)?$/x ) {
+  if ( $url =~ /^mysql\:\/\/([^\@]+\@)?([^\:\/]+)(\:\d+)?(\/\d+)?\/?$/x ) {
     my $user_pass = $1;
     my $host      = $2;
     my $port      = $3;
