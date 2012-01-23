@@ -841,9 +841,9 @@ WEL
 
 sub get_analysis{
   my $self = shift;
-  my %typeToLogicName = ( 'Gene'        => 'XrefExonerateDNA',
-                          'Transcript'  => 'XrefExonerateDNA',
-                          'Translation' => 'XrefExonerateProtein');
+  my %typeToLogicName = ( 'Gene'        => 'xrefexoneratedna',
+                          'Transcript'  => 'xrefexoneratedna',
+                          'Translation' => 'xrefexonerateprotein');
   my %analysis_id;
   foreach my $key (qw(Gene Transcript Translation)){
     my $logic_name = $typeToLogicName{$key};
