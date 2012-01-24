@@ -145,9 +145,9 @@ sub parse_common_options {
       s/\s+[;].*$//;
 
       # read options into internal parameter datastructure, removing whitespace
-      next unless (/(\w\S*)\s*=*\s*(\S*)\s*/);
+      next unless (/(\w\S*)\s*=\s*(\S*)\s*/);
       my $name = $1;
-      my $val  = $2 || 1;
+      my $val = $2;
       if ($val =~ /\$SERVERROOT/) {
 	$val =~ s/\$SERVERROOT/$serverroot/g;
 	$val = abs_path($val);
@@ -405,8 +405,8 @@ sub list_all_params {
 =cut
 
 sub create_commandline_options {
-  my ($self, $settings) = @_;
-  my %param_hash;
+  my ($self, $settings, $param_hash) = @_;
+  my %param_hash = $param_hash ? %$param_hash : ();
 
   # get all allowed parameters
   if ($settings->{'allowed_params'}) {
@@ -882,7 +882,7 @@ sub get_chrlength {
   my $sa = $dba->get_SliceAdaptor;
 
   my @chromosomes = map { $_->seq_region_name } 
-    @{ $sa->fetch_all($type, $version,$include_non_reference) };
+    @{ $sa->fetch_all($type,$version,$include_non_reference) };
   my %chr = map { $_ => $sa->fetch_by_region($type, $_, undef, undef, undef, $version)->length } @chromosomes;
 
   my @wanted = $self->param('chromosomes');
@@ -1636,7 +1636,7 @@ sub get_wanted_chromosomes {
 
   Arg[1]      : B::E::Slice
   Arg[2]      : B::E::DBAdaptor (optional, if you don't supply one then the *first* one you generated is returned, which may or may not be what you want!)
-  Example     : $genes = $support->get_unique_genes($slice,[$dba]);
+  Example     : $genes = $support->get_unique_genes($slice,$dba);
   Description : Retrieve genes that are only on the slice itself - used for human where assembly patches
                 are in the assembly_exception table. Needs the PATCHes to have 'non_ref' seq_region_attributes.
   Return type : arrayref of genes
@@ -1655,12 +1655,13 @@ sub get_unique_genes {
   my $ga    = $dba->get_adaptor('Gene');
   my $patch = 0;
   my $genes = [];
-
   if ( ! $slice->is_reference() ) {
+#  if ( 0 ) {
     $patch = 1;
     my $slices = $sa->fetch_by_region_unique( $slice->coord_system_name(),$slice->seq_region_name() );
     foreach my $slice ( @{$slices} ) {
-      push @$genes, @{$ga->fetch_all_by_Slice($slice)};
+      push @$genes,@{$ga->fetch_all_by_Slice($slice)};
+      #      my $start = $slice->start;
     }
   }
   else {
