@@ -11,6 +11,9 @@ use Getopt::Long;
 use IO::File;
 use Sys::Hostname;
 use Tie::File;
+use English qw( -no_match_vars ) ;
+
+$OUTPUT_AUTOFLUSH = 1;
 
 my $start_time = time();
 
