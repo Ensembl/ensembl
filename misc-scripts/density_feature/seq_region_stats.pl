@@ -144,7 +144,7 @@ foreach my $name (@dbnames) {
       while (my $gene = shift(@{$genes})) {
 
 	my $biotype = $gene->biotype();
-	if( $biotype =~ /coding/i ) {
+	if( $biotype =~ /coding/i && $biotype !~ /non_/i) {
 	  if($gene->is_known()) {
 	    $biotype = "known ".$biotype;
 	  } else {
