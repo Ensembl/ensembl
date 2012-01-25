@@ -1,6 +1,7 @@
 use strict;
 
 use Data::Dumper;
+use Bio::EnsEMBL::ApiVersion qw/software_version/;
 
 $Data::Dumper::Useqq=1;
 $Data::Dumper::Terse = 1;
@@ -10,12 +11,12 @@ $Data::Dumper::Indent = 0;
 # Remember to check/set the various config optons
 
 # ------------------------------ config -------------------------------
-my $release = X;
+my $release = software_version();
 
 
 my $base_dir = "mypath";
 
-my $conf = "release_X.ini"; # registry config file, specifies Compara location
+my $conf = "release_${release}.ini"; # registry config file, specifies Compara location
 
 # location of other databases
 
@@ -101,6 +102,7 @@ my @names_1_1 = (["human", "chimp"            ],
                  ["human", "panda"            ],
                  ["human", "turkey"           ],
                  ["human", "tasmanian_devil"  ],
+                 ["human", "coelacanth"       ],
 		 ["mouse", "kangaroo_rat"     ],
 		 ["mouse", "rat"              ]);
 
@@ -154,6 +156,7 @@ my @go_terms = (["human",      "mouse"          ],
 		["human",      "panda"          ],
 		["human",      "turkey"         ],
 		["human",      "tasmanian_devil"],
+		["human",      "coelacanth"     ],
                 ["mouse",      "human"          ],
 		["mouse",      "rat"            ],
 		["mouse",      "dog"            ],
@@ -201,7 +204,8 @@ my @go_terms = (["human",      "mouse"          ],
 		["zebrafish",      "tetraodon"  ],
 		["zebrafish",      "stickleback"],
 		["zebrafish",      "lamprey"    ],
-	        ["zebrafish",      "cod"    ],
+	  ["zebrafish",      "cod"        ],
+	  ["zebrafish",      "coelacanth" ],
 		["human",      "stickleback"    ],
 		["mouse",      "stickleback"    ],
 		["mouse",      "turkey"         ],
