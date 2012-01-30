@@ -1,5 +1,10 @@
 #!/usr/local/ensembl/bin/perl -w
 
+### This script is used to mark exons which are used in more than one
+### transcript linked to a single gene. The script does not limit
+### by differing biotypes. Exons are identified as being the same if they
+### occupy identical genomic locations if the -uselocations flag is specified
+
 use strict;
 use warnings;
 
@@ -16,12 +21,14 @@ sub usage {
   print("\t--dbpass=<password>  \tUser password (optional)\n");
   print("\t--dbpattern=<regex>  "
       . "\tRegular expresssion to match database names\n" );
+  print("\t--uselocations       "
+      . "\tUse locations to find indentical exons rather than DB identifiers(optional)\n" );
   print("\t--help               "
       . "\tDisplays this info and exits (optional)\n" );
   exit;
 }
 
-my ( $dbhost, $dbport, $dbuser, $dbpass, $dbpattern );
+my ( $dbhost, $dbport, $dbuser, $dbpass, $dbpattern, $uselocations );
 
 GetOptions(
   'dbhost|host=s'       => \$dbhost,
@@ -29,6 +36,7 @@ GetOptions(
   'dbuser|user=s'       => \$dbuser,
   'dbpass|pass=s'       => \$dbpass,
   'dbpattern|pattern=s' => \$dbpattern,
+  'uselocations'        => \$uselocations,
   'help|h'              => \&usage
 );
 
@@ -83,32 +91,30 @@ foreach my $dbname (@dbnames) {
 
       foreach my $transcript (@transcripts) {
         foreach my $exon ( @{ $transcript->get_all_Exons() } ) {
-          my $exon_dbID = $exon->dbID();
-          ++$exon_count{$exon_dbID};
-          $exon_object{$exon_dbID} = $exon;
+          my $key = exon_key($exon);
+          ++$exon_count{$key};
+          $exon_object{$key} = $exon;
         }
       }
 
-      foreach my $exon_dbID ( keys(%exon_count) ) {
-        if ( $exon_count{$exon_dbID} == $transcript_count ) {
-          if ( !$exon_object{$exon_dbID}->is_constitutive() ) {
-            $gene_adaptor->dbc()
-              ->do( "UPDATE exon "
-                . "SET is_constitutive = 1 "
-                . "WHERE exon_id = "
-                . $exon_dbID );
+      foreach my $exon_key ( keys(%exon_count) ) {
+        my $exon = $exon_object{$exon_key};
+        my $is_constitutive = $exon->is_constitutive(); 
+        if ( $exon_count{$exon_key} == $transcript_count ) {
+          if ( !$exon->is_constitutive() ) {
+            $is_constitutive = 1;
             ++$update_1;
           }
         } else {
-          if ( $exon_object{$exon_dbID}->is_constitutive() ) {
-            $gene_adaptor->dbc()
-              ->do( "UPDATE exon "
-                . "SET is_constitutive = 0 "
-                . "WHERE exon_id = "
-                . $exon_dbID );
+          if ( $exon_object{$exon_key}->is_constitutive() ) {
+            $is_constitutive = 0;
             ++$update_0;
           }
         }
+        $gene_adaptor->dbc()->sql_helper()->excute_update(
+          -SQL => 'update exon set is_constitutive = ? where exon_id =?',
+          -PARAMS => [$is_constitutive, $exon->dbID()]
+        );
 
         if ( ( ++$exon_counter % 1000 ) == 0 ) {
           printf(
@@ -136,3 +142,16 @@ foreach my $dbname (@dbnames) {
   print( '-' x 80, "\n" );
   print("\n");
 } ## end foreach my $dbname (@dbnames)
+
+sub exon_key {
+  my ($e) = @_;
+  if($uselocations) {
+    return join(q{:}, 
+      ($e->slice()->name() ? $e->slice()->name() : 'undef'),
+      $e->seq_region_start(),
+      $e->seq_region_end(),
+      $e->seq_region_strand()
+    );
+  }
+  return $e->dbID();
+}
