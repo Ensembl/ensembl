@@ -228,6 +228,33 @@ if ( !defined($input_file) ) {
 my %executables = ( 'myisamchk' => '/usr/local/ensembl/mysql/bin/myisamchk',
                     'rsync'     => '/usr/bin/rsync' );
 
+#Check executables
+
+print( '-' x 35, ' EXECUTABLE CHECKS ', '-' x 35, "\n" );
+foreach my $key (keys %executables) {
+  my $exe = $executables{$key};
+  my $output = `which $exe`;
+  my $rc = $? >> 8;
+  if($rc != 0) {
+    my $possible_location = `which $key 2>&1`;
+    my $loc_rc = $? >> 8;
+    if($loc_rc == 0) {
+      chomp $possible_location;
+      $executables{$key} = $possible_location;
+      printf("Can not find '%s'; using '%s'\n", $exe, $executables{$key});
+    }
+    else {
+      if($key eq 'myisamchk' && ! $opt_check) {
+        printf("Can not find '%s' but --nocheck was specified so skipping\n", $exe);
+      }
+      else {
+        die(sprintf("Can not find '%s' and using 'locate %s' yields nothing Check your path", $exe, $key));
+      }
+    }
+    $executables{$key} = $key;
+  }
+}
+
 my $run_hostname = ( gethostbyname( hostname() ) )[0];
 my $working_dir  = rel2abs( curdir() );
 
