@@ -3120,17 +3120,17 @@ sub get_all_compara_Syntenies {
 
   my ( @arr, @arr1, @arr2 );
   @arr1 = @{
-    $sra->fetch_by_MethodLinkSpeciesSet_DnaFrag( $mlss, $dnafrag,
+    $sra->fetch_all_by_MethodLinkSpeciesSet_DnaFrag( $mlss, $dnafrag,
                                                 $sl1->start, $sl1->end )
     };
   @arr2 = @{
-    $sra->fetch_by_MethodLinkSpeciesSet_DnaFrag( $mlss, $dnafrag,
+    $sra->fetch_all_by_MethodLinkSpeciesSet_DnaFrag( $mlss, $dnafrag,
                                                 $sl2->start, $sl2->end )
     };
   push @arr, @arr1, @arr2;
   return \@arr;
   ## circular EOF
-#return $sra->fetch_by_MethodLinkSpeciesSet_DnaFrag($mlss, $dnafrag, $self->start, $self->end);
+#return $sra->fetch_all_by_MethodLinkSpeciesSet_DnaFrag($mlss, $dnafrag, $self->start, $self->end);
 } ## end sub get_all_compara_Syntenies
 
 =head2 get_all_Haplotypes

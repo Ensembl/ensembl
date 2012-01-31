@@ -3015,7 +3015,7 @@ sub get_all_compara_Syntenies {
   my $cs = $self->coord_system()->name();
   my $sr = $self->seq_region_name();
   my ($dnafrag) = @{$dfa->fetch_all_by_GenomeDB_region($this_gdb, $cs, $sr)};
-  return $sra->fetch_by_MethodLinkSpeciesSet_DnaFrag($mlss, $dnafrag, $self->start, $self->end);
+  return $sra->fetch_all_by_MethodLinkSpeciesSet_DnaFrag($mlss, $dnafrag, $self->start, $self->end);
 }
 
 =head2 get_all_Haplotypes
