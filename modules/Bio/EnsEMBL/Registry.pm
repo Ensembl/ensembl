@@ -2108,7 +2108,7 @@ sub _group_to_adaptor_class {
     funcgen => 'Bio::EnsEMBL::Funcgen::DBSQL::DBAdaptor',
     compara => 'Bio::EnsEMBL::Compara::DBSQL::DBAdaptor',
   }->{$group};
-  throw "Group '${group}' is unknown";
+  throw "Group '${group}' is unknown" if ! $class;
   return $class;
 }
 
