@@ -34,6 +34,7 @@ Bio::EnsEMBL::Utils::IO
 	#or
 	# use Bio::EnsEMBL::Utils::IO qw/:slurp/; #brings in any method starting with slurp
 	# use Bio::EnsEMBL::Utils::IO qw/:array/; #brings in any method which ends with _array
+	# use Bio::EnsEMBL::Utils::IO qw/:gz/;    #brings all methods which start with gz_
 	# use Bio::EnsEMBL::Utils::IO qw/:all/;   #brings all methods in
 	
 	#As a scalar
@@ -62,6 +63,13 @@ Bio::EnsEMBL::Utils::IO
     print $fh $$file_contents_ref;
     return;
   });
+  
+  #Gzipping the data to another file
+  gz_work_with_file('/my/file.gz', 'w', sub {
+    my ($fh) = @_;
+    print $fh $$file_contents_ref;
+    return;
+  });
 	
 =head1 DESCRIPTION
 
@@ -86,15 +94,22 @@ use warnings;
 
 use base qw(Exporter);
 
-our @EXPORT_OK = qw/slurp slurp_to_array fh_to_array process_to_array work_with_file/;
+our $GZIP_OK = 0;
+our @EXPORT_OK = qw/slurp slurp_to_array fh_to_array process_to_array work_with_file gz_slurp gz_slurp_to_array gz_work_with_file/;
 our %EXPORT_TAGS = (
   all => [@EXPORT_OK],
-  slurp => [qw/slurp slurp_to_array/],
-  array => [qw/fh_to_array process_to_array slurp_to_array/]
+  slurp => [qw/slurp slurp_to_array gz_slurp gz_slurp_to_array/],
+  array => [qw/fh_to_array process_to_array slurp_to_array gz_slurp_to_array/],
+  gz    => [qw/gz_slurp gz_slurp_to_array gz_work_with_file/]
 );
 use Bio::EnsEMBL::Utils::Exception qw(throw);
 use Bio::EnsEMBL::Utils::Scalar qw(:assert);
 use IO::File;
+eval {
+  require IO::Compress::Gzip;
+  require IO::Uncompress::Gunzip;
+  $GZIP_OK = 1;
+};
 
 =head2 slurp()
 
@@ -127,6 +142,37 @@ sub slurp {
 	return ($want_ref) ? \$contents : $contents;
 }
 
+=head2 gz_slurp()
+
+  Arg [1]     : string $file
+  Arg [2]     : boolean; $want_ref
+  Arg [3]     : boolean; $binary
+                Indicates if we want to return a scalar reference
+  Description : Forces the contents of a file into a scalar. This is the 
+                fastest way to get a file into memory in Perl. You can also
+                get a scalar reference back to avoid copying the file contents
+                in Scalar references. If the input file is binary then specify
+                with the binary flag
+  Returntype  : Scalar or reference of the file contents depending on arg 2
+  Example     : my $contents = slurp('/tmp/file.txt.gz');
+  Exceptions  : If the file did not exist or was not readable
+  Status      : Stable
+
+=cut
+
+sub gz_slurp {
+  my ($file, $want_ref, $binary) = @_;
+  my $contents;
+  gz_work_with_file($file, 'r', sub {
+    my ($fh) = @_;
+    local $/ = undef;
+    binmode($fh) if $binary;
+    $contents = <$fh>;
+    return;
+  });
+  return ($want_ref) ? \$contents : $contents;
+}
+
 =head2 slurp_to_array()
 
   Arg [1]     : string $file
@@ -148,6 +194,29 @@ sub slurp_to_array {
 	  return;
 	});
 	return $contents;
+}
+
+=head2 gz_slurp_to_array()
+
+  Arg [1]     : string $file
+  Arg [2]     : boolean $chomp
+  Description : Sends the contents of the given gzipped file into an ArrayRef
+  Returntype  : ArrayRef
+  Example     : my $contents_array = slurp_to_array('/tmp/file.txt.gz');
+  Exceptions  : If the file did not exist or was not readable
+  Status      : Stable
+
+=cut
+
+sub gz_slurp_to_array {
+  my ($file, $chomp) = @_;
+  my $contents;
+  gz_work_with_file($file, 'r', sub {
+    my ($fh) = @_;
+    $contents = fh_to_array($fh, $chomp);
+    return;
+  });
+  return $contents;
 }
 
 =head2 fh_to_array()
@@ -225,12 +294,59 @@ sub process_to_array {
 
 sub work_with_file {
   my ($file, $mode, $callback) = @_;
-  throw "We need a mode to open the requested file with" if ! $file;
+  throw "We need a file name to open" if ! $file;
+  throw "We need a mode to open the requested file with" if ! $mode;
   assert_ref($callback, 'CODE', 'callback');
   my $fh = IO::File->new($file, $mode) or
     throw "Cannot open '${file}' in  mode '${mode}': $!";
   $callback->($fh);
   close($fh) or throw "Cannot close FH from ${file}: $!";
+  return;
+}
+
+=head2 gz_work_with_file()
+
+  Arg [1]     : string $file
+  Arg [2]     : string; $mode 
+                Supports modes like C<r>, C<w>, C<\>> and C<\<>
+  Arg [3]     : CodeRef the callback which is given the open file handle as
+                its only argument
+  Description : Performs the nitty gritty of checking if a file handle is open
+                and closing the resulting filehandle down.
+  Returntype  : None
+  Example     : work_with_file('/tmp/out.txt.gz', 'w', sub { 
+                  my ($fh) = @_; 
+                  print $fh 'hello'; 
+                  return;
+                });
+  Exceptions  : If we could not work with the file due to permissions
+  Status      : Stable
+
+=cut
+
+sub gz_work_with_file {
+  my ($file, $mode, $callback) = @_;
+  throw "IO::Compress was not available"if ! $GZIP_OK;
+  throw "We need a file name to open" if ! $file;
+  throw "We need a mode to open the requested file with" if ! $mode;
+  assert_ref($callback, 'CODE', 'callback');
+  my $fh;
+  {
+    no warnings qw/once/;
+    if($mode =~ '>$' || $mode eq 'w') {
+      my $append = ($mode =~ />>$/) ? 1 : 0;
+      $fh = IO::Compress::Gzip->new($file, Append => $append) or throw "Cannot open '$file' for writing: $IO::Compress::Gzip::GzipError";
+    }
+    elsif($mode eq '<' || $mode eq 'r') {
+      $fh = IO::Uncompress::Gunzip->new($file) or throw "Cannot open '$file' for writing: $IO::Uncompress::Gunzip::GunzipError";
+    }
+    else {
+      throw "Could not decipher a mode from '$mode'";
+    }
+  };
+  $callback->($fh);
+  close($fh) or throw "Cannot close FH from ${file}: $!";
+  return;
   return;
 }
 
