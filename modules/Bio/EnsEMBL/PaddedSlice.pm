@@ -217,7 +217,7 @@ sub sub_Slice {
 =cut
 
 sub __resolver {
-  my ($self, $method) = @_;
+  my ($self, $package_name, $method) = @_;
   return sub {
     my ($local_self, @args) = @_;
     return $local_self->__proxy()->$method(@args);
