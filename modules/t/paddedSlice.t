@@ -37,5 +37,7 @@ is($padded->subseq(10, 14), 'NATGC', 'Checking overlapping padded at start');
 is($padded->subseq(15, 18), 'ATGC', 'Checking mid subseq as expected');
 is($padded->subseq(28, 34), 'TGCNNNN', 'Checking overlapping padded at end');
 
+#Checking attributes
+is($test_slice->name(), $padded->name(), 'Checking names are the same');
 
 done_testing();
