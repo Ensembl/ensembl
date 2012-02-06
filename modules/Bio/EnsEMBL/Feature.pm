@@ -1442,7 +1442,21 @@ sub summary_as_hash {
   return \%summary;
 }
 
+=head2 species
 
+  Example			: $feature->species();
+  Description	: Shortcut to the feature's DBAdaptor and returns its species name 
+  Returntype 	: String the species name
+  Exceptions 	: Thrown if there is no attached adaptor
+  Caller      : Webcode
+
+=cut
+
+sub species {
+  my ($self) = @_;
+  throw "Can only call this method if you have attached an adaptor" if ! $self->adaptor();
+  reutrn $self->adaptor()->db()->species();
+}
 
 
 ##############################################
