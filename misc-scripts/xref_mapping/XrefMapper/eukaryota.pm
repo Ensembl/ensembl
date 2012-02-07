@@ -37,6 +37,7 @@ sub transcript_display_xref_sources {
 		 phatr_jgi_v2_bd
                  PGD_GENE
                  Mycgr3_jgi_v2.0_gene
+                 BROAD_Magnaporthe_DB
                );
     
     my %ignore;
@@ -70,6 +71,7 @@ sub gene_description_sources {
 	  "phatr_jgi_v2",
 	  "phatr_jgi_v2_bd",
           "PGD_GENE",
+          "BROAD_Magnaporthe_DB",
           "RFAM",
           "TRNASCAN_SE",
           "RNAMMER",
