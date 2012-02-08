@@ -159,7 +159,8 @@ sub single_value_by_key {
   if(defined $results) {
     my $count = scalar(@{$results});
     if($count == 1) {
-      return $results->[0];
+      my ($value) = @{$results};
+      return $value;
     }
     elsif($count == 0) {
       if($warn) {
