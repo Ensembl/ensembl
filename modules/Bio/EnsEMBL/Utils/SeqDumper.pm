@@ -604,7 +604,9 @@ sub dump_genbank {
   $self->write($FH, $GENBANK_HEADER, 'KEYWORDS', '.');
 
   # SOURCE
-  $self->write($FH, $GENBANK_HEADER, 'SOURCE', $meta_container->get_common_name());
+  my $common_name = $meta_container->get_common_name();
+  $common_name = $meta_container->get_scientific_name() unless $common_name;
+  $self->write($FH, $GENBANK_HEADER, 'SOURCE', $common_name);
 
   #organism
   my @cls = $meta_container->get_classification();
