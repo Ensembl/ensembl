@@ -123,7 +123,7 @@ sub gen_load {
     } elsif ( $dba->group eq "otherfeatures" ) {
       $config_sub =
         \&Bio::EnsEMBL::Utils::ConfigRegistry::load_otherfeatures;
-    } elsif ( $dba->group eq "vega" ) {
+    } elsif ( $dba->group eq 'vega' || $dba->group eq 'vega_update' ) {
       $config_sub = \&Bio::EnsEMBL::Utils::ConfigRegistry::load_vega;
     } else {
       $config_sub = \&Bio::EnsEMBL::Utils::ConfigRegistry::load_core;
