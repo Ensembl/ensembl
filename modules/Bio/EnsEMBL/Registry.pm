@@ -149,7 +149,8 @@ my %group2adaptor = (
       'pipeline'      => 'Bio::EnsEMBL::Pipeline::DBSQL::DBAdaptor',
       'snp'       => 'Bio::EnsEMBL::ExternalData::SNPSQL::DBAdaptor',
       'variation' => 'Bio::EnsEMBL::Variation::DBSQL::DBAdaptor',
-      'vega'      => 'Bio::EnsEMBL::DBSQL::DBAdaptor'
+      'vega'      => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
+      'vega_update' => 'Bio::EnsEMBL::DBSQL::DBAdaptor',
 );
 
 
@@ -1644,7 +1645,7 @@ sub load_registry_from_db {
   }
 
   # Register Core like databases
-  foreach my $type (qw(core cdna vega otherfeatures rnaseq)) {
+  foreach my $type (qw(core cdna vega vega_update otherfeatures rnaseq)) {
 
     my @dbs = grep { /^[a-z]+_[a-z0-9]+(?:_[a-z0-9]+)?  # species name
                        _
