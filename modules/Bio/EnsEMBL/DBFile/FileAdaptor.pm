@@ -130,24 +130,29 @@ sub open_file{
   if(($file_op ne '<') &&
 	 ($file_op ne '>') &&
 	 ($file_op ne '>>')){
-	#thow rather than warn as this is a code bug
 	throw("Cannot perform open with unsupported operator:\t${file_op}${filepath}");
   }
 
   my $fh;
   my $success = open($fh, "${file_op}${filepath}");
   #$fh will be still be GLOB on fail
+  
+  #These warn instead of throw/die to allow
+  #open_file to be used to test a file
+  #this prevents throws/die when an attempting to access an absent file (good for webcode)
+  #could alternatively change to throw/die and eval where required
+  #prevents need to catch everywhere else and potential double reporting of error
 
   if(! $success){
-	undef $fh;
-	warn "Failed to open:\t$filepath\n$!\n";
+	#undef $fh;
+	throw("Failed to open:\t$filepath\n$!\n");
   }
   elsif($params_hash->{-binmode}){
 	$success = binmode $fh;
 	  
 	if(! $success){
-	  warn "Failed to set binmode:\t$filepath\n$!";
-	  undef $fh;
+	  throw("Failed to set binmode:\t$filepath\n$!");
+	  #undef $fh;
 	}
   }
 
