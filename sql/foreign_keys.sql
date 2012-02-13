@@ -18,6 +18,9 @@ ALTER table assembly ADD FOREIGN KEY (cmp_seq_region_id) REFERENCES seq_region(s
 ALTER table assembly_exception ADD FOREIGN KEY (exc_seq_region_id) REFERENCES seq_region(seq_region_id);
 ALTER table assembly_exception ADD FOREIGN KEY (seq_region_id) REFERENCES seq_region(seq_region_id);
 
+ALTER table data_file ADD FOREIGN KEY (coord_system_id) REFERENCES coord_system(coord_system_id);
+ALTER table data_file ADD FOREIGN KEY (analysis_id) REFERENCES analysis(analysis_id);
+
 ALTER table density_feature ADD FOREIGN KEY (density_type_id) REFERENCES density_type(density_type_id);
 ALTER table density_feature ADD FOREIGN KEY (seq_region_id) REFERENCES seq_region(seq_region_id);
 
@@ -42,8 +45,6 @@ ALTER table dnac ADD FOREIGN KEY (seq_region_id) REFERENCES seq_region(seq_regio
 
 ALTER table exon ADD FOREIGN KEY (seq_region_id) REFERENCES seq_region(seq_region_id);
 
-ALTER table exon_stable_id ADD FOREIGN KEY (exon_id) REFERENCES exon(exon_id);
-
 ALTER table exon_transcript ADD FOREIGN KEY (exon_id) REFERENCES exon(exon_id);
 ALTER table exon_transcript ADD FOREIGN KEY (transcript_id) REFERENCES transcript(transcript_id);
 
@@ -59,8 +60,6 @@ ALTER table gene_attrib ADD FOREIGN KEY (gene_id) REFERENCES gene(gene_id);
 
 ALTER table gene_archive ADD FOREIGN KEY (mapping_session_id) REFERENCES mapping_session(mapping_session_id);
 ALTER table gene_archive ADD FOREIGN KEY (peptide_archive_id) REFERENCES peptide_archive(peptide_archive_id);
-
-ALTER table gene_stable_id ADD FOREIGN KEY (gene_id) REFERENCES gene(gene_id);
 
 ALTER table ontology_xref ADD FOREIGN KEY (object_xref_id) REFERENCES object_xref(object_xref_id);
 ALTER table ontology_xref ADD FOREIGN KEY (source_xref_id) REFERENCES xref(xref_id);
@@ -99,13 +98,9 @@ ALTER table object_xref ADD FOREIGN KEY (analysis_id) REFERENCES analysis(analys
 ALTER TABLE operon ADD FOREIGN KEY (analysis_id) REFERENCES analysis(analysis_id);
 ALTER TABLE operon ADD FOREIGN KEY (seq_region_id) REFERENCES seq_region(seq_region_id);
 
-ALTER TABLE operon_stable_id ADD FOREIGN KEY (operon_id) REFERENCES operon(operon_id);
-
 ALTER TABLE operon_transcript ADD FOREIGN KEY (analysis_id) REFERENCES analysis(analysis_id);
 ALTER TABLE operon_transcript ADD FOREIGN KEY (seq_region_id) REFERENCES seq_region(seq_region_id); 
 ALTER TABLE operon_transcript ADD FOREIGN KEY (operon_id) REFERENCES operon(operon_id);
-
-ALTER TABLE operon_transcript_stable_id ADD FOREIGN KEY (operon_transcript_id) REFERENCES operon_transcript(operon_transcript_id);
 
 ALTER TABLE operon_transcript_gene ADD FOREIGN KEY (operon_transcript_id) REFERENCES operon_transcript(operon_transcript_id);
 ALTER TABLE operon_transcript_gene ADD FOREIGN KEY (gene_id) REFERENCES gene(gene_id);
@@ -170,8 +165,6 @@ ALTER table transcript ADD FOREIGN KEY (canonical_translation_id) REFERENCES tra
 ALTER table transcript_attrib ADD FOREIGN KEY (attrib_type_id) REFERENCES attrib_type(attrib_type_id);
 ALTER table transcript_attrib ADD FOREIGN KEY (transcript_id) REFERENCES transcript(transcript_id);
 
-ALTER table transcript_stable_id ADD FOREIGN KEY (transcript_id) REFERENCES transcript(transcript_id);
-
 ALTER table transcript_supporting_feature ADD FOREIGN KEY (transcript_id) REFERENCES transcript(transcript_id);
 
 ALTER table translation ADD FOREIGN KEY (end_exon_id) REFERENCES exon(exon_id);
@@ -180,8 +173,6 @@ ALTER table translation ADD FOREIGN KEY (transcript_id) REFERENCES transcript(tr
 
 ALTER table translation_attrib ADD FOREIGN KEY (attrib_type_id) REFERENCES attrib_type(attrib_type_id);
 ALTER table translation_attrib ADD FOREIGN KEY (translation_id) REFERENCES translation(translation_id);
-
-ALTER table translation_stable_id ADD FOREIGN KEY (translation_id) REFERENCES translation(translation_id);
 
 ALTER table unconventional_transcript_association ADD FOREIGN KEY (gene_id) REFERENCES gene(gene_id);
 ALTER table unconventional_transcript_association ADD FOREIGN KEY (transcript_id) REFERENCES transcript(transcript_id);
