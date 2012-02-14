@@ -93,7 +93,7 @@ SELECT DISTINCT
         ontology.namespace
 FROM    ontology
   JOIN  term USING (ontology_id)
-  JOIN  synonym USING (term_id)
+  LEFT JOIN  synonym USING (term_id)
 WHERE   ( term.name LIKE ? OR synonym.name LIKE ? ));
 
   if ( defined($ontology) ) {
