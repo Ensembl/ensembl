@@ -244,9 +244,13 @@ SCAF: while(<TXT>){
     elsif($arr[$key_to_index{'ori'}] eq "-"){
       $seq_id_to_strand{$max_seq_region_id} = -1;
     }
-    elsif($arr[$key_to_index{'ori'}] eq "b"){
+    elsif($arr[$key_to_index{'ori'}] eq "b" && $alt_name ne "HG1211_PATCH"){
       $seq_id_to_strand{$max_seq_region_id} = 1;
       print "WARNING: Encountered ori = b for $alt_name - defaulting to ori = 1\n";
+    }
+    elsif($arr[$key_to_index{'ori'}] eq "b" && $alt_name eq "HG1211_PATCH"){
+      $seq_id_to_strand{$max_seq_region_id} = -1;
+      print "WARNING: Encountered ori = b for $alt_name - defaulting to ori = -1 (Hard-coded exception for this patch)_\n";
     }
     else{
       print "Problem with strand.\n";
