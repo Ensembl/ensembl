@@ -129,7 +129,8 @@ sub print_metadata {
     my $self = shift;
     my $slice = shift;
     my $fh = $self->{'filehandle'};
-    my $metadata = $self->{'header_function'}->($slice); 
+    my $function = $self->{'header_function'};
+    my $metadata = &$function($slice);
     print $fh $metadata."\n";
 }
 
