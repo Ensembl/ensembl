@@ -29,6 +29,8 @@ Bio::EnsEMBL::DBSQL::DataFileAdaptor
 	my $dfa = $dba->get_DataFileAdaptor();
 	my $file = $dfa->fetch_by_dbID(1);
 	my $files = $dfa->fetch_all();
+	
+	my $logic_name_files = $dfa->fetch_all_by_logic_name('bam_alignments');
 
 =head1 DESCRIPTION
 
@@ -156,6 +158,33 @@ sub DataFile_to_adaptor {
   return $dispatch->();
 }
 
+=head2 fetch_all_by_logic_name
+
+  Args [1]   	: String $logic_name for the linked analysis 
+  Example			: my $dfs = $dfa->fetch_all_by_logic_name('bam_alignments');
+  Description	: Returns all DataFile entries linked to the given analysis 
+                logic name
+  Returntype 	: ArrayRef contains Bio::EnsEMBL::DataFile instances
+  Exceptions 	: Thrown if logic name does not exist 
+
+=cut
+
+sub fetch_all_by_logic_name {
+  my ($self, $logic_name) = @_;
+  my $analysis = $self->db()->get_AnalysisAdaptor()->fetch_by_logic_name($logic_name);
+  throw "No analysis found for logic_name '${logic_name}'" if ! $analysis;
+  return $self->fetch_all_by_Analysis($analysis);
+}
+
+=head2 fetch_all_by_Analysis
+
+  Args [1]    : Bio::EnsEMBL::Analysis $analysis to look up by 
+  Example     : my $dfs = $dfa->fetch_all_by_Analysis($analysis);
+  Description : Returns all DataFile entries linked to the given analysis
+  Returntype  : ArrayRef contains Bio::EnsEMBL::DataFile instances
+  Exceptions  : None
+
+=cut
 
 sub fetch_all_by_Analysis {
   my ($self, $analysis) = @_;
@@ -164,13 +193,23 @@ sub fetch_all_by_Analysis {
   return $self->generic_fetch('df.analysis_id =?');
 }
 
+=head2 fetch_all_by_CoordSystem
+
+  Args [1]    : Bio::EnsEMBL::CoordSystem $coord_system to look up by 
+  Example     : my $dfs = $dfa->fetch_all_by_CoordSystem($cs);
+  Description : Returns all DataFile entries linked to the given coordinate
+                system. Does B<not> support I<toplevel>
+  Returntype  : ArrayRef contains Bio::EnsEMBL::DataFile instances
+  Exceptions  : None 
+
+=cut
+
 sub fetch_all_by_CoordSystem {
   my ($self, $cs) = @_;
   assert_ref($cs, 'Bio::EnsEMBL::CoordSystem', 'coord_system');
   $self->bind_param_generic_fetch($cs->dbID(), SQL_INTEGER);
   return $self->generic_fetch('df.coord_system_id =?');
 }
-
 
 sub fetch_by_name_and_type {
   my ($self, $name, $type) = @_;
