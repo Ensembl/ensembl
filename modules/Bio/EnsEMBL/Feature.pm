@@ -1455,7 +1455,7 @@ sub summary_as_hash {
 sub species {
   my ($self) = @_;
   throw "Can only call this method if you have attached an adaptor" if ! $self->adaptor();
-  reutrn $self->adaptor()->db()->species();
+  return $self->adaptor()->db()->species();
 }
 
 
