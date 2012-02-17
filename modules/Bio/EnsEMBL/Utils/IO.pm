@@ -131,12 +131,19 @@ eval {
 
 sub slurp {
 	my ($file, $want_ref, $binary) = @_;
-	my $contents;
+	my $contents = q{};
 	work_with_file($file, 'r', sub {
 	  my ($fh) = @_;
-	  local $/ = undef;
 	  binmode($fh) if $binary;
-	  $contents = <$fh>;
+    my $size_left = -s $fh;
+    while( $size_left > 0 ) {
+      my $read_cnt = sysread($fh, $contents, $size_left, length($contents));
+      unless( $read_cnt ) {
+        throw "read error in file $file: $!" ;
+        last;
+      }
+      $size_left -= $read_cnt ;
+    }
 	  return;
 	});
 	return ($want_ref) ? \$contents : $contents;
