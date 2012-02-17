@@ -486,7 +486,7 @@ sub _set_opts_from_hostname {
     if !$settings;
 
   #Setup default connection params
-  $o->{host}     = $host;
+  $o->{host}     = $settings->{host} || $host; # use a configured host otherwise use hostname
   $o->{port}     = $settings->{port};
   
   #Set just SQL dump mode only if specified in cfg file
@@ -743,6 +743,14 @@ form of an entry is
   
   ;more complex
   [other-server-name]
+  port = 3306               ; port of the DB
+  pattern = ^web\w+$        ; regular expression to filter DBs by
+  dir = /path/to/dump/dir   ;
+  sql = 1                   ; dump just the SQL for these databases
+  
+  ;if your host isn't the same as the server you are running the script on
+  [mydumpserver]
+  host = my-real-server     ; host you want the script to connect to
   port = 3306               ; port of the DB
   pattern = ^web\w+$        ; regular expression to filter DBs by
   dir = /path/to/dump/dir   ;
