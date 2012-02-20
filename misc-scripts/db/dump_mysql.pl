@@ -9,14 +9,17 @@ use Carp;
 use DBI;
 use File::Spec;
 use File::Path qw/mkpath/;
-use Getopt::Long;
+use Getopt::Long qw/:config no_ignore_case auto_version bundling_override/;
 use IO::Compress::Gzip qw/gzip $GzipError/;
 use Pod::Usage;
 use Sys::Hostname;
 
+my $rcsid = '$Revision$';
+our ($VERSION) = $rcsid =~ /(\d+\.\d+)/;
+
 my $PIGZ_BINARY = 'pigz';
-my $PIGZ_PROCESSORS = 2; #ensdb-1-* only have 4 cores
-my $MAX_FILE_SIZE = 1_048_576; #anything greater than 1MB farm out
+my $PIGZ_PROCESSORS = 2; #some machines only have 4 cores so do not go mad
+my $MAX_FILE_SIZE = 1 * 1024 * 1024; #anything greater than 1MB farm out
 
 sub run {
   my ($class) = @_;
@@ -40,21 +43,21 @@ sub args {
   GetOptions(
     $opts, qw/
       defaults=s
-      version=i
+      version|release=i
       dry
-      host=s
-      port=i
-      username=s
-      password=s
-      directory=s
-      databases=s@
+      host|hostname|h=s
+      port|P=i
+      username|user|u=s
+      password|pass|p=s
+      directory|dir=s
+      databases|database|db=s@
       groups=s@
       species=s@
-      tables=s@
+      tables|table=s@
       pattern=s
       sql
       perlgzip
-      verbose
+      verbose|v
       log=s
       help
       man
@@ -137,14 +140,6 @@ sub defaults {
     $self->v(q{Will work with the tables [%s]}, join(q{,}, @{ $o->{tables} }));
   }
   
-  if(! $o->{username}) {
-    pod2usage(
-      -msg     => 'No -username given on the command line',
-      -exitval => 1,
-      -verbose => 0
-    );
-  }
-  
   if ($o->{defaults}) {
     $self->_set_opts_from_hostname();
   } else {
@@ -155,6 +150,14 @@ sub defaults {
       $o->{databases} = $self->_all_dbs($p);
     }
     $o->{directory} = File::Spec->rel2abs($o->{directory});
+  }
+  
+    if(! $o->{username}) {
+    pod2usage(
+      -msg     => 'No -username given on the command line or in the configuration file',
+      -exitval => 1,
+      -verbose => 0
+    );
   }
 
   $self->v(q{Using the database server %s@%s:%d},
@@ -486,11 +489,13 @@ sub _set_opts_from_hostname {
     if !$settings;
 
   #Setup default connection params
-  $o->{host}     = $settings->{host} || $host; # use a configured host otherwise use hostname
-  $o->{port}     = $settings->{port};
+  $o->{host}      = $settings->{host} || $host; # use a configured host otherwise use hostname
   
-  #Set just SQL dump mode only if specified in cfg file
-  $o->{sql}      = $settings->{sql} if $settings->{sql};
+  #only use if specified
+  $o->{port}      = $settings->{port} if $settings->{port};
+  $o->{username}  = $settings->{username} if $settings->{username};
+  $o->{password}  = $settings->{password} if $settings->{password};
+  $o->{sql}       = $settings->{sql} if $settings->{sql};
 
   if (!$o->{databases}) {
     my $opts_pattern = $o->{pattern};
@@ -599,12 +604,12 @@ dump_mysql.pl
 =head1 SYNOPSIS
 
   #Basic
-  ./dump_mysql.pl --username USER --password PASS [--defaults] | [--host HOST [--port PORT] [-pattern 'REGEX' | -databases DB] [-tables TABLE] -directory DIR] [-help | -man]
+  ./dump_mysql.pl (-version VER | -release VER) [-defaults] | [ -username USER -password PASS -host HOST [-port PORT] [-pattern 'REGEX' | -databases DB] [-tables TABLE] -directory DIR] [-verbose] [-help | -man]
   
   #Using defaults ini file
   ./dump_mysql.pl --defaults my.ini --username root --password p --version 64
   
-  ./dump_mysql.pl --defaults my.ini --username root --password p --version 64 -dry
+  ./dump_mysql.pl --defaults my.ini --username root --password p --release 64 -dry
   
   ./dump_mysql.pl --defaults my.ini --username root --password p --version 64 --tables dna
   
@@ -621,7 +626,7 @@ dump_mysql.pl
   
   ./dump_mysql.pl --host srv --username root --password p --databases my_db --tables dna,dnac --directory $PWD/dumps
   
-  ./dump_mysql.pl --host srv --username root --password p --databases my_db --tables dna --tables dnac --directory $PWD/dumps
+  ./dump_mysql.pl --host srv --username root --password p --db my_db --tables dna --tables dnac --directory $PWD/dumps
 
 =head1 DESCRIPTION
 
@@ -640,12 +645,12 @@ parameters rather than having to manually configure the setup.
 
 =over 8
 
-=item B<--username>
+=item B<--username | --user | -u>
 
 REQUIRED. Username of the connecting account. Must be able to perform 
 C<SELECT INTO OUTFILE> calls.
 
-=item B<--password>
+=item B<--password | -pass | -p>
 
 REQUIRED. Password of the connecting user.
 
@@ -658,18 +663,18 @@ C<-groups>, C<-species> and C<-tables> but not with parameters like <--host>.
 
 The options set are specified by your custom ini-file.
 
-=item B<--version>
+=item B<--version | --release>
 
 If you are using C<--defaults> then you must also specify the version
 of the databases you are dumping. Once specified the program will only
 consider databases with the version number in there (specifically the 
-occurance of C<%\_VERSION%>).
+occurance of C<%\_VERSION%>). C<--release> can also be used.
 
-=item B<--host>
+=item B<--host | --host | -h>
 
 Host name of the database to connect to. Cannot be used with <--defaults>.
 
-=item B<--port>
+=item B<--port | -P>
 
 Optional integer of the database port. Defaults to 3306. Cannot be used 
 with <--defaults>.
@@ -679,19 +684,19 @@ with <--defaults>.
 Allows the specification of a regular expression to select databases with. 
 Cannot be used in conjunction with the C<--databases> argument.
 
-=item B<--databases>
+=item B<--databases | --database | --db>
 
 Allows database name specification and can be used more than once. Cannot
 be used in conjunction with C<--pattern>. Comma separated values are 
 supported.
 
-=item B<--tables>
+=item B<--tables | --table>
 
 Allows you to specify a table to perform the dumps for. This will be applied
 to all databases matching the given pattern or the list of databases. Be
 warned that this will cause a full SQL re-dump and checksum re-calculation.
 
-=item B<--directory>
+=item B<--directory | --dir>
 
 Target directory to place all dumps. A sub-directory will be created here;
 one per database dump. Cannot be used with <--defaults>.
@@ -755,7 +760,15 @@ form of an entry is
   pattern = ^web\w+$        ; regular expression to filter DBs by
   dir = /path/to/dump/dir   ;
   sql = 1                   ; dump just the SQL for these databases
-
+  
+  ; and if you wanted everything in the config file so our cmd line becomes
+  ; ./dump_mysql.pl -defaults mydbcfg.ini
+  [myserver]
+  port = 5306
+  username = uberuser
+  password = uberpassword
+  pattern = ^homo_sap.+var.+$
+  dir = /path/to/dump/dir
 
 As an example of one which grabs all core dbs from a-m and puts it in /dumps
 
