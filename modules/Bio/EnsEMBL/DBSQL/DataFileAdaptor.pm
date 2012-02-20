@@ -138,8 +138,8 @@ sub DataFile_to_adaptor {
   my $type = $df->file_type();
   my $dispatch = {
     BAM     => sub {
-      require Bio::EnsEMBL::ExternalData::BAM::BamAdaptor;
-      return Bio::EnsEMBL::ExternalData::BAM::BamAdaptor->new($df->path($base));
+      require Bio::EnsEMBL::ExternalData::BAM::BAMAdaptor;
+      return Bio::EnsEMBL::ExternalData::BAM::BAMAdaptor->new($df->path($base));
     },
 #    BIGBED  => sub {
 #      require Bio::EnsEMBL::ExternalData::BigFile::BigBedAdaptor;
