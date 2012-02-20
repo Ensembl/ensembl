@@ -281,11 +281,16 @@ sub is_enabled {
 
   Arg [1]    : Bio::EnsEMBL::Slice slice
                The slice to dump
-  Arg [1]    : string $format
+  Arg [2]    : string $format
                The name of the format to dump
-  Arg [2]    : (optional) $outfile
+  Arg [3]    : (optional) $outfile
                The name of the file to dump to. If no file is specified STDOUT
                is used
+  Arg [4]    : (optional) $seq
+               Sequence to dump
+  Arg [4]    : (optional) $no_append
+               Default action is to open the file in append mode. This will
+               turn that mode off
   Example    : $seq_dumper->dump($slice, 'EMBL');
   Description: Dumps a region of a genome specified by the slice argument into
                an outfile of the format $format
@@ -297,7 +302,7 @@ sub is_enabled {
 
 
 sub dump {
-  my ($self, $slice, $format, $outfile, $seq) = @_;
+  my ($self, $slice, $format, $outfile, $seq, $no_append) = @_;
 
   $format || throw("format arg is required");
   $slice  || throw("slice arg is required");
@@ -311,21 +316,20 @@ sub dump {
 
   my $FH = IO::File->new;;
   if($outfile) {
-    $FH->open(">>$outfile") or throw("Could not open file $outfile");
+    my $mode = ($no_append) ? '>' : '>>';
+    $FH->open("${mode}${outfile}") or throw("Could not open file $outfile: $!");
   } else {
     $FH = \*STDOUT;
     #mod_perl did not like the following
     #$FH->fdopen(fileno(STDOUT), "w") 
     #  or throw("Could not open currently selected output filehandle " .
-    #		      "for writing");
+    #         "for writing");
   }
   
   &$dump_handler($self, $slice, $FH, $seq);
 
   $FH->close if ($outfile); #close if we were writing to a file
 }
-
-
 
 =head2 dump_embl
 
