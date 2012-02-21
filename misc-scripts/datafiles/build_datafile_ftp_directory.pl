@@ -77,7 +77,7 @@ sub check {
 
 sub setup {
   my ($self) = @_;
-  my $o = $self->o();
+  my $o = $self->opts();
   
   $self->v('Using the database server %s@%s:%d', map { $o->{$_} } qw/username host port/);
   
@@ -118,7 +118,7 @@ sub _process_datafile {
   return if $datafile->absolute();
   my $target_dir = $self->_target_root($datafile);
   if(! -d $target_dir) {
-    if($self->o->{dry}) {
+    if($self->opts->{dry}) {
       $self->v("Would have created directory '%s'", $target_dir);
     }
     else {
@@ -130,7 +130,7 @@ sub _process_datafile {
   foreach my $filepath (@{$files}) {
     my ($file_volume, $file_dir, $name) = File::Spec->splitpath($filepath);
     my $target = File::Spec->catfile($target_dir, $name);
-    if($self->o()->{dry}) {
+    if($self->opts()->{dry}) {
       $self->v("Would have linked '%s' -> '%s'", $filepath, $target);
     }
     else {
@@ -154,7 +154,7 @@ sub _process_datafile {
 # e.g. pub/66/bam/genebuild/pan_trogladytes/chimp_1.bam
 sub _target_root {
   my ($self, $datafile) = @_;
-  my $base = $self->o()->{ftp_dir};
+  my $base = $self->opts()->{ftp_dir};
   my $file_type = $self->_datafile_to_type($datafile); 
   my $ftp_type = $self->_dba_to_ftp_type($datafile->adaptor()->db());
   my $species = $datafile->adaptor()->db()->get_MetaContainer()->get_production_name();
@@ -196,7 +196,7 @@ sub _get_core_like_dbs {
 
 sub _files {
   my ($self, $datafile) = @_;
-  my $source_file = $datafile->path($self->o()->{datafile_dir});
+  my $source_file = $datafile->path($self->opts()->{datafile_dir});
   my ($volume, $dir, $name) = File::Spec->splitpath($source_file);
   my $regex = qr/^$name.*/;
   my @files;
@@ -208,7 +208,7 @@ sub _files {
 
 sub v {
   my ($self, $msg, @params) = @_;
-  return unless $self->o()->{verbose};
+  return unless $self->opts()->{verbose};
   printf(STDERR $msg."\n", @params);
   return;
 }
