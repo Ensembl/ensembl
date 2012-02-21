@@ -162,7 +162,29 @@ sub new {
   return $self;
 } ## end sub new
 
+=head2 clear_caches
 
+  Example			: $dba->clear_caches();
+  Description	: Loops through all linked adaptors and clears their 
+                caches if C<clear_cache()> is implemented. Not all caches
+                are cleared & the DBAdaptor instance should be removed from
+                the registry to clear these remaining essential caches. 
+  Returntype 	: None
+  Exceptions 	: None
+
+=cut
+
+sub clear_caches {
+  my ($self) = @_;
+  my $adaptors = Bio::EnsEMBL::Registry->get_all_adaptors(
+    $self->species(), $self->group());
+  while (my $adaptor = shift @{$adaptors}) {
+    if($adaptor->can('clear_cache')) {
+      $adaptor->clear_cache();
+    }
+  }
+  return;
+}
 
 =head2 dbc
 
@@ -320,6 +342,7 @@ sub get_available_adaptors {
         SplicingEvent            SplicingEventFeature SplicingTranscriptPair
         Operon 					OperonTranscript
         DataFile
+        IntronSupportingEvidence
         ) ),
     # Those whose adaptors are in Map::DBSQL
     map( { $_ => "Bio::EnsEMBL::Map::DBSQL::${_}Adaptor" } qw(
