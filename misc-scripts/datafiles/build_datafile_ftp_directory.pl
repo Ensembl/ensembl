@@ -87,7 +87,7 @@ sub setup {
     -USER => $o->{username}, -DB_VERSION => $o->{release},
   ); 
   $args{-PASS} = $o->{password} if $o->{password};
-  $args{-VERBOSE} = 1 if $o->{verbose};
+#  $args{-VERBOSE} = 1 if $o->{verbose};
   my $loaded = Bio::EnsEMBL::Registry->load_registry_from_db(%args);
   $self->v('Loaded %d DBAdaptor(s)', $loaded);
   
@@ -178,7 +178,8 @@ sub _dba_to_ftp_type {
     
     funcgen => 'funcgen',
   }->{$group};
-  die "No way to convert from $group to a type";
+  die "No way to convert from $group to a type" unless $type;
+  return $type;
 }
 
 sub _get_core_like_dbs {
@@ -187,7 +188,7 @@ sub _get_core_like_dbs {
   my @final_dbas;
   while(my $dba = shift @{$dbas}) {
     next if $dba->species() eq 'multi';
-    next if lc($dba->species()) eq 'ancestral species';
+    next if lc($dba->species()) eq 'ancestral sequences';
     
     my $type = $dba->get_MetaContainer()->single_value_by_key('schema_type');
     $dba->dbc()->disconnect_if_idle();
