@@ -212,3 +212,5 @@ sub v {
   printf(STDERR $msg."\n", @params);
   return;
 }
+
+Script->run();
