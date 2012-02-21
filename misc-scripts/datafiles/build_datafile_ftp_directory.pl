@@ -72,6 +72,17 @@ sub check {
     }
   }
   
+  foreach my $key (qw/datafile_dir ftp_dir/) {
+    my $dir = $o->{$key};
+    if(! -d $dir) {
+      pod2usage(
+        -message => "-${key} given location '${dir}' does not exist",
+        -verbose => 1,
+        -exitval => 1
+      );
+    }
+  }
+  
   return;
 }
 
@@ -107,9 +118,15 @@ sub _process_dba {
   my ($self, $dba) = @_;
   $self->v('Working with species %s', $dba->species());
   my $datafiles = $dba->get_DataFileAdaptor()->fetch_all();
-  foreach my $df (@{$datafiles}) {
-    $self->_process_datafile($df);
+  if(! @{$datafiles}) {
+    $self->v("\tNo datafiles found");
   }
+  else {
+    foreach my $df (@{$datafiles}) {
+      $self->_process_datafile($df);
+    }
+  }
+  $dba->dbc()->disconnect_if_idle();
   return;
 }
 
@@ -119,10 +136,10 @@ sub _process_datafile {
   my $target_dir = $self->_target_root($datafile);
   if(! -d $target_dir) {
     if($self->opts->{dry}) {
-      $self->v("Would have created directory '%s'", $target_dir);
+      $self->v("\tWould have created directory '%s'", $target_dir);
     }
     else {
-      $self->v("Creating directory '%s'", $target_dir);
+      $self->v("\tCreating directory '%s'", $target_dir);
       mkpath($target_dir) or die "Cannot create the directory $target_dir: $!";
     }
   }
@@ -131,7 +148,7 @@ sub _process_datafile {
     my ($file_volume, $file_dir, $name) = File::Spec->splitpath($filepath);
     my $target = File::Spec->catfile($target_dir, $name);
     if($self->opts()->{dry}) {
-      $self->v("Would have linked '%s' -> '%s'", $filepath, $target);
+      $self->v("\tWould have linked '%s' -> '%s'", $filepath, $target);
     }
     else {
       if(-e $target) {
@@ -143,7 +160,7 @@ sub _process_datafile {
           unlink $target;
         }
       }
-      $self->v('Linking %s -> %s', $filepath, $target);
+      $self->v("\tLinking %s -> %s", $filepath, $target);
       symlink($filepath, $target) or die "Cannot symbolically link $filepath to $target: $!";
     }
   }
@@ -219,3 +236,101 @@ sub v {
 }
 
 Script->run();
+
+1;
+__END__
+
+=pod
+
+=head1 NAME
+
+build_datafile_ftp_directory.pl
+
+=head1 SYNOPSIS
+
+  #BASIC
+  ./build_datafile_ftp_directory.pl -release VER -user USER -pass PASS -host HOST [-port PORT] -datafile_dir DIR -ftp_dir DIR [-dry] [-verbose] [-help | -man]
+  
+  #EXAMPLE dry
+  ./build_datafile_ftp_directory.pl -release 66 -host ensembdb.ensembl.org -port 5306 -user anonymous -verbose -datafile_dir /my/datafile -ftp_dir /target/datafile/pub -dry
+  
+  #EXAMPLE do it
+  ./build_datafile_ftp_directory.pl -release 66 -host ensembdb.ensembl.org -port 5306 -user anonymous -verbose -datafile_dir /my/datafile -ftp_dir /target/datafile/pub
+
+=head1 DESCRIPTION
+
+A script which will link all files for datafiles in a release into a
+FTP compatible directory format.
+
+=head1 OPTIONS
+
+=over 8
+
+=item B<--username | --user | -u>
+
+REQUIRED. Username of the connecting account. Must be able to perform 
+C<SELECT INTO OUTFILE> calls.
+
+=item B<--password | -pass | -p>
+
+REQUIRED. Password of the connecting user.
+
+=item B<--release | --version>
+
+REQUIRED. Indicates the release of Ensembl to process
+
+=item B<--host | --host | -h>
+
+REQUIRED. Host name of the database to connect to
+
+=item B<--port | -P>
+
+Optional integer of the database port. Defaults to 3306.
+
+=item B<--datafile_dir>
+
+  -datafile_dir /datafile/dir
+
+REQUIRED. Source directory which is the intended root of the datafiles.
+
+=item B<--ftp_dir>
+
+  -ftp_dir /ftp/site/pub/release-66
+
+REQUIRED. Target directory to symbolically link into. Push directly into the
+release directory as the script does not assume the directory is publically
+available.
+
+=item B<--verbose>
+
+Makes the program give more information about what is going on. Otherwise
+the program is silent.
+
+=item B<--dry>
+
+If specified the script will inform of the types of commands and actions it 
+would have performed.
+
+=item B<--help>
+
+Help message
+
+=item B<--man>
+
+Man page
+
+=back
+
+=head1 REQUIREMENTS
+
+=over 8
+
+=item Perl 5.8+
+
+=item Bio::EnsEMBL
+
+=item Post 66 databases
+
+=back
+
+=end
