@@ -186,8 +186,12 @@ sub _get_core_like_dbs {
   my $dbas = Bio::EnsEMBL::Registry->get_all_DBAdaptors();
   my @final_dbas;
   while(my $dba = shift @{$dbas}) {
+    next if $dba->species() eq 'multi';
+    next if lc($dba->species()) eq 'ancestral species';
+    
     my $type = $dba->get_MetaContainer()->single_value_by_key('schema_type');
     $dba->dbc()->disconnect_if_idle();
+    next unless $type;
     push(@final_dbas, $dba) if $type eq 'core';
   }
   $self->v('Found %d core like database(s)', scalar(@final_dbas));
