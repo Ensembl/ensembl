@@ -108,6 +108,21 @@ sub new {
   return $self;
 }
 
+=head2 clear_cache
+
+  Example			: $sa->clear_cache();
+  Description	: Removes all entries from the associcated sequence cache
+  Returntype 	: None
+  Exceptions 	: None
+
+=cut
+
+sub clear_cache {
+  my ($self) = @_;
+  %{$self->{seq_cache}} = ();
+  return;
+}
+
 
 =head2 fetch_by_Slice_start_end_strand
 
