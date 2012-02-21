@@ -61,9 +61,7 @@ my @indexes = split ',', $ind;
 my $dbHash = get_databases();
 
 #warn Dumper $dbcHash;
-
 foreach my $species ( sort keys %$dbHash ) {
-
     my $conf = $dbHash->{$species};
     foreach my $index (@indexes) {
 
@@ -359,13 +357,52 @@ WHERE
           "\n";
         my $extra = $DB ne 'core' ? ";db=$DB" : '';
 
+        
         my $dbh = DBI->connect( "$dsn:$DBNAME", $user, $pass )
           or die "DBI::error";
 
+
+
+
+        print "Get Genes query...\n---------------------\n";
+$dbh->ping;
+        my %exons = ();
+        my $get_genes_sth    = $dbh->prepare(
+            "select distinct t.gene_id, esi.stable_id
+         from transcript as t, exon_transcript as et, exon_stable_id as esi
+        where t.transcript_id = et.transcript_id and et.exon_id = esi.exon_id"
+        );
+
+
+	$get_genes_sth->execute;
+        my $gene_rows = [];    # cache for batches of rows
+
+	while (
+            my $row = (
+                shift(@$gene_rows) ||    # get row from cache, or reload cache:
+                  shift(
+                    @{
+                        $gene_rows =
+                          $get_genes_sth->fetchall_arrayref( undef, 10_000 )
+                          || []
+                      }
+                  )
+            )
+          )
+        {
+ 
+
+
+            $exons{ $row->[0] }{ $row->[1] } = 1;
+
+        }
+    
+#warn "Exons: " . scalar (keys %exons);
+        print "Done Get Genes query...\n---------------------\n";
         # SNP query
         my $snp_sth = eval {
             $dbh->prepare(
-"select distinct(vf.variation_name) from $SNPDB.transcript_variation as tv, $SNPDB.variation_feature as vf where vf.variation_feature_id = tv.variation_feature_id and tv.transcript_stable_id in(?)"
+"select distinct(vf.variation_name) from $SNPDB.transcript_variation as tv, $SNPDB.variation_feature as vf where vf.variation_feature_id = tv.variation_feature_id and tv.feature_stable_id in(?)"
             );
         };
 
@@ -411,8 +448,14 @@ g.seq_region_id=ae.seq_region_id and ae.exc_type='HAP'", [qw(gene_id)]
         #     $exons{ $_->[0] }{ $_->[1] } = 1;
         # }
 
-        print "Get Genes query...\n---------------------\n";
 
+<<<<<<< ebi_search_dump.pl
+        my $dbh2 = DBI->connect( "$dsn:$DBNAME", $user, $pass )
+          or die "DBI::error";
+        my $gene_info = $dbh2->selectall_arrayref( "
+        select gsi.gene_id, tsi.transcript_id, trsi.translation_id,
+             gsi.stable_id as gsid, tsi.stable_id as tsid, trsi.stable_id as trsid,
+=======
         my %exons = ();
         my $get_genes_sth    = $dbh->prepare(
             "select distinct t.gene_id, e.stable_id
@@ -448,6 +491,7 @@ g.seq_region_id=ae.seq_region_id and ae.exc_type='HAP'", [qw(gene_id)]
         my $gene_info = $dbh->selectall_arrayref( "
         select g.gene_id, t.transcript_id, tr.translation_id,
              g.stable_id as gsid, t.stable_id as tsid, tr.stable_id as trsid,
+>>>>>>> 1.18
              g.description, ed.db_name, x.dbprimary_acc,x.display_label, ad.display_label, ad.description, g.source, g.status, g.biotype
         from ((( $DBNAME.gene as g, 
              $DBNAME.analysis_description as ad,
@@ -460,7 +504,7 @@ g.seq_region_id=ae.seq_region_id and ae.exc_type='HAP'", [qw(gene_id)]
        order by g.stable_id, t.stable_id;
     " );
 
-        print "Done Get Genes query...\n---------------------\n";
+   #     print "Done Get Genes query...\n---------------------\n";
 
         my %hash = map { $_->[0] } @$gene_info;
         my $ecount = scalar(keys(%hash)). "\n\n";
