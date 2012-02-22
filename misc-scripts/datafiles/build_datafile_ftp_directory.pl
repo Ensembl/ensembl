@@ -188,6 +188,8 @@ sub _process_datafile {
       $self->v("\tLinking %s -> %s", $filepath, $target);
       $self->v("\tRelative path is %s", $relative_path);
       symlink($relative_path, $target) or die "Cannot symbolically link $filepath (${relative_path}) to $target: $!";
+      
+      $self->_flag_missing_ftp_link($datafile);
     }
   }
   return;
