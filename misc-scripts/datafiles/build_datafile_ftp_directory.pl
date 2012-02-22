@@ -139,7 +139,7 @@ sub _process_missing_ftp_links {
   my $module = 'EnsEMBL::Web::Document::HTML::FTPtable';
   if(exists $self->{ftp}->{missing_types}) {
     foreach my $type (keys %{$self->{ftp}->{missing_types}}) {
-      printf("MISSING TYPE: '%s' is missing from thwe WebCode module '%s'. Please add it\n", $type, $module);
+      printf("MISSING TYPE: '%s' is missing from the WebCode module '%s'. Please add it\n", $type, $module);
     }
   }
   
