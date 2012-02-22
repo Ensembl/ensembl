@@ -189,7 +189,7 @@ sub update{
   ####################
 
   my %analysis_ids = $self->get_analysis();
-  my $checksum_analysis_id = $self->get_single_analysis('XrefChecksum');
+  my $checksum_analysis_id = $self->get_single_analysis('xrefchecksum');
 
 
   print "xref offset is $xref_offset, object_xref offset is $object_xref_offset\n" if ($verbose);
