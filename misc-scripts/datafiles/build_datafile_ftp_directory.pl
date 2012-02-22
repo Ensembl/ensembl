@@ -188,7 +188,7 @@ sub _target_species_root {
 # e.g. pub/release-66/data_files/pan_trogladytes/CHIMP2.14/rnaseq/chimp_1.bam
 sub _target_datafiles_root {
   my ($self, $datafile) = @_;
-  my $base = $self->opts()->{ftp_dir};
+  my $base = File::Spec->catdir($self->opts()->{ftp_dir}, 'data-files');
   my $target_location = $datafile->path($base);
   my ($volume, $dir, $file) = File::Spec->splitpath($target_location);
   return $dir;
