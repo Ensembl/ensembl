@@ -43,11 +43,11 @@ sub run {
     $self->get_source_id_for_source_name('Uniprot/SPTREMBL', '');
 
   $sptr_non_display_source_id =
-    $self->get_source_id_for_source_name('Uniprot/SPTREMBL', 'protein_evidence_gt_3');
+    $self->get_source_id_for_source_name('Uniprot/SPTREMBL', 'protein_evidence_gt_2');
 
   print "SwissProt source id for $file: $sp_source_id\n" if ($verbose);
   print "SpTREMBL source id for $file: $sptr_source_id\n" if ($verbose);
-  print "SpTREMBL protein_evidence > 3 source id for $file: $sptr_non_display_source_id\n" if ($verbose);
+  print "SpTREMBL protein_evidence > 2 source id for $file: $sptr_non_display_source_id\n" if ($verbose);
  
 
   my @xrefs =
@@ -283,7 +283,8 @@ sub create_xrefs {
       }
       else { 
 
-	  if (defined($protein_evidence_code) && $protein_evidence_code <= 3) {
+    #Use normal source only if it is PE levels 1 & 2
+	  if (defined($protein_evidence_code) && $protein_evidence_code < 3) {
 	      $xref->{SOURCE_ID} = $sptr_source_id;
 	      $num_sptr++;
 	  } else {

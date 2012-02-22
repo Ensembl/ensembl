@@ -95,14 +95,15 @@ foreach my $source_section ( sort( $config->GroupMembers('source') ) ) {
 
   print(   "INSERT INTO source "
          . "(name, source_release, download, ordered, "
-         . "priority, priority_description)\n" );
-
-  printf( "VALUES ('%s', '1', '%s', %d, %d, '%s');\n",
+         . "priority, priority_description, status)\n" );
+  
+  printf( "VALUES ('%s', '1', '%s', %d, %d, '%s', '%s');\n",
           $config->val( $source_section, 'name' ),
           $config->val( $source_section, 'download' ),
           $config->val( $source_section, 'order' ),
           $config->val( $source_section, 'priority' ),
-          $config->val( $source_section, 'prio_descr' ) );
+          $config->val( $source_section, 'prio_descr' ),
+          $config->val($source_section, 'status', 'NOIDEA') );
 
   print("\n");
 

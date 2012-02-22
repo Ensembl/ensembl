@@ -89,7 +89,7 @@ CREATE TABLE source (
 
   source_id                   int unsigned not null auto_increment,
   name                        varchar(255) not null,
-  status                      enum('KNOWN','XREF','PRED','ORTH','PSEUDO','NOIDEA') not null default 'NOIDEA',
+  status                      enum('KNOWN','XREF','PRED','ORTH','PSEUDO','LOWEVIDENCE','NOIDEA') not null default 'NOIDEA',
   source_release              varchar(255),
   download                    enum('Y', 'N') default 'Y',
   ordered                     int unsigned not null, 

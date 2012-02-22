@@ -71,8 +71,8 @@ sub set_status_for_source_from_core{
   
   my %external_name_to_status;
   
-  my $sth = $self->core->dbc->prepare('select db_name, status from external_db where status like "KNOWN%"');
-  $sth->execute();
+  my $sth = $self->core->dbc->prepare('select db_name, status from external_db where status like ?');
+  $sth->execute('KNOWN%');
   my  ($name, $status, $id);
   $sth->bind_columns(\$name,\$status); 
   while($sth->fetch()){
@@ -80,18 +80,16 @@ sub set_status_for_source_from_core{
   }
   $sth->finish;
 
+  my $sth_up = $self->xref->dbc->prepare("update source set status = ? where source_id = ?");
 
-  my $sth_up = $self->xref->dbc->prepare("update source set status = 'KNOWN' where source_id = ?");
-
-
-  my $sql = 'select s.source_id, s.name from source s, xref x where x.source_id = s.source_id group by s.source_id'; # only get those of interest
+  my $sql = 'select s.source_id, s.name from source s, xref x where x.source_id = s.source_id and s.status =? group by s.source_id'; # only get those of interest
   $sth = $self->xref->dbc->prepare($sql);
-  $sth->execute();
+  $sth->execute('NOIDEA');
   $sth->bind_columns(\$id, \$name);
   while($sth->fetch()){
     if(defined($external_name_to_status{$name})){
       # set status
-      $sth_up->execute($id);
+      $sth_up->execute('KNOWN', $id);
     }
   }
   $sth->finish;
