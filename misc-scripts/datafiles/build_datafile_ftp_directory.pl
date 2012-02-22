@@ -1,5 +1,12 @@
 #!/usr/bin/env perl
 
+#TODO Need to change to emit a build script which can be run on the FTP site 
+#TODO and directory structure needs to change to 
+#TODO pub/release-66/TYPE/species/fakegroup/symlink - for people just after data
+#TODO pub/release-66/data_files/NORMALPATH/symlink - for people to mirror the 66 site
+
+#TODO also use EnsEMBL::Web::Document::HTML::FTPtable required_types_for_species() && titles() 
+
 package Script;
 
 use strict;
@@ -98,7 +105,6 @@ sub setup {
     -USER => $o->{username}, -DB_VERSION => $o->{release},
   ); 
   $args{-PASS} = $o->{password} if $o->{password};
-#  $args{-VERBOSE} = 1 if $o->{verbose};
   my $loaded = Bio::EnsEMBL::Registry->load_registry_from_db(%args);
   $self->v('Loaded %d DBAdaptor(s)', $loaded);
   
@@ -123,7 +129,9 @@ sub _process_dba {
   }
   else {
     foreach my $df (@{$datafiles}) {
-      $self->_process_datafile($df);
+      next if $df->absolute();
+      $self->_process_datafile($df, $self->_target_species_root($df));
+      $self->_process_datafile($df, $self->_target_datafiles_root($df));
     }
   }
   $dba->dbc()->disconnect_if_idle();
@@ -131,9 +139,7 @@ sub _process_dba {
 }
 
 sub _process_datafile {
-  my ($self, $datafile) = @_;
-  return if $datafile->absolute();
-  my $target_dir = $self->_target_root($datafile);
+  my ($self, $datafile, $target_dir) = @_;
   if(! -d $target_dir) {
     if($self->opts->{dry}) {
       $self->v("\tWould have created directory '%s'", $target_dir);
@@ -167,15 +173,25 @@ sub _process_datafile {
   return;
 }
 
-# Expected path: /root/RELEASE/DATATYPE/TYPE/SPECIES/files
-# e.g. pub/66/bam/genebuild/pan_trogladytes/chimp_1.bam
-sub _target_root {
+# Expected path: base/FILETYPE/SPECIES/TYPE/files
+# e.g. pub/release-66/bam/pan_trogladytes/genebuild/chimp_1.bam
+sub _target_species_root {
   my ($self, $datafile) = @_;
   my $base = $self->opts()->{ftp_dir};
   my $file_type = $self->_datafile_to_type($datafile); 
   my $ftp_type = $self->_dba_to_ftp_type($datafile->adaptor()->db());
   my $species = $datafile->adaptor()->db()->get_MetaContainer()->get_production_name();
-  return File::Spec->catdir($base, $file_type, $ftp_type, $species);
+  return File::Spec->catdir($base, $file_type, $species, $ftp_type);
+}
+
+# Expected path: base/data_files/normalpath
+# e.g. pub/release-66/data_files/pan_trogladytes/CHIMP2.14/rnaseq/chimp_1.bam
+sub _target_datafiles_root {
+  my ($self, $datafile) = @_;
+  my $base = $self->opts()->{ftp_dir};
+  my $target_location = $datafile->path($base);
+  my ($volume, $dir, $file) = File::Spec->splitpath($target_location);
+  return $dir;
 }
 
 sub _datafile_to_type {
