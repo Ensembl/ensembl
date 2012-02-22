@@ -1,6 +1,7 @@
 #!/usr/local/bin/perl
 
 # Dump variation information to an XML file for indexing by the EBI's search engine.
+# To be used by Ensembl.
 #
 # To copy files to the EBI so that they can be picked up:
 # scp *.xml.gz glenn@puffin.ebi.ac.uk:xml/

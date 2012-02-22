@@ -1,0 +1,7 @@
+If you are generating dumps for Ensembl use: 
+
+ebi_search_dump.pl
+
+If you are doing dumps for anyone else use:
+
+ebi_search_dump_generic.pl
