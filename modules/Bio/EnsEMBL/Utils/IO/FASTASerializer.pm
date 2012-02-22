@@ -65,7 +65,9 @@ use base qw(Bio::EnsEMBL::Utils::IO::Serializer);
 
   Arg [1]    : Filehandle (optional) 
   Arg [2]    : CODEREF subroutine for writing custom headers
-  Example    : $dumper = Bio::EnsEMBL::Utils::IO::FASTASerializer->new;
+  Arg [3]    : [optional] Chunking size (integer)
+  Arg [4]    : [optional] Line width (integer)
+  Example    : $dumper = Bio::EnsEMBL::Utils::IO::FASTASerializer->new($filehandle,$header_function,1000,60);
   Description: Constructor
                Allows the specification of a custom function for rendering
                header lines.
@@ -80,12 +82,15 @@ sub new {
     my $class = ref($caller) || $caller;
     my $filehandle = shift;
     my $header_function = shift;
+    my $chunk_factor = shift;
+    my $line_width = shift;
     
     my $self = $class->SUPER::new($filehandle);
     
     $self->{'header_function'} = $header_function;
-    $self->{'line_width'} = 60; # default, overriden with setter
-    $self->{'chunk_factor'} = 1000; # gives a 60kb buffer, increase for specific purposes 
+    $self->{'line_width'} = ($line_width)? $line_width : 60; 
+    $self->{'chunk_factor'} = ($chunk_factor)? $chunk_factor : 1000; 
+    # gives a 60kb buffer by default, increase for higher database and disk efficiency. 
     
     # TODO: Check this error trap works as intended
     if ( defined($self->{'header_function'}) ) { 
@@ -212,6 +217,7 @@ sub chunk_factor {
     Arg [1]    : CODE reference
     Description: Set the custom header function. Normally this is done at
                  construction time, but can be overridden here.
+    Example    : $serializer->set_custom_header( sub { return 'New header'});
     Returntype : 
     
 =cut
