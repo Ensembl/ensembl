@@ -185,8 +185,9 @@ sub _process_datafile {
       #Generate the relative link
       my $relative_path = File::Spec->abs2rel($file_dir, $target_dir);
       
-      $self->v("\tLinking %s -> %s", $relative_path, $target);
-      #symlink($filepath, $target) or die "Cannot symbolically link $filepath to $target: $!";
+      $self->v("\tLinking %s -> %s", $filepath, $target);
+      $self->v("\tRelative path is %s", $relative_path);
+      symlink($relative_path, $target) or die "Cannot symbolically link $filepath to $target: $!";
     }
   }
   return;
