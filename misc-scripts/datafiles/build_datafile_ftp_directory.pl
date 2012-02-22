@@ -179,12 +179,12 @@ sub _process_datafile {
     }
     else {
       if(-e $target) {
-        if(-f $target) {
+        if(-h $target) {
+          unlink $target;
+        }
+        elsif(-f $target) {
           my $id = $datafile->dbID();
           die "Cannot unlink $target as it is a file and not a symbolic link. Datafile ID was $id";
-        }
-        elsif(-h $target) {
-          unlink $target;
         }
       }
       $self->v("\tLinking %s -> %s", $filepath, $target);
