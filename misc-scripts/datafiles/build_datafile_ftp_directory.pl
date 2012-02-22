@@ -181,8 +181,12 @@ sub _process_datafile {
           die "Cannot unlink $target as it is a file and not a symbolic link. Datafile ID was $id";
         }
       }
-      $self->v("\tLinking %s -> %s", $filepath, $target);
-      symlink($filepath, $target) or die "Cannot symbolically link $filepath to $target: $!";
+      
+      #Generate the relative link
+      my $relative_path = File::Spec->abs2rel($file_dir, $target_dir);
+      
+      $self->v("\tLinking %s -> %s", $relative_path, $target);
+      #symlink($filepath, $target) or die "Cannot symbolically link $filepath to $target: $!";
     }
   }
   return;
