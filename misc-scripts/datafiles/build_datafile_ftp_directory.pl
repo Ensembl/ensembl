@@ -221,10 +221,10 @@ sub _flag_missing_ftp_link {
     my $species = $datafile->adaptor()->db()->get_MetaContainer()->get_production_name();
     my $missing_type = 1;
     my $missing_species = 1;
-    if(exists $self->{_webcode}->{types}->{$type}) {
+    if(exists $self->{_webcode}->{$type}) {
       $missing_type = 0;
     }
-    if(! $missing_type && exists $self->{_webcode}->{types}->{$type}->{$species}) {
+    if(! $missing_type && exists $self->{_webcode}->{$type}->{$species}) {
       $missing_species = 0;
     }
     $self->{ftp}->{missing_types}->{$type} = 1 if $missing_type;
@@ -302,9 +302,7 @@ sub _webcode_available {
     $self->{_webcode_available} = 0;
     require EnsEMBL::Web::Document::HTML::FTPtable;
     my $types_for_species = EnsEMBL::Web::Document::HTML::FTPtable->required_types_for_species();
-    my $titles = EnsEMBL::Web::Document::HTML::FTPtable->titles();
-    $self->{_webcode}->{types} = $types_for_species;
-    $self->{_webcode}->{titles} = $titles;
+    $self->{_webcode} = $types_for_species;
     $self->{_webcode_available} = 1;
   };
   if($@) {
