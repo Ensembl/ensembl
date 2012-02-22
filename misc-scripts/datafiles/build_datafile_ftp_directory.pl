@@ -114,9 +114,10 @@ sub setup {
 sub process {
   my ($self) = @_;
   my $dbas = $self->_get_core_like_dbs();
-  foreach my $dba (@$dbas) {
+  while (my $dba = shift @{$dbas}) {
     $self->_process_dba($dba);
   }
+  $self->_process_missing_ftp_links();  
   return;
 }
 
@@ -135,6 +136,26 @@ sub _process_dba {
     }
   }
   $dba->dbc()->disconnect_if_idle();
+  return;
+}
+
+sub _process_missing_ftp_links {
+  my ($self) = @_;
+  return unless $self->_webcode_available();
+  my $module = 'EnsEMBL::Web::Document::HTML::FTPtable';
+  if(exists $self->{ftp}->{missing_types}) {
+    foreach my $type (keys %{$self->{ftp}->{missing_types}}) {
+      printf("MISSING TYPE: '%s' is missing from thwe WebCode module '%s'. Please add it\n", $type, $module);
+    }
+  }
+  
+  if(exists $self->{ftp}->{missing_species}) {
+    foreach my $type (keys %{$self->{ftp}->{missing_species}}) {
+      foreach my $species (keys %{$self->{ftp}->{missing_species}->{$type}}) {
+        printf("MISSING SPECIES: '%s' is missing from the type '%s' in the WebCode module '%s'. Please add it\n", $species, $type, $module);
+      }
+    }
+  }
   return;
 }
 
@@ -194,6 +215,25 @@ sub _target_datafiles_root {
   return $dir;
 }
 
+sub _flag_missing_ftp_link {
+  my ($self, $datafile) = @_;
+  if($self->_webcode_available()) {
+    my $type = $self->_datafile_to_type($datafile);
+    my $species = $datafile->adaptor()->db()->get_MetaContainer()->get_production_name();
+    my $missing_type = 1;
+    my $missing_species = 1;
+    if(exists $self->{_webcode}->{types}->{$type}) {
+      $missing_type = 0;
+    }
+    if(! $missing_type && exists $self->{_webcode}->{types}->{$type}->{$species}) {
+      $missing_species = 0;
+    }
+    $self->{ftp}->{missing_types}->{$type} = 1 if $missing_type;
+    $self->{ftp}->{missing_species}->{$type}->{$species} = 1 if $missing_species;
+  }
+  return;
+}
+
 sub _datafile_to_type {
   my ($self, $datafile) = @_;
   return lc($datafile->file_type());
@@ -248,6 +288,30 @@ sub v {
   my ($self, $msg, @params) = @_;
   return unless $self->opts()->{verbose};
   printf(STDERR $msg."\n", @params);
+  return;
+}
+
+sub _webcode_available {
+  my ($self) = @_;
+  return $self->{_webcode_available} if exists $self->{_webcode_available};
+  if($self->opts()->{no_ftp_table}) {
+    $self->{_webcode_available} = 0;
+    return $self->{_webcode_available};
+  }
+  
+  eval {
+    $self->{_webcode_available} = 0;
+    require EnsEMBL::Web::Document::HTML::FTPtable;
+    my $types_for_species = EnsEMBL::Web::Document::HTML::FTPtable->required_types_for_species();
+    my $titles = EnsEMBL::Web::Document::HTML::FTPtable->titles();
+    $self->{_webcode}->{types} = $types_for_species;
+    $self->{_webcode}->{titles} = $titles;
+    $self->{_webcode_available} = 1;
+  };
+  if($@) {
+    warn "Trying to setup the webcode to flag those links not on the FTP table. Please fix the error if you want this feature: $@";
+  }
+  
   return;
 }
 
@@ -316,6 +380,11 @@ REQUIRED. Source directory which is the intended root of the datafiles.
 REQUIRED. Target directory to symbolically link into. Push directly into the
 release directory as the script does not assume the directory is publically
 available.
+
+=item B<--no_ftp_table>
+
+If flagged the script will not warn about the FTP table and therefore does
+not have any dependencies on the webcode.
 
 =item B<--verbose>
 
