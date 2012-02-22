@@ -183,7 +183,8 @@ sub _process_datafile {
       }
       
       #Generate the relative link
-      my $relative_path = File::Spec->abs2rel($file_dir, $target_dir);
+      my $relative_path_dir = File::Spec->abs2rel($file_dir, $target_dir);
+      my $relative_path = File::Spec->catfile($relative_path_dir, $name);
       
       $self->v("\tLinking %s -> %s", $filepath, $target);
       $self->v("\tRelative path is %s", $relative_path);
@@ -210,7 +211,7 @@ sub _target_species_root {
 # e.g. pub/release-66/data_files/pan_trogladytes/CHIMP2.14/rnaseq/chimp_1.bam
 sub _target_datafiles_root {
   my ($self, $datafile) = @_;
-  my $base = File::Spec->catdir($self->opts()->{ftp_dir}, 'data_file');
+  my $base = File::Spec->catdir($self->opts()->{ftp_dir}, 'data_files');
   my $target_location = $datafile->path($base);
   my ($volume, $dir, $file) = File::Spec->splitpath($target_location);
   return $dir;
