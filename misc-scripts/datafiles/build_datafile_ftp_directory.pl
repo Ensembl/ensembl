@@ -179,7 +179,7 @@ sub _process_datafile {
     }
     else {
       if(-e $target) {
-        if(-h $target) {
+        if(-l $target) {
           unlink $target;
         }
         elsif(-f $target) {
