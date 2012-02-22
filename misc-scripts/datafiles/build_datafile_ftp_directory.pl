@@ -1,12 +1,5 @@
 #!/usr/bin/env perl
 
-#TODO Need to change to emit a build script which can be run on the FTP site 
-#TODO and directory structure needs to change to 
-#TODO pub/release-66/TYPE/species/fakegroup/symlink - for people just after data
-#TODO pub/release-66/data_files/NORMALPATH/symlink - for people to mirror the 66 site
-
-#TODO also use EnsEMBL::Web::Document::HTML::FTPtable required_types_for_species() && titles() 
-
 package Script;
 
 use strict;
