@@ -448,50 +448,11 @@ g.seq_region_id=ae.seq_region_id and ae.exc_type='HAP'", [qw(gene_id)]
         #     $exons{ $_->[0] }{ $_->[1] } = 1;
         # }
 
-
-<<<<<<< ebi_search_dump.pl
         my $dbh2 = DBI->connect( "$dsn:$DBNAME", $user, $pass )
           or die "DBI::error";
         my $gene_info = $dbh2->selectall_arrayref( "
         select gsi.gene_id, tsi.transcript_id, trsi.translation_id,
              gsi.stable_id as gsid, tsi.stable_id as tsid, trsi.stable_id as trsid,
-=======
-        my %exons = ();
-        my $get_genes_sth    = $dbh->prepare(
-            "select distinct t.gene_id, e.stable_id
-         from transcript as t, exon_transcript as et, exon as e
-        where t.transcript_id = et.transcript_id and et.exon_id = e.exon_id"
-        );
-
-
-	$get_genes_sth->execute;
-        my $gene_rows = [];    # cache for batches of rows
-
-	while (
-            my $row = (
-                shift(@$gene_rows) ||    # get row from cache, or reload cache:
-                  shift(
-                    @{
-                        $gene_rows =
-                          $get_genes_sth->fetchall_arrayref( undef, 10_000 )
-                          || []
-                      }
-                  )
-            )
-          )
-        {
-            push @{ $ortholog_lookup->{ $row->[0] } },
-              [ $row->[1], $orth_species->{ $row->[2] } ];
-
-            $exons{ $row->[0] }{ $row->[1] } = 1;
-
-        }
-    
-
-        my $gene_info = $dbh->selectall_arrayref( "
-        select g.gene_id, t.transcript_id, tr.translation_id,
-             g.stable_id as gsid, t.stable_id as tsid, tr.stable_id as trsid,
->>>>>>> 1.18
              g.description, ed.db_name, x.dbprimary_acc,x.display_label, ad.display_label, ad.description, g.source, g.status, g.biotype
         from ((( $DBNAME.gene as g, 
              $DBNAME.analysis_description as ad,
