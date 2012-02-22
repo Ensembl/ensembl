@@ -47,6 +47,7 @@ sub args {
       password|pass|p=s
       datafile_dir=s
       ftp_dir=s
+      no_ftp_table
       verbose 
       help
       man
