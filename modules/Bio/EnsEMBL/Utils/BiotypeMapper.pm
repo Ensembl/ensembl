@@ -118,6 +118,35 @@ my %feature_so_mapping = (
 	'Bio::EnsEMBL::Funcgen::RegulatoryFeature' => 'SO:0001679', # transcription_regulatory_region
 );
 
+my %biotype_grouping = (
+    'protein-coding' => 'protein_coding',
+    'polymorphic_pseudogene' => 'protein_coding',
+    'pseudogene' => 'pseudogene',
+    'retrotransposed' => 'pseudogene',
+    '3prime_overlapping_ncrna' => 'long noncoding',
+    'antisense' => 'long noncoding',
+    'lincRNA' => 'long noncoding',
+    'ncrna_host' => 'long noncoding',
+    'non_coding' => 'long noncoding',
+    'processed_transcript' => 'long noncoding',
+    'sense_intronic' => 'long noncoding',
+    'sense_overlapping' => 'long noncoding',
+    'miRNA' => 'short noncoding',
+    'miRNA_pseudogene' => 'short noncoding',
+    'misc_RNA_pseudogene' => 'short noncoding',
+    'misc_RNA' => 'short noncoding',
+    'Mt_tRNA' => 'short noncoding',
+    'Mt_tRNA_pseudogene' => 'short noncoding',
+    'rRNA' => 'short noncoding',
+    'rRNA_pseudogene' => 'short noncoding',
+    'scRNA_pseudogene' => 'short noncoding',
+    'snoRNA' => 'short noncoding',
+    'snoRNA_pseudogene' => 'short noncoding',
+    'snRNA' => 'short noncoding',
+    'snRNA_pseudogene' => 'short noncoding',
+    'tRNA_pseudogene' => 'short noncoding',
+);
+
 =head2 new
 
     Constructor
@@ -176,7 +205,7 @@ sub translate_feature_to_SO_term {
 
 	Arg [0]    : Sequence Ontology term, either in name or URI format
 	Description: Returns the closest corresponding Ensembl biotypes to a given SO term
-	Returntype : String containing a comma-separated list of biotypes
+	Returntype : Listref Array of Strings containing possible biotypes
 =cut
 
 sub translate_SO_to_biotype {
@@ -215,7 +244,38 @@ sub translate_SO_to_biotype {
 		}
 	}
 
-	return join (',',@biotypes);
+	return \@biotypes;
+}
+
+=head2 biotype_to_group_member
+
+    Arg [0]    : Biotype (string)
+    Description: Returns the group name that includes the given biotype
+    Returntype : String
+=cut
+
+sub biotype_to_group_member {
+    my $self = shift;
+    my $member = shift;
+    my $group = $biotype_grouping{$member};
+    return $group;
+}
+
+=head2 biotype_to_group_member
+
+    Arg [0]    : Biotype group name (string)
+    Description: Returns a list of biotypes that belong in the group.
+    Returntype : Listref of strings
+=cut
+
+sub biotypes_belonging_to_group {
+    my $self = shift;
+    my $group = shift;
+    my @biotypes;
+    foreach my $biotype (keys %biotype_grouping) {
+        if ($biotype_grouping{$biotype} eq $group) { push @biotypes,$biotype;}
+    }
+    return \@biotypes
 }
 
 1;
